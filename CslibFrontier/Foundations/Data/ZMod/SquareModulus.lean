@@ -29,6 +29,7 @@ theorem with exponent `φ(N ^ 2) = N * φ(N)`. These facts underlie Paillier enc
 * `ZMod.natCast_mul_self_eq_zero`: `N * N = 0` in `ZMod (N ^ 2)`.
 * `ZMod.one_add_natCast_pow`, `ZMod.one_add_natCast_pow_self`, `ZMod.orderOf_one_add_natCast`:
   `(1 + N) ^ a = 1 + a * N`, so `(1 + N) ^ N = 1`, and `1 + N` has order `N` when `0 < N`.
+* `ZMod.val_one_add_natCast_mul`: the least representative of `1 + k * N` is `1 + (k % N) * N`.
 * `ZMod.add_natCast_mul_pow_self`, `ZMod.natCast_pow_self_mod`: an `N`-th power modulo `N ^ 2`
   only depends on the base modulo `N`.
 * `ZMod.natCast_pow_mul_totient`: `r ^ (N * φ(N)) = 1` modulo `N ^ 2` for `r` coprime to `N`.
@@ -56,6 +57,18 @@ theorem one_add_natCast_pow (N a : ℕ) :
     rw [pow_succ (1 + (N : ZMod (N ^ 2))) a, ih]
     push_cast
     linear_combination (a : ZMod (N ^ 2)) * natCast_mul_self_eq_zero N
+
+/-- For `1 < N`, the least representative of `1 + k * N` modulo `N ^ 2` is `1 + (k % N) * N`. -/
+theorem val_one_add_natCast_mul {N : ℕ} (hN : 1 < N) (k : ℕ) :
+    (1 + (k : ZMod (N ^ 2)) * N).val = 1 + k % N * N := by
+  have hlt : 1 + k % N * N < N ^ 2 := by
+    have := Nat.mod_lt k (by lia : 0 < N)
+    nlinarith
+  rw [← ZMod.val_cast_of_lt hlt]
+  congr 1
+  conv_lhs => rw [← Nat.mod_add_div k N]
+  push_cast
+  linear_combination ((k / N : ℕ) : ZMod (N ^ 2)) * natCast_mul_self_eq_zero N
 
 /-- `(1 + N) ^ N = 1` in `ZMod (N ^ 2)` ([KatzLindell2020], Claim 15.8). -/
 theorem one_add_natCast_pow_self (N : ℕ) : (1 + (N : ZMod (N ^ 2))) ^ N = 1 := by

@@ -106,27 +106,13 @@ variable {p : δ → Memory.Prog α} {input : δ ↪ (Fin k → ℕ)} {output : 
 by the exchange factor. The new factor is `C * (K + 1)`; the emitter and scratch are unchanged. -/
 theorem mono_mul (h : Realizes B p input output safe work) (K : ℕ)
     (hwork : ∀ d s, work d s ≤ K * (memoryCost (p d) s + work' d s + 1)) :
-    Realizes B p input output safe work' := by
-  obtain ⟨n, C, emit, he⟩ := h
-  refine ⟨n, C * (K + 1), emit, fun frontier src tmp hi hd hf hs => ?_⟩
-  obtain ⟨hnw, hrun⟩ := he frontier src tmp hi hd hf hs
-  refine ⟨hnw, fun w d x hx hin hsafe hv => ?_⟩
-  obtain ⟨y, hy, hm, hout, hframe⟩ := hrun w d x hx hin hsafe hv
-  refine ⟨y, hy.mono ?_, hm, hout, hframe⟩
-  have hw := hwork d (memoryState frontier x)
-  rw [Nat.mul_assoc]
-  apply Nat.mul_le_mul_left
-  have hexpand : (K + 1) * (memoryCost (p d) (memoryState frontier x) +
-      work' d (memoryState frontier x) + 1) =
-      K * (memoryCost (p d) (memoryState frontier x) + work' d (memoryState frontier x) + 1) +
-        (memoryCost (p d) (memoryState frontier x) + work' d (memoryState frontier x) + 1) := by
-    ring
-  omega
+    Realizes B p input output safe work' :=
+  Realizes.With.mono_mul h (fun hT h => h.mono hT) K hwork
 
 /-- Pointwise equal programs have the same certificates. -/
 theorem congr {p' : δ → Memory.Prog α} (h : Realizes B p input output safe work)
     (hp : ∀ d, p d = p' d) : Realizes B p' input output safe work :=
-  funext hp ▸ h
+  Realizes.With.congr h hp
 
 /-- Strengthen the visible domain using, besides the input fits and memory well-formedness, the
 validity of the client's own history from the entry memory, which every execution supplies. -/
@@ -135,7 +121,7 @@ theorem consequence_valid {safe' : ℕ → δ → Memory.State → Prop}
     (hsafe : ∀ w d s, (∀ i, Fits w (input d i)) → Memory.WellFormed w s →
       (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s (p d)) →
       safe' w d s → safe w d s) : Realizes B p input output safe' work :=
-  ((Witness.ofRealizes h).consequenceValid hsafe).toRealizes
+  Realizes.With.consequence_valid h hsafe
 
 variable {q : δ × α → Memory.Prog β} {answer : α ↪ (Fin l → ℕ)} {output' : β ↪ (Fin m → ℕ)}
   {safeP : ℕ → δ → Memory.State → Prop} {safeQ : ℕ → δ × α → Memory.State → Prop}

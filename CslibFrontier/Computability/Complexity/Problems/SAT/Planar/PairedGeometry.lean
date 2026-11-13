@@ -483,12 +483,12 @@ private theorem originalClause_endpoints {φ : CNF ℕ} {sites : List Point}
   obtain ⟨⟨sourceLiteral, j⟩, hlj, heq⟩ := List.mem_map.mp hlr
   have ho := mk_mem_occurrences_of_mem_zipIdx hci hlj
   obtain ⟨rfl, rfl⟩ := Prod.mk.inj heq
-  have hlast : (occurrencePath φ (i, j, sourceLiteral)).getLastD (0, 0) =
+  have hlast : (occurrencePath φ ⟨i, j, sourceLiteral⟩).getLastD (0, 0) =
       Layout.center (φ.distinctVars.length + i) := by
     rw [List.getLastD_eq_getLast?, PlanarCompile.occurrencePath_endpoints ho |>.2]
     rfl
   simpa only [lastLiteral, hlast] using lastLiteral_endpoints sites
-    (occurrencePath φ (i, j, sourceLiteral))
+    (occurrencePath φ ⟨i, j, sourceLiteral⟩)
     sourceLiteral.2
 
 private theorem ordinary_literal_routes_cover : ∀ i : Fin 8,
@@ -942,7 +942,7 @@ theorem route_variable_contact (φ : CNF ℕ) {r : Route} (hr : r ∈ routes φ)
   · obtain ⟨i, j, x, ho, rfl⟩ := (exists_occurrence_of_mem_originalClauses hpc).2 _ hr
     rw [support_lastLiteral _ _ _ (PlanarCompile.occurrencePath_last_unit ho)] at hp
     rcases hp with hp | hp
-    · have hcell : v.1 = (occurrencePath φ (i, j, x)).getLastD (0, 0) :=
+    · have hcell : v.1 = (occurrencePath φ ⟨i, j, x⟩).getLastD (0, 0) :=
         cell_eq_of_mem_open_closed (by decide) (variablePosition_mem_openCell v)
           (spoke_support_cell _ _ hp)
       have hend := (PlanarCompile.occurrencePath_endpoints ho).2
@@ -1319,7 +1319,7 @@ private inductive AccessPiece (φ : CNF ℕ) : Route → Point → Point → Fin
       (he : e ∈ (occurrencePath φ o).dropLast.consecutivePairs) (l : Fin 2) :
       AccessPiece φ (access (crossingSites φ) e.2 e.1 l) e.2 e.1 l
   | final {o : Occurrence ℕ} (ho : o ∈ Cslib.Logic.PL.occurrences φ) :
-      AccessPiece φ (lastLiteral (crossingSites φ) (occurrencePath φ o) o.2.2.2).2
+      AccessPiece φ (lastLiteral (crossingSites φ) (occurrencePath φ o) o.lit.2).2
         (lastStep (occurrencePath φ o)).1 (lastStep (occurrencePath φ o)).2
         (PairedPorts.spokeLane
           (side (lastStep (occurrencePath φ o)).2 (lastStep (occurrencePath φ o)).1))
@@ -1361,7 +1361,7 @@ private theorem AccessPiece.source {φ : CNF ℕ} {r : Route} {c q : Point} {l :
       ((e ∈ (occurrencePath φ o).dropLast.consecutivePairs ∧
           r = access (crossingSites φ) c q l) ∨
         (e = lastStep (occurrencePath φ o) ∧
-          r = (lastLiteral (crossingSites φ) (occurrencePath φ o) o.2.2.2).2)) := by
+          r = (lastLiteral (crossingSites φ) (occurrencePath φ o) o.lit.2).2)) := by
   cases h with
   | link ho he l => exact ⟨_, ho, _, prefixStep_mem he, rfl, Or.inl ⟨he, rfl⟩⟩
   | reverseLink ho he l =>
@@ -1450,7 +1450,7 @@ theorem spoke_support_boundary (c : Point) (s : Fin 4) {p : ℝ × ℝ}
 
 private inductive SpokePiece (φ : CNF ℕ) : Route → Point → Fin 4 → Prop where
   | final {o : Occurrence ℕ} (ho : o ∈ Cslib.Logic.PL.occurrences φ) :
-      SpokePiece φ (lastLiteral (crossingSites φ) (occurrencePath φ o) o.2.2.2).2
+      SpokePiece φ (lastLiteral (crossingSites φ) (occurrencePath φ o) o.lit.2).2
         (lastStep (occurrencePath φ o)).2
         (side (lastStep (occurrencePath φ o)).2 (lastStep (occurrencePath φ o)).1)
 
@@ -1761,7 +1761,7 @@ private theorem originalClause_routes_nodup_at {φ : CNF ℕ}
     (hw : ∀ c ∈ φ, c.length ≤ 3) (hv : ∀ v, φ.vars.count v ≤ 3)
     {c : Clause ℕ} {i : ℕ} (hci : (c, i) ∈ φ.zipIdx) :
     ((c.zipIdx.map fun lj =>
-      lastLiteral (crossingSites φ) (occurrencePath φ (i, lj.2, lj.1)) lj.1.2).map
+      lastLiteral (crossingSites φ) (occurrencePath φ ⟨i, lj.2, lj.1⟩) lj.1.2).map
         Prod.snd).Nodup := by
   rw [List.map_map]
   have hn : c.zipIdx.Nodup := by
@@ -1773,8 +1773,8 @@ private theorem originalClause_routes_nodup_at {φ : CNF ℕ}
   have ho := mk_mem_occurrences_of_mem_zipIdx hci hlj
   have ht := mk_mem_occurrences_of_mem_zipIdx hci hmk
   have hot := lastLiteral_route_injective hw hv ho ht (b := lj.1.2) (b' := mk.1.2) heq
-  have hjl := Prod.mk.inj (Prod.mk.inj hot).2
-  exact Prod.ext hjl.2 hjl.1
+  have hjl := Occurrence.mk.inj hot
+  exact Prod.ext hjl.2.2 hjl.2.1
 
 private theorem ordinary_routes_nodup_check : ∀ i : Fin 8,
     ((OrdinaryRing.incidenceRoutes.filter fun e => e.1 == i.val).map fun e => e.2.2).Nodup := by

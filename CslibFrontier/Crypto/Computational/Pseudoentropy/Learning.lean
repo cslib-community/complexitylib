@@ -134,9 +134,8 @@ theorem extractedSequence_learn_error_pow {Seed Output : Type} [Fintype α]
     (hash : Seed → List Bool → Output) (test : List β × Seed × Output → ProbComp Bool)
     (ideal : PMF (List β × Seed × Output)) {ε : ℝ}
     (hclose : (Game.advantage
-      ((ProbComp.eval (OracleComp.replicate count
-        (maskedSample source observe truth mask) >>= extractLabels seed hash)).bind
-          (fun output => ProbComp.eval (test output)))
+      ((ProbComp.eval (extractLabelsReal (maskedSample source observe truth mask) count seed
+        hash)).bind (fun output => ProbComp.eval (test output)))
       (ideal.bind (fun output => ProbComp.eval (test output))) : ℝ) ≤ ε)
     (candidates : ProbComp (List Bool)) (predict : List Bool → β → Bool)
     (hrealize : ∀ value ∈ (ProbComp.eval source).support,
@@ -145,11 +144,8 @@ theorem extractedSequence_learn_error_pow {Seed Output : Type} [Fintype α]
           (fun samples => extractLabels seed hash samples >>= test) (observe value)))
     (confidence inverseGap : ℕ) (hgap : 0 < inverseGap)
     (hdistinguish : (dyadicSize count : ℝ) / inverseGap + ε ≤
-      (Game.advantage (ProbComp.eval (do
-        let samples ← OracleComp.replicate count
-          ((fun value => (observe value, truth value)) <$> source)
-        let result ← extractLabels seed hash samples
-        test result))
+      (Game.advantage (ProbComp.eval (extractLabelsReal
+        ((fun value => (observe value, truth value)) <$> source) count seed hash >>= test))
         (ideal.bind (fun output => ProbComp.eval (test output))) : ℝ)) :
     ((ProbComp.eval (learn candidates (fun code => weightedTrial source mask
       (fun value => pure (predict code (observe value) == truth value)))
@@ -163,6 +159,7 @@ theorem extractedSequence_learn_error_pow {Seed Output : Type} [Fintype α]
     confidence inverseGap hgap
   have h := extractLabels_sequence_gap ((fun value => (observe value, truth value)) <$> source)
     (maskedSample source observe truth mask) count seed hash test ideal hclose
+  rw [extractLabelsReal, bind_assoc] at hdistinguish
   have hgap' := (le_sub_iff_add_le.mpr hdistinguish).trans h
   simpa only [Game.coe_advantage, Game.coe_succProbability] using hgap'
 

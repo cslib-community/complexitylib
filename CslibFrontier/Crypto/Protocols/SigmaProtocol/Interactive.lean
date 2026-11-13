@@ -494,27 +494,30 @@ theorem Encoding.toInteractiveEncoding_transcript_apply
     challengeOfTranscript, responseOfTranscript, Function.Embedding.coeFn_mk, encPair_apply,
     encBits, Function.Embedding.coe_refl, id_eq]
 
-/-- Combine a word-level challenge sampler `sampleChallengeWord` with a word-level Sigma-protocol
-simulator `program` to sample encoded interactive transcripts `(t, (c, z))`. -/
-def interactiveSimWord
+/-- Combine a challenge sampler `sampleChallenge` with a word-level Sigma-protocol simulator
+`program` to sample encoded interactive transcripts `(t, (c, z))`: the sampled challenge is passed
+to `program` encoded by `enc`. -/
+def interactiveSimWord (enc : Encoding I YF TF CF ZF)
     (program : I × List Bool × List Bool → ProbComp (List Bool × List Bool))
-    (sampleChallengeWord : I → ProbComp (List Bool)) :
+    (sampleChallenge : ∀ i, ProbComp (CF i)) :
     I × List Bool → ProbComp (List Bool) :=
   fun p =>
     encPair encBits (encPair encBits encBits) <$> do
-      let cBits ← sampleChallengeWord p.1
+      let cBits ← enc.challenge p.1 <$> sampleChallenge p.1
       (fun tzBits => (tzBits.1, (cBits, tzBits.2))) <$> program (p.1, p.2, cBits)
 
-/-- If `program` and `sampleChallengeWord` are uniform strict PPT, so is `interactiveSimWord`. -/
+/-- If `program` is uniform strict PPT and one machine samples the encoded challenges of
+`sampleChallenge` from the encoded index, then `interactiveSimWord` is uniform strict PPT. -/
 theorem isPPTOn_interactiveSimWord {enc : Encoding I YF TF CF ZF}
     {program : I × List Bool × List Bool → ProbComp (List Bool × List Bool)}
-    {sampleChallengeWord : I → ProbComp (List Bool)}
-    (hprog : IsPPTOn (encSimulatorInput enc.index) (encPair encBits encBits) program)
-    (hchal : IsPPTOn enc.index encBits sampleChallengeWord) :
+    {sampleChallenge : ∀ i, ProbComp (CF i)}
+    (hprog : IsPPTOn (encSimulatorWordInput enc.index) (encPair encBits encBits) program)
+    (hchal : IsPPTOn enc.index encBits fun i => enc.challenge i <$> sampleChallenge i) :
     IsPPTOn (encPair enc.index encBits) encBits
-      (interactiveSimWord program sampleChallengeWord) := by
+      (interactiveSimWord enc program sampleChallenge) := by
   let encIn := encPair enc.index encBits
-  have h1 : IsPPTOn encIn encBits (fun p : I × List Bool => sampleChallengeWord p.1) :=
+  have h1 : IsPPTOn encIn encBits
+      (fun p : I × List Bool => enc.challenge p.1 <$> sampleChallenge p.1) :=
     hchal.preprocess (by fun_prop)
   let encMid := encPair encIn encBits
   have h2 : IsPPTOn encMid (encPair encBits encBits)
@@ -527,7 +530,7 @@ theorem isPPTOn_interactiveSimWord {enc : Encoding I YF TF CF ZF}
     h2.map_with (by fun_prop)
   have h4 : IsPPTOn encIn (encPair encBits (encPair encBits encBits))
       (fun p : I × List Bool => do
-        let cBits ← sampleChallengeWord p.1
+        let cBits ← enc.challenge p.1 <$> sampleChallenge p.1
         (fun tzBits : List Bool × List Bool => (tzBits.1, (cBits, tzBits.2))) <$>
           program (p.1, p.2, cBits)) :=
     h1.bind_with h3
@@ -564,24 +567,22 @@ theorem SpecialSoundness.efficientKnowledgeSound
   polyTime := hpoly
 
 /-- `interactiveSimWord` realizes `(PF i).interactiveSim (simComp i)` on encodings up to
-`δC i + δ i`. -/
+`δC i + δ i`, when `program` is within `δ i` of the encoded `simulate i` on every encoded input
+(as `SimulatorRealizedBy.exists_word` provides). -/
 theorem simulatorRealizedBy_interactiveSimWord
     {enc : Encoding I YF TF CF ZF}
     {simulate : ∀ i, YF i → CF i → PMF (TF i × ZF i)}
     {simComp : ∀ i, YF i → CF i → ProbComp (TF i × ZF i)}
     {program : I × List Bool × List Bool → ProbComp (List Bool × List Bool)}
     {sampleChallenge : ∀ i, ProbComp (CF i)}
-    {sampleChallengeWord : I → ProbComp (List Bool)}
     {δ δC : I → ℝ≥0∞}
     (hsim : ∀ i y c, ProbComp.eval (simComp i y c) = simulate i y c)
-    (hreal : SimulatorRealizedBy enc simulate program δ)
+    (hreal : WordSimulatorRealizedBy enc simulate program δ)
     (hchal : ∀ i, CloseTo (PMF.uniformOfFintype (CF i))
-      (ProbComp.eval (sampleChallenge i)) (δC i))
-    (hchalWord : ∀ i, ProbComp.eval (sampleChallengeWord i) =
-      (ProbComp.eval (sampleChallenge i)).map (enc.challenge i)) :
+      (ProbComp.eval (sampleChallenge i)) (δC i)) :
     Interactive.SimulatorRealizedBy (enc.toInteractiveEncoding PF)
       (fun i => (PF i).interactiveSim (simComp i))
-      (interactiveSimWord program sampleChallengeWord)
+      (interactiveSimWord enc program sampleChallenge)
       (fun i => δC i + δ i) := by
   intro i y
   let pack (cBits : List Bool) (tzBits : List Bool × List Bool) : List Bool :=
@@ -597,14 +598,14 @@ theorem simulatorRealizedBy_interactiveSimWord
     rw [hsim i y c, PMF.map_comp, PMF.map_comp]
     rfl
   have hrhs :
-      ProbComp.eval (interactiveSimWord program sampleChallengeWord
+      ProbComp.eval (interactiveSimWord enc program sampleChallenge
           (i, (enc.toInteractiveEncoding PF).statement i y)) =
         (ProbComp.eval (sampleChallenge i)).bind fun c =>
           (ProbComp.eval (program (i, enc.statement i y, enc.challenge i c))).map
             (pack (enc.challenge i c)) := by
-    change ProbComp.eval (interactiveSimWord program sampleChallengeWord
+    change ProbComp.eval (interactiveSimWord enc program sampleChallenge
         (i, enc.statement i y)) = _
-    simp only [pmf_norm, interactiveSimWord, hchalWord i, pack]
+    simp only [pmf_norm, interactiveSimWord, ProbComp.eval_map, pack]
   rw [hlhs, hrhs]
   exact CloseTo.bind (hchal i) fun c _ => (hreal i y c).map (pack (enc.challenge i c))
 
@@ -619,16 +620,13 @@ theorem EfficientSpecialHVZK.efficientHVZK
     {sampleCommit : ∀ i, XF i → YF i → ProbComp (TF i × (PF i).State)}
     {simComp : ∀ i, YF i → CF i → ProbComp (TF i × ZF i)}
     {sampleChallenge : ∀ i, ProbComp (CF i)}
-    {sampleChallengeWord : I → ProbComp (List Bool)}
     {δ δC : I → ℝ≥0∞}
     (h : EfficientSpecialHVZK PF RF enc simulate δ)
     (hcommit : ∀ i, (PF i).CommitRealizedBy (sampleCommit i))
     (hsim : ∀ i y c, ProbComp.eval (simComp i y c) = simulate i y c)
-    (hchalPPT : IsPPTOn enc.index encBits sampleChallengeWord)
+    (hchalPPT : IsPPTOn enc.index encBits fun i => enc.challenge i <$> sampleChallenge i)
     (hchal : ∀ i, CloseTo (PMF.uniformOfFintype (CF i))
-      (ProbComp.eval (sampleChallenge i)) (δC i))
-    (hchalWord : ∀ i, ProbComp.eval (sampleChallengeWord i) =
-      (ProbComp.eval (sampleChallenge i)).map (enc.challenge i)) :
+      (ProbComp.eval (sampleChallenge i)) (δC i)) :
     Interactive.Reduction.EfficientHVZK
       (fun i => (PF i).toInteractiveReduction (sampleCommit i))
       (fun i => Function.swap (RF i))
@@ -637,10 +635,11 @@ theorem EfficientSpecialHVZK.efficientHVZK
       (fun _ => 0) (fun i => δC i + δ i) where
   hvzk i := (h.specialHVZK i).hvzk_zero (hcommit i) (hsim i)
   realized := by
-    obtain ⟨program, hprogPPT, hprogReal⟩ := h.realized
-    exact ⟨interactiveSimWord program sampleChallengeWord,
+    obtain ⟨sim, hsimPPT, hsimReal⟩ := h.realized
+    obtain ⟨program, hprogPPT, hprogReal⟩ := hsimReal.exists_word hsimPPT
+    exact ⟨interactiveSimWord enc program sampleChallenge,
       isPPTOn_interactiveSimWord hprogPPT hchalPPT,
-      simulatorRealizedBy_interactiveSimWord PF hsim hprogReal hchal hchalWord⟩
+      simulatorRealizedBy_interactiveSimWord PF hsim hprogReal hchal⟩
 
 end Family
 

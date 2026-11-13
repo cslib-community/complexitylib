@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import CslibFrontier.Computability.Communication.Lifting.Volume
 public import CslibFrontier.Computability.Communication.Lifting.Gadget
 public import Mathlib.Data.Fintype.Pi
 public import Mathlib.Basic.Real.Basic
@@ -232,5 +233,21 @@ theorem exists_forall_eq_of_isDense {F : Finset (Fin n)} {X : Finset (Fin n → 
     (by positivity : (0 : ℝ) < 2 ^ (#F * m))]
 
 end FullRange
+
+/-- All of `[m]ⁿ` is `τ`-dense when `τ ≤ m`. -/
+theorem isDense_univ {τ : ℝ} (hτ : 0 ≤ τ) (hτm : τ ≤ m) (F : Finset (Fin n)) :
+    IsDense τ F (univ : Finset (Fin n → Fin m)) := by
+  intro I _ _ α
+  have h1 : #((univ : Finset (Fin n → Fin m)).filter fun x => ∀ i ∈ I, x i = α i) ≤ m ^ #Iᶜ :=
+    card_le_pow_of_fixed fun x hx x' hx' i hi => by
+      rw [(mem_filter.mp hx).2 i hi, (mem_filter.mp hx').2 i hi]
+  have h1' : (#((univ : Finset (Fin n → Fin m)).filter fun x => ∀ i ∈ I, x i = α i) : ℝ) ≤
+      (m : ℝ) ^ #Iᶜ := by exact_mod_cast h1
+  have h2 : τ ^ #I ≤ (m : ℝ) ^ #I := pow_le_pow_left₀ hτ hτm _
+  have hu : (#(univ : Finset (Fin n → Fin m)) : ℝ) = (m : ℝ) ^ #Iᶜ * (m : ℝ) ^ #I := by
+    rw [← pow_add, card_compl, Nat.sub_add_cancel (card_le_univ I)]
+    simp
+  rw [hu]
+  exact mul_le_mul h1' h2 (by positivity) (by positivity)
 
 end Cslib.Communication.Lifting

@@ -21,27 +21,24 @@ together with `(A, b)` is a `(k + 1) × k` Module-LWE sample with secret `r ← 
 `(e₂, e₁) ← CBD_{η₂}^{k + 1}`; replacing it by a uniform sample makes the view independent of the
 message. Both hops are explicit reductions:
 
-* `mlweKeyReduction`: embeds a `k × k` sample as the public key and encrypts honestly;
-* `mlweReduction`: splits a `(k + 1) × k` sample `(M, w)` into the public key
+* `mlweKeyReduction`: reads a `k × k` sample `(A, b)` as the public key and encrypts honestly;
+* `mlweReduction`: reads a `(k + 1) × k` sample `(M, w)` as the public key
   `unextendPublicKeyMatrix M` and the ciphertext
   `compressCiphertext (unextendCiphertext w + (0, messagePoly m))`.
 
-The three game identities are exact (`eval_indCpaGame_eq`, `eval_mlweIdealGame_mlweKeyReduction`,
-`eval_mlweIdealGame_mlweReduction`), and `indCpaAdvantage_le` bounds the fixed-message IND-CPA
-advantage of `toExplicitCoinPKE` by four Module-LWE advantages of the explicit reductions, two for
+The three game identities are exact (`eval_indCpaGame_eq`, `randomGame_mlweKeyReduction`,
+`randomGame_mlweReduction`), and `indCpaAdvantage_le` bounds the fixed-message IND-CPA advantage
+of `toExplicitCoinPKE` by four `ModuleLWE.advantage` terms of the explicit reductions, two for
 each message. This is the usual two-hop argument for Kyber-style encryption, stated here as an
 original concrete bound in this model: the matrix `A` is uniform rather than expanded from a seed,
 so no random oracle is involved.
 
-`ModuleLWE.sampleLaw` and `DecisionModuleLWE` fix a uniform secret, while K-PKE needs Module-LWE
-with centered-binomial secrets. `mlweAdvantage` is therefore the concrete Module-LWE advantage for
-arbitrary secret and error samplers. (Informally, a uniform secret program recovers the setting of
-`ModuleLWE.sampleLaw`; no bridge lemma is proved here.)
+The Module-LWE terms use the shared games `ModuleLWE.realGame` and `ModuleLWE.randomGame` with
+centered-binomial secret and error laws. `DecisionModuleLWE` fixes a uniform secret, so it does
+not bound these terms; no bridge between the two secret laws is proved here.
 
 ## Main definitions
 
-* `Cslib.Crypto.MLKEM.mlweRealGame`, `Cslib.Crypto.MLKEM.mlweIdealGame`,
-  `Cslib.Crypto.MLKEM.mlweAdvantage`: Module-LWE experiments with explicit samplers.
 * `Cslib.Crypto.MLKEM.mlweKeyReduction`, `Cslib.Crypto.MLKEM.mlweReduction`: the two reductions.
 * `Cslib.Crypto.MLKEM.uniformCiphertextGame`: the message-independent final game.
 
@@ -62,57 +59,26 @@ namespace Cslib.Crypto.MLKEM
 open Probability Cslib.Crypto.Protocols
 open scoped NNReal
 
-/-! ### Module-LWE with explicit secret and error samplers -/
-
-/-- The real Module-LWE experiment: a uniform `A ∈ R_q^{m×d}`, a secret `s ← secret` and an error
-`e ← error`; the distinguisher sees `(A, A s + e)`. -/
-noncomputable def mlweRealGame (m d n q : ℕ) [NeZero q]
-    (secret : ProbComp (Fin d → Fin n → ZMod q)) (error : ProbComp (Fin m → Fin n → ZMod q))
-    (distinguisher :
-      Matrix (Fin m) (Fin d) (Fin n → ZMod q) × (Fin m → Fin n → ZMod q) → ProbComp Bool) :
-    ProbComp Bool := do
-  let A ← ProbComp.uniform (Matrix (Fin m) (Fin d) (Fin n → ZMod q))
-  let s ← secret
-  let e ← error
-  distinguisher (A, ModuleLWE.sample A s e)
-
-/-- The ideal Module-LWE experiment: the distinguisher sees a uniform pair `(A, b)`. -/
-noncomputable def mlweIdealGame (m d n q : ℕ) [NeZero q]
-    (distinguisher :
-      Matrix (Fin m) (Fin d) (Fin n → ZMod q) × (Fin m → Fin n → ZMod q) → ProbComp Bool) :
-    ProbComp Bool := do
-  let sample ← ProbComp.uniform
-    (Matrix (Fin m) (Fin d) (Fin n → ZMod q) × (Fin m → Fin n → ZMod q))
-  distinguisher sample
-
-/-- Concrete Module-LWE distinguishing advantage for the given secret and error samplers. -/
-noncomputable def mlweAdvantage (m d n q : ℕ) [NeZero q]
-    (secret : ProbComp (Fin d → Fin n → ZMod q)) (error : ProbComp (Fin m → Fin n → ZMod q))
-    (distinguisher :
-      Matrix (Fin m) (Fin d) (Fin n → ZMod q) × (Fin m → Fin n → ZMod q) → ProbComp Bool) :
-    ℝ≥0 :=
-  Game.advantage (ProbComp.eval (mlweRealGame m d n q secret error distinguisher))
-    (ProbComp.eval (mlweIdealGame m d n q distinguisher))
-
 /-! ### The reductions -/
 
 variable (P : Params)
 
-/-- **Public-key hop**: use a `k × k` Module-LWE sample as the public key and encrypt `m` with
-fresh K-PKE coins. -/
+/-- **Public-key hop**: use a `k × k` Module-LWE sample `(A, b)` as the public key and encrypt
+`m` with fresh K-PKE coins. -/
 noncomputable def mlweKeyReduction (adversary : PublicKey P → Ciphertext P → ProbComp Bool)
-    (m : Fin P.n → Bool) (pk : PublicKey P) : ProbComp Bool := do
+    (m : Fin P.n → Bool) (A : Matrix (Fin P.k) (Fin P.k) (Fin P.n → ZMod P.q))
+    (b : Fin P.k → Fin P.n → ZMod P.q) : ProbComp Bool := do
   let coins ← sampleCoins P
-  adversary pk (encrypt P pk m coins)
+  adversary (A, b) (encrypt P (A, b) m coins)
 
 /-- **Ciphertext hop**: read a `(k + 1) × k` Module-LWE sample `(M, w)` as the public key
 `unextendPublicKeyMatrix M` (row `0` of `M` is `b`, the other rows are `Aᵀ`) and the ciphertext
 obtained by adding the message polynomial to `v = w 0` and compressing. -/
 def mlweReduction (adversary : PublicKey P → Ciphertext P → ProbComp Bool) (m : Fin P.n → Bool)
-    (sample : Matrix (Fin (P.k + 1)) (Fin P.k) (Fin P.n → ZMod P.q) ×
-      (Fin (P.k + 1) → Fin P.n → ZMod P.q)) : ProbComp Bool :=
-  adversary (unextendPublicKeyMatrix sample.1)
-    (compressCiphertext P (unextendCiphertext sample.2 + (0, messagePoly P m)))
+    (M : Matrix (Fin (P.k + 1)) (Fin P.k) (Fin P.n → ZMod P.q))
+    (w : Fin (P.k + 1) → Fin P.n → ZMod P.q) : ProbComp Bool :=
+  adversary (unextendPublicKeyMatrix M)
+    (compressCiphertext P (unextendCiphertext w + (0, messagePoly P m)))
 
 /-- The final game: a uniform public key and the compression of a uniform ciphertext, independent
 of the message. -/
@@ -141,21 +107,25 @@ theorem unextendCiphertext_sample_add_messagePoly (pk : PublicKey P)
 theorem eval_indCpaGame_eq [NeZero P.q] (m₀ m₁ : Fin P.n → Bool) (b : Bool)
     (adversary : PublicKey P → Ciphertext P → ProbComp Bool) :
     ProbComp.eval ((toExplicitCoinPKE P).indCpaGame m₀ m₁ b adversary) =
-      ProbComp.eval (mlweRealGame P.k P.k P.n P.q (sampleVecCBD P.k P.n P.q P.η₁)
-        (sampleVecCBD P.k P.n P.q P.η₁) (mlweKeyReduction P adversary (if b then m₁ else m₀))) := by
+      ModuleLWE.realGame (ProbComp.eval (sampleVecCBD P.k P.n P.q P.η₁))
+        (ProbComp.eval (sampleVecCBD P.k P.n P.q P.η₁))
+        (mlweKeyReduction P adversary (if b then m₁ else m₀)) := by
+  rw [ModuleLWE.realGame_eq_uniform_bind]
   simp only [ExplicitCoinPKE.indCpaGame, ExplicitCoinPKE.encrypt, toExplicitCoinPKE, keyGen,
-    mlweRealGame, mlweKeyReduction, moduleLWEKeyGen_eq_sample, bind_assoc, pure_bind]
+    mlweKeyReduction, moduleLWEKeyGen_eq_sample, bind_assoc, pure_bind, ProbComp.eval_bind,
+    ProbComp.eval_uniform]
 
 /-- **Hybrid game**: with a uniform public key, the experiment is the real `(k + 1) × k`
 Module-LWE game for `mlweReduction` with `CBD_{η₁}` secret and `CBD_{η₂}` errors. -/
-theorem eval_mlweIdealGame_mlweKeyReduction [NeZero P.q]
+theorem randomGame_mlweKeyReduction [NeZero P.q]
     (adversary : PublicKey P → Ciphertext P → ProbComp Bool) (m : Fin P.n → Bool) :
-    ProbComp.eval (mlweIdealGame P.k P.k P.n P.q (mlweKeyReduction P adversary m)) =
-      ProbComp.eval (mlweRealGame (P.k + 1) P.k P.n P.q (sampleVecCBD P.k P.n P.q P.η₁)
-        (sampleVecCBD (P.k + 1) P.n P.q P.η₂) (mlweReduction P adversary m)) := by
-  simp only [mlweIdealGame, mlweRealGame, mlweKeyReduction, mlweReduction, sampleCoins,
-    sampleVecCBD, OracleComp.replicateFin_succ, bind_assoc, pure_bind, bind_map_left,
-    ProbComp.eval_bind, ProbComp.eval_uniform]
+    ModuleLWE.randomGame (mlweKeyReduction P adversary m) =
+      ModuleLWE.realGame (ProbComp.eval (sampleVecCBD P.k P.n P.q P.η₁))
+        (ProbComp.eval (sampleVecCBD (P.k + 1) P.n P.q P.η₂)) (mlweReduction P adversary m) := by
+  rw [ModuleLWE.randomGame_eq, ModuleLWE.realGame_eq_uniform_bind]
+  simp only [mlweKeyReduction, mlweReduction, sampleCoins, sampleVecCBD,
+    OracleComp.replicateFin_succ, bind_assoc, pure_bind, ProbComp.eval_bind, ProbComp.eval_map,
+    PMF.bind_map, PMF.bind_bind, Function.comp_def]
   rw [← PMF.uniformOfFintype_map_equiv (extendPublicKeyEquiv P.k P.n P.q), PMF.bind_map]
   congr 1
   funext pk
@@ -168,14 +138,15 @@ theorem eval_mlweIdealGame_mlweKeyReduction [NeZero P.q]
 
 /-- **Final game**: on a uniform `(k + 1) × k` sample, `mlweReduction` produces the
 message-independent `uniformCiphertextGame`. -/
-theorem eval_mlweIdealGame_mlweReduction [NeZero P.q]
+theorem randomGame_mlweReduction [NeZero P.q]
     (adversary : PublicKey P → Ciphertext P → ProbComp Bool) (m : Fin P.n → Bool) :
-    ProbComp.eval (mlweIdealGame (P.k + 1) P.k P.n P.q (mlweReduction P adversary m)) =
+    ModuleLWE.randomGame (mlweReduction P adversary m) =
       ProbComp.eval (uniformCiphertextGame P adversary) := by
   let e := (extendPublicKeyEquiv P.k P.n P.q).symm.prodCongr
     ((extendCiphertextEquiv P.k P.n P.q).symm.trans
       (Equiv.addRight ((0, messagePoly P m) : ModuleLWECiphertext P.k P.n P.q)))
-  simp only [mlweIdealGame, uniformCiphertextGame, ProbComp.eval_bind, ProbComp.eval_uniform]
+  simp only [ModuleLWE.randomGame_eq, uniformCiphertextGame, ProbComp.eval_bind,
+    ProbComp.eval_uniform]
   rw [← PMF.uniformOfFintype_map_equiv e, PMF.bind_map]
   rfl
 
@@ -187,16 +158,16 @@ theorem advantage_indCpa_uniform_le [NeZero P.q]
     (b : Bool) :
     Game.advantage (ProbComp.eval ((toExplicitCoinPKE P).indCpaGame m₀ m₁ b adversary))
         (ProbComp.eval (uniformCiphertextGame P adversary)) ≤
-      mlweAdvantage P.k P.k P.n P.q (sampleVecCBD P.k P.n P.q P.η₁)
-          (sampleVecCBD P.k P.n P.q P.η₁) (mlweKeyReduction P adversary (if b then m₁ else m₀)) +
-        mlweAdvantage (P.k + 1) P.k P.n P.q (sampleVecCBD P.k P.n P.q P.η₁)
-          (sampleVecCBD (P.k + 1) P.n P.q P.η₂)
+      ModuleLWE.advantage (ProbComp.eval (sampleVecCBD P.k P.n P.q P.η₁))
+          (ProbComp.eval (sampleVecCBD P.k P.n P.q P.η₁))
+          (mlweKeyReduction P adversary (if b then m₁ else m₀)) +
+        ModuleLWE.advantage (ProbComp.eval (sampleVecCBD P.k P.n P.q P.η₁))
+          (ProbComp.eval (sampleVecCBD (P.k + 1) P.n P.q P.η₂))
           (mlweReduction P adversary (if b then m₁ else m₀)) := by
-  rw [eval_indCpaGame_eq, ← eval_mlweIdealGame_mlweReduction P adversary (if b then m₁ else m₀)]
+  rw [eval_indCpaGame_eq, ← randomGame_mlweReduction P adversary (if b then m₁ else m₀)]
   refine le_trans (Game.advantage_triangle _
-    (ProbComp.eval (mlweIdealGame P.k P.k P.n P.q
-      (mlweKeyReduction P adversary (if b then m₁ else m₀)))) _) ?_
-  rw [mlweAdvantage, mlweAdvantage, ← eval_mlweIdealGame_mlweKeyReduction]
+    (ModuleLWE.randomGame (mlweKeyReduction P adversary (if b then m₁ else m₀))) _) ?_
+  rw [ModuleLWE.advantage, ModuleLWE.advantage, ← randomGame_mlweKeyReduction]
 
 /-- **IND-CPA security of K-PKE**: for all fixed messages `m₀, m₁` and every adversary, the
 fixed-message IND-CPA advantage of `toExplicitCoinPKE P` is at most the sum, over both messages,
@@ -205,14 +176,16 @@ of the Module-LWE advantages of `mlweKeyReduction` (`k × k`, `CBD_{η₁}` secr
 theorem indCpaAdvantage_le [NeZero P.q] (m₀ m₁ : Fin P.n → Bool)
     (adversary : PublicKey P → Ciphertext P → ProbComp Bool) :
     (toExplicitCoinPKE P).indCpaAdvantage m₀ m₁ adversary ≤
-      (mlweAdvantage P.k P.k P.n P.q (sampleVecCBD P.k P.n P.q P.η₁)
-          (sampleVecCBD P.k P.n P.q P.η₁) (mlweKeyReduction P adversary m₀) +
-        mlweAdvantage (P.k + 1) P.k P.n P.q (sampleVecCBD P.k P.n P.q P.η₁)
-          (sampleVecCBD (P.k + 1) P.n P.q P.η₂) (mlweReduction P adversary m₀)) +
-      (mlweAdvantage P.k P.k P.n P.q (sampleVecCBD P.k P.n P.q P.η₁)
-          (sampleVecCBD P.k P.n P.q P.η₁) (mlweKeyReduction P adversary m₁) +
-        mlweAdvantage (P.k + 1) P.k P.n P.q (sampleVecCBD P.k P.n P.q P.η₁)
-          (sampleVecCBD (P.k + 1) P.n P.q P.η₂) (mlweReduction P adversary m₁)) := by
+      (ModuleLWE.advantage (ProbComp.eval (sampleVecCBD P.k P.n P.q P.η₁))
+          (ProbComp.eval (sampleVecCBD P.k P.n P.q P.η₁)) (mlweKeyReduction P adversary m₀) +
+        ModuleLWE.advantage (ProbComp.eval (sampleVecCBD P.k P.n P.q P.η₁))
+          (ProbComp.eval (sampleVecCBD (P.k + 1) P.n P.q P.η₂))
+          (mlweReduction P adversary m₀)) +
+      (ModuleLWE.advantage (ProbComp.eval (sampleVecCBD P.k P.n P.q P.η₁))
+          (ProbComp.eval (sampleVecCBD P.k P.n P.q P.η₁)) (mlweKeyReduction P adversary m₁) +
+        ModuleLWE.advantage (ProbComp.eval (sampleVecCBD P.k P.n P.q P.η₁))
+          (ProbComp.eval (sampleVecCBD (P.k + 1) P.n P.q P.η₂))
+          (mlweReduction P adversary m₁)) := by
   have h₀ := advantage_indCpa_uniform_le P adversary m₀ m₁ false
   have h₁ := advantage_indCpa_uniform_le P adversary m₀ m₁ true
   simp only [Bool.false_eq_true, ↓reduceIte] at h₀ h₁

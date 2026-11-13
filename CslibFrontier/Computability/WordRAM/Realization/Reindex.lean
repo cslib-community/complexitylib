@@ -43,16 +43,8 @@ theorem Spec.reindex {p : δ → Memory.Prog α} {input : δ ↪ (Fin k → ℕ)
     (hw : ∀ e i, input (f e) i = env e (ix i)) :
     Spec B (fun e => p (f e)) env output
       (fun w e s => safe w (f e) s) (fun e s => work (f e) s) n C
-      (fun frontier src tmp => emit frontier (src ∘ ix) tmp) := by
-  intro r frontier src tmp hi hd hf hs
-  obtain ⟨hnw, hrun⟩ := he frontier (src ∘ ix) tmp hi
-    (fun i j => hd (ix i) j) hf (fun i => hs (ix i))
-  refine ⟨hnw, ?_⟩
-  intro w e x hx hin hsafe hv
-  have hin' : x.regs ∘ (src ∘ ix) = input (f e) := by
-    funext i
-    exact (congrFun hin (ix i)).trans (hw e i).symm
-  exact hrun w (f e) x hx hin' hsafe hv
+      (fun frontier src tmp => emit frontier (src ∘ ix) tmp) :=
+  SpecWith.reindex he f env ix hw
 
 /-- A fixed input-index map merely rewires registers. The semantic map must agree with that
 wiring on every encoded input; no host computation or runtime choice of code is granted. -/
@@ -63,7 +55,6 @@ theorem reindex {p : δ → Memory.Prog α} {input : δ ↪ (Fin k → ℕ)}
     (hw : ∀ e i, input (f e) i = env e (ix i)) :
     Realizes B (fun e => p (f e)) env output
       (fun w e s => safe w (f e) s) (fun e s => work (f e) s) :=
-  let ⟨n, C, emit, he⟩ := h
-  ⟨n, C, fun frontier src tmp => emit frontier (src ∘ ix) tmp, he.reindex f env ix hw⟩
+  With.reindex h f env ix hw
 
 end Cslib.WordRAM.Realization.Realizes

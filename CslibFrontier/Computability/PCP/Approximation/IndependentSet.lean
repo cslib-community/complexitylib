@@ -111,7 +111,7 @@ theorem card_toFinset_vertices_toIndependentSet {φ : CNF ℕ} (h3 : ∀ c ∈ �
       obtain ⟨hi, hj⟩ := Finset.mem_product.1 hij
       rw [Finset.mem_range] at hi hj
       have hj' : j < φ[i].length := (h3 _ (List.getElem_mem hi)).symm ▸ hj
-      exact ⟨(i, j, φ[i][j]), mem_occurrences.2 ⟨hi, hj', rfl⟩, rfl⟩
+      exact ⟨⟨i, j, φ[i][j]⟩, mem_occurrences.2 ⟨hi, hj', rfl⟩, rfl⟩
   rw [hset, Finset.card_image_of_injective _ fun p q h => Prod.ext (Nat.pair_eq_pair.1 h).1
     (Nat.pair_eq_pair.1 h).2, Finset.card_product, Finset.card_range, Finset.card_range,
     Nat.mul_comm]

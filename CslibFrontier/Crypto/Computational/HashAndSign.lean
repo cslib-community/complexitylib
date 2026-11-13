@@ -218,9 +218,9 @@ noncomputable def scheme
 /-- Extract a colliding message pair `(m*, m)` from the output `((m*, σ*), queried)` of a
 signing-oracle execution by selecting the first queried message `m ∈ queried` with
 `H s m = H s m*`. -/
-def collisionOf (s : List Bool) (out : (List Bool × List Bool) × List (List Bool)) :
-    List Bool × List Bool :=
-  (out.1.1, (out.2.find? fun m => H s m == H s out.1.1).getD [])
+def collisionOf (s : List Bool) : (List Bool × List Bool) × List (List Bool) →
+    List Bool × List Bool
+  | ((mStar, _), queried) => (mStar, (queried.find? fun m => H s m == H s mStar).getD [])
 
 @[fun_prop]
 theorem computableInPolyTime_collisionOf
@@ -230,22 +230,25 @@ theorem computableInPolyTime_collisionOf
         collisionOf H p.1 p.2)
       (encPair encBits (encPair (encPair encBits encBits) (encList encBits)))
       (encPair encBits encBits) := by
-  unfold collisionOf
+  change ComputableInPolyTime (fun p : List Bool × ((List Bool × List Bool) × List (List Bool)) =>
+      collisionOf H p.1 ((p.2.1.1, p.2.1.2), p.2.2)) _ _
+  simp only [collisionOf]
   polytime
 
 /-- Whenever `m* ∉ queried` and `queried.find? (fun m => H s m == H s m*)` succeeds, `collisionOf`
 produces a genuine collision for `H` under key `s`. -/
-theorem isCollision_collisionOf_of_isSome {n : ℕ} {s : List Bool}
-    {out : (List Bool × List Bool) × List (List Bool)} (hfresh : !out.2.contains out.1.1 = true)
-    (hfind : (out.2.find? fun m => H s m == H s out.1.1).isSome = true) :
-    isCollision H (fun _ _ => true) n s (collisionOf H s out).1 (collisionOf H s out).2 = true := by
+theorem isCollision_collisionOf_of_isSome {n : ℕ} {s mStar sig : List Bool}
+    {queried : List (List Bool)} (hfresh : !queried.contains mStar = true)
+    (hfind : (queried.find? fun m => H s m == H s mStar).isSome = true) :
+    isCollision H (fun _ _ => true) n s (collisionOf H s ((mStar, sig), queried)).1
+      (collisionOf H s ((mStar, sig), queried)).2 = true := by
   obtain ⟨m, hm⟩ := Option.isSome_iff_exists.mp hfind
-  have hmem : m ∈ out.2 := List.mem_of_find?_eq_some hm
-  have hcoll : H s m = H s out.1.1 :=
-    beq_iff_eq.mp (List.find?_some (p := fun m => H s m == H s out.1.1) hm)
-  have hnotmem : out.1.1 ∉ out.2 := by
+  have hmem : m ∈ queried := List.mem_of_find?_eq_some hm
+  have hcoll : H s m = H s mStar :=
+    beq_iff_eq.mp (List.find?_some (p := fun m => H s m == H s mStar) hm)
+  have hnotmem : mStar ∉ queried := by
     simpa [List.contains_iff_mem] using hfresh
-  have hne : out.1.1 ≠ m := fun h => hnotmem (h ▸ hmem)
+  have hne : mStar ≠ m := fun h => hnotmem (h ▸ hmem)
   simp only [collisionOf, hm, Option.getD_some]
   exact isCollision_eq_true_iff.mpr ⟨rfl, rfl, hne, hcoll.symm⟩
 
@@ -316,12 +319,12 @@ forwarding hashed signing queries `H s msg` through `hashSigningHandler`, and ou
 forgery `(H s m*, σ*)`. -/
 noncomputable def baseForger (bound : ℕ → ℕ) (adversary : Forger) : Forger := fun n pk₀ => do
   let s ← ProbOracleComp.sample (BitString.sampleList n)
-  let out ← (OracleComp.interpret
+  let ((mStar, sig), _) ← (OracleComp.interpret
     (OracleComp.sumHandler
       (fun j => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin j)))
       (hashSigningHandler H s (bound n)))
     (adversary n (encPair encBits encBits (pk₀, s)))).run ()
-  return (H s out.1.1, out.1.2)
+  return (H s mStar, sig)
 
 private theorem isOraclePPTOn_hashSigningHandler
     (hH : ComputableInPolyTime (fun p : List Bool × List Bool => H p.1 p.2)
@@ -536,20 +539,22 @@ theorem succProbability_eufCmaGame_le
     refine PMF.bind_apply_le_add_on_support _ true fun s hs => ?_
     have hlen_s : s.length = n := BitString.length_of_mem_support_uniformList hs
     refine PMF.bind_apply_le_add_on_support _ true fun out _ => ?_
-    cases hwin : (!out.2.contains out.1.1 && S.verify keys.1 (H s out.1.1) out.1.2)
+    obtain ⟨⟨mStar, sig⟩, queried⟩ := out
+    dsimp only
+    cases hwin : (!queried.contains mStar && S.verify keys.1 (H s mStar) sig)
     · simp
     · obtain ⟨hfresh, hver⟩ := Bool.and_eq_true_iff.mp hwin
-      cases hfind : (out.2.find? fun m => H s m == H s out.1.1).isSome
-      · have hnotmem : (out.2.map (H s)).contains (H s out.1.1) = false := by
+      cases hfind : (queried.find? fun m => H s m == H s mStar).isSome
+      · have hnotmem : (queried.map (H s)).contains (H s mStar) = false := by
           rw [Bool.eq_false_iff]
           intro hmem
           obtain ⟨m, hm, hcoll⟩ := List.mem_map.mp (List.contains_iff_mem.mp hmem)
-          have hex : ∃ m ∈ out.2, (H s m == H s out.1.1) = true :=
+          have hex : ∃ m ∈ queried, (H s m == H s mStar) = true :=
             ⟨m, hm, beq_iff_eq.mpr hcoll⟩
-          have hisSome : (out.2.find? fun m => H s m == H s out.1.1).isSome = true :=
+          have hisSome : (queried.find? fun m => H s m == H s mStar).isSome = true :=
             List.find?_isSome.mpr hex
           exact Bool.false_ne_true (hfind.symm.trans hisSome)
-        have hlen_d : ((H s out.1.1).length == n) = true := by
+        have hlen_d : ((H s mStar).length == n) = true := by
           rw [hlen, hlen_s, beq_self_eq_true]
         rw [hlen_d, hnotmem, hver]
         exact le_add_right le_rfl

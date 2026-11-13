@@ -71,22 +71,22 @@ The original source's formula-size measure is not automatically encoded bit leng
 | 2.3, $P\subseteq NP\subseteq EXP$ | 41 / 57 | **Covered.** `P_subset_NP` in [Reduction.lean](../CslibFrontier/Computability/Complexity/Reduction.lean) and `NP_subset_EXP` in [Inclusions.lean](../CslibFrontier/Computability/Complexity/Classes/Inclusions.lean). `EXP` is the union of native $DTIME(2^{n^k})$; enlarging an exponent absorbs the draft's union over $c>1$ and constants. |
 | 2.6, verifier/NTM characterization | 42 / 58 | **Covered.** `mem_NP_iff_exists_mem_NTIME` in [Time.lean](../CslibFrontier/Computability/Complexity/Classes/Time.lean) gives $A\in NP\;enc\iff\exists k, A\in NTIME\;enc\;(n\mapsto n^k)$. The nondeterministic machines are native binary multitape machines, with all-branch time bounds. |
 | 2.8, reductions and completeness | 44 / 60 | **Covered.** `PolyTimeReducible.trans`, `NPComplete.P_eq_NP_of_mem_P` and `NPComplete.mem_P_iff` in [Reduction.lean](../CslibFrontier/Computability/Complexity/Reduction.lean). The NP-hard case follows from the same reduction-closure proof, without using membership in NP; the library expresses collapse uniformly over instance encodings. |
-| 2.9, TMSAT NP-complete | 44 / 60 | **Endpoint not located.** Searches for TMSAT and bounded acceptance did not locate NP-completeness for the four-part instance $(\alpha,x,1^n,1^t)$ with an existential $n$-bit witness. [BoundedHalting.lean](../CslibFrontier/Computability/Complexity/Problems/BoundedHalting.lean) instead uses a binary clock and deterministic acceptance and proves EXP-completeness. These are different endpoints. |
+| 2.9, TMSAT NP-complete | 44 / 60 | **Covered.** `TMSAT.npComplete` in [TMSAT.lean](../CslibFrontier/Computability/Complexity/Problems/TMSAT.lean). Instances are the structure `TMSATInstance` $(\alpha,x,1^n,1^t)$, encoded by `encTMSATInstance` with the description in `eDesc`, $x$ as raw bits and $n,t$ in unary. Membership asks for a witness of exactly $n$ bits on which the universal interpreter, run for $t$ steps on `frame x ++ u` (the `NP` pairing), has halted with output `[true]`; `TMSATInstance.accepts_desc_iff` gives the machine's own run on real descriptions. Hardness is for every `NP` problem with every instance encoding. [BoundedHalting.lean](../CslibFrontier/Computability/Complexity/Problems/BoundedHalting.lean) is the separate deterministic, binary-clock EXP-complete problem. |
 | 2.10, Cook–Levin | 45 / 61 | **Covered.** `CookLevin.SAT_npComplete` in [Completeness.lean](../CslibFrontier/Computability/Complexity/CookLevin/Completeness.lean) and `ThreeSAT_npComplete` in [ThreeSAT.lean](../CslibFrontier/Computability/Complexity/Problems/ThreeSAT.lean). The reductions are native polynomial-time, with `encCNF`; the three-CNF representation allows clauses of length at most three. No quasi-linear size/time bound follows. |
 | 2.12, SAT NP-hard | 46 / 62 | **Covered.** `CookLevin.SAT_npHard` in [Completeness.lean](../CslibFrontier/Computability/Complexity/CookLevin/Completeness.lean), through a constructed native verifier tableau reduction. This auxiliary lemma is separately formalized. |
-| 2.14, CNF for every Boolean function | 46 / 62 | **Endpoint not located.** Inspected propositional CNF and Cook–Levin clause APIs did not locate the general $\ell$-variable truth-table CNF with at most $\ell2^\ell$ AND/OR symbols. The proof says “at most”; the heading's wording “size $\ell2^\ell$” should be read as a bound. A tableau encoding of computations is not this size theorem. |
+| 2.14, CNF for every Boolean function | 46 / 62 | **Covered (bound).** `CNF.exists_eval_eq_connectiveCount_le` in [TruthTable.lean](../CslibFrontier/Logics/Propositional/CNF/TruthTable.lean): every $f:(\mathrm{Fin}\,\ell\to\mathrm{Bool})\to\mathrm{Bool}$ has a CNF over the variables $\mathrm{Fin}\,\ell$ computing it with `connectiveCount` at most $\ell2^\ell$. The measure counts binary AND/OR symbols of the written formula: $k-1$ ORs per clause of $k$ literals and $m-1$ ANDs between $m$ clauses. The witness `CNF.ofTruthTable` also has at most $\ell2^\ell$ literal occurrences (`CNF.length_vars_ofTruthTable_le`). The heading's “size $\ell2^\ell$” is read as the upper bound its proof gives. |
 | 2.15, SAT reduces to 3SAT | 49 / 65 | **Covered.** `polyTimeReducible_SAT_ThreeSAT` in [ThreeSAT.lean](../CslibFrontier/Computability/Complexity/Problems/ThreeSAT.lean), with correctness `mem_ThreeSAT_toThreeSAT_iff` and polynomial-time construction. Fresh variables encode the long-clause splitting; satisfiability, rather than pointwise equality of assignments, is preserved. |
 | 2.16, independent set NP-complete | 50 / 66 | **Covered.** `IndependentSet_npComplete` in [IndependentSet.lean](../CslibFrontier/Computability/Complexity/Problems/IndependentSet.lean). Finite listed graphs and binary threshold use `encPair encGraph encNat`; the predicate asks for an independent subset of cardinality at least the threshold, equivalent to existence of one of exactly that size by taking a subset. The reduction uses literal occurrences rather than the draft's seven assignments per clause. |
-| 2.17, integer programming NP-complete | 52 / 68 | **Partial.** `ZeroOneIP_npComplete` in [IntegerProgramming.lean](../CslibFrontier/Computability/Complexity/Problems/IntegerProgramming.lean) covers natural-coefficient equalities with Boolean unknowns, encoded by `encZeroOneIP`. The draft permits rational inequalities and arbitrary nonnegative integer unknowns. General membership needs a polynomial-bit witness bound, not just a Boolean verifier. [#2904](https://github.com/cslib-community/cslib-frontier/issues/2904) catalogs Karp's 0–1 problem; [#2976](https://github.com/cslib-community/cslib-frontier/issues/2976) concerns rational LP, not integer feasibility. |
-| 2.18, directed Hamiltonian path NP-complete | 52 / 68 | **Partial.** `DirHamPath_npComplete` in [Directed.lean](../CslibFrontier/Computability/Complexity/Problems/Hamiltonian/Directed.lean) proves completeness with designated start/end vertices (`encPathInstance`); the draft asks whether the graph has any Hamiltonian path. `DirHamCycle_npComplete` covers cycles. An explicit polynomial-time bridge to the unrestricted-endpoint path language, including empty-graph conventions, was not located. |
+| 2.17, integer programming NP-complete | 52 / 68 | **Partial.** `ZeroOneIP_npComplete` in [IntegerProgramming.lean](../CslibFrontier/Computability/Complexity/Problems/IntegerProgramming.lean) covers natural-coefficient equalities with Boolean unknowns, encoded by `encZeroOneIP`. The draft permits rational inequalities and arbitrary nonnegative integer unknowns. Hardness transfers once such a language is defined (0–1 constraints are expressible), but general membership needs the small-solution theorem: a system $Ax=b$, $x\ge 0$ with $m$ rows, $n$ unknowns and integer entries of absolute value at most $a$ that has a nonnegative integer solution has one with entries at most $n(ma)^{2m+1}$ (inequalities reduce to this form with slack variables) [Papadimitriou 1981, *On the complexity of integer programming*], or an equivalent polynomial-bit bound. A search found no such bound in the library (the Cramer-rule bounds of [RationalVertex.lean](../CslibFrontier/GameTheory/Bimatrix/RationalVertex.lean) concern rational vertices, not integer points), so membership is not formalized. [#2904](https://github.com/cslib-community/cslib-frontier/issues/2904) catalogs Karp's 0–1 problem; [#2976](https://github.com/cslib-community/cslib-frontier/issues/2976) concerns rational LP, not integer feasibility. |
+| 2.18, directed Hamiltonian path NP-complete | 52 / 68 | **Covered.** `DirHamPathAny_npComplete` in [AnyEndpoints.lean](../CslibFrontier/Computability/Complexity/Problems/Hamiltonian/AnyEndpoints.lean) is the draft's language of graphs with some Hamiltonian path (`mem_DirHamPathAny_iff`), on `encGraph`. **Empty-graph convention:** a path is a nonempty vertex list, so graphs without declared vertices are not members (`DirHamPathAny.notMem_of_vertices_eq_nil`). The bridge `polyTimeReducible_DirHamPath_DirHamPathAny` shifts labels by two and adds a source arc `0 → s+2` and a sink arc `t+2 → 1`; its output always has at least two vertices, so hardness does not depend on the convention. Hardness comes from the designated-endpoint `DirHamPath_npComplete` ([Directed.lean](../CslibFrontier/Computability/Complexity/Problems/Hamiltonian/Directed.lean), Sipser's diamond reduction), not from the draft's direct reduction from 3SAT. |
 | 2.19, search from $P=NP$ | 55 / 71 | **Covered.** `FNP_subset_FPSearch_of_NP_subset_P` and `FNP_subset_FPSearch_iff_SAT_mem_P` in [SearchToDecision.lean](../CslibFrontier/Computability/Complexity/Classes/TFNP/SearchToDecision.lean) produce an optional polynomial-time solution of any polynomially balanced, polynomial-time decidable witness relation. Apply to the original verifier and its exact-length certificate condition to retain that verifier's witnesses, rather than just some SAT assignment. The hypothesis is on the paired encoding (or uniformly all encodings). |
 | 2.25, $EXP\ne NEXP\Rightarrow P\ne NP$ | 57 / 73 | **Covered.** `EXP_eq_NEXP_of_P_eq_NP` in [Padding.lean](../CslibFrontier/Computability/Complexity/Classes/Padding.lean) is the contrapositive, with `P encBits = NP encBits` implying equality for every target encoding. Native costs of writing exponential unary padding are included. |
 
 ### What the existing API establishes
 
-- Cook–Levin, three-SAT, independent set, and designated-endpoint Hamiltonian path have
-  unconditional polynomial-time completeness results. They are not merely abstract reductions
-  with an assumed efficient implementation.
+- Cook–Levin, TMSAT, three-SAT, independent set, and directed Hamiltonian path (with designated
+  endpoints and without) have unconditional polynomial-time completeness results. They are not
+  merely abstract reductions with an assumed efficient implementation.
 - The zero-one integer-programming theorem does not prove the draft's general integer-programming
   NP membership. The draft's “clearly in NP” suppresses the small-solution theorem needed there.
 - [#4225](https://github.com/cslib-community/cslib-frontier/issues/4225) owns the small-formula
@@ -244,8 +244,9 @@ are not counted. The PDF itself was inspected for the formulas in 7.5, 7.11, 7.1
 7.35–7.36 and 7.41. Searches covered randomized classes, probabilistic computation, concentration,
 coins and expander modules, pinned CSLib, and targeted pinned Mathlib searches for coin extraction
 and expander Chernoff results. Negative findings retain those search limits. No new Lean client
-or build was run for this documentation audit. Chapters 6–7 total 12 Covered, 10 Partial,
-5 Endpoint not located, 6 Source issue and 0 Unverified results.
+or build was run for this documentation audit. Chapters 6–7 total 13 Covered, 11 Partial,
+3 Endpoint not located, 6 Source issue and 0 Unverified results. Rows 7.14 and 7.15 were
+updated after the snapshot by [#5144](https://github.com/cslib-community/cslib-frontier/issues/5144).
 
 Unless otherwise qualified, complexity declarations below are in `Cslib.Complexity`.
 `BPP` and `RP` use native deterministic polynomial-time verifiers on framed instance/random-word
@@ -266,8 +267,8 @@ probability space. Simple graphs are a specialization; parallel edges/loops carr
 | 7.10, error reduction | 122 / 138 | **Partial, after the finite-length repair of 7.9.** `mem_BPP_iff_forall_decidesWithErrorExponent` in [BPP/Amplification.lean](../CslibFrontier/Computability/Complexity/Classes/BPP/Amplification.lean) supplies every polynomial error exponent from the fixed $2/3$ threshold. The statistical ingredient `Cslib.ProbComp.countTrue_average_deviation_pow` in [Concentration.lean](../CslibFrontier/Languages/Probabilistic/Concentration.lean) supports inverse-polynomial tolerance, but no inspected theorem connects the weak-gap premise to native BPP with polynomially many majority trials. Integer polynomial exponents dominate the draft's real $d>0$ after finite-length handling. |
 | 7.11, two-sided Chernoff corollary | 122 / 138 | **Source issue.** The PDF prints a two-sided probability strictly below $e^{-\delta^2pk/4}$ without a prefactor. For $k=1$, $p=1/2$, $\delta=1/4$, the left side is one and the right side is less than one. `Cslib.Probability.PMF.pi_sum_abs_sub_mean_ge_mul` in [Chernoff.lean](../CslibFrontier/Probability/Chernoff.lean) has the correct two-sided prefactor $2$ for relative deviation; `Cslib.ProbComp.countTrue_average_deviation` in [Concentration.lean](../CslibFrontier/Languages/Probabilistic/Concentration.lean) gives the additive Hoeffding form. These do not establish the false printed formula. |
 | 7.12, RP error reduction | 122 / 138 | **Partial.** The rendered PDF correctly requires zero acceptance on nonmembers in both premise and conclusion. `Cslib.Complexity.mem_RP_iff_forall_decidesWithOneSidedErrorExponent` in [RP.lean](../CslibFrontier/Computability/Complexity/Classes/RP.lean) preserves this zero acceptance and supplies every polynomial error exponent, but starts from success $1/2$, rather than the draft's inverse-polynomial success $n^{-c}$. The inverse-polynomial-success class bridge was not located; `Cslib.ProbComp.replicate_failure_pow` in [Concentration.lean](../CslibFrontier/Languages/Probabilistic/Concentration.lean) supplies a statistical ingredient, not the entire native class theorem. |
-| 7.14, fair coins simulate computable bias | 124 / 140 | **Endpoint not located.** No native expected-constant-time exact sampler for a fixed $\rho\in[0,1]$ with polynomial-time binary digits was located. [PMF/Coin.lean](../CslibFrontier/Probability/PMF/Coin.lean)'s `Cslib.Probability.PMF.coin` defines the distribution; it is noncomputable and does not certify this algorithm. `Cslib.Probability.DDGTree.knuthYao_generates` and `expectedFlips_knuthYao_lt` in [DDGTree/KnuthYao.lean](../CslibFrontier/Probability/DDGTree/KnuthYao.lean) give exact output and expected flip bounds, but no native running-time certificate for computing the tree. The target compares successive independent fair bits to the fixed expansion and sums the geometrically weighted digit-computation costs. |
-| 7.15, von Neumann extraction | 124 / 140 | **Endpoint not located.** For independent identically biased coins, $0<\rho<1$ is necessary: deterministic coins cannot yield a fair bit. No native repeat-until-different sampler with exact fair output and expected cost $O(1/(\rho(1-\rho)))$ was located. Existing biased-coin PMFs and finite/rejection-sampling APIs are not that expected-runtime endpoint. |
+| 7.14, fair coins simulate computable bias | 124 / 140 | **Partial: exact sampler, expected flips and digit-oracle cost covered; no single PTM.** The native model is an unbounded coin-reading tree (`Cslib.Probability.DDGTree`); `OracleComp` programs are finite and only express truncated loops. For any binary expansion $d$ of $\rho\in[0,1]$ (stated as a `HasSum`; $\rho=1$ uses $0.111\cdots$), `Cslib.Probability.DDGTree.coinOfDigits_generates` and `expectedFlips_coinOfDigits` in [DDGTree/Digits.lean](../CslibFrontier/Probability/DDGTree/Digits.lean) give exact output law `PMF.coin ρ` and exactly $2$ expected fair bits. Charging $w(n)$ for the digit compared at flip $n+1$ costs exactly $\sum_n w(n)2^{-n}$ in expectation, finite for polynomially bounded $w$. `exists_digitTime_expectedCostWith_coinOfDigits_lt_top` in [CoinOfDigits.lean](../CslibFrontier/Computability/Probabilistic/CoinOfDigits.lean) takes $w(n)=t(n)+1$ for the time bound $t$ of a binary multitape machine computing $d$ from `encUnary`; `coinOfDigits_spec_of_computableInPolyTime` collects the three conclusions. Remaining: the comparison loop is charged one unit per flip rather than compiled, with the digit machine, into one fair-coin multitape machine with expected $O(1)$ steps. [#5144](https://github.com/cslib-community/cslib-frontier/issues/5144). |
+| 7.15, von Neumann extraction | 124 / 140 | **Covered in the coin-reading model.** `Cslib.Probability.DDGTree.vonNeumann` in [DDGTree/Biased.lean](../CslibFrontier/Probability/DDGTree/Biased.lean) is the repeat-until-different tree, run on independent flips of `PMF.coin ρ` (`runWith`). For $0<\rho<1$, `vonNeumann_generatesWith_coin` gives an exactly fair output and `expectedFlipsWith_coin_vonNeumann` exactly $1/(\rho(1-\rho))$ expected flips. The hypothesis is necessary: `exists_generatesWith_coin_iff` shows some tree outputs a fair bit exactly when $0<\rho<1$, since a coin of bias $0$ or $1$ is deterministic. Cost counts coin flips; each flip needs constant work, but no biased-coin machine model exists, so no Turing-machine step count is stated. |
 | 7.16, expander-walk error reduction | 126 / 142 | **Covered, with the spectral constant explicit.** `Cslib.RotationMap.dens_filter_forall_walkAt_mem_le_pow` in [Hitting.lean](../CslibFrontier/Foundations/Combinatorics/Expander/Hitting.lean) gives $(\beta+\lambda(1-\beta))^k$ for $k\ge1$ uniformly started vertices, stronger than the asymptotic claim. A family requires a fixed $\lambda<1$; the decay constant depends on that bound as well as $\beta$, rather than on $\beta$ alone across arbitrary expander families. |
 | 7.17, Adleman | 126 / 142 | **Covered.** `Cslib.Circuits.Boolean.BPP_subset_PPolyOn` in [PolynomialTime.lean](../CslibFrontier/Computability/Circuit/Boolean/PolynomialTime.lean), specialized to `encBits`, is BPP ⊆ P/poly. Its general statement is agreement with a circuit language on the encoding image; circuits count gates. |
 | 7.18, Sipser–Gács | 127 / 143 | **Covered.** `BPP_subset_SigmaP_two_inter_PiP_two` in [PH/SipserLautemann.lean](../CslibFrontier/Computability/Complexity/Classes/PH/SipserLautemann.lean) proves the full two-sided inclusion, for the native seeded-verifier BPP and bounded-quantifier PH with any explicit encoding. |
@@ -318,7 +319,7 @@ textbook protocols. Class names below are in `Cslib.Complexity` unless qualified
 
 | Draft result | Printed / PDF page | Disposition and remaining endpoint |
 |---|---|---|
-| 8.3, $\mathrm{dIP}=\mathrm{NP}$ | 148 / 164 | **Endpoint not located.** `IP` and deterministic verifier/game infrastructure do not supply a located deterministic-interaction class equality. Searches for `dIP` and deterministic interactive proofs found no endpoint. A transcript certificate needs a polynomial total communication/time bound, not just a bound on the number of rounds. |
+| 8.3, $\mathrm{dIP}=\mathrm{NP}$ | 148 / 164 | **Covered, with a corrected definition.** `Cslib.Complexity.dIP_eq_NP` in [Deterministic](../CslibFrontier/Computability/Complexity/Classes/IP/Deterministic.lean) proves native equality for every explicit instance encoding. `Cslib.Complexity.dIP` is the coin-free case of the `IP` model, not a parallel notion. Its verifier is a `WordQueryComp` program run against every randomized stateful prover, with the same strict oracle-PPT certificate (one machine, one polynomial clock), completeness $1$ and soundness $0$. The clock bounds the verifier's time; `exists_queryBounds_of_mem_dIP` bounds the number and length of messages, so the number of rounds is polynomial. `NP_subset_dIP` reuses the one-message `npVerifier`. `dIP_subset_NP` is the coin-free case of Goldreich 9.2 (`IsInteractiveProof.mem_NP`). Its certificate is a transcript of at most $t$ messages and replies of at most $t$ bits, with the $t$ coins of the realizing machine, where $t$ is the clock, checked by the polynomial-time replay `Interaction.accepts`. Source issue: the draft's Definition 8.2 soundness clause reads $x\notin L\Rightarrow\forall P\ \mathrm{out}_V\langle V,P\rangle(x)=1$, a typo for $=0$; the corrected clause is used. Provers may be randomized; for a coin-free verifier this neither helps completeness nor weakens soundness. Issue [#5146](https://github.com/cslib-community/cslib-frontier/issues/5146). |
 | 8.8, Goldwasser–Sipser | 152 / 168 | **Covered.** [`IPPolyRounds_subset_AMPolyRounds`](../CslibFrontier/Computability/Complexity/Classes/IP/Games/PolyRounds.lean) proves dynamic $\mathrm{IP}[k(n)]\subseteq\mathrm{AM}[k(n)+2]$. Shape/coin maps are uniformly polynomial-time from unary input length. [`IPPolyQueryBounded_eq_IPPolyRounds`, `IPPolyQueryBounded_subset_AMPolyRounds`](../CslibFrontier/Computability/Complexity/Classes/IP/Games/Oracle.lean) connect strict oracle-PPT verifiers: $q(n)$ request/response exchanges correspond to $2q(n)$ individual moves, followed by two extra moves. The draft's AM[2] convention counts individual messages. The variable-round proof is landed [#4424](https://github.com/cslib-community/cslib-frontier/pull/4424), completing [#3425](https://github.com/cslib-community/cslib-frontier/issues/3425); the older constant-round `IPk_subset_AMk` alone would not suffice. |
 | 8.9, GNI in constant-round AM | 152 / 168 | **Covered.** [`GraphNonIsomorphism.mem_AM`](../CslibFrontier/Computability/Complexity/Classes/ArthurMerlin/GraphNonIsomorphism.lean), together with [`AMk_two`](../CslibFrontier/Computability/Complexity/Classes/ArthurMerlin/Games.lean), gives two-move membership. Uses the library's finite graph-pair encoding `encGraphIsomorphism`, with bounded error; it does not claim perfect completeness for the displayed draft protocol. |
 | 8.11, efficient pairwise independent hashing | 153 / 169 | **Partial.** [`Cslib.Probability.isPairwiseIndependentHash_affineHash`](../CslibFrontier/Probability/PairwiseIndependentHash/Affine.lean) proves pairwise independence for affine vector maps over finite fields. This includes scalar maps over a field of size $2^n$ mathematically, but does not itself construct a uniform polynomial-time field presentation of $\mathrm{GF}(2^n)$ for the draft's scalar family. Binary affine matrices used by the AM API are an alternative family. |
@@ -360,7 +361,7 @@ oracle completeness must not be identified. Names below are in `Cslib.Complexity
 
 | Draft result | Printed / PDF page | Disposition and remaining endpoint |
 |---|---|---|
-| 9.4, $\#\mathrm{CYCLE}\in\mathrm{FP}\Rightarrow\mathrm{P}=\mathrm{NP}$ | 173 / 189 | **Endpoint not located.** No exact simple directed-cycle counting function with the Hamiltonian-cycle amplification reduction was located. Hamiltonian-path counting and Euler-tour/spanning-tree counting are different functions. No dedicated owner was found by the issue/PR searches described below. |
+| 9.4, $\#\mathrm{CYCLE}\in\mathrm{FP}\Rightarrow\mathrm{P}=\mathrm{NP}$ | 173 / 189 | **Covered.** [`P_eq_NP_of_computableInPolyTime_SharpCycle`](../CslibFrontier/Computability/Complexity/Problems/SharpCycle.lean) proves `ComputableInPolyTime SharpCycle encGraph encNat → P enc = NP enc` for every encoding, via `SharpCycle.DirHamCycle_mem_P`. `SharpCycle G` is the number of simple directed cycles: `Cycle ℕ` values that are nonempty, have no repeated vertex, use only declared vertices, and follow arcs of the edge list. Graphs and their digraph reading are those of `DirHamCycle_npComplete`, so a self-loop is a cycle of length one and repeated edges count once. FP is read, as in the draft, as binary output. The gadget reduction `SharpCycle.reduce` is native polynomial-time (`computableInPolyTime_reduce`). The exact criterion `SharpCycle.mem_DirHamCycle_iff` is `G ∈ DirHamCycle ↔ 2^(m·n) ≤ SharpCycle (reduce G)`, with `n` distinct vertices and `m = n² + n + 1` layers. **Source issue in the proof:** with the draft's `m = n log n + 1` levels (base-two logarithm, idealized as an integer), the draft's stated bound does not establish separation at its threshold $n^{n^2}$: its own non-Hamiltonian bound $(2^m)^{n-1}n^{n-1}=2^{n-1}n^{n^2-1}$ exceeds $n^{n^2}$ by the factor $2^{n-1}/n>1$ for $n\ge3$. This refutes the displayed estimate, not separation itself; no graph whose actual count reaches the threshold is claimed. The formal proof compares with $2^{mn}$ and bounds the cycles of `G` by $2^n n!<2^m$. Claimed in [#5145](https://github.com/cslib-community/cslib-frontier/issues/5145). |
 | Proposition 9.6, complete counting in FP collapses #P | 174 / 190 | **Partial.** [`SharpPComplete`, `ParsimoniousReducible`](../CslibFrontier/Computability/Complexity/Classes/SharpP/Completeness.lean), native polynomial-time composition and [`mem_SharpP_of_polyTime`](../CslibFrontier/Computability/Complexity/Classes/SharpP/PolyTime.lean) supply the ingredients for the parsimonious version. No bundled FP = #P endpoint for the draft's oracle-reduction definition was located. FP here must be natural-valued functions with binary output, rather than all word-valued functions. |
 | 9.7, #SAT completeness | 174 / 190 | **Covered.** [`Cslib.Complexity.CookLevin.SharpSAT_sharpPComplete`](../CslibFrontier/Computability/Complexity/CookLevin/Counting.lean) proves parsimonious completeness, stronger than oracle hardness. Counts assignments to the distinct variables occurring in encoded CNF, with uniquely determined auxiliary tableau variables. `encCNF` replaces the draft's unspecified Boolean-formula representation. |
 | 9.8, Valiant, 0/1 permanent #P-completeness | 175 / 191 | **Endpoint not located.** No polynomial-time counting-oracle hardness theorem for unrestricted 0/1 matrices was located. [`permFamily_mem_VNP`](../CslibFrontier/Computability/Circuit/Arithmetic/Permanent.lean) concerns algebraic polynomial families, not #P. [#321](https://github.com/cslib-community/cslib-frontier/issues/321) owns algebraic VNP completeness; [#2095](https://github.com/cslib-community/cslib-frontier/issues/2095) concerns bounded-degree counting algorithms. Neither is this Boolean counting-hardness endpoint. Do not use parsimonious `SharpPComplete` as a silent replacement for the draft's oracle reduction. |
@@ -437,10 +438,73 @@ Snapshot: `b91d5151fd7dc665a5e3efcb466077caf44e690d` (2026-11-12), CSLib pin
 | 11.24 (both parts) | 218 / 234 | **Covered.** `Cslib.DecisionTree.degree_le_complexity` in [Degree](../CslibFrontier/Computability/QueryComplexity/Degree.lean) proves part 1. `Cslib.DecisionTree.complexity_le_degree_mul_blockSensitivity` and `complexity_le_two_mul_degree_pow_three` in [Midrijanis](../CslibFrontier/Computability/QueryComplexity/Midrijanis.lean) strengthen part 2: $D\le\deg(f)bs(f)$ and $D\le2\deg(f)^3$. Degree is exact real multilinear degree; constants have degree and query cost zero, so their case is separate from the positive-degree asymptotic comparison. |
 
 
+### Exercise 1 after the audited snapshot
+
+Chapter 11 Exercise 1 (printed p. 218 / PDF p. 234) establishes new theory: a Boolean function
+depending on all $n$ bits has $s(f)=\Omega(\log n)$.
+[RelevantCoordinates](../CslibFrontier/Computability/QueryComplexity/RelevantCoordinates.lean)
+proves `Cslib.BitString.card_relevant_le_sensitivity_mul_four_pow` and
+`clog_le_three_mul_sensitivity_of_depends_on_all`: at most $s4^s$ coordinates are relevant, hence
+$\operatorname{clog}_2 n\le3s(f)$ when all are relevant. The measures are native maximum
+sensitivity, and the empty-coordinate convention is explicit. A nonempty-set local-boundary
+cardinality lemma and sensitive-incidence double counting give the bound directly.
+The [checked clients](../CslibFrontierTests/SensitivityRelevant.lean) include ignored coordinates,
+constants, parity, and singleton/proper-subcube boundary instances. This completes this exercise's
+endpoint, not the separate adjacent-pair block construction in Exercise 2 or the full
+[#4711](https://github.com/cslib-community/cslib-frontier/issues/4711) objective.
+
 ### What the existing query API establishes
 
 - Exact finite query-measure inequalities are available without a machine-encoding translation.
 - Bounded-error depth minimax and zero-error expected cost are distinct contracts; their separate APIs do not by themselves prove 11.17.
+
+### Connectivity evasiveness after the audited snapshot
+
+This later formalization fills the historical snapshot’s connectivity gap.
+Theorem 11.4 (printed 212 / PDF 228 in the source-pinned public draft) is formalized by
+`Cslib.BitString.Graph.complexity_connectivity` in
+[QueryComplexity/Connectivity](../CslibFrontier/Computability/QueryComplexity/Connectivity.lean):
+for every vertex count $m$, the total labelled undirected simple-graph connectivity function has
+exact deterministic edge-query complexity $\binom m2$. Repeated queries are allowed. The proof
+uses the draft's bridge adversary with existing partial assignments and Mathlib graph paths;
+its graph/edge-word representation is the shared encoding extracted from the clique library.
+
+The result includes the conventions that the empty graph is disconnected and the one-vertex
+graph is connected; both functions have complexity zero. The
+[checked clients](../CslibFrontierTests/ConnectivityEvasiveness.lean) include a connected path and
+a triangle with an isolated vertex, each with three edges, so the claim is not a surrogate based
+only on edge count. It does not assert a randomized or machine-runtime lower bound. This is one
+formalized mathematical endpoint with validation, review and integration tracked in #4984.
+The remaining Chapter 11 theory objectives and the broader #4711 objective remain open; the
+chapter audit is recorded above, and the later expected-cost Yao endpoint below.
+
+### Expected-cost Yao after the audited snapshot
+
+The later [YaoExpected](../CslibFrontier/Computability/QueryComplexity/YaoExpected.lean)
+formalization fills the historical gap for Theorem 11.17.
+`Cslib.QueryComplexity.zeroErrorComplexity_eq_iSup_distributionalExpectedComplexity` proves the
+numerical equality, and `exists_optimal_expectedCost` supplies an optimal finite-support
+randomized algorithm and a hardest finite-support input distribution. Each distribution also
+has a deterministic minimizer (`exists_computes_distributionalCost_eq`). Coordinate types need
+only be finite; output types may be infinite. Correctness is everywhere, even outside the input
+law's support. Cost counts executed queries, including repeats, with free local computation.
+The source is the same pinned draft, Definitions 11.13 and 11.15–11.16 and Theorem 11.17,
+printed pages 215–216 / PDF pages 231–232. The [checked clients](../CslibFrontierTests/YaoExpected.lean)
+include empty coordinates and natural-number outputs. The separate exact majority-three example (11.14/11.18) is addressed below. Neither supplies
+expected machine time or book-wide coverage under
+[#4711](https://github.com/cslib-community/cslib-frontier/issues/4711).
+
+### Exact majority example after the audited snapshot
+
+[MajorityThree](../CslibFrontier/Computability/QueryComplexity/MajorityThree.lean) proves
+`Cslib.QueryComplexity.zeroErrorComplexity_majority_three`, the exact value $8/3$ in
+Examples 11.14 and 11.18 (printed pp. 215–216 / PDF pp. 231–232). The algorithm uniformly mixes
+the six short-circuit query orders; the hard input law is uniform on the six nonconstant words.
+The lower bound covers every correct deterministic tree, including adaptive and repeated
+queries, by a partial-assignment potential and structural induction. It does not identify
+arbitrary decision trees with fixed query orders. [Checked clients](../CslibFrontierTests/MajorityThree.lean)
+exercise exact costs, explicit input masses and a redundant-query tree. These are executed-query
+expectations with free local computation; the broader #4711 objective stays open.
 
 ## Chapter 12: communication complexity
 
@@ -485,6 +549,29 @@ The [checked clients](../CslibFrontierTests/CommunicationTilings.lean) include e
 Boolean equality, empty and constant cases, and uniform and nonuniform distributions.
 This establishes no protocol-realization theorem for arbitrary tilings and no communication
 runtime bound. The book-wide theory/exercise objective remains open under
+[#4711](https://github.com/cslib-community/cslib-frontier/issues/4711).
+
+### Corrected spectral discrepancy
+
+This is a bounded formalization update for draft Lemma12.13 (printed225 / PDF241), not a full
+chapter audit. Its literal eigenvalue statement remains a source issue under
+[#4771](https://github.com/cslib-community/cslib-frontier/issues/4771); the broader chapter
+comparison is in [#4764](https://github.com/cslib-community/cslib-frontier/pull/4764).
+
+[Discrepancy/Spectral](../CslibFrontier/Computability/Communication/Discrepancy/Spectral.lean)
+proves the corrected $\ell^2$ operator-norm version. For a finite real rectangular matrix,
+`Matrix.abs_sum_sum_le_l2_opNorm` bounds an absolute rectangle sum by the norm times the square
+roots of the two side sizes. Empty sides and empty index types are permitted. For a Boolean
+function on finite nonempty input sets, `discrepancy_uniformOfFintype_le_l2_opNorm` bounds uniform
+discrepancy by $\|\operatorname{signMatrix}(f)\|_2/\sqrt{|X||Y|}$; the bit-cube specialization has
+denominator $2^n$. The sign convention differs by an overall minus sign from the draft's
+`2 M(f) - 1`, which preserves these quantities. This proves no general eigenvalue-magnitude bound.
+
+The [checked clients](../CslibFrontierTests/SpectralDiscrepancy.lean) include a nilpotent sign
+matrix with characteristic polynomial `X^2` and a positive normalized rectangle sum `1/4`, a
+nonsquare matrix, empty cases and the zero-bit cube. Forster's existing consumers now reuse the
+shared matrix estimate; source credit and public theorem statements are retained.
+The full book/theory/exercise objective remains open under
 [#4711](https://github.com/cslib-community/cslib-frontier/issues/4711).
 
 ## Chapter 13: circuit lower bounds
@@ -622,14 +709,22 @@ The scope includes exercises whose endpoints develop theory, as clarified by Chr
 Reitwiessner; routine practice is not a formalization target. An exercise already implied by
 an existing theorem should be mapped to that theorem rather than reproved. Exercise numbers
 must be pinned to the source chapter, including subparts; placeholders do not supply a precise
-mathematical specification.
+mathematical specification. The exercises of all other chapters are classified in the companion
+[exercise inventory](arora-barak-2007-exercises.md), which supersedes the first-inventory
+remark below the Chapter 14 table.
+
+Chapter 11 Exercise 2 appears on printed p. 218/PDF p. 234.
+
+| Exercise | Endpoint and disposition |
+|---|---|
+| 11 §2 | Adjacent-pair blocks: sensitivity versus block sensitivity. **Covered for every length n ≥ 4.** [AdjacentPair](../CslibFrontier/Computability/QueryComplexity/AdjacentPair.lean) defines `Cslib.BitString.adjacentPairSqrt n` with `k = Nat.sqrt n` balanced contiguous blocks of sizes `n / k + [i < n % k]` (not only squares); a block accepts exactly two adjacent true bits, overlapping choices such as `0110` included. `adjacentPairSqrt_measures` proves $k\le s(f_n)\le3k$, $n\le3\,bs(f_n)$ and $bs\le C\le D\le n$ for the native measures, hence $s=\Theta(\sqrt n)$ and $bs=C=D=\Theta(n)$. General unequal-block bounds (`sensitivity_adjacentPairBlocks_le`: $s\le\max(3k,M)$; `sum_half_le_blockSensitivity_adjacentPairBlocks`: $\sum_b\lfloor m_b/2\rfloor\le bs$) sit in [Blocks](../CslibFrontier/Computability/QueryComplexity/AdjacentPair/Blocks.lean), on the shared OR-of-blocks count in [OrBlocks](../CslibFrontier/Computability/QueryComplexity/OrBlocks.lean). For $n=0$ the function is constantly false; for $1\le n\le3$ it is one block. No exact values (such as $D=n$) are claimed. [Clients](../CslibFrontierTests/AdjacentPair.lean). |
 
 The six exercise prompts at the end of Chapter 14 all appear on printed p. 265/PDF p. 281.
 Their current dispositions are:
 
 | Exercise | Endpoint and disposition |
 |---|---|
-| 14 §1 | Finite-field arithmetic versus Boolean circuits up to constant factors. **GF(2) milestone:** [Boolean/Arithmetic.lean](../CslibFrontier/Computability/Circuit/Boolean/Arithmetic.lean) proves same-carrier simulations with size factors three and four, preserving every output. The arbitrary fixed finite-field endpoint remains open; it needs explicit bit representations. |
+| 14 §1 | Finite-field arithmetic versus Boolean circuits up to constant factors. **Covered for the explicit value/size conventions:** [Boolean/FiniteSimulation.lean](../CslibFrontier/Computability/Circuit/Boolean/FiniteSimulation.lean) supplies a fixed logarithmic-width encoding and an all-output Boolean simulation over every finite nonempty carrier, with constant gate factor for each fixed carrier. [Boolean/ArithmeticRing.lean](../CslibFrontier/Computability/Circuit/Boolean/ArithmeticRing.lean) gives the reverse zero/one-input value simulation with factor five over any ring. Constants count as gates and wires are free. Correctness of the forward direction is on valid encoded inputs; no uniform compiler runtime or formal-polynomial identity is asserted. The earlier [GF(2) simulations](../CslibFrontier/Computability/Circuit/Boolean/Arithmetic.lean) have factors three and four. |
 | 14 §2 | Circuit depth versus exponential-size straight-line programs. **Source specification needed:** the short prompt does not fix the two directions, costs or parameter relation sufficiently for a formal endpoint. |
 | 14 §3 | The draft only asks “Bauer-Strassen lemma?” **Source specification needed:** select and cite a precise differentiation theorem before implementation; do not silently repair the name and infer a statement. |
 | 14 §4 | Algebraic-machine time to computation-tree depth. **Source issue:** the prompt uses running-time parameter `T` and concludes depth `O(d)` without defining `d`. A corrected endpoint also needs the absent machine/tree model. |
@@ -637,11 +732,15 @@ Their current dispositions are:
 | 14 §6 | The draft only asks “Shamir's trick?” **Source specification needed:** no exact algorithm, machine model or bound is given in the exercise. |
 
 This is a first exercise inventory, not a complete classification of every chapter's exercises.
-The GF(2) simulations concern values in `Bool`'s Boolean ring, not equality of formal
-polynomials. They use existing gate replacement and four-gate XOR synthesis; no new carrier,
-compiler-runtime claim or general finite-field completion is implied. Their
-[clients](../CslibFrontierTests/BooleanArithmetic.lean) include multiple outputs and zero-cost
-wiring. The remaining theoretical exercises stay under
+The GF(2) simulations concern values in `Bool`'s Boolean ring and use existing gate replacement
+and four-gate XOR synthesis. Those two-element lemmas alone do not establish the general
+finite-field endpoint: that endpoint instead combines the fixed finite encoding with the
+ring simulation, as in the row above. These are value and gate-size results, without uniform
+compiler-runtime or formal-polynomial-identity claims. The checked clients in
+[BooleanArithmetic](../CslibFrontierTests/BooleanArithmetic.lean) and
+[BitBlastEncoding](../CslibFrontierTests/BitBlastEncoding.lean) include odd characteristic,
+multiple outputs, unused code words, zero-width encoding and zero-cost wiring. The remaining
+theoretical exercises stay under
 [#4711](https://github.com/cslib-community/cslib-frontier/issues/4711).
 
 ## Chapter 15: average-case complexity
@@ -933,9 +1032,10 @@ Snapshot: `b91d5151fd7dc665a5e3efcb466077caf44e690d` (2026-11-12), CSLib pin
 
 ## Remaining audit work
 
-Chapters 1–22 now have chapter-specific records above. These are snapshot-qualified audit
-records, not proofs of the remaining theory endpoints or a complete classification of the
-exercises. The first implementation milestones for
+Chapters 1–22 now have chapter-specific records above, and every chapter's exercises are
+classified here or in the [exercise inventory](arora-barak-2007-exercises.md). These are
+snapshot-qualified audit records, not proofs of the remaining theory endpoints. The first
+implementation milestones for
 §22.1 are [#4712](https://github.com/cslib-community/cslib-frontier/pull/4712) and
 [#4713](https://github.com/cslib-community/cslib-frontier/pull/4713); the latter distinguishes
 the literal unrestricted draft 22.3 from the published theorem with an additive loss.
