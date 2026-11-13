@@ -29,13 +29,13 @@ samplers [SahaiVadhan2003, Lemma 3.5]. The XOR construction also commutes with i
 ## Main definitions
 
 * `Cslib.BitString.parityComplete` and `Cslib.BitString.parityCompleteEquiv`, used below, are
-  defined in `Foundations/Data/BitString/Parity/Complete.lean`.
+  defined in `CslibFrontier/Foundations/Data/BitString/Parity/Complete.lean`.
 
 ## Main results
 
 * `Cslib.Probability.PMF.xorMix_map`: naturality of the XOR construction.
 * `Cslib.Probability.PMF.uniformOfFintype_map_parityComplete`, used below, is proved in
-  `Probability/BitString/Parity.lean`.
+  `CslibFrontier/Probability/BitString/Parity.lean`.
 * `Cslib.Probability.PMF.xorMix_map_uniform`: the XOR construction of two images of uniform seeds is
   an image of uniform selector bits and seeds.
 

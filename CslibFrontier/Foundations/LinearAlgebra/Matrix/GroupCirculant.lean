@@ -49,7 +49,8 @@ cyclic circulants on `Fin n` to `Cslib.dft` (`Matrix.circulant_mulVec_pow_eq_dft
 
 ## Main definitions
 
-* `Matrix.circulantEigenvalue`, defined in `GroupCirculant/Eigenvalues.lean`: eigenvalue
+* `Matrix.circulantEigenvalue`, defined in
+  `CslibFrontier/Foundations/LinearAlgebra/Matrix/GroupCirculant/Eigenvalues.lean`: eigenvalue
   `∑ g, w g * ψ (-g)` of `Matrix.circulant w` on `ψ`.
 * `Matrix.addCharMatrix`, `Matrix.dualAddCharMatrix`: character and dual-character matrices on `G`.
 * `Matrix.sylvesterTwo`, `Matrix.cubeCharMatrix`: `2 × 2` Sylvester kernel and Walsh–Hadamard
@@ -60,7 +61,8 @@ cyclic circulants on `Fin n` to `Cslib.dft` (`Matrix.circulant_mulVec_pow_eq_dft
 ## Main results
 
 * `Matrix.circulant_mulVec_addChar` and `Matrix.circulantEigenvalue_mulVec`, proved in
-  `GroupCirculant/Eigenvalues.lean`: character eigenpairs and convolution multiplicativity.
+  `CslibFrontier/Foundations/LinearAlgebra/Matrix/GroupCirculant/Eigenvalues.lean`: character
+  eigenpairs and convolution multiplicativity.
 * `Matrix.circulant_mul_addCharMatrix`, `Matrix.dualAddCharMatrix_mul_addCharMatrix`,
   `Matrix.diagonalize_circulant_of_card_addChar_eq`: character-matrix orthogonality and similarity
   diagonalization.
