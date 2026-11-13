@@ -28,6 +28,7 @@ formalization infrastructure.
 ## Main definitions
 
 * `Cslib.Quantum.OracleGateCode`: elementary gates and coherent oracle-query instructions.
+* `Cslib.Quantum.OracleCircuit`: finite instruction lists in execution order.
 * `Cslib.Quantum.OracleGateCode.WellFormed`: validity at fixed register and query widths.
 * `Cslib.Quantum.OracleCircuit.toCircuit`: interpretation as an existing quantum circuit.
 * `Cslib.Quantum.OracleCircuit.queryCount`, `Cslib.Quantum.OracleCircuit.gateCount`:

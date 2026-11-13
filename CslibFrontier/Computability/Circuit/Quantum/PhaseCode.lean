@@ -235,7 +235,7 @@ namespace PhaseGateCode
 
 /-- The placed gate denoted by a gate code with phase gates on `m` qubits, or `none` when the code
 is not well formed. -/
-noncomputable def toPlacedGate? (m : ℕ) : PhaseGateCode → Option (PlacedGate m)
+@[expose] noncomputable def toPlacedGate? (m : ℕ) : PhaseGateCode → Option (PlacedGate m)
   | (false, g) => GateCode.toPlacedGate? m g
   | (true, inv, t, []) =>
     if h : t < m then

@@ -9,7 +9,7 @@ module
 
 public import CslibFrontier.Computability.Circuit.Quantum.Basic
 public import Mathlib.Algebra.Ring.BooleanRing
-public import Mathlib.Logic.Equiv.Fin.Basic
+import Mathlib.Logic.Equiv.Fin.Basic
 import CslibFrontier.Foundations.Data.BitString.Basic
 
 /-!
@@ -59,6 +59,14 @@ noncomputable def queryRegisters (A : Fin (a + b) ↪ Fin m) :
   (splitEquiv A).trans
     ((Equiv.prodCongr (Fin.appendEquiv a b).symm (Equiv.refl _)).trans
       (Equiv.prodAssoc _ _ _))
+
+/-- Splitting a basis string reads the selected query and response wires and retains the unused
+wire indices for the workspace. -/
+@[simp] theorem queryRegisters_apply (A : Fin (a + b) ↪ Fin m) (z : Fin m → Bool) :
+    queryRegisters A z =
+      (fun i => z (A (Fin.castAdd b i)), fun i => z (A (Fin.natAdd a i)), fun j => z j.1) := by
+  unfold queryRegisters
+  rfl
 
 /-- Reassembling the registers recovers a query bit at its selected wire. -/
 @[simp] theorem queryRegisters_symm_query (A : Fin (a + b) ↪ Fin m)
