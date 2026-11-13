@@ -90,9 +90,9 @@ table `Hfb : CT → K` instead of `H(true, s, ·)`. -/
 noncomputable def eagerFbGame [Fintype M] [Finite R] [Fintype CT] [Finite K]
     (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K) (b : Bool) : Game := do
   let (pk, dk) ← ProbComp.eval S.keyGenNotBot
-  let G ← pi (α := fun _ : M => R) (fun _ => ProbComp.eval S.pke.sampleCoins)
-  let H ← pi (α := fun _ : Bool × M × CT => K) (fun _ => ProbComp.eval S.sampleKey)
-  let Hfb ← pi (α := fun _ : CT => K) (fun _ => ProbComp.eval S.sampleKey)
+  let G ← S.coinTable
+  let H ← S.keyTable (Bool × M × CT)
+  let Hfb ← S.keyTable CT
   let (cStar, kReal) ← ProbComp.eval (S.encapsNotBot G H pk)
   let kRand ← ProbComp.eval S.sampleKey
   OracleComp.interpret (S.eagerFbHandler G H Hfb dk cStar)
@@ -121,9 +121,9 @@ noncomputable def eagerCoupledHandler (S : Scheme PK SK M R CT K) (G : M → R) 
 noncomputable def eagerCoupledGame [Fintype M] [Finite R] [Fintype CT] [Finite K]
     (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K) (b : Bool) : Game := do
   let (pk, sk) ← ProbComp.eval S.pke.keyGen
-  let G ← pi (α := fun _ : M => R) (fun _ => ProbComp.eval S.pke.sampleCoins)
-  let Hq ← pi (α := fun _ : CT => K) (fun _ => ProbComp.eval S.sampleKey)
-  let Hraw ← pi (α := fun _ : Bool × M × CT => K) (fun _ => ProbComp.eval S.sampleKey)
+  let G ← S.coinTable
+  let Hq ← S.keyTable CT
+  let Hraw ← S.keyTable (Bool × M × CT)
   let mStar ← ProbComp.eval S.sampleMsg
   let cStar := encT S.pke G pk mStar
   let kRand ← ProbComp.eval S.sampleKey

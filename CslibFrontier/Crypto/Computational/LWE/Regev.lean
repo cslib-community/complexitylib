@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Computational.LWE.Decoding
 public import CslibFrontier.Crypto.Computational.LWE.KeyGen
+public import CslibFrontier.Crypto.Computational.TwoStage
 public import CslibFrontier.Crypto.Game.Statistical
 public import CslibFrontier.Probability.BitString.SubsetSum.Matrix
 import CslibFrontier.Probability.PMF.Uniform
@@ -41,8 +42,11 @@ asymptotic single-challenge theorem are in `LWE.Regev.Security`.
 * `Regev.LoRAdversary`, `Regev.lorRun`, `Regev.lorGame`: an adaptive `Q`-query left-or-right
   adversary, its interaction with an encryption oracle, and the experiment for a public-key law.
 * `Regev.idealLorGame`: the interaction in which every answer is an independent uniform vector.
-* `Regev.challengeGame`, `Regev.LoRAdversary.ofChallenge`: the single-challenge experiment and
-  its embedding as a one-query left-or-right experiment.
+* `Regev.challengeGame`: the single-challenge experiment, the left-or-right experiment
+  `lrExperiment` of a typed `TwoStage` adversary on a public key drawn from a key law.
+* `Regev.ChallengeState`, `Regev.LoRAdversary.ofChallenge`: a single-challenge adversary as a
+  one-query left-or-right adversary, whose state records the challenge pair, the saved state and
+  the challenge ciphertext.
 * `Regev.lorDistinguisher`: the typed decision-LWE distinguisher that runs the `Q`-query
   experiment for one challenge bit on the supplied matrix.
 
@@ -160,7 +164,7 @@ structure LoRAdversary (n m w : ℕ) (State : Type) where
   /-- Receive the public matrix. -/
   start : PublicKey n m w → PMF State
   /-- Choose the next pair of challenge bits. -/
-  query : State → PMF ((Bool × Bool) × State)
+  query : State → PMF (MessagePair Bool × State)
   /-- Absorb the answer to the last query. -/
   receive : State → Ciphertext n w → State
   /-- Output the final guess. -/
@@ -168,14 +172,14 @@ structure LoRAdversary (n m w : ℕ) (State : Type) where
 
 variable {n m w : ℕ} {State : Type}
 
-/-- Answer `q` adaptive queries, encrypting the left (`bit = false`) or right message of each
-pair with the oracle `enc`. -/
+/-- Answer `q` adaptive queries, encrypting the message of each pair selected by `bit` (`msg₀` for
+`false`, `msg₁` for `true`) with the oracle `enc`. -/
 noncomputable def lorRun (enc : Bool → PMF (Ciphertext n w))
     (adversary : LoRAdversary n m w State) (bit : Bool) : ℕ → State → PMF State
   | 0, state => PMF.pure state
   | q + 1, state => do
     let (pair, state) ← adversary.query state
-    let c ← enc (if bit then pair.2 else pair.1)
+    let c ← enc (pair.select bit)
     lorRun enc adversary bit q (adversary.receive state c)
 
 /-- The adaptive `Q`-query left-or-right experiment with public keys drawn from `keys`; every
@@ -203,7 +207,7 @@ private noncomputable def lorRunRows {γ : Type} (answer : Bool → γ → Ciphe
   | q + 1, rows, state => do
     let (pair, state) ← adversary.query state
     lorRunRows answer adversary bit q (Fin.tail rows)
-      (adversary.receive state (answer (if bit then pair.2 else pair.1) (rows 0)))
+      (adversary.receive state (answer (pair.select bit) (rows 0)))
 
 /-- Fresh oracle coins may be drawn in advance as independent rows. -/
 private theorem lorRun_map_eq {γ : Type} [Finite γ] (D : PMF γ) (answer : Bool → γ → Ciphertext n w)
@@ -343,44 +347,55 @@ theorem lorGame_uniform_advantage_le (Q : ℕ) (adversary : LoRAdversary n m w S
     (idealLorGame Q adversary)
   linarith
 
-/-- The single-challenge experiment with typed adversary stages: the first stage sees the public
-matrix and chooses two bits and a state, the second sees that state and the challenge ciphertext. -/
+/-- The single-challenge experiment: draw a public matrix from `keys` and run the left-or-right
+experiment `lrExperiment` with Regev encryption. Every challenge pair is admissible. The typed
+adversary's first stage sees the public matrix and chooses a pair of bits and a state; its second
+stage sees that state and the challenge ciphertext. -/
 noncomputable def challengeGame (keys : PMF (PublicKey n m w))
-    (choose : PublicKey n m w → PMF ((Bool × Bool) × State))
-    (guess : State → Ciphertext n w → PMF Bool) (bit : Bool) : PMF Bool := do
-  let A ← keys
-  let choice ← choose A
-  let c ← ProbComp.eval (encrypt A (if bit then choice.1.2 else choice.1.1))
-  guess choice.2 c
+    (adversary : TwoStage (PublicKey n m w) (MessagePair Bool) (Ciphertext n w) Bool State)
+    (bit : Bool) : Game :=
+  Game.withSetup keys (lrExperiment (fun _ _ _ => true) encrypt adversary bit)
 
-/-- A single-challenge adversary as a one-query left-or-right adversary. -/
-noncomputable def LoRAdversary.ofChallenge (choose : PublicKey n m w → PMF ((Bool × Bool) × State))
-    (guess : State → Ciphertext n w → PMF Bool) :
-    LoRAdversary n m w (((Bool × Bool) × State) × Ciphertext n w) where
-  start A := (choose A).map (·, 0)
-  query state := PMF.pure (state.1.1, state)
-  receive state c := (state.1, c)
-  guess state := guess state.1.2 state.2
+/-- The state of `LoRAdversary.ofChallenge`: the challenge pair and saved state chosen by the first
+stage, and the challenge ciphertext received (`0` before the query is answered). -/
+structure ChallengeState (n w : ℕ) (State : Type) where
+  /-- The pair of challenge bits chosen by the first stage. -/
+  pair : MessagePair Bool
+  /-- The state saved by the first stage. -/
+  saved : State
+  /-- The challenge ciphertext. -/
+  ciphertext : Ciphertext n w
+
+/-- A single-challenge adversary as a one-query left-or-right adversary: the first stage starts the
+interaction, the only query is its challenge pair, and the second stage guesses from the saved
+state and the answer. -/
+noncomputable def LoRAdversary.ofChallenge
+    (adversary : TwoStage (PublicKey n m w) (MessagePair Bool) (Ciphertext n w) Bool State) :
+    LoRAdversary n m w (ChallengeState n w State) where
+  start A := (ProbComp.eval (adversary.choose A)).map fun (pair, saved) => ⟨pair, saved, 0⟩
+  query state := PMF.pure (state.pair, state)
+  receive state c := { state with ciphertext := c }
+  guess state := ProbComp.eval (adversary.guess state.saved state.ciphertext)
 
 /-- The single-challenge experiment is the one-query left-or-right experiment. -/
 theorem lorGame_ofChallenge (keys : PMF (PublicKey n m w))
-    (choose : PublicKey n m w → PMF ((Bool × Bool) × State))
-    (guess : State → Ciphertext n w → PMF Bool) (bit : Bool) :
-    lorGame keys 1 (LoRAdversary.ofChallenge choose guess) bit =
-      challengeGame keys choose guess bit := by
-  simp only [lorGame, challengeGame, LoRAdversary.ofChallenge, lorRun, PMF.monad_bind_eq_bind,
-    PMF.bind_map, PMF.pure_bind, PMF.bind_bind, Function.comp_def]
+    (adversary : TwoStage (PublicKey n m w) (MessagePair Bool) (Ciphertext n w) Bool State)
+    (bit : Bool) :
+    lorGame keys 1 (LoRAdversary.ofChallenge adversary) bit =
+      challengeGame keys adversary bit := by
+  simp only [lorGame, challengeGame, Game.withSetup, lrExperiment, LoRAdversary.ofChallenge,
+    lorRun, ↓reduceIte, PMF.monad_bind_eq_bind, PMF.bind_map, PMF.pure_bind, PMF.bind_bind,
+    Function.comp_def, ProbComp.eval_bind]
 
 /-- Single-challenge security under a uniform public matrix: advantage at most
 `sqrt(2 ^ ((n + 1) * w) / 2 ^ m)`. -/
 theorem challengeGame_uniform_advantage_le
-    (choose : PublicKey n m w → PMF ((Bool × Bool) × State))
-    (guess : State → Ciphertext n w → PMF Bool) :
-    (Game.advantage (challengeGame (PMF.uniformOfFintype (PublicKey n m w)) choose guess false)
-        (challengeGame (PMF.uniformOfFintype (PublicKey n m w)) choose guess true) : ℝ) ≤
+    (adversary : TwoStage (PublicKey n m w) (MessagePair Bool) (Ciphertext n w) Bool State) :
+    (Game.advantage (challengeGame (PMF.uniformOfFintype (PublicKey n m w)) adversary false)
+        (challengeGame (PMF.uniformOfFintype (PublicKey n m w)) adversary true) : ℝ) ≤
       Real.sqrt ((2 : ℝ) ^ ((n + 1) * w) / (2 : ℝ) ^ m) := by
   simpa only [lorGame_ofChallenge, Nat.cast_one, one_mul] using
-    lorGame_uniform_advantage_le 1 (LoRAdversary.ofChallenge choose guess)
+    lorGame_uniform_advantage_le 1 (LoRAdversary.ofChallenge adversary)
 
 /-- The decision-LWE distinguisher for one challenge bit: run the `Q`-query experiment on the
 supplied matrix as public key. -/

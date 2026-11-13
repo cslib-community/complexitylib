@@ -82,43 +82,12 @@ theorem Op.eval_replay {w : ℕ} {o : Op B r} {x x' y : Data r} {D : Finset ℕ}
     · simp [he]
     · simpa only [Function.update_of_ne he] using hm b hb
 
-/-- Replaying a continuing flat step preserves its control and register file. -/
-theorem Next.replay {w : ℕ} {p : Program B r} {s t s' : State r} {D : Finset ℕ}
-    (h : Next w p s t) (hpc : s.pc = s'.pc) (ha : s.data.AgreeOutside D s'.data)
-    (hd : Disjoint (Probe.reads (probes p s)) D) :
-    ∃ t', Next w p s' t' ∧ t.pc = t'.pc ∧ t.data.AgreeOutside D t'.data := by
-  unfold Next step at h ⊢
-  rw [← hpc]
-  cases hp : p[s.pc]? with
-  | none => simp [hp] at h
-  | some i =>
-    cases i with
-    | op o =>
-      cases ho : o.eval w s.data with
-      | none => simp [hp, ho] at h
-      | some x =>
-        have ht : t = ⟨s.pc + 1, x⟩ := by simpa [hp, ho] using h.symm
-        subst t
-        obtain ⟨y, hy, ha'⟩ := o.eval_replay ho ha (by simpa [probes, hp] using hd)
-        exact ⟨⟨s.pc + 1, y⟩, by simp [hy], rfl, ha'⟩
-    | jump k =>
-      have ht : t = ⟨k, s.data⟩ := by simpa [hp] using h.symm
-      subst t
-      exact ⟨⟨k, s'.data⟩, by simp, rfl, ha⟩
-    | branch c k =>
-      have hc : c.Holds s.data ↔ c.Holds s'.data := by
-        cases c <;> simp only [Cond.Holds, ha.1]
-      have ht : t = ⟨if c.Holds s.data then k else s.pc + 1, s.data⟩ := by
-        simpa [hp] using h.symm
-      subst t
-      exact ⟨⟨if c.Holds s'.data then k else s.pc + 1, s'.data⟩,
-        by simp, by simp only [hc], ha⟩
-    | halt i => simp [hp] at h
-    | rand d s => simp [hp] at h
-
-/-- A continuing step changes memory only at its actual store address. -/
-theorem Next.modifies {w : ℕ} {p : Program B r} {s t : State r}
-    (h : Next w p s t) : Modifies (Probe.writes (probes p s)) s.data.mem t.data.mem := by
+/-- A continuing flat step executes a successful data operation, a jump or a branch. -/
+private theorem Next.cases_instr {w : ℕ} {p : Program B r} {s t : State r} (h : Next w p s t) :
+    (∃ o x, p[s.pc]? = some (.op o) ∧ o.eval w s.data = some x ∧ t = ⟨s.pc + 1, x⟩) ∨
+    (∃ k, p[s.pc]? = some (.jump k) ∧ t = ⟨k, s.data⟩) ∨
+    ∃ c k, p[s.pc]? = some (.branch c k) ∧
+      t = ⟨if c.Holds s.data then k else s.pc + 1, s.data⟩ := by
   unfold Next step at h
   cases hp : p[s.pc]? with
   | none => simp [hp] at h
@@ -127,16 +96,32 @@ theorem Next.modifies {w : ℕ} {p : Program B r} {s t : State r}
     | op o =>
       cases ho : o.eval w s.data with
       | none => simp [hp, ho] at h
-      | some x =>
-        have ht : t = ⟨s.pc + 1, x⟩ := by simpa [hp, ho] using h.symm
-        subst t
-        simpa only [probes, hp] using o.eval_modifies ho
-    | jump k => cases (by simpa [hp] using h : State.mk k s.data = t); exact Modifies.refl _ _
-    | branch c k =>
-      cases (by simpa [hp] using h : State.mk (if c.Holds s.data then k else s.pc + 1) s.data = t)
-      exact Modifies.refl _ _
+      | some x => exact Or.inl ⟨o, x, rfl, ho, by simpa [hp, ho] using h.symm⟩
+    | jump k => exact Or.inr (Or.inl ⟨k, rfl, by simpa [hp] using h.symm⟩)
+    | branch c k => exact Or.inr (Or.inr ⟨c, k, rfl, by simpa [hp] using h.symm⟩)
     | halt i => simp [hp] at h
     | rand d s => simp [hp] at h
+
+/-- Replaying a continuing flat step preserves its control and register file. -/
+theorem Next.replay {w : ℕ} {p : Program B r} {s t s' : State r} {D : Finset ℕ}
+    (h : Next w p s t) (hpc : s.pc = s'.pc) (ha : s.data.AgreeOutside D s'.data)
+    (hd : Disjoint (Probe.reads (probes p s)) D) :
+    ∃ t', Next w p s' t' ∧ t.pc = t'.pc ∧ t.data.AgreeOutside D t'.data := by
+  rcases h.cases_instr with ⟨o, x, hp, ho, rfl⟩ | ⟨k, hp, rfl⟩ | ⟨c, k, hp, rfl⟩
+  · obtain ⟨y, hy, ha'⟩ := o.eval_replay ho ha (by simpa [probes, hp] using hd)
+    exact ⟨_, step_op (hpc ▸ hp) hy, by simp [hpc], ha'⟩
+  · exact ⟨_, step_jump (hpc ▸ hp), rfl, ha⟩
+  · have hc : c.Holds s.data ↔ c.Holds s'.data := by
+      cases c <;> simp only [Cond.Holds, ha.1]
+    exact ⟨_, step_branch (hpc ▸ hp), by simp only [hc, hpc], ha⟩
+
+/-- A continuing step changes memory only at its actual store address. -/
+theorem Next.modifies {w : ℕ} {p : Program B r} {s t : State r}
+    (h : Next w p s t) : Modifies (Probe.writes (probes p s)) s.data.mem t.data.mem := by
+  rcases h.cases_instr with ⟨o, x, hp, ho, rfl⟩ | ⟨k, hp, rfl⟩ | ⟨c, k, hp, rfl⟩
+  · simpa only [probes, hp] using o.eval_modifies ho
+  · exact Modifies.refl _ _
+  · exact Modifies.refl _ _
 
 private theorem card_probes_le (p : Program B r) (s : State r) :
     (Probe.reads (probes p s)).card ≤ 1 ∧ (Probe.writes (probes p s)).card ≤ 1 := by

@@ -44,6 +44,12 @@ example : ComputableInPolyTime (TaggedTable.tag (n := 0)) encPublicTable encBool
     fun_prop
   exact encPublicTable_tag_polyTime hid
 
+-- Public flattened-parent rules survive an import and namespace opening.
+example (F : Family) {α : Type} {enc : α ↪ List Bool} {f : α → ElementPair F}
+    (hf : ComputableInPolyTime f enc (eElementPair F)) :
+    ComputableInPolyTime (fun a => (f a).toElement) enc (eElement F) := by
+  fun_prop
+
 end
 
 -- Check the whole generated family, including constructor/field budgets and linear rules.
@@ -59,6 +65,20 @@ run_cmd do
       (`CslibFrontierTests.StructureEncodingVisibility.encPrivateTable).appendAfter suffix
     unless env.contains visible do
       throwError "default-public enc_structure did not export {visible}"
+    if env.contains hidden then
+      throwError "private enc_structure exported {hidden}"
+
+-- A private flattened encoding also hides all four generated parent rules.
+run_cmd do
+  let env ← Lean.getEnv
+  let suffixes := ["", "Fields", "_apply", "_fields_deg", "_mk_deg", "_mk_inO",
+    "_mk_budget", "_mk_polyTime", "_toElement_deg", "_toElement_inO",
+    "_toElement_budget", "_toElement_polyTime"]
+  let fieldSuffixes := ["_size", "_desc", "_elt", "_other"].flatMap fun f =>
+    ["_deg", "_inO", "_budget", "_polyTime"].map (f ++ ·)
+  for suffix in suffixes ++ fieldSuffixes do
+    let hidden :=
+      (`CslibFrontierTests.StructureEncodingVisibility.encPrivateElementPair).appendAfter suffix
     if env.contains hidden then
       throwError "private enc_structure exported {hidden}"
 

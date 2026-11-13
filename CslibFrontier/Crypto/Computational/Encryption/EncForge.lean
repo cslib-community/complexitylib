@@ -386,9 +386,7 @@ private noncomputable def etmForgeJointOracle (E : SymmetricCipher) (M : MACSche
       return ([], queriedPairs)
 
 private theorem eval_run_encForgeOracle_encryptThenMAC_eq (E : SymmetricCipher) (M : MACScheme)
-    (hctLen : ∀ n ke, ke ∈ (ProbComp.eval (E.keyGen n)).support →
-      ∀ msg, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = M.msgLen n)
+    (hctLen : ∀ n, E.CiphertextLength n (M.msgLen n))
     (n : ℕ) (ke km : List Bool) (prog : WordOracleComp Unit (List Bool)) :
     ProbComp.eval ((OracleComp.interpret
       (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
@@ -415,9 +413,7 @@ private theorem eval_run_encForgeOracle_encryptThenMAC_eq (E : SymmetricCipher) 
     prog []).symm
 
 private theorem eval_run_etmToMACHandler_signingOracle_eq (E : SymmetricCipher) (M : MACScheme)
-    (hctLen : ∀ n ke, ke ∈ (ProbComp.eval (E.keyGen n)).support →
-      ∀ msg, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = M.msgLen n)
+    (hctLen : ∀ n, E.CiphertextLength n (M.msgLen n))
     (n : ℕ) (tagBound : ℕ → ℕ) (ke km : List Bool)
     (hke : ke ∈ (ProbComp.eval (E.keyGen n)).support)
     (hkm : km ∈ (ProbComp.eval (M.keyGen n)).support)
@@ -518,9 +514,7 @@ private theorem mem_support_etmForgeJointOracle (E : SymmetricCipher) (M : MACSc
 winning probability of `adversary` against `encryptThenMAC E M hctLen` is at most the `eufCmaGame`
 winning probability of `etmToMACForger E M tagBound adversary` against `M`. -/
 theorem succProbability_encForgeGame_encryptThenMAC_le (E : SymmetricCipher) (M : MACScheme)
-    (hctLen : ∀ n ke, ke ∈ (ProbComp.eval (E.keyGen n)).support →
-      ∀ msg, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = M.msgLen n)
+    (hctLen : ∀ n, E.CiphertextLength n (M.msgLen n))
     (tagBound : ℕ → ℕ) (adversary : CIAdversary) (n : ℕ)
     (htagBound : ∀ km ∈ (ProbComp.eval (M.keyGen n)).support,
       ∀ c, c.length = M.msgLen n →
@@ -632,9 +626,7 @@ theorem succProbability_encForgeGame_encryptThenMAC_le (E : SymmetricCipher) (M 
 existential unforgeability (`M.EUFCMA`), then `encryptThenMAC E M hctLen` satisfies fresh-message
 encryption unforgeability (`EncForge`), without requiring `M.SUFCMA` or `E.INDCPA`. -/
 theorem encForge_encryptThenMAC (E : SymmetricCipher) (M : MACScheme)
-    (hctLen : ∀ n ke, ke ∈ (ProbComp.eval (E.keyGen n)).support →
-      ∀ msg, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = M.msgLen n)
+    (hctLen : ∀ n, E.CiphertextLength n (M.msgLen n))
     (heuf : M.EUFCMA) :
     (encryptThenMAC E M hctLen).EncForge := by
   obtain ⟨tagBound, htagBoundPoly, htagBound⟩ := M.exists_tag_length_bound_of_length_eq
