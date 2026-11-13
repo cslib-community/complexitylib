@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Init
 public import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson
+public import CslibFrontier.Foundations.Combinatorics.Design.ReedSolomon
 public import Mathlib.Algebra.IsPrimePow
 public import Mathlib.Data.Fintype.EquivFin
 import Mathlib.FieldTheory.Cardinality
@@ -22,10 +23,11 @@ Nisan and Wigderson build designs from polynomials over a finite field `F` with 
 [NisanWigderson1994]. The universe is the plane `F × F`, and each polynomial `P` of degree less than
 `k` contributes its graph `{(x, P x) | x ∈ F}`, a set of `q` points. Two distinct such polynomials
 agree on at most `k - 1` points, because their difference is a nonzero polynomial of degree less
-than `k`, so two distinct graphs share at most `k - 1` points. There are `q ^ k` polynomials of
-degree less than `k`, one for each list of `k` coefficients. Numbering the points of the plane and
-the polynomials gives a `(q ^ 2, q, k - 1)`-design with `q ^ k` blocks. Since finite fields exist in
-every prime power order, such a design exists whenever `q` is a prime power.
+than `k`, so two distinct graphs share at most `k - 1` points (`Cslib.polynomialBlock`,
+`Cslib.card_polynomialBlock_inter_le`, shared with `Cslib.rsDesign`). There are `q ^ k` polynomials
+of degree less than `k`, one for each list of `k` coefficients. Numbering the points of the plane
+and the polynomials gives a `(q ^ 2, q, k - 1)`-design with `q ^ k` blocks. Since finite fields
+exist in every prime power order, such a design exists whenever `q` is a prime power.
 
 Designs can be adjusted: one may keep only some of the blocks, embed the universe in a larger
 one, weaken the bound on intersections, or replace each block by a subset of a given size, since
@@ -45,15 +47,11 @@ greedy construction is not formalized here.
   `Cslib.Crypto.PRG.NisanWigderson.Design.shrink`: fewer blocks, a larger universe, a weaker
   intersection bound, and smaller blocks; `Cslib.Crypto.PRG.NisanWigderson.Design.castLE` does
   all four at once.
-* `Cslib.Crypto.PRG.NisanWigderson.polynomialBlock`: the graph of a polynomial over a finite
-  field, given by its coefficients.
 * `Cslib.Crypto.PRG.NisanWigderson.Design.polynomial`: the Nisan–Wigderson design of the graphs of
   the polynomials of degree less than `k` over a finite field.
 
 ## Main results
 
-* `Cslib.Crypto.PRG.NisanWigderson.card_polynomialBlock_inter_le`: the graphs of two distinct
-  polynomials of degree less than `k` share at most `k - 1` points.
 * `Cslib.Crypto.PRG.NisanWigderson.Design.nonempty_of_isPrimePow`: for every prime power `q`
   and every `k`, there is a `(q ^ 2, q, k - 1)`-design with `q ^ k` blocks.
 * `Cslib.Crypto.PRG.NisanWigderson.Design.nonempty_four_mul_sq`: for all `n` and `k`, there is a
@@ -142,62 +140,12 @@ end Design
 
 section Polynomial
 
-variable (F : Type*) [Field F] [Fintype F] (k : ℕ)
+variable (F : Type*) [Field F] [Fintype F] (k : ℕ) [DecidableEq F]
 
-/-- The graph `{(x, c₀ + c₁ x + ⋯ + cₖ₋₁ x ^ (k - 1)) | x ∈ F}` of the polynomial over `F` with
-coefficients `c : Fin k → F`, a block of the Nisan–Wigderson design `Design.polynomial F k`. -/
-def polynomialBlock (c : Fin k → F) : Finset (F × F) :=
-  univ.map ⟨fun x => (x, ∑ i, c i * x ^ (i : ℕ)), fun _ _ h => congrArg Prod.fst h⟩
-
-variable {F k}
-
-@[simp]
-theorem mem_polynomialBlock {c : Fin k → F} {p : F × F} :
-    p ∈ polynomialBlock F k c ↔ p.2 = ∑ i, c i * p.1 ^ (i : ℕ) := by
-  rw [polynomialBlock, mem_map]
-  constructor
-  · rintro ⟨x, -, rfl⟩
-    rfl
-  · exact fun h => ⟨p.1, mem_univ _, Prod.ext rfl h.symm⟩
-
-/-- The graph of a polynomial over `F` has one point above each `x ∈ F`. -/
-@[simp]
-theorem card_polynomialBlock (c : Fin k → F) : #(polynomialBlock F k c) = Fintype.card F := by
-  rw [polynomialBlock, card_map, card_univ]
-
-variable [DecidableEq F]
-
-/-- The graphs of two distinct polynomials over `F` of degree less than `k` share at most `k - 1`
-points: the difference of the polynomials is nonzero and has degree less than `k`, so it has at most
-`k - 1` roots [NisanWigderson1994]. -/
-theorem card_polynomialBlock_inter_le {c d : Fin k → F} (hcd : c ≠ d) :
-    #(polynomialBlock F k c ∩ polynomialBlock F k d) ≤ k - 1 := by
-  have heval (c : Fin k → F) (x : F) :
-      ((degreeLTEquiv F k).symm c : F[X]).eval x = ∑ i, c i * x ^ (i : ℕ) := by
-    rw [eval_eq_sum_degreeLTEquiv ((degreeLTEquiv F k).symm c).2, Subtype.coe_eta,
-      LinearEquiv.apply_symm_apply]
-  set P : F[X] := ↑((degreeLTEquiv F k).symm c)
-  set Q : F[X] := ↑((degreeLTEquiv F k).symm d)
-  set s : Finset F := {x | P.eval x = Q.eval x}
-  have hs : #(polynomialBlock F k c ∩ polynomialBlock F k d) ≤ #s := by
-    refine card_le_card_of_injOn Prod.fst (fun p hp => ?_) (fun p hp p' hp' h => ?_)
-    · rw [coe_inter, Set.mem_inter_iff, mem_coe, mem_coe, mem_polynomialBlock,
-        mem_polynomialBlock] at hp
-      rw [mem_coe, mem_filter, heval, heval, ← hp.1, ← hp.2]
-      exact ⟨mem_univ _, rfl⟩
-    · rw [coe_inter, Set.mem_inter_iff, mem_coe, mem_coe, mem_polynomialBlock] at hp hp'
-      exact Prod.ext h (by rw [hp.1, hp'.1, h])
-  refine hs.trans (Nat.le_sub_one_of_lt (lt_of_not_ge fun hks => hcd ?_))
-  refine (degreeLTEquiv F k).symm.injective (Subtype.ext ?_)
-  refine eq_of_degree_sub_lt_of_eval_finset_eq s ?_ fun x hx => (mem_filter.1 hx).2
-  refine (mem_degreeLT.1 (Submodule.sub_mem _ (Subtype.prop _) (Subtype.prop _))).trans_le ?_
-  exact_mod_cast hks
-
-variable (F k) in
 /-- The Nisan–Wigderson design over a finite field `F` with `q` elements [NisanWigderson1994]: a
-`(q ^ 2, q, k - 1)`-design with `q ^ k` blocks. Its blocks are the graphs `polynomialBlock F k c` of
-the polynomials of degree less than `k` over `F`, with the points of the plane `F × F` and the
-coefficient vectors `c : Fin k → F` numbered in some order. -/
+`(q ^ 2, q, k - 1)`-design with `q ^ k` blocks. Its blocks are the graphs
+`Cslib.polynomialBlock F k c` of the polynomials of degree less than `k` over `F`, with the points
+of the plane `F × F` and the coefficient vectors `c : Fin k → F` numbered in some order. -/
 noncomputable def Design.polynomial :
     Design (Fintype.card F ^ 2) (Fintype.card F) (k - 1) (Fintype.card F ^ k) :=
   .ofFamily (polynomialBlock F k) card_polynomialBlock

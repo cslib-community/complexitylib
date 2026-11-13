@@ -211,7 +211,7 @@ example (hP : ∀ j, P.degreeOf j ≤ d) (hn : 2 ≤ n) :
     ((Sumcheck.round d P 0).verifier.append (Sumcheck.round d P 1).verifier).KnowledgeSound
       (Sumcheck.rel P 0) (Sumcheck.rel P 2)
       ((Sumcheck.round d P 0).verifier.extractAppend (fun _ _ _ => ()) (fun _ _ _ => ())
-        (fun _ => 0, 0))
+        ⟨fun _ => 0, 0⟩)
       ((d : ℝ≥0∞) / Fintype.card F + (d : ℝ≥0∞) / Fintype.card F) :=
   (sumcheck_round_knowledgeSound d P hP (by omega)).append
     (sumcheck_round_knowledgeSound d P hP (by omega)) _
@@ -228,7 +228,7 @@ example (hP : ∀ j, P.degreeOf j ≤ d) :
 noncomputable def roundSim (i : ℕ) (x : Sumcheck.Claim F i) :
     ProbComp (Transcript (Sumcheck.roundSpec F)) := do
   let z ← ProbComp.uniform F
-  return (Sumcheck.roundPoly P x.1, (z, ()))
+  return (Sumcheck.roundPoly P x.challenges, (z, ()))
 
 /-- A sumcheck round is perfectly honest-verifier zero knowledge. -/
 theorem sumcheck_round_hvzk (i : ℕ) :

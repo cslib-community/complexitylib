@@ -55,7 +55,7 @@ private theorem query_capacity : queryCap 16 16 = 64 := by
   have hs : Nat.sqrt 4096 = 64 := by omega
   simpa only [queryCap, Nat.reducePow, Nat.reduceDiv] using hs
 
-private theorem first_index : (0, 0, 0) ∈ instanceIndices wAB 16 1 3 := by
+private theorem first_index : (⟨0, 0, 0⟩ : InstanceIndex 3) ∈ instanceIndices wAB 16 1 3 := by
   rw [mem_instanceIndices]
   have hclass : (residueClass wAB 3 0).card = 256 := by
     have hset : residueClass wAB 3 0 = Finset.univ := by
@@ -94,7 +94,7 @@ example : ∃ y t, t ≤ 2826240 ∧
     (fun q => values.getD q 0) wAB wBC wAC
     (by decide) (by decide) (by decide) hp
     (by intro a b; rfl) (by intro b c; rfl) (by intro a c; rfl)
-    hout (0, 0, 0) first_index
+    hout ⟨0, 0, 0⟩ first_index
   have hc : (1 : Fin 16) ∈ piece 16 16 1 0 := by
     rw [mem_piece, piece_size]
     decide

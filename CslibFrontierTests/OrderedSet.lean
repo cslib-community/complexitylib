@@ -70,6 +70,17 @@ example : ¬ LeastResult ({1} : Finset (Fin 3)) none := by
   simp [LeastResult]
 example : least ({0, 2} : Finset (Fin 3)) = some 0 := by decide
 example (s : Finset (Fin 3)) : (least s : WithTop (Fin 3)) = s.min := least_eq_min s
+
+-- Maxima and strict predecessors have the same complete absence contract.
+example : GreatestResult (∅ : Finset (Fin 3)) none := rfl
+example : ¬ GreatestResult ({1} : Finset (Fin 3)) none := by
+  simp [GreatestResult]
+example : greatest ({0, 2} : Finset (Fin 3)) = some 2 := by decide
+example (s : Finset (Fin 3)) : (greatest s : WithBot (Fin 3)) = s.max := greatest_eq_max s
+example : predecessor ({0, 2} : Finset (Fin 3)) 2 = some 0 := by decide
+example : predecessor ({0, 2} : Finset (Fin 3)) 0 = none := by decide
+example : predecessor ({0, 2} : Finset (Fin 3)) 1 = some 0 :=
+  predecessor_eq_some_iff.mpr ⟨by decide, by decide, by decide⟩
 example : (spec (Fin 3)).stepFn {0, 2} (.successor 1) = ({0, 2}, some 2) := by decide
 example : (spec (Fin 3)).stepFn {0, 2} (.successor 2) = ({0, 2}, none) := by decide
 

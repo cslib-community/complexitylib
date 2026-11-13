@@ -169,17 +169,10 @@ theorem sum_uniform_timeBoundedNat_lt_le {t : ℕ → ℕ} {n : ℕ} (ht : n + 1
 private theorem pmf_map_true_le_one_sub_of_imp_false {α : Type*} (q : PMF α) (P Q : α → Bool)
     (hdisj : ∀ v, P v = true → Q v = false) :
     ((q.map P) true).toReal ≤ 1 - ((q.map Q) true).toReal := by
-  have hle : (q.map P) true ≤ (q.map Q) false := by
-    rw [PMF.map_apply, PMF.map_apply]
-    refine tsum_le_tsum fun v => ?_
-    by_cases hp : P v = true
-    · have hq : Q v = false := hdisj v hp
-      simp [hp, hq]
-    · simp [hp]
-  have hle' : ((q.map P) true).toReal ≤ ((q.map Q) false).toReal :=
-    ENNReal.toReal_mono (PMF.apply_ne_top _ _) hle
-  have hsum := Cslib.Probability.PMF.toReal_true_add_toReal_false (q.map Q)
-  linarith
+  have h := map_true_mono q (E := P) (F := fun a => !Q a) fun v _ hv => by simp [hdisj v hv]
+  rw [map_not_true] at h
+  rw [← ENNReal.toReal_one, ← ENNReal.toReal_sub_of_le (PMF.coe_le_one _ _) ENNReal.one_ne_top]
+  exact ENNReal.toReal_mono (ENNReal.sub_ne_top ENNReal.one_ne_top) h
 
 /-- **[Liu and Pass, Proof of Theorem 5.2, Claim 1, §5.2, p. 12 of arXiv:2009.11514v1][LiuPass2020]:
 Acceptance probability of the threshold distinguisher on the uniform distribution $U_m$.** -/

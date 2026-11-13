@@ -301,7 +301,7 @@ theorem toDrawnPlanarPositiveOneInExactThreeSATThree_fits (φ : CNF ℕ) :
       (14516280000 * s) (14516280000 * s) := by
   apply Graph.drawingFits_mono
     (SAT.ExactOne.positiveDrawing_fits (toPlanarThreeSAT φ) (toDrawnPlanarThreeSAT_fits φ)) <;>
-    omega
+    simp only [SAT.ExactOne.positiveScale] <;> omega
 
 /-- The actual output formula and drawing all have quadratic size relative to the original
 ordinary 3SAT input. Segment and wire costs refer to the emitted full routes. -/
