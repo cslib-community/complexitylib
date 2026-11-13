@@ -236,6 +236,11 @@ theorem mem_vertices_toDiameter {v : ℕ} (hv : v ∈ (toDiameter p).vertices) :
   · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr ⟨j, hj, rfl⟩)))))
   · omega
 
+private theorem mem_bitEdges {k i : ℕ} {b : Bool} {e : ℕ × ℕ} (h : e ∈ bitEdges k i b) :
+    (e = (0, coordVertex i) ∨ e = (1, coordVertex i)) ∨
+      b = true ∧ e = (coordVertex i, vecVertex k) := by
+  cases b <;> simpa [bitEdges, or_assoc] using h
+
 /-- The edges of the gadget. -/
 theorem mem_edges_toDiameter {e : ℕ × ℕ} (he : e ∈ (toDiameter p).edges) :
     e ∈ constEdges ∨ (∃ i, e = (0, coordVertex i) ∨ e = (1, coordVertex i)) ∨
@@ -247,24 +252,14 @@ theorem mem_edges_toDiameter {e : ℕ × ℕ} (he : e ∈ (toDiameter p).edges) 
         p.2[j][i] = true ∧ e = (coordVertex i, vecVertex (p.1.length + j))) := by
   simp only [toDiameter, List.mem_append, mem_vecsOut, Nat.zero_add] at he
   rcases he with ((⟨k, hk, ⟨i, hi, h⟩ | h⟩ | ⟨j, hj, ⟨i, hi, h⟩ | h⟩) | h)
-  · simp only [bitEdges, List.mem_cons] at h
-    rcases h with rfl | rfl | h
-    · exact Or.inr (Or.inl ⟨i, Or.inl rfl⟩)
-    · exact Or.inr (Or.inl ⟨i, Or.inr rfl⟩)
-    · split_ifs at h with hb
-      · rw [List.mem_singleton] at h
-        exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl ⟨k, hk, i, hi, hb, h⟩))))
-      · exact absurd h List.not_mem_nil
+  · rcases mem_bitEdges h with h | ⟨hb, h⟩
+    · exact Or.inr (Or.inl ⟨i, h⟩)
+    · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl ⟨k, hk, i, hi, hb, h⟩))))
   · simp only [endEdges, sideVertex, List.mem_singleton] at h
     exact Or.inr (Or.inr (Or.inl ⟨k, hk, h⟩))
-  · simp only [bitEdges, List.mem_cons] at h
-    rcases h with rfl | rfl | h
-    · exact Or.inr (Or.inl ⟨i, Or.inl rfl⟩)
-    · exact Or.inr (Or.inl ⟨i, Or.inr rfl⟩)
-    · split_ifs at h with hb
-      · rw [List.mem_singleton] at h
-        exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr ⟨j, hj, i, hi, hb, h⟩))))
-      · exact absurd h List.not_mem_nil
+  · rcases mem_bitEdges h with h | ⟨hb, h⟩
+    · exact Or.inr (Or.inl ⟨i, h⟩)
+    · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr ⟨j, hj, i, hi, hb, h⟩))))
   · simp only [endEdges, sideVertex, List.mem_singleton] at h
     exact Or.inr (Or.inr (Or.inr (Or.inl ⟨j, hj, h⟩)))
   · exact Or.inl h

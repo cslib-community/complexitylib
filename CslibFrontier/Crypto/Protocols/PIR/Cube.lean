@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Crypto.Protocols.PIR.Basic
+public import CslibFrontier.Crypto.Protocols.PIR.Collusion
 public import CslibFrontier.Foundations.Data.Code.Hadamard
 public import Mathlib.Data.Nat.Sqrt
 import CslibFrontier.Languages.Probabilistic.Norm

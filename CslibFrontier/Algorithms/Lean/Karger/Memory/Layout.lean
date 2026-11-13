@@ -56,7 +56,7 @@ instruction count appears. The machine-level counterparts are `uScan_exec` and `
 
 namespace Cslib.Algorithms.Lean.Karger.Memory
 
-open Finset Cslib.WordRAM Cslib.WeightedCut Cslib.Algorithms.WordRAM.Karger Cslib.DataStructure
+open Finset Cslib.WordRAM Cslib.WeightedCut Cslib.Algorithms.Karger Cslib.DataStructure
   Cslib.DataStructure.Memory Cslib.DataStructure.StateTransitionSpec
 
 /-! ## Layout -/

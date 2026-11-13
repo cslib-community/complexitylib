@@ -72,8 +72,8 @@ number of scans that were carried out. -/
 def runScans {n : ℕ} (wAB wBC wAC : Fin n → Fin n → ℤ) (D g : ℕ) {p : ℕ} :
     List (InstanceIndex p × (Fin n × Fin n)) → Option (Fin n × Fin n × Fin n) × ℕ
   | [] => (none, 0)
-  | ((_, _, k), a, b) :: rest =>
-    match scanPiece wAB wBC wAC D g k a b with
+  | (ι, a, b) :: rest =>
+    match scanPiece wAB wBC wAC D g ι.piece a b with
     | some c => (some (a, b, c), 1)
     | none => ((runScans wAB wBC wAC D g rest).1, (runScans wAB wBC wAC D g rest).2 + 1)
 
@@ -112,11 +112,11 @@ theorem scanPiece_eq_none_iff {k : ℕ} {a b : Fin n} :
 
 variable (wAB wBC wAC) (D g)
 
-/-- The scan that belongs to `x = ((ϱ, j, k), (a, b))`, a query pair `(a, b)` of the instance with
-index `(ϱ, j, k)`: the piece `C_k` is scanned for the pair `(a, b)`. -/
+/-- The scan that belongs to `x = (ι, (a, b))`, a query pair `(a, b)` of the instance with
+index `ι = ⟨ϱ, j, k⟩`: the piece `C_k` is scanned for the pair `(a, b)`. -/
 abbrev scanOf (wAB wBC wAC : Fin n → Fin n → ℤ) (D g : ℕ)
     (x : InstanceIndex p × (Fin n × Fin n)) : Option (Fin n) :=
-  scanPiece wAB wBC wAC D g x.1.2.2 x.2.1 x.2.2
+  scanPiece wAB wBC wAC D g x.1.piece x.2.1 x.2.2
 
 /-- What the scans over a list of pairs return: a triangle that is returned is a zero triangle; if
 none is returned, then every scan failed; and all the scans that are carried out, except possibly
@@ -184,16 +184,18 @@ the oracle accept its pair." -/
 theorem exists_mem_acceptedPairs (hD : 16 ≤ D) (hDn : D ≤ n) (hg1 : 1 ≤ g) (hp : p ≠ 0)
     (hans : AnswersCorrect wAB wBC wAC D g p ans) {a b c : Fin n}
     (h0 : weightSum wAB wBC wAC a b c = 0) :
-    ∃ ϱ j k, ((ϱ, j, k), (a, b)) ∈ acceptedPairs wAB wBC wAC D g p ans ∧ c ∈ piece n D g k := by
+    ∃ ι : InstanceIndex p,
+      (ι, (a, b)) ∈ acceptedPairs wAB wBC wAC D g p ans ∧ c ∈ piece n D g ι.piece := by
   -- The piece of `c`, the residue class of `(a, b)` and the chunk of `(a, b)` in it.
   obtain ⟨k, ⟨hk, hck⟩, -⟩ := existsUnique_mem_piece hD hg1 c
   obtain ⟨ϱ, hab, -⟩ := existsUnique_mem_residueClass wAB hp (a, b)
   obtain ⟨j, hj, hW⟩ := Finset.mem_biUnion.mp
     ((biUnion_chunk (residueClass wAB p ϱ) (one_le_queryCap (by omega) hDn)).symm ▸ hab)
-  have hι : ((ϱ, j, k) : InstanceIndex p) ∈ instanceIndices wAB D g p :=
+  let ι : InstanceIndex p := ⟨ϱ, j, k⟩
+  have hι : ι ∈ instanceIndices wAB D g p :=
     (mem_instanceIndices wAB _).mpr ⟨Finset.mem_range.mp hj, hk⟩
-  have hquery : (a, b) ∈ (lopInstance wAB wBC wAC D g p (ϱ, j, k)).W := hW
-  refine ⟨ϱ, j, k, mem_acceptedPairs.mpr ⟨hι, hquery, ?_⟩, hck⟩
+  have hquery : (a, b) ∈ (lopInstance wAB wBC wAC D g p ι).W := hW
+  refine ⟨ι, mem_acceptedPairs.mpr ⟨hι, hquery, ?_⟩, hck⟩
   -- The vertex `c` makes the oracle accept the pair.
   apply (Iff.of_eq (hans _ hι hquery)).mpr
   rw [hasCommonNeighbor_lopInstance_iff wAB wBC wAC hp hquery]
@@ -203,9 +205,9 @@ theorem exists_mem_acceptedPairs (hD : 16 ≤ D) (hDn : D ≤ n) (hg1 : 1 ≤ g)
 S(a,b,c) ≡ 0 (mod p) but S(a,b,c) ≠ 0, that is, a false positive (a,b,c) of p". -/
 theorem exists_isFalsePositive_of_mem_failedScans (hp : p ≠ 0)
     (hans : AnswersCorrect wAB wBC wAC D g p ans)
-    {ϱ : Fin p} {j k : ℕ} {a b : Fin n}
-    (hx : ((ϱ, j, k), (a, b)) ∈ failedScans wAB wBC wAC D g p ans) :
-    ∃ c ∈ piece n D g k, IsFalsePositive wAB wBC wAC p (a, b, c) := by
+    {ι : InstanceIndex p} {a b : Fin n}
+    (hx : (ι, (a, b)) ∈ failedScans wAB wBC wAC D g p ans) :
+    ∃ c ∈ piece n D g ι.piece, IsFalsePositive wAB wBC wAC p (a, b, c) := by
   obtain ⟨hacc, hnone⟩ := Finset.mem_filter.mp hx
   obtain ⟨hι, hquery, htrue⟩ := mem_acceptedPairs.mp hacc
   obtain ⟨c, hc, hS⟩ := (hasCommonNeighbor_lopInstance_iff wAB wBC wAC hp hquery).mp
@@ -214,21 +216,22 @@ theorem exists_isFalsePositive_of_mem_failedScans (hp : p ≠ 0)
 
 /-- Proof of Theorem 17: "distinct scans contain distinct false positives": a triple `(a,b,c)`
 belongs to the scan of at most one accepted pair. -/
-theorem eq_of_mem_acceptedPairs {ϱ ϱ' : Fin p} {j j' k k' : ℕ} {q : Fin n × Fin n}
-    (hx : ((ϱ, j, k), q) ∈ acceptedPairs wAB wBC wAC D g p ans)
-    (hy : ((ϱ', j', k'), q) ∈ acceptedPairs wAB wBC wAC D g p ans) {c : Fin n}
-    (hc : c ∈ piece n D g k)
-    (hc' : c ∈ piece n D g k') : (ϱ, j, k) = (ϱ', j', k') := by
+theorem eq_of_mem_acceptedPairs {ι ι' : InstanceIndex p} {q : Fin n × Fin n}
+    (hx : (ι, q) ∈ acceptedPairs wAB wBC wAC D g p ans)
+    (hy : (ι', q) ∈ acceptedPairs wAB wBC wAC D g p ans) {c : Fin n}
+    (hc : c ∈ piece n D g ι.piece)
+    (hc' : c ∈ piece n D g ι'.piece) : ι = ι' := by
   have hp : p ≠ 0 := by
     rintro rfl
-    exact ϱ.elim0
+    exact ι.residue.elim0
   obtain ⟨hclass, hchunk⟩ := mem_lopInstance_W (mem_acceptedPairs.mp hx).2.1
   obtain ⟨hclass', hchunk'⟩ := mem_lopInstance_W (mem_acceptedPairs.mp hy).2.1
   -- The pair determines its residue class, then its chunk; the vertex `c` determines the piece.
-  obtain rfl : ϱ = ϱ' := (existsUnique_mem_residueClass wAB hp q).unique hclass hclass'
-  obtain rfl : j = j' := hchunk.symm.trans hchunk'
-  obtain rfl : k = k' := ((mem_piece c).mp hc).symm.trans ((mem_piece c).mp hc')
-  rfl
+  have hresidue : ι.residue = ι'.residue :=
+    (existsUnique_mem_residueClass wAB hp q).unique hclass hclass'
+  rw [hresidue] at hchunk
+  exact InstanceIndex.ext hresidue (hchunk.symm.trans hchunk')
+    (((mem_piece c).mp hc).symm.trans ((mem_piece c).mp hc'))
 
 /-- Proof of Theorem 17: "distinct scans contain distinct false positives, so there are at most F(p)
 failed scans", for any finite family `s` of scans and any notion "the scan `x` contains the triple
@@ -251,11 +254,11 @@ theorem card_failedScans_le (hp : p ≠ 0)
     (failedScans wAB wBC wAC D g p ans).card ≤ falsePositiveCount wAB wBC wAC p := by
   -- The scan of the piece `C_k` for the pair `(a, b)` contains the triples `(a, b, c)`, `c ∈ C_k`.
   refine card_le_falsePositiveCount_of_distinct_scans wAB wBC wAC _
-    (fun x t => x.2 = (t.1, t.2.1) ∧ t.2.2 ∈ piece n D g x.1.2.2) ?_ ?_
-  · rintro ⟨⟨ϱ, j, k⟩, a, b⟩ hx
+    (fun x t => x.2 = (t.1, t.2.1) ∧ t.2.2 ∈ piece n D g x.1.piece) ?_ ?_
+  · rintro ⟨ι, a, b⟩ hx
     obtain ⟨c, hc, hfalse⟩ := exists_isFalsePositive_of_mem_failedScans hp hans hx
     exact ⟨(a, b, c), ⟨rfl, hc⟩, hfalse⟩
-  · rintro ⟨a, b, c⟩ ⟨⟨ϱ, j, k⟩, q⟩ hx ⟨⟨ϱ', j', k'⟩, q'⟩ hy ⟨rfl, hc⟩ ⟨rfl, hc'⟩
+  · rintro ⟨a, b, c⟩ ⟨ι, q⟩ hx ⟨ι', q'⟩ hy ⟨rfl, hc⟩ ⟨rfl, hc'⟩
     rw [eq_of_mem_acceptedPairs (Finset.mem_filter.mp hx).1 (Finset.mem_filter.mp hy).1 hc hc']
 
 end Matrices
@@ -326,7 +329,7 @@ theorem recovery_correct (hD : 16 ≤ D) (hDn : D ≤ n) (hg1 : 1 ≤ g)
   obtain ⟨hzero, hnone, hcount⟩ := runScans_spec wAB wBC wAC D g L
   refine ⟨⟨hzero, fun hout ⟨a, b, c, h0⟩ => ?_⟩, ?_⟩
   · -- "A zero triangle is always found": its scan cannot have failed.
-    obtain ⟨ϱ, j, k, hx, hc⟩ := exists_mem_acceptedPairs hD hDn hg1 hp0 hans h0
+    obtain ⟨ι, hx, hc⟩ := exists_mem_acceptedPairs hD hDn hg1 hp0 hans h0
     exact scanPiece_eq_none_iff.mp (hnone hout _ ((hL.2 _).mpr hx)) c hc h0
   · -- All the scans except possibly the last one fail, and there are at most `F(p)` failed scans.
     have hfailed : (L.filter fun x => decide (scanOf wAB wBC wAC D g x = none)).length

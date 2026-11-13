@@ -39,6 +39,29 @@ The leveled theorem chooses an efficiently computable budget dominating the requ
 
 The library also proves quantitative reduction bounds in `GSW/FullyHomomorphic.lean` and [Leveled.ExactSecurity](../../CslibFrontier/Crypto/Computational/Homomorphic/Leveled/ExactSecurity.lean). The former uses power-of-two `dyadicSize` sampling. The latter removes that rounding: each key-chain hop has loss `(2 * budget n) * capacity n`, while the unified `exactLeveledAdversary` has loss `3 * (2 * budget n) * capacity n`. Its strict-PPT modular counterpart has an explicit statistical error bound. `exists_leveledAdversary_overhead` supplies polynomial artifact-length bounds and component evaluator witnesses; polynomial boundedness of its composite coin-budget expressions alone does not identify them with the reduction's execution cost.
 
+To read the dyadic reduction's branch selection, import
+[Leveled.Reduction.Game](../../CslibFrontier/Crypto/Computational/Homomorphic/Leveled/Reduction/Game.lean)
+and inspect `leveledSelectorGame E depth capacity adversary bit n`. It is a `ProbComp Bool`
+program: two independent fair bits choose one of these branches.
+
+| Selector bits | Experiment |
+|---|---|
+| `(false, false)` | The false-world link reduction, with challenge bit `bit` |
+| `(false, true)` | The true-world link reduction, with challenge bit `!bit` because its messages are swapped |
+| `(true, false)` | The zero-link reduction, retained by the two `sampleDyadicCoin` draws; other outcomes reject |
+| `(true, true)` | Return `false` |
+
+`eval_leveledAdversary` identifies the actual reduction's output distribution with this
+program's evaluation. `succProbability_leveledSelectorGame` calculates its weighted acceptance
+once; `succProbability_leveledAdversary` and the exact advantage identity reuse that calculation.
+The factor remains `4 * dyadicSize (depth n) * dyadicSize (capacity n)`.
+The [checked client](../../CslibFrontierTests/Crypto/LeveledSecurity.lean) includes the boundary
+`depth = capacity = 0`: link branches reject, while the zero-link branch accepts in the true
+world with probability `1/16`, retaining its original challenge behavior. Run
+`scripts/build.sh CslibFrontierTests.Crypto.LeveledSecurity` from the repository root.
+This selector is a distributional view of the reduction; its native efficiency remains
+certified for the actual two-stage adversary.
+
 [Leveled.CoinTape](../../CslibFrontier/Crypto/Computational/Homomorphic/Leveled/CoinTape.lean) makes that execution connection for the modular link reduction's choice stage. Supply a key evaluator whose output on `keyCoins` uniform bits has the original key-generation law. `eval_modLinkAdversary_choose_eq_map_coins` then realizes the original choice using exactly `2 * indexCoins + depth * keyCoins` bits: two selector blocks followed by separate blocks for the generated keys. The selector remains binary decoding modulo the range, including its non-power-of-two bias and zero-range behavior. `exists_modLinkAdversary_choose_coin_evaluator` obtains a polynomial component budget and a native polynomial-time replay certificate directly from strict-PPT key generation. [Checked replay examples](../../CslibFrontierTests/Crypto/LeveledCoinTape.lean) inspect saved contexts, independent key seeds, modular bias and rejection. The original choice algorithm and its selection distribution are unchanged.
 
 [Leveled.GuessCoinTape](../../CslibFrontier/Crypto/Computational/Homomorphic/Leveled/GuessCoinTape.lean) realizes the corresponding guessing stage. `eval_modLinkAdversary_guess_eq_map_coins` takes a choice supported by the original modular sampler and component seed laws for encryption, adversary choice and adversary guessing. Generated secret lengths must fit `capacity`. It proves the exact existing `leveledGuessCoinBudget`: `depth * capacity * encCoins + chooseCoins + guessCoins`. Each surrounding link reserves `capacity` independent encryption blocks, the selected splice reserves one fewer, and the actual `publicKeyGame` supplies the final encryption. Unused padding is discarded; repeated keys and plaintexts still receive separate blocks. The saved context, supplied challenge ciphertext, adversary state and ciphertext tag are preserved. Rejected choices return false.

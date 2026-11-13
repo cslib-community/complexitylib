@@ -278,8 +278,7 @@ theorem eval_originalClauses_of_values (φ : CNF ℕ) (sites : List Point)
           rw [List.map_map]
           apply List.map_congr_left
           intro l hl
-          have ho : (c.2, l.2, l.1) ∈ Cslib.Logic.PL.occurrences φ :=
-            List.mem_flatMap.mpr ⟨c, hc, List.mem_map.mpr ⟨l, hl, rfl⟩⟩
+          have ho := mk_mem_occurrences_of_mem_zipIdx hc hl
           simp only [Function.comp_def, Literal.eval]
           rw [hvalues _ ho]
           rfl

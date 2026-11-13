@@ -77,7 +77,7 @@ every accepted certificate sound, and listing a witness for every query in `B` i
 theorem PolyTimePTTReducible.mem_NP {L : Set α} {B : Set β}
     (h : PolyTimePTTReducible encA encB L B) (hB : B ∈ NP encB) : L ∈ NP encA := by
   classical
-  obtain ⟨r, q, d, hr, hq, hd, hmono, hL⟩ := h
+  obtain ⟨r, q, d, ⟨hr, hq, hd, hmono⟩, hL⟩ := h
   obtain ⟨pB, VB, hVB, hVspec⟩ := hB
   -- Whether the `i`-th listed string is a valid witness for the query `q (a, i)`.
   let confirmed : α → List (List Bool) → ℕ → Bool := fun a ws i =>
