@@ -28,12 +28,13 @@ the configuration matrix (`Turing.MultiTapePTM.configMatrix_pow_mulVec_acceptVec
 deterministic algorithm evaluates it exactly: breadth-first search lists the reachable views
 (`Turing.MultiTapeNTM.exists_computableInPolyTime_search`), and `t` rounds update a table of
 binary counts, one per view, by adding the counts of the two coin successors. Under a logarithmic
-space bound there are polynomially many views, the polynomial clock bounds the number of rounds,
-and every count of round `t` has at most `t + 1` bits, so the evaluation runs in polynomial time.
-Comparing the count with `2 / 3` of the `2 ^ t` coin strings decides a `BPL` language, so
-`BPL ⊆ P` (`Cslib.Complexity.BPL_subset_P`), and with `Cslib.Complexity.RL_subset_BPL` also
-`RL ⊆ P`. This is a sequential exact evaluation of the configuration matrix, whose powers Borodin,
-Cook and Pippenger evaluate in parallel [Borodin, Cook and Pippenger][BorodinCookPippenger1983].
+space bound there are polynomially many views, and every count of round `t` has at most `t + 1`
+bits, so the evaluation runs in polynomial time for any horizon computed in unary in polynomial
+time (`Turing.MultiTapePTM.computableInPolyTime_acceptCoins`). Comparing the count at the
+polynomial clock with `2 / 3` of the `2 ^ t` coin strings decides a `BPL` language, so `BPL ⊆ P`
+(`Cslib.Complexity.BPL_subset_P`), and with `Cslib.Complexity.RL_subset_BPL` also `RL ⊆ P`. This
+is a sequential exact evaluation of the configuration matrix, whose powers Borodin, Cook and
+Pippenger evaluate in parallel [Borodin, Cook and Pippenger][BorodinCookPippenger1983].
 
 The certificates use only the plain polynomial-time calculus.
 
@@ -49,6 +50,9 @@ The certificates use only the plain polynomial-time calculus.
   the configuration matrix.
 * `Turing.MultiTapePTM.acceptCoins_eq_viewAcceptCount`: the count from the initial view is the
   number of accepting coin strings.
+* `Turing.MultiTapePTM.computableInPolyTime_acceptCoins`: under a logarithmic space bound, the
+  number of accepting coin strings is polynomial-time at any horizon computed in unary in
+  polynomial time.
 * `Cslib.Complexity.BPL_subset_P`, `Cslib.Complexity.RL_subset_P`: randomized logarithmic space is
   within polynomial time.
 
@@ -149,9 +153,9 @@ end Turing.MultiTapePTM
 
 /-! ### Evaluation of the counts on a table of views -/
 
-namespace Cslib.Complexity
+namespace Turing.MultiTapePTM
 
-open _root_.Turing _root_.Turing.MultiTapeTM
+open MultiTapeTM
 
 variable {k : ℕ} {State : Type}
 
@@ -237,116 +241,112 @@ private theorem computableInPolyTime_countRound [Finite State] (M : MultiTapePTM
   exact ComputableInPolyTime.mapWithInput ComputableInPolyTime.id'
     (hview.prod (ComputableInPolyTime.binary_add.comp ((hlookup false).prod (hlookup true))))
 
-variable {α : Type} {enc : α ↪ List Bool} {A : Set α}
-
 open scoped Classical in
-/-- **Randomized logarithmic space with two-sided error is within polynomial time**: breadth-first
-search lists the polynomially many reachable views, and rounds of the count recursion over a
-table of binary counts evaluate the number of accepting coin strings at the polynomial clock
-exactly. -/
-theorem BPL_subset_P : BPL enc ⊆ P enc := by
-  intro A h
-  obtain ⟨k, State, hfin, M, c, d, hM, herr⟩ := exists_polyClock_of_mem_BPL h
-  set T : α → ℕ := fun a => polyClock d (enc a).length
+/-- **Accepting coin strings are counted in polynomial time** under a logarithmic space bound:
+breadth-first search lists the polynomially many reachable views, and `T a` rounds of the count
+recursion over a table of binary counts evaluate `acceptCoins (enc a) (T a)` exactly, for any
+horizon `T` computed in unary in polynomial time. Halting is not needed. -/
+theorem computableInPolyTime_acceptCoins [Finite State] {α : Type} {enc : α ↪ List Bool} {c : ℕ}
+    (M : MultiTapePTM k Bool State)
+    (hs : ∀ a, M.toNTM.RunsInSpace (enc a) (c * (Nat.log2 (enc a).length + 1)))
+    {T : α → ℕ} (hT : ComputableInPolyTime T enc encUnary) :
+    ComputableInPolyTime (fun a => M.acceptCoins (enc a) (T a)) enc encNat := by
   obtain ⟨rounds, hrounds, hsearch⟩ :=
-    MultiTapeNTM.exists_computableInPolyTime_search (ntm := M.toNTM) hM.runsInSpace
+    MultiTapeNTM.exists_computableInPolyTime_search (ntm := M.toNTM) hs
   set views : α → List (FiniteCfg k Bool State) := fun a =>
     Cslib.Reachability.search M.toNTM.viewSucc (rounds a) (M.toNTM.initView (enc a))
   have hmem (a : α) (finite : FiniteCfg k Bool State) : finite ∈ views a ↔
       Relation.ReflTransGen M.toNTM.ViewStep (M.toNTM.initView (enc a)) finite :=
-    MultiTapeNTM.mem_search_iff (hM.runsInSpace a) (hrounds a)
+    MultiTapeNTM.mem_search_iff (hs a) (hrounds a)
   have hclosed (a : α) : ∀ finite ∈ views a, ∀ bit, M.viewCoinStep finite bit ∈ views a :=
     fun finite hf bit => (hmem a _).mpr (((hmem a _).mp hf).tail
-      (MultiTapePTM.viewStep_toNTM_iff.mpr ⟨bit, rfl⟩))
+      (viewStep_toNTM_iff.mpr ⟨bit, rfl⟩))
   have hinitMem (a : α) : M.toNTM.initView (enc a) ∈ views a := (hmem a _).mpr .refl
-  -- the computed count at the clock is the number of accepting coin strings
+  -- the computed count at the horizon is the number of accepting coin strings
   set table : α → List (FiniteCfg k Bool State × ℕ) := fun a =>
     (countRound M)^[T a] ((views a).map fun view => (view, M.viewAcceptCount 0 view))
   have hvalue (a : α) : lookupCount (table a) (M.toNTM.initView (enc a)) =
       M.acceptCoins (enc a) (T a) := by
     simp only [table]
     rw [countRound_iterate M (hclosed a), lookupCount_map (hinitMem a),
-      MultiTapePTM.acceptCoins_eq_viewAcceptCount (V := (views a).toFinset)
+      acceptCoins_eq_viewAcceptCount (V := (views a).toFinset)
         (fun finite hf bit => List.mem_toFinset.mpr (hclosed a finite
           (List.mem_toFinset.mp hf) bit)) (List.mem_toFinset.mpr (hinitMem a))]
-  refine ⟨fun a => decide (2 * 2 ^ T a ≤ 3 * lookupCount (table a) (M.toNTM.initView (enc a))),
-    ?_, fun a => ?_⟩
-  · -- certificates
-    have hT : ComputableInPolyTime T enc encUnary :=
-      ComputableInPolyTime.unary_mul.comp ((ComputableInPolyTime.const 2).prod
-        ((ComputableInPolyTime.unary_pow d).comp (ComputableInPolyTime.unary_mul.comp
-          ((ComputableInPolyTime.const 2).prod (ComputableInPolyTime.unary_add.comp
-            ((ComputableInPolyTime.encoding_length enc).prod
-              (ComputableInPolyTime.const 1)))))))
-    have hinitView : ComputableInPolyTime (fun a => M.toNTM.initView (enc a)) enc encFiniteCfg :=
-      ComputableInPolyTime.finiteCfg_init
-        (ComputableInPolyTime.of_eq (encIn := enc) (encOut := encBits) (f := fun a => enc a)
-          fun _ => rfl) M.toNTM.q₀
-    have htest : ComputableInPolyTime
-        (fun finite : FiniteCfg k Bool State =>
-          decide (finite.state = none) && decide (finite.output = [true])) encFiniteCfg encBool :=
-      MultiTapeNTM.computableInPolyTime_acceptingView
-    have hcount0 : ComputableInPolyTime (M.viewAcceptCount 0) encFiniteCfg encNat :=
-      htest.ite (ComputableInPolyTime.const 1) (ComputableInPolyTime.const 0)
-    have htable0 : ComputableInPolyTime
-        (fun a => (views a).map fun view => (view, M.viewAcceptCount 0 view)) enc
-        (encList (encPair encFiniteCfg encNat)) :=
-      ComputableInPolyTime.mapWithInput hsearch
-        ((ComputableInPolyTime.snd _ _).prod (hcount0.comp (ComputableInPolyTime.snd _ _)))
-    -- every table has polynomially many entries of polynomial length
-    set K := 8 + 2 * Nat.card (Option State) + 200 * k
-    set D := 2 * K * (c + 1)
-    set viewBound : α → ℕ := fun a =>
-      MultiTapeNTM.viewLengthBound k State (enc a).length (c * (Nat.log2 (enc a).length + 1))
-    set bound : α → ℕ := fun a =>
-      polyClock D (enc a).length * (2 * (2 * viewBound a + 1 + (T a + 1)) + 1)
-    have hviewBound : PolyBounded (fun a => (enc a).length) viewBound := by
-      refine .of_forall_le (2 * (10 + 2 * Nat.card (Option State) + 200 * k) * (c + 2) + 1) 1
-        fun a => ?_
-      have hlog := Nat.mul_le_mul_left ((10 + 2 * Nat.card (Option State) + 200 * k) * c)
-        (Nat.log2_le_self (enc a).length)
-      simp only [viewBound, MultiTapeNTM.viewLengthBound, pow_one]
-      generalize 10 + 2 * Nat.card (Option State) + 200 * k = B at *
-      nlinarith [Nat.zero_le (B * c), Nat.zero_le (B * (enc a).length),
-        Nat.zero_le (B * c * (enc a).length)]
-    have hbound : PolyBounded (fun a => (enc a).length) bound := by
-      simp only [bound, polyClock]
-      growth_poly
-    have hstates : ∀ a, ∀ i ≤ T a, (encList (encPair encFiniteCfg encNat)
-        ((countRound M)^[i] ((views a).map fun view => (view, M.viewAcceptCount 0 view)))).length
-          ≤ bound a := by
-      intro a i hi
-      rw [countRound_iterate M (hclosed a)]
-      have hreach (finite) (hf : finite ∈ views a) :=
-        (hmem a finite).mp hf
-      have hlen : (views a).length ≤ polyClock D (enc a).length :=
-        (MultiTapeNTM.length_le_of_nodup_reachable (hM.runsInSpace a)
-          (Cslib.Reachability.nodup_search _ _) hreach).trans
-          (MultiTapeNTM.two_pow_coreLengthBound_log_le k State c _)
-      refine (length_encList_le _ _ (b := 2 * viewBound a + 1 + (T a + 1)) ?_).trans ?_
-      · intro entry hentry
-        obtain ⟨view, hview, rfl⟩ := List.mem_map.mp hentry
-        have hv := MultiTapeNTM.length_encFiniteCfg_le (hM.runsInSpace a) (hreach view hview)
-        have hn : (encNat (M.viewAcceptCount i view)).length ≤ i + 1 := by
-          have := length_encNat_le_log2 (MultiTapePTM.viewAcceptCount_le (machine := M) i view)
-          rwa [Nat.log2_two_pow] at this
-        rw [length_encPair]
-        simp only [viewBound]
-        omega
-      · rw [List.length_map]
-        exact Nat.mul_le_mul_right _ hlen
-    have htable : ComputableInPolyTime table enc (encList (encPair encFiniteCfg encNat)) :=
-      ComputableInPolyTime.iterate hT htable0 (computableInPolyTime_countRound M) hbound hstates
-    have hcount : ComputableInPolyTime
-        (fun a => lookupCount (table a) (M.toNTM.initView (enc a))) enc encNat :=
-      computableInPolyTime_lookupCount.comp (htable.prod hinitView)
-    exact ComputableInPolyTime.binary_le'
+  -- certificates
+  have hcount0 : ComputableInPolyTime (M.viewAcceptCount 0) encFiniteCfg encNat :=
+    MultiTapeNTM.computableInPolyTime_acceptingView.ite (ComputableInPolyTime.const 1)
+      (ComputableInPolyTime.const 0)
+  have htable0 : ComputableInPolyTime
+      (fun a => (views a).map fun view => (view, M.viewAcceptCount 0 view)) enc
+      (encList (encPair encFiniteCfg encNat)) :=
+    ComputableInPolyTime.mapWithInput hsearch
+      ((ComputableInPolyTime.snd _ _).prod (hcount0.comp (ComputableInPolyTime.snd _ _)))
+  -- every table has polynomially many entries of polynomial length
+  set D := 2 * (8 + 2 * Nat.card (Option State) + 200 * k) * (c + 1)
+  set viewBound : α → ℕ := fun a =>
+    MultiTapeNTM.viewLengthBound k State (enc a).length (c * (Nat.log2 (enc a).length + 1))
+  set bound : α → ℕ := fun a =>
+    polyClock D (enc a).length * (2 * (2 * viewBound a + 1 + (T a + 1)) + 1)
+  have hbound : PolyBounded (fun a => (enc a).length) bound := by
+    simp only [bound, viewBound, polyClock, MultiTapeNTM.viewLengthBound, Nat.log2_eq_log_two]
+    growth_poly
+  have hstates : ∀ a, ∀ i ≤ T a, (encList (encPair encFiniteCfg encNat)
+      ((countRound M)^[i] ((views a).map fun view => (view, M.viewAcceptCount 0 view)))).length
+        ≤ bound a := by
+    intro a i hi
+    rw [countRound_iterate M (hclosed a)]
+    have hreach (finite) (hf : finite ∈ views a) :=
+      (hmem a finite).mp hf
+    have hlen : (views a).length ≤ polyClock D (enc a).length :=
+      (MultiTapeNTM.length_le_of_nodup_reachable (hs a)
+        (Cslib.Reachability.nodup_search _ _) hreach).trans
+        (MultiTapeNTM.two_pow_coreLengthBound_log_le k State c _)
+    refine (length_encList_le _ _ (b := 2 * viewBound a + 1 + (T a + 1)) ?_).trans ?_
+    · intro entry hentry
+      obtain ⟨view, hview, rfl⟩ := List.mem_map.mp hentry
+      have hv := MultiTapeNTM.length_encFiniteCfg_le (hs a) (hreach view hview)
+      have hn : (encNat (M.viewAcceptCount i view)).length ≤ i + 1 := by
+        have := length_encNat_le_log2 (viewAcceptCount_le (machine := M) i view)
+        rwa [Nat.log2_two_pow] at this
+      rw [length_encPair]
+      simp only [viewBound]
+      omega
+    · rw [List.length_map]
+      exact Nat.mul_le_mul_right _ hlen
+  have htable : ComputableInPolyTime table enc (encList (encPair encFiniteCfg encNat)) :=
+    ComputableInPolyTime.iterate hT htable0 (computableInPolyTime_countRound M) hbound hstates
+  have hcount : ComputableInPolyTime
+      (fun a => lookupCount (table a) (M.toNTM.initView (enc a))) enc encNat :=
+    computableInPolyTime_lookupCount.comp
+      (htable.prod (MultiTapeNTM.computableInPolyTime_initView (ntm := M.toNTM) enc))
+  simpa only [hvalue] using hcount
+
+end Turing.MultiTapePTM
+
+namespace Cslib.Complexity
+
+open _root_.Turing _root_.Turing.MultiTapeTM
+
+variable {α : Type} {enc : α ↪ List Bool} {A : Set α}
+
+/-- **Randomized logarithmic space with two-sided error is within polynomial time**: the number of
+accepting coin strings at the polynomial clock is computed exactly
+(`Turing.MultiTapePTM.computableInPolyTime_acceptCoins`) and compared with two thirds of all coin
+strings. -/
+theorem BPL_subset_P : BPL enc ⊆ P enc := by
+  intro A h
+  obtain ⟨k, State, hfin, M, c, d, hM, herr⟩ := exists_polyClock_of_mem_BPL h
+  set T : α → ℕ := fun a => polyClock d (enc a).length
+  have hT : ComputableInPolyTime T enc encUnary := by
+    simp only [T, polyClock]
+    fun_prop
+  refine ⟨fun a => decide (2 * 2 ^ T a ≤ 3 * M.acceptCoins (enc a) (T a)), ?_, fun a => ?_⟩
+  · exact ComputableInPolyTime.binary_le'
       (ComputableInPolyTime.binary_mul' (ComputableInPolyTime.const 2)
         (ComputableInPolyTime.binary_two_pow.comp hT))
-      (ComputableInPolyTime.binary_mul' (ComputableInPolyTime.const 3) hcount)
-  · change a ∈ A ↔
-      decide (2 * 2 ^ T a ≤ 3 * lookupCount (table a) (M.toNTM.initView (enc a))) = true
-    rw [hvalue, decide_eq_true_iff]
+      (ComputableInPolyTime.binary_mul' (ComputableInPolyTime.const 3)
+        (M.computableInPolyTime_acceptCoins hM.runsInSpace hT))
+  · simp only [decide_eq_true_eq]
     obtain ⟨hmemA, hnotA⟩ := herr a
     refine ⟨hmemA, fun hle => by_contra fun ha => ?_⟩
     have hle' := (hnotA ha).trans' (Nat.mul_le_mul_left 3 (le_refl _))

@@ -162,7 +162,7 @@ theorem IsPolyEquivalence.comap {encC : β ↪ List Bool} {r : β × β → Bool
     IsPolyEquivalence enc fun p => r (g p.1, g p.2) := by
   classical
   obtain ⟨c, hc, hT⟩ := hr.classes
-  obtain ⟨q, hq⟩ := ((encoding_length encC).comp hg).polyBounded.exists_polynomial
+  obtain ⟨q, hq⟩ := hg.polyBounded_length.exists_polynomial
   refine ⟨⟨fun a => hr.equivalence.refl _, fun h => hr.equivalence.symm h,
     fun h h' => hr.equivalence.trans h h'⟩,
     hr.polyTime.comp ((hg.comp (fst enc enc)).prod (hg.comp (snd enc enc))),
@@ -390,7 +390,7 @@ theorem coNP_subset_NPPoly_of_orCompression (hA : NPHard enc A) {r : α × α �
       (∀ a ∈ l, ∀ b ∈ l, r (a, b) = true) → (encB (f l)).length < t n)
     {γ : Type} (encC : γ ↪ List Bool) : coNP encC ⊆ NPPoly encC := by
   obtain ⟨red, hred, hSAT⟩ := hA encCNF SAT CookLevin.SAT_npComplete.1
-  obtain ⟨q, hq⟩ := ((encoding_length enc).comp hred).polyBounded.exists_polynomial
+  obtain ⟨q, hq⟩ := hred.polyBounded_length.exists_polynomial
   -- transfer everything to `SAT`, whose formulas have a decoder
   have hUNSAT : SATᶜ ∈ NPPoly encCNF := by
     refine compl_mem_NPPoly_of_orCompression (B := B) cnfDecoder (hr.comap hred)
