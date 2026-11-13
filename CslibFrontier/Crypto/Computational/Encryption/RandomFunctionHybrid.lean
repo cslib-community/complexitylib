@@ -366,8 +366,7 @@ theorem blockModeCpaGame_eq_realExperiment {Key : Type} [Fintype Key] [Nonempty 
   funext q
   cases q with
   | inl i =>
-    simp only [ProbOracleComp.interpret_sample]
-    exact (OracleComp.interpret_query_eq_self _).symm
+    simp only [ProbOracleComp.interpret_sample, ProbComp.interpret_unifFin]
   | inr q =>
     simp only [blockModeOracle, blockModeQueryProgram, ProbOracleComp.interpret_sample,
       OracleComp.interpret_bind, OracleComp.interpret_pure]
