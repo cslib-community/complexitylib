@@ -11,7 +11,7 @@ public import CslibFrontier.Computability.Circuit.Arithmetic
 public import CslibFrontier.Foundations.LinearAlgebra.Tensor.Basic
 public import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import CslibFrontier.Computability.Circuit.Synthesis
-import CslibFrontier.Computability.Circuit.Arithmetic.VP
+import CslibFrontier.Computability.Circuit.Arithmetic.Synthesis
 import CslibFrontier.Computability.Circuit.Inputization
 
 /-!

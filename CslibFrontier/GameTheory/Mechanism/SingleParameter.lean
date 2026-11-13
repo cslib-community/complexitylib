@@ -33,8 +33,9 @@ definition here.
 
 General valuations and the VCG mechanism use the separate structure `Cslib.GameTheory.Mechanism`
 in `CslibFrontier.GameTheory.Mechanism.VCG`. Its incentive predicates range over all real
-valuation functions, whereas the ones here range over the restricted domain `v · xᵢ`. No bridge
-between the two models is proved yet.
+valuation functions, whereas the ones here range over the restricted domain `v · xᵢ`.
+`CslibFrontier.GameTheory.Mechanism.LinearValuation` relates the two models, and
+`CslibFrontier.GameTheory.Mechanism.VickreyVCG` shows that the Vickrey auction is VCG.
 
 ## Main definitions
 

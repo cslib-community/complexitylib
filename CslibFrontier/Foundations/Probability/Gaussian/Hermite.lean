@@ -26,7 +26,9 @@ orthonormal, and so are their products `h_α z = ∏ i, h_{α i} (z i)` over a m
 Gaussian noise operator, `U_ρ h_α = ρ ^ |α| h_α` for `|ρ| ≤ 1`, so for `ρ`-correlated `(z, z')`,
 `E[h_α z h_β z'] = ⟨h_α, U_ρ h_β⟩` is `ρ ^ |α|` if `α = β` and `0` otherwise (Proposition 11.33,
 and Proposition 11.31 in one dimension). Completeness of the Hermite basis
-(Propositions 11.30 and 11.33) is not proved here.
+(Propositions 11.30 and 11.33, `ProbabilityTheory.normalizedHermiteBasis` and
+`ProbabilityTheory.hermiteBasis`) and Hermite expansions are in
+`CslibFrontier.Foundations.Probability.Gaussian.HermiteExpansion`.
 
 The book derives these facts from the generating function of `H_j` (11.7)–(11.8). Here they
 follow from Stein's lemma `E[x p x] = E[p' x]` for polynomials `p`
@@ -271,8 +273,9 @@ theorem normalizedHermite_two (x : ℝ) : normalizedHermite 2 x = (x ^ 2 - 1) / 
   ((hermite j).continuous_aeval).div_const _
 
 /-- **Orthonormality of the normalized Hermite polynomials**
-[O'Donnell, Proposition 11.30][ODonnell2014] (without completeness): `⟨h_j, h_k⟩ = 1` if `j = k`
-and `0` otherwise, in `L²` of the standard Gaussian. -/
+[O'Donnell, Proposition 11.30][ODonnell2014] (without completeness, which is
+`normalizedHermiteBasis`): `⟨h_j, h_k⟩ = 1` if `j = k` and `0` otherwise, in `L²` of the standard
+Gaussian. -/
 theorem integral_normalizedHermite_mul_normalizedHermite (j k : ℕ) :
     ∫ x, normalizedHermite j x * normalizedHermite k x ∂gaussianReal 0 1 =
       if j = k then 1 else 0 := by
@@ -298,6 +301,11 @@ private theorem integrable_normalizedHermite_mul (j k : ℕ) :
   refine ((integrable_eval_gaussianReal (hermiteR j * hermiteR k)).div_const
     (√(j ! : ℝ) * √(k ! : ℝ))).congr (ae_of_all _ fun x => ?_)
   simp only [normalizedHermite, aeval_hermite, eval_mul, div_mul_div_comm]
+
+/-- The normalized Hermite polynomials lie in `L²` of the standard Gaussian. -/
+theorem memLp_normalizedHermite (j : ℕ) : MemLp (normalizedHermite j) 2 (gaussianReal 0 1) :=
+  (memLp_two_iff_integrable_sq (continuous_normalizedHermite j).aestronglyMeasurable).2
+    (by simpa only [sq] using integrable_normalizedHermite_mul j j)
 
 end Univariate
 
@@ -325,8 +333,9 @@ theorem multiHermite_def (α : ι → ℕ) (z : ι → ℝ) :
 /-- **The multivariate Hermite polynomials of subsets**
 [O'Donnell, Definition 11.32 and Remark 11.35][ODonnell2014]: for the indicator multi-index of
 `S`, `h_S z = ∏ i ∈ S, zᵢ`. Hence a multilinear polynomial `∑_S c_S ∏ i ∈ S, zᵢ` is the
-combination `∑_S c_S h_S`; that this is its Hermite expansion (the rest of Remark 11.35) needs
-Hermite coefficients (Definition 11.34), which are not formalized here. -/
+combination `∑_S c_S h_S`. That this is its Hermite expansion, the rest of Remark 11.35, is
+`hermiteCoeff_sum_mul_prod` in the module
+`CslibFrontier.Foundations.Probability.Gaussian.HermiteExpansion`. -/
 theorem multiHermite_indicator [DecidableEq ι] (S : Finset ι) (z : ι → ℝ) :
     multiHermite (fun i => if i ∈ S then 1 else 0) z = ∏ i ∈ S, z i := by
   have h (i : ι) : normalizedHermite (if i ∈ S then 1 else 0) (z i) = if i ∈ S then z i else 1 := by
@@ -361,8 +370,8 @@ theorem memLp_multiHermite (α : ι → ℕ) :
     (by simpa only [sq] using integrable_multiHermite_mul α α)
 
 /-- **Orthonormality of the multivariate Hermite polynomials**
-[O'Donnell, Proposition 11.33][ODonnell2014] (without completeness): `⟨h_α, h_β⟩ = 1` if `α = β`
-and `0` otherwise, in `L²(γⁿ)`. -/
+[O'Donnell, Proposition 11.33][ODonnell2014] (without completeness, which is `hermiteBasis`):
+`⟨h_α, h_β⟩ = 1` if `α = β` and `0` otherwise, in `L²(γⁿ)`. -/
 theorem integral_multiHermite_mul_multiHermite (α β : ι → ℕ) :
     ∫ z, multiHermite α z * multiHermite β z ∂Measure.pi (fun _ : ι => gaussianReal 0 1) =
       if α = β then 1 else 0 := by
