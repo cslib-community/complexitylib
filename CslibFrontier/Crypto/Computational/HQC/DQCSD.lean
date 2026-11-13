@@ -45,6 +45,12 @@ decoding failures and HQC-PKE/KEM reductions remain separate obligations.
 
 ## Main results
 
+* `Cslib.Crypto.HQC.nativeQuantumTwoDQCSDPWithin_iff_indistinguishableWithin`,
+  `Cslib.Crypto.HQC.nativeQuantumTwoDQCSDP_iff_computationallyIndistinguishable`: the
+  source-named two-block predicates expose the shared native quantum interfaces.
+* `Cslib.Crypto.HQC.nativeQuantumThreeDQCSDPTWithin_iff_indistinguishableWithin`,
+  `Cslib.Crypto.HQC.nativeQuantumThreeDQCSDPT_iff_computationallyIndistinguishable`: the
+  analogous truncated three-block interfaces.
 * `Cslib.Crypto.HQC.NativeQuantumTwoDQCSDP.of_within`: concrete-to-asymptotic transfer.
 * `Cslib.Crypto.HQC.NativeQuantumThreeDQCSDPT.of_within`: its truncated three-block analogue.
 
@@ -241,11 +247,30 @@ def NativeQuantumTwoDQCSDPWithin (params : DQCSDParameters) (publicParity : ℕ 
   NativeQuantum.IndistinguishableWithin (twoRealEnsemble params publicParity)
     (twoUniformEnsemble params publicParity) (twoWordLength params) ε
 
+/-- The source-named concrete two-block assumption is exactly the shared native quantum
+indistinguishability interface. -/
+theorem nativeQuantumTwoDQCSDPWithin_iff_indistinguishableWithin
+    (params : DQCSDParameters) (publicParity : ℕ → Bool)
+    (ε : ℕ → OracleCircuit.Resources → ℝ≥0) :
+    NativeQuantumTwoDQCSDPWithin params publicParity ε ↔
+      NativeQuantum.IndistinguishableWithin (twoRealEnsemble params publicParity)
+        (twoUniformEnsemble params publicParity) (twoWordLength params) ε :=
+  Iff.rfl
+
 /-- Native quantum 2-DQCSD-P hardness for the exact source distributions. This is an assumption
 under the repository's no-advice, no-useful-oracle native test convention. -/
 def NativeQuantumTwoDQCSDP (params : DQCSDParameters) (publicParity : ℕ → Bool) : Prop :=
   NativeQuantum.ComputationallyIndistinguishable (twoRealEnsemble params publicParity)
     (twoUniformEnsemble params publicParity)
+
+/-- The source-named asymptotic two-block assumption is exactly the shared native quantum
+computational-indistinguishability interface. -/
+theorem nativeQuantumTwoDQCSDP_iff_computationallyIndistinguishable
+    (params : DQCSDParameters) (publicParity : ℕ → Bool) :
+    NativeQuantumTwoDQCSDP params publicParity ↔
+      NativeQuantum.ComputationallyIndistinguishable
+        (twoRealEnsemble params publicParity) (twoUniformEnsemble params publicParity) :=
+  Iff.rfl
 
 /-- A concrete bound negligible along every polynomial circuit-resource schedule implies native
 quantum 2-DQCSD-P hardness when the ambient block length is polynomially bounded. -/
@@ -270,6 +295,17 @@ def NativeQuantumThreeDQCSDPTWithin (params : DQCSDTruncatedParameters)
   NativeQuantum.IndistinguishableWithin (threeRealEnsemble params firstParity secondParity)
     (threeUniformEnsemble params firstParity secondParity) (threeWordLength params) ε
 
+/-- The source-named concrete truncated three-block assumption is exactly the shared native
+quantum indistinguishability interface. -/
+theorem nativeQuantumThreeDQCSDPTWithin_iff_indistinguishableWithin
+    (params : DQCSDTruncatedParameters) (firstParity secondParity : ℕ → Bool)
+    (ε : ℕ → OracleCircuit.Resources → ℝ≥0) :
+    NativeQuantumThreeDQCSDPTWithin params firstParity secondParity ε ↔
+      NativeQuantum.IndistinguishableWithin
+        (threeRealEnsemble params firstParity secondParity)
+        (threeUniformEnsemble params firstParity secondParity) (threeWordLength params) ε :=
+  Iff.rfl
+
 /-- Native quantum 3-DQCSD-PT hardness for the exact source distributions. This is an assumption
 under the repository's no-advice, no-useful-oracle native test convention. -/
 def NativeQuantumThreeDQCSDPT (params : DQCSDTruncatedParameters)
@@ -277,6 +313,16 @@ def NativeQuantumThreeDQCSDPT (params : DQCSDTruncatedParameters)
   NativeQuantum.ComputationallyIndistinguishable
     (threeRealEnsemble params firstParity secondParity)
     (threeUniformEnsemble params firstParity secondParity)
+
+/-- The source-named asymptotic truncated three-block assumption is exactly the shared native
+quantum computational-indistinguishability interface. -/
+theorem nativeQuantumThreeDQCSDPT_iff_computationallyIndistinguishable
+    (params : DQCSDTruncatedParameters) (firstParity secondParity : ℕ → Bool) :
+    NativeQuantumThreeDQCSDPT params firstParity secondParity ↔
+      NativeQuantum.ComputationallyIndistinguishable
+        (threeRealEnsemble params firstParity secondParity)
+        (threeUniformEnsemble params firstParity secondParity) :=
+  Iff.rfl
 
 /-- A concrete bound negligible along every polynomial circuit-resource schedule implies native
 quantum 3-DQCSD-PT hardness when the ambient block length is polynomially bounded. -/

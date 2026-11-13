@@ -4,16 +4,20 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import CslibFrontier.Crypto.Computational.HQC.DQCSD
+module
+
+public import CslibFrontier.Crypto.Computational.HQC.DQCSD
 import CslibFrontier.Probability.PMF.Support
 import CslibFrontierTests.Crypto.NativeQuantumIndistinguishability
 import Mathlib.Data.Fin.VecNotation
 
 /-! Concrete encodings, source ensembles, and native quantum bridges for HQC DQCSD. -/
 
+public section
+
 namespace CslibFrontierTests.HQCDQCSD
 
-open Cslib Cslib.Crypto Cslib.Crypto.HQC Cslib.Crypto.NativeQuantum
+open Cslib Cslib.Crypto Cslib.Crypto.HQC Cslib.Crypto.NativeQuantum Cslib.Quantum
 open CslibFrontierTests.NativeQuantumIndistinguishability
 open scoped NNReal
 
@@ -139,5 +143,41 @@ example
   · change PolynomiallyBounded fun _ => 2
     fun_prop
   · fun_prop
+
+/-! ### Ordinary-module use through the shared native quantum interfaces -/
+
+theorem twoWithin_sharedInterface (p : DQCSDParameters) (primitive : ℕ → Bool)
+    {ε : ℕ → OracleCircuit.Resources → ℝ≥0}
+    (h : NativeQuantumTwoDQCSDPWithin p primitive ε) :
+    NativeQuantum.IndistinguishableWithin
+      (twoRealEnsemble p primitive)
+      (twoUniformEnsemble p primitive)
+      (twoWordLength p) ε :=
+  (nativeQuantumTwoDQCSDPWithin_iff_indistinguishableWithin p primitive ε).mp h
+
+theorem twoAsymptotic_sharedInterface (p : DQCSDParameters) (primitive : ℕ → Bool)
+    (h : NativeQuantumTwoDQCSDP p primitive) :
+    NativeQuantum.ComputationallyIndistinguishable
+      (twoRealEnsemble p primitive)
+      (twoUniformEnsemble p primitive) :=
+  (nativeQuantumTwoDQCSDP_iff_computationallyIndistinguishable p primitive).mp h
+
+theorem threeWithin_sharedInterface (p : DQCSDTruncatedParameters)
+    (primitive prime : ℕ → Bool) {ε : ℕ → OracleCircuit.Resources → ℝ≥0}
+    (h : NativeQuantumThreeDQCSDPTWithin p primitive prime ε) :
+    NativeQuantum.IndistinguishableWithin
+      (threeRealEnsemble p primitive prime)
+      (threeUniformEnsemble p primitive prime)
+      (threeWordLength p) ε :=
+  (nativeQuantumThreeDQCSDPTWithin_iff_indistinguishableWithin
+    p primitive prime ε).mp h
+
+theorem threeAsymptotic_sharedInterface (p : DQCSDTruncatedParameters)
+    (primitive prime : ℕ → Bool) (h : NativeQuantumThreeDQCSDPT p primitive prime) :
+    NativeQuantum.ComputationallyIndistinguishable
+      (threeRealEnsemble p primitive prime)
+      (threeUniformEnsemble p primitive prime) :=
+  (nativeQuantumThreeDQCSDPT_iff_computationallyIndistinguishable
+    p primitive prime).mp h
 
 end CslibFrontierTests.HQCDQCSD
