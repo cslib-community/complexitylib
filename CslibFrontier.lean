@@ -1961,6 +1961,7 @@ public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Translati
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.WordRAM
 public import CslibFrontier.Computability.Complexity.Classes.IP
 public import CslibFrontier.Computability.Complexity.Classes.IP.CoinFixing
+public import CslibFrontier.Computability.Complexity.Classes.IP.Deterministic
 public import CslibFrontier.Computability.Complexity.Classes.IP.GameTree
 public import CslibFrontier.Computability.Complexity.Classes.IP.Games
 public import CslibFrontier.Computability.Complexity.Classes.IP.Games.Emulation
@@ -1972,6 +1973,7 @@ public import CslibFrontier.Computability.Complexity.Classes.IP.GraphNonIsomorph
 public import CslibFrontier.Computability.Complexity.Classes.IP.Guessing
 public import CslibFrontier.Computability.Complexity.Classes.IP.OptimalProver
 public import CslibFrontier.Computability.Complexity.Classes.IP.PSPACE
+public import CslibFrontier.Computability.Complexity.Classes.IP.PerfectSoundness
 public import CslibFrontier.Computability.Complexity.Classes.IP.Reduction
 public import CslibFrontier.Computability.Complexity.Classes.IP.Repetition
 public import CslibFrontier.Computability.Complexity.Classes.IP.Shamir
