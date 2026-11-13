@@ -6095,6 +6095,7 @@ public import CslibFrontier.Languages.Probabilistic.Selection
 public import CslibFrontier.Languages.Probabilistic.Semantics
 public import CslibFrontier.Languages.Probabilistic.Sharing
 public import CslibFrontier.Languages.Probabilistic.Simulation
+public import CslibFrontier.Languages.Probabilistic.Simulation.CloseTo
 public import CslibFrontier.Languages.Probabilistic.Sum
 public import CslibFrontier.Languages.Probabilistic.Transcript
 public import CslibFrontier.Languages.Probabilistic.Traverse

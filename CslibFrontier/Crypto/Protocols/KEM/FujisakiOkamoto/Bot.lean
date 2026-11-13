@@ -13,10 +13,12 @@ import CslibFrontier.Crypto.Game.CloseTo.UntilBad
 import CslibFrontier.Crypto.Game.Hybrid
 import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Challenge
 import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Correctness
+import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Lazy
 import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Pushforward
 import CslibFrontier.Languages.Probabilistic.Norm
-import CslibFrontier.Languages.Probabilistic.RandomOracle.Probabilistic
+import CslibFrontier.Languages.Probabilistic.RandomOracle.Represented
 import CslibFrontier.Languages.Probabilistic.Simulation
+import CslibFrontier.Languages.Probabilistic.Simulation.CloseTo
 import CslibFrontier.Tactic.PMFSwap
 
 /-!
@@ -103,66 +105,9 @@ namespace Cslib.Crypto.Protocols.FujisakiOkamoto
 
 open Probability
 open Probability.PMF
-open RandomOracle (eval_zoom_memoize_map eval_zoom_memoize_bind
-  answer_bind_complete answer_bind_complete₁ answer_bind_complete₂)
 open scoped ENNReal NNReal
 
 variable {PK SK M R CT K : Type}
-
-/-! ### Generic `CloseTo` simulation and map helpers -/
-
-/-- Two pushforwards of the same distribution `μ` that agree outside an event `B` are within
-`μ.toOuterMeasure B` in statistical distance (`CloseTo`). -/
-private theorem closeTo_map_of_eq_off {α β : Type} (μ : PMF α) (f g : α → β) (B : Set α)
-    (heq : ∀ x, x ∉ B → f x = g x) :
-    CloseTo (μ.map f) (μ.map g) (μ.toOuterMeasure B) := by
-  simpa only [PMF.map, Function.comp_def] using
-    Cslib.Interactive.CloseTo.bind_of_eq_on μ (fun x => PMF.pure (f x)) (fun x => PMF.pure (g x)) B
-      fun x _ hx => congrArg PMF.pure (heq x hx)
-
-/-- Approximate stateful simulation: if each query `q` commutes with `relate` up to statistical
-distance `cost q * ε`, then any program `prog` with `IsCostBounded cost prog d` commutes with
-`relate` up to statistical distance `d * ε`. -/
-private theorem run_interpret_closeTo_simulation {ι State State' α : Type}
-    {spec : OracleSpec ι} (cost : ι → ℕ) (oracle : (q : ι) → StateT State PMF (spec q))
-    (oracle' : (q : ι) → StateT State' PMF (spec q)) (relate : State → PMF State')
-    (ε : ℝ≥0∞)
-    (step : ∀ q s, CloseTo
-      ((oracle q s).bind fun x => (relate x.2).map (x.1, ·))
-      ((relate s).bind (oracle' q))
-      (cost q * ε))
-    (prog : OracleComp spec α) {d : ℕ} (hd : OracleComp.IsCostBounded cost prog d) (s : State) :
-    CloseTo
-      (((OracleComp.interpret oracle prog).run s).bind fun x => (relate x.2).map (x.1, ·))
-      ((relate s).bind fun t => (OracleComp.interpret oracle' prog).run t)
-      (d * ε) := by
-  induction hd generalizing s with
-  | pure a n =>
-    simp only [OracleComp.run_interpret_pure, Probability.PMF.monad_pure_eq_pure, PMF.pure_bind,
-      PMF.map, Function.comp_def]
-    exact (CloseTo.refl _).mono zero_le
-  | liftBind q cont n _ ih =>
-    rw [OracleComp.run_interpret_bind, OracleComp.run_interpret_query]
-    simp only [OracleComp.interpret_bind, OracleComp.interpret_query, StateT.run_bind,
-      Probability.PMF.monad_bind_eq_bind, PMF.bind_bind]
-    have h₁ : CloseTo
-        ((oracle q s).bind fun x =>
-          ((OracleComp.interpret oracle (cont x.1)).run x.2).bind fun y =>
-            (relate y.2).map (y.1, ·))
-        ((oracle q s).bind fun x =>
-          (relate x.2).bind fun t => (OracleComp.interpret oracle' (cont x.1)).run t)
-        ((n : ℝ≥0∞) * ε) :=
-      CloseTo.bind_right _ fun x _ => ih x.1 x.2
-    have h₂ : CloseTo
-        (((oracle q s).bind fun x => (relate x.2).map (x.1, ·)).bind fun y =>
-          (OracleComp.interpret oracle' (cont y.1)).run y.2)
-        (((relate s).bind (oracle' q)).bind fun y =>
-          (OracleComp.interpret oracle' (cont y.1)).run y.2)
-        (cost q * ε) :=
-      (step q s).bind_left _
-    simp only [PMF.bind_bind, PMF.bind_map, Function.comp_def] at h₂
-    refine (h₁.trans h₂).mono (le_of_eq ?_)
-    rw [← add_mul, Nat.cast_add]
 
 namespace Scheme
 
@@ -375,320 +320,77 @@ def cachedCoupledBotGame (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT 
     (b : Bool) : ProbComp Bool :=
   S.coupledFilterGame (cachedCoupledBotCheck S.pke) A b
 
-/-- The three partial tables `(G, Hraw, Hq)` of the coupled game. -/
-private abbrev Tables (M R CT K : Type) : Type :=
-  RandomOracle.Cache (fun _ : M => R) × RandomOracle.Cache (fun _ : Bool × M × CT => K) ×
-    RandomOracle.Cache (fun _ : CT => K)
-
-/-- The represented tables of a `SimState`. -/
-private def tablesOf (st : SimState M R CT K) : Tables M R CT K :=
-  (RandomOracle.ofList st.gCache, RandomOracle.ofList st.hCache, RandomOracle.ofList st.hqCache)
-
-/-- `coupledHashH` on represented tables, answered with `RandomOracle.answer`. -/
-private noncomputable def answerHashH (S : Scheme PK SK M R CT K) (pk : PK) (sk : SK)
-    (x : Bool × M × CT) : StateT (Tables M R CT K) PMF K := fun (tG, tH, tQ) =>
-  match x with
-  | (false, m, c) =>
-    (RandomOracle.answer (fun _ => ProbComp.eval S.pke.sampleCoins) m tG).bind fun y =>
-      if S.pke.encDet pk m y.1 = c ∧ S.pke.dec sk c = some m then
-        (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) c tQ).map
-          fun z => (z.1, (y.2, tH, z.2))
-      else
-        (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) (false, m, c) tH).map
-          fun z => (z.1, (y.2, z.2, tQ))
-  | (true, m, c) =>
-    (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) (true, m, c) tH).map
-      fun z => (z.1, (tG, z.2, tQ))
-
-/-- Mapping `SimState` to its represented tables turns `coupledHashH` into `answerHashH`. -/
-private theorem coupledHashH_map_tablesOf (S : Scheme PK SK M R CT K) (pk : PK) (sk : SK)
-    (x : Bool × M × CT) (st : SimState M R CT K) :
-    (ProbComp.eval (S.coupledHashH pk sk x st)).map (fun z => (z.1, tablesOf z.2)) =
-      S.answerHashH pk sk x (tablesOf st) := by
-  rcases x with ⟨_ | _, m, c⟩
-  · change (ProbComp.eval (simHashG S.pke.sampleCoins m st >>= fun vs =>
-        (if S.pke.encDet pk m vs.1 = c ∧ S.pke.dec sk c = some m then
-          simHashHq S.sampleKey c else simHashHRaw S.sampleKey (false, m, c)) vs.2)).map _ = _
-    dsimp only [answerHashH, simHashG]
-    refine eval_zoom_memoize_bind (fun st : SimState M R CT K => st.gCache)
-      (fun st g => { st with gCache := g }) S.pke.sampleCoins m st
-      (fun r st' => (if S.pke.encDet pk m r = c ∧ S.pke.dec sk c = some m then
-          simHashHq S.sampleKey c else simHashHRaw S.sampleKey (false, m, c)) st')
-      tablesOf _ (fun r gC => ?_)
-    by_cases h : S.pke.encDet pk m r = c ∧ S.pke.dec sk c = some m
-    · simp only [h, and_self, ↓reduceIte]
-      exact eval_zoom_memoize_map SimState.hqCache (fun st q => { st with hqCache := q })
-        S.sampleKey c _ (fun k => k) tablesOf
-        (fun q => (RandomOracle.ofList gC, RandomOracle.ofList st.hCache, q)) (fun _ => rfl)
-    · simp only [h, ↓reduceIte]
-      exact eval_zoom_memoize_map (fun st : SimState M R CT K => st.hCache)
-        (fun st h => { st with hCache := h }) S.sampleKey (false, m, c) _ (fun k => k) tablesOf
-        (fun h => (RandomOracle.ofList gC, h, RandomOracle.ofList st.hqCache)) (fun _ => rfl)
-  · exact eval_zoom_memoize_map (fun st : SimState M R CT K => st.hCache)
-      (fun st h => { st with hCache := h }) S.sampleKey (true, m, c) st (fun k => k) tablesOf
-      (fun h => (RandomOracle.ofList st.gCache, h, RandomOracle.ofList st.hqCache)) (fun _ => rfl)
-
-/-- `coupledFilterHandler (cachedCoupledBotCheck S.pke pk sk)` on represented tables
-`(tG, tH, tQ)`. -/
-private noncomputable def answerCachedBotHandler (S : Scheme PK SK M R CT K) (pk : PK) (sk : SK)
-    (cStar : CT) (q : ROQuery M CT) : StateT (Tables M R CT K) PMF (ROResp R K q) :=
-  ROQuery.dispatch
-    (fun m t => (RandomOracle.answer (fun _ => ProbComp.eval S.pke.sampleCoins) m t.1).map
-      fun z => (z.1, (z.2, t.2.1, t.2.2)))
-    (S.answerHashH pk sk)
-    (fun c t =>
-      match S.pke.dec sk c with
-      | none => PMF.pure (none, t)
-      | some m' =>
-        match t.1 m' with
-        | none => PMF.pure (none, t)
-        | some r' =>
-          if S.pke.encDet pk m' r' = c then
-            (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) c t.2.2).map
-              fun z => (some z.1, (t.1, t.2.1, z.2))
-          else
-            PMF.pure (none, t))
-    cStar q
-
-private theorem cachedCoupledBotHandler_map_tablesOf (S : Scheme PK SK M R CT K) (pk : PK)
-    (sk : SK) (cStar : CT) (q : ROQuery M CT) (st : SimState M R CT K) :
-    (ProbComp.eval (S.coupledFilterHandler (cachedCoupledBotCheck S.pke pk sk) pk sk cStar q
-        st)).map (fun z => (z.1, tablesOf z.2)) =
-      S.answerCachedBotHandler pk sk cStar q (tablesOf st) := by
-  cases q with
-  | G m =>
-    exact eval_zoom_memoize_map (fun st : SimState M R CT K => st.gCache)
-      (fun st g => { st with gCache := g }) S.pke.sampleCoins m st (fun r => r) tablesOf
-      (fun g => (g, RandomOracle.ofList st.hCache, RandomOracle.ofList st.hqCache))
-      (fun _ => rfl)
-  | H x => exact S.coupledHashH_map_tablesOf pk sk x st
-  | decaps c =>
-    by_cases hc : c = cStar
-    · simp only [coupledFilterHandler, simFilterDispatch, answerCachedBotHandler, hc, ↓reduceIte,
-        ROQuery.dispatch]
-      exact PMF.pure_map _ _
-    · dsimp only [coupledFilterHandler, simFilterDispatch, answerCachedBotHandler, ROQuery.dispatch]
-      simp only [hc, ↓reduceIte]
-      dsimp only [filterDecaps, cachedCoupledBotCheck, tablesOf, RandomOracle.ofList]
-      cases hdec : S.pke.dec sk c with
-      | none => exact PMF.pure_map _ _
-      | some m' =>
-        dsimp only
-        cases hlook : st.gCache.lookup m' with
-        | none => exact PMF.pure_map _ _
-        | some r' =>
-          dsimp only
-          by_cases henc : S.pke.encDet pk m' r' = c
-          · simp only [henc, decide_true, Bool.cond_true, ↓reduceIte]
-            change (ProbComp.eval (simHashHq S.sampleKey c st >>= fun vs =>
-              pure (some vs.1, vs.2))).map _ = _
-            refine Eq.trans ?_ (eval_zoom_memoize_map SimState.hqCache
-              (fun st q => { st with hqCache := q }) S.sampleKey c st some tablesOf
-              (fun q => (RandomOracle.ofList st.gCache, RandomOracle.ofList st.hCache, q))
-              (fun _ => rfl))
-            rw [ProbComp.eval_bind, PMF.map_bind]
-            simp only [ProbComp.eval_pure, PMF.pure_map]
-            rfl
-          · simp only [henc, decide_false, Bool.cond_false, ↓reduceIte]
-            exact PMF.pure_map _ _
-
 section CompleteBot
 
 variable [Fintype M] [Finite R] [Fintype CT] [Finite K]
 
-/-- Full tables `(G, Hraw, Hq)` of the eager coupled game. -/
-private abbrev FullTables (M R CT K : Type) : Type :=
-  (M → R) × (Bool × M × CT → K) × (CT → K)
-
-/-- Complete the three represented tables independently. -/
-private noncomputable def completeTables (S : Scheme PK SK M R CT K) :
-    Tables M R CT K → PMF (FullTables M R CT K)
-  | (tG, tH, tQ) =>
-    (RandomOracle.complete (fun _ => ProbComp.eval S.pke.sampleCoins) tG).bind fun G =>
-    (RandomOracle.complete (fun _ => ProbComp.eval S.sampleKey) tH).bind fun H =>
-    (RandomOracle.complete (fun _ => ProbComp.eval S.sampleKey) tQ).map fun Q => (G, H, Q)
-
-private noncomputable def eagerCoupledBotStateHandler (S : Scheme PK SK M R CT K) (pk : PK)
-    (sk : SK) (cStar : CT) (q : ROQuery M CT) :
-    StateT (FullTables M R CT K) PMF (ROResp R K q) :=
-  fun T => (S.eagerCoupledBotHandler T.1 T.2.2 T.2.1 pk sk cStar q).map (·, T)
-
-omit [DecidableEq M] [DecidableEq CT] in
-/-- At an uncached message `m'` (`tG m' = none`), the `m'`-coordinate of `completeTables` has law
-`sampleCoins`. -/
-private theorem completeTables_map_eval_at_of_none (S : Scheme PK SK M R CT K)
-    (tG : RandomOracle.Cache (fun _ : M => R))
-    (tH : RandomOracle.Cache (fun _ : Bool × M × CT => K))
-    (tQ : RandomOracle.Cache (fun _ : CT => K))
-    (m' : M) (hnone : tG m' = none) :
-    (S.completeTables (tG, tH, tQ)).map (fun T => T.1 m') = ProbComp.eval S.pke.sampleCoins := by
-  classical
-  let dG : M → PMF R := fun _ => ProbComp.eval S.pke.sampleCoins
-  have h := (answer_bind_complete dG tG m' (fun x _ => PMF.pure x.1)
-    (fun _ _ _ => rfl)).symm
-  rw [RandomOracle.answer_of_none dG tG m' hnone] at h
-  simp only [pmf_norm, PMF.map, PMF.bind_const, dG] at h
-  calc (S.completeTables (tG, tH, tQ)).map (fun T => T.1 m')
-      = (RandomOracle.complete dG tG).bind (fun G => PMF.pure (G m')) := by
-        simp only [completeTables, pmf_norm, PMF.map, PMF.bind_const, dG]
-    _ = ProbComp.eval S.pke.sampleCoins := h
-
-/-- Single-step `CloseTo` simulation from `answerCachedBotHandler` to
-`eagerCoupledBotStateHandler`: `.G` and `.H` commute with `completeTables` exactly, while
-`.decaps c` commutes up to `2^{-γ}` when `S.pke.dec sk c = some m'` and `t.1 m' = none`. -/
-private theorem answerCachedBotHandler_closeTo_sim (S : Scheme PK SK M R CT K) {γ : ℝ}
+/-- One step of the lazy and `γ`-spreadness CVO hop: answering a query of `cachedCoupledBotGame`
+and then completing the joined cache is within `q.dCost · 2^{-γ}` of completing the cache first
+and answering from the tables as `eagerCoupledBotHandler` does. Only decapsulation of `c` with
+`Dec(sk, c) = some m'` and `m'` uncached can differ, when the fresh coin `G m'` re-encrypts `m'`
+to `c`. -/
+private theorem closeTo_coupledCache_cachedCoupledBotHandler (S : Scheme PK SK M R CT K) {γ : ℝ}
     (hγ : S.pke.GammaSpread γ) {pk : PK} {sk : SK}
     (hpk : (pk, sk) ∈ (ProbComp.eval S.pke.keyGen).support) (cStar : CT)
-    (q : ROQuery M CT) (t : Tables M R CT K) :
+    (q : ROQuery M CT) (st : SimState M R CT K) :
     CloseTo
-      ((S.answerCachedBotHandler pk sk cStar q t).bind
-        fun x => (S.completeTables x.2).map (x.1, ·))
-      ((S.completeTables t).bind (S.eagerCoupledBotStateHandler pk sk cStar q))
+      ((ProbComp.eval (S.coupledFilterHandler (cachedCoupledBotCheck S.pke pk sk) pk sk cStar q
+        st)).bind fun x =>
+          (RandomOracle.complete S.coupledDistribution x.2.coupledCache).map (x.1, ·))
+      ((RandomOracle.complete S.coupledDistribution st.coupledCache).bind fun T =>
+        (S.eagerCoupledBotHandler (fun m => T (.inl (.inl m))) (fun c => T (.inr c))
+          (fun x => T (.inl (.inr x))) pk sk cStar q).map (·, T))
       (q.dCost * ENNReal.ofReal ((2 : ℝ) ^ (-γ))) := by
-  rcases t with ⟨tG, tH, tQ⟩
+  rw [coupledFilterHandler_eq_interpret, RandomOracle.eval_run_interpret_bind_complete
+    S.coupledDistribution S.coupledLazyOracle SimState.coupledCache
+    S.eval_coupledLazyOracle_map_coupledCache]
+  simp only [interpret_coupledProgram]
   cases q with
-  | G m =>
-    suffices h : (S.answerCachedBotHandler pk sk cStar (.G m) (tG, tH, tQ)).bind
-        (fun x => (S.completeTables x.2).map (x.1, ·)) =
-      (S.completeTables (tG, tH, tQ)).bind (S.eagerCoupledBotStateHandler pk sk cStar (.G m)) by
-      rw [h]; exact (CloseTo.refl _).mono zero_le
-    simp only [answerCachedBotHandler, completeTables, eagerCoupledBotStateHandler,
-      eagerCoupledBotHandler, pmf_norm, ROQuery.dispatch]
-    rw [answer_bind_complete]
-    · rfl
-    · intros; rfl
-  | H x =>
-    suffices h : (S.answerCachedBotHandler pk sk cStar (.H x) (tG, tH, tQ)).bind
-        (fun x => (S.completeTables x.2).map (x.1, ·)) =
-      (S.completeTables (tG, tH, tQ)).bind (S.eagerCoupledBotStateHandler pk sk cStar (.H x)) by
-      rw [h]; exact (CloseTo.refl _).mono zero_le
-    rcases x with ⟨_ | _, m, c⟩
-    · simp only [answerCachedBotHandler, answerHashH, completeTables, eagerCoupledBotStateHandler,
-        eagerCoupledBotHandler, coupledH, pmf_norm, ROQuery.dispatch]
-      refine Eq.trans ?_ (answer_bind_complete _ tG m
-        (fun x G => (RandomOracle.complete (fun _ => ProbComp.eval S.sampleKey) tH).bind fun H =>
-          (RandomOracle.complete (fun _ => ProbComp.eval S.sampleKey) tQ).bind fun Q =>
-            PMF.pure (if S.pke.encDet pk m x.1 = c ∧ S.pke.dec sk c = some m then Q c
-              else H (false, m, c), G, H, Q)) (fun _ _ _ => rfl))
-      congr 1 with y : 1
-      by_cases h : S.pke.encDet pk m y.1 = c ∧ S.pke.dec sk c = some m
-      · simp only [h, and_self, ↓reduceIte, pmf_norm, PMF.map]
-        rw [answer_bind_complete₂]
-        · pmf_swap
-        · intros; rfl
-      · simp only [h, ↓reduceIte, pmf_norm, PMF.map]
-        rw [answer_bind_complete₁]
-        · pmf_swap
-        · intros; rfl
-    · simp only [answerCachedBotHandler, answerHashH, completeTables, eagerCoupledBotStateHandler,
-        eagerCoupledBotHandler, coupledH, pmf_norm, PMF.map, ROQuery.dispatch]
-      rw [answer_bind_complete₁]
-      · pmf_swap
-      · intros; rfl
+  | G m => exact (CloseTo.refl _).mono zero_le
+  | H x => exact (CloseTo.refl _).mono zero_le
   | decaps c =>
     simp only [ROQuery.dCost, Nat.cast_one, one_mul]
-    change CloseTo
-      ((S.answerCachedBotHandler pk sk cStar (.decaps c) (tG, tH, tQ)).bind
-        fun x => (S.completeTables x.2).map (x.1, ·))
-      ((S.completeTables (tG, tH, tQ)).bind fun T =>
-        (S.eagerCoupledBotHandler T.1 T.2.2 T.2.1 pk sk cStar (.decaps c)).map (·, T))
-      (ENNReal.ofReal ((2 : ℝ) ^ (-γ)))
-    dsimp only [answerCachedBotHandler, eagerCoupledBotHandler, ROQuery.dispatch]
-    simp only [decT_eq]
-    have hnone_sim : CloseTo
-        ((PMF.pure (none, (tG, tH, tQ))).bind
-          fun x : Option K × Tables M R CT K => (S.completeTables x.2).map (x.1, ·))
-        ((S.completeTables (tG, tH, tQ)).bind
-          fun T => (PMF.pure (none : Option K)).map (·, T))
-        (ENNReal.ofReal ((2 : ℝ) ^ (-γ))) := by
-      have h : (PMF.pure (none, (tG, tH, tQ))).bind
-          (fun x : Option K × Tables M R CT K => (S.completeTables x.2).map (x.1, ·)) =
-        (S.completeTables (tG, tH, tQ)).bind
-          (fun T => (PMF.pure (none : Option K)).map (·, T)) := by
-        simp only [pmf_norm, PMF.map]
-      rw [h]; exact (CloseTo.refl _).mono zero_le
+    dsimp only [eagerCoupledBotHandler, ROQuery.dispatch]
     by_cases hc : c = cStar
     · simp only [hc, ↓reduceIte]
-      exact hnone_sim
-    · simp only [hc, ↓reduceIte]
-      cases hdec : S.pke.dec sk c with
-      | none => exact hnone_sim
-      | some m' =>
-        dsimp only
-        cases ht : tG m' with
-        | some r' =>
-          dsimp only
-          suffices h :
-              (if S.pke.encDet pk m' r' = c then
-                (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) c tQ).map
-                  fun z => (some z.1, tG, tH, z.2)
-              else PMF.pure (none, tG, tH, tQ)).bind
-                (fun x => (S.completeTables x.2).map (x.1, ·)) =
-              (S.completeTables (tG, tH, tQ)).bind fun T =>
-                (PMF.pure (match if encT S.pke T.1 pk m' = c then some m' else none with
-                  | some _ => some (T.2.2 c)
-                  | none => none)).map (·, T) by
-            rw [h]; exact (CloseTo.refl _).mono zero_le
-          let dG : M → PMF R := fun _ => ProbComp.eval S.pke.sampleCoins
-          have hans : RandomOracle.answer dG m' tG = PMF.pure (r', tG) :=
-            RandomOracle.answer_of_some dG tG m' r' ht
-          have hR := (answer_bind_complete dG tG m'
-            (fun x G =>
-              (RandomOracle.complete (fun _ => ProbComp.eval S.sampleKey) tH).bind fun H =>
-              (RandomOracle.complete (fun _ => ProbComp.eval S.sampleKey) tQ).bind fun Q =>
-                PMF.pure (if S.pke.encDet pk m' x.1 = c then some (Q c) else none, G, H, Q))
-            (fun _ _ _ => rfl)).symm
-          rw [hans, PMF.pure_bind] at hR
-          have hR' : ((S.completeTables (tG, tH, tQ)).bind fun T =>
-              (PMF.pure (match if encT S.pke T.1 pk m' = c then some m' else none with
-                | some _ => some (T.2.2 c)
-                | none => none)).map (·, T)) =
-              (RandomOracle.complete dG tG).bind fun G =>
-              (RandomOracle.complete (fun _ => ProbComp.eval S.sampleKey) tH).bind fun H =>
-              (RandomOracle.complete (fun _ => ProbComp.eval S.sampleKey) tQ).bind fun Q =>
-                PMF.pure (if S.pke.encDet pk m' r' = c then some (Q c) else none, G, H, Q) := by
-            refine Eq.trans ?_ hR
-            simp only [completeTables, pmf_norm, PMF.map, dG]
-            congr 1 with G : 1; congr 1 with H : 1; congr 1 with Q : 1
-            by_cases h : S.pke.encDet pk m' (G m') = c <;> simp [encT, h]
-          rw [hR']
-          by_cases henc : S.pke.encDet pk m' r' = c
-          · simp only [henc, ↓reduceIte, completeTables, pmf_norm, PMF.map, dG]
-            rw [answer_bind_complete₂]
-            · pmf_swap
-            · intros; rfl
-          · simp only [henc, ↓reduceIte, completeTables, pmf_norm, PMF.map, dG]
-        | none =>
-          dsimp only
-          have hL : ((PMF.pure (none, (tG, tH, tQ))).bind
-              fun x : Option K × Tables M R CT K => (S.completeTables x.2).map (x.1, ·)) =
-              (S.completeTables (tG, tH, tQ)).map (fun T => ((none : Option K), T)) := by
-            rw [PMF.pure_bind]
-          have hR : ((S.completeTables (tG, tH, tQ)).bind fun T =>
-              (PMF.pure (match if encT S.pke T.1 pk m' = c then some m' else none with
-                | some _ => some (T.2.2 c)
-                | none => none)).map (·, T)) =
-              (S.completeTables (tG, tH, tQ)).map (fun T =>
-                (if S.pke.encDet pk m' (T.1 m') = c then some (T.2.2 c) else none, T)) := by
-            simp only [PMF.map, PMF.pure_bind, Function.comp_def]
-            congr 1 with T : 1
-            by_cases h : S.pke.encDet pk m' (T.1 m') = c <;> simp [encT, h]
-          rw [hL, hR]
-          refine (closeTo_map_of_eq_off (S.completeTables (tG, tH, tQ)) _ _
-            {T | S.pke.encDet pk m' (T.1 m') = c} (fun T hT => ?_)).mono ?_
-          · have hT' : S.pke.encDet pk m' (T.1 m') ≠ c := hT
-            simp [hT']
-          · have hmap := S.completeTables_map_eval_at_of_none tG tH tQ m' ht
-            have hmeas : (S.completeTables (tG, tH, tQ)).toOuterMeasure
-                {T | S.pke.encDet pk m' (T.1 m') = c} =
-                (ProbComp.eval S.pke.sampleCoins).toOuterMeasure
-                  {r | S.pke.encDet pk m' r = c} := by
-              rw [← hmap, PMF.toOuterMeasure_map_apply]
-              rfl
-            rw [hmeas]
-            exact (ENNReal.le_ofReal_iff_toReal_le (PMF.toOuterMeasure_ne_top _ _)
-              (by positivity)).mpr (hγ pk sk hpk m' c)
+      exact (CloseTo.refl _).mono zero_le
+    simp only [hc, ↓reduceIte, cachedCoupledBotCheck, decT_eq]
+    cases hdec : S.pke.dec sk c with
+    | none => exact (CloseTo.refl _).mono zero_le
+    | some m' =>
+      dsimp only
+      cases hlook : st.gCache.lookup m' with
+      | some r' =>
+        -- A cached coin is the completed table's coin, so both sides agree.
+        refine (Interactive.CloseTo.bind_of_eq_on _ _ _ ∅ fun T hT _ => ?_).mono (by simp)
+        have hT' : T (.inl (.inl m')) = r' :=
+          RandomOracle.complete_agrees _ _ T hT (.inl (.inl m')) r'
+            (by simp [SimState.coupledCache, RandomOracle.ofList, hlook])
+        by_cases henc : S.pke.encDet pk m' r' = c <;> simp [encT, hT', henc]
+      | none =>
+        -- An uncached coin is fresh, so the sides differ only when it re-encrypts `m'` to `c`.
+        refine (Interactive.CloseTo.bind_of_eq_on
+          (RandomOracle.complete S.coupledDistribution st.coupledCache) _ _
+          {T | S.pke.encDet pk m' (T (.inl (.inl m'))) = c} fun T _ hT => ?_).mono ?_
+        · have hT' : S.pke.encDet pk m' (T (.inl (.inl m'))) ≠ c := hT
+          simp [encT, hT']
+        · have hmap : (RandomOracle.complete S.coupledDistribution st.coupledCache).map
+              (fun T => T (.inl (.inl m'))) = ProbComp.eval S.pke.sampleCoins := by
+            rw [RandomOracle.complete, PMF.pi_map_eval]
+            simp only [SimState.coupledCache, RandomOracle.Cache.sum_inl, RandomOracle.ofList,
+              hlook, Option.elim_none]
+          have hmeas : (RandomOracle.complete S.coupledDistribution st.coupledCache).toOuterMeasure
+              {T | S.pke.encDet pk m' (T (.inl (.inl m'))) = c} =
+              (ProbComp.eval S.pke.sampleCoins).toOuterMeasure {r | S.pke.encDet pk m' r = c} := by
+            rw [← hmap, PMF.toOuterMeasure_map_apply]
+            rfl
+          rw [hmeas]
+          exact (ENNReal.le_ofReal_iff_toReal_le (PMF.toOuterMeasure_ne_top _ _)
+            (by positivity)).mpr (hγ pk sk hpk m' c)
 
+/-- Running a decapsulation-bounded program under the handler of `cachedCoupledBotGame` is within
+`d · 2^{-γ}` of completing the three caches into tables `G`, `Hraw` and `Hq` and running it under
+`eagerCoupledBotHandler`. -/
 private theorem closeTo_run_cachedCoupledBotHandler_eager (S : Scheme PK SK M R CT K) {γ : ℝ}
     (hγ : S.pke.GammaSpread γ) {pk : PK} {sk : SK}
     (hpk : (pk, sk) ∈ (ProbComp.eval S.pke.keyGen).support) (cStar : CT) {α : Type}
@@ -698,45 +400,26 @@ private theorem closeTo_run_cachedCoupledBotHandler_eager (S : Scheme PK SK M R 
       ((ProbComp.eval ((OracleComp.interpret
         (S.coupledFilterHandler (cachedCoupledBotCheck S.pke pk sk) pk sk cStar)
         prog).run st)).map Prod.fst)
-      ((S.completeTables (tablesOf st)).bind fun T =>
-        OracleComp.interpret (S.eagerCoupledBotHandler T.1 T.2.2 T.2.1 pk sk cStar) prog)
+      ((RandomOracle.complete (fun _ => ProbComp.eval S.pke.sampleCoins)
+          (RandomOracle.ofList st.gCache)).bind fun G =>
+        (RandomOracle.complete (fun _ => ProbComp.eval S.sampleKey)
+            (RandomOracle.ofList st.hCache)).bind fun Hraw =>
+          (RandomOracle.complete (fun _ => ProbComp.eval S.sampleKey)
+              (RandomOracle.ofList st.hqCache)).bind fun Hq =>
+            OracleComp.interpret (S.eagerCoupledBotHandler G Hq Hraw pk sk cStar) prog)
       (d * ENNReal.ofReal ((2 : ℝ) ^ (-γ))) := by
-  rw [OracleComp.map_run_interpret ProbComp.isMonadHom_eval]
-  have hmap := congrArg (PMF.map Prod.fst)
-    (OracleComp.run_interpret_map_state
-      (fun q s => ProbComp.eval
-        (S.coupledFilterHandler (cachedCoupledBotCheck S.pke pk sk) pk sk cStar q s))
-      (S.answerCachedBotHandler pk sk cStar) tablesOf
-      (fun q s => S.cachedCoupledBotHandler_map_tablesOf pk sk cStar q s) prog st)
-  simp only [PMF.map_comp, Function.comp_def] at hmap
-  rw [hmap]
-  have hsim := (run_interpret_closeTo_simulation ROQuery.dCost
-    (S.answerCachedBotHandler pk sk cStar) (S.eagerCoupledBotStateHandler pk sk cStar)
-    S.completeTables (ENNReal.ofReal ((2 : ℝ) ^ (-γ)))
-    (fun q t => S.answerCachedBotHandler_closeTo_sim hγ hpk cStar q t) prog hd
-    (tablesOf st)).map Prod.fst
-  have hL : (((OracleComp.interpret (S.answerCachedBotHandler pk sk cStar) prog).run
-      (tablesOf st)).bind (fun x => (S.completeTables x.2).map (x.1, ·))).map Prod.fst =
-      ((OracleComp.interpret (S.answerCachedBotHandler pk sk cStar) prog).run
-        (tablesOf st)).map Prod.fst := by
-    simp only [PMF.map, PMF.bind_bind, PMF.pure_bind, Function.comp_def, PMF.bind_const]
-  have hR : ((S.completeTables (tablesOf st)).bind fun T =>
-      (OracleComp.interpret (S.eagerCoupledBotStateHandler pk sk cStar) prog).run T).map
-        Prod.fst =
-      (S.completeTables (tablesOf st)).bind fun T =>
-        OracleComp.interpret (S.eagerCoupledBotHandler T.1 T.2.2 T.2.1 pk sk cStar) prog := by
-    rw [PMF.map_bind]
-    congr 1 with T : 1
-    have hro := congrArg (PMF.map Prod.fst)
-      (OracleComp.run_interpret_readOnly
-        (fun q T' => S.eagerCoupledBotHandler T'.1 T'.2.2 T'.2.1 pk sk cStar q) prog T)
-    change ((OracleComp.interpret (S.eagerCoupledBotStateHandler pk sk cStar) prog).run T).map
-        Prod.fst =
-      ((OracleComp.interpret (fun q => S.eagerCoupledBotHandler T.1 T.2.2 T.2.1 pk sk cStar q)
-        prog).map (fun a => (a, T))).map Prod.fst at hro
-    rw [PMF.map_comp] at hro
-    exact hro.trans (PMF.map_id _)
-  rwa [hL, hR] at hsim
+  have h := OracleComp.closeTo_run_interpret_simulation_readOnly ROQuery.dCost
+    (fun q s => ProbComp.eval
+      (S.coupledFilterHandler (cachedCoupledBotCheck S.pke pk sk) pk sk cStar q s))
+    (fun (T : (q : (M ⊕ (Bool × M × CT)) ⊕ CT) → CoupledSpec M R CT K q) =>
+      S.eagerCoupledBotHandler (fun m => T (.inl (.inl m))) (fun c => T (.inr c))
+        (fun x => T (.inl (.inr x))) pk sk cStar)
+    (fun st => RandomOracle.complete S.coupledDistribution st.coupledCache)
+    (ENNReal.ofReal ((2 : ℝ) ^ (-γ)))
+    (S.closeTo_coupledCache_cachedCoupledBotHandler hγ hpk cStar) prog hd st
+  rw [OracleComp.map_run_interpret ProbComp.isMonadHom_eval, ← RandomOracle.bind_complete_sum,
+    ← RandomOracle.bind_complete_sum]
+  exact h
 
 /-- **Lazy and `γ`-spreadness CVO hop for `FO^⊥`** ([HofheinzHoevelmannsKiltz2017], §3.1):
 replacing `eagerCoupledBotGame` (where decapsulation evaluates `decT` on the full table `G`) by
@@ -791,14 +474,18 @@ theorem closeTo_cachedCoupledBotGame_eagerCoupledBotGame
       (ProbComp.eval S.pke.sampleCoins).bind fun rStar =>
       (ProbComp.eval S.sampleKey).bind fun kRand =>
         let cStar := S.pke.encDet keys.1 mStar rStar
-        (S.completeTables (tablesOf ({ gCache := [(mStar, rStar)] } : SimState M R CT K))).bind
-          fun T => OracleComp.interpret
-            (S.eagerCoupledBotHandler T.1 T.2.2 T.2.1 keys.1 keys.2 cStar)
-            (OracleComp.query (spec := ROResp (M := M) (CT := CT) R K)
-              (ROQuery.H (false, mStar, cStar)) >>= fun k =>
-                A ⟨keys.1, cStar, if b then kRand else k⟩) := by
+        (RandomOracle.complete (fun _ => ProbComp.eval S.pke.sampleCoins)
+            (RandomOracle.ofList [(mStar, rStar)])).bind fun G =>
+          (RandomOracle.complete (fun _ => ProbComp.eval S.sampleKey)
+              (RandomOracle.ofList ([] : List ((Bool × M × CT) × K)))).bind fun Hraw =>
+            (RandomOracle.complete (fun _ => ProbComp.eval S.sampleKey)
+                (RandomOracle.ofList ([] : List (CT × K)))).bind fun Hq =>
+              OracleComp.interpret (S.eagerCoupledBotHandler G Hq Hraw keys.1 keys.2 cStar)
+                (OracleComp.query (spec := ROResp (M := M) (CT := CT) R K)
+                  (ROQuery.H (false, mStar, cStar)) >>= fun k =>
+                    A ⟨keys.1, cStar, if b then kRand else k⟩) := by
     dsimp only [eagerCoupledBotGame]
-    simp only [completeTables, tablesOf, RandomOracle.complete_ofList_singleton,
+    simp only [RandomOracle.complete_ofList_singleton,
       RandomOracle.ofList_nil, RandomOracle.complete_empty, OracleComp.interpret_bind,
       OracleComp.interpret_query, eagerCoupledBotHandler, pmf_norm, encT, ROQuery.dispatch]
     congr 1 with ⟨pk, sk⟩ : 1
