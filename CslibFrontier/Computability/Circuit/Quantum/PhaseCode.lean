@@ -329,7 +329,7 @@ end PhaseGateCode
 
 /-- The circuit on `m` qubits denoted by a list of gate codes with phase gates, applied first to
 last. Codes that are not well formed are skipped. -/
-noncomputable def Circuit.ofPhaseCodes (m : ℕ) (gs : List PhaseGateCode) : Circuit m :=
+@[expose] noncomputable def Circuit.ofPhaseCodes (m : ℕ) (gs : List PhaseGateCode) : Circuit m :=
   gs.filterMap (PhaseGateCode.toPlacedGate? m)
 
 theorem Circuit.ofPhaseCodes_cons (c : PhaseGateCode) (gs : List PhaseGateCode) :
