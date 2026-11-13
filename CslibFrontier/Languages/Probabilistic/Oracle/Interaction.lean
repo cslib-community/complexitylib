@@ -45,7 +45,9 @@ simulation and state-representation rules.
   `Cslib.ProbOracleComp.runWith_sample`: structural rules for `runWith`.
 * `Cslib.ProbOracleComp.eval_run_interpret_eq_runWith`: evaluating a closed run is `runWith`
   against the evaluated handler.
-* `Cslib.ProbOracleComp.runWith_sample_bind`: a private sample averages the continuation's run.
+* `Cslib.ProbOracleComp.runWith_sample_bind`: a private sample averages the continuation's run;
+  `Cslib.ProbOracleComp.runWith_sample_bind_congr` exchanges samples with the same law, and
+  `Cslib.ProbOracleComp.runWith_sample_bind_comm` moves a sample past any program.
 * `Cslib.ProbOracleComp.runWith_interpret`, `Cslib.ProbOracleComp.runWith_interpret_sumHandler`:
   running an interpreted program runs the original program against the handler programs' runs.
 * `Cslib.ProbOracleComp.acceptProbWith_bind`: sequencing for acceptance probability.
@@ -154,6 +156,26 @@ theorem runWith_sample_bind (program : ProbComp α) (next : α → ProbOracleCom
       (ProbComp.eval program).bind fun a => runWith oracle (next a) s := by
   rw [runWith_bind, runWith_sample, PMF.bind_map]
   rfl
+
+/-- Private samples with the same law can be exchanged in front of any continuation. -/
+theorem runWith_sample_bind_congr {program program' : ProbComp α}
+    (h : ProbComp.eval program = ProbComp.eval program') (next : α → ProbOracleComp spec β)
+    (s : State) :
+    runWith oracle (sample program >>= next) s = runWith oracle (sample program' >>= next) s := by
+  rw [runWith_sample_bind, runWith_sample_bind, h]
+
+/-- A private sample commutes with any program: since the draw neither reads nor changes the
+oracle state, drawing it before or after the program gives the same run. -/
+theorem runWith_sample_bind_comm {γ : Type} (program : ProbComp α)
+    (other : ProbOracleComp spec β) (next : α → β → ProbOracleComp spec γ) (s : State) :
+    runWith oracle (sample program >>= fun a => other >>= fun b => next a b) s =
+      runWith oracle (other >>= fun b => sample program >>= fun a => next a b) s := by
+  rw [runWith_sample_bind]
+  conv_lhs => arg 2; ext a; rw [runWith_bind]
+  rw [PMF.bind_comm, runWith_bind]
+  congr 1
+  funext b
+  rw [← runWith_sample_bind]
 
 /-- Running a program whose calls a handler answers with `ProbOracleComp spec` programs is a
 stateful run of the original program, each call answered by running its handler program. -/

@@ -993,6 +993,7 @@ public import CslibFrontier.Computability.Circuit.Approximation
 public import CslibFrontier.Computability.Circuit.Approximation.Hamming
 public import CslibFrontier.Computability.Circuit.Arithmetic
 public import CslibFrontier.Computability.Circuit.Arithmetic.Adjugate
+public import CslibFrontier.Computability.Circuit.Arithmetic.BitBlast
 public import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.Asymptotics
 public import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.CircuitRank
@@ -4503,6 +4504,7 @@ public import CslibFrontier.Crypto.Game.CloseTo.UniformNat
 public import CslibFrontier.Crypto.Game.CloseTo.UntilBad
 public import CslibFrontier.Crypto.Game.Concrete
 public import CslibFrontier.Crypto.Game.FourHop
+public import CslibFrontier.Crypto.Game.Hop
 public import CslibFrontier.Crypto.Game.Hybrid
 public import CslibFrontier.Crypto.Game.Order
 public import CslibFrontier.Crypto.Game.Retry
@@ -4611,6 +4613,11 @@ public import CslibFrontier.Crypto.Protocols.MPC.OTCommitment.Serial.Receiver
 public import CslibFrontier.Crypto.Protocols.MPC.OTCommitment.Session
 public import CslibFrontier.Crypto.Protocols.MPC.OTCommitment.World
 public import CslibFrontier.Crypto.Protocols.MPC.PolyTime
+public import CslibFrontier.Crypto.Protocols.MPC.PolyTime.Certificates
+public import CslibFrontier.Crypto.Protocols.MPC.PolyTime.Encoding
+public import CslibFrontier.Crypto.Protocols.MPC.PolyTime.InputProgEquiv
+public import CslibFrontier.Crypto.Protocols.MPC.PolyTime.RunEncoded
+public import CslibFrontier.Crypto.Protocols.MPC.PolyTime.Runner
 public import CslibFrontier.Crypto.Protocols.MPC.SPDZ
 public import CslibFrontier.Crypto.Protocols.MPC.SharedMul
 public import CslibFrontier.Crypto.Protocols.MPC.Yao
@@ -6621,6 +6628,7 @@ public import CslibFrontier.Privacy.DifferentialPrivacy.Reconstruction
 public import CslibFrontier.Privacy.DifferentialPrivacy.Sensitivity
 public import CslibFrontier.Privacy.DifferentialPrivacy.SmallUniverse
 public import CslibFrontier.Probability.AdaptiveWeights
+public import CslibFrontier.Probability.ApproxEq
 public import CslibFrontier.Probability.ApproximateCounting
 public import CslibFrontier.Probability.ApproximateCounting.Relative
 public import CslibFrontier.Probability.BitString

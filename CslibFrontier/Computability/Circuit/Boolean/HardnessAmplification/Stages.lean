@@ -138,7 +138,8 @@ theorem BitSynthesis.lineListDecode {enc : F ≃ BitString w} {G : (Fin m → F)
   have hA : Synthesis (fullInterpretation (k := 2)) (inputs m) (Set.range ΨA)
       ((q + 5) * m + 2) :=
     Synthesis.full_linePoints (s := inputs m) (fun i v => v i) (fun i => ⟨i, rfl⟩) z
-  have hA' := Synthesis.bitBlast_synthesis enc ΨA hA φ hφ
+  have hA' := Synthesis.bitBlast_synthesis enc enc.symm enc.symm_apply_apply
+    ΨA hA φ hφ
   set TA := Set.range fun oj : Option (F × Fin m) × Fin w =>
     bitsOf enc (fun x => ΨA oj.1 fun i => φ i x) oj.2
   -- the oracle at the points of the line
@@ -177,7 +178,8 @@ theorem BitSynthesis.lineListDecode {enc : F ≃ BitString w} {G : (Fin m → F)
       exact Set.mem_union_left _ (Set.mem_union_right _ ⟨(none, j), rfl⟩)
     · simp only [φC, Fin.lastCases_castSucc]
       exact Set.mem_union_right _ (Set.mem_iUnion.2 ⟨e.symm k, j, rfl⟩)
-  have hC' := Synthesis.bitBlast_synthesis enc ΨC hC φC hφC
+  have hC' := Synthesis.bitBlast_synthesis enc enc.symm enc.symm_apply_apply
+    ΨC hC φC hφC
   refine (hA'.trans (hB.comp hC')).mono Set.Subset.rfl ?_ ?_
   · rintro _ ⟨j, rfl⟩
     refine Or.inr ⟨((), j), funext fun x => ?_⟩
@@ -215,7 +217,8 @@ theorem BitSynthesis.selfCorrect {enc : F ≃ BitString w} {C1 : (Fin m → F) �
       (fun o => Synthesis.full_unary (fun a => a + ν o.1.2 * V o.1.1 o.2)
         (⟨o.2, rfl⟩ : (fun v : Fin m → F => v o.2) ∈ inputs m))
     simpa [Fintype.card_prod, mul_comm, mul_left_comm, mul_assoc] using this
-  have hA' := Synthesis.bitBlast_synthesis enc ΨA hA φ hφ
+  have hA' := Synthesis.bitBlast_synthesis enc enc.symm enc.symm_apply_apply
+    ΨA hA φ hφ
   set TA := Set.range fun oj : ((Fin (3 ^ L) × Fin (d + 1)) × Fin m) × Fin w =>
     bitsOf enc (fun x => ΨA oj.1 fun i => φ i x) oj.2
   -- the oracle at the points
@@ -259,7 +262,8 @@ theorem BitSynthesis.selfCorrect {enc : F ≃ BitString w} {C1 : (Fin m → F) �
     C1 fun i => pt (finProdFinEquiv.symm k) i x
   have hφC : ∀ k j, bitsOf enc (φC k) j ∈ (S ∪ TA) ∪ TB := fun k j =>
     Set.mem_union_right _ (Set.mem_iUnion.2 ⟨finProdFinEquiv.symm k, j, rfl⟩)
-  have hC' := Synthesis.bitBlast_synthesis enc ΨC hC φC hφC
+  have hC' := Synthesis.bitBlast_synthesis enc enc.symm enc.symm_apply_apply
+    ΨC hC φC hφC
   refine (hA'.trans (hB.comp hC')).mono Set.Subset.rfl ?_ ?_
   · rintro _ ⟨j, rfl⟩
     refine Or.inr ⟨((), j), funext fun x => ?_⟩
