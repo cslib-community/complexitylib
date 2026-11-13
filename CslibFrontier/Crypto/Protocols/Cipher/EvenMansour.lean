@@ -871,11 +871,8 @@ private theorem toOuterMeasure_uniformOfFintype_singleton_pred {p : G → Prop} 
     (target : G) (htarget : ∀ k, p k ↔ k = target) :
     (PMF.uniformOfFintype G).toOuterMeasure {k : G | decide (p k) = true} =
       (Fintype.card G : ℝ≥0∞)⁻¹ := by
-  rw [PMF.toOuterMeasure_uniformOfFintype]
-  have hfilter : Finset.univ.filter (· ∈ {k : G | decide (p k) = true}) = {target} := by
-    ext k
-    simp [htarget k]
-  rw [hfilter, Finset.card_singleton, Nat.cast_one, one_mul]
+  rw [show {k : G | decide (p k) = true} = {target} by ext k; simp [htarget k],
+    PMF.toOuterMeasure_apply_singleton, PMF.uniformOfFintype_apply]
 
 /-- Under a uniform key `k₀ ← G`, the probability of an input collision `x + k₀ = u` is exactly
 `|G|⁻¹`. -/

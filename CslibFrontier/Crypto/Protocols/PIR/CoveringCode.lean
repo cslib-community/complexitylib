@@ -251,13 +251,9 @@ theorem hasScheme [Fintype S] [Fintype M] {n ℓ : ℕ} (h : n ≤ ℓ ^ Fintype
     HasScheme (Fin n) (Fintype.card S)
       (Fintype.card S * ((Fintype.card D + Fintype.card M) * ℓ + 1)) := by
   classical
-  have hcard : Fintype.card (D → Fin ℓ) = ℓ ^ Fintype.card D := by
-    rw [Fintype.card_fun, Fintype.card_fin]
-  let e : Fin n ↪ (D → Fin ℓ) :=
-    (Fin.castLEEmb (h.trans_eq hcard.symm)).trans (Fintype.equivFin (D → Fin ℓ)).symm.toEmbedding
-  have hP := ((K.isCorrect_scheme (ι := Fin ℓ)).comap e false).hasScheme
-    ((K.isPrivate_scheme (ι := Fin ℓ)).comap e false)
-  rwa [communication_scheme, Fintype.card_fin] at hP
+  have hP := (K.isCorrect_scheme (ι := Fin ℓ)).hasScheme (K.isPrivate_scheme (ι := Fin ℓ))
+  rw [communication_scheme, Fintype.card_fin] at hP
+  exact hP.fin_of_le_card (by simpa using h)
 
 end Scheme
 

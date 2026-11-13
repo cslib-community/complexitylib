@@ -29,7 +29,7 @@ open Cslib.Logic.PL Cslib.Logic.PL.CSP Graph.RotationSystem
 
 variable {Rel : Type}
 
-private abbrev finBody (r : Rel) (n : ℕ) : CSP Rel (Fin n) := [(r, List.finRange n)]
+private abbrev finBody (r : Rel) (n : ℕ) : CSP Rel (Fin n) := [⟨r, List.finRange n⟩]
 
 private theorem vars_finBody (r : Rel) (n : ℕ) : (finBody r n).vars = List.finRange n := by
   simp [finBody, CSP.vars]
@@ -119,8 +119,8 @@ private theorem verifyArgumentOrder_finBody (r : Rel) (n : ℕ) :
 /-- The actual original-language PP atom has precisely the unbounded ordered-star graph. -/
 theorem incidenceGraph_atom (arity : Rel → ℕ) (sem : Rel → List Bool → Bool) (r : Rel) :
     incidenceGraph (PPGadget.atom (arity := arity) (sem := sem) r).body = starGraph (arity r) := by
-  change incidenceGraph ([(r, List.ofFn Sum.inl)] : CSP Rel (Fin (arity r) ⊕ Fin 0)) = _
-  have he : ([(r, List.ofFn Sum.inl)] : CSP Rel (Fin (arity r) ⊕ Fin 0)) =
+  change incidenceGraph ([⟨r, List.ofFn Sum.inl⟩] : CSP Rel (Fin (arity r) ⊕ Fin 0)) = _
+  have he : ([⟨r, List.ofFn Sum.inl⟩] : CSP Rel (Fin (arity r) ⊕ Fin 0)) =
       (finBody r (arity r)).relabel (Sum.inl : Fin (arity r) → Fin (arity r) ⊕ Fin 0) := by
     simp [finBody, CSP.relabel, Constraint.relabel, List.ofFn_eq_map]
   rw [he]
@@ -144,8 +144,8 @@ private theorem verifyRotationCertificate_finBody (r : Rel) (n : ℕ) :
 table. The relation label and truth value play no role in the graph check. -/
 theorem singleScopeCertificate_accepted {V : Type} [DecidableEq V]
     (r : Rel) (scope : List V) (hn : scope.Nodup) :
-    verifyRotationCertificate [(r, scope)] (atomBodyCertificate scope.length) = true := by
-  have he : (finBody r scope.length).relabel scope.get = [(r, scope)] := by
+    verifyRotationCertificate [⟨r, scope⟩] (atomBodyCertificate scope.length) = true := by
+  have he : (finBody r scope.length).relabel scope.get = [⟨r, scope⟩] := by
     simp [finBody, CSP.relabel, Constraint.relabel, List.map_get_finRange]
   rw [← he]
   have hf : Set.InjOn scope.get {i | i ∈ (finBody r scope.length).vars} :=
@@ -158,7 +158,7 @@ including zero and one. No planarity or rotation provider is a premise. -/
 theorem atomBodyCertificate_accepted (arity : Rel → ℕ) (sem : Rel → List Bool → Bool)
     (r : Rel) : verifyRotationCertificate (PPGadget.atom (arity := arity) (sem := sem) r).body
       (atomBodyCertificate (arity r)) = true := by
-  change verifyRotationCertificate ([(r, List.ofFn Sum.inl)] : CSP Rel (Fin (arity r) ⊕ Fin 0))
+  change verifyRotationCertificate ([⟨r, List.ofFn Sum.inl⟩] : CSP Rel (Fin (arity r) ⊕ Fin 0))
     (atomBodyCertificate (arity r)) = true
   rw [List.ofFn_eq_map]
   change verifyRotationCertificate ((finBody r (arity r)).relabel
@@ -186,7 +186,7 @@ def Witness.empty {V : Type} [DecidableEq V] (ports : List V) (hn : ports.Nodup)
     constructor
     · change verifyRotationCertificate ([] : CSP Rel V) ⟨[]⟩ = true
       rfl
-    · change verifyRotationCertificate ([(none, ports.reverse)] : CSP (Option Rel) V)
+    · change verifyRotationCertificate ([⟨none, ports.reverse⟩] : CSP (Option Rel) V)
         (atomBodyCertificate ports.length) = true
       simpa only [List.length_reverse] using
         singleScopeCertificate_accepted (none : Option Rel) ports.reverse

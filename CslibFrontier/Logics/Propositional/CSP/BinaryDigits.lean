@@ -61,8 +61,8 @@ theorem eval_partitionFunction {R : Type*} [CommSemiring R]
 bounds. -/
 theorem natDegree_partitionFunction_le {R : Type*} [Semiring R]
     {wt : Rel → List D → R[X]} {F : CSP Rel V} {d : Rel → ℕ}
-    (hd : ∀ c ∈ F, ∀ w : List D, w.length = c.2.length → (wt c.1 w).natDegree ≤ d c.1) :
-    (F.partitionFunction wt).natDegree ≤ (F.map fun c => d c.1).sum := by
+    (hd : ∀ c ∈ F, ∀ w : List D, w.length = c.scope.length → (wt c.rel w).natDegree ≤ d c.rel) :
+    (F.partitionFunction wt).natDegree ≤ (F.map fun c => d c.rel).sum := by
   rw [partitionFunction]
   refine natDegree_sum_le_of_forall_le _ _ fun σ _ => ?_
   rw [weight]
@@ -78,12 +78,12 @@ polynomial. -/
 
 /-- The degree bound from a bit-length bound for each relation. -/
 @[expose] def binaryDegreeBound (b : Rel → ℕ) (F : CSP Rel V) : ℕ :=
-  (F.map fun c => b c.1 - 1).sum
+  (F.map fun c => b c.rel - 1).sum
 
 /-- The precision for recovering the natural coefficients: the number of variables, plus the
 sum of the binary lengths of the local bit-length bounds, plus one. -/
 @[expose] def binaryPrecision (b : Rel → ℕ) (F : CSP Rel V) : ℕ :=
-  F.numVars + (F.map fun c => (b c.1).size).sum + 1
+  F.numVars + (F.map fun c => (b c.rel).size).sum + 1
 
 /-- Evaluating the binary-digit partition polynomial at `2` gives the original weighted
 partition function. -/
@@ -95,7 +95,7 @@ variable {wt : Rel → List Bool → ℕ} {F : CSP Rel V} {b : Rel → ℕ}
 
 /-- The polynomial's degree is at most the sum of the local bit-length bounds less one. -/
 theorem natDegree_binaryPartitionPolynomial_le
-    (hb : ∀ c ∈ F, ∀ w : List Bool, w.length = c.2.length → (wt c.1 w).size ≤ b c.1) :
+    (hb : ∀ c ∈ F, ∀ w : List Bool, w.length = c.scope.length → (wt c.rel w).size ≤ b c.rel) :
     (F.binaryPartitionPolynomial wt).natDegree ≤ F.binaryDegreeBound b := by
   exact natDegree_partitionFunction_le
     (wt := fun r w => binaryDigits (wt r w)) (d := fun r => b r - 1) fun c hc w hw =>
@@ -104,9 +104,9 @@ theorem natDegree_binaryPartitionPolynomial_le
 /-- The coefficient sum is at most the number of assignments times the product of the local
 bit-length bounds. -/
 theorem eval_one_binaryPartitionPolynomial_le
-    (hb : ∀ c ∈ F, ∀ w : List Bool, w.length = c.2.length → (wt c.1 w).size ≤ b c.1) :
+    (hb : ∀ c ∈ F, ∀ w : List Bool, w.length = c.scope.length → (wt c.rel w).size ≤ b c.rel) :
     (F.binaryPartitionPolynomial wt).eval 1 ≤
-      2 ^ F.numVars * (F.map fun c => b c.1).prod := by
+      2 ^ F.numVars * (F.map fun c => b c.rel).prod := by
   rw [binaryPartitionPolynomial, eval_partitionFunction]
   simpa only [Fintype.card_bool] using partitionFunction_le_prod
     (wt := fun r w => (binaryDigits (wt r w)).eval 1)
@@ -114,26 +114,26 @@ theorem eval_one_binaryPartitionPolynomial_le
 
 /-- The explicit precision strictly exceeds the coefficient sum. -/
 theorem eval_one_binaryPartitionPolynomial_lt_two_pow
-    (hb : ∀ c ∈ F, ∀ w : List Bool, w.length = c.2.length → (wt c.1 w).size ≤ b c.1) :
+    (hb : ∀ c ∈ F, ∀ w : List Bool, w.length = c.scope.length → (wt c.rel w).size ≤ b c.rel) :
     (F.binaryPartitionPolynomial wt).eval 1 < 2 ^ F.binaryPrecision b := by
-  have hprod : (F.map fun c => b c.1).prod ≤ 2 ^ (F.map fun c => (b c.1).size).sum := by
+  have hprod : (F.map fun c => b c.rel).prod ≤ 2 ^ (F.map fun c => (b c.rel).size).sum := by
     clear hb
     induction F with
     | nil => simp
     | cons c F ih =>
       simpa only [List.map_cons, List.prod_cons, List.sum_cons, pow_add] using
-        Nat.mul_le_mul (Nat.lt_size_self (b c.1)).le ih
+        Nat.mul_le_mul (Nat.lt_size_self (b c.rel)).le ih
   calc (F.binaryPartitionPolynomial wt).eval 1
-      ≤ 2 ^ F.numVars * (F.map fun c => b c.1).prod :=
+      ≤ 2 ^ F.numVars * (F.map fun c => b c.rel).prod :=
         eval_one_binaryPartitionPolynomial_le hb
-    _ ≤ 2 ^ F.numVars * 2 ^ (F.map fun c => (b c.1).size).sum := by gcongr
-    _ = 2 ^ (F.numVars + (F.map fun c => (b c.1).size).sum) := (pow_add _ _ _).symm
+    _ ≤ 2 ^ F.numVars * 2 ^ (F.map fun c => (b c.rel).size).sum := by gcongr
+    _ = 2 ^ (F.numVars + (F.map fun c => (b c.rel).size).sum) := (pow_add _ _ _).symm
     _ < 2 ^ F.binaryPrecision b := Nat.pow_lt_pow_right (by decide) (Nat.lt_succ_self _)
 
 /-- Recovering enough coefficients modulo the explicit power of two gives the entire
 binary-digit partition polynomial. -/
 theorem recover_binaryPartitionPolynomial
-    (hb : ∀ c ∈ F, ∀ w : List Bool, w.length = c.2.length → (wt c.1 w).size ≤ b c.1) :
+    (hb : ∀ c ∈ F, ∀ w : List Bool, w.length = c.scope.length → (wt c.rel w).size ≤ b c.rel) :
     ofCoeffList ((List.range (F.binaryDegreeBound b + 1)).map fun i =>
       (F.binaryPartitionPolynomial wt).coeff i % 2 ^ F.binaryPrecision b) =
         F.binaryPartitionPolynomial wt :=
@@ -142,7 +142,7 @@ theorem recover_binaryPartitionPolynomial
 
 /-- Evaluating the decoded coefficient residues at `2` recovers the weighted count. -/
 theorem evalCoeffList_binaryPartitionPolynomial_residues
-    (hb : ∀ c ∈ F, ∀ w : List Bool, w.length = c.2.length → (wt c.1 w).size ≤ b c.1) :
+    (hb : ∀ c ∈ F, ∀ w : List Bool, w.length = c.scope.length → (wt c.rel w).size ≤ b c.rel) :
     evalCoeffList 2 ((List.range (F.binaryDegreeBound b + 1)).map fun i =>
       (F.binaryPartitionPolynomial wt).coeff i % 2 ^ F.binaryPrecision b) =
         F.partitionFunction wt := by

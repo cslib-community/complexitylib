@@ -12,7 +12,6 @@ public import Mathlib.MeasureTheory.Constructions.BorelSpace.Order
 public import Mathlib.Order.Interval.Set.OrdConnected
 public import Mathlib.Order.UpperLower.Basic
 public import Mathlib.Data.List.MinMax
-public import CslibFrontier.MachineLearning.OnlineLearning.MistakeBound.Thresholds
 
 /-!
 # Compression schemes for thresholds and intervals
@@ -33,7 +32,9 @@ countable Borel structure, such as `ℝ`, and on countable domains such as `ℕ`
 (`measurableReconstruction_lowerSetScheme`, `measurableReconstruction_ordConnectedScheme`), so the
 compression bound gives PAC learners from `m` examples whenever
 `(m + 1) (1 - ε) ^ (m - 1) ≤ δ` for thresholds and `(m + 1) ^ 2 (1 - ε) ^ (m - 2) ≤ δ` for
-intervals.
+intervals. `CslibFrontier/MachineLearning/PACLearning/Compression/Thresholds.lean` applies the
+threshold scheme to the thresholds of the mistake-bound development, whose Littlestone dimension is
+infinite.
 
 ## Main definitions
 
@@ -46,9 +47,6 @@ intervals.
 
 - `measurableReconstruction_lowerSetScheme`, `measurableReconstruction_ordConnectedScheme`: the
   reconstructions are measurable on second countable order topologies.
-- `thresholdClass_subset_lowerSetClass`: the threshold class `x < θ` on `ℕ` of the mistake-bound
-  development, whose Littlestone dimension is infinite, lies in `lowerSetClass ℕ`, so it has the
-  size-`1` scheme.
 - `isPACLearnable_lowerSetClass`, `isPACLearnable_ordConnectedClass`: both classes are PAC
   learnable in the realizable setting.
 
@@ -163,17 +161,6 @@ examples. -/
       · rw [Bool.and_eq_true, decide_eq_true_eq]
         exact ⟨mem_positiveIndices.1 (List.argmax_mem hl),
           List.le_of_mem_argmax (f := fun i => (S i).1) (mem_positiveIndices.2 hi) hl⟩
-
-/-- The thresholds `x < θ` on `ℕ` of the mistake-bound development are lower-set concepts. Their
-Littlestone dimension is infinite (`littlestoneDim_thresholdClass`), so the scheme from a mistake
-bound does not apply, but `lowerSetScheme` compresses them to one example. -/
-theorem thresholdClass_subset_lowerSetClass :
-    OnlineLearning.MistakeBound.thresholdClass ⊆ lowerSetClass ℕ := by
-  intro c hc
-  obtain ⟨θ, rfl⟩ := OnlineLearning.MistakeBound.mem_thresholdClass.1 hc
-  refine mem_lowerSetClass.2 fun x y hyx hx => ?_
-  simp only [OnlineLearning.MistakeBound.thresholdConcept_apply, decide_eq_true_eq] at hx ⊢
-  omega
 
 variable [MeasurableSpace α]
 

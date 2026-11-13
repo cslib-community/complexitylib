@@ -194,9 +194,8 @@ elements), the element `c • g` for uniform `c : ZMod q` is uniform on `G`. -/
 theorem uniformOfFintype_bind_smul [Fintype G] (hg : Function.Bijective fun c : ZMod q => c • g)
     (f : G → PMF α) :
     ((PMF.uniformOfFintype (ZMod q)).bind fun c => f (c • g)) =
-      (PMF.uniformOfFintype G).bind f := by
-  rw [← PMF.uniformOfFintype_map_equiv (Equiv.ofBijective _ hg), PMF.bind_map]
-  rfl
+      (PMF.uniformOfFintype G).bind f :=
+  PMF.uniformOfFintype_bind_bijective hg fun _ => rfl
 
 end Masks
 

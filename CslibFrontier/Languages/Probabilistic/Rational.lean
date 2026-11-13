@@ -41,6 +41,8 @@ without passing through `ℝ≥0∞` (`ProbComp.coe_evalRat_eq_toReal_eval`,
 * `Cslib.ProbComp.eval_bernoulliRat_true`, `Cslib.ProbComp.toReal_eval_bernoulliRat_true`,
   `Cslib.ProbComp.evalRat_bernoulliRat_true`, `Cslib.ProbComp.evalRat_bernoulliRat_false`:
   exact `ℝ≥0∞`, `ℝ`, and `ℚ` outcome probabilities of `bernoulliRat`.
+* `Cslib.ProbComp.mul_toReal_eval_bernoulliRat_true_eq_min`: keeping mass `b` with the clamped
+  ratio `if b ≤ a then 1 else a / b` leaves mass `min a b` (rejection sampling).
 -/
 
 public section
@@ -188,6 +190,21 @@ theorem toReal_eval_bernoulliRat_true_of_mem_Icc {p : ℚ} (hp0 : 0 ≤ p) (hp1 
     (eval (bernoulliRat p) true).toReal = (p : ℝ) := by
   rw [toReal_eval_bernoulliRat_true, max_eq_left (by exact_mod_cast hp0),
     min_eq_left (by exact_mod_cast hp1)]
+
+/-- Rejection-sampling identity: keeping mass `b` with the clamped ratio
+`if b ≤ a then 1 else a / b` leaves mass `min a b`. -/
+theorem mul_toReal_eval_bernoulliRat_true_eq_min {a b : ℚ} (ha : 0 ≤ a) :
+    (b : ℝ) * (eval (bernoulliRat (if b ≤ a then 1 else a / b)) true).toReal =
+      min (a : ℝ) b := by
+  by_cases hle : b ≤ a
+  · rw [ite_eq_left hle, toReal_eval_bernoulliRat_true_of_mem_Icc zero_le_one le_rfl, Rat.cast_one,
+      mul_one, min_eq_right (by exact_mod_cast hle)]
+  · have hlt : a < b := lt_of_not_ge hle
+    have hb : 0 < b := ha.trans_lt hlt
+    rw [ite_eq_right hle, toReal_eval_bernoulliRat_true_of_mem_Icc (div_nonneg ha hb.le)
+        ((div_le_one hb).mpr hlt.le), Rat.cast_div,
+      mul_div_cancel₀ _ (by exact_mod_cast hb.ne' : (b : ℝ) ≠ 0),
+      min_eq_left (by exact_mod_cast hlt.le)]
 
 /-- Complementary `false` probability of `bernoulliRat p`. -/
 theorem toReal_eval_bernoulliRat_false (p : ℚ) :

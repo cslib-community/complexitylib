@@ -631,7 +631,7 @@ theorem runTwoRound_map {α β : Type} (reply1 reply2 : List Bool → List Bool)
     (prog : ProbComp α) (s : TwoRoundState) :
     runTwoRound reply1 reply2 (ProbOracleComp.sample prog) s = (·, s) <$> prog := by
   simp only [runTwoRound, ProbOracleComp.interpret_sample, OracleComp.run_interpret_lift,
-    ProbComp.unifFin, OracleComp.interpret_query_eq_self]
+    ProbComp.interpret_unifFin]
 
 @[simp] theorem runTwoRound_query (reply1 reply2 : List Bool → List Bool)
     (q : Unit × List Bool) (s : TwoRoundState) :

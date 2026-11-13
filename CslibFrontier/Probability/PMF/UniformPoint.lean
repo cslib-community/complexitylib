@@ -19,9 +19,10 @@ uniform form test `a = x`; `bind_pure_decide_eq_apply_true'` and the map form te
 uniform draw from a nonempty finite type `α` this is `(Fintype.card α)⁻¹`
 (`uniformOfFintype_bind_decide_eq_apply_true`). More generally, a Boolean test that accepts at most
 one value accepts a uniform draw with probability at most `(Fintype.card α)⁻¹`
-(`uniformOfFintype_bind_pure_apply_true_le`). Guessing games use this bound: an adversary whose
-view is independent of a uniform secret guesses it with probability at most `1 / |α|`, and so does
-any test comparing the secret with an injective image of the draw.
+(`uniformOfFintype_bind_pure_apply_true_le`), and so does a set with at most one member
+(`toOuterMeasure_uniformOfFintype_le_of_subsingleton`). Guessing games use this bound: an
+adversary whose view is independent of a uniform secret guesses it with probability at most
+`1 / |α|`, and so does any test comparing the secret with an injective image of the draw.
 
 ## Main results
 
@@ -32,6 +33,8 @@ any test comparing the secret with an injective image of the draw.
   fixed point with probability `(Fintype.card α)⁻¹`.
 * `Cslib.Probability.PMF.uniformOfFintype_bind_pure_apply_true_le`: a test accepting at most one
   value accepts a uniform draw with probability at most `(Fintype.card α)⁻¹`.
+* `Cslib.Probability.PMF.toOuterMeasure_uniformOfFintype_le_of_subsingleton`: a uniform draw lands
+  in a set with at most one member with probability at most `(Fintype.card α)⁻¹`.
 -/
 
 public section
@@ -81,5 +84,13 @@ theorem uniformOfFintype_bind_pure_apply_true_le {E : α → Bool}
     rw [← uniformOfFintype_bind_decide_eq_apply_true a]
     exact map_true_mono _ fun x _ hx => decide_eq_true (hE ha hx)
   · simp [not_exists.mp h]
+
+/-- A uniform draw from `α` lands in a set with at most one member with probability at most
+`(Fintype.card α)⁻¹`. -/
+theorem toOuterMeasure_uniformOfFintype_le_of_subsingleton {s : Set α} (hs : s.Subsingleton) :
+    (uniformOfFintype α).toOuterMeasure s ≤ (Fintype.card α : ℝ≥0∞)⁻¹ := by
+  obtain rfl | ⟨a, rfl⟩ := hs.eq_empty_or_singleton
+  · simp
+  · rw [PMF.toOuterMeasure_apply_singleton, uniformOfFintype_apply]
 
 end Cslib.Probability.PMF
