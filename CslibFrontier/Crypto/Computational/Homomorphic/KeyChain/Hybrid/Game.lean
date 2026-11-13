@@ -64,11 +64,8 @@ theorem publicKeyLinkHybrid_gap (n beforeCount afterCount width capacity : ℕ)
             (E.publicKeyLinkHybrid n beforeCount afterCount (j.val + 1) >>= test)
             else PMF.pure false))) := by
   have h := Game.succProbability_hybrid_average
-    (fun j : Fin (width + 1) =>
-      ProbComp.eval (E.publicKeyLinkHybrid n beforeCount afterCount j.val >>= test))
-    (dyadicSize capacity) (hcapacity.trans (lt_dyadicSize capacity).le)
-  simp only [Fin.val_zero, Fin.val_last, Fin.val_castSucc, Fin.val_castLT, Fin.val_succ,
-    dite_eq_ite] at h
+    (fun j => ProbComp.eval (E.publicKeyLinkHybrid n beforeCount afterCount j >>= test))
+    width (dyadicSize capacity) (hcapacity.trans (lt_dyadicSize capacity).le)
   simpa only [ProbComp.eval_bind, E.eval_publicKeyLinkHybrid_zero,
     E.eval_publicKeyLinkHybrid_length n beforeCount afterCount width hwidth] using h
 
@@ -113,12 +110,8 @@ theorem publicKeyChainHybrid_gap (n depth width capacity : ℕ)
       hwidth hcapacity test
     rw [hdepth, hbefore] at h
     simpa only [games, original, replacement, Nat.sub_sub] using h
-  have h := Game.succProbability_hybrid_reduction
-    (fun i : Fin (depth + 1) => games i.val)
-    (fun i => original i.val) (fun i => replacement i.val)
-    (dyadicSize depth) (lt_dyadicSize depth).le (dyadicSize capacity)
-    (fun i => hstep i.val i.isLt)
-  simp only [Fin.val_zero, Fin.val_last, Fin.val_castLT, dite_eq_ite] at h
+  have h := Game.succProbability_hybrid_reduction games original replacement
+    depth (dyadicSize depth) (lt_dyadicSize depth).le (dyadicSize capacity) hstep
   simpa only [games, original, replacement, keyChainHybridGame, PMF.monad_bind_eq_bind,
     PMF.monad_pure_eq_pure,
     Nat.sub_zero, Nat.sub_self, Bool.false_eq_true, ↓reduceIte, Nat.add_zero] using h

@@ -274,12 +274,10 @@ theorem advantage_eq (generator : List Bool → List Bool) (count : ℕ → ℕ)
     pmf_swap with i
     exact eval_ideal_hop generator count adversary n i.val
   have havg := Game.advantage_hybrid_average
-    (fun i : Fin (count n + 1) => (hybrid generator n (count n) i.val).bind
-      (fun word => ProbComp.eval (adversary n word)))
+    (fun i => (hybrid generator n (count n) i).bind
+      (fun word => ProbComp.eval (adversary n word))) (count n)
     (2 ^ (Nat.log 2 (count n) + 1))
     (Nat.le_of_lt (Nat.lt_pow_succ_log_self Nat.one_lt_two (count n)))
-  simp only [Fin.val_zero, Fin.val_last, Fin.val_castSucc, Fin.val_castLT, Fin.val_succ,
-    dite_eq_ite] at havg
   rw [← hreal, ← hideal, hybrid_zero, hybrid_last] at havg
   simpa only [eval_prgRealGame, eval_prgIdealGame, distinguishingGame,
     PMF.monad_bind_eq_bind] using havg

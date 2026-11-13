@@ -192,15 +192,14 @@ theorem reduction_gap (generator : List Bool → List Bool) (adversary : OracleD
           reduction generator adversary count n)) : ℝ)) := by
   unfold reduction
   have h := Game.succProbability_hybrid_reduction
-    (fun depth : Fin (n + 1) => ProbComp.eval (hybridGame generator adversary n depth.val))
+    (fun depth => ProbComp.eval (hybridGame generator adversary n depth))
     (fun depth => ProbComp.eval ((generator <$> BitString.sampleList n) >>=
-      levelTest generator adversary n depth.val (count n)))
+      levelTest generator adversary n depth (count n)))
     (fun depth => ProbComp.eval (BitString.sampleList (2 * n) >>=
-      levelTest generator adversary n depth.val (count n))) (dyadicSize n)
+      levelTest generator adversary n depth (count n))) n (dyadicSize n)
     (lt_dyadicSize n).le (dyadicSize (count n))
-    (fun depth =>
-      levelTest_gap generator adversary n depth.val (count n) depth.isLt hqueries)
-  simp only [Fin.val_zero, Fin.val_last, Fin.val_castLT, dite_eq_ite] at h
+    (fun depth hdepth =>
+      levelTest_gap generator adversary n depth (count n) hdepth hqueries)
   simpa only [ProbComp.eval_bind_sampleDyadicIndex_guard, PMF.monad_bind_eq_bind,
     hybridGame_zero, hybridGame_self] using h
 

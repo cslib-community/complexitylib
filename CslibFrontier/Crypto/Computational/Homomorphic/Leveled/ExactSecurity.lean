@@ -146,11 +146,8 @@ theorem publicKeyLinkHybrid_exact_gap (n beforeCount afterCount width capacity :
             (E.publicKeyLinkHybrid n beforeCount afterCount (j.val + 1) >>= test)
             else PMF.pure false))) := by
   have h := Game.succProbability_hybrid_average
-    (fun j : Fin (width + 1) =>
-      ProbComp.eval (E.publicKeyLinkHybrid n beforeCount afterCount j.val >>= test))
-    capacity hcapacity
-  simp only [Fin.val_zero, Fin.val_last, Fin.val_castSucc, Fin.val_castLT, Fin.val_succ,
-    dite_eq_ite] at h
+    (fun j => ProbComp.eval (E.publicKeyLinkHybrid n beforeCount afterCount j >>= test))
+    width capacity hcapacity
   simpa only [ProbComp.eval_bind, E.eval_publicKeyLinkHybrid_zero,
     E.eval_publicKeyLinkHybrid_length n beforeCount afterCount width hwidth] using h
 
@@ -225,11 +222,8 @@ theorem publicKeyChainHybrid_exact_gap (n depth width capacity : ℕ)
         hwidth hcapacity test
       rw [hdepth, hbefore] at h
       simpa only [games, original, replacement, Nat.sub_sub] using h
-    have h := Game.succProbability_hybrid_reduction
-      (fun i : Fin (depth + 1) => games i.val)
-      (fun i => original i.val) (fun i => replacement i.val)
-      depth le_rfl capacity (fun i => hstep i.val i.isLt)
-    simp only [Fin.val_zero, Fin.val_last, Fin.val_castLT, dite_eq_ite] at h
+    have h := Game.succProbability_hybrid_reduction games original replacement
+      depth depth le_rfl capacity hstep
     have hfin (g : ℕ → Game) :
         ((PMF.uniformOfFintype (Fin depth)).bind
           fun i : Fin depth => if i.val < depth then g i.val else PMF.pure false) =
