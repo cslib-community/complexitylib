@@ -127,6 +127,9 @@ import CslibFrontier.Computability.QueryComplexity.Quantum.NayakWuConsequences
 import CslibFrontier.Computability.QueryComplexity.Quantum.PermutationInversion
 import CslibFrontier.Computability.QueryComplexity.Quantum.SpectralAdversary
 import CslibFrontier.Computability.QueryComplexity.Quantum.WeightedAdversary
+import CslibFrontier.Crypto.Computational.GoldreichLevin.HardCore
+import CslibFrontier.Crypto.Computational.InaccessibleEntropy.TargetCollision
+import CslibFrontier.Crypto.Computational.NaorYung
 import CslibFrontier.Crypto.Computational.Nonuniform.ZeroKnowledge
 import CslibFrontier.Crypto.Computational.OneWay.LiuPass
 import CslibFrontier.Crypto.Computational.OneWay.MCSP
@@ -824,6 +827,63 @@ register_result "cryptography-prf" where
     deterministic polynomial-time evaluator, indistinguishable from a random function by \
     uniform adaptive oracle PPT adversaries with full stateful oracle semantics (negligible \
     advantage); via the one-way-to-PRG theorem and the GGM construction. Asymptotic security."
+
+register_result "goldreich-levin-hard-core" where
+  title := "Goldreich–Levin: every one-way function has a hard-core predicate, and one-way \
+    permutations yield pseudorandom generators"
+  topic := "cryptography"
+  sources := [
+    { paper := GoldreichLevin1989, theorem := unverified, locator := unverified },
+    { paper := Goldreich2007Draft, theorem := "Theorem 7.7",
+      locator := "March 2007 draft r4.pdf, PDF p. 12; printed p. 276" }
+  ]
+  theorems := [
+    Cslib.Crypto.GoldreichLevin.padded_hardCore,
+    Cslib.Crypto.OneWayPermutation.pseudorandomGenerator
+  ]
+  scope := "For every uniform one-way function f on bit strings, the inner product of the two \
+    seed halves is hard-core for the padded function (x, r, s) ↦ (f x, r, s), with at most one \
+    spare bit s so that every seed length is covered, against uniform PPT predictors with \
+    negligible bias. This is not a hard-core predicate for f itself. For a length-preserving \
+    one-way permutation, appending that bit gives a deterministic polynomial-time generator with \
+    one-bit stretch, secure against uniform strict PPT distinguishers. Asymptotic security; the \
+    source's explicit runtime and advantage trade-off is not stated."
+
+register_result "naor-yung-uowhf" where
+  title := "Naor–Yung: one-way permutations yield universal one-way hash functions"
+  topic := "cryptography"
+  sources := [
+    { paper := NaorYung1989, theorem := unverified, locator := "Section 3" },
+    { paper := Goldreich2004, theorem := unverified, locator := "Section 6.4.3.2" }
+  ]
+  theorems := [
+    Cslib.Crypto.OneWayPermutation.targetCollisionResistant_naorYungHash,
+    Cslib.Crypto.OneWayPermutation.exists_targetCollisionResistant_keyedHashFamily
+  ]
+  scope := "Every uniform one-way permutation f on bit strings gives a keyed hash family on all \
+    bit strings, with polynomial-time keys, digests and evaluation, that is target \
+    collision-resistant: a uniform strict PPT adversary that commits to a target before seeing \
+    the key finds a distinct colliding input with negligible probability. Each compression step \
+    uses a pivot-deletion quotient instead of the source's universal hash; a binary tree extends \
+    the domain. Asymptotic security; no compact key-length bound."
+
+register_result "rompel-uowhf" where
+  title := "Rompel: one-way functions yield universal one-way hash functions"
+  topic := "cryptography"
+  sources := [
+    { paper := Rompel1990, theorem := unverified, locator := unverified },
+    { paper := HHRVW2020, theorem := "Theorem 5.1", locator := "Section 5.1, p. 25" }
+  ]
+  theorems := [
+    Cslib.Crypto.ShrinkingCollisionGrid.targetCollisionResistant_rompelHash,
+    Cslib.Crypto.OneWay.exists_targetCollisionResistant_keyedHashFamily
+  ]
+  scope := "Every uniform one-way function on bit strings gives a target collision-resistant \
+    keyed hash family on all bit strings, against uniform strict PPT adversaries that commit to \
+    a target before seeing the key, via the inaccessible-entropy construction of Haitner et al. \
+    `rompelHash` is secure for every shrinking collision grid; the existence theorem obtains a \
+    grid from the one-way function. Each one-bit step takes a fresh subkey, so keys are \
+    polynomial but not as compact as the source's O(|y| log t) bound. Asymptotic security."
 
 register_result "resolution" where
   title := "Haken: pigeonhole formulas require long resolution proofs"
