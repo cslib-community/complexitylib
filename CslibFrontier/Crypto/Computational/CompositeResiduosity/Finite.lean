@@ -76,18 +76,8 @@ modulo `N` sends the uniform unit modulo `N ^ 2` to the uniform unit modulo `N`.
 theorem eval_dcrRealExperiment (D : (ZMod (N ^ 2))ˣ → Experiment) :
     ProbComp.eval (dcrRealExperiment N D) =
       (PMF.uniformOfFintype (ZMod N)ˣ).bind fun r => ProbComp.eval (D (powSelfHom N r)) := by
-  -- TODO: use `uniformOfFintype_map_monoidHom` once #4891 lands.
-  have hmap : (PMF.uniformOfFintype (ZMod (N ^ 2))ˣ).map
-      (ZMod.unitsMap (dvd_pow_self N two_ne_zero)) = PMF.uniformOfFintype (ZMod N)ˣ := by
-    rw [← Probability.PMF.uniformOfFintype_map_equiv
-        (Additive.toMul : Additive (ZMod (N ^ 2))ˣ ≃ (ZMod (N ^ 2))ˣ), PMF.map_comp,
-      ← Probability.PMF.uniformOfFintype_map_equiv
-        (Additive.toMul : Additive (ZMod N)ˣ ≃ (ZMod N)ˣ),
-      ← Probability.PMF.uniformOfFintype_map_addHom
-        (MonoidHom.toAdditive (ZMod.unitsMap (dvd_pow_self N two_ne_zero)))
-        (ZMod.unitsMap_surjective _), PMF.map_comp]
-    rfl
-  rw [← hmap, PMF.bind_map]
+  rw [← Probability.PMF.uniformOfFintype_map_monoidHom
+    (ZMod.unitsMap (dvd_pow_self N two_ne_zero)) (ZMod.unitsMap_surjective _), PMF.bind_map]
   simp only [dcrRealExperiment, ProbComp.eval_bind, ProbComp.eval_uniform, Function.comp_def,
     powSelfHom_unitsMap]
 
