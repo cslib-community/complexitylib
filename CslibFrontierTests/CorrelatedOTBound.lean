@@ -12,11 +12,12 @@ import Mathlib.Tactic.NormNum
 # Tests: information-theoretic OT upper bounds from correlated randomness
 
 * Tight impossibility on `(2, 1; 1)` deals: no semi-honest private `MPC.Protocol` over `deal211`
-  or `deal211Unordered` realizes `2` random OTs (`idealROT 2`) or `2` chosen-input OTs
+  or `deal211Unordered` realizes `2` random OTs (`rotFunctionality 2`) or `2` chosen-input OTs
   (`batchOTFunctionality 2 Bool`), and `m + 1` OTs are impossible over `deal211Batch m`, with
   matching `Communication.Protocol` and `Communication.PrivateCoin` `deal211` bounds.
 * Nonvacuous `1`-OT achievability: Beaver's 1-round tetrahedral `MPC.Protocol` realizes
-  `idealROT 1` with `PerfectSemiHonestPrivateProperOverSource` over `deal211`, and a depth-`3`
+  `rotFunctionality 1` with `PerfectSemiHonestPrivateProperWithSetup` over `dealSource deal211`,
+  and a depth-`3`
   `Communication.PrivateCoin 1 0` protocol witnesses the `1`-ROT privacy and correctness hypotheses
   of `privateCoin_rot_le_one_of_deal211` and `commProtocol_rot_le_mutualInfo`.
 * Negative non-private counterexample: over the trivial source `PMF.pure ((), ())` of mutual
@@ -40,8 +41,10 @@ example {sc : Schedule 2 noOracleSpec} {Coins : Fin 2 → Type}
     (proto : MPC.Protocol 2 noOracleSpec sc (Fin.cases (Fin 4 × Fin 4) (fun _ => Fin 4)) Coins
       (fun _ => Fin 2 → Bool × Bool))
     (S : (I : Finset (Fin 2)) →
-      CorrelatedSimulator sc (Fin 4 × Fin 4) (Fin 4) Coins (fun _ => Fin 2 → Bool × Bool) I) :
-    ¬ PerfectSemiHonestPrivateProperOverSource proto deal211 (idealROT 2) S := by
+      SetupSimulator sc (fun _ => Unit) (Fin.cases (Fin 4 × Fin 4) (fun _ => Fin 4)) Coins
+        (fun _ => Fin 2 → Bool × Bool) I) :
+    ¬ PerfectSemiHonestPrivateProperWithSetup proto noOracleWorld
+      (fun _ => dealSource deal211) (rotFunctionality 2) S := by
   intro hPriv
   have hle := rot_le_one_of_deal211 proto S hPriv
   omega
@@ -53,10 +56,11 @@ example {sc : Schedule 2 noOracleSpec} {Coins : Fin 2 → Type}
       (fun i => (batchOTSpec 2 Bool).Query () i × Fin.cases (Fin 4 × Fin 4) (fun _ => Fin 4) i)
       Coins ((batchOTSpec 2 Bool).Answer ()))
     (S : (I : Finset (Fin 2)) →
-      CorrelatedSimulatorWithInput sc (Fin 4 × Fin 4) (Fin 4) ((batchOTSpec 2 Bool).Query ()) Coins
-        ((batchOTSpec 2 Bool).Answer ()) I) :
-    ¬ PerfectSemiHonestPrivateProperWithInputOverSource proto deal211
-      (batchOTFunctionality 2 Bool) S := by
+      SetupSimulator sc ((batchOTSpec 2 Bool).Query ())
+        (fun i => (batchOTSpec 2 Bool).Query () i × Fin.cases (Fin 4 × Fin 4) (fun _ => Fin 4) i)
+        Coins ((batchOTSpec 2 Bool).Answer ()) I) :
+    ¬ PerfectSemiHonestPrivateProperWithSetup proto noOracleWorld
+      (dealSourceWithInput deal211) (batchOTFunctionality 2 Bool) S := by
   intro hPriv
   have hle := chosenOT_le_one_of_deal211 proto S hPriv
   omega
@@ -68,9 +72,11 @@ example {sc : Schedule 2 noOracleSpec} {Coins : Fin 2 → Type}
       (Fin.cases {s : Finset (Fin 4) // s.card = 2} (fun _ => Fin 4)) Coins
       (fun _ => Fin 2 → Bool × Bool))
     (S : (I : Finset (Fin 2)) →
-      CorrelatedSimulator sc {s : Finset (Fin 4) // s.card = 2} (Fin 4) Coins
+      SetupSimulator sc (fun _ => Unit)
+        (Fin.cases {s : Finset (Fin 4) // s.card = 2} (fun _ => Fin 4)) Coins
         (fun _ => Fin 2 → Bool × Bool) I) :
-    ¬ PerfectSemiHonestPrivateProperOverSource proto deal211Unordered (idealROT 2) S := by
+    ¬ PerfectSemiHonestPrivateProperWithSetup proto noOracleWorld
+      (fun _ => dealSource deal211Unordered) (rotFunctionality 2) S := by
   intro hPriv
   have hle := rot_le_one_of_deal211Unordered proto S hPriv
   omega
@@ -83,9 +89,11 @@ example {m : ℕ} {sc : Schedule 2 noOracleSpec} {Coins : Fin 2 → Type}
       (Fin.cases (Fin m → Fin 4 × Fin 4) (fun _ => Fin m → Fin 4)) Coins
       (fun _ => Fin (m + 1) → Bool × Bool))
     (S : (I : Finset (Fin 2)) →
-      CorrelatedSimulator sc (Fin m → Fin 4 × Fin 4) (Fin m → Fin 4) Coins
+      SetupSimulator sc (fun _ => Unit)
+        (Fin.cases (Fin m → Fin 4 × Fin 4) (fun _ => Fin m → Fin 4)) Coins
         (fun _ => Fin (m + 1) → Bool × Bool) I) :
-    ¬ PerfectSemiHonestPrivateProperOverSource proto (deal211Batch m) (idealROT (m + 1)) S := by
+    ¬ PerfectSemiHonestPrivateProperWithSetup proto noOracleWorld
+      (fun _ => dealSource (deal211Batch m)) (rotFunctionality (m + 1)) S := by
   intro hPriv
   have hle := rot_le_of_deal211Batch proto S hPriv
   omega
@@ -193,8 +201,8 @@ private def beaverView1 (b : Fin 4) (msg : beaverMsg) :
 
 private noncomputable def beaverSim :
     (I : Finset (Fin 2)) →
-      CorrelatedSimulator beaverSchedule (Fin 4 × Fin 4) (Fin 4) beaverCoins beaverOut I
-  | I => fun out =>
+      SetupSimulator beaverSchedule (fun _ => Unit) beaverIn beaverCoins beaverOut I
+  | I => fun _ out =>
     if h0 : (0 : Fin 2) ∈ I then
       if h1 : (1 : Fin 2) ∈ I then
         pure fun ⟨i, _⟩ => match i with
@@ -486,12 +494,11 @@ private def beaverPhi0 : ((Equiv.Perm (Fin 4) × Bool) × (Bool × Bool × Bool)
     · have hj : j = 0 := Fin.eq_zero j; subst hj; rfl
 
 private theorem beaver_priv0 :
-    idealCorrelatedJoint beaverSchedule (Fin 4 × Fin 4) (Fin 4) beaverCoins beaverOut
-        (idealROT 1) {0} (beaverSim {0}) =
-      realCorrelatedJoint beaverOTProtocol deal211 {0} := by
+    ProbComp.eval (idealJoint (rotFunctionality 1) {0} (beaverSim {0}) fun _ => ()) =
+      (realCorrelated beaverOTProtocol deal211).map
+        (Prod.map ({0} : Finset (Fin 2)).restrict id) := by
   have hLHS :
-      idealCorrelatedJoint beaverSchedule (Fin 4 × Fin 4) (Fin 4) beaverCoins beaverOut
-          (idealROT 1) {0} (beaverSim {0}) =
+      ProbComp.eval (idealJoint (rotFunctionality 1) {0} (beaverSim {0}) fun _ => ()) =
         (PMF.uniformOfFintype (((Fin 1 → Bool × Bool) × (Fin 1 → Bool)) ×
             (Equiv.Perm (Fin 4) × Bool))).map fun ⟨⟨s, c⟩, (ρ', r)⟩ =>
           let a := (ρ' 0, ρ' 1)
@@ -506,7 +513,8 @@ private theorem beaver_priv0 :
           let out : (i : Fin 2) → beaverOut i :=
             Fin.cases s (fun _ j => (c j, otSelect (s j) (c j)))
           (v0, out) := by
-    dsimp only [idealCorrelatedJoint, semanticIdealCorrelatedJoint, idealROT, beaverSim]
+    rw [eval_idealJoint, eval_rotFunctionality]
+    dsimp only [idealROT, beaverSim]
     simp only [Finset.mem_singleton, one_ne_zero, ↓reduceDIte,
       ProbComp.eval_bind, ProbComp.eval_uniform, ProbComp.eval_map,
       PMF.bind_map, PMF.map_bind, PMF.map_comp, Function.comp_def, Finset.restrict, Fin.cases_zero]
@@ -517,7 +525,8 @@ private theorem beaver_priv0 :
     subst hi0
     rfl
   have hRHS :
-      realCorrelatedJoint beaverOTProtocol deal211 {0} =
+      (realCorrelated beaverOTProtocol deal211).map
+          (Prod.map ({0} : Finset (Fin 2)).restrict id) =
         (PMF.uniformOfFintype ((Equiv.Perm (Fin 4) × Bool) × (Bool × Bool × Bool))).map
           fun ⟨⟨ρ, _⟩, rmm⟩ =>
             let v0 : (i : ↑({0} : Finset (Fin 2))) →
@@ -530,7 +539,7 @@ private theorem beaver_priv0 :
               | ⟨0, _⟩ => beaverOutputFn 0 ((v0'.input, v0'.coins), v0'.received.1)
               | ⟨1, _⟩ => beaverOutputFn 1 ((v1'.input, v1'.coins), v1'.received.1)
             (v0, out) := by
-    rw [realCorrelatedJoint, realCorrelated_beaverOTProtocol]
+    rw [realCorrelated_beaverOTProtocol]
     conv_lhs =>
       arg 2; arg 1
       rw [← uniformOfFintype_prod_map_fst (α := Equiv.Perm (Fin 4)) (β := Bool)]
@@ -692,12 +701,11 @@ private def beaverPhi1 : ((Equiv.Perm (Fin 4) × Bool) × (Bool × Bool × Bool)
       · have hj : j = 0 := Fin.eq_zero j; subst hj; exact hc.symm
 
 private theorem beaver_priv1 :
-    idealCorrelatedJoint beaverSchedule (Fin 4 × Fin 4) (Fin 4) beaverCoins beaverOut
-        (idealROT 1) {1} (beaverSim {1}) =
-      realCorrelatedJoint beaverOTProtocol deal211 {1} := by
+    ProbComp.eval (idealJoint (rotFunctionality 1) {1} (beaverSim {1}) fun _ => ()) =
+      (realCorrelated beaverOTProtocol deal211).map
+        (Prod.map ({1} : Finset (Fin 2)).restrict id) := by
   have hLHS :
-      idealCorrelatedJoint beaverSchedule (Fin 4 × Fin 4) (Fin 4) beaverCoins beaverOut
-          (idealROT 1) {1} (beaverSim {1}) =
+      ProbComp.eval (idealJoint (rotFunctionality 1) {1} (beaverSim {1}) fun _ => ()) =
         (PMF.uniformOfFintype (((Fin 1 → Bool × Bool) × (Fin 1 → Bool)) ×
             (Equiv.Perm (Fin 4) × Bool))).map fun ⟨⟨s, c⟩, (ρ', mOther)⟩ =>
           let b := ρ' 2
@@ -712,8 +720,8 @@ private theorem beaver_priv1 :
           let out : (i : Fin 2) → beaverOut i :=
             Fin.cases s (fun _ j => (c j, otSelect (s j) (c j)))
           (v1, out) := by
-    dsimp only [idealCorrelatedJoint, semanticIdealCorrelatedJoint, idealROT, beaverSim,
-      Finset.restrict]
+    rw [eval_idealJoint, eval_rotFunctionality]
+    dsimp only [idealROT, beaverSim, Finset.restrict]
     simp only [Finset.mem_singleton, zero_ne_one, ↓reduceDIte,
       ProbComp.eval_bind, ProbComp.eval_uniform, ProbComp.eval_map,
       PMF.bind_map, PMF.map_bind, PMF.map_comp, Function.comp_def]
@@ -724,7 +732,8 @@ private theorem beaver_priv1 :
     subst hi1
     rfl
   have hRHS :
-      realCorrelatedJoint beaverOTProtocol deal211 {1} =
+      (realCorrelated beaverOTProtocol deal211).map
+          (Prod.map ({1} : Finset (Fin 2)).restrict id) =
         (PMF.uniformOfFintype ((Equiv.Perm (Fin 4) × Bool) × (Bool × Bool × Bool))).map
           fun ⟨⟨ρ, _⟩, rmm⟩ =>
             let v1 : (i : ↑({1} : Finset (Fin 2))) →
@@ -737,7 +746,7 @@ private theorem beaver_priv1 :
               | ⟨0, _⟩ => beaverOutputFn 0 ((v0'.input, v0'.coins), v0'.received.1)
               | ⟨1, _⟩ => beaverOutputFn 1 ((v1'.input, v1'.coins), v1'.received.1)
             (v1, out) := by
-    rw [realCorrelatedJoint, realCorrelated_beaverOTProtocol]
+    rw [realCorrelated_beaverOTProtocol]
     conv_lhs =>
       arg 2; arg 1
       rw [← uniformOfFintype_prod_map_fst (α := Equiv.Perm (Fin 4)) (β := Bool)]
@@ -791,23 +800,28 @@ private theorem beaver_priv1 :
             | (rw [sortedPair_fst_eq (hne 0 2 (by decide))]; rfl)
             | (rw [sortedPair_fst_eq (hne 1 2 (by decide))]; rfl)) ]) ])
 
-/-- `beaverOTProtocol` realizes `idealROT 1` with perfect semi-honest privacy over `deal211`. -/
+/-- `beaverOTProtocol` realizes `rotFunctionality 1` with perfect semi-honest privacy over
+`deal211`. -/
 theorem beaverOTProtocol_private :
-    PerfectSemiHonestPrivateProperOverSource beaverOTProtocol deal211 (idealROT 1) beaverSim := by
+    PerfectSemiHonestPrivateProperWithSetup beaverOTProtocol noOracleWorld
+      (fun _ => dealSource deal211) (rotFunctionality 1) beaverSim := by
   have hOutEq : (realCorrelated beaverOTProtocol deal211).map Prod.snd = idealROT 1 := by
     have h := congrArg (PMF.map Prod.snd) beaver_priv0
-    dsimp only [idealCorrelatedJoint, semanticIdealCorrelatedJoint, realCorrelatedJoint] at h
+    rw [eval_idealJoint, eval_rotFunctionality] at h
     rw [PMF.map_bind, PMF.map_comp] at h
     have hconst : ∀ {α β : Type} (p : PMF α) (b : β),
         PMF.map (fun _ => b) p = PMF.pure b := fun p b => PMF.map_const p b
     simp only [PMF.map_comp, Function.comp_def, hconst, PMF.bind_pure] at h
     exact h.symm
-  intro I hI
+  intro I hI x
+  obtain rfl : x = fun _ => () := Subsingleton.elim _ _
   have hI_cases : I = ∅ ∨ I = {0} ∨ I = {1} := by
     revert I hI
     decide
   rcases hI_cases with rfl | rfl | rfl
-  · dsimp only [idealCorrelatedJoint, semanticIdealCorrelatedJoint, realCorrelatedJoint, beaverSim]
+  · refine Eq.trans ?_ (dealSource_bind_realJoint beaverOTProtocol deal211 ∅).symm
+    rw [eval_idealJoint, eval_rotFunctionality]
+    dsimp only [beaverSim]
     rw [← hOutEq, PMF.bind_map]
     simp only [Finset.notMem_empty, ↓reduceDIte, ProbComp.eval_pure,
       PMF.pure_map, Function.comp_def]
@@ -815,8 +829,8 @@ theorem beaverOTProtocol_private :
       (realCorrelated beaverOTProtocol deal211).map _
     congr 1 with x : 1
     refine Prod.ext (funext fun ⟨i, hi⟩ => False.elim (Finset.notMem_empty i hi)) rfl
-  · exact beaver_priv0
-  · exact beaver_priv1
+  · exact beaver_priv0.trans (dealSource_bind_realJoint beaverOTProtocol deal211 {0}).symm
+  · exact beaver_priv1.trans (dealSource_bind_realJoint beaverOTProtocol deal211 {1}).symm
 
 /-- Confirming our `k ≤ 1` bound is consistent with `beaverOTProtocol`: applying
 `rot_le_one_of_deal211` yields `1 ≤ 1`. -/
@@ -894,10 +908,12 @@ example {sc : Schedule 2 noOracleSpec} {Coins : Fin 2 → Type}
         Fin.cases {s : Finset (Fin 4) // s.card = 2} (fun _ => Fin 4) i)
       Coins ((batchOTSpec 2 Bool).Answer ()))
     (S : (I : Finset (Fin 2)) →
-      CorrelatedSimulatorWithInput sc {s : Finset (Fin 4) // s.card = 2} (Fin 4)
-        ((batchOTSpec 2 Bool).Query ()) Coins ((batchOTSpec 2 Bool).Answer ()) I) :
-    ¬ PerfectSemiHonestPrivateProperWithInputOverSource proto deal211Unordered
-      (batchOTFunctionality 2 Bool) S := by
+      SetupSimulator sc ((batchOTSpec 2 Bool).Query ())
+        (fun i => (batchOTSpec 2 Bool).Query () i ×
+          Fin.cases {s : Finset (Fin 4) // s.card = 2} (fun _ => Fin 4) i)
+        Coins ((batchOTSpec 2 Bool).Answer ()) I) :
+    ¬ PerfectSemiHonestPrivateProperWithSetup proto noOracleWorld
+      (dealSourceWithInput deal211Unordered) (batchOTFunctionality 2 Bool) S := by
   intro hPriv
   have hle := chosenOT_le_one_of_deal211Unordered proto S hPriv
   omega
@@ -910,10 +926,12 @@ example {m : ℕ} {sc : Schedule 2 noOracleSpec} {Coins : Fin 2 → Type}
         Fin.cases (Fin m → Fin 4 × Fin 4) (fun _ => Fin m → Fin 4) i)
       Coins ((batchOTSpec (m + 1) Bool).Answer ()))
     (S : (I : Finset (Fin 2)) →
-      CorrelatedSimulatorWithInput sc (Fin m → Fin 4 × Fin 4) (Fin m → Fin 4)
-        ((batchOTSpec (m + 1) Bool).Query ()) Coins ((batchOTSpec (m + 1) Bool).Answer ()) I) :
-    ¬ PerfectSemiHonestPrivateProperWithInputOverSource proto (deal211Batch m)
-      (batchOTFunctionality (m + 1) Bool) S := by
+      SetupSimulator sc ((batchOTSpec (m + 1) Bool).Query ())
+        (fun i => (batchOTSpec (m + 1) Bool).Query () i ×
+          Fin.cases (Fin m → Fin 4 × Fin 4) (fun _ => Fin m → Fin 4) i)
+        Coins ((batchOTSpec (m + 1) Bool).Answer ()) I) :
+    ¬ PerfectSemiHonestPrivateProperWithSetup proto noOracleWorld
+      (dealSourceWithInput (deal211Batch m)) (batchOTFunctionality (m + 1) Bool) S := by
   intro hPriv
   have hle := chosenOT_le_of_deal211Batch proto S hPriv
   omega
@@ -924,8 +942,10 @@ example {sc : Schedule 2 noOracleSpec} {Coins : Fin 2 → Type}
     (proto : MPC.Protocol 2 noOracleSpec sc (Fin.cases (Fin 4 × Fin 4) (fun _ => Fin 4)) Coins
       (fun _ => Fin k → Bool × Bool))
     (S : (I : Finset (Fin 2)) →
-      CorrelatedSimulator sc (Fin 4 × Fin 4) (Fin 4) Coins (fun _ => Fin k → Bool × Bool) I)
-    (hPriv : PerfectSemiHonestPrivateProperOverSource proto deal211 (idealROT k) S) :
+      SetupSimulator sc (fun _ => Unit) (Fin.cases (Fin 4 × Fin 4) (fun _ => Fin 4)) Coins
+        (fun _ => Fin k → Bool × Bool) I)
+    (hPriv : PerfectSemiHonestPrivateProperWithSetup proto noOracleWorld
+      (fun _ => dealSource deal211) (rotFunctionality k) S) :
     (k : ℝ) ≤ PMF.entropy (PMF.map Prod.fst deal211) ∧
       (k : ℝ) ≤ PMF.entropy (PMF.map Prod.snd deal211) ∧
       (k : ℝ) ≤ Real.logb 2 (Fintype.card (Fin 4 × Fin 4)) ∧
