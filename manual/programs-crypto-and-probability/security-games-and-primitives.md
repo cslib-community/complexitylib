@@ -520,6 +520,7 @@ tied to the security parameter `n`.
 
 Paillier public-key encryption operates over binary words with natural-number encodings `encNat`
 and `encPair encNat encNat (N, φ(N))`:
+
 - `keyGen gen n` draws a valid description `(p, q) ← gen n` and emits `pk = encNat N` and
   `sk = encPair encNat encNat (N, φ(N))`. Given `IsPPTOn encUnary encDesc gen`, `isPPTOn_keyGen`
   proves that key generation is uniform strict PPT.
@@ -749,8 +750,8 @@ the query-count row bound `Scheme.sum_simHitProb_le`, and the OW-to-CPA averagin
 [`FujisakiOkamoto/NotBot.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/NotBot.lean):
 `Scheme.indCcaRomAdvantage_le` bounds `indCcaRomAdvantage A` for uniform messages, a `δ`-correct
 and `γ`-spread PKE and `(qG, qH)` random-oracle queries (decapsulation queries unbounded) by
-`2 · indCpaAdvantage m₀ m₁ (romCpaReduction A m₀ m₁) + (2 qH + 2 (qG + qH)) / |M|
-+ 2 (qG + qH + 1) δ + 2 (qG + qH) 2^{-γ}` for some `m₀ ≠ m₁` (where `roIndCcaGame` draws both real `H` values and the independent ideal challenge key from the arbitrary sampler `S.sampleKey`, recovering the uniform-key experiment of HHK17 §2.2 Def. 2.4 / Fig. 4 when `S.sampleKey` is uniform). Its hybrids are fixed in
+`2 · indCpaAdvantage m₀ m₁ (romCpaReduction A m₀ m₁) + (2 qH + 2 (qG + qH)) / |M| +
+2 (qG + qH + 1) δ + 2 (qG + qH) 2^{-γ}` for some `m₀ ≠ m₁` (where `roIndCcaGame` draws both real `H` values and the independent ideal challenge key from the arbitrary sampler `S.sampleKey`, recovering the uniform-key experiment of HHK17 §2.2 Def. 2.4 / Fig. 4 when `S.sampleKey` is uniform). Its hybrids are fixed in
 `NotBot/Hybrids.lean` (`Scheme.eagerFbGame`, `Scheme.eagerCoupledGame`, `Scheme.coupledGame`,
 `Scheme.simGame`), one file per hop: fallback-seed decoupling (`NotBot/Fallback.lean`), re-indexing
 the oracles so that decapsulation reads a ciphertext table (`NotBot/Pushforward.lean`) and its lazy
