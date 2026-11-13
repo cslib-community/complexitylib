@@ -1474,6 +1474,32 @@ reuse its laws and native efficiency certificates. Substitution preserves the fr
 it does not by itself certify its runtime. This separation follows VCVio's treatment of
 [untouched oracle effects](https://github.com/Verified-zkEVM/VCVio/blob/87bc1892fff1982e97cfd8c7303c9d1f2bfdc2f9/VCVio/OracleComp/SimSemantics/Append/Core.lean).
 
+## Run a word adversary against a typed oracle
+
+When a game's adversary sends word requests but the oracle is naturally typed, import
+[Oracle/Codec.lean](../../CslibFrontier/Languages/Probabilistic/Oracle/Codec.lean) and describe
+the channel once as an `OracleCodec Op Q spec`: `encodeQuery` writes each query as a request,
+`decodeQuery` recognizes exactly those requests, and `encodeReply` writes each reply. Then
+`c.adapt P` runs the word program `P` against the typed oracle, answering requests that carry no
+query with `[]` and no call. Do not write the decoding handler by hand.
+
+`OracleCodec.run_adapt` and `OracleCodec.runWith_adapt` say that the typed run of `c.adapt P` is
+the word run of `P` against `c.wordOracle O`. So a word game equals the typed game of the adapted
+adversary exactly when its oracle is `c.wordOracle` of the typed one: it answers requests carrying
+no query with `[]`, leaving its state unchanged, and answers the others through the typed oracle.
+Prove that once for the game's oracle, as a pointwise equation, and keep the word channel when it
+fails. `isQueryBounded_adapt` keeps the adversary's budget; `isCostBounded_adapt` keeps a general
+cost budget when each query costs at most its request.
+
+`OracleCodec.bitString n` carries `n`-bit strings on a single channel. `comap` transports a codec
+along an equivalence of queries, and `withOp` puts one copy of a single-channel codec on each
+channel. In [the Luby–Rackoff reduction](../../CslibFrontier/Crypto/Computational/LubyRackoff.lean),
+`pairCodec` and `strongPairCodec` are built this way, and `pairCodec_wordOracle` and
+`strongPairCodec_wordOracle` are the pointwise equations for its random-permutation games. The
+[checked client](../../CslibFrontierTests/OracleCodec.lean) runs a word adversary with one
+malformed and one well-formed request against a stateful typed oracle. Check it with
+`scripts/build.sh --wfail --iofail CslibFrontierTests.OracleCodec`.
+
 ## Compare two runs one step at a time
 
 To relate the laws of two loops, prove the relation for one step and lift it. Import
