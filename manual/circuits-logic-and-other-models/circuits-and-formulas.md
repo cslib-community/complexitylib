@@ -150,6 +150,25 @@ polynomial-size circuits, undecidability and length dependence, and checking emp
 to the even-length language. Strict P/1 versus P/poly and the arbitrary advice hierarchy
 remain separate obligations.
 
+### Compare exact advice lengths carefully
+
+Import [Advice.LengthComparison](../../CslibFrontier/Computability/Complexity/Classes/Advice/LengthComparison.lean)
+for `PWithAdvice_subset_succ length`, which appends one advice bit and removes the last bit
+before running the original decider. It needs no algorithm for `length`. Applying it twice
+allows two extra bits, as shown in the complete
+[clients](../../CslibFrontierTests/AdviceLengthComparison.lean); run
+`scripts/build.sh CslibFrontierTests.AdviceLengthComparison`.
+
+Do not replace this fixed-gap result with arbitrary pointwise monotonicity.
+`exists_nonmonotone_advice_bounds` gives polynomially bounded lower/gap functions, an unbounded
+gap and a language lost by the corresponding upper exact-length class. The gap is not required
+to be strictly positive. An arbitrary exact length can encode information in whether advice is
+empty; a fixed upper length can remove that information. Polynomial growth of a bound does
+not mean the bound is computable. The
+[source qualification](../../results/goldreich-2007.md#exact-advice-length-comparison-a-model-qualification)
+distinguishes the draft's displayed hypotheses, its positivity prose and the author's official
+fixed-one-bit addendum. No general positive-gap hierarchy is claimed here.
+
 ## Nonuniform classes and branching programs
 
 [PolylogDepth](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Boolean/DepthClasses.lean#L51) defines polynomial-size families with depth bounded by `c(floor(log2 n)+1)^i`. The De Morgan, unbounded, majority and modular bases give NC, AC, TC and ACMod hierarchies. Exponent zero gives constant-depth classes. The families are nonuniform: one circuit may be chosen independently at every length. `ACC0` is the union over fixed moduli at least two, and the library proves its Boolean closure and inclusion in TC0. See [ACC0](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Boolean/ACC0/Basic.lean) and [TC0](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Boolean/TC0.lean).

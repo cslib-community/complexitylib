@@ -7,6 +7,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
 import CslibFrontier.Computability.Complexity.Classes.Advice.OneBit
+import CslibFrontier.Computability.Complexity.Classes.Advice.LengthComparison
 import CslibFrontier.Algorithms.Lean.Arborescence.PolyTime
 import CslibFrontier.Algorithms.Lean.DFS.SCC
 import CslibFrontier.Algorithms.Lean.MaxDicut.GoemansWilliamson
@@ -676,6 +677,27 @@ register_result "one-bit-advice-undecidable" where
     decider and has the same membership for all words of equal length. Advice need not be \
     computable; no efficient construction of the undecidable advice family is claimed. \
     Arbitrary advice hierarchies and strict P/1 versus P/poly remain separate."
+
+register_result "exact-advice-length-comparison-qualification" where
+  title := "Unbounded nonnegative gaps do not imply exact-advice containment"
+  topic := "complexity theory"
+  sources := [
+    { paper := Goldreich2007DraftR2,
+      theorem := "Exercise 3.3 / Theorem 4.1 (model qualification)",
+      locator := "January 2007 r2.pdf, PDF pp. 16, 22; printed pp. 132, 138" },
+    { paper := GoldreichAdviceHierarchyAddendum,
+      theorem := "Theorem 4.1 revised (fixed-gap contrast, not refuted)",
+      locator := "Online addendum, theorem and proof after the December 2014 discussion" }
+  ]
+  theorems := [
+    Cslib.Complexity.PWithAdvice_subset_succ,
+    Cslib.Complexity.exists_nonmonotone_advice_bounds
+  ]
+  scope := "Original counterexample for arbitrary exact-length advice: polynomial lower/gap \
+    bounds, both draft capacity bounds and an unbounded nonnegative gap do not force class \
+    containment. No computability of bounds/advice is claimed. A constant extra bit does \
+    preserve inclusion. This qualifies a reading of the displayed draft hypotheses; it \
+    neither refutes nor completes positive-gap or official fixed-gap hierarchy theorems."
 
 register_result "formula-bounds" where
   title := "Formula lower bounds: Khrapchenko's quadratic bound for parity"
