@@ -602,6 +602,11 @@ Amos Fiat, Richard M. Karp, Michael Luby, Lyle A. McGeoch, Daniel D. Sleator and
 
 National Institute of Standards and Technology. *Module-Lattice-Based Key-Encapsulation Mechanism Standard*, Federal Information Processing Standards Publication 203, 2024. https://doi.org/10.6028/NIST.FIPS.203 . Cited for the rounding maps `Compress_d` and `Decompress_d` (Section 4.2.1), `SamplePolyCBD` (Section 4.2.2, Algorithm 8), K-PKE (Section 5, Algorithms 13–15), the internal ML-KEM algorithms (Section 6, Algorithms 16–18), the ML-KEM interface (Section 7, Algorithms 19–21) and the parameter sets (Section 8, Table 2); the Lean modules record the model differences (uniform matrix, sampled coins, coefficient form). The locators follow the structure of the published standard; the PDF was not re-read in this pass.
 
+<a id="fips205"></a>
+## fips205
+
+National Institute of Standards and Technology. *Stateless Hash-Based Digital Signature Standard*, Federal Information Processing Standards Publication 205, 2024. https://doi.org/10.6028/NIST.FIPS.205 . Checked on 2026-11-13 against the official PDF (SHA-256 `8ef34228276f3386d23cb0da8c14592b8cfb0db3358016bba64df7a004f8d13d`): Section 4.4, Algorithm 4 defines `base_2b`; Section 5, Equations (5.1)–(5.4) fixes `lg_w = 4`, `w = 16`, `len1 = 2n`, `len2 = 3` and `len = 2n + 3` for `n = 16, 24, 32`; and Algorithms 7 and 8, lines 1–7 define the shared message conversion and complement checksum, including the four-bit left shift and two-byte big-endian encoding. `CslibFrontier.Crypto.Primitives.SLHDSA.WOTS.Digits` formalizes exactly this digit-preprocessing layer. It does not formalize the Algorithm 5 chain, WOTS+ keys or signatures, concrete hash instantiations, or a security theorem.
+
 <a id="fks84"></a>
 ## fks84
 
