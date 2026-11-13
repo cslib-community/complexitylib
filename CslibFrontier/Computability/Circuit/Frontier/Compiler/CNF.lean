@@ -140,17 +140,17 @@ def reachWiresCode {σ : Signature} (n : ℕ) (code : List (σ.Op × List ℕ) �
 def reachGateCountCode {σ : Signature} (n : ℕ) (code : List (σ.Op × List ℕ) × List ℕ) : ℕ :=
   code.1.zipIdx.countP fun gj => (reachWiresCode n code).any (· == n + gj.2)
 
-/-- Serialized circuit-to-CSP compiler emitting one gate constraint `(Sum.inl g.1, (n + j) :: g.2)`
+/-- Serialized circuit-to-CSP compiler emitting one gate constraint `⟨Sum.inl g.1, (n + j) :: g.2⟩`
 for each reachable gate `(g, j)` followed by one unary output constraint
-`(Sum.inr o, [code.2.getD o.val 0])` for each `o : Fin m`. -/
+`⟨Sum.inr o, [code.2.getD o.val 0]⟩` for each `o : Fin m`. -/
 def toCSPCode {σ : Signature} (m n : ℕ) (code : List (σ.Op × List ℕ) × List ℕ) :
     CSP (CircuitRel σ m) ℕ :=
   let reach := reachWiresCode n code
   let gCons : CSP (CircuitRel σ m) ℕ :=
     (code.1.zipIdx.filter fun gj => reach.any (· == n + gj.2)).map
-      fun gj => (Sum.inl gj.1.1, (n + gj.2) :: gj.1.2)
+      fun gj => ⟨Sum.inl gj.1.1, (n + gj.2) :: gj.1.2⟩
   let outCons : CSP (CircuitRel σ m) ℕ :=
-    (List.finRange m).map fun o => (Sum.inr o, [code.2.getD o.val 0])
+    (List.finRange m).map fun o => ⟨Sum.inr o, [code.2.getD o.val 0]⟩
   gCons ++ outCons
 
 /-- Reachable-wire Boolean CSP compiled from `c : Circuit σ n m`. -/
@@ -192,7 +192,7 @@ def satFreeShift {σ : Signature} {n : ℕ} (c : Circuit σ n 1) (I : Interpreta
 private theorem eval_gateConstraint_eq_true_iff {σ : Signature} {m : ℕ}
     (I : Interpretation σ Bool) (acc : Fin m → Bool → Bool)
     {outWire : ℕ} {g : σ.Op × List ℕ} (hlen : g.2.length = σ.Arity g.1) (τ : ℕ → Bool) :
-    Cslib.Logic.PL.Constraint.eval (circuitSem I acc) τ (Sum.inl g.1, outWire :: g.2) = true ↔
+    Cslib.Logic.PL.Constraint.eval (circuitSem I acc) τ ⟨Sum.inl g.1, outWire :: g.2⟩ = true ↔
       τ outWire = I g.1 (fun a => τ (g.2[a.val]'(a.isLt.trans_eq hlen.symm))) := by
   simp only [Cslib.Logic.PL.Constraint.eval, List.map_cons, circuitSem, List.length_map, hlen,
     decide_true, Bool.true_and, beq_iff_eq]
@@ -470,7 +470,7 @@ theorem reachGateCountCode_le_numVars_toCNFCode (I : Interpretation σ Bool)
   obtain ⟨⟨g, j⟩, hgj, rfl⟩ := hw
   set inBits : List Bool := List.replicate g.2.length false
   set bits : List Bool := (!I g.1 fun a => inBits.getD a.val false) :: inBits
-  have hcon : ((Sum.inl g.1, (n + j) :: g.2) : Cslib.Logic.PL.Constraint (CircuitRel σ m) ℕ) ∈
+  have hcon : (⟨Sum.inl g.1, (n + j) :: g.2⟩ : Cslib.Logic.PL.Constraint (CircuitRel σ m) ℕ) ∈
       toCSPCode m n code := by
     simp only [toCSPCode]
     exact List.mem_append_left _ (List.mem_map_of_mem hgj)
@@ -563,7 +563,7 @@ private theorem eval_toCSP_iff_satisfies_network (c : Circuit σ n m) (I : Inter
   have hcode1 : c.code.1 = List.ofFn fun j : Fin c.size => (c.program.lines j).code :=
     Program.code_eq_ofFn_lines c.program
   have hout_iff :
-      (∀ con ∈ (List.finRange m).map (fun o => (Sum.inr o, [c.code.2.getD o.val 0])),
+      (∀ con ∈ (List.finRange m).map (fun o => ⟨Sum.inr o, [c.code.2.getD o.val 0]⟩),
         Cslib.Logic.PL.Constraint.eval (circuitSem I acc) τ con = true) ↔
         ∀ o : Fin m, acc o (τ (c.outputs o).toNat) = true := by
     simp only [List.mem_map, List.mem_finRange, true_and, forall_exists_index,

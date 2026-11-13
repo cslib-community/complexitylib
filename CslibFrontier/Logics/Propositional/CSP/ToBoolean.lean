@@ -166,12 +166,12 @@ def CSP.semBoolean (q : ℕ) (sem : Rel → List (Fin q) → Bool) :
     else false
 
 /-- Compile a finite-domain CSP on declared variables `0, …, N - 1` into an equivalent Boolean CSP.
-Emits a domain-validity constraint `(none, bitScope b v)` for every `v < N`, and translates each
-constraint `(R, vs)` to `(some R, vs.flatMap (bitScope b))`. -/
+Emits a domain-validity constraint `⟨none, bitScope b v⟩` for every `v < N`, and translates each
+constraint `⟨R, vs⟩` to `⟨some R, vs.flatMap (bitScope b)⟩`. -/
 def CSP.toBoolean (q : ℕ) (N : ℕ) (F : CSP Rel ℕ) : CSP (Option Rel) ℕ :=
   let b := CSP.bitWidth q
-  (List.range N).map (fun v => (none, CSP.bitScope b v)) ++
-  F.map (fun c => (some c.rel, c.scope.flatMap (CSP.bitScope b)))
+  (List.range N).map (fun v => ⟨none, CSP.bitScope b v⟩) ++
+  F.map (fun c => ⟨some c.rel, c.scope.flatMap (CSP.bitScope b)⟩)
 
 /-- The constraint scope length of every clause in the compiled Boolean CSP is bounded by
 `max 1 k * bitWidth q`. -/
@@ -296,7 +296,7 @@ private theorem eval_none_constraint_encodeAssign (q N : ℕ) (sem : Rel → Lis
     Constraint.eval (CSP.semBoolean q sem)
       (fun x => if h : x ∈ Finset.range (N * CSP.bitWidth q) then
         encodeAssign q N τ ⟨x, h⟩ else false)
-      (none, CSP.bitScope (CSP.bitWidth q) v) = true := by
+      ⟨none, CSP.bitScope (CSP.bitWidth q) v⟩ = true := by
   dsimp only [Constraint.eval, CSP.semBoolean]
   rw [map_extend_encodeAssign_bitScope q N τ hv]
   simp only [length_lowBits, decide_eq_true_eq]
@@ -323,7 +323,7 @@ private theorem eval_some_constraint_encodeAssign (q N : ℕ) (hq : 0 < q)
     Constraint.eval (CSP.semBoolean q sem)
       (fun x => if h : x ∈ Finset.range (N * CSP.bitWidth q) then
         encodeAssign q N τ ⟨x, h⟩ else false)
-      (some c.rel, c.scope.flatMap (CSP.bitScope (CSP.bitWidth q))) =
+      ⟨some c.rel, c.scope.flatMap (CSP.bitScope (CSP.bitWidth q))⟩ =
     Constraint.eval sem
       (fun v => if h : v ∈ Finset.range N then τ ⟨v, h⟩ else ⟨0, hq⟩) c := by
   let b := CSP.bitWidth q
@@ -392,14 +392,14 @@ private theorem eval_toBoolean_encodeAssign (q N : ℕ) (hq : 0 < q)
   let τ_ext := fun v => if h : v ∈ Finset.range N then τ ⟨v, h⟩ else ⟨0, hq⟩
   dsimp only [CSP.toBoolean, CSP.eval]
   rw [List.all_append]
-  have hnone : ((List.range N).map (fun v => (none, CSP.bitScope (CSP.bitWidth q) v))).all
+  have hnone : ((List.range N).map (fun v => ⟨none, CSP.bitScope (CSP.bitWidth q) v⟩)).all
       (Constraint.eval (CSP.semBoolean q sem) σ) = true := by
     rw [List.all_eq_true]
     intro c hc
     simp only [List.mem_map, List.mem_range] at hc
     rcases hc with ⟨v, hv, rfl⟩
     exact eval_none_constraint_encodeAssign q N sem τ hv
-  have hsome : (F.map (fun c => (some c.rel, c.scope.flatMap (CSP.bitScope (CSP.bitWidth q))))).all
+  have hsome : (F.map (fun c => ⟨some c.rel, c.scope.flatMap (CSP.bitScope (CSP.bitWidth q))⟩)).all
       (Constraint.eval (CSP.semBoolean q sem) σ) = F.all (Constraint.eval sem τ_ext) := by
     have hscope (c) (hc : c ∈ F) : ∀ v ∈ c.scope, v < N := fun v hv => hvars v (by
       simp only [CSP.vars, List.mem_flatMap]
@@ -408,7 +408,7 @@ private theorem eval_toBoolean_encodeAssign (q N : ℕ) (hq : 0 < q)
     simp only [List.all_eq_true, List.mem_map, forall_exists_index, and_imp]
     constructor
     · intro h c hc
-      have h1 := h (some c.rel, c.scope.flatMap (CSP.bitScope (CSP.bitWidth q))) c hc rfl
+      have h1 := h ⟨some c.rel, c.scope.flatMap (CSP.bitScope (CSP.bitWidth q))⟩ c hc rfl
       rwa [eval_some_constraint_encodeAssign q N hq sem τ c (hscope c hc)] at h1
     · intro h _ c hc rfl
       have h1 := h c hc
@@ -424,13 +424,13 @@ private theorem encodeAssign_decodeAssign_of_eval (q N : ℕ) (hq : 0 < q)
   let b := CSP.bitWidth q
   let σ_ext := fun x => if h : x ∈ Finset.range (N * b) then σ ⟨x, h⟩ else false
   have hnone : ∀ v < N,
-      Constraint.eval (CSP.semBoolean q sem) σ_ext (none, CSP.bitScope b v) = true := by
+      Constraint.eval (CSP.semBoolean q sem) σ_ext ⟨none, CSP.bitScope b v⟩ = true := by
     intro v hv
-    have hmem : (none, CSP.bitScope b v) ∈ F.toBoolean q N := by
+    have hmem : ⟨none, CSP.bitScope b v⟩ ∈ F.toBoolean q N := by
       simp only [CSP.toBoolean, List.mem_append, List.mem_map]
       left
       exact ⟨v, List.mem_range.mpr hv, rfl⟩
-    have := List.all_eq_true.mp (by exact h_eval) (none, CSP.bitScope b v) hmem
+    have := List.all_eq_true.mp (by exact h_eval) _ hmem
     exact this
   have hbits_lt : ∀ v (hv : v < N),
       lsbValue ((List.range b).map (fun j =>

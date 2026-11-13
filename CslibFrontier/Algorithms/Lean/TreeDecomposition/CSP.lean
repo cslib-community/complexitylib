@@ -879,7 +879,8 @@ private theorem dpSpec_dpCountAlg_eq {q : ℕ} (hq : 0 < q) (sem : Rel → List 
   | .leaf, α => by
     dsimp only [dpSpec, CSP.specDPCount, dpCountAlg]
     by_cases h : ∀ c ∈ F, c.scope = [] → c.eval sem (fun _ => ⟨0, hq⟩) = true
-    · have h1 : (F.all fun c => !decide (c.scope = []) || c.eval sem (fun _ => ⟨0, hq⟩)) = true := by
+    · have h1 :
+          (F.all fun c => !decide (c.scope = []) || c.eval sem (fun _ => ⟨0, hq⟩)) = true := by
         rw [List.all_eq_true]
         intro x hx
         by_cases hx2 : x.scope = []
@@ -887,7 +888,8 @@ private theorem dpSpec_dpCountAlg_eq {q : ℕ} (hq : 0 < q) (sem : Rel → List 
           exact Or.inr (h x hx hx2)
         · simp [hx2]
       rw [h1, ite_eq_left rfl, ite_eq_left h]
-    · have h0 : (F.all fun c => !decide (c.scope = []) || c.eval sem (fun _ => ⟨0, hq⟩)) = false := by
+    · have h0 :
+          (F.all fun c => !decide (c.scope = []) || c.eval sem (fun _ => ⟨0, hq⟩)) = false := by
         by_contra hnt
         rw [Bool.not_eq_false, List.all_eq_true] at hnt
         apply h

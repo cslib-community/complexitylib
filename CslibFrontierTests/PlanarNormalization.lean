@@ -216,8 +216,9 @@ example : (twistBody (fun _ : Fin 6 => false)).eval (sem (twoDifferences 6))
 example : (twelveToFour.gadget (twistGadget (twoDifferences 12) (fun _ => false))).numAux = 28 := by
   rw [Program.gadget_numAux]
   rfl
-example : (sixToFour.gadget (twistGadget (twoDifferences 6) (fun _ => false))).body.map Prod.fst =
-    (twistBody (fun _ : Fin 6 => false)).map Prod.fst := Program.gadget_symbols _ _
+example :
+    (sixToFour.gadget (twistGadget (twoDifferences 6) (fun _ => false))).body.map Constraint.rel =
+      (twistBody (fun _ : Fin 6 => false)).map Constraint.rel := Program.gadget_symbols _ _
 
 example : ((twelveToFour.gadget
     (twistGadget (twoDifferences 12) (fun _ => false))).body.map (fun c => c.scope.length)) =

@@ -46,7 +46,7 @@ are allowed and count as distinct positions in the scope. -/
 
 /-- Executable exact-arity guard for an instance of a fixed constraint language. -/
 @[expose] def validArity (arity : Rel → ℕ) (F : CSP Rel V) : Bool :=
-  F.all fun (R, vs) => decide (vs.length = arity R)
+  F.all fun c => decide (c.scope.length = arity c.rel)
 
 /-- The exact-arity guard agrees with the semantic well-formedness condition. -/
 @[simp] theorem validArity_eq_true_iff (arity : Rel → ℕ) (F : CSP Rel V) :

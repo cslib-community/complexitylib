@@ -72,13 +72,13 @@ constraints, including nullary constraints, retain their relation and scope. -/
   else
     let ps := positions vs F[i.val].scope
     let os := outsidePositions F[i.val].scope.length ps
-    (F[i.val].rel.contract (localTuple f i) ps,
-      os.map (fun j => F[i.val].scope.getD j 0) ++ [connector F i])
+    ⟨F[i.val].rel.contract (localTuple f i) ps,
+      os.map (fun j => F[i.val].scope.getD j 0) ++ [connector F i]⟩
 
 /-- Executable whole-instance contraction. This keeps every old constraint and appends the
 central exactly-one constraint, even when some old constraints have empty scopes. -/
 @[expose] def contract (f : OccurrenceLabeling F Bool) (vs : List ℕ) : CSP Table ℕ :=
-  List.ofFn (constraint f vs) ++ [(exactlyOne (connectors F vs), connectors F vs)]
+  List.ofFn (constraint f vs) ++ [Constraint.mk (exactlyOne (connectors F vs)) (connectors F vs)]
 
 /-- Ordered outside projections of actual original labels, with supplied connector bits and
 one supplied central row. The buffers retain exactly the old constraint ordering. -/
@@ -216,7 +216,7 @@ theorem get_referenceRows_old (f : OccurrenceLabeling F Bool) (vs : List ℕ)
 /-- The central relation occupies the single newly appended constraint position. -/
 theorem get_contract_central (f : OccurrenceLabeling F Bool) (vs : List ℕ) :
     (contract f vs)[F.length]'(by simp) =
-      (exactlyOne (connectors F vs), connectors F vs) := by
+      ⟨exactlyOne (connectors F vs), connectors F vs⟩ := by
   simp [contract, List.getElem_append_right]
 
 /-- The reference buffer at the central constraint is one-hot, with position zero selected. -/
@@ -310,9 +310,9 @@ theorem even_constraint {f : OccurrenceLabeling F Bool} (hf : ValidLabeling sem 
     rw [he]
     simpa only [P, Fin.getElem_fin] using hM i
   · have he : constraint f vs i =
-        (F[i.val].rel.contract (localTuple f i) (positions vs F[i.val].scope),
+        ⟨F[i.val].rel.contract (localTuple f i) (positions vs F[i.val].scope),
           (outsidePositions F[i.val].scope.length (positions vs F[i.val].scope)).map
-            (fun j => F[i.val].scope.getD j 0) ++ [connector F i]) := by
+            (fun j => F[i.val].scope.getD j 0) ++ [connector F i]⟩ := by
       simp [constraint, hp]
     have hout := arity_constraint hf vs i
     rw [he] at hout
@@ -332,7 +332,7 @@ theorem even_contract {f : OccurrenceLabeling F Bool} (hf : ValidLabeling sem f)
   · rw [get_contract_old f vs ⟨i.val, hi⟩]
     exact even_constraint hf hM vs ⟨i.val, hi⟩
   · have he : i.val = F.length := by have := i.isLt; simp only [length_contract] at this; omega
-    have hget : (contract f vs)[i.val] = (exactlyOne (connectors F vs), connectors F vs) := by
+    have hget : (contract f vs)[i.val] = ⟨exactlyOne (connectors F vs), connectors F vs⟩ := by
       simp [contract, he, List.getElem_append_right]
     have hscope : connectors F vs ≠ [] := by
       intro hz

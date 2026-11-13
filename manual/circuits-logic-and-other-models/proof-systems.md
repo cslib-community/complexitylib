@@ -159,7 +159,7 @@ supplies `declaredCNFDecoder` and the polynomial-time well-formed word recognize
 `declaredCNFCode`. See the [CNF basis tests](../../CslibFrontierTests/CNFBasics.lean), checked with
 `scripts/build.sh CslibFrontierTests.CNFBasics`.
 
-[Constraint](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/CSP.lean#L69) has a relation alphabet and constraints consisting of a relation label plus a variable list. Semantics evaluates the label on the corresponding list of domain values. Arity is not enforced by the relation's type; a fixed-arity interpretation is an additional condition. Boolean/CNF translations and partition-function clients instantiate this generic semantic interface; see [weighted CSP partition functions and variable elimination](networks-and-iteration.md#weighted-csp-partition-functions-and-variable-elimination) for `partitionFunctionOn`, separator conditioning, `FactorTable` tensor bridges, and `TimeM` / weight-cost variable elimination.
+[Constraint](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/CSP.lean#L69) has a relation alphabet and constraints consisting of a relation label `rel` plus a variable list `scope`; write `⟨R, vs⟩` for a literal constraint, and use `Constraint.equivProd` where a pair is needed. Semantics evaluates the label on the corresponding list of domain values. Arity is not enforced by the relation's type; a fixed-arity interpretation is an additional condition. Boolean/CNF translations and partition-function clients instantiate this generic semantic interface; see [weighted CSP partition functions and variable elimination](networks-and-iteration.md#weighted-csp-partition-functions-and-variable-elimination) for `partitionFunctionOn`, separator conditioning, `FactorTable` tensor bridges, and `TimeM` / weight-cost variable elimination.
 
 [QBF](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/QBF.lean#L76) uses named-variable Boolean quantifiers. Evaluating an existential or universal binder updates the assignment with both possible values and ORs or ANDs the results. Arithmetization and native/interactive-proof completeness clients live in their corresponding sections. This formula syntax does not by itself assert a resource bound for evaluation.
 
@@ -1557,8 +1557,8 @@ full body acceptance from probe acceptance with explicit `hn : ports.Nodup`.
 arbitrary repeated words; the underlying witness interface still permits repeated markers.
 
 `verifyRotationCertificate_restrictPrefix_lastArgument F r scope v c h` applies to the
-original CSP lists: acceptance of `F ++ [(r, scope ++ [v])]` implies acceptance of the literal
-restricted table on `F ++ [(r, scope)]`. Occurrence and endpoint maps internally handle dense
+original CSP lists: acceptance of `F ++ [⟨r, scope ++ [v]⟩]` implies acceptance of the literal
+restricted table on `F ++ [⟨r, scope⟩]`. Occurrence and endpoint maps internally handle dense
 renumbering, disappearing variables, repeated labels and nullaries. In gadget recipes this
 edits a structural probe. It makes no SAT-preservation claim for deleting an argument of a
 Gamma constraint. Zero-port extraction removes only the structural nullary, retaining

@@ -318,7 +318,8 @@ theorem subtreeSatCount_leaf [Finite D] [Inhabited D] (sem : Rel → List D → 
 
 theorem subtreeSatCount_introduce [Finite D] (sem : Rel → List D → Bool) {F : CSP Rel V}
     {U S B : Finset V} {v : V} (hvS : v ∉ S) (hBS : B ⊆ S) (hU : F.vars.toFinset ⊆ U)
-    (hcov : ∀ c ∈ F, c.scope.toFinset ⊆ insert v S → c.scope.toFinset ⊆ S ∨ c.scope.toFinset ⊆ insert v B)
+    (hcov : ∀ c ∈ F, c.scope.toFinset ⊆ insert v S →
+      c.scope.toFinset ⊆ S ∨ c.scope.toFinset ⊆ insert v B)
     (α : V → D) :
     subtreeSatCount sem F U (insert v S) (insert v B) α =
       if ∀ c ∈ F, c.scope.toFinset ⊆ insert v B → v ∈ c.scope → c.eval sem α = true then
@@ -618,7 +619,8 @@ theorem specDPCount_eq_subtreeSatCount (sem : Rel → List D → Bool) {F : CSP 
         exact Finset.disjoint_left.1 hdisjR (Finset.mem_sdiff.2 ⟨hcSub hv, hnot⟩) (hsubL hv)
       · exact hR
     have hcov_step : ∀ c ∈ F, c.scope.toFinset ⊆ left.subtreeVerts ∪ right.subtreeVerts →
-        c.scope.toFinset ⊆ left.subtreeVerts ∨ c.scope.toFinset ⊆ right.subtreeVerts := fun c hc hcSub => by
+        c.scope.toFinset ⊆ left.subtreeVerts ∨ c.scope.toFinset ⊆ right.subtreeVerts :=
+        fun c hc hcSub => by
       rcases hcov c hc hcSub with hB | hL | hR
       · exact Or.inl (hB.trans left.bag_subset_subtreeVerts)
       · exact Or.inl (NiceTree.coversFinset_subset_subtreeVerts hL)

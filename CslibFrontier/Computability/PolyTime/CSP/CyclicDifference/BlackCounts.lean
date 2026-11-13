@@ -40,8 +40,8 @@ theorem mem_vars_blackConstraints (v : ℕ) :
   · intro hv
     obtain ⟨o, ho⟩ := exists_incidenceEdgeIndex (F := F) v (by
       simpa only [incidenceGraph_edges, List.length_map] using hv)
-    refine ⟨(differenceTable arity sem F[o.1.val].rel,
-      blackScope F o.1 F[o.1.val].scope), ?_, ?_⟩
+    refine ⟨⟨differenceTable arity sem F[o.1.val].rel,
+      blackScope F o.1 F[o.1.val].scope⟩, ?_, ?_⟩
     · refine ⟨(F[o.1.val], o.1.val), List.mem_filter.mpr ⟨?_, ?_⟩, rfl⟩
       · exact List.mem_zipIdx_iff_getElem?.mpr (List.getElem?_eq_getElem o.1.isLt)
       · have hp := Nat.zero_lt_of_lt o.2.isLt

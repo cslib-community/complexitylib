@@ -49,8 +49,8 @@ namespace Cslib.Logic.PL.CSP
 `i * n + j` for every nonzero entry, and an exactly-one constraint for every row and every column
 on the variables of its nonzero entries. -/
 @[expose] def permanentInstance (n : ℕ) (r : ℕ → ℕ → Bool) : CSP Unit ℕ :=
-  (List.range n).map (fun i => ((), ((List.range n).filter (r i)).map fun j => i * n + j)) ++
-    (List.range n).map fun j => ((), ((List.range n).filter fun i => r i j).map fun i => i * n + j)
+  (List.range n).map (fun i => ⟨(), ((List.range n).filter (r i)).map fun j => i * n + j⟩) ++
+    (List.range n).map fun j => ⟨(), ((List.range n).filter fun i => r i j).map fun i => i * n + j⟩
 
 variable {n : ℕ} {r : ℕ → ℕ → Bool}
 

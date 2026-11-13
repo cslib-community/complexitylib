@@ -55,7 +55,7 @@ exactly-one constraint for each distinct declared vertex on the positions of its
 edges. -/
 @[expose] def perfectMatchingInstance (G : Graph) : CSP Unit ℕ :=
   G.distinctVertices.map fun v =>
-    ((), (List.range G.edgeList.length).filter fun i => incident (G.edgeList.getD i (0, 0)) v)
+    ⟨(), (List.range G.edgeList.length).filter fun i => incident (G.edgeList.getD i (0, 0)) v⟩
 
 variable {G : Graph}
 

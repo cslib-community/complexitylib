@@ -56,7 +56,7 @@ private theorem computable_constraint [Finite Rel] (encRel : Rel ↪ List Bool)
   have ht : ComputableInPolyTime template encRel
       (encList (encList (encPair encUnary encBool))) := of_finite _
   unfold Constraint.instantiateCNF CNF.relabel
-  exact mapWithInput (ht.comp (fst _ _)) (computable_clause encRel)
+  exact mapWithInput (ht.comp (encConstraint_rel_polyTime id')) (computable_clause encRel)
 
 /-- Fixed CNF templates over a finite relation alphabet can be instantiated in polynomial time,
 with binary variable labels and unary local positions. -/

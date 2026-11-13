@@ -81,11 +81,11 @@ example : Nonempty (Trace (booleanRelation arity sem .negative) nand) :=
 
 -- Sparse original variable labels and repeated scopes use the original CSP evaluator.
 example : CSP.eval sem
-    (F := ([(Symbol.negative, [7, 7, 2 ^ 80])] : CSP Symbol ℕ))
+    (F := ([⟨Symbol.negative, [7, 7, 2 ^ 80]⟩] : CSP Symbol ℕ))
     (fun i => i == 7) = true := by decide
 
 example : CSP.eval sem
-    (F := ([(Symbol.negative, [7, 7, 7])] : CSP Symbol ℕ))
+    (F := ([⟨Symbol.negative, [7, 7, 7]⟩] : CSP Symbol ℕ))
     (fun _ => true) = false := by decide
 
 example : IsPolymorphism (parity 3) (∅ : Set (Fin 17 → Bool)) := by
@@ -174,6 +174,6 @@ example : triangleBody.eval (triangleSem positive)
     (Sum.elim ![true, false, true] (fun _ => false)) = false := by decide
 
 -- The final pair is (2,0); rejecting 101 checks the cyclic wraparound edge.
-example : triangleBody[3] = (.nand, [.inl 2, .inl 0]) := rfl
+example : triangleBody[3] = ⟨.nand, [.inl 2, .inl 0]⟩ := rfl
 
 end CslibFrontierTests.PlanarNonSelfDual

@@ -111,10 +111,11 @@ theorem computableInPolyTime_toBoolean (encRel : Rel ↪ List Bool) (q : ℕ) :
   let encOutElem := encConstraint (encOption encRel) encNat
   have hnone : ComputableInPolyTime
       (fun x : ℕ × CSP Rel ℕ =>
-        (List.range x.1).map fun v => ((none : Option Rel), CSP.bitScope b v))
+        (List.range x.1).map fun v => (⟨none, CSP.bitScope b v⟩ : Constraint (Option Rel) ℕ))
       encIn (encList encOutElem) := by fun_prop
   have hsome : ComputableInPolyTime
-      (fun x : ℕ × CSP Rel ℕ => x.2.map fun c => (some c.1, c.2.flatMap (CSP.bitScope b)))
+      (fun x : ℕ × CSP Rel ℕ => x.2.map fun c =>
+        (⟨some c.rel, c.scope.flatMap (CSP.bitScope b)⟩ : Constraint (Option Rel) ℕ))
       encIn (encList encOutElem) := by fun_prop
   exact ComputableInPolyTime.listAppend' hnone hsome
 

@@ -53,7 +53,7 @@ theorem vars_length_replaceGadgets (B : ℕ) (templates : Src → CSP Rel (Bool 
     (replaceGadgets B templates F).vars.length =
       (F.map fun c => (templates c.rel).vars.length).sum := by
   change ((F.zipIdx.flatMap fun p => instantiate B p.2 p.1.scope (templates p.1.rel)).flatMap
-    Prod.snd).length = _
+    Constraint.scope).length = _
   rw [List.flatMap_assoc, List.length_flatMap]
   conv_rhs => rw [← List.zipIdx_map_fst 0 F, List.map_map]
   congr 1

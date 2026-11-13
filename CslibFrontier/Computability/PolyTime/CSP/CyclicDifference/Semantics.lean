@@ -34,11 +34,12 @@ theorem eval_blackConstraints_iff (arity : Rel → ℕ) (sem : Rel → List Bool
     (σ : ℕ → Bool) :
     (blackConstraints arity sem F).eval Table.sem σ = true ↔
       ∀ i : Fin F.length, 0 < F[i.val].scope.length →
-        (differenceTable arity sem F[i.val].rel).sem ((blackScope F i F[i.val].scope).map σ) = true := by
+        (differenceTable arity sem F[i.val].rel).sem
+          ((blackScope F i F[i.val].scope).map σ) = true := by
   simp only [CSP.eval, List.all_eq_true]
   constructor
   · intro h i hipos
-    apply h (differenceTable arity sem F[i.val].rel, blackScope F i F[i.val].scope)
+    apply h ⟨differenceTable arity sem F[i.val].rel, blackScope F i F[i.val].scope⟩
     apply List.mem_map.mpr
     refine ⟨(F[i.val], i.val), List.mem_filter.mpr ⟨?_, ?_⟩, rfl⟩
     · apply List.mem_zipIdx_iff_getElem?.mpr
@@ -157,7 +158,8 @@ theorem satisfiable_source_of_body (arity : Rel → ℕ) (sem : Rel → List Boo
     rwa [ofFn_spinTuple] at hs
   · have hnil : F[i].scope = [] := List.length_eq_zero_iff.mp (by omega)
     rw [hnil, List.map_nil]
-    exact sem_nullary_of_nonempty arity sem F[i].rel (by rw [hnil] at hwidth; simpa using hwidth.symm)
+    exact sem_nullary_of_nonempty arity sem F[i].rel
+      (by rw [hnil] at hwidth; simpa using hwidth.symm)
       ((nonemptySymbol_eq_true_iff arity sem _).mp (hnonempty F[i] (List.getElem_mem hi)))
 
 /-- Every source solution gives a solution of the actual expanded body. Difference tables are

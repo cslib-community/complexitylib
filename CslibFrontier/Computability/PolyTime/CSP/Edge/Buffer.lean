@@ -60,7 +60,7 @@ The default makes this total even for a short buffer. -/
 
 /-- Test every constraint against the complete finite labeling buffer. -/
 @[expose] def valid (F : CSP Table ℕ) (bits : List Bool) : Bool :=
-  F.zipIdx.all fun ((table, scope), constraint) => table.sem
+  F.zipIdx.all fun ⟨⟨table, scope⟩, constraint⟩ => table.sem
     (scope.zipIdx.map fun (vertex, port) => readRecord F bits (constraint, port, vertex))
 
 /-- Test for unequal buffer bits at two actual occurrences of the requested variable. -/

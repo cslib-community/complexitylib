@@ -41,7 +41,7 @@ open Cslib.BitString
 
 /-- Actual local rows, in original constraint and argument order, read from the existing buffer. -/
 @[expose] def rows (input : EdgeForest.Input) : List (List Bool) :=
-  input.body.zipIdx.map fun ((_, scope), i) => scope.zipIdx.map fun (v, j) =>
+  input.body.zipIdx.map fun (c, i) => c.scope.zipIdx.map fun (v, j) =>
     EdgeAugmenting.readRecord input.body input.labels (i, j, v)
 
 /-- A fresh binary base, obtained by one scan of actual original names. -/
@@ -58,13 +58,13 @@ open Cslib.BitString
   let ps := Blossom.positions vs c.scope
   if ps.isEmpty then c else
     let os := Table.outsidePositions c.scope.length ps
-    (c.rel.contract ((rows input).getD i []) ps,
-      os.map (fun j => c.scope.getD j 0) ++ [freshBase input.body + i])
+    ⟨c.rel.contract ((rows input).getD i []) ps,
+      os.map (fun j => c.scope.getD j 0) ++ [freshBase input.body + i]⟩
 
 /-- Total finite whole-instance contraction on arbitrary raw table and buffer inputs. -/
 @[expose] def contract (input : EdgeForest.Input) (vs : List ℕ) : CSP Table ℕ :=
   input.body.zipIdx.map (fun (c, i) => constraint input vs c i) ++
-    [(Table.exactlyOne (connectors input.body vs), connectors input.body vs)]
+    [Constraint.mk (Table.exactlyOne (connectors input.body vs)) (connectors input.body vs)]
 
 /-- The honest contracted reference: zero old connector bits, followed by one central one-hot
 row. The central row is paid for by the actual connector list. -/
@@ -395,7 +395,8 @@ private theorem poly_referenceRow : ComputableInPolyTime
   have hnew : ComputableInPolyTime
       (fun p : (EdgeForest.Input × List ℕ) × (Constraint Table ℕ × ℕ) =>
         Table.project ((rows p.1.1).getD p.2.2 [])
-          (Table.outsidePositions p.2.1.scope.length (Blossom.positions p.1.2 p.2.1.scope)) ++ [false])
+          (Table.outsidePositions p.2.1.scope.length
+            (Blossom.positions p.1.2 p.2.1.scope)) ++ [false])
       encConstraintArgs (encList encBool) := by fun_prop
   have hg : ComputableInPolyTime
       (fun p : (EdgeForest.Input × List ℕ) × (Constraint Table ℕ × ℕ) =>

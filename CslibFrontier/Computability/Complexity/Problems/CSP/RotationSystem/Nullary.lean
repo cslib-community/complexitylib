@@ -31,7 +31,7 @@ variable {Rel V : Type} [DecidableEq V]
 
 /-- A trailing nullary adds exactly one isolated constraint declaration. -/
 theorem incidenceGraph_append_nullary (F : CSP Rel V) (r : Rel) :
-    incidenceGraph (F ++ [(r, [])]) =
+    incidenceGraph (F ++ [Constraint.mk r []]) =
       ⟨(incidenceGraph F).vertices ++ [F.numVars + F.length], (incidenceGraph F).edges⟩ := by
   apply Graph.ext
   · simp only [incidenceGraph_vertices, CSP.numVars_append_nullary, List.length_append,
@@ -42,7 +42,7 @@ theorem incidenceGraph_append_nullary (F : CSP Rel V) (r : Rel) :
 omit [DecidableEq V] in
 /-- The extra zero-width entry agrees even with the length reader's missing-entry default. -/
 theorem scopeLength_append_nullary (F : CSP Rel V) (r : Rel) (i : ℕ) :
-    scopeLength (F ++ [(r, [])]) i = scopeLength F i := by
+    scopeLength (F ++ [Constraint.mk r []]) i = scopeLength F i := by
   unfold scopeLength
   simp only [List.map_append, List.map_cons, List.map_nil, List.length_nil]
   by_cases hi : i < F.length
@@ -56,7 +56,7 @@ omit [DecidableEq V] in
 /-- Every original clockwise argument successor is unchanged on the very same raw table. -/
 theorem verifyArgumentOrder_append_nullary (F : CSP Rel V) (r : Rel)
     (c : RotationCertificate) :
-    verifyArgumentOrder (F ++ [(r, [])]) c = verifyArgumentOrder F c := by
+    verifyArgumentOrder (F ++ [Constraint.mk r []]) c = verifyArgumentOrder F c := by
   simp only [verifyArgumentOrder, CSP.occurrences_append_nullary, argumentNextIndex,
     argumentPositions, scopeLength_append_nullary]
   rfl
@@ -65,12 +65,12 @@ theorem verifyArgumentOrder_append_nullary (F : CSP Rel V) (r : Rel)
 ordered numerical certificate. Its truth value under relation semantics is not asserted. -/
 theorem verifyRotationCertificate_append_nullary (F : CSP Rel V) (r : Rel)
     (c : RotationCertificate) :
-    verifyRotationCertificate (F ++ [(r, [])]) c = verifyRotationCertificate F c := by
-  have he : (incidenceGraph (F ++ [(r, [])])).edges = (incidenceGraph F).edges :=
+    verifyRotationCertificate (F ++ [Constraint.mk r []]) c = verifyRotationCertificate F c := by
+  have he : (incidenceGraph (F ++ [Constraint.mk r []])).edges = (incidenceGraph F).edges :=
     by simpa only using
       congrArg (fun G : Graph => G.edges) (incidenceGraph_append_nullary F r)
   have hg := RotationCertificate.verifyGenusZero_eq_of_edges_eq he
-    (incidenceVertices_declared (F ++ [(r, [])])) (incidenceVertices_declared F) c
+    (incidenceVertices_declared (F ++ [Constraint.mk r []])) (incidenceVertices_declared F) c
   simp only [verifyRotationCertificate, verifyArgumentOrder_append_nullary, hg]
 
 end Cslib.Complexity.CSP

@@ -55,7 +55,8 @@ theorem get_transportRows_central (g : OccurrenceLabeling F Bool) (vs : List ℕ
 /-- Every projected old row has exactly the constructor's actual scope width. -/
 theorem transportRow_length (f g : OccurrenceLabeling F Bool) (vs : List ℕ)
     (bits : Fin F.length → Bool) (central : List Bool) (i : Fin F.length) :
-    ((transportRows g vs bits central).getD i.val []).length = (constraint f vs i).scope.length := by
+    ((transportRows g vs bits central).getD i.val []).length =
+      (constraint f vs i).scope.length := by
   rw [get_transportRows_old]
   unfold constraint
   split <;> simp [localTuple, project]
@@ -64,7 +65,8 @@ theorem transportRow_length (f g : OccurrenceLabeling F Bool) (vs : List ℕ)
 theorem transportRows_length (f g : OccurrenceLabeling F Bool) (vs : List ℕ)
     (bits : Fin F.length → Bool) {central : List Bool}
     (hc : central.length = (connectors F vs).length) (i : Fin (contract f vs).length) :
-    ((transportRows g vs bits central).getD i.val []).length = (contract f vs)[i.val].scope.length := by
+    ((transportRows g vs bits central).getD i.val []).length =
+      (contract f vs)[i.val].scope.length := by
   by_cases hi : i.val < F.length
   · simpa only [get_contract_old f vs ⟨i.val, hi⟩] using
       transportRow_length f g vs bits central ⟨i.val, hi⟩
@@ -76,7 +78,8 @@ precisely at touched constraints. -/
 theorem transportRows_project (g : OccurrenceLabeling F Bool) (vs : List ℕ)
     (bits : Fin F.length → Bool) (central : List Bool) (i : Fin F.length) :
     (transportRows g vs bits central).getD i.val [] =
-      project (localTuple g i) (outsidePositions F[i.val].scope.length (positions vs F[i.val].scope)) ++
+      project (localTuple g i)
+          (outsidePositions F[i.val].scope.length (positions vs F[i.val].scope)) ++
         if (positions vs F[i.val].scope).isEmpty then [] else [bits i] := by
   rw [get_transportRows_old]
   split

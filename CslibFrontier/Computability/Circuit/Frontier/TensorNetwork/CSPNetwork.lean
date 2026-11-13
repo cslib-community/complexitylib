@@ -19,7 +19,7 @@ import Mathlib.Data.List.GetD
 
 The network of the occurrence list of a CSP instance `F : CSP Rel ℕ`
 (`Cslib.Circuits.Frontier.ClauseNetwork.network`) with weighted row tables: the row of constraint
-`(R, vs)` lists `wt R w` at the words `w` of length `|vs|`, and the variables are joined by the
+`⟨R, vs⟩` lists `wt R w` at the words `w` of length `|vs|`, and the variables are joined by the
 equality chains of the clause network. Its contraction is the partition function
 `F.partitionFunction wt` (`ClauseNetwork.contraction_cspNetwork`). This is the network of
 Appendix D.2 of [OpenAI2026ETH] with the clause tables replaced by arbitrary weight tables, as in

@@ -13,7 +13,7 @@ public import CslibFrontier.Logics.Propositional.CSP
 /-!
 # Forbidden-pattern compilation from Boolean CSPs to CNF
 
-Every Boolean constraint `(R, vs) : Constraint Rel V` of scope length `r = vs.length ≤ k` has at
+Every Boolean constraint `⟨R, vs⟩ : Constraint Rel V` of scope length `r = vs.length ≤ k` has at
 most `2 ^ r ≤ 2 ^ k` forbidden local assignments `w ∈ BitString.enumList r` with `sem R w = false`.
 Emitting one width-`r` clause `Constraint.forbidClause vs w` per forbidden assignment translates a
 Boolean CSP instance `F : CSP Rel V` into an equivalent `k`-CNF formula `F.toCNF sem` on a subset
@@ -113,7 +113,7 @@ theorem eval_forbidClause (vs : List V) {w : List Bool} (hw : w.length = vs.leng
       simp only [Literal.eval, List.map_cons]
       cases σ v <;> cases b <;> simp
 
-/-- Compile a Boolean constraint `c = (R, vs)` to a CNF formula by emitting `forbidClause vs w` for
+/-- Compile a Boolean constraint `c = ⟨R, vs⟩` to a CNF formula by emitting `forbidClause vs w` for
 every forbidden local assignment `w ∈ BitString.enumList vs.length` with `sem R w = false`. -/
 def toCNF (sem : Rel → List Bool → Bool) (c : Constraint Rel V) : CNF V :=
   ((BitString.enumList c.scope.length).filter fun w => !sem c.rel w).map (forbidClause c.scope)

@@ -82,7 +82,8 @@ at touched constraints. Untouched constraints need no extra connector bit. -/
 theorem referenceRows_project (f : OccurrenceLabeling F Bool) (vs : List ℕ)
     (i : Fin F.length) :
     (referenceRows f vs).getD i.val [] =
-      project (localTuple f i) (outsidePositions F[i.val].scope.length (positions vs F[i.val].scope)) ++
+      project (localTuple f i)
+          (outsidePositions F[i.val].scope.length (positions vs F[i.val].scope)) ++
         if (positions vs F[i.val].scope).isEmpty then [] else [false] := by
   rw [get_referenceRows_old]
   split

@@ -148,7 +148,7 @@ theorem isEvenDeltaMatroid_pinTable (b : Bool) :
   exact isEvenDeltaMatroid_singleton _
 
 /-- Fixed unsatisfiable edge instance with two nonempty singleton unary relations. -/
-@[expose] def rejectEdge : CSP Table ℕ := [(pinTable false, [0]), (pinTable true, [0])]
+@[expose] def rejectEdge : CSP Table ℕ := [⟨pinTable false, [0]⟩, ⟨pinTable true, [0]⟩]
 
 /-- Rejection remains an edge instance: one variable in two distinct unary constraints. -/
 theorem edgeInstance_rejectEdge : EdgeInstance rejectEdge := by

@@ -47,7 +47,7 @@ private theorem fullDelta (r : Unit) :
   rw [he]
   exact fullDifferenceDelta _
 
-private abbrev longInput : CSP Unit ℕ := [((), [2 ^ 250, 9, 2 ^ 100, 31, 0])]
+private abbrev longInput : CSP Unit ℕ := [⟨(), [2 ^ 250, 9, 2 ^ 100, 31, 0]⟩]
 private abbrev longCert : Graph.RotationCertificate := ⟨[0, 3, 2, 5, 4, 7, 6, 9, 8, 1]⟩
 private abbrev longOutput := compile fullArity fullSem (longInput, longCert)
 
@@ -85,7 +85,7 @@ example : ¬ ∃ σ : ℕ → Bool, (∀ v < 4, σ v = decide (v = 0)) ∧
   contradiction
 
 -- Raw invalid guards execute the fixed nonempty even-delta-matroid rejection gadget.
-example : compile fullArity fullSem ([((), [2 ^ 250])], ⟨[0, 1]⟩) = rejectEdge := by decide
+example : compile fullArity fullSem ([⟨(), [2 ^ 250]⟩], ⟨[0, 1]⟩) = rejectEdge := by decide
 example : compile fullArity fullSem (longInput, ⟨[0, 3, 2, 5, 4, 7, 6, 9, 8, 2 ^ 250]⟩) =
     rejectEdge := by decide
 example : compile fullArity fullSem (longInput, ⟨[]⟩) = rejectEdge := by decide
@@ -97,11 +97,11 @@ example : ¬ (compile fullArity fullSem (longInput, ⟨[]⟩)).Satisfiable Table
   exact not_satisfiable_rejectEdge
 
 -- Both nullary truth values, empty body and empty alphabet are actual program cases.
-example : compile (fun _ : Bool => 0) (fun b _ => b) ([(true, []), (true, [])], ⟨[]⟩) = [] := by
+example : compile (fun _ : Bool => 0) (fun b _ => b) ([⟨true, []⟩, ⟨true, []⟩], ⟨[]⟩) = [] := by
   decide
-example : compile (fun _ : Bool => 0) (fun b _ => b) ([(true, []), (false, [])], ⟨[]⟩) =
+example : compile (fun _ : Bool => 0) (fun b _ => b) ([⟨true, []⟩, ⟨false, []⟩], ⟨[]⟩) =
     rejectEdge := by decide
-example : compile (fun _ : Unit => 1) (fun _ _ => false) ([((), [2 ^ 100])], ⟨[0, 1]⟩) =
+example : compile (fun _ : Unit => 1) (fun _ _ => false) ([⟨(), [2 ^ 100]⟩], ⟨[0, 1]⟩) =
     rejectEdge := by decide
 example : compile fullArity fullSem ([], ⟨[]⟩) = [] := by decide
 example : compile (fun e : Empty => nomatch e) (fun e _ => nomatch e) ([], ⟨[]⟩) = [] := by
@@ -120,18 +120,18 @@ private theorem mixedDelta (b : Bool) :
   exact fullDifferenceDelta _
 
 private abbrev mixedInput : CSP Bool ℕ :=
-  [(true, []), (false, [2 ^ 100]), (true, []), (false, [2 ^ 100])]
+  [⟨true, []⟩, ⟨false, [2 ^ 100]⟩, ⟨true, []⟩, ⟨false, [2 ^ 100]⟩]
 private abbrev mixedCert : Graph.RotationCertificate := ⟨[2, 1, 0, 3]⟩
 private abbrev mixedOutput := compile mixedArity mixedSem (mixedInput, mixedCert)
 example : verifyRotationCertificate mixedInput mixedCert = true := by decide
-example : mixedOutput.map Prod.snd = [[0], [1], [0, 1]] := by decide
+example : mixedOutput.map Constraint.scope = [[0], [1], [0, 1]] := by decide
 example : EdgeInstance mixedOutput := by unfold EdgeInstance; decide
 example : mixedOutput.eval Table.sem (fun _ => false) = true := by decide
 example : EdgeInstance.EvenConstraints Table.sem mixedOutput :=
   (compile_correct mixedArity mixedSem mixedSelf (fun b _ => mixedDelta b)
     (mixedInput, mixedCert)).2.2.1
 example : (compile (fun _ : Unit => 1) (fun _ _ => true)
-    ([((), [7]), ((), [2 ^ 100])], ⟨[0, 1, 2, 3]⟩)).map Prod.snd =
+    ([⟨(), [7]⟩, ⟨(), [2 ^ 100]⟩], ⟨[0, 1, 2, 3]⟩)).map Constraint.scope =
       [[0], [1], [0], [1]] := by decide
 
 -- Ternary NAE is a nontrivial self-complementary difference-even-delta-matroid language.
@@ -150,13 +150,13 @@ private theorem naeDelta (r : Unit) :
     · exact ⟨![true, true, false], by decide⟩
     · decide
   · decide
-private abbrev naeInput : CSP Unit ℕ := [((), [0, 1, 2])]
+private abbrev naeInput : CSP Unit ℕ := [⟨(), [0, 1, 2]⟩]
 private abbrev naeCert : Graph.RotationCertificate := ⟨[0, 3, 2, 5, 4, 1]⟩
-private abbrev naeRepeated : CSP Unit ℕ := [((), [7, 7, 7])]
+private abbrev naeRepeated : CSP Unit ℕ := [⟨(), [7, 7, 7]⟩]
 private abbrev naeRepeatedCert : Graph.RotationCertificate := ⟨[4, 3, 0, 5, 2, 1]⟩
 example : (compile naeArity naeSem (naeInput, naeCert)).eval Table.sem
     (fun n => decide (n ≠ 2)) = true := by decide
-example : (compile naeArity naeSem (naeRepeated, naeRepeatedCert)).map Prod.snd =
+example : (compile naeArity naeSem (naeRepeated, naeRepeatedCert)).map Constraint.scope =
     [[0, 1, 2], [0], [1], [2]] := by decide
 example : EdgeInstance.EvenConstraints Table.sem (compile naeArity naeSem
     (naeRepeated, naeRepeatedCert)) :=
@@ -172,7 +172,7 @@ example : compile naeArity naeSem (naeInput, ⟨[0, 5, 2, 1, 4, 3]⟩) = rejectE
 
 -- A correctly ordered toroidal rotation fails the numerical input guard.
 example : compile naeArity naeSem
-    ([((), [0, 1, 2]), ((), [0, 1, 2])],
+    ([⟨(), [0, 1, 2]⟩, ⟨(), [0, 1, 2]⟩],
       ⟨[6, 3, 8, 5, 10, 1, 0, 9, 2, 11, 4, 7]⟩) = rejectEdge := by decide
 
 -- A real native client under the original encodings, with no machine/runtime premise supplied.
@@ -199,11 +199,11 @@ private theorem nullaryDelta (b : Bool)
       · decide
     · decide
 example : EdgeInstance.EvenConstraints Table.sem
-    (compile nullaryArity nullarySem ([(false, [])], ⟨[]⟩)) :=
-  (compile_correct nullaryArity nullarySem nullarySelf nullaryDelta ([(false, [])], ⟨[]⟩)).2.2.1
-example : (compile nullaryArity nullarySem ([(true, [])], ⟨[]⟩)).Satisfiable Table.sem := by
+    (compile nullaryArity nullarySem ([⟨false, []⟩], ⟨[]⟩)) :=
+  (compile_correct nullaryArity nullarySem nullarySelf nullaryDelta ([⟨false, []⟩], ⟨[]⟩)).2.2.1
+example : (compile nullaryArity nullarySem ([⟨true, []⟩], ⟨[]⟩)).Satisfiable Table.sem := by
   apply (compile_correct nullaryArity nullarySem nullarySelf nullaryDelta
-    ([(true, [])], ⟨[]⟩)).2.2.2.mp
+    ([⟨true, []⟩], ⟨[]⟩)).2.2.2.mp
   exact ⟨by decide, by decide, fun _ => false, by decide⟩
 
 end CSPCyclicCompilerTests

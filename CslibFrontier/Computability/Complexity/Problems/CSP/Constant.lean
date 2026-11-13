@@ -59,7 +59,7 @@ theorem mem_P_of_constant [Finite Rel] (encRel : Rel ↪ List Bool) (arity : Rel
   have hall : ComputableInPolyTime
       (fun F : CSP Rel ℕ => F.all (fun c => possible c.rel)) (encCSP encRel encNat) encBool := by
     exact ComputableInPolyTime.allWithInput ComputableInPolyTime.id'
-      ((hp.comp (ComputableInPolyTime.fst _ _)).comp (ComputableInPolyTime.snd _ _))
+      (hp.comp (encConstraint_rel_polyTime (ComputableInPolyTime.snd _ _)))
   have hs : ComputableInPolyTime solver (encCSP encRel encNat) encBool := by
     exact ComputableInPolyTime.bool_and.comp
       ((CSP.computableInPolyTime_validArity encRel arity).prod hall)

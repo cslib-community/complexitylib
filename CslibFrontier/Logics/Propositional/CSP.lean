@@ -14,9 +14,9 @@ public import CslibFrontier.Logics.Propositional.CNF.ModelCount.Declared
 # Constraint satisfaction problems
 
 A constraint satisfaction problem (CSP) instance `F : CSP Rel V` over a relation alphabet `Rel`
-and variable type `V` is a conjunction (list) of constraints `(R, vs) : Rel × List V`, interpreted
-over a domain `D` under a family of relations `sem : Rel → List D → Bool` by requiring
-`sem R (vs.map σ) = true` for every `(R, vs) ∈ F`.
+and variable type `V` is a conjunction (list) of constraints `⟨R, vs⟩ : Constraint Rel V`,
+interpreted over a domain `D` under a family of relations `sem : Rel → List D → Bool` by requiring
+`sem R (vs.map σ) = true` for every `⟨R, vs⟩ ∈ F`.
 
 Relations are not assigned fixed arities at the type level: `sem R` is evaluated at the length of
 each constraint's scope `c.scope`. Under a uniform scope-length bound `c.scope.length ≤ k`, each
@@ -30,7 +30,9 @@ variables `F.vars.toFinset`. In the Boolean case `D = Bool`, `default = false`, 
 
 ## Main definitions
 
-* `Cslib.Logic.PL.Constraint`, `Cslib.Logic.PL.CSP`: constraints and CSP instances.
+* `Cslib.Logic.PL.Constraint`, `Cslib.Logic.PL.CSP`: constraints, with fields `rel` and `scope`,
+  and CSP instances. `Cslib.Logic.PL.Constraint.equivProd` identifies a constraint with the pair
+  of its fields.
 * `Cslib.Logic.PL.Constraint.eval`, `Cslib.Logic.PL.CSP.eval`, `Cslib.Logic.PL.CSP.Satisfiable`:
   evaluation and satisfiability over an arbitrary domain `D`.
 * `Cslib.Logic.PL.CSP.vars`, `Cslib.Logic.PL.CSP.numVars`, `Cslib.Logic.PL.CSP.distinctVars`:
@@ -62,11 +64,16 @@ variables `F.vars.toFinset`. In the Boolean case `D = Bool`, `default = false`, 
 
 namespace Cslib.Logic.PL
 
-/-- A constraint over relation alphabet `Rel` and variable type `V` pairs a relation symbol
-`R : Rel` with its scope of variables `vs : List V`. Relations are not assigned fixed arities at
-the type level; a semantics `sem : Rel → List D → Bool` is read at the length of each scope
-`vs`. -/
-abbrev Constraint (Rel V : Type*) : Type _ := Rel × List V
+/-- A constraint over relation alphabet `Rel` and variable type `V`: a relation symbol `rel` applied
+to an ordered `scope` of variables. Relations are not assigned fixed arities at the type level; a
+semantics `sem : Rel → List D → Bool` is read at the length of each scope. -/
+@[ext]
+structure Constraint (Rel V : Type*) where
+  /-- The relation symbol applied to the scope. -/
+  rel : Rel
+  /-- The variables the relation is applied to, in order. -/
+  scope : List V
+  deriving DecidableEq, Repr
 
 /-- A constraint satisfaction problem (CSP) instance over relation alphabet `Rel` and variable type
 `V` is a conjunction (list) of constraints. -/
@@ -76,24 +83,19 @@ namespace Constraint
 
 variable {Rel V W D : Type*}
 
-/-- The relation symbol of a constraint. -/
-@[reducible] def rel (c : Constraint Rel V) : Rel := c.1
+/-- A constraint is its relation symbol together with its scope. -/
+def equivProd : Constraint Rel V ≃ Rel × List V where
+  toFun c := (c.rel, c.scope)
+  invFun p := ⟨p.1, p.2⟩
 
-/-- The scope of a constraint: the variables its relation is applied to, in order. -/
-@[reducible] def scope (c : Constraint Rel V) : List V := c.2
-
-@[simp] theorem rel_mk (R : Rel) (vs : List V) : rel ((R, vs) : Constraint Rel V) = R := rfl
-
-@[simp] theorem scope_mk (R : Rel) (vs : List V) : scope ((R, vs) : Constraint Rel V) = vs := rfl
-
-/-- Evaluate a constraint `(R, vs)` under assignment `σ : V → D` and semantics
+/-- Evaluate a constraint `⟨R, vs⟩` under assignment `σ : V → D` and semantics
 `sem : Rel → List D → Bool`. -/
 def eval (sem : Rel → List D → Bool) (σ : V → D) (c : Constraint Rel V) : Bool :=
   sem c.rel (c.scope.map σ)
 
 /-- Rename variables in a constraint's scope. -/
 def relabel (f : V → W) (c : Constraint Rel V) : Constraint Rel W :=
-  (c.rel, c.scope.map f)
+  ⟨c.rel, c.scope.map f⟩
 
 /-- Evaluating a relabeled constraint composes the assignment with the relabeling. -/
 @[simp]

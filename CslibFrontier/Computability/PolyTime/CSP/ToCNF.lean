@@ -42,15 +42,54 @@ namespace Cslib.Complexity
 
 open Cslib.Logic.PL Turing.MultiTapeTM
 
-/-- Binary encoding of a constraint `(R, vs) : Constraint Rel V`. -/
-abbrev encConstraint {Rel V : Type} (encRel : Rel ↪ List Bool) (encV : V ↪ List Bool) :
+/-- Binary encoding of a constraint `⟨R, vs⟩ : Constraint Rel V`: the encoded pair of its relation
+symbol and its scope. -/
+def encConstraint {Rel V : Type} (encRel : Rel ↪ List Bool) (encV : V ↪ List Bool) :
     Constraint Rel V ↪ List Bool :=
-  encPair encRel (encList encV)
+  Constraint.equivProd.toEmbedding.trans (encPair encRel (encList encV))
+
+@[simp]
+theorem encConstraint_apply {Rel V : Type} (encRel : Rel ↪ List Bool) (encV : V ↪ List Bool)
+    (c : Constraint Rel V) :
+    encConstraint encRel encV c = encPair encRel (encList encV) (c.rel, c.scope) :=
+  rfl
 
 /-- Binary encoding of a CSP instance `F : CSP Rel V`. -/
 abbrev encCSP {Rel V : Type} (encRel : Rel ↪ List Bool) (encV : V ↪ List Bool) :
     CSP Rel V ↪ List Bool :=
   encList (encConstraint encRel encV)
+
+section encConstraintRules
+
+variable {Rel V γ : Type} {encRel : Rel ↪ List Bool} {encV : V ↪ List Bool}
+  {encIn : γ ↪ List Bool}
+
+/-- Reading the relation symbol of a polynomial-time constraint is polynomial-time. -/
+@[fun_prop]
+theorem encConstraint_rel_polyTime {g : γ → Constraint Rel V}
+    (h : ComputableInPolyTime g encIn (encConstraint encRel encV)) :
+    ComputableInPolyTime (fun a => (g a).rel) encIn encRel :=
+  (ComputableInPolyTime.fst encRel (encList encV)).comp
+    ((ComputableInPolyTime.of_eq fun _ => rfl).comp h)
+
+/-- Reading the scope of a polynomial-time constraint is polynomial-time. -/
+@[fun_prop]
+theorem encConstraint_scope_polyTime {g : γ → Constraint Rel V}
+    (h : ComputableInPolyTime g encIn (encConstraint encRel encV)) :
+    ComputableInPolyTime (fun a => (g a).scope) encIn (encList encV) :=
+  (ComputableInPolyTime.snd encRel (encList encV)).comp
+    ((ComputableInPolyTime.of_eq fun _ => rfl).comp h)
+
+/-- Building a constraint from a polynomial-time relation symbol and scope is polynomial-time. -/
+@[fun_prop]
+theorem encConstraint_mk_polyTime {r : γ → Rel} {vs : γ → List V}
+    (hr : ComputableInPolyTime r encIn encRel)
+    (hvs : ComputableInPolyTime vs encIn (encList encV)) :
+    ComputableInPolyTime (fun a => (⟨r a, vs a⟩ : Constraint Rel V)) encIn
+      (encConstraint encRel encV) :=
+  (hr.prod hvs).of_enc_eq fun _ => rfl
+
+end encConstraintRules
 
 namespace CSP
 
@@ -99,7 +138,7 @@ private theorem computableInPolyTime_toCNFAt (encRel : Rel ↪ List Bool)
   · have hsemw := hsem w hw
     fun_prop
   · exact (computableInPolyTime_forbidClause encV).comp
-      ((snd encRel (encList encV)).prod (const w))
+      ((encConstraint_scope_polyTime id').prod (const w))
 
 private theorem computableInPolyTime_constraintToCNFBounded
     (encRel : Rel ↪ List Bool) (encV : V ↪ List Bool) (k : ℕ) (sem : Rel → List Bool → Bool)

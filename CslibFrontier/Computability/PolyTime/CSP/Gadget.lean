@@ -66,7 +66,7 @@ end PPGadget
 /-- Replace every source constraint, with disjoint auxiliary namespaces. -/
 @[expose] def replaceGadgets (B : ℕ) (templates : Src → CSP Rel (Bool × ℕ))
     (F : CSP Src ℕ) : CSP Rel ℕ :=
-  F.zipIdx.flatMap fun ((r, scope), index) =>
+  F.zipIdx.flatMap fun (⟨r, scope⟩, index) =>
     instantiate B index scope (templates r)
 
 /-- Exact-arity guarded gadget replacement with an explicit reject instance. -/
@@ -220,7 +220,7 @@ theorem wellFormed_satisfiable_replaceGadgetsGuarded_iff
 
 /-- A fixed malformed target for rejecting invalid source scopes. Any target symbol suffices. -/
 @[expose] def malformedReject (arity : Rel → ℕ) (r : Rel) : CSP Rel ℕ :=
-  [(r, List.replicate (arity r + 1) 0)]
+  [⟨r, List.replicate (arity r + 1) 0⟩]
 
 /-- The fixed reject target fails exact arity independently of its semantics. -/
 theorem not_wellFormed_malformedReject (arity : Rel → ℕ) (r : Rel) :

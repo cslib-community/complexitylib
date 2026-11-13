@@ -40,8 +40,9 @@ open Cslib.Logic.PL
 /-- An exactly-one choice at every vertex, with every private unmatched port pinned false.
 This instance always has a valid local labeling; consistency is not required by optimization. -/
 @[expose] def matchingInstance (G : Graph) : CSP CSP.Table ℕ :=
-  (G.distinctVertices.map fun v => (CSP.Table.exactlyOne (G.matchingScope v), G.matchingScope v)) ++
-    (G.distinctVertices.map fun v => (CSP.Table.pinTable false, [2 * v + 1]))
+  (G.distinctVertices.map fun v =>
+      Constraint.mk (CSP.Table.exactlyOne (G.matchingScope v)) (G.matchingScope v)) ++
+    (G.distinctVertices.map fun v => Constraint.mk (CSP.Table.pinTable false) [2 * v + 1])
 
 /-- An original edge belongs to a choice scope precisely at its two original endpoints. -/
 theorem mem_matchingScope_even (G : Graph) (v i : ℕ) :

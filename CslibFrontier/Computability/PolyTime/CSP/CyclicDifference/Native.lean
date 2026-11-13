@@ -42,7 +42,7 @@ theorem computableInPolyTime_parityChain :
     ComputableInPolyTime (fun p : ℕ × List ℕ => parityChain p.1 p.2)
       encParityChain (encCSP encTable encNat) := by
   have heq (p : ℕ × List ℕ) : parityChain p.1 p.2 =
-      if p.2.isEmpty then [(evenTable 0, [])]
+      if p.2.isEmpty then [Constraint.mk (evenTable 0) []]
       else parityChainTail p.1 (p.2.headD 0) p.2.tail := by
     cases p.2 <;> rfl
   simp only [heq]

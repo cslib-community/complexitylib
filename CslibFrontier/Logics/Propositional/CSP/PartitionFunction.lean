@@ -24,7 +24,7 @@ A weighting `wt : Rel → List D → R` reads each relation symbol as a function
 assignments to a semiring `R`. The partition function of a CSP instance `F : CSP Rel V`
 sums, over the assignments of the variables occurring in `F` to the finite domain `D`, the product
 of the weights of the constraints at their scopes:
-`F.partitionFunction wt = ∑ σ, ∏ (R, vs) ∈ F, wt R (vs.map σ)`.
+`F.partitionFunction wt = ∑ σ, ∏ ⟨R, vs⟩ ∈ F, wt R (vs.map σ)`.
 
 With `0/1` weights this is the model count of the relation semantics
 (`CSP.partitionFunction_boole`). Weighted counting problems such as the hard-core model, or the
@@ -57,7 +57,7 @@ namespace Cslib.Logic.PL.CSP
 
 variable {Rel V D : Type*}
 
-/-- The weight of an assignment `σ`: the product over the constraints `(R, vs)` of `F` of
+/-- The weight of an assignment `σ`: the product over the constraints `⟨R, vs⟩` of `F` of
 `wt R (vs.map σ)`. -/
 @[expose] def weight {R : Type*} [Monoid R] (wt : Rel → List D → R) (F : CSP Rel V)
     (σ : V → D) : R :=
@@ -116,7 +116,8 @@ theorem partitionFunction_le {wt : Rel → List D → ℕ} {F : CSP Rel V} {W : 
 /-- **A constraint of weight zero makes the partition function zero**: if some constraint of `F`
 weighs zero at every local assignment of the right length, every assignment weighs zero. -/
 theorem partitionFunction_eq_zero_of_mem {wt : Rel → List D → ℕ} {F : CSP Rel V}
-    {c : Constraint Rel V} (hc : c ∈ F) (h0 : ∀ w : List D, w.length = c.scope.length → wt c.rel w = 0) :
+    {c : Constraint Rel V} (hc : c ∈ F)
+    (h0 : ∀ w : List D, w.length = c.scope.length → wt c.rel w = 0) :
     F.partitionFunction wt = 0 := by
   exact Finset.sum_eq_zero fun σ _ =>
     List.prod_eq_zero (List.mem_map.mpr ⟨c, hc, h0 _ (List.length_map _)⟩)

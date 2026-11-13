@@ -150,7 +150,7 @@ theorem vars_contract (f : OccurrenceLabeling F Bool) (vs : List ℕ) :
       apply List.mem_append_left
       apply List.mem_filter.mpr
       exact ⟨List.getElem_mem o.2.isLt, by simpa using hn⟩
-    · exact List.mem_flatMap.mpr ⟨(exactlyOne (connectors F vs), connectors F vs),
+    · exact List.mem_flatMap.mpr ⟨⟨exactlyOne (connectors F vs), connectors F vs⟩,
         List.mem_append_right _ (List.mem_singleton_self _), hv⟩
 
 /-- Freshness makes the output variable count an exact deletion-plus-connectors formula. -/
@@ -200,14 +200,14 @@ theorem vars_contract_perm (f : OccurrenceLabeling F Bool) (vs : List ℕ) :
   have hf : ids.map (fun i => F[i.val]) = F := by
     rw [← List.ofFn_eq_map]
     simp
-  have hflat := congrArg (List.flatMap Prod.snd) hf
+  have hflat := congrArg (List.flatMap Constraint.scope) hf
   simp only [List.flatMap_map] at hflat
   have hout : ids.flatMap outside = F.vars.filter (fun v => !vs.contains v) := by
     rw [show ids.flatMap outside =
       (ids.flatMap fun i => F[i.val].scope).filter (fun v => !vs.contains v) from
         List.filter_flatMap.symm]
     exact congrArg (List.filter fun v => !vs.contains v) hflat
-  have hscope : (List.ofFn (constraint f vs)).flatMap Prod.snd =
+  have hscope : (List.ofFn (constraint f vs)).flatMap Constraint.scope =
       ids.flatMap (fun i => outside i ++ added i) := by
     rw [List.ofFn_eq_map, List.flatMap_map]
     apply List.flatMap_congr

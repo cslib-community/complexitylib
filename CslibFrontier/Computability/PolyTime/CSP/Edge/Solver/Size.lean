@@ -112,7 +112,7 @@ theorem encoded_body_le (F : CSP Table ℕ) (f : OccurrenceLabeling F Bool)
     have hs := hscope c hc
     have hr : c.1.rows.length * (6 * c.rel.arity + 1) ≤
         c.1.rows.length * (6 * F.vars.length + 1) := Nat.mul_le_mul_left _ (by omega)
-    simp only [encConstraint, length_encPair, length_encTable hw]
+    simp only [encConstraint_apply, length_encPair, length_encTable hw]
     nlinarith
   rw [encCSP, length_encList]
   calc
@@ -221,7 +221,7 @@ theorem original_name_bits_le (F : CSP Table ℕ) :
   obtain ⟨c, hc, hv⟩ := List.mem_flatMap.mp hv
   have hn := length_le_encList_of_mem encNat hv
   have hb := length_le_encList_of_mem (encConstraint encTable encNat) hc
-  simp only [encConstraint, length_encPair] at hb
+  simp only [encConstraint_apply, length_encPair] at hb
   change 2 * (encTable c.1).length + 1 + (encList encNat c.2).length ≤
     (encCSP encTable encNat F).length at hb
   exact hn.trans (by omega)

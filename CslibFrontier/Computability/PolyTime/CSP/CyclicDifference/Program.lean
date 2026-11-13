@@ -88,8 +88,8 @@ Repeated source vertices remain separate positions; parity is invariant under th
 handled by the outer nonemptiness guard and contribute no black dart orbit. -/
 @[expose] def blackConstraints (arity : Rel → ℕ) (sem : Rel → List Bool → Bool)
     (F : CSP Rel ℕ) : CSP Table ℕ :=
-  (F.zipIdx.filter fun ((_, scope), _) => !scope.isEmpty).map fun ((rel, scope), index) =>
-    (differenceTable arity sem rel, blackScope F index scope)
+  (F.zipIdx.filter fun (c, _) => !c.scope.isEmpty).map fun (c, index) =>
+    ⟨differenceTable arity sem c.rel, blackScope F index c.scope⟩
 
 /-- Fresh block prefix length. Only actual white boundary lists fund the allocated names. -/
 @[expose] def auxiliaryPrefix (scopes : List (List ℕ)) (index : ℕ) : ℕ :=

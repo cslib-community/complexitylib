@@ -36,7 +36,7 @@ theorem getElem_matchingInstance_vertex {v : ℕ} (hv : v ∈ G.vertices) :
     G.matchingInstance[G.distinctVertices.idxOf v]'(by
       have := List.idxOf_lt_length_iff.mpr (mem_distinctVertices.mpr hv)
       simp only [matchingInstance, List.length_append, List.length_map]
-      omega) = (Table.exactlyOne (G.matchingScope v), G.matchingScope v) := by
+      omega) = ⟨Table.exactlyOne (G.matchingScope v), G.matchingScope v⟩ := by
   simp [matchingInstance, List.idxOf_lt_length_iff.mpr (mem_distinctVertices.mpr hv)]
 
 /-- The unary false pin follows all choice constraints in distinct vertex order. -/
@@ -44,7 +44,7 @@ theorem getElem_matchingInstance_pin {v : ℕ} (hv : v ∈ G.vertices) :
     G.matchingInstance[G.distinctVertices.length + G.distinctVertices.idxOf v]'(by
       have := List.idxOf_lt_length_iff.mpr (mem_distinctVertices.mpr hv)
       simp only [matchingInstance, List.length_append, List.length_map]
-      omega) = (Table.pinTable false, [2 * v + 1]) := by
+      omega) = ⟨Table.pinTable false, [2 * v + 1]⟩ := by
   simp [matchingInstance]
 
 /-- The actual choice incidence of the variable `x` at vertex `v`. -/

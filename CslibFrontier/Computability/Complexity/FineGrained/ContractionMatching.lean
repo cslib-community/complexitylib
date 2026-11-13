@@ -97,7 +97,7 @@ open Cslib.Logic.PL Turing.MultiTapeTM ComputableInPolyTime
 
 /-- The instance answered in place of an instance with an empty or overlong scope: one
 exactly-one constraint on a repeated variable, whose partition function is zero. -/
-@[expose] def zeroInstance : CSP Unit ℕ := [((), [0, 0])]
+@[expose] def zeroInstance : CSP Unit ℕ := [⟨(), [0, 0]⟩]
 
 /-- The instance handed to the counter: `F` itself when each of its constraints has between one
 and `d` variables, and `zeroInstance` otherwise. -/

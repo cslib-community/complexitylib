@@ -40,7 +40,7 @@ theorem scopes_add_constraints_le {Rel V : Type} (encRel : Rel ↪ List Bool) (e
         2 * (encConstraint encRel encV c).length + 1 + (encCSP encRel encV F).length := by
       simp only [encCSP, length_encList, List.map_cons, List.sum_cons]
     rw [he]
-    simp only [encConstraint, length_encPair, List.map_cons, List.sum_cons, List.length_cons]
+    simp only [encConstraint_apply, length_encPair, List.map_cons, List.sum_cons, List.length_cons]
     omega
 
 /-- Dense incidence vertices and listed occurrences are each bounded by original encoded size. -/

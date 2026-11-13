@@ -52,11 +52,11 @@ def semNeq (q : ℕ) : Unit → List (Fin q) → Bool
 
 /-- Triangle graph K₃ 3-coloring CSP instance. -/
 def triangleCSP : CSP Unit ℕ :=
-  [((), [0, 1]), ((), [1, 2]), ((), [0, 2])]
+  [⟨(), [0, 1]⟩, ⟨(), [1, 2]⟩, ⟨(), [0, 2]⟩]
 
 /-- Path graph P₃ 3-coloring CSP instance. -/
 def pathCSP : CSP Unit ℕ :=
-  [((), [0, 1]), ((), [1, 2])]
+  [⟨(), [0, 1]⟩, ⟨(), [1, 2]⟩]
 
 -- Model counts directly on finite-domain CSP
 example : triangleCSP.modelCountOn (semNeq 3) (Finset.range 3) = 6 := by decide

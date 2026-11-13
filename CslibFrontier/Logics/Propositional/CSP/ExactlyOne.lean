@@ -52,7 +52,8 @@ theorem partitionFunction_exactlyOne (F : CSP Unit V) :
   rw [partitionFunction_eq_sum_powerset, Finset.card_filter]
   refine Finset.sum_congr rfl fun S _ => ?_
   rw [weight, List.map_congr_left (g := fun c =>
-      if (c.scope.filter fun v => v ∈ S).length = 1 then 1 else 0) fun c _ => ?_, List.prod_map_boole]
+      if (c.scope.filter fun v => v ∈ S).length = 1 then 1 else 0) fun c _ => ?_,
+    List.prod_map_boole]
   simp only [exactlyOneWeight, List.count_eq_countP, List.filter_map, List.length_map,
     List.countP_eq_length_filter, Function.comp_def, beq_true]
 
