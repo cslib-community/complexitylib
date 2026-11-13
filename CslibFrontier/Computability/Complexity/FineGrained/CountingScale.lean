@@ -78,13 +78,9 @@ theorem isLittleO_interpolationScale :
 /-- Every fixed multiple of the exponent is eventually at most any positive linear exponent. -/
 theorem eventually_mul_interpolationScale_le (A : ℝ) {ε : ℝ} (hε : 0 < ε) :
     ∀ᶠ n : ℕ in atTop, A * interpolationScale n ≤ ε * n := by
-  have ht : Tendsto (fun n : ℕ => A *
-      (Real.log (Real.log ((n : ℝ) + 16)) ^ 2 / Real.sqrt (Real.log ((n : ℝ) + 16))))
-      atTop (𝓝 0) := by
-    simpa only [mul_zero] using tendsto_const_nhds.mul tendsto_ratio
-  filter_upwards [ht.eventually (gt_mem_nhds hε)] with n hn
-  have h := mul_le_mul_of_nonneg_right hn.le (Nat.cast_nonneg n : (0 : ℝ) ≤ n)
-  simpa only [interpolationScale, mul_div_assoc, mul_assoc, mul_left_comm, mul_comm] using h
+  filter_upwards [(isLittleO_interpolationScale.const_mul_left A).def hε] with n hn
+  rw [Real.norm_natCast] at hn
+  exact (Real.le_norm_self _).trans hn
 
 /-- The interpolation scale is nonnegative at every natural input. -/
 theorem interpolationScale_nonneg (n : ℕ) : 0 ≤ interpolationScale n := by
