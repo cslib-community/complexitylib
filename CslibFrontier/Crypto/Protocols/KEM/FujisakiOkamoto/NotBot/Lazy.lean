@@ -258,8 +258,8 @@ theorem eval_coupledGame_eq_eagerCoupledGame [Fintype M] [Finite R] [Fintype CT]
       (pi (Function.update (fun _ : M => ProbComp.eval S.pke.sampleCoins) mStar
           (PMF.pure rStar))).bind fun G =>
         (ProbComp.eval S.sampleKey).bind fun kRand =>
-        (pi (α := fun _ : Bool × M × CT => K) (fun _ => ProbComp.eval S.sampleKey)).bind fun H =>
-        (pi (α := fun _ : CT => K) (fun _ => ProbComp.eval S.sampleKey)).bind fun Q =>
+        (S.keyTable (Bool × M × CT)).bind fun H =>
+        (S.keyTable CT).bind fun Q =>
           OracleComp.interpret (S.eagerCoupledHandler G Q H pk sk (S.pke.encDet pk mStar rStar))
             (A ⟨pk, S.pke.encDet pk mStar rStar, if b then kRand else
               S.coupledH G Q H pk sk (false, mStar, S.pke.encDet pk mStar rStar)⟩) := by
