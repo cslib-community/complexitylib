@@ -15,8 +15,9 @@ import CslibFrontier.Probability.PMF.Uniform
 
 Exercise the fuzzy-extractor definitions, the sketch-and-extract construction (Lemma 2.5), and the
 LWE decode-then-extract construction (Construction 4.1) on concrete finite-field parameters.
-Includes both positive instances (zero-error sketch-and-extract, zero-loss additive extractor on
-`Fin 2 → ZMod 5`, concrete Hamming-weight/distance identities) and a separating negative fixture
+Includes positive instances (zero-error sketch-and-extract, the additive extractor on a uniform
+source, the LWE security bound for Construction 4.1 at concrete dimensions, concrete
+Hamming-weight/distance identities) and a separating negative fixture
 (`revealingFuzzyExtractor`) that is perfectly reproducible for every distance threshold `t` yet
 has distinguishing advantage `1 / 2` on a uniform 1-bit source.
 -/
@@ -78,23 +79,34 @@ theorem securityAdvantage_decodeThenExtract_concrete_zero
         (PMF.uniformOfFintype (Fin 3 → ZMod 5)) D = 0 :=
   securityAdvantage_decodeThenExtract_add_uniform_eq_zero 3 2 5 decode D
 
-/-- Concrete instantiation of the `2 * ε_lwe` bound for `decodeThenExtract` on `m = 4, n = 2,
-q = 7` when both LWE context advantages are bounded by `ε_lwe`. -/
+/-- Construction 4.1 at `m = 4, k = 1, l = 1, q = 7`: for every source and distinguisher, the
+advantage is at most the sum of two dimension-`1` decisional LWE advantages. -/
 example
-    (decode : Matrix (Fin 4) (Fin 2) (ZMod 7) → (Fin 4 → ZMod 7) →
-      ProbComp (Option (Fin 2 → ZMod 7)))
+    (decode : Matrix (Fin 4) (Fin (1 + 1)) (ZMod 7) → (Fin 4 → ZMod 7) →
+      ProbComp (Option (Fin (1 + 1) → ZMod 7)))
     (W : PMF (Fin 4 → ZMod 7))
-    (D : (Fin 2 → ZMod 7) × DecodeHelper 4 2 7 (Fin 2 → ZMod 7) → PMF Bool)
-    (ε_lwe : ℝ≥0)
-    (hlwe₁ : Game.advantage
-      ((realContextDistribution 4 2 7 W).bind
-        (realContextReduction (fun (s x : Fin 2 → ZMod 7) => s + x) D))
-      ((uniformContextDistribution 4 2 7).bind
-        (realContextReduction (fun (s x : Fin 2 → ZMod 7) => s + x) D)) ≤ ε_lwe)
-    (hlwe₂ : lweContextAdvantage 4 2 7 W (idealLweReduction D) ≤ ε_lwe) :
-    (decodeThenExtract 4 2 7 decode (fun (s x : Fin 2 → ZMod 7) => s + x)).securityAdvantage
-        W D ≤ 2 * ε_lwe :=
-  securityAdvantage_decodeThenExtract_add_le 4 2 7 decode hlwe₁ hlwe₂
+    (D : (Fin 1 → ZMod 7) × DecodeHelper 4 (1 + 1) 7 Unit → PMF Bool) :
+    (lweFuzzyExtractor 4 1 1 7 decode).securityAdvantage W D ≤
+      lweContextAdvantage 4 1 7 W (hardcoreKeyReduction D) +
+        lweContextAdvantage 4 1 7 W (hardcoreUniformReduction D) :=
+  securityAdvantage_lweFuzzyExtractor_le decode W D
+
+/-- The hypothesis of `computationallySecureFor_lweFuzzyExtractor` is satisfiable: for the
+uniform source, both LWE advantages vanish, so Construction 4.1 is `0`-secure for it. -/
+example
+    (decode : Matrix (Fin 4) (Fin (1 + 1)) (ZMod 7) → (Fin 4 → ZMod 7) →
+      ProbComp (Option (Fin (1 + 1) → ZMod 7))) :
+    (lweFuzzyExtractor 4 1 1 7 decode).ComputationallySecureFor
+      {PMF.uniformOfFintype (Fin 4 → ZMod 7)} (fun _ => True) 0 := by
+  have h := computationallySecureFor_lweFuzzyExtractor decode
+    (sources := {PMF.uniformOfFintype (Fin 4 → ZMod 7)}) (Admissible := fun _ => True) (ε := 0)
+    (by
+      intro W hW D _
+      rw [Set.mem_singleton_iff] at hW
+      subst hW
+      simp only [lweContextAdvantage, lweRealContext_uniform, Game.advantage_self, le_refl,
+        and_self])
+  simpa using h
 
 /-! ### Separating fixture: reproducible for all `t`, but insecure -/
 
