@@ -44,6 +44,10 @@ of answered pairs, oldest first, and the two agree up to that representation.
 
 ## Main results
 
+* `Cslib.Crypto.Forger.eval_eufCmaExperiment_toTyped`,
+  `Cslib.Crypto.Forger.eval_eufCmaExperiment_restrict_toTyped`: the EUF-CMA experiment of any typed
+  scheme on words, restricted or not, played by a word forger, is the word-level game against the
+  signing oracle that records the queried messages.
 * `Cslib.Crypto.SignatureScheme.eufCmaGame_eq_eufCmaExperiment`,
   `Cslib.Crypto.SignatureScheme.eufOneTimeGame_eq_oneTimeEufCmaExperiment`,
   `Cslib.Crypto.WordSignatureScheme.eufCmaGame_eq_eufCmaExperiment`,
@@ -143,6 +147,52 @@ private theorem eval_runLogWith_rename {Q α : Type} (program : WordOracleComp U
     (fun request queried => ProbComp.eval (oracle request queried))
     (fun log => (log.map Prod.fst).reverse) step program []
 
+/-- The EUF-CMA experiment of a typed scheme on words, played by `adversary.toTyped n`, is the
+word-level game: run the word forger against the signing oracle that records the queried messages,
+newest first, and accept a valid signature on a message that was never queried. -/
+theorem Forger.eval_eufCmaExperiment_toTyped
+    (S : Signature.Scheme (List Bool) (List Bool) (List Bool) (List Bool)) (adversary : Forger)
+    (n : ℕ) :
+    ProbComp.eval (S.eufCmaExperiment (adversary.toTyped n)) = ProbComp.eval (do
+      let keys ← S.keyGen
+      let out ← (OracleComp.interpret
+        (sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
+          (SignatureScheme.signingOracleOf S.sign keys.2)) (adversary n keys.1)).run []
+      return !out.2.contains out.1.1 && S.verify keys.1 out.1.1 out.1.2) := by
+  simp only [forgeExperiment, ProbComp.eval_bind, ProbComp.eval_pure]
+  congr 1
+  funext keys
+  obtain ⟨pk, sk⟩ := keys
+  dsimp only
+  rw [← eval_runLogWith_rename (adversary n pk) (fun w => w) (Signer.ofSign S.sign sk)
+    (SignatureScheme.signingOracleOf S.sign sk) fun request log => by
+      simp [ProbOracleComp.logOracle, SignatureScheme.signingOracleOf, ProbComp.eval_map,
+        PMF.map_comp, Function.comp_def]]
+  rw [PMF.bind_map]
+  congr 1
+  funext x
+  obtain ⟨⟨msg, sig⟩, log⟩ := x
+  simp only [Function.comp_apply, freshMessage, List.contains_reverse]
+  cases S.verify pk msg sig <;> simp
+
+/-- The EUF-CMA experiment of a scheme on words restricted to the messages accepted by `adm`,
+played by `adversary.toTyped n`, is the word-level game that also requires the forged message to
+be admissible. -/
+theorem Forger.eval_eufCmaExperiment_restrict_toTyped
+    (S : Signature.Scheme (List Bool) (List Bool) (List Bool) (List Bool)) (adm : List Bool → Bool)
+    (adversary : Forger) (n : ℕ) :
+    ProbComp.eval ((S.restrict adm).eufCmaExperiment (adversary.toTyped n)) = ProbComp.eval (do
+      let keys ← S.keyGen
+      let out ← (OracleComp.interpret
+        (sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
+          (SignatureScheme.signingOracleOf S.sign keys.2)) (adversary n keys.1)).run []
+      return adm out.1.1 && !out.2.contains out.1.1 && S.verify keys.1 out.1.1 out.1.2) := by
+  rw [Forger.eval_eufCmaExperiment_toTyped]
+  simp only [Signature.Scheme.restrict_keyGen, Signature.Scheme.restrict_sign,
+    Signature.Scheme.restrict_verify, ProbComp.eval_bind, ProbComp.eval_pure]
+  refine congrArg _ (funext fun keys => congrArg _ (funext fun out => ?_))
+  cases adm out.1.1 <;> simp
+
 namespace SignatureScheme
 
 /-- The typed scheme of `S` at parameter `n`: the same algorithms at `n`, restricted to `n`-bit
@@ -172,22 +222,9 @@ private theorem post_eq (S : SignatureScheme) (n : ℕ) (pk msg sig : List Bool)
 `S.toScheme n` played by `adversary.toTyped n`. -/
 theorem eufCmaGame_eq_eufCmaExperiment (S : SignatureScheme) (adversary : Forger) (n : ℕ) :
     ProbComp.eval (S.eufCmaGame adversary n) =
-      ProbComp.eval ((S.toScheme n).eufCmaExperiment (adversary.toTyped n)) := by
-  simp only [eufCmaGame, forgeExperiment, toScheme_keyGen, ProbComp.eval_bind,
-    ProbComp.eval_pure]
-  congr 1
-  funext keys
-  obtain ⟨pk, sk⟩ := keys
-  dsimp only
-  rw [← eval_runLogWith_rename (adversary n pk) (fun w => w)
-    (Signer.ofSign (S.toScheme n).sign sk) (S.signingOracle sk) fun request log => by
-      simp [ProbOracleComp.logOracle, signingOracle, ProbComp.eval_map, PMF.map_comp,
-        Function.comp_def]]
-  rw [PMF.bind_map]
-  congr 1
-  funext x
-  obtain ⟨⟨msg, sig⟩, log⟩ := x
-  simp only [Function.comp_apply, post_eq]
+      ProbComp.eval ((S.toScheme n).eufCmaExperiment (adversary.toTyped n)) :=
+  (Forger.eval_eufCmaExperiment_restrict_toTyped ⟨S.keyGen n, S.sign, S.verify⟩ (·.length == n)
+    adversary n).symm
 
 /-- At each parameter `n`, the word-level one-time EUF-CMA game is the typed one-time EUF-CMA
 experiment of `S.toScheme n` played by `adversary.toTyped n`. -/
@@ -256,23 +293,8 @@ def toScheme (S : WordSignatureScheme) (n : ℕ) :
 experiment of `S.toScheme n` played by `adversary.toTyped n`. -/
 theorem eufCmaGame_eq_eufCmaExperiment (S : WordSignatureScheme) (adversary : Forger) (n : ℕ) :
     ProbComp.eval (S.eufCmaGame adversary n) =
-      ProbComp.eval ((S.toScheme n).eufCmaExperiment (adversary.toTyped n)) := by
-  simp only [eufCmaGame, forgeExperiment, toScheme_keyGen, ProbComp.eval_bind,
-    ProbComp.eval_pure]
-  congr 1
-  funext keys
-  obtain ⟨pk, sk⟩ := keys
-  dsimp only
-  rw [← eval_runLogWith_rename (adversary n pk) (fun w => w)
-    (Signer.ofSign (S.toScheme n).sign sk) (S.signingOracle sk) fun request log => by
-      simp [ProbOracleComp.logOracle, signingOracle, ProbComp.eval_map, PMF.map_comp,
-        Function.comp_def]]
-  rw [PMF.bind_map]
-  congr 1
-  funext x
-  obtain ⟨⟨msg, sig⟩, log⟩ := x
-  simp only [Function.comp_apply, toScheme_verify, freshMessage, List.contains_reverse]
-  cases S.verify pk msg sig <;> simp
+      ProbComp.eval ((S.toScheme n).eufCmaExperiment (adversary.toTyped n)) :=
+  (Forger.eval_eufCmaExperiment_toTyped (S.toScheme n) adversary n).symm
 
 end WordSignatureScheme
 
