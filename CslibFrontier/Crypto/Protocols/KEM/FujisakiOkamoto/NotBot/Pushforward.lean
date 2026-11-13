@@ -97,7 +97,7 @@ private theorem readIndex_injective (S : Scheme PK SK M R CT K) (G : M → R) (p
     Function.Injective (S.readIndex G pk sk) := by
   rintro (⟨_ | _, m, c⟩ | c) (⟨_ | _, m', c'⟩ | c') h <;>
     simp only [readIndex] at h <;> (try split_ifs at h) <;>
-    simp_all [decT, encT]
+    simp_all [decT_eq, encT]
 
 /-- Reading the independent tables `(Hq, Hraw, Hfb')` through `readIndex` gives independent tables
 `(H, Hfb)`. -/

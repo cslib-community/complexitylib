@@ -286,25 +286,12 @@ namespace Scheme
 variable [DecidableEq M] [DecidableEq CT]
 
 /-- Stateful oracle handler for the real ROM IND-CCA game of `FO-notbot`. Queries to the
-challenge ciphertext `cStar` are rejected with `none`; other decapsulation queries
-re-encrypt under the lazy random oracle `G` and derive the key via the lazy random oracle
-`H`, falling back to `H(true, dk.fallback, c)` on implicit rejection. -/
+challenge ciphertext `cStar` are rejected with `none`; other decapsulation queries run the scheme's
+decapsulation `decapsNotBotM` against the lazy random oracles `G` and `H`. -/
 def roHandler (S : Scheme PK SK M R CT K) (dk : ImplicitSK PK SK M) (cStar : CT)
     (q : ROQuery M CT) : StateT (ROCache M R CT K) ProbComp (ROResp R K q) :=
   ROQuery.dispatch (roHashG S.pke.sampleCoins) (roHashH S.sampleKey)
-    (fun c =>
-      match S.pke.dec dk.sk c with
-      | none => do
-        let k ← roHashH S.sampleKey (true, dk.fallback, c)
-        return some k
-      | some m' => do
-        let r' ← roHashG S.pke.sampleCoins m'
-        if S.pke.encDet dk.pk m' r' = c then do
-          let k ← roHashH S.sampleKey (false, m', c)
-          return some k
-        else do
-          let k ← roHashH S.sampleKey (true, dk.fallback, c)
-          return some k)
+    (fun c => some <$> S.decapsNotBotM (roHashG S.pke.sampleCoins) (roHashH S.sampleKey) dk c)
     cStar q
 
 /-- The executable ROM IND-CCA security game for `FO-notbot` with bit `b : Bool` (standard KEM
@@ -437,37 +424,53 @@ def romCpaReduction (S : Scheme PK SK M R CT K)
 /-! ### Section 2: Connecting `memoize` to `RandomOracle.answer` and Eager/Lazy Equivalence -/
 
 /-- Hybrid 1 handler: `G : M → R` is a complete table while `H : Bool × M × CT → K` is answered
-lazily via `RandomOracle.answer`. Decapsulation uses `decT S.pke G dk.pk dk.sk c`. -/
+lazily via `RandomOracle.answer`. Decapsulation queries `c ≠ cStar` run `decapsNotBotM` against
+these oracles. -/
 noncomputable def h1Handler (S : Scheme PK SK M R CT K)
     (G : M → R) (dk : ImplicitSK PK SK M) (cStar : CT)
     (q : ROQuery M CT) :
     StateT (RandomOracle.Cache (fun _ : Bool × M × CT => K)) PMF (ROResp R K q) :=
-  ROQuery.dispatch (fun m tH => PMF.pure (G m, tH))
-    (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey))
-    (fun c tH =>
+  let H := RandomOracle.answer (fun _ : Bool × M × CT => ProbComp.eval S.sampleKey)
+  ROQuery.dispatch (pure ∘ G) H (fun c => some <$> S.decapsNotBotM (pure ∘ G) H dk c) cStar q
+
+/-- A decapsulation query `c ≠ cStar` to `h1Handler`: the `T` check runs on the table `G`, and
+only the key derivation touches the `H` table. -/
+private theorem h1Handler_decaps (S : Scheme PK SK M R CT K) (G : M → R)
+    (dk : ImplicitSK PK SK M) {cStar c : CT} (hc : c ≠ cStar)
+    (tH : RandomOracle.Cache (fun _ : Bool × M × CT => K)) :
+    S.h1Handler G dk cStar (.decaps c) tH =
       match decT S.pke G dk.pk dk.sk c with
       | some m' =>
         (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) (false, m', c) tH).map
           (fun (k, tH') => (some k, tH'))
       | none =>
         (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) (true, dk.fallback, c) tH).map
-          (fun (k, tH') => (some k, tH')))
-    cStar q
+          (fun (k, tH') => (some k, tH')) := by
+  simp only [h1Handler, ROQuery.dispatch, hc, ↓reduceIte, decapsNotBotM, decTM_pure, pure_bind]
+  cases decT S.pke G dk.pk dk.sk c <;> rfl
 
 /-- Intermediate handler answering `G` and `H` via `RandomOracle.answer` on a pair of
-`RandomOracle.Cache` tables `(tG, tH)`. -/
+`RandomOracle.Cache` tables `(tG, tH)`. Decapsulation queries `c ≠ cStar` run `decapsNotBotM`
+against these table oracles. -/
 noncomputable def roAnswerHandler (S : Scheme PK SK M R CT K)
     (dk : ImplicitSK PK SK M) (cStar : CT) (q : ROQuery M CT) :
     StateT (RandomOracle.Cache (fun _ : M => R) ×
       RandomOracle.Cache (fun _ : Bool × M × CT => K)) PMF (ROResp R K q) :=
-  ROQuery.dispatch
-    (fun m (tG, tH) =>
-      (RandomOracle.answer (fun _ => ProbComp.eval S.pke.sampleCoins) m tG).map
-        (fun (r, tG') => (r, (tG', tH))))
-    (fun x (tG, tH) =>
-      (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) x tH).map
-        (fun (k, tH') => (k, (tG, tH'))))
-    (fun c (tG, tH) =>
+  let G : M → StateT (RandomOracle.Cache (fun _ : M => R) ×
+      RandomOracle.Cache (fun _ : Bool × M × CT => K)) PMF R := fun m (tG, tH) =>
+    (RandomOracle.answer (fun _ => ProbComp.eval S.pke.sampleCoins) m tG).map
+      (fun (r, tG') => (r, (tG', tH)))
+  let H : Bool × M × CT → StateT (RandomOracle.Cache (fun _ : M => R) ×
+      RandomOracle.Cache (fun _ : Bool × M × CT => K)) PMF K := fun x (tG, tH) =>
+    (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) x tH).map
+      (fun (k, tH') => (k, (tG, tH')))
+  ROQuery.dispatch G H (fun c => some <$> S.decapsNotBotM G H dk c) cStar q
+
+/-- A decapsulation query `c ≠ cStar` to `roAnswerHandler` as explicit table operations. -/
+private theorem roAnswerHandler_decaps (S : Scheme PK SK M R CT K) (dk : ImplicitSK PK SK M)
+    {cStar c : CT} (hc : c ≠ cStar) (tG : RandomOracle.Cache (fun _ : M => R))
+    (tH : RandomOracle.Cache (fun _ : Bool × M × CT => K)) :
+    S.roAnswerHandler dk cStar (.decaps c) (tG, tH) =
       match S.pke.dec dk.sk c with
       | none =>
         (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) (true, dk.fallback, c) tH).map
@@ -479,14 +482,27 @@ noncomputable def roAnswerHandler (S : Scheme PK SK M R CT K)
               (fun (k, tH') => (some k, (tG', tH')))
           else
             (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) (true, dk.fallback, c) tH).map
-              (fun (k, tH') => (some k, (tG', tH'))))
-    cStar q
+              (fun (k, tH') => (some k, (tG', tH'))) := by
+  simp only [roAnswerHandler, ROQuery.dispatch, hc, ↓reduceIte, decapsNotBotM_eq]
+  cases S.pke.dec dk.sk c with
+  | none =>
+    dsimp only
+    simp only [Functor.map, StateT.map, Probability.PMF.monad_bind_eq_bind,
+      Probability.PMF.monad_pure_eq_pure, PMF.bind_map]
+    rfl
+  | some m' =>
+    dsimp only
+    simp only [Functor.map, StateT.map, bind, StateT.bind, Probability.PMF.monad_pure_eq_pure,
+      PMF.bind_map, PMF.bind_bind]
+    congr 1 with a : 1
+    dsimp only [Function.comp_apply]
+    split_ifs <;> rw [PMF.bind_map] <;> rfl
 
-/-- Evaluating `(do let k ← roHashH sampleKey x; return some k) st` and mapping `ROCache` via
+/-- Evaluating `(some <$> roHashH sampleKey x) st` and mapping `ROCache` via
 `RandomOracle.ofList`. -/
 private theorem eval_roHashH_some_map_ofList (sampleKey : ProbComp K) (x : Bool × M × CT)
     (st : ROCache M R CT K) :
-    (ProbComp.eval ((do let k ← roHashH sampleKey x; return some k) st)).map
+    (ProbComp.eval ((some <$> roHashH sampleKey x) st)).map
       (fun (res, st') =>
         (res, (RandomOracle.ofList st'.gCache, RandomOracle.ofList st'.hCache))) =
     (RandomOracle.answer (fun _ => ProbComp.eval sampleKey) x
@@ -526,21 +542,21 @@ theorem roHandler_map_ofList (S : Scheme PK SK M R CT K) (dk : ImplicitSK PK SK 
       (RandomOracle.memoize_map_ofList dH x st.hCache)
     simpa only [PMF.map_comp, Function.comp_def, dH] using h
   | decaps c =>
-    dsimp only [roHandler, roAnswerHandler, ROQuery.dispatch]
     by_cases hc : c = cStar
-    · simp only [hc, ↓reduceIte]
+    · dsimp only [roHandler, roAnswerHandler, ROQuery.dispatch]
+      simp only [hc, ↓reduceIte]
       exact PMF.pure_map _ _
-    · simp only [hc, ↓reduceIte]
+    · rw [roAnswerHandler_decaps S dk hc]
+      dsimp only [roHandler, ROQuery.dispatch]
+      simp only [hc, ↓reduceIte, decapsNotBotM_eq]
       cases hdec : S.pke.dec dk.sk c with
       | none => exact eval_roHashH_some_map_ofList S.sampleKey (true, dk.fallback, c) st
       | some m' =>
+        dsimp only
+        rw [map_bind]
         change (ProbComp.eval (roHashG S.pke.sampleCoins m' st >>= fun a =>
-            (if S.pke.encDet dk.pk m' a.fst = c then do
-              let k ← roHashH S.sampleKey (false, m', c)
-              return some k
-            else do
-              let k ← roHashH S.sampleKey (true, dk.fallback, c)
-              return some k) a.snd)).map _ = _
+            (some <$> if S.pke.encDet dk.pk m' a.fst = c then roHashH S.sampleKey (false, m', c)
+              else roHashH S.sampleKey (true, dk.fallback, c)) a.snd)).map _ = _
         dsimp only [roHashG]
         simp only [ProbComp.eval_bind, RandomOracle.eval_zoomStateT_memoize, PMF.map_bind,
           PMF.bind_map, Function.comp_def]
@@ -571,7 +587,8 @@ theorem roAnswerHandler_sim_h1 [Fintype M] [Finite R]
   simp only [Probability.PMF.monad_bind_eq_bind]
   cases q with
   | G m =>
-    dsimp only [roAnswerHandler, h1Handler, ROQuery.dispatch]
+    dsimp only [roAnswerHandler, h1Handler, ROQuery.dispatch, Function.comp_apply, pure,
+      StateT.pure]
     have hc := congrArg (PMF.map (fun (r, G) => (r, (G, tH))))
       (RandomOracle.answer_complete dG tG m)
     simpa only [Probability.PMF.monad_bind_eq_bind, PMF.bind_map, PMF.map_bind, PMF.map_comp,
@@ -581,16 +598,17 @@ theorem roAnswerHandler_sim_h1 [Fintype M] [Finite R]
     rw [PMF.bind_map, PMF.bind_comm]
     rfl
   | decaps c =>
-    dsimp only [roAnswerHandler, h1Handler, ROQuery.dispatch]
     by_cases hc : c = cStar
-    · simp [hc, pure, StateT.pure]
-    · simp only [hc, ↓reduceIte]
+    · dsimp only [roAnswerHandler, h1Handler, ROQuery.dispatch]
+      simp [hc, pure, StateT.pure]
+    · rw [roAnswerHandler_decaps S dk hc]
+      simp only [h1Handler_decaps S _ dk hc]
       cases hdec : S.pke.dec dk.sk c with
       | none =>
-        simp only [decT, hdec, Function.comp_def, PMF.map, PMF.bind_bind, PMF.pure_bind]
+        simp only [decT_eq, hdec, Function.comp_def, PMF.map, PMF.bind_bind, PMF.pure_bind]
         exact PMF.bind_comm _ _ _
       | some m' =>
-        simp only [decT, encT, hdec, PMF.bind_bind]
+        simp only [decT_eq, encT, hdec, PMF.bind_bind]
         trans (((RandomOracle.answer dG m' tG).bind (fun (r', tG') =>
             (RandomOracle.complete dG tG').map (fun G => (r', G)))).bind (fun (r', G) =>
             if S.pke.encDet dk.pk m' r' = c then
@@ -716,16 +734,18 @@ theorem h1Handler_sim_eager [Fintype M] [Fintype CT] [Finite K]
   simp only [Probability.PMF.monad_bind_eq_bind]
   cases q with
   | G m =>
-    simp [h1Handler, eagerHandler, ROQuery.dispatch]
+    simp [h1Handler, eagerHandler, pure, StateT.pure]
   | H x =>
     dsimp only [h1Handler, eagerHandler, ROQuery.dispatch]
     simpa only [Probability.PMF.monad_bind_eq_bind, PMF.pure_bind, PMF.map, Function.comp_def, dH]
       using RandomOracle.answer_complete dH tH x
   | decaps c =>
-    dsimp only [h1Handler, eagerHandler, decapsNotBot, ROQuery.dispatch]
     by_cases hc : c = cStar
-    · simp [hc, pure, StateT.pure]
-    · simp only [hc, ↓reduceIte]
+    · dsimp only [h1Handler, eagerHandler, ROQuery.dispatch]
+      simp [hc, pure, StateT.pure]
+    · rw [h1Handler_decaps S G dk hc]
+      dsimp only [eagerHandler, decapsNotBot, ROQuery.dispatch]
+      simp only [hc, ↓reduceIte]
       cases hdec : decT S.pke G dk.pk dk.sk c with
       | none =>
         have hH := congrArg (PMF.map (fun (k, H) => (some k, H)))

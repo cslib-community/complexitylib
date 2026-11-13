@@ -21,7 +21,9 @@ Exercises the HHK17 modular Fujisaki–Okamoto transforms (`T`, `FO^⊥`, `FO-no
    for `T`, `FO^⊥`, and `FO-notbot`, and rejection of a valid underlying PKE ciphertext encrypted
    under
    non-canonical coins (`c = (1, 6)` decrypts to `some 2` under PKE, yet `decapsBot` rejects with
-   `none` and `decapsNotBot` returns the domain-separated fallback key `H(true, fallback, c)`).
+   `none` and `decapsNotBot` returns the domain-separated fallback key `H(true, fallback, c)`),
+   and the same decapsulations with oracle access (`decapsBotM`, `decapsNotBotM`) against a `G`
+   oracle that records its queries.
 2. **Positive and negative witnesses for `DeltaCorrect` (including `δ > 0` tight and non-tight
    bounds)**: `identityPKE` (`DeltaCorrect 0`), `alwaysZeroDecPKE` (`¬ DeltaCorrect 0`), and
    `noisyCoinPKE` whose decryptor fails on coin `r = 1` with probability `1 / 2`, satisfying
@@ -108,6 +110,24 @@ example :
   exact ⟨by decide,
     maskedShiftScheme.decapsBot_eq_none_of_reencrypt_ne testG testH 3 3 (1, 6) hbad,
     maskedShiftScheme.decapsNotBot_of_reencrypt_ne testG testH ⟨3, 3, 7⟩ (1, 6) hbad⟩
+
+/-- `testG` as an oracle that records each query. -/
+def logG (m : Fin 8) : StateM (List (Fin 8)) (Fin 8) := do
+  modify (m :: ·)
+  return testG m
+
+/-- Decapsulation with oracle access: on the honest ciphertext `(0, 5)` and the non-canonical
+`(1, 6)`, `decapsBotM` and `decapsNotBotM` query `G(2)` exactly once, and the rejected `(1, 6)`
+keeps that query before returning `none` or the fallback key. With pure oracles, `decapsNotBotM`
+is `decapsNotBot`. -/
+example :
+    (maskedShiftScheme.decapsBotM logG (pure ∘ testH) 3 3 (1, 6)).run [] = (none, [2]) ∧
+    (maskedShiftScheme.decapsNotBotM logG (pure ∘ testH) ⟨3, 3, 7⟩ (1, 6)).run [] = (15, [2]) ∧
+    (maskedShiftScheme.decapsNotBotM logG (pure ∘ testH) ⟨3, 3, 7⟩
+      (encT maskedShiftPKE testG 3 2)).run [] = (2, [2]) ∧
+    maskedShiftScheme.decapsNotBotM (m := Id) (pure ∘ testG) (pure ∘ testH) ⟨3, 3, 7⟩ (1, 6) =
+      maskedShiftScheme.decapsNotBot testG testH ⟨3, 3, 7⟩ (1, 6) :=
+  ⟨rfl, rfl, rfl, maskedShiftScheme.decapsNotBotM_pure testG testH _ _⟩
 
 /-! ### 2. `DeltaCorrect` Witnesses (Zero-Error, Tight Non-Zero `δ > 0`, Non-Tight, and Negative) -/
 

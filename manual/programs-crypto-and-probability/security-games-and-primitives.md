@@ -604,7 +604,12 @@ implicit-rejection `FO-notbot` (§3.2.2, Fig. 12; `ImplicitSK`, `Scheme.keyGenNo
 `Scheme.encapsNotBot`, `Scheme.decapsNotBot`, `decapsNotBot_encT_eq`,
 `decapsNotBot_of_reencrypt_ne`) that tags `H : Bool × M × CT → K` with `false` for valid key
 derivations and `true` for fallback rejection keys `H(true, dk.fallback, c)` in place of HHK17's
-untagged `H(s, c)`. For Random Oracle Model (ROM) IND-CCA games and the keyless IND-CPA reduction
+untagged `H(s, c)`. `FujisakiOkamoto.decTM`, `Scheme.decapsBotM` and `Scheme.decapsNotBotM` are
+the same algorithms with oracle access to `G` and `H` in any monad. `decT` is `decTM` in `Id`, and
+with pure oracles the decapsulations are `decapsBot` and `decapsNotBot` (`Scheme.decapsBotM_pure`,
+`Scheme.decapsNotBotM_pure`). The random-oracle game handlers run them against lazy or table
+oracles instead of restating the re-encryption check. For Random Oracle Model (ROM) IND-CCA games
+and the keyless IND-CPA reduction
 on `FO-notbot`, import
 [`FujisakiOkamoto/Security.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Security.lean).
 It defines the ROM query family `ROQuery M CT` (`G`, `H`, and punctured decapsulation rejecting

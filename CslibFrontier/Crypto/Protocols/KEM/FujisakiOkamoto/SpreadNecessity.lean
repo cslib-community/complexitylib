@@ -322,7 +322,7 @@ theorem eval_roIndCcaBotGame_probeDecapsAdv (P : ExplicitCoinPKE PK SK M R CT) (
     have hdec : S.pke.dec sk none = some m₀ := rfl
     have henc (r' : R) : S.pke.encDet pk m₀ r' = none := by
       simp [S, unspreadScheme, unspreadPointPKE]
-    simp [StateT.run_bind, hc, hdec, henc, hm, pmf_norm]
+    simp [StateT.run_bind, hc, hdec, henc, hm, pmf_norm, Scheme.decapsBotM_eq]
 
 /-- **Necessity of the `qD · 2^{-γ}` spreadness term in `FO^⊥`**: for a uniform message sampler on a
 finite message space `M`, the 1-query adversary `probeDecapsAdv` (`qG = 0, qH = 0, qD = 1`)

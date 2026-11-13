@@ -361,7 +361,7 @@ private theorem simHandler_reEnc_le (S : Scheme PK SK M R CT K) (d : List (M × 
     simp only [ROQuery.gCost, ROQuery.hCost, Nat.cast_zero, zero_mul, add_zero]
     refine (toOuterMeasure_gCache_eq_zero _ st
       (fun g => ∃ p ∈ g, S.pke.encDet pk p.1 p.2 = cStar) hst fun y hy => ?_).le
-    dsimp only [simFilterHandler, simFilterDispatch, ROQuery.dispatch, filterDecaps] at hy
+    dsimp only [simFilterHandler, simFilterDispatch, ROQuery.dispatch] at hy
     exact gCache_eq_of_mem_support_filterDecaps _ _ _ _ _ _ hy
 
 /-- **Bad-event split**: from the empty state, the simulator records `mStar` in
