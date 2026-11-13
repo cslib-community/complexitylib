@@ -122,7 +122,7 @@ private theorem runWith_runLoggedForger_toROM (S : Scheme PK SK M Sig) (A : Forg
       (ROMSignature.runLoggedForger (A.toROM pk)) []).map
         (fun ((msig, pairs), _) => (msig, pairs.reverse)) =
       ProbComp.eval ((A pk).runLogWith (Signer.ofSign S.sign sk)) := by
-  rw [ProbOracleComp.runLogWith, ProbOracleComp.eval_run_interpret_eq_runWith]
+  rw [ProbOracleComp.runLogWith, ProbOracleComp.eval_runState]
   unfold ROMSignature.runLoggedForger Forger.toROM
   have hcomp :
       interpret

@@ -140,8 +140,8 @@ private theorem eval_runLogWith_rename {Q α : Type} (program : WordOracleComp U
         (fun request : Unit × List Bool => ProbOracleComp.logOracle signer (decode request.2)) := by
     funext q
     cases q <;> simp [ProbOracleComp.query]
-  rw [ProbOracleComp.runLogWith, OracleComp.interpret_interpret, hhandler,
-    ProbOracleComp.eval_run_interpret, ProbOracleComp.eval_run_interpret]
+  rw [ProbOracleComp.runLogWith, ProbOracleComp.runState, OracleComp.interpret_interpret,
+    hhandler, ProbOracleComp.eval_run_interpret, ProbOracleComp.eval_run_interpret]
   exact ProbOracleComp.run_interpret_map_state
     (fun request log => ProbComp.eval (ProbOracleComp.logOracle signer (decode request.2) log))
     (fun request queried => ProbComp.eval (oracle request queried))
@@ -330,8 +330,7 @@ theorem indexedEufCmaGame_eq_eufCmaExperiment (S : IndexedSignatureScheme)
   funext keys
   obtain ⟨pk, sk⟩ := keys
   dsimp only
-  rw [IndexedForger.toTyped, ProbOracleComp.runLogWith, OracleComp.run_interpret_map,
-    ← ProbOracleComp.runLogWith, ProbComp.eval_map, PMF.bind_map,
+  rw [IndexedForger.toTyped, ProbOracleComp.runLogWith_map, ProbComp.eval_map, PMF.bind_map,
     ← eval_runLogWith_rename (adversary n pk) requestDecoder.decode
       (Signer.indexed (S.capacity n) S.sign sk) (S.indexedSigningOracle n sk) fun request log => by
         simp only [indexedSigningOracle]
@@ -371,7 +370,8 @@ private theorem eval_runLogWith_toCounter (S : IndexedSignatureScheme) (adversar
         (sumHandler (fun k => StateT.lift (ProbComp.unifFin k)) (S.counterSigningOracle n sk))
         (adversary n pk)).run (0, []))).map
         (fun ((m, sig), (_, signed)) => ((m, requestDecoder.decode sig), signed)) := by
-  rw [Forger.toCounter, ProbOracleComp.runLogWith, OracleComp.run_interpret_map,
+  rw [Forger.toCounter, ProbOracleComp.runLogWith, ProbOracleComp.runState,
+    OracleComp.run_interpret_map,
     ProbComp.eval_map, PMF.map_comp, ProbOracleComp.eval_run_interpret,
     ProbOracleComp.eval_run_interpret, ProbOracleComp.run_interpret_run_interpret, PMF.map_comp]
   have key := ProbOracleComp.run_interpret_map_state_of_invariant
