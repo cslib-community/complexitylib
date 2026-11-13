@@ -158,8 +158,9 @@ theorem pair_hasGapWithAdvice {f : List Bool → List Bool}
     (imageLength : ℕ → ℕ) (hlength : ∀ n image, (encodeImage n image).length = imageLength n) :
     (pair f hf finiteFunction encodeImage hencode).HasGapWithAdvice
       (fun n => 1 / (hashCount n : ℝ)) advice :=
-  eventually_prediction_entropy_le_withAdvice hf hhard hadvice finiteFunction encodeImage hencode
-    imageLength hlength
+  SamplablePair.hasGapWithAdvice_iff_word.mpr
+    (eventually_prediction_entropy_le_withAdvice hf hhard hadvice finiteFunction encodeImage
+      hencode imageLength hlength)
 
 end Cslib.Crypto.Pseudoentropy.HashPair
 

@@ -143,7 +143,7 @@ private def mixedHashQueries :
 -- Four adversary hash calls induce three fresh queries; distinct junk keys are never collapsed.
 example :
     OracleComp.runWithAnswers (0 : ZMod 11)
-      ((OracleComp.interpret (FiatShamir.reductionHandler extendedHashPoint)
+      ((OracleComp.interpret (ForkingReduction.handler (FiatShamir.signer extendedHashPoint))
         mixedHashQueries).run ⟨[], [], 0, []⟩) [3, 7, 9] =
       (((3, 7, 9, 3),
         ⟨[(.inr true, 9, some 2), (.inl (true, 0), 7, some 1), (.inr false, 3, some 0)],
@@ -152,7 +152,7 @@ example :
 -- Programming a signature retains a previously cached junk key and records only its own message.
 example :
     OracleComp.runWithAnswers (0 : ZMod 11)
-      ((FiatShamir.reductionHandler extendedHashPoint (.inl false)).run
+      ((ForkingReduction.handler (FiatShamir.signer extendedHashPoint) (.inl false)).run
         ⟨[(.inr false, 3, some 0)], [], 1, [(0, 5, 9)]⟩) [] =
       (((0, 9), ⟨[(.inl (false, 0), 5, none), (.inr false, 3, some 0)], [false], 1, []⟩),
         []) := by rfl
@@ -217,7 +217,8 @@ private theorem reduction_rejecting (fallback : ℕ) :
       (fun _ _ => PMF.pure ((), ())) (fun _ _ _ _ _ _ => 0) fallback emptyForger 0 0 () =
       PMF.pure fallback := by
   simp [FiatShamir.reduction, FiatShamir.coins, Forking.fork, OracleComp.forkingAlgorithm,
-    FiatShamir.forkingProgram, FiatShamir.finish, FiatShamir.verdict, emptyForger,
+    FiatShamir.forkingProgram, ForkingReduction.program, ForkingReduction.finish,
+    ForkingReduction.verdict, FiatShamir.check, emptyForger,
     rejecting, OracleComp.validIndex, OracleComp.forkNamedPosition,
     OracleComp.runWithAnswersOutput, PMF.iid]
 
