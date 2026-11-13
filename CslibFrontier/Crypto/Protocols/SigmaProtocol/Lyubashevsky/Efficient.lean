@@ -19,6 +19,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.P
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.BitString
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.ZMod
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pair.Projections
 import CslibFrontier.Foundations.Data.List.Lookup
 import CslibFrontier.Tactic.PolyTime
 import CslibFrontier.Tactic.PPT
@@ -507,14 +508,6 @@ theorem lyubashevskyVerifyEqList_ofFn (n m k q : ℕ)
       ListMatrix.intCast_dotProduct_matrix_ofFn T (lyubashevskyChallenge c) i]
     rw [List.getD_ofFn_of_lt _ hj_lt, ZMod.intCast_zmod_cast]
     exact h i
-
-private theorem unframe_encPair {α β : Type} (encA : α ↪ List Bool) (encB : β ↪ List Bool)
-    (p : α × β) : unframe (encPair encA encB p) = encA p.1 :=
-  unframe_frame_append (encA p.1) (encB p.2)
-
-private theorem dropFrame_encPair {α β : Type} (encA : α ↪ List Bool) (encB : β ↪ List Bool)
-    (p : α × β) : dropFrame (encPair encA encB p) = encB p.2 :=
-  dropFrame_frame_append (encA p.1) (encB p.2)
 
 @[simp]
 theorem decode_encZModMatrix (n m q : ℕ) (M : Matrix (Fin n) (Fin m) (ZMod q)) :

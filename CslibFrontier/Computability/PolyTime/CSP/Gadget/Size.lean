@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Computability.PolyTime.CSP.Gadget
+public import CslibFrontier.Logics.Propositional.CSP.PrimitivePositive.Replacement
 import Mathlib.Algebra.Order.BigOperators.Group.List
 import Mathlib.Data.Finset.Lattice.Fold
 
