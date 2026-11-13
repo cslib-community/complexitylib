@@ -28,7 +28,7 @@ variable {Rel V : Type}
 
 /-- The complete occurrence word consists of the old body and the appended indexed scope. -/
 theorem occurrences_append_scope (F : CSP Rel V) (r : Rel) (scope : List V) :
-    (F ++ [(r, scope)]).occurrences = F.occurrences ++
+    (F ++ [Constraint.mk r scope]).occurrences = F.occurrences ++
       scope.zipIdx.map (fun (v, j) => (F.length, j, v)) := by
   simp [CSP.occurrences, CSP.varCNF, Cslib.Logic.PL.occurrences, List.zipIdx_append,
     List.zipIdx_map, List.flatMap_append, List.map_flatMap, List.map_map, Function.comp_def]
@@ -57,7 +57,7 @@ private def appendedScopeRecord (F : CSP Rel V) (scope : List V) :
 
 private theorem appendedScopeRecord_mem (F : CSP Rel V) (r : Rel) (scope : List V)
     (o : F.Occurrence ⊕ Fin scope.length) :
-    appendedScopeRecord F scope o ∈ (F ++ [(r, scope)]).occurrences := by
+    appendedScopeRecord F scope o ∈ (F ++ [Constraint.mk r scope]).occurrences := by
   rw [occurrences_append_scope, List.mem_append]
   cases o with
   | inl o => exact Or.inl (mem_occurrences.mpr ⟨o, rfl⟩)
@@ -69,7 +69,7 @@ private theorem appendedScopeRecord_mem (F : CSP Rel V) (r : Rel) (scope : List 
 private theorem appendedScopeRecord_bijective (F : CSP Rel V) (r : Rel) (scope : List V) :
     Function.Bijective (fun o : F.Occurrence ⊕ Fin scope.length =>
       (⟨appendedScopeRecord F scope o, appendedScopeRecord_mem F r scope o⟩ :
-        {record // record ∈ (F ++ [(r, scope)]).occurrences})) := by
+        {record // record ∈ (F ++ [Constraint.mk r scope]).occurrences})) := by
   constructor
   · intro a b he
     have h := congrArg Subtype.val he
@@ -108,10 +108,10 @@ private theorem appendedScopeRecord_bijective (F : CSP Rel V) (r : Rel) (scope :
 /-- Original-body occurrences and the appended scope indices parametrize the exact original
 occurrence type. Constraint and argument positions remain distinct when variable labels repeat. -/
 noncomputable def appendScopeOccurrenceEquiv (F : CSP Rel V) (r : Rel) (scope : List V) :
-    F.Occurrence ⊕ Fin scope.length ≃ (F ++ [(r, scope)]).Occurrence :=
+    F.Occurrence ⊕ Fin scope.length ≃ (F ++ [Constraint.mk r scope]).Occurrence :=
   (Equiv.ofBijective (fun o =>
     (⟨appendedScopeRecord F scope o, appendedScopeRecord_mem F r scope o⟩ :
-      {record // record ∈ (F ++ [(r, scope)]).occurrences}))
+      {record // record ∈ (F ++ [Constraint.mk r scope]).occurrences}))
     (appendedScopeRecord_bijective F r scope)).trans (occurrenceRecordEquiv _).symm
 
 /-- Old-body coordinates retain exactly their original positional record. -/
@@ -130,7 +130,8 @@ theorem record_appendScopeOccurrenceEquiv_inr (F : CSP Rel V) (r : Rel) (scope :
 /-- Function-indexed scopes use the same actual occurrence coordinates, without replacing
 source scope positions by a set of variable names. -/
 noncomputable def appendOfFnOccurrenceEquiv (F : CSP Rel V) (r : Rel) {n : ℕ}
-    (scope : Fin n → V) : F.Occurrence ⊕ Fin n ≃ (F ++ [(r, List.ofFn scope)]).Occurrence :=
+    (scope : Fin n → V) :
+    F.Occurrence ⊕ Fin n ≃ (F ++ [Constraint.mk r (List.ofFn scope)]).Occurrence :=
   (Equiv.sumCongr (Equiv.refl F.Occurrence)
     (finCongr (List.length_ofFn (f := scope)).symm)).trans
       (appendScopeOccurrenceEquiv F r (List.ofFn scope))

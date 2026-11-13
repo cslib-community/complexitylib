@@ -198,8 +198,7 @@ private theorem reaches_formulaCode {P : CounterProgram} {a : EncodedStructure}
       ∃ (res : Bool) (regs' : List ℕ),
         (res = true ↔ (letI := v.decode a; φ.Realize val xs)) ∧
         P.Reaches (encStructure a) (P.Running B) (b, regs) (if res then T else F, regs') ∧
-        regs'.length = regs.length ∧ (∀ i < base + k, regs'.getD i 0 = regs.getD i 0) ∧
-        ∀ r ∈ regs', r ≤ B := by
+        Kept B (base + k) regs regs' := by
   let _ := v.decode a
   intro k
   exact reaches_formulaCodeWith (P := P) hnB fv base hbase hfv val (atomicCompiler v fv base)

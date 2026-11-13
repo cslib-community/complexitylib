@@ -165,8 +165,8 @@ theorem GapP.pow_mem_polyTime {g : α → ℤ} {r : α → ℕ} (hg : g ∈ GapP
     (fun a => g a ^ r a) ∈ GapP enc := by
   obtain ⟨f₁, ⟨p₁, V₁, hV₁, hf₁⟩, f₂, ⟨p₂, V₂, hV₂, hf₂⟩, hg⟩ := hg
   let k : α → ℕ := fun a => (p₁ + p₂).eval (enc a).length
-  let V := andVerifier (fun a => p₁.eval (enc a).length) V₁ allFalseVerifier
-  let W := andVerifier (fun a => p₂.eval (enc a).length) V₂ allFalseVerifier
+  let V := padVerifier (fun a => p₁.eval (enc a).length) V₁
+  let W := padVerifier (fun a => p₂.eval (enc a).length) V₂
   have hk : ComputableInPolyTime k enc encUnary := by dsimp [k]; fun_prop
   have hV : ComputableInPolyTime V (encPair enc encBits) encBool := by dsimp [V]; fun_prop
   have hW : ComputableInPolyTime W (encPair enc encBits) encBool := by dsimp [W]; fun_prop
@@ -183,7 +183,7 @@ theorem GapP.pow_mem_polyTime {g : α → ℤ} {r : α → ℕ} (hg : g ∈ GapP
   congr 1
   rw [hg, hf₁, hf₂]
   dsimp [V, W, k]
-  rw [Polynomial.eval_add, acceptCount_andVerifier_allFalseVerifier,
-    Nat.add_comm (p₁.eval _), acceptCount_andVerifier_allFalseVerifier]
+  rw [Polynomial.eval_add, acceptCount_padVerifier_of_le _ _ (Nat.le_add_right _ _),
+    acceptCount_padVerifier_of_le _ _ (Nat.le_add_left _ _)]
 
 end Cslib.Complexity

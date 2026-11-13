@@ -10,10 +10,13 @@ module
 public import CslibFrontier.Init
 public import Cslib.Crypto.Primitives.PRG.Defs
 public import Mathlib.Data.Fin.Tuple.Take
+public import CslibFrontier.Crypto.Game.Inversion
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.BindCompare
 import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Bool
+import CslibFrontier.Probability.PMF.UniformPoint
 import CslibFrontier.Probability.Product
 
 /-!
@@ -97,11 +100,6 @@ noncomputable def guessOfDistinguisher (d : Bool → PMF Bool) : PMF Bool := do
   let r ← uniformOfFintype Bool
   (d r).map fun a => if a then r else !r
 
-private theorem map_decide_eq_apply_true {α : Type*} [DecidableEq α] (q : PMF α) (c : α) :
-    (q.map fun a => decide (a = c)) true = q c := by
-  rw [PMF.map_apply]
-  simp
-
 /-- The distinguisher/predictor lemma for a single bit, without subtraction. -/
 private theorem guessOfDistinguisher_apply_add (d : Bool → PMF Bool) (b : Bool) :
     guessOfDistinguisher d b + (uniformOfFintype Bool).bind d true = d b true + 2⁻¹ := by
@@ -117,14 +115,6 @@ private theorem guessOfDistinguisher_apply_add (d : Bool → PMF Bool) (b : Bool
       zero_add, add_zero]
     calc _ = 2⁻¹ * 2 * d true true + 2⁻¹ * (d false true + d false false) := by ring
       _ = _ := by rw [hd, h2, one_mul, mul_one]
-
-private theorem bind_apply_add_of_forall {α β : Type*} (μ : PMF α) {f g h : α → PMF β} {b : β}
-    {c : ℝ≥0∞} (hfg : ∀ x, f x b + g x b = h x b + c) :
-    μ.bind f b + μ.bind g b = μ.bind h b + c := by
-  simp only [PMF.bind_apply]
-  rw [← tsum_add]
-  simp_rw [← mul_add, hfg, mul_add]
-  rw [tsum_add, ENNReal.tsum_mul_right, μ.tsum_coe, one_mul]
 
 /-- **The distinguisher/predictor lemma** [Boneh and Shoup, Lemma 3.5][BonehShoup2023]. Draw `x`
 from `μ`. The guess `guessOfDistinguisher (d x)` equals `target x` with probability `1 / 2`, plus
@@ -250,11 +240,19 @@ variable {Seed : Type*} [Fintype Seed] [Nonempty Seed] {m : ℕ}
 
 /-- Attack Game 3.2 of [BonehShoup2023] at the fixed position `i`: the predictor receives the
 first `i` bits of the generator's output on a uniform seed, and the experiment outputs `true`
-exactly when the predictor's guess is bit `i`. -/
+exactly when the predictor's guess is bit `i`. This is `Cslib.Crypto.predictionExperiment` on
+`G.outputDist`, observing the first `i` bits and hiding bit `i`. -/
 noncomputable def Generator.predictionExperiment (G : Generator Seed (Fin m → Bool))
-    (i : Fin m) (predictor : Adversary (Fin i → Bool)) : PMF Bool := do
-  let y ← G.outputDist
-  (predictor (Fin.take i i.isLt.le y)).map fun g => decide (g = y i)
+    (i : Fin m) (predictor : Adversary (Fin i → Bool)) : PMF Bool :=
+  Crypto.predictionExperiment G.outputDist (Fin.take i i.isLt.le) (fun y => y i) predictor
+
+/-- The prediction experiment maps the predictor's guess on each output to its correctness. -/
+theorem Generator.predictionExperiment_eq_bind (G : Generator Seed (Fin m → Bool))
+    (i : Fin m) (predictor : Adversary (Fin i → Bool)) :
+    G.predictionExperiment i predictor = (do
+      let y ← G.outputDist
+      (predictor (Fin.take i i.isLt.le y)).map fun g => decide (g = y i)) :=
+  rfl
 
 /-- The advantage of a predictor in Attack Game 3.2 of [BonehShoup2023]: the distance of its
 probability of guessing bit `i` correctly from `1 / 2`. -/

@@ -21,6 +21,7 @@ import CslibFrontier.Computability.Complexity.Classes.LogSpace.Savitch
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OPrimitives
+import CslibFrontier.Foundations.Data.Nat.AffineBound
 import Mathlib.Tactic.Linarith
 
 /-!
@@ -204,8 +205,8 @@ theorem NSPACE_ssubset_NSPACE {f g : ℕ → ℕ} (hg : SpaceConstructible g)
   have hsub : NSPACE encBits f ⊆ NSPACE encBits g := NSPACE_mono_of_eventually_le <| by
     filter_upwards [hfg 1] with n h
     omega
-  refine (Set.ssubset_iff_of_subset hsub).mpr ⟨_, NSPACE_subset_of_le_mul_add 4 0
-    (fun n => (Nat.add_zero _).ge) (nspaceDiagonal_mem_NSPACE (hg.const_mul 4)
+  refine (Set.ssubset_iff_of_subset hsub).mpr ⟨_, NSPACE_mono_of_le_mul_add (C := 4)
+    (fun n => Nat.le_add_right _ _) (nspaceDiagonal_mem_NSPACE (hg.const_mul 4)
       fun n => (hlog n).trans (Nat.le_mul_of_pos_left _ (by norm_num))),
     nspaceDiagonal_notMem_NSPACE (fun n => Nat.mul_le_mul_left 4 (hlog n)) fun c => ?_⟩
   filter_upwards [hfg c] with n h
@@ -235,8 +236,8 @@ theorem NSPACE_pow_ssubset_NSPACE_pow_succ (k : ℕ) :
   (NSPACE_ssubset_NSPACE (g := fun n => (n + 1) ^ (k + 1))
     (spaceConstructible_succ_pow (k + 1))
     (fun n => (Nat.log2_le_self n).trans ((Nat.le_succ n).trans (Nat.le_self_pow (by omega) _)))
-    (eventually_mul_pow_add_le_succ_pow k)).trans_subset (NSPACE_subset_of_le_mul_add (2 ^ (k + 1))
-      1 fun n => by simpa using Nat.mul_add_one_pow_le_two_pow 1 (k + 1) n)
+    (eventually_mul_pow_add_le_succ_pow k)).trans_subset
+      (NSPACE_mono_of_le_mul_add (Nat.add_one_pow_le_two_pow_mul_add (k + 1)))
 
 /-- **Nondeterministic logarithmic space is strictly within polynomial space**
 [Sipser, Corollary 9.6][Sipser2013]: `NL ⊆ DSPACE (log₂ n ^ 2)` by Savitch's theorem

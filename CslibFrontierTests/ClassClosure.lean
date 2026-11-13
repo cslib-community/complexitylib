@@ -5,21 +5,27 @@ Authors: Samuel Schlesinger
 -/
 
 import CslibFrontier.Computability.Complexity.Classes.BPP.Collapse
+import CslibFrontier.Computability.Complexity.Classes.BPPpath
 import CslibFrontier.Computability.Complexity.Classes.Inclusions
 import CslibFrontier.Computability.Complexity.Classes.Ladner
+import CslibFrontier.Computability.Complexity.Classes.ModP
 import CslibFrontier.Computability.Complexity.Classes.P.Closure
 import CslibFrontier.Computability.Complexity.Classes.P.Complement
+import CslibFrontier.Computability.Complexity.Classes.ParityP.Closure
 import CslibFrontier.Computability.Complexity.Classes.PCP.ZeroRandomness
 import CslibFrontier.Computability.Complexity.Classes.PP.Characterization
 import CslibFrontier.Computability.Complexity.Classes.RP.Closure
+import CslibFrontier.Computability.Complexity.Classes.RP.Reduction
 import CslibFrontier.Computability.Complexity.Classes.SharpP.Closure
 import CslibFrontier.Computability.Complexity.Classes.SharpP.Combinators
 import CslibFrontier.Computability.Complexity.Classes.Space.Closure
+import CslibFrontier.Computability.Complexity.Classes.US
 import CslibFrontier.Computability.Complexity.CookLevin.Completeness
 import CslibFrontier.Computability.Complexity.Problems.ExactThreeSAT
 
 /-! Verifier combinators on concrete verifiers, closure properties of `#P`, `GapP`, `PP`, `RP`,
-`coRP` and `ZPP` applied to concrete problems, and non-vacuity witnesses for the new conditions.
+`coRP`, `ZPP`, `⊕P`, `BPPpath`, `US` and `ModP` applied to concrete problems, and non-vacuity
+witnesses for the new conditions.
 -/
 
 namespace CslibFrontierTests.ClassClosure
@@ -68,7 +74,14 @@ example :
     SharpP.mul_mem (SharpP.two_pow_mem _) (SharpP.two_pow_mem _)⟩,
    ⟨SharpP.pow_mem (SharpP.two_pow_mem _) 3,
     SharpP.sum_mem _ fun i _ => SharpP.natCast_mem i⟩,
-   GapP.neg_mem (natCast_mem (GapP.subring encBits) 3)⟩
+   GapP.neg_mem (GapP.natCast_mem 3)⟩
+
+/-- Finite sums, finite products and powers of concrete `GapP` functions. -/
+example :
+    ∑ i ∈ Finset.range 4, ((i : ℕ) : List Bool → ℤ) ∈ GapP encBits ∧
+      ∏ i ∈ Finset.range 3, (-((i : ℕ) : List Bool → ℤ)) ^ 2 ∈ GapP encBits :=
+  ⟨GapP.sum_mem _ fun i _ => GapP.natCast_mem i,
+   GapP.prod_mem _ fun i _ => GapP.pow_mem (GapP.neg_mem (GapP.natCast_mem i)) 2⟩
 
 /-- The complementary count of the constant function `1`. -/
 example : ∃ p : Polynomial ℕ,
@@ -124,6 +137,28 @@ example :
     union_mem_BPP (P_subset_BPP headD_mem_P) (P_subset_BPP hc)⟩,
    ⟨inter_mem_PSPACE (P_subset_PSPACE headD_mem_P) (P_subset_PSPACE hc),
     union_mem_PSPACE (P_subset_PSPACE headD_mem_P) (P_subset_PSPACE hc)⟩⟩
+
+/-- Dropping the first bit reduces the words whose second bit is `true` to the words starting with
+`true`, so they are in `RP`, `coRP` and `ZPP` through the reduction. -/
+example : List.tail ⁻¹' {w : List Bool | w.headD false = true} ∈
+    RP encBits ∩ coRP encBits ∩ ZPP encBits :=
+  have h : PolyTimeReducible encBits encBits (List.tail ⁻¹' {w | w.headD false = true})
+      {w : List Bool | w.headD false = true} :=
+    ⟨List.tail, ComputableInPolyTime.bitsTail, fun _ => Iff.rfl⟩
+  ⟨⟨h.mem_RP (P_subset_RP headD_mem_P), h.mem_coRP (P_subset_coRP headD_mem_P)⟩,
+    h.mem_ZPP (P_subset_ZPP headD_mem_P)⟩
+
+/-- The same reduction pulls back membership in the counting classes `⊕P`, `BPPpath`, `US` and
+`Mod₃P`. -/
+example : List.tail ⁻¹' {w : List Bool | w.headD false = true} ∈
+    ParityP encBits ∩ BPPpath encBits ∩ US encBits ∩ ModP 3 encBits :=
+  have h : PolyTimeReducible encBits encBits (List.tail ⁻¹' {w | w.headD false = true})
+      {w : List Bool | w.headD false = true} :=
+    ⟨List.tail, ComputableInPolyTime.bitsTail, fun _ => Iff.rfl⟩
+  ⟨⟨⟨h.mem_ParityP (P_subset_ParityP headD_mem_P),
+      h.mem_BPPpath (BPP_subset_BPPpath (P_subset_BPP headD_mem_P))⟩,
+    h.mem_US (UP_subset_US (P_subset_UP headD_mem_P))⟩,
+   h.mem_ModP (P_subset_ModP (by decide) headD_mem_P)⟩
 
 /-! ### `SAT` and `P` -/
 

@@ -21,6 +21,7 @@ import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.PPT.Clock
 import CslibFrontier.Computability.Probabilistic.Sampling.Verifier
 import CslibFrontier.Foundations.Analysis.ENNRealFraction
+import CslibFrontier.Foundations.Data.Nat.AffineBound
 import CslibFrontier.Probability.PMF.Map
 import Mathlib.Data.Set.Finite.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
@@ -79,7 +80,8 @@ certificate within time and space `O(t' m)`
 
 ## Main results
 
-* `Cslib.Complexity.DTIME_mono_of_le_mul_add`: `DTIME` absorbs constant factors.
+* `Cslib.Complexity.DTIME_mono_of_le_mul_add`, `Cslib.Complexity.NTIME_mono_of_le_mul_add`,
+  `Cslib.Complexity.BPTIME_mono_of_le_mul_add`: the classes absorb constant factors.
 * `Cslib.Complexity.computableInO_indicator_of_mem_DTIME`: a decider within the
   same time and space bounds up to constants.
 * `Cslib.Complexity.preimage_mem_DTIME`: `DTIME` under timed reductions.
@@ -132,26 +134,6 @@ open _root_.Turing _root_.Turing.MultiTapeTM Filter
 
 variable {α : Type*}
 
-/-- A bound on all but finitely many arguments is a bound up to an additive constant. -/
-private theorem exists_add_of_eventually_le {t₁ t₂ : ℕ → ℕ} (h : ∀ᶠ n in atTop, t₁ n ≤ t₂ n) :
-    ∃ C, ∀ n, t₁ n ≤ t₂ n + C := by
-  obtain ⟨N, hN⟩ := eventually_atTop.mp h
-  refine ⟨∑ n ∈ Finset.range N, t₁ n, fun n => ?_⟩
-  rcases le_or_gt N n with h | h
-  · have := hN _ h
-    omega
-  · have := Finset.single_le_sum (f := t₁) (fun _ _ => Nat.zero_le _) (Finset.mem_range.mpr h)
-    omega
-
-/-- Linear bounds `c₁ * t n + c₂` absorb a bound that holds eventually. -/
-private theorem exists_linear_of_eventually_le {t₁ t₂ : ℕ → ℕ} (h : ∀ᶠ n in atTop, t₁ n ≤ t₂ n)
-    (c₁ c₂ : ℕ) : ∃ c₂', ∀ n, c₁ * t₁ n + c₂ ≤ c₁ * t₂ n + c₂' := by
-  obtain ⟨C, hC⟩ := exists_add_of_eventually_le h
-  refine ⟨c₁ * C + c₂, fun n => ?_⟩
-  have := Nat.mul_le_mul_left c₁ (hC n)
-  rw [Nat.mul_add] at this
-  omega
-
 /-! ### Deterministic time -/
 
 /-- The problems decidable within time `O(t n)`, that is `c₁ * t n + c₂` for constants `c₁` and
@@ -162,20 +144,25 @@ def DTIME (enc : α ↪ List Bool) (t : ℕ → ℕ) : Set (Set α) :=
   {A | ∃ c₁ c₂ : ℕ, ∃ s : ℕ → ℕ,
     DecidableInTimeAndSpace A enc (fun a => c₁ * t (enc a).length + c₂) fun a => s (enc a).length}
 
+/-- `DTIME` absorbs constant factors: a bound `t₁ n ≤ C * t₂ n + C` puts `DTIME enc t₁` inside
+`DTIME enc t₂`. -/
+theorem DTIME_mono_of_le_mul_add {enc : α ↪ List Bool} {t₁ t₂ : ℕ → ℕ} {C : ℕ}
+    (h : ∀ n, t₁ n ≤ C * t₂ n + C) : DTIME enc t₁ ⊆ DTIME enc t₂ := by
+  rintro A ⟨c₁, c₂, s, hA⟩
+  exact ⟨c₁ * C, c₁ * C + c₂, s, ComputableInTimeAndSpace.mono hA
+    (fun _ => Nat.mul_add_le_mul_add_of_le_mul_add (h _) c₁ c₂) fun _ => le_rfl⟩
+
 /-- `DTIME` is monotone in the time bound. -/
 theorem DTIME_mono {enc : α ↪ List Bool} {t₁ t₂ : ℕ → ℕ} (h : ∀ n, t₁ n ≤ t₂ n) :
-    DTIME enc t₁ ⊆ DTIME enc t₂ := by
-  rintro A ⟨c₁, c₂, s, hA⟩
-  exact ⟨c₁, c₂, s, ComputableInTimeAndSpace.mono hA
-    (fun a => Nat.add_le_add_right (Nat.mul_le_mul_left _ (h _)) _) fun _ => le_rfl⟩
+    DTIME enc t₁ ⊆ DTIME enc t₂ :=
+  DTIME_mono_of_le_mul_add (C := 1) fun n => by have := h n; omega
 
 /-- `DTIME` only depends on the time bound eventually: the finitely many other values are absorbed
 by the additive constant. -/
 theorem DTIME_mono_of_eventually_le {enc : α ↪ List Bool} {t₁ t₂ : ℕ → ℕ}
-    (h : ∀ᶠ n in atTop, t₁ n ≤ t₂ n) : DTIME enc t₁ ⊆ DTIME enc t₂ := by
-  rintro A ⟨c₁, c₂, s, hA⟩
-  obtain ⟨c₂', hc⟩ := exists_linear_of_eventually_le h c₁ c₂
-  exact ⟨c₁, c₂', s, ComputableInTimeAndSpace.mono hA (fun a => hc _) fun _ => le_rfl⟩
+    (h : ∀ᶠ n in atTop, t₁ n ≤ t₂ n) : DTIME enc t₁ ⊆ DTIME enc t₂ :=
+  let ⟨_, hC⟩ := Nat.exists_le_mul_add_of_eventually_le h
+  DTIME_mono_of_le_mul_add hC
 
 /-- Every function of the instances is bounded by a function of the length of the encoded
 instance: there are finitely many instances of each length. -/
@@ -204,15 +191,6 @@ theorem setOf_mem_DTIME_of_computableInO {enc : α ↪ List Bool} {f : α → Bo
 section TimedReductions
 
 variable {α β : Type} {enc : α ↪ List Bool} {encB : β ↪ List Bool}
-
-/-- `DTIME` absorbs constant factors. -/
-theorem DTIME_mono_of_le_mul_add {t₁ t₂ : ℕ → ℕ} {C : ℕ} (h : ∀ n, t₁ n ≤ C * t₂ n + C) :
-    DTIME enc t₁ ⊆ DTIME enc t₂ := by
-  rintro A ⟨c₁, c₂, s, hA⟩
-  refine ⟨c₁ * C, c₁ * C + c₂, s, ComputableInTimeAndSpace.mono hA (fun a => ?_) fun _ => le_rfl⟩
-  have := Nat.mul_le_mul_left c₁ (h (enc a).length)
-  rw [Nat.mul_add, ← Nat.mul_assoc] at this
-  omega
 
 /-- A problem in `DTIME enc t` is decided by a machine computing its indicator within time
 and space `O(t n)`, on instances whose encoding has length `n`. -/
@@ -267,19 +245,24 @@ and `a ∈ A` exactly when some computation path halts with output `[true]`
 def NTIME (enc : α ↪ List Bool) (t : ℕ → ℕ) : Set (Set α) :=
   {A | ∃ c₁ c₂ : ℕ, MultiTapeNTM.DecidableInTime A enc fun a => c₁ * t (enc a).length + c₂}
 
+/-- `NTIME` absorbs constant factors: a bound `t₁ n ≤ C * t₂ n + C` puts `NTIME enc t₁` inside
+`NTIME enc t₂`. -/
+theorem NTIME_mono_of_le_mul_add {enc : α ↪ List Bool} {t₁ t₂ : ℕ → ℕ} {C : ℕ}
+    (h : ∀ n, t₁ n ≤ C * t₂ n + C) : NTIME enc t₁ ⊆ NTIME enc t₂ := by
+  rintro A ⟨c₁, c₂, k, State, hfinite, ntm, hA⟩
+  exact ⟨c₁ * C, c₁ * C + c₂, k, State, hfinite, ntm,
+    hA.mono fun _ => Nat.mul_add_le_mul_add_of_le_mul_add (h _) c₁ c₂⟩
+
 /-- `NTIME` is monotone in the time bound. -/
 theorem NTIME_mono {enc : α ↪ List Bool} {t₁ t₂ : ℕ → ℕ} (h : ∀ n, t₁ n ≤ t₂ n) :
-    NTIME enc t₁ ⊆ NTIME enc t₂ := by
-  rintro A ⟨c₁, c₂, k, State, hfinite, ntm, hA⟩
-  exact ⟨c₁, c₂, k, State, hfinite, ntm,
-    hA.mono fun a => Nat.add_le_add_right (Nat.mul_le_mul_left _ (h _)) _⟩
+    NTIME enc t₁ ⊆ NTIME enc t₂ :=
+  NTIME_mono_of_le_mul_add (C := 1) fun n => by have := h n; omega
 
 /-- `NTIME` only depends on the time bound eventually. -/
 theorem NTIME_mono_of_eventually_le {enc : α ↪ List Bool} {t₁ t₂ : ℕ → ℕ}
-    (h : ∀ᶠ n in atTop, t₁ n ≤ t₂ n) : NTIME enc t₁ ⊆ NTIME enc t₂ := by
-  rintro A ⟨c₁, c₂, k, State, hfinite, ntm, hA⟩
-  obtain ⟨c₂', hc⟩ := exists_linear_of_eventually_le h c₁ c₂
-  exact ⟨c₁, c₂', k, State, hfinite, ntm, hA.mono fun a => hc _⟩
+    (h : ∀ᶠ n in atTop, t₁ n ≤ t₂ n) : NTIME enc t₁ ⊆ NTIME enc t₂ :=
+  let ⟨_, hC⟩ := Nat.exists_le_mul_add_of_eventually_le h
+  NTIME_mono_of_le_mul_add hC
 
 /-- **A deterministic machine is a nondeterministic machine**, with one computation path, which
 accepts exactly when the deterministic machine halts with output `[true]`. -/
@@ -313,19 +296,24 @@ def BPTIME (enc : α ↪ List Bool) (t : ℕ → ℕ) : Set (Set α) :=
     (machine : MultiTapePTM k Bool State),
       machine.DecidesWithBoundedErrorInTime enc A fun a => c₁ * t (enc a).length + c₂}
 
+/-- `BPTIME` absorbs constant factors: a bound `t₁ n ≤ C * t₂ n + C` puts `BPTIME enc t₁` inside
+`BPTIME enc t₂`. -/
+theorem BPTIME_mono_of_le_mul_add {enc : α ↪ List Bool} {t₁ t₂ : ℕ → ℕ} {C : ℕ}
+    (h : ∀ n, t₁ n ≤ C * t₂ n + C) : BPTIME enc t₁ ⊆ BPTIME enc t₂ := by
+  rintro A ⟨c₁, c₂, k, State, hfinite, machine, hA⟩
+  exact ⟨c₁ * C, c₁ * C + c₂, k, State, hfinite, machine,
+    hA.mono fun _ => Nat.mul_add_le_mul_add_of_le_mul_add (h _) c₁ c₂⟩
+
 /-- `BPTIME` is monotone in the time bound. -/
 theorem BPTIME_mono {enc : α ↪ List Bool} {t₁ t₂ : ℕ → ℕ} (h : ∀ n, t₁ n ≤ t₂ n) :
-    BPTIME enc t₁ ⊆ BPTIME enc t₂ := by
-  rintro A ⟨c₁, c₂, k, State, hfinite, machine, hA⟩
-  exact ⟨c₁, c₂, k, State, hfinite, machine,
-    hA.mono fun a => Nat.add_le_add_right (Nat.mul_le_mul_left _ (h _)) _⟩
+    BPTIME enc t₁ ⊆ BPTIME enc t₂ :=
+  BPTIME_mono_of_le_mul_add (C := 1) fun n => by have := h n; omega
 
 /-- `BPTIME` only depends on the time bound eventually. -/
 theorem BPTIME_mono_of_eventually_le {enc : α ↪ List Bool} {t₁ t₂ : ℕ → ℕ}
-    (h : ∀ᶠ n in atTop, t₁ n ≤ t₂ n) : BPTIME enc t₁ ⊆ BPTIME enc t₂ := by
-  rintro A ⟨c₁, c₂, k, State, hfinite, machine, hA⟩
-  obtain ⟨c₂', hc⟩ := exists_linear_of_eventually_le h c₁ c₂
-  exact ⟨c₁, c₂', k, State, hfinite, machine, hA.mono fun a => hc _⟩
+    (h : ∀ᶠ n in atTop, t₁ n ≤ t₂ n) : BPTIME enc t₁ ⊆ BPTIME enc t₂ :=
+  let ⟨_, hC⟩ := Nat.exists_le_mul_add_of_eventually_le h
+  BPTIME_mono_of_le_mul_add hC
 
 /-! ### The polynomial classes -/
 

@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Logics.Propositional.CNF
+import CslibFrontier.Logics.Propositional.CNF.Vars
 import Mathlib.Data.List.Basic
 
 /-!
@@ -109,10 +110,7 @@ theorem length_vars_glue (sites : List I) (gadget : I → CNF (V ⊕ W)) :
   | nil => rfl
   | cons i sites ih =>
     change ((gadget i).relabel (Sum.map id (fun w => (i, w))) ++ glue sites gadget).vars.length = _
-    simp only [CNF.vars, List.flatten_append, List.map_append, List.length_append]
-    change ((gadget i).relabel (Sum.map id (fun w => (i, w)))).vars.length +
-      (glue sites gadget).vars.length = _
-    rw [vars_relabel, List.length_map, ih]
+    rw [vars_append, List.length_append, vars_relabel, List.length_map, ih]
     rfl
 
 end Cslib.Logic.PL.CNF

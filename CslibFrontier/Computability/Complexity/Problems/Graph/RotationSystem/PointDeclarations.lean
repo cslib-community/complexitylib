@@ -28,14 +28,14 @@ open RotationSystem
 
 private theorem verifyGenusZero_redeclare_of_true (vertices newVertices : List ℕ)
     (edges : List (ℕ × ℕ))
-    (hG : ∀ v ∈ Graph.incidenceVertices (vertices, edges), v ∈ vertices)
-    (hH : ∀ v ∈ Graph.incidenceVertices (newVertices, edges), v ∈ newVertices)
-    (c : RotationCertificate) (hc : verifyGenusZero (vertices, edges) c = true) :
-    verifyGenusZero (newVertices, edges) c = true := by
+    (hG : ∀ v ∈ Graph.incidenceVertices ⟨vertices, edges⟩, v ∈ vertices)
+    (hH : ∀ v ∈ Graph.incidenceVertices ⟨newVertices, edges⟩, v ∈ newVertices)
+    (c : RotationCertificate) (hc : verifyGenusZero ⟨vertices, edges⟩ c = true) :
+    verifyGenusZero ⟨newVertices, edges⟩ c = true := by
   obtain ⟨hrot, hgenus⟩ := (verifyGenusZero_eq_true_iff _ _).mp hc
-  let r := decode (vertices, edges) c hrot
+  let r := decode ⟨vertices, edges⟩ c hrot
   have hg : (r.redeclare newVertices).NumericalGenusZero := by
-    exact r.numericalGenusZero_transport (H := (newVertices, edges))
+    exact r.numericalGenusZero_transport (H := ⟨newVertices, edges⟩)
       (Equiv.refl _) (by intro a b; rfl)
       (by intro a; rfl) hG hH hgenus
   have he : ofRotation (r.redeclare newVertices) = c := by
@@ -50,19 +50,19 @@ private theorem verifyGenusZero_redeclare_of_true (vertices newVertices : List �
 /-- Declaring different isolated points, or repeating declarations, retains the exact raw
 numerical-checker result when all actual edge endpoints are declared on both sides. -/
 theorem verifyGenusZero_redeclare (vertices newVertices : List ℕ) (edges : List (ℕ × ℕ))
-    (hG : ∀ v ∈ Graph.incidenceVertices (vertices, edges), v ∈ vertices)
-    (hH : ∀ v ∈ Graph.incidenceVertices (newVertices, edges), v ∈ newVertices)
+    (hG : ∀ v ∈ Graph.incidenceVertices ⟨vertices, edges⟩, v ∈ vertices)
+    (hH : ∀ v ∈ Graph.incidenceVertices ⟨newVertices, edges⟩, v ∈ newVertices)
     (c : RotationCertificate) :
-    verifyGenusZero (newVertices, edges) c = verifyGenusZero (vertices, edges) c := by
+    verifyGenusZero ⟨newVertices, edges⟩ c = verifyGenusZero ⟨vertices, edges⟩ c := by
   rw [Bool.eq_iff_iff]
   exact ⟨verifyGenusZero_redeclare_of_true newVertices vertices edges hH hG c,
     verifyGenusZero_redeclare_of_true vertices newVertices edges hG hH c⟩
 
 /-- Equal indexed edge lists retain the exact raw numerical result under any valid endpoint
 declarations. Vertex declarations may differ at point components or contain duplicates. -/
-theorem verifyGenusZero_eq_of_edges_eq {G H : Graph} (he : G.2 = H.2)
-    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1)
-    (hH : ∀ v ∈ H.incidenceVertices, v ∈ H.1) (c : RotationCertificate) :
+theorem verifyGenusZero_eq_of_edges_eq {G H : Graph} (he : G.edges = H.edges)
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.vertices)
+    (hH : ∀ v ∈ H.incidenceVertices, v ∈ H.vertices) (c : RotationCertificate) :
     verifyGenusZero H c = verifyGenusZero G c := by
   rcases G with ⟨vertices, edges⟩
   rcases H with ⟨newVertices, newEdges⟩

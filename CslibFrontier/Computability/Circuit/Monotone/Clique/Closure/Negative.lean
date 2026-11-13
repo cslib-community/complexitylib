@@ -48,6 +48,8 @@ cruder bound suffices.
 
 @[expose] public section
 
+open Cslib.BitString.Graph
+
 namespace Cslib.Circuits.Monotone.Closure.Negative
 
 open Cslib.Circuits.Clique Finset Relation Cslib.Circuits.Monotone.Closure.Approximator

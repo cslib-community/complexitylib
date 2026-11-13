@@ -65,7 +65,8 @@ count `p.cost Op.arity`.
   `Cslib.Circuits.Boolean.WeightedThreshold.altLinearTruncErrorPair`,
   `Cslib.Circuits.Boolean.WeightedThreshold.sq_altLinearTrunc_sub_altLinear`: the truncation
   `f_R(u) = φ(u) [|u| ≤ R]` of `altLinear`, the odd error of a reflected pair, and the squared
-  truncation error.
+  truncation error; `altLinearTrunc_eq_sum`: `f_R` as a staircase of `2 R + 2` threshold
+  steps `altLinearTruncStep` at `altLinearTruncThreshold`.
 
 ## References
 
@@ -378,6 +379,40 @@ theorem sum_sub_mul_decide_le (f : ℤ → ℤ) {ℓ u : ℤ} {L : ℕ}
       simp only [hlast, decide_true, Bool.toNat_true, Nat.cast_one, mul_one]
       rw [hu]
       ring
+
+/-- **The staircase of `f_R`**: `f_R(u) = ∑_{k < 2 R + 2} (f_R(θ_k) - f_R(θ_k - 1)) [θ_k ≤ u]` for
+every integer `u`, with thresholds `θ_k = -R + k`. -/
+theorem altLinearTrunc_eq_sum (R : ℕ) (u : ℤ) :
+    altLinearTrunc R u = ∑ k : Fin (2 * R + 2),
+      (altLinearTrunc R (-(R : ℤ) - 1 + k + 1) - altLinearTrunc R (-(R : ℤ) - 1 + k)) *
+        (decide (-(R : ℤ) - 1 + k + 1 ≤ u)).toNat := by
+  set ℓ : ℤ := -(R : ℤ) - 1
+  set u' : ℤ := max ℓ (min u (ℓ + (2 * R + 2 : ℕ)))
+  have h := sum_sub_mul_decide_le (altLinearTrunc R) (ℓ := ℓ) (u := u') (L := 2 * R + 2)
+    (le_max_left _ _) (max_le (by push_cast; omega) (min_le_right _ _))
+  have hℓ : altLinearTrunc R ℓ = 0 := by
+    simp only [altLinearTrunc, ℓ]
+    split_ifs <;> first | rfl | omega
+  have hu : altLinearTrunc R u' = altLinearTrunc R u := by
+    simp only [altLinearTrunc, u', ℓ]
+    push_cast
+    split_ifs <;> first | rfl | omega | (congr 1; omega)
+  rw [hℓ, zero_add, hu] at h
+  rw [← h]
+  refine sum_congr rfl fun k _ => ?_
+  have hk := k.isLt
+  congr 3
+  simp only [u', ℓ, decide_eq_decide]
+  push_cast
+  omega
+
+/-- The threshold `θ_k = -R + k` of step `k` of the staircase of `f_R`. -/
+def altLinearTruncThreshold (R : ℕ) (k : Fin (2 * R + 2)) : ℤ :=
+  -(R : ℤ) - 1 + k + 1
+
+/-- The height `f_R(θ_k) - f_R(θ_k - 1)` of step `k` of the staircase of `f_R`. -/
+def altLinearTruncStep (R : ℕ) (k : Fin (2 * R + 2)) : ℤ :=
+  altLinearTrunc R (-(R : ℤ) - 1 + k + 1) - altLinearTrunc R (-(R : ℤ) - 1 + k)
 
 /-- Twice the sum of subset cardinalities over `Finset (Fin b)` is `b * 2 ^ b`. -/
 theorem two_mul_sum_card_finset (b : ℕ) :

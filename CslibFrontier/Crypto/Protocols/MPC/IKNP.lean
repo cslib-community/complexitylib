@@ -138,7 +138,8 @@ chooses with `s`. -/
     (st : ((batchOTSpec m L).Query () 0 × IKNPCoins κ m 0) ×
       (Round.oracle (spec := batchOTSpec κ (BitString m)) () iknpRoleReversal).Received 0) :
     Fin m → Bool → L :=
-  iknpMasked H st.1.1 st.1.2 (st.2 1 rfl)
+  let ((X, s), Q) := st
+  iknpMasked H X s (Q 1 rfl)
 
 /-- The local state of each party at the end of the protocol. -/
 @[expose, reducible] def IKNPFinal (κ m : ℕ) (L : Type) (i : Fin 2) : Type :=
@@ -152,7 +153,7 @@ with `H j tⱼ`. -/
     (st : IKNPFinal κ m L i) : (batchOTSpec m L).Answer () i :=
   Fin.cases (motive := fun i => IKNPFinal κ m L i → (batchOTSpec m L).Answer () i)
     (fun _ => ())
-    (fun j st k => st.2 (Fin.fin_one_eq_zero j ▸ rfl) k (st.1.1.1 k) - H k (st.1.1.2 k))
+    (fun j (((r, T), _), msg) k => msg (Fin.fin_one_eq_zero j ▸ rfl) k (r k) - H k (T k))
     i st
 
 variable [AddCommGroup L]
@@ -474,8 +475,7 @@ theorem semiHonestAdvantage_iknp_receiver [Fintype L] (H : Fin m → BitString �
       Functionality.ofDeterministic, iknpReceiverSim, iknpReduction, ProbComp.eval_bind,
       ProbComp.eval_pure, ProbComp.eval_uniform, PMF.pure_bind, PMF.bind_bind]
     refine congrArg _ (funext fun T => ?_)
-    conv_lhs => rw [← PMF.uniformOfFintype_map_equiv
-      (Equiv.addLeft (fun j => x 0 j (!x 1 j) : Fin m → L))]
+    conv_lhs => rw [← PMF.uniformOfFintype_map_add_left (fun j => x 0 j (!x 1 j) : Fin m → L)]
     rw [PMF.bind_map]
     refine congrArg _ (funext fun w => ?_)
     exact congrArg (fun Y => ProbComp.eval (D (singletonView (iknpReceiverView (x 1) T Y),

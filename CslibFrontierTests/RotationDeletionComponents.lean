@@ -23,7 +23,7 @@ private theorem checkedGenus {G : Graph} (r : RotationSystem G)
     (RotationCertificate.verifyRotation_ofRotation r hG)).mp h
   exact RotationCertificate.decode_ofRotation r hG ▸ he
 
-private abbrev mixed : Graph := ([0, 1, 2, 3, 4, 99, 99], [(0, 1), (2, 3), (4, 4)])
+private abbrev mixed : Graph := ⟨[0, 1, 2, 3, 4, 99, 99], [(0, 1), (2, 3), (4, 4)]⟩
 
 private def mixedSource : RotationSystem (lastEdgeGraph mixed 1 2) where
   rotate :=
@@ -48,7 +48,7 @@ example : RotationCertificate.componentBool mixed 0 2 = false ∧
     RotationCertificate.componentBool mixed 0 1 = true ∧
       RotationCertificate.componentBool mixed 2 3 = true := by decide +kernel
 
-private abbrev pendant : Graph := ([0, 1, 2, 8], [(0, 1)])
+private abbrev pendant : Graph := ⟨[0, 1, 2, 8], [(0, 1)]⟩
 
 private def pendantSource : RotationSystem (lastEdgeGraph pendant 1 2) where
   rotate := Equiv.swap ((⟨0, by decide⟩, true) : Dart (lastEdgeGraph pendant 1 2))
@@ -67,7 +67,7 @@ example : ¬ ∃ d : Dart pendant, d.vertex = 2 := by decide +kernel
 example : RotationCertificate.verifyGenusZero pendant
     (RotationCertificate.ofRotation pendantSource.deleteLastEdge) = true := by decide +kernel
 
-private abbrev loopAndPoint : Graph := ([0, 8], [(0, 0)])
+private abbrev loopAndPoint : Graph := ⟨[0, 8], [(0, 0)]⟩
 
 private def sphereLoops : RotationSystem (lastEdgeGraph loopAndPoint 0 0) where
   rotate := ((finCongr (show 4 = 2 * (lastEdgeGraph loopAndPoint 0 0).2.length by decide)).trans
@@ -83,7 +83,7 @@ example : RotationCertificate.ofRotation sphereLoops.deleteLastEdge = ⟨[1, 0]�
 example : RotationCertificate.verifyGenusZero loopAndPoint
     (RotationCertificate.ofRotation sphereLoops.deleteLastEdge) = true := by decide +kernel
 
-private abbrev onlyPoints : Graph := ([0, 8], [])
+private abbrev onlyPoints : Graph := ⟨[0, 8], []⟩
 
 private def soleLoop : RotationSystem (lastEdgeGraph onlyPoints 0 0) where
   rotate := Dart.reversal _

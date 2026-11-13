@@ -88,9 +88,16 @@ theorem numPieces_eq_ceil (n D g : ℕ) :
   · simp [numPieces, h]
   exact (Nat.ceil_div_eq_ceilDiv _ (Nat.pos_of_ne_zero h)).symm
 
-/-- The index of an instance built by the reduction of Theorem 17: a residue `ϱ ∈ ℤ_p`, the number
-`j` of a chunk of `W_ϱ`, and the number `k` of a piece of `C`. -/
-abbrev InstanceIndex (p : ℕ) : Type := Fin p × ℕ × ℕ
+/-- The index `(ϱ, j, k)` of an instance built by the reduction of Theorem 17. -/
+@[ext]
+structure InstanceIndex (p : ℕ) where
+  /-- The residue `ϱ ∈ ℤ_p` of the A–B weights whose query pairs the instance answers. -/
+  residue : Fin p
+  /-- The number `j` of the chunk of `W_ϱ` that holds the instance's query pairs. -/
+  chunk : ℕ
+  /-- The number `k` of the piece `C_k` of the third part that forms the middle part. -/
+  piece : ℕ
+  deriving DecidableEq
 
 
 /-- Proof of Theorem 17: "For ϱ ∈ ℤ_p let W_ϱ be the set of edges (a,b) ∈ A × B with w(a,b) ≡ ϱ (mod
@@ -110,7 +117,7 @@ vertices are pairs (vertex, label) [...], with a ∼ (c, σ) ⟺ σ ≡ w(a,c) +
 −w(b,c)   (mod p)." -/
 def lopInstance {n : ℕ} (wAB wBC wAC : Fin n → Fin n → ℤ) (D g p : ℕ) :
     InstanceIndex p → LopsidedGraph n
-  | (ϱ, j, k) =>
+  | ⟨ϱ, j, k⟩ =>
     { M := {c : Fin n // c ∈ piece n D g k} × Fin p
       adjA := fun a (c, σ) => ((σ : ℕ) : ℤ) ≡ wAC a c + ((ϱ : ℕ) : ℤ) [ZMOD (p : ℤ)]
       adjB := fun (c, σ) b => ((σ : ℕ) : ℤ) ≡ -wBC b c [ZMOD (p : ℤ)]
@@ -123,7 +130,7 @@ def instanceIndices {n : ℕ} (wAB : Fin n → Fin n → ℤ) (D g p : ℕ) :
     Finset (InstanceIndex p) :=
   Finset.univ.biUnion fun ϱ : Fin p =>
     ((Finset.range (numChunks (residueClass wAB p ϱ) (queryCap n D))) ×ˢ
-      (Finset.range (numPieces n D g))).image fun jk => (ϱ, jk)
+      (Finset.range (numPieces n D g))).image fun jk => ⟨ϱ, jk.1, jk.2⟩
 
 /-- Total number of query chunks, summed over residues. -/
 def totalChunks {n : ℕ} (wAB : Fin n → Fin n → ℤ) (D p : ℕ) : ℕ :=
@@ -395,11 +402,11 @@ theorem card_middle_lopInstance (hD : 16 ≤ D) (hg1 : 1 ≤ g) (hp : p ∈ Nat.
     calc (sOf D : ℝ) * (p : ℝ) ≤ Real.sqrt D * Real.sqrt D :=
           mul_le_mul (sOf_le_sqrt D) hlt.le (Nat.cast_nonneg p) (Real.sqrt_nonneg _)
       _ = D := Real.mul_self_sqrt (Nat.cast_nonneg D)
-  calc Fintype.card ({c : Fin n // c ∈ piece n D g ι.2.2} × Fin p)
-      = (piece n D g ι.2.2).card * p := by
+  calc Fintype.card ({c : Fin n // c ∈ piece n D g ι.piece} × Fin p)
+      = (piece n D g ι.piece).card * p := by
         rw [Fintype.card_prod, Fintype.card_coe, Fintype.card_fin]
     _ ≤ sOf D * p := Nat.mul_le_mul_right p
-        ((card_piece_le hD hg1 n ι.2.2).trans (pieceSize_le_sOf hg1))
+        ((card_piece_le hD hg1 n ι.piece).trans (pieceSize_le_sOf hg1))
     _ ≤ D := by exact_mod_cast hsp
 
 /-- A query pair of the instance with index `(ϱ, j, k)` lies in `W_ϱ`, and `j` is the number of its
@@ -407,7 +414,8 @@ chunk. -/
 theorem mem_lopInstance_W {wAB wBC wAC : Fin n → Fin n → ℤ}
     {ι : InstanceIndex p} {q : Fin n × Fin n}
     (hq : q ∈ (lopInstance wAB wBC wAC D g p ι).W) :
-    q ∈ residueClass wAB p ι.1 ∧ rankIn (residueClass wAB p ι.1) q / queryCap n D = ι.2.1 :=
+    q ∈ residueClass wAB p ι.residue ∧
+      rankIn (residueClass wAB p ι.residue) q / queryCap n D = ι.chunk :=
   Finset.mem_filter.mp hq
 
 /-- Proof of Theorem 17: "Within the chunk, the condition S(a,b,c) ≡ 0 (mod p) has become the
@@ -425,8 +433,8 @@ theorem hasCommonNeighbor_lopInstance_iff (hp : p ≠ 0)
     {ι : InstanceIndex p} {q : Fin n × Fin n}
     (hq : q ∈ (lopInstance wAB wBC wAC D g p ι).W) :
     (lopInstance wAB wBC wAC D g p ι).HasCommonNeighbor q.1 q.2 ↔
-      ∃ c ∈ piece n D g ι.2.2, weightSum wAB wBC wAC q.1 q.2 c ≡ 0 [ZMOD (p : ℤ)] := by
-  have hϱ : wAB q.1 q.2 ≡ ((ι.1 : ℕ) : ℤ) [ZMOD (p : ℤ)] :=
+      ∃ c ∈ piece n D g ι.piece, weightSum wAB wBC wAC q.1 q.2 c ≡ 0 [ZMOD (p : ℤ)] := by
+  have hϱ : wAB q.1 q.2 ≡ ((ι.residue : ℕ) : ℤ) [ZMOD (p : ℤ)] :=
     (Finset.mem_filter.mp (mem_lopInstance_W hq).1).2
   constructor
   · -- A common neighbor `(c, σ)` carries the label `σ` of `(a,c)` and of `(b,c)`.
@@ -442,10 +450,11 @@ theorem hasCommonNeighbor_lopInstance_iff (hp : p ≠ 0)
 instance exactly if `j` is the number of a chunk of `W_ϱ` and `k` the number of a piece. -/
 theorem mem_instanceIndices (ι : InstanceIndex p) :
     ι ∈ instanceIndices wAB D g p ↔
-      ι.2.1 < numChunks (residueClass wAB p ι.1) (queryCap n D) ∧ ι.2.2 < numPieces n D g := by
+      ι.chunk < numChunks (residueClass wAB p ι.residue) (queryCap n D) ∧
+        ι.piece < numPieces n D g := by
   obtain ⟨ϱ, j, k⟩ := ι
   simp only [instanceIndices, Finset.mem_biUnion, Finset.mem_univ, true_and,
-    Finset.mem_image, Finset.mem_product, Finset.mem_range, Prod.mk.injEq, Prod.exists]
+    Finset.mem_image, Finset.mem_product, Finset.mem_range, InstanceIndex.mk.injEq, Prod.exists]
   exact ⟨fun ⟨_, _, _, h, h1, h2, h3⟩ => by subst h1 h2 h3; exact h,
     fun h => ⟨ϱ, j, k, h, rfl, rfl, rfl⟩⟩
 
@@ -455,14 +464,18 @@ theorem card_instanceIndices (D g p : ℕ) :
   unfold instanceIndices totalChunks
   rw [Finset.card_biUnion, Finset.sum_mul]
   · refine Finset.sum_congr rfl fun ϱ _ => ?_
-    rw [Finset.card_image_of_injective _ (Prod.mk_right_injective ϱ), Finset.card_product,
+    have hinj : Function.Injective fun jk : ℕ × ℕ => (⟨ϱ, jk.1, jk.2⟩ : InstanceIndex p) :=
+      fun a b h => by
+        obtain ⟨-, h1, h2⟩ := InstanceIndex.mk.inj h
+        exact Prod.ext h1 h2
+    rw [Finset.card_image_of_injective _ hinj, Finset.card_product,
       Finset.card_range, Finset.card_range]
   · intro ϱ _ ϱ' _ hne
     rw [Function.onFun, Finset.disjoint_left]
     intro x hx hx'
     obtain ⟨_, _, rfl⟩ := Finset.mem_image.mp hx
     obtain ⟨_, _, h⟩ := Finset.mem_image.mp hx'
-    exact hne (congrArg Prod.fst h).symm
+    exact hne (congrArg InstanceIndex.residue h).symm
 
 /-- Proof of Theorem 17: "There are at most 2√D h ≤ 2√D(ng/s + 1) ≤ 4ng instances". -/
 theorem card_instanceIndices_le (hD : 16 ≤ D) (hDn : D ≤ n) (hg1 : 1 ≤ g)
@@ -513,15 +526,16 @@ theorem ncard_nbr_lopInstance_le (wAB wBC wAC : Fin n → Fin n → ℤ) (hD : 1
     (∀ a, {v | (lopInstance wAB wBC wAC D g p ι).adjA a v}.ncard ≤ pieceSize D g) ∧
     (∀ b, {v | (lopInstance wAB wBC wAC D g p ι).adjB v b}.ncard ≤ pieceSize D g) := by
   -- The neighbors of a vertex are the graph of the function that sends `c` to its label.
-  have hgraph : ∀ (f : {c : Fin n // c ∈ piece n D g ι.2.2} → ℤ),
-      {v : {c : Fin n // c ∈ piece n D g ι.2.2} × Fin p |
+  have hgraph : ∀ (f : {c : Fin n // c ∈ piece n D g ι.piece} → ℤ),
+      {v : {c : Fin n // c ∈ piece n D g ι.piece} × Fin p |
         ((v.2 : ℕ) : ℤ) ≡ f v.1 [ZMOD (p : ℤ)]}.ncard ≤ pieceSize D g := by
     intro f
-    refine le_trans (le_of_eq ?_) (card_piece_le hD hg1 n ι.2.2)
+    refine le_trans (le_of_eq ?_) (card_piece_le hD hg1 n ι.piece)
     rw [← Fintype.card_coe, ← ncard_graph fun c => resFin hp (f c)]
     congr 1
     ext v
     exact modEq_iff_eq_resFin hp v.2 _
-  exact ⟨fun a => hgraph fun c => wAC a c + ((ι.1 : ℕ) : ℤ), fun b => hgraph fun c => -wBC b c⟩
+  exact ⟨fun a => hgraph fun c => wAC a c + ((ι.residue : ℕ) : ℤ),
+    fun b => hgraph fun c => -wBC b c⟩
 
 end Cslib.Algorithms.ExactTriangle

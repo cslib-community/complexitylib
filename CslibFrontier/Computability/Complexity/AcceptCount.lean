@@ -27,8 +27,8 @@ and the choice strings accepted by a fair-coin machine (`Turing.MultiTapePTM.acc
 
 ## Main results
 
-* `Cslib.Complexity.acceptCount_le_two_pow`, `Cslib.Complexity.acceptCount_pos_iff`: the range
-  and support of the count.
+* `Cslib.Complexity.acceptCount_le_two_pow`, `Cslib.Complexity.acceptCount_pos_iff`,
+  `Cslib.Complexity.acceptCount_eq_zero_iff`: the range and support of the count.
 * `Cslib.Complexity.acceptCount_add`: counting accepted strings by their prefixes.
 * `Cslib.Complexity.acceptCount_zero`, `Cslib.Complexity.acceptCount_add_acceptCount_not`,
   `Cslib.Complexity.acceptCount_not`: counts of trivial and negated verifiers.
@@ -61,6 +61,11 @@ theorem acceptCount_pos_iff :
     exact ⟨List.ofFn w, List.length_ofFn, hw⟩
   · rintro ⟨w, rfl, hw⟩
     exact ⟨fun i => w[i.val], Finset.mem_univ _, by rwa [List.ofFn_getElem]⟩
+
+/-- No string of length `n` is accepted exactly when the count is zero. -/
+theorem acceptCount_eq_zero_iff :
+    acceptCount V a n = 0 ↔ ∀ w : Fin n → Bool, V (a, List.ofFn w) = false := by
+  simp [acceptCount, Finset.filter_eq_empty_iff]
 
 /-- The strings that `V` accepts together with `a` and those it rejects are all the strings. -/
 theorem acceptCount_add_card_filter_eq_false :

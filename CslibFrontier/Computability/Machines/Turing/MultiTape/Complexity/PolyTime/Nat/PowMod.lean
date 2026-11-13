@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Karn Seth
 -/
 
 module
@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.PolyTime
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Foundations.Data.BitString.List.Binary
@@ -24,12 +25,20 @@ multiplying by `a` at each `1` digit, reducing modulo `m` after every product. E
 value is below `m`, so the work is polynomial in the lengths of `a`, `e` and `m`.
 
 Without a modulus, `a ^ e` has about `e` times as many digits as `a`, exponentially many in the
-length of `e`; the statement therefore requires a positive modulus.
+length of `e`; the statement therefore requires a positive modulus. The total function `powMod`
+returns `1` at the modulus `0` instead, so it is polynomial-time on every input. This is where it
+differs from core's `Nat.powMod`, which returns the unreduced power at the modulus `0`.
+
+## Main definitions
+
+* `Turing.MultiTapeTM.powMod`: modular exponentiation, returning `1` at the modulus `0`.
 
 ## Main results
 
 * `Turing.MultiTapeTM.ComputableInPolyTime.binary_powMod`: modular exponentiation of computed
   binary values with a positive modulus.
+* `Turing.MultiTapeTM.computableInPolyTime_powMod`: `powMod` of computed binary values, with no
+  condition on the modulus.
 
 ## References
 
@@ -114,6 +123,37 @@ theorem ComputableInPolyTime.binary_powMod {α : Type} {input : α ↪ List Bool
     (hbase.tidy.prod (hexponent.tidy.prod hpred))
   refine ComputableInPolyTime.of_tidy ?_
   simpa only [Function.comp_def, Nat.sub_add_cancel (hpos _)] using hcomp
+
+/-! ### Total modular exponentiation -/
+
+/-- Modular exponentiation `x ^ e mod M`. For the degenerate modulus `M = 0` it returns `1`
+instead of the unreduced power, so that it is computable in polynomial time on every input. -/
+@[expose] def powMod (M x e : ℕ) : ℕ := if M = 0 then 1 else x ^ e % M
+
+theorem powMod_of_ne_zero {M : ℕ} (hM : M ≠ 0) (x e : ℕ) : powMod M x e = x ^ e % M := by
+  simp [powMod, hM]
+
+/-- `powMod` is computable in polynomial time. -/
+theorem computableInPolyTime_powMod {α : Type} {input : α ↪ List Bool} {M x e : α → ℕ}
+    (hM : ComputableInPolyTime M input encNat) (hx : ComputableInPolyTime x input encNat)
+    (he : ComputableInPolyTime e input encNat) :
+    ComputableInPolyTime (fun a => powMod (M a) (x a) (e a)) input encNat := by
+  have hpow := ComputableInPolyTime.binary_powMod hx he
+    (ComputableInPolyTime.binary_add'
+      (ComputableInPolyTime.binary_sub' hM (ComputableInPolyTime.const 1))
+      (ComputableInPolyTime.const 1)) fun _ => Nat.succ_pos _
+  have h := ComputableInPolyTime.ite_decide (condition := fun a => M a = 0)
+    (ComputableInPolyTime.decide_eq' hM (ComputableInPolyTime.const 0))
+    (ComputableInPolyTime.const 1) hpow
+  have heq : (fun a => powMod (M a) (x a) (e a)) =
+      fun a => if M a = 0 then 1 else x a ^ e a % (M a - 1 + 1) := by
+    funext a
+    unfold powMod
+    split_ifs with h0
+    · rfl
+    · rw [Nat.sub_add_cancel (Nat.one_le_iff_ne_zero.mpr h0)]
+  rw [heq]
+  exact h
 
 end Turing.MultiTapeTM
 

@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Algorithms.Lean.Dijkstra.Client
 public import CslibFrontier.DataStructure.StateTransition.CostHoare
 public import Mathlib.Analysis.Asymptotics.Defs
+public import Mathlib.Data.Nat.Log
 import CslibFrontier.DataStructure.StateTransition.TotalCost
 
 /-!
@@ -77,7 +78,7 @@ charged, and no statement concerns a machine.
 namespace Cslib.Algorithms.Lean.Dijkstra
 
 open Cslib.DataStructure Cslib.DataStructure.PriorityQueue
-open Cslib.Algorithms.WordRAM.Dijkstra (ListInstance)
+open Cslib.Algorithms.Dijkstra (ListInstance)
 
 variable {n K V : ℕ}
 

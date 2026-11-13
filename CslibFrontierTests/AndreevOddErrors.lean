@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
 
-import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevOddErrors
+import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevTruncatedCircuit
 
 /-! Checked examples for Lemma 6 and the truncated subcube vote (issue #4640, Milestone 2). -/
 
@@ -57,3 +57,37 @@ example (m : ℕ) :
         andreevTruncatedVote 3 m 2 (andreevTruncationRadius 3 m 2 (1 / 8)) w =
           Boolean.andreev 3 m w} : ℝ) :=
   half_add_mul_le_card_andreevTruncatedVote_eq_andreev (by decide) m (by norm_num) (by norm_num)
+
+-- The truncated circuit at `k = 2, m = 2, r = 1, R = 1`: `4 (2 - 1) 2 + 1 = 9` gates, depth `2`,
+-- sign-coherent bottom gates, and it computes the truncated vote on a concrete input.
+example :
+    (andreevTruncatedCircuit 2 2 1 1).size = 9 ∧ (andreevTruncatedCircuit 2 2 1 1).depth ≤ 2 ∧
+      (∀ j, IsSignCoherent (Boolean.andreevBlockVar 2 2)
+        (argWeight (andreevTruncatedBottomOp 2 2 1 1 j) id)) ∧
+      (andreevTruncatedCircuit 2 2 1 1).eval interpretation
+        (fun i => decide (i = 1 ∨ i = 2 ∨ i = 4)) 0 = true :=
+  ⟨size_andreevTruncatedCircuit (by decide) 2 1, depth_andreevTruncatedCircuit_le 2 2 1 1,
+    isSignCoherent_andreevTruncatedBottomOp 2 2 1 1,
+    by rw [eval_andreevTruncatedCircuit]; decide⟩
+
+-- Thm. 7, Part 1 at balance `k = 2, m = 2` (`k m = N = 4`), with `δ = 1 / 4`.
+example :
+    ((andreevTruncatedCircuit 2 2 2 (andreevTruncationRadius 2 2 2 (1 / 4))).size : ℝ) ≤
+        64 * (2 ^ 2 + 2 * 2 : ℕ) * Real.sqrt ((2 ^ 2 + 2 * 2 : ℕ) * Real.log (1 / (1 / 4))) ∧
+      (#{w : BitString (2 ^ 2 + 2 * 2) |
+        (andreevTruncatedCircuit 2 2 2 (andreevTruncationRadius 2 2 2 (1 / 4))).eval
+          interpretation w 0 ≠ Boolean.andreev 2 2 w} : ℝ) ≤ 1 / 4 * 2 ^ (2 ^ 2 + 2 * 2) :=
+  ⟨size_andreevTruncatedCircuit_le_of_balanced (by norm_num) (by norm_num) (by norm_num),
+    card_eval_andreevTruncatedCircuit_ne_andreev_le 2 2 (by norm_num)⟩
+
+-- Thm. 7, Part 2 at balance `k = 8, m = 32` (`N = 256`), with `ε = 1 / 8 ≥ 1 / √N`.
+example :
+    (1 / 2 + 1 / 8) * 2 ^ (2 ^ 8 + 8 * 32) ≤
+      (#{w : BitString (2 ^ 8 + 8 * 32) |
+        (andreevTruncatedCircuit 8 32 (andreevVoteLevel 8 (1 / 8))
+          (andreevTruncationRadius 8 32 (andreevVoteLevel 8 (1 / 8)) (1 / 8))).eval
+            interpretation w 0 = Boolean.andreev 8 32 w} : ℝ) := by
+  have hsqrt : Real.sqrt (2 ^ 8) = 16 := by
+    rw [show (2 : ℝ) ^ 8 = 16 ^ 2 by norm_num, Real.sqrt_sq (by norm_num)]
+  exact (andreevTruncatedCircuit_part_two_of_balanced (by norm_num)
+    (by rw [hsqrt]; norm_num) (by norm_num)).1

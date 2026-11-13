@@ -42,7 +42,9 @@ After adding a library file, run `lake exe mk_all` to regenerate the aggregate. 
 scripts/check.sh --quick
 ```
 
-Quick mode compares against the merge base with local `origin/main` without fetching by default. It includes committed, staged, unstaged and untracked changes and builds affected modules and importing clients when supported. It runs source hygiene on the changed files and the encoding readability and projection chain ratchets on changed library modules, then the declaration linters on the affected library modules, so an argument that a change leaves unused in a client is reported before CI. A changed ratchet baseline (`scripts/encoding_readability_baseline.json` or `scripts/projection_chains_baseline.json`) runs its ratchet; other non-Lean, unsupported or ambiguous changes fall back to the full check. Quick success is development feedback, not full integration validation.
+Quick mode compares against the merge base with local `origin/main` without fetching by default. It includes committed, staged, unstaged and untracked changes and builds affected modules and importing clients when supported. It runs source hygiene on the changed files and the encoding readability and projection chain ratchets on changed library modules, then the declaration linters on the affected library modules, so an argument that a change leaves unused in a client is reported before CI. A changed ratchet baseline (`scripts/encoding_readability_baseline.json` or `scripts/projection_chains_baseline.json`) runs its ratchet. A library aggregate whose only edit is the import lines `lake exe mk_all` adds for new modules keeps the quick plan, which then builds the aggregate's importing clients. Other non-Lean, unsupported or ambiguous changes, including deletions and renames, fall back to the full check; `scripts/check.sh --quick --no-full-fallback` instead reports the reason and exits with status 3. Quick success is development feedback, not full integration validation.
+
+Quick mode also runs the changed-file lints that read only sources: an `@[expose]` section with nothing to expose, and a new test file that only restates signatures. When building targets directly instead, run them with `python3 scripts/check_changed_files.py --source-only`; CI's changed-file step additionally checks module-doc names against build outputs.
 
 Lean, dependency or build changes need the six Lean gates on the final revision, together with the other required CI checks:
 
@@ -55,7 +57,9 @@ lake exe lint-style
 lake exe checkInitImports
 ```
 
-`scripts/check.sh` restores available caches and runs every required step of CI's `ci-checks` job that can run locally, with CI's commands: these gates, the Python tooling tests, source hygiene, the encoding readability and projection chain ratchets, documentation pins, and the tidy statement ratchet, result registry and changed-file lints that read the build outputs. [`scripts/full_check.py`](../../scripts/full_check.py) lists the steps and why the rest stay CI-only. After the Lean gates, it also re-elaborates built root-package sources whose outputs Lake restored from the shared local artifact cache without their warnings, including unchanged clients ([diagnosis](troubleshooting.md#diagnose-warnings-that-only-ci-reports)). A successful hosted run covering the final revision supplies this evidence without a duplicate local run. Required CI and merge-group checks still apply. Documentation-only changes need consistency, link and introduced Lean-example checks rather than a whole-library rebuild. Validation-tool changes also need direct checks of their changed behavior. [Validation policy](../../AGENTS.md#validation-sequence)
+`scripts/check.sh` restores available caches and runs every locally reproducible step from CI's parallel `source-checks` and `lean-checks` jobs, whose results feed the required `ci-checks` aggregator, with CI's commands: these gates, the Python tooling tests, source hygiene, the encoding readability and projection chain ratchets, documentation pins, and the tidy statement ratchet, result registry and changed-file lints that read the build outputs. [`scripts/full_check.py`](../../scripts/full_check.py) lists the steps and why the rest stay CI-only. After the Lean gates, it also re-elaborates built root-package sources whose outputs Lake restored from the shared local artifact cache without their warnings, including unchanged clients ([diagnosis](troubleshooting.md#diagnose-warnings-that-only-ci-reports)). A successful hosted run covering the final revision supplies this evidence without a duplicate local run. Required CI and merge-group checks still apply. Documentation-only changes need consistency, link and introduced Lean-example checks rather than a whole-library rebuild. Validation-tool changes also need direct checks of their changed behavior. [Validation policy](../../AGENTS.md#validation-sequence)
+
+This split overlaps work rather than removing it. It adds another checkout and runner plus the aggregator's scheduling time, and saves only source-check time that would otherwise extend the slower Lean path. Treat measured wall-time improvements as run-specific rather than a fixed reduction.
 
 ## Update and review both manuals
 
@@ -91,6 +95,11 @@ resolutions instead of repeating them. Skipped or incomplete scans need an expli
 assessment and targeted source checks, following [the review cycle](../../AGENTS.md#review-cycle).
 For local commands and matching limits, see [the tooling reference](../../CONTRIBUTING.md#ai-assistance-and-review).
 
+`python3 scripts/check_pr_names.py --pr N` checks backticked declaration names in the PR
+description against source text. It recognizes the encoder, `Fields` abbreviation and `_apply`
+theorem generated by `enc_structure`, including parameterized commands. This source check
+supplements compiled import clients and API review; it does not establish public visibility.
+
 Consider alternative statements, representations, invariants and proof strategies when they make
 the mathematics more natural to state, prove and apply. Demonstrate the benefit on actual clients,
 preserve the mathematical claim and resource bounds, and complete the cleanup affecting the
@@ -105,6 +114,18 @@ Keep a source approval conditional while notices, rendered pages or other source
 need review. When releasing that hold, link the earlier proof/API/caller assessment and record
 which remaining questions were resolved; reuse unchanged evidence. The queue helper's `--wait`
 option queues automatically when CI passes, so finish any review of newly produced material
-before starting it. Follow [Approve and queue](../../AGENTS.md#approve-and-queue).
+before starting it. Use the [helper procedure from trusted current main](agent-operations.md#queue-approved-work-and-keep-its-approval)
+without refreshing the approved PR branch, following [Approve and queue](../../AGENTS.md#approve-and-queue).
+
+If the helper sleeps for CI or mergeability, it records the PR body, top-level comments,
+submitted reviews and inline threads before sleeping, then rereads their complete discussion
+before enqueueing. A change, including an edit to an older comment or a dismissed review,
+prints `not queued: its review discussion changed while waiting` and exits with status 1.
+Reread the discussion and any holds; once they are resolved and the head remains approved,
+rerun that trusted helper for the same approved head. An incomplete discussion read instead
+exits with status 2; resolve the reported API error and retry. Check events and reactions alone
+do not stop the wait, and an existing queue entry is only reported. This check neither interprets
+hold prose nor reads linked issues. GitHub checks the expected head atomically, but provides no
+equivalent discussion lease, so a change after the final read can still race with enqueue.
 
 [complexitylib]: ../sources.md#complexitylib

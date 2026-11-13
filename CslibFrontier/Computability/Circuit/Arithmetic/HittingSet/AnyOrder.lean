@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConcentratingShiftSet
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.SetPartitioned
+public import CslibFrontier.Computability.Circuit.Arithmetic.ROABP
 
 /-!
 # Hitting sets for multilinear any-order ROABPs
@@ -40,7 +41,6 @@ every variable a block of its own; the set of all these points is `anyOrderHitti
 ## Main definitions
 
 * `anyOrderHittingSet`: the hitting set.
-* `roabpProd`, `IsAnyOrderROABP`: read-once oblivious branching programs, in every order.
 
 ## Main results
 
@@ -106,41 +106,6 @@ theorem card_anyOrderHittingSet_le :
 section ROABP
 
 variable {F : Type*} [Field F] {n w : ℕ}
-
-open Polynomial in
-/-- The matrix computed by a read-once oblivious branching program of width `w` that reads the
-variables in the order of the list `l`: the product of the matrices `M i`, with entries
-univariate polynomials evaluated at the variable `X i`. -/
-@[expose] noncomputable def roabpProd (M : Fin n → Matrix (Fin w) (Fin w) F[X]) (l : List (Fin n)) :
-    Matrix (Fin w) (Fin w) (MvPolynomial (Fin n) F) :=
-  (l.map fun i => (M i).map (Polynomial.aeval (X i : MvPolynomial (Fin n) F))).prod
-
-open Polynomial in
-/-- `f` is computed by a read-once oblivious branching program of width `w` in every order of
-the variables: for every list of all the variables without repetition, `f` is an entry of the
-product of some `w × w` matrices of univariate polynomials read in that order. The matrices may
-depend on the order. -/
-@[expose] def IsAnyOrderROABP (w : ℕ) (f : MvPolynomial (Fin n) F) : Prop :=
-  ∀ l : List (Fin n), l.Nodup → (∀ i, i ∈ l) →
-    ∃ (M : Fin n → Matrix (Fin w) (Fin w) F[X]) (s t : Fin w), f = roabpProd M l s t
-
-open Polynomial in
-private theorem roabpProd_mem_supported (M : Fin n → Matrix (Fin w) (Fin w) F[X])
-    {S : Set (Fin n)} : ∀ l : List (Fin n), (∀ i ∈ l, i ∈ S) → ∀ s t : Fin w,
-      roabpProd M l s t ∈ supported F S
-  | [], _, s, t => by
-    rw [roabpProd, List.map_nil, List.prod_nil, Matrix.one_apply]
-    split_ifs
-    · exact one_mem _
-    · exact zero_mem _
-  | i :: l, hl, s, t => by
-    rw [roabpProd, List.map_cons, List.prod_cons, Matrix.mul_apply]
-    refine sum_mem fun k _ => mul_mem ?_
-      (roabpProd_mem_supported M l (fun j hj => hl j (List.mem_cons_of_mem _ hj)) k t)
-    have hX : (X i : MvPolynomial (Fin n) F) ∈ supported F S :=
-      Algebra.subset_adjoin ⟨i, hl i List.mem_cons_self, rfl⟩
-    rw [Matrix.map_apply, ← Subtype.coe_mk (X i) hX, ← Polynomial.aeval_subalgebra_coe]
-    exact Subtype.coe_prop _
 
 /-- Nisan's observation: a polynomial computed by width-`w` read-once oblivious branching
 programs in every order has split rank at most `w` across every split of the variables. -/

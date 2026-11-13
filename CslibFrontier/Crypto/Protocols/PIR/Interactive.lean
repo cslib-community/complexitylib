@@ -11,7 +11,7 @@ public import CslibFrontier.Init
 public import CslibFrontier.Languages.Probabilistic.Basic
 public import CslibFrontier.Computability.Communication.Rectangle
 import CslibFrontier.Languages.Probabilistic.Norm
-import CslibFrontier.Probability.PMF.Map
+import CslibFrontier.Probability.PMF.Support
 
 /-!
 # Interactive single-server private information retrieval
@@ -177,18 +177,12 @@ theorem isCorrect_iff : P.IsCorrect ↔ ∀ x i, ∀ c ∈ (ProbComp.eval (P.use
     ∀ d ∈ (ProbComp.eval P.serverCoins).support,
       P.protocol.leafOutput (P.protocol.leaf (x, d) (i, c)) (i, c) = x i := by
   refine forall_congr' fun x => forall_congr' fun i => ?_
-  rw [run, ProbComp.eval_map]
+  rw [run, ProbComp.eval_map, Probability.PMF.map_eq_pure_iff]
   constructor
   · intro h c hc d hd
-    have hmem : P.protocol.leafOutput (P.protocol.leaf (x, d) (i, c)) (i, c) ∈
-        ((ProbComp.eval (P.coins i)).map fun cd =>
-          P.protocol.leafOutput (P.protocol.leaf (x, cd.2) (i, cd.1)) (i, cd.1)).support :=
-      (PMF.mem_support_map_iff _ _ _).2 ⟨(c, d), P.mem_support_coins_iff.mpr ⟨hc, hd⟩, rfl⟩
-    rwa [h, PMF.support_pure, Set.mem_singleton_iff] at hmem
-  · intro h
-    rw [Cslib.Probability.PMF.map_congr_on_support _ _ (Function.const _ (x i))
-      fun cd hcd => h cd.1 (P.mem_support_coins_iff.mp hcd).1 cd.2
-        (P.mem_support_coins_iff.mp hcd).2, PMF.map_const]
+    exact h (c, d) (P.mem_support_coins_iff.mpr ⟨hc, hd⟩)
+  · intro h cd hcd
+    exact h cd.1 (P.mem_support_coins_iff.mp hcd).1 cd.2 (P.mem_support_coins_iff.mp hcd).2
 
 theorem isPrivate_iff : P.IsPrivate ↔
     ∀ x i i', ProbComp.eval (P.transcript x i) = ProbComp.eval (P.transcript x i') := by
@@ -276,18 +270,6 @@ def download (n : ℕ) : InteractiveScheme (Fin n) Unit Unit where
   serverCoins := pure ()
   protocol := Protocol.aliceSend n (fun xd => xd.1) fun x => Protocol.output fun ic => x ic.1
 
-/-- In a protocol in which only Alice sends, the leaf does not depend on Bob's input. -/
-private theorem leaf_aliceSend_output {X Y Z : Type} (n : ℕ) (msg : X → BitString n)
-    (out : BitString n → Z) (x : X) (y y' : Y) :
-    (Protocol.aliceSend n msg fun m => Protocol.output (out m)).leaf x y =
-      (Protocol.aliceSend n msg fun m => Protocol.output (out m)).leaf x y' := by
-  induction n generalizing Z with
-  | zero => rfl
-  | succ n ih =>
-    simp only [Protocol.aliceSend, Protocol.leaf_alice]
-    rw [ih (fun x => Fin.tail (msg x)) fun m => out (Fin.cons false m),
-      ih (fun x => Fin.tail (msg x)) fun m => out (Fin.cons true m)]
-
 theorem isCorrect_download (n : ℕ) : (download n).IsCorrect :=
   (download n).isCorrect_iff.mpr fun x i _ _ _ _ => by
     rw [← Protocol.run_eq_leafOutput_leaf]
@@ -296,8 +278,8 @@ theorem isCorrect_download (n : ℕ) : (download n).IsCorrect :=
 theorem isPrivate_download (n : ℕ) : (download n).IsPrivate :=
   (download n).isPrivate_iff.mpr fun x i i' => by
     simp only [pmf_norm, transcript, coins, download]
-    exact congrArg PMF.pure
-      (leaf_aliceSend_output n _ (fun (x : BitString n) (ic : Fin n × Unit) => x ic.1) _ _ _)
+    exact congrArg PMF.pure (Protocol.leaf_aliceSend_output n _
+      (fun (x : BitString n) (ic : Fin n × Unit) => x ic.1) _ _ _)
 
 theorem depth_download (n : ℕ) : (download n).protocol.depth = n :=
   le_antisymm (Protocol.depth_aliceSend_le (d := 0) fun _ => le_rfl)

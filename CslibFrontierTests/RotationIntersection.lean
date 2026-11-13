@@ -17,10 +17,10 @@ namespace CslibFrontierTests.RotationIntersection
 
 open Cslib Cslib.Complexity Cslib.Complexity.Graph
 
-private abbrev bridge : Graph := ([0, 1], [(0, 1)])
-private abbrev loopGraph : Graph := ([0], [(0, 0)])
-private abbrev digon : Graph := ([0, 1], [(0, 1), (0, 1)])
-private abbrev bouquet : Graph := ([0], [(0, 0), (0, 0)])
+private abbrev bridge : Graph := ⟨[0, 1], [(0, 1)]⟩
+private abbrev loopGraph : Graph := ⟨[0], [(0, 0)]⟩
+private abbrev digon : Graph := ⟨[0, 1], [(0, 1), (0, 1)]⟩
+private abbrev bouquet : Graph := ⟨[0], [(0, 0), (0, 0)]⟩
 
 private def bridgeRotation : RotationSystem bridge where
   rotate := Equiv.refl _
@@ -202,7 +202,7 @@ example : torusRotation.intersectionParity firstLoop (emptyPassages bouquet) = f
   exact Finset.sum_eq_zero (fun (j : Fin 0) _ => Fin.elim0 j)
 
 -- Degree eight, with two visits per system and a self-crossing pairing of the first support.
-private abbrev fourLoops : Graph := ([0], [(0, 0), (0, 0), (0, 0), (0, 0)])
+private abbrev fourLoops : Graph := ⟨[0], [(0, 0), (0, 0), (0, 0), (0, 0)]⟩
 
 private def degreeEightRotation : RotationSystem fourLoops where
   rotate := ((Dart.indexEquiv fourLoops).trans (finRotate 8)).trans
@@ -280,7 +280,7 @@ example : degreeEightRotation.intersectionParity evenLoopPassages oddLoopPassage
 
 -- Sparse disconnected components, duplicate declared vertices, and two isolated points.
 private abbrev sparseGraph : Graph :=
-  ([2 ^ 100, 7, 2 ^ 100, 19, 23], [(2 ^ 100, 2 ^ 100), (7, 7)])
+  ⟨[2 ^ 100, 7, 2 ^ 100, 19, 23], [(2 ^ 100, 2 ^ 100), (7, 7)]⟩
 
 private def sparseRotation : RotationSystem sparseGraph where
   rotate := Dart.reversal sparseGraph
@@ -299,7 +299,7 @@ example : sparseRotation.intersectionParity
 
 -- Two disjoint length-two cycles retain their parallel edge occurrences and four vertices.
 private abbrev twoDigons : Graph :=
-  ([0, 1, 2, 3], [(0, 1), (0, 1), (2, 3), (2, 3)])
+  ⟨[0, 1, 2, 3], [(0, 1), (0, 1), (2, 3), (2, 3)]⟩
 
 private def twoDigonRotation : RotationSystem twoDigons where
   rotate := Equiv.prodCongr
@@ -328,7 +328,7 @@ example : twoDigonRotation.intersectionParity leftDigonPassages rightDigonPassag
   twoDigonRotation.intersectionParity_eq_false (by decide)
     (genus_of_verify twoDigonRotation (by decide) (by decide)) _ _ (by decide)
 
-private abbrev pointsGraph : Graph := ([13, 13, 2 ^ 100], [])
+private abbrev pointsGraph : Graph := ⟨[13, 13, 2 ^ 100], []⟩
 
 private def pointsRotation : RotationSystem pointsGraph where
   rotate := Equiv.refl _
@@ -340,15 +340,15 @@ example : pointsRotation.NumericalGenusZero :=
 example (x : Fin 0 → Bool) : ∃ q, pointsRotation.faceBoundary q = x :=
   ⟨fun _ => false, funext fun i => Fin.elim0 i⟩
 
-private def emptyRotation : RotationSystem ([], []) where
+private def emptyRotation : RotationSystem ⟨[], []⟩ where
   rotate := Equiv.refl _
   sameCycle_iff := by decide
 
 example : emptyRotation.NumericalGenusZero :=
   genus_of_verify emptyRotation (by decide) (by decide)
 
-example : emptyRotation.intersectionParity (emptyPassages ([], []))
-    (emptyPassages ([], [])) = false :=
+example : emptyRotation.intersectionParity (emptyPassages ⟨[], []⟩)
+    (emptyPassages ⟨[], []⟩) = false :=
   emptyRotation.intersectionParity_eq_false (by decide)
     (genus_of_verify emptyRotation (by decide) (by decide)) _ _ (by decide)
 

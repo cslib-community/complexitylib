@@ -15,7 +15,7 @@ namespace CslibFrontierTests.PlanarBoundaryRestriction
 
 open Cslib.Complexity CSP.OrderedBoundary Graph Graph.RotationSystem
 
-private abbrev loop : Graph := ([0, 88, 88], [(0, 0)])
+private abbrev loop : Graph := ⟨[0, 88, 88], [(0, 0)]⟩
 
 private def firstOrder : RotationSystem (lastEdgeGraph loop 0 0) where
   rotate := Equiv.swap ((⟨0, by decide⟩, false) : Dart (lastEdgeGraph loop 0 0))
@@ -48,7 +48,7 @@ example : restrictPrefix 2 (RotationCertificate.ofRotation firstOrder) =
     RotationCertificate.ofRotation firstOrder.deleteLastEdge :=
   restrictPrefix_ofRotation_deleteLastEdge firstOrder
 
-private abbrev edge : Graph := ([0, 1, 99], [(0, 1)])
+private abbrev edge : Graph := ⟨[0, 1, 99], [(0, 1)]⟩
 
 private def bigon : RotationSystem (lastEdgeGraph edge 0 1) where
   rotate := Equiv.swap ((⟨0, by decide⟩, false) : Dart (lastEdgeGraph edge 0 1))
@@ -63,7 +63,7 @@ example : RotationCertificate.ofRotation bigon = ⟨[2, 3, 0, 1]⟩ ∧
 example : RotationCertificate.verifyGenusZero edge
     (restrictPrefix 2 (RotationCertificate.ofRotation bigon)) = true := by decide +kernel
 
-private abbrev points : Graph := ([0, 1, 66, 66], [])
+private abbrev points : Graph := ⟨[0, 1, 66, 66], []⟩
 
 private def bridge : RotationSystem (lastEdgeGraph points 0 1) where
   rotate := Equiv.refl _

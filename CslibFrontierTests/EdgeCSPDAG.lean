@@ -24,7 +24,7 @@ private def pairedSem (_ : Unit) : List Bool → Bool
   | _ => false
 
 private abbrev pairedInstance : CSP Unit (Fin 4) :=
-  [((), [0, 1, 2, 3]), ((), [0, 1, 2, 3])]
+  [⟨(), [0, 1, 2, 3]⟩, ⟨(), [0, 1, 2, 3]⟩]
 
 private abbrev port (j : Fin 4) : Occurrence pairedInstance := ⟨0, j⟩
 
@@ -324,7 +324,7 @@ private def chainSem (cross : Bool) : List Bool → Bool
   | _ => false
 
 private abbrev chainInstance : CSP Bool (Fin 4) :=
-  [(false, [0, 1, 2, 3]), (true, [0, 1, 2, 3])]
+  [⟨false, [0, 1, 2, 3]⟩, ⟨true, [0, 1, 2, 3]⟩]
 private abbrev cp (i : Fin 2) (j : Fin 4) : Occurrence chainInstance :=
   ⟨i, ⟨j.val, by fin_cases i <;> exact j.isLt⟩⟩
 private abbrev c0 : Arc chainInstance := ⟨cp 0 0, 0, true⟩
