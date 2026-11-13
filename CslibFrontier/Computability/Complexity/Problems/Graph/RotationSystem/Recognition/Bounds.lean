@@ -49,7 +49,7 @@ theorem boundedEndpoints_frame {I : FixedRotationInput} (hI : Valid I) :
 /-- Every variable in a literal row lies in the finite rectangular move frame. -/
 theorem label_lt_row {F : Frame} (hF : BoundedEndpoints F)
     {e f : Segment × ℕ} (he : e ∈ F.segments.zipIdx) (hf : f ∈ F.segments.zipIdx)
-    {label : ℕ} (hl : label ∈ (row F e f).1) :
+    {label : ℕ} (hl : label ∈ (row F e f).vars) :
     label < F.segments.length * F.vertexCount := by
   have entry (x : Segment × ℕ) (hx : x ∈ F.segments.zipIdx) :
       x.2 < F.segments.length ∧ x.1 ∈ F.segments := by
@@ -88,25 +88,26 @@ theorem mem_compileFrame {F : Frame} {r : AffineEquation ℕ} :
 
 /-- The finite system uses at most four labels per row. -/
 theorem width_compileFrame {F : Frame} {r : AffineEquation ℕ} (hr : r ∈ compileFrame F) :
-    r.1.length ≤ 4 := by
+    r.vars.length ≤ 4 := by
   obtain ⟨e, _, f, _, _, _, rfl⟩ := mem_compileFrame.mp hr
   exact length_row_le F e f
 
 /-- Full binary label width including the zero/empty-frame case. -/
 theorem bits_compileFrame {F : Frame} (hF : BoundedEndpoints F)
-    {r : AffineEquation ℕ} (hr : r ∈ compileFrame F) {label : ℕ} (hl : label ∈ r.1) :
+    {r : AffineEquation ℕ} (hr : r ∈ compileFrame F) {label : ℕ} (hl : label ∈ r.vars) :
     (encNat label).length ≤ Nat.log2 (F.segments.length * F.vertexCount) + 1 := by
   obtain ⟨e, he, f, hf, _, _, rfl⟩ := mem_compileFrame.mp hr
   exact length_encNat_le_log2 (label_lt_row hF he hf hl).le
 
 /-- Each fully framed sparse row costs at most `32 ell + 21` bits in its outer system list. -/
-theorem framed_row_length_le {r : AffineEquation ℕ} {ell : ℕ} (hw : r.1.length ≤ 4)
-    (hb : ∀ label ∈ r.1, (encNat label).length ≤ ell) :
-    2 * (XORSAT.equationEncoding r).length + 1 ≤ 32 * ell + 21 := by
-  have hl := length_encList_le encNat r.1 hb
-  have hv : (encList encNat r.1).length ≤ 4 * (2 * ell + 1) :=
+theorem framed_row_length_le {r : AffineEquation ℕ} {ell : ℕ} (hw : r.vars.length ≤ 4)
+    (hb : ∀ label ∈ r.vars, (encNat label).length ≤ ell) :
+    2 * (encAffineEquation encNat r).length + 1 ≤ 32 * ell + 21 := by
+  have hl := length_encList_le encNat r.vars hb
+  have hv : (encList encNat r.vars).length ≤ 4 * (2 * ell + 1) :=
     hl.trans (Nat.mul_le_mul_right _ hw)
-  simp only [XORSAT.equationEncoding, length_encPair, encBool_apply, List.length_singleton]
+  simp only [encAffineEquation_apply, encAffineEquationFields, length_encPair, encBool_apply,
+    List.length_singleton]
   omega
 
 /-- The entire sparse system encoding, including equation and list framing. -/
