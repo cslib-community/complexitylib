@@ -28,7 +28,10 @@ class PrepareRunnerTests(unittest.TestCase):
                 if command == "sudo":
                     body += 'exit "${CLEANUP_TEST_EXIT:-0}"\n'
                 else:
-                    body += ('if [ "$1" = "-Pk" ]; then\n'
+                    body += ('if [ "${CLEANUP_TEST_ALL_DF_EXIT:-0}" != 0 ]; then\n'
+                             '  exit "$CLEANUP_TEST_ALL_DF_EXIT"\n'
+                             'fi\n'
+                             'if [ "$1" = "-Pk" ]; then\n'
                              '  printf "Filesystem 1024-blocks Used Available Capacity Mounted on\\n"\n'
                              '  printf "/dev/root 304087040 62914560 %s 21%% /\\n" '
                              '"${CLEANUP_TEST_FREE_KIB:-92274688}"\n'
@@ -73,7 +76,8 @@ class PrepareRunnerTests(unittest.TestCase):
 
     def test_unavailable_space_measurement_keeps_cleanup(self):
         for override in ({"CLEANUP_TEST_FREE_KIB": "unknown"},
-                         {"CLEANUP_TEST_FREE_KIB": "242221056", "CLEANUP_TEST_DF_EXIT": "1"}):
+                         {"CLEANUP_TEST_FREE_KIB": "242221056", "CLEANUP_TEST_DF_EXIT": "1"},
+                         {"CLEANUP_TEST_ALL_DF_EXIT": "1"}):
             with self.subTest(override=override):
                 result, commands = self.run_cleanup(**override)
                 self.assertEqual(result.returncode, 0, result.stderr)

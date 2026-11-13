@@ -11,7 +11,7 @@ if [[ "${GITHUB_ACTIONS:-}" != true || "${RUNNER_ENVIRONMENT:-}" != github-hoste
   exit 0
 fi
 
-df -h /
+df -h / || true
 # Keep 100 GiB of headroom for cache restoration and compilation. Larger runners usually have
 # ample space already; deleting their preinstalled SDKs can otherwise take several minutes.
 available_kib=
@@ -26,4 +26,4 @@ fi
 # These preinstalled SDKs are not used by Lean, Python or the workflow's Node actions.
 # Keep the tool cache, compiler, repository, Lean toolchain and build caches intact.
 sudo rm -rf -- /usr/local/lib/android /usr/share/dotnet
-df -h /
+df -h / || true
