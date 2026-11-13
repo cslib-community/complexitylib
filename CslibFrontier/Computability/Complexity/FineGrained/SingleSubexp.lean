@@ -369,38 +369,9 @@ theorem ComputableInSingleSubexpTime.ite_polyTime {f g : α → β} {p : α → 
     (hf : ComputableInSingleSubexpTime f encIn encMid μ)
     (hg : ComputableInPolyTime g encIn encMid) :
     ComputableInSingleSubexpTime (fun a => if p a then f a else g a) encIn encMid μ := by
-  obtain ⟨t, sp, e, hcomp, hbound⟩ := computableInSingleSubexpTime_iff_exists_machine.mp hf
-  have hl : ∀ a, (encMid (f a)).length ≤ t a := hcomp.length_le
-  obtain ⟨k, hf'⟩ := ComputableInTimeAndSpace.exists_space_linear hcomp
-  have hfO : ComputableInO f encIn encMid t t := ComputableInO.of_bounds hf' (k + 1)
-    (fun a => by nlinarith) (fun a => by nlinarith) (fun a => by nlinarith [hl a])
-  obtain ⟨dp, _, hp'⟩ := hp.exists_degree
-  obtain ⟨dg, _, hg'⟩ := hg.exists_degree
-  obtain ⟨c_comb, hcomb_ts, -⟩ := hp'.inO.ite hfO hg'.inO
-  refine computableInSingleSubexpTime_iff_exists_machine.mpr
-    ⟨_, _, dp + dg + e, hcomb_ts, fun δ hδ => ?_⟩
-  obtain ⟨c, hc⟩ := hbound δ hδ
-  refine ⟨c_comb * (2 * c + 4), fun a => ?_⟩
-  have hx : 0 ≤ δ * μ a := by positivity
-  have hX := one_le_two_rpow_mul_pow (L := (encIn a).length) (e := dp + dg + e) hx
-  have ht := le_two_mul_mul_of_le_mul_add (hc a)
-    (two_rpow_mul_pow_le_two_rpow_mul_pow le_rfl (by omega : e ≤ dp + dg + e)) hX
-  have hdp := pow_le_two_rpow_mul_pow (L := (encIn a).length) (d := dp) (e := dp + dg + e) hx
-    (by omega)
-  have hdg := pow_le_two_rpow_mul_pow (L := (encIn a).length) (d := dg) (e := dp + dg + e) hx
-    (by omega)
-  have hcX := mul_nonneg (Nat.cast_nonneg c : (0 : ℝ) ≤ c) (zero_le_one.trans hX)
-  -- the guarded runtime is at most `(2 * c + 4)` envelopes, in either branch
-  have hsum : ((((encIn a).length + 1) ^ dp +
-      if p a then t a else ((encIn a).length + 1) ^ dg) + 1 : ℕ) ≤
-      (2 * c + 4) * (2 ^ (δ * μ a) * (((encIn a).length : ℝ) + 1) ^ (dp + dg + e)) := by
-    split_ifs <;> push_cast <;> linarith
-  have hmul := mul_le_mul_of_nonneg_left hsum (Nat.cast_nonneg c_comb : (0 : ℝ) ≤ c_comb)
-  have hpos : (0 : ℝ) ≤ (c_comb * (2 * c + 4) : ℕ) := Nat.cast_nonneg _
-  change ((c_comb * ((((encIn a).length + 1) ^ dp +
-    if p a then t a else ((encIn a).length + 1) ^ dg) + 1) : ℕ) : ℝ) ≤ _
-  push_cast at hmul hpos ⊢
-  linarith
+  obtain ⟨s, e, hnn, hs_o, hf⟩ := hf
+  obtain ⟨e', h⟩ := hf.ite_polyTime_of_le hp hg (fun a => hnn (μ a)) fun _ _ => le_rfl
+  exact ⟨s, e', hnn, hs_o, h⟩
 
 /-- **Single-machine decision from function computation.** Composing a single-machine
 subexponential function of polynomially bounded output length with a polynomial-time test yields a
@@ -411,33 +382,10 @@ theorem DecidableInSingleSubexpTime.of_computableInSingleSubexpTime_polyBounded
     (hlen : PolyBounded (fun a => (encIn a).length) (fun a => (encMid (f a)).length))
     {test : β → Bool} (htest : ComputableInPolyTime test encMid encBool) :
     DecidableInSingleSubexpTime {a | test (f a) = true} encIn μ := by
-  obtain ⟨s, e, hnn, hs_o, hfO_time⟩ := hf
-  obtain ⟨t, c, hfO, ht⟩ := hfO_time.exists_computableInO
-  obtain ⟨d, _, htest'⟩ := htest.exists_degree
-  obtain ⟨p, q, hp⟩ := hlen.exists_le
-  obtain ⟨c_comp, hcomp_ts, -⟩ := htest'.inO.comp hfO
-  refine ⟨s, e + q * d, hnn, hs_o, c_comp * (2 * c + 2 + (p + 1) ^ d), _, _, fun a => ?_,
-    decidableInTimeAndSpace_iff.mpr ⟨test ∘ f, hcomp_ts, fun _ => Iff.rfl⟩⟩
-  have hx : 0 ≤ s (μ a) := hnn (μ a)
-  have hX := one_le_two_rpow_mul_pow (L := (encIn a).length) (e := e + q * d) hx
-  have ht' : (t a : ℝ) ≤ 2 * c * (2 ^ s (μ a) * (((encIn a).length : ℝ) + 1) ^ (e + q * d)) :=
-    le_two_mul_mul_of_le_mul_add (ht a) (two_rpow_mul_pow_le_two_rpow_mul_pow le_rfl (by omega)) hX
-  have hout : (((encMid (f a)).length : ℝ) + 1) ^ d ≤
-      ((p + 1) ^ d : ℕ) * (((encIn a).length : ℝ) + 1) ^ (q * d) := by
-    exact_mod_cast Nat.add_one_pow_le_of_le_mul_pow (Nat.le_add_left 1 _) (hp a) d
-  have hq := mul_le_mul_of_nonneg_left (pow_le_two_rpow_mul_pow (L := (encIn a).length)
-    (d := q * d) (e := e + q * d) hx (by omega)) (Nat.cast_nonneg ((p + 1) ^ d) : (0 : ℝ) ≤ _)
-  -- the composed runtime is at most `2 * c + 2 + (p + 1) ^ d` envelopes
-  have hsum : ((t a + ((encMid (f a)).length + 1) ^ d + 1 : ℕ) : ℝ) ≤
-      (2 * c + 2 + (p + 1) ^ d : ℕ) *
-        (2 ^ s (μ a) * (((encIn a).length : ℝ) + 1) ^ (e + q * d)) := by
-    push_cast at hout hq ⊢
-    linarith
-  have hmul := mul_le_mul_of_nonneg_left hsum (Nat.cast_nonneg c_comp : (0 : ℝ) ≤ c_comp)
-  have hpos : (0 : ℝ) ≤ (c_comp * (2 * c + 2 + (p + 1) ^ d) : ℕ) := Nat.cast_nonneg _
-  change ((c_comp * ((t a + ((encMid (f a)).length + 1) ^ d) + 1) : ℕ) : ℝ) ≤ _
-  push_cast at hmul hpos ⊢
-  linarith
+  obtain ⟨s, e, hnn, hs_o, hf⟩ := hf
+  obtain ⟨e', h⟩ :=
+    DecidableInTimeO.of_computableInTimeO_polyBounded (fun a => hnn (μ a)) hf hlen htest
+  exact ⟨s, e', hnn, hs_o, h⟩
 
 /-- **Transfer along linear-parameter parsimonious reductions (`SingleSubexp`).** -/
 theorem ComputableInSingleSubexpTime.of_reduction {μA : α → ℕ} {μB : β → ℕ}
@@ -698,37 +646,12 @@ theorem ComputableInSingleSubexpTime.SharpKSAT_length_of_numVars {k : ℕ}
     ComputableInSingleSubexpTime (SharpKSAT k) encCNF encNat List.length := by
   obtain ⟨s, e, hnn, hs_o, htime⟩ := h
   obtain ⟨sBar, hmono, hnnBar, hle, hsBar_o⟩ := exists_monotone_isLittleO_ge hnn hs_o
-  obtain ⟨t, c, hO, ht⟩ := htime.exists_computableInO
-  obtain ⟨dw, _, hw⟩ := (computableInPolyTime_all_length_le k).exists_degree
-  obtain ⟨dc, _, hc0⟩ := (ComputableInPolyTime.const (encIn := encCNF) (0 : ℕ)).exists_degree
-  have hite := (hw.inO.ite hO hc0.inO).of_enc_eq (g := SharpKSAT k) fun φ => congrArg encNat <| by
-    split_ifs with hφ
-    · simp only [SharpKSAT, hφ, ↓reduceIte]
-    · simp only [SharpKSAT, hφ, Bool.false_eq_true, ↓reduceIte]
-  let s' (m : ℕ) : ℝ := sBar (k * m + 0)
-  refine ⟨s', dw + dc + e, fun m => hnnBar _,
-    isLittleO_comp_linear_of_nonneg hnnBar hsBar_o k 0,
-    (ComputableInTimeO.of_computableInO hite fun _ => le_rfl).mono (2 * c + 3)
-      (fun φ => ?_) fun _ => by positivity⟩
-  have hx : 0 ≤ s' φ.length := hnnBar _
-  have hX := one_le_two_rpow_mul_pow (L := (encCNF φ).length) (e := dw + dc + e) hx
-  have hcX := mul_nonneg (Nat.cast_nonneg c : (0 : ℝ) ≤ c) (zero_le_one.trans hX)
-  have hdw := pow_le_two_rpow_mul_pow (L := (encCNF φ).length) (d := dw) (e := dw + dc + e) hx
-    (by omega)
-  have hdc := pow_le_two_rpow_mul_pow (L := (encCNF φ).length) (d := dc) (e := dw + dc + e) hx
-    (by omega)
-  change ((((encCNF φ).length + 1) ^ dw +
-    if φ.all (fun cl => decide (cl.length ≤ k)) then t φ
-    else ((encCNF φ).length + 1) ^ dc : ℕ) : ℝ) ≤ _
-  split_ifs with hφ
-  · simp only [List.all_eq_true, decide_eq_true_eq] at hφ
-    have hexp : s φ.numVars ≤ s' φ.length :=
-      (hle _).trans (hmono (by simpa only [Nat.add_zero] using CNF.numVars_le_mul_length hφ))
-    have ht' := le_two_mul_mul_of_le_mul_add (ht φ)
-      (two_rpow_mul_pow_le_two_rpow_mul_pow hexp (by omega)) hX
-    push_cast
-    linarith
-  · push_cast
-    linarith
+  obtain ⟨e', hite⟩ := htime.ite_polyTime_of_le (computableInPolyTime_all_length_le k)
+    (ComputableInPolyTime.const 0) (y := fun φ => sBar (k * φ.length + 0)) (fun _ => hnnBar _)
+    fun φ hφ => (hle _).trans (hmono (Nat.le_add_right_of_le (CNF.numVars_le_mul_length
+      (by simpa only [List.all_eq_true, decide_eq_true_eq] using hφ))))
+  refine ⟨fun m => sBar (k * m + 0), e', fun _ => hnnBar _,
+    isLittleO_comp_linear_of_nonneg hnnBar hsBar_o k 0, ?_⟩
+  simpa only [ite_all_length_le_SharpKSAT le_rfl] using hite
 
 end Cslib.Complexity

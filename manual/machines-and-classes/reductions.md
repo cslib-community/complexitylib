@@ -56,6 +56,23 @@ For a fixed bound with an OR or AND evaluator, import
 query generator and require that count to be at most `k` on every input. Their
 `logSpaceKTruthTableReducible` lemmas preserve that bound when introducing an explicit evaluator.
 
+Both families instantiate the resource-free kernels in
+[Reduction/TruthTable](../../CslibFrontier/Computability/Reduction/TruthTable.lean), as the
+many-one notions instantiate `ManyOneReducibleBy`. `TruthTableReducibleBy Good` asks for a count,
+query generator and evaluator satisfying `Good`, while `DTTReducibleBy` and `CTTReducibleBy` drop
+the evaluator. The unrestricted, `k`-truth-table, disjunctive, conjunctive and positive predicates,
+and the fixed-bound `LogSpaceKDTTReducible` and `LogSpaceKCTTReducible`, spell out their bodies
+with the resource conditions and any query bound or monotonicity condition grouped into one
+conjunct, so each is by definition a kernel instance and the kernel lemmas apply to it directly.
+`PolyTimeBTTReducible` and `LogSpaceBTTReducible` are `∃ k, …KTruthTableReducible k …`; their
+lemmas unpack that single uniform bound before applying the kernel. Monotonicity in `Good`,
+complementation, one-query many-one embeddings, the `List.any id` and `List.all id` evaluators
+and disjunctive/conjunctive duality are proved once at kernel level; the named lemmas such as
+`PolyTimeTruthTableReducible.compl_left` apply them, so clients never supply a `Good`. A new
+resource bound needs only the closure facts of its own `Good`. Transitivity stays per family,
+sharing the combiner in
+[TruthTable/Composition](../../CslibFrontier/Computability/Complexity/Reduction/TruthTable/Composition.lean).
+
 ## Adaptive word-oracle access
 
 [`PolyTimeTuringReducible`](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Turing.lean#L120) defines `A ≤T B` by membership in `PWithOracle (encB '' B) encA`. The underlying algorithm is a deterministic adaptive `WordQueryComp` with a native `IsOraclePPTOn` realization. Its polynomial clock charges query-symbol writes and bounds both query lengths and query count; the oracle evaluation itself is one step. The machine realization is efficient for arbitrary admissible handlers, while correctness of the reduction is stated for the designated language oracle.
@@ -66,7 +83,7 @@ The oracle recognizes the **encoded image** of `B`: a word outside the image of 
 
 ## Autoreductions and splitting
 
-An autoreduction is a reduction to the same language that avoids asking its original instance. [Polynomial-time](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Autoreducibility.lean#L83) and [logspace](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Autoreducibility.lean#L101) many-one versions require a fixed-point-free map. The polynomial-time truth-table variants—`k`-bounded, bounded, disjunctive, conjunctive, and unrestricted—require `q(a,i) ≠ a` only for indices actually used, `i < r(a)`. The same resource and answer semantics described above apply.
+An autoreduction is a reduction to the same language that avoids asking its original instance. [Polynomial-time](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Autoreducibility.lean#L83) and [logspace](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Reduction/Autoreducibility.lean#L101) many-one versions require a fixed-point-free map. The polynomial-time truth-table variants—`k`-bounded, bounded, disjunctive, conjunctive, and unrestricted—require `q(a,i) ≠ a` only for indices actually used, `i < r(a)`. The same resource and answer semantics described above apply. These variants add that avoidance condition to the kernel's `Good`, so their forgetful maps, closure under complement and disjunctive/conjunctive duality are kernel corollaries.
 
 To turn a bounded disjunctive or conjunctive reduction from `Aᶜ` to `A` into an autoreduction,
 import [`LogSpaceBoundedAutoreducibility`](../../CslibFrontier/Computability/Complexity/Reduction/LogSpaceBoundedAutoreducibility.lean)
