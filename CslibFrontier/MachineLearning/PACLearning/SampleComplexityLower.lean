@@ -10,6 +10,8 @@ module
 public import Cslib.MachineLearning.PACLearning.VCDimension
 public import CslibFrontier.MachineLearning.PACLearning.SampleComplexityLower.EHKVProof
 
+-- vendored: the Theorem 1 entry below records the source's `δ ≤ 1/100` against this proof's
+-- `δ < 1/14`.
 /-! # Sample Complexity Lower Bound
 
 We use the prefix `ehkv` for Ehrenfeucht–Haussler–Kearns–Valiant throughout.
@@ -35,7 +37,8 @@ change-of-variables `pi_map_sampleOf` below.
 - `pi_map_sampleOf`, `error_realizable_self_eq_zero`,
   `optimalError_realizable_eq_zero`: joint↔marginal bridge lemmas.
 - `sample_complexity_lower_bound_randomized`: **Theorem 1** of [EHKV1989] for
-  randomized learners, family-parametric.
+  randomized learners, family-parametric, with the confidence range `δ < 1/14`
+  in place of the source's `δ ≤ 1/100`.
 - `sample_complexity_lower_bound`: deterministic corollary via
   `IsPACLearnerFor.toIsRPACLearnerFor`.
 - `sample_complexity_lower_bound_agnostic_randomized`,
@@ -276,10 +279,13 @@ variable {C : ConceptClass α Bool} {W : Finset α}
   {m : ℕ} {ε δ : Set.Ioo (0 : ℝ≥0) 1}
 
 open Classical in
+-- vendored: the Theorem 1 label is qualified with the source's confidence range (§3, Theorem 1
+-- assumes `δ ≤ 1/100`); this proof's `δ < 1/14` is its own adaptation of the constants.
 /-- **Theorem 1 (randomized, family-parametric)** [EHKV1989]:
 The sample-complexity lower bound `(|W| - 1) / (32 ε) ≤ m` holds for
 *randomized* `(ε, δ)`-PAC learners over any distribution family `𝒟` containing
-all realizable distributions for `C`. -/
+all realizable distributions for `C`. [EHKV1989, §3, Theorem 1] states this
+for `0 < δ ≤ 1/100`; the proof here allows the wider range `δ < 1/14`. -/
 theorem sample_complexity_lower_bound_randomized
     (hW : SetShatters C ↑W) (hW_card : 2 ≤ W.card)
     (hε_le : ε.val.toReal ≤ 1 / 8)

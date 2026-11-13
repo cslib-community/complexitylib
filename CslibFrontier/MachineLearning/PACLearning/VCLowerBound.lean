@@ -9,16 +9,19 @@ module
 
 public import CslibFrontier.MachineLearning.PACLearning.Realizable
 public import Cslib.MachineLearning.PACLearning.VCDimension
+import CslibFrontier.Foundations.MeasureTheory.MeasurableSpace.Embedding
 import CslibFrontier.MachineLearning.PACLearning.SampleComplexityLower
 import CslibFrontier.MachineLearning.PACLearning.RealizableSample
 
 /-!
 # The VC lower bound for PAC learning on general domains
 
-Ehrenfeucht, Haussler, Kearns and Valiant [EHKV1989, Theorem 1] showed that learning a binary class
-which shatters `d + 1` points to accuracy `ε ≤ 1/8` with confidence `1 - δ`, `δ < 1/14`, needs
-more than `d / (32 ε)` examples, even for randomized learners and even over the distributions the
-class realizes. The vendored `SampleComplexityLower` proves this for classes of measurable concepts.
+Ehrenfeucht, Haussler, Kearns and Valiant [EHKV1989, §3, Theorem 1] showed that learning a binary
+class which shatters `d + 1` points to accuracy `ε ≤ 1/8` with confidence `1 - δ`, `δ ≤ 1/100`,
+needs at least `d / (32 ε)` examples, even for randomized learners and even over the distributions
+the class realizes. The vendored `SampleComplexityLower` proves the same bound for the wider
+confidence range `δ < 1/14`, an adaptation of the source's constants made by the vendored proof,
+for classes of measurable concepts.
 This module removes the measurability hypothesis, so that the bound holds for every binary class on
 every domain with measurable singletons:
 
@@ -102,18 +105,9 @@ section Transfer
 
 variable [MeasurableSpace α] [MeasurableSingletonClass α] {s : Set α} [Countable s]
 
-/-- An injective map from a countable space with measurable singletons into a space with measurable
-singletons is a measurable embedding: every set of the source is countable, and so is its image. -/
-private theorem measurableEmbedding_of_countable {X Y : Type*} [MeasurableSpace X]
-    [MeasurableSingletonClass X] [Countable X] [MeasurableSpace Y] [MeasurableSingletonClass Y]
-    {f : X → Y} (hf : Function.Injective f) : MeasurableEmbedding f where
-  injective := hf
-  measurable := .of_discrete
-  measurableSet_image' _ _ := ((Set.to_countable _).image f).measurableSet
-
 private theorem measurableEmbedding_inclusion :
     MeasurableEmbedding (Prod.map Subtype.val id : s × Bool → α × Bool) :=
-  measurableEmbedding_of_countable (Subtype.val_injective.prodMap Function.injective_id)
+  MeasurableEmbedding.of_countable (Subtype.val_injective.prodMap Function.injective_id)
 
 private theorem error_map_inclusion (D : Measure (s × Bool)) (h : α → Bool) :
     error (D.map (Prod.map Subtype.val id)) h = error D fun x => h x := by
@@ -141,7 +135,7 @@ private theorem failure_map_inclusion {m : ℕ} (D : Measure (s × Bool)) [IsPro
     (Measure.pi_map_pi fun _ => measurableEmbedding_inclusion.measurable.aemeasurable).symm
   have hemb : MeasurableEmbedding fun (S : LabeledSample s Bool m) i =>
       Prod.map Subtype.val id (S i) :=
-    measurableEmbedding_of_countable fun S T hST =>
+    MeasurableEmbedding.of_countable fun S T hST =>
       funext fun i => measurableEmbedding_inclusion.injective (congrFun hST i)
   rw [hpi, hemb.map_apply]
   simp only [preimage_ofPred_eq, optimalError_map_inclusion, error_map_inclusion]
@@ -189,10 +183,12 @@ section LowerBound
 
 variable [MeasurableSpace α] [MeasurableSingletonClass α]
 
-/-- **The EHKV lower bound** [EHKV1989, Theorem 1] for an arbitrary binary class on a domain with
-measurable singletons: if `C` shatters the finite set `W`, then every randomized `(ε, δ)`-PAC
-learner for `C` with `ε ≤ 1/8` and `δ < 1/14` over a family containing the distributions `C`
-realizes uses `m ≥ (W.card - 1) / (32 ε)` examples. No measurability of the concepts is assumed. -/
+/-- **The EHKV lower bound** [EHKV1989, §3, Theorem 1] for an arbitrary binary class on a domain
+with measurable singletons: if `C` shatters the finite set `W`, then every randomized
+`(ε, δ)`-PAC learner for `C` with `ε ≤ 1/8` and `δ < 1/14` over a family containing the
+distributions `C` realizes uses `m ≥ (W.card - 1) / (32 ε)` examples. No measurability of the
+concepts is assumed. The source states the bound for `δ ≤ 1/100`; the range `δ < 1/14` is the
+vendored proof's adaptation (see `sample_complexity_lower_bound_randomized`). -/
 theorem card_le_of_isRPACLearnerFor.{u} {C : ConceptClass α Bool} {W : Finset α}
     (hW : SetShatters C ↑W) {m : ℕ} {ε δ : Set.Ioo (0 : ℝ≥0) 1} (hε : (ε : ℝ) ≤ 1 / 8)
     (hδ : (δ : ℝ) < 1 / 14) {𝒟 : Set (Measure (α × Bool))}

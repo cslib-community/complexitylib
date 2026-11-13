@@ -10,6 +10,8 @@ module
 public import CslibFrontier.MachineLearning.PACLearning.SampleComplexityLower.AdversarialMeasure
 public import CslibFrontier.MachineLearning.PACLearning.SampleComplexityLower.InvolutionPairing
 
+-- vendored: the Lemma 3 entry below records the source's `δ ≤ 1/100` against this proof's
+-- `δ < 1/14`.
 /-! # EHKV Proof Assembly
 
 This module assembles the Markov bound, involution pairing, and adversarial
@@ -24,7 +26,9 @@ under a realizable distribution `D = P.map (x ↦ (x, c x))` is performed in
 ## Main statements
 
 - `markov_bad_samples`: **Lemma 3** [EHKV1989] — bad samples occur with
-  probability `> 1/2` when the sample size is too small.
+  probability `> 1/2` when the sample size is too small. The source proves its
+  lemmas within Theorem 1's confidence range `δ ≤ 1/100`; this development
+  adapts the argument to `δ < 1/14`.
 - `ehkv_sum_lower_bound`: the half-fraction sum lower bound via involution.
 - `ehkv_final_contradiction`: the final arithmetic contradiction.
 - `exists_bad_concept_marginal`: for any set-valued learner with too few
@@ -54,7 +58,10 @@ section EHKVProof
 variable {α : Type*} [MeasurableSpace α] [MeasurableSingletonClass α]
 
 open Classical in
-/-- **Lemma 3** [EHKV1989]: Markov bound on bad samples.
+-- vendored: the Lemma 3 label is qualified: the source works with Theorem 1's `δ ≤ 1/100`, and
+-- this development adapts the argument to `δ < 1/14`.
+/-- **Lemma 3** [EHKV1989]: Markov bound on bad samples (in the form used for this
+development's confidence range `δ < 1/14`; the source states its lemmas for `δ ≤ 1/100`).
 
 When the sample size `m` satisfies `m < d / (32ε)`, the probability
 (under the product measure `P^m`) that the sample reveals at most

@@ -5887,6 +5887,7 @@ public import CslibFrontier.Foundations.MeasureTheory.Integral.CauchySchwarz
 public import CslibFrontier.Foundations.MeasureTheory.Integral.IntervalPrimitive
 public import CslibFrontier.Foundations.MeasureTheory.Integral.Pi
 public import CslibFrontier.Foundations.MeasureTheory.Integral.PiUpdate
+public import CslibFrontier.Foundations.MeasureTheory.MeasurableSpace.Embedding
 public import CslibFrontier.Foundations.MeasureTheory.Measure.TotalVariation.Map
 public import CslibFrontier.Foundations.MeasureTheory.Measure.TotalVariation.Mixture
 public import CslibFrontier.Foundations.ModelTheory.Basic
