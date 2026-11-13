@@ -434,8 +434,8 @@ and is uniform strict PPT (`isPPTOn_dcrDistinguisher`). The book samples the enc
 uniformly from the units modulo `N`; here `encrypt` uses the dyadic sampler with `unitOrOne`, which is
 within `N / 2 ^ (n + |N|) + (N - φ(N)) / N` of uniform on the units. Under `hsize` this costs at most
 `5 / 2 ^ n` per real hop (`Game.advantage_sampleModNat_units_le` in
-[`UnitSampling.lean`](../../CslibFrontier/Crypto/Computational/UnitSampling.lean), also used for
-Goldwasser–Micali below), so the IND-CPA advantage is at most `10 / 2 ^ n` plus the two DCR
+[`UnitSampling.lean`](../../CslibFrontier/Crypto/Computational/UnitSampling.lean), which also
+defines `unitOrOne`; both are shared with Goldwasser–Micali below), so the IND-CPA advantage is at most `10 / 2 ^ n` plus the two DCR
 advantages; without a growth condition on the primes the non-unit loss need not be negligible. The
 distributional-homomorphism gap above is unaffected.
 [`CslibFrontierTests/Crypto/Paillier.lean`](../../CslibFrontierTests/Crypto/Paillier.lean) checks the
