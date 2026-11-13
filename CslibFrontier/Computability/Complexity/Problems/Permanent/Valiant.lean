@@ -52,7 +52,7 @@ polynomial-time oracle program that reads the bits of the 0/1 permanent from its
   [Goldreich2007Draft]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 
