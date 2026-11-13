@@ -3821,6 +3821,7 @@ public import CslibFrontier.Computability.Probabilistic.Oracle.Normalization
 public import CslibFrontier.Computability.Probabilistic.Oracle.Parameter
 public import CslibFrontier.Computability.Probabilistic.Oracle.Replay
 public import CslibFrontier.Computability.Probabilistic.Oracle.ReplayParameter
+public import CslibFrontier.Computability.Probabilistic.Oracle.RunState
 public import CslibFrontier.Computability.Probabilistic.Oracle.SingleOracle
 public import CslibFrontier.Computability.Probabilistic.Oracle.Substitution
 public import CslibFrontier.Computability.Probabilistic.Oracle.Tidy
