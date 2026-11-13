@@ -143,7 +143,7 @@ ordered first-order reductions. -/
 theorem Reduces.esoDefinable {L L' : Language} [L.IsRelational] [L'.IsRelational]
     (v : Vocabulary L) (v' : Vocabulary L') {K : Query L} {K' : Query L'}
     (h : Reduces K K') (hK' : ESODefinable K') : ESODefinable K :=
-  ESODefinable.of_queryLanguage_mem_NP v
+  ESODefinable.of_encodedLanguage_mem_NP v
     (h.encodedLanguage_mem_NP v v' (hK'.encodedLanguage_mem_NP v'))
 
 /-! ### Unconditional `≤_qfp`, `≤_fop`, and `≤_fo` completeness for ordered `NP` -/

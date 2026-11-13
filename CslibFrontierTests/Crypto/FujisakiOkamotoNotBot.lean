@@ -102,9 +102,9 @@ theorem pairCoinScheme_sampleMsg_uniform :
 /-- ROM adversary that queries `H(false, 0, c*)` once (`qG = 0`, `qH = 1`) and tests whether the
 reply equals the challenge key `k*`. -/
 def probeZeroKeyAdv : ROAdversary Unit (Fin 16) (Fin 16) (Fin 16 × Fin 16) (Fin 2) :=
-  fun (_, cStar, kStar) => do
-    let k ← OracleComp.query (ROQuery.H (false, 0, cStar))
-    return decide (k = kStar)
+  fun ch => do
+    let k ← OracleComp.query (ROQuery.H (false, 0, ch.ct))
+    return decide (k = ch.key)
 
 /-- `probeZeroKeyAdv` makes `0` queries to `G` and `1` query to `H`. -/
 theorem probeZeroKeyAdv_bounds : ROQueryBounds probeZeroKeyAdv 0 1 := by
