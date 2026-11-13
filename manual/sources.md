@@ -1398,6 +1398,11 @@ Ryan O'Donnell. *Analysis of Boolean Functions*. Cambridge University Press, 201
 
 Igor Carboni Oliveira, Ján Pich and Rahul Santhanam. *Hardness Magnification near State-Of-The-Art Lower Bounds*. CCC 2019, LIPIcs 137, 27:1–27:29. https://doi.org/10.4230/LIPIcs.CCC.2019.27 . Lemma numbers follow the journal version, Theory of Computing 17(11), 2021. Bibliographic data comes from the repository bibliography. The Lean modules cite its Lemmas 4.1 and 4.7 and Theorem 1.4. For Theorem 1.4, worker meta-proj read the authors' copy of ECCC TR18-158 revision 1 (https://www.dcs.warwick.ac.uk/~igorcarb/documents/papers/OPS19.pdf) on 2026-11-11 UTC: Theorem 4 there is the same statement with an unspecified universal constant `c ≥ 1`, its proof in Section 4.1 uses `c = 10`, Definition 9 has no-instances of size `> s₂`, and Section 2 says gate types do not matter. The journal numbering `1.4` was not checked against the journal text.
 
+<a id="oliveirasanthanam2017"></a>
+## oliveirasanthanam2017
+
+Igor Carboni Oliveira and Rahul Santhanam. *Conspiracies Between Learning Algorithms, Circuit Lower Bounds, and Pseudorandomness*. CCC 2017, LIPIcs 79, 18:1–18:49. https://doi.org/10.4230/LIPIcs.CCC.2017.18 . Full version arXiv:1611.01190. Bibliographic data comes from the repository bibliography and the LIPIcs record. The Lean module [CryptoHardness/NaturalProperty.lean](../CslibFrontier/MachineLearning/UniformLearning/CryptoHardness/NaturalProperty.lean) cites Theorem 8, (1) ⇒ (5) (a learner yields a distinguisher, hence a natural property) and Lemma 4 from the arXiv full version; the page locators are not recorded in the results registry.
+
 <a id="oliveirasanthanam2018"></a>
 ## oliveirasanthanam2018
 

@@ -207,6 +207,7 @@ import CslibFrontier.MachineLearning.UniformLearning.CIKK.Amplification
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.Complexity
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.Learner
 import CslibFrontier.MachineLearning.UniformLearning.CryptoHardness.GGM
+import CslibFrontier.MachineLearning.UniformLearning.CryptoHardness.NaturalProperty
 import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson
 import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson.BestOf
 import CslibFrontier.Probability.Extractor.TwoSource
@@ -3276,6 +3277,27 @@ register_result "learning-hardness-from-generators" where
     have such tests, so none reaches (1 - delta)(1 - eps) > 3/4. Running time is not modelled. \
     The distinguisher fixes the learner's seed and comparison point by averaging; it is a \
     nonuniform circuit test."
+
+register_result "learning-natural-property" where
+  title := "Oliveira–Santhanam: learners for SIZE s yield P/poly-natural properties useful against \
+    SIZE s"
+  topic := "meta-complexity"
+  sources := [
+    { paper := OliveiraSanthanam2017, theorem := "Theorem 8, (1) ⇒ (5)", locator := unverified }
+  ]
+  theorems := [
+    Cslib.MachineLearning.UniformLearning.isNatural_PPoly_and_isUseful_SIZE,
+    Cslib.MachineLearning.UniformLearning.isNatural_PPoly_lowAgreement,
+    Cslib.MachineLearning.UniformLearning.isUseful_lowAgreement
+  ]
+  scope := "Membership-query learners (adaptive allowed) with uniform seeds from a set of size \
+    2^(c(n+1)), circuit tests of at most 2^(c(n+1)) gates on truth tables (HasCircuitTests), and \
+    accuracy \
+    (1 - delta)(1 - eps) at least 2^(-cn) above 1/2 + q/2^(n+1). The property is the set of \
+    functions on which the seed-averaged agreement is below (1 - delta)(1 - eps); it is decided \
+    by an exact threshold over all seeds and points, so constructivity is P/poly by circuit size, \
+    not the source's BPP-natural form, and arbitrary seed distributions are not covered. The \
+    random-function bound is the fair-coin argument, not the source's small-hypothesis lemma."
 
 register_result "nw-reconstruction-learner" where
   title := "Carmosino–Impagliazzo–Kabanets–Kolokolova: the Nisan–Wigderson reconstruction as a \
