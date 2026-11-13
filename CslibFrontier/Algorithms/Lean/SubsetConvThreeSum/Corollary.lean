@@ -72,8 +72,8 @@ theorem copyMissFrac_le {m T : ℕ} (hT : 0 < T) {A B C : List ℕ} {c q : ℕ} 
           (#(seeds q) : ℝ) ^ μ m
       else 0) / T := by
   have : Fact q.Prime := ⟨hq⟩
-  unfold copyMissFrac missProb
-  rw [dite_eq_left_of_eq_true (eq_true hq), dite_eq_left_of_eq_true (eq_true hq), seedsOf_eq]
+  unfold copyMissFrac
+  rw [missProb_eq_of_prime, dite_eq_left_of_eq_true (eq_true hq), seedsOf_eq]
   set S := Fintype.piFinset fun _ : Fin (μ m) => seeds q
   set time : (Fin (μ m) → Seed q) → ℕ := fun ss =>
     (threeSumM (d m) (t m) (s m) q (List.ofFn ss) A B C).time
