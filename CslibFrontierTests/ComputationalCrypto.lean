@@ -223,8 +223,8 @@ example : ¬ HardCore id (fun w => w.headD false) := by
   intro h
   have hgame (n : ℕ) :
       ProbComp.eval (predictionGame id (fun w => w.headD false) copyFirst n) = PMF.pure true := by
-    simp only [predictionGame, copyFirst, id, ProbComp.eval_bind, ProbComp.eval_pure,
-      BitString.eval_sampleList]
+    simp only [predictionGame, predictionExperiment, copyFirst, id, ProbComp.eval_bind,
+      ProbComp.eval_pure, BitString.eval_sampleList]
     simp
   have hneg := h.unpredictable copyFirst copyFirst_ppt
   have hfun : predictionAdvantage id (fun w => w.headD false) copyFirst =

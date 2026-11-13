@@ -12,6 +12,7 @@ import tempfile
 import threading
 import time
 import unittest
+from unittest.mock import patch
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 REPO = Path(__file__).resolve().parents[1]
@@ -100,6 +101,9 @@ class MirrorTests(unittest.TestCase):
                 if "/miss/" in self.path:
                     self.send_error(404)
                     return
+                if "/forbidden/" in self.path:
+                    self.send_error(403)
+                    return
                 if self.path.endswith(".jsonl"):
                     data = b'"2026-03-17"\n["0000000000000001","0000000000000001.ltar"]\n["0000000000000002","0000000000000002.ltar"]\n'
                     if "/html/" in self.path:
@@ -157,6 +161,18 @@ class MirrorTests(unittest.TestCase):
         self.assertEqual(len(self.events()), 1)
         self.assertFalse(any("/fallback/" in request for request in self.requests))
         self.assertEqual(len(list(self.artifacts.iterdir())), 2)
+
+    def test_default_origins_fall_back_after_public_access_is_revoked(self):
+        for missing in (False, True):
+            with self.subTest(missing=missing), patch.object(
+                    restore, "DEFAULT_URLS", (self.base + "/forbidden", self.base + "/fallback")):
+                self.requests.clear()
+                self.log.unlink(missing_ok=True)
+                shutil.rmtree(self.artifacts, ignore_errors=True)
+                self.assertTrue(restore.restore(self.root, self.env, missing=missing))
+                self.assertTrue(any("/forbidden/r0/" in request for request in self.requests))
+                self.assertEqual(self.events()[-1]["endpoint"], self.base + "/fallback/a0")
+                self.assertEqual(len(list(self.artifacts.iterdir())), 2)
 
     def test_partial_primary_preserves_completed_archive_for_secondary(self):
         self.fetch("/partial", "/fallback")
@@ -342,6 +358,20 @@ child.wait()
         for value in ("https://user:secret@example.invalid", "https://example.invalid/?secret=x"):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 restore.origins({"COMPLEXITYLIB_CACHE_URL": value})
+
+
+class OriginConfigurationTests(unittest.TestCase):
+    def test_default_origin_order_and_explicit_overrides(self):
+        defaults = ["https://storage.googleapis.com/complexitylib-lake-cache",
+                    "https://complexitycache.csail.mit.edu"]
+        self.assertEqual(restore.origins({}), defaults)
+        self.assertEqual(restore.origins({"COMPLEXITYLIB_CACHE_URLS": ""}), defaults)
+        self.assertEqual(restore.origins({"COMPLEXITYLIB_CACHE_URLS": "https://other.invalid"}),
+                         ["https://other.invalid"])
+        self.assertEqual(restore.origins({"COMPLEXITYLIB_CACHE_URL": "https://single.invalid",
+                                        "COMPLEXITYLIB_CACHE_URLS": "https://other.invalid"}),
+                         ["https://single.invalid"])
+        self.assertEqual(restore.origins({"COMPLEXITYLIB_CACHE_URL": ""}), [])
 
 
 class PublicationPermissionTests(unittest.TestCase):
