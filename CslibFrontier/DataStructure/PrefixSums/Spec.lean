@@ -31,6 +31,8 @@ an implementation with machine bounds, such as a word-fit condition, restricts `
 
 * `Cslib.DataStructure.PrefixSums.length_addAt`, `Cslib.DataStructure.PrefixSums.getD_addAt`,
   `Cslib.DataStructure.PrefixSums.addAt_of_length_le`: the point increment changes one entry.
+* `Cslib.DataStructure.PrefixSums.addAt_append`: a point increment of a concatenation updates
+  the part containing the position.
 * `Cslib.DataStructure.PrefixSums.length_stepFn`: every operation preserves the length.
 
 ## References
@@ -67,6 +69,16 @@ theorem getD_addAt (s : List α) {pos : ℕ} (δ : α) (hpos : pos < s.length) (
   · subst heq
     exact List.getD_set_self hpos
   · exact List.getD_set_ne (Ne.symm heq)
+
+/-- A point increment of a concatenation updates the part containing the position. -/
+theorem addAt_append (s t : List α) (pos : ℕ) (δ : α) :
+    addAt (s ++ t) pos δ =
+      if pos < s.length then addAt s pos δ ++ t else s ++ addAt t (pos - s.length) δ := by
+  unfold addAt
+  split_ifs with h
+  · rw [List.getD_append _ _ _ _ h, List.set_append_left _ _ h]
+  · have h' := Nat.le_of_not_gt h
+    rw [List.getD_append_right _ _ _ _ h', List.set_append_right _ _ h']
 
 end AddAt
 
