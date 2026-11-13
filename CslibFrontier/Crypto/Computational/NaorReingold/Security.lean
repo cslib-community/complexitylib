@@ -23,6 +23,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.BitString
 import CslibFrontier.Crypto.Game.Hybrid
 import CslibFrontier.Crypto.Game.Statistical
 import CslibFrontier.Crypto.Negligible.Basic
@@ -1193,7 +1194,7 @@ private theorem frontierLevelWithExpLaw_uniform_eq_multi (F : PrimeOrderGroupFam
   let post : List Bool → List Bool × List Bool → List Bool := fun xs vw =>
     F.naorReingoldWordSuffix d (if xs.getD k false then vw.2 else vw.1) αs (xs.drop (k + 1))
   have hmemo := interpret_wordFiltered_eq_memoize_map
-    ⟨List.ofFn, List.ofFn_injective⟩ valMap
+    (encBitString k) valMap
     (fun _ : BitString k => F.ddhFixedURerandomizeLaw d u₀ v₀ w₀)
     (fun _ => (F.ddhFixedURerandomizeLaw d u₀ v₀ w₀).map valMap) (fun _ => rfl)
     (fun xs => BitString.zeroExtend (d' := k) (BitString.ofList m xs)) (fun xs => xs.take k)
@@ -1889,7 +1890,7 @@ private theorem run_eager_bitStringTable_eq_presample {m ℓ Q : ℕ}
         | none => PMF.pure (fresh, (request.2, fresh) :: cache)
       else PMF.pure ([], cache)
   have hmemo := interpret_wordFiltered_eq_memoize_map
-    ⟨List.ofFn, List.ofFn_injective⟩ (List.ofFn : BitString ℓ → List Bool) (fun _ => outLaw)
+    (encBitString m) (List.ofFn : BitString ℓ → List Bool) (fun _ => outLaw)
     sample' (fun _ => rfl) (BitString.ofList m) (fun xs => xs)
     (fun hq => BitString.ofFn_ofList hq) (fun _ v => v) prog
   have hrhs :
