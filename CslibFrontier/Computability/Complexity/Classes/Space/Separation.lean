@@ -21,9 +21,10 @@ import CslibFrontier.Foundations.Data.Nat.AffineBound
 For `k ≥ 1`, the class `DSPACE (n ^ k)` of problems on bit words is not closed under
 polynomial-time many-one reductions. By the space hierarchy theorem
 (`Cslib.Complexity.DSPACE_pow_ssubset_DSPACE_pow_succ`), some problem `A` is in
-`DSPACE (n ^ (k + 1))` but not in `DSPACE (n ^ k)`. Padding instances of `A` of length `m` to length
-`(m + 1) ^ 2` gives a problem in `DSPACE (n ^ k)` (`Cslib.Complexity.spacePadded_mem_DSPACE`), and
-`A` reduces to it in polynomial time (`Cslib.Complexity.polyTimeReducible_spacePadded`).
+`DSPACE (n ^ (k + 1))` but not in `DSPACE (n ^ k)`. Padding instances of `A` of length `m` to
+length `(m + 1) ^ 2` gives a problem in `DSPACE (n ^ k)`
+(`Cslib.Complexity.polynomialPadded_mem_DSPACE`), and `A` reduces to it in polynomial time
+(`Cslib.Complexity.polyTimeReducible_polynomialPadded`).
 
 So `DSPACE (n ^ k)` differs from every class closed under these reductions
 (`Cslib.Complexity.DSPACE_pow_ne_of_polyTimeReducible_mem`). For linear space this is **Book's
@@ -65,9 +66,9 @@ theorem exists_polyTimeReducible_mem_DSPACE_pow_notMem {k : ℕ} (hk : 1 ≤ k) 
     ∃ A B : Set (List Bool), PolyTimeReducible encBits encBits A B ∧
       B ∈ DSPACE encBits (· ^ k) ∧ A ∉ DSPACE encBits (· ^ k) := by
   obtain ⟨A, hA, hAk⟩ := Set.exists_of_ssubset (DSPACE_pow_ssubset_DSPACE_pow_succ k)
-  refine ⟨A, spacePadded A 2, polyTimeReducible_spacePadded A (by norm_num),
+  refine ⟨A, polynomialPadded A 2, polyTimeReducible_polynomialPadded A (by norm_num),
     DSPACE_mono_of_le_mul_add (Nat.add_one_pow_le_two_pow_mul_add k)
-      (spacePadded_mem_DSPACE hk (DSPACE_mono (fun n => ?_) hA)), hAk⟩
+      (polynomialPadded_mem_DSPACE hk (DSPACE_mono (fun n => ?_) hA)), hAk⟩
   calc n ^ (k + 1) ≤ (n + 1) ^ (k + 1) := Nat.pow_le_pow_left (Nat.le_succ n) _
     _ ≤ (n + 1) ^ (k * 2) := Nat.pow_le_pow_right (Nat.succ_pos n) (by omega)
 
