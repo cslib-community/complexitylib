@@ -34,6 +34,7 @@ import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Norm
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Probability.Uniform
 import CslibFrontier.Tactic.Negligible
@@ -2017,14 +2018,11 @@ private theorem bind_bool_mono_of_imp {α β γ δ : Type}
     (pa.bind fun a => pb.bind fun b => pc.bind fun c =>
       (pd a b c).bind fun d => PMF.pure (f a b d)) true ≤
     (pa.bind fun a => pb.bind fun b => pc.bind fun c =>
-      (pd a b c).bind fun d => PMF.pure (g a b d)) true := by
-  refine bind_apply_mono_on_support pa true fun a _ =>
+      (pd a b c).bind fun d => PMF.pure (g a b d)) true :=
+  bind_apply_mono_on_support pa true fun a _ =>
     bind_apply_mono_on_support pb true fun b _ =>
       bind_apply_mono_on_support pc true fun c _ =>
-        bind_apply_mono_on_support (pd a b c) true fun d _ => ?_
-  by_cases h : f a b d = true
-  · rw [h, hfg a b d h]
-  · simp [Bool.eq_false_iff.mpr h]
+        map_true_mono (pd a b c) fun d _ => hfg a b d
 
 /-! ### Full nonce-based Carter–Wegman MAC (Boneh–Shoup Attack Game 7.4 and Theorem 7.10) -/
 
