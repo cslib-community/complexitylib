@@ -13,7 +13,6 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Machine.Nond
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.PPT.Clock
 import CslibFrontier.Computability.Probabilistic.Sampling.Verifier
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-!
 # Guess and verify

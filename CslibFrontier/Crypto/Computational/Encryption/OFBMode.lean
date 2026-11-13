@@ -13,6 +13,7 @@ public import CslibFrontier.Languages.Probabilistic.QueryCount
 import CslibFrontier.Languages.Probabilistic.Oracle.Interaction
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Languages.Probabilistic.UntilBad.TwoCost
+import CslibFrontier.Probability.PMF.Support
 /-!
 # CPA Security of Output Feedback (OFB) Mode
 
@@ -278,7 +279,7 @@ private theorem toOuterMeasure_bad_fresh_le (ℓ : ℕ) (b : Bool) {adversary : 
   · intro q s hs
     cases q with
     | inl i =>
-      exact (toOuterMeasure_lift_eq_zero (bad := fun s : FlagState n => s.2 = true)
+      exact (PMF.toOuterMeasure_lift_eq_zero (bad := fun s : FlagState n => s.2 = true)
         (ProbComp.unifOracle i) s hs).trans_le zero_le
     | inr q =>
       calc (ProbOracleComp.runWith freshStep (ofbQueryProgram ℓ b q) s).toOuterMeasure
@@ -295,7 +296,7 @@ private theorem toOuterMeasure_bad_fresh_le (ℓ : ℕ) (b : Bool) {adversary : 
   · intro q s _ x hx _
     cases q with
     | inl i =>
-      rw [snd_eq_of_mem_support_lift hx]
+      rw [PMF.snd_eq_of_mem_support_lift hx]
       exact le_add_right (le_add_right le_rfl)
     | inr q =>
       have hlen := length_of_mem_support_freshQuery ℓ b q s hx

@@ -549,9 +549,8 @@ private theorem entry_gateVertex (neg : R) (X : List Bool) (gs : List GateCode) 
       simp only [Option.map_some, BitString.testBit_lsbValue]
       have hmem : 2 * (c * (occurrences gs).length + w) + 1 ∈ gatePorts gs c i :=
         List.mem_append_right _ (List.mem_filterMap.mpr ⟨j, hj, by simp [inPort, hl]⟩)
-      have hlt := List.idxOf_lt_length_of_mem hmem
-      rw [List.getD_eq_getElem _ _ (by simpa using hlt), List.getElem_map,
-        List.getElem_idxOf hlt]
+      rw [List.getD_eq_getElem?_getD, List.getElem?_map, List.getElem?_idxOf hmem,
+        Option.map_some, Option.getD_some]
       congr 1
       omega
   · refine List.map_congr_left fun k hk => ?_

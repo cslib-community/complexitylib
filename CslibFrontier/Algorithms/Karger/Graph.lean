@@ -14,9 +14,9 @@ public import CslibFrontier.Probability.PMF.Uniform
 import Mathlib.Algebra.Order.Ring.Nat
 import Mathlib.Algebra.Order.Ring.Pow
 import Mathlib.Data.Nat.Log
+import CslibFrontier.Foundations.Analysis.ENNRealNatDiv
 import CslibFrontier.Foundations.Analysis.ENNRealOneSubInvPow
 import CslibFrontier.Foundations.Data.Nat.Choose
-import CslibFrontier.Foundations.Data.Nat.Div
 
 /-!
 # Supervertex contractions and Karger's survival bounds
@@ -29,7 +29,10 @@ general notions of `CslibFrontier.Foundations.Combinatorics.WeightedCut` (`Cslib
 the swap-compacted contraction of one pair of supervertices (`mergePair`, `embedCompact`,
 `contractMatrix`, `contractPart`) is
 `CslibFrontier.Foundations.Combinatorics.WeightedCut.Contraction`;
-this module adds the row-major word-RAM layout of the matrix and its edge sampling.
+this module adds edge-weight-proportional sampling and the survival bounds. Nothing here refers to
+a machine: the word-RAM programs (`CslibFrontier.Algorithms.WordRAM.Karger.Contract`,
+`CslibFrontier.Algorithms.WordRAM.KargerMinCut`) store the matrix in row-major order
+(`Cslib.Algorithms.WordRAM.Karger.flattenMatrix`) and import these facts.
 
 ## Source statements and notation mapping
 
@@ -68,18 +71,17 @@ this module adds the row-major word-RAM layout of the matrix and its edge sampli
 
 ## Main definitions
 
-* `Cslib.Algorithms.WordRAM.Karger.flattenMatrix`: row-major `n ^ 2`-element flattening.
-* `Cslib.Algorithms.WordRAM.Karger.edgeOffset`, `Cslib.Algorithms.WordRAM.Karger.IsSampledPair`:
+* `Cslib.Algorithms.Karger.edgeOffset`, `Cslib.Algorithms.Karger.IsSampledPair`:
   prefix-sum interval characterization of edge-weight-proportional sampling from `Fin S`.
 
 ## Main results
 
-* `Cslib.Algorithms.WordRAM.Karger.surviving_card_eq`,
-  `Cslib.Algorithms.WordRAM.Karger.step_survival_prob_ge`: a fixed minimum cut survives one
+* `Cslib.Algorithms.Karger.surviving_card_eq`,
+  `Cslib.Algorithms.Karger.step_survival_prob_ge`: a fixed minimum cut survives one
   edge-proportional contraction on `k` supervertices with probability at least `(k - 2) / k`.
-* `Cslib.Algorithms.WordRAM.Karger.telescope_survival_step`: telescoping multiplication identity
+* `Cslib.Algorithms.Karger.telescope_survival_step`: telescoping multiplication identity
   `((m - 1) / (m + 1)) * (t * (t - 1) / (m * (m - 1))) = t * (t - 1) / ((m + 1) * m)` in `ℝ≥0∞`.
-* `Cslib.Algorithms.WordRAM.Karger.highProb_failure_le`: elementary Bernoulli amplification bound
+* `Cslib.Algorithms.Karger.highProb_failure_le`: elementary Bernoulli amplification bound
   `(1 - 2 / (n * (n - 1))) ^ ((n * (n - 1) / 2) * (Nat.log 2 n + 2)) ≤ 1 / (2 * n)`.
 
 ## References
@@ -92,41 +94,10 @@ this module adds the row-major word-RAM layout of the matrix and its edge sampli
 
 @[expose] public section
 
-namespace Cslib.Algorithms.WordRAM.Karger
+namespace Cslib.Algorithms.Karger
 
 open scoped ENNReal
 open Cslib.WeightedCut
-
-/-! ### Row-major matrix flattening -/
-
-/-- Row-major `n * n`-element list encoding of `W : Fin n → Fin n → ℕ`. -/
-def flattenMatrix {n : ℕ} (W : Fin n → Fin n → ℕ) : List ℕ :=
-  List.ofFn fun idx : Fin (n * n) =>
-    W ⟨idx.val / n, Nat.div_lt_of_lt_mul idx.isLt⟩
-      ⟨idx.val % n, Nat.mod_lt _
-        (Nat.pos_of_ne_zero fun h0 => Nat.not_lt_zero idx.val (by simpa [h0] using idx.isLt))⟩
-
-@[simp]
-theorem length_flattenMatrix {n : ℕ} (W : Fin n → Fin n → ℕ) :
-    (flattenMatrix W).length = n * n := by
-  simp [flattenMatrix]
-
-theorem getElem_flattenMatrix {n : ℕ} (W : Fin n → Fin n → ℕ) (u v : Fin n) :
-    (flattenMatrix W)[u.val * n + v.val]'(by
-      rw [length_flattenMatrix]
-      nlinarith [u.isLt, v.isLt]) = W u v := by
-  simp only [flattenMatrix, List.getElem_ofFn]
-  have hdiv : (u.val * n + v.val) / n = u.val := Nat.mul_add_div_of_lt _ v.isLt
-  have hmod : (u.val * n + v.val) % n = v.val := Nat.mul_add_mod_of_lt v.isLt
-  congr 1 <;> exact Fin.ext (by assumption)
-
-theorem mem_flattenMatrix_le_totalDoubledWeight {n : ℕ} (W : Fin n → Fin n → ℕ)
-    {x : ℕ} (hx : x ∈ flattenMatrix W) :
-    x ≤ totalDoubledWeight W := by
-  unfold flattenMatrix at hx
-  rw [List.mem_ofFn] at hx
-  rcases hx with ⟨idx, rfl⟩
-  exact entry_le_totalDoubledWeight W _ _
 
 /-! ### Prefix-sum edge-proportional sampling on `Fin S` -/
 
@@ -468,34 +439,10 @@ theorem step_survival_prob_ge {k : ℕ} (hk : 2 ≤ k) {W : Fin k → Fin k → 
       omega
     zify [hk, h2]
     nlinarith
-  have henn : (((k - 2 : ℕ) : ℝ≥0∞) * S) ≤
-      (k : ℝ≥0∞) * ((S - 2 * cutWeight W B : ℕ) : ℝ≥0∞) := by
-    exact_mod_cast hnat
-  have hk_ne_zero : (k : ℝ≥0∞) ≠ 0 := by positivity
-  have hk_ne_top : (k : ℝ≥0∞) ≠ ⊤ := ENNReal.natCast_ne_top k
-  have hS_ne_zero : (S : ℝ≥0∞) ≠ 0 := by exact_mod_cast hS.ne'
-  have hS_ne_top : (S : ℝ≥0∞) ≠ ⊤ := ENNReal.natCast_ne_top S
-  rw [ENNReal.div_le_iff_le_mul (Or.inl hk_ne_zero) (Or.inl hk_ne_top)]
-  rw [← ENNReal.mul_div_right_comm]
-  rw [ENNReal.le_div_iff_mul_le (Or.inl hS_ne_zero) (Or.inl hS_ne_top)]
-  simpa [mul_comm] using henn
+  exact (ENNReal.natCast_div_le_natCast_div_iff (by omega) hS.ne').mpr
+    (hnat.trans_eq (Nat.mul_comm _ _))
 
 /-! ### Telescoping and Bernoulli amplification -/
-
-/-- Power of a quotient in `ℝ≥0∞`: `(a / b) ^ m = a ^ m / b ^ m`. -/
-theorem ennreal_div_pow (a b : ℝ≥0∞) (m : ℕ) :
-    (a / b) ^ m = a ^ m / b ^ m := by
-  simp only [div_eq_mul_inv, mul_pow, ENNReal.inv_pow]
-
-private theorem ennreal_div_eq_of_mul_eq {a b c d : ℝ≥0∞}
-    (hb0 : b ≠ 0) (hbt : b ≠ ⊤) (hd0 : d ≠ 0) (hdt : d ≠ ⊤)
-    (h : a * d = c * b) :
-    a / b = c / d := by
-  apply le_antisymm
-  · rw [ENNReal.div_le_iff_le_mul (Or.inl hb0) (Or.inl hbt), ← ENNReal.mul_div_right_comm,
-      ENNReal.le_div_iff_mul_le (Or.inl hd0) (Or.inl hdt), h]
-  · rw [ENNReal.div_le_iff_le_mul (Or.inl hd0) (Or.inl hdt), ← ENNReal.mul_div_right_comm,
-      ENNReal.le_div_iff_mul_le (Or.inl hb0) (Or.inl hbt), h]
 
 private theorem two_le_mul_pred {n : ℕ} (hn : 2 ≤ n) : 2 ≤ n * (n - 1) := by
   obtain ⟨d, rfl⟩ : ∃ d, n = d + 2 := ⟨n - 2, by omega⟩
@@ -528,11 +475,10 @@ theorem telescope_survival_step {t m : ℕ} (ht : 2 ≤ t) (htm : t ≤ m) :
         (((m + 1 : ℕ) : ℝ≥0∞) * ((m * (m - 1) : ℕ) : ℝ≥0∞)) := by
     simp only [div_eq_mul_inv, ENNReal.mul_inv (Or.inl hmp1_ne0) (Or.inl hmp1_top)]
     ring
-  rw [hprod]
-  refine ennreal_div_eq_of_mul_eq (mul_ne_zero hmp1_ne0 hmm1_ne0)
-    (ENNReal.mul_ne_top hmp1_top hmm1_top) hmp1m_ne0 hmp1m_top ?_
-  have hnat : ((m - 1) * (t * (t - 1))) * ((m + 1) * m) =
-      (t * (t - 1)) * ((m + 1) * (m * (m - 1))) := by ring
+  rw [hprod, ENNReal.div_eq_div_iff hmp1m_ne0 hmp1m_top (mul_ne_zero hmp1_ne0 hmm1_ne0)
+    (ENNReal.mul_ne_top hmp1_top hmm1_top)]
+  have hnat : ((m + 1) * m) * ((m - 1) * (t * (t - 1))) =
+      ((m + 1) * (m * (m - 1))) * (t * (t - 1)) := by ring
   exact_mod_cast hnat
 
 theorem one_sub_two_div_pairs_eq {n : ℕ} (hn : 2 ≤ n) :
@@ -579,22 +525,8 @@ theorem one_sub_two_div_pairs_eq {n : ℕ} (hn : 2 ≤ n) :
 theorem one_sub_two_div_pow_pairs_le_half {n : ℕ} (hn : 2 ≤ n) :
     ((1 : ℝ≥0∞) - (2 : ℝ≥0∞) / ((n * (n - 1) : ℕ) : ℝ≥0∞)) ^ (n * (n - 1) / 2) ≤
       (1 : ℝ≥0∞) / 2 := by
-  let m := n * (n - 1) / 2
-  have hm_pos : 1 ≤ m := by
-    have := two_le_mul_pred hn
-    omega
   rw [one_sub_two_div_pairs_eq hn]
-  change (((m - 1 : ℕ) : ℝ≥0∞) / (m : ℝ≥0∞)) ^ m ≤ (1 : ℝ≥0∞) / 2
-  rw [ennreal_div_pow]
-  have hm_pow_ne0 : ((m : ℝ≥0∞) ^ m) ≠ 0 := pow_ne_zero m (by exact_mod_cast (by omega : m ≠ 0))
-  have hm_pow_top : ((m : ℝ≥0∞) ^ m) ≠ ⊤ := ENNReal.pow_ne_top (ENNReal.natCast_ne_top m)
-  have h2_ne0 : (2 : ℝ≥0∞) ≠ 0 := by norm_num
-  have h2_top : (2 : ℝ≥0∞) ≠ ⊤ := by norm_num
-  rw [ENNReal.div_le_iff_le_mul (Or.inl hm_pow_ne0) (Or.inl hm_pow_top)]
-  rw [← ENNReal.mul_div_right_comm, one_mul]
-  rw [ENNReal.le_div_iff_mul_le (Or.inl h2_ne0) (Or.inl h2_top)]
-  rw [mul_comm]
-  exact_mod_cast Nat.two_mul_pred_pow_le hm_pos
+  exact ENNReal.natCast_pred_div_pow_le_half (by have := two_le_mul_pred hn; omega)
 
 /-- Elementary high-probability trial count `(n * (n - 1) / 2) * (Nat.log 2 n + 2)` for Basic
 Karger amplification. -/
@@ -622,7 +554,7 @@ theorem highProb_failure_le {n : ℕ} (hn : 2 ≤ n) :
       ≤ ((1 : ℝ≥0∞) / 2) ^ (Nat.log 2 n + 2) :=
         pow_le_pow_left' (one_sub_two_div_pow_pairs_le_half hn) _
     _ = (1 : ℝ≥0∞) / ((2 ^ (Nat.log 2 n + 2) : ℕ) : ℝ≥0∞) := by
-        rw [ennreal_div_pow, one_pow, Nat.cast_pow, Nat.cast_ofNat]
+        rw [ENNReal.div_pow, one_pow, Nat.cast_pow, Nat.cast_ofNat]
     _ ≤ (1 : ℝ≥0∞) / ((2 * n : ℕ) : ℝ≥0∞) := by
         apply ENNReal.div_le_div_left
         have hlt : n < 2 ^ (Nat.log 2 n + 1) := Nat.lt_pow_succ_log_self (by omega) n
@@ -638,4 +570,4 @@ theorem highProb_failure_le_inv_n {n : ℕ} (hn : 2 ≤ n) :
   apply ENNReal.div_le_div_left
   exact_mod_cast (by omega : n ≤ 2 * n)
 
-end Cslib.Algorithms.WordRAM.Karger
+end Cslib.Algorithms.Karger

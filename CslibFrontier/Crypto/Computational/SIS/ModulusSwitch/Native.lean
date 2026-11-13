@@ -15,7 +15,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 # Native modulus switching of encoded ciphertext rows
 
 The implementation maps the native scalar conversion over runtime rows in the existing
-`GeneralSIS.encodeMatrix` representation. Source and target moduli are binary inputs. Dimensions
+`SIS.encodeMatrix` representation. Source and target moduli are binary inputs. Dimensions
 are represented structurally by framed lists: the certificate is uniform over arbitrary row
 counts and lengths, including empty and ragged lists. It counts the complete input encoding,
 not a fixed-dimension family or a unary encoding of coefficient magnitudes.
@@ -78,7 +78,7 @@ theorem modulusSwitchRows_encodeMatrix_extendCiphertext {k n q p : ℕ}
     encList (encList encNat)
         (modulusSwitchRows q p
           (List.ofFn fun i => List.ofFn fun j => (extendCiphertext ct i j).val)) =
-      GeneralSIS.encodeMatrix (extendCiphertext (moduleLWEModulusSwitch p ct)) := by
+      SIS.encodeMatrix (extendCiphertext (moduleLWEModulusSwitch p ct)) := by
   let : NeZero q := ⟨hq.ne'⟩
   congr 1
   simp only [modulusSwitchRows, List.map_ofFn, Function.comp_def]

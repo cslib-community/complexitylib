@@ -15,7 +15,7 @@ interfaces, and nonvacuity of its correctness and cost theorems. -/
 @[expose] public section
 
 open Cslib.DataStructure Cslib.DataStructure.PriorityQueue
-open Cslib.Algorithms.WordRAM.Dijkstra (ListInstance)
+open Cslib.Algorithms.Dijkstra (ListInstance)
 open Cslib.Algorithms.Lean.Dijkstra
 
 namespace DijkstraTests

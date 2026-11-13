@@ -9,6 +9,8 @@ module
 
 public import CslibFrontier.Init
 public import Mathlib.Algebra.MvPolynomial.Basic
+public import Mathlib.Algebra.MvPolynomial.Degrees
+public import Mathlib.Data.Finsupp.Weight
 public import Mathlib.Data.Finset.Pi
 
 /-!
@@ -44,6 +46,8 @@ Kronecker product.
   `MvPolynomial.isSetMultilinear_C`, `MvPolynomial.isSetMultilinear_X`: closure properties.
 * `MvPolynomial.coeff_mul_blockMonomial`: coefficients of a product of set-multilinear polynomials
   on disjoint blocks.
+* `MvPolynomial.IsSetMultilinear.degreeOf_le_one`, `MvPolynomial.IsSetMultilinear.totalDegree_le`:
+  set-multilinear polynomials are multilinear, of degree at most the number of blocks.
 
 ## References
 
@@ -290,6 +294,23 @@ theorem IsSetMultilinear.prod {blk : σ → Fin d} {ι : Type*} (s : Finset ι)
     rintro rfl
     exact ha hi
 
+
+/-- A set-multilinear polynomial is multilinear: it has degree at most one in every variable. -/
+theorem IsSetMultilinear.degreeOf_le_one {blk : σ → Fin d} {S : Finset (Fin d)}
+    {f : MvPolynomial σ K} (hf : IsSetMultilinear blk S f) (v : σ) : f.degreeOf v ≤ 1 := by
+  classical
+  refine (degreeOf_le_iff).2 fun m hm => ?_
+  obtain ⟨x, rfl⟩ := hf m hm
+  rw [blockMonomial_apply]
+  split_ifs <;> omega
+
+/-- A set-multilinear polynomial on `S` has total degree at most the number of blocks of `S`. -/
+theorem IsSetMultilinear.totalDegree_le {blk : σ → Fin d} {S : Finset (Fin d)}
+    {f : MvPolynomial σ K} (hf : IsSetMultilinear blk S f) : f.totalDegree ≤ S.card := by
+  refine Finset.sup_le fun m hm => ?_
+  obtain ⟨x, rfl⟩ := hf m hm
+  change Finsupp.degree (blockMonomial blk S x) ≤ S.card
+  simp [blockMonomial]
 
 /-- **The product of set-multilinear polynomials on disjoint blocks**: a coefficient of `f * g`
 on a monomial that splits along the blocks is the product of the coefficients of its two parts. -/

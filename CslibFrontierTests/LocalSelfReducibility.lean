@@ -54,8 +54,8 @@ example : LogSpaceCTTSelfReducible encBool ({true} : Set Bool) :=
 This uses native equality/branching/count/query/evaluation certificates. -/
 theorem empty_active : LogSpaceTruthTableSelfReducible encBits (∅ : Set (List Bool)) := by
   let r : List Bool → ℕ := fun x => if x = [false, true] then 1 else 0
-  refine ⟨r, fun _ => [false, false], fun _ => false, ?_,
-    ComputableInLogSpace.const _, ComputableInLogSpace.const _, ?_, ?_⟩
+  refine ⟨r, fun _ => [false, false], fun _ => false,
+    ⟨⟨?_, ComputableInLogSpace.const _, ComputableInLogSpace.const _⟩, ?_⟩, ?_⟩
   · dsimp only [r]
     fun_prop
   · intro x i hi

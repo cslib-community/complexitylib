@@ -37,14 +37,14 @@ theorem native_failed_occurrences_le {m n g p : ℕ} (values : ℕ → ℤ)
     (hvaluesAC : ∀ a c, values (2 * (n * n) + pairIndex (a, c)) = wAC a c)
     (idx : InstanceIndex p) (hidx : idx ∈ instanceIndices wAB (D m) g p)
     (qs : List (Fin n × Fin n)) (default : Fin n × Fin n) (hqs : qs.Nodup)
-    (hquery : ∀ q ∈ qs, q ∈ chunkOf wAB (D m) p idx.1 idx.2.1)
+    (hquery : ∀ q ∈ qs, q ∈ chunkOf wAB (D m) p idx.residue idx.chunk)
     (a b : ℕ → ℕ) (hcoords : ∀ i : Fin qs.length,
       a i.val = (qs.get i).1.val ∧ b i.val = (qs.get i).2.val)
     (mem : ℕ → ℕ) (out : ℕ)
     (hanswer : ∀ i : Fin qs.length, mem (out + i.val) = Signed.encode
       ((RecordProduct.leftMatrix m n g p values idx *
         RecordProduct.rightMatrix m n g p values idx) (qs.get i).1 (qs.get i).2)) :
-    let first := idx.2.2 * pieceSize (D m) g
+    let first := idx.piece * pieceSize (D m) g
     let length := min (pieceSize (D m) g) (n - first)
     Nat.count (fun i => mem (out + i) ≠ 0 ∧
       ∀ c : Fin length, AB (a i) (b i) + BC (b i) (first + c.val) +
@@ -65,22 +65,22 @@ theorem actual_success_iff {m n g p : ℕ} (values : ℕ → ℤ)
     (hvaluesBC : ∀ b c, values (n * n + pairIndex (b, c)) = wBC b c)
     (hvaluesAC : ∀ a c, values (2 * (n * n) + pairIndex (a, c)) = wAC a c)
     (idx : InstanceIndex p) (qs : List (Fin n × Fin n))
-    (hset : qs.toFinset = chunkOf wAB (D m) p idx.1 idx.2.1)
+    (hset : qs.toFinset = chunkOf wAB (D m) p idx.residue idx.chunk)
     (a b : ℕ → ℕ) (hcoords : ∀ i : Fin qs.length,
       a i.val = (qs.get i).1.val ∧ b i.val = (qs.get i).2.val)
     (mem : ℕ → ℕ) (out : ℕ)
     (hanswer : ∀ i : Fin qs.length, mem (out + i.val) = Signed.encode
       ((RecordProduct.leftMatrix m n g p values idx *
         RecordProduct.rightMatrix m n g p values idx) (qs.get i).1 (qs.get i).2)) :
-    let first := idx.2.2 * pieceSize (D m) g
+    let first := idx.piece * pieceSize (D m) g
     let length := min (pieceSize (D m) g) (n - first)
     (∃ i < qs.length, mem (out + i) ≠ 0 ∧
       ∃ c, first ≤ c ∧ c < first + length ∧ AB (a i) (b i) + BC (b i) c + AC (a i) c = 0) ↔
-      ∃ q ∈ chunkOf wAB (D m) p idx.1 idx.2.1,
-        ∃ c ∈ piece n (D m) g idx.2.2, weightSum wAB wBC wAC q.1 q.2 c = 0 := by
-  let first := idx.2.2 * pieceSize (D m) g
+      ∃ q ∈ chunkOf wAB (D m) p idx.residue idx.chunk,
+        ∃ c ∈ piece n (D m) g idx.piece, weightSum wAB wBC wAC q.1 q.2 c = 0 := by
+  let first := idx.piece * pieceSize (D m) g
   let length := min (pieceSize (D m) g) (n - first)
-  have pair_mem (i : Fin qs.length) : qs.get i ∈ chunkOf wAB (D m) p idx.1 idx.2.1 := by
+  have pair_mem (i : Fin qs.length) : qs.get i ∈ chunkOf wAB (D m) p idx.residue idx.chunk := by
     rw [← hset, List.mem_toFinset]
     exact List.get_mem _ _
   constructor
@@ -89,7 +89,7 @@ theorem actual_success_iff {m n g p : ℕ} (values : ℕ → ℤ)
     have hl := min_le_right (pieceSize (D m) g) (n - first)
     have hn : c < n := by change first ≤ c at hlo; change c < first + length at hhi; omega
     let vertex : Fin n := ⟨c, hn⟩
-    have hc : vertex ∈ piece n (D m) g idx.2.2 :=
+    have hc : vertex ∈ piece n (D m) g idx.piece :=
       (mem_piece_iff_interval hD hg vertex).mpr ⟨hlo, hhi⟩
     obtain ⟨ha, hb⟩ := hcoords j
     have he : AB (a i) (b i) + BC (b i) c + AC (a i) c =
