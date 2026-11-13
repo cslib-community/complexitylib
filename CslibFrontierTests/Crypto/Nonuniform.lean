@@ -316,8 +316,11 @@ example {f : List Bool → List Bool} (hf : NonuniformOneWay f) :
       ⟨hbound, hdensity, hcommon, hfits, hsize⟩
       (Filter.Eventually.of_forall Pseudoentropy.EntropyGrid.four_steps_le_owf_gap)
   refine ⟨pair, savedPair, bound, common, choose, hchoose, ?_⟩
-  exact hsecure (fun a _ word => advisedWordDistinguisher (a, word))
-    (by unfold advisedWordDistinguisher; fun_prop)
+  simpa only [distinguishingGame, PMF.monad_bind_eq_bind] using
+    hsecure.negligible_encoded (encAdvice := Turing.MultiTapeTM.encPair
+        Turing.MultiTapeTM.encBits Turing.MultiTapeTM.encUnary)
+      (test := fun input => advisedWordDistinguisher ((input.1.1, input.1.2.1), input.2))
+      (by unfold advisedWordDistinguisher; fun_prop)
 
 /-- Unconditional concrete client of `GeneratorXor.indistinguishableWithAdvice`: combining a
 constant-zero candidate (`index = 0`) with an identity candidate (`index = 1`) yields an ensemble
@@ -351,7 +354,7 @@ example :
     apply GeneratorXor.indistinguishableWithAdvice (choose := fun _ => 1)
       (by fun_prop) (by fun_prop) (by fun_prop) hcand
       (Filter.Eventually.of_forall fun _ => by decide)
-    intro adversary _
+    intro test _
     have hid (n : ℕ) :
         (BitString.uniformList (n + 1)).map (candidate n 1) = BitString.uniformList (n + 1) := by
       simpa only [candidate, one_ne_zero, ↓reduceIte] using

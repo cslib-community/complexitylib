@@ -22,8 +22,8 @@ family thus specializes to its uniform counterpart at empty advice.
 
 ## Main definitions
 
-* `Cslib.Crypto.encAdvisedInput`: the input encoding `((1ⁿ, advice), x)` of an adversary with
-  advice.
+* `Cslib.Crypto.encAdvisedInputWith`, `Cslib.Crypto.encAdvisedInput`: the input encoding
+  `((1ⁿ, advice), x)` of an adversary with typed advice, and with an advice word.
 
 ## Main results
 
@@ -39,11 +39,18 @@ namespace Cslib.Crypto
 
 open Turing.MultiTapeTM
 
+/-- Input `((1ⁿ, advice), x)` of an adversary with typed advice encoded by `encAdvice`: the
+parameter `n` in unary paired with the encoded advice, then the challenge word `x`. The pair
+`(n, advice)` is framed, and within it the parameter; `x` is not. -/
+abbrev encAdvisedInputWith {γ : Type} (encAdvice : γ ↪ List Bool) :
+    (ℕ × γ) × List Bool ↪ List Bool :=
+  encPair (encPair encUnary encAdvice) encBits
+
 /-- Input `((1ⁿ, advice), x)` of an adversary with advice: the parameter `n` in unary paired
 with the advice word, then the challenge word `x`. The pair `(n, advice)` is framed, and within it
-the parameter; `x` is not. -/
+the parameter; `x` is not. This is `encAdvisedInputWith` at the advice word's own encoding. -/
 abbrev encAdvisedInput : (ℕ × List Bool) × List Bool ↪ List Bool :=
-  encPair (encPair encUnary encBits) encBits
+  encAdvisedInputWith encBits
 
 end Cslib.Crypto
 
