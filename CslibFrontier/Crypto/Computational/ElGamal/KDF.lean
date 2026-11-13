@@ -82,6 +82,8 @@ To formalize this over an arbitrary `PrimeOrderGroupFamily`:
   from `Cslib.BitString.padWord` and `Cslib.BitString.LinearHash.wordHash`.
 * `Cslib.Crypto.PrimeOrderGroupFamily.linearHashSeedLen`: seed length
   `msgLen n * (2 * bound d + 1)` for `linearHashKDF`.
+* `Cslib.Crypto.PrimeOrderGroupFamily.LinearHashKDFConditions`: the support, length, group-order
+  and negligible-loss conditions under which `linearHashKDF` is a `SecureKDF`.
 
 ## Main results
 
@@ -443,29 +445,42 @@ theorem advantage_kdfGame_linearHashKDF_le (setup : ℕ → PMF F.Desc)
         push_cast
         rw [← div_eq_mul_inv]
 
+/-- Statistical conditions under which `linearHashKDF keyLen bound` is a `SecureKDF` with output
+length `msgLen` over `setup` ([BonehShoup2023], Section 8.10.4, Theorem 8.11, p. 334): on every
+supported description `d` of `setup n`, the derived key has length `msgLen n`, `bound d` bounds the
+encoded group elements, and the group order is at least `qMin n > 0`, while the Leftover Hash Lemma
+loss `2 ^ (msgLen n) / qMin n` is negligible. -/
+structure LinearHashKDFConditions (setup : ℕ → PMF F.Desc) (keyLen bound : F.Desc → ℕ)
+    (msgLen qMin : ℕ → ℕ) : Prop where
+  /-- The group-order lower bound is positive. -/
+  qMin_pos : ∀ n, 0 < qMin n
+  /-- Supported descriptions derive keys of length `msgLen n`. -/
+  keyLen_eq : ∀ n, ∀ d ∈ (setup n).support, keyLen d = msgLen n
+  /-- `bound d` bounds the encoded length of every group element of a supported description. -/
+  length_encode_le : ∀ n, ∀ d ∈ (setup n).support, ∀ x : F.Carrier d,
+    (F.encode d x).length ≤ bound d
+  /-- Supported descriptions have group order at least `qMin n`. -/
+  qMin_le_order : ∀ n, ∀ d ∈ (setup n).support, qMin n ≤ F.order d
+  /-- The Leftover Hash Lemma loss `2 ^ (msgLen n) / qMin n` is negligible. -/
+  negligible : Negligible fun n => (2 : ℝ≥0) ^ (msgLen n) / (qMin n : ℝ≥0)
+
 /-- **Unconditional `SecureKDF` instantiation via `linearHashKDF`** ([BonehShoup2023],
-Section 8.10.4, Theorem 8.11, p. 334, and Section 11.5.2, Definition 11.5, p. 449): when `keyLen`
-matches `msgLen n` on `(setup n).support`, `bound` bounds the encoded group element length, and
-`2 ^ (msgLen n) / qMin n` is negligible, `linearHashKDF keyLen bound` satisfies `SecureKDF` over
-`F.withSeed` and `F.seededSetup setup (F.linearHashSeedLen msgLen bound)`. -/
-theorem secureKDF_linearHashKDF (setup : ℕ → PMF F.Desc)
-    (keyLen bound : F.Desc → ℕ) (msgLen : ℕ → ℕ) {qMin : ℕ → ℕ}
-    (hq0 : ∀ n, 0 < qMin n)
-    (hkey : ∀ n, ∀ d ∈ (setup n).support, keyLen d = msgLen n)
-    (hbound : ∀ n, ∀ d ∈ (setup n).support, ∀ x : F.Carrier d, (F.encode d x).length ≤ bound d)
-    (hq : ∀ n, ∀ d ∈ (setup n).support, qMin n ≤ F.order d)
-    (hneg : Negligible fun n => (2 : ℝ≥0) ^ (msgLen n) / (qMin n : ℝ≥0)) :
+Section 8.10.4, Theorem 8.11, p. 334, and Section 11.5.2, Definition 11.5, p. 449): under
+`LinearHashKDFConditions`, `linearHashKDF keyLen bound` satisfies `SecureKDF` over `F.withSeed` and
+`F.seededSetup setup (F.linearHashSeedLen msgLen bound)`. -/
+theorem secureKDF_linearHashKDF {setup : ℕ → PMF F.Desc} {keyLen bound : F.Desc → ℕ}
+    {msgLen qMin : ℕ → ℕ} (h : F.LinearHashKDFConditions setup keyLen bound msgLen qMin) :
     F.withSeed.SecureKDF (F.seededSetup setup (F.linearHashSeedLen msgLen bound))
       (F.linearHashKDF keyLen bound) msgLen := by
   intro distinguisher _
   have hsqrt : Negligible fun n => NNReal.sqrt ((2 : ℝ≥0) ^ (msgLen n) / (qMin n : ℝ≥0)) / 2 := by
     have h1 : Negligible fun n =>
         (2⁻¹ : ℝ≥0) * NNReal.sqrt ((2 : ℝ≥0) ^ (msgLen n) / (qMin n : ℝ≥0)) :=
-      (Negligible.sqrt hneg).const_mul (2⁻¹ : ℝ≥0)
+      (Negligible.sqrt h.negligible).const_mul (2⁻¹ : ℝ≥0)
     simpa only [div_eq_inv_mul] using h1
   exact negligible_of_le hsqrt fun n =>
     F.advantage_kdfGame_linearHashKDF_le setup keyLen bound msgLen distinguisher n (qMin n)
-      (hq0 n) (hkey n) (hbound n) (hq n)
+      (h.qMin_pos n) (h.keyLen_eq n) (h.length_encode_le n) (h.qMin_le_order n)
 
 /-- **Unconditional `SecureKDF` instantiation for any constant key length `k : ℕ`** (including all
 non-degenerate `k > 0`, e.g., `k = 128` as in [BonehShoup2023], Section 8.10.4, p. 334): when
@@ -479,8 +494,7 @@ theorem secureKDF_linearHashKDF_const (setup : ℕ → PMF F.Desc)
     (hneg : Negligible fun n => (1 / qMin n : ℝ≥0)) :
     F.withSeed.SecureKDF (F.seededSetup setup (F.linearHashSeedLen (fun _ => k) bound))
       (F.linearHashKDF (fun _ => k) bound) (fun _ => k) := by
-  refine F.secureKDF_linearHashKDF setup (fun _ => k) bound (fun _ => k) hq0
-    (fun _ _ _ => rfl) hbound hq ?_
+  refine F.secureKDF_linearHashKDF ⟨hq0, fun _ _ _ => rfl, hbound, hq, ?_⟩
   have hk : Negligible fun n => (2 : ℝ≥0) ^ k * (1 / qMin n : ℝ≥0) :=
     hneg.const_mul ((2 : ℝ≥0) ^ k)
   simpa only [div_eq_mul_inv, one_mul] using hk
@@ -518,18 +532,13 @@ theorem exists_secureKDF_withSeed (setup : ℕ → PMF F.Desc) (k : ℕ) {qMin :
 ([BonehShoup2023], Section 8.10.4, Theorem 8.11, p. 334, and Section 11.5.2, Theorem 11.5,
 pp. 449–451): combining `DDH.withSeed`, `secureKDF_linearHashKDF`, and
 `DDH.negligible_hashedElGamalCPAGame`, no computational hypothesis on the key-derivation hash is
-needed when `2 ^ (msgLen n) / qMin n` is negligible. -/
+needed under `LinearHashKDFConditions`. -/
 theorem DDH.negligible_hashedElGamalCPAGame_linearHashKDF {F : PrimeOrderGroupFamily}
     {setup : ℕ → PMF F.Desc} {keyLen bound : F.Desc → ℕ} {msgLen qMin : ℕ → ℕ}
-    (hDDH : F.DDH setup)
+    (hDDH : F.DDH setup) (hKDF : F.LinearHashKDFConditions setup keyLen bound msgLen qMin)
     (hkey_poly : ComputableInPolyTime keyLen F.encDesc encUnary)
     (hbound_poly : ComputableInPolyTime bound F.encDesc encUnary)
     (hmsg_poly : ComputableInPolyTime msgLen encUnary encUnary)
-    (hq0 : ∀ n, 0 < qMin n)
-    (hkey : ∀ n, ∀ d ∈ (setup n).support, keyLen d = msgLen n)
-    (hbound : ∀ n, ∀ d ∈ (setup n).support, ∀ x : F.Carrier d, (F.encode d x).length ≤ bound d)
-    (hq : ∀ n, ∀ d ∈ (setup n).support, qMin n ≤ F.order d)
-    (hneg : Negligible fun n => (2 : ℝ≥0) ^ (msgLen n) / (qMin n : ℝ≥0))
     {adversary : Encryption.WordAdversary} (hA : adversary.IsPPT) :
     Negligible fun n =>
       Game.advantage
@@ -540,8 +549,7 @@ theorem DDH.negligible_hashedElGamalCPAGame_linearHashKDF {F : PrimeOrderGroupFa
           (F.seededSetup setup (F.linearHashSeedLen msgLen bound))
           (F.linearHashKDF keyLen bound) adversary true n) :=
   (hDDH.withSeed (F.computableInPolyTime_linearHashSeedLen hmsg_poly hbound_poly))
-    |>.negligible_hashedElGamalCPAGame
-      (F.secureKDF_linearHashKDF setup keyLen bound msgLen hq0 hkey hbound hq hneg)
+    |>.negligible_hashedElGamalCPAGame (F.secureKDF_linearHashKDF hKDF)
       (F.computableInPolyTime_linearHashKDF hkey_poly hbound_poly) hA
 
 end Cslib.Crypto.PrimeOrderGroupFamily
