@@ -348,12 +348,12 @@ theorem SimulatorRealizedBy.closeTo_bind_conversation
     (h : SimulatorRealizedBy enc simulate sim δ)
     {i : I} {x : X i} {y : Y i} (hxy : R i x y) {α : Type}
     (out : C i → List Bool × List Bool → α) :
-    CloseTo (((P i).conversation x y).map fun tcz =>
-        out tcz.2.1 (enc.commitment i tcz.1, enc.response i tcz.2.2))
+    CloseTo (((P i).conversation x y).map fun (t, c, z) =>
+        out c (enc.commitment i t, enc.response i z))
       ((PMF.uniformOfFintype (C i)).bind fun c =>
         (ProbComp.eval (sim (i, enc.statement i y, enc.challenge i c))).map (out c)) (δ i) := by
-  have henc : (((P i).conversation x y).map fun tcz =>
-        out tcz.2.1 (enc.commitment i tcz.1, enc.response i tcz.2.2)) =
+  have henc : (((P i).conversation x y).map fun (t, c, z) =>
+        out c (enc.commitment i t, enc.response i z)) =
       (PMF.uniformOfFintype (C i)).bind fun c =>
         ((simulate i y c).map (Prod.map (enc.commitment i) (enc.response i))).map (out c) := by
     rw [(hS i).conversation_eq hxy]
