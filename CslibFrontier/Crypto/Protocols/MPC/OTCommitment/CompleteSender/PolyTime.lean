@@ -11,6 +11,7 @@ public import CslibFrontier.Crypto.Protocols.MPC.OTCommitment.CompleteSender
 public import CslibFrontier.Crypto.Protocols.MPC.OTCommitment.SenderProgram.PolyTime
 public import CslibFrontier.Computability.Probabilistic.OracleSimulation
 public import CslibFrontier.Computability.Probabilistic.QueryBounds
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Finite
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 
@@ -37,51 +38,13 @@ namespace Cslib.Crypto.Protocols.MPC.OTCommitment
 
 open Probability Turing.MultiTapeTM Crypto.Protocols.Commitment
 
-/-- The fixed table carrier and every byte of the unbounded opening word are charged. -/
-@[expose] def encSession : Session ↪ List Bool :=
-  ⟨fun s => encPair (encList (encFinEnum (Fin 4 → Bool)))
-    (encPair encBool (encPair encBool (encOption (encPair encBool encBits))))
-      (s.tables, s.sealed, s.stopped, s.submission), by
-    intro a b h
-    have h' := (encPair (encList (encFinEnum (Fin 4 → Bool)))
-      (encPair encBool (encPair encBool (encOption (encPair encBool encBits))))).injective h
-    cases a
-    cases b
-    simpa using h'⟩
-
-private abbrev encSessionParts := encPair (encList (encFinEnum (Fin 4 → Bool)))
-  (encPair encBool (encPair encBool (encOption (encPair encBool encBits))))
-
-private theorem sessionParts_polyTime : ComputableInPolyTime
-    (fun s : Session => (s.tables, s.sealed, s.stopped, s.submission)) encSession encSessionParts :=
-  .of_eq fun _ => rfl
-
-@[fun_prop] private theorem sessionTables_polyTime :
-    ComputableInPolyTime Session.tables encSession (encList (encFinEnum (Fin 4 → Bool))) :=
-  sessionParts_polyTime.fst'
-
-@[fun_prop] private theorem sessionSealed_polyTime :
-    ComputableInPolyTime Session.sealed encSession encBool :=
-  sessionParts_polyTime.snd'.fst'
-
-@[fun_prop] private theorem sessionStopped_polyTime :
-    ComputableInPolyTime Session.stopped encSession encBool :=
-  sessionParts_polyTime.snd'.snd'.fst'
-
-@[fun_prop] private theorem sessionSubmission_polyTime :
-    ComputableInPolyTime Session.submission encSession (encOption (encPair encBool encBits)) :=
-  sessionParts_polyTime.snd'.snd'.snd'
-
-@[fun_prop] private theorem sessionMk_polyTime {Input : Type} {input : Input ↪ List Bool}
-    {tables : Input → List (Fin 4 → Bool)} {sealed stopped : Input → Bool}
-    {submission : Input → Option (Bool × List Bool)}
-    (htables : ComputableInPolyTime tables input (encList (encFinEnum (Fin 4 → Bool))))
-    (hsealed : ComputableInPolyTime sealed input encBool)
-    (hstopped : ComputableInPolyTime stopped input encBool)
-    (hsubmission : ComputableInPolyTime submission input (encOption (encPair encBool encBits))) :
-    ComputableInPolyTime (fun a => Session.mk (tables a) (sealed a) (stopped a) (submission a))
-      input encSession :=
-  (htables.prod (hsealed.prod (hstopped.prod hsubmission))).of_enc_eq fun _ => rfl
+/-- Encoding of a single-session state as the tuple of its fields: the tables as a list of
+`Fin 4 → Bool` values (each framed), the sealed and stopped flags, then the first opening attempt as
+an optional framed pair of a bit and a bit word. The fixed table carrier and every byte of the
+unbounded opening word are charged. -/
+enc_structure encSession : Session where
+  tables : (encList (encFinEnum (Fin 4 → Bool))), sealed : encBool, stopped : encBool,
+  submission : (encOption (encPair encBool encBits))
 
 private theorem sessionAdvance_polyTime :
     ComputableInPolyTime
@@ -105,7 +68,7 @@ private theorem sessionAdvance_length (k : ℕ) (request : SenderOperation × Li
   all_goals first
     | omega
     | (try split) <;>
-        simp only [encSession, Function.Embedding.coeFn_mk, length_encPair,
+        simp only [encSession_apply, length_encPair,
           encBool_apply, List.length_cons, List.length_nil, encOption_none, encOption_some,
           encBits_apply,
           encList_append, encList_cons, encList_nil, List.length_append, length_frame]
@@ -165,7 +128,7 @@ private theorem sessionOpening_polyTime :
   convert ComputableInPolyTime.optionElimWithInput
     (body := fun p value => if value.2.length = 2 * p.1 then
       some (value.1, (value.2.take p.1).zip (value.2.drop p.1)) else none)
-    (sessionSubmission_polyTime.comp (ComputableInPolyTime.snd encUnary encSession))
+    (encSession_submission_polyTime (ComputableInPolyTime.snd encUnary encSession))
     (ComputableInPolyTime.const none) (by simpa only [Function.comp_def] using hbody) using 1
   funext p
   dsimp only [Function.comp_def]
@@ -177,7 +140,7 @@ private theorem sessionExtracted_polyTime :
     ComputableInPolyTime Session.extracted encSession encBool := by
   apply extractPairs_polyTime.comp
   apply ComputableInPolyTime.mapWithInput (encA := encFinEnum (Fin 4 → Bool))
-    sessionTables_polyTime
+    (encSession_tables_polyTime ComputableInPolyTime.id')
   exact (ComputableInPolyTime.of_finite
     (fun t : Fin 4 → Bool =>
       (t (boolPairToFin4 (false, false)), t (boolPairToFin4 (false, true))))).comp (.snd _ _)
@@ -193,11 +156,11 @@ private theorem sessionView_polyTime (ideal : Bool) :
   have hcount := ComputableInPolyTime.fst encUnary (encPair encBits encSession)
   have hchoices := (ComputableInPolyTime.snd encUnary (encPair encBits encSession)).fst'
   have hstate := (ComputableInPolyTime.snd encUnary (encPair encBits encSession)).snd'
-  have hreceived := selectedBits_polyTime.comp ((sessionTables_polyTime.comp hstate).prod hchoices)
+  have hreceived := selectedBits_polyTime.comp ((encSession_tables_polyTime hstate).prod hchoices)
   have hopening := sessionOpening_polyTime.comp (hcount.prod hstate)
   have hresult := openPairs_polyTime.comp (hchoices.prod (hreceived.prod hopening))
-  have hsealed := sessionSealed_polyTime.comp hstate
-  have hstopped := sessionStopped_polyTime.comp hstate
+  have hsealed := encSession_sealed_polyTime hstate
+  have hstopped := encSession_stopped_polyTime hstate
   have hextracted := sessionExtracted_polyTime.comp hstate
   have hreceipt : ComputableInPolyTime
       (fun sealed : Bool => if sealed then Phased.Observation.receipt else .idle)

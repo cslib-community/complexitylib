@@ -3228,6 +3228,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.L
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Words
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Nondeterministic
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolySpace
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Basic
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Fold
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
@@ -4492,6 +4493,7 @@ public import CslibFrontier.Crypto.Game.CloseTo.UntilBad
 public import CslibFrontier.Crypto.Game.Concrete
 public import CslibFrontier.Crypto.Game.Experiment
 public import CslibFrontier.Crypto.Game.FourHop
+public import CslibFrontier.Crypto.Game.Hop
 public import CslibFrontier.Crypto.Game.Hybrid
 public import CslibFrontier.Crypto.Game.Order
 public import CslibFrontier.Crypto.Game.Statistical
@@ -6597,6 +6599,7 @@ public import CslibFrontier.Privacy.DifferentialPrivacy.RandomizedResponse
 public import CslibFrontier.Privacy.DifferentialPrivacy.Reconstruction
 public import CslibFrontier.Privacy.DifferentialPrivacy.SmallUniverse
 public import CslibFrontier.Probability.AdaptiveWeights
+public import CslibFrontier.Probability.ApproxEq
 public import CslibFrontier.Probability.ApproximateCounting
 public import CslibFrontier.Probability.ApproximateCounting.Relative
 public import CslibFrontier.Probability.BitString
