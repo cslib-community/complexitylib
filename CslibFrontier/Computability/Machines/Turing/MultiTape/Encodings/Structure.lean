@@ -60,10 +60,11 @@ they mention must not share its name with an earlier field: the command reports 
 field rules read the word `encode x.desc x.element`, and the constructor rules take each such
 argument as a dependent function with a certificate for its word. There is no `eS_mk_deg` for such
 a structure, since its tuple holds words rather than fields. An explicit parameter that only these
-terms read does not occur in `eSFields`, which still takes it, like every generated declaration.
-The command then marks `eSFields` `nolint unusedArguments`, provided these terms read every
-parameter missing from its slots and from the other parameters' types. Otherwise `eSFields` stays
-linted, so a parameter that only the structure type mentions, or that nothing reads, is reported.
+terms use does not occur in `eSFields`, which still takes it, like every generated declaration.
+The command then marks `eSFields` `nolint unusedArguments`, provided these terms use every
+parameter that `eSFields` does not. Both sides are decided on the elaborated terms, as by the
+linter: a parameter is used when it occurs free, so a local binder that shares its name is not a
+use. Otherwise `eSFields` stays linted, so a parameter that nothing uses is reported.
 -/
 
 public meta section
@@ -218,6 +219,60 @@ private def checkFields (S : Term) (fs : Array Ident) : CommandElabM (Name × Ar
       {names} of `{sName}`; {order}"
   return (s, seen)
 
+/-- Whether `e` is the local `x` or reads a field of it through projections. -/
+private partial def readsLocal (env : Environment) (x : Expr) (e : Expr) : Bool :=
+  match e.consumeMData with
+  | .fvar _ => e.consumeMData == x
+  | .proj _ _ s => readsLocal env x s
+  | e => match e.getAppFn with
+    | .const c _ => match env.getProjectionFnInfo? c with
+      | some info => e.getAppNumArgs == info.numParams + 1 && readsLocal env x e.appArg!
+      | none => false
+    | _ => false
+
+/-- Whether the free variable `p` occurs in `e` outside the reads of the local `x`. -/
+private def occursOutsideReads (env : Environment) (x p : Expr) (e : Expr) : Bool :=
+  (e.replace fun s => if readsLocal env x s then some x else none).containsFVar p.fvarId!
+
+/-- Whether `fieldsDecl` has an explicit parameter among `ps` that it does not use, and the word
+or injectivity proof of a dependent field uses every such parameter. The unused parameters are
+those that occur free in neither the value nor the type of `fieldsDecl` nor the type of another
+parameter, as for the `unusedArguments` linter. `depTerms x` gives each dependent field's word and
+proof, reading the earlier fields from `x : S`. These terms are elaborated against a local
+`x : S`, and a parameter counts as used only when it occurs free in them outside the reads of `x`,
+so a local binder that shares its name is not a use. Any failure leaves the declaration linted. -/
+private def usingOnlyParams (fieldsDecl : Name) (ps : Array Ident) (S : Term)
+    (depTerms : Term → MacroM (Array (Term × Term))) : CommandElabM Bool := liftTermElabM do
+  let env ← getEnv
+  let some ci ← withoutExporting do return (← getEnv).find? fieldsDecl | return false
+  let some val := ci.value? | return false
+  Meta.forallTelescope ci.type fun xs body => do
+    if xs.size < ps.size then return false
+    let params := xs.extract (xs.size - ps.size) xs.size
+    for p in ps, v in params do
+      unless (← v.fvarId!.getUserName) == p.getId do return false
+    let value := val.beta xs
+    let others (v : Expr) : MetaM Bool := xs.anyM fun w => do
+      return w != v && (← w.fvarId!.getType).containsFVar v.fvarId!
+    let unused ← params.filterM fun v => do
+      return !value.containsFVar v.fvarId! && !body.containsFVar v.fvarId! && !(← others v)
+    if unused.isEmpty then return false
+    let s ← Term.saveState
+    try
+      Term.withoutErrToSorry do
+        let sType ← Term.elabType S
+        let xId := mkIdent (← withFreshMacroScope <| MonadQuotation.addMacroScope `x)
+        Meta.withLocalDeclD xId.getId sType fun x => do
+          let mut found : Array Expr := #[]
+          for (w, hw) in ← liftMacroM (depTerms xId) do
+            let wE ← Term.elabTerm w none
+            let hwE ← Term.elabTerm hw (← Term.elabType (← `(Function.Injective $w)))
+            Term.synthesizeSyntheticMVarsNoPostponing
+            found := found.push (← instantiateMVars wE) |>.push (← instantiateMVars hwE)
+          return unused.all fun v => found.any (occursOutsideReads env x v ·)
+    catch _ => pure false
+    finally s.restore (restoreInfo := true)
+
 /-- Elaborate `enc_structure`: the encoding, its unfolding lemma and its rules. -/
 @[command_elab encStructure] def elabEncStructure : CommandElab := fun stx => do
   let `($[$doc:docComment]? $[$vis:visibility]? enc_structure $eS:ident
@@ -294,18 +349,17 @@ private def checkFields (S : Term) (fs : Array Ident) : CommandElabM (Name × Ar
   let fieldsDecl ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo fields
   addDocStringCore fieldsDecl s!"The tuple of the fields of `{name}`."
   -- `eSFields` takes every parameter, so that all generated declarations share one argument list.
-  -- A parameter that only a dependent field's word or proof reads reaches no slot. Mark
-  -- `eSFields` only when those terms read every parameter missing from the slots and from the
-  -- other parameters' types, so that the linter still reports a parameter that nothing reads.
-  let slotRoots := slots.flatMap (identRoots ·)
-  let missing := ps.zipIdx.filter fun (p, i) => !slotRoots.contains p.getId &&
-    !(pts.eraseIdx! i).any (identRoots · |>.contains p.getId)
-  let depRoots := (Array.range n).flatMap fun i =>
-    match hws[i]! with
-    | some hw => identRoots es[i]! ++ identRoots hw
-    | none => #[]
-  if !missing.isEmpty && missing.all (depRoots.contains ·.1.getId) then
-    elabCommand (← `(attribute [nolint unusedArguments] $fields:ident))
+  -- A parameter that only a dependent field's word or proof uses reaches no slot. Mark
+  -- `eSFields` only when those terms use every parameter that it does not, so that the linter
+  -- still reports a parameter that nothing uses.
+  if dependent then
+    let depTerms (x : Term) : MacroM (Array (Term × Term)) := do
+      let reads ← projs.mapM (readPath · x)
+      (Array.range n).filterMapM fun i => do
+        let some hw := hws[i]! | return none
+        return some (← wordFn i reads, ← substIdents (names.extract 0 i) (reads.extract 0 i) hw)
+    if ← usingOnlyParams fieldsDecl ps S depTerms then
+      elabCommand (← `(attribute [nolint unusedArguments] $fields:ident))
   let inj : Term ← if simple then `(fun x y h => by cases x; cases y; simp_all) else do
     -- Match both structures, then recover each field from its word in field order, replacing the
     -- right field by the left one.
