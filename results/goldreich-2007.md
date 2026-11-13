@@ -286,7 +286,7 @@ runtime theorem in 9.19. Conversely, that remaining bridge does not invalidate t
 proved class-level PCP theorem.
 
 For zero knowledge, use the nonuniform OWF endpoint, not just
-`OneWay.exists_zeroKnowledgeProof_of_npRelation`: the latter's generable-family guarantee
+`OneWay.exists_zkProof_of_npRelation`: the latter's generable-family guarantee
 is narrower. The full endpoint has a separate security parameter and polynomially bounded
 families; the instance/auxiliary-input clock bridges are part of its interpretation.
 Neither a witness-preserving honest prover nor soundness against arbitrary provers constitutes

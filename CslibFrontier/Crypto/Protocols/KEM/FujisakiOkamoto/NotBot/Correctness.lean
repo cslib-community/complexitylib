@@ -398,11 +398,6 @@ theorem advantage_coupledFilterGame_simFilterGame_le [Fintype M] [Nonempty M]
     (Game.advantage (ProbComp.eval (S.coupledFilterGame d₁ A b))
         (ProbComp.eval (S.simFilterGame d₂ A b)) : ℝ) ≤
       ((qG + qH + 1 : ℕ) : ℝ) * δ := by
-  have hcost (ch : KEM.Challenge PK CT K) :
-      OracleComp.IsCostBounded ROQuery.ghCost (A ch) (qG + qH) := by
-    have ⟨hG, hH⟩ := hq ch
-    convert OracleComp.IsCostBounded.add hG hH using 1
-    funext q; cases q <;> rfl
   set E : ℝ≥0∞ := S.pke.keyGen.expect fun x =>
     ENNReal.ofReal (S.pke.keyPairMaxFailProb x.1 x.2) with hE
   have hclose : CloseTo (ProbComp.eval (S.coupledFilterGame d₁ A b))
@@ -456,7 +451,7 @@ theorem advantage_coupledFilterGame_simFilterGame_le [Fintype M] [Nonempty M]
         exact hr
       refine (CloseTo.bind_right_tsum _ (err := fun _ => ((qG + qH : ℕ) : ℝ≥0∞) * p)
         fun kRand _ => ?_).mono (le_of_eq (hconst _ _))
-      exact closeTo_run_coupled_sim S pk sk _ (d₁ pk sk) (d₂ pk) (hd pk sk) _ (hcost _) hgood _
+      exact closeTo_run_coupled_sim S pk sk _ (d₁ pk sk) (d₂ pk) (hd pk sk) _ (hq.ghCost _) hgood _
     · rw [ite_eq_right_of_eq_false _ _ (eq_false hr)]
       exact fun e => (Probability.PMF.toOuterMeasure_le_one _ e).trans
         (le_self_add.trans le_add_self)

@@ -6,7 +6,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.StepCounter
+import CslibFrontier.Computability.Complexity.Classes.Advice.OneBit
 import CslibFrontier.Algorithms.Lean.Arborescence.PolyTime
 import CslibFrontier.Algorithms.Lean.DFS.SCC
 import CslibFrontier.Algorithms.Lean.MaxDicut.GoemansWilliamson
@@ -33,6 +33,7 @@ import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Sparse
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.SparseOrbit
 import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.NineQuarters
 import CslibFrontier.Computability.Circuit.Boolean.Arithmetic
+import CslibFrontier.Computability.Circuit.Boolean.BitBlastCompiler
 import CslibFrontier.Computability.Circuit.Boolean.BarringtonClass
 import CslibFrontier.Computability.Circuit.Boolean.Braverman.Fooling
 import CslibFrontier.Computability.Circuit.Boolean.Formula.Andreev
@@ -119,6 +120,7 @@ import CslibFrontier.Computability.MCSP.Magnification.MergeTree.Locality
 import CslibFrontier.Computability.MCSP.MultiNPHard
 import CslibFrontier.Computability.MCSP.PartialETH
 import CslibFrontier.Computability.MCSP.PartialHardness.Reduction
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.StepCounter
 import CslibFrontier.Computability.PCP.Approximation.UniqueGames.Complexity
 import CslibFrontier.Computability.PCP.Completeness
 import CslibFrontier.Computability.PolyTime.LinearAlgebra.RationalElimination
@@ -200,10 +202,13 @@ import CslibFrontier.Logics.SecondOrder.WordMSO.OfRegular
 import CslibFrontier.Logics.SecondOrder.WordMSO.Separation
 import CslibFrontier.Logics.SecondOrder.WordMSO.StarFree
 import CslibFrontier.MachineLearning.OnlineLearning.SwapRegret
+import CslibFrontier.MachineLearning.PACLearning.MDL
+import CslibFrontier.MachineLearning.PACLearning.Nonuniform
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.AC0Mod
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.Amplification
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.Complexity
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.Learner
+import CslibFrontier.MachineLearning.UniformLearning.CryptoHardness.GGM
 import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson
 import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson.BestOf
 import CslibFrontier.Probability.Extractor.TwoSource
@@ -700,6 +705,23 @@ register_result "bpp-proper-subset-ppoly" where
     No efficient separator or uniform circuit-family construction. Strictness is not asserted \
     for arbitrary encoded finite instance domains, where the two classes coincide."
 
+register_result "one-bit-advice-undecidable" where
+  title := "One bit of advice decides a length-dependent undecidable bit language"
+  topic := "complexity theory"
+  sources := [
+    { paper := Goldreich2007DraftR2, theorem := "Theorem 3.7 (one-bit undecidability endpoint)",
+      locator := "January 2007 draft r2.pdf, PDF p. 6; printed p. 122" }
+  ]
+  theorems := [
+    Cslib.Complexity.length_preimage_mem_PWithAdvice_one,
+    Cslib.Complexity.exists_mem_PWithAdvice_one_not_isDecidable
+  ]
+  scope := "Native polynomial-time decider on framed advice/input pairs, with exactly one \
+    arbitrary advice bit per input length. Some accepted bit language has no native machine \
+    decider and has the same membership for all words of equal length. Advice need not be \
+    computable; no efficient construction of the undecidable advice family is claimed. \
+    Arbitrary advice hierarchies and strict P/1 versus P/poly remain separate."
+
 register_result "arithmetic-bit-synthesis-injective-encoding" where
   title := "Arithmetic bit-synthesis with injective fixed-width encodings"
   topic := "circuit complexity"
@@ -713,6 +735,20 @@ register_result "arithmetic-bit-synthesis-injective-encoding" where
     bits cost at most size * bitBlastCost w additional De Morgan gates. The encoding need not \
     be surjective, admitting odd fields. No free-input compiler, reverse simulation, encoding \
     construction or runtime claim; the full finite-field exercise remains open."
+
+register_result "encoded-circuit-boolean-simulation" where
+  title := "Boolean circuits for left-invertibly encoded bounded-arity computations"
+  topic := "circuit complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 14, Exercise 1 (forward circuit milestone)",
+      locator := "Web draft 2007-01-08, printed p. 265; PDF p. 281" }
+  ]
+  theorems := [Cslib.Circuits.Circuit.exists_encoded_boolean]
+  scope := "Any interpreted circuit of arity at most two, with a supplied w-bit encoding and \
+    decoder left inverse, has a Boolean circuit on N*w free inputs with M*w outputs, costing \
+    at most size * bitBlastCost w gates. Correctness holds on valid encoded inputs, packed \
+    wire-major by blocksEquiv.symm. Constants count as gates and wiring is free. No encoding \
+    construction, reverse general-field simulation or compiler-runtime claim."
 
 register_result "formula-bounds" where
   title := "Formula lower bounds: Khrapchenko's quadratic bound for parity"
@@ -1494,6 +1530,39 @@ register_result "blum-mansour-swap-regret" where
     With Hedge copies and losses in [-1, 1], swap regret is at most η T + n ln n / η, and \
     2 √(T n ln n) with the tuned rate when n ≥ 2 and T ≥ n ln n. Stationary vectors are \
     chosen classically; no running time is charged."
+
+register_result "srm-nonuniform-learnability" where
+  title := "Countable unions of uniformly convergent classes are nonuniformly learnable by SRM"
+  topic := "statistical learning"
+  sources := [
+    { paper := ShalevShwartzBenDavid2014, theorem := "Theorems 7.3 and 7.5",
+      locator := "Theorem 7.3 in Section 7.1.1, p. 85; Theorem 7.5 in Section 7.2, pp. 87–88" }
+  ]
+  theorems := [
+    Cslib.MachineLearning.PACLearning.isNonuniformLearnable_iUnion,
+    Cslib.MachineLearning.PACLearning.isNonuniformLearnable_of_countable
+  ]
+  scope := "Domain and labels are arbitrary measurable spaces. Uniform convergence is an \
+    explicit rate ε i m δ for m > 0 and δ > 0 with ε i m δ → 0; the learner for accuracy ε and \
+    confidence δ is an SRM rule over pairs (i, h) and may depend on (ε, δ), following the \
+    upstream IsPACLearnable conventions. Countable classes need measurable misclassification \
+    sets. The converse characterization (Theorem 7.2) is not proved."
+
+register_result "mdl-bound" where
+  title := "Minimum description length bound for prefix-free descriptions"
+  topic := "statistical learning"
+  sources := [
+    { paper := ShalevShwartzBenDavid2014, theorem := "Theorem 7.7",
+      locator := "Section 7.3, p. 90" }
+  ]
+  theorems := [
+    Cslib.MachineLearning.PACLearning.IsPrefixFreeDescription.mdl_bound,
+    Cslib.MachineLearning.PACLearning.IsPrefixFreeDescription.measure_pi_exists_le_abs_sub_le
+  ]
+  scope := "Binary descriptions d : (α → β) → List Bool, prefix-free on the class, and \
+    hypotheses with measurable misclassification sets, for m > 0 and δ > 0. With probability \
+    at least 1 - δ every h satisfies L_D(h) ≤ L_S(h) + √((|d h| log 2 + log (2/δ)) / (2m)), \
+    which is sharper than the source's |h| + ln (2/δ). Kraft's inequality is Mathlib's."
 
 register_result "gmw-zero-knowledge" where
   title := "Goldreich–Micali–Wigderson auxiliary-input zero-knowledge proofs for NP"
@@ -3218,6 +3287,26 @@ register_result "natural-proofs" where
     P/poly-natural property is useful against P/poly. The generator tests are nonuniform \
     circuits reading the 2k-bit outputs; the barrier's derived tests read whole truth tables \
     of the GGM keyed family. The generator family is a hypothesis, not a constructed object."
+
+register_result "learning-hardness-from-generators" where
+  title := "Subexponentially secure generators rule out learners with small circuits for \
+    polynomial-size circuits"
+  topic := "meta-complexity"
+  sources := [
+    { paper := Valiant1984, theorem := unverified, locator := unverified },
+    { paper := GGM1986, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.MachineLearning.UniformLearning.eventually_le_of_isSubexponentiallySecure,
+    Cslib.MachineLearning.UniformLearning.exists_eventually_not_learns_of_isSubexponentiallySecure
+  ]
+  scope := "Conditional on a subexponentially secure family of length-doubling generators of \
+    polynomial circuit complexity, as in natural-proofs. Learners are membership-query learners \
+    with a De Morgan circuit and q non-adaptive queries on each seed (HasCircuit); running time \
+    is not modelled. For a polynomial s, every c and large n, a learner with S + 7 <= 2^(cn) \
+    gates for the functions of circuit size s n has (1 - delta)(1 - eps) <= 1/2 + q/2^(n+1) + \
+    2^(-cn), so none with q <= 2^(n-1) reaches (1 - delta)(1 - eps) > 3/4. The distinguisher \
+    fixes the learner's seed and comparison point by averaging; it is a nonuniform circuit test."
 
 register_result "nw-reconstruction-learner" where
   title := "Carmosino–Impagliazzo–Kabanets–Kolokolova: the Nisan–Wigderson reconstruction as a \

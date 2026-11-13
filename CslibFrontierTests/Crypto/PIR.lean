@@ -17,7 +17,9 @@ import Mathlib.Tactic.NormNum
   reconstruction holds for every database, set and index (checked by `decide`), the scheme is
   correct and private with `8` bits, and the two servers together learn the index.
 * The rows transformation reads a nine-bit database with two servers and `12` bits, and the
-  subcube scheme reads an eight-bit database with eight servers and `56` bits.
+  subcube scheme reads an eight-bit database with eight servers and `56` bits. Restricting the
+  rows scheme on a `2 × 2` grid with `HasScheme.fin_of_le_card` reads a three-bit database with
+  `8` bits.
 * One server needs exactly `n` bits: a three-bit database has a one-server scheme with three
   bits and none with two.
 * Both hypotheses of the lower bound are needed. The scheme that sends the index to the server is
@@ -63,6 +65,13 @@ example : communication Bool (Fin 3 → Bool) (Fin 3 → Bool) = 12 := by
 
 example : HasScheme (Fin 9) 2 12 :=
   hasScheme_two_of_le_mul_self (n := 9) (m := 3) le_rfl
+
+/-- A scheme on the `2 × 2` grid restricts to three bits, padding the unused cell. -/
+example : HasScheme (Fin 3) 2 8 := by
+  have h := ((isCorrect_twoServer (ι := Fin 2)).rows (Fin 2)).hasScheme
+    ((isPrivate_twoServer (ι := Fin 2)).rows (Fin 2))
+  rw [Fintype.card_bool, communication_twoServer_rows, Fintype.card_fin] at h
+  exact h.fin_of_le_card (by simp)
 
 example : HasScheme (Fin 10) 2 16 := by
   have h : Nat.sqrt 10 = 3 := Nat.sqrt_add_eq (a := 1) 3 (by norm_num)

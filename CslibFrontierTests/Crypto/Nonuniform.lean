@@ -78,8 +78,9 @@ example : ¬ IndistinguishableWithAdvice (fun _ => []) (fun n => PMF.pure (List.
 it to the GMW length `3 * n + 1` itself. -/
 example {generator : List Bool → List Bool} (h : NonuniformPRG generator (fun n => n + 1))
     {α : Type} {enc : α ↪ List Bool} {A : Set α} (hA : A ∈ Complexity.NP enc) :
-    ∃ zk : ZeroKnowledgeProof enc A, zk.AuxiliaryInputZeroKnowledge :=
-  h.exists_auxiliaryInputZeroKnowledge_of_mem_NP hA
+    ∃ zk : ZKProof enc A (fun n => (1 / 3 : ENNReal) ^ (n + 1)),
+      zk.NegligibleSoundness ∧ zk.AuxiliaryInputZeroKnowledge :=
+  h.exists_zkProof_of_mem_NP hA
 
 private noncomputable def fairPair : Pseudoentropy.SamplablePair where
   Observation _ := Unit
@@ -316,7 +317,7 @@ example {f : List Bool → List Bool} (hf : NonuniformOneWay f) :
       ⟨hbound, hdensity, hcommon, hfits, hsize⟩
       (Filter.Eventually.of_forall Pseudoentropy.EntropyGrid.four_steps_le_owf_gap)
   refine ⟨pair, savedPair, bound, common, choose, hchoose, ?_⟩
-  simpa only [distinguishingGame, PMF.monad_bind_eq_bind] using
+  simpa only [distinguishingGame_eq_bind, PMF.monad_bind_eq_bind] using
     hsecure.negligible_encoded (encAdvice := Turing.MultiTapeTM.encPair
         Turing.MultiTapeTM.encBits Turing.MultiTapeTM.encUnary)
       (test := fun input => advisedWordDistinguisher ((input.1.1, input.1.2.1), input.2))
@@ -335,7 +336,7 @@ example {X Y : ℕ → PMF (List Bool)} {advice : ℕ → List Bool} {choose : �
         ((X n).bind (fun word => ProbComp.eval (test (n, advice n) (choose n) word)))
         ((Y n).bind (fun word => ProbComp.eval (test (n, advice n) (choose n) word)))) := by
   intro test htest
-  simpa only [distinguishingGame, PMF.monad_bind_eq_bind] using
+  simpa only [distinguishingGame_eq_bind, PMF.monad_bind_eq_bind] using
     h.negligible_encoded (encAdvice := encPair encBits encUnary)
       (test := fun input => test (input.1.1, input.1.2.1) input.1.2.2 input.2)
       (htest.preprocess (prepare := fun input : (ℕ × (List Bool × ℕ)) × List Bool =>
@@ -354,7 +355,7 @@ example {X Y : ℕ → PMF (List Bool)} {advice : ℕ → List Bool} {choose : �
     IndistinguishableWithAdvice (fun n => encPair encBits encUnary (advice n, choose n)) X Y := by
   apply IndistinguishableWithAdvice.of_negligible_encoded
   intro test htest
-  simpa only [distinguishingGame, PMF.monad_bind_eq_bind] using
+  simpa only [distinguishingGame_eq_bind, PMF.monad_bind_eq_bind] using
     h (fun a i word => test ((a.1, (a.2, i)), word))
       (htest.preprocess (prepare := fun input : ((ℕ × List Bool) × ℕ) × List Bool =>
         ((input.1.1.1, (input.1.1.2, input.1.2)), input.2)) (by fun_prop))
@@ -400,23 +401,14 @@ example :
   exact hind advisedWordDistinguisher (by unfold advisedWordDistinguisher; fun_prop)
 
 /-- Concrete exercised client of `NonuniformOneWay.exists_nonuniformPRG`,
-`NonuniformOneWay.exists_nonuniformPRG_three_mul`,
-`NonuniformOneWay.exists_auxiliaryInputZeroKnowledge_of_mem_NP` (chained to
-`UnboundedAuxiliaryInputZeroKnowledge` and `InstanceAuxiliaryInputZeroKnowledge`),
-`NonuniformOneWay.exists_auxiliaryInputZeroKnowledge_of_npRelation`, and the soundness-amplified
+`NonuniformOneWay.exists_nonuniformPRG_three_mul`, and the soundness-amplified
 (`(1 / 3) ^ (n + 1)`, `ZKProof.NegligibleSoundness`) landmark theorems
 `NonuniformOneWay.exists_zkProof_of_mem_NP` and
-`NonuniformOneWay.exists_zkProof_of_npRelation` on `ThreeSAT`. -/
+`NonuniformOneWay.exists_zkProof_of_npRelation` on `ThreeSAT` (chained to
+`UnboundedAuxiliaryInputZeroKnowledge` and `InstanceAuxiliaryInputZeroKnowledge`). -/
 example {f : List Bool → List Bool} (hf : NonuniformOneWay f) :
     (∃ g₁ : List Bool → List Bool, NonuniformPRG g₁ (fun n => n + 1)) ∧
     (∃ g₃ : List Bool → List Bool, NonuniformPRG g₃ (fun n => 3 * n + 1)) ∧
-    (∃ zk : ZeroKnowledgeProof Complexity.encCNF Complexity.ThreeSAT,
-      zk.AuxiliaryInputZeroKnowledge ∧
-      zk.UnboundedAuxiliaryInputZeroKnowledge ∧
-      zk.InstanceAuxiliaryInputZeroKnowledge) ∧
-    (∃ zk : ZeroKnowledgeProof Complexity.encCNF Complexity.ThreeSAT.npRelation.language,
-      (∀ a w, zk.isWitness a w = true ↔ Complexity.ThreeSAT.npRelation.IsWitness a w) ∧
-      zk.AuxiliaryInputZeroKnowledge) ∧
     (∃ zk : ZKProof Complexity.encCNF Complexity.ThreeSAT
         (fun n => (1 / 3 : ENNReal) ^ (n + 1)),
       zk.NegligibleSoundness ∧
@@ -430,20 +422,25 @@ example {f : List Bool → List Bool} (hf : NonuniformOneWay f) :
       zk.AuxiliaryInputZeroKnowledge ∧
       zk.UnboundedAuxiliaryInputZeroKnowledge ∧
       zk.InstanceAuxiliaryInputZeroKnowledge) := by
-  obtain ⟨zk, hzk⟩ :=
-    hf.exists_auxiliaryInputZeroKnowledge_of_mem_NP Complexity.ThreeSAT.mem_NP
   obtain ⟨zkSeq, hnegSeq, hzkSeq⟩ :=
     hf.exists_zkProof_of_mem_NP Complexity.ThreeSAT.mem_NP
   obtain ⟨zkRel, hwRel, hnegRel, hzkRel⟩ :=
     hf.exists_zkProof_of_npRelation Complexity.ThreeSAT.npRelation
   exact ⟨hf.exists_nonuniformPRG, hf.exists_nonuniformPRG_three_mul,
-    ⟨zk, hzk, hzk.unboundedAuxiliaryInputZeroKnowledge, hzk.instanceAuxiliaryInputZeroKnowledge⟩,
-    hf.exists_auxiliaryInputZeroKnowledge_of_npRelation Complexity.ThreeSAT.npRelation,
     ⟨zkSeq, hnegSeq, hzkSeq,
       hzkSeq.unboundedAuxiliaryInputZeroKnowledge,
       hzkSeq.instanceAuxiliaryInputZeroKnowledge⟩,
     ⟨zkRel, hwRel, hnegRel, hzkRel,
       hzkRel.unboundedAuxiliaryInputZeroKnowledge,
       hzkRel.instanceAuxiliaryInputZeroKnowledge⟩⟩
+
+-- `ZKProof.mono` keeps the witness check and auxiliary-input zero knowledge, so the single-session
+-- `1 / 3` statement for an NP relation's own witnesses follows from the amplified one.
+example {α : Type} {enc : α ↪ List Bool} {f : List Bool → List Bool} (hf : NonuniformOneWay f)
+    (R : Complexity.NPRelation enc) :
+    ∃ zk : ZKProof enc R.language (fun _ => 1 / 3),
+      (∀ a w, zk.isWitness a w = true ↔ R.IsWitness a w) ∧ zk.AuxiliaryInputZeroKnowledge :=
+  let ⟨zk, hw, _, hzk⟩ := hf.exists_zkProof_of_npRelation R
+  ⟨zk.mono one_third_pow_succ_le, hw, hzk⟩
 
 end CslibFrontierTests.Crypto.Nonuniform
