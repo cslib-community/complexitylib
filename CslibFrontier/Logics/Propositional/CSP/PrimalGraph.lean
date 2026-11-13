@@ -134,7 +134,7 @@ theorem liftActiveNiceTree_coversFinset [DecidableEq V] {F : CSP Rel V}
     (N : F.activePrimalGraph.NiceTreeDecomposition) {c : Constraint Rel V} (hc : c ∈ F) :
     (liftActiveNiceTree N).CoversFinset c.scope.toFinset := by
   let K : Finset {v : V // v ∈ F.vars.toFinset} :=
-    c.2.toFinset.subtype fun v => v ∈ F.vars.toFinset
+    c.scope.toFinset.subtype fun v => v ∈ F.vars.toFinset
   have hK : F.activePrimalGraph.IsClique (K : Set {v : V // v ∈ F.vars.toFinset}) := by
     rintro ⟨u, hu⟩ huK ⟨w, hw⟩ hwK huw
     simp only [Finset.mem_coe, Finset.mem_subtype, List.mem_toFinset, K] at huK hwK

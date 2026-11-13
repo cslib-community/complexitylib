@@ -55,7 +55,7 @@ example : verifyRotationCertificate longInput longCert = true := by decide
 example : (whiteScopes longInput longCert) = [[0, 1, 2, 3, 4]] := by decide
 example : longOutput.map (fun c => c.scope) =
     [[0, 1, 2, 3, 4], [0, 1, 5], [5, 2, 6], [6, 3, 4]] := by decide
-example : longOutput.map (fun c => (c.rel.arity, c.1.rows.length)) =
+example : longOutput.map (fun c => (c.rel.arity, c.rel.rows.length)) =
     [(5, 32), (3, 4), (3, 4), (3, 4)] := by decide
 example : longOutput.vars.toFinset = Finset.range 7 := by decide
 example : longOutput.vars.length = 14 := by decide
@@ -72,7 +72,8 @@ example : longOutput.Satisfiable Table.sem := by
 -- No exponential white-face table: twelve ports use ten EVEN3 constraints and nine auxiliaries.
 example : (parityChain 12 (List.range 12)).length = 10 := by decide
 example : (parityChain 12 (List.range 12)).vars.toFinset = Finset.range 21 := by decide
-example : (parityChain 12 (List.range 12)).all (fun c => decide (c.1.rows.length = 4)) = true := by
+example :
+    (parityChain 12 (List.range 12)).all (fun c => decide (c.rel.rows.length = 4)) = true := by
   decide
 example : (parityChain 4 [0, 1, 2, 3]).eval Table.sem
     (fun n => decide (n = 0 ∨ n = 3 ∨ n = 4)) = true := by decide

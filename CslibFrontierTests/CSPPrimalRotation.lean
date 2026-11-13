@@ -111,7 +111,7 @@ example : (polygonRotation emptyRotation).NumericalGenusZero :=
     ((verifyEuler_eq_true_iff (by decide)).mp (by decide))
 -- A nullary constraint is explicitly outside the positive-scope face correspondence.
 example : ¬ (∀ i : Fin ([⟨(), []⟩] : CSP Unit ℕ).length,
-    0 < ([⟨(), []⟩] : CSP Unit ℕ)[i.val].2.length) := by decide
+    0 < ([⟨(), []⟩] : CSP Unit ℕ)[i.val].scope.length) := by decide
 
 private abbrev toroidal : CSP Unit ℕ := [⟨(), [0, 1, 2]⟩, ⟨(), [0, 1, 2]⟩]
 private abbrev toroidalCertificate : Graph.RotationCertificate :=

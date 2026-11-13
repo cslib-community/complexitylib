@@ -31,7 +31,7 @@ namespace Cslib.Complexity.CSP.EdgeSolver.Size
 open Cslib.Logic.PL Cslib.Logic.PL.CSP Turing.MultiTapeTM
 
 /-- Total number of actual stored rows, retaining duplicate constraints and duplicate rows. -/
-@[expose] def rowCount (F : CSP Table ℕ) : ℕ := (F.map fun c => c.1.rows.length).sum
+@[expose] def rowCount (F : CSP Table ℕ) : ℕ := (F.map fun c => c.rel.rows.length).sum
 
 /-- A fresh connector increases maximum binary name length additively. The bound depends on
 the actual constraint count; it never enumerates the interval below an original name. -/
@@ -99,7 +99,7 @@ theorem encoded_body_le (F : CSP Table ℕ) (f : OccurrenceLabeling F Bool)
       _ = _ := by simp [Nat.mul_comm]
   have hclause (c : Constraint Table ℕ) (hc : c ∈ F) :
       2 * (encConstraint encTable encNat c).length + 1 ≤
-        7 + (4 * B + 10) * c.scope.length + 4 * (6 * F.vars.length + 1) * c.1.rows.length := by
+        7 + (4 * B + 10) * c.scope.length + 4 * (6 * F.vars.length + 1) * c.rel.rows.length := by
     have hw := (htable c hc).1
     have ha := (htable c hc).2
     have hb : (encNat c.rel.arity).length ≤ c.scope.length := by
@@ -110,14 +110,14 @@ theorem encoded_body_le (F : CSP Table ℕ) (f : OccurrenceLabeling F Bool)
         c.scope.length ∈ F.map fun d => d.scope.length)
       simpa only [vars, List.length_flatMap] using hh
     have hs := hscope c hc
-    have hr : c.1.rows.length * (6 * c.rel.arity + 1) ≤
-        c.1.rows.length * (6 * F.vars.length + 1) := Nat.mul_le_mul_left _ (by omega)
+    have hr : c.rel.rows.length * (6 * c.rel.arity + 1) ≤
+        c.rel.rows.length * (6 * F.vars.length + 1) := Nat.mul_le_mul_left _ (by omega)
     simp only [encConstraint_apply, length_encPair, length_encTable hw]
     nlinarith
   rw [encCSP, length_encList]
   calc
     _ ≤ (F.map fun c => 7 + (4 * B + 10) * c.scope.length +
-        4 * (6 * F.vars.length + 1) * c.1.rows.length).sum := List.sum_le_sum hclause
+        4 * (6 * F.vars.length + 1) * c.rel.rows.length).sum := List.sum_le_sum hclause
     _ = _ := by
       simp only [List.sum_map_add, List.sum_map_mul_left, rowCount, vars, List.length_flatMap]
       simp [Nat.mul_comm]
@@ -222,7 +222,7 @@ theorem original_name_bits_le (F : CSP Table ℕ) :
   have hn := length_le_encList_of_mem encNat hv
   have hb := length_le_encList_of_mem (encConstraint encTable encNat) hc
   simp only [encConstraint_apply, length_encPair] at hb
-  change 2 * (encTable c.1).length + 1 + (encList encNat c.2).length ≤
+  change 2 * (encTable c.rel).length + 1 + (encList encNat c.scope).length ≤
     (encCSP encTable encNat F).length at hb
   exact hn.trans (by omega)
 

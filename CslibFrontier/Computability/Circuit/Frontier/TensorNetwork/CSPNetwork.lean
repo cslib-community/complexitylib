@@ -60,7 +60,7 @@ open Cslib.Logic.PL
 variable {Rel : Type*}
 
 /-- The table entry of a constraint `c`, of arity at most `k`, at the word of value `idx`:
-`wt c.1 w` for the word `w` of length `|c.2|` with value `idx`. -/
+`wt c.rel w` for the word `w` of length `|c.scope|` with value `idx`. -/
 @[expose] def cspEntry (k : ℕ) (wt : Rel → List Bool → ℕ) (c : Constraint Rel ℕ) (idx : ℕ) : ℕ :=
   ((List.range (k + 1)).map fun r => wt c.rel (BitString.lowBits r idx)).getD c.scope.length 0
 

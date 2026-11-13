@@ -31,7 +31,7 @@ open Cslib.Logic.PL Cslib.Logic.PL.CSP
 /-- One actual first stored row per original constraint. A missing row defaults to `[]`;
 the full model guard rejects it, including a false nullary relation. -/
 @[expose] def initialRows (F : CSP Table ℕ) : List (List Bool) :=
-  F.map fun c => c.1.rows.headD []
+  F.map fun c => c.rel.rows.headD []
 
 /-- The initial positional labeling, with no global assignment search. -/
 @[expose] def initial (F : CSP Table ℕ) : OccurrenceLabeling F Bool :=
@@ -54,11 +54,11 @@ theorem initialRows_spec (F : CSP Table ℕ) (h : checkModel F = true) (i : Fin 
     have hw := hi.1.1.1
     have ha := hi.1.1.2
     have hn := hi.1.2
-    have hm : F[i.val].1.rows.headD [] ∈ F[i.val].rel.rows := by
+    have hm : F[i.val].rel.rows.headD [] ∈ F[i.val].rel.rows := by
       cases he : F[i.val].rel.rows with
       | nil => exact (hn he).elim
       | cons r rs => simp
-    have he : (initialRows F).getD i.val [] = F[i.val].1.rows.headD [] := by
+    have he : (initialRows F).getD i.val [] = F[i.val].rel.rows.headD [] := by
       simp [initialRows, i.isLt]
     rw [he]
     exact ⟨Table.sem_eq_true.mpr ⟨hw, hm⟩,

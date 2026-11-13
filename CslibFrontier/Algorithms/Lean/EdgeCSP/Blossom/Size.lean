@@ -119,16 +119,16 @@ theorem contractionMeasure_contract_lt (hF : EdgeInstance F) {f : OccurrenceLabe
 rows of width `r`; thus its new Boolean row data is quadratic in `r`, not linear in `r`.
 Every old table retains at most its original number of rows, with original outside order. -/
 theorem totalRows_contract_le (f : OccurrenceLabeling F Bool) (vs : List ℕ) :
-    ((contract f vs).map fun c => c.1.rows.length).sum ≤
-      (F.map fun c => c.1.rows.length).sum + (touched F vs).length := by
+    ((contract f vs).map fun c => c.rel.rows.length).sum ≤
+      (F.map fun c => c.rel.rows.length).sum + (touched F vs).length := by
   simp only [contract, List.map_append, List.map_cons, List.map_nil, List.sum_append,
     List.sum_cons, List.sum_nil, Table.length_rows_exactlyOne, length_connectors, Nat.add_zero]
   apply Nat.add_le_add_right
   rw [List.map_ofFn, List.sum_ofFn]
   calc
-    _ ≤ ∑ i : Fin F.length, F[i.val].1.rows.length :=
+    _ ≤ ∑ i : Fin F.length, F[i.val].rel.rows.length :=
       sum_le_sum (fun i _ => rows_constraint_le f vs i)
-    _ = (List.ofFn fun i : Fin F.length => F[i.val].1.rows.length).sum := by rw [List.sum_ofFn]
-    _ = _ := congrArg List.sum (List.ofFn_getElem_eq_map F (fun c => c.1.rows.length))
+    _ = (List.ofFn fun i : Fin F.length => F[i.val].rel.rows.length).sum := by rw [List.sum_ofFn]
+    _ = _ := congrArg List.sum (List.ofFn_getElem_eq_map F (fun c => c.rel.rows.length))
 
 end Cslib.Logic.PL.CSP.Blossom

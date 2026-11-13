@@ -193,7 +193,7 @@ private theorem argumentSuccessor_finBoundaryOccurrence (r : Rel) (n : ℕ)
     (b : Bool) (i : Fin n) :
     argumentSuccessor (finBoundaryOccurrence r n b i) =
       finBoundaryOccurrence r n b (finRotate n i) := by
-  have hlen : (finBoundary r n)[(finBoundaryOccurrence r n b i).1.val].2.length = n := by
+  have hlen : (finBoundary r n)[(finBoundaryOccurrence r n b i).1.val].scope.length = n := by
     cases b <;> simp [finBoundaryOccurrence, finBoundary, probeBody]
   refine Sigma.ext (x := argumentSuccessor (finBoundaryOccurrence r n b i))
     (y := finBoundaryOccurrence r n b (finRotate n i)) rfl ?_
@@ -201,7 +201,7 @@ private theorem argumentSuccessor_finBoundaryOccurrence (r : Rel) (n : ℕ)
   apply Fin.ext
   change (finRotate _ (finBoundaryOccurrence r n b i).2).val = (finRotate n i).val
   rw [val_finRotate, val_finRotate]
-  change (if i.val + 1 = (finBoundary r n)[(finBoundaryOccurrence r n b i).1.val].2.length
+  change (if i.val + 1 = (finBoundary r n)[(finBoundaryOccurrence r n b i).1.val].scope.length
     then 0 else i.val + 1) = _
   rw [hlen]
 

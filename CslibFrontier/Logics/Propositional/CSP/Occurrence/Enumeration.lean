@@ -44,7 +44,7 @@ instance (sem : Rel → List Bool → Bool) (f : OccurrenceLabeling F Bool) :
 theorem occurrences_eq_map_incidenceList (F : CSP Rel V) :
     F.occurrences = (incidenceList F).map Occurrence.record := by
   have he : F.occurrences =
-      F.zipIdx.flatMap (fun c => c.1.2.zipIdx.map fun v => (c.2, v.2, v.1)) := by
+      F.zipIdx.flatMap (fun c => c.1.scope.zipIdx.map fun v => (c.2, v.2, v.1)) := by
     simp only [CSP.occurrences, Cslib.Logic.PL.occurrences, varCNF,
       List.zipIdx_map, List.flatMap_map, List.map_flatMap, List.map_map, Function.comp_def,
       Prod.map, id_eq]

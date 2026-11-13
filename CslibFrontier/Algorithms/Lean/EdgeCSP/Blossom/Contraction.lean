@@ -165,7 +165,7 @@ theorem arity_constraint {f : OccurrenceLabeling F Bool}
 /-- The number of stored rows of each old constraint never increases. Duplicate rows retain
 multiplicity, as in `Table.contract`. -/
 theorem rows_constraint_le (f : OccurrenceLabeling F Bool) (vs : List ℕ)
-    (i : Fin F.length) : (constraint f vs i).1.rows.length ≤ F[i.val].1.rows.length := by
+    (i : Fin F.length) : (constraint f vs i).rel.rows.length ≤ F[i.val].rel.rows.length := by
   unfold constraint
   split
   · exact le_rfl

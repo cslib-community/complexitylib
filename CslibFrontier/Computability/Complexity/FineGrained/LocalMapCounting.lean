@@ -528,7 +528,7 @@ theorem eval_toDeclaredCNF (k : ℕ) (q : LocalMap × List Bool) (σ : ℕ → B
   dsimp only
   by_cases hG : q.1.Valid k = true
   · by_cases hlen : q.2.length = q.1.numOutputs
-    · have hwidth : ∀ c ∈ q.1.toCSP q.2, c.2.length ≤ k :=
+    · have hwidth : ∀ c ∈ q.1.toCSP q.2, c.scope.length ≤ k :=
         (CSP.validDeclaredCSP_eq_true_iff.mp (q.1.validDeclaredCSP_toCSP hG q.2)).1
       simp only [hG, hlen, decide_true, Bool.and_self, ↓reduceIte,
         CSP.toCNFBounded_eq_toCNF hwidth, CSP.eval_toCNF, q.1.eval_toCSP hlen, Bool.true_and]

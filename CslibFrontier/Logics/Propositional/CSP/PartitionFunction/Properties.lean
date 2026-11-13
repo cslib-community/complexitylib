@@ -289,7 +289,7 @@ theorem partitionFunction_relabel_equiv [Semiring R] [DecidableEq V] [DecidableE
       rcases hw with ⟨v, hv, rfl⟩
       exact ⟨v, ⟨c, hc, hv⟩, rfl⟩
     · rintro ⟨v, ⟨c, hc, hv⟩, rfl⟩
-      exact ⟨⟨c.1, List.map e c.2⟩, ⟨c, hc, rfl⟩, List.mem_map.mpr ⟨v, hv, rfl⟩⟩
+      exact ⟨⟨c.rel, List.map e c.scope⟩, ⟨c, hc, rfl⟩, List.mem_map.mpr ⟨v, hv, rfl⟩⟩
   rw [partitionFunction_eq_partitionFunctionOn, hvars]
   exact partitionFunctionOn_relabel_equiv wt e F F.vars.toFinset
 

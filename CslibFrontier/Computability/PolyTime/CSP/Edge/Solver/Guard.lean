@@ -44,8 +44,8 @@ The coordinates are paid for by the first row's actual list. -/
 
 /-- Check a constraint's full finite model, including declared arity and scope width. -/
 @[expose] def checkConstraint (c : Constraint Table ℕ) : Bool :=
-  c.rel.wellFormed && decide (c.rel.arity = c.scope.length) && !c.1.rows.isEmpty &&
-    c.1.rows.all fun x => c.1.rows.all fun y => checkPair c.rel x y
+  c.rel.wellFormed && decide (c.rel.arity = c.scope.length) && !c.rel.rows.isEmpty &&
+    c.rel.rows.all fun x => c.rel.rows.all fun y => checkPair c.rel x y
 
 /-- Check the actual edge model without scanning a finite universe of names. -/
 @[expose] def checkEdge (F : CSP Table ℕ) : Bool :=

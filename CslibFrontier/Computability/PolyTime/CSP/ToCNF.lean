@@ -128,12 +128,12 @@ private theorem computableInPolyTime_toCNFAt (encRel : Rel ↪ List Bool)
       ComputableInPolyTime (fun R : Rel => sem R w) encRel encBool) :
     ComputableInPolyTime
       (fun c : Constraint Rel V =>
-        ((BitString.enumList r).filter fun w => !sem c.1 w).map (Constraint.forbidClause c.2))
+        ((BitString.enumList r).filter fun w => !sem c.rel w).map (Constraint.forbidClause c.scope))
       (encConstraint encRel encV)
       (encList (encList (encPair encV encBool))) := by
   refine computableInPolyTime_mapFilterConst (BitString.enumList r)
-    (test := fun (c : Constraint Rel V) (w : List Bool) => !sem c.1 w)
-    (f := fun (c : Constraint Rel V) (w : List Bool) => Constraint.forbidClause c.2 w)
+    (test := fun (c : Constraint Rel V) (w : List Bool) => !sem c.rel w)
+    (f := fun (c : Constraint Rel V) (w : List Bool) => Constraint.forbidClause c.scope w)
     (fun w hw => ?_) (fun w _ => ?_)
   · have hsemw := hsem w hw
     fun_prop
@@ -150,26 +150,26 @@ private theorem computableInPolyTime_constraintToCNFBounded
   induction k with
   | zero =>
     have htest : ComputableInPolyTime
-        (fun c : Constraint Rel V => decide (c.2.length = 0))
+        (fun c : Constraint Rel V => decide (c.scope.length = 0))
         (encConstraint encRel encV) encBool := by
       fun_prop
     refine (htest.ite (computableInPolyTime_toCNFAt encRel encV sem 0
         fun w hw => hsem w (by simp [BitString.length_of_mem_enumList hw]))
       (const [])).of_enc_eq fun c => ?_
     simp only [Constraint.toCNFBounded, Constraint.toCNF, Nat.le_zero]
-    by_cases h : c.2.length = 0 <;> simp [h]
+    by_cases h : c.scope.length = 0 <;> simp [h]
   | succ k ih =>
     have htest : ComputableInPolyTime
-        (fun c : Constraint Rel V => decide (c.2.length = k + 1))
+        (fun c : Constraint Rel V => decide (c.scope.length = k + 1))
         (encConstraint encRel encV) encBool := by
       fun_prop
     refine (htest.ite (computableInPolyTime_toCNFAt encRel encV sem (k + 1)
         fun w hw => hsem w (by simp [BitString.length_of_mem_enumList hw]))
       (ih fun w hw => hsem w (hw.trans (Nat.le_succ k)))).of_enc_eq fun c => ?_
     simp only [Constraint.toCNFBounded, Constraint.toCNF]
-    by_cases h1 : c.2.length = k + 1
+    by_cases h1 : c.scope.length = k + 1
     · simp [h1]
-    · have hle : (c.2.length ≤ k + 1) ↔ (c.2.length ≤ k) := by omega
+    · have hle : (c.scope.length ≤ k + 1) ↔ (c.scope.length ≤ k) := by omega
       simp [h1, hle]
 
 /-- Width-guarded compilation of a Boolean CSP instance to a `k`-CNF formula is computable in
