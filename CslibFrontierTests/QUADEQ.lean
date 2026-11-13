@@ -4,10 +4,15 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
 
+module
+
 import CslibFrontier.Computability.Complexity.Problems.QUADEQ
 
 /-! Checked clients of QUADEQ: verifier runs, the SAT reduction on concrete formulas, and the
 NP-completeness theorem. -/
+
+-- This regression module checks ordinary imports and exports no test fixtures.
+set_option linter.privateModule false
 
 open Cslib.Logic.PL Cslib.Complexity
 

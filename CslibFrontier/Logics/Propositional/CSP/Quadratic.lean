@@ -59,6 +59,9 @@ namespace Cslib.Logic.PL
 
 variable {V W : Type*}
 
+-- The derived equality decision is exposed so that module clients can `decide` equations.
+@[expose] public section
+
 /-- A quadratic equation $\sum_{i,j} a_{ij} u_i u_j = b$ over `𝔽₂`: the monomials `(i, j)` with
 $a_{ij} = 1$, and the right-hand side `b`. -/
 structure QuadEquation (V : Type*) where
@@ -67,6 +70,8 @@ structure QuadEquation (V : Type*) where
   /-- The right-hand side of the equation. -/
   rhs : Bool
 deriving DecidableEq, Repr
+
+end
 
 /-- A finite conjunction of quadratic equations over `𝔽₂`. -/
 abbrev QuadSystem (V : Type*) := List (QuadEquation V)
