@@ -24,7 +24,9 @@ The state type is a parameter, so a saved state can be a typed record.
 is uniform strict PPT: one finite machine for each stage, reading the unary security parameter
 and the encoded stage input, including the full encoded saved state. Security definitions over
 two-stage adversaries quantify over every state type and state encoding. The word-level
-adversaries with state `List Bool` are the instance `σ := List Bool`, `encσ := encBits`.
+adversaries with state `List Bool` are the instance `σ := List Bool`, `encσ := encBits`, so a
+typed definition quantifying over every `σ` implies the word-level one. The converse is not free:
+it needs a word-level adversary that simulates the second stage on the `encσ` codewords.
 
 `lrExperiment` is the left-or-right experiment. The adversary chooses two messages from the drawn
 public input; the challenger checks the pair with an admissibility predicate, encrypts the message
