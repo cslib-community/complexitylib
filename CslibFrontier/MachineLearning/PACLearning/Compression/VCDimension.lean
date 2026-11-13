@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.MachineLearning.PACLearning.VCUpperBound
-public import CslibFrontier.Probability.PMF
+public import Mathlib.Probability.ProbabilityMassFunction.Basic
 import CslibFrontier.MachineLearning.PACLearning.DualVCDimension
 import CslibFrontier.Probability.Minimax
 import CslibFrontier.Probability.PMF.Event
@@ -17,10 +17,13 @@ import CslibFrontier.Probability.PMF.Event
 # Sample compression from finite VC dimension: voting over subsamples
 
 Moran and Yehudayoff showed that every binary class of finite VC dimension `d` has a sample
-compression scheme of size `exp(O(d))` [MoranYehudayoff2016, Theorem 1.3]. Their proof starts
-from a *weak learner on subsamples*. Fix a consistent learner `A` for `C` that reads `s` examples,
-where `s` is the VC sample size for accuracy `ε` and confidence `δ < 1`, and fix a sample `S` of
-`m` examples realized by `C`. Then:
+compression scheme of size `exp(O(d))` [MoranYehudayoff2016, Theorem 1.3], which follows from
+the size `O(d* d log (d* d))` bound in terms of the dual VC dimension `d*` [MoranYehudayoff2016,
+Theorem 1.4] and Assouad's bound `d* < 2 ^ (d + 1)` (`DualVCDimension.lean`). The proof of
+Theorem 1.4 starts from a *weak learner on subsamples* [MoranYehudayoff2016, proof of
+Claim 3.1]. Fix a consistent learner `A` for `C` that reads `s` examples, where `s` is the VC
+sample size for accuracy `ε` and confidence `δ < 1`, and fix a sample `S` of `m` examples realized
+by `C`. Then:
 
 * for every distribution `q` on the positions of `S`, some sequence `b` of `s` positions has
   `A (S ∘ b)` wrong on a set of positions of `q`-probability at most `ε`
@@ -54,7 +57,7 @@ namespace Cslib.MachineLearning.PACLearning
 
 variable {α : Type*}
 
-/-- **Weak learning on subsamples** [MoranYehudayoff2016, proof of Theorem 1.3]. Let `A` be a
+/-- **Weak learning on subsamples** [MoranYehudayoff2016, proof of Claim 3.1]. Let `A` be a
 consistent learner for `C` reading `s ≥ vcSampleSize d ε δ` examples with `δ < 1`, where every
 finite set shattered by `C` has at most `d` points. For every sample `S` realized by `C` and every
 distribution `q` on its positions, some sequence `b` of `s` positions has `A (S ∘ b)` wrong on a
@@ -115,9 +118,10 @@ theorem IsConsistent.exists_subsample_toOuterMeasure_le {C : ConceptClass α Boo
   exact absurd hle (not_le.2 (ENNReal.ofReal_lt_one.2 hδ1))
 
 /-- **A distribution on subsamples that is right everywhere** [MoranYehudayoff2016, proof of
-Theorem 1.3]. Under the hypotheses of `IsConsistent.exists_subsample_toOuterMeasure_le`, for every
-nonempty sample `S` realized by `C`, some distribution `μ` on sequences `b` of `s` positions has
-`A (S ∘ b)` wrong at each example of `S` with `μ`-probability at most `ε`. This is the minimax
+Claim 3.1, via Theorem 2.3]. Under the hypotheses of
+`IsConsistent.exists_subsample_toOuterMeasure_le`, for every nonempty sample `S` realized by `C`,
+some distribution `μ` on sequences `b` of `s` positions has `A (S ∘ b)` wrong at each example of
+`S` with `μ`-probability at most `ε`. This is the minimax
 theorem `Cslib.Probability.PMF.exists_forall_toOuterMeasure_le` applied to weak learning on
 subsamples. -/
 theorem IsConsistent.exists_pmf_subsample_toOuterMeasure_le {C : ConceptClass α Bool} {d : ℕ}
