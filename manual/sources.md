@@ -259,6 +259,11 @@ Robert G. Bland. "New Finite Pivoting Rules for the Simplex Method." *Mathematic
 
 Manuel Blum. *A Machine-Independent Theory of the Complexity of Recursive Functions*. Journal of the ACM 14(2), 322–336, 1967. https://doi.org/10.1145/321386.321395 . Bibliographic metadata checked on 2026-11-07; the manual attributes only the two axioms, recursive relatedness and the speed-up theorem to this paper. The manual also mentions the customary attribution of the measure-independent theorem on arbitrarily complex functions to this paper (and to Rabin, 1960); that attribution and any theorem locator are unverified.
 
+<a id="blumfurstkearnslipton93"></a>
+## blumfurstkearnslipton93
+
+Avrim Blum, Merrick Furst, Michael Kearns and Richard J. Lipton. "Cryptographic Primitives Based on Hard Learning Problems." *Advances in Cryptology — CRYPTO '93*, LNCS 773, 278–291, 1993. https://doi.org/10.1007/3-540-48329-2_24 . Bibliographic metadata only (`references.bib`); the paper was not inspected and no numbered result is claimed. [CryptoHardness/Inversion.lean](../CslibFrontier/MachineLearning/UniformLearning/CryptoHardness/Inversion.lean) cites it, with [Impagliazzo and Levin](#impagliazzolevin90), for the easy direction of the correspondence between average-case learning and one-way functions: an inverter for the map from a key and examples to the labelled sample is a consistent learner.
+
 <a id="blummansour07"></a>
 ## blummansour07
 
@@ -937,6 +942,11 @@ Russell Impagliazzo. “Hard-Core Distributions for Somewhat Hard Problems.” *
 ## impagliazzojaiswalkabanetswigderson10
 
 Russell Impagliazzo, Ragesh Jaiswal, Valentine Kabanets and Avi Wigderson. *Uniform Direct Product Theorems: Simplified, Optimized, and Derandomized*. SIAM Journal on Computing 39(4), 1637–1665, 2010. DOI: [10.1137/080734030](https://doi.org/10.1137/080734030) (as reported by search; not resolved). The authors' preprint dated 2009-10-19 (https://www.math.ias.edu/~avi/PUBLICATIONS/ImpagliazzoJaKaWi2010.pdf) was inspected on 2026-11-11: Theorem 1.2 (the decoder that CIKK cite as their Theorem 4.1), Algorithms 1–2, Theorem 3.2 and Lemmas 2.11–2.14 and 3.8–3.12. Locators follow the preprint; the journal numbering is unchecked.
+
+<a id="impagliazzolevin90"></a>
+## impagliazzolevin90
+
+Russell Impagliazzo and Leonid A. Levin. "No Better Ways to Generate Hard NP Instances than Picking Uniformly at Random." *Proceedings of the 31st Annual Symposium on Foundations of Computer Science (FOCS 1990)*, 812–821. Bibliographic metadata only (`references.bib`); the paper was not inspected and no numbered result is claimed. Cited with [Blum, Furst, Kearns and Lipton](#blumfurstkearnslipton93) by [CryptoHardness/Inversion.lean](../CslibFrontier/MachineLearning/UniformLearning/CryptoHardness/Inversion.lean).
 
 <a id="impagliazzopudlaksgall99"></a>
 ## impagliazzopudlaksgall99
