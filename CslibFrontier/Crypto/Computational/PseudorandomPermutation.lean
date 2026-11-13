@@ -18,6 +18,7 @@ import CslibFrontier.Crypto.Game.Concrete
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Crypto.Primitives.PRP.Finite
 import CslibFrontier.Languages.Probabilistic.Oracle.Substitution.QueryCount
+import CslibFrontier.Languages.Probabilistic.Sum.Lift
 import CslibFrontier.Probability.PMF.Bind
 
 /-!
@@ -473,23 +474,6 @@ theorem isOraclePPT_liftForwardDistinguisher {blockLen : ℕ → ℕ}
       exact ⟨trivial, List.length_take_le _ _, by simp [encFinEnum]⟩)
   exact (hrun.map' (ComputableInPolyTime.fst encBool (encFinEnum Unit))).isOraclePPT
 
-/-- A stateless word handler that forwards to channel `false` and cuts replies agrees with the
-`StateT Unit` handler of `liftForwardDistinguisher`. -/
-private theorem liftForward_handler_eq (m : ℕ) :
-    OracleComp.sumHandler (fun k => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin k)))
-      (fun (request : Unit × List Bool) (_ : Unit) =>
-        (fun reply => (reply, ())) <$> (List.take m <$>
-          ProbOracleComp.query (spec := fun _ : Bool × List Bool => List Bool)
-            (false, request.2))) =
-      fun q => StateT.lift (OracleComp.sumHandler
-        (fun k => ProbOracleComp.sample (ProbComp.unifFin k))
-        (fun request : Unit × List Bool => List.take m <$>
-          ProbOracleComp.query (spec := fun _ : Bool × List Bool => List Bool) (false, request.2))
-        q) := by
-  funext q; rcases q with k | request
-  · rfl
-  · funext ⟨⟩; simp only [OracleComp.sumHandler, StateT.lift, bind_pure_comp]
-
 /-- Running `liftForwardDistinguisher` against a bidirectional table `oracle` is running the
 forward adversary against the cut encryption channel of `oracle`. -/
 private theorem eval_interpret_liftForwardDistinguisher (blockLen : ℕ → ℕ)
@@ -501,7 +485,7 @@ private theorem eval_interpret_liftForwardDistinguisher (blockLen : ℕ → ℕ)
         (fun request : Unit × List Bool =>
           PMF.pure ((oracle (false, request.2)).take (blockLen n))))
       (adversary n []) := by
-  rw [liftForwardDistinguisher, liftForward_handler_eq, OracleComp.run_interpret_lift,
+  rw [liftForwardDistinguisher, OracleComp.run_interpret_sumHandler_readOnly,
     OracleComp.interpret_map, OracleComp.interpret_map, Functor.map_map]
   simp only [id_map', OracleComp.interpret_interpret]
   congr 1 with q : 1; rcases q with k | request

@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Probabilistic.Oracle.Composition
 import CslibFrontier.Computability.Probabilistic.Realization.OpenOracleSimulation
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Languages.Probabilistic.Simulation
+import CslibFrontier.Languages.Probabilistic.Sum.Lift
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
@@ -250,15 +251,7 @@ theorem IsOraclePPTOn.interpret_preprocess_open'
   have h := hrun.map' (ComputableInPolyTime.fst output (encFinEnum Unit))
   convert h using 1
   funext a
-  have hliftEq : OracleComp.sumHandler
-      (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n)))
-      (fun request state => (fun reply => (reply, state)) <$> handler a request) =
-      (fun q => StateT.lift (σ := Unit)
-        (OracleComp.sumHandler (fun n => ProbOracleComp.sample (ProbComp.unifFin n))
-          (handler a) q)) := by
-    funext q state
-    cases q <;> simp [OracleComp.sumHandler, StateT.lift, bind_pure_comp]
-  rw [hliftEq, OracleComp.run_interpret_lift]
+  rw [OracleComp.run_interpret_sumHandler_readOnly]
   simp
 
 /-- Replacing every request by a polynomial-time computed word and reading at most one reply

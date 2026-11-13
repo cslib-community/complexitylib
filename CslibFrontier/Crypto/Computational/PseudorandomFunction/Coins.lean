@@ -13,6 +13,7 @@ import CslibFrontier.Computability.Probabilistic.Oracle.Composition
 import CslibFrontier.Computability.Probabilistic.Oracle.Substitution
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Languages.Probabilistic.Oracle.Support
+import CslibFrontier.Languages.Probabilistic.Sum.Lift
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Tactic.PolyTime
 import CslibFrontier.Tactic.PPT
@@ -244,23 +245,13 @@ theorem isOraclePPT_coinDistinguisher {adversary : OracleDistinguisher}
     (fun _ => trivial) (by polytime) ?_
   · refine (hrun.map' (ComputableInPolyTime.fst encBool (encFinEnum Unit))).congr
       fun c External oracle e => ?_
-    have hlift : OracleComp.sumHandler
-        (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n)))
-        (fun q => coinHandler c.1 q) =
-      fun q => StateT.lift (σ := Unit) (OracleComp.sumHandler
-        (fun n => ProbOracleComp.sample (ProbComp.unifFin n)) (coinQuery c.1) q) := by
-      funext q
-      cases q with
-      | inl n => rfl
-      | inr q =>
-        funext u
-        exact map_eq_pure_bind _ _
     have h : Prod.fst <$> (OracleComp.interpret
         (OracleComp.sumHandler
           (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n)))
           (fun q => coinHandler c.1 q)) (adversary c.1 c.2)).run () =
         coinDistinguisher adversary c.1 c.2 := by
-      rw [hlift, OracleComp.run_interpret_lift, Functor.map_map]
+      unfold coinHandler
+      rw [OracleComp.run_interpret_sumHandler_readOnly, Functor.map_map]
       exact id_map _
     rw [h]
   · intro c request u _ result hresult

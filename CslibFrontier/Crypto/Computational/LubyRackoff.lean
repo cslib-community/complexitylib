@@ -19,6 +19,7 @@ import CslibFrontier.Crypto.Protocols.Cipher.LubyRackoff
 import CslibFrontier.Foundations.Data.BitString.List.Operations
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.CoinFixing
+import CslibFrontier.Languages.Probabilistic.Sum.Lift
 import CslibFrontier.Probability.IID
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.Product
@@ -540,15 +541,7 @@ private theorem isOraclePPT_interpret_handler {Operation External : Type} [Decid
   have h := hrun.map' (ComputableInPolyTime.fst encBool (encFinEnum Unit))
   refine IsOraclePPTOn.isOraclePPT ?_
   convert h using 1; funext ⟨n, aux⟩
-  rw [show (OracleComp.sumHandler
-      (fun k => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin k)))
-      (fun request (_ : Unit) => (fun reply => (reply, ())) <$> handler n request)) =
-      fun q => StateT.lift (OracleComp.sumHandler
-        (fun k => ProbOracleComp.sample (ProbComp.unifFin k)) (handler n) q) by
-    funext q; rcases q with k | request
-    · rfl
-    · funext u; simp only [OracleComp.sumHandler, StateT.lift, bind_pure_comp],
-    OracleComp.run_interpret_lift, Functor.map_map]
+  rw [OracleComp.run_interpret_sumHandler_readOnly, Functor.map_map]
   exact (id_map _).symm
 
 /-! ### The reduction to three PRF keys -/

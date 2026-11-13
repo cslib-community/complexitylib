@@ -22,6 +22,7 @@ import CslibFrontier.Foundations.Data.BitString.List.LowBits
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Languages.Probabilistic.Oracle.Support
+import CslibFrontier.Languages.Probabilistic.Sum.Lift
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Probability.Uniform
@@ -206,23 +207,13 @@ theorem isOraclePPT_firstBitDistinguisher {adversary : OracleDistinguisher}
     (fun _ => trivial) (ComputableInPolyTime.const 1) ?_
   · refine (hrun.map' (ComputableInPolyTime.fst encBool (encFinEnum Unit))).congr
       fun c External oracle e => ?_
-    have hlift : OracleComp.sumHandler
-        (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n)))
-        (fun q => firstBitHandler q) =
-      fun q => StateT.lift (σ := Unit) (OracleComp.sumHandler
-        (fun n => ProbOracleComp.sample (ProbComp.unifFin n)) firstBitQuery q) := by
-      funext q
-      cases q with
-      | inl k => rfl
-      | inr q =>
-        funext u
-        exact map_eq_pure_bind _ _
     have h : Prod.fst <$> (OracleComp.interpret
         (OracleComp.sumHandler
           (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n)))
           (fun q => firstBitHandler q)) (adversary c.1 c.2)).run () =
         firstBitDistinguisher adversary c.1 c.2 := by
-      rw [hlift, OracleComp.run_interpret_lift, Functor.map_map]
+      unfold firstBitHandler
+      rw [OracleComp.run_interpret_sumHandler_readOnly, Functor.map_map]
       exact id_map _
     rw [h]
   · intro _ _ _ _ result hresult
