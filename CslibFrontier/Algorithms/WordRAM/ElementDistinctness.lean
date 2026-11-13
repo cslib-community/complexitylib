@@ -345,7 +345,7 @@ theorem decidesInTime_nodup :
 are below their length. -/
 theorem uniformLinearTime_nodup :
     UniformLinearTime .standard {l : Input | l.1.Nodup} (fun _ l => l.1) (fun l => l.1.length) :=
-  ⟨16, 2, by decide, _, _, decidesInTime_nodup⟩
+  ⟨16, 2, by decide, _, _, decidesInTime_nodup, inputAdmissible_of_widthIndependent _ _⟩
 
 /-- Element distinctness also has a bounded nonuniform linear-time family. -/
 theorem linearTime_nodup :
@@ -366,7 +366,7 @@ theorem decidesInTime_nodup_additive :
 entries are below their length. -/
 theorem uniformLinearTime_nodup_additive :
     UniformLinearTime .additive {l : Input | l.1.Nodup} (fun _ l => l.1) (fun l => l.1.length) :=
-  ⟨16, 2, by decide, _, _, decidesInTime_nodup_additive⟩
+  ⟨16, 2, by decide, _, _, decidesInTime_nodup_additive, inputAdmissible_of_widthIndependent _ _⟩
 
 /-- Element distinctness also has a bounded nonuniform linear-time family over `Basis.additive`. -/
 theorem linearTime_nodup_additive :

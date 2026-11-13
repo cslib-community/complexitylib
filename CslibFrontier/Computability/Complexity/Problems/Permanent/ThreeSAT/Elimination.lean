@@ -243,53 +243,53 @@ theorem mem_gadgetEntries (Q : Finset (Fin 3)) (u : Fin (size φ)) :
     unfold entryIdx
     omega
 
-theorem stageRows_step {P : Finset ℕ} (hP : P ⊆ range (3 * k)) (Q : Finset (Fin 3)) :
-    stageRows φ k P \ univ.map (gadgetEmb φ k hk) ∪ (Q.map exitE).map (gadgetEmb φ k hk) =
-      stageRows φ (k + 1) (P ∪ Q.image fun p : Fin 3 => 3 * k + p.val) := by
+/-- The kept vertices after eliminating the gadgets before `k`, keeping the vertices `idx o` of the
+occurrences `o ∈ P`; `stageRows` and `stageCols` are the instances `idx = exitIdx φ` and
+`idx = entryIdx φ`. -/
+private def stageSet (φ : CNF ℕ) (idx : ℕ → ℕ) (k : ℕ) (P : Finset ℕ) : Finset (Fin (size φ)) :=
+  univ.filter fun u => u.val < numAux φ ∨ k ≤ (u.val - numAux φ) / 8 ∨ ∃ o ∈ P, u.val = idx o
+
+/-- The common set decomposition behind `stageRows_step` and `stageCols_step`: replacing the
+`k`-th gadget by its vertices `idx (3 * k + p)`, `p ∈ Q`, extends the kept occurrences by those of
+the `k`-th clause, provided `idx o` lies in the gadget of clause `o / 3`. -/
+private theorem stage_step (idx : ℕ → ℕ)
+    (hidx : ∀ o, numAux φ ≤ idx o ∧ (idx o - numAux φ) / 8 = o / 3)
+    {G E : Finset (Fin (size φ))} {P : Finset ℕ} (hP : P ⊆ range (3 * k)) {Q : Finset (Fin 3)}
+    (hG : ∀ u, u ∈ G ↔ numAux φ ≤ u.val ∧ (u.val - numAux φ) / 8 = k)
+    (hE : ∀ u, u ∈ E ↔ ∃ p ∈ Q, u.val = idx (3 * k + p.val)) :
+    stageSet φ idx k P \ G ∪ E =
+      stageSet φ idx (k + 1) (P ∪ Q.image fun p : Fin 3 => 3 * k + p.val) := by
   ext u
-  rw [mem_union, mem_sdiff, mem_gadget, mem_gadgetExits]
-  simp only [stageRows, mem_filter, mem_univ, true_and, mem_union, mem_image]
+  rw [mem_union, mem_sdiff, hG, hE]
+  simp only [stageSet, mem_filter, mem_univ, true_and, mem_union, mem_image]
   constructor
-  · rintro (⟨h, hnot⟩ | ⟨p, hp, he⟩)
-    · rcases h with h | h | ⟨o, ho, he⟩
-      · exact Or.inl h
-      · by_cases hun : u.val < numAux φ
-        · exact Or.inl hun
-        · right; left; omega
-      · exact Or.inr (Or.inr ⟨o, Or.inl ho, he⟩)
+  · rintro (⟨h | h | ⟨o, ho, he⟩, hnot⟩ | ⟨p, hp, he⟩)
+    · exact Or.inl h
+    · by_cases hun : u.val < numAux φ
+      · exact Or.inl hun
+      · right; left; omega
+    · exact Or.inr (Or.inr ⟨o, Or.inl ho, he⟩)
     · exact Or.inr (Or.inr ⟨3 * k + p.val, Or.inr ⟨p, hp, rfl⟩, he⟩)
   · rintro (h | h | ⟨o, ho | ⟨p, hp, rfl⟩, he⟩)
     · exact Or.inl ⟨Or.inl h, by omega⟩
     · exact Or.inl ⟨Or.inr (Or.inl (by omega)), by omega⟩
     · have := mem_range.1 (hP ho)
-      refine Or.inl ⟨Or.inr (Or.inr ⟨o, ho, he⟩), ?_⟩
-      unfold exitIdx at he
-      omega
+      have := hidx o
+      have : o / 3 < k := by omega
+      exact Or.inl ⟨Or.inr (Or.inr ⟨o, ho, he⟩), by omega⟩
     · exact Or.inr ⟨p, hp, he⟩
+
+theorem stageRows_step {P : Finset ℕ} (hP : P ⊆ range (3 * k)) (Q : Finset (Fin 3)) :
+    stageRows φ k P \ univ.map (gadgetEmb φ k hk) ∪ (Q.map exitE).map (gadgetEmb φ k hk) =
+      stageRows φ (k + 1) (P ∪ Q.image fun p : Fin 3 => 3 * k + p.val) :=
+  stage_step (exitIdx φ) (fun o => by unfold exitIdx; omega) hP (mem_gadget hk)
+    (mem_gadgetExits hk Q)
 
 theorem stageCols_step {P : Finset ℕ} (hP : P ⊆ range (3 * k)) (Q : Finset (Fin 3)) :
     stageCols φ k P \ univ.map (gadgetEmb φ k hk) ∪ (Q.map entryE).map (gadgetEmb φ k hk) =
-      stageCols φ (k + 1) (P ∪ Q.image fun p : Fin 3 => 3 * k + p.val) := by
-  ext u
-  rw [mem_union, mem_sdiff, mem_gadget, mem_gadgetEntries]
-  simp only [stageCols, mem_filter, mem_univ, true_and, mem_union, mem_image]
-  constructor
-  · rintro (⟨h, hnot⟩ | ⟨p, hp, he⟩)
-    · rcases h with h | h | ⟨o, ho, he⟩
-      · exact Or.inl h
-      · by_cases hun : u.val < numAux φ
-        · exact Or.inl hun
-        · right; left; omega
-      · exact Or.inr (Or.inr ⟨o, Or.inl ho, he⟩)
-    · exact Or.inr (Or.inr ⟨3 * k + p.val, Or.inr ⟨p, hp, rfl⟩, he⟩)
-  · rintro (h | h | ⟨o, ho | ⟨p, hp, rfl⟩, he⟩)
-    · exact Or.inl ⟨Or.inl h, by omega⟩
-    · exact Or.inl ⟨Or.inr (Or.inl (by omega)), by omega⟩
-    · have := mem_range.1 (hP ho)
-      refine Or.inl ⟨Or.inr (Or.inr ⟨o, ho, he⟩), ?_⟩
-      unfold entryIdx at he
-      omega
-    · exact Or.inr ⟨p, hp, he⟩
+      stageCols φ (k + 1) (P ∪ Q.image fun p : Fin 3 => 3 * k + p.val) :=
+  stage_step (entryIdx φ) (fun o => by unfold entryIdx; omega) hP (mem_gadget hk)
+    (mem_gadgetEntries hk Q)
 
 theorem gadget_subset_stageRows (P : Finset ℕ) :
     univ.map (gadgetEmb φ k hk) ⊆ stageRows φ k P := fun u hu => by

@@ -535,7 +535,7 @@ private theorem step_resample_subroutineCode
     (htab : H.tableRep t.data.mem) :
     ∃ μ_t : PMF (StepOutcome H.Seed PUnit (r_core + 5)),
       ExecCodeDist w H.subroutineCode.code
-        ((H.subroutineCode.toDynamicProgram H.encode H.decode).prepare .resample t.data)
+        (H.subroutineCode.prepare H.encode .resample t.data)
         (μ_t.map StepOutcome.data) ((H.charge .resample : ℕ) : ℝ≥0∞) ∧
       μ_t.map StepOutcome.latent = PMF.uniformOfFintype H.Seed ∧
       ∀ q ∈ μ_t.support,
@@ -545,9 +545,9 @@ private theorem step_resample_subroutineCode
         q.data.regs (coreReg H.baseReg) = base ∧
         H.tableRep q.data.mem ∧
         H.seedRep q.latent q.data.mem := by
-  let x_prep := (H.subroutineCode.toDynamicProgram H.encode H.decode).prepare .resample t.data
+  let x_prep := H.subroutineCode.prepare H.encode .resample t.data
   have hx_prep : x_prep.Bounded w :=
-    (H.subroutineCode.toDynamicProgram H.encode H.decode).prepare_bounded hbdd
+    H.subroutineCode.prepare_bounded H.encode hbdd
       (H.arguments_fit .resample)
   let x_z := x_prep.set (zeroReg r_core) 0
   have he_z : ExecCodeDist (B := B) w (.op (.const (zeroReg r_core) 0))
@@ -557,7 +557,7 @@ private theorem step_resample_subroutineCode
   have hc_pos : (Cond.eq (opReg r_core) (zeroReg r_core)).Holds x_z := by
     have hne : opReg r_core ≠ zeroReg r_core := by
       simp [opReg, zeroReg, Fin.ext_iff]
-    simp [Cond.Holds, x_z, x_prep, SubroutineCode.toDynamicProgram, DynamicProgram.prepare,
+    simp [Cond.Holds, x_z, x_prep, SubroutineCode.prepare,
       subroutineCode, encode, Data.set, Function.update_of_ne hne]
   have hxz_base : (x_z.comap coreReg).regs H.baseReg = base := by
     have hne_z : coreReg H.baseReg ≠ zeroReg r_core :=
@@ -567,7 +567,7 @@ private theorem step_resample_subroutineCode
     have hne_key : coreReg H.baseReg ≠ coreReg H.keyReg :=
       fun h => H.key_ne_base (coreReg_injective h.symm)
     simp [x_z, x_prep, Data.comap, Data.set, Function.update_of_ne hne_z,
-      SubroutineCode.toDynamicProgram, DynamicProgram.prepare, subroutineCode,
+      SubroutineCode.prepare, subroutineCode,
       hne_op, hne_key, hb]
   have hxz_mem : (x_z.comap coreReg).mem = t.data.mem := rfl
   obtain ⟨ν_core, he_res, hunif, hsupp⟩ :=
@@ -615,15 +615,15 @@ private theorem step_eval_subroutineCode
     (hseed : H.seedRep t.latent t.data.mem) :
     ∃ y_ext : Data (r_core + 5),
       ExecCodeDist w H.subroutineCode.code
-        ((H.subroutineCode.toDynamicProgram H.encode H.decode).prepare (.eval u) t.data)
+        (H.subroutineCode.prepare H.encode (.eval u) t.data)
         (PMF.pure y_ext) ((H.charge (.eval u) : ℕ) : ℝ≥0∞) ∧
       y_ext.Bounded w ∧
       H.decode (.eval u) y_ext.regs = some (H.eval t.latent u) ∧
       y_ext.mem = t.data.mem ∧
       y_ext.regs (coreReg H.baseReg) = base := by
-  let x_prep := (H.subroutineCode.toDynamicProgram H.encode H.decode).prepare (.eval u) t.data
+  let x_prep := H.subroutineCode.prepare H.encode (.eval u) t.data
   have hx_prep : x_prep.Bounded w :=
-    (H.subroutineCode.toDynamicProgram H.encode H.decode).prepare_bounded hbdd
+    H.subroutineCode.prepare_bounded H.encode hbdd
       (H.arguments_fit (.eval u))
   let x_z := x_prep.set (zeroReg r_core) 0
   have he_z : ExecCodeDist (B := B) w (.op (.const (zeroReg r_core) 0))
@@ -633,7 +633,7 @@ private theorem step_eval_subroutineCode
   have hc_neg : ¬(Cond.eq (opReg r_core) (zeroReg r_core)).Holds x_z := by
     have hne : opReg r_core ≠ zeroReg r_core := by
       simp [opReg, zeroReg, Fin.ext_iff]
-    simp [Cond.Holds, x_z, x_prep, SubroutineCode.toDynamicProgram, DynamicProgram.prepare,
+    simp [Cond.Holds, x_z, x_prep, SubroutineCode.prepare,
       subroutineCode, encode, Data.set, Function.update_of_ne hne]
   have hxz_base : (x_z.comap coreReg).regs H.baseReg = base := by
     have hne_z : coreReg H.baseReg ≠ zeroReg r_core :=
@@ -643,7 +643,7 @@ private theorem step_eval_subroutineCode
     have hne_key : coreReg H.baseReg ≠ coreReg H.keyReg :=
       fun h => H.key_ne_base (coreReg_injective h.symm)
     simp [x_z, x_prep, Data.comap, Data.set, Function.update_of_ne hne_z,
-      SubroutineCode.toDynamicProgram, DynamicProgram.prepare, subroutineCode,
+      SubroutineCode.prepare, subroutineCode,
       hne_op, hne_key, hb]
   have hxz_key : (x_z.comap coreReg).regs H.keyReg = u.val := by
     have hne_z : coreReg H.keyReg ≠ zeroReg r_core :=
@@ -651,7 +651,7 @@ private theorem step_eval_subroutineCode
     have hne_op : coreReg H.keyReg ≠ opReg r_core :=
       coreReg_ne_of_val_ge H.keyReg (by simp [opReg])
     simp [x_z, x_prep, Data.comap, Data.set, Function.update_of_ne hne_z,
-      SubroutineCode.toDynamicProgram, DynamicProgram.prepare, subroutineCode,
+      SubroutineCode.prepare, subroutineCode,
       encode, hne_op]
   obtain ⟨y_core, he_eval, hy_mem, hy_base, hy_out⟩ :=
     H.eval_exec t.latent u (hx_z.comap coreReg) hxz_base hxz_key htab hseed
@@ -757,7 +757,7 @@ private theorem steps_subroutineCode
           (H.step_resample_subroutineCode t ht_inv.1 ht_inv.2.1 ht_inv.2.2)
         rw [hμ_eq]
         exact ⟨ht_inv.1, H.arguments_fit .resample,
-          (H.subroutineCode.toDynamicProgram H.encode H.decode).prepare_bounded ht_inv.1
+          H.subroutineCode.prepare_bounded H.encode ht_inv.1
             (H.arguments_fit .resample),
           hspec.1,
           fun q hq => ⟨(hspec.2.2 q hq).1, (hspec.2.2 q hq).2.1, (hspec.2.2 q hq).2.2.1⟩⟩
@@ -840,7 +840,7 @@ private theorem steps_subroutineCode
         have hspec := Classical.choose_spec
           (H.step_eval_subroutineCode u t ht_inv.1 ht_inv.2.1 ht_inv.2.2.1 ht_inv.2.2.2)
         refine ⟨ht_inv.1, H.arguments_fit (.eval u),
-          (H.subroutineCode.toDynamicProgram H.encode H.decode).prepare_bounded ht_inv.1
+          H.subroutineCode.prepare_bounded H.encode ht_inv.1
             (H.arguments_fit (.eval u)), ?_, ?_⟩
         · simpa [μ_step, hy_eq] using hspec.1
         · intro q hq

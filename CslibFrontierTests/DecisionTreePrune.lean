@@ -32,3 +32,7 @@ example : ((leaf 7 : DecisionTree Empty ℕ).prune PartialAssignment.empty).dept
 
 
 end Cslib.DecisionTree
+
+-- Recording an observed answer also works on an infinite coordinate type.
+example (ρ : PartialAssignment ℕ) (x : ℕ → Bool) (hx : ρ.Agrees x) (i : ℕ) :
+    PartialAssignment.Agrees (Function.update ρ i (some (x i))) x := hx.update rfl

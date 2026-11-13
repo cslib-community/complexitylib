@@ -827,12 +827,12 @@ Christopher Henson and Fabrizio Montesi. *Computer Science as Infrastructure: th
 <a id="hhk17"></a>
 ## hhk17
 
-Dennis Hofheinz, Kathrin Hövelmanns, Eike Kiltz. “A Modular Analysis of the Fujisaki–Okamoto Transformation.” *Theory of Cryptography (TCC 2017)*, LNCS 10677, 341–371, 2017. https://doi.org/10.1007/978-3-319-70500-2_12 ; full version https://eprint.iacr.org/2017/604 (dated 2 November 2021). Checked against the 2 November 2021 ePrint PDF (§2.1 correctness/spreadness and Def. 2.2 / Fig. 4 IND-CPA; §3.1 Fig. 5 transform `T`; §3.2.1 Fig. 9 `FO^⊥`; §3.2.2 Fig. 12 `FO-notbot`), with model adaptations (`ExplicitCoinPKE`/`Scheme` fixed types and arbitrary `sampleCoins`/`sampleMsg`/`sampleKey` samplers, single-stage fixed-message probability-difference `indCpaGame`/`indCpaAdvantage`, and domain-separated `H : Bool × M × CT → K`) documented in the Lean module and chapter text.
+Dennis Hofheinz, Kathrin Hövelmanns, Eike Kiltz. “A Modular Analysis of the Fujisaki–Okamoto Transformation.” *Theory of Cryptography (TCC 2017)*, LNCS 10677, 341–371, 2017. https://doi.org/10.1007/978-3-319-70500-2_12 ; full version https://eprint.iacr.org/2017/604 (dated 2 November 2021). Checked against the 2 November 2021 ePrint PDF (§2.1 correctness/spreadness and Def. 2.2 / Fig. 4 IND-CPA; §3.1 Fig. 5 transform `T`; §3.2.1 Fig. 9 `FO^⊥`; §3.2.2 Fig. 12 `FO-notbot`), with model adaptations (`ExplicitCoinPKE`/`Scheme` fixed types and arbitrary `sampleCoins`/`sampleMsg`/`sampleKey` samplers, single-stage fixed-message probability-difference `indCpaGame`/`indCpaAdvantage`, and domain-separated `H : Bool × M × CT → K`) documented in the Lean modules and chapter text.
 
 <a id="hhrvw20"></a>
 ## hhrvw20
 
-Iftach Haitner, Thomas Holenstein, Omer Reingold, Salil Vadhan, Hoeteck Wee. “Inaccessible Entropy II: IE Functions and Universal One-Way Hashing.” *Theory of Computing* 16(8), 1–55, 2020. https://doi.org/10.4086/toc.2020.v016a008 . Open-access article PDF inspected (Section 3, Definitions 3.1, 3.3, 3.9, pp. 11–15; Section 4.2, Theorem 4.5 and Claims 4.6–4.8, pp. 21–25, adapted to a constant light-image threshold with inverse-linear gap `1 / (64 * (n + 1))`; and Section 5.1, Theorem 5.1, Lemmas 5.3–5.7, and Section 5.1.5 STEPS 1–5, pp. 25–32).
+Iftach Haitner, Thomas Holenstein, Omer Reingold, Salil Vadhan, Hoeteck Wee. “Inaccessible Entropy II: IE Functions and Universal One-Way Hashing.” *Theory of Computing* 16(8), 1–55, 2020. https://doi.org/10.4086/toc.2020.v016a008 . Open-access article PDF inspected (Section 3, Definitions 3.1, 3.3, 3.9, pp. 11–15, including canonical collision-finder sanitization and adversary-dependent accessible preimage sets; Section 4.2, Theorem 4.5 and Claims 4.6–4.8, pp. 21–25, with polynomial light-image threshold and `d * Real.logb 2 n / n` entropy gap against uniform strict-PPT adversaries; and Section 5.1, Theorem 5.1, Lemmas 5.3–5.7, and Section 5.1.5 STEPS 1–5, pp. 25–32, proved from Definition 3.9's adversary-dependent hypothesis).
 
 <a id="hierholzer73"></a>
 ## hierholzer73
@@ -1292,7 +1292,7 @@ Michael Mitzenmacher and Eli Upfal. *Probability and Computing: Randomization an
 <a id="mohrirostamizadehtalwalkar18"></a>
 ## mohrirostamizadehtalwalkar18
 
-Mehryar Mohri, Afshin Rostamizadeh and Ameet Talwalkar. *Foundations of Machine Learning*, 2nd edition. MIT Press, 2018. ISBN 978-0-262-03940-6; https://cs.nyu.edu/~mohri/mlbook/ . Bibliographic metadata from `references.bib`; Chapter 3 locators (Definitions 3.1–3.2, Theorem 3.3, Lemma 3.4, Theorem 3.5, Theorem 3.7, Corollaries 3.8, 3.9, 3.18 and 3.19) and Section 5.4 locators (Definitions 5.5–5.6 for the `ρ`-margin loss and empirical margin loss, Lemma 5.7 for uncentered Talagrand contraction, and Theorem 5.8, (5.39)–(5.40) for fixed-`ρ` Rademacher margin generalization bounds) were checked against secondary search summaries on 2026-11-11 UTC; the printed book PDF was not directly inspected in this pass. The library formalizes these results on finite `PMF` sample spaces and assumes uniform boundedness on real-valued hypothesis classes so that real conditional suprema `⨆` are bounded above.
+Mehryar Mohri, Afshin Rostamizadeh and Ameet Talwalkar. *Foundations of Machine Learning*, 2nd edition. MIT Press, 2018. ISBN 978-0-262-03940-6; https://cs.nyu.edu/~mohri/mlbook/ . Bibliographic metadata from `references.bib`; Chapter 3 locators (Definitions 3.1–3.2, Theorem 3.3, Lemma 3.4, Theorem 3.5, Theorem 3.7, Corollaries 3.8, 3.9, 3.18 and 3.19) and Section 5.4 locators (Definitions 5.5–5.6 for the `ρ`-margin loss and empirical margin loss, Lemma 5.7 for uncentered Talagrand contraction, and Theorem 5.8, (5.39)–(5.40) for fixed-`ρ` Rademacher margin generalization bounds) were checked against secondary search summaries on 2026-11-11 UTC; the printed book PDF was not directly inspected in this pass. Theorem 7.2 (AdaBoost's empirical error, p. 149) and Corollary 7.5 were read in a PDF of the book on 2026-11-13. The library formalizes these results on finite `PMF` sample spaces and assumes uniform boundedness on real-valued hypothesis classes so that real conditional suprema `⨆` are bounded above.
 
 <a id="monderershapley96"></a>
 ## monderershapley96
@@ -1594,6 +1594,11 @@ James Schummer and Rakesh V. Vohra. "Strategy-proof Location on a Network." *Jou
 
 James Schummer and Rakesh V. Vohra. "Mechanism Design without Money." Chapter 10 of Noam Nisan, Tim Roughgarden, Éva Tardos and Vijay V. Vazirani (eds.), *Algorithmic Game Theory*, Cambridge University Press, 2007, 243–265. A university-hosted PDF of the book was consulted on 2026-11-08 for §10.3 (the definition of blocking coalitions and the core, Definition 10.5, Theorems 10.6 and 10.7, pp. 253–255). Its core uses weak blocking, the strict core of the housing-market modules. Its claim on p. 255 that the core and the strict core coincide under strict preferences is refuted by a checked three-agent market in `CslibFrontierTests/HousingMarket.lean`.
 
+<a id="shalevshwartzbendavid14"></a>
+## shalevshwartzbendavid14
+
+Shai Shalev-Shwartz and Shai Ben-David. *Understanding Machine Learning: From Theory to Algorithms*. Cambridge University Press, 2014. ISBN 978-1-107-05713-5. A PDF of the book was read on 2026-11-13 for Section 10.2 (AdaBoost, Theorem 10.2 and its proof, pp. 135–137, including the product form `Z_{t+1}/Z_t = 2 √(ε_{t+1} (1 - ε_{t+1}))`) and Lemma 10.3 (Section 10.3). [Boosting/AdaBoost](../CslibFrontier/MachineLearning/Boosting/AdaBoost.lean) records its differences from Theorem 10.2: early stopping at `ε_t = 0` and ties predicting `false`.
+
 <a id="shamir1979"></a>
 ## shamir1979
 
@@ -1827,6 +1832,11 @@ Jacob Ziv and Abraham Lempel. "A Universal Algorithm for Sequential Data Compres
 ## zivlempel78
 
 Jacob Ziv and Abraham Lempel. "Compression of Individual Sequences via Variable-Rate Coding." *IEEE Transactions on Information Theory* 24(5), 530–536, 1978. https://doi.org/10.1109/TIT.1978.1055934 . Bibliographic data from the DOI record and secondary summaries. The incremental parsing rule (each phrase is the shortest new prefix) is attributed through [Cover and Thomas](#coverthomas06); the paper's text was not inspected in this pass.
+
+<a id="zpzs24"></a>
+## zpzs24
+
+Mingxun Zhou, Andrew Park, Wenting Zheng and Elaine Shi. "Piano: Extremely Simple, Single-Server PIR with Sublinear Server Computation." *2024 IEEE Symposium on Security and Privacy (SP)*, 4296–4314, 2024. https://doi.org/10.1109/SP54263.2024.00055 ; full version (author order Mingxun Zhou, Andrew Park, Elaine Shi and Wenting Zheng): Cryptology ePrint Archive, Paper 2023/452, https://eprint.iacr.org/2023/452.pdf . Checked against the full ePrint version on 2026-11-12: Section 2 and Section 3.1–3.2 (Figure 1 on p. 6, Definition 3.1 on pp. 7–8, Theorems 3.2–3.4 on pp. 8–9), Appendix A (pp. 20–21, Figure 3 compacted query offsets and `√n`-parity server replies), and Appendix C.1–C.2 (pp. 24–26, Theorem C.1 and Lemma C.2). The library formalizes deterministic conditional correctness for the Figure 1 `HintTable` client (`CanAnswerSeq`, with replacement and backup entries sharing one per-chunk counter `used`), exact perfect privacy in the ideal-random-set model for the separate unbounded-backup server-view hybrid `pianoHybridScheme` (which sets replacement and backup parity bits to `false` and is not a correct PIR scheme), and the exact bit-alphabet online communication counts; the PRF reduction, full-client privacy, the Theorem 3.3 failure-probability bound, pipelining, the Appendix A server algorithm, and storage/runtime bounds are not formalized.
 
 <a id="zre15"></a>
 ## zre15

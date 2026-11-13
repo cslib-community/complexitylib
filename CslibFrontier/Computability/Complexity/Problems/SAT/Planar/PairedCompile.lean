@@ -119,7 +119,7 @@ def lastLiteral (sites : List Point) (r : Route) (positive : Bool) : Literal Var
 def originalClauses (φ : CNF ℕ) (sites : List Point) : List PlacedClause :=
   φ.zipIdx.map fun (c, i) =>
     let ls := c.zipIdx.map fun (l, j) =>
-      lastLiteral sites (occurrencePath φ (i, j, l)) l.2
+      lastLiteral sites (occurrencePath φ ⟨i, j, l⟩) l.2
     (ls.map Prod.fst, center (Layout.center (φ.distinctVars.length + i)), ls.map Prod.snd)
 
 /-- The ordinary fixed implication ring in an occupied cell. -/
@@ -175,15 +175,15 @@ theorem mem_placedClauses {φ : CNF ℕ} {pc : PlacedClause} :
   simp only [placedClauses, List.mem_append, List.mem_flatMap, mem_links, or_assoc]
 
 /-- Each literal and each route of an original clause record `(c, p, rs)` is the final literal
-or final incidence of one occurrence `(i, j, x)` of the source formula, carrying the sign of its
+or final incidence of one occurrence `⟨i, j, x⟩` of the source formula, carrying the sign of its
 source literal `x`. -/
 theorem exists_occurrence_of_mem_originalClauses {φ : CNF ℕ} {sites : List Point}
     {c : Clause Variable} {p : Point} {rs : List Route}
     (hpc : (c, p, rs) ∈ originalClauses φ sites) :
-    (∀ l ∈ c, ∃ i j x, (i, j, x) ∈ Cslib.Logic.PL.occurrences φ ∧
-      (lastLiteral sites (occurrencePath φ (i, j, x)) x.2).1 = l) ∧
-    ∀ r ∈ rs, ∃ i j x, (i, j, x) ∈ Cslib.Logic.PL.occurrences φ ∧
-      (lastLiteral sites (occurrencePath φ (i, j, x)) x.2).2 = r := by
+    (∀ l ∈ c, ∃ i j x, ⟨i, j, x⟩ ∈ Cslib.Logic.PL.occurrences φ ∧
+      (lastLiteral sites (occurrencePath φ ⟨i, j, x⟩) x.2).1 = l) ∧
+    ∀ r ∈ rs, ∃ i j x, ⟨i, j, x⟩ ∈ Cslib.Logic.PL.occurrences φ ∧
+      (lastLiteral sites (occurrencePath φ ⟨i, j, x⟩) x.2).2 = r := by
   obtain ⟨⟨d, i⟩, hdi, heq⟩ := List.mem_map.mp hpc
   simp only [Prod.mk.injEq] at heq
   obtain ⟨rfl, -, rfl⟩ := heq

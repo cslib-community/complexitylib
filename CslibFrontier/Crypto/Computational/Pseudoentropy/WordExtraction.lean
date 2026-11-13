@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Computational.Pseudoentropy.Seed
+public import CslibFrontier.Crypto.Computational.Pseudoentropy.SeedSchedule
 public import CslibFrontier.Probability.UniformNat
 public import CslibFrontier.Crypto.Computational.Pseudoentropy.MatrixExtraction
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
@@ -151,13 +152,13 @@ theorem SamplablePair.HasGapWithAdvice.extract_indexed_word_labels {pair : Sampl
         PMF.conditionalEntropy (pair.joint n) + gap n)
     (hbudget : ∀ᶠ n in atTop,
       outputBits n (choose n) +
-        2 * (ExtractionSchedule.slack n (realization.length n) (inverseSlack n) : ℝ) ≤
-        ExtractionSchedule.count n (realization.length n) (inverseSlack n) *
+        2 * (realization.sampleSlack inverseSlack n : ℝ) ≤
+        realization.sampleCount inverseSlack n *
           ((numerator n (choose n) : ℝ) / dyadicSize (densityBound n)))
     (test : ℕ × List Bool → ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool)
     (htest : IsPPTOn (encPair (encPair (encPair encUnary encBits) encUnary)
       encWordExtractionOutput) encBool (fun ((a, i), result) => test a i result)) :
-    let count := fun n => ExtractionSchedule.count n (realization.length n) (inverseSlack n)
+    let count := realization.sampleCount inverseSlack
     Negligible (fun n => Game.advantage
       (ProbComp.eval (do
         let samples ← OracleComp.replicate (count n) (pair.sample n)
@@ -165,9 +166,8 @@ theorem SamplablePair.HasGapWithAdvice.extract_indexed_word_labels {pair : Sampl
         test (n, advice n) (choose n) result))
       (ProbComp.eval (extractWordLabelsIdeal (Prod.fst <$> pair.sample n) (count n)
         (outputBits n (choose n)) >>= test (n, advice n) (choose n)))) := by
-  let count := fun n => ExtractionSchedule.count n (realization.length n) (inverseSlack n)
-  have hcount := ExtractionSchedule.isPolyTime_count .id'
-    realization.length_isPolyTime hslack
+  let count := realization.sampleCount inverseSlack
+  have hcount := realization.isPolyTime_sampleCount hslack
   have hn := (ComputableInPolyTime.fst (encPair encUnary encBits) encUnary).fst'
   have h := hpair.extract_indexed_labels realization choose
     (inverseSlack := inverseSlack)
@@ -187,10 +187,10 @@ theorem SamplablePair.HasGapWithAdvice.extract_indexed_word_labels {pair : Sampl
   have hpublic : ProbComp.eval ((fun value => pair.encode n value.1) <$>
       pair.latentSample n) = ProbComp.eval (Prod.fst <$> pair.sample n) := by
     simp only [pmf_norm, pair.eval_latentSample, pair.eval_sample]
-  simp only [count, ProbComp.eval_bind, eval_extractWordLabels,
-    eval_extractWordLabelsIdeal, PMF.bind_map, Function.comp_def, extractLabelsIdeal,
+  simp only [count, ProbComp.eval_bind, eval_extractWordLabels, eval_extractWordLabelsIdeal,
+    PMF.bind_map, PMF.bind_bind, Function.comp_def, extractLabelsIdeal,
     ProbComp.eval_replicate_congr hpublic
-      (ExtractionSchedule.count n (realization.length n) (inverseSlack n))]
+      (realization.sampleCount inverseSlack n)]
 
 open Filter in
 /-- Computational label extraction relative to fixed advice as two ordinary word programs. The
@@ -208,13 +208,13 @@ theorem SamplablePair.HasGapWithAdvice.extract_word_labels {pair : SamplablePair
       (numerator n : ℝ) / dyadicSize (densityBound n) ≤
         PMF.conditionalEntropy (pair.joint n) + gap n)
     (hbudget : ∀ᶠ n in atTop,
-      outputBits n + 2 * (ExtractionSchedule.slack n (realization.length n) (inverseSlack n) : ℝ) ≤
-        ExtractionSchedule.count n (realization.length n) (inverseSlack n) *
+      outputBits n + 2 * (realization.sampleSlack inverseSlack n : ℝ) ≤
+        realization.sampleCount inverseSlack n *
           ((numerator n : ℝ) / dyadicSize (densityBound n)))
     (test : ℕ × List Bool → List (List Bool) × List Bool × List Bool → ProbComp Bool)
     (htest : IsPPTOn (encPair (encPair encUnary encBits) encWordExtractionOutput) encBool
       (fun input => test input.1 input.2)) :
-    let count := fun n => ExtractionSchedule.count n (realization.length n) (inverseSlack n)
+    let count := realization.sampleCount inverseSlack
     Negligible (fun n => Game.advantage
       (ProbComp.eval (do
         let samples ← OracleComp.replicate (count n) (pair.sample n)

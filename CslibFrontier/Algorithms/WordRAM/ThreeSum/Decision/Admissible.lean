@@ -44,6 +44,11 @@ This admits every width above the threshold, independently of the particular inp
   width κ 123357 input.length ≤ W ∧
     ∀ z ∈ input, |z| ≤ ((input.length + 2) ^ κ : ℕ)
 
+/-- Integer lists in the polynomial-magnitude promise domain. Every such input admits a
+physical width satisfying `Admissible`; arbitrary integer lists need not satisfy the promise. -/
+abbrev MagnitudeBoundedInput (κ : ℕ) :=
+  {input : List ℤ // ∀ z ∈ input, |z| ≤ ((input.length + 2) ^ κ : ℕ)}
+
 /-- Admitted input/width pairs satisfy the decision API's separate input-fit condition. -/
 theorem Admissible.inputFits {κ W : ℕ} {input : List ℤ} (h : Admissible κ input W) :
     InputFits W (input.map Signed.encode) := by

@@ -150,7 +150,7 @@ private theorem falseView_real : falseView ∈
             ()), ())) := by
     simp [maskedMulCheckReceiverView, Receiver.strategy, constantReceiver, World.eval, voleWorld,
       maskedMulCheck, liftProver, liftVerifier, runAgainst, ProverStrategy.hoist,
-      VerifierStrategy.hoist, maskedMulCheckSpec, Cslib.Crypto.Protocols.SigmaProtocol.sigmaSpec,
+      VerifierStrategy.hoist, maskedMulCheckSpec, threeMoveSpec,
       ProbOracleComp.query, ProbOracleComp.sample, ProbOracleComp.runWith,
       OracleComp.sumHandler, VOLECorrelation.senderView, PMF.map, Function.comp_def, PMF.bind_bind]
   rw [hrun]

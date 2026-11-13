@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stop tidy computability from spreading into public statements (S3 of #456).
+"""Stop tidy computability from spreading into public statements (tracked by #862).
 
 Usage: python3 scripts/check_tidy_surface.py [--update [--allow-increase]] [--no-build-check]
 
@@ -11,7 +11,7 @@ Proofs, bodies that are not exposed and private declarations do not count, and n
 machine constructions listed in `scripts/tidy_allowlist.txt` (#608).
 
 The check counts tidy statements per module and compares the counts with
-`scripts/tidy_surface_baseline.json`, which records those that #456's sweep has yet to restate.
+`scripts/tidy_surface_baseline.json`, which records those that #862 has yet to remove.
 Every count must equal its baseline entry (a module without an entry, such as a new one, has
 none). A count above its entry is a new tidy statement. A count below it fails too, until the
 baseline is lowered in the same change: otherwise the unused allowance would let a removed
@@ -96,7 +96,7 @@ def compare(counts: dict[str, int], baseline: dict[str, int]
 
 
 def over_report(over: dict[str, tuple[int, int]], found: dict[str, list[Statement]]) -> str:
-    out = ["Public statements may not mention tidy computability, only proofs may (#456). Restate "
+    out = ["Public statements may not mention tidy computability, only proofs may (#862). Restate "
            "these with plain computability (`ComputableInPolyTime`, `ComputableInTimeAndSpace`, "
            "…) and switch inside the proofs (`.tidy`, `.of_tidy`).", ""]
     for path, (count, entry) in over.items():
