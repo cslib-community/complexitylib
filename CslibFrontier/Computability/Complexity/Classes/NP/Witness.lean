@@ -12,9 +12,11 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.De
 public import CslibFrontier.Foundations.Data.List.MaskSelect
 public import CslibFrontier.Foundations.Data.List.SelectDistinct
 public import Mathlib.Data.Finset.Card
+import CslibFrontier.Computability.Complexity.Classes.TruncatedVerifier
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import CslibFrontier.Foundations.Data.List.TakeQuantifiers
 import Cslib.Foundations.Data.Polynomial.Monotone
 import Mathlib.Data.List.GetD
 
@@ -54,7 +56,8 @@ supported:
 the unrelativized counterpart of `Cslib.Complexity.PolyTimeReducible.mem_NPWithOracle`).
 Certificates for the original instance have a length polynomial in its own length, while the
 verifier of the target expects a length determined by the reduced instance, so the verifier reads
-only that prefix of the certificate, and `IsVerifier.of_padding` handles the rest.
+only that prefix of the certificate (`Cslib.Complexity.exists_truncated_verifier`), and
+`List.exists_length_eq_take_iff` matches the two certificate quantifiers.
 
 For verifiers on concatenated strings, `Cslib.Complexity.mem_NP_setOf_exists_append` places the
 pairs `(a, u)` admitting an accepted suffix of length `q (enc a).length` in `NP`. This is the
@@ -352,20 +355,10 @@ theorem PolyTimeReducible.mem_NP {encB : β ↪ List Bool} {B : Set β}
     (h : PolyTimeReducible enc encB A B) (hB : B ∈ NP encB) : A ∈ NP enc := by
   obtain ⟨f, hf, hAB⟩ := h
   obtain ⟨q, W, hW, hWB⟩ := Complexity.mem_NP.mp hB
-  have hlen : ComputableInPolyTime (fun a => q.eval (encB (f a)).length) enc encUnary :=
-    (unary_eval q).comp ((encoding_length encB).comp hf)
-  obtain ⟨p, hle⟩ := hlen.polyBounded.exists_polynomial
-  refine Complexity.mem_NP.mpr ⟨p,
-    fun x => W (f x.1, x.2.take (q.eval (encB (f x.1)).length)), ?_,
-    IsVerifier.of_padding (fun a w hw h => ?_) fun a ha => ?_⟩
-  · exact hW.comp ((hf.comp (fst enc encBits)).prod
-      (bitsTakeWithInput (snd enc encBits) (hlen.comp (fst enc encBits))))
-  · refine (hAB a).2 ((hWB (f a)).2 ⟨_, List.length_take_of_le ?_, h⟩)
-    rw [hw]
-    exact hle a
-  · obtain ⟨u, hu, hWu⟩ := (hWB (f a)).1 ((hAB a).1 ha)
-    refine ⟨u, by rw [hu]; exact hle a, fun k => ?_⟩
-    simpa only [List.take_left' hu] using hWu
+  obtain ⟨p, V, hV, hle, hVW⟩ := exists_truncated_verifier hf q hW
+  refine Complexity.mem_NP.mpr ⟨p, V, hV, fun a => ?_⟩
+  simp only [hVW, hAB a, hWB (f a)]
+  exact (List.exists_length_eq_take_iff (P := fun u => W (f a, u) = true) (hle a)).symm
 
 /-- `coNP` is closed under polynomial-time reductions. -/
 theorem PolyTimeReducible.mem_coNP {encB : β ↪ List Bool} {B : Set β}
@@ -386,15 +379,7 @@ theorem mem_NP_setOf_exists_append {V : α × List Bool → Bool}
   · exact hV.comp ((fst _ _).fst'.prod (bitsAppend (fst _ _).snd'
       (bitsTakeWithInput (snd _ _) ((unary_eval q).comp ((encoding_length enc).comp
         (fst _ _).fst')))))
-  · have hle : q.eval (enc y.1).length ≤ q.eval (encPair enc encBits y).length :=
-      q.eval_mono (length_le_encPair_left _ _ _)
-    constructor
-    · rintro ⟨v, hv, hV⟩
-      refine ⟨v ++ List.replicate (q.eval (encPair enc encBits y).length - v.length) false,
-        by simp only [List.length_append, List.length_replicate, hv]; omega, ?_⟩
-      dsimp only
-      rwa [← hv, List.take_left]
-    · rintro ⟨w, hw, hV⟩
-      exact ⟨_, by rw [List.length_take, hw, Nat.min_eq_left hle], hV⟩
+  · exact (List.exists_length_eq_take_iff (P := fun v => V (y.1, y.2 ++ v) = true)
+      (q.eval_mono (length_le_encPair_left _ _ _))).symm
 
 end Cslib.Complexity
