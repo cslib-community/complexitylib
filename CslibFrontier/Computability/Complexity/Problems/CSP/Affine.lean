@@ -16,7 +16,7 @@ public import CslibFrontier.Computability.Complexity.Problems.XORSAT
 
 For each relation, affine normal form on `Fin (arity R)` supplies a fixed system. Relabeling its
 local coordinates by natural numbers and substituting constraint scopes gives a polynomial-time
-reduction to ordinary XORSAT. Malformed arities produce the inconsistent system `[([], true)]`.
+reduction to ordinary XORSAT. Malformed arities produce the inconsistent system `[⟨[], true⟩]`.
 All fixed arities, empty/nullary relations and repeated scope variables are supported.
 
 This proves the parity case of [Chen2006CSP], Theorem 3.20 (arXiv v1, p. 12), using Theorem 4.3
@@ -55,14 +55,14 @@ theorem exists_affine_templates (arity : Rel → ℕ) (sem : Rel → List Bool �
 /-- Compile well-formed scopes to affine equations; reject every malformed instance. -/
 @[expose] def toXORSAT (arity : Rel → ℕ) (template : Rel → AffineSystem ℕ)
     (F : CSP Rel ℕ) : XORSAT.System :=
-  if F.validArity arity then F.instantiateAffine 0 template else [([], true)]
+  if F.validArity arity then F.instantiateAffine 0 template else [⟨[], true⟩]
 
 /-- Correct fixed templates give a native polynomial-time reduction to ordinary XORSAT. -/
 theorem polyTimeReducible_XORSAT_of_templates [Finite Rel] (encRel : Rel ↪ List Bool)
     (arity : Rel → ℕ) (sem : Rel → List Bool → Bool) (template : Rel → AffineSystem ℕ)
     (ht : CSP.AffineTemplates arity sem template) :
     PolyTimeReducible (encCSP encRel encNat) XORSAT.encoding (CSPSAT arity sem) XORSAT := by
-  refine polyTimeReducible_of_guard encRel arity sem [([], true)]
+  refine polyTimeReducible_of_guard encRel arity sem [⟨[], true⟩]
     (CSP.computableInPolyTime_instantiateAffine encRel template) (fun F hF => ?_)
     (by simp [mem_XORSAT, XORSAT.Satisfiable, AffineSystem.Holds, AffineEquation.Holds,
       Bool.zero_eq_false])
