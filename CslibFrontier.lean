@@ -1096,6 +1096,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.ACC0.Basic
 public import CslibFrontier.Computability.Circuit.Boolean.ACC0.Gadgets
 public import CslibFrontier.Computability.Circuit.Boolean.ACC0.Simulation
 public import CslibFrontier.Computability.Circuit.Boolean.Advice
+public import CslibFrontier.Computability.Circuit.Boolean.Advice.Hierarchy
 public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperser
 public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperser.Deletion
 public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperser.Elimination
@@ -1809,6 +1810,7 @@ public import CslibFrontier.Computability.Complexity.Classes.AWPP.Lowness
 public import CslibFrontier.Computability.Complexity.Classes.AWPP.OracleWeights
 public import CslibFrontier.Computability.Complexity.Classes.AWPP.WPP
 public import CslibFrontier.Computability.Complexity.Classes.Advice
+public import CslibFrontier.Computability.Complexity.Classes.Advice.Hierarchy
 public import CslibFrontier.Computability.Complexity.Classes.Advice.LengthComparison
 public import CslibFrontier.Computability.Complexity.Classes.Advice.OneBit
 public import CslibFrontier.Computability.Complexity.Classes.Alternation
