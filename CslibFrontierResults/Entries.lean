@@ -19,6 +19,7 @@ import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.VectorProbability
 import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.VectorReduction
 import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.BalancedCount
 import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.VectorParameters
+import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.VectorDimension
 import CslibFrontier.Algorithms.Lean.VectorConvolution
 import CslibFrontier.Algorithms.Lean.VectorConvolution.CostBounds
 import CslibFrontier.Algorithms.LinearAlgebra.BareissElimination
@@ -3830,7 +3831,8 @@ register_result "integer-3sum-base-r-balanced-pair-count" where
   ]
   scope := "For 0 < r and r | d: #P = d!/((d/r)!)^r * (r!)^(d/r) exactly, P the pairs of numbers \
     below r^d whose base-r digit vectors add up to a balanced vector; none if r does not divide \
-    d. The asymptotic form r^d / d^Theta(r) of the multinomial is not formalized."
+    d. The explicit lower bound #P >= r^d (r!)^(d/r) / (d+1)^r is recorded with the input \
+    parameters. The full multinomial Theta estimate remains open."
 
 register_result "integer-3sum-base-r-trial-number" where
   title := "Number of trials and miss envelope of the base-r 3SUM reduction"
@@ -3845,8 +3847,29 @@ register_result "integer-3sum-base-r-trial-number" where
   ]
   scope := "mu = vTrials k e r d is computed from k, e, r, d; with mu trials and a uniform prime of \
     [2^e, 2^(e+1)) with r^d <= 2^e the miss probability is at most #bad/#window + exp(-k), for \
-    0 < r, r | d. The choice of d, the expected running time with these parameters and \
+    0 < r, r | d. The input-computed choice of d is recorded separately; the source asymptotic \
+    dimension and trial-count bounds, expected running time with these parameters and \
     Corollaries 3.5 and 3.6 are not formalized."
+
+register_result "integer-3sum-base-r-input-parameters" where
+  title := "Input-computed dimension and trials for the base-r 3SUM reduction"
+  topic := "algorithms"
+  sources := [
+    { paper := ChanItakuraMaYu2026, theorem := "Theorem 3.4 (choice of d and mu)",
+      locator := "Section 3.2, pp. 13-14" }
+  ]
+  theorems := [
+    Cslib.Algorithms.Lean.SubsetConvThreeSum.pow_mul_le_card_balancedPairs,
+    Cslib.Algorithms.Lean.SubsetConvThreeSum.three_mul_vTrials_le,
+    Cslib.Algorithms.Lean.SubsetConvThreeSum.twenty_mul_card_badPrimesOf_le,
+    Cslib.Algorithms.Lean.SubsetConvThreeSum.vaverage_miss_le_vDim
+  ]
+  scope := "For r >= 2, d = vDim r |A x B| log2 M (least r j with 480 (r!)^j |A x B| log2 M <= \
+    (r^(rj) - 1) r^(rj)), e = clog2 r^d and mu = vTrials k e r d, all computed from the input: \
+    miss probability <= 1/20 + exp(-k) over a uniform prime of [2^e, 2^(e+1)) and mu seeds; \
+    #P >= r^d (r!)^(d/r) / (d+1)^r and an explicit upper bound on mu. Constants differ from the \
+    paper's. Not formalized: the full multinomial Theta estimate, source asymptotic dimension \
+    and trial-count bounds, expected running time, amplification, Corollaries 3.5 and 3.6."
 
 register_result "integer-3sum-base-r-reduction-timem" where
   title := "Base-r hashing reduction from integer 3SUM to convolution in [r]^d"
@@ -3863,9 +3886,9 @@ register_result "integer-3sum-base-r-reduction-timem" where
   scope := "TimeM unit-cost model with the random prime and seeds as inputs: one-sided error, \
     exact cost for given random choices, and the miss probability over uniform seeds and a \
     uniform prime of [2^e, 2^(e+1)) with r^d <= 2^e (the paper: (r^d, 2 r^d]) as explicit counts. \
-    The exact #P and a computed vTrials choice of mu are recorded separately. Not formalized: \
-    selection of d, the asymptotic trial-count bound, expected running time and amplification, \
-    Corollaries 3.5 and 3.6, unbalanced/per-query forms and Word-RAM realizations."
+    The exact #P, the vTrials choice of mu and the input-computed d are recorded separately. Not \
+    formalized: the source asymptotic dimension and trial-count bounds, expected running time \
+    and amplification, Corollaries 3.5 and 3.6, unbalanced/per-query forms and Word-RAM realizations."
 
 register_result "integer-3sum-base-r-trial-timem" where
   title := "One base-r hashing trial of the reduction from integer 3SUM to convolution in [r]^d"
@@ -3881,8 +3904,8 @@ register_result "integer-3sum-base-r-trial-timem" where
   scope := "One trial for a given prime and seed in the TimeM unit-cost model: what it returns, \
     its exact cost and soundness. The success count, given-choice reduction (A_bad, repetition, \
     prime-window averaging), exact #P and computed vTrials are recorded separately. Not \
-    formalized: selection of d, the asymptotic trial-count bound, expected running time and \
-    amplification, Corollaries 3.5 and 3.6."
+    formalized: the source asymptotic dimension and trial-count bounds, expected running time \
+    and amplification, Corollaries 3.5 and 3.6."
 
 register_result "integer-3sum-base-r-trial-success-count" where
   title := "Per-trial success count for base-r hashing from integer 3SUM to vector convolution"
@@ -3896,8 +3919,9 @@ register_result "integer-3sum-base-r-trial-success-count" where
   scope := "Given isolated witnesses a in Ag subset A and b in Bg subset B with a + b = c and \
     r^d <= p, #P (p - 1) <= #accepting seeds + #P #L (r!)^(d/r). This is a count over seeds \
     supporting the separately recorded given-choice TimeM reduction. Exact #P and computed \
-    vTrials are also recorded separately; selection of d, the asymptotic trial-count bound, \
-    expected running time, amplification and Corollaries 3.5 and 3.6 remain open."
+    vTrials and input-computed d are also recorded separately; the source asymptotic dimension \
+    and trial-count bounds, expected running time, amplification and Corollaries 3.5 and 3.6 \
+    remain open."
 
 register_result "selected-entries-subset-convolution-timem" where
   title := "Selected entries of ranked subset convolution by the trimmed fast zeta transform"

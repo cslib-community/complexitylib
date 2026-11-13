@@ -235,6 +235,7 @@ public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Reduction
 public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Repetition
 public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Trial
 public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.TrialReduction
+public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.VectorDimension
 public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.VectorParameters
 public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.VectorProbability
 public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.VectorReduction
@@ -5593,6 +5594,7 @@ public import CslibFrontier.Foundations.Data.Nat.Choose.Central
 public import CslibFrontier.Foundations.Data.Nat.Choose.Entropy
 public import CslibFrontier.Foundations.Data.Nat.Choose.MaxTerm
 public import CslibFrontier.Foundations.Data.Nat.Choose.Multichoose
+public import CslibFrontier.Foundations.Data.Nat.Choose.MultinomialMax
 public import CslibFrontier.Foundations.Data.Nat.Choose.PrimePowerDvd
 public import CslibFrontier.Foundations.Data.Nat.Choose.Real
 public import CslibFrontier.Foundations.Data.Nat.Choose.Sum

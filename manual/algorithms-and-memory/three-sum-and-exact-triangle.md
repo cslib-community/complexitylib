@@ -417,10 +417,23 @@ and `d` only, `vaverage_miss_le_exp` bounds the miss probability by `#bad / #win
 The [count tests](../../CslibFrontierTests/Algorithms/Lean/BalancedCount.lean) compute
 `#balancedPairs 3 3 = 36` both ways and instantiate the bound.
 
-Not formalized: Theorem 3.4's choice of `d = 2 log_ρ n̂ + O(log log N)`, the lower bound
-`d! / ((d/r)!)^r = r^d / d^{Θ(r)}`, the expected running time and amplification, the choice of
-`r`, `δ` and `d` for Corollary 3.5, Corollary 3.5 itself, odd k-SUM (Corollary 3.6), the
-unbalanced and per-query forms, and Word-RAM realizations. The [tests](../../CslibFrontierTests/Algorithms/Lean/VectorConvolution.lean) run
+`CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.VectorDimension` computes all parameters from
+the input. `pow_mul_le_card_balancedPairs` bounds `#P ≥ r ^ d (r!)^(d/r) / (d + 1) ^ r` (through
+`Nat.pow_mul_pow_factorial_le`, the maximality of the balanced multinomial coefficient), and
+`three_mul_vTrials_le` bounds the number of trials from above. `vDim r n L` is `r j` for the least
+`j ≥ 1` with `480 (r!)^j n L ≤ (r^(r j) - 1) r^(r j)`, where `n = |A × B|` and `L = log₂ M`;
+`twenty_mul_card_badPrimesOf_le` then makes at most `1/20` of the window's primes bad. End to end,
+`vaverage_miss_le_vDim` gives miss probability at most `1/20 + exp (-k)` with
+`d = vDim r n L`, `e = ⌈log₂ r ^ d⌉` and `μ = vTrials k e r d`, for `r ≥ 2` and
+`|a + b - c| ≤ M` on `A × B`. The constants (`480`, `log₂ M`, the binary window) differ from the
+paper's, and `d` is defined as a least solution rather than as `2 log_ρ n̂ + O(log log N)`. The
+[dimension tests](../../CslibFrontierTests/Algorithms/Lean/VectorDimension.lean) compute `d = 8`
+for a small input and instantiate the bound.
+
+Not formalized: the full multinomial `Θ` estimate, the source asymptotic dimension and trial-count
+bounds, the expected running time with these parameters, its worst-case conversion and
+amplification, the choice of `r`, `δ` and `d` for Corollary 3.5, Corollary 3.5 itself, odd k-SUM
+(Corollary 3.6), the unbalanced and per-query forms, and Word-RAM realizations. The [tests](../../CslibFrontierTests/Algorithms/Lean/VectorConvolution.lean) run
 `solveM` on `[3]^2` and a base-`3` trial with `p = 29` by kernel reduction. Check with
 
 ```bash
