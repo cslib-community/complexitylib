@@ -6,6 +6,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
+import CslibFrontier.Probability.BilinearFingerprint
 import CslibFrontier.Computability.Complexity.Problems.Permanent.Valiant
 import CslibFrontier.Computability.Complexity.Problems.ThreeSAT.Collapse
 import CslibFrontier.Computability.Complexity.Classes.Sparse.Envelope
@@ -5585,3 +5586,19 @@ register_result "valiant-zero-one-permanent-sharp-p-complete" where
     and Barak Definition 9.5, FP with a bit oracle) is derived as a native polynomial-time \
     oracle program reading the permanent's bits. Arora and Barak's XOR-gadget proof and its \
     constant 4^(3m) are not formalized; the proof uses Goldreich's gadget."
+
+
+register_result "bilinear-finite-field-fingerprint" where
+  title := "Two-vector matrix identity fingerprint"
+  topic := "randomized verification"
+  sources := [
+    { paper := Goldreich2007DraftR5, theorem := "Exercise 9.22",
+      locator := "r5.pdf; PDF page 70 / printed page 452; rendered guideline exponent checked" }
+  ]
+  theorems := [Cslib.Probability.toOuterMeasure_bilinear_ne_zero_ge,
+    Cslib.Probability.toOuterMeasure_bilinear_zmod_ne_zero_ge,
+    Cslib.Probability.toOuterMeasure_bilinear_vecMulVec]
+  scope := "Arbitrary finite field and finite rectangular matrix with M ≠ 0. Independent \
+    uniform product sampling detects a nonzero bilinear fingerprint with probability at \
+    least (1 - 1/|F|)^2. Nonzero outer products attain equality, including characteristic \
+    two. No runtime bound or general rank formula."
