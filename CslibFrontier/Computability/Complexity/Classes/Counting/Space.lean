@@ -15,6 +15,7 @@ public import CslibFrontier.Computability.Complexity.Classes.Oracle.Space
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.OfBits
 
 /-!
 # Counting classes within polynomial space
@@ -104,7 +105,7 @@ theorem coModP_subset_PSPACE (k : ℕ) : coModP k enc ⊆ PSPACE enc := by
         (Nat.pow_lt_pow_right (by norm_num) (by lia)))
     obtain ⟨hv, hl⟩ := BitString.iterate_increment _ _ hlt
     refine ⟨_, hl, ?_⟩
-    rw [ofBits, ← BitString.lsbValue_eq_foldr_bit, hv]
+    rw [ofBits_eq_lsbValue, hv]
     exact (Nat.mul_div_cancel' (Nat.dvd_of_mod_eq_zero hdiv)).symm
   · rintro ⟨w, _, hw⟩
     exact Nat.mod_eq_zero_of_dvd ⟨ofBits w, hw⟩

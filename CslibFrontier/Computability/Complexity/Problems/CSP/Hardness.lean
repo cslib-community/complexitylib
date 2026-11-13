@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.Problems.CSP.SelfDualThreeSAT
 public import CslibFrontier.Computability.PolyTime.CSP.Gadget.Size
 public import CslibFrontier.Logics.Polymorphism.BooleanClone
+import CslibFrontier.Computability.PolyTime.CSP.Gadget
 
 /-!
 # The hard branch of Boolean Schaefer
