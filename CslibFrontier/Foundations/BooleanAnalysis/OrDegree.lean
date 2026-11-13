@@ -54,16 +54,6 @@ open MvPolynomial Finset
 
 variable {ι R : Type*} [Fintype ι] [CommRing R]
 
-omit [Fintype ι] in
-/-- Evaluating a polynomial with the coordinate functions of the cube gives, at every point, its
-evaluation at that point. -/
-private theorem aeval_bitVal_apply (p : MvPolynomial ι R) (x : ι → Bool) :
-    aeval (fun i (y : ι → Bool) => bitVal R (y i)) p x = eval (bitPoint x) p := by
-  induction p using MvPolynomial.induction_on with
-  | C r => simp
-  | add p q hp hq => simp [hp, hq]
-  | mul_X p i hp => simp [hp, bitPoint]
-
 /-- The subset Möbius transform of `OR` on the set of all coordinates is `-(-1)ⁿ`. -/
 private theorem subsetMobius_or_univ [DecidableEq ι] [Nonempty ι] :
     subsetMobius (fun T : Finset ι => bitVal R (decide (∃ i, decide (i ∈ T) = true))) univ =
@@ -95,10 +85,7 @@ theorem card_le_totalDegree_of_eval_eq_or [Nontrivial R] {p : MvPolynomial ι R}
   have : Nonempty ι := Fintype.card_pos_iff.1 (Nat.zero_lt_of_lt h)
   have hmem : (fun x : ι → Bool => bitVal R (decide (∃ i, x i = true))) ∈
       lowDegree R ι p.totalDegree := by
-    rw [lowDegree_eq_map_restrictTotalDegree]
-    refine ⟨p, (mem_restrictTotalDegree _ _ _).2 le_rfl, ?_⟩
-    funext x
-    simp [aeval_bitVal_apply, hp]
+    simpa only [← hp] using eval_mem_lowDegree p le_rfl
   have h0 := subsetMobius_eq_zero_of_mem_lowDegree hmem (S := univ) (by simpa using h)
   rw [subsetMobius_or_univ, neg_eq_zero] at h0
   exact (isUnit_one.neg.pow _).ne_zero h0
