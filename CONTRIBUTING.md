@@ -157,8 +157,8 @@ statements and public definition bodies, leaving out proofs, these two exception
 accessors. CI fails a pull request when a module it changes has more chains than its entry in
 `scripts/projection_chains_baseline.json`; a new module starts at 0. Fewer chains pass, and
 `--update-baseline` lowers the entry. `--list PREFIX` shows the remaining chains of an area.
-This ratchet and the experiment readability ratchet below share their baseline handling,
-[count_ratchet.py](scripts/count_ratchet.py).
+This ratchet and the experiment readability and probability idiom ratchets below share their
+baseline handling, [count_ratchet.py](scripts/count_ratchet.py).
 
 **Readable encodings** ([#1656](https://github.com/cslib-community/cslib-frontier/issues/1656)).
 An encoding is part of what a statement claims, so statements show it; they should not make the
@@ -205,6 +205,16 @@ pull request when a module it changes has more findings of a category than its e
 own `encode` and `decode` algorithms (Bellare–Hoang–Rogaway's En and De), go in
 `scripts/experiment_readability_allowlist.txt` with a reason. `--list CslibFrontier/Crypto/Computational/Encryption` lists an area's findings
 for a sweep.
+
+Public statements write the probability that a program returns `true` as `Pr[e]`, or through
+`Experiment.succProbability` and `Experiment.advantage`, and programs sample uniformly with `$ᵗ α`
+([conventions](manual/workflows/probabilistic-workflows.md#state-a-probability-and-sample-uniformly)).
+`scripts/check_probability_idioms.py` counts `ProbComp.eval e true` and
+`succProbability (ProbComp.eval …)` in public theorem statements, other than the `eval_…` and
+`bind_apply_…` mass facts that `PMF` proofs use, and `ProbComp.uniform` in definition bodies. It
+leaves out the `PMF` algebra modules under `Probability/` and `Languages/Probabilistic/`. CI fails a
+pull request when a module it changes has more of either than its entry in
+`scripts/probability_idioms_baseline.json`.
 
 Improving an interface never weakens the mathematics: keep the models, encodings, independent
 resource bounds and nonvacuity of the results it touches.

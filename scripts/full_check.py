@@ -60,6 +60,8 @@ STEPS = (
          ('python3 -B scripts/check_projection_chains.py --base "$BASE"',)),
     Step("Experiment readability ratchet (changed modules)",
          ('python3 -B scripts/check_experiment_readability.py --base "$BASE"',)),
+    Step("Probability idiom ratchet (changed modules)",
+         ('python3 -B scripts/check_probability_idioms.py --base "$BASE"',)),
     Step("Documentation pins", ("python3 -B scripts/check_docs.py --config-only",)),
     Step("Test Lake build handoff reuse",
          ("python3 -B -m unittest test_cache_handoff.HandoffTests"
@@ -108,6 +110,8 @@ CI_ONLY = {
     "Projection chain report":
         "merge groups and main pushes only; reports and always succeeds",
     "Experiment readability report":
+        "merge groups and main pushes only; reports and always succeeds",
+    "Probability idiom report":
         "merge groups and main pushes only; reports and always succeeds",
     "Repeated-proof-block notice (advisory)":
         "advisory; never fails the job. Run `scripts/proof_copies.py --base REF` to see it",

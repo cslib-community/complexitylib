@@ -28,8 +28,11 @@ PROJECTION_RATCHET = (
 EXPERIMENT_RATCHET = (
     "experiment readability ratchet",
     [sys.executable, "-B", "scripts/check_experiment_readability.py", "--base", "{base}"])
+IDIOM_RATCHET = (
+    "probability idiom ratchet",
+    [sys.executable, "-B", "scripts/check_probability_idioms.py", "--base", "{base}"])
 # The per-module ratchets of `ci-checks`, which read only the library sources.
-RATCHETS = (ENCODING_RATCHET, PROJECTION_RATCHET, EXPERIMENT_RATCHET)
+RATCHETS = (ENCODING_RATCHET, PROJECTION_RATCHET, EXPERIMENT_RATCHET, IDIOM_RATCHET)
 
 # Data files that no Lean gate reads, each with the source-only check that does read it. A change
 # to one runs that check (with `{base}`, the merge base) instead of falling back to the full check.
@@ -41,6 +44,7 @@ DATA_CHECKS = {
     "scripts/projection_chains_baseline.json": PROJECTION_RATCHET,
     "scripts/experiment_readability_baseline.json": EXPERIMENT_RATCHET,
     "scripts/experiment_readability_allowlist.txt": EXPERIMENT_RATCHET,
+    "scripts/probability_idioms_baseline.json": IDIOM_RATCHET,
 }
 
 # The source-only `ci-checks` steps, scoped to the changed Lean files: source hygiene reads the

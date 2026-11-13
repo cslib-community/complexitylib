@@ -483,8 +483,11 @@ class QuickCheckTests(unittest.TestCase):
         experiment = ("experiment readability ratchet",
                       [sys.executable, "-B", "scripts/check_experiment_readability.py", "--base",
                        base])
+        idioms = ("probability idiom ratchet",
+                  [sys.executable, "-B", "scripts/check_probability_idioms.py", "--base", base])
         labels = ["source hygiene (changed files)", "encoding readability ratchet",
-                  "projection chain ratchet", "experiment readability ratchet"]
+                  "projection chain ratchet", "experiment readability ratchet",
+                  "probability idiom ratchet"]
         with patch.object(quick, "HYGIENE_ROOTS", ("Demo/", "DemoTests/")), \
              patch.object(quick, "RATCHET_ROOT", "Demo/"):
             self.write("DemoTests/Client.lean", "import Demo.Middle\nexample : Nat := middle + 0\n")
@@ -494,12 +497,13 @@ class QuickCheckTests(unittest.TestCase):
             self.assertEqual(self.plan().checks, [
                 ("source hygiene (changed files)",
                  [*hygiene, "Demo/Base.lean", "DemoTests/Client.lean"]), encoding, projection,
-                experiment])
+                experiment, idioms])
             # A changed baseline already selects its ratchet; each ratchet runs once.
             for baseline in ("scripts/encoding_readability_baseline.json",
                              "scripts/projection_chains_baseline.json",
                              "scripts/experiment_readability_baseline.json",
-                             "scripts/experiment_readability_allowlist.txt"):
+                             "scripts/experiment_readability_allowlist.txt",
+                             "scripts/probability_idioms_baseline.json"):
                 with self.subTest(baseline=baseline):
                     self.write(baseline, "{}\n")
                     self.assertEqual(sorted(label for label, _ in self.plan().checks),

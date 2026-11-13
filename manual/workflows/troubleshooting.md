@@ -84,12 +84,14 @@ One Lake build runs roughly as many `lean` processes at once as its thread pool 
 
 ## Diagnose a readability ratchet failure
 
-Three source-only checks count readability debt per module against a checked-in baseline:
+Four source-only checks count readability debt per module against a checked-in baseline:
 `scripts/check_encoding_readability.py` (repeated compound encodings,
 `scripts/encoding_readability_baseline.json`), `scripts/check_projection_chains.py` (positional
 projection chains, `scripts/projection_chains_baseline.json`) and
 `scripts/check_experiment_readability.py` (word plumbing in security experiments and adversary
-types under `CslibFrontier/Crypto`, `scripts/experiment_readability_baseline.json`). On a pull
+types under `CslibFrontier/Crypto`, `scripts/experiment_readability_baseline.json`) and
+`scripts/check_probability_idioms.py` (`ProbComp.eval … true` in public statements and
+`ProbComp.uniform` in definitions, `scripts/probability_idioms_baseline.json`). On a pull
 request, CI runs each on the modules the branch changes, and fails when one has more findings
 than its baseline entry; a new module's entry is 0. Run the failing command from the repository
 root to reproduce it:
@@ -99,8 +101,8 @@ python3 scripts/check_experiment_readability.py --base origin/main
 ```
 
 The report lists each counted finding with its line and declaration. Fix the findings your change
-added: name the encoding, bind the components by name, or move the encoding out of the experiment
-into the adversary's efficiency predicate, as the
+added: name the encoding, bind the components by name, move the encoding out of the experiment
+into the adversary's efficiency predicate, or write `Pr[e]` and `$ᵗ α`, as the
 [contributing rules](../../CONTRIBUTING.md#library-quality-standard) and
 [experiment walkthrough](../programs-crypto-and-probability/security-games-and-primitives.md#write-an-experiment-like-its-textbook-figure)
 describe. Run the command again; it succeeds when no module exceeds its entry.

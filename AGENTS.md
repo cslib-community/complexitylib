@@ -309,12 +309,13 @@ lake exe checkInitImports
 `scripts/check.sh` first runs the live manual checker and its tooling tests, then restores
 optional caches and runs every required step of CI's `ci-checks` job that can run locally, with
 CI's commands (`scripts/full_check.py`): these six Lean gates, the Python tooling tests, source
-hygiene, the encoding readability, projection chain and experiment readability ratchets,
-documentation pins, and the post-build tidy statement ratchet, result registry and changed-file lints. Changed-file checks
-compare with the merge base of `origin/main`, or of `--base REF`. `scripts/full_check.py` records
-why each remaining step stays CI-only (advisory notices, cache plumbing, steps that need GitHub
-context), and its test fails when the workflow gains a step that is neither mirrored nor recorded
-there, or when a mirrored step runs a line or sets an option that the local run does not repeat.
+hygiene, the encoding readability, projection chain, experiment readability and probability idiom
+ratchets, documentation pins, and the post-build tidy statement ratchet, result registry and
+changed-file lints. Changed-file checks compare with the merge base of `origin/main`, or of
+`--base REF`. `scripts/full_check.py` records why each remaining step stays CI-only (advisory
+notices, cache plumbing, steps that need GitHub context), and its test fails when the workflow
+gains a step that is neither mirrored nor recorded there, or when a mirrored step runs a line or
+sets an option that the local run does not repeat.
 After the Lean gates, full mode also re-elaborates built root-package sources whose outputs Lake
 restored from the shared local artifact cache, which keeps no warnings. Quick mode checks the
 affected sources, including unchanged importing clients, built import aggregates and executable
@@ -337,16 +338,16 @@ For the edit loop, `scripts/check.sh --quick [--base REF]` builds changed Lean m
 transitive importing clients, then checks import aggregates. The comparison uses the merge base
 with local `origin/main` by default, including committed, staged, unstaged and untracked changes;
 it does not fetch. It also runs source hygiene on the changed library and test files and, when a
-library module changed, the encoding readability, projection chain and experiment readability
-ratchets: all read only sources and take seconds. Quick mode lints only the affected library modules, skips the global
-test/style/init-import gates and the post-build audits, which need whole-library outputs, and is
-not full validation. Non-Lean changes, deletions/renames, changed aggregates, unsupported layouts
-and ambiguous change/import analysis fall back to the full check. The exceptions are the
-ratchet baselines `scripts/encoding_readability_baseline.json`,
-`scripts/projection_chains_baseline.json` and `scripts/experiment_readability_baseline.json`, and
-`scripts/experiment_readability_allowlist.txt`, which no Lean gate reads: a change to one runs its
-ratchet instead. Quick success alone does not satisfy the full validation requirement above;
-documentation-only checks need not invoke quick mode.
+library module changed, the encoding readability, projection chain, experiment readability and
+probability idiom ratchets: all read only sources and take seconds. Quick mode lints only the
+affected library modules, skips the global test/style/init-import gates and the post-build audits,
+which need whole-library outputs, and is not full validation. Non-Lean changes, deletions/renames,
+changed aggregates, unsupported layouts and ambiguous change/import analysis fall back to the full
+check. The exceptions are the ratchet baselines `scripts/encoding_readability_baseline.json`,
+`scripts/projection_chains_baseline.json`, `scripts/experiment_readability_baseline.json` and
+`scripts/probability_idioms_baseline.json`, and `scripts/experiment_readability_allowlist.txt`,
+which no Lean gate reads: a change to one runs its ratchet instead. Quick success alone does not
+satisfy the full validation requirement above; documentation-only checks need not invoke quick mode.
 
 `lake exe mk_all` regenerates `CslibFrontier.lean` after adding a file. New test files go in
 `CslibFrontierTests/`; the test library is built from a Lake glob, so there is no aggregator to update.
@@ -788,6 +789,12 @@ Computational games are `ProbComp` programs; information-theoretic ones (PIR, co
 randomized response) may stay `PMF`. `scripts/check_experiment_readability.py` checks rules 1 and 2
 in `CslibFrontier/Crypto` against a per-module, per-category baseline that may only fall, with
 reviewed exceptions in `scripts/experiment_readability_allowlist.txt`; review covers the rest.
+Public statements write probabilities as `Pr[e]` or a named `Experiment` probability, and programs
+sample with `$ᵗ α`
+([conventions](manual/workflows/probabilistic-workflows.md#state-a-probability-and-sample-uniformly)).
+`scripts/check_probability_idioms.py` counts the remaining `ProbComp.eval … true` in public
+statements and `ProbComp.uniform` in definition bodies outside the `PMF` algebra modules, against
+a baseline that may only fall.
 
 ## Design commitments (do not re-litigate casually)
 

@@ -45,7 +45,7 @@ entry unless `--allow-increase` is given, for instance when a module moves.
 ignores the baseline and prints every counted chain in the modules under the path PREFIX (such as
 `CslibFrontier/DataStructure`), or in every module, with the most affected modules first; it
 always succeeds. `scripts/count_ratchet.py` implements this baseline handling, which
-`scripts/check_experiment_readability.py` shares.
+`scripts/check_experiment_readability.py` and `scripts/check_probability_idioms.py` share.
 
 The scanner is adapted from the survey script of the #1764 projections lane. The check reads only
 the sources: it needs no build outputs.

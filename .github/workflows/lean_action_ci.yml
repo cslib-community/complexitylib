@@ -151,6 +151,24 @@ jobs:
       - name: "Experiment readability report"
         if: github.event_name != 'pull_request'
         run: python3 -B scripts/check_experiment_readability.py --report
+      # Public statements write probabilities as `Pr[e]` and programs sample with `$ᵗ` (#4817):
+      # `ProbComp.eval … true` in public theorem statements and `ProbComp.uniform` in definition
+      # bodies are counted per module and category outside the PMF algebra modules, in
+      # scripts/probability_idioms_baseline.json. Enforced and reported as the projection chain
+      # ratchet above. Sources only: no Lean.
+      - name: "Probability idiom ratchet (changed modules)"
+        if: github.event_name == 'pull_request'
+        env:
+          RECORDED_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -e
+          BASE=$(git cat-file -p HEAD | sed -n 's/^parent //p' | head -n 1)
+          BASE=${BASE:-$RECORDED_BASE}
+          git fetch --no-tags --depth=1 origin "$BASE"
+          python3 -B scripts/check_probability_idioms.py --base "$BASE"
+      - name: "Probability idiom report"
+        if: github.event_name != 'pull_request'
+        run: python3 -B scripts/check_probability_idioms.py --report
       # Advisory only: tactic blocks on lines a pull request adds or changes that repeat a block
       # of another proof in the same file or directory nearly verbatim (#3725). Candidates go to
       # the job summary and appear as notices; the step never fails the job. Sources only: no

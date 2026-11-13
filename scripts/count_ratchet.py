@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""The per-module count ratchet shared by `check_projection_chains.py` and
-`check_experiment_readability.py`.
+"""The per-module count ratchet shared by `check_projection_chains.py`,
+`check_experiment_readability.py` and `check_probability_idioms.py`.
 
 A check supplies a `Ratchet`: how to find the counted rows of a module, and the words of its
 messages. This module supplies the baseline file, the comparison and the command line.
