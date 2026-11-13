@@ -13,6 +13,7 @@ public import CslibFrontier.Crypto.Encoding
 public import CslibFrontier.Languages.Probabilistic.Oracle.Substitution
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
+import CslibFrontier.Languages.Probabilistic.Oracle.Substitution.RunWith
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Computability.Probabilistic.Oracle.Substitution
 import CslibFrontier.Tactic.PPT
@@ -207,9 +208,8 @@ private theorem eval_run_substituted_phase {α : Type}
       have h := congrArg ProbComp.eval (hstep request)
       rw [ProbOracleComp.eval_run_interpret_eq_runWith, ProbComp.eval_pure] at h
       simpa only [PMF.pure_map] using h.symm) program ()
-  rw [ProbOracleComp.simulate, ProbOracleComp.eval_run_interpret_eq_runWith,
-    ProbOracleComp.runWith_interpret_sumHandler,
-    ← hsim, ProbOracleComp.eval_run_interpret_eq_runWith]
+  rw [ProbOracleComp.eval_run_interpret_eq_runWith, ProbOracleComp.runWith_simulate, ← hsim,
+    ProbOracleComp.eval_run_interpret_eq_runWith]
   simp only [ProbComp.eval_pure]
 
 private theorem eval_run_hybridDEMContinuation (E : SymmetricCipher)

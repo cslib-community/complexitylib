@@ -270,18 +270,6 @@ def download (n : ℕ) : InteractiveScheme (Fin n) Unit Unit where
   serverCoins := pure ()
   protocol := Protocol.aliceSend n (fun xd => xd.1) fun x => Protocol.output fun ic => x ic.1
 
-/-- In a protocol in which only Alice sends, the leaf does not depend on Bob's input. -/
-private theorem leaf_aliceSend_output {X Y Z : Type} (n : ℕ) (msg : X → BitString n)
-    (out : BitString n → Z) (x : X) (y y' : Y) :
-    (Protocol.aliceSend n msg fun m => Protocol.output (out m)).leaf x y =
-      (Protocol.aliceSend n msg fun m => Protocol.output (out m)).leaf x y' := by
-  induction n generalizing Z with
-  | zero => rfl
-  | succ n ih =>
-    simp only [Protocol.aliceSend, Protocol.leaf_alice]
-    rw [ih (fun x => Fin.tail (msg x)) fun m => out (Fin.cons false m),
-      ih (fun x => Fin.tail (msg x)) fun m => out (Fin.cons true m)]
-
 theorem isCorrect_download (n : ℕ) : (download n).IsCorrect :=
   (download n).isCorrect_iff.mpr fun x i _ _ _ _ => by
     rw [← Protocol.run_eq_leafOutput_leaf]
@@ -290,8 +278,8 @@ theorem isCorrect_download (n : ℕ) : (download n).IsCorrect :=
 theorem isPrivate_download (n : ℕ) : (download n).IsPrivate :=
   (download n).isPrivate_iff.mpr fun x i i' => by
     simp only [pmf_norm, transcript, coins, download]
-    exact congrArg PMF.pure
-      (leaf_aliceSend_output n _ (fun (x : BitString n) (ic : Fin n × Unit) => x ic.1) _ _ _)
+    exact congrArg PMF.pure (Protocol.leaf_aliceSend_output n _
+      (fun (x : BitString n) (ic : Fin n × Unit) => x ic.1) _ _ _)
 
 theorem depth_download (n : ℕ) : (download n).protocol.depth = n :=
   le_antisymm (Protocol.depth_aliceSend_le (d := 0) fun _ => le_rfl)

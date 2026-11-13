@@ -458,19 +458,11 @@ theorem Circuit.nodup_criticalPathAux (C : Circuit σ n m) :
     cases h : C.uniqueReaderSlot v with
     | none => simp [Circuit.criticalPathAux, h]
     | some s =>
+      -- The path continues from `v` with a tail of strictly larger rank, so `v` does not recur.
+      have hrank := C.rank_lt_of_mem_tail_criticalPathAux (fuel + 1) v v
+      simp only [Circuit.criticalPathAux, h, List.tail_cons] at hrank
       simp only [Circuit.criticalPathAux, h, List.nodup_cons]
-      refine ⟨fun hmem => ?_, C.nodup_criticalPathAux fuel (.gate s.1)⟩
-      have hs := C.uniqueReaderSlot_eq_some_iff.mp h
-      have hstep : v.rank < (Wire.gate s.1 : Wire n C.size).rank :=
-        C.rank_lt_of_slotWire_eq (C.mem_slotReaders.mp (by simp [hs]))
-      have hne := C.criticalPathAux_ne_nil fuel (.gate s.1)
-      rw [← List.cons_head_tail hne] at hmem
-      simp only [head_criticalPathAux, List.mem_cons] at hmem
-      rcases hmem with hhead | htail
-      · rw [hhead] at hstep
-        exact Nat.lt_irrefl _ hstep
-      · exact Nat.lt_irrefl _
-          (hstep.trans (C.rank_lt_of_mem_tail_criticalPathAux fuel (.gate s.1) v htail))
+      exact ⟨fun hmem => Nat.lt_irrefl _ (hrank hmem), C.nodup_criticalPathAux fuel (.gate s.1)⟩
 
 /-- Along `C.criticalPathAux fuel v`, topological ranks strictly increase with list index. -/
 theorem Circuit.rank_lt_criticalPathAux_getElem (C : Circuit σ n m) :
@@ -887,47 +879,41 @@ theorem Circuit.exists_bottleneck_of_not_disjoint_criticalPath {U : Type u} [Dec
       refine ih t (fun ht => ?_) (fun ht => ?_) p q (hpq.imp_left hlt.trans)
       · exact (hclosedX ⟨k, t⟩ ht).elim hkG hkx
       · exact (hclosedY ⟨k, t⟩ ht).elim hkG hky
-  /- A wire of `Px` depends only on `bx`, and a wire of `Py` only on `by_`. -/
-  have hX : ∀ w ∈ Px, ∀ p q : U × U, p.1 = q.1 → T w p = T w q := by
-    intro w
+  /- A wire of `Px` depends only on `bx`, and a wire of `Py` only on `by_`. Both follow from one
+  argument about a prefix `P` whose only input is `z`: a slot read on `P` from outside `P` lies
+  below `G`, and also outside the other prefix `Q`, so it lies on neither prefix. -/
+  have hprefix : ∀ (z : Fin n) (π : U × U → U) (P Q : List (Wire n C.size)),
+      (∀ u, Wire.input u ∈ P → u = z) → (∀ p, assign p z = π p) →
+      (∀ w ∈ P, w.rank < (Wire.gate G : Wire n C.size).rank) →
+      (∀ s : C.Slot, C.slotWire s ∈ Q → s.1 = G ∨ Wire.gate s.1 ∈ Q) → P.Disjoint Q →
+      (∀ w, w ∉ P → w ∉ Q → ∀ p q,
+        w.rank < (Wire.gate G : Wire n C.size).rank → T w p = T w q) →
+      ∀ w ∈ P, ∀ p q : U × U, π p = π q → T w p = T w q := by
+    intro z π P Q hinput hπ hrank hclosed hdisjPQ hoff w
     induction w using C.program.wire_induction with
-    | input z =>
-      intro hz p q hpq
-      obtain rfl : z = x := (C.input_mem_criticalPath_iff).mp (List.mem_of_mem_take hz)
-      simp only [T, Program.trace_input, hassignX, hpq]
+    | input u =>
+      intro hu p q hpq
+      obtain rfl := hinput u hu
+      simp only [T, Program.trace_input, hπ, hpq]
     | gate k ih =>
       intro hk p q hpq
       simp only [T, Program.trace_gate]
       congr 1
       funext t
-      by_cases ht : C.slotWire ⟨k, t⟩ ∈ Px
+      by_cases ht : C.slotWire ⟨k, t⟩ ∈ P
       · exact ih t ht p q hpq
-      have hlt : (C.slotWire ⟨k, t⟩).rank < (Wire.gate G : Wire n C.size).rank :=
-        (C.rank_lt_of_slotWire_eq rfl).trans (hrankX _ hk)
-      refine hout _ ht (fun hy => ?_) p q (Or.inl hlt)
-      rcases hclosedY ⟨k, t⟩ hy with hkG | hky
-      · exact lt_irrefl _ (hkG ▸ hrankX _ hk)
-      · exact List.disjoint_left.mp hdisj hk hky
-  have hY : ∀ w ∈ Py, ∀ p q : U × U, p.2 = q.2 → T w p = T w q := by
-    intro w
-    induction w using C.program.wire_induction with
-    | input z =>
-      intro hz p q hpq
-      obtain rfl : z = y := (C.input_mem_criticalPath_iff).mp (List.mem_of_mem_take hz)
-      simp only [T, Program.trace_input, hassignY, hpq]
-    | gate k ih =>
-      intro hk p q hpq
-      simp only [T, Program.trace_gate]
-      congr 1
-      funext t
-      by_cases ht : C.slotWire ⟨k, t⟩ ∈ Py
-      · exact ih t ht p q hpq
-      have hlt : (C.slotWire ⟨k, t⟩).rank < (Wire.gate G : Wire n C.size).rank :=
-        (C.rank_lt_of_slotWire_eq rfl).trans (hrankY _ hk)
-      refine hout _ (fun hx => ?_) ht p q (Or.inl hlt)
-      rcases hclosedX ⟨k, t⟩ hx with hkG | hkx
-      · exact lt_irrefl _ (hkG ▸ hrankY _ hk)
-      · exact List.disjoint_right.mp hdisj hk hkx
+      refine hoff _ ht (fun hQ => ?_) p q ((C.rank_lt_of_slotWire_eq rfl).trans (hrank _ hk))
+      rcases hclosed ⟨k, t⟩ hQ with hkG | hkQ
+      · exact lt_irrefl _ (hkG ▸ hrank _ hk)
+      · exact List.disjoint_left.mp hdisjPQ hk hkQ
+  have hX : ∀ w ∈ Px, ∀ p q : U × U, p.1 = q.1 → T w p = T w q :=
+    hprefix x Prod.fst Px Py
+      (fun _ hu => (C.input_mem_criticalPath_iff).mp (List.mem_of_mem_take hu)) hassignX hrankX
+      hclosedY hdisj fun w hPx hPy p q hlt => hout w hPx hPy p q (Or.inl hlt)
+  have hY : ∀ w ∈ Py, ∀ p q : U × U, p.2 = q.2 → T w p = T w q :=
+    hprefix y Prod.snd Py Px
+      (fun _ hu => (C.input_mem_criticalPath_iff).mp (List.mem_of_mem_take hu)) hassignY hrankY
+      hclosedX hdisj.symm fun w hPy hPx p q hlt => hout w hPx hPy p q (Or.inl hlt)
   /- Hence `G` computes `opG (f₂ bx) (f₃ by_)`, and the output factors through `G`, since it has
   out-degree `0` and so lies on neither prefix. -/
   have hG : ∀ p, T (.gate G) p = opG (T px[a] (p.1, p.1)) (T py[b] (p.2, p.2)) := by
