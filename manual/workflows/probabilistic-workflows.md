@@ -1280,8 +1280,8 @@ back to `ProbComp.eval`, after which the existing law lemmas apply. Use `ProbCom
 for a bare `rw` after `unfold`. With the import, any program passed where a distribution is
 expected is lifted silently: `Game.advantage program μ` elaborates. So public statements keep
 naming `ProbComp.eval`, `Pr[e]` or `Experiment` explicitly, and the lift is for definition bodies.
-`Pr[e]` on a program still elaborates to `ProbComp.eval e true`. A computational experiment that is
-a program throughout stays a `ProbComp Bool`. The
+`Pr[e]` on a program still elaborates to `(ProbComp.eval e true).toReal`. A computational
+experiment that is a program throughout stays a `ProbComp Bool`. The
 [checked examples](../../CslibFrontierTests/ProbabilisticLift.lean) prove a chooser/guesser game
 equal to its explicit form both ways. Run `scripts/build.sh CslibFrontierTests.ProbabilisticLift`.
 
