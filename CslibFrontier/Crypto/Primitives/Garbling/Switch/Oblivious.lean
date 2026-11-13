@@ -387,9 +387,9 @@ private theorem realGame_reduction [DecidableEq R] [Fintype L] {S : SwitchSystem
     PMF.uniformOfFintype_map_equiv (Equiv.addRight fun i => x i • Δ)
   have hself : ∀ {α : Type} (p : ProbComp α), OracleComp.interpret ProbComp.unifFin p = p :=
     fun p => OracleComp.interpret_query_eq_self p
-  simp only [CCR.Arithmetic.realGame, PRF.realGame, realGame, garble, reduction,
-    OracleComp.interpret_bind, ProbOracleComp.interpret_sample, hself, hmat, pure_bind, bind_assoc,
-    ProbComp.eval_bind, ProbComp.eval_uniform]
+  simp only [CCR.Arithmetic.realGame, PRF.realExperiment, ProbOracleComp.run, realGame, garble,
+    reduction, OracleComp.interpret_bind, ProbOracleComp.interpret_sample, hself, hmat, pure_bind,
+    bind_assoc, ProbComp.eval_bind, ProbComp.eval_uniform]
   congr 1
   funext Δ
   conv_lhs => rw [← hshift Δ.1]

@@ -17,7 +17,7 @@ import Mathlib.Tactic.Linarith
 
 This module states the CRYSTALS-Dilithium signature scheme ([DucasEtAl2018]), standardized as
 ML-DSA in [NISTFIPS204], over `R_q = ℤ_q[X] / (X^n + 1)` (coefficient vectors `Fin n → ZMod q`
-with `Cslib.Crypto.negacyclicMul`), and proves its correctness.
+with `Cslib.negacyclicMul`), and proves its correctness.
 
 The model is the *uncompressed-public-key* scheme: the public key is `(A, t)` with
 `t = A s₁ + s₂`, a signature is `(z, c)`, and verification recomputes

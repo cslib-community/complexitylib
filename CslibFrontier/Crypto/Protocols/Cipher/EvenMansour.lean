@@ -18,6 +18,7 @@ import CslibFrontier.Languages.Probabilistic.Simulation
 import CslibFrontier.Probability.BitString
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Uniform
+import CslibFrontier.Probability.PMF.UniformPoint
 import CslibFrontier.Probability.Uniform
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
@@ -709,21 +710,13 @@ noncomputable def preWhitenKeyRecoveryIdealGame (x : G) : Game := do
     preWhitenKeyRecoveryRealGame x = PMF.pure true := by
   simp [preWhitenKeyRecoveryRealGame, PMF.bind_const]
 
-omit [AddGroup G] in
-/-- A uniform draw from `G` hits a fixed `a` with probability `|G|⁻¹`. -/
-private theorem uniformOfFintype_bind_decide_eq_apply_true (a : G) :
-    ((PMF.uniformOfFintype G).bind fun k => PMF.pure (decide (a = k))) true =
-      (Fintype.card G : ℝ≥0∞)⁻¹ := by
-  rw [PMF.bind_apply, tsum_eq_single a fun k hk => by simp [Ne.symm hk]]
-  simp [PMF.uniformOfFintype_apply]
-
 /-- In the ideal game, `preWhitenKeyRecoveryAttack x` outputs the uniform target `k₀` with
 probability `|G|⁻¹`. -/
 theorem preWhitenKeyRecoveryIdealGame_true_toReal (x : G) :
     (preWhitenKeyRecoveryIdealGame x true).toReal = (Fintype.card G : ℝ)⁻¹ := by
   simp only [preWhitenKeyRecoveryIdealGame, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
   rw [PMF.bind_apply_of_forall _ fun E => PMF.bind_apply_of_forall _ fun π =>
-      uniformOfFintype_bind_decide_eq_apply_true _,
+      PMF.uniformOfFintype_bind_decide_eq_apply_true _,
     ENNReal.toReal_inv, ENNReal.toReal_natCast]
 
 /-- **2-query break of pre-whitening-only Even–Mansour** ([BonehShoup2023], Section 4.7):
@@ -768,7 +761,7 @@ theorem postWhitenKeyRecoveryIdealGame_true_toReal (x : G) :
     (postWhitenKeyRecoveryIdealGame x true).toReal = (Fintype.card G : ℝ)⁻¹ := by
   simp only [postWhitenKeyRecoveryIdealGame, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
   rw [PMF.bind_apply_of_forall _ fun E => PMF.bind_apply_of_forall _ fun π =>
-      uniformOfFintype_bind_decide_eq_apply_true _,
+      PMF.uniformOfFintype_bind_decide_eq_apply_true _,
     ENNReal.toReal_inv, ENNReal.toReal_natCast]
 
 /-- **2-query break of post-whitening-only Even–Mansour** ([BonehShoup2023], Section 4.7):

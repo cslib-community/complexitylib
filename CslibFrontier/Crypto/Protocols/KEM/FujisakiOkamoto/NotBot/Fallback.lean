@@ -146,7 +146,7 @@ private theorem eagerHandler_fbTable (S : Scheme PK SK M R CT K) (G : M → R)
   | G m => rfl
   | H x => simp [eagerHandler, eagerFbHandler, fbTable, hq x rfl]
   | decaps c =>
-    simp only [eagerHandler, eagerFbHandler, decapsNotBot, ROQuery.dispatch]
+    simp only [eagerHandler, eagerFbHandler, decapsNotBot_eq, ROQuery.dispatch]
     cases decT S.pke G pk sk c <;> simp [fbTable]
 
 /-- The logged oracles of the two games are identical until the log contains the seed. -/
@@ -177,14 +177,14 @@ private noncomputable def runReal (S : Scheme PK SK M R CT K) (A : ROAdversary P
     (b : Bool) (pk : PK) (sk : SK) (s : M) (G : M → R) (H : Bool × M × CT → K) (Hfb : CT → K)
     (m : M) (kRand : K) : PMF Bool :=
   OracleComp.interpret (S.eagerHandler G (fbTable s H Hfb) ⟨sk, pk, s⟩ (encT S.pke G pk m))
-    (A (pk, encT S.pke G pk m, if b then kRand else H (false, m, encT S.pke G pk m)))
+    (A ⟨pk, encT S.pke G pk m, if b then kRand else H (false, m, encT S.pke G pk m)⟩)
 
 /-- The adversary's run in `eagerFbGame` once all randomness is fixed. -/
 private noncomputable def runFb (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K)
     (b : Bool) (pk : PK) (sk : SK) (s : M) (G : M → R) (H : Bool × M × CT → K) (Hfb : CT → K)
     (m : M) (kRand : K) : PMF Bool :=
   OracleComp.interpret (S.eagerFbHandler G H Hfb ⟨sk, pk, s⟩ (encT S.pke G pk m))
-    (A (pk, encT S.pke G pk m, if b then kRand else H (false, m, encT S.pke G pk m)))
+    (A ⟨pk, encT S.pke G pk m, if b then kRand else H (false, m, encT S.pke G pk m)⟩)
 
 /-- The logged run of `eagerFbGame`; the oracle ignores the fallback seed, set here to `m`. -/
 private noncomputable def logRunFb (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K)
@@ -193,7 +193,7 @@ private noncomputable def logRunFb (S : Scheme PK SK M R CT K) (A : ROAdversary 
   (OracleComp.interpret (m := StateT (List M) PMF)
     (fun q st => (S.eagerFbHandler G H Hfb ⟨sk, pk, m⟩ (encT S.pke G pk m) q).map
       (·, logM q st))
-    (A (pk, encT S.pke G pk m, if b then kRand else H (false, m, encT S.pke G pk m)))).run []
+    (A ⟨pk, encT S.pke G pk m, if b then kRand else H (false, m, encT S.pke G pk m)⟩)).run []
 
 /-- Whether the logged run of `eagerFbGame` queries `H` at the seed `s`. -/
 private noncomputable def hitSeed (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K)
@@ -210,7 +210,7 @@ private theorem runReal_le_and_runFb_le (S : Scheme PK SK M R CT K)
         S.runReal A b pk sk s G H Hfb m kRand true +
           S.hitSeed A b pk sk s G H Hfb m kRand true := by
   set c := encT S.pke G pk m
-  set prog := A (pk, c, if b then kRand else H (false, m, c))
+  set prog := A ⟨pk, c, if b then kRand else H (false, m, c)⟩
   have h := identicalUntilBad_log S G H Hfb pk sk s c
   have e (hd : (q : ROQuery M CT) → PMF (ROResp R K q)) :
       OracleComp.interpret hd prog =
@@ -292,8 +292,8 @@ private theorem expect_hitSeed_le [Fintype M] [Finite R] [Fintype CT] [Finite K]
   rw [PMF.bind_comm (ProbComp.eval S.sampleMsg)]
   refine Probability.PMF.bind_apply_le_on_support _ fun x hx => ?_
   have hlen : x.2.length ≤ qH := by
-    have hcost := (hq (ks.1, encT S.pke G ks.1 m,
-      if b then kRand else H (false, m, encT S.pke G ks.1 m))).2
+    have hcost := (hq ⟨ks.1, encT S.pke G ks.1 m,
+      if b then kRand else H (false, m, encT S.pke G ks.1 m)⟩).2
     simpa using hcost.measure_le _ List.length
       (fun q st res st' hmem => by
         rw [show st' = logM q st from snd_eq_of_mem_support_map_pair hmem]

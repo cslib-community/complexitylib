@@ -184,4 +184,9 @@ theorem IsRepresentative.error_le_optimalError_add {D : Measure (α × β)} [IsP
       linarith)]
   exact ENNReal.ofReal_le_ofReal hreal
 
+/-- An `ε`-representative sample is `ε'`-representative for every `ε' ≥ ε`. -/
+theorem IsRepresentative.mono {D : Measure (α × β)} {C : ConceptClass α β} {ε ε' : ℝ} {m : ℕ}
+    {S : LabeledSample α β m} (hS : IsRepresentative D C ε S) (hε : ε ≤ ε') :
+    IsRepresentative D C ε' S := fun h hh => (hS h hh).trans hε
+
 end Cslib.MachineLearning.PACLearning
