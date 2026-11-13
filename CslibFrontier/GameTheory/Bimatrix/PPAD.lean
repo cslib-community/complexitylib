@@ -207,8 +207,7 @@ private lemma fin_sum_getD_eq_list_sum {α : Type*} [AddCommMonoid α] (l : List
 theorem isMixedStrategy_strategyVec {n : ℕ} {x : List ℚ} (hlen : x.length = n)
     (hnn : ∀ q ∈ x, 0 ≤ q) (hsum : x.sum = 1) : IsMixedStrategy (strategyVec (n := n) x) := by
   refine isMixedStrategy_iff.2 ⟨fun i => Rat.cast_nonneg.2 (hnn _ ?_), ?_⟩
-  · rw [List.getD_eq_getElem x 0 (by omega)]
-    exact List.getElem_mem (by omega)
+  · exact List.getD_mem 0 (by omega)
   · simp only [strategyVec_apply, ← Rat.cast_sum, fin_sum_getD_eq_list_sum x 0 hlen, hsum,
       Rat.cast_one]
 
@@ -1259,8 +1258,7 @@ private lemma posMat_getD_eq {c : BimatrixCode} (hc : c.WellFormed)
         scaledEntry (clearScale c) ((M.getD i.1 []).getD j.1 0) + shiftVal c := by
     intro M hlen hrows
     have hi : i.1 < M.length := by rw [hlen]; exact i.2
-    have hrlen : (M.getD i.1 []).length = c.cols :=
-      hrows _ (List.getD_eq_getElem M [] hi ▸ List.getElem_mem hi)
+    have hrlen : (M.getD i.1 []).length = c.cols := hrows _ (List.getD_mem [] hi)
     have hj : j.1 < (M.getD i.1 []).length := by rw [hrlen]; exact j.2
     have h1 : (posMat c M).getD i.1 [] =
         (M.getD i.1 []).map fun q => scaledEntry (clearScale c) q + shiftVal c :=
@@ -1280,10 +1278,9 @@ private lemma abs_scaledEntry_lt_shiftVal {c : BimatrixCode} (hc : c.WellFormed)
         (M.map fun row => (row.map fun q => |scaledEntry (clearScale c) q|).sum).sum := by
     intro M hlen hrows
     have hi : i.1 < M.length := by rw [hlen]; exact i.2
-    have hrmem : M.getD i.1 [] ∈ M := List.getD_eq_getElem M [] hi ▸ List.getElem_mem hi
+    have hrmem : M.getD i.1 [] ∈ M := List.getD_mem [] hi
     have hj : j.1 < (M.getD i.1 []).length := by rw [hrows _ hrmem]; exact j.2
-    have hqmem : (M.getD i.1 []).getD j.1 0 ∈ M.getD i.1 [] :=
-      List.getD_eq_getElem _ 0 hj ▸ List.getElem_mem hj
+    have hqmem : (M.getD i.1 []).getD j.1 0 ∈ M.getD i.1 [] := List.getD_mem 0 hj
     have h1 : |scaledEntry (clearScale c) ((M.getD i.1 []).getD j.1 0)| ≤
         ((M.getD i.1 []).map fun q => |scaledEntry (clearScale c) q|).sum :=
       List.single_le_sum (fun x hx => by
@@ -1358,9 +1355,9 @@ private lemma isNash_posMat {c : BimatrixCode} (hc : c.WellFormed)
       (clearScale c : ℝ) * c.toGame.A i j + (shiftVal c : ℝ) := by
     intro i j
     have hi : i.1 < c.matA.length := i.2
-    have hrmem := List.getD_eq_getElem c.matA [] hi ▸ List.getElem_mem hi
+    have hrmem := List.getD_mem [] hi
     have hj : j.1 < (c.matA.getD i.1 []).length := by rw [hr1 _ hrmem]; exact j.2
-    have hqmem := List.getD_eq_getElem (c.matA.getD i.1 []) 0 hj ▸ List.getElem_mem hj
+    have hqmem := List.getD_mem 0 hj
     have hdvd := den_dvd_clearScale (Or.inl rfl) hrmem hqmem
     have hsc := congrArg (Rat.cast : ℚ → ℝ) (scaledEntry_cast hdvd)
     push_cast at hsc
@@ -1372,9 +1369,9 @@ private lemma isNash_posMat {c : BimatrixCode} (hc : c.WellFormed)
       (clearScale c : ℝ) * c.toGame.B i j + (shiftVal c : ℝ) := by
     intro i j
     have hi : i.1 < c.matB.length := by rw [hl2]; exact i.2
-    have hrmem := List.getD_eq_getElem c.matB [] hi ▸ List.getElem_mem hi
+    have hrmem := List.getD_mem [] hi
     have hj : j.1 < (c.matB.getD i.1 []).length := by rw [hr2 _ hrmem]; exact j.2
-    have hqmem := List.getD_eq_getElem (c.matB.getD i.1 []) 0 hj ▸ List.getElem_mem hj
+    have hqmem := List.getD_mem 0 hj
     have hdvd := den_dvd_clearScale (Or.inr rfl) hrmem hqmem
     have hsc := congrArg (Rat.cast : ℚ → ℝ) (scaledEntry_cast hdvd)
     push_cast at hsc
