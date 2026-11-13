@@ -216,6 +216,74 @@ private theorem edist_gt_of_sep {V : Type*} {G : SimpleGraph V} {T : ℕ} {u v x
       _ = ((2 * T : ℕ) : ℕ∞) := by rw [← Nat.cast_add, two_mul]
   exact absurd huv (not_lt.2 htri)
 
+private theorem cast_two_pow_le_succ (m : ℕ) : ((2 ^ m : ℕ) : ℕ∞) ≤ ((2 ^ (m + 1) : ℕ) : ℕ∞) := by
+  exact_mod_cast Nat.pow_le_pow_right (by decide) (Nat.le_succ m)
+
+/-- A point within `2 ^ m` of a cluster that is `2 ^ (m + 1)`-separated from another cluster
+lies more than `2 ^ m` from every pebble of that other cluster. -/
+private theorem lt_edist_of_mem_ball_of_sep {V : Type*} [L.Structure V] {m k c s : ℕ}
+    {a : Fin k → V} {cl : Fin k → Fin c}
+    (hsep : ∀ i j : Fin k, cl i ≠ cl j →
+      ((2 ^ (m + 1) : ℕ) : ℕ∞) < (gaifmanGraph L V).edist (a i) (a j))
+    {idx : Fin s → Fin k} {x : V} (hx : x ∈ ball L (a ∘ idx) (2 ^ m)) {j : Fin k}
+    (hj : ∀ u, cl (idx u) ≠ cl j) : ((2 ^ m : ℕ) : ℕ∞) < (gaifmanGraph L V).edist x (a j) := by
+  obtain ⟨u, hu⟩ := mem_ball.1 hx
+  have hsep := hsep (idx u) j (hj u)
+  rw [pow_succ'] at hsep
+  exact edist_gt_of_sep hsep hu
+
+/-- The `2 ^ m`-balls around two `2 ^ (m + 1)`-separated clusters are disjoint. -/
+private theorem not_mem_ball_of_sep {V : Type*} [L.Structure V] {m k c s t : ℕ}
+    {a : Fin k → V} {cl : Fin k → Fin c}
+    (hsep : ∀ i j : Fin k, cl i ≠ cl j →
+      ((2 ^ (m + 1) : ℕ) : ℕ∞) < (gaifmanGraph L V).edist (a i) (a j))
+    {p q : Fin c} (hpq : p ≠ q) {idxp : Fin s → Fin k} {idxq : Fin t → Fin k}
+    (hp : ∀ u, cl (idxp u) = p) (hq : ∀ u, cl (idxq u) = q) {z : V}
+    (hz : z ∈ ball L (a ∘ idxp) (2 ^ m)) : z ∉ ball L (a ∘ idxq) (2 ^ m) := by
+  intro hzq
+  obtain ⟨v, hv⟩ := mem_ball.1 hzq
+  refine absurd hv (not_le.2 ?_)
+  rw [SimpleGraph.edist_comm]
+  exact lt_edist_of_mem_ball_of_sep hsep hz fun u => by rw [hp u, hq v]; exact hpq
+
+/-- A point outside the `r`-ball around a subtuple lies more than `r` from each of its pebbles. -/
+private theorem lt_edist_of_not_mem_ball {V : Type*} [L.Structure V] {k s r : ℕ} {a : Fin k → V}
+    {idx : Fin s → Fin k} {x : V} {j : Fin k} (hj : ∃ u, idx u = j)
+    (hx : x ∉ ball L (a ∘ idx) r) : ((r : ℕ) : ℕ∞) < (gaifmanGraph L V).edist x (a j) := by
+  obtain ⟨u, rfl⟩ := hj
+  rw [SimpleGraph.edist_comm]
+  exact lt_of_not_ge fun hle => hx (mem_ball.2 ⟨u, hle⟩)
+
+/-- The pebble separation of a clustered position extends to a new pebble `x`, given the
+separation `hnew` of `x` from the pebbles outside its cluster. -/
+private theorem sep_snoc {V : Type*} [L.Structure V] {m k c c' : ℕ} {a : Fin k → V}
+    {cl : Fin k → Fin c} {cl' : Fin (k + 1) → Fin c'} {x : V}
+    (hsep : ∀ i j : Fin k, cl i ≠ cl j →
+      ((2 ^ (m + 1) : ℕ) : ℕ∞) < (gaifmanGraph L V).edist (a i) (a j))
+    (hcl : ∀ i j : Fin k, cl' i.castSucc ≠ cl' j.castSucc → cl i ≠ cl j)
+    (hnew : ∀ j : Fin k, cl' (Fin.last k) ≠ cl' j.castSucc →
+      ((2 ^ m : ℕ) : ℕ∞) < (gaifmanGraph L V).edist x (a j))
+    (i j : Fin (k + 1)) (hij : cl' i ≠ cl' j) :
+    ((2 ^ m : ℕ) : ℕ∞) <
+      (gaifmanGraph L V).edist ((Fin.snoc a x : Fin (k + 1) → V) i)
+        ((Fin.snoc a x : Fin (k + 1) → V) j) := by
+  induction i using Fin.lastCases with
+  | last =>
+    induction j using Fin.lastCases with
+    | last => exact absurd rfl hij
+    | cast j =>
+      simp only [Fin.snoc_last, Fin.snoc_castSucc]
+      exact hnew j hij
+  | cast i =>
+    induction j using Fin.lastCases with
+    | last =>
+      simp only [Fin.snoc_castSucc, Fin.snoc_last]
+      rw [SimpleGraph.edist_comm]
+      exact hnew i (Ne.symm hij)
+    | cast j =>
+      simp only [Fin.snoc_castSucc]
+      exact (cast_two_pow_le_succ m).trans_lt (hsep i j (hcl i j hij))
+
 /-- One forth step of the clustered invariant: from stage `m + 1` and Spoiler move `x : M`,
 Duplicator finds `y : N` preserving `ClusterWitness` at stage `m`. -/
 private theorem ClusterWitness.forth [Finite M] {m k : ℕ} {a : Fin k → M} {b : Fin k → N}
@@ -224,7 +292,6 @@ private theorem ClusterWitness.forth [Finite M] {m k : ℕ} {a : Fin k → M} {b
     ∃ y : N, Nonempty (ClusterWitness L m (Fin.snoc a x : Fin (k + 1) → M)
       (Fin.snoc b y : Fin (k + 1) → N)) := by
   have hr_eq := two_pow_add_pred_eq m
-  have hpow : ((2 ^ (m + 1) : ℕ) : ℕ∞) = ((2 * 2 ^ m : ℕ) : ℕ∞) := by rw [pow_succ, mul_comm]
   by_cases hnear : ∃ p : Fin W.c, x ∈ ball L (a ∘ (W.entry p).idx) (2 ^ m)
   · -- Case A: `x` lies within `2 ^ m` of some cluster `p₀`; extend `p₀`.
     obtain ⟨p₀, hx⟩ := hnear
@@ -301,77 +368,19 @@ private theorem ClusterWitness.forth [Finite M] {m k : ℕ} {a : Fin k → M} {b
               rw [ha_eq, hb_eq]
               exact (W.entry p).isNbhdIso.mono (by omega) }
       nullary := W.nullary
-      sepM := fun i j hij => by
-        induction i using Fin.lastCases with
-        | last =>
-          induction j using Fin.lastCases with
-          | last => exact absurd rfl hij
-          | cast j =>
-            simp only [Fin.snoc_last, Fin.snoc_castSucc] at hij ⊢
-            obtain ⟨u, hu⟩ := mem_ball.1 hx
-            have hsep := W.sepM (E₀.idx u) j (by rwa [E₀.cl_idx u])
-            rw [hpow] at hsep
-            exact edist_gt_of_sep hsep hu
-        | cast i =>
-          induction j using Fin.lastCases with
-          | last =>
-            simp only [Fin.snoc_castSucc, Fin.snoc_last] at hij ⊢
-            obtain ⟨u, hu⟩ := mem_ball.1 hx
-            have hsep := W.sepM (E₀.idx u) i (by rw [E₀.cl_idx u]; exact hij.symm)
-            rw [hpow] at hsep
-            rw [SimpleGraph.edist_comm]
-            exact edist_gt_of_sep hsep hu
-          | cast j =>
-            simp only [Fin.snoc_castSucc] at hij ⊢
-            have hle : ((2 ^ m : ℕ) : ℕ∞) ≤ ((2 ^ (m + 1) : ℕ) : ℕ∞) := by
-              exact_mod_cast Nat.pow_le_pow_right (by decide) (Nat.le_succ m)
-            exact hle.trans_lt (W.sepM i j hij)
-      sepN := fun i j hij => by
-        induction i using Fin.lastCases with
-        | last =>
-          induction j using Fin.lastCases with
-          | last => exact absurd rfl hij
-          | cast j =>
-            simp only [Fin.snoc_last, Fin.snoc_castSucc] at hij ⊢
-            obtain ⟨u, hu⟩ := mem_ball.1 hy
-            have hsep := W.sepN (E₀.idx u) j (by rwa [E₀.cl_idx u])
-            rw [hpow] at hsep
-            exact edist_gt_of_sep hsep hu
-        | cast i =>
-          induction j using Fin.lastCases with
-          | last =>
-            simp only [Fin.snoc_castSucc, Fin.snoc_last] at hij ⊢
-            obtain ⟨u, hu⟩ := mem_ball.1 hy
-            have hsep := W.sepN (E₀.idx u) i (by rw [E₀.cl_idx u]; exact hij.symm)
-            rw [hpow] at hsep
-            rw [SimpleGraph.edist_comm]
-            exact edist_gt_of_sep hsep hu
-          | cast j =>
-            simp only [Fin.snoc_castSucc] at hij ⊢
-            have hle : ((2 ^ m : ℕ) : ℕ∞) ≤ ((2 ^ (m + 1) : ℕ) : ℕ∞) := by
-              exact_mod_cast Nat.pow_le_pow_right (by decide) (Nat.le_succ m)
-            exact hle.trans_lt (W.sepN i j hij) }⟩⟩
+      sepM := sep_snoc W.sepM (fun i j h => by simpa only [Fin.snoc_castSucc] using h)
+        fun j hj => lt_edist_of_mem_ball_of_sep W.sepM hx fun u => by
+          simpa only [E₀.cl_idx u, Fin.snoc_last, Fin.snoc_castSucc] using hj
+      sepN := sep_snoc W.sepN (fun i j h => by simpa only [Fin.snoc_castSucc] using h)
+        fun j hj => lt_edist_of_mem_ball_of_sep W.sepN hy fun u => by
+          simpa only [E₀.cl_idx u, Fin.snoc_last, Fin.snoc_castSucc] using hj }⟩⟩
   · -- Case B: `x` lies outside every cluster's `2 ^ m`-ball; form a new singleton cluster.
     let BM : Fin W.c → Set M := fun p => ball L (a ∘ (W.entry p).idx) (2 ^ m)
     let BN : Fin W.c → Set N := fun p => ball L (b ∘ (W.entry p).idx) (2 ^ m)
-    have disjM : ∀ {p q : Fin W.c}, p ≠ q → ∀ {z : M}, z ∈ BM p → z ∉ BM q := by
-      intro p q hpq z hzp hzq
-      obtain ⟨u, hu⟩ := mem_ball.1 hzp
-      obtain ⟨v, hv⟩ := mem_ball.1 hzq
-      have hsep := W.sepM ((W.entry p).idx u) ((W.entry q).idx v)
-        (by rw [(W.entry p).cl_idx u, (W.entry q).cl_idx v]; exact hpq)
-      rw [hpow] at hsep
-      rw [SimpleGraph.edist_comm] at hv
-      exact absurd hv (not_le.2 (edist_gt_of_sep hsep hu))
-    have disjN : ∀ {p q : Fin W.c}, p ≠ q → ∀ {w : N}, w ∈ BN p → w ∉ BN q := by
-      intro p q hpq w hwp hwq
-      obtain ⟨u, hu⟩ := mem_ball.1 hwp
-      obtain ⟨v, hv⟩ := mem_ball.1 hwq
-      have hsep := W.sepN ((W.entry p).idx u) ((W.entry q).idx v)
-        (by rw [(W.entry p).cl_idx u, (W.entry q).cl_idx v]; exact hpq)
-      rw [hpow] at hsep
-      rw [SimpleGraph.edist_comm] at hv
-      exact absurd hv (not_le.2 (edist_gt_of_sep hsep hu))
+    have disjM : ∀ {p q : Fin W.c}, p ≠ q → ∀ {z : M}, z ∈ BM p → z ∉ BM q :=
+      fun hpq _ => not_mem_ball_of_sep W.sepM hpq (W.entry _).cl_idx (W.entry _).cl_idx
+    have disjN : ∀ {p q : Fin W.c}, p ≠ q → ∀ {w : N}, w ∈ BN p → w ∉ BN q :=
+      fun hpq _ => not_mem_ball_of_sep W.sepN hpq (W.entry _).cl_idx (W.entry _).cl_idx
     set SM : Set M := ⋃ p, BM p
     set SN : Set N := ⋃ p, BN p
     classical
@@ -464,52 +473,14 @@ private theorem ClusterWitness.forth [Finite M] {m k : ℕ} {a : Fin k → M} {b
                 exact (W.entry p').isNbhdIso.mono (by omega) })
           p
       nullary := W.nullary
-      sepM := fun i j hij => by
-        induction i using Fin.lastCases with
-        | last =>
-          induction j using Fin.lastCases with
-          | last => exact absurd rfl hij
-          | cast j =>
-            simp only [Fin.snoc_last, Fin.snoc_castSucc]
-            obtain ⟨u, hu⟩ := (W.entry (W.cl j)).mem_idx j rfl
-            rw [SimpleGraph.edist_comm]
-            exact lt_of_not_ge fun hle => hxSM (Set.mem_iUnion.2
-              ⟨W.cl j, mem_ball.2 ⟨u, by simpa [Function.comp_apply, hu] using hle⟩⟩)
-        | cast i =>
-          induction j using Fin.lastCases with
-          | last =>
-            simp only [Fin.snoc_castSucc, Fin.snoc_last]
-            obtain ⟨u, hu⟩ := (W.entry (W.cl i)).mem_idx i rfl
-            exact lt_of_not_ge fun hle => hxSM (Set.mem_iUnion.2
-              ⟨W.cl i, mem_ball.2 ⟨u, by simpa [Function.comp_apply, hu] using hle⟩⟩)
-          | cast j =>
-            simp only [Fin.snoc_castSucc, Function.comp_apply, ne_eq, Fin.castSucc_inj] at hij ⊢
-            have hle : ((2 ^ m : ℕ) : ℕ∞) ≤ ((2 ^ (m + 1) : ℕ) : ℕ∞) := by
-              exact_mod_cast Nat.pow_le_pow_right (by decide) (Nat.le_succ m)
-            exact hle.trans_lt (W.sepM i j hij)
-      sepN := fun i j hij => by
-        induction i using Fin.lastCases with
-        | last =>
-          induction j using Fin.lastCases with
-          | last => exact absurd rfl hij
-          | cast j =>
-            simp only [Fin.snoc_last, Fin.snoc_castSucc]
-            obtain ⟨u, hu⟩ := (W.entry (W.cl j)).mem_idx j rfl
-            rw [SimpleGraph.edist_comm]
-            exact lt_of_not_ge fun hle => hySN (Set.mem_iUnion.2
-              ⟨W.cl j, mem_ball.2 ⟨u, by simpa [Function.comp_apply, hu] using hle⟩⟩)
-        | cast i =>
-          induction j using Fin.lastCases with
-          | last =>
-            simp only [Fin.snoc_castSucc, Fin.snoc_last]
-            obtain ⟨u, hu⟩ := (W.entry (W.cl i)).mem_idx i rfl
-            exact lt_of_not_ge fun hle => hySN (Set.mem_iUnion.2
-              ⟨W.cl i, mem_ball.2 ⟨u, by simpa [Function.comp_apply, hu] using hle⟩⟩)
-          | cast j =>
-            simp only [Fin.snoc_castSucc, Function.comp_apply, ne_eq, Fin.castSucc_inj] at hij ⊢
-            have hle : ((2 ^ m : ℕ) : ℕ∞) ≤ ((2 ^ (m + 1) : ℕ) : ℕ∞) := by
-              exact_mod_cast Nat.pow_le_pow_right (by decide) (Nat.le_succ m)
-            exact hle.trans_lt (W.sepN i j hij) }⟩⟩
+      sepM := sep_snoc W.sepM (fun i j h => by simpa only [Fin.snoc_castSucc,
+          Function.comp_apply, ne_eq, Fin.castSucc_inj] using h)
+        fun j _ => lt_edist_of_not_mem_ball ((W.entry (W.cl j)).mem_idx j rfl)
+          fun h => hxSM (Set.mem_iUnion.2 ⟨W.cl j, h⟩)
+      sepN := sep_snoc W.sepN (fun i j h => by simpa only [Fin.snoc_castSucc,
+          Function.comp_apply, ne_eq, Fin.castSucc_inj] using h)
+        fun j _ => lt_edist_of_not_mem_ball ((W.entry (W.cl j)).mem_idx j rfl)
+          fun h => hySN (Set.mem_iUnion.2 ⟨W.cl j, h⟩) }⟩⟩
 
 private theorem ClusterWitness.duplicatorWins [Finite M] :
     ∀ {n k : ℕ} {a : Fin k → M} {b : Fin k → N} (e : M ≃ N),

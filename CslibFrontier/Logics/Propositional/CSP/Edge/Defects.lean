@@ -192,14 +192,14 @@ theorem card_defects_flipOn_pair_le (h : EdgeInstance F) (f : OccurrenceLabeling
 Common parity may be odd and may differ between constraints. -/
 @[expose] def EvenConstraints (sem : Rel → List Bool → Bool) (F : CSP Rel V) : Prop :=
   ∀ i : Fin F.length,
-    IsEvenDeltaMatroid {t : Fin F[i].2.length → Bool | sem F[i].1 (List.ofFn t) = true}
+    IsEvenDeltaMatroid {t : Fin F[i].scope.length → Bool | sem F[i].rel (List.ofFn t) = true}
 
 omit [DecidableEq V] in
 /-- A two-coordinate move in one constraint preserves validity exactly when its new tuple does. -/
 theorem validLabeling_flipOn_pair {sem : Rel → List Bool → Bool}
     {f : OccurrenceLabeling F Bool} (hf : ValidLabeling sem f)
-    (i : Fin F.length) (a b : Fin F[i].2.length)
-    (hab : sem F[i].1 (List.ofFn (flipOn {a, b} (fun j => f ⟨i, j⟩))) = true) :
+    (i : Fin F.length) (a b : Fin F[i].scope.length)
+    (hab : sem F[i].rel (List.ofFn (flipOn {a, b} (fun j => f ⟨i, j⟩))) = true) :
     ValidLabeling sem (flipOn {⟨i, a⟩, ⟨i, b⟩} f) := by
   intro k
   by_cases hk : k = i
