@@ -14,6 +14,7 @@ import CslibFrontier.Crypto.Protocols.SecretSharing.Shamir.Linear
 import CslibFrontier.Crypto.Protocols.SecretSharing.Shamir.Product
 import CslibFrontier.Foundations.Data.Nat.Clog
 import CslibFrontier.Languages.Probabilistic.Norm
+import CslibFrontier.Languages.Probabilistic.Semantics
 import CslibFrontier.Probability.PMF.Uniform
 
 /-!
@@ -167,9 +168,8 @@ theorem isCorrect_shamir {ι : Type} [Fintype ι] [DecidableEq ι] (params : Sha
   classical
   rw [Scheme.isCorrect_iff]
   intro x i _ q hrq
-  simp only [shamir, ProbComp.eval_bind, ProbComp.eval_pure, ProbComp.eval_uniform,
-    PMF.mem_support_bind_iff, PMF.mem_support_pure_iff, Prod.mk.injEq] at hrq
-  obtain ⟨r, -, -, rfl⟩ := hrq
+  simp only [shamir, ProbComp.mem_support_eval_uniform_bind_pure, Prod.mk.injEq] at hrq
+  obtain ⟨r, -, rfl⟩ := hrq
   let sec : ι → F := fun j => if x j then (if j = i then 1 else 0) else 0
   let coeff : ι → Shamir.Randomness params := fun j => if x j then r j else 0
   have hans :
@@ -295,9 +295,8 @@ theorem isCorrect_shamirCube {D ι : Type} [Fintype D] [DecidableEq D] [Fintype 
   classical
   rw [Scheme.isCorrect_iff]
   intro x i _ q hrq
-  simp only [shamirCube, ProbComp.eval_bind, ProbComp.eval_pure, ProbComp.eval_uniform,
-    PMF.mem_support_bind_iff, PMF.mem_support_pure_iff, Prod.mk.injEq] at hrq
-  obtain ⟨r, -, -, rfl⟩ := hrq
+  simp only [shamirCube, ProbComp.mem_support_eval_uniform_bind_pure, Prod.mk.injEq] at hrq
+  obtain ⟨r, -, rfl⟩ := hrq
   let factor (l : D) (u : ι) : _root_.Polynomial F :=
     Shamir.Polynomial.sharingPolynomial (if u = i l then 1 else 0)
       (Shamir.Polynomial.tailPolynomial params.threshold (r l u))

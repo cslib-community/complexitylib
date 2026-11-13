@@ -503,8 +503,7 @@ theorem indcpa_macThenEncrypt (E : SymmetricCipher) (M : MACScheme)
   have hcomp : Negligible (fun n => Game.advantage
       (ProbComp.eval (E.cpaGame (mteToCPAAdversary M ptLen ctBound adversary) false (ptLen n)))
       (ProbComp.eval (E.cpaGame (mteToCPAAdversary M ptLen ctBound adversary) true (ptLen n)))) :=
-    hred.comp_of_polynomial_bound (bound := id) hmono.tendsto_atTop
-      (by fun_prop) (Filter.Eventually.of_forall hmono.id_le)
+    hred.comp_strictMono hmono
   refine hcomp.congr fun n => ?_
   dsimp only
   rw [eval_cpaGame_mteToCPAAdversary E M ptLen hptLenPoly hmono hmsgLen hpairLen ctBound

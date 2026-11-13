@@ -187,7 +187,9 @@ ideal conditional key law. Other clients cover width zero, modulus one, empty di
 and security remain open.
 The scalar all-event bridge `Probability.closeTo_uniform_sampleModNat` in
 [`Game/CloseTo/UniformNat.lean`](../../CslibFrontier/Crypto/Game/CloseTo/UniformNat.lean) bounds the
-sampled residue law against uniform `ZMod q` within `q / 2^width`.
+sampled residue law against uniform `ZMod q` within `q / 2^width`. In the same module,
+`Game.advantage_bind_sampleModNat_fin_le` and `Game.advantage_bind_sampleModNat_fin_fin_le` bound
+the advantage lost when one or two uniform `Fin` draws are replaced by `sampleModNat` draws.
 
 For full randomized key generation, import
 [`ModuleEncryption/Sampling/Native.lean`](../../CslibFrontier/Crypto/Computational/SIS/ModuleEncryption/Sampling/Native.lean).

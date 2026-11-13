@@ -1193,11 +1193,6 @@ theorem eufOneTimeGame_reindex (M : MACScheme) {ℓ : ℕ → ℕ}
   unfold eufOneTimeGame oneTimeSigningOracle reindex
   rw [reindexForger_apply_of_strictMono hmono]
 
-private theorem negligible_comp_strictMono {f : ℕ → ℝ≥0} (hf : Negligible f) {ℓ : ℕ → ℕ}
-    (hmono : StrictMono ℓ) : Negligible (fun n => f (ℓ n)) :=
-  hf.comp_of_polynomial_bound (bound := id) hmono.tendsto_atTop PolynomiallyBounded.id
-    (Filter.Eventually.of_forall hmono.id_le)
-
 /-- Strong unforgeability (`SUFCMA`) is preserved under reindexing along any strictly monotone
 plain polynomial-time schedule `ℓ`. -/
 theorem SUFCMA.reindex {M : MACScheme} (h : M.SUFCMA) {ℓ : ℕ → ℕ}
@@ -1205,9 +1200,8 @@ theorem SUFCMA.reindex {M : MACScheme} (h : M.SUFCMA) {ℓ : ℕ → ℕ}
     (M.reindex ℓ hℓ).SUFCMA := by
   apply SUFCMA.of_negligible
   intro adversary hadversary
-  refine (negligible_comp_strictMono
-    (h.negligible (reindexForger ℓ adversary) (isOraclePPT_reindexForger hℓ hadversary))
-    hmono).congr fun n => ?_
+  refine ((h.negligible (reindexForger ℓ adversary)
+    (isOraclePPT_reindexForger hℓ hadversary)).comp_strictMono hmono).congr fun n => ?_
   rw [sufCmaGame_reindex M hℓ hmono adversary n]
 
 /-- Strong one-time unforgeability (`OneTimeSUFCMA`) is preserved under reindexing along any
@@ -1217,9 +1211,8 @@ theorem OneTimeSUFCMA.reindex {M : MACScheme} (h : M.OneTimeSUFCMA) {ℓ : ℕ �
     (M.reindex ℓ hℓ).OneTimeSUFCMA := by
   apply OneTimeSUFCMA.of_negligible
   intro adversary hadversary
-  refine (negligible_comp_strictMono
-    (h.negligible (reindexForger ℓ adversary) (isOraclePPT_reindexForger hℓ hadversary))
-    hmono).congr fun n => ?_
+  refine ((h.negligible (reindexForger ℓ adversary)
+    (isOraclePPT_reindexForger hℓ hadversary)).comp_strictMono hmono).congr fun n => ?_
   rw [sufOneTimeGame_reindex M hℓ hmono adversary n]
 
 /-- Ordinary fresh-message unforgeability (`EUFCMA`) is preserved under reindexing along any
@@ -1229,9 +1222,8 @@ theorem EUFCMA.reindex {M : MACScheme} (h : M.EUFCMA) {ℓ : ℕ → ℕ}
     (M.reindex ℓ hℓ).EUFCMA := by
   apply EUFCMA.of_negligible
   intro adversary hadversary
-  refine (negligible_comp_strictMono
-    (h.negligible (reindexForger ℓ adversary) (isOraclePPT_reindexForger hℓ hadversary))
-    hmono).congr fun n => ?_
+  refine ((h.negligible (reindexForger ℓ adversary)
+    (isOraclePPT_reindexForger hℓ hadversary)).comp_strictMono hmono).congr fun n => ?_
   rw [eufCmaGame_reindex M hℓ hmono adversary n]
 
 /-- One-time unforgeability (`OneTimeEUFCMA`) is preserved under reindexing along any strictly
@@ -1241,9 +1233,8 @@ theorem OneTimeEUFCMA.reindex {M : MACScheme} (h : M.OneTimeEUFCMA) {ℓ : ℕ �
     (M.reindex ℓ hℓ).OneTimeEUFCMA := by
   apply OneTimeEUFCMA.of_negligible
   intro adversary hadversary
-  refine (negligible_comp_strictMono
-    (h.negligible (reindexForger ℓ adversary) (isOraclePPT_reindexForger hℓ hadversary))
-    hmono).congr fun n => ?_
+  refine ((h.negligible (reindexForger ℓ adversary)
+    (isOraclePPT_reindexForger hℓ hadversary)).comp_strictMono hmono).congr fun n => ?_
   rw [eufOneTimeGame_reindex M hℓ hmono adversary n]
 
 end MACScheme

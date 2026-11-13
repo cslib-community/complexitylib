@@ -1567,14 +1567,7 @@ theorem le_advantage_feistel3CCAAttack_idealStrongGame (f₁ f₂ f₃ : G → G
   have hfail := ENNReal.toReal_mono (PMF.apply_ne_top g false)
     (le_idealStrongGame_feistel3CCAAttack_false h01 h02 h12)
   rw [ENNReal.toReal_inv, ENNReal.toReal_natCast] at hfail
-  have hsum := congrArg (fun x : ℝ≥0 => (x : ℝ)) g.succProbability_add_failProbability
-  simp only [NNReal.coe_add, NNReal.coe_one, Game.succProbability, Game.failProbability,
-    ENNReal.coe_toNNReal_eq_toReal] at hsum
-  rw [Game.coe_advantage, eval_feistel3_feistel3CCAAttack]
-  simp only [Game.coe_succProbability, PMF.pure_apply_self, ENNReal.toReal_one]
-  have hnonneg : 0 ≤ (g false).toReal := ENNReal.toReal_nonneg
-  rw [abs_of_nonneg (by linarith)]
-  linarith
+  rwa [eval_feistel3_feistel3CCAAttack, Game.advantage_pure_true_left, Game.coe_failProbability]
 
 /-- When `l₀, l₁, l₂ : G` are pairwise distinct (`|G| ≥ 3`), `feistel3CCAAttack l₀ l₁ r₀` has
 strictly positive distinguishing advantage against the true bidirectional random-permutation game
@@ -1669,13 +1662,8 @@ theorem advantage_feistel3CCAAttack_independentTable (f₁ f₂ f₃ : G → G) 
         (feistel3CCAAttack l₀ l₁ r₀))
       (independentTableStrongGame (feistel3CCAAttack l₀ l₁ r₀)) : ℝ) =
       1 - (Fintype.card G : ℝ)⁻¹ := by
-  rw [Game.coe_advantage]
-  simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal,
-    eval_feistel3_feistel3CCAAttack, eval_independentTableStrongGame_feistel3CCAAttack,
-    PMF.pure_apply_self, ENNReal.toReal_one, ENNReal.toReal_inv, ENNReal.toReal_natCast]
-  have hle : (Fintype.card G : ℝ)⁻¹ ≤ 1 :=
-    inv_le_one_of_one_le₀ (by exact_mod_cast Fintype.card_pos)
-  exact abs_of_nonneg (sub_nonneg.mpr hle)
+  rw [eval_feistel3_feistel3CCAAttack, Game.coe_advantage_pure_true_left,
+    eval_independentTableStrongGame_feistel3CCAAttack, ENNReal.toReal_inv, ENNReal.toReal_natCast]
 
 private theorem uniformOfFintype_prod_map_decide_add_snd_true (a t : G) :
     ((PMF.uniformOfFintype (G × G)).map (fun lr : G × G => decide (a + lr.2 = t))) true =

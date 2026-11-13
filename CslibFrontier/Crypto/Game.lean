@@ -45,6 +45,11 @@ directly, and computational definitions over infinite sample spaces can reuse th
   `Cslib.Crypto.Game.Indistinguishable.of_eventually_succProbability_reduction`,
   `Cslib.Crypto.Game.Indistinguishable.of_succProbability_reduction`: one-sided search/forgery game
   characterizations and success-probability reductions against `PMF.pure false`.
+* `Cslib.Crypto.Game.advantage_pure_true`, `Cslib.Crypto.Game.advantage_pure_true_left`,
+  `Cslib.Crypto.Game.coe_advantage_pure_true_left`: comparison with certain success measures
+  failure probability.
+* `Cslib.Crypto.Game.coe_succProbability`, `Cslib.Crypto.Game.coe_failProbability`: real-valued
+  success and failure probabilities.
 * `Cslib.Crypto.Game.advantage_le_of_apply_le`, `Cslib.Crypto.Game.advantage_bind_le`: bound
   real-valued distinguishing advantage from mutual acceptance-probability bounds or across a common
   first-stage distribution.
@@ -365,6 +370,28 @@ theorem Indistinguishable.of_succProbability_reduction
 /-- As a real number, the success probability is the real-valued probability of `true`. -/
 @[simp] theorem coe_succProbability (game : Game) :
     (succProbability game : ℝ) = (game true).toReal := rfl
+
+/-- As a real number, the failure probability is the real-valued probability of `false`. -/
+@[simp] theorem coe_failProbability (game : Game) :
+    (failProbability game : ℝ) = (game false).toReal := rfl
+
+/-- Comparing a game with certain success measures the game's failure probability. -/
+theorem advantage_pure_true (game : Game) :
+    advantage game (PMF.pure true) = failProbability game := by
+  rw [← advantage_not game (PMF.pure true), PMF.pure_map, Bool.not_true, advantage_pure_false,
+    succProbability_not]
+
+/-- Comparing certain success on the left with a game measures the game's failure probability. -/
+theorem advantage_pure_true_left (game : Game) :
+    advantage (PMF.pure true) game = failProbability game :=
+  (advantage_comm _ _).trans (advantage_pure_true game)
+
+/-- As a real number, the advantage of certain success over `game` is one minus the probability
+that `game` outputs `true`. -/
+theorem coe_advantage_pure_true_left (game : Game) :
+    (advantage (PMF.pure true) game : ℝ) = 1 - (game true).toReal := by
+  rw [advantage_pure_true_left, failProbability_eq, NNReal.coe_sub (succProbability_le_one _),
+    NNReal.coe_one, coe_succProbability]
 
 open scoped ENNReal in
 /-- Mutual upper bounds on the two acceptance probabilities bound the real-valued advantage. -/
