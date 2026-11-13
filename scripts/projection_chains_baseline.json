@@ -268,8 +268,6 @@
  "CslibFrontier/Crypto/Computational/TCRSignature/ManyTime.lean": 8,
  "CslibFrontier/Crypto/Computational/TargetCollisionResistant.lean": 5,
  "CslibFrontier/Crypto/Game/CloseTo/RandomOracle.lean": 1,
- "CslibFrontier/Crypto/Primitives/BlockCipher/CBCMAC.lean": 20,
- "CslibFrontier/Crypto/Primitives/BlockCipher/Modes.lean": 4,
  "CslibFrontier/Crypto/Primitives/Garbling/CircuitInverters.lean": 6,
  "CslibFrontier/Crypto/Primitives/Garbling/SizeLowerBound.lean": 5,
  "CslibFrontier/Crypto/Protocols/MPC/DDHOT.lean": 16,

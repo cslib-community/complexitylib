@@ -979,7 +979,9 @@ rather than prepended message lengths (`cbcLengthSuffixAttack_valid`), and ambig
 (`zeroPadAttack_valid`, using `List.rightpad` and the floor-count block splitter
 [`BitString.padBlocks`](../../CslibFrontier/Foundations/Data/BitString/PadBlocks.lean)), with concrete
 four-bit witnesses in
-[`CslibFrontierTests/Crypto/CBCMAC.lean`](../../CslibFrontierTests/Crypto/CBCMAC.lean).
+[`CslibFrontierTests/Crypto/CBCMAC.lean`](../../CslibFrontierTests/Crypto/CBCMAC.lean). Each
+attack returns a `ForgeryTrace` with its `queries`, forged `message` and claimed `tag`;
+`trace.Valid mac` says that the message was never queried and that `mac` gives it the claimed tag.
 
 For variable-length messages under CBC-MAC, import
 [`BlockCipher/LengthPrependedCBCMAC.lean`](../../CslibFrontier/Crypto/Primitives/BlockCipher/LengthPrependedCBCMAC.lean)
