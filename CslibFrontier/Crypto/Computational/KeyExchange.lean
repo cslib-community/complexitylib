@@ -363,8 +363,9 @@ theorem realGame_dhKeyExchange (setup : ℕ → PMF F.Desc)
     (adversary : Eavesdropper F.DHTranscript F.DHKey) (n : ℕ) :
     (F.dhKeyExchange setup).realGame adversary n =
       F.ddhRealGame setup (F.dhEavToDDH adversary) n := by
+  rw [ddhRealGame, Game.withSetup]
   simp only [KeyExchange.realGame, dhKeyExchange, KeyExchange.withSetup_realView_bind,
-    withSetup_realView_dhExecution, ddhRealGame, PMF.monad_bind_eq_bind]
+    withSetup_realView_dhExecution]
 
 /-- With the uniform group element as ideal key, the ideal eavesdropping experiment on
 Diffie–Hellman is the random DDH experiment. -/
@@ -372,8 +373,9 @@ theorem idealGame_dhKeyExchange (setup : ℕ → PMF F.Desc)
     (adversary : Eavesdropper F.DHTranscript F.DHKey) (n : ℕ) :
     (F.dhKeyExchange setup).idealGame (fun _ => F.dhIdealKey) adversary n =
       F.ddhRandomGame setup (F.dhEavToDDH adversary) n := by
+  rw [ddhRandomGame, Game.withSetup]
   simp only [KeyExchange.idealGame, dhKeyExchange, KeyExchange.withSetup_idealView_bind,
-    withSetup_idealView_dhExecution, ddhRandomGame, PMF.monad_bind_eq_bind]
+    withSetup_idealView_dhExecution]
 
 open scoped KeyExchange in
 /-- The distinguisher `dhEavToDDH` is uniform strict PPT when the eavesdropper is. -/

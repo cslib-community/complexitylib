@@ -59,7 +59,7 @@ word-level form for families with decodable encodings.
 
 We prove the implications `DDH ⇒ CDH ⇒ DiscreteLog` between the assumptions from the fixed-group
 bounds `Cslib.Crypto.dlAdvantage_le_cdhAdvantage_dlToCDH` and
-`Cslib.Crypto.ddhRandomExperiment_cdhToDDH_apply_true_le`. We also prove the random
+`Cslib.Crypto.probability_ddhRandomExperiment_cdhToDDH_le`. We also prove the random
 self-reducibility of DDH ([BonehShoup2023], Section 10.11, Exercises 10.8–10.10, pp. 425–426): the
 distributional rerandomisation lemma (`ddhRerandomizeLaw_real`, `ddhRerandomizeLaw_random`), its
 efficient form `ddhSelfReduceDistinguisher`, the equivalence of average-case and worst-case DDH
@@ -232,9 +232,8 @@ def CDHAdversary.IsPPT (adversary : F.CDHAdversary) : Prop :=
 group parameters `d` using the arbitrary setup law, then run `Cslib.Crypto.cdhExperiment` in the
 group `F.Carrier d`. No efficient sampler for setup is required. -/
 noncomputable def cdhGame (setup : ℕ → PMF F.Desc) (adversary : F.CDHAdversary) (n : ℕ) :
-    Game := do
-  let d ← setup n
-  ProbComp.eval (cdhExperiment (F.order d) (F.generator d) (adversary n d))
+    Game :=
+  Game.withSetup (setup n) fun d => cdhExperiment (F.order d) (F.generator d) (adversary n d)
 
 /-- The Computational Diffie–Hellman assumption for a family and a setup law: every PPT CDH
 adversary wins `cdhGame` with negligible probability. -/
@@ -254,11 +253,10 @@ noncomputable def discreteLogAdversary
 setup law. -/
 theorem discreteLogGame_eq (setup : ℕ → PMF F.Desc)
     (adversary : ℕ → F.Desc × List Bool → ProbComp (List Bool)) (n : ℕ) :
-    F.discreteLogGame setup adversary n = (do
-      let d ← setup n
-      ProbComp.eval
-        (dlExperiment (F.order d) (F.generator d) (F.discreteLogAdversary adversary n d))) := by
-  simp [discreteLogGame, dlExperiment, discreteLogAdversary, PMF.map, Function.comp_def]
+    F.discreteLogGame setup adversary n = Game.withSetup (setup n) fun d =>
+      dlExperiment (F.order d) (F.generator d) (F.discreteLogAdversary adversary n d) := by
+  simp [discreteLogGame, Game.withSetup, dlExperiment, discreteLogAdversary, PMF.map,
+    Function.comp_def]
 
 /-- Turn a word-level discrete-logarithm adversary into a CDH adversary: run
 `Cslib.Crypto.dlToCDH` on its `discreteLogAdversary`. -/
@@ -273,8 +271,7 @@ theorem succProbability_discreteLogGame_le_cdhGame (setup : ℕ → PMF F.Desc)
     Game.succProbability (F.discreteLogGame setup adversary n) ≤
       Game.succProbability (F.cdhGame setup (F.dlToCDHAdversary adversary) n) := by
   rw [discreteLogGame_eq]
-  refine ENNReal.toNNReal_mono (PMF.apply_ne_top _ _) ?_
-  refine PMF.bind_apply_mono_on_support _ _ fun d _ => ?_
+  refine Game.succProbability_mono (PMF.bind_apply_mono_on_support _ _ fun d _ => ?_)
   exact (ENNReal.toNNReal_le_toNNReal (PMF.apply_ne_top _ _) (PMF.apply_ne_top _ _)).mp
     (dlAdvantage_le_cdhAdvantage_dlToCDH _ _ _)
 
@@ -318,17 +315,17 @@ def DDHDistinguisher.IsPPT (distinguisher : F.DDHDistinguisher) : Prop :=
 /-- The real DDH game ([BonehShoup2023], Attack Game 10.6, Experiment 0): choose group parameters
 `d` using the arbitrary setup law, then run `Cslib.Crypto.ddhRealExperiment` in `F.Carrier d`. -/
 noncomputable def ddhRealGame (setup : ℕ → PMF F.Desc) (distinguisher : F.DDHDistinguisher)
-    (n : ℕ) : Game := do
-  let d ← setup n
-  ProbComp.eval (ddhRealExperiment (F.order d) (F.generator d) (distinguisher n d))
+    (n : ℕ) : Game :=
+  Game.withSetup (setup n) fun d =>
+    ddhRealExperiment (F.order d) (F.generator d) (distinguisher n d)
 
 /-- The random DDH game ([BonehShoup2023], Attack Game 10.6, Experiment 1): choose group
 parameters `d` using the arbitrary setup law, then run `Cslib.Crypto.ddhRandomExperiment` in
 `F.Carrier d`. -/
 noncomputable def ddhRandomGame (setup : ℕ → PMF F.Desc) (distinguisher : F.DDHDistinguisher)
-    (n : ℕ) : Game := do
-  let d ← setup n
-  ProbComp.eval (ddhRandomExperiment (F.order d) (F.generator d) (distinguisher n d))
+    (n : ℕ) : Game :=
+  Game.withSetup (setup n) fun d =>
+    ddhRandomExperiment (F.order d) (F.generator d) (distinguisher n d)
 
 /-- The Decisional Diffie–Hellman assumption for a family and a setup law: every PPT DDH
 distinguisher has negligible advantage between `ddhRealGame` and `ddhRandomGame`. -/
@@ -386,13 +383,16 @@ def cdhToDDHDistinguisher (adversary : F.CDHAdversary) : F.DDHDistinguisher :=
   rfl
 
 /-- In the random DDH game, `cdhToDDHDistinguisher` accepts with probability at most `1 / m`
-whenever every supported group order is at least `m`. -/
-theorem ddhRandomGame_cdhToDDHDistinguisher_true_le (setup : ℕ → PMF F.Desc)
-    (adversary : F.CDHAdversary) (n m : ℕ) (hm : ∀ d ∈ (setup n).support, m ≤ F.order d) :
-    F.ddhRandomGame setup (F.cdhToDDHDistinguisher adversary) n true ≤ (m : ℝ≥0∞)⁻¹ :=
-  PMF.bind_apply_le_on_support _ fun d hd =>
-    (ddhRandomExperiment_cdhToDDH_apply_true_le _ _ (F.smul_generator_injective d) _).trans
-      (ENNReal.inv_le_inv.mpr (Nat.cast_le.mpr (hm d hd)))
+whenever every supported group order is at least `m > 0`. -/
+theorem succProbability_ddhRandomGame_cdhToDDHDistinguisher_le (setup : ℕ → PMF F.Desc)
+    (adversary : F.CDHAdversary) (n m : ℕ) (hm0 : 0 < m)
+    (hm : ∀ d ∈ (setup n).support, m ≤ F.order d) :
+    Game.succProbability (F.ddhRandomGame setup (F.cdhToDDHDistinguisher adversary) n) ≤ 1 / m :=
+  Game.succProbability_withSetup_le _ _ fun d hd => by
+    rw [← NNReal.coe_le_coe]
+    push_cast
+    exact (probability_ddhRandomExperiment_cdhToDDH_le _ _ (F.smul_generator_injective d) _).trans
+      (one_div_le_one_div_of_le (by exact_mod_cast hm0) (by exact_mod_cast hm d hd))
 
 /-- **Quantitative reduction from CDH to DDH**: when every supported group at parameter `n` has
 order at least `m > 0`, any CDH adversary's success probability is at most the DDH distinguishing
@@ -403,17 +403,11 @@ theorem succProbability_cdhGame_le_advantage_ddh_add (setup : ℕ → PMF F.Desc
     Game.succProbability (F.cdhGame setup adversary n) ≤
       Game.advantage (F.ddhRealGame setup (F.cdhToDDHDistinguisher adversary) n)
         (F.ddhRandomGame setup (F.cdhToDDHDistinguisher adversary) n) + 1 / m := by
-  have hrandom :
-      Game.succProbability (F.ddhRandomGame setup (F.cdhToDDHDistinguisher adversary) n) ≤
-        1 / m := by
-    have htop : (m : ℝ≥0∞)⁻¹ ≠ ⊤ := ENNReal.inv_ne_top.mpr (Nat.cast_ne_zero.mpr hm0.ne')
-    simpa only [one_div, ENNReal.toNNReal_inv, ENNReal.toNNReal_natCast] using
-      ENNReal.toNNReal_mono htop
-        (F.ddhRandomGame_cdhToDDHDistinguisher_true_le setup adversary n m hm)
   game_trans
     [F.ddhRealGame setup (F.cdhToDDHDistinguisher adversary) n,
      F.ddhRandomGame setup (F.cdhToDDHDistinguisher adversary) n]
-    using [F.ddhRealGame_cdhToDDHDistinguisher setup adversary n, le_rfl, hrandom]
+    using [F.ddhRealGame_cdhToDDHDistinguisher setup adversary n, le_rfl,
+      F.succProbability_ddhRandomGame_cdhToDDHDistinguisher_le setup adversary n m hm0 hm]
 
 /-- The CDH-to-DDH reduction is uniform strict PPT when the CDH adversary is. -/
 theorem isPPT_cdhToDDHDistinguisher {adversary : F.CDHAdversary} (hA : adversary.IsPPT) :
@@ -797,9 +791,8 @@ noncomputable def ddhRerandomizeGame (setup : ℕ → PMF F.Desc) (u v w : ∀ d
 /-- The worst-case DDH game: draw group parameters `d` and run `distinguisher` on the fixed triple
 `(u d, v d, w d)`. -/
 noncomputable def ddhWorstCaseGame (setup : ℕ → PMF F.Desc) (u v w : ∀ d : F.Desc, F.Carrier d)
-    (distinguisher : F.DDHDistinguisher) (n : ℕ) : Game := do
-  let d ← setup n
-  ProbComp.eval (distinguisher n d (u d) (v d) (w d))
+    (distinguisher : F.DDHDistinguisher) (n : ℕ) : Game :=
+  Game.withSetup (setup n) fun d => distinguisher n d (u d) (v d) (w d)
 
 /-- Re-randomizing any family of real DDH triples `(α d • g, β d • g, (α d * β d) • g)` gives the
 average-case `ddhRealGame` ([BonehShoup2023], Exercises 10.8–10.9, pp. 425–426). -/
@@ -808,8 +801,8 @@ average-case `ddhRealGame` ([BonehShoup2023], Exercises 10.8–10.9, pp. 425–4
     F.ddhRerandomizeGame setup (fun d => α d • F.generator d) (fun d => β d • F.generator d)
       (fun d => (α d * β d) • F.generator d) distinguisher n =
       F.ddhRealGame setup distinguisher n := by
-  simp only [ddhRerandomizeGame, ddhRealGame, PMF.monad_bind_eq_bind, ddhRerandomizeLaw_real,
-    ddhRealTupleLaw_bind_eq]
+  simp only [ddhRerandomizeGame, ddhRealGame, Game.withSetup, PMF.monad_bind_eq_bind,
+    ddhRerandomizeLaw_real, ddhRealTupleLaw_bind_eq]
 
 /-- Re-randomizing any family of non-DDH triples `(α d • g, β d • g, γ d • g)` with
 `γ d ≠ α d * β d` on the support of `setup n` gives the average-case `ddhRandomGame`
@@ -819,7 +812,7 @@ theorem ddhRerandomizeGame_random (setup : ℕ → PMF F.Desc)
     (hγ : ∀ d ∈ (setup n).support, γ d ≠ α d * β d) :
     F.ddhRerandomizeGame setup (fun d => α d • F.generator d) (fun d => β d • F.generator d)
       (fun d => γ d • F.generator d) distinguisher n = F.ddhRandomGame setup distinguisher n := by
-  simp only [ddhRerandomizeGame, ddhRandomGame, PMF.monad_bind_eq_bind]
+  simp only [ddhRerandomizeGame, ddhRandomGame, Game.withSetup, PMF.monad_bind_eq_bind]
   refine Cslib.Probability.PMF.bind_congr_on_support _ _ _ fun d hd => ?_
   rw [ddhRerandomizeLaw_random _ _ (hγ d hd), ddhRandomTupleLaw_bind_eq]
 

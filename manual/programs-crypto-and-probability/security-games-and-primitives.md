@@ -83,11 +83,11 @@ is additive notation for the textbook `g^a`.
 
 | Step | Textbook (Boneh–Shoup) | Lean experiment |
 |---|---|---|
-| CDH challenge | `α, β ←R Z_q`; send `u := g^α`, `v := g^β` | `cdhExperiment q g A`: `a ← uniform (ZMod q)`, `b ← uniform (ZMod q)`, `z ← A (a • g) (b • g)` |
-| CDH outcome | adversary outputs `ŵ`; it wins if `ŵ = g^{αβ}` | `return z = (a * b) • g`; `cdhAdvantage` is the success probability |
+| CDH challenge | `α, β ←R Z_q`; send `u := g^α`, `v := g^β` | `cdhExperiment q g A`: `a ← $ᵗ ZMod q`, `b ← $ᵗ ZMod q`, `z ← A (a • g) (b • g)` |
+| CDH outcome | adversary outputs `ŵ`; it wins if `ŵ = g^{αβ}` | `return z = (a * b) • g`; `cdhAdvantage` is its `Experiment.succProbability` |
 | DDH Experiment 0 | `α, β, γ ←R Z_q`; send `(g^α, g^β, g^{αβ})` | `ddhRealExperiment q g D`: `D (a • g) (b • g) ((a * b) • g)` |
 | DDH Experiment 1 | `α, β, γ ←R Z_q`; send `(g^α, g^β, g^γ)` | `ddhRandomExperiment q g D`: `D (a • g) (b • g) (c • g)` with an independent `c` |
-| DDH outcome | adversary outputs a bit; advantage `\|Pr[W₀] − Pr[W₁]\|` | `ddhAdvantage q g D := Game.advantage` of the two evaluated experiments |
+| DDH outcome | adversary outputs a bit; advantage `\|Pr[W₀] − Pr[W₁]\|` | `ddhAdvantage q g D := Experiment.advantage` of the two experiments |
 
 The book's Experiment 0 challenger also draws an unused `γ`; omitting it does not change the
 distribution. The experiments draw exact uniform exponents from `ZMod q` and carry no efficiency
@@ -95,7 +95,7 @@ certificate.
 
 The family games in `DiffieHellman.lean` draw public group parameters `d` from
 `setup n : PMF F.Desc` and run these experiments in `F.Carrier d` with `q = F.order d` and
-`g = F.generator d`:
+`g = F.generator d`; each is `Game.withSetup (setup n) fun d => …`:
 
 - `F.cdhGame setup adversary n` runs `cdhExperiment` on `adversary n d`, where
   `adversary : F.CDHAdversary` maps the security parameter, `d` and two elements of `F.Carrier d`
@@ -129,12 +129,16 @@ certificate. Reductions that need exponents use `F.sampleExp n d`, with its `1 /
 error and separate PPT theorem `isPPTOn_sampleExp`.
 
 `dlToCDHAdversary` and `cdhToDDHDistinguisher` are the elementary reductions behind
-`CDH.discreteLog` and `DDH.cdh`. Random self-reducibility ([bs23][bs23], Exercises 10.8–10.10)
-works on the same types: `ddhRerandomize` maps a triple `(u, v, w)` to a uniform real triple when
-`w` is the Diffie–Hellman element and to a uniform triple otherwise (`ddhRerandomizeLaw_real`,
-`ddhRerandomizeLaw_random`); `ddhSelfReduceDistinguisher` is its efficient form, so
-`ddh_of_worstCase` derives `F.DDH setup` from worst-case indistinguishability of fixed triple
-families with loss `6 / 2 ^ n`; and `ddhAmplifiedDecider` turns a distinguisher with
+`CDH.discreteLog` and `DDH.cdh`. In one group they are `dlToCDH` and `cdhToDDH`, with the bounds
+`dlAdvantage_le_cdhAdvantage_dlToCDH` and `cdhAdvantage_le_ddhAdvantage_cdhToDDH_add`. The
+random-world half of the latter,
+`probability_ddhRandomExperiment_cdhToDDH_le : Pr[ddhRandomExperiment q g (cdhToDDH A)] ≤ 1 / q`,
+is the step that the family bound averages over setup. Random self-reducibility ([bs23][bs23],
+Exercises 10.8–10.10) works on the same types: `ddhRerandomize` maps a triple `(u, v, w)` to a
+uniform real triple when `w` is the Diffie–Hellman element and to a uniform triple otherwise
+(`ddhRerandomizeLaw_real`, `ddhRerandomizeLaw_random`); `ddhSelfReduceDistinguisher` is its
+efficient form, so `ddh_of_worstCase` derives `F.DDH setup` from worst-case indistinguishability of
+fixed triple families with loss `6 / 2 ^ n`; and `ddhAmplifiedDecider` turns a distinguisher with
 inverse-polynomial fixed-group advantage into one that decides every triple except with
 negligible error (`negligible_ddhAmplifiedDecider_error`). The
 [DH client](../../CslibFrontierTests/Crypto/DiffieHellman.lean) checks the DDH input layout,
