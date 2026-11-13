@@ -232,22 +232,18 @@ theorem exists_spread_hardDistribution (g : BitString n → Bool) {d K : ℕ}
   have hc : 7 / 8 < c := by linarith
   have hc0 : 0 < c := by linarith
   -- The conditional distribution outside `T`.
-  have hw0 (x : BitString n) : 0 ≤ if x ∈ T then 0 else m x / c := by
-    split_ifs
-    · exact le_rfl
-    · exact div_nonneg (hm0 x) hc0.le
-  have hsum : ∑ x, ENNReal.ofReal (if x ∈ T then 0 else m x / c) = 1 := by
-    rw [← ENNReal.ofReal_sum_of_nonneg fun x _ => hw0 x, ← ENNReal.ofReal_one]
-    congr 1
-    have h1 : ∑ x, (if x ∈ T then 0 else m x / c) = ∑ x ∈ Tᶜ, m x / c := by
-      rw [← Finset.sum_compl_add_sum T, Finset.sum_eq_zero (s := T) fun x hx => by simp [hx],
-        add_zero]
-      exact Finset.sum_congr rfl fun x hx => by simp [Finset.mem_compl.1 hx]
-    rw [h1, ← Finset.sum_div, hcompl, div_self hc0.ne']
-  set ν := PMF.ofFintype _ hsum
+  have hmass : (μ.toOuterMeasure {x | x ∉ T}).toReal = c := by
+    rw [show {x | x ∉ T} = (↑(Tᶜ) : Set (BitString n)) by ext x; simp,
+      μ.toOuterMeasure_apply_finset,
+      ENNReal.toReal_sum (fun x _ => μ.apply_ne_top x)]
+    exact hcompl
+  have hevent : ∃ x ∈ {x | x ∉ T}, x ∈ μ.support :=
+    (toOuterMeasure_toReal_pos_iff μ _).mp (by rw [hmass]; exact hc0)
+  set ν := μ.filter {x | x ∉ T} hevent
   have hν (x : BitString n) : (ν x).toReal = if x ∈ T then 0 else m x / c := by
-    simp only [ν, PMF.ofFintype_apply]
-    exact ENNReal.toReal_ofReal (hw0 x)
+    change ((μ.filter {x | x ∉ T} hevent) x).toReal = _
+    rw [filter_apply_toReal, hmass]
+    by_cases hx : x ∈ T <;> simp [hx, m]
   refine ⟨ν, fun x => ?_, fun F hF => ?_⟩
   · rw [hν]
     split_ifs with hx
@@ -276,7 +272,8 @@ theorem exists_spread_hardDistribution (g : BitString n → Bool) {d K : ℕ}
 
 /-- **A spread hard distribution** ([ChukhinKulikovMihajlinSmal2026], proof of Lemma 6.3, printed
 p. 15; PDF p. 16): the two steps together. If `D(g)` exceeds `d + 18 + 3 ⌈log₂ n⌉` for
-`d = ⌈log₂ n⌉ + ⌈log₂ K⌉`, then some distribution `ν` has `ν(x) < 1/(7K)` at every point, and every
+`d = ⌈log₂ n⌉ + ⌈log₂ K⌉`, then some distribution `ν` has `7Kν(x) < 1` at every point
+(equivalently `ν(x) < 1/(7K)` when `K > 0`), and every
 formula of `binaryCost` depth at most `d` predicts `g` under `ν` with accuracy below `9/14`. -/
 theorem exists_spread_hardDistribution_of_lt_formulaDepth (g : BooleanFunction n) {K : ℕ}
     (hg : Nat.clog 2 n + Nat.clog 2 K + 18 + 3 * Nat.clog 2 n < formulaDepth g) :
