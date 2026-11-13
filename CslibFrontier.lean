@@ -4372,6 +4372,7 @@ public import CslibFrontier.Crypto.Computational.LWE.DualRegev
 public import CslibFrontier.Crypto.Computational.LWE.DualRegev.Security
 public import CslibFrontier.Crypto.Computational.LWE.KeyGen
 public import CslibFrontier.Crypto.Computational.LWE.Module
+public import CslibFrontier.Crypto.Computational.LWE.Module.Seeded
 public import CslibFrontier.Crypto.Computational.LWE.Regev
 public import CslibFrontier.Crypto.Computational.LWE.Regev.Security
 public import CslibFrontier.Crypto.Computational.Lattice.ShortestVector
