@@ -291,11 +291,11 @@ class ParityProblemTests(unittest.TestCase):
         self.assertReported(problems, "Operator manual links and excerpts", "--strict")
 
     def test_job_level_settings(self):
-        env = "    env:\n      HANDOFF_MEASUREMENT_PLAN:"
+        anchor = "  ci-checks:\n    runs-on: ubuntu-latest\n"
         defaults = "    defaults:\n      run:\n        shell: sh\n"
-        self.assertReported(self.report((env, defaults + env)), "defaults")
-        self.assertReported(self.report((env, f"    env:\n      STRICT: \"1\"\n"
-                                              "      HANDOFF_MEASUREMENT_PLAN:")), "STRICT")
+        env = "    env:\n      STRICT: \"1\"\n"
+        self.assertReported(self.report((anchor, anchor + defaults)), "defaults")
+        self.assertReported(self.report((anchor, anchor + env)), "STRICT")
 
     def test_misindented_key_is_not_absorbed(self):
         with self.assertRaisesRegex(ValueError, "unparsed workflow line"):
