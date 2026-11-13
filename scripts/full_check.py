@@ -106,13 +106,13 @@ CI_ONLY = {
     "Prepare optional handoff measurement":
         "main-push cache experiment (#1728); needs the GitHub API",
     "Encoding readability report":
-        "merge groups and main pushes only; reports and always succeeds",
+        "merge groups report; main pushes check every module and annotate; always succeeds",
     "Projection chain report":
-        "merge groups and main pushes only; reports and always succeeds",
+        "merge groups report; main pushes check every module and annotate; always succeeds",
     "Experiment readability report":
-        "merge groups and main pushes only; reports and always succeeds",
+        "merge groups report; main pushes check every module and annotate; always succeeds",
     "Probability idiom report":
-        "merge groups and main pushes only; reports and always succeeds",
+        "merge groups report; main pushes check every module and annotate; always succeeds",
     "Repeated-proof-block notice (advisory)":
         "advisory; never fails the job. Run `scripts/proof_copies.py --base REF` to see it",
     "Reclaim unused hosted-runner SDK space": "hosted-runner disk cleanup",

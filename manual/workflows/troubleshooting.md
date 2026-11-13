@@ -101,8 +101,11 @@ types under `CslibFrontier/Crypto`, `scripts/experiment_readability_baseline.jso
 `scripts/check_probability_idioms.py` (`ProbComp.eval … true` in public statements and
 `ProbComp.uniform` in definitions, `scripts/probability_idioms_baseline.json`). On a pull
 request, CI runs each on the modules the branch changes, and fails when one has more findings
-than its baseline entry; a new module's entry is 0. Run the failing command from the repository
-root to reproduce it:
+than its baseline entry; a new module's entry is 0. Merge groups only report. A push to `main`
+checks every module and marks each one above its entry with an error annotation titled "Readability
+baseline exceeded on main", without failing the run; a pull-request run that predates a ratchet or
+a baseline change can let such a count through. Run the failing command from the repository
+root to reproduce it, or `--all` for an annotation on `main`:
 
 ```bash
 python3 scripts/check_experiment_readability.py --base origin/main

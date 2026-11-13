@@ -344,7 +344,9 @@ enforces its baseline and the `local notation` rule only in the modules a pull r
 and merge groups only report,
 so `main` can drift above the baseline; the next change to a drifted module names the encoding
 or records it with `--update-baseline --allow-increase`. Its docstring gives the rule and the
-options. On pull requests CI also runs
+options. A push to `main` checks every module for this and the other count ratchets, and marks
+each drifted module with an error annotation on that run without failing it. On pull requests CI
+also runs
 `python3 scripts/parallel_defs.py`, an advisory notice (it never fails) that lists new or changed
 public definitions sharing a large anonymized subterm with an existing one, or merely renaming one.
 With `--theorems` it lists new or changed theorems, private ones included, whose statement another

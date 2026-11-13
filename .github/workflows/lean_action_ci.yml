@@ -98,8 +98,11 @@ jobs:
       # name (#1656). The existing ones are counted per module in
       # scripts/encoding_readability_baseline.json, which only falls. Pull requests enforce it in
       # the modules they change, against the first parent of the merge commit as in the
-      # changed-file lints below; merge groups and pushes only report, so that queued PRs written
-      # before an entry was lowered are not ejected. Sources only: no Lean.
+      # changed-file lints below. Merge groups only report, so that queued PRs written before an
+      # entry was lowered are not ejected. A main push checks every module and annotates each
+      # module above its entry with an error, without failing the job: cache publication needs
+      # this job to succeed. That catches a count a stale pull-request run let through.
+      # Sources only: no Lean.
       - name: "Encoding readability ratchet (changed modules)"
         if: github.event_name == 'pull_request'
         env:
@@ -112,12 +115,14 @@ jobs:
           python3 -B scripts/check_encoding_readability.py --base "$BASE"
       - name: "Encoding readability report"
         if: github.event_name != 'pull_request'
-        run: python3 -B scripts/check_encoding_readability.py --report
+        env:
+          MAIN_PUSH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        run: scripts/ci/ratchet_report.sh scripts/check_encoding_readability.py
       # Positional projection chains such as `c.1.2` in public statements and definition bodies
       # (#1764) are counted per module in scripts/projection_chains_baseline.json. Pull requests
       # fail when a module they change has more chains than its entry; fewer chains only print
       # the command that lowers the entry, so migrations need not edit the baseline. Merge groups
-      # and pushes only report. The base is the first parent of the merge commit, as above.
+      # and main pushes behave as above, and the base is the first parent of the merge commit.
       # Sources only: no Lean.
       - name: "Projection chain ratchet (changed modules)"
         if: github.event_name == 'pull_request'
@@ -131,7 +136,9 @@ jobs:
           python3 -B scripts/check_projection_chains.py --base "$BASE"
       - name: "Projection chain report"
         if: github.event_name != 'pull_request'
-        run: python3 -B scripts/check_projection_chains.py --report
+        env:
+          MAIN_PUSH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        run: scripts/ci/ratchet_report.sh scripts/check_projection_chains.py
       # Security experiments read like their textbook figures, and adversaries are typed (#4817):
       # encodings, `ProbComp.eval` and projection chains in experiment and reduction bodies, and
       # `List Bool` in adversary types, are counted per module and category under
@@ -150,7 +157,9 @@ jobs:
           python3 -B scripts/check_experiment_readability.py --base "$BASE"
       - name: "Experiment readability report"
         if: github.event_name != 'pull_request'
-        run: python3 -B scripts/check_experiment_readability.py --report
+        env:
+          MAIN_PUSH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        run: scripts/ci/ratchet_report.sh scripts/check_experiment_readability.py
       # Public statements write probabilities as `Pr[e]` and programs sample with `$ᵗ` (#4817):
       # `ProbComp.eval … true` in public theorem statements and `ProbComp.uniform` in definition
       # bodies are counted per module and category outside the PMF algebra modules, in
@@ -168,7 +177,9 @@ jobs:
           python3 -B scripts/check_probability_idioms.py --base "$BASE"
       - name: "Probability idiom report"
         if: github.event_name != 'pull_request'
-        run: python3 -B scripts/check_probability_idioms.py --report
+        env:
+          MAIN_PUSH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        run: scripts/ci/ratchet_report.sh scripts/check_probability_idioms.py
       # Advisory only: tactic blocks on lines a pull request adds or changes that repeat a block
       # of another proof in the same file or directory nearly verbatim (#3725). Candidates go to
       # the job summary and appear as notices; the step never fails the job. Sources only: no
