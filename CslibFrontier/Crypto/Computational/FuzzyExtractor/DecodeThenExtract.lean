@@ -26,61 +26,54 @@ and uses `w` as the error vector in an LWE-style code-offset sample `c = A s + w
 
 Given a close reading `w'` with `hammingDist w w' ≤ t`, `Rep(w', p)` subtracts `w'` from `c` to
 form `c - w' = A s + (w - w')`, where the residual error `e = w - w'` has Hamming weight
-`hammingWeight (w - w') = hammingDist w w' ≤ t`, runs a `t`-error decoder `decode A (c - w')` to
+`hammingNorm (w - w') = hammingDist w w' ≤ t`, runs a `t`-error decoder `decode A (c - w')` to
 recover `s`, and derives the key from `s`.
 
 ## Main definitions
 
-* `Cslib.Crypto.DecodeContext`, `Cslib.Crypto.DecodeHelper`: the LWE sample `(A, c)` and full
-  public helper `(A, c, x)` of the decode-then-extract construction.
-* `Cslib.Crypto.decodeThenExtract`: the generic decode-then-extract `FuzzyExtractor`, with the key
-  derived from the decoded secret by an arbitrary seeded function `ext`.
-* `Cslib.Crypto.lweFuzzyExtractor`: Construction 4.1 as stated in the paper (key = the first `k`
-  coordinates of the secret, no seed).
-* `Cslib.Crypto.DecoderCorrect`, `Cslib.Crypto.decodeCheck`, `Cslib.Crypto.decodeGame`,
-  `Cslib.Crypto.DecoderCorrectWithError`: zero-error and `(1 - δ)` average-case decoding
-  correctness up to Hamming weight `t`.
-* `Cslib.Crypto.realContextDistribution`, `Cslib.Crypto.uniformContextDistribution`,
-  `Cslib.Crypto.hybridDistribution`, `Cslib.Crypto.uniformIdealDistribution`,
-  `Cslib.Crypto.lweRealContext`, `Cslib.Crypto.lweUniformContext`,
-  `Cslib.Crypto.lweContextAdvantage`: the real, hybrid, and ideal distributions and the
-  Decisional LWE advantage with error distribution `W` (Definition 4.5).
-* `Cslib.Crypto.joinCols`, `Cslib.Crypto.hardcoreKeyReduction`,
-  `Cslib.Crypto.hardcoreUniformReduction`: the secret-splitting reductions behind Lemma 4.7.
+* `Cslib.Crypto.FuzzyExtractor.DecodeHelper`: the public helper `(A, c, x)` of the
+  decode-then-extract construction.
+* `Cslib.Crypto.FuzzyExtractor.decodeThenExtract`: the generic decode-then-extract
+  `FuzzyExtractor`, with the key derived from the decoded secret by an arbitrary seeded function
+  `ext`.
+* `Cslib.Crypto.FuzzyExtractor.lweFuzzyExtractor`: Construction 4.1 as stated in the paper
+  (key = the first `k` coordinates of the secret, no seed).
+* `Cslib.Crypto.FuzzyExtractor.DecoderCorrect`, `Cslib.Crypto.FuzzyExtractor.decodeCheck`,
+  `Cslib.Crypto.FuzzyExtractor.decodeGame`, `Cslib.Crypto.FuzzyExtractor.DecoderCorrectWithError`:
+  zero-error and `(1 - δ)` average-case decoding correctness up to Hamming weight `t`.
+* `Cslib.Crypto.FuzzyExtractor.joinCols`, `Cslib.Crypto.FuzzyExtractor.hardcoreKeyReduction`,
+  `Cslib.Crypto.FuzzyExtractor.hardcoreUniformReduction`: the secret-splitting reductions behind
+  Lemma 4.7, as LWE distinguishers `Matrix (Fin m) (Fin l) (ZMod q) → (Fin m → ZMod q) →
+  Experiment`.
 
 ## Main results
 
-* `Cslib.Crypto.cipher_sub_eq_mulVec_add_sub`,
-  `Cslib.Crypto.hammingNorm_sub_eq_hammingDist`: the code-offset algebraic identity
-  `(A s + w) - w' = A s + (w - w')` and `hammingNorm (w - w') = hammingDist w w'`.
-* `Cslib.Crypto.DecoderCorrect.correctHamming_decodeThenExtract`: zero-error decoder correctness
-  implies zero-error Hamming fuzzy-extractor correctness.
-* `Cslib.Crypto.failProbability_reproduceGame_decodeThenExtract_le`,
-  `Cslib.Crypto.DecoderCorrectWithError.correctHammingWithError_decodeThenExtract`: `δ`-error
-  average-case decoder correctness over uniform `A` implies `δ`-error Hamming fuzzy-extractor
-  correctness (the correctness part of Theorem 4.11, with the decoder of Lemma 4.10 taken as a
-  hypothesis).
-* `Cslib.Crypto.securityAdvantage_lweFuzzyExtractor_le`: for every source `W` and every
-  distinguisher `D`, the security advantage of `lweFuzzyExtractor` is at most the sum of two
-  Decisional LWE advantages in secret dimension `l` with error `W`, against explicit reductions
-  that never see the secret of their challenge. This is Lemma 4.7 (secret-splitting form)
-  composed into the security part of Theorem 4.11.
-* `Cslib.Crypto.computationallySecureFor_lweFuzzyExtractor`: the same bound packaged as
-  `ComputationallySecureFor` with loss `2 * ε`.
-* `Cslib.Crypto.lweContextAdvantage_eq_advantage`: `lweContextAdvantage` is the repository's
-  `Cslib.Crypto.LWE.advantage` with uniform secret and error law `W`.
-* `Cslib.Crypto.realContextDistribution_uniform`, `Cslib.Crypto.lweRealContext_uniform`,
-  `Cslib.Crypto.securityAdvantage_decodeThenExtract_uniform_eq`,
-  `Cslib.Crypto.hybridDistribution_add_eq_uniformIdealDistribution`,
-  `Cslib.Crypto.securityAdvantage_decodeThenExtract_add_uniform_eq_zero`: sanity checks for a
-  uniform source, where the LWE terms vanish by translation invariance.
+* `Cslib.Crypto.FuzzyExtractor.DecoderCorrect.correctHamming_decodeThenExtract`: zero-error
+  decoder correctness implies zero-error Hamming fuzzy-extractor correctness.
+* `Cslib.Crypto.FuzzyExtractor.failProbability_reproduceGame_decodeThenExtract_le`,
+  `Cslib.Crypto.FuzzyExtractor.DecoderCorrectWithError.correctHammingWithError_decodeThenExtract`:
+  `δ`-error average-case decoder correctness over uniform `A` implies `δ`-error Hamming
+  fuzzy-extractor correctness (the correctness part of Theorem 4.11, with the decoder of
+  Lemma 4.10 taken as a hypothesis).
+* `Cslib.Crypto.FuzzyExtractor.securityAdvantage_lweFuzzyExtractor_le`: for every source `W` and
+  every distinguisher `D`, the security advantage of `lweFuzzyExtractor` is at most the sum of two
+  decisional LWE advantages `Cslib.Crypto.LWE.advantage`, with a uniform secret in dimension `l`
+  and error distribution `W`, against explicit reductions that never see the secret of their
+  challenge. This is Lemma 4.7 (secret-splitting form) composed into the security part of
+  Theorem 4.11.
+* `Cslib.Crypto.FuzzyExtractor.computationallySecureFor_lweFuzzyExtractor`: the same bound
+  packaged as `ComputationallySecureFor` with loss `2 * ε`.
+* `Cslib.Crypto.FuzzyExtractor.realDistribution_decodeThenExtract_add_uniform`,
+  `Cslib.Crypto.FuzzyExtractor.securityAdvantage_decodeThenExtract_add_uniform_eq_zero`: sanity
+  checks for a uniform source and the additive key derivation `ext s x = s + x`, where the real
+  and ideal distributions coincide.
 
 ## What is not proved
 
 * Hardness of LWE with error distribution `W` (Theorems 4.6 and 4.8 of the paper, which rest on
   Döttling and Müller-Quade and on Regev); the security theorem is a reduction to that
   assumption, stated as an inequality between advantages.
-* Running time of the reductions (they are explicit `PMF` programs, but efficiency is not
+* Running time of the reductions (they are explicit `ProbComp` programs, but efficiency is not
   formalized).
 * Correctness of the decoder of Construction 4.9 (Lemma 4.10); it is a hypothesis.
 * The symbol-fixing and block-source results of Section 5.
@@ -96,22 +89,14 @@ recover `s`, and derives the key from `s`.
 
 @[expose] public section
 
-namespace Cslib.Crypto
+namespace Cslib.Crypto.FuzzyExtractor
 
 open Probability
 open scoped ENNReal NNReal
 
-/-- The LWE sample `(A, c)` portion of the public helper in the decode-then-extract construction
-([FullerMengReyzin2020], Construction 4.1 and Definition 4.5). -/
-structure DecodeContext (m n q : ℕ) where
-  /-- The public random matrix `A ∈ Z_q^{m × n}`. -/
-  matrix : Matrix (Fin m) (Fin n) (ZMod q)
-  /-- The code-offset vector `c = A s + w ∈ Z_q^m`. -/
-  cipher : Fin m → ZMod q
-  deriving DecidableEq
-
-/-- The public helper `p = (A, c, x)` of the decode-then-extract construction, pairing the LWE
-sample `(A, c)` with the public extractor seed `x`. -/
+/-- The public helper `p = (A, c, x)` of the decode-then-extract construction
+([FullerMengReyzin2020], Construction 4.1), pairing the LWE sample `(A, c)` with the public
+extractor seed `x`. -/
 structure DecodeHelper (m n q : ℕ) (Seed : Type) where
   /-- The public random matrix `A ∈ Z_q^{m × n}`. -/
   matrix : Matrix (Fin m) (Fin n) (ZMod q)
@@ -120,11 +105,6 @@ structure DecodeHelper (m n q : ℕ) (Seed : Type) where
   /-- The public extractor seed `x`. -/
   seed : Seed
   deriving DecidableEq
-
-/-- Project the LWE context `(A, c)` out of a `DecodeHelper`. -/
-def DecodeHelper.context {m n q : ℕ} {Seed : Type} (p : DecodeHelper m n q Seed) :
-    DecodeContext m n q :=
-  ⟨p.matrix, p.cipher⟩
 
 /-! ### Construction 4.1: Decode-then-extract fuzzy extractor -/
 
@@ -151,19 +131,12 @@ noncomputable def decodeThenExtract (m n q : ℕ) [NeZero q]
     | some s' => return ext s' p.seed
     | none => return default
 
-/-! ### Algebraic code-offset identities and reproduction correctness -/
 
-/-- Subtracting the noisy reading `w'` from the helper ciphertext `c = A s + w` yields
-`A s + (w - w')`, shifting the difference `w - w'` into the error position of the code-offset
-sample. -/
-theorem cipher_sub_eq_mulVec_add_sub {m n q : ℕ}
-    (A : Matrix (Fin m) (Fin n) (ZMod q)) (s : Fin n → ZMod q) (w w' : Fin m → ZMod q) :
-    A.mulVec s + w - w' = A.mulVec s + (w - w') :=
-  add_sub_assoc (A.mulVec s) w w'
+/-! ### Algebraic code-offset identities and reproduction correctness -/
 
 /-- The Hamming weight (`hammingNorm`) of the difference vector `w - w'` equals the Hamming
 distance `hammingDist w w'`. -/
-theorem hammingNorm_sub_eq_hammingDist {m q : ℕ} (w w' : Fin m → ZMod q) :
+private theorem hammingNorm_sub_eq_hammingDist {m q : ℕ} (w w' : Fin m → ZMod q) :
     hammingNorm (w - w') = hammingDist w w' := by
   simp only [hammingNorm, hammingDist, Pi.sub_apply, ne_eq, sub_eq_zero]
 
@@ -184,7 +157,7 @@ output equals `some s`. -/
 noncomputable def decodeCheck {m n q : ℕ} [NeZero q]
     (decode : Matrix (Fin m) (Fin n) (ZMod q) → (Fin m → ZMod q) →
       ProbComp (Option (Fin n → ZMod q)))
-    (s : Fin n → ZMod q) (e : Fin m → ZMod q) : ProbComp Bool := do
+    (s : Fin n → ZMod q) (e : Fin m → ZMod q) : Experiment := do
   let A ← ProbComp.uniform (Matrix (Fin m) (Fin n) (ZMod q))
   let sOpt ← decode A (A.mulVec s + e)
   return decide (sOpt = some s)
@@ -231,7 +204,7 @@ theorem DecoderCorrect.correctHamming_decodeThenExtract {m n q : ℕ} [NeZero q]
     true_and, Prod.mk.injEq] at hrp hr'
   obtain ⟨A, s, x, rfl, rfl⟩ := hrp
   obtain ⟨sOpt, hsOpt, hr'⟩ := hr'
-  rw [cipher_sub_eq_mulVec_add_sub] at hsOpt
+  rw [add_sub_assoc] at hsOpt
   have hwt : hammingNorm (w - w') ≤ t := by
     rwa [hammingNorm_sub_eq_hammingDist]
   rw [hdec A s (w - w') hwt sOpt hsOpt] at hr'
@@ -293,7 +266,7 @@ theorem failProbability_reproduceGame_decodeThenExtract_le {m n q : ℕ} [NeZero
     ProbComp.eval_uniform]
   refine PMF.bind_apply_mono_on_support _ false fun A _ => ?_
   refine PMF.bind_apply_le_on_support _ fun x _ => ?_
-  rw [cipher_sub_eq_mulVec_add_sub]
+  rw [add_sub_assoc]
   refine PMF.bind_apply_mono_on_support _ false fun sOpt _ => ?_
   by_cases h : sOpt = some s
   · subst h
@@ -318,242 +291,63 @@ theorem DecoderCorrectWithError.correctHammingWithError_decodeThenExtract
   refine hdec s (w - w') ?_
   rwa [hammingNorm_sub_eq_hammingDist]
 
-/-! ### Hybrid distributions and security reduction -/
+/-! ### Exact uniformity for a uniform source -/
 
-/-- The real joint distribution `(s, ⟨A, A s + w⟩)` of the secret `s` and LWE context
-`(A, A s + w)` for a source `W : PMF (Fin m → ZMod q)`. -/
-noncomputable def realContextDistribution (m n q : ℕ) [NeZero q]
-    (W : PMF (Fin m → ZMod q)) : PMF ((Fin n → ZMod q) × DecodeContext m n q) := do
-  let w ← W
-  let A ← PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q))
-  let s ← PMF.uniformOfFintype (Fin n → ZMod q)
-  pure (s, ⟨A, A.mulVec s + w⟩)
-
-/-- The uniform context distribution `(s, ⟨A, u⟩)` where `A`, `u`, and `s` are independent and
-uniform. -/
-noncomputable def uniformContextDistribution (m n q : ℕ) [NeZero q] :
-    PMF ((Fin n → ZMod q) × DecodeContext m n q) := do
-  let A ← PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q))
-  let u ← PMF.uniformOfFintype (Fin m → ZMod q)
-  let s ← PMF.uniformOfFintype (Fin n → ZMod q)
-  pure (s, ⟨A, u⟩)
-
-/-- The hybrid fuzzy-extractor distribution `(ext s x, ⟨A, u, x⟩)` in which the code-offset
-ciphertext `c = A s + w` is replaced by an independent uniform vector `u`. -/
-noncomputable def hybridDistribution (m n q : ℕ) [NeZero q]
-    {Seed Key : Type} [Fintype Seed] [Nonempty Seed]
-    (ext : (Fin n → ZMod q) → Seed → Key) : PMF (Key × DecodeHelper m n q Seed) := do
-  let A ← PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q))
-  let u ← PMF.uniformOfFintype (Fin m → ZMod q)
-  let s ← PMF.uniformOfFintype (Fin n → ZMod q)
-  let x ← PMF.uniformOfFintype Seed
-  pure (ext s x, ⟨A, u, x⟩)
-
-/-- The fully uniform ideal distribution `(r, ⟨A, u, x⟩)` in which both the key `r` and the
-ciphertext `u` are uniform and independent of `(A, x)`. -/
-noncomputable def uniformIdealDistribution (m n q : ℕ) [NeZero q]
-    {Seed Key : Type} [Fintype Seed] [Nonempty Seed] [Fintype Key] [Nonempty Key] :
-    PMF (Key × DecodeHelper m n q Seed) := do
-  let A ← PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q))
-  let u ← PMF.uniformOfFintype (Fin m → ZMod q)
-  let x ← PMF.uniformOfFintype Seed
-  let r ← PMF.uniformOfFintype Key
-  pure (r, ⟨A, u, x⟩)
-
-/-- The real Decisional LWE distribution `(A, A s + w)` for error source `W`
-([FullerMengReyzin2020], Definition 4.5). -/
-noncomputable def lweRealContext (m n q : ℕ) [NeZero q]
-    (W : PMF (Fin m → ZMod q)) : PMF (DecodeContext m n q) := do
-  let w ← W
-  let A ← PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q))
-  let s ← PMF.uniformOfFintype (Fin n → ZMod q)
-  pure ⟨A, A.mulVec s + w⟩
-
-/-- The uniform Decisional LWE distribution `(A, u)` ([FullerMengReyzin2020], Definition 4.5). -/
-noncomputable def lweUniformContext (m n q : ℕ) [NeZero q] : PMF (DecodeContext m n q) := do
-  let A ← PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q))
-  let u ← PMF.uniformOfFintype (Fin m → ZMod q)
-  pure ⟨A, u⟩
-
-/-- The Decisional LWE advantage of a context distinguisher `B` on error distribution `W`
-([FullerMengReyzin2020], Definition 4.5). -/
-noncomputable abbrev lweContextAdvantage (m n q : ℕ) [NeZero q]
-    (W : PMF (Fin m → ZMod q)) (B : DecodeContext m n q → PMF Bool) : ℝ≥0 :=
-  Game.advantage ((lweRealContext m n q W).bind B) ((lweUniformContext m n q).bind B)
-
-/-- Reduction from a `(secret, context)` pair `(s, ⟨A, c⟩)` to a fuzzy-extractor distinguisher
-`D`: sample uniform seed `x ← Seed` and run `D (ext s x, ⟨A, c, x⟩)`. -/
-noncomputable def realContextReduction {m n q : ℕ} {Seed Key : Type}
-    [Fintype Seed] [Nonempty Seed]
-    (ext : (Fin n → ZMod q) → Seed → Key)
-    (D : Key × DecodeHelper m n q Seed → PMF Bool)
-    (sc : (Fin n → ZMod q) × DecodeContext m n q) : PMF Bool := do
-  let x ← PMF.uniformOfFintype Seed
-  D (ext sc.1 x, ⟨sc.2.matrix, sc.2.cipher, x⟩)
-
-/-- Reduction from a Decisional LWE context `⟨A, c⟩` to a fuzzy-extractor distinguisher `D`
-in the ideal game: sample uniform seed `x ← Seed` and uniform key `r ← Key`, and run
-`D (r, ⟨A, c, x⟩)`. -/
-noncomputable def idealLweReduction {m n q : ℕ} {Seed Key : Type}
-    [Fintype Seed] [Nonempty Seed] [Fintype Key] [Nonempty Key]
-    (D : Key × DecodeHelper m n q Seed → PMF Bool)
-    (ctx : DecodeContext m n q) : PMF Bool := do
-  let x ← PMF.uniformOfFintype Seed
-  let r ← PMF.uniformOfFintype Key
-  D (r, ⟨ctx.matrix, ctx.cipher, x⟩)
-
-/-- Running `realContextReduction ext D` on `realContextDistribution` equals the real
-fuzzy-extractor game of `decodeThenExtract`. -/
-theorem realContextDistribution_bind_realContextReduction (m n q : ℕ) [NeZero q]
-    {Seed Key : Type} [Fintype Seed] [Nonempty Seed] [Inhabited Key]
-    (decode : Matrix (Fin m) (Fin n) (ZMod q) → (Fin m → ZMod q) →
-      ProbComp (Option (Fin n → ZMod q)))
-    (ext : (Fin n → ZMod q) → Seed → Key)
-    (W : PMF (Fin m → ZMod q)) (D : Key × DecodeHelper m n q Seed → PMF Bool) :
-    (realContextDistribution m n q W).bind (realContextReduction ext D) =
-      (decodeThenExtract m n q decode ext).realGame W D := by
-  simp only [realContextDistribution, realContextReduction, FuzzyExtractor.realGame,
-    FuzzyExtractor.realDistribution, decodeThenExtract, ProbComp.eval_bind,
-    ProbComp.eval_pure, ProbComp.eval_uniform, PMF.monad_bind_eq_bind,
-    PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
-
-/-- Running `realContextReduction ext D` on `uniformContextDistribution` equals the hybrid game
-`(hybridDistribution m n q ext).bind D`. -/
-theorem uniformContextDistribution_bind_realContextReduction (m n q : ℕ) [NeZero q]
-    {Seed Key : Type} [Fintype Seed] [Nonempty Seed]
-    (ext : (Fin n → ZMod q) → Seed → Key)
-    (D : Key × DecodeHelper m n q Seed → PMF Bool) :
-    (uniformContextDistribution m n q).bind (realContextReduction ext D) =
-      (hybridDistribution m n q ext).bind D := by
-  simp only [uniformContextDistribution, realContextReduction, hybridDistribution,
-    PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
-
-/-- Running `idealLweReduction D` on `lweRealContext` equals the ideal fuzzy-extractor game of
-`decodeThenExtract`. -/
-theorem lweRealContext_bind_idealLweReduction (m n q : ℕ) [NeZero q]
-    {Seed Key : Type} [Fintype Seed] [Nonempty Seed] [Fintype Key] [Nonempty Key] [Inhabited Key]
-    (decode : Matrix (Fin m) (Fin n) (ZMod q) → (Fin m → ZMod q) →
-      ProbComp (Option (Fin n → ZMod q)))
-    (ext : (Fin n → ZMod q) → Seed → Key)
-    (W : PMF (Fin m → ZMod q)) (D : Key × DecodeHelper m n q Seed → PMF Bool) :
-    (lweRealContext m n q W).bind (idealLweReduction D) =
-      (decodeThenExtract m n q decode ext).idealGame W D := by
-  simp only [lweRealContext, idealLweReduction, FuzzyExtractor.idealGame,
-    FuzzyExtractor.idealDistribution, decodeThenExtract, ProbComp.eval_bind,
-    ProbComp.eval_pure, ProbComp.eval_uniform, PMF.monad_bind_eq_bind,
-    PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
-
-/-- Running `idealLweReduction D` on `lweUniformContext` equals the fully uniform ideal game
-`(uniformIdealDistribution m n q).bind D`. -/
-theorem lweUniformContext_bind_idealLweReduction (m n q : ℕ) [NeZero q]
-    {Seed Key : Type} [Fintype Seed] [Nonempty Seed] [Fintype Key] [Nonempty Key]
-    (D : Key × DecodeHelper m n q Seed → PMF Bool) :
-    (lweUniformContext m n q).bind (idealLweReduction D) =
-      (uniformIdealDistribution m n q).bind D := by
-  simp only [lweUniformContext, idealLweReduction, uniformIdealDistribution,
-    PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
-
-/-! ### Exact translation invariance for uniform error sources -/
-
-/-- When the source `W` is the uniform distribution over `Fin m → ZMod q`, the real context
-distribution `(s, ⟨A, A s + w⟩)` is identically equal to `uniformContextDistribution` because
-translation by `A s` is a bijection on `Fin m → ZMod q`. -/
-theorem realContextDistribution_uniform (m n q : ℕ) [NeZero q] :
-    realContextDistribution m n q (PMF.uniformOfFintype (Fin m → ZMod q)) =
-      uniformContextDistribution m n q := by
-  simp only [realContextDistribution, uniformContextDistribution,
-    PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
-  rw [PMF.bind_comm (PMF.uniformOfFintype (Fin m → ZMod q))
-    (PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q)))]
+/-- A uniform offset `u` absorbs the translation `A s`: over uniform `u`, `A`, and `s`, the
+code-offset vector `A s + u` is uniform and independent of `(A, s)`. -/
+private theorem uniform_bind_offset {m n q : ℕ} [NeZero q] {α : Type}
+    (G : Matrix (Fin m) (Fin n) (ZMod q) → (Fin n → ZMod q) → (Fin m → ZMod q) → PMF α) :
+    ((PMF.uniformOfFintype (Fin m → ZMod q)).bind fun u =>
+      (PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q))).bind fun A =>
+        (PMF.uniformOfFintype (Fin n → ZMod q)).bind fun s => G A s (A.mulVec s + u)) =
+      (PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q))).bind fun A =>
+        (PMF.uniformOfFintype (Fin n → ZMod q)).bind fun s =>
+          (PMF.uniformOfFintype (Fin m → ZMod q)).bind fun u => G A s u := by
+  rw [PMF.bind_comm (PMF.uniformOfFintype (Fin m → ZMod q))]
   congr 1 with A : 1
-  rw [PMF.bind_comm (PMF.uniformOfFintype (Fin m → ZMod q))
-    (PMF.uniformOfFintype (Fin n → ZMod q)),
-    PMF.bind_comm (PMF.uniformOfFintype (Fin m → ZMod q))
-    (PMF.uniformOfFintype (Fin n → ZMod q))]
+  rw [PMF.bind_comm (PMF.uniformOfFintype (Fin m → ZMod q))]
   congr 1 with s : 1
-  exact PMF.uniformOfFintype_bind_equiv (Equiv.addLeft (A.mulVec s))
-    (fun u => PMF.pure (s, DecodeContext.mk A u))
+  exact Probability.PMF.uniformOfFintype_bind_equiv (Equiv.addLeft (A.mulVec s)) (G A s)
 
-/-- When `W` is the uniform distribution over `Fin m → ZMod q`, `lweRealContext` is identically
-equal to `lweUniformContext`. -/
-theorem lweRealContext_uniform (m n q : ℕ) [NeZero q] :
-    lweRealContext m n q (PMF.uniformOfFintype (Fin m → ZMod q)) =
-      lweUniformContext m n q := by
-  simp only [lweRealContext, lweUniformContext, PMF.monad_bind_eq_bind,
-    PMF.monad_pure_eq_pure]
-  rw [PMF.bind_comm (PMF.uniformOfFintype (Fin m → ZMod q))
-    (PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod q)))]
-  congr 1 with A : 1
-  rw [PMF.bind_comm (PMF.uniformOfFintype (Fin m → ZMod q))
-    (PMF.uniformOfFintype (Fin n → ZMod q))]
-  calc
-    (PMF.uniformOfFintype (Fin n → ZMod q)).bind (fun s =>
-        (PMF.uniformOfFintype (Fin m → ZMod q)).bind (fun w =>
-          PMF.pure (DecodeContext.mk A (A.mulVec s + w))))
-      = (PMF.uniformOfFintype (Fin n → ZMod q)).bind (fun _ =>
-          (PMF.uniformOfFintype (Fin m → ZMod q)).bind (fun u =>
-            PMF.pure (DecodeContext.mk A u))) := by
-        congr 1 with s : 1
-        exact PMF.uniformOfFintype_bind_equiv (Equiv.addLeft (A.mulVec s))
-          (fun u => PMF.pure (DecodeContext.mk A u))
-    _ = (PMF.uniformOfFintype (Fin m → ZMod q)).bind (fun u => PMF.pure (DecodeContext.mk A u)) :=
-      PMF.bind_const _ _
-
-/-- On a uniform source `W = PMF.uniformOfFintype (Fin m → ZMod q)`, the fuzzy-extractor
-distinguishing advantage of `decodeThenExtract` equals the extractor distinguishing advantage on
-`uniformContextDistribution`. -/
-theorem securityAdvantage_decodeThenExtract_uniform_eq (m n q : ℕ) [NeZero q]
-    {Seed Key : Type} [Fintype Seed] [Nonempty Seed] [Fintype Key] [Nonempty Key] [Inhabited Key]
+/-- Sanity check for a uniform source: with `W` uniform on `Fin m → ZMod q` and the additive key
+derivation `ext s x = s + x`, the real distribution `(R, P)` of `decodeThenExtract` equals the
+ideal distribution `(U, P)`, because translation by `A s` and then by `x` are bijections. -/
+theorem realDistribution_decodeThenExtract_add_uniform (m n q : ℕ) [NeZero q]
     (decode : Matrix (Fin m) (Fin n) (ZMod q) → (Fin m → ZMod q) →
-      ProbComp (Option (Fin n → ZMod q)))
-    (ext : (Fin n → ZMod q) → Seed → Key)
-    (D : Key × DecodeHelper m n q Seed → PMF Bool) :
-    (decodeThenExtract m n q decode ext).securityAdvantage
-        (PMF.uniformOfFintype (Fin m → ZMod q)) D =
-      Game.advantage
-        ((hybridDistribution m n q ext).bind D)
-        ((uniformIdealDistribution m n q).bind D) := by
-  have hreal : (decodeThenExtract m n q decode ext).realGame
-      (PMF.uniformOfFintype (Fin m → ZMod q)) D = (hybridDistribution m n q ext).bind D := by
-    rw [← realContextDistribution_bind_realContextReduction m n q decode ext,
-      realContextDistribution_uniform,
-      uniformContextDistribution_bind_realContextReduction]
-  have hideal : (decodeThenExtract m n q decode ext).idealGame
-      (PMF.uniformOfFintype (Fin m → ZMod q)) D = (uniformIdealDistribution m n q).bind D := by
-    rw [← lweRealContext_bind_idealLweReduction m n q decode ext,
-      lweRealContext_uniform,
-      lweUniformContext_bind_idealLweReduction]
-  simp only [FuzzyExtractor.securityAdvantage, hreal, hideal]
-
-/-! ### Zero-loss extractor specialization (`ext s x = s + x`) -/
-
-/-- When the extractor is one-time-pad addition `fun s x => s + x` on `Fin n → ZMod q`,
-`hybridDistribution` is identically equal to `uniformIdealDistribution` because translation by `x`
-is a bijection on the uniform secret `s`. -/
-theorem hybridDistribution_add_eq_uniformIdealDistribution (m n q : ℕ) [NeZero q] :
-    hybridDistribution m n q (fun (s x : Fin n → ZMod q) => s + x) =
-      uniformIdealDistribution m n q (Seed := Fin n → ZMod q) (Key := Fin n → ZMod q) := by
-  simp only [hybridDistribution, uniformIdealDistribution,
-    PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
+      ProbComp (Option (Fin n → ZMod q))) :
+    (decodeThenExtract m n q decode fun (s x : Fin n → ZMod q) => s + x).realDistribution
+        (PMF.uniformOfFintype (Fin m → ZMod q)) =
+      (decodeThenExtract m n q decode fun (s x : Fin n → ZMod q) => s + x).idealDistribution
+        (PMF.uniformOfFintype (Fin m → ZMod q)) := by
+  simp only [realDistribution, idealDistribution, decodeThenExtract, ProbComp.eval_bind,
+    ProbComp.eval_pure, ProbComp.eval_uniform, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
+    PMF.bind_bind, PMF.pure_bind]
+  refine (uniform_bind_offset fun A s c => (PMF.uniformOfFintype (Fin n → ZMod q)).bind fun x =>
+    PMF.pure (s + x, DecodeHelper.mk A c x)).trans (Eq.trans ?_
+      (uniform_bind_offset fun A _ c => (PMF.uniformOfFintype (Fin n → ZMod q)).bind fun x =>
+        (PMF.uniformOfFintype (Fin n → ZMod q)).bind fun u =>
+          PMF.pure (u, DecodeHelper.mk A c x)).symm)
   congr 1 with A : 1
-  congr 1 with u : 1
+  conv_rhs => rw [PMF.bind_const]
+  rw [PMF.bind_comm (PMF.uniformOfFintype (Fin n → ZMod q))
+    (PMF.uniformOfFintype (Fin m → ZMod q))]
+  congr 1 with c : 1
   rw [PMF.bind_comm (PMF.uniformOfFintype (Fin n → ZMod q))
     (PMF.uniformOfFintype (Fin n → ZMod q))]
   congr 1 with x : 1
-  exact PMF.uniformOfFintype_bind_equiv (Equiv.addRight x)
-    (fun r => PMF.pure (r, DecodeHelper.mk A u x))
+  exact Probability.PMF.uniformOfFintype_bind_equiv (Equiv.addRight x)
+    (fun u => PMF.pure (u, DecodeHelper.mk A c x))
 
-/-- On a uniform source `W = PMF.uniformOfFintype (Fin m → ZMod q)` with the additive extractor
-`fun s x => s + x`, every distinguisher has fuzzy-extractor advantage `0`. -/
+/-- On a uniform source with the additive key derivation `ext s x = s + x`, every distinguisher
+has advantage `0` against `decodeThenExtract`. -/
 theorem securityAdvantage_decodeThenExtract_add_uniform_eq_zero (m n q : ℕ) [NeZero q]
     (decode : Matrix (Fin m) (Fin n) (ZMod q) → (Fin m → ZMod q) →
       ProbComp (Option (Fin n → ZMod q)))
-    (D : (Fin n → ZMod q) × DecodeHelper m n q (Fin n → ZMod q) → PMF Bool) :
-    (decodeThenExtract m n q decode (fun (s x : Fin n → ZMod q) => s + x)).securityAdvantage
-        (PMF.uniformOfFintype (Fin m → ZMod q)) D = 0 := by
-  rw [securityAdvantage_decodeThenExtract_uniform_eq,
-    hybridDistribution_add_eq_uniformIdealDistribution, Game.advantage_self]
-
+    (D : (Fin n → ZMod q) → DecodeHelper m n q (Fin n → ZMod q) → Experiment) :
+    (decodeThenExtract m n q decode fun (s x : Fin n → ZMod q) => s + x).securityAdvantage
+        (PMF.uniformOfFintype (Fin m → ZMod q)) D = 0 :=
+  securityAdvantage_eq_zero_of_realDistribution_eq
+    (realDistribution_decodeThenExtract_add_uniform m n q decode) D
 
 /-! ### Construction 4.1 with hardcore key coordinates (Lemma 4.7) -/
 
@@ -568,7 +362,7 @@ def joinCols (A₁ : Matrix (Fin m) (Fin k) (ZMod q)) (A₂ : Matrix (Fin m) (Fi
   Matrix.of fun i => Fin.append (A₁ i) (A₂ i)
 
 /-- Splitting the columns identifies pairs `(A₁, A₂)` with matrices `[A₁ | A₂]`. -/
-def joinColsEquiv :
+private def joinColsEquiv :
     Matrix (Fin m) (Fin k) (ZMod q) × Matrix (Fin m) (Fin l) (ZMod q) ≃
       Matrix (Fin m) (Fin (k + l)) (ZMod q) where
   toFun A := joinCols A.fst A.snd
@@ -583,7 +377,7 @@ def joinColsEquiv :
 
 omit [NeZero q] in
 /-- `[A₁ | A₂] (x₁ ‖ x₂) = A₁ x₁ + A₂ x₂`. -/
-theorem joinCols_mulVec_append (A₁ : Matrix (Fin m) (Fin k) (ZMod q))
+private theorem joinCols_mulVec_append (A₁ : Matrix (Fin m) (Fin k) (ZMod q))
     (A₂ : Matrix (Fin m) (Fin l) (ZMod q)) (x₁ : Fin k → ZMod q) (x₂ : Fin l → ZMod q) :
     (joinCols A₁ A₂).mulVec (Fin.append x₁ x₂) = A₁.mulVec x₁ + A₂.mulVec x₂ := by
   ext i
@@ -609,42 +403,44 @@ noncomputable def lweFuzzyExtractor (m k l q : ℕ) [NeZero q]
   decodeThenExtract m (k + l) q decode fun x _ i => x (Fin.castAdd l i)
 
 /-- The real-key branch of the reduction behind [FullerMengReyzin2020], Lemma 4.7 (from
-Akavia, Goldwasser, and Vaikuntanathan): given a sample `(A₂, c₂)` for secret dimension `l`,
-sample `A₁` and `x₁` itself and run `D` on `(x₁, ⟨[A₁ | A₂], A₁ x₁ + c₂⟩)`. The distinguisher
-never sees the secret of the sample it is given. -/
+Akavia, Goldwasser, and Vaikuntanathan), as an LWE distinguisher: given a sample `(A₂, c₂)` for
+secret dimension `l`, sample `A₁` and `x₁` itself and run `D x₁ ⟨[A₁ | A₂], A₁ x₁ + c₂, ()⟩`.
+The reduction never sees the secret of the sample it is given. -/
 noncomputable def hardcoreKeyReduction
-    (D : (Fin k → ZMod q) × DecodeHelper m (k + l) q Unit → PMF Bool)
-    (ctx : DecodeContext m l q) : PMF Bool := do
-  let A₁ ← PMF.uniformOfFintype (Matrix (Fin m) (Fin k) (ZMod q))
-  let x₁ ← PMF.uniformOfFintype (Fin k → ZMod q)
-  D (x₁, ⟨joinCols A₁ ctx.matrix, A₁.mulVec x₁ + ctx.cipher, ()⟩)
+    (D : (Fin k → ZMod q) → DecodeHelper m (k + l) q Unit → Experiment)
+    (A₂ : Matrix (Fin m) (Fin l) (ZMod q)) (c₂ : Fin m → ZMod q) : Experiment := do
+  let A₁ ← ProbComp.uniform (Matrix (Fin m) (Fin k) (ZMod q))
+  let x₁ ← ProbComp.uniform (Fin k → ZMod q)
+  D x₁ ⟨joinCols A₁ A₂, A₁.mulVec x₁ + c₂, ()⟩
 
 /-- The uniform-key branch of the reduction behind [FullerMengReyzin2020], Lemma 4.7: as
 `hardcoreKeyReduction`, but `D` receives an independent uniform key `r` in place of `x₁`. -/
 noncomputable def hardcoreUniformReduction
-    (D : (Fin k → ZMod q) × DecodeHelper m (k + l) q Unit → PMF Bool)
-    (ctx : DecodeContext m l q) : PMF Bool := do
-  let A₁ ← PMF.uniformOfFintype (Matrix (Fin m) (Fin k) (ZMod q))
-  let x₁ ← PMF.uniformOfFintype (Fin k → ZMod q)
-  let r ← PMF.uniformOfFintype (Fin k → ZMod q)
-  D (r, ⟨joinCols A₁ ctx.matrix, A₁.mulVec x₁ + ctx.cipher, ()⟩)
+    (D : (Fin k → ZMod q) → DecodeHelper m (k + l) q Unit → Experiment)
+    (A₂ : Matrix (Fin m) (Fin l) (ZMod q)) (c₂ : Fin m → ZMod q) : Experiment := do
+  let A₁ ← ProbComp.uniform (Matrix (Fin m) (Fin k) (ZMod q))
+  let x₁ ← ProbComp.uniform (Fin k → ZMod q)
+  let r ← ProbComp.uniform (Fin k → ZMod q)
+  D r ⟨joinCols A₁ A₂, A₁.mulVec x₁ + c₂, ()⟩
 
 /-- Embedding a dimension-`l` sample `(A₂, A₂ x₂ + w)` into `([A₁ | A₂], A₁ x₁ + A₂ x₂ + w)`
 for fresh uniform `A₁, x₁` gives a dimension-`(k + l)` sample with uniform matrix and secret
 `x₁ ‖ x₂`. -/
-private theorem lweRealContext_bind_embed (W : PMF (Fin m → ZMod q))
-    (F : (Fin k → ZMod q) → DecodeContext m (k + l) q → PMF Bool) :
-    ((lweRealContext m l q W).bind fun ctx =>
-      (PMF.uniformOfFintype (Matrix (Fin m) (Fin k) (ZMod q))).bind fun A₁ =>
-        (PMF.uniformOfFintype (Fin k → ZMod q)).bind fun x₁ =>
-          F x₁ ⟨joinCols A₁ ctx.matrix, A₁.mulVec x₁ + ctx.cipher⟩) =
+private theorem realGame_embed (W : PMF (Fin m → ZMod q))
+    (F : (Fin k → ZMod q) → Matrix (Fin m) (Fin (k + l)) (ZMod q) → (Fin m → ZMod q) →
+      PMF Bool) :
+    ((PMF.uniformOfFintype (Fin l → ZMod q)).bind fun x₂ => W.bind fun w =>
+      (PMF.uniformOfFintype (Matrix (Fin m) (Fin l) (ZMod q))).bind fun A₂ =>
+        (PMF.uniformOfFintype (Matrix (Fin m) (Fin k) (ZMod q))).bind fun A₁ =>
+          (PMF.uniformOfFintype (Fin k → ZMod q)).bind fun x₁ =>
+            F x₁ (joinCols A₁ A₂) (A₁.mulVec x₁ + (A₂.mulVec x₂ + w))) =
       W.bind fun w =>
         (PMF.uniformOfFintype (Matrix (Fin m) (Fin (k + l)) (ZMod q))).bind fun A =>
           (PMF.uniformOfFintype (Fin (k + l) → ZMod q)).bind fun x =>
-            F (fun i => x (Fin.castAdd l i)) ⟨A, A.mulVec x + w⟩ := by
-  simp only [lweRealContext, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind,
-    PMF.pure_bind]
+            F (fun i => x (Fin.castAdd l i)) A (A.mulVec x + w) := by
+  rw [PMF.bind_comm (PMF.uniformOfFintype (Fin l → ZMod q)) W]
   congr 1 with w : 1
+  rw [PMF.bind_comm (PMF.uniformOfFintype (Fin l → ZMod q))]
   conv_rhs => rw [← uniform_bind_bind_equiv joinColsEquiv,
     PMF.bind_comm (PMF.uniformOfFintype (Matrix (Fin m) (Fin k) (ZMod q)))]
   congr 1 with A₂ : 1
@@ -654,8 +450,8 @@ private theorem lweRealContext_bind_embed (W : PMF (Fin m → ZMod q))
   rw [PMF.bind_comm (PMF.uniformOfFintype (Fin l → ZMod q))]
   congr 1 with x₁ : 1
   congr 1 with x₂ : 1
-  change F x₁ _ = F (fun i => Fin.append x₁ x₂ (Fin.castAdd l i))
-    ⟨joinCols A₁ A₂, (joinCols A₁ A₂).mulVec (Fin.append x₁ x₂) + w⟩
+  change F x₁ _ _ = F (fun i => Fin.append x₁ x₂ (Fin.castAdd l i)) (joinCols A₁ A₂)
+    ((joinCols A₁ A₂).mulVec (Fin.append x₁ x₂) + w)
   rw [joinCols_mulVec_append, add_assoc]
   simp
 
@@ -663,77 +459,63 @@ private theorem uniformOfFintype_unit : PMF.uniformOfFintype Unit = PMF.pure () 
   ext u
   simp
 
-/-- On real dimension-`l` samples, `hardcoreKeyReduction D` is the real game of
-`lweFuzzyExtractor`. -/
-private theorem lweRealContext_bind_hardcoreKeyReduction
+/-- The LWE real game of `hardcoreKeyReduction D` (uniform secret, error law `W`) is the real
+fuzzy-extractor game of `lweFuzzyExtractor`. -/
+private theorem realGame_hardcoreKeyReduction
     (decode : Matrix (Fin m) (Fin (k + l)) (ZMod q) → (Fin m → ZMod q) →
       ProbComp (Option (Fin (k + l) → ZMod q)))
     (W : PMF (Fin m → ZMod q))
-    (D : (Fin k → ZMod q) × DecodeHelper m (k + l) q Unit → PMF Bool) :
-    (lweRealContext m l q W).bind (hardcoreKeyReduction D) =
+    (D : (Fin k → ZMod q) → DecodeHelper m (k + l) q Unit → Experiment) :
+    LWE.realGame (PMF.uniformOfFintype (Fin l → ZMod q)) W (hardcoreKeyReduction D) =
       (lweFuzzyExtractor m k l q decode).realGame W D := by
-  have h := lweRealContext_bind_embed (k := k) W
-    (fun x₁ ctx => D (x₁, ⟨ctx.matrix, ctx.cipher, ()⟩))
+  have h := realGame_embed (k := k) W fun x₁ A c => ProbComp.eval (D x₁ ⟨A, c, ()⟩)
+  simp only [LWE.realGame, LWE.eval_realExperiment, hardcoreKeyReduction, ProbComp.eval_bind,
+    ProbComp.eval_uniform, PMF.monad_bind_eq_bind]
   refine h.trans ?_
-  simp only [lweFuzzyExtractor, decodeThenExtract, FuzzyExtractor.realGame,
-    FuzzyExtractor.realDistribution, ProbComp.eval_bind, ProbComp.eval_pure,
-    ProbComp.eval_uniform, uniformOfFintype_unit, PMF.bind_bind, PMF.pure_bind]
+  simp only [lweFuzzyExtractor, decodeThenExtract, realGame, Game.withSetup, realExperiment,
+    ProbComp.eval_bind, ProbComp.eval_pure, ProbComp.eval_uniform, uniformOfFintype_unit,
+    PMF.bind_bind, PMF.pure_bind]
 
-/-- On real dimension-`l` samples, `hardcoreUniformReduction D` is the ideal game of
-`lweFuzzyExtractor`. -/
-private theorem lweRealContext_bind_hardcoreUniformReduction
+/-- The LWE real game of `hardcoreUniformReduction D` (uniform secret, error law `W`) is the
+ideal fuzzy-extractor game of `lweFuzzyExtractor`. -/
+private theorem realGame_hardcoreUniformReduction
     (decode : Matrix (Fin m) (Fin (k + l)) (ZMod q) → (Fin m → ZMod q) →
       ProbComp (Option (Fin (k + l) → ZMod q)))
     (W : PMF (Fin m → ZMod q))
-    (D : (Fin k → ZMod q) × DecodeHelper m (k + l) q Unit → PMF Bool) :
-    (lweRealContext m l q W).bind (hardcoreUniformReduction D) =
+    (D : (Fin k → ZMod q) → DecodeHelper m (k + l) q Unit → Experiment) :
+    LWE.realGame (PMF.uniformOfFintype (Fin l → ZMod q)) W (hardcoreUniformReduction D) =
       (lweFuzzyExtractor m k l q decode).idealGame W D := by
-  have h := lweRealContext_bind_embed (k := k) W
-    (fun _ ctx => (PMF.uniformOfFintype (Fin k → ZMod q)).bind fun r =>
-      D (r, ⟨ctx.matrix, ctx.cipher, ()⟩))
+  have h := realGame_embed (k := k) W fun _ A c =>
+    (PMF.uniformOfFintype (Fin k → ZMod q)).bind fun r => ProbComp.eval (D r ⟨A, c, ()⟩)
+  simp only [LWE.realGame, LWE.eval_realExperiment, hardcoreUniformReduction,
+    ProbComp.eval_bind, ProbComp.eval_uniform, PMF.monad_bind_eq_bind]
   refine h.trans ?_
-  simp only [lweFuzzyExtractor, decodeThenExtract, FuzzyExtractor.idealGame,
-    FuzzyExtractor.idealDistribution, ProbComp.eval_bind, ProbComp.eval_pure,
-    ProbComp.eval_uniform, uniformOfFintype_unit, PMF.monad_bind_eq_bind,
-    PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
+  simp only [lweFuzzyExtractor, decodeThenExtract, idealGame, Game.withSetup, idealExperiment,
+    ProbComp.eval_bind, ProbComp.eval_pure, ProbComp.eval_uniform, uniformOfFintype_unit,
+    PMF.bind_bind, PMF.pure_bind]
 
-/-- A uniform offset `u` absorbs the translation `A₁ x₁`. -/
-private theorem uniform_bind_offset
-    (G : Matrix (Fin m) (Fin k) (ZMod q) → (Fin k → ZMod q) → (Fin m → ZMod q) → PMF Bool) :
-    ((PMF.uniformOfFintype (Fin m → ZMod q)).bind fun u =>
-      (PMF.uniformOfFintype (Matrix (Fin m) (Fin k) (ZMod q))).bind fun A₁ =>
-        (PMF.uniformOfFintype (Fin k → ZMod q)).bind fun x₁ => G A₁ x₁ (A₁.mulVec x₁ + u)) =
-      (PMF.uniformOfFintype (Matrix (Fin m) (Fin k) (ZMod q))).bind fun A₁ =>
-        (PMF.uniformOfFintype (Fin k → ZMod q)).bind fun x₁ =>
-          (PMF.uniformOfFintype (Fin m → ZMod q)).bind fun u => G A₁ x₁ u := by
-  rw [PMF.bind_comm (PMF.uniformOfFintype (Fin m → ZMod q))]
-  congr 1 with A₁ : 1
-  rw [PMF.bind_comm (PMF.uniformOfFintype (Fin m → ZMod q))]
-  congr 1 with x₁ : 1
-  exact Probability.PMF.uniformOfFintype_bind_equiv (Equiv.addLeft (A₁.mulVec x₁)) (G A₁ x₁)
-
-/-- On uniform dimension-`l` samples the two branches agree: `A₁ x₁ + u` is uniform and
+/-- On uniform dimension-`l` samples the two reductions agree: `A₁ x₁ + u` is uniform and
 independent of `x₁`, so the key `x₁` is distributed exactly like a fresh uniform key. -/
-private theorem lweUniformContext_bind_hardcoreKeyReduction
-    (D : (Fin k → ZMod q) × DecodeHelper m (k + l) q Unit → PMF Bool) :
-    (lweUniformContext m l q).bind (hardcoreKeyReduction D) =
-      (lweUniformContext m l q).bind (hardcoreUniformReduction D) := by
-  simp only [lweUniformContext, hardcoreKeyReduction, hardcoreUniformReduction,
-    PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
+private theorem randomGame_hardcoreKeyReduction
+    (D : (Fin k → ZMod q) → DecodeHelper m (k + l) q Unit → Experiment) :
+    LWE.randomGame (hardcoreKeyReduction D) = LWE.randomGame (hardcoreUniformReduction D) := by
+  simp only [LWE.randomGame, LWE.eval_randomExperiment, hardcoreKeyReduction,
+    hardcoreUniformReduction, ProbComp.eval_bind, ProbComp.eval_uniform]
   congr 1 with A₂ : 1
-  refine (uniform_bind_offset fun A₁ x₁ c => D (x₁, ⟨joinCols A₁ A₂, c, ()⟩)).trans
+  refine (uniform_bind_offset fun A₁ x₁ c =>
+      ProbComp.eval (D x₁ ⟨joinCols A₁ A₂, c, ()⟩)).trans
     (Eq.trans ?_ (uniform_bind_offset fun A₁ _ c =>
       (PMF.uniformOfFintype (Fin k → ZMod q)).bind fun r =>
-        D (r, ⟨joinCols A₁ A₂, c, ()⟩)).symm)
+        ProbComp.eval (D r ⟨joinCols A₁ A₂, c, ()⟩)).symm)
   congr 1 with A₁ : 1
   rw [PMF.bind_const, PMF.bind_comm]
 
 /-- Security of Construction 4.1 from decisional LWE in dimension `l`
 ([FullerMengReyzin2020], Lemma 4.7 and the security part of Theorem 4.11): for every source `W`
 (used as the LWE error distribution) and every distinguisher `D`, the advantage of `D` against
-`lweFuzzyExtractor` is at most the sum of the decisional LWE advantages, on secret dimension `l`
-and error distribution `W`, of the two explicit reductions `hardcoreKeyReduction D` and
-`hardcoreUniformReduction D`.
+`lweFuzzyExtractor` is at most the sum of the decisional LWE advantages `LWE.advantage`, with a
+uniform secret in dimension `l` and error distribution `W`, of the two explicit reductions
+`hardcoreKeyReduction D` and `hardcoreUniformReduction D`.
 
 This is an exact statement with no hypotheses; it does not bound the running time of the
 reductions, and it does not prove that LWE with error distribution `W` is hard (the paper obtains
@@ -742,14 +524,13 @@ theorem securityAdvantage_lweFuzzyExtractor_le
     (decode : Matrix (Fin m) (Fin (k + l)) (ZMod q) → (Fin m → ZMod q) →
       ProbComp (Option (Fin (k + l) → ZMod q)))
     (W : PMF (Fin m → ZMod q))
-    (D : (Fin k → ZMod q) × DecodeHelper m (k + l) q Unit → PMF Bool) :
+    (D : (Fin k → ZMod q) → DecodeHelper m (k + l) q Unit → Experiment) :
     (lweFuzzyExtractor m k l q decode).securityAdvantage W D ≤
-      lweContextAdvantage m l q W (hardcoreKeyReduction D) +
-        lweContextAdvantage m l q W (hardcoreUniformReduction D) := by
-  simp only [lweContextAdvantage, FuzzyExtractor.securityAdvantage]
-  rw [lweRealContext_bind_hardcoreKeyReduction decode,
-    lweRealContext_bind_hardcoreUniformReduction decode,
-    lweUniformContext_bind_hardcoreKeyReduction,
+      LWE.advantage (PMF.uniformOfFintype (Fin l → ZMod q)) W (hardcoreKeyReduction D) +
+        LWE.advantage (PMF.uniformOfFintype (Fin l → ZMod q)) W (hardcoreUniformReduction D) := by
+  simp only [LWE.advantage, securityAdvantage]
+  rw [realGame_hardcoreKeyReduction decode, realGame_hardcoreUniformReduction decode,
+    randomGame_hardcoreKeyReduction,
     Game.advantage_comm ((lweFuzzyExtractor m k l q decode).idealGame W D)]
   exact Game.advantage_triangle _ _ _
 
@@ -761,11 +542,12 @@ theorem computationallySecureFor_lweFuzzyExtractor
     (decode : Matrix (Fin m) (Fin (k + l)) (ZMod q) → (Fin m → ZMod q) →
       ProbComp (Option (Fin (k + l) → ZMod q)))
     {sources : Set (PMF (Fin m → ZMod q))}
-    {Admissible : ((Fin k → ZMod q) × DecodeHelper m (k + l) q Unit → PMF Bool) → Prop}
+    {Admissible : ((Fin k → ZMod q) → DecodeHelper m (k + l) q Unit → Experiment) → Prop}
     {ε : ℝ≥0}
     (hlwe : ∀ W ∈ sources, ∀ D, Admissible D →
-      lweContextAdvantage m l q W (hardcoreKeyReduction D) ≤ ε ∧
-        lweContextAdvantage m l q W (hardcoreUniformReduction D) ≤ ε) :
+      LWE.advantage (PMF.uniformOfFintype (Fin l → ZMod q)) W (hardcoreKeyReduction D) ≤ ε ∧
+        LWE.advantage (PMF.uniformOfFintype (Fin l → ZMod q)) W
+          (hardcoreUniformReduction D) ≤ ε) :
     (lweFuzzyExtractor m k l q decode).ComputationallySecureFor sources Admissible (2 * ε) := by
   intro W hW D hD
   obtain ⟨hkey, hunif⟩ := hlwe W hW D hD
@@ -773,20 +555,6 @@ theorem computationallySecureFor_lweFuzzyExtractor
       ≤ ε + ε := (securityAdvantage_lweFuzzyExtractor_le decode W D).trans (add_le_add hkey hunif)
     _ = 2 * ε := (two_mul ε).symm
 
-/-- `lweContextAdvantage` is the repository's decisional LWE advantage `LWE.advantage` with a
-uniform secret, for distinguishers given as `ProbComp` programs. -/
-theorem lweContextAdvantage_eq_advantage (W : PMF (Fin m → ZMod q))
-    (B : Matrix (Fin m) (Fin l) (ZMod q) → (Fin m → ZMod q) → ProbComp Bool) :
-    lweContextAdvantage m l q W (fun ctx => ProbComp.eval (B ctx.matrix ctx.cipher)) =
-      LWE.advantage (PMF.uniformOfFintype (Fin l → ZMod q)) W B := by
-  simp only [lweContextAdvantage, LWE.advantage, LWE.realGame, LWE.randomGame,
-    LWE.eval_realExperiment, LWE.eval_randomExperiment, lweRealContext, lweUniformContext,
-    PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
-  congr 1
-  rw [PMF.bind_comm (PMF.uniformOfFintype (Fin l → ZMod q)) W]
-  congr 1 with w : 1
-  rw [PMF.bind_comm (PMF.uniformOfFintype (Fin l → ZMod q))]
-
 end Hardcore
 
-end Cslib.Crypto
+end Cslib.Crypto.FuzzyExtractor

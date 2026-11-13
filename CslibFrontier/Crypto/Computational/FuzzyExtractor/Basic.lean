@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Computational.Basic
+public import CslibFrontier.Crypto.Game.Experiment
 public import Mathlib.InformationTheory.Hamming
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Bind
@@ -41,12 +42,15 @@ average-case extractor security on `(W, SS(W))` directly to fuzzy-extractor secu
   `Cslib.Crypto.FuzzyExtractor.CorrectHamming`,
   `Cslib.Crypto.FuzzyExtractor.CorrectHammingWithError`: zero-error and `δ`-error correctness
   for general distance functions and for Hamming distance.
-* `Cslib.Crypto.FuzzyExtractor.realDistribution`, `Cslib.Crypto.FuzzyExtractor.idealDistribution`,
+* `Cslib.Crypto.FuzzyExtractor.realDistribution`, `Cslib.Crypto.FuzzyExtractor.idealDistribution`:
+  the real `(R, P)` and ideal `(U, P)` distributions on a source `W` (Definition 2.2).
+* `Cslib.Crypto.FuzzyExtractor.realExperiment`, `Cslib.Crypto.FuzzyExtractor.idealExperiment`,
   `Cslib.Crypto.FuzzyExtractor.realGame`, `Cslib.Crypto.FuzzyExtractor.idealGame`,
   `Cslib.Crypto.FuzzyExtractor.securityAdvantage`,
-  `Cslib.Crypto.FuzzyExtractor.ComputationallySecureFor`: the real `(R, P)` and ideal `(U, P)`
-  distributions, distinguishing games, advantage, and computational security over a source family
-  (Definition 2.2).
+  `Cslib.Crypto.FuzzyExtractor.ComputationallySecureFor`: the distinguishing experiments on a fixed
+  reading, the games averaging them over `W` with `Cslib.Crypto.Game.withSetup`, the advantage, and
+  computational security over a source family (Definition 2.2). Distinguishers are
+  `Cslib.Crypto.Experiment` programs `Key → Helper → Experiment`.
 * `Cslib.Crypto.SecureSketch`, `Cslib.Crypto.SketchHelper`,
   `Cslib.Crypto.SecureSketch.sketchAndExtract`: secure sketches (Definition 2.3) and the
   sketch-and-extract fuzzy extractor (Lemma 2.5).
@@ -58,6 +62,8 @@ average-case extractor security on `(W, SS(W))` directly to fuzzy-extractor secu
   `reproduceGame w w' = PMF.pure true` and `CorrectWithError` for every `δ`.
 * `Cslib.Crypto.FuzzyExtractor.CorrectWithError.one_sub_le_succProbability`: a failure bound `δ`
   implies reproduction success probability at least `1 - δ`.
+* `Cslib.Crypto.FuzzyExtractor.realGame_eq_bind`, `Cslib.Crypto.FuzzyExtractor.idealGame_eq_bind`:
+  the games are the distinguisher run on `realDistribution W` and `idealDistribution W`.
 * `Cslib.Crypto.FuzzyExtractor.securityAdvantage_eq_zero_of_realDistribution_eq`,
   `Cslib.Crypto.FuzzyExtractor.computationallySecureFor_zero_of_realDistribution_eq`:
   exact equality of `(R, P)` and `(U, P)` implies zero distinguishing advantage against all
@@ -232,24 +238,57 @@ theorem idealDistribution_eq_helperDistribution_bind [Fintype Key] [Nonempty Key
   simp only [idealDistribution, helperDistribution, realDistribution, PMF.monad_bind_eq_bind,
     PMF.bind_map, PMF.bind_bind, Function.comp_def]
 
-/-- The real distinguishing game for source `W` and distinguisher `D`: sample `(r, p)` from
-`realDistribution W` and run `D(r, p)`. -/
-noncomputable def realGame (fe : FuzzyExtractor M Key Helper) (W : PMF M)
-    (D : Key × Helper → PMF Bool) : Game :=
-  (fe.realDistribution W).bind D
+/-- The real distinguishing experiment on a fixed reading `w`: sample `(r, p) ← Gen(w)` and run
+`D r p`. -/
+def realExperiment (fe : FuzzyExtractor M Key Helper) (w : M)
+    (D : Key → Helper → Experiment) : Experiment := do
+  let (r, p) ← fe.gen w
+  D r p
 
-/-- The ideal distinguishing game for source `W` and distinguisher `D`: sample `(u, p)` from
-`idealDistribution W` and run `D(u, p)`. -/
+/-- The ideal distinguishing experiment on a fixed reading `w`: sample `(_, p) ← Gen(w)` and an
+independent uniform key `u`, and run `D u p`. -/
+noncomputable def idealExperiment [Fintype Key] [Nonempty Key]
+    (fe : FuzzyExtractor M Key Helper) (w : M) (D : Key → Helper → Experiment) :
+    Experiment := do
+  let (_, p) ← fe.gen w
+  let u ← ProbComp.uniform Key
+  D u p
+
+/-- The real distinguishing game for source `W` and distinguisher `D`: sample `w ← W` and run
+`realExperiment w D`. -/
+noncomputable def realGame (fe : FuzzyExtractor M Key Helper) (W : PMF M)
+    (D : Key → Helper → Experiment) : Game :=
+  Game.withSetup W fun w => fe.realExperiment w D
+
+/-- The ideal distinguishing game for source `W` and distinguisher `D`: sample `w ← W` and run
+`idealExperiment w D`. -/
 noncomputable def idealGame [Fintype Key] [Nonempty Key]
     (fe : FuzzyExtractor M Key Helper) (W : PMF M)
-    (D : Key × Helper → PMF Bool) : Game :=
-  (fe.idealDistribution W).bind D
+    (D : Key → Helper → Experiment) : Game :=
+  Game.withSetup W fun w => fe.idealExperiment w D
+
+/-- The real game runs `D` on a sample of `realDistribution W`. -/
+theorem realGame_eq_bind (fe : FuzzyExtractor M Key Helper) (W : PMF M)
+    (D : Key → Helper → Experiment) :
+    fe.realGame W D = (fe.realDistribution W).bind fun rp => ProbComp.eval (D rp.1 rp.2) := by
+  simp only [realGame, Game.withSetup, realExperiment, realDistribution, ProbComp.eval_bind,
+    PMF.bind_bind]
+
+/-- The ideal game runs `D` on a sample of `idealDistribution W`. -/
+theorem idealGame_eq_bind [Fintype Key] [Nonempty Key] (fe : FuzzyExtractor M Key Helper)
+    (W : PMF M) (D : Key → Helper → Experiment) :
+    fe.idealGame W D = (fe.idealDistribution W).bind fun up => ProbComp.eval (D up.1 up.2) := by
+  simp only [idealGame, Game.withSetup, idealExperiment, idealDistribution,
+    PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, ProbComp.eval_bind]
+  congr 1 with w : 1
+  congr 1 with ⟨r, p⟩
+  simp only [ProbComp.eval_uniform, PMF.pure_bind]
 
 /-- The distinguishing advantage `δ^D((R, P), (U, P))` of `D` on source `W`
 ([FullerMengReyzin2020], Definition 2.2). -/
 noncomputable abbrev securityAdvantage [Fintype Key] [Nonempty Key]
     (fe : FuzzyExtractor M Key Helper) (W : PMF M)
-    (D : Key × Helper → PMF Bool) : ℝ≥0 :=
+    (D : Key → Helper → Experiment) : ℝ≥0 :=
   Game.advantage (fe.realGame W D) (fe.idealGame W D)
 
 /-- Concrete computational security of a fuzzy extractor for a source family `sources` against
@@ -257,7 +296,7 @@ a distinguisher class `Admissible` with advantage bound `ε`
 ([FullerMengReyzin2020], Definition 2.2, item 4). -/
 def ComputationallySecureFor [Fintype Key] [Nonempty Key]
     (fe : FuzzyExtractor M Key Helper) (sources : Set (PMF M))
-    (Admissible : (Key × Helper → PMF Bool) → Prop) (ε : ℝ≥0) : Prop :=
+    (Admissible : (Key → Helper → Experiment) → Prop) (ε : ℝ≥0) : Prop :=
   ∀ W ∈ sources, ∀ D, Admissible D → fe.securityAdvantage W D ≤ ε
 
 /-- When the real `(R, P)` and ideal `(U, P)` distributions coincide, every distinguisher
@@ -265,16 +304,16 @@ def ComputationallySecureFor [Fintype Key] [Nonempty Key]
 theorem securityAdvantage_eq_zero_of_realDistribution_eq [Fintype Key] [Nonempty Key]
     {fe : FuzzyExtractor M Key Helper} {W : PMF M}
     (h : fe.realDistribution W = fe.idealDistribution W)
-    (D : Key × Helper → PMF Bool) :
+    (D : Key → Helper → Experiment) :
     fe.securityAdvantage W D = 0 := by
-  simp only [securityAdvantage, realGame, idealGame, h, Game.advantage_self]
+  simp only [securityAdvantage, realGame_eq_bind, idealGame_eq_bind, h, Game.advantage_self]
 
 /-- Exact equality of real and ideal distributions on every source in `sources` implies
 `ComputationallySecureFor` with error `0` against any class of distinguishers. -/
 theorem computationallySecureFor_zero_of_realDistribution_eq [Fintype Key] [Nonempty Key]
     {fe : FuzzyExtractor M Key Helper} {sources : Set (PMF M)}
     (h : ∀ W ∈ sources, fe.realDistribution W = fe.idealDistribution W)
-    (Admissible : (Key × Helper → PMF Bool) → Prop) :
+    (Admissible : (Key → Helper → Experiment) → Prop) :
     fe.ComputationallySecureFor sources Admissible 0 :=
   fun W hW D _ => by rw [securityAdvantage_eq_zero_of_realDistribution_eq (h W hW) D]
 
@@ -282,7 +321,7 @@ theorem computationallySecureFor_zero_of_realDistribution_eq [Fintype Key] [None
 distinguishers preserves `ComputationallySecureFor`. -/
 theorem ComputationallySecureFor.mono [Fintype Key] [Nonempty Key]
     {fe : FuzzyExtractor M Key Helper} {sources₁ sources₂ : Set (PMF M)}
-    {Admissible₁ Admissible₂ : (Key × Helper → PMF Bool) → Prop} {ε₁ ε₂ : ℝ≥0}
+    {Admissible₁ Admissible₂ : (Key → Helper → Experiment) → Prop} {ε₁ ε₂ : ℝ≥0}
     (h : fe.ComputationallySecureFor sources₂ Admissible₂ ε₁)
     (hs : sources₁ ⊆ sources₂)
     (ha : ∀ D, Admissible₁ D → Admissible₂ D)
@@ -458,12 +497,14 @@ on the joint distribution `(W, SS(W))`. -/
 theorem securityAdvantage_sketchAndExtract_eq
     [Fintype Seed] [Nonempty Seed] [Fintype Key] [Nonempty Key]
     (ss : SecureSketch M Sketch) (ext : M → Seed → Key) (W : PMF M)
-    (D : Key × SketchHelper Sketch Seed → PMF Bool) :
+    (D : Key → SketchHelper Sketch Seed → Experiment) :
     (ss.sketchAndExtract ext).securityAdvantage W D =
-      Game.advantage ((extractorRealLaw ext (ss.jointSketch W)).bind D)
-        ((extractorIdealLaw (ss.jointSketch W)).bind D) := by
-  simp only [FuzzyExtractor.securityAdvantage, FuzzyExtractor.realGame, FuzzyExtractor.idealGame,
-    realDistribution_sketchAndExtract, idealDistribution_sketchAndExtract]
+      Game.advantage
+        ((extractorRealLaw ext (ss.jointSketch W)).bind fun rp => ProbComp.eval (D rp.1 rp.2))
+        ((extractorIdealLaw (ss.jointSketch W)).bind fun up => ProbComp.eval (D up.1 up.2)) := by
+  simp only [FuzzyExtractor.securityAdvantage, FuzzyExtractor.realGame_eq_bind,
+    FuzzyExtractor.idealGame_eq_bind, realDistribution_sketchAndExtract,
+    idealDistribution_sketchAndExtract]
 
 end SecureSketch
 

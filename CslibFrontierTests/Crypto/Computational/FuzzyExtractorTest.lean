@@ -15,9 +15,10 @@ import CslibFrontier.Probability.PMF.Uniform
 
 Exercise the fuzzy-extractor definitions, the sketch-and-extract construction (Lemma 2.5), and the
 LWE decode-then-extract construction (Construction 4.1) on concrete finite-field parameters.
-Includes positive instances (zero-error sketch-and-extract, the additive extractor on a uniform
-source, the LWE security bound for Construction 4.1 at concrete dimensions, concrete
-Hamming-weight/distance identities) and a separating negative fixture
+Distinguishers are `Experiment` programs. Includes positive instances (zero-error
+sketch-and-extract, the additive extractor on a uniform source, the LWE security bound for
+Construction 4.1 at concrete dimensions against `LWE.advantage`, a concrete Hamming distance) and a
+separating negative fixture
 (`revealingFuzzyExtractor`) that is perfectly reproducible for every distance threshold `t` yet
 has distinguishing advantage `1 / 2` on a uniform 1-bit source.
 -/
@@ -26,15 +27,13 @@ public section
 
 namespace CslibFrontierTests.Crypto.Computational.FuzzyExtractorTest
 
-open Cslib Cslib.Crypto Cslib.Probability
+open Cslib Cslib.Crypto Cslib.Crypto.FuzzyExtractor Cslib.Probability
 open scoped ENNReal NNReal
 
-/-! ### Concrete Hamming distance and weight identity -/
+/-! ### Concrete Hamming distance -/
 
-/-- Concrete verification of `hammingNorm (w - w') = hammingDist w w' = 1` on two 3-symbol
-vectors over `ZMod 5`. -/
-example : hammingNorm (![(1 : ZMod 5), 2, 3] - ![(1 : ZMod 5), 4, 3]) = 1 := by
-  rw [hammingNorm_sub_eq_hammingDist]
+/-- Concrete verification of `hammingDist w w' = 1` on two 3-symbol vectors over `ZMod 5`. -/
+example : hammingDist ![(1 : ZMod 5), 2, 3] ![(1 : ZMod 5), 4, 3] = 1 := by
   decide
 
 /-! ### Concrete sketch-and-extract instance (Lemma 2.5) -/
@@ -67,14 +66,14 @@ example (w : Fin 3 → ZMod 2) :
     (by simp [hammingDist_self])
   exact le_antisymm h zero_le
 
-/-! ### Concrete decode-then-extract security and hybrid identities (Construction 4.1) -/
+/-! ### Concrete decode-then-extract security (Construction 4.1) -/
 
 /-- Concrete instantiation of `decodeThenExtract` on `m = 3, n = 2, q = 5` with the additive
 extractor `fun s x => s + x`: on a uniform source `W`, every distinguisher has advantage `0`. -/
 theorem securityAdvantage_decodeThenExtract_concrete_zero
     (decode : Matrix (Fin 3) (Fin 2) (ZMod 5) → (Fin 3 → ZMod 5) →
       ProbComp (Option (Fin 2 → ZMod 5)))
-    (D : (Fin 2 → ZMod 5) × DecodeHelper 3 2 5 (Fin 2 → ZMod 5) → PMF Bool) :
+    (D : (Fin 2 → ZMod 5) → DecodeHelper 3 2 5 (Fin 2 → ZMod 5) → Experiment) :
     (decodeThenExtract 3 2 5 decode (fun (s x : Fin 2 → ZMod 5) => s + x)).securityAdvantage
         (PMF.uniformOfFintype (Fin 3 → ZMod 5)) D = 0 :=
   securityAdvantage_decodeThenExtract_add_uniform_eq_zero 3 2 5 decode D
@@ -85,11 +84,29 @@ example
     (decode : Matrix (Fin 4) (Fin (1 + 1)) (ZMod 7) → (Fin 4 → ZMod 7) →
       ProbComp (Option (Fin (1 + 1) → ZMod 7)))
     (W : PMF (Fin 4 → ZMod 7))
-    (D : (Fin 1 → ZMod 7) × DecodeHelper 4 (1 + 1) 7 Unit → PMF Bool) :
+    (D : (Fin 1 → ZMod 7) → DecodeHelper 4 (1 + 1) 7 Unit → Experiment) :
     (lweFuzzyExtractor 4 1 1 7 decode).securityAdvantage W D ≤
-      lweContextAdvantage 4 1 7 W (hardcoreKeyReduction D) +
-        lweContextAdvantage 4 1 7 W (hardcoreUniformReduction D) :=
+      LWE.advantage (PMF.uniformOfFintype (Fin 1 → ZMod 7)) W (hardcoreKeyReduction D) +
+        LWE.advantage (PMF.uniformOfFintype (Fin 1 → ZMod 7)) W (hardcoreUniformReduction D) :=
   securityAdvantage_lweFuzzyExtractor_le decode W D
+
+/-- With a uniform error distribution, the decisional LWE advantage of every distinguisher is `0`:
+`A s + e` is uniform and independent of `(A, s)`. -/
+theorem lweAdvantage_uniform_error_eq_zero
+    (B : Matrix (Fin 4) (Fin 1) (ZMod 7) → (Fin 4 → ZMod 7) → Experiment) :
+    LWE.advantage (PMF.uniformOfFintype (Fin 1 → ZMod 7))
+      (PMF.uniformOfFintype (Fin 4 → ZMod 7)) B = 0 := by
+  have hreal : LWE.realGame (PMF.uniformOfFintype (Fin 1 → ZMod 7))
+      (PMF.uniformOfFintype (Fin 4 → ZMod 7)) B = LWE.randomGame B := by
+    simp only [LWE.realGame, LWE.randomGame, LWE.eval_realExperiment,
+      LWE.eval_randomExperiment, PMF.monad_bind_eq_bind]
+    refine Eq.trans ?_ (PMF.bind_const (PMF.uniformOfFintype (Fin 1 → ZMod 7)) _)
+    congr 1 with s : 1
+    rw [PMF.bind_comm (PMF.uniformOfFintype (Fin 4 → ZMod 7))]
+    congr 1 with A : 1
+    exact PMF.uniformOfFintype_bind_equiv (Equiv.addLeft (A.mulVec s))
+      (fun b => ProbComp.eval (B A b))
+  rw [LWE.advantage, hreal, Game.advantage_self]
 
 /-- The hypothesis of `computationallySecureFor_lweFuzzyExtractor` is satisfiable: for the
 uniform source, both LWE advantages vanish, so Construction 4.1 is `0`-secure for it. -/
@@ -104,8 +121,7 @@ example
       intro W hW D _
       rw [Set.mem_singleton_iff] at hW
       subst hW
-      simp only [lweContextAdvantage, lweRealContext_uniform, Game.advantage_self, le_refl,
-        and_self])
+      simp only [lweAdvantage_uniform_error_eq_zero, le_refl, and_self])
   simpa using h
 
 /-! ### Separating fixture: reproducible for all `t`, but insecure -/
@@ -126,17 +142,18 @@ theorem correct_revealingFuzzyExtractor (dis : Bool → Bool → ℕ) (t : ℕ) 
     Prod.mk.injEq] at hrp hr'
   rw [hr', hrp.2, hrp.1]
 
-/-- The equality distinguisher on `Bool × Bool`, testing whether the key equals the helper bit. -/
-noncomputable def eqBitDistinguisher (rp : Bool × Bool) : PMF Bool :=
-  PMF.pure (decide (rp.1 = rp.2))
+/-- The equality distinguisher on `Bool` keys and helpers, testing whether the key equals the
+helper bit. -/
+def eqBitDistinguisher (r p : Bool) : Experiment :=
+  pure (decide (r = p))
 
 /-- On a uniform 1-bit source, `revealingFuzzyExtractor` has distinguishing advantage `1 / 2`
 against `eqBitDistinguisher`. -/
 theorem securityAdvantage_revealingFuzzyExtractor :
     revealingFuzzyExtractor.securityAdvantage (PMF.uniformOfFintype Bool) eqBitDistinguisher =
       (1 : ℝ≥0) / 2 := by
-  simp only [FuzzyExtractor.securityAdvantage, FuzzyExtractor.realGame,
-    FuzzyExtractor.idealGame, FuzzyExtractor.realDistribution,
+  simp only [FuzzyExtractor.securityAdvantage, FuzzyExtractor.realGame_eq_bind,
+    FuzzyExtractor.idealGame_eq_bind, FuzzyExtractor.realDistribution,
     FuzzyExtractor.idealDistribution, revealingFuzzyExtractor, eqBitDistinguisher,
     ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
     PMF.bind_bind, PMF.pure_bind, decide_true, PMF.bind_const,
