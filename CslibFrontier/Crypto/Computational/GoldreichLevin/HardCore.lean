@@ -13,6 +13,7 @@ import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Tactic.PPT
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString.Dot
 
 /-!
 # The Goldreich–Levin hard-core predicate
@@ -57,7 +58,7 @@ def paddedFunction (f : List Bool → List Bool) (seed : List Bool) : List Bool 
 /-- The inner product of the first two equal halves, ignoring an optional final bit. -/
 def paddedPredicate (seed : List Bool) : Bool :=
   let half := seed.length / 2
-  ((seed.take half).zipWith Bool.and ((seed.drop half).take half)).foldl Bool.xor false
+  listDot (seed.take half) ((seed.drop half).take half)
 
 /-- The padded function uses ordinary slicing and one call to the supplied function. -/
 @[fun_prop]
@@ -87,7 +88,7 @@ theorem paddedPredicate_chunks {n : ℕ} (x r : BitString n)
     (extra : List Bool) (hextra : extra.length ≤ 1) :
     paddedPredicate (List.ofFn x ++ List.ofFn r ++ extra) = x ⬝ᵥ r := by
   have hhalf : (n + (n + extra.length)) / 2 = n := by lia
-  simp [paddedPredicate, hhalf, List.append_assoc, dotProduct_eq_foldl]
+  simp [paddedPredicate, hhalf, List.append_assoc]
 
 /-- A length-preserving function leaves the complete padded seed length unchanged. -/
 theorem paddedFunction_length {f : List Bool → List Bool}
@@ -143,15 +144,15 @@ theorem eval_paddedPrediction (f : List Bool → List Bool) (adversary : Disting
     (n spare : ℕ) (hspare : spare ≤ 1) :
     ProbComp.eval (predictionGame (paddedFunction f) paddedPredicate adversary (2 * n + spare)) =
       ProbComp.eval (parityPredictionGame f (paddedPredictor adversary spare) n) := by
-  simp only [predictionGame, parityPredictionGame, paddedPredictor, ProbComp.eval_bind,
-    BitString.eval_sampleList, ProbComp.eval_pure, two_mul]
+  simp only [predictionGame, predictionExperiment, parityPredictionGame, paddedPredictor,
+    ProbComp.eval_bind, BitString.eval_sampleList, ProbComp.eval_pure, two_mul]
   rw [uniformList_add (n + n) spare, uniformList_add n n]
   simp only [pmf_norm, uniformList]
   congr 1 with x : 1
   congr 1 with r : 1
   congr 1 with extra : 1
   rw [paddedFunction_chunks f x r (List.ofFn extra) (by simpa using hspare),
-    paddedPredicate_chunks x r (List.ofFn extra) (by simpa using hspare), dotProduct_eq_foldl]
+    paddedPredicate_chunks x r (List.ofFn extra) (by simpa using hspare), listDot_ofFn]
 
 /-- Goldreich–Levin supplies an efficient hard-core predicate for the padded function. Two fixed
 PPT reductions handle even and odd seed lengths; no length-dependent adversary is chosen. -/

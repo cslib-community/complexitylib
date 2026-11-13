@@ -31,7 +31,7 @@ example (input : List Bool) : ProbComp.eval (extract 0 input) = PMF.pure [] := b
 -- The digest marginal can be uniform while the complete output repeats its public seed.
 example : ProbComp.eval (extract 1 [true]) =
     (PMF.uniformOfFintype Bool).map (fun bit => [bit, bit]) := by
-  simp [extract, sampleList, wordHash, listRows, listRow]
+  simp [extract, sampleList, wordHash, listDot, listRows, listRow]
 
 -- The hash count and both words can be computed from an alternatively encoded caller.
 example : ComputableInPolyTime

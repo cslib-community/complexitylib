@@ -721,7 +721,7 @@ theorem gmwView_advantage_le {α : Type} (generator : List Bool → List Bool)
         (adversary n a z) =
       ProbComp.eval (OracleComp.replicate (n + 1) g >>=
         fun attempts => adversary n a z (firstSuccess [] attempts)) := by
-    simp only [pmf_norm, distinguishingGame]
+    simp only [pmf_norm, distinguishingGame_eq_bind]
   have hzero : ProbComp.eval (firstSuccess [] <$> OracleComp.replicate (n + 1)
       (gmwRealPRGPads generator (n + 7) (length (n + 7)) (f a) w (Vstar n a z))) = guess := by
     simp only [guess, ProbComp.eval_map,
@@ -1132,7 +1132,7 @@ theorem gmwView_indistinguishable_gmwSimulator {α : Type} {enc : α ↪ List Bo
   have herr := (negligible_geometric (by norm_num : (7 / 8 : ℝ≥0) < 1)).shift 1
   apply negligible_of_le (herr.add_fun (hneg.polynomiallyBounded_mul hloss))
   intro n
-  simpa only [pmf_norm, distinguishingGame, BitString.eval_sampleList, generatorEnsemble,
+  simpa only [pmf_norm, distinguishingGame_eq_bind, BitString.eval_sampleList, generatorEnsemble,
     Nat.cast_mul, red] using
     gmwView_advantage_le generator length f Vstar (fun n _ _ view => adversary n view)
       n (a n) (w n) (z n) (hw_sat n)

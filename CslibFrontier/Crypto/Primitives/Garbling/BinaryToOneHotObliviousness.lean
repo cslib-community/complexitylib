@@ -256,25 +256,26 @@ theorem isQueryBounded_reduction (H : L → T → L) (tw : (t : ℕ) → (Fin (t
 
 /-- Against a fixed function the reduction runs `D` on uniform labels and the ciphertexts of
 `runSteps`. -/
-private theorem eval_interpret_reduction (H : L → T → L)
+private theorem eval_run_reduction (H : L → T → L)
     (tw : (t : ℕ) → (Fin (t + 1) → Bool) → T) (n : ℕ) (x : Fin (n + 1) → Bool)
     (D : OneHotView L n → ProbComp Bool) (f : CCR.Query L T → L) :
-    ProbComp.eval (OracleComp.interpret (OracleComp.sumHandler ProbComp.unifFin
-        fun q => pure (f q)) (reduction H tw n x D)) =
+    ProbComp.eval ((reduction H tw n x D).run fun q => pure (f q)) =
       (PMF.uniformOfFintype (Fin (n + 1) → L)).bind fun A =>
         ProbComp.eval (D (A, (runSteps H tw f n x A).1)) := by
   have hself : ∀ {α : Type} (p : ProbComp α), OracleComp.interpret ProbComp.unifFin p = p :=
     fun p => OracleComp.interpret_query_eq_self p
-  simp only [reduction, OracleComp.interpret_bind, ProbOracleComp.interpret_sample, hself,
-    interpret_oracleSteps, pure_bind, ProbComp.eval_bind, ProbComp.eval_uniform]
+  simp only [ProbOracleComp.run, reduction, OracleComp.interpret_bind,
+    ProbOracleComp.interpret_sample, hself, interpret_oracleSteps, pure_bind, ProbComp.eval_bind,
+    ProbComp.eval_uniform]
 
 /-- **Real side**: against the keyed oracle, the reduction plays the real experiment. -/
 theorem realGame_reduction [Module (ZMod 2) L] [Fintype Key] [Nonempty Key] (H : L → T → L)
     (tw : (t : ℕ) → (Fin (t + 1) → Bool) → T) (δ : Key → L) (n : ℕ) (x : Fin (n + 1) → Bool)
     (D : OneHotView L n → ProbComp Bool) :
-    PRF.realGame (CCR.keyed H δ δ) (reduction H tw n x D) = realGame H tw δ n x D := by
-  simp only [PRF.realGame, realGame, ProbComp.eval_bind, ProbComp.eval_uniform,
-    eval_interpret_reduction]
+    ProbComp.eval (PRF.realExperiment (CCR.keyed H δ δ) (reduction H tw n x D)) =
+      realGame H tw δ n x D := by
+  simp only [PRF.realExperiment, realGame, ProbComp.eval_bind, ProbComp.eval_uniform,
+    eval_run_reduction]
   congr 1 with k : 1
   -- The input labels are the zero-labels shifted by the offsets of the bits of `x`.
   let e : (Fin (n + 1) → L) ≃ (Fin (n + 1) → L) :=
@@ -356,9 +357,9 @@ experiment, when different doubling steps use different tweaks. -/
 theorem idealGame_reduction (H : L → T → L) (tw : (t : ℕ) → (Fin (t + 1) → Bool) → T) (n : ℕ)
     (htw : ∀ t t' j j', t < n → t' < n → tw t j = tw t' j' → t = t')
     (x : Fin (n + 1) → Bool) (D : OneHotView L n → ProbComp Bool) :
-    PRF.idealGame (reduction H tw n x D) = simGame n D := by
-  simp only [PRF.idealGame, simGame, simulate, ProbComp.eval_bind, ProbComp.eval_uniform,
-    eval_interpret_reduction, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind]
+    ProbComp.eval (PRF.idealExperiment (reduction H tw n x D)) = simGame n D := by
+  simp only [PRF.idealExperiment, simGame, simulate, ProbComp.eval_bind, ProbComp.eval_uniform,
+    eval_run_reduction, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind]
   rw [PMF.bind_comm]
   refine congrArg _ (funext fun A => ?_)
   exact uniformOfFintype_bind_runSteps H tw n htw x A fun ct => ProbComp.eval (D (A, ct))

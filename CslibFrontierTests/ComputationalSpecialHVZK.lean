@@ -434,7 +434,7 @@ theorem computationalSpecialHVZK_prgWitnessSigma
           chvzkRealGame (prgWitnessSigma generator length) (fun _ _ _ => True) PMF.pure
             adversary n = distinguishingGame (generatorEnsemble generator n) (D n) := by
         simp only [chvzkRealGame, chvzkExperiment_map_some, ProbComp.liftM_eq_eval,
-          distinguishingGame, D, PMF.monad_bind_eq_bind, PMF.pure_bind, ProbComp.eval_bind]
+          distinguishingGame_eq_bind, D, PMF.monad_bind_eq_bind, PMF.pure_bind, ProbComp.eval_bind]
         rw [PMF.bind_comm (generatorEnsemble generator n)]
         refine PMF.bind_congr_on_support _ _ _ fun ⟨⟨x, ⟨⟩⟩, state⟩ _ => ?_
         cases x
@@ -458,7 +458,7 @@ theorem computationalSpecialHVZK_prgWitnessSigma
           chvzkSimGame (fun _ _ _ => True) prgWitnessEncoding PMF.pure (prgWitnessSim length)
             adversary n = distinguishingGame (BitString.uniformList (length n)) (D n) := by
         simp only [chvzkSimGame, chvzkExperiment, hconv, ProbComp.liftM_eq_eval,
-          distinguishingGame, D, PMF.monad_bind_eq_bind, PMF.pure_bind, ProbComp.eval_bind]
+          distinguishingGame_eq_bind, D, PMF.monad_bind_eq_bind, PMF.pure_bind, ProbComp.eval_bind]
         rw [PMF.bind_comm (BitString.uniformList (length n))]
         refine PMF.bind_congr_on_support _ _ _ fun ⟨⟨x, ⟨⟩⟩, state⟩ _ => ?_
         cases x

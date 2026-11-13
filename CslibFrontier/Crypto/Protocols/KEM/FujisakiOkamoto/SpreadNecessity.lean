@@ -208,7 +208,7 @@ end UnspreadPKE
 
 /-! ### The 1-Query Decapsulation Probe Adversary -/
 
-/-- The 1-query decapsulation probe adversary: ignores `(pk, c*, k*)`, queries the decapsulation
+/-- The 1-query decapsulation probe adversary: ignores the challenge, queries the decapsulation
 oracle once on `none : Option CT`, and outputs `true` iff the oracle returns `some k`. -/
 @[expose] def probeDecapsAdv : ROAdversary PK M R (Option CT) K :=
   fun _ => do

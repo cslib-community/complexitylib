@@ -15,6 +15,7 @@ public import CslibFrontier.Languages.Probabilistic.Repeat
 public import CslibFrontier.Languages.Probabilistic.UniformNat
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -242,7 +243,7 @@ theorem SignatureScheme.OneTimeEUFCMA.exists_oneWay {S : SignatureScheme}
   have hstep1 : Game.succProbability (ProbComp.eval (inversionGame f adversary size)) ≤
       Game.succProbability (trial size) := by
     apply ENNReal.toNNReal_mono (PMF.apply_ne_top _ _)
-    dsimp only [trial, inversionGame]
+    dsimp only [trial, inversionGame, inversionExperiment]
     rw [hlaw n size hbudget, PMF.monad_bind_eq_bind, PMF.bind_map]
     simp only [pmf_norm, BitString.eval_sampleList]
     refine PMF.bind_apply_mono_on_support _ true fun seed hseed => ?_
@@ -589,12 +590,6 @@ theorem isPPT_lamportInverter {f : List Bool → List Bool}
     (hkeys.bind_with ((hrun_base.preprocess hprep).bind_with hpost.isPPTOn))
     (ComputableInPolyTime.const []).isPPTOn)).isPPT
 
-private theorem map_bool_apply_true {α : Type*} (p : PMF α) (P : α → Bool) :
-    (p.map P) true = ∑' a, p a * (if P a then 1 else 0) := by
-  rw [PMF.map_apply]
-  refine tsum_congr fun a => ?_
-  cases P a <;> simp
-
 private theorem map_true_le_sum_of_pointwise {β : Type*} {m : ℕ}
     (p : PMF β) (win : β → Bool) (q : ℕ → PMF β) (invWin : ℕ → β → Bool)
     (h : ∀ x, p x * (if win x then 1 else 0) ≤
@@ -602,12 +597,12 @@ private theorem map_true_le_sum_of_pointwise {β : Type*} {m : ℕ}
         if j.val < m then q j.val x * (if invWin j.val x then 1 else 0) else 0) :
     (p.map win) true ≤
       ∑ j : Fin (dyadicSize m), if j.val < m then ((q j.val).map (invWin j.val)) true else 0 := by
-  rw [map_bool_apply_true]
+  rw [PMF.map_apply_true]
   refine (tsum_le_tsum h).trans ?_
   rw [Summable.tsum_finsetSum fun _ _ => CompleteLattice.summable]
   refine le_of_eq (Finset.sum_congr rfl fun j _ => ?_)
   split_ifs
-  · exact (map_bool_apply_true _ _).symm
+  · exact (PMF.map_apply_true _ _).symm
   · simp
 
 private theorem bind_map_true_le_sum {α β : Type*} {m : ℕ} (μ : PMF α)
@@ -754,8 +749,8 @@ theorem OneWay.oneTimeEUFCMA_lamport {f : List Bool → List Bool} (hf : OneWay 
     (ProbComp.eval (inverterAt j (f xStar))).map fun cand => f cand == f xStar
   have hinv_eq : ProbComp.eval (inversionGame f inverter n) =
       (PMF.uniformOfFintype (Fin (dyadicSize (2 * n)))).bind (fun j => trial j.val) := by
-    simp only [pmf_norm, inversionGame, inverter, lamportInverter, trial, inverterAt,
-      BitString.eval_sampleList, eval_sampleDyadicIndex]
+    simp only [pmf_norm, inversionGame, inversionExperiment, inverter, lamportInverter, trial,
+      inverterAt, BitString.eval_sampleList, eval_sampleDyadicIndex]
     rw [PMF.bind_comm]
     rfl
   have htrial_eq : ∀ j < 2 * n,

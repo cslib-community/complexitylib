@@ -17,6 +17,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pair.Projections
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Exponential
 
@@ -349,15 +350,13 @@ theorem mem_E : MKtP ∈ E (encPair encBits encUnary) := by
   have heq : MKtP = g ⁻¹' {y : List Bool | Ψ (y, 2 ^ y.length) = true} := by
     ext ⟨x, k⟩
     simp only [Set.mem_preimage, Set.mem_ofPred_eq, Ψ, g]
-    have hunf : unframe (encPair encBits encUnary (x, k)) = x := by
-      simp [encPair_apply]
     have hdrop : (dropFrame (encPair encBits encUnary (x, k))).length = k := by
-      simp [encPair_apply]
+      rw [dropFrame_encPair]; simp
     have hpow : 2 ^ (k + 1) ≤ 2 ^ (encPair encBits encUnary (x, k)).length := by
       refine Nat.pow_le_pow_right (by norm_num) ?_
       simp only [length_encPair, encBits_apply, encUnary_apply, List.length_replicate]
       omega
-    rw [hunf, hdrop, boundedSearch_eq_true_iff_of_two_pow_le hpow]
+    rw [unframe_encPair_encBits, hdrop, boundedSearch_eq_true_iff_of_two_pow_le hpow]
   rw [heq]
   exact mem_E_iff.mpr ⟨c + 1, hpre⟩
 
