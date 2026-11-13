@@ -202,6 +202,7 @@ import CslibFrontier.Logics.SecondOrder.WordMSO.Separation
 import CslibFrontier.Logics.SecondOrder.WordMSO.StarFree
 import CslibFrontier.MachineLearning.OnlineLearning.SwapRegret
 import CslibFrontier.MachineLearning.PACBayes.Basic
+import CslibFrontier.MachineLearning.PACBayes.KL
 import CslibFrontier.MachineLearning.PACLearning.MDL
 import CslibFrontier.MachineLearning.PACLearning.Nonuniform
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.AC0Mod
@@ -1583,6 +1584,27 @@ register_result "pac-bayes-mcallester" where
     E_Q L_D ≤ E_Q L_S + √((KL(Q ‖ P) + log (m / δ)) / (2 (m - 1))); the proved form has \
     log (√m / δ). Point masses give the Occam bound with log (1 / P {i}). Measurable \
     hypothesis spaces, the kl form and Catoni's bound are not covered."
+
+register_result "pac-bayes-kl" where
+  title := "The PAC-Bayes-kl bound of Seeger and Maurer and its Occam form"
+  topic := "statistical learning"
+  sources := [
+    { paper := Seeger2002, theorem := "Theorem 1 and Appendix A",
+      locator := "Section 1, p. 239, and pp. 264–265" },
+    { paper := Maurer2004, theorem := "Lemma 3", locator := "Section 2, p. 4" }
+  ]
+  theorems := [
+    Cslib.MachineLearning.PACBayes.measure_pi_exists_binaryKL_integral_risk_gt,
+    Cslib.MachineLearning.PACBayes.measure_pi_exists_binaryKL_risk_gt
+  ]
+  scope := "Countable hypothesis index with measurable singletons, a prior fixed before the \
+    sample, measurable losses in [0, 1], m ≥ 1 i.i.d. examples and δ > 0. With probability at \
+    least 1 - δ every posterior Q with KL(Q ‖ P) < ∞, possibly depending on the sample, has \
+    kl(E_Q L_S ‖ E_Q L_D) ≤ (KL(Q ‖ P) + log ((m + 1) / δ)) / m, the binary relative entropy \
+    in nats; Seeger states it for the 0-1 loss and Maurer's Lemma 3 extends it to [0, 1]. \
+    Point masses give the Occam form with log (1 / P {i}). Maurer's log (2√m / δ) for m ≥ 8, \
+    the square-root form through binary Pinsker, measurable hypothesis spaces and Catoni's \
+    bound are not covered."
 
 register_result "gmw-zero-knowledge" where
   title := "Goldreich–Micali–Wigderson auxiliary-input zero-knowledge proofs for NP"

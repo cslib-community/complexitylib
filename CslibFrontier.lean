@@ -6598,6 +6598,7 @@ public import CslibFrontier.MachineLearning.OnlineLearning.SwapRegret
 public import CslibFrontier.MachineLearning.OnlineLearning.WeightedMajority
 public import CslibFrontier.MachineLearning.OnlineLearning.ZeroSum
 public import CslibFrontier.MachineLearning.PACBayes.Basic
+public import CslibFrontier.MachineLearning.PACBayes.KL
 public import CslibFrontier.MachineLearning.PACLearning.AgnosticFiniteClass
 public import CslibFrontier.MachineLearning.PACLearning.Compression.Basic
 public import CslibFrontier.MachineLearning.PACLearning.Compression.MistakeBound
@@ -6672,6 +6673,8 @@ public import CslibFrontier.Probability.AdaptiveWeights
 public import CslibFrontier.Probability.ApproxEq
 public import CslibFrontier.Probability.ApproximateCounting
 public import CslibFrontier.Probability.ApproximateCounting.Relative
+public import CslibFrontier.Probability.BernoulliComparison
+public import CslibFrontier.Probability.BinaryKL
 public import CslibFrontier.Probability.BitString
 public import CslibFrontier.Probability.BitString.AffineHash
 public import CslibFrontier.Probability.BitString.AffineHash.ThreeWise
