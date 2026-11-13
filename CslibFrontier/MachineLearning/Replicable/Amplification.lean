@@ -22,6 +22,7 @@ import CslibFrontier.Probability.PMF.EventBind
 import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Probability.PMF.Markov
 import CslibFrontier.Probability.PMF.ToReal
+import CslibFrontier.Probability.PMF.UniformPoint
 import CslibFrontier.Probability.PMF.Union
 
 /-!
@@ -1261,11 +1262,7 @@ private theorem trialRunMarginal_single_fail [DecidableEq α] (A : Algorithm X �
           2 * Real.exp (-2 * (k₂ : ℝ) * δ_maj ^ 2) := by
       let q : PMF Bool := μ.map fun z => decide (z = yStar)
       have hq : (q true).toReal = (μ yStar).toReal := by
-        rw [← PMF.toOuterMeasure_apply_singleton q true, PMF.toOuterMeasure_map_apply]
-        have hset : (fun z : α => decide (z = yStar)) ⁻¹' {true} = {yStar} := by
-          ext z
-          simp
-        rw [hset, PMF.toOuterMeasure_apply_singleton]
+        rw [Probability.PMF.map_decide_eq_apply_true]
       have hsub :
           {zs : Fin k₂ → α | strictMajorityCandidate zs (zs ⟨0, NeZero.pos k₂⟩) ≠ yStar} ⊆
           (fun zs : Fin k₂ → α => fun j => decide (zs j = yStar)) ⁻¹'

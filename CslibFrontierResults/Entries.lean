@@ -124,6 +124,7 @@ import CslibFrontier.Computability.MCSP.Magnification.MergeTree.Locality
 import CslibFrontier.Computability.MCSP.MultiNPHard
 import CslibFrontier.Computability.MCSP.PartialETH
 import CslibFrontier.Computability.MCSP.PartialHardness.Reduction
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.StepCounter
 import CslibFrontier.Computability.PCP.Approximation.UniqueGames.Complexity
 import CslibFrontier.Computability.PCP.Completeness
 import CslibFrontier.Computability.PolyTime.LinearAlgebra.RationalElimination
@@ -207,7 +208,9 @@ import CslibFrontier.Logics.SecondOrder.WordMSO.McNaughtonPapert
 import CslibFrontier.Logics.SecondOrder.WordMSO.OfRegular
 import CslibFrontier.Logics.SecondOrder.WordMSO.Separation
 import CslibFrontier.Logics.SecondOrder.WordMSO.StarFree
+import CslibFrontier.MachineLearning.LossMinimization.RLM
 import CslibFrontier.MachineLearning.OnlineLearning.SwapRegret
+import CslibFrontier.MachineLearning.PACBayes.Basic
 import CslibFrontier.MachineLearning.PACLearning.AgnosticVCSharp
 import CslibFrontier.MachineLearning.PACLearning.MDL
 import CslibFrontier.MachineLearning.PACLearning.Nonuniform
@@ -1616,6 +1619,24 @@ register_result "blum-mansour-swap-regret" where
     2 √(T n ln n) with the tuned rate when n ≥ 2 and T ≥ n ln n. Stationary vectors are \
     chosen classically; no running time is charged."
 
+register_result "rlm-stability" where
+  title := "Stability and oracle inequality of Tikhonov-regularized loss minimization"
+  topic := "statistical learning"
+  sources := [
+    { paper := ShalevShwartzBenDavid2014, theorem := "Corollaries 13.6, 13.8 and 13.9",
+      locator := "Sections 13.3.1 and 13.4" }
+  ]
+  theorems := [
+    Cslib.MachineLearning.IsRLM.isReplaceOneStable_tikhonov,
+    Cslib.MachineLearning.IsRLM.integral_trueRisk_le_tikhonov,
+    Cslib.MachineLearning.IsRLM.integral_trueRisk_le_add_sqrt
+  ]
+  scope := "Regularizer r‖w‖² on a convex subset K of a real inner product space, losses convex \
+    and ρ-Lipschitz on K, m i.i.d. examples from an arbitrary probability measure. The rule \
+    minimizes over K and the comparator ranges over K. The replace-one stability rate proved is \
+    ρ² / (r m), half the source's; the oracle inequalities are stated with the source's \
+    constants. Integrability of the losses of the rule's output is a hypothesis."
+
 register_result "srm-nonuniform-learnability" where
   title := "Countable unions of uniformly convergent classes are nonuniformly learnable by SRM"
   topic := "statistical learning"
@@ -1668,6 +1689,26 @@ register_result "agnostic-vc-sharp-rate" where
     the shattered sets. The constants are explicit and unoptimized. The lower bounds and the \
     realizable item 3 are not part of this entry, and uncountable domains need a measurability \
     hypothesis on the class."
+
+register_result "pac-bayes-mcallester" where
+  title := "McAllester's PAC-Bayes bound and its Occam corollary"
+  topic := "statistical learning"
+  sources := [
+    { paper := ShalevShwartzBenDavid2014, theorem := "Theorem 31.1 and Exercise 31.2",
+      locator := "Section 31.1 and 31.3, pp. 416–418" },
+    { paper := McAllester1999, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.MachineLearning.PACBayes.measure_pi_exists_integral_risk_gt,
+    Cslib.MachineLearning.PACBayes.measure_pi_exists_integral_risk_gt_log_div,
+    Cslib.MachineLearning.PACBayes.measure_pi_exists_risk_gt
+  ]
+  scope := "Countable hypothesis index with measurable singletons, a prior fixed before the \
+    sample, measurable losses in [0, 1], m ≥ 2 i.i.d. examples and δ > 0. With probability at \
+    least 1 - δ every posterior Q with KL(Q ‖ P) < ∞, possibly depending on the sample, has \
+    E_Q L_D ≤ E_Q L_S + √((KL(Q ‖ P) + log (m / δ)) / (2 (m - 1))); the proved form has \
+    log (√m / δ). Point masses give the Occam bound with log (1 / P {i}). Measurable \
+    hypothesis spaces, the kl form and Catoni's bound are not covered."
 
 register_result "gmw-zero-knowledge" where
   title := "Goldreich–Micali–Wigderson auxiliary-input zero-knowledge proofs for NP"
@@ -3074,6 +3115,23 @@ register_result "sublinear-dtime-equals-constant" where
   scope := "DTIME encBits p equals DTIME encBits 1 for p=o(n), including affine clock constants. \
     The input is every raw bit word; prefixes of arbitrary encoded instances need not be \
     valid, so no such encoding-general class identity is claimed."
+
+register_result "goldreich-exact-step-counter" where
+  title := "Exact native step counter from binary input"
+  topic := "time complexity"
+  sources := [
+    { paper := Goldreich2007DraftR2, theorem := "Exercise 4.5",
+      locator := "January 2007 r2.pdf; PDF page 36 / printed page 152" },
+    { paper := Goldreich2006DraftR1, theorem := "Numbers convention",
+      locator := "December 2006 r1.pdf; PDF page 45 / printed page 20" }
+  ]
+  theorems := [Turing.MultiTapeTM.exists_stepCounter]
+  scope := "One fixed finite deterministic native multitape machine on encNat n, \
+    least-significant-first binary, visits one designated signal state exactly n times. \
+    It starts outside the signal state and leaves each visit on the next transition. \
+    Total runtime, including binary-to-unary preparation, is bounded by c*(n+1) for a \
+    uniform constant c; zero input issues no signals. No logarithmic workspace or \
+    per-prefix signal-latency bound is claimed."
 
 register_result "translational-time-hierarchy" where
   title := "Deterministic time hierarchy below every power of the logarithm, by translation"

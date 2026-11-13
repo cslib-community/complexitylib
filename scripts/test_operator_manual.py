@@ -637,6 +637,25 @@ class BookInputs(unittest.TestCase):
             book.validate_manifest(self.root, self.output, ["README.md"])
 
 
+class MissingGlyphs(unittest.TestCase):
+    def test_log_lines_name_each_missing_character_once(self):
+        log = ("Missing character: There is no 𝔼 (U+1D53C) in font [DejaVuSansMono.ttf]:mode=node;\n"
+               "Missing character: There is no ι in font cmmi10!\n"
+               "Missing character: There is no 𝔼 (U+1D53C) in font [DejaVuSansMono.ttf]:mode=node;\n"
+               "Missing character: There is no ⬝ (U+2B1D) in font [texgyrepagella-regular.o\n")
+        self.assertEqual(book.missing_glyphs(log), [
+            "𝔼 (U+1D53C) in [DejaVuSansMono.ttf]", "ι (U+03B9) in cmmi10",
+            "⬝ (U+2B1D) in [texgyrepagella-regular.o"])
+        self.assertEqual(book.missing_glyphs("Output written on book.pdf (2 pages).\n"), [])
+
+    def test_unicode_absent_from_the_fonts_is_set_in_math(self):
+        self.assertEqual(book.base.inline_tex("𝔼"), r"\ensuremath{\mathbb{E}}")
+        self.assertEqual(book.base.inline_tex("A ⬝ v"), r"A \ensuremath{\cdot} v")
+        self.assertTrue(all(book.base.MATH.values()))
+        math = {'t': 'Math', 'c': [{'t': 'InlineMath'}, r'ι \times κ₁']}
+        self.assertEqual(book.base.transform(math, 'topic.md')['c'][1], r'{\iota} \times {\kappa}_1')
+
+
 class PortableLinks(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="cslib-frontier-manual-links-")
