@@ -151,6 +151,7 @@ import CslibFrontier.Computability.QueryComplexity.Quantum.WeightedAdversary
 import CslibFrontier.Crypto.Computational.Encryption.CTRMode
 import CslibFrontier.Crypto.Computational.Encryption.OFBMode
 import CslibFrontier.Crypto.Computational.GoldreichLevin.HardCore
+import CslibFrontier.Crypto.Computational.InaccessibleEntropy.OneWay
 import CslibFrontier.Crypto.Computational.InaccessibleEntropy.TargetCollision
 import CslibFrontier.Crypto.Computational.MLDSA.KeyOnly
 import CslibFrontier.Crypto.Computational.NaorYung
@@ -1215,6 +1216,24 @@ register_result "naor-yung-uowhf" where
     the key finds a distinct colliding input with negligible probability. Each compression step \
     uses a pivot-deletion quotient instead of the source's universal hash; a binary tree extends \
     the domain. Asymptotic security; no compact key-length bound."
+
+register_result "inaccessible-entropy-from-owf" where
+  title := "Inaccessible average max-entropy from any one-way function"
+  topic := "cryptography"
+  sources := [
+    { paper := HHRVW2020, theorem := "Theorem 4.5", locator := "Section 4.2, p. 21" }
+  ]
+  theorems := [
+    Cslib.Crypto.OneWay.rompelBase_logGap,
+    Cslib.Crypto.OneWay.exists_rompelBase_logGap,
+    Cslib.Crypto.OneWay.exists_inaccessibleEntropyFamily_logGap
+  ]
+  scope := "Every uniform one-way function on bit strings yields a single uniform polynomial-time \
+    fixed-width function family whose accessible average max-entropy against uniform strict PPT \
+    adversaries is eventually at most H(Z | F₀(Z)) - d log₂ n / n for every constant d > 0, \
+    witnessed at each d > 0 by an adversary-independent accessible preimage set family with \
+    polynomial light-image threshold and packaged as an InaccessibleEntropyFamily with \
+    Θ(n / log n) gap denominator."
 
 register_result "rompel-uowhf" where
   title := "Rompel: one-way functions yield universal one-way hash functions"
