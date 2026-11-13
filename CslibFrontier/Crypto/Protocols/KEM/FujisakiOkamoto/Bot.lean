@@ -109,16 +109,7 @@ open scoped ENNReal NNReal
 
 variable {PK SK M R CT K : Type}
 
-/-! ### Generic `CloseTo` simulation and map helpers -/
-
-/-- Two pushforwards of the same distribution `μ` that agree outside an event `B` are within
-`μ.toOuterMeasure B` in statistical distance (`CloseTo`). -/
-private theorem closeTo_map_of_eq_off {α β : Type} (μ : PMF α) (f g : α → β) (B : Set α)
-    (heq : ∀ x, x ∉ B → f x = g x) :
-    CloseTo (μ.map f) (μ.map g) (μ.toOuterMeasure B) := by
-  simpa only [PMF.map, Function.comp_def] using
-    Cslib.Interactive.CloseTo.bind_of_eq_on μ (fun x => PMF.pure (f x)) (fun x => PMF.pure (g x)) B
-      fun x _ hx => congrArg PMF.pure (heq x hx)
+/-! ### Generic `CloseTo` simulation helper -/
 
 /-- Approximate stateful simulation: if each query `q` commutes with `relate` up to statistical
 distance `cost q * ε`, then any program `prog` with `IsCostBounded cost prog d` commutes with
@@ -846,8 +837,9 @@ private theorem answerCachedBotHandler_closeTo_sim (S : Scheme PK SK M R CT K) {
             congr 1 with T : 1
             by_cases h : S.pke.encDet pk m' (T.1 m') = c <;> simp [encT, h]
           rw [hL, hR]
-          refine (closeTo_map_of_eq_off (S.completeTables (tG, tH, tQ)) _ _
-            {T | S.pke.encDet pk m' (T.1 m') = c} (fun T hT => ?_)).mono ?_
+          simp only [PMF.map, Function.comp_def]
+          refine (Cslib.Interactive.CloseTo.bind_of_eq_on (S.completeTables (tG, tH, tQ)) _ _
+            {T | S.pke.encDet pk m' (T.1 m') = c} (fun T _ hT => ?_)).mono ?_
           · have hT' : S.pke.encDet pk m' (T.1 m') ≠ c := hT
             simp [hT']
           · have hmap := S.completeTables_map_eval_at_of_none tG tH tQ m' ht
