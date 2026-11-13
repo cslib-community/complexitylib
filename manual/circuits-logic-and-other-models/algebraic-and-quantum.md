@@ -8,6 +8,26 @@ Algebraic and quantum developments reuse the generic circuit architecture while 
 
 [affineSignature](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Arithmetic.lean#L67) makes an entire arbitrary-arity affine combination one gate. The [FullOp](https://github.com/leanprover/cslib/blob/254e30e6d4299c51323aaeaf5f51a4763b375d4a/Cslib/Computability/Circuit/Signature.lean#L37) model is broader still: any operation depending on at most a fixed number of values is primitive. Over the full binary basis, tests and selections can cost one gate, and `Synthesis.full_sum`, `full_dot` and `full_chain` bound counts of these operations. An algebraic operation count in that model is not automatically a bound in the restricted addition/multiplication basis, nor a bound on binary integer/rational computation. [cslib][cslib] See [full-basis synthesis](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/FullArithmetic.lean).
 
+For encoded arithmetic values, import
+[Arithmetic.BitBlast](../../CslibFrontier/Computability/Circuit/Arithmetic/BitBlast.lean).
+`Synthesis.bitBlast_arithmetic enc decode hdecode c φ hφ` synthesizes every encoded output of
+an arithmetic circuit from the already-available bits of `φ`, within
+`c.size * bitBlastCost w` additional Boolean gates. The encoding is any function to `w` bits
+with `Function.LeftInverse decode enc`; it need not fill the bit cube, so odd-sized carriers
+are supported. The budget and all-output guarantee are unchanged from bijective bit-blasting.
+No behavior on unused code words or reverse Boolean-to-field simulation is asserted.
+
+The generic `bitBlast_program`, `bitBlast` and `bitBlast_synthesis` APIs in
+[Boolean.BitBlast](../../CslibFrontier/Computability/Circuit/Boolean/BitBlast.lean) now take
+`enc`, `decode` and the left-inverse proof explicitly. Existing equivalence callers pass
+`enc`, `enc.symm`, `enc.symm_apply_apply`; `bitsOf` accepts the encoding function directly.
+Run `scripts/build.sh CslibFrontierTests.BitBlastEncoding` for
+[clients](../../CslibFrontierTests/BitBlastEncoding.lean) using the odd field `ZMod 3`, an unused
+code word, modulo-three addition and zero-width synthesis over a singleton. This advances one
+synthesis direction of Arora–Barak Chapter 14 Exercise 1; encoding construction, free-input
+circuit compilation and the reverse general-field direction remain open under
+[#4711](https://github.com/cslib-community/cslib-frontier/issues/4711).
+
 [SigmaPiOp](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Arithmetic/SigmaPi.lean#L109) permits unbounded sums with edge coefficients and unbounded products. Product depth counts multiplication layers only; weighted sums contribute zero to that depth. Set-multilinearity records that products combine disjoint variable groups. [SPCircuit](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Arithmetic/SPCircuit.lean#L89) provides shared DAGs in this basis. Its `IsSimple` condition requires distinct input wires at product gates; the unfolding bound used by the constant-product-depth lower-bound development assumes this condition.
 
 The [constant-depth arithmetic abstract](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/CslibFrontierAbstracts/ConstantDepthArithmeticAbstract.lean), since retired, states an iterated-matrix-multiplication lower bound over any field for the specified simple Sigma–Pi circuits and product-depth convention. Its finite exponent involves the matrix-chain parameter and `4^Delta-1`; the asymptotic regime chooses the chain length roughly `log log n`. Source annotations credit the Limaye–Srinivasan–Tavenas development and the stated reduction through set-multilinearization. This survey does not remove the simplicity hypothesis or identify the bound with unrestricted arbitrary repeated-wire product syntax.
@@ -18,6 +38,41 @@ complex-number machines whose endpoints were not located. In particular, the 200
 Theorem 14.7 should not be used as an unrestricted circuit-to-determinant specification: its
 linear dimension bound fails the existing repeated-squaring degree check. See the audit's
 [checked client](../../CslibFrontierTests/AroraBarakAlgebraic.lean) and exact model conventions.
+
+## Arithmetic synthesis without polynomial families
+
+Import [Arithmetic.Synthesis](../../CslibFrontier/Computability/Circuit/Arithmetic/Synthesis.lean)
+for `Synthesis.arith_const`, `arith_add`, `arith_mul` and `arith_sum`. The constant symbols
+have arbitrary type `K`, interpreted by a supplied map into the value carrier `R`; no semiring
+structure on `K` is required. The primitive rules need addition and multiplication on `R`,
+and the finite-sum rule needs an additive commutative monoid. VP publicly re-exports the same
+rules and names for existing clients; `Synthesis.exists_circuit_polynomial` stays in VP.
+
+The Boolean simulation below and the
+[matrix-multiplication exponent module](../../CslibFrontier/Computability/Circuit/Arithmetic/MatrixMultiplication/Exponent.lean)
+use the shared topic module directly. Run `scripts/build.sh CslibFrontierTests.ArithmeticSynthesis`
+for a [client](../../CslibFrontierTests/ArithmeticSynthesis.lean) that interprets string-labelled
+constants as natural-number lengths, without importing VP or giving the labels a semiring.
+
+## Boolean and two-element arithmetic circuits
+
+Import [Boolean.Arithmetic](../../CslibFrontier/Computability/Circuit/Boolean/Arithmetic.lean)
+for the two-element case of Arora–Barak's Chapter 14, Exercise 1. Mathlib's Boolean ring
+on `Bool` uses XOR for addition and AND for multiplication. `Boolean.exists_arithmetic_simulation c`
+replaces a De Morgan circuit by an arithmetic circuit on this same carrier, preserving every
+output with at most `3 * c.size` gates. `Boolean.exists_boolean_simulation c` goes the other way
+with at most `4 * c.size` gates. Constants count as gates; input/output wires are free, and
+zero-input and pure-wiring circuits are included.
+
+The `arithmetic_simulates_boolean` and `boolean_simulates_arithmetic` gate-budget certificates
+also work with the generic `Circuit.exists_simulationWithCost` API. These are circuit-value
+and nonuniform size results, not formal polynomial identities or certified translation runtimes.
+They establish the GF(2) milestone, not the exercise for every fixed finite field; the latter
+still needs bit encodings and the general-field directions. Existing `Synthesis.bitBlast`
+handles an equivalence to a fixed-width bit cube and should be reused where applicable.
+Run `scripts/build.sh CslibFrontierTests.BooleanArithmetic` for the
+[checked clients](../../CslibFrontierTests/BooleanArithmetic.lean): multiple XOR/AND and OR/NOT
+outputs, zero-input constants and zero-gate wiring.
 
 ## Valiant classes and term models
 
@@ -375,6 +430,24 @@ lake build CslibFrontierTests.Computability.Circuit.Arithmetic.NWGenerator \
 The theorem is finite: it takes the hardness of one polynomial as a hypothesis. No hard family is instantiated here and nothing is said about running time.
 
 **Not certified here.** Positive characteristic (the formula divides by `m`, interpolation by node differences). Power-series roots and the general Lagrange inversion theorem for compositional inverses. Factors other than roots. Circuits (only formulas), depth as opposed to product-depth, and any algorithm or bit-cost bound; `rootCost` is not optimized.
+
+## Subexponential hitting sets for constant-depth formulas
+
+Import [HittingSet/ConstantDepth.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ConstantDepth.lean). This is a finite form of Corollary 6 of Limaye, Srinivasan and Tavenas: the library's lower bound for iterated matrix multiplication, in its formula form `SPFormula.eventually_pow_lt_nodeCount_of_imm` ([CircuitLowerBound.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/CircuitLowerBound.lean)), turned into a hitting set by `isHittingSet_generatorHittingSet_of_hard` of [Roots of polynomial equations and hardness versus randomness](#roots-of-polynomial-equations-and-hardness-versus-randomness). For `[Field K] [CharZero K]`, a product-depth `Δ` and an exponent `c`:
+
+- [eventually_isHittingSet_constantDepthHittingSet_rpow](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ConstantDepth.lean): for every real `ε > 0`, for all large `n`, `constantDepthHittingSet K c ⌈ε⁻¹⌉₊ n` hits `{p | ∃ C : SPFormula K n, C.polynomial = p ∧ C.productDepth ≤ Δ ∧ C.nodeCount ≤ n ^ c}` and has at most `2 ^ (n ^ ε)` points (a real inequality).
+- `eventually_isHittingSet_constantDepthHittingSet_circuit_rpow`: the same for simple circuits (`SPCircuit.IsSimple`) of product-depth at most `Δ` with at most `n ^ c` gates, with the set at exponent `(c + 2) * (2 * Δ + 1)`.
+- `eventually_isHittingSet_constantDepthHittingSet`, `eventually_card_constantDepthHittingSet_le`, `eventually_isHittingSet_constantDepthHittingSet_circuit`: the separate statements at `ε = 1 / t` for a natural number `t ≥ 1`.
+
+The set does not depend on `Δ`. It is the set of values of the Nisan–Wigderson generator of `IMM_{ν,δ}`, with `ν = 2 ^ ⌊log₂ n / 8t⌋` and `δ = ⌊log₂ ⌊log₂ ν⌋⌋`, over a Reed–Solomon design indexed by coefficient vectors, on a grid; the parameters are the definitions in the namespace `ConstantDepthHittingSet`.
+
+Complete client: [ConstantDepthHittingSet.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/ConstantDepthHittingSet.lean) takes the formula `x₀ + x₁` in `n ≥ 2` variables (product-depth zero, three nodes) and obtains, for all large `n`, a point of the set at `c = 2` and `ε = 1 / 2` where it does not vanish, together with the bound `2 ^ √n` on the size of the set; it also instantiates the circuit form. Build it from the repository root with
+
+```bash
+lake build CslibFrontierTests.Computability.Circuit.Arithmetic.ConstantDepthHittingSet
+```
+
+**Not certified here.** Corollary 6 of the source is a deterministic identity test with running time `(s ^ (Δ + 1) n) ^ O(n ^ μ)` for circuits of depth `Δ = o(log log log n)` in characteristic zero; here there is no algorithm, running time, uniformity or bit complexity, only the existence and size of an explicit set, with thresholds "for all large `n`" that are not explicit. Constant product-depth only. Circuits that are not simple. Positive characteristic.
 
 ## Rational formulas and hitting lists
 

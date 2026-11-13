@@ -501,6 +501,14 @@ The shared guard certificate is
 {name}`Cslib.Complexity.CSP.computableInPolyTime_validArity` in
 {module}`CslibFrontier.Computability.PolyTime.CSP.Boolean`.
 
+For replacement definitions and semantic correctness without native runtime imports, use
+{module}`CslibFrontier.Logics.Propositional.CSP.PrimitivePositive.Replacement`.
+The existing {module}`CslibFrontier.Computability.PolyTime.CSP.Gadget` import retains those
+definitions and adds the native certificates. Its `Gadget.Size` topic supplies pure counts
+and no longer incidentally exports the runtime certificates; import `Gadget` explicitly
+when using them. The complete `PPGadgetReplacement` test checks the logical-only import on
+repeated names, sparse binary labels and the empty source alphabet.
+
 The hard branch is native and unconditional:
 {name}`CSPSAT.npComplete_of_not_hasSchaeferPolymorphism` proves NP-completeness
 for any fixed finite language lacking all six common operations. The proof imports
@@ -1507,6 +1515,14 @@ Hanani–Tutte, bare recognition and full #3091 remain open. No coordinate-bit,
 runtime/P bound or CSP dichotomy is claimed.
 
 # Ordered Incidence-to-Polygon Rotations
+
+For argument succession alone, use
+{module}`CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.ArgumentPermutation`.
+It supplies {name}`Cslib.Complexity.CSP.argumentPermutation` and
+{name}`Cslib.Complexity.CSP.sameCycle_argumentPermutation` without polygon construction.
+The latter identifies each orbit by its original constraint position, even for repeated
+names and duplicate rows. Nullary scopes have no argument occurrences. The complete
+`CSPArgumentPermutation` test uses only this import; `Primal.Graph` retains both APIs.
 
 Import `CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Euler`.
 The actual `polygonGraph` puts one edge between successive variables of each

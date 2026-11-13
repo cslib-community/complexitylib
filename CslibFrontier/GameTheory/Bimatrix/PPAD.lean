@@ -74,7 +74,8 @@ polynomial-time search reduction to `endOfLineRel` (`BimatrixNash_mem_PPAD`).
 
 ## Main results
 
-* `Cslib.GameTheory.BimatrixCode.BimatrixNash.isNash`: witnesses decode to Nash equilibria.
+* `Cslib.GameTheory.BimatrixCode.BimatrixNash.isNash`: witnesses of well-formed codes decode to
+  Nash equilibria.
 * `Cslib.GameTheory.BimatrixCode.BimatrixNash_mem_FNP`: `BimatrixNash ∈ FNP encBimatrix`.
 * `Cslib.GameTheory.BimatrixCode.BimatrixNash_searchReducible_endOfLineRel`,
   `Cslib.GameTheory.BimatrixCode.BimatrixNash_mem_PPAD`: two-player Nash is in `PPAD`.
@@ -169,6 +170,14 @@ theorem wellFormed_iff_wellFormedB (c : BimatrixCode) : c.WellFormed ↔ c.wellF
 @[expose] noncomputable def toGame (c : BimatrixCode) : BimatrixGame (Fin c.rows) (Fin c.cols) :=
   BimatrixGame.mk ((toMatA c).map Rat.cast) ((toMatB c).map Rat.cast)
 
+/-- The real strategy vector `Fin n → ℝ` of a rational strategy list, padded with zeros. -/
+@[expose] def strategyVec {n : ℕ} (x : List ℚ) : Fin n → ℝ := fun i => (x.getD i.1 0 : ℝ)
+
+@[simp]
+theorem strategyVec_apply {n : ℕ} (x : List ℚ) (i : Fin n) :
+    strategyVec x i = (x.getD i.1 0 : ℝ) :=
+  rfl
+
 /-- Pure rational Nash condition on strategy lists `x` (length `c.rows`) and `y`
 (length `c.cols`). -/
 @[expose] def IsRationalNash (c : BimatrixCode) (x y : List ℚ) : Prop :=
@@ -194,78 +203,36 @@ private lemma fin_sum_getD_eq_list_sum {α : Type*} [AddCommMonoid α] (l : List
     simp only [List.sum_cons]
     exact congrArg (a + ·) ih
 
+/-- A nonnegative rational list of length `n` summing to `1` is a mixed strategy on `Fin n`. -/
+theorem isMixedStrategy_strategyVec {n : ℕ} {x : List ℚ} (hlen : x.length = n)
+    (hnn : ∀ q ∈ x, 0 ≤ q) (hsum : x.sum = 1) : IsMixedStrategy (strategyVec (n := n) x) := by
+  refine isMixedStrategy_iff.2 ⟨fun i => Rat.cast_nonneg.2 (hnn _ ?_), ?_⟩
+  · exact List.getD_mem 0 (by omega)
+  · simp only [strategyVec_apply, ← Rat.cast_sum, fin_sum_getD_eq_list_sum x 0 hlen, hsum,
+      Rat.cast_one]
+
 theorem IsRationalNash.toGame_isNash {c : BimatrixCode} {x y : List ℚ}
-    (hn : c.IsRationalNash x y) :
-    c.toGame.IsNash (fun i : Fin c.rows => (x.getD i.1 0 : ℝ))
-      (fun j : Fin c.cols => (y.getD j.1 0 : ℝ)) := by
+    (hn : c.IsRationalNash x y) : c.toGame.IsNash (strategyVec x) (strategyVec y) := by
   obtain ⟨hxlen, hylen, hxnn, hxsum, hynn, hysum, hbr1, hbr2⟩ := hn
-  let xR : Fin c.rows → ℝ := fun i => (x.getD i.1 0 : ℝ)
-  let yR : Fin c.cols → ℝ := fun j => (y.getD j.1 0 : ℝ)
-  have hx_sum : ∑ i : Fin c.rows, xR i = 1 := by
-    have hq : (∑ i : Fin c.rows, x.getD i.1 0) = 1 := by
-      rw [fin_sum_getD_eq_list_sum x 0 hxlen, hxsum]
-    simpa only [xR, ← Rat.cast_sum, Rat.cast_one] using congrArg (Rat.cast : ℚ → ℝ) hq
-  have hy_sum : ∑ j : Fin c.cols, yR j = 1 := by
-    have hq : (∑ j : Fin c.cols, y.getD j.1 0) = 1 := by
-      rw [fin_sum_getD_eq_list_sum y 0 hylen, hysum]
-    simpa only [yR, ← Rat.cast_sum, Rat.cast_one] using congrArg (Rat.cast : ℚ → ℝ) hq
-  have hx_nn : ∀ i : Fin c.rows, 0 ≤ xR i := fun i =>
-    Rat.cast_nonneg.2 (hxnn _ (by
-      rw [List.getD_eq_getElem x 0 (by omega)]
-      exact List.getElem_mem (by omega)))
-  have hy_nn : ∀ j : Fin c.cols, 0 ≤ yR j := fun j =>
-    Rat.cast_nonneg.2 (hynn _ (by
-      rw [List.getD_eq_getElem y 0 (by omega)]
-      exact List.getElem_mem (by omega)))
-  have hmx : IsMixedStrategy xR := by
-    rw [isMixedStrategy_iff]
-    exact ⟨hx_nn, hx_sum⟩
-  have hmy : IsMixedStrategy yR := by
-    rw [isMixedStrategy_iff]
-    exact ⟨hy_nn, hy_sum⟩
+  have hpt₁ : ∀ a : Fin c.rows, (c.toGame.A *ᵥ strategyVec y) a ≤
+      strategyVec x ⬝ᵥ (c.toGame.A *ᵥ strategyVec y) := fun a => by
+    have ha := (Rat.cast_le (K := ℝ)).2 (hbr1 a)
+    simpa only [strategyVec_apply, toGame, Matrix.mulVec, dotProduct, Matrix.map_apply,
+      Rat.cast_sum, Rat.cast_mul, Finset.mul_sum, mul_assoc] using ha
+  have hpt₂ : ∀ b : Fin c.cols, (strategyVec x ᵥ* c.toGame.B) b ≤
+      strategyVec y ⬝ᵥ (strategyVec x ᵥ* c.toGame.B) := fun b => by
+    have hb := (Rat.cast_le (K := ℝ)).2 (hbr2 b)
+    rw [Finset.sum_comm] at hb
+    rw [dotProduct_comm (strategyVec y)]
+    simpa only [strategyVec_apply, toGame, Matrix.vecMul, dotProduct, Matrix.map_apply,
+      Rat.cast_sum, Rat.cast_mul, Finset.sum_mul, mul_assoc] using hb
+  have hmx := isMixedStrategy_strategyVec hxlen hxnn hxsum
+  have hmy := isMixedStrategy_strategyVec hylen hynn hysum
   rw [BimatrixGame.isNash_iff, BimatrixGame.isBestResponse₁_iff, BimatrixGame.isBestResponse₂_iff]
-  refine ⟨⟨hmx, fun i hi => ?_⟩, ⟨hmy, fun j hj => ?_⟩⟩
-  · rw [BimatrixGame.isPureBestResponse₁_iff]
-    have hpt : ∀ a : Fin c.rows,
-        ((c.toGame.A *ᵥ yR) a : ℝ) ≤ ∑ a' : Fin c.rows, xR a' * (c.toGame.A *ᵥ yR) a' := by
-      intro a
-      have ha := (Rat.cast_le (K := ℝ)).2 (hbr1 a)
-      simpa only [xR, yR, toGame, Matrix.mulVec, dotProduct, Matrix.map_apply, Rat.cast_sum,
-        Rat.cast_mul, Finset.mul_sum, mul_assoc] using ha
-    have hi_eq : (c.toGame.A *ᵥ yR) i = ∑ a' : Fin c.rows, xR a' * (c.toGame.A *ᵥ yR) a' := by
-      by_contra hne
-      have hlt : (c.toGame.A *ᵥ yR) i < ∑ a' : Fin c.rows, xR a' * (c.toGame.A *ᵥ yR) a' :=
-        lt_of_le_of_ne (hpt i) hne
-      have hsum_lt : (∑ a : Fin c.rows, xR a * (c.toGame.A *ᵥ yR) a) <
-          ∑ a : Fin c.rows, xR a * (∑ a' : Fin c.rows, xR a' * (c.toGame.A *ᵥ yR) a') :=
-        Finset.sum_lt_sum
-          (fun a _ => mul_le_mul_of_nonneg_left (hpt a) (hx_nn a))
-          ⟨i, Finset.mem_univ i, mul_lt_mul_of_pos_left hlt hi⟩
-      rw [← Finset.sum_mul, hx_sum, one_mul] at hsum_lt
-      exact (lt_irrefl _ hsum_lt).elim
-    intro i'
-    exact (hpt i').trans_eq hi_eq.symm
-  · rw [BimatrixGame.isPureBestResponse₂_iff]
-    have hpt : ∀ b : Fin c.cols,
-        ((xR ᵥ* c.toGame.B) b : ℝ) ≤ ∑ b' : Fin c.cols, (xR ᵥ* c.toGame.B) b' * yR b' := by
-      intro b
-      have hb := (Rat.cast_le (K := ℝ)).2 (hbr2 b)
-      rw [Finset.sum_comm] at hb
-      simpa only [xR, yR, toGame, Matrix.vecMul, dotProduct, Matrix.map_apply, Rat.cast_sum,
-        Rat.cast_mul, Finset.sum_mul, mul_assoc] using hb
-    have hj_eq : (xR ᵥ* c.toGame.B) j = ∑ b' : Fin c.cols, (xR ᵥ* c.toGame.B) b' * yR b' := by
-      by_contra hne
-      have hlt : (xR ᵥ* c.toGame.B) j < ∑ b' : Fin c.cols, (xR ᵥ* c.toGame.B) b' * yR b' :=
-        lt_of_le_of_ne (hpt j) hne
-      have hsum_lt : (∑ b : Fin c.cols, (xR ᵥ* c.toGame.B) b * yR b) <
-          ∑ b : Fin c.cols, (∑ b' : Fin c.cols, (xR ᵥ* c.toGame.B) b' * yR b') * yR b :=
-        Finset.sum_lt_sum
-          (fun b _ => mul_le_mul_of_nonneg_right (hpt b) (hy_nn b))
-          ⟨j, Finset.mem_univ j, mul_lt_mul_of_pos_right hlt hj⟩
-      rw [← Finset.mul_sum, hy_sum, mul_one] at hsum_lt
-      exact (lt_irrefl _ hsum_lt).elim
-    intro j'
-    exact (hpt j').trans_eq hj_eq.symm
+  refine ⟨⟨hmx, fun i hi => BimatrixGame.isPureBestResponse₁_iff.2 ?_⟩,
+    ⟨hmy, fun j hj => BimatrixGame.isPureBestResponse₂_iff.2 ?_⟩⟩
+  · exact hmx.forall_dotProduct_le_iff.1 (fun x' hx' => hx'.dotProduct_le_of_forall_le hpt₁) i hi
+  · exact hmy.forall_dotProduct_le_iff.1 (fun y' hy' => hy'.dotProduct_le_of_forall_le hpt₂) j hj
 
 /-- Polynomial witness length bound `120 * L^3 + 400 * L + 100` in `L = (encBimatrix c).length`. -/
 @[expose] noncomputable def witnessPoly : Polynomial ℕ :=
@@ -281,16 +248,14 @@ rational strategy pair `s` forming an exact Nash equilibrium of `c.toGame` (or `
 `c`). -/
 @[expose] def BimatrixNash (c : BimatrixCode) (w : List Bool) : Prop :=
   if c.wellFormedB then
-    w.length ≤ 120 * (encBimatrix c).length ^ 3 + 400 * (encBimatrix c).length + 100 ∧
+    w.length ≤ witnessPoly.eval (encBimatrix c).length ∧
       ∃ s : StrategyPair, w = encWitness s ∧ c.IsRationalNash s.x s.y
   else w = []
 
 /-- Every solution witness of a well-formed game decodes to a Nash equilibrium of `c.toGame`. -/
 theorem BimatrixNash.isNash {c : BimatrixCode} {w : List Bool}
     (hc : c.WellFormed) (hw : BimatrixNash c w) :
-    ∃ s : StrategyPair, w = encWitness s ∧
-      c.toGame.IsNash (fun i : Fin c.rows => (s.x.getD i.1 0 : ℝ))
-        (fun j : Fin c.cols => (s.y.getD j.1 0 : ℝ)) := by
+    ∃ s : StrategyPair, w = encWitness s ∧ c.toGame.IsNash (strategyVec s.x) (strategyVec s.y) := by
   have hwb : c.wellFormedB = true := (wellFormed_iff_wellFormedB c).1 hc
   simp only [BimatrixNash, hwb, ite_true] at hw
   obtain ⟨-, s, rfl, hrat⟩ := hw
@@ -1184,7 +1149,7 @@ private lemma verifiesBimatrixNash_eq_true_iff (c : BimatrixCode) (w : List Bool
 theorem BimatrixNash_mem_FNP : BimatrixNash ∈ FNP encBimatrix := by
   rw [mem_FNP_iff_exists_bounded]
   refine ⟨witnessPoly, verifiesBimatrixNash, verifiesBimatrixNash_polytime, fun c w => ?_⟩
-  rw [verifiesBimatrixNash_eq_true_iff, witnessPoly_eval]
+  rw [verifiesBimatrixNash_eq_true_iff]
   by_cases hwb : c.wellFormedB = true
   · simp only [BimatrixNash, hwb, ite_true]
   · have hwf : c.wellFormedB = false := Bool.eq_false_iff.2 hwb
@@ -1293,8 +1258,7 @@ private lemma posMat_getD_eq {c : BimatrixCode} (hc : c.WellFormed)
         scaledEntry (clearScale c) ((M.getD i.1 []).getD j.1 0) + shiftVal c := by
     intro M hlen hrows
     have hi : i.1 < M.length := by rw [hlen]; exact i.2
-    have hrlen : (M.getD i.1 []).length = c.cols :=
-      hrows _ (List.getD_eq_getElem M [] hi ▸ List.getElem_mem hi)
+    have hrlen : (M.getD i.1 []).length = c.cols := hrows _ (List.getD_mem [] hi)
     have hj : j.1 < (M.getD i.1 []).length := by rw [hrlen]; exact j.2
     have h1 : (posMat c M).getD i.1 [] =
         (M.getD i.1 []).map fun q => scaledEntry (clearScale c) q + shiftVal c :=
@@ -1314,10 +1278,9 @@ private lemma abs_scaledEntry_lt_shiftVal {c : BimatrixCode} (hc : c.WellFormed)
         (M.map fun row => (row.map fun q => |scaledEntry (clearScale c) q|).sum).sum := by
     intro M hlen hrows
     have hi : i.1 < M.length := by rw [hlen]; exact i.2
-    have hrmem : M.getD i.1 [] ∈ M := List.getD_eq_getElem M [] hi ▸ List.getElem_mem hi
+    have hrmem : M.getD i.1 [] ∈ M := List.getD_mem [] hi
     have hj : j.1 < (M.getD i.1 []).length := by rw [hrows _ hrmem]; exact j.2
-    have hqmem : (M.getD i.1 []).getD j.1 0 ∈ M.getD i.1 [] :=
-      List.getD_eq_getElem _ 0 hj ▸ List.getElem_mem hj
+    have hqmem : (M.getD i.1 []).getD j.1 0 ∈ M.getD i.1 [] := List.getD_mem 0 hj
     have h1 : |scaledEntry (clearScale c) ((M.getD i.1 []).getD j.1 0)| ≤
         ((M.getD i.1 []).map fun q => |scaledEntry (clearScale c) q|).sum :=
       List.single_le_sum (fun x hx => by
@@ -1392,9 +1355,9 @@ private lemma isNash_posMat {c : BimatrixCode} (hc : c.WellFormed)
       (clearScale c : ℝ) * c.toGame.A i j + (shiftVal c : ℝ) := by
     intro i j
     have hi : i.1 < c.matA.length := i.2
-    have hrmem := List.getD_eq_getElem c.matA [] hi ▸ List.getElem_mem hi
+    have hrmem := List.getD_mem [] hi
     have hj : j.1 < (c.matA.getD i.1 []).length := by rw [hr1 _ hrmem]; exact j.2
-    have hqmem := List.getD_eq_getElem (c.matA.getD i.1 []) 0 hj ▸ List.getElem_mem hj
+    have hqmem := List.getD_mem 0 hj
     have hdvd := den_dvd_clearScale (Or.inl rfl) hrmem hqmem
     have hsc := congrArg (Rat.cast : ℚ → ℝ) (scaledEntry_cast hdvd)
     push_cast at hsc
@@ -1406,9 +1369,9 @@ private lemma isNash_posMat {c : BimatrixCode} (hc : c.WellFormed)
       (clearScale c : ℝ) * c.toGame.B i j + (shiftVal c : ℝ) := by
     intro i j
     have hi : i.1 < c.matB.length := by rw [hl2]; exact i.2
-    have hrmem := List.getD_eq_getElem c.matB [] hi ▸ List.getElem_mem hi
+    have hrmem := List.getD_mem [] hi
     have hj : j.1 < (c.matB.getD i.1 []).length := by rw [hr2 _ hrmem]; exact j.2
-    have hqmem := List.getD_eq_getElem (c.matB.getD i.1 []) 0 hj ▸ List.getElem_mem hj
+    have hqmem := List.getD_mem 0 hj
     have hdvd := den_dvd_clearScale (Or.inr rfl) hrmem hqmem
     have hsc := congrArg (Rat.cast : ℚ → ℝ) (scaledEntry_cast hdvd)
     push_cast at hsc
@@ -4348,47 +4311,22 @@ private lemma isRationalNash_of_toGame_isNash {c : BimatrixCode} {x y : List ℚ
     (hx_len : x.length = c.rows) (hy_len : y.length = c.cols)
     (hx_nn : ∀ q ∈ x, 0 ≤ q) (hx_sum : x.sum = 1)
     (hy_nn : ∀ q ∈ y, 0 ≤ q) (hy_sum : y.sum = 1)
-    (hGameNash : c.toGame.IsNash (fun i : Fin c.rows => (x.getD i.1 0 : ℝ))
-      (fun j : Fin c.cols => (y.getD j.1 0 : ℝ))) :
+    (hGameNash : c.toGame.IsNash (strategyVec x) (strategyVec y)) :
     c.IsRationalNash x y := by
-  rw [BimatrixGame.isNash_iff, BimatrixGame.isBestResponse₁_iff,
-    BimatrixGame.isBestResponse₂_iff] at hGameNash
-  rcases hGameNash with ⟨⟨hmx, hbr1R⟩, ⟨hmy, hbr2R⟩⟩
-  let xR : Fin c.rows → ℝ := fun i => (x.getD i.1 0 : ℝ)
-  let yR : Fin c.cols → ℝ := fun j => (y.getD j.1 0 : ℝ)
-  have hxR_nn : ∀ i, 0 ≤ xR i := (isMixedStrategy_iff.1 hmx).1
-  have hxR_sum : ∑ i : Fin c.rows, xR i = 1 := (isMixedStrategy_iff.1 hmx).2
-  have hyR_nn : ∀ j, 0 ≤ yR j := (isMixedStrategy_iff.1 hmy).1
-  have hyR_sum : ∑ j : Fin c.cols, yR j = 1 := (isMixedStrategy_iff.1 hmy).2
+  obtain ⟨h₁, h₂⟩ := BimatrixGame.isNash_iff.1 hGameNash
   refine ⟨hx_len, hy_len, hx_nn, hx_sum, hy_nn, hy_sum, fun i => ?_, fun j => ?_⟩
   · rw [← Rat.cast_le (K := ℝ)]
-    have hstep : ∀ a : Fin c.rows,
-        xR a * (c.toGame.A *ᵥ yR) i ≤ xR a * (c.toGame.A *ᵥ yR) a := fun a => by
-      rcases eq_or_lt_of_le (hxR_nn a) with ha0 | hapos
-      · rw [← ha0, zero_mul, zero_mul]
-      · have hpb := (BimatrixGame.isPureBestResponse₁_iff.1 (hbr1R a hapos)) i
-        exact mul_le_mul_of_nonneg_left hpb (hxR_nn a)
-    have hsum_le : (∑ a : Fin c.rows, xR a * (c.toGame.A *ᵥ yR) i) ≤
-        ∑ a : Fin c.rows, xR a * (c.toGame.A *ᵥ yR) a :=
-      Finset.sum_le_sum fun a _ => hstep a
-    rw [← Finset.sum_mul, hxR_sum, one_mul] at hsum_le
-    simpa only [xR, yR, toGame, Matrix.mulVec, dotProduct, Matrix.map_apply, Rat.cast_sum,
-      Rat.cast_mul, Finset.mul_sum, mul_assoc] using hsum_le
+    have h := h₁.le_payoff₁ i
+    rw [BimatrixGame.payoff₁_eq_dotProduct] at h
+    simpa only [strategyVec_apply, toGame, Matrix.mulVec, dotProduct, Matrix.map_apply,
+      Rat.cast_sum, Rat.cast_mul, Finset.mul_sum, mul_assoc] using h
   · rw [← Rat.cast_le (K := ℝ)]
-    have hstep : ∀ b : Fin c.cols,
-        (xR ᵥ* c.toGame.B) j * yR b ≤ (xR ᵥ* c.toGame.B) b * yR b := fun b => by
-      rcases eq_or_lt_of_le (hyR_nn b) with hb0 | hbpos
-      · rw [← hb0, mul_zero, mul_zero]
-      · have hpb := (BimatrixGame.isPureBestResponse₂_iff.1 (hbr2R b hbpos)) j
-        exact mul_le_mul_of_nonneg_right hpb (hyR_nn b)
-    have hsum_le : (∑ b : Fin c.cols, (xR ᵥ* c.toGame.B) j * yR b) ≤
-        ∑ b : Fin c.cols, (xR ᵥ* c.toGame.B) b * yR b :=
-      Finset.sum_le_sum fun b _ => hstep b
-    rw [← Finset.mul_sum, hyR_sum, mul_one] at hsum_le
-    simp only [xR, yR, toGame, Matrix.vecMul, dotProduct, Matrix.map_apply, Rat.cast_sum,
-      Rat.cast_mul, Finset.sum_mul, mul_assoc] at hsum_le ⊢
-    rw [Finset.sum_comm] at hsum_le
-    exact hsum_le
+    have h := h₂.le_payoff₂ j
+    rw [BimatrixGame.payoff₂_eq_dotProduct, dotProduct_comm (strategyVec y)] at h
+    simp only [strategyVec_apply, toGame, Matrix.vecMul, dotProduct, Matrix.map_apply,
+      Rat.cast_sum, Rat.cast_mul, Finset.sum_mul, mul_assoc] at h ⊢
+    rw [Finset.sum_comm] at h
+    exact h
 
 private lemma strategy_pair_size_bd {k H L : ℕ} (hkL : k ≤ L) (hH_sz : H.size ≤ 4 * L + 4)
     {num_l : List ℤ} (hlen : num_l.length = k)
@@ -4638,24 +4576,23 @@ theorem extractNash_sound {c : BimatrixCode} {u : List Bool}
       have hcan := (List.all_eq_true.1 hyp_spec.2.1) pq hpq
       simp only [isCanonicalNonnegPair, Bool.and_eq_true, decide_eq_true_eq] at hcan
       exact div_nonneg (by exact_mod_cast hcan.1.1) (by exact_mod_cast Nat.zero_le pq.2)
-    have hx_getR : (fun i : Fin c.rows => (x.getD i.1 0 : ℝ)) =
+    have hx_getR : (strategyVec x : Fin c.rows → ℝ) =
         fun i => ((basisSignNum (intMatP (posMatB c)) (intRhsP c.rows c.cols) T₁s hcard₁ i : ℤ) :
           ℝ) / ((∑ i : Fin c.rows,
             basisSignNum (intMatP (posMatB c)) (intRhsP c.rows c.cols) T₁s hcard₁ i : ℤ) : ℝ) := by
       ext i
-      rw [hxp_spec.2.2 i, hnumP_get i, hS₁_eq]
+      rw [strategyVec_apply, hxp_spec.2.2 i, hnumP_get i, hS₁_eq]
       simp only [Rat.cast_div, Rat.cast_intCast]
       rfl
-    have hy_getR : (fun j : Fin c.cols => (y.getD j.1 0 : ℝ)) =
+    have hy_getR : (strategyVec y : Fin c.cols → ℝ) =
         fun j => ((basisSignNum (intMatQ (posMatA c)) (intRhsQ c.rows c.cols) T₂s hcard₂ j : ℤ) :
           ℝ) / ((∑ j : Fin c.cols,
             basisSignNum (intMatQ (posMatA c)) (intRhsQ c.rows c.cols) T₂s hcard₂ j : ℤ) : ℝ) := by
       ext j
-      rw [hyp_spec.2.2 j, hnumQ_get j, hS₂_eq]
+      rw [strategyVec_apply, hyp_spec.2.2 j, hnumQ_get j, hS₂_eq]
       simp only [Rat.cast_div, Rat.cast_intCast]
       rfl
-    have hGameNash : c.toGame.IsNash (fun i : Fin c.rows => (x.getD i.1 0 : ℝ))
-        (fun j : Fin c.cols => (y.getD j.1 0 : ℝ)) := by
+    have hGameNash : c.toGame.IsNash (strategyVec x) (strategyVec y) := by
       rw [hx_getR, hy_getR]
       exact (isNash_posMat hc _ _).1 hNashPos
     have hx_sum : x.sum = 1 :=
@@ -4695,7 +4632,7 @@ theorem extractNash_sound {c : BimatrixCode} {u : List Bool}
         120 * L ^ 3 + 400 * L + 100
       rw [length_encPair]
       exact witness_length_arith hc.1 hc.2.1 hrc hlen_xp hlen_yp
-    simp only [BimatrixNash, hwb, ite_true]
+    simp only [BimatrixNash, hwb, ite_true, witnessPoly_eval]
     exact ⟨hlen_w, ⟨x, y⟩, hw_eq, hRatNash⟩
   · have hwf : c.wellFormedB = false := Bool.eq_false_iff.2 hwb
     simp only [BimatrixNash, extractNash, hwf, Bool.false_eq_true, ite_false]

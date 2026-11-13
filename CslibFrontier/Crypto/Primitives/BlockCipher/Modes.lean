@@ -387,9 +387,6 @@ theorem map_zipWith_uniformBlocks :
         uniformBlocks ms.length
   | [] => by simp
   | m :: ms => by
-    have hshift : (PMF.uniformOfFintype (BitString n)).map (· + m) =
-        PMF.uniformOfFintype (BitString n) :=
-      PMF.uniformOfFintype_map_equiv (Equiv.addRight m)
     calc (uniformBlocks (m :: ms).length).map (fun us => List.zipWith (· + ·) us (m :: ms))
         = (PMF.uniformOfFintype (BitString n)).bind fun u =>
             ((uniformBlocks ms.length).map fun us => List.zipWith (· + ·) us ms).map
@@ -402,12 +399,9 @@ theorem map_zipWith_uniformBlocks :
       _ = (PMF.uniformOfFintype (BitString n)).bind fun u =>
             (uniformBlocks ms.length).map ((u + m) :: ·) := by
           rw [map_zipWith_uniformBlocks ms]
-      _ = ((PMF.uniformOfFintype (BitString n)).map (· + m)).bind fun u =>
-            (uniformBlocks ms.length).map (u :: ·) :=
-          (PMF.bind_map (PMF.uniformOfFintype (BitString n)) (· + m) fun u =>
-            (uniformBlocks ms.length).map (u :: ·)).symm
       _ = uniformBlocks (m :: ms).length := by
-          rw [hshift, List.length_cons, uniformBlocks_succ]
+          rw [PMF.uniformOfFintype_bind_add_right m fun u => (uniformBlocks ms.length).map (u :: ·),
+            List.length_cons, uniformBlocks_succ]
 
 /-- XORing a fixed block sequence `ms` into the uniform block draws paired with an independent
   uniform IV leaves the joint `(iv, blocks)` distribution invariant. -/

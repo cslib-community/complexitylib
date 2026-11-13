@@ -565,8 +565,7 @@ theorem mem_dedup {C : Clause V} {l : Literal V} : l ∈ dedup C ↔ l ∈ C := 
   · rintro ⟨i, hi, -⟩
     exact List.mem_of_getElem? (List.mem_zipIdx_iff_getElem?.mp hi)
   · intro hl
-    refine ⟨C.idxOf l, List.mem_zipIdx_iff_getElem?.mpr ?_, rfl⟩
-    rw [List.getElem?_eq_getElem (List.idxOf_lt_length_iff.mpr hl), List.getElem_idxOf]
+    exact ⟨C.idxOf l, List.mem_zipIdx_iff_getElem?.mpr (List.getElem?_idxOf hl), rfl⟩
 
 /-- Literal deduplication yields a duplicate-free clause. -/
 theorem nodup_dedup (C : Clause V) : (dedup C).Nodup := by

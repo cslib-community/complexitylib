@@ -16,6 +16,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.OfBits
 import Mathlib.Data.FinEnum
 
 /-!
@@ -371,7 +372,7 @@ private theorem decodeTriangle_tri {α : Type} {enc : α ↪ List Bool} {m : α 
     {w : α → List Bool} (hm : ComputableInPolyTime m enc encUnary)
     (hw : ComputableInPolyTime w enc encBits) :
     ComputableInPolyTime (fun a => decodeTriangle (m a) (w a)) enc encTri := by
-  simp only [decodeTriangle, show ∀ w, lsbValue w = ofBits w from lsbValue_eq_foldr_bit]
+  simp only [decodeTriangle, ← ofBits_eq_lsbValue]
   fun_prop
 
 private theorem encodeTriangle_tri {α : Type} {enc : α ↪ List Bool} {m : α → ℕ}

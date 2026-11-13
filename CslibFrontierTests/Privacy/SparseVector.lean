@@ -36,7 +36,7 @@ noncomputable def countUtility {n : ℕ} (x : Fin n → Bool) (b : Bool) : ℝ :
 example {n : ℕ} {ε : ℝ} (hε : 0 ≤ ε) :
     DifferentiallyPrivate HammingAdjacent (exponentialMechanism (countUtility (n := n)) 1 ε) ε 0 :=
   differentiallyPrivate_exponentialMechanism one_pos hε fun x y h b => by
-    refine abs_countTrue_sub_le fun i hi j hj => h (fun hxy => hi ?_) (fun hxy => hj ?_)
+    refine sensitivity_countTrue fun i hi j hj => h (fun hxy => hi ?_) (fun hxy => hj ?_)
     · simp only [hxy]
     · simp only [hxy]
 
@@ -67,7 +67,7 @@ example {c ε : ℝ} (hε : 0 < ε) :
 
 /-- AboveThreshold with discrete Laplace noise on any list of count queries is `(ε, 0)`-private. -/
 example {n : ℕ} (qs : List ((Fin n → Bool) → ℝ))
-    (hqs : ∀ q ∈ qs, ∀ ⦃x y⦄, HammingAdjacent x y → |q x - q y| ≤ 1) (T : ℝ) {ε : ℝ}
+    (hqs : ∀ q ∈ qs, Sensitivity HammingAdjacent q 1) (T : ℝ) {ε : ℝ}
     (hε : 0 < ε) :
     DifferentiallyPrivate HammingAdjacent
       (aboveThresholdMechanism (discreteLaplace (2 * (1 : ℕ) / ε) (by positivity))
@@ -84,11 +84,11 @@ example {n : ℕ} (T : ℝ) {ε : ℝ} (hε : 0 < ε) :
     (fun q hq x y h => by
       simp only [List.mem_cons, List.not_mem_nil, or_false] at hq
       rcases hq with rfl | rfl <;>
-        simpa only [Nat.cast_one] using abs_countTrue_sub_le h) hε
+        simpa only [Nat.cast_one] using sensitivity_countTrue h) hε
 
 /-- Sparse with cutoff `2` on a fixed stream of count queries is `(ε, 0)`-private. -/
 example {n : ℕ} (qs : List ((Fin n → Bool) → ℝ))
-    (hqs : ∀ q ∈ qs, ∀ ⦃x y⦄, HammingAdjacent x y → |q x - q y| ≤ 1) (T : ℝ) {ε : ℝ}
+    (hqs : ∀ q ∈ qs, Sensitivity HammingAdjacent q 1) (T : ℝ) {ε : ℝ}
     (hε : 0 < ε) :
     DifferentiallyPrivate HammingAdjacent
       (sparse (discreteLaplace (2 * (2 : ℕ) * (1 : ℕ) / ε) (by positivity))
@@ -112,7 +112,7 @@ example {n : ℕ} (T : ℝ) {ε : ℝ} (hε : 0 < ε) :
     (fun history q hq x y h => by
       simp only [shiftedCount, List.mem_singleton] at hq
       subst hq
-      simpa only [add_sub_add_right_eq_sub, Nat.cast_one] using abs_countTrue_sub_le h)
+      simpa only [add_sub_add_right_eq_sub, Nat.cast_one] using sensitivity_countTrue h)
     (by norm_num) hε
 
 /-! ### Concrete behaviour and the accuracy condition -/
