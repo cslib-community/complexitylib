@@ -78,7 +78,7 @@ theorem exec_after_product {w U m n g p : ℕ} (values : ℕ → ℤ)
     let q := RecordProduct.recordQueries n (D m) p idx
     let Q := RecordProduct.recordQueryCount n (D m) p values idx
     let qs := RecordProduct.decodedQueries hn x.mem q Q
-    let first := idx.2.2 * pieceSize (D m) g
+    let first := idx.piece * pieceSize (D m) g
     let length := min (pieceSize (D m) g) (n - first)
     ∃ y S, ExecWithin (w + 2) (.seq (product.rename productBank) consume) x y
         (T + 5 * Nat.sqrt (D m) + 8 * Q +

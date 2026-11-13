@@ -48,9 +48,9 @@ theorem exec_after_record_product {w U m n g p i : ℕ} (values : ℕ → ℤ)
       let q := RecordProduct.recordQueries n (D m) p idx
       let Q := RecordProduct.recordQueryCount n (D m) p values idx
       5 + 3 * (n * n) ≤ heap ∧ base + 6 ≤ heap ∧ q + 2 * Q ≤ heap ∧
-        idx.2.2 * pieceSize (D m) g ≤ n ∧
+        idx.piece * pieceSize (D m) g ≤ n ∧
         (∀ j : Fin 6, x.mem (base + j.val) =
-          ![idx.1.val, idx.2.2, q, Q, base + 6, base + 6 + n * D m] j) ∧
+          ![idx.residue.val, idx.piece, q, Q, base + 6, base + 6 + n * D m] j) ∧
         (∀ j < Q, x.mem (q + 2 * j) < n ∧ x.mem (q + 2 * j + 1) < n))
     (hmem : ∀ a < n, ∀ b < n,
       x.mem (5 + (a * n + b)) = Signed.encode (AB a b) ∧
@@ -88,7 +88,7 @@ theorem exec_after_record_product {w U m n g p i : ℕ} (values : ℕ → ℤ)
     let q := RecordProduct.recordQueries n (D m) p idx
     let Q := RecordProduct.recordQueryCount n (D m) p values idx
     let qs := RecordProduct.decodedQueries hn x.mem q Q
-    let first := idx.2.2 * pieceSize (D m) g
+    let first := idx.piece * pieceSize (D m) g
     let length := min (pieceSize (D m) g) (n - first)
     ∃ y S, ExecWithin (w + 2) (.seq (product.rename productBank) consume) x y
         (T + 5 * Nat.sqrt (D m) + 8 * Q +
@@ -143,7 +143,7 @@ theorem exec_after_record_product {w U m n g p i : ℕ} (values : ℕ → ℤ)
       s.regs (productBank j) = x.regs (productBank j) := (sr j).trans (rregs j hj)
   have sout : s.regs (productBank RecordProduct.Reg.result) = out := by
     exact (sr RecordProduct.Reg.result).trans rr
-  let v : Fin 6 → ℕ := ![idx.1.val, idx.2.2, q, Q, base + 6, base + 6 + n * D m]
+  let v : Fin 6 → ℕ := ![idx.residue.val, idx.piece, q, Q, base + 6, base + 6 + n * D m]
   have hread (j : Fin 6) : s.mem (base + j.val) = v j :=
     (sm _ (by have := j.isLt; omega)).trans (hv j)
   have hquery : ∀ j < Q, s.mem (q + 2 * j) = x.mem (q + 2 * j) ∧
@@ -174,16 +174,17 @@ theorem exec_after_record_product {w U m n g p i : ℕ} (values : ℕ → ℤ)
       omega))
   change ExecWithin (w + 2) consume s y
     (5 * Nat.sqrt (D m) + 8 * Q +
-      (42 * min (pieceSize (D m) g) (n - idx.2.2 * pieceSize (D m) g) + 28) * S + 52) at he
+      (42 * min (pieceSize (D m) g) (n - idx.piece * pieceSize (D m) g) + 28) * S + 52) at he
   change S ≤ Nat.count (fun j => s.mem (out + j) ≠ 0 ∧
-    ∀ c : Fin (min (pieceSize (D m) g) (n - idx.2.2 * pieceSize (D m) g)),
+    ∀ c : Fin (min (pieceSize (D m) g) (n - idx.piece * pieceSize (D m) g)),
       AB (x.mem (q + 2 * j)) (x.mem (q + 2 * j + 1)) +
-        BC (x.mem (q + 2 * j + 1)) (idx.2.2 * pieceSize (D m) g + c.val) +
-        AC (x.mem (q + 2 * j)) (idx.2.2 * pieceSize (D m) g + c.val) ≠ 0) Q + y.regs Reg.found at hS
-  simp_rw [show v 1 = idx.2.2 from rfl, show v 3 = Q from rfl] at yiff
+        BC (x.mem (q + 2 * j + 1)) (idx.piece * pieceSize (D m) g + c.val) +
+        AC (x.mem (q + 2 * j)) (idx.piece * pieceSize (D m) g + c.val) ≠ 0) Q + y.regs Reg.found
+      at hS
+  simp_rw [show v 1 = idx.piece from rfl, show v 3 = Q from rfl] at yiff
   have hexe : ExecWithin (w + 2) (.seq (product.rename productBank) consume) x y
       (T + 5 * Nat.sqrt (D m) + 8 * Q +
-        (42 * min (pieceSize (D m) g) (n - idx.2.2 * pieceSize (D m) g) + 28) * S + 52) :=
+        (42 * min (pieceSize (D m) g) (n - idx.piece * pieceSize (D m) g) + 28) * S + 52) :=
     (hs.seq he).mono (by omega)
   refine ⟨y, S, hexe, ys, yf, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · simpa only [ym, frame (productBank RecordProduct.Reg.result) (by decide), sout] using hS

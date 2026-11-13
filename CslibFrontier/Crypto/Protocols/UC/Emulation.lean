@@ -82,9 +82,9 @@ budget `pS ≤ g (κ + pA κ)` such that every environment with budget `pZ`, wha
 parties, distinguishes `(π, A)` from `(φ, S)` with advantage at most `ε pA pZ κ`. -/
 @[expose] def EmulatesWithin (π : Protocol n In Out NetQ₁ NetR₁) (φ : Protocol n In Out NetQ₂ NetR₂)
     (g : Polynomial ℕ) (ε : Polynomial ℕ → Polynomial ℕ → ℕ → ℝ≥0) : Prop :=
-  ∀ (AdvQ AdvR : Type) (A : Adversary n AdvQ AdvR ((Fin n × In) ⊕ NetQ₁) (Option Out ⊕ NetR₁))
+  ∀ (AdvQ AdvR : Type) (A : ExecAdversary n In Out NetQ₁ NetR₁ AdvQ AdvR)
     (pA : Polynomial ℕ), A.PolyBounded pA →
-    ∃ (S : Adversary n AdvQ AdvR ((Fin n × In) ⊕ NetQ₂) (Option Out ⊕ NetR₂)) (pS : Polynomial ℕ),
+    ∃ (S : ExecAdversary n In Out NetQ₂ NetR₂ AdvQ AdvR) (pS : Polynomial ℕ),
       S.PolyBounded pS ∧ SimPolyBound g pA pS ∧
         ∀ (C : Finset (Fin n)) (Z : Environment n In Out AdvQ AdvR) (pZ : Polynomial ℕ),
           Z.PolyBounded pZ → ∀ (κ : ℕ) (z : List Bool), advantage π φ A S C Z κ z ≤ ε pA pZ κ
@@ -141,9 +141,9 @@ with a polynomial budget, such that for each polynomial environment budget one n
 bounds the advantage of every such environment, for all corrupted parties and auxiliary inputs. -/
 @[expose] def Emulates (π : Protocol n In Out NetQ₁ NetR₁) (φ : Protocol n In Out NetQ₂ NetR₂) :
     Prop :=
-  ∀ (AdvQ AdvR : Type) (A : Adversary n AdvQ AdvR ((Fin n × In) ⊕ NetQ₁) (Option Out ⊕ NetR₁))
+  ∀ (AdvQ AdvR : Type) (A : ExecAdversary n In Out NetQ₁ NetR₁ AdvQ AdvR)
     (pA : Polynomial ℕ), A.PolyBounded pA →
-    ∃ (S : Adversary n AdvQ AdvR ((Fin n × In) ⊕ NetQ₂) (Option Out ⊕ NetR₂)) (pS : Polynomial ℕ),
+    ∃ (S : ExecAdversary n In Out NetQ₂ NetR₂ AdvQ AdvR) (pS : Polynomial ℕ),
       S.PolyBounded pS ∧
         ∀ pZ : Polynomial ℕ, ∃ ν : ℕ → ℝ≥0, Negligible ν ∧
           ∀ (C : Finset (Fin n)) (Z : Environment n In Out AdvQ AdvR),

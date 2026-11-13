@@ -76,14 +76,14 @@ variable [DecidableEq M] [DecidableEq CT]
 noncomputable def eagerFbHandler (S : Scheme PK SK M R CT K) (G : M → R)
     (H : Bool × M × CT → K) (Hfb : CT → K) (dk : ImplicitSK PK SK M) (cStar : CT)
     (q : ROQuery M CT) : PMF (ROResp R K q) :=
-  match q with
-  | .G m => PMF.pure (G m)
-  | .H x => PMF.pure (H x)
-  | .decaps c =>
-    PMF.pure (if c = cStar then none else
-      some (match decT S.pke G dk.pk dk.sk c with
-        | some m' => H (false, m', c)
-        | none => Hfb c))
+  ROQuery.dispatch (PMF.pure ∘ G) (PMF.pure ∘ H)
+    (fun c =>
+      PMF.pure
+        (some
+          (match decT S.pke G dk.pk dk.sk c with
+          | some m' => H (false, m', c)
+          | none => Hfb c)))
+    cStar q
 
 /-- The eager IND-CCA game of `FO-notbot` with implicit-rejection keys drawn from an independent
 table `Hfb : CT → K` instead of `H(true, s, ·)`. -/
@@ -113,10 +113,8 @@ decapsulation query `c ≠ cStar` reads `Hq c`. -/
 noncomputable def eagerCoupledHandler (S : Scheme PK SK M R CT K) (G : M → R) (Hq : CT → K)
     (Hraw : Bool × M × CT → K) (pk : PK) (sk : SK) (cStar : CT) (q : ROQuery M CT) :
     PMF (ROResp R K q) :=
-  match q with
-  | .G m => PMF.pure (G m)
-  | .H x => PMF.pure (S.coupledH G Hq Hraw pk sk x)
-  | .decaps c => PMF.pure (if c = cStar then none else some (Hq c))
+  ROQuery.dispatch (PMF.pure ∘ G) (PMF.pure ∘ S.coupledH G Hq Hraw pk sk)
+    (fun c => PMF.pure (some (Hq c))) cStar q
 
 /-- The eager coupled game: independent tables `G`, `Hq`, `Hraw`, challenge
 `c* = Enc(pk, m*; G(m*))` with real key `coupledH (false, m*, c*)`. -/
@@ -155,12 +153,9 @@ leaves `gCache` unchanged. -/
 theorem gCache_eq_of_mem_support_filterDecaps (sampleKey : ProbComp K)
     (d : List (M × R) → CT → Bool) (cStar c : CT)
     (st : SimState M R CT K) (x : Option K × SimState M R CT K)
-    (hx : x ∈ (ProbComp.eval ((if c = cStar then return none else fun st =>
-      cond (d st.gCache c)
-        ((do let k ← simHashHq sampleKey c; return some k :
-          StateT (SimState M R CT K) ProbComp (Option K)) st)
-        ((return none : StateT (SimState M R CT K) ProbComp (Option K)) st) :
-          StateT (SimState M R CT K) ProbComp (Option K)) st)).support) :
+    (hx : x ∈ (ProbComp.eval ((if c = cStar then return none else
+      filterDecaps (simHashHq sampleKey) d c : StateT (SimState M R CT K) ProbComp (Option K))
+        st)).support) :
     x.2.gCache = st.gCache := by
   by_cases hc : c = cStar
   · simp only [hc, ↓reduceIte] at hx
@@ -169,11 +164,11 @@ theorem gCache_eq_of_mem_support_filterDecaps (sampleKey : ProbComp K)
     rw [hx]
   · simp only [hc, ↓reduceIte] at hx
     cases hd : d st.gCache c
-    · simp only [hd, Bool.cond_false] at hx
+    · simp only [filterDecaps, hd, Bool.cond_false] at hx
       change x ∈ (ProbComp.eval (pure (none, st))).support at hx
       rw [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hx
       rw [hx]
-    · simp only [hd, Bool.cond_true] at hx
+    · simp only [filterDecaps, hd, Bool.cond_true] at hx
       change x ∈ (ProbComp.eval (simHashHq sampleKey c st >>= fun a =>
         pure (some a.fst, a.snd))).support at hx
       rw [ProbComp.eval_bind, PMF.mem_support_bind_iff] at hx
