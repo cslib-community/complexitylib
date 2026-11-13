@@ -480,17 +480,22 @@ class QuickCheckTests(unittest.TestCase):
                     [sys.executable, "-B", "scripts/check_encoding_readability.py", "--base", base])
         projection = ("projection chain ratchet",
                       [sys.executable, "-B", "scripts/check_projection_chains.py", "--base", base])
-        labels = ["source hygiene (changed files)", "encoding readability ratchet",
-                  "projection chain ratchet"]
+        source_lints = ("changed-file source lints",
+                        [sys.executable, "-B", "scripts/check_changed_files.py", "--base", base,
+                         "--source-only"])
+        labels = ["source hygiene (changed files)", "changed-file source lints",
+                  "encoding readability ratchet", "projection chain ratchet"]
         with patch.object(quick, "HYGIENE_ROOTS", ("Demo/", "DemoTests/")), \
              patch.object(quick, "RATCHET_ROOT", "Demo/"):
             self.write("DemoTests/Client.lean", "import Demo.Middle\nexample : Nat := middle + 0\n")
             self.assertEqual(self.plan().checks, [
-                ("source hygiene (changed files)", [*hygiene, "DemoTests/Client.lean"])])
+                ("source hygiene (changed files)", [*hygiene, "DemoTests/Client.lean"]),
+                source_lints])
             self.write("Demo/Base.lean", "def value : Nat := 2\n")
             self.assertEqual(self.plan().checks, [
                 ("source hygiene (changed files)",
-                 [*hygiene, "Demo/Base.lean", "DemoTests/Client.lean"]), encoding, projection])
+                 [*hygiene, "Demo/Base.lean", "DemoTests/Client.lean"]), source_lints, encoding,
+                projection])
             # A changed baseline already selects its ratchet; each ratchet runs once.
             for baseline in ("scripts/encoding_readability_baseline.json",
                              "scripts/projection_chains_baseline.json"):

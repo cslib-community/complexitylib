@@ -44,6 +44,8 @@ scripts/check.sh --quick
 
 Quick mode compares against the merge base with local `origin/main` without fetching by default. It includes committed, staged, unstaged and untracked changes and builds affected modules and importing clients when supported. It runs source hygiene on the changed files and the encoding readability and projection chain ratchets on changed library modules, then the declaration linters on the affected library modules, so an argument that a change leaves unused in a client is reported before CI. A changed ratchet baseline (`scripts/encoding_readability_baseline.json` or `scripts/projection_chains_baseline.json`) runs its ratchet; other non-Lean, unsupported or ambiguous changes fall back to the full check. Quick success is development feedback, not full integration validation.
 
+Quick mode also runs the changed-file lints that read only sources: an `@[expose]` section with nothing to expose, and a new test file that only restates signatures. When building targets directly instead, run them with `python3 scripts/check_changed_files.py --source-only`; CI's changed-file step additionally checks module-doc names against build outputs.
+
 Lean, dependency or build changes need the six Lean gates on the final revision, together with the other required CI checks:
 
 ```bash
