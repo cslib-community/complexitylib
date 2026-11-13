@@ -8,14 +8,13 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Computational.TwoStage
-import CslibFrontier.Languages.Probabilistic.Norm
 
 /-!
 # Public-key encryption schemes
 
 A public-key encryption scheme `PKE PK SK M C` has typed public keys, secret keys, messages and
 ciphertexts. Key generation and encryption are probabilistic programs; decryption is a function
-that returns `none` on a ciphertext it rejects ([BonehShoup2023], Section 11.1, Definition 11.1).
+that returns `none` on a ciphertext it rejects ([BonehShoup2023], Section 11.2, Definition 11.1).
 Correctness is a separate property (`PKE.Correct`), so a scheme with decryption errors is still a
 `PKE`.
 
@@ -41,7 +40,7 @@ the adversary are stated on top of this experiment.
 ## References
 
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*][BonehShoup2023],
-  Section 11.1 (Definition 11.1) and Section 11.2 (Attack Game 11.1, p. 436).
+  Section 11.2 (Definition 11.1 and Attack Game 11.1, p. 436).
 -/
 
 @[expose] public section

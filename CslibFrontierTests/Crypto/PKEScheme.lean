@@ -66,4 +66,18 @@ example {Msg : Type} (valid : ℕ → List Bool → Msg → Msg → Bool)
   rw [Encryption.gameOn_eq_cpaExperiment valid keyGen encrypt (fun _ _ => none),
     PKE.eval_cpaExperiment]
 
+-- A bound on the typed experiment of every fixed scheme bounds the word-level advantage.
+example {Msg : Type} (valid : ℕ → List Bool → Msg → Msg → Bool)
+    (keyGen : ℕ → ProbComp (List Bool × List Bool))
+    (encrypt : ℕ → List Bool → Msg → ProbComp (List Bool))
+    (adversary : Encryption.AdversaryOf Msg) (ε : ℕ → NNReal)
+    (h : ∀ n, Experiment.advantage
+      ((PKE.mk (keyGen n) (encrypt n) fun _ _ => none).cpaExperiment (valid n)
+        (adversary.toTwoStage n) false)
+      ((PKE.mk (keyGen n) (encrypt n) fun _ _ => none).cpaExperiment (valid n)
+        (adversary.toTwoStage n) true) ≤ ε n) (n : ℕ) :
+    Encryption.advantage (Encryption.gameOn valid keyGen encrypt adversary) n ≤ ε n := by
+  rw [Encryption.advantage_gameOn_eq_cpaExperiment valid keyGen encrypt fun _ _ => none]
+  exact h n
+
 end CslibFrontierTests.Crypto.PKEScheme

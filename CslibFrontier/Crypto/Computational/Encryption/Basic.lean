@@ -63,9 +63,10 @@ properties.
 * `Cslib.Crypto.Encryption.eval_game_restrict`: `game` on `adversary.restrict valid` has the same
   output distribution as `gameOn valid` on `adversary`.
 * `Cslib.Crypto.Encryption.gameOn_eq_cpaExperiment`,
-  `Cslib.Crypto.Encryption.AdversaryOf.isPPT_toTwoStage`: at each parameter, `gameOn` is the typed
-  chosen-plaintext experiment of the scheme with the same algorithms, and a PPT word-level
-  adversary is a PPT two-stage family.
+  `Cslib.Crypto.Encryption.advantage_gameOn_eq_cpaExperiment`,
+  `Cslib.Crypto.Encryption.AdversaryOf.isPPT_toTwoStage`: at each parameter, `gameOn` and its
+  advantage are those of the typed chosen-plaintext experiment of the scheme with the same
+  algorithms, and a PPT word-level adversary is a PPT two-stage family.
 * `Cslib.Crypto.Encryption.INDCPAOn.congr`, `Cslib.Crypto.Encryption.INDCPAOf.congr`,
   `Cslib.Crypto.Encryption.INDCPA.congr`: distributionally equal honest algorithms have the same
   security guarantee.
@@ -351,5 +352,19 @@ theorem gameOn_eq_cpaExperiment {Msg : Type} (valid : ℕ → List Bool → Msg 
   cases bit <;>
     simp only [gameOn, PKE.cpaExperiment, lrExperiment, AdversaryOf.toTwoStage, bind_map_left,
       MessagePair.select_false, MessagePair.select_true, Bool.false_eq_true, ↓reduceIte]
+
+/-- The word-level advantage of `gameOn` at parameter `n` is the advantage between the two sides of
+the typed chosen-plaintext experiment, so a bound on one fixed scheme transfers to `INDCPAOn`. -/
+theorem advantage_gameOn_eq_cpaExperiment {Msg : Type}
+    (valid : ℕ → List Bool → Msg → Msg → Bool) (keyGen : ℕ → ProbComp (List Bool × List Bool))
+    (encrypt : ℕ → List Bool → Msg → ProbComp (List Bool))
+    (decrypt : List Bool → List Bool → Option Msg) (adversary : AdversaryOf Msg) (n : ℕ) :
+    advantage (gameOn valid keyGen encrypt adversary) n =
+      Experiment.advantage
+        ((PKE.mk (keyGen n) (encrypt n) decrypt).cpaExperiment (valid n)
+          (adversary.toTwoStage n) false)
+        ((PKE.mk (keyGen n) (encrypt n) decrypt).cpaExperiment (valid n)
+          (adversary.toTwoStage n) true) := by
+  simp only [advantage, Experiment.advantage, gameOn_eq_cpaExperiment valid keyGen encrypt decrypt]
 
 end Cslib.Crypto.Encryption

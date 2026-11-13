@@ -527,8 +527,10 @@ public key, against a `TwoStage` adversary with any state type. Bound
 reduction's advantage at a fixed instance, then pass to the word level:
 `Encryption.gameOn_eq_cpaExperiment` says that `gameOn valid keyGen encrypt adversary bit n` is
 the typed experiment of the scheme with key generation `keyGen n` and encryption `encrypt n`,
-played by `adversary.toTwoStage n`, and `AdversaryOf.isPPT_toTwoStage` turns a word-level PPT
-certificate into a `TwoStage.IsPPT` family. The
+played by `adversary.toTwoStage n`. Rewrite advantages with
+`Encryption.advantage_gameOn_eq_cpaExperiment`: `Encryption.advantage` applies `gameOn`
+partially, so `rw` with the experiment equation does not reach it. `AdversaryOf.isPPT_toTwoStage`
+turns a word-level PPT certificate into a `TwoStage.IsPPT` family. The
 [checked examples](../../CslibFrontierTests/Crypto/PKEScheme.lean) separate the two challenge
 bits of a key-leaking scheme and rewrite `gameOn` into the typed experiment; run
 `scripts/build.sh CslibFrontierTests.Crypto.PKEScheme`. The PPT transfer is checked in
