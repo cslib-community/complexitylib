@@ -21,6 +21,7 @@ the two intermediate games are compared directly. The endpoint advantage is then
 ## Main results
 
 * `Cslib.Crypto.Game.advantage_four_hop_le`: the endpoint bound for a symmetric four-game chain.
+* `Cslib.Crypto.Game.negligible_advantage_four_hop`: its asymptotic form, for negligible `c`.
 -/
 
 public section
@@ -39,5 +40,14 @@ theorem advantage_four_hop_le {G0 M0 M1 G1 : Game} {c : ℝ≥0}
     (calc Pr[G0] ≈[c] Pr[M0] := approxEq_of_advantage_le h0
       _ ≈[M0.advantage M1] Pr[M1] := approxEq_advantage M0 M1
       _ ≈[c] Pr[G1] := (approxEq_of_advantage_le h1).symm)
+
+/-- **Asymptotic symmetric four-game hop**: if each real game `G0 n`, `G1 n` is within a
+negligible `c n` of its intermediate game, and the intermediate games are indistinguishable, then
+so are the real games. -/
+theorem negligible_advantage_four_hop {G0 M0 M1 G1 : ℕ → Game} {c : ℕ → ℝ≥0}
+    (hc : Negligible c) (hM : Negligible fun n => (M0 n).advantage (M1 n))
+    (h0 : ∀ n, (G0 n).advantage (M0 n) ≤ c n) (h1 : ∀ n, (G1 n).advantage (M1 n) ≤ c n) :
+    Negligible fun n => (G0 n).advantage (G1 n) :=
+  negligible_of_le ((hc.add hM).add hc) fun n => advantage_four_hop_le (h0 n) (h1 n)
 
 end Cslib.Crypto.Game

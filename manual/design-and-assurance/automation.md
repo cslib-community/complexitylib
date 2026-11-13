@@ -661,7 +661,11 @@ experiments `e : ProbComp Bool`, since `Pr[e]` and the experiment advantage are 
 where each hop is a local computation rather than a textbook step. On `h : x ≈[ε] y`, `h.trans`
 is `ApproxEq.trans`; use `le_trans` for the order. The
 [checked examples](../../CslibFrontierTests/Crypto/Hop.lean) cover each form, and
-[FourHop.lean](../../CslibFrontier/Crypto/Game/FourHop.lean) is a library client.
+[FourHop.lean](../../CslibFrontier/Crypto/Game/FourHop.lean) is a library client. Its
+`Game.negligible_advantage_four_hop` is the asymptotic form: two real games, each within a
+negligible `c n` of an intermediate game (often `negligible_const_div_two_pow k` for `k`
+approximate draws), are indistinguishable when the intermediate games are, as in
+`DDH.indcca2On_cramerShoup`.
 
 ## Step through counter programs
 

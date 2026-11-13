@@ -13,6 +13,8 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Probabilistic.UniformNat
+import CslibFrontier.Crypto.Game.FourHop
+import CslibFrontier.Crypto.Game.Hop
 import CslibFrontier.Crypto.Game.Statistical
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Crypto.Negligible.Dyadic
@@ -425,11 +427,6 @@ private theorem advantage_eval_cramerShoupMsgToDDHDistinguisher_le
       F.cramerShoupPhase2Oracle_eq_skNatOfZMod hasAD H isElem hmem d ((s, t), ((s₁, t₁), (s₂, t₂)))]
   · simp only [h, Bool.false_eq_true, ↓reduceIte, ProbComp.eval_pure]
 
-private theorem advantage_four_le (g₁ g₂ g₃ g₄ : Game) {n : ℕ}
-    (h₁ : Game.advantage g₂ g₁ ≤ 6 / 2 ^ n) (h₂ : Game.advantage g₃ g₄ ≤ 6 / 2 ^ n) :
-    Game.advantage g₁ g₄ ≤ Game.advantage g₂ g₃ + 12 / 2 ^ n := by
-  game_trans [g₂, g₃] using [h₁, le_rfl, h₂]
-
 /-- **Game 1 $\to$ Game 2 bound** ([BonehShoup2023], Section 12.5.3, equation (12.22), printed
 p. 492): the distinguishing advantage between `cramerShoupGame1` and `cramerShoupGame2` is at
 most the DDH advantage of `cramerShoupMsgToDDHDistinguisher` plus `12 / 2 ^ n` (six approximate
@@ -449,7 +446,9 @@ theorem advantage_cramerShoupGame1_game2_le
         (F.ddhRandomGame setup
           (F.cramerShoupMsgToDDHDistinguisher hasAD encodeMsg encodeAD H isElem adversary bit) n) +
       12 / 2 ^ n := by
-  refine advantage_four_le _ _ _ _ ?_ ?_
+  rw [show ∀ x : ℝ≥0, x + 12 / 2 ^ n = 6 / 2 ^ n + x + 6 / 2 ^ n from fun x => by ring]
+  refine advantage_four_hop_le ((advantage_comm _ _).trans_le ?_)
+    ((advantage_comm _ _).trans_le ?_)
   · unfold ddhRealGame Game.withSetup cramerShoupGame1
     simp only [eval_ddhRealExperiment, PMF.monad_bind_eq_bind]
     peel_binds d α β
@@ -705,23 +704,29 @@ theorem advantage_cramerShoupMsgCCA2Game_game5_le
         (collisionGameFor setup (F.cramerShoupHashMod H) (fun _ _ _ => true)
           (F.cramerShoupMsgToCollisionFinder hasAD encodeMsg encodeAD H isElem adversary bit) n) +
       ((Q₁ + Q₂ + 1 : ℕ) : ℝ≥0) / (m : ℝ≥0) +
-      21 / 2 ^ n := by
-  game_trans [
-    F.cramerShoupGame1 hasAD encodeMsg encodeAD setup H isElem adversary bit n,
-    F.cramerShoupGame2 hasAD encodeMsg encodeAD setup H isElem adversary bit n,
-    F.cramerShoupGame3 hasAD encodeMsg encodeAD setup H isElem adversary bit n,
-    F.cramerShoupGame4 hasAD encodeMsg encodeAD setup H isElem adversary bit n]
-    using [
-      F.cramerShoupMsgCCA2Game_eq_game1 hasAD encodeMsg encodeAD setup H isElem adversary bit n,
-      F.advantage_cramerShoupGame1_game2_le hasAD encodeMsg encodeAD setup H isElem hmem
-        adversary bit n,
-      F.advantage_cramerShoupGame2_game3_le hasAD encodeMsg encodeAD setup H isElem hmem
-        adversary bit n,
-      F.advantage_cramerShoupGame3_game4_le hasAD encodeMsg encodeAD setup H isElem hmem
-        adversary bit n Q₁ Q₂ m hm0 hm hQ₁ hQ₂,
-      F.advantage_cramerShoupGame4_game5_le hasAD encodeMsg encodeAD setup H isElem hmem
-        adversary bit n m hm0 hm]
-  exact le_of_eq (by push_cast; ring)
+      21 / 2 ^ n :=
+  advantage_le_of_approxEq
+    (calc Pr[F.cramerShoupMsgCCA2Game hasAD encodeMsg encodeAD setup H isElem adversary bit n]
+      -- (12.21)
+      _ = Pr[F.cramerShoupGame1 hasAD encodeMsg encodeAD setup H isElem adversary bit n] := by
+        rw [F.cramerShoupMsgCCA2Game_eq_game1]
+      -- (12.22)
+      _ ≈[_] Pr[F.cramerShoupGame2 hasAD encodeMsg encodeAD setup H isElem adversary bit n] :=
+        approxEq_of_advantage_le (F.advantage_cramerShoupGame1_game2_le hasAD encodeMsg encodeAD
+          setup H isElem hmem adversary bit n)
+      -- (12.24)–(12.25)
+      _ ≈[_] Pr[F.cramerShoupGame3 hasAD encodeMsg encodeAD setup H isElem adversary bit n] :=
+        approxEq_of_advantage_le (F.advantage_cramerShoupGame2_game3_le hasAD encodeMsg encodeAD
+          setup H isElem hmem adversary bit n)
+      -- (12.26)–(12.27)
+      _ ≈[_] Pr[F.cramerShoupGame4 hasAD encodeMsg encodeAD setup H isElem adversary bit n] :=
+        approxEq_of_advantage_le (F.advantage_cramerShoupGame3_game4_le hasAD encodeMsg encodeAD
+          setup H isElem hmem adversary bit n Q₁ Q₂ m hm0 hm hQ₁ hQ₂)
+      -- (12.23) and (12.28)
+      _ ≈[_] Pr[F.cramerShoupGame5 hasAD encodeMsg encodeAD setup H isElem adversary bit n] :=
+        approxEq_of_advantage_le (F.advantage_cramerShoupGame4_game5_le hasAD encodeMsg encodeAD
+          setup H isElem hmem adversary bit n m hm0 hm))
+    (le_of_eq (by push_cast; ring))
 
 /-- Concrete upper-bound expression for the two-run single-bit Theorem 12.9 / Exercise 12.27 1CCA
 reduction ([BonehShoup2023], equation (12.19), printed p. 489): the DDH advantages of
@@ -767,19 +772,19 @@ theorem advantage_cramerShoupMsgCCA2Game_le_of_honest_bounds
     Game.advantage
       (F.cramerShoupMsgCCA2Game hasAD encodeMsg encodeAD setup H isElem adversary false n)
       (F.cramerShoupMsgCCA2Game hasAD encodeMsg encodeAD setup H isElem adversary true n) ≤
-      F.cramerShoupCCA2Bound hasAD encodeMsg encodeAD setup H isElem adversary n Q₁ Q₂ m := by
-  have hfalse := F.advantage_cramerShoupMsgCCA2Game_game5_le hasAD encodeMsg encodeAD setup H
-    isElem hmem adversary false n Q₁ Q₂ m hm0 hm hQ₁ hQ₂
-  have htrue := F.advantage_cramerShoupMsgCCA2Game_game5_le hasAD encodeMsg encodeAD setup H
-    isElem hmem adversary true n Q₁ Q₂ m hm0 hm hQ₁ hQ₂
-  game_trans [
-    F.cramerShoupGame5 hasAD encodeMsg encodeAD setup H isElem adversary false n,
-    F.cramerShoupGame5 hasAD encodeMsg encodeAD setup H isElem adversary true n]
-    using [hfalse,
-      F.cramerShoupGame5_false_eq_true hasAD encodeMsg encodeAD setup H isElem adversary n,
-      htrue]
-  dsimp only [cramerShoupCCA2Bound]
-  exact le_of_eq (by push_cast; ring)
+      F.cramerShoupCCA2Bound hasAD encodeMsg encodeAD setup H isElem adversary n Q₁ Q₂ m :=
+  advantage_le_of_approxEq
+    (calc Pr[F.cramerShoupMsgCCA2Game hasAD encodeMsg encodeAD setup H isElem adversary false n]
+      _ ≈[_] Pr[F.cramerShoupGame5 hasAD encodeMsg encodeAD setup H isElem adversary false n] :=
+        approxEq_of_advantage_le (F.advantage_cramerShoupMsgCCA2Game_game5_le hasAD encodeMsg
+          encodeAD setup H isElem hmem adversary false n Q₁ Q₂ m hm0 hm hQ₁ hQ₂)
+      _ = Pr[F.cramerShoupGame5 hasAD encodeMsg encodeAD setup H isElem adversary true n] := by
+        rw [F.cramerShoupGame5_false_eq_true]
+      _ ≈[_] Pr[F.cramerShoupMsgCCA2Game hasAD encodeMsg encodeAD setup H isElem adversary true
+          n] :=
+        (approxEq_of_advantage_le (F.advantage_cramerShoupMsgCCA2Game_game5_le hasAD encodeMsg
+          encodeAD setup H isElem hmem adversary true n Q₁ Q₂ m hm0 hm hQ₁ hQ₂)).symm)
+    (le_of_eq (by dsimp only [cramerShoupCCA2Bound]; push_cast; ring))
 
 /-- **Concrete ideal-game 1CCA security bound for `cramerShoupMsgCCA2Game`**: for any adversary with
 decryption-query bounds `(Q₁ n, Q₂ n)`, the ideal 1CCA advantage at parameter `n` is bounded by the
@@ -1138,13 +1143,6 @@ theorem DDH.cramerShoupINDCCA2
 /-! ### `Encryption.cca2ADGameOn`, `Encryption.INDCCA2ADOn`, `Encryption.cca2GameOn`, and
 `Encryption.INDCCA2On` instantiations -/
 
-private theorem advantage_four_le_eight (g₁ g₂ g₃ g₄ : Game) {n : ℕ}
-    (h₁ : Game.advantage g₁ g₂ ≤ 1 / 2 ^ n)
-    (h₂ : Game.advantage g₂ g₃ ≤ 6 / 2 ^ n)
-    (h₃ : Game.advantage g₃ g₄ ≤ 1 / 2 ^ n) :
-    Game.advantage g₁ g₄ ≤ 8 / 2 ^ n := by
-  game_trans [g₂, g₃] using [h₁, h₂, h₃]
-
 private theorem eval_run_interpret_map_bind
     {α β γ State : Type}
     (oracle : Unit × List Bool → StateT State ProbComp (List Bool))
@@ -1240,10 +1238,10 @@ private theorem advantage_cramerShoupCCA2InnerSK_le
       8 / 2 ^ n := by
   unfold cramerShoupCCA2UniformSK
   simp only [PMF.monad_bind_eq_bind]
-  refine advantage_four_le_eight _
-    ((PMF.uniformOfFintype (ZMod (F.order d))).bind
-      (F.cramerShoupCCA2SampledSK hasAD encodeAD H isElem d adversary bit n))
-    ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
+  game_trans [
+    (PMF.uniformOfFintype (ZMod (F.order d))).bind
+      (F.cramerShoupCCA2SampledSK hasAD encodeAD H isElem d adversary bit n),
+    (PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
       (PMF.uniformOfFintype (ZMod (F.order d))).bind fun σ =>
         (PMF.uniformOfFintype (ZMod (F.order d))).bind fun τ =>
           (PMF.uniformOfFintype (ZMod (F.order d))).bind fun σ₁ =>
@@ -1251,22 +1249,26 @@ private theorem advantage_cramerShoupCCA2InnerSK_le
               (PMF.uniformOfFintype (ZMod (F.order d))).bind fun σ₂ =>
                 (PMF.uniformOfFintype (ZMod (F.order d))).bind fun τ₂ =>
                   F.cramerShoupCCA2InnerSK hasAD encodeAD H isElem d adversary bit n
-                    α σ τ σ₁ τ₁ σ₂ τ₂ false) _
-    (F.advantage_bind_sampleExp_le n d
-      (F.cramerShoupCCA2SampledSK hasAD encodeAD H isElem d adversary bit n))
-    (advantage_bind_le_nnreal _ _ _ fun α =>
-      F.advantage_bind_sampleCramerShoupSK_le n d _ (fun σ τ σ₁ τ₁ σ₂ τ₂ =>
-        F.cramerShoupCCA2InnerSK hasAD encodeAD H isElem d adversary bit n
-          α σ τ σ₁ τ₁ σ₂ τ₂ false) (fun _ _ _ _ _ _ => rfl)) ?_
-  peel_binds α σ τ σ₁ τ₁ σ₂ τ₂
-  dsimp only [cramerShoupCCA2InnerSK]
-  peel_binds choiceOut
-  by_cases h : (isElem (d, csChoiceMsg₀ choiceOut.1) && isElem (d, csChoiceMsg₁ choiceOut.1)) = true
-  · simp only [h, ↓reduceIte, Bool.false_eq_true]
-    exact F.advantage_bind_sampleExp_le n d
-      (F.cramerShoupCCA2InnerB hasAD encodeAD H isElem d adversary bit n
-        α σ τ σ₁ τ₁ σ₂ τ₂ choiceOut)
-  · simp only [h, Bool.false_eq_true, ↓reduceIte, Game.advantage_self, zero_le]
+                    α σ τ σ₁ τ₁ σ₂ τ₂ false]
+    using [
+      F.advantage_bind_sampleExp_le n d
+        (F.cramerShoupCCA2SampledSK hasAD encodeAD H isElem d adversary bit n),
+      advantage_bind_le_nnreal _ _ _ fun α =>
+        F.advantage_bind_sampleCramerShoupSK_le n d _ (fun σ τ σ₁ τ₁ σ₂ τ₂ =>
+          F.cramerShoupCCA2InnerSK hasAD encodeAD H isElem d adversary bit n
+            α σ τ σ₁ τ₁ σ₂ τ₂ false) (fun _ _ _ _ _ _ => rfl),
+      _]
+  · peel_binds α σ τ σ₁ τ₁ σ₂ τ₂
+    dsimp only [cramerShoupCCA2InnerSK]
+    peel_binds choiceOut
+    by_cases h :
+        (isElem (d, csChoiceMsg₀ choiceOut.1) && isElem (d, csChoiceMsg₁ choiceOut.1)) = true
+    · simp only [h, ↓reduceIte, Bool.false_eq_true]
+      exact F.advantage_bind_sampleExp_le n d
+        (F.cramerShoupCCA2InnerB hasAD encodeAD H isElem d adversary bit n
+          α σ τ σ₁ τ₁ σ₂ τ₂ choiceOut)
+    · simp only [h, Bool.false_eq_true, ↓reduceIte, Game.advantage_self, zero_le]
+  · exact le_of_eq (by ring)
 
 private theorem cramerShoupMsgCCA2Game_pure_eq_innerSK
     (hasAD : Bool) {AD : Type} (encodeAD : F.Desc × AD → List Bool)
@@ -1355,20 +1357,6 @@ private theorem order_pure_ge {d : ℕ → F.Desc} {m : ℕ → ℕ}
   rw [PMF.support_pure, Set.mem_singleton_iff] at hd'
   exact hd' ▸ hm n
 
-private theorem negligible_advantage_of_eight_le {g₀ g₁ h₀ h₁ : ℕ → Game}
-    (hmid : Negligible fun n => Game.advantage (h₀ n) (h₁ n))
-    (hle₀ : ∀ n, Game.advantage (g₀ n) (h₀ n) ≤ 8 / 2 ^ n)
-    (hle₁ : ∀ n, Game.advantage (g₁ n) (h₁ n) ≤ 8 / 2 ^ n) :
-    Negligible fun n => Game.advantage (g₀ n) (g₁ n) := by
-  have h8 : Negligible fun n => (8 : ℝ≥0) / 2 ^ n := negligible_const_div_two_pow 8
-  refine negligible_of_le ((h8.add hmid).add h8) fun n => ?_
-  have h0 := hle₀ n
-  have h1 := hle₁ n
-  rw [Game.advantage_comm] at h1
-  exact ((Game.advantage_triangle (g₀ n) (h₀ n) (g₁ n)).trans
-    (add_le_add le_rfl (Game.advantage_triangle (h₀ n) (h₁ n) (g₁ n)))).trans
-    (by rw [add_assoc]; exact add_le_add h0 (add_le_add le_rfl h1))
-
 /-- The native `Encryption.cca2ADGameOn` experiment for `(cramerShoupValid, cramerShoupKeyGenProb,
 cramerShoupADEncryptProb, cramerShoupADDecryptOpt)` is within statistical distance `8 / 2 ^ n` of
 the ideal exact-uniform PMF game `cramerShoupADGroupCCA2Game encAD (fun n => PMF.pure (d n))`
@@ -1440,7 +1428,7 @@ theorem DDH.indcca2ADOn_cramerShoup
       hinv (F.exists_length_encDesc_pure_le hd)
   intro adversary hA
   dsimp only [INDCCA2ADOn, Game.Indistinguishable]
-  exact negligible_advantage_of_eight_le (hgroup adversary hA)
+  exact negligible_advantage_four_hop (negligible_const_div_two_pow 8) (hgroup adversary hA)
     (F.advantage_cca2ADGameOn_cramerShoupADGroupCCA2Game_le encAD H isElem hmem d adversary false)
     (F.advantage_cca2ADGameOn_cramerShoupADGroupCCA2Game_le encAD H isElem hmem d adversary true)
 
@@ -1511,7 +1499,7 @@ theorem DDH.indcca2On_cramerShoup
       hinv (F.exists_length_encDesc_pure_le hd)
   intro adversary hA
   dsimp only [INDCCA2On, Game.Indistinguishable]
-  exact negligible_advantage_of_eight_le (hgroup adversary hA)
+  exact negligible_advantage_four_hop (negligible_const_div_two_pow 8) (hgroup adversary hA)
     (F.advantage_cca2GameOn_cramerShoupGroupCCA2Game_le H isElem hmem d adversary false)
     (F.advantage_cca2GameOn_cramerShoupGroupCCA2Game_le H isElem hmem d adversary true)
 
