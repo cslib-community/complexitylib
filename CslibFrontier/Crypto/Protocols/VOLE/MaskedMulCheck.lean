@@ -10,7 +10,7 @@ module
 public import CslibFrontier.Crypto.Protocols.VOLE.World
 public import CslibFrontier.Crypto.Protocols.VOLE.BatchMulCheck
 public import CslibFrontier.Computability.Interactive.Security
-public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Interactive
+public import CslibFrontier.Computability.Interactive.ThreeMove
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Interaction
 import CslibFrontier.Probability.PMF.Bind

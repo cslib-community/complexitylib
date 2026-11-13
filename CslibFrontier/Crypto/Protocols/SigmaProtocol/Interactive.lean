@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Interactive.Efficient
 public import CslibFrontier.Computability.Interactive.Plain
+public import CslibFrontier.Computability.Interactive.ThreeMove
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Composition
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Efficient
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Linear
@@ -71,7 +72,7 @@ This module proves that the Sigma-protocol security notions transfer across the 
 
 ## Main definitions
 
-* `SigmaProtocol.sigmaSpec`, `SigmaProtocol.interactiveSpec`: the 3-round public-coin
+* `SigmaProtocol.interactiveSpec`: the 3-round public-coin
   specification `[.prover T (OracleInterface.full T), .verifier C,
   .prover Z (OracleInterface.full Z)]`.
 * `SigmaProtocol.interactiveTranscript`, `SigmaProtocol.transcriptOfConversation`,
@@ -119,11 +120,6 @@ open scoped ENNReal
 variable {X Y T C Z : Type}
 
 /-! ### Specification and transcripts -/
-
-/-- The three-round public-coin specification of a Sigma protocol with commitments in `T`,
-challenges in `C` and responses in `Z`: prover commitment, verifier challenge, prover response. -/
-@[reducible] def sigmaSpec (T C Z : Type) : Interactive.Spec :=
-  [.prover T (OracleInterface.full T), .verifier C, .prover Z (OracleInterface.full Z)]
 
 /-- The interactive specification of `P`. -/
 abbrev interactiveSpec (_ : SigmaProtocol X Y T C Z) : Interactive.Spec := sigmaSpec T C Z
