@@ -1779,6 +1779,11 @@ theorem opCode_execWithin {U V w base n_max : ℕ} {θ : Seed U n_max}
   obtain ⟨n1, hn1, hex1⟩ := heval1
   obtain ⟨n2, hn2, hex2⟩ := he2
   obtain ⟨n3, hn3, hex3⟩ := he3
+  -- Either finishing branch closes the operation within its step bound.
+  have hclose : ∀ {y m}, Exec w (.branch (.eq 22 10) insertFinishCode queryFinishCode) x₃ y m →
+      n1 + (n2 + (n3 + m)) ≤ KWise.evalSteps n_max U (tableLog n_max) 5 + 12 * t + 27 →
+      ExecWithin w (opCode n_max) x y (KWise.evalSteps n_max U (tableLog n_max) 5 + 12 * t + 27) :=
+    fun he hm => ⟨_, hm, hex1.seq (hex2.seq (hex3.seq he))⟩
   cases o with
   | query u₀ =>
     have hu₀ : u₀ = u := rfl
@@ -1793,13 +1798,7 @@ theorem opCode_execWithin {U V w base n_max : ℕ} {θ : Seed U n_max}
         hx₃_6
         (by simpa only [ht_eq3, hx₃_mem_eq] using hx₃_9)
         hx₃_10 hfit_space hfit_V
-    have he_br : Exec w (.branch (.eq 22 10) insertFinishCode queryFinishCode) x₃ y (n4 + 2) :=
-      Exec.branch_neg hc_br hex4
-    have hall : Exec w (opCode n_max) x y (n1 + (n2 + (n3 + (n4 + 2)))) :=
-      hex1.seq (hex2.seq (hex3.seq he_br))
-    have hex_within : ExecWithin w (opCode n_max) x y
-        (KWise.evalSteps n_max U (tableLog n_max) 5 + 12 * t + 27) :=
-      ⟨_, by omega, hall⟩
+    have hex_within := hclose (Exec.branch_neg hc_br hex4) (by omega)
     have hymem_x : y.mem = x.mem := hymem.trans hx₃_mem_eq
     refine ⟨y, hex_within, hdec,
       ⟨hex_within.bounded hrep.bounded, hy0, hymem_x ▸ hrep.kwise_rep,
@@ -1814,13 +1813,7 @@ theorem opCode_execWithin {U V w base n_max : ℕ} {θ : Seed U n_max}
       insertFinishCode_execWithin u v p
         hx₃_0 hx₃_1 hx₃_2 hx₃_4 hx₃_5 hx₃_6 hx₃_10
         (hx₃_23_eq.trans harg.2.2) hfit_space
-    have he_br : Exec w (.branch (.eq 22 10) insertFinishCode queryFinishCode) x₃ y (n4 + 1) :=
-      Exec.branch_pos hc_br hex4
-    have hall : Exec w (opCode n_max) x y (n1 + (n2 + (n3 + (n4 + 1)))) :=
-      hex1.seq (hex2.seq (hex3.seq he_br))
-    have hex_within : ExecWithin w (opCode n_max) x y
-        (KWise.evalSteps n_max U (tableLog n_max) 5 + 12 * t + 27) :=
-      ⟨_, by omega, hall⟩
+    have hex_within := hclose (Exec.branch_pos hc_br hex4) (by omega)
     have hymem_x : y.mem = insertMem base n_max x.mem p u.val v := by
       rw [hymem, hx₃_mem_eq]
     have hp_lt : p.val < tableSize n_max := p.isLt
