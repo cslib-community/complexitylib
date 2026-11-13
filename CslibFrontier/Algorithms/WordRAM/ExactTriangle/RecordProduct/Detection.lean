@@ -43,7 +43,7 @@ theorem product_ne_zero_iff {m n g p : ℕ} (values : ℕ → ℤ)
   let X := leftMatrix m n g p values idx
   let Y := rightMatrix m n g p values idx
   let G := lopInstance wAB wBC wAC (D m) g p idx
-  let A := matrixArgs n (D m) g p idx.1.val idx.2.2
+  let A := matrixArgs n (D m) g p idx.residue.val idx.piece
   let Rleft (q : ℕ) := (values (2 * (n * n) + q) % (p : ℤ)).toNat
   let Rright (q : ℕ) := (values (n * n + q) % (p : ℤ)).toNat
   have hpad : A.length * p ≤ D m := pieceLength_mul_le_of_mem_sqrtPrimeWindow hg hp
@@ -56,15 +56,15 @@ theorem product_ne_zero_iff {m n g p : ℕ} (values : ℕ → ℤ)
     change (values (n * n + pairIndex (u, c)) % (p : ℤ)).toNat = _
     rw [hBC]
     rfl
-  have edges (c : Fin n) (hc : c ∈ piece n (D m) g idx.2.2)
+  have edges (c : Fin n) (hc : c ∈ piece n (D m) g idx.piece)
       (v : Fin A.length) (label : Fin p) (j : Fin (D m))
       (hv : A.first + v.val = c.val) (hj : j.val = v.val * p + label.val) :
       (X a j = 1 ↔ G.adjA a (⟨c, hc⟩, label)) ∧
       (Y j b = 1 ↔ G.adjB (⟨c, hc⟩, label) b) := by
-    have hl := MatrixSpec.left_lopInstance A Rleft wAB wBC wAC g idx.2.1 idx.2.2
-      idx.1 rfl a c v label hc hv hpad loadLeft
-    have hr := MatrixSpec.right_lopInstance A Rright wAB wBC wAC g idx.2.1 idx.2.2
-      idx.1 b c v label hc hv loadRight
+    have hl := MatrixSpec.left_lopInstance A Rleft wAB wBC wAC g idx.chunk idx.piece
+      idx.residue rfl a c v label hc hv hpad loadLeft
+    have hr := MatrixSpec.right_lopInstance A Rright wAB wBC wAC g idx.chunk idx.piece
+      idx.residue b c v label hc hv loadRight
     constructor
     · change (WriteMatrices.entry false A Rleft (a.val * D m + j.val) : ℤ) = 1 ↔ _
       rw [hj]
@@ -106,10 +106,10 @@ theorem product_ne_zero_iff {m n g p : ℕ} (values : ℕ → ℤ)
       change v.val < min (pieceSize (D m) g) (n - A.first) at hv
       omega
     let c : Fin n := ⟨A.first + v.val, hn⟩
-    have hc : c ∈ piece n (D m) g idx.2.2 := by
+    have hc : c ∈ piece n (D m) g idx.piece := by
       apply (mem_piece_iff_interval hD hg c).mpr
-      change idx.2.2 * pieceSize (D m) g ≤ A.first + v.val ∧
-        A.first + v.val < idx.2.2 * pieceSize (D m) g + A.length
+      change idx.piece * pieceSize (D m) g ≤ A.first + v.val ∧
+        A.first + v.val < idx.piece * pieceSize (D m) g + A.length
       change A.first ≤ A.first + v.val ∧ A.first + v.val < A.first + A.length
       exact ⟨by omega, Nat.add_lt_add_left v.isLt _⟩
     have he : j.val = v.val * p + label.val := by
@@ -151,11 +151,11 @@ theorem failed_occurrences_le {m n g p : ℕ} (values : ℕ → ℤ)
     (hAC : ∀ a c, values (2 * (n * n) + pairIndex (a, c)) = wAC a c)
     (idx : InstanceIndex p) (hidx : idx ∈ instanceIndices wAB (D m) g p)
     (qs : List (Fin n × Fin n)) (default : Fin n × Fin n) (hqs : qs.Nodup)
-    (hquery : ∀ q ∈ qs, q ∈ chunkOf wAB (D m) p idx.1 idx.2.1) :
+    (hquery : ∀ q ∈ qs, q ∈ chunkOf wAB (D m) p idx.residue idx.chunk) :
     Nat.count (fun i =>
       (leftMatrix m n g p values idx * rightMatrix m n g p values idx)
           (qs.getD i default).1 (qs.getD i default).2 ≠ 0 ∧
-        scanPiece wAB wBC wAC (D m) g idx.2.2
+        scanPiece wAB wBC wAC (D m) g idx.piece
           (qs.getD i default).1 (qs.getD i default).2 = none) qs.length ≤
       falsePositiveCount wAB wBC wAC p := by
   classical
@@ -164,7 +164,7 @@ theorem failed_occurrences_le {m n g p : ℕ} (values : ℕ → ℤ)
   let P (i : ℕ) : Prop :=
     (leftMatrix m n g p values idx * rightMatrix m n g p values idx)
         (qs.getD i default).1 (qs.getD i default).2 ≠ 0 ∧
-      scanPiece wAB wBC wAC (D m) g idx.2.2
+      scanPiece wAB wBC wAC (D m) g idx.piece
         (qs.getD i default).1 (qs.getD i default).2 = none
   let := Nat.CountSet.fintype P qs.length
   let failures := failedScans wAB wBC wAC (D m) g p ans

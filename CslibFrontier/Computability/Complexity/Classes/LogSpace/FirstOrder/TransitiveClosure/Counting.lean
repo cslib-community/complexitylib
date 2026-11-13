@@ -327,33 +327,56 @@ variable (B base E s₀ regs₀) in
 /-- The state before one test of inductive counting: registers below `base` as in `regs₀`, the
 round `i < n ^ k` in register `base`, its size in `base + 1`, and the candidate `y < n ^ k` in
 `base + 3`. -/
-def TestPre (i y : ℕ) (regs : List ℕ) : Prop :=
-  Kept B base regs₀ regs ∧ base + 9 + 4 * k ≤ regs.length ∧ regs.getD 0 0 = n ∧
-    regs.getD base 0 = i ∧ i < n ^ k ∧ regs.getD (base + 1) 0 = (countRound E s₀ i).card ∧
-    regs.getD (base + 3) 0 = y ∧ y < n ^ k
+structure TestPre (i y : ℕ) (regs : List ℕ) : Prop where
+  /-- The registers below `base` and the length are kept, and every register is bounded. -/
+  kept : Kept B base regs₀ regs
+  /-- The test's registers exist. -/
+  le_length : base + 9 + 4 * k ≤ regs.length
+  /-- The universe size is in register `0`. -/
+  size : regs.getD 0 0 = n
+  /-- The round is in register `base`. -/
+  round : regs.getD base 0 = i
+  /-- The round is below `n ^ k`. -/
+  round_lt : i < n ^ k
+  /-- The size of the round is in register `base + 1`. -/
+  card : regs.getD (base + 1) 0 = (countRound E s₀ i).card
+  /-- The candidate is in register `base + 3`. -/
+  cand : regs.getD (base + 3) 0 = y
+  /-- The candidate is below `n ^ k`. -/
+  cand_lt : y < n ^ k
 
 variable (B base E s₀) in
 /-- The scan invariant of a test: the codes selected so far are members of round `i` below `m`,
 counted in register `base + 5`, and register `base + 6` records whether one of them is `y` or
 an edge to `y`. -/
-private def ScanInv (i y x m : ℕ) (Sel : Finset ℕ) (regsT regs : List ℕ) : Prop :=
-  Kept B (base + 4) regsT regs ∧ regs.getD (base + 4) 0 = x ∧ Sel ⊆ countRound E s₀ i ∧
-    (∀ c ∈ Sel, c < m) ∧ regs.getD (base + 5) 0 = Sel.card ∧
-    regs.getD (base + 6) 0 = if ∃ c ∈ Sel, c = y ∨ codeEdge E c y = true then 1 else 0
+private structure ScanInv (i y x m : ℕ) (Sel : Finset ℕ) (regsT regs : List ℕ) : Prop where
+  /-- The registers below `base + 4` and the length are kept from the state `regsT` before the
+  test, and every register is bounded. -/
+  kept : Kept B (base + 4) regsT regs
+  /-- The scanned code is in register `base + 4`. -/
+  cur : regs.getD (base + 4) 0 = x
+  /-- The codes selected are members of round `i`. -/
+  subset : Sel ⊆ countRound E s₀ i
+  /-- The codes selected are below `m`. -/
+  lt_bound : ∀ c ∈ Sel, c < m
+  /-- The number of codes selected is in register `base + 5`. -/
+  count : regs.getD (base + 5) 0 = Sel.card
+  /-- Register `base + 6` records whether a selected code is `y` or an edge to `y`. -/
+  hit : regs.getD (base + 6) 0 = if ∃ c ∈ Sel, c = y ∨ codeEdge E c y = true then 1 else 0
 
-private theorem scan_facts {i y x m : ℕ} {Sel : Finset ℕ} {regsT regs : List ℕ}
-    (hpre : TestPre B base E s₀ regs₀ i y regsT)
-    (hinv : ScanInv B base E s₀ i y x m Sel regsT regs) :
-    Kept B base regs₀ regs ∧ base + 9 + 4 * k ≤ regs.length ∧ regs.getD 0 0 = regsT.getD 0 0 ∧
-      regs.getD base 0 = i ∧ regs.getD (base + 1) 0 = (countRound E s₀ i).card ∧
-      regs.getD (base + 3) 0 = y := by
-  obtain ⟨hk, hlen, -, hI, -, hC, hY, -⟩ := hpre
-  have hk' := hinv.1
-  refine ⟨hk.trans (hk'.mono (by omega)), by rw [hk'.length_eq]; exact hlen,
-    hk'.getD_eq 0 (by omega), ?_, ?_, ?_⟩
-  · rw [hk'.getD_eq _ (by omega), hI]
-  · rw [hk'.getD_eq _ (by omega), hC]
-  · rw [hk'.getD_eq _ (by omega), hY]
+/-- The state before a test persists through the scan, which writes only registers from
+`base + 4`. -/
+private theorem TestPre.of_kept {i y : ℕ} {regsT regs : List ℕ}
+    (hpre : TestPre B base E s₀ regs₀ i y regsT) (hk : Kept B (base + 4) regsT regs) :
+    TestPre B base E s₀ regs₀ i y regs where
+  kept := hpre.kept.trans (hk.mono (by omega))
+  le_length := by rw [hk.length_eq]; exact hpre.le_length
+  size := by rw [hk.getD_eq 0 (by omega), hpre.size]
+  round := by rw [hk.getD_eq _ (by omega), hpre.round]
+  round_lt := hpre.round_lt
+  card := by rw [hk.getD_eq _ (by omega), hpre.card]
+  cand := by rw [hk.getD_eq _ (by omega), hpre.cand]
+  cand_lt := hpre.cand_lt
 
 private theorem scan_start (hw : w₁ = b + 14 + 5 * k + wb.length)
     (hP : P.CodeAt b (countTestCode b base k src wb et ef T R)) {i y : ℕ} {regs : List ℕ}
@@ -397,8 +420,8 @@ private theorem scan_post {i y x m : ℕ} {regsT regs : List ℕ} (hy : y < n ^ 
     (hinv : ScanInv B base E s₀ i y x m (countRound E s₀ i) regsT regs) :
     Kept B (base + 4) regsT regs ∧
       regs.getD (base + 6) 0 = if y ∈ countRound E s₀ (i + 1) then 1 else 0 := by
-  refine ⟨hinv.1, ?_⟩
-  rw [hinv.2.2.2.2.2]
+  refine ⟨hinv.kept, ?_⟩
+  rw [hinv.hit]
   by_cases h : y ∈ countRound E s₀ (i + 1)
   · rw [ite_eq_left h, ite_eq_left ((mem_countRound_succ hy).mp h)]
   · rw [ite_eq_right h, ite_eq_right fun h' => h ((mem_countRound_succ hy).mpr h')]
@@ -414,14 +437,14 @@ private theorem scan_check_sound (hw : w₁ = b + 14 + 5 * k + wb.length)
         regs'.getD (base + 6) 0 = if y ∈ countRound E s₀ (i + 1) then 1 else 0) := by
   obtain ⟨-, -, -, -, -, -, -, -, -, -, -, -, -, -, -, -, -, -, -, -, -, h22⟩ :=
     countTestCode_parts hw hP
-  obtain ⟨-, -, -, -, hC, -⟩ := scan_facts hpre hinv
-  have hB := hinv.1.bounded
+  have hC := (hpre.of_kept hinv.kept).card
+  have hB := hinv.kept.bounded
   by_cases hS : Sel.card = (countRound E s₀ i).card
-  · have hsel : Sel = countRound E s₀ i := Finset.eq_of_subset_of_card_le hinv.2.2.1 hS.ge
+  · have hsel : Sel = countRound E s₀ i := Finset.eq_of_subset_of_card_le hinv.subset hS.ge
     subst hsel
-    exact Sound.of_oblivious hB1 (reaches_dist_eq h22 hB (by rw [hinv.2.2.2.2.1, hC]))
-      (Sound.exit (scan_post hpre.2.2.2.2.2.2.2 hinv))
-  · exact Sound.of_oblivious hB1 (reaches_dist_ne h22 hB (by rw [hinv.2.2.2.2.1, hC]; exact hS))
+    exact Sound.of_oblivious hB1 (reaches_dist_eq h22 hB (by rw [hinv.count, hC]))
+      (Sound.exit (scan_post hpre.cand_lt hinv))
+  · exact Sound.of_oblivious hB1 (reaches_dist_ne h22 hB (by rw [hinv.count, hC]; exact hS))
       (Sound.halt hB1 hR (fun _ => hPost _ rfl) hB)
 
 private theorem scan_check_complete (hw : w₁ = b + 14 + 5 * k + wb.length)
@@ -433,9 +456,9 @@ private theorem scan_check_complete (hw : w₁ = b + 14 + 5 * k + wb.length)
         regs'.getD (base + 6) 0 = if y ∈ countRound E s₀ (i + 1) then 1 else 0) := by
   obtain ⟨-, -, -, -, -, -, -, -, -, -, -, -, -, -, -, -, -, -, -, -, -, h22⟩ :=
     countTestCode_parts hw hP
-  obtain ⟨-, -, -, -, hC, -⟩ := scan_facts hpre hinv
-  exact Complete.of_oblivious (reaches_dist_eq h22 hinv.1.bounded (by rw [hinv.2.2.2.2.1, hC]))
-    (Complete.refl (scan_post hpre.2.2.2.2.2.2.2 hinv))
+  exact Complete.of_oblivious (reaches_dist_eq h22 hinv.kept.bounded
+    (by rw [hinv.count, (hpre.of_kept hinv.kept).card]))
+    (Complete.refl (scan_post hpre.cand_lt hinv))
 
 private theorem walk_dst {regs₂ : List ℕ} {x : ℕ} {xs : Fin k → Fin n}
     (h0 : regs₂.getD 0 0 = n) (hX : regs₂.getD (base + 4) 0 = x)
@@ -443,10 +466,8 @@ private theorem walk_dst {regs₂ : List ℕ} {x : ℕ} {xs : Fin k → Fin n}
     ∀ regs : List ℕ, (∀ j < base + 7 + 2 * k, regs.getD j 0 = regs₂.getD j 0) →
       ∀ j : Fin k, (digitE (base + 4) j).eval regs = xs j := by
   intro regs h j
-  have hd := finFunctionFinEquiv_symm_apply_val (finFunctionFinEquiv xs) j
-  rw [Equiv.symm_apply_apply, hxs] at hd
-  simp only [digitE, eval_mod, eval_div, eval_pow, eval_reg]
-  rw [h (base + 4) (by omega), h 0 (by omega), hX, h0, hd]
+  rw [ClosureKernel.eval_digitE ((h 0 (by omega)).trans h0) (finFunctionFinEquiv xs)
+    (by rw [h _ (by omega), hX, hxs]), Equiv.symm_apply_apply]
 
 private theorem walk_M {regs₂ : List ℕ} {i : ℕ} (hI : regs₂.getD base 0 = i) :
     ∀ regs : List ℕ, (∀ j < base + 7 + 2 * k, regs.getD j 0 = regs₂.getD j 0) →
@@ -610,7 +631,7 @@ private theorem scanInv_nohit {i y x : ℕ} {Sel : Finset ℕ} {regsT regs regs'
 private theorem scanInv_weaken {i y x m : ℕ} {Sel : Finset ℕ} {regsT regs : List ℕ}
     (h : ScanInv B base E s₀ i y x m Sel regsT regs) :
     ScanInv B base E s₀ i y x (m + 1) Sel regsT regs :=
-  ⟨h.1, h.2.1, h.2.2.1, fun c hc => (h.2.2.2.1 c hc).trans (Nat.lt_succ_self _), h.2.2.2.2⟩
+  { h with lt_bound := fun c hc => (h.lt_bound c hc).trans (Nat.lt_succ_self _) }
 
 private theorem scan_mid (hw : w₁ = b + 14 + 5 * k + wb.length)
     (hP : P.CodeAt b (countTestCode b base k src wb et ef T R)) (hNB : n ^ k ≤ B) {i y x : ℕ}
@@ -626,7 +647,7 @@ private theorem scan_mid (hw : w₁ = b + 14 + 5 * k + wb.length)
       regs₄.getD (base + 5) 0 = Sel.card + 1 ∧ regs₄.getD (base + 6) 0 = regs.getD (base + 6) 0 ∧
       (∀ j : Fin k, regs₄.getD (base + 7 + j) 0 = xs j) ∧
       ∀ j : Fin k, regs₄.getD (base + 7 + k + j) 0 = ys j := by
-  obtain ⟨hkR, hlen, -, -, -, hY⟩ := scan_facts hpre hinv
+  obtain ⟨hkR, hlen, -, -, -, -, hY, -⟩ := hpre.of_kept hinv.kept
   obtain ⟨-, hX, hsub, hlt, hS, -⟩ := hinv
   have hx : x ∉ Sel := fun h => Nat.lt_irrefl _ (hlt x h)
   have hcard : Sel.card + 1 ≤ B := by
@@ -695,22 +716,20 @@ private theorem scan_sound (hw : w₁ = b + 14 + 5 * k + wb.length)
           regs'.getD (base + 6) 0 = if y ∈ countRound E s₀ (i + 1) then 1 else 0) := by
   obtain ⟨-, -, -, -, -, h6, -, -, -, -, -, h12, h13, h14, h15, h16, h17, -, h19, -⟩ :=
     countTestCode_parts hw hP
-  have hiB : i ≤ B := by have := hpre.2.2.2.2.1; omega
-  have hy := hpre.2.2.2.2.2.2.2
+  have hiB : i ≤ B := by have := hpre.round_lt; omega
+  have hy := hpre.cand_lt
   intro e
   induction e with
   | zero =>
     intro x Sel regs he hinv
-    obtain ⟨-, -, h0, -, -, -⟩ := scan_facts hpre hinv
-    exact Sound.of_oblivious hB1 (scan_leave hw hP hinv.1.bounded (h0.trans hpre.2.2.1) hinv.2.1
-      (by omega)) (scan_check_sound hw hP hB1 hR hPost hpre hinv)
+    exact Sound.of_oblivious hB1 (scan_leave hw hP hinv.kept.bounded (hpre.of_kept hinv.kept).size
+      hinv.cur (by omega)) (scan_check_sound hw hP hB1 hR hPost hpre hinv)
   | succ e ih =>
     intro x Sel regs he hinv
-    obtain ⟨hkR, hlen, h0, hI, -, hY⟩ := scan_facts hpre hinv
-    have h0' : regs.getD 0 0 = n := h0.trans hpre.2.2.1
+    obtain ⟨hkR, hlen, h0', hI, -, -, hY, -⟩ := hpre.of_kept hinv.kept
     have hx : x < n ^ k := by omega
     have hxB : x + 1 ≤ B := by omega
-    have hB := hinv.1.bounded
+    have hB := hinv.kept.bounded
     have hnext : ∀ Sel' regs', ScanInv B base E s₀ i y x (x + 1) Sel' regsT regs' →
         base + 7 ≤ regs'.length →
         Sound P w B Post (w₁ + 9 + et.length + ef.length) regs' T (fun regs' =>
@@ -718,17 +737,17 @@ private theorem scan_sound (hw : w₁ = b + 14 + 5 * k + wb.length)
             regs'.getD (base + 6) 0 = if y ∈ countRound E s₀ (i + 1) then 1 else 0) :=
       fun Sel' regs' hinv' hlen' => scan_next_sound hw hP hB1 hinv' hlen' hxB
         fun regs'' hinv'' => ih (x + 1) Sel' regs'' (by omega) hinv''
-    refine Sound.of_oblivious hB1 (scan_enter hw hP hB h0' hinv.2.1 hx)
+    refine Sound.of_oblivious hB1 (scan_enter hw hP hB h0' hinv.cur hx)
       (Sound.choice hB1 h6 hB ?_ (hnext Sel regs (scanInv_weaken hinv) (by omega)))
     -- select `x`: decode, walk, count
     obtain ⟨regs₂, xs, ys, hr₂, hk₂, hxs, hys, hxs₂, hys₂⟩ := scan_decode (w := w) hw hP hnB hlen
-      h0' hB hinv.2.1 hx hY hy
+      h0' hB hinv.cur hx hY hy
     have hk₀₂ : Kept B base regs₀ regs₂ := hkR.trans (hk₂.mono (by omega))
     refine Sound.of_oblivious hB1 hr₂ ((walk_sound (i := i) (x := x) (xs := xs) hw hP hB1 hnB hNB hR
       hPost hsrc hwb hk₀₂
       (by rw [hk₂.length_eq]; omega) (by rw [hk₂.getD_eq 0 (by omega)]; exact h0')
       (by rw [hk₂.getD_eq _ (by omega)]; exact hI) hiB
-      (by rw [hk₂.getD_eq _ (by omega)]; exact hinv.2.1) hxs).bind fun regs₃ ⟨hk₃, hpath⟩ => ?_)
+      (by rw [hk₂.getD_eq _ (by omega)]; exact hinv.cur) hxs).bind fun regs₃ ⟨hk₃, hpath⟩ => ?_)
     have hmem : x ∈ countRound E s₀ i := by rw [← hxs]; exact mem_countRound_iff.mpr hpath
     obtain ⟨regs₄, hr₄, hk₄, hk₀₄, hlen₄, hX₄, hY₄, hS₄, hH₄, hxs₄, hys₄⟩ :=
       scan_mid (w := w) hw hP hNB hpre hinv hmem hk₂ hk₃ hxs₂ hys₂
@@ -787,28 +806,27 @@ private theorem scan_complete (hw : w₁ = b + 14 + 5 * k + wb.length)
           regs'.getD (base + 6) 0 = if y ∈ countRound E s₀ (i + 1) then 1 else 0) := by
   obtain ⟨-, -, -, -, -, h6, -, -, -, -, -, h12, h13, h14, h15, h16, h17, -, h19, -⟩ :=
     countTestCode_parts hw hP
-  have hiB : i ≤ B := by have := hpre.2.2.2.2.1; omega
-  have hy := hpre.2.2.2.2.2.2.2
+  have hiB : i ≤ B := by have := hpre.round_lt; omega
+  have hy := hpre.cand_lt
   intro e
   induction e with
   | zero =>
     intro x regs he hinv
-    obtain ⟨-, -, h0, -, -, -⟩ := scan_facts hpre hinv
+    have h0 := (hpre.of_kept hinv.kept).size
     have hfull : (countRound E s₀ i).filter (· < x) = countRound E s₀ i :=
       Finset.filter_true_of_mem fun c hc => by
         have := lt_of_mem_countRound hc
         change c < x
         omega
     rw [hfull] at hinv
-    exact Complete.of_oblivious (scan_leave hw hP hinv.1.bounded (h0.trans hpre.2.2.1) hinv.2.1
-      (by omega)) (scan_check_complete hw hP hpre hinv)
+    exact Complete.of_oblivious (scan_leave hw hP hinv.kept.bounded h0 hinv.cur (by omega))
+      (scan_check_complete hw hP hpre hinv)
   | succ e ih =>
     intro x regs he hinv
-    obtain ⟨hkR, hlen, h0, hI, -, hY⟩ := scan_facts hpre hinv
-    have h0' : regs.getD 0 0 = n := h0.trans hpre.2.2.1
+    obtain ⟨hkR, hlen, h0', hI, -, -, hY, -⟩ := hpre.of_kept hinv.kept
     have hx : x < n ^ k := by omega
     have hxB : x + 1 ≤ B := by omega
-    have hB := hinv.1.bounded
+    have hB := hinv.kept.bounded
     have hnext : ∀ regs', ScanInv B base E s₀ i y x (x + 1)
         ((countRound E s₀ i).filter (· < x + 1)) regsT regs' → base + 7 ≤ regs'.length →
         Complete P w (w₁ + 9 + et.length + ef.length) regs' T (fun regs' =>
@@ -818,9 +836,9 @@ private theorem scan_complete (hw : w₁ = b + 14 + 5 * k + wb.length)
         fun regs'' hinv'' => ih (x + 1) regs'' (by omega) hinv''
     by_cases hmem : x ∈ countRound E s₀ i
     · rw [InductiveCounting.filter_lt_succ_of_mem hmem] at hnext
-      refine Complete.choice (scan_enter hw hP hB h0' hinv.2.1 hx) (by omega) h6 (Or.inl ?_)
+      refine Complete.choice (scan_enter hw hP hB h0' hinv.cur hx) (by omega) h6 (Or.inl ?_)
       obtain ⟨regs₂, xs, ys, hr₂, hk₂, hxs, hys, hxs₂, hys₂⟩ := scan_decode (w := w) hw hP hnB
-        hlen h0' hB hinv.2.1 hx hY hy
+        hlen h0' hB hinv.cur hx hY hy
       have hk₀₂ : Kept B base regs₀ regs₂ := hkR.trans (hk₂.mono (by omega))
       have hpath : Relation.RelatesWithinSteps E s₀ xs i := by
         rw [← hxs] at hmem; exact mem_countRound_iff.mp hmem
@@ -828,7 +846,7 @@ private theorem scan_complete (hw : w₁ = b + 14 + 5 * k + wb.length)
         hsrc hwb hk₀₂
         (by rw [hk₂.length_eq]; omega) (by rw [hk₂.getD_eq 0 (by omega)]; exact h0')
         (by rw [hk₂.getD_eq _ (by omega)]; exact hI) hiB
-        (by rw [hk₂.getD_eq _ (by omega)]; exact hinv.2.1) hxs hpath).bind fun regs₃ hk₃ => ?_)
+        (by rw [hk₂.getD_eq _ (by omega)]; exact hinv.cur) hxs hpath).bind fun regs₃ hk₃ => ?_)
       obtain ⟨regs₄, hr₄, hk₄, hk₀₄, hlen₄, hX₄, hY₄, hS₄, hH₄, hxs₄, hys₄⟩ :=
         scan_mid (w := w) hw hP hNB hpre hinv hmem hk₂ hk₃ hxs₂ hys₂
       have hB₄ := hk₄.bounded
@@ -859,7 +877,7 @@ private theorem scan_complete (hw : w₁ = b + 14 + 5 * k + wb.length)
           (by rw [hk₅.getD_eq _ (by omega), hH₄]) fun h => h.elim hxy fun h' => hE (hedge.mp h'))
           (by rw [hk₄₅.length_eq]; omega)
     · rw [InductiveCounting.filter_lt_succ_of_notMem hmem] at hnext
-      exact Complete.choice (scan_enter hw hP hB h0' hinv.2.1 hx) (by omega) h6
+      exact Complete.choice (scan_enter hw hP hB h0' hinv.cur hx) (by omega) h6
         (Or.inr (hnext regs (scanInv_weaken hinv) (by omega)))
 
 /-- **Soundness of one test**: from the state before a test of `y` against round `i`, every
@@ -888,7 +906,7 @@ theorem test_sound (hw : w₁ = b + 14 + 5 * k + wb.length)
       Kept B (base + 4) regs regs' ∧
         regs'.getD (base + 6) 0 = if y ∈ countRound E s₀ (i + 1) then 1 else 0) := by
   obtain ⟨regs₁, hr₁, hinv₁⟩ := scan_start (w := w) (E := E) (s₀ := s₀) (i := i) (y := y) hw hP
-    (by have := hpre.2.1; omega) hpre.1.bounded
+    (by have := hpre.le_length; omega) hpre.kept.bounded
   exact Sound.of_oblivious hB1 hr₁ (scan_sound hw hP hB1 hnB hNB hR hPost hsrc hwb het hef hpre
     _ 0 ∅ regs₁ rfl hinv₁)
 
@@ -917,7 +935,7 @@ theorem test_complete (hw : w₁ = b + 14 + 5 * k + wb.length)
       Kept B (base + 4) regs regs' ∧
         regs'.getD (base + 6) 0 = if y ∈ countRound E s₀ (i + 1) then 1 else 0) := by
   obtain ⟨regs₁, hr₁, hinv₁⟩ := scan_start (w := w) (E := E) (s₀ := s₀) (i := i) (y := y) hw hP
-    (by have := hpre.2.1; omega) hpre.1.bounded
+    (by have := hpre.le_length; omega) hpre.kept.bounded
   have hempty : (countRound E s₀ i).filter (· < 0) = ∅ :=
     Finset.filter_false_of_mem fun c _ => Nat.not_lt_zero c
   rw [← hempty] at hinv₁
@@ -935,18 +953,32 @@ variable {P : CounterProgram} {w : List Bool} {B : ℕ} {Post : Config → Prop}
 variable (B base E s₀ regs₀) in
 /-- The invariant at the round head: round `i` with `i + 1 ≤ n ^ k` in register `base` and its
 size in register `base + 1`. -/
-private def RoundInv (i : ℕ) (regs : List ℕ) : Prop :=
-  Kept B base regs₀ regs ∧ base + 9 + 4 * k ≤ regs.length ∧ regs.getD 0 0 = n ∧
-    regs.getD base 0 = i ∧ i + 1 ≤ n ^ k ∧ regs.getD (base + 1) 0 = (countRound E s₀ i).card
+private structure RoundInv (i : ℕ) (regs : List ℕ) : Prop where
+  /-- The registers below `base` and the length are kept, and every register is bounded. -/
+  kept : Kept B base regs₀ regs
+  /-- The block's registers exist. -/
+  le_length : base + 9 + 4 * k ≤ regs.length
+  /-- The universe size is in register `0`. -/
+  size : regs.getD 0 0 = n
+  /-- The round is in register `base`. -/
+  round : regs.getD base 0 = i
+  /-- The next round is at most `n ^ k`. -/
+  succ_le : i + 1 ≤ n ^ k
+  /-- The size of the round is in register `base + 1`. -/
+  card : regs.getD (base + 1) 0 = (countRound E s₀ i).card
 
 variable (B base E s₀ regs₀) in
 /-- The invariant at the candidate head: also `i + 1 < n ^ k`, the candidate `y` in register
 `base + 3`, and the number of members of round `i + 1` below `y` (the `prefixCount` of
 inductive counting) in register `base + 2`. -/
-private def YInv (i y : ℕ) (regs : List ℕ) : Prop :=
-  RoundInv B base E s₀ regs₀ i regs ∧ i + 1 < n ^ k ∧
-    regs.getD (base + 2) 0 = prefixCount (n ^ k) (codeEdge E) (finFunctionFinEquiv s₀) i y ∧
-    regs.getD (base + 3) 0 = y
+private structure YInv (i y : ℕ) (regs : List ℕ) : Prop
+    extends RoundInv B base E s₀ regs₀ i regs where
+  /-- The next round is below `n ^ k`. -/
+  succ_lt : i + 1 < n ^ k
+  /-- The number of members of round `i + 1` below `y` is in register `base + 2`. -/
+  below : regs.getD (base + 2) 0 = prefixCount (n ^ k) (codeEdge E) (finFunctionFinEquiv s₀) i y
+  /-- The candidate is in register `base + 3`. -/
+  cand : regs.getD (base + 3) 0 = y
 
 /-- The exit of the candidate loop at `y = n ^ k`: store the size of round `i + 1` and advance
 to the next round head. -/
@@ -1138,7 +1170,7 @@ private theorem count_round_sound (hP : P.CodeAt b (countCode b base k dst t₁ 
   obtain ⟨-, -, -, -, -, -, -, -, -, -, -, -, -, c14⟩ := countCode_parts hP
   intro e
   induction e with
-  | zero => intro i regs he hinv; have := hinv.2.2.2.2.1; omega
+  | zero => intro i regs he hinv; have := hinv.succ_le; omega
   | succ e ih =>
     intro i regs he hinv
     by_cases hlt : i + 1 < n ^ k
@@ -1154,7 +1186,7 @@ private theorem count_round_sound (hP : P.CodeAt b (countCode b base k dst t₁ 
         cp_step [hH]
       · rw [ite_eq_right fun h => hreach (hmem.mp h)] at hH
         refine Sound.of_oblivious hB1 ?_
-          (Sound.exit ⟨hpre.1.trans (hk'.mono (by omega)), hreach⟩)
+          (Sound.exit ⟨hpre.kept.trans (hk'.mono (by omega)), hreach⟩)
         cp_step [hH]
 
 private theorem count_round_complete (hP : P.CodeAt b (countCode b base k dst t₁ t₂ T R))
@@ -1175,7 +1207,7 @@ private theorem count_round_complete (hP : P.CodeAt b (countCode b base k dst t�
   obtain ⟨-, -, -, -, -, -, -, -, -, -, -, -, -, c14⟩ := countCode_parts hP
   intro e
   induction e with
-  | zero => intro i regs he hinv; have := hinv.2.2.2.2.1; omega
+  | zero => intro i regs he hinv; have := hinv.succ_le; omega
   | succ e ih =>
     intro i regs he hinv
     by_cases hlt : i + 1 < n ^ k
@@ -1186,7 +1218,8 @@ private theorem count_round_complete (hP : P.CodeAt b (countCode b base k dst t�
       refine Complete.of_oblivious hr ((ht₂ i _ _ hpre).bind fun regs' ⟨hk', hH⟩ => ?_)
       rw [ite_eq_right fun h => hreach (hmem.mp h)] at hH
       have hB' := hk'.bounded
-      refine Complete.of_oblivious (B := B) ?_ (Complete.refl (hpre.1.trans (hk'.mono (by omega))))
+      refine Complete.of_oblivious (B := B) ?_
+        (Complete.refl (hpre.kept.trans (hk'.mono (by omega))))
       cp_step [hH]
 
 private theorem count_init (hP : P.CodeAt b (countCode b base k dst t₁ t₂ T R))

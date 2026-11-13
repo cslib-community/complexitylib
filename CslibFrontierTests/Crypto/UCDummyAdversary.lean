@@ -45,7 +45,7 @@ theorem askParty_polyBounded {AdvQ AdvR : Type} :
 
 /-- With no corruptions, the environment sees the functionality's bit, whatever the adversary. -/
 theorem eval_exec_askParty (b : Bool) {AdvQ AdvR : Type}
-    (S : Adversary 1 AdvQ AdvR ((Fin 1 × Unit) ⊕ Unit) (Option Bool ⊕ Unit)) (κ : ℕ)
+    (S : ExecAdversary 1 Unit Bool Unit Unit AdvQ AdvR) (κ : ℕ)
     (z : List Bool) : (exec (bitFunc b).toProtocol S ∅ askParty κ z).eval = PMF.pure b := by
   simp only [exec, Machine.run, Machine.link, askParty, execMachine, Machine.comp,
     Machine.closeProgram_bind, Machine.closeProgram_map, Machine.closeProgram_sample,
@@ -59,8 +59,8 @@ theorem eval_exec_askParty (b : Bool) {AdvQ AdvR : Type}
 
 /-- Every simulator of the dummy adversary loses with certainty. -/
 theorem advantage_dummy_bitFunc
-    (S : Adversary 1 ((Fin 1 × Unit) ⊕ Unit) (Option Bool ⊕ Unit) ((Fin 1 × Unit) ⊕ Unit)
-      (Option Bool ⊕ Unit)) (κ : ℕ) (z : List Bool) :
+    (S : Adversary 1 (RoutedNetQ 1 Unit Unit) (RoutedNetR Bool Unit) (RoutedNetQ 1 Unit Unit)
+      (RoutedNetR Bool Unit)) (κ : ℕ) (z : List Bool) :
     advantage (bitFunc true).toProtocol (bitFunc false).toProtocol (dummyAdversary 1 _ _) S ∅
       askParty κ z = 1 := by
   rw [advantage, eval_exec_askParty, eval_exec_askParty, Game.advantage_pure_false]
@@ -104,16 +104,16 @@ example {pZ p p' : Polynomial ℕ} (κ : ℕ) (h : ∀ κ', p.eval κ' ≤ p'.ev
 
 /-- An adversary relaying each environment query to the network twice and returning the second
 reply. -/
-def relay : Adversary 1 ((Fin 1 × Unit) ⊕ Unit) (Option Bool ⊕ Unit) ((Fin 1 × Unit) ⊕ Unit)
-    (Option Bool ⊕ Unit) := fun _ _ => {
+def relay : Adversary 1 (RoutedNetQ 1 Unit Unit) (RoutedNetR Bool Unit) (RoutedNetQ 1 Unit Unit)
+    (RoutedNetR Bool Unit) := fun _ _ => {
   State := Unit
   init := pure ()
   handle q := StateT.lift do
-    let _ ← ProbOracleComp.query (spec := netSpec _ (Option Bool ⊕ Unit)) q
-    ProbOracleComp.query (spec := netSpec _ (Option Bool ⊕ Unit)) q }
+    let _ ← ProbOracleComp.query (spec := netSpec _ (RoutedNetR Bool Unit)) q
+    ProbOracleComp.query (spec := netSpec _ (RoutedNetR Bool Unit)) q }
 
 /-- The relay's network port. -/
-abbrev relayNet : (Fin 1 × Unit) ⊕ Unit → Type := netSpec _ (Option Bool ⊕ Unit)
+abbrev relayNet : RoutedNetQ 1 Unit Unit → Type := netSpec _ (RoutedNetR Bool Unit)
 
 theorem relay_polyBounded : relay.PolyBounded 2 := fun κ C => by
   refine ⟨OracleComp.IsCostBounded.pure _ _, fun q s => ?_⟩
