@@ -19,8 +19,9 @@ import Mathlib.Tactic
 # Hard distributions for shallow formulas
 
 The first two steps of the proof of [ChukhinKulikovMihajlinSmal2026], Lemma 6.3 (printed p. 15;
-PDF p. 16). This is not Lemma 6.3 itself: its final step, rounding the distribution to a set, is
-not formalized here.
+PDF p. 16). This module supplies the first two steps;
+`CslibFrontier/Computability/Circuit/Boolean/HardSet.lean` completes Lemma 6.3 by rounding
+the distribution to a set using independent Bernoulli samples and Chernoff bounds.
 
 * **A hard distribution** (`exists_hardDistribution`). If `D(g) > d + 18 + 3 ⌈log₂ n⌉`, some
   distribution `μ` on `{0, 1}ⁿ` makes every formula of `binaryCost` depth at most `d` predict `g`
@@ -43,10 +44,9 @@ The source states the spread step for the formulas of depth at most `t ≤ d`; h
 to `d` are covered. The source's assumption that the support of `μ` has more than `K` points is not
 needed. If there are at most `K` points, they are all memorized and the accuracy would be one.
 
-Still missing for Lemma 6.3:
-* rounding `ν` to a random set `S` (including `x` with probability `K ν(x)`);
-* Bernstein's inequality for `w_h = Σ_{x ∈ S} (1[h(x) = g(x)] - 2/3)`;
-* the union bound over `depthFunctions n t` with `K = c_K 2^t log₂(4n + 4)`.
+The final rounding and finite union bound are proved in
+`CslibFrontier/Computability/Circuit/Boolean/HardSet.lean`. That module reuses Chernoff bounds
+instead of the source's Bernstein inequality and gives explicit constants for the full lemma.
 
 ## Main results
 
