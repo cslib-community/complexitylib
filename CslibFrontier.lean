@@ -6141,6 +6141,7 @@ public import CslibFrontier.Languages.Probabilistic.Presample
 public import CslibFrontier.Languages.Probabilistic.QueriesWith
 public import CslibFrontier.Languages.Probabilistic.QueryCount
 public import CslibFrontier.Languages.Probabilistic.QueryCount.Expected
+public import CslibFrontier.Languages.Probabilistic.QueryCount.Scale
 public import CslibFrontier.Languages.Probabilistic.QueryCount.Sum
 public import CslibFrontier.Languages.Probabilistic.QueryCount.Support
 public import CslibFrontier.Languages.Probabilistic.RandomOracle

@@ -69,8 +69,7 @@ variable {Query Query' α β : Type} {spec : Query → Type} {spec' : Query' →
 /-- A private sample is the sampled program itself. -/
 @[simp] theorem run_sample (program : ProbComp α) (O : (q : Query) → ProbComp (spec q)) :
     (sample program : ProbOracleComp spec α).run O = program := by
-  simp only [run, interpret_sample]
-  exact OracleComp.interpret_query_eq_self program
+  simp only [run, interpret_sample, ProbComp.interpret_unifFin]
 
 /-- Running a substituted program runs each handler program against the oracle, with the same
 fresh private coins. -/
