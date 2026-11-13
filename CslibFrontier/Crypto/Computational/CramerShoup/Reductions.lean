@@ -34,7 +34,9 @@ Section 12.5.3, Theorem 12.9, printed pp. 488–493][BonehShoup2023]:
    with their `IsPPTOn` certificates and `Game.advantage` bounds (`1 / 2 ^ n` per exponent draw)
    relative to exact uniform sampling on `ZMod (F.order d)`.
 2. **Phase 1/2 and collision-tracking decryption oracle handlers**: `cramerShoupPhase1Oracle`,
-   `cramerShoupPhase2Reply`, `cramerShoupPhase2Oracle`, and `cramerShoupCollisionPhase2Oracle`.
+   `cramerShoupPhase2Reply`, `cramerShoupPhase2Oracle`, and `cramerShoupCollisionPhase2Oracle`,
+   with `cramerShoupPhase2Guess` running the adversary's second stage against
+   `cramerShoupPhase2Oracle`.
 3. **Certified strict-PPT DDH distinguishers (`Game 1 → Game 2`, eq. (12.22), printed p. 492)**:
    `cramerShoupMsgToDDHDistinguisher`, `cramerShoupADToDDHDistinguisher`, and
    `cramerShoupToDDHDistinguisher`, with `DDHDistinguisher.IsPPT` certificates
@@ -297,6 +299,19 @@ def cramerShoupPhase2Oracle (hasAD : Bool) (H : F.Desc × List Bool → List Boo
     StateT Unit ProbComp (List Bool) :=
   fun s => pure (F.cramerShoupPhase2Reply hasAD H isElem d sk ct ad request.2, s)
 
+/-- Phase 2 of the CCA experiments for Cramer–Shoup: run `adversary.guess n state ct` with
+uniform coins and the decryption oracle `cramerShoupPhase2Oracle`, which rejects the challenge
+`(ct, ad)`, and return the adversary's guess bit. -/
+def cramerShoupPhase2Guess (hasAD : Bool) {Msg AD : Type} (H : F.Desc × List Bool → List Bool)
+    (isElem : F.Desc × List Bool → Bool) (d : F.Desc)
+    (sk : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) (adversary : ADCCA2AdversaryOf Msg AD)
+    (n : ℕ) (state ct ad : List Bool) : ProbComp Bool := do
+  let guessOut ← (OracleComp.interpret
+    (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
+      (F.cramerShoupPhase2Oracle hasAD H isElem d sk ct ad))
+    (adversary.guess n state ct)).run ()
+  return guessOut.1
+
 /-- Phase 2 collision-tracking oracle handler for `cramerShoupMsgToCollisionFinder`: replies with
 `cramerShoupCollisionPhase2Reply` and records `some (extractCramerShoupTuple q.1 q.2)` whenever
 `isCramerShoupCollision H d q.1 q.2 ct ad` holds (where `q = splitCramerShoupQuery hasAD req`). -/
@@ -413,7 +428,7 @@ private theorem isPPTOn_run_cramerShoupPhase1Oracle
       subst hresEq
       exact ⟨trivial, le_rfl, Nat.le_add_right _ _⟩)
 
-private theorem isPPTOn_run_cramerShoupPhase2Oracle
+private theorem isPPTOn_cramerShoupPhase2Guess
     (hasAD : Bool) {Msg AD : Type} {encMsg : Msg ↪ List Bool} {encAD : AD ↪ List Bool}
     {H : F.Desc × List Bool → List Bool} {isElem : F.Desc × List Bool → Bool}
     {adversary : ADCCA2AdversaryOf Msg AD}
@@ -429,11 +444,9 @@ private theorem isPPTOn_run_cramerShoupPhase2Oracle
     (hstate : ComputableInPolyTime state encIn encBits)
     (hct : ComputableInPolyTime ct encIn encBits)
     (had : ComputableInPolyTime ad encIn encBits) :
-    IsPPTOn encIn (encPair encBool (encFinEnum Unit))
-      (fun a => (OracleComp.interpret
-        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
-          (F.cramerShoupPhase2Oracle hasAD H isElem (d a) (sk a) (ct a) (ad a)))
-        (adversary.guess (n a) (state a) (ct a))).run ()) := by
+    IsPPTOn encIn encBool
+      (fun a => F.cramerShoupPhase2Guess hasAD H isElem (d a) (sk a) adversary (n a) (state a)
+        (ct a) (ad a)) := by
   have hp1 := ComputableInPolyTime.fst encIn encBits
   have hp2 := ComputableInPolyTime.snd encIn encBits
   have hreply := F.computableInPolyTime_cramerShoupPhase2Reply hasAD hH hisElem
@@ -444,19 +457,27 @@ private theorem isPPTOn_run_cramerShoupPhase2Oracle
     (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit))
   have hreplyIn := F.computableInPolyTime_cramerShoupPhase2Reply hasAD hH hisElem
     (hd.comp hE1) (hsk.comp hE1) (hct.comp hE1) (had.comp hE1) hE2.fst'.snd'
-  exact hA.guess.run_interpret_preprocess
-    (prepare := fun a : γ => (n a, state a, ct a)) (initial := fun _ => ())
-    (resources := fun a req =>
-      (F.cramerShoupPhase2Reply hasAD H isElem (d a) (sk a) (ct a) (ad a) req).length)
-    (hn.prod (hstate.prod hct)).tidy (hreplyIn.prod hE2.snd').isPPTOn
-    (ComputableInPolyTime.const ()).tidy (fun _ _ => True)
-    (fun _ => trivial) (ComputableInPolyTime.length_bits.comp hreply).tidy
-    (fun a request st _ result hresult => by
-      have hresEq : result =
-          (F.cramerShoupPhase2Reply hasAD H isElem (d a) (sk a) (ct a) (ad a) request.2, st) := by
-        simpa [cramerShoupPhase2Oracle] using hresult
-      subst hresEq
-      exact ⟨trivial, le_rfl, Nat.le_add_right _ _⟩)
+  have hrun : IsPPTOn encIn (encPair encBool (encFinEnum Unit))
+      (fun a => (OracleComp.interpret
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
+          (F.cramerShoupPhase2Oracle hasAD H isElem (d a) (sk a) (ct a) (ad a)))
+        (adversary.guess (n a) (state a) (ct a))).run ()) :=
+    hA.guess.run_interpret_preprocess
+      (prepare := fun a : γ => (n a, state a, ct a)) (initial := fun _ => ())
+      (resources := fun a req =>
+        (F.cramerShoupPhase2Reply hasAD H isElem (d a) (sk a) (ct a) (ad a) req).length)
+      (hn.prod (hstate.prod hct)).tidy (hreplyIn.prod hE2.snd').isPPTOn
+      (ComputableInPolyTime.const ()).tidy (fun _ _ => True)
+      (fun _ => trivial) (ComputableInPolyTime.length_bits.comp hreply).tidy
+      (fun a request st _ result hresult => by
+        have hresEq : result =
+            (F.cramerShoupPhase2Reply hasAD H isElem (d a) (sk a) (ct a) (ad a) request.2, st) := by
+          simpa [cramerShoupPhase2Oracle] using hresult
+        subst hresEq
+        exact ⟨trivial, le_rfl, Nat.le_add_right _ _⟩)
+  unfold cramerShoupPhase2Guess
+  exact hrun.bind_with
+    (ComputableInPolyTime.snd encIn (encPair encBool (encFinEnum Unit))).fst'.isPPTOn
 
 private theorem isPPTOn_run_cramerShoupCollisionPhase2Oracle
     (hasAD : Bool) {Msg AD : Type} {encMsg : Msg ↪ List Bool} {encAD : AD ↪ List Bool}
@@ -547,11 +568,7 @@ noncomputable def cramerShoupMsgToDDHDistinguisher
     if isElem (d, m₀) && isElem (d, m₁) then
       let m := if bit then m₁ else m₀
       let ct := F.encodeCramerShoupChallenge H d sk (F.encode d v) (F.encode d w) m ad
-      let guessOut ← (OracleComp.interpret
-        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
-          (F.cramerShoupPhase2Oracle hasAD H isElem d sk ct ad))
-        (adversary.guess n choice.2 ct)).run ()
-      return guessOut.1
+      F.cramerShoupPhase2Guess hasAD H isElem d sk adversary n choice.2 ct ad
     else
       return false
 
@@ -619,11 +636,9 @@ theorem isPPT_cramerShoupMsgToDDHDistinguisher
   have hct := (F.computableInPolyTime_encodeCramerShoupChallenge hH).comp
     (hd2.prod (hp2.fst'.snd'.prod ((hv0.comp hp2.fst'.fst').prod
       ((hw0.comp hp2.fst'.fst').prod (hm.prod had)))))
-  have hphase2 := F.isPPTOn_run_cramerShoupPhase2Oracle hasAD hH hisElem hA
+  have hphase2 := F.isPPTOn_cramerShoupPhase2Guess hasAD hH hisElem hA
     (hn0.comp hp2.fst'.fst') hd2 hp2.fst'.snd' hp2.snd'.fst'.snd' hct had
-  exact hsk.bind_with (hphase1.bind_with (IsPPTOn.cond' hvalid
-    (hphase2.bind_with ((ComputableInPolyTime.snd
-      (encPair E1 EChoice) (encPair encBool (encFinEnum Unit))).fst').isPPTOn)
+  exact hsk.bind_with (hphase1.bind_with (IsPPTOn.cond' hvalid hphase2
     (ComputableInPolyTime.isPPTOn (.const false))))
 
 /-- `cramerShoupADToDDHDistinguisher` is uniform strict PPT whenever `H` and `isElem` are

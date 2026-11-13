@@ -212,11 +212,7 @@ noncomputable def cramerShoupMsgCCA2Game
       (F.encode d (csPkU pkVal), F.encode d (csPkH pkVal),
         F.encode d (csPkH₁ pkVal), F.encode d (csPkH₂ pkVal))
       m ad β.val
-    let guessOut ← ProbComp.eval ((OracleComp.interpret
-      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
-        (F.cramerShoupPhase2Oracle hasAD H isElem d sk ct ad))
-      (adversary.guess n choice.2 ct)).run ())
-    return guessOut.1
+    ProbComp.eval (F.cramerShoupPhase2Guess hasAD H isElem d sk adversary n choice.2 ct ad)
   else
     return false
 
@@ -330,11 +326,7 @@ noncomputable def cramerShoupChallengeGame
   if isElem (d, m₀) && isElem (d, m₁) then
     let m := if bit then m₁ else m₀
     let ct := F.encodeCramerShoupChallenge H d sk v w m ad
-    let guessOut ← ProbComp.eval ((OracleComp.interpret
-      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
-        (F.cramerShoupPhase2Oracle hasAD H isElem d sk ct ad))
-      (adversary.guess n choice.2 ct)).run ())
-    return guessOut.1
+    ProbComp.eval (F.cramerShoupPhase2Guess hasAD H isElem d sk adversary n choice.2 ct ad)
   else
     return false
 
@@ -414,7 +406,7 @@ private theorem advantage_eval_cramerShoupMsgToDDHDistinguisher_le
           (α • F.generator d) (β • F.generator d) (γ • F.generator d)))
       (F.cramerShoupChallengeGame hasAD encodeMsg encodeAD H isElem adversary bit n d α β γ) ≤
       6 / 2 ^ n := by
-  unfold cramerShoupChallengeGame cramerShoupMsgToDDHDistinguisher
+  unfold cramerShoupChallengeGame cramerShoupMsgToDDHDistinguisher cramerShoupPhase2Guess
   simp only [pmf_norm]
   refine F.advantage_bind_sampleCramerShoupSK_le n d _ _ fun s t s₁ t₁ s₂ t₂ => ?_
   rw [F.encodeCramerShoupPublicKey_eq_skNatOfZMod d α ((s, t), ((s₁, t₁), (s₂, t₂))),
@@ -549,13 +541,11 @@ private theorem advantage_cramerShoupGame2_game3_le_exactCollision
     let ad := encodeAD (d, csChoiceAD choiceOut.1)
     let ct := F.encodeCramerShoupChallenge H d sk v w m ad
     have hrun :
-        (ProbComp.eval ((OracleComp.interpret
-          (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
-            (F.cramerShoupPhase2Oracle hasAD H isElem d sk ct ad))
-          (adversary.guess n (csChoiceState choiceOut.1) ct)).run ())).bind
-            (fun guessOut => PMF.pure guessOut.1) =
+        ProbComp.eval (F.cramerShoupPhase2Guess hasAD H isElem d sk adversary n
+            (csChoiceState choiceOut.1) ct ad) =
         runStatelessOracle (F.cramerShoupPhase2Reply hasAD H isElem d sk ct ad)
-          (adversary.guess n (csChoiceState choiceOut.1) ct) PMF.pure := rfl
+          (adversary.guess n (csChoiceState choiceOut.1) ct) PMF.pure := by
+      rw [cramerShoupPhase2Guess, ProbComp.eval_bind]; rfl
     rw [hrun]
     refine runStatelessOracle_le_runFinderOracle
       (F.cramerShoupPhase2Reply hasAD H isElem d sk ct ad)
@@ -1172,11 +1162,8 @@ private noncomputable def cramerShoupCCA2InnerB
   let ct := F.encodeCramerShoupEncrypt H d
     (F.encode d (csPkU pkVal), F.encode d (csPkH pkVal),
       F.encode d (csPkH₁ pkVal), F.encode d (csPkH₂ pkVal)) m adBits β.val
-  (ProbComp.eval ((OracleComp.interpret
-    (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
-      (F.cramerShoupPhase2Oracle hasAD H isElem d sk ct adBits))
-    (adversary.guess n (csChoiceState choiceOut.1) ct)).run ())).bind
-    (fun guessOut => PMF.pure guessOut.1)
+  ProbComp.eval
+    (F.cramerShoupPhase2Guess hasAD H isElem d sk adversary n (csChoiceState choiceOut.1) ct adBits)
 
 private noncomputable def cramerShoupCCA2InnerSK
     (hasAD : Bool) {AD : Type} (encodeAD : F.Desc × AD → List Bool)
@@ -1328,7 +1315,8 @@ private theorem cramerShoupCCA2InnerSK_false_eq
   refine congrArg _ (funext fun choiceOut => ?_)
   by_cases h : (isElem (d, csChoiceMsg₀ choiceOut.1) && isElem (d, csChoiceMsg₁ choiceOut.1)) = true
   · simp only [pmf_norm, h, ↓reduceIte, Bool.false_eq_true,
-      F.decodeBits4_dropFrame_encodeCramerShoupPublicKey, cramerShoupCCA2InnerB]
+      F.decodeBits4_dropFrame_encodeCramerShoupPublicKey, cramerShoupCCA2InnerB,
+      cramerShoupPhase2Guess]
     refine congrArg _ (funext fun b => ?_)
     have hct :=
       F.encodeCramerShoupEncrypt_skNatOfZMod H d (a : ZMod (F.order d))
