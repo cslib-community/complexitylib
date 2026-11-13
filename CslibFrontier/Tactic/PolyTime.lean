@@ -388,7 +388,7 @@ looks for a universe in the type of a term, which unfolding a `Prop`-valued cons
 produces. A module cannot change the reducible status of an imported constant without
 `allowUnsafeReducibility`; a change to that status, or to a constant that is not `Prop`-valued,
 makes the invocation classify imported declarations itself. `[local irreducible]
-ComputableInPolyTime` keeps the shared classifications. -/
+ComputableTidilyInPolyTime` keeps the shared classifications. -/
 private meta def importedClassificationsStable : MetaM Bool := do
   let env ← getEnv
   let state := reducibilityExtraExt.getState env

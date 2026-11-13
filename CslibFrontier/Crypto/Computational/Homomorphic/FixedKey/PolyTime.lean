@@ -42,7 +42,7 @@ are polynomially bounded as a consequence of the generator certificate.
   construction][Gentry2009]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Homomorphic.FixedKey
 

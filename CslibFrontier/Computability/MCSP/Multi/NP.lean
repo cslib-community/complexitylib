@@ -339,8 +339,6 @@ private theorem certLength_le (x : Instance) :
 
 open ComputableInPolyTime
 
-attribute [local irreducible] ComputableInPolyTime
-
 /-- `accepts`, with its arguments computed in polynomial time, is polynomial-time when the
 enumeration of `2 ^ testArity n m` inputs is polynomially bounded in the input length. -/
 private theorem computableInPolyTime_accepts {γ : Type} {encIn : γ ↪ List Bool}

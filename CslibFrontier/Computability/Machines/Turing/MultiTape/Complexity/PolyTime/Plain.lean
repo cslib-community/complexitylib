@@ -109,7 +109,7 @@ deciding membership, the form used by the classes in `Cslib.Complexity`.
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM
 

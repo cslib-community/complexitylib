@@ -48,7 +48,7 @@ identity, constants, functions on finite types and changes of representation.
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
 -/
 
-@[expose] public section
+public section
 
 namespace Turing.MultiTapeTM
 

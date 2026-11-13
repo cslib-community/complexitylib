@@ -45,7 +45,7 @@ generated circuit, so no separate runtime assumption on the base decryption func
 * [C. Gentry, *Fully homomorphic encryption using ideal lattices*, Section 2][Gentry2009]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Homomorphic.Leveled
 
