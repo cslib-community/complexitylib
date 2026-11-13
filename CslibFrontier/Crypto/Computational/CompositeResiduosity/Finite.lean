@@ -21,9 +21,8 @@ receives the challenge as a unit of `ZMod (N ^ 2)`; there are no encodings, secu
 setup. Each world is an `Experiment`, read as the challenger's steps.
 
 The asymptotic assumption `DCR`, over a law on balanced moduli and strict-PPT distinguishers on
-encoded inputs, is in `CslibFrontier/Crypto/Computational/CompositeResiduosity.lean`. There,
-`dcrRealGame_eq_withSetup` and `dcrIdealGame_eq_withSetup` show that its games draw a modulus and
-run these experiments.
+encoded inputs, is in `CslibFrontier/Crypto/Computational/CompositeResiduosity.lean`. Its games
+`dcrRealGame` and `dcrRandomGame` draw a modulus and run these experiments.
 
 ## Main definitions
 
@@ -77,7 +76,7 @@ modulo `N` sends the uniform unit modulo `N ^ 2` to the uniform unit modulo `N`.
 theorem eval_dcrRealExperiment (D : (ZMod (N ^ 2))ˣ → Experiment) :
     ProbComp.eval (dcrRealExperiment N D) =
       (PMF.uniformOfFintype (ZMod N)ˣ).bind fun r => ProbComp.eval (D (powSelfHom N r)) := by
-  -- TODO: use `uniformOfFintype_map_monoidHom` (readability/facts-uniform) once it lands.
+  -- TODO: use `uniformOfFintype_map_monoidHom` once #4891 lands.
   have hmap : (PMF.uniformOfFintype (ZMod (N ^ 2))ˣ).map
       (ZMod.unitsMap (dvd_pow_self N two_ne_zero)) = PMF.uniformOfFintype (ZMod N)ˣ := by
     rw [← Probability.PMF.uniformOfFintype_map_equiv

@@ -188,22 +188,13 @@ Theorem 15.13): on challenge `y`, run the chosen-plaintext experiment for bit `b
 
 variable {N}
 
-/-- With every pair admissible, the left-or-right experiment runs the challenge on the chosen
-pair. -/
-private theorem eval_lrExperiment_true {I₁ M C σ : Type} (enc : I₁ → M → ProbComp C)
-    (A : TwoStage I₁ (MessagePair M) C Bool σ) (b : Bool) (x : I₁) :
-    ProbComp.eval (lrExperiment (fun _ _ _ => true) enc A b x) =
-      (ProbComp.eval (A.choose x)).bind fun p =>
-        (ProbComp.eval (enc x (p.1.select b))).bind fun c => ProbComp.eval (A.guess p.2 c) := by
-  simp only [lrExperiment, ProbComp.eval_bind, ite_true]
-
 /-- A real DCR challenge gives the reduction the chosen-plaintext experiment. -/
 theorem eval_dcrRealExperiment_paillierToDCR {σ : Type}
     (A : TwoStage ℕ (MessagePair (ZMod N)) (ZMod (N ^ 2))ˣ Bool σ) (b : Bool) :
     ProbComp.eval (dcrRealExperiment N (paillierToDCR N A b)) =
       ProbComp.eval (paillierCPAExperiment N A b) := by
   simp only [eval_dcrRealExperiment, paillierToDCR, paillierCPAExperiment,
-    eval_lrExperiment_true, paillierEncrypt, ProbComp.eval_bind, ProbComp.eval_pure,
+    eval_lrExperiment, ite_true, paillierEncrypt, ProbComp.eval_bind, ProbComp.eval_pure,
     ProbComp.eval_uniform, PMF.pure_bind]
   rw [PMF.bind_comm]
   simp only [PMF.bind_bind, PMF.pure_bind]
@@ -218,8 +209,8 @@ theorem eval_dcrRandomExperiment_paillierToDCR {σ : Type}
       (ProbComp.eval (A.choose N)).bind fun p =>
         (PMF.uniformOfFintype (ZMod (N ^ 2))ˣ).bind fun y => ProbComp.eval (A.guess p.2 y) := by
     intro b
-    simp only [dcrRandomExperiment, paillierToDCR, eval_lrExperiment_true, ProbComp.eval_bind,
-      ProbComp.eval_pure, ProbComp.eval_uniform, PMF.pure_bind]
+    simp only [dcrRandomExperiment, paillierToDCR, eval_lrExperiment, ite_true,
+      ProbComp.eval_bind, ProbComp.eval_pure, ProbComp.eval_uniform, PMF.pure_bind]
     rw [PMF.bind_comm]
     congr 1
     funext p

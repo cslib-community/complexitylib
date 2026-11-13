@@ -118,7 +118,7 @@ theorem isPPTOn_constDistinguisher :
 negligible advantage. -/
 example (setup : ℕ → PMF Desc) (h : DCR setup) :
     Negligible (fun n => Game.advantage (dcrRealGame setup (fun _ _ => pure true) n)
-      (dcrIdealGame setup (fun _ _ => pure true) n)) :=
+      (dcrRandomGame setup (fun _ _ => pure true) n)) :=
   h (fun _ _ => pure true) isPPTOn_constDistinguisher
 
 /-! ### IND-CPA security under decisional composite residuosity -/
@@ -195,12 +195,6 @@ example : paillierCPAAdvantage 143 constTwoStage ≤
     dcrAdvantage 143 (paillierToDCR 143 constTwoStage false) +
       dcrAdvantage 143 (paillierToDCR 143 constTwoStage true) :=
   paillierCPAAdvantage_le_dcrAdvantage constTwoStage
-
-/-- The DCR games draw a modulus and run the fixed-modulus experiments. -/
-example (setup : ℕ → PMF Desc) (n : ℕ) :
-    dcrRealGame setup (fun _ _ => pure true) n =
-      Game.withSetup (setup n) fun d => dcrRealExperiment d.modulus fun _ => pure true :=
-  dcrRealGame_eq_withSetup setup _ n
 
 /-! ### Axiom guards for headline results -/
 

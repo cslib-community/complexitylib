@@ -397,7 +397,7 @@ Construction 15.11, Example 15.12, Theorem 15.13, and Definition 15.14; checked 
 A balanced modulus is a product `N = p * q` of distinct odd primes of the same bit length
 (`BalancedModulus.Valid (p, q)`). The Decisional Composite Residuosity assumption
 `DCR setup` ([katzlindell20][katzlindell20], Definition 15.10) compares `dcrRealGame` (drawing an
-`N`-th residue `r ^ N mod N ^ 2` for a uniform unit `r`) against `dcrIdealGame` (drawing a uniform
+`N`-th residue `r ^ N mod N ^ 2` for a uniform unit `r`) against `dcrRandomGame` (drawing a uniform
 unit modulo `N ^ 2`) under `Game.Indistinguishable` against uniform strict-PPT distinguishers
 `IsPPTOn (encPair encUnary (encPair encNat encNat)) encBool`. The parameter `setup : ℕ → PMF Desc`
 is arbitrary: prime factor generation is not constructed, and equal factor bit lengths are not
@@ -438,9 +438,8 @@ second condition of Definition 15.14 holds: multiplying any encryption of `m₁`
 encryption of `m₂` gives exactly a fresh encryption of `m₁ + m₂` (`eval_mul_paillierEncrypt`,
 `eval_paillierEncrypt_mul_paillierEncrypt`). The fixed-modulus DCR worlds `dcrRealExperiment N D`
 and `dcrRandomExperiment N D` are in
-[`CompositeResiduosity/Finite.lean`](../../CslibFrontier/Crypto/Computational/CompositeResiduosity/Finite.lean);
-`dcrRealGame_eq_withSetup` and `dcrIdealGame_eq_withSetup` show that the asymptotic games draw a
-modulus and run them. `paillierCPAExperiment N A b` is the left-or-right experiment
+[`CompositeResiduosity/Finite.lean`](../../CslibFrontier/Crypto/Computational/CompositeResiduosity/Finite.lean),
+and the asymptotic games `dcrRealGame` and `dcrRandomGame` are `Game.withSetup` over them. `paillierCPAExperiment N A b` is the left-or-right experiment
 `lrExperiment` against a two-stage adversary `A : TwoStage ℕ (MessagePair (ZMod N)) (ZMod (N ^ 2))ˣ
 Bool σ` that receives the public key `N`. `paillierCPAAdvantage_le_dcrAdvantage` bounds its
 advantage by `dcrAdvantage N (paillierToDCR N A false) + dcrAdvantage N (paillierToDCR N A true)`,
