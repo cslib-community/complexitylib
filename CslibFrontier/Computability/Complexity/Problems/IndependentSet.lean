@@ -124,11 +124,11 @@ namespace SAT
 /-! ### Karp's reduction -/
 
 /-- The vertex of an occurrence. -/
-def _root_.Cslib.Logic.PL.Occurrence.vertex (o : Occurrence ℕ) : ℕ := Nat.pair o.1 o.2.1
+def _root_.Cslib.Logic.PL.Occurrence.vertex (o : Occurrence ℕ) : ℕ := Nat.pair o.clause o.pos
 
 /-- Two occurrences conflict when they are in the same clause or are complementary. -/
 def _root_.Cslib.Logic.PL.Occurrence.Conflict (o o' : Occurrence ℕ) : Prop :=
-  (o.1 = o'.1 ∧ o.2.1 ≠ o'.2.1) ∨ (o.2.2.1 = o'.2.2.1 ∧ o.2.2.2 ≠ o'.2.2.2)
+  (o.clause = o'.clause ∧ o.pos ≠ o'.pos) ∨ (o.lit.1 = o'.lit.1 ∧ o.lit.2 ≠ o'.lit.2)
 
 instance : DecidableRel Occurrence.Conflict := fun _ _ => by
   unfold Occurrence.Conflict; infer_instance
@@ -203,17 +203,17 @@ theorem exists_card_add_countUnsat_le {φ : CNF ℕ} {S : Finset ℕ}
     rw [hocc_vertex u hu, hocc_vertex v hv] at this
     exact hS hu hv huv this
   -- Distinct chosen occurrences lie in distinct clauses.
-  have hinj : Set.InjOn (fun v => (occ v).1) S := by
+  have hinj : Set.InjOn (fun v => (occ v).clause) S := by
     intro u hu v hv h
     by_contra huv
     refine hadj u hu v hv huv (Or.inl ⟨h, fun hj => huv ?_⟩)
     rw [← hocc_vertex u hu, ← hocc_vertex v hv]
     simp [Occurrence.vertex, h, hj]
   -- The assignment making the chosen positive literals true.
-  let σ : ℕ → Bool := fun x => decide (∃ v ∈ S, (occ v).2.2 = (x, true))
+  let σ : ℕ → Bool := fun x => decide (∃ v ∈ S, (occ v).lit = (x, true))
   -- It satisfies the clause of every chosen occurrence.
   have hsat : ∀ v ∈ S, ((φ.zipIdx.filter fun c => c.1.eval σ).map Prod.snd).contains
-      (occ v).1 = true := by
+      (occ v).clause = true := by
     intro v hv
     have hov := hocc_mem v hv
     rcases hocc : occ v with ⟨i, j, x, b⟩
@@ -239,7 +239,7 @@ theorem exists_card_add_countUnsat_le {φ : CNF ℕ} {S : Finset ℕ}
     exact ⟨(φ[i], i), ⟨List.mem_zipIdx_iff_getElem?.2 (by simp [hi]), heval⟩, rfl⟩
   refine ⟨σ, ?_⟩
   have hcard : S.card ≤ φ.countP fun c => c.eval σ := by
-    calc S.card = (S.image fun v => (occ v).1).card := (Finset.card_image_of_injOn hinj).symm
+    calc S.card = (S.image fun v => (occ v).clause).card := (Finset.card_image_of_injOn hinj).symm
       _ ≤ ((φ.zipIdx.filter fun c => c.1.eval σ).map Prod.snd).toFinset.card := by
           refine Finset.card_le_card fun i hi => ?_
           obtain ⟨v, hv, rfl⟩ := Finset.mem_image.1 hi
@@ -274,7 +274,7 @@ theorem toIndependentSet_mem_iff (φ : CNF ℕ) : toIndependentSet φ ∈ Indepe
       obtain ⟨j, hj, rfl⟩ := List.getElem_of_mem hl
       exact ⟨⟨j, hj⟩, hσl⟩
     choose J hJ using hcl
-    let o : Fin φ.length → Occurrence ℕ := fun i => (i, J i, φ[i][J i])
+    let o : Fin φ.length → Occurrence ℕ := fun i => ⟨i, J i, φ[i][J i]⟩
     have ho : ∀ i, o i ∈ occurrences φ := fun i => mem_occurrences.2 ⟨i.2, (J i).2, rfl⟩
     have hoinj : Function.Injective fun i => (o i).vertex := by
       intro i i' h
@@ -304,7 +304,7 @@ theorem toIndependentSet_mem_iff (φ : CNF ℕ) : toIndependentSet φ ∈ Indepe
 @[fun_prop]
 theorem _root_.Cslib.Logic.PL.Occurrence.computableInPolyTime_vertex :
     ComputableInPolyTime Occurrence.vertex encOccurrence encNat := by
-  unfold Occurrence.vertex encOccurrence Cslib.Logic.PL.encOccurrence
+  unfold Occurrence.vertex
   exact unary_to_binary.comp (by fun_prop)
 
 /-- Testing whether two occurrences conflict is polynomial-time. -/
@@ -312,7 +312,7 @@ theorem _root_.Cslib.Logic.PL.Occurrence.computableInPolyTime_vertex :
 theorem _root_.Cslib.Logic.PL.Occurrence.computableInPolyTime_conflict :
     ComputableInPolyTime (fun p : Occurrence ℕ × Occurrence ℕ => decide (p.1.Conflict p.2))
       (encPair encOccurrence encOccurrence) encBool := by
-  unfold Occurrence.Conflict encOccurrence Cslib.Logic.PL.encOccurrence
+  unfold Occurrence.Conflict
   fun_prop
 
 /-- Karp's reduction `toIndependentSet` is computable in polynomial time. -/
