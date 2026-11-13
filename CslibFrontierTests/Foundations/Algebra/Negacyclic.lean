@@ -9,9 +9,9 @@ import Mathlib.Data.Fin.VecNotation
 import Mathlib.Data.ZMod.Defs
 import Mathlib.Tactic.FinCases
 
-/-! Checked computations in the negacyclic ring `Negacyclic R n = R[X] / (X^n + 1)`: the wrap
-`X^n = -1`, a product that differs from the pointwise one, the unit and constants, the zero ring
-at `n = 0`, cardinality, and `innerPoly` as a dot product. -/
+/-! Checked computations in the negacyclic ring `Negacyclic R n`, which is `R[X] / (X^n + 1)` for
+`n ≠ 0`: the wrap `X^n = -1`, a product that differs from the pointwise one, the unit and
+constants, the chosen zero ring at `n = 0`, cardinality, and `innerPoly` as a dot product. -/
 
 namespace CslibFrontierTests.Foundations.Algebra.Negacyclic
 
@@ -46,7 +46,7 @@ example : (7 : Negacyclic ℤ 2).coeffs = ![7, 0] := by
   ext i
   fin_cases i <;> simp
 
-/-- At `n = 0` the ring is the zero ring. -/
+/-- At `n = 0` the ring is the zero ring by choice; the quotient `ℤ[X] / (2)` is not. -/
 example : (1 : Negacyclic ℤ 0) = 0 := by decide
 
 example : Fintype.card (Negacyclic (ZMod 3) 2) = 9 := by

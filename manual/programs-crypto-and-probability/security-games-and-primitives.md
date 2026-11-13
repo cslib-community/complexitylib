@@ -61,7 +61,9 @@ The negacyclic ring `R[X]/(X^n + 1)` on coefficient vectors lives in
 independently of any cryptographic definition. It provides the coefficient-vector operations
 `rotMatrix`, `negacyclicMul` and `innerPoly` together with their algebra and coefficient
 bounds, and the typed ring `Negacyclic R n`: a one-field structure around `coeffs : Fin n → R`
-whose `*` is `negacyclicMul`, a commutative ring and `R`-algebra for commutative `R`.
+whose `*` is `negacyclicMul`, a commutative ring and `R`-algebra for commutative `R`. It
+represents the quotient for `n ≠ 0`; at `n = 0` it is the zero ring, a chosen zero-dimensional
+extension, since the quotient there is `R[X]/(2)`.
 `Negacyclic` is a structure rather than a synonym for `Fin n → R`, so the pointwise product of
 the function type cannot be used by mistake. Move between the two views with `ofCoeffs`,
 `coeffs` and `coeffsLinearEquiv`; `coeffs_mul` and `ofCoeffs_innerPoly` translate products and
@@ -81,7 +83,7 @@ needs the quotient. `negacyclicEquiv_mulVec` then carries any such product entry
 quotient ring. The checked examples in
 [`NegacyclicPolynomial.lean`](../../CslibFrontierTests/Crypto/NegacyclicPolynomial.lean) include
 integers, composite modulus `6`, characteristic `2`, dimension `1`, and reflection of the
-Module-SIS zero equation. Dimension zero is excluded because its quotient is `R/(2)`, while
+Module-SIS zero equation. Dimension zero is excluded because its quotient is `R[X]/(2)`, while
 `Negacyclic R 0` is the zero ring. This algebraic bridge adds no hardness or runtime claim.
 
 The pure coefficient identity `negacyclicMul_eq_coeff_mul` is available separately in
