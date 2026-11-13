@@ -107,8 +107,10 @@ In [LiLiangYuZhou2024] (`arXiv:2310.20536v1`):
 * `Cslib.DataStructure.Dictionary.FeistelPerm.feistelHead`,
   `Cslib.DataStructure.Dictionary.FeistelPerm.feistelPair`,
   `Cslib.DataStructure.Dictionary.FeistelPerm.recoverLeft`,
-  `Cslib.DataStructure.Dictionary.FeistelPerm.feistelPairEquiv`: one-round Feistel head projection,
-  involution, left-coordinate recovery, and `Equiv.Perm` on `Fin (2 ^ s) × α`.
+  `Cslib.DataStructure.Dictionary.FeistelPerm.feistelPairEquiv`,
+  `Cslib.DataStructure.Dictionary.FeistelPerm.feistelRightEquiv`: one-round Feistel head projection,
+  involution, left-coordinate recovery, and left/right `Equiv.Perm`s on `Fin (2 ^ s) × α` and
+  `α × Fin (2 ^ s)`.
 * `Cslib.DataStructure.Dictionary.FeistelPerm.mixedDomainEquiv`,
   `Cslib.DataStructure.Dictionary.FeistelPerm.feistelMixedEquiv`,
   `Cslib.DataStructure.Dictionary.FeistelPerm.bitDomainEquiv`,
@@ -268,6 +270,28 @@ theorem feistelPairEquiv_apply {s : ℕ} {α : Type*} (f : α → Fin (2 ^ s)) (
 theorem feistelPairEquiv_symm {s : ℕ} {α : Type*} (f : α → Fin (2 ^ s)) :
     (feistelPairEquiv f).symm = feistelPairEquiv f :=
   rfl
+
+/-- Right-updating one-round Feistel permutation `(x_L, x_R) ↦ (x_L, x_R ^^^ f x_L)` on
+`α × Fin (2 ^ s)`. -/
+@[expose]
+def feistelRightEquiv {α : Type*} {s : ℕ} (f : α → Fin (2 ^ s)) :
+    Equiv.Perm (α × Fin (2 ^ s)) :=
+  (Equiv.prodComm (Fin (2 ^ s)) α).permCongr (feistelPairEquiv f)
+
+@[simp]
+theorem feistelRightEquiv_apply {α : Type*} {s : ℕ} (f : α → Fin (2 ^ s))
+    (p : α × Fin (2 ^ s)) : feistelRightEquiv f p = (p.1, p.2 ^^^ f p.1) :=
+  rfl
+
+theorem feistelRightEquiv_involutive {α : Type*} {s : ℕ} (f : α → Fin (2 ^ s)) :
+    Function.Involutive (feistelRightEquiv f) :=
+  fun p => by ext <;> simp [feistelRightEquiv_apply]
+
+@[simp]
+theorem feistelRightEquiv_symm {α : Type*} {s : ℕ} (f : α → Fin (2 ^ s)) :
+    (feistelRightEquiv f).symm = feistelRightEquiv f :=
+  Equiv.ext fun p =>
+    (feistelRightEquiv f).symm_apply_eq.mpr (feistelRightEquiv_involutive f p).symm
 
 /-- Characterization of `feistelHead f x = b` via left-coordinate recovery `x.1 = b ^^^ f x.2`. -/
 theorem feistelHead_eq_iff {s : ℕ} {α : Type*} (f : α → Fin (2 ^ s))

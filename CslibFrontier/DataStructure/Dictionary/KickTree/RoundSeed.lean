@@ -13,12 +13,14 @@ public import CslibFrontier.Probability.KWiseIndependent.DoubleTabulation
 public import CslibFrontier.Probability.KWiseIndependent.ReducedLimbs
 import CslibFrontier.Foundations.Data.Nat.Log
 import CslibFrontier.Foundations.Data.Nat.Power
+import CslibFrontier.Probability.KWiseIndependent.Coupling
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Expect
 import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Probability.PMF.ToReal
 import CslibFrontier.Probability.PMF.Uniform
+import CslibFrontier.Probability.StatisticalDistance.Coupling
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
 import Mathlib.Tactic.Ring
@@ -265,7 +267,7 @@ theorem dist_caseA_restrict_le {Top ι₀ ι₁ : Type*}
             caseABucketAux hma (h₀ τ s₀) (h₁₂ τ s₁) u.1) U_target ≤
         ((#S * (#S - 1) : ℕ) : ℝ) / (2 * (2 ^ (a - m) : ℝ)) + δ₁ := by
     let Good₀ : Set ι₀ := {s₀ | Set.InjOn (caseAQuot hma (h₀ τ s₀)) (S : Set (Fin (2 ^ a)))}
-    refine (dist_bind_uniform_of_good _ U_target Good₀ hδ₁ (hgood₁₂ τ hτ)).trans ?_
+    refine (dist_bind_of_good _ _ U_target Good₀ hδ₁ (hgood₁₂ τ hτ)).trans ?_
     rw [toOuterMeasure_uniformOfFintype_toReal]
     have hd := dens_not_injOn_caseAQuot_le hma S (hgood₀ τ hτ)
     rw [dens_eq_card_div_card, NNRat.cast_div, NNRat.cast_natCast, NNRat.cast_natCast] at hd
@@ -277,7 +279,7 @@ theorem dist_caseA_restrict_le {Top ι₀ ι₁ : Type*}
     linarith
   have hnn : 0 ≤ ((#S * (#S - 1) : ℕ) : ℝ) / (2 * (2 ^ (a - m) : ℝ)) + δ₁ :=
     add_nonneg (by positivity) hδ₁
-  refine (dist_bind_uniform_of_good _ U_target GoodTop hnn hgood_τ).trans ?_
+  refine (dist_bind_of_good _ _ U_target GoodTop hnn hgood_τ).trans ?_
   linarith
 
 
@@ -848,7 +850,7 @@ theorem dist_caseA_reducedDoubleTab_le {a m b_aux c n : ℕ}
       rw [hprod_map]
       let Goodα₁ : Set (Fin (2 ^ (a - m - 1))) :=
         {α₁ | Set.InjOn (reduceBits (a - m) (quotientPermRedBits c n) α₁) (T_Q : Set _)}
-      refine (dist_bind_uniform_of_good _ U_target Goodα₁ le_rfl fun α₁ hα₁ => ?_).trans ?_
+      refine (dist_bind_of_good _ _ U_target Goodα₁ le_rfl fun α₁ hα₁ => ?_).trans ?_
       · have hinjT : Set.InjOn (caseAQuot hma g₀) (T : Set (Fin (2 ^ a))) :=
           hb₀.mono (Finset.coe_subset.mpr hTS)
         have hkw := isKWiseIndependentHash_caseABucketAux_of_injOn (b_aux := b_aux) hma hinjT

@@ -17,8 +17,7 @@ Verifies:
 * concrete forward/inverse round-trip bijectivity (`quotientPermDecode ∘ quotientPermEncode` and
   `quotientPermEncode ∘ quotientPermDecode`, plus bit-level `caseBEquiv` evaluation) in both
   **Case A** (`m + caseAGap c n ≤ a`) and **Case B** (`a < m + caseAGap c n`, including tight
-  `a = m` with `0`-bit quotients and odd intra-shard suffix width `suffixBits a m`);
-* concrete doubly-stochastic matrix identity `(P₁ - U) * (P₂ - U) = P₁ * P₂ - U` and
+  `a = m` with `0`-bit quotients and odd intra-shard suffix width `suffixBits a m`), together with
   intra-shard suffix injectivity (`injOn_yR_of_caseBShard_eq`);
 * universal full-quotient bit-width bound `mul_fullQuotBits_le_clog_choose` across `n = 0`,
   `U < n`, `U = n`, `U = 2 * n`, and super-exponential `U = 2 ^ (2 ^ n)`;
@@ -150,26 +149,7 @@ theorem fullQuotBits_superexponential_bound (n V : ℕ) :
       Dynamic.optBits (2 ^ (2 ^ n)) V n + 2 * n :=
   ⟨mul_fullQuotBits_le_clog_choose _ _, mul_fullQuotBits_add_valBits_le_optBits _ _ _⟩
 
-/-! ## 3. Doubly-stochastic matrix identity on a concrete `2 × 2` pair -/
-
-theorem doublyStochastic_two_by_two_identity :
-    let P₁ : Matrix (Fin 2) (Fin 2) ℝ := !![3 / 4, 1 / 4; 1 / 4, 3 / 4]
-    let P₂ : Matrix (Fin 2) (Fin 2) ℝ := !![1 / 3, 2 / 3; 2 / 3, 1 / 3]
-    (P₁ - unifMatrix (Fin 2)) * (P₂ - unifMatrix (Fin 2)) =
-      P₁ * P₂ - unifMatrix (Fin 2) := by
-  let P₁ : Matrix (Fin 2) (Fin 2) ℝ := !![3 / 4, 1 / 4; 1 / 4, 3 / 4]
-  let P₂ : Matrix (Fin 2) (Fin 2) ℝ := !![1 / 3, 2 / 3; 2 / 3, 1 / 3]
-  have h₁ : IsDoublyStochastic P₁ :=
-    ⟨fun i j => by fin_cases i <;> fin_cases j <;> simp [P₁] <;> norm_num,
-     fun i => by fin_cases i <;> simp [P₁, Fin.sum_univ_two] <;> norm_num,
-     fun j => by fin_cases j <;> simp [P₁, Fin.sum_univ_two] <;> norm_num⟩
-  have h₂ : IsDoublyStochastic P₂ :=
-    ⟨fun i j => by fin_cases i <;> fin_cases j <;> simp [P₂] <;> norm_num,
-     fun i => by fin_cases i <;> simp [P₂, Fin.sum_univ_two] <;> norm_num,
-     fun j => by fin_cases j <;> simp [P₂, Fin.sum_univ_two] <;> norm_num⟩
-  exact sub_unifMatrix_mul_sub_unifMatrix h₁ h₂
-
-/-! ## 4. Non-vacuity across `U = n`, `U = 2n`, and `U = 2 ^ (2 ^ n)` -/
+/-! ## 3. Non-vacuity across `U = n`, `U = 2n`, and `U = 2 ^ (2 ^ n)` -/
 
 /-- Tight `U = n` (`0`-bit quotients, Case B) non-vacuity of `prob_fullQuotientPerm_forall_mem_le`
 and `fullDecode` round-trip key recovery. -/

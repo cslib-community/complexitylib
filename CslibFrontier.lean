@@ -4721,7 +4721,6 @@ public import CslibFrontier.DataStructure.Dictionary.Dynamic.Spec
 public import CslibFrontier.DataStructure.Dictionary.DynamicMatching
 public import CslibFrontier.DataStructure.Dictionary.FeistelPerm
 public import CslibFrontier.DataStructure.Dictionary.FeistelQuotient
-public import CslibFrontier.DataStructure.Dictionary.KickTree.DoublyStochastic
 public import CslibFrontier.DataStructure.Dictionary.KickTree.QuotientPerm
 public import CslibFrontier.DataStructure.Dictionary.KickTree.RoundSeed
 public import CslibFrontier.DataStructure.Dictionary.KickTree.SmallUniversePerm
@@ -5619,6 +5618,7 @@ public import CslibFrontier.Foundations.Data.Nat.Choose.Vandermonde
 public import CslibFrontier.Foundations.Data.Nat.Clog
 public import CslibFrontier.Foundations.Data.Nat.ClogPow
 public import CslibFrontier.Foundations.Data.Nat.ConstantDivision
+public import CslibFrontier.Foundations.Data.Nat.DescFactorial
 public import CslibFrontier.Foundations.Data.Nat.Div
 public import CslibFrontier.Foundations.Data.Nat.Doubling
 public import CslibFrontier.Foundations.Data.Nat.Factorial
@@ -6806,6 +6806,7 @@ public import CslibFrontier.Probability.StochasticDomination.PoissonBinomial
 public import CslibFrontier.Probability.StochasticDomination.Stopping
 public import CslibFrontier.Probability.TupleSampler
 public import CslibFrontier.Probability.Uniform
+public import CslibFrontier.Probability.UniformEmbedding
 public import CslibFrontier.Probability.UniformNat
 public import CslibFrontier.Probability.UniformOrder
 public import CslibFrontier.Probability.UniversalHash

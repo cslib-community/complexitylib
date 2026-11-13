@@ -8,13 +8,17 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Init
-public import CslibFrontier.DataStructure.Dictionary.KickTree.DoublyStochastic
+public import CslibFrontier.DataStructure.Dictionary.FeistelPerm
+public import CslibFrontier.Probability.StatisticalDistance.Event
+public import CslibFrontier.Probability.UniformEmbedding
+import CslibFrontier.Probability.KWiseIndependent.Coupling
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Expect
 import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Probability.PMF.ToReal
 import CslibFrontier.Probability.PMF.Uniform
+import CslibFrontier.Probability.StatisticalDistance.Coupling
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
 import Mathlib.Tactic.Ring
@@ -33,7 +37,6 @@ bijectivity for `CslibFrontier.DataStructure.Dictionary.KickTree.QuotientPerm`.
 * `Cslib.DataStructure.Dictionary.KickTree.nrHalfLow`,
   `Cslib.DataStructure.Dictionary.KickTree.nrHalfHigh`,
   `Cslib.DataStructure.Dictionary.KickTree.nrSplitEquiv`,
-  `Cslib.DataStructure.Dictionary.KickTree.feistelRightEquiv`,
   `Cslib.DataStructure.Dictionary.KickTree.NRBlockFuncs`,
   `Cslib.DataStructure.Dictionary.KickTree.nrBlockEquiv`,
   `Cslib.DataStructure.Dictionary.KickTree.nrComposedEquiv`,
@@ -96,21 +99,6 @@ theorem nrHalfLow_le_nrHalfHigh (a' : ℕ) : nrHalfLow a' ≤ nrHalfHigh a' := b
 @[expose] def nrSplitEquiv (a' : ℕ) :
     Fin (2 ^ a') ≃ Fin (2 ^ nrHalfLow a') × Fin (2 ^ nrHalfHigh a') :=
   bitDomainEquiv (nrHalfLow_le a')
-
-/-- Right-updating unbalanced Feistel involution `(L, R) ↦ (L, R ^^^ f L)`. -/
-@[expose] def feistelRightEquiv {s₁ s₂ : ℕ} (f : Fin (2 ^ s₁) → Fin (2 ^ s₂)) :
-    Equiv.Perm (Fin (2 ^ s₁) × Fin (2 ^ s₂)) :=
-  (Equiv.prodComm (Fin (2 ^ s₂)) (Fin (2 ^ s₁))).permCongr (feistelPairEquiv f)
-
-@[simp] theorem feistelRightEquiv_apply {s₁ s₂ : ℕ} (f : Fin (2 ^ s₁) → Fin (2 ^ s₂))
-    (p : Fin (2 ^ s₁) × Fin (2 ^ s₂)) : feistelRightEquiv f p = (p.1, p.2 ^^^ f p.1) := rfl
-
-theorem feistelRightEquiv_involutive {s₁ s₂ : ℕ} (f : Fin (2 ^ s₁) → Fin (2 ^ s₂)) :
-    Function.Involutive (feistelRightEquiv f) := fun p => by ext <;> simp [feistelRightEquiv_apply]
-
-@[simp] theorem feistelRightEquiv_symm {s₁ s₂ : ℕ} (f : Fin (2 ^ s₁) → Fin (2 ^ s₂)) :
-    (feistelRightEquiv f).symm = feistelRightEquiv f :=
-  Equiv.ext fun p => (feistelRightEquiv f).symm_apply_eq.mpr (feistelRightEquiv_involutive f p).symm
 
 /-- Round-function triple `(f₀, f₁, f₂)` for one unbalanced 3-round Feistel Naor–Reingold block on
 `Fin (2 ^ a')` ([NaorReingold1999], Definition 3.1, Section 5.2, and Section 6 Definition 6.1). -/
@@ -294,7 +282,7 @@ theorem dist_permTupleKernel_nrBlock_le {ι₀ ι₁ ι₂ T : Type*}
       ((PMF.uniformOfFintype (T ↪ Fin (2 ^ a'))).map j) ≤
       ((Fintype.card T * (Fintype.card T - 1) : ℕ) : ℝ) / (2 * (2 ^ a' : ℝ)) := by
     rw [dist_comm]
-    exact dist_uniform_embedding_to_fun a' hT_a
+    simpa using dist_uniform_embedding_to_fun (T := T) (α := Fin (2 ^ a')) (by simpa using hT_a)
   let splitFun : ((T → Fin (2 ^ nrHalfLow a')) × (T → Fin (2 ^ nrHalfHigh a'))) ≃
       (T → Fin (2 ^ a')) :=
     { toFun := fun p i => (nrSplitEquiv a').symm (p.1 i, p.2 i)
@@ -321,7 +309,8 @@ theorem dist_permTupleKernel_nrBlock_le {ι₀ ι₁ ι₂ T : Type*}
           splitFun (L₂ p.1 p.2.1, R₃ p.1 p.2.1 p.2.2) := by
       rw [← hunif_seed]
       simp only [permTupleKernel_eq, nrBlockSeedDist, PMF.map_comp, Function.comp_def, j,
-        permTupleEquiv_apply, nrBlockEquiv, Equiv.permCongr_apply, Equiv.symm_symm, nrPairBlock,
+        Equiv.embeddingCongr_apply, Function.Embedding.congr_apply, Equiv.refl_symm,
+        Equiv.refl_apply, nrBlockEquiv, Equiv.permCongr_apply, Equiv.symm_symm, nrPairBlock,
         Equiv.trans_apply, feistelRightEquiv_apply, feistelPairEquiv_apply, feistelPair,
         feistelHead, nrBlockSeedEquivProd, splitFun, Equiv.coe_fn_mk, L₀, R₀, R₁, L₂, R₃]
     rw [h1, ← uniformOfFintype_prod, ← uniformOfFintype_prod]
@@ -370,9 +359,9 @@ theorem dist_permTupleKernel_nrBlock_le {ι₀ ι₁ ι₂ T : Type*}
         _ = (U₁.toOuterMeasure E₁).toReal := by
             rw [toOuterMeasure_apply_toReal]
             exact sum_congr rfl fun l _ => by by_cases hl : l ∈ E₁ <;> simp [hl]
-        _ ≤ ((Fintype.card T * (Fintype.card T - 1) : ℕ) : ℝ) / (2 * (2 ^ nrHalfLow a' : ℝ)) :=
-            prob_not_injective_uniform_le (nrHalfLow a')
-    refine (dist_bind_uniform_of_good _ _ {s₀ | Function.Injective (R₁ s₀)} (by positivity)
+        _ ≤ ((Fintype.card T * (Fintype.card T - 1) : ℕ) : ℝ) / (2 * (2 ^ nrHalfLow a' : ℝ)) := by
+            simpa using prob_not_injective_uniform_le T (Fin (2 ^ nrHalfLow a'))
+    refine (dist_bind_of_good _ _ _ {s₀ | Function.Injective (R₁ s₀)} (by positivity)
       hgood_dist).trans ?_
     gcongr
     rw [toOuterMeasure_uniformOfFintype_toReal]
@@ -674,7 +663,7 @@ theorem dist_caseB_shardTuple_le {Top ι_sh ι₀ ι₁ ι₂ ι_aux : Type*}
             (PMF.uniformOfFintype ι_aux).map fun s_aux =>
               ((fun u : T => (bitDomainEquiv (shardBits_le_of_le hma) u.1).1 ^^^
                   h_sh τ s_sh (yEmb u)),
-                (permTupleEquiv π yEmb, fun u : T => h_aux τ s_aux u.1))))
+                ((Equiv.refl T).embeddingCongr π yEmb, fun u : T => h_aux τ s_aux u.1))))
       (PMF.uniformOfFintype
         ((T → Fin (2 ^ shardBits m)) ×
           ((T ↪ Fin (2 ^ suffixBits a m)) × (T → Fin (2 ^ b_aux))))) ≤
@@ -694,7 +683,7 @@ theorem dist_caseB_shardTuple_le {Top ι_sh ι₀ ι₁ ι₂ ι_aux : Type*}
             (PMF.uniformOfFintype ι_aux).map fun s_aux =>
               ((fun u : T => (bitDomainEquiv (shardBits_le_of_le hma) u.1).1 ^^^
                   h_sh τ s_sh (yEmb u)),
-                (permTupleEquiv π yEmb, fun u : T => h_aux τ s_aux u.1))) U_all ≤
+                ((Equiv.refl T).embeddingCongr π yEmb, fun u : T => h_aux τ s_aux u.1))) U_all ≤
         (1 / 2 : ℝ) * (3 * (κ : ℝ) ^ 2 / (2 ^ nrHalfLow (suffixBits a m) : ℝ)) ^ t := by
     let shiftSh : (T → Fin (2 ^ shardBits m)) ≃ (T → Fin (2 ^ shardBits m)) :=
       { toFun := fun f u => (bitDomainEquiv (shardBits_le_of_le hma) u.1).1 ^^^ f u
@@ -721,7 +710,7 @@ theorem dist_caseB_shardTuple_le {Top ι_sh ι₀ ι₁ ι₂ ι_aux : Type*}
             (PMF.uniformOfFintype ι_aux).map fun s_aux =>
               ((fun u : T => (bitDomainEquiv (shardBits_le_of_le hma) u.1).1 ^^^
                   h_sh τ s_sh (yEmb u)),
-                (permTupleEquiv π yEmb, fun u : T => h_aux τ s_aux u.1))) =
+                ((Equiv.refl T).embeddingCongr π yEmb, fun u : T => h_aux τ s_aux u.1))) =
         U_sh.bind fun f_sh => (μ_nr.bind fun e => U_aux.map (e, ·)).map (f_sh, ·) := by
       rw [← hsh_unif, PMF.bind_map]
       refine congrArg ((PMF.uniformOfFintype ι_sh).bind ·) (funext fun s_sh => ?_)
@@ -756,28 +745,8 @@ theorem dist_caseB_shardTuple_le {Top ι_sh ι₀ ι₁ ι₂ ι_aux : Type*}
     simp only [hpair_dist, ← sum_mul, sum_toReal, one_mul]
     exact dist_permTupleKernel_nrComposed_le ht (hgood_nr₀ τ hτ) (hgood_nr₁ τ hτ)
       (hgood_nr₂ τ hτ) hT_card yEmb
-  refine (dist_bind_uniform_of_good _ U_all GoodTop (by positivity) hgood_τ).trans ?_
+  refine (dist_bind_of_good _ _ U_all GoodTop (by positivity) hgood_τ).trans ?_
   linarith
-
-
-theorem prob_uniformOfFintype_pi_prod_forall_mem {T α β : Type*}
-    [Fintype T] [DecidableEq T] [Fintype α] [Nonempty α]
-    [Fintype β] [Nonempty β]
-    (B : T → Finset α) (A : T → Finset β) :
-    ((PMF.uniformOfFintype (T → α × β)).toOuterMeasure
-      {f : T → α × β | ∀ i : T, (f i).1 ∈ B i ∧ (f i).2 ∈ A i}).toReal =
-      ∏ i : T, (((#(B i) : ℝ) / (Fintype.card α : ℝ)) *
-        ((#(A i) : ℝ) / (Fintype.card β : ℝ))) := by
-  classical
-  let E : Set (T → α × β) := {f | ∀ i : T, (f i).1 ∈ B i ∧ (f i).2 ∈ A i}
-  change ((PMF.uniformOfFintype (T → α × β)).toOuterMeasure E).toReal = _
-  rw [toOuterMeasure_uniformOfFintype_toReal]
-  have hfilt : univ.filter (· ∈ E) = Fintype.piFinset (fun i : T => B i ×ˢ A i) := by
-    ext f
-    simp [E, Fintype.mem_piFinset]
-  rw [hfilt, Fintype.card_piFinset, Fintype.card_pi]
-  simp only [Finset.card_product, Fintype.card_prod, Nat.cast_prod, Nat.cast_mul, div_mul_div_comm]
-  rw [Finset.prod_div_distrib]
 
 /-- Suffix-space preimage `(B.image (bucketLocal m) ×ˢ univ)` of an intra-shard bucket set `B`. -/
 def intraShardSuffixSet {a m : ℕ} (hma : m ≤ a) [DecidableEq (Fin (2 ^ localBucketBits m))]

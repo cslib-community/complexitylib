@@ -31,6 +31,9 @@ with `#T ≤ k` is coupled within `(#(Finset.univ \ GoodTop) : ℝ≥0∞) / Fin
 
 ## Main results
 
+* `Cslib.Probability.uniformOfFintype_map_of_isKWise`: mapping a `k`-wise independent hash family
+  over a finite domain `X` with `Fintype.card X ≤ k` under a uniform seed produces
+  `PMF.uniformOfFintype (X → Y)`.
 * `Cslib.Probability.uniformOfFintype_map_restrict_eq`: restricting a `k`-wise independent hash
   family to `T` (`#T ≤ k`) under a uniform seed produces `PMF.uniformOfFintype (T → Fin m)`.
 * `Cslib.Probability.coupledWithin_uniformOfFintype_prod_restrict`: two-level coupling bound for
@@ -46,6 +49,26 @@ namespace Cslib.Probability
 
 universe u v w
 
+/-- If `h : ι → X → Y` is `k`-wise independent and `Fintype.card X ≤ k`, then `h θ` under
+`θ ← PMF.uniformOfFintype ι` has the exact uniform distribution `PMF.uniformOfFintype (X → Y)`. -/
+theorem uniformOfFintype_map_of_isKWise {ι : Type u} {X : Type v} {Y : Type w}
+    [Fintype ι] [Nonempty ι] [Fintype X] [DecidableEq X] [Fintype Y] [Nonempty Y] [DecidableEq Y]
+    {k : ℕ} {h : ι → X → Y} (hh : IsKWiseIndependentHash k h) (hX : Fintype.card X ≤ k) :
+    (PMF.uniformOfFintype ι).map h = PMF.uniformOfFintype (X → Y) := by
+  classical
+  ext y
+  apply (ENNReal.toReal_eq_toReal_iff' (PMF.apply_ne_top _ _) (PMF.apply_ne_top _ _)).mp
+  rw [toReal_uniformOfFintype_map_apply]
+  let y' : (x : (Finset.univ : Finset X)) → Y := fun x => y x.1
+  have hcard : (Finset.univ : Finset X).card ≤ k := by simpa using hX
+  have hset : (Finset.univ.filter fun s : ι => h s = y) =
+      (Finset.univ.filter fun s : ι => (Finset.univ : Finset X).restrict (h s) = y') := by
+    ext s
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and, funext_iff, Finset.restrict]
+    exact ⟨fun hs x => hs x.1, fun hs x => hs ⟨x, Finset.mem_univ x⟩⟩
+  rw [hset, hh.dens_filter_restrict_eq hcard y']
+  simp [PMF.uniformOfFintype_apply, Fintype.card_pi]
+
 /-- If `eval : Seed → Fin U → Fin m` is `k`-wise independent, then restricting `eval θ` under
 `θ ← PMF.uniformOfFintype Seed` to any subset `T : Finset (Fin U)` of size `#T ≤ k` produces the
 exact uniform distribution `PMF.uniformOfFintype (T → Fin m)`. -/
@@ -54,12 +77,8 @@ theorem uniformOfFintype_map_restrict_eq {Seed : Type u} {U m : ℕ}
     (hk : IsKWiseIndependentHash k eval)
     {T : Finset (Fin U)} (hT : T.card ≤ k) :
     (PMF.uniformOfFintype Seed).map (fun θ => T.restrict (eval θ)) =
-      PMF.uniformOfFintype (T → Fin m) := by
-  classical
-  ext y
-  apply (ENNReal.toReal_eq_toReal_iff' (PMF.apply_ne_top _ _) (PMF.apply_ne_top _ _)).mp
-  rw [toReal_uniformOfFintype_map_apply, hk.dens_filter_restrict_eq hT y]
-  simp [Fintype.card_pi]
+      PMF.uniformOfFintype (T → Fin m) :=
+  uniformOfFintype_map_of_isKWise (hk.comp Subtype.val_injective) (by simpa using hT)
 
 private theorem uniformOfFintype_prod_map {α : Type u} {β : Type v} {γ : Type w}
     [Fintype α] [Nonempty α] [Fintype β] [Nonempty β] (f : α → β → γ) :

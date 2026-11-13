@@ -30,7 +30,8 @@ import Mathlib.Tactic.Ring
 This module constructs an explicit, computable, zero-collision key-quotienting bijection
 `quotientPermEquiv : Fin (2 ^ a) ≃ Fin (2 ^ m) × Fin (2 ^ (a - m))` (for all `m ≤ a`) and a
 universal full-quotient bit-width bound `mul_fullQuotBits_le_clog_choose` (for all `U, n`),
-together with high-probability `κ`-wise (`κ = Θ(c log n)`) distributional transfer across every
+together with high-probability intra-shard `κ`-wise (`κ = Θ(c log n)`) distributional transfer
+(for target bucket sets lying within a single shard `σ` via `bucketShard _ b = σ`) across every
 universe `U ≥ n` once `n ≥ quotientPermThreshold c`, without assuming `U ≥ n ^ (1 + Ω(1))` or
 `log U ≤ poly(log n)`.
 
@@ -99,7 +100,8 @@ universe `U ≥ n` once `n ≥ quotientPermThreshold c`, without assuming `U ≥
   `Cslib.DataStructure.Dictionary.KickTree.prob_concreteQuotientPerm_forall_mem_perKey_le`,
   `Cslib.DataStructure.Dictionary.KickTree.prob_fullQuotientPerm_forall_mem_le`,
   `Cslib.DataStructure.Dictionary.KickTree.prob_fullQuotientPerm_forall_mem_perKey_le`: unified
-  `κ`-tuple multiplicative tail transfer across all `U ≥ n` once `n ≥ quotientPermThreshold c`
+  intra-shard `κ`-tuple multiplicative tail transfer (for target bucket sets `B` / `B u` lying in a
+  common shard `σ`, `bucketShard _ b = σ`) across all `U ≥ n` once `n ≥ quotientPermThreshold c`
   (`≤ 1 / n ^ (c + 1)`).
 
 ## References
@@ -427,7 +429,7 @@ theorem dist_concreteCaseB_shardTuple_le {a m b_aux c n : ℕ}
     dist ((PMF.uniformOfFintype (QuotientPermSeed a m b_aux c n)).map fun θ =>
         ((fun u : T => (bitDomainEquiv (shardBits_le_of_le hma) u.1).1 ^^^
             (concreteRounds θ).caseB.fShard (yEmb u)),
-          (permTupleEquiv
+          ((Equiv.refl T).embeddingCongr
             (nrComposedEquiv (suffixBits a m) (nrRounds c) (concreteRounds θ).caseB.nrBlocks) yEmb,
             fun u : T => concreteAux hma θ u.1)))
       (PMF.uniformOfFintype
@@ -496,7 +498,7 @@ theorem dist_concreteCaseB_shardTuple_le {a m b_aux c n : ℕ}
   have hmarg : ((PMF.uniformOfFintype (QuotientPermSeed a m b_aux c n)).map fun θ =>
       ((fun u : T => (bitDomainEquiv (shardBits_le_of_le hma) u.1).1 ^^^
           (concreteRounds θ).caseB.fShard (yEmb u)),
-        (permTupleEquiv
+        ((Equiv.refl T).embeddingCongr
           (nrComposedEquiv (suffixBits a m) (nrRounds c) (concreteRounds θ).caseB.nrBlocks) yEmb,
           fun u : T => concreteAux hma θ u.1))) =
       (PMF.uniformOfFintype Top).bind fun τ =>
@@ -506,20 +508,20 @@ theorem dist_concreteCaseB_shardTuple_le {a m b_aux c n : ℕ}
             (PMF.uniformOfFintype BotAux).map fun s_aux =>
               ((fun u : T => (bitDomainEquiv (shardBits_le_of_le hma) u.1).1 ^^^
                   h_sh τ s_sh (yEmb u)),
-                (permTupleEquiv π yEmb, fun u : T => h_aux τ s_aux u.1)) := by
+                ((Equiv.refl T).embeddingCongr π yEmb, fun u : T => h_aux τ s_aux u.1)) := by
     let G : Top × (BotSh × (NRComposedSeed (nrRounds c) NR₀ NR₁ NR₂ × BotAux)) →
         (T → Fin (2 ^ shardBits m)) × ((T ↪ Fin (2 ^ suffixBits a m)) × (T → Fin (2 ^ b_aux))) :=
       fun q =>
         ((fun u : T => (bitDomainEquiv (shardBits_le_of_le hma) u.1).1 ^^^
             h_sh q.1 q.2.1 (yEmb u)),
-          (permTupleEquiv (nrComposedEquiv (suffixBits a m) (nrRounds c) (fun r =>
+          ((Equiv.refl T).embeddingCongr (nrComposedEquiv (suffixBits a m) (nrRounds c) (fun r =>
               ⟨h_nr₀ q.1 (q.2.2.1.blocks r).s₀, h_nr₁ q.1 (q.2.2.1.blocks r).s₁,
                 h_nr₂ q.1 (q.2.2.1.blocks r).s₂⟩)) yEmb,
             fun u : T => h_aux q.1 q.2.2.2 u.1))
     have hfun : (fun θ : QuotientPermSeed a m b_aux c n =>
         ((fun u : T => (bitDomainEquiv (shardBits_le_of_le hma) u.1).1 ^^^
             (concreteRounds θ).caseB.fShard (yEmb u)),
-          (permTupleEquiv
+          ((Equiv.refl T).embeddingCongr
             (nrComposedEquiv (suffixBits a m) (nrRounds c) (concreteRounds θ).caseB.nrBlocks) yEmb,
             fun u : T => concreteAux hma θ u.1))) = (G ∘ Prod.fst ∘ eB) := by
       ext θ : 1
@@ -696,7 +698,7 @@ private theorem prob_concreteQuotientPerm_master_le {a m b_aux c n : ℕ}
       let Ψ (θ : QuotientPermSeed a m b_aux c n) :=
         ((fun u : T => (bitDomainEquiv (shardBits_le_of_le hma) u.1).1 ^^^
             (concreteRounds θ).caseB.fShard (yEmb u)),
-          (permTupleEquiv
+          ((Equiv.refl T).embeddingCongr
             (nrComposedEquiv (suffixBits a m) (nrRounds c) (concreteRounds θ).caseB.nrBlocks) yEmb,
             fun u : T => concreteAux hma θ u.1))
       let S_all : Set ((T → Fin (2 ^ shardBits m)) ×
@@ -775,7 +777,9 @@ theorem prob_concreteQuotientPerm_forall_mem_le {a m b_aux c n : ℕ}
               shard_suffix_ratio_eq hma #B]
   simpa only [one_mul, Finset.prod_const] using hmst
 
-/-- **Per-key `Fin (2 ^ a)` multiplicative tail bound across Case A and Case B** (factor `2`). -/
+/-- **Per-key `Fin (2 ^ a)` multiplicative tail bound across Case A and Case B** (per-key
+intra-shard target bucket sets `B u` satisfying `∀ u ∈ T, ∀ b ∈ B u, bucketShard m b = σ`,
+factor `2`). -/
 theorem prob_concreteQuotientPerm_forall_mem_perKey_le {a m b_aux c n : ℕ}
     (hma : m ≤ a) (hn : quotientPermThreshold c ≤ n)
     (hm_lo : bucketIndexBits n ≤ m) (hm_hi : m ≤ 8 * quotientPermCharBits n)
@@ -865,8 +869,9 @@ private theorem bucketIndexBits_le_eight_mul_charBits (n : ℕ) :
   rw [quotientPermCharBits_eq]; unfold bucketIndexBits; omega
 
 /-- **Universal `Fin U` multiplicative tail bound across every `U ≥ n` above
-`quotientPermThreshold c`** (shared intra-shard `B, A`, factor `1`, without assuming
-`U ≥ n ^ (1 + Ω(1))` or `log U ≤ poly(log n)`). -/
+`quotientPermThreshold c`** (shared intra-shard target bucket set `B` with
+`∀ b ∈ B, bucketShard (bucketIndexBits n) b = σ` and auxiliary set `A`, factor `1`, without
+assuming `U ≥ n ^ (1 + Ω(1))` or `log U ≤ poly(log n)`). -/
 theorem prob_fullQuotientPerm_forall_mem_le {U b_aux c n : ℕ}
     (hnU : n ≤ U) (hn : quotientPermThreshold c ≤ n)
     {S T : Finset (Fin U)} (hS : #S ≤ n) (hTS : T ⊆ S) (hT : #T ≤ quotientPermInd c n)
@@ -895,8 +900,9 @@ theorem prob_fullQuotientPerm_forall_mem_le {U b_aux c n : ℕ}
     (bucketIndexBits_le_eight_mul_charBits n) hS' hTS' hT' σ B hB A
 
 /-- **Universal per-key `Fin U` multiplicative tail bound across every `U ≥ n` above
-`quotientPermThreshold c`** (factor `2`, without assuming `U ≥ n ^ (1 + Ω(1))` or
-`log U ≤ poly(log n)`). -/
+`quotientPermThreshold c`** (per-key intra-shard target bucket sets `B u` satisfying
+`∀ u ∈ T, ∀ b ∈ B u, bucketShard (bucketIndexBits n) b = σ` and auxiliary sets `A u`, factor `2`,
+without assuming `U ≥ n ^ (1 + Ω(1))` or `log U ≤ poly(log n)`). -/
 theorem prob_fullQuotientPerm_forall_mem_perKey_le {U b_aux c n : ℕ}
     (hnU : n ≤ U) (hn : quotientPermThreshold c ≤ n)
     {S T : Finset (Fin U)} (hS : #S ≤ n) (hTS : T ⊆ S) (hT : #T ≤ quotientPermInd c n)
