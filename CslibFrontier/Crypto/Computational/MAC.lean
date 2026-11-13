@@ -1563,7 +1563,7 @@ theorem succProbability_prfIdealGame_macToPrfDistinguisher_le (adversary : Forge
           (fun x : BitString n => (List.ofFn x == tag)) := by
         funext x
         simp [List.take_of_length_le (List.length_ofFn (f := x)).le]
-      rw [htake, PMF.map, Function.comp_def]
+      rw [htake, ← PMF.bind_pure_comp]
       refine (PMF.uniformOfFintype_bind_pure_apply_true_le (E := fun x => List.ofFn x == tag)
         fun a ha b hb => List.ofFn_injective
           ((beq_iff_eq.mp ha).trans (beq_iff_eq.mp hb).symm)).trans_eq ?_
