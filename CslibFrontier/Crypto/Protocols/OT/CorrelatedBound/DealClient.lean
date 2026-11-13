@@ -274,20 +274,10 @@ theorem commProtocol_rot_le_one_of_deal211 {k : ℕ} {τ : Type}
     (outB : Fin 4 × Fin P.leafCount → Fin k → Bool × Bool)
     (hCorrect : ∀ a b j, (a, b) ∈ deal211.support →
       (outB (b, P.leaf a b) j).2 = otSelect (outA (a, P.leaf a b) j) (outB (b, P.leaf a b) j).1)
-    (hAlicePriv :
-      PMF.map (fun q => ((outA (q.1, Prod.snd q.2), Prod.snd q.2),
-          rotChoices (outB (Prod.fst q.2, Prod.snd q.2))))
-          (P.transcriptLaw deal211) =
-        (PMF.map (fun q => (outA (q.1, Prod.snd q.2), Prod.snd q.2))
-          (P.transcriptLaw deal211)).bind fun st =>
-          PMF.map (fun x => (st, x)) (PMF.uniformOfFintype (Fin k → Bool)))
-    (hBobPriv :
-      PMF.map (fun q => ((Prod.snd q.2, outB (Prod.fst q.2, Prod.snd q.2)),
-          rotUnselected (outA (q.1, Prod.snd q.2)) (outB (Prod.fst q.2, Prod.snd q.2))))
-          (P.transcriptLaw deal211) =
-        (PMF.map (fun q => (Prod.snd q.2, outB (Prod.fst q.2, Prod.snd q.2)))
-          (P.transcriptLaw deal211)).bind
-          fun tr => PMF.map (fun x => (tr, x)) (PMF.uniformOfFintype (Fin k → Bool))) :
+    (hAlicePriv : IndepUniform (P.transcriptLaw deal211) (fun (x, _, t) => (outA (x, t), t))
+      (fun (_, y, t) => rotChoices (outB (y, t))))
+    (hBobPriv : IndepUniform (P.transcriptLaw deal211) (fun (_, y, t) => (t, outB (y, t)))
+      (fun (x, y, t) => rotUnselected (outA (x, t)) (outB (y, t)))) :
     k ≤ 1 := by
   have hk := commProtocol_rot_le_mutualInfo P deal211 outA outB hCorrect hAlicePriv hBobPriv
   rw [mutualInfo_deal211] at hk
@@ -306,24 +296,13 @@ theorem privateCoin_rot_le_one_of_deal211 {a b k : ℕ} {τ : Type}
         (outB (v, Communication.Protocol.leaf P u v) j).2 =
           otSelect (outA (u, Communication.Protocol.leaf P u v) j)
             (outB (v, Communication.Protocol.leaf P u v) j).1)
-    (hAlicePriv :
-      (PMF.map (fun q => ((outA (q.1, Prod.snd q.2), Prod.snd q.2),
-          rotChoices (outB (Prod.fst q.2, Prod.snd q.2))))
-          (Communication.Protocol.transcriptLaw P
-            (Communication.PrivateCoin.inputLaw a b deal211))) =
-        (PMF.map (fun q => (outA (q.1, Prod.snd q.2), Prod.snd q.2))
-          (Communication.Protocol.transcriptLaw P
-            (Communication.PrivateCoin.inputLaw a b deal211))).bind fun st =>
-          PMF.map (fun x => (st, x)) (PMF.uniformOfFintype (Fin k → Bool)))
-    (hBobPriv :
-      (PMF.map (fun q => ((Prod.snd q.2, outB (Prod.fst q.2, Prod.snd q.2)),
-          rotUnselected (outA (q.1, Prod.snd q.2)) (outB (Prod.fst q.2, Prod.snd q.2))))
-          (Communication.Protocol.transcriptLaw P
-            (Communication.PrivateCoin.inputLaw a b deal211))) =
-        (PMF.map (fun q => (Prod.snd q.2, outB (Prod.fst q.2, Prod.snd q.2)))
-          (Communication.Protocol.transcriptLaw P
-            (Communication.PrivateCoin.inputLaw a b deal211))).bind fun tr =>
-          PMF.map (fun x => (tr, x)) (PMF.uniformOfFintype (Fin k → Bool))) :
+    (hAlicePriv : IndepUniform
+      (Communication.Protocol.transcriptLaw P (Communication.PrivateCoin.inputLaw a b deal211))
+      (fun (x, _, t) => (outA (x, t), t)) (fun (_, y, t) => rotChoices (outB (y, t))))
+    (hBobPriv : IndepUniform
+      (Communication.Protocol.transcriptLaw P (Communication.PrivateCoin.inputLaw a b deal211))
+      (fun (_, y, t) => (t, outB (y, t)))
+      (fun (x, y, t) => rotUnselected (outA (x, t)) (outB (y, t)))) :
     k ≤ 1 := by
   have hk := privateCoin_rot_le_mutualInfo P deal211 outA outB hCorrect hAlicePriv hBobPriv
   rw [mutualInfo_deal211] at hk
