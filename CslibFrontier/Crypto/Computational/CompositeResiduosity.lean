@@ -8,9 +8,9 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Probabilistic.Parameter
+public import CslibFrontier.Crypto.Computational.CompositeResiduosity.Finite
 public import CslibFrontier.Crypto.Computational.Paillier.Algebra
 public import CslibFrontier.Crypto.Game
-import CslibFrontier.Probability.PMF
 
 /-!
 # The decisional composite residuosity assumption
@@ -23,13 +23,17 @@ on moduli says that every uniform strict PPT distinguisher has negligible advant
 
 A description of a balanced modulus is its pair of prime factors `(p, q)`, with validity part of
 the type, as for Schnorr groups. Nothing here claims that valid descriptions can be generated
-efficiently; the assumption is stated relative to an arbitrary law on descriptions.
+efficiently; the assumption is stated relative to an arbitrary law on descriptions. The two
+worlds at one fixed modulus are `dcrRealExperiment` and `dcrRandomExperiment` in
+`CslibFrontier/Crypto/Computational/CompositeResiduosity/Finite.lean`; the games here draw a
+modulus and run them.
 
 ## Main definitions
 
 * `Cslib.Crypto.BalancedModulus.Valid`, `Cslib.Crypto.BalancedModulus.Desc`: valid factor pairs
   `(p, q)` of balanced moduli.
-* `Cslib.Crypto.dcrRealGame`, `Cslib.Crypto.dcrIdealGame`: the two DCR experiments.
+* `Cslib.Crypto.dcrRealGame`, `Cslib.Crypto.dcrRandomGame`: the two DCR games, which draw a
+  modulus and run the fixed-modulus experiments.
 * `Cslib.Crypto.DCR`: the decisional composite residuosity assumption.
 
 ## Main results
@@ -114,31 +118,28 @@ end BalancedModulus
 
 open BalancedModulus
 
-/-- The real experiment of the decisional composite residuosity problem ([KatzLindell2020],
-Definition 15.10): draw `(p, q) ← setup n`, set `N = p * q`, draw a uniform unit `r` modulo
-`N ^ 2`, and give the distinguisher `N` and the residue of `r ^ N` modulo `N ^ 2`. -/
+/-- The real game of the decisional composite residuosity problem ([KatzLindell2020],
+Definition 15.10): draw `(p, q) ← setup n` and run `dcrRealExperiment` at `N = p * q`, giving the
+distinguisher `N` and the least representative of the uniform `N`-th residue modulo `N ^ 2`. -/
 noncomputable def dcrRealGame (setup : ℕ → PMF Desc)
-    (distinguisher : ℕ → ℕ × ℕ → ProbComp Bool) (n : ℕ) : Game := do
-  let d ← setup n
-  let r ← PMF.uniformOfFintype (ZMod (d.modulus ^ 2))ˣ
-  ProbComp.eval (distinguisher n (d.modulus, ((r ^ d.modulus : (ZMod (d.modulus ^ 2))ˣ) :
-    ZMod (d.modulus ^ 2)).val))
+    (distinguisher : ℕ → ℕ × ℕ → ProbComp Bool) (n : ℕ) : Game :=
+  Game.withSetup (setup n) fun d => dcrRealExperiment d.modulus fun y =>
+    distinguisher n (d.modulus, (y : ZMod (d.modulus ^ 2)).val)
 
-/-- The ideal experiment of the decisional composite residuosity problem ([KatzLindell2020],
-Definition 15.10): draw `(p, q) ← setup n`, set `N = p * q`, draw a uniform unit `r` modulo
-`N ^ 2`, and give the distinguisher `N` and the residue of `r` itself. -/
-noncomputable def dcrIdealGame (setup : ℕ → PMF Desc)
-    (distinguisher : ℕ → ℕ × ℕ → ProbComp Bool) (n : ℕ) : Game := do
-  let d ← setup n
-  let r ← PMF.uniformOfFintype (ZMod (d.modulus ^ 2))ˣ
-  ProbComp.eval (distinguisher n (d.modulus, (r : ZMod (d.modulus ^ 2)).val))
+/-- The random game of the decisional composite residuosity problem ([KatzLindell2020],
+Definition 15.10): draw `(p, q) ← setup n` and run `dcrRandomExperiment` at `N = p * q`, giving
+the distinguisher `N` and the least representative of a uniform unit modulo `N ^ 2`. -/
+noncomputable def dcrRandomGame (setup : ℕ → PMF Desc)
+    (distinguisher : ℕ → ℕ × ℕ → ProbComp Bool) (n : ℕ) : Game :=
+  Game.withSetup (setup n) fun d => dcrRandomExperiment d.modulus fun y =>
+    distinguisher n (d.modulus, (y : ZMod (d.modulus ^ 2)).val)
 
 /-- The **decisional composite residuosity assumption** relative to a law `setup` on balanced
 moduli ([KatzLindell2020], Definition 15.10): every uniform strict PPT distinguisher, given `N`,
 has negligible advantage in telling a uniform `N`-th residue modulo `N ^ 2` from a uniform unit
 modulo `N ^ 2`. -/
 def DCR (setup : ℕ → PMF Desc) : Prop :=
-  Game.Indistinguishable (dcrRealGame setup) (dcrIdealGame setup) fun distinguisher =>
+  Game.Indistinguishable (dcrRealGame setup) (dcrRandomGame setup) fun distinguisher =>
     IsPPTOn (encPair encUnary (encPair encNat encNat)) encBool
       (fun input => distinguisher input.1 input.2)
 

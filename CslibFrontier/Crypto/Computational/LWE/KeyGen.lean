@@ -481,7 +481,8 @@ theorem eval_keyGen_publicMatrix (n m w η : ℕ) :
   simp only [PMF.bind_map, Function.comp_def]
   rfl
 
-/-- Encoding the actual public marginal gives the exact word ensemble in `DecisionLWE`. -/
+/-- Encoding the actual public marginal gives the encoded real matrix `realEnsemble` of
+`DecisionLWE` (`decisionLWE_iff_encoded`). -/
 theorem eval_keyGen_publicWord (n m w η : ℕ → ℕ) (security : ℕ) :
     (ProbComp.eval (keyGen (n security) (m security) (w security) (η security))).map
       (fun keys => Cslib.Matrix.toBinary keys.1) =
@@ -489,7 +490,8 @@ theorem eval_keyGen_publicWord (n m w η : ℕ → ℕ) (security : ℕ) :
   rw [realEnsemble, ← eval_keyGen_publicMatrix, PMF.map_comp]
   rfl
 
-/-- The actual serialized key generator has precisely the public marginal used by `DecisionLWE`. -/
+/-- The actual serialized key generator has precisely the public marginal `realEnsemble` of
+`DecisionLWE`. -/
 theorem eval_keyGenSerialized_publicWord (n m w η : ℕ → ℕ) (security : ℕ) :
     (ProbComp.eval
       (keyGenSerialized (n security) (m security) (w security) (η security))).map Prod.fst =

@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Protocols.MPC.Beaver
 public import CslibFrontier.Probability.LinearCombination
+import CslibFrontier.Languages.Probabilistic.Notation
 import CslibFrontier.Probability.PMF.Bind
 import Mathlib.Algebra.Field.ZMod
 import Mathlib.Algebra.Group.TransferInstance
@@ -148,12 +149,11 @@ $2 / p$ bound to an arbitrary finite field and removing the `AddCommMonoid` requ
   and cheating equation for forged openings.
 * `Cslib.Crypto.Protocols.MPC.SPDZ.eval_linearCombZeroGame_eq`,
   `Cslib.Crypto.Protocols.MPC.SPDZ.eval_linearCombZeroGame_le`,
-  `Cslib.Crypto.Protocols.MPC.SPDZ.toReal_eval_linearCombZeroGame_le`: Stage 1 weight-cancellation
+  `Cslib.Crypto.Protocols.MPC.SPDZ.probability_linearCombZeroGame_le`: Stage 1 weight-cancellation
   probability $1 / p$.
 * `Cslib.Crypto.Protocols.MPC.SPDZ.eval_macKey_guess_le`: Stage 2 key-guessing probability bound.
 * `Cslib.Crypto.Protocols.MPC.SPDZ.eval_macCheckSoundnessGame_le`,
-  `Cslib.Crypto.Protocols.MPC.SPDZ.toReal_eval_macCheckSoundnessGame_le`,
-  `Cslib.Crypto.Protocols.MPC.SPDZ.succProbability_macCheckSoundnessGame_le`,
+  `Cslib.Crypto.Protocols.MPC.SPDZ.probability_macCheckSoundnessGame_le`,
   `Cslib.Crypto.Protocols.MPC.SPDZ.eval_macCheckSoundnessAdvGame_le`: concrete $2 / p$ bound for the
   standalone `MACCheck` cheating-equation game.
 
@@ -624,23 +624,23 @@ theorem eval_snd_macCheckProtocol_eq_pure_true {p n T : ℕ} {Coins Comm : Type}
 
 /-! ### Concrete $2 / p$ bound for the standalone `MACCheck` cheating-equation game -/
 
-/-- Stage-1 `ProbComp` game testing whether random weights `e ← ProbComp.uniform (Fin T → ZMod p)`
+/-- Stage-1 `ProbComp` game testing whether random weights `e ← $ᵗ (Fin T → ZMod p)`
 annihilate a fixed nonzero error vector `err : Fin T → ZMod p`. -/
 noncomputable def linearCombZeroGame (p T : ℕ) [NeZero p] (err : Fin T → ZMod p) :
     ProbComp Bool := do
-  let e ← ProbComp.uniform (Fin T → ZMod p)
+  let e ← $ᵗ (Fin T → ZMod p)
   return decide (linearCombAddHom err e = 0)
 
 /-- Standalone `MACCheck` cheating-equation game, the game from the proof of
 [DamgardKellerLarraiaPastroSchollSmart2013], §5.1, Lemma 1 (App. D.3):
-samples an independent uniform MAC key `alpha ← ProbComp.uniform (ZMod p)` and public weights
-`e ← ProbComp.uniform (Fin T → ZMod p)`, and tests whether the adversary's (possibly `e`-adaptive)
+samples an independent uniform MAC key `alpha ← $ᵗ ZMod p` and public weights
+`e ← $ᵗ (Fin T → ZMod p)`, and tests whether the adversary's (possibly `e`-adaptive)
 residual shift `deltaShift e` satisfies the cheating equation
 `alpha * linearCombAddHom err e = deltaShift e`. -/
 noncomputable def macCheckSoundnessGame (p T : ℕ) [NeZero p]
     (err : Fin T → ZMod p) (deltaShift : (Fin T → ZMod p) → ZMod p) : ProbComp Bool := do
-  let alpha ← ProbComp.uniform (ZMod p)
-  let e ← ProbComp.uniform (Fin T → ZMod p)
+  let alpha ← $ᵗ ZMod p
+  let e ← $ᵗ (Fin T → ZMod p)
   return decide (alpha * linearCombAddHom err e = deltaShift e)
 
 /-- Stateful randomized-adversary standalone `MACCheck` cheating-equation game (the game of
@@ -653,8 +653,8 @@ noncomputable def macCheckSoundnessAdvGame (p T : ℕ) [NeZero p] {S : Type}
     (adv : ProbComp S) (err : S → Fin T → ZMod p)
     (deltaShift : S → (Fin T → ZMod p) → ZMod p) : ProbComp Bool := do
   let s ← adv
-  let alpha ← ProbComp.uniform (ZMod p)
-  let e ← ProbComp.uniform (Fin T → ZMod p)
+  let alpha ← $ᵗ ZMod p
+  let e ← $ᵗ (Fin T → ZMod p)
   return decide (err s ≠ 0 ∧ alpha * linearCombAddHom (err s) e = deltaShift s e)
 
 /-- Stage 1 exact probability: for prime `p` and `err ≠ 0`, `linearCombZeroGame p T err` outputs
@@ -678,9 +678,9 @@ theorem eval_linearCombZeroGame_le {p T : ℕ} [Fact (Nat.Prime p)]
   (eval_linearCombZeroGame_eq herr).le
 
 /-- Stage 1 real-valued probability bound `≤ 1 / p`. -/
-theorem toReal_eval_linearCombZeroGame_le {p T : ℕ} [Fact (Nat.Prime p)]
+theorem probability_linearCombZeroGame_le {p T : ℕ} [Fact (Nat.Prime p)]
     {err : Fin T → ZMod p} (herr : err ≠ 0) :
-    ((ProbComp.eval (linearCombZeroGame p T err)) true).toReal ≤ 1 / (p : ℝ) := by
+    Pr[linearCombZeroGame p T err] ≤ 1 / p := by
   rw [eval_linearCombZeroGame_eq herr, ENNReal.toReal_inv, ENNReal.toReal_natCast, one_div]
 
 /-- Stage-2 pointwise key-guessing bound: for any `L, d : ZMod p`, a uniform key `alpha : ZMod p`
@@ -748,10 +748,10 @@ theorem eval_macCheckSoundnessGame_le {p T : ℕ} [Fact (Nat.Prime p)]
     _ = 2 / (p : ℝ≥0∞) := by rw [div_eq_mul_inv, two_mul]
 
 /-- Real-valued `2 / p` bound for `macCheckSoundnessGame`. -/
-theorem toReal_eval_macCheckSoundnessGame_le {p T : ℕ} [Fact (Nat.Prime p)]
+theorem probability_macCheckSoundnessGame_le {p T : ℕ} [Fact (Nat.Prime p)]
     {err : Fin T → ZMod p} (herr : err ≠ 0)
     (deltaShift : (Fin T → ZMod p) → ZMod p) :
-    ((ProbComp.eval (macCheckSoundnessGame p T err deltaShift)) true).toReal ≤ 2 / (p : ℝ) := by
+    Pr[macCheckSoundnessGame p T err deltaShift] ≤ 2 / p := by
   have h := eval_macCheckSoundnessGame_le herr deltaShift
   have hne_top : (2 : ℝ≥0∞) / (p : ℝ≥0∞) ≠ ⊤ := by
     rw [div_eq_mul_inv]
@@ -759,14 +759,6 @@ theorem toReal_eval_macCheckSoundnessGame_le {p T : ℕ} [Fact (Nat.Prime p)]
     exact Nat.cast_ne_zero.mpr (Fact.out : Nat.Prime p).pos.ne'
   have htr := ENNReal.toReal_mono hne_top h
   rwa [ENNReal.toReal_div, ENNReal.toReal_ofNat, ENNReal.toReal_natCast] at htr
-
-/-- `Game.succProbability` form of the `2 / p` bound for `macCheckSoundnessGame`. -/
-theorem succProbability_macCheckSoundnessGame_le {p T : ℕ} [Fact (Nat.Prime p)]
-    {err : Fin T → ZMod p} (herr : err ≠ 0)
-    (deltaShift : (Fin T → ZMod p) → ZMod p) :
-    (Game.succProbability (ProbComp.eval (macCheckSoundnessGame p T err deltaShift)) : ℝ) ≤
-      2 / (p : ℝ) :=
-  toReal_eval_macCheckSoundnessGame_le herr deltaShift
 
 /-- Standalone `MACCheck` cheating-equation bound against any prior randomized adversary
 `adv : ProbComp S` that selects state `s` (fixing `err s` and `deltaShift s`) before the
@@ -783,8 +775,8 @@ theorem eval_macCheckSoundnessAdvGame_le {p T : ℕ} [Fact (Nat.Prime p)] {S : T
   · simp [herr]
   · have heq :
         (ProbComp.eval do
-          let alpha ← ProbComp.uniform (ZMod p)
-          let e ← ProbComp.uniform (Fin T → ZMod p)
+          let alpha ← $ᵗ ZMod p
+          let e ← $ᵗ (Fin T → ZMod p)
           return decide (err s ≠ 0 ∧ alpha * linearCombAddHom (err s) e = deltaShift s e)) =
         ProbComp.eval (macCheckSoundnessGame p T (err s) (deltaShift s)) := by
       simp only [herr, ne_eq, not_false_eq_true, true_and, macCheckSoundnessGame]

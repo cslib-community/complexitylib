@@ -24,7 +24,8 @@ Its chapters 8–10 record distinguishes constant-round protocols, counting-orac
 and quantitative crypto bounds. Its Chapter 14 record includes a checked degree obstruction to the draft's literal
 circuit-to-determinant statement.
 Its chapters 11–13, 15, 21 and 22 distinguish exact endpoints, model restrictions and
-source defects. Chapter 22 preserves the constant-free formula restriction and the open
+source defects. The later expected-cost Yao endpoint includes numerical equality, optimal
+finite-support algorithms and hard distributions for arbitrary output types. Chapter 22 preserves the constant-free formula restriction and the open
 corrected density-amplification objective.
 Chapters 16–17 distinguish finite pseudorandomness/coding
 results from uniform machine bounds and general-hardness endpoints; this is not a claim of

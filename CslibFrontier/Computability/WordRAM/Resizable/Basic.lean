@@ -447,6 +447,62 @@ theorem readsWidth_of_mapSimulates (φ : B.Simulates B') {c : RCode B r}
 
 end RCode
 
+/-! ### Locating the parts of an assembled structured program -/
+
+namespace RProgram.Contains
+
+variable {p : RProgram B r} {pc : ℕ}
+
+/-- The second part of an assembled sequence starts after the first. -/
+theorem seq_right {c₁ c₂ : RCode B r} (hp : p.Contains pc ((RCode.seq c₁ c₂).assemble pc)) :
+    p.Contains (pc + c₁.size) (c₂.assemble (pc + c₁.size)) := by
+  simpa [RCode.length_assemble] using hp.append_right
+
+/-- An assembled branch starts with its test, which jumps over the negative arm. -/
+theorem branch_head {c : Cond r} {pos neg : RCode B r}
+    (hp : p.Contains pc ((RCode.branch c pos neg).assemble pc)) :
+    p[pc]? = some (.branch c (pc + neg.size + 2)) := by
+  simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hp.head
+
+/-- The negative arm of an assembled branch follows its test. -/
+theorem branch_neg {c : Cond r} {pos neg : RCode B r}
+    (hp : p.Contains pc ((RCode.branch c pos neg).assemble pc)) :
+    p.Contains (pc + 1) (neg.assemble (pc + 1)) :=
+  hp.cons_tail.append_left
+
+/-- The negative arm of an assembled branch ends with a jump over the positive arm. -/
+theorem branch_jump {c : Cond r} {pos neg : RCode B r}
+    (hp : p.Contains pc ((RCode.branch c pos neg).assemble pc)) :
+    p[pc + 1 + neg.size]? = some (.jump (pc + neg.size + pos.size + 2)) := by
+  simpa using (hp.cons_tail.append_right (q₁ := neg.assemble (pc + 1))).head
+
+/-- The positive arm of an assembled branch follows the jump that ends the negative arm. -/
+theorem branch_pos {c : Cond r} {pos neg : RCode B r}
+    (hp : p.Contains pc ((RCode.branch c pos neg).assemble pc)) :
+    p.Contains (pc + neg.size + 2) (pos.assemble (pc + neg.size + 2)) := by
+  have h := (hp.cons_tail.append_right (q₁ := neg.assemble (pc + 1))).cons_tail
+  rwa [RCode.length_assemble, show pc + 1 + neg.size + 1 = pc + neg.size + 2 by omega] at h
+
+/-- The test of an assembled loop is followed by its exit jump. -/
+theorem loop_exit {c : Cond r} {body : RCode B r}
+    (hp : p.Contains pc ((RCode.loop c body).assemble pc)) :
+    p[pc + 1]? = some (.jump (pc + body.size + 3)) :=
+  hp.cons_tail.head
+
+/-- The body of an assembled loop follows its test and exit jump. -/
+theorem loop_body {c : Cond r} {body : RCode B r}
+    (hp : p.Contains pc ((RCode.loop c body).assemble pc)) :
+    p.Contains (pc + 2) (body.assemble (pc + 2)) := by
+  simpa [Nat.add_assoc] using hp.cons_tail.cons_tail.append_left
+
+/-- The body of an assembled loop is followed by a jump back to the test. -/
+theorem loop_back {c : Cond r} {body : RCode B r}
+    (hp : p.Contains pc ((RCode.loop c body).assemble pc)) :
+    p[pc + 2 + body.size]? = some (.jump pc) := by
+  simpa using hp.cons_tail.cons_tail.append_right.head
+
+end RProgram.Contains
+
 /-! ## Big-step demonic execution (`RDemonicExec`) -/
 
 /-- Big-step demonic execution judgment `RDemonicExec w L_peak c x T P`: at word width `w`,

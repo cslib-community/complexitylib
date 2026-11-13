@@ -22,6 +22,36 @@ The [superquadratic sensitivity separation](https://github.com/cslib-community/c
 
 The [zero-error module](../../CslibFrontier/Computability/QueryComplexity/Randomized/ZeroError.lean) adds the expected-query view on the same simplex type, not a second randomized-tree type. `RandomizedDecisionTree.expectedCost` is the weighted average of the queries the drawn tree actually makes on one input (`DecisionTree.cost`, counting repeats), and `QueryComplexity.zeroErrorComplexity` is the real-valued Las Vegas complexity `R₀`, which takes the infimum over always-correct trees of the worst-input expected cost. It satisfies `R₀ <= D`. Worst-case `randomizedComplexity 0` equals `D`, so `R₀` is the measure that can drop below it. `RandomizedDecisionTree.uniformMixture` builds the algorithm whose coins select a deterministic tree uniformly. For the complete binary AND–OR tree `T_{2,k}` on `n = 4^k` leaves, with AND at the root as in Motwani–Raghavan, every deterministic tree reads all leaves on some input, so `D = n`. This is in [AndOrTree](../../CslibFrontier/Computability/QueryComplexity/AndOrTree.lean), via the Rivest–Vuillemin top-Fourier-coefficient criterion in [Evasive](../../CslibFrontier/Computability/DecisionTree/Evasive.lean). The directional algorithm in [AndOrTree/Randomized](../../CslibFrontier/Computability/QueryComplexity/AndOrTree/Randomized.lean) has an exact expected-cost recurrence. From it come Motwani–Raghavan's `R₀ <= 3^k = n^(log₄ 3)` and Snir's sharp `R₀ <= (α - 1/2) n^(log₂ α)` with `α = (1 + √33)/4`, about `n^0.7537`. Nonconstant functions have `1 <= R₀`. The AND-rooted and OR-rooted orientations transfer through [dual trees](../../CslibFrontier/Computability/DecisionTree/Dual.lean), which swap children and negate leaves. The matching Saks–Wigderson lower bound `Ω(n^(log₂ α))` is not formalized.
 
+For zero-error expected cost, import
+[`CslibFrontier.Computability.QueryComplexity.YaoExpected`](../../CslibFrontier/Computability/QueryComplexity/YaoExpected.lean).
+`DecisionTree.distributionalCost ν` averages executed queries over inputs drawn from `ν`.
+`QueryComplexity.distributionalExpectedComplexity ν f` minimizes this cost over trees correct on
+**every** input, including inputs outside `ν`'s support. For any finite coordinate type and any
+output type, `zeroErrorComplexity_eq_iSup_distributionalExpectedComplexity` proves
+$R_0(f)=\sup_\nu\min_{t\text{ computes }f}\mathbb E_{x\sim\nu}[t.\mathrm{cost}(x)]$.
+The supremum is attained: `exists_optimal_expectedCost` returns an always-correct randomized tree
+with expected cost at most `zeroErrorComplexity f` on every input and a distribution forcing at
+least that cost on every correct deterministic tree. For a chosen distribution,
+`exists_computes_distributionalCost_eq` returns a deterministic minimizer. All laws have finite
+support; this is a query theorem with free local computation. See Arora–Barak 2007,
+Definitions 11.13 and 11.15–11.16, Theorem 11.17, printed pages 215–216 / PDF pages 231–232.
+
+Start with the [complete checked client](../../CslibFrontierTests/YaoExpected.lean), which imports
+this module and checks empty coordinates, constant functions and a nonconstant one-bit function
+with natural-number outputs. From the repository root, run
+`scripts/build.sh --wfail --iofail CslibFrontierTests.YaoExpected CslibFrontierTests.DecisionTreePrune`.
+Success checks the numerical equality and witnesses at costs $0$ and $1$. If a lower bound is
+available for every correct tree under a chosen input law, use
+`le_distributionalExpectedComplexity` followed by
+`distributionalExpectedComplexity_le_zeroErrorComplexity`. A tree correct only on the law's
+support does not satisfy this API. For pruning repeated queries, import
+[`DecisionTree.Prune`](../../CslibFrontier/Computability/DecisionTree/Prune.lean): `prune` grows a
+partial assignment along each path, preserves evaluation on agreeing inputs, decreases natural
+weighted cost (including zero weights), and leaves depth at most the number of initially free
+coordinates. The [pruning client](../../CslibFrontierTests/DecisionTreePrune.lean) checks repeated
+and initially fixed queries. The finite minimax proof uses these pruned cost profiles, so its
+public theorem needs no finite-output hypothesis.
+
 [distributionalComplexity](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/QueryComplexity/Yao.lean#L74) instead fixes a distribution on inputs and minimizes deterministic depth subject to average error. Yao's theorem equates randomized complexity to the supremum of these distributional complexities on the finite domain and supplies an attaining hard distribution. The [Nisan relation](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/QueryComplexity/Randomized/Nisan.lean) gives `D <= 27 R_(1/3)^3`; approximate degree and block-sensitivity lower bounds are stated over the same cost convention.
 
 Quantum queries use arbitrary input-independent isometries and a controlled phase oracle, charging only oracle uses. Their definitions and BBBV/polynomial/adversary/Grover endpoints are described in [algebraic and quantum models](algebraic-and-quantum.md). That chapter also covers the exponential separation between quantum and randomized queries for Simon's problem, whose classical side is the randomized decision-tree lower bound [simon_randomized_lower_bound](../../CslibFrontier/Computability/QueryComplexity/Simon.lean). It also covers Deutsch–Jozsa. The deterministic bound `N/2 + 1` is in [DeutschJozsa](../../CslibFrontier/Computability/QueryComplexity/DeutschJozsa.lean). Three random queries with error `1/4` on the promise ([Randomized/DeutschJozsa](../../CslibFrontier/Computability/QueryComplexity/Randomized/DeutschJozsa.lean), through `RandomizedDecisionTree.errorProb_uniformMixture`) show that its quantum advantage holds only for exact algorithms.
@@ -103,6 +133,46 @@ Two building blocks bound concrete protocols. In `Protocol.ecomplexityFun_le_clo
 The nondeterministic cover convention does not charge a final output announcement. Its relationship to a tree in which both parties know the answer therefore has an explicit small overhead. Public-coin PMFs and finite-support randomized query trees are different probability representations; neither should be silently substituted for the other.
 
 ## Major communication bridges and bounds
+
+### Arbitrary monochromatic tilings
+
+Import [Partition](../../CslibFrontier/Computability/Communication/Partition.lean) for
+`Cslib.Communication.RectanglePartition X Y Z`. Its named fields are the number `size`,
+rectangle sides `alice` and `bob`, output labels and the exact-partition law. Every input pair
+belongs to one piece, and `p.run = f` says that each rectangle has the corresponding constant
+value of `f`. These are arbitrary labelled tilings; constructing one does not require a protocol.
+Empty pieces count toward `size`. `RectanglePartition.constant` and `singletons` supply basic
+examples. The latter needs finite input types.
+
+`tilingNumber f` is the minimum size in `ℕ∞`, with `⊤` if there is no finite tiling.
+On finite input types, `exists_minimal_tiling f` supplies a tiling attaining the minimum.
+An empty input product has minimum zero. For lower bounds, `le_tilingNumber_iff` reduces the
+claim to a bound for every tiling. Import the corresponding bound module:
+
+- [FoolingSet](../../CslibFrontier/Computability/Communication/FoolingSet.lean):
+  `IsFoolingSet.card_le_tilingNumber` gives the cardinality bound, with the stronger
+  `card_le_partition` counting only pieces with the fooling set's label.
+- [Rank](../../CslibFrontier/Computability/Communication/Rank.lean):
+  `rank_communicationMatrix_le_tilingNumber` bounds the rank of the **zero/one** matrix with
+  finite columns, over a commutative semiring with the strong rank condition, including any field.
+- [Discrepancy](../../CslibFrontier/Computability/Communication/Discrepancy.lean):
+  `one_le_tilingNumber_mul_discrepancy` gives $1 \leq \chi(f)\,\mathrm{disc}_\nu(f)$,
+  and `one_div_discrepancy_le_tilingNumber` gives the reciprocal form. These use finite
+  input types and any PMF on the input product. The finite minimum is converted with `toNat`.
+  A PMF cannot exist on an empty input product.
+
+These are Arora–Barak's draft Lemma 12.8, Theorem 12.10 and Lemma 12.11
+([printed 224–225 / PDF 240–241](https://theory.cs.princeton.edu/complexity/book.pdf)).
+The uniform PMF on two equal bit cubes gives the draft's discrepancy normalization; arbitrary
+finite rectangular input sets and nonuniform PMFs are supported too. The cost is piece count;
+no implementation runtime is certified. No reconstruction of a protocol from an arbitrary tiling is
+claimed. `Protocol.toRectanglePartition` connects protocol leaves to this interface; the existing
+protocol sum, fooling-set, rank and discrepancy results now reuse its general proofs. The
+fooling-set injection is also shared with nondeterministic covers.
+
+Run `scripts/build.sh CslibFrontierTests.CommunicationTilings` for the
+[complete examples](../../CslibFrontierTests/CommunicationTilings.lean): Boolean equality,
+constant functions, a charged empty piece, uniform and point-mass discrepancy, and an empty domain.
 
 ### Choosing an instance and steering a protocol
 
@@ -486,6 +556,14 @@ The Gilbert–Varshamov bound for linear codes comes from a union bound over a r
 - the exponents at sample points;
 - Parseval for a singleton;
 - the main theorem at `ε = 1/4`.
+
+## Nearest decoding with radial noise
+
+Import [Code/NearestDecoding](../../CslibFrontier/Foundations/Data/Code/NearestDecoding.lean) for `IsNearestDecoder E D` and the finite tie set `nearestMessages E y`. This is the same decoder predicate used by the binary symmetric channel. With an injective encoder, uniform messages give uniform codewords; for a finite code `C`, use its subtype as the message type and `Subtype.val` as encoder.
+
+[Code/RadialDecoding](../../CslibFrontier/Foundations/Data/Code/RadialDecoding.lean) samples the message and additive noise independently, returning `(received word, message)`. `IsRadial ν` requires equal noise masses for equal Hamming weights, without requiring independent noise coordinates. `nearestMessages_card_mul_joint` proves that the tie-set cardinality times the joint success mass equals the mass of receiving `y` with the sent message in that tie set. It holds at null observations; `nearestMessages_conditional_success` divides only when the conditioning event has nonzero mass. `twoWayTie_failure_eq_half` gives exact half-error probability on two-way ties at each specified noise weight.
+
+These are the deterministic tie statements of [HQC v5.1, §6.1.5, Lemma 6.2, p. 60](https://pqc-hqc.org/doc/hqc_specifications_v5.1.pdf#page=60). They do not establish radiality of actual HQC noise, correctness of its implemented decoder, independence of Reed–Solomon blocks, or a decoding-failure/security bound. The [checked client](../../CslibFrontierTests/RadialDecoding.lean) uses the code `{00, 11}` and uniform weight-one noise, checks null and singleton cases, and changes the prior to show conditional success `3/4` instead of `1/2`. Run `scripts/build.sh --wfail --iofail CslibFrontierTests.RadialDecoding`.
 
 ## Channel coding on the binary symmetric channel
 

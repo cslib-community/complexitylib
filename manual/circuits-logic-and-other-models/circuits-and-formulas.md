@@ -161,8 +161,60 @@ exact polynomially bounded advice-length classes. `PWithAdvice_subset_PAdvice hl
 polynomial-advice/circuit APIs. Run `scripts/build.sh CslibFrontierTests.OneBitAdvice` for
 [complete clients](../../CslibFrontierTests/OneBitAdvice.lean) assembling one-bit advice,
 polynomial-size circuits, undecidability and length dependence, and checking empty/odd inputs
-to the even-length language. Strict P/1 versus P/poly and the arbitrary advice hierarchy
-remain separate obligations.
+to the even-length language. The hierarchy API below supplies strict P/1 versus P/poly
+and separates arbitrary strictly increasing advice schedules under eventual capacity.
+
+### Compare exact advice lengths carefully
+
+Import [Advice.LengthComparison](../../CslibFrontier/Computability/Complexity/Classes/Advice/LengthComparison.lean)
+for `PWithAdvice_subset_of_lt hlt`, where `hlt : ∀ n, lower n < upper n`.
+The new advice appends a `true` delimiter and fills the remaining space with `false` bits.
+The decider uses binary-word normalization to discard those trailing false bits and removes
+the delimiter. It recovers every original advice word, including empty words and words
+ending in false bits, without computing either bound. The complete-pair polynomial-time
+convention is preserved because the new advice is longer.
+
+`PWithAdvice_subset_succ length` is the one-extra-bit case. The complete
+[clients](../../CslibFrontierTests/AdviceLengthComparison.lean) also apply the theorem to a
+growing gap and an arbitrary positive gap; run
+`scripts/build.sh CslibFrontierTests.AdviceLengthComparison`.
+
+Strict positivity matters: do not replace it with arbitrary pointwise monotonicity.
+`exists_nonmonotone_advice_bounds` gives polynomially bounded lower/gap functions, an unbounded
+gap and a language lost by the corresponding upper exact-length class. The gap is not required
+to be strictly positive. An arbitrary exact length can encode information in whether advice is
+empty; a fixed upper length can remove that information. Polynomial growth of a bound does
+not mean the bound is computable. The
+[source qualification](../../results/goldreich-2007.md#exact-advice-length-comparison-a-model-qualification)
+distinguishes the draft's displayed hypotheses, its positivity prose and the author's official
+fixed-one-bit addendum. The inclusion theorem alone does not prove strict separation;
+strict separation is supplied by the hierarchy API below.
+
+### Apply the strict advice hierarchy
+
+Import [Advice.Hierarchy](../../CslibFrontier/Computability/Complexity/Classes/Advice/Hierarchy.lean)
+and apply `PWithAdvice_ssubset_of_lt hlt hcap`. Here `hlt : ∀ n, lower n < upper n` is
+pointwise strict growth, and `hcap : ∀ᶠ n in Filter.atTop, upper n ≤ 2 ^ n` is eventual
+truth-table capacity. Neither function must be computable. The proof chooses advice by
+countability and uses a fixed native decoder: interpret the input as a binary index, capped
+at the advice length, then read the indexed bit or return false. Capping avoids an
+exponential unary intermediate. The clock is polynomial in the complete encoded pair,
+including advice; exponential advice is therefore allowed by this contract.
+
+`PWithAdvice_pred_ssubset hpos hcap` removes exactly one bit from a positive upper bound.
+The positivity hypothesis is essential for natural-number subtraction. For constant advice,
+`PWithAdvice_const_ssubset_succ k` needs no hypotheses: capacity eventually holds even when
+short inputs have fewer possible values than advice bits. These theorems use exact membership,
+with no allowance for finitely many erroneous inputs.
+
+For circuits, import
+[Boolean.Advice.Hierarchy](../../CslibFrontier/Computability/Circuit/Boolean/Advice/Hierarchy.lean).
+`PWithAdvice_const_ssubset_PPoly k` proves every constant exact-advice class strictly smaller
+than P/poly. At `k = 1` this supplies Goldreich's strict P/1 endpoint. Run
+`scripts/build.sh CslibFrontierTests.AdviceHierarchy` for
+[complete clients](../../CslibFrontierTests/AdviceHierarchy.lean) extracting a two-bit
+separating language, recovering the P/0 boundary, allowing constant five-bit advice on short
+inputs, and applying the theorem to the exponential truth-table schedule.
 
 ## Nonuniform classes and branching programs
 

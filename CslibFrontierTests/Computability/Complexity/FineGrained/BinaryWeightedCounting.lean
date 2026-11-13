@@ -25,7 +25,7 @@ open Cslib.Logic.PL Cslib.Circuits.Frontier Cslib.Circuits.Frontier.ClauseNetwor
   Turing.MultiTapeTM Cslib.GenericRAM BinaryWeightedCounting
 
 /-- One unary relation whose two table entries are part of the input. -/
-@[expose] def weightedVariable : CSP (List ℕ) ℕ := [([5, 13], [0])]
+@[expose] def weightedVariable : CSP (List ℕ) ℕ := [⟨[5, 13], [0]⟩]
 
 private theorem tableWeight_polyTime (w : List Bool) :
     ComputableInPolyTime (fun table : List ℕ => ExplicitTensorNetwork.entry table w)
@@ -45,7 +45,7 @@ example : count 1 0 1 ExplicitTensorNetwork.entry weightedVariable = 0 := by dec
 
 example : count 1 16 1 ExplicitTensorNetwork.entry ([] : CSP (List ℕ) ℕ) = 1 := count_nil ..
 
-example : count 1 16 1 ExplicitTensorNetwork.entry [([5, 13], [])] = 0 := by decide
+example : count 1 16 1 ExplicitTensorNetwork.entry [⟨[5, 13], []⟩] = 0 := by decide
 
 -- The supplied local weight certificate produces an ordinary native machine for the input tables.
 example : ComputableInO (count 1 16 1 ExplicitTensorNetwork.entry)
@@ -62,7 +62,7 @@ example : (cspNetwork 1 ExplicitTensorNetwork.entry weightedVariable).2.binaryTa
     49 * ((cspNetwork 1 ExplicitTensorNetwork.entry weightedVariable).2.numEdges + 1) ^ 3 := by
   apply binaryTableBound_cspNetwork_le 2 (by decide)
   intro c hc w hw
-  have hc' : c = ([5, 13], [0]) := by simpa [weightedVariable] using hc
+  have hc' : c = ⟨[5, 13], [0]⟩ := by simpa [weightedVariable] using hc
   subst c
   apply ExplicitTensorNetwork.size_entry_le
   decide

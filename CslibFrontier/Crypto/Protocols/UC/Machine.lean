@@ -176,8 +176,7 @@ variable {β : Type}
 /-- An embedded closed program is unchanged by closing. -/
 @[simp] theorem closeProgram_sample (program : ProbComp α) :
     closeProgram (ProbOracleComp.sample program) = program := by
-  rw [closeProgram, ProbOracleComp.interpret_sample]
-  exact OracleComp.interpret_query_eq_self program
+  rw [closeProgram, ProbOracleComp.interpret_sample, ProbComp.interpret_unifFin]
 
 end RunFrom
 

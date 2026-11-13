@@ -61,13 +61,13 @@ theorem paritySem_three (b x y z : Bool) :
     paritySem b [x, y, z] = ((x ^^ y ^^ z) == b) := by
   cases x <;> rfl
 
-private theorem length_constraint_toCNF_parity (c : Constraint Bool V) (hc : c.2.length = 3) :
+private theorem length_constraint_toCNF_parity (c : Constraint Bool V) (hc : c.scope.length = 3) :
     (Constraint.toCNF paritySem c).length = 4 := by
   simp only [Constraint.toCNF, List.length_map, hc]
-  cases c.1 <;> decide
+  cases c.rel <;> decide
 
 /-- A system of three-variable parity equations produces exactly four clauses per equation. -/
-theorem length_toCNFBounded_parity {F : CSP Bool V} (hF : ∀ c ∈ F, c.2.length = 3) :
+theorem length_toCNFBounded_parity {F : CSP Bool V} (hF : ∀ c ∈ F, c.scope.length = 3) :
     (F.toCNFBounded 3 paritySem).length = 4 * F.length := by
   rw [toCNFBounded_eq_toCNF fun c hc => (hF c hc).le]
   induction F with
@@ -81,7 +81,7 @@ theorem length_toCNFBounded_parity {F : CSP Bool V} (hF : ∀ c ∈ F, c.2.lengt
 
 /-- Every clause produced from a three-variable parity system has exactly three literals. -/
 theorem length_clause_mem_toCNFBounded_parity {F : CSP Bool V}
-    (hF : ∀ c ∈ F, c.2.length = 3) {cl : Clause V}
+    (hF : ∀ c ∈ F, c.scope.length = 3) {cl : Clause V}
     (hcl : cl ∈ F.toCNFBounded 3 paritySem) : cl.length = 3 := by
   rw [toCNFBounded_eq_toCNF fun c hc => (hF c hc).le] at hcl
   obtain ⟨c, hc, hcl⟩ := List.mem_flatMap.mp hcl
@@ -92,7 +92,7 @@ theorem length_clause_mem_toCNFBounded_parity {F : CSP Bool V}
 /-- Three distinct variables in every input scope give three distinct variables in every output
 clause. -/
 theorem isExactThreeDistinct_toCNFBounded_parity {F : CSP Bool V}
-    (hF : ∀ c ∈ F, c.2.length = 3 ∧ c.2.Nodup) :
+    (hF : ∀ c ∈ F, c.scope.length = 3 ∧ c.scope.Nodup) :
     (F.toCNFBounded 3 paritySem).IsExactThreeDistinct := by
   intro cl hcl
   refine ⟨length_clause_mem_toCNFBounded_parity (fun c hc => (hF c hc).1) hcl, ?_⟩
@@ -100,7 +100,7 @@ theorem isExactThreeDistinct_toCNFBounded_parity {F : CSP Bool V}
   obtain ⟨c, hc, hcl⟩ := List.mem_flatMap.mp hcl
   obtain ⟨w, hw, rfl⟩ := List.mem_map.mp hcl
   have hwlen := BitString.length_of_mem_enumList (List.mem_filter.mp hw).1
-  have hvars : (Constraint.forbidClause c.2 w).map Prod.fst = c.2 := by
+  have hvars : (Constraint.forbidClause c.scope w).map Prod.fst = c.scope := by
     simpa only [Constraint.forbidClause, List.map_map, Function.comp_def] using
       (List.map_fst_zip hwlen.ge)
   rw [hvars]
@@ -108,14 +108,14 @@ theorem isExactThreeDistinct_toCNFBounded_parity {F : CSP Bool V}
 
 /-- The compiler preserves satisfiability, including the empty system and repeated variables. -/
 theorem satisfiable_toCNFBounded_parity {F : CSP Bool V}
-    (hF : ∀ c ∈ F, c.2.length = 3) :
+    (hF : ∀ c ∈ F, c.scope.length = 3) :
     (F.toCNFBounded 3 paritySem).Satisfiable ↔ F.Satisfiable paritySem := by
   rw [toCNFBounded_eq_toCNF fun c hc => (hF c hc).le, satisfiable_toCNF]
 
 /-- For each assignment, the fraction of falsified output clauses is exactly one quarter of the
 fraction of violated input equations. Both fractions are zero for the empty system. -/
 theorem proportion_countUnsat_toCNFBounded_parity {F : CSP Bool V}
-    (hF : ∀ c ∈ F, c.2.length = 3) (σ : V → Bool) :
+    (hF : ∀ c ∈ F, c.scope.length = 3) (σ : V → Bool) :
     ((F.toCNFBounded 3 paritySem).countUnsat σ : ℝ) /
         (F.toCNFBounded 3 paritySem).length =
       (F.countP (fun c => !Constraint.eval paritySem σ c) : ℝ) / F.length / 4 := by
@@ -126,7 +126,7 @@ theorem proportion_countUnsat_toCNFBounded_parity {F : CSP Bool V}
 /-- A universal lower bound on the fraction of violated equations transfers with the exact factor
 four. No nonempty-system assumption is hidden in this equivalence. -/
 theorem le_unsatVal_toCNFBounded_parity_iff {F : CSP Bool V}
-    (hF : ∀ c ∈ F, c.2.length = 3) (ε : ℝ) :
+    (hF : ∀ c ∈ F, c.scope.length = 3) (ε : ℝ) :
     ε / 4 ≤ (F.toCNFBounded 3 paritySem).unsatVal ↔
       ∀ σ : V → Bool, ε ≤
         (F.countP (fun c => !Constraint.eval paritySem σ c) : ℝ) / F.length := by

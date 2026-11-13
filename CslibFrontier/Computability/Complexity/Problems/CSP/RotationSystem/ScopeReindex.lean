@@ -34,7 +34,7 @@ positional permutation commutes with the positive cycle. Arity zero remains vacu
 theorem argumentSuccessor_reindexLastScopeOccurrenceEquiv (F : CSP Rel V) (r : Rel)
     {n : ℕ} (scope : Fin n → V) (q : Equiv.Perm (Fin n))
     (hq : ∀ j, q (finRotate n j) = finRotate n (q j))
-    (o : (F ++ [(r, List.ofFn scope)]).Occurrence) :
+    (o : (F ++ [Constraint.mk r (List.ofFn scope)]).Occurrence) :
     reindexLastScopeOccurrenceEquiv F r scope q (argumentSuccessor o) =
       argumentSuccessor (reindexLastScopeOccurrenceEquiv F r scope q o) := by
   have hqs (j : Fin n) : q.symm (finRotate n j) = finRotate n (q.symm j) := by
@@ -58,7 +58,7 @@ theorem argumentSuccessor_reindexLastScopeOccurrenceEquiv (F : CSP Rel V) (r : R
 
 private theorem reindex_variable_fibers (F : CSP Rel V) (r : Rel) {n : ℕ}
     (scope : Fin n → V) (q : Equiv.Perm (Fin n))
-    (o p : (F ++ [(r, List.ofFn scope)]).Occurrence) :
+    (o p : (F ++ [Constraint.mk r (List.ofFn scope)]).Occurrence) :
     (reindexLastScopeOccurrenceEquiv F r scope q o).var =
       (reindexLastScopeOccurrenceEquiv F r scope q p).var ↔ o.var = p.var := by
   have ho := congrArg Prod.snd (header_reindexLastScopeOccurrenceEquiv F r scope q o)
@@ -68,7 +68,7 @@ private theorem reindex_variable_fibers (F : CSP Rel V) (r : Rel) {n : ℕ}
 
 private theorem reindex_constraint_fibers (F : CSP Rel V) (r : Rel) {n : ℕ}
     (scope : Fin n → V) (q : Equiv.Perm (Fin n))
-    (o p : (F ++ [(r, List.ofFn scope)]).Occurrence) :
+    (o p : (F ++ [Constraint.mk r (List.ofFn scope)]).Occurrence) :
     (reindexLastScopeOccurrenceEquiv F r scope q o).1 =
       (reindexLastScopeOccurrenceEquiv F r scope q p).1 ↔ o.1 = p.1 := by
   have ho := congrArg Prod.fst (header_reindexLastScopeOccurrenceEquiv F r scope q o)
@@ -82,8 +82,8 @@ variable [DecidableEq V]
 bijection. This supplies no order claim for an arbitrary noncyclic scope permutation. -/
 noncomputable def reindexLastScopeRotation (F : CSP Rel V) (r : Rel) {n : ℕ}
     (scope : Fin n → V) (q : Equiv.Perm (Fin n))
-    (rho : RotationSystem (incidenceGraph (F ++ [(r, List.ofFn scope)]))) :
-    RotationSystem (incidenceGraph (F ++ [(r, List.ofFn (scope ∘ q))])) :=
+    (rho : RotationSystem (incidenceGraph (F ++ [Constraint.mk r (List.ofFn scope)]))) :
+    RotationSystem (incidenceGraph (F ++ [Constraint.mk r (List.ofFn (scope ∘ q))])) :=
   occurrenceTransport rho (reindexLastScopeOccurrenceEquiv F r scope q)
     (reindex_variable_fibers F r scope q) (reindex_constraint_fibers F r scope q)
 
@@ -91,7 +91,7 @@ noncomputable def reindexLastScopeRotation (F : CSP Rel V) (r : Rel) {n : ℕ}
 closed components, nullaries, repeated variable names and empty scopes. -/
 theorem numericalGenusZero_reindexLastScopeRotation (F : CSP Rel V) (r : Rel) {n : ℕ}
     (scope : Fin n → V) (q : Equiv.Perm (Fin n))
-    (rho : RotationSystem (incidenceGraph (F ++ [(r, List.ofFn scope)])))
+    (rho : RotationSystem (incidenceGraph (F ++ [Constraint.mk r (List.ofFn scope)])))
     (hr : rho.NumericalGenusZero) : (reindexLastScopeRotation F r scope q rho).NumericalGenusZero :=
   numericalGenusZero_occurrenceTransport rho (reindexLastScopeOccurrenceEquiv F r scope q)
     (reindex_variable_fibers F r scope q) (reindex_constraint_fibers F r scope q) hr
@@ -101,7 +101,7 @@ hypothesis; no target order or genus provider is assumed. -/
 theorem respectsArgumentOrder_reindexLastScopeRotation (F : CSP Rel V) (r : Rel) {n : ℕ}
     (scope : Fin n → V) (q : Equiv.Perm (Fin n))
     (hq : ∀ j, q (finRotate n j) = finRotate n (q j))
-    (rho : RotationSystem (incidenceGraph (F ++ [(r, List.ofFn scope)])))
+    (rho : RotationSystem (incidenceGraph (F ++ [Constraint.mk r (List.ofFn scope)])))
     (hr : RespectsArgumentOrder rho) :
     RespectsArgumentOrder (reindexLastScopeRotation F r scope q rho) :=
   respectsArgumentOrder_occurrenceTransport rho (reindexLastScopeOccurrenceEquiv F r scope q)
@@ -113,7 +113,7 @@ source. This constructor makes no uniform native runtime assertion. -/
 @[expose] noncomputable def reindexLastScopeCertificate (F : CSP Rel V) (r : Rel) {n : ℕ}
     (scope : Fin n → V) (q : Equiv.Perm (Fin n)) (c : RotationCertificate)
     (hrot : RotationCertificate.verifyRotation
-      (incidenceGraph (F ++ [(r, List.ofFn scope)])) c = true) : RotationCertificate :=
+      (incidenceGraph (F ++ [Constraint.mk r (List.ofFn scope)])) c = true) : RotationCertificate :=
   RotationCertificate.ofRotation (reindexLastScopeRotation F r scope q
     (RotationCertificate.decode _ c hrot))
 
@@ -123,12 +123,13 @@ theorem verifyRotationCertificate_reindexLastScopeCertificate (F : CSP Rel V) (r
     {n : ℕ} (scope : Fin n → V) (q : Equiv.Perm (Fin n))
     (hq : ∀ j, q (finRotate n j) = finRotate n (q j)) (c : RotationCertificate)
     (hrot : RotationCertificate.verifyRotation
-      (incidenceGraph (F ++ [(r, List.ofFn scope)])) c = true)
-    (h : verifyRotationCertificate (F ++ [(r, List.ofFn scope)]) c = true) :
-    verifyRotationCertificate (F ++ [(r, List.ofFn (scope ∘ q))])
+      (incidenceGraph (F ++ [Constraint.mk r (List.ofFn scope)])) c = true)
+    (h : verifyRotationCertificate (F ++ [Constraint.mk r (List.ofFn scope)]) c = true) :
+    verifyRotationCertificate (F ++ [Constraint.mk r (List.ofFn (scope ∘ q))])
       (reindexLastScopeCertificate F r scope q c hrot) = true := by
   obtain ⟨hr, hg, ho⟩ := (verifyRotationCertificate_eq_true_iff _ _).mp h
-  let rho := RotationCertificate.decode (incidenceGraph (F ++ [(r, List.ofFn scope)])) c hrot
+  let rho :=
+    RotationCertificate.decode (incidenceGraph (F ++ [Constraint.mk r (List.ofFn scope)])) c hrot
   let tau := reindexLastScopeRotation F r scope q rho
   have hgenus : tau.NumericalGenusZero :=
     numericalGenusZero_reindexLastScopeRotation F r scope q rho hg
@@ -142,13 +143,14 @@ coordinates or assuming a target certificate. -/
 theorem getD_reindexLastScopeCertificate_of_step (F : CSP Rel V) (r : Rel) {n : ℕ}
     (scope : Fin n → V) (q : Equiv.Perm (Fin n)) (c : RotationCertificate)
     (hrot : RotationCertificate.verifyRotation
-      (incidenceGraph (F ++ [(r, List.ofFn scope)])) c = true)
-    (o p : (F ++ [(r, List.ofFn scope)]).Occurrence) (side other : Bool)
+      (incidenceGraph (F ++ [Constraint.mk r (List.ofFn scope)])) c = true)
+    (o p : (F ++ [Constraint.mk r (List.ofFn scope)]).Occurrence) (side other : Bool)
     (hstep : c.successor.getD (incidenceDart o side).index 0 = (incidenceDart p other).index) :
     (reindexLastScopeCertificate F r scope q c hrot).successor.getD
         (incidenceDart (reindexLastScopeOccurrenceEquiv F r scope q o) side).index 0 =
       (incidenceDart (reindexLastScopeOccurrenceEquiv F r scope q p) other).index := by
-  let rho := RotationCertificate.decode (incidenceGraph (F ++ [(r, List.ofFn scope)])) c hrot
+  let rho :=
+    RotationCertificate.decode (incidenceGraph (F ++ [Constraint.mk r (List.ofFn scope)])) c hrot
   let e := reindexLastScopeOccurrenceEquiv F r scope q
   have hr : rho.rotate (incidenceDart o side) = incidenceDart p other := by
     apply (Dart.indexEquiv _).injective

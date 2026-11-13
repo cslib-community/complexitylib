@@ -61,8 +61,8 @@ theorem scope_ne_nil_of_positions_ne_nil {vs scope : List ℕ}
 /-- The scope at an old constraint deletes all internal variables and appends its own fresh
 connector exactly when touched. Outside order and original constraint multiplicity are retained. -/
 theorem scope_constraint (f : OccurrenceLabeling F Bool) (vs : List ℕ) (i : Fin F.length) :
-    (constraint f vs i).2 = F[i.val].2.filter (fun v => !vs.contains v) ++
-      if (positions vs F[i.val].2).isEmpty then [] else [connector F i] := by
+    (constraint f vs i).scope = F[i.val].scope.filter (fun v => !vs.contains v) ++
+      if (positions vs F[i.val].scope).isEmpty then [] else [connector F i] := by
   unfold constraint
   split
   next hp =>
@@ -74,12 +74,12 @@ theorem scope_constraint (f : OccurrenceLabeling F Bool) (vs : List ℕ) (i : Fi
 
 /-- Positivity at every retained old constraint is unchanged by actual contraction. -/
 theorem positive_constraint (f : OccurrenceLabeling F Bool) (vs : List ℕ)
-    (i : Fin F.length) : (!(constraint f vs i).2.isEmpty) = !F[i.val].2.isEmpty := by
+    (i : Fin F.length) : (!(constraint f vs i).scope.isEmpty) = !F[i.val].scope.isEmpty := by
   unfold constraint
   split
   · rfl
   next hp =>
-    have he : positions vs F[i.val].2 ≠ [] := by simpa using hp
+    have he : positions vs F[i.val].scope ≠ [] := by simpa using hp
     have hs := scope_ne_nil_of_positions_ne_nil he
     simp [List.isEmpty_eq_false_iff.mpr hs]
 
@@ -92,13 +92,13 @@ theorem positiveCount_contract (f : OccurrenceLabeling F Bool) (vs : List ℕ)
     have hh := congrArg List.length he
     simp only [length_connectors, List.length_nil, List.length_eq_zero_iff] at hh
     exact hne hh
-  have he : ((List.ofFn (constraint f vs)).map fun c => !c.2.isEmpty) =
-      F.map (fun c => !c.2.isEmpty) := by
+  have he : ((List.ofFn (constraint f vs)).map fun c => !c.scope.isEmpty) =
+      F.map (fun c => !c.scope.isEmpty) := by
     simp only [List.map_ofFn, Function.comp_def]
-    have hp : (fun i => !(constraint f vs i).2.isEmpty) =
-        (fun i : Fin F.length => !F[i.val].2.isEmpty) := funext (positive_constraint f vs)
+    have hp : (fun i => !(constraint f vs i).scope.isEmpty) =
+        (fun i : Fin F.length => !F[i.val].scope.isEmpty) := funext (positive_constraint f vs)
     rw [hp]
-    exact List.ofFn_getElem_eq_map F (fun c => !c.2.isEmpty)
+    exact List.ofFn_getElem_eq_map F (fun c => !c.scope.isEmpty)
   have hcount := congrArg (List.countP id) he
   simp only [List.countP_map, Function.comp_def, id_eq] at hcount
   simpa [positiveCount, contract, List.filter_append, List.isEmpty_eq_false_iff.mpr hscope,
@@ -106,7 +106,7 @@ theorem positiveCount_contract (f : OccurrenceLabeling F Bool) (vs : List ℕ)
 
 /-- Touching is determined by the gathered ports, not by the number of cycle visits. -/
 theorem mem_touched (vs : List ℕ) (i : Fin F.length) :
-    i ∈ touched F vs ↔ positions vs F[i.val].2 ≠ [] := by
+    i ∈ touched F vs ↔ positions vs F[i.val].scope ≠ [] := by
   simp [touched]
 
 /-- Any nonempty incidence sequence touches an actual original constraint. -/
@@ -150,7 +150,7 @@ theorem vars_contract (f : OccurrenceLabeling F Bool) (vs : List ℕ) :
       apply List.mem_append_left
       apply List.mem_filter.mpr
       exact ⟨List.getElem_mem o.2.isLt, by simpa using hn⟩
-    · exact List.mem_flatMap.mpr ⟨(exactlyOne (connectors F vs), connectors F vs),
+    · exact List.mem_flatMap.mpr ⟨⟨exactlyOne (connectors F vs), connectors F vs⟩,
         List.mem_append_right _ (List.mem_singleton_self _), hv⟩
 
 /-- Freshness makes the output variable count an exact deletion-plus-connectors formula. -/
@@ -176,14 +176,14 @@ theorem numVars_contract_add (f : OccurrenceLabeling F Bool) (vs : List ℕ)
 /-- Collecting the new port of each touched constraint gives precisely the central scope. -/
 theorem flatMap_connectors (F : CSP Table ℕ) (vs : List ℕ) :
     (List.finRange F.length).flatMap (fun i =>
-      if (positions vs F[i.val].2).isEmpty then [] else [connector F i]) = connectors F vs := by
+      if (positions vs F[i.val].scope).isEmpty then [] else [connector F i]) = connectors F vs := by
   have he (is : List (Fin F.length)) :
-      is.flatMap (fun i => if (positions vs F[i.val].2).isEmpty then [] else [connector F i]) =
-        (is.filter fun i => !(positions vs F[i.val].2).isEmpty).map (connector F) := by
+      is.flatMap (fun i => if (positions vs F[i.val].scope).isEmpty then [] else [connector F i]) =
+        (is.filter fun i => !(positions vs F[i.val].scope).isEmpty).map (connector F) := by
     induction is with
     | nil => rfl
     | cons i is ih =>
-      cases hp : (positions vs F[i.val].2).isEmpty <;>
+      cases hp : (positions vs F[i.val].scope).isEmpty <;>
         simp only [List.flatMap_cons, List.filter_cons, hp, Bool.not_false, Bool.not_true,
           Bool.false_eq_true, ↓reduceIte, ih, List.nil_append, List.singleton_append, List.map_cons]
   exact he _
@@ -194,20 +194,20 @@ theorem vars_contract_perm (f : OccurrenceLabeling F Bool) (vs : List ℕ) :
     (contract f vs).vars.Perm
       (F.vars.filter (fun v => !vs.contains v) ++ connectors F vs ++ connectors F vs) := by
   let ids := List.finRange F.length
-  let outside (i : Fin F.length) := F[i.val].2.filter fun v => !vs.contains v
+  let outside (i : Fin F.length) := F[i.val].scope.filter fun v => !vs.contains v
   let added (i : Fin F.length) :=
-    if (positions vs F[i.val].2).isEmpty then [] else [connector F i]
+    if (positions vs F[i.val].scope).isEmpty then [] else [connector F i]
   have hf : ids.map (fun i => F[i.val]) = F := by
     rw [← List.ofFn_eq_map]
     simp
-  have hflat := congrArg (List.flatMap Prod.snd) hf
+  have hflat := congrArg (List.flatMap Constraint.scope) hf
   simp only [List.flatMap_map] at hflat
   have hout : ids.flatMap outside = F.vars.filter (fun v => !vs.contains v) := by
     rw [show ids.flatMap outside =
-      (ids.flatMap fun i => F[i.val].2).filter (fun v => !vs.contains v) from
+      (ids.flatMap fun i => F[i.val].scope).filter (fun v => !vs.contains v) from
         List.filter_flatMap.symm]
     exact congrArg (List.filter fun v => !vs.contains v) hflat
-  have hscope : (List.ofFn (constraint f vs)).flatMap Prod.snd =
+  have hscope : (List.ofFn (constraint f vs)).flatMap Constraint.scope =
       ids.flatMap (fun i => outside i ++ added i) := by
     rw [List.ofFn_eq_map, List.flatMap_map]
     apply List.flatMap_congr
