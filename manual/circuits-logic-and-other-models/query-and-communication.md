@@ -298,8 +298,20 @@ formula of depth at most `t` agrees with `g` on fewer than two thirds of the poi
 form. The [hard-set client](../../CslibFrontierTests/CircuitHardSet.lean) applies it to the
 first bit. It also finds a function on 80 bits and a nonempty set on which no depth-0 formula
 agrees with that function on two thirds of the points. Run
-`scripts/build.sh CslibFrontierTests.CircuitHardSet`. Theorem 1.7, which combines Lemmas 6.2 and
-6.3, and Lemmas 6.4–6.5 and Theorem 6.6 are not formalized yet.
+`scripts/build.sh CslibFrontierTests.CircuitHardSet`.
+[DenseCore](../../CslibFrontier/Computability/Circuit/Boolean/DenseCore.lean) proves
+Theorem 1.7. `exists_core g` gives, for every total `g`, one nonempty `S`. For every `m ≥ 1` and
+every `X ⊆ Sᵐ` with `(2^{m-1} + 1) |S|ᵐ ≤ 3 · 2^{m-1} |X|` (relative density at least
+`(1 + 2^{1-m})/3`), it gives `formulaDepth g ≤ ecomplexity (composeKW g) X X + coreLoss n`, where
+`coreLoss n = 4 ⌈log₂ n⌉ + ⌈log₂(4n + 4)⌉ + 33`. The core step
+`le_ecomplexity_composeKW_of_hard` applies Lemma 6.2 under the uniform distribution on a `t`-hard
+`S`; at the threshold that gives accuracy exactly `2/3` (`two_thirds_le_half_add`). Lemma 6.3
+then bounds `formulaDepth g` by the least `t` without a hard set. The
+[dense-core client](../../CslibFrontierTests/CircuitDenseCore.lean) checks the exact threshold. It
+also applies the theorem to a function on 80 bits of formula depth above 76: every dense `X`,
+including a half-density subset of `S²`, needs at least 7 bits. Run
+`scripts/build.sh CslibFrontierTests.CircuitDenseCore`. Lemmas 6.4–6.5 and Theorem 6.6 are not
+formalized yet, nor are Theorems 1.6 and 1.8.
 
 
 This covers submission 865 through Theorem 1.5: the upper bound, Lemma 5.2, Theorems 1.1, 1.2
