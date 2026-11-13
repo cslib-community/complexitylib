@@ -19,9 +19,6 @@ namespace CslibFrontierTests.RademacherChaining
 open Cslib.MachineLearning Cslib.MachineLearning.PACLearning
 open CslibFrontierTests.RealizablePAC (thresholds card_le_one_of_setShatters_thresholds)
 
-private theorem sqrt_le_of_le_sq {x y : ℝ} (hy : 0 ≤ y) (h : x ≤ y ^ 2) : √x ≤ y :=
-  (Real.sqrt_le_sqrt h).trans_eq (Real.sqrt_sq hy)
-
 /-- The empirical Rademacher complexity of thresholds on any `m` points is at most `32 / √m`. -/
 example {m : ℕ} (S : Fin m → ℕ) :
     empiricalRademacherComplexity (signClass thresholds) S ≤ 32 / √m := by
@@ -48,7 +45,7 @@ example (D : PMF (Bool × Bool)) {A : Learner Bool Bool (2 ^ 20)} (hA : IsERM A 
         (D.toOuterMeasure {p | A S p.1 ≠ p.2}).toReal}).toReal ≤ 1 / 20 := by
   have hvc : 32 * √(((2 : ℕ) : ℝ) / ((2 ^ 20 : ℕ) : ℝ)) ≤ 45 / 1000 := by
     have : √(((2 : ℕ) : ℝ) / ((2 ^ 20 : ℕ) : ℝ)) ≤ 45 / 32000 :=
-      sqrt_le_of_le_sq (by norm_num) (by norm_num)
+      (Real.sqrt_le_left (by norm_num)).2 (by norm_num)
     linarith
   have hδ : √(2 * Real.log (2 / (1 / 20)) / ((2 ^ 20 : ℕ) : ℝ)) ≤ 5 / 1000 := by
     have hlog : Real.log (2 / (1 / 20)) ≤ 4 := by
@@ -57,7 +54,7 @@ example (D : PMF (Bool × Bool)) {A : Learner Bool Bool (2 ^ 20)} (hA : IsERM A 
       calc (2 / (1 / 20) : ℝ) ≤ (27 / 10) ^ 4 := by norm_num
         _ ≤ Real.exp 1 ^ 4 := by gcongr; linarith
         _ = Real.exp 4 := by rw [← Real.exp_nat_mul]; norm_num
-    refine sqrt_le_of_le_sq (by norm_num) ?_
+    refine (Real.sqrt_le_left (by norm_num)).2 ?_
     push_cast
     linarith
   refine le_trans (Cslib.Probability.PMF.toOuterMeasure_toReal_mono _ ?_)
