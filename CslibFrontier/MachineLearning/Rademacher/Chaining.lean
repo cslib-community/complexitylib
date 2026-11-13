@@ -36,9 +36,10 @@ The point is the rate, which is what the sharp agnostic sample complexity
 
 ## Main results
 
-* `Cslib.MachineLearning.expect_ciSup_sum_mul_signVal_le_of_hammingDist`: vectors that depend
-  Hamming-Lipschitzly on the labelings of a class whose shattered sets have at most `d` points have
-  expected maximal correlation with random signs at most `32 r √d`, where `r` bounds their norms.
+* `Cslib.MachineLearning.expect_ciSup_sum_mul_signVal_le_of_hammingDist`: let the vectors come
+  from labelings realized by a class whose shattered sets have at most `d` points, with squared
+  distances at most a fixed multiple of the Hamming distances of their labelings. Then their
+  expected maximal correlation with random signs is at most `32 r √d`, where `r` bounds their norms.
 * `Cslib.MachineLearning.empiricalRademacherComplexity_signClass_le_mul_sqrt`: the empirical
   Rademacher complexity of a class whose shattered sets have at most `d` points is at most
   `32 √(d / m)`.
@@ -91,8 +92,9 @@ private theorem sum_range_add_seven_div_two_pow_le (K : ℕ) :
   have : (0 : ℝ) ≤ (2 * K + 16) / 2 ^ K := by positivity
   linarith
 
-/-- **Chaining over the labelings of a VC class** [ShalevShwartzBenDavid2014, Lemma 27.4]
-[Vershynin2018, Section 8.3]: let every finite set shattered by `C` have at most `d` points, and let
+/-- **Chaining over the labelings of a VC class**, derived from the chaining bound
+[ShalevShwartzBenDavid2014, Lemma 27.4] as in [Vershynin2018, Section 8.3]: let every finite set
+shattered by `C` have at most `d` points, and let
 `a j : κ → ℝ`, `j : ι`, be vectors of Euclidean norm at most `r` that depend on `j` only through a
 labeling `ℓ j` realized by `C` on `n` points `x`, with
 `‖a j - a j'‖² ≤ (4 r² / n) · hammingDist (ℓ j) (ℓ j')`. Then the expected maximum of their
@@ -232,8 +234,9 @@ theorem expect_ciSup_sum_mul_signVal_le_of_hammingDist {ι κ : Type*} [Fintype 
       _ = ε := by field_simp
   linarith [hK K]
 
-/-- **Chaining bound for VC classes** [ShalevShwartzBenDavid2014, Lemma 27.4]
-[Vershynin2018, Section 8.3]: if every finite set shattered by `C` has at most `d` points, the
+/-- **Chaining bound for VC classes**, derived from the chaining bound
+[ShalevShwartzBenDavid2014, Lemma 27.4] as in [Vershynin2018, Section 8.3]: if every finite set
+shattered by `C` has at most `d` points, the
 empirical Rademacher complexity of `signClass C` on `m` points is at most `32 √(d / m)`. Unlike
 `empiricalRademacherComplexity_signClass_le_vc`, the bound has no factor `log (m / d)`. -/
 theorem empiricalRademacherComplexity_signClass_le_mul_sqrt {C : ConceptClass α Bool} {d : ℕ}

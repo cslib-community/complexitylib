@@ -41,7 +41,8 @@ does not grow with the number of vectors. This is how VC classes obtain Rademach
 * [S. Shalev-Shwartz, S. Ben-David, *Understanding Machine Learning: From Theory to
   Algorithms*][ShalevShwartzBenDavid2014], Lemma 27.4
 * [R. Vershynin, *High-Dimensional Probability*][Vershynin2018], Section 8.1
-* [R. M. Dudley, *Central limit theorems for empirical measures*][Dudley1978]
+* [R. M. Dudley, *The sizes of compact subsets of Hilbert space and continuity of Gaussian
+  processes*][Dudley1967]
 -/
 
 public section
