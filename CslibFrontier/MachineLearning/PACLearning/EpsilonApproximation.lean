@@ -21,8 +21,9 @@ probability at most `δ` once `m ≥ uniformConvergenceSampleSize d ε δ`, so f
 succeeds.
 
 The size `uniformConvergenceSampleSize d ε δ = (16 / ε²) (2 d log (10 / ε) + log (4 / δ))` is
-`O(d log (1 / ε) / ε²)`, weaker by the factor `log (1 / ε)` than the `O(d / ε²)` of
-[MoranYehudayoff2016, Theorem 2.1], which relies on chaining arguments not formalized here. The
+`O(d log (1 / ε) / ε²)`, weaker by the factor `log (1 / ε)` than the `O(d / ε²)` stated in
+[MoranYehudayoff2016, Theorem 2.1], which credits that improvement to Li, Long and Srinivasan and
+to Talagrand; their chaining arguments are not formalized here. The
 domain is countable with measurable singletons, as in `VCUniformConvergence.lean`; distributions
 given as probability mass functions on a countable type are covered through `PMF.toMeasure`.
 
@@ -70,7 +71,7 @@ i.i.d. samples from `μ` fail to be an ε-approximation for `G` with probability
 theorem measure_pi_not_isEpsApprox_le_of_uniformConvergenceSampleSize_le (μ : Measure Z)
     [IsProbabilityMeasure μ] {G : ConceptClass Z Bool} {d : ℕ}
     (hG : ∀ W : Finset Z, SetShatters G ↑W → W.card ≤ d) {m : ℕ} {ε δ : ℝ} (hε : 0 < ε)
-    (hε1 : ε ≤ 1) (hδ : 0 < δ) (hm : uniformConvergenceSampleSize d ε δ ≤ m) :
+    (hε10 : ε ≤ 10) (hδ : 0 < δ) (hm : uniformConvergenceSampleSize d ε δ ≤ m) :
     Measure.pi (fun _ : Fin m => μ) {S | ¬ IsEpsApprox μ G ε S} ≤ ENNReal.ofReal δ :=
   calc Measure.pi (fun _ : Fin m => μ) {S | ¬ IsEpsApprox μ G ε S}
       ≤ Measure.pi (fun _ : Fin m => μ)
@@ -81,8 +82,7 @@ theorem measure_pi_not_isEpsApprox_le_of_uniformConvergenceSampleSize_le (μ : M
     _ ≤ ENNReal.ofReal (4 * growthFunction G (m + m) * Real.exp (-(m * ε ^ 2 / 8))) :=
         measure_pi_exists_le_abs_card_filter_div_sub_measure_le μ G m hε.le
     _ ≤ ENNReal.ofReal δ := ENNReal.ofReal_le_ofReal
-        (four_mul_growthFunction_mul_exp_le_of_uniformConvergenceSampleSize_le hG hε
-          (by linarith) hδ hm)
+        (four_mul_growthFunction_mul_exp_le_of_uniformConvergenceSampleSize_le hG hε hε10 hδ hm)
 
 /-- **ε-approximations for classes of finite VC dimension** on a countable domain
 [VapnikChervonenkis1971; MoranYehudayoff2016, Theorem 2.1, with the weaker size
@@ -92,7 +92,7 @@ probability measure `μ` has an ε-approximation for `G` with `m` points wheneve
 theorem exists_isEpsApprox_of_uniformConvergenceSampleSize_le (μ : Measure Z)
     [IsProbabilityMeasure μ] {G : ConceptClass Z Bool} {d : ℕ}
     (hG : ∀ W : Finset Z, SetShatters G ↑W → W.card ≤ d) {m : ℕ} {ε δ : ℝ} (hε : 0 < ε)
-    (hε1 : ε ≤ 1) (hδ : 0 < δ) (hδ1 : δ < 1) (hm : uniformConvergenceSampleSize d ε δ ≤ m) :
+    (hε10 : ε ≤ 10) (hδ : 0 < δ) (hδ1 : δ < 1) (hm : uniformConvergenceSampleSize d ε δ ≤ m) :
     ∃ S : Fin m → Z, IsEpsApprox μ G ε S := by
   by_contra h
   simp only [not_exists] at h
@@ -101,7 +101,7 @@ theorem exists_isEpsApprox_of_uniformConvergenceSampleSize_le (μ : Measure Z)
       _ ≤ Measure.pi (fun _ : Fin m => μ) {S | ¬ IsEpsApprox μ G ε S} :=
         measure_mono fun S _ => h S
       _ ≤ ENNReal.ofReal δ :=
-        measure_pi_not_isEpsApprox_le_of_uniformConvergenceSampleSize_le μ hG hε hε1 hδ hm
+        measure_pi_not_isEpsApprox_le_of_uniformConvergenceSampleSize_le μ hG hε hε10 hδ hm
   exact absurd hle (not_le.2 (ENNReal.ofReal_lt_one.2 hδ1))
 
 end Cslib.MachineLearning.PACLearning
