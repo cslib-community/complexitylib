@@ -45,10 +45,10 @@ most `2t + 1 + t(6t + 3)`. With soundness error `0`, no prover is accepted on a 
 the transcripts are `NP` certificates as soon as every member has a prover accepted with positive
 probability (`Cslib.Complexity.mem_NP_of_exists_pos_acceptProb`).
 
-**Completeness.** The draft states the proposition for interactive proofs with completeness `2 / 3`
-but proves it by fixing the coins of the verifier to the all-zero string, which keeps completeness
-only when it is perfect. Here the coins are part of the certificate instead, so any completeness
-`c > 0` suffices and perfect completeness is not assumed.
+**Completeness.** Goldreich's draft Definition 9.1 assumes perfect completeness, and the proof
+of Proposition 9.2 fixes the verifier's coins to the all-zero string (PDF pp. 8–9 / printed
+pp. 390–391). This formalization strengthens that result: the coins are part of the certificate,
+so any completeness `c > 0` suffices and perfect completeness is not assumed.
 
 ## Main definitions
 
