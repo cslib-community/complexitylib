@@ -147,7 +147,7 @@ theorem exists_minEntropy_map_eq_pure_bool [Nonempty Input] (f : Input → Bool)
       Real.logb 2 (Fintype.card Input) - 1 ≤ minEntropy source ∧
       source.map f = PMF.pure b := by
   classical
-  -- One of the two preimages of `ext · s₀` contains at least half of the inputs.
+  -- One of the two preimages of `f` contains at least half of the inputs.
   obtain ⟨b, hb⟩ : ∃ b : Bool,
       Fintype.card Input ≤ 2 * (Finset.univ.filter fun x => f x = b).card := by
     have hsplit := Finset.card_filter_add_card_filter_not
