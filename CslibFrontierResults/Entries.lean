@@ -22,6 +22,8 @@ import CslibFrontier.Algorithms.Lean.TreeDecomposition.CSP
 import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
 import CslibFrontier.Computability.QueryComplexity.MajorityThree
 import CslibFrontier.Computability.QueryComplexity.YaoExpected
+import CslibFrontier.Computability.Complexity.Problems.SharpCycle
+
 import CslibFrontier.Computability.QueryComplexity.AdjacentPair
 import CslibFrontier.Computability.Circuit.Arithmetic.BitBlast
 import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
@@ -116,6 +118,7 @@ import CslibFrontier.Computability.Complexity.Problems.Permanent.ThreeSAT
 import CslibFrontier.Computability.Complexity.Problems.Primes
 import CslibFrontier.Computability.Complexity.Problems.TMSAT
 import CslibFrontier.Computability.Complexity.Problems.TwoSAT.PolyTime
+import CslibFrontier.Computability.Complexity.Problems.Permanent.ZeroOne
 import CslibFrontier.Computability.Kolmogorov.Incompleteness
 import CslibFrontier.Computability.Kolmogorov.MINKT
 import CslibFrontier.Computability.Kolmogorov.MINKTStar.Hardness
@@ -244,6 +247,7 @@ import CslibFrontier.MachineLearning.UniformLearning.CryptoHardness.GGM
 import CslibFrontier.MachineLearning.UniformLearning.CryptoHardness.NaturalProperty
 import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson
 import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson.BestOf
+import CslibFrontier.Computability.Probabilistic.CoinOfDigits
 import CslibFrontier.Probability.Extractor.TwoSource
 import CslibFrontier.Probability.LocalitySensitiveHash.PStable
 import CslibFrontier.Probability.LocalitySensitiveHash.SimHash
@@ -591,6 +595,23 @@ register_result "toda" where
     The class does not count queries; the construction asks a single one. PH uses \
     polynomial-time alternating verifiers; arbitrary injective encodings."
 
+register_result "sharp-cycle-fp-p-eq-np" where
+  title := "If #CYCLE is in FP then P = NP"
+  topic := "counting classes"
+  sources := [
+    { paper := AroraBarak07, theorem := "Theorem 9.4",
+      locator := "Web draft 2007-01-08, §9.1, printed p. 173; PDF p. 189" }
+  ]
+  theorems := [
+    Cslib.Complexity.P_eq_NP_of_computableInPolyTime_SharpCycle,
+    Cslib.Complexity.SharpCycle.mem_DirHamCycle_iff
+  ]
+  scope := "#CYCLE counts the simple directed cycles (Cycle values: nonempty, no repeated \
+    vertex, declared vertices, arcs of the edge list; a self-loop is a cycle of length one) of \
+    a graph under encGraph. FP is native polynomial-time computability with binary output \
+    encNat. The gadget reduction uses n*n+n+1 layers and threshold 2^(m*n) instead of the \
+    draft's n log n + 1 and n^(n^2). P = NP holds for every injective encoding."
+
 register_result "bqp-pp" where
   title := "Adleman–DeMarrais–Huang: BQP is contained in PP"
   topic := "quantum complexity"
@@ -816,6 +837,34 @@ register_result "boolean-two-element-arithmetic-simulation" where
     input/output wires are free. Nonuniform existence, not compiler runtime or formal \
     polynomial equality. This does not complete the arbitrary fixed finite-field exercise."
 
+register_result "von-neumann-fair-bit-extraction" where
+  title := "Von Neumann extraction: an exact fair bit from a biased coin"
+  topic := "randomized complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Lemma 7.15",
+      locator := "Web draft 2007-01-08, §7.4, printed p. 124; PDF p. 140" }
+  ]
+  theorems := [Cslib.Probability.DDGTree.vonNeumann_generatesWith_coin,
+    Cslib.Probability.DDGTree.expectedFlipsWith_coin_vonNeumann,
+    Cslib.Probability.DDGTree.exists_generatesWith_coin_iff]
+  scope := "Unbounded coin-reading trees (DDG trees) run on independent flips of a coin of \
+    bias 0 < rho < 1: exact fair output and exactly 1/(rho(1-rho)) expected flips. Some tree \
+    outputs a fair bit iff 0 < rho < 1. Cost counts coin flips; no Turing-machine runtime."
+
+register_result "biased-coin-from-fair-digits" where
+  title := "A coin of any bias from fair coins with expected two flips"
+  topic := "randomized complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Lemma 7.14",
+      locator := "Web draft 2007-01-08, §7.4, printed p. 124; PDF p. 140" }
+  ]
+  theorems := [Cslib.Probability.DDGTree.coinOfDigits_spec_of_computableInPolyTime]
+  scope := "Digit-comparison DDG tree for any binary expansion of rho in [0,1] (rho = 1 via \
+    0.111...): exact coin of bias rho, exactly 2 expected fair bits. With digits polynomial-time \
+    from the unary index, the expected sum of the digit machine's time bounds (plus one per \
+    flip) is the finite series sum_n (t n + 1) 2^-n. The comparison loop is not compiled to a \
+    Turing machine."
+
 register_result "or-exact-degree" where
   title := "Polynomials computing OR on the cube have full degree"
   topic := "circuit complexity"
@@ -867,6 +916,28 @@ register_result "formal-complexity-measure-quarter-density" where
     at least one quarter of all truth tables have measure at least c/4. \
     Natural-number cardinalities with denominators cleared; no computational claim. \
     Theorem 22.3's stronger near-total-density endpoint is not included."
+
+register_result "integer-permanent-to-zero-one-permanent" where
+  title := "The integer permanent reduces to the 0/1 permanent"
+  topic := "counting complexity"
+  sources := [
+    { paper := Goldreich2007Draft, theorem := "Proposition 6.22",
+      locator := "February 2007 draft r3.pdf, PDF p. 24; printed p. 226" }
+  ]
+  theorems := [
+    Cslib.Complexity.intPermanent_eq_recoverPermanent_intTableToZeroOne,
+    Cslib.Complexity.metricReducible_intPermanent_zeroOnePermanent,
+    Cslib.Complexity.computableInPolyTime_intTableToZeroOne,
+    Cslib.Complexity.computableInPolyTime_recoverPermanent,
+    Cslib.Complexity.parsimoniousReducible_natPermanent_zeroOnePermanent
+  ]
+  scope := "Dense integer tables (encIntTable, binary sign-magnitude entries) read as n x n \
+    matrices with missing entries 0, mapped by a native polynomial-time machine to dense 0/1 \
+    tables (encBoolTable); the integer permanent is recovered in polynomial time from the input \
+    and the 0/1 permanent. Entries are reduced modulo 2 n! S^n + 1 with S the sum of absolute \
+    entries (Goldreich uses the maximum), then each residue is replaced by a binary chain of \
+    relay vertices; the 0/1 dimension is n + 2 L n^2. One-query (metric) reduction, a special \
+    case of the source's Cook reduction."
 
 register_result "bpp-proper-subset-ppoly" where
   title := "BPP is strictly contained in P/poly on ordinary bit languages"
