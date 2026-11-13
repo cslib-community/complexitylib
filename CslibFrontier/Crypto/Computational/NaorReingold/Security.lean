@@ -1370,7 +1370,11 @@ private theorem advantage_naorReingoldDescGame_le (F : PrimeOrderGroupFamily)
     simp only [H, naorReingoldDescIdealGame, PMF.monad_bind_eq_bind]
     congr 1; funext d
     exact naorReingoldWordHybridAt_self F d m (adv n d)
-  rw [← hH0, ← hHm, Game.advantage_hybrid_average H m cap (lt_dyadicSize m).le]
+  have havg := Game.advantage_hybrid_average
+    (fun i : Fin (m + 1) => H i.val) cap (lt_dyadicSize m).le
+  simp only [Fin.val_zero, Fin.val_last, Fin.val_castSucc, Fin.val_castLT, Fin.val_succ,
+    dite_eq_ite] at havg
+  rw [← hH0, ← hHm, havg]
   refine mul_le_mul_of_nonneg_left ?_ (Nat.cast_nonneg _)
   let ddhReal := F.ddhRealGame setup (naorReingoldDescToDDHDistinguisher F inLen adv) n
   let ddhIdeal := F.ddhIdealGame setup (naorReingoldDescToDDHDistinguisher F inLen adv) n
