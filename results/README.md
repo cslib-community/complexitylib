@@ -35,6 +35,8 @@ every end-of-chapter exercise as establishing new theory, covered, a source issu
 
 The [Goldreich draft audit](goldreich-2007.md) records a source-pinned chapter-level coverage comparison
 for *Computational Complexity: A Conceptual Perspective*; it is not a claim of book-wide coverage.
+Its companion [exercise inventory](goldreich-2007-exercises.md) classifies the end-of-chapter
+exercises of chapters 2 and 5–10 as establishing new theory, covered, a source issue or routine.
 
 ## Authoring
 
