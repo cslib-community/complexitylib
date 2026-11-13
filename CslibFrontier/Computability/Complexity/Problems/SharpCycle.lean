@@ -28,15 +28,16 @@ A simple cycle is a `Cycle ℕ`, a list up to rotation, that is nonempty, has no
 contains only declared vertices, and whose consecutive vertices, read cyclically, are joined by
 arcs (`Cslib.Complexity.Graph.IsSimpleCycle`). In particular a self-loop is a cycle of length one.
 
-[Arora and Barak, Theorem 9.4][AroraBarak09] shows that computing `#CYCLE` is as hard as deciding
-whether a digraph has a Hamiltonian cycle. The reduction (`Cslib.Complexity.SharpCycle.reduce`)
+[Arora and Barak, Theorem 9.4][AroraBarak07] (web draft of 2007-01-08, §9.1, printed p. 173 /
+PDF p. 189) shows that computing `#CYCLE` is as hard as deciding whether a digraph has a
+Hamiltonian cycle. The reduction (`Cslib.Complexity.SharpCycle.reduce`)
 replaces every arc `(u, v)` by a gadget of `m` layers of two nodes, complete between consecutive
 layers, from `u` to `v`. It has `2 ^ m` paths from `u` to `v`. A simple cycle of the gadget graph
 is a simple cycle of `G` with a path chosen through the gadget of each of its arcs, so a cycle of
 length `k` of `G` gives `2 ^ (m * k)` cycles. With `n` distinct vertices and
 `m = n * n + n + 1`, `G` has fewer than `2 ^ m` simple cycles, so a Hamiltonian cycle alone gives
 `2 ^ (m * n)` cycles and without one the total stays below `2 ^ (m * n)`
-(`Cslib.Complexity.SharpCycle.mem_DirHamCycle_iff`). The draft takes `m = n log n`; any
+(`Cslib.Complexity.SharpCycle.mem_DirHamCycle_iff`). The draft takes `m = n log n + 1`; any
 polynomial `m` with `2 ^ m` above the number of cycles of `G` works.
 
 The original vertex `v` becomes `2 * v` (`Cslib.Complexity.SharpCycle.origNode`) and the gadget
@@ -74,7 +75,8 @@ choice of bits gives a simple cycle of the gadget graph, and different bits give
 
 ## References
 
-* [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
+* [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, web draft of
+  2007-01-08][AroraBarak07]
 -/
 
 @[expose] public section
@@ -95,7 +97,7 @@ theorem isSimpleCycle_coe {G : Graph} {p : List ℕ} :
 
 end Graph
 
-/-- **#CYCLE** [Arora and Barak, Theorem 9.4][AroraBarak09]: the number of simple directed cycles
+/-- **#CYCLE** [Arora and Barak, Theorem 9.4][AroraBarak07]: the number of simple directed cycles
 of `G`. -/
 noncomputable def SharpCycle (G : Graph) : ℕ := {c : Cycle ℕ | G.IsSimpleCycle c}.ncard
 
@@ -166,7 +168,7 @@ def gadgetGraph (m : ℕ) (G : Graph) : Graph :=
 def layers (G : Graph) : ℕ := G.distinctVertices.length * G.distinctVertices.length +
   G.distinctVertices.length + 1
 
-/-- The reduction from `DirHamCycle` to `#CYCLE` [Arora and Barak, Theorem 9.4][AroraBarak09]. -/
+/-- The reduction from `DirHamCycle` to `#CYCLE` [Arora and Barak, Theorem 9.4][AroraBarak07]. -/
 def reduce (G : Graph) : Graph := gadgetGraph (layers G) G
 
 /-! ### Nodes and arcs of the gadget graph -/
@@ -726,8 +728,8 @@ private theorem exists_eq_cycleWalk (hm : 0 < m) {c : Cycle ℕ}
   have hrhead : r.headD 0 = u := by
     obtain ⟨a, r', hr'⟩ := List.exists_cons_of_ne_nil hrne
     rw [hr'] at hru ⊢
-    simp at hru
-    simp [hru.1]
+    rw [List.cons_append, List.cons.injEq] at hru
+    exact hru.1
   have hrot : s.map Prod.fst = r.rotate 1 := by
     have := headD_cons_rotate_one hrne
     rw [hrhead, hru] at this
@@ -892,7 +894,7 @@ theorem lt_two_pow_of_notMem_DirHamCycle (h : G ∉ DirHamCycle) :
             _ = 2 ^ (m * n) := by
                 rw [← pow_succ', ← pow_mul, Nat.sub_add_cancel hn]
 
-/-- **Theorem 9.4, the reduction** [Arora and Barak, Theorem 9.4][AroraBarak09]: with `n`
+/-- **Theorem 9.4, the reduction** [Arora and Barak, Theorem 9.4][AroraBarak07]: with `n`
 distinct vertices and `m = n * n + n + 1` layers, `G` has a Hamiltonian cycle exactly when the
 gadget graph has at least `2 ^ (m * n)` simple cycles. -/
 theorem mem_DirHamCycle_iff (G : Graph) :
@@ -945,7 +947,7 @@ theorem computableInPolyTime_reduce : ComputableInPolyTime reduce encGraph encGr
     fun_prop
   exact encGraph_mk_polyTime hv he
 
-/-- **Theorem 9.4, decision** [Arora and Barak, Theorem 9.4][AroraBarak09]: if the number of
+/-- **Theorem 9.4, decision** [Arora and Barak, Theorem 9.4][AroraBarak07]: if the number of
 simple cycles is computable in polynomial time with binary output, then `DirHamCycle ∈ P`. -/
 theorem DirHamCycle_mem_P (h : ComputableInPolyTime SharpCycle encGraph encNat) :
     DirHamCycle ∈ P encGraph := by
@@ -960,7 +962,7 @@ end PolyTime
 
 end SharpCycle
 
-/-- **Arora–Barak, Theorem 9.4** [Arora and Barak, Theorem 9.4][AroraBarak09]: if `#CYCLE`, the
+/-- **Arora–Barak, Theorem 9.4** [Arora and Barak, Theorem 9.4][AroraBarak07]: if `#CYCLE`, the
 number of simple directed cycles, is computable in polynomial time with binary output, then
 `P = NP`, for every encoding. -/
 theorem P_eq_NP_of_computableInPolyTime_SharpCycle
