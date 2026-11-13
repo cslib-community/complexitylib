@@ -1,4 +1,7 @@
 {
+ "CslibFrontier/Algorithms/ExactTriangle/Hashing.lean": 10,
+ "CslibFrontier/Algorithms/ExactTriangle/Lopsided.lean": 3,
+ "CslibFrontier/Algorithms/ExactTriangle/Witnesses.lean": 2,
  "CslibFrontier/Algorithms/Lean/Dijkstra/Native/Domain.lean": 5,
  "CslibFrontier/Algorithms/Lean/EdgeCSP/Forest/Events.lean": 1,
  "CslibFrontier/Algorithms/Lean/IterativeCompression/OddCycleTransversal.lean": 2,
