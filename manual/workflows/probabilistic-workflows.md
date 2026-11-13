@@ -1413,6 +1413,58 @@ reuse its laws and native efficiency certificates. Substitution preserves the fr
 it does not by itself certify its runtime. This separation follows VCVio's treatment of
 [untouched oracle effects](https://github.com/Verified-zkEVM/VCVio/blob/87bc1892fff1982e97cfd8c7303c9d1f2bfdc2f9/VCVio/OracleComp/SimSemantics/Append/Core.lean).
 
+## Pass a query adapter through an eager/lazy game hop
+
+Import [Oracle/Substitution.lean](../../CslibFrontier/Languages/Probabilistic/Oracle/Substitution.lean)
+and [RandomOracle/Probabilistic.lean](../../CslibFrontier/Languages/Probabilistic/RandomOracle/Probabilistic.lean).
+Write the query conversion as a `ProbOracleComp` handler, then apply the eager/lazy theorem to
+`ProbOracleComp.simulate handler program`. The same adapted program is used on both sides:
+one interpreter samples the random function eagerly, and the other fills its cache on demand.
+
+The [checked adapter](../../CslibFrontierTests/RandomOracleAdapter.lean) accepts one-bit words and
+rejects other words. Its client repeats a query across a private draw and an invalid query.
+The following excerpt uses the test file's `open Cslib Cslib.Probability`:
+
+<!-- excerpt: random-oracle-adapter -->
+```lean
+private def oneBitQuery (word : List Bool) : ProbOracleComp (fun _ : Bool => Bool) (List Bool) :=
+  match word with
+  | [bit] => List.singleton <$> ProbOracleComp.query bit
+  | _ => pure []
+
+private noncomputable def repeated : ProbOracleComp (fun _ : List Bool => List Bool) Bool := do
+  let first ← ProbOracleComp.query [false]
+  let coin ← ProbOracleComp.sample (ProbComp.uniform Bool)
+  let rejected ← ProbOracleComp.query []
+  let second ← ProbOracleComp.query [false]
+  return (first == second) && rejected.isEmpty && coin
+
+private noncomputable def adapted : ProbOracleComp (fun _ : Bool => Bool) Bool :=
+  ProbOracleComp.simulate oneBitQuery repeated
+```
+
+Apply `RandomOracle.interpret_prob_eq_memoize` to `adapted`. When cache keys and sampled values
+have different representations, use `interpret_prob_eq_memoize_map` instead. Then
+`ProbOracleComp.interpret_simulate` composes the surrounding interpreter with the adapter;
+prove the adapter's response equation for each valid or rejected query. Import
+[Oracle/Norm.lean](../../CslibFrontier/Languages/Probabilistic/Oracle/Norm.lean) and use
+`simp only [runWith_norm, pmf_norm]` to normalize closed runs and their state threading.
+
+The test also computes the complete cached run: its result is the fresh private coin, and its
+cache contains exactly the first sampled answer at `false`. Rejection adds no cache entry and
+the repeated query reuses that answer. Check it with
+`scripts/build.sh --wfail --iofail CslibFrontierTests.RandomOracleAdapter`.
+
+In [the PRF game](../../CslibFrontier/Crypto/Computational/PseudorandomFunction/RandomOracle.lean),
+`prfIdealGame_eq_cached` uses this route after converting a valid word to a bit string. In
+[GGM](../../CslibFrontier/Crypto/Computational/GGM/Expansion.lean), `prefix_eager` also converts the
+query to its prefix. The proof of `expansionGame_uniform` then follows three named game hops:
+cached parent expansions become an eager prefix table, `childTableEquiv` reindexes that table
+into child labels, and those labels become the next level's cache. The prefix-length and
+child-table equations remain local mathematical obligations. These eager tables are used to
+prove distributional equalities; the executable reductions retain their existing separate
+runtime and query-bound certificates.
+
 ## Certify an adaptive oracle client
 
 For native oracle efficiency, start with `WordOracleComp Operation α`: finite operation names and word payloads/replies.
