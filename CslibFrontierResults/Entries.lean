@@ -226,6 +226,7 @@ import CslibFrontier.MachineLearning.UniformLearning.CryptoHardness.GGM
 import CslibFrontier.MachineLearning.UniformLearning.CryptoHardness.NaturalProperty
 import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson
 import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson.BestOf
+import CslibFrontier.Computability.Probabilistic.CoinOfDigits
 import CslibFrontier.Probability.Extractor.TwoSource
 import CslibFrontier.Probability.LocalitySensitiveHash.PStable
 import CslibFrontier.Probability.LocalitySensitiveHash.SimHash
@@ -695,6 +696,34 @@ register_result "boolean-two-element-arithmetic-simulation" where
     and De Morgan circuits simulate arithmetic with factor 4. Constants count as gates; \
     input/output wires are free. Nonuniform existence, not compiler runtime or formal \
     polynomial equality. This does not complete the arbitrary fixed finite-field exercise."
+
+register_result "von-neumann-fair-bit-extraction" where
+  title := "Von Neumann extraction: an exact fair bit from a biased coin"
+  topic := "randomized complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Lemma 7.15",
+      locator := "Web draft 2007-01-08, §7.4, printed p. 124; PDF p. 140" }
+  ]
+  theorems := [Cslib.Probability.DDGTree.vonNeumann_generatesWith_coin,
+    Cslib.Probability.DDGTree.expectedFlipsWith_coin_vonNeumann,
+    Cslib.Probability.DDGTree.exists_generatesWith_coin_iff]
+  scope := "Unbounded coin-reading trees (DDG trees) run on independent flips of a coin of \
+    bias 0 < rho < 1: exact fair output and exactly 1/(rho(1-rho)) expected flips. Some tree \
+    outputs a fair bit iff 0 < rho < 1. Cost counts coin flips; no Turing-machine runtime."
+
+register_result "biased-coin-from-fair-digits" where
+  title := "A coin of any bias from fair coins with expected two flips"
+  topic := "randomized complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Lemma 7.14",
+      locator := "Web draft 2007-01-08, §7.4, printed p. 124; PDF p. 140" }
+  ]
+  theorems := [Cslib.Probability.DDGTree.coinOfDigits_spec_of_computableInPolyTime]
+  scope := "Digit-comparison DDG tree for any binary expansion of rho in [0,1] (rho = 1 via \
+    0.111...): exact coin of bias rho, exactly 2 expected fair bits. With digits polynomial-time \
+    from the unary index, the expected sum of the digit machine's time bounds (plus one per \
+    flip) is the finite series sum_n (t n + 1) 2^-n. The comparison loop is not compiled to a \
+    Turing machine."
 
 register_result "formal-complexity-measure-leaf-bound" where
   title := "Formal complexity measures lower-bound constant-free formula leaf size"

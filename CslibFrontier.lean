@@ -3843,6 +3843,7 @@ public import CslibFrontier.Computability.Probabilistic.Adaptive
 public import CslibFrontier.Computability.Probabilistic.AffineHash
 public import CslibFrontier.Computability.Probabilistic.BoundedUniform
 public import CslibFrontier.Computability.Probabilistic.CenteredBinomial
+public import CslibFrontier.Computability.Probabilistic.CoinOfDigits
 public import CslibFrontier.Computability.Probabilistic.CoinTape
 public import CslibFrontier.Computability.Probabilistic.CoinTape.Bounds
 public import CslibFrontier.Computability.Probabilistic.ExponentialIterate
@@ -6772,6 +6773,8 @@ public import CslibFrontier.Probability.CorrelatedSampling
 public import CslibFrontier.Probability.CorrelatedSampling.Embeddability
 public import CslibFrontier.Probability.CorrelatedSampling.Embedding
 public import CslibFrontier.Probability.DDGTree
+public import CslibFrontier.Probability.DDGTree.Biased
+public import CslibFrontier.Probability.DDGTree.Digits
 public import CslibFrontier.Probability.DDGTree.KnuthYao
 public import CslibFrontier.Probability.DDGTree.Rejection
 public import CslibFrontier.Probability.Divergence

@@ -275,6 +275,33 @@ They also cover a non-halting tree that generates nothing and has infinite cost.
 `scripts/build.sh CslibFrontierTests.KnuthYao`. The model counts coin flips only; it does not certify
 that `knuthYao p` is computable from an encoding of `p`, or bound its running time.
 
+To run the same trees on a biased coin, import
+[DDGTree/Biased.lean](../../CslibFrontier/Probability/DDGTree/Biased.lean). `T.runWith c n`,
+`T.outputProbWith c`, `T.GeneratesWith c p` and `T.expectedFlipsWith c` replace fair bits by
+independent flips of `c : PMF Bool`; `run_eq_runWith` and its siblings recover the fair-bit API at
+`PMF.uniformOfFintype Bool`. `T.expectedCostWith c w` charges `w n` for flip number `n + 1`, which
+is read exactly when the tree has not stopped after `n` flips, so it is `∑ₙ w n P(T > n)`. Use a
+tree rather than an `OracleComp` program when the sampler loops without a bound: oracle programs
+are finite call trees, so `OracleComp.retry` only expresses the truncated loop, with a visible
+failure outcome. `vonNeumann` reads flips in pairs until they differ
+([Arora–Barak draft Lemma 7.15](../../results/arora-barak-2007.md#chapter-7-randomized-computation)).
+On `PMF.coin ρ` with `0 < ρ < 1`, `vonNeumann_generatesWith_coin` gives an exactly fair bit and
+`expectedFlipsWith_coin_vonNeumann` gives exactly `ENNReal.ofReal (ρ * (1 - ρ))⁻¹` flips.
+`exists_generatesWith_coin_iff` shows that `0 < ρ < 1` is necessary: at bias `0` or `1` the coin is
+deterministic (`runWith_pure`). In the other direction, import
+[DDGTree/Digits.lean](../../CslibFrontier/Probability/DDGTree/Digits.lean) for Lemma 7.14.
+`coinOfDigits d` compares fair bits with a binary expansion `d` of `ρ`, stated as
+`HasSum (fun i => if d i then 2⁻¹ ^ (i + 1) else 0) ρ`. Use the expansion `0.111⋯` for `ρ = 1`.
+It generates `PMF.coin ρ` (`coinOfDigits_generates`) and reads exactly two fair bits in expectation
+(`expectedFlips_coinOfDigits`). Its expected digit cost is `∑ₙ w n 2⁻ⁿ`
+(`expectedCostWith_coinOfDigits`), which is finite for polynomially bounded `w`.
+[Computability/Probabilistic/CoinOfDigits.lean](../../CslibFrontier/Computability/Probabilistic/CoinOfDigits.lean)
+instantiates `w` with the time bound of a multitape machine computing the digits from `encUnary`.
+The comparison loop itself is charged one unit per flip, not compiled to a machine. The
+[checked clients](../../CslibFrontierTests/BiasedCoinSamplers.lean) cover bias `1/3` (`9/2` flips),
+the impossible bias `0`, `ρ = 1` and a constant digit machine; run
+`scripts/build.sh CslibFrontierTests.BiasedCoinSamplers`.
+
 When an exact sampler instead repeats a fixed-width `width`-bit decoder `attempt : List Bool → Option α`,
 import [DDGTree/Rejection.lean](../../CslibFrontier/Probability/DDGTree/Rejection.lean) for
 `BlockRejectionSpec`, [Languages/Probabilistic/RejectionSampling.lean](../../CslibFrontier/Languages/Probabilistic/RejectionSampling.lean)
