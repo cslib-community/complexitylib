@@ -88,8 +88,8 @@ Repeated source vertices remain separate positions; parity is invariant under th
 handled by the outer nonemptiness guard and contribute no black dart orbit. -/
 @[expose] def blackConstraints (arity : Rel → ℕ) (sem : Rel → List Bool → Bool)
     (F : CSP Rel ℕ) : CSP Table ℕ :=
-  (F.zipIdx.filter fun ((_, scope), _) => !scope.isEmpty).map fun ((rel, scope), index) =>
-    (differenceTable arity sem rel, blackScope F index scope)
+  (F.zipIdx.filter fun (c, _) => !c.scope.isEmpty).map fun (c, index) =>
+    ⟨differenceTable arity sem c.rel, blackScope F index c.scope⟩
 
 /-- Fresh block prefix length. Only actual white boundary lists fund the allocated names. -/
 @[expose] def auxiliaryPrefix (scopes : List (List ℕ)) (index : ℕ) : ℕ :=
@@ -110,7 +110,7 @@ honestly to an unsatisfiable edge instance whose two relations are even delta-ma
 @[expose] def compile (arity : Rel → ℕ) (sem : Rel → List Bool → Bool)
     (input : CSP Rel ℕ × Graph.RotationCertificate) : CSP Table ℕ :=
   if validArity arity input.1 && verifyRotationCertificate input.1 input.2 &&
-      input.1.all (fun c => nonemptySymbol arity sem c.1) then
+      input.1.all (fun c => nonemptySymbol arity sem c.rel) then
     body arity sem input.1 input.2
   else rejectEdge
 

@@ -148,7 +148,7 @@ theorem isEvenDeltaMatroid_pinTable (b : Bool) :
   exact isEvenDeltaMatroid_singleton _
 
 /-- Fixed unsatisfiable edge instance with two nonempty singleton unary relations. -/
-@[expose] def rejectEdge : CSP Table ℕ := [(pinTable false, [0]), (pinTable true, [0])]
+@[expose] def rejectEdge : CSP Table ℕ := [⟨pinTable false, [0]⟩, ⟨pinTable true, [0]⟩]
 
 /-- Rejection remains an edge instance: one variable in two distinct unary constraints. -/
 theorem edgeInstance_rejectEdge : EdgeInstance rejectEdge := by
@@ -166,7 +166,7 @@ theorem not_satisfiable_rejectEdge : ¬ rejectEdge.Satisfiable sem := by
 
 /-- Every rejecting constraint uses a nonempty even delta-matroid. -/
 theorem rejectEdge_tables (c : Constraint Table ℕ) (hc : c ∈ rejectEdge) :
-    IsEvenDeltaMatroid (booleanRelation arity sem c.1) := by
+    IsEvenDeltaMatroid (booleanRelation arity sem c.rel) := by
   simp only [rejectEdge, List.mem_cons, List.not_mem_nil, or_false] at hc
   rcases hc with rfl | rfl <;> exact isEvenDeltaMatroid_pinTable _
 

@@ -34,7 +34,8 @@ public section
 namespace Cslib.Circuits.Frontier.ClauseNetwork
 
 open Turing.MultiTapeTM ComputableInPolyTime Cslib.Logic.PL
-open Cslib.Complexity (encCSP encConstraint)
+open Cslib.Complexity (encCSP encConstraint encConstraint_rel_polyTime
+  encConstraint_scope_polyTime)
 
 variable {Rel : Type}
 
@@ -58,13 +59,13 @@ theorem computableInPolyTime_cspEntry (idx : ℕ) :
     ComputableInPolyTime (fun c : Constraint Rel ℕ => cspEntry k wt c idx)
       (encConstraint encRel encNat) encNat := by
   have hlist := mapFilterConst (List.range (k + 1)) (test := fun _ _ => true)
-    (f := fun (c : Constraint Rel ℕ) r => wt c.1 (BitString.lowBits r idx))
+    (f := fun (c : Constraint Rel ℕ) r => wt c.rel (BitString.lowBits r idx))
     (encIn := encConstraint encRel encNat) (fun _ _ => const true)
     (fun r hr => (hwt _ (by rw [BitString.length_lowBits]; simpa [Nat.lt_succ_iff] using hr)).comp
-      (fst _ _))
+      (encConstraint_rel_polyTime id'))
   simp only [List.filter_true] at hlist
   unfold cspEntry
-  exact listGetDWithInput hlist ((length_list _).comp (snd _ _)) 0
+  exact listGetDWithInput hlist ((length_list _).comp (encConstraint_scope_polyTime id')) 0
 
 /-- The entry of a row table at a fixed word value is polynomial-time in the instance and the
 unary row number. -/

@@ -510,15 +510,8 @@ private theorem separateMidLoopM_spec {cs : List ℚ} (hsep : (ofCoeffList cs).S
     obtain ⟨r₁, har₁, hr₁m, hr₁⟩ := exists_root_Ioc_of_var_pos hsep ham.le (by omega)
     obtain ⟨r₂, hmr₂, hr₂b, hr₂⟩ := exists_root_Ioc_of_var_pos hsep hmb.le (by omega)
     have hr₁_lt_m : r₁ < (m : ℝ) := lt_of_le_of_ne hr₁m fun heq => hnotm (heq ▸ hr₁)
-    have hr₁₂ : r₁ < r₂ := lt_trans hr₁_lt_m hmr₂
-    have hd2 : 2 ≤ (ofCoeffList cs).natDegree :=
-      natDegree_ge_two_of_two_roots hsep hr₁ hr₂ hr₁₂.ne
-    have hsep_w := dyadic_width_lt_root_sep hsep hd2 hr₁ hr₂ hr₁₂.ne
-    rw [← hdepth, abs_of_neg (sub_neg.mpr hr₁₂), neg_sub] at hsep_w
-    have hw' : (b : ℝ) - (a : ℝ) ≤ 2 * (cauchyBoundNat cs : ℝ) / (2 : ℝ) ^ depth := by
-      simpa only [Rat.cast_sub] using hwidth
-    have hba : r₂ - r₁ < (b : ℝ) - (a : ℝ) := by linarith
-    linarith
+    exact not_two_roots_of_width_le hsep hr₁ hr₂ (hr₁_lt_m.trans hmr₂) har₁.le hr₂b hdepth
+      hwidth
   | fuel + 1, depth, a, m, b, vm, hsum, ham, hmb, hvm, hca, hcb, hnotm, hwidth => by
     let seq := sturmSeqList cs
     let m₁ := (a + m) / 2

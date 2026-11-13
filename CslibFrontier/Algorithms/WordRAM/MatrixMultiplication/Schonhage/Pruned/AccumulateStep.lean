@@ -54,24 +54,12 @@ theorem exec_accumulateDispatch {w : ℕ} {a b : ℤ}
       (∀ i, ¬AccumulateDispatchLocal i → y.regs i = x.regs i) := by
   by_cases hsel : selected true (x.regs term) q
   · obtain ⟨y, hy, hmem, _⟩ := exec_addValue ha hb x q hq h10 (hleft hsel) (hright hsel) hp hc
-    have hchoice : q % 10 = 9 ∨ q % 10 = x.regs term := hsel
-    have he : ExecWithin (w + 2) accumulateDispatch x y 25 := by
-      by_cases hfirst : q % 10 = 9
-      · exact (ExecWithin.branch_pos (by
-          simpa only [Cond.holds_eq, hd, h9] using hfirst) hy).mono (by decide)
-      · have hsecond := hchoice.resolve_left hfirst
-        exact (ExecWithin.branch_neg (by
-          simpa only [Cond.holds_eq, hd, h9] using hfirst)
-          (ExecWithin.branch_pos (by simpa only [Cond.holds_eq, hd] using hsecond) hy)).mono
-            (by decide)
+    have he : ExecWithin (w + 2) accumulateDispatch x y 25 :=
+      (exec_selectDigit hd h9 hsel hy).mono (by decide)
     exact ⟨y, he, by simpa only [hsel, ↓reduceIte] using hmem,
       fun i hi => he.regs_eq (accumulateDispatch_preserves i hi)⟩
-  · have hfirst : q % 10 ≠ 9 := fun h => hsel (Or.inl h)
-    have hsecond : q % 10 ≠ x.regs term := fun h => hsel (Or.inr h)
-    let y := x.set temporary (x.regs temporary)
-    have he : ExecWithin (w + 2) accumulateDispatch x y 5 :=
-      ExecWithin.branch_neg (by simpa only [Cond.holds_eq, hd, h9] using hfirst)
-        (ExecWithin.branch_neg (by simpa only [Cond.holds_eq, hd] using hsecond) ExecWithin.copy)
+  · let y := x.set temporary (x.regs temporary)
+    have he : ExecWithin (w + 2) accumulateDispatch x y 5 := exec_selectDigit_skip hd h9 hsel
     exact ⟨y, he.mono (by decide), by simp [hsel, y],
       fun i hi => he.regs_eq (accumulateDispatch_preserves i hi)⟩
 
