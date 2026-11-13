@@ -339,6 +339,11 @@ def make_plan(root: Path, base_ref: str = "origin/main", parser=None) -> Plan:
                 if dependency not in modules:
                     raise FullCheck(f"missing local import {dependency} in {path}")
                 reverse[dependency].add(consumer)
+    for aggregate in sorted(changed & aggregates):
+        # A changed aggregate is never a target and is audited only on a built client's import
+        # path: without an importing client it would be neither built nor audited.
+        if not reverse[aggregate]:
+            raise FullCheck(f"library import aggregate {aggregate} has no importing client")
     affected = set(changed)
     queue = deque(sorted(changed))
     while queue:

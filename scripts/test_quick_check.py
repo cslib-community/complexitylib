@@ -200,6 +200,15 @@ class QuickCheckTests(unittest.TestCase):
                 self.assertEqual(plan.targets, ["Demo.Added", "DemoTests.AllClient"])
                 self.assertEqual(plan.restore_built, ["Demo.lean"])
 
+    def test_changed_aggregate_without_importing_client_falls_back(self):
+        self.write("DemoTests/AllClient.lean", "import Demo.Middle\nexample : Nat := middle\n")
+        self.commit()
+        self.git("update-ref", "refs/remotes/origin/main", "HEAD")
+        self.write("Demo/Added.lean", "import Demo.Base\ndef added := value\n")
+        self.write("Demo.lean", "import Demo.Base\nimport Demo.Middle\nimport Demo.Added\n")
+        with self.assertRaisesRegex(quick.FullCheck, "aggregate Demo has no importing client"):
+            self.plan()
+
     def test_aggregate_edit_beyond_added_imports_falls_back(self):
         self.write("Demo/Added.lean", "def added := 1\n")
         cases = {
