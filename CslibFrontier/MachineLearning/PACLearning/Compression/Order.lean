@@ -12,18 +12,21 @@ public import Mathlib.MeasureTheory.Constructions.BorelSpace.Order
 public import Mathlib.Order.Interval.Set.OrdConnected
 public import Mathlib.Order.UpperLower.Basic
 public import Mathlib.Data.List.MinMax
+public import CslibFrontier.MachineLearning.OnlineLearning.MistakeBound.Thresholds
 
 /-!
 # Compression schemes for thresholds and intervals
 
-On a linear order, the binary concepts whose positive examples form a lower set (thresholds
-`x ≤ θ`, `x < θ` and the constants) have a sample compression scheme of size `1`: keep the
-positive example with the largest instance, and label `x` positive when it lies below a kept
-positive example. The concepts whose positive examples form an order-connected set (intervals)
-have a scheme of size `2`: keep the positive examples with the smallest and the largest
-instance, and label `x` positive when it lies between two kept positive examples. Intervals are
-the one-dimensional case of the axis-aligned rectangles of [ShalevShwartzBenDavid2014, §30.2.1],
-whose scheme keeps the two extremal positive examples in each dimension.
+On a linear order, the binary concepts whose positive examples form a lower set have a sample
+compression scheme of size `1`: keep the positive example with the largest instance, and label
+`x` positive when it lies below a kept positive example. On `ℝ` or `ℕ` these concepts are exactly
+the thresholds `x ≤ θ` and `x < θ` and the two constants; on an order such as `ℚ` they also
+include cuts at irrational points. The concepts whose positive examples form an order-connected
+set (on `ℝ` or `ℕ`, the intervals) have a scheme of size `2`: keep the positive examples with
+the smallest and the largest instance, and label `x` positive when it lies between two kept
+positive examples. Intervals are the one-dimensional case of the axis-aligned rectangles of
+[ShalevShwartzBenDavid2014, §30.2.1], whose scheme keeps the two extremal positive examples in
+each dimension.
 
 Both reconstructions are measurable on a linear order with the order topology and a second
 countable Borel structure, such as `ℝ`, and on countable domains such as `ℕ`
@@ -43,6 +46,9 @@ intervals.
 
 - `measurableReconstruction_lowerSetScheme`, `measurableReconstruction_ordConnectedScheme`: the
   reconstructions are measurable on second countable order topologies.
+- `thresholdClass_subset_lowerSetClass`: the threshold class `x < θ` on `ℕ` of the mistake-bound
+  development, whose Littlestone dimension is infinite, lies in `lowerSetClass ℕ`, so it has the
+  size-`1` scheme.
 - `isPACLearnable_lowerSetClass`, `isPACLearnable_ordConnectedClass`: both classes are PAC
   learnable in the realizable setting.
 
@@ -60,29 +66,34 @@ open MeasureTheory Set
 
 namespace Cslib.MachineLearning.PACLearning
 
-/-- The indices of the positive examples of a sample. -/
+/-- The indices of the positive examples of a sample, in increasing order. -/
 @[expose] def positiveIndices {α : Type*} {m : ℕ} (S : LabeledSample α Bool m) : List (Fin m) :=
   (List.finRange m).filter fun i => (S i).2
 
+/-- An index is in `positiveIndices S` when its example is labelled `true`. -/
 theorem mem_positiveIndices {α : Type*} {m : ℕ} {S : LabeledSample α Bool m} {i : Fin m} :
     i ∈ positiveIndices S ↔ (S i).2 = true := by
   simp [positiveIndices]
 
 variable {α : Type*} [LinearOrder α]
 
-/-- The binary concepts whose positive examples form a lower set: thresholds `x ≤ θ` and `x < θ`,
-and the two constants. -/
+/-- The binary concepts whose positive examples form a lower set. On `ℝ` or `ℕ` these are exactly
+the thresholds `x ≤ θ` and `x < θ` and the two constants. -/
 def lowerSetClass (α : Type*) [LinearOrder α] : ConceptClass α Bool :=
   {c | IsLowerSet {x | c x = true}}
 
-/-- The binary concepts whose positive examples form an order-connected set: intervals of every
-kind, including the empty one. -/
+/-- The binary concepts whose positive examples form an order-connected set. On `ℝ` or `ℕ` these
+are exactly the intervals of every kind, including the empty one. -/
 def ordConnectedClass (α : Type*) [LinearOrder α] : ConceptClass α Bool :=
   {c | OrdConnected {x | c x = true}}
 
+/-- A concept is in `lowerSetClass α` when every instance below a positive instance is
+positive. -/
 theorem mem_lowerSetClass {c : α → Bool} :
     c ∈ lowerSetClass α ↔ ∀ ⦃x y⦄, y ≤ x → c x = true → c y = true := Iff.rfl
 
+/-- A concept is in `ordConnectedClass α` when every instance between two positive instances is
+positive. -/
 theorem mem_ordConnectedClass {c : α → Bool} :
     c ∈ ordConnectedClass α ↔ ∀ ⦃x y z⦄, x ≤ y → y ≤ z → c x = true → c z = true → c y = true :=
   ⟨fun h _ _ _ hxy hyz hx hz => OrdConnected.out h hx hz ⟨hxy, hyz⟩,
@@ -152,6 +163,17 @@ examples. -/
       · rw [Bool.and_eq_true, decide_eq_true_eq]
         exact ⟨mem_positiveIndices.1 (List.argmax_mem hl),
           List.le_of_mem_argmax (f := fun i => (S i).1) (mem_positiveIndices.2 hi) hl⟩
+
+/-- The thresholds `x < θ` on `ℕ` of the mistake-bound development are lower-set concepts. Their
+Littlestone dimension is infinite (`littlestoneDim_thresholdClass`), so the scheme from a mistake
+bound does not apply, but `lowerSetScheme` compresses them to one example. -/
+theorem thresholdClass_subset_lowerSetClass :
+    OnlineLearning.MistakeBound.thresholdClass ⊆ lowerSetClass ℕ := by
+  intro c hc
+  obtain ⟨θ, rfl⟩ := OnlineLearning.MistakeBound.mem_thresholdClass.1 hc
+  refine mem_lowerSetClass.2 fun x y hyx hx => ?_
+  simp only [OnlineLearning.MistakeBound.thresholdConcept_apply, decide_eq_true_eq] at hx ⊢
+  omega
 
 variable [MeasurableSpace α]
 

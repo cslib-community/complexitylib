@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.MachineLearning.PACLearning.Compression.Basic
+public import CslibFrontier.MachineLearning.OnlineLearning.MistakeBound.OnlineToBatch
 public import CslibFrontier.MachineLearning.OnlineLearning.MistakeBound.SOA
 
 /-!
@@ -24,11 +25,14 @@ exactly those examples. Repeat this pass from the examples kept so far. On a sam
 `M + 1` passes a pass keeps nothing new. In that last pass `A`, fed the kept examples, labels
 every example of the sample correctly. The reconstruction is `A` itself.
 
-With the Standard Optimal Algorithm, a class of finite Littlestone dimension `d` has a scheme of
-size `d`, so on a countable domain the compression bound gives the explicit realizable sample size
-`(m + 1) ^ d (1 - ε) ^ (m - d) ≤ δ`. This is logarithmic in `1 / δ`; the online-to-batch
-conversion by prefix majority, with expected error at most `M / (m + 1)`, is another route from
-mistake bounds to PAC learning.
+For a measurable learner (`IsMeasurableLearner`), the compression bound gives the realizable
+sample size `(m + 1) ^ M (1 - ε) ^ (m - M) ≤ δ`, which is logarithmic in `1 / δ`
+(`isPACLearnerFor_of_mistakeBound_le`). The prefix-majority conversion of
+`CslibFrontier/MachineLearning/OnlineLearning/MistakeBound/OnlineToBatch.lean`
+(`isPACLearnerFor_prefixMajority`) needs `2 M ≤ ε δ (m + 1)`, linear in `1 / δ`, but has no
+`log m` factor. With the Standard Optimal Algorithm, a class of Littlestone dimension at most `d`
+has a scheme of size `d`; on a countable domain this gives the sample size
+`(m + 1) ^ d (1 - ε) ^ (m - d) ≤ δ` (`isPACLearnerFor_of_littlestoneDim_le`).
 
 ## Main definitions
 
@@ -43,6 +47,11 @@ mistake bounds to PAC learning.
 
 - `SampleCompressionScheme.mistakes_mistakePass_iterate`: on every sample, the examples kept after
   any number of passes form a sequence on which the learner errs at every step.
+- `IsMeasurableLearner.measurableReconstruction`: a measurable online learner is a measurable
+  reconstruction map.
+- `SampleCompressionScheme.isPACLearnerFor_of_mistakeBound_le`: a measurable learner with mistake
+  bound `M` on `C` gives a PAC learner in the realizable setting from every `m` with
+  `(m + 1) ^ M (1 - ε) ^ (m - M) ≤ δ`.
 - `SampleCompressionScheme.isPACLearnerFor_of_littlestoneDim_le`: on a countable domain, a class of
   Littlestone dimension at most `d` is PAC learnable in the realizable setting from every `m` with
   `(m + 1) ^ d (1 - ε) ^ (m - d) ≤ δ`.
@@ -61,9 +70,21 @@ public section
 
 open MeasureTheory
 open scoped NNReal
-open Cslib.MachineLearning.OnlineLearning.MistakeBound (OnlineLearner mistakes mistakesFrom
+open Cslib.MachineLearning.OnlineLearning.MistakeBound (OnlineLearner IsMeasurableLearner mistakes
+  mistakesFrom
   mistakesFrom_append mistakesFrom_cons mistakeBound mistakes_le_mistakeBound littlestoneDim soa
   mistakeBound_soa)
+
+namespace Cslib.MachineLearning.OnlineLearning.MistakeBound
+
+/-- A measurable online learner, used as a reconstruction map, has measurable misclassification
+sets. -/
+theorem IsMeasurableLearner.measurableReconstruction {α : Type*} [MeasurableSpace α]
+    {A : OnlineLearner α} (hA : IsMeasurableLearner A) :
+    PACLearning.MeasurableReconstruction A :=
+  PACLearning.measurableReconstruction_of_measurable hA
+
+end Cslib.MachineLearning.OnlineLearning.MistakeBound
 
 namespace Cslib.MachineLearning.PACLearning.SampleCompressionScheme
 
@@ -190,10 +211,12 @@ that labels the whole sample correctly. -/
   length_compress_le _ hS := length_mistakePass_iterate_le hA hS (M + 1)
   reconstruct_correct _ hS i := apply_mistakePass_iterate_eq hA hS i
 
+/-- The scheme of a mistake bound keeps the examples left after `M + 1` passes. -/
 @[simp] theorem ofMistakeBound_compress (A : OnlineLearner α) {C : ConceptClass α Bool} {M : ℕ}
     (hA : mistakeBound A C ≤ M) (S : LabeledSample α Bool m) :
     (ofMistakeBound A hA).compress S = (mistakePass A S)^[M + 1] [] := rfl
 
+/-- The scheme of a mistake bound reconstructs with the online learner itself. -/
 @[simp] theorem ofMistakeBound_reconstruct (A : OnlineLearner α) {C : ConceptClass α Bool}
     {M : ℕ} (hA : mistakeBound A C ≤ M) : (ofMistakeBound A hA).reconstruct = A := rfl
 
@@ -202,6 +225,16 @@ which reconstructs with the Standard Optimal Algorithm. -/
 noncomputable def ofLittlestoneDim {C : ConceptClass α Bool} {d : ℕ}
     (hC : littlestoneDim C ≤ d) : SampleCompressionScheme C d :=
   ofMistakeBound (soa C) ((mistakeBound_soa C).trans_le hC)
+
+/-- **Explicit realizable sample size from a mistake bound.** A measurable online learner `A` with
+mistake bound `M` on `C` gives, through its compression scheme, a PAC learner in the realizable
+setting from every number `m` of examples with `(m + 1) ^ M (1 - ε) ^ (m - M) ≤ δ`. -/
+theorem isPACLearnerFor_of_mistakeBound_le [MeasurableSpace α] {A : OnlineLearner α}
+    (hA : IsMeasurableLearner A) {C : ConceptClass α Bool} {M : ℕ} (hM : mistakeBound A C ≤ M)
+    {m : ℕ} {ε δ : Set.Ioo (0 : ℝ≥0) 1}
+    (hm : ((m : ℝ) + 1) ^ M * (1 - (ε.val : ℝ)) ^ (m - M) ≤ δ.val) :
+    IsPACLearnerFor m ε δ C (realizableDistributions C) :=
+  (ofMistakeBound A hM).isPACLearnerFor hA.measurableReconstruction hm
 
 /-- **Explicit realizable sample size from the Littlestone dimension.** On a countable domain, a
 class of Littlestone dimension at most `d` has a PAC learner in the realizable setting from every

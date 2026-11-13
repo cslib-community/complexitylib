@@ -12,7 +12,8 @@ import CslibFrontier.MachineLearning.OnlineLearning.MistakeBound.Thresholds
 /-! Checks for sample compression schemes: the threshold and interval schemes on concrete samples,
 including a non-realizable sample on which the threshold reconstruction errs; explicit sample sizes
 for thresholds and intervals on `ℝ`; the halving algorithm's compression scheme on a concrete
-sample; and an explicit sample size for thresholds on `ℕ` from their Littlestone dimension. -/
+sample; and explicit sample sizes from a mistake bound, from the Littlestone dimension of bounded
+thresholds on `ℕ`, and from the threshold scheme for all thresholds on `ℕ`. -/
 
 namespace CslibFrontierTests.SampleCompression
 
@@ -43,7 +44,7 @@ example : lowerSetScheme.learner (![(1, false), (2, true)] : LabeledSample ℕ B
 
 /-- Restricting the interval scheme to thresholds gives a second, size-`2` scheme for them; on the
 threshold sample it keeps the smallest and the largest positive example. -/
-example : (ordConnectedScheme.mono lowerSetClass_subset_ordConnectedClass).compress
+example : (ordConnectedScheme.ofSubset lowerSetClass_subset_ordConnectedClass).compress
     thresholdSample = [3, 2] := by decide
 
 /-- A sample labelled by the interval `[2, 5]`. -/
@@ -88,6 +89,14 @@ theorem mistakeBound_halving_three_le : mistakeBound (halving three) (three : Se
 def halvingScheme : SampleCompressionScheme (three : Set (Fin 2 → Bool)) 1 :=
   .ofMistakeBound (halving three) mistakeBound_halving_three_le
 
+/-- Through the measurable-learner corollary, five examples learn `three` to accuracy and
+confidence `1 / 2`, because `6 (1 / 2) ^ 4 ≤ 1 / 2`. -/
+theorem isPACLearnerFor_three_five :
+    IsPACLearnerFor 5 half half (three : Set (Fin 2 → Bool))
+      (realizableDistributions (three : Set (Fin 2 → Bool))) :=
+  SampleCompressionScheme.isPACLearnerFor_of_mistakeBound_le
+    (isMeasurableLearner_of_countable _) mistakeBound_halving_three_le (by norm_num [half])
+
 /-- A sample labelled by the constant `false`. -/
 def falseSample : LabeledSample (Fin 2) Bool 3 := ![(0, false), (1, false), (0, false)]
 
@@ -110,5 +119,13 @@ theorem isPACLearnerFor_thresholdClassUpTo_ten :
       (realizableDistributions (thresholdClassUpTo 3)) :=
   SampleCompressionScheme.isPACLearnerFor_of_littlestoneDim_le (d := 2)
     (by rw [littlestoneDim_thresholdClassUpTo]; decide) (by norm_num [half])
+
+/-- All thresholds `x < θ` on `ℕ` have infinite Littlestone dimension, so no mistake-bound scheme
+exists, but the size-`1` threshold scheme learns them from five examples to accuracy and
+confidence `1 / 2`. -/
+theorem isPACLearnerFor_thresholdClass_five :
+    IsPACLearnerFor 5 half half thresholdClass (realizableDistributions thresholdClass) :=
+  (lowerSetScheme.ofSubset thresholdClass_subset_lowerSetClass).isPACLearnerFor
+    (measurableReconstruction_of_countable _) (by norm_num [half])
 
 end CslibFrontierTests.SampleCompression

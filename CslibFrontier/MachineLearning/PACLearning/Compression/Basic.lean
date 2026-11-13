@@ -9,6 +9,9 @@ module
 
 public import CslibFrontier.MachineLearning.PACLearning.RealizableSample
 public import Mathlib.Analysis.SpecialFunctions.Log.Basic
+public import Mathlib.Logic.Function.DependsOn
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.ExpBounds
+import CslibFrontier.Foundations.Data.Nat.Choose.Sum
 import CslibFrontier.MachineLearning.PACLearning.FiniteClass
 import Mathlib.Analysis.SpecificLimits.Normed
 
@@ -116,6 +119,7 @@ variable {C : ConceptClass α β} {k : ℕ}
 @[expose] def learner (κ : SampleCompressionScheme C k) {m : ℕ} : Learner α β m :=
   fun S => κ.reconstruct ((κ.compress S).map S)
 
+/-- The learner's hypothesis is the reconstruction from the compressed sample. -/
 theorem learner_apply (κ : SampleCompressionScheme C k) {m : ℕ} (S : LabeledSample α β m) :
     κ.learner S = κ.reconstruct ((κ.compress S).map S) := rfl
 
@@ -126,7 +130,7 @@ theorem learner_apply_eq (κ : SampleCompressionScheme C k) {m : ℕ} {S : Label
 
 /-- A scheme for `C` restricts to every subclass of `C`, with the same compression and
 reconstruction maps. -/
-@[expose] def mono (κ : SampleCompressionScheme C k) {C' : ConceptClass α β} (h : C' ⊆ C) :
+@[expose] def ofSubset (κ : SampleCompressionScheme C k) {C' : ConceptClass α β} (h : C' ⊆ C) :
     SampleCompressionScheme C' k where
   compress := κ.compress
   reconstruct := κ.reconstruct
@@ -142,7 +146,7 @@ variable [MeasurableSpace α] [MeasurableSpace β]
 /-- A reconstruction map has *measurable misclassification sets* when, for every number `j` of
 kept examples, the set of pairs (kept examples, test example) on which the reconstructed
 hypothesis errs is measurable. -/
-def MeasurableReconstruction (ρ : List (α × β) → α → β) : Prop :=
+@[expose] def MeasurableReconstruction (ρ : List (α × β) → α → β) : Prop :=
   ∀ j : ℕ, MeasurableSet
     {q : (LabeledSample α β j × α) × β | Function.uncurry (fun T x => ρ (List.ofFn T) x) q.1 ≠ q.2}
 
@@ -168,7 +172,7 @@ probability that `g` has error greater than `ε` and still labels every example 
 correctly is at most `(1 - ε) ^ (m - |J|)`. -/
 theorem measure_pi_lt_error_and_forall_notMem_apply_eq_le (D : Measure (α × β))
     [IsProbabilityMeasure D] {m : ℕ} (J : Finset (Fin m)) {g : LabeledSample α β m → α → β}
-    (hg : ∀ S S' : LabeledSample α β m, (∀ i ∈ J, S i = S' i) → g S = g S')
+    (hg : DependsOn g (J : Set (Fin m)))
     (hgm : MeasurableSet {q : (LabeledSample α β m × α) × β | Function.uncurry g q.1 ≠ q.2})
     (ε : ℝ≥0∞) :
     Measure.pi (fun _ : Fin m => D)
@@ -212,8 +216,9 @@ theorem measure_pi_lt_error_and_forall_notMem_apply_eq_le (D : Measure (α × β
       exact zero_le
     set h := g (e.symm (u, v₀))
     have hconst (v : (i : {i // i ∉ J}) → α × β) : g (e.symm (u, v)) = h :=
-      hg _ _ fun i hi => by
-        simp only [e, MeasurableEquiv.piEquivPiSubtypeProd_symm_apply, hi, dite_true]
+      hg fun i hi => by
+        simp only [e, MeasurableEquiv.piEquivPiSubtypeProd_symm_apply, Finset.mem_coe.1 hi,
+          dite_true]
     have hsub : Prod.mk u ⁻¹' (e.symm ⁻¹' T) ⊆ {v | ∀ i, h (v i).1 = (v i).2} := by
       intro v hv i
       have := hv.2 i i.2
@@ -234,20 +239,6 @@ theorem measure_pi_lt_error_and_forall_notMem_apply_eq_le (D : Measure (α × β
           gcongr
   refine (lintegral_mono hbound).trans_eq ?_
   rw [lintegral_const, measure_univ, mul_one]
-
-/-- The number of index lists of length at most `k` into `Fin m` is at most `(m + 1) ^ k`. -/
-private theorem sum_range_pow_le (m k : ℕ) : ∑ j ∈ Finset.range (k + 1), m ^ j ≤ (m + 1) ^ k := by
-  induction k with
-  | zero => simp
-  | succ k ih =>
-    rw [Finset.sum_range_succ]
-    calc ∑ j ∈ Finset.range (k + 1), m ^ j + m ^ (k + 1)
-        ≤ (m + 1) ^ k + m * (m + 1) ^ k := by
-          gcongr
-          rw [pow_succ']
-          gcongr
-          omega
-      _ = (m + 1) ^ (k + 1) := by ring
 
 namespace SampleCompressionScheme
 
@@ -300,7 +291,7 @@ theorem measure_pi_lt_error_learner_le (κ : SampleCompressionScheme C k)
   have hcard : Fintype.card (Σ j : Fin (k + 1), Fin j → Fin m) ≤ (m + 1) ^ k := by
     simp only [Fintype.card_sigma, Fintype.card_fun, Fintype.card_fin]
     rw [Fin.sum_univ_eq_sum_range (fun j => m ^ j)]
-    exact sum_range_pow_le m k
+    exact Cslib.sum_range_pow_le_add_one_pow m k
   calc μ {S | ε < error D (κ.learner S)}
       ≤ μ (⋃ ι, B ι) := measure_mono_ae hsub
     _ ≤ ∑ ι, μ (B ι) := measure_iUnion_fintype_le μ B
@@ -341,23 +332,15 @@ theorem isPACLearnerFor_of_log_le (κ : SampleCompressionScheme C k)
     IsPACLearnerFor m ε δ C (realizableDistributions C) := by
   refine κ.isPACLearnerFor hκ ?_
   have hδ : (0 : ℝ) < δ.val := by exact_mod_cast δ.2.1
-  have hε1 : (ε.val : ℝ) ≤ 1 := by exact_mod_cast ε.2.2.le
-  have hm1 : (0 : ℝ) < m + 1 := by positivity
   rw [Real.log_inv] at hm
-  have h1 : ((m : ℝ) + 1) ^ k = Real.exp (k * Real.log (m + 1)) := by
-    rw [Real.exp_nat_mul, Real.exp_log hm1]
-  have h2 : (1 - (ε.val : ℝ)) ^ (m - k) ≤ Real.exp (-(ε.val * (m - k : ℕ))) := by
-    refine (pow_le_pow_left₀ (sub_nonneg.2 hε1) (Real.one_sub_le_exp_neg _) _).trans_eq ?_
-    rw [← Real.exp_nat_mul]
-    congr 1
-    ring
   calc ((m : ℝ) + 1) ^ k * (1 - (ε.val : ℝ)) ^ (m - k)
       ≤ Real.exp (k * Real.log (m + 1)) * Real.exp (-(ε.val * (m - k : ℕ))) := by
-        rw [h1]
+        rw [Real.exp_nat_mul, Real.exp_log (by positivity)]
         gcongr
-    _ = Real.exp (k * Real.log (m + 1) + -(ε.val * (m - k : ℕ))) := (Real.exp_add _ _).symm
-    _ ≤ Real.exp (Real.log δ.val) := Real.exp_le_exp.2 (by linarith)
-    _ = δ.val := Real.exp_log hδ
+        exact Real.one_sub_pow_le_exp (by exact_mod_cast ε.2.2.le) (by rw [mul_comm])
+    _ ≤ δ.val := by
+        rw [← Real.exp_add, ← Real.exp_log hδ]
+        exact Real.exp_le_exp.2 (by linarith)
 
 /-- For `0 < r < 1`, `(m + 1) ^ k r ^ (m - k) ≤ δ` for some `m`. -/
 private theorem exists_pow_mul_pow_le (k : ℕ) {r δ : ℝ} (hr0 : 0 < r) (hr1 : r < 1)
