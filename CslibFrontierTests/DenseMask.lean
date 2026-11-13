@@ -64,23 +64,30 @@ example (n : ℕ) :
   rw [fairPair.eval_latentSample n]
   exact ⟨rfl, fairPair_entropy n⟩
 
-private theorem fairPair_gap : fairPair.HasGap (fun _ => 0) := by
-  intro adversary _
-  apply Eventually.of_forall
-  intro n
-  have hbit (guess : Bool) : (uniformOfFintype Bool).map (fun bit => guess == bit) =
+/-- An independent uniform hidden bit is guessed correctly with probability exactly one half,
+whatever the predictor. -/
+private theorem predictionExperiment_uniform_bit {O : Type} (o : O) (predictor : O → PMF Bool) :
+    predictionExperiment ((uniformOfFintype Bool).map (o, ·)) Prod.fst Prod.snd predictor =
       uniformOfFintype Bool := by
+  have hbit (guess : Bool) :
+      (uniformOfFintype Bool).bind (fun bit => PMF.pure (guess == bit)) =
+        uniformOfFintype Bool := by
     ext bit
     cases guess <;> cases bit <;>
-      norm_num [PMF.map_apply, tsum_fintype, Fintype.sum_bool, PMF.uniformOfFintype_apply]
-  have hgame : ProbComp.eval (predictionGame fairPair.sample adversary n) =
-      uniformOfFintype Bool := by
-    simp only [predictionGame, fairPair, ProbComp.eval_bind, ProbComp.eval_map,
-      ProbComp.eval_uniform, ProbComp.eval_pure, PMF.bind_map, Function.comp_def]
-    rw [PMF.bind_comm]
-    change (ProbComp.eval (adversary n [true, false])).bind
-      (fun guess => (uniformOfFintype Bool).map (fun bit => guess == bit)) = _
-    simp only [hbit, PMF.bind_const]
+      simp [PMF.bind_apply, tsum_fintype, PMF.uniformOfFintype_apply]
+  simp only [predictionExperiment, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_map,
+    Function.comp_def]
+  rw [PMF.bind_comm]
+  simp only [hbit, PMF.bind_const]
+
+private theorem fairPair_gap : fairPair.HasGap (fun _ => 0) := by
+  intro predictor _
+  apply Eventually.of_forall
+  intro n
+  have hgame : ProbComp.eval (predictionExperiment (fairPair.latentSample n) Prod.fst Prod.snd
+      (predictor n)) = uniformOfFintype Bool := by
+    simp only [ProbComp.eval_predictionExperiment, fairPair.eval_latentSample]
+    exact predictionExperiment_uniform_bit () _
   rw [hgame, fairPair_entropy]
   norm_num [PMF.uniformOfFintype_apply]
 

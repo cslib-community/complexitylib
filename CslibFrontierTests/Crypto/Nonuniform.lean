@@ -103,28 +103,33 @@ private theorem fairPair_entropy (n : ℕ) :
   rw [PMF.map_const]
   simp [PMF.entropy_uniform]
 
+/-- An independent uniform hidden bit is guessed correctly with probability exactly one half,
+whatever the predictor. -/
+private theorem predictionExperiment_uniform_bit {O : Type} (o : O) (predictor : O → PMF Bool) :
+    predictionExperiment ((PMF.uniformOfFintype Bool).map (o, ·)) Prod.fst Prod.snd predictor =
+      PMF.uniformOfFintype Bool := by
+  have hbit (guess : Bool) :
+      (PMF.uniformOfFintype Bool).bind (fun bit => PMF.pure (guess == bit)) =
+        PMF.uniformOfFintype Bool := by
+    ext bit
+    cases guess <;> cases bit <;>
+      simp [PMF.bind_apply, tsum_fintype, PMF.uniformOfFintype_apply]
+  simp only [predictionExperiment, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_map,
+    Function.comp_def]
+  rw [PMF.bind_comm]
+  simp only [hbit, PMF.bind_const]
+
 /-- An independent fair hidden bit has zero prediction gap against predictors receiving any
 fixed advice family. -/
 private theorem fairPair_gapWithAdvice (advice : ℕ → List Bool) :
     fairPair.HasGapWithAdvice (fun _ => 0) advice := by
-  intro adversary _
+  intro predictor _
   apply Filter.Eventually.of_forall
   intro n
-  have hbit (guess : Bool) : (PMF.uniformOfFintype Bool).map (fun bit => guess == bit) =
-      PMF.uniformOfFintype Bool := by
-    ext bit
-    cases guess <;> cases bit <;>
-      norm_num [PMF.map_apply, tsum_fintype, Fintype.sum_bool, PMF.uniformOfFintype_apply]
-  have hgame : ProbComp.eval
-      (Pseudoentropy.predictionGame fairPair.sample
-        (fun n word => adversary ((n, advice n), word)) n) =
-      PMF.uniformOfFintype Bool := by
-    simp only [Pseudoentropy.predictionGame, fairPair, ProbComp.eval_bind, ProbComp.eval_map,
-      ProbComp.eval_uniform, ProbComp.eval_pure, PMF.bind_map, Function.comp_def]
-    rw [PMF.bind_comm]
-    change (ProbComp.eval (adversary ((n, advice n), [true, false]))).bind
-      (fun guess => (PMF.uniformOfFintype Bool).map (fun bit => guess == bit)) = _
-    simp only [hbit, PMF.bind_const]
+  have hgame : ProbComp.eval (predictionExperiment (fairPair.latentSample n) Prod.fst Prod.snd
+      (predictor n (advice n))) = PMF.uniformOfFintype Bool := by
+    simp only [ProbComp.eval_predictionExperiment, fairPair.eval_latentSample]
+    exact predictionExperiment_uniform_bit () _
   rw [hgame, fairPair_entropy]
   norm_num [PMF.uniformOfFintype_apply]
 
@@ -147,11 +152,13 @@ example (n : ℕ) :
 `1 / 2` via `HasGapWithAdvice.eventually_error_ge`. -/
 example :
     ∀ᶠ n in Filter.atTop, (1 / 2 : ℝ) ≤
-      (ProbComp.eval
-        (Pseudoentropy.predictionGame fairPair.sample
-          (fun n _ => pure ((nonemptyAdvice n).headD false)) n) false).toReal := by
+      (ProbComp.eval (predictionExperiment (fairPair.latentSample n) Prod.fst Prod.snd
+        fun _ => pure ((nonemptyAdvice n).headD false)) false).toReal := by
   have h := (fairPair_gapWithAdvice nonemptyAdvice).eventually_error_ge
-    (fun input => pure (input.1.2.headD false)) (by fun_prop)
+    (fun _ advice _ => pure (advice.headD false)) (by
+      open Pseudoentropy Pseudoentropy.SamplablePair in
+      unfold AdvisedPredictor.IsPPT
+      fun_prop)
   filter_upwards [h] with n hn
   simpa [fairPair_entropy] using hn
 
