@@ -4845,6 +4845,7 @@ public import CslibFrontier.DataStructure.Paging.LRU
 public import CslibFrontier.DataStructure.Paging.LowerBound
 public import CslibFrontier.DataStructure.Paging.Marking
 public import CslibFrontier.DataStructure.PrefixSums.CellProbe.LowerBound
+public import CslibFrontier.DataStructure.PrefixSums.Spec
 public import CslibFrontier.DataStructure.PrefixSums.WordRAM.Dynamic
 public import CslibFrontier.DataStructure.PrefixSums.WordRAM.Query
 public import CslibFrontier.DataStructure.PrefixSums.WordRAM.Tree
