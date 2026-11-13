@@ -113,4 +113,4 @@ example : sem cross .disequality [false] = false := by decide
 example : sem cross .disequality [false, true, false] = false := by decide
 example : nearSem () [false, false, false] = false := by decide
 example : nearSem () [false, false, false, false, false] = false := by decide
-example : validArity arity [(Symbol.relation, ([0, 1, 2] : List ℕ))] = false := by decide
+example : validArity arity [⟨Symbol.relation, ([0, 1, 2] : List ℕ)⟩] = false := by decide

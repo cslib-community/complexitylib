@@ -45,6 +45,12 @@ seconds; accepted range 0.1–600). Mapping lookups made by the missing-only hel
 five-second connection and twenty-second request limits, within that origin's overall budget.
 These limits cover lookup and transfer work together, including a stalled server.
 
+Each origin reports its elapsed time and whether the native request completed, failed or timed
+out. Completion means that request succeeded, not that the checkout is fully built or that all
+artifacts were downloaded anew. Missing-only lookups retain the revision/module counts and
+report the final HTTP/curl status when no usable mapping was found; a denied lookup is not
+evidence that no uploaded artifacts exist.
+
 CI reads the cache too. After restoring `.lake` from the GitHub Actions cache, Lean CI runs
 `scripts/cache/get-missing.sh`, which downloads the same outputs except those of modules whose
 input hash already matches a build trace in `.lake`. A fresh runner would otherwise download a
@@ -137,12 +143,16 @@ following builds while preserving the public cache's authorization boundary.
   either the new rename or the rollback, `.lake/build` is absent (with the original outputs
   retained in the temporary staging directory) and the subsequent `lake build` safely recompiles
   from source and the local artifact cache.
+- **Superseded merge-group runs.** Each merge-group run has its own concurrency group, so GitHub
+  does not cancel a run whose entry has left the queue: the entry landed inside a later group, or
+  its group was rebuilt after an ejection. The *Merge-queue cleanup* workflow
+  (`scripts/ci/cancel_stale_merge_groups.py`) cancels such runs after each push to `main` and every
+  10 minutes. It skips runs younger than 5 minutes and runs for the current `main` commit, and
+  cancels a run only after a fresh read of its queue branch returns 404 or another commit; any
+  other error keeps the run. The handoff above is not affected, since it only uses a completed
+  successful run for the landed commit. Run the script without `--apply` for a dry-run list.
 
 ## Automatic restoration
-
-Temporary controlled measurement is specified in [MEASUREMENT.md](MEASUREMENT.md) (#1728).
-Its hooks are disabled without an explicit plan and expire on 2026-11-15. Installing them does
-not authorize study activation or complete #1197's net-benefit requirement.
 
 `scripts/build.sh` runs `scripts/cache/ensure.sh`, then forwards its arguments and exit status to
 `lake build`. `scripts/check.sh` uses the same bootstrap before full or quick validation; a quick
@@ -166,6 +176,9 @@ download deadlines, recovery generation and `LAKE_CACHE_DIR`.
 Working proof edits do not trigger another download. A changed `HEAD`, pin or configuration
 triggers a new attempt; an unchanged state is retried after ten minutes, including a previous miss or
 network failure. The stamp is written atomically after the fetch command finishes.
+The bootstrap prints when it starts and finishes an attempt, and when it reuses a recent
+attempt record. These messages include elapsed time or record age and the fetch exit status;
+an optional fetch can exit zero after a miss, so neither a zero exit nor the stamp certifies a hit.
 
 ```bash
 scripts/cache/ensure.sh --refresh             # retry now, e.g. after clearing caches
@@ -329,6 +342,67 @@ This PR does not complete repository-managed provisioning or automated upgrades.
 open under [#2503](https://github.com/cslib-community/cslib-frontier/issues/2503); the
 [milestone scope](../../tools/cache-origin/SECURITY.md#scope-of-2506-and-remaining-2503-work) separates
 the source/host checks from remaining cold-restore, recovery and preferred-reader decisions.
+
+## Profile cache publication
+
+Publication reports separate wall times for the mapping/archive build, archive staging and
+inventory hashing. Each phase prints its start and outcome; a successful stage also emits one
+`CACHE_STAGING_METRICS` JSON line. A failed phase keeps its textual diagnostic and command failure.
+The report records the source revision, toolchain, platform,
+explicit `LEAN_NUM_THREADS` value (or null when unset), mapping entries and root `.ltar`
+counts/bytes before and after the mapping build. Archive sizes are logical sizes, including
+hard-linked files; they are not physical disk usage.
+
+From a clean checkout with its dependencies and validated outputs available, stage into a new
+directory outside the checkout and optionally keep the same metrics as JSON:
+
+```bash
+publication_dir=$(mktemp -d)
+python3 -B scripts/cache/publish.py stage "$publication_dir/outputs" \
+  --report "$publication_dir/metrics.json"
+```
+
+This stages local files. The report is kept outside the publication inventory. Wall time and
+the Python process's CPU time are recorded on every platform; completed-child user/system CPU
+times are included where Python's `resource` module is available. Child CPU includes the waited
+command and its waited descendants, not a separate measurement of each subprocess or peak memory.
+
+`lake build ... -o` can create missing per-module archives even when the Lean outputs are warm.
+The pinned Lake implementation calls `packLtar` when output tracking finds no archive
+([source](https://github.com/leanprover/lean4/blob/v4.36.0-rc2/src/lake/Lake/Build/Module.lean#L1336)).
+Compare archive counts, phase CPU/wall time and unchanged compiled outputs before attributing
+a long mapping build to recompilation. The real-Lake publication test checks missing versus
+retained archives with fixed tiny sources and verifies that OLean hashes and mtimes stay unchanged.
+It establishes that mechanism, not a speedup estimate for a full CI build.
+
+By default, CI saves its Actions `.lake` snapshot before publication staging, so newly packed
+archives can be absent from that snapshot. The repository variable
+`RETAIN_PUBLICATION_ARCHIVES=true` enables a reversible experiment: the ordinary save is skipped
+and the same `.lake` path and key are saved after staging and the publisher handoff. Actions string
+comparisons are case-insensitive, so any capitalization of `true` enables the experiment; an absent
+variable or every other value disables it. Retention is best-effort because the pinned cache-save
+action reports ordinary save failures as warnings.
+
+Use adjacent, representative `main` pushes with the same toolchain, thread settings, recovery
+generation and comparable source changes:
+
+1. With the variable absent or unequal to `true` under the case-insensitive comparison, record the
+   source SHA, Actions restore/save duration and bytes, and `CACHE_STAGING_METRICS` archive counts
+   and mapping-build time.
+2. Set the variable to `true` in any capitalization for one `main` push. Record its late save
+   duration and bytes as well as the staging metrics; this run creates the snapshot that can retain
+   new archives.
+3. Keep it at `true` for the next representative `main` push. Compare restore duration and bytes,
+   `archives_before`, and mapping-build wall time with the baseline. Actions cache keys include the
+   commit SHA, so rerunning the first activated SHA cannot replace its already-created key.
+4. Roll back by deleting the variable or setting it to a value other than `true`, ignoring case.
+   The ordinary pre-publication save resumes immediately. A retained snapshot may still be restored
+   until a newer matching snapshot displaces or evicts it; rollback does not delete Actions cache
+   entries.
+
+This protocol tests the ordering change; it does not establish a speedup. Both remote publishers
+consume the same staged files, so the mapping/archive phase still delays fresh outputs on both
+origins.
 
 ## Maintainer runbook
 

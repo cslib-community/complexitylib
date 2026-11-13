@@ -36,8 +36,8 @@ Given a valid topology `t` and target output `y ∈ {0, 1}^m`, `mTopo` leaves th
 sets every non-output gate to the constant `false` table and every output gate `g` to the constant
 table returning the corresponding bit of `y`, and pairs this circuit with `0^n`. Given a valid
 shape `(n, m, q)` and `y`, `mSize` wires every gate to the first two input wires `A(g) = 1`,
-`B(g) = 2` (which is well-formed because `2 ≤ n` and `m + 2 ≤ n + q` for every valid circuit)
-and applies `mTopo`. Combining these inverters with the reductions of
+`B(g) = 2` (which is well-formed because `2 ≤ n` and `m ≤ q` for every valid circuit) and applies
+`mTopo`. Combining these inverters with the reductions of
 `CslibFrontier.Crypto.Primitives.Garbling.Foundations` yields Corollaries 1 and 2 of
 [BellareHoangRogaway2012], Sections 4.2 and 4.3, relating `prv.ind` to `prv.sim` and `obv.ind` to
 `obv.sim` for `phiTopo`, `phiSize` and `phiCirc`.
@@ -46,6 +46,10 @@ and applies `mTopo`. Combining these inverters with the reductions of
 
 * `Cslib.Crypto.Garbling.Topo`, `Cslib.Crypto.Garbling.ConventionalCircuit`,
   `Cslib.Crypto.Garbling.ValidCircuit`: BHR12 conventional circuits and their topologies.
+* `Cslib.Crypto.Garbling.Topo.IsValid`, `Cslib.Crypto.Garbling.ConventionalCircuit.IsValid`:
+  well-formedness, a property of the topology alone.
+* `Cslib.Crypto.Garbling.ValidTopo`, `Cslib.Crypto.Garbling.ValidShape`: valid topologies and
+  valid shapes `(n, m, q)`.
 * `Cslib.Crypto.Garbling.Scheme.IsCircuitScheme`: schemes over `ValidCircuit` whose length readers
   and semantics agree with `(n, m, q)` and `ConventionalCircuit.evalCirc`.
 * `Cslib.Crypto.Garbling.phiTopo`, `Cslib.Crypto.Garbling.phiSize`,
@@ -96,6 +100,36 @@ structure Topo where
   B : Fin q → ℕ
   deriving DecidableEq
 
+/-- Well-formedness of a topology ([BellareHoangRogaway2012], Section 2.3): `2 ≤ n`, `1 ≤ m`,
+`1 ≤ q`, `m ≤ q` (output wires are disjoint from input wires), and for every gate `g = n + 1 + i`,
+`1 ≤ A(g) < B(g) < g` and `B(g) ≤ n + q - m` (output wires are not fed into any gate). -/
+structure Topo.IsValid (t : Topo) : Prop where
+  /-- At least two input wires. -/
+  two_le_n : 2 ≤ t.n
+  /-- At least one output wire. -/
+  one_le_m : 1 ≤ t.m
+  /-- At least one gate. -/
+  one_le_q : 1 ≤ t.q
+  /-- The output wires are gate wires, disjoint from the input wires. -/
+  m_le_q : t.m ≤ t.q
+  /-- Wire numbers start at `1`. -/
+  one_le_A : ∀ i, 1 ≤ t.A i
+  /-- The first input wire of a gate precedes its second input wire. -/
+  A_lt_B : ∀ i, t.A i < t.B i
+  /-- A gate reads only earlier wires. -/
+  B_lt_gate : ∀ i : Fin t.q, t.B i < t.n + 1 + i.val
+  /-- No gate reads an output wire. -/
+  B_le_n_add_q_sub_m : ∀ i, t.B i ≤ t.n + t.q - t.m
+
+theorem Topo.isValid_iff (t : Topo) :
+    t.IsValid ↔ 2 ≤ t.n ∧ 1 ≤ t.m ∧ 1 ≤ t.q ∧ t.m ≤ t.q ∧ (∀ i, 1 ≤ t.A i) ∧
+      (∀ i, t.A i < t.B i) ∧ (∀ i : Fin t.q, t.B i < t.n + 1 + i.val) ∧
+      ∀ i, t.B i ≤ t.n + t.q - t.m :=
+  ⟨fun ⟨h₁, h₂, h₃, h₄, h₅, h₆, h₇, h₈⟩ => ⟨h₁, h₂, h₃, h₄, h₅, h₆, h₇, h₈⟩,
+    fun ⟨h₁, h₂, h₃, h₄, h₅, h₆, h₇, h₈⟩ => ⟨h₁, h₂, h₃, h₄, h₅, h₆, h₇, h₈⟩⟩
+
+instance (t : Topo) : Decidable t.IsValid := decidable_of_iff _ t.isValid_iff.symm
+
 /-- A conventional Boolean circuit `f = (n, m, q, A, B, G)` following
 [BellareHoangRogaway2012], Section 2.3: wires are numbered `1` to `n + q`, with inputs `1` to `n`,
 gate `i : Fin q` on wire `n + 1 + i.val`, and outputs on the last `m` wires
@@ -120,20 +154,9 @@ namespace ConventionalCircuit
 /-- The topology of a conventional circuit, forgetting the gate truth tables `G`. -/
 def topo (f : ConventionalCircuit) : Topo := ⟨f.n, f.m, f.q, f.A, f.B⟩
 
-/-- Well-formedness of a conventional circuit ([BellareHoangRogaway2012], Section 2.3):
-`2 ≤ n`, `1 ≤ m`, `1 ≤ q`, `m ≤ q` (output wires are disjoint from input wires), and for every
-gate `g = n + 1 + i`, `1 ≤ A(g) < B(g) < g` and `B(g) ≤ n + q - m` (output wires are not fed into
-any gate). -/
-def IsValid (f : ConventionalCircuit) : Prop :=
-  2 ≤ f.n ∧ 1 ≤ f.m ∧ 1 ≤ f.q ∧ f.m ≤ f.q ∧
-    ∀ i : Fin f.q,
-      1 ≤ f.A i ∧ f.A i < f.B i ∧ f.B i < f.n + 1 + i.val ∧ f.B i ≤ f.n + f.q - f.m
-
-instance (f : ConventionalCircuit) : Decidable f.IsValid := by
-  unfold IsValid
-  infer_instance
-
-theorem IsValid.m_le {f : ConventionalCircuit} (h : f.IsValid) : f.m ≤ f.q := h.2.2.2.1
+/-- Well-formedness of a conventional circuit ([BellareHoangRogaway2012], Section 2.3): its
+topology is valid (`Topo.IsValid`). It does not depend on the gate truth tables. -/
+abbrev IsValid (f : ConventionalCircuit) : Prop := f.topo.IsValid
 
 /-- Read the 1-indexed wire `w` from a list of wire values, defaulting to `false`. -/
 def wireVal (ws : List Bool) (w : ℕ) : Bool := ws[w - 1]?.getD false
@@ -190,36 +213,27 @@ def ofTopo (t : Topo) (G : Fin t.q → Bool → Bool → Bool) : ConventionalCir
 @[simp] theorem topo_ofTopo (t : Topo) (G : Fin t.q → Bool → Bool → Bool) :
     (ofTopo t G).topo = t := rfl
 
-/-- Circuit well-formedness depends only on the topology. -/
-theorem isValid_ofTopo_iff (t : Topo) (G G' : Fin t.q → Bool → Bool → Bool) :
-    (ofTopo t G).IsValid ↔ (ofTopo t G').IsValid := Iff.rfl
-
 /-- Topologies of valid conventional circuits. -/
-abbrev ValidTopo := {t : Topo // (ofTopo t fun _ _ _ => false).IsValid}
+abbrev ValidTopo := {t : Topo // t.IsValid}
 
-/-- Valid circuit shapes `(n, m, q)` satisfying `2 ≤ n`, `1 ≤ m`, `1 ≤ q`, `m ≤ q` and
-`m + 2 ≤ n + q`. The predicate reads the triple by position because it defines the layout;
-elsewhere use the components `ValidShape.n`, `ValidShape.m` and `ValidShape.q`. -/
-abbrev ValidShape :=
-  {s : ℕ × ℕ × ℕ // 2 ≤ s.1 ∧ 1 ≤ s.2.1 ∧ 1 ≤ s.2.2 ∧ s.2.1 ≤ s.2.2 ∧ s.2.1 + 2 ≤ s.1 + s.2.2}
-
-/-- The input count `n` of a shape. -/
-abbrev ValidShape.n (s : ValidShape) : ℕ := s.1.1
-
-/-- The output count `m` of a shape. -/
-abbrev ValidShape.m (s : ValidShape) : ℕ := s.1.2.1
-
-/-- The gate count `q` of a shape. -/
-abbrev ValidShape.q (s : ValidShape) : ℕ := s.1.2.2
-
-/-- The shape `(n, m, q)` of any valid conventional circuit is a `ValidShape`. -/
-theorem shape_of_isValid {f : ConventionalCircuit} (h : f.IsValid) :
-    2 ≤ f.n ∧ 1 ≤ f.m ∧ 1 ≤ f.q ∧ f.m ≤ f.q ∧ f.m + 2 ≤ f.n + f.q := by
-  obtain ⟨hn, hm, hq, hmq, hg⟩ := h
-  obtain ⟨h1, h2, _, h4⟩ := hg ⟨0, hq⟩
-  have h2le : 2 ≤ f.n + f.q - f.m := Nat.le_trans (Nat.succ_le_of_lt (Nat.lt_of_le_of_lt h1 h2)) h4
-  have hmlenq : f.m ≤ f.n + f.q := Nat.le_trans hmq (Nat.le_add_left f.q f.n)
-  exact ⟨hn, hm, hq, hmq, Nat.add_comm f.m 2 ▸ (Nat.le_sub_iff_add_le hmlenq).mp h2le⟩
+/-- Valid circuit shapes `(n, m, q)`: `2 ≤ n`, `1 ≤ m`, `1 ≤ q` and `m ≤ q`, the shape conditions
+of `Topo.IsValid`. -/
+structure ValidShape where
+  /-- The number of input wires `n`. -/
+  n : ℕ
+  /-- The number of output wires `m`. -/
+  m : ℕ
+  /-- The number of gates `q`. -/
+  q : ℕ
+  /-- At least two input wires. -/
+  two_le_n : 2 ≤ n
+  /-- At least one output wire. -/
+  one_le_m : 1 ≤ m
+  /-- At least one gate. -/
+  one_le_q : 1 ≤ q
+  /-- The output wires are gate wires. -/
+  m_le_q : m ≤ q
+  deriving DecidableEq
 
 /-! ## Standard side-information functions -/
 
@@ -234,7 +248,7 @@ def phiTopo : SideInfo ValidCircuit ValidTopo where
 /-- `Φ_size(f) = (n, m, q)`: side information revealing only the input count, output count and
 gate count ([BellareHoangRogaway2012], Section 3.3). -/
 def phiSize : SideInfo ValidCircuit ValidShape where
-  phi f := ⟨(f.1.n, f.1.m, f.1.q), shape_of_isValid f.2⟩
+  phi f := ⟨f.1.n, f.1.m, f.1.q, f.2.two_le_n, f.2.one_le_m, f.2.one_le_q, f.2.m_le_q⟩
   inLen s := s.n
   outLen s := s.m
   size s := s.q
@@ -275,40 +289,40 @@ def mTopoGates (t : Topo) (y : List Bool) : Fin t.q → Bool → Bool → Bool :
 /-- The `(Φ_topo, ev)`-inverter `M_topo` ([BellareHoangRogaway2012], Section 4.1, Proposition 1):
 from a valid topology `t` and output string `y`, build the circuit with topology `t` and constant
 gates `mTopoGates t y` paired with the all-zero input `0^n`. -/
-def mTopo (t : ValidTopo) (y : List Bool) : ValidCircuit × List Bool :=
-  (⟨ofTopo t.1 (mTopoGates t.1 y), t.2⟩, List.replicate t.1.n false)
+def mTopo (t : ValidTopo) (y : List Bool) : Query ValidCircuit :=
+  ⟨⟨ofTopo t.1 (mTopoGates t.1 y), t.2⟩, List.replicate t.1.n false⟩
 
 /-- The canonical wiring for a shape `(n, m, q)` ([BellareHoangRogaway2012], Section 4.1,
 Proposition 1): every gate takes wires `A(g) = 1` and `B(g) = 2`. -/
-def sizeTopo : ℕ × ℕ × ℕ → Topo
-  | (n, m, q) => ⟨n, m, q, fun _ => 1, fun _ => 2⟩
+def sizeTopo (s : ValidShape) : Topo := ⟨s.n, s.m, s.q, fun _ => 1, fun _ => 2⟩
 
-theorem sizeTopo_valid (s : ValidShape) :
-    (ofTopo (sizeTopo s.1) fun _ _ _ => false).IsValid := by
-  obtain ⟨⟨n, m, q⟩, h⟩ := s
-  change 2 ≤ n ∧ 1 ≤ m ∧ 1 ≤ q ∧ m ≤ q ∧ m + 2 ≤ n + q at h
-  obtain ⟨hn, hm, hq, hmq, hs⟩ := h
-  refine ⟨hn, hm, hq, hmq, fun i => ⟨Nat.le_refl 1, Nat.lt_succ_self 1,
-    Nat.lt_of_lt_of_le (Nat.lt_succ_of_le hn) (Nat.le_add_right _ _),
-    Nat.le_sub_of_add_le' hs⟩⟩
+theorem sizeTopo_isValid (s : ValidShape) : (sizeTopo s).IsValid where
+  two_le_n := s.two_le_n
+  one_le_m := s.one_le_m
+  one_le_q := s.one_le_q
+  m_le_q := s.m_le_q
+  one_le_A _ := le_rfl
+  A_lt_B _ := Nat.one_lt_two
+  B_lt_gate _ := by have := s.two_le_n; simp only [sizeTopo]; omega
+  B_le_n_add_q_sub_m _ := by have := s.two_le_n; have := s.m_le_q; simp only [sizeTopo]; omega
 
 /-- The `(Φ_size, ev)`-inverter `M_size` ([BellareHoangRogaway2012], Section 4.1, Proposition 1):
 extend the shape `s = (n, m, q)` with the canonical wiring `A(g) = 1, B(g) = 2` and apply
 `mTopo`. -/
-def mSize (s : ValidShape) (y : List Bool) : ValidCircuit × List Bool :=
-  mTopo ⟨sizeTopo s.1, sizeTopo_valid s⟩ y
+def mSize (s : ValidShape) (y : List Bool) : Query ValidCircuit :=
+  mTopo ⟨sizeTopo s, sizeTopo_isValid s⟩ y
 
 /-- The `Φ_topo`-inverter built from `mTopo` by setting `y = 0^m`. -/
-def mTopoInv (t : ValidTopo) : ValidCircuit := (mTopo t (List.replicate t.1.m false)).1
+def mTopoInv (t : ValidTopo) : ValidCircuit := (mTopo t (List.replicate t.1.m false)).fn
 
 /-- The `Φ_size`-inverter built from `mSize` by setting `y = 0^m`. -/
-def mSizeInv (s : ValidShape) : ValidCircuit := (mSize s (List.replicate s.m false)).1
+def mSizeInv (s : ValidShape) : ValidCircuit := (mSize s (List.replicate s.m false)).fn
 
 @[simp] theorem phiTopo_mTopo (t : ValidTopo) (y : List Bool) :
-    phiTopo.phi (mTopo t y).1 = t := rfl
+    phiTopo.phi (mTopo t y).fn = t := rfl
 
 @[simp] theorem phiSize_mSize (s : ValidShape) (y : List Bool) :
-    phiSize.phi (mSize s y).1 = s := rfl
+    phiSize.phi (mSize s y).fn = s := rfl
 
 /-- `mTopoInv` is a `Φ_topo`-inverter ([BellareHoangRogaway2012], Section 4.1, Proposition 1). -/
 theorem phiTopo_isInverter : phiTopo.IsInverter mTopoInv := fun _ => rfl
@@ -366,27 +380,25 @@ theorem evalCirc_ofTopo_mTopoGates (t : Topo) (hm : t.m ≤ t.q) (y : List Bool)
 ([BellareHoangRogaway2012], Section 4.1, Proposition 1). -/
 theorem phiTopo_isEvInverter {G : Scheme ValidCircuit} (hG : G.IsCircuitScheme) :
     phiTopo.IsEvInverter G mTopo := by
-  intro f x _ f' x' hM
-  obtain ⟨rfl, rfl⟩ := Prod.mk.inj hM.symm
+  intro f x _
   refine ⟨rfl, ?_, ?_⟩
   · rw [(hG.1 _).1]
     exact List.length_replicate
   · rw [hG.2, hG.2]
-    exact evalCirc_ofTopo_mTopoGates f.1.topo f.2.m_le (f.1.evalCirc x)
-      (f.1.length_evalCirc x f.2.m_le)
+    exact evalCirc_ofTopo_mTopoGates f.1.topo f.2.m_le_q (f.1.evalCirc x)
+      (f.1.length_evalCirc x f.2.m_le_q)
 
 /-- `mSize` is a `(Φ_size, ev)`-inverter for every circuit garbling scheme
 ([BellareHoangRogaway2012], Section 4.1, Proposition 1). -/
 theorem phiSize_isEvInverter {G : Scheme ValidCircuit} (hG : G.IsCircuitScheme) :
     phiSize.IsEvInverter G mSize := by
-  intro f x _ f' x' hM
-  obtain ⟨rfl, rfl⟩ := Prod.mk.inj hM.symm
+  intro f x _
   refine ⟨rfl, ?_, ?_⟩
   · rw [(hG.1 _).1]
     exact List.length_replicate
   · rw [hG.2, hG.2]
-    exact evalCirc_ofTopo_mTopoGates (sizeTopo (phiSize.phi f).1) f.2.m_le (f.1.evalCirc x)
-      (f.1.length_evalCirc x f.2.m_le)
+    exact evalCirc_ofTopo_mTopoGates (sizeTopo (phiSize.phi f)) f.2.m_le_q (f.1.evalCirc x)
+      (f.1.length_evalCirc x f.2.m_le_q)
 
 /-! ## Equivalence of indistinguishability and simulation for circuit side information -/
 
@@ -398,89 +410,84 @@ include hG
 /-- Corollary 1 of [BellareHoangRogaway2012], Section 4.2 (`Φ_topo`, simulation to
 indistinguishability): for any circuit garbling scheme, the `prv.ind` advantage under `phiTopo` is
 twice the `prv.sim` advantage of `prvIndToSim` against any simulator. -/
-theorem prvIndAdvantage_phiTopo_eq_two_mul_prvSimAdvantage (A : PrvIndAdversary ValidCircuit σ)
-    (S : PrvSimulator ValidTopo) (k : ℕ) :
-    prvIndAdvantage G phiTopo A k =
-      2 * prvSimAdvantage G phiTopo S (prvIndToSim G phiTopo A) k :=
-  prvIndAdvantage_eq_two_mul_prvSimAdvantage_prvIndToSim G phiTopo (phiTopo_compatible hG) A S k
+theorem prvIndAdvantage_phiTopo_eq_two_mul_prvSimAdvantage (k : ℕ) (S : PrvSimulator ValidTopo)
+    (A : PrvIndAdversary ValidCircuit σ) :
+    prvIndAdvantage G phiTopo k A = 2 * prvSimAdvantage G phiTopo k S (prvIndToSim G phiTopo A) :=
+  prvIndAdvantage_eq_two_mul_prvSimAdvantage_prvIndToSim G phiTopo (phiTopo_compatible hG) k S A
 
 /-- Corollary 1 of [BellareHoangRogaway2012], Section 4.2 (`Φ_topo`, indistinguishability to
 simulation): for any circuit garbling scheme, the `prv.sim` advantage against the `mTopo` inverter
 simulator equals the `prv.ind` advantage of `prvSimToInd`. -/
-theorem prvSimAdvantage_phiTopo_mTopo_eq (B : PrvSimAdversary ValidCircuit σ) (k : ℕ) :
-    prvSimAdvantage G phiTopo (prvSimFromInverter G mTopo) B k =
-      prvIndAdvantage G phiTopo (prvSimToInd G phiTopo mTopo B) k :=
+theorem prvSimAdvantage_phiTopo_mTopo_eq (k : ℕ) (B : PrvSimAdversary ValidCircuit σ) :
+    prvSimAdvantage G phiTopo k (prvSimFromInverter G k mTopo) B =
+      prvIndAdvantage G phiTopo k (prvSimToInd G phiTopo mTopo B) :=
   prvSimAdvantage_prvSimFromInverter_eq G phiTopo (phiTopo_compatible hG)
-    (phiTopo_isEvInverter hG) B k
+    (phiTopo_isEvInverter hG) k B
 
 /-- Corollary 1 of [BellareHoangRogaway2012], Section 4.2 (`Φ_size`, simulation to
 indistinguishability): for any circuit garbling scheme, the `prv.ind` advantage under `phiSize` is
 twice the `prv.sim` advantage of `prvIndToSim` against any simulator. -/
-theorem prvIndAdvantage_phiSize_eq_two_mul_prvSimAdvantage (A : PrvIndAdversary ValidCircuit σ)
-    (S : PrvSimulator ValidShape) (k : ℕ) :
-    prvIndAdvantage G phiSize A k =
-      2 * prvSimAdvantage G phiSize S (prvIndToSim G phiSize A) k :=
-  prvIndAdvantage_eq_two_mul_prvSimAdvantage_prvIndToSim G phiSize (phiSize_compatible hG) A S k
+theorem prvIndAdvantage_phiSize_eq_two_mul_prvSimAdvantage (k : ℕ) (S : PrvSimulator ValidShape)
+    (A : PrvIndAdversary ValidCircuit σ) :
+    prvIndAdvantage G phiSize k A = 2 * prvSimAdvantage G phiSize k S (prvIndToSim G phiSize A) :=
+  prvIndAdvantage_eq_two_mul_prvSimAdvantage_prvIndToSim G phiSize (phiSize_compatible hG) k S A
 
 /-- Corollary 1 of [BellareHoangRogaway2012], Section 4.2 (`Φ_size`, indistinguishability to
 simulation): for any circuit garbling scheme, the `prv.sim` advantage against the `mSize` inverter
 simulator equals the `prv.ind` advantage of `prvSimToInd`. -/
-theorem prvSimAdvantage_phiSize_mSize_eq (B : PrvSimAdversary ValidCircuit σ) (k : ℕ) :
-    prvSimAdvantage G phiSize (prvSimFromInverter G mSize) B k =
-      prvIndAdvantage G phiSize (prvSimToInd G phiSize mSize B) k :=
+theorem prvSimAdvantage_phiSize_mSize_eq (k : ℕ) (B : PrvSimAdversary ValidCircuit σ) :
+    prvSimAdvantage G phiSize k (prvSimFromInverter G k mSize) B =
+      prvIndAdvantage G phiSize k (prvSimToInd G phiSize mSize B) :=
   prvSimAdvantage_prvSimFromInverter_eq G phiSize (phiSize_compatible hG)
-    (phiSize_isEvInverter hG) B k
+    (phiSize_isEvInverter hG) k B
 
 /-- Corollary 2 of [BellareHoangRogaway2012], Section 4.3 (`Φ_topo`, simulation to
 indistinguishability): for any circuit garbling scheme, the `obv.ind` advantage under `phiTopo` is
 twice the `obv.sim` advantage of `obvIndToSim` against any simulator. -/
-theorem obvIndAdvantage_phiTopo_eq_two_mul_obvSimAdvantage (A : ObvIndAdversary ValidCircuit σ)
-    (S : ObvSimulator ValidTopo) (k : ℕ) :
-    obvIndAdvantage G phiTopo A k =
-      2 * obvSimAdvantage G phiTopo S (obvIndToSim G phiTopo A) k :=
-  obvIndAdvantage_eq_two_mul_obvSimAdvantage_obvIndToSim G phiTopo (phiTopo_compatible hG) A S k
+theorem obvIndAdvantage_phiTopo_eq_two_mul_obvSimAdvantage (k : ℕ) (S : ObvSimulator ValidTopo)
+    (A : ObvIndAdversary ValidCircuit σ) :
+    obvIndAdvantage G phiTopo k A = 2 * obvSimAdvantage G phiTopo k S (obvIndToSim G phiTopo A) :=
+  obvIndAdvantage_eq_two_mul_obvSimAdvantage_obvIndToSim G phiTopo (phiTopo_compatible hG) k S A
 
 /-- Corollary 2 of [BellareHoangRogaway2012], Section 4.3 (`Φ_topo`, indistinguishability to
 simulation): for any circuit garbling scheme, the `obv.sim` advantage against the `mTopoInv`
 inverter simulator equals the `obv.ind` advantage of `obvSimToInd`. -/
-theorem obvSimAdvantage_phiTopo_mTopoInv_eq (B : ObvSimAdversary ValidCircuit σ) (k : ℕ) :
-    obvSimAdvantage G phiTopo (obvSimFromInverter G mTopoInv) B k =
-      obvIndAdvantage G phiTopo (obvSimToInd G phiTopo mTopoInv B) k :=
-  obvSimAdvantage_obvSimFromInverter_eq G phiTopo (phiTopo_compatible hG) phiTopo_isInverter B k
+theorem obvSimAdvantage_phiTopo_mTopoInv_eq (k : ℕ) (B : ObvSimAdversary ValidCircuit σ) :
+    obvSimAdvantage G phiTopo k (obvSimFromInverter G k mTopoInv) B =
+      obvIndAdvantage G phiTopo k (obvSimToInd G phiTopo mTopoInv B) :=
+  obvSimAdvantage_obvSimFromInverter_eq G phiTopo (phiTopo_compatible hG) phiTopo_isInverter k B
 
 /-- Corollary 2 of [BellareHoangRogaway2012], Section 4.3 (`Φ_size`, simulation to
 indistinguishability): for any circuit garbling scheme, the `obv.ind` advantage under `phiSize` is
 twice the `obv.sim` advantage of `obvIndToSim` against any simulator. -/
-theorem obvIndAdvantage_phiSize_eq_two_mul_obvSimAdvantage (A : ObvIndAdversary ValidCircuit σ)
-    (S : ObvSimulator ValidShape) (k : ℕ) :
-    obvIndAdvantage G phiSize A k =
-      2 * obvSimAdvantage G phiSize S (obvIndToSim G phiSize A) k :=
-  obvIndAdvantage_eq_two_mul_obvSimAdvantage_obvIndToSim G phiSize (phiSize_compatible hG) A S k
+theorem obvIndAdvantage_phiSize_eq_two_mul_obvSimAdvantage (k : ℕ) (S : ObvSimulator ValidShape)
+    (A : ObvIndAdversary ValidCircuit σ) :
+    obvIndAdvantage G phiSize k A = 2 * obvSimAdvantage G phiSize k S (obvIndToSim G phiSize A) :=
+  obvIndAdvantage_eq_two_mul_obvSimAdvantage_obvIndToSim G phiSize (phiSize_compatible hG) k S A
 
 /-- Corollary 2 of [BellareHoangRogaway2012], Section 4.3 (`Φ_size`, indistinguishability to
 simulation): for any circuit garbling scheme, the `obv.sim` advantage against the `mSizeInv`
 inverter simulator equals the `obv.ind` advantage of `obvSimToInd`. -/
-theorem obvSimAdvantage_phiSize_mSizeInv_eq (B : ObvSimAdversary ValidCircuit σ) (k : ℕ) :
-    obvSimAdvantage G phiSize (obvSimFromInverter G mSizeInv) B k =
-      obvIndAdvantage G phiSize (obvSimToInd G phiSize mSizeInv B) k :=
-  obvSimAdvantage_obvSimFromInverter_eq G phiSize (phiSize_compatible hG) phiSize_isInverter B k
+theorem obvSimAdvantage_phiSize_mSizeInv_eq (k : ℕ) (B : ObvSimAdversary ValidCircuit σ) :
+    obvSimAdvantage G phiSize k (obvSimFromInverter G k mSizeInv) B =
+      obvIndAdvantage G phiSize k (obvSimToInd G phiSize mSizeInv B) :=
+  obvSimAdvantage_obvSimFromInverter_eq G phiSize (phiSize_compatible hG) phiSize_isInverter k B
 
 /-- Corollary 2 of [BellareHoangRogaway2012], Section 4.3 (`Φ_circ`, simulation to
 indistinguishability): for any circuit garbling scheme, the `obv.ind` advantage under `phiCirc` is
 twice the `obv.sim` advantage of `obvIndToSim` against any simulator. -/
-theorem obvIndAdvantage_phiCirc_eq_two_mul_obvSimAdvantage (A : ObvIndAdversary ValidCircuit σ)
-    (S : ObvSimulator ValidCircuit) (k : ℕ) :
-    obvIndAdvantage G phiCirc A k =
-      2 * obvSimAdvantage G phiCirc S (obvIndToSim G phiCirc A) k :=
-  obvIndAdvantage_eq_two_mul_obvSimAdvantage_obvIndToSim G phiCirc (phiCirc_compatible hG) A S k
+theorem obvIndAdvantage_phiCirc_eq_two_mul_obvSimAdvantage (k : ℕ) (S : ObvSimulator ValidCircuit)
+    (A : ObvIndAdversary ValidCircuit σ) :
+    obvIndAdvantage G phiCirc k A = 2 * obvSimAdvantage G phiCirc k S (obvIndToSim G phiCirc A) :=
+  obvIndAdvantage_eq_two_mul_obvSimAdvantage_obvIndToSim G phiCirc (phiCirc_compatible hG) k S A
 
 /-- Corollary 2 of [BellareHoangRogaway2012], Section 4.3 (`Φ_circ`, indistinguishability to
 simulation): for any circuit garbling scheme, the `obv.sim` advantage against the identity
 inverter simulator equals the `obv.ind` advantage of `obvSimToInd`. -/
-theorem obvSimAdvantage_phiCirc_id_eq (B : ObvSimAdversary ValidCircuit σ) (k : ℕ) :
-    obvSimAdvantage G phiCirc (obvSimFromInverter G id) B k =
-      obvIndAdvantage G phiCirc (obvSimToInd G phiCirc id B) k :=
-  obvSimAdvantage_obvSimFromInverter_eq G phiCirc (phiCirc_compatible hG) phiCirc_isInverter B k
+theorem obvSimAdvantage_phiCirc_id_eq (k : ℕ) (B : ObvSimAdversary ValidCircuit σ) :
+    obvSimAdvantage G phiCirc k (obvSimFromInverter G k id) B =
+      obvIndAdvantage G phiCirc k (obvSimToInd G phiCirc id B) :=
+  obvSimAdvantage_obvSimFromInverter_eq G phiCirc (phiCirc_compatible hG) phiCirc_isInverter k B
 
 end Corollaries
 

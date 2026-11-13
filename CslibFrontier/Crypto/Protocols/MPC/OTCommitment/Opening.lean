@@ -49,17 +49,15 @@ must have the submitted parity and match the receiver's selected bit. -/
     (submission : Option (Bool × List (Bool × Bool))) : Option Bool :=
   submission.elim none fun (b, pairs) =>
     if choices.length == received.length && choices.length == pairs.length &&
-        ((choices.zip received).zip pairs).all (fun row =>
-          (row.2.1 ^^ row.2.2) == b &&
-            (if row.1.1 then row.2.2 else row.2.1) == row.1.2) then
+        ((choices.zip received).zip pairs).all (fun ((c, r), (x₀, x₁)) =>
+          (x₀ ^^ x₁) == b && (if c then x₁ else x₀) == r) then
       some b else none
 
 private theorem rows_ofFn {k : ℕ} (choices received : Fin k → Bool)
     (b : Bool) (o : Opening k) :
     (((List.ofFn choices).zip (List.ofFn received)).zip
-      (List.ofFn fun i => (o i false, o i true))).all (fun row =>
-        (row.2.1 ^^ row.2.2) == b &&
-          (if row.1.1 then row.2.2 else row.2.1) == row.1.2) = true ↔
+      (List.ofFn fun i => (o i false, o i true))).all (fun ((c, r), (x₀, x₁)) =>
+        (x₀ ^^ x₁) == b && (if c then x₁ else x₀) == r) = true ↔
       Accepts choices received b o := by
   induction k with
   | zero => simp [Accepts]
@@ -78,12 +76,7 @@ theorem openPairs_ofFn {k : ℕ} (choices received : Fin k → Bool)
   | none => rfl
   | some s =>
     rcases s with ⟨b, o⟩
-    change (if ((List.ofFn choices).length == (List.ofFn received).length &&
-        (List.ofFn choices).length == (List.ofFn fun i => (o i false, o i true)).length &&
-        (((List.ofFn choices).zip (List.ofFn received)).zip
-          (List.ofFn fun i => (o i false, o i true))).all (fun row =>
-            (row.2.1 ^^ row.2.2) == b &&
-              (if row.1.1 then row.2.2 else row.2.1) == row.1.2)) then some b else none) = _
+    dsimp only [openPairs, Option.map_some, Option.elim]
     rw [List.length_ofFn, List.length_ofFn, List.length_ofFn]
     rw [beq_self_eq_true, Bool.true_and, Bool.true_and]
     have hrows := Bool.eq_iff_iff.mpr ((rows_ofFn choices received b o).trans

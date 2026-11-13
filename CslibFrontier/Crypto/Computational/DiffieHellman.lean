@@ -26,6 +26,7 @@ import CslibFrontier.Languages.Probabilistic.Concentration
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Uniform
+import CslibFrontier.Probability.Uniform
 import CslibFrontier.Tactic.GameHop
 import CslibFrontier.Tactic.Negligible
 import CslibFrontier.Tactic.PolyTime.Init
@@ -168,20 +169,12 @@ enc_structure encCDHInput (F : PrimeOrderGroupFamily) : CDHInput F where
 
 /-- The encoding of a DDH input: the fields of its CDH input followed by the word of the candidate
 shared element, each framed except the last (`encDDHInput_apply`). -/
-enc_structure encDDHInput (F : PrimeOrderGroupFamily) : DDHInput F where
+enc_structure encDDHInput (F : PrimeOrderGroupFamily) : DDHInput F
+    flattened toCDHInput : (F.encCDHInput) where
   secParam : encUnary, groupParameters : F.encDesc,
   leftPublic : (F.encode groupParameters) using (F.encode_injective groupParameters),
   rightPublic : (F.encode groupParameters) using (F.encode_injective groupParameters),
   candidateShared : (F.encode groupParameters) using (F.encode_injective groupParameters)
-
-variable {F} in
-/-- Dropping the candidate shared element of a computed DDH input. -/
-@[fun_prop] theorem DDHInput.computableInPolyTime_toCDHInput {α : Type} {enc : α ↪ List Bool}
-    {g : α → F.DDHInput} (h : ComputableInPolyTime g enc F.encDDHInput) :
-    ComputableInPolyTime (fun a => (g a).toCDHInput) enc F.encCDHInput :=
-  F.encCDHInput_mk_polyTime (F.encDDHInput_secParam_polyTime h)
-    (F.encDDHInput_groupParameters_polyTime h) (F.encDDHInput_leftPublic_polyTime h)
-    (F.encDDHInput_rightPublic_polyTime h)
 
 variable {F} in
 /-- The encoded generator of computed group parameters. -/
@@ -360,8 +353,8 @@ theorem DDHDistinguisher.IsPPT.comp {distinguisher : F.DDHDistinguisher}
 encoded tuple `(1ⁿ, d, encode u, encode v, encode w)` as words, each with one uniform strict PPT
 machine on its flat layout, gives the same assumption as quantifying over typed distinguishers.
 A typed distinguisher's machine reads exactly that layout; conversely, a word distinguisher is
-typed by encoding its elements, and a typed one extends to all words by rerunning its machine
-(`IsPPTOn.exists_bool_extension`), since its output is a single bit. -/
+typed by encoding its elements, and a typed one is a word distinguisher on that layout run on the
+encoded elements (`IsPPTOn.exists_bool_factor`), since its output is a single bit. -/
 theorem ddh_iff_encoded (setup : ℕ → PMF F.Desc) :
     F.DDH setup ↔ ∀ W : ℕ → F.Desc × List Bool × List Bool × List Bool → ProbComp Bool,
       IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
@@ -370,21 +363,16 @@ theorem ddh_iff_encoded (setup : ℕ → PMF F.Desc) :
         (F.ddhRealGame setup (fun n d u v w => W n (d, F.encode d u, F.encode d v, F.encode d w)) n)
         (F.ddhRandomGame setup
           (fun n d u v w => W n (d, F.encode d u, F.encode d v, F.encode d w)) n) := by
-  set E := encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits)))
   constructor
   · intro h W hW
     exact h _ (hW.preprocess (prepare := fun x : F.DDHInput => (x.secParam, x.groupParameters,
       F.encode _ x.leftPublic, F.encode _ x.rightPublic, F.encode _ x.candidateShared))
       (by fun_prop))
   · intro h D hD
-    obtain ⟨W, hWppt, hW⟩ := hD.exists_bool_extension
-    have := h (fun n t => W (E (n, t))) (hWppt.preprocess ComputableInPolyTime.id'.encoding_comp)
-    have hgame (n : ℕ) (d : F.Desc) (u v w : F.Carrier d) :
-        ProbComp.eval (W (E (n, d, F.encode d u, F.encode d v, F.encode d w))) =
-          ProbComp.eval (D n d u v w) :=
-      hW ⟨⟨n, d, u, v⟩, w⟩
-    simpa only [ddhRealGame, ddhRandomGame, eval_ddhRealExperiment, eval_ddhRandomExperiment,
-      hgame] using this
+    obtain ⟨W, hW, hWD⟩ := hD.exists_bool_factor F.encDDHInput_apply
+    obtain rfl : D = fun n d u v w => W (n, d, F.encode d u, F.encode d v, F.encode d w) :=
+      funext₂ fun n d => funext₃ fun u v w => hWD ⟨⟨n, d, u, v⟩, w⟩
+    exact h (fun n t => W (n, t)) hW
 
 /-- Turn a CDH adversary into a DDH distinguisher by running `Cslib.Crypto.cdhToDDH` in each
 group. -/
@@ -515,7 +503,7 @@ theorem ddhRerandomizeLaw_real (d : F.Desc) (α β : ZMod (F.order d)) :
           (α' * (β + s₂)) • F.generator d)) =
       ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun β' =>
         PMF.pure (α' • F.generator d, β' • F.generator d, (α' * β') • F.generator d)) :=
-    PMF.uniformOfFintype_bind_equiv (Equiv.addLeft β)
+    PMF.uniformOfFintype_bind_add_left β
       (fun β' => PMF.pure (α' • F.generator d, β' • F.generator d, (α' * β') • F.generator d))
   have hs₁ (r : ZMod (F.order d)) :
       ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun s₁ =>
@@ -526,7 +514,7 @@ theorem ddhRerandomizeLaw_real (d : F.Desc) (α β : ZMod (F.order d)) :
         (PMF.uniformOfFintype (ZMod (F.order d))).bind fun β' =>
           PMF.pure (α' • F.generator d, β' • F.generator d, (α' * β') • F.generator d)) := by
     simp_rw [hs₂]
-    exact PMF.uniformOfFintype_bind_equiv (Equiv.addLeft (r * α))
+    exact PMF.uniformOfFintype_bind_add_left (r * α)
       (fun α' => (PMF.uniformOfFintype (ZMod (F.order d))).bind fun β' =>
         PMF.pure (α' • F.generator d, β' • F.generator d, (α' * β') • F.generator d))
   simp_rw [hs₁, PMF.bind_const]
@@ -545,7 +533,7 @@ theorem ddhRerandomizeLaw_random (d : F.Desc) {α β γ : ZMod (F.order d)} (hγ
       ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun β' =>
         PMF.pure (α' • F.generator d, β' • F.generator d,
           (α' * β' + r * (γ - α * β)) • F.generator d)) :=
-    PMF.uniformOfFintype_bind_equiv (Equiv.addLeft β)
+    PMF.uniformOfFintype_bind_add_left β
       (fun β' => PMF.pure (α' • F.generator d, β' • F.generator d,
         (α' * β' + r * (γ - α * β)) • F.generator d))
   have hs₁ (r : ZMod (F.order d)) :
@@ -558,7 +546,7 @@ theorem ddhRerandomizeLaw_random (d : F.Desc) {α β γ : ZMod (F.order d)} (hγ
           PMF.pure (α' • F.generator d, β' • F.generator d,
             (α' * β' + r * (γ - α * β)) • F.generator d)) := by
     simp_rw [hs₂]
-    exact PMF.uniformOfFintype_bind_equiv (Equiv.addLeft (r * α))
+    exact PMF.uniformOfFintype_bind_add_left (r * α)
       (fun α' => (PMF.uniformOfFintype (ZMod (F.order d))).bind fun β' =>
         PMF.pure (α' • F.generator d, β' • F.generator d,
           (α' * β' + r * (γ - α * β)) • F.generator d))

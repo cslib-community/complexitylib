@@ -10,6 +10,8 @@ module
 public import CslibFrontier.Init
 public import CslibFrontier.Computability.Communication.Information
 public import CslibFrontier.Probability.MutualInformation.DataProcessing
+public import CslibFrontier.Probability.PMF.Independence
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Probability.Product
@@ -123,12 +125,8 @@ that the sender's unselected bits `rotUnselected (S ω) (R ω)` are uniform and 
 theorem condMutualInfo_rot_eq [Finite τ] {k : ℕ} (ν : PMF Ω)
     (T : Ω → τ) (S R : Ω → Fin k → Bool × Bool)
     (hCorrect : ∀ ω ∈ ν.support, ∀ j : Fin k, (R ω j).2 = otSelect (S ω j) (R ω j).1)
-    (hAlicePriv : ν.map (fun ω => ((S ω, T ω), rotChoices (R ω))) =
-      (ν.map fun ω => (S ω, T ω)).bind fun st =>
-        (PMF.uniformOfFintype (Fin k → Bool)).map (st, ·))
-    (hBobPriv : ν.map (fun ω => ((T ω, R ω), rotUnselected (S ω) (R ω))) =
-      (ν.map fun ω => (T ω, R ω)).bind fun tr =>
-        (PMF.uniformOfFintype (Fin k → Bool)).map (tr, ·)) :
+    (hAlicePriv : IndepUniform ν (fun ω => (S ω, T ω)) (fun ω => rotChoices (R ω)))
+    (hBobPriv : IndepUniform ν (fun ω => (T ω, R ω)) (fun ω => rotUnselected (S ω) (R ω))) :
     condMutualInfo (ν.map fun ω => (T ω, S ω, R ω)) = k := by
   let C : Ω → Fin k → Bool := fun ω => rotChoices (R ω)
   let Y : Ω → Fin k → Bool := fun ω => rotReceived (R ω)
@@ -152,7 +150,7 @@ theorem condMutualInfo_rot_eq [Finite τ] {k : ℕ} (ν : PMF Ω)
         (ν.map fun ω => ((S ω, T ω), C ω)).map fun ((s', t'), c') => (t', s', c') := by
       rw [PMF.map_comp]
       rfl
-    rw [hmap, hAlicePriv]
+    rw [hmap, hAlicePriv.map_pair_eq]
     let e : ((Fin k → Bool × Bool) × τ) × (Fin k → Bool) ≃
         τ × (Fin k → Bool × Bool) × (Fin k → Bool) :=
       { toFun := fun ((s', t'), c') => (t', s', c')
@@ -189,7 +187,7 @@ theorem condMutualInfo_rot_eq [Finite τ] {k : ℕ} (ν : PMF Ω)
   -- Step 3: Show `((T, C), Y)` is `(T, C) × Unif` by flipping `C` to relate `Y` to `U`.
   have hFlipST : (ν.map fun ω => ((S ω, T ω), C ω)).map (Prod.map id (bitFlip (k := k))) =
       ν.map fun ω => ((S ω, T ω), C ω) := by
-    rw [hAlicePriv, PMF.map_bind]
+    rw [hAlicePriv.map_pair_eq, PMF.map_bind]
     congr 1 with st : 1
     rw [PMF.map_comp]
     have hcomp : Prod.map id (⇑(bitFlip (k := k))) ∘ (fun c => (st, c)) =
@@ -228,9 +226,8 @@ theorem condMutualInfo_rot_eq [Finite τ] {k : ℕ} (ν : PMF Ω)
     congr 1 with p : 1
     dsimp only [Function.comp_def, Prod.map, id_eq]
     rw [bitFlip_bitFlip]
-  have hTCU : ν.map (fun ω => ((T ω, C ω), U ω)) =
-      (ν.map fun ω => (T ω, C ω)).bind fun tc =>
-        (PMF.uniformOfFintype (Fin k → Bool)).map (tc, ·) := by
+  have hTCU : IndepUniform ν (fun ω => (T ω, C ω)) U := by
+    refine ⟨?_⟩
     have h1 : ν.map (fun ω => ((T ω, C ω), U ω)) =
         (ν.map fun ω => ((T ω, R ω), U ω)).map fun ((t, r), u) => ((t, rotChoices r), u) := by
       rw [PMF.map_comp]
@@ -239,14 +236,13 @@ theorem condMutualInfo_rot_eq [Finite τ] {k : ℕ} (ν : PMF Ω)
         (ν.map fun ω => (T ω, R ω)).map fun (t, r) => (t, rotChoices r) := by
       rw [PMF.map_comp]
       rfl
-    rw [h1, hBobPriv, PMF.map_bind]
+    rw [h1, hBobPriv.map_pair_eq, PMF.map_bind]
     conv_rhs => rw [h2, PMF.bind_map]
     congr 1 with ⟨t, r⟩ : 1
     rw [PMF.map_comp]
     rfl
-  have hTCY : ν.map (fun ω => ((T ω, C ω), Y ω)) =
-      (ν.map fun ω => (T ω, C ω)).bind fun tc =>
-        (PMF.uniformOfFintype (Fin k → Bool)).map (tc, ·) := by
+  have hTCY : IndepUniform ν (fun ω => (T ω, C ω)) Y := by
+    refine ⟨?_⟩
     have h1 : ν.map (fun ω => ((T ω, C ω), Y ω)) =
         (ν.map fun ω => ((T ω, bitFlip (C ω)), Y ω)).map
           (Prod.map (Prod.map id bitFlip) id) := by
@@ -254,14 +250,12 @@ theorem condMutualInfo_rot_eq [Finite τ] {k : ℕ} (ν : PMF Ω)
       refine congrArg (ν.map ·) (funext fun ω => ?_)
       dsimp only [Function.comp_def, Prod.map, id_eq]
       rw [bitFlip_bitFlip]
-    rw [h1, hFlipEq, hTCU, PMF.map_bind]
+    rw [h1, hFlipEq, hTCU.map_pair_eq, PMF.map_bind]
     conv_rhs => rw [← hTC_flip, PMF.bind_map]
     congr 1 with tc : 1
     rw [PMF.map_comp]
     rfl
-  rw [hSC, zero_add, hSY, hTCY, entropy_prod, entropy_uniform, Fintype.card_fun,
-    Fintype.card_bool, Fintype.card_fin, Nat.cast_pow, Nat.cast_ofNat, Real.logb_pow,
-    Real.logb_self_eq_one one_lt_two]
+  rw [hSC, zero_add, hSY, hTCY.map_pair_eq, entropy_prod, entropy_uniform, BitString.logb_card]
   ring
 
 /-- **Ahlswede–Csiszár-style upper bound on oblivious transfer from correlated randomness**:
@@ -277,12 +271,8 @@ theorem natCast_le_mutualInfo_of_rot
     (outA : γ → Fin k → Bool × Bool) (hOutA : ∀ ω ∈ ν.support, S ω = outA (VA ω))
     (outB : δ → Fin k → Bool × Bool) (hOutB : ∀ ω ∈ ν.support, R ω = outB (VB ω))
     (hCorrect : ∀ ω ∈ ν.support, ∀ j : Fin k, (R ω j).2 = otSelect (S ω j) (R ω j).1)
-    (hAlicePriv : ν.map (fun ω => ((S ω, T ω), rotChoices (R ω))) =
-      (ν.map fun ω => (S ω, T ω)).bind fun st =>
-        (PMF.uniformOfFintype (Fin k → Bool)).map (st, ·))
-    (hBobPriv : ν.map (fun ω => ((T ω, R ω), rotUnselected (S ω) (R ω))) =
-      (ν.map fun ω => (T ω, R ω)).bind fun tr =>
-        (PMF.uniformOfFintype (Fin k → Bool)).map (tr, ·)) :
+    (hAlicePriv : IndepUniform ν (fun ω => (S ω, T ω)) (fun ω => rotChoices (R ω)))
+    (hBobPriv : IndepUniform ν (fun ω => (T ω, R ω)) (fun ω => rotUnselected (S ω) (R ω))) :
     (k : ℝ) ≤ mutualInfo (ν.map fun ω => (A ω, B ω)) := by
   calc (k : ℝ)
       = condMutualInfo (ν.map fun ω => (T ω, S ω, R ω)) :=

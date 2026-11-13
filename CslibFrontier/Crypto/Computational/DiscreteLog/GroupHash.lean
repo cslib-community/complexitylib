@@ -14,7 +14,6 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.PowMod
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Probability.PMF
@@ -39,7 +38,7 @@ as natural numbers in little-endian binary via `ofBits`) and evaluating
 When `2 ^ blockLen d ≤ F.order d`, the two `blockLen d`-bit halves represent elements strictly
 below the prime order `q = F.order d`. Any collision `x ≠ y` of length `2 * blockLen d` with
 `groupHash blockLen (d, encode d (α • g)) x = groupHash blockLen (d, encode d (α • g)) y` satisfies
-`x₁ + x₂ * α = y₁ + y₂ * α` in `ZMod q` with `(y₂ : ZMod q) ≠ x₂`, so `pedersenExtractNat`
+`x₁ + x₂ * α = y₁ + y₂ * α` in `ZMod q` with `(y₂ : ZMod q) ≠ x₂`, so `extractNat`
 recovers the discrete logarithm `α = (y₂ - x₂)⁻¹ * (x₁ - y₁)` in deterministic polynomial time.
 This yields an exact zero-loss reduction
 (`succProbability_collisionGameFor_groupHash_le_discreteLogGame`) showing that `F.DiscreteLog setup`
@@ -73,7 +72,7 @@ its linear homomorphisms and coordinate-wise discrete-logarithm extraction ident
   `2 * blockLen pk.1`-bit inputs, splitting `x` at `blockLen pk.1` and evaluating
   `F.encodePedersenCommit` (encoded output; no fixed output width or compression is asserted).
 * `Cslib.Crypto.PrimeOrderGroupFamily.groupHashToDLAdversary`: discrete-logarithm reduction from a
-  `groupHash` collision finder via `pedersenExtractNat`.
+  `groupHash` collision finder via `extractNat`.
 * `Cslib.Crypto.PrimeOrderGroupFamily.multiGeneratorHash`: multi-generator vector hash
   `∑ i, xs i • hs i` (algebraic core of [KatzLindell2020], Construction 9.81).
 
@@ -85,7 +84,7 @@ its linear homomorphisms and coordinate-wise discrete-logarithm extraction ident
 * `Cslib.Crypto.PrimeOrderGroupFamily.computableInPolyTime_validGroupHashInput`,
   `Cslib.Crypto.PrimeOrderGroupFamily.computableInPolyTime_groupHash`: polynomial-time evaluation
   of the domain test and hash function when `blockLen` is polynomial-time in unary.
-* `Cslib.Crypto.PrimeOrderGroupFamily.pedersenExtractNat_eq_of_isCollisionFor_groupHash`: any valid
+* `Cslib.Crypto.PrimeOrderGroupFamily.extractNat_eq_of_isCollisionFor_groupHash`: any valid
   `groupHash` collision under `h = α • g` when `2 ^ blockLen d ≤ F.order d` recovers `α`.
 * `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_groupHashToDLAdversary`,
   `Cslib.Crypto.PrimeOrderGroupFamily.DiscreteLog.collisionResistantForOn_groupHash`, and
@@ -194,18 +193,18 @@ theorem computableInPolyTime_groupHash {blockLen : F.Desc → ℕ}
 
 /-- **Collision extraction for `groupHash`** (step 2 of the proof of [KatzLindell2020],
 Theorem 9.79, pp. 358–359): if `2 ^ blockLen d ≤ F.order d`, any valid collision `(x, y)` for
-`groupHash blockLen` under `(d, F.encode d (α • F.generator d))` recovers `α` via
-`pedersenExtractNat`. -/
-theorem pedersenExtractNat_eq_of_isCollisionFor_groupHash (blockLen : F.Desc → ℕ)
+`groupHash blockLen` under `(d, F.encode d (α • F.generator d))` recovers `α` with
+`extractNat`. -/
+theorem extractNat_eq_of_isCollisionFor_groupHash (blockLen : F.Desc → ℕ)
     (n : ℕ) (d : F.Desc) (α : ZMod (F.order d)) {x y : List Bool}
     (hsize : 2 ^ blockLen d ≤ F.order d)
     (hcoll : isCollisionFor (Param := F.Desc × List Bool) (Digest := fun _ => List Bool)
       (F.groupHash blockLen) (F.validGroupHashInput blockLen)
       n (d, F.encode d (α • F.generator d)) x y = true) :
     let w := blockLen d
-    (pedersenExtractNat (F.order d)
-      (ofBits (x.take w)) (ofBits (x.drop w))
-      (ofBits (y.take w)) (ofBits (y.drop w)) : ZMod (F.order d)) = α := by
+    (extractNat (F.order d)
+      (ofBits (y.drop w)) (ofBits (x.take w))
+      (ofBits (x.drop w)) (ofBits (y.take w)) : ZMod (F.order d)) = α := by
   dsimp only
   set w := blockLen d
   rw [isCollisionFor_eq_true_iff, validGroupHashInput_eq_true_iff,
@@ -213,57 +212,31 @@ theorem pedersenExtractNat_eq_of_isCollisionFor_groupHash (blockLen : F.Desc →
   rcases hcoll with ⟨hx_len, hy_len, hne, hhash⟩
   change x.length = 2 * w at hx_len
   change y.length = 2 * w at hy_len
-  have hxt_len : (x.take w).length = w := by rw [List.length_take, hx_len]; omega
-  have hxd_len : (x.drop w).length = w := by rw [List.length_drop, hx_len]; omega
-  have hyt_len : (y.take w).length = w := by rw [List.length_take, hy_len]; omega
-  have hyd_len : (y.drop w).length = w := by rw [List.length_drop, hy_len]; omega
-  have hxt_lt : ofBits (x.take w) < F.order d :=
-    (ofBits_lt_two_pow (x.take w)).trans_le (by rw [hxt_len]; exact hsize)
-  have hxd_lt : ofBits (x.drop w) < F.order d :=
-    (ofBits_lt_two_pow (x.drop w)).trans_le (by rw [hxd_len]; exact hsize)
-  have hyt_lt : ofBits (y.take w) < F.order d :=
-    (ofBits_lt_two_pow (y.take w)).trans_le (by rw [hyt_len]; exact hsize)
-  have hyd_lt : ofBits (y.drop w) < F.order d :=
-    (ofBits_lt_two_pow (y.drop w)).trans_le (by rw [hyd_len]; exact hsize)
-  have hlin :
-      (ofBits (x.take w) : ZMod (F.order d)) + (ofBits (x.drop w) : ZMod (F.order d)) * α =
-        (ofBits (y.take w) : ZMod (F.order d)) + (ofBits (y.drop w) : ZMod (F.order d)) * α :=
-    (F.pedersenCommit_smul_generator_eq_iff d α _ _ _ _).mp (F.encode_injective d hhash)
-  have hmul :
-      ((ofBits (y.drop w) : ZMod (F.order d)) - ofBits (x.drop w)) * α =
-        (ofBits (x.take w) : ZMod (F.order d)) - ofBits (y.take w) := by
-    linear_combination -hlin
-  have hr : (ofBits (y.drop w) : ZMod (F.order d)) ≠ ofBits (x.drop w) := by
-    intro hreq
-    apply hne
-    have hdrop_nat : ofBits (x.drop w) = ofBits (y.drop w) := by
-      have hval := congrArg ZMod.val hreq.symm
-      rwa [ZMod.val_natCast_of_lt hxd_lt, ZMod.val_natCast_of_lt hyd_lt] at hval
-    have htake_zmod : (ofBits (x.take w) : ZMod (F.order d)) = ofBits (y.take w) := by
-      have hzero : ((ofBits (y.drop w) : ZMod (F.order d)) - ofBits (x.drop w)) * α = 0 := by
-        rw [sub_eq_zero.mpr hreq, zero_mul]
-      exact sub_eq_zero.mp (hmul.symm.trans hzero)
-    have htake_nat : ofBits (x.take w) = ofBits (y.take w) := by
-      have hval := congrArg ZMod.val htake_zmod
-      rwa [ZMod.val_natCast_of_lt hxt_lt, ZMod.val_natCast_of_lt hyt_lt] at hval
-    have htake_eq : x.take w = y.take w :=
-      ofBits_injective_of_length_eq (hxt_len.trans hyt_len.symm) htake_nat
-    have hdrop_eq : x.drop w = y.drop w :=
-      ofBits_injective_of_length_eq (hxd_len.trans hyd_len.symm) hdrop_nat
-    rw [← List.take_append_drop w x, ← List.take_append_drop w y, htake_eq, hdrop_eq]
-  rw [pedersenExtractNat_cast hr, ← hmul, inv_mul_cancel_left₀ (sub_ne_zero.mpr hr)]
+  -- Two `w`-bit words that agree modulo the order are equal.
+  have hcast {u v : List Bool} (hu : u.length = w) (hv : v.length = w)
+      (h : (ofBits u : ZMod (F.order d)) = ofBits v) : u = v := by
+    have hval := congrArg ZMod.val h
+    rw [ZMod.val_natCast_of_lt ((ofBits_lt_two_pow u).trans_le (by rw [hu]; exact hsize)),
+      ZMod.val_natCast_of_lt ((ofBits_lt_two_pow v).trans_le (by rw [hv]; exact hsize))] at hval
+    exact ofBits_injective_of_length_eq (hu.trans hv.symm) hval
+  refine F.extractNat_eq_of_pedersenCommit_eq d α (fun h => hne ?_) (F.encode_injective d hhash)
+  rw [← List.take_append_drop w x, ← List.take_append_drop w y,
+    hcast (by rw [List.length_take, hx_len]; omega) (by rw [List.length_take, hy_len]; omega)
+      (Prod.mk.inj h).1,
+    hcast (by rw [List.length_drop, hx_len]; omega) (by rw [List.length_drop, hy_len]; omega)
+      (Prod.mk.inj h).2]
 
 /-- Turn a `groupHash` collision finder into a discrete-logarithm adversary by splitting the two
-candidate colliding words at `blockLen d` and extracting `pedersenExtractNat` in binary
+candidate colliding words at `blockLen d` and extracting `α` with `extractNat` in binary
 ([KatzLindell2020], Theorem 9.79, pp. 358–359). -/
 def groupHashToDLAdversary (blockLen : F.Desc → ℕ)
     (adversary : CollisionFinderFor (F.Desc × List Bool))
     (n : ℕ) (pk : F.Desc × List Bool) : ProbComp (List Bool) := do
   let pair ← adversary n pk
   let w := blockLen pk.1
-  return (pedersenExtractNat (F.order pk.1)
-    (ofBits (pair.1.take w)) (ofBits (pair.1.drop w))
-    (ofBits (pair.2.take w)) (ofBits (pair.2.drop w))).bits
+  return (extractNat (F.order pk.1)
+    (ofBits (pair.2.drop w)) (ofBits (pair.1.take w))
+    (ofBits (pair.1.drop w)) (ofBits (pair.2.take w))).bits
 
 /-- **Exact collision-to-discrete-logarithm reduction** ([KatzLindell2020], Theorem 9.79,
 pp. 358–359): whenever every group `d` in the support of `setup n` satisfies
@@ -282,7 +255,8 @@ theorem succProbability_collisionGameFor_groupHash_le_discreteLogGame
       Game.succProbability
         (F.discreteLogGame setup (F.groupHashToDLAdversary blockLen adversary) n) := by
   refine ENNReal.toNNReal_mono (PMF.apply_ne_top _ _) ?_
-  dsimp only [collisionGameFor, groupHashSetup, discreteLogGame, groupHashToDLAdversary,
+  dsimp only [collisionGameFor, Game.withSetup, collisionExperiment, groupHashSetup,
+    discreteLogGame, groupHashToDLAdversary,
     PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
   simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind]
   refine PMF.bind_apply_mono_on_support (setup n) true fun d hd => ?_
@@ -294,7 +268,7 @@ theorem succProbability_collisionGameFor_groupHash_le_discreteLogGame
         (F.groupHash blockLen) (F.validGroupHashInput blockLen)
         n (d, F.encode d (α • F.generator d)) pair.1 pair.2 = true
   · have hextract :=
-      F.pedersenExtractNat_eq_of_isCollisionFor_groupHash blockLen n d α (hsize d hd) hcoll
+      F.extractNat_eq_of_isCollisionFor_groupHash blockLen n d α (hsize d hd) hcoll
     simp [hcoll, hextract]
   · simp [Bool.eq_false_iff.mpr hcoll]
 
@@ -310,27 +284,15 @@ theorem isPPTOn_groupHashToDLAdversary {blockLen : F.Desc → ℕ}
   unfold groupHashToDLAdversary
   refine hA.bind_with ?_
   have hbt := hblock.tidy
-  have hextract : ComputableTidilyInPolyTime
+  have hextract : ComputableInPolyTime
       (fun p : (ℕ × (F.Desc × List Bool)) × (List Bool × List Bool) =>
-        (pedersenExtractNat (F.order p.1.2.1)
-          (ofBits (p.2.1.take (blockLen p.1.2.1))) (ofBits (p.2.1.drop (blockLen p.1.2.1)))
-          (ofBits (p.2.2.take (blockLen p.1.2.1))) (ofBits (p.2.2.drop (blockLen p.1.2.1)))).bits)
+        (extractNat (F.order p.1.2.1)
+          (ofBits (p.2.2.drop (blockLen p.1.2.1))) (ofBits (p.2.1.take (blockLen p.1.2.1)))
+          (ofBits (p.2.1.drop (blockLen p.1.2.1))) (ofBits (p.2.2.take (blockLen p.1.2.1)))).bits)
       (encPair (encPair encUnary (encPair F.encDesc encBits)) (encPair encBits encBits))
       encBits := by
-    change ComputableTidilyInPolyTime
-      (fun p : (ℕ × (F.Desc × List Bool)) × (List Bool × List Bool) =>
-        encNat (pedersenExtractNat (F.order p.1.2.1)
-          (ofBits (p.2.1.take (blockLen p.1.2.1))) (ofBits (p.2.1.drop (blockLen p.1.2.1)))
-          (ofBits (p.2.2.take (blockLen p.1.2.1))) (ofBits (p.2.2.drop (blockLen p.1.2.1)))))
-      _ encBits
-    have hpe := F.computableInPolyTime_pedersenExtractNat.tidy.comp'
-      (g := fun p : (ℕ × (F.Desc × List Bool)) × (List Bool × List Bool) =>
-        (p.1.2.1, (ofBits (p.2.1.take (blockLen p.1.2.1)), ofBits (p.2.1.drop (blockLen p.1.2.1))),
-          (ofBits (p.2.2.take (blockLen p.1.2.1)), ofBits (p.2.2.drop (blockLen p.1.2.1)))))
-      (encIn := encPair (encPair encUnary (encPair F.encDesc encBits)) (encPair encBits encBits))
-      (by fun_prop)
-    exact ComputableTidilyInPolyTime.id'.comp (by fun_prop)
-  exact hextract.isPPTOn
+    fun_prop
+  exact hextract.tidy.isPPTOn
 
 /-- **Collision resistance of the discrete-logarithm hash family under the discrete-logarithm
 assumption** ([KatzLindell2020], Section 9.4.2, Theorem 9.79, pp. 358–359): if

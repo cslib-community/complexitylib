@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Init
 public import CslibFrontier.Crypto.Protocols.OT.CorrelatedBound.Protocol
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import CslibFrontier.Probability.Entropy
 import CslibFrontier.Probability.MutualInformation.DataProcessing
 import CslibFrontier.Probability.PMF.Map
@@ -218,7 +219,7 @@ theorem mutualInfo_deal211 : mutualInfo deal211 = 1 := by
   have hsnd : entropy (deal211.map Prod.snd) = 2 := by
     rw [deal211_map_snd, entropy_uniform, Fintype.card_fin]
     have h4 : ((4 : ℕ) : ℝ) = (2 : ℝ) ^ (2 : ℕ) := by norm_num
-    rw [h4, Real.logb_pow, Real.logb_self_eq_one (by norm_num : (1 : ℝ) < 2)]
+    rw [h4, Real.logb_two_pow]
     norm_num
   have hres := mutualInfo_eq_entropy_map_snd_sub_logb_of_const_fiber deal211 unseenOrdered 2
     (by norm_num) (fun a ha => unseenOrdered_card (deal211_fst_ne ha))
@@ -273,20 +274,10 @@ theorem commProtocol_rot_le_one_of_deal211 {k : ℕ} {τ : Type}
     (outB : Fin 4 × Fin P.leafCount → Fin k → Bool × Bool)
     (hCorrect : ∀ a b j, (a, b) ∈ deal211.support →
       (outB (b, P.leaf a b) j).2 = otSelect (outA (a, P.leaf a b) j) (outB (b, P.leaf a b) j).1)
-    (hAlicePriv :
-      PMF.map (fun q => ((outA (q.1, Prod.snd q.2), Prod.snd q.2),
-          rotChoices (outB (Prod.fst q.2, Prod.snd q.2))))
-          (P.transcriptLaw deal211) =
-        (PMF.map (fun q => (outA (q.1, Prod.snd q.2), Prod.snd q.2))
-          (P.transcriptLaw deal211)).bind fun st =>
-          PMF.map (fun x => (st, x)) (PMF.uniformOfFintype (Fin k → Bool)))
-    (hBobPriv :
-      PMF.map (fun q => ((Prod.snd q.2, outB (Prod.fst q.2, Prod.snd q.2)),
-          rotUnselected (outA (q.1, Prod.snd q.2)) (outB (Prod.fst q.2, Prod.snd q.2))))
-          (P.transcriptLaw deal211) =
-        (PMF.map (fun q => (Prod.snd q.2, outB (Prod.fst q.2, Prod.snd q.2)))
-          (P.transcriptLaw deal211)).bind
-          fun tr => PMF.map (fun x => (tr, x)) (PMF.uniformOfFintype (Fin k → Bool))) :
+    (hAlicePriv : IndepUniform (P.transcriptLaw deal211) (fun (x, _, t) => (outA (x, t), t))
+      (fun (_, y, t) => rotChoices (outB (y, t))))
+    (hBobPriv : IndepUniform (P.transcriptLaw deal211) (fun (_, y, t) => (t, outB (y, t)))
+      (fun (x, y, t) => rotUnselected (outA (x, t)) (outB (y, t)))) :
     k ≤ 1 := by
   have hk := commProtocol_rot_le_mutualInfo P deal211 outA outB hCorrect hAlicePriv hBobPriv
   rw [mutualInfo_deal211] at hk
@@ -305,24 +296,13 @@ theorem privateCoin_rot_le_one_of_deal211 {a b k : ℕ} {τ : Type}
         (outB (v, Communication.Protocol.leaf P u v) j).2 =
           otSelect (outA (u, Communication.Protocol.leaf P u v) j)
             (outB (v, Communication.Protocol.leaf P u v) j).1)
-    (hAlicePriv :
-      (PMF.map (fun q => ((outA (q.1, Prod.snd q.2), Prod.snd q.2),
-          rotChoices (outB (Prod.fst q.2, Prod.snd q.2))))
-          (Communication.Protocol.transcriptLaw P
-            (Communication.PrivateCoin.inputLaw a b deal211))) =
-        (PMF.map (fun q => (outA (q.1, Prod.snd q.2), Prod.snd q.2))
-          (Communication.Protocol.transcriptLaw P
-            (Communication.PrivateCoin.inputLaw a b deal211))).bind fun st =>
-          PMF.map (fun x => (st, x)) (PMF.uniformOfFintype (Fin k → Bool)))
-    (hBobPriv :
-      (PMF.map (fun q => ((Prod.snd q.2, outB (Prod.fst q.2, Prod.snd q.2)),
-          rotUnselected (outA (q.1, Prod.snd q.2)) (outB (Prod.fst q.2, Prod.snd q.2))))
-          (Communication.Protocol.transcriptLaw P
-            (Communication.PrivateCoin.inputLaw a b deal211))) =
-        (PMF.map (fun q => (Prod.snd q.2, outB (Prod.fst q.2, Prod.snd q.2)))
-          (Communication.Protocol.transcriptLaw P
-            (Communication.PrivateCoin.inputLaw a b deal211))).bind fun tr =>
-          PMF.map (fun x => (tr, x)) (PMF.uniformOfFintype (Fin k → Bool))) :
+    (hAlicePriv : IndepUniform
+      (Communication.Protocol.transcriptLaw P (Communication.PrivateCoin.inputLaw a b deal211))
+      (fun (x, _, t) => (outA (x, t), t)) (fun (_, y, t) => rotChoices (outB (y, t))))
+    (hBobPriv : IndepUniform
+      (Communication.Protocol.transcriptLaw P (Communication.PrivateCoin.inputLaw a b deal211))
+      (fun (_, y, t) => (t, outB (y, t)))
+      (fun (x, y, t) => rotUnselected (outA (x, t)) (outB (y, t)))) :
     k ≤ 1 := by
   have hk := privateCoin_rot_le_mutualInfo P deal211 outA outB hCorrect hAlicePriv hBobPriv
   rw [mutualInfo_deal211] at hk
@@ -458,7 +438,7 @@ theorem mutualInfo_deal211Unordered : mutualInfo deal211Unordered = 1 := by
   have hsnd : entropy (deal211Unordered.map Prod.snd) = 2 := by
     rw [deal211Unordered_map_snd, entropy_uniform, Fintype.card_fin]
     have h4 : ((4 : ℕ) : ℝ) = (2 : ℝ) ^ (2 : ℕ) := by norm_num
-    rw [h4, Real.logb_pow, Real.logb_self_eq_one (by norm_num : (1 : ℝ) < 2)]
+    rw [h4, Real.logb_two_pow]
     norm_num
   have hres := mutualInfo_eq_entropy_map_snd_sub_logb_of_const_fiber
     deal211Unordered unseenUnordered 2 (by norm_num) (fun s _ => unseenUnordered_card s)
@@ -534,7 +514,7 @@ theorem mutualInfo_deal211Batch (m : ℕ) : mutualInfo (deal211Batch m) = m := b
     rw [hsnd_eq, entropy_uniform, Fintype.card_fun, Fintype.card_fin, Fintype.card_fin,
       Nat.cast_pow]
     have h4 : ((4 : ℕ) : ℝ) = (2 : ℝ) ^ (2 : ℕ) := by norm_num
-    rw [h4, ← pow_mul, Real.logb_pow, Real.logb_self_eq_one (by norm_num : (1 : ℝ) < 2)]
+    rw [h4, ← pow_mul, Real.logb_two_pow]
     push_cast
     ring
   have hfst_eq : (deal211Batch m).map Prod.fst = PMF.pi fun _ : Fin m => deal211.map Prod.fst := by
@@ -581,8 +561,7 @@ theorem mutualInfo_deal211Batch (m : ℕ) : mutualInfo (deal211Batch m) = m := b
       deal211_const_on_unseen (as i) (hbs₀ i) (hbs₁ i)
   have hres := mutualInfo_eq_entropy_map_snd_sub_logb_of_const_fiber (deal211Batch m) unseenB
     (2 ^ m) (pow_pos (by norm_num) m) hcard hzero hconst
-  rw [hres, hsnd, Nat.cast_pow, Nat.cast_ofNat, Real.logb_pow,
-    Real.logb_self_eq_one (by norm_num : (1 : ℝ) < 2)]
+  rw [hres, hsnd, Nat.cast_pow, Nat.cast_ofNat, Real.logb_two_pow]
   ring
 
 /-- Any protocol realizing `k` independent random OTs with perfect semi-honest privacy over

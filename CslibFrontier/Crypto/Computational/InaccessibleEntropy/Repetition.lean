@@ -360,12 +360,6 @@ theorem realSampleEntropy_wordToFinMap_repEvalWord {t inLen₀ outLen₀ : ℕ}
       simp only [f₁, f₀, wordToFinMap_repEvalWord hlen, Equiv.apply_symm_apply, hu]
   simp only [realSampleEntropy, f₁, f₀, hcard]
 
-private theorem logb_two_card_bitString (n₀ : ℕ) :
-    Real.logb 2 (Fintype.card (BitString n₀)) ≤ (n₀ : ℝ) := by
-  have hcard : Fintype.card (BitString n₀) = 2 ^ n₀ := by simp [BitString]
-  rw [hcard, Nat.cast_pow, Nat.cast_ofNat,
-    Real.logb_pow, Real.logb_self_eq_one (by norm_num : (1 : ℝ) < 2), mul_one]
-
 /-- Flat `BitString` lower-tail Hoeffding bound for `repEvalWord` (`[HHRVW2020]`, Lemma 5.3(i),
 p. 26). -/
 theorem repEvalWord_realSampleEntropy_le_prob {t inLen₀ outLen₀ : ℕ}
@@ -381,7 +375,7 @@ theorem repEvalWord_realSampleEntropy_le_prob {t inLen₀ outLen₀ : ℕ}
       Real.exp (-2 * Δ ^ 2 / (t * (inLen₀ : ℝ) ^ 2)) := by
   intro f₀ f₁
   have h := repHashFin_realSampleEntropy_le_prob t f₀ (Nat.cast_nonneg inLen₀)
-    (logb_two_card_bitString inLen₀) hΔ
+    (by simp [Real.logb_pow]) hΔ
   rw [← PMF.uniformOfFintype_map_equiv Cslib.BitString.blocksEquiv,
     PMF.toOuterMeasure_map_apply] at h
   have hevent : (Cslib.BitString.blocksEquiv ⁻¹'
@@ -406,7 +400,7 @@ theorem repBitAccessibleSet_logb_card_ge_prob (t inLen₀ : ℕ)
         Real.logb 2 #(repBitAccessibleSet t inLen₀ L₀ z)}).toReal ≤
       Real.exp (-2 * Δ ^ 2 / (t * (inLen₀ : ℝ) ^ 2)) := by
   have h := repAccessibleSet_logb_card_ge_prob t L₀ hself (Nat.cast_nonneg inLen₀)
-    (logb_two_card_bitString inLen₀) hΔ
+    (by simp [Real.logb_pow]) hΔ
   rw [← PMF.uniformOfFintype_map_equiv Cslib.BitString.blocksEquiv,
     PMF.toOuterMeasure_map_apply] at h
   have hevent : (Cslib.BitString.blocksEquiv ⁻¹'

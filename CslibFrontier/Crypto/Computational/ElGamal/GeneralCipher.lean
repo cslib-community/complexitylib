@@ -1304,10 +1304,8 @@ Section 8.10.4, Theorem 8.11, p. 334, and Section 11.5.2, Theorem 11.5, pp. 449�
 `DDH.negligible_hashedElGamalCipherCPAGameOn_of_demOneTimeKeyINDCPAOn` yields IND-CPA security of
 general-cipher Hashed ElGamal instantiated with `linearHashKDF` at any polynomial-time key length
 `outLen` under `F.DDH` and `Encryption.DEMOneTimeKeyINDCPAOn`, with no `SecureKDF` hypothesis.
-In its place the theorem requires that every description `d` in the support of the strict PPT
-setup sampler `setupProb n` has `keyLen d = outLen n`, encoded group elements of length at most
-`bound d`, and `qMin n ≤ F.order d`, where `0 < qMin n` and `2 ^ outLen n / qMin n` is
-negligible. -/
+In its place the theorem requires `LinearHashKDFConditions` for the strict PPT setup sampler
+`setupProb` with output length `outLen`. -/
 theorem DDH.negligible_hashedElGamalCipherCPAGameOn_linearHashKDF_of_demOneTimeKeyINDCPAOn
     {F : PrimeOrderGroupFamily} {Msg : Type} {encMsg : Msg ↪ List Bool}
     {valid validSym : ℕ → List Bool → Msg → Msg → Bool}
@@ -1316,15 +1314,11 @@ theorem DDH.negligible_hashedElGamalCipherCPAGameOn_linearHashKDF_of_demOneTimeK
     (hDDH : F.DDH (fun n => ProbComp.eval (setupProb n)))
     (hDEM : Encryption.DEMOneTimeKeyINDCPAOn validSym encMsg outLen encryptSym)
     (hsetup : IsPPTOn encUnary F.encDesc setupProb)
+    (hKDF : F.LinearHashKDFConditions (fun n => ProbComp.eval (setupProb n)) keyLen bound outLen
+      qMin)
     (hout_poly : ComputableInPolyTime outLen encUnary encUnary)
     (hkey_poly : ComputableInPolyTime keyLen F.encDesc encUnary)
     (hbound_poly : ComputableInPolyTime bound F.encDesc encUnary)
-    (hq0 : ∀ n, 0 < qMin n)
-    (hkey : ∀ n, ∀ d ∈ (ProbComp.eval (setupProb n)).support, keyLen d = outLen n)
-    (hbound : ∀ n, ∀ d ∈ (ProbComp.eval (setupProb n)).support,
-      ∀ x : F.Carrier d, (F.encode d x).length ≤ bound d)
-    (hq : ∀ n, ∀ d ∈ (ProbComp.eval (setupProb n)).support, qMin n ≤ F.order d)
-    (hneg : Negligible fun n => (2 : ℝ≥0) ^ (outLen n) / (qMin n : ℝ≥0))
     (hvalid : ComputableInPolyTime
       (fun p : ℕ × List Bool × Msg × Msg => valid p.1 p.2.1 p.2.2.1 p.2.2.2)
       (encChallengePairInput encMsg) encBool)
@@ -1357,8 +1351,7 @@ theorem DDH.negligible_hashedElGamalCipherCPAGameOn_linearHashKDF_of_demOneTimeK
         (F.linearHashSeedLen outLen bound) n))
         (F.linearHashKDF keyLen bound) outLen := by
     simp only [F.eval_seededSetupProb]
-    exact F.secureKDF_linearHashKDF (fun m => ProbComp.eval (setupProb m))
-      keyLen bound outLen hq0 hkey hbound hq hneg
+    exact F.secureKDF_linearHashKDF hKDF
   simpa only [F.eval_seededSetupProb] using
     hDDH_seeded.negligible_hashedElGamalCipherCPAGameOn_of_demOneTimeKeyINDCPAOn
       hKDF_seeded hDEM hsetup_seeded hvalid hvalid_imp
@@ -1370,9 +1363,8 @@ Section 11.5.2, Theorem 11.5, pp. 449–451): combining `DDH.withSeed`, `secureK
 `isPPTOn_seededSetupProb`, and `DDH.negligible_hashedElGamalCipherCPAGameOn_of_demOneTimeINDCPAOn`
 yields IND-CPA security of general-cipher Hashed ElGamal instantiated with `linearHashKDF` under
 `F.DDH` and `Encryption.DEMOneTimeINDCPAOn`, with no `SecureKDF` hypothesis. In its place the
-theorem requires that every description `d` in the support of the strict PPT setup sampler
-`setupProb n` has `keyLen d = n`, encoded group elements of length at most `bound d`, and
-`qMin n ≤ F.order d`, where `0 < qMin n` and `2 ^ n / qMin n` is negligible. -/
+theorem requires `LinearHashKDFConditions` for the strict PPT setup sampler `setupProb` with output
+length `n`. -/
 theorem DDH.negligible_hashedElGamalCipherCPAGameOn_linearHashKDF {F : PrimeOrderGroupFamily}
     {Msg : Type} {encMsg : Msg ↪ List Bool}
     {valid validSym : ℕ → List Bool → Msg → Msg → Bool}
@@ -1381,14 +1373,10 @@ theorem DDH.negligible_hashedElGamalCipherCPAGameOn_linearHashKDF {F : PrimeOrde
     (hDDH : F.DDH (fun n => ProbComp.eval (setupProb n)))
     (hDEM : Encryption.DEMOneTimeINDCPAOn validSym encMsg encryptSym)
     (hsetup : IsPPTOn encUnary F.encDesc setupProb)
+    (hKDF : F.LinearHashKDFConditions (fun n => ProbComp.eval (setupProb n)) keyLen bound
+      (fun n => n) qMin)
     (hkey_poly : ComputableInPolyTime keyLen F.encDesc encUnary)
     (hbound_poly : ComputableInPolyTime bound F.encDesc encUnary)
-    (hq0 : ∀ n, 0 < qMin n)
-    (hkey : ∀ n, ∀ d ∈ (ProbComp.eval (setupProb n)).support, keyLen d = n)
-    (hbound : ∀ n, ∀ d ∈ (ProbComp.eval (setupProb n)).support,
-      ∀ x : F.Carrier d, (F.encode d x).length ≤ bound d)
-    (hq : ∀ n, ∀ d ∈ (ProbComp.eval (setupProb n)).support, qMin n ≤ F.order d)
-    (hneg : Negligible fun n => (2 : ℝ≥0) ^ n / (qMin n : ℝ≥0))
     (hvalid : ComputableInPolyTime
       (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
       (encChallengePairInput encMsg) encBool)
@@ -1410,7 +1398,7 @@ theorem DDH.negligible_hashedElGamalCipherCPAGameOn_linearHashKDF {F : PrimeOrde
             (F.linearHashSeedLen (fun n => n) bound))
           (F.linearHashKDF keyLen bound) encryptSym adversary true n) :=
   hDDH.negligible_hashedElGamalCipherCPAGameOn_linearHashKDF_of_demOneTimeKeyINDCPAOn
-    hDEM hsetup ComputableInPolyTime.id' hkey_poly hbound_poly hq0 hkey hbound hq hneg
+    hDEM hsetup hKDF ComputableInPolyTime.id' hkey_poly hbound_poly
     hvalid hvalid_imp hencryptSym hA
 
 end Cslib.Crypto.PrimeOrderGroupFamily

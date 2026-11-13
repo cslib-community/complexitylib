@@ -595,7 +595,8 @@ private theorem succProbability_cramerShoupExactCollisionGame_le
         (collisionGameFor setup (F.cramerShoupHashMod H) (fun _ _ _ => true) C n)
         (F.cramerShoupExactCollisionGame hasAD encodeMsg encodeAD setup H isElem adversary bit n) ≤
       9 / 2 ^ n := by
-    unfold collisionGameFor cramerShoupExactCollisionGame C cramerShoupMsgToCollisionFinder
+    unfold collisionGameFor Game.withSetup collisionExperiment cramerShoupExactCollisionGame C
+      cramerShoupMsgToCollisionFinder
     simp only [pmf_norm, F.smul_encode]
     peel_binds d
     let kSK (α β γ : ZMod (F.order d)) (sk : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) : Game :=

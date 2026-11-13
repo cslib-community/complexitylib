@@ -34,19 +34,19 @@ theorem HasPolymorphism.eval (h : HasPolymorphism arity sem f) (F : CSP Rel V)
     F.eval sem (fun v => f (fun j => a j v)) = true := by
   simp only [CSP.eval, List.all_eq_true] at ha ⊢
   intro c hc
-  let scope : Fin (arity c.1) → V := fun i => c.2[i.val]'(by have := hw c hc; omega)
-  have hs : List.ofFn scope = c.2 := by
+  let scope : Fin (arity c.rel) → V := fun i => c.scope[i.val]'(by have := hw c hc; omega)
+  have hs : List.ofFn scope = c.scope := by
     apply List.ext_getElem
     · rw [List.length_ofFn]
       exact (hw c hc).symm
     · intro i hi hj
       simp only [List.getElem_ofFn, scope]
-  have hin (j : J) : (fun i => a j (scope i)) ∈ booleanRelation arity sem c.1 := by
-    change sem c.1 (List.ofFn (a j ∘ scope)) = true
+  have hin (j : J) : (fun i => a j (scope i)) ∈ booleanRelation arity sem c.rel := by
+    change sem c.rel (List.ofFn (a j ∘ scope)) = true
     rw [← List.map_ofFn, hs]
     exact ha j c hc
-  have hout := h c.1 (fun j i => a j (scope i)) hin
-  change sem c.1 (c.2.map (fun v => f (fun j => a j v))) = true
+  have hout := h c.rel (fun j i => a j (scope i)) hin
+  change sem c.rel (c.scope.map (fun v => f (fun j => a j v))) = true
   rw [← hs, List.map_ofFn]
   exact hout
 

@@ -4,7 +4,7 @@ Part of the [representative algorithm endpoints](algorithm-endpoints.md); the co
 
 ## Sorting and selection
 
-[abstracts/CslibFrontierAbstracts/RandomizedWordRAMAbstract.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/CslibFrontierAbstracts/RandomizedWordRAMAbstract.lean) (retired; its bridge applied [Quicksort.lean](../../CslibFrontier/Algorithms/WordRAM/Quicksort.lean) and [Quickselect.lean](../../CslibFrontier/Algorithms/WordRAM/Quickselect.lean)) gives one fixed 16-register program for in-place randomized quicksort and one for quickselect, in the exact Word-RAM basis with unit-cost finite-interval `rand`.
+[abstracts/ComplexityAbstracts/RandomizedWordRAMAbstract.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/ComplexityAbstracts/RandomizedWordRAMAbstract.lean) (retired; its bridge applied [Quicksort.lean](../../CslibFrontier/Algorithms/WordRAM/Quicksort.lean) and [Quickselect.lean](../../CslibFrontier/Algorithms/WordRAM/Quickselect.lean)) gives one fixed 16-register program for in-place randomized quicksort and one for quickselect, in the exact Word-RAM basis with unit-cost finite-interval `rand`.
 
 | Algorithm | Fitting-width condition | Worst-case executed steps | Expected steps | Other guarantee |
 |---|---|---|---|---|

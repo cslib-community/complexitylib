@@ -21,7 +21,7 @@ The [version before the scope-only rewrite of 2026-11-08](https://github.com/csl
 | Optional experiment: formalize unformalized STOC 2027 submission results, subject to independent source-correspondence review | [#2527](https://github.com/cslib-community/cslib-frontier/issues/2527) |
 | Metacomplexity: time-bounded Kolmogorov complexity, partial MCSP, hardness magnification | [#798](https://github.com/cslib-community/cslib-frontier/issues/798), cleanup [#4644](https://github.com/cslib-community/cslib-frontier/issues/4644) |
 | Plain computability: delete the tidy calculus, keeping a machine-level kernel | [#862](https://github.com/cslib-community/cslib-frontier/issues/862), from [#456](https://github.com/cslib-community/cslib-frontier/issues/456) |
-| Consolidation: duplicates, accurate statements and docs, less churn | [#949](https://github.com/cslib-community/cslib-frontier/issues/949), [#939](https://github.com/cslib-community/cslib-frontier/issues/939) |
+| Consolidation: duplicates, accurate statements and docs, less churn | [#949](https://github.com/cslib-community/cslib-frontier/issues/949) |
 | Fully homomorphic encryption: follow-ups to the instantiated bootstrapping theorem, then modern schemes | [#2585](https://github.com/cslib-community/cslib-frontier/issues/2585) |
 | Boneh–Shoup cryptography tracks; zero-knowledge architecture | [#640](https://github.com/cslib-community/cslib-frontier/issues/640), [#643](https://github.com/cslib-community/cslib-frontier/issues/643) |
 | Crypto frontier track: Kilian's succinct arguments | [#999](https://github.com/cslib-community/cslib-frontier/issues/999) |
@@ -96,7 +96,7 @@ For each scheme, prove chosen-plaintext security for the actual algorithms and p
 
 ### Public-key, lattice and symmetric constructions ([#640](https://github.com/cslib-community/cslib-frontier/issues/640))
 
-- **Sigma protocols and Fiat–Shamir** ([#581](https://github.com/cslib-community/cslib-frontier/issues/581), [#2568](https://github.com/cslib-community/cslib-frontier/issues/2568)): Prove random-oracle EUF-CMA security of Schnorr signatures under discrete log against strict PPT forgers with encoded signing and hash access, by an efficient forking reduction for the actual key-generation and signing algorithms.
+- **Sigma protocols and Fiat–Shamir** ([#581](https://github.com/cslib-community/cslib-frontier/issues/581)): Prove random-oracle EUF-CMA security of Schnorr signatures under discrete log against strict PPT forgers with encoded signing and hash access, by an efficient forking reduction for the actual key-generation and signing algorithms.
   Identification and eavesdropping security do not suffice.
   Its components are [#2672](https://github.com/cslib-community/cslib-frontier/issues/2672), [#2684](https://github.com/cslib-community/cslib-frontier/issues/2684), [#2696](https://github.com/cslib-community/cslib-frontier/issues/2696), [#2708](https://github.com/cslib-community/cslib-frontier/issues/2708), [#2724](https://github.com/cslib-community/cslib-frontier/issues/2724), [#2774](https://github.com/cslib-community/cslib-frontier/issues/2774), and forger replay in [#2579](https://github.com/cslib-community/cslib-frontier/issues/2579), [#2636](https://github.com/cslib-community/cslib-frontier/issues/2636) and [#2652](https://github.com/cslib-community/cslib-frontier/issues/2652).
 - **Lattice signatures from SIS**: Prove random-oracle EUF-CMA security of Lyubashevsky's signatures (2009, 2012) from SIS by a native reduction that receives only `A`, with an efficient secret-free simulator and a security parameter family.
@@ -138,6 +138,9 @@ Information-theoretic private information retrieval, following Chor–Goldreich�
 - **PIR lower bounds** ([#3426](https://github.com/cslib-community/cslib-frontier/issues/3426)): the single-server bound with and without interaction, the two-server linear-summation bound with its tight even-set scheme (CGKS Section 5), and lower bounds for general two-server schemes.
 
 ### Concurrent and quantum security
+
+- **NIST post-quantum portfolio** ([#4987](https://github.com/cslib-community/cslib-frontier/issues/4987)): Faithful protocols, exact asymptotic assumptions and checked quantum security reductions for ML-KEM, ML-DSA, SLH-DSA, FN-DSA, HQC and every active additional-signature candidate.
+  Reuse operational quantum-PPT/QROM models and concrete-to-asymptotic reductions; keep source-required sampling, abort, transform and failure obligations explicit, including evolving or unsupported claims.
 
 - **Concurrent composition**: Extend the protocol semantics with environments, scheduling, session identifiers and concurrent executions, and prove a composition theorem with efficient simulators and explicit setup, corruption and communication assumptions.
   Then develop selected adaptive-corruption and non-malleability applications, alongside the static-malicious OT target.
@@ -234,7 +237,7 @@ Containments, separations, closure properties, complete problems and reductions 
 
 - **Another Solution Problem (ASP) framework:** ASP reductions with certified polynomial-time forward and inverse witness maps, starting from the parsimonious reductions to positive exact-one SAT and its planar three-occurrence variants.
   Exact count preservation alone does not supply the ASP runtime certificates.
-- **Counting reductions and hierarchies:** counting reductions and further oracle results preserving exact multiplicities; permanent #P-completeness; modular and counting hierarchies; the oracle-algorithm form of Stockmeyer's approximate counting.
+- **Counting reductions and hierarchies:** counting reductions and further oracle results preserving exact multiplicities; modular and counting hierarchies; the oracle-algorithm form of Stockmeyer's approximate counting.
 - **Exact counting by determinants** ([#3081](https://github.com/cslib-community/cslib-frontier/issues/3081)): Kasteleyn's Pfaffian method for counting perfect matchings of planar graphs in polynomial time, in contrast with permanent #P-completeness (polynomial-time counting for unweighted and weighted spanning trees, simple and multi-digraph arborescences, and BEST Eulerian circuits, along with root independence for balanced graphs, are formalized).
 - **Target-relativized counting classes:** `LWPP^A`, `WPP^A` and `SBP^A` with `FP^A` targets; adaptive WPP closure and UP-oracle containment.
 - **Native oracle counting machines:** efficient encoded oracle checking, response-access costs and oracle-machine characterizations, with resource bounds uniform over admissible oracles.
@@ -439,7 +442,7 @@ Organize modules by subject, not chapter.
 
 ## Communication, queries, learning and other models
 
-- **Lifting** ([#890](https://github.com/cslib-community/cslib-frontier/issues/890)): applications of deterministic lifting, such as partition-number separations, and randomized lifting.
+- **Lifting** ([#890](https://github.com/cslib-community/cslib-frontier/issues/890)): applications of deterministic lifting, such as partition-number separations, and randomized lifting. Low-discrepancy deterministic simulation now covers every positive discrepancy exponent and arbitrary sufficiently large finite alphabets. The conventional minimum-complexity bound and literal bit-string interface are proved. Remaining directions are randomized simulation, round-sensitive refinements, and improved explicit constants.
 - **Randomized query complexity of game trees** ([#3060](https://github.com/cslib-community/cslib-frontier/issues/3060)): for the AND–OR (NAND) tree on `n = 4 ^ k` leaves, Snir's `R₀ = O(n ^ (log₂ α))`, `α = (1 + √33) / 4`, and the matching Saks–Wigderson lower bound via Yao's principle for expected cost.
   Also bounded-error bounds for the same trees, and Saks–Wigderson's results for general read-once formulas and MIN/MAX game trees over integer leaves.
 - **Number-on-forehead multiparty protocols** ([#3197](https://github.com/cslib-community/cslib-frontier/issues/3197)): cylinder intersections and discrepancy, the Chung–Raz cube bound, Babai–Nisan–Szegedy's `Ω(n / 4 ^ k)` and a sharper `Ω(n / 2 ^ k)` (source unverified) for generalized inner product, Grolmusz's `O(k n / 2 ^ k + k)` protocol for any finite set of players ([#3453](https://github.com/cslib-community/cslib-frontier/issues/3453)), Raz's matrix multiplication and NOF disjointness bounds, and `ACC⁰` and branching-program applications.
@@ -478,8 +481,8 @@ Organize modules by subject, not chapter.
   Also the `ℓ₁` bound `B R √(2 log (2 d) / m)` and kernel classes.
 - **Stability and regularization** ([#4917](https://github.com/cslib-community/cslib-frontier/issues/4917)): true and empirical risk for general losses, the replace-one identity between on-average stability and the expected generalization gap, `2 ρ² / (λ m)` stability of Tikhonov-regularized loss minimization for convex `ρ`-Lipschitz losses, and the resulting learnability of convex-Lipschitz-bounded problems.
   Also smooth losses, high-probability stability bounds (Bousquet–Elisseeff, Feldman–Vondrák) and the stability of SGD.
-- **Online-to-batch conversion** ([#4918](https://github.com/cslib-community/cslib-frontier/issues/4918)): averaging the iterates of an online convex optimizer run on i.i.d. examples, the resulting `B ρ / √T` excess-risk bound for projected SGD, and PAC learners from mistake-bounded online learners by random stopping.
-  Also high-probability conversions, `log T / T` rates for strongly convex losses and running-time bounds.
+- **Online-to-batch conversion** ([#4918](https://github.com/cslib-community/cslib-frontier/issues/4918)): averaging the iterates of an online convex optimizer run on i.i.d. examples, the resulting `B ρ / √T` excess-risk bound for projected SGD, PAC learners from mistake-bounded online learners by random stopping, and high-probability conversions by the Azuma–Hoeffding inequality.
+  Also a high-probability SGD bound, `log T / T` rates for strongly convex losses and running-time bounds.
 - **Multiclass and real-valued learning**: Natarajan and graph dimensions with the multiclass fundamental theorem, pseudo-dimension and fat-shattering dimension, covering numbers, and Dudley's entropy integral by chaining.
 - **Cryptographic hardness of learning** ([#4927](https://github.com/cslib-community/cslib-frontier/issues/4927)): learners for a class containing a pseudorandom function family yield distinguishers, so no efficient learner, even with membership queries, learns polynomial-size circuits if secure generators exist; the converse of learning from natural proofs.
   Also the Kearns–Valiant, Kharitonov and Klivans–Sherstov hardness results, learning algorithms implying circuit lower bounds, and average-case hardness of learning versus one-way functions.
@@ -778,7 +781,7 @@ Social welfare and social choice functions on strict rankings, from Arrow's impo
 The long-term bar is to support formalizing every paper in the [Electronic Colloquium on Computational Complexity](https://eccc.weizmann.ac.il/colloquium/call_for_papers/), with the additional work per paper increasingly its new mathematics: standard models, representation changes, reductions, resource certificates and proof techniques come from the library.
 Use a growing, source-pinned sample of papers, including some chosen after an API was designed, as demanding clients, and promote recurring obligations into shared APIs only after reuse is demonstrated.
 
-- **Arora–Barak coverage** ([#4711](https://github.com/cslib-community/cslib-frontier/issues/4711)): audit the draft against library statements and track remaining endpoints, including formal-measure density amplification with the additive loss in Razborov–Rudich Theorem 5.1(b) (omitted in draft Theorem 22.3).
+- **Arora–Barak coverage** ([#4711](https://github.com/cslib-community/cslib-frontier/issues/4711)): audit the draft against library statements and track remaining endpoints, including formal-measure density amplification with the additive loss in Razborov–Rudich Theorem 5.1(b) (omitted in draft Theorem 22.3), and general integer programming in `NP` (draft Theorem 2.17), which needs Papadimitriou's polynomial-bit small-solution bound.
 - **Measure postprocessing** ([#2732](https://github.com/cslib-community/cslib-frontier/issues/2732)): Canonical full-L1 total variation contracts under measurable maps of arbitrary finite measures, including unequal masses.
   Its consumer is the Gaussian projection and mod-one bound ([#2734](https://github.com/cslib-community/cslib-frontier/issues/2734)).
 - **Finite weighted measure mixtures:** Bound the full-L1 distance when both the finite component measures and their nonnegative weights change, keeping the comparison components' total masses explicit so that neither probability normalization nor equal masses is required.

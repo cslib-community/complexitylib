@@ -65,10 +65,10 @@ inductive TriangleSymbol where
 /-- The ordered inner ternary face and three cyclic binary digons. All three variables are
 free; there are no macro auxiliary variables. The last binary scope is `(2,0)`. -/
 @[expose] def triangleBody : CSP TriangleSymbol (Fin 3 ⊕ Fin 0) :=
-  [(.relation, [.inl 0, .inl 1, .inl 2]),
-   (.nand, [.inl 0, .inl 1]),
-   (.nand, [.inl 1, .inl 2]),
-   (.nand, [.inl 2, .inl 0])]
+  [⟨.relation, [.inl 0, .inl 1, .inl 2]⟩,
+   ⟨.nand, [.inl 0, .inl 1]⟩,
+   ⟨.nand, [.inl 1, .inl 2]⟩,
+   ⟨.nand, [.inl 2, .inl 0]⟩]
 
 /-- The four macro constraints have exactly their declared widths. -/
 theorem triangleBody_wellFormed : WellFormed triangleArity triangleBody := by

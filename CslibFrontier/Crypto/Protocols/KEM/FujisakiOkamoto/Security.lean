@@ -59,7 +59,7 @@ choices:
   random challenge key via `kRand ← S.sampleKey` (rather than a uniform draw on `K`), leaves
   decapsulation queries unbounded and uncounted in `ROQueryBounds`, and requires
   `[Fintype M] [Finite R] [Fintype CT] [Finite K]` on `eagerIndCcaGame` to sample the eager
-  random-oracle tables via `PMF.pi`.
+  random-oracle tables `Scheme.coinTable` and `Scheme.keyTable`.
 
 On top of those definitions, this module formalizes:
 
@@ -67,8 +67,14 @@ On top of those definitions, this module formalizes:
    `Scheme.indCcaRomAdvantage`, `Scheme.eagerIndCcaGame`) over the oracle interface
    `ROQuery M CT` (`G`, `H`, and punctured decapsulation rejecting `c = cStar` with `none`),
    together with exact eager/lazy equivalence (`Scheme.eval_roIndCcaGame_eq_eagerIndCcaGame`,
-   `Scheme.indCcaRomAdvantage_eq_eager`), obtained from the generic represented-cache law
-   `RandomOracle.eval_run_interpret_eq_complete_bind`.
+   `Scheme.indCcaRomAdvantage_eq_eager`). Both games are instances of one ROM IND-CCA experiment
+   `Scheme.romIndCcaExperiment`, parameterized by the key generator and the decapsulation oracle
+   (written as a program against the random oracles), whose eager/lazy equivalence
+   `Scheme.eval_romIndCcaExperiment_eq_eager` follows from the generic represented-cache law
+   `RandomOracle.eval_run_interpret_eq_complete_bind`. The `@[simp]` bridges
+   `Scheme.romIndCcaExperiment_notBot` and `Scheme.eagerRomIndCcaExperiment_notBot` identify the
+   `FO-notbot` instance with `roIndCcaGame` and `eagerIndCcaGame`; the `FO^⊥` instance is in
+   `CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Bot`.
 2. **Keyless ROM simulator and IND-CPA reduction** (`Scheme.simHandler`,
    `Scheme.romCpaReduction`, `Scheme.simHitProb`). Neither is a verbatim construction from
    [HofheinzHoevelmannsKiltz2017]; both are adapted to domain-separated `FO-notbot`. `simHandler` is
@@ -112,6 +118,14 @@ On top of those definitions, this module formalizes:
 * `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.eagerIndCcaGame`: eager random-oracle
   IND-CCA game defined directly from `Scheme.keyGenNotBot`, `Scheme.encapsNotBot`, and
   `Scheme.decapsNotBot`.
+* `Cslib.Crypto.Protocols.FujisakiOkamoto.ROSpec`,
+  `Cslib.Crypto.Protocols.FujisakiOkamoto.romProgram`,
+  `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.romIndCcaExperiment`,
+  `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.eagerRomIndCcaExperiment`: the random-oracle
+  signature `G ⊕ₒ H`, the IND-CCA oracle interface as a program against it, and the lazy and
+  eager ROM IND-CCA experiments for any key generator and decapsulation program.
+* `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.notBotDecaps`: the `FO-notbot` decapsulation
+  program, the instance of `romIndCcaExperiment` that gives `roIndCcaGame`.
 * `Cslib.Crypto.Protocols.FujisakiOkamoto.SimState`,
   `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.simHandler`,
   `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.romCpaReduction`,
@@ -120,6 +134,13 @@ On top of those definitions, this module formalizes:
 
 ## Main results
 
+* `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.eval_romIndCcaExperiment_eq_eager`: the lazy
+  ROM IND-CCA experiment has the same output distribution as its eager form, for every key
+  generator and decapsulation program.
+* `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.romIndCcaExperiment_notBot`,
+  `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.eagerRomIndCcaExperiment_notBot`: the
+  `FO-notbot` instance of the experiment is `roIndCcaGame`, and its eager form is
+  `eagerIndCcaGame`.
 * `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.eval_roIndCcaGame_eq_eagerIndCcaGame`,
   `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.indCcaRomAdvantage_eq_eager`:
   the lazy executable game `roIndCcaGame` has the same output distribution and advantage as
@@ -292,6 +313,17 @@ def filterDecaps (Hq : CT → StateT (SimState M R CT K) ProbComp K)
 
 end LazyOracles
 
+/-- The random oracles `G : M → R` and `H : Bool × M × CT → K` as one interface. -/
+abbrev ROSpec (M R CT K : Type) := (fun _ : M => R) ⊕ₒ (fun _ : Bool × M × CT => K)
+
+/-- Each query of a ROM IND-CCA game as a program over the random oracles: `G` and `H` are
+forwarded, decapsulation of `cStar` is refused, and any other ciphertext runs `decaps`. -/
+def romProgram [DecidableEq CT] (decaps : CT → OracleComp (ROSpec M R CT K) (Option K))
+    (cStar : CT) :
+    (q : ROQuery M CT) → OracleComp (ROSpec M R CT K) (ROResp R K q) :=
+  ROQuery.dispatch (fun m => OracleComp.query (spec := ROSpec M R CT K) (Sum.inl m))
+    (fun x => OracleComp.query (spec := ROSpec M R CT K) (Sum.inr x)) decaps cStar
+
 namespace Scheme
 
 variable [DecidableEq M] [DecidableEq CT]
@@ -332,6 +364,20 @@ noncomputable def indCcaRomAdvantage (S : Scheme PK SK M R CT K)
     (ProbComp.eval (S.roIndCcaGame A false))
     (ProbComp.eval (S.roIndCcaGame A true))
 
+omit [DecidableEq M] [DecidableEq CT] in
+/-- The eager random oracle `G : M → R`: an independent coin `S.pke.sampleCoins` at every
+message. -/
+noncomputable def coinTable [Fintype M] [Finite R] (S : Scheme PK SK M R CT K) : PMF (M → R) :=
+  pi fun _ => ProbComp.eval S.pke.sampleCoins
+
+omit [DecidableEq M] [DecidableEq CT] in
+/-- An eager random oracle `X → K` into the key space: an independent key `S.sampleKey` at every
+point. The FO games draw `H ← S.keyTable (Bool × M × CT)` and their ciphertext-indexed key tables
+`S.keyTable CT` from it. -/
+noncomputable def keyTable [Finite K] (S : Scheme PK SK M R CT K) (X : Type) [Fintype X] :
+    PMF (X → K) :=
+  pi fun _ => ProbComp.eval S.sampleKey
+
 /-- Stateless handler for `S.eagerIndCcaGame`: `G` and `H` are complete functions and
 decapsulation queries for `c ≠ cStar` evaluate `S.decapsNotBot G H dk c`. -/
 noncomputable def eagerHandler (S : Scheme PK SK M R CT K) (G : M → R) (H : Bool × M × CT → K)
@@ -341,14 +387,13 @@ noncomputable def eagerHandler (S : Scheme PK SK M R CT K) (G : M → R) (H : Bo
 
 /-- The eager random-oracle IND-CCA game for `FO-notbot` (standard KEM IND-CCA experiment, not
 separately located in the source map above), defined directly from `S.keyGenNotBot`,
-`S.encapsNotBot`, and `S.decapsNotBot` over eagerly sampled random functions `G : M → R` and
-`H : Bool × M × CT → K` (requiring `[Fintype M] [Finite R] [Fintype CT] [Finite K]` for
-`PMF.pi`) and `kRand ← S.sampleKey`. -/
+`S.encapsNotBot`, and `S.decapsNotBot` over eager random oracles `G ← S.coinTable` and
+`H ← S.keyTable (Bool × M × CT)` and `kRand ← S.sampleKey`. -/
 noncomputable def eagerIndCcaGame [Fintype M] [Finite R] [Fintype CT] [Finite K]
     (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K) (b : Bool) : Game := do
   let (pk, dk) ← ProbComp.eval S.keyGenNotBot
-  let G ← pi (α := fun _ : M => R) (fun _ => ProbComp.eval S.pke.sampleCoins)
-  let H ← pi (α := fun _ : Bool × M × CT => K) (fun _ => ProbComp.eval S.sampleKey)
+  let G ← S.coinTable
+  let H ← S.keyTable (Bool × M × CT)
   let (cStar, kReal) ← ProbComp.eval (S.encapsNotBot G H pk)
   let kRand ← ProbComp.eval S.sampleKey
   let kStar := if b then kRand else kReal
@@ -432,30 +477,88 @@ def romCpaReduction (S : Scheme PK SK M R CT K)
     (A : ROAdversary PK M R CT K) (m0 m1 : M) : PK → CT → ProbComp Bool :=
   S.romFilterCpaReduction (fun _ _ _ => true) A m0 m1
 
-/-! ### Section 2: Eager/Lazy Equivalence
+/-! ### Section 2: One ROM IND-CCA Experiment and Eager/Lazy Equivalence
 
-The lazy oracles `G` and `H` of `roHandler` are one lazy random oracle on the joined interface
-`ROSpec`, kept in `ROCache` and read through `RandomOracle.ofList`. Every query of the game is the
-oracle program `roProgram` over that interface, so
+The ROM IND-CCA games of `FO-notbot` and `FO^⊥` differ only in their key generation and in the
+decapsulation they run against the random oracles `G` and `H`. `romIndCcaExperiment` takes both as
+parameters, with decapsulation a program over the joined interface `ROSpec` of `G` and `H`.
+`roIndCcaGame` and `eagerIndCcaGame` are its `FO-notbot` instances
+(`romIndCcaExperiment_notBot`, `eagerRomIndCcaExperiment_notBot`), and
+`CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Bot` gives the `FO^⊥` instances. Every query
+of the experiment is the oracle program `romProgram`, so
 `RandomOracle.eval_run_interpret_eq_complete_bind` replaces both caches by complete tables in one
-step, and `RandomOracle.bind_complete_sum` splits the completed table into `G` and `H`. -/
+step, and `RandomOracle.bind_complete_sum` splits the completed table into `G` and `H`
+(`eval_romIndCcaExperiment_eq_eager`). -/
 
-/-- The random oracles `G : M → R` and `H : Bool × M × CT → K` as one interface. -/
-private abbrev ROSpec (M R CT K : Type) := (fun _ : M => R) ⊕ₒ (fun _ : Bool × M × CT => K)
+/-- The lazy handler of a ROM IND-CCA game: `romProgram` against the lazy oracles `roHashG` and
+`roHashH`. -/
+abbrev romHandler (S : Scheme PK SK M R CT K)
+    (decaps : CT → OracleComp (ROSpec M R CT K) (Option K)) (cStar : CT) (q : ROQuery M CT) :
+    StateT (ROCache M R CT K) ProbComp (ROResp R K q) :=
+  OracleComp.interpret (OracleComp.sumHandler (roHashG S.pke.sampleCoins) (roHashH S.sampleKey))
+    (romProgram decaps cStar q)
 
-/-- Each query of the ROM IND-CCA game as a program over the random oracles: `G` and `H` are
-forwarded, and decapsulation runs `decapsNotBotM` against them. -/
-private def roProgram (S : Scheme PK SK M R CT K) (dk : ImplicitSK PK SK M) (cStar : CT) :
-    (q : ROQuery M CT) → OracleComp (ROSpec M R CT K) (ROResp R K q) :=
-  ROQuery.dispatch (fun m => OracleComp.query (spec := ROSpec M R CT K) (Sum.inl m))
-    (fun x => OracleComp.query (spec := ROSpec M R CT K) (Sum.inr x))
-    (fun c => some <$> S.decapsNotBotM
-      (fun m => OracleComp.query (spec := ROSpec M R CT K) (Sum.inl m))
-      (fun x => OracleComp.query (spec := ROSpec M R CT K) (Sum.inr x)) dk c) cStar
+omit [DecidableEq M] in
+/-- The eager handler of a ROM IND-CCA game: `romProgram` against complete tables `G` and `H`. -/
+noncomputable abbrev romEagerHandler (G : M → R) (H : Bool × M × CT → K)
+    (decaps : CT → OracleComp (ROSpec M R CT K) (Option K)) (cStar : CT) (q : ROQuery M CT) :
+    PMF (ROResp R K q) :=
+  OracleComp.interpret (OracleComp.sumHandler (fun m => PMF.pure (G m)) (fun x => PMF.pure (H x)))
+    (romProgram decaps cStar q)
+
+/-- **The ROM IND-CCA experiment** of an FO-style KEM with key generation `keyGen` and
+decapsulation `decaps pk dk`, a program over the random oracles, for challenge bit `b`. The
+challenge encrypts `m* ← sampleMsg` under coins `r* ← sampleCoins`, which are programmed as
+`G(m*)`; the real key `kReal ← sampleKey` is programmed as `H(false, m*, c*)`. The adversary
+receives `kReal` when `b = false` and an independent `kRand ← sampleKey` when `b = true`, and
+interacts with the lazy oracles through `romHandler`. -/
+def romIndCcaExperiment {DK : Type} (S : Scheme PK SK M R CT K) (keyGen : ProbComp (PK × DK))
+    (decaps : PK → DK → CT → OracleComp (ROSpec M R CT K) (Option K))
+    (A : ROAdversary PK M R CT K) (b : Bool) : ProbComp Bool := do
+  let (pk, dk) ← keyGen
+  let mStar ← S.sampleMsg
+  let rStar ← S.pke.sampleCoins
+  let cStar := S.pke.encDet pk mStar rStar
+  let kReal ← S.sampleKey
+  let kRand ← S.sampleKey
+  let kStar := if b then kRand else kReal
+  let st₀ : ROCache M R CT K :=
+    { gCache := [(mStar, rStar)], hCache := [((false, mStar, cStar), kReal)] }
+  let (guess, _) ←
+    (OracleComp.interpret (S.romHandler (decaps pk dk) cStar) (A ⟨pk, cStar, kStar⟩)).run st₀
+  return guess
+
+/-- The eager ROM IND-CCA experiment: `romIndCcaExperiment` with eager random oracles
+`G ← S.coinTable` and `H ← S.keyTable (Bool × M × CT)` and the challenge `S.encapsBot G H pk`. -/
+noncomputable def eagerRomIndCcaExperiment [Fintype M] [Finite R] [Fintype CT] [Finite K]
+    {DK : Type} (S : Scheme PK SK M R CT K) (keyGen : ProbComp (PK × DK))
+    (decaps : PK → DK → CT → OracleComp (ROSpec M R CT K) (Option K))
+    (A : ROAdversary PK M R CT K) (b : Bool) : Game := do
+  let (pk, dk) ← ProbComp.eval keyGen
+  let G ← S.coinTable
+  let H ← S.keyTable (Bool × M × CT)
+  let (cStar, kReal) ← ProbComp.eval (S.encapsBot G H pk)
+  let kRand ← ProbComp.eval S.sampleKey
+  let kStar := if b then kRand else kReal
+  OracleComp.interpret (romEagerHandler G H (decaps pk dk) cStar) (A ⟨pk, cStar, kStar⟩)
+
+omit [DecidableEq M] in
+/-- A dispatcher whose random oracles are the calls of `oracle` and whose decapsulation interprets
+`decaps` against `oracle` is `oracle` interpreting `romProgram`. -/
+theorem dispatch_eq_interpret_romProgram {n : Type → Type} [Monad n] [LawfulMonad n]
+    (oracle : (q : M ⊕ (Bool × M × CT)) → n (ROSpec M R CT K q))
+    (decaps : CT → OracleComp (ROSpec M R CT K) (Option K)) (cStar : CT) (q : ROQuery M CT) :
+    ROQuery.dispatch (fun m => oracle (.inl m)) (fun x => oracle (.inr x))
+        (fun c => OracleComp.interpret oracle (decaps c)) cStar q =
+      OracleComp.interpret oracle (romProgram decaps cStar q) := by
+  cases q with
+  | G m => exact (OracleComp.interpret_query _ _).symm
+  | H x => exact (OracleComp.interpret_query _ _).symm
+  | decaps c => by_cases hc : c = cStar <;> simp [romProgram, hc]
 
 omit [DecidableEq M] in
 /-- Interpreting `decapsNotBotM` against oracle calls runs it against the interpreted calls. -/
-private theorem interpret_decapsNotBotM {ι : Type} {spec : OracleSpec ι} {n : Type → Type}
+theorem interpret_decapsNotBotM {ι : Type} {spec : OracleSpec ι} {n : Type → Type}
     [Monad n] [LawfulMonad n] (oracle : (q : ι) → n (spec q)) (S : Scheme PK SK M R CT K)
     (G : M → OracleComp spec R) (H : Bool × M × CT → OracleComp spec K)
     (dk : ImplicitSK PK SK M) (c : CT) :
@@ -470,39 +573,22 @@ private theorem interpret_decapsNotBotM {ι : Type} {spec : OracleSpec ι} {n : 
     congr 1 with r'
     split_ifs <;> rfl
 
-/-- `roHandler` interprets `roProgram` with the lazy oracles `roHashG` and `roHashH`. -/
-private theorem roHandler_eq_interpret (S : Scheme PK SK M R CT K) (dk : ImplicitSK PK SK M)
-    (cStar : CT) (q : ROQuery M CT) :
-    S.roHandler dk cStar q = OracleComp.interpret
-      (OracleComp.sumHandler (roHashG S.pke.sampleCoins) (roHashH S.sampleKey))
-      (S.roProgram dk cStar q) := by
-  cases q with
-  | G m => exact (OracleComp.interpret_query _ _).symm
-  | H x => exact (OracleComp.interpret_query _ _).symm
-  | decaps c =>
-    by_cases hc : c = cStar
-    · simp [roHandler, roProgram, hc]
-    · simp only [roHandler, roProgram, ROQuery.dispatch, hc, ↓reduceIte,
-        OracleComp.interpret_map, interpret_decapsNotBotM, OracleComp.interpret_query]
-
 omit [DecidableEq M] in
-/-- `eagerHandler` interprets `roProgram` with the complete tables `G` and `H`. -/
-private theorem eagerHandler_eq_interpret (S : Scheme PK SK M R CT K) (G : M → R)
-    (H : Bool × M × CT → K) (dk : ImplicitSK PK SK M) (cStar : CT) (q : ROQuery M CT) :
-    S.eagerHandler G H dk cStar q = OracleComp.interpret
-      (OracleComp.sumHandler (fun m => PMF.pure (G m)) (fun x => PMF.pure (H x)))
-      (S.roProgram dk cStar q) := by
-  cases q with
-  | G m => exact (OracleComp.interpret_query _ _).symm
-  | H x => exact (OracleComp.interpret_query _ _).symm
-  | decaps c =>
-    by_cases hc : c = cStar
-    · simp [eagerHandler, roProgram, hc]
-    · simp only [eagerHandler, roProgram, ROQuery.dispatch, hc, ↓reduceIte,
-        OracleComp.interpret_map, interpret_decapsNotBotM, OracleComp.interpret_query]
-      change PMF.pure _ = some <$> S.decapsNotBotM (m := PMF) (pure ∘ G) (pure ∘ H) dk c
-      rw [decapsNotBotM_pure, map_pure]
-      rfl
+/-- Interpreting `decapsBotM` against oracle calls runs it against the interpreted calls. -/
+theorem interpret_decapsBotM {ι : Type} {spec : OracleSpec ι} {n : Type → Type}
+    [Monad n] [LawfulMonad n] (oracle : (q : ι) → n (spec q)) (S : Scheme PK SK M R CT K)
+    (G : M → OracleComp spec R) (H : Bool × M × CT → OracleComp spec K) (pk : PK) (sk : SK)
+    (c : CT) :
+    OracleComp.interpret oracle (S.decapsBotM G H pk sk c) =
+      S.decapsBotM (fun m => OracleComp.interpret oracle (G m))
+        (fun x => OracleComp.interpret oracle (H x)) pk sk c := by
+  rw [decapsBotM_eq, decapsBotM_eq]
+  cases S.pke.dec sk c with
+  | none => simp
+  | some m' =>
+    simp only [OracleComp.interpret_bind]
+    congr 1 with r'
+    split_ifs <;> simp
 
 /-- The joined cache represented by the two list caches of an `ROCache`. -/
 private abbrev roTables (st : ROCache M R CT K) : RandomOracle.Cache (ROSpec M R CT K) :=
@@ -525,25 +611,20 @@ private theorem eval_roHash_map_roTables (S : Scheme PK SK M R CT K)
       S.sampleKey x st (fun k => k) roTables
       (fun c => RandomOracle.Cache.sum (RandomOracle.ofList st.gCache) c) (fun _ => rfl)
 
-/-- Running a program under `roHandler` has the law of completing both caches into tables `G` and
-`H` and running it under `eagerHandler`. -/
-private theorem eval_run_roHandler_eq_eager [Fintype M] [Finite R] [Fintype CT] [Finite K]
-    (S : Scheme PK SK M R CT K) (dk : ImplicitSK PK SK M) (cStar : CT) {α : Type}
-    (prog : OracleComp (ROResp (M := M) (CT := CT) R K) α) (st : ROCache M R CT K) :
-    (ProbComp.eval ((OracleComp.interpret (S.roHandler dk cStar) prog).run st)).map Prod.fst =
+/-- Running a program under `romHandler` has the law of completing both caches into tables `G` and
+`H` and running it under `romEagerHandler`. -/
+private theorem eval_run_romHandler_eq_eager [Fintype M] [Finite R] [Fintype CT] [Finite K]
+    (S : Scheme PK SK M R CT K) (decaps : CT → OracleComp (ROSpec M R CT K) (Option K))
+    (cStar : CT) {α : Type} (prog : OracleComp (ROResp (M := M) (CT := CT) R K) α)
+    (st : ROCache M R CT K) :
+    (ProbComp.eval ((OracleComp.interpret (S.romHandler decaps cStar) prog).run st)).map
+        Prod.fst =
       (RandomOracle.complete (fun _ => ProbComp.eval S.pke.sampleCoins)
           (RandomOracle.ofList st.gCache)).bind fun G =>
         (RandomOracle.complete (fun _ => ProbComp.eval S.sampleKey)
             (RandomOracle.ofList st.hCache)).bind fun H =>
-          OracleComp.interpret (S.eagerHandler G H dk cStar) prog := by
-  have himpl : S.roHandler dk cStar = fun q => OracleComp.interpret
-      (OracleComp.sumHandler (roHashG S.pke.sampleCoins) (roHashH S.sampleKey))
-      (S.roProgram dk cStar q) := funext (S.roHandler_eq_interpret dk cStar)
-  have heager (G : M → R) (H : Bool × M × CT → K) : S.eagerHandler G H dk cStar = fun q =>
-      OracleComp.interpret
-        (OracleComp.sumHandler (fun m => PMF.pure (G m)) (fun x => PMF.pure (H x)))
-        (S.roProgram dk cStar q) := funext (S.eagerHandler_eq_interpret G H dk cStar)
-  simp only [heager, himpl, ← OracleComp.interpret_interpret]
+          OracleComp.interpret (romEagerHandler G H decaps cStar) prog := by
+  simp only [← OracleComp.interpret_interpret]
   rw [RandomOracle.eval_run_interpret_eq_complete_bind
       (OracleComp.sumHandler (fun _ => ProbComp.eval S.pke.sampleCoins)
         (fun _ => ProbComp.eval S.sampleKey))
@@ -554,20 +635,24 @@ private theorem eval_run_roHandler_eq_eager [Fintype M] [Finite R] [Fintype CT] 
   congr 1 with q : 1
   rcases q with m | x <;> rfl
 
-/-- **Eager/lazy equivalence for the `FO-notbot` ROM IND-CCA game**: evaluating the executable
-lazy-cached game `S.roIndCcaGame A b` yields the exact same output distribution as the eager
-random-oracle game `S.eagerIndCcaGame A b`. -/
-theorem eval_roIndCcaGame_eq_eagerIndCcaGame [Fintype M] [Finite R] [Fintype CT] [Finite K]
-    (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K) (b : Bool) :
-    ProbComp.eval (S.roIndCcaGame A b) = S.eagerIndCcaGame A b := by
+/-- **Eager/lazy equivalence for the ROM IND-CCA experiment**: for every key generation and
+decapsulation program, the lazy experiment has the output distribution of the eager one. -/
+theorem eval_romIndCcaExperiment_eq_eager [Fintype M] [Finite R] [Fintype CT] [Finite K]
+    {DK : Type} (S : Scheme PK SK M R CT K) (keyGen : ProbComp (PK × DK))
+    (decaps : PK → DK → CT → OracleComp (ROSpec M R CT K) (Option K))
+    (A : ROAdversary PK M R CT K) (b : Bool) :
+    ProbComp.eval (S.romIndCcaExperiment keyGen decaps A b) =
+      S.eagerRomIndCcaExperiment keyGen decaps A b := by
   let dG : M → PMF R := fun _ => ProbComp.eval S.pke.sampleCoins
   let dH : Bool × M × CT → PMF K := fun _ => ProbComp.eval S.sampleKey
-  dsimp only [roIndCcaGame]
-  simp only [eagerIndCcaGame, encapsNotBot, encapsBot, encT, Probability.PMF.monad_bind_eq_bind,
-    ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind]
+  dsimp only [romIndCcaExperiment]
+  simp only [eagerRomIndCcaExperiment, coinTable, keyTable, encapsBot, encT,
+    Probability.PMF.monad_bind_eq_bind, ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind,
+    PMF.pure_bind]
   congr 1; funext ⟨pk, dk⟩
   have hstep (mStar : M) (rStar : R) (kReal kRand : K) :
-      (ProbComp.eval ((OracleComp.interpret (S.roHandler dk (S.pke.encDet pk mStar rStar))
+      (ProbComp.eval ((OracleComp.interpret
+        (S.romHandler (decaps pk dk) (S.pke.encDet pk mStar rStar))
         (A ⟨pk, S.pke.encDet pk mStar rStar, if b then kRand else kReal⟩)).run
         { gCache := [(mStar, rStar)],
           hCache := [((false, mStar, S.pke.encDet pk mStar rStar), kReal)] })).bind
@@ -575,17 +660,18 @@ theorem eval_roIndCcaGame_eq_eagerIndCcaGame [Fintype M] [Finite R] [Fintype CT]
       (pi (Function.update dG mStar (PMF.pure rStar))).bind fun G =>
         (pi (Function.update dH (false, mStar, S.pke.encDet pk mStar rStar)
             (PMF.pure kReal))).bind fun H =>
-          OracleComp.interpret (S.eagerHandler G H dk (S.pke.encDet pk mStar rStar))
+          OracleComp.interpret
+            (romEagerHandler G H (decaps pk dk) (S.pke.encDet pk mStar rStar))
             (A ⟨pk, S.pke.encDet pk mStar rStar, if b then kRand else kReal⟩) := by
     change (ProbComp.eval _).map Prod.fst = _
-    rw [eval_run_roHandler_eq_eager, RandomOracle.complete_ofList_singleton,
+    rw [eval_run_romHandler_eq_eager, RandomOracle.complete_ofList_singleton,
       RandomOracle.complete_ofList_singleton]
   simp only [hstep]
   pmf_hoist (ProbComp.eval S.sampleMsg)
   congr 1 with mStar : 1
   rw [← bind_pi_update dG mStar fun rStar G =>
     (pi dH).bind fun H => (ProbComp.eval S.sampleKey).bind fun kRand =>
-      OracleComp.interpret (S.eagerHandler G H dk (S.pke.encDet pk mStar rStar))
+      OracleComp.interpret (romEagerHandler G H (decaps pk dk) (S.pke.encDet pk mStar rStar))
         (A ⟨pk, S.pke.encDet pk mStar rStar,
           if b then kRand else H (false, mStar, S.pke.encDet pk mStar rStar)⟩)]
   congr 1 with rStar : 1
@@ -593,10 +679,70 @@ theorem eval_roIndCcaGame_eq_eagerIndCcaGame [Fintype M] [Finite R] [Fintype CT]
   congr 1 with G : 1
   rw [← bind_pi_update dH (false, mStar, S.pke.encDet pk mStar rStar) fun kReal H =>
     (ProbComp.eval S.sampleKey).bind fun kRand =>
-      OracleComp.interpret (S.eagerHandler G H dk (S.pke.encDet pk mStar rStar))
+      OracleComp.interpret (romEagerHandler G H (decaps pk dk) (S.pke.encDet pk mStar rStar))
         (A ⟨pk, S.pke.encDet pk mStar rStar, if b then kRand else kReal⟩)]
   congr 1 with kReal : 1
   exact PMF.bind_comm _ _ _
+
+/-! #### The `FO-notbot` instance -/
+
+omit [DecidableEq M] in
+/-- `FO-notbot` decapsulation `decapsNotBotM` as a program over the random oracles. -/
+def notBotDecaps (S : Scheme PK SK M R CT K) (dk : ImplicitSK PK SK M) (c : CT) :
+    OracleComp (ROSpec M R CT K) (Option K) :=
+  some <$> S.decapsNotBotM (fun m => OracleComp.query (spec := ROSpec M R CT K) (Sum.inl m))
+    (fun x => OracleComp.query (spec := ROSpec M R CT K) (Sum.inr x)) dk c
+
+/-- `roHandler` is the lazy handler of `romProgram` with `FO-notbot` decapsulation. -/
+theorem roHandler_eq_romHandler (S : Scheme PK SK M R CT K) (dk : ImplicitSK PK SK M)
+    (cStar : CT) : S.roHandler dk cStar = S.romHandler (S.notBotDecaps dk) cStar := by
+  funext q
+  refine Eq.trans ?_ (dispatch_eq_interpret_romProgram _ _ cStar q)
+  simp only [roHandler, notBotDecaps, OracleComp.interpret_map, interpret_decapsNotBotM,
+    OracleComp.interpret_query]
+
+omit [DecidableEq M] in
+/-- `eagerHandler` is the eager handler of `romProgram` with `FO-notbot` decapsulation. -/
+theorem eagerHandler_eq_romEagerHandler (S : Scheme PK SK M R CT K) (G : M → R)
+    (H : Bool × M × CT → K) (dk : ImplicitSK PK SK M) (cStar : CT) :
+    S.eagerHandler G H dk cStar = romEagerHandler G H (S.notBotDecaps dk) cStar := by
+  have hd (c : CT) : PMF.pure (some (S.decapsNotBot G H dk c)) = OracleComp.interpret
+      (OracleComp.sumHandler (fun m => PMF.pure (G m)) (fun x => PMF.pure (H x)))
+      (S.notBotDecaps dk c) := by
+    simp only [notBotDecaps, OracleComp.interpret_map, interpret_decapsNotBotM,
+      OracleComp.interpret_query]
+    change _ = some <$> S.decapsNotBotM (m := PMF) (pure ∘ G) (pure ∘ H) dk c
+    rw [decapsNotBotM_pure, map_pure]
+    rfl
+  funext q
+  refine Eq.trans ?_ (dispatch_eq_interpret_romProgram _ _ cStar q)
+  simp only [eagerHandler, hd]
+  rfl
+
+/-- `roIndCcaGame` is the ROM IND-CCA experiment of `FO-notbot`. -/
+@[simp] theorem romIndCcaExperiment_notBot (S : Scheme PK SK M R CT K)
+    (A : ROAdversary PK M R CT K) (b : Bool) :
+    S.romIndCcaExperiment S.keyGenNotBot (fun _ dk => S.notBotDecaps dk) A b =
+      S.roIndCcaGame A b := by
+  simp only [romIndCcaExperiment, roIndCcaGame, roHandler_eq_romHandler]
+
+omit [DecidableEq M] in
+/-- `eagerIndCcaGame` is the eager ROM IND-CCA experiment of `FO-notbot`. -/
+@[simp] theorem eagerRomIndCcaExperiment_notBot [Fintype M] [Finite R] [Fintype CT] [Finite K]
+    (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K) (b : Bool) :
+    S.eagerRomIndCcaExperiment S.keyGenNotBot (fun _ dk => S.notBotDecaps dk) A b =
+      S.eagerIndCcaGame A b := by
+  simp only [eagerRomIndCcaExperiment, eagerIndCcaGame, encapsNotBot,
+    eagerHandler_eq_romEagerHandler]
+
+/-- **Eager/lazy equivalence for the `FO-notbot` ROM IND-CCA game**: evaluating the executable
+lazy-cached game `S.roIndCcaGame A b` yields the exact same output distribution as the eager
+random-oracle game `S.eagerIndCcaGame A b`. -/
+theorem eval_roIndCcaGame_eq_eagerIndCcaGame [Fintype M] [Finite R] [Fintype CT] [Finite K]
+    (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K) (b : Bool) :
+    ProbComp.eval (S.roIndCcaGame A b) = S.eagerIndCcaGame A b := by
+  rw [← romIndCcaExperiment_notBot, ← eagerRomIndCcaExperiment_notBot]
+  exact S.eval_romIndCcaExperiment_eq_eager _ _ A b
 
 /-- The ROM IND-CCA advantage of `A` against `FO-notbot` equals the distinguishing advantage
 between `S.eagerIndCcaGame A false` and `S.eagerIndCcaGame A true`. -/

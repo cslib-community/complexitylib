@@ -4,16 +4,13 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import CslibFrontier.Computability.Circuit.Quantum.Basic
+import CslibFrontierTests.QuantumCircuitFixture
 
 /-! Quantum circuits: concrete runs, and objects that fail the definitions. -/
 
 namespace CslibFrontierTests.QuantumCircuit
 
 open Cslib.Quantum Matrix
-
-/-- The Hadamard gate on the only qubit of a one-qubit register. -/
-noncomputable def h₀ : PlacedGate 1 := ⟨1, Gate.hadamard, Function.Embedding.refl _⟩
 
 -- `H|0⟩ = (|0⟩ + |1⟩)/√2`: measuring it gives each outcome with probability `1 / 2`.
 example (y : Fin 1 → Bool) : Circuit.measure [h₀] (fun _ => false) y = 1 / 2 := by

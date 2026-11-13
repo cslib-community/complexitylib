@@ -22,6 +22,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.PPT.Composition
 import CslibFrontier.Computability.Probabilistic.Sampling
@@ -1020,15 +1021,28 @@ theorem exists_uowhfCandidateInput_collision
 
 /-! ### Two-stage planted-subkey reduction for `uowhfTreeHash` -/
 
-private abbrev TreeState := Bool × ℕ × ℕ × List Bool × List Bool
+/-- The state `uowhfTreeAdversary` saves between its two stages. -/
+private structure TreeState where
+  /-- Whether the sampled dyadic slot encodes a node `(i, j)` with `i ≤ n`, `j < maxBlocks n`. -/
+  active : Bool
+  /-- The level `i` whose subkey is the challenge (`0` when inactive). -/
+  level : ℕ
+  /-- The block index `j` of the target node (`0` when inactive). -/
+  block : ℕ
+  /-- The `i` subkeys sampled before the challenge subkey. -/
+  front : List Bool
+  /-- The wrapped adversary's saved state. -/
+  state : List Bool
 
-private abbrev encTreeState : TreeState ↪ List Bool :=
-  encPair encBool (encPair encUnary (encPair encUnary (encPair encBits encBits)))
+/-- The encoding of `TreeState`: the flag, level and block, then the subkeys and the saved state. -/
+private enc_structure encTreeState : TreeState where
+  active : encBool, level : encUnary, block : encUnary, front : encBits, state : encBits
 
+/-- The decoder of `encTreeState`. -/
 private def treeStateDecoder : Decoder encTreeState :=
-  Decoder.pair Decoder.bool
-    (Decoder.pair Decoder.unary
-      (Decoder.pair Decoder.unary (Decoder.pair Decoder.bits Decoder.bits)))
+  (Decoder.bool.pair (Decoder.unary.pair (Decoder.unary.pair (Decoder.bits.pair Decoder.bits)))).map
+    (fun p => ⟨p.1, p.2.1, p.2.2.1, p.2.2.2.1, p.2.2.2.2⟩)
+    (fun s => (s.active, s.level, s.block, s.front, s.state)) (fun _ => rfl) (fun _ => rfl)
 
 /-- Two-stage target-collision reduction from `uowhfTreeHash` to the underlying compression family
 `h`: Stage 1 samples a dyadic slot `slot < (n + 1) * maxBlocks n` encoding `(i, j)` (`i ≤ n`,
@@ -1048,14 +1062,14 @@ noncomputable def uowhfTreeAdversary
     let j := if active then slot % maxBlocks n else 0
     let front ← BitString.sampleList (i * keyLen n)
     let x₀ := uowhfCandidateInput h n (keyLen n) (blockLen n) i j front choice.1
-    return (x₀, encTreeState (active, i, j, front, choice.2))
+    return (x₀, encTreeState ⟨active, i, j, front, choice.2⟩)
   find n savedState kStar := do
     let s := treeStateDecoder.decode savedState
-    let i := min n s.2.1
+    let i := min n s.level
     let back ← BitString.sampleList ((n - i) * keyLen n)
-    let m₁ ← adversary.find n s.2.2.2.2 (s.2.2.2.1 ++ kStar ++ back)
-    return if s.1 then
-      uowhfCandidateInput h n (keyLen n) (blockLen n) i s.2.2.1 s.2.2.2.1 m₁
+    let m₁ ← adversary.find n s.state (s.front ++ kStar ++ back)
+    return if s.active then
+      uowhfCandidateInput h n (keyLen n) (blockLen n) i s.block s.front m₁
     else []
 
 /-- `uowhfTreeAdversary` is a uniform strict PPT `TargetCollisionFinder` whenever `h`, `keyLen`,
@@ -1070,7 +1084,6 @@ theorem isPPT_uowhfTreeAdversary
     (hmaxBlocks : ComputableInPolyTime maxBlocks encUnary encUnary)
     (ha : adversary.IsPPT) :
     (uowhfTreeAdversary h keyLen blockLen maxBlocks adversary).IsPPT := by
-  have hdec := treeStateDecoder.computableInPolyTime
   have hbound : ComputableInPolyTime (fun n => (n + 1) * maxBlocks n) encUnary encUnary :=
     poly_congr (ComputableInPolyTime.unary_mul.comp
       ((ComputableInPolyTime.unary_add.comp
@@ -1090,8 +1103,8 @@ theorem isPPT_uowhfTreeAdversary
     have hx₀ := computableInPolyTime_uowhfCandidateInput hh
       hn3 (hkeyLen.comp hn3) (hblockLen.comp hn3)
       hi3 hj3 hr.snd' hr.fst'.snd'.fst'
-    have hst := ((hact2.comp hr.fst').prod
-      (hi3.prod (hj3.prod (hr.snd'.prod hr.fst'.snd'.snd')))).encoding_comp
+    have hst := (encTreeState_mk_polyTime (hact2.comp hr.fst') hi3 hj3 hr.snd'
+      hr.fst'.snd'.snd').encoding_comp
     exact (isPPTOn_sampleDyadicIndex hbound).bind_with
       ((ha.choose.preprocess (ComputableInPolyTime.fst encUnary encUnary)).bind_with
         ((isPPTOn_sampleList.preprocess (poly_congr hflen fun _ => rfl)).bind_with
@@ -1099,26 +1112,27 @@ theorem isPPT_uowhfTreeAdversary
   · let EF0 := encPair encUnary (encPair encBits encBits)
     let EF1 := encPair EF0 encBits
     have hp := ComputableInPolyTime.id' (encIn := EF0)
-    have hs0 := hdec.comp hp.snd'.fst'
+    have hs0 := treeStateDecoder.computableInPolyTime.comp hp.snd'.fst'
+    have hlevel := encTreeState_level_polyTime hs0
     have hi0 : ComputableInPolyTime
-        (fun p : ℕ × List Bool × List Bool => min p.1 (treeStateDecoder.decode p.2.1).2.1)
+        (fun p : ℕ × List Bool × List Bool => min p.1 (treeStateDecoder.decode p.2.1).level)
         EF0 encUnary :=
-      poly_congr (ComputableInPolyTime.ite_decide (hp.fst'.unary_le' hs0.snd'.fst')
-        hp.fst' hs0.snd'.fst') fun _ => by simp only [Function.comp_apply]; split_ifs <;> omega
+      poly_congr (ComputableInPolyTime.ite_decide (hp.fst'.unary_le' hlevel)
+        hp.fst' hlevel) fun _ => by simp only [Function.comp_apply]; split_ifs <;> omega
     have hblen := ComputableInPolyTime.unary_mul.comp
       ((ComputableInPolyTime.unary_sub.comp (hp.fst'.prod hi0)).prod (hkeyLen.comp hp.fst'))
     have hq := ComputableInPolyTime.id' (encIn := EF1)
     have hK1 := ComputableInPolyTime.bitsAppend
-      (ComputableInPolyTime.bitsAppend (hs0.snd'.snd'.snd'.fst'.comp hq.fst')
+      (ComputableInPolyTime.bitsAppend ((encTreeState_front_polyTime hs0).comp hq.fst')
         hq.fst'.snd'.snd') hq.snd'
-    have hfin := hq.fst'.fst'.prod ((hs0.snd'.snd'.snd'.snd'.comp hq.fst').prod hK1)
+    have hfin := hq.fst'.fst'.prod (((encTreeState_state_polyTime hs0).comp hq.fst').prod hK1)
     have hr := ComputableInPolyTime.id' (encIn := encPair EF1 encBits)
     have hr0 := hr.fst'.fst'; have hn3 := hr0.fst'
-    have hret := ComputableInPolyTime.ite' (hs0.fst'.comp hr0)
+    have hret := ComputableInPolyTime.ite' ((encTreeState_active_polyTime hs0).comp hr0)
       (computableInPolyTime_uowhfCandidateInput hh hn3
         (hkeyLen.comp hn3) (hblockLen.comp hn3)
-        (hi0.comp hr0) (hs0.snd'.snd'.fst'.comp hr0)
-        (hs0.snd'.snd'.snd'.fst'.comp hr0) hr.snd')
+        (hi0.comp hr0) ((encTreeState_block_polyTime hs0).comp hr0)
+        ((encTreeState_front_polyTime hs0).comp hr0) hr.snd')
       (.const [])
     exact (isPPTOn_sampleList.preprocess (poly_congr hblen fun _ => rfl)).bind_with
       ((ha.find.preprocess (poly_congr hfin fun _ => rfl)).bind_with

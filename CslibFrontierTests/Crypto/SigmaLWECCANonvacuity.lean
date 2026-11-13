@@ -157,7 +157,7 @@ advantage `1 / 2`. -/
 theorem not_decisionLWE_zeroNoise :
     ¬ DecisionLWE (fun _ => 0) (fun _ => 1) (fun _ => 1) zeroNoise := by
   intro h
-  have hneg := h firstBitFalse firstBitFalse_ppt
+  have hneg := h.encoded firstBitFalse firstBitFalse_ppt
   have hadv (security : ℕ) : Game.advantage
       (distinguishingGame (LWE.realEnsemble (fun _ => 0) (fun _ => 1) (fun _ => 1) zeroNoise
         security) (firstBitFalse security))
@@ -218,9 +218,7 @@ theorem isOraclePPT_detCCAAdversary : IsOraclePPT encBool detCCAAdversary := by
 /-- In Experiment `false`, both queries encrypt `0ⁿ`; without ciphertext expansion the answers
 agree, so the adversary outputs `true`. -/
 theorem eval_ccaGame_detCCAAdversary_false (E : SymmetricCipher) (n : ℕ)
-    (hctLen : ∀ ke ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg : List Bool, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = n) :
+    (hctLen : E.CiphertextLength n n) :
     ProbComp.eval (E.ccaGame detCCAAdversary false n) = PMF.pure true := by
   simp only [ccaGame, detCCAAdversary, OracleComp.interpret_bind, OracleComp.interpret_map,
     OracleComp.interpret_pure, ProbOracleComp.interpret_query, StateT.run_bind, StateT.run_map,
@@ -247,9 +245,7 @@ theorem eval_ccaGame_detCCAAdversary_false (E : SymmetricCipher) (n : ℕ)
 /-- In Experiment `true` with `n ≥ 1`, the queries encrypt `1ⁿ` and then `0ⁿ`; by correctness the
 answers differ, so the adversary outputs `false`. -/
 theorem eval_ccaGame_detCCAAdversary_true (E : SymmetricCipher) {n : ℕ} (hn : 1 ≤ n)
-    (hctLen : ∀ ke ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg : List Bool, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = n) :
+    (hctLen : E.CiphertextLength n n) :
     ProbComp.eval (E.ccaGame detCCAAdversary true n) = PMF.pure false := by
   simp only [ccaGame, detCCAAdversary, OracleComp.interpret_bind, OracleComp.interpret_map,
     OracleComp.interpret_pure, ProbOracleComp.interpret_query, StateT.run_bind, StateT.run_map,
@@ -291,9 +287,7 @@ theorem eval_ccaGame_detCCAAdversary_true (E : SymmetricCipher) {n : ℕ} (hn : 
 encryption channel has advantage `1` at every positive parameter. This is the CCA counterpart of
 `SymmetricCipher.not_indcpa_of_ciphertext_length_eq`. -/
 theorem not_indcca_of_ciphertext_length_eq (E : SymmetricCipher)
-    (hctLen : ∀ n, ∀ ke ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg : List Bool, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = n) :
+    (hctLen : ∀ n, E.CiphertextLength n n) :
     ¬ E.INDCCA := by
   intro hcca
   have hneg := hcca detCCAAdversary isOraclePPT_detCCAAdversary

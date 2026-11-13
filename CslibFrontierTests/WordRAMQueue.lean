@@ -25,6 +25,11 @@ open Cslib.DataStructure Cslib.DataStructure.Queue
 
 namespace WordRAMQueueTest
 
+-- A malformed option tag is rejected at the native queue's actual output boundary.
+example : (Queue.WordRAM.implementation 2 1).decode .dequeue (fun _ => 2) = none := by
+  rw [Queue.WordRAM.decode_dequeue]
+  decide
+
 /-- An adaptive FIFO client, with no access to either stack representation. -/
 def cycle {w capacity : ℕ} (a b : ℕ) :
     (Queue.WordRAM.spec w capacity).Client (Option ℕ × Option ℕ) :=
