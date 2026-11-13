@@ -6,6 +6,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.StepCounter
 import CslibFrontier.Algorithms.Lean.Arborescence.PolyTime
 import CslibFrontier.Algorithms.Lean.DFS.SCC
 import CslibFrontier.Algorithms.Lean.MaxDicut.GoemansWilliamson
@@ -2854,6 +2855,23 @@ register_result "cai-furer-immerman-isomorphism" where
     particular cfiEven k and cfiOdd k over K_(2k+4) are non-isomorphic. Indistinguishability \
     in C^(k+1) and k-WL is in cai-furer-immerman-graphs; expander base graphs of size O(k) are \
     not formalized."
+
+register_result "goldreich-exact-step-counter" where
+  title := "Exact native step counter from binary input"
+  topic := "time complexity"
+  sources := [
+    { paper := Goldreich2007DraftR2, theorem := "Exercise 4.5",
+      locator := "January 2007 r2.pdf; PDF page 36 / printed page 152" },
+    { paper := Goldreich2006DraftR1, theorem := "Numbers convention",
+      locator := "December 2006 r1.pdf; PDF page 45 / printed page 20" }
+  ]
+  theorems := [Turing.MultiTapeTM.exists_stepCounter]
+  scope := "One fixed finite deterministic native multitape machine on encNat n, \
+    least-significant-first binary, visits one designated signal state exactly n times. \
+    It starts outside the signal state and leaves each visit on the next transition. \
+    Total runtime, including binary-to-unary preparation, is bounded by c*(n+1) for a \
+    uniform constant c; zero input issues no signals. No logarithmic workspace or \
+    per-prefix signal-latency bound is claimed."
 
 register_result "translational-time-hierarchy" where
   title := "Deterministic time hierarchy below every power of the logarithm, by translation"
