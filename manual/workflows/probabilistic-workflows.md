@@ -1256,6 +1256,34 @@ The source's mod-one Gaussian sampling law is represented by its actual measure 
 its periodic-density series, the joint LWE sample law in Lemma 3.11, efficient sampling,
 finite precision and the quantum reduction remain separate work.
 
+## State a probability and sample uniformly
+
+Import [Notation.lean](../../CslibFrontier/Languages/Probabilistic/Notation.lean) and
+`open Probability`. Public statements then write probabilities the way the textbooks do:
+
+- A named advantage is `ℝ≥0`, defined through `Experiment.advantage`, `Experiment.succProbability`
+  or the `Game` API, because `Negligible`, `Indistinguishable` and the reductions take `ℝ≥0`. As
+  real numbers they are `|Pr[e₀] - Pr[e₁]|` and `Pr[e]`; rewrite with `Experiment.coe_advantage`
+  and `Experiment.coe_succProbability` (plain `simp` also proves them, so they are not `simp` lemmas).
+- Every other probability is `Pr[e] : ℝ`: one-sided bounds `Pr[e] ≤ 1 / q`, exact values
+  `Pr[e] = 1 / 2`, hop differences and biases. A statement does not write
+  `(ProbComp.eval e true).toReal`, `ProbComp.eval e true ≤ …` in `ℝ≥0∞`,
+  `Game.succProbability (ProbComp.eval e)` or a real-cast `Game.advantage` of two laws.
+- An exact hop that is an equality of distributions stays one (`ProbComp.eval G₁ = ProbComp.eval G₂`,
+  or `G₁ = G₂` by `rfl`): it is stronger than `Pr[G₁] = Pr[G₂]` and works with `rw`.
+- `ℝ≥0∞` masses stay inside `PMF` algebra: private lemmas and `eval_*`/`bind_apply_*` facts whose
+  consumers are other `PMF` proofs.
+
+Sample uniformly with `$ᵗ α`, the textbook `a ←$ α`: a program reads `let a ← $ᵗ ZMod q`. It is
+notation for `ProbComp.uniform α` and adds no constant, so `ProbComp.eval_uniform`, `pmf_norm` and
+every other lemma about `ProbComp.uniform` apply unchanged, and goals print `ProbComp.uniform α` as
+`$ᵗ α`. Its argument is an application at most, so a product type needs parentheses:
+`$ᵗ (ZMod q × Bool)`. The SPDZ MAC-check bounds in
+[SPDZ.lean](../../CslibFrontier/Crypto/Protocols/MPC/SPDZ.lean) use both
+(`probability_macCheckSoundnessGame_le : Pr[macCheckSoundnessGame p T err deltaShift] ≤ 2 / p`), and the
+[checked examples](../../CslibFrontierTests/ProbabilityNotation.lean) cover the elaborated term,
+its printing inside `do` blocks and `simp`.
+
 ## Normalize the law of a program
 
 To compute with `ProbComp.eval` of a `do` block, import
