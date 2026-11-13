@@ -201,6 +201,7 @@ import CslibFrontier.Logics.SecondOrder.WordMSO.OfRegular
 import CslibFrontier.Logics.SecondOrder.WordMSO.Separation
 import CslibFrontier.Logics.SecondOrder.WordMSO.StarFree
 import CslibFrontier.MachineLearning.LossMinimization.RLM
+import CslibFrontier.MachineLearning.LossMinimization.Squared
 import CslibFrontier.MachineLearning.OnlineLearning.SwapRegret
 import CslibFrontier.MachineLearning.PACLearning.MDL
 import CslibFrontier.MachineLearning.PACLearning.Nonuniform
@@ -1548,6 +1549,40 @@ register_result "rlm-stability" where
     minimizes over K and the comparator ranges over K. The replace-one stability rate proved is \
     ρ² / (r m), half the source's; the oracle inequalities are stated with the source's \
     constants. Integrability of the losses of the rule's output is a hypothesis."
+
+register_result "rlm-smooth-stability" where
+  title := "Stability and oracle inequality of Tikhonov-regularized loss minimization for smooth \
+    losses"
+  topic := "statistical learning"
+  sources := [
+    { paper := ShalevShwartzBenDavid2014, theorem := "Corollaries 13.7, 13.10 and 13.11",
+      locator := "Sections 13.3.2 and 13.4" }
+  ]
+  theorems := [
+    Cslib.MachineLearning.IsRLM.replaceOneGap_le_tikhonov_of_lipschitzWith_fderiv,
+    Cslib.MachineLearning.IsRLM.integral_trueRisk_le_tikhonov_of_lipschitzWith_fderiv,
+    Cslib.MachineLearning.IsRLM.integral_trueRisk_le_add_of_lipschitzWith_fderiv
+  ]
+  scope := "Regularizer r‖w‖² on a convex subset K of a real inner product space, losses convex \
+    on K, nonnegative, and differentiable on the whole space with β-Lipschitz derivative, m \
+    i.i.d. examples from an arbitrary probability measure. Corollaries 13.7 and 13.10 are proved \
+    with the factor 5β / (r m) in place of the source's 48β / (r m); Corollary 13.11 keeps the \
+    source's parameters, for which the factor 48 does not suffice. Integrability of the losses \
+    of the rule's output is a hypothesis."
+
+register_result "ridge-regression-learnability" where
+  title := "Learnability by ridge regression"
+  topic := "statistical learning"
+  sources := [
+    { paper := ShalevShwartzBenDavid2014, theorem := "Theorem 13.1", locator := "Section 13.1.1" }
+  ]
+  theorems := [
+    Cslib.MachineLearning.IsRLM.integral_trueRisk_squaredLoss_le_add
+  ]
+  scope := "The squared loss (⟪w, x⟫ - y)² / 2 in a real inner product space, features of norm \
+    at most 1 and labels in [-1, 1], the rule minimizing over the whole space, and comparators \
+    of norm at most B, with the source's parameters m ≥ 150 B² / ε² and r = ε / (3 B²). \
+    Integrability of the losses of the rule's output is a hypothesis."
 
 register_result "srm-nonuniform-learnability" where
   title := "Countable unions of uniformly convergent classes are nonuniformly learnable by SRM"

@@ -5020,6 +5020,7 @@ public import CslibFrontier.Foundations.Analysis.Asymptotics.Exponential
 public import CslibFrontier.Foundations.Analysis.BernoulliInequality
 public import CslibFrontier.Foundations.Analysis.Brouwer
 public import CslibFrontier.Foundations.Analysis.Brouwer.Simplex
+public import CslibFrontier.Foundations.Analysis.Calculus.LipschitzDeriv
 public import CslibFrontier.Foundations.Analysis.Calculus.LipschitzSmoothing
 public import CslibFrontier.Foundations.Analysis.Calculus.Taylor
 public import CslibFrontier.Foundations.Analysis.Convex.Ellipsoid
@@ -6579,6 +6580,8 @@ public import CslibFrontier.Logics.SecondOrder.WordMSO.ToRegular
 public import CslibFrontier.MachineLearning.LossMinimization.Basic
 public import CslibFrontier.MachineLearning.LossMinimization.Hinge
 public import CslibFrontier.MachineLearning.LossMinimization.RLM
+public import CslibFrontier.MachineLearning.LossMinimization.Smooth
+public import CslibFrontier.MachineLearning.LossMinimization.Squared
 public import CslibFrontier.MachineLearning.LossMinimization.Stability
 public import CslibFrontier.MachineLearning.OnlineLearning.FTRL
 public import CslibFrontier.MachineLearning.OnlineLearning.Hedge
