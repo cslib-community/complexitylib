@@ -23,6 +23,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Quantita
 import CslibFrontier.Foundations.Data.BitString.ShortWords
 import CslibFrontier.Foundations.Data.BitString.Binary
 import CslibFrontier.Foundations.Data.BitString.Counter
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.OfBits
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 import CslibFrontier.Tactic.Space
 import CslibFrontier.Tactic.EncLen
@@ -108,15 +109,9 @@ constructibility, and arbitrary instances under an encoding into `List Bool`.
 namespace Turing.MultiTapeNTM.SquareSavitch
 
 open MultiTapeTM ConfigurationGraph Cslib.Reachability Cslib.Reachability.Savitch
-open Cslib.BitString (lowBits length_lowBits lsbValue_lowBits lsbValue_eq_foldr_bit
-  lsbValue_replicate_true)
+open Cslib.BitString (lowBits length_lowBits lsbValue_replicate_true)
 
 /-! ### The graph on words -/
-
-/-- The value of the `W` low-order digits of `x < 2 ^ W` is `x`. -/
-private theorem ofBits_lowBits {W x : ℕ} (hx : x < 2 ^ W) :
-    ofBits (lowBits W x) = x :=
-  (lsbValue_eq_foldr_bit _).symm.trans (lsbValue_lowBits hx)
 
 variable {k : ℕ} {State : Type} [Fintype State] (ntm : MultiTapeNTM k Bool State)
 
@@ -168,9 +163,8 @@ variable {ntm} {B : ℕ} {w : List Bool}
 theorem vertexBound_le_ofBits_sink (B : ℕ) :
     vertexBound (k := k) B ≤ ofBits (List.replicate (vertexWidth k B) true) := by
   have h := lsbValue_replicate_true (vertexWidth k B)
-  rw [lsbValue_eq_foldr_bit] at h
   have := vertexBound_lt_two_pow_vertexWidth k B
-  change _ ≤ (List.replicate _ true).foldr Nat.bit 0
+  rw [ofBits_eq_lsbValue]
   omega
 
 /-- Every target is a vertex of the graph. -/

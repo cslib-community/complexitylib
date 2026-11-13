@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import check_changed_files as c  # noqa: E402
@@ -232,13 +233,34 @@ class ChangedFileTests(unittest.TestCase):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text)
 
-    def run_main(self) -> tuple[int, str]:
+    def run_main(self, *flags: str) -> tuple[int, str]:
         import contextlib
         import io
-        err = io.StringIO()
-        with contextlib.redirect_stderr(err), contextlib.redirect_stdout(io.StringIO()):
-            code = c.main(["--no-build-check"], root=self.root)
+        err, self.out = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stderr(err), contextlib.redirect_stdout(self.out):
+            code = c.main(list(flags or ["--no-build-check"]), root=self.root)
         return code, err.getvalue()
+
+    def test_source_only_runs_the_source_lints_without_build_outputs(self) -> None:
+        # A missing "Main" name would need `.ilean` outputs; the source-only run must not load them.
+        self.write("CslibFrontier/Kept.lean",
+                   "/-! # Kept\n\n## Main results\n\n* `missing`: x\n-/\n"
+                   "@[expose] public section\n\ntheorem t : True := trivial\n")
+        self.write("CslibFrontierTests/New.lean", "example := @kept\n")
+        with mock.patch.object(c.lo, "check_outputs", side_effect=AssertionError("build read")):
+            code, err = self.run_main("--source-only")
+        self.assertEqual(code, 1)
+        self.assertEqual(err.count("ERROR"), 2)
+        self.assertIn("CslibFrontier/Kept.lean:7: this `@[expose]` section", err)
+        self.assertIn("CslibFrontierTests/New.lean: every example only restates", err)
+        self.assertIn("Skipped the module-doc name lint", self.out.getvalue())
+        self.write("CslibFrontier/Kept.lean", "def kept := 1\n")
+        self.write("CslibFrontierTests/New.lean", "example : kept = 1 := rfl\n")
+        self.assertEqual(self.run_main("--source-only"), (0, ""))
+        self.assertIn("Changed-file source lints passed", self.out.getvalue())
+        self.assertIn("Skipped the module-doc name lint", self.out.getvalue())
+        with self.assertRaises(SystemExit):
+            self.run_main("--source-only", "--no-build-check")
 
     def test_only_added_and_modified_files_are_checked(self) -> None:
         self.write("CslibFrontier/Kept.lean", "def kept := 2\n")
