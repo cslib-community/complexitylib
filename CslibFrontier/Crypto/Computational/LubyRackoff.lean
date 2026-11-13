@@ -17,6 +17,7 @@ import CslibFrontier.Crypto.Game.Concrete
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Crypto.Protocols.Cipher.LubyRackoff
 import CslibFrontier.Foundations.Data.BitString.List.Operations
+import CslibFrontier.Foundations.Data.BitString.Neg
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.CoinFixing
 import CslibFrontier.Probability.IID
@@ -149,9 +150,6 @@ private theorem splitBlock_joinBlock {n : ℕ} (halves : BitString n × BitStrin
     splitBlock n (joinBlock halves) = halves := by
   simp [splitBlock, joinBlock]
 
-private theorem bitString_sub_eq_add {n : ℕ} (a b : BitString n) : a - b = a + b :=
-  funext fun i => BooleanRing.sub_eq_add (a i) (b i)
-
 /-- A word oracle `g` represents `f` on `n`-bit strings. -/
 private abbrev Represents {n : ℕ} (g : List Bool → List Bool) (f : BitString n → BitString n) :
     Prop :=
@@ -172,7 +170,7 @@ private theorem feistelInvRoundWord_joinBlock {n : ℕ} {g : List Bool → List 
         joinBlock (LubyRackoff.feistelInvRound f halves)
   | ⟨_, _⟩ => by
     simp only [feistelInvRoundWord, joinBlock, LubyRackoff.feistelInvRound,
-      List.take_left' List.length_ofFn, List.drop_left' List.length_ofFn, h, bitString_sub_eq_add,
+      List.take_left' List.length_ofFn, List.drop_left' List.length_ofFn, h, BitString.sub_eq_add,
       ← BitString.ofFn_add]
 
 /-- Word-level Feistel rounds compute the Feistel network of the round functions they represent.
