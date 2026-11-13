@@ -5,7 +5,8 @@ Authors: Samuel Schlesinger
 -/
 
 import CslibFrontier.Computability.Circuit.Quantum.Oracle.Code
-import CslibFrontierTests.QuantumCircuit
+import CslibFrontierTests.QuantumCircuitFixture
+import CslibFrontierTests.QuantumOracleFixture
 
 /-! Coherent oracle circuits: explicit basis actions, entanglement, interference and costs. -/
 
@@ -21,20 +22,8 @@ private noncomputable def query : PlacedGate 2 :=
 -- A one-bit identity hash is CNOT, on all basis inputs, including a nonzero response.
 private theorem query_ket (x : Fin 2 → Bool) :
     query.eval (ket x) = ket ![x 0, x 1 ^^ x 0] := by
-  let A : Fin (1 + 1) ↪ Fin 2 := Function.Embedding.refl _
-  let w : {j // ¬∃ i, A i = j} → Bool := fun j => x j
-  have hin : (queryRegisters A).symm (![x 0], ![x 1], w) = x := by
-    funext j
-    fin_cases j
-    · exact queryRegisters_symm_query A _ _ w 0
-    · exact queryRegisters_symm_response A _ _ w 0
-  have hout : (queryRegisters A).symm (![x 0], ![x 1] + identityHash ![x 0], w) =
-      ![x 0, x 1 ^^ x 0] := by
-    funext j
-    fin_cases j
-    · exact queryRegisters_symm_query A _ _ w 0
-    · exact queryRegisters_symm_response A _ _ w 0
-  simpa only [hin, hout, query, A] using xorQuery_eval_ket identityHash A ![x 0] ![x 1] w
+  simpa [query, identityHash] using
+    CslibFrontierTests.QuantumOracle.xorQuery_oneBit_ket identityHash x
 
 example : query.eval (ket ![true, false]) = ket ![true, true] := by
   simpa using query_ket ![true, false]

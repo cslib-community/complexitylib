@@ -1686,6 +1686,7 @@ public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Basic
 public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Code
 public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Density
 public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Resources
+public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Signature
 public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Uniform
 public import CslibFrontier.Computability.Circuit.Quantum.Oracle.ValueQuery
 public import CslibFrontier.Computability.Circuit.Quantum.Output
