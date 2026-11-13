@@ -76,11 +76,8 @@ theorem snd_eq_of_mem_support_map_pair {μ : PMF α} {t : σ} {x : α × σ}
 
 /-- Lifting a state-free `PMF` into `StateT` preserves the state on the entire support. -/
 theorem snd_eq_of_mem_support_lift {α σ : Type _} {p : PMF α} {s : σ} {z : α × σ}
-    (hz : z ∈ ((StateT.lift p : StateT σ PMF α) s).support) : z.2 = s := by
-  simp only [StateT.lift, monad_bind_eq_bind, monad_pure_eq_pure, PMF.mem_support_bind_iff,
-    PMF.mem_support_pure_iff] at hz
-  obtain ⟨_, -, rfl⟩ := hz
-  rfl
+    (hz : z ∈ ((StateT.lift p : StateT σ PMF α) s).support) : z.2 = s :=
+  snd_eq_of_mem_support_map_pair hz
 
 /-- Lifting a state-free `PMF` from a good state reaches a bad state with probability zero. -/
 theorem toOuterMeasure_lift_eq_zero {α σ : Type _} {bad : σ → Prop} (p : PMF α) (s : σ)
