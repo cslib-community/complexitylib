@@ -28,6 +28,7 @@ queries sent to those servers does not depend on the target index `i`.
 * **Existence (`HasTPrivateScheme`, `HasScheme`).** `HasTPrivateScheme ι t k c β` says that a
   correct, `t`-private `k`-server scheme communicating at most `c` bits exists; the single-server
   statement `HasScheme ι k c β` is its `t = 1` case, unfolded by `hasScheme_iff`.
+  `HasTPrivateScheme.fin_of_le_card` turns a scheme for a grid or a cube into one for `Fin n`.
 * **Necessity of `t < |S|` (`Scheme.exists_injective_answers_of_card_le`,
   `Scheme.card_le_communication_of_card_le`).** Generalizing the single-server injectivity argument
   of [CGKS, Section 5.1, p. 14][ChorGoldreichKushilevitzSudan1998] (`PIR.SingleServer`) from
@@ -56,6 +57,9 @@ Polynomial Shamir `t`-private constructions live in `PIR.Shamir`, single-server 
 * `Cslib.Crypto.Protocols.PIR.Scheme.IsTPrivate.of_query_eq`: `t`-privacy transfers along
   reindexed query laws.
 * `Cslib.Crypto.Protocols.PIR.hasScheme_iff`: `HasScheme` unfolded with single-server privacy.
+* `Cslib.Crypto.Protocols.PIR.HasTPrivateScheme.comap`,
+  `Cslib.Crypto.Protocols.PIR.HasTPrivateScheme.fin_of_le_card`: existence restricts along an
+  embedding of indices, in particular to `Fin n` from any index type with at least `n` elements.
 * `Cslib.Crypto.Protocols.PIR.Scheme.exists_injective_answers_of_card_le`,
   `Cslib.Crypto.Protocols.PIR.Scheme.card_le_communication_of_card_le`: full-coalition `|S| ≤ t`
   determines the database from one joint answer vector and requires at least `|ι|` bits.
@@ -373,6 +377,29 @@ theorem HasTPrivateScheme.mono_threshold {ι β : Type} {t₁ t₂ k c : ℕ} (h
 theorem HasTPrivateScheme.hasScheme {ι β : Type} {t k c : ℕ} (ht : 1 ≤ t)
     (h : HasTPrivateScheme ι t k c β) : HasScheme ι k c β :=
   h.mono_threshold ht
+
+/-- A scheme for a larger index type restricts along an embedding `ι ↪ ι'`
+(`Scheme.comap`), keeping its servers and communication. -/
+theorem HasTPrivateScheme.comap {ι ι' β : Type} [Nonempty β] {t k c : ℕ}
+    (h : HasTPrivateScheme ι' t k c β) (e : ι ↪ ι') : HasTPrivateScheme ι t k c β := by
+  obtain ⟨S, R, Q, A, _, _, _, P, hcorrect, hprivate, hk, hcomm⟩ := hasTPrivateScheme_iff.mp h
+  let pad : β := Classical.arbitrary β
+  exact hasTPrivateScheme_iff.mpr
+    ⟨S, R, Q, A, _, _, _, P.comap e pad, hcorrect.comap e pad, hprivate.comap e pad, hk, hcomm⟩
+
+theorem HasScheme.comap {ι ι' β : Type} [Nonempty β] {k c : ℕ} (h : HasScheme ι' k c β)
+    (e : ι ↪ ι') : HasScheme ι k c β :=
+  HasTPrivateScheme.comap h e
+
+/-- A scheme for a finite index type of size at least `n` gives one for `n`-entry databases. -/
+theorem HasTPrivateScheme.fin_of_le_card {ι β : Type} [Fintype ι] [Nonempty β] {n t k c : ℕ}
+    (h : HasTPrivateScheme ι t k c β) (hn : n ≤ Fintype.card ι) :
+    HasTPrivateScheme (Fin n) t k c β :=
+  h.comap ((Fin.castLEEmb hn).trans (Fintype.equivFin ι).symm.toEmbedding)
+
+theorem HasScheme.fin_of_le_card {ι β : Type} [Fintype ι] [Nonempty β] {n k c : ℕ}
+    (h : HasScheme ι k c β) (hn : n ≤ Fintype.card ι) : HasScheme (Fin n) k c β :=
+  HasTPrivateScheme.fin_of_le_card h hn
 
 theorem HasTPrivateScheme.card_le_of_le {ι : Type} [Fintype ι] {t k c : ℕ}
     (h : HasTPrivateScheme ι t k c) (hkt : k ≤ t) : Fintype.card ι ≤ c := by

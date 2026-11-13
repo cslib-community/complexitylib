@@ -77,26 +77,27 @@ variable {ι κ : Type*} [Fintype ι] [DecidableEq ι]
 abbrev Op (ι : Type*) := Matrix (ι → Bool) (ι → Bool) ℂ
 
 /-- **Encryption** with the key `(a, b)`: `ρ ↦ X^a Z^b ρ (X^a Z^b)ᴴ`. -/
-noncomputable def encrypt (k : (ι → Bool) × (ι → Bool)) (ρ : Op ι) : Op ι :=
-  pauliString k.1 k.2 * ρ * (pauliString k.1 k.2)ᴴ
+noncomputable def encrypt : (ι → Bool) × (ι → Bool) → Op ι → Op ι
+  | (a, b), ρ => pauliString a b * ρ * (pauliString a b)ᴴ
 
 /-- **Decryption** with the key `(a, b)`: `σ ↦ (X^a Z^b)ᴴ σ X^a Z^b`. -/
-noncomputable def decrypt (k : (ι → Bool) × (ι → Bool)) (σ : Op ι) : Op ι :=
-  (pauliString k.1 k.2)ᴴ * σ * pauliString k.1 k.2
+noncomputable def decrypt : (ι → Bool) × (ι → Bool) → Op ι → Op ι
+  | (a, b), σ => (pauliString a b)ᴴ * σ * pauliString a b
 
-theorem encrypt_def (k : (ι → Bool) × (ι → Bool)) (ρ : Op ι) :
-    encrypt k ρ = pauliString k.1 k.2 * ρ * (pauliString k.1 k.2)ᴴ := by
+theorem encrypt_def (a b : ι → Bool) (ρ : Op ι) :
+    encrypt (a, b) ρ = pauliString a b * ρ * (pauliString a b)ᴴ := by
   rfl
 
-theorem decrypt_def (k : (ι → Bool) × (ι → Bool)) (σ : Op ι) :
-    decrypt k σ = (pauliString k.1 k.2)ᴴ * σ * pauliString k.1 k.2 := by
+theorem decrypt_def (a b : ι → Bool) (σ : Op ι) :
+    decrypt (a, b) σ = (pauliString a b)ᴴ * σ * pauliString a b := by
   rfl
 
 /-- **Correctness**: decryption with the same key recovers the plaintext. -/
 theorem decrypt_encrypt (k : (ι → Bool) × (ι → Bool)) (ρ : Op ι) :
     decrypt k (encrypt k ρ) = ρ := by
-  have hU := pauliString_mem_unitaryGroup k.1 k.2
-  have h1 : (pauliString k.1 k.2)ᴴ * pauliString k.1 k.2 = 1 := by
+  obtain ⟨a, b⟩ := k
+  have hU := pauliString_mem_unitaryGroup a b
+  have h1 : (pauliString a b)ᴴ * pauliString a b = 1 := by
     rw [← star_eq_conjTranspose]; exact mem_unitaryGroup_iff'.mp hU
   simp only [decrypt, encrypt, ← Matrix.mul_assoc, h1, Matrix.one_mul]
   rw [Matrix.mul_assoc, h1, Matrix.mul_one]
@@ -104,7 +105,8 @@ theorem decrypt_encrypt (k : (ι → Bool) × (ι → Bool)) (ρ : Op ι) :
 /-- Ciphertexts of states are states. -/
 theorem isDensityMatrix_encrypt {ρ : Op ι} (hρ : IsDensityMatrix ρ)
     (k : (ι → Bool) × (ι → Bool)) : IsDensityMatrix (encrypt k ρ) :=
-  hρ.conj_unitary (pauliString_mem_unitaryGroup k.1 k.2)
+  let (a, b) := k
+  hρ.conj_unitary (pauliString_mem_unitaryGroup a b)
 
 /-- The ciphertext averaged over a uniformly random key of `2n` bits: the state of an
 eavesdropper who does not know the key. -/
@@ -141,23 +143,23 @@ theorem averageCiphertext_eq_averageCiphertext {ρ ρ' : Op ι} (hρ : IsDensity
 
 /-- Encryption of the first register of a joint state with a reference system `κ`:
 `ρ ↦ (X^a Z^b ⊗ 1) ρ (X^a Z^b ⊗ 1)ᴴ`. -/
-noncomputable def encryptWith [Fintype κ] [DecidableEq κ] (k : (ι → Bool) × (ι → Bool))
-    (ρ : Matrix ((ι → Bool) × κ) ((ι → Bool) × κ) ℂ) :
-    Matrix ((ι → Bool) × κ) ((ι → Bool) × κ) ℂ :=
-  (pauliString k.1 k.2 ⊗ₖ (1 : Matrix κ κ ℂ)) * ρ * (pauliString k.1 k.2 ⊗ₖ (1 : Matrix κ κ ℂ))ᴴ
+noncomputable def encryptWith [Fintype κ] [DecidableEq κ] :
+    (ι → Bool) × (ι → Bool) → Matrix ((ι → Bool) × κ) ((ι → Bool) × κ) ℂ →
+      Matrix ((ι → Bool) × κ) ((ι → Bool) × κ) ℂ
+  | (a, b), ρ => (pauliString a b ⊗ₖ (1 : Matrix κ κ ℂ)) * ρ * (pauliString a b ⊗ₖ 1)ᴴ
 
-theorem encryptWith_def [Fintype κ] [DecidableEq κ] (k : (ι → Bool) × (ι → Bool))
+theorem encryptWith_def [Fintype κ] [DecidableEq κ] (a b : ι → Bool)
     (ρ : Matrix ((ι → Bool) × κ) ((ι → Bool) × κ) ℂ) :
-    encryptWith k ρ =
-      (pauliString k.1 k.2 ⊗ₖ (1 : Matrix κ κ ℂ)) * ρ *
-        (pauliString k.1 k.2 ⊗ₖ (1 : Matrix κ κ ℂ))ᴴ := by
+    encryptWith (a, b) ρ =
+      (pauliString a b ⊗ₖ (1 : Matrix κ κ ℂ)) * ρ * (pauliString a b ⊗ₖ (1 : Matrix κ κ ℂ))ᴴ := by
   rfl
 
 /-- Joint ciphertexts of joint states are states. -/
 theorem isDensityMatrix_encryptWith [Fintype κ] [DecidableEq κ]
     {ρ : Matrix ((ι → Bool) × κ) ((ι → Bool) × κ) ℂ} (hρ : IsDensityMatrix ρ)
     (k : (ι → Bool) × (ι → Bool)) : IsDensityMatrix (encryptWith k ρ) :=
-  hρ.conj_unitary (kronecker_mem_unitary (pauliString_mem_unitaryGroup k.1 k.2) (one_mem _))
+  let (a, b) := k
+  hρ.conj_unitary (kronecker_mem_unitary (pauliString_mem_unitaryGroup a b) (one_mem _))
 
 /-- The key-averaged joint state of the ciphertext and the reference system. -/
 noncomputable def averageCiphertextWith [Fintype κ] [DecidableEq κ]
