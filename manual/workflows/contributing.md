@@ -114,4 +114,15 @@ which remaining questions were resolved; reuse unchanged evidence. The queue hel
 option queues automatically when CI passes, so finish any review of newly produced material
 before starting it. Follow [Approve and queue](../../AGENTS.md#approve-and-queue).
 
+If the helper sleeps for CI or mergeability, it records the PR body, top-level comments,
+submitted reviews and inline threads before sleeping, then rereads their complete discussion
+before enqueueing. A change, including an edit to an older comment or a dismissed review,
+prints `not queued: its review discussion changed while waiting` and exits with status 1.
+Reread the discussion and any holds; once they are resolved and the head remains approved,
+rerun `python3 scripts/queue_pr.py <PR> <approved head>`. An incomplete discussion read instead
+exits with status 2; resolve the reported API error and retry. Check events and reactions alone
+do not stop the wait, and an existing queue entry is only reported. This check neither interprets
+hold prose nor reads linked issues. GitHub checks the expected head atomically, but provides no
+equivalent discussion lease, so a change after the final read can still race with enqueue.
+
 [complexitylib]: ../sources.md#complexitylib

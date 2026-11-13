@@ -22,6 +22,7 @@ more than `2 ^ 512 / 2` lines.
 
 namespace CslibFrontierTests.MonotoneCliqueClosure
 
+open Cslib.BitString.Graph
 open Cslib Cslib.Circuits Cslib.Circuits.Clique Cslib.Logic.PL
 
 /-- Two singletons form an implication-minimal family for `3`. -/

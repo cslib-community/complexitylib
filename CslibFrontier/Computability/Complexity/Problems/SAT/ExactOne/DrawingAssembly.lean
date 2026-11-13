@@ -44,12 +44,12 @@ def positiveFormulaDrawing (φ : CNF ℕ) (d : Graph.OrthogonalDrawing) :
   variablePoint := positiveVariablePoint φ d
   clausePoints := (positivePlacedClauses φ d).map fun pc => pc.point
   incidenceRoute := fun o =>
-    ((positivePlacedClauses φ d).getD o.1 ([], (0, 0), [])).routes.getD o.2.1 []
+    ((positivePlacedClauses φ d).getD o.clause ([], (0, 0), [])).routes.getD o.pos []
 
 private theorem placed_occurrence_routes (pcs : List PositivePlacedClause)
     (hc : ∀ pc ∈ pcs, pc.routes.length = pc.clause.length) :
     ((Cslib.Logic.PL.occurrences (pcs.map Prod.fst)).map fun o =>
-      (pcs.getD o.1 ([], (0, 0), [])).routes.getD o.2.1 []) =
+      (pcs.getD o.clause ([], (0, 0), [])).routes.getD o.pos []) =
         pcs.flatMap fun pc => pc.routes := by
   rw [Cslib.Logic.PL.occurrences, List.zipIdx_map]
   simp only [List.flatMap_map, List.map_flatMap, List.map_map, Function.comp_def]
@@ -75,7 +75,8 @@ theorem positiveFormulaDrawing_drawing (φ : CNF ℕ) (d : Graph.OrthogonalDrawi
   apply Prod.ext
   · rfl
   · change ((Cslib.Logic.PL.occurrences (CNF.PositiveExactOneCompile.rawFormula φ)).map
-      fun o => ((positivePlacedClauses φ d).getD o.1 ([], (0, 0), [])).routes.getD o.2.1 []) = _
+      fun o =>
+        ((positivePlacedClauses φ d).getD o.clause ([], (0, 0), [])).routes.getD o.pos []) = _
     rw [← positivePlacedClauses_formula φ d]
     exact placed_occurrence_routes _ (fun pc hpc => positivePlacedClauses_route_count φ d hpc)
 
@@ -84,32 +85,32 @@ theorem positiveFormulaDrawing_occurrence (φ : CNF ℕ) (d : Graph.OrthogonalDr
     {o : Occurrence (CNF.PositiveExactOneCompile.Variable ℕ)}
     (ho : o ∈ Cslib.Logic.PL.occurrences (CNF.PositiveExactOneCompile.rawFormula φ)) :
     ∃ pc ∈ positivePlacedClauses φ d,
-      pc.point = (positiveFormulaDrawing φ d).clausePoints.getD o.1 (0, 0) ∧
-        (o.2.2, (positiveFormulaDrawing φ d).incidenceRoute o) ∈ pc.clause.zip pc.routes := by
+      pc.point = (positiveFormulaDrawing φ d).clausePoints.getD o.clause (0, 0) ∧
+        (o.lit, (positiveFormulaDrawing φ d).incidenceRoute o) ∈ pc.clause.zip pc.routes := by
   obtain ⟨hi, hj, hl⟩ := Cslib.Logic.PL.mem_occurrences.mp ho
-  have hip : o.1 < (positivePlacedClauses φ d).length := by
+  have hip : o.clause < (positivePlacedClauses φ d).length := by
     have h := congrArg List.length (positivePlacedClauses_formula φ d)
     simp only [List.length_map] at h
     omega
-  let pc := (positivePlacedClauses φ d)[o.1]
+  let pc := (positivePlacedClauses φ d)[o.clause]
   have hpc : pc ∈ positivePlacedClauses φ d := List.getElem_mem hip
-  have hec : pc.clause = (CNF.PositiveExactOneCompile.rawFormula φ)[o.1] := by
-    have h := congrArg (fun cs => cs.getD o.1 []) (positivePlacedClauses_formula φ d)
-    simpa only [List.getD_eq_getElem _ _ (show o.1 <
+  have hec : pc.clause = (CNF.PositiveExactOneCompile.rawFormula φ)[o.clause] := by
+    have h := congrArg (fun cs => cs.getD o.clause []) (positivePlacedClauses_formula φ d)
+    simpa only [List.getD_eq_getElem _ _ (show o.clause <
       ((positivePlacedClauses φ d).map Prod.fst).length by simpa using hip), List.getElem_map,
       List.getD_eq_getElem _ _ hi] using h
-  have hjp : o.2.1 < pc.clause.length := by simpa only [hec] using hj
-  have hjr : o.2.1 < pc.routes.length := by
+  have hjp : o.pos < pc.clause.length := by simpa only [hec] using hj
+  have hjr : o.pos < pc.routes.length := by
     rw [positivePlacedClauses_route_count φ d hpc]; exact hjp
   refine ⟨pc, hpc, ?_, ?_⟩
-  · change pc.point = ((positivePlacedClauses φ d).map (fun pc => pc.point)).getD o.1 (0, 0)
+  · change pc.point = ((positivePlacedClauses φ d).map (fun pc => pc.point)).getD o.clause (0, 0)
     rw [List.getD_eq_getElem _ _ (by simpa using hip), List.getElem_map]
-  · have hr : (positiveFormulaDrawing φ d).incidenceRoute o = pc.routes[o.2.1] := by
-      change ((positivePlacedClauses φ d).getD o.1 ([], (0, 0), [])).routes.getD o.2.1 [] = _
+  · have hr : (positiveFormulaDrawing φ d).incidenceRoute o = pc.routes[o.pos] := by
+      change ((positivePlacedClauses φ d).getD o.clause ([], (0, 0), [])).routes.getD o.pos [] = _
       rw [List.getD_eq_getElem _ _ hip, List.getD_eq_getElem _ _ hjr]
-    have hli : o.2.2 = pc.clause[o.2.1] := by grind
+    have hli : o.lit = pc.clause[o.pos] := by grind
     rw [hr, hli]
-    have hz := List.getElem_mem (l := pc.clause.zip pc.routes) (n := o.2.1)
+    have hz := List.getElem_mem (l := pc.clause.zip pc.routes) (n := o.pos)
       (by simp only [List.length_zip]; omega)
     rw [List.getElem_zip] at hz
     exact hz
@@ -172,9 +173,9 @@ theorem positiveFormulaDrawing_incidence (φ : CNF ℕ) (d : Graph.OrthogonalDra
     ∃ (i : ℕ) (hi : i < φ.length) (e : LocalIncidence),
       e ∈ (clauseGeometry φ d i φ[i]).incidenceRoutes ∧
         (positiveFormulaDrawing φ d).incidenceRoute o = positiveIncidenceRoute φ d i φ[i] e ∧
-        (positiveFormulaDrawing φ d).clausePoints.getD o.1 (0, 0) =
+        (positiveFormulaDrawing φ d).clausePoints.getD o.clause (0, 0) =
           positiveBoxOrigin φ d i + (clauseGeometry φ d i φ[i]).clausePosition e.clauseIndex ∧
-        o.2.2.1 = profileVariableMap i (CNF.PositiveExactOneCompile.signedOffset φ i) φ[i]
+        o.lit.1 = profileVariableMap i (CNF.PositiveExactOneCompile.signedOffset φ i) φ[i]
           ((profileVariables (clauseProfile φ[i])).getD e.variableIndex (.inl (.inl 0))) := by
   obtain ⟨pc, hpc, hp, hlr⟩ := positiveFormulaDrawing_occurrence φ d ho
   obtain ⟨⟨c, i⟩, hci, hpc⟩ := List.mem_flatMap.mp hpc

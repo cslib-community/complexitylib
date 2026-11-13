@@ -293,9 +293,7 @@ theorem eval_hybridDEMGame (E : SymmetricCipher)
     (decaps : ℕ → List Bool → List Bool → Option (List Bool))
     (ctBound : ℕ → ℕ) (decBound : ℕ → List Bool → ℕ)
     (adversary : WordCCA2Adversary) (bit : Bool) (n : ℕ)
-    (hct : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n → ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support,
-        ct.length ≤ ctBound n)
+    (hct : E.CiphertextLengthLE n (ctBound n))
     (hdec : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
       ∀ ct, (encOption encBits (E.decrypt n k ct)).length ≤ decBound n ct) :
     ProbComp.eval (hybridDEMGame E keyGen encaps decaps adversary bit n) =

@@ -4,7 +4,7 @@ cslib-frontier represents propositional syntax as concrete finite data and disti
 
 ## CNF, CSP and quantified formulas
 
-[CNF](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/CNF.lean#L67) is a list of clauses, each a list of signed variables. Ordering and repeated occurrences are retained. Several useful sizes coexist: clause count, literal-occurrence count, distinct-variable support, maximum clause width and serialized bit length. In a fixed-width SAT theorem the stated width convention must be checked; in resolution, width is explicitly the number of distinct literals.
+[CNF](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Logics/Propositional/CNF.lean#L67) is a list of clauses, each a list of signed variables. Ordering and repeated occurrences are retained. Several useful sizes coexist: clause count, literal-occurrence count, distinct-variable support, maximum clause width and serialized bit length. In a fixed-width SAT theorem the stated width convention must be checked; in resolution, width is explicitly the number of distinct literals. A further measure, `CNF.connectiveCount`, counts the binary AND and OR symbols of the written formula (`k - 1` ORs per clause of `k` literals, `m - 1` ANDs between `m` clauses); [CNF/TruthTable.lean](../../CslibFrontier/Logics/Propositional/CNF/TruthTable.lean) proves that the truth-table formula `CNF.ofTruthTable f` of any `f : (Fin ℓ → Bool) → Bool` computes it with at most `ℓ * 2 ^ ℓ` such symbols and at most `ℓ * 2 ^ ℓ` literal occurrences (Arora–Barak draft, Claim 2.14).
 
 To certify a program that evaluates a formula, import
 `CslibFrontier.Logics.Propositional.CNF.PolyTime`. Its `fun_prop` rules
@@ -392,10 +392,15 @@ From the repository root, import
 The namespace is `Cslib.Complexity.Graph.RotationRecognition`. The
 [checked guide clients](../../guide/CslibFrontierGuide/NPCompleteness.lean#frozen-xor-queries-and-checked-recovery)
 show the ordinary imports, concrete validation/failure cases and success contracts.
-The [regression suite](../../CslibFrontierTests/RotationRecognition.lean) additionally exercises
-loops, parallel edges, repeated scopes, nullaries and large binary labels; run
-`scripts/build.sh CslibFrontierTests.RotationRecognition` to check it. Successful compilation
-checks actual solver/recovery evaluations and theorem applications, without proving completeness.
+The [regression suite](../../CslibFrontierTests/RotationRecognition.lean) checks small successful
+recoveries, raw-loop order acceptance and rejection, repeated scopes, nullaries, malformed inputs
+and relation-metadata insensitivity. The [CSP certificate cases](../../CslibFrontierTests/CSPRotationCertificate.lean)
+cover large variable names and supplied-table checking. Run
+`scripts/build.sh CslibFrontierTests.RotationRecognition` to check the recovery examples.
+These kernel-checked evaluations and theorem applications witness particular outcomes; they
+do not prove completeness or check generated code. The
+[profiling and coverage record](https://github.com/cslib-community/cslib-frontier/issues/4972#issuecomment-6845165353)
+explains the choice of small fixtures.
 
 `FixedRotationInput` pairs the existing listed graph with optional complete clockwise dart
 words. `Valid` requires declared vertices exactly `List.range n`, endpoints below `n`, exactly
