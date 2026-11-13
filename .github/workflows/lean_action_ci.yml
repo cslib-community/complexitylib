@@ -265,7 +265,7 @@ jobs:
           path: ./.lake
           key: ${{ steps.lake-cache.outputs.cache-primary-key }}
       # Source hygiene that needs the build outputs: each module's count of public statements that
-      # mention tidy computability (#456) must equal its baseline; proofs may use it. See
+      # mention tidy computability (#862) must equal its baseline; proofs may use it. See
       # scripts/check_tidy_surface.py. Its tests on a compiled module need Lean, so the Python
       # tests at the start skip them; they run here.
       - name: "Tidy statement ratchet"
