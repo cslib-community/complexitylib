@@ -136,6 +136,8 @@ import CslibFrontier.Computability.QueryComplexity.Quantum.NayakWuConsequences
 import CslibFrontier.Computability.QueryComplexity.Quantum.PermutationInversion
 import CslibFrontier.Computability.QueryComplexity.Quantum.SpectralAdversary
 import CslibFrontier.Computability.QueryComplexity.Quantum.WeightedAdversary
+import CslibFrontier.Crypto.Computational.Encryption.CTRMode
+import CslibFrontier.Crypto.Computational.Encryption.OFBMode
 import CslibFrontier.Crypto.Computational.GoldreichLevin.HardCore
 import CslibFrontier.Crypto.Computational.InaccessibleEntropy.TargetCollision
 import CslibFrontier.Crypto.Computational.MLDSA.KeyOnly
@@ -4999,6 +5001,41 @@ register_result "mldsa-key-only-forgery" where
     term is not routed through the uniform-secret DecisionModuleLWE. Chosen-message security \
     (signing-oracle simulation in the random-oracle model) and asymptotic packaging are not \
     formalized; no running time is charged."
+
+register_result "ctr-mode-cpa" where
+  title := "CTR mode is CPA-secure for a pseudorandom function"
+  topic := "cryptography"
+  sources := [
+    { paper := KatzLindell2020, theorem := "Theorem 3.33", locator := "Section 3.6.3, p. 93" }
+  ]
+  theorems := [
+    Cslib.Crypto.advantage_ctrCpaGame_le,
+    Cslib.Crypto.advantage_ctrCpaGame_ctrModCounter_le
+  ]
+  scope := "Left-or-right multiple-encryption CPA (Definition 3.22) for CTR mode on n-bit blocks, \
+    with a finite key set and a keyed function F : Key → BitString n → BitString n, against \
+    block-mode oracle adversaries asking at most K blocks in total and at most ℓ per query. For \
+    any counter schedule that is distinct within a query and injective in the IV at each \
+    offset, and in particular for the modular counter iv + i mod 2^n when ℓ ≤ 2^n, the \
+    advantage is at most the PRF advantages of the two explicit reductions plus 2 K² / 2^n. \
+    Concrete bound; no running time is charged and no asymptotic form is stated."
+
+register_result "ofb-mode-cpa" where
+  title := "OFB mode is CPA-secure for a pseudorandom function"
+  topic := "cryptography"
+  sources := [
+    { paper := KatzLindell2020, theorem := "unnumbered statement that OFB mode is CPA-secure",
+      locator := "Section 3.6.3, p. 92" }
+  ]
+  theorems := [
+    Cslib.Crypto.advantage_ofbCpaGame_le
+  ]
+  scope := "Left-or-right multiple-encryption CPA (Definition 3.22) for OFB mode on n-bit blocks, \
+    with a finite key set and a keyed function F : Key → BitString n → BitString n, against \
+    block-mode oracle adversaries asking at most K blocks in total and at most ℓ per query: the \
+    advantage is at most the PRF advantages of the two explicit reductions plus \
+    2 K (K + ℓ) / 2^n. The source states OFB security without a numbered theorem or proof; the \
+    proof follows its Theorem 3.33 template. Concrete bound; no running time is charged."
 
 register_result "clique-eth-lower-bound" where
   title := "No f(k) n^o(k) or FPT algorithm for Clique under ETH"
