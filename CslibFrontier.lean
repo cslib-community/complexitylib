@@ -6600,6 +6600,7 @@ public import CslibFrontier.MachineLearning.PACLearning.Compression.Basic
 public import CslibFrontier.MachineLearning.PACLearning.Compression.MistakeBound
 public import CslibFrontier.MachineLearning.PACLearning.Compression.Order
 public import CslibFrontier.MachineLearning.PACLearning.DoubleSample
+public import CslibFrontier.MachineLearning.PACLearning.DualVCDimension
 public import CslibFrontier.MachineLearning.PACLearning.ERM
 public import CslibFrontier.MachineLearning.PACLearning.EpsilonNet
 public import CslibFrontier.MachineLearning.PACLearning.FiniteClass
