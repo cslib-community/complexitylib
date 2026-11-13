@@ -26,8 +26,8 @@ one-hot garbling.
 `CCR.oracle H Δ Δ' q` is that oracle, with the input offset `Δ : L` and the output offset
 `Δ' : M` given separately, and `CCR.advantage H δ δ' A` is the advantage of `A` in telling
 `CCR.oracle H (δ k) (δ' k)` under a uniform key `k` from a uniform random function, in the finite
-PRF game `Cslib.Crypto.PRF.advantage`. Every Boolean garbling scheme of this library is an
-instance:
+PRF game `Cslib.Crypto.PRF.advantage`. Three Boolean garbling schemes of this library rest on it
+(the point-and-permute scheme of `Cslib.Crypto.Garbling.Privacy` rests on PRF security instead):
 
 * Free-XOR (`Cslib.Crypto.Garbling.FreeXOR`): the hash reads only a key `x : K`, labels are
   `K × Bool`, and the offsets are `δ` and `(δ, true)`.
@@ -37,9 +37,9 @@ instance:
   offsets are `δ k` for a key map `δ`, which can fix the colour bit of the offset.
 
 The input and output offsets live in different groups only for Free-XOR, whose hash ignores the
-colour bit. Reading that hash on whole labels instead would make the assumption false: the queries
-`((x, false), t, b)` and `((x, true), t, b)` would get answers that differ by exactly the output
-offset's colour.
+colour bit. Reading that hash on whole labels instead would make the assumption false: the distinct
+queries `((x, false), t, b)` and `((x, true), t, b)` would get equal answers, which a uniform random
+function rarely gives.
 
 Heath's arithmetic garbling [Heath2024] uses an arithmetic variant (`CCR.Arithmetic`): labels lie
 in an `R`-module, the shift is a scalar, and the ideal oracle answers every query with a fresh
@@ -154,15 +154,13 @@ structure Query (L R : Type) where
 
 /-- An arithmetic CCR adversary: a test with private coins and oracle access to queries
 `(k, t, s)`. -/
-abbrev Adversary (R L : Type) := ProbOracleComp (fun _ : Query L R => L) Bool
+abbrev Adversary (R L : Type) := PRF.Adversary (Query L R) L
 
-/-- The keyed experiment: sample a uniform offset of colour `1` and answer with `oracle`. -/
+/-- The keyed experiment: the PRF real game keyed by a uniform offset of colour `1`, answering
+with `oracle`. -/
 @[expose] noncomputable def realGame (H : L → ℕ → L) (col : L →+ ZMod 2) [Fintype L]
     [Nonempty {Δ : L // col Δ = 1}] (adversary : Adversary R L) : Game :=
-  ProbComp.eval do
-    let Δ ← ProbComp.uniform {Δ : L // col Δ = 1}
-    OracleComp.interpret
-      (OracleComp.sumHandler ProbComp.unifFin fun q => pure (oracle H Δ.1 q)) adversary
+  PRF.realGame (fun Δ : {Δ : L // col Δ = 1} => oracle H Δ.1) adversary
 
 /-- The ideal experiment: answer every query with a fresh uniform label. -/
 @[expose] noncomputable def idealGame [Fintype L] (adversary : Adversary R L) : Game :=
