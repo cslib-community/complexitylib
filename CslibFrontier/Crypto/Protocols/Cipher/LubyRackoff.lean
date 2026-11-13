@@ -23,6 +23,7 @@ import CslibFrontier.Probability.BitString
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Uniform
+import CslibFrontier.Probability.PMF.UniformPoint
 import CslibFrontier.Probability.Uniform
 import CslibFrontier.Tactic.GameHop
 import CslibFrontier.Tactic.PMFSwap
@@ -1629,16 +1630,9 @@ theorem eval_independentTableStrongGame_feistel3CCAAttack (l₀ l₁ r₀ : G) :
           rfl
       _ = (PMF.uniformOfFintype G).map (fun y => decide (y = -vw₁.1 + r₀)) := by
           rw [Probability.PMF.uniformOfFintype_map_add_left]
-  have hprob (t : G) :
-      ((PMF.uniformOfFintype G).map (fun y => decide (y = t))) true =
-        (Fintype.card G : ℝ≥0∞)⁻¹ := by
-    rw [← PMF.toOuterMeasure_apply_singleton, PMF.toOuterMeasure_map_apply]
-    have hpre : (fun y : G => decide (y = t)) ⁻¹' {true} = {t} := by
-      ext y
-      simp
-    rw [hpre, PMF.toOuterMeasure_apply_singleton, PMF.uniformOfFintype_apply]
   rw [PMF.bind_apply]
-  simp only [hinner, hprob, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
+  simp only [hinner, Probability.PMF.map_decide_eq_apply_true, PMF.uniformOfFintype_apply (α := G),
+    ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
 
 /-- The 3-query CCA attack `feistel3CCAAttack` distinguishes any 3-round Feistel network from
 the independent-table game `independentTableStrongGame` with exact advantage `1 - |G|⁻¹`. -/
@@ -1664,11 +1658,7 @@ private theorem uniformOfFintype_prod_map_decide_add_snd_true (a t : G) :
       _ = (PMF.uniformOfFintype G).map (fun y => decide (y = t)) := by
           rw [Probability.PMF.uniformOfFintype_prod_map_snd,
             Probability.PMF.uniformOfFintype_map_add_left]
-  rw [hmap, ← PMF.toOuterMeasure_apply_singleton, PMF.toOuterMeasure_map_apply]
-  have hpre : (fun y : G => decide (y = t)) ⁻¹' {true} = {t} := by
-    ext y
-    simp
-  rw [hpre, PMF.toOuterMeasure_apply_singleton, PMF.uniformOfFintype_apply]
+  rw [hmap, Probability.PMF.map_decide_eq_apply_true, PMF.uniformOfFintype_apply]
 
 /-- When `l₀ ≠ l₁`, the true bidirectional random-permutation game `idealStrongGame` accepts
 `feistel3CCAAttack l₀ l₁ r₀` with probability at most `|G|⁻¹ + 4 * |G × G|⁻¹`. -/
