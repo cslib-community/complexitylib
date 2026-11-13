@@ -1833,6 +1833,11 @@ Jacob Ziv and Abraham Lempel. "A Universal Algorithm for Sequential Data Compres
 
 Jacob Ziv and Abraham Lempel. "Compression of Individual Sequences via Variable-Rate Coding." *IEEE Transactions on Information Theory* 24(5), 530–536, 1978. https://doi.org/10.1109/TIT.1978.1055934 . Bibliographic data from the DOI record and secondary summaries. The incremental parsing rule (each phrase is the shortest new prefix) is attributed through [Cover and Thomas](#coverthomas06); the paper's text was not inspected in this pass.
 
+<a id="zpzs24"></a>
+## zpzs24
+
+Mingxun Zhou, Andrew Park, Wenting Zheng and Elaine Shi. "Piano: Extremely Simple, Single-Server PIR with Sublinear Server Computation." *2024 IEEE Symposium on Security and Privacy (SP)*, 4296–4314, 2024. https://doi.org/10.1109/SP54263.2024.00055 ; full version (author order Mingxun Zhou, Andrew Park, Elaine Shi and Wenting Zheng): Cryptology ePrint Archive, Paper 2023/452, https://eprint.iacr.org/2023/452.pdf . Checked against the full ePrint version on 2026-11-12: Section 2 and Section 3.1–3.2 (Figure 1 on p. 6, Definition 3.1 on pp. 7–8, Theorems 3.2–3.4 on pp. 8–9), Appendix A (pp. 20–21, Figure 3 compacted query offsets and `√n`-parity server replies), and Appendix C.1–C.2 (pp. 24–26, Theorem C.1 and Lemma C.2). The library formalizes deterministic conditional correctness for the Figure 1 `HintTable` client (`CanAnswerSeq`, with replacement and backup entries sharing one per-chunk counter `used`), exact perfect privacy in the ideal-random-set model for the separate unbounded-backup server-view hybrid `pianoHybridScheme` (which sets replacement and backup parity bits to `false` and is not a correct PIR scheme), and the exact bit-alphabet online communication counts; the PRF reduction, full-client privacy, the Theorem 3.3 failure-probability bound, pipelining, the Appendix A server algorithm, and storage/runtime bounds are not formalized.
+
 <a id="zre15"></a>
 ## zre15
 
