@@ -14,6 +14,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
+import CslibFrontier.Computability.Probabilistic.PPT.Extension
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Tactic.GameHop
@@ -37,7 +38,7 @@ and `F.add`.
 We prove IND-CPA security under DDH in the following settings:
 1. **Shared typed-message ElGamal reduction** (`elGamalMsgCPAGameOn`,
    `elGamalMsgToDDHDistinguisher`, `advantage_elGamalMsgCPAGameOn_le`,
-   `isPPTOn_elGamalMsgToDDHDistinguisher`, `DDH.negligible_elGamalMsgCPAGameOn`). As in
+   `isPPT_elGamalMsgToDDHDistinguisher`, `DDH.negligible_elGamalMsgCPAGameOn`). As in
    `Encryption.gameOn`, a challenge-pair admissibility predicate
    `valid : ℕ → List Bool → Msg → Msg → Bool` sees the security parameter and the public key, and
    an inadmissible pair makes the game output `false` in both experiments. The reduction needs
@@ -64,6 +65,10 @@ We prove IND-CPA security under DDH in the following settings:
    `H (d, encode (γ • g))` from a uniform `msgLen n`-bit key). The ciphertext length does not
    depend on the message, and `hashedElGamalCPAGame` admits every challenge pair, which is
    stronger than Attack Game 11.1's equal-length rule.
+
+The reductions are typed distinguishers (`DDHDistinguisher`, `KDFDistinguisher`): they receive
+group elements and encode them only where they build the public key and ciphertext words of the
+IND-CPA adversary, whose games keep their word encodings.
 
 ## Limitations
 
@@ -107,19 +112,29 @@ encryption given randomness (`encodeElGamalEncrypt`, `encodeHashedElGamalEncrypt
   `Cslib.Crypto.PrimeOrderGroupFamily.encodeHashedElGamalEncrypt`,
   `Cslib.Crypto.PrimeOrderGroupFamily.decodeHashedElGamal`: algebraic and word-level Hashed ElGamal
   encryption and decryption ([BonehShoup2023], Section 11.5, pp. 445–446, Remark 11.1).
-* `Cslib.Crypto.PrimeOrderGroupFamily.hashedElGamalCPAGame`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.hashedElGamalIdealDDHGame`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.hashedElGamalUniformPadGame`,
+* `Cslib.Crypto.PrimeOrderGroupFamily.KDFDistinguisher`,
   `Cslib.Crypto.PrimeOrderGroupFamily.kdfRealGame`,
   `Cslib.Crypto.PrimeOrderGroupFamily.kdfIdealGame`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.SecureKDF`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.hashedElGamalToDDHDistinguisher`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.hashedElGamalToKDFDistinguisher`: Hashed ElGamal IND-CPA
-  experiments, hybrids, and reductions ([BonehShoup2023], Section 11.5.2, Attack Game 11.3,
-  Definition 11.5, and Theorem 11.5, pp. 448–451).
+  `Cslib.Crypto.PrimeOrderGroupFamily.KDFInput`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.encKDFInput`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.KDFDistinguisher.IsPPT`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.KDFDistinguisher.IsPPT.comp`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.SecureKDF`: typed key-derivation distinguishers, the
+  key-derivation experiments, their input record and its encoding, their uniform strict PPT
+  predicate and its composition rule, and secure key derivation ([BonehShoup2023], Section 11.5.2,
+  Attack Game 11.3 and Definition 11.5, pp. 448–449).
+* `Cslib.Crypto.PrimeOrderGroupFamily.kdfToDDHDistinguisher`: a key-derivation distinguisher run
+  on the key `H (d, encode w)` derived from a DDH candidate `w`; its random DDH game is the real
+  key-derivation game.
+* `Cslib.Crypto.PrimeOrderGroupFamily.hashedElGamalCPAGame`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.hashedElGamalToKDFDistinguisher`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.hashedElGamalToDDHDistinguisher`: Hashed ElGamal IND-CPA
+  experiment and reductions ([BonehShoup2023], Section 11.5.2, Theorem 11.5, pp. 449–451).
 
 ## Main results
 
+* `Cslib.Crypto.PrimeOrderGroupFamily.secureKDF_iff_encoded`: `SecureKDF` is the word-level
+  key-derivation assumption.
 * `Cslib.Crypto.PrimeOrderGroupFamily.elGamalDecrypt_elGamalEncrypt`,
   `Cslib.Crypto.PrimeOrderGroupFamily.encodeElGamalPublicKey_eq_encode`,
   `Cslib.Crypto.PrimeOrderGroupFamily.encodeElGamalEncrypt_encode`,
@@ -131,11 +146,11 @@ encryption given randomness (`encodeElGamalEncrypt`, `encodeHashedElGamalEncrypt
   `Cslib.Crypto.PrimeOrderGroupFamily.computableInPolyTime_decodeElGamal`: polynomial-time
   certificates for honest ElGamal operations.
 * `Cslib.Crypto.PrimeOrderGroupFamily.advantage_elGamalMsgCPAGameOn_le`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_elGamalMsgToDDHDistinguisher`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.isPPT_elGamalMsgToDDHDistinguisher`,
   `Cslib.Crypto.PrimeOrderGroupFamily.DDH.negligible_elGamalMsgCPAGameOn`: shared typed-message
   ElGamal IND-CPA reduction to DDH.
 * `Cslib.Crypto.PrimeOrderGroupFamily.advantage_elGamalCPAGame_le`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_elGamalToDDHDistinguisher`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.isPPT_elGamalToDDHDistinguisher`,
   `Cslib.Crypto.PrimeOrderGroupFamily.DDH.elGamalINDCPA`: ElGamal IND-CPA security for bit
   messages under DDH ([BonehShoup2023], Exercise 11.5(a), p. 459).
 * `Cslib.Crypto.PrimeOrderGroupFamily.advantage_elGamalGroupCPAGameOn_le`,
@@ -144,9 +159,10 @@ encryption given randomness (`encodeElGamalEncrypt`, `encodeHashedElGamalEncrypt
 * `Cslib.Crypto.PrimeOrderGroupFamily.hashedElGamalDecrypt_hashedElGamalEncrypt`,
   `Cslib.Crypto.PrimeOrderGroupFamily.computableInPolyTime_encodeHashedElGamalEncrypt`,
   `Cslib.Crypto.PrimeOrderGroupFamily.computableInPolyTime_decodeHashedElGamal`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.ddhRandomGame_kdfToDDHDistinguisher`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.isPPT_kdfToDDHDistinguisher`,
   `Cslib.Crypto.PrimeOrderGroupFamily.advantage_hashedElGamalCPAGame_le`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_hashedElGamalToDDHDistinguisher`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_hashedElGamalToKDFDistinguisher`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.isPPT_hashedElGamalToKDFDistinguisher`,
   `Cslib.Crypto.PrimeOrderGroupFamily.DDH.negligible_hashedElGamalCPAGame`: Hashed ElGamal
   correctness, polynomial-time certificates, and IND-CPA security under DDH and `SecureKDF`
   ([BonehShoup2023], Section 11.5.2, Theorem 11.5, pp. 449–451).
@@ -252,29 +268,6 @@ abbrev decEph (input : F.Desc × ℕ × List Bool × List Bool) : List Bool :=
 /-- Encoded body `c` of a 4-tuple decryption input `(d, a, v, c)`. -/
 abbrev decBody (input : F.Desc × ℕ × List Bool × List Bool) : List Bool :=
   (F.decCt input).2
-
-/-- Group-element payload `(u, v, w)` of a 4-tuple DDH/KDF distinguisher input `(d, u, v, w)`. -/
-abbrev ddhPayload (input : F.Desc × List Bool × List Bool × List Bool) :
-    List Bool × List Bool × List Bool :=
-  input.2
-
-/-- Public-key component `u` of a 4-tuple DDH/KDF distinguisher input `(d, u, v, w)`. -/
-abbrev ddhPk (input : F.Desc × List Bool × List Bool × List Bool) : List Bool :=
-  (F.ddhPayload input).1
-
-/-- Challenge pair `(v, w)` of a 4-tuple DDH/KDF distinguisher input `(d, u, v, w)`. -/
-abbrev ddhChallenge (input : F.Desc × List Bool × List Bool × List Bool) :
-    List Bool × List Bool :=
-  (F.ddhPayload input).2
-
-/-- Ephemeral component `v` of a 4-tuple DDH/KDF distinguisher input `(d, u, v, w)`. -/
-abbrev ddhEph (input : F.Desc × List Bool × List Bool × List Bool) : List Bool :=
-  (F.ddhChallenge input).1
-
-/-- Challenge shared component `w` (or `pad`/`k`) of a 4-tuple DDH/KDF distinguisher input
-`(d, u, v, w)`. -/
-abbrev ddhShared (input : F.Desc × List Bool × List Bool × List Bool) : List Bool :=
-  (F.ddhChallenge input).2
 
 /-- Word-level ElGamal encryption: given `(d, encode u, encode m, b)`, compute
 `(encode (b • g), encode (b • u + m))`. -/
@@ -385,22 +378,22 @@ noncomputable def elGamalMsgCPAGameOn {Msg : Type} (valid : ℕ → List Bool �
     pure false
 
 /-- The DDH distinguisher constructed from a typed-message ElGamal IND-CPA adversary
-([BonehShoup2023], Exercise 11.5(a), p. 459): given `(d, u, v, w)`, pass `pk = (d, u)` as the
-public key; if `valid n pk m₀ m₁` holds, mask the selected encoded message `encodeMsg d m` with `w`
-using `F.add` and return the adversary's guess, and otherwise return `false`. -/
+([BonehShoup2023], Exercise 11.5(a), p. 459): given group parameters `d` and elements `u`, `v`,
+`w`, pass the encoded public key `pk = (d, encode u)` to the adversary; if `valid n pk m₀ m₁`
+holds, mask the selected encoded message `encodeMsg d m` with `encode w` using `F.add`, send the
+ciphertext `(encode v, _)` and return the adversary's guess, and otherwise return `false`. -/
 def elGamalMsgToDDHDistinguisher {Msg : Type} (valid : ℕ → List Bool → Msg → Msg → Bool)
     (encodeMsg : F.Desc → Msg → List Bool)
-    (adversary : Encryption.AdversaryOf Msg) (bit : Bool) (n : ℕ)
-    (input : F.Desc × List Bool × List Bool × List Bool) : ProbComp Bool := do
-  let pk := encPair F.encDesc encBits (input.1, F.ddhPk input)
-  let choice ← adversary.choose n pk
-  if valid n pk (Encryption.ChoiceOut.msg₀ choice) (Encryption.ChoiceOut.msg₁ choice) then
-    let m := if bit then Encryption.ChoiceOut.msg₁ choice else Encryption.ChoiceOut.msg₀ choice
-    let ct := encPair encBits encBits
-      (F.ddhEph input, F.add (input.1, F.ddhShared input, encodeMsg input.1 m))
-    adversary.guess n choice.2 ct
-  else
-    return false
+    (adversary : Encryption.AdversaryOf Msg) (bit : Bool) : F.DDHDistinguisher :=
+  fun n d u v w => do
+    let pk := encPair F.encDesc encBits (d, F.encode d u)
+    let choice ← adversary.choose n pk
+    if valid n pk (Encryption.ChoiceOut.msg₀ choice) (Encryption.ChoiceOut.msg₁ choice) then
+      let m := if bit then Encryption.ChoiceOut.msg₁ choice else Encryption.ChoiceOut.msg₀ choice
+      let ct := encPair encBits encBits (F.encode d v, F.add (d, F.encode d w, encodeMsg d m))
+      adversary.guess n choice.2 ct
+    else
+      return false
 
 /-- In the real DDH game, `elGamalMsgToDDHDistinguisher` simulates `elGamalMsgCPAGameOn`
 exactly. -/
@@ -409,9 +402,9 @@ theorem ddhRealGame_elGamalMsgToDDHDistinguisher {Msg : Type}
     (setup : ℕ → PMF F.Desc) (adversary : Encryption.AdversaryOf Msg) (bit : Bool) (n : ℕ) :
     F.ddhRealGame setup (F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary bit) n =
       F.elGamalMsgCPAGameOn valid encodeMsg setup adversary bit n := by
-  simp only [ddhRealGame, elGamalMsgToDDHDistinguisher, elGamalMsgCPAGameOn,
-    ddhPk, ProbComp.eval_bind,
-    PMF.monad_bind_eq_bind, apply_ite ProbComp.eval, ProbComp.eval_pure, PMF.monad_pure_eq_pure]
+  simp only [ddhRealGame, eval_ddhRealExperiment, elGamalMsgToDDHDistinguisher,
+    elGamalMsgCPAGameOn, ProbComp.eval_bind, PMF.monad_bind_eq_bind, apply_ite ProbComp.eval,
+    ProbComp.eval_pure, PMF.monad_pure_eq_pure]
   pmf_swap with d α choice
   split_ifs <;> first | rfl | exact PMF.bind_const _ _
 
@@ -424,21 +417,19 @@ def AdmitsGroupElements {Msg : Type} (encodeMsg : F.Desc → Msg → List Bool)
     (∃ x₀ : F.Carrier d, encodeMsg d m₀ = F.encode d x₀) ∧
       (∃ x₁ : F.Carrier d, encodeMsg d m₁ = F.encode d x₁)
 
-/-- When `valid` admits only group elements under `encodeMsg`, the uniform element `γ • g` of the
-ideal DDH game perfectly masks both admissible candidate messages, so the experiments for
+/-- When `valid` admits only group elements under `encodeMsg`, the uniform element `c • g` of the
+random DDH game perfectly masks both admissible candidate messages, so the experiments for
 `bit = false` and `bit = true` are identical. -/
-theorem ddhIdealGame_elGamalMsgToDDHDistinguisher_false_eq_true {Msg : Type}
+theorem ddhRandomGame_elGamalMsgToDDHDistinguisher_false_eq_true {Msg : Type}
     (valid : ℕ → List Bool → Msg → Msg → Bool) (encodeMsg : F.Desc → Msg → List Bool)
     (setup : ℕ → PMF F.Desc) (adversary : Encryption.AdversaryOf Msg) (n : ℕ)
     (hsound : F.AdmitsGroupElements encodeMsg valid) :
-    F.ddhIdealGame setup (F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary false) n =
-      F.ddhIdealGame setup (F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary true) n := by
-  simp only [ddhIdealGame, elGamalMsgToDDHDistinguisher,
-    ddhPk, ddhEph, ddhShared, Encryption.ChoiceOut.msg₀,
-    Encryption.ChoiceOut.msg₁, Encryption.ChoiceOut.msgs,
-    ProbComp.eval_bind,
-    PMF.monad_bind_eq_bind, Bool.false_eq_true, ↓reduceIte, apply_ite ProbComp.eval,
-    ProbComp.eval_pure]
+    F.ddhRandomGame setup (F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary false) n =
+      F.ddhRandomGame setup (F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary true) n := by
+  simp only [ddhRandomGame, eval_ddhRandomExperiment, elGamalMsgToDDHDistinguisher,
+    Encryption.ChoiceOut.msg₀, Encryption.ChoiceOut.msg₁, Encryption.ChoiceOut.msgs,
+    ProbComp.eval_bind, PMF.monad_bind_eq_bind, Bool.false_eq_true, ↓reduceIte,
+    apply_ite ProbComp.eval, ProbComp.eval_pure]
   pmf_swap with d α β choice
   by_cases hv : valid n (encPair F.encDesc encBits (d, F.encode d (α • F.generator d)))
       choice.1.1 choice.1.2 = true
@@ -465,24 +456,24 @@ theorem advantage_elGamalMsgCPAGameOn_le {Msg : Type}
       (F.elGamalMsgCPAGameOn valid encodeMsg setup adversary true n) ≤
       Game.advantage
         (F.ddhRealGame setup (F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary false) n)
-        (F.ddhIdealGame setup (F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary false) n) +
+        (F.ddhRandomGame setup (F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary false) n) +
       Game.advantage
         (F.ddhRealGame setup (F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary true) n)
-        (F.ddhIdealGame setup
+        (F.ddhRandomGame setup
           (F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary true) n) := by
   rw [← F.ddhRealGame_elGamalMsgToDDHDistinguisher valid encodeMsg setup adversary false n,
     ← F.ddhRealGame_elGamalMsgToDDHDistinguisher valid encodeMsg setup adversary true n]
   game_trans
-    [F.ddhIdealGame setup (F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary false) n,
-     F.ddhIdealGame setup (F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary true) n]
+    [F.ddhRandomGame setup (F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary false) n,
+     F.ddhRandomGame setup (F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary true) n]
     using [le_rfl,
-      F.ddhIdealGame_elGamalMsgToDDHDistinguisher_false_eq_true valid encodeMsg setup adversary n
+      F.ddhRandomGame_elGamalMsgToDDHDistinguisher_false_eq_true valid encodeMsg setup adversary n
         hsound,
       le_rfl]
 
 /-- `elGamalMsgToDDHDistinguisher` is uniform strict PPT whenever `valid` and `encodeMsg` are
 computable in polynomial time and `adversary` is uniform strict PPT. -/
-theorem isPPTOn_elGamalMsgToDDHDistinguisher {Msg : Type} {encMsg : Msg ↪ List Bool}
+theorem isPPT_elGamalMsgToDDHDistinguisher {Msg : Type} {encMsg : Msg ↪ List Bool}
     {valid : ℕ → List Bool → Msg → Msg → Bool}
     (hvalid : ComputableInPolyTime
       (fun ⟨n, pk, m₀, m₁⟩ => valid n pk m₀ m₁)
@@ -492,55 +483,56 @@ theorem isPPTOn_elGamalMsgToDDHDistinguisher {Msg : Type} {encMsg : Msg ↪ List
       (encPair F.encDesc encMsg) encBits)
     {adversary : Encryption.AdversaryOf Msg}
     (hA : Encryption.AdversaryOf.IsPPT encMsg adversary) (bit : Bool) :
-    IsPPTOn F.encDDHInput
-      encBool
-      (fun input => F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary bit input.1
-        input.2) := by
-  let encTuple := encPair encBits (encPair encBits encBits)
-  let EIn := encPair encUnary (encPair F.encDesc encTuple)
-  let EChoice := encPair (encPair encMsg encMsg) encBits
-  let E2 := encPair EIn EChoice
-  have hin2 := ComputableInPolyTime.snd encUnary (encPair F.encDesc encTuple)
-  have hd_in := (ComputableInPolyTime.fst F.encDesc encTuple).comp hin2
-  have htuple_in := (ComputableInPolyTime.snd F.encDesc encTuple).comp hin2
-  have hu_in := (ComputableInPolyTime.fst encBits (encPair encBits encBits)).comp htuple_in
-  have hvw_in := (ComputableInPolyTime.snd encBits (encPair encBits encBits)).comp htuple_in
-  have hpk_in := (hd_in.prod hu_in).encoding_comp
-  have hp1 := ComputableInPolyTime.fst EIn EChoice
-  have hp2 := ComputableInPolyTime.snd EIn EChoice
-  have hn := (ComputableInPolyTime.fst encUnary (encPair F.encDesc encTuple)).comp hp1
-  have hd := hd_in.comp hp1
-  have hv := ((ComputableInPolyTime.fst encBits encBits).comp hvw_in).comp hp1
-  have hw := ((ComputableInPolyTime.snd encBits encBits).comp hvw_in).comp hp1
-  have hmsgs := (ComputableInPolyTime.fst (encPair encMsg encMsg) encBits).comp hp2
-  have hst := (ComputableInPolyTime.snd (encPair encMsg encMsg) encBits).comp hp2
-  have hm0 := (ComputableInPolyTime.fst encMsg encMsg).comp hmsgs
-  have hm1 := (ComputableInPolyTime.snd encMsg encMsg).comp hmsgs
+    (F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary bit).IsPPT := by
+  let E := encPair F.encDDHInput (Encryption.encChoiceOut encMsg)
+  have hpk : ComputableInPolyTime
+      (fun x : F.DDHInput => encPair F.encDesc encBits (x.groupParameters, F.encode _ x.leftPublic))
+      F.encDDHInput encBits :=
+    ComputableInPolyTime.encoding_comp (by fun_prop)
+  have hn : ComputableInPolyTime (fun p : F.DDHInput × Encryption.ChoiceOut Msg => p.1.secParam)
+      E encUnary := by fun_prop
+  have hd : ComputableInPolyTime
+      (fun p : F.DDHInput × Encryption.ChoiceOut Msg => p.1.groupParameters) E F.encDesc := by
+    fun_prop
+  have hv : ComputableInPolyTime
+      (fun p : F.DDHInput × Encryption.ChoiceOut Msg => F.encode _ p.1.rightPublic) E encBits := by
+    fun_prop
+  have hw : ComputableInPolyTime
+      (fun p : F.DDHInput × Encryption.ChoiceOut Msg => F.encode _ p.1.candidateShared) E
+      encBits := by
+    fun_prop
+  have hst : ComputableInPolyTime (fun p : F.DDHInput × Encryption.ChoiceOut Msg => p.2.2) E
+      encBits := by
+    fun_prop
+  have hm₀ : ComputableInPolyTime (fun p : F.DDHInput × Encryption.ChoiceOut Msg => p.2.1.1) E
+      encMsg := by
+    fun_prop
+  have hm₁ : ComputableInPolyTime (fun p : F.DDHInput × Encryption.ChoiceOut Msg => p.2.1.2) E
+      encMsg := by
+    fun_prop
   have hm : ComputableInPolyTime
-      (fun p :
-          (ℕ × F.Desc × List Bool × List Bool × List Bool) ×
-            (Msg × Msg) × List Bool =>
-        if bit then p.2.1.2 else p.2.1.1)
-      E2 encMsg := by
+      (fun p : F.DDHInput × Encryption.ChoiceOut Msg => if bit then p.2.1.2 else p.2.1.1) E
+      encMsg := by
     cases bit
-    · exact hm0
-    · exact hm1
-  have hencM := hencMsg.comp (hd.prod hm)
-  have hvalidStep := (hvalid.comp (hn.prod ((hpk_in.comp hp1).prod (hm0.prod hm1)))).tidy
+    · exact hm₀
+    · exact hm₁
+  have hvalidStep := (hvalid.comp (hn.prod
+    ((hpk.comp (ComputableInPolyTime.fst F.encDDHInput (Encryption.encChoiceOut encMsg))).prod
+      (hm₀.prod hm₁)))).tidy
   have hguessStep := hA.guess.preprocess
-    (prepare := fun p :
-        (ℕ × F.Desc × List Bool × List Bool × List Bool) ×
-          (Msg × Msg) × List Bool =>
-      (p.1.1, p.2.2, encPair encBits encBits
-        (p.1.2.2.2.1,
-          F.add (p.1.2.1, p.1.2.2.2.2, encodeMsg p.1.2.1 (if bit then p.2.1.2 else p.2.1.1)))))
-    (hn.prod (hst.prod
-      (hv.prod (F.computableInPolyTime_add.comp (hd.prod (hw.prod hencM)))).encoding_comp))
-  unfold elGamalMsgToDDHDistinguisher
+    (prepare := fun p : F.DDHInput × Encryption.ChoiceOut Msg =>
+      (p.1.secParam, p.2.2, encPair encBits encBits
+        (F.encode _ p.1.rightPublic,
+          F.add (p.1.groupParameters, F.encode _ p.1.candidateShared,
+            encodeMsg p.1.groupParameters (if bit then p.2.1.2 else p.2.1.1)))))
+    (hn.prod (hst.prod (hv.prod (F.computableInPolyTime_add.comp
+      (hd.prod (hw.prod (hencMsg.comp (hd.prod hm)))))).encoding_comp))
+  simp only [DDHDistinguisher.IsPPT, elGamalMsgToDDHDistinguisher]
   refine (hA.choose.on.preprocess
-    (prepare := fun input : ℕ × F.Desc × List Bool × List Bool × List Bool =>
-      (input.1, encPair F.encDesc encBits (input.2.1, input.2.2.1)))
-    ((ComputableInPolyTime.fst encUnary (encPair F.encDesc encTuple)).prod hpk_in)).bind_with ?_
+    (prepare := fun x : F.DDHInput =>
+      (x.secParam, encPair F.encDesc encBits (x.groupParameters, F.encode _ x.leftPublic)))
+    ((show ComputableInPolyTime (fun x : F.DDHInput => x.secParam) _ encUnary by fun_prop).prod
+      hpk)).bind_with ?_
   exact IsPPTOn.cond hvalidStep hguessStep (ComputableTidilyInPolyTime.const false).isPPTOn
 
 /-- **Typed-message ElGamal encryption is IND-CPA secure under the DDH assumption**
@@ -562,8 +554,8 @@ theorem DDH.negligible_elGamalMsgCPAGameOn {F : PrimeOrderGroupFamily} {setup : 
     Negligible fun n =>
       Game.advantage (F.elGamalMsgCPAGameOn valid encodeMsg setup adversary false n)
         (F.elGamalMsgCPAGameOn valid encodeMsg setup adversary true n) := by
-  have h₀ := hDDH _ (F.isPPTOn_elGamalMsgToDDHDistinguisher hvalid hencMsg hA false)
-  have h₁ := hDDH _ (F.isPPTOn_elGamalMsgToDDHDistinguisher hvalid hencMsg hA true)
+  have h₀ := hDDH _ (F.isPPT_elGamalMsgToDDHDistinguisher hvalid hencMsg hA false)
+  have h₁ := hDDH _ (F.isPPT_elGamalMsgToDDHDistinguisher hvalid hencMsg hA true)
   negligible using fun n =>
     F.advantage_elGamalMsgCPAGameOn_le valid encodeMsg setup adversary n hsound
 
@@ -644,11 +636,13 @@ def elGamalINDCPA (setup : ℕ → PMF F.Desc) : Prop :=
     Encryption.Adversary.IsPPT
 
 /-- The DDH distinguisher constructed from an IND-CPA adversary ([BonehShoup2023], proof of
-Exercise 11.5(a), p. 459): given `(d, u, v, w)`, pass `(d, u)` as the public key, encrypt the
-selected challenge bit by masking with `w`, and return the adversary's guess. -/
-abbrev elGamalToDDHDistinguisher (adversary : Encryption.Adversary) (bit : Bool) (n : ℕ)
-    (input : F.Desc × List Bool × List Bool × List Bool) : ProbComp Bool :=
-  F.elGamalMsgToDDHDistinguisher (fun _ _ _ _ => true) F.encodeBit adversary bit n input
+Exercise 11.5(a), p. 459): given group parameters `d` and elements `u`, `v`, `w`, pass the encoded
+public key `(d, encode u)` to the adversary, mask the encoded challenge bit with `encode w` using
+`F.add`, send the ciphertext `(encode v, _)` and return the adversary's guess. It is the
+unrestricted `encodeBit` instance of `elGamalMsgToDDHDistinguisher`. -/
+abbrev elGamalToDDHDistinguisher (adversary : Encryption.Adversary) (bit : Bool) :
+    F.DDHDistinguisher :=
+  F.elGamalMsgToDDHDistinguisher (fun _ _ _ _ => true) F.encodeBit adversary bit
 
 /-- In the real DDH game, `elGamalToDDHDistinguisher` simulates `elGamalCPAGame` exactly. -/
 @[simp] theorem ddhRealGame_elGamalToDDHDistinguisher (setup : ℕ → PMF F.Desc)
@@ -657,13 +651,13 @@ abbrev elGamalToDDHDistinguisher (adversary : Encryption.Adversary) (bit : Bool)
       F.elGamalCPAGame setup adversary bit n := by
   rw [F.ddhRealGame_elGamalMsgToDDHDistinguisher, F.elGamalCPAGame_eq_elGamalMsgCPAGameOn]
 
-/-- In the ideal DDH game, the uniform element `γ • g` perfectly masks the challenge bit, so the
+/-- In the random DDH game, the uniform element `c • g` perfectly masks the challenge bit, so the
 experiments for `bit = false` and `bit = true` are identical. -/
-theorem ddhIdealGame_elGamalToDDHDistinguisher_false_eq_true (setup : ℕ → PMF F.Desc)
+theorem ddhRandomGame_elGamalToDDHDistinguisher_false_eq_true (setup : ℕ → PMF F.Desc)
     (adversary : Encryption.Adversary) (n : ℕ) :
-    F.ddhIdealGame setup (F.elGamalToDDHDistinguisher adversary false) n =
-      F.ddhIdealGame setup (F.elGamalToDDHDistinguisher adversary true) n :=
-  F.ddhIdealGame_elGamalMsgToDDHDistinguisher_false_eq_true _ F.encodeBit setup adversary n
+    F.ddhRandomGame setup (F.elGamalToDDHDistinguisher adversary false) n =
+      F.ddhRandomGame setup (F.elGamalToDDHDistinguisher adversary true) n :=
+  F.ddhRandomGame_elGamalMsgToDDHDistinguisher_false_eq_true _ F.encodeBit setup adversary n
     F.admitsGroupElements_encodeBit
 
 /-- **Quantitative reduction of ElGamal IND-CPA to DDH** ([BonehShoup2023], Exercise 11.5(a),
@@ -675,19 +669,17 @@ theorem advantage_elGamalCPAGame_le (setup : ℕ → PMF F.Desc)
     Game.advantage (F.elGamalCPAGame setup adversary false n)
       (F.elGamalCPAGame setup adversary true n) ≤
       Game.advantage (F.ddhRealGame setup (F.elGamalToDDHDistinguisher adversary false) n)
-        (F.ddhIdealGame setup (F.elGamalToDDHDistinguisher adversary false) n) +
+        (F.ddhRandomGame setup (F.elGamalToDDHDistinguisher adversary false) n) +
       Game.advantage (F.ddhRealGame setup (F.elGamalToDDHDistinguisher adversary true) n)
-        (F.ddhIdealGame setup (F.elGamalToDDHDistinguisher adversary true) n) := by
+        (F.ddhRandomGame setup (F.elGamalToDDHDistinguisher adversary true) n) := by
   rw [F.elGamalCPAGame_eq_elGamalMsgCPAGameOn, F.elGamalCPAGame_eq_elGamalMsgCPAGameOn]
   exact F.advantage_elGamalMsgCPAGameOn_le _ F.encodeBit setup adversary n
     F.admitsGroupElements_encodeBit
 
 /-- `elGamalToDDHDistinguisher` is uniform strict PPT whenever `adversary` is. -/
-theorem isPPTOn_elGamalToDDHDistinguisher {adversary : Encryption.Adversary}
-    (hA : adversary.IsPPT) (bit : Bool) :
-    IsPPTOn F.encDDHInput
-      encBool (fun input => F.elGamalToDDHDistinguisher adversary bit input.1 input.2) :=
-  F.isPPTOn_elGamalMsgToDDHDistinguisher
+theorem isPPT_elGamalToDDHDistinguisher {adversary : Encryption.Adversary}
+    (hA : adversary.IsPPT) (bit : Bool) : (F.elGamalToDDHDistinguisher adversary bit).IsPPT :=
+  F.isPPT_elGamalMsgToDDHDistinguisher
     (ComputableTidilyInPolyTime.const true).computableInPolyTime F.computableInPolyTime_encodeBit hA
     bit
 
@@ -696,8 +688,8 @@ theorem isPPTOn_elGamalToDDHDistinguisher {adversary : Encryption.Adversary}
 theorem DDH.elGamalINDCPA {F : PrimeOrderGroupFamily} {setup : ℕ → PMF F.Desc}
     (hDDH : F.DDH setup) : F.elGamalINDCPA setup := by
   intro adversary hA
-  have h₀ := hDDH _ (F.isPPTOn_elGamalToDDHDistinguisher hA false)
-  have h₁ := hDDH _ (F.isPPTOn_elGamalToDDHDistinguisher hA true)
+  have h₀ := hDDH _ (F.isPPT_elGamalToDDHDistinguisher hA false)
+  have h₁ := hDDH _ (F.isPPT_elGamalToDDHDistinguisher hA true)
   negligible using F.advantage_elGamalCPAGame_le setup adversary
 
 /-! ### Group-element ElGamal IND-CPA security under DDH -/
@@ -715,9 +707,8 @@ noncomputable abbrev elGamalGroupCPAGameOn (valid : ℕ → List Bool → List B
 ([BonehShoup2023], Exercise 11.5(a), p. 459): specialization of `elGamalMsgToDDHDistinguisher` to
 identity message encoding. -/
 abbrev elGamalGroupToDDHDistinguisher (valid : ℕ → List Bool → List Bool → List Bool → Bool)
-    (adversary : Encryption.WordAdversary) (bit : Bool) (n : ℕ)
-    (input : F.Desc × List Bool × List Bool × List Bool) : ProbComp Bool :=
-  F.elGamalMsgToDDHDistinguisher valid (fun _ m => m) adversary bit n input
+    (adversary : Encryption.WordAdversary) (bit : Bool) : F.DDHDistinguisher :=
+  F.elGamalMsgToDDHDistinguisher valid (fun _ m => m) adversary bit
 
 /-- **Quantitative reduction of group-element ElGamal IND-CPA to DDH** ([BonehShoup2023],
 Exercise 11.5(a), p. 459): when `valid` admits only encoded group elements, the IND-CPA
@@ -732,10 +723,10 @@ theorem advantage_elGamalGroupCPAGameOn_le
       (F.elGamalGroupCPAGameOn valid setup adversary true n) ≤
       Game.advantage
         (F.ddhRealGame setup (F.elGamalGroupToDDHDistinguisher valid adversary false) n)
-        (F.ddhIdealGame setup (F.elGamalGroupToDDHDistinguisher valid adversary false) n) +
+        (F.ddhRandomGame setup (F.elGamalGroupToDDHDistinguisher valid adversary false) n) +
       Game.advantage
         (F.ddhRealGame setup (F.elGamalGroupToDDHDistinguisher valid adversary true) n)
-        (F.ddhIdealGame setup (F.elGamalGroupToDDHDistinguisher valid adversary true) n) :=
+        (F.ddhRandomGame setup (F.elGamalGroupToDDHDistinguisher valid adversary true) n) :=
   F.advantage_elGamalMsgCPAGameOn_le valid (fun _ m => m) setup adversary n hsound
 
 /-- **Group-element ElGamal encryption is IND-CPA secure under the DDH assumption**
@@ -900,93 +891,155 @@ noncomputable def hashedElGamalCPAGame (setup : ℕ → PMF F.Desc)
     (F.encode d (β • F.generator d), Cslib.BitString.listXor pad.length [pad, m])
   ProbComp.eval (adversary.guess n choice.2 ct)
 
-/-- Hybrid 1 for Hashed ElGamal ([BonehShoup2023], Section 11.5.2, proof of Theorem 11.5,
-pp. 449–451): replace the Diffie–Hellman shared element `(α * β) • g` with an independent uniform
-group element `γ • g`. -/
-noncomputable def hashedElGamalIdealDDHGame (setup : ℕ → PMF F.Desc)
-    (H : F.Desc × List Bool → List Bool) (adversary : Encryption.WordAdversary) (bit : Bool)
-    (n : ℕ) : Game := do
-  let d ← setup n
-  let α ← PMF.uniformOfFintype (ZMod (F.order d))
-  let pk := encPair F.encDesc encBits (d, F.encode d (α • F.generator d))
-  let choice ← ProbComp.eval (adversary.choose n pk)
-  let m := if bit then Encryption.ChoiceOut.msg₁ choice else Encryption.ChoiceOut.msg₀ choice
-  let β ← PMF.uniformOfFintype (ZMod (F.order d))
-  let γ ← PMF.uniformOfFintype (ZMod (F.order d))
-  let pad := H (d, F.encode d (γ • F.generator d))
-  let ct := encPair encBits encBits
-    (F.encode d (β • F.generator d), Cslib.BitString.listXor pad.length [pad, m])
-  ProbComp.eval (adversary.guess n choice.2 ct)
-
-/-- Hybrid 2 for Hashed ElGamal ([BonehShoup2023], Section 11.5.2, proof of Theorem 11.5,
-pp. 449–451): replace the derived key `H (d, encode (γ • g))` with an independent uniform
-`msgLen n`-bit key `pad ← Cslib.BitString.uniformList (msgLen n)`. -/
-noncomputable def hashedElGamalUniformPadGame (setup : ℕ → PMF F.Desc)
-    (msgLen : ℕ → ℕ) (adversary : Encryption.WordAdversary) (bit : Bool) (n : ℕ) : Game := do
-  let d ← setup n
-  let α ← PMF.uniformOfFintype (ZMod (F.order d))
-  let pk := encPair F.encDesc encBits (d, F.encode d (α • F.generator d))
-  let choice ← ProbComp.eval (adversary.choose n pk)
-  let m := if bit then Encryption.ChoiceOut.msg₁ choice else Encryption.ChoiceOut.msg₀ choice
-  let β ← PMF.uniformOfFintype (ZMod (F.order d))
-  let pad ← Cslib.BitString.uniformList (msgLen n)
-  let ct := encPair encBits encBits
-    (F.encode d (β • F.generator d), Cslib.BitString.listXor pad.length [pad, m])
-  ProbComp.eval (adversary.guess n choice.2 ct)
+/-- A key-derivation distinguisher over the family ([BonehShoup2023], Section 11.5.2, Attack
+Game 11.3, p. 448): given the security parameter, public group parameters `d`, two elements of
+`F.Carrier d` and a candidate key word, it outputs a bit. `SecureKDF` states its efficiency on
+encodings. -/
+abbrev KDFDistinguisher : Type :=
+  ℕ → (d : F.Desc) → F.Carrier d → F.Carrier d → List Bool → ProbComp Bool
 
 /-- The real key-derivation security experiment ([BonehShoup2023], Section 11.5.2, Attack Game 11.3,
-Experiment `0`, p. 448): draw `d ← setup n` and independent uniform `α, β, γ : ZMod (F.order d)`,
-and give the distinguisher `(d, encode (α • g), encode (β • g), H (d, encode (γ • g)))`. -/
+Experiment `0`, p. 448): draw `d ← setup n` and independent uniform `a, b, c : ZMod (F.order d)`,
+and give the distinguisher `a • g`, `b • g` and the derived key `H (d, encode (c • g))`. -/
 noncomputable def kdfRealGame (setup : ℕ → PMF F.Desc) (H : F.Desc × List Bool → List Bool)
-    (distinguisher : ℕ → F.Desc × List Bool × List Bool × List Bool → ProbComp Bool)
-    (n : ℕ) : Game := do
+    (distinguisher : F.KDFDistinguisher) (n : ℕ) : Game := do
   let d ← setup n
-  let α ← PMF.uniformOfFintype (ZMod (F.order d))
-  let β ← PMF.uniformOfFintype (ZMod (F.order d))
-  let γ ← PMF.uniformOfFintype (ZMod (F.order d))
-  ProbComp.eval (distinguisher n
-    (d, F.encode d (α • F.generator d), F.encode d (β • F.generator d),
-      H (d, F.encode d (γ • F.generator d))))
+  let a ← PMF.uniformOfFintype (ZMod (F.order d))
+  let b ← PMF.uniformOfFintype (ZMod (F.order d))
+  let c ← PMF.uniformOfFintype (ZMod (F.order d))
+  ProbComp.eval (distinguisher n d (a • F.generator d) (b • F.generator d)
+    (H (d, F.encode d (c • F.generator d))))
 
 /-- The ideal key-derivation security experiment ([BonehShoup2023], Section 11.5.2,
 Attack Game 11.3, Experiment `1`, p. 448): draw `d ← setup n`, independent uniform
-`α, β : ZMod (F.order d)`, and an independent uniform `msgLen n`-bit key
-`pad ← Cslib.BitString.uniformList (msgLen n)`, and give the distinguisher
-`(d, encode (α • g), encode (β • g), pad)`. -/
+`a, b : ZMod (F.order d)` and an independent uniform `msgLen n`-bit key
+`key ← Cslib.BitString.uniformList (msgLen n)`, and give the distinguisher `a • g`, `b • g` and
+`key`. -/
 noncomputable def kdfIdealGame (setup : ℕ → PMF F.Desc) (msgLen : ℕ → ℕ)
-    (distinguisher : ℕ → F.Desc × List Bool × List Bool × List Bool → ProbComp Bool)
-    (n : ℕ) : Game := do
+    (distinguisher : F.KDFDistinguisher) (n : ℕ) : Game := do
   let d ← setup n
-  let α ← PMF.uniformOfFintype (ZMod (F.order d))
-  let β ← PMF.uniformOfFintype (ZMod (F.order d))
-  let pad ← Cslib.BitString.uniformList (msgLen n)
-  ProbComp.eval (distinguisher n
-    (d, F.encode d (α • F.generator d), F.encode d (β • F.generator d), pad))
+  let a ← PMF.uniformOfFintype (ZMod (F.order d))
+  let b ← PMF.uniformOfFintype (ZMod (F.order d))
+  let key ← Cslib.BitString.uniformList (msgLen n)
+  ProbComp.eval (distinguisher n d (a • F.generator d) (b • F.generator d) key)
+
+/-- The input of a key-derivation distinguisher: a CDH input and a candidate key word, which is
+`H (d, encode (c • g))` in the real experiment and uniform in the ideal one. -/
+structure KDFInput extends F.CDHInput where
+  /-- The candidate key word. -/
+  key : List Bool
+
+/-- The encoding of a key-derivation input: the fields of its CDH input followed by the key word,
+each framed except the last. This is the layout of `encDDHInput` with the key word in place of the
+encoded candidate shared element. -/
+enc_structure encKDFInput (F : PrimeOrderGroupFamily) : KDFInput F where
+  secParam : encUnary, groupParameters : F.encDesc,
+  leftPublic : (F.encode groupParameters) using (F.encode_injective groupParameters),
+  rightPublic : (F.encode groupParameters) using (F.encode_injective groupParameters),
+  key : encBits
+
+variable {F} in
+/-- A key-derivation distinguisher is uniform strict PPT: one machine reading the `encKDFInput`
+encoding of its security parameter, group parameters, two group elements and key word realizes
+it. -/
+def KDFDistinguisher.IsPPT (distinguisher : F.KDFDistinguisher) : Prop :=
+  IsPPTOn F.encKDFInput encBool fun x =>
+    distinguisher x.secParam x.groupParameters x.leftPublic x.rightPublic x.key
+
+variable {F} in
+/-- A PPT key-derivation distinguisher run on computed inputs is uniform strict PPT. -/
+theorem KDFDistinguisher.IsPPT.comp {distinguisher : F.KDFDistinguisher}
+    (hD : distinguisher.IsPPT)
+    {α : Type} {enc : α ↪ List Bool} {n : α → ℕ} {d : α → F.Desc}
+    {u v : (a : α) → F.Carrier (d a)} {key : α → List Bool}
+    (hn : ComputableInPolyTime n enc encUnary) (hd : ComputableInPolyTime d enc F.encDesc)
+    (hu : ComputableInPolyTime (fun a => F.encode (d a) (u a)) enc encBits)
+    (hv : ComputableInPolyTime (fun a => F.encode (d a) (v a)) enc encBits)
+    (hkey : ComputableInPolyTime key enc encBits) :
+    IsPPTOn enc encBool fun a => distinguisher (n a) (d a) (u a) (v a) (key a) :=
+  IsPPTOn.preprocess hD (F.encKDFInput_mk_polyTime hn hd hu hv hkey)
 
 /-- Secure key derivation for `H` over `F` ([BonehShoup2023], Section 11.5.2, Attack Game 11.3,
-p. 448, and Definition 11.5, p. 449): every uniform strict PPT distinguisher has negligible
-advantage between `kdfRealGame` and `kdfIdealGame`. No nondegenerate `SecureKDF` instance
-(`msgLen n > 0`, e.g., via the leftover hash lemma) is constructed in this module. -/
+p. 448, and Definition 11.5, p. 449): every uniform strict PPT key-derivation distinguisher
+(`KDFDistinguisher.IsPPT`) has negligible advantage between `kdfRealGame` and `kdfIdealGame`. No
+nondegenerate `SecureKDF` instance (`msgLen n > 0`, e.g., via the leftover hash lemma) is
+constructed in this module. -/
 def SecureKDF (setup : ℕ → PMF F.Desc) (H : F.Desc × List Bool → List Bool)
     (msgLen : ℕ → ℕ) : Prop :=
   Game.Indistinguishable (F.kdfRealGame setup H) (F.kdfIdealGame setup msgLen)
-    fun distinguisher =>
-      IsPPTOn F.encDDHInput encBool (fun input => distinguisher input.1 input.2)
+    KDFDistinguisher.IsPPT
+
+/-- **`SecureKDF` is the word-level key-derivation assumption.** Quantifying over distinguishers
+that read `(1ⁿ, d, encode u, encode v, key)` as words, each with one uniform strict PPT machine on
+its flat layout, gives the same assumption as quantifying over typed distinguishers, as for DDH
+(`ddh_iff_encoded`). -/
+theorem secureKDF_iff_encoded (setup : ℕ → PMF F.Desc) (H : F.Desc × List Bool → List Bool)
+    (msgLen : ℕ → ℕ) :
+    F.SecureKDF setup H msgLen ↔
+      ∀ W : ℕ → F.Desc × List Bool × List Bool × List Bool → ProbComp Bool,
+        IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
+          encBool (fun x => W x.1 x.2) →
+        Negligible fun n => Game.advantage
+          (F.kdfRealGame setup H (fun n d u v key => W n (d, F.encode d u, F.encode d v, key)) n)
+          (F.kdfIdealGame setup msgLen
+            (fun n d u v key => W n (d, F.encode d u, F.encode d v, key)) n) := by
+  set E := encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits)))
+  constructor
+  · intro h W hW
+    exact h _ (hW.preprocess (prepare := fun x : F.KDFInput => (x.secParam, x.groupParameters,
+      F.encode _ x.leftPublic, F.encode _ x.rightPublic, x.key)) (by fun_prop))
+  · intro h D hD
+    obtain ⟨W, hWppt, hW⟩ := hD.exists_bool_extension
+    have := h (fun n t => W (E (n, t))) (hWppt.preprocess ComputableInPolyTime.id'.encoding_comp)
+    have hgame (n : ℕ) (d : F.Desc) (u v : F.Carrier d) (key : List Bool) :
+        ProbComp.eval (W (E (n, d, F.encode d u, F.encode d v, key))) =
+          ProbComp.eval (D n d u v key) :=
+      hW ⟨⟨n, d, u, v⟩, key⟩
+    simpa only [kdfRealGame, kdfIdealGame, hgame] using this
+
+/-- Run a key-derivation distinguisher as a DDH distinguisher: derive the candidate key
+`H (d, encode w)` from the candidate shared element `w`. -/
+def kdfToDDHDistinguisher (H : F.Desc × List Bool → List Bool)
+    (distinguisher : F.KDFDistinguisher) : F.DDHDistinguisher :=
+  fun n d u v w => distinguisher n d u v (H (d, F.encode d w))
+
+/-- In the random DDH game, `kdfToDDHDistinguisher H` runs the real key-derivation game. -/
+@[simp] theorem ddhRandomGame_kdfToDDHDistinguisher (setup : ℕ → PMF F.Desc)
+    (H : F.Desc × List Bool → List Bool) (distinguisher : F.KDFDistinguisher) (n : ℕ) :
+    F.ddhRandomGame setup (F.kdfToDDHDistinguisher H distinguisher) n =
+      F.kdfRealGame setup H distinguisher n := by
+  simp only [ddhRandomGame, eval_ddhRandomExperiment, kdfToDDHDistinguisher, kdfRealGame,
+    PMF.monad_bind_eq_bind]
+
+/-- `kdfToDDHDistinguisher H` is uniform strict PPT whenever `H` is polynomial time and the
+key-derivation distinguisher is uniform strict PPT. -/
+theorem isPPT_kdfToDDHDistinguisher {H : F.Desc × List Bool → List Bool}
+    (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
+    {distinguisher : F.KDFDistinguisher} (hD : distinguisher.IsPPT) :
+    (F.kdfToDDHDistinguisher H distinguisher).IsPPT :=
+  hD.comp (by fun_prop) (by fun_prop) (by fun_prop) (by fun_prop) (hH.comp (by fun_prop))
+
+/-- The KDF distinguisher constructed from a Hashed ElGamal IND-CPA adversary ([BonehShoup2023],
+Section 11.5.2, proof of Theorem 11.5, pp. 449–451): given `(d, u, v, pad)`, pass `(d, encode u)`
+as the public key, mask the selected message word with `pad` via
+`Cslib.BitString.listXor pad.length [pad, m]`, send the ciphertext `(encode v, _)` and return the
+adversary's guess. -/
+def hashedElGamalToKDFDistinguisher (adversary : Encryption.WordAdversary) (bit : Bool) :
+    F.KDFDistinguisher :=
+  fun n d u v pad => do
+    let pk := encPair F.encDesc encBits (d, F.encode d u)
+    let choice ← adversary.choose n pk
+    let m := if bit then Encryption.ChoiceOut.msg₁ choice else Encryption.ChoiceOut.msg₀ choice
+    let ct := encPair encBits encBits
+      (F.encode d v, Cslib.BitString.listXor pad.length [pad, m])
+    adversary.guess n choice.2 ct
 
 /-- The DDH distinguisher constructed from a Hashed ElGamal IND-CPA adversary ([BonehShoup2023],
-Section 11.5.2, proof of Theorem 11.5, pp. 449–451): given `(d, u, v, w)`, pass `(d, u)` as the
-public key, mask the selected message word with `pad = H (d, w)` via
-`Cslib.BitString.listXor pad.length [pad, m]`, and return the adversary's guess. -/
-def hashedElGamalToDDHDistinguisher (H : F.Desc × List Bool → List Bool)
-    (adversary : Encryption.WordAdversary) (bit : Bool) (n : ℕ)
-    (input : F.Desc × List Bool × List Bool × List Bool) : ProbComp Bool := do
-  let pk := encPair F.encDesc encBits (input.1, F.ddhPk input)
-  let choice ← adversary.choose n pk
-  let m := if bit then Encryption.ChoiceOut.msg₁ choice else Encryption.ChoiceOut.msg₀ choice
-  let pad := H (input.1, F.ddhShared input)
-  let ct := encPair encBits encBits
-    (F.ddhEph input, Cslib.BitString.listXor pad.length [pad, m])
-  adversary.guess n choice.2 ct
+Section 11.5.2, proof of Theorem 11.5, pp. 449–451): `hashedElGamalToKDFDistinguisher` run with
+the pad `H (d, encode w)` derived from the candidate shared element `w`. -/
+abbrev hashedElGamalToDDHDistinguisher (H : F.Desc × List Bool → List Bool)
+    (adversary : Encryption.WordAdversary) (bit : Bool) : F.DDHDistinguisher :=
+  F.kdfToDDHDistinguisher H (F.hashedElGamalToKDFDistinguisher adversary bit)
 
 /-- In the real DDH game, `hashedElGamalToDDHDistinguisher` simulates `hashedElGamalCPAGame`
 exactly. -/
@@ -995,122 +1048,46 @@ exactly. -/
     (n : ℕ) :
     F.ddhRealGame setup (F.hashedElGamalToDDHDistinguisher H adversary bit) n =
       F.hashedElGamalCPAGame setup H adversary bit n := by
-  simp only [ddhRealGame, hashedElGamalToDDHDistinguisher, hashedElGamalCPAGame, ProbComp.eval_bind,
+  simp only [ddhRealGame, eval_ddhRealExperiment, kdfToDDHDistinguisher,
+    hashedElGamalToKDFDistinguisher, hashedElGamalCPAGame, ProbComp.eval_bind,
     PMF.monad_bind_eq_bind]
   pmf_swap
 
-/-- In the ideal DDH game, `hashedElGamalToDDHDistinguisher` simulates `hashedElGamalIdealDDHGame`
-exactly. -/
-@[simp] theorem ddhIdealGame_hashedElGamalToDDHDistinguisher (setup : ℕ → PMF F.Desc)
-    (H : F.Desc × List Bool → List Bool) (adversary : Encryption.WordAdversary) (bit : Bool)
-    (n : ℕ) :
-    F.ddhIdealGame setup (F.hashedElGamalToDDHDistinguisher H adversary bit) n =
-      F.hashedElGamalIdealDDHGame setup H adversary bit n := by
-  simp only [ddhIdealGame, hashedElGamalToDDHDistinguisher, hashedElGamalIdealDDHGame,
-    ddhPk, ProbComp.eval_bind, PMF.monad_bind_eq_bind]
-  pmf_swap
-
-/-- `hashedElGamalToDDHDistinguisher` is uniform strict PPT whenever `H` is polynomial time and
-`adversary` is uniform strict PPT. -/
-theorem isPPTOn_hashedElGamalToDDHDistinguisher {H : F.Desc × List Bool → List Bool}
-    (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
-    {adversary : Encryption.WordAdversary} (hA : adversary.IsPPT) (bit : Bool) :
-    IsPPTOn F.encDDHInput
-      encBool (fun input => F.hashedElGamalToDDHDistinguisher H adversary bit input.1 input.2) := by
-  let encTuple := encPair encBits (encPair encBits encBits)
-  let EIn := encPair encUnary (encPair F.encDesc encTuple)
-  let EChoice := encPair (encPair encBits encBits) encBits
-  let E := encPair EIn EChoice
-  have hin2 := ComputableInPolyTime.snd encUnary (encPair F.encDesc encTuple)
-  have hd_in := (ComputableInPolyTime.fst F.encDesc encTuple).comp hin2
-  have htuple_in := (ComputableInPolyTime.snd F.encDesc encTuple).comp hin2
-  have hu_in := (ComputableInPolyTime.fst encBits (encPair encBits encBits)).comp htuple_in
-  have hvw_in := (ComputableInPolyTime.snd encBits (encPair encBits encBits)).comp htuple_in
-  have hp1 := ComputableInPolyTime.fst EIn EChoice
-  have hp2 := ComputableInPolyTime.snd EIn EChoice
-  have hn := (ComputableInPolyTime.fst encUnary (encPair F.encDesc encTuple)).comp hp1
-  have hv := ((ComputableInPolyTime.fst encBits encBits).comp hvw_in).comp hp1
-  have hw := ((ComputableInPolyTime.snd encBits encBits).comp hvw_in).comp hp1
-  have hmsgs := (ComputableInPolyTime.fst (encPair encBits encBits) encBits).comp hp2
-  have hst := (ComputableInPolyTime.snd (encPair encBits encBits) encBits).comp hp2
-  have hm : ComputableInPolyTime
-      (fun p :
-          (ℕ × F.Desc × List Bool × List Bool × List Bool) ×
-            (List Bool × List Bool) × List Bool =>
-        if bit then p.2.1.2 else p.2.1.1) E encBits := by
-    cases bit
-    · exact (ComputableInPolyTime.fst encBits encBits).comp hmsgs
-    · exact (ComputableInPolyTime.snd encBits encBits).comp hmsgs
-  have hpad := hH.comp ((hd_in.comp hp1).prod hw)
-  unfold hashedElGamalToDDHDistinguisher
-  refine (hA.choose.on.preprocess
-    (prepare := fun input : ℕ × F.Desc × List Bool × List Bool × List Bool =>
-      (input.1, encPair F.encDesc encBits (input.2.1, input.2.2.1)))
-    ((ComputableInPolyTime.fst encUnary (encPair F.encDesc encTuple)).prod
-      (hd_in.prod hu_in).encoding_comp)).bind_with ?_
-  exact hA.guess.preprocess
-    (prepare := fun p :
-        (ℕ × F.Desc × List Bool × List Bool × List Bool) ×
-          (List Bool × List Bool) × List Bool =>
-      let pad := H (p.1.2.1, p.1.2.2.2.2)
-      (p.1.1, p.2.2, encPair encBits encBits
-        (p.1.2.2.2.1,
-          Cslib.BitString.listXor pad.length [pad, if bit then p.2.1.2 else p.2.1.1])))
-    (hn.prod (hst.prod (hv.prod (computableInPolyTime_listXor_pair hpad hm)).encoding_comp))
-
-/-- The KDF distinguisher constructed from a Hashed ElGamal IND-CPA adversary ([BonehShoup2023],
-Section 11.5.2, proof of Theorem 11.5, pp. 449–451): given `(d, u, v, pad)`, pass `(d, u)` as the
-public key, mask the selected message word with `pad` via
-`Cslib.BitString.listXor pad.length [pad, m]`, and return the adversary's guess. -/
-def hashedElGamalToKDFDistinguisher (adversary : Encryption.WordAdversary) (bit : Bool) (n : ℕ)
-    (input : F.Desc × List Bool × List Bool × List Bool) : ProbComp Bool := do
-  let pk := encPair F.encDesc encBits (input.1, F.ddhPk input)
-  let choice ← adversary.choose n pk
-  let m := if bit then Encryption.ChoiceOut.msg₁ choice else Encryption.ChoiceOut.msg₀ choice
-  let pad := F.ddhShared input
-  let ct := encPair encBits encBits
-    (F.ddhEph input, Cslib.BitString.listXor pad.length [pad, m])
-  adversary.guess n choice.2 ct
-
-/-- In the real KDF game, `hashedElGamalToKDFDistinguisher` simulates `hashedElGamalIdealDDHGame`
-exactly: unfolded, this is the ideal DDH game for `hashedElGamalToDDHDistinguisher`. -/
-@[simp] theorem kdfRealGame_hashedElGamalToKDFDistinguisher (setup : ℕ → PMF F.Desc)
-    (H : F.Desc × List Bool → List Bool) (adversary : Encryption.WordAdversary) (bit : Bool)
-    (n : ℕ) :
-    F.kdfRealGame setup H (F.hashedElGamalToKDFDistinguisher adversary bit) n =
-      F.hashedElGamalIdealDDHGame setup H adversary bit n :=
-  F.ddhIdealGame_hashedElGamalToDDHDistinguisher setup H adversary bit n
-
-/-- In the ideal KDF game, `hashedElGamalToKDFDistinguisher` simulates
-`hashedElGamalUniformPadGame` exactly. -/
-@[simp] theorem kdfIdealGame_hashedElGamalToKDFDistinguisher (setup : ℕ → PMF F.Desc)
-    (msgLen : ℕ → ℕ) (adversary : Encryption.WordAdversary) (bit : Bool) (n : ℕ) :
-    F.kdfIdealGame setup msgLen (F.hashedElGamalToKDFDistinguisher adversary bit) n =
-      F.hashedElGamalUniformPadGame setup msgLen adversary bit n := by
-  simp only [kdfIdealGame, hashedElGamalToKDFDistinguisher, hashedElGamalUniformPadGame,
-    ddhPk, ProbComp.eval_bind, PMF.monad_bind_eq_bind]
-  pmf_swap
-
-/-- `hashedElGamalToKDFDistinguisher` is uniform strict PPT whenever `adversary` is: it is
-`hashedElGamalToDDHDistinguisher` with the identity key derivation `H (d, w) = w`. -/
-theorem isPPTOn_hashedElGamalToKDFDistinguisher {adversary : Encryption.WordAdversary}
+/-- `hashedElGamalToKDFDistinguisher` is uniform strict PPT whenever `adversary` is. -/
+theorem isPPT_hashedElGamalToKDFDistinguisher {adversary : Encryption.WordAdversary}
     (hA : adversary.IsPPT) (bit : Bool) :
-    IsPPTOn F.encDDHInput
-      encBool (fun input => F.hashedElGamalToKDFDistinguisher adversary bit input.1 input.2) :=
-  F.isPPTOn_hashedElGamalToDDHDistinguisher (H := fun p => p.2)
-    (ComputableInPolyTime.snd F.encDesc encBits) hA bit
+    (F.hashedElGamalToKDFDistinguisher adversary bit).IsPPT := by
+  let E := encPair F.encKDFInput (Encryption.encChoiceOut encBits)
+  have hm : ComputableInPolyTime
+      (fun p : F.KDFInput × Encryption.ChoiceOut (List Bool) =>
+        if bit then p.2.1.2 else p.2.1.1) E encBits :=
+    .ite' (encC := encBool) (.const bit) (by fun_prop) (by fun_prop)
+  simp only [KDFDistinguisher.IsPPT, hashedElGamalToKDFDistinguisher]
+  refine (hA.choose.on.preprocess
+    (prepare := fun x : F.KDFInput =>
+      (x.secParam, encPair F.encDesc encBits (x.groupParameters, F.encode _ x.leftPublic)))
+    (.prod (by fun_prop) (.encoding_comp (by fun_prop)))).bind_with ?_
+  exact hA.guess.preprocess
+    (prepare := fun p : F.KDFInput × Encryption.ChoiceOut (List Bool) =>
+      (p.1.secParam, p.2.2, encPair encBits encBits
+        (F.encode _ p.1.rightPublic,
+          Cslib.BitString.listXor p.1.key.length [p.1.key, if bit then p.2.1.2 else p.2.1.1])))
+    (.prod (by fun_prop) (.prod (by fun_prop)
+      (.encoding_comp (.prod (by fun_prop) (computableInPolyTime_listXor_pair (by fun_prop) hm)))))
 
-/-- In `hashedElGamalUniformPadGame`, the uniform `msgLen n`-bit pad masks any challenge message
-word perfectly via `Cslib.BitString.listXor pad.length [pad, m]`, so the experiments for
-`bit = false` and `bit = true` are identical. -/
-theorem hashedElGamalUniformPadGame_false_eq_true (setup : ℕ → PMF F.Desc)
+/-- In `kdfIdealGame`, the uniform `msgLen n`-bit pad masks any challenge message word perfectly
+via `Cslib.BitString.listXor pad.length [pad, m]`, so `hashedElGamalToKDFDistinguisher` accepts
+with the same law for `bit = false` and `bit = true`. -/
+theorem kdfIdealGame_hashedElGamalToKDFDistinguisher_false_eq_true (setup : ℕ → PMF F.Desc)
     (msgLen : ℕ → ℕ) (adversary : Encryption.WordAdversary) (n : ℕ) :
-    F.hashedElGamalUniformPadGame setup msgLen adversary false n =
-      F.hashedElGamalUniformPadGame setup msgLen adversary true n := by
-  simp only [hashedElGamalUniformPadGame, PMF.monad_bind_eq_bind,
-    Bool.false_eq_true, ↓reduceIte]
+    F.kdfIdealGame setup msgLen (F.hashedElGamalToKDFDistinguisher adversary false) n =
+      F.kdfIdealGame setup msgLen (F.hashedElGamalToKDFDistinguisher adversary true) n := by
+  simp only [kdfIdealGame, hashedElGamalToKDFDistinguisher, ProbComp.eval_bind,
+    PMF.monad_bind_eq_bind, Bool.false_eq_true, ↓reduceIte]
   refine congrArg (PMF.bind _) (funext fun d => congrArg (PMF.bind _) (funext fun α => ?_))
-  refine congrArg (PMF.bind _) (funext fun choice => congrArg (PMF.bind _) (funext fun β => ?_))
+  refine congrArg (PMF.bind _) (funext fun β => ?_)
+  rw [PMF.bind_comm, PMF.bind_comm (Cslib.BitString.uniformList (msgLen n))]
+  refine congrArg (PMF.bind _) (funext fun choice => ?_)
   have hpad (m : List Bool) :
       ((Cslib.BitString.uniformList (msgLen n)).bind fun pad =>
         ProbComp.eval (adversary.guess n choice.2
@@ -1133,7 +1110,9 @@ theorem hashedElGamalUniformPadGame_false_eq_true (setup : ℕ → PMF F.Desc)
 ([BonehShoup2023], Section 11.5.2, Theorem 11.5, pp. 449–451): the IND-CPA distinguishing
 advantage of `adversary` is bounded by the sum of the two DDH advantages of
 `hashedElGamalToDDHDistinguisher` and the two KDF advantages of
-`hashedElGamalToKDFDistinguisher`. -/
+`hashedElGamalToKDFDistinguisher`. The hybrids of the proof are the random DDH game, which is the
+real KDF game (`ddhRandomGame_kdfToDDHDistinguisher`), and the ideal KDF game, where the uniform
+pad hides the challenge bit. -/
 theorem advantage_hashedElGamalCPAGame_le (setup : ℕ → PMF F.Desc)
     (H : F.Desc × List Bool → List Bool) (msgLen : ℕ → ℕ)
     (adversary : Encryption.WordAdversary) (n : ℕ) :
@@ -1141,7 +1120,7 @@ theorem advantage_hashedElGamalCPAGame_le (setup : ℕ → PMF F.Desc)
       (F.hashedElGamalCPAGame setup H adversary true n) ≤
       Game.advantage
         (F.ddhRealGame setup (F.hashedElGamalToDDHDistinguisher H adversary false) n)
-        (F.ddhIdealGame setup (F.hashedElGamalToDDHDistinguisher H adversary false) n) +
+        (F.ddhRandomGame setup (F.hashedElGamalToDDHDistinguisher H adversary false) n) +
       Game.advantage
         (F.kdfRealGame setup H (F.hashedElGamalToKDFDistinguisher adversary false) n)
         (F.kdfIdealGame setup msgLen (F.hashedElGamalToKDFDistinguisher adversary false) n) +
@@ -1150,18 +1129,15 @@ theorem advantage_hashedElGamalCPAGame_le (setup : ℕ → PMF F.Desc)
         (F.kdfIdealGame setup msgLen (F.hashedElGamalToKDFDistinguisher adversary true) n) +
       Game.advantage
         (F.ddhRealGame setup (F.hashedElGamalToDDHDistinguisher H adversary true) n)
-        (F.ddhIdealGame setup (F.hashedElGamalToDDHDistinguisher H adversary true) n) := by
-  simp only [ddhRealGame_hashedElGamalToDDHDistinguisher,
-    ddhIdealGame_hashedElGamalToDDHDistinguisher,
-    kdfRealGame_hashedElGamalToKDFDistinguisher,
-    kdfIdealGame_hashedElGamalToKDFDistinguisher]
+        (F.ddhRandomGame setup (F.hashedElGamalToDDHDistinguisher H adversary true) n) := by
+  simp only [ddhRealGame_hashedElGamalToDDHDistinguisher, ddhRandomGame_kdfToDDHDistinguisher]
   game_trans
-    [F.hashedElGamalIdealDDHGame setup H adversary false n,
-     F.hashedElGamalUniformPadGame setup msgLen adversary false n,
-     F.hashedElGamalUniformPadGame setup msgLen adversary true n,
-     F.hashedElGamalIdealDDHGame setup H adversary true n]
+    [F.kdfRealGame setup H (F.hashedElGamalToKDFDistinguisher adversary false) n,
+     F.kdfIdealGame setup msgLen (F.hashedElGamalToKDFDistinguisher adversary false) n,
+     F.kdfIdealGame setup msgLen (F.hashedElGamalToKDFDistinguisher adversary true) n,
+     F.kdfRealGame setup H (F.hashedElGamalToKDFDistinguisher adversary true) n]
     using [le_rfl, le_rfl,
-      F.hashedElGamalUniformPadGame_false_eq_true setup msgLen adversary n,
+      F.kdfIdealGame_hashedElGamalToKDFDistinguisher_false_eq_true setup msgLen adversary n,
       le_rfl, le_rfl]
 
 /-- **Hashed ElGamal encryption is IND-CPA secure under DDH and `SecureKDF`**
@@ -1177,10 +1153,12 @@ theorem DDH.negligible_hashedElGamalCPAGame {F : PrimeOrderGroupFamily} {setup :
     Negligible fun n =>
       Game.advantage (F.hashedElGamalCPAGame setup H adversary false n)
         (F.hashedElGamalCPAGame setup H adversary true n) := by
-  have hddh₀ := hDDH _ (F.isPPTOn_hashedElGamalToDDHDistinguisher hH hA false)
-  have hkdf₀ := hKDF _ (F.isPPTOn_hashedElGamalToKDFDistinguisher hA false)
-  have hkdf₁ := hKDF _ (F.isPPTOn_hashedElGamalToKDFDistinguisher hA true)
-  have hddh₁ := hDDH _ (F.isPPTOn_hashedElGamalToDDHDistinguisher hH hA true)
+  have hkdf₀ := hKDF _ (F.isPPT_hashedElGamalToKDFDistinguisher hA false)
+  have hkdf₁ := hKDF _ (F.isPPT_hashedElGamalToKDFDistinguisher hA true)
+  have hddh₀ := hDDH _ (F.isPPT_kdfToDDHDistinguisher hH
+    (F.isPPT_hashedElGamalToKDFDistinguisher hA false))
+  have hddh₁ := hDDH _ (F.isPPT_kdfToDDHDistinguisher hH
+    (F.isPPT_hashedElGamalToKDFDistinguisher hA true))
   negligible using F.advantage_hashedElGamalCPAGame_le setup H msgLen adversary
 
 end Cslib.Crypto.PrimeOrderGroupFamily
