@@ -317,7 +317,7 @@ example {f : List Bool → List Bool} (hf : NonuniformOneWay f) :
       ⟨hbound, hdensity, hcommon, hfits, hsize⟩
       (Filter.Eventually.of_forall Pseudoentropy.EntropyGrid.four_steps_le_owf_gap)
   refine ⟨pair, savedPair, bound, common, choose, hchoose, ?_⟩
-  simpa only [distinguishingGame, PMF.monad_bind_eq_bind] using
+  simpa only [distinguishingGame_eq_bind, PMF.monad_bind_eq_bind] using
     hsecure.negligible_encoded (encAdvice := Turing.MultiTapeTM.encPair
         Turing.MultiTapeTM.encBits Turing.MultiTapeTM.encUnary)
       (test := fun input => advisedWordDistinguisher ((input.1.1, input.1.2.1), input.2))
@@ -336,7 +336,7 @@ example {X Y : ℕ → PMF (List Bool)} {advice : ℕ → List Bool} {choose : �
         ((X n).bind (fun word => ProbComp.eval (test (n, advice n) (choose n) word)))
         ((Y n).bind (fun word => ProbComp.eval (test (n, advice n) (choose n) word)))) := by
   intro test htest
-  simpa only [distinguishingGame, PMF.monad_bind_eq_bind] using
+  simpa only [distinguishingGame_eq_bind, PMF.monad_bind_eq_bind] using
     h.negligible_encoded (encAdvice := encPair encBits encUnary)
       (test := fun input => test (input.1.1, input.1.2.1) input.1.2.2 input.2)
       (htest.preprocess (prepare := fun input : (ℕ × (List Bool × ℕ)) × List Bool =>
@@ -355,7 +355,7 @@ example {X Y : ℕ → PMF (List Bool)} {advice : ℕ → List Bool} {choose : �
     IndistinguishableWithAdvice (fun n => encPair encBits encUnary (advice n, choose n)) X Y := by
   apply IndistinguishableWithAdvice.of_negligible_encoded
   intro test htest
-  simpa only [distinguishingGame, PMF.monad_bind_eq_bind] using
+  simpa only [distinguishingGame_eq_bind, PMF.monad_bind_eq_bind] using
     h (fun a i word => test ((a.1, (a.2, i)), word))
       (htest.preprocess (prepare := fun input : ((ℕ × List Bool) × ℕ) × List Bool =>
         ((input.1.1.1, (input.1.1.2, input.1.2)), input.2)) (by fun_prop))

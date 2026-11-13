@@ -44,7 +44,8 @@ stages in `Cslib.PCP`.
 ## Main definitions
 
 * `Cslib.Complexity.PCPVerifier`, with `PCPVerifier.accepts` and `PCPVerifier.PolyTime`.
-* `Cslib.Complexity.IsPCPVerifier`: completeness, soundness and the bound on queries.
+* `Cslib.Complexity.IsPCPVerifier`: the bounds on random bits and queries, completeness and
+  soundness.
 * `Cslib.Complexity.PCP`.
 
 ## Main results
@@ -94,10 +95,13 @@ def accepts (V : PCPVerifier α) (a : α) (π ρ : List Bool) : Bool :=
 /-- A verifier is polynomial-time, with respect to the encoding `enc` of instances, when its
 number of random bits, its queries and its verdict are computable in polynomial time, the numbers
 in binary. -/
-def PolyTime (enc : α ↪ List Bool) (V : PCPVerifier α) : Prop :=
-  ComputableInPolyTime V.coins enc encNat ∧
-    ComputableInPolyTime V.queries (encPair enc encBits) (encList encNat) ∧
-    ComputableInPolyTime V.verdict (encPair (encPair enc encBits) encBits) encBool
+structure PolyTime (enc : α ↪ List Bool) (V : PCPVerifier α) : Prop where
+  /-- The number of random bits is computable in polynomial time, in binary. -/
+  coins : ComputableInPolyTime V.coins enc encNat
+  /-- The queried positions are computable in polynomial time, in binary. -/
+  queries : ComputableInPolyTime V.queries (encPair enc encBits) (encList encNat)
+  /-- The verdict is computable in polynomial time. -/
+  verdict : ComputableInPolyTime V.verdict (encPair (encPair enc encBits) encBits) encBool
 
 end PCPVerifier
 
@@ -105,12 +109,20 @@ end PCPVerifier
 whose encoding has length `n`: every member of `A` has a proof that is accepted for every random
 string, and for every non-member, every proof is accepted for at most half of the random strings.
 The random strings on an instance `a` are those of length `V.coins a`. -/
-def IsPCPVerifier (enc : α ↪ List Bool) (r q : ℕ → ℕ) (V : PCPVerifier α) (A : Set α) : Prop :=
-  (∀ a, V.coins a ≤ r (enc a).length) ∧
-    (∀ a (ρ : List Bool), ρ.length = V.coins a → (V.queries (a, ρ)).length ≤ q (enc a).length) ∧
-    (∀ a ∈ A, ∃ π : List Bool, ∀ ρ : List Bool, ρ.length = V.coins a → V.accepts a π ρ = true) ∧
-    ∀ a ∉ A, ∀ π : List Bool,
-      2 * acceptCount (fun x => V.accepts x.1 π x.2) a (V.coins a) ≤ 2 ^ V.coins a
+structure IsPCPVerifier (enc : α ↪ List Bool) (r q : ℕ → ℕ) (V : PCPVerifier α) (A : Set α) :
+    Prop where
+  /-- At most `r n` random bits on an instance whose encoding has length `n`. -/
+  coins_le : ∀ a, V.coins a ≤ r (enc a).length
+  /-- At most `q n` queries on an instance whose encoding has length `n`. -/
+  length_queries_le :
+    ∀ a (ρ : List Bool), ρ.length = V.coins a → (V.queries (a, ρ)).length ≤ q (enc a).length
+  /-- Completeness: every member of `A` has a proof accepted for every random string. -/
+  complete :
+    ∀ a ∈ A, ∃ π : List Bool, ∀ ρ : List Bool, ρ.length = V.coins a → V.accepts a π ρ = true
+  /-- Soundness: on a non-member, every proof is accepted for at most half of the random
+  strings. -/
+  sound : ∀ a ∉ A, ∀ π : List Bool,
+    2 * acceptCount (fun x => V.accepts x.1 π x.2) a (V.coins a) ≤ 2 ^ V.coins a
 
 /-- The class `PCP(r, q)` with respect to the encoding `enc` of instances: the problems with a
 polynomial-time verifier using `O(r n)` random bits and `O(q n)` queries on instances whose
@@ -129,11 +141,11 @@ theorem mem_PCP {r q : ℕ → ℕ} {A : Set α} : A ∈ PCP r q enc ↔
 
 theorem IsPCPVerifier.mono_randomness {r r' q : ℕ → ℕ} {V : PCPVerifier α} {A : Set α}
     (hr : ∀ n, r n ≤ r' n) (h : IsPCPVerifier enc r q V A) : IsPCPVerifier enc r' q V A :=
-  ⟨fun a => (h.1 a).trans (hr _), h.2⟩
+  { h with coins_le a := (h.coins_le a).trans (hr _) }
 
 theorem IsPCPVerifier.mono_queries {r q q' : ℕ → ℕ} {V : PCPVerifier α} {A : Set α}
     (hq : ∀ n, q n ≤ q' n) (h : IsPCPVerifier enc r q V A) : IsPCPVerifier enc r q' V A :=
-  ⟨h.1, fun a ρ hρ => (h.2.1 a ρ hρ).trans (hq _), h.2.2⟩
+  { h with length_queries_le a ρ hρ := (h.length_queries_le a ρ hρ).trans (hq _) }
 
 /-- More randomness gives a larger class. -/
 theorem PCP_mono_randomness {r r' q : ℕ → ℕ} (hr : ∀ n, r n ≤ r' n) :

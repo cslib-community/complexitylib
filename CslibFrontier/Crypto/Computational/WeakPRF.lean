@@ -176,10 +176,6 @@ theorem isOraclePPT_weakToPrfDistinguisher {adversary : OracleDistinguisher}
       (fun _ _ _ hreply => length_le_of_mem_support_weakSampleQuery hreply)
   exact hrun.isOraclePPT
 
-private theorem interpret_unifFin_self {α : Type} (program : ProbComp α) :
-    OracleComp.interpret ProbComp.unifFin program = program :=
-  OracleComp.interpret_query_eq_self program
-
 /-- Against any deterministic oracle with answers of width at most `n` on `n`-bit points,
 `weakToPrfDistinguisher` has the same law as the weak experiment on that oracle. -/
 private theorem eval_interpret_weakToPrfDistinguisher (adversary : OracleDistinguisher) (n : ℕ)
@@ -201,7 +197,7 @@ private theorem eval_interpret_weakToPrfDistinguisher (adversary : OracleDisting
     exact ProbComp.eval_unifFin m
   · simp only [OracleComp.sumHandler, weakSampleQuery, weakSample, OracleComp.interpret_bind,
       ProbOracleComp.interpret_sample, ProbOracleComp.interpret_query, OracleComp.interpret_pure,
-      OracleComp.interpret_map, interpret_unifFin_self, ProbComp.eval_bind, ProbComp.eval_map,
+      OracleComp.interpret_map, ProbComp.interpret_unifFin, ProbComp.eval_bind, ProbComp.eval_map,
       ProbComp.eval_pure, PMF.pure_bind, PMF.pure_map]
     refine PMF.bind_congr_on_support _ _ _ fun point hpoint => ?_
     rw [BitString.eval_sampleList] at hpoint

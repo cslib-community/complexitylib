@@ -47,8 +47,8 @@ theorem output_collision_eq_inversion (f : List Bool → List Bool) (n : ℕ) :
       (Game.succProbability (ProbComp.eval
         (inversionGame f (fun n _ => BitString.sampleList n) n)) : ℝ) := by
   simp only [pmf_norm, collisionProbability_eq_probability, Game.succProbability,
-    ENNReal.coe_toNNReal_eq_toReal, inversionGame, BitString.eval_sampleList, PMF.map,
-    beq_eq_decide, eq_comm]
+    ENNReal.coe_toNNReal_eq_toReal, inversionGame, inversionExperiment,
+    BitString.eval_sampleList, PMF.map, beq_eq_decide, eq_comm]
 
 /-- One-wayness forces negligible output collisions, even for variable-length images.
 `Real.toNNReal` is exact here because collision probability is nonnegative. -/

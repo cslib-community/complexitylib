@@ -13,7 +13,10 @@ from urllib.parse import urlsplit
 
 from bounded import UnsafeShutdown, interruptible, run, seconds
 
-DEFAULT_URL = "https://storage.googleapis.com/complexitylib-lake-cache"
+DEFAULT_URLS = (
+    "https://storage.googleapis.com/complexitylib-lake-cache",
+    "https://complexitycache.csail.mit.edu",
+)
 SCOPE = "cslib-community/complexitylib"
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -23,7 +26,7 @@ def origins(env):
     if "COMPLEXITYLIB_CACHE_URL" in env:
         values = [env["COMPLEXITYLIB_CACHE_URL"]] if env["COMPLEXITYLIB_CACHE_URL"] else []
     else:
-        values = env.get("COMPLEXITYLIB_CACHE_URLS", "").split() or [DEFAULT_URL]
+        values = env.get("COMPLEXITYLIB_CACHE_URLS", "").split() or list(DEFAULT_URLS)
     if len(values) > 8:
         raise ValueError("At most eight cache origins may be configured")
     for value in values:

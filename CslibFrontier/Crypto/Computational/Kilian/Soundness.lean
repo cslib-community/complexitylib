@@ -44,7 +44,7 @@ output at parameter `n` has a compact table of at most `M` entries, then
 The proof is `Cslib.Probability.Rewinding.le_add_mul_sqrt_disagreement`: at each saved state, a
 run that accepts while its opened bits agree with a fixed table makes the PCP verifier accept the
 proof spelled by that table on all `n` independent random strings, which happens with
-probability at most `2⁻ⁿ` when `x ∉ L` (`IsPCPVerifier`'s soundness); otherwise two runs disagree.
+probability at most `2⁻ⁿ` when `x ∉ L` (`IsPCPVerifier.sound`); otherwise two runs disagree.
 Composing with `succProbability_merkleBindingGame_le` bounds the advantage by that of the collision
 finder `merkleCollisionFinder H (kilianBindingAdversary P)`.
 
@@ -490,7 +490,7 @@ private theorem computableInPolyTime_kilianOpenings (hV : V.PolyTime enc) :
     encKilianResponse)) (encPair encBits (encList encKilianOpening))
   have hρ := (ComputableInPolyTime.fst encBits (encList encKilianOpening)).comp hps
   have hanswers := (ComputableInPolyTime.snd encBits (encList encKilianOpening)).comp hps
-  have hqueries := hV.2.1.comp ((hx.comp hpf).prod hρ)
+  have hqueries := hV.queries.comp ((hx.comp hpf).prod hρ)
   unfold kilianOpenings
   exact ComputableInPolyTime.flatMapWithInput
     (f := fun (p : α × List (List Bool) × KilianResponse)
@@ -666,7 +666,7 @@ theorem HashFamily.kilianSound (hH : HashFamily H) {enc : α ↪ List Bool} {L :
     (hpcp : IsPCPVerifier enc (fun m => c * (Nat.log 2 m + 1)) q V L) :
     KilianSound H V enc L := by
   intro P hP
-  have hcoins := hpcp.1
+  have hcoins := hpcp.coins_le
   obtain ⟨c₁, d₁, hlen₁⟩ := hP.commit.on.length_le
   have hq : ComputableInPolyTime (fun out : (α × List Bool) × List Bool => V.queryTable out.1.1)
       (encPair (encPair enc encBits) encBits) (encList encNat) :=
@@ -690,6 +690,6 @@ theorem HashFamily.kilianSound (hH : HashFamily H) {enc : α ↪ List Bool} {L :
   have hbind := hH.merklePositionBinding.negligible _ (isPPT_kilianBindingAdversary hV hcoins hP)
   refine negligible_of_le ((negligible_geometric (by norm_num : (1 / 2 : NNReal) < 1)).add
     (hbind.sqrt.polynomiallyBounded_mul hpoly)) fun n => ?_
-  exact succProbability_kilianSoundnessGame_le L P n _ hpcp.2.2.2 (hM n)
+  exact succProbability_kilianSoundnessGame_le L P n _ hpcp.sound (hM n)
 
 end Cslib.Crypto

@@ -125,8 +125,7 @@ theorem eq_of_mem_support_realEnsemble {security : ℕ} {word : List Bool}
 theorem distinguishingGame_realEnsemble (security : ℕ) :
     distinguishingGame (LWE.realEnsemble (fun _ => 0) (fun _ => 1) (fun _ => 1) zeroNoise
       security) (firstBitFalse security) = PMF.pure true := by
-  unfold distinguishingGame
-  rw [PMF.monad_bind_eq_bind]
+  rw [distinguishingGame_eq_bind, PMF.monad_bind_eq_bind]
   trans (LWE.realEnsemble (fun _ => 0) (fun _ => 1) (fun _ => 1) zeroNoise security).bind
     fun _ => PMF.pure true
   · refine PMF.bind_congr_on_support _ _ _ fun word hword => ?_
@@ -138,7 +137,7 @@ theorem distinguishingGame_realEnsemble (security : ℕ) :
 theorem distinguishingGame_uniformEnsemble_apply (security : ℕ) :
     distinguishingGame (LWE.uniformEnsemble (fun _ => 0) (fun _ => 1) (fun _ => 1) security)
       (firstBitFalse security) true = 2⁻¹ := by
-  simp only [distinguishingGame, LWE.uniformEnsemble, firstBitFalse, PMF.monad_bind_eq_bind,
+  simp only [distinguishingGame_eq_bind, LWE.uniformEnsemble, firstBitFalse, PMF.monad_bind_eq_bind,
     PMF.bind_map, Function.comp_def, ProbComp.eval_pure, PMF.bind_apply, tsum_fintype,
     PMF.uniformOfFintype_apply, PMF.pure_apply]
   rw [← Finset.mul_sum]
@@ -301,8 +300,7 @@ theorem not_indcca_of_ciphertext_length_eq (E : SymmetricCipher)
   have hcomp : Negligible (fun n =>
       Game.advantage (ProbComp.eval (E.ccaGame detCCAAdversary false (n + 1)))
         (ProbComp.eval (E.ccaGame detCCAAdversary true (n + 1)))) :=
-    hneg.comp_of_polynomial_bound (bound := fun m => m) (Filter.tendsto_add_atTop_nat 1)
-      (by fun_prop) (Filter.Eventually.of_forall fun n => by lia)
+    hneg.shift 1
   have hcongr : Negligible (fun _ : ℕ => (1 : ℝ≥0)) := hcomp.congr fun n => by
     rw [eval_ccaGame_detCCAAdversary_false E (n + 1) (hctLen (n + 1)),
       eval_ccaGame_detCCAAdversary_true E (by lia) (hctLen (n + 1)), Game.advantage]
@@ -355,7 +353,7 @@ def constFalse : PRG.Generator Unit (Fin 1 → Bool) := ⟨fun _ _ => false⟩
 /-- Guessing `false` predicts the bit of `constFalse` with probability `1`. -/
 theorem predictionExperiment_constFalse :
     constFalse.predictionExperiment 0 (fun _ => PMF.pure false) = PMF.pure true := by
-  simp [PRG.Generator.predictionExperiment, PRG.Generator.outputDist, constFalse,
+  simp [PRG.Generator.predictionExperiment_eq_bind, PRG.Generator.outputDist, constFalse,
     PMF.monad_bind_eq_bind, PMF.pure_map, Function.comp_def, PMF.bind_const]
 
 /-- **A constant generator is not next-bit unpredictable** at any error below `1 / 2`. -/
