@@ -4335,6 +4335,8 @@ public import CslibFrontier.Crypto.Computational.Encryption.Scheme
 public import CslibFrontier.Crypto.Computational.EvenMansour
 public import CslibFrontier.Crypto.Computational.Factoring.PollardRho
 public import CslibFrontier.Crypto.Computational.Falcon.Verification
+public import CslibFrontier.Crypto.Computational.FuzzyExtractor.Basic
+public import CslibFrontier.Crypto.Computational.FuzzyExtractor.DecodeThenExtract
 public import CslibFrontier.Crypto.Computational.GGM.Circuit
 public import CslibFrontier.Crypto.Computational.GGM.Evaluation
 public import CslibFrontier.Crypto.Computational.GGM.Expansion
