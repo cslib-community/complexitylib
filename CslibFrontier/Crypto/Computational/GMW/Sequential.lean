@@ -981,15 +981,24 @@ theorem mem_support_runTwoRound {β : Type} (f1 f2 : List Bool → List Bool)
   rw [eval_runTwoRound] at h
   exact ProbOracleComp.mem_support_of_mem _ h
 
+/-- An output that `acceptGuess` keeps from `runTwoRound` lies in `OracleComp.support prog`. -/
+theorem mem_support_acceptGuess_runTwoRound {β : Type} (f1 f2 : List Bool → List Bool)
+    (prog : WordOracleComp Unit β) (ch_guess : List Bool) (s : TwoRoundState) {result : β}
+    (h : some result ∈
+      (ProbComp.eval (acceptGuess ch_guess <$> runTwoRound f1 f2 prog s)).support) :
+    result ∈ OracleComp.support prog := by
+  rw [ProbComp.eval_map, PMF.mem_support_map_iff] at h
+  obtain ⟨⟨view, st⟩, hp, hacc⟩ := h
+  obtain ⟨-, rfl⟩ := acceptGuess_eq_some.mp hacc
+  exact mem_support_runTwoRound f1 f2 prog s st hp
+
 theorem mem_support_gmwSimWithPads {β : Type} (generator : List Bool → List Bool)
     (s m : ℕ) (φ : CNF ℕ) (prog : WordOracleComp Unit β) (pads : List (List Bool)) {result : β}
     (h : some result ∈ (ProbComp.eval (gmwSimWithPads generator s m φ prog pads)).support) :
     result ∈ OracleComp.support prog := by
   simp only [gmwSimWithPads, ProbComp.eval_bind, PMF.mem_support_bind_iff] at h
-  obtain ⟨ch_guess, -, coins, -, ⟨view, st⟩, hp, hret⟩ := h
-  simp only [ProbComp.eval_pure, PMF.support_pure, Set.mem_singleton_iff] at hret
-  split_ifs at hret; cases hret
-  exact mem_support_runTwoRound _ _ prog _ _ hp
+  obtain ⟨ch_guess, -, coins, -, h⟩ := h
+  exact mem_support_acceptGuess_runTwoRound _ _ prog ch_guess _ h
 
 theorem mem_support_gmwSimAttempt {β : Type} (generator : List Bool → List Bool)
     (s m : ℕ) (φ : CNF ℕ) (prog : WordOracleComp Unit β) {result : β}
@@ -1005,10 +1014,8 @@ theorem mem_support_gmwRealWithPads {β : Type} (generator : List Bool → List 
     (h : some result ∈ (ProbComp.eval (gmwRealWithPads generator s m φ w prog pads)).support) :
     result ∈ OracleComp.support prog := by
   simp only [gmwRealWithPads, ProbComp.eval_bind, PMF.mem_support_bind_iff] at h
-  obtain ⟨ch_guess, -, m₀, -, m₁, -, m₂, -, seeds, -, ⟨view, st⟩, hp, hret⟩ := h
-  simp only [ProbComp.eval_pure, PMF.support_pure, Set.mem_singleton_iff] at hret
-  split_ifs at hret; cases hret
-  exact mem_support_runTwoRound _ _ prog _ _ hp
+  obtain ⟨ch_guess, -, m₀, -, m₁, -, m₂, -, seeds, -, h⟩ := h
+  exact mem_support_acceptGuess_runTwoRound _ _ prog ch_guess _ h
 
 theorem mem_support_of_mem_replicate {α : Type} {n : ℕ} {g : ProbComp α} {xs : List α}
     (hxs : xs ∈ (ProbComp.eval (OracleComp.replicate n g)).support) {x : α} (hx : x ∈ xs) :

@@ -20,6 +20,14 @@ def satFormula : CNF ℕ := [[(0, true), (1, false)]]
 theorem satFormula_verified : ThreeSAT.verifier (satFormula, [true, false]) = true := by
   decide
 
+/-! The record encodings keep the encoded words of the tuples they replaced. -/
+
+example (coins : GMW.ProverCoins) :
+    GMW.encProverCoins coins = encPair encBits (encList encBits) (coins.bits, coins.seeds) := rfl
+
+example (state : GMW.TwoRoundState) :
+    GMW.encTwoRoundState state = encPair encUnary encBits (state.round, state.challenge) := rfl
+
 example : GMW.totalLen satFormula = 36 := by decide
 
 /-- Keep one private coin and one commitment bit, derive the challenge from both, and retain

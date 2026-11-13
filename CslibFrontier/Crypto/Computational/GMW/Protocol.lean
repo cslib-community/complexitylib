@@ -39,6 +39,8 @@ clause truth tables (`ch[j] = false`) or `v` and the active truth-table entries 
   `Cslib.Crypto.GMW.verifyTranscript`: prover round functions and verifier transcript predicate.
 * `Cslib.Crypto.GMW.TwoRoundState`, `Cslib.Crypto.GMW.runTwoRound`: the round counter and recorded
   challenge of one execution, and the two-round deterministic oracle handler in `ProbComp`.
+* `Cslib.Crypto.GMW.acceptGuess`: the accept step of a simulation attempt, keeping the output when
+  the recorded challenge equals the guessed one.
 * `Cslib.Crypto.GMW.ProverCoins`: the committed bits and commitment seeds of one execution.
 * `Cslib.Crypto.GMW.gmwProver`, `Cslib.Crypto.GMW.gmwInteract`: honest prover strategy and its
   `ProbComp` realization.
@@ -645,6 +647,18 @@ theorem eval_runTwoRound {α : Type} (reply1 reply2 : List Bool → List Bool)
   simpa [runTwoRound] using
     ProbOracleComp.eval_run_interpret_eq_runWith
       (fun q state => pure (twoRoundStep reply1 reply2 q.2 state)) prog s
+
+/-- The accept step of a simulation attempt that guessed the challenge `ch_guess`: keep the output
+of a two-round execution when its recorded challenge equals the guess, and fail otherwise. -/
+def acceptGuess {β : Type} (ch_guess : List Bool) (result : β × TwoRoundState) : Option β :=
+  if result.2.challenge == ch_guess then some result.1 else none
+
+theorem acceptGuess_eq_some {β : Type} {ch_guess : List Bool} {result : β × TwoRoundState}
+    {out : β} :
+    acceptGuess ch_guess result = some out ↔
+      result.2.challenge = ch_guess ∧ result.1 = out := by
+  unfold acceptGuess
+  split_ifs with h <;> simp_all
 
 /-- The private coins of one prover execution: the committed bits and one commitment seed per
 bit. The honest prover commits to `realBits` of its witness and masks; the simulator to `simBits` of

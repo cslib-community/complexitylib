@@ -110,7 +110,7 @@ theorem eval_gmwRealPRGPads_sessionStep {tapes : ℕ} {Control : Type}
 changes the acceptance probability of any post-processing game `post` by at most
 `(K : ℝ≥0) * (7 / 8) ^ att`. -/
 theorem advantage_iterate_realSessionStep_realPRGPadsSessionStep_le
-    {tapes : ℕ} {Control : Type} [Finite Control]
+    {tapes : ℕ} {Control : Type}
     (machine : _root_.Turing.MultiTapePTM tapes Bool Control Unit)
     (generator : List Bool → List Bool) (s m limit att : ℕ) (φ : CNF ℕ) (w : List Bool)
     (K : ℕ) (st : ℕ × FiniteConfig tapes Bool Control Unit)
@@ -333,7 +333,7 @@ theorem eval_replicate_runAllSessionsWithPads_prg {tapes : ℕ} {Control : Type}
   simp only [pmf_norm, runAllSessionsWithPads] at hbind ⊢
   exact hbind
 
-theorem eval_replicate_runAllSessionsWithPads_uniform {tapes : ℕ} {Control : Type} [Finite Control]
+theorem eval_replicate_runAllSessionsWithPads_uniform {tapes : ℕ} {Control : Type}
     (machine : _root_.Turing.MultiTapePTM tapes Bool Control Unit)
     (generator : List Bool → List Bool) (s m limit att K : ℕ) (φ : CNF ℕ) (w word : List Bool)
     (hw : ThreeSAT.verifier (φ, w) = true) :

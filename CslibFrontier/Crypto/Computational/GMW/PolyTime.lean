@@ -45,7 +45,7 @@ certifies:
   state of `runTwoRound` and of the prover's coins.
 * `Cslib.Crypto.GMW.gmwSampleSimCoins`, `Cslib.Crypto.GMW.gmwSimWithPads`,
   `Cslib.Crypto.GMW.gmwSimAttempt`: single-attempt GMW simulator components. An attempt returns
-  `some` view when its guess hits the verifier's challenge and `none` otherwise.
+  `some` view when its guess hits the verifier's challenge and `none` otherwise (`acceptGuess`).
 * `Cslib.Crypto.GMW.gmwSimulator`: the GMW zero-knowledge simulator repeating `gmwSimAttempt`
   `n + 1` times.
 
@@ -591,6 +591,16 @@ theorem computableInPolyTime_firstSuccess {α β : Type} {input : α ↪ List Bo
       (ComputableTidilyInPolyTime.snd input (encOption enc)).optionIsSome.computableInPolyTime)
   (hfilt.tidy.optionGetDWithInput hd.tidy).computableInPolyTime
 
+@[fun_prop]
+theorem computableInPolyTime_acceptGuess {α β : Type} {input : α ↪ List Bool}
+    {encB : β ↪ List Bool} {ch_guess : α → List Bool} {result : α → β × TwoRoundState}
+    (hch : ComputableInPolyTime ch_guess input encBits)
+    (hres : ComputableInPolyTime result input (encPair encB encTwoRoundState)) :
+    ComputableInPolyTime (fun a => acceptGuess (ch_guess a) (result a)) input (encOption encB) := by
+  unfold acceptGuess
+  exact ((encTwoRoundState_challenge_polyTime hres.snd').beq hch).ite'
+    ((ComputableInPolyTime.optionSome encB).comp hres.fst') (.const none)
+
 private theorem isPPTOn_sampleThreeAndSeeds {α : Type} {input : α ↪ List Bool}
     {s : α → ℕ} {φ : α → CNF ℕ} {combine : α → List Bool → List Bool → List Bool → List Bool}
     (hs : ComputableInPolyTime s input encUnary) (hφ : ComputableInPolyTime φ input encCNF)
@@ -647,12 +657,11 @@ noncomputable def gmwSimWithPads {β : Type} (generator : List Bool → List Boo
     ProbComp (Option β) := do
   let ch_guess ← BitString.sampleList 3
   let coins ← gmwSampleSimCoins s φ ch_guess
-  let result ← runTwoRound
+  acceptGuess ch_guess <$> runTwoRound
     (fun r => proverReply1 generator m r (allOpenFlags φ ch_guess coins.bits) coins.bits
       coins.seeds pads)
     (fun _ => proverReply2 s φ ch_guess coins.bits coins.seeds)
     prog .init
-  return if result.2.challenge == ch_guess then some result.1 else none
 
 /-- One attempt of the GMW zero-knowledge simulator on `prog`, without any witness. -/
 noncomputable def gmwSimAttempt {β : Type} (generator : List Bool → List Bool) (s m : ℕ)
@@ -690,7 +699,6 @@ theorem isPPTOn_gmwSimWithPads {α β : Type} {enc : α ↪ List Bool} {encB : �
   have hfst1 := ComputableInPolyTime.fst e0 encBits
   apply IsPPTOn.bind_with
     (isPPTOn_gmwSampleSimCoins (hs0.comp hfst1) (hφ0.comp hfst1) (.snd e0 encBits))
-  simp only [bind_pure_comp]
   have hp1 := ComputableInPolyTime.fst e1 encProverCoins
   have hp0 := hp1.fst'; have hch := hp1.snd'
   have hcoins := ComputableInPolyTime.snd e1 encProverCoins
@@ -700,10 +708,8 @@ theorem isPPTOn_gmwSimWithPads {α β : Type} {enc : α ↪ List Bool} {encB : �
     (computableInPolyTime_allOpenFlags hφ2 hch hbits) hbits hch
     (encProverCoins_seeds_polyTime hcoins) hp0.snd')
   let eOut := encPair encB encTwoRoundState
-  have hres := ComputableInPolyTime.snd e2 eOut
-  have hch3 := ((ComputableInPolyTime.fst e2 eOut).fst').snd'
-  exact ((encTwoRoundState_challenge_polyTime hres.snd').beq hch3).ite'
-    ((ComputableInPolyTime.optionSome encB).comp hres.fst') (.const none)
+  exact computableInPolyTime_acceptGuess ((ComputableInPolyTime.fst e2 eOut).fst').snd'
+    (ComputableInPolyTime.snd e2 eOut)
 
 theorem isPPTOn_gmwSimAttempt {α β : Type} {enc : α ↪ List Bool} {encB : β ↪ List Bool}
     {generator : List Bool → List Bool} {length : ℕ → ℕ} {f : α → CNF ℕ}

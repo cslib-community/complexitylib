@@ -211,11 +211,6 @@ private theorem eval_bind_runTwoRound_reply1 {α β : Type} (μ : ProbComp β)
         (hf q.2)
       simpa only [pmf_norm] using hmap
 
-/-- Keep the output of a two-round execution when its recorded challenge equals `ch_guess`. -/
-private abbrev acceptGuess {β : Type} (ch_guess : List Bool) (p : β × TwoRoundState) :
-    Option β :=
-  if p.2.challenge == ch_guess then some p.1 else none
-
 private theorem eval_runTwoRound_of_two_le {β : Type} (r1 r2 : List Bool → List Bool)
     (ch_guess : List Bool) (prog : WordOracleComp Unit β) {s : TwoRoundState}
     (hs1 : 2 ≤ s.round) (hs2 : (s.challenge == ch_guess) = false) :
@@ -337,11 +332,10 @@ noncomputable def game0 {β : Type} (generator : List Bool → List Bool) (s m :
     (w : List Bool) (prog : WordOracleComp Unit β) : ProbComp (Option β) := do
   let ch_guess ← BitString.sampleList 3
   let coins ← sampleHonestCoins s φ w
-  let result ← runTwoRound
+  acceptGuess ch_guess <$> runTwoRound
     (honestReply1 generator m φ coins)
     (fun _ => honestReply2 s φ coins ch_guess)
     prog .init
-  return if result.2.challenge == ch_guess then some result.1 else none
 
 /-- An attempt of hybrid 0 returns the honest view tagged by an independent `guessCoin`: answering
 the guessed challenge instead of the verifier's leaves the accepted views unchanged. -/
@@ -358,14 +352,7 @@ theorem eval_game0 {β : Type} (generator : List Bool → List Bool) (s m : ℕ)
         ProbComp.eval (acceptGuess ch_guess <$> runTwoRound (honestReply1 generator m φ coins)
           (honestReply2 s φ coins) prog .init) :=
     (eval_runTwoRound_guess _ _ ch_guess prog .init).symm
-  have hgame : game0 generator s m φ w prog = (do
-      let ch_guess ← BitString.sampleList 3
-      let coins ← sampleHonestCoins s φ w
-      acceptGuess ch_guess <$> runTwoRound (honestReply1 generator m φ coins)
-        (fun _ => honestReply2 s φ coins ch_guess) prog .init) := by
-    simp only [game0, bind_pure_comp]
-  rw [hgame]
-  simp only [ProbComp.eval_bind, BitString.eval_sampleList, hguess]
+  simp only [game0, ProbComp.eval_bind, BitString.eval_sampleList, hguess]
   simp only [pmf_norm]
   rw [PMF.bind_comm]
   refine Probability.PMF.bind_congr_on_support _ _ _ fun coins _ => ?_
@@ -390,11 +377,10 @@ noncomputable def gmwRealWithPads {β : Type} (generator : List Bool → List Bo
   let bits := realBits φ w m₀ m₁ m₂
   let openFlags := allOpenFlags φ ch_guess bits
   let seeds ← OracleComp.replicate (totalLen φ) (BitString.sampleList s)
-  let result ← runTwoRound
+  acceptGuess ch_guess <$> runTwoRound
     (fun r => proverReply1 generator m r openFlags bits seeds pads)
     (fun _ => proverReply2 s φ ch_guess bits seeds)
     prog .init
-  return if result.2.challenge == ch_guess then some result.1 else none
 
 /-- Single-attempt hybrid with pseudorandom unopened pads. -/
 noncomputable def gmwRealPRGPads {β : Type} (generator : List Bool → List Bool) (s m : ℕ)
@@ -421,11 +407,10 @@ private theorem eval_bind_gameWithPads {β : Type} (d_pads : ProbComp (List (Lis
         let openFlags := allOpenFlags φ ch_guess bits
         let seeds ← OracleComp.replicate (totalLen φ) (BitString.sampleList s)
         let pads ← d_pads
-        let p ← runTwoRound
+        acceptGuess ch_guess <$> runTwoRound
           (fun r => proverReply1 generator m r openFlags bits seeds pads)
           (fun _ => proverReply2 s φ ch_guess bits seeds)
-          prog .init
-        return if p.2.challenge == ch_guess then some p.1 else none) := by
+          prog .init) := by
   simp only [gmwRealWithPads, ProbComp.eval_bind, BitString.eval_sampleList]
   rw [PMF.bind_comm]; refine congrArg (PMF.bind _) (funext fun ch_guess => ?_)
   rw [PMF.bind_comm]; refine congrArg (PMF.bind _) (funext fun m₀ => ?_)
@@ -454,12 +439,10 @@ theorem eval_game0Pads_eq_eval_game0 {β : Type} (generator : List Bool → List
   have hbits : bits.length = totalLen φ := length_realBits φ w m₀ m₁ m₂
   let openFlags := allOpenFlags φ ch_guess bits
   let cont (q : List (List Bool) × List (List Bool)) : PMF (Option β) :=
-    ProbComp.eval (do
-      let p ← runTwoRound
-        (fun r => proverReply1 id m r (List.replicate bits.length false) bits [] q.1)
-        (fun _ => naorMaskBits openFlags bits ++ q.2.flatten)
-        prog .init
-      return if p.2.challenge == ch_guess then some p.1 else none)
+    ProbComp.eval (acceptGuess ch_guess <$> runTwoRound
+      (fun r => proverReply1 id m r (List.replicate bits.length false) bits [] q.1)
+      (fun _ => naorMaskBits openFlags bits ++ q.2.flatten)
+      prog .init)
   have hselect := congrArg (fun d => d.bind cont)
     (eval_replicate_naorSelectPads s generator openFlags bits)
   simp only [pmf_norm, hbits, cont] at hselect
@@ -467,7 +450,7 @@ theorem eval_game0Pads_eq_eval_game0 {β : Type} (generator : List Bool → List
       honestReply1 generator m φ ⟨realBits φ w m₀ m₁ m₂, seeds⟩ =
         fun r => proverReply1 generator m r (List.replicate (totalLen φ) true)
           (realBits φ w m₀ m₁ m₂) seeds [] := rfl
-  simp only [hhon1, honestReply2, proverReply2, ProbComp.eval_pure,
+  simp only [hhon1, honestReply2, proverReply2, ProbComp.eval_map,
     proverReply1_eq_naorSelectPads generator m, length_realBits]
   exact hselect
 
@@ -527,9 +510,9 @@ private theorem eval_bind_gmwSimWithPads {β : Type} (d_pads : ProbComp (List (L
         let r₂ ← BitString.sampleList φ.vars.length
         let bits := simBits φ ch_guess r₀ r₁ r₂; let openFlags := allOpenFlags φ ch_guess bits
         let seeds ← OracleComp.replicate (totalLen φ) (BitString.sampleList s); let pads ← d_pads
-        let p ← runTwoRound (fun r => proverReply1 generator m r openFlags bits seeds pads)
-          (fun _ => proverReply2 s φ ch_guess bits seeds) prog .init
-        return if p.2.challenge == ch_guess then some p.1 else none) := by
+        acceptGuess ch_guess <$> runTwoRound
+          (fun r => proverReply1 generator m r openFlags bits seeds pads)
+          (fun _ => proverReply2 s φ ch_guess bits seeds) prog .init) := by
   simp only [gmwSimWithPads, gmwSampleSimCoins, bind_assoc, pure_bind,
     ProbComp.eval_bind, BitString.eval_sampleList]
   rw [PMF.bind_comm]; refine congrArg (PMF.bind _) (funext fun ch_guess => ?_)
@@ -542,15 +525,14 @@ private theorem eval_pads_runTwoRound_mask {β : Type} (generator : List Bool �
     (prog : WordOracleComp Unit β) :
     ProbComp.eval (do
       let pads ← OracleComp.replicate bits.length (BitString.sampleList m)
-      let p ← runTwoRound (fun r => proverReply1 generator m r openFlags bits seeds pads)
-        (fun _ => proverReply2 s φ ch_guess bits seeds) prog .init
-      return if p.2.challenge == ch_guess then some p.1 else none) =
+      acceptGuess ch_guess <$> runTwoRound
+        (fun r => proverReply1 generator m r openFlags bits seeds pads)
+        (fun _ => proverReply2 s φ ch_guess bits seeds) prog .init) =
     ProbComp.eval (do
       let pads ← OracleComp.replicate bits.length (BitString.sampleList m)
-      let p ← runTwoRound
+      acceptGuess ch_guess <$> runTwoRound
         (fun r => proverReply1 generator m r openFlags (naorMaskBits openFlags bits) seeds pads)
-        (fun _ => proverReply2 s φ ch_guess bits seeds) prog .init
-      return if p.2.challenge == ch_guess then some p.1 else none) := by
+        (fun _ => proverReply2 s φ ch_guess bits seeds) prog .init) := by
   have h1 := eval_bind_runTwoRound_reply1
     (OracleComp.replicate bits.length (BitString.sampleList m))
     (fun pads r => proverReply1 generator m r openFlags bits seeds pads)
@@ -563,8 +545,7 @@ private theorem eval_pads_runTwoRound_mask {β : Type} (generator : List Bool �
           openFlags bits seeds)
       simpa only [pmf_norm, proverReply1,
         length_naorMaskBits] using hsplit) prog
-  have hmap := congrArg (PMF.map (fun p : β × TwoRoundState =>
-      if p.2.challenge == ch_guess then some p.1 else none)) h1
+  have hmap := congrArg (PMF.map (acceptGuess (β := β) ch_guess)) h1
   simpa only [pmf_norm, PMF.map] using hmap
 
 theorem eval_game1_eq_eval_gmwSimAttempt {β : Type} (generator : List Bool → List Bool)
@@ -578,17 +559,17 @@ theorem eval_game1_eq_eval_gmwSimAttempt {β : Type} (generator : List Bool → 
     ProbComp.eval (do
       let seeds ← OracleComp.replicate (totalLen φ) (BitString.sampleList s)
       let pads ← OracleComp.replicate (totalLen φ) (BitString.sampleList m)
-      let p ← runTwoRound (fun r => proverReply1 generator m r sflags sbits seeds pads)
-        (fun _ => proverReply2 s φ ch_guess sbits seeds) prog .init
-      return if p.2.challenge == ch_guess then some p.1 else none)
+      acceptGuess ch_guess <$> runTwoRound
+        (fun r => proverReply1 generator m r sflags sbits seeds pads)
+        (fun _ => proverReply2 s φ ch_guess sbits seeds) prog .init)
   have hinner (ch_guess m₀ m₁ m₂ : List Bool) :
       ProbComp.eval (do
         let bits := realBits φ w m₀ m₁ m₂; let openFlags := allOpenFlags φ ch_guess bits
         let seeds ← OracleComp.replicate (totalLen φ) (BitString.sampleList s)
         let pads ← OracleComp.replicate (totalLen φ) (BitString.sampleList m)
-        let p ← runTwoRound (fun r => proverReply1 generator m r openFlags bits seeds pads)
-          (fun _ => proverReply2 s φ ch_guess bits seeds) prog .init
-        return if p.2.challenge == ch_guess then some p.1 else none) =
+        acceptGuess ch_guess <$> runTwoRound
+          (fun r => proverReply1 generator m r openFlags bits seeds pads)
+          (fun _ => proverReply2 s φ ch_guess bits seeds) prog .init) =
       simCont ch_guess
         (if ch_guess.getD 0 false then BitString.listXor φ.vars.length [w, m₀] else m₀)
         (if ch_guess.getD 1 false then BitString.listXor φ.vars.length [w, m₁] else m₁)
@@ -618,16 +599,14 @@ theorem eval_game1_eq_eval_gmwSimAttempt {β : Type} (generator : List Bool → 
     have hpad_rhs :
         ProbComp.eval (do
           let pads ← OracleComp.replicate (totalLen φ) (BitString.sampleList m)
-          let p ← runTwoRound
+          acceptGuess ch_guess <$> runTwoRound
             (fun r => proverReply1 generator m r openFlags (naorMaskBits openFlags bits) seeds pads)
-            (fun _ => proverReply2 s φ ch_guess bits seeds) prog .init
-          return if p.2.challenge == ch_guess then some p.1 else none) =
+            (fun _ => proverReply2 s φ ch_guess bits seeds) prog .init) =
         ProbComp.eval (do
           let pads ← OracleComp.replicate (totalLen φ) (BitString.sampleList m)
-          let p ← runTwoRound
+          acceptGuess ch_guess <$> runTwoRound
             (fun r => proverReply1 generator m r (allOpenFlags φ ch_guess sbits) sbits seeds pads)
-            (fun _ => proverReply2 s φ ch_guess sbits seeds) prog .init
-          return if p.2.challenge == ch_guess then some p.1 else none) := by
+            (fun _ => proverReply2 s φ ch_guess sbits seeds) prog .init) := by
       rw [hmask, hflags, hrep2 seeds]
     simpa only [ProbComp.eval_bind] using hpad.trans hpad_rhs
   simp only [ProbComp.eval_bind, BitString.eval_sampleList, hinner]
@@ -794,7 +773,6 @@ theorem isPPTOn_gmwRealWithPads {α β Param : Type} {enc : α ↪ List Bool}
   apply IsPPTOn.bind_with (hvars.comp hfst2).sampleList
   apply IsPPTOn.bind_with (hvars.comp hfst3).sampleList
   apply IsPPTOn.bind_with ((hs.comp hfst4).sampleList.replicate (htotal.comp hfst4))
-  simp only [bind_pure_comp]
   have hp4 := ComputableInPolyTime.fst e4 (encList encBits)
   have hp3 := hp4.fst'; have hp2 := hp3.fst'; have hp1 := hp2.fst'; have hp0 := hp1.fst'
   have hch := hp1.snd'
@@ -805,10 +783,9 @@ theorem isPPTOn_gmwRealWithPads {α β Param : Type} {enc : α ↪ List Bool}
       (ha.comp hp0) (hz.comp hp0) hφ5 (computableInPolyTime_allOpenFlags hφ5 hch hbits)
       hbits hch (.snd e4 (encList encBits)) (hpads.comp hp0))
   let eOut := encPair encB encTwoRoundState
-  have hres := ComputableInPolyTime.snd e5 eOut
-  have hch6 := ((((ComputableInPolyTime.fst e5 eOut).fst').fst').fst').fst'.snd'
-  exact ((encTwoRoundState_challenge_polyTime hres.snd').beq hch6).ite'
-    ((ComputableInPolyTime.optionSome encB).comp hres.fst') (.const none)
+  exact computableInPolyTime_acceptGuess
+    ((((ComputableInPolyTime.fst e5 eOut).fst').fst').fst').fst'.snd'
+    (ComputableInPolyTime.snd e5 eOut)
 
 private theorem isPPTOn_gmwViewReduction_aux {α γ : Type} {enc : α ↪ List Bool}
     {encAux : γ ↪ List Bool}
