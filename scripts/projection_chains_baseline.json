@@ -293,7 +293,6 @@
  "CslibFrontier/Crypto/Game/CloseTo/RandomOracle.lean": 1,
  "CslibFrontier/Crypto/Primitives/BlockCipher/CBCMAC.lean": 20,
  "CslibFrontier/Crypto/Primitives/BlockCipher/Modes.lean": 4,
- "CslibFrontier/Crypto/Primitives/Garbling/CircuitInverters.lean": 6,
  "CslibFrontier/Crypto/Primitives/Garbling/CorrelationRobust.lean": 4,
  "CslibFrontier/Crypto/Primitives/Garbling/FreeXOR.lean": 1,
  "CslibFrontier/Crypto/Primitives/Garbling/HalfGates/Privacy.lean": 1,
