@@ -30,6 +30,8 @@ constant, and the other coordinates stay uniform.
 * `Cslib.Probability.PMF.pi_map_restrict`, `Cslib.Probability.PMF.pi_map_comp_injective`:
   restricting an independent product, or reading it along an injection, gives the independent
   product of the selected factors.
+* `Cslib.Probability.PMF.pi_map_sumPiEquivProdPi`, `Cslib.Probability.PMF.pi_bind_sum`: an
+  independent product over `ι ⊕ κ` is the pair of independent products over `ι` and over `κ`.
 * `Cslib.Probability.PMF.filter_uniformOfFintype_eval_eq`: conditioning a uniform tuple on one
   coordinate sets that coordinate.
 -/
@@ -82,6 +84,32 @@ theorem pi_map_comp_injective {κ : Type*} [Fintype κ] (p : ∀ i, PMF (α i)) 
     (he : Function.Injective e) :
     (pi p).map (fun a k => a (e k)) = pi fun k => p (e k) :=
   pi_map_comp_subtypeEquiv (· ∈ Set.range e) p (Equiv.ofInjective e he)
+
+section Sum
+
+variable {κ : Type*} [Fintype κ] {β : ι ⊕ κ → Type*} [∀ i, Finite (β i)]
+
+/-- An independent product over a sum of index types splits, along Mathlib's
+`Equiv.sumPiEquivProdPi`, into the two independent products over the summands. -/
+theorem pi_map_sumPiEquivProdPi (p : ∀ i, PMF (β i)) :
+    (pi p).map (Equiv.sumPiEquivProdPi β) =
+      (pi fun i => p (.inl i)).bind fun a => (pi fun j => p (.inr j)).map (a, ·) := by
+  ext ⟨a, b⟩
+  rw [map_equiv_apply, bind_map_prodMk_apply, pi_apply, pi_apply, pi_apply,
+    Fintype.prod_sum_type]
+  rfl
+
+/-- Drawing an independent product over a sum of index types and reading its two parts is drawing
+the two independent products over the summands. -/
+theorem pi_bind_sum {γ : Type*} (p : ∀ i, PMF (β i))
+    (F : (∀ i, β (.inl i)) → (∀ j, β (.inr j)) → PMF γ) :
+    (pi p).bind (fun f => F (fun i => f (.inl i)) fun j => f (.inr j)) =
+      (pi fun i => p (.inl i)).bind fun a => (pi fun j => p (.inr j)).bind fun b => F a b := by
+  have h := congrArg (fun q => q.bind fun ab => F ab.1 ab.2) (pi_map_sumPiEquivProdPi p)
+  simp only [PMF.bind_bind, PMF.map, PMF.pure_bind, Function.comp_def] at h
+  exact h
+
+end Sum
 
 /-- Conditioning a uniform tuple on the value `c` of its coordinate `j` sets that coordinate to `c`
 and keeps the other coordinates uniform. -/
