@@ -77,14 +77,14 @@ example : phiTopo.phi sampleValidCircuit = phiTopo.phi sampleValidCircuitSameTop
 
 example :
     let t := phiTopo.phi sampleValidCircuit
-    let (f', x') := mTopo t [true]
-    phiTopo.phi f' = t ∧ x' = [false, false, false] ∧ f'.1.evalCirc x' = [true] := by
+    let q := mTopo t [true]
+    phiTopo.phi q.fn = t ∧ q.input = [false, false, false] ∧ q.fn.1.evalCirc q.input = [true] := by
   decide
 
 example :
     let s := phiSize.phi sampleValidCircuit
-    let (f', x') := mSize s [true]
-    phiSize.phi f' = s ∧ x' = [false, false, false] ∧ f'.1.evalCirc x' = [true] := by
+    let q := mSize s [true]
+    phiSize.phi q.fn = s ∧ q.input = [false, false, false] ∧ q.fn.1.evalCirc q.input = [true] := by
   decide
 
 /-- A concrete circuit scheme over `ValidCircuit` with semantics `evalCirc`. -/
@@ -103,63 +103,65 @@ theorem plainCircuitScheme_isCircuitScheme : plainCircuitScheme.IsCircuitScheme 
   ⟨fun _ => ⟨rfl, rfl, rfl⟩, fun _ _ => rfl⟩
 
 example :
-    prvIndValid plainCircuitScheme phiSize sampleValidCircuit sampleValidCircuit'
-      [false, true, false] [false, true, false] := by
+    prvIndValid plainCircuitScheme phiSize
+      ⟨⟨sampleValidCircuit, [false, true, false]⟩,
+        ⟨sampleValidCircuit', [false, true, false]⟩⟩ := by
   decide
 
 example :
-    ¬ prvIndValid plainCircuitScheme phiTopo sampleValidCircuit sampleValidCircuit'
-      [false, true, false] [false, true, false] := by
+    ¬ prvIndValid plainCircuitScheme phiTopo
+      ⟨⟨sampleValidCircuit, [false, true, false]⟩,
+        ⟨sampleValidCircuit', [false, true, false]⟩⟩ := by
   decide
 
-example {σ : Type} (B : PrvSimAdversary ValidCircuit σ) (k : ℕ) :
-    prvSimAdvantage plainCircuitScheme phiTopo (prvSimFromInverter plainCircuitScheme mTopo) B k =
-      prvIndAdvantage plainCircuitScheme phiTopo
-        (prvSimToInd plainCircuitScheme phiTopo mTopo B) k :=
-  prvSimAdvantage_phiTopo_mTopo_eq plainCircuitScheme_isCircuitScheme B k
+example {σ : Type} (k : ℕ) (B : PrvSimAdversary ValidCircuit σ) :
+    prvSimAdvantage plainCircuitScheme phiTopo k (prvSimFromInverter plainCircuitScheme k mTopo) B =
+      prvIndAdvantage plainCircuitScheme phiTopo k
+        (prvSimToInd plainCircuitScheme phiTopo mTopo B) :=
+  prvSimAdvantage_phiTopo_mTopo_eq plainCircuitScheme_isCircuitScheme k B
 
-example {σ : Type} (B : PrvSimAdversary ValidCircuit σ) (k : ℕ) :
-    prvSimAdvantage plainCircuitScheme phiSize (prvSimFromInverter plainCircuitScheme mSize) B k =
-      prvIndAdvantage plainCircuitScheme phiSize
-        (prvSimToInd plainCircuitScheme phiSize mSize B) k :=
-  prvSimAdvantage_phiSize_mSize_eq plainCircuitScheme_isCircuitScheme B k
+example {σ : Type} (k : ℕ) (B : PrvSimAdversary ValidCircuit σ) :
+    prvSimAdvantage plainCircuitScheme phiSize k (prvSimFromInverter plainCircuitScheme k mSize) B =
+      prvIndAdvantage plainCircuitScheme phiSize k
+        (prvSimToInd plainCircuitScheme phiSize mSize B) :=
+  prvSimAdvantage_phiSize_mSize_eq plainCircuitScheme_isCircuitScheme k B
 
-example {σ : Type} (B : ObvSimAdversary ValidCircuit σ) (k : ℕ) :
-    obvSimAdvantage plainCircuitScheme phiTopo
-        (obvSimFromInverter plainCircuitScheme mTopoInv) B k =
-      obvIndAdvantage plainCircuitScheme phiTopo
-        (obvSimToInd plainCircuitScheme phiTopo mTopoInv B) k :=
-  obvSimAdvantage_phiTopo_mTopoInv_eq plainCircuitScheme_isCircuitScheme B k
+example {σ : Type} (k : ℕ) (B : ObvSimAdversary ValidCircuit σ) :
+    obvSimAdvantage plainCircuitScheme phiTopo k
+        (obvSimFromInverter plainCircuitScheme k mTopoInv) B =
+      obvIndAdvantage plainCircuitScheme phiTopo k
+        (obvSimToInd plainCircuitScheme phiTopo mTopoInv B) :=
+  obvSimAdvantage_phiTopo_mTopoInv_eq plainCircuitScheme_isCircuitScheme k B
 
-example {σ : Type} (B : ObvSimAdversary ValidCircuit σ) (k : ℕ) :
-    obvSimAdvantage plainCircuitScheme phiSize
-        (obvSimFromInverter plainCircuitScheme mSizeInv) B k =
-      obvIndAdvantage plainCircuitScheme phiSize
-        (obvSimToInd plainCircuitScheme phiSize mSizeInv B) k :=
-  obvSimAdvantage_phiSize_mSizeInv_eq plainCircuitScheme_isCircuitScheme B k
+example {σ : Type} (k : ℕ) (B : ObvSimAdversary ValidCircuit σ) :
+    obvSimAdvantage plainCircuitScheme phiSize k
+        (obvSimFromInverter plainCircuitScheme k mSizeInv) B =
+      obvIndAdvantage plainCircuitScheme phiSize k
+        (obvSimToInd plainCircuitScheme phiSize mSizeInv B) :=
+  obvSimAdvantage_phiSize_mSizeInv_eq plainCircuitScheme_isCircuitScheme k B
 
 /-- A stateful `Prv1Simulator` for `plainCircuitScheme` under `phiTopo`. -/
 def samplePrv1Simulator : Prv1Simulator ValidTopo ValidTopo where
-  garble _ t := pure (([], List.replicate t.1.m false), t)
+  garble t := pure (⟨[], List.replicate t.1.m false⟩, t)
   input _ y := pure y
 
-example {σ : Type} (B : PrvSimAdversary ValidCircuit σ) (k : ℕ) :
-    prvSimAdvantage plainCircuitScheme phiTopo (prv1SimulatorToPrv samplePrv1Simulator) B k =
-      prv1Advantage plainCircuitScheme phiTopo samplePrv1Simulator (prvSimToPrv1 B) k :=
-  prvSimAdvantage_prv1SimulatorToPrv_eq plainCircuitScheme phiTopo samplePrv1Simulator B k
+example {σ : Type} (k : ℕ) (B : PrvSimAdversary ValidCircuit σ) :
+    prvSimAdvantage plainCircuitScheme phiTopo k (prv1SimulatorToPrv samplePrv1Simulator) B =
+      prv1Advantage plainCircuitScheme phiTopo k samplePrv1Simulator (prvSimToPrv1 B) :=
+  prvSimAdvantage_prv1SimulatorToPrv_eq plainCircuitScheme phiTopo k samplePrv1Simulator B
 
-example {σ : Type} (A : PrvIndAdversary ValidCircuit σ) (k : ℕ) :
-    prvIndAdvantage plainCircuitScheme phiTopo A k =
-      2 * prv1Advantage plainCircuitScheme phiTopo samplePrv1Simulator
-        (prvSimToPrv1 (prvIndToSim plainCircuitScheme phiTopo A)) k :=
+example {σ : Type} (k : ℕ) (A : PrvIndAdversary ValidCircuit σ) :
+    prvIndAdvantage plainCircuitScheme phiTopo k A =
+      2 * prv1Advantage plainCircuitScheme phiTopo k samplePrv1Simulator
+        (prvSimToPrv1 (prvIndToSim plainCircuitScheme phiTopo A)) :=
   prvIndAdvantage_eq_two_mul_prv1Advantage plainCircuitScheme phiTopo
-    (phiTopo_compatible plainCircuitScheme_isCircuitScheme) A samplePrv1Simulator k
+    (phiTopo_compatible plainCircuitScheme_isCircuitScheme) k samplePrv1Simulator A
 
 /-- info: 'Cslib.Crypto.Garbling.phiTopo_isInverter' depends on axioms: [propext] -/
 #guard_msgs in
 #print axioms phiTopo_isInverter
 
-/-- info: 'Cslib.Crypto.Garbling.phiSize_isInverter' depends on axioms: [propext] -/
+/-- info: 'Cslib.Crypto.Garbling.phiSize_isInverter' depends on axioms: [propext, Quot.sound] -/
 #guard_msgs in
 #print axioms phiSize_isInverter
 

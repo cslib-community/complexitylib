@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Interactive.Security
 public import CslibFrontier.Languages.Probabilistic.QueryCount
 public import CslibFrontier.Probability.StatisticalDistance.CloseTo
+import CslibFrontier.Languages.Probabilistic.Simulation.CloseTo
 
 /-!
 # Statistical error under stateful oracle replacement
@@ -17,7 +18,9 @@ public import CslibFrontier.Probability.StatisticalDistance.CloseTo
 Replacing a handler costs at most the program's query budget times the per-unit statistical
 error. The hypothesis compares joint reply/state laws from every identical starting state;
 the conclusion retains the complete joint result/final-state law. No coupling, finite state
-space or independence between calls is required.
+space or independence between calls is required. This is the identity-relation case of
+`OracleComp.closeTo_run_interpret_simulation`, which also relates the two states through a
+probabilistic map.
 
 The existing `OracleComp.IsCostBounded` allows calls that cost zero. Such calls may still change
 the shared state, but their handlers must be statistically identical. For example, charging only
@@ -43,12 +46,10 @@ theorem closeTo_runWith {ι α σ : Type} {spec : OracleSpec ι} {cost : ι → 
     {left right : (q : ι) → StateT σ PMF (spec q)} {ε : ℝ≥0∞}
     (hstep : ∀ q s, CloseTo (left q s) (right q s) (cost q * ε)) (s : σ) :
     CloseTo (runWith left program s) (runWith right program s) (n * ε) := by
-  induction h generalizing s with
-  | pure a n =>
-    simpa only [runWith_pure] using (CloseTo.refl (PMF.pure (a, s))).mono (by positivity)
-  | liftBind q cont n _ ih =>
-    simp only [runWith_bind, runWith_query]
-    have hc := (hstep q s).bind fun out _ => ih out.1 out.2
-    simpa only [Nat.cast_add, add_mul, add_comm] using hc
+  have hstep' : ∀ q s, CloseTo ((left q s).bind fun x => (PMF.pure x.2).map (x.1, ·))
+      ((PMF.pure s).bind (right q)) (cost q * ε) := fun q s => by
+    simpa only [PMF.pure_map, PMF.pure_bind, Prod.mk.eta, PMF.bind_pure] using hstep q s
+  simpa only [runWith, PMF.pure_map, PMF.pure_bind, Prod.mk.eta, PMF.bind_pure] using
+    closeTo_run_interpret_simulation cost left right PMF.pure ε hstep' program h s
 
 end Cslib.OracleComp.IsCostBounded

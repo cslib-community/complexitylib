@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import CslibFrontier.DataStructure.ApproximateMembership.WordRAM.QuotientFilter.SlotArray
 public import CslibFrontier.Computability.WordRAM.Realization.WhileAbsorb
 public import CslibFrontier.Computability.WordRAM.Realization.Witness
+public import CslibFrontier.Computability.WordRAM.Realization.WordEncoding.Equiv
 import CslibFrontier.Computability.WordRAM.SymbolicExec.Call
 import CslibFrontier.Foundations.Data.List.Sort
 import CslibFrontier.Tactic.Realize
@@ -918,43 +919,102 @@ theorem clientState_occBefore (s : Memory.State) (x : ClusterInput × (ℕ × �
     (fun _ _ t ht => by rw [clientState_occBeforeStep, ht])
     (n := x.2.2) (a := (0, 0)) (s := s) rfl
 
-/-- Environment for `scanLoopProg`: `((d, (o, (a, ℓ))), (occA, occA1))`. -/
-abbrev ScanEnv : Type := (ClusterInput × (ℕ × (ℕ × ℕ))) × (ℕ × ℕ)
+/-- Environment of the cluster scan `scanLoopProg`. The words are listed in the order
+`((d, (o, (a, ℓ))), (occA, occA1))`. -/
+@[ext] structure ScanEnv where
+  /-- Cluster operation input. -/
+  d : ClusterInput
+  /-- Cluster start slot. -/
+  o : ℕ
+  /-- Offset of the target quotient within the cluster. -/
+  a : ℕ
+  /-- Cluster length. -/
+  ℓ : ℕ
+  /-- Occupied quotients before the target, `occBefore st o a`. -/
+  occA : ℕ
+  /-- Occupied quotients up to and including the target, `occBefore st o (a + 1)`. -/
+  occA1 : ℕ
 
-/-- Loop state for `scanLoopProg`: `((i, (runs, occI)), ((s₀, s), (e, qFound)))`. -/
-abbrev ScanState : Type := (ℕ × (ℕ × ℕ)) × ((ℕ × ℕ) × (ℕ × ℕ))
+/-- The word layout of a `ScanEnv`. -/
+@[expose] def ScanEnv.equiv : ScanEnv ≃ (ClusterInput × (ℕ × (ℕ × ℕ))) × (ℕ × ℕ) where
+  toFun env := ((env.d, (env.o, (env.a, env.ℓ))), (env.occA, env.occA1))
+  invFun := fun ((d, (o, (a, ℓ))), (occA, occA1)) => ⟨d, o, a, ℓ, occA, occA1⟩
+  left_inv _ := rfl
+  right_inv _ := rfl
+
+instance : WordEncoding ScanEnv := .ofEquiv ScanEnv.equiv
+
+/-- Loop state of the cluster scan after `i` slots. The words are listed in the order
+`((i, (runs, occI)), ((s₀, s), (e, qFound)))`. -/
+@[ext] structure ScanState where
+  /-- Slots scanned so far. -/
+  i : ℕ
+  /-- Run starts among the scanned slots. -/
+  runs : ℕ
+  /-- Occupied quotients among the scanned slots. -/
+  occI : ℕ
+  /-- Start of the target run, `calcRunStart`. -/
+  s₀ : ℕ
+  /-- Insertion target slot, `calcTargetSlot`. -/
+  s : ℕ
+  /-- End of the shift for a delete, `calcDeleteStop`. -/
+  e : ℕ
+  /-- Whether the target remainder was found (`0` or `1`), `queryAnyPrefix`. -/
+  qFound : ℕ
+
+/-- The word layout of a `ScanState`. -/
+@[expose] def ScanState.equiv : ScanState ≃ (ℕ × (ℕ × ℕ)) × ((ℕ × ℕ) × (ℕ × ℕ)) where
+  toFun m := ((m.i, (m.runs, m.occI)), ((m.s₀, m.s), (m.e, m.qFound)))
+  invFun := fun ((i, (runs, occI)), ((s₀, s), (e, qFound))) => ⟨i, runs, occI, s₀, s, e, qFound⟩
+  left_inv _ := rfl
+  right_inv _ := rfl
+
+instance : WordEncoding ScanState := .ofEquiv ScanState.equiv
+
+/-- Bounds on the scan environment at word width `w`. -/
+@[expose] def ScanEnv.Safe (w : ℕ) (env : ScanEnv) : Prop :=
+  ClusterSafe w env.d ∧ env.o < env.d 3 ∧ env.a ≤ env.ℓ ∧ env.ℓ ≤ env.d 3 ∧
+    env.occA ≤ env.d 3 ∧ env.occA1 ≤ env.d 3 + 1
+
+/-- Bounds kept by the scan state: the counters and targets are at most the slots scanned, the
+delete stop is at most the cluster length, and `qFound` is a bit. -/
+@[expose] def ScanState.Bounds (env : ScanEnv) (m : ScanState) : Prop :=
+  m.runs ≤ m.i ∧ m.occI ≤ m.i ∧ m.s₀ ≤ m.i ∧ m.s ≤ m.i ∧ m.e ≤ env.ℓ ∧ m.qFound ≤ 1
 
 /-- Safety predicate for one step of `scanLoopProg`. -/
 @[expose] def ScanStepSafe (w : ℕ) (x : ScanEnv × ScanState) : Prop :=
-  let d := x.1.1.1
-  let o := x.1.1.2.1
-  let a := x.1.1.2.2.1
-  let ℓ := x.1.1.2.2.2
-  let occA := x.1.2.1
-  let occA1 := x.1.2.2
-  let i := x.2.1.1
-  let runs := x.2.1.2.1
-  let occI := x.2.1.2.2
-  let s₀ := x.2.2.1.1
-  let s := x.2.2.1.2
-  let e := x.2.2.2.1
-  let qFound := x.2.2.2.2
-  ClusterSafe w d ∧ o < d 3 ∧ a ≤ ℓ ∧ ℓ ≤ d 3 ∧
-    occA ≤ d 3 ∧ occA1 ≤ d 3 + 1 ∧
-    i < ℓ ∧ runs ≤ i ∧ occI ≤ i ∧ s₀ ≤ i ∧ s ≤ i ∧ e ≤ ℓ ∧ qFound ≤ 1
+  x.1.Safe w ∧ x.2.i < x.1.ℓ ∧ x.2.Bounds x.1
 
-/-- Read `(occBit, (runBit, remVal))` at slot offset `o + i`. -/
-@[expose] def scanStepReadsProg (x : ClusterInput × (ℕ × ℕ)) :
-    Memory.Prog (ℕ × (ℕ × ℕ)) := do
-  let rawIdx ← pure (x.2.1 + x.2.2)
-  let occBit ← readOccProg (x.1, rawIdx)
-  let runBit ← readRunStartProg (x.1, rawIdx)
-  let remVal ← readRemProg (x.1, rawIdx)
-  pure (occBit, (runBit, remVal))
+/-- The three bits and fields read at one slot of the scan. The words are listed in the order
+`(occ, (run, rem))`. -/
+@[ext] structure ScanReads where
+  /-- Occupied bit. -/
+  occ : ℕ
+  /-- Run-start bit. -/
+  run : ℕ
+  /-- Stored remainder. -/
+  rem : ℕ
+
+/-- The word layout of a `ScanReads`. -/
+@[expose] def ScanReads.equiv : ScanReads ≃ ℕ × (ℕ × ℕ) where
+  toFun r := (r.occ, (r.run, r.rem))
+  invFun := fun (occ, (run, rem)) => ⟨occ, run, rem⟩
+  left_inv _ := rfl
+  right_inv _ := rfl
+
+instance : WordEncoding ScanReads := .ofEquiv ScanReads.equiv
+
+/-- Read the occupied bit, run-start bit and remainder at slot offset `o + i`. -/
+@[expose] def scanStepReadsProg (x : ScanEnv × ScanState) : Memory.Prog ScanReads := do
+  let rawIdx ← pure (x.1.o + x.2.i)
+  let occBit ← readOccProg (x.1.d, rawIdx)
+  let runBit ← readRunStartProg (x.1.d, rawIdx)
+  let remVal ← readRemProg (x.1.d, rawIdx)
+  pure ⟨occBit, runBit, remVal⟩
 
 theorem realizes_scanStepReads :
     Realizes .exact scanStepReadsProg WordEncoding.encode WordEncoding.encode
-      (fun w x _ => ClusterSafe w x.1 ∧ x.2.1 + x.2.2 < 2 ^ w) (fun _ _ => 0) := by
+      (fun w x _ => ClusterSafe w x.1.d ∧ x.1.o + x.2.i < 2 ^ w) (fun _ _ => 0) := by
   have hReadOcc := realizes_readOcc
   have hReadRun := realizes_readRunStart
   have hReadRem := realizes_readRem
@@ -962,18 +1022,18 @@ theorem realizes_scanStepReads :
   · exact h.2
   · exact h.1
 
-theorem clientResult_scanStepReads (t : Memory.State) (x : ClusterInput × (ℕ × ℕ)) :
+theorem clientResult_scanStepReads (t : Memory.State) (x : ScanEnv × ScanState) :
     (Memory.spec 0).clientResult t (scanStepReadsProg x) =
-      ((Memory.spec 0).clientResult t (readOccProg (x.1, x.2.1 + x.2.2)),
-        ((Memory.spec 0).clientResult t (readRunStartProg (x.1, x.2.1 + x.2.2)),
-          (Memory.spec 0).clientResult t (readRemProg (x.1, x.2.1 + x.2.2)))) := by
+      ⟨(Memory.spec 0).clientResult t (readOccProg (x.1.d, x.1.o + x.2.i)),
+        (Memory.spec 0).clientResult t (readRunStartProg (x.1.d, x.1.o + x.2.i)),
+        (Memory.spec 0).clientResult t (readRemProg (x.1.d, x.1.o + x.2.i))⟩ := by
   unfold scanStepReadsProg
   rw [StateTransitionSpec.clientResult_bind, clientResult_pure, clientState_pure,
     StateTransitionSpec.clientResult_bind, clientState_readOcc,
     StateTransitionSpec.clientResult_bind, clientState_readRunStart,
     StateTransitionSpec.clientResult_bind, clientState_readRem, clientResult_pure]
 
-theorem clientState_scanStepReads (t : Memory.State) (x : ClusterInput × (ℕ × ℕ)) :
+theorem clientState_scanStepReads (t : Memory.State) (x : ScanEnv × ScanState) :
     (Memory.spec 0).clientState t (scanStepReadsProg x) = t := by
   unfold scanStepReadsProg
   rw [StateTransitionSpec.clientState_bind, clientResult_pure, clientState_pure,
@@ -981,74 +1041,91 @@ theorem clientState_scanStepReads (t : Memory.State) (x : ClusterInput × (ℕ �
     StateTransitionSpec.clientState_bind, clientState_readRunStart,
     StateTransitionSpec.clientState_bind, clientState_readRem, clientState_pure]
 
+/-- Input of the target, stop and query updates in one step of `scanLoopProg`: the environment,
+the state before the step, the run count including the current slot, and the current slot's
+remainder. The words are listed in the order `((env, st), (runs, rem))`. -/
+structure ScanStepCtx where
+  /-- Scan environment. -/
+  env : ScanEnv
+  /-- State before the step. -/
+  st : ScanState
+  /-- Run starts up to and including the current slot. -/
+  runs : ℕ
+  /-- Remainder stored at the current slot. -/
+  rem : ℕ
+
+/-- The word layout of a `ScanStepCtx`. -/
+@[expose] def ScanStepCtx.equiv : ScanStepCtx ≃ (ScanEnv × ScanState) × (ℕ × ℕ) where
+  toFun c := ((c.env, c.st), (c.runs, c.rem))
+  invFun := fun ((env, st), (runs, rem)) => ⟨env, st, runs, rem⟩
+  left_inv _ := rfl
+  right_inv _ := rfl
+
+instance : WordEncoding ScanStepCtx := .ofEquiv ScanStepCtx.equiv
+
 /-- Update `(s₀, s)` during one step of `scanLoopProg`. -/
-@[expose] def scanStepTargetProg
-    (x : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × (ℕ × ℕ)))) : Memory.Prog (ℕ × ℕ) :=
-  if x.1.1 ≤ x.2.1.1 then
-    pure (x.2.2.2.1 + 1, x.2.2.2.2 + 1)
-  else if x.1.1 ≤ x.2.1.2 then
-    if x.1.2 < x.2.2.1 then pure (x.2.2.2.1, x.2.2.2.2 + 1) else pure (x.2.2.2.1, x.2.2.2.2)
+@[expose] def scanStepTargetProg (c : ScanStepCtx) : Memory.Prog (ℕ × ℕ) :=
+  if c.runs ≤ c.env.occA then
+    pure (c.st.s₀ + 1, c.st.s + 1)
+  else if c.runs ≤ c.env.occA1 then
+    if c.rem < c.env.d 1 then pure (c.st.s₀, c.st.s + 1) else pure (c.st.s₀, c.st.s)
   else
-    pure (x.2.2.2.1, x.2.2.2.2)
+    pure (c.st.s₀, c.st.s)
 
 theorem realizes_scanStepTarget :
     Realizes .exact scanStepTargetProg WordEncoding.encode WordEncoding.encode
-      (fun w x _ => x.2.2.2.1 + 1 < 2 ^ w ∧ x.2.2.2.2 + 1 < 2 ^ w)
+      (fun w c _ => c.st.s₀ + 1 < 2 ^ w ∧ c.st.s + 1 < 2 ^ w)
       (fun _ _ => 0) := by
   realize <;> {
     dsimp only [Fits] at h ⊢
     omega
   }
 
-theorem clientResult_scanStepTarget (t : Memory.State)
-    (x : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × (ℕ × ℕ)))) :
-    (Memory.spec 0).clientResult t (scanStepTargetProg x) =
-      (if x.1.1 ≤ x.2.1.1 then x.2.2.2.1 + 1 else x.2.2.2.1,
-        if x.1.1 ≤ x.2.1.1 ∨ (x.1.1 ≤ x.2.1.2 ∧ x.1.2 < x.2.2.1)
-        then x.2.2.2.2 + 1 else x.2.2.2.2) := by
+theorem clientResult_scanStepTarget (t : Memory.State) (c : ScanStepCtx) :
+    (Memory.spec 0).clientResult t (scanStepTargetProg c) =
+      (if c.runs ≤ c.env.occA then c.st.s₀ + 1 else c.st.s₀,
+        if c.runs ≤ c.env.occA ∨ (c.runs ≤ c.env.occA1 ∧ c.rem < c.env.d 1)
+        then c.st.s + 1 else c.st.s) := by
   unfold scanStepTargetProg
   split_ifs <;> simp only [clientResult_pure, Prod.mk.injEq] <;> omega
 
-theorem clientState_scanStepTarget (t : Memory.State)
-    (x : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × (ℕ × ℕ)))) :
-    (Memory.spec 0).clientState t (scanStepTargetProg x) = t := by
+theorem clientState_scanStepTarget (t : Memory.State) (c : ScanStepCtx) :
+    (Memory.spec 0).clientState t (scanStepTargetProg c) = t := by
   unfold scanStepTargetProg
   split_ifs <;> rfl
 
 /-- Update `e` (`calcDeleteStop`) during one step of `scanLoopProg`. -/
-@[expose] def scanStepStopProg (x : (ℕ × (ℕ × ℕ)) × (ℕ × (ℕ × ℕ))) : Memory.Prog ℕ :=
-  if x.2.1 < x.1.1 then
-    if x.1.2.2 < x.1.2.1 then
-      if x.2.2.2 = x.2.2.1 then pure x.1.1 else pure x.2.2.2
-    else pure x.2.2.2
-  else pure x.2.2.2
+@[expose] def scanStepStopProg (c : ScanStepCtx) : Memory.Prog ℕ :=
+  if c.env.a < c.st.i then
+    if c.st.occI < c.runs then
+      if c.st.e = c.env.ℓ then pure c.st.i else pure c.st.e
+    else pure c.st.e
+  else pure c.st.e
 
 theorem realizes_scanStepStop :
     Realizes .exact scanStepStopProg WordEncoding.encode WordEncoding.encode
       (fun _ _ _ => True) (fun _ _ => 0) := by
   realize
 
-theorem clientResult_scanStepStop (t : Memory.State)
-    (x : (ℕ × (ℕ × ℕ)) × (ℕ × (ℕ × ℕ))) :
-    (Memory.spec 0).clientResult t (scanStepStopProg x) =
-      if x.2.1 < x.1.1 ∧ x.1.2.2 < x.1.2.1 ∧ x.2.2.2 = x.2.2.1
-      then x.1.1 else x.2.2.2 := by
+theorem clientResult_scanStepStop (t : Memory.State) (c : ScanStepCtx) :
+    (Memory.spec 0).clientResult t (scanStepStopProg c) =
+      if c.env.a < c.st.i ∧ c.st.occI < c.runs ∧ c.st.e = c.env.ℓ
+      then c.st.i else c.st.e := by
   unfold scanStepStopProg
   split_ifs <;> simp only [clientResult_pure] <;> tauto
 
-theorem clientState_scanStepStop (t : Memory.State)
-    (x : (ℕ × (ℕ × ℕ)) × (ℕ × (ℕ × ℕ))) :
-    (Memory.spec 0).clientState t (scanStepStopProg x) = t := by
+theorem clientState_scanStepStop (t : Memory.State) (c : ScanStepCtx) :
+    (Memory.spec 0).clientState t (scanStepStopProg c) = t := by
   unfold scanStepStopProg
   split_ifs <;> rfl
 
 /-- Update `qFound` (`queryAnyPrefix`) during one step of `scanLoopProg`. -/
-@[expose] def scanStepQueryProg (x : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) : Memory.Prog ℕ :=
-  if x.2.1.1 < x.1.1 then
-    if x.1.1 ≤ x.2.1.2 then
-      if x.1.2 = x.2.2.1 then pure 1 else pure x.2.2.2
-    else pure x.2.2.2
-  else pure x.2.2.2
+@[expose] def scanStepQueryProg (c : ScanStepCtx) : Memory.Prog ℕ :=
+  if c.env.occA < c.runs then
+    if c.runs ≤ c.env.occA1 then
+      if c.rem = c.env.d 1 then pure 1 else pure c.st.qFound
+    else pure c.st.qFound
+  else pure c.st.qFound
 
 theorem realizes_scanStepQuery :
     Realizes .exact scanStepQueryProg WordEncoding.encode WordEncoding.encode
@@ -1056,31 +1133,26 @@ theorem realizes_scanStepQuery :
   realize
   exact h
 
-theorem clientResult_scanStepQuery (t : Memory.State)
-    (x : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) :
-    (Memory.spec 0).clientResult t (scanStepQueryProg x) =
-      if (x.2.1.1 < x.1.1 ∧ x.1.1 ≤ x.2.1.2) ∧ x.1.2 = x.2.2.1
-      then 1 else x.2.2.2 := by
+theorem clientResult_scanStepQuery (t : Memory.State) (c : ScanStepCtx) :
+    (Memory.spec 0).clientResult t (scanStepQueryProg c) =
+      if (c.env.occA < c.runs ∧ c.runs ≤ c.env.occA1) ∧ c.rem = c.env.d 1
+      then 1 else c.st.qFound := by
   unfold scanStepQueryProg
   split_ifs <;> simp only [clientResult_pure] <;> omega
 
-theorem clientState_scanStepQuery (t : Memory.State)
-    (x : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) :
-    (Memory.spec 0).clientState t (scanStepQueryProg x) = t := by
+theorem clientState_scanStepQuery (t : Memory.State) (c : ScanStepCtx) :
+    (Memory.spec 0).clientState t (scanStepQueryProg c) = t := by
   unfold scanStepQueryProg
   split_ifs <;> rfl
 
 /-- One step of the cluster scan over `i ∈ [0, ℓ)`. -/
 @[expose] def scanLoopStep (x : ScanEnv × ScanState) : Memory.Prog ScanState := do
-  let reads ← scanStepReadsProg (x.1.1.1, (x.1.1.2.1, x.2.1.1))
-  let runs' ← pure (x.2.1.2.1 + reads.2.1)
-  let tgt ← scanStepTargetProg ((runs', reads.2.2),
-    ((x.1.2.1, x.1.2.2), (x.1.1.1 1, (x.2.2.1.1, x.2.2.1.2))))
-  let e' ← scanStepStopProg ((x.2.1.1, (runs', x.2.1.2.2)),
-    (x.1.1.2.2.1, (x.1.1.2.2.2, x.2.2.2.1)))
-  let qFound' ← scanStepQueryProg ((runs', reads.2.2),
-    ((x.1.2.1, x.1.2.2), (x.1.1.1 1, x.2.2.2.2)))
-  pure ((x.2.1.1 + 1, (runs', x.2.1.2.2 + reads.1)), (tgt, (e', qFound')))
+  let reads ← scanStepReadsProg x
+  let runs ← pure (x.2.runs + reads.run)
+  let tgt ← scanStepTargetProg ⟨x.1, x.2, runs, reads.rem⟩
+  let e ← scanStepStopProg ⟨x.1, x.2, runs, reads.rem⟩
+  let qFound ← scanStepQueryProg ⟨x.1, x.2, runs, reads.rem⟩
+  pure ⟨x.2.i + 1, runs, x.2.occI + reads.occ, tgt.1, tgt.2, e, qFound⟩
 
 theorem realizes_scanLoopStep :
     Realizes .exact scanLoopStep WordEncoding.encode WordEncoding.encode
@@ -1090,15 +1162,15 @@ theorem realizes_scanLoopStep :
   have hStop := realizes_scanStepStop
   have hQuery := realizes_scanStepQuery
   realize <;> {
-    rcases h with ⟨hcs, ho, ha, hℓ, hoccA, hoccA1, hi, hruns, hoccI, hs₀, hs, he, hq⟩
+    rcases h with ⟨⟨hcs, ho, ha, hℓ, hoccA, hoccA1⟩, hi, hruns, hoccI, hs₀, hs, he, hq⟩
     have h2w := hcs.two_cap_lt
     have h1w := hcs.one_lt_two_pow
     first
     | exact hcs
     | exact h1w
     | {
-        have hb_occ := clientResult_readOcc_le s (d.1.1.1, d.1.1.2.1 + d.2.1.1)
-        have hb_run := clientResult_readRunStart_le s (d.1.1.1, d.1.1.2.1 + d.2.1.1)
+        have hb_occ := clientResult_readOcc_le s (d.1.d, d.1.o + d.2.i)
+        have hb_run := clientResult_readRunStart_le s (d.1.d, d.1.o + d.2.i)
         try rw [clientResult_scanStepReads]
         dsimp only [Fits] at *
         omega
@@ -1114,19 +1186,12 @@ theorem clientState_scanLoopStep (t : Memory.State) (x : ScanEnv × ScanState) :
     StateTransitionSpec.clientState_bind, clientState_scanStepStop,
     StateTransitionSpec.clientState_bind, clientState_scanStepQuery, clientState_pure]
 
+/-- One scan step advances `i` and keeps `ScanState.Bounds`. -/
 theorem clientResult_scanLoopStep_bounds (t : Memory.State) (x : ScanEnv × ScanState)
-    (hi : x.2.1.1 < x.1.1.2.2.2) (hruns : x.2.1.2.1 ≤ x.2.1.1)
-    (hoccI : x.2.1.2.2 ≤ x.2.1.1) (hs₀ : x.2.2.1.1 ≤ x.2.1.1)
-    (hs : x.2.2.1.2 ≤ x.2.1.1) (he : x.2.2.2.1 ≤ x.1.1.2.2.2)
-    (hq : x.2.2.2.2 ≤ 1) :
+    (hi : x.2.i < x.1.ℓ) (hb : x.2.Bounds x.1) :
     let res := (Memory.spec 0).clientResult t (scanLoopStep x)
-    res.1.1 = x.2.1.1 + 1 ∧
-      res.1.2.1 ≤ x.2.1.1 + 1 ∧
-      res.1.2.2 ≤ x.2.1.1 + 1 ∧
-      res.2.1.1 ≤ x.2.1.1 + 1 ∧
-      res.2.1.2 ≤ x.2.1.1 + 1 ∧
-      res.2.2.1 ≤ x.1.1.2.2.2 ∧
-      res.2.2.2 ≤ 1 := by
+    res.i = x.2.i + 1 ∧ res.Bounds x.1 := by
+  rcases hb with ⟨hruns, hoccI, hs₀, hs, he, hq⟩
   dsimp only
   unfold scanLoopStep
   rw [StateTransitionSpec.clientResult_bind, clientState_scanStepReads,
@@ -1136,74 +1201,86 @@ theorem clientResult_scanLoopStep_bounds (t : Memory.State) (x : ScanEnv × Scan
     StateTransitionSpec.clientResult_bind, clientState_scanStepQuery, clientResult_pure,
     clientResult_scanStepTarget, clientResult_scanStepStop, clientResult_scanStepQuery,
     clientResult_scanStepReads]
-  dsimp only
-  have hb_occ := clientResult_readOcc_le t (x.1.1.1, x.1.1.2.1 + x.2.1.1)
-  have hb_run := clientResult_readRunStart_le t (x.1.1.1, x.1.1.2.1 + x.2.1.1)
+  dsimp only [ScanState.Bounds]
+  have hb_occ := clientResult_readOcc_le t (x.1.d, x.1.o + x.2.i)
+  have hb_run := clientResult_readRunStart_le t (x.1.d, x.1.o + x.2.i)
   split_ifs <;> refine ⟨rfl, by omega, by omega, by omega, by omega, by omega, by omega⟩
 
-/-- Iterate `scanLoopStep` `ℓ` times from `((0, (0, 0)), ((0, 0), (ℓ, 0)))`. -/
+/-- Iterate `scanLoopStep` `ℓ` times from `⟨0, 0, 0, 0, 0, ℓ, 0⟩`. -/
 @[expose] def scanLoopProg (env : ScanEnv) : Memory.Prog ScanState :=
-  iterate scanLoopStep env env.1.2.2.2 ((0, (0, 0)), ((0, 0), (env.1.2.2.2, 0)))
+  iterate scanLoopStep env env.ℓ ⟨0, 0, 0, 0, 0, env.ℓ, 0⟩
 
 theorem realizes_scanLoop :
     Realizes .exact scanLoopProg WordEncoding.encode WordEncoding.encode
-      (fun w env _ => ClusterSafe w env.1.1 ∧ env.1.2.1 < env.1.1 3 ∧
-        env.1.2.2.1 ≤ env.1.2.2.2 ∧ env.1.2.2.2 ≤ env.1.1 3 ∧
-        env.2.1 ≤ env.1.1 3 ∧ env.2.2 ≤ env.1.1 3 + 1) (fun _ _ => 0) := by
+      (fun w env _ => env.Safe w) (fun _ _ => 0) := by
   have hStep := realizes_scanLoopStep
   realize
   refine iterationSafe_of_invariant _ _ w d
-    (fun j (m : ScanState) _ =>
-      m.1.1 + j = d.1.2.2.2 ∧ m.1.2.1 ≤ m.1.1 ∧ m.1.2.2 ≤ m.1.1 ∧
-        m.2.1.1 ≤ m.1.1 ∧ m.2.1.2 ≤ m.1.1 ∧ m.2.2.1 ≤ d.1.2.2.2 ∧ m.2.2.2 ≤ 1)
-    ?_ ⟨by dsimp only [ScanEnv, ScanState]; omega, le_rfl, le_rfl, le_rfl, le_rfl, le_rfl,
-      by dsimp only [ScanEnv, ScanState]; omega⟩
-  rintro j m t ⟨hij, hruns, hoccI, hs₀, hs, he, hq⟩
-  rcases h with ⟨hcs, ho, ha, hℓ, hoccA, hoccA1⟩
-  have hi : m.1.1 < d.1.2.2.2 := by omega
-  refine ⟨⟨hcs, ho, ha, hℓ, hoccA, hoccA1, hi, hruns, hoccI, hs₀, hs, he, hq⟩, ?_⟩
-  have hb := clientResult_scanLoopStep_bounds t (d, m) hi hruns hoccI hs₀ hs he hq
-  dsimp only [ScanEnv, ScanState] at hb hij ⊢
-  omega
+    (fun j (m : ScanState) _ => m.i + j = d.ℓ ∧ m.Bounds d) ?_
+    ⟨Nat.zero_add _, le_rfl, le_rfl, le_rfl, le_rfl, le_rfl, Nat.zero_le 1⟩
+  rintro j m t ⟨hij, hb⟩
+  have hi : m.i < d.ℓ := by omega
+  obtain ⟨hi', hb'⟩ := clientResult_scanLoopStep_bounds t (d, m) hi hb
+  dsimp only at hi'
+  exact ⟨⟨h, hi, hb⟩, by omega, hb'⟩
 
 theorem clientResult_scanLoop_bounds (s : Memory.State) (env : ScanEnv) :
     let res := (Memory.spec 0).clientResult s (scanLoopProg env)
-    res.1.1 = env.1.2.2.2 ∧
-      res.2.1.1 ≤ env.1.2.2.2 ∧
-      res.2.1.2 ≤ env.1.2.2.2 ∧
-      res.2.2.1 ≤ env.1.2.2.2 ∧
-      res.2.2.2 ≤ 1 := by
+    res.i = env.ℓ ∧ res.Bounds env := by
   dsimp only [scanLoopProg]
   have h := iterate_invariant scanLoopStep env
-    (fun j (m : ScanState) _ =>
-      m.1.1 + j = env.1.2.2.2 ∧ m.1.2.1 ≤ m.1.1 ∧ m.1.2.2 ≤ m.1.1 ∧
-        m.2.1.1 ≤ m.1.1 ∧ m.2.1.2 ≤ m.1.1 ∧ m.2.2.1 ≤ env.1.2.2.2 ∧ m.2.2.2 ≤ 1)
-    (fun j m t ⟨hij, hruns, hoccI, hs₀, hs, he, hq⟩ => by
-      have hi : m.1.1 < env.1.2.2.2 := by omega
-      have hb := clientResult_scanLoopStep_bounds t (env, m) hi hruns hoccI hs₀ hs he hq
-      dsimp only [ScanEnv, ScanState] at hb hij ⊢
-      omega)
-    (n := env.1.2.2.2) (a := ((0, (0, 0)), ((0, 0), (env.1.2.2.2, 0)))) (s := s)
-    ⟨by dsimp only [ScanEnv, ScanState]; omega, le_rfl, le_rfl, le_rfl, le_rfl, le_rfl,
-      by dsimp only [ScanEnv, ScanState]; omega⟩
-  dsimp only [ScanEnv, ScanState] at h ⊢
-  omega
+    (fun j (m : ScanState) _ => m.i + j = env.ℓ ∧ m.Bounds env)
+    (fun j m t ⟨hij, hb⟩ => by
+      have hi : m.i < env.ℓ := by omega
+      obtain ⟨hi', hb'⟩ := clientResult_scanLoopStep_bounds t (env, m) hi hb
+      dsimp only at hi'
+      exact ⟨by omega, hb'⟩)
+    (n := env.ℓ) (a := ⟨0, 0, 0, 0, 0, env.ℓ, 0⟩) (s := s)
+    ⟨Nat.zero_add _, le_rfl, le_rfl, le_rfl, le_rfl, le_rfl, Nat.zero_le 1⟩
+  exact ⟨h.1, h.2⟩
 
 theorem clientState_scanLoop (s : Memory.State) (env : ScanEnv) :
     (Memory.spec 0).clientState s (scanLoopProg env) = s :=
   iterate_invariant scanLoopStep env
     (fun _ _ t => t = s)
     (fun _ _ t ht => by rw [clientState_scanLoopStep, ht])
-    (n := env.1.2.2.2) (a := ((0, (0, 0)), ((0, 0), (env.1.2.2.2, 0)))) (s := s) rfl
+    (n := env.ℓ) (a := ⟨0, 0, 0, 0, 0, env.ℓ, 0⟩) (s := s) rfl
 
-/-- Full cluster scan returning `(occQ, ((s₀, s), (e, qFound)))`. -/
-@[expose] def scanClusterProg (x : ClusterInput × (ℕ × (ℕ × ℕ))) :
-    Memory.Prog (ℕ × ((ℕ × ℕ) × (ℕ × ℕ))) := do
+/-- Result of the full cluster scan `scanClusterProg`. The words are listed in the order
+`(occQ, ((s₀, s), (e, qFound)))`. -/
+@[ext] structure ScanResult where
+  /-- Whether the target quotient is occupied (`0` or `1`). -/
+  occQ : ℕ
+  /-- Start of the target run, `calcRunStart`. -/
+  s₀ : ℕ
+  /-- Insertion target slot, `calcTargetSlot`. -/
+  s : ℕ
+  /-- End of the shift for a delete, `calcDeleteStop`. -/
+  e : ℕ
+  /-- Whether the target remainder was found (`0` or `1`), `queryAnyPrefix`. -/
+  qFound : ℕ
+
+/-- The word layout of a `ScanResult`. -/
+@[expose] def ScanResult.equiv : ScanResult ≃ ℕ × ((ℕ × ℕ) × (ℕ × ℕ)) where
+  toFun r := (r.occQ, ((r.s₀, r.s), (r.e, r.qFound)))
+  invFun := fun (occQ, ((s₀, s), (e, qFound))) => ⟨occQ, s₀, s, e, qFound⟩
+  left_inv _ := rfl
+  right_inv _ := rfl
+
+instance : WordEncoding ScanResult := .ofEquiv ScanResult.equiv
+
+/-- Bounds on a scan of a cluster of length `ℓ`: the two flags are bits and the run start,
+target slot and delete stop are at most `ℓ`. -/
+@[expose] def ScanResult.Bounds (ℓ : ℕ) (r : ScanResult) : Prop :=
+  r.occQ ≤ 1 ∧ r.s₀ ≤ ℓ ∧ r.s ≤ ℓ ∧ r.e ≤ ℓ ∧ r.qFound ≤ 1
+
+/-- Full cluster scan of the cluster at `x = (d, (o, (a, ℓ)))`. -/
+@[expose] def scanClusterProg (x : ClusterInput × (ℕ × (ℕ × ℕ))) : Memory.Prog ScanResult := do
   let occRes ← occBeforeProg (x.1, (x.2.1, x.2.2.1))
   let occQ ← readOccProg (x.1, x.1 0)
   let occA1 ← pure (occRes.2 + occQ)
-  let loopRes ← scanLoopProg (x, (occRes.2, occA1))
-  pure (occQ, loopRes.2)
+  let m ← scanLoopProg ⟨x.1, x.2.1, x.2.2.1, x.2.2.2, occRes.2, occA1⟩
+  pure ⟨occQ, m.s₀, m.s, m.e, m.qFound⟩
 
 theorem realizes_scanCluster :
     Realizes .exact scanClusterProg WordEncoding.encode WordEncoding.encode
@@ -1214,37 +1291,34 @@ theorem realizes_scanCluster :
   have hLoop := realizes_scanLoop
   realize <;> {
     rcases h with ⟨hcs, ho, ha, hℓ⟩
+    have h2w := hcs.two_cap_lt
+    have h_occ := (clientResult_occBefore_bounds s (d.1, (d.2.1, d.2.2.1))).2
+    have h_occQ := clientResult_readOcc_le s (d.1, d.1 0)
+    try rw [clientState_occBefore] at *
     first
     | exact hcs
     | exact ho
-    | {
-        have h2w := hcs.two_cap_lt
-        have h_occ := (clientResult_occBefore_bounds s (d.1, (d.2.1, d.2.2.1))).2
-        have h_occQ := clientResult_readOcc_le s (d.1, d.1 0)
-        try rw [clientState_occBefore]
-        dsimp only [Fits] at h_occ ⊢
-        omega
-      }
+    | exact ⟨hcs, ho, ha, hℓ, by dsimp only at h_occ ⊢; omega, by dsimp only at h_occ ⊢; omega⟩
+    | (dsimp only [Fits] at h_occ ⊢; omega)
   }
 
 theorem clientResult_scanCluster_bounds (s : Memory.State)
     (x : ClusterInput × (ℕ × (ℕ × ℕ))) :
-    let res := (Memory.spec 0).clientResult s (scanClusterProg x)
-    res.1 ≤ 1 ∧ res.2.1.1 ≤ x.2.2.2 ∧ res.2.1.2 ≤ x.2.2.2 ∧
-      res.2.2.1 ≤ x.2.2.2 ∧ res.2.2.2 ≤ 1 := by
-  dsimp only
+    ((Memory.spec 0).clientResult s (scanClusterProg x)).Bounds x.2.2.2 := by
   unfold scanClusterProg
   rw [StateTransitionSpec.clientResult_bind, clientState_occBefore,
     StateTransitionSpec.clientResult_bind, clientState_readOcc,
     StateTransitionSpec.clientResult_bind, clientResult_pure, clientState_pure,
     StateTransitionSpec.clientResult_bind, clientState_scanLoop, clientResult_pure]
   have h_occQ := clientResult_readOcc_le s (x.1, x.1 0)
-  have h_loop := clientResult_scanLoop_bounds s
-    (x, (((Memory.spec 0).clientResult s (occBeforeProg (x.1, (x.2.1, x.2.2.1)))).2,
+  obtain ⟨hi, hruns, hoccI, hs₀, hs, he, hq⟩ := clientResult_scanLoop_bounds s
+    ⟨x.1, x.2.1, x.2.2.1, x.2.2.2,
+      ((Memory.spec 0).clientResult s (occBeforeProg (x.1, (x.2.1, x.2.2.1)))).2,
       ((Memory.spec 0).clientResult s (occBeforeProg (x.1, (x.2.1, x.2.2.1)))).2 +
-        (Memory.spec 0).clientResult s (readOccProg (x.1, x.1 0))))
-  dsimp only at h_loop
-  exact ⟨h_occQ, h_loop.2.1, h_loop.2.2.1, h_loop.2.2.2.1, h_loop.2.2.2.2⟩
+        (Memory.spec 0).clientResult s (readOccProg (x.1, x.1 0))⟩
+  dsimp only at hi he
+  dsimp only [ScanResult.Bounds]
+  exact ⟨h_occQ, by omega, by omega, he, hq⟩
 
 theorem clientState_scanCluster (s : Memory.State) (x : ClusterInput × (ℕ × (ℕ × ℕ))) :
     (Memory.spec 0).clientState s (scanClusterProg x) = s := by
@@ -1610,19 +1684,18 @@ theorem realizes_deleteAfterScan :
 (`0 = insert`, `1 = delete`, `2 = query`). Every value of `d 2` other than `0` and `1` takes the
 query branch. -/
 @[expose] def clusterDispatchProg
-    (x : (ClusterInput × (ℕ × (ℕ × ℕ))) × (ℕ × ((ℕ × ℕ) × (ℕ × ℕ)))) : Memory.Prog ℕ :=
+    (x : (ClusterInput × (ℕ × (ℕ × ℕ))) × ScanResult) : Memory.Prog ℕ :=
   if x.1.1 2 = 0 then
-    insertAfterScanProg ((x.1.1, x.1.2.1), ((x.2.1, x.1.2.2.2), x.2.2.1))
+    insertAfterScanProg ((x.1.1, x.1.2.1), ((x.2.occQ, x.1.2.2.2), (x.2.s₀, x.2.s)))
   else if x.1.1 2 = 1 then
-    deleteAfterScanProg ((x.1.1, x.1.2.1), (x.2.2.1, x.2.2.2.1))
+    deleteAfterScanProg ((x.1.1, x.1.2.1), ((x.2.s₀, x.2.s), x.2.e))
   else
-    pure (x.2.1 * x.2.2.2.2)
+    pure (x.2.occQ * x.2.qFound)
 
 theorem realizes_clusterDispatch :
     Realizes .exact clusterDispatchProg WordEncoding.encode WordEncoding.encode
       (fun w x _ => ClusterSafe w x.1.1 ∧ x.1.2.1 < x.1.1 3 ∧ x.1.2.2.2 ≤ x.1.1 3 ∧
-        x.2.1 ≤ 1 ∧ x.2.2.1.1 ≤ x.1.2.2.2 ∧ x.2.2.1.2 ≤ x.1.2.2.2 ∧
-        x.2.2.2.1 ≤ x.1.2.2.2 ∧ x.2.2.2.2 ≤ 1) (fun _ _ => 0) := by
+        x.2.Bounds x.1.2.2.2) (fun _ _ => 0) := by
   have hIns := realizes_insertAfterScan
   have hDel := realizes_deleteAfterScan
   realize <;> {
@@ -1655,17 +1728,13 @@ theorem realizes_clusterOp :
     have h_scan := clientResult_scanCluster_bounds s
       (d, (Memory.spec 0).clientResult s (findClusterProg d))
     try rw [clientState_findCluster]
-    dsimp only at h_ext h_scan ⊢
+    dsimp only at h_ext ⊢
     first
     | exact hcs
     | exact h_ext.1
     | exact h_ext.2.1
     | exact h_ext.2.2
-    | exact h_scan.1
-    | exact h_scan.2.1
-    | exact h_scan.2.2.1
-    | exact h_scan.2.2.2.1
-    | exact h_scan.2.2.2.2
+    | exact h_scan
   }
 
 /-! ## Section 8A: Memory Admissibility (`ValidHistory`) and `memoryCost` Bound -/
@@ -1756,18 +1825,15 @@ theorem validHistory_selectPos (w : ℕ) (s : Memory.State) (x : ℕ × (ℕ × 
     (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s (selectPosProg x)) := by
   dsimp only [selectPosProg]; split_ifs <;> trivial
 
-theorem validHistory_scanStepTarget (w : ℕ) (s : Memory.State)
-    (x : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × (ℕ × ℕ)))) :
+theorem validHistory_scanStepTarget (w : ℕ) (s : Memory.State) (x : ScanStepCtx) :
     (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s (scanStepTargetProg x)) := by
   unfold scanStepTargetProg; split_ifs <;> trivial
 
-theorem validHistory_scanStepStop (w : ℕ) (s : Memory.State)
-    (x : (ℕ × (ℕ × ℕ)) × (ℕ × (ℕ × ℕ))) :
+theorem validHistory_scanStepStop (w : ℕ) (s : Memory.State) (x : ScanStepCtx) :
     (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s (scanStepStopProg x)) := by
   unfold scanStepStopProg; split_ifs <;> trivial
 
-theorem validHistory_scanStepQuery (w : ℕ) (s : Memory.State)
-    (x : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) :
+theorem validHistory_scanStepQuery (w : ℕ) (s : Memory.State) (x : ScanStepCtx) :
     (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s (scanStepQueryProg x)) := by
   unfold scanStepQueryProg; split_ifs <;> trivial
 
@@ -2025,17 +2091,17 @@ theorem validHistory_clusterOp {w : ℕ} {d : ClusterInput} {s : Memory.State}
     memoryCost (selectPosProg x) s = 0 := by
   dsimp only [selectPosProg]; split_ifs <;> rfl
 
-@[simp] theorem memoryCost_scanStepTarget (x : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × (ℕ × ℕ))))
+@[simp] theorem memoryCost_scanStepTarget (x : ScanStepCtx)
     (s : Memory.State) :
     memoryCost (scanStepTargetProg x) s = 0 := by
   unfold scanStepTargetProg; split_ifs <;> rfl
 
-@[simp] theorem memoryCost_scanStepStop (x : (ℕ × (ℕ × ℕ)) × (ℕ × (ℕ × ℕ)))
+@[simp] theorem memoryCost_scanStepStop (x : ScanStepCtx)
     (s : Memory.State) :
     memoryCost (scanStepStopProg x) s = 0 := by
   unfold scanStepStopProg; split_ifs <;> rfl
 
-@[simp] theorem memoryCost_scanStepQuery (x : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ)))
+@[simp] theorem memoryCost_scanStepQuery (x : ScanStepCtx)
     (s : Memory.State) :
     memoryCost (scanStepQueryProg x) s = 0 := by
   unfold scanStepQueryProg; split_ifs <;> rfl
@@ -2166,9 +2232,10 @@ theorem memoryCost_scanCluster_le (x : ClusterInput × (ℕ × (ℕ × ℕ))) (s
     simp only [pure_bind_prog, memoryCost_bind', memoryCost_readOcc, memoryCost_pure]
     omega
   have hloop : memoryCost (scanLoopProg
-      (x, (((Memory.spec 0).clientResult s (occBeforeProg (x.1, (x.2.1, x.2.2.1)))).2,
+      ⟨x.1, x.2.1, x.2.2.1, x.2.2.2,
+        ((Memory.spec 0).clientResult s (occBeforeProg (x.1, (x.2.1, x.2.2.1)))).2,
         ((Memory.spec 0).clientResult s (occBeforeProg (x.1, (x.2.1, x.2.2.1)))).2 +
-          (Memory.spec 0).clientResult s (readOccProg (x.1, x.1 0))))) s ≤ 3 * x.2.2.2 := by
+          (Memory.spec 0).clientResult s (readOccProg (x.1, x.1 0))⟩) s ≤ 3 * x.2.2.2 := by
     refine memoryCost_iterate_le scanLoopStep 3 (fun env st t => ?_) _ _ _ s
     unfold scanLoopStep scanStepReadsProg
     simp only [pure_bind_prog, memoryCost_bind', memoryCost_readOcc, memoryCost_readRunStart,
@@ -2274,10 +2341,12 @@ theorem memoryCost_clusterOp_le (d : ClusterInput) (s : Memory.State) :
     · exact memoryCost_insertAfterScan_le _ s
     · have hd := memoryCost_deleteAfterScan_le
         ((d, ((Memory.spec 0).clientResult s (findClusterProg d)).1),
-          (((Memory.spec 0).clientResult s
-              (scanClusterProg (d, (Memory.spec 0).clientResult s (findClusterProg d)))).2.1,
+          ((((Memory.spec 0).clientResult s
+              (scanClusterProg (d, (Memory.spec 0).clientResult s (findClusterProg d)))).s₀,
             ((Memory.spec 0).clientResult s
-              (scanClusterProg (d, (Memory.spec 0).clientResult s (findClusterProg d)))).2.2.1)) s
+              (scanClusterProg (d, (Memory.spec 0).clientResult s (findClusterProg d)))).s),
+            ((Memory.spec 0).clientResult s
+              (scanClusterProg (d, (Memory.spec 0).clientResult s (findClusterProg d)))).e)) s
       have he := (clientResult_scanCluster_bounds s
         (d, (Memory.spec 0).clientResult s (findClusterProg d))).2.2.2.1
       dsimp only at hd he ⊢
@@ -2537,6 +2606,34 @@ theorem clientResult_boundedWhile_zero_snd {δ : Type}
       (boundedWhile (fun _ (st : ℕ × ℕ) => 0 < st.2) body d fuel (c, 0)) = (c, 0) := by
   cases fuel <;> simp [boundedWhile]
 
+/-- A bounded counting loop whose state-preserving step reads the flag `full cnt`, advancing
+`(cnt, rem)` to `(cnt + 1, rem - 1)` while it is set and stopping with `rem = 0` otherwise, ends
+at the first unset count `a` once its fuel and budget suffice. -/
+private theorem clientResult_countWhile {δ : Type}
+    (body : δ × (ℕ × ℕ) → Memory.Prog (ℕ × ℕ)) (d : δ) (s : Memory.State) (full : ℕ → Bool)
+    {a : ℕ} (hstate : ∀ x, (Memory.spec 0).clientState s (body (d, x)) = s)
+    (hresult : ∀ cnt ≤ a, ∀ rem, (Memory.spec 0).clientResult s (body (d, (cnt, rem))) =
+      if (full cnt).toNat = 0 then (cnt, 0) else (cnt + 1, rem - 1))
+    (hfull : ∀ c < a, full c = true) (hempty : full a = false) :
+    ∀ fuel cnt rem, cnt ≤ a → a - cnt < fuel → a - cnt < rem →
+      (Memory.spec 0).clientResult s
+        (boundedWhile (fun _ (st : ℕ × ℕ) => 0 < st.2) body d fuel (cnt, rem)) = (a, 0) := by
+  intro fuel
+  induction fuel with
+  | zero => intro _ _ _ hlt _; omega
+  | succ fuel ih =>
+    intro cnt rem hcnt hfuel hrem
+    have hg : 0 < rem := by omega
+    simp only [boundedWhile, hg, ↓reduceIte]
+    rw [StateTransitionSpec.clientResult_bind, hstate, hresult cnt hcnt]
+    rcases lt_or_eq_of_le hcnt with hlt | rfl
+    · rw [hfull cnt hlt]
+      simp only [Bool.toNat_true, one_ne_zero, ↓reduceIte]
+      exact ih (cnt + 1) (rem - 1) (by omega) (by omega) (by omega)
+    · rw [hempty]
+      simp only [Bool.toNat_false, ↓reduceIte]
+      exact clientResult_boundedWhile_zero_snd _ _ _ _ _
+
 theorem clientResult_backLen_aux (base w w₀ n k : ℕ)
     (q : Fin (2 ^ quotBits w₀ n)) (r : Fin (2 ^ remBits w₀ k)) (opTag : ℕ)
     (s : Memory.State) {a : ℕ} (ha_lt : a < 2 ^ quotBits w₀ n)
@@ -2548,24 +2645,15 @@ theorem clientResult_backLen_aux (base w w₀ n k : ℕ)
     ∀ fuel cnt rem, cnt ≤ a → a - cnt < fuel → a - cnt < rem →
       (Memory.spec 0).clientResult s
         (boundedWhile (fun _ (st : ℕ × ℕ) => 0 < st.2) backLenStep
-          (mkClusterInput base w w₀ n k q r opTag) fuel (cnt, rem)) = (a, 0) := by
-  intro fuel
-  induction fuel with
-  | zero => intro _ _ _ hlt _; omega
-  | succ fuel ih =>
-    intro cnt rem hcnt hfuel hrem
-    have hg : 0 < rem := by omega
-    simp only [boundedWhile, hg, ↓reduceIte]
-    rw [StateTransitionSpec.clientResult_bind, clientState_backLenStep, clientResult_backLenStep]
-    simp only [mkClusterInput_0, mkClusterInput_3, clientResult_readFull_mk,
-      maskedSlot_backSlot q (a := cnt + 1) (by omega)]
-    rcases lt_or_eq_of_le hcnt with hlt | rfl
-    · rw [hfull cnt hlt]
-      simp only [Bool.toNat_true, one_ne_zero, ↓reduceIte]
-      exact ih (cnt + 1) (rem - 1) (by omega) (by omega) (by omega)
-    · rw [hempty]
-      simp only [Bool.toNat_false, ↓reduceIte]
-      exact clientResult_boundedWhile_zero_snd _ _ _ _ _
+          (mkClusterInput base w w₀ n k q r opTag) fuel (cnt, rem)) = (a, 0) :=
+  clientResult_countWhile backLenStep _ s
+    (fun c => (extractFilterState base w w₀ n k s.mem).isFull (backSlot (quotBits w₀ n) q (c + 1)))
+    (fun _ => clientState_backLenStep _ _)
+    (fun cnt hcnt rem => by
+      rw [clientResult_backLenStep]
+      simp only [mkClusterInput_0, mkClusterInput_3, clientResult_readFull_mk,
+        maskedSlot_backSlot q (a := cnt + 1) (by omega)])
+    hfull hempty
 
 theorem clientResult_backLen_mk {U : ℕ} {S : Finset (Fin U)} (base w w₀ n k : ℕ)
     {quot : Fin U → Fin (2 ^ quotBits w₀ n)} {rem : Fin U → Fin (2 ^ remBits w₀ k)}
@@ -2596,23 +2684,14 @@ theorem clientResult_fwdLen_aux (base w w₀ n k : ℕ)
     ∀ fuel cnt rem, cnt ≤ t → t - cnt < fuel → t - cnt < rem →
       (Memory.spec 0).clientResult s
         (boundedWhile (fun _ (st : ℕ × ℕ) => 0 < st.2) fwdLenStep
-          (mkClusterInput base w w₀ n k q r opTag) fuel (cnt, rem)) = (t, 0) := by
-  intro fuel
-  induction fuel with
-  | zero => intro _ _ _ hlt _; omega
-  | succ fuel ih =>
-    intro cnt rem hcnt hfuel hrem
-    have hg : 0 < rem := by omega
-    simp only [boundedWhile, hg, ↓reduceIte]
-    rw [StateTransitionSpec.clientResult_bind, clientState_fwdLenStep, clientResult_fwdLenStep]
-    simp only [mkClusterInput_0, clientResult_readFull_mk, maskedSlot_probeSlot q cnt]
-    rcases lt_or_eq_of_le hcnt with hlt | rfl
-    · rw [hfull cnt hlt]
-      simp only [Bool.toNat_true, one_ne_zero, ↓reduceIte]
-      exact ih (cnt + 1) (rem - 1) (by omega) (by omega) (by omega)
-    · rw [hempty]
-      simp only [Bool.toNat_false, ↓reduceIte]
-      exact clientResult_boundedWhile_zero_snd _ _ _ _ _
+          (mkClusterInput base w w₀ n k q r opTag) fuel (cnt, rem)) = (t, 0) :=
+  clientResult_countWhile fwdLenStep _ s
+    (fun c => (extractFilterState base w w₀ n k s.mem).isFull (probeSlot (quotBits w₀ n) q c))
+    (fun _ => clientState_fwdLenStep _ _)
+    (fun cnt _ rem => by
+      rw [clientResult_fwdLenStep]
+      simp only [mkClusterInput_0, clientResult_readFull_mk, maskedSlot_probeSlot q cnt])
+    hfull hempty
 
 theorem clientResult_fwdLen_mk {U : ℕ} {S : Finset (Fin U)} (base w w₀ n k : ℕ)
     {quot : Fin U → Fin (2 ^ quotBits w₀ n)} {rem : Fin U → Fin (2 ^ remBits w₀ k)}
@@ -2754,19 +2833,18 @@ theorem clientResult_scanLoop_mk (base w w₀ n k : ℕ)
     (s : Memory.State) (a ℓ : ℕ) :
     let d := mkClusterInput base w w₀ n k q r opTag
     let st := extractFilterState base w w₀ n k s.mem
-    let env : ScanEnv := ((d, (o.val, (a, ℓ))), (occBefore st o a, occBefore st o (a + 1)))
+    let env : ScanEnv := ⟨d, o.val, a, ℓ, occBefore st o a, occBefore st o (a + 1)⟩
     (Memory.spec 0).clientResult s (scanLoopProg env) =
-      ((ℓ, (runsBefore st o ℓ, occBefore st o ℓ)),
-        ((calcRunStart st o a ℓ, calcTargetSlot st o a ℓ r),
-          (calcDeleteStop st o a ℓ, (queryAnyPrefix st o a ℓ r).toNat))) := by
+      ⟨ℓ, runsBefore st o ℓ, occBefore st o ℓ, calcRunStart st o a ℓ, calcTargetSlot st o a ℓ r,
+        calcDeleteStop st o a ℓ, (queryAnyPrefix st o a ℓ r).toNat⟩ := by
   intro d st env
   dsimp only [scanLoopProg]
   have h := iterate_invariant scanLoopStep env
     (fun j (m : ScanState) t =>
       t = s ∧ j ≤ ℓ ∧
-      m = ((ℓ - j, (runsBefore st o (ℓ - j), occBefore st o (ℓ - j))),
-        ((calcRunStart st o a (ℓ - j), calcTargetSlot st o a (ℓ - j) r),
-          (calcDeleteStopPrefix st o a ℓ (ℓ - j), (queryAnyPrefix st o a (ℓ - j) r).toNat))))
+      m = ⟨ℓ - j, runsBefore st o (ℓ - j), occBefore st o (ℓ - j),
+        calcRunStart st o a (ℓ - j), calcTargetSlot st o a (ℓ - j) r,
+        calcDeleteStopPrefix st o a ℓ (ℓ - j), (queryAnyPrefix st o a (ℓ - j) r).toNat⟩)
     (fun j m t ⟨ht, hj, hm⟩ => by
       subst t
       set i := ℓ - (j + 1)
@@ -2823,7 +2901,7 @@ theorem clientResult_scanLoop_mk (base w w₀ n k : ℕ)
             (extractFilterState base w w₀ n k s.mem).remAt (probeSlot (quotBits w₀ n) o i) =
               r <;>
           simp [h1, h2, h3])
-    (n := ℓ) (a := ((0, (0, 0)), ((0, 0), (ℓ, 0)))) (s := s)
+    (n := ℓ) (a := ⟨0, 0, 0, 0, 0, ℓ, 0⟩) (s := s)
     ⟨rfl, le_rfl, by simp [calcDeleteStopPrefix_zero, queryAnyPrefix_zero,
       calcRunStart_zero, calcTargetSlot_zero, runsBefore, occBefore]⟩
   have hres := h.2.2
@@ -2836,9 +2914,8 @@ theorem clientResult_scanCluster_mk (base w w₀ n k : ℕ)
     let d := mkClusterInput base w w₀ n k q r opTag
     let st := extractFilterState base w w₀ n k s.mem
     (Memory.spec 0).clientResult s (scanClusterProg (d, (o.val, (a, ℓ)))) =
-      ((st.isOcc q).toNat,
-        ((calcRunStart st o a ℓ, calcTargetSlot st o a ℓ r),
-          (calcDeleteStop st o a ℓ, (queryAnyPrefix st o a ℓ r).toNat))) := by
+      ⟨(st.isOcc q).toNat, calcRunStart st o a ℓ, calcTargetSlot st o a ℓ r,
+        calcDeleteStop st o a ℓ, (queryAnyPrefix st o a ℓ r).toNat⟩ := by
   intro d st
   unfold scanClusterProg
   rw [StateTransitionSpec.clientResult_bind, clientState_occBefore, clientResult_occBefore_mk,
@@ -3329,35 +3406,12 @@ theorem FilterInv.calcTargetSlot_lt_calcDeleteStop_of_mem {U b f n : ℕ}
     let ℓ := hinv.clusterLen hS_lt q
     calcTargetSlot st o a ℓ (rem u) < calcDeleteStop st o a ℓ := by
   intro q o a ℓ
-  let t := hinv.fwdLen hS_lt q
   have hq_probe : q = probeSlot b o a := by
     dsimp only [o, FilterInv.clusterStart]
     have h1 := probeSlot_backSlot_add q a 0
     rw [add_zero, probeSlot_zero] at h1
     exact h1.symm
-  have ha_lt : a < ℓ := by
-    have hr_mem : rem u ∈ bucketRun S quot rem q :=
-      (mem_bucketRun_iff S quot rem q (rem u)).mpr ⟨u, hu, rfl, rfl⟩
-    have hocc_q : st.isOcc q = true := by
-      rw [hinv.isOcc_eq q]
-      cases h : bucketRun S quot rem q with
-      | nil => simp [h] at hr_mem
-      | cons _ _ => rfl
-    have hfull_q : st.isFull q = true := by
-      cases h : st.isFull q
-      · have := (hinv.empty_slot q h).1
-        rw [hocc_q] at this
-        cases this
-      · rfl
-    have ht_pos : 0 < t := by
-      rcases Nat.eq_zero_or_pos t with ht0 | hpos
-      · have h1 := hinv.isFull_probeSlot_fwdLen hS_lt q
-        change st.isFull (probeSlot b q t) = false at h1
-        rw [ht0, probeSlot_zero, hfull_q] at h1
-        cases h1
-      · exact hpos
-    change a < a + t
-    omega
+  have ha_lt : a < ℓ := Nat.lt_add_of_pos_right (hinv.fwdLen_pos_of_mem hS_lt hu)
   have hvalid₀ : IntervalValid S quot rem st o ℓ := hinv.intervalValid_cluster hS_lt q
   obtain ⟨_ha_lt_e, _he_le_ℓ, he_run, _⟩ := hvalid₀.calcDeleteStop_spec hinv.isOcc_eq ha_lt
   have hs_eq := hvalid₀.calcTargetSlot_eq hinv.isOcc_eq ha_lt (rem u)

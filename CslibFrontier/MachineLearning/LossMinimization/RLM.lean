@@ -47,6 +47,9 @@ are stated in the source's form.
 * `Cslib.MachineLearning.exists_isRLM_tikhonov`: on a nonempty closed subset of a proper space,
   continuous losses bounded below admit a Tikhonov RLM rule; this covers unconstrained
   minimization.
+* `Cslib.MachineLearning.IsRLM.mul_norm_sub_sq_le`: for a `σ`-strongly convex regularizer and
+  convex losses, the minimizers `u` and `v` on two samples that differ in one example satisfy
+  `σ m ‖v - u‖² ≤ X + Y`, where `X` and `Y` are the loss changes on the two differing examples.
 * `Cslib.MachineLearning.IsRLM.norm_sub_le`, `Cslib.MachineLearning.IsRLM.sub_le`,
   `Cslib.MachineLearning.IsRLM.isReplaceOneStable`: for a `σ`-strongly convex regularizer and
   convex `ρ`-Lipschitz losses, replacing one example moves the minimizer by at most `2ρ / (σ m)`
@@ -55,6 +58,9 @@ are stated in the source's form.
 * `Cslib.MachineLearning.IsRLM.isReplaceOneStable_tikhonov`: Tikhonov RLM is replace-one stable
   with rate `ρ² / (r m)`, hence with the rate `2ρ² / (r m)` of [ShalevShwartzBenDavid2014,
   Corollary 13.6].
+* `Cslib.MachineLearning.IsRLM.integral_empiricalRisk_le`: the fitting term
+  `𝔼_S [L_S(A S)] ≤ L_D(w) + R(w)` for a nonnegative regularizer [ShalevShwartzBenDavid2014,
+  (13.16)].
 * `Cslib.MachineLearning.IsRLM.integral_trueRisk_le`: the oracle inequality for a stable RLM rule
   with a nonnegative regularizer.
 * `Cslib.MachineLearning.IsRLM.integral_trueRisk_le_tikhonov`: the oracle inequality
@@ -170,15 +176,17 @@ section Stability
 
 variable [NormedAddCommGroup E] [NormedSpace ℝ E]
 
-/-- **RLM rules with a strongly convex regularizer are stable** (compare
-[ShalevShwartzBenDavid2014, Corollary 13.6]): if `R` is
-`σ`-strongly convex on `K` with `σ > 0` and every loss is convex and `ρ`-Lipschitz on `K`, then
-replacing one of `m` examples moves the output of an RLM rule by at most `2ρ / (σ m)`. -/
-theorem IsRLM.norm_sub_le {ℓ : E → Z → ℝ} {R : E → ℝ} {K : Set E} {m : ℕ}
-    {A : (Fin m → Z) → E} (hA : IsRLM ℓ R K A) {σ : ℝ} (hσ : 0 < σ) (hR : StrongConvexOn K σ R)
-    (hconv : ∀ z, ConvexOn ℝ K fun w => ℓ w z) {ρ : NNReal}
-    (hlip : ∀ z, LipschitzOnWith ρ (fun w => ℓ w z) K) (S : Fin m → Z) (i : Fin m) (z' : Z) :
-    ‖A (Function.update S i z') - A S‖ ≤ 2 * ρ / (σ * m) := by
+/-- **Two-minimizer growth**: if `R` is `σ`-strongly convex on `K` and every loss is convex on `K`,
+then the outputs `u = A S` and `v = A S⁽ⁱ⁾` of an RLM rule on `m` examples satisfy
+`σ m ‖v - u‖² ≤ (ℓ(v, z_i) - ℓ(u, z_i)) + (ℓ(u, z') - ℓ(v, z'))`, where `S⁽ⁱ⁾` replaces the `i`-th
+example by `z'`. This adds the quadratic growth of both regularized empirical risks at their
+minimizers (compare [ShalevShwartzBenDavid2014, (13.10)], which uses one). -/
+theorem IsRLM.mul_norm_sub_sq_le {ℓ : E → Z → ℝ} {R : E → ℝ} {K : Set E} {m : ℕ}
+    {A : (Fin m → Z) → E} (hA : IsRLM ℓ R K A) {σ : ℝ} (hR : StrongConvexOn K σ R)
+    (hconv : ∀ z, ConvexOn ℝ K fun w => ℓ w z) (S : Fin m → Z) (i : Fin m) (z' : Z) :
+    σ * m * ‖A (Function.update S i z') - A S‖ ^ 2 ≤
+      (ℓ (A (Function.update S i z')) (S i) - ℓ (A S) (S i)) +
+        (ℓ (A S) z' - ℓ (A (Function.update S i z')) z') := by
   have hm : (0 : ℝ) < m := by exact_mod_cast i.pos
   have hu := hA.mem S
   have hv := hA.mem (Function.update S i z')
@@ -192,21 +200,36 @@ theorem IsRLM.norm_sub_le {ℓ : E → Z → ℝ} {R : E → ℝ} {K : Set E} {m
   have h₁ := (hstrong S).add_le_of_isMinOn hu (hA.isMinOn S) hv
   have h₂ := (hstrong (Function.update S i z')).add_le_of_isMinOn hv (hA.isMinOn _) hu
   rw [norm_sub_rev, empiricalRisk_update, empiricalRisk_update] at h₂
+  have h : σ * ‖A (Function.update S i z') - A S‖ ^ 2 ≤
+      ((ℓ (A S) z' - ℓ (A S) (S i)) -
+        (ℓ (A (Function.update S i z')) z' - ℓ (A (Function.update S i z')) (S i))) / m := by
+    rw [sub_div]
+    linarith
+  rw [le_div_iff₀ hm] at h
+  linarith
+
+/-- **RLM rules with a strongly convex regularizer are stable** (compare
+[ShalevShwartzBenDavid2014, Corollary 13.6]): if `R` is
+`σ`-strongly convex on `K` with `σ > 0` and every loss is convex and `ρ`-Lipschitz on `K`, then
+replacing one of `m` examples moves the output of an RLM rule by at most `2ρ / (σ m)`. -/
+theorem IsRLM.norm_sub_le {ℓ : E → Z → ℝ} {R : E → ℝ} {K : Set E} {m : ℕ}
+    {A : (Fin m → Z) → E} (hA : IsRLM ℓ R K A) {σ : ℝ} (hσ : 0 < σ) (hR : StrongConvexOn K σ R)
+    (hconv : ∀ z, ConvexOn ℝ K fun w => ℓ w z) {ρ : NNReal}
+    (hlip : ∀ z, LipschitzOnWith ρ (fun w => ℓ w z) K) (S : Fin m → Z) (i : Fin m) (z' : Z) :
+    ‖A (Function.update S i z') - A S‖ ≤ 2 * ρ / (σ * m) := by
+  have hm : (0 : ℝ) < m := by exact_mod_cast i.pos
+  have hu := hA.mem S
+  have hv := hA.mem (Function.update S i z')
+  have hgrowth := hA.mul_norm_sub_sq_le hR hconv S i z'
   -- Lipschitz bounds on the two changed losses.
   have hlip₁ := (hlip z').le_add_mul hu hv
   have hlip₂ := (hlip (S i)).le_add_mul hv hu
   rw [dist_eq_norm, norm_sub_rev] at hlip₁
   rw [dist_eq_norm] at hlip₂
   have hd0 : 0 ≤ ‖A (Function.update S i z') - A S‖ := norm_nonneg _
-  generalize ‖A (Function.update S i z') - A S‖ = d at h₁ h₂ hlip₁ hlip₂ hd0 ⊢
-  -- Adding the two growth inequalities, `σ d² m` is at most the change in the two losses, which
-  -- is at most `2 ρ d`.
-  have key : σ * d ^ 2 * m ≤ 2 * ρ * d := by
-    have h : σ * d ^ 2 ≤ (ℓ (A S) z' - ℓ (A S) (S i)) / m -
-        (ℓ (A (Function.update S i z')) z' - ℓ (A (Function.update S i z')) (S i)) / m := by
-      linarith
-    rw [← sub_div, le_div_iff₀ hm] at h
-    linarith
+  generalize ‖A (Function.update S i z') - A S‖ = d at hgrowth hlip₁ hlip₂ hd0 ⊢
+  -- The change in the two losses is at most `2 ρ d`.
+  have key : σ * m * d ^ 2 ≤ 2 * ρ * d := by linarith
   rcases hd0.eq_or_lt with hd | hd
   · rw [← hd]
     positivity
@@ -242,6 +265,29 @@ end Stability
 
 /-! ### The oracle inequality -/
 
+/-- **The fitting term of the oracle inequality** [ShalevShwartzBenDavid2014, (13.16)]: for an RLM
+rule on `K` with a regularizer that is nonnegative on `K`, `m > 0` i.i.d. examples from `D` and
+every `w ∈ K` with `D`-integrable loss, `𝔼_S [L_S(A S)] ≤ L_D(w) + R(w)`. -/
+theorem IsRLM.integral_empiricalRisk_le [MeasurableSpace Z] {ℓ : E → Z → ℝ} {R : E → ℝ}
+    {K : Set E} {m : ℕ} {A : (Fin m → Z) → E} (hA : IsRLM ℓ R K A)
+    (hR : ∀ w ∈ K, 0 ≤ R w) (D : Measure Z) [IsProbabilityMeasure D] (hm : 0 < m)
+    (hint' : ∀ i, Integrable (fun S => ℓ (A S) (S i)) (Measure.pi fun _ : Fin m => D))
+    {w : E} (hw : w ∈ K) (hwint : Integrable (ℓ w) D) :
+    ∫ S, empiricalRisk ℓ S (A S) ∂(Measure.pi fun _ : Fin m => D) ≤ trueRisk ℓ D w + R w := by
+  -- `L_S(A S) ≤ L_S(A S) + R(A S) ≤ L_S(w) + R(w)`, and `𝔼_S [L_S(w)] = L_D(w)`.
+  have hwint' : ∀ i, Integrable (fun S : Fin m → Z => ℓ w (S i))
+      (Measure.pi fun _ : Fin m => D) := fun i => integrable_comp_eval (i := i) hwint
+  have hemp : ∫ S, empiricalRisk ℓ S (A S) ∂(Measure.pi fun _ : Fin m => D) ≤
+      ∫ S, (empiricalRisk ℓ S w + R w) ∂(Measure.pi fun _ : Fin m => D) :=
+    integral_mono (integrable_empiricalRisk_comp ℓ _ A hint')
+      ((integrable_empiricalRisk_comp ℓ _ (fun _ => w) hwint').add (integrable_const _))
+      fun S => by
+        have := hA.le S hw
+        have := hR _ (hA.mem S)
+        linarith
+  rwa [integral_add (integrable_empiricalRisk_comp ℓ _ (fun _ => w) hwint') (integrable_const _),
+    integral_empiricalRisk ℓ D hm w hwint, integral_const, probReal_univ, one_smul] at hemp
+
 /-- **The oracle inequality for stable RLM rules** [ShalevShwartzBenDavid2014, (13.15) and
 (13.16)]: if an RLM rule on `K` with a regularizer that is nonnegative on `K` is replace-one stable
 at rate `ε`, then for `m > 0` i.i.d. examples from `D` and every `w ∈ K` with `D`-integrable loss,
@@ -257,19 +303,7 @@ theorem IsRLM.integral_trueRisk_le [MeasurableSpace Z] {ℓ : E → Z → ℝ} {
     {w : E} (hw : w ∈ K) (hwint : Integrable (ℓ w) D) :
     ∫ S, trueRisk ℓ D (A S) ∂(Measure.pi fun _ : Fin m => D) ≤ trueRisk ℓ D w + R w + ε := by
   have hgen := hstab.integral_trueRisk_le D hm hint hint'
-  -- `L_S(A S) ≤ L_S(A S) + R(A S) ≤ L_S(w) + R(w)`, and `𝔼_S [L_S(w)] = L_D(w)`.
-  have hwint' : ∀ i, Integrable (fun S : Fin m → Z => ℓ w (S i))
-      (Measure.pi fun _ : Fin m => D) := fun i => integrable_comp_eval (i := i) hwint
-  have hemp : ∫ S, empiricalRisk ℓ S (A S) ∂(Measure.pi fun _ : Fin m => D) ≤
-      ∫ S, (empiricalRisk ℓ S w + R w) ∂(Measure.pi fun _ : Fin m => D) :=
-    integral_mono (integrable_empiricalRisk_comp ℓ _ A hint')
-      ((integrable_empiricalRisk_comp ℓ _ (fun _ => w) hwint').add (integrable_const _))
-      fun S => by
-        have := hA.le S hw
-        have := hR _ (hA.mem S)
-        linarith
-  rw [integral_add (integrable_empiricalRisk_comp ℓ _ (fun _ => w) hwint') (integrable_const _),
-    integral_empiricalRisk ℓ D hm w hwint, integral_const, probReal_univ, one_smul] at hemp
+  have hemp := hA.integral_empiricalRisk_le hR D hm hint' hw hwint
   linarith
 
 section Tikhonov

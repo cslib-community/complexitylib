@@ -253,7 +253,8 @@ example :
 /-! Listing the fields of a parent instead of the parent field flattens them into the tuple. -/
 
 /-- Triples, as the flat tuple of their three fields. -/
-enc_structure eFlat : Triple where fst : encNat, snd : encBool, w : encUnary
+enc_structure eFlat : Triple flattened toPair : ePair where
+  fst : encNat, snd : encBool, w : encUnary
 
 example (t : Triple) : eFlat t = encPair encNat (encPair encBool encUnary) (t.fst, t.snd, t.w) :=
   rfl
@@ -266,6 +267,10 @@ example : ComputableInDegree (fun p : ℕ × Bool × ℕ => Triple.mk ⟨p.1, p.
 -- The flattened field rules read through the parent projection.
 example {α : Type} {enc : α ↪ List Bool} {f : α → Triple} (hf : ComputableInPolyTime f enc eFlat) :
     ComputableInPolyTime (fun a => Triple.mk ⟨(f a).fst, (f a).snd⟩ (f a).w) enc eFlat := by
+  fun_prop
+
+example {α : Type} {enc : α ↪ List Bool} {f : α → Triple} (hf : ComputableInPolyTime f enc eFlat) :
+    ComputableInPolyTime (fun a => (f a).toPair) enc ePair := by
   fun_prop
 
 /-! A field whose type depends on an earlier field is encoded by an injective word function of the
@@ -316,7 +321,7 @@ structure ElementPair (F : Family) extends Element F where
   other : F.Carrier desc
 
 /-- Element pairs, flattening the parent: byte-compatible with a hand-written five-word tuple. -/
-enc_structure eElementPair (F : Family) : ElementPair F where
+enc_structure eElementPair (F : Family) : ElementPair F flattened toElement : (eElement F) where
   size : encUnary, desc : F.encDesc, elt : (F.encode desc) using (F.encode_injective desc),
   other : (F.encode desc) using (F.encode_injective desc)
 
@@ -337,12 +342,26 @@ example (F : Family) {α : Type} {enc : α ↪ List Bool} {S : α → ℕ} {f : 
     ComputableInSpace (fun a => F.encode (f a).desc (f a).other) enc encBits S :=
   eElementPair_other_budget F hf
 
--- The parent projection follows from the parent's constructor rule and the flattened field rules.
+-- The explicit flattened-parent metadata generates the projection rule directly.
+example (F : Family) :
+    ComputableInDegree (fun x : ElementPair F => x.toElement)
+      (eElementPair F) (eElement F) 1 1 := by
+  fun_prop
+
+example (F : Family) :
+    ComputableInO (fun x : ElementPair F => x.toElement) (eElementPair F) (eElement F)
+      (fun x => (eElementPair F x).length) (fun x => (eElementPair F x).length) := by
+  fun_prop
+
+example (F : Family) {α : Type} {enc : α ↪ List Bool} {S : α → ℕ} {f : α → ElementPair F}
+    (hf : ComputableInSpace f enc (eElementPair F) S) :
+    ComputableInSpace (fun a => (f a).toElement) enc (eElement F) S := by
+  fun_prop
+
 example (F : Family) {α : Type} {enc : α ↪ List Bool} {f : α → ElementPair F}
     (hf : ComputableInPolyTime f enc (eElementPair F)) :
-    ComputableInPolyTime (fun a => (f a).toElement) enc (eElement F) :=
-  eElement_mk_polyTime F (eElementPair_size_polyTime F hf) (eElementPair_desc_polyTime F hf)
-    (eElementPair_elt_polyTime F hf)
+    ComputableInPolyTime (fun a => (f a).toElement) enc (eElement F) := by
+  fun_prop
 
 /-- An element with a second element of the same type, keeping the parent as one field. -/
 structure ElementTagged (F : Family) extends Element F where
@@ -488,6 +507,27 @@ error: enc_structure: missing field `snd` of `Triple`; the fields of `Triple` in
 -/
 #guard_msgs in
 enc_structure eFlatMissing : Triple where fst : encNat, w : encUnary
+
+/-- error: enc_structure: `missingParent` is not a field of `Triple` -/
+#guard_msgs in
+enc_structure eUnknownParent : Triple flattened missingParent : ePair where
+  fst : encNat, snd : encBool, w : encUnary
+
+/-- error: enc_structure: `w` is a field of `Triple`, but not a parent field -/
+#guard_msgs in
+enc_structure eNonParent : Triple flattened w : encUnary where
+  fst : encNat, snd : encBool, w : encUnary
+
+/-- error: enc_structure: parent field `toPair` is not flattened by the listed fields -/
+#guard_msgs in
+enc_structure eUnflattenedParent : Triple flattened toPair : ePair where
+  toPair : ePair, w : encUnary
+
+/-- error: enc_structure: flattened parent `toPair` is listed twice -/
+#guard_msgs in
+enc_structure eDuplicateParent : Triple
+    flattened toPair : ePair flattened toPair : ePair where
+  fst : encNat, snd : encBool, w : encUnary
 
 /-- error: enc_structure: `Nat` is not a structure -/
 #guard_msgs in

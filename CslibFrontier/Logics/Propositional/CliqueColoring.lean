@@ -17,7 +17,7 @@ import Mathlib.Data.Finset.Sort
 
 Krajíček's formulas `Clique_{n,k}(p, q)` and `Color_{n,r}(p, r)` [Krajíček, Definition 7.1]
 [Krajicek1997] share the variables `p` of the possible edges of a graph on `n` vertices, numbered
-as the inputs of the clique function (`Cslib.Circuits.Clique.edgeEquiv`). The clique formula
+as the inputs of the clique function (`Cslib.BitString.Graph.edgeEquiv`). The clique formula
 (`Cslib.Logic.PL.CNF.clique`) has a variable `q (u, i)` for each `u : Fin k` and vertex `i`, read
 as "the `u`-th member of the clique is `i`", and says that
 
@@ -73,6 +73,8 @@ formula, which is what monotone feasible interpolation needs.
 -/
 
 @[expose] public section
+
+open Cslib.BitString.Graph
 
 namespace Cslib.Logic.PL
 

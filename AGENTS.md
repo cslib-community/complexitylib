@@ -583,10 +583,14 @@ and [API review with explicit nonblocking nits](https://github.com/leanprover/cs
 ### Approve and queue
 
 Approving a PR's exact current head and queueing it are one step. A non-authoring reviewer with
-write access who approves runs `python3 scripts/queue_pr.py <PR> <approved head>`, which queues
-exactly that head once the required check has passed there; `--wait 30` waits up to 30 minutes
-for a check that is still running. Write access is sufficient authority to queue a head approved
-under this cycle. Approve without queueing, and say why in the approval, when:
+write access who approves uses `scripts/queue_pr.py` from a trusted checkout of current `main`,
+or an isolated copy obtained from a pinned revision of current `main`. Do not use the PR branch's
+helper or an old copy. Invoke the trusted script by its path; from private scratch, pass `--repo OWNER/NAME`
+explicitly ([queue command](manual/workflows/agent-operations.md#queue-approved-work-and-keep-its-approval)).
+Keep the approved PR head; do not refresh its branch just to obtain the tool. The helper queues
+exactly that head once its required check passes; `--wait 30` waits up to 30 minutes for a running
+check. Write access is sufficient authority to queue a head approved under this cycle. Approve
+without queueing, and say why in the approval, when:
 
 - human review has been requested in the PR, its comments or a linked issue; queueing is then left
   to that human or to whomever they name;
@@ -597,7 +601,15 @@ Pending source, advisory-notice or rendered-manual review is also a hold. `--wai
 automatically when the check passes; do not start it while completing CI will produce material
 that still needs review. Inspect that material first, then record the hold's resolution and link
 the existing proof/API/caller assessment before queueing. A successful check does not release a
-review hold, and the helper does not judge whether that review is complete.
+review hold, and the helper does not judge whether that review is complete. Updating `main` does
+not upgrade a running copy; an old waiter's owner stops it before replacing it after holds clear.
+
+When the helper actually waits, including its automatic mergeability retries, it snapshots the
+PR body, comments, submitted reviews and inline discussion before the first sleep and rereads
+them before enqueueing. Any change stops that enqueue: reread the discussion and holds, then
+rerun for the still-approved head when appropriate. It does not recheck linked issues or make
+the discussion read atomic with enqueue, so the reviewer's final hold check remains necessary.
+Instant-ready invocations and reports of already-queued entries are unchanged.
 
 The script refuses a head other than the approved one, a draft, a PR not based on `main`, a
 conflicting PR and failed checks. When the reviewer cannot queue, any other non-author agent with

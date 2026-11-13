@@ -152,11 +152,11 @@ example : RealizesBounded .exact
 
 -- Both migrated helpers accept a comparison bound at the largest two-bit word.
 example : (Memory.spec 2).clientResult (Memory.State.init [])
-    (scanStepTargetProg ((3, 0), ((3, 3), (0, (0, 0))))) = (1, 1) := by
+    (scanStepTargetProg ⟨⟨fun _ => 0, 0, 0, 0, 3, 3⟩, ⟨0, 0, 0, 0, 0, 0, 0⟩, 3, 0⟩) = (1, 1) := by
   decide
 
 example : (Memory.spec 2).clientResult (Memory.State.init [])
-    (scanStepQueryProg ((3, 0), ((0, 3), (0, 0)))) = 1 := by
+    (scanStepQueryProg ⟨⟨fun _ => 0, 0, 0, 0, 0, 3⟩, ⟨0, 0, 0, 0, 0, 0, 0⟩, 3, 0⟩) = 1 := by
   decide
 
 /-- The migrated query really executes at width two with an encoded cutoff of three. The
@@ -166,17 +166,17 @@ theorem maximum_cutoff_executes : ∃ r C, ∃ code : Code .exact r,
       ¬code.ReadsWidth ∧ x.Bounded 2 ∧ x.regs cutoff = 3 ∧
       ExecWithin 2 code x y C ∧ y.regs result = 1 ∧ y.mem = x.mem := by
   obtain ⟨n, C, emit, he⟩ := realizes_scanStepQuery
-  let r := 7 + (1 + n + 1)
+  let r := 30 + (1 + n + 1)
   let frontier : Fin r := ⟨0, by omega⟩
-  let src : Fin 6 → Fin r := fun i => ⟨1 + i.val, by have := i.isLt; omega⟩
-  let tmp : Fin (1 + n + 1) → Fin r := fun i => ⟨7 + i.val, by have := i.isLt; omega⟩
+  let src : Fin 29 → Fin r := fun i => ⟨1 + i.val, by have := i.isLt; omega⟩
+  let tmp : Fin (1 + n + 1) → Fin r := fun i => ⟨30 + i.val, by have := i.isLt; omega⟩
   have hi : Function.Injective tmp := by
     intro i j h
     apply Fin.ext
     have := congrArg Fin.val h
     dsimp only [tmp] at this
     omega
-  have hd (i : Fin 6) (j : Fin (1 + n + 1)) : src i ≠ tmp j := by
+  have hd (i : Fin 29) (j : Fin (1 + n + 1)) : src i ≠ tmp j := by
     intro h
     have := congrArg Fin.val h
     dsimp only [src, tmp] at this
@@ -187,17 +187,18 @@ theorem maximum_cutoff_executes : ∃ r C, ∃ code : Code .exact r,
     have := congrArg Fin.val h
     dsimp only [tmp, frontier] at this
     omega
-  have hs (i : Fin 6) : src i ≠ frontier := by
+  have hs (i : Fin 29) : src i ≠ frontier := by
     intro h
     have := congrArg Fin.val h
     dsimp only [src, frontier] at this
     omega
-  let d : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ)) := ((3, 0), ((0, 3), (0, 0)))
-  let x : Data r := ⟨fun i => if i.val = 1 ∨ i.val = 4 then 3 else 0, fun _ => 0⟩
+  -- `runs = 3` (word 27) is compared with `occA1 = 3` (word 19).
+  let d : ScanStepCtx := ⟨⟨fun _ => 0, 0, 0, 0, 0, 3⟩, ⟨0, 0, 0, 0, 0, 0, 0⟩, 3, 0⟩
+  let x : Data r := ⟨fun i => if i.val = 20 ∨ i.val = 28 then 3 else 0, fun _ => 0⟩
   have hx : x.Bounded 2 := by
     constructor
     · intro i
-      change Fits 2 (if i.val = 1 ∨ i.val = 4 then 3 else 0)
+      change Fits 2 (if i.val = 20 ∨ i.val = 28 then 3 else 0)
       split_ifs <;> decide
     · intro a
       exact fits_zero 2
@@ -209,7 +210,7 @@ theorem maximum_cutoff_executes : ∃ r C, ∃ code : Code .exact r,
     (validHistory_scanStepQuery 2 _ d)
   have hout := ho 0
   change y.regs (tmp 0) = 1 at hout
-  refine ⟨r, C, emit frontier src tmp, tmp 0, src 3, x, y, hnw, hx, rfl, ?_, hout, ?_⟩
+  refine ⟨r, C, emit frontier src tmp, tmp 0, src 19, x, y, hnw, hx, rfl, ?_, hout, ?_⟩
   · simpa only [memoryCost_scanStepQuery, Nat.zero_add, Nat.add_zero, Nat.mul_one] using hy
   · exact congrArg Memory.State.mem hm
 

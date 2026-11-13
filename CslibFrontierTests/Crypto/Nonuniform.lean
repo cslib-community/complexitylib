@@ -191,11 +191,11 @@ example (n : ℕ) :
 
 /-- Concrete exercised client of `HasGapWithAdvice.extract_three` on `fairPair` with nonempty
 advice `nonemptyAdvice`, positive extracted label output
-`ExtractionSchedule.slack n (saved.length n) 0`, and the advice-dependent distinguisher
+`saved.sampleSlack (fun _ => 0) n`, and the advice-dependent distinguisher
 `advisedWordDistinguisher`. -/
 example :
-    let count := fun n => Pseudoentropy.ExtractionSchedule.count n (saved.length n) 0
-    let bits := fun n => Pseudoentropy.ExtractionSchedule.slack n (saved.length n) 0
+    let count := saved.sampleCount (fun _ => 0)
+    let bits := saved.sampleSlack (fun _ => 0)
     Negligible (fun n => Game.advantage
       (distinguishingGame
         (ProbComp.eval
@@ -210,19 +210,19 @@ example :
   have hind : IndistinguishableWithAdvice nonemptyAdvice
       (fun n => ProbComp.eval
         (Pseudoentropy.ThreeSource.extract
-          (Pseudoentropy.ExtractionSchedule.count n (saved.length n) 0)
+          (saved.sampleCount (fun _ => 0) n)
           (saved.length n) 2 0
-          (Pseudoentropy.ExtractionSchedule.slack n (saved.length n) 0) 0
+          (saved.sampleSlack (fun _ => 0) n) 0
           (saved.sampleWithSeed n)))
       (fun n => BitString.uniformList
         (Pseudoentropy.ThreeSource.outputLength
-          (Pseudoentropy.ExtractionSchedule.count n (saved.length n) 0)
+          (saved.sampleCount (fun _ => 0) n)
           (saved.length n) 2 0
-          (Pseudoentropy.ExtractionSchedule.slack n (saved.length n) 0) 0)) := by
+          (saved.sampleSlack (fun _ => 0) n) 0)) := by
     apply (fairPair_gapWithAdvice nonemptyAdvice).extract_three saved
       (bound := fun _ => 2) (inverseSlack := fun _ => 0)
       (observationBits := fun _ => 0) (remainingBits := fun _ => 0)
-      (labelBits := fun n => Pseudoentropy.ExtractionSchedule.slack n (saved.length n) 0)
+      (labelBits := fun n => saved.sampleSlack (fun _ => 0) n)
       (numerator := fun _ => 2) (densityBound := fun _ => 0)
       (by constructor <;> fun_prop)
       (by intro n observation _; exact Nat.le_refl 2)
@@ -234,14 +234,14 @@ example :
     have h := Pseudoentropy.ExtractionSchedule.two_slack_eq n (saved.length n) 0
     norm_num [dyadicSize] at h ⊢
     linarith [Nat.cast_nonneg (α := ℝ)
-      (Pseudoentropy.ExtractionSchedule.slack n (saved.length n) 0)]
+      (saved.sampleSlack (fun _ => 0) n)]
   exact hind advisedWordDistinguisher (by unfold advisedWordDistinguisher; fun_prop)
 
 /-- Concrete exercised client of `HasGapWithAdvice.extract_indexed_word_labels` on `fairPair` with
 nonempty advice `nonemptyAdvice` and an advice-dependent indexed test. -/
 example (choose : ℕ → ℕ) (hchoose : ∀ n, choose n < n + 1) :
-    let count := fun n => Pseudoentropy.ExtractionSchedule.count n (saved.length n) 0
-    let bits := fun n => Pseudoentropy.ExtractionSchedule.slack n (saved.length n) 0
+    let count := saved.sampleCount (fun _ => 0)
+    let bits := saved.sampleSlack (fun _ => 0)
     let test : ℕ × List Bool → ℕ → List (List Bool) × List Bool × List Bool → ProbComp Bool :=
       fun a i result => pure (a.2.headD false && (result.2.2.headD false ^^ decide (i < a.1)))
     Negligible (fun n => Game.advantage
@@ -256,7 +256,7 @@ example (choose : ℕ → ℕ) (hchoose : ∀ n, choose n < n + 1) :
   have hlength := saved.length_isPolyTime
   apply (fairPair_gapWithAdvice nonemptyAdvice).extract_indexed_word_labels saved choose
     (candidates := fun n => n + 1) (inverseSlack := fun _ => 0)
-    (outputBits := fun n _ => Pseudoentropy.ExtractionSchedule.slack n (saved.length n) 0)
+    (outputBits := fun n _ => saved.sampleSlack (fun _ => 0) n)
     (numerator := fun _ _ => 2) (densityBound := fun _ => 0)
     (by fun_prop)
     (Pseudoentropy.ExtractionSchedule.isPolyTime_slack (by fun_prop) (by fun_prop) (by fun_prop))
@@ -270,7 +270,7 @@ example (choose : ℕ → ℕ) (hchoose : ∀ n, choose n < n + 1) :
   intro n
   have h := Pseudoentropy.ExtractionSchedule.two_slack_eq n (saved.length n) 0
   norm_num [dyadicSize] at h ⊢
-  linarith [Nat.cast_nonneg (α := ℝ) (Pseudoentropy.ExtractionSchedule.slack n (saved.length n) 0)]
+  linarith [Nat.cast_nonneg (α := ℝ) (saved.sampleSlack (fun _ => 0) n)]
 
 /-- Conditional client of `EntropyGrid.exists_secure_padded_choice_withAdvice` assuming a
 nonuniform one-way function `hf : NonuniformOneWay f` (which supplies a pseudoentropy pair with
