@@ -125,8 +125,7 @@ theorem eq_of_mem_support_realEnsemble {security : ℕ} {word : List Bool}
 theorem distinguishingGame_realEnsemble (security : ℕ) :
     distinguishingGame (LWE.realEnsemble (fun _ => 0) (fun _ => 1) (fun _ => 1) zeroNoise
       security) (firstBitFalse security) = PMF.pure true := by
-  unfold distinguishingGame
-  rw [PMF.monad_bind_eq_bind]
+  rw [distinguishingGame_eq_bind, PMF.monad_bind_eq_bind]
   trans (LWE.realEnsemble (fun _ => 0) (fun _ => 1) (fun _ => 1) zeroNoise security).bind
     fun _ => PMF.pure true
   · refine PMF.bind_congr_on_support _ _ _ fun word hword => ?_
@@ -138,7 +137,7 @@ theorem distinguishingGame_realEnsemble (security : ℕ) :
 theorem distinguishingGame_uniformEnsemble_apply (security : ℕ) :
     distinguishingGame (LWE.uniformEnsemble (fun _ => 0) (fun _ => 1) (fun _ => 1) security)
       (firstBitFalse security) true = 2⁻¹ := by
-  simp only [distinguishingGame, LWE.uniformEnsemble, firstBitFalse, PMF.monad_bind_eq_bind,
+  simp only [distinguishingGame_eq_bind, LWE.uniformEnsemble, firstBitFalse, PMF.monad_bind_eq_bind,
     PMF.bind_map, Function.comp_def, ProbComp.eval_pure, PMF.bind_apply, tsum_fintype,
     PMF.uniformOfFintype_apply, PMF.pure_apply]
   rw [← Finset.mul_sum]
