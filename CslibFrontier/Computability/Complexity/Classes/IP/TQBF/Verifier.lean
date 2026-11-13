@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Complexity.Classes.IP
 public import CslibFrontier.Computability.Complexity.Classes.IP.TQBF.Words
 public import CslibFrontier.Computability.Complexity.Problems.TQBF.Closed
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Finite
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 public import CslibFrontier.Languages.Probabilistic.Iteration
 public import CslibFrontier.Languages.Probabilistic.Oracle.Support
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -92,66 +93,60 @@ instance : FinEnum ArithQBF.Kind :=
 abbrev encArithToken : ArithQBF.Kind × ℕ ↪ List Bool :=
   encPair (encFinEnum ArithQBF.Kind) encNat
 
-/-- The parameters of the machine: the variables `xs` linearized after every quantifier, the
-modulus less one, so that the modulus is positive, and the degree bound `D` of every round. -/
-abbrev Params := List ℕ × ℕ × ℕ
+/-- The parameters of the machine. -/
+structure Params where
+  /-- The variables linearized after every quantifier. -/
+  xs : List ℕ
+  /-- The modulus less one, so that the modulus is positive. -/
+  modulusPred : ℕ
+  /-- The degree bound `D` of every round. -/
+  degree : ℕ
 
 /-- The encoding of the parameters, the numbers in unary. -/
-private abbrev encParams : Params ↪ List Bool :=
-  encPair (encList encNat) (encPair encUnary encUnary)
+enc_structure encParams : Params where
+  xs : (encList encNat),
+  modulusPred : encUnary,
+  degree : encUnary
 
 /-- The input of the loop: the parameters and the tokens of the arithmetic formula. -/
-abbrev LoopInput := Params × List (ArithQBF.Kind × ℕ)
-
-namespace LoopInput
-
-/-- The variables linearized after every quantifier. -/
-abbrev xs (I : LoopInput) : List ℕ := I.1.1
-
-/-- The modulus less one, as stored in the parameters. -/
-abbrev modulusPred (I : LoopInput) : ℕ := I.1.2.1
-
-/-- The modulus, which is positive. -/
-abbrev modulus (I : LoopInput) : ℕ := I.modulusPred + 1
-
-/-- The degree bound of every round. -/
-abbrev degree (I : LoopInput) : ℕ := I.1.2.2
-
-/-- The tokens of the arithmetic formula. -/
-abbrev tokens (I : LoopInput) : List (ArithQBF.Kind × ℕ) := I.2
-
-end LoopInput
+structure LoopInput extends Params where
+  /-- The tokens of the arithmetic formula. -/
+  tokens : List (ArithQBF.Kind × ℕ)
 
 /-- The encoding of the input of the loop. -/
-private abbrev encLoopInput : LoopInput ↪ List Bool :=
-  encPair encParams (encList encArithToken)
+enc_structure encLoopInput : LoopInput where
+  toParams : encParams,
+  tokens : (encList encArithToken)
 
-/-- A pending claim: a point and a value. -/
-abbrev Claim := List (ℕ × ℕ) × ℕ
+/-- The modulus, which is positive. -/
+abbrev LoopInput.modulus (I : LoopInput) : ℕ := I.modulusPred + 1
+
+/-- A pending claim: the value `value` at the point `point`. -/
+structure Claim where
+  /-- The point, as pairs of a variable and its value. -/
+  point : List (ℕ × ℕ)
+  /-- The claimed value. -/
+  value : ℕ
 
 /-- The encoding of a claim, its value in unary. -/
-abbrev encClaim : Claim ↪ List Bool := encPair encPt encUnary
+enc_structure encClaim : Claim where
+  point : encPt,
+  value : encUnary
 
-/-- A state of the machine: the remaining tokens, the stack of pending claims, and whether every
-check so far passed. -/
-abbrev VState := List (ArithQBF.Kind × ℕ) × List Claim × Bool
-
-namespace VState
-
-/-- The remaining tokens. -/
-abbrev tokens (st : VState) : List (ArithQBF.Kind × ℕ) := st.1
-
-/-- The stack of pending claims, its top first. -/
-abbrev claims (st : VState) : List Claim := st.2.1
-
-/-- Whether every check so far passed. -/
-abbrev passed (st : VState) : Bool := st.2.2
-
-end VState
+/-- A state of the machine. -/
+structure VState where
+  /-- The remaining tokens. -/
+  tokens : List (ArithQBF.Kind × ℕ)
+  /-- The stack of pending claims, its top first. -/
+  claims : List Claim
+  /-- Whether every check so far passed. -/
+  passed : Bool
 
 /-- The encoding of the states. -/
-abbrev encVState : VState ↪ List Bool :=
-  encPair (encList encArithToken) (encPair (encList encClaim) encBool)
+enc_structure encVState : VState where
+  tokens : (encList encArithToken),
+  claims : (encList encClaim),
+  passed : encBool
 
 /-- The data of a step: the input of the loop and the current state. -/
 abbrev StepData := LoopInput × VState
@@ -179,7 +174,7 @@ abbrev tokens (a : StepData) : List (ArithQBF.Kind × ℕ) := a.2.tokens
 def head (a : StepData) : ArithQBF.Kind × ℕ := a.tokens.headD (.top, 0)
 
 /-- The claim on top of the stack. -/
-def top (a : StepData) : Claim := a.2.claims.headD ([], 0)
+def top (a : StepData) : Claim := a.2.claims.headD ⟨[], 0⟩
 
 /-- The claims below the top of the stack. -/
 def below (a : StepData) : List Claim := a.2.claims.tail
@@ -190,10 +185,10 @@ end StepData
 
 /-- The message of a step: the remaining tokens and the point of the claim on top of the stack. -/
 def message (a : StepData) : List Bool :=
-  encPair (encList encArithToken) encPt (a.tokens, a.top.1)
+  encPair (encList encArithToken) encPt (a.tokens, a.top.point)
 
 /-- The state after a failed check: the token and the claim are dropped. -/
-def reject (a : StepData) : VState := (a.tokens.tail, a.below, false)
+def reject (a : StepData) : VState := ⟨a.tokens.tail, a.below, false⟩
 
 /-- The reply of a step, read as `D + 1` residues. -/
 def replyOf (a : StepData) (word : List Bool) : List ℕ := decodeReply a.modulus a.degree word
@@ -202,22 +197,22 @@ def replyOf (a : StepData) (word : List Bool) : List ℕ := decodeReply a.modulu
 arguments are checked against the top claim, then pushed in its place. -/
 def binNext (o : ArithQBF.Connective) (a : StepData) (word : List Bool) : VState :=
   if connectiveMod a.modulus o ((replyOf a word).getD 0 0) ((replyOf a word).getD 1 0) %
-      a.modulus = a.top.2 % a.modulus then
-    (a.tokens.tail, (normPt a.modulus a.xs a.top.1, (replyOf a word).getD 0 0) ::
-      (normPt a.modulus a.xs a.top.1, (replyOf a word).getD 1 0) :: a.below, true)
+      a.modulus = a.top.value % a.modulus then
+    ⟨a.tokens.tail, ⟨normPt a.modulus a.xs a.top.point, (replyOf a word).getD 0 0⟩ ::
+      ⟨normPt a.modulus a.xs a.top.point, (replyOf a word).getD 1 0⟩ :: a.below, true⟩
   else reject a
 
 /-- Whether the reply `word` to an operator `o` passes the check against the top claim. -/
 def opCheck (o : ArithQBF.Operator) (a : StepData) (word : List Bool) : Bool :=
-  decide (operatorMod a.modulus o (lookupPt a.top.1 a.head.2 % a.modulus)
+  decide (operatorMod a.modulus o (lookupPt a.top.point a.head.2 % a.modulus)
     (hornerMod a.modulus 0 (replyOf a word)) (hornerMod a.modulus 1 (replyOf a word)) %
-      a.modulus = a.top.2 % a.modulus)
+      a.modulus = a.top.value % a.modulus)
 
 /-- The state after the reply `word` to an operator and the random point `z`: the claim that the
 body has the value of the reply at `z`, with the variable set to `z`. -/
 def opNext (a : StepData) (word : List Bool) (z : ℕ) : VState :=
-  (a.tokens.tail, (updatePt a.modulus a.xs a.top.1 a.head.2 z,
-    hornerMod a.modulus z (replyOf a word)) :: a.below, true)
+  ⟨a.tokens.tail, ⟨updatePt a.modulus a.xs a.top.point a.head.2 z,
+    hornerMod a.modulus z (replyOf a word)⟩ :: a.below, true⟩
 
 /-- The reply to the message of a step, of which `D + 1` rows are read. -/
 noncomputable def ask (a : StepData) : WordOracleComp Unit (List Bool) :=
@@ -233,12 +228,12 @@ noncomputable def opCont (o : ArithQBF.Operator) (a : StepData) (word : List Boo
 
 /-- A step on a token of kind `k`. -/
 noncomputable def stepAt : ArithQBF.Kind → StepData → WordOracleComp Unit VState
-  | .var, a => pure (a.tokens.tail, a.below,
-      decide (lookupPt a.top.1 a.head.2 % a.modulus = a.top.2 % a.modulus))
-  | .top, a => pure (a.tokens.tail, a.below, decide (1 % a.modulus = a.top.2 % a.modulus))
-  | .bot, a => pure (a.tokens.tail, a.below, decide (0 % a.modulus = a.top.2 % a.modulus))
-  | .not, a => pure (a.tokens.tail,
-      (normPt a.modulus a.xs a.top.1, subMod a.modulus 1 a.top.2) :: a.below, true)
+  | .var, a => pure ⟨a.tokens.tail, a.below,
+      decide (lookupPt a.top.point a.head.2 % a.modulus = a.top.value % a.modulus)⟩
+  | .top, a => pure ⟨a.tokens.tail, a.below, decide (1 % a.modulus = a.top.value % a.modulus)⟩
+  | .bot, a => pure ⟨a.tokens.tail, a.below, decide (0 % a.modulus = a.top.value % a.modulus)⟩
+  | .not, a => pure ⟨a.tokens.tail,
+      ⟨normPt a.modulus a.xs a.top.point, subMod a.modulus 1 a.top.value⟩ :: a.below, true⟩
   | .and, a => do
       let word ← ask a
       return binNext .and a word
@@ -262,7 +257,7 @@ noncomputable def step (I : LoopInput) (st : VState) : WordOracleComp Unit VStat
 
 /-- The initial state: all the tokens, and the claim that the formula has value `1` at the
 origin. -/
-def init (I : LoopInput) : VState := (I.tokens, [(I.xs.map fun x => (x, 0), 1)], true)
+def init (I : LoopInput) : VState := ⟨I.tokens, [⟨I.xs.map fun x => (x, 0), 1⟩], true⟩
 
 /-- The machine runs one step per token. -/
 noncomputable def loop (I : LoopInput) : WordOracleComp Unit VState :=
@@ -321,7 +316,7 @@ private lemma degree_pt :
   fun_prop
 
 private lemma tokens_pt :
-    ComputableInPolyTime (fun a : StepData => a.2.1) encStepData (encList encArithToken) := by
+    ComputableInPolyTime StepData.tokens encStepData (encList encArithToken) := by
   fun_prop
 
 attribute [local fun_prop] xs_pt modulus_pt degree_pt tokens_pt
@@ -403,14 +398,15 @@ private lemma opCont_pt (o : ArithQBF.Operator) :
 private lemma stepAt_pt (k : ArithQBF.Kind) :
     IsOraclePPTOn encStepData encVState (stepAt k) := by
   cases k
-  · exact ComputableInPolyTime.isOraclePPTOn (f := fun a : StepData => (a.tokens.tail, a.below,
-      decide (lookupPt a.top.1 a.head.2 % a.modulus = a.top.2 % a.modulus))) (by fun_prop)
-  · exact ComputableInPolyTime.isOraclePPTOn (f := fun a : StepData => (a.tokens.tail, a.below,
-      decide (1 % a.modulus = a.top.2 % a.modulus))) (by fun_prop)
-  · exact ComputableInPolyTime.isOraclePPTOn (f := fun a : StepData => (a.tokens.tail, a.below,
-      decide (0 % a.modulus = a.top.2 % a.modulus))) (by fun_prop)
-  · exact ComputableInPolyTime.isOraclePPTOn (f := fun a : StepData => (a.tokens.tail,
-      (normPt a.modulus a.xs a.top.1, subMod a.modulus 1 a.top.2) :: a.below, true))
+  · exact ComputableInPolyTime.isOraclePPTOn (f := fun a : StepData => VState.mk a.tokens.tail
+      a.below (decide (lookupPt a.top.point a.head.2 % a.modulus = a.top.value % a.modulus)))
+      (by fun_prop)
+  · exact ComputableInPolyTime.isOraclePPTOn (f := fun a : StepData => VState.mk a.tokens.tail
+      a.below (decide (1 % a.modulus = a.top.value % a.modulus))) (by fun_prop)
+  · exact ComputableInPolyTime.isOraclePPTOn (f := fun a : StepData => VState.mk a.tokens.tail
+      a.below (decide (0 % a.modulus = a.top.value % a.modulus))) (by fun_prop)
+  · exact ComputableInPolyTime.isOraclePPTOn (f := fun a : StepData => VState.mk a.tokens.tail
+      (⟨normPt a.modulus a.xs a.top.point, subMod a.modulus 1 a.top.value⟩ :: a.below) true)
       (by fun_prop)
   · exact ask_pt.bind_with (binNext_pt .and).isOraclePPTOn
   · exact ask_pt.bind_with (binNext_pt .or).isOraclePPTOn
@@ -447,21 +443,22 @@ private theorem length_encPt_map_le (xs : List ℕ) (f : ℕ → ℕ) {q : ℕ} 
     nlinarith
 
 private theorem length_encClaim_map_le (I : LoopInput) (f : ℕ → ℕ)
-    (hf : ∀ x, f x < I.1.2.1 + 1) (v : ℕ) (hv : v < I.1.2.1 + 1) :
-    (encClaim (I.1.1.map fun x => (x, f x), v)).length ≤ claimBound I := by
-  have := length_encPt_map_le I.1.1 f (q := I.1.2.1) fun x => Nat.le_of_lt_succ (hf x)
-  simp only [encClaim, length_encPair, encUnary_apply, List.length_replicate, claimBound,
-    LoopInput.xs, LoopInput.modulusPred]
+    (hf : ∀ x, f x < I.modulus) (v : ℕ) (hv : v < I.modulus) :
+    (encClaim ⟨I.xs.map fun x => (x, f x), v⟩).length ≤ claimBound I := by
+  have := length_encPt_map_le I.xs f (q := I.modulusPred) fun x => Nat.le_of_lt_succ (hf x)
+  have hv' : v ≤ I.modulusPred := Nat.le_of_lt_succ hv
+  simp only [encClaim_apply, encClaimFields, length_encPair, encUnary_apply,
+    List.length_replicate, claimBound]
   nlinarith
 
 /-- Replacing the next token and the top claim by at most two claims of bounded encodings adds at
 most a bounded amount of storage. -/
 private theorem length_encVState_push_le (st : VState) (entries : List Claim) (b : Bool) {B : ℕ}
     (hlen : entries.length ≤ 2) (hentries : ∀ e ∈ entries, (encClaim e).length ≤ B) :
-    (encVState (st.1.tail, entries ++ st.2.1.tail, b)).length ≤
+    (encVState ⟨st.tokens.tail, entries ++ st.claims.tail, b⟩).length ≤
       (encVState st).length + (8 * B + 8) := by
-  have htok := length_encList_sublist encArithToken st.1.tail_sublist
-  have hstk := length_encList_sublist encClaim st.2.1.tail_sublist
+  have htok := length_encList_sublist encArithToken st.tokens.tail_sublist
+  have hstk := length_encList_sublist encClaim st.claims.tail_sublist
   have hentry : (encList encClaim entries).length ≤ 2 * (2 * B + 1) := by
     rw [length_encList]
     calc (entries.map fun e => 2 * (encClaim e).length + 1).sum
@@ -469,26 +466,19 @@ private theorem length_encVState_push_le (st : VState) (entries : List Claim) (b
           List.sum_le_sum fun e he => by have := hentries e he; omega
       _ = entries.length * (2 * B + 1) := by simp
       _ ≤ 2 * (2 * B + 1) := Nat.mul_le_mul_right _ hlen
-  enc_len [encVState, encList_append, List.length_singleton]
+  enc_len [encVState_apply, encVStateFields, encList_append, List.length_singleton]
 
 /-- **Every step adds a bounded amount of storage**, polynomial in the input of the loop. -/
 theorem length_encVState_le_of_mem_support_step (I : LoopInput) (st : VState) {next : VState}
     (h : next ∈ OracleComp.support (step I st)) :
     (encVState next).length ≤ (encVState st).length + (8 * claimBound I + 8) := by
-  have : NeZero (I.1.2.1 + 1) := ⟨Nat.succ_ne_zero _⟩
-  have hq : 0 < I.1.2.1 + 1 := Nat.succ_pos _
+  have hq : 0 < I.modulus := Nat.succ_pos _
   have hrej :
       (encVState (reject (I, st))).length ≤ (encVState st).length + (8 * claimBound I + 8) :=
     length_encVState_push_le st [] false (B := claimBound I) (by simp) (by simp)
-  have hnorm (pt : List (ℕ × ℕ)) (v : ℕ) (hv : v < I.1.2.1 + 1) :
-      (encClaim (normPt (I.1.2.1 + 1) I.1.1 pt, v)).length ≤ claimBound I :=
+  have hnorm (pt : List (ℕ × ℕ)) (v : ℕ) (hv : v < I.modulus) :
+      (encClaim ⟨normPt I.modulus I.xs pt, v⟩).length ≤ claimBound I :=
     length_encClaim_map_le I _ (fun x => Nat.mod_lt _ hq) v hv
-  have hreply (word : List Bool) (i : ℕ) :
-      (decodeReply (I.1.2.1 + 1) I.1.2.2 word).getD i 0 < I.1.2.1 + 1 := by
-    rw [List.getD_eq_getElem?_getD]
-    rcases hget : (decodeReply (I.1.2.1 + 1) I.1.2.2 word)[i]? with _ | a
-    · exact hq
-    · exact lt_of_mem_decodeReply (List.mem_of_getElem? hget)
   have hbin (o : ArithQBF.Connective) (hnext : next ∈ OracleComp.support
       (ask (I, st) >>= fun word => pure (binNext o (I, st) word))) :
       (encVState next).length ≤ (encVState st).length + (8 * claimBound I + 8) := by
@@ -497,7 +487,8 @@ theorem length_encVState_le_of_mem_support_step (I : LoopInput) (st : VState) {n
     split_ifs
     · refine length_encVState_push_le st [_, _] true (by simp) ?_
       simp only [List.mem_cons, List.not_mem_nil, or_false, forall_eq_or_imp, forall_eq]
-      exact ⟨hnorm _ _ (hreply word 0), hnorm _ _ (hreply word 1)⟩
+      exact ⟨hnorm _ _ (getD_decodeReply_lt I.degree word 0),
+        hnorm _ _ (getD_decodeReply_lt I.degree word 1)⟩
     · exact hrej
   have hop (o : ArithQBF.Operator) (hnext : next ∈ OracleComp.support
       (ask (I, st) >>= opCont o (I, st))) :
@@ -543,24 +534,23 @@ private lemma init_pt : ComputableInPolyTime init encLoopInput encVState := by
 private lemma growth_polyBounded :
     PolyBounded (fun I => (encLoopInput I).length) (fun I => 8 * claimBound I + 8) := by
   refine PolyBounded.of_forall_le 64 2 fun I => ?_
-  have hxs : (encList encNat I.1.1).length ≤ (encLoopInput I).length :=
-    (length_le_encPair_left _ _ I.1).trans (length_le_encPair_left _ _ I)
-  have hq : I.1.2.1 ≤ (encLoopInput I).length := by
-    have h₁ : (encUnary I.1.2.1).length ≤ (encPair encUnary encUnary I.1.2).length :=
-      length_le_encPair_left _ _ I.1.2
-    have h₂ : (encPair encUnary encUnary I.1.2).length ≤ (encParams I.1).length :=
-      length_le_encPair_right _ _ I.1
-    have h₃ : (encParams I.1).length ≤ (encLoopInput I).length := length_le_encPair_left _ _ I
-    simp only [encUnary_apply, List.length_replicate] at h₁
-    omega
-  unfold claimBound LoopInput.xs LoopInput.modulusPred
+  have hparams : (encParams I.toParams).length ≤ (encLoopInput I).length :=
+    length_le_encPair_left encParams _ (I.toParams, I.tokens)
+  have hxs : (encList encNat I.xs).length ≤ (encLoopInput I).length := by
+    refine le_trans ?_ hparams
+    rw [encParams_apply]
+    exact length_le_encPair_left _ _ (I.xs, I.modulusPred, I.degree)
+  have hq : I.modulusPred ≤ (encLoopInput I).length := by
+    refine le_trans ?_ hparams
+    enc_len [encParams_apply, encParamsFields]
+  unfold claimBound
   nlinarith
 
 /-- **The machine is strict oracle PPT** in its encoded input. -/
 private theorem isOraclePPTOn_loop : IsOraclePPTOn encLoopInput encVState loop := by
   unfold loop
-  exact IsOraclePPTOn.iterateWith_of_bounded_growth' (count := fun I => I.2.length) (by fun_prop)
-    init_pt isOraclePPTOn_step growth_polyBounded
+  exact IsOraclePPTOn.iterateWith_of_bounded_growth' (count := fun I => I.tokens.length)
+    (by fun_prop) init_pt isOraclePPTOn_step growth_polyBounded
     fun I st _ h => length_encVState_le_of_mem_support_step I st h
 
 end LoopPolyTime
@@ -585,8 +575,11 @@ def primeBound (ψ : QBF ℕ) : ℕ := 12 * ψ.tokens.length ^ 2 * (ψ.tokens.le
 def modulus (ψ : QBF ℕ) : ℕ := Nat.findGreatest Nat.Prime (2 * primeBound ψ)
 
 /-- The parameters and tokens of the machine for a formula. -/
-def loopInput (ψ : QBF ℕ) : LoopInput :=
-  ((linVars ψ, modulus ψ - 1, degreeBound ψ), ψ.tokens.flatMap (QBF.expandToken (linVars ψ)))
+def loopInput (ψ : QBF ℕ) : LoopInput where
+  xs := linVars ψ
+  modulusPred := modulus ψ - 1
+  degree := degreeBound ψ
+  tokens := ψ.tokens.flatMap (QBF.expandToken (linVars ψ))
 
 /-- **The verifier**: reject a formula with a free variable, and otherwise run the machine on the
 arithmetization and accept when every check passed. -/

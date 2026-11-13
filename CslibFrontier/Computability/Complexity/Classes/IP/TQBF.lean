@@ -92,14 +92,14 @@ private theorem verdict_of_passed_eq_false (I : LoopInput) {st : VState} (h : st
 
 /-- Without tokens the machine stays put and accepts when every check passed. -/
 private theorem verdict_nil (I : LoopInput) (St : List Claim) (n : ℕ) :
-    verdict I ([], St, true) n = pure true := by
+    verdict I ⟨[], St, true⟩ n = pure true := by
   rw [verdict, OracleComp.iterate_eq_pure _ _ _ (by simp [Machine.step]), map_pure]
 
 private theorem runWith_verdict_ite (respond : Unit × List Bool → StateT S PMF (List Bool))
     (I : LoopInput) (rest : List (ArithQBF.Kind × ℕ)) (St : List Claim) (b : Bool) (m : ℕ)
     (s : S) :
-    runWith respond (verdict I (rest, St, b) m) s =
-      if b then runWith respond (verdict I (rest, St, true) m) s else PMF.pure (false, s) := by
+    runWith respond (verdict I ⟨rest, St, b⟩ m) s =
+      if b then runWith respond (verdict I ⟨rest, St, true⟩ m) s else PMF.pure (false, s) := by
   cases b
   · rw [verdict_of_passed_eq_false I rfl]
     rfl
@@ -138,9 +138,9 @@ private theorem val_natCast_of_lt {n : ℕ} (hn : n < I.modulus) :
 
 private theorem step_cons (t : ArithQBF.Kind × ℕ) (ts : List (ArithQBF.Kind × ℕ))
     (St : List Claim) :
-    Machine.step I (t :: ts, St, true) = stepAt t.1 (I, (t :: ts, St, true)) := by
-  simp only [Machine.step, VState.passed, VState.tokens, List.isEmpty_cons, Bool.not_false,
-    Bool.and_self, ↓reduceIte, List.headD_cons]
+    Machine.step I ⟨t :: ts, St, true⟩ = stepAt t.1 (I, ⟨t :: ts, St, true⟩) := by
+  simp only [Machine.step, List.isEmpty_cons, Bool.not_false, Bool.and_self, ↓reduceIte,
+    List.headD_cons]
 
 private theorem runWith_ask (a : StepData) (s : S) :
     runWith respond (ask a) s =
@@ -163,13 +163,6 @@ private theorem getD_decodeTyped (word : List Bool) (i : ℕ) :
         ZMod I.modulus) := by
   rw [decodeTyped, ← Nat.cast_zero, List.getD_map]
 
-private theorem getD_decodeReply_lt (word : List Bool) (i : ℕ) :
-    (decodeReply I.modulus I.degree word).getD i 0 < I.modulus := by
-  rw [List.getD_eq_getElem?_getD]
-  rcases hget : (decodeReply I.modulus I.degree word)[i]? with _ | a
-  · exact Nat.succ_pos _
-  · exact lt_of_mem_decodeReply (List.mem_of_getElem? hget)
-
 private theorem take_decodeTyped (word : List Bool) :
     (decodeTyped I word).take (I.degree + 1) = decodeTyped I word :=
   List.take_of_length_le (by rw [decodeTyped, List.length_map, length_decodeReply])
@@ -182,7 +175,7 @@ private theorem val_one_sub (c : ZMod I.modulus) : (1 - c).val = subMod I.modulu
 private theorem reject_case (rest : List (ArithQBF.Kind × ℕ)) (St : List Claim) (m : ℕ)
     (s : S) (cont : Bool × S → PMF (Bool × S))
     (hcont : cont (false, s) = PMF.pure (false, s)) :
-    runWith respond (verdict I (rest, St, false) m) s =
+    runWith respond (verdict I ⟨rest, St, false⟩ m) s =
       (runWith (typedRespond I respond) (pure false :
         ProbOracleComp (fun _ : QueryAt (ZMod I.modulus) => List (ZMod I.modulus)) Bool) s).bind
         cont := by
@@ -192,20 +185,20 @@ private theorem reject_case (rest : List (ArithQBF.Kind × ℕ)) (St : List Clai
 private theorem binNext_eq_ite (o : ArithQBF.Connective) (e₁ e₂ : ArithQBF ℕ)
     (rest : List (ArithQBF.Kind × ℕ)) (r : ℕ → ZMod I.modulus) (c : ZMod I.modulus)
     (St : List Claim) {a : StepData} (hsuf : a.tokens = (ArithQBF.bin o e₁ e₂).tokens ++ rest)
-    (htop : a.top = (canonPt I.xs r, c.val)) (hbelow : a.below = St) (hxs : a.xs = I.xs)
+    (htop : a.top = ⟨canonPt I.xs r, c.val⟩) (hbelow : a.below = St) (hxs : a.xs = I.xs)
     (hmod : a.modulus = I.modulus) (hdeg : a.degree = I.degree) (w : List Bool) :
     binNext o a w =
       if o.apply (((decodeReply I.modulus I.degree w).getD 0 0 : ℕ) : ZMod I.modulus)
           ((decodeReply I.modulus I.degree w).getD 1 0) = c then
-        (e₁.tokens ++ (e₂.tokens ++ rest),
-          (canonPt I.xs r,
-            (((decodeReply I.modulus I.degree w).getD 0 0 : ℕ) : ZMod I.modulus).val) ::
-          (canonPt I.xs r,
-            (((decodeReply I.modulus I.degree w).getD 1 0 : ℕ) : ZMod I.modulus).val) :: St,
-          true)
-      else (a.tokens.tail, St, false) := by
-  have hx₁ := getD_decodeReply_lt I w 0
-  have hx₂ := getD_decodeReply_lt I w 1
+        ⟨e₁.tokens ++ (e₂.tokens ++ rest),
+          ⟨canonPt I.xs r,
+            (((decodeReply I.modulus I.degree w).getD 0 0 : ℕ) : ZMod I.modulus).val⟩ ::
+          ⟨canonPt I.xs r,
+            (((decodeReply I.modulus I.degree w).getD 1 0 : ℕ) : ZMod I.modulus).val⟩ :: St,
+          true⟩
+      else ⟨a.tokens.tail, St, false⟩ := by
+  have hx₁ := getD_decodeReply_lt (p := I.modulus) I.degree w 0
+  have hx₂ := getD_decodeReply_lt (p := I.modulus) I.degree w 1
   unfold binNext reject replyOf
   rw [hmod, hdeg, htop, hxs, hbelow, normPt_canonPt, val_natCast_of_lt I hx₁,
     val_natCast_of_lt I hx₂]
@@ -223,26 +216,26 @@ private theorem runWith_verdict_bin (o : ArithQBF.Connective) (e₁ e₂ : Arith
     (rest : List (ArithQBF.Kind × ℕ)) (r : ℕ → ZMod I.modulus) (c : ZMod I.modulus)
     (St : List Claim) (m : ℕ) (s : S) {a : StepData}
     (hsuf : a.tokens = (ArithQBF.bin o e₁ e₂).tokens ++ rest)
-    (htop : a.top = (canonPt I.xs r, c.val)) (hbelow : a.below = St) (hxs : a.xs = I.xs)
+    (htop : a.top = ⟨canonPt I.xs r, c.val⟩) (hbelow : a.below = St) (hxs : a.xs = I.xs)
     (hmod : a.modulus = I.modulus) (hdeg : a.degree = I.degree)
     (ih₁ : ∀ rest r c St m s,
-      runWith respond (verdict I (e₁.tokens ++ rest, (canonPt I.xs r, c.val) :: St, true)
+      runWith respond (verdict I ⟨e₁.tokens ++ rest, ⟨canonPt I.xs r, c.val⟩ :: St, true⟩
           (e₁.tokens.length + m)) s =
         (runWith (typedRespond I respond) (verifyAt (samplerOf I) I.degree e₁ rest r c) s).bind
-          fun x => if x.1 then runWith respond (verdict I (rest, St, true) m) x.2
+          fun x => if x.1 then runWith respond (verdict I ⟨rest, St, true⟩ m) x.2
             else PMF.pure (false, x.2))
     (ih₂ : ∀ rest r c St m s,
-      runWith respond (verdict I (e₂.tokens ++ rest, (canonPt I.xs r, c.val) :: St, true)
+      runWith respond (verdict I ⟨e₂.tokens ++ rest, ⟨canonPt I.xs r, c.val⟩ :: St, true⟩
           (e₂.tokens.length + m)) s =
         (runWith (typedRespond I respond) (verifyAt (samplerOf I) I.degree e₂ rest r c) s).bind
-          fun x => if x.1 then runWith respond (verdict I (rest, St, true) m) x.2
+          fun x => if x.1 then runWith respond (verdict I ⟨rest, St, true⟩ m) x.2
             else PMF.pure (false, x.2)) :
     ((runWith respond (ask a >>= fun word => pure (binNext o a word)) s).bind fun x =>
       runWith respond (verdict I x.1 (e₁.tokens.length + (e₂.tokens.length + m))) x.2) =
     (runWith (typedRespond I respond) (verifyAt (samplerOf I) I.degree (.bin o e₁ e₂) rest r c)
-      s).bind fun x => if x.1 then runWith respond (verdict I (rest, St, true) m) x.2
+      s).bind fun x => if x.1 then runWith respond (verdict I ⟨rest, St, true⟩ m) x.2
         else PMF.pure (false, x.2) := by
-  have hmsg : message a = queryMessage I (.bin o e₁ e₂, rest, r) := by
+  have hmsg : message a = queryMessage I ⟨.bin o e₁ e₂, rest, r⟩ := by
     rw [message, queryMessage, hsuf, htop]
   rw [ProbOracleComp.runWith_bind, runWith_ask, PMF.bind_map, PMF.bind_bind, verifyAt,
     runWith_query_bind, PMF.bind_bind, hmsg]
@@ -262,13 +255,13 @@ private theorem runWith_verdict_bin (o : ArithQBF.Connective) (e₁ e₂ : Arith
 private theorem opNext_eq (o : ArithQBF.Operator) (v : ℕ) (e : ArithQBF ℕ)
     (rest : List (ArithQBF.Kind × ℕ)) (r : ℕ → ZMod I.modulus) (c : ZMod I.modulus)
     (St : List Claim) {a : StepData} (hsuf : a.tokens = (ArithQBF.op o v e).tokens ++ rest)
-    (hhead : a.head.2 = v) (htop : a.top = (canonPt I.xs r, c.val)) (hbelow : a.below = St)
+    (hhead : a.head.2 = v) (htop : a.top = ⟨canonPt I.xs r, c.val⟩) (hbelow : a.below = St)
     (hxs : a.xs = I.xs) (hmod : a.modulus = I.modulus) (hdeg : a.degree = I.degree)
     (w : List Bool) (n : ℕ) :
     opNext a w n =
-      (e.tokens ++ rest, (canonPt I.xs (Function.update r v (n : ZMod I.modulus)),
+      ⟨e.tokens ++ rest, ⟨canonPt I.xs (Function.update r v (n : ZMod I.modulus)),
         (evalCoeffList (n : ZMod I.modulus)
-          ((decodeReply I.modulus I.degree w).map Nat.cast)).val) :: St, true) := by
+          ((decodeReply I.modulus I.degree w).map Nat.cast)).val⟩ :: St, true⟩ := by
   unfold opNext replyOf
   rw [hmod, hdeg, htop, hhead, hxs, hbelow, hsuf, updatePt_canonPt,
     ← val_natCast_of_lt I (hornerMod_lt _ _), natCast_hornerMod]
@@ -278,20 +271,20 @@ private theorem runWith_verdict_op (o : ArithQBF.Operator) (v : ℕ) (hv : v ∈
     (rest : List (ArithQBF.Kind × ℕ)) (r : ℕ → ZMod I.modulus) (c : ZMod I.modulus)
     (St : List Claim) (m : ℕ) (s : S) {a : StepData}
     (hsuf : a.tokens = (ArithQBF.op o v e).tokens ++ rest) (hhead : a.head.2 = v)
-    (htop : a.top = (canonPt I.xs r, c.val)) (hbelow : a.below = St) (hxs : a.xs = I.xs)
+    (htop : a.top = ⟨canonPt I.xs r, c.val⟩) (hbelow : a.below = St) (hxs : a.xs = I.xs)
     (hmod : a.modulus = I.modulus) (hdeg : a.degree = I.degree)
     (ih : ∀ rest r c St m s,
-      runWith respond (verdict I (e.tokens ++ rest, (canonPt I.xs r, c.val) :: St, true)
+      runWith respond (verdict I ⟨e.tokens ++ rest, ⟨canonPt I.xs r, c.val⟩ :: St, true⟩
           (e.tokens.length + m)) s =
         (runWith (typedRespond I respond) (verifyAt (samplerOf I) I.degree e rest r c) s).bind
-          fun x => if x.1 then runWith respond (verdict I (rest, St, true) m) x.2
+          fun x => if x.1 then runWith respond (verdict I ⟨rest, St, true⟩ m) x.2
             else PMF.pure (false, x.2)) :
     ((runWith respond (ask a >>= opCont o a) s).bind fun x =>
       runWith respond (verdict I x.1 (e.tokens.length + m)) x.2) =
     (runWith (typedRespond I respond) (verifyAt (samplerOf I) I.degree (.op o v e) rest r c)
-      s).bind fun x => if x.1 then runWith respond (verdict I (rest, St, true) m) x.2
+      s).bind fun x => if x.1 then runWith respond (verdict I ⟨rest, St, true⟩ m) x.2
         else PMF.pure (false, x.2) := by
-  have hmsg : message a = queryMessage I (.op o v e, rest, r) := by
+  have hmsg : message a = queryMessage I ⟨.op o v e, rest, r⟩ := by
     rw [message, queryMessage, hsuf, htop]
   rw [ProbOracleComp.runWith_bind, runWith_ask, PMF.bind_map, PMF.bind_bind, verifyAt,
     runWith_query_bind, PMF.bind_bind, hmsg]
@@ -302,8 +295,9 @@ private theorem runWith_verdict_op (o : ArithQBF.Operator) (v : ℕ) (hv : v ∈
   set l := decodeReply I.modulus I.degree w with hl
   have hlT : decodeTyped I y.1 = l.map Nat.cast := rfl
   rw [hlT]
-  have hiff : operatorMod I.modulus o (lookupPt a.top.1 a.head.2 % I.modulus)
-        (hornerMod I.modulus 0 l) (hornerMod I.modulus 1 l) % I.modulus = a.top.2 % I.modulus ↔
+  have hiff : operatorMod I.modulus o (lookupPt a.top.point a.head.2 % I.modulus)
+        (hornerMod I.modulus 0 l) (hornerMod I.modulus 1 l) % I.modulus =
+          a.top.value % I.modulus ↔
       o.apply (r v) (evalCoeffList 0 (l.map Nat.cast)) (evalCoeffList 1 (l.map Nat.cast)) = c := by
     rw [htop, hhead, lookupPt_canonPt r hv, mod_eq_val_mod_iff, natCast_operatorMod,
       ZMod.natCast_mod, ZMod.natCast_zmod_val, natCast_hornerMod, natCast_hornerMod,
@@ -332,10 +326,10 @@ with `rest` and the claims below. -/
 theorem runWith_verdict (e : ArithQBF ℕ) (he : ∀ w ∈ e.vars, w ∈ I.xs)
     (rest : List (ArithQBF.Kind × ℕ)) (r : ℕ → ZMod I.modulus) (c : ZMod I.modulus)
     (St : List Claim) (m : ℕ) (s : S) :
-    runWith respond (verdict I (e.tokens ++ rest, (canonPt I.xs r, c.val) :: St, true)
+    runWith respond (verdict I ⟨e.tokens ++ rest, ⟨canonPt I.xs r, c.val⟩ :: St, true⟩
         (e.tokens.length + m)) s =
       (runWith (typedRespond I respond) (verifyAt (samplerOf I) I.degree e rest r c) s).bind
-        fun x => if x.1 then runWith respond (verdict I (rest, St, true) m) x.2
+        fun x => if x.1 then runWith respond (verdict I ⟨rest, St, true⟩ m) x.2
           else PMF.pure (false, x.2) := by
   induction e generalizing rest r c St m s with
   | var w =>
@@ -343,7 +337,7 @@ theorem runWith_verdict (e : ArithQBF ℕ) (he : ∀ w ∈ e.vars, w ∈ I.xs)
       verdict_succ, ProbOracleComp.runWith_bind]
     simp only [ArithQBF.tokens, List.cons_append, List.nil_append, step_cons, stepAt,
       ProbOracleComp.runWith_pure, PMF.pure_bind, verifyAt, StepData.top, StepData.head,
-      StepData.below, StepData.modulus, StepData.tokens, VState.tokens, VState.claims,
+      StepData.below, StepData.modulus, StepData.tokens,
       List.headD_cons, List.tail_cons,
       lookupPt_canonPt r (he w (List.mem_singleton_self w)), mod_eq_val_mod_iff,
       ZMod.natCast_zmod_val]; exact runWith_verdict_ite respond I rest St _ m s
@@ -352,7 +346,7 @@ theorem runWith_verdict (e : ArithQBF ℕ) (he : ∀ w ∈ e.vars, w ∈ I.xs)
       verdict_succ, ProbOracleComp.runWith_bind]
     simp only [ArithQBF.tokens, List.cons_append, List.nil_append, step_cons, stepAt,
       ProbOracleComp.runWith_pure, PMF.pure_bind, verifyAt, StepData.top, StepData.below,
-      StepData.modulus, StepData.tokens, VState.tokens, VState.claims, List.headD_cons,
+      StepData.modulus, StepData.tokens, List.headD_cons,
       List.tail_cons, mod_eq_val_mod_iff, Nat.cast_one,
       decide_eq_decide.2 eq_comm]; exact runWith_verdict_ite respond I rest St _ m s
   | bot =>
@@ -360,7 +354,7 @@ theorem runWith_verdict (e : ArithQBF ℕ) (he : ∀ w ∈ e.vars, w ∈ I.xs)
       verdict_succ, ProbOracleComp.runWith_bind]
     simp only [ArithQBF.tokens, List.cons_append, List.nil_append, step_cons, stepAt,
       ProbOracleComp.runWith_pure, PMF.pure_bind, verifyAt, StepData.top, StepData.below,
-      StepData.modulus, StepData.tokens, VState.tokens, VState.claims, List.headD_cons,
+      StepData.modulus, StepData.tokens, List.headD_cons,
       List.tail_cons, mod_eq_val_mod_iff, Nat.cast_zero,
       decide_eq_decide.2 eq_comm]; exact runWith_verdict_ite respond I rest St _ m s
   | not e ih =>
@@ -368,7 +362,7 @@ theorem runWith_verdict (e : ArithQBF ℕ) (he : ∀ w ∈ e.vars, w ∈ I.xs)
       Nat.add_right_comm e.tokens.length 1 m, verdict_succ, ProbOracleComp.runWith_bind]
     simp only [ArithQBF.tokens, List.cons_append, step_cons, stepAt, ProbOracleComp.runWith_pure,
       PMF.pure_bind, verifyAt, StepData.top, StepData.below, StepData.modulus, StepData.xs,
-      StepData.tokens, VState.tokens, VState.claims,
+      StepData.tokens,
       List.headD_cons, List.tail_cons, normPt_canonPt, ← val_one_sub, ih he]
   | bin o e₁ e₂ ih₁ ih₂ =>
     rw [show (ArithQBF.bin o e₁ e₂).tokens.length + m =
@@ -450,9 +444,9 @@ theorem acceptProb_verifier_eq (hψ : ψ.Closed) (P : Prover Unit) :
     Complexity.acceptProb (verifier ψ) P = acceptProbWith (typedRespond (loopInput ψ) P.respond)
       (verifyAt (samplerOf (loopInput ψ)) (loopInput ψ).degree (arithOf ψ) [] 0 1) P.init := by
   have : Fact (1 < (loopInput ψ).modulus) := ⟨one_lt_modulus_loopInput ψ⟩
-  have hinit : init (loopInput ψ) = ((arithOf ψ).tokens ++ [],
-      (canonPt (loopInput ψ).xs (0 : ℕ → ZMod ((loopInput ψ).modulus)),
-        (1 : ZMod ((loopInput ψ).modulus)).val) :: [], true) := by
+  have hinit : init (loopInput ψ) = ⟨(arithOf ψ).tokens ++ [],
+      ⟨canonPt (loopInput ψ).xs (0 : ℕ → ZMod (loopInput ψ).modulus),
+        (1 : ZMod (loopInput ψ).modulus).val⟩ :: [], true⟩ := by
     rw [init, List.append_nil, tokens_arithOf, ZMod.val_one]
     simp only [canonPt, Pi.zero_apply, ZMod.val_zero]
   have hrun := runWith_verdict P.respond (loopInput ψ) (arithOf ψ) (fun w hw => vars_arithOf ψ hw)
@@ -460,7 +454,7 @@ theorem acceptProb_verifier_eq (hψ : ψ.Closed) (P : Prover Unit) :
   rw [← hinit, Nat.add_zero, tokens_arithOf] at hrun
   rw [acceptProb_eq_acceptProbWith, verifier, decide_eq_true hψ, ite_eq_left rfl]
   have hcont : (fun x : Bool × P.State => if x.1 then runWith P.respond
-      (verdict (loopInput ψ) ([], [], true) 0) x.2 else PMF.pure (false, x.2)) = PMF.pure := by
+      (verdict (loopInput ψ) ⟨[], [], true⟩ 0) x.2 else PMF.pure (false, x.2)) = PMF.pure := by
     funext x
     obtain ⟨b, t⟩ := x
     cases b
@@ -501,7 +495,7 @@ theorem acceptProb_verifier_le (hψ : ψ ∉ TQBF) (P : Prover Unit) :
   · rw [acceptProb_verifier_eq ψ hclosed]
     have hfalse : ψ.eval (fun _ => false) = false :=
       Bool.eq_false_iff.2 fun h => hψ ⟨hclosed, h⟩
-    have hc : (arithOf ψ).eval 0 ≠ (1 : ZMod ((loopInput ψ).modulus)) := by
+    have hc : (arithOf ψ).eval 0 ≠ (1 : ZMod (loopInput ψ).modulus) := by
       rw [arithOf, QBF.eval_arithmetize_zero _ hclosed (fun _ => false), hfalse]
       simp
     refine (acceptProb_verifyAt_le (samplerOf (loopInput ψ)) (loopInput ψ).degree
@@ -543,7 +537,7 @@ open Classical in
 /-- The reply of the honest prover to a message of the machine on `ψ`: the encoding of the honest
 reply to the query of the protocol that the message encodes. -/
 noncomputable def honestWord (ψ : QBF ℕ) (message : List Bool) : List Bool :=
-  if h : ∃ q : QueryAt (ZMod ((loopInput ψ).modulus)), queryMessage (loopInput ψ) q = message then
+  if h : ∃ q : QueryAt (ZMod (loopInput ψ).modulus), queryMessage (loopInput ψ) q = message then
     encodeReply ((loopInput ψ).modulus)
       ((honestReplyAt (loopInput ψ).degree h.choose.formula h.choose.point).map ZMod.val)
   else []
@@ -583,18 +577,18 @@ variable (ψ : QBF ℕ)
 
 private theorem one_le_degree : 1 ≤ (loopInput ψ).degree := by
   have : 0 < ψ.tokens.length := List.length_pos_of_ne_nil (QBF.tokens_ne_nil ψ)
-  simp only [loopInput, degreeBound, LoopInput.degree]
+  simp only [loopInput, degreeBound]
   omega
 
 /-- The decoded honest reply to a query about a subformula whose variables lie in `xs`. -/
 private theorem decodeTyped_honestWord (e : ArithQBF ℕ) (rest : List (ArithQBF.Kind × ℕ))
-    (r : ℕ → ZMod ((loopInput ψ).modulus)) (he : ∀ w ∈ e.vars, w ∈ (loopInput ψ).xs) :
-    (decodeTyped (loopInput ψ) (honestWord ψ (queryMessage (loopInput ψ) (e, rest, r)))).length =
+    (r : ℕ → ZMod (loopInput ψ).modulus) (he : ∀ w ∈ e.vars, w ∈ (loopInput ψ).xs) :
+    (decodeTyped (loopInput ψ) (honestWord ψ (queryMessage (loopInput ψ) ⟨e, rest, r⟩))).length =
       (loopInput ψ).degree + 1 ∧
-    ∀ i, (decodeTyped (loopInput ψ) (honestWord ψ (queryMessage (loopInput ψ) (e, rest, r)))).getD
+    ∀ i, (decodeTyped (loopInput ψ) (honestWord ψ (queryMessage (loopInput ψ) ⟨e, rest, r⟩))).getD
       i 0 = (honestReplyAt (loopInput ψ).degree e r).getD i 0 := by
-  have hex : ∃ q : QueryAt (ZMod ((loopInput ψ).modulus)),
-      queryMessage (loopInput ψ) q = queryMessage (loopInput ψ) (e, rest, r) := ⟨_, rfl⟩
+  have hex : ∃ q : QueryAt (ZMod (loopInput ψ).modulus),
+      queryMessage (loopInput ψ) q = queryMessage (loopInput ψ) ⟨e, rest, r⟩ := ⟨_, rfl⟩
   obtain ⟨h₁, h₂⟩ := eq_of_queryMessage_eq hex.choose_spec
   have h₁' : hex.choose.formula = e := h₁
   have hreply : honestReplyAt (loopInput ψ).degree hex.choose.formula hex.choose.point =
@@ -605,7 +599,7 @@ private theorem decodeTyped_honestWord (e : ArithQBF ℕ) (rest : List (ArithQBF
     have := one_le_degree ψ
     cases e <;> simp only [honestReplyAt, length_coeffsBelow, List.length_cons, List.length_nil] <;>
       omega
-  have hdec : decodeTyped (loopInput ψ) (honestWord ψ (queryMessage (loopInput ψ) (e, rest, r))) =
+  have hdec : decodeTyped (loopInput ψ) (honestWord ψ (queryMessage (loopInput ψ) ⟨e, rest, r⟩)) =
       ((List.range ((loopInput ψ).degree + 1)).map fun i =>
         ((honestReplyAt (loopInput ψ).degree e r).map ZMod.val).getD i 0).map Nat.cast := by
     rw [honestWord, dite_eq_left hex, hreply, decodeTyped, decodeReply_encodeReply]
@@ -620,9 +614,9 @@ private theorem decodeTyped_honestWord (e : ArithQBF ℕ) (rest : List (ArithQBF
 
 /-- The typed prover of the honest prover agrees with the honest replies. -/
 private theorem agreesAt_honest (e : ArithQBF ℕ) (rest : List (ArithQBF.Kind × ℕ))
-    (r : ℕ → ZMod ((loopInput ψ).modulus)) (he : ∀ w ∈ e.vars, w ∈ (loopInput ψ).xs) :
+    (r : ℕ → ZMod (loopInput ψ).modulus) (he : ∀ w ∈ e.vars, w ∈ (loopInput ψ).xs) :
     AgreesAt (loopInput ψ).degree
-      (decodeTyped (loopInput ψ) (honestWord ψ (queryMessage (loopInput ψ) (e, rest, r)))) e r := by
+      (decodeTyped (loopInput ψ) (honestWord ψ (queryMessage (loopInput ψ) ⟨e, rest, r⟩))) e r := by
   obtain ⟨hlen, hget⟩ := decodeTyped_honestWord ψ e rest r he
   cases e with
   | bin o e₁ e₂ => exact ⟨hget 0, hget 1⟩
@@ -642,17 +636,17 @@ probability `1`. -/
 theorem acceptProb_verifier_honestProver (hψ : ψ ∈ TQBF) :
     Complexity.acceptProb (verifier ψ) (honestProver ψ) = 1 := by
   rw [acceptProb_verifier_eq ψ hψ.1]
-  set f : QueryAt (ZMod ((loopInput ψ).modulus)) → List (ZMod ((loopInput ψ).modulus)) :=
+  set f : QueryAt (ZMod (loopInput ψ).modulus) → List (ZMod (loopInput ψ).modulus) :=
     fun q => decodeTyped (loopInput ψ) (honestWord ψ (queryMessage (loopInput ψ) q))
   have htyped : typedRespond (loopInput ψ) (honestProver ψ).respond =
       fun q s => PMF.pure (f q, s) := by
     funext q s
     simp only [typedRespond, honestProver, PMF.pure_map, f]
-  have heval : (arithOf ψ).eval 0 = (1 : ZMod ((loopInput ψ).modulus)) := by
+  have heval : (arithOf ψ).eval 0 = (1 : ZMod (loopInput ψ).modulus) := by
     rw [arithOf, QBF.eval_arithmetize_zero _ hψ.1 (fun _ => false), hψ.2]
     rfl
   have hrun := run_verifyAt_of_agreesAt (samplerOf (loopInput ψ)) (loopInput ψ).degree f
-    (loopInput ψ).xs (fun e' rest' r' he' => agreesAt_honest ψ e' rest' r' he') (arithOf ψ)
+    (loopInput ψ).xs (fun q hq => agreesAt_honest ψ q.formula q.rest q.point hq) (arithOf ψ)
     (fun w hw => vars_arithOf ψ hw) (maxRoundDegree_arithOf ψ) [] 0 ()
   rw [heval] at hrun
   rw [htyped, acceptProbWith]
