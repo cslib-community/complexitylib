@@ -530,9 +530,7 @@ security parameter `n`. -/
 theorem eval_sufCmaGame_etmToMACForger (E : SymmetricCipher) (M : MACScheme)
     (hctLen : ∀ n, E.CiphertextLength n (M.msgLen n))
     (tagBound : ℕ → ℕ) (adversary : CIAdversary) (n : ℕ)
-    (htagBound : ∀ km ∈ (ProbComp.eval (M.keyGen n)).support,
-      ∀ c, c.length = M.msgLen n →
-      ∀ tag ∈ (ProbComp.eval (M.sign km c)).support, tag.length ≤ tagBound n) :
+    (htagBound : M.TagLengthLE n (tagBound n)) :
     ProbComp.eval (M.sufCmaGame (etmToMACForger E M tagBound adversary) n) =
       ProbComp.eval ((encryptThenMAC E M hctLen).ciGame adversary n) := by
   have hkeyGen : (encryptThenMAC E M hctLen).keyGen =
@@ -592,9 +590,7 @@ the SUF-CMA winning probability of `etmToMACForger E M tagBound adversary` again
 theorem succProbability_ciGame_encryptThenMAC_eq (E : SymmetricCipher) (M : MACScheme)
     (hctLen : ∀ n, E.CiphertextLength n (M.msgLen n))
     (tagBound : ℕ → ℕ) (adversary : CIAdversary) (n : ℕ)
-    (htagBound : ∀ km ∈ (ProbComp.eval (M.keyGen n)).support,
-      ∀ c, c.length = M.msgLen n →
-      ∀ tag ∈ (ProbComp.eval (M.sign km c)).support, tag.length ≤ tagBound n) :
+    (htagBound : M.TagLengthLE n (tagBound n)) :
     Game.succProbability (ProbComp.eval ((encryptThenMAC E M hctLen).ciGame adversary n)) =
       Game.succProbability
         (ProbComp.eval (M.sufCmaGame (etmToMACForger E M tagBound adversary) n)) := by
@@ -807,9 +803,7 @@ exact same winning distribution as running `adversary` in
 theorem eval_sufOneTimeGame_etmToOneTimeMACForger (E : SymmetricCipher) (M : MACScheme)
     (hctLen : ∀ n, E.CiphertextLength n (M.msgLen n))
     (tagBound : ℕ → ℕ) (adversary : CIAdversary) (n : ℕ)
-    (htagBound : ∀ km ∈ (ProbComp.eval (M.keyGen n)).support,
-      ∀ c, c.length = M.msgLen n →
-      ∀ tag ∈ (ProbComp.eval (M.sign km c)).support, tag.length ≤ tagBound n) :
+    (htagBound : M.TagLengthLE n (tagBound n)) :
     ProbComp.eval (M.sufOneTimeGame (etmToOneTimeMACForger E M tagBound adversary) n) =
       ProbComp.eval ((encryptThenMAC E M hctLen).ciOneTimeGame adversary n) := by
   have hkeyGen : (encryptThenMAC E M hctLen).keyGen =
@@ -892,9 +886,7 @@ against `M`. -/
 theorem succProbability_ciOneTimeGame_encryptThenMAC_eq (E : SymmetricCipher) (M : MACScheme)
     (hctLen : ∀ n, E.CiphertextLength n (M.msgLen n))
     (tagBound : ℕ → ℕ) (adversary : CIAdversary) (n : ℕ)
-    (htagBound : ∀ km ∈ (ProbComp.eval (M.keyGen n)).support,
-      ∀ c, c.length = M.msgLen n →
-      ∀ tag ∈ (ProbComp.eval (M.sign km c)).support, tag.length ≤ tagBound n) :
+    (htagBound : M.TagLengthLE n (tagBound n)) :
     Game.succProbability (ProbComp.eval ((encryptThenMAC E M hctLen).ciOneTimeGame adversary n)) =
       Game.succProbability
         (ProbComp.eval (M.sufOneTimeGame (etmToOneTimeMACForger E M tagBound adversary) n)) := by

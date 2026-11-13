@@ -417,9 +417,7 @@ private theorem eval_run_etmToMACHandler_signingOracle_eq (E : SymmetricCipher) 
     (n : ℕ) (tagBound : ℕ → ℕ) (ke km : List Bool)
     (hke : ke ∈ (ProbComp.eval (E.keyGen n)).support)
     (hkm : km ∈ (ProbComp.eval (M.keyGen n)).support)
-    (htagBound : ∀ km ∈ (ProbComp.eval (M.keyGen n)).support,
-      ∀ c, c.length = M.msgLen n →
-      ∀ tag ∈ (ProbComp.eval (M.sign km c)).support, tag.length ≤ tagBound n)
+    (htagBound : M.TagLengthLE n (tagBound n))
     (prog : WordOracleComp Unit (List Bool)) :
     ((OracleComp.interpret
       (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifOracle m))
@@ -516,9 +514,7 @@ winning probability of `etmToMACForger E M tagBound adversary` against `M`. -/
 theorem succProbability_encForgeGame_encryptThenMAC_le (E : SymmetricCipher) (M : MACScheme)
     (hctLen : ∀ n, E.CiphertextLength n (M.msgLen n))
     (tagBound : ℕ → ℕ) (adversary : CIAdversary) (n : ℕ)
-    (htagBound : ∀ km ∈ (ProbComp.eval (M.keyGen n)).support,
-      ∀ c, c.length = M.msgLen n →
-      ∀ tag ∈ (ProbComp.eval (M.sign km c)).support, tag.length ≤ tagBound n) :
+    (htagBound : M.TagLengthLE n (tagBound n)) :
     Game.succProbability (ProbComp.eval ((encryptThenMAC E M hctLen).encForgeGame adversary n)) ≤
       Game.succProbability
         (ProbComp.eval (M.eufCmaGame (etmToMACForger E M tagBound adversary) n)) := by

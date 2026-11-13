@@ -64,7 +64,8 @@ $$\Pr[\text{EUF-CMA}] \le \Pr[\text{SUF-CMA}], \qquad
 and the security implications `SUFCMA → EUFCMA`, `SUFCMA → OneTimeSUFCMA`, and
 `OneTimeSUFCMA → OneTimeEUFCMA` (`SUFCMA.eufCma`, `SUFCMA.oneTimeSUFCMA`,
 `OneTimeSUFCMA.oneTimeEUFCMA`). For randomized `MACScheme.sign` algorithms the two notions differ;
-for MACs with a unique valid tag per `(sk, msg)` (`eval_sufCmaGame_eq_eufCmaGame_of_unique_tag`,
+for MACs with a unique valid tag per `(sk, msg)` (`MACScheme.UniqueTag`;
+`eval_sufCmaGame_eq_eufCmaGame_of_unique_tag`,
 `sufCma_iff_eufCma_of_unique_tag`, `eval_sufOneTimeGame_eq_eufOneTimeGame_of_unique_tag`,
 `oneTimeSUFCMA_iff_oneTimeEUFCMA_of_unique_tag`), including `prfMAC`, fresh-message and fresh-pair
 unforgeability coincide.
@@ -121,7 +122,7 @@ $$\Pr[\text{Forge}] \le \mathrm{Adv}_{\mathrm{PRF}}(B(\mathcal{A}), n) + 2^{-n}.
   `SUFCMA.eufCma`, `SUFCMA.oneTimeSUFCMA`, `OneTimeSUFCMA.oneTimeEUFCMA`,
   `SUFCMA.oneTimeEUFCMA`: shared pair-history representation and quantitative /
   asymptotic implications between strong, ordinary, and one-time unforgeability.
-* `Cslib.Crypto.MACScheme.eval_sufCmaGame_eq_eufCmaGame_of_unique_tag`,
+* `Cslib.Crypto.MACScheme.UniqueTag`, `eval_sufCmaGame_eq_eufCmaGame_of_unique_tag`,
   `sufCma_iff_eufCma_of_unique_tag`,
   `eval_sufOneTimeGame_eq_eufOneTimeGame_of_unique_tag`,
   `oneTimeSUFCMA_iff_oneTimeEUFCMA_of_unique_tag`: equivalence of strong and fresh-message
@@ -159,10 +160,10 @@ $$\Pr[\text{Forge}] \le \mathrm{Adv}_{\mathrm{PRF}}(B(\mathcal{A}), n) + 2^{-n}.
   `OneTimeEUFCMA`-secure `MACScheme`.
 * `Cslib.Crypto.NonceMACScheme.isPPTOn_run_signingPairOracle`,
   `Cslib.Crypto.NonceMACScheme.isPPTOn_sufCmaGame`, `isPPT_sufCmaGame`, `isPPTOn_eufCmaGame`,
-  `isPPT_eufCmaGame`, `succProbability_eufCmaGame_le_sufCmaGame`, `SUFCMA.eufCma`,
-  `eval_sufCmaGame_eq_freshPair_of_unique_tag`: strict PPT certificates, quantitative /
-  asymptotic implication from `SUFCMA` to `EUFCMA`, and unique-tag pair-freshness characterization
-  for nonce-based MACs.
+  `isPPT_eufCmaGame`, `succProbability_eufCmaGame_le_sufCmaGame`, `SUFCMA.eufCma`, `UniqueTag`,
+  `freshPairGame`, `eval_sufCmaGame_eq_freshPair_of_unique_tag`: strict PPT certificates,
+  quantitative / asymptotic implication from `SUFCMA` to `EUFCMA`, and unique-tag pair-freshness
+  characterization for nonce-based MACs.
 
 ## References
 
@@ -255,6 +256,23 @@ theorem computableInPolyTime_verify_comp (M : MACScheme)
     (htag : ComputableInPolyTime tag encIn encBits) :
     ComputableInPolyTime (fun a => M.verify (sk a) (msg a) (tag a)) encIn encBool :=
   M.verify_polyTime.comp (hsk.prod (hmsg.prod htag))
+
+/-- `M` has unique valid tags: under every supported secret key, every tag accepted on a
+`M.msgLen n`-bit message equals every tag that `M.sign` can produce on it. Deterministic canonical
+MACs such as `prfMAC` satisfy this; for them strong and fresh-message unforgeability coincide
+(`sufCma_iff_eufCma_of_unique_tag`). -/
+def UniqueTag (M : MACScheme) : Prop :=
+  ∀ n sk, sk ∈ (ProbComp.eval (M.keyGen n)).support →
+    ∀ msg, msg.length = M.msgLen n → ∀ tag tag',
+    M.verify sk msg tag = true →
+    tag' ∈ (ProbComp.eval (M.sign sk msg)).support → tag' = tag
+
+/-- At security parameter `n`, every tag that `M.sign` produces on a `M.msgLen n`-bit message
+under a supported secret key has length at most `bound`. Every `MACScheme` has a polynomial-time
+such bound (`exists_tag_length_bound_of_length_eq`). -/
+def TagLengthLE (M : MACScheme) (n bound : ℕ) : Prop :=
+  ∀ sk ∈ (ProbComp.eval (M.keyGen n)).support, ∀ msg, msg.length = M.msgLen n →
+    ∀ tag ∈ (ProbComp.eval (M.sign sk msg)).support, tag.length ≤ bound
 
 /-! ### Full adaptive chosen-message security (`EUFCMA`) -/
 
@@ -448,10 +466,7 @@ private theorem exists_oneTimeTagBound (M : MACScheme) :
 produced on `M.msgLen n`-bit messages under keys sampled from `M.keyGen n`. -/
 theorem exists_tag_length_bound_of_length_eq (M : MACScheme) :
     ∃ tagBound : ℕ → ℕ,
-      ComputableInPolyTime tagBound encUnary encUnary ∧
-      ∀ n, ∀ sk ∈ (ProbComp.eval (M.keyGen n)).support,
-        ∀ msg, msg.length = M.msgLen n →
-        ∀ tag ∈ (ProbComp.eval (M.sign sk msg)).support, tag.length ≤ tagBound n := by
+      ComputableInPolyTime tagBound encUnary encUnary ∧ ∀ n, M.TagLengthLE n (tagBound n) := by
   obtain ⟨bound, hpoly, hb⟩ := M.exists_oneTimeTagBound
   have hlen := M.msgLen_polyTime
   refine ⟨fun n => bound n (M.msgLen n), by fun_prop,
@@ -708,10 +723,7 @@ private theorem mem_support_signingPairOracle (M : MACScheme) (sk : List Bool)
 /-- When every supported transcript records only supported tags and valid tags are unique, the
 fresh-pair and fresh-message checks have the same law on the pair-logging run. -/
 private theorem bind_sufCheck_eq_bind_eufCheck (M : MACScheme) (n : ℕ)
-    (huniq : ∀ n sk, sk ∈ (ProbComp.eval (M.keyGen n)).support →
-      ∀ msg, msg.length = M.msgLen n → ∀ tag tag',
-      M.verify sk msg tag = true →
-      tag' ∈ (ProbComp.eval (M.sign sk msg)).support → tag' = tag)
+    (huniq : M.UniqueTag)
     (run : List Bool → PMF ((List Bool × List Bool) × List (List Bool × List Bool)))
     (hinv : ∀ sk out, out ∈ (run sk).support →
       ∀ pair ∈ out.2, pair.2 ∈ (ProbComp.eval (M.sign sk pair.1)).support) :
@@ -745,10 +757,7 @@ private theorem bind_sufCheck_eq_bind_eufCheck (M : MACScheme) (n : ℕ)
 agree with every tag in the support of `M.sign`, the `sufCmaGame` and `eufCmaGame` distributions
 are identical. -/
 theorem eval_sufCmaGame_eq_eufCmaGame_of_unique_tag (M : MACScheme)
-    (huniq : ∀ n sk, sk ∈ (ProbComp.eval (M.keyGen n)).support →
-      ∀ msg, msg.length = M.msgLen n → ∀ tag tag',
-      M.verify sk msg tag = true →
-      tag' ∈ (ProbComp.eval (M.sign sk msg)).support → tag' = tag)
+    (huniq : M.UniqueTag)
     (adversary : Forger) (n : ℕ) :
     ProbComp.eval (M.sufCmaGame adversary n) =
       ProbComp.eval (M.eufCmaGame adversary n) := by
@@ -760,10 +769,7 @@ theorem eval_sufCmaGame_eq_eufCmaGame_of_unique_tag (M : MACScheme)
 /-- For a `MACScheme` with unique valid tags per `(sk, msg)`, the SUF-CMA and EUF-CMA forgery
 probabilities are equal for every forger and security parameter `n`. -/
 theorem succProbability_sufCmaGame_eq_eufCmaGame_of_unique_tag (M : MACScheme)
-    (huniq : ∀ n sk, sk ∈ (ProbComp.eval (M.keyGen n)).support →
-      ∀ msg, msg.length = M.msgLen n → ∀ tag tag',
-      M.verify sk msg tag = true →
-      tag' ∈ (ProbComp.eval (M.sign sk msg)).support → tag' = tag)
+    (huniq : M.UniqueTag)
     (adversary : Forger) (n : ℕ) :
     Game.succProbability (ProbComp.eval (M.sufCmaGame adversary n)) =
       Game.succProbability (ProbComp.eval (M.eufCmaGame adversary n)) := by
@@ -772,10 +778,7 @@ theorem succProbability_sufCmaGame_eq_eufCmaGame_of_unique_tag (M : MACScheme)
 /-- For a `MACScheme` with unique valid tags per `(sk, msg)`, strong unforgeability (`SUFCMA`) is
 equivalent to ordinary fresh-message unforgeability (`EUFCMA`). -/
 theorem sufCma_iff_eufCma_of_unique_tag (M : MACScheme)
-    (huniq : ∀ n sk, sk ∈ (ProbComp.eval (M.keyGen n)).support →
-      ∀ msg, msg.length = M.msgLen n → ∀ tag tag',
-      M.verify sk msg tag = true →
-      tag' ∈ (ProbComp.eval (M.sign sk msg)).support → tag' = tag) :
+    (huniq : M.UniqueTag) :
     M.SUFCMA ↔ M.EUFCMA :=
   ⟨SUFCMA.eufCma, fun h => h.of_succProbability_le fun adversary _ n =>
     (M.succProbability_sufCmaGame_eq_eufCmaGame_of_unique_tag huniq adversary n).le⟩
@@ -1054,10 +1057,7 @@ private theorem mem_support_oneTimeSigningPairOracle (M : MACScheme) (sk : List 
 agree with every tag in the support of `M.sign`, the `sufOneTimeGame` and `eufOneTimeGame`
 distributions are identical. -/
 theorem eval_sufOneTimeGame_eq_eufOneTimeGame_of_unique_tag (M : MACScheme)
-    (huniq : ∀ n sk, sk ∈ (ProbComp.eval (M.keyGen n)).support →
-      ∀ msg, msg.length = M.msgLen n → ∀ tag tag',
-      M.verify sk msg tag = true →
-      tag' ∈ (ProbComp.eval (M.sign sk msg)).support → tag' = tag)
+    (huniq : M.UniqueTag)
     (adversary : Forger) (n : ℕ) :
     ProbComp.eval (M.sufOneTimeGame adversary n) =
       ProbComp.eval (M.eufOneTimeGame adversary n) := by
@@ -1069,10 +1069,7 @@ theorem eval_sufOneTimeGame_eq_eufOneTimeGame_of_unique_tag (M : MACScheme)
 /-- For a `MACScheme` with unique valid tags per `(sk, msg)`, the `sufOneTimeGame` and
 `eufOneTimeGame` forgery probabilities are equal for every forger and security parameter `n`. -/
 theorem succProbability_sufOneTimeGame_eq_eufOneTimeGame_of_unique_tag (M : MACScheme)
-    (huniq : ∀ n sk, sk ∈ (ProbComp.eval (M.keyGen n)).support →
-      ∀ msg, msg.length = M.msgLen n → ∀ tag tag',
-      M.verify sk msg tag = true →
-      tag' ∈ (ProbComp.eval (M.sign sk msg)).support → tag' = tag)
+    (huniq : M.UniqueTag)
     (adversary : Forger) (n : ℕ) :
     Game.succProbability (ProbComp.eval (M.sufOneTimeGame adversary n)) =
       Game.succProbability (ProbComp.eval (M.eufOneTimeGame adversary n)) := by
@@ -1082,10 +1079,7 @@ theorem succProbability_sufOneTimeGame_eq_eufOneTimeGame_of_unique_tag (M : MACS
 (`OneTimeSUFCMA`) is equivalent to ordinary fresh-message one-time unforgeability
 (`OneTimeEUFCMA`). -/
 theorem oneTimeSUFCMA_iff_oneTimeEUFCMA_of_unique_tag (M : MACScheme)
-    (huniq : ∀ n sk, sk ∈ (ProbComp.eval (M.keyGen n)).support →
-      ∀ msg, msg.length = M.msgLen n → ∀ tag tag',
-      M.verify sk msg tag = true →
-      tag' ∈ (ProbComp.eval (M.sign sk msg)).support → tag' = tag) :
+    (huniq : M.UniqueTag) :
     M.OneTimeSUFCMA ↔ M.OneTimeEUFCMA :=
   ⟨OneTimeSUFCMA.oneTimeEUFCMA, fun h => h.of_succProbability_le fun adversary _ n =>
     (M.succProbability_sufOneTimeGame_eq_eufOneTimeGame_of_unique_tag huniq adversary n).le⟩
@@ -1586,12 +1580,8 @@ private theorem unique_tag_prfMAC
     {family : List Bool → List Bool → List Bool}
     (hpoly : ComputableInPolyTime (fun pair : List Bool × List Bool => family pair.1 pair.2)
       (encPair encBits encBits) encBits) :
-    ∀ n sk, sk ∈ (ProbComp.eval ((prfMAC family hpoly).keyGen n)).support →
-      ∀ msg, msg.length = n → ∀ tag tag',
-      (prfMAC family hpoly).verify sk msg tag = true →
-      tag' ∈ (ProbComp.eval ((prfMAC family hpoly).sign sk msg)).support →
-      tag' = tag := by
-  intro n sk hsk msg hmsg tag tag' hver htag'
+    (prfMAC family hpoly).UniqueTag := by
+  intro n sk hsk msg (hmsg : msg.length = n) tag tag' hver htag'
   dsimp [prfMAC] at hsk hver htag'
   rw [BitString.eval_sampleList] at hsk
   have hskLen : sk.length = n := BitString.length_of_mem_support_uniformList hsk
@@ -1886,6 +1876,33 @@ noncomputable def eufCmaGame (M : NonceMACScheme) (adversary : NonceMACForger) (
     !(out.2.map (fun ⟨⟨qmsg, _⟩, _⟩ => qmsg)).contains msg &&
     M.verify sk msg nonce tag
 
+/-- The pair-fresh nonce-based MAC experiment: identical to `sufCmaGame` except that the candidate
+`(msg, nonce)` pair, rather than the whole `((msg, nonce), tag)` triple, must never have been
+queried during the signing phase (`!(out.2.map Prod.fst).contains pair`). For MACs with unique
+valid tags the two coincide (`eval_sufCmaGame_eq_freshPair_of_unique_tag`). -/
+noncomputable def freshPairGame (M : NonceMACScheme) (adversary : NonceMACForger) (n : ℕ) :
+    ProbComp Bool := do
+  let sk ← M.keyGen n
+  let out ← (OracleComp.interpret
+    (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
+      (M.signingPairOracle sk)) (adversary n [])).run []
+  let (pair, tag) := out.1
+  let (msg, nonce) := pair
+  return (msg.length == M.msgLen n) && (nonce.length == M.nonceLen n) &&
+    decide (out.2.map (fun ⟨⟨_, qnonce⟩, _⟩ => qnonce)).Nodup &&
+    !(out.2.map Prod.fst).contains pair &&
+    M.verify sk msg nonce tag
+
+/-- `M` has unique valid tags: under every supported secret key, every tag accepted on a
+`M.msgLen n`-bit message and `M.nonceLen n`-bit nonce equals every tag that `M.sign` can produce on
+them. -/
+def UniqueTag (M : NonceMACScheme) : Prop :=
+  ∀ n sk, sk ∈ (ProbComp.eval (M.keyGen n)).support →
+    ∀ msg, msg.length = M.msgLen n →
+    ∀ nonce, nonce.length = M.nonceLen n → ∀ tag tag',
+    M.verify sk msg nonce tag = true →
+    tag' ∈ (ProbComp.eval (M.sign sk msg nonce)).support → tag' = tag
+
 /-- Running an oracle-PPT nonce-MAC forger against `signingPairOracle` is uniformly strict PPT in
 the unary security parameter and secret key. -/
 @[program_certificate]
@@ -2077,30 +2094,13 @@ private theorem mem_support_signingPairOracle (M : NonceMACScheme) (sk : List Bo
   · exact htag
   · exact hs triple htail
 
-/-- For any `NonceMACScheme` whose valid tags on `M.msgLen n`-bit messages and `M.nonceLen n`-bit
-nonces under supported secret keys agree with every tag in the support of `M.sign`, strong
-triple-freshness (`!out.2.contains out.1`) in `sufCmaGame` is identical to `(msg, nonce)`-pair
-freshness (`!(out.2.map Prod.fst).contains pair`). -/
-theorem eval_sufCmaGame_eq_freshPair_of_unique_tag (M : NonceMACScheme)
-    (huniq : ∀ n sk, sk ∈ (ProbComp.eval (M.keyGen n)).support →
-      ∀ msg, msg.length = M.msgLen n →
-      ∀ nonce, nonce.length = M.nonceLen n → ∀ tag tag',
-      M.verify sk msg nonce tag = true →
-      tag' ∈ (ProbComp.eval (M.sign sk msg nonce)).support → tag' = tag)
+/-- For any `NonceMACScheme` with unique valid tags, strong triple-freshness
+(`!out.2.contains out.1`) in `sufCmaGame` is identical to `(msg, nonce)`-pair freshness
+(`freshPairGame`). -/
+theorem eval_sufCmaGame_eq_freshPair_of_unique_tag (M : NonceMACScheme) (huniq : M.UniqueTag)
     (adversary : NonceMACForger) (n : ℕ) :
-    ProbComp.eval (M.sufCmaGame adversary n) =
-      ProbComp.eval (do
-        let sk ← M.keyGen n
-        let out ← (OracleComp.interpret
-          (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
-            (M.signingPairOracle sk)) (adversary n [])).run []
-        let (pair, tag) := out.1
-        let (msg, nonce) := pair
-        return (msg.length == M.msgLen n) && (nonce.length == M.nonceLen n) &&
-          decide (out.2.map (fun ⟨⟨_, qnonce⟩, _⟩ => qnonce)).Nodup &&
-          !(out.2.map Prod.fst).contains pair &&
-          M.verify sk msg nonce tag) := by
-  simp only [sufCmaGame, ProbComp.eval_bind, ProbComp.eval_pure]
+    ProbComp.eval (M.sufCmaGame adversary n) = ProbComp.eval (M.freshPairGame adversary n) := by
+  simp only [sufCmaGame, freshPairGame, ProbComp.eval_bind, ProbComp.eval_pure]
   refine PMF.bind_congr_on_support _ _ _ fun sk hsk => ?_
   refine PMF.bind_congr_on_support _ _ _ fun ⟨⟨⟨msg, nonce⟩, tag⟩, queriedTriples⟩ hout => ?_
   have hinv := M.mem_support_signingPairOracle sk (adversary n [])

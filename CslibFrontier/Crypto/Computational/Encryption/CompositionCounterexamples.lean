@@ -726,9 +726,7 @@ theorem isOraclePPT_redundantTagForger (M : MACScheme) {tagBound : ℕ → ℕ}
 probability `1` at every security parameter `n` where `tagBound n` bounds tag lengths. -/
 theorem eval_sufOneTimeGame_redundantTag_redundantTagForger (M : MACScheme)
     (tagBound : ℕ → ℕ) (n : ℕ)
-    (htagBound : ∀ sk ∈ (ProbComp.eval (M.keyGen n)).support,
-      ∀ msg, msg.length = M.msgLen n →
-      ∀ tag ∈ (ProbComp.eval (M.sign sk msg)).support, tag.length ≤ tagBound n) :
+    (htagBound : M.TagLengthLE n (tagBound n)) :
     ProbComp.eval (M.redundantTag.sufOneTimeGame (M.redundantTagForger tagBound) n) =
       PMF.pure true := by
   simp only [sufOneTimeGame, redundantTagForger, oneTimeSigningPairOracle,
@@ -744,9 +742,7 @@ theorem eval_sufOneTimeGame_redundantTag_redundantTagForger (M : MACScheme)
 `1` at every security parameter `n` where `tagBound n` bounds tag lengths. -/
 theorem eval_sufCmaGame_redundantTag_redundantTagForger (M : MACScheme)
     (tagBound : ℕ → ℕ) (n : ℕ)
-    (htagBound : ∀ sk ∈ (ProbComp.eval (M.keyGen n)).support,
-      ∀ msg, msg.length = M.msgLen n →
-      ∀ tag ∈ (ProbComp.eval (M.sign sk msg)).support, tag.length ≤ tagBound n) :
+    (htagBound : M.TagLengthLE n (tagBound n)) :
     ProbComp.eval (M.redundantTag.sufCmaGame (M.redundantTagForger tagBound) n) =
       PMF.pure true := by
   simp only [sufCmaGame, redundantTagForger, signingPairOracle, runWith_norm, pmf_norm]

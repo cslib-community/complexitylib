@@ -984,26 +984,26 @@ For generic MAC-then-Encrypt composition, its `INDCPA` preservation, and its cho
 counterexample over `SymmetricCipher` and `MACScheme`, import
 [`Encryption/MACThenEncrypt.lean`](../../CslibFrontier/Crypto/Computational/Encryption/MACThenEncrypt.lean)
 (Katz–Lindell 3rd ed., §5.2 [katzlindell20][katzlindell20]; Boneh–Shoup §9.4.1 [bs23][bs23]).
-Given a polynomial-time plaintext-tag length schedule `ptLen : ℕ → ℕ`
-(`hptLenPoly : ComputableInPolyTime ptLen encUnary encUnary`), `M.msgLen n = n`, and
-`(encPair encBits encBits (msg, tag)).length = ptLen n` on valid `M` messages and tags,
-`macThenEncrypt E M ptLen hptLenPoly hmsgLen hpairLen` signs `msg` and runs `E` at security
-parameter `ptLen n` on `encPair encBits encBits (msg, tag)` (requiring no extra decryption
-hypothesis beyond `E.decrypt_encrypt`), verifying length, framing round-trip, and `M.verify` on
-decryption. When `StrictMono ptLen`, `indcpa_macThenEncrypt` reduces `INDCPA` of `macThenEncrypt`
+Given a plaintext-tag length schedule `ptLen : ℕ → ℕ` and a framing record
+`hF : MtEFraming M ptLen` (`ptLen` is polynomial-time, `M.msgLen n = n`, and
+`(encPair encBits encBits (msg, tag)).length = ptLen n` on valid `M` messages and tags),
+`macThenEncrypt E M ptLen hF` signs `msg` and runs `E` at security parameter `ptLen n` on
+`encPair encBits encBits (msg, tag)` (requiring no extra decryption hypothesis beyond
+`E.decrypt_encrypt`), verifying length, framing round-trip, and `M.verify` on decryption. When
+`StrictMono ptLen`, `indcpa_macThenEncrypt` reduces `INDCPA` of `macThenEncrypt`
 to `E.INDCPA` via `mteToCPAAdversary` (reindexing `ptLen` with `GeneratorReindex`). The malleable
 wrapper `SymmetricCipher.extendCipher` appends `false` to every ciphertext and ignores the last bit
 in decryption, preserving `INDCPA` (`SymmetricCipher.INDCPA.extendCipher`) and `OneTimeINDCPA`
 (`SymmetricCipher.OneTimeINDCPA.extendCipher`) via `extendCPAAdversary` and
 `extendOneTimeCPAAdversary`. Meanwhile, flipping that trailing bit (`macThenEncryptExtendCIAdversary`,
 `macThenEncryptExtendCCAAdversary`) achieves advantage `1` for every `n ≥ 1` against
-`macThenEncrypt E.extendCipher M ptLen ...`, refuting `OneTimeCiphertextIntegrity`,
+`macThenEncrypt E.extendCipher M ptLen hF`, refuting `OneTimeCiphertextIntegrity`,
 `CiphertextIntegrity`, `OneTimeINDCCA` (`not_oneTimeINDCCA_macThenEncrypt_extendCipher`), and
 `INDCCA` (`not_indcca_macThenEncrypt_extendCipher`), combined in
 `macThenEncrypt_extendCipher_counterexample` and instantiated unconditionally from any
-`PseudorandomFunction` via `prfMacThenEncryptExtend` (`ptLen n = 3 * n + 1`) and
-`PseudorandomFunction.prfMacThenEncryptExtend_counterexample`. Concrete checks on `echoCipher` and
-`echoMAC` as well as the PRF instantiation are in
+`PseudorandomFunction` via `prfMacThenEncryptExtend` (`ptLen n = 3 * n + 1`, framed by
+`prfMAC_mteFraming`) and `PseudorandomFunction.prfMacThenEncryptExtend_counterexample`. Concrete
+checks on `echoCipher` and `echoMAC` as well as the PRF instantiation are in
 [`CslibFrontierTests/Crypto/MACThenEncrypt.lean`](../../CslibFrontierTests/Crypto/MACThenEncrypt.lean).
 
 ## Authentication, signatures, and state
@@ -1018,7 +1018,7 @@ from `SignatureScheme.exists_sign_length_bound` (in the parameter and the messag
 `IndexedSignatureScheme.exists_sign_length_bound` (at indices below the capacity) instead of
 re-deriving it from `keyGen_ppt.length_le` and `sign_ppt.length_le`.
 
-[MACScheme](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/MAC.lean#L176) reuses `SignatureScheme.signingOracleOf` and `oneTimeSigningOracleOf` for fresh-message EUF-CMA while distinguishing it from fresh-pair SUF-CMA (`signingPairOracle`, `oneTimeSigningPairOracle`). A randomized signer can return more than one valid tag for a message, so the distinction is observable. `PseudorandomFunction.sufCma_prfMAC` proves a native PRF-based construction with forging probability bounded by reduction advantage plus `2^-n`. `NonceMACScheme` adds a nonce-respecting query condition.
+[MACScheme](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/MAC.lean#L176) reuses `SignatureScheme.signingOracleOf` and `oneTimeSigningOracleOf` for fresh-message EUF-CMA while distinguishing it from fresh-pair SUF-CMA (`signingPairOracle`, `oneTimeSigningPairOracle`). A randomized signer can return more than one valid tag for a message, so the distinction is observable. For a MAC with unique valid tags (`MACScheme.UniqueTag`), `sufCma_iff_eufCma_of_unique_tag` makes the two notions coincide; `NonceMACScheme.UniqueTag` similarly reduces nonce-MAC SUF-CMA to `freshPairGame`. `PseudorandomFunction.sufCma_prfMAC` proves a native PRF-based construction with forging probability bounded by reduction advantage plus `2^-n`. `NonceMACScheme` adds a nonce-respecting query condition.
 
 For concrete multi-block CBC-MAC bounds and domain-separation counterexamples over `BitString n`,
 import [`BlockCipher/CBCMAC.lean`](../../CslibFrontier/Crypto/Primitives/BlockCipher/CBCMAC.lean)

@@ -52,31 +52,27 @@ def echoMAC : MACScheme where
     subst htag
     exact beq_self_eq_true _
 
-/-- Every framed `(msg, tag)` pair produced by `echoMAC` on an `n`-bit message has exact length
-`3 * n + 1`. -/
-theorem echo_pairLen :
-    ∀ n km, km ∈ (ProbComp.eval (echoMAC.keyGen n)).support →
-      ∀ msg, msg.length = n →
-      ∀ tag ∈ (ProbComp.eval (echoMAC.sign km msg)).support,
-        (encPair encBits encBits (msg, tag)).length = 3 * n + 1 := by
-  intro n km _ msg hmsg tag htag
-  change tag ∈ (ProbComp.eval (pure msg)).support at htag
-  simp only [ProbComp.eval_pure, PMF.mem_support_pure_iff] at htag
-  subst htag
-  rw [encPair_apply]
-  dsimp only
-  rw [length_frame_append, encBits_apply, hmsg]
-  omega
+/-- `echoMAC` is framed for MAC-then-Encrypt at `ptLen n = 3 * n + 1`: every framed `(msg, tag)`
+pair it produces on an `n`-bit message has exact length `3 * n + 1`. -/
+theorem echoMAC_mteFraming : MtEFraming echoMAC (fun n => 3 * n + 1) where
+  polyTime := by polytime
+  msgLen_eq _ := rfl
+  pair_length n km _ msg hmsg tag htag := by
+    change tag ∈ (ProbComp.eval (pure msg)).support at htag
+    simp only [ProbComp.eval_pure, PMF.mem_support_pure_iff] at htag
+    subst htag
+    rw [encPair_apply]
+    dsimp only
+    rw [length_frame_append, encBits_apply, hmsg]
+    omega
 
 /-- Plain MAC-then-Encrypt instantiated on `echoCipher` and `echoMAC` with `ptLen n = 3 * n + 1`. -/
 noncomputable def echoMtE : SymmetricCipher :=
-  macThenEncrypt echoCipher echoMAC (fun n => 3 * n + 1) (by polytime) (fun _ => rfl)
-    echo_pairLen
+  macThenEncrypt echoCipher echoMAC (fun n => 3 * n + 1) echoMAC_mteFraming
 
 /-- MAC-then-Encrypt over `echoCipher.extendCipher` and `echoMAC` with `ptLen n = 3 * n + 1`. -/
 noncomputable def echoMtEExt : SymmetricCipher :=
-  macThenEncrypt echoCipher.extendCipher echoMAC (fun n => 3 * n + 1) (by polytime)
-    (fun _ => rfl) echo_pairLen
+  macThenEncrypt echoCipher.extendCipher echoMAC (fun n => 3 * n + 1) echoMAC_mteFraming
 
 /-! ### Round-trip, tag-rejection, and trailing-bit malleability checks -/
 
@@ -143,10 +139,10 @@ example :
           (echoMtEExt.ccaOneTimeGame
             (macThenEncryptExtendCCAAdversary (fun n => 3 * n + 2)) true 2)) = 1 :=
   ⟨eval_ciOneTimeGame_macThenEncrypt_extendCipher echoCipher echoMAC (fun n => 3 * n + 1)
-     (by polytime) (fun _ => rfl) echo_pairLen (fun n => 3 * n + 2) 2 (echoMtEExt_ctBound 2),
+     echoMAC_mteFraming (fun n => 3 * n + 2) 2 (echoMtEExt_ctBound 2),
    advantage_ccaOneTimeGame_macThenEncrypt_extendCipher_eq_one echoCipher echoMAC
-     (fun n => 3 * n + 1) (by polytime) (fun _ => rfl) echo_pairLen (fun n => 3 * n + 2)
-     (by decide) (echoMtEExt_ctBound 2)⟩
+     (fun n => 3 * n + 1) echoMAC_mteFraming (fun n => 3 * n + 2) (by decide)
+     (echoMtEExt_ctBound 2)⟩
 
 /-- Concrete failure of ciphertext integrity and CCA security on `echoMtEExt`. -/
 example :
@@ -155,20 +151,19 @@ example :
     ¬ echoMtEExt.OneTimeINDCCA ∧
     ¬ echoMtEExt.INDCCA :=
   ⟨not_oneTimeCiphertextIntegrity_macThenEncrypt_extendCipher echoCipher echoMAC
-     (fun n => 3 * n + 1) (by polytime) (fun _ => rfl) echo_pairLen,
+     (fun n => 3 * n + 1) echoMAC_mteFraming,
    not_ciphertextIntegrity_macThenEncrypt_extendCipher echoCipher echoMAC
-     (fun n => 3 * n + 1) (by polytime) (fun _ => rfl) echo_pairLen,
+     (fun n => 3 * n + 1) echoMAC_mteFraming,
    not_oneTimeINDCCA_macThenEncrypt_extendCipher echoCipher echoMAC
-     (fun n => 3 * n + 1) (by polytime) (fun _ => rfl) echo_pairLen,
+     (fun n => 3 * n + 1) echoMAC_mteFraming,
    not_indcca_macThenEncrypt_extendCipher echoCipher echoMAC
-     (fun n => 3 * n + 1) (by polytime) (fun _ => rfl) echo_pairLen⟩
+     (fun n => 3 * n + 1) echoMAC_mteFraming⟩
 
 /-- Parametric `INDCPA` preservation and full non-vacuous PRF counterexample witness. -/
 example {E : SymmetricCipher} (h : E.INDCPA) :
-    (macThenEncrypt E echoMAC (fun n => 3 * n + 1) (by polytime) (fun _ => rfl)
-      echo_pairLen).INDCPA :=
-  indcpa_macThenEncrypt E echoMAC (fun n => 3 * n + 1) (by polytime)
-    (fun _ _ h => by dsimp only; omega) (fun _ => rfl) echo_pairLen h
+    (macThenEncrypt E echoMAC (fun n => 3 * n + 1) echoMAC_mteFraming).INDCPA :=
+  indcpa_macThenEncrypt E echoMAC (fun n => 3 * n + 1) echoMAC_mteFraming
+    (fun _ _ h => by dsimp only; omega) h
 
 example {family : List Bool → List Bool → List Bool} (hprf : PseudorandomFunction family) :
     (prfCipher family hprf.polyTime hprf.length_eq).extendCipher.INDCPA ∧

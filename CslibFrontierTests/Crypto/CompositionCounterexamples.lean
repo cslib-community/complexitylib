@@ -69,11 +69,8 @@ theorem isQueryBounded_zeroCIAdversary (n : ℕ) :
   ProbOracleComp.IsQueryBounded.sample (pure (List.replicate n false))
 
 /-- Every `echoPrfMAC` tag under a key sampled at parameter `n` has length at most `2 * n`. -/
-theorem echoPrfMAC_tag_length_le (n : ℕ) (km : List Bool)
-    (hkm : km ∈ (ProbComp.eval (echoPrfMAC.keyGen n)).support)
-    (m : List Bool) (_hm : m.length = echoPrfMAC.msgLen n)
-    (tag : List Bool) (htag : tag ∈ (ProbComp.eval (echoPrfMAC.sign km m)).support) :
-    tag.length ≤ 2 * n := by
+theorem echoPrfMAC_tag_length_le (n : ℕ) : echoPrfMAC.TagLengthLE n (2 * n) := by
+  intro km hkm m _hm tag htag
   change km ∈ (ProbComp.eval (BitString.sampleList (2 * n))).support at hkm
   rw [BitString.eval_sampleList, BitString.mem_support_uniformList_iff] at hkm
   change tag ∈ (ProbComp.eval (pure (prfOracle echoFamily km.length km m))).support at htag

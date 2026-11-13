@@ -153,10 +153,8 @@ example (n : ℕ) :
         (ProbComp.eval
           (echoPrfMAC.sufCmaGame
             (etmToMACForger echoPrfCipher echoPrfMAC (fun n => 2 * n) zeroCIAdversary) n)) := by
-  have htag (km : List Bool) (hkm : km ∈ (ProbComp.eval (echoPrfMAC.keyGen n)).support)
-      (c : List Bool) (_hc : c.length = echoPrfMAC.msgLen n)
-      (tag : List Bool) (htag : tag ∈ (ProbComp.eval (echoPrfMAC.sign km c)).support) :
-      tag.length ≤ 2 * n := by
+  have htag : echoPrfMAC.TagLengthLE n (2 * n) := by
+    intro km hkm c _hc tag htag
     change km ∈ (ProbComp.eval (BitString.sampleList (2 * n))).support at hkm
     rw [BitString.eval_sampleList, BitString.mem_support_uniformList_iff] at hkm
     change tag ∈ (ProbComp.eval (pure (prfOracle echoFamily km.length km c))).support at htag
@@ -276,10 +274,8 @@ example (n : ℕ) :
         (ProbComp.eval
           (echoPrfCipher.cpaOneTimeGame
             (etmToOneTimeCPAAdversary echoPrfMAC zeroCPAAdversary) true n)) := by
-  have htag (km : List Bool) (hkm : km ∈ (ProbComp.eval (echoPrfMAC.keyGen n)).support)
-      (c : List Bool) (_hc : c.length = echoPrfMAC.msgLen n)
-      (tag : List Bool) (htag : tag ∈ (ProbComp.eval (echoPrfMAC.sign km c)).support) :
-      tag.length ≤ 2 * n := by
+  have htag : echoPrfMAC.TagLengthLE n (2 * n) := by
+    intro km hkm c _hc tag htag
     change km ∈ (ProbComp.eval (BitString.sampleList (2 * n))).support at hkm
     rw [BitString.eval_sampleList, BitString.mem_support_uniformList_iff] at hkm
     change tag ∈ (ProbComp.eval (pure (prfOracle echoFamily km.length km c))).support at htag
