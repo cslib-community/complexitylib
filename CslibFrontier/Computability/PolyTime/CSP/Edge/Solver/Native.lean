@@ -91,7 +91,7 @@ theorem computableInPolyTime_stateBudget : ComputableInPolyTime stateBudget
     (ComputableInPolyTime.of_eq (encOut := encBits) (fun _ => rfl))
   have hget := encTable_rows_deg.computableInPolyTime
   have hr : ComputableInPolyTime
-      (fun F : CSP Table ℕ => F.flatMap fun c => c.1.rows)
+      (fun F : CSP Table ℕ => F.flatMap fun c => c.rel.rows)
       (encCSP encTable encNat) (encList (encList encBool)) := by fun_prop
   have hc : ComputableInPolyTime Size.rowCount (encCSP encTable encNat) encUnary := by
     unfold Size.rowCount

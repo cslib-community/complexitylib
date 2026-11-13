@@ -953,6 +953,25 @@ private theorem realizationMap_classify [Finite V] (W : WeightedGraph V)
         exact hVertexCase d'.snd
       · have hr_pos : (0 : ℝ) < r := lt_of_le_of_ne r.2.1 (Ne.symm hr0)
         have hr_lt : (r : ℝ) < 1 := lt_of_le_of_ne r.2.2 hr1
+        clear hr0 hr1
+        -- A reversed sub-dart is the forward one read backwards (`edgePoint_symm`).
+        wlog hfwd :
+            (∃ e : W.graph.edgeSet, d'.fst.1 = vertex (edgeDartOfSym2 e).fst ∧ d'.snd.1 = bp1 W e) ∨
+            (∃ e : W.graph.edgeSet, d'.fst.1 = bp1 W e ∧ d'.snd.1 = bp2 W e) ∨
+            (∃ e : W.graph.edgeSet, d'.fst.1 = bp2 W e ∧ d'.snd.1 = vertex (edgeDartOfSym2 e).snd)
+            generalizing d' r
+        · rw [← edgePoint_symm d' r]
+          refine this d'.symm (unitInterval.symm r) (by rw [unitInterval.coe_symm_eq]; linarith)
+            (by rw [unitInterval.coe_symm_eq]; linarith) ?_
+          rcases classifySubDart W d' with
+            ⟨e, hfst, hsnd, _⟩ | ⟨e, hfst, hsnd, _⟩ | ⟨e, hfst, hsnd, _⟩ |
+            ⟨e, hfst, hsnd, _⟩ | ⟨e, hfst, hsnd, _⟩ | ⟨e, hfst, hsnd, _⟩
+          · exact absurd (Or.inl ⟨e, hfst, hsnd⟩) hfwd
+          · exact absurd (Or.inr (Or.inl ⟨e, hfst, hsnd⟩)) hfwd
+          · exact absurd (Or.inr (Or.inr ⟨e, hfst, hsnd⟩)) hfwd
+          · exact Or.inl ⟨e, hsnd, hfst⟩
+          · exact Or.inr (Or.inl ⟨e, hsnd, hfst⟩)
+          · exact Or.inr (Or.inr ⟨e, hsnd, hfst⟩)
         obtain ⟨d, s, t, hst, hs, ht, _, _, heq⟩ :=
           subdivideEquiv_edgePoint (vertex_mem_realizationPoints W) d' r
         have hwitness : ∀ {e : W.graph.edgeSet} {s₀ t₀ : unitInterval},
@@ -968,29 +987,6 @@ private theorem realizationMap_classify [Finite V] (W : WeightedGraph V)
           obtain ⟨rfl, rfl, rfl⟩ :=
             subAdj_witness_eq hst hst₀ (hs.trans hs₀.symm) (ht.trans ht₀.symm)
           exact heq
-        have hwitnessSymm : ∀ {e : W.graph.edgeSet} {s₀ t₀ : unitInterval},
-            (s₀ : ℝ) < t₀ →
-            edgePoint (edgeDartOfSym2 e) t₀ = d'.fst.1 →
-            edgePoint (edgeDartOfSym2 e) s₀ = d'.snd.1 →
-            subdivideEquiv (vertex_mem_realizationPoints W) (edgePoint d' r) =
-              edgePoint (edgeDartOfSym2 e) ⟨(1 - (r : ℝ)) * t₀ + r * s₀,
-                add_nonneg (mul_nonneg (unitInterval.one_sub_nonneg r) t₀.2.1)
-                  (mul_nonneg r.2.1 s₀.2.1),
-                by nlinarith [r.2.1, r.2.2, s₀.2.2, t₀.2.2]⟩ := by
-          intro e s₀ t₀ hst₀ ht₀ hs₀
-          have hst' : (unitInterval.symm t₀ : ℝ) < unitInterval.symm s₀ := by
-            change 1 - (t₀ : ℝ) < 1 - s₀; linarith
-          have hs' : edgePoint (edgeDartOfSym2 e).symm (unitInterval.symm t₀) = d'.fst.1 := by
-            rw [edgePoint_symm]; exact ht₀
-          have ht' : edgePoint (edgeDartOfSym2 e).symm (unitInterval.symm s₀) = d'.snd.1 := by
-            rw [edgePoint_symm]; exact hs₀
-          obtain ⟨rfl, rfl, rfl⟩ :=
-            subAdj_witness_eq hst hst' (hs.trans hs'.symm) (ht.trans ht'.symm)
-          rw [heq, ← edgePoint_symm]
-          congr 1
-          ext
-          change 1 - ((1 - (r : ℝ)) * (1 - (t₀ : ℝ)) + r * (1 - (s₀ : ℝ))) = _
-          ring
         have hseg1 : ∀ (e : W.graph.edgeSet) (τ : unitInterval)
             (hτ_pos : (0 : ℝ) < τ) (hτ_lt : (τ : ℝ) < 1)
             (hz : realizationMap W (edgePoint d' r) =
@@ -1126,9 +1122,7 @@ private theorem realizationMap_classify [Finite V] (W : WeightedGraph V)
             field_simp [hw]
             rw [← hsum]
             ring
-        rcases classifySubDart W d' with
-          ⟨e, hfst, hsnd, _⟩ | ⟨e, hfst, hsnd, _⟩ | ⟨e, hfst, hsnd, _⟩ |
-          ⟨e, hfst, hsnd, _⟩ | ⟨e, hfst, hsnd, _⟩ | ⟨e, hfst, hsnd, _⟩
+        rcases hfwd with ⟨e, hfst, hsnd⟩ | ⟨e, hfst, hsnd⟩ | ⟨e, hfst, hsnd⟩
         · have hf1 : d'.fst = ⟨vertex (edgeDartOfSym2 e).fst, vertex_mem_realizationPoints W _⟩ :=
             Subtype.ext hfst
           have hs1 : d'.snd = ⟨bp1 W e, bp1_mem_realizationPoints W e⟩ := Subtype.ext hsnd
@@ -1157,58 +1151,6 @@ private theorem realizationMap_classify [Finite V] (W : WeightedGraph V)
             ext
             dsimp only
             change (1 - (r : ℝ)) * ratio2 W e + r = (1 - (r : ℝ)) * ratio2 W e + r * (1 : ℝ)
-            ring
-        · have hf1 : d'.fst = ⟨bp1 W e, bp1_mem_realizationPoints W e⟩ := Subtype.ext hfst
-          have hs1 : d'.snd = ⟨vertex (edgeDartOfSym2 e).fst, vertex_mem_realizationPoints W _⟩ :=
-            Subtype.ext hsnd
-          let τ := unitInterval.symm r
-          have hτ0 : (0 : ℝ) < τ := by change (0 : ℝ) < 1 - r; linarith
-          have hτ1 : (τ : ℝ) < 1 := by change 1 - (r : ℝ) < 1; linarith
-          refine hseg1 e τ hτ0 hτ1 ?_ ?_
-          · have hsub : 1 - (τ : ℝ) = (r : ℝ) := by change 1 - (1 - (r : ℝ)) = r; ring
-            rw [realizationMap_edgePoint, hf1, hs1, hsub, add_comm ((1 - (r : ℝ)) • _)]
-            rfl
-          · have heq' := hwitnessSymm (ratio1_pos W e)
-              hfst.symm (by rw [edgePoint_zero, hsnd])
-            convert heq' using 2
-            ext
-            dsimp only [τ]
-            rw [unitInterval.coe_symm_eq]
-            change (1 - (r : ℝ)) * ratio1 W e = (1 - (r : ℝ)) * ratio1 W e + r * (0 : ℝ)
-            ring
-        · have hf1 : d'.fst = ⟨bp2 W e, bp2_mem_realizationPoints W e⟩ := Subtype.ext hfst
-          have hs1 : d'.snd = ⟨bp1 W e, bp1_mem_realizationPoints W e⟩ := Subtype.ext hsnd
-          let τ := unitInterval.symm r
-          have hτ0 : (0 : ℝ) < τ := by change (0 : ℝ) < 1 - r; linarith
-          have hτ1 : (τ : ℝ) < 1 := by change 1 - (r : ℝ) < 1; linarith
-          refine hseg2 e τ hτ0 hτ1 ?_ ?_
-          · have hsub : 1 - (τ : ℝ) = (r : ℝ) := by change 1 - (1 - (r : ℝ)) = r; ring
-            rw [realizationMap_edgePoint, hf1, hs1, hsub, add_comm ((1 - (r : ℝ)) • _)]
-            rfl
-          · have heq' := hwitnessSymm (ratio1_lt_ratio2 W e) hfst.symm hsnd.symm
-            convert heq' using 2
-            ext
-            dsimp only [τ]
-            rw [unitInterval.coe_symm_eq]
-            ring
-        · have hf1 : d'.fst = ⟨vertex (edgeDartOfSym2 e).snd, vertex_mem_realizationPoints W _⟩ :=
-            Subtype.ext hfst
-          have hs1 : d'.snd = ⟨bp2 W e, bp2_mem_realizationPoints W e⟩ := Subtype.ext hsnd
-          let τ := unitInterval.symm r
-          have hτ0 : (0 : ℝ) < τ := by change (0 : ℝ) < 1 - r; linarith
-          have hτ1 : (τ : ℝ) < 1 := by change 1 - (r : ℝ) < 1; linarith
-          refine hseg3 e τ hτ0 hτ1 ?_ ?_
-          · have hsub : 1 - (τ : ℝ) = (r : ℝ) := by change 1 - (1 - (r : ℝ)) = r; ring
-            rw [realizationMap_edgePoint, hf1, hs1, hsub, add_comm ((1 - (r : ℝ)) • _)]
-            rfl
-          · have heq' := hwitnessSymm (ratio2_lt_one W e)
-              (by rw [edgePoint_one, hfst]) hsnd.symm
-            convert heq' using 2
-            ext
-            dsimp only [τ]
-            rw [unitInterval.coe_symm_eq]
-            change (1 - (1 - (r : ℝ))) * ratio2 W e + (1 - (r : ℝ)) =
-              (1 - (r : ℝ)) * (1 : ℝ) + r * ratio2 W e
             ring
 
 theorem realizationMap_injective [Finite V] (W : WeightedGraph V) :

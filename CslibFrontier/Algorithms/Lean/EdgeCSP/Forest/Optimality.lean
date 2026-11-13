@@ -98,7 +98,7 @@ private theorem local_changes_le {sem : Rel → List Bool → Bool}
         fun j => f ⟨i, j⟩ ≠ g ⟨i, j⟩).card) =
       (P.filter fun o => f o ≠ g o).card := by
     calc
-      _ = ∑ i : Fin F.length, ∑ j : Fin F[i].2.length,
+      _ = ∑ i : Fin F.length, ∑ j : Fin F[i].scope.length,
           if (⟨i, j⟩ : Occurrence F) ∈ P ∧ f ⟨i, j⟩ ≠ g ⟨i, j⟩ then (1 : ℕ) else 0 := by
         simp only [sum_boole, filter_filter, Nat.cast_id]
         rfl

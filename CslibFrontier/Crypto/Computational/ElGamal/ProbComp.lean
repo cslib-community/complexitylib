@@ -17,6 +17,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.WordsRoundTrip
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pair.Projections
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Computability.Probabilistic.UniformNat
@@ -103,14 +104,6 @@ open Probability Turing.MultiTapeTM Encryption Game
 open scoped ENNReal NNReal
 
 variable (F : PrimeOrderGroupFamily)
-
-private theorem dropFrame_encPair_encBits {α : Type} (e : α ↪ List Bool) (p : α × List Bool) :
-    dropFrame (encPair e encBits p) = p.2 := by
-  simp only [encPair_apply, dropFrame_frame_append, encBits_apply]
-
-private theorem unframe_encPair_encBits (p : List Bool × List Bool) :
-    unframe (encPair encBits encBits p) = p.1 := by
-  simp only [encPair_apply, unframe_frame_append, encBits_apply]
 
 /-- Probabilistic polynomial-time ElGamal key generation for a group description family
 `d : ℕ → F.Desc` ([BonehShoup2023], Section 11.5, p. 445, and Exercise 11.5, p. 459): sample
@@ -483,8 +476,9 @@ theorem elGamalDecryptDet_elGamalEncryptProb (d : ℕ → F.Desc) (n : ℕ)
     F.elGamalDecryptDet d n keys.2 ct = F.encode (d n) m := by
   supp_cases hkeys [elGamalKeyGenProb] with ⟨a, _, rfl⟩
   supp_cases hct [elGamalEncryptProb] with ⟨b, _, rfl⟩
-  simp only [elGamalDecryptDet, ofBits_encNat, unframe_encPair_encBits, dropFrame_encPair_encBits,
-    F.decodeElGamal_encodeElGamalEncrypt]
+  simp only [elGamalDecryptDet, ofBits_encNat, encodeElGamalEncrypt, unframe_encPair_encBits,
+    dropFrame_encPair_encBits]
+  exact F.decodeElGamal_encodeElGamalEncrypt _ _ _ _
 
 /-- The native `Encryption.gameOn` experiment for
 `(elGamalKeyGenProb d, elGamalEncryptProb encodeMsg d)` is within statistical distance `2 / 2 ^ n`
