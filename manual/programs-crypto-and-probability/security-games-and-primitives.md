@@ -47,6 +47,18 @@ with `enc_structure`; open `Cslib.Crypto.Pseudoentropy` and
 `encAdvisedInput` in the word game `Pseudoentropy.predictionGame`, and the word-level extraction
 pipeline applies it once, in `HasGapWithAdvice.eventually_indexed_error_ge`.
 
+For the hashed-parity construction, import
+[`Pseudoentropy/HashPair.lean`](../../CslibFrontier/Crypto/Computational/Pseudoentropy/HashPair.lean).
+`HashPair.Observation` names the public `image`, `index`, `matrix`, `digest` and `query`.
+The digest has width `index.val + 1`, while the matrix retains all sampled rows. Its
+`encObservation` encoding writes those five fields in that order, with a unary index and every
+field except the final query self-delimited. Open `Cslib.Crypto.Pseudoentropy.HashPair` for the
+generated field-access certificates; the dependent digest is read as `List.ofFn observation.digest`.
+The [checked client](../../CslibFrontierTests/Crypto/HashPair.lean) verifies the exact word layout,
+uses the generated certificates to read the image and digest, and exercises zero-width inputs.
+`encodeObservation` also accepts a possibly noninjective image map for the sampler's semantic
+agreement theorem; the efficient pair uses `encObservation` with an injective image encoding.
+
 For Diffie–Hellman games, import
 [`DiffieHellman.lean`](../../CslibFrontier/Crypto/Computational/DiffieHellman.lean) and open
 `Cslib.Crypto.PrimeOrderGroupFamily`. Fixing `F : PrimeOrderGroupFamily` fixes the family,
