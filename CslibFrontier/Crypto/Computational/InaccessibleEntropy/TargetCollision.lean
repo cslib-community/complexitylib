@@ -1040,7 +1040,7 @@ theorem ShrinkingCollisionGrid.targetCollisionResistant_rompelCompression
 /-! ### Unrestricted `KeyedHashFamily` and `OneWay` UOWHF endpoints -/
 
 /-- **Rompel / HHRVW unrestricted `KeyedHashFamily`** (`[Rompel1990]`; `[HHRVW2020]`,
-Section 5.1, Theorem 5.1, p. 25): hashes arbitrary-length bit strings `List Bool` to
+Section 5.1, Theorem 5.1, p. 26): hashes arbitrary-length bit strings `List Bool` to
 `rompelBlockLen G n`-bit digests via `(rompelCompression G).treeHash` (inheriting `uowhfTreeHash`'s
 `< 2 ^ n` finite-parameter tree capacity). -/
 @[expose]
@@ -1054,7 +1054,7 @@ theorem ShrinkingCollisionGrid.targetCollisionResistant_rompelHash
   KeyedCompressionFamily.targetCollisionResistant_treeHash
     G.targetCollisionResistant_rompelCompression
 
-/-- **`[HHRVW2020]`, Section 5.1, Theorem 5.1 (p. 25) from Definition 3.9**: every
+/-- **`[HHRVW2020]`, Section 5.1, Theorem 5.1 (p. 26) from Definition 3.9**: every
 `AdversaryInaccessibleEntropyFamily` yields a target collision-resistant
 `KeyedCompressionFamily`. -/
 theorem AdversaryInaccessibleEntropyFamily.exists_targetCollisionResistantCompression
@@ -1063,7 +1063,7 @@ theorem AdversaryInaccessibleEntropyFamily.exists_targetCollisionResistantCompre
   obtain ⟨G⟩ := F.exists_shrinkingCollisionGrid
   exact ⟨rompelCompression G, G.targetCollisionResistant_rompelCompression⟩
 
-/-- **`[HHRVW2020]`, Section 5.1, Theorem 5.1 (p. 25) from Definition 3.9**: every
+/-- **`[HHRVW2020]`, Section 5.1, Theorem 5.1 (p. 26) from Definition 3.9**: every
 `AdversaryInaccessibleEntropyFamily` yields an unrestricted target collision-resistant
 `KeyedHashFamily` on `List Bool`. -/
 theorem AdversaryInaccessibleEntropyFamily.exists_targetCollisionResistantHash
@@ -1080,7 +1080,7 @@ theorem OneWay.exists_targetCollisionResistant_keyedCompressionFamily
   exact F.toAdversaryInaccessibleEntropyFamily.exists_targetCollisionResistantCompression
 
 /-- **Rompel–HHRVW universal one-way hash theorem** (`[Rompel1990]`; `[HHRVW2020]`,
-Section 5.1, Theorem 5.1, p. 25): every uniform `OneWay` function implies the existence of an
+Section 5.1, Theorem 5.1, p. 26): every uniform `OneWay` function implies the existence of an
 unrestricted target collision-resistant `KeyedHashFamily` on `List Bool`. -/
 theorem OneWay.exists_targetCollisionResistant_keyedHashFamily
     {f : List Bool → List Bool} (hf : OneWay f) :

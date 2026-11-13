@@ -169,12 +169,12 @@ theorem expected_realSampleEntropy_eq_conditionalEntropy {α β : Type*}
 /-! ### Collision-finding adversaries and canonical sanitization -/
 
 /-- An **$F$-collision-finder** is a randomized mapping that always outputs a preimage in the fiber
-$F^{-1}(F(x))$ (`[HHRVW2020]`, Section 3.1, Definition 3.3, p. 12). -/
+$F^{-1}(F(x))$ (`[HHRVW2020]`, Section 3.2, Definition 3.3, p. 12). -/
 @[expose] def IsCollisionFinder {α β : Type*} (F : α → β) (A : α → PMF α) : Prop :=
   ∀ x x', x' ∈ (A x).support → F x' = F x
 
 /-- Canonical fallback sanitization replacing any non-colliding output of `A x` by `x` itself
-(`[HHRVW2020]`, Section 3.1, Definition 3.3 and fallback discussion, p. 12). -/
+(`[HHRVW2020]`, Section 3.2, Definition 3.3 and fallback discussion, p. 12). -/
 @[expose] noncomputable def sanitizeCollisionFinder {α β : Type*} [DecidableEq β]
     (F : α → β) (A : α → PMF α) (x : α) : PMF α :=
   (A x).map fun x' => if F x' = F x then x' else x
@@ -256,7 +256,7 @@ preimage of `evalWord n` outside the accessible set `accSet n`. -/
   let z' := BitString.ofList (inLen n) raw
   return decide (raw.length = inLen n ∧ evalWord n raw = evalWord n zWord ∧ z' ∉ accSet n z)
 
-/-- Word-level parameterized **$F$-collision-finder** (`[HHRVW2020]`, Section 3.1, Definition 3.3,
+/-- Word-level parameterized **$F$-collision-finder** (`[HHRVW2020]`, Section 3.2, Definition 3.3,
 p. 12): on every security parameter `n` and `(inLen n)`-bit input `zWord`, `A n zWord` is supported
 on `(inLen n)`-bit preimages in the fiber of `evalWord n zWord`. -/
 @[expose] def IsWordCollisionFinder (inLen : ℕ → ℕ) (evalWord : ℕ → List Bool → List Bool)
@@ -277,7 +277,7 @@ theorem IsWordCollisionFinder.isCollisionFinder {inLen outLen : ℕ → ℕ}
   obtain ⟨hlen, heval⟩ := hA n (List.ofFn z) List.length_ofFn raw hraw
   simp only [wordToFinMap, BitString.ofFn_ofList hlen, heval]
 
-/-- Canonical word-level fallback sanitization (`[HHRVW2020]`, Section 3.1, Definition 3.3 and
+/-- Canonical word-level fallback sanitization (`[HHRVW2020]`, Section 3.2, Definition 3.3 and
 fallback discussion, p. 12): runs `A n zWord` and falls back to `zWord` whenever the output does not
 have length `inLen n` or fails to collide under `evalWord n`. -/
 @[expose] def sanitizeWordCollisionFinder (inLen : ℕ → ℕ) (evalWord : ℕ → List Bool → List Bool)

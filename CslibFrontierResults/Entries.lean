@@ -1240,7 +1240,7 @@ register_result "rompel-uowhf" where
   topic := "cryptography"
   sources := [
     { paper := Rompel1990, theorem := unverified, locator := unverified },
-    { paper := HHRVW2020, theorem := "Theorem 5.1", locator := "Section 5.1, p. 25" }
+    { paper := HHRVW2020, theorem := "Theorem 5.1", locator := "Section 5.1, p. 26" }
   ]
   theorems := [
     Cslib.Crypto.ShrinkingCollisionGrid.targetCollisionResistant_rompelHash,

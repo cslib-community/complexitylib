@@ -498,8 +498,9 @@ theorem InaccessibleEntropyFamily.exists_shrinkingCollisionGrid (F : Inaccessibl
 
 /-- **`[HHRVW2020]`, Section 4.2, Theorem 4.5 (p. 21) composed with Section 5.1.5, Theorem 5.1,
 STEPS 1–3 (pp. 30–31)**: every uniform `OneWay` function yields a uniform polynomial-time
-`ShrinkingCollisionGrid` of strictly `1`-bit shrinking hash candidates containing a sequence that is
-collision-resistant on random inputs against all uniform strict-PPT adversaries. -/
+`ShrinkingCollisionGrid` of strictly `1`-bit shrinking hash candidates admitting, for every uniform
+strict-PPT adversary `B`, an in-range candidate sequence that is collision-resistant on random
+inputs against `B`. -/
 theorem OneWay.exists_shrinkingCollisionGrid {f : List Bool → List Bool} (hf : OneWay f) :
     Nonempty ShrinkingCollisionGrid :=
   let ⟨F⟩ := hf.exists_inaccessibleEntropyFamily
