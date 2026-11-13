@@ -70,27 +70,14 @@ theorem exec_loadScanChild {w L f a0 b0 d N k : ℕ} (x : Data registers)
   have hL : L + 1 ≤ (L + 1) * 10 ^ L := by nlinarith only [hpow]
   have hmul : (d + 1) * 10 ^ L ≤ (L + 1) * 10 ^ L :=
     Nat.mul_le_mul_right _ (by omega)
-  obtain ⟨u, hu, humem, huf, huc, hup, hus, hut, hul, _, hun, huch, _, hureg⟩ :=
-    exec_loadFrame x hregs.one_eq hregs.frameWidth_eq (hw.of_le (by
-      rw [hregs.frames_eq, hregs.lists_eq, hregs.values_eq, hregs.span_eq, hd]
-      nlinarith only [hpow, hL, hmul]))
+  obtain ⟨u, hu, humem, huf', huc, hup', hstride', hut, hul', _, hun', huch', _, hureg⟩ :=
+    hregs.exec_loadFrame hd hdL.le (hw.of_le (by omega))
   have fixed (i : Fin registers) (hi : ¬LoadFrameLocal i) : u.regs i = x.regs i :=
     hureg i hi
-  have huf' : u.regs frame = f + 4 * d := by
-    simpa only [hregs.frames_eq, hd] using huf
-  have hul' : u.regs listBase = f + 4 * (L + 1) + d * 10 ^ L := by
-    simpa only [hregs.lists_eq, hregs.span_eq, hd] using hul
-  have huch' : u.regs childList = f + 4 * (L + 1) + (d + 1) * 10 ^ L := by
-    simpa only [hregs.lists_eq, hregs.span_eq, hd] using huch
   have hus' : u.regs stamps = f + 4 * (L + 1) + 2 * (L + 1) * 10 ^ L :=
     (fixed stamps (by decide)).trans hregs.stamps_eq
-  have huc' : u.regs count = N := by simpa only [hregs.frames_eq, hd, hN] using huc
-  have hup' : u.regs leafPrefix = x.mem (f + 4 * d + 1) := by
-    simpa only [hregs.frames_eq, hd] using hup
-  have hstride' : u.regs stride = x.mem (f + 4 * d + 2) := by
-    simpa only [hregs.frames_eq, hd] using hus
-  have hut' : u.regs term = k := by simpa only [hregs.frames_eq, hd, hterm] using hut
-  have hun' : u.regs nextLevel = d + 1 := by simpa only [hd] using hun
+  have huc' : u.regs count = N := huc.trans hN
+  have hut' : u.regs term = k := hut.trans hterm
   have hue : u.regs epoch = x.regs epoch := fixed epoch (by decide)
   obtain ⟨v, hv, _, hve, hvc, htable, _, hscanFrame, hvreg⟩ :=
     exec_scan (N := N) (capacity := 10 ^ L) true u input huc'

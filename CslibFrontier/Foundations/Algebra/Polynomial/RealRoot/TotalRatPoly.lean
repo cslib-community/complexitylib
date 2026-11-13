@@ -678,6 +678,7 @@ theorem sturmSeqAuxM_time_le :
     have hp_le : p.length ≤ M := le_max_left _ _
     have hq_le : q.length ≤ M := le_max_right _ _
     simp only [sturmSeqAuxM, TimeM.time_bind, isEmptyM_time, isEmptyM_ret]
+    rw [Nat.succ_mul (n + 1)]
     split_ifs with hemp
     · simp only [TimeM.time_bind, TimeM.time_tick, TimeM.time_pure]
       have hpos : 0 ≤ (n + 1) * ((max p.length q.length + 2) *
@@ -685,12 +686,6 @@ theorem sturmSeqAuxM_time_le :
       have h2 : 2 ≤ (max p.length q.length + 2) * (20 * max p.length q.length + 30) :=
         (by decide : 2 ≤ 2 * 30).trans
           (Nat.mul_le_mul (Nat.le_add_left 2 _) (Nat.le_add_left 30 _))
-      have hsplit : (n + 1 + 1) * ((max p.length q.length + 2) *
-          (20 * max p.length q.length + 30)) =
-          (n + 1) * ((max p.length q.length + 2) * (20 * max p.length q.length + 30)) +
-            (max p.length q.length + 2) * (20 * max p.length q.length + 30) :=
-        Nat.succ_mul (n + 1) _
-      rw [hsplit]
       omega
     · simp only [TimeM.time_bind, negModListM_ret, TimeM.time_tick, TimeM.time_pure]
       have hneg := negModListM_time_le p q
@@ -706,12 +701,6 @@ theorem sturmSeqAuxM_time_le :
         have hexp : (M + 2) * (20 * M + 30) = (M + 2) * (20 * M + 28) + 2 * (M + 2) := by ring
         omega
       dsimp only [M] at ih hstep
-      have hsplit : (n + 1 + 1) * ((max p.length q.length + 2) *
-          (20 * max p.length q.length + 30)) =
-          (n + 1) * ((max p.length q.length + 2) * (20 * max p.length q.length + 30)) +
-            (max p.length q.length + 2) * (20 * max p.length q.length + 30) :=
-        Nat.succ_mul (n + 1) _
-      rw [hsplit]
       omega
 
 /-- `TimeM ℕ`-charged Sturm sequence `sturmSeqList`. -/

@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger
 
 import CslibFrontier.MachineLearning.PACLearning.Compression.Order
 import CslibFrontier.MachineLearning.PACLearning.Compression.MistakeBound
+import CslibFrontier.MachineLearning.PACLearning.Compression.Thresholds
 import CslibFrontier.MachineLearning.OnlineLearning.MistakeBound.Halving
 import CslibFrontier.MachineLearning.OnlineLearning.MistakeBound.Thresholds
 

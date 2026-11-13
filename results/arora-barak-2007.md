@@ -285,6 +285,32 @@ Snapshot: `b91d5151fd7dc665a5e3efcb466077caf44e690d` (2026-11-12), CSLib pin
 | 12.22 (generalized inner product) | 229 / 245 | **Covered.** `Cslib.Communication.NOF.Protocol.two_mul_le_four_pow_mul_of_ecomplexityFun_gip_le` in [GeneralizedInnerProduct](../CslibFrontier/Computability/Communication/NOF/GeneralizedInnerProduct.lean) proves $2n\le4^k C$ for $k\ge1$, stronger than the stated $\Omega(n/8^k)$. The public-coin theorem in the same module also handles error $1/3$ with additive cost two. |
 
 
+### Arbitrary tiling milestones after the audited snapshot
+
+These three later formalizations fill the arbitrary-tiling gaps in the historical snapshot above.
+The complete chapter comparison was integrated in
+[#4764](https://github.com/cslib-community/cslib-frontier/pull/4764); its snapshot rows are retained.
+Source pages: printed 224–225 / PDF 240–241 of the pinned draft. Definition 12.6 minimizes over
+arbitrary disjoint monochromatic rectangles, independently of protocol trees.
+
+`RectanglePartition` in [Partition](../CslibFrontier/Computability/Communication/Partition.lean)
+models labelled finite tilings; `tilingNumber` is their minimum in $\mathbb N\cup\{\infty\}$.
+The minimum is attained for finite inputs, including zero for an empty product. Empty pieces
+are allowed and charged, so they cannot improve the minimum.
+
+| Draft result | Disposition and scope |
+|---|---|
+| Lemma 12.8 | **Covered.** `IsFoolingSet.card_le_tilingNumber` in [FoolingSet](../CslibFrontier/Computability/Communication/FoolingSet.lean) bounds every arbitrary tiling and hence its minimum. The stronger labelled-piece bound is also available. |
+| Theorem 12.10 | **Covered.** `rank_communicationMatrix_le_tilingNumber` in [Rank](../CslibFrontier/Computability/Communication/Rank.lean) bounds the zero/one matrix rank over any commutative semiring with the strong rank condition, in particular every field. |
+| Lemma 12.11 | **Covered.** `one_div_discrepancy_le_tilingNumber` in [Discrepancy](../CslibFrontier/Computability/Communication/Discrepancy.lean) proves the reciprocal bound for any PMF on finite input sets. Uniform equal bit cubes specialize to the draft's normalization. |
+
+The existing protocol proofs now specialize these general arguments through the leaf partition.
+The [checked clients](../CslibFrontierTests/CommunicationTilings.lean) include explicit tilings,
+Boolean equality, empty and constant cases, and uniform and nonuniform distributions.
+This establishes no protocol-realization theorem for arbitrary tilings and no communication
+runtime bound. The book-wide theory/exercise objective remains open under
+[#4711](https://github.com/cslib-community/cslib-frontier/issues/4711).
+
 ## Chapter 13: circuit lower bounds
 
 Snapshot: `b91d5151fd7dc665a5e3efcb466077caf44e690d` (2026-11-12), CSLib pin
