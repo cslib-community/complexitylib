@@ -33,6 +33,12 @@ adaptive membership queries, the adaptive counterpart of
 `UniformLearning.QueryLearner.HasCircuit`, which is the special case of constant queries
 (`UniformLearning.QueryLearner.HasCircuit.hasAdaptiveCircuit`). Such a learner agrees with one
 making at most `q` queries (`UniformLearning.QueryLearner.HasAdaptiveCircuit.exists_queriesAtMost`).
+The other model of adaptive queries in the library is the oracle circuit of
+`CslibFrontier.Computability.Circuit.Boolean.Oracle`, one circuit whose oracle gates take arguments
+computed from the answers of other oracle gates;
+`UniformLearning.QueryLearner.HasCircuit.exists_oracleCircuit` turns a non-adaptive learner with a
+circuit into one. Here the queries and the hypothesis are separate circuits, so that the answers
+can be read from a truth table, and no adaptive counterpart of that bridge is proved.
 
 Reading the answers from a truth table `T` of `2 ^ n` entries costs at most the gates of the
 queries plus `2 ^ n (2 n + 3) + 1` gates per query, for selecting the entry at the computed address
@@ -181,21 +187,17 @@ gates. -/
 theorem HasCircuit.hasAdaptiveCircuit {A : QueryLearner (Fin n) Ω} (hA : A.HasCircuit q S) :
     A.HasAdaptiveCircuit q (S + 2 * q) := fun ω => by
   obtain ⟨pts, F, hF, hev⟩ := hA ω
-  have hQ : (fun (i : Fin q) (_ : BitString i) => pts i) =
-      fun (i : Fin q) => substitute fun j => (Sum.inr (pts i j) : Fin i ⊕ Bool) := by
-    funext i a j
-    rfl
-  refine ⟨fun (i : Fin q) => substitute fun j => (Sum.inr (pts i j) : Fin i ⊕ Bool), F, ?_,
-    fun f x => ?_⟩
-  · calc ∑ i : Fin q,
-            complexity interpretation (substitute fun j => (Sum.inr (pts i j) : Fin i ⊕ Bool)) +
-          complexity interpretation (single F)
+  -- each fixed query is a substitution of constants
+  let Q : (i : Fin q) → BitString i → BitString n := fun i =>
+    substitute fun j => (Sum.inr (pts i j) : Fin i ⊕ Bool)
+  refine ⟨Q, F, ?_, fun f x => ?_⟩
+  · calc ∑ i, complexity interpretation (Q i) + complexity interpretation (single F)
         ≤ ∑ _i : Fin q, 2 + S :=
           add_le_add (sum_le_sum fun i _ => complexity_substitute_le_two _) hF
       _ = S + 2 * q := by
           rw [sum_const, card_univ, Fintype.card_fin, smul_eq_mul]
           ring
-  · rw [hev, ← hQ, answersUpTo_const]
+  · rw [hev, show Q = fun i _ => pts i from rfl, answersUpTo_const]
     rfl
 
 /-- The answers to the first `k` queries, read from a truth table, with the table kept. -/

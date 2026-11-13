@@ -101,6 +101,41 @@ def HasCircuitTests (A : QueryLearner (Fin n) Ω) (q t : ℕ) : Prop :=
     ∀ ω z, IsCircuitTest t fun T : BitString (2 ^ n) =>
       PMF.pure (A.agrees ω z ((truthTable n).symm T))
 
+/-- **Comparing a hypothesis with an input costs seven gates.** The function reading `y`, feeding
+`H` with the variables `σ` of `y` followed by the constants `z`, and accepting when the value of `H`
+agrees with the variable `j` of `y`, costs at most seven more gates than `H`: the two constants of
+the substitution and five gates for the comparison. -/
+private theorem complexity_not_xor_substitute_le {d m p : ℕ} (H : BooleanFunction (d + p))
+    (σ : Fin d → Fin m) (z : Fin p → Bool) (j : Fin m) :
+    complexity interpretation
+        (single fun y : Fin m → Bool => !(H (Fin.append (fun i => y (σ i)) z) ^^ y j)) ≤
+      complexity interpretation (single H) + 7 := by
+  let ρ : Fin (d + p) → Fin m ⊕ Bool := Fin.append (fun i => .inl (σ i)) fun i => .inr (z i)
+  have hρ (y : Fin m → Bool) : substitute ρ y = Fin.append (fun i => y (σ i)) z := by
+    funext k
+    refine Fin.addCases (fun i => ?_) (fun i => ?_) k <;> simp [ρ, substitute]
+  have hfun : (fun y : Fin m → Bool => !(H (Fin.append (fun i => y (σ i)) z) ^^ y j)) =
+      fun y => !(H (substitute ρ y) ^^ y j) :=
+    funext fun y => by rw [hρ]
+  rw [hfun]
+  calc complexity interpretation (single fun y : Fin m → Bool => !(H (substitute ρ y) ^^ y j))
+      ≤ complexity interpretation (single fun y : Fin m → Bool => H (substitute ρ y) ^^ y j) + 1 :=
+        complexity_not_le _
+    _ ≤ complexity interpretation (single fun y => H (substitute ρ y)) +
+          complexity interpretation (single fun y : Fin m → Bool => y j) + 4 + 1 :=
+        Nat.add_le_add_right (complexity_xor_le _ _) 1
+    _ ≤ complexity interpretation (single H) + 2 + 0 + 4 + 1 := by
+        gcongr
+        · exact complexity_substitute_le ρ H
+        · exact (complexity_single_proj _).le
+    _ = complexity interpretation (single H) + 7 := by ring
+
+/-- The test `A.agrees ω z` accepts `g` when the hypothesis agrees with `g` at `z`. -/
+private theorem agrees_eq_not_xor (ω : Ω) (z : BitString n) (g : BooleanFunction n) :
+    A.agrees ω z g = !((A ω).eval g z ^^ g z) := by
+  rw [Bool.eq_iff_iff, agrees_eq_true_iff]
+  cases (A ω).eval g z <;> cases g z <;> simp
+
 /-- **The test of a learner with a circuit is a small circuit on truth tables.** If `A` has a
 circuit with at most `S` gates, then for every seed `ω` and point `z` the test `A.agrees ω z`, read
 on truth tables, is computed with at most `S + 7` gates: the circuit with its queried values wired
@@ -110,34 +145,12 @@ theorem HasCircuit.isCircuitTest_agrees (hA : A.HasCircuit q S) (ω : Ω) (z : B
     IsCircuitTest (S + 7) fun T : BitString (2 ^ n) =>
       PMF.pure (A.agrees ω z ((truthTable n).symm T)) := by
   obtain ⟨pts, F, hF, hev⟩ := hA ω
-  -- read the queries from the truth table and fix the point `z`
-  let ρ : Fin (q + n) → Fin (2 ^ n) ⊕ Bool :=
-    Fin.append (fun i => .inl (BitString.equivFin n (pts i))) fun i => .inr (z i)
-  have hρ (T : BitString (2 ^ n)) :
-      substitute ρ T = Fin.append (fun i => (truthTable n).symm T (pts i)) z := by
-    funext j
-    refine Fin.addCases (fun i => ?_) (fun i => ?_) j <;> simp [ρ, substitute]
-  refine ⟨fun T => !(F (substitute ρ T) ^^ T (BitString.equivFin n z)), ?_, ?_⟩
-  · calc complexity interpretation
-          (single fun T => !(F (substitute ρ T) ^^ T (BitString.equivFin n z)))
-        ≤ complexity interpretation
-            (single fun T => F (substitute ρ T) ^^ T (BitString.equivFin n z)) + 1 :=
-          complexity_not_le _
-      _ ≤ complexity interpretation (single fun T => F (substitute ρ T)) +
-            complexity interpretation
-              (single fun T : BitString (2 ^ n) => T (BitString.equivFin n z)) + 4 + 1 :=
-          Nat.add_le_add_right (complexity_xor_le _ _) 1
-      _ ≤ S + 2 + 0 + 4 + 1 := by
-          gcongr
-          · exact (complexity_substitute_le ρ F).trans (Nat.add_le_add_right hF 2)
-          · exact (complexity_single_proj _).le
-      _ = S + 7 := by ring
+  refine ⟨fun T => !(F (Fin.append (fun i => T (BitString.equivFin n (pts i))) z) ^^
+      T (BitString.equivFin n z)), ?_, ?_⟩
+  · exact (complexity_not_xor_substitute_le F (fun i => BitString.equivFin n (pts i)) z _).trans
+      (Nat.add_le_add_right hF 7)
   · funext T
-    congr 1
-    beta_reduce
-    rw [hρ, ← hev ((truthTable n).symm T) z, Bool.eq_iff_iff, agrees_eq_true_iff,
-      truthTable_symm_apply]
-    cases (A ω).eval ((truthTable n).symm T) z <;> cases T (BitString.equivFin n z) <;> simp
+    simp only [agrees_eq_not_xor, hev, truthTable_symm_apply]
 
 /-- A learner with `q` non-adaptive queries and a circuit of `S` gates has circuit tests of size
 `S + 7`. -/
@@ -160,28 +173,9 @@ theorem HasAdaptiveCircuit.isCircuitTest_agrees (hA : A.HasAdaptiveCircuit q S) 
   let P : BitString (2 ^ n) → Fin (2 ^ n + q) → Bool := fun T =>
     Fin.append T (answersUpTo Q (fun x => T (BitString.equivFin n x)) q le_rfl)
   -- the hypothesis at the fixed point `z`, compared with the table at `z`
-  let ρ : Fin (q + n) → Fin (2 ^ n + q) ⊕ Bool :=
-    Fin.append (fun i => .inl (Fin.natAdd (2 ^ n) i)) fun i => .inr (z i)
   let out : (Fin (2 ^ n + q) → Bool) → Bool := fun y =>
-    !(H (substitute ρ y) ^^ y (Fin.castAdd q (BitString.equivFin n z)))
-  have hρ (y : Fin (2 ^ n + q) → Bool) :
-      substitute ρ y = Fin.append (fun i => y (Fin.natAdd (2 ^ n) i)) z := by
-    funext j
-    refine Fin.addCases (fun i => ?_) (fun i => ?_) j <;> simp [ρ, substitute]
-  have hout : complexity interpretation (single out) ≤ complexity interpretation (single H) + 7 :=
-    calc complexity interpretation (single out)
-        ≤ complexity interpretation (single fun y =>
-            H (substitute ρ y) ^^ y (Fin.castAdd q (BitString.equivFin n z))) + 1 :=
-          complexity_not_le _
-      _ ≤ complexity interpretation (single fun y => H (substitute ρ y)) +
-            complexity interpretation (single fun y : Fin (2 ^ n + q) → Bool =>
-              y (Fin.castAdd q (BitString.equivFin n z))) + 4 + 1 :=
-          Nat.add_le_add_right (complexity_xor_le _ _) 1
-      _ ≤ complexity interpretation (single H) + 2 + 0 + 4 + 1 := by
-          gcongr
-          · exact complexity_substitute_le ρ H
-          · exact (complexity_single_proj _).le
-      _ = complexity interpretation (single H) + 7 := by ring
+    !(H (Fin.append (fun i => y (Fin.natAdd (2 ^ n) i)) z) ^^
+      y (Fin.castAdd q (BitString.equivFin n z)))
   refine ⟨fun T => out (P T), ?_, ?_⟩
   · calc complexity interpretation (single fun T => out (P T))
         = complexity interpretation (single out ∘ P) := rfl
@@ -189,17 +183,13 @@ theorem HasAdaptiveCircuit.isCircuitTest_agrees (hA : A.HasAdaptiveCircuit q S) 
           complexity_comp_le _ _
       _ ≤ (∑ i, complexity interpretation (Q i) + q * (2 ^ n * (2 * n + 3) + 1)) +
             (complexity interpretation (single H) + 7) :=
-          add_le_add (complexity_append_answers_le Q) hout
+          add_le_add (complexity_append_answers_le Q)
+            (complexity_not_xor_substitute_le H (Fin.natAdd (2 ^ n)) z _)
       _ ≤ S + q * (2 ^ n * (2 * n + 3) + 1) + 7 := by omega
-  · have htt (T : BitString (2 ^ n)) :
-        (truthTable n).symm T = fun x => T (BitString.equivFin n x) :=
+  · funext T
+    have htt : (truthTable n).symm T = fun x => T (BitString.equivFin n x) :=
       funext fun x => truthTable_symm_apply T x
-    funext T
-    congr 1
-    simp only [out, P, hρ, Fin.append_left, Fin.append_right]
-    rw [htt, Bool.eq_iff_iff, agrees_eq_true_iff, hev]
-    cases H (Fin.append (answersUpTo Q (fun x => T (BitString.equivFin n x)) q le_rfl) z) <;>
-      cases T (BitString.equivFin n z) <;> simp
+    simp only [out, P, Fin.append_left, Fin.append_right, agrees_eq_not_xor, hev, htt]
 
 /-- A learner with `q` adaptive queries and circuits of `S` gates in all has circuit tests of size
 `S + q (2 ^ n (2 n + 3) + 1) + 7`. -/
