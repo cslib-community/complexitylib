@@ -75,7 +75,7 @@ private noncomputable def sampledView (η : ℕ) := do
 private def failure : Set ((Fin 1 → Fin 1 → ZMod 64) ×
     (ModuleLWEPublicKey 1 1 64 × ModuleLWECiphertext 1 1 64)) :=
   {out | moduleLWEDecrypt
-    (fun j i => (GeneralSIS.liftCentered (out.1 j) i : ZMod 32))
+    (fun j i => (SIS.liftCentered (out.1 j) i : ZMod 32))
     (moduleLWEModulusSwitch 32 out.2.2) ≠ ![true]}
 
 /-- The supported witness below belongs to exactly the first member of the proved family. -/
@@ -163,7 +163,7 @@ example : 0 < ((sampledView 8).toOuterMeasure failure).toReal := by
   rw [PMF.toOuterMeasure_toReal_pos_iff]
   refine ⟨(![![-1]], (key, ciphertext)), ?_, witness_support⟩
   change moduleLWEDecrypt
-    (fun j i => (GeneralSIS.liftCentered ((![![-1]] : Fin 1 → Fin 1 → ZMod 64) j) i :
+    (fun j i => (SIS.liftCentered ((![![-1]] : Fin 1 → Fin 1 → ZMod 64) j) i :
       ZMod 32)) (moduleLWEModulusSwitch 32 ciphertext) ≠ ![true]
   rw [switched_ciphertext]
   decide

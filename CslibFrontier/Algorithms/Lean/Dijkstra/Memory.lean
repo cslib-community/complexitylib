@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Algorithms.Lean.Dijkstra.Cost
+public import CslibFrontier.Algorithms.WordRAM.Dijkstra.HeapStatement
 public import CslibFrontier.DataStructure.AdjacencyList.Memory
 public import CslibFrontier.DataStructure.Dictionary.Memory
 public import CslibFrontier.DataStructure.PriorityQueue.BinaryHeap.Memory
@@ -67,7 +68,8 @@ file does not provide.
 namespace Cslib.Algorithms.Lean.Dijkstra.Memory
 
 open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.Memory Cslib.DataStructure.PriorityQueue
-open Cslib.Algorithms.WordRAM.Dijkstra (ListInstance encodeDist)
+open Cslib.Algorithms.Dijkstra (ListInstance)
+open Cslib.Algorithms.WordRAM.Dijkstra (encodeDist)
 
 /-! ## The client does not depend on its bounds -/
 

@@ -139,16 +139,16 @@ theorem moduleLWEDecrypt_modulusSwitch_encrypt_eq {k n q p Bq Bp : ℕ}
     (A : Matrix (Fin k) (Fin k) (Fin n → ZMod q))
     (s r e e₁ : Fin k → Fin n → ZMod q) (e₂ : Fin n → ZMod q) (m : Fin n → Bool)
     (herr : ∀ i, |moduleLWEErrorPoly
-      (fun j => GeneralSIS.liftCentered (s j)) (fun j => GeneralSIS.liftCentered (r j))
-      (fun j => GeneralSIS.liftCentered (e j)) (fun j => GeneralSIS.liftCentered (e₁ j))
-      (GeneralSIS.liftCentered e₂) i| ≤ Bq)
+      (fun j => SIS.liftCentered (s j)) (fun j => SIS.liftCentered (r j))
+      (fun j => SIS.liftCentered (e j)) (fun j => SIS.liftCentered (e₁ j))
+      (SIS.liftCentered e₂) i| ≤ Bq)
     (hbudget : (p : ℚ) / q * Bq +
-      (1 + ∑ j, ∑ l, |(GeneralSIS.liftCentered (s j) l : ℚ)|) / 2 +
+      (1 + ∑ j, ∑ l, |(SIS.liftCentered (s j) l : ℚ)|) / 2 +
       |(p : ℚ) / q * (q / 2 : ℕ) - (p / 2 : ℕ)| ≤ Bp) :
-    moduleLWEDecrypt (fun j i => (GeneralSIS.liftCentered (s j) i : ZMod p))
+    moduleLWEDecrypt (fun j i => (SIS.liftCentered (s j) i : ZMod p))
       (moduleLWEModulusSwitch p (moduleLWEEncrypt (moduleLWEKeyGen A s e) r e₁ e₂ m)) = m := by
   apply moduleLWEDecrypt_modulusSwitch_eq hq hp _ _ m _ _ herr hbudget
-  have hs : (fun j i => (GeneralSIS.liftCentered (s j) i : ZMod q)) = s := by
+  have hs : (fun j i => (SIS.liftCentered (s j) i : ZMod q)) = s := by
     funext j i
     exact ZMod.coe_valMinAbs _
   rw [hs, moduleLWEDecrypt_phase_eq, intCast_moduleLWEErrorPoly_liftCentered]

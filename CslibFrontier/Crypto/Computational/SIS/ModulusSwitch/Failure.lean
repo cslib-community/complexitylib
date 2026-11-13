@@ -39,14 +39,14 @@ theorem moduleLWEDecrypt_modulusSwitch_encrypt_eq_of_bounds
     {s r e e₁ : Fin k → Fin n → ZMod q} {e₂ : Fin n → ZMod q}
     (hs : ModuleSIS.inInfNormBound Bs s) (hr : ModuleSIS.inInfNormBound Br r)
     (he : ModuleSIS.inInfNormBound Be e) (he₁ : ModuleSIS.inInfNormBound Be e₁)
-    (he₂ : GeneralSIS.inInfNormBound Be e₂) (m : Fin n → Bool)
+    (he₂ : SIS.inInfNormBound Be e₂) (m : Fin n → Bool)
     (hbudget : (p : ℚ) / q * (k * n * Be * Br + k * n * Be * Bs + Be : ℕ) +
       (1 + k * n * Bs) / 2 + |(p : ℚ) / q * (q / 2 : ℕ) - (p / 2 : ℕ)| ≤ Bp) :
-    moduleLWEDecrypt (fun j i => (GeneralSIS.liftCentered (s j) i : ZMod p))
+    moduleLWEDecrypt (fun j i => (SIS.liftCentered (s j) i : ZMod p))
       (moduleLWEModulusSwitch p (moduleLWEEncrypt (moduleLWEKeyGen A s e) r e₁ e₂ m)) = m := by
   apply moduleLWEDecrypt_modulusSwitch_encrypt_eq hq hp A s r e e₁ e₂ m
     (abs_moduleLWEErrorPoly_le hs hr he he₁ he₂)
-  have hsum : (∑ j, ∑ i, |(GeneralSIS.liftCentered (s j) i : ℚ)|) ≤ k * n * Bs := by
+  have hsum : (∑ j, ∑ i, |(SIS.liftCentered (s j) i : ℚ)|) ≤ k * n * Bs := by
     calc
       _ ≤ ∑ _j : Fin k, ∑ _i : Fin n, (Bs : ℚ) := by
         apply Finset.sum_le_sum
@@ -74,22 +74,22 @@ theorem toOuterMeasure_moduleLWEModulusSwitch_failure_le
         noise m ephemeralLaw
       pure (s, view)).toOuterMeasure
         {out | moduleLWEDecrypt
-          (fun j i => (GeneralSIS.liftCentered (out.1 j) i : ZMod p))
+          (fun j i => (SIS.liftCentered (out.1 j) i : ZMod p))
           (moduleLWEModulusSwitch p out.2.2) ≠ m} ≤
-      (2 * k + 1) * noise.toOuterMeasure {e | ¬ GeneralSIS.inInfNormBound Be e} := by
+      (2 * k + 1) * noise.toOuterMeasure {e | ¬ SIS.inInfNormBound Be e} := by
   classical
-  let δ := noise.toOuterMeasure {e | ¬ GeneralSIS.inInfNormBound Be e}
+  let δ := noise.toOuterMeasure {e | ¬ SIS.inInfNormBound Be e}
   let μ := PMF.pi (fun _ : Fin k => noise)
   let bad : Set ((Fin k → Fin n → ZMod q) ×
       (ModuleLWEPublicKey k n q × ModuleLWECiphertext k n q)) :=
     {out | moduleLWEDecrypt
-      (fun j i => (GeneralSIS.liftCentered (out.1 j) i : ZMod p))
+      (fun j i => (SIS.liftCentered (out.1 j) i : ZMod p))
       (moduleLWEModulusSwitch p out.2.2) ≠ m}
   have hμ : μ.toOuterMeasure {e | ¬ ModuleSIS.inInfNormBound Be e} ≤ k * δ := by
-    simpa [μ, ModuleSIS.inInfNormBound, δ, GeneralSIS.inInfNormBound, not_forall,
+    simpa [μ, ModuleSIS.inInfNormBound, δ, SIS.inInfNormBound, not_forall,
       Finset.sum_const, nsmul_eq_mul] using
       PMF.toOuterMeasure_pi_exists_le (fun _ : Fin k => noise)
-        (fun _ => {e | ¬ GeneralSIS.inInfNormBound Be e})
+        (fun _ => {e | ¬ SIS.inInfNormBound Be e})
   have hlast (s r e : Fin k → Fin n → ZMod q)
       (A : Matrix (Fin k) (Fin k) (Fin n → ZMod q))
       (hs' : ModuleSIS.inInfNormBound Bs s) (hr' : ModuleSIS.inInfNormBound Br r)
@@ -101,7 +101,7 @@ theorem toOuterMeasure_moduleLWEModulusSwitch_failure_le
           moduleLWEEncrypt (moduleLWEKeyGen A s e) r e₁ e₂ m))).toOuterMeasure bad ≤
         δ + k * δ := by
     refine (PMF.toOuterMeasure_bind_failure_le noise _
-      {e₂ | GeneralSIS.inInfNormBound Be e₂} bad (k * δ) ?_).trans ?_
+      {e₂ | SIS.inInfNormBound Be e₂} bad (k * δ) ?_).trans ?_
     · intro e₂ _ he₂
       refine (PMF.toOuterMeasure_bind_failure_le μ _
         {e₁ | ModuleSIS.inInfNormBound Be e₁} bad 0 ?_).trans ?_
