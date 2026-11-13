@@ -6891,6 +6891,7 @@ public import CslibFrontier.Probability.ApproxEq
 public import CslibFrontier.Probability.ApproximateCounting
 public import CslibFrontier.Probability.ApproximateCounting.Relative
 public import CslibFrontier.Probability.BernoulliComparison
+public import CslibFrontier.Probability.BilinearFingerprint
 public import CslibFrontier.Probability.BinaryKL
 public import CslibFrontier.Probability.BitString
 public import CslibFrontier.Probability.BitString.AffineHash
