@@ -181,6 +181,16 @@ theorem Trace.constraint_first_copies (h : Trace sem f m) {c : Copy F}
     hside _ _ t rfl (m.ancestor_constraint_index_lt hc).2
       (m.ancestor_at_common_index hc).2 ht⟩
 
+omit [DecidableEq V] in
+/-- The steps of a walk after its `k`-th step `(a, b)` form the walk's suffix from `k + 1`,
+which starts at `b.var`. -/
+private theorem walk_drop_succ_eq {w : Walk F} {k : ℕ} {a b : Occurrence F}
+    (h : w.steps[k]? = some (a, b)) :
+    (⟨b.var, w.steps.drop (k + 1)⟩ : Walk F) = w.drop (k + 1) := by
+  obtain ⟨hk, hval⟩ := List.getElem?_eq_some_iff.mp h
+  unfold Walk.drop
+  rw [Walk.finish_take_succ _ hk, hval]
+
 /-- The child ports at a constraint LCA name distinct variables. Otherwise their common
 child would extend the computed common-node prefix, contradicting maximality. -/
 theorem Trace.constraint_children_ne (h : Trace sem f m) {c : Copy F}
@@ -189,14 +199,10 @@ theorem Trace.constraint_children_ne (h : Trace sem f m) {c : Copy F}
     (ht : m.right.walk.steps[(m.commonNodes.length - 1) / 2]? = some t) :
     s.2.var ≠ t.2.var := by
   let k := (m.commonNodes.length - 1) / 2
-  have hkl : k < m.left.walk.steps.length := (m.ancestor_constraint_index_lt hc).1
-  have hkr : k < m.right.walk.steps.length := (m.ancestor_constraint_index_lt hc).2
   change m.left.walk.steps[k]? = some s at hs
   change m.right.walk.steps[k]? = some t at ht
-  have hsval : m.left.walk.steps[k] = s := by
-    simpa only [List.getElem?_eq_getElem hkl, Option.some.injEq] using hs
-  have htval : m.right.walk.steps[k] = t := by
-    simpa only [List.getElem?_eq_getElem hkr, Option.some.injEq] using ht
+  obtain ⟨hkl, hsval⟩ := List.getElem?_eq_some_iff.mp hs
+  obtain ⟨hkr, htval⟩ := List.getElem?_eq_some_iff.mp ht
   have hsd : s ∈ m.left.walk.steps.drop k := by
     rw [List.drop_eq_getElem_cons hkl, hsval]
     exact List.mem_cons_self
@@ -231,14 +237,10 @@ theorem Trace.constraint_fork_earliest (h : Trace sem f m) {c : Copy F}
     (ht : m.right.walk.steps[(m.commonNodes.length - 1) / 2]? = some t) :
     (m.forkDAG ((m.commonNodes.length - 1) / 2)).Earliest c := by
   let k := (m.commonNodes.length - 1) / 2
-  have hkl : k < m.left.walk.steps.length := (m.ancestor_constraint_index_lt hc).1
-  have hkr : k < m.right.walk.steps.length := (m.ancestor_constraint_index_lt hc).2
   change m.left.walk.steps[k]? = some s at hs
   change m.right.walk.steps[k]? = some t at ht
-  have hsval : m.left.walk.steps[k] = s := by
-    simpa only [List.getElem?_eq_getElem hkl, Option.some.injEq] using hs
-  have htval : m.right.walk.steps[k] = t := by
-    simpa only [List.getElem?_eq_getElem hkr, Option.some.injEq] using ht
+  obtain ⟨hkl, hsval⟩ := List.getElem?_eq_some_iff.mp hs
+  obtain ⟨hkr, htval⟩ := List.getElem?_eq_some_iff.mp ht
   have hdl : m.left.walk.steps.drop k = s :: m.left.walk.steps.drop (k + 1) := by
     rw [List.drop_eq_getElem_cons hkl, hsval]
   have hdr : m.right.walk.steps.drop k = t :: m.right.walk.steps.drop (k + 1) := by
@@ -296,14 +298,10 @@ theorem Trace.constraint_fork_leaf (h : Trace sem f m) (hF : EdgeInstance F)
       a.occurrence.var = s.1.var → a = inArc m.older.stamp s := by
   let k := (m.commonNodes.length - 1) / 2
   have hT := h.pruned_isFDAG hF hf
-  have hkl : k < m.left.walk.steps.length := (m.ancestor_constraint_index_lt hc).1
-  have hkr : k < m.right.walk.steps.length := (m.ancestor_constraint_index_lt hc).2
   change m.left.walk.steps[k]? = some s at hs
   change m.right.walk.steps[k]? = some t at ht
-  have hsval : m.left.walk.steps[k] = s := by
-    simpa only [List.getElem?_eq_getElem hkl, Option.some.injEq] using hs
-  have htval : m.right.walk.steps[k] = t := by
-    simpa only [List.getElem?_eq_getElem hkr, Option.some.injEq] using ht
+  obtain ⟨hkl, hsval⟩ := List.getElem?_eq_some_iff.mp hs
+  obtain ⟨hkr, htval⟩ := List.getElem?_eq_some_iff.mp ht
   have hdl : (m.left.walk.drop k).steps = s :: m.left.walk.steps.drop (k + 1) := by
     change m.left.walk.steps.drop k = _
     rw [List.drop_eq_getElem_cons hkl, hsval]
@@ -382,10 +380,8 @@ theorem Trace.reroot_constraint_fork (h : Trace sem f m) (hF : EdgeInstance F)
       (inArc m.older.stamp s) (outArc m.older.stamp s)).IsFDAG sem
       ((m.left.walk.take ((m.commonNodes.length - 1) / 2 + 1)).flip f) := by
   let k := (m.commonNodes.length - 1) / 2
-  have hkl : k < m.left.walk.steps.length := (m.ancestor_constraint_index_lt hc).1
   change m.left.walk.steps[k]? = some s at hs
-  have hsval : m.left.walk.steps[k] = s := by
-    simpa only [List.getElem?_eq_getElem hkl, Option.some.injEq] using hs
+  obtain ⟨hkl, hsval⟩ := List.getElem?_eq_some_iff.mp hs
   have hdl : (m.left.walk.drop k).steps = s :: m.left.walk.steps.drop (k + 1) := by
     change m.left.walk.steps.drop k = _
     rw [List.drop_eq_getElem_cons hkl, hsval]
@@ -436,14 +432,10 @@ theorem Trace.constraint_cycle_isFDAG (h : Trace sem f m) (hF : EdgeInstance F)
   let R := (m.forkDAG k).reroot (inArc m.older.stamp s) (outArc m.older.stamp s)
   have hR : R.IsFDAG sem ((m.left.walk.take (k + 1)).flip f) :=
     h.reroot_constraint_fork hF hf hM hc hs ht
-  have hkl : k < m.left.walk.steps.length := (m.ancestor_constraint_index_lt hc).1
-  have hkr : k < m.right.walk.steps.length := (m.ancestor_constraint_index_lt hc).2
   change m.left.walk.steps[k]? = some s at hs
   change m.right.walk.steps[k]? = some t at ht
-  have hsval : m.left.walk.steps[k] = s := by
-    simpa only [List.getElem?_eq_getElem hkl, Option.some.injEq] using hs
-  have htval : m.right.walk.steps[k] = t := by
-    simpa only [List.getElem?_eq_getElem hkr, Option.some.injEq] using ht
+  obtain ⟨hkl, hsval⟩ := List.getElem?_eq_some_iff.mp hs
+  obtain ⟨hkr, htval⟩ := List.getElem?_eq_some_iff.mp ht
   have hdl : (m.left.walk.drop k).steps = s :: w.steps := by
     change m.left.walk.steps.drop k = _
     rw [List.drop_eq_getElem_cons hkl, hsval]
@@ -597,14 +589,10 @@ theorem Trace.constraint_cycle_isWalk (h : Trace sem f m) (hF : EdgeInstance F)
   let k := (m.commonNodes.length - 1) / 2
   let w := m.left.walk.drop (k + 1)
   let z := m.right.walk.drop (k + 1)
-  have hkl : k < m.left.walk.steps.length := (m.ancestor_constraint_index_lt hc).1
-  have hkr : k < m.right.walk.steps.length := (m.ancestor_constraint_index_lt hc).2
   change m.left.walk.steps[k]? = some s at hs
   change m.right.walk.steps[k]? = some t at ht
-  have hsval : m.left.walk.steps[k] = s := by
-    simpa only [List.getElem?_eq_getElem hkl, Option.some.injEq] using hs
-  have htval : m.right.walk.steps[k] = t := by
-    simpa only [List.getElem?_eq_getElem hkr, Option.some.injEq] using ht
+  obtain ⟨hkl, hsval⟩ := List.getElem?_eq_some_iff.mp hs
+  obtain ⟨hkr, htval⟩ := List.getElem?_eq_some_iff.mp ht
   have hcs := h.constraint_first_copies hc hs ht
   have hsm : s ∈ m.left.walk.steps := hsval ▸ List.getElem_mem hkl
   have htm : t ∈ m.right.walk.steps := htval ▸ List.getElem_mem hkr
@@ -686,20 +674,6 @@ theorem Trace.constraint_blossom_isFDAG (h : Trace sem f m) (hF : EdgeInstance F
   next ain lp bin rp hs ht =>
     cases hb
     let k := (m.commonNodes.length - 1) / 2
-    have hkl := (m.ancestor_constraint_index_lt hc).1
-    have hkr := (m.ancestor_constraint_index_lt hc).2
-    have hsl : m.left.walk.steps[k] = (ain, lp) := by
-      simpa only [List.getElem?_eq_getElem hkl, Option.some.injEq] using hs
-    have hsr : m.right.walk.steps[k] = (bin, rp) := by
-      simpa only [List.getElem?_eq_getElem hkr, Option.some.injEq] using ht
-    have hleft : (⟨lp.var, m.left.walk.steps.drop (k + 1)⟩ : Walk F) =
-        m.left.walk.drop (k + 1) := by
-      unfold Walk.drop
-      rw [Walk.finish_take_succ _ hkl, hsl]
-    have hright : (⟨rp.var, m.right.walk.steps.drop (k + 1)⟩ : Walk F) =
-        m.right.walk.drop (k + 1) := by
-      unfold Walk.drop
-      rw [Walk.finish_take_succ _ hkr, hsr]
     have htl : m.left.times.drop (k + 1) = (m.left.walk.drop (k + 1)).steps.map
         (fun s => m.older.stamp s.1) := by
       simpa only [Meeting.left, Walk.drop, List.map_drop] using congrArg (List.drop (k + 1))
@@ -709,7 +683,7 @@ theorem Trace.constraint_blossom_isFDAG (h : Trace sem f m) (hF : EdgeInstance F
       simpa only [Meeting.right, Walk.drop, List.map_drop] using congrArg (List.drop (k + 1))
         (h.expansion.grown.ancestry_times_eq_stamp m.output.var)
     dsimp only
-    rw [hleft, hright, htl, htr]
+    rw [walk_drop_succ_eq hs, walk_drop_succ_eq ht, htl, htr]
     simpa only [Walk.drop] using
       h.constraint_cycle_isFDAG hF hf hM hc (s := (ain, lp)) (t := (bin, rp)) hs ht
   · cases hb
@@ -821,23 +795,8 @@ theorem Trace.blossom_cycle_isWalk (h : Trace sem f m) (hF : EdgeInstance F)
       split at hb
       next ain lp bin rp hs ht =>
         cases hb
-        let k := (m.commonNodes.length - 1) / 2
-        have hkl := (m.ancestor_constraint_index_lt ha).1
-        have hkr := (m.ancestor_constraint_index_lt ha).2
-        have hsl : m.left.walk.steps[k] = (ain, lp) := by
-          simpa only [List.getElem?_eq_getElem hkl, Option.some.injEq] using hs
-        have hsr : m.right.walk.steps[k] = (bin, rp) := by
-          simpa only [List.getElem?_eq_getElem hkr, Option.some.injEq] using ht
-        have hl : (⟨lp.var, m.left.walk.steps.drop (k + 1)⟩ : Walk F) =
-            m.left.walk.drop (k + 1) := by
-          unfold Walk.drop
-          rw [Walk.finish_take_succ _ hkl, hsl]
-        have hr : (⟨rp.var, m.right.walk.steps.drop (k + 1)⟩ : Walk F) =
-            m.right.walk.drop (k + 1) := by
-          unfold Walk.drop
-          rw [Walk.finish_take_succ _ hkr, hsr]
         dsimp only
-        rw [hl, hr]
+        rw [walk_drop_succ_eq hs, walk_drop_succ_eq ht]
         exact h.constraint_cycle_isWalk hF hf ha hs ht
       · cases hb
 
