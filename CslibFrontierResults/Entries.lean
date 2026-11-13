@@ -8,6 +8,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 import CslibFrontierResults.Registry
 import CslibFrontier.Computability.Complexity.Classes.Advice.OneBit
 import CslibFrontier.Computability.Complexity.Classes.Advice.LengthComparison
+import CslibFrontier.Computability.Circuit.Boolean.Advice.Hierarchy
 import CslibFrontier.Algorithms.Lean.Arborescence.PolyTime
 import CslibFrontier.Algorithms.Lean.DFS.SCC
 import CslibFrontier.Algorithms.Lean.MaxDicut.GoemansWilliamson
@@ -795,6 +796,41 @@ register_result "encoded-circuit-boolean-simulation" where
     at most size * bitBlastCost w gates. Correctness holds on valid encoded inputs, packed \
     wire-major by blocksEquiv.symm. Constants count as gates and wiring is free. No encoding \
     construction, reverse general-field simulation or compiler-runtime claim."
+
+register_result "exact-advice-strict-hierarchy" where
+  title := "Strict exact-advice hierarchy"
+  topic := "complexity theory"
+  sources := [
+    { paper := Goldreich2007DraftR2,
+      theorem := "Theorem 3.7; Exercise 3.3 / Theorem 4.1 with positive gap and capacity",
+      locator := "January 2007 r2.pdf, PDF pp. 6, 16, 22; printed pp. 122, 132, 138" },
+    { paper := GoldreichAdviceHierarchyAddendum,
+      theorem := "Revised Theorem 4.1, positive one-bit difference",
+      locator := "Online addendum, theorem and exact/no-exception technical note" }
+  ]
+  theorems := [
+    Cslib.Complexity.PWithAdvice_ssubset_of_lt,
+    Cslib.Complexity.PWithAdvice_pred_ssubset,
+    Cslib.Complexity.PWithAdvice_const_ssubset_succ
+  ]
+  scope := "Strict pointwise growth and eventual upper truth-table capacity give strict \
+    containment of exact-advice classes, with arbitrary noncomputable bounds/advice and a \
+    native complete-pair polynomial clock. Includes positive predecessor, every constant \
+    advice hierarchy. Does not prove the displayed hierarchy without positivity, or a \
+    separation allowing finitely many errors."
+
+register_result "constant-advice-strict-subset-ppoly" where
+  title := "Every constant advice class is strictly smaller than P/poly"
+  topic := "complexity theory"
+  sources := [
+    { paper := Goldreich2007DraftR2,
+      theorem := "Theorem 3.7, strictness in the following paragraph",
+      locator := "January 2007 r2.pdf, PDF p. 6; printed p. 122" }
+  ]
+  theorems := [Cslib.Circuits.Boolean.PWithAdvice_const_ssubset_PPoly]
+  scope := "Every constant exact-advice class, including P/1, is strictly contained in \
+    P/poly on bit languages. Uses the native full-pair polynomial-time advice class and \
+    its existing polynomial-advice/circuit bridge; no uniform advice is claimed."
 
 register_result "exact-advice-length-comparison-qualification" where
   title := "Unbounded nonnegative gaps do not imply exact-advice containment"
