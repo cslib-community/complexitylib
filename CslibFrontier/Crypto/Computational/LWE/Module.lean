@@ -400,7 +400,7 @@ theorem distinguishingGame_realEnsemble
     distinguishingGame (realEnsemble m d n q noise κ) (W κ) =
       realGame (PMF.uniformOfFintype (Fin (d κ) → Fin (n κ) → ZMod (q κ)))
         (PMF.pi fun _ : Fin (m κ) => noise κ) (Distinguisher.ofWords W κ) := by
-  simp only [distinguishingGame, realEnsemble, sampleLaw, realGame, eval_realExperiment,
+  simp only [distinguishingGame_eq_bind, realEnsemble, sampleLaw, realGame, eval_realExperiment,
     Distinguisher.ofWords, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_map,
     PMF.pure_bind, PMF.bind_bind, Function.comp_def]
   congr 1 with s
@@ -410,7 +410,7 @@ theorem distinguishingGame_realEnsemble
 theorem distinguishingGame_uniformEnsemble (W : Crypto.Distinguisher) (κ : ℕ) :
     distinguishingGame (uniformEnsemble m d n q κ) (W κ) =
       randomGame (Distinguisher.ofWords (m := m) (d := d) (n := n) (q := q) W κ) := by
-  simp only [distinguishingGame, uniformEnsemble, randomGame_eq, Distinguisher.ofWords,
+  simp only [distinguishingGame_eq_bind, uniformEnsemble, randomGame_eq, Distinguisher.ofWords,
     PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def]
 
 end ModuleLWE
