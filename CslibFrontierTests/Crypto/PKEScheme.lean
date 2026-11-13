@@ -22,6 +22,9 @@ parameter are the typed experiments of the scheme with the same algorithms; the 
 `Encryption.AdversaryOf.isPPT_toTwoStage` is checked in `CslibFrontierTests.Crypto.Experiment`.
 -/
 
+-- This regression module checks ordinary imports and exports no test fixtures.
+set_option linter.privateModule false
+
 namespace CslibFrontierTests.Crypto.PKEScheme
 
 open Cslib Cslib.Crypto Cslib.Probability
