@@ -285,65 +285,48 @@ theorem method_arguments {n K : ℕ} (L : Memory.Layout n) (x : Data registers)
     (ha : PQCode.argMatch code o x.regs) :
     x.regs ∘ Backend.src family (.inl ((backend n K L).tag o)) =
       (certificates ((backend n K L).tag o)).input ((backend n K L).arg o) := by
-  cases o with
-  | isEmpty =>
+  -- Each method reads its layout words from argument registers `2..5` and its payload from
+  -- `argument 4` (handle) and `argument 5` (key).
+  have hsrc (t : Fin 5) (j : Fin (certificates t).k) (a : Fin 6) (he : j.val = a.val) :
+      x.regs (Backend.src family (.inl t) j) = x.regs (argument a) :=
+    congrArg x.regs (method_src_eq_argument t j a he)
+  cases o
+  case' isEmpty =>
     change x.regs ∘ Backend.src family (.inl 0) = layoutWords ⟨n, L⟩
     funext j
     change Fin 4 at j
-    fin_cases j <;>
-      first
-      | exact (congrArg x.regs (method_src_eq_argument 0 _ (0 : Fin 6) rfl)).trans (hl 0)
-      | exact (congrArg x.regs (method_src_eq_argument 0 _ (1 : Fin 6) rfl)).trans (hl 1)
-      | exact (congrArg x.regs (method_src_eq_argument 0 _ (2 : Fin 6) rfl)).trans (hl 2)
-      | exact (congrArg x.regs (method_src_eq_argument 0 _ (3 : Fin 6) rfl)).trans (hl 3)
-  | getKey v =>
+    fin_cases j
+  case' getKey v =>
     rcases ha with ⟨_, _, _, hv⟩
     change x.regs ∘ Backend.src family (.inl 1) = indexWords (⟨n, L⟩, v.val)
     funext j
     change Fin 5 at j
-    fin_cases j <;>
-      first
-      | exact (congrArg x.regs (method_src_eq_argument 1 _ (0 : Fin 6) rfl)).trans (hl 0)
-      | exact (congrArg x.regs (method_src_eq_argument 1 _ (1 : Fin 6) rfl)).trans (hl 1)
-      | exact (congrArg x.regs (method_src_eq_argument 1 _ (2 : Fin 6) rfl)).trans (hl 2)
-      | exact (congrArg x.regs (method_src_eq_argument 1 _ (3 : Fin 6) rfl)).trans (hl 3)
-      | exact (congrArg x.regs (method_src_eq_argument 1 _ (4 : Fin 6) rfl)).trans (hv)
-  | insert v k =>
+    fin_cases j
+  case' insert v k =>
     rcases ha with ⟨_, _, _, hv, hk⟩
     change x.regs ∘ Backend.src family (.inl 2) = updateWords ((⟨n, L⟩, v.val), k)
     funext j
     change Fin 6 at j
-    fin_cases j <;>
-      first
-      | exact (congrArg x.regs (method_src_eq_argument 2 _ (0 : Fin 6) rfl)).trans (hl 0)
-      | exact (congrArg x.regs (method_src_eq_argument 2 _ (1 : Fin 6) rfl)).trans (hl 1)
-      | exact (congrArg x.regs (method_src_eq_argument 2 _ (2 : Fin 6) rfl)).trans (hl 2)
-      | exact (congrArg x.regs (method_src_eq_argument 2 _ (3 : Fin 6) rfl)).trans (hl 3)
-      | exact (congrArg x.regs (method_src_eq_argument 2 _ (4 : Fin 6) rfl)).trans (hv)
-      | exact (congrArg x.regs (method_src_eq_argument 2 _ (5 : Fin 6) rfl)).trans (hk)
-  | decreaseKey v k =>
+    fin_cases j
+  case' decreaseKey v k =>
     rcases ha with ⟨_, _, _, hv, hk⟩
     change x.regs ∘ Backend.src family (.inl 3) = updateWords ((⟨n, L⟩, v.val), k)
     funext j
     change Fin 6 at j
-    fin_cases j <;>
-      first
-      | exact (congrArg x.regs (method_src_eq_argument 3 _ (0 : Fin 6) rfl)).trans (hl 0)
-      | exact (congrArg x.regs (method_src_eq_argument 3 _ (1 : Fin 6) rfl)).trans (hl 1)
-      | exact (congrArg x.regs (method_src_eq_argument 3 _ (2 : Fin 6) rfl)).trans (hl 2)
-      | exact (congrArg x.regs (method_src_eq_argument 3 _ (3 : Fin 6) rfl)).trans (hl 3)
-      | exact (congrArg x.regs (method_src_eq_argument 3 _ (4 : Fin 6) rfl)).trans (hv)
-      | exact (congrArg x.regs (method_src_eq_argument 3 _ (5 : Fin 6) rfl)).trans (hk)
-  | extractMin =>
+    fin_cases j
+  case' extractMin =>
     change x.regs ∘ Backend.src family (.inl 4) = layoutWords ⟨n, L⟩
     funext j
     change Fin 4 at j
-    fin_cases j <;>
-      first
-      | exact (congrArg x.regs (method_src_eq_argument 4 _ (0 : Fin 6) rfl)).trans (hl 0)
-      | exact (congrArg x.regs (method_src_eq_argument 4 _ (1 : Fin 6) rfl)).trans (hl 1)
-      | exact (congrArg x.regs (method_src_eq_argument 4 _ (2 : Fin 6) rfl)).trans (hl 2)
-      | exact (congrArg x.regs (method_src_eq_argument 4 _ (3 : Fin 6) rfl)).trans (hl 3)
+    fin_cases j
+  all_goals
+    first
+    | exact (hsrc _ _ (0 : Fin 6) rfl).trans (hl 0)
+    | exact (hsrc _ _ (1 : Fin 6) rfl).trans (hl 1)
+    | exact (hsrc _ _ (2 : Fin 6) rfl).trans (hl 2)
+    | exact (hsrc _ _ (3 : Fin 6) rfl).trans (hl 3)
+    | exact (hsrc _ _ (4 : Fin 6) rfl).trans hv
+    | exact (hsrc _ _ (5 : Fin 6) rfl).trans hk
 
 private noncomputable def finish {n : ℕ} (o : IndexedMinPQ.Op n)
     (y : Data registers) : Data registers :=
