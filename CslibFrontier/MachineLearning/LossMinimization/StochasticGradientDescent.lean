@@ -11,6 +11,7 @@ public import CslibFrontier.MachineLearning.LossMinimization.Basic
 public import CslibFrontier.MachineLearning.OnlineLearning.OnlineGradientDescent
 import CslibFrontier.Foundations.Analysis.Convex.FirstOrder
 import CslibFrontier.MachineLearning.OnlineLearning.ConvexOnlineToBatch
+import CslibFrontier.MachineLearning.OnlineLearning.HighProbabilityOnlineToBatch
 
 /-!
 # Stochastic gradient descent for convex Lipschitz losses
@@ -36,8 +37,11 @@ makes the iterates measurable functions of the sample. For `K = Set.univ` the pr
 identity; the metric projection onto a nonempty complete convex set is Lipschitz
 (`lipschitzWith_metricProjection`), hence measurable.
 
-The bound is in expectation. High-probability bounds, the `log T / T` rates for strongly convex
-losses, and running time are not treated here.
+When `K` has diameter at most `d`, the losses on `K` differ from `ℓ · u` by at most `ρ d`, and
+the Azuma–Hoeffding conversion (`OnlineLearning.measureReal_trueRisk_average_gt_le`) gives the
+bound with high probability: outside an event of probability at most `δ`,
+`L_D ((1 / T) ∑ t < T, x t) ≤ L_D u + B ρ / √T + ρ d √(2 ln (1 / δ) / T)`. The `log T / T` rates
+for strongly convex losses and running time are not treated here.
 
 ## Main definitions
 
@@ -46,10 +50,14 @@ losses, and running time are not treated here.
 ## Main results
 
 * `Cslib.MachineLearning.sgd_def`: `sgd` is online gradient descent on the sample's losses.
-* `Cslib.MachineLearning.measurable_sgd`, `Cslib.MachineLearning.sgd_update`: each iterate is a
-  measurable function of the sample, and iterate `t` does not depend on example `t`.
+* `Cslib.MachineLearning.measurable_sgd`, `Cslib.MachineLearning.sgd_update_of_le`: each iterate
+  is a measurable function of the sample, and iterate `t` does not depend on example `s ≥ t`.
+* `Cslib.MachineLearning.sgd_regret_le`: the regret of SGD on every sample is at most `ρ B √T`.
 * `Cslib.MachineLearning.integral_trueRisk_sgd_average_le`: the expected true risk of the average
   of the first `T` iterates is at most `L_D u + B ρ / √T`.
+* `Cslib.MachineLearning.measureReal_trueRisk_sgd_average_gt_le`: on a set of diameter `d`, the
+  true risk of the average iterate exceeds `L_D u + B ρ / √T + ρ d √(2 ln (1 / δ) / T)` with
+  probability at most `δ`.
 
 ## References
 
@@ -103,6 +111,31 @@ theorem sgd_update {T : ℕ} (proj : E → E) (η : ℕ → ℝ) (g : E → Z �
     (S : Fin T → Z) (t : Fin T) (z : Z) :
     sgd proj η g x₀ (Function.update S t z) t = sgd proj η g x₀ S t :=
   sgd_congr proj η g x₀ t fun _ hi => Function.update_of_ne (Fin.ne_of_lt hi) _ _
+
+/-- Iterate `t` of stochastic gradient descent does not depend on example `s` for `t ≤ s`. -/
+theorem sgd_update_of_le {T : ℕ} (proj : E → E) (η : ℕ → ℝ) (g : E → Z → E) (x₀ : E)
+    (S : Fin T → Z) {t s : Fin T} (hts : t ≤ s) (z : Z) :
+    sgd proj η g x₀ (Function.update S s z) t = sgd proj η g x₀ S t :=
+  sgd_congr proj η g x₀ t fun _ hi =>
+    Function.update_of_ne (Fin.ne_of_lt (lt_of_lt_of_le hi hts)) _ _
+
+/-- **Regret of stochastic gradient descent** on every sample: with step size `B / (ρ √T)`, the
+iterates' total loss on the sample exceeds that of a comparator `u ∈ K` with `‖x₀ - u‖ ≤ B` by
+at most `ρ B √T`. This is `OCO.ogd_regret_le_fixed_of_norm_sub_le` for the sample's losses. -/
+theorem sgd_regret_le {T : ℕ} (hT : 0 < T) {K : Set E} {proj : E → E}
+    (hP : IsPythagoreanProjection K proj) {ℓ : E → Z → ℝ} {g : E → Z → E}
+    (hsub : ∀ z, ∀ x ∈ K, ∀ y ∈ K, ℓ x z + ⟪g x z, y - x⟫ ≤ ℓ y z)
+    {ρ : ℝ} (hρ : 0 < ρ) (hgρ : ∀ z, ∀ x ∈ K, ‖g x z‖ ≤ ρ) {x₀ u : E} (hx₀ : x₀ ∈ K)
+    (hu : u ∈ K) {B : ℝ} (hB : 0 < B) (hx₀u : ‖x₀ - u‖ ≤ B) (S : Fin T → Z) :
+    ∑ t : Fin T, (ℓ (sgd proj (fun _ => B / (ρ * √(T : ℝ))) g x₀ S t) (S t) - ℓ u (S t)) ≤
+      ρ * B * √(T : ℝ) := by
+  have h := ogd_regret_le_fixed_of_norm_sub_le (K := K) (proj := proj) (x₀ := x₀) (u := u)
+    (grad := fun t x => if h : t < T then g x (S ⟨t, h⟩) else 0)
+    (f := fun t x => if h : t < T then ℓ x (S ⟨t, h⟩) else 0) hP hx₀ hB hρ
+    (fun t x hx => by by_cases h : t < T <;> simp [h, hgρ _ x hx, hρ.le])
+    (fun t x hx y hy => by by_cases h : t < T <;> simp [h, hsub _ x hx y hy]) hu hx₀u hT
+  rw [← Fin.sum_univ_eq_sum_range] at h
+  simpa [sgd_def] using h
 
 variable [MeasurableSpace Z] [MeasurableSpace E] [BorelSpace E] [SecondCountableTopology E]
 
@@ -177,15 +210,8 @@ theorem integral_trueRisk_sgd_average_le {T : ℕ} (hT : 0 < T) {D : Measure Z}
     convexOn_of_forall_add_inner_le hK' fun x hx y hy => hsub z x hx.1 y hy.1
   -- The regret of online gradient descent on each sample.
   have hreg : ∀ S : Fin T → Z, ∑ t : Fin T,
-      (ℓ (sgd proj (fun _ => c) g x₀ S t) (S t) - ℓ u (S t)) ≤ ρ * B * √(T : ℝ) := by
-    intro S
-    have h := ogd_regret_le_fixed_of_norm_sub_le (K := K) (proj := proj) (x₀ := x₀) (u := u)
-      (grad := fun t x => if h : t < T then g x (S ⟨t, h⟩) else 0)
-      (f := fun t x => if h : t < T then ℓ x (S ⟨t, h⟩) else 0) hP hx₀ hB hρ
-      (fun t x hx => by by_cases h : t < T <;> simp [h, hgρ _ x hx, hρ.le])
-      (fun t x hx y hy => by by_cases h : t < T <;> simp [h, hsub _ x hx y hy]) hu hx₀u hT
-    rw [← Fin.sum_univ_eq_sum_range] at h
-    simpa [sgd_def, c] using h
+      (ℓ (sgd proj (fun _ => c) g x₀ S t) (S t) - ℓ u (S t)) ≤ ρ * B * √(T : ℝ) :=
+    sgd_regret_le hT hP hsub hρ hgρ hx₀ hu hB hx₀u
   refine (OnlineLearning.integral_trueRisk_average_le_add hT hK' hℓ hconv hb hbound
     (w := fun t S => sgd proj (fun _ => c) g x₀ S t) (fun t S => hiter S t)
     (fun t => measurable_sgd hproj _ hgm x₀ t) (fun t S z => sgd_update proj _ g x₀ S t z) hu'
@@ -193,5 +219,51 @@ theorem integral_trueRisk_sgd_average_le {T : ℕ} (hT : 0 < T) {D : Measure Z}
   congr 1
   rw [div_eq_div_iff hTr.ne' hs.ne']
   linear_combination (ρ * B) * mul_self_sqrt hTr.le
+
+/-- **Stochastic gradient descent with high probability.** Under the hypotheses of
+`integral_trueRisk_sgd_average_le`, let `K` have diameter at most `d`, that is,
+`‖x - y‖ ≤ d` for `x, y ∈ K`. Then for `δ ∈ (0, 1]`, projected SGD with step size `B / (ρ √T)` on
+`T` i.i.d. examples from `D` satisfies
+`L_D ((1 / T) ∑ t < T, x t) ≤ L_D u + B ρ / √T + ρ d √(2 ln (1 / δ) / T)`
+outside an event of probability at most `δ`. The deviation term comes from the Azuma–Hoeffding
+inequality (`OnlineLearning.measureReal_trueRisk_average_gt_le`), since on `K` the losses differ
+from `ℓ · u` by at most `ρ d`. -/
+theorem measureReal_trueRisk_sgd_average_gt_le {T : ℕ} (hT : 0 < T) {D : Measure Z}
+    [IsProbabilityMeasure D] {K : Set E} (hK : Convex ℝ K) {proj : E → E}
+    (hP : IsPythagoreanProjection K proj) (hproj : Measurable proj) {ℓ : E → Z → ℝ}
+    (hℓ : Measurable (Function.uncurry ℓ)) {g : E → Z → E} (hgm : Measurable (Function.uncurry g))
+    (hsub : ∀ z, ∀ x ∈ K, ∀ y ∈ K, ℓ x z + ⟪g x z, y - x⟫ ≤ ℓ y z)
+    {ρ : ℝ} (hρ : 0 < ρ) (hgρ : ∀ z, ∀ x ∈ K, ‖g x z‖ ≤ ρ)
+    {x₀ u : E} (hx₀ : x₀ ∈ K) (hint : Integrable (ℓ x₀) D) (hu : u ∈ K) {B : ℝ} (hB : 0 < B)
+    (hx₀u : ‖x₀ - u‖ ≤ B) {d : ℝ} (hd : ∀ x ∈ K, ∀ y ∈ K, ‖x - y‖ ≤ d) {δ : ℝ} (hδ : 0 < δ)
+    (hδ1 : δ ≤ 1) :
+    (Measure.pi fun _ => D).real {S : Fin T → Z |
+      trueRisk ℓ D u + B * ρ / √(T : ℝ) + ρ * d * √(2 * log (1 / δ) / T) <
+        trueRisk ℓ D ((T : ℝ)⁻¹ • ∑ t : Fin T,
+          sgd proj (fun _ => B / (ρ * √(T : ℝ))) g x₀ S t)} ≤ δ := by
+  have hTr : (0 : ℝ) < T := by exact_mod_cast hT
+  have hs : 0 < √(T : ℝ) := sqrt_pos.mpr hTr
+  have hlip : ∀ w ∈ K, ∀ z, |ℓ w z - ℓ u z| ≤ ρ * d := fun w hw z =>
+    (abs_sub_le_of_forall_add_inner_le (f := fun x => ℓ x z) (g := fun x => g x z) (hsub z)
+      (hgρ z) hw hu).trans (mul_le_mul_of_nonneg_left (hd w hw u hu) hρ.le)
+  have hui : Integrable (ℓ u) D :=
+    (hint.norm.add (integrable_const (ρ * d))).mono'
+      (hℓ.comp (measurable_const.prodMk measurable_id)).aestronglyMeasurable
+      (Filter.Eventually.of_forall fun z => by
+        have h1 := hlip x₀ hx₀ z
+        have h2 := abs_sub_abs_le_abs_sub (ℓ u z) (ℓ x₀ z)
+        rw [abs_sub_comm] at h1
+        simp only [Real.norm_eq_abs, Pi.add_apply]
+        linarith)
+  have hrate : ρ * B * √(T : ℝ) / T = B * ρ / √(T : ℝ) := by
+    rw [div_eq_div_iff hTr.ne' hs.ne']
+    linear_combination (ρ * B) * mul_self_sqrt hTr.le
+  have h := OnlineLearning.measureReal_trueRisk_average_gt_le hT hK hℓ
+    (fun z => convexOn_of_forall_add_inner_le hK fun x hx y hy => hsub z x hx y hy) hui hlip
+    (w := fun t S => sgd proj (fun _ => B / (ρ * √(T : ℝ))) g x₀ S t)
+    (fun t S => sgd_mem hP _ g hx₀ S t) (fun t => measurable_sgd hproj _ hgm x₀ t)
+    (fun t s hts S z => sgd_update_of_le proj _ g x₀ S hts z)
+    (sgd_regret_le hT hP hsub hρ hgρ hx₀ hu hB hx₀u) hδ hδ1
+  rwa [hrate] at h
 
 end Cslib.MachineLearning

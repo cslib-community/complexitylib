@@ -69,4 +69,47 @@ example (D : Measure ℝ) [IsProbabilityMeasure D] (hD : Integrable id D) {u : �
     exact Real.sqrt_sq (by norm_num)
   simpa only [Nat.cast_ofNat, hs, one_mul, mul_one] using h
 
+/-- Projected SGD on `[-1, 1]` with high probability: four steps from `0` with step size `1 / 2`
+on the absolute loss, projecting onto `[-1, 1]`, whose diameter is `2`. For every distribution
+`D` with a first moment, every comparator `u ∈ [-1, 1]` and every `δ ∈ (0, 1]`, outside an event
+of probability at most `δ` the average iterate has true risk at most
+`L_D(u) + 1 / 2 + √(2 ln (1 / δ))`. -/
+example (D : Measure ℝ) [IsProbabilityMeasure D] (hD : Integrable id D) {u : ℝ}
+    (hu : u ∈ Set.Icc (-1 : ℝ) 1) {δ : ℝ} (hδ : 0 < δ) (hδ1 : δ ≤ 1) :
+    (Measure.pi fun _ => D).real {S : Fin 4 → ℝ |
+      trueRisk absLoss D u + 1 / 2 + √(2 * Real.log (1 / δ)) <
+        trueRisk absLoss D ((4 : ℝ)⁻¹ • ∑ t : Fin 4,
+          sgd (Cslib.metricProjection (Set.Icc (-1) 1)) (fun _ => 1 / 2) absGrad 0 S t)} ≤
+      δ := by
+  have hne : (Set.Icc (-1 : ℝ) 1).Nonempty := Set.nonempty_Icc.2 (by norm_num)
+  have hc : IsComplete (Set.Icc (-1 : ℝ) 1) := isClosed_Icc.isComplete
+  have hint : Integrable (absLoss 0) D := by
+    have e : absLoss 0 = fun z => |id z| := funext fun z => by simp [absLoss]
+    rw [e]
+    exact hD.abs
+  have hd : ∀ x ∈ Set.Icc (-1 : ℝ) 1, ∀ y ∈ Set.Icc (-1 : ℝ) 1, ‖x - y‖ ≤ 2 := fun x hx y hy => by
+    rw [Real.norm_eq_abs, abs_le]
+    constructor <;> linarith [hx.1, hx.2, hy.1, hy.2]
+  have hx₀u : ‖(0 : ℝ) - u‖ ≤ 1 := by
+    rw [zero_sub, norm_neg, Real.norm_eq_abs, abs_le]
+    exact hu
+  have h := measureReal_trueRisk_sgd_average_gt_le (T := 4) (by norm_num) (convex_Icc _ _)
+    (isPythagoreanProjection_metricProjection hne hc (convex_Icc _ _))
+    (Cslib.lipschitzWith_metricProjection hne hc (convex_Icc _ _)).continuous.measurable
+    measurable_absLoss measurable_absGrad (fun z x _ y _ => absLoss_add_inner_le z x y) one_pos
+    (fun z x _ => norm_absGrad_le x z) (by norm_num : (0 : ℝ) ∈ Set.Icc (-1 : ℝ) 1) hint hu
+    one_pos hx₀u hd hδ hδ1
+  have hs : √(4 : ℝ) = 2 := by
+    rw [show (4 : ℝ) = 2 ^ 2 by norm_num]
+    exact Real.sqrt_sq (by norm_num)
+  have hdev : 1 * 2 * √(2 * Real.log (1 / δ) / ((4 : ℕ) : ℝ)) = √(2 * Real.log (1 / δ)) := by
+    rw [Real.sqrt_div' _ (by norm_num), Nat.cast_ofNat, hs]
+    ring
+  have hrate : (1 : ℝ) * 1 / √((4 : ℕ) : ℝ) = 1 / 2 := by
+    rw [Nat.cast_ofNat, hs, one_mul]
+  have hstep : (1 : ℝ) / (1 * √((4 : ℕ) : ℝ)) = 1 / 2 := by
+    rw [Nat.cast_ofNat, hs, one_mul]
+  rw [hdev, hrate, hstep] at h
+  simpa only [Nat.cast_ofNat] using h
+
 end CslibFrontierTests.StochasticGradientDescent
