@@ -1244,13 +1244,15 @@ register_result "rompel-uowhf" where
   ]
   theorems := [
     Cslib.Crypto.ShrinkingCollisionGrid.targetCollisionResistant_rompelHash,
+    Cslib.Crypto.AdversaryInaccessibleEntropyFamily.exists_targetCollisionResistantHash,
     Cslib.Crypto.OneWay.exists_targetCollisionResistant_keyedHashFamily
   ]
-  scope := "Every uniform one-way function on bit strings gives a target collision-resistant \
-    keyed hash family on all bit strings, against uniform strict PPT adversaries that commit to \
-    a target before seeing the key, via the inaccessible-entropy construction of Haitner et al. \
-    `rompelHash` is secure for every shrinking collision grid; the existence theorem obtains a \
-    grid from the one-way function. Each one-bit step takes a fresh subkey, so keys are \
+  scope := "Every uniform polynomial-time function family with inaccessible average max-entropy \
+    against adversary-dependent accessible sets (Definition 3.9, \
+    AdversaryInaccessibleEntropyFamily), and hence every uniform one-way function on bit strings, \
+    gives a target collision-resistant keyed hash family on all bit strings against uniform \
+    strict PPT adversaries that commit to a target before seeing the key. `rompelHash` is secure \
+    for every shrinking collision grid. Each one-bit step takes a fresh subkey, so keys are \
     polynomial but not as compact as the source's O(|y| log t) bound. Asymptotic security."
 
 register_result "resolution" where

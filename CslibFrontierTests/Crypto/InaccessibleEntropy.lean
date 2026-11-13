@@ -341,4 +341,87 @@ example {f : List Bool → List Bool} (hf : OneWay f) :
       ∀ᶠ n : ℕ in Filter.atTop, 3 * Real.logb 2 n / n ≤ 1 / (F.denom n : ℝ) :=
   hf.exists_inaccessibleEntropyFamily_logGap (by norm_num)
 
+/-! ### 5. Definition 3.9: word sanitization and adversary-dependent accessible sets -/
+
+/-- `badEmptyAdv` outputs `[]` regardless of the `(n + 1)`-bit input, so it is not an
+`IsWordCollisionFinder`, yet `sanitizeWordCollisionFinder` turns it into one while preserving
+strict-PPT admissibility and `accessibleEscapeGame`. -/
+def badEmptyAdv : ℕ → List Bool → ProbComp (List Bool) := fun _ _ => pure []
+
+theorem not_isWordCollisionFinder_badEmptyAdv :
+    ¬ IsWordCollisionFinder (fun n => n + 1) (fun _ w => w) badEmptyAdv := by
+  intro h
+  have h0 := h 0 [false] rfl [] (by simp [badEmptyAdv])
+  exact absurd h0.1 (by decide)
+
+example (n : ℕ) :
+    IsWordCollisionFinder (fun k => k + 1) (fun _ w => w.take 1)
+      (sanitizeWordCollisionFinder (fun k => k + 1) (fun _ w => w.take 1) badEmptyAdv) ∧
+    IsCollisionFinder (wordToFinMap (n + 1) 1 (fun w => w.take 1))
+      (fun z => (ProbComp.eval
+        (sanitizeWordCollisionFinder (fun k => k + 1) (fun _ w => w.take 1) badEmptyAdv n
+          (List.ofFn z))).map (BitString.ofList (n + 1))) ∧
+    IsPPT encBits
+      (sanitizeWordCollisionFinder (fun k => k + 1) (fun _ w => w.take 1) badEmptyAdv) ∧
+    accessibleEscapeGame (fun _ w => w.take 1) (fun k => k + 1) (fun _ z => {z})
+      (sanitizeWordCollisionFinder (fun k => k + 1) (fun _ w => w.take 1) badEmptyAdv) n =
+      accessibleEscapeGame (fun _ w => w.take 1) (fun k => k + 1) (fun _ z => {z}) badEmptyAdv n :=
+  ⟨isWordCollisionFinder_sanitizeWordCollisionFinder _ _ _,
+    (isWordCollisionFinder_sanitizeWordCollisionFinder _ _ _).isCollisionFinder
+      (outLen := fun _ => 1) n,
+    isPPT_sanitizeWordCollisionFinder (by fun_prop)
+      ((ComputableInPolyTime.snd encUnary encBits).bitsTakeWithInput (.const 1))
+      (ComputableInPolyTime.const []).isPPT,
+    accessibleEscapeGame_sanitizeWordCollisionFinder _ _ _ _ n fun _ => mem_singleton_self _⟩
+
+/-- Two-bit conjunction `z 0 && z 1` has a `3`-element `false`-fiber, separating adversary-dependent
+accessible sets ($\forall f, \exists L_f$ of size $\le 2$ with zero escape) from fixed accessible
+sets ($\neg \exists L$ of size $\le 2$ with zero escape against all deterministic collision
+finders). -/
+def andTwoBits (z : BitString 2) : Bool := z 0 && z 1
+
+theorem adversary_dependent_vs_fixed_accSet_andTwoBits :
+    (∀ f : BitString 2 → BitString 2,
+      ∃ L : BitString 2 → Finset (BitString 2),
+        (∀ z, z ∈ L z) ∧ (∀ z, L z ⊆ fiberSet andTwoBits (andTwoBits z)) ∧
+        (∀ z, #(L z) ≤ 2) ∧ (∀ z, andTwoBits (f z) = andTwoBits z → f z ∈ L z)) ∧
+    ¬ ∃ L : BitString 2 → Finset (BitString 2),
+        (∀ z, #(L z) ≤ 2) ∧
+        ∀ f : BitString 2 → BitString 2,
+          (∀ z, andTwoBits (f z) = andTwoBits z) → ∀ z, f z ∈ L z := by
+  constructor
+  · intro f
+    refine ⟨fun z => insert z ((fiberSet andTwoBits (andTwoBits z)).filter (· = f z)),
+      fun z => mem_insert_self _ _, fun z x hx => ?_, fun z => ?_, fun z hcol => ?_⟩
+    · rcases mem_insert.mp hx with rfl | hmem
+      · exact self_mem_fiberSet andTwoBits x
+      · exact (mem_filter.mp hmem).1
+    · refine (card_insert_le _ _).trans (Nat.succ_le_succ ?_)
+      have hsub : (fiberSet andTwoBits (andTwoBits z)).filter (· = f z) ⊆ {f z} :=
+        fun u hu => mem_singleton.mpr (mem_filter.mp hu).2
+      exact (card_le_card hsub).trans (by simp)
+    · exact mem_insert_of_mem (mem_filter.mpr ⟨mem_fiberSet _ _ _ |>.mpr hcol, rfl⟩)
+  · rintro ⟨L, hcard, hall⟩
+    have hfib : #(fiberSet andTwoBits (andTwoBits 0)) = 3 := by decide
+    have hlt : #(L 0) < #(fiberSet andTwoBits (andTwoBits 0)) := by
+      have := hcard 0
+      omega
+    obtain ⟨w, hw_fib, hw_notMem⟩ := exists_mem_notMem_of_card_lt_card hlt
+    have hw_eq : andTwoBits w = andTwoBits 0 := (mem_fiberSet _ _ _).mp hw_fib
+    let f : BitString 2 → BitString 2 := fun z => if z = 0 then w else z
+    have hf_col : ∀ z, andTwoBits (f z) = andTwoBits z := fun z => by
+      dsimp only [f]
+      split_ifs with hz
+      · subst hz; exact hw_eq
+      · rfl
+    have hmem := hall f hf_col 0
+    simp only [f, ↓reduceIte] at hmem
+    exact hw_notMem hmem
+
+example (F : AdversaryInaccessibleEntropyFamily) : Nonempty ShrinkingCollisionGrid :=
+  F.exists_shrinkingCollisionGrid
+
+example (F : InaccessibleEntropyFamily) : Nonempty ShrinkingCollisionGrid :=
+  F.toAdversaryInaccessibleEntropyFamily.exists_shrinkingCollisionGrid
+
 end CslibFrontierTests.Crypto.InaccessibleEntropy
