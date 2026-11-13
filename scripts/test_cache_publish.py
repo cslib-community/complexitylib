@@ -310,6 +310,10 @@ name = "CslibFrontierTests"
             shutil.rmtree(env["LAKE_CACHE_DIR"])
             reports = []
             for name in ("missing-archives", "retained-archives"):
+                # Actions retains build outputs but excludes the toolchain's mutable cache.
+                shutil.rmtree(env["LAKE_CACHE_DIR"], ignore_errors=True)
+                retained = {path: (path.stat().st_mtime_ns, publish.digest(path))
+                            for path in (root / ".lake/build").rglob("*.ltar")}
                 target = Path(temporary) / name
                 report = Path(temporary) / (name + ".json")
                 with (patch.object(publish, "ROOT", root),
@@ -325,6 +329,8 @@ name = "CslibFrontierTests"
                 publish.validate(target)  # Diagnostic JSON must never enter the public inventory.
                 self.assertEqual(outputs, {path: (path.stat().st_mtime_ns, publish.digest(path))
                                            for path in outputs})
+                self.assertEqual(retained, {path: (path.stat().st_mtime_ns, publish.digest(path))
+                                            for path in retained})
             self.assertEqual(reports[0]["archives_before"]["count"], 0)
             self.assertEqual(reports[1]["archives_before"]["count"], 2)
 

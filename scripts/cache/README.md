@@ -326,8 +326,9 @@ the source/host checks from reader activation and integration approval.
 ## Profile cache publication
 
 Publication reports separate wall times for the mapping/archive build, archive staging and
-inventory hashing. Each phase prints its start and outcome, followed by one
-`CACHE_STAGING_METRICS` JSON line. The report records the source revision, toolchain, platform,
+inventory hashing. Each phase prints its start and outcome; a successful stage also emits one
+`CACHE_STAGING_METRICS` JSON line. A failed phase keeps its textual diagnostic and command failure.
+The report records the source revision, toolchain, platform,
 explicit `LEAN_NUM_THREADS` value (or null when unset), mapping entries and root `.ltar`
 counts/bytes before and after the mapping build. Archive sizes are logical sizes, including
 hard-linked files; they are not physical disk usage.
