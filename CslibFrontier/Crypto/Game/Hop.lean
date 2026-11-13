@@ -41,7 +41,7 @@ remains the tool for chains whose hops are proved in place.
 * `Cslib.Crypto.Game.advantage_le_of_approxEq`: a chain bounds the advantage between its ends.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.Game
 
@@ -66,8 +66,10 @@ theorem approxEq_advantage (G₀ G₁ : Game) : Pr[G₀] ≈[advantage G₀ G₁
   approxEq_of_advantage_le le_rfl
 
 /-- A chain of hops whose total error is at most `ε` bounds the advantage between its ends by
-`ε`. -/
-theorem advantage_le_of_approxEq {δ : ℝ} {ε : ℝ≥0} (h : Pr[G₀] ≈[δ] Pr[G₁]) (hδ : δ ≤ ε) :
+`ε`. The bound `hδ` defaults to a cast check, which proves it when `ε` is the chain's sum of
+errors. -/
+theorem advantage_le_of_approxEq {δ : ℝ} {ε : ℝ≥0} (h : Pr[G₀] ≈[δ] Pr[G₁])
+    (hδ : δ ≤ ε := by exact_mod_cast le_rfl) :
     advantage G₀ G₁ ≤ ε :=
   NNReal.coe_le_coe.mp ((approxEq_iff_advantage_le.mp h).trans hδ)
 
