@@ -27,15 +27,15 @@ The actual output fits the unchanged 240-macrocell grid, with linear grid sides 
 clause, literal, route, segment, and Manhattan-wire costs. Bounds concern the emitted lists and
 all their integer points; geometric separation is proved separately.
 
+The path and grid estimates are those of
+`CslibFrontier.Computability.Complexity.Problems.SAT.Planar.PathBounds`, and the clause and
+literal counts those of `CslibFrontier.Computability.Complexity.Problems.SAT.Planar.PairedSize`.
+
 ## Main results
 
 * `drawing_fits`, `gridWidth_le`, `gridHeight_le`: the actual drawing fits a linear grid.
 * `length_routes`, `drawingSegmentCount_eq`, `drawingWireLength_eq`: exact output costs.
 * `routes_length_le`, `drawingSegmentCount_le`, `drawingWireLength_le`: quadratic bounds.
-
-## References
-
-The unchanged path and grid estimates are reused from `Planar.Size` and `Planar.Bounds`.
 -/
 
 @[expose] public section

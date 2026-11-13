@@ -11,7 +11,7 @@ The explicit carry example includes negacyclic wraparound at degree two. -/
 
 namespace CslibFrontierTests.Crypto.ModulusSwitch
 
-open Cslib.Crypto
+open Cslib Cslib.Crypto
 open scoped Matrix
 
 /-- The canonical lift of the source midpoint is positive. -/

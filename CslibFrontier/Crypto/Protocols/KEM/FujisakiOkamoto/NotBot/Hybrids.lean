@@ -96,7 +96,7 @@ noncomputable def eagerFbGame [Fintype M] [Finite R] [Fintype CT] [Finite K]
   let (cStar, kReal) ← ProbComp.eval (S.encapsNotBot G H pk)
   let kRand ← ProbComp.eval S.sampleKey
   OracleComp.interpret (S.eagerFbHandler G H Hfb dk cStar)
-    (A (pk, cStar, if b then kRand else kReal))
+    (A ⟨pk, cStar, if b then kRand else kReal⟩)
 
 /-! ### Eager coupled game -/
 
@@ -129,7 +129,7 @@ noncomputable def eagerCoupledGame [Fintype M] [Finite R] [Fintype CT] [Finite K
   let kRand ← ProbComp.eval S.sampleKey
   let kReal := S.coupledH G Hq Hraw pk sk (false, mStar, cStar)
   OracleComp.interpret (S.eagerCoupledHandler G Hq Hraw pk sk cStar)
-    (A (pk, cStar, if b then kRand else kReal))
+    (A ⟨pk, cStar, if b then kRand else kReal⟩)
 
 /-! ### Lazy coupled and simulator games -/
 
@@ -213,7 +213,7 @@ def coupledFilterGame (S : Scheme PK SK M R CT K) (d : PK → SK → List (M × 
     { gCache := [(mStar, rStar)] }
   let kRand ← S.sampleKey
   let (guess, _) ← (OracleComp.interpret (S.coupledFilterHandler (d pk sk) pk sk cStar)
-    (A (pk, cStar, if b then kRand else kReal))).run st₀
+    (A ⟨pk, cStar, if b then kRand else kReal⟩)).run st₀
   return guess
 
 /-- The lazy coupled game: `G(m*)` is programmed to fresh challenge coins `r*` and the real key
@@ -234,7 +234,7 @@ def simFilterGame (S : Scheme PK SK M R CT K) (d : PK → List (M × R) → CT �
     { gCache := [(mStar, rStar)] }
   let kRand ← S.sampleKey
   let (guess, _) ← (OracleComp.interpret (S.simFilterHandler (d pk) pk cStar)
-    (A (pk, cStar, if b then kRand else kReal))).run st₀
+    (A ⟨pk, cStar, if b then kRand else kReal⟩)).run st₀
   return guess
 
 /-- The lazy keyless simulator game: as `coupledGame` with `simHashH` and `simHandler`, which do

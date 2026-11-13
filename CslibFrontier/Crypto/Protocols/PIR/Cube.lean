@@ -266,11 +266,10 @@ end Cube
 `n ≤ m ^ 2` has a perfectly correct and perfectly private two-server scheme for `n`-bit databases
 communicating `4 m` bits. -/
 theorem hasScheme_two_of_le_mul_self {n m : ℕ} (h : n ≤ m * m) : HasScheme (Fin n) 2 (4 * m) := by
-  let e : Fin n ↪ Fin m × Fin m := (Fin.castLEEmb h).trans finProdFinEquiv.symm.toEmbedding
-  have hP := ((isCorrect_twoServer.rows (Fin m)).comap e false).hasScheme
-    ((isPrivate_twoServer.rows (Fin m)).comap e false)
+  have hP := ((isCorrect_twoServer (ι := Fin m)).rows (Fin m)).hasScheme
+    ((isPrivate_twoServer (ι := Fin m)).rows (Fin m))
   rw [Fintype.card_bool, communication_twoServer_rows, Fintype.card_fin] at hP
-  exact hP.mono (by omega)
+  exact (hP.mono (by omega)).fin_of_le_card (by simpa using h)
 
 /-- Two servers with `4 (⌊√n⌋ + 1)` bits. -/
 theorem hasScheme_two_sqrt (n : ℕ) : HasScheme (Fin n) 2 (4 * (Nat.sqrt n + 1)) :=
@@ -282,10 +281,9 @@ and perfectly private `2 ^ d`-server scheme for `n`-bit databases communicating 
 bits. With `ℓ = ⌈n ^ (1/d)⌉` this is the source's `2 ^ d (d n ^ (1/d) + 1)`. -/
 theorem hasScheme_two_pow_of_le_pow {n d ℓ : ℕ} (h : n ≤ ℓ ^ d) :
     HasScheme (Fin n) (2 ^ d) (2 ^ d * (d * ℓ + 1)) := by
-  let e : Fin n ↪ (Fin d → Fin ℓ) :=
-    (Fin.castLEEmb h).trans finFunctionFinEquiv.symm.toEmbedding
-  have hP := (isCorrect_cube.comap e false).hasScheme (isPrivate_cube.comap e false)
-  rwa [Fintype.card_fun, Fintype.card_bool, Fintype.card_fin, communication_cube,
+  have hP := (isCorrect_cube (D := Fin d) (ι := Fin ℓ)).hasScheme isPrivate_cube
+  rw [Fintype.card_fun, Fintype.card_bool, Fintype.card_fin, communication_cube,
     Fintype.card_fin, Fintype.card_fin] at hP
+  exact hP.fin_of_le_card (by simpa using h)
 
 end Cslib.Crypto.Protocols.PIR

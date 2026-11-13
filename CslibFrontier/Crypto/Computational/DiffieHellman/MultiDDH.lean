@@ -17,7 +17,7 @@ import CslibFrontier.Tactic.PolyTime
 # Fixed-first-coordinate DDH rerandomization and Multi-DDH
 
 Fixed-first-coordinate rerandomization preserves the real DDH law and sends any non-DDH triple
-to the ideal pair law. Independent coordinate rerandomization gives the single-shared-secret
+to the random pair law. Independent coordinate rerandomization gives the single-shared-secret
 case of Multi-DDH (I), with the exact exceptional-point loss `1 / q`.
 
 This is shared distributional support, not an efficient lazy-sampling reduction. The tuple wrapper
@@ -27,7 +27,7 @@ source in PR #1103, authored by worker-jetski-cf53d356 (Gemini), with its mathem
 ## Main results
 
 * `Cslib.Crypto.PrimeOrderGroupFamily.ddhFixedURerandomizeLaw_real`: real fixed-coordinate law.
-* `Cslib.Crypto.PrimeOrderGroupFamily.ddhFixedURerandomizeLaw_ideal`: non-DDH fixed-coordinate law.
+* `Cslib.Crypto.PrimeOrderGroupFamily.ddhFixedURerandomizeLaw_random`: non-DDH fixed-coordinate law.
 * `Cslib.Crypto.PrimeOrderGroupFamily.advantage_multiDDH_le`: Multi-DDH loss for one shared secret.
 
 ## References
@@ -76,12 +76,6 @@ theorem ddhFixedUWordRerandomize_encode (d : F.Desc) (u v w : F.Carrier d) (σ �
   simp [ddhFixedUWordRerandomize, ddhFixedURerandomize, F.smul_encode, F.add_encode]
 
 @[local fun_prop]
-private theorem computableInPolyTime_generator_comp {α : Type} {encIn : α ↪ List Bool}
-    {d : α → F.Desc} (hd : ComputableInPolyTime d encIn F.encDesc) :
-    ComputableInPolyTime (fun a => F.encode (d a) (F.generator (d a))) encIn encBits :=
-  F.computableInPolyTime_generator.comp hd
-
-@[local fun_prop]
 private theorem computableInPolyTime_add_comp {α : Type} {encIn : α ↪ List Bool}
     {d : α → F.Desc} {x y : α → List Bool}
     (hd : ComputableInPolyTime d encIn F.encDesc)
@@ -125,8 +119,8 @@ noncomputable def ddhFixedURealLaw (d : F.Desc) (α : ZMod (F.order d)) :
   let β ← PMF.uniformOfFintype (ZMod (F.order d))
   return (β • F.generator d, (α * β) • F.generator d)
 
-/-- The ideal pair distribution `(β • g, γ • g)` on `F.Carrier d × F.Carrier d`. -/
-noncomputable def ddhFixedUIdealLaw (d : F.Desc) :
+/-- The random pair distribution `(β • g, γ • g)` on `F.Carrier d × F.Carrier d`. -/
+noncomputable def ddhFixedURandomLaw (d : F.Desc) :
     PMF (F.Carrier d × F.Carrier d) := do
   let β ← PMF.uniformOfFintype (ZMod (F.order d))
   let γ ← PMF.uniformOfFintype (ZMod (F.order d))
@@ -153,11 +147,11 @@ theorem ddhFixedURerandomizeLaw_real (d : F.Desc) (α β : ZMod (F.order d)) :
   simp_rw [hσ, PMF.bind_const]
 
 /-- **Boneh–Shoup Exercise 10.8(b)**: if `(u, v, w) = (α • g, β • g, γ • g)` is a non-DDH triple
-(`γ ≠ α * β`), then `ddhFixedURerandomizeLaw` produces `ddhFixedUIdealLaw d`. -/
-theorem ddhFixedURerandomizeLaw_ideal (d : F.Desc) {α β γ : ZMod (F.order d)} (hγ : γ ≠ α * β) :
+(`γ ≠ α * β`), then `ddhFixedURerandomizeLaw` produces `ddhFixedURandomLaw d`. -/
+theorem ddhFixedURerandomizeLaw_random (d : F.Desc) {α β γ : ZMod (F.order d)} (hγ : γ ≠ α * β) :
     F.ddhFixedURerandomizeLaw d (α • F.generator d) (β • F.generator d) (γ • F.generator d) =
-      F.ddhFixedUIdealLaw d := by
-  simp only [ddhFixedURerandomizeLaw, ddhFixedUIdealLaw, ddhFixedURerandomize_smul_generator,
+      F.ddhFixedURandomLaw d := by
+  simp only [ddhFixedURerandomizeLaw, ddhFixedURandomLaw, ddhFixedURerandomize_smul_generator,
     PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
   rw [PMF.bind_comm]
   have hσ (τ : ZMod (F.order d)) :
@@ -187,9 +181,9 @@ noncomputable def multiDDHRealTupleLaw (d : F.Desc) (ι : Type*) [Fintype ι] [D
   (PMF.uniformOfFintype (ι → ZMod (F.order d))).map fun B i =>
     (B i • F.generator d, (α * B i) • F.generator d)
 
-/-- The Multi-DDH (I) ideal tuple family `i ↦ (B₀ i • g, B₁ i • g)` for an index type `ι`
+/-- The Multi-DDH (I) random tuple family `i ↦ (B₀ i • g, B₁ i • g)` for an index type `ι`
 ([BonehShoup2023], Section 10.11, Exercise 10.11, p. 426). -/
-noncomputable def multiDDHIdealTupleLaw (d : F.Desc) (ι : Type*) [Fintype ι] [DecidableEq ι] :
+noncomputable def multiDDHRandomTupleLaw (d : F.Desc) (ι : Type*) [Fintype ι] [DecidableEq ι] :
     PMF (ι → F.Carrier d × F.Carrier d) :=
   (PMF.uniformOfFintype (ι → ZMod (F.order d) × ZMod (F.order d))).map fun B i =>
     ((B i).1 • F.generator d, (B i).2 • F.generator d)
@@ -249,16 +243,16 @@ theorem multiDDHRerandomizeLaw_real (d : F.Desc) (ι : Type*) [Fintype ι] [Deci
   simp [e, ddhRerandomizeRealTupleEquiv, ddhFixedURerandomize_smul_generator]
 
 /-- On any non-DDH triple `(α • g, β • g, γ • g)` with `γ ≠ α * β`, `multiDDHRerandomizeLaw`
-produces `multiDDHIdealTupleLaw d ι` ([BonehShoup2023], Exercise 10.11). -/
-theorem multiDDHRerandomizeLaw_ideal (d : F.Desc) (ι : Type*) [Fintype ι] [DecidableEq ι]
+produces `multiDDHRandomTupleLaw d ι` ([BonehShoup2023], Exercise 10.11). -/
+theorem multiDDHRerandomizeLaw_random (d : F.Desc) (ι : Type*) [Fintype ι] [DecidableEq ι]
     {α β γ : ZMod (F.order d)} (hγ : γ ≠ α * β) :
     F.multiDDHRerandomizeLaw d ι (α • F.generator d) (β • F.generator d) (γ • F.generator d) =
-      F.multiDDHIdealTupleLaw d ι := by
+      F.multiDDHRandomTupleLaw d ι := by
   let e : (ι → ZMod (F.order d) × ZMod (F.order d)) ≃
       (ι → ZMod (F.order d) × ZMod (F.order d)) :=
     Equiv.piCongrRight fun _ =>
       (ddhRerandomizeRealCoordEquiv β).trans (ddhRerandomizeSecondCoordEquiv hγ)
-  rw [multiDDHIdealTupleLaw, ← PMF.uniformOfFintype_map_equiv e, PMF.map_comp,
+  rw [multiDDHRandomTupleLaw, ← PMF.uniformOfFintype_map_equiv e, PMF.map_comp,
     multiDDHRerandomizeLaw]
   congr 1 with r : 1; funext i
   simp [e, ddhRerandomizeRealCoordEquiv, ddhRerandomizeSecondCoordEquiv,
@@ -267,7 +261,7 @@ theorem multiDDHRerandomizeLaw_ideal (d : F.Desc) (ι : Type*) [Fintype ι] [Dec
 /-- **Boneh–Shoup Exercise 10.11 ($n = 1$ Multi-DDH (I), p. 426)**: for a single shared secret `α`,
 any finite index type `ι` (`|ι|` pairs), and any test
 `test : F.Carrier d → (ι → F.Carrier d × F.Carrier d) → PMF Bool`, the advantage between
-`(α • g, multiDDHRealTupleLaw d ι α)` and `(α • g, multiDDHIdealTupleLaw d ι)` is at most the DDH
+`(α • g, multiDDHRealTupleLaw d ι α)` and `(α • g, multiDDHRandomTupleLaw d ι)` is at most the DDH
 advantage of the rerandomizing wrapper `multiDDHRerandomizeLaw` (which samples `|ι|` pairs) plus
 `(F.order d)⁻¹`. -/
 theorem advantage_multiDDH_le (d : F.Desc) (ι : Type*) [Fintype ι] [DecidableEq ι]
@@ -276,11 +270,11 @@ theorem advantage_multiDDH_le (d : F.Desc) (ι : Type*) [Fintype ι] [DecidableE
       ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
         (F.multiDDHRealTupleLaw d ι α).bind (test (α • F.generator d)))
       ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
-        (F.multiDDHIdealTupleLaw d ι).bind (test (α • F.generator d))) ≤
+        (F.multiDDHRandomTupleLaw d ι).bind (test (α • F.generator d))) ≤
     Game.advantage
       ((F.ddhRealTupleLaw d).bind fun (u, v, w) =>
         (F.multiDDHRerandomizeLaw d ι u v w).bind (test u))
-      ((F.ddhIdealTupleLaw d).bind fun (u, v, w) =>
+      ((F.ddhRandomTupleLaw d).bind fun (u, v, w) =>
         (F.multiDDHRerandomizeLaw d ι u v w).bind (test u)) +
       (F.order d : ℝ≥0)⁻¹ := by
   have hreal :
@@ -291,26 +285,26 @@ theorem advantage_multiDDH_le (d : F.Desc) (ι : Type*) [Fintype ι] [DecidableE
     simp only [pmf_norm, ddhRealTupleLaw, multiDDHRerandomizeLaw_real, PMF.bind_const]
   have hideal :
       Game.advantage
-        ((F.ddhIdealTupleLaw d).bind fun (u, v, w) =>
+        ((F.ddhRandomTupleLaw d).bind fun (u, v, w) =>
           (F.multiDDHRerandomizeLaw d ι u v w).bind (test u))
         ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun α =>
-          (F.multiDDHIdealTupleLaw d ι).bind (test (α • F.generator d))) ≤
+          (F.multiDDHRandomTupleLaw d ι).bind (test (α • F.generator d))) ≤
       (F.order d : ℝ≥0)⁻¹ := by
-    simp only [pmf_norm, ddhIdealTupleLaw]
+    simp only [pmf_norm, ddhRandomTupleLaw]
     peel_binds α
     rw [← PMF.bind_const (PMF.uniformOfFintype (ZMod (F.order d)))
-      ((F.multiDDHIdealTupleLaw d ι).bind (test (α • F.generator d)))]
+      ((F.multiDDHRandomTupleLaw d ι).bind (test (α • F.generator d)))]
     peel_binds β
     simpa only [ZMod.card] using
       Game.advantage_bind_uniformOfFintype_of_ne_le (α * β)
         (fun γ => (F.multiDDHRerandomizeLaw d ι (α • F.generator d) (β • F.generator d)
           (γ • F.generator d)).bind (test (α • F.generator d)))
-        ((F.multiDDHIdealTupleLaw d ι).bind (test (α • F.generator d)))
-        (fun γ hγ => by rw [F.multiDDHRerandomizeLaw_ideal d ι hγ])
+        ((F.multiDDHRandomTupleLaw d ι).bind (test (α • F.generator d)))
+        (fun γ hγ => by rw [F.multiDDHRerandomizeLaw_random d ι hγ])
   game_trans
     [(F.ddhRealTupleLaw d).bind fun (u, v, w) =>
        (F.multiDDHRerandomizeLaw d ι u v w).bind (test u),
-     (F.ddhIdealTupleLaw d).bind fun (u, v, w) =>
+     (F.ddhRandomTupleLaw d).bind fun (u, v, w) =>
        (F.multiDDHRerandomizeLaw d ι u v w).bind (test u)]
     using [hreal, le_rfl, hideal]
 

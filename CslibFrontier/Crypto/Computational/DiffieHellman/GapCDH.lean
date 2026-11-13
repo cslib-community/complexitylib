@@ -130,8 +130,6 @@ abbrev DHKEMAdversary (K : Type) :=
 (`inr`), each with the key returned for it. -/
 abbrev SimTable (K : Type) := List ((F.Carrier d ⊕ F.Carrier d) × K)
 
-variable [DecidableEq (F.Carrier d)]
-
 /-- The DDH oracle `O_y` of [KatzLindell2020], §12.4.4: `(U, V)` is answered `true` exactly
 when `V = y • U`. -/
 @[expose] def ddhOracle (y : ZMod (F.order d)) (query : F.Carrier d × F.Carrier d) : PMF Bool :=
@@ -351,7 +349,6 @@ private theorem tableCache_cons (x : ZMod (F.order d)) (label : F.Carrier d ⊕ 
     simp [tableCache]
   · simp [tableCache, h, Function.update_of_ne (Ne.symm h)]
 
-omit [DecidableEq (F.Carrier d)] in
 private theorem smul_inj (x : ZMod (F.order d)) (hx : x ≠ 0) {c c' : F.Carrier d} :
     x • c = x • c' ↔ c = c' := by
   refine ⟨fun h => ?_, fun h => h ▸ rfl⟩
@@ -525,7 +522,6 @@ end Simulation
 
 section Programming
 
-omit [DecidableEq (F.Carrier d)] in
 private theorem toOuterMeasure_le_bind_apply {α β : Type} (μ : PMF α) (event : Set α)
     (f : α → PMF β) (b : β) (h : ∀ a ∈ μ.support, a ∈ event → f a b = 1) :
     μ.toOuterMeasure event ≤ (μ.bind f) b := by
@@ -539,7 +535,6 @@ private theorem toOuterMeasure_le_bind_apply {α β : Type} (μ : PMF α) (event
   · rw [Set.indicator_of_notMem ha]
     exact zero_le
 
-omit [DecidableEq (F.Carrier d)] in
 private theorem answer_support {Q : Type} [DecidableEq Q] {law : Q → PMF K} {q : Q}
     {s : RandomOracle.Cache (fun _ : Q => K)} {r : K × RandomOracle.Cache (fun _ : Q => K)}
     (hr : r ∈ (RandomOracle.answer law q s).support) :

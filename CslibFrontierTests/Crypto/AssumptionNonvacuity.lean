@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 import CslibFrontier.Crypto.Computational.DiffieHellman
 import CslibFrontier.Crypto.Computational.Encryption.CCA
 import CslibFrontier.Crypto.Computational.PseudorandomFunction
+import CslibFrontier.Probability.PMF.UniformPoint
 import CslibFrontier.Probability.Product
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Tactic.PPT
@@ -48,18 +49,12 @@ theorem guessZero_isPPT : IsPPTOn (encPair encUnary (encPair F.encDesc encBits))
     (fun input => guessZero F input.1 input.2) :=
   (ComputableInPolyTime.const _).isPPTOn
 
-/-- A uniform element of a group of order `q` is a given one with probability `1 / q`. -/
-theorem uniform_eq_apply (α₀ : ZMod (F.order d)) :
-    (do let α ← PMF.uniformOfFintype (ZMod (F.order d)); return decide (α₀ = α) : PMF Bool) true =
-      (F.order d : ℝ≥0∞)⁻¹ := by
-  rw [PMF.monad_bind_eq_bind, PMF.bind_apply, tsum_fintype]
-  simp [PMF.uniformOfFintype_apply, PMF.pure_apply]
-
 /-- Guessing `0` against a fixed group of order `q` succeeds with probability exactly `1 / q`. -/
 theorem succProbability_discreteLogGame_guessZero (n : ℕ) :
     Game.succProbability (F.discreteLogGame (fun _ => PMF.pure d) (guessZero F) n) =
       (F.order d : ℝ≥0)⁻¹ := by
-  have h := uniform_eq_apply F d 0
+  have h := PMF.uniformOfFintype_bind_decide_eq_apply_true (0 : ZMod (F.order d))
+  rw [ZMod.card] at h
   simp only [discreteLogGame, guessZero, ProbComp.eval_pure, PMF.monad_bind_eq_bind,
     PMF.monad_pure_eq_pure, PMF.pure_bind] at h ⊢
   simp only [ofBits, List.foldr_nil, Nat.cast_zero]
@@ -78,51 +73,62 @@ theorem not_cdh_const : ¬ F.CDH fun _ => PMF.pure d :=
 
 /-! ### DDH -/
 
-/-- Accept when the first and third elements are both the identity of the fixed group `d`. -/
-noncomputable def identityTest :
-    ℕ → F.Desc × List Bool × List Bool × List Bool → ProbComp Bool :=
-  fun _ input => pure (decide (input.2.1 = F.encode d 0 ∧ input.2.2.2 = F.encode d 0))
+/-- Accept when the first and third elements are both the identity. -/
+noncomputable def identityTest : F.DDHDistinguisher :=
+  fun _ _ u _ w => pure (decide (u = 0) && decide (w = 0))
 
-theorem identityTest_isPPT :
-    IsPPTOn F.encDDHInput encBool (fun input => identityTest F d input.1 input.2) := by
-  unfold identityTest
-  ppt
-
-/-- An encoded multiple of the generator is the identity exactly for the exponent `0`. -/
-theorem encode_smul_eq_zero_iff (α : ZMod (F.order d)) :
-    F.encode d (α • F.generator d) = F.encode d 0 ↔ α = 0 := by
-  rw [(F.encode_injective d).eq_iff, ← zero_smul (ZMod (F.order d)) (F.generator d),
-    (F.smul_generator_injective d).eq_iff]
+theorem identityTest_isPPT : (identityTest F).IsPPT := by
+  refine (ComputableInPolyTime.isPPTOn (f := fun x : F.DDHInput =>
+    decide (F.encode x.groupParameters x.leftPublic = F.encode x.groupParameters 0) &&
+      decide (F.encode x.groupParameters x.candidateShared = F.encode x.groupParameters 0))
+    (by fun_prop)).congr fun x => ?_
+  simp only [identityTest, (F.encode_injective _).eq_iff]
 
 /-- In the real game, the test succeeds exactly when `α = 0`, with probability `1 / q`. -/
 theorem succProbability_ddhRealGame_identityTest (n : ℕ) :
-    Game.succProbability (F.ddhRealGame (fun _ => PMF.pure d) (identityTest F d) n) =
+    Game.succProbability (F.ddhRealGame (fun _ => PMF.pure d) (identityTest F) n) =
       (F.order d : ℝ≥0)⁻¹ := by
-  have h := uniform_eq_apply F d 0
-  simp only [ddhRealGame, identityTest, ProbComp.eval_pure, PMF.monad_bind_eq_bind,
-    PMF.monad_pure_eq_pure, PMF.pure_bind, encode_smul_eq_zero_iff, mul_eq_zero] at h ⊢
-  simp only [and_or_left, and_self, or_iff_left_of_imp And.left, PMF.bind_const,
-    eq_comm (a := (0 : ZMod _))] at h ⊢
-  rw [Game.succProbability, h, ENNReal.toNNReal_inv, ENNReal.toNNReal_natCast]
+  simp only [ddhRealGame, eval_ddhRealExperiment, identityTest, ProbComp.eval_pure,
+    PMF.monad_bind_eq_bind, PMF.pure_bind, smul_eq_zero, F.generator_ne_zero, or_false,
+    mul_eq_zero, ← Bool.decide_and, and_or_left, and_self, or_iff_left_of_imp And.left,
+    PMF.bind_const]
+  rw [Game.succProbability, PMF.bind_pure_decide_eq_apply_true', PMF.uniformOfFintype_apply,
+    ZMod.card, ENNReal.toNNReal_inv, ENNReal.toNNReal_natCast]
 
-/-- In the ideal game, the test succeeds exactly when `α = γ = 0`, with probability `1 / q²`. -/
-theorem succProbability_ddhIdealGame_identityTest (n : ℕ) :
-    Game.succProbability (F.ddhIdealGame (fun _ => PMF.pure d) (identityTest F d) n) =
+/-- In the random game, the test succeeds exactly when `α = γ = 0`, with probability `1 / q²`. -/
+theorem succProbability_ddhRandomGame_identityTest (n : ℕ) :
+    Game.succProbability (F.ddhRandomGame (fun _ => PMF.pure d) (identityTest F) n) =
       (F.order d : ℝ≥0)⁻¹ ^ 2 := by
-  simp only [ddhIdealGame, identityTest, ProbComp.eval_pure, PMF.monad_bind_eq_bind,
-    PMF.pure_bind, encode_smul_eq_zero_iff, PMF.bind_const]
+  simp only [ddhRandomGame, eval_ddhRandomExperiment, identityTest, ProbComp.eval_pure,
+    PMF.monad_bind_eq_bind, PMF.pure_bind, smul_eq_zero, F.generator_ne_zero, or_false,
+    PMF.bind_const]
   rw [Game.succProbability, ← ENNReal.toNNReal_natCast, ← ENNReal.toNNReal_inv,
     ← ENNReal.toNNReal_pow]
   congr 1
   simp [PMF.bind_apply, tsum_fintype, PMF.uniformOfFintype_apply, PMF.pure_apply, ite_and,
     Finset.sum_ite_eq', sq]
 
+/-- The fixed-group experiments keep the distinct real and random probabilities. -/
+example (n : ℕ) :
+    Game.succProbability (ProbComp.eval
+      (ddhRealExperiment (F.order d) (F.generator d) (identityTest F n d))) =
+      (F.order d : ℝ≥0)⁻¹ := by
+  simpa only [ddhRealGame, PMF.monad_bind_eq_bind, PMF.pure_bind] using
+    succProbability_ddhRealGame_identityTest F d n
+
+example (n : ℕ) :
+    Game.succProbability (ProbComp.eval
+      (ddhRandomExperiment (F.order d) (F.generator d) (identityTest F n d))) =
+      (F.order d : ℝ≥0)⁻¹ ^ 2 := by
+  simpa only [ddhRandomGame, PMF.monad_bind_eq_bind, PMF.pure_bind] using
+    succProbability_ddhRandomGame_identityTest F d n
+
 /-- **DDH fails for a fixed group.** -/
 theorem not_ddh_const : ¬ F.DDH fun _ => PMF.pure d := by
   intro h
-  have hneg := h (identityTest F d) (identityTest_isPPT F d)
+  have hneg := h (identityTest F) (identityTest_isPPT F)
   simp only [Game.advantage, succProbability_ddhRealGame_identityTest,
-    succProbability_ddhIdealGame_identityTest] at hneg
+    succProbability_ddhRandomGame_identityTest] at hneg
   refine not_negligible_const ?_ hneg
   rw [ne_eq, nndist_eq_zero]
   intro heq

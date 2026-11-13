@@ -243,7 +243,7 @@ theorem SignatureScheme.OneTimeEUFCMA.exists_oneWay {S : SignatureScheme}
   have hstep1 : Game.succProbability (ProbComp.eval (inversionGame f adversary size)) ≤
       Game.succProbability (trial size) := by
     apply ENNReal.toNNReal_mono (PMF.apply_ne_top _ _)
-    dsimp only [trial, inversionGame]
+    dsimp only [trial, inversionGame, inversionExperiment]
     rw [hlaw n size hbudget, PMF.monad_bind_eq_bind, PMF.bind_map]
     simp only [pmf_norm, BitString.eval_sampleList]
     refine PMF.bind_apply_mono_on_support _ true fun seed hseed => ?_
@@ -749,8 +749,8 @@ theorem OneWay.oneTimeEUFCMA_lamport {f : List Bool → List Bool} (hf : OneWay 
     (ProbComp.eval (inverterAt j (f xStar))).map fun cand => f cand == f xStar
   have hinv_eq : ProbComp.eval (inversionGame f inverter n) =
       (PMF.uniformOfFintype (Fin (dyadicSize (2 * n)))).bind (fun j => trial j.val) := by
-    simp only [pmf_norm, inversionGame, inverter, lamportInverter, trial, inverterAt,
-      BitString.eval_sampleList, eval_sampleDyadicIndex]
+    simp only [pmf_norm, inversionGame, inversionExperiment, inverter, lamportInverter, trial,
+      inverterAt, BitString.eval_sampleList, eval_sampleDyadicIndex]
     rw [PMF.bind_comm]
     rfl
   have htrial_eq : ∀ j < 2 * n,
