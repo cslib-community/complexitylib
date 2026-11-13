@@ -2,6 +2,8 @@
 
 import importlib.util
 import base64
+from contextlib import redirect_stdout
+import io
 import json
 import os
 from pathlib import Path
@@ -186,6 +188,13 @@ class PublicationTests(unittest.TestCase):
 
 @unittest.skipUnless(shutil.which("git"), "Git is required")
 class SourceStateTests(unittest.TestCase):
+    def test_report_inside_publication_is_rejected_before_staging(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            destination = Path(temporary) / "publication"
+            with self.assertRaisesRegex(ValueError, "outside the publication"):
+                publish.stage(destination, destination / "metrics.json")
+            self.assertFalse(destination.exists())
+
     def make_repo(self, temporary):
         root = Path(temporary) / "repo"
         root.mkdir()
@@ -291,6 +300,53 @@ name = "CslibFrontierTests"
             self.assertGreater(len(data["files"]), 1)
             self.assertTrue(all(publish.digest(destination / name) == expected
                                 for name, expected in data["files"].items()))
+            # Simulate a restored Actions build tree without its module archives or shared cache.
+            # The mapping build must pack these warm outputs without recompiling them.
+            outputs = {path: (path.stat().st_mtime_ns, publish.digest(path))
+                       for path in (root / ".lake/build").rglob("*.olean")}
+            self.assertEqual(len(outputs), 2)
+            for path in (root / ".lake/build").rglob("*.ltar"):
+                path.unlink()
+            shutil.rmtree(env["LAKE_CACHE_DIR"])
+            reports = []
+            for name in ("missing-archives", "retained-archives"):
+                target = Path(temporary) / name
+                report = Path(temporary) / (name + ".json")
+                with (patch.object(publish, "ROOT", root),
+                      patch.dict(os.environ, env, clear=True)):
+                    publish.stage(target, report)
+                measured = json.loads(report.read_text())
+                reports.append(measured)
+                self.assertEqual(measured["mapping_entries"], 2)
+                self.assertEqual(measured["staged_artifacts"], 2)
+                self.assertEqual(measured["archives_after"]["count"], 2)
+                self.assertTrue(all(phase["status"] == "success"
+                                    and phase["wall_seconds"] >= 0 for phase in measured["phases"]))
+                publish.validate(target)  # Diagnostic JSON must never enter the public inventory.
+                self.assertEqual(outputs, {path: (path.stat().st_mtime_ns, publish.digest(path))
+                                           for path in outputs})
+            self.assertEqual(reports[0]["archives_before"]["count"], 0)
+            self.assertEqual(reports[1]["archives_before"]["count"], 2)
+
+
+class StagePhaseTests(unittest.TestCase):
+    def test_failed_command_keeps_its_exception_and_reports_the_phase(self):
+        phases, output = [], io.StringIO()
+        failure = subprocess.CalledProcessError(23, ["lake", "build"])
+        with redirect_stdout(output), self.assertRaises(subprocess.CalledProcessError) as raised:
+            with publish.stage_phase("mapping and archive build", phases):
+                raise failure
+        self.assertIs(raised.exception, failure)
+        self.assertEqual(phases[0]["status"], "failed")
+        self.assertIn("mapping and archive build failed", output.getvalue())
+
+    def test_resource_module_is_optional(self):
+        phases = []
+        with patch.object(publish, "resource", None), redirect_stdout(io.StringIO()):
+            with publish.stage_phase("fixture", phases):
+                pass
+        self.assertEqual(phases[0]["status"], "success")
+        self.assertNotIn("child_user_seconds", phases[0])
 
 
 if __name__ == "__main__":

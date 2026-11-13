@@ -90,4 +90,13 @@ A focused build, quick changed-client check, whole-library build, full `scripts/
 
 If generated API documentation alone is stale after a module was removed, use the targeted cleanup in [the build instructions](../BUILD.md#build-the-api-reference). A library-wide clean discards unrelated warm outputs and does not repair an incorrect statement.
 
+## Profile slow cache publication
+
+If a `main` run builds quickly but takes much longer to publish its cache, inspect the staging
+phase timings and archive counts in `CACHE_STAGING_METRICS`. The mapping-producing build can
+pack missing module archives even when no Lean source needs recompilation. The
+[cache publication profiling procedure](../../scripts/cache/README.md#profile-cache-publication)
+gives the clean-checkout command, metric meanings and controls for a comparison. Separate this
+preparation from upload time: both GCS and MIT receive the same staged files.
+
 [complexitylib]: ../sources.md#complexitylib
