@@ -8,7 +8,6 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Hybrids
-import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Probability.Product.Split
 import CslibFrontier.Tactic.PMFSwap
 
@@ -101,13 +100,13 @@ private theorem bind_pi_reindex [Fintype M] [Fintype CT] [Finite K]
       (pi fun _ : CT ⊕ ((Bool × M × CT) ⊕ CT) => μ).bind fun f =>
         F (S.coupledH G (fun c => f (.inl c)) (fun x => f (.inr (.inl x))) pk sk)
           (S.coupledFb G (fun c => f (.inl c)) (fun c => f (.inr (.inr c))) pk sk) := by
-    refine Eq.symm ((pi_bind_sum (fun _ => μ) fun (Hq : CT → K) (g : (Bool × M × CT) ⊕ CT → K) =>
+    refine Eq.symm ((bind_pi_sum (fun _ => μ) fun (Hq : CT → K) (g : (Bool × M × CT) ⊕ CT → K) =>
       F (S.coupledH G Hq (fun x => g (Sum.inl x)) pk sk)
         (S.coupledFb G Hq (fun c => g (Sum.inr c)) pk sk)).trans ?_)
     congr 1 with Hq : 1
-    exact pi_bind_sum (fun _ => μ) fun Hraw Hfb' =>
+    exact bind_pi_sum (fun _ => μ) fun Hraw Hfb' =>
       F (S.coupledH G Hq Hraw pk sk) (S.coupledFb G Hq Hfb' pk sk)
-  rw [hR, ← pi_bind_sum (fun _ => μ) F,
+  rw [hR, ← bind_pi_sum (fun _ => μ) F,
     ← pi_map_comp_injective (fun _ : CT ⊕ ((Bool × M × CT) ⊕ CT) => μ)
       (S.readIndex_injective G pk sk),
     PMF.bind_map]
@@ -176,8 +175,8 @@ theorem eagerCoupledGame_eq_eagerFbGame [Fintype M] [Finite R] [Fintype CT] [Fin
                   (ProbComp.eval S.sampleKey).bind fun kRand =>
                     OracleComp.interpret
                       (S.eagerCoupledHandler G Hq Hraw pk sk (encT S.pke G pk mStar))
-                      (A (pk, encT S.pke G pk mStar, if b = true then kRand else
-                        S.coupledH G Hq Hraw pk sk (false, mStar, encT S.pke G pk mStar))) := by
+                      (A ⟨pk, encT S.pke G pk mStar, if b = true then kRand else
+                        S.coupledH G Hq Hraw pk sk (false, mStar, encT S.pke G pk mStar)⟩) := by
         congr 1 with s : 1
         congr 1 with G : 1
         rw [bind_pi_reindex S G pk sk]

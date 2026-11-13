@@ -927,12 +927,11 @@ theorem mem_SOPL_of_localOpt_sinkOfLine (hR : R ∈ FNP enc)
     (hn₁ : ComputableInPolyTime n₁ enc encUnary)
     (hN₁ : ComputableInPolyTime N₁ (encPair enc encBits) encBits)
     (hC₁ : ComputableInPolyTime C₁ (encPair enc encBits) encNat)
-    (hN₁_len : ∀ a u, u.length = n₁ a → (N₁ (a, u)).length = n₁ a)
+    (hN₁_len : PreservesWidth n₁ N₁)
     (hn₂ : ComputableInPolyTime n₂ enc encUnary)
     (hP₂ : ComputableInPolyTime P₂ (encPair enc encBits) encBits)
     (hS₂ : ComputableInPolyTime S₂ (encPair enc encBits) encBits)
-    (hP₂_len : ∀ a u, u.length = n₂ a → (P₂ (a, u)).length = n₂ a)
-    (hS₂_len : ∀ a u, u.length = n₂ a → (S₂ (a, u)).length = n₂ a)
+    (hP₂_len : PreservesWidth n₂ P₂) (hS₂_len : PreservesWidth n₂ S₂)
     {g₁ g₂ : α × List Bool → List Bool}
     (hg₁ : ComputableInPolyTime g₁ (encPair enc encBits) encBits)
     (hg₂ : ComputableInPolyTime g₂ (encPair enc encBits) encBits)
@@ -954,12 +953,10 @@ theorem mem_SOPL_of_localOpt_sinkOfLine (hR : R ∈ FNP enc)
   have hg : ComputableInPolyTime g (encPair enc encBits) encBits := by
     dsimp only [g, optTest]
     fun_prop
-  have hSucc_len (a : α) (w : List Bool) (hw : w.length = plsPpadsWidth n₁ n₂ a) :
-      (plsPpadsSucc n₁ N₁ C₁ n₂ P₂ S₂ (a, w)).length = plsPpadsWidth n₁ n₂ a :=
-    length_plsPpadsSucc (hN₁_len a) (hS₂_len a) hw
-  have hPred_len (a : α) (w : List Bool) (hw : w.length = plsPpadsWidth n₁ n₂ a) :
-      (plsPpadsPred n₁ N₁ C₁ n₂ P₂ S₂ (a, w)).length = plsPpadsWidth n₁ n₂ a :=
-    length_plsPpadsPred (hP₂_len a) hw
+  have hSucc_len : PreservesWidth (plsPpadsWidth n₁ n₂) (plsPpadsSucc n₁ N₁ C₁ n₂ P₂ S₂) :=
+    fun a _ hw => length_plsPpadsSucc (hN₁_len a) (hS₂_len a) hw
+  have hPred_len : PreservesWidth (plsPpadsWidth n₁ n₂) (plsPpadsPred n₁ N₁ C₁ n₂ P₂ S₂) :=
+    fun a _ hw => length_plsPpadsPred (hP₂_len a) hw
   refine ⟨hR, plsPpadsWidth n₁ n₂, plsPpadsPred n₁ N₁ C₁ n₂ P₂ S₂,
     plsPpadsSucc n₁ N₁ C₁ n₂ P₂ S₂, plsPpadsPotential n₁ C₁ n₂ (fun a => 2 ^ m₀ a), hW,
     computableInPolyTime_plsPpadsPred hn₁ hN₁ hC₁ hn₂ hP₂ hS₂,

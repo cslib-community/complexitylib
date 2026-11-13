@@ -76,6 +76,7 @@ import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PotentialL
 import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PotentialLineNormalization
 import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.SOPLCollapse
 import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.SpernerHardness
+import CslibFrontier.Computability.Complexity.Classes.Time.Sublinear
 import CslibFrontier.Computability.Complexity.Classes.TimeSpace.Williams
 import CslibFrontier.Computability.Complexity.Classes.Toda
 import CslibFrontier.Computability.Complexity.CookLevin.Completeness
@@ -2869,6 +2870,35 @@ register_result "cai-furer-immerman-isomorphism" where
     particular cfiEven k and cfiOdd k over K_(2k+4) are non-isomorphic. Indistinguishability \
     in C^(k+1) and k-WL is in cai-furer-immerman-graphs; expander base graphs of size O(k) are \
     not formalized."
+
+register_result "native-sublinear-time-collapse" where
+  title := "Sublinear native algorithms have constant runtime"
+  topic := "time complexity"
+  sources := [
+    { paper := Goldreich2007DraftR2, theorem := "Exercise 4.3",
+      locator := "January 2007 draft r2.pdf, PDF p. 35; printed p. 151" }
+  ]
+  theorems := [
+    Turing.MultiTapeTM.exists_uniform_time_of_fast_length,
+    Turing.MultiTapeTM.exists_uniform_time_of_isLittleO,
+    Turing.MultiTapeTM.ComputableInTimeAndSpace.exists_const_time_of_isLittleO
+  ]
+  scope := "A fixed native sequential-input machine with a uniform sublinear clock on every \
+    input word has a global constant clock. One fast width suffices under a uniform total \
+    clock on all words. Raw-bit computability preserves outputs and independent workspace. \
+    No separate input length, random access or arbitrary encoding extension is asserted."
+
+register_result "sublinear-dtime-equals-constant" where
+  title := "Sublinear deterministic time classes equal constant time"
+  topic := "time complexity"
+  sources := [
+    { paper := Goldreich2007DraftR2, theorem := "Exercise 4.3 (decision-class consequence)",
+      locator := "January 2007 draft r2.pdf, PDF p. 35; printed p. 151" }
+  ]
+  theorems := [Cslib.Complexity.DTIME_eq_const_of_isLittleO]
+  scope := "DTIME encBits p equals DTIME encBits 1 for p=o(n), including affine clock constants. \
+    The input is every raw bit word; prefixes of arbitrary encoded instances need not be \
+    valid, so no such encoding-general class identity is claimed."
 
 register_result "translational-time-hierarchy" where
   title := "Deterministic time hierarchy below every power of the logarithm, by translation"

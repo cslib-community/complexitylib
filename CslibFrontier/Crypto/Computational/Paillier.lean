@@ -20,6 +20,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.WordsRoundTrip
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pair.Projections
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.UniformNat
 import CslibFrontier.Probability.PMF
@@ -259,16 +260,6 @@ theorem computableInPolyTime_addCiphertexts :
 
 /-! ### Correctness and the additive homomorphism -/
 
-/-- The first component of the binary encoding of a pair of natural numbers. -/
-theorem unframe_encPair_encNat (a b : ℕ) :
-    unframe (encPair encNat encNat (a, b)) = encNat a := by
-  simp only [encPair_apply, unframe_frame_append]
-
-/-- The second component of the binary encoding of a pair of natural numbers. -/
-theorem dropFrame_encPair_encNat (a b : ℕ) :
-    dropFrame (encPair encNat encNat (a, b)) = encNat b := by
-  simp only [encPair_apply, dropFrame_frame_append]
-
 /-- Key pairs in the support of `keyGen gen n` come from a valid description. -/
 theorem exists_of_mem_support_keyGen {gen : ℕ → ProbComp Desc} {n : ℕ}
     {keys : List Bool × List Bool} (hkeys : keys ∈ (ProbComp.eval (keyGen gen n)).support) :
@@ -292,7 +283,7 @@ theorem exists_of_mem_support_encrypt {n N m : ℕ} {ct : List Bool}
 private theorem decrypt_encPair (d : Desc) (c : ℕ) :
     decrypt (encPair encNat encNat (d.modulus, d.totient)) (encNat c) =
       encNat (decryptNat d.modulus d.modulus.totient c) := by
-  rw [decrypt, unframe_encPair_encNat, dropFrame_encPair_encNat, ofBits_encNat, ofBits_encNat,
+  rw [decrypt, unframe_encPair, dropFrame_encPair, ofBits_encNat, ofBits_encNat,
     ofBits_encNat, d.totient_eq]
 
 /-- **Perfect correctness of Paillier encryption** ([KatzLindell2020], Construction 15.11): for

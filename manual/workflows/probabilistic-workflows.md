@@ -104,7 +104,7 @@ satisfying `P` and the remaining coordinates form two independent products. Its 
 `pi_map_restrict` and `pi_map_comp_injective` give the marginal law: restricting `pi p` to the
 coordinates satisfying `P`, or reading it along an injection `e` of index types as
 `fun a k => a (e k)`, gives the independent product of the selected factors. For a product indexed
-by a sum type `ι ⊕ κ`, `pi_bind_sum` samples the two summands as independent products inside a
+by a sum type `ι ⊕ κ`, `bind_pi_sum` samples the two summands as independent products inside a
 `bind`. Use these instead of counting tuples when the factors are not uniform. `pi_map_curry` in
 [Product/Reindex.lean](../../CslibFrontier/Probability/Product/Reindex.lean) splits a product
 indexed by `ι × κ` into independent blocks, and `toOuterMeasure_pi_forall` in
@@ -187,6 +187,17 @@ The same module records that pairing with a constant (`snd_eq_of_mem_support_map
 into `StateT` (`snd_eq_of_mem_support_lift`, `toOuterMeasure_lift_eq_zero`) keeps the state fixed on
 the support. The [checked examples](../../CslibFrontierTests/PMFSupport.lean) cover each direction;
 run `scripts/build.sh CslibFrontierTests.PMFSupport`.
+
+For a guessing bound, import
+[PMF/UniformPoint.lean](../../CslibFrontier/Probability/PMF/UniformPoint.lean) instead of summing
+over the uniform law by hand. For any law `μ`, `PMF.bind_pure_decide_eq_apply_true μ a` (and its
+`'` and `map_` forms for the other comparison order and for `μ.map`) says an equality test against
+`a` accepts with probability `μ a`. `PMF.uniformOfFintype_bind_decide_eq_apply_true a` specializes
+it: a uniform draw equals `a` with probability `(Fintype.card α)⁻¹`, and
+`PMF.uniformOfFintype_bind_pure_apply_true_le` gives the upper bound `(Fintype.card α)⁻¹` for any
+test accepting at most one value, such as comparing a fixed point with an injective image of the
+draw. The [fixed-group Diffie–Hellman checks](../../CslibFrontierTests/Crypto/DiffieHellmanFinite.lean)
+compute discrete-logarithm advantages `1 / q` with it.
 
 Moving a bound between `ℝ≥0∞` and `ℝ` or `ℝ≥0` (`ENNReal.toReal_mono`, `ENNReal.toReal_add`,
 `ENNReal.toNNReal_mono`, `ENNReal.toReal_sum`) needs every term to be finite. Import
@@ -1455,6 +1466,14 @@ response types are preserved. For the cryptographic clients, inspect
 and [hybridKEMCCAContinuation](../../CslibFrontier/Crypto/Computational/Encryption/Hybrid/CompositionCCA.lean):
 each phase names only the oracle simulation it needs.
 
+To bound a substituted program's queries, import
+[Oracle/Substitution/QueryCount.lean](../../CslibFrontier/Languages/Probabilistic/Oracle/Substitution/QueryCount.lean).
+`hQ.simulate hhandler` keeps the adversary's budget `hQ` when every handler program makes at
+most one query, and `isCostBounded_simulate` does the same for general costs. Neither needs a case
+split on the private-sampling branch. The forward lift
+[PRP.StrongAdversary.isQueryBounded_ofForward](../../CslibFrontier/Crypto/Primitives/PRP/Finite.lean)
+is a one-line client.
+
 If an existing proof needs the underlying interpreter, unfold `ProbOracleComp.simulate` to
 reuse its laws and native efficiency certificates. Substitution preserves the free program;
 it does not by itself certify its runtime. This separation follows VCVio's treatment of
@@ -1511,6 +1530,41 @@ into child labels, and those labels become the next level's cache. The prefix-le
 child-table equations remain local mathematical obligations. These eager tables are used to
 prove distributional equalities; the executable reductions retain their existing separate
 runtime and query-bound certificates.
+
+## Replace a game's own caches by complete tables
+
+Use this route when a game keeps its random-oracle caches in its own state, such as association
+lists in a record or several caches for several oracles, rather than running a program through
+`memoize`. Import
+[RandomOracle/Represented.lean](../../CslibFrontier/Languages/Probabilistic/RandomOracle/Represented.lean).
+
+1. Join the oracles into one interface with `⊕ₒ` and write each game query as an oracle program
+   over it. Write the lazy handler and the complete-table handler as `interpret` of the same
+   program, so the game logic is stated once.
+2. Choose `rep : State → RandomOracle.Cache spec`, the cache that the state represents. Build it
+   from one cache per oracle with `RandomOracle.Cache.sum` from
+   [RandomOracle/Sum.lean](../../CslibFrontier/Languages/Probabilistic/RandomOracle/Sum.lean),
+   which `Represented.lean` re-exports, and read list caches with `RandomOracle.ofList`.
+3. Prove the per-call step: each lazy handler call, with its next state mapped by `rep`, is
+   `RandomOracle.answer` on the represented cache. On a joined cache, `answer_sum_inl` and
+   `answer_sum_inr` reduce this to one side, and `RandomOracle.eval_zoom_memoize_map` proves it for
+   a `zoomStateT`/`memoize` cache.
+4. Apply `RandomOracle.eval_run_interpret_eq_complete_bind`, or `run_interpret_eq_complete_bind`
+   for a handler that already returns `PMF`. The run's result law becomes completing `rep s` once
+   and answering every call from the table. `RandomOracle.bind_complete_sum` then splits the
+   completed table into one independent table per oracle.
+
+This proves an exact equality, so step 3 fails when a handler also inspects its caches directly,
+for example a decapsulation filter that checks whether a message was already queried. Such a hop
+needs an approximate simulation instead, as in `closeTo_cachedCoupledBotGame_eagerCoupledBotGame`
+in [FujisakiOkamoto/Bot.lean](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Bot.lean).
+
+The checked clients are `Scheme.eval_roIndCcaGame_eq_eagerIndCcaGame` in
+[FujisakiOkamoto/Security.lean](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Security.lean),
+with two caches for `G` and `H`, and `Scheme.eval_coupledGame_eq_eagerCoupledGame` in
+[NotBot/Lazy.lean](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/NotBot/Lazy.lean),
+with three caches and a key-derivation query that calls two oracles. Check them with
+`scripts/build.sh --wfail --iofail CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Lazy`.
 
 ## Certify an adaptive oracle client
 

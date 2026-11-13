@@ -235,13 +235,13 @@ def identityScheme : Scheme Unit Unit (Fin 4) Unit (Fin 4) (Fin 2) where
   sampleMsg := ProbComp.unifFin 3
   sampleKey := pure 0
 
-/-- ROM adversary against `identityScheme` that queries `G` on the challenge ciphertext `cStar`
-(which equals the plaintext message in `identityPKE`), queries punctured decapsulation on `cStar`,
+/-- ROM adversary against `identityScheme` that queries `G` on the challenge ciphertext `ch.ct`
+(which equals the plaintext message in `identityPKE`), queries punctured decapsulation on `ch.ct`,
 and outputs `true`. -/
 def queryCiphertextGAdv : ROAdversary Unit (Fin 4) Unit (Fin 4) (Fin 2) :=
-  fun (_, cStar, _) => do
-    let _ ← OracleComp.query (ROQuery.G cStar)
-    let _ ← OracleComp.query (ROQuery.decaps cStar)
+  fun ch => do
+    let _ ← OracleComp.query (ROQuery.G ch.ct)
+    let _ ← OracleComp.query (ROQuery.decaps ch.ct)
     return true
 
 /-- `queryCiphertextGAdv` makes at most `1` query to `G` and `0` queries to `H`. -/
@@ -297,12 +297,12 @@ def identityUnifKeyScheme : Scheme Unit Unit (Fin 4) Unit (Fin 4) (Fin 2) where
   sampleMsg := pure 0
   sampleKey := ProbComp.unifFin 1
 
-/-- ROM adversary that queries `H(false, cStar, cStar)` and checks whether the returned key equals
-the challenge key `kStar`. -/
+/-- ROM adversary that queries `H(false, c*, c*)` on the challenge ciphertext `c* = ch.ct` and
+checks whether the returned key equals the challenge key `ch.key`. -/
 def checkKeyHAdv : ROAdversary Unit (Fin 4) Unit (Fin 4) (Fin 2) :=
-  fun (_, cStar, kStar) => do
-    let k ← OracleComp.query (ROQuery.H (false, cStar, cStar))
-    return decide (k = kStar)
+  fun ch => do
+    let k ← OracleComp.query (ROQuery.H (false, ch.ct, ch.ct))
+    return decide (k = ch.key)
 
 /-- Positive-advantage witness for `indCcaRomAdvantage`: `checkKeyHAdv` distinguishes real from
 random keys in `identityUnifKeyScheme` with advantage `1 / 2`. -/

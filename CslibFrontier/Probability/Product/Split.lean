@@ -20,6 +20,7 @@ Split the coordinates of an independent product by a predicate `P`, along Mathli
 `Equiv.piEquivPiSubtypeProd`. The coordinates satisfying `P` and the remaining coordinates form two
 independent products. In particular, the restriction of an independent product to some of its
 coordinates, or its composition with an injection of index types, is again an independent product.
+An independent product over a sum of index types splits the same way into its two summands.
 Conditioning a uniform tuple on the value of one coordinate splits that coordinate off: it becomes
 constant, and the other coordinates stay uniform.
 
@@ -30,8 +31,8 @@ constant, and the other coordinates stay uniform.
 * `Cslib.Probability.PMF.pi_map_restrict`, `Cslib.Probability.PMF.pi_map_comp_injective`:
   restricting an independent product, or reading it along an injection, gives the independent
   product of the selected factors.
-* `Cslib.Probability.PMF.pi_map_sumPiEquivProdPi`, `Cslib.Probability.PMF.pi_bind_sum`: an
-  independent product over `ι ⊕ κ` is the pair of independent products over `ι` and over `κ`.
+* `Cslib.Probability.PMF.pi_map_sumPiEquivProdPi`, `Cslib.Probability.PMF.bind_pi_sum`: an
+  independent product over `ι ⊕ κ` is a pair of independent products over `ι` and `κ`.
 * `Cslib.Probability.PMF.filter_uniformOfFintype_eval_eq`: conditioning a uniform tuple on one
   coordinate sets that coordinate.
 * `Cslib.Probability.PMF.uniformOfFintype_map_comp_dep`: a uniform dependent function read
@@ -89,10 +90,10 @@ theorem pi_map_comp_injective {κ : Type*} [Fintype κ] (p : ∀ i, PMF (α i)) 
 
 section Sum
 
-variable {κ : Type*} [Fintype κ] {β : ι ⊕ κ → Type*} [∀ i, Finite (β i)]
+variable {ι κ : Type*} [Fintype ι] [Fintype κ] {β : ι ⊕ κ → Type*} [∀ i, Finite (β i)]
 
-/-- An independent product over a sum of index types splits, along Mathlib's
-`Equiv.sumPiEquivProdPi`, into the two independent products over the summands. -/
+/-- An independent product over `ι ⊕ κ` splits, along Mathlib's `Equiv.sumPiEquivProdPi`, into
+independent products over `ι` and over `κ`. -/
 theorem pi_map_sumPiEquivProdPi (p : ∀ i, PMF (β i)) :
     (pi p).map (Equiv.sumPiEquivProdPi β) =
       (pi fun i => p (.inl i)).bind fun a => (pi fun j => p (.inr j)).map (a, ·) := by
@@ -101,9 +102,9 @@ theorem pi_map_sumPiEquivProdPi (p : ∀ i, PMF (β i)) :
     Fintype.prod_sum_type]
   rfl
 
-/-- Drawing an independent product over a sum of index types and reading its two parts is drawing
-the two independent products over the summands. -/
-theorem pi_bind_sum {γ : Type*} (p : ∀ i, PMF (β i))
+/-- An experiment reading the two halves of an independent product over `ι ⊕ κ` samples each half
+independently. -/
+theorem bind_pi_sum {γ : Type*} (p : ∀ i, PMF (β i))
     (F : (∀ i, β (.inl i)) → (∀ j, β (.inr j)) → PMF γ) :
     (pi p).bind (fun f => F (fun i => f (.inl i)) fun j => f (.inr j)) =
       (pi fun i => p (.inl i)).bind fun a => (pi fun j => p (.inr j)).bind fun b => F a b := by

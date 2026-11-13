@@ -231,14 +231,14 @@ and root vector `roots : Fin r → List Bool`. -/
     (tr_MT : List (List Bool × List Bool)) (x : Stmt) (roots : Fin r → List Bool) : Wit :=
   iopExtract x (bcsExtractOracles decSym defaultSym tr_MT d roots)
 
-/-- Every Merkle opening `((j, idx), (val, path))` checked by `iop.queries x chals` against
+/-- Every Merkle opening `((j, idx), ⟨val, path⟩)` checked by `iop.queries x chals` against
 `prf.openings` has all of its hash steps recorded in `tr_MT`. -/
 @[expose] def BCSOpeningsQueriedInTrace (H : List Bool → List Bool → List Bool) (k : List Bool)
     (iop : PublicCoinIOP r d Stmt Wit Sym Chal) (encSym : Sym → List Bool)
     (tr_MT : List (List Bool × List Bool)) (x : Stmt) (chals : Fin r → Chal)
     (prf : BCSProof r Sym) : Prop :=
   ∀ j idx val path,
-    ((j, idx), (val, path)) ∈ (iop.queries x chals).zip prf.openings →
+    ((j, idx), ⟨val, path⟩) ∈ (iop.queries x chals).zip prf.openings →
       PathQueriedInTrace H k tr_MT idx.val (encSym val) path
 
 instance instDecidableBCSOpeningsQueriedInTrace (H : List Bool → List Bool → List Bool)
@@ -249,8 +249,8 @@ instance instDecidableBCSOpeningsQueriedInTrace (H : List Bool → List Bool →
   decidable_of_iff
     (∀ e ∈ (iop.queries x chals).zip prf.openings,
       match e with
-      | ((_, idx), (val, path)) => PathQueriedInTrace H k tr_MT idx.val (encSym val) path)
-    ⟨fun h j idx val path hmem => h ((j, idx), (val, path)) hmem,
+      | ((_, idx), ⟨val, path⟩) => PathQueriedInTrace H k tr_MT idx.val (encSym val) path)
+    ⟨fun h j idx val path hmem => h ((j, idx), ⟨val, path⟩) hmem,
      fun h ⟨⟨j, idx⟩, ⟨val, path⟩⟩ hmem => h j idx val path hmem⟩
 
 /-- If `tr_MT` is collision-free and records the authentication path of an opening `(val, path)` at
@@ -282,9 +282,8 @@ theorem iopVerify_bcsExtractOracles_of_bcsVerify {H : List Bool → List Bool �
     iopVerify iop x (bcsChallenge hFS x prf.roots)
       (bcsExtractOracles decSym defaultSym tr_MT d prf.roots) = true := by
   refine iopVerify_eq_true_of_bcsVerify_of_openings_eq hver fun j idx val path hmem => ?_
-  have hmv : merkleVerify H k d (prf.roots j) idx.val (encSym val) path = true := by
-    simp only [bcsVerify, Bool.and_eq_true, beq_iff_eq, List.all_eq_true] at hver
-    exact hver.1.2 ((j, idx), (val, path)) hmem
+  have hmv : merkleVerify H k d (prf.roots j) idx.val (encSym val) path = true :=
+    verify_of_bcsVerify hver hmem
   exact (bcsExtractTable_eq_of_merkleVerify hdec defaultSym hfree
     (hpaths j idx val path hmem) hmv).symm
 
@@ -306,20 +305,19 @@ theorem exists_collision_of_bcsVerify_of_iopVerify_eq_false
     ∃ q₁ ∈ tr_MT.map Prod.fst, ∃ q₂ ∈ tr_MT.map Prod.fst, q₁ ≠ q₂ ∧ H k q₁ = H k q₂ := by
   set chals := bcsChallenge hFS x prf.roots
   have hnot_all : ¬ ∀ p ∈ (iop.queries x chals).zip prf.openings,
-      extractLeafFromTrace tr_MT d (prf.roots p.1.1) p.1.2.val = some (encSym p.2.1) := by
+      extractLeafFromTrace tr_MT d (prf.roots p.1.1) p.1.2.val = some (encSym p.2.leaf) := by
     intro hall
     have hacc : iopVerify iop x chals
         (bcsExtractOracles decSym defaultSym tr_MT d prf.roots) = true := by
       refine iopVerify_eq_true_of_bcsVerify_of_openings_eq hver fun j idx val path hmem => ?_
-      have hleaf := hall ((j, idx), (val, path)) hmem
+      have hleaf := hall ((j, idx), ⟨val, path⟩) hmem
       simp only [bcsExtractOracles, bcsExtractTable, hleaf, hdec val]
     rw [hacc] at hrej
     cases hrej
   push Not at hnot_all
   obtain ⟨⟨⟨j, idx⟩, ⟨val, path⟩⟩, hmem, hne⟩ := hnot_all
-  have hmv : merkleVerify H k d (prf.roots j) idx.val (encSym val) path = true := by
-    simp only [bcsVerify, Bool.and_eq_true, beq_iff_eq, List.all_eq_true] at hver
-    exact hver.1.2 ((j, idx), (val, path)) hmem
+  have hmv : merkleVerify H k d (prf.roots j) idx.val (encSym val) path = true :=
+    verify_of_bcsVerify hver hmem
   exact exists_collision_of_extractLeafFromTrace_ne hcons (hpaths j idx val path hmem) hmv hne
 
 /-- Prepending `(q, ans)` to `tr_MT` leaves `bcsExtractTable` at `rt` unchanged whenever `ans ≠ rt`
@@ -529,7 +527,7 @@ def bcsProveROM (iop : PublicCoinIOP r d Stmt Wit Sym Chal)
   let openings ← OracleComp.liftLeft (spec₂ := BCSFSSpec Stmt Chal)
     ((iop.queries x chals).mapM fun (j, idx) => do
       let path ← merklePathProg (oracleLeaves encSym d (tables j)) idx.val
-      return (tables j idx, path))
+      return ⟨tables j idx, path⟩)
   return { roots := roots, openings := openings }
 
 /-- Verify all Merkle openings and the IOP decision predicate for a `BCSProof` given already
@@ -538,11 +536,11 @@ derived challenges `chals`. -/
     (encSym : Sym → List Bool) (x : Stmt) (prf : BCSProof r Sym) (chals : Fin r → Chal) :
     OracleComp MerkleHashSpec Bool := do
   let qs := iop.queries x chals
-  let checks ← (qs.zip prf.openings).mapM fun ((j, idx), (val, path)) =>
+  let checks ← (qs.zip prf.openings).mapM fun ((j, idx), ⟨val, path⟩) =>
     merkleVerifyProg d (prf.roots j) idx.val (encSym val) path
   return prf.openings.length == qs.length &&
     checks.all id &&
-    iop.decide x chals (prf.openings.map Prod.fst)
+    iop.decide x chals (prf.openings.map MerkleOpening.leaf)
 
 /-- **The BCS verifier in the two-channel random-oracle model** (`bcsVerifyROM`): re-derives all `r`
 round challenges on the Fiat–Shamir channel via `bcsChallengesProg` and checks all Merkle openings
@@ -662,15 +660,15 @@ theorem evalPure_bcsVerifyOpeningsProg (hTree : List Bool → List Bool)
     (x : Stmt) (prf : BCSProof r Sym) (chals : Fin r → Chal) :
     OracleComp.evalPure hTree (bcsVerifyOpeningsProg iop encSym x prf chals) =
       (prf.openings.length == (iop.queries x chals).length &&
-        ((iop.queries x chals).zip prf.openings).all (fun ((j, idx), (val, path)) =>
-          merkleVerify (fun _ => hTree) [] d (prf.roots j) idx.val (encSym val) path) &&
-        iop.decide x chals (prf.openings.map Prod.fst)) := by
+        ((iop.queries x chals).zip prf.openings).all (fun ((j, idx), o) =>
+          o.verify (fun _ => hTree) [] encSym d (prf.roots j) idx.val) &&
+        iop.decide x chals (prf.openings.map MerkleOpening.leaf)) := by
   simp only [bcsVerifyOpeningsProg, OracleComp.evalPure_bind, OracleComp.evalPure_mapM,
     OracleComp.evalPure_pure, List.all_map]
   congr 2
   refine List.all_congr rfl ?_
   rintro ⟨⟨j, idx⟩, ⟨val, path⟩⟩
-  simp
+  simp [MerkleOpening.verify]
 
 @[simp]
 theorem evalPure_bcsVerifyROM (hTree : List Bool → List Bool)
@@ -1626,14 +1624,14 @@ theorem isCostBounded_bcsFSCost_bcsVerifyROM (iop : PublicCoinIOP r d Stmt Wit S
 
 /-- Total number of Merkle hash queries needed to verify every opening in `openings` (one leaf hash
 plus `path.length` internal-node hashes per opening). -/
-@[expose] def bcsOpeningsMerkleQueries {Sym : Type} (openings : List (BCSOpening Sym)) : ℕ :=
-  (openings.map fun (_, path) => path.length + 1).sum
+@[expose] def bcsOpeningsMerkleQueries {Sym : Type} (openings : List (MerkleOpening Sym)) : ℕ :=
+  (openings.map fun o => o.path.length + 1).sum
 
 private theorem isQueryBounded_zip_mapM_merkleVerifyProg (encSym : Sym → List Bool)
     (roots : Fin r → List Bool) (qs : List (Fin r × Fin (2 ^ d)))
-    (ops : List (BCSOpening Sym)) :
+    (ops : List (MerkleOpening Sym)) :
     IsQueryBounded
-      ((qs.zip ops).mapM fun ((j, idx), (val, path)) =>
+      ((qs.zip ops).mapM fun ((j, idx), ⟨val, path⟩) =>
         merkleVerifyProg d (roots j) idx.val (encSym val) path)
       (bcsOpeningsMerkleQueries ops) := by
   induction qs generalizing ops with
@@ -1644,7 +1642,7 @@ private theorem isQueryBounded_zip_mapM_merkleVerifyProg (encSym : Sym → List 
     | cons op ops' =>
       rcases q with ⟨j, idx⟩
       rcases op with ⟨val, path⟩
-      have hsum : bcsOpeningsMerkleQueries ((val, path) :: ops') =
+      have hsum : bcsOpeningsMerkleQueries (⟨val, path⟩ :: ops') =
           (path.length + 1) + bcsOpeningsMerkleQueries ops' := by
         simp [bcsOpeningsMerkleQueries]
       rw [List.zip_cons_cons, List.mapM_cons, hsum]
@@ -1670,10 +1668,10 @@ theorem isCostBounded_bcsMTCost_bcsVerifyROM (iop : PublicCoinIOP r d Stmt Wit S
 
 private theorem isQueryBounded_zip_mapM_merkleVerifyProg_of_le (encSym : Sym → List Bool)
     (roots : Fin r → List Bool) (qs : List (Fin r × Fin (2 ^ d)))
-    (ops : List (BCSOpening Sym)) {q_iop L_path : ℕ}
-    (hqs : qs.length ≤ q_iop) (hops : ∀ op ∈ ops, op.2.length ≤ L_path) :
+    (ops : List (MerkleOpening Sym)) {q_iop L_path : ℕ}
+    (hqs : qs.length ≤ q_iop) (hops : ∀ op ∈ ops, op.path.length ≤ L_path) :
     IsQueryBounded
-      ((qs.zip ops).mapM fun ((j, idx), (val, path)) =>
+      ((qs.zip ops).mapM fun ((j, idx), ⟨val, path⟩) =>
         merkleVerifyProg d (roots j) idx.val (encSym val) path)
       (q_iop * (L_path + 1)) := by
   induction qs generalizing ops q_iop with
@@ -1691,7 +1689,7 @@ private theorem isQueryBounded_zip_mapM_merkleVerifyProg_of_le (encSym : Sym →
         rcases op with ⟨val, path⟩
         simp only [List.zip_cons_cons, List.mapM_cons]
         have hpath_le : path.length + 1 ≤ L_path + 1 :=
-          Nat.add_le_add_right (hops (val, path) List.mem_cons_self) 1
+          Nat.add_le_add_right (hops ⟨val, path⟩ List.mem_cons_self) 1
         have hhd := (isQueryBounded_merkleVerifyProg d (roots j) idx.val (encSym val) path).mono
           hpath_le
         have htl := ih ops' (Nat.le_of_succ_le_succ hqs)
@@ -1708,7 +1706,7 @@ theorem isCostBounded_bcsMTCost_bcsVerifyROM_of_queries_le
     (iop : PublicCoinIOP r d Stmt Wit Sym Chal) (encSym : Sym → List Bool)
     (x : Stmt) (prf : BCSProof r Sym) {q_iop L_path : ℕ}
     (hqs : ∀ chals, (iop.queries x chals).length ≤ q_iop)
-    (hops : ∀ op ∈ prf.openings, op.2.length ≤ L_path) :
+    (hops : ∀ op ∈ prf.openings, op.path.length ≤ L_path) :
     IsCostBounded bcsMTCost (bcsVerifyROM iop encSym x prf) (q_iop * (L_path + 1)) := by
   unfold bcsVerifyROM
   simpa only [Nat.zero_add] using
@@ -1888,16 +1886,16 @@ private theorem validFSChain_of_mem_support_bcsChallengesProg
 private theorem allOpenings_of_mem_support_mapM_merkleVerifyProg
     (dist : List Bool → PMF (List Bool)) (encSym : Sym → List Bool)
     (roots : Fin r → List Bool)
-    (qa : List ((Fin r × Fin (2 ^ d)) × BCSOpening Sym))
+    (qa : List ((Fin r × Fin (2 ^ d)) × MerkleOpening Sym))
     {tr tr' : List (List Bool × List Bool)} {checks : List Bool}
     (hnodup : (tr.map Prod.fst).Nodup)
     (hsupp : ∀ e ∈ tr, e.2 ∈ (dist e.1).support)
     (hmem : (checks, tr') ∈
       ((OracleComp.interpret (memoize dist)
-        (qa.mapM fun ((j, idx), (val, path)) =>
+        (qa.mapM fun ((j, idx), ⟨val, path⟩) =>
           merkleVerifyProg d (roots j) idx.val (encSym val) path)).run tr).support)
     {h : List Bool → List Bool} (hcons : TraceConsistentWith h tr') :
-    ∀ j idx val path, ((j, idx), (val, path)) ∈ qa →
+    ∀ j idx val path, ((j, idx), ⟨val, path⟩) ∈ qa →
       PathQueriedInTrace (fun _ => h) [] tr' idx.val (encSym val) path := by
   induction qa generalizing tr checks with
   | nil =>
@@ -1918,7 +1916,7 @@ private theorem allOpenings_of_mem_support_mapM_merkleVerifyProg
       idx₀.val (encSym val₀) path₀ hnodup hsupp hc hcons₁
     intro j idx val path ho
     rcases List.mem_cons.mp ho with heq | htl
-    · rw [Prod.mk.injEq, Prod.mk.injEq, Prod.mk.injEq] at heq
+    · rw [Prod.mk.injEq, Prod.mk.injEq, MerkleOpening.mk.injEq] at heq
       rcases heq with ⟨⟨rfl, rfl⟩, ⟨rfl, rfl⟩⟩
       intro q hq
       exact hsub₂ _ (hhd q hq)
