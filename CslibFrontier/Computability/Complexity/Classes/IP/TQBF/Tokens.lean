@@ -224,6 +224,15 @@ variable {F : Type}
 it, and the current point. -/
 abbrev QueryAt (F : Type) := ArithQBF ℕ × List (ArithQBF.Kind × ℕ) × (ℕ → F)
 
+/-- The current subformula of a query. -/
+abbrev QueryAt.formula (q : QueryAt F) : ArithQBF ℕ := q.1
+
+/-- The tokens that follow the subformula of a query. -/
+abbrev QueryAt.rest (q : QueryAt F) : List (ArithQBF.Kind × ℕ) := q.2.1
+
+/-- The current point of a query. -/
+abbrev QueryAt.point (q : QueryAt F) : ℕ → F := q.2.2
+
 variable [CommRing F] [DecidableEq F] (sampler : ProbComp F) (D : ℕ)
 
 /-- **The verifier on a stream of tokens**, checking the claim that `e`, followed by the tokens
