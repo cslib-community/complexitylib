@@ -1764,6 +1764,7 @@ public import CslibFrontier.Computability.Communication.DagProtocol
 public import CslibFrontier.Computability.Communication.Discrepancy
 public import CslibFrontier.Computability.Communication.Discrepancy.Spectral
 public import CslibFrontier.Computability.Communication.Disjointness
+public import CslibFrontier.Computability.Communication.DistinctRows
 public import CslibFrontier.Computability.Communication.Distributional
 public import CslibFrontier.Computability.Communication.Equality
 public import CslibFrontier.Computability.Communication.FoolingSet
