@@ -72,6 +72,20 @@ variable {ι β : Type*}
 noncomputable def expectedCost (μ : RandomizedDecisionTree ι β) (x : ι → Bool) : ℝ :=
   μ.weights.sum fun t w => w * (t.cost x : ℝ)
 
+/-- Express expected cost as the finite weighted sum over the sampled trees. -/
+theorem expectedCost_eq_sum (μ : RandomizedDecisionTree ι β) (x : ι → Bool) :
+    μ.expectedCost x = μ.weights.sum (fun t w => w * (t.cost x : ℝ)) := by
+  unfold expectedCost
+  rfl
+
+/-- Sampling an index and running its associated tree averages the costs over the indices. -/
+theorem expectedCost_map {C : Type*} (p : StdSimplex ℝ C) (g : C → DecisionTree ι β)
+    (x : ι → Bool) :
+    expectedCost (p.map g : RandomizedDecisionTree ι β) x =
+      p.weights.sum (fun c w => w * ((g c).cost x : ℝ)) := by
+  rw [expectedCost, StdSimplex.weights_map,
+    Finsupp.sum_mapDomain_index (fun _ => zero_mul _) fun _ _ _ => add_mul _ _ _]
+
 variable {μ : RandomizedDecisionTree ι β} {x : ι → Bool}
 
 theorem expectedCost_nonneg : 0 ≤ μ.expectedCost x :=
@@ -119,8 +133,7 @@ theorem computes_uniformMixture {g : C → DecisionTree ι β} {f : (ι → Bool
 `g c`. -/
 theorem expectedCost_uniformMixture (g : C → DecisionTree ι β) (x : ι → Bool) :
     (uniformMixture g).expectedCost x = 𝔼 c, ((g c).cost x : ℝ) := by
-  rw [expectedCost, uniformMixture, StdSimplex.weights_map,
-    Finsupp.sum_mapDomain_index (fun _ => zero_mul _) fun _ _ _ => add_mul _ _ _,
+  rw [uniformMixture, expectedCost_map,
     Finsupp.sum_fintype _ _ fun _ => zero_mul _, Fintype.expect_eq_sum_div_card, sum_div]
   refine sum_congr rfl fun c _ => ?_
   simp [div_eq_inv_mul]
@@ -172,9 +185,14 @@ private theorem zeroErrorComplexity_nonempty (f : (ι → Bool) → β) :
   rw [expectedCost_single]
   exact Nat.cast_le.2 (t.cost_le_depth x)
 
+/-- A lower bound valid for every feasible randomized expected-cost bound also bounds `R₀`. -/
+theorem le_zeroErrorComplexity {c : ℝ}
+    (hc : ∀ (μ : RandomizedDecisionTree ι β) (d : ℝ), μ.Computes 0 f →
+      (∀ x, μ.expectedCost x ≤ d) → c ≤ d) : c ≤ zeroErrorComplexity f :=
+  le_csInf (zeroErrorComplexity_nonempty f) fun _ ⟨μ, hμ, h⟩ => hc μ _ hμ h
+
 theorem zeroErrorComplexity_nonneg : 0 ≤ zeroErrorComplexity f :=
-  le_csInf (zeroErrorComplexity_nonempty f) fun _ ⟨_, _, hc⟩ =>
-    expectedCost_nonneg.trans (hc fun _ => false)
+  le_zeroErrorComplexity fun _ _ _ hc => expectedCost_nonneg.trans (hc fun _ => false)
 
 /-- Randomness with zero error does not hurt: `R₀(f) ≤ D(f)`. -/
 theorem zeroErrorComplexity_le_complexity (f : (ι → Bool) → β) :
@@ -188,8 +206,8 @@ theorem zeroErrorComplexity_le_complexity (f : (ι → Bool) → β) :
 computing `f` is a node, so it makes at least one query on every input. -/
 theorem one_le_zeroErrorComplexity (hf : ∃ x y, f x ≠ f y) :
     1 ≤ zeroErrorComplexity f := by
-  refine le_csInf (zeroErrorComplexity_nonempty f) ?_
-  rintro c ⟨μ, hμ, hc⟩
+  apply le_zeroErrorComplexity
+  intro μ c hμ hc
   obtain ⟨t, ht, hle⟩ :=
     StdSimplex.exists_mem_support_le_sum_mul μ fun t => (t.cost fun _ => false : ℝ)
   refine le_trans ?_ (hle.trans (hc fun _ => false))

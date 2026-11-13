@@ -25,11 +25,14 @@ import CslibFrontier.Computability.Probabilistic.Oracle.Substitution
 import CslibFrontier.Crypto.Computational.Encryption.DecryptionBound
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Crypto.Negligible.Dyadic
+import CslibFrontier.Languages.Probabilistic.Iteration.Chain
 import CslibFrontier.Languages.Probabilistic.Notation
 import CslibFrontier.Languages.Probabilistic.Oracle.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Support
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.BindCompare
+import CslibFrontier.Probability.PMF.Coupling
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Tactic.PolyTime
 import CslibFrontier.Tactic.PPT
@@ -1954,30 +1957,6 @@ private theorem mem_S_of_mem_support_interleavedRoundStep {Msg Out : Type}
       rcases hreply with ⟨_, rfl, rfl⟩
       exact hct
 
-/-- Every supported multi-step transition of `OracleComp.iterate k (interleavedRoundStep ...)`
-preserves membership in `S`. -/
-private theorem mem_S_of_mem_support_iterate_interleavedRoundStep {Msg Out : Type}
-    {valid : ℕ → List Bool → Msg → Msg → Bool}
-    {encOut : Out ↪ List Bool}
-    {encrypt : ℕ → List Bool → Msg → ProbComp (List Bool)}
-    {decrypt : ℕ → List Bool → List Bool → Option Out}
-    {adversary : InterleavedCCA2AdversaryOf Msg}
-    {n : ℕ} {pk sk : List Bool} {roundBit : Bool}
-    {k : ℕ} {st st' : InterleavedLoopState} {ct : List Bool}
-    (hst' : st' ∈ (ProbComp.eval (OracleComp.iterate k
-      (interleavedRoundStep valid encOut encrypt decrypt adversary n pk sk roundBit) st)).support)
-    (hct : ct ∈ st.2.2) :
-    ct ∈ st'.2.2 := by
-  induction k generalizing st st' with
-  | zero =>
-    simp only [OracleComp.iterate_zero, ProbComp.eval_pure, PMF.mem_support_pure_iff] at hst'
-    subst hst'
-    exact hct
-  | succ k ih =>
-    rw [OracleComp.iterate_succ_bind, ProbComp.eval_bind, PMF.mem_support_bind_iff] at hst'
-    obtain ⟨stMid, hstMid, hst'⟩ := hst'
-    exact ih hst' (mem_S_of_mem_support_interleavedRoundStep hstMid hct)
-
 /-- Iterating `interleavedOpenRoundStep` `k` times under `cca2Phase1Oracle` has the same
 distribution as iterating `interleavedRoundStep` `k` times. -/
 private theorem eval_interpret_iterate_interleavedOpenRoundStep_phase1 {Msg Out : Type}
@@ -1998,18 +1977,14 @@ private theorem eval_interpret_iterate_interleavedOpenRoundStep_phase1 {Msg Out 
     (ProbComp.eval (OracleComp.iterate k
       (interleavedRoundStep valid encOut encrypt decrypt adversary n pk sk roundBit) st)).map
       (fun st' => (st', ())) := by
-  induction k generalizing st with
-  | zero =>
-    simp [OracleComp.iterate_zero, OracleComp.interpret_pure, StateT.run_pure, ProbComp.eval_pure]
-  | succ k ih =>
-    rw [OracleComp.iterate_succ_bind, OracleComp.iterate_succ_bind,
-      OracleComp.interpret_bind, StateT.run_bind, ProbComp.eval_bind,
-      eval_interpret_interleavedOpenRoundStep_phase1 valid encOut encrypt decrypt decBound
-        adversary roundBit n pk sk st hdecBound,
-      ProbComp.eval_bind, PMF.bind_map, Function.comp_def, PMF.map_bind]
-    apply PMF.bind_congr_on_support
-    intro st' _
-    exact ih st'
+  simp only [OracleComp.run_interpret_iterate, ProbComp.eval_iterate]
+  refine (Probability.PMF.map_iterate_bind_of_invariant
+    (fun st' => ProbComp.eval
+      (interleavedRoundStep valid encOut encrypt decrypt adversary n pk sk roundBit st'))
+    _ (fun st' => (st', ())) (fun _ _ => True) k st trivial
+    fun _ _ st' _ => ⟨?_, fun _ _ => trivial⟩).1.symm
+  exact (eval_interpret_interleavedOpenRoundStep_phase1 valid encOut encrypt decrypt decBound
+    adversary roundBit n pk sk st' hdecBound).symm
 
 /-- Iterating `interleavedOpenRoundStep` `k` times under `cca2Phase2Oracle` on `ct ∈ st.2.2` has the
 same distribution as iterating `interleavedRoundStep` `k` times. -/
@@ -2032,18 +2007,14 @@ private theorem eval_interpret_iterate_interleavedOpenRoundStep_phase2 {Msg Out 
     (ProbComp.eval (OracleComp.iterate k
       (interleavedRoundStep valid encOut encrypt decrypt adversary n pk sk roundBit) st)).map
       (fun st' => (st', ())) := by
-  induction k generalizing st with
-  | zero =>
-    simp [OracleComp.iterate_zero, OracleComp.interpret_pure, StateT.run_pure, ProbComp.eval_pure]
-  | succ k ih =>
-    rw [OracleComp.iterate_succ_bind, OracleComp.iterate_succ_bind,
-      OracleComp.interpret_bind, StateT.run_bind, ProbComp.eval_bind,
-      eval_interpret_interleavedOpenRoundStep_phase2 valid encOut encrypt decrypt decBound
-        adversary roundBit n pk sk ct st hct hdecBound,
-      ProbComp.eval_bind, PMF.bind_map, Function.comp_def, PMF.map_bind]
-    apply PMF.bind_congr_on_support
-    intro st' hst'
-    exact ih st' (mem_S_of_mem_support_interleavedRoundStep hst' hct)
+  simp only [OracleComp.run_interpret_iterate, ProbComp.eval_iterate]
+  refine (Probability.PMF.map_iterate_bind_of_invariant
+    (fun st' => ProbComp.eval
+      (interleavedRoundStep valid encOut encrypt decrypt adversary n pk sk roundBit st'))
+    _ (fun st' => (st', ())) (fun _ st' => ct ∈ st'.2.2) k st hct
+    fun _ _ st' hst' => ⟨?_, fun _ h => mem_S_of_mem_support_interleavedRoundStep h hst'⟩).1.symm
+  exact (eval_interpret_interleavedOpenRoundStep_phase2 valid encOut encrypt decrypt decBound
+    adversary roundBit n pk sk ct st' hst' hdecBound).symm
 
 /-- Continuation of `interleavedHybridGameOn` after round `split` has emitted `stepOut` from state
 `stMid`, parameterized by the challenge bit `roundBit` used in round `split`. -/
@@ -2125,7 +2096,11 @@ private theorem eval_interleavedToSingleAt_guess_active {Msg Out : Type} [Inhabi
   apply PMF.bind_congr_on_support
   intro finalSt hfinalSt
   have hctFinal : ct ∈ finalSt.2.2 :=
-    mem_S_of_mem_support_iterate_interleavedRoundStep hfinalSt (List.mem_cons_self ..)
+    ProbComp.iterate_invariant remRounds
+      (interleavedRoundStep valid encOut encrypt decrypt adversary n pk sk false)
+      (state', true :: ct, ct :: S) (fun _ st => ct ∈ st.2.2) (List.mem_cons_self ..)
+      (fun _ _ _ hs _ hnext => mem_S_of_mem_support_interleavedRoundStep hnext hs)
+      finalSt hfinalSt
   have hfin := eval_run_multiPhase2FilterHandler encOut decrypt (decBound n) n sk ct
     finalSt.2.2 hctFinal hdecBound (adversary.finish n pk finalSt.1 finalSt.2.1)
   have hmap := congrArg (fun p : PMF (Bool × Unit) => p.bind (fun x => PMF.pure x.1)) hfin
@@ -2375,9 +2350,9 @@ theorem interleavedHybridGameOn_step_gap {Msg Out : Type} [Inhabited Msg]
           adversary split true n hlt hdecBound,
         eval_cca2GameOn_interleavedToSingleAt_of_lt valid encOut keyGen encrypt decrypt decBound
           adversary split false n hlt hdecBound]
-      refine bind_apply_add_eq_of_support fun keys _ =>
-        bind_apply_add_eq_of_support fun stMid _ =>
-        bind_apply_add_eq_of_support fun stepOut _ => ?_
+      refine PMF.bind_apply_add_eq_on_support fun keys _ =>
+        PMF.bind_apply_add_eq_on_support fun stMid _ =>
+        PMF.bind_apply_add_eq_on_support fun stepOut _ => ?_
       by_cases hcond :
           (stepOut.1.1.isChallenge &&
             valid n keys.1 stepOut.1.1.challengePair.1 stepOut.1.1.challengePair.2) = true

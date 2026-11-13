@@ -17,6 +17,20 @@ with `Function.LeftInverse decode enc`; it need not fill the bit cube, so odd-si
 are supported. The budget and all-output guarantee are unchanged from bijective bit-blasting.
 No behavior on unused code words or reverse Boolean-to-field simulation is asserted.
 
+To obtain a circuit on free Boolean input wires, import
+[Boolean.BitBlastCompiler](../../CslibFrontier/Computability/Circuit/Boolean/BitBlastCompiler.lean)
+and use `c.exists_encoded_boolean I hArity enc decode hdecode`. This returns a Boolean circuit
+with `N * w` inputs, `M * w` outputs and at most `c.size * bitBlastCost w` gates, for any
+interpretation `I` whose operations have arity at most two. Pack source inputs with
+`BitString.blocksEquiv.symm (enc ∘ x)`; the output is the same packing of `enc ∘ c.eval I x`.
+Bit `j` of source wire `i` occupies position `finProdFinEquiv (i, j)`. Correctness is required
+on valid encoded inputs, with no source semantics promised for unused code words. Constants
+count as gates and wiring is free, with no additive input-size cost. The linked
+[clients](../../CslibFrontierTests/BitBlastEncoding.lean) check addition over `ZMod 3` on all
+field inputs and a zero-cost wiring circuit with repeated outputs. This supplies the forward
+circuit simulation with an explicit encoding; constructing encodings and the reverse general-field
+simulation remain separate obligations of the finite-field exercise.
+
 The generic `bitBlast_program`, `bitBlast` and `bitBlast_synthesis` APIs in
 [Boolean.BitBlast](../../CslibFrontier/Computability/Circuit/Boolean/BitBlast.lean) now take
 `enc`, `decode` and the left-inverse proof explicitly. Existing equivalence callers pass
@@ -24,8 +38,8 @@ The generic `bitBlast_program`, `bitBlast` and `bitBlast_synthesis` APIs in
 Run `scripts/build.sh CslibFrontierTests.BitBlastEncoding` for
 [clients](../../CslibFrontierTests/BitBlastEncoding.lean) using the odd field `ZMod 3`, an unused
 code word, modulo-three addition and zero-width synthesis over a singleton. This advances one
-synthesis direction of Arora–Barak Chapter 14 Exercise 1; encoding construction, free-input
-circuit compilation and the reverse general-field direction remain open under
+synthesis direction of Arora–Barak Chapter 14 Exercise 1, including compilation on free input
+wires. Encoding construction and the reverse general-field direction remain open under
 [#4711](https://github.com/cslib-community/cslib-frontier/issues/4711).
 
 [SigmaPiOp](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Arithmetic/SigmaPi.lean#L109) permits unbounded sums with edge coefficients and unbounded products. Product depth counts multiplication layers only; weighted sums contribute zero to that depth. Set-multilinearity records that products combine disjoint variable groups. [SPCircuit](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Arithmetic/SPCircuit.lean#L89) provides shared DAGs in this basis. Its `IsSimple` condition requires distinct input wires at product gates; the unfolding bound used by the constant-product-depth lower-bound development assumes this condition.
@@ -54,6 +68,24 @@ use the shared topic module directly. Run `scripts/build.sh CslibFrontierTests.A
 for a [client](../../CslibFrontierTests/ArithmeticSynthesis.lean) that interprets string-labelled
 constants as natural-number lengths, without importing VP or giving the labels a semiring.
 
+## Boolean circuits over a ring
+
+Import [Boolean.ArithmeticRing](../../CslibFrontier/Computability/Circuit/Boolean/ArithmeticRing.lean)
+and use `Boolean.exists_ring_simulation (R := R) c` for a ring `R`. It returns an arithmetic
+circuit with at most `5 * c.size` gates. Represent Boolean input `x i` by
+`((x i).toNat : R)`; every output represents the corresponding Boolean output the same way.
+This works in odd characteristic and over infinite rings. It does not assert agreement on
+arbitrary ring-valued inputs. Constants, addition and multiplication are the only arithmetic
+gates; subtraction is implemented using the constant `-1`, which is counted in the budget.
+Wiring is free. The zero/one representation is faithful when `R` is nontrivial.
+
+This supplies the Boolean-to-arithmetic direction of the finite-field exercise independently
+of characteristic. The arithmetic-to-Boolean direction needs an encoding of field elements.
+These are value simulations, without compiler-runtime or formal-polynomial identity claims.
+Run `scripts/build.sh CslibFrontierTests.BooleanArithmetic` for the
+[complete clients](../../CslibFrontierTests/BooleanArithmetic.lean), including all Boolean
+inputs to a two-output circuit over `ZMod 3`, zero-input constants and zero-cost integer wiring.
+
 ## Boolean and two-element arithmetic circuits
 
 Import [Boolean.Arithmetic](../../CslibFrontier/Computability/Circuit/Boolean/Arithmetic.lean)
@@ -68,7 +100,7 @@ The `arithmetic_simulates_boolean` and `boolean_simulates_arithmetic` gate-budge
 also work with the generic `Circuit.exists_simulationWithCost` API. These are circuit-value
 and nonuniform size results, not formal polynomial identities or certified translation runtimes.
 They establish the GF(2) milestone, not the exercise for every fixed finite field; the latter
-still needs bit encodings and the general-field directions. Existing `Synthesis.bitBlast`
+still needs finite-field encodings and the arithmetic-to-Boolean direction. Existing `Synthesis.bitBlast`
 handles an equivalence to a fixed-width bit cube and should be reused where applicable.
 Run `scripts/build.sh CslibFrontierTests.BooleanArithmetic` for the
 [checked clients](../../CslibFrontierTests/BooleanArithmetic.lean): multiple XOR/AND and OR/NOT
@@ -600,6 +632,8 @@ lake build CslibFrontier.Computability.QueryComplexity.Quantum.DeutschJozsa \
 ```
 
 ## Quantum Fourier transform and exact period finding
+
+The [2007 draft Chapter 20 audit](../../results/arora-barak-2007.md#chapter-20-quantum-computation) maps the numbered quantum results to their precise models. It distinguishes exact period finding from efficient QFT synthesis and general order finding, and records source defects in the factoring and continued-fraction statements.
 
 This is the quantum core of Shor's algorithm in the case where the period divides the register size. It works at the level of states and unitary matrices, using `unitaryEquiv`, `ket` and `measure`; it is not phrased in the query model of the previous section or in the uniform circuits of `BQP`.
 

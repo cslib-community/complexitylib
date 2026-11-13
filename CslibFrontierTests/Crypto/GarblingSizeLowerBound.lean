@@ -5,6 +5,7 @@ Authors: Karn Seth
 -/
 
 import CslibFrontier.Crypto.Primitives.Garbling.SizeLowerBound
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import CslibFrontier.Probability.Entropy.Guessing
 import Mathlib.Algebra.Ring.BooleanRing
 
@@ -19,56 +20,51 @@ namespace CslibFrontierTests.GarblingSizeLowerBound
 
 open Cslib Cslib.Probability.PMF Cslib.Crypto.Garbling
 
-/-- An observed key `K`, a hidden value `X` and the pad `G = X + K`, all of `m` bits. -/
-noncomputable def padReal (m : ℕ) : PMF (BitString m × BitString m × BitString m) :=
-  (uniformOfFintype (BitString m)).bind fun k =>
-    (uniformOfFintype (BitString m)).map fun x => (k, x, x + k)
-
-/-- The view of `(K, X)`, with `X` uniform and independent of the key. -/
+/-- The law of a key `K` and a hidden value `X`, uniform and independent. It is both the real
+probability space, on which the observation is `K`, the hidden value is `X` and the garbled
+material is the pad `G = X + K`, and the simulated law of `(K, X)`. -/
 noncomputable def padIdeal (m : ℕ) : PMF (BitString m × BitString m) :=
   (uniformOfFintype (BitString m)).bind fun k => (uniformOfFintype (BitString m)).map (k, ·)
 
-theorem padReal_map (m : ℕ) : (padReal m).map (fun w => (w.1, w.2.1)) = padIdeal m := by
-  simp only [padReal, padIdeal, PMF.map_bind, PMF.map_comp]
-  rfl
-
 theorem conditionalEntropy_padIdeal (m : ℕ) : conditionalEntropy (padIdeal m) = m := by
   rw [padIdeal, conditionalEntropy_bind_pair, entropy_uniform, ← Finset.sum_mul, sum_toReal,
-    one_mul, Fintype.card_fun, Fintype.card_bool, Fintype.card_fin, Nat.cast_pow, Nat.cast_ofNat,
-    Real.logb_pow, Real.logb_self_eq_one one_lt_two, mul_one]
+    one_mul, BitString.logb_card]
+
+/-- The pad `G = X + K` of a key `K` and a hidden value `X`. -/
+def pad {m : ℕ} (kx : BitString m × BitString m) : BitString m := kx.2 + kx.1
 
 /-- Removing the key recovers the hidden value. -/
 def unpad {m : ℕ} (kg : BitString m × BitString m) : BitString m := kg.2 + kg.1
 
-theorem decodingError_padReal (m : ℕ) :
-    (padReal m).toOuterMeasure {w | unpad (w.1, w.2.2) ≠ w.2.1} = 0 := by
-  rw [PMF.toOuterMeasure_apply_eq_zero_iff, Set.disjoint_left]
-  intro w hw
-  simp only [padReal, PMF.support_bind, PMF.support_map, Set.mem_iUnion, Set.mem_image] at hw
-  obtain ⟨k, -, x, -, rfl⟩ := hw
-  simp only [Set.mem_ofPred_eq, not_not, unpad]
+theorem unpad_pad {m : ℕ} (kx : BitString m × BitString m) : unpad (kx.1, pad kx) = kx.2 := by
   funext i
-  simp only [Pi.add_apply]
-  cases x i <;> cases k i <;> decide
+  simp only [unpad, pad, Pi.add_apply]
+  cases kx.1 i <;> cases kx.2 i <;> decide
 
--- The size bound for the one-time pad: every slack term vanishes and the bound is `m ≤ m`.
+theorem decodingError_pad (m : ℕ) :
+    (padIdeal m).toOuterMeasure {kx | unpad (kx.1, pad kx) ≠ kx.2} = 0 := by
+  simp [unpad_pad]
+
+-- The size bound for the one-time pad, on the space of key and hidden value: every slack term
+-- vanishes and the bound is `m ≤ m`.
 example (m : ℕ) : (m : ℝ) - 0 * Real.logb 2 (Fintype.card (BitString m)) -
     condEntropyModulus 0 -
-      (Real.binEntropy ((padReal m).toOuterMeasure {w | unpad (w.1, w.2.2) ≠ w.2.1}).toReal /
+      (Real.binEntropy ((padIdeal m).toOuterMeasure {kx | unpad (kx.1, pad kx) ≠ kx.2}).toReal /
           Real.log 2 +
-        ((padReal m).toOuterMeasure {w | unpad (w.1, w.2.2) ≠ w.2.1}).toReal *
+        ((padIdeal m).toOuterMeasure {kx | unpad (kx.1, pad kx) ≠ kx.2}).toReal *
           Real.logb 2 (Fintype.card (BitString m) - 1)) ≤ m :=
-  sub_le_bitLength_of_recover (padReal m) (padIdeal m) unpad
-    (by rw [padReal_map, dist_self]) (conditionalEntropy_padIdeal m).symm.le
+  sub_le_bitLength_of_recover (padIdeal m) Prod.fst Prod.snd pad (padIdeal m) unpad
+    (by rw [show (fun kx : BitString m × BitString m => (kx.1, kx.2)) = id from rfl, PMF.map_id,
+      dist_self]) (conditionalEntropy_padIdeal m).symm.le
 
 -- With no decoding error and no distance, the slack is zero.
 example (m : ℕ) : (m : ℝ) - 0 * Real.logb 2 (Fintype.card (BitString m)) -
     condEntropyModulus 0 -
-      (Real.binEntropy ((padReal m).toOuterMeasure {w | unpad (w.1, w.2.2) ≠ w.2.1}).toReal /
+      (Real.binEntropy ((padIdeal m).toOuterMeasure {kx | unpad (kx.1, pad kx) ≠ kx.2}).toReal /
           Real.log 2 +
-        ((padReal m).toOuterMeasure {w | unpad (w.1, w.2.2) ≠ w.2.1}).toReal *
+        ((padIdeal m).toOuterMeasure {kx | unpad (kx.1, pad kx) ≠ kx.2}).toReal *
           Real.logb 2 (Fintype.card (BitString m) - 1)) = m := by
-  rw [decodingError_padReal]
+  rw [decodingError_pad]
   simp
 
 -- A deterministic joint law has zero conditional entropy, so the MAP guess never errs.

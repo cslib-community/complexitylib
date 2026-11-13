@@ -273,12 +273,12 @@ theorem length_encConstraint_tableContract_le {table : Cslib.Logic.PL.CSP.Table}
     (h : table.canContract reference positions = true) (htwo : 2 ≤ positions.length)
     (hscope : List.Sublist outsideScope scope) :
     (encConstraint encTable encNat
-      (table.contract reference positions, outsideScope ++ [connector])).length ≤
-      (encConstraint encTable encNat (table, scope)).length +
+      ⟨table.contract reference positions, outsideScope ++ [connector]⟩).length ≤
+      (encConstraint encTable encNat ⟨table, scope⟩).length +
         2 * (encNat connector).length + 1 := by
   have ht := length_encTable_contract_le h htwo
   have hs := length_encList_sublist encNat hscope
-  simp only [encConstraint, length_encPair, encList_append, List.length_append,
+  simp only [encConstraint_apply, length_encPair, encList_append, List.length_append,
     encList_cons, encList_nil, List.append_nil, length_frame] at *
   omega
 
@@ -292,17 +292,16 @@ theorem length_encTable_exactlyOne {V : Type*} (scope : List V) :
 /-- Actual binary constraint size includes every supplied variable name, in addition to the
 quadratic exactly-one table. -/
 theorem length_encConstraint_exactlyOne (scope : List ℕ) :
-    (encConstraint encTable encNat (exactlyOne scope, scope)).length =
+    (encConstraint encTable encNat ⟨exactlyOne scope, scope⟩).length =
       4 * (encNat scope.length).length + 3 +
         2 * scope.length * (6 * scope.length + 1) + (encList encNat scope).length := by
-  rw [length_encPair, length_encTable_exactlyOne]
-  dsimp only [Prod.snd]
+  simp only [encConstraint_apply, length_encPair, length_encTable_exactlyOne]
   ring
 
 /-- A concrete quadratic bound in the actual framed binary scope encoding. This resource pays
 for both the quadratic table and the binary names; binary arity alone would not suffice. -/
 theorem length_encConstraint_exactlyOne_le (scope : List ℕ) :
-    (encConstraint encTable encNat (exactlyOne scope, scope)).length ≤
+    (encConstraint encTable encNat ⟨exactlyOne scope, scope⟩).length ≤
       21 * ((encList encNat scope).length + 1) ^ 2 := by
   have hlen := SizedListEncoding.length_le (encA := encNat) (encL := encList encNat) scope
   have hbits : (encNat scope.length).length ≤ scope.length := by

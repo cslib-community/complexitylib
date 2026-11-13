@@ -45,18 +45,18 @@ namespace Cslib.Logic.PL.CSP
 variable {Rel V D : Type*} {F : CSP Rel V}
 
 /-- A constraint position and an argument position in that constraint's ordered scope. -/
-abbrev Occurrence (F : CSP Rel V) := (i : Fin F.length) × Fin F[i.val].2.length
+abbrev Occurrence (F : CSP Rel V) := (i : Fin F.length) × Fin F[i.val].scope.length
 
 namespace Occurrence
 
 /-- Relation symbol at this occurrence's constraint position. -/
-@[expose] def relation (o : Occurrence F) : Rel := F[o.1.val].1
+@[expose] def relation (o : Occurrence F) : Rel := F[o.1.val].rel
 
 /-- Ordered scope at this occurrence's constraint position. -/
-@[expose] def scope (o : Occurrence F) : List V := F[o.1.val].2
+@[expose] def scope (o : Occurrence F) : List V := F[o.1.val].scope
 
 /-- Variable at this argument position, retaining repeated occurrences. -/
-@[expose] def var (o : Occurrence F) : V := F[o.1.val].2[o.2.val]
+@[expose] def var (o : Occurrence F) : V := F[o.1.val].scope[o.2.val]
 
 /-- Executable record: constraint index, scope index, variable. -/
 @[expose] def record (o : Occurrence F) : ℕ × ℕ × V := (o.1, o.2, o.var)
@@ -108,7 +108,7 @@ theorem mem_occurrences {r : ℕ × ℕ × V} :
       exact congrArg Prod.fst he.symm⟩
   · rintro ⟨⟨⟨i', hi⟩, ⟨j', hj⟩⟩, hr⟩
     cases hr
-    refine ⟨(i', j', F[i'].2[j'], true), ?_, rfl⟩
+    refine ⟨(i', j', F[i'].scope[j'], true), ?_, rfl⟩
     exact ⟨by simpa only [varCNF, List.length_map] using hi,
       by simpa only [varCNF, List.getElem_map, List.length_map] using hj, by
         simp only [varCNF, List.getElem_map]⟩
@@ -132,7 +132,7 @@ theorem occurrences_nodup (F : CSP Rel V) : F.occurrences.Nodup := by
 
 /-- The number of argument occurrences is the sum of the scope lengths. -/
 theorem length_occurrences (F : CSP Rel V) :
-    F.occurrences.length = (F.map fun c => c.2.length).sum := by
+    F.occurrences.length = (F.map fun c => c.scope.length).sum := by
   rw [← List.length_map (f := fun o : ℕ × ℕ × V => o.2.2), map_occurrences]
   simp [vars, List.length_flatMap]
 
@@ -145,7 +145,7 @@ abbrev OccurrenceLabeling (F : CSP Rel V) (D : Type*) := Occurrence F → D
 
 /-- Every constraint accepts its own ordered tuple of occurrence labels. -/
 @[expose] def ValidLabeling (sem : Rel → List D → Bool) (l : OccurrenceLabeling F D) : Prop :=
-  ∀ i : Fin F.length, sem F[i].1 (localTuple l i) = true
+  ∀ i : Fin F.length, sem F[i].rel (localTuple l i) = true
 
 /-- All occurrences of the same variable have the same label. -/
 @[expose] def ConsistentLabeling (l : OccurrenceLabeling F D) : Prop :=
@@ -160,7 +160,7 @@ theorem consistentLabeling_labelAssignment (σ : V → D) :
 
 /-- Restricting an assignment preserves each constraint's ordered tuple. -/
 @[simp] theorem localTuple_labelAssignment (σ : V → D) (i : Fin F.length) :
-    localTuple (labelAssignment σ) i = F[i].2.map σ := by
+    localTuple (labelAssignment σ) i = F[i].scope.map σ := by
   exact List.ofFn_getElem_eq_map _ _
 
 /-- Local validity of assignment labels is exactly the existing CSP evaluation. -/

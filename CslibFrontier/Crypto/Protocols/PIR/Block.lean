@@ -11,7 +11,6 @@ public import CslibFrontier.Crypto.Protocols.PIR.Collusion
 public import CslibFrontier.Crypto.Protocols.PIR.Cube
 public import CslibFrontier.Crypto.Protocols.PIR.SingleServer
 public import CslibFrontier.Languages.Probabilistic.Vector
-import CslibFrontier.Foundations.Data.Nat.Clog
 
 /-!
 # Private block retrieval
@@ -370,10 +369,8 @@ theorem communication_toBlock_le (S Q A κ : Type) [Fintype S] [Fintype Q] [Fint
     [Fintype κ] [DecidableEq κ] :
     communication S Q (κ → A) ≤
       Fintype.card S *
-        (Nat.clog 2 (Fintype.card Q) + Fintype.card κ * Nat.clog 2 (Fintype.card A)) := by
-  rw [communication_eq, Fintype.card_fun]
-  have hA := Nat.clog_pow_le_mul 2 (Fintype.card A) (Fintype.card κ)
-  nlinarith
+        (Nat.clog 2 (Fintype.card Q) + Fintype.card κ * Nat.clog 2 (Fintype.card A)) :=
+  communication_le_of_clog_le le_rfl (clog_card_fun_le κ A)
 
 /-- Proposition 4 multiplies `b`-bit server answers (`|A| = 2 ^ b`) by `|κ|`. -/
 theorem communication_toBlock_of_card_answer (S Q A κ : Type) [Fintype S] [Fintype Q] [Fintype A]
@@ -386,11 +383,9 @@ theorem communication_toBlock_of_card_answer (S Q A κ : Type) [Fintype S] [Fint
 /-- Proposition 5 uses `m` queries and a `1`-bit answer per server. -/
 theorem communication_sumChunks_le (S Q : Type) [Fintype S] [Fintype Q] (m : ℕ) :
     communication S (Fin m → Q) Bool ≤
-      Fintype.card S * (m * Nat.clog 2 (Fintype.card Q) + 1) := by
-  rw [communication_eq, Fintype.card_fun, Fintype.card_fin, Fintype.card_bool,
-    Nat.clog_eq_one le_rfl le_rfl]
-  have hQ := Nat.clog_pow_le_mul 2 (Fintype.card Q) m
-  nlinarith
+      Fintype.card S * (m * Nat.clog 2 (Fintype.card Q) + 1) :=
+  communication_le_of_clog_le (by simpa using clog_card_fun_le (Fin m) Q)
+    (by rw [Fintype.card_bool, Nat.clog_eq_one le_rfl le_rfl])
 
 /-- **`t`-private Corollary 6** [CGKS, Section 4.1, p. 13][ChorGoldreichKushilevitzSudan1998]:
 combining Proposition 5 (`sumChunks`) and Proposition 4 (`toBlock`) preserves `t`-privacy while
@@ -401,14 +396,11 @@ theorem hasTPrivateBlockScheme_of_xorReconstruct {S R Q : Type} [Fintype S] [Fin
     (hN : N ≤ m * n) :
     HasTPrivateScheme (Fin N) t (Fintype.card S)
       (Fintype.card S * (m * Nat.clog 2 (Fintype.card Q) + ℓ)) (Fin ℓ → Bool) := by
-  let e : Fin N ↪ Fin m × Fin n := (Fin.castLEEmb hN).trans finProdFinEquiv.symm.toEmbedding
-  have hB := (((hcorrect.sumChunks m hxor).toBlock (Fin ℓ)).comap e
-    (fun _ => false)).hasTPrivateScheme
-    (((hprivate.sumChunks m).toBlock (Fin ℓ)).comap e (fun _ => false))
-  refine hB.mono ?_
-  rw [communication_rows, Fintype.card_fun, Fintype.card_fin, Fintype.card_fin]
-  have hQ := Nat.clog_pow_le_mul 2 (Fintype.card Q) m
-  nlinarith
+  refine (((hcorrect.sumChunks m hxor).toBlock (Fin ℓ)).hasTPrivateScheme
+    ((hprivate.sumChunks m).toBlock (Fin ℓ))).mono ?_ |>.fin_of_le_card (by simpa using hN)
+  rw [communication_rows, Fintype.card_fin]
+  gcongr
+  simpa using clog_card_fun_le (Fin m) Q
 
 /-- **Corollary 6** [CGKS, Section 4.1, p. 13][ChorGoldreichKushilevitzSudan1998]: combining
 Proposition 5 (`sumChunks`) and Proposition 4 (`toBlock`), an XOR-reconstruction single-bit scheme
@@ -439,16 +431,13 @@ and `2 * m ≤ ℓ`, four servers (`d = 2` subcube PIR lifted via Proposition 4)
 block from `n` blocks with at most `8 * ℓ` bits of communication. -/
 theorem hasBlockScheme_four_of_le_sq {n m ℓ : ℕ} (hn : n ≤ m * m) (hm : 2 * m ≤ ℓ) :
     HasScheme (Fin n) 4 (8 * ℓ) (Fin ℓ → Bool) := by
-  let e : Fin n ↪ (Fin 2 → Fin m) :=
-    (Fin.castLEEmb (by simpa [pow_two] using hn)).trans finFunctionFinEquiv.symm.toEmbedding
-  have hcube := ((isCorrect_cube (D := Fin 2) (ι := Fin m)).comap e false).toBlock (Fin ℓ)
-  have hpriv := ((isPrivate_cube (D := Fin 2) (ι := Fin m)).comap e false).toBlock (Fin ℓ)
-  have hB := hcube.hasScheme hpriv
+  have hB := ((isCorrect_cube (D := Fin 2) (ι := Fin m)).toBlock (Fin ℓ)).hasScheme
+    ((isPrivate_cube (D := Fin 2) (ι := Fin m)).toBlock (Fin ℓ))
   have hcardS : Fintype.card (Fin 2 → Bool) = 4 := by decide
   rw [hcardS, communication_rows] at hB
   simp only [Fintype.card_fun, Fintype.card_bool, Fintype.card_fin, ← pow_mul,
     Nat.clog_pow 2 _ (by norm_num)] at hB
-  exact hB.mono (by omega)
+  exact (hB.mono (by omega)).fin_of_le_card (by simpa [pow_two] using hn)
 
 /-- Closed-form specialization of Corollary 8 for `n ≤ (ℓ / 2) ^ 2` (replacing the paper's
 unrounded `n ≤ ℓ ^ 2 / 4`, and matching it whenever `ℓ` is even). -/

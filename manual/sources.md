@@ -771,6 +771,7 @@ Anupam Gupta. “Dimension Reduction and the JL Lemma.” Chapter 11 of the lect
 ## guruswamirudrasudan25
 
 Venkatesan Guruswami, Atri Rudra and Madhu Sudan. *Essential Coding Theory*. Draft book, version of 26 August 2025. https://cse.buffalo.edu/faculty/atri/courses/coding-theory/book/ ; open PDF https://cse.buffalo.edu/faculty/atri/courses/coding-theory/book/web-coding-book.pdf . The library's key is `GuruswamiRudraSudan2019`. Read in the open PDF on 2026-11-08 for Chapter 6:
+
 - §6.2 (the binary symmetric channel) and §6.2.2 (capacity: reliable communication is possible below it and impossible above it);
 - Theorem 6.3.1 (p. 119): part (1), achievability with error `2^(−δn)`, and part (2), for `0 ≤ p < 1/2` and `k ≥ ⌈(1 − H(p) + ε) n⌉` with `0 ≤ ε ≤ 1/2 − p`, some message misdecoded with probability more than `1/2`;
 - §6.3.1, the packing proof of part (2) (pp. 120–122), and Remark 6.3.2, the error bound `1 − 2^(−βn)`;
@@ -1398,6 +1399,11 @@ Ryan O'Donnell. *Analysis of Boolean Functions*. Cambridge University Press, 201
 
 Igor Carboni Oliveira, Ján Pich and Rahul Santhanam. *Hardness Magnification near State-Of-The-Art Lower Bounds*. CCC 2019, LIPIcs 137, 27:1–27:29. https://doi.org/10.4230/LIPIcs.CCC.2019.27 . Lemma numbers follow the journal version, Theory of Computing 17(11), 2021. Bibliographic data comes from the repository bibliography. The Lean modules cite its Lemmas 4.1 and 4.7 and Theorem 1.4. For Theorem 1.4, worker meta-proj read the authors' copy of ECCC TR18-158 revision 1 (https://www.dcs.warwick.ac.uk/~igorcarb/documents/papers/OPS19.pdf) on 2026-11-11 UTC: Theorem 4 there is the same statement with an unspecified universal constant `c ≥ 1`, its proof in Section 4.1 uses `c = 10`, Definition 9 has no-instances of size `> s₂`, and Section 2 says gate types do not matter. The journal numbering `1.4` was not checked against the journal text.
 
+<a id="oliveirasanthanam2017"></a>
+## oliveirasanthanam2017
+
+Igor Carboni Oliveira and Rahul Santhanam. *Conspiracies Between Learning Algorithms, Circuit Lower Bounds, and Pseudorandomness*. CCC 2017, LIPIcs 79, 18:1–18:49. https://doi.org/10.4230/LIPIcs.CCC.2017.18 . Full version arXiv:1611.01190. Bibliographic data comes from the repository bibliography and the LIPIcs record. The Lean module [CryptoHardness/NaturalProperty.lean](../CslibFrontier/MachineLearning/UniformLearning/CryptoHardness/NaturalProperty.lean) cites Theorem 8, (1) ⇒ (5) (a learner yields a distinguisher, hence a natural property) and Lemma 4 from the arXiv full version; the page locators are not recorded in the results registry.
+
 <a id="oliveirasanthanam2018"></a>
 ## oliveirasanthanam2018
 
@@ -1711,6 +1717,11 @@ Alexandre B. Tsybakov. *Introduction to Nonparametric Estimation*. Springer Seri
 ## tutte48
 
 W. T. Tutte. "The dissection of equilateral triangles into equilateral triangles." *Mathematical Proceedings of the Cambridge Philosophical Society* 44(4), 463–482, 1948. https://doi.org/10.1017/S030500410002449X . Not inspected. [Stanley's notes](#stanley13) (Chapter 10 notes, p. 199, and reference [118]) attribute the directed matrix-tree theorem to Theorem 3.6 of this paper.
+
+<a id="valiant84"></a>
+## valiant84
+
+L. G. Valiant. "A Theory of the Learnable." *Proceedings of the Sixteenth Annual ACM Symposium on Theory of Computing* (STOC '84), 436–445, 1984. https://doi.org/10.1145/800057.808710 . Bibliographic data from the library's `references.bib` entry `Valiant1984`; the paper was not inspected for this citation. The manual attributes to it, following the standard account, the observation that pseudorandom functions make polynomial-size circuits unlearnable; no section or theorem locator is claimed.
 
 <a id="vanaardenneehrenfestdebruijn51"></a>
 ## vanaardenneehrenfestdebruijn51

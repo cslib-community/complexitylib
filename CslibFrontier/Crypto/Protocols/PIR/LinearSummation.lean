@@ -8,6 +8,8 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Protocols.PIR.Cube
+import CslibFrontier.Foundations.Data.BitString.Single
+import CslibFrontier.Languages.Probabilistic.Semantics
 import CslibFrontier.Probability.Uniform
 
 /-!
@@ -295,14 +297,9 @@ theorem isLinearSummation_evenTwoServer : (evenTwoServer h₀).IsLinearSummation
 theorem isCorrect_evenTwoServer : (evenTwoServer h₀).IsCorrect := by
   rw [(isLinearSummation_evenTwoServer h₀).isCorrect_iff]
   intro i r q hrq
-  simp only [evenTwoServer, ProbComp.eval_bind, ProbComp.eval_pure, ProbComp.eval_uniform,
-    PMF.mem_support_bind_iff, PMF.mem_support_pure_iff, Prod.mk.injEq] at hrq
-  obtain ⟨u, -, -, rfl⟩ := hrq
-  funext j
-  change (makeEven h₀ u + (Pi.single i false : ι → Bool)) j +
-      (makeEven h₀ u + (Pi.single i true : ι → Bool)) j = (Pi.single i true : ι → Bool) j
-  rw [show (Pi.single i false : ι → Bool) = 0 from Pi.single_zero i, add_zero, Pi.add_apply,
-    ← add_assoc, BooleanRing.add_self, zero_add]
+  simp only [evenTwoServer, ProbComp.mem_support_eval_uniform_bind_pure, Prod.mk.injEq] at hrq
+  obtain ⟨u, -, rfl⟩ := hrq
+  exact BitString.add_single_false_add_add_single_true (makeEven h₀ u) i
 
 /-- **The even-set scheme is private**: the server `σ` receives the uniform even set made odd at
 `h₀` if `σ = true`, whatever the index. -/

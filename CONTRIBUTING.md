@@ -155,8 +155,12 @@ Two places keep projections, as standing exceptions:
 `scripts/check_projection_chains.py` counts the chains of depth 2 or more in each module's public
 statements and public definition bodies, leaving out proofs, these two exceptions and named
 accessors. CI fails a pull request when a module it changes has more chains than its entry in
-`scripts/projection_chains_baseline.json`; a new module starts at 0. Fewer chains pass, and
-`--update-baseline` lowers the entry. `--list PREFIX` shows the remaining chains of an area.
+`scripts/projection_chains_baseline.json`, or than it had at the merge base unless the pull request
+raises the entry; a new module starts at 0. Removing chains needs no baseline edit, which keeps
+pull requests from colliding on neighbouring lines of the baseline in the merge queue; a periodic
+`--update-baseline --all` prunes stale entries. Edit the baseline only to raise an entry on
+purpose, as for a moved module (`--update-baseline --allow-increase`). `--list PREFIX` shows the
+remaining chains of an area.
 
 **Readable encodings** ([#1656](https://github.com/cslib-community/cslib-frontier/issues/1656)).
 An encoding is part of what a statement claims, so statements show it; they should not make the
@@ -516,9 +520,11 @@ not a decision.
   [#858](https://github.com/leanprover/cslib/pull/858).
   [#966](https://github.com/leanprover/cslib/pull/966) would make `sampleComplexity` and `vcDim`
   `ℕ∞`-valued; if it lands, restate the bounds in `FiniteClass`, `VCUpperBound`,
-  `AgnosticFiniteClass` and `GrowthFunction`. Before submission, reconcile names with
-  [`feat/pac-learning-ehkv-headline`](https://github.com/SamuelSchlesinger/cslib/tree/feat/pac-learning-ehkv-headline),
-  which proves the EHKV `Ω(d/ε)` lower bound; do not reprove it locally.
+  `AgnosticFiniteClass`, `AgnosticVC` and `GrowthFunction`. `PACLearning/SampleComplexityLower*`
+  vendors the EHKV `Ω(d/ε)` lower bound from
+  [`feat/pac-learning-ehkv-headline`](https://github.com/SamuelSchlesinger/cslib/tree/feat/pac-learning-ehkv-headline);
+  submit or update it through that branch, not as a competing copy, and reconcile `VCLowerBound`
+  and `FundamentalTheorem` with its names before submitting them.
 * **Tree decompositions.** Upstream `SimpleGraph/TreeDecomposition` through Justin Lai's
   [mathlib4#38334](https://github.com/leanprover-community/mathlib4/pull/38334),
   [#39939](https://github.com/leanprover-community/mathlib4/pull/39939) and

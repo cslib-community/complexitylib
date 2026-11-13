@@ -185,17 +185,13 @@ def UnboundedAuxiliaryInputZeroKnowledge {α : Type} (enc : α ↪ List Bool)
         PolynomiallyBounded (fun n => (enc (a n)).length) →
         PolynomiallyBounded (fun n => (w n).length) →
         (∀ n, isWitness (a n) (w n) = true) →
-        ∀ adversary : ℕ → α → List Bool → List Bool → ProbComp Bool,
+        ∀ adversary : ZKDistinguisher α,
           IsPPTWithAux (encPair (encPair encUnary enc) encBits) encBool
             (fun ⟨⟨n, a⟩, view⟩ z => adversary n a z view) →
           Negligible (fun n => Game.advantage
-            (distinguishingGame
-              (((prover n (a n) (w n)).run (Vstar n (a n) (z n))
-                (prover n (a n) (w n)).init).map Prod.fst)
+            (distinguishingGame (zkRealView (prover n (a n) (w n)) (Vstar n (a n) (z n)))
               (adversary n (a n) (z n)))
-            (distinguishingGame
-              (ProbComp.eval (S n (a n) (z n)))
-              (adversary n (a n) (z n))))
+            (distinguishingGame (ProbComp.eval (S n (a n) (z n))) (adversary n (a n) (z n))))
 
 /-- Under `UnboundedAuxiliaryInputZeroKnowledge`, the real and simulated view ensembles are
 `ComputationallyIndistinguishable` across all polynomially bounded valid `(a, w)` families and
@@ -214,8 +210,7 @@ theorem UnboundedAuxiliaryInputZeroKnowledge.computationallyIndistinguishable
         PolynomiallyBounded (fun n => (w n).length) →
         (∀ n, isWitness (a n) (w n) = true) →
         ComputationallyIndistinguishable
-          (fun n => ((prover n (a n) (w n)).run (Vstar n (a n) (z n))
-            (prover n (a n) (w n)).init).map Prod.fst)
+          (fun n => zkRealView (prover n (a n) (w n)) (Vstar n (a n) (z n)))
           (fun n => ProbComp.eval (S n (a n) (z n))) := by
   obtain ⟨S, c, d, hS_ppt, hS_take, hS_zk⟩ := h Vstar hV
   refine ⟨S, c, d, hS_ppt, hS_take, fun a w z ha hw hw_sat adversary hadversary => ?_⟩
@@ -313,19 +308,16 @@ theorem AuxiliaryInputZeroKnowledge.unboundedAuxiliaryInputZeroKnowledge
         omega
       exact Nat.mul_le_mul_left c_A (Nat.pow_le_pow_left hle_base d_A)
     have hgame_real (n : ℕ) :
-        distinguishingGame
-          (((prover n (a n) (w n)).run (Vstar n (a n) (z_V n))
-            (prover n (a n) (w n)).init).map Prod.fst)
+        distinguishingGame (zkRealView (prover n (a n) (w n)) (Vstar n (a n) (z_V n)))
           (adversary n (a n) (z_A n)) =
-        distinguishingGame
-          (((prover n (a n) (w n)).run (Vstar n (a n) (z n))
-            (prover n (a n) (w n)).init).map Prod.fst)
+        distinguishingGame (zkRealView (prover n (a n) (w n)) (Vstar n (a n) (z n)))
           (adversary n (a n) (z n)) := by
       have hrun_eq :
           (prover n (a n) (w n)).run (Vstar n (a n) (z_V n)) (prover n (a n) (w n)).init =
           (prover n (a n) (w n)).run (Vstar n (a n) (z n)) (prover n (a n) (w n)).init :=
         hV_take (n, a n) (z n) le_rfl (prover n (a n) (w n)) (prover n (a n) (w n)).init
-      simp only [distinguishingGame, hrun_eq, PMF.monad_bind_eq_bind, PMF.bind_map]
+      simp only [distinguishingGame_eq_bind, zkRealView, hrun_eq, PMF.monad_bind_eq_bind,
+        PMF.bind_map]
       refine PMF.bind_congr_on_support _ _ _ fun p hp => ?_
       have hview_le : p.1.length ≤ L_view n (a n) := by
         have h1 : (encBits p.1).length ≤
@@ -342,7 +334,7 @@ theorem AuxiliaryInputZeroKnowledge.unboundedAuxiliaryInputZeroKnowledge
         distinguishingGame
           (ProbComp.eval (S n (a n) (z n)))
           (adversary n (a n) (z n)) := by
-      simp only [distinguishingGame, S, z_V, PMF.monad_bind_eq_bind]
+      simp only [distinguishingGame_eq_bind, S, z_V, PMF.monad_bind_eq_bind]
       refine PMF.bind_congr_on_support _ _ _ fun view hview => ?_
       have hview_le : view.length ≤ L_view n (a n) := by
         have h1 : (encBits view).length ≤
@@ -387,13 +379,10 @@ def InstanceAuxiliaryInputZeroKnowledge {α : Type} (enc : α ↪ List Bool)
             isWitness x w = true →
             w.length ≤ c_w * (n + 1) ^ d_w →
             (Game.advantage
-              (distinguishingGame
-                (((prover (enc x).length x w).run (Vstar x z)
-                  (prover (enc x).length x w).init).map Prod.fst)
+              (distinguishingGame (zkRealView (prover (enc x).length x w) (Vstar x z))
                 (adversary x z))
-              (distinguishingGame
-                (ProbComp.eval (S x z))
-                (adversary x z)) : ℝ) ≤ 1 / ((n : ℝ) + 1) ^ k
+              (distinguishingGame (ProbComp.eval (S x z)) (adversary x z)) : ℝ) ≤
+              1 / ((n : ℝ) + 1) ^ k
 
 /-- **Indexing bridge from `UnboundedAuxiliaryInputZeroKnowledge` to Goldreich-style `x`-indexed
 auxiliary-input zero knowledge.**
@@ -438,13 +427,10 @@ theorem UnboundedAuxiliaryInputZeroKnowledge.instanceAuxiliaryInputZeroKnowledge
         isWitness p.1 p.2.1 = true ∧
         p.2.1.length ≤ c_w * (n + 1) ^ d_w ∧
         ¬ (Game.advantage
-            (distinguishingGame
-              (((prover (enc p.1).length p.1 p.2.1).run (Vstar p.1 p.2.2)
-                (prover (enc p.1).length p.1 p.2.1).init).map Prod.fst)
+            (distinguishingGame (zkRealView (prover (enc p.1).length p.1 p.2.1) (Vstar p.1 p.2.2))
               (adversary p.1 p.2.2))
-            (distinguishingGame
-              (ProbComp.eval (S p.1 p.2.2))
-              (adversary p.1 p.2.2)) : ℝ) ≤ 1 / ((n : ℝ) + 1) ^ k
+            (distinguishingGame (ProbComp.eval (S p.1 p.2.2)) (adversary p.1 p.2.2)) : ℝ) ≤
+          1 / ((n : ℝ) + 1) ^ k
     have hfreq : ∃ᶠ n in Filter.atTop, Bad n := by
       refine hnot.mono fun n hn => ?_
       push Not at hn

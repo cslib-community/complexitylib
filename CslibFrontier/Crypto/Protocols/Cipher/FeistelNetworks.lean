@@ -14,6 +14,7 @@ import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Uniform
+import CslibFrontier.Probability.PMF.UniformPoint
 import CslibFrontier.Probability.Product
 import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.FieldSimp
@@ -552,15 +553,6 @@ private theorem uniformOfFintype_perm_filter_toReal (P : Equiv.Perm α → Bool)
     Cslib.Probability.PMF.toOuterMeasure_uniformOfFintype_toReal, Fintype.card_perm]
   simp only [Set.mem_preimage, Set.mem_singleton_iff]
 
-private theorem le_advantage_of_pure_true_of_toReal_le {d₁ d₂ : PMF Bool} {B : ℝ}
-    (hd₁ : d₁ = PMF.pure true) (hd₂ : (d₂ true).toReal ≤ B) (hB : B ≤ 1) :
-    1 - B ≤ (Game.advantage d₁ d₂ : ℝ) := by
-  rw [hd₁, Game.coe_advantage]
-  simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal,
-    PMF.pure_apply_self, ENNReal.toReal_one]
-  rw [abs_of_nonneg (by linarith)]
-  linarith
-
 variable {G : Type} [AddGroup G] [Fintype G] [DecidableEq G]
 
 /-! #### 1-round Feistel CPA distinguisher -/
@@ -608,9 +600,7 @@ theorem randomFunctionGame_feistel1CPAAttack_true [Nonempty G] (l₀ r₀ : G) :
             Prod.fst).map (fun v => decide (v = r₀)) := by
           simp [randomFunctionGame, feistel1CPAAttack, PMF.map_comp, Function.comp_def]; rfl
       _ = (PMF.uniformOfFintype G).map (fun v => decide (v = r₀)) := by rw [heval, hfst]
-  rw [hgame, ← PMF.toOuterMeasure_apply_singleton, PMF.toOuterMeasure_map_apply]
-  have hpre : (fun v : G => decide (v = r₀)) ⁻¹' {true} = {r₀} := by ext v; simp
-  rw [hpre, PMF.toOuterMeasure_apply_singleton, PMF.uniformOfFintype_apply]
+  rw [hgame, Cslib.Probability.PMF.map_decide_eq_apply_true, PMF.uniformOfFintype_apply]
 
 /-- `feistel1CPAAttack l₀ r₀` distinguishes any 1-round Feistel network `feistelRoundEquiv f` from
 `randomFunctionGame` with exact advantage `1 - |G|⁻¹` (original bound). -/
@@ -620,12 +610,8 @@ theorem advantage_feistel1CPAAttack_randomFunctionGame [Nonempty G] (f : G → G
         (feistel1CPAAttack l₀ r₀))
       (randomFunctionGame (feistel1CPAAttack l₀ r₀)) : ℝ) =
       1 - (Fintype.card G : ℝ)⁻¹ := by
-  rw [Game.coe_advantage]
-  simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal,
-    eval_feistelRoundEquiv_feistel1CPAAttack, randomFunctionGame_feistel1CPAAttack_true,
-    PMF.pure_apply_self, ENNReal.toReal_one, ENNReal.toReal_inv, ENNReal.toReal_natCast]
-  exact abs_of_nonneg
-    (sub_nonneg.mpr (inv_le_one_of_one_le₀ (by exact_mod_cast Fintype.card_pos)))
+  rw [eval_feistelRoundEquiv_feistel1CPAAttack, Game.coe_advantage_pure_true_left,
+    randomFunctionGame_feistel1CPAAttack_true, ENNReal.toReal_inv, ENNReal.toReal_natCast]
 
 omit [AddGroup G] in
 /-- Against `idealPermGame`, `feistel1CPAAttack l₀ r₀` accepts with probability at most `|G|⁻¹`
@@ -667,11 +653,9 @@ theorem le_advantage_feistel1CPAAttack_idealPermGame [Nonempty G] (f : G → G) 
       (Game.advantage
         (OracleComp.interpret (fun p => PMF.pure (feistelRoundEquiv f p))
           (feistel1CPAAttack l₀ r₀))
-        (idealPermGame (feistel1CPAAttack l₀ r₀)) : ℝ) :=
-  le_advantage_of_pure_true_of_toReal_le
-    (eval_feistelRoundEquiv_feistel1CPAAttack f l₀ r₀)
-    (idealPermGame_feistel1CPAAttack_true_le l₀ r₀)
-    (inv_le_one_of_one_le₀ (by exact_mod_cast Fintype.card_pos))
+        (idealPermGame (feistel1CPAAttack l₀ r₀)) : ℝ) := by
+  rw [eval_feistelRoundEquiv_feistel1CPAAttack, Game.coe_advantage_pure_true_left]
+  exact sub_le_sub_left (idealPermGame_feistel1CPAAttack_true_le l₀ r₀) 1
 
 /-! #### 2-round Feistel CPA distinguisher -/
 
@@ -764,11 +748,8 @@ theorem le_advantage_feistel2CPAAttack_idealPermGame [Nonempty G] (f₁ f₂ : G
         (OracleComp.interpret (fun p => PMF.pure (feistelNetwork [f₁, f₂] p))
           (feistel2CPAAttack l₀ l₁ r₀))
         (idealPermGame (feistel2CPAAttack l₀ l₁ r₀)) : ℝ) := by
-  have hN : (2 : ℝ) ≤ Fintype.card G := by exact_mod_cast hG
-  exact le_advantage_of_pure_true_of_toReal_le
-    (eval_feistel2_feistel2CPAAttack f₁ f₂ l₀ l₁ r₀)
-    (idealPermGame_feistel2CPAAttack_true_le r₀ h01 hG)
-    (by rw [div_le_iff₀ (by nlinarith)]; nlinarith)
+  rw [eval_feistel2_feistel2CPAAttack, Game.coe_advantage_pure_true_left]
+  exact sub_le_sub_left (idealPermGame_feistel2CPAAttack_true_le r₀ h01 hG) 1
 
 /-! #### 3-round repeated-key (`[f, f, f]`) Feistel CPA distinguisher -/
 
@@ -878,11 +859,9 @@ theorem le_advantage_feistel3RepeatedKeyCPAAttack_idealPermGame [Nonempty G]
         (OracleComp.interpret (fun p => PMF.pure (feistel3 f f f p))
           (feistel3RepeatedKeyCPAAttack x))
         (idealPermGame (feistel3RepeatedKeyCPAAttack x)) : ℝ) := by
-  have hN : (2 : ℝ) ≤ Fintype.card G := by exact_mod_cast hG
-  exact le_advantage_of_pure_true_of_toReal_le
-    (eval_feistel3_repeated_feistel3RepeatedKeyCPAAttack hneg f x)
-    (idealPermGame_feistel3RepeatedKeyCPAAttack_true_le x hG)
-    (by rw [div_le_iff₀ (by nlinarith)]; nlinarith)
+  rw [eval_feistel3_repeated_feistel3RepeatedKeyCPAAttack hneg f x,
+    Game.coe_advantage_pure_true_left]
+  exact sub_le_sub_left (idealPermGame_feistel3RepeatedKeyCPAAttack_true_le x hG) 1
 
 /-! #### Sharper permutation-fiber bound for the 3-round CCA distinguisher -/
 
@@ -983,11 +962,8 @@ theorem le_advantage_feistel3CCAAttack_idealStrongGame_of_two_le_card [Nonempty 
         (OracleComp.interpret (feistelStrongOracle (feistel3 f₁ f₂ f₃))
           (feistel3CCAAttack l₀ l₁ r₀))
         (idealStrongGame (feistel3CCAAttack l₀ l₁ r₀)) : ℝ) := by
-  have hN : (2 : ℝ) ≤ Fintype.card G := by exact_mod_cast hG
-  exact le_advantage_of_pure_true_of_toReal_le
-    (eval_feistel3_feistel3CCAAttack f₁ f₂ f₃ l₀ l₁ r₀)
-    (idealStrongGame_feistel3CCAAttack_true_le_inv_card_sub_one r₀ h01 hG)
-    (inv_le_one_of_one_le₀ (by linarith))
+  rw [eval_feistel3_feistel3CCAAttack, Game.coe_advantage_pure_true_left]
+  exact sub_le_sub_left (idealStrongGame_feistel3CCAAttack_true_le_inv_card_sub_one r₀ h01 hG) 1
 
 end Distinguishers
 

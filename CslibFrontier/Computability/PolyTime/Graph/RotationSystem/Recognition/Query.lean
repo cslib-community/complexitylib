@@ -280,8 +280,11 @@ private theorem row_polyTime :
     ComputableTidilyInPolyTime (fun p : (Frame × (Segment × ℕ)) × (Segment × ℕ) =>
       row p.1.1 p.1.2 p.2)
       (encPair (encPair encFrame (encPair encSegment encUnary)) (encPair encSegment encUnary))
-      XORSAT.equationEncoding := by
-  unfold row XORSAT.equationEncoding
+      (encAffineEquation encNat) := by
+  unfold row
+  refine ComputableTidilyInPolyTime.of_enc_eq (encB := encPair (encList encNat) encBool)
+    (f := fun p : (Frame × (Segment × ℕ)) × (Segment × ℕ) =>
+      ((row p.1.1 p.1.2 p.2).vars, (row p.1.1 p.1.2 p.2).rhs)) ?_ fun _ => rfl
   apply ComputableTidilyInPolyTime.prod
   · apply ComputableTidilyInPolyTime.listAppend'
     · exact moveLabels_polyTime.comp

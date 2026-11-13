@@ -48,8 +48,8 @@ hops:
    uniform law on `(ZMod (N ^ 2))ˣ` to the uniform law on `(ZMod N)ˣ`. The encryption
    randomness is `unitOrOne N r` for `r` from `ProbComp.sampleModNat`, which is within
    `N / 2 ^ (n + |N|) + (N - φ(N)) / N` of uniform on the units.
-2. The DCR real and ideal games of `dcrDistinguisher A b` differ by its DCR advantage.
-3. The DCR ideal games for `b = false` and `b = true` are equal: multiplying a uniform unit by
+2. The DCR real and random games of `dcrDistinguisher A b` differ by its DCR advantage.
+3. The DCR random games for `b = false` and `b = true` are equal: multiplying a uniform unit by
    the unit `(1 + N) ^ m` gives a uniform unit, whatever `m` is.
 4. Hops 1 and 2 again, for the other bit.
 
@@ -145,10 +145,6 @@ theorem isPPTOn_dcrDistinguisher {adversary : AdversaryOf ℕ} (hA : adversary.I
 
 /-! ### Algebra of the reduction -/
 
-private theorem eq_of_natCast_eq_of_lt {M a b : ℕ} (ha : a < M) (hb : b < M)
-    (h : (a : ZMod M) = (b : ZMod M)) : a = b := by
-  rw [← ZMod.val_cast_of_lt ha, ← ZMod.val_cast_of_lt hb, h]
-
 /-- Multiplying the challenge `y = r` by `(1 + N) ^ m` is multiplication by a unit. -/
 private theorem powMod_mul_val_eq (N : ℕ) [NeZero N] (m : ℕ) (r : (ZMod (N ^ 2))ˣ) :
     powMod (N ^ 2) (1 + N) m * (r : ZMod (N ^ 2)).val % N ^ 2 =
@@ -172,13 +168,14 @@ private theorem powMod_mul_val_pow_eq_ciphertext (N : ℕ) [NeZero N] (m : ℕ)
   have hcop : Nat.gcd ((ZMod.unitsMap (dvd_pow_self N two_ne_zero) s : ZMod N)).val N = 1 :=
     ZMod.val_coe_unit_coprime _
   simp only [unitOrOne, hcop, ↓reduceIte]
-  refine eq_of_natCast_eq_of_lt (Nat.mod_lt _ (Nat.pos_of_ne_zero hN2)) ?_ ?_
-  · unfold ciphertext
-    exact Nat.mod_lt _ (Nat.pos_of_ne_zero hN2)
+  refine Nat.ModEq.eq_of_lt_of_lt ((ZMod.natCast_eq_natCast_iff _ _ _).mp ?_)
+    (Nat.mod_lt _ (Nat.pos_of_ne_zero hN2)) ?_
   · rw [natCast_ciphertext (NeZero.ne N), ZMod.unitsMap_val, ZMod.cast_eq_val, ZMod.val_natCast,
       ← ZMod.natCast_pow_self_mod, ZMod.natCast_zmod_val]
     simp only [powMod_of_ne_zero hN2, ZMod.natCast_mod, Nat.cast_mul, Nat.cast_pow, Nat.cast_add,
       Nat.cast_one, ZMod.natCast_zmod_val, Units.val_pow_eq_pow_val]
+  · unfold ciphertext
+    exact Nat.mod_lt _ (Nat.pos_of_ne_zero hN2)
 
 /-! ### The hops -/
 
@@ -226,8 +223,8 @@ private theorem advantage_gameOn_dcrRealGame_le {gen : ℕ → ProbComp Desc}
     Game.advantage (ProbComp.eval (gameOn validMessages (keyGen gen) encrypt adversary bit n))
       (dcrRealGame (fun n => ProbComp.eval (gen n)) (dcrDistinguisher adversary bit) n) ≤
       5 / 2 ^ n := by
-  simp only [gameOn, keyGen, encrypt, dcrRealGame, dcrDistinguisher, ProbComp.eval_bind,
-    ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.bind_bind,
+  simp only [gameOn, keyGen, encrypt, dcrRealGame, Game.withSetup, dcrRealExperiment,
+    dcrDistinguisher, ProbComp.eval_bind, ProbComp.eval_pure, ProbComp.eval_uniform, PMF.bind_bind,
     PMF.pure_bind, apply_ite ProbComp.eval, ofBits_encNat, ChoiceOut.msg₀, ChoiceOut.msg₁,
     ChoiceOut.msgs]
   refine Game.advantage_bind_le_of_support _ _ _ fun d hd => ?_
@@ -239,14 +236,14 @@ private theorem advantage_gameOn_dcrRealGame_le {gen : ℕ → ProbComp Desc}
   · simp only [hv, Bool.false_eq_true, ↓reduceIte, PMF.bind_const, Game.advantage_self, zero_le]
 
 /-- Ingredient of the proof of [KatzLindell2020], Theorem 15.13 (the case `y` uniform): the DCR
-ideal games of the two reduction distinguishers are equal. -/
-private theorem dcrIdealGame_dcrDistinguisher_false_eq_true (setup : ℕ → PMF Desc)
+random games of the two reduction distinguishers are equal. -/
+private theorem dcrRandomGame_dcrDistinguisher_false_eq_true (setup : ℕ → PMF Desc)
     (adversary : AdversaryOf ℕ) (n : ℕ) :
-    dcrIdealGame setup (dcrDistinguisher adversary false) n =
-      dcrIdealGame setup (dcrDistinguisher adversary true) n := by
-  simp only [dcrIdealGame, dcrDistinguisher, ProbComp.eval_bind, PMF.monad_bind_eq_bind,
-    apply_ite ProbComp.eval, ProbComp.eval_pure, Bool.false_eq_true,
-    ↓reduceIte]
+    dcrRandomGame setup (dcrDistinguisher adversary false) n =
+      dcrRandomGame setup (dcrDistinguisher adversary true) n := by
+  simp only [dcrRandomGame, Game.withSetup, dcrRandomExperiment, dcrDistinguisher,
+    ProbComp.eval_bind, ProbComp.eval_uniform, apply_ite ProbComp.eval, ProbComp.eval_pure,
+    Bool.false_eq_true, ↓reduceIte]
   refine congrArg (PMF.bind _) (funext fun d => ?_)
   rw [PMF.bind_comm, PMF.bind_comm (PMF.uniformOfFintype (ZMod (d.modulus ^ 2))ˣ)]
   refine congrArg (PMF.bind _) (funext fun choice => ?_)
@@ -284,9 +281,9 @@ theorem DCR.indcpaOn_paillier {gen : ℕ → ProbComp Desc}
     refine negligible_of_le ((hD false).add (hD true)) fun n => ?_
     dsimp only [Pi.add_apply]
     refine (Game.advantage_triangle _
-      (dcrIdealGame (fun n => ProbComp.eval (gen n)) (dcrDistinguisher adversary false) n)
+      (dcrRandomGame (fun n => ProbComp.eval (gen n)) (dcrDistinguisher adversary false) n)
       _).trans (add_le_add le_rfl ?_)
-    rw [dcrIdealGame_dcrDistinguisher_false_eq_true]
+    rw [dcrRandomGame_dcrDistinguisher_false_eq_true]
     exact (Game.advantage_comm _ _).le
   have h5 : Negligible fun n => (5 : ℝ≥0) / 2 ^ n := negligible_const_div_two_pow 5
   refine negligible_of_le ((h5.add hmid).add h5) fun n => ?_

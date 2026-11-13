@@ -11,6 +11,7 @@ public import CslibFrontier.Foundations.Data.BitString.ZModTwo
 public import CslibFrontier.Foundations.Data.Code.Linear
 public import Mathlib.LinearAlgebra.Matrix.Rank
 public import Mathlib.LinearAlgebra.Matrix.ToLin
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import Mathlib.LinearAlgebra.Dimension.Constructions
 import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 
@@ -209,7 +210,7 @@ theorem rate_parityCheckCode_bool (H : Matrix κ ι Bool) :
   have hcard : Nat.card (parityCheckCode H : Set (ι → Bool)) = Nat.card (parityCheckCode H) := rfl
   rw [rate, h1, hcard, card_parityCheckCode_bool_eq_two_pow_finrank]
   push_cast
-  rw [← Real.rpow_natCast (2 : ℝ), Real.logb_rpow (by norm_num) (by norm_num)]
+  rw [Real.logb_two_pow]
 
 end Binary
 

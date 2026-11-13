@@ -1137,6 +1137,18 @@ private lemma walk_cons_tail_eq {u b₁ b₂ v : V} {h₁ : W.graph.Adj u b₁} 
   cases he
   exact ⟨rfl, rfl⟩
 
+/-- A trail that starts with the edge `s(u, w)` does not use that edge at a later step. -/
+private lemma edge_ne_of_isTrail_cons_append {u w u₂ v₂ v : V} {p : W.graph.Walk u v}
+    (ht : p.IsTrail) (h : W.graph.Adj u w) (q : W.graph.Walk w u₂) (h₂ : W.graph.Adj u₂ v₂)
+    (r₂ : W.graph.Walk v₂ v) (hp : p = .cons h (q.append (.cons h₂ r₂))) :
+    s(u, w) ≠ s(u₂, v₂) := by
+  intro he
+  have hnd := ht.edges_nodup
+  rw [hp, Walk.edges_cons, List.nodup_cons] at hnd
+  refine hnd.1 ?_
+  rw [he, Walk.edges_append, List.mem_append, Walk.edges_cons]
+  exact Or.inr List.mem_cons_self
+
 private lemma walk_decomp_unique_of_isTrail :
     ∀ {u v : V} (p : W.graph.Walk u v), p.IsTrail →
       ∀ {u₁ v₁ u₂ v₂ : V} (q₁ : W.graph.Walk u u₁) (r₁ : W.graph.Walk v₁ v)
@@ -1159,39 +1171,17 @@ private lemma walk_decomp_unique_of_isTrail :
         obtain ⟨hv, _⟩ := walk_cons_tail_eq (hp1.symm.trans hp2)
         exact ⟨rfl, hv, rfl⟩
       | cons hadj2 q₂' =>
-        exfalso
-        rename_i w₂
         rw [Walk.nil_append] at hp1
         rw [Walk.cons_append] at hp2
-        have hp_eq := hp1.symm.trans hp2
-        have hnd := ht.edges_nodup
-        rw [hp2, Walk.edges_cons, List.nodup_cons] at hnd
-        have hmem : s(u, v₁) ∈ (q₂'.append (Walk.cons h₂ r₂)).edges := by
-          rw [hedge, Walk.edges_append, List.mem_append, Walk.edges_cons]
-          exact Or.inr List.mem_cons_self
-        have heq : s(u, w₂) = s(u, v₁) := by
-          have hed := congrArg Walk.edges hp_eq
-          simp only [Walk.edges_cons, List.cons.injEq] at hed
-          exact hed.1.symm
-        exact hnd.1 (heq ▸ hmem)
+        obtain ⟨rfl, -⟩ := walk_cons_tail_eq (hp1.symm.trans hp2)
+        exact absurd hedge (edge_ne_of_isTrail_cons_append ht hadj2 q₂' h₂ r₂ hp2)
     | cons hadj1 q₁' =>
       cases q₂ with
       | nil =>
-        exfalso
-        rename_i w₁
         rw [Walk.nil_append] at hp2
         rw [Walk.cons_append] at hp1
-        have hp_eq := hp2.symm.trans hp1
-        have hnd := ht.edges_nodup
-        rw [hp1, Walk.edges_cons, List.nodup_cons] at hnd
-        have hmem : s(u, v₂) ∈ (q₁'.append (Walk.cons h₁ r₁)).edges := by
-          rw [← hedge, Walk.edges_append, List.mem_append, Walk.edges_cons]
-          exact Or.inr List.mem_cons_self
-        have heq : s(u, w₁) = s(u, v₂) := by
-          have hed := congrArg Walk.edges hp_eq
-          simp only [Walk.edges_cons, List.cons.injEq] at hed
-          exact hed.1.symm
-        exact hnd.1 (heq ▸ hmem)
+        obtain ⟨rfl, -⟩ := walk_cons_tail_eq (hp2.symm.trans hp1)
+        exact absurd hedge.symm (edge_ne_of_isTrail_cons_append ht hadj1 q₁' h₁ r₁ hp1)
       | cons hadj2 q₂' =>
         rw [Walk.cons_append] at hp1 hp2
         obtain ⟨hb1, hp1'⟩ := walk_cons_tail_eq hp1
@@ -1266,6 +1256,30 @@ theorem circleMap_dist_eq_circleDist [Finite V] {v₀ : V} {c : W.graph.Walk v�
     exact ⟨d, q₁, q₂, hadj, t, hd, hc_eq, hpt, hcd_s, hfst, hsnd, hcd_fst, hcd_snd⟩
   obtain ⟨d₁, q₁₁, q₁₂, h₁, t₁, hd₁, hc₁, hpt₁, hcds₁, hfst₁, hsnd₁, hcdf₁, hcdsnd₁⟩ := decomp s₁
   obtain ⟨d₂, q₂₁, q₂₂, h₂, t₂, hd₂, hc₂, hpt₂, hcds₂, hfst₂, hsnd₂, hcdf₂, hcdsnd₂⟩ := decomp s₂
+  have hbound : ∀ {s : ℝ} {d : W.graph.Dart} (q : W.graph.Walk v₀ d.fst) (t : unitInterval),
+      circleDist L s (walkLength W.weight q + (t : ℝ) * W.weight d.edge) = 0 →
+      circleDist L (walkLength W.weight q) (cycCoord c d.fst) = 0 →
+      circleDist L (walkLength W.weight q + W.weight d.edge) (cycCoord c d.snd) = 0 →
+      ∀ u ∈ ({d.fst, d.snd} : Set V), circleDist L s (cycCoord c u) ≤
+        if u = d.fst then (t : ℝ) * W.weight d.edge else (1 - (t : ℝ)) * W.weight d.edge := by
+    intro s d q t hcds hcdf hcdsnd u hu
+    refine (circleDist_triangle hL _ (walkLength W.weight q + (t : ℝ) * W.weight d.edge) _).trans ?_
+    rw [hcds, zero_add]
+    rcases hu with rfl | rfl
+    · rw [ite_eq_left rfl]
+      refine (circleDist_triangle hL _ (walkLength W.weight q) _).trans ?_
+      rw [hcdf, add_zero]
+      refine (circleDist_le_abs hL _ _).trans_eq ?_
+      rw [add_sub_cancel_left, abs_of_nonneg (mul_nonneg t.2.1 (W.dart_weight_pos d).le)]
+    · rw [ite_eq_right d.snd_ne_fst]
+      refine (circleDist_triangle hL _ (walkLength W.weight q + W.weight d.edge) _).trans ?_
+      rw [hcdsnd, add_zero]
+      refine (circleDist_le_abs hL _ _).trans_eq ?_
+      have hneg : (walkLength W.weight q + (t : ℝ) * W.weight d.edge) -
+          (walkLength W.weight q + W.weight d.edge) = -((1 - (t : ℝ)) * W.weight d.edge) := by
+        ring
+      rw [hneg, abs_neg,
+        abs_of_nonneg (mul_nonneg (unitInterval.one_sub_nonneg t) (W.dart_weight_pos d).le)]
   have hpair : ∀ u₁ ∈ ({d₁.fst, d₁.snd} : Set V), ∀ u₂ ∈ ({d₂.fst, d₂.snd} : Set V),
       circleDist L s₁ s₂ ≤
         (if u₁ = d₁.fst then (t₁ : ℝ) * W.weight d₁.edge else (1 - (t₁ : ℝ)) * W.weight d₁.edge) +
@@ -1273,67 +1287,14 @@ theorem circleMap_dist_eq_circleDist [Finite V] {v₀ : V} {c : W.graph.Walk v�
         (if u₂ = d₂.fst then (t₂ : ℝ) * W.weight d₂.edge
           else (1 - (t₂ : ℝ)) * W.weight d₂.edge) := by
     intro u₁ hu₁ u₂ hu₂
-    have h1_bound : circleDist L s₁ (cycCoord c u₁) ≤
-        (if u₁ = d₁.fst then (t₁ : ℝ) * W.weight d₁.edge else (1 - (t₁ : ℝ)) * W.weight d₁.edge) ∧
-        u₁ ∈ c.support := by
-      rcases hu₁ with rfl | rfl
-      · refine ⟨?_, hfst₁⟩
-        split_ifs with h
-        · refine (circleDist_triangle hL _
-              (walkLength W.weight q₁₁ + (t₁ : ℝ) * W.weight d₁.edge) _).trans ?_
-          rw [hcds₁, zero_add]
-          refine (circleDist_triangle hL _ (walkLength W.weight q₁₁) _).trans ?_
-          rw [hcdf₁, add_zero]
-          refine (circleDist_le_abs hL _ _).trans_eq ?_
-          rw [add_sub_cancel_left, abs_of_nonneg (mul_nonneg t₁.2.1 (W.dart_weight_pos d₁).le)]
-        · exact absurd rfl h
-      · refine ⟨?_, hsnd₁⟩
-        split_ifs with h
-        · exact absurd h d₁.snd_ne_fst
-        · refine (circleDist_triangle hL _
-              (walkLength W.weight q₁₁ + (t₁ : ℝ) * W.weight d₁.edge) _).trans ?_
-          rw [hcds₁, zero_add]
-          refine (circleDist_triangle hL _ (walkLength W.weight q₁₁ + W.weight d₁.edge) _).trans ?_
-          rw [hcdsnd₁, add_zero]
-          refine (circleDist_le_abs hL _ _).trans_eq ?_
-          have hneg : (walkLength W.weight q₁₁ + (t₁ : ℝ) * W.weight d₁.edge) -
-              (walkLength W.weight q₁₁ + W.weight d₁.edge) =
-              -((1 - (t₁ : ℝ)) * W.weight d₁.edge) := by ring
-          rw [hneg, abs_neg,
-            abs_of_nonneg (mul_nonneg (unitInterval.one_sub_nonneg t₁) (W.dart_weight_pos d₁).le)]
-    have h2_bound : circleDist L (cycCoord c u₂) s₂ ≤
-        (if u₂ = d₂.fst then (t₂ : ℝ) * W.weight d₂.edge else (1 - (t₂ : ℝ)) * W.weight d₂.edge) ∧
-        u₂ ∈ c.support := by
-      rcases hu₂ with rfl | rfl
-      · refine ⟨?_, hfst₂⟩
-        split_ifs with h
-        · rw [circleDist_symm hL]
-          refine (circleDist_triangle hL _
-              (walkLength W.weight q₂₁ + (t₂ : ℝ) * W.weight d₂.edge) _).trans ?_
-          rw [hcds₂, zero_add]
-          refine (circleDist_triangle hL _ (walkLength W.weight q₂₁) _).trans ?_
-          rw [hcdf₂, add_zero]
-          refine (circleDist_le_abs hL _ _).trans_eq ?_
-          rw [add_sub_cancel_left, abs_of_nonneg (mul_nonneg t₂.2.1 (W.dart_weight_pos d₂).le)]
-        · exact absurd rfl h
-      · refine ⟨?_, hsnd₂⟩
-        split_ifs with h
-        · exact absurd h d₂.snd_ne_fst
-        · rw [circleDist_symm hL]
-          refine (circleDist_triangle hL _
-              (walkLength W.weight q₂₁ + (t₂ : ℝ) * W.weight d₂.edge) _).trans ?_
-          rw [hcds₂, zero_add]
-          refine (circleDist_triangle hL _ (walkLength W.weight q₂₁ + W.weight d₂.edge) _).trans ?_
-          rw [hcdsnd₂, add_zero]
-          refine (circleDist_le_abs hL _ _).trans_eq ?_
-          have hneg : (walkLength W.weight q₂₁ + (t₂ : ℝ) * W.weight d₂.edge) -
-              (walkLength W.weight q₂₁ + W.weight d₂.edge) =
-              -((1 - (t₂ : ℝ)) * W.weight d₂.edge) := by ring
-          rw [hneg, abs_neg,
-            abs_of_nonneg (mul_nonneg (unitInterval.one_sub_nonneg t₂) (W.dart_weight_pos d₂).le)]
-    have hvd := circleDist_le_vertexDist hs h1_bound.2 h2_bound.2
-    linarith [h1_bound.1, h2_bound.1,
-      circleDist_triangle hL s₁ (cycCoord c u₁) s₂,
+    have hmem : ∀ {d : W.graph.Dart}, d.fst ∈ c.support → d.snd ∈ c.support →
+        ∀ u ∈ ({d.fst, d.snd} : Set V), u ∈ c.support := by
+      rintro d hf hs u (rfl | rfl) <;> assumption
+    have h1 := hbound q₁₁ t₁ hcds₁ hcdf₁ hcdsnd₁ u₁ hu₁
+    have h2 := hbound q₂₁ t₂ hcds₂ hcdf₂ hcdsnd₂ u₂ hu₂
+    rw [circleDist_symm hL] at h2
+    have hvd := circleDist_le_vertexDist hs (hmem hfst₁ hsnd₁ u₁ hu₁) (hmem hfst₂ hsnd₂ u₂ hu₂)
+    linarith [circleDist_triangle hL s₁ (cycCoord c u₁) s₂,
       circleDist_triangle hL (cycCoord c u₁) (cycCoord c u₂) s₂]
   have hff := hpair d₁.fst (Or.inl rfl) d₂.fst (Or.inl rfl)
   have hfs := hpair d₁.fst (Or.inl rfl) d₂.snd (Or.inr rfl)
@@ -1511,28 +1472,19 @@ theorem circleMap_surjective_of_cycleGraph {n : ℕ}
       have hq2_nn : 0 ≤ walkLength W.weight q₂ := walkLength_nonneg W.weight W.weight_nonneg q₂
       have hw' : W.weight s(d'.fst, d'.snd) = W.weight d'.edge := rfl
       linarith
+    have hpt : ∀ s : unitInterval,
+        circleMap hc (walkLength W.weight q₁ + (s : ℝ) * W.weight d'.edge) = edgePoint d' s := by
+      intro s
+      have hs0 : 0 ≤ (s : ℝ) * W.weight d'.edge := mul_nonneg s.2.1 (W.dart_weight_pos d').le
+      have hsl : walkLength W.weight q₁ + (s : ℝ) * W.weight d'.edge ≤ walkLength W.weight c := by
+        nlinarith [s.2.2, (W.dart_weight_pos d').le]
+      rw [circleMap_eq_walkPoint hc (add_nonneg (walkLength_nonneg _ W.weight_nonneg _) hs0) hsl]
+      conv_lhs => arg 1; rw [hc_eq]
+      rw [walkPoint_append_of_ge _ _ hs0]
+      exact walkPoint_cons_mul hadj q₂ d' hd'_eq s
     rcases (dart_edge_eq_iff d' d).mp hd'_edge with rfl | hsymm
-    · refine ⟨walkLength W.weight q₁ + (t : ℝ) * W.weight d'.edge, ?_⟩
-      have hs0 : 0 ≤ walkLength W.weight q₁ + (t : ℝ) * W.weight d'.edge :=
-        add_nonneg (walkLength_nonneg _ W.weight_nonneg _)
-          (mul_nonneg t.2.1 (W.dart_weight_pos d').le)
-      have hsl : walkLength W.weight q₁ + (t : ℝ) * W.weight d'.edge ≤ walkLength W.weight c := by
-        nlinarith [t.2.2, (W.dart_weight_pos d').le]
-      rw [circleMap_eq_walkPoint hc hs0 hsl]
-      conv_lhs => arg 1; rw [hc_eq]
-      rw [walkPoint_append_of_ge _ _ (mul_nonneg t.2.1 (W.dart_weight_pos d').le)]
-      exact walkPoint_cons_mul hadj q₂ d' hd'_eq t
-    · let t' := unitInterval.symm t
-      refine ⟨walkLength W.weight q₁ + (t' : ℝ) * W.weight d'.edge, ?_⟩
-      have hs0 : 0 ≤ walkLength W.weight q₁ + (t' : ℝ) * W.weight d'.edge :=
-        add_nonneg (walkLength_nonneg _ W.weight_nonneg _)
-          (mul_nonneg t'.2.1 (W.dart_weight_pos d').le)
-      have hsl : walkLength W.weight q₁ + (t' : ℝ) * W.weight d'.edge ≤ walkLength W.weight c := by
-        nlinarith [t'.2.2, (W.dart_weight_pos d').le]
-      rw [circleMap_eq_walkPoint hc hs0 hsl]
-      conv_lhs => arg 1; rw [hc_eq]
-      rw [walkPoint_append_of_ge _ _ (mul_nonneg t'.2.1 (W.dart_weight_pos d').le),
-        walkPoint_cons_mul hadj q₂ d' hd'_eq t', hsymm, edgePoint_symm d t]
+    · exact ⟨_, hpt t⟩
+    · exact ⟨_, (hpt (unitInterval.symm t)).trans (by rw [hsymm, edgePoint_symm])⟩
 
 private lemma circleMap_rotate_eq [DecidableEq V] {v₀ v : V} {c : W.graph.Walk v₀ v₀}
     (hc : c.IsCycle) (hv : v ∈ c.support) (r : ℝ) :

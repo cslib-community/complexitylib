@@ -42,7 +42,7 @@ private theorem eval_readSelf (real : Bool) (n : ℕ) :
       ((ProbComp.eval (Encryption.circularPublicKey keyGen leak real n)).map
         Encryption.encCircularPublicKey) (readSelf n) = PMF.pure real := by
   cases real <;>
-    simp [distinguishingGame, Encryption.circularPublicKey, keyGen, leak, readSelf,
+    simp [distinguishingGame_eq_bind, Encryption.circularPublicKey, keyGen, leak, readSelf,
       ProbComp.eval_pure, FixedKey.publicKeyDecoder.decode_enc]
 
 -- The circular definition rejects the real-versus-zero leakage with advantage exactly one.
@@ -103,8 +103,8 @@ private theorem eval_readJoint (real : Bool) (n : ℕ) :
       ((ProbComp.eval (Encryption.circularPublicKey maskedKeyGen maskedEncrypt real n)).map
         Encryption.encCircularPublicKey) (readJoint n) = PMF.pure real := by
   rw [eval_masked]
-  simp [distinguishingGame, readJoint, FixedKey.publicKeyDecoder.decode_enc,
-    PMF.map, Function.comp_def]
+  simp [distinguishingGame_eq_bind, readJoint, FixedKey.publicKeyDecoder.decode_enc, PMF.map,
+    Function.comp_def]
 
 example : ¬ Encryption.CircularSecure maskedKeyGen maskedEncrypt := by
   intro hcircular

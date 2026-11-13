@@ -103,16 +103,12 @@ theorem ancestry_times_eq_stamp (hg : Grown sem f rs es) (v : V) :
   induction hg generalizing v with
   | nil => rfl
   | @cons es e hp hv hu hf hn hfe hsat ih =>
-    have oldstamp : ∀ z ∈ es.used, Log.stamp (e :: es) z = es.stamp z := by
-      intro z hz
-      have hne : e.input ≠ z := fun he => hu (he.symm ▸ hz)
-      simp [Log.stamp, hne]
     have hmap : ∀ u, (es.ancestry u).walk.steps.map (fun s => Log.stamp (e :: es) s.1) =
         (es.ancestry u).walk.steps.map (fun s => es.stamp s.1) := by
       intro u
       apply List.map_congr_left
       intro s hs
-      exact oldstamp s.1 (es.mem_arcs (hp.ancestry_arcs u hs).1).1
+      exact (hp.stamp_cons_of_mem_ancestry hu hs).1
     simp only [Log.ancestry]
     split
     · simp only [Walk.snoc, List.map_append, List.map_singleton]
@@ -248,10 +244,6 @@ theorem ancestry_root_eq_of_copy (hg : Grown sem f rs es) {u v : V}
   induction hg generalizing u v s t with
   | nil => simp [Log.ancestry] at hs
   | @cons es e hp hv hu hf hn hfe hsat ih =>
-    have oldstamp : ∀ z ∈ es.used, Log.stamp (e :: es) z = es.stamp z := by
-      intro z hz
-      have hne : e.input ≠ z := fun he => hu (he.symm ▸ hz)
-      simp [Log.stamp, hne]
     have older : ∀ {x y : V} {s t : Occurrence F × Occurrence F},
         s ∈ (es.ancestry x).walk.steps → t ∈ (es.ancestry y).walk.steps →
         (inArc (Log.stamp (e :: es)) s).copy =
@@ -259,19 +251,14 @@ theorem ancestry_root_eq_of_copy (hg : Grown sem f rs es) {u v : V}
         (es.ancestry x).walk.start = (es.ancestry y).walk.start := by
       intro x y s t hs ht hc
       apply ih hs ht
-      simpa only [inArc, Arc.copy,
-        oldstamp s.1 (es.mem_arcs (hp.ancestry_arcs x hs).1).1,
-        oldstamp t.1 (es.mem_arcs (hp.ancestry_arcs y ht).1).1] using hc
+      simpa only [inArc, Arc.copy, (hp.stamp_cons_of_mem_ancestry hu hs).1,
+        (hp.stamp_cons_of_mem_ancestry hu ht).1] using hc
     have notnew : ∀ {x : V} {s : Occurrence F × Occurrence F},
         s ∈ (es.ancestry x).walk.steps →
         (inArc (Log.stamp (e :: es)) s).copy ≠ (e.input.1, es.length) := by
       intro x s hs he
-      have hsa := (hp.ancestry_arcs x hs).1
-      have hlt := (es.mem_arcs hsa).2
-      have htime := congrArg Prod.snd he
-      change Log.stamp (e :: es) s.1 = es.length at htime
-      rw [oldstamp s.1 (es.mem_arcs hsa).1] at htime
-      change es.stamp s.1 < es.length at hlt
+      have htime : Log.stamp (e :: es) s.1 = es.length := congrArg Prod.snd he
+      have := hp.stamp_cons_of_mem_ancestry hu hs
       omega
     cases hfu : e.outputs.find? (fun o => o.var == u) with
     | some a =>

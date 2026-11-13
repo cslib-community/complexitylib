@@ -81,6 +81,14 @@ function. -/
 noncomputable def complete (st : Key → Cache Block) : PMF (Key → Equiv.Perm Block) :=
   PMF.pi (fun k => RandomPermutation.complete (st k))
 
+omit [DecidableEq Key] [Nonempty Block] in
+/-- Completing the empty cache samples an independent uniformly random permutation for every
+key. -/
+theorem complete_nil :
+    complete (fun _ : Key => ([] : Cache Block)) =
+      PMF.pi (fun _ : Key => PMF.uniformOfFintype (Equiv.Perm Block)) := by
+  simp only [complete, RandomPermutation.complete_nil]
+
 /-- An exact evaluation step for the ideal cipher model, with a bad flag that triggers
 when a duplicate output is sampled. -/
 noncomputable def exactWithBad (q : Query Key Block) :
