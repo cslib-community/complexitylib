@@ -7,10 +7,11 @@ Authors: Karn Seth
 module
 -- upstream: candidate
 
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.PowMod
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.Words
 public import CslibFrontier.Crypto.Computational.Encryption.PublicKeyReplacement
-public import CslibFrontier.Crypto.Computational.Paillier
 public import CslibFrontier.Crypto.Computational.QuadraticResiduosity
+public import CslibFrontier.Crypto.Computational.UnitSampling
 public import CslibFrontier.Crypto.Encoding
 public import CslibFrontier.Languages.Probabilistic.UniformNat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
@@ -26,7 +27,6 @@ import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.PPT.Composition
 import CslibFrontier.Computability.Probabilistic.Traverse
 import CslibFrontier.Computability.Probabilistic.UniformNat
-import CslibFrontier.Crypto.Computational.UnitSampling
 import CslibFrontier.Crypto.Game.FourHop
 import CslibFrontier.Crypto.Game.Statistical
 import CslibFrontier.Crypto.Negligible.Basic
