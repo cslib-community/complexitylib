@@ -261,6 +261,21 @@ Snapshot: `b91d5151fd7dc665a5e3efcb466077caf44e690d` (2026-11-12), CSLib pin
 | 11.24 (both parts) | 218 / 234 | **Covered.** `Cslib.DecisionTree.degree_le_complexity` in [Degree](../CslibFrontier/Computability/QueryComplexity/Degree.lean) proves part 1. `Cslib.DecisionTree.complexity_le_degree_mul_blockSensitivity` and `complexity_le_two_mul_degree_pow_three` in [Midrijanis](../CslibFrontier/Computability/QueryComplexity/Midrijanis.lean) strengthen part 2: $D\le\deg(f)bs(f)$ and $D\le2\deg(f)^3$. Degree is exact real multilinear degree; constants have degree and query cost zero, so their case is separate from the positive-degree asymptotic comparison. |
 
 
+### Exercise 1 after the audited snapshot
+
+Chapter 11 Exercise 1 (printed p. 218 / PDF p. 234) establishes new theory: a Boolean function
+depending on all $n$ bits has $s(f)=\Omega(\log n)$.
+[RelevantCoordinates](../CslibFrontier/Computability/QueryComplexity/RelevantCoordinates.lean)
+proves `Cslib.BitString.card_relevant_le_sensitivity_mul_four_pow` and
+`clog_le_three_mul_sensitivity_of_depends_on_all`: at most $s4^s$ coordinates are relevant, hence
+$\operatorname{clog}_2 n\le3s(f)$ when all are relevant. The measures are native maximum
+sensitivity, and the empty-coordinate convention is explicit. A nonempty-set local-boundary
+cardinality lemma and sensitive-incidence double counting give the bound directly.
+The [checked clients](../CslibFrontierTests/SensitivityRelevant.lean) include ignored coordinates,
+constants, parity, and singleton/proper-subcube boundary instances. This completes this exercise's
+endpoint, not the separate adjacent-pair block construction in Exercise 2 or the full
+[#4711](https://github.com/cslib-community/cslib-frontier/issues/4711) objective.
+
 ### What the existing query API establishes
 
 - Exact finite query-measure inequalities are available without a machine-encoding translation.

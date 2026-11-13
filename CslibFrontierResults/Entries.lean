@@ -123,6 +123,7 @@ import CslibFrontier.Computability.MCSP.PartialHardness.Reduction
 import CslibFrontier.Computability.PCP.Approximation.UniqueGames.Complexity
 import CslibFrontier.Computability.PCP.Completeness
 import CslibFrontier.Computability.PolyTime.LinearAlgebra.RationalElimination
+import CslibFrontier.Computability.QueryComplexity.RelevantCoordinates
 import CslibFrontier.Computability.QueryComplexity.Quantum.NayakWuConsequences
 import CslibFrontier.Computability.QueryComplexity.Quantum.PermutationInversion
 import CslibFrontier.Computability.QueryComplexity.Quantum.SpectralAdversary
@@ -748,6 +749,22 @@ register_result "encoded-circuit-boolean-simulation" where
     at most size * bitBlastCost w gates. Correctness holds on valid encoded inputs, packed \
     wire-major by blocksEquiv.symm. Constants count as gates and wiring is free. No encoding \
     construction, reverse general-field simulation or compiler-runtime claim."
+
+register_result "sensitivity-relevant-coordinates" where
+  title := "All-relevant Boolean functions have logarithmic maximum sensitivity"
+  topic := "query complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 11, Exercise 1",
+      locator := "Web draft 2007-01-08, printed p. 218; PDF p. 234" }
+  ]
+  theorems := [
+    Cslib.BitString.card_relevant_le_sensitivity_mul_four_pow,
+    Cslib.BitString.clog_le_three_mul_sensitivity_of_depends_on_all
+  ]
+  scope := "Total Boolean functions on n bits, using native maximum sensitivity. The number \
+    of coordinates sensitive at some input is at most s(f)*4^s(f). If every coordinate is \
+    relevant, Nat.clog 2 n ≤ 3*s(f), an explicit uniform logarithmic lower bound, including \
+    the n=0 convention. Irrelevant coordinates are excluded from the cardinality theorem."
 
 register_result "formula-bounds" where
   title := "Formula lower bounds: Khrapchenko's quadratic bound for parity"

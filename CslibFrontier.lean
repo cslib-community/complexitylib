@@ -3928,6 +3928,7 @@ public import CslibFrontier.Computability.QueryComplexity.Randomized.DeutschJozs
 public import CslibFrontier.Computability.QueryComplexity.Randomized.Nisan
 public import CslibFrontier.Computability.QueryComplexity.Randomized.ZeroError
 public import CslibFrontier.Computability.QueryComplexity.Relations
+public import CslibFrontier.Computability.QueryComplexity.RelevantCoordinates
 public import CslibFrontier.Computability.QueryComplexity.Restriction
 public import CslibFrontier.Computability.QueryComplexity.SensitivityBounds
 public import CslibFrontier.Computability.QueryComplexity.SensitivitySeparation
@@ -5435,6 +5436,7 @@ public import CslibFrontier.Foundations.Data.BitString.List.PrefixFree
 public import CslibFrontier.Foundations.Data.BitString.List.Single
 public import CslibFrontier.Foundations.Data.BitString.List.Vote
 public import CslibFrontier.Foundations.Data.BitString.ListParity
+public import CslibFrontier.Foundations.Data.BitString.LocalBoundary
 public import CslibFrontier.Foundations.Data.BitString.MajorityVote
 public import CslibFrontier.Foundations.Data.BitString.Neg
 public import CslibFrontier.Foundations.Data.BitString.PadBlocks
@@ -5502,6 +5504,7 @@ public import CslibFrontier.Foundations.Data.Code.Sudan
 public import CslibFrontier.Foundations.Data.Code.SudanInterpolant
 public import CslibFrontier.Foundations.Data.ENat.IInf
 public import CslibFrontier.Foundations.Data.Fin.Append
+public import CslibFrontier.Foundations.Data.Fin.Counting
 public import CslibFrontier.Foundations.Data.Fin.Order
 public import CslibFrontier.Foundations.Data.Fin.Tuple
 public import CslibFrontier.Foundations.Data.Finset.ApplyUpdate
