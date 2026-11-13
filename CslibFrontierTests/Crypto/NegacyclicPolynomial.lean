@@ -68,12 +68,14 @@ example {d k n : ℕ} (hn : n ≠ 0)
     (z : Fin k → Fin n → ZMod 6) :
     moduleSISMap A z = 0 ↔
       A.map (negacyclicEquiv hn ∘ ofCoeffs) *ᵥ (negacyclicEquiv hn ∘ ofCoeffs ∘ z) = 0 := by
-  have h (i : Fin d) := RingHom.map_mulVec (negacyclicEquiv hn : Negacyclic (ZMod 6) n →+* _)
-    (A.map ofCoeffs) (ofCoeffs ∘ z) i
-  simp only [Matrix.map_map, ← congrFun (ofCoeffs_comp_moduleSISMap A z)] at h
+  have h (i : Fin d) : negacyclicEquiv hn (ofCoeffs (moduleSISMap A z i)) =
+      (A.map (negacyclicEquiv hn ∘ ofCoeffs) *ᵥ (negacyclicEquiv hn ∘ ofCoeffs ∘ z)) i := by
+    refine (congrArg _ (congrFun (ofCoeffs_comp_moduleSISMap A z) i)).trans ?_
+    rw [← Matrix.map_map]
+    exact RingHom.map_mulVec (negacyclicEquiv hn).toRingEquiv.toRingHom _ _ i
   simp only [funext_iff, Pi.zero_apply]
   refine forall_congr' fun i => ?_
   rw [← h, map_eq_zero_iff _ (negacyclicEquiv hn).injective, Negacyclic.ext_iff]
-  rfl
+  simp only [Negacyclic.coeffs_zero, funext_iff, Pi.zero_apply]
 
 end CslibFrontierTests.Crypto.NegacyclicPolynomial

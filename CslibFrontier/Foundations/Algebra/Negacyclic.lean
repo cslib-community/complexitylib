@@ -60,7 +60,7 @@ the zero ring. Sampling, encoding and norm bounds transfer along `Negacyclic.coe
 * `Cslib.Negacyclic.ofCoeffs_innerPoly`: `innerPoly` is the dot product over `Negacyclic R n`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib
 
@@ -70,7 +70,7 @@ open scoped Matrix
 
 /-- The `n × n` negacyclic (anticirculant) multiplication matrix of a degree-`< n` polynomial
 `a : Fin n → R` in `R[X] / (X^n + 1)`. Column `j` represents `X^j · a(X) mod (X^n + 1)`. -/
-def rotMatrix {n : ℕ} {R : Type*} [Ring R] (a : Fin n → R) : Matrix (Fin n) (Fin n) R :=
+@[expose] def rotMatrix {n : ℕ} {R : Type*} [Ring R] (a : Fin n → R) : Matrix (Fin n) (Fin n) R :=
   Matrix.of fun i j =>
     if h : j.val ≤ i.val then
       a ⟨i.val - j.val, by omega⟩
@@ -79,7 +79,7 @@ def rotMatrix {n : ℕ} {R : Type*} [Ring R] (a : Fin n → R) : Matrix (Fin n) 
 
 /-- Negacyclic polynomial multiplication `a * b mod (X^n + 1)` on coefficient vectors
 `Fin n → R`, defined as the matrix-vector product `rotMatrix a *ᵥ b`. -/
-def negacyclicMul {n : ℕ} {R : Type*} [Ring R] (a b : Fin n → R) : Fin n → R :=
+@[expose] def negacyclicMul {n : ℕ} {R : Type*} [Ring R] (a b : Fin n → R) : Fin n → R :=
   rotMatrix a *ᵥ b
 
 /-- Negacyclic multiplication is the matrix-vector product with `rotMatrix a`. -/
@@ -400,7 +400,7 @@ theorem abs_negacyclicMul_le_sum_abs_mul {n β : ℕ} {a b : Fin n → ℤ} (hb 
 
 /-- Polynomial inner product `⟨b, r⟩ = ∑ j : Fin k, negacyclicMul (b j) (r j)` over
 `R[X] / (X^n + 1)`. -/
-def innerPoly {k n : ℕ} {R : Type*} [Ring R]
+@[expose] def innerPoly {k n : ℕ} {R : Type*} [Ring R]
     (b r : Fin k → Fin n → R) : Fin n → R :=
   ∑ j : Fin k, negacyclicMul (b j) (r j)
 
@@ -490,7 +490,7 @@ theorem coeffs_injective : Function.Injective (coeffs : Negacyclic R n → Fin n
   fun _ _ => Negacyclic.ext
 
 /-- Coefficient vectors as a plain equivalence, for transferring sampling and encodings. -/
-@[simps]
+@[expose, simps]
 def coeffsEquiv : Negacyclic R n ≃ (Fin n → R) where
   toFun := coeffs
   invFun := ofCoeffs
@@ -527,7 +527,7 @@ instance {S : Type*} [Semiring S] [AddCommGroup R] [Module S R] : Module S (Nega
     coeffs_injective fun _ _ => rfl
 
 /-- Coefficient vectors as an `S`-linear equivalence. -/
-@[simps]
+@[expose, simps]
 def coeffsLinearEquiv (S : Type*) [Semiring S] [AddCommGroup R] [Module S R] :
     Negacyclic R n ≃ₗ[S] (Fin n → R) where
   toFun := coeffs
@@ -628,8 +628,7 @@ instance instAlgebra : Algebra R (Negacyclic R n) :=
 
 /-- A numeral is the constant polynomial with that value. -/
 @[simp] theorem coeffs_ofNat (m : ℕ) [m.AtLeastTwo] (i : Fin n) :
-    (OfNat.ofNat m : Negacyclic R n).coeffs i =
-      if (i : ℕ) = 0 then (OfNat.ofNat m : R) else 0 := by
+    (ofNat(m) : Negacyclic R n).coeffs i = if (i : ℕ) = 0 then ofNat(m) else 0 := by
   rw [← map_ofNat (algebraMap R (Negacyclic R n)), coeffs_algebraMap]
 
 end CommRing
