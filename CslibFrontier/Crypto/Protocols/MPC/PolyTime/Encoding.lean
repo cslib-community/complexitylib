@@ -8,23 +8,24 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Protocols.MPC.PolyTime.RunEncoded
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 
 /-!
 # Family Inputs, View Encodings and Efficiency Predicates for the GMW Completeness Theorem
 
 This module fixes the word-level interface of the uniform efficiency claims in
-`Cslib.Crypto.Protocols.MPC.PolyTime`. Family instances are packaged with their party inputs
-(`FamilyRunInput`) or with a coalition's inputs and outputs (`FamilySimInput`) and encoded
-injectively as bit lists. Party views of `gmwOT14RandomizedProtocol` are encoded by
-`encGMWPartyView`, and coalition view tuples by `encodeCoalitionView`. The named predicates
-`Protocol.Family.IsOraclePPT` and `CoalitionSimulator.Family.IsPPT` state uniform efficiency of a
-protocol family's joint word-level runner and of a coalition simulator family.
+`Cslib.Crypto.Protocols.MPC.PolyTime`. A family instance is packaged with its party inputs
+(`FamilyRunInput`) or with a coalition's inputs and outputs (`FamilySimInput`), records encoded
+injectively as bit lists by `enc_structure`. Party views of `gmwOT14RandomizedProtocol` are
+encoded by `encGMWPartyView`, and coalition view tuples by `encodeCoalitionView`. The named
+predicates `Protocol.Family.IsOraclePPT` and `CoalitionSimulator.Family.IsPPT` state uniform
+efficiency of a protocol family's joint word-level runner and of a coalition simulator family.
 
 ## Main definitions
 
 * `Cslib.Crypto.Protocols.MPC.FamilyRunInput`, `Cslib.Crypto.Protocols.MPC.FamilySimInput`,
   `Cslib.Crypto.Protocols.MPC.encFamilyRunInput`, `Cslib.Crypto.Protocols.MPC.encFamilySimInput`:
-  `Sigma`-packaged family input records and injective bit-list encodings.
+  family input records and their injective bit-list encodings.
 * `Cslib.Crypto.Protocols.MPC.encGMWPartyView`, `Cslib.Crypto.Protocols.MPC.encodeCoalitionView`:
   word-level view encoders for `gmwOT14RandomizedProtocol` and `gmwOT14RandomizedSim`.
 * `Cslib.Crypto.Protocols.MPC.Protocol.Family.IsOraclePPT`,
@@ -46,40 +47,35 @@ namespace Cslib.Crypto.Protocols.MPC
 
 open Cslib.Probability Cslib.ProbComp Cslib.Circuits Turing.MultiTapeTM
 
-/-! ### Part 2: `Sigma`-Packaged Family Input Encodings and `encGMWPartyView` -/
+/-! ### Family input records and `encGMWPartyView` -/
 
-/-- `Sigma`-packaged input record for executing a protocol family at instance `a : α`. -/
-abbrev FamilyRunInput (α : Type) (m : ℕ) (n : α → ℕ) :=
-  Σ a : α, Fin m → BitString (n a)
+/-- Input record for executing a protocol family: the instance `index : α` and the `n index`-bit
+party inputs. -/
+structure FamilyRunInput (α : Type) (m : ℕ) (n : α → ℕ) where
+  /-- The instance of the family. -/
+  index : α
+  /-- The party inputs. -/
+  inputs : Fin m → BitString (n index)
 
-/-- `Sigma`-packaged input record for running the coalition simulator at instance `a : α`. -/
-abbrev FamilySimInput (α : Type) (m : ℕ) (n k : α → ℕ) (I : Finset (Fin m)) :=
-  Σ a : α, ((i : I) → BitString (n a)) × ((i : I) → BitString (k a))
-
-/-- Injective bit-list encoding of `FamilyRunInput α m n`: pairs `enc a` with the packed `m * n a`
-party input bits `List.ofFn (BitString.blocksEquiv.symm x)`. -/
-@[expose] def encFamilyRunInput {α : Type} (enc : α ↪ List Bool) (m : ℕ) (n : α → ℕ) :
-    FamilyRunInput α m n ↪ List Bool where
-  toFun inp :=
-    encPair enc encBits
-      (inp.1,
-       List.ofFn ((Cslib.BitString.blocksEquiv (α := Bool) (m := m) (k := n inp.1)).symm inp.2))
-  inj' := by
-    rintro ⟨a₁, x₁⟩ ⟨a₂, x₂⟩ h
-    obtain ⟨ha, hx⟩ := Prod.ext_iff.1 ((encPair enc encBits).injective h)
-    dsimp only at ha hx
-    subst ha
-    have hx' := List.ofFn_injective hx
-    exact Sigma.ext rfl (heq_of_eq (Cslib.BitString.blocksEquiv.symm.injective hx'))
+/-- Input record for running a coalition simulator family: the instance `index : α` with the
+coalition's `n index`-bit inputs and `k index`-bit outputs. -/
+structure FamilySimInput (α : Type) (m : ℕ) (n k : α → ℕ) (I : Finset (Fin m)) where
+  /-- The instance of the family. -/
+  index : α
+  /-- The coalition's inputs. -/
+  inputs : (i : I) → BitString (n index)
+  /-- The coalition's outputs. -/
+  outputs : (i : I) → BitString (k index)
 
 /-- Pad a coalition-indexed bitstring tuple `vI : (i : I) → BitString len` with `0` outside `I`
 and serialize the resulting `m` blocks of width `len` to a `m * len`-bit list. -/
-private def extendCoalitionBits {m len : ℕ} (I : Finset (Fin m)) (vI : (i : I) → BitString len) :
+@[expose] def extendCoalitionBits {m len : ℕ} (I : Finset (Fin m)) (vI : (i : I) → BitString len) :
     List Bool :=
   List.ofFn ((Cslib.BitString.blocksEquiv (α := Bool) (m := m) (k := len)).symm
     (GMWCircuit.extendByZero I vI))
 
-private theorem extendCoalitionBits_injective {m len : ℕ} (I : Finset (Fin m)) :
+/-- Zero-extension and serialization of coalition tuples is injective. -/
+theorem extendCoalitionBits_injective {m len : ℕ} (I : Finset (Fin m)) :
     Function.Injective (extendCoalitionBits (len := len) I) := by
   intro u v h
   have h1 := Cslib.BitString.blocksEquiv.symm.injective (List.ofFn_injective h)
@@ -88,23 +84,32 @@ private theorem extendCoalitionBits_injective {m len : ℕ} (I : Finset (Fin m))
   simp only [GMWCircuit.extendByZero, hi, ↓reduceDIte] at hi_eq
   exact congrFun hi_eq j
 
-/-- Injective bit-list encoding of `FamilySimInput α m n k I`: pairs `enc a` with the zero-extended
-packed coalition input bits `extendCoalitionBits I xI` and output bits
-`extendCoalitionBits I yI`. -/
-def encFamilySimInput {α : Type} (enc : α ↪ List Bool) (m : ℕ) (n k : α → ℕ)
-    (I : Finset (Fin m)) : FamilySimInput α m n k I ↪ List Bool where
-  toFun inp :=
-    let ⟨a, xI, yI⟩ := inp
-    encPair enc (encPair encBits encBits)
-      (a, (extendCoalitionBits I xI, extendCoalitionBits I yI))
-  inj' := by
-    rintro ⟨a₁, x₁, y₁⟩ ⟨a₂, x₂, y₂⟩ h
-    obtain ⟨ha, hxy⟩ := Prod.ext_iff.1 ((encPair enc (encPair encBits encBits)).injective h)
-    dsimp only at ha hxy
-    subst ha
-    obtain ⟨hx, hy⟩ := Prod.ext_iff.1 hxy
-    dsimp only at hx hy
-    rw [extendCoalitionBits_injective I hx, extendCoalitionBits_injective I hy]
+section FamilyInputEncodings
+
+variable {α : Type}
+
+/-- Injective bit-list encoding of `FamilyRunInput α m n`: pairs `enc index` with the packed
+`m * n index` party input bits `List.ofFn (BitString.blocksEquiv.symm inputs)`. -/
+enc_structure encFamilyRunInput (enc : α ↪ List Bool) (m : ℕ) (n : α → ℕ) :
+    FamilyRunInput α m n where
+  index : enc,
+  inputs :
+    (fun x : Fin m → BitString (n index) =>
+      List.ofFn ((Cslib.BitString.blocksEquiv (α := Bool) (m := m) (k := n index)).symm x))
+    using (List.ofFn_injective.comp Cslib.BitString.blocksEquiv.symm.injective)
+
+/-- Injective bit-list encoding of `FamilySimInput α m n k I`: pairs `enc index` with the
+zero-extended packed coalition input bits `extendCoalitionBits I inputs` and output bits
+`extendCoalitionBits I outputs`. -/
+enc_structure encFamilySimInput (enc : α ↪ List Bool) (m : ℕ) (n : α → ℕ) (k : α → ℕ)
+    (I : Finset (Fin m)) : FamilySimInput α m n k I where
+  index : enc,
+  inputs : (extendCoalitionBits (len := n index) I)
+    using (extendCoalitionBits_injective (len := n index) I),
+  outputs : (extendCoalitionBits (len := k index) I)
+    using (extendCoalitionBits_injective (len := k index) I)
+
+end FamilyInputEncodings
 
 /-- Serialize party `i`'s `twoPartyMulProtocol` subcoins along any `sharedMulSpec 2` schedule `sc`:
 appends `[c_head 0 h]` at each `.oracle () parties` round where `parties 0 = i`. -/
@@ -204,6 +209,16 @@ private def encOutCoordsMsgReceived {m k : ℕ} (i : Fin m) :
     encGatherOTReceived coord.1 i (List.finRange m) r_gather ++
       encOutCoordsMsgReceived i L r_rest
 
+/-- The view word of a `gmwOT14RandomizedProtocol` party from its seven component words: input,
+wrapper coins, Step 1 coins, $\text{OT}_1^4$ sender coins, Step 1 received shares,
+$\text{OT}_1^4$ answers and Step 3 received shares. -/
+private def gmwViewWord
+    (input coins circuitCoins otCoins inShares otAnswers outShares : List Bool) : List Bool :=
+  encPair
+    (encPair (encPair encBits encBits) (encPair encBits encBits))
+    (encPair encBits (encPair encBits encBits))
+    (((input, coins), (circuitCoins, otCoins)), (inShares, (otAnswers, outShares)))
+
 /-- Serialize party `i`'s complete `PartyView` in `gmwOT14RandomizedProtocol m coins n k C` to a
 `List Bool` encoding:
 - `v.input : BitString n`
@@ -238,17 +253,10 @@ def encGMWPartyView (m coins n k : ℕ)
     splitOTMulCompose (GMWCircuit.progSchedule m D.program)
       (GMWCircuit.outputSchedule m k) i r_prog_out
   let (preludeCoins, (circuitCoins, _), otSubCoins) := v.coins
-  encPair
-    (encPair (encPair encBits encBits) (encPair encBits encBits))
-    (encPair encBits (encPair encBits encBits))
-    (((List.ofFn v.input, List.ofFn preludeCoins),
-      (List.ofFn
-        ((Cslib.BitString.blocksEquiv (α := Bool) (m := N) (k := m - 1)).symm
-          circuitCoins),
-       encOTSubCoins _ i otSubCoins)),
-     (encPairsMsgReceived i (allPairs m) r_in,
-      (encOTOracleAnswers _ i v.received,
-       encOutCoordsMsgReceived i (GMWCircuit.outCoords m k) r_out)))
+  gmwViewWord (List.ofFn v.input) (List.ofFn preludeCoins)
+    (List.ofFn ((Cslib.BitString.blocksEquiv (α := Bool) (m := N) (k := m - 1)).symm circuitCoins))
+    (encOTSubCoins _ i otSubCoins) (encPairsMsgReceived i (allPairs m) r_in)
+    (encOTOracleAnswers _ i v.received) (encOutCoordsMsgReceived i (GMWCircuit.outCoords m k) r_out)
 
 /-- Encode a coalition view tuple `vI : (i : I) → PartyView In Coins sc i.1` into `List Bool`
 by listing `encView i (vI ⟨i, hi⟩)` for `i ∈ I` and `[]` for `i ∉ I`. -/
@@ -274,7 +282,7 @@ certifies the joint execution across all parties rather than separate per-party 
       PartyView (fun _ => BitString (n a)) (Coins a) (sc a) i → List Bool)
     (encOut : (a : α) → (i : Fin m) → Out a i → List Bool) : Prop :=
   Cslib.Probability.IsOraclePPTOn (encFamilyRunInput enc m n) encBits
-    fun inp => (proto inp.1).runEncoded (encView inp.1) (encOut inp.1) inp.2
+    fun inp => (proto inp.index).runEncoded (encView inp.index) (encOut inp.index) inp.inputs
 
 /-- A family of coalition-`I` simulators `S a`, indexed by `a : α` with `n a`-bit party inputs and
 `k a`-bit party outputs, is uniformly PPT: on the family input encoding `encFamilySimInput enc m n k
@@ -289,6 +297,6 @@ I` is `Cslib.Probability.IsPPTOn`. -/
       CoalitionSimulator (sc a) (fun _ => BitString (n a)) (Coins a) (fun _ => BitString (k a)) I) :
     Prop :=
   Cslib.Probability.IsPPTOn (encFamilySimInput enc m n k I) encBits
-    fun ⟨a, xI, yI⟩ => encodeCoalitionView (encView a) I <$> S a xI yI
+    fun inp => encodeCoalitionView (encView inp.index) I <$> S inp.index inp.inputs inp.outputs
 
 end Cslib.Crypto.Protocols.MPC

@@ -40,13 +40,13 @@ def encSampleRel : SampleRel ↪ List Bool :=
 in a constraint scope (`(5, 5)`), and a tautological constraint on `(9, 12)` that emits 0 clauses
 in `toCNF` while still keeping `12` in `F.vars`. -/
 def sampleCSP : CSP SampleRel ℕ :=
-  [((false, false), [2, 5, 9]),
-   ((false, true), [2, 5]),
-   ((true, false), [9, 12])]
+  [⟨(false, false), [2, 5, 9]⟩,
+   ⟨(false, true), [2, 5]⟩,
+   ⟨(true, false), [9, 12]⟩]
 
 /-- CSP with a repeated variable in an unsatisfied NAE constraint `x ≠ x`. -/
 def unsatRepeatedScopeCSP : CSP SampleRel ℕ :=
-  [((false, true), [4, 4])]
+  [⟨(false, true), [4, 4]⟩]
 
 -- Concrete evaluations on `sampleCSP`, `unsatRepeatedScopeCSP`, and the empty CSP.
 example :
@@ -71,7 +71,7 @@ def neqFin3 : Unit → List (Fin 3) → Bool
   | (), _ => false
 
 def triangle3ColorCSP : CSP Unit ℕ :=
-  [((), [10, 20]), ((), [20, 30]), ((), [10, 30])]
+  [⟨(), [10, 20]⟩, ⟨(), [20, 30]⟩, ⟨(), [10, 30]⟩]
 
 example :
     triangle3ColorCSP.modelCount neqFin3 = 6 ∧
@@ -112,7 +112,7 @@ example :
     ∃ (count : CSP (Bool × List Bool) ℕ → ℕ) (T S : CSP (Bool × List Bool) ℕ → ℕ) (A c e a b : ℕ),
       ComputableInO count (encCSP (encPair encBool encBits) encNat) encNat T S ∧
       (∀ F : CSP (Bool × List Bool) ℕ,
-        (∀ c ∈ F, c.2.length ≤ 3) → count F = F.modelCount taggedSem) ∧
+        (∀ c ∈ F, c.scope.length ≤ 3) → count F = F.modelCount taggedSem) ∧
       (∀ F : CSP (Bool × List Bool) ℕ,
         (T F : ℝ) ≤ c * ((2 : ℝ) ^ ((A : ℝ) * interpolationScale F.numVars) *
           (((encCSP (encPair encBool encBits) encNat F).length : ℝ) + 1) ^ e) + c) ∧

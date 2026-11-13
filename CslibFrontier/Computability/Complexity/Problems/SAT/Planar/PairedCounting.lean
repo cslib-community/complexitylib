@@ -39,12 +39,6 @@ namespace Cslib.Complexity.SAT.ParsimoniousPlanar
 
 open Cslib.Logic.PL Cslib.Logic.PL.CNF Orthogonal
 
-/-- A used source variable has an indexed literal occurrence, including repeated literals. -/
-private theorem exists_occurrence_of_mem_vars {φ : CNF ℕ} {v : ℕ} (hv : v ∈ φ.vars) :
-    ∃ o ∈ Cslib.Logic.PL.occurrences φ, o.2.2.1 = v := by
-  rw [← map_occurrences] at hv
-  exact List.mem_map.mp hv
-
 /-- Every used source cell is retained and receives an ordinary ring. -/
 theorem source_cell_mem_ordinary {φ : CNF ℕ} {v : ℕ} (hv : v ∈ φ.vars) :
     Layout.center (φ.distinctVars.idxOf v) ∈ ordinaryCells φ := by
@@ -55,7 +49,7 @@ theorem source_cell_mem_ordinary {φ : CNF ℕ} {v : ℕ} (hv : v ∈ φ.vars) :
   change (occurrencePath φ o).head? = _ at hhead
   rw [List.head?_eq_getElem?, List.getElem?_eq_getElem (by omega)] at hhead
   have he := Option.some.inj hhead
-  have hret : Layout.center (φ.distinctVars.idxOf o.2.2.1) ∈
+  have hret : Layout.center (φ.distinctVars.idxOf o.lit.1) ∈
       (occurrencePath φ o).dropLast := by
     rw [← he]
     have hi : 0 < (occurrencePath φ o).dropLast.length := by grind
@@ -110,7 +104,7 @@ theorem raw_assignments_agree {φ : CNF ℕ}
   obtain ⟨pc, hpc, rfl⟩ := List.mem_map.mp hc
   rcases mem_placedClauses.mp hpc with hpc | ⟨p, hp, hpc⟩ | ⟨p, hp, hpc⟩ | ⟨o, ho, hpc⟩
   · obtain ⟨i, j, x, ho, heq⟩ := (exists_occurrence_of_mem_originalClauses hpc).1 _ hl
-    have heq' : (lastLiteral (crossingSites φ) (occurrencePath φ (i, j, x)) x.2).1.1 = v :=
+    have heq' : (lastLiteral (crossingSites φ) (occurrencePath φ ⟨i, j, x⟩) x.2).1.1 = v :=
       congrArg Prod.fst heq
     rw [← heq']
     exact (lastLiteral_value hw hv hσ ho).trans

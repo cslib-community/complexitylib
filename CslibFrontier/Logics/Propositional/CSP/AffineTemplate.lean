@@ -44,7 +44,7 @@ variable {Rel V W : Type*}
 
 /-- Rename the variables of an affine equation, retaining all occurrences. -/
 @[expose] def AffineEquation.relabel (f : V → W) (e : AffineEquation V) : AffineEquation W :=
-  (e.1.map f, e.2)
+  ⟨e.vars.map f, e.rhs⟩
 
 /-- Substitution composes assignments; the variable map need not be injective. -/
 @[simp] theorem AffineEquation.holds_relabel (f : V → W) (e : AffineEquation V)
@@ -84,12 +84,12 @@ theorem CSP.affineTemplates_relabel_fin {arity : Rel → ℕ} {sem : Rel → Lis
 sized scopes for correct templates. -/
 @[expose] def Constraint.instantiateAffine (fallback : V) (template : Rel → AffineSystem ℕ)
     (c : Constraint Rel V) : AffineSystem V :=
-  (template c.1).relabel (fun i => c.2.getD i fallback)
+  (template c.rel).relabel (fun i => c.scope.getD i fallback)
 
 /-- Correctness of an instantiated constraint under every assignment. -/
 theorem Constraint.holds_instantiateAffine {arity : Rel → ℕ} {sem : Rel → List Bool → Bool}
     {template : Rel → AffineSystem ℕ} (h : CSP.AffineTemplates arity sem template)
-    (fallback : V) {c : Constraint Rel V} (hc : c.2.length = arity c.1) (σ : V → Bool) :
+    (fallback : V) {c : Constraint Rel V} (hc : c.scope.length = arity c.rel) (σ : V → Bool) :
     (c.instantiateAffine fallback template).Holds σ ↔ c.eval sem σ = true := by
   obtain ⟨R, vs⟩ := c
   rw [instantiateAffine, AffineSystem.holds_relabel, h R]

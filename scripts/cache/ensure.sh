@@ -77,6 +77,9 @@ try:
     previous = json.loads(stamp.read_text())
     age = time.time() - previous["attempted_at"]
     if not args.refresh and previous["fingerprint"] == fingerprint and 0 <= age < 600:
+        print(f"Cache bootstrap: skipping repeated attempt ({age:.0f}s old, previous fetch "
+              f"exit {previous.get('fetch_exit_code', 'unknown')}); use --refresh to retry. "
+              "The attempt record does not certify a cache hit.", flush=True)
         raise SystemExit(0)
 except (OSError, ValueError, KeyError, TypeError):
     pass
@@ -87,6 +90,9 @@ get_script = root / "scripts/cache/get.sh"
 if not get_script.exists():
     get_script = script_root / "scripts/cache/get.sh"
 child_env = {**os.environ, "COMPLEXITYLIB_CACHE_CHECKOUT": str(root)}
+started = time.monotonic()
+print(f"Cache bootstrap: attempting optional downloads (budget {bootstrap_timeout:g}s).",
+      flush=True)
 try:
     # Nested download supervisors handle SIGTERM by draining their own groups.
     # Give them longer than their ten-second shutdown bound before a forced kill.
@@ -106,6 +112,8 @@ if result.returncode == 125:
 if result.returncode:
     print("note: cache bootstrap did not complete; continuing with the build",
           file=sys.stderr)
+print(f"Cache bootstrap: attempt finished in {time.monotonic() - started:.1f}s "
+      f"(fetch exit {result.returncode}). Completion does not certify a cache hit.", flush=True)
 
 temporary = None
 try:

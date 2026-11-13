@@ -14,6 +14,7 @@ import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Uniform
+import CslibFrontier.Probability.PMF.UniformPoint
 import CslibFrontier.Probability.Product
 import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.FieldSimp
@@ -469,17 +470,6 @@ section Distinguishers
 
 variable {α : Type} [Fintype α] [DecidableEq α]
 
-private theorem card_filter_perm_one_mul_le (x a : α) :
-    ((Finset.univ.filter fun π : Equiv.Perm α => π x = a).card : ℝ) * (Fintype.card α : ℝ) ≤
-      (Fintype.card α).factorial := by
-  let xs : Fin 1 ↪ α := ⟨![x], fun i j _ => Subsingleton.elim i j⟩
-  have h := RandomPermutation.card_extPerms_ofFn_mul_descFactorial_le xs ![a]
-  have he : RandomPermutation.extPerms (List.ofFn fun i : Fin 1 => (xs i, ![a] i)) =
-      Finset.univ.filter fun π : Equiv.Perm α => π x = a := by
-    rw [RandomPermutation.extPerms_ofFn_eq]; ext π; simp [xs]; rfl
-  rw [he, Nat.descFactorial_one] at h
-  exact_mod_cast h
-
 private theorem card_filter_perm_two_mul_le {x y : α} (hxy : x ≠ y) (a b : α) :
     ((Finset.univ.filter fun π : Equiv.Perm α => π x = a ∧ π y = b).card : ℝ) *
       ((Fintype.card α : ℝ) * ((Fintype.card α : ℝ) - 1)) ≤ (Fintype.card α).factorial := by
@@ -599,9 +589,7 @@ theorem randomFunctionGame_feistel1CPAAttack_true [Nonempty G] (l₀ r₀ : G) :
             Prod.fst).map (fun v => decide (v = r₀)) := by
           simp [randomFunctionGame, feistel1CPAAttack, PMF.map_comp, Function.comp_def]; rfl
       _ = (PMF.uniformOfFintype G).map (fun v => decide (v = r₀)) := by rw [heval, hfst]
-  rw [hgame, ← PMF.toOuterMeasure_apply_singleton, PMF.toOuterMeasure_map_apply]
-  have hpre : (fun v : G => decide (v = r₀)) ⁻¹' {true} = {r₀} := by ext v; simp
-  rw [hpre, PMF.toOuterMeasure_apply_singleton, PMF.uniformOfFintype_apply]
+  rw [hgame, Cslib.Probability.PMF.map_decide_eq_apply_true, PMF.uniformOfFintype_apply]
 
 /-- `feistel1CPAAttack l₀ r₀` distinguishes any 1-round Feistel network `feistelRoundEquiv f` from
 `randomFunctionGame` with exact advantage `1 - |G|⁻¹` (original bound). -/
@@ -642,7 +630,9 @@ theorem idealPermGame_feistel1CPAAttack_true_le [Nonempty G] (l₀ r₀ : G) :
   have hE := card_le_of_biUnion_cover _ Finset.univ
     (fun w => Finset.univ.filter fun π : Equiv.Perm (G × G) => π (l₀, r₀) = (r₀, w))
     (P / M) hcover
-    (fun w _ => by rw [le_div_iff₀ hMpos]; exact card_filter_perm_one_mul_le (l₀, r₀) (r₀, w))
+    (fun w _ => by
+      rw [le_div_iff₀ hMpos, ← Nat.cast_mul]
+      exact Nat.cast_le.mpr (RandomPermutation.card_filter_apply_eq_mul_card_le (l₀, r₀) (r₀, w)))
   rw [Finset.card_univ] at hE
   rw [div_le_iff₀ hP]
   exact hE.trans_eq (by rw [hMr]; field_simp)
@@ -822,7 +812,8 @@ theorem idealPermGame_feistel3RepeatedKeyCPAAttack_true_le [Nonempty G] (x : G)
     · exact Or.inl h
     · exact Or.inr ⟨π p₀, h, rfl, hπ⟩
   have hA : ((Finset.univ.filter fun π : Equiv.Perm (G × G) => π p₀ = p₀).card : ℝ) ≤ P / M := by
-    rw [le_div_iff₀ (by linarith)]; exact card_filter_perm_one_mul_le p₀ p₀
+    rw [le_div_iff₀ (by linarith), ← Nat.cast_mul]
+    exact Nat.cast_le.mpr (RandomPermutation.card_filter_apply_eq_mul_card_le p₀ p₀)
   have hB := card_le_of_biUnion_cover _ (Finset.univ.erase p₀)
     (fun a => Finset.univ.filter fun π : Equiv.Perm (G × G) => π p₀ = a ∧ π a.swap = p₀)
     (P / (M * (M - 1))) (Finset.Subset.refl _)

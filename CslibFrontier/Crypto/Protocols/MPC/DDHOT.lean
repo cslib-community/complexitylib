@@ -12,6 +12,7 @@ public import CslibFrontier.Crypto.Protocols.MPC.Advantage
 public import CslibFrontier.Crypto.Protocols.MPC.BatchOT
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.UniformPoint
+import CslibFrontier.Probability.Uniform.Translate
 
 /-!
 # Three-Message DDH 1-out-of-2 Oblivious Transfer
@@ -245,8 +246,8 @@ abbrev DDHOTFinal (G : Type) (q : ℕ) (i : Fin 2) : Type :=
     OTOut G i :=
   Fin.cases (motive := fun i => DDHOTFinal G q i → OTOut G i)
     (fun _ => ())
-    (fun j st => ddhOTReceiverOutput (G := G) st.1.1.1.1 st.1.1.1.2
-      (st.2 (Fin.fin_one_eq_zero j ▸ rfl)))
+    (fun j ((((σ, b), _), _), reply) => ddhOTReceiverOutput (G := G) σ b
+      (reply (Fin.fin_one_eq_zero j ▸ rfl)))
     i st
 
 /-- **Unchecked three-message DDH OT protocol**: `ddhOTProtocol` without the sender's
@@ -259,9 +260,9 @@ attack against this protocol. -/
   sampleCoins i := Fin.cases (motive := fun i => ProbComp (DDHOTCoins q i))
     (sampleDDHOTSenderCoins q) (fun _ => ProbComp.uniform (ZMod q)) i
   steps :=
-    .message (fun st => st.2.1 • g)
-      (.message (fun st => ddhOTReceiverMsg g st.1.1 st.1.2 (st.2 rfl))
-        (.message (fun st => ddhOTSenderReplyUnchecked g st.1.1.1 st.1.1.2 (st.2 rfl))
+    .message (fun (_, (a, _)) => a • g)
+      (.message (fun ((σ, b), u) => ddhOTReceiverMsg g σ b (u rfl))
+        (.message (fun (((m, c), _), w) => ddhOTSenderReplyUnchecked g m c (w rfl))
           (.done ddhOTOutput)))
 
 omit [AddCommGroup G] in
@@ -288,7 +289,8 @@ theorem ddhOTSenderReplyOf_ddhOTUncheckedProtocol (g : G) (q : ℕ) [NeZero q] [
 /-- Simultaneous decryption of both branches from the unchecked sender reply using `(b₀, b₁)`. -/
 @[expose] def ddhOTAttackBothMessages {q : ℕ} [Module (ZMod q) G] (b₀ b₁ : ZMod q)
     (reply : (G × G) × (G × G)) : G × G :=
-  (reply.1.2 - b₀ • reply.1.1, reply.2.2 - b₁ • reply.2.1)
+  let ((e₀, c₀), (e₁, c₁)) := reply
+  (c₀ - b₀ • e₀, c₁ - b₁ • e₁)
 
 /-- **Simultaneous recovery on the unchecked variant**: when the sender omits `w₀ + w₁ = u`,
 a malicious receiver sending `ddhOTAttackMsg g b₀ b₁` recovers both `(m.1, m.2)` from
@@ -342,9 +344,9 @@ differences. -/
   sampleCoins i := Fin.cases (motive := fun i => ProbComp (DDHOTCoins q i))
     (sampleDDHOTSenderCoins q) (fun _ => ProbComp.uniform (ZMod q)) i
   steps :=
-    .message (fun st => st.2.1 • g)
-      (.message (fun st => ddhOTReceiverMsg g st.1.1 st.1.2 (st.2 rfl))
-        (.message (fun st => ddhOTSenderReply g st.1.1.1 st.1.1.2 (st.2 rfl))
+    .message (fun (_, (a, _)) => a • g)
+      (.message (fun ((σ, b), u) => ddhOTReceiverMsg g σ b (u rfl))
+        (.message (fun (((m, c), _), w) => ddhOTSenderReply g m c (w rfl))
           (.done ddhOTOutput)))
 
 /-! ### Party views and execution characterization -/
@@ -533,9 +535,9 @@ theorem idealJoint_ddhOT_sender (g : G) (q : ℕ) [NeZero q] [Module (ZMod q) G]
         (ddhOTReceiverMsg g σ b (c₀.1 • g))), otOutputs x))
   cases σ
   · rfl
-  · conv_lhs => rw [← PMF.uniformOfFintype_map_equiv (Equiv.subLeft c₀.1), PMF.bind_map]
+  · conv_lhs => rw [← PMF.uniformOfFintype_map_sub_left c₀.1, PMF.bind_map]
     refine congrArg (PMF.bind _) (funext fun b => ?_)
-    simp only [Function.comp_apply, Equiv.subLeft_apply, ddhOTReceiverMsg, ↓reduceIte,
+    simp only [Function.comp_apply, ddhOTReceiverMsg, ↓reduceIte,
       sub_smul, sub_sub_cancel]
 
 /-- A corrupted sender has advantage zero against every distinguisher. -/
@@ -592,9 +594,7 @@ private theorem bind_unchosen_right {q : ℕ} [NeZero q] (a : ZMod q)
     have hconst : ∀ s₁ : ZMod q,
         (PMF.uniformOfFintype (ZMod q)).bind (fun r₁ => f r₀ s₀ (r₁ + a * s₁)) =
         (PMF.uniformOfFintype (ZMod q)).bind (fun k => f r₀ s₀ k) := fun s₁ => by
-      change (PMF.uniformOfFintype (ZMod q)).bind
-          ((fun k => f r₀ s₀ k) ∘ Equiv.addRight (a * s₁)) = _
-      rw [← PMF.bind_map, PMF.uniformOfFintype_map_equiv]
+      exact PMF.uniformOfFintype_bind_add_right (a * s₁) (f r₀ s₀)
     simp_rw [hconst]
     ext c
     simp only [PMF.bind_apply, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
@@ -627,11 +627,9 @@ private theorem bind_unchosen_left {q : ℕ} [NeZero q] (a : ZMod q)
       (PMF.uniformOfFintype (ZMod q)).bind (fun k =>
         (PMF.uniformOfFintype (ZMod q)).bind (fun r₁ =>
           (PMF.uniformOfFintype (ZMod q)).bind (fun s₁ => f r₁ s₁ k))) := fun s₀ => by
-    change (PMF.uniformOfFintype (ZMod q)).bind ((fun k =>
-        (PMF.uniformOfFintype (ZMod q)).bind (fun r₁ =>
-          (PMF.uniformOfFintype (ZMod q)).bind (fun s₁ => f r₁ s₁ k))) ∘
-        Equiv.addRight (a * s₀)) = _
-    rw [← PMF.bind_map, PMF.uniformOfFintype_map_equiv]
+    exact PMF.uniformOfFintype_bind_add_right (a * s₀) fun k =>
+      (PMF.uniformOfFintype (ZMod q)).bind fun r₁ =>
+        (PMF.uniformOfFintype (ZMod q)).bind fun s₁ => f r₁ s₁ k
   simp_rw [hconst]
   ext c
   simp only [PMF.bind_apply, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]

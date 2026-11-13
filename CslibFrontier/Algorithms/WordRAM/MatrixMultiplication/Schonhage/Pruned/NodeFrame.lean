@@ -60,11 +60,15 @@ theorem nodeWrites_child_subset {L f d : ℕ} (hd : d < L) :
   have hl := Nat.mul_le_mul_right (10 ^ L) (by omega : d + 1 ≤ d + 1 + 1)
   omega
 
-/-- The scan-and-push transition changes only cells in the current node's frame. -/
-theorem childWrites_subset_nodeWrites {L f d : ℕ} (hd : d < L) :
-    childWrites L f d ⊆ nodeWrites L f d := by
+/-- A scan transition writes the child query row, the timestamps and one four-word frame at
+depth `e ∈ {d, d + 1}`; all of these lie in the current node's frame. -/
+private theorem scanWrites_subset_nodeWrites {L f d e : ℕ} (hd : d < L) (hde : d ≤ e)
+    (he : e ≤ d + 1) :
+    (Block.mk (f + 4 * (L + 1) + (d + 1) * 10 ^ L) (10 ^ L)).footprint ∪
+      (Block.mk (f + 4 * (L + 1) + 2 * (L + 1) * 10 ^ L) (10 ^ L)).footprint ∪
+      (Block.mk (f + 4 * e) 4).footprint ⊆ nodeWrites L f d := by
   intro c hc
-  simp only [childWrites, Finset.mem_union, Block.mem_footprint, Block.Owns] at hc
+  simp only [Finset.mem_union, Block.mem_footprint, Block.Owns] at hc
   rw [mem_nodeWrites_iff hd.le]
   have hprod := Nat.mul_le_mul_right (10 ^ L) (by omega : d + 2 ≤ L + 1)
   have hstep : (d + 1) * 10 ^ L + 10 ^ L = (d + 2) * 10 ^ L := by ring
@@ -76,21 +80,15 @@ theorem childWrites_subset_nodeWrites {L f d : ℕ} (hd : d < L) :
   · left; left; left
     omega
 
+/-- The scan-and-push transition changes only cells in the current node's frame. -/
+theorem childWrites_subset_nodeWrites {L f d : ℕ} (hd : d < L) :
+    childWrites L f d ⊆ nodeWrites L f d :=
+  scanWrites_subset_nodeWrites hd (Nat.le_succ d) le_rfl
+
 /-- The scan-and-skip transition also stays inside the current node's frame. -/
 theorem emptyChildWrites_subset_nodeWrites {L f d : ℕ} (hd : d < L) :
-    emptyChildWrites L f d ⊆ nodeWrites L f d := by
-  intro c hc
-  simp only [emptyChildWrites, Finset.mem_union, Block.mem_footprint, Block.Owns] at hc
-  rw [mem_nodeWrites_iff hd.le]
-  have hprod := Nat.mul_le_mul_right (10 ^ L) (by omega : d + 2 ≤ L + 1)
-  have hstep : (d + 1) * 10 ^ L + 10 ^ L = (d + 2) * 10 ^ L := by ring
-  rcases hc with (hc | hc) | hc
-  · left; left; right
-    exact ⟨hc.1, by omega⟩
-  · right
-    exact hc
-  · left; left; left
-    omega
+    emptyChildWrites L f d ⊆ nodeWrites L f d :=
+  scanWrites_subset_nodeWrites hd le_rfl (Nat.le_succ d)
 
 /-- No node changes the original input or any other cell below the workspace. -/
 theorem notMem_nodeWrites_before {L f d c : ℕ} (hc : c < f) :

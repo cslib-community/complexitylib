@@ -74,7 +74,7 @@ private theorem pairFlip_at_other (f : OccurrenceLabeling F Bool) {a b q : Occur
   simp [pairFlip, flipOn_apply, hqa, hqb]
 
 private theorem localTuple_pairFlip (f : OccurrenceLabeling F Bool) (i : Fin F.length)
-    (a b : Fin F[i].2.length) (hab : a ≠ b) :
+    (a b : Fin F[i].scope.length) (hab : a ≠ b) :
     localTuple (pairFlip f ⟨i, a⟩ ⟨i, b⟩) i =
       List.ofFn (flipOn {a, b} (fun j => f ⟨i, j⟩)) := by
   rw [pairFlip_eq f (sigma_mk_injective.ne hab)]
@@ -85,9 +85,9 @@ private theorem localTuple_pairFlip (f : OccurrenceLabeling F Bool) (i : Fin F.l
 /-- Feasibility of a two-port move is exactly local feasibility at its positional constraint. -/
 theorem validLabeling_pairFlip_iff {sem : Rel → List Bool → Bool}
     {f : OccurrenceLabeling F Bool} (hf : ValidLabeling sem f)
-    (i : Fin F.length) (a b : Fin F[i].2.length) (hab : a ≠ b) :
+    (i : Fin F.length) (a b : Fin F[i].scope.length) (hab : a ≠ b) :
     ValidLabeling sem (pairFlip f ⟨i, a⟩ ⟨i, b⟩) ↔
-      sem F[i].1 (List.ofFn (flipOn {a, b} (fun j => f ⟨i, j⟩))) = true := by
+      sem F[i].rel (List.ofFn (flipOn {a, b} (fun j => f ⟨i, j⟩))) = true := by
   constructor
   · intro hv
     have h := hv i
@@ -97,7 +97,7 @@ theorem validLabeling_pairFlip_iff {sem : Rel → List Bool → Bool}
     exact EdgeInstance.validLabeling_flipOn_pair hf i a b hv
 
 private theorem four_eq (f : OccurrenceLabeling F Bool) (i : Fin F.length)
-    {a b c d : Fin F[i].2.length}
+    {a b c d : Fin F[i].scope.length}
     (hab : a ≠ b) (hac : a ≠ c) (had : a ≠ d)
     (hbc : b ≠ c) (hbd : b ≠ d) (hcd : c ≠ d) :
     flipOn {c, d} (fun j => pairFlip f ⟨i, a⟩ ⟨i, b⟩ ⟨i, j⟩) =
@@ -111,7 +111,7 @@ private theorem four_eq (f : OccurrenceLabeling F Bool) (i : Fin F.length)
 The two forbidden old-incoming cross-pairs force the four-coordinate move. -/
 theorem valid_pairFlip_pairFlip_of_no_cross {sem : Rel → List Bool → Bool}
     (hM : EdgeInstance.EvenConstraints sem F) {f : OccurrenceLabeling F Bool}
-    (hf : ValidLabeling sem f) (i : Fin F.length) {a b c d : Fin F[i].2.length}
+    (hf : ValidLabeling sem f) (i : Fin F.length) {a b c d : Fin F[i].scope.length}
     (hab : a ≠ b) (hac : a ≠ c) (had : a ≠ d)
     (hbc : b ≠ c) (hbd : b ≠ d) (hcd : c ≠ d)
     (habf : ValidLabeling sem (pairFlip f ⟨i, a⟩ ⟨i, b⟩))
@@ -131,7 +131,7 @@ theorem valid_pairFlip_pairFlip_of_no_cross {sem : Rel → List Bool → Bool}
 Exchange toward the feasible base would produce one of three forbidden pairs. -/
 theorem not_valid_pairFlip_pairFlip_of_no_cross {sem : Rel → List Bool → Bool}
     (hM : EdgeInstance.EvenConstraints sem F) {f : OccurrenceLabeling F Bool}
-    (hf : ValidLabeling sem f) (i : Fin F.length) {a b c d : Fin F[i].2.length}
+    (hf : ValidLabeling sem f) (i : Fin F.length) {a b c d : Fin F[i].scope.length}
     (hab : a ≠ b) (hac : a ≠ c) (had : a ≠ d)
     (hbc : b ≠ c) (hbd : b ≠ d) (hcd : c ≠ d)
     (habf : ValidLabeling sem (pairFlip f ⟨i, a⟩ ⟨i, b⟩))
@@ -213,7 +213,7 @@ private theorem valid_pairFlip_other_iff {sem : Rel → List Bool → Bool}
     funext j
     exact pairFlip_at_other f hic (hiab ▸ hic)
   exact Iff.of_eq (congrArg
-    (fun bits => sem F[i].1 (List.ofFn (flipOn {c, d} bits)) = true) he)
+    (fun bits => sem F[i].rel (List.ofFn (flipOn {c, d} bits)) = true) he)
 
 variable {sem : Rel → List Bool → Bool} {f : OccurrenceLabeling F Bool} {T : DAG F}
 
