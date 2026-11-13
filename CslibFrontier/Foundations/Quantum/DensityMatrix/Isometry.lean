@@ -75,6 +75,15 @@ theorem IsDensityMatrix.densityConj [Fintype ι'] [DecidableEq ι] {ρ : Matrix 
   rw [densityConj_apply]
   exact hρ.conj_isometry hV
 
+/-- A local isometry preserves a joint density matrix and retains the full reference. -/
+theorem IsDensityMatrix.densityConj_kronecker [Fintype ι'] [Fintype κ]
+    [DecidableEq ι] [DecidableEq κ] {ρ : Matrix (ι × κ) (ι × κ) ℂ}
+    (hρ : IsDensityMatrix ρ) {V : Matrix ι' ι ℂ} (hV : Vᴴ * V = 1) :
+    IsDensityMatrix (Cslib.Quantum.densityConj (V ⊗ₖ (1 : Matrix κ κ ℂ)) ρ) := by
+  apply hρ.densityConj
+  rw [conjTranspose_kronecker, conjTranspose_one, ← mul_kronecker_mul,
+    hV, one_mul, one_kronecker_one]
+
 /-- The matrix of a linear isometry has orthonormal columns, even when it is rectangular. -/
 theorem matrix_isometry [Fintype ι'] [DecidableEq ι]
     (V : EuclideanSpace ℂ ι →ₗᵢ[ℂ] EuclideanSpace ℂ ι') :

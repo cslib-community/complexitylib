@@ -173,7 +173,8 @@ noncomputable def redrawnExperiment : PMF Bool := do
   let second ← readOutput 1 le_rfl H₁
   pure (decide (first = second))
 
-private theorem uniform_answer (q : Fin 1 → Bool) :
+/-- Evaluating one cell of the finite uniform table gives a fair bit. -/
+theorem uniform_answer (q : Fin 1 → Bool) :
     (Probability.PMF.uniformOfFintype ((Fin 1 → Bool) → Fin 1 → Bool)).map
       (fun H => H q 0) = Probability.PMF.uniformOfFintype Bool := by
   rw [show (fun H : (Fin 1 → Bool) → Fin 1 → Bool => H q 0) =

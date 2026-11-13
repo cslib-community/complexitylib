@@ -1685,6 +1685,8 @@ public import CslibFrontier.Computability.Circuit.Quantum.Input
 public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Basic
 public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Code
 public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Density
+public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Interaction
+public import CslibFrontier.Computability.Circuit.Quantum.Oracle.InteractionResources
 public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Resources
 public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Signature
 public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Uniform
@@ -5987,6 +5989,7 @@ public import CslibFrontier.Foundations.Quantum.Bell
 public import CslibFrontier.Foundations.Quantum.Bipartite
 public import CslibFrontier.Foundations.Quantum.DensityMatrix
 public import CslibFrontier.Foundations.Quantum.DensityMatrix.Isometry
+public import CslibFrontier.Foundations.Quantum.DensityMatrix.Linear
 public import CslibFrontier.Foundations.Quantum.DensityMatrix.Normalize
 public import CslibFrontier.Foundations.Quantum.Fourier
 public import CslibFrontier.Foundations.Quantum.HadamardTransform
@@ -6000,6 +6003,7 @@ public import CslibFrontier.Foundations.Quantum.Measurement.Restrict
 public import CslibFrontier.Foundations.Quantum.NoCloning
 public import CslibFrontier.Foundations.Quantum.POVM
 public import CslibFrontier.Foundations.Quantum.POVM.Density
+public import CslibFrontier.Foundations.Quantum.POVM.Mixture
 public import CslibFrontier.Foundations.Quantum.Pauli
 public import CslibFrontier.Foundations.Quantum.PauliTwirl
 public import CslibFrontier.Foundations.Quantum.Register
