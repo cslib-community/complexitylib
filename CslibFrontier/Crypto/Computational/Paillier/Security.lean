@@ -145,10 +145,6 @@ theorem isPPTOn_dcrDistinguisher {adversary : AdversaryOf ℕ} (hA : adversary.I
 
 /-! ### Algebra of the reduction -/
 
-private theorem eq_of_natCast_eq_of_lt {M a b : ℕ} (ha : a < M) (hb : b < M)
-    (h : (a : ZMod M) = (b : ZMod M)) : a = b := by
-  rw [← ZMod.val_cast_of_lt ha, ← ZMod.val_cast_of_lt hb, h]
-
 /-- Multiplying the challenge `y = r` by `(1 + N) ^ m` is multiplication by a unit. -/
 private theorem powMod_mul_val_eq (N : ℕ) [NeZero N] (m : ℕ) (r : (ZMod (N ^ 2))ˣ) :
     powMod (N ^ 2) (1 + N) m * (r : ZMod (N ^ 2)).val % N ^ 2 =
@@ -172,28 +168,14 @@ private theorem powMod_mul_val_pow_eq_ciphertext (N : ℕ) [NeZero N] (m : ℕ)
   have hcop : Nat.gcd ((ZMod.unitsMap (dvd_pow_self N two_ne_zero) s : ZMod N)).val N = 1 :=
     ZMod.val_coe_unit_coprime _
   simp only [unitOrOne, hcop, ↓reduceIte]
-  refine eq_of_natCast_eq_of_lt (Nat.mod_lt _ (Nat.pos_of_ne_zero hN2)) ?_ ?_
-  · unfold ciphertext
-    exact Nat.mod_lt _ (Nat.pos_of_ne_zero hN2)
+  refine Nat.ModEq.eq_of_lt_of_lt ((ZMod.natCast_eq_natCast_iff _ _ _).mp ?_)
+    (Nat.mod_lt _ (Nat.pos_of_ne_zero hN2)) ?_
   · rw [natCast_ciphertext (NeZero.ne N), ZMod.unitsMap_val, ZMod.cast_eq_val, ZMod.val_natCast,
       ← ZMod.natCast_pow_self_mod, ZMod.natCast_zmod_val]
     simp only [powMod_of_ne_zero hN2, ZMod.natCast_mod, Nat.cast_mul, Nat.cast_pow, Nat.cast_add,
       Nat.cast_one, ZMod.natCast_zmod_val, Units.val_pow_eq_pow_val]
-
-/-! ### Distributions -/
-
-/-- Reduction modulo `N` sends the uniform unit modulo `N ^ 2` to the uniform unit modulo `N`. -/
-private theorem uniformOfFintype_map_unitsMap (N : ℕ) [NeZero N] :
-    (PMF.uniformOfFintype (ZMod (N ^ 2))ˣ).map (ZMod.unitsMap (dvd_pow_self N two_ne_zero)) =
-      PMF.uniformOfFintype (ZMod N)ˣ := by
-  rw [← Probability.PMF.uniformOfFintype_map_equiv
-      (Additive.toMul : Additive (ZMod (N ^ 2))ˣ ≃ (ZMod (N ^ 2))ˣ), PMF.map_comp,
-    ← Probability.PMF.uniformOfFintype_map_equiv
-      (Additive.toMul : Additive (ZMod N)ˣ ≃ (ZMod N)ˣ),
-    ← Probability.PMF.uniformOfFintype_map_addHom
-      (MonoidHom.toAdditive (ZMod.unitsMap (dvd_pow_self N two_ne_zero)))
-      (ZMod.unitsMap_surjective _), PMF.map_comp]
-  rfl
+  · unfold ciphertext
+    exact Nat.mod_lt _ (Nat.pos_of_ne_zero hN2)
 
 /-! ### The hops -/
 
@@ -221,7 +203,10 @@ private theorem advantage_encrypt_dcrReal_le (d : Desc) (n : ℕ)
             ((s ^ d.modulus : (ZMod (d.modulus ^ 2))ˣ) : ZMod (d.modulus ^ 2)).val %
               d.modulus ^ 2)))) =
       (PMF.uniformOfFintype (ZMod d.modulus)ˣ).bind fun u => K (u : ZMod d.modulus).val := by
-    rw [← uniformOfFintype_map_unitsMap d.modulus, PMF.bind_map]
+    -- Reduction modulo `N` sends the uniform unit modulo `N ^ 2` to the uniform unit modulo `N`.
+    rw [← Probability.PMF.uniformOfFintype_map_monoidHom
+      (ZMod.unitsMap (dvd_pow_self d.modulus two_ne_zero)) (ZMod.unitsMap_surjective _),
+      PMF.bind_map]
     refine congrArg _ (funext fun s => ?_)
     simp only [Function.comp_apply, K]
     rw [powMod_mul_val_pow_eq_ciphertext]

@@ -89,6 +89,8 @@ example : Turing.MultiTapeTM.ComputableInPolyTime
     encDrawnPlanarThreeSATThree := by
   fun_prop
 
+example : (default : DrawnPlanarThreeSATThreeInstance) = ⟨default, default⟩ := rfl
+
 -- The paired-port variable and placed-clause encodings are computable via `FinEnum`.
 example : SAT.ParsimoniousPlanar.encVariable ((0, 0), .inl (0, 0)) ≠
     SAT.ParsimoniousPlanar.encVariable ((0, 0), .inr .center) := by decide +kernel

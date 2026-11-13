@@ -7,8 +7,8 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.LazyDiagonal
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Time
-public import CslibFrontier.Foundations.Data.BitString.Enumeration
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.BitLength
 import CslibFrontier.Computability.Complexity.Classes.Hierarchy.LazyDiagonalBounds
 import CslibFrontier.Computability.Complexity.Classes.Time.BoundedExists
@@ -32,25 +32,10 @@ lazy diagonalization [Žák][Zak1983]. The separating problem is explicit: the l
 
 ## The lazy diagonal
 
-A diagonal for nondeterministic time cannot simply negate the answer of the machine it
-simulates: that answer is an existential over certificates. Lazy diagonalization negates it only
-once per interval of lengths, where the input is long enough to try every certificate.
-
-An input `x` carries a word `w` framed at its start, and `w` carries the description
-`unframe w` of a deterministic verifier on pairs framed at its start, followed by arbitrary
-padding. The padding of `w` gives each description infinitely many words `w`. The interval of
-`w` consists of the lengths from `P = 2 * w.length + 1`, the length of `frame w`, to
-`2 ^ clock d P - 1`, where `clock d m = (m + 1) ^ (d + 3)`. On the input `x` of length `n` in
-this interval, with a certificate `v` of length `certLen d (n + 1) = (n + 2) ^ (d + 2)`, the
-verifier `Cslib.Complexity.LazyDiagonal.verifier d`
-
-* below the end of the interval, runs the described verifier on the one bit longer input
-  `x ++ [false]` and the certificate `v` for `clock d (n + 1)` steps with the universal function
-  (`Cslib.Complexity.LazyDiagonal.accepts`);
-* at the end of the interval, accepts when the described verifier accepts no certificate of
-  length `certLen d P` on `frame w`, trying them all.
-
-The lazy diagonal is the problem of the inputs with an accepted certificate.
+The lazy diagonal is the generic construction `Cslib.Complexity.Diagonal.lazyLanguage` with
+certificates of length `certLen d m = (m + 1) ^ (d + 2)` on words of length `m`, and the clock
+`clock d m = (m + 1) ^ (d + 3)` as both the step budget on the input `y` (`clock d y.length`) and
+the horizon: the interval of a word `w` ends below `2 ^ clock d P`, where `P = 2 * w.length + 1`.
 
 * **Upper bound** (`Cslib.Complexity.lazyDiagonal_mem_NTIME`). Guess the certificate and run the
   verifier (`Cslib.Complexity.setOf_exists_mem_NTIME`). The simulation takes time
@@ -58,22 +43,17 @@ The lazy diagonal is the problem of the inputs with an accepted certificate.
   native universal machine. The brute force takes time `2 ^ O((P + 1) ^ (d + 2))`
   (`Cslib.Complexity.exists_computableInO_any_enumList`), which is `O(n)` at the end of the
   interval, where `n + 1 = 2 ^ ((P + 1) ^ (d + 3))`.
-* **Lower bound** (`Cslib.Complexity.lazyDiagonal_notMem_NTIME`). A nondeterministic machine
-  deciding the problem within time `O((n + 1) ^ d)` has a deterministic verifier on pairs within
-  linear time, accepting certificates of every length at least `c * (n + 1) ^ d + c`
-  (`Cslib.Complexity.exists_verifier_of_mem_NTIME`). On the interval of a word `w` describing that
-  verifier, with enough padding, the universal function runs it exactly. Then each input of the
-  interval is in the problem exactly when the next one is, and the last exactly when the first is
-  not.
+* **Lower bound** (`Cslib.Complexity.lazyDiagonal_notMem_NTIME`). A verifier for a problem in
+  `NTIME ((n + 1) ^ d)` accepts certificates of every length at least `c * (n + 1) ^ d + c`, and
+  runs within `c₂` times its input length; `certLen d` and `clock d` eventually exceed both
+  (`Cslib.Complexity.Diagonal.lazyLanguage_notMem_NTIME`).
 
-Arora and Barak enumerate nondeterministic machines and use one global sequence of intervals; this
-construction gives each word `w` its own interval instead, and diagonalizes against verifiers.
 The gap `6 * d + 14` is the polynomial overhead of the native universal machine and of the
 certificate length, not the textbook `f (n + 1) = o (g n)`.
 
 ## Main definitions
 
-* `Cslib.Complexity.LazyDiagonal.verifier`: the verifier of the lazy diagonal.
+* `Cslib.Complexity.LazyDiagonal.verifier`: the verifier of the lazy diagonal for degree `d`.
 * `Cslib.Complexity.lazyDiagonal`: the lazy diagonal problem for degree `d`.
 
 ## Main results
@@ -105,31 +85,16 @@ def certLen (d m : ℕ) : ℕ := (m + 1) ^ (d + 2)
 simulated steps on `m`, and the interval of lengths starting at `m` ends below `2 ^ clock d m`. -/
 def clock (d m : ℕ) : ℕ := (m + 1) ^ (d + 3)
 
-/-- The machine described by `c`, run as a verifier on the pair `(y, v)` (encoded as
-`frame y ++ v`) for `clock d y.length` steps with the universal function, has halted with output
-`[true]`. -/
-def accepts (d : ℕ) (c y v : List Bool) : Bool :=
-  !Diagonal.verdict (universal (decodeDesc c, (frame y ++ v).map eBit, clock d y.length))
+/-- The machine described by `c`, run as a verifier on the pair `(y, v)` for `clock d y.length`
+steps with the universal function, has halted with output `[true]`. -/
+def accepts (d : ℕ) : List Bool → List Bool → List Bool → Bool :=
+  Diagonal.lazyAccepts fun y _ => clock d y.length
 
-/-- **The verifier of the lazy diagonal**, on an input `x` of length `n` and a certificate `v`.
-The input carries a word `w` framed at its start, and `w` carries the description `unframe w`
-framed at its start. When the description is short (`Cslib.Complexity.Diagonal.shortDesc w`),
-let `P = 2 * w.length + 1`; the lengths from `P` to `2 ^ clock d P - 1` form the interval of `w`.
-
-* If `n + 1 < 2 ^ clock d P`, below the end of the interval, accept when the described verifier
-  accepts `v` on the input one bit longer.
-* If `n + 1 = 2 ^ clock d P`, at the end of the interval, accept when the described verifier
-  accepts no certificate on `frame w`, the input of length `P`, by trying them all.
-* Otherwise, and when the description is not short, reject. -/
-def verifier (d : ℕ) (p : List Bool × List Bool) : Bool :=
-  if Diagonal.shortDesc (unframe p.1) then
-    if Nat.size (p.1.length + 1) ≤ clock d (2 * (unframe p.1).length + 1) then
-      accepts d (unframe (unframe p.1)) (p.1 ++ [false]) p.2
-    else if Nat.size p.1.length ≤ clock d (2 * (unframe p.1).length + 1) then
-      !(Cslib.BitString.enumList (certLen d (2 * (unframe p.1).length + 1))).any
-        (accepts d (unframe (unframe p.1)) (frame (unframe p.1)))
-    else false
-  else false
+/-- **The verifier of the lazy diagonal** (`Cslib.Complexity.Diagonal.lazyVerifier`) with the
+budget `clock d y.length` for the input `y`, certificates of length `certLen d` and horizon
+`clock d`. -/
+def verifier (d : ℕ) : List Bool × List Bool → Bool :=
+  Diagonal.lazyVerifier (fun y _ => clock d y.length) (certLen d) (clock d)
 
 end LazyDiagonal
 
@@ -138,7 +103,7 @@ open LazyDiagonal
 /-- **The lazy diagonal language** for degree `d`: the words `x` with a certificate of length
 `(x.length + 2) ^ (d + 2)` accepted by `Cslib.Complexity.LazyDiagonal.verifier d`. -/
 def lazyDiagonal (d : ℕ) : Set (List Bool) :=
-  {x | ∃ v : List Bool, v.length = certLen d (x.length + 1) ∧ verifier d (x, v) = true}
+  Diagonal.lazyLanguage (fun y _ => clock d y.length) (certLen d) (clock d)
 
 /-! ### The lazy diagonal is not in `NTIME ((n + 1) ^ d)` -/
 
@@ -165,96 +130,18 @@ private theorem exists_le_certLen_clock (d c c₂ : ℕ) : ∃ M, ∀ m, M ≤ m
     exact h₁.trans ((Nat.mul_le_mul_right Y (by omega : 3 * c₂ ≤ m + 1)).trans
       (le_of_eq (by simp only [Y, certLen, clock]; ring)))
 
-/-- **The lazy diagonal is not decidable in nondeterministic time `O((n + 1) ^ d)`.** A
-nondeterministic machine deciding it has a verifier on pairs within linear time
-(`Cslib.Complexity.exists_verifier_of_mem_NTIME`), described by a word `code`. On the interval of
-lengths of `w = frame code ++ pad` with a long enough `pad`, the universal function runs that
-verifier exactly. Each word of the interval is then in the language exactly when the next one is,
-and the last exactly when the first is not. -/
+/-- **The lazy diagonal is not decidable in nondeterministic time `O((n + 1) ^ d)`**
+(`Cslib.Complexity.Diagonal.lazyLanguage_notMem_NTIME`): certificates of length `certLen d m` and
+`clock d m` simulated steps eventually suffice for a verifier of a problem in that class. -/
 theorem lazyDiagonal_notMem_NTIME (d : ℕ) :
-    lazyDiagonal d ∉ NTIME encBits fun n => (n + 1) ^ d := by
-  intro hD
-  obtain ⟨V, c, hV, hmem⟩ := exists_verifier_of_mem_NTIME hD
-  obtain ⟨c₂, ⟨k, State, hfin, tm, htm⟩, -⟩ := hV
-  have := Fintype.ofFinite State
-  let eS : State ↪ ℕ := (Fintype.equivFin State).toEmbedding.trans Fin.valEmbedding
-  set code := eDesc (desc eS eBit tm) with hcode
-  obtain ⟨M, hM⟩ := exists_le_certLen_clock d c c₂
-  -- the universal function runs the verifier exactly on long enough words
-  have hsim (y v : List Bool) (hy : M ≤ y.length) (hv : v.length = certLen d y.length) :
-      accepts d code y v = V (y, v) := by
-    have hclock : c₂ * ((encPair encBits encBits (y, v)).length + 1) ≤ clock d y.length := by
-      have := (hM y.length hy).2
+    lazyDiagonal d ∉ NTIME encBits fun n => (n + 1) ^ d :=
+  Diagonal.lazyLanguage_notMem_NTIME
+    (fun c => (exists_le_certLen_clock d c 0).imp fun _ h m hm => (h m hm).1)
+    (fun c₂ => (exists_le_certLen_clock d 0 c₂).imp fun _ h y v hy hv => by
+      have := (h y.length hy).2
       simp only [encPair_apply, encBits_apply, List.length_append, length_frame, hv]
-      omega
-    obtain ⟨hhalt, hout⟩ := (htm (y, v)).runFrom_of_le hclock
-    simp only [encPair_apply, encBits_apply, encBool_apply] at hhalt hout
-    rw [accepts, hcode, decodeDesc_eDesc, universal_desc, hout]
-    simp only [List.map_cons, List.map_nil, Cfg.Halted] at hhalt ⊢
-    rw [hhalt]
-    cases V (y, v) <;> simp [Diagonal.verdict, eBit]
-  -- on long enough words, membership is acceptance by the simulated verifier
-  have hiff (y : List Bool) (hy : M ≤ y.length) : y ∈ lazyDiagonal d ↔
-      ∃ v : List Bool, v.length = certLen d y.length ∧ accepts d code y v = true := by
-    have h := hmem y (certLen d y.length) (by simpa [encBits_apply] using (hM y.length hy).1)
-    rw [h]
-    exact exists_congr fun v => and_congr_right fun hv => by rw [hsim y v hy hv]
-  -- the interval of `w`
-  set w := frame code ++ List.replicate (2 ^ code.length + M) true with hw
-  set P := 2 * w.length + 1 with hP
-  set E := clock d P with hE
-  set x : ℕ → List Bool := fun m => frame w ++ List.replicate (m - P) false with hx
-  have hwlen : w.length = 2 * code.length + 1 + (2 ^ code.length + M) := by simp [w]
-  have hMP : M ≤ P := by
-    have := hwlen; generalize 2 ^ code.length = e at this; omega
-  have hxlen (m : ℕ) (hm : P ≤ m) : (x m).length = m := by
-    simp only [x, List.length_append, length_frame, List.length_replicate]; omega
-  have hshort : Diagonal.shortDesc w = true := by
-    rw [Diagonal.shortDesc, decide_eq_true_eq, unframe_frame_append, hwlen]; omega
-  have hverifier (m : ℕ) (hm : P ≤ m) (v : List Bool) : verifier d (x m, v) =
-      if Nat.size (m + 1) ≤ E then accepts d code (x m ++ [false]) v
-      else if Nat.size m ≤ E then
-        !(Cslib.BitString.enumList (certLen d P)).any (accepts d code (frame w))
-      else false := by
-    have hu : unframe (x m) = w := unframe_frame_append _ _
-    have hc : unframe w = code := unframe_frame_append _ _
-    simp only [verifier, hu, hc, hshort, hxlen m hm, ← hP, ← hE, ↓reduceIte]
-  have hPE : P + 1 < 2 ^ E :=
-    (Nat.le_self_pow (by omega) (P + 1)).trans_lt Nat.lt_two_pow_self
-  set U := 2 ^ E - 1 with hU
-  -- each word below the end of the interval is in the language exactly when the next one is
-  have hstep (m : ℕ) (hm : P ≤ m) (hmU : m < U) :
-      x m ∈ lazyDiagonal d ↔ x (m + 1) ∈ lazyDiagonal d := by
-    have hsize : Nat.size (m + 1) ≤ E := Nat.size_le.mpr (by omega)
-    have hnext : x m ++ [false] = x (m + 1) := by
-      simp only [x, List.append_assoc, ← List.replicate_succ', show m - P + 1 = m + 1 - P by omega]
-    rw [hiff (x (m + 1)) (by rw [hxlen _ (by omega)]; omega), lazyDiagonal, Set.mem_ofPred_eq,
-      hxlen (m + 1) (by omega), hxlen m hm]
-    refine exists_congr fun v => and_congr_right fun _ => ?_
-    simp only [hverifier m hm v, hsize, ↓reduceIte, hnext]
-  -- the end of the interval is in the language exactly when its start is not
-  have hend : x U ∈ lazyDiagonal d ↔ x P ∉ lazyDiagonal d := by
-    have hUP : P ≤ U := by omega
-    have hsize₁ : ¬Nat.size (U + 1) ≤ E := by
-      rw [Nat.size_le, hU, Nat.sub_add_cancel Nat.one_le_two_pow]; exact lt_irrefl _
-    have hsize₂ : Nat.size U ≤ E := Nat.size_le.mpr (by omega)
-    have hbase : x P = frame w := by simp [x]
-    rw [hiff (x P) (by rw [hxlen P le_rfl]; omega), hxlen P le_rfl, hbase, lazyDiagonal,
-      Set.mem_ofPred_eq]
-    simp only [hverifier U hUP, hsize₁, hsize₂, ↓reduceIte, Bool.not_eq_true',
-      List.any_eq_false, Cslib.BitString.mem_enumList, not_exists, not_and, Bool.not_eq_true]
-    exact ⟨fun ⟨_, _, h⟩ v hv => h v hv,
-      fun h => ⟨List.replicate _ false, List.length_replicate .., h⟩⟩
-  -- the chain from the start of the interval to its end
-  have hchain (j : ℕ) (hj : j ≤ U - P) : x (U - j) ∈ lazyDiagonal d ↔ x U ∈ lazyDiagonal d := by
-    induction j with
-    | zero => rfl
-    | succ j ih =>
-      have heq : U - j = U - (j + 1) + 1 := by omega
-      rw [← ih (by omega), heq, ← hstep (U - (j + 1)) (by omega) (by omega)]
-  have h := hchain (U - P) le_rfl
-  rw [Nat.sub_sub_self (by omega), hend] at h
-  exact iff_not_self h
+      omega)
+    fun P => (Nat.le_self_pow (by omega) (P + 1)).trans_lt Nat.lt_two_pow_self
 
 /-! ### The lazy diagonal is in nondeterministic polynomial time -/
 
@@ -486,7 +373,8 @@ private theorem exists_computableInO_verifier (d : ℕ) :
   have h := hc₀.ite (hc₁'.ite hf₁ (hc₂'.ite hf₂ hfalse)) hfalse
   refine ⟨D, K, _, (h.of_enc_eq fun p => ?_).mono_le (fun p => le_of_eq ?_) fun p => le_rfl⟩
   · congr 1
-    simp only [verifier, Function.comp_apply, decide_eq_true_eq, length_frame]
+    simp only [verifier, Diagonal.lazyVerifier, accepts, Function.comp_apply, decide_eq_true_eq,
+      length_frame]
   · simp only [Function.comp_apply, decide_eq_true_eq]
 
 /-- **The lazy diagonal is decidable in nondeterministic time `O((n + 1) ^ (6 * d + 14))`.** Guess

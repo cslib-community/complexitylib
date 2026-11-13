@@ -10,14 +10,15 @@ import CslibFrontier.Computability.Complexity.Problems.Graph.OrthogonalPath
 
 open Cslib.Complexity Cslib.Orthogonal
 
-private def exampleGraph : Graph := ([0, 1, 2, 3, 4, 5], [(0, 2), (1, 3), (4, 5)])
+private def exampleGraph : Graph := ⟨[0, 1, 2, 3, 4, 5], [(0, 2), (1, 3), (4, 5)]⟩
 
-private theorem declared : ∀ e ∈ exampleGraph.2, e.1 ∈ exampleGraph.1 ∧ e.2 ∈ exampleGraph.1 := by
+private theorem declared :
+    ∀ e ∈ exampleGraph.edges, e.1 ∈ exampleGraph.vertices ∧ e.2 ∈ exampleGraph.vertices := by
   intro e he
   simp only [exampleGraph, List.mem_cons, List.not_mem_nil, or_false] at he
   rcases he with rfl | rfl | rfl <;> decide
 
-private theorem loopless : ∀ e ∈ exampleGraph.2, e.1 ≠ e.2 := by
+private theorem loopless : ∀ e ∈ exampleGraph.edges, e.1 ≠ e.2 := by
   intro e he
   simp only [exampleGraph, List.mem_cons, List.not_mem_nil, or_false] at he
   rcases he with rfl | rfl | rfl <;> decide
@@ -82,22 +83,24 @@ example :
       (by decide) (by decide) (by decide) not_center first_member second_member⟩
   · intro h
     have hindex := Graph.unitPath_atMostTwo exampleGraph declared loopless degree
-      (by decide : 0 < exampleGraph.2.length) (by decide : 1 < exampleGraph.2.length)
-      (by decide : 2 < exampleGraph.2.length) (by decide) not_center first_member second_member h
+      (by decide : 0 < exampleGraph.edges.length) (by decide : 1 < exampleGraph.edges.length)
+      (by decide : 2 < exampleGraph.edges.length) (by decide) not_center first_member
+      second_member h
     omega
   · rw [Graph.unitPath_center_iff exampleGraph declared loopless (by decide) (by decide)]
     decide
 
-private def reverseGraph : Graph := ([0, 1, 2, 3, 4, 5], [(2, 0), (3, 1), (4, 5)])
-private def starGraph : Graph := ([0, 1, 2, 3], [(0, 1), (0, 2), (0, 3)])
-private def returnStar : Graph := ([0, 1, 2, 3], [(1, 0), (2, 0), (3, 0)])
+private def reverseGraph : Graph := ⟨[0, 1, 2, 3, 4, 5], [(2, 0), (3, 1), (4, 5)]⟩
+private def starGraph : Graph := ⟨[0, 1, 2, 3], [(0, 1), (0, 2), (0, 3)]⟩
+private def returnStar : Graph := ⟨[0, 1, 2, 3], [(1, 0), (2, 0), (3, 0)]⟩
 
-private theorem star_declared : ∀ e ∈ starGraph.2, e.1 ∈ starGraph.1 ∧ e.2 ∈ starGraph.1 := by
+private theorem star_declared :
+    ∀ e ∈ starGraph.edges, e.1 ∈ starGraph.vertices ∧ e.2 ∈ starGraph.vertices := by
   intro e he
   simp only [starGraph, List.mem_cons, List.not_mem_nil, or_false] at he
   rcases he with rfl | rfl | rfl <;> decide
 
-private theorem star_loopless : ∀ e ∈ starGraph.2, e.1 ≠ e.2 := by
+private theorem star_loopless : ∀ e ∈ starGraph.edges, e.1 ≠ e.2 := by
   intro e he
   simp only [starGraph, List.mem_cons, List.not_mem_nil, or_false] at he
   rcases he with rfl | rfl | rfl <;> decide
@@ -127,10 +130,10 @@ example (d : Point) :
       returnStar.endpointNeighbor 1 true = (4, 5) ∧
       returnStar.endpointNeighbor 2 true = (5, 4)) ∧
     (exampleGraph.unitPath 0).getD 1 d =
-      Layout.center (exampleGraph.1.idxOf (exampleGraph.edgeEndpoint 0 false)) +
+      Layout.center (exampleGraph.vertices.idxOf (exampleGraph.edgeEndpoint 0 false)) +
         Layout.portStep (Graph.portAt exampleGraph.canonicalPorts 0 false) ∧
     (exampleGraph.unitPath 0).getD ((exampleGraph.unitPath 0).length - 2) d =
-      Layout.center (exampleGraph.1.idxOf (exampleGraph.edgeEndpoint 0 true)) +
+      Layout.center (exampleGraph.vertices.idxOf (exampleGraph.edgeEndpoint 0 true)) +
         Layout.portStep (Graph.portAt exampleGraph.canonicalPorts 0 true) ∧
     starGraph.endpointNeighbor 0 false ≠ starGraph.endpointNeighbor 1 false :=
   ⟨by decide, by decide, by decide, by decide, by decide,

@@ -42,7 +42,7 @@ example : ¬ ∃ p : Fin 1 → Bool, ∀ i, true = (p i ^^ p ((1 : Equiv.Perm (F
   have h := hp 0
   simp only [Equiv.Perm.one_apply, Bool.xor_self, Bool.true_eq_false] at h
 
-private abbrev torus : Graph := ([0], [(0, 0), (0, 0)])
+private abbrev torus : Graph := ⟨[0], [(0, 0), (0, 0)]⟩
 
 private def torusRotation : RotationSystem torus where
   rotate := ((Dart.indexEquiv torus).trans

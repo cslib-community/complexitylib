@@ -18,9 +18,9 @@ namespace CslibFrontierTests.CliqueCover
 
 open Cslib.Complexity Turing.MultiTapeTM
 
-private def triangle : Graph := ([0, 1, 2], [(0, 1), (1, 2), (2, 0)])
+private def triangle : Graph := ⟨[0, 1, 2], [(0, 1), (1, 2), (2, 0)]⟩
 
-private def path3 : Graph := ([0, 1, 2], [(0, 1), (1, 2)])
+private def path3 : Graph := ⟨[0, 1, 2], [(0, 1), (1, 2)]⟩
 
 /-! ### Headline results -/
 
@@ -43,8 +43,8 @@ example : (⟨path3, 2⟩ : CliqueCoverInstance) ∈ CliqueCover := by
   rw [Graph.mem_CliqueCover_iff_compl, mem_ChromaticNumber_iff, mem_KColoring_iff]
   refine ⟨fun v => if v = 2 then 1 else 0, by decide, fun u hu v hv huv => ?_⟩
   rw [← Graph.adjBool_eq_true_iff] at huv
-  have hu' : u ∈ path3.1 := hu
-  have hv' : v ∈ path3.1 := hv
+  have hu' : u ∈ path3.vertices := hu
+  have hv' : v ∈ path3.vertices := hv
   simp only [path3, List.mem_cons, List.not_mem_nil, or_false] at hu' hv'
   rcases hu' with rfl | rfl | rfl <;> rcases hv' with rfl | rfl | rfl <;> revert huv <;> decide
 
@@ -63,7 +63,7 @@ example : (⟨triangle.compl, 3⟩ : CliqueCoverInstance) ∈ CliqueCover :=
     exact ⟨id, by decide, fun u _ v _ huv => huv.ne⟩)
 
 -- A graph without declared vertices is covered by no clique at all.
-example : (⟨(([] : List ℕ), [(0, 1)]), 0⟩ : CliqueCoverInstance) ∈ CliqueCover :=
+example : (⟨⟨([] : List ℕ), [(0, 1)]⟩, 0⟩ : CliqueCoverInstance) ∈ CliqueCover :=
   ⟨∅, by simp, by simp, fun v => absurd v.2 (by simp)⟩
 
 /-! ### Clique covers and colorings of the complement -/

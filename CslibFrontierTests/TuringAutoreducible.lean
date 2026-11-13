@@ -56,7 +56,7 @@ theorem coEmpty_dtt_autoreducible :
     PolyTimeDTTAutoreducible encBits ({[]}ᶜ : Set (List Bool)) := by
   refine ⟨fun w => if w.isEmpty then 0 else 1,
     fun p => true :: p.1,
-    by fun_prop, by fun_prop, fun w i hi => ?_, fun w => ?_⟩
+    ⟨⟨by fun_prop, by fun_prop⟩, fun w i hi => ?_⟩, fun w => ?_⟩
   · cases w <;> simp at hi ⊢
   · cases w <;> simp
 

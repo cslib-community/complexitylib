@@ -21,15 +21,15 @@ Polynomial-time evaluation of spanning in-arborescence counts for both simple di
 
 ## Main definitions
 
-* `Cslib.Complexity.Graph.toDigraph`: simple digraph induced by `G` on `{v // v ∈ G.1}`.
+* `Cslib.Complexity.Graph.toDigraph`: simple digraph induced by `G` on `{v // v ∈ G.vertices}`.
 * `Cslib.Complexity.Graph.digraphInArborescenceCount`: reduced Laplacian determinant counting
-  simple-digraph spanning in-arborescences rooted at `r` (`0` if `r ∉ G.1`).
-* `Cslib.Complexity.Graph.validArcs`, `.arcSrc`, `.arcTgt`: list of pairs in `G.2` whose endpoints
-  both lie in `G.1`, giving a finite multidigraph on `{v // v ∈ G.1}`.
+  simple-digraph spanning in-arborescences rooted at `r` (`0` if `r ∉ G.vertices`).
+* `Cslib.Complexity.Graph.validArcs`, `.arcSrc`, `.arcTgt`: list of pairs in `G.edges` whose
+  endpoints both lie in `G.vertices`, giving a finite multidigraph on `{v // v ∈ G.vertices}`.
 * `Cslib.Complexity.Graph.multiLaplacianCount`: reduced multidigraph Laplacian determinant over an
   arbitrary duplicate-free vertex list `vs` and arc list `arcs`.
 * `Cslib.Complexity.Graph.multiInArborescenceCount`: reduced Laplacian determinant counting
-  multidigraph spanning in-arborescences rooted at `r` (`0` if `r ∉ G.1`).
+  multidigraph spanning in-arborescences rooted at `r` (`0` if `r ∉ G.vertices`).
 
 ## Main results
 
@@ -77,20 +77,20 @@ private theorem card_filter_fst_eq_sum_snd {V E : Type*} [Fintype V] [DecidableE
 /-! ### Simple-digraph spanning in-arborescences -/
 
 /-- The simple digraph induced by `G` on its declared vertices: `u → v` holds iff `(u.1, v.1)`
-appears in `G.2`. -/
+appears in `G.edges`. -/
 @[expose]
-def toDigraph (G : Graph) : Digraph {v // v ∈ G.1} where
-  Adj u v := (u.1, v.1) ∈ G.2
+def toDigraph (G : Graph) : Digraph {v // v ∈ G.vertices} where
+  Adj u v := (u.1, v.1) ∈ G.edges
 
 /-- Entry `(u, v)` of the out-degree integer Laplacian of `G.toDigraph`. -/
 @[expose]
 def digraphLaplacianEntry (G : Graph) (u v : ℕ) : ℤ :=
   if u = v then
     (G.distinctVertices.countP fun w =>
-      decide (w ≠ u) && G.2.any fun e => decide (e.1 = u ∧ e.2 = w) : ℤ)
-  else if G.2.any fun e => decide (e.1 = u ∧ e.2 = v) then -1 else 0
+      decide (w ≠ u) && G.edges.any fun e => decide (e.1 = u ∧ e.2 = w) : ℤ)
+  else if G.edges.any fun e => decide (e.1 = u ∧ e.2 = v) then -1 else 0
 
-/-- Number of spanning in-arborescences of `G.toDigraph` rooted at `r` (`0` if `r ∉ G.1`),
+/-- Number of spanning in-arborescences of `G.toDigraph` rooted at `r` (`0` if `r ∉ G.vertices`),
 computed via the reduced out-degree Laplacian determinant. -/
 @[expose]
 def digraphInArborescenceCount (G : Graph) (r : ℕ) : ℕ :=
@@ -108,7 +108,7 @@ private lemma any_eq_decide_mem (arcs : List (ℕ × ℕ)) (u v : ℕ) :
     fun h => ⟨u, v, h, rfl, rfl⟩⟩
 
 open Classical in
-private lemma digraphLaplacianEntry_eq (G : Graph) (u v : {v // v ∈ G.1}) :
+private lemma digraphLaplacianEntry_eq (G : Graph) (u v : {v // v ∈ G.vertices}) :
     G.digraphLaplacianEntry u.1 v.1 = ((G.toDigraph.adjMatrix ℤ).laplacian u v) := by
   classical
   rw [Matrix.laplacian_apply]
@@ -117,15 +117,16 @@ private lemma digraphLaplacianEntry_eq (G : Graph) (u v : {v // v ∈ G.1}) :
     simp only [digraphLaplacianEntry, ↓reduceIte]
     have hdiag :
         ((G.distinctVertices.countP fun w =>
-          decide (w ≠ u.1) && G.2.any fun e => decide (e.1 = u.1 ∧ e.2 = w) : ℤ)) =
-          ((Finset.univ.filter fun w : {v // v ∈ G.1} =>
+          decide (w ≠ u.1) && G.edges.any fun e => decide (e.1 = u.1 ∧ e.2 = w) : ℤ)) =
+          ((Finset.univ.filter fun w : {v // v ∈ G.vertices} =>
             G.toDigraph.Adj u w ∧ w ≠ u).card : ℤ) := by
       have hcard :
           G.distinctVertices.countP (fun w =>
-              decide (w ≠ u.1) && G.2.any fun e => decide (e.1 = u.1 ∧ e.2 = w)) =
+              decide (w ≠ u.1) && G.edges.any fun e => decide (e.1 = u.1 ∧ e.2 = w)) =
             (Finset.univ.filter fun i : Fin G.distinctVertices.length =>
               (decide (G.distinctVertices[i] ≠ u.1) &&
-                G.2.any fun e => decide (e.1 = u.1 ∧ e.2 = G.distinctVertices[i])) = true).card :=
+                G.edges.any fun e =>
+                  decide (e.1 = u.1 ∧ e.2 = G.distinctVertices[i])) = true).card :=
         List.countP_eq_card_filter_getElem G.distinctVertices _
       rw [hcard, Nat.cast_inj]
       refine Finset.card_bij (fun i _ => G.vertexEquiv i) ?_ ?_ ?_
@@ -134,7 +135,7 @@ private lemma digraphLaplacianEntry_eq (G : Graph) (u v : {v // v ∈ G.1}) :
           decide_eq_true_eq, any_eq_decide_mem] at hi ⊢
         refine ⟨?_, fun h =>
           hi.1 ((Graph.vertexEquiv_getElem G i).symm.trans (congrArg Subtype.val h))⟩
-        change (u.1, (G.vertexEquiv i).1) ∈ G.2
+        change (u.1, (G.vertexEquiv i).1) ∈ G.edges
         rw [Graph.vertexEquiv_getElem]
         exact hi.2
       · intro i _ j _ hij
@@ -150,19 +151,21 @@ private lemma digraphLaplacianEntry_eq (G : Graph) (u v : {v // v ∈ G.1}) :
         exact ⟨fun h => hw.2 (Subtype.ext h), hw.1⟩
     rw [hdiag]
     have hsum :
-        (∑ w : {v // v ∈ G.1}, G.toDigraph.adjMatrix ℤ u w - G.toDigraph.adjMatrix ℤ u u) =
-          ((Finset.univ.filter fun w : {v // v ∈ G.1} =>
+        (∑ w : {v // v ∈ G.vertices}, G.toDigraph.adjMatrix ℤ u w - G.toDigraph.adjMatrix ℤ u u) =
+          ((Finset.univ.filter fun w : {v // v ∈ G.vertices} =>
             G.toDigraph.Adj u w ∧ w ≠ u).card : ℤ) := by
       simp only [Digraph.adjMatrix_apply, Finset.sum_boole]
       have hsub :
-          (Finset.univ.filter fun w : {v // v ∈ G.1} => G.toDigraph.Adj u w ∧ w ≠ u).card +
-              (Finset.univ.filter fun w : {v // v ∈ G.1} => G.toDigraph.Adj u w ∧ w = u).card =
-            (Finset.univ.filter fun w : {v // v ∈ G.1} => G.toDigraph.Adj u w).card := by
+          (Finset.univ.filter fun w : {v // v ∈ G.vertices} => G.toDigraph.Adj u w ∧ w ≠ u).card +
+              (Finset.univ.filter fun w : {v // v ∈ G.vertices} =>
+                G.toDigraph.Adj u w ∧ w = u).card =
+            (Finset.univ.filter fun w : {v // v ∈ G.vertices} => G.toDigraph.Adj u w).card := by
         simpa only [Finset.filter_filter, ne_eq, not_not] using
           Finset.card_filter_add_card_filter_not
-            (s := Finset.univ.filter fun w : {v // v ∈ G.1} => G.toDigraph.Adj u w) (fun w => w ≠ u)
+            (s := Finset.univ.filter fun w : {v // v ∈ G.vertices} => G.toDigraph.Adj u w)
+            (fun w => w ≠ u)
       have hself :
-          (Finset.univ.filter fun w : {v // v ∈ G.1} => G.toDigraph.Adj u w ∧ w = u).card =
+          (Finset.univ.filter fun w : {v // v ∈ G.vertices} => G.toDigraph.Adj u w ∧ w = u).card =
             if G.toDigraph.Adj u u then 1 else 0 := by
         split_ifs with h
         · rw [Finset.card_eq_one]
@@ -173,7 +176,7 @@ private lemma digraphLaplacianEntry_eq (G : Graph) (u v : {v // v ∈ G.1}) :
           intro w _ hw
           exact h (hw.2 ▸ hw.1)
       have hle : (if G.toDigraph.Adj u u then 1 else 0) ≤
-          (Finset.univ.filter fun w : {v // v ∈ G.1} => G.toDigraph.Adj u w).card := by
+          (Finset.univ.filter fun w : {v // v ∈ G.vertices} => G.toDigraph.Adj u w).card := by
         rw [← hself, ← hsub]; omega
       have hcast : ((if G.toDigraph.Adj u u then (1 : ℕ) else 0 : ℕ) : ℤ) =
           if G.toDigraph.Adj u u then (1 : ℤ) else 0 := by split_ifs <;> rfl
@@ -184,19 +187,19 @@ private lemma digraphLaplacianEntry_eq (G : Graph) (u v : {v // v ∈ G.1}) :
     simp only [digraphLaplacianEntry, hne, ↓reduceIte, huv, any_eq_decide_mem,
       Digraph.adjMatrix_apply, zero_sub, decide_eq_true_eq]
     dsimp only [toDigraph]
-    by_cases hadj : (u.1, v.1) ∈ G.2 <;> simp [hadj]
+    by_cases hadj : (u.1, v.1) ∈ G.edges <;> simp [hadj]
 
 /-- `G.digraphInArborescenceCount r` equals the number of spanning in-arborescences of
-`G.toDigraph` rooted at `r` (and `0` when `r ∉ G.1`). -/
+`G.toDigraph` rooted at `r` (and `0` when `r ∉ G.vertices`). -/
 theorem digraphInArborescenceCount_eq_natCard (G : Graph) (r : ℕ) :
     G.digraphInArborescenceCount r =
-      if hr : r ∈ G.1 then
-        Nat.card {T : Digraph {v // v ∈ G.1} // T ≤ G.toDigraph ∧ T.IsInArborescence ⟨r, hr⟩}
+      if hr : r ∈ G.vertices then
+        Nat.card {T : Digraph {v // v ∈ G.vertices} // T ≤ G.toDigraph ∧ T.IsInArborescence ⟨r, hr⟩}
       else 0 := by
   classical
-  have hany : (G.distinctVertices.any fun v => decide (v = r)) = true ↔ r ∈ G.1 := by
+  have hany : (G.distinctVertices.any fun v => decide (v = r)) = true ↔ r ∈ G.vertices := by
     simp [Graph.mem_distinctVertices]
-  by_cases hr : r ∈ G.1
+  by_cases hr : r ∈ G.vertices
   · have htrue : (G.distinctVertices.any fun v => decide (v = r)) = true := hany.2 hr
     have hr_dist : r ∈ G.distinctVertices := Graph.mem_distinctVertices.2 hr
     simp only [digraphInArborescenceCount, htrue, ↓reduceIte]
@@ -214,35 +217,35 @@ theorem digraphInArborescenceCount_eq_natCard (G : Graph) (r : ℕ) :
 
 /-! ### Multidigraph spanning in-arborescences -/
 
-/-- Directed pairs `(u, v)` listed in `G.2` whose both endpoints lie in `G.1`, preserving
+/-- Directed pairs `(u, v)` listed in `G.edges` whose both endpoints lie in `G.vertices`, preserving
 multiplicity. -/
 @[expose]
 def validArcs (G : Graph) : List (ℕ × ℕ) :=
-  G.2.filter fun e =>
-    G.1.any (fun v => decide (v = e.1)) && G.1.any fun v => decide (v = e.2)
+  G.edges.filter fun e =>
+    G.vertices.any (fun v => decide (v = e.1)) && G.vertices.any fun v => decide (v = e.2)
 
 theorem mem_validArcs {G : Graph} {e : ℕ × ℕ} :
-    e ∈ G.validArcs ↔ e ∈ G.2 ∧ e.1 ∈ G.1 ∧ e.2 ∈ G.1 := by
+    e ∈ G.validArcs ↔ e ∈ G.edges ∧ e.1 ∈ G.vertices ∧ e.2 ∈ G.vertices := by
   simp [validArcs]
 
 theorem mem_validArcs_fst {G : Graph} {e : ℕ × ℕ} (he : e ∈ G.validArcs) :
-    e.1 ∈ G.1 := by
+    e.1 ∈ G.vertices := by
   rcases mem_validArcs.1 he with ⟨_, h1, _⟩
   exact h1
 
 theorem mem_validArcs_snd {G : Graph} {e : ℕ × ℕ} (he : e ∈ G.validArcs) :
-    e.2 ∈ G.1 := by
+    e.2 ∈ G.vertices := by
   rcases mem_validArcs.1 he with ⟨_, _, h2⟩
   exact h2
 
 /-- Source vertex of an arc in `G.validArcs`. -/
 @[expose]
-def arcSrc (G : Graph) (e : Fin G.validArcs.length) : {v // v ∈ G.1} :=
+def arcSrc (G : Graph) (e : Fin G.validArcs.length) : {v // v ∈ G.vertices} :=
   ⟨G.validArcs[e].1, mem_validArcs_fst (List.getElem_mem e.isLt)⟩
 
 /-- Target vertex of an arc in `G.validArcs`. -/
 @[expose]
-def arcTgt (G : Graph) (e : Fin G.validArcs.length) : {v // v ∈ G.1} :=
+def arcTgt (G : Graph) (e : Fin G.validArcs.length) : {v // v ∈ G.vertices} :=
   ⟨G.validArcs[e].2, mem_validArcs_snd (List.getElem_mem e.isLt)⟩
 
 /-- Entry `(u, v)` of the out-degree integer Laplacian of the multidigraph with arc list `arcs`. -/
@@ -260,7 +263,7 @@ def multiLaplacianCount (vs : List ℕ) (arcs : List (ℕ × ℕ)) (r : ℕ) : �
     (rest.map fun u => rest.map fun v => multiLaplacianEntry arcs u v)).toNat
 
 /-- Number of spanning in-arborescences of the multidigraph `(G.arcSrc, G.arcTgt)` rooted at `r`
-(`0` if `r ∉ G.1`). -/
+(`0` if `r ∉ G.vertices`). -/
 @[expose]
 def multiInArborescenceCount (G : Graph) (r : ℕ) : ℕ :=
   if G.distinctVertices.any fun v => decide (v = r) then
@@ -325,17 +328,17 @@ theorem multiLaplacianCount_eq_natCard {vs : List ℕ} (hnd : vs.Nodup) {mem : �
   exact Int.toNat_natCast _
 
 /-- `G.multiInArborescenceCount r` equals the number of multidigraph spanning in-arborescences
-of `(G.arcSrc, G.arcTgt)` rooted at `r` (and `0` if `r ∉ G.1`). -/
+of `(G.arcSrc, G.arcTgt)` rooted at `r` (and `0` if `r ∉ G.vertices`). -/
 theorem multiInArborescenceCount_eq_natCard (G : Graph) (r : ℕ) :
     G.multiInArborescenceCount r =
-      if hr : r ∈ G.1 then
-        Nat.card {f : {v : {v // v ∈ G.1} // v ≠ ⟨r, hr⟩} → Fin G.validArcs.length //
+      if hr : r ∈ G.vertices then
+        Nat.card {f : {v : {v // v ∈ G.vertices} // v ≠ ⟨r, hr⟩} → Fin G.validArcs.length //
           Multidigraph.IsInArborescence G.arcSrc G.arcTgt ⟨r, hr⟩ f}
       else 0 := by
   classical
-  have hany : (G.distinctVertices.any fun v => decide (v = r)) = true ↔ r ∈ G.1 := by
+  have hany : (G.distinctVertices.any fun v => decide (v = r)) = true ↔ r ∈ G.vertices := by
     simp [Graph.mem_distinctVertices]
-  by_cases hr : r ∈ G.1
+  by_cases hr : r ∈ G.vertices
   · have htrue : (G.distinctVertices.any fun v => decide (v = r)) = true := hany.2 hr
     have hr_dist : r ∈ G.distinctVertices := Graph.mem_distinctVertices.2 hr
     simp only [multiInArborescenceCount, htrue, ↓reduceIte]
@@ -352,13 +355,11 @@ theorem multiInArborescenceCount_eq_natCard (G : Graph) (r : ℕ) :
 private lemma computableInPolyTime_hasArc {γ : Type} {encIn : γ ↪ List Bool}
     {g : γ → Graph} (hg : ComputableInPolyTime g encIn encGraph) :
     ComputableInPolyTime
-      (fun q : ((γ × ℕ) × ℕ) => (g q.1.1).2.any fun e => decide (e.1 = q.1.2 ∧ e.2 = q.2))
+      (fun q : ((γ × ℕ) × ℕ) => (g q.1.1).edges.any fun e => decide (e.1 = q.1.2 ∧ e.2 = q.2))
       (encPair (encPair encIn encNat) encNat) encBool := by
   refine ComputableInPolyTime.anyWithInput (encA := encPair encNat encNat) ?_ ?_
-  · have he : ComputableInPolyTime (fun x : Graph => x.2) encGraph
-        (encList (encPair encNat encNat)) := by
-      unfold encGraph
-      exact ComputableInPolyTime.snd _ _
+  · have he : ComputableInPolyTime (fun x : Graph => x.edges) encGraph
+        (encList (encPair encNat encNat)) := by fun_prop
     exact (he.comp hg).comp
       ((ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.fst _ _))
   · fun_prop
@@ -369,13 +370,13 @@ theorem computableInPolyTime_digraphLaplacianEntry :
       (encPair (encPair encGraph encNat) encNat) encIntBin := by
   have hhas : ComputableInPolyTime
       (fun p : (Graph × ℕ) × ℕ =>
-        p.1.1.2.any fun e => decide (e.1 = p.1.2 ∧ e.2 = p.2))
+        p.1.1.edges.any fun e => decide (e.1 = p.1.2 ∧ e.2 = p.2))
       (encPair (encPair encGraph encNat) encNat) encBool :=
     computableInPolyTime_hasArc (ComputableInPolyTime.id' (encIn := encGraph))
   have hdiag : ComputableInPolyTime
       (fun p : (Graph × ℕ) × ℕ =>
         (p.1.1.distinctVertices.countP fun w =>
-          decide (w ≠ p.1.2) && p.1.1.2.any fun e => decide (e.1 = p.1.2 ∧ e.2 = w) : ℤ))
+          decide (w ≠ p.1.2) && p.1.1.edges.any fun e => decide (e.1 = p.1.2 ∧ e.2 = w) : ℤ))
       (encPair (encPair encGraph encNat) encNat) encIntBin := by
     have hverts : ComputableInPolyTime
         (fun p : (Graph × ℕ) × ℕ => p.1.1.distinctVertices)
@@ -386,7 +387,7 @@ theorem computableInPolyTime_digraphLaplacianEntry :
     have hcnt : ComputableInPolyTime
         (fun p : (Graph × ℕ) × ℕ =>
           p.1.1.distinctVertices.countP fun w =>
-            decide (w ≠ p.1.2) && p.1.1.2.any fun e => decide (e.1 = p.1.2 ∧ e.2 = w))
+            decide (w ≠ p.1.2) && p.1.1.edges.any fun e => decide (e.1 = p.1.2 ∧ e.2 = w))
         (encPair (encPair encGraph encNat) encNat) encUnary := by
       refine ComputableInPolyTime.countPWithInput hverts ?_
       have hne : ComputableInPolyTime
@@ -400,7 +401,7 @@ theorem computableInPolyTime_digraphLaplacianEntry :
         simpa only [Function.comp_def, decide_not] using ComputableInPolyTime.bool_not.comp heq
       have hedge : ComputableInPolyTime
           (fun q : ((Graph × ℕ) × ℕ) × ℕ =>
-            q.1.1.1.2.any fun e => decide (e.1 = q.1.1.2 ∧ e.2 = q.2))
+            q.1.1.1.edges.any fun e => decide (e.1 = q.1.1.2 ∧ e.2 = q.2))
           (encPair (encPair (encPair encGraph encNat) encNat) encNat) encBool := by
         have hproj : ComputableInPolyTime
             (fun q : ((Graph × ℕ) × ℕ) × ℕ => ((q.1.1.1, q.1.1.2), q.2))
@@ -412,7 +413,7 @@ theorem computableInPolyTime_digraphLaplacianEntry :
       (ComputableInPolyTime.unary_to_binary.comp hcnt)
   have hoff : ComputableInPolyTime
       (fun p : (Graph × ℕ) × ℕ =>
-        if p.1.1.2.any fun e => decide (e.1 = p.1.2 ∧ e.2 = p.2) then (-1 : ℤ) else 0)
+        if p.1.1.edges.any fun e => decide (e.1 = p.1.2 ∧ e.2 = p.2) then (-1 : ℤ) else 0)
       (encPair (encPair encGraph encNat) encNat) encIntBin :=
     ComputableInPolyTime.ite' hhas (ComputableInPolyTime.const (-1))
       (ComputableInPolyTime.const 0)
@@ -465,8 +466,8 @@ computable in polynomial time on `encPair encGraph encNat`. -/
 theorem computableInPolyTime_natCard_digraphIsInArborescence :
     ComputableInPolyTime
       (fun p : Graph × ℕ =>
-        if hr : p.2 ∈ p.1.1 then
-          Nat.card {T : Digraph {v // v ∈ p.1.1} //
+        if hr : p.2 ∈ p.1.vertices then
+          Nat.card {T : Digraph {v // v ∈ p.1.vertices} //
             T ≤ p.1.toDigraph ∧ T.IsInArborescence ⟨p.2, hr⟩}
         else 0)
       (encPair encGraph encNat) encNat := by
@@ -480,14 +481,14 @@ abbrev encArcList : List (ℕ × ℕ) ↪ List Bool :=
 @[fun_prop]
 theorem computableInPolyTime_validArcs :
     ComputableInPolyTime validArcs encGraph encArcList := by
-  have h1 : ComputableInPolyTime (fun G : Graph => G.1) encGraph (encList encNat) := by
-    unfold encGraph; exact ComputableInPolyTime.fst _ _
-  have h2 : ComputableInPolyTime (fun G : Graph => G.2) encGraph
+  have h1 : ComputableInPolyTime (fun G : Graph => G.vertices) encGraph (encList encNat) := by
+    fun_prop
+  have h2 : ComputableInPolyTime (fun G : Graph => G.edges) encGraph
       (encList (encPair encNat encNat)) := by
-    unfold encGraph; exact ComputableInPolyTime.snd _ _
+    fun_prop
   refine ComputableInPolyTime.filterWithInput h2 ?_
   have hs1 : ComputableInPolyTime
-      (fun q : Graph × (ℕ × ℕ) => q.1.1.any fun v => decide (v = q.2.1))
+      (fun q : Graph × (ℕ × ℕ) => q.1.vertices.any fun v => decide (v = q.2.1))
       (encPair encGraph (encPair encNat encNat)) encBool := by
     refine ComputableInPolyTime.anyWithInput (h1.comp (ComputableInPolyTime.fst _ _)) ?_
     exact (ComputableInPolyTime.snd _ _).decide_eq'
@@ -495,7 +496,7 @@ theorem computableInPolyTime_validArcs :
         ((ComputableInPolyTime.snd encGraph (encPair encNat encNat)).comp
           (ComputableInPolyTime.fst _ _)))
   have hs2 : ComputableInPolyTime
-      (fun q : Graph × (ℕ × ℕ) => q.1.1.any fun v => decide (v = q.2.2))
+      (fun q : Graph × (ℕ × ℕ) => q.1.vertices.any fun v => decide (v = q.2.2))
       (encPair encGraph (encPair encNat encNat)) encBool := by
     refine ComputableInPolyTime.anyWithInput (h1.comp (ComputableInPolyTime.fst _ _)) ?_
     exact (ComputableInPolyTime.snd _ _).decide_eq'
@@ -585,8 +586,8 @@ theorem computableInPolyTime_multiInArborescenceCount :
 theorem computableInPolyTime_natCard_multiIsInArborescence :
     ComputableInPolyTime
       (fun p : Graph × ℕ =>
-        if hr : p.2 ∈ p.1.1 then
-          Nat.card {f : {v : {v // v ∈ p.1.1} // v ≠ ⟨p.2, hr⟩} → Fin p.1.validArcs.length //
+        if hr : p.2 ∈ p.1.vertices then
+          Nat.card {f : {v : {v // v ∈ p.1.vertices} // v ≠ ⟨p.2, hr⟩} → Fin p.1.validArcs.length //
             Multidigraph.IsInArborescence p.1.arcSrc p.1.arcTgt ⟨p.2, hr⟩ f}
         else 0)
       (encPair encGraph encNat) encNat := by

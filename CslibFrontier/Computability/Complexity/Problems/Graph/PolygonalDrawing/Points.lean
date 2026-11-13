@@ -22,7 +22,7 @@ namespace Cslib.Complexity.Graph.PolygonalDrawing
 
 /-- Draw an arbitrary list of declared isolates at their natural-number real-axis positions.
 Repeated occurrences of a name retain the same point. -/
-@[expose] def points (vertices : List ℕ) : PolygonalDrawing (vertices, []) where
+@[expose] def points (vertices : List ℕ) : PolygonalDrawing ⟨vertices, []⟩ where
   vertex := fun v => (v : ℂ)
   route := fun e => Fin.elim0 e
   endpoint_eq := fun e => Fin.elim0 e
@@ -38,7 +38,7 @@ theorem points_isEmbedding (vertices : List ℕ) : (points vertices).IsEmbedding
   edge_contacts := fun e => Fin.elim0 e
 
 /-- Every rotation of an edgeless listed graph is realized by its declared point drawing. -/
-theorem points_realizes (vertices : List ℕ) (r : RotationSystem (vertices, [])) :
+theorem points_realizes (vertices : List ℕ) (r : RotationSystem ⟨vertices, []⟩) :
     (points vertices).Realizes r where
   nonzero := fun d => Fin.elim0 d.1
   directions_injective := fun d => Fin.elim0 d.1

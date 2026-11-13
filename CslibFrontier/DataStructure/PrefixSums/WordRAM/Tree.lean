@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.WordRAM.Structured
+public import CslibFrontier.DataStructure.PrefixSums.Spec
 public import Mathlib.Data.List.TakeDrop
 public import Mathlib.Algebra.BigOperators.Group.List.Basic
 public import Mathlib.Data.Nat.Log
@@ -25,7 +26,7 @@ and cost proofs.
 
 * `Tree`, `Tree.leaves`, `Tree.total`, `Tree.zero`: a complete binary tree with natural-number
   leaves, its leaf array, root aggregate, and all-zero tree.
-* `increment`: point increment on a list of natural numbers.
+* `increment`: the shared point increment `PrefixSums.addAt` on natural-number arrays.
 * `Tree.words`, `Tree.Rep`: word count and contiguous memory representation, including every
   internal sum.
 * `Tree.prefixSum`, `Tree.add`: prefix queries and point increments.
@@ -33,6 +34,7 @@ and cost proofs.
 ## Main results
 
 * `Tree.prefixSum_eq_sum_take`: the query is the sum of the corresponding leaf prefix.
+* `Tree.leaves_add`: the tree update is `PrefixSums.addAt` on the leaf array.
 * `Tree.Rep.congr`: representation depends only on its owned region.
 
 ## References
@@ -53,26 +55,11 @@ inductive Tree : ℕ → Type where
   | node {h : ℕ} (left right : Tree h) : Tree (h + 1)
   deriving DecidableEq, Repr
 
-/-- Add an increment at a list position; out-of-range positions leave the list unchanged. -/
-def increment : List ℕ → ℕ → ℕ → List ℕ
-  | [], _, _ => []
-  | a :: as, 0, δ => (a + δ) :: as
-  | a :: as, i + 1, δ => a :: increment as i δ
-
-/-- Point increments split over concatenation at the left array's length. -/
-private theorem increment_append (as bs : List ℕ) (i δ : ℕ) :
-    increment (as ++ bs) i δ =
-      if i < as.length then increment as i δ ++ bs
-      else as ++ increment bs (i - as.length) δ := by
-  induction as generalizing i with
-  | nil => simp
-  | cons a as ih =>
-    cases i with
-    | zero => simp [increment]
-    | succ i =>
-      simp only [List.cons_append, increment, ih, List.length_cons, Nat.add_lt_add_iff_right,
-        Nat.add_sub_add_right]
-      split <;> rfl
+/-- Point increment on the natural-number array of the word-RAM interface: the shared
+`PrefixSums.addAt`. The name remains only for `Dynamic.spec`, which will use `addAt` directly once
+it moves to `PrefixSums.spec`. -/
+abbrev increment (s : List ℕ) (i δ : ℕ) : List ℕ :=
+  PrefixSums.addAt s i δ
 
 namespace Tree
 
@@ -149,19 +136,19 @@ theorem total_add (t : Tree h) (i δ : ℕ) : (t.add i δ).total = t.total + δ 
 
 /-- The tree update is the ordinary point increment on the represented array. -/
 theorem leaves_add (t : Tree h) (i δ : ℕ) (hi : i < 2 ^ h) :
-    (t.add i δ).leaves = increment t.leaves i δ := by
+    (t.add i δ).leaves = PrefixSums.addAt t.leaves i δ := by
   induction t generalizing i with
   | leaf v =>
     have : i = 0 := by simpa using hi
-    simp [add, leaves, increment, this]
+    subst this
+    rfl
   | @node h l r ihl ihr =>
-    have hp := Nat.two_pow_pos h
-    simp only [add, leaves, increment_append, length_leaves]
+    simp only [add, leaves, PrefixSums.addAt_append, length_leaves]
     split
-    · next hl => simp [leaves, ihl i hl]
+    · next hl => simp only [leaves, ihl i hl]
     · next hl =>
       have hi' : i - 2 ^ h < 2 ^ h := by rw [pow_succ] at hi; omega
-      simp [leaves, ihr (i - 2 ^ h) hi']
+      simp only [leaves, ihr (i - 2 ^ h) hi']
 
 /-- Number of words occupied by a complete aggregation tree. -/
 def words (h : ℕ) : ℕ := 2 * 2 ^ h - 1

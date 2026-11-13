@@ -25,10 +25,9 @@ def ctrQueryLR : BlockModeQuery 8 := ([0, 1], [1, 1])
 `i, i + 1, …, i + k - 1`. -/
 example (f : BitString 8 → BitString 8) (counter : BitString 8 → ℕ → BitString 8)
     (iv : BitString 8) :
-    OracleComp.interpret (OracleComp.sumHandler ProbComp.unifFin fun y => pure (f y))
-        (ctrMaskQueriesFrom counter iv 3 2) =
-      (pure [f (counter iv 3), f (counter iv 4)] : ProbComp (List (BitString 8))) := by
-  simpa [List.range'_succ] using interpret_ctrMaskQueriesFrom f counter iv 3 2
+    (ctrMaskQueriesFrom counter iv 3 2).run (fun y => pure (f y)) =
+      pure [f (counter iv 3), f (counter iv 4)] := by
+  simpa [List.range'_succ] using run_ctrMaskQueriesFrom f counter iv 3 2
 
 /-! ### Modular counter schedule checks -/
 
@@ -67,16 +66,19 @@ def xorKeyed (k x : BitString 8) : BitString 8 := k + x
 
 /-- The CTR experiment for `xorKeyed` equals the real PRF experiment for the reduction. -/
 example : ctrCpaGame ctrModCounter xorKeyed 2 true ctrOneQueryAdversary =
-    PRF.realGame xorKeyed (ctrReduction ctrModCounter 2 true ctrOneQueryAdversary) :=
-  ctrCpaGame_eq_realGame ctrModCounter xorKeyed 2 true ctrOneQueryAdversary
+    ProbComp.eval
+      (PRF.realExperiment xorKeyed (ctrReduction ctrModCounter 2 true ctrOneQueryAdversary)) :=
+  ctrCpaGame_eq_realExperiment ctrModCounter xorKeyed 2 true ctrOneQueryAdversary
 
 /-- Against a uniform random function on 8-bit blocks, the reduction's view is within
 `2 ^ 2 / 2 ^ 8 = 1 / 64` of the ideal CTR experiment. -/
 example :
     (Game.advantage
-        (PRF.idealGame (ctrReduction ctrModCounter 2 false ctrOneQueryAdversary))
+        (ProbComp.eval
+          (PRF.idealExperiment (ctrReduction ctrModCounter 2 false ctrOneQueryAdversary)))
         (blockModeIdealGame 2 ctrOneQueryAdversary) : ℝ) ≤ 1 / 64 :=
-  (advantage_idealGame_ctrReduction_le ctrModCounter 2 false isCostBounded_ctrOneQueryAdversary
+  (advantage_idealExperiment_ctrReduction_le ctrModCounter 2 false
+    isCostBounded_ctrOneQueryAdversary
     (fun iv _ _ hi hj hij => ctrModCounter_injOn (by decide) iv hi hj hij)
     (fun i _ => ctrModCounter_injective_left i)).trans_eq (by norm_num)
 

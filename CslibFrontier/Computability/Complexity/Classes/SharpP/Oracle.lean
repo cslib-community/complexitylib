@@ -40,7 +40,9 @@ eliminates every polynomial-time decidable oracle. Oracle lowness for other clas
 * `Cslib.Complexity.SharpPWithOracle_eq_SharpP`,
   `Cslib.Complexity.GapPWithOracle_eq_GapP`: eliminate an oracle in P.
 * `Cslib.Complexity.computableInPolyTimeWithOracle_andVerifier`,
-  `Cslib.Complexity.computableInPolyTimeWithOracle_selectVerifier`: reuse verifier combinators.
+  `Cslib.Complexity.computableInPolyTimeWithOracle_selectVerifier`,
+  `Cslib.Complexity.computableInPolyTimeWithOracle_padVerifier`,
+  `Cslib.Complexity.computableInPolyTimeWithOracle_sumVerifier`: reuse verifier combinators.
 * `Cslib.Complexity.SharpPWithOracle.add_mem`,
   `Cslib.Complexity.SharpPWithOracle.mul_mem`,
   `Cslib.Complexity.SharpPWithOracle.natCast_mem_GapPWithOracle`: additive and multiplicative
@@ -120,6 +122,25 @@ theorem computableInPolyTimeWithOracle_selectVerifier {V₀ V₁ : α × List Bo
     (by fun_prop)).map_with (g := fun x b => if x.2.headD false then b.2 else b.1)
       (output := encBool) (by fun_prop)
 
+/-- Padding an oracle verifier keeps it polynomial-time relative to the oracle. -/
+theorem computableInPolyTimeWithOracle_padVerifier {k : α → ℕ} {V : α × List Bool → Bool}
+    (hk : ComputableInPolyTime k enc encUnary)
+    (hV : ComputableInPolyTimeWithOracle A V (encPair enc encBits) encBool) :
+    ComputableInPolyTimeWithOracle A (padVerifier k V) (encPair enc encBits) encBool :=
+  computableInPolyTimeWithOracle_andVerifier hk hV
+    (computableInPolyTime_allFalseVerifier.computableInPolyTimeWithOracle A)
+
+/-- The sum of two oracle verifiers is polynomial-time relative to the oracle. -/
+theorem computableInPolyTimeWithOracle_sumVerifier {k₁ k₂ : α → ℕ}
+    {V₁ V₂ : α × List Bool → Bool} (hk₁ : ComputableInPolyTime k₁ enc encUnary)
+    (hk₂ : ComputableInPolyTime k₂ enc encUnary)
+    (h₁ : ComputableInPolyTimeWithOracle A V₁ (encPair enc encBits) encBool)
+    (h₂ : ComputableInPolyTimeWithOracle A V₂ (encPair enc encBits) encBool) :
+    ComputableInPolyTimeWithOracle A (sumVerifier k₁ k₂ V₁ V₂) (encPair enc encBits) encBool :=
+  computableInPolyTimeWithOracle_selectVerifier
+    (computableInPolyTimeWithOracle_padVerifier hk₁ h₁)
+    (computableInPolyTimeWithOracle_padVerifier hk₂ h₂)
+
 namespace SharpPWithOracle
 
 /-- The zero function is in `SharpPWithOracle A enc`. -/
@@ -133,23 +154,11 @@ theorem add_mem {f₁ f₂ : α → ℕ} (h₁ : f₁ ∈ SharpPWithOracle A enc
     f₁ + f₂ ∈ SharpPWithOracle A enc := by
   obtain ⟨p₁, V₁, hV₁, hf₁⟩ := h₁
   obtain ⟨p₂, V₂, hV₂, hf₂⟩ := h₂
-  have hfalse : ComputableInPolyTimeWithOracle A (allFalseVerifier (α := α))
-      (encPair enc encBits) encBool :=
-    computableInPolyTime_allFalseVerifier.computableInPolyTimeWithOracle A
-  refine ⟨p₁ + p₂ + 1, selectVerifier
-      (andVerifier (fun a => p₁.eval (enc a).length) V₁ allFalseVerifier)
-      (andVerifier (fun a => p₂.eval (enc a).length) V₂ allFalseVerifier),
-    computableInPolyTimeWithOracle_selectVerifier
-      (computableInPolyTimeWithOracle_andVerifier (by fun_prop) hV₁ hfalse)
-      (computableInPolyTimeWithOracle_andVerifier (by fun_prop) hV₂ hfalse),
-    fun a => ?_⟩
-  have e₁ := acceptCount_andVerifier_allFalseVerifier (fun a => p₁.eval (enc a).length) V₁ a
-    (p₂.eval (enc a).length)
-  have e₂ := acceptCount_andVerifier_allFalseVerifier (fun a => p₂.eval (enc a).length) V₂ a
-    (p₁.eval (enc a).length)
-  rw [Nat.add_comm (p₂.eval _)] at e₂
+  refine ⟨p₁ + p₂ + 1, sumVerifier (fun a => p₁.eval (enc a).length)
+      (fun a => p₂.eval (enc a).length) V₁ V₂,
+    computableInPolyTimeWithOracle_sumVerifier (by fun_prop) (by fun_prop) hV₁ hV₂, fun a => ?_⟩
   rw [Pi.add_apply, hf₁ a, hf₂ a, Polynomial.eval_add, Polynomial.eval_add, Polynomial.eval_one,
-    acceptCount_selectVerifier, e₁, e₂]
+    acceptCount_sumVerifier]
 
 /-- **`SharpPWithOracle` is closed under multiplication**: the two verifiers read disjoint parts of
 the certificate. -/

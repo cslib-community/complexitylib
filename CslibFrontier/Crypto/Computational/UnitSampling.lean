@@ -8,10 +8,14 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.Words
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.PolyTime
 public import CslibFrontier.Crypto.Game
 public import CslibFrontier.Languages.Probabilistic.UniformNat
 public import Mathlib.Data.Nat.Totient
-import CslibFrontier.Crypto.Computational.Homomorphic.Leveled.ExactSecurity
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Gcd
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import CslibFrontier.Crypto.Game.CloseTo.UniformNat
 import CslibFrontier.Crypto.Game.Statistical
 import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Probability.PMF.UniformSubset
@@ -27,7 +31,17 @@ reason about a uniform unit. The draw is within `N / 2 ^ (n + |N|) ≤ 1 / 2 ^ n
 residue modulo `N`, and a uniform residue is within the fraction `(N - φ(N)) / N` of non-units of a
 uniform unit. When `p` and `q` have at least `n` bits, this fraction is at most `4 / 2 ^ n`.
 
+A draw `r` that is not a unit is replaced by `1` (`unitOrOne N r`), so the randomness that is used
+is always a unit, and the replacement is computable in polynomial time.
+
+## Main definitions
+
+* `Cslib.Crypto.unitOrOne`: keep `r` when it is a unit modulo `N`, and use `1` otherwise.
+
 ## Main results
+
+* `Cslib.Crypto.coprime_unitOrOne`, `Cslib.Crypto.computableInPolyTime_unitOrOne`: the result is
+  a unit modulo `N`, computed in polynomial time.
 
 * `Cslib.Crypto.Game.advantage_bind_units_le`: restricting a uniform residue modulo `N` to the
   units changes the advantage of any continuation by at most `(N - φ(N)) / N`.
@@ -42,13 +56,6 @@ namespace Cslib.Crypto
 
 open Probability Turing.MultiTapeTM
 open scoped ENNReal NNReal Cslib.Probability.PMF
-
-/-- A uniform draw from `Fin M` is a uniform draw from `ZMod M`. -/
-private theorem uniformOfFintype_fin_bind (M : ℕ) [NeZero M] (k : ℕ → Game) :
-    ((PMF.uniformOfFintype (Fin M)).bind fun i => k i.val) =
-      (PMF.uniformOfFintype (ZMod M)).bind fun r => k r.val := by
-  rcases Nat.exists_eq_succ_of_ne_zero (NeZero.ne M) with ⟨m, rfl⟩
-  rfl
 
 /-- Restricting a uniform residue modulo `N` to the units changes the advantage of any
 continuation by at most the fraction `(N - φ(N)) / N` of non-units. -/
@@ -131,9 +138,9 @@ theorem Game.advantage_sampleModNat_units_le {p q n : ℕ} [NeZero (p * q)] (hp 
     Game.advantage
       ((ProbComp.eval (ProbComp.sampleModNat (n + (encNat (p * q)).length) (p * q))).bind k)
       ((PMF.uniformOfFintype (ZMod (p * q))ˣ).bind fun u => k u.val.val) ≤ 5 / 2 ^ n := by
-  have h1 := Homomorphic.Scheme.advantage_bind_sampleModNat_fin_le
+  have h1 := Game.advantage_bind_sampleModNat_fin_le
     (n + (encNat (p * q)).length) (p * q) k
-  rw [uniformOfFintype_fin_bind] at h1
+  rw [Probability.PMF.uniformOfFintype_fin_bind] at h1
   have hw : ((p * q : ℕ) : ℝ≥0) / 2 ^ (n + (encNat (p * q)).length) ≤ 1 / 2 ^ n := by
     rw [encNat_apply, Nat.size_eq_bits_len, div_le_div_iff₀ (by positivity) (by positivity),
       one_mul, pow_add, mul_comm ((2 : ℝ≥0) ^ n)]
@@ -145,5 +152,25 @@ theorem Game.advantage_sampleModNat_units_le {p q n : ℕ} [NeZero (p * q)] (hp 
       ((Game.advantage_bind_units_le (p * q) fun x => k x.val).trans
         (sub_totient_div_le hp hq hpq hpn hqn))
     _ = 5 / 2 ^ n := by ring
+
+/-! ### Replacing a non-unit draw -/
+
+/-- The randomness that is used: `r` itself when it is a unit modulo `N`, and `1` otherwise. -/
+@[expose] def unitOrOne (N r : ℕ) : ℕ := if Nat.gcd r N = 1 then r else 1
+
+theorem coprime_unitOrOne (N r : ℕ) : (unitOrOne N r).Coprime N := by
+  unfold unitOrOne
+  split_ifs with h
+  · exact h
+  · exact Nat.coprime_one_left N
+
+/-- `unitOrOne` is computable in polynomial time. -/
+theorem computableInPolyTime_unitOrOne {α : Type} {input : α ↪ List Bool} {N r : α → ℕ}
+    (hN : ComputableInPolyTime N input encNat) (hr : ComputableInPolyTime r input encNat) :
+    ComputableInPolyTime (fun a => unitOrOne (N a) (r a)) input encNat := by
+  unfold unitOrOne
+  exact ComputableInPolyTime.ite_decide
+    (ComputableInPolyTime.decide_eq' (ComputableInPolyTime.binary_gcd' hr hN)
+      (ComputableInPolyTime.const 1)) hr (ComputableInPolyTime.const 1)
 
 end Cslib.Crypto

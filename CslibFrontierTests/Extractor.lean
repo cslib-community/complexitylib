@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import CslibFrontier.Probability.Extractor.LeftoverHash
 
 /-! Seeded extractors: concrete instances, a satisfiable entropy hypothesis and seedless failure.
@@ -30,8 +31,7 @@ example :
           (rows, BitString.LinearHash.hash rows x))
       (PMF.uniformOfFintype ((Fin 1 → BitString 4) × BitString 1)) ≤ 1 / 4 := by
   refine linearHash_isStrongExtractor _ ?_
-  rw [minEntropy_uniformOfFintype, show Fintype.card (BitString 4) = 2 ^ 4 by simp,
-    Nat.cast_pow, Nat.cast_ofNat, Real.logb_pow, Real.logb_self_eq_one (by norm_num)]
+  rw [minEntropy_uniformOfFintype, BitString.logb_card]
   norm_num
 
 -- Strong extractors are extractors.
@@ -44,8 +44,7 @@ example :
 example : ¬ IsExtractor (fun (x : BitString 3) (_ : Unit) => x 0) 2 (1 / 4) := by
   have h := not_isExtractor_bool_of_subsingleton (Input := BitString 3) (Seed := Unit)
     (fun x _ => x 0) (ε := 1 / 4) (by norm_num)
-  rw [show Fintype.card (BitString 3) = 2 ^ 3 by simp, Nat.cast_pow, Nat.cast_ofNat,
-    Real.logb_pow, Real.logb_self_eq_one (by norm_num)] at h
+  rw [BitString.logb_card] at h
   norm_num at h
   exact h
 

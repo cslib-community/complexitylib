@@ -29,11 +29,11 @@ open Equiv
 
 /-- One actual listed edge from each index to its image under the finite permutation. -/
 @[expose] def permutationGraph {n : ℕ} (f : Perm (Fin n)) : Graph :=
-  (List.range n, (List.finRange n).map fun i => (i.val, (f i).val))
+  ⟨List.range n, (List.finRange n).map fun i => (i.val, (f i).val)⟩
 
 /-- Edge positions are exactly the original permutation indices. -/
 @[expose] def permutationEdgeEquiv {n : ℕ} (f : Perm (Fin n)) :
-    Fin n ≃ Fin (permutationGraph f).2.length := finCongr (by simp [permutationGraph])
+    Fin n ≃ Fin (permutationGraph f).edges.length := finCongr (by simp [permutationGraph])
 
 /-- Original index/end coordinates on the actual graph. -/
 @[expose] def permutationDartEquiv {n : ℕ} (f : Perm (Fin n)) :
@@ -43,8 +43,8 @@ open Equiv
 /-- The first end has name `i`, the second name `f i`, including fixed-point loops. -/
 @[simp] theorem vertex_permutationDartEquiv {n : ℕ} (f : Perm (Fin n)) (i : Fin n) (b : Bool) :
     (permutationDartEquiv f (i, b)).vertex = if b then (f i).val else i.val := by
-  change (if b then ((permutationGraph f).2.getD i.val (0, 0)).2
-    else ((permutationGraph f).2.getD i.val (0, 0)).1) = _
+  change (if b then ((permutationGraph f).edges.getD i.val (0, 0)).2
+    else ((permutationGraph f).edges.getD i.val (0, 0)).1) = _
   rw [List.getD_eq_getElem _ _ (by simp [permutationGraph])]
   simp [permutationGraph]
 
@@ -96,7 +96,7 @@ theorem faceNext_permutationDartEquiv {n : ℕ} (f : Perm (Fin n)) (i : Fin n) (
 
 /-- All endpoints are actual declared permutation indices. -/
 theorem permutationGraph_endpoints_declared {n : ℕ} (f : Perm (Fin n)) :
-    ∀ v ∈ (permutationGraph f).incidenceVertices, v ∈ (permutationGraph f).1 := by
+    ∀ v ∈ (permutationGraph f).incidenceVertices, v ∈ (permutationGraph f).vertices := by
   intro v hv
   obtain ⟨edge, he, hv⟩ := List.mem_flatMap.mp hv
   obtain ⟨i, _, rfl⟩ := List.mem_map.mp he
@@ -104,7 +104,7 @@ theorem permutationGraph_endpoints_declared {n : ℕ} (f : Perm (Fin n)) :
   rcases hv with rfl | rfl <;> simp [permutationGraph]
 
 private theorem vertex_false {n : ℕ} (f : Perm (Fin n))
-    (i : Fin (permutationGraph f).2.length) :
+    (i : Fin (permutationGraph f).edges.length) :
     Dart.vertex (G := permutationGraph f) (i, false) = i.val := by
   obtain ⟨j, rfl⟩ := (permutationEdgeEquiv f).surjective i
   simpa [permutationDartEquiv, permutationEdgeEquiv] using vertex_permutationDartEquiv f j false
@@ -118,7 +118,7 @@ private noncomputable def componentEdgeVertexEquiv {n : ℕ} (f : Perm (Fin n)) 
     exact (mem_componentEdgeSet_iff root (permutationGraph_endpoints_declared f) i.val false).mp
       i.property⟩
   invFun v :=
-    let i : Fin (permutationGraph f).2.length := ⟨v.val, by
+    let i : Fin (permutationGraph f).edges.length := ⟨v.val, by
       have h := List.mem_range.mp (List.mem_toFinset.mp (Finset.mem_filter.mp v.property).1)
       simpa only [permutationGraph, List.length_map, List.length_finRange] using h⟩
     ⟨i, (mem_componentEdgeSet_iff root (permutationGraph_endpoints_declared f) i false).mpr
@@ -216,7 +216,7 @@ theorem exists_potential_of_cycleSum_zero {n : ℕ} (f : Perm (Fin n)) (x : Fin 
     (h : ∀ i, (∑ j : Fin n, if f.SameCycle i j then x j else 0) = 0) :
     ∃ p : Fin n → Bool, ∀ i, x i = (p i ^^ p (f i)) := by
   let r := permutationRotation f
-  let xe (j : Fin (permutationGraph f).2.length) := x ((permutationEdgeEquiv f).symm j)
+  let xe (j : Fin (permutationGraph f).edges.length) := x ((permutationEdgeEquiv f).symm j)
   have hxcoord (j : Fin n) (b : Bool) : xe (permutationDartEquiv f (j, b)).1 = x j := by
     change x ((permutationEdgeEquiv f).symm (permutationEdgeEquiv f j)) = x j
     rw [Equiv.symm_apply_apply]

@@ -35,7 +35,7 @@ variable {G : Graph}
 
 /-- At most one selected incident position per vertex suffices for a Mathlib matching. -/
 theorem isMatching_matchingOfPositions {S : Finset ℕ}
-    (huniq : ∀ (v : ℕ), v ∈ G.1 → ∀ i ∈ S, ∀ j ∈ S,
+    (huniq : ∀ (v : ℕ), v ∈ G.vertices → ∀ i ∈ S, ∀ j ∈ S,
       incident (G.edgeList.getD i (0, 0)) v = true →
       incident (G.edgeList.getD j (0, 0)) v = true → i = j) :
     (matchingOfPositions G S).IsMatching := by

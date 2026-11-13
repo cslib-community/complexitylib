@@ -502,9 +502,6 @@ private theorem lookup_true_cons_false (u v : G) (y₂ : G) (cache : List ((Bool
   have h : ((true, v) == (false, u)) = false := rfl
   simp [List.lookup_cons, h]
 
-omit [Fintype G] [DecidableEq G] in
-private theorem addLeft_apply (a b : G) : Equiv.addLeft a b = a + b := rfl
-
 /-- The real and ideal round handlers agree until a `U`-collision or `V`-collision occurs. -/
 private theorem identicalUntilBad_roundHandler (f₁ : G → G) :
     OracleComp.IdenticalUntilBad (realRoundHandler f₁) (idealRoundHandler f₁)
@@ -543,10 +540,8 @@ private theorem identicalUntilBad_roundHandler (f₁ : G → G) :
                   PMF.pure ((v, p.1 + f₁ p.2 + x.1), (x.2, (cache.lookup (true, v)).isSome)) := by
         simp only [pmf_norm, realRoundHandler, memoize_of_none _ _ _ hu, hu, Option.isSome_none,
           Bool.false_or]
-        conv_rhs =>
-          rw [← Probability.PMF.uniformOfFintype_map_equiv (Equiv.addLeft p.2), PMF.bind_map]
-        simp only [addLeft_apply, neg_add_cancel_left, Function.comp_def,
-          Probability.PMF.uniformOfFintype_map_equiv]
+        conv_rhs => rw [← Probability.PMF.uniformOfFintype_bind_add_left p.2]
+        simp only [neg_add_cancel_left]
       have hideal :
           idealRoundHandler f₁ p (cache, false) =
             (PMF.uniformOfFintype G).bind fun v =>
@@ -592,10 +587,8 @@ private theorem identicalUntilBad_roundHandler (f₁ : G → G) :
               PMF.pure ((v, w),
                 (((true, v), -(p.1 + f₁ p.2) + w) ::
                   ((false, p.1 + f₁ p.2), -p.2 + v) :: cache, false))) := by
-          conv_rhs =>
-            rw [← Probability.PMF.uniformOfFintype_map_equiv (Equiv.addLeft (p.1 + f₁ p.2)),
-              PMF.bind_map]
-          simp only [addLeft_apply, neg_add_cancel_left, Function.comp_def]
+          conv_rhs => rw [← Probability.PMF.uniformOfFintype_bind_add_left (p.1 + f₁ p.2)]
+          simp only [neg_add_cancel_left]
         exact DFunLike.congr_fun heq_w (ans, (cache', false))
   absorb_first p st hst x hx := by
     rcases st with ⟨cache, bad⟩
@@ -1567,14 +1560,7 @@ theorem le_advantage_feistel3CCAAttack_idealStrongGame (f₁ f₂ f₃ : G → G
   have hfail := ENNReal.toReal_mono (PMF.apply_ne_top g false)
     (le_idealStrongGame_feistel3CCAAttack_false h01 h02 h12)
   rw [ENNReal.toReal_inv, ENNReal.toReal_natCast] at hfail
-  have hsum := congrArg (fun x : ℝ≥0 => (x : ℝ)) g.succProbability_add_failProbability
-  simp only [NNReal.coe_add, NNReal.coe_one, Game.succProbability, Game.failProbability,
-    ENNReal.coe_toNNReal_eq_toReal] at hsum
-  rw [Game.coe_advantage, eval_feistel3_feistel3CCAAttack]
-  simp only [Game.coe_succProbability, PMF.pure_apply_self, ENNReal.toReal_one]
-  have hnonneg : 0 ≤ (g false).toReal := ENNReal.toReal_nonneg
-  rw [abs_of_nonneg (by linarith)]
-  linarith
+  rwa [eval_feistel3_feistel3CCAAttack, Game.advantage_pure_true_left, Game.coe_failProbability]
 
 /-- When `l₀, l₁, l₂ : G` are pairwise distinct (`|G| ≥ 3`), `feistel3CCAAttack l₀ l₁ r₀` has
 strictly positive distinguishing advantage against the true bidirectional random-permutation game
@@ -1630,13 +1616,6 @@ theorem eval_independentTableStrongGame_feistel3CCAAttack (l₀ l₁ r₀ : G) :
         (PMF.uniformOfFintype (G × G → G × G)).map (fun decTable => decTable q₃) =
           PMF.uniformOfFintype (G × G) := by
       rw [← Probability.PMF.pi_uniformOfFintype, Probability.PMF.pi_map_eval]
-    have hsnd :
-        (PMF.uniformOfFintype (G × G)).map Prod.snd = PMF.uniformOfFintype G := by
-      rw [← Probability.PMF.uniformOfFintype_map_equiv (Equiv.prodComm G G), PMF.map_comp]
-      exact Probability.PMF.uniformOfFintype_prod_map_fst
-    have hshift :
-        (PMF.uniformOfFintype G).map (Equiv.addLeft (-vw₀.1)) = PMF.uniformOfFintype G :=
-      Probability.PMF.uniformOfFintype_map_equiv (Equiv.addLeft (-vw₀.1))
     calc ((PMF.uniformOfFintype (G × G → G × G)).bind fun decTable =>
           PMF.pure (decide (-vw₀.1 + (decTable q₃).2 = -vw₁.1 + r₀)))
         = (PMF.uniformOfFintype (G × G → G × G)).map
@@ -1644,12 +1623,12 @@ theorem eval_independentTableStrongGame_feistel3CCAAttack (l₀ l₁ r₀ : G) :
       _ = (((PMF.uniformOfFintype (G × G → G × G)).map (fun decTable => decTable q₃)).map
             Prod.snd).map (fun r₂ => decide (-vw₀.1 + r₂ = -vw₁.1 + r₀)) := by
           simp [PMF.map_comp, Function.comp_def]
-      _ = ((PMF.uniformOfFintype G).map (Equiv.addLeft (-vw₀.1))).map
+      _ = ((PMF.uniformOfFintype G).map (-vw₀.1 + ·)).map
           (fun y => decide (y = -vw₁.1 + r₀)) := by
-          rw [heval, hsnd, PMF.map_comp]
+          rw [heval, Probability.PMF.uniformOfFintype_prod_map_snd, PMF.map_comp]
           rfl
       _ = (PMF.uniformOfFintype G).map (fun y => decide (y = -vw₁.1 + r₀)) := by
-          rw [hshift]
+          rw [Probability.PMF.uniformOfFintype_map_add_left]
   have hprob (t : G) :
       ((PMF.uniformOfFintype G).map (fun y => decide (y = t))) true =
         (Fintype.card G : ℝ≥0∞)⁻¹ := by
@@ -1669,33 +1648,22 @@ theorem advantage_feistel3CCAAttack_independentTable (f₁ f₂ f₃ : G → G) 
         (feistel3CCAAttack l₀ l₁ r₀))
       (independentTableStrongGame (feistel3CCAAttack l₀ l₁ r₀)) : ℝ) =
       1 - (Fintype.card G : ℝ)⁻¹ := by
-  rw [Game.coe_advantage]
-  simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal,
-    eval_feistel3_feistel3CCAAttack, eval_independentTableStrongGame_feistel3CCAAttack,
-    PMF.pure_apply_self, ENNReal.toReal_one, ENNReal.toReal_inv, ENNReal.toReal_natCast]
-  have hle : (Fintype.card G : ℝ)⁻¹ ≤ 1 :=
-    inv_le_one_of_one_le₀ (by exact_mod_cast Fintype.card_pos)
-  exact abs_of_nonneg (sub_nonneg.mpr hle)
+  rw [eval_feistel3_feistel3CCAAttack, Game.coe_advantage_pure_true_left,
+    eval_independentTableStrongGame_feistel3CCAAttack, ENNReal.toReal_inv, ENNReal.toReal_natCast]
 
 private theorem uniformOfFintype_prod_map_decide_add_snd_true (a t : G) :
     ((PMF.uniformOfFintype (G × G)).map (fun lr : G × G => decide (a + lr.2 = t))) true =
       (Fintype.card G : ℝ≥0∞)⁻¹ := by
-  have hsnd :
-      (PMF.uniformOfFintype (G × G)).map Prod.snd = PMF.uniformOfFintype G := by
-    rw [← Probability.PMF.uniformOfFintype_map_equiv (Equiv.prodComm G G), PMF.map_comp]
-    exact Probability.PMF.uniformOfFintype_prod_map_fst
-  have hshift :
-      (PMF.uniformOfFintype G).map (Equiv.addLeft a) = PMF.uniformOfFintype G :=
-    Probability.PMF.uniformOfFintype_map_equiv (Equiv.addLeft a)
   have hmap :
       (PMF.uniformOfFintype (G × G)).map (fun lr : G × G => decide (a + lr.2 = t)) =
         (PMF.uniformOfFintype G).map (fun y => decide (y = t)) := by
     calc (PMF.uniformOfFintype (G × G)).map (fun lr : G × G => decide (a + lr.2 = t))
-        = (((PMF.uniformOfFintype (G × G)).map Prod.snd).map (Equiv.addLeft a)).map
+        = (((PMF.uniformOfFintype (G × G)).map Prod.snd).map (a + ·)).map
             (fun y => decide (y = t)) := by
           simp [PMF.map_comp, Function.comp_def]
       _ = (PMF.uniformOfFintype G).map (fun y => decide (y = t)) := by
-          rw [hsnd, hshift]
+          rw [Probability.PMF.uniformOfFintype_prod_map_snd,
+            Probability.PMF.uniformOfFintype_map_add_left]
   rw [hmap, ← PMF.toOuterMeasure_apply_singleton, PMF.toOuterMeasure_map_apply]
   have hpre : (fun y : G => decide (y = t)) ⁻¹' {true} = {t} := by
     ext y

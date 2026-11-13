@@ -94,32 +94,11 @@ theorem isLinearOrder_moveToBot (r : α → α → Prop) [IsLinearOrder α r] (x
     · exact Or.inl (Or.inr ⟨hb, h⟩)
     · exact Or.inr (Or.inr ⟨ha, h⟩)
 
+/-- Moving `x` to the top is moving it to the bottom of the reversed order, reversed. -/
 theorem isLinearOrder_moveToTop (r : α → α → Prop) [IsLinearOrder α r] (x : α) :
-    IsLinearOrder α (moveToTop r x) where
-  refl a := by
-    by_cases h : a = x
-    · exact Or.inl h
-    · exact Or.inr ⟨h, refl_of r a⟩
-  trans a b c hab hbc := by
-    rcases hbc with hbc | ⟨hbx, hbc⟩
-    · exact Or.inl hbc
-    rcases hab with hab | ⟨hax, hab⟩
-    · exact absurd hab hbx
-    · exact Or.inr ⟨hax, _root_.trans hab hbc⟩
-  antisymm a b hab hba := by
-    rcases hab with hab | ⟨hax, hab⟩ <;> rcases hba with hba | ⟨hbx, hba⟩
-    · exact hba.trans hab.symm
-    · exact absurd hab hbx
-    · exact absurd hba hax
-    · exact antisymm hab hba
-  total a b := by
-    by_cases hb : b = x
-    · exact Or.inl (Or.inl hb)
-    by_cases ha : a = x
-    · exact Or.inr (Or.inl ha)
-    rcases total_of r a b with h | h
-    · exact Or.inl (Or.inr ⟨ha, h⟩)
-    · exact Or.inr (Or.inr ⟨hb, h⟩)
+    IsLinearOrder α (moveToTop r x) :=
+  haveI := isLinearOrder_moveToBot (Function.swap r) x
+  inferInstanceAs (IsLinearOrder α (Function.swap (moveToBot (Function.swap r) x)))
 
 /-! ## Elements found above or below along a run -/
 
@@ -254,23 +233,22 @@ theorem agreeOn_moveToBot {r : α → α → Prop} [Std.Refl r] {T : List (α ×
     simp only [h, true_or]
   · simp only [hax, hbx, ne_eq, not_false_eq_true, true_and, false_or]
 
+/-- Being found below is being found above in the reversed order, for the reversed comparisons. -/
+private theorem foundAbove_swap_iff {r : α → α → Prop} {T : List (α × α)} {x : α} :
+    FoundAbove (Function.swap r) (T.map Prod.swap) x ↔ FoundBelow r T x := by
+  simp only [FoundAbove, FoundBelow, List.mem_map, Prod.exists, Prod.swap_prod_mk,
+    Prod.mk.injEq, Function.swap]
+  constructor
+  · rintro ⟨a, b, ⟨c, d, hcd, rfl, rfl⟩, hab, h⟩
+    exact ⟨c, d, hcd, Ne.symm hab, h⟩
+  · rintro ⟨c, d, hcd, hcd', h⟩
+    exact ⟨d, c, ⟨c, d, hcd, rfl, rfl⟩, Ne.symm hcd', h⟩
+
 /-- Moving an element that is never found below to the top keeps every answer. -/
 theorem agreeOn_moveToTop {r : α → α → Prop} [Std.Refl r] {T : List (α × α)} {x : α}
-    (hx : ¬ FoundBelow r T x) : AgreeOn r (moveToTop r x) T := by
-  intro a b hab
-  unfold moveToTop
-  by_cases heq : a = b
-  · subst heq
-    exact ⟨fun h => (eq_or_ne a x).elim Or.inl fun hax => Or.inr ⟨hax, h⟩, fun _ => refl_of r a⟩
-  by_cases hax : a = x
-  · subst hax
-    have h : ¬ r a b := fun h => hx ⟨a, b, hab, heq, Or.inl ⟨rfl, h⟩⟩
-    simp only [h, Ne.symm heq, ne_eq, not_true_eq_false, false_and, or_self]
-  by_cases hbx : b = x
-  · subst hbx
-    have h : r a b := by_contra fun h => hx ⟨a, b, hab, heq, Or.inr ⟨rfl, h⟩⟩
-    simp only [h, true_or]
-  · simp only [hax, hbx, ne_eq, not_false_eq_true, true_and, false_or]
+    (hx : ¬ FoundBelow r T x) : AgreeOn r (moveToTop r x) T := fun a b hab =>
+  agreeOn_moveToBot (r := Function.swap r) (mt foundAbove_swap_iff.mp hx) b a
+    (List.mem_map_of_mem (f := Prod.swap) hab)
 
 /-! ## The fooling argument -/
 

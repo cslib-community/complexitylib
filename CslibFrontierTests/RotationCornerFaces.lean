@@ -14,7 +14,7 @@ namespace CslibFrontierTests.RotationCornerFaces
 
 open Cslib.Complexity Graph.RotationSystem
 
-private abbrev twoEdges : Graph := ([0, 1, 2, 3], [(0, 1), (2, 3)])
+private abbrev twoEdges : Graph := ⟨[0, 1, 2, 3], [(0, 1), (2, 3)]⟩
 
 private def twoEdgeRotation : Graph.RotationSystem twoEdges where
   rotate := Equiv.refl _
@@ -36,7 +36,7 @@ example : Nat.card (twoEdgeRotation.insertEdge (0, false) (0, false)).Face =
     Nat.card twoEdgeRotation.Face + 1 :=
   card_faces_insertEdge_cofacial _ _ _ Equiv.Perm.SameCycle.rfl
 
-private abbrev mixed : Graph := ([0, 1, 2, 3, 4, 5], [(0, 1), (2, 3), (5, 5)])
+private abbrev mixed : Graph := ⟨[0, 1, 2, 3, 4, 5], [(0, 1), (2, 3), (5, 5)]⟩
 
 private def mixedRotation : Graph.RotationSystem mixed where
   rotate := Equiv.swap (2, false) (2, true)

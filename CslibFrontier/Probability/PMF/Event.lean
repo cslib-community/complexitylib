@@ -33,6 +33,7 @@ the outcome masses of Boolean distributions and Boolean predicates are in
   `Cslib.Probability.PMF.toOuterMeasure_abs_sub_ge_toReal_le`: two-sided tail bounds from upper
   and lower tails.
 * `Cslib.Probability.PMF.toOuterMeasure_apply_toReal`,
+  `Cslib.Probability.PMF.toOuterMeasure_toReal_eq_sum_ite`,
   `Cslib.Probability.PMF.toOuterMeasure_toReal_add_compl`,
   `Cslib.Probability.PMF.toOuterMeasure_toReal_pos_iff`: real-valued event probabilities.
 * `Cslib.Probability.PMF.toOuterMeasure_add_compl_ennreal`,
@@ -102,6 +103,14 @@ theorem toOuterMeasure_apply_toReal [Fintype α] (p : PMF α) (event : Set α) :
     by_cases ha : a ∈ event <;> simp [ha]
   · intro a _
     by_cases ha : a ∈ event <;> simp [ha, PMF.apply_ne_top]
+
+/-- The probability of an event in a finite space, as the mean of its indicator. -/
+theorem toOuterMeasure_toReal_eq_sum_ite [Fintype α] (p : PMF α) (event : Set α)
+    [DecidablePred (· ∈ event)] :
+    (p.toOuterMeasure event).toReal = ∑ a, (p a).toReal * if a ∈ event then (1 : ℝ) else 0 := by
+  rw [toOuterMeasure_apply_toReal]
+  refine Finset.sum_congr rfl fun a _ => ?_
+  split_ifs <;> simp
 
 /-- Exact complementation law `p.toOuterMeasure s + p.toOuterMeasure sᶜ = 1` for discrete `PMF`s,
 valid on arbitrary types without measurability hypotheses. -/

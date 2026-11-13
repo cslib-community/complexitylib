@@ -32,7 +32,8 @@ measurable. This holds when every `h ∈ H` is measurable and equality on `β` i
 ## Main results
 
 - `measure_pi_forall_apply_eq_eq_pow`: a hypothesis survives `m` i.i.d. examples with probability
-  `(1 - error D h) ^ m`.
+  `(1 - error D h) ^ m`; `measure_pi_forall_apply_eq_eq_pow_card` indexes the examples by any
+  finite type.
 - `IsConsistent.measure_pi_lt_error_le_card_mul_pow`: the union bound `|H| (1 - ε) ^ m` for a
   consistent learner of a finite class.
 - `IsConsistent.measure_pi_lt_error_le_of_log_card_add_log_inv_le`: the Occam sample-size form.
@@ -56,18 +57,25 @@ namespace Cslib.MachineLearning.PACLearning
 
 variable {α β : Type*} [MeasurableSpace α] [MeasurableSpace β]
 
+/-- A fixed hypothesis `h` agrees with i.i.d. examples from `D` indexed by a finite type `ι` with
+probability `(1 - error D h) ^ |ι|`. -/
+theorem measure_pi_forall_apply_eq_eq_pow_card {ι : Type*} [Fintype ι] (D : Measure (α × β))
+    [IsProbabilityMeasure D] {h : α → β} (hh : MeasurableSet {p : α × β | h p.1 ≠ p.2}) :
+    Measure.pi (fun _ : ι => D) {S : ι → α × β | ∀ i, h (S i).1 = (S i).2} =
+      (1 - error D h) ^ Fintype.card ι := by
+  have hset : {S : ι → α × β | ∀ i, h (S i).1 = (S i).2} =
+      Set.univ.pi fun _ => {p : α × β | h p.1 ≠ p.2}ᶜ := by
+    ext S
+    simp only [mem_ofPred_eq, mem_pi, mem_univ, mem_compl_iff, not_not, true_implies]
+  rw [hset, Measure.pi_pi, prob_compl_eq_one_sub hh, Finset.prod_const, Finset.card_univ, error]
+
 /-- A fixed hypothesis `h` agrees with all `m` i.i.d. examples drawn from `D` with probability
 `(1 - error D h) ^ m`. -/
 theorem measure_pi_forall_apply_eq_eq_pow (D : Measure (α × β)) [IsProbabilityMeasure D]
     {h : α → β} (hh : MeasurableSet {p : α × β | h p.1 ≠ p.2}) (m : ℕ) :
     Measure.pi (fun _ : Fin m => D) {S : LabeledSample α β m | ∀ i, h (S i).1 = (S i).2} =
       (1 - error D h) ^ m := by
-  have hset : {S : LabeledSample α β m | ∀ i, h (S i).1 = (S i).2} =
-      Set.univ.pi fun _ => {p : α × β | h p.1 ≠ p.2}ᶜ := by
-    ext S
-    simp only [mem_ofPred_eq, mem_pi, mem_univ, mem_compl_iff, not_not, true_implies]
-  rw [hset, Measure.pi_pi, prob_compl_eq_one_sub hh, Finset.prod_const, Finset.card_univ,
-    Fintype.card_fin, error]
+  rw [measure_pi_forall_apply_eq_eq_pow_card D hh, Fintype.card_fin]
 
 /-- **Union bound for consistent learners of a finite class.** If `D` is realizable by the finite
 class `H` and `A` is consistent with `H`, then the probability over `m` i.i.d. examples that the

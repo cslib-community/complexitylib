@@ -250,10 +250,10 @@ theorem sumcheck_twoRounds_rbrKnowledgeSound (hP : ∀ j, P.degreeOf j ≤ d) (h
     ((Sumcheck.round d P 0).verifier.append (Sumcheck.round d P 1).verifier).RbrKnowledgeSound
       (Sumcheck.rel P 0) (Sumcheck.rel P 2)
       ((Sumcheck.round d P 0).verifier.extractAppend (fun _ _ _ => ()) (fun _ _ _ => ())
-        (fun _ => 0, 0))
+        ⟨fun _ => 0, 0⟩)
       ((d : ℝ≥0∞) / Fintype.card F, ((d : ℝ≥0∞) / Fintype.card F, ())) :=
   (sumcheck_round_rbrKnowledgeSound d P hP (by omega)).seq
-    (sumcheck_round_rbrKnowledgeSound d P hP (by omega)) (fun _ => 0, 0)
+    (sumcheck_round_rbrKnowledgeSound d P hP (by omega)) ⟨fun _ => 0, 0⟩
 
 /-- Iterating `n` sumcheck rounds preserves round-by-round knowledge soundness. -/
 theorem sumcheck_iterate_rbrKnowledgeSound (hP : ∀ j, P.degreeOf j ≤ d) :
@@ -261,10 +261,10 @@ theorem sumcheck_iterate_rbrKnowledgeSound (hP : ∀ j, P.degreeOf j ≤ d) :
       (W := fun _ => Unit) (Sumcheck.round d P) n).verifier.RbrKnowledgeSound
       (Sumcheck.rel P 0) (Sumcheck.rel P n)
       (Verifier.extractIterate (Sumcheck.round d P) (fun _ _ _ _ => ())
-        (fun _ => (fun _ => 0, 0)) n)
+        (fun _ => ⟨fun _ => 0, 0⟩) n)
       (PerChallenge.iterate (s := fun _ => Sumcheck.roundSpec F)
         (fun _ => ((d : ℝ≥0∞) / Fintype.card F, ())) n) :=
-  Verifier.RbrKnowledgeSound.iterate (fun _ => (fun _ => 0, 0)) n
+  Verifier.RbrKnowledgeSound.iterate (fun _ => ⟨fun _ => 0, 0⟩) n
     fun _ hi => sumcheck_round_rbrKnowledgeSound d P hP hi
 
 end Sumcheck

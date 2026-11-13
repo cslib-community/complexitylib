@@ -42,6 +42,8 @@ gate, it uses that the top weights are fixed.
   circuit is an upper level set of its live form.
 * `Cslib.Circuits.Boolean.WeightedThreshold.card_image_eval_embedUpdate_le`: the count of
   restricted functions with `D` splitting gates.
+* `Cslib.Circuits.Boolean.WeightedThreshold.circuitLiveForm_mixed_eq`: on two live coordinates,
+  gates with zero mixed difference give a live form with zero mixed difference.
 -/
 
 public section
@@ -121,6 +123,36 @@ theorem circuitLiveForm_congr (c : Circuit signature n 1) (o : Fin 1) (emb : κ 
   cases c.outputs o
   · rfl
   · dsimp only; rw [sum_congr rfl fun k hk => by rw [h k hk]]
+
+/-- **Separable live forms on a square**: if every selected gate has zero mixed difference on
+`Fin 2 → Bool`, so does the live form. Restricted to two live coordinates, a circuit whose
+splitting gates are all constant or literals is thus an upper level set of a separable form. -/
+theorem circuitLiveForm_mixed_eq (c : Circuit signature n 1) (o : Fin 1) (emb : Fin 2 → Fin n)
+    (U : Finset (Fin c.size)) (g : Fin c.size → (Fin 2 → Bool) → Bool)
+    (hg : ∀ k ∈ U, (g k ![false, false]).toNat + (g k ![true, true]).toNat =
+      (g k ![true, false]).toNat + (g k ![false, true]).toNat) :
+    circuitLiveForm c o emb U g ![false, false] + circuitLiveForm c o emb U g ![true, true] =
+      circuitLiveForm c o emb U g ![true, false] + circuitLiveForm c o emb U g ![false, true] := by
+  unfold circuitLiveForm
+  cases c.outputs o with
+  | input i =>
+    simp only [Fin.sum_univ_two, Matrix.cons_val_zero, Matrix.cons_val_one, Bool.toNat_false,
+      Bool.toNat_true, Nat.cast_zero, Nat.cast_one]
+    ring
+  | gate top =>
+    dsimp only
+    have h : ∑ k ∈ U, (gateWeight c.program top k * (g k ![false, false]).toNat +
+          gateWeight c.program top k * (g k ![true, true]).toNat) =
+        ∑ k ∈ U, (gateWeight c.program top k * (g k ![true, false]).toNat +
+          gateWeight c.program top k * (g k ![false, true]).toNat) :=
+      sum_congr rfl fun k hk => by
+        rw [← mul_add, ← mul_add]
+        congr 1
+        exact_mod_cast hg k hk
+    rw [sum_add_distrib, sum_add_distrib] at h
+    simp only [Fin.sum_univ_two, Matrix.cons_val_zero, Matrix.cons_val_one, Bool.toNat_false,
+      Bool.toNat_true, Nat.cast_zero, Nat.cast_one]
+    linarith
 
 /-- **Restriction to an upper level set**: restricting a weighted threshold circuit of depth at most
 two outside the image of an injective `emb` to `w` gives an upper level set of its live form with

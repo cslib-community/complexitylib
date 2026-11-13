@@ -308,9 +308,10 @@ distance matrix has a closed tour of length at most the number of cities. -/
 theorem toTSP_mem_iff (G : Graph) : toTSP G ∈ TSP ↔ G ∈ HamCycle := by
   rw [mem_HamCycle_iff]
   have hVnd := G.nodup_distinctVertices
-  have hmemV : ∀ v, v ∈ G.distinctVertices ↔ v ∈ G.1 := fun _ => Graph.mem_distinctVertices
+  have hmemV : ∀ v, v ∈ G.distinctVertices ↔ v ∈ G.vertices := fun _ => Graph.mem_distinctVertices
   have hlenV :
-      ∀ q : List ℕ, q.Nodup → (∀ v, v ∈ q ↔ v ∈ G.1) → q.length = G.distinctVertices.length :=
+      ∀ q : List ℕ, q.Nodup → (∀ v, v ∈ q ↔ v ∈ G.vertices) →
+        q.length = G.distinctVertices.length :=
     fun q hq hcov =>
       ((List.perm_ext_iff_of_nodup hq hVnd).2 fun v => (hcov v).trans (hmemV v).symm).length_eq
   unfold toTSP

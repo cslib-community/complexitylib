@@ -21,8 +21,8 @@ private def body (scopes : List (List ℕ)) : CSP Bool ℕ := scopes.map fun sco
 
 -- The named components preserve the literal compiler used by the native certificates.
 example (I : FixedRotationInput) : subdivide I =
-    I.graph.2.zipIdx.flatMap (fun entry =>
-      let a := I.graph.1.length + 2 * entry.2
+    I.graph.edges.zipIdx.flatMap (fun entry =>
+      let a := I.graph.vertices.length + 2 * entry.2
       let b := a + 1
       [((entry.1.1, a), (I.orders.getD entry.1.1 none).isSome),
         ((a, b), false), ((b, entry.1.2), (I.orders.getD entry.1.2 none).isSome)]) := rfl
@@ -32,12 +32,12 @@ example (F : Frame) (e f : Segment × ℕ) : row F e f =
       moveLabels F.vertexCount f.2 f.1 e.1.1, crossing F.order e.1.1 f.1.1) := rfl
 
 example (I : FixedRotationInput) (v : ℕ) (block : List ℕ) : split I v block =
-    ⟨(List.range (I.graph.1.length + 1),
-        I.graph.2.zipIdx.map (fun e =>
-          (redirectEnd I.graph.1.length block (2 * e.2) e.1.1,
-           redirectEnd I.graph.1.length block (2 * e.2 + 1) e.1.2)) ++
-          [(I.graph.1.length, v)]),
-      I.orders ++ [some (block ++ [2 * I.graph.2.length])]⟩ := rfl
+    ⟨⟨List.range (I.graph.vertices.length + 1),
+        I.graph.edges.zipIdx.map (fun e =>
+          (redirectEnd I.graph.vertices.length block (2 * e.2) e.1.1,
+           redirectEnd I.graph.vertices.length block (2 * e.2 + 1) e.1.2)) ++
+          [(I.graph.vertices.length, v)]⟩,
+      I.orders ++ [some (block ++ [2 * I.graph.edges.length])]⟩ := rfl
 
 example : query (ofCSP (body [])) = true := by decide +kernel
 example : query (ofCSP (body [[]])) = true := by decide +kernel
@@ -52,25 +52,25 @@ example : (recoverCSP (body
     [[2 ^ 250], [2 ^ 250], [2 ^ 250], [2 ^ 250], [2 ^ 250]])).isSome = true := by
   decide +kernel
 
-private def allFree : FixedRotationInput := ⟨([0, 1], [(0, 0), (0, 1), (0, 1)]), [none, none]⟩
+private def allFree : FixedRotationInput := ⟨⟨[0, 1], [(0, 0), (0, 1), (0, 1)]⟩, [none, none]⟩
 
 example : validate allFree = true := by decide +kernel
 example : (subdivide allFree).length = 9 := by decide +kernel
 example : (recover allFree).isSome = true := by decide +kernel
-example : !(validate ⟨([1], []), [none]⟩) = true := by decide +kernel
-example : !(validate ⟨([0], [(0, 1)]), [none]⟩) = true := by decide +kernel
-example : !(validate ⟨([0], []), []⟩) = true := by decide +kernel
-example : !(validate ⟨([0], []), [some [0]]⟩) = true := by decide +kernel
-example : !(validate ⟨([0], [(0, 0)]), [some [0]]⟩) = true := by decide +kernel
-example : !(validate ⟨([0], [(0, 0)]), [some [0, 0]]⟩) = true := by decide +kernel
-example : !(validate ⟨([0], [(0, 0)]), [some [0, 2 ^ 250]]⟩) = true := by decide +kernel
-example : validate ⟨([0], []), [some []]⟩ = true := by decide +kernel
-example : validate ⟨([0], [(0, 0)]), [some [0, 1]]⟩ = true := by decide +kernel
-example : query ⟨([0], [(0, 0)]), [some [0, 1]]⟩ = true := by decide +kernel
-example : !query ⟨([0], [(0, 0), (0, 0)]), [some [0, 2, 1, 3]]⟩ = true := by decide +kernel
-example : query ⟨([0], [(0, 0), (0, 0)]), [some [0, 1, 2, 3]]⟩ = true := by decide +kernel
+example : !(validate ⟨⟨[1], []⟩, [none]⟩) = true := by decide +kernel
+example : !(validate ⟨⟨[0], [(0, 1)]⟩, [none]⟩) = true := by decide +kernel
+example : !(validate ⟨⟨[0], []⟩, []⟩) = true := by decide +kernel
+example : !(validate ⟨⟨[0], []⟩, [some [0]]⟩) = true := by decide +kernel
+example : !(validate ⟨⟨[0], [(0, 0)]⟩, [some [0]]⟩) = true := by decide +kernel
+example : !(validate ⟨⟨[0], [(0, 0)]⟩, [some [0, 0]]⟩) = true := by decide +kernel
+example : !(validate ⟨⟨[0], [(0, 0)]⟩, [some [0, 2 ^ 250]]⟩) = true := by decide +kernel
+example : validate ⟨⟨[0], []⟩, [some []]⟩ = true := by decide +kernel
+example : validate ⟨⟨[0], [(0, 0)]⟩, [some [0, 1]]⟩ = true := by decide +kernel
+example : query ⟨⟨[0], [(0, 0)]⟩, [some [0, 1]]⟩ = true := by decide +kernel
+example : !query ⟨⟨[0], [(0, 0), (0, 0)]⟩, [some [0, 2, 1, 3]]⟩ = true := by decide +kernel
+example : query ⟨⟨[0], [(0, 0), (0, 0)]⟩, [some [0, 1, 2, 3]]⟩ = true := by decide +kernel
 example : validate (split allFree 0 [0]) = true := by decide +kernel
-example : (split allFree 0 [0]).graph.2 = [(2, 0), (0, 1), (0, 1), (2, 0)] := by decide +kernel
+example : (split allFree 0 [0]).graph.edges = [(2, 0), (0, 1), (0, 1), (2, 0)] := by decide +kernel
 
 /-- Every successful output uses the existing CSP verifier, independently of any criterion. -/
 example {F : CSP Bool ℕ} {c : RotationCertificate} (h : recoverCSP F = some c) :
