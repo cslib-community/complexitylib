@@ -1316,6 +1316,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.PopulationCount
 public import CslibFrontier.Computability.Circuit.Boolean.PopulationCount.PolyTime
 public import CslibFrontier.Computability.Circuit.Boolean.PopulationCount.ThresholdPolyTime
 public import CslibFrontier.Computability.Circuit.Boolean.Propagation
+public import CslibFrontier.Computability.Circuit.Boolean.RandomPredictor
 public import CslibFrontier.Computability.Circuit.Boolean.Razborov.LearningParams
 public import CslibFrontier.Computability.Circuit.Boolean.Razborov.MiddleSlice
 public import CslibFrontier.Computability.Circuit.Boolean.Razborov.MiddleSlice.P
@@ -5054,6 +5055,7 @@ public import CslibFrontier.Foundations.Combinatorics.Digraph.Arborescence
 public import CslibFrontier.Foundations.Combinatorics.Digraph.Branching
 public import CslibFrontier.Foundations.Combinatorics.Digraph.Connectivity
 public import CslibFrontier.Foundations.Combinatorics.Digraph.MatrixTree
+public import CslibFrontier.Foundations.Combinatorics.DistinctValues
 public import CslibFrontier.Foundations.Combinatorics.ErdosSzekeres
 public import CslibFrontier.Foundations.Combinatorics.Expander.AffineFamily
 public import CslibFrontier.Foundations.Combinatorics.Expander.AffinePlane
