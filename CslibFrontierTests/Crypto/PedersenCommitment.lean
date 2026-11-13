@@ -71,14 +71,11 @@ example (c : schnorrGroups.Carrier d23)
       ((3 : ZMod (schnorrGroups.order d23)) • schnorrGroups.generator d23) 4 c 5 = true := by
   simp [hc]
 
-/-- The concrete collision `(4, 5)`, `(2, 2)` under `h = 3 • g` recovers `α = 3` through the typed
-extraction `(r₁ - r₀)⁻¹ * (m₀ - m₁)`. -/
-example (heq : schnorrGroups.pedersenCommit d23
-      ((3 : ZMod (schnorrGroups.order d23)) • schnorrGroups.generator d23) 4 5 =
-    schnorrGroups.pedersenCommit d23
-      ((3 : ZMod (schnorrGroups.order d23)) • schnorrGroups.generator d23) 2 2) :
-    ((2 : ZMod (schnorrGroups.order d23)) - 5)⁻¹ * (4 - 2) = 3 :=
-  schnorrGroups.inv_mul_eq_of_pedersenCommit_eq (by decide) heq
+/-- `(4, 5)` and `(2, 2)` collide under `h = 3 • g`, since `4 + 5 * 3 ≡ 2 + 2 * 3 (mod 11)`, and the
+typed extraction `(r₁ - r₀)⁻¹ * (m₀ - m₁)` recovers `α = 3`. -/
+example : ((2 : ZMod (schnorrGroups.order d23)) - 5)⁻¹ * (4 - 2) = 3 :=
+  schnorrGroups.inv_mul_eq_of_pedersenCommit_eq (by decide)
+    ((schnorrGroups.pedersenCommit_smul_generator_eq_iff d23 3 4 5 2 2).mpr (by decide))
 
 /-- Typed fixed-group hiding: every adversary has advantage at most `1 / q` on `d23`, where
 `q = 11`. -/

@@ -333,7 +333,7 @@ theorem pedersen_perfectlyHidingAt (d : F.Desc) {h : F.Carrier d} (hh : h ≠ 0)
 
 /-- Key generation outputs the identity `h = 0` exactly when it draws `α = 0`, which has
 probability `1 / q`. -/
-theorem succProbability_pedersen_keyGen_eq_zero (d : F.Desc) :
+theorem succProbability_pedersen_keyGen_zero_eq_inv (d : F.Desc) :
     Experiment.succProbability ((fun h => decide (h = 0)) <$> (F.pedersen d).keyGen) =
       (F.order d : ℝ≥0)⁻¹ := by
   have hzero (α : ZMod (F.order d)) : α • F.generator d = 0 ↔ α = 0 :=
@@ -349,7 +349,7 @@ theorem succProbability_pedersen_keyGen_eq_zero (d : F.Desc) :
 
 /-- **Hiding of Pedersen commitments** ([Pedersen1991], Section 3, Theorem 3.1; [BonehShoup2023],
 Exercise 20.5). The only loss is the event that key generation draws `α = 0`
-(`succProbability_pedersen_keyGen_eq_zero`); every other key is perfectly hiding
+(`succProbability_pedersen_keyGen_zero_eq_inv`); every other key is perfectly hiding
 (`pedersen_perfectlyHidingAt`). So every adversary, even a computationally unbounded one, has
 hiding advantage at most `1 / q`. -/
 theorem advantage_pedersen_hidingExperiment_le {σ : Type} (d : F.Desc)
@@ -358,7 +358,7 @@ theorem advantage_pedersen_hidingExperiment_le {σ : Type} (d : F.Desc)
       ((F.pedersen d).hidingExperiment A true) ≤ (F.order d : ℝ≥0)⁻¹ :=
   ((F.pedersen d).advantage_hidingExperiment_le (fun h => decide (h = 0))
       (fun _ hh => F.pedersen_perfectlyHidingAt d (of_decide_eq_false hh)) A).trans_eq
-    (F.succProbability_pedersen_keyGen_eq_zero d)
+    (F.succProbability_pedersen_keyGen_zero_eq_inv d)
 
 private theorem sub_mul_eq_of_pedersenCommit_eq {d : F.Desc} {α m₀ r₀ m₁ r₁ : ZMod (F.order d)}
     (heq : F.pedersenCommit d (α • F.generator d) m₀ r₀ =
