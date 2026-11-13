@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Probability.BitString.BinarySymmetricChannel
 public import Mathlib.Analysis.SpecialFunctions.BinaryEntropy
 public import Mathlib.Order.Filter.AtTopBot.Defs
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import CslibFrontier.Probability.BitString.BinarySymmetricChannel.Achievability
 import CslibFrontier.Probability.BitString.BinarySymmetricChannel.StrongConverse
 import Mathlib.Order.Filter.AtTopBot.Basic
@@ -132,8 +133,7 @@ theorem not_isAchievableRate_of_lt (p : I) {R : ℝ} (hR : 1 - Real.binEntropy p
       (eventually_one_sub_le_expect_decodingError p hR (ε := 1 / 2) (by norm_num))).exists
   have : Nonempty (Fin (2 ^ ⌈R * n⌉₊)) := ⟨⟨0, by positivity⟩⟩
   have hM : R * n ≤ Real.logb 2 (Fintype.card (Fin (2 ^ ⌈R * n⌉₊))) := by
-    rw [Fintype.card_fin, Nat.cast_pow, Nat.cast_two, Real.logb_pow,
-      Real.logb_self_eq_one one_lt_two, mul_one]
+    rw [Fintype.card_fin, Nat.cast_pow, Nat.cast_two, Real.logb_two_pow]
     exact Nat.le_ceil _
   have h1 := hn E D hM
   have h2 : 𝔼 m, decodingError p E D m ≤ 1 / 4 :=

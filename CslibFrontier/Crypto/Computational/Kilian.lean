@@ -288,7 +288,7 @@ private theorem computableInPolyTime_kilianCheck
     ComputableInPolyTime (fun g => kilianCheck H V (k g) (x g) (root g) (ρ g) (answers g))
       encIn encBool := by
   have htable := (PCPVerifier.isPolyTime_queryTable hV hcoins).comp hx
-  have hqueries := hV.2.1.comp (hx.prod hρ)
+  have hqueries := hV.queries.comp (hx.prod hρ)
   have hdepth : ComputableInPolyTime (fun g => kilianDepth V (x g)) encIn encUnary :=
     (ComputableInPolyTime.unary_clog_const 2).comp
       ((ComputableInPolyTime.length_list encNat).comp htable)
@@ -325,7 +325,7 @@ private theorem computableInPolyTime_kilianCheck
     ComputableInPolyTime.listToBits.comp
       (ComputableInPolyTime.mapWithInput hanswers
         (encKilianOpening_leaf_polyTime (ComputableInPolyTime.snd encIn encKilianOpening)))
-  have hverdict := hV.2.2.comp ((hx.prod hρ).prod hbits)
+  have hverdict := hV.verdict.comp ((hx.prod hρ).prod hbits)
   unfold kilianCheck
   exact ComputableInPolyTime.bool_and' (ComputableInPolyTime.bool_and' hlength hall)
     hverdict
@@ -426,7 +426,7 @@ private theorem computableInPolyTime_kilianOpen
     (hρ : ComputableInPolyTime ρ encIn encBits) :
     ComputableInPolyTime (fun g => kilianOpen H V (k g) (x g) (table g) (ρ g)) encIn
       (encList encKilianOpening) := by
-  have hqueries := hV.2.1.comp (hx.prod hρ)
+  have hqueries := hV.queries.comp (hx.prod hρ)
   have hfst := ComputableInPolyTime.fst encIn encNat
   have ha := ComputableInPolyTime.snd encIn encNat
   have hnormal := computableInPolyTime_kilianTable hV hcoins (hx.comp hfst)
@@ -476,7 +476,7 @@ theorem isPPTOn_kilianChallenges (hV : V.PolyTime enc)
     IsPPTOn (encPair encUnary enc) (encList encBits)
       (fun p : ℕ × α => kilianChallenges V p.1 p.2) :=
   IsPPTOn.replicate
-    (((ComputableInPolyTime.binary_to_unary_bounded hV.1 (by fun_prop) hcoins).comp
+    (((ComputableInPolyTime.binary_to_unary_bounded hV.coins (by fun_prop) hcoins).comp
       (ComputableInPolyTime.snd encUnary enc)).sampleList)
     (ComputableInPolyTime.fst encUnary enc)
 
