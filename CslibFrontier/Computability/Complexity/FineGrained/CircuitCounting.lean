@@ -204,23 +204,29 @@ private theorem computableInPolyTime_reachWiresRaw (encOp : σ.Op ↪ List Bool)
     omega
   · omega
 
-private theorem computableInPolyTime_toCSPRaw (encOp : σ.Op ↪ List Bool) (m : ℕ) :
-    ComputableInPolyTime (fun r : RawCode σ => Compiler.toCSPCode m r.1 r.2)
-      (encRaw encOp) (encCSP (encCircuitRel encOp m) encNat) := by
+/-- Testing whether the indexed gate `gj` of a raw circuit `r` drives a reachable wire takes
+polynomial time. This is the gate predicate shared by `Compiler.toCSPCode` and
+`Compiler.reachGateCountCode`. -/
+private theorem computableInPolyTime_reachGateTest (encOp : σ.Op ↪ List Bool) :
+    ComputableInPolyTime
+      (fun p : RawCode σ × ((σ.Op × List ℕ) × ℕ) =>
+        (Compiler.reachWiresCode p.1.1 p.1.2).any (· == p.1.1 + p.2.2))
+      (encPair (encRaw encOp) (encPair (Circuit.encGate encOp) encUnary)) encBool := by
   have hreach := computableInPolyTime_reachWiresRaw encOp
-  have hgates : ComputableInPolyTime (fun r : RawCode σ => r.2.1.zipIdx)
-      (encRaw encOp) (encList (encPair (Circuit.encGate encOp) encUnary)) := by fun_prop
-  let encGJ := encPair (Circuit.encGate encOp) encUnary
-  let encRG := encPair (encRaw encOp) encGJ
+  let encRG := encPair (encRaw encOp) (encPair (Circuit.encGate encOp) encUnary)
   have hwireNat : ComputableInPolyTime
       (fun p : RawCode σ × ((σ.Op × List ℕ) × ℕ) => p.1.1 + p.2.2) encRG encNat := by fun_prop
   have hreachP : ComputableInPolyTime
       (fun p : RawCode σ × ((σ.Op × List ℕ) × ℕ) => Compiler.reachWiresCode p.1.1 p.1.2)
       encRG (encList encNat) := by fun_prop
-  have hpred : ComputableInPolyTime
-      (fun p : RawCode σ × ((σ.Op × List ℕ) × ℕ) =>
-        (Compiler.reachWiresCode p.1.1 p.1.2).any (· == p.1.1 + p.2.2))
-      encRG encBool := by fun_prop
+  fun_prop
+
+private theorem computableInPolyTime_toCSPRaw (encOp : σ.Op ↪ List Bool) (m : ℕ) :
+    ComputableInPolyTime (fun r : RawCode σ => Compiler.toCSPCode m r.1 r.2)
+      (encRaw encOp) (encCSP (encCircuitRel encOp m) encNat) := by
+  have hgates : ComputableInPolyTime (fun r : RawCode σ => r.2.1.zipIdx)
+      (encRaw encOp) (encList (encPair (Circuit.encGate encOp) encUnary)) := by fun_prop
+  have hpred := computableInPolyTime_reachGateTest encOp
   have hfilt := filterWithInput
     (test := fun (r : RawCode σ) gj => (Compiler.reachWiresCode r.1 r.2).any (· == r.1 + gj.2))
     hgates hpred
@@ -240,21 +246,9 @@ private theorem computableInPolyTime_toCSPRaw (encOp : σ.Op ↪ List Bool) (m :
 private theorem computableInPolyTime_reachGateCountRaw (encOp : σ.Op ↪ List Bool) :
     ComputableInPolyTime (fun r : RawCode σ => Compiler.reachGateCountCode r.1 r.2)
       (encRaw encOp) encUnary := by
-  have hreach := computableInPolyTime_reachWiresRaw encOp
   have hgates : ComputableInPolyTime (fun r : RawCode σ => r.2.1.zipIdx)
       (encRaw encOp) (encList (encPair (Circuit.encGate encOp) encUnary)) := by fun_prop
-  let encGJ := encPair (Circuit.encGate encOp) encUnary
-  let encRG := encPair (encRaw encOp) encGJ
-  have hwireNat : ComputableInPolyTime
-      (fun p : RawCode σ × ((σ.Op × List ℕ) × ℕ) => p.1.1 + p.2.2) encRG encNat := by fun_prop
-  have hreachP : ComputableInPolyTime
-      (fun p : RawCode σ × ((σ.Op × List ℕ) × ℕ) => Compiler.reachWiresCode p.1.1 p.1.2)
-      encRG (encList encNat) := by fun_prop
-  have hpred : ComputableInPolyTime
-      (fun p : RawCode σ × ((σ.Op × List ℕ) × ℕ) =>
-        (Compiler.reachWiresCode p.1.1 p.1.2).any (· == p.1.1 + p.2.2))
-      encRG encBool := by fun_prop
-  exact countPWithInput hgates hpred
+  exact countPWithInput hgates (computableInPolyTime_reachGateTest encOp)
 
 /-- Compiling a circuit over `σ` to its reachable-wire Boolean CSP `Compiler.toCSP c.2` takes
 polynomial time. -/

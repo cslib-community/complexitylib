@@ -179,11 +179,10 @@ theorem decapsNoCheck_of_dec_eq_some (S : Scheme PK SK M R CT K) (H : Bool × M 
 `dk` and challenge ciphertext `cStar`: decapsulation queries use `decapsNoCheck` and reject
 `cStar`. -/
 noncomputable def eagerNoCheckOracle (S : Scheme PK SK M R CT K) (G : M → R)
-    (H : Bool × M × CT → K) (dk : ImplicitSK PK SK M) (cStar : CT) :
-    (q : ROQuery M CT) → PMF (ROResp R K q)
-  | .G m => PMF.pure (G m)
-  | .H x => PMF.pure (H x)
-  | .decaps c => PMF.pure (if c = cStar then none else some (S.decapsNoCheck H dk c))
+    (H : Bool × M × CT → K) (dk : ImplicitSK PK SK M) (cStar : CT) (q : ROQuery M CT) :
+    PMF (ROResp R K q) :=
+  ROQuery.dispatch (PMF.pure ∘ G) (PMF.pure ∘ H) (fun c => PMF.pure (some (S.decapsNoCheck H dk c)))
+    cStar q
 
 /-- The eager ROM IND-CCA game of `FO-notbot` with decapsulation `decapsNoCheck`; otherwise as
 `eagerIndCcaGame`. -/

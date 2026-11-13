@@ -118,6 +118,12 @@ to recompute `Enc(pk, m'; G(m'))` during decapsulation.
   bundle (`FO^⊥` via `Scheme.encapsBot` / `Scheme.decapsBot` (§3.2.1, Fig. 9) and
   domain-separated `FO-notbot` via `Scheme.keyGenNotBot` / `Scheme.encapsNotBot` /
   `Scheme.decapsNotBot` (§3.2.2, Fig. 12)).
+* `Cslib.Crypto.Protocols.FujisakiOkamoto.decTM`,
+  `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.decapsBotM`,
+  `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.decapsNotBotM`: the `T` check and both
+  decapsulation algorithms with oracle access to `G` and `H` in any monad, run by the random-oracle
+  games; `decT` is `decTM` in the identity monad, and with pure oracles the decapsulations are
+  `decapsBot` and `decapsNotBot` (`Scheme.decapsBotM_pure`, `Scheme.decapsNotBotM_pure`).
 
 ## Main results
 
@@ -313,26 +319,55 @@ def encT (P : ExplicitCoinPKE PK SK M R CT) (G : M → R) (pk : PK) (m : M) : CT
 
 /-- Derandomized decryption `Dec_1(pk, sk, c)` of `T[PKE, G]` with mandatory re-encryption check
 ([HofheinzHoevelmannsKiltz2017], ePrint 2017/604 (2 Nov 2021), §3.1, Fig. 5): runs
-`m' ← Dec(sk, c)` and accepts `m'` only when `Enc(pk, m'; G(m')) = c`. -/
+`m' ← Dec(sk, c)` and accepts `m'` only when `Enc(pk, m'; G(m')) = c`, with oracle access to
+`G : M → m R` in a monad `m`. `G` is queried only when `Dec` succeeds. The random-oracle games run
+it with lazily sampled `G`; `decT` is the case of a fixed function `G`. -/
+def decTM [DecidableEq CT] {m : Type → Type} [Monad m] (P : ExplicitCoinPKE PK SK M R CT)
+    (G : M → m R) (pk : PK) (sk : SK) (c : CT) : m (Option M) :=
+  match P.dec sk c with
+  | none => return none
+  | some m' => do
+    let r' ← G m'
+    return if P.encDet pk m' r' = c then some m' else none
+
+/-- Derandomized decryption `Dec_1(pk, sk, c)` of `T[PKE, G]` with mandatory re-encryption check
+([HofheinzHoevelmannsKiltz2017], ePrint 2017/604 (2 Nov 2021), §3.1, Fig. 5) for a fixed
+function `G`: `decTM` in the identity monad. -/
 def decT [DecidableEq CT] (P : ExplicitCoinPKE PK SK M R CT) (G : M → R)
     (pk : PK) (sk : SK) (c : CT) : Option M :=
-  match P.dec sk c with
-  | none => none
-  | some m' => if encT P G pk m' = c then some m' else none
+  decTM (m := Id) P G pk sk c
+
+/-- `decT` runs `m' ← Dec(sk, c)` and accepts `m'` only when `Enc(pk, m'; G(m')) = c`. -/
+theorem decT_eq [DecidableEq CT] (P : ExplicitCoinPKE PK SK M R CT) (G : M → R)
+    (pk : PK) (sk : SK) (c : CT) :
+    decT P G pk sk c =
+      match P.dec sk c with
+      | none => none
+      | some m' => if encT P G pk m' = c then some m' else none := by
+  unfold decT decTM encT
+  cases P.dec sk c <;> rfl
+
+/-- With a pure oracle, `decTM` is `decT`. -/
+@[simp] theorem decTM_pure [DecidableEq CT] {m : Type → Type} [Monad m] [LawfulMonad m]
+    (P : ExplicitCoinPKE PK SK M R CT) (G : M → R) (pk : PK) (sk : SK) (c : CT) :
+    decTM (m := m) P (pure ∘ G) pk sk c = pure (decT P G pk sk c) := by
+  rw [decT_eq]
+  unfold decTM encT
+  cases P.dec sk c <;> simp
 
 /-- Whenever `Dec(sk, Enc_1(pk, m)) = some m`, the re-encryption check succeeds and `decT`
 recovers `some m`. -/
 theorem decT_encT_eq_some [DecidableEq CT] (P : ExplicitCoinPKE PK SK M R CT) (G : M → R)
     (pk : PK) (sk : SK) (m : M) (hdec : P.dec sk (encT P G pk m) = some m) :
     decT P G pk sk (encT P G pk m) = some m := by
-  simp [decT, hdec]
+  simp [decT_eq, hdec]
 
 /-- **Rigidity of `T`**: any plaintext `m'` accepted by `decT` re-encrypts strictly to `c`, and
 satisfies `P.dec sk c = some m'`. -/
 theorem encT_of_decT_eq_some [DecidableEq CT] {P : ExplicitCoinPKE PK SK M R CT} {G : M → R}
     {pk : PK} {sk : SK} {c : CT} {m' : M} (h : decT P G pk sk c = some m') :
     encT P G pk m' = c := by
-  unfold decT at h
+  rw [decT_eq] at h
   cases hdec : P.dec sk c with
   | none => simp [hdec] at h
   | some m₀ =>
@@ -344,7 +379,7 @@ theorem encT_of_decT_eq_some [DecidableEq CT] {P : ExplicitCoinPKE PK SK M R CT}
 theorem dec_of_decT_eq_some [DecidableEq CT] {P : ExplicitCoinPKE PK SK M R CT} {G : M → R}
     {pk : PK} {sk : SK} {c : CT} {m' : M} (h : decT P G pk sk c = some m') :
     P.dec sk c = some m' := by
-  unfold decT at h
+  rw [decT_eq] at h
   cases hdec : P.dec sk c with
   | none => simp [hdec] at h
   | some m₀ =>
@@ -358,7 +393,7 @@ theorem decT_eq_none_of_reencrypt_ne [DecidableEq CT] (P : ExplicitCoinPKE PK SK
     (G : M → R) (pk : PK) (sk : SK) (c : CT)
     (hbad : ∀ m', P.dec sk c = some m' → encT P G pk m' ≠ c) :
     decT P G pk sk c = none := by
-  unfold decT
+  rw [decT_eq]
   cases hdec : P.dec sk c with
   | none => rfl
   | some m' => exact ite_eq_right (hbad m' hdec)
@@ -488,6 +523,96 @@ theorem decapsNotBot_of_reencrypt_ne [DecidableEq CT] (S : Scheme PK SK M R CT K
     (decT_eq_none_of_reencrypt_ne S.pke G dk.pk dk.sk c hbad)
 
 end FixedOracles
+
+/-! ### Decapsulation with oracle access
+
+The random-oracle games answer `G` and `H` lazily, so their decapsulation oracles run the
+decapsulation algorithms with `G : M → m R` and `H : Bool × M × CT → m K` given as oracles in a
+monad `m`. Both run the `T` check `decTM` and add only their rejection policy and `H` query. With
+pure oracles they are `decapsBot` and `decapsNotBot` (`decapsBotM_pure`, `decapsNotBotM_pure`);
+`decapsBotM_eq` and `decapsNotBotM_eq` unfold them into explicit oracle calls. -/
+
+section OracleAccess
+
+variable {PK SK M R CT K : Type} [DecidableEq CT] {m : Type → Type} [Monad m]
+
+/-- Explicit-rejection decapsulation `Decaps^⊥(pk, sk, c)` of `FO^⊥` with oracle access to `G` and
+`H`: returns `some (H(false, m', c))` when `decTM` accepts `m'`, and `none` otherwise. -/
+def decapsBotM (S : Scheme PK SK M R CT K) (G : M → m R) (H : Bool × M × CT → m K) (pk : PK)
+    (sk : SK) (c : CT) : m (Option K) := do
+  match ← decTM S.pke G pk sk c with
+  | some m' => some <$> H (false, m', c)
+  | none => return none
+
+/-- Implicit-rejection decapsulation `Decaps-notbot(dk, c)` of `FO-notbot` with oracle access to
+`G` and `H`: returns `H(false, m', c)` when `decTM` accepts `m'`, and the fallback key
+`H(true, dk.fallback, c)` otherwise. -/
+def decapsNotBotM (S : Scheme PK SK M R CT K) (G : M → m R) (H : Bool × M × CT → m K)
+    (dk : ImplicitSK PK SK M) (c : CT) : m K := do
+  match ← decTM S.pke G dk.pk dk.sk c with
+  | some m' => H (false, m', c)
+  | none => H (true, dk.fallback, c)
+
+variable [LawfulMonad m]
+
+/-- With pure oracles, `decapsBotM` is the fixed-function decapsulation `decapsBot`. -/
+@[simp] theorem decapsBotM_pure (S : Scheme PK SK M R CT K) (G : M → R) (H : Bool × M × CT → K)
+    (pk : PK) (sk : SK) (c : CT) :
+    S.decapsBotM (m := m) (pure ∘ G) (pure ∘ H) pk sk c = pure (S.decapsBot G H pk sk c) := by
+  unfold decapsBotM decapsBot
+  rw [decTM_pure, pure_bind]
+  cases decT S.pke G pk sk c <;> simp
+
+/-- With pure oracles, `decapsNotBotM` is the fixed-function decapsulation `decapsNotBot`. -/
+@[simp] theorem decapsNotBotM_pure (S : Scheme PK SK M R CT K) (G : M → R)
+    (H : Bool × M × CT → K) (dk : ImplicitSK PK SK M) (c : CT) :
+    S.decapsNotBotM (m := m) (pure ∘ G) (pure ∘ H) dk c = pure (S.decapsNotBot G H dk c) := by
+  unfold decapsNotBotM decapsNotBot
+  rw [decTM_pure, pure_bind]
+  cases decT S.pke G dk.pk dk.sk c <;> rfl
+
+/-- `decapsBotM` as explicit oracle calls: no query when `Dec` fails; otherwise `G(m')`, then
+`H(false, m', c)` exactly when the re-encryption check passes. -/
+theorem decapsBotM_eq (S : Scheme PK SK M R CT K) (G : M → m R) (H : Bool × M × CT → m K)
+    (pk : PK) (sk : SK) (c : CT) :
+    S.decapsBotM G H pk sk c =
+      (match S.pke.dec sk c with
+      | none => return none
+      | some m' => do
+        let r' ← G m'
+        if S.pke.encDet pk m' r' = c then do
+          let k ← H (false, m', c)
+          return some k
+        else
+          return none) := by
+  unfold decapsBotM decTM
+  cases S.pke.dec sk c with
+  | none => simp
+  | some m' =>
+    simp only [bind_assoc, pure_bind]
+    refine bind_congr fun r' => ?_
+    split_ifs <;> simp
+
+/-- `decapsNotBotM` as explicit oracle calls: `H(true, dk.fallback, c)` when `Dec` fails;
+otherwise `G(m')`, then `H(false, m', c)` or `H(true, dk.fallback, c)` by the re-encryption
+check. -/
+theorem decapsNotBotM_eq (S : Scheme PK SK M R CT K) (G : M → m R) (H : Bool × M × CT → m K)
+    (dk : ImplicitSK PK SK M) (c : CT) :
+    S.decapsNotBotM G H dk c =
+      (match S.pke.dec dk.sk c with
+      | none => H (true, dk.fallback, c)
+      | some m' => do
+        let r' ← G m'
+        if S.pke.encDet dk.pk m' r' = c then H (false, m', c) else H (true, dk.fallback, c)) := by
+  unfold decapsNotBotM decTM
+  cases S.pke.dec dk.sk c with
+  | none => simp
+  | some m' =>
+    simp only [bind_assoc, pure_bind]
+    refine bind_congr fun r' => ?_
+    split_ifs <;> rfl
+
+end OracleAccess
 
 end Scheme
 

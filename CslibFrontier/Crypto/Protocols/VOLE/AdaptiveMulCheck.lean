@@ -316,15 +316,13 @@ theorem maskedMulCheckReceiverSimulate_accepts (left right output : ι → Fin n
         (maskedMulCheckSpec F ι n) View)) (z : Aux)
     {result : (F × (Fin (n + 1) → F)) × Transcript (maskedMulCheckSpec F ι n) × View}
     (hv : result ∈ (ProbComp.eval (maskedMulCheckReceiverSimulate left right output V z)).support) :
-    maskedMulCheckValue left right output result.1.1 result.1.2
-        result.2.1.1 result.2.1.2.1 =
-      result.2.1.2.2.1.1 * result.1.1 + result.2.1.2.2.1.2 := by
+    MaskedMulCheckAccepts left right output result.1 result.2.1 := by
   rw [maskedMulCheckReceiverSimulate_eq] at hv
   simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
     PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hv
   rcases hv with ⟨delta, _, q, _, v, _, d, _, challenge, _, ⟨r, continuation⟩, _,
     a, _, terminal, _, view, _, rfl⟩
-  dsimp
+  dsimp only [MaskedMulCheckAccepts]
   ring
 
 end Cslib.Crypto.Protocols.VOLE

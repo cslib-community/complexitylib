@@ -60,9 +60,7 @@ uses its first occurrence, and missing selected bits are false. -/
 theorem getD_readPositions_idxOf {positions : List ℕ} (word : List Bool) {j : ℕ}
     (hj : j ∈ positions) :
     (readPositions positions word).getD (positions.idxOf j) false = word.getD j false := by
-  have hindex : positions.idxOf j < positions.length := List.idxOf_lt_length_iff.mpr hj
-  rw [List.getD_eq_getElem _ _ (by simpa only [length_readPositions] using hindex)]
-  simp [readPositions, List.getElem_idxOf]
+  simp [readPositions, List.getD_eq_getElem?_getD, hj]
 
 /-- Restored bits come from the selected word at selected positions and the reference elsewhere. -/
 theorem getD_restorePositions (positions : List ℕ) (reference bits : List Bool) {j : ℕ}

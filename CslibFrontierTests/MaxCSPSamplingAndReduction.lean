@@ -321,12 +321,12 @@ theorem thresholdLanguage_expTime_bruteForce :
       (KSAT_decidableInExpTime_one 3)
 
 /-- Native `FixedWidthSATSolver 3` instantiated via `FixedWidthSATSolver.exists_bruteForce` to
-verify `FixedWidthSATSolver.exists_optimum_algorithm` end-to-end in `2 ^ (957 * workSize + 957)`
-time and polynomial space. -/
+verify `FixedWidthSATSolver.exists_optimum_algorithm` end-to-end in
+`2 ^ thresholdVarBudget workSize` time and polynomial space. -/
 theorem exists_bruteForce_optimum_from_solver :
     ∃ d : ℕ,
       ComputableInO StructInstance.optimum encStructInstance encNat
-        (fun F => 2 ^ (957 * F.workSize + 957) * ((encStructInstance F).length + 1) ^ d)
+        (fun F => 2 ^ thresholdVarBudget F.workSize * ((encStructInstance F).length + 1) ^ d)
         (fun F => ((encStructInstance F).length + 1) ^ d) := by
   obtain ⟨solver, -, hrate⟩ := FixedWidthSATSolver.exists_bruteForce 3
   obtain ⟨d, hinO⟩ := solver.exists_optimum_algorithm (k := 3) le_rfl

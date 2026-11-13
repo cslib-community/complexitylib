@@ -238,8 +238,10 @@ theorem rot_le_one_of_deal211 {sc : Schedule 2 noOracleSpec} {Coins : Fin 2 → 
     (proto : MPC.Protocol 2 noOracleSpec sc (Fin.cases (Fin 4 × Fin 4) (fun _ => Fin 4)) Coins
       (fun _ => Fin k → Bool × Bool))
     (S : (I : Finset (Fin 2)) →
-      CorrelatedSimulator sc (Fin 4 × Fin 4) (Fin 4) Coins (fun _ => Fin k → Bool × Bool) I)
-    (hPriv : PerfectSemiHonestPrivateProperOverSource proto deal211 (idealROT k) S) :
+      SetupSimulator sc (fun _ => Unit) (Fin.cases (Fin 4 × Fin 4) (fun _ => Fin 4)) Coins
+        (fun _ => Fin k → Bool × Bool) I)
+    (hPriv : PerfectSemiHonestPrivateProperWithSetup proto noOracleWorld
+      (fun _ => dealSource deal211) (rotFunctionality k) S) :
     k ≤ 1 := by
   have hk := rot_le_mutualInfo proto deal211 S hPriv
   rw [mutualInfo_deal211] at hk
@@ -253,11 +255,11 @@ theorem chosenOT_le_one_of_deal211 {sc : Schedule 2 noOracleSpec} {Coins : Fin 2
       (fun i => (batchOTSpec k Bool).Query () i × Fin.cases (Fin 4 × Fin 4) (fun _ => Fin 4) i)
       Coins ((batchOTSpec k Bool).Answer ()))
     (S : (I : Finset (Fin 2)) →
-      CorrelatedSimulatorWithInput sc (Fin 4 × Fin 4) (Fin 4) ((batchOTSpec k Bool).Query ()) Coins
-        ((batchOTSpec k Bool).Answer ()) I)
-    (hPriv :
-      PerfectSemiHonestPrivateProperWithInputOverSource proto deal211 (batchOTFunctionality k Bool)
-        S) :
+      SetupSimulator sc ((batchOTSpec k Bool).Query ())
+        (fun i => (batchOTSpec k Bool).Query () i × Fin.cases (Fin 4 × Fin 4) (fun _ => Fin 4) i)
+        Coins ((batchOTSpec k Bool).Answer ()) I)
+    (hPriv : PerfectSemiHonestPrivateProperWithSetup proto noOracleWorld
+      (dealSourceWithInput deal211) (batchOTFunctionality k Bool) S) :
     k ≤ 1 := by
   have hk := chosenOT_le_mutualInfo proto deal211 S hPriv
   rw [mutualInfo_deal211] at hk
@@ -476,9 +478,11 @@ theorem rot_le_one_of_deal211Unordered {sc : Schedule 2 noOracleSpec} {Coins : F
       (Fin.cases {s : Finset (Fin 4) // s.card = 2} (fun _ => Fin 4)) Coins
       (fun _ => Fin k → Bool × Bool))
     (S : (I : Finset (Fin 2)) →
-      CorrelatedSimulator sc {s : Finset (Fin 4) // s.card = 2} (Fin 4) Coins
+      SetupSimulator sc (fun _ => Unit)
+        (Fin.cases {s : Finset (Fin 4) // s.card = 2} (fun _ => Fin 4)) Coins
         (fun _ => Fin k → Bool × Bool) I)
-    (hPriv : PerfectSemiHonestPrivateProperOverSource proto deal211Unordered (idealROT k) S) :
+    (hPriv : PerfectSemiHonestPrivateProperWithSetup proto noOracleWorld
+      (fun _ => dealSource deal211Unordered) (rotFunctionality k) S) :
     k ≤ 1 := by
   have hk := rot_le_mutualInfo proto deal211Unordered S hPriv
   rw [mutualInfo_deal211Unordered] at hk
@@ -493,10 +497,12 @@ theorem chosenOT_le_one_of_deal211Unordered {sc : Schedule 2 noOracleSpec} {Coin
         Fin.cases {s : Finset (Fin 4) // s.card = 2} (fun _ => Fin 4) i)
       Coins ((batchOTSpec k Bool).Answer ()))
     (S : (I : Finset (Fin 2)) →
-      CorrelatedSimulatorWithInput sc {s : Finset (Fin 4) // s.card = 2} (Fin 4)
-        ((batchOTSpec k Bool).Query ()) Coins ((batchOTSpec k Bool).Answer ()) I)
-    (hPriv : PerfectSemiHonestPrivateProperWithInputOverSource proto deal211Unordered
-      (batchOTFunctionality k Bool) S) :
+      SetupSimulator sc ((batchOTSpec k Bool).Query ())
+        (fun i => (batchOTSpec k Bool).Query () i ×
+          Fin.cases {s : Finset (Fin 4) // s.card = 2} (fun _ => Fin 4) i)
+        Coins ((batchOTSpec k Bool).Answer ()) I)
+    (hPriv : PerfectSemiHonestPrivateProperWithSetup proto noOracleWorld
+      (dealSourceWithInput deal211Unordered) (batchOTFunctionality k Bool) S) :
     k ≤ 1 := by
   have hk := chosenOT_le_mutualInfo proto deal211Unordered S hPriv
   rw [mutualInfo_deal211Unordered] at hk
@@ -587,9 +593,11 @@ theorem rot_le_of_deal211Batch {m k : ℕ} {sc : Schedule 2 noOracleSpec} {Coins
       (Fin.cases (Fin m → Fin 4 × Fin 4) (fun _ => Fin m → Fin 4)) Coins
       (fun _ => Fin k → Bool × Bool))
     (S : (I : Finset (Fin 2)) →
-      CorrelatedSimulator sc (Fin m → Fin 4 × Fin 4) (Fin m → Fin 4) Coins
+      SetupSimulator sc (fun _ => Unit)
+        (Fin.cases (Fin m → Fin 4 × Fin 4) (fun _ => Fin m → Fin 4)) Coins
         (fun _ => Fin k → Bool × Bool) I)
-    (hPriv : PerfectSemiHonestPrivateProperOverSource proto (deal211Batch m) (idealROT k) S) :
+    (hPriv : PerfectSemiHonestPrivateProperWithSetup proto noOracleWorld
+      (fun _ => dealSource (deal211Batch m)) (rotFunctionality k) S) :
     k ≤ m := by
   have hk := rot_le_mutualInfo proto (deal211Batch m) S hPriv
   rw [mutualInfo_deal211Batch] at hk
@@ -604,10 +612,12 @@ theorem chosenOT_le_of_deal211Batch {m k : ℕ} {sc : Schedule 2 noOracleSpec} {
         Fin.cases (Fin m → Fin 4 × Fin 4) (fun _ => Fin m → Fin 4) i)
       Coins ((batchOTSpec k Bool).Answer ()))
     (S : (I : Finset (Fin 2)) →
-      CorrelatedSimulatorWithInput sc (Fin m → Fin 4 × Fin 4) (Fin m → Fin 4)
-        ((batchOTSpec k Bool).Query ()) Coins ((batchOTSpec k Bool).Answer ()) I)
-    (hPriv : PerfectSemiHonestPrivateProperWithInputOverSource proto (deal211Batch m)
-      (batchOTFunctionality k Bool) S) :
+      SetupSimulator sc ((batchOTSpec k Bool).Query ())
+        (fun i => (batchOTSpec k Bool).Query () i ×
+          Fin.cases (Fin m → Fin 4 × Fin 4) (fun _ => Fin m → Fin 4) i)
+        Coins ((batchOTSpec k Bool).Answer ()) I)
+    (hPriv : PerfectSemiHonestPrivateProperWithSetup proto noOracleWorld
+      (dealSourceWithInput (deal211Batch m)) (batchOTFunctionality k Bool) S) :
     k ≤ m := by
   have hk := chosenOT_le_mutualInfo proto (deal211Batch m) S hPriv
   rw [mutualInfo_deal211Batch] at hk
@@ -622,8 +632,10 @@ theorem rot_le_entropy_fst {sc : Schedule 2 noOracleSpec} {A B : Type} {Coins : 
       (fun _ => Fin k → Bool × Bool))
     (source : PMF (A × B))
     (S : (I : Finset (Fin 2)) →
-      CorrelatedSimulator sc A B Coins (fun _ => Fin k → Bool × Bool) I)
-    (hPriv : PerfectSemiHonestPrivateProperOverSource proto source (idealROT k) S) :
+      SetupSimulator sc (fun _ => Unit) (Fin.cases A (fun _ => B)) Coins
+        (fun _ => Fin k → Bool × Bool) I)
+    (hPriv : PerfectSemiHonestPrivateProperWithSetup proto noOracleWorld
+      (fun _ => dealSource source) (rotFunctionality k) S) :
     (k : ℝ) ≤ entropy (source.map Prod.fst) :=
   (rot_le_mutualInfo proto source S hPriv).trans (mutualInfo_le_entropy_map_fst source)
 
@@ -636,8 +648,10 @@ theorem rot_le_entropy_snd {sc : Schedule 2 noOracleSpec} {A B : Type} {Coins : 
       (fun _ => Fin k → Bool × Bool))
     (source : PMF (A × B))
     (S : (I : Finset (Fin 2)) →
-      CorrelatedSimulator sc A B Coins (fun _ => Fin k → Bool × Bool) I)
-    (hPriv : PerfectSemiHonestPrivateProperOverSource proto source (idealROT k) S) :
+      SetupSimulator sc (fun _ => Unit) (Fin.cases A (fun _ => B)) Coins
+        (fun _ => Fin k → Bool × Bool) I)
+    (hPriv : PerfectSemiHonestPrivateProperWithSetup proto noOracleWorld
+      (fun _ => dealSource source) (rotFunctionality k) S) :
     (k : ℝ) ≤ entropy (source.map Prod.snd) :=
   (rot_le_mutualInfo proto source S hPriv).trans (mutualInfo_le_entropy_map_snd source)
 
@@ -650,8 +664,10 @@ theorem rot_le_logb_card_fst {sc : Schedule 2 noOracleSpec} {A B : Type} {Coins 
       (fun _ => Fin k → Bool × Bool))
     (source : PMF (A × B))
     (S : (I : Finset (Fin 2)) →
-      CorrelatedSimulator sc A B Coins (fun _ => Fin k → Bool × Bool) I)
-    (hPriv : PerfectSemiHonestPrivateProperOverSource proto source (idealROT k) S) :
+      SetupSimulator sc (fun _ => Unit) (Fin.cases A (fun _ => B)) Coins
+        (fun _ => Fin k → Bool × Bool) I)
+    (hPriv : PerfectSemiHonestPrivateProperWithSetup proto noOracleWorld
+      (fun _ => dealSource source) (rotFunctionality k) S) :
     (k : ℝ) ≤ Real.logb 2 (Fintype.card A) :=
   (rot_le_entropy_fst proto source S hPriv).trans (entropy_le_log_card _)
 
@@ -664,8 +680,10 @@ theorem rot_le_logb_card_snd {sc : Schedule 2 noOracleSpec} {A B : Type} {Coins 
       (fun _ => Fin k → Bool × Bool))
     (source : PMF (A × B))
     (S : (I : Finset (Fin 2)) →
-      CorrelatedSimulator sc A B Coins (fun _ => Fin k → Bool × Bool) I)
-    (hPriv : PerfectSemiHonestPrivateProperOverSource proto source (idealROT k) S) :
+      SetupSimulator sc (fun _ => Unit) (Fin.cases A (fun _ => B)) Coins
+        (fun _ => Fin k → Bool × Bool) I)
+    (hPriv : PerfectSemiHonestPrivateProperWithSetup proto noOracleWorld
+      (fun _ => dealSource source) (rotFunctionality k) S) :
     (k : ℝ) ≤ Real.logb 2 (Fintype.card B) :=
   (rot_le_entropy_snd proto source S hPriv).trans (entropy_le_log_card _)
 
