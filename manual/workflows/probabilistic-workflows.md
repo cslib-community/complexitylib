@@ -78,6 +78,12 @@ condition, a relabeling and an almost sure event. For a two-stage law
 `a` and keeps the kernel. When the second draw is independent of the first,
 `filter_bind_pair_prod` conditions both factors on a rectangle `s ×ˢ t`, and
 `map_snd_filter_bind_pair_prod` shows that the condition on `a` does not affect the law of `b`.
+To state that two observables of a PMF are independent, import
+[PMF/Independence.lean](../../CslibFrontier/Probability/PMF/Independence.lean):
+`indepFun_iff_map_pair_eq_bind` identifies Mathlib's `IndepFun f g p.toMeasure` with this
+two-stage form `p.map (f, g) = (p.map f).bind fun a => (p.map g).map (a, ·)`. When `Y` is
+moreover uniform on a finite type, state `IndepUniform ν X Y`, consume it with `.map_pair_eq`,
+and use `indepUniform_iff` to split it into `IndepFun` and `ν.map Y = uniformOfFintype _`.
 
 Import [StatisticalDistance/Event.lean](../../CslibFrontier/Probability/StatisticalDistance/Event.lean)
 to turn a distance bound into event bounds. Here `dist` is cslib's statistical distance on PMFs
