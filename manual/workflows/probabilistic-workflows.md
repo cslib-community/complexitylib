@@ -109,9 +109,12 @@ indexed by `ι × κ` into independent blocks, and `toOuterMeasure_pi_forall` in
 box `{u | ∀ i, u i ∈ E i}`. To move a finite statistic of i.i.d. samples from a measure into this
 setting, import [Product/MapMeasure.lean](../../CslibFrontier/Probability/Product/MapMeasure.lean):
 `map_measurePi_eq_toMeasure_pi` identifies the image of `Measure.pi μ` under coordinatewise
-measurable maps into finite types with `(pi fun i => ((μ i).map (g i)).toPMF).toMeasure`, after
-which the PMF concentration bounds apply.
-For a uniform draw on a finite group, import
+almost everywhere measurable maps into finite types with
+`(pi fun i => ((μ i).map (g i)).toPMF).toMeasure`. The finite-product bounds then apply:
+Hoeffding's `pi_sum_abs_sub_mean_ge` in
+[Concentration.lean](../../CslibFrontier/Probability/Concentration.lean) and the Chernoff lower
+tail `pi_sum_le_one_sub_mul` in [Chernoff.lean](../../CslibFrontier/Probability/Chernoff.lean). For
+a uniform draw on a finite group, import
 [Uniform.lean](../../CslibFrontier/Probability/Uniform.lean): `uniformOfFintype_map_add_left` and
 `uniformOfFintype_bind_add_left`, with their `_right` forms, remove a fixed mask as in the one-time
 pad, and the `_sub_left` and `_sub_right` forms in
@@ -1608,17 +1611,28 @@ lists in a record or several caches for several oracles, rather than running a p
    and answering every call from the table. `RandomOracle.bind_complete_sum` then splits the
    completed table into one independent table per oracle.
 
+The checked clients are `Scheme.eval_romIndCcaExperiment_eq_eager` in
+[FujisakiOkamoto/Security.lean](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Security.lean),
+with two caches for `G` and `H` and a decapsulation oracle given as a program over both, which
+proves the step once for the `FO-notbot` and `FO^⊥` games, and
+`Scheme.eval_coupledGame_eq_eagerCoupledGame` in
+[NotBot/Lazy.lean](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/NotBot/Lazy.lean),
+with three caches and a key-derivation query that calls two oracles. Check them, and the
+approximate client below, with
+`scripts/build.sh --wfail --iofail CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Bot`.
+
 This proves an exact equality, so step 3 fails when a handler also inspects its caches directly,
 for example a decapsulation filter that checks whether a message was already queried. Such a hop
-needs an approximate simulation instead, as in `closeTo_cachedCoupledBotGame_eagerCoupledBotGame`
-in [FujisakiOkamoto/Bot.lean](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Bot.lean).
-
-The checked clients are `Scheme.eval_roIndCcaGame_eq_eagerIndCcaGame` in
-[FujisakiOkamoto/Security.lean](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Security.lean),
-with two caches for `G` and `H`, and `Scheme.eval_coupledGame_eq_eagerCoupledGame` in
-[NotBot/Lazy.lean](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/NotBot/Lazy.lean),
-with three caches and a key-derivation query that calls two oracles. Check them with
-`scripts/build.sh --wfail --iofail CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Lazy`.
+needs an approximate simulation instead. Import
+[Simulation/CloseTo.lean](../../CslibFrontier/Languages/Probabilistic/Simulation/CloseTo.lean) and
+apply `OracleComp.closeTo_run_interpret_simulation_readOnly` with
+`relate s := RandomOracle.complete distribution (rep s)` and a cost function that charges only the
+calls that read the cache. For each call, `RandomOracle.eval_run_interpret_bind_complete` gives the
+joint law of the answer and the completed final cache. On the calls that answer as a lazy oracle
+this is already the eager side, so only the cache-reading calls need a statistical-distance bound.
+The checked client is `closeTo_cachedCoupledBotGame_eagerCoupledBotGame` in
+[FujisakiOkamoto/Bot.lean](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Bot.lean),
+whose `G` and `H` calls are exact and whose decapsulation call costs `2^{-γ}` by spreadness.
 
 ## Certify an adaptive oracle client
 
@@ -1724,8 +1738,9 @@ and apply `hybrid_indcca2On`. Supply the existing KEM CCA indistinguishability a
 `F` satisfying `(uniformList (keyLen n)).map (F n) = eval (E.keyGen n)` for every `n`.
 Postprocess every successful decapsulation with `Option.map (F n)` too. The conclusion uses
 `INDCCA2On` with both challenge lengths equal to `n`, not unrestricted `WordINDCCA2`.
-`exists_hybridCCA_reductions` returns native KEM and symmetric adversaries and the exact
-`2 * KEM advantage + symmetric advantage` bound. Reply caps are derived from supported
+`exists_hybridCCA_reductions` returns a `HybridCCAReductions` record: native KEM and symmetric
+adversaries `kem` and `dem` with the exact `2 * KEM advantage + symmetric advantage` bound
+`advantage_le`. Reply caps are derived from supported
 secret-key lengths and the native decryptor; external replies need no assumed length bound.
 
 The [complete composition clients](../../CslibFrontierTests/Crypto/HybridCompositionCCA.lean)

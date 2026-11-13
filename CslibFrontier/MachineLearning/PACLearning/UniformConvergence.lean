@@ -93,7 +93,7 @@ theorem measure_pi_le_abs_card_filter_div_sub_measure (μ : Measure Z) [IsProbab
   set q : PMF Bool := (μ.map g).toPMF
   have hmap : (Measure.pi fun _ : Fin m => μ).map (fun S i => g (S i)) =
       (Cslib.Probability.PMF.pi fun _ : Fin m => q).toMeasure :=
-    Cslib.Probability.PMF.map_measurePi_eq_toMeasure_pi _ fun _ => hg
+    Cslib.Probability.PMF.map_measurePi_eq_toMeasure_pi _ fun _ => hg.aemeasurable
   have hgm : Measurable fun (S : Fin m → Z) i => g (S i) :=
     measurable_pi_iff.2 fun i => hg.comp (measurable_pi_apply i)
   have hqt : (q true).toReal = (μ {z | g z = true}).toReal := by

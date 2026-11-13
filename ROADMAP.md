@@ -139,6 +139,9 @@ Information-theoretic private information retrieval, following Chorâ€“Goldreichâ
 
 ### Concurrent and quantum security
 
+- **NIST post-quantum portfolio** ([#4987](https://github.com/cslib-community/cslib-frontier/issues/4987)): Faithful protocols, exact asymptotic assumptions and checked quantum security reductions for ML-KEM, ML-DSA, SLH-DSA, FN-DSA, HQC and every active additional-signature candidate.
+  Reuse operational quantum-PPT/QROM models and concrete-to-asymptotic reductions; keep source-required sampling, abort, transform and failure obligations explicit, including evolving or unsupported claims.
+
 - **Concurrent composition**: Extend the protocol semantics with environments, scheduling, session identifiers and concurrent executions, and prove a composition theorem with efficient simulators and explicit setup, corruption and communication assumptions.
   Then develop selected adaptive-corruption and non-malleability applications, alongside the static-malicious OT target.
 - **Quantum-secure cryptography**: Define uniform quantum-efficient distinguishers and computational indistinguishability with quantum side information, and justify security reductions for concrete constructions in that model.

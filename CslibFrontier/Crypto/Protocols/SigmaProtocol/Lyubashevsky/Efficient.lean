@@ -314,8 +314,8 @@ theorem extractorRealizedBy_lyubashevskyExtractorAdapter :
         ((p.m, p.k),
           ((lyubashevskyEncoding.challenge p c, lyubashevskyEncoding.response p z),
             (lyubashevskyEncoding.challenge p c', lyubashevskyEncoding.response p z'))) =
-      encLyubashevskyExtractInput ((p.m, p.k),
-        ((List.ofFn c, z.map List.ofFn), (List.ofFn c', z'.map List.ofFn))) := rfl
+      encLyubashevskyExtractInput
+        ⟨⟨p.m, p.k⟩, ⟨List.ofFn c, z.map List.ofFn⟩, ⟨List.ofFn c', z'.map List.ofFn⟩⟩ := rfl
   dsimp only [lyubashevskyExtractorAdapter]
   rw [hinput, lyubashevskyExtractWord_eq_extract p.n p.m p.k p.q y t c z c' z']
   rfl
