@@ -9,12 +9,11 @@ module
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Decoder
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.IntBinary.Decode
-public import CslibFrontier.Crypto.Computational.LWE.Basic
 public import CslibFrontier.Crypto.Computational.SIS.Basic
 public import CslibFrontier.Foundations.Algebra.Negacyclic
 
 /-!
-# Negacyclic Polynomial Rings, Module-SIS and Module-LWE
+# Negacyclic Polynomial Rings and Module-SIS
 
 This module states structured lattice problems over the negacyclic polynomial ring
 `R_q = ℤ_q[X] / (X^n + 1)` ([Lyubashevsky2012], [DucasEtAl2018]). The unstructured short integer
@@ -36,11 +35,8 @@ solution problem is in `CslibFrontier.Crypto.Computational.SIS.Basic`.
    advantage for the parameter family `M`. Solver machines read a module matrix through its
    expansion (`ModuleSIS.encodeMatrix`). This module proves no relation between `ModuleSIS` and
    `SIS`, whose experiment draws a uniform unstructured matrix.
-3. **Module-LWE (`ModuleLWE`, `DecisionModuleLWE`)**:
-   Samples `(A, A · s + e)` over `R_q` expand via `expandModuleMatrix` and `flattenPolyVec` into
-   standard LWE relations `(expandModuleMatrix A) *ᵥ flattenPolyVec s + flattenPolyVec e`
-   (`ModuleLWE.flattenPolyVec_sample`), and `DecisionModuleLWE` states computational
-   indistinguishability of encoded Module-LWE samples from uniform module samples.
+
+Module-LWE over the same ring is in `CslibFrontier.Crypto.Computational.LWE.Module`.
 
 ## Main definitions
 
@@ -61,10 +57,6 @@ solution problem is in `CslibFrontier.Crypto.Computational.SIS.Basic`.
   inputs and their encoding, and efficient solvers.
 * `Cslib.Crypto.ModuleSIS`, `Cslib.Crypto.RingSIS`: the Module-SIS and Ring-SIS hardness
   hypotheses.
-* `Cslib.Crypto.ModuleLWE.sample`, `Cslib.Crypto.ModuleLWE.encodeSample`,
-  `Cslib.Crypto.ModuleLWE.sampleLaw`, `Cslib.Crypto.ModuleLWE.realEnsemble`,
-  `Cslib.Crypto.ModuleLWE.uniformEnsemble`, `Cslib.Crypto.DecisionModuleLWE`: Module-LWE sample
-  law, ensembles and decision hardness hypothesis.
 
 ## Main results
 
@@ -77,8 +69,6 @@ solution problem is in `CslibFrontier.Crypto.Computational.SIS.Basic`.
 * `Cslib.Crypto.ModuleSIS.isSolution_expandModuleMatrix_iff`,
   `Cslib.Crypto.ModuleSIS.isResidueSolution_expandModuleMatrix_iff`: `ModuleSIS` solutions are
   characterized by `SIS` solutions of `expandModuleMatrix A`.
-* `Cslib.Crypto.ModuleLWE.flattenPolyVec_sample`: Module-LWE samples flatten to standard LWE
-  matrix-vector relations under `expandModuleMatrix`.
 
 ## References
 
@@ -94,7 +84,7 @@ namespace Cslib.Crypto
 open Probability Turing.MultiTapeTM
 open scoped _root_.Matrix NNReal ENNReal
 
-/-! ### Part 1: Module-SIS, Ring-SIS and Structured-to-Unstructured Expansion -/
+/-! ### Module-SIS, Ring-SIS and Structured-to-Unstructured Expansion -/
 
 /-- The Module-SIS linear map `A · z` over `ℤ_q[X] / (X^n + 1)`: the `i`-th output polynomial
 is `∑ j : Fin k, negacyclicMul (A i j) (z j)`. -/
@@ -474,71 +464,5 @@ def ModuleSIS (M : ModuleSISParams) : Prop :=
 /-- The Ring-SIS hardness hypothesis is `ModuleSIS` at module rank `1`. -/
 abbrev RingSIS (R : RingSISParams) : Prop :=
   ModuleSIS R.toModuleSISParams
-
-/-! ### Part 2: Module-LWE and Structured Expansion -/
-
-namespace ModuleLWE
-
-/-- Deterministic Module-LWE noisy linear map `A · s + e` over `ℤ_q[X] / (X^n + 1)`. -/
-def sample {m d n q : ℕ}
-    (A : Matrix (Fin m) (Fin d) (Fin n → ZMod q))
-    (s : Fin d → Fin n → ZMod q)
-    (e : Fin m → Fin n → ZMod q) : Fin m → Fin n → ZMod q :=
-  moduleSISMap A s + e
-
-/-- **Structured-to-unstructured Module-LWE identity**: flattening `ModuleLWE.sample A s e` gives
-the standard LWE vector `expandModuleMatrix A *ᵥ flattenPolyVec s + flattenPolyVec e`. -/
-theorem flattenPolyVec_sample {m d n q : ℕ}
-    (A : Matrix (Fin m) (Fin d) (Fin n → ZMod q))
-    (s : Fin d → Fin n → ZMod q)
-    (e : Fin m → Fin n → ZMod q) :
-    flattenPolyVec (sample A s e) =
-      expandModuleMatrix A *ᵥ flattenPolyVec s + flattenPolyVec e := by
-  rw [sample, flattenPolyVec_add, expandModuleMatrix_mulVec]
-
-/-- Encode a Module-LWE public pair `(A, b)` as a framed pair of the encoded module matrix `A`
-and the framed list of natural residue coefficients of `b`. -/
-def encodeSample {m d n q : ℕ}
-    (pair : Matrix (Fin m) (Fin d) (Fin n → ZMod q) × (Fin m → Fin n → ZMod q)) : List Bool :=
-  encPair encBits (encList encNat)
-    (ModuleSIS.encodeMatrix pair.1,
-      List.ofFn fun c : Fin (m * n) => (flattenPolyVec pair.2 c).val)
-
-/-- Draw a Module-LWE sample `(A, A · s + e)` with uniform `A`, uniform secret `s`, and
-independent polynomial errors drawn from `noise`. -/
-noncomputable def sampleLaw (m d n q : ℕ) [NeZero q] (noise : PMF (Fin n → ZMod q)) :
-    PMF (Matrix (Fin m) (Fin d) (Fin n → ZMod q) × (Fin m → Fin n → ZMod q)) := do
-  let secret ← PMF.uniformOfFintype (Fin d → Fin n → ZMod q)
-  let A ← PMF.uniformOfFintype (Matrix (Fin m) (Fin d) (Fin n → ZMod q))
-  let error ← PMF.pi (fun _ : Fin m => noise)
-  return (A, sample A secret error)
-
-/-- Encoded real Module-LWE ensemble at each security parameter. -/
-noncomputable def realEnsemble (m d n q : ℕ → ℕ)
-    [∀ security, NeZero (q security)]
-    (noise : (security : ℕ) → PMF (Fin (n security) → ZMod (q security)))
-    (security : ℕ) : PMF (List Bool) :=
-  (sampleLaw (m security) (d security) (n security) (q security) (noise security)).map
-    encodeSample
-
-/-- Encoded uniform comparison ensemble `(A, u)` with independent uniform `A` and `u`. -/
-noncomputable def uniformEnsemble (m d n q : ℕ → ℕ)
-    [∀ security, NeZero (q security)]
-    (security : ℕ) : PMF (List Bool) :=
-  (PMF.uniformOfFintype
-    (Matrix (Fin (m security)) (Fin (d security)) (Fin (n security) → ZMod (q security)) ×
-      (Fin (m security) → Fin (n security) → ZMod (q security)))).map encodeSample
-
-end ModuleLWE
-
-/-- The Decision Module-LWE hardness hypothesis over `ℤ_q[X] / (X^n + 1)`: encoded samples
-`(A, A · s + e)` are computationally indistinguishable from uniform pairs `(A, u)` against
-uniform classical strict PPT distinguishers. -/
-def DecisionModuleLWE (m d n q : ℕ → ℕ)
-    [∀ security, NeZero (q security)]
-    (noise : (security : ℕ) → PMF (Fin (n security) → ZMod (q security))) : Prop :=
-  ComputationallyIndistinguishable
-    (ModuleLWE.realEnsemble m d n q noise)
-    (ModuleLWE.uniformEnsemble m d n q)
 
 end Cslib.Crypto
