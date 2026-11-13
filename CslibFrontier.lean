@@ -2845,6 +2845,7 @@ public import CslibFrontier.Computability.Interactive.Security.Repeat
 public import CslibFrontier.Computability.Interactive.Sequential
 public import CslibFrontier.Computability.Interactive.StrategyEffect
 public import CslibFrontier.Computability.Interactive.Sumcheck
+public import CslibFrontier.Computability.Interactive.ThreeMove
 public import CslibFrontier.Computability.Interactive.ToIP
 public import CslibFrontier.Computability.Kolmogorov.AverageCase
 public import CslibFrontier.Computability.Kolmogorov.Basic
