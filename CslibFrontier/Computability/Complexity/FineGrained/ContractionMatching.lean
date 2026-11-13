@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.FineGrained.ContractionPartitionFunction
 public import CslibFrontier.Logics.Propositional.CSP.Permanent
 public import CslibFrontier.Computability.Complexity.Problems.Graph.PerfectMatching
+public import CslibFrontier.Computability.Complexity.Problems.Permanent.Basic
 import CslibFrontier.Computability.Complexity.Problems.Graph.PerfectMatchingPolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Preprocess
 import CslibFrontier.Computability.PolyTime.CSP.Vars
@@ -30,7 +31,7 @@ matchings of a graph on `n` vertices of maximum degree `d`
 (`ContractionMatching.exists_perfectMatchingCounter`). Both run, on every input, in time
 `2 ^ (A (n + 1) / √⌊log₂ (n + 2)⌋)` times a polynomial in the encoding length, and in polynomial
 space, with constants depending only on `d`. The inputs are standard encodings: a matrix is a list
-of rows (`encList encBits`, read by `ContractionMatching.rowsMatrix`), and a graph is a vertex and
+of rows (`encList encBits`, read by `Cslib.Complexity.boolTableMatrix`), and a graph is a vertex and
 edge list (`Cslib.Complexity.encGraph`, read as `Cslib.Complexity.Graph.induced`).
 
 Both problems are Holant problems: one Boolean variable per edge of a graph, and one exactly-one
@@ -65,8 +66,9 @@ Holant encoding with exactly-one tables instead of the 3-CNF encoding.
 * `Cslib.Complexity.ContractionMatching.zeroInstance`,
   `Cslib.Complexity.ContractionMatching.guarded`: the instance answered in place of one with an
   empty or overlong scope.
-* `Cslib.Complexity.ContractionMatching.rowEntry`,
-  `Cslib.Complexity.ContractionMatching.rowsMatrix`: the square `0/1` matrix of a list of rows.
+* `Cslib.Complexity.ContractionMatching.rowEntry`: entry `(i, j)` of a list of rows, read by the
+  permanent instance; `ContractionMatching.boolTableMatrix_eq_rowEntry` relates it to the shared
+  `0/1` matrix `Cslib.Complexity.boolTableMatrix`.
 
 ## Main results
 
@@ -203,23 +205,19 @@ missing. -/
 @[expose] def rowEntry (rows : List (List Bool)) (i j : ℕ) : Bool :=
   (rows.getD i []).getD j false
 
-/-- The square `0/1` matrix with rows `rows`, of size `rows.length`: entry `(i, j)` is one when
-entry `j` of row `i` is `true`, and zero when it is `false` or missing. -/
-@[expose] def rowsMatrix (rows : List (List Bool)) :
-    Matrix (Fin rows.length) (Fin rows.length) ℕ :=
-  Matrix.of fun i j => if rows[i].getD j false then 1 else 0
-
-theorem rowsMatrix_eq (rows : List (List Bool)) :
-    rowsMatrix rows =
+/-- The shared `0/1` matrix of a list of rows, read through `rowEntry`. -/
+theorem boolTableMatrix_eq_rowEntry (rows : List (List Bool)) :
+    boolTableMatrix rows =
       Matrix.of fun i j : Fin rows.length => if rowEntry rows i j then 1 else 0 := by
   ext i j
-  simp only [rowsMatrix, rowEntry, Matrix.of_apply, List.getD_eq_getElem _ _ i.2]
-  rfl
+  simp only [boolTableMatrix_apply, rowEntry, Matrix.of_apply, List.getD_eq_getElem _ _ i.2]
+  cases rows[i].getD j false <;> rfl
 
-/-- The nonzero entries of `rowsMatrix rows` are the `true` entries of the rows. -/
-theorem rowsMatrix_ne_zero_iff {rows : List (List Bool)} {i j : Fin rows.length} :
-    rowsMatrix rows i j ≠ 0 ↔ rowEntry rows i j = true := by
-  rw [rowsMatrix_eq, Matrix.of_apply]
+/-- The nonzero entries of `boolTableMatrix rows` are the `true` entries of the rows. -/
+private theorem boolTableMatrix_ne_zero_iff_rowEntry {rows : List (List Bool)}
+    {i j : Fin rows.length} :
+    boolTableMatrix rows i j ≠ 0 ↔ rowEntry rows i j = true := by
+  rw [boolTableMatrix_eq_rowEntry, Matrix.of_apply]
   cases rowEntry rows i j <;> simp
 
 /-- Building the permanent instance of the matrix with rows `rows` is polynomial-time. -/
@@ -235,27 +233,28 @@ open Finset in
 /-- Under the degree promise, every constraint of the permanent instance has at most `d`
 variables. -/
 private theorem length_le_of_mem_permanentInstance {d : ℕ} {rows : List (List Bool)}
-    (hrow : ∀ i, #{j | rowsMatrix rows i j ≠ 0} ≤ d)
-    (hcol : ∀ j, #{i | rowsMatrix rows i j ≠ 0} ≤ d) {c : Constraint Unit ℕ}
+    (hrow : ∀ i, #{j | boolTableMatrix rows i j ≠ 0} ≤ d)
+    (hcol : ∀ j, #{i | boolTableMatrix rows i j ≠ 0} ≤ d) {c : Constraint Unit ℕ}
     (hc : c ∈ CSP.permanentInstance rows.length (rowEntry rows)) : c.scope.length ≤ d := by
   simp only [CSP.permanentInstance, List.mem_append, List.mem_map, List.mem_range] at hc
   rcases hc with ⟨i, hi, rfl⟩ | ⟨j, hj, rfl⟩
   · rw [List.length_map, ← List.countP_eq_length_filter, List.countP_range_eq_card_filter]
-    simpa only [rowsMatrix_ne_zero_iff] using hrow ⟨i, hi⟩
+    simpa only [boolTableMatrix_ne_zero_iff_rowEntry] using hrow ⟨i, hi⟩
   · rw [List.length_map, ← List.countP_eq_length_filter, List.countP_range_eq_card_filter]
-    simpa only [rowsMatrix_ne_zero_iff] using hcol ⟨j, hj⟩
+    simpa only [boolTableMatrix_ne_zero_iff_rowEntry] using hcol ⟨j, hj⟩
 
 open Finset in
 /-- **The `0/1` permanent with at most `d` nonzero entries per row and column in time
 `2 ^ O(n / √log n)`.** For each `d`, one machine reads a list of rows `rows` (encoded by
-`encList encBits`) and, when every row and every column of the `n × n` matrix `rowsMatrix rows`
-has at most `d` nonzero entries, outputs its permanent. On every input it runs in time
-`2 ^ (A (n + 1) / √⌊log₂ (n + 2)⌋)` times a polynomial in the encoding length, and in polynomial
-space, for `n = rows.length`. The constants `A`, `e` and `b` depend only on `d`. -/
+`encList encBits`) and, when every row and every column of the `n × n` matrix
+`boolTableMatrix rows` has at most `d` nonzero entries, outputs its permanent. On every input it
+runs in time `2 ^ (A (n + 1) / √⌊log₂ (n + 2)⌋)` times a polynomial in the encoding length, and
+in polynomial space, for `n = rows.length`. The constants `A`, `e` and `b` depend only on `d`. -/
 theorem exists_permanentCounter (d : ℕ) :
     ∃ (count : List (List Bool) → ℕ) (A e b : ℕ),
-      (∀ rows : List (List Bool), (∀ i, #{j | rowsMatrix rows i j ≠ 0} ≤ d) →
-        (∀ j, #{i | rowsMatrix rows i j ≠ 0} ≤ d) → count rows = (rowsMatrix rows).permanent) ∧
+      (∀ rows : List (List Bool), (∀ i, #{j | boolTableMatrix rows i j ≠ 0} ≤ d) →
+        (∀ j, #{i | boolTableMatrix rows i j ≠ 0} ≤ d) →
+          count rows = (boolTableMatrix rows).permanent) ∧
       ComputableInO count (encList encBits) encNat
         (fun rows => 2 ^ (A * (rows.length + 1) / Nat.sqrt (Nat.log 2 (rows.length + 2))) *
           ((encList encBits rows).length + 1) ^ e)
@@ -267,7 +266,7 @@ theorem exists_permanentCounter (d : ℕ) :
       omega
   refine ⟨count, A, e, b, fun rows hrow hcol => ?_, hc⟩
   rw [hcount rows fun c hc => length_le_of_mem_permanentInstance hrow hcol hc,
-    CSP.partitionFunction_permanentInstance, rowsMatrix_eq]
+    CSP.partitionFunction_permanentInstance, boolTableMatrix_eq_rowEntry]
 
 /-! ### Perfect matchings -/
 

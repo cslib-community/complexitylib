@@ -78,6 +78,12 @@ condition, a relabeling and an almost sure event. For a two-stage law
 `a` and keeps the kernel. When the second draw is independent of the first,
 `filter_bind_pair_prod` conditions both factors on a rectangle `s ×ˢ t`, and
 `map_snd_filter_bind_pair_prod` shows that the condition on `a` does not affect the law of `b`.
+To state that two observables of a PMF are independent, import
+[PMF/Independence.lean](../../CslibFrontier/Probability/PMF/Independence.lean):
+`indepFun_iff_map_pair_eq_bind` identifies Mathlib's `IndepFun f g p.toMeasure` with this
+two-stage form `p.map (f, g) = (p.map f).bind fun a => (p.map g).map (a, ·)`. When `Y` is
+moreover uniform on a finite type, state `IndepUniform ν X Y`, consume it with `.map_pair_eq`,
+and use `indepUniform_iff` to split it into `IndepFun` and `ν.map Y = uniformOfFintype _`.
 
 Import [StatisticalDistance/Event.lean](../../CslibFrontier/Probability/StatisticalDistance/Event.lean)
 to turn a distance bound into event bounds. Here `dist` is cslib's statistical distance on PMFs
@@ -95,19 +101,26 @@ distinguisher `T` outputs `b`. `dist_map_of_injective` keeps the distance unchan
 injective relabeling. For a second-moment tail bound on a finite PMF without measure-theoretic side
 conditions, import [PMF/Chebyshev.lean](../../CslibFrontier/Probability/PMF/Chebyshev.lean): by
 `sum_mul_ite_le_sum_mul_sq_div`, the mass where `|f a − m| ≥ c` is at most
-`∑ a, p(a) (f a − m)² / c²`. Import
+`∑ a, p(a) (f a − m)² / c²`. The first-moment form for a function `f` with values in `[0, 1]`
+is `toOuterMeasure_toReal_le_tsum_div` in
+[PMF/Markov.lean](../../CslibFrontier/Probability/PMF/Markov.lean). Import
 [Product/Split.lean](../../CslibFrontier/Probability/Product/Split.lean) to split an independent
 product `pi p` along a predicate `P`: by `pi_map_piEquivPiSubtypeProd`, the coordinates
 satisfying `P` and the remaining coordinates form two independent products. Its corollaries
 `pi_map_restrict` and `pi_map_comp_injective` give the marginal law: restricting `pi p` to the
 coordinates satisfying `P`, or reading it along an injection `e` of index types as
-`fun a k => a (e k)`, gives the independent product of the selected factors. Use these instead of
-counting tuples when the factors are not uniform. `pi_map_curry` in
+`fun a k => a (e k)`, gives the independent product of the selected factors. For a product indexed
+by a sum type `ι ⊕ κ`, `bind_pi_sum` samples the two summands as independent products inside a
+`bind`. Use these instead of counting tuples when the factors are not uniform. `pi_map_curry` in
 [Product/Reindex.lean](../../CslibFrontier/Probability/Product/Reindex.lean) splits a product
 indexed by `ι × κ` into independent blocks, and `toOuterMeasure_pi_forall` in
 [Product/Event.lean](../../CslibFrontier/Probability/Product/Event.lean) is the probability of a
-box `{u | ∀ i, u i ∈ E i}`. To move a finite statistic of i.i.d. samples from a measure into this
-setting, import [Product/MapMeasure.lean](../../CslibFrontier/Probability/Product/MapMeasure.lean):
+box `{u | ∀ i, u i ∈ E i}`. For `Fin k`-indexed tuples with different factors, `PMF.piFin` in
+[IID.lean](../../CslibFrontier/Probability/IID.lean) generalizes `iid`, and
+[IID/Event.lean](../../CslibFrontier/Probability/IID/Event.lean) gives its box and union bounds
+`toOuterMeasure_piFin_forall` and `toOuterMeasure_toReal_piFin_exists_le`. To move a finite
+statistic of i.i.d. samples from a measure into this setting, import
+[Product/MapMeasure.lean](../../CslibFrontier/Probability/Product/MapMeasure.lean):
 `map_measurePi_eq_toMeasure_pi` identifies the image of `Measure.pi μ` under coordinatewise
 almost everywhere measurable maps into finite types with
 `(pi fun i => ((μ i).map (g i)).toPMF).toMeasure`. The finite-product bounds then apply:
@@ -274,6 +287,33 @@ optimal cost is exactly `2`, no generating tree does better, and the entropy is 
 They also cover a non-halting tree that generates nothing and has infinite cost. Run
 `scripts/build.sh CslibFrontierTests.KnuthYao`. The model counts coin flips only; it does not certify
 that `knuthYao p` is computable from an encoding of `p`, or bound its running time.
+
+To run the same trees on a biased coin, import
+[DDGTree/Biased.lean](../../CslibFrontier/Probability/DDGTree/Biased.lean). `T.runWith c n`,
+`T.outputProbWith c`, `T.GeneratesWith c p` and `T.expectedFlipsWith c` replace fair bits by
+independent flips of `c : PMF Bool`; `run_eq_runWith` and its siblings recover the fair-bit API at
+`PMF.uniformOfFintype Bool`. `T.expectedCostWith c w` charges `w n` for flip number `n + 1`, which
+is read exactly when the tree has not stopped after `n` flips, so it is `∑ₙ w n P(T > n)`. Use a
+tree rather than an `OracleComp` program when the sampler loops without a bound: oracle programs
+are finite call trees, so `OracleComp.retry` only expresses the truncated loop, with a visible
+failure outcome. `vonNeumann` reads flips in pairs until they differ
+([Arora–Barak draft Lemma 7.15](../../results/arora-barak-2007.md#chapter-7-randomized-computation)).
+On `PMF.coin ρ` with `0 < ρ < 1`, `vonNeumann_generatesWith_coin` gives an exactly fair bit and
+`expectedFlipsWith_coin_vonNeumann` gives exactly `ENNReal.ofReal (ρ * (1 - ρ))⁻¹` flips.
+`exists_generatesWith_coin_iff` shows that `0 < ρ < 1` is necessary: at bias `0` or `1` the coin is
+deterministic (`runWith_pure`). In the other direction, import
+[DDGTree/Digits.lean](../../CslibFrontier/Probability/DDGTree/Digits.lean) for Lemma 7.14.
+`coinOfDigits d` compares fair bits with a binary expansion `d` of `ρ`, stated as
+`HasSum (fun i => if d i then 2⁻¹ ^ (i + 1) else 0) ρ`. Use the expansion `0.111⋯` for `ρ = 1`.
+It generates `PMF.coin ρ` (`coinOfDigits_generates`) and reads exactly two fair bits in expectation
+(`expectedFlips_coinOfDigits`). Its expected digit cost is `∑ₙ w n 2⁻ⁿ`
+(`expectedCostWith_coinOfDigits`), which is finite for polynomially bounded `w`.
+[Computability/Probabilistic/CoinOfDigits.lean](../../CslibFrontier/Computability/Probabilistic/CoinOfDigits.lean)
+instantiates `w` with the time bound of a multitape machine computing the digits from `encUnary`.
+The comparison loop itself is charged one unit per flip, not compiled to a machine. The
+[checked clients](../../CslibFrontierTests/BiasedCoinSamplers.lean) cover bias `1/3` (`9/2` flips),
+the impossible bias `0`, `ρ = 1` and a constant digit machine; run
+`scripts/build.sh CslibFrontierTests.BiasedCoinSamplers`.
 
 When an exact sampler instead repeats a fixed-width `width`-bit decoder `attempt : List Bool → Option α`,
 import [DDGTree/Rejection.lean](../../CslibFrontier/Probability/DDGTree/Rejection.lean) for

@@ -147,9 +147,9 @@ theorem toOuterMeasure_moduleLWECBD_switch_failure_le (l : ℕ) (m : Fin (l + 1)
       let view ← encryptionViewOfKeyLaw
         (moduleLWEPublicKeyLaw t t (2 ^ (w + 1)) noise (PMF.pure s)) noise m secrets
       pure (s, view)).toOuterMeasure
-        {out | moduleLWEDecrypt
-          (fun j i => (SIS.liftCentered (out.1 j) i : ZMod (2 ^ w)))
-          (moduleLWEModulusSwitch (2 ^ w) out.2.2) ≠ m} ≤
+        {(s, _, ct) | moduleLWEDecrypt
+          (fun j i => (SIS.liftCentered (s j) i : ZMod (2 ^ w)))
+          (moduleLWEModulusSwitch (2 ^ w) ct) ≠ m} ≤
       ENNReal.ofReal (4 * (2 * (t : ℝ) + 1) * t * Real.exp (-(t : ℝ))) := by
   dsimp only
   let t := l + 1
@@ -207,9 +207,9 @@ theorem negligible_moduleLWECBD_switch_failure (m : (l : ℕ) → Fin (l + 1) �
         let view ← encryptionViewOfKeyLaw
           (moduleLWEPublicKeyLaw t t (2 ^ (w + 1)) noise (PMF.pure s)) noise (m l) secrets
         pure (s, view)).toOuterMeasure
-          {out | moduleLWEDecrypt
-            (fun j i => (SIS.liftCentered (out.1 j) i : ZMod (2 ^ w)))
-            (moduleLWEModulusSwitch (2 ^ w) out.2.2) ≠ m l}).toNNReal) := by
+          {(s, _, ct) | moduleLWEDecrypt
+            (fun j i => (SIS.liftCentered (s j) i : ZMod (2 ^ w)))
+            (moduleLWEModulusSwitch (2 ^ w) ct) ≠ m l}).toNNReal) := by
   let ratio : ℝ≥0 := ⟨Real.exp (-1), (Real.exp_pos _).le⟩
   have hratio : ratio < 1 := by
     change Real.exp (-1) < 1

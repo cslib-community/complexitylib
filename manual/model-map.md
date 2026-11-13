@@ -308,6 +308,7 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `randomized-state-transition` | [Randomized state transitions and refinement](algorithms-and-memory/memory-specifications.md) | state-transition |
 | `oblivious-sequence` | [Oblivious operation/transcript contracts](algorithms-and-memory/memory-specifications.md) | state-transition |
 | `cell-probe-data-structure` | [Cell-probe data-structure implementations and Word-RAM lower-bound transfer](algorithms-and-memory/memory-specifications.md) | state-transition |
+| `wordram-resizable-data-structure` | [Resizable Word RAM state-transition and oblivious-sequence implementations](algorithms-and-memory/memory-specifications.md#resizable-word-ram-state-transition-and-oblivious-sequence-implementations) | state-transition |
 | `memory-oracle` | [Allocated word-memory oracle](algorithms-and-memory/memory-specifications.md) | memory |
 | `resizable-memory-oracle` | [Word-granular resizable memory specification](algorithms-and-memory/memory-specifications.md) | memory |
 | `native-callable` | [Dynamic programs, controllers and graded realization](algorithms-and-memory/memory-specifications.md) | memory |

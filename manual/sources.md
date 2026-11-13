@@ -832,7 +832,7 @@ Dennis Hofheinz, Kathrin Hövelmanns, Eike Kiltz. “A Modular Analysis of the F
 <a id="hhrvw20"></a>
 ## hhrvw20
 
-Iftach Haitner, Thomas Holenstein, Omer Reingold, Salil Vadhan, Hoeteck Wee. “Inaccessible Entropy II: IE Functions and Universal One-Way Hashing.” *Theory of Computing* 16(8), 1–55, 2020. https://doi.org/10.4086/toc.2020.v016a008 . Open-access article PDF inspected (Section 3, Definitions 3.1, 3.3, 3.9, pp. 11–15; Section 4.2, Theorem 4.5 and Claims 4.6–4.8, pp. 21–25, adapted to a constant light-image threshold with inverse-linear gap `1 / (64 * (n + 1))`; and Section 5.1, Theorem 5.1, Lemmas 5.3–5.7, and Section 5.1.5 STEPS 1–5, pp. 25–32).
+Iftach Haitner, Thomas Holenstein, Omer Reingold, Salil Vadhan, Hoeteck Wee. “Inaccessible Entropy II: IE Functions and Universal One-Way Hashing.” *Theory of Computing* 16(8), 1–55, 2020. https://doi.org/10.4086/toc.2020.v016a008 . Open-access article PDF inspected (Section 3, Definitions 3.1, 3.3, 3.9, pp. 11–15; Section 4.2, Theorem 4.5 and Claims 4.6–4.8, pp. 21–25, with polynomial light-image threshold and `d * Real.logb 2 n / n` entropy gap against uniform strict-PPT adversaries; and Section 5.1, Theorem 5.1, Lemmas 5.3–5.7, and Section 5.1.5 STEPS 1–5, pp. 25–32).
 
 <a id="hierholzer73"></a>
 ## hierholzer73
@@ -1292,7 +1292,7 @@ Michael Mitzenmacher and Eli Upfal. *Probability and Computing: Randomization an
 <a id="mohrirostamizadehtalwalkar18"></a>
 ## mohrirostamizadehtalwalkar18
 
-Mehryar Mohri, Afshin Rostamizadeh and Ameet Talwalkar. *Foundations of Machine Learning*, 2nd edition. MIT Press, 2018. ISBN 978-0-262-03940-6; https://cs.nyu.edu/~mohri/mlbook/ . Bibliographic metadata from `references.bib`; Chapter 3 locators (Definitions 3.1–3.2, Theorem 3.3, Lemma 3.4, Theorem 3.5, Theorem 3.7, Corollaries 3.8, 3.9, 3.18 and 3.19) and Section 5.4 locators (Definitions 5.5–5.6 for the `ρ`-margin loss and empirical margin loss, Lemma 5.7 for uncentered Talagrand contraction, and Theorem 5.8, (5.39)–(5.40) for fixed-`ρ` Rademacher margin generalization bounds) were checked against secondary search summaries on 2026-11-11 UTC; the printed book PDF was not directly inspected in this pass. The library formalizes these results on finite `PMF` sample spaces and assumes uniform boundedness on real-valued hypothesis classes so that real conditional suprema `⨆` are bounded above.
+Mehryar Mohri, Afshin Rostamizadeh and Ameet Talwalkar. *Foundations of Machine Learning*, 2nd edition. MIT Press, 2018. ISBN 978-0-262-03940-6; https://cs.nyu.edu/~mohri/mlbook/ . Bibliographic metadata from `references.bib`; Chapter 3 locators (Definitions 3.1–3.2, Theorem 3.3, Lemma 3.4, Theorem 3.5, Theorem 3.7, Corollaries 3.8, 3.9, 3.18 and 3.19) and Section 5.4 locators (Definitions 5.5–5.6 for the `ρ`-margin loss and empirical margin loss, Lemma 5.7 for uncentered Talagrand contraction, and Theorem 5.8, (5.39)–(5.40) for fixed-`ρ` Rademacher margin generalization bounds) were checked against secondary search summaries on 2026-11-11 UTC; the printed book PDF was not directly inspected in this pass. Theorem 7.2 (AdaBoost's empirical error, p. 149) and Corollary 7.5 were read in a PDF of the book on 2026-11-13. The library formalizes these results on finite `PMF` sample spaces and assumes uniform boundedness on real-valued hypothesis classes so that real conditional suprema `⨆` are bounded above.
 
 <a id="monderershapley96"></a>
 ## monderershapley96
@@ -1593,6 +1593,11 @@ James Schummer and Rakesh V. Vohra. "Strategy-proof Location on a Network." *Jou
 ## schummervohra07
 
 James Schummer and Rakesh V. Vohra. "Mechanism Design without Money." Chapter 10 of Noam Nisan, Tim Roughgarden, Éva Tardos and Vijay V. Vazirani (eds.), *Algorithmic Game Theory*, Cambridge University Press, 2007, 243–265. A university-hosted PDF of the book was consulted on 2026-11-08 for §10.3 (the definition of blocking coalitions and the core, Definition 10.5, Theorems 10.6 and 10.7, pp. 253–255). Its core uses weak blocking, the strict core of the housing-market modules. Its claim on p. 255 that the core and the strict core coincide under strict preferences is refuted by a checked three-agent market in `CslibFrontierTests/HousingMarket.lean`.
+
+<a id="shalevshwartzbendavid14"></a>
+## shalevshwartzbendavid14
+
+Shai Shalev-Shwartz and Shai Ben-David. *Understanding Machine Learning: From Theory to Algorithms*. Cambridge University Press, 2014. ISBN 978-1-107-05713-5. A PDF of the book was read on 2026-11-13 for Section 10.2 (AdaBoost, Theorem 10.2 and its proof, pp. 135–137, including the product form `Z_{t+1}/Z_t = 2 √(ε_{t+1} (1 - ε_{t+1}))`) and Lemma 10.3 (Section 10.3). [Boosting/AdaBoost](../CslibFrontier/MachineLearning/Boosting/AdaBoost.lean) records its differences from Theorem 10.2: early stopping at `ε_t = 0` and ties predicting `false`.
 
 <a id="shamir1979"></a>
 ## shamir1979

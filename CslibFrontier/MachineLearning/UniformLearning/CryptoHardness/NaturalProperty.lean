@@ -11,7 +11,6 @@ public import CslibFrontier.MachineLearning.UniformLearning.CryptoHardness.Circu
 public import CslibFrontier.Computability.Circuit.Boolean.NaturalProof
 import CslibFrontier.Computability.Circuit.Boolean.AtLeast
 import CslibFrontier.Computability.Circuit.Boolean.Synthesis
-import CslibFrontier.Computability.Circuit.Complexity
 import CslibFrontier.Foundations.Data.Finset.Expect
 import CslibFrontier.Probability.PMF.Uniform
 public import Cslib.Probability.PMF
@@ -139,24 +138,6 @@ theorem sub_le_dens_lowAgreement {A : QueryLearner ι Ω} {q : ℕ} (hA : A.Quer
 
 end Cslib.MachineLearning.UniformLearning.QueryLearner
 
-namespace Cslib.Circuits.Boolean
-
-open Finset
-
-/-- A negated threshold of `m` functions costs at most their complexities, the threshold, and one
-negation. -/
-private theorem complexity_not_threshold_pi_le {n m j : ℕ} (f : Fin m → BooleanFunction n) :
-    complexity interpretation (single fun x => !threshold m j fun i => f i x) ≤
-      ∑ i, complexity interpretation (single (f i)) + (2 + m * (2 * (m + 2))) + 1 := by
-  refine (complexity_not_le _).trans (Nat.add_le_add_right ?_ 1)
-  have hg : single (fun x => threshold m j fun i => f i x) =
-      single (threshold m j) ∘ fun x i => f i x := rfl
-  rw [hg]
-  exact (complexity_comp_le _ _).trans
-    (add_le_add (complexity_pi_le f) (complexity_threshold_le m j))
-
-end Cslib.Circuits.Boolean
-
 namespace Cslib.MachineLearning.UniformLearning.QueryLearner
 
 open Cslib.Circuits Cslib.Circuits.Boolean Cslib.MCSP Cslib.Crypto.PRG Finset
@@ -209,11 +190,8 @@ theorem complexity_truthTableTest_lowAgreement_le {A : QueryLearner (Fin n) Ω} 
     simp only [lowAgreement, Set.mem_ofPred_eq, hX]
     rw [div_lt_iff₀ hMpos]
   rw [htest]
-  refine (complexity_not_threshold_pi_le f).trans ?_
-  gcongr
-  calc ∑ i, complexity interpretation (single (f i)) ≤ ∑ _i : Fin M, t :=
-        sum_le_sum fun i _ => htst _ _
-    _ = M * t := by simp
+  exact (complexity_not_le _).trans (Nat.add_le_add_right
+    (complexity_threshold_pi_le_of_le f fun i => htst _ _) 1)
 
 end Cslib.MachineLearning.UniformLearning.QueryLearner
 

@@ -65,7 +65,7 @@ formalizes STEPS 1–3 of `[HHRVW2020]`, Section 5.1.5, Proof of Theorem 5.1 (pp
 * `Cslib.Crypto.InaccessibleEntropyFamily.exists_shrinkingCollisionGrid`: STEPS 1–3 of Theorem 5.1
   from any `InaccessibleEntropyFamily`.
 * `Cslib.Crypto.OneWay.exists_shrinkingCollisionGrid`: STEPS 1–3 of Theorem 5.1 composed with
-  the constant-threshold adaptation of Theorem 4.5 (`OneWay.exists_inaccessibleEntropyFamily`).
+  Theorem 4.5 (`OneWay.exists_inaccessibleEntropyFamily`).
 
 ## References
 
@@ -222,26 +222,6 @@ private theorem le_ampRepInLen (F : InaccessibleEntropyFamily) (n : ℕ) :
       n + 2 = (n + 2) * 1 := (Nat.mul_one _).symm
       _ ≤ ampReps F n * F.inLen n := by gcongr
 
-/-! ### Entropy and exponential helper bounds -/
-
-private theorem conditionalEntropy_le_inLen {w m : ℕ} (f : BitString w → BitString m) :
-    PMF.conditionalEntropy ((PMF.uniformOfFintype (BitString w)).map fun z => (f z, z)) ≤
-      (w : ℝ) := by
-  rw [← expected_realSampleEntropy_eq_conditionalEntropy f]
-  have hpoint (z : BitString w) : realSampleEntropy f z ≤ (w : ℝ) := by
-    have hpos : (0 : ℝ) < #(fiberSet f (f z)) := by exact_mod_cast card_fiberSet_pos f z
-    have hle : (#(fiberSet f (f z)) : ℝ) ≤ (2 : ℝ) ^ w := by
-      have hc : #(fiberSet f (f z)) ≤ Fintype.card (BitString w) := card_le_univ _
-      have hw : Fintype.card (BitString w) = 2 ^ w := by simp [BitString]
-      exact_mod_cast hc.trans hw.le
-    exact (Real.logb_le_iff_le_rpow (by norm_num : (1 : ℝ) < 2) hpos).mpr
-      (by simpa only [Real.rpow_natCast] using hle)
-  calc
-    (∑ z : BitString w, ((PMF.uniformOfFintype (BitString w)) z).toReal * realSampleEntropy f z)
-      ≤ ∑ z : BitString w, ((PMF.uniformOfFintype (BitString w)) z).toReal * (w : ℝ) :=
-        sum_le_sum fun z _ => mul_le_mul_of_nonneg_left (hpoint z) ENNReal.toReal_nonneg
-    _ = (w : ℝ) := by rw [← sum_mul, PMF.sum_toReal, one_mul]
-
 /-! ### Main grid theorem: STEPS 1–3 of Theorem 5.1 -/
 
 private theorem computableInPolyTime_shrunkHashInLen_amp (F : InaccessibleEntropyFamily) :
@@ -278,8 +258,11 @@ private theorem ampGoodIdx_lt_ampGridCount (F : InaccessibleEntropyFamily) {N₀
   · unfold ampGridCount; omega
   · have ha_le : accessibleSetExpectation (F.accSet n) ≤ (F.inLen n : ℝ) := by
       have hgap := hN₀ n (not_lt.mp hlt)
-      have hk_le := conditionalEntropy_le_inLen
-        (wordToFinMap (F.inLen n) (F.outLen n) (F.evalWord n))
+      have hlog : Real.logb 2 (Fintype.card (BitString (F.inLen n))) = F.inLen n := by
+        simp [Real.logb_pow]
+      have hk_le := (PMF.conditionalEntropy_le_log_card ((PMF.uniformOfFintype
+        (BitString (F.inLen n))).map fun z =>
+          (wordToFinMap (F.inLen n) (F.outLen n) (F.evalWord n) z, z))).trans_eq hlog
       have hd_pos : (0 : ℝ) ≤ 1 / (F.denom n : ℝ) := by positivity
       linarith
     have hΔ_pos : (0 : ℝ) < ampSlack F n := by
@@ -356,7 +339,8 @@ private theorem amp_randomCollisionGame_succProbability_le
   let k₀ := PMF.conditionalEntropy ((PMF.uniformOfFintype (BitString w₀)).map fun z => (f₀ z, z))
   have ha₀_nonneg : 0 ≤ a₀ := accessibleSetExpectation_nonneg _
   have hgap₀ : a₀ ≤ k₀ - 1 / (D : ℝ) := hN₀ n hn
-  have hk₀_le : k₀ ≤ (w₀ : ℝ) := conditionalEntropy_le_inLen f₀
+  have hk₀_le : k₀ ≤ (w₀ : ℝ) :=
+    (PMF.conditionalEntropy_le_log_card _).trans_eq (by simp [Real.logb_pow])
   have hD_pos : (0 : ℝ) < D := by exact_mod_cast F.denom_pos n
   have hw₀_ne_zero : w₀ ≠ 0 := by
     intro h0
@@ -488,11 +472,10 @@ theorem InaccessibleEntropyFamily.exists_shrinkingCollisionGrid (F : Inaccessibl
   filter_upwards [Filter.eventually_ge_atTop N₀] with n hn
   exact amp_randomCollisionGame_succProbability_le F hN₀ B hn
 
-/-- **Constant-threshold adaptation of `[HHRVW2020]`, Section 4.2, Theorem 4.5 (p. 21) composed
-with Section 5.1.5, Theorem 5.1, STEPS 1–3 (pp. 30–31)**: every uniform `OneWay` function yields a
-uniform polynomial-time `ShrinkingCollisionGrid` of strictly `1`-bit shrinking hash candidates
-containing a sequence that is collision-resistant on random inputs against all uniform strict-PPT
-adversaries. -/
+/-- **`[HHRVW2020]`, Section 4.2, Theorem 4.5 (p. 21) composed with Section 5.1.5, Theorem 5.1,
+STEPS 1–3 (pp. 30–31)**: every uniform `OneWay` function yields a uniform polynomial-time
+`ShrinkingCollisionGrid` of strictly `1`-bit shrinking hash candidates containing a sequence that is
+collision-resistant on random inputs against all uniform strict-PPT adversaries. -/
 theorem OneWay.exists_shrinkingCollisionGrid {f : List Bool → List Bool} (hf : OneWay f) :
     Nonempty ShrinkingCollisionGrid :=
   let ⟨F⟩ := hf.exists_inaccessibleEntropyFamily

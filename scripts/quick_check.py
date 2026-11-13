@@ -25,7 +25,7 @@ ENCODING_RATCHET = (
 PROJECTION_RATCHET = (
     "projection chain ratchet",
     [sys.executable, "-B", "scripts/check_projection_chains.py", "--base", "{base}"])
-# The per-module ratchets of `ci-checks`, which read only the library sources.
+# The per-module ratchets of CI's `source-checks` job, which read only the library sources.
 RATCHETS = (ENCODING_RATCHET, PROJECTION_RATCHET)
 
 # Data files that no Lean gate reads, each with the source-only check that does read it. A change
@@ -38,7 +38,7 @@ DATA_CHECKS = {
     "scripts/projection_chains_baseline.json": PROJECTION_RATCHET,
 }
 
-# The source-only `ci-checks` steps, scoped to the changed Lean files: source hygiene reads the
+# The source-only `source-checks` steps, scoped to the changed Lean files: source hygiene reads the
 # files under these roots (its default selection), the ratchets the modules under `RATCHET_ROOT`.
 # Each takes seconds; the post-build audits need whole-library outputs that quick mode does not
 # build, so they stay in the full check.

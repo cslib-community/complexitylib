@@ -18,7 +18,7 @@ example : (links true [((), ()), ((), ())]).vars.count () = 2 := by decide
 
 private def unitSource : CNF Unit := [[((), true)]]
 private def contradiction : CNF Unit := [[((), true)], [((), false)]]
-private def testWire (o : Occurrence Unit) : List (ℕ × ℕ) := [(0, 0), (o.1 + 1, o.1 + 1)]
+private def testWire (o : Occurrence Unit) : List (ℕ × ℕ) := [(0, 0), (o.clause + 1, o.clause + 1)]
 
 -- A nonempty compatible wire assembly genuinely has a satisfying assignment.
 example : (assemble unitSource testWire 0).Satisfiable := by

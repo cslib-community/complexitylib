@@ -147,7 +147,7 @@ namespace Cslib.Logic.PL
 /-- Relabeling preserves literal-occurrence order and both occurrence indices. -/
 theorem occurrences_relabel {V W : Type*} (φ : CNF V) (f : V → W) :
     occurrences (φ.relabel f) =
-      (occurrences φ).map (fun o => (o.1, o.2.1, (f o.2.2.1, o.2.2.2))) := by
+      (occurrences φ).map (fun o => ⟨o.clause, o.pos, (f o.lit.1, o.lit.2)⟩) := by
   simp only [occurrences, CNF.relabel, Clause.relabel, List.zipIdx_map,
     List.flatMap_map, List.map_flatMap, List.map_map, Function.comp_def,
     Prod.map_fst, Prod.map_snd, id_eq]

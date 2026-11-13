@@ -132,6 +132,13 @@ end Gate
 noncomputable def PlacedGate.ctrlPhase (inv : Bool) {k : ℕ} (e : Fin k ↪ Fin m) : PlacedGate m :=
   ⟨k, bif inv then (Gate.ctrlPhase k)⁻¹ else Gate.ctrlPhase k, e⟩
 
+/-- Moving a controlled phase gate to a larger register composes its wire placement. -/
+@[simp] theorem PlacedGate.mapWires_ctrlPhase {N k : ℕ} (e : Fin m ↪ Fin N) (inv : Bool)
+    (A : Fin k ↪ Fin m) :
+    (PlacedGate.ctrlPhase inv A).mapWires e = PlacedGate.ctrlPhase inv (A.trans e) := by
+  unfold PlacedGate.ctrlPhase PlacedGate.mapWires
+  rfl
+
 /-- **The entries of a placed controlled phase gate**: it multiplies `|x⟩` by `i` (for `inv`, by
 `-i`) when every qubit of `e` is one. -/
 theorem PlacedGate.ctrlPhase_matrix_apply (inv : Bool) {k : ℕ} (e : Fin k ↪ Fin m)
