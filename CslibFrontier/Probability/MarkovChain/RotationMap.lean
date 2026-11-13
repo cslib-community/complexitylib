@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Probability.MarkovChain.HittingTime
-public import CslibFrontier.Foundations.Combinatorics.Expander.Hom
+public import CslibFrontier.Foundations.Combinatorics.Expander.Harmonic
 public import CslibFrontier.Foundations.Combinatorics.Expander.Walk
 public import Mathlib.Combinatorics.SimpleGraph.Metric
 import Mathlib.Combinatorics.SimpleGraph.Connectivity.Connected
@@ -26,8 +26,8 @@ self-loops allowed) moves from `x` along a uniformly random edge label
 These are the facts of [Arora and Barak, Chapter 7, Exercise 9][AroraBarak07]:
 
 * **(b)(i)** On a connected regular multigraph, the uniform distribution is the unique stationary
-  distribution (`isStationary_randomWalk_iff`). The proof is a maximum principle: a stationary
-  vector is constant on neighbors of a vertex where it is maximal.
+  distribution (`isStationary_randomWalk_iff`). The proof is the maximum principle
+  `Cslib.RotationMap.eq_of_forall_sum_edgeCount_mul_eq` of `Expander.Harmonic`.
 * **(c)** The expected return time to `u` equals the number of vertices of the connected component
   of `u` (`returnTime_randomWalk_eq_card`); in a connected graph on `n` vertices it is `n`, so at
   most `10 n²`. This is Kac's formula for the uniform measure on the component.
@@ -79,15 +79,6 @@ label. -/
 noncomputable def randomWalk : MarkovChain V where
   step x := (PMF.uniformOfFintype D).map (G.neighbor x)
 
-omit [Nonempty D] in
-/-- A sum over the labels at `x` of a function of the neighbor is a sum over the vertices weighted
-by edge multiplicities. -/
-theorem sum_comp_neighbor {M : Type*} [AddCommMonoid M] (x : V) (f : V → M) :
-    ∑ i, f (G.neighbor x i) = ∑ y, G.edgeCount x y • f y := by
-  rw [← sum_fiberwise univ (G.neighbor x) (fun i => f (G.neighbor x i))]
-  refine sum_congr rfl fun y _ => ?_
-  rw [sum_congr rfl fun i hi => by rw [(mem_filter.1 hi).2], sum_const, edgeCount_eq_card_filter]
-
 omit [Fintype V] in
 /-- The transition probabilities of the random walk are the edge multiplicities divided by the
 degree. -/
@@ -101,28 +92,10 @@ theorem randomWalk_apply (x y : V) :
 
 variable {G}
 
-theorem card_D_ne_zero : (Fintype.card D : ℝ≥0∞) ≠ 0 := by
-  exact_mod_cast Fintype.card_ne_zero
-
 omit [Fintype V] in
 theorem randomWalk_ne_zero_iff {x y : V} : G.randomWalk x y ≠ 0 ↔ G.edgeCount x y ≠ 0 := by
   rw [randomWalk_apply, ne_eq, ENNReal.div_eq_zero_iff, not_or]
   simp [ENNReal.natCast_ne_top]
-
-omit [Fintype V] [Nonempty D] in
-theorem edgeCount_ne_zero_iff {x y : V} : G.edgeCount x y ≠ 0 ↔ ∃ i, G.neighbor x i = y := by
-  rw [edgeCount_eq_card_filter, ← pos_iff_ne_zero, card_pos]
-  simp [Finset.Nonempty]
-
-omit [Fintype V] [Nonempty D] in
-theorem reachable_of_edgeCount_ne_zero {x y : V} (h : G.edgeCount x y ≠ 0) :
-    G.toSimpleGraph.Reachable x y := by
-  obtain ⟨i, rfl⟩ := edgeCount_ne_zero_iff.1 h
-  exact G.reachable_neighbor x i
-
-omit [Fintype V] [Nonempty D] in
-theorem edgeCount_ne_zero_of_adj {x y : V} (h : G.toSimpleGraph.Adj x y) : G.edgeCount x y ≠ 0 :=
-  edgeCount_ne_zero_iff.2 h.2
 
 /-! ### Kac's formula on a component -/
 
@@ -218,7 +191,8 @@ theorem hittingTime_randomWalk_le_of_edgeCount_ne_zero {x y : V} (h : G.edgeCoun
         (fun _ _ => zero_le) (mem_univ x))
   calc hittingTime G.randomWalk y x
       = Fintype.card D * ((Fintype.card D : ℝ≥0∞)⁻¹ * hittingTime G.randomWalk y x) := by
-        rw [← mul_assoc, ENNReal.mul_inv_cancel card_D_ne_zero (ENNReal.natCast_ne_top _),
+        rw [← mul_assoc, ENNReal.mul_inv_cancel
+          (Nat.cast_ne_zero.2 Fintype.card_ne_zero) (ENNReal.natCast_ne_top _),
           one_mul]
     _ ≤ Fintype.card D * Fintype.card V := by gcongr
 
@@ -306,7 +280,8 @@ theorem survival_randomWalk_mul_pow (t : V) :
         = G.edgeCount s y * (survival G.randomWalk t T y * (Fintype.card D : ℝ≥0∞) ^ T) *
           ((Fintype.card D : ℝ≥0∞)⁻¹ * Fintype.card D) := by ring
       _ = _ := by
-        rw [ENNReal.inv_mul_cancel card_D_ne_zero (ENNReal.natCast_ne_top _), mul_one]
+        rw [ENNReal.inv_mul_cancel
+          (Nat.cast_ne_zero.2 Fintype.card_ne_zero) (ENNReal.natCast_ne_top _), mul_one]
 
 /-- **Arora–Barak, Exercise 7.9(d), miss probability.** In a `d`-regular multigraph on `n`
 vertices with `d ≤ n`, if `s` and `t` are connected, at most a tenth of the label sequences of
@@ -351,30 +326,6 @@ theorem ten_mul_card_filter_walkAt_ne_le (hD : Fintype.card D ≤ Fintype.card V
 
 /-! ### Uniqueness of the stationary distribution -/
 
-omit [Nonempty D] in
-/-- **Maximum principle.** On a connected regular multigraph, a function equal at every vertex to
-the average of its values over the edges there is constant. -/
-theorem eq_of_forall_sum_edgeCount_mul_eq (hG : G.toSimpleGraph.Preconnected) {f : V → ℝ}
-    (hf : ∀ y, ∑ x, (G.edgeCount y x : ℝ) * f x = Fintype.card D * f y) (x y : V) :
-    f x = f y := by
-  have : Nonempty V := ⟨x⟩
-  obtain ⟨m, hm⟩ := Finite.exists_max f
-  set S : Set V := {v | f v = f m}
-  have hS : ∀ v ∈ S, ∀ i, G.neighbor v i ∈ S := by
-    intro v hv i
-    have hsum : ∑ z, (G.edgeCount v z : ℝ) * (f m - f z) = 0 := by
-      simp_rw [mul_sub, sum_sub_distrib, hf v, ← sum_mul]
-      have hc : ∑ z, (G.edgeCount v z : ℝ) = Fintype.card D := by
-        exact_mod_cast G.sum_edgeCount v
-      rw [hc, (hv : f v = f m), sub_self]
-    have hz := (sum_eq_zero_iff_of_nonneg fun z _ =>
-      mul_nonneg (Nat.cast_nonneg _) (sub_nonneg.2 (hm z))).1 hsum (G.neighbor v i) (mem_univ _)
-    have hc : (G.edgeCount v (G.neighbor v i) : ℝ) ≠ 0 := by
-      exact_mod_cast (edgeCount_ne_zero_iff (G := G)).2 ⟨i, rfl⟩
-    exact (sub_eq_zero.1 ((mul_eq_zero.1 hz).resolve_left hc)).symm
-  have hall : ∀ v, v ∈ S := fun v => G.mem_of_reachable hS (show m ∈ S from rfl) (hG m v)
-  exact (hall x).trans (hall y).symm
-
 omit [DecidableEq V] in
 /-- The uniform distribution is stationary for the random walk on a regular multigraph. -/
 theorem isStationary_uniform_randomWalk [Nonempty V] :
@@ -386,7 +337,8 @@ theorem isStationary_uniform_randomWalk [Nonempty V] :
   rw [← mul_sum]
   simp_rw [randomWalk_apply, G.edgeCount_comm _ y, div_eq_mul_inv, ← sum_mul]
   rw [← Nat.cast_sum, G.sum_edgeCount,
-    ENNReal.mul_inv_cancel card_D_ne_zero (ENNReal.natCast_ne_top _), mul_one]
+    ENNReal.mul_inv_cancel
+          (Nat.cast_ne_zero.2 Fintype.card_ne_zero) (ENNReal.natCast_ne_top _), mul_one]
 
 omit [DecidableEq V] in
 /-- **Arora–Barak, Exercise 7.9(b)(i).** On a connected regular multigraph, the uniform
@@ -405,7 +357,8 @@ theorem isStationary_randomWalk_iff (hG : G.toSimpleGraph.Connected) (π : PMF V
     rw [← hy, mul_sum]
     refine sum_congr rfl fun x _ => ?_
     rw [randomWalk_apply, G.edgeCount_comm x y, mul_comm (π x), ← mul_assoc,
-      ENNReal.mul_div_cancel card_D_ne_zero (ENNReal.natCast_ne_top _)]
+      ENNReal.mul_div_cancel
+          (Nat.cast_ne_zero.2 Fintype.card_ne_zero) (ENNReal.natCast_ne_top _)]
   set f : V → ℝ := fun x => (π x).toReal
   have hf : ∀ y, ∑ x, (G.edgeCount y x : ℝ) * f x = Fintype.card D * f y := by
     intro y

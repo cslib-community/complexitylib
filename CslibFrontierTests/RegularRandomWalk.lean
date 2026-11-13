@@ -4,6 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
 
+module
+
 import CslibFrontier.Probability.MarkovChain.RotationMap
 
 /-!
@@ -13,6 +15,9 @@ The parts (b)(i), (c) and (d) of [Arora and Barak, Exercise 7.9][AroraBarak07] i
 form, for a `d`-regular multigraph `G : RotationMap V D` on `n = |V|` vertices, and the
 single-edge instance `flip` on `Bool`, where the expected return time is exactly `2`.
 -/
+
+-- This regression module checks ordinary imports and exports no test fixtures.
+set_option linter.privateModule false
 
 namespace CslibFrontierTests.RegularRandomWalk
 
@@ -51,14 +56,14 @@ example (hD : Fintype.card D ≤ Fintype.card V) {s t : V} (h : G.toSimpleGraph.
   have h10 := ten_mul_card_filter_walkAt_ne_le (G := G) hD h
   rw [ENNReal.div_le_iff (pow_ne_zero _ (by exact_mod_cast Fintype.card_ne_zero))
     (ENNReal.pow_ne_top (ENNReal.natCast_ne_top _))]
-  rw [one_div, ← ENNReal.div_eq_inv_mul, ENNReal.le_div_iff_mul_le (Or.inl (by norm_num)) (Or.inl (by norm_num)),
-    mul_comm]
+  rw [one_div, ← ENNReal.div_eq_inv_mul,
+    ENNReal.le_div_iff_mul_le (Or.inl (by norm_num)) (Or.inl (by norm_num)), mul_comm]
   exact_mod_cast h10
 
 /-- The single edge `{false, true}` as a `1`-regular graph. -/
-def flip : RotationMap Bool Unit := ofInvolutive (!·) fun b => Bool.not_not b
+private def flip : RotationMap Bool Unit := ofInvolutive (!·) fun b => Bool.not_not b
 
-theorem flip_connected : flip.toSimpleGraph.Connected := by
+private theorem flip_connected : flip.toSimpleGraph.Connected := by
   have hadj : flip.toSimpleGraph.Adj false true := ⟨by decide, (), rfl⟩
   refine ⟨fun x y => ?_⟩
   have hft : flip.toSimpleGraph.Reachable false true := hadj.reachable
