@@ -128,6 +128,21 @@ noncomputable def chvzkExperiment (R : X → Y → Prop) (conv : X → Y → PMF
   else
     return false
 
+open Classical in
+/-- Attack Game 20.4 with a conversation law that always returns a conversation, such as the honest
+conversation of a Sigma protocol. -/
+theorem chvzkExperiment_map_some (R : X → Y → Prop) (conv : X → Y → PMF (T × C × Z))
+    (A : TwoStage Unit (X × Y) (T × C × Z) Bool σ) :
+    chvzkExperiment R (fun x y => (conv x y).map some) A = do
+      let ((x, y), state) ← ProbComp.eval (A.choose ())
+      if R x y then
+        let conversation ← conv x y
+        ProbComp.eval (A.guess state conversation)
+      else
+        return false := by
+  simp only [chvzkExperiment, PMF.monad_bind_eq_bind, PMF.bind_map]
+  rfl
+
 /-- Conversation laws that are `ε`-close on every valid pair give Attack Game 20.4 advantage at
 most `ε` against every adversary, including computationally unbounded ones. -/
 theorem advantage_chvzkExperiment_le {R : X → Y → Prop}
@@ -215,6 +230,27 @@ noncomputable def decodeConversation (enc : Encoding I Y T C Z) (i : I) (c : C i
     decodeConversation enc i c (enc.commitment i t, enc.response i z) = some (t, c, z) := by
   simp [decodeConversation, Function.partialInv_left (enc.commitment i).injective,
     Function.partialInv_left (enc.response i).injective]
+
+/-- A simulator's words decode to `(t, c', z)` exactly when they encode `t` and `z` and `c'` is the
+sampled challenge. -/
+theorem decodeConversation_eq_some_iff {enc : Encoding I Y T C Z} {i : I} {c : C i}
+    {words : List Bool × List Bool} {t : T i} {c' : C i} {z : Z i} :
+    decodeConversation enc i c words = some (t, c', z) ↔
+      words = (enc.commitment i t, enc.response i z) ∧ c = c' := by
+  rcases words with ⟨tw, zw⟩
+  constructor
+  · intro h
+    simp only [decodeConversation, Option.bind_eq_bind, Option.bind_eq_some_iff,
+      Option.pure_def, Option.some.injEq] at h
+    obtain ⟨t', ht', z', hz', h⟩ := h
+    simp only [Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl, rfl⟩ := h
+    exact ⟨Prod.ext (((enc.commitment i).injective.isPartialInv t' tw).mp ht').symm
+      (((enc.response i).injective.isPartialInv z' zw).mp hz').symm, rfl⟩
+  · rintro ⟨h, rfl⟩
+    simp only [Prod.mk.injEq] at h
+    obtain ⟨rfl, rfl⟩ := h
+    exact decodeConversation_encode enc i c t z
 
 /-- The simulated conversation on `(i, y)` ([BonehShoup2023], Section 20.4.2, Attack Game 20.4,
 Experiment 1, p. 840): sample a uniform challenge `c : C i`, run `sim` on
