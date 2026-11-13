@@ -45,6 +45,8 @@ depth `b = 0` via `LoopSegment.finish`.
   and word-bound invariance across a `LoopSegment`.
 * `Cslib.WordRAM.execRand_seq_det`: appends a deterministic `ExecWithin` continuation onto a
   randomized `ExecRand` computation as a pure `Functor.map`.
+* `Cslib.WordRAM.execRand_seq_det_map`: appends a deterministic `Exec` continuation, indexed by
+  the sample, onto a randomized prefix that is the pushforward of a sampler.
 
 ## References
 
@@ -253,5 +255,28 @@ theorem execRand_seq_det {B : Basis} {r w T : ℕ} {c₁ c₂ : Code B r} {x : D
     simp only [pure_bind, ← bind_pure_comp]
   rw [heq] at hseq
   exact ⟨g, hseq, hg⟩
+
+/-- A randomized prefix reaching `p a` after `n` instructions for each sample `a ∼ μ`, followed by
+a deterministic continuation from `p a` to `y a` in `t a` instructions, runs as the pushforward of
+`μ`. Samples reaching the same state have the same continuation, by determinism of `Exec`. -/
+theorem execRand_seq_det_map {B : Basis} {r w n : ℕ} {α : Type} {c₁ c₂ : Code B r} {x : Data r}
+    {μ : ProbComp α} {p y : α → Data r} {t : α → ℕ}
+    (h₁ : ExecRand w c₁ x ((fun a => (p a, n)) <$> μ))
+    (h₂ : ∀ a, Exec w c₂ (p a) (y a) (t a)) :
+    ExecRand w (.seq c₁ c₂) x ((fun a => (y a, n + t a)) <$> μ) := by
+  classical
+  let m₂ : Data r → ProbComp (Data r × ℕ) := fun d =>
+    if h : ∃ a, p a = d then pure (y h.choose, t h.choose) else pure (d, 0)
+  have hm₂ (a : α) : m₂ (p a) = pure (y a, t a) := by
+    have h : ∃ a', p a' = p a := ⟨a, rfl⟩
+    have ha := h₂ a
+    rw [← h.choose_spec] at ha
+    obtain ⟨hy, ht⟩ := (h₂ h.choose).unique ha
+    simp only [m₂, dite_eq_left h, hy, ht]
+  have hseq := ExecRand.seq h₁ (m₂ := m₂) fun z hz => by
+    obtain ⟨a, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
+    rw [hm₂]
+    exact (h₂ a).execRand
+  simpa only [← bind_pure_comp, bind_assoc, pure_bind, hm₂] using hseq
 
 end Cslib.WordRAM
