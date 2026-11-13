@@ -592,7 +592,7 @@ theorem toOuterMeasure_micaliMemoize_not_goodState_step [BEq α]
   cases q with
   | inl msg =>
     simp only [micaliMTCost, micaliFSCost, Nat.cast_one, Nat.cast_zero, one_mul, zero_mul,
-      add_zero, RandomOracle.memoizeSum, PMF.toOuterMeasure_map_apply]
+      add_zero, RandomOracle.memoizeSum_inl, PMF.toOuterMeasure_map_apply]
     cases hlookup : tr_MT.lookup msg with
     | some ans =>
       rw [memoize_of_some _ _ _ _ hlookup, PMF.monad_pure_eq_pure, PMF.toOuterMeasure_pure_apply]
@@ -614,7 +614,7 @@ theorem toOuterMeasure_micaliMemoize_not_goodState_step [BEq α]
             rw [length_micaliForbiddenDigests]
   | inr xrt =>
     simp only [micaliMTCost, micaliFSCost, Nat.cast_zero, Nat.cast_one, zero_mul, one_mul,
-      zero_add, RandomOracle.memoizeSum, PMF.toOuterMeasure_map_apply]
+      zero_add, RandomOracle.memoizeSum_inr, PMF.toOuterMeasure_map_apply]
     calc (memoize (fun q : α × List Bool => ProbComp.eval (kilianChallenges V m q.1))
             xrt tr_FS).toOuterMeasure {x | ¬ MicaliGoodState V L (tr_MT, x.2)}
         ≤ (memoize (fun q : α × List Bool => ProbComp.eval (kilianChallenges V m q.1))
@@ -654,7 +654,7 @@ theorem toOuterMeasure_run_micaliMemoize_not_goodState_le [BEq α] {β : Type}
       rcases st with ⟨tr_MT, tr_FS⟩
       cases q with
       | inl msg =>
-        supp_cases hx [RandomOracle.memoizeSum] with ⟨⟨ans, tr_MT'⟩, hmem, rfl⟩
+        supp_cases hx [RandomOracle.memoizeSum_inl] with ⟨⟨ans, tr_MT'⟩, hmem, rfl⟩
         have hlen := length_le_of_mem_support_memoize _ msg tr_MT hmem
         simp only [micaliMTCost, micaliFSCost, Nat.cast_one, Nat.cast_zero, one_mul, zero_mul,
           add_zero]
@@ -666,7 +666,7 @@ theorem toOuterMeasure_run_micaliMemoize_not_goodState_le [BEq α] {β : Type}
               push_cast
               ring
       | inr xrt =>
-        supp_cases hx [RandomOracle.memoizeSum] with ⟨⟨ρs, tr_FS'⟩, hmem, rfl⟩
+        supp_cases hx [RandomOracle.memoizeSum_inr] with ⟨⟨ρs, tr_FS'⟩, hmem, rfl⟩
         have hlen := length_le_of_mem_support_memoize _ xrt tr_FS hmem
         simp only [micaliMTCost, micaliFSCost, Nat.cast_zero, Nat.cast_one, zero_mul, one_mul,
           add_zero]
@@ -771,7 +771,7 @@ theorem not_micaliGoodState_of_mem_support_micaliSoundnessProg [DecidableEq α]
       (fun q _ _ _ h hmem => (mem_support_memoize_nodup _ q h.1 h.2 hmem).2.2) P
       (st := ([], [])) (by simp) hP
   rcases st₁ with ⟨tr_MT₁, tr_FS₁⟩
-  supp_cases hFS_call [liftRight_query, run_interpret_query, RandomOracle.memoizeSum]
+  supp_cases hFS_call [liftRight_query, run_interpret_query, RandomOracle.memoizeSum_inr]
     with ⟨⟨ρs', tr_FS₂⟩, hfs_mem, rfl, rfl⟩
   obtain ⟨hρs_in_FS₂, -, hnodup_FS₂, hsupp_FS₂⟩ :=
     mem_support_memoize_nodup

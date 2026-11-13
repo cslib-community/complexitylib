@@ -58,6 +58,15 @@ example (st : List (Bool × Bool) × List ((Bool × Bool) × Bool)) (res : Bool 
     (fun q tr tr' ans htr hstep => (RandomOracle.memoize_invariant _ (fun _ v => v = true) q tr
       htr (by simp) (ans, tr') hstep).2) mixed ⟨trivial, by simp⟩ hmem).2
 
+-- A hash call leaves the challenge list unchanged.
+example (tr₁ : List (Bool × Bool)) (tr₂ : List ((Bool × Bool) × Bool)) (ans : Bool)
+    (st : List (Bool × Bool) × List ((Bool × Bool) × Bool))
+    (h : (ans, st) ∈ (RandomOracle.memoizeSum (fun _ => PMF.uniformOfFintype Bool)
+      (fun _ => PMF.uniformOfFintype Bool) (.inl false) (tr₁, tr₂)).support) :
+    st.2 = tr₂ := by
+  obtain ⟨_, -, rfl⟩ := RandomOracle.mem_support_memoizeSum_inl.mp h
+  rfl
+
 -- An embedded hash program costs nothing under a cost that counts only challenge queries, and
 -- its two hash calls stay within budget under a cost that counts only hash queries.
 example : IsCostBounded (fun q : Bool ⊕ (Bool × Bool) => q.elim (fun _ => 0) (fun _ => 1))

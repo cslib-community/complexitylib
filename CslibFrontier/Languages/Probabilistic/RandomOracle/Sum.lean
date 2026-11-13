@@ -13,26 +13,36 @@ public import CslibFrontier.Languages.Probabilistic.Sum
 import CslibFrontier.Languages.Probabilistic.Simulation
 
 /-!
-# Two independent lazy random oracles
+# Random-oracle caches on a sum of interfaces
+
+Several independent lazy random oracles are one lazy random oracle on the sum of their interfaces,
+answered by `OracleComp.sumHandler`. `RandomOracle.Cache.sum` joins one cache per side into a cache
+of the joined interface, and a lazy call on one side of a joined cache is a lazy call on that side's
+cache (`answer_sum_inl`, `answer_sum_inr`). A game that keeps one cache per oracle can therefore be
+read as one represented lazy oracle.
 
 A protocol in the random-oracle model often queries two independent oracles, such as a Merkle
 hash and a Fiat–Shamir challenge oracle. `RandomOracle.memoizeSum` answers the calls of
 `spec₁ ⊕ₒ spec₂` by memoizing each side in its own association list, so that a soundness proof
-can reason about the two traces separately.
-
-`run_interpret_memoizeSum` shows that this implements the lazy random oracle
-`RandomOracle.answer (sumHandler dist₁ dist₂)` on the cache represented by the two lists
-(`RandomOracle.ofSumTrace`). A program over one side touches only that side's list
+can reason about the two lists separately. It implements the lazy random oracle
+`answer (sumHandler dist₁ dist₂)` on the joined cache of the two lists
+(`run_interpret_memoizeSum`). A program over one side touches only that side's list
 (`run_interpret_memoizeSum_liftLeft`), and properties of each list preserved by single memoized
 calls hold after every run (`mem_support_run_interpret_memoizeSum`).
 
 ## Main definitions
 
+* `Cslib.RandomOracle.Cache.sum`: the cache of `spec₁ ⊕ₒ spec₂` built from one cache for each side.
 * `Cslib.RandomOracle.memoizeSum`: memoize the two sides of a sum interface in two lists.
-* `Cslib.RandomOracle.ofSumTrace`: the cache represented by the two lists.
 
 ## Main results
 
+* `Cslib.RandomOracle.answer_sum_inl`, `Cslib.RandomOracle.answer_sum_inr`: a lazy call on one side
+  of a joined cache is a lazy call on that side's cache.
+* `Cslib.RandomOracle.Cache.update_sum_inl`, `Cslib.RandomOracle.Cache.update_sum_inr`: recording
+  an answer in a joined cache records it on its side.
+* `Cslib.RandomOracle.mem_support_memoizeSum_inl`, `Cslib.RandomOracle.mem_support_memoizeSum_inr`:
+  a memoized call on one side updates only that side's list.
 * `Cslib.RandomOracle.run_interpret_memoizeSum`: the two lists implement the lazy random oracle.
 * `Cslib.RandomOracle.run_interpret_memoizeSum_liftLeft`,
   `Cslib.RandomOracle.run_interpret_memoizeSum_liftRight`: a program over one side uses only its
@@ -40,9 +50,94 @@ calls hold after every run (`mem_support_run_interpret_memoizeSum`).
 * `Cslib.RandomOracle.mem_support_run_interpret_memoizeSum`: per-list invariants of supported runs.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.RandomOracle
+
+open scoped Cslib
+
+section Cache
+
+universe u
+
+variable {ι₁ ι₂ : Type u} {spec₁ : OracleSpec.{u, u} ι₁} {spec₂ : OracleSpec.{u, u} ι₂}
+
+/-- The cache of the joined interface `spec₁ ⊕ₒ spec₂`: left queries read `c₁`, right queries read
+`c₂`. -/
+@[expose] def Cache.sum (c₁ : Cache spec₁) (c₂ : Cache spec₂) : Cache (spec₁ ⊕ₒ spec₂)
+  | .inl q => c₁ q
+  | .inr q => c₂ q
+
+@[simp] theorem Cache.sum_inl (c₁ : Cache spec₁) (c₂ : Cache spec₂) (q : ι₁) :
+    Cache.sum c₁ c₂ (.inl q) = c₁ q := rfl
+
+@[simp] theorem Cache.sum_inr (c₁ : Cache spec₁) (c₂ : Cache spec₂) (q : ι₂) :
+    Cache.sum c₁ c₂ (.inr q) = c₂ q := rfl
+
+/-- The responses of a joined interface are finite when both sides' responses are. -/
+instance [∀ q, Finite (spec₁ q)] [∀ q, Finite (spec₂ q)] : ∀ q, Finite ((spec₁ ⊕ₒ spec₂) q)
+  | .inl q => inferInstanceAs (Finite (spec₁ q))
+  | .inr q => inferInstanceAs (Finite (spec₂ q))
+
+variable [DecidableEq ι₁] [DecidableEq ι₂]
+
+/-- Recording a left answer in a joined cache records it in the left cache. -/
+theorem Cache.update_sum_inl (c₁ : Cache spec₁) (c₂ : Cache spec₂) (q : ι₁) (v : spec₁ q) :
+    Function.update (Cache.sum c₁ c₂) (.inl q) (some v) =
+      Cache.sum (Function.update c₁ q (some v)) c₂ := by
+  funext q'
+  rcases q' with q' | q'
+  · by_cases h : q' = q
+    · subst h; simp
+    · simp [Function.update_of_ne h, Function.update_of_ne (Sum.inl_injective.ne h)]
+  · simp
+
+/-- Recording a right answer in a joined cache records it in the right cache. -/
+theorem Cache.update_sum_inr (c₁ : Cache spec₁) (c₂ : Cache spec₂) (q : ι₂) (v : spec₂ q) :
+    Function.update (Cache.sum c₁ c₂) (.inr q) (some v) =
+      Cache.sum c₁ (Function.update c₂ q (some v)) := by
+  funext q'
+  rcases q' with q' | q'
+  · simp
+  · by_cases h : q' = q
+    · subst h; simp
+    · simp [Function.update_of_ne h, Function.update_of_ne (Sum.inr_injective.ne h)]
+
+/-- A lazy call on the left side of a joined cache is a lazy call on the left cache. -/
+theorem answer_sum_inl (d₁ : (q : ι₁) → PMF (spec₁ q)) (d₂ : (q : ι₂) → PMF (spec₂ q))
+    (c₁ : Cache spec₁) (c₂ : Cache spec₂) (q : ι₁) :
+    answer (OracleComp.sumHandler d₁ d₂) (.inl q) (Cache.sum c₁ c₂) =
+      (answer d₁ q c₁).map fun z => (z.1, Cache.sum z.2 c₂) := by
+  cases h : c₁ q with
+  | none =>
+    rw [answer_of_none d₁ c₁ q h,
+      answer_of_none (OracleComp.sumHandler d₁ d₂) (Cache.sum c₁ c₂) (.inl q) h, PMF.map_comp]
+    exact congrArg (PMF.map · (d₁ q))
+      (funext fun v => Prod.ext rfl (Cache.update_sum_inl c₁ c₂ q v))
+  | some v =>
+    rw [answer_of_some d₁ c₁ q v h,
+      answer_of_some (OracleComp.sumHandler d₁ d₂) (Cache.sum c₁ c₂) (.inl q) v h, PMF.pure_map]
+
+/-- A lazy call on the right side of a joined cache is a lazy call on the right cache. -/
+theorem answer_sum_inr (d₁ : (q : ι₁) → PMF (spec₁ q)) (d₂ : (q : ι₂) → PMF (spec₂ q))
+    (c₁ : Cache spec₁) (c₂ : Cache spec₂) (q : ι₂) :
+    answer (OracleComp.sumHandler d₁ d₂) (.inr q) (Cache.sum c₁ c₂) =
+      (answer d₂ q c₂).map fun z => (z.1, Cache.sum c₁ z.2) := by
+  cases h : c₂ q with
+  | none =>
+    rw [answer_of_none d₂ c₂ q h,
+      answer_of_none (OracleComp.sumHandler d₁ d₂) (Cache.sum c₁ c₂) (.inr q) h, PMF.map_comp]
+    exact congrArg (PMF.map · (d₂ q))
+      (funext fun v => Prod.ext rfl (Cache.update_sum_inr c₁ c₂ q v))
+  | some v =>
+    rw [answer_of_some d₂ c₂ q v h,
+      answer_of_some (OracleComp.sumHandler d₁ d₂) (Cache.sum c₁ c₂) (.inr q) v h, PMF.pure_map]
+
+end Cache
+
+/-! ### Two lazy random oracles memoized in two lists -/
+
+section MemoizeSum
 
 open OracleComp Probability
 
@@ -52,24 +147,53 @@ variable {ι₁ ι₂ R₁ R₂ : Type} [BEq ι₁] [BEq ι₂]
 list, sampling from `dist₁`, and the right calls in the second, sampling from `dist₂`. -/
 noncomputable def memoizeSum (dist₁ : ι₁ → PMF R₁) (dist₂ : ι₂ → PMF R₂) :
     (q : ι₁ ⊕ ι₂) → StateT (List (ι₁ × R₁) × List (ι₂ × R₂)) PMF
-      (((fun _ : ι₁ => R₁) ⊕ₒ (fun _ : ι₂ => R₂)) q)
-  | .inl q => fun (tr₁, tr₂) =>
-    (memoize dist₁ q tr₁).map fun (ans, tr₁') => (ans, (tr₁', tr₂))
-  | .inr q => fun (tr₁, tr₂) =>
-    (memoize dist₂ q tr₂).map fun (ans, tr₂') => (ans, (tr₁, tr₂'))
+      (((fun _ : ι₁ => R₁) ⊕ₒ (fun _ : ι₂ => R₂)) q) :=
+  sumHandler (fun q => zoomStateT Prod.fst (fun st tr₁ => (tr₁, st.2)) (memoize dist₁ q))
+    (fun q => zoomStateT Prod.snd (fun st tr₂ => (st.1, tr₂)) (memoize dist₂ q))
 
-/-- The cache represented by a pair of association lists: the first occurrence of a key in the
-list for its side determines its value. -/
-def ofSumTrace (st : List (ι₁ × R₁) × List (ι₂ × R₂)) :
-    Cache ((fun _ : ι₁ => R₁) ⊕ₒ (fun _ : ι₂ => R₂))
-  | .inl q => ofList st.1 q
-  | .inr q => ofList st.2 q
+/-- A left call memoizes on the first list and leaves the second unchanged. -/
+theorem memoizeSum_inl (dist₁ : ι₁ → PMF R₁) (dist₂ : ι₂ → PMF R₂) (q : ι₁)
+    (tr₁ : List (ι₁ × R₁)) (tr₂ : List (ι₂ × R₂)) :
+    memoizeSum dist₁ dist₂ (.inl q) (tr₁, tr₂) =
+      (memoize dist₁ q tr₁).map fun (ans, tr₁') => (ans, (tr₁', tr₂)) := by
+  rfl
 
-/-- Two empty lists represent the empty cache. -/
-@[simp] theorem ofSumTrace_nil :
-    ofSumTrace (([], []) : List (ι₁ × R₁) × List (ι₂ × R₂)) = fun _ => none := by
-  funext q
-  cases q <;> rfl
+/-- A right call memoizes on the second list and leaves the first unchanged. -/
+theorem memoizeSum_inr (dist₁ : ι₁ → PMF R₁) (dist₂ : ι₂ → PMF R₂) (q : ι₂)
+    (tr₁ : List (ι₁ × R₁)) (tr₂ : List (ι₂ × R₂)) :
+    memoizeSum dist₁ dist₂ (.inr q) (tr₁, tr₂) =
+      (memoize dist₂ q tr₂).map fun (ans, tr₂') => (ans, (tr₁, tr₂')) := by
+  rfl
+
+/-- The supported outcomes of a left call are those of `memoize dist₁` on the first list, with the
+second list unchanged. -/
+theorem mem_support_memoizeSum_inl {dist₁ : ι₁ → PMF R₁} {dist₂ : ι₂ → PMF R₂} {q : ι₁}
+    {tr₁ : List (ι₁ × R₁)} {tr₂ : List (ι₂ × R₂)} {ans : R₁}
+    {st' : List (ι₁ × R₁) × List (ι₂ × R₂)} :
+    (ans, st') ∈ (memoizeSum dist₁ dist₂ (.inl q) (tr₁, tr₂)).support ↔
+      ∃ tr₁', (ans, tr₁') ∈ (memoize dist₁ q tr₁).support ∧ st' = (tr₁', tr₂) := by
+  rw [memoizeSum_inl, PMF.mem_support_map_iff]
+  constructor
+  · rintro ⟨⟨ans', tr₁'⟩, hmem, heq⟩
+    cases heq
+    exact ⟨tr₁', hmem, rfl⟩
+  · rintro ⟨tr₁', hmem, rfl⟩
+    exact ⟨(ans, tr₁'), hmem, rfl⟩
+
+/-- The supported outcomes of a right call are those of `memoize dist₂` on the second list, with
+the first list unchanged. -/
+theorem mem_support_memoizeSum_inr {dist₁ : ι₁ → PMF R₁} {dist₂ : ι₂ → PMF R₂} {q : ι₂}
+    {tr₁ : List (ι₁ × R₁)} {tr₂ : List (ι₂ × R₂)} {ans : R₂}
+    {st' : List (ι₁ × R₁) × List (ι₂ × R₂)} :
+    (ans, st') ∈ (memoizeSum dist₁ dist₂ (.inr q) (tr₁, tr₂)).support ↔
+      ∃ tr₂', (ans, tr₂') ∈ (memoize dist₂ q tr₂).support ∧ st' = (tr₁, tr₂') := by
+  rw [memoizeSum_inr, PMF.mem_support_map_iff]
+  constructor
+  · rintro ⟨⟨ans', tr₂'⟩, hmem, heq⟩
+    cases heq
+    exact ⟨tr₂', hmem, rfl⟩
+  · rintro ⟨tr₂', hmem, rfl⟩
+    exact ⟨(ans, tr₂'), hmem, rfl⟩
 
 /-- Running a left program under `memoizeSum` runs it under `memoize dist₁` on the first list and
 leaves the second list unchanged. -/
@@ -82,7 +206,7 @@ theorem run_interpret_memoizeSum_liftLeft (dist₁ : ι₁ → PMF R₁) (dist�
   | pure a => simp [PMF.monad_pure_eq_pure]
   | query_bind q cont ih =>
     simp only [liftLeft_bind, liftLeft_query, run_interpret_bind, run_interpret_query,
-      memoizeSum, PMF.monad_bind_eq_bind, PMF.bind_map, PMF.map_bind, Function.comp_def]
+      memoizeSum_inl, PMF.monad_bind_eq_bind, PMF.bind_map, PMF.map_bind, Function.comp_def]
     exact congrArg (PMF.bind _) (funext fun ⟨ans, tr₁'⟩ => ih ans tr₁')
 
 /-- Running a right program under `memoizeSum` runs it under `memoize dist₂` on the second list
@@ -96,7 +220,7 @@ theorem run_interpret_memoizeSum_liftRight (dist₁ : ι₁ → PMF R₁) (dist�
   | pure a => simp [PMF.monad_pure_eq_pure]
   | query_bind q cont ih =>
     simp only [liftRight_bind, liftRight_query, run_interpret_bind, run_interpret_query,
-      memoizeSum, PMF.monad_bind_eq_bind, PMF.bind_map, PMF.map_bind, Function.comp_def]
+      memoizeSum_inr, PMF.monad_bind_eq_bind, PMF.bind_map, PMF.map_bind, Function.comp_def]
     exact congrArg (PMF.bind _) (funext fun ⟨ans, tr₂'⟩ => ih ans tr₂')
 
 /-- If single memoized calls preserve a property `P₁` of the first list and a property `P₂` of the
@@ -110,68 +234,30 @@ theorem mem_support_run_interpret_memoizeSum (dist₁ : ι₁ → PMF R₁) (dis
     (hmem : (res, st') ∈ ((interpret (memoizeSum dist₁ dist₂) prog).run st).support) :
     P₁ st'.1 ∧ P₂ st'.2 := by
   refine run_interpret_invariant _ (fun st => P₁ st.1 ∧ P₂ st.2) ?_ prog st hst res st' hmem
-  rintro (q | q) ⟨tr₁, tr₂⟩ ⟨hP₁, hP₂⟩ ans ⟨tr₁', tr₂'⟩ hstep
-  · obtain ⟨⟨ans', tr₁''⟩, hmemo, heq⟩ := (PMF.mem_support_map_iff _ _ _).mp hstep
-    simp only [Prod.mk.injEq] at heq
-    obtain ⟨rfl, rfl, rfl⟩ := heq
+  rintro (q | q) ⟨tr₁, tr₂⟩ ⟨hP₁, hP₂⟩ ans st'' hstep
+  · obtain ⟨tr₁', hmemo, rfl⟩ := mem_support_memoizeSum_inl.mp hstep
     exact ⟨h₁ q tr₁ _ _ hP₁ hmemo, hP₂⟩
-  · obtain ⟨⟨ans', tr₂''⟩, hmemo, heq⟩ := (PMF.mem_support_map_iff _ _ _).mp hstep
-    simp only [Prod.mk.injEq] at heq
-    obtain ⟨rfl, rfl, rfl⟩ := heq
+  · obtain ⟨tr₂', hmemo, rfl⟩ := mem_support_memoizeSum_inr.mp hstep
     exact ⟨hP₁, h₂ q tr₂ _ _ hP₂ hmemo⟩
 
 variable [LawfulBEq ι₁] [LawfulBEq ι₂] [DecidableEq ι₁] [DecidableEq ι₂]
 
-omit [LawfulBEq ι₂] in
-/-- Recording a left answer updates exactly its key in the represented cache. -/
-theorem ofSumTrace_cons_left (tr₁ : List (ι₁ × R₁)) (tr₂ : List (ι₂ × R₂)) (q : ι₁) (ans : R₁) :
-    ofSumTrace ((q, ans) :: tr₁, tr₂) =
-      Function.update (ofSumTrace (tr₁, tr₂)) (.inl q) (some ans) := by
-  funext q'
-  cases q' with
-  | inl q' => simpa [ofSumTrace] using congrFun (ofList_cons tr₁ q ans) q'
-  | inr q' => simp [ofSumTrace]
-
-omit [LawfulBEq ι₁] in
-/-- Recording a right answer updates exactly its key in the represented cache. -/
-theorem ofSumTrace_cons_right (tr₁ : List (ι₁ × R₁)) (tr₂ : List (ι₂ × R₂)) (q : ι₂) (ans : R₂) :
-    ofSumTrace (tr₁, (q, ans) :: tr₂) =
-      Function.update (ofSumTrace (tr₁, tr₂)) (.inr q) (some ans) := by
-  funext q'
-  cases q' with
-  | inl q' => simp [ofSumTrace]
-  | inr q' => simpa [ofSumTrace] using congrFun (ofList_cons tr₂ q ans) q'
-
-/-- `memoizeSum dist₁ dist₂` implements the lazy random oracle
-`answer (sumHandler dist₁ dist₂)`, preserving the result and represented final cache of every
+/-- `memoizeSum dist₁ dist₂` implements the lazy random oracle `answer (sumHandler dist₁ dist₂)`
+on the joined cache of its two lists, preserving the result and represented final cache of every
 adaptive program. -/
 theorem run_interpret_memoizeSum (dist₁ : ι₁ → PMF R₁) (dist₂ : ι₂ → PMF R₂) {β : Type}
     (prog : OracleComp ((fun _ : ι₁ => R₁) ⊕ₒ (fun _ : ι₂ => R₂)) β)
     (st : List (ι₁ × R₁) × List (ι₂ × R₂)) :
     ((interpret (memoizeSum dist₁ dist₂) prog).run st).map
-        (fun (res, st') => (res, ofSumTrace st')) =
+        (fun (res, st') => (res, Cache.sum (ofList st'.1) (ofList st'.2))) =
       runWith (answer (sumHandler (spec₁ := fun _ : ι₁ => R₁) (spec₂ := fun _ : ι₂ => R₂)
-        dist₁ dist₂)) prog (ofSumTrace st) := by
-  apply run_interpret_map_state
+        dist₁ dist₂)) prog (Cache.sum (ofList st.1) (ofList st.2)) := by
+  refine run_interpret_map_state _ _ (fun st => Cache.sum (ofList st.1) (ofList st.2)) ?_ prog st
   rintro (q | q) ⟨tr₁, tr₂⟩
-  · dsimp only [memoizeSum]
-    cases h : tr₁.lookup q with
-    | none =>
-      rw [memoize_of_none _ _ _ h, answer_of_none _ (ofSumTrace (tr₁, tr₂)) (.inl q) h]
-      change (((dist₁ q).map (fun v => (v, (q, v) :: tr₁))).map _).map _ = _
-      simp only [PMF.map_comp, Function.comp_def, ofSumTrace_cons_left]
-    | some val =>
-      rw [memoize_of_some _ _ _ _ h, answer_of_some _ (ofSumTrace (tr₁, tr₂)) (.inl q) val h]
-      simp [PMF.monad_pure_eq_pure]
-  · dsimp only [memoizeSum]
-    cases h : tr₂.lookup q with
-    | none =>
-      rw [memoize_of_none _ _ _ h, answer_of_none _ (ofSumTrace (tr₁, tr₂)) (.inr q) h]
-      change (((dist₂ q).map (fun v => (v, (q, v) :: tr₂))).map _).map _ = _
-      simp only [PMF.map_comp, Function.comp_def, ofSumTrace_cons_right]
-    | some val =>
-      rw [memoize_of_some _ _ _ _ h, answer_of_some _ (ofSumTrace (tr₁, tr₂)) (.inr q) val h]
-      simp [PMF.monad_pure_eq_pure]
+  · rw [memoizeSum_inl, PMF.map_comp, answer_sum_inl, ← memoize_map_ofList, PMF.map_comp]
+    rfl
+  · rw [memoizeSum_inr, PMF.map_comp, answer_sum_inr, ← memoize_map_ofList, PMF.map_comp]
+    rfl
 
 /-- From two empty lists, `memoizeSum dist₁ dist₂` has the output distribution of the lazy random
 oracle `answer (sumHandler dist₁ dist₂)` started from the empty cache. -/
@@ -180,7 +266,13 @@ theorem map_fst_run_interpret_memoizeSum_nil (dist₁ : ι₁ → PMF R₁) (dis
     ((interpret (memoizeSum dist₁ dist₂) prog).run ([], [])).map Prod.fst =
       (runWith (answer (sumHandler (spec₁ := fun _ : ι₁ => R₁) (spec₂ := fun _ : ι₂ => R₂)
         dist₁ dist₂)) prog (fun _ => none)).map Prod.fst := by
+  have hnil : Cache.sum (ofList ([] : List (ι₁ × R₁))) (ofList ([] : List (ι₂ × R₂))) =
+      fun _ => none := by
+    funext q
+    cases q <;> rfl
   have h := congrArg (PMF.map Prod.fst) (run_interpret_memoizeSum dist₁ dist₂ prog ([], []))
-  simpa only [PMF.map_comp, Function.comp_def, ofSumTrace_nil] using h
+  simpa only [PMF.map_comp, Function.comp_def, hnil] using h
+
+end MemoizeSum
 
 end Cslib.RandomOracle

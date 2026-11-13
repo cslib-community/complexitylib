@@ -1235,7 +1235,7 @@ private theorem toOuterMeasure_bcsStickyMemoize_step [BEq Stmt] [BEq Chal]
   cases q with
   | inl msg =>
     simp only [bcsMTCost, bcsFSCost, Nat.cast_one, Nat.cast_zero, one_mul, zero_mul, add_zero,
-      bcsStickyMemoize, RandomOracle.memoizeSum, PMF.map_comp, Function.comp_def,
+      bcsStickyMemoize, RandomOracle.memoizeSum_inl, PMF.map_comp, Function.comp_def,
       PMF.toOuterMeasure_map_apply]
     cases hlookup : tr_MT.lookup msg with
     | some ans =>
@@ -1266,7 +1266,7 @@ private theorem toOuterMeasure_bcsStickyMemoize_step [BEq Stmt] [BEq Chal]
             exact_mod_cast length_bcsForbiddenDigests_le r (tr_MT, tr_FS)
   | inr fsq =>
     simp only [bcsMTCost, bcsFSCost, Nat.cast_zero, Nat.cast_one, zero_mul, one_mul, zero_add,
-      bcsStickyMemoize, RandomOracle.memoizeSum, PMF.map_comp, Function.comp_def,
+      bcsStickyMemoize, RandomOracle.memoizeSum_inr, PMF.map_comp, Function.comp_def,
       PMF.toOuterMeasure_map_apply]
     have hno_cons : ¬ ∃ msg' ans', tr_MT = (msg', ans') :: tr_MT ∧
         ans' ∈ bcsForbiddenDigests r (tr_MT, tr_FS) := by
@@ -1324,9 +1324,8 @@ private theorem toOuterMeasure_run_bcsStickyMemoize_bad_le {γ : Type}
       rcases p with ⟨⟨tr_MT, tr_FS⟩, badFlag⟩
       cases q with
       | inl msg =>
-        simp only [bcsStickyMemoize, RandomOracle.memoizeSum, PMF.map_comp, Function.comp_def,
-          PMF.mem_support_map_iff] at hx
-        rcases hx with ⟨⟨ans, tr_MT'⟩, hmem, rfl⟩
+        obtain ⟨⟨ans, st'⟩, hmemo, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hx
+        obtain ⟨tr_MT', hmem, rfl⟩ := RandomOracle.mem_support_memoizeSum_inl.mp hmemo
         have hlen := length_le_of_mem_support_memoize _ msg tr_MT hmem
         simp only [bcsMTCost, bcsFSCost, Nat.cast_one, Nat.cast_zero, one_mul, zero_mul, add_zero]
         calc ((3 * tr_MT'.length + r * tr_FS.length : ℕ) : ℝ≥0∞) * ((1 : ℝ≥0∞) / 2 ^ σ)
@@ -1337,9 +1336,8 @@ private theorem toOuterMeasure_run_bcsStickyMemoize_bad_le {γ : Type}
               push_cast
               ring
       | inr fsq =>
-        simp only [bcsStickyMemoize, RandomOracle.memoizeSum, PMF.map_comp, Function.comp_def,
-          PMF.mem_support_map_iff] at hx
-        rcases hx with ⟨⟨c, tr_FS'⟩, hmem, rfl⟩
+        obtain ⟨⟨c, st'⟩, hmemo, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hx
+        obtain ⟨tr_FS', hmem, rfl⟩ := RandomOracle.mem_support_memoizeSum_inr.mp hmemo
         have hlen := length_le_of_mem_support_memoize _ fsq tr_FS hmem
         simp only [bcsMTCost, bcsFSCost, Nat.cast_zero, Nat.cast_one, zero_mul, one_mul, add_zero]
         calc ((3 * tr_MT.length + r * tr_FS'.length : ℕ) : ℝ≥0∞) * ((1 : ℝ≥0∞) / 2 ^ σ)
@@ -1353,14 +1351,12 @@ private theorem toOuterMeasure_run_bcsStickyMemoize_bad_le {γ : Type}
       rcases p with ⟨⟨tr_MT, tr_FS⟩, badFlag⟩
       cases q with
       | inl msg =>
-        simp only [bcsStickyMemoize, RandomOracle.memoizeSum, PMF.map_comp, Function.comp_def,
-          PMF.mem_support_map_iff] at hx
-        rcases hx with ⟨⟨ans, tr_MT'⟩, _, rfl⟩
+        obtain ⟨⟨ans, st'⟩, hmemo, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hx
+        obtain ⟨tr_MT', -, rfl⟩ := RandomOracle.mem_support_memoizeSum_inl.mp hmemo
         simp [bcsMTCost, bcsFSCost]
       | inr fsq =>
-        simp only [bcsStickyMemoize, RandomOracle.memoizeSum, PMF.map_comp, Function.comp_def,
-          PMF.mem_support_map_iff] at hx
-        rcases hx with ⟨⟨c, tr_FS'⟩, hmem, rfl⟩
+        obtain ⟨⟨c, st'⟩, hmemo, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hx
+        obtain ⟨tr_FS', hmem, rfl⟩ := RandomOracle.mem_support_memoizeSum_inr.mp hmemo
         have hlen := length_le_of_mem_support_memoize _ fsq tr_FS hmem
         simp only [bcsMTCost, bcsFSCost, Nat.cast_zero, Nat.cast_one, zero_mul, one_mul, add_zero]
         calc ε_rbr + (tr_FS'.length : ℝ≥0∞) * ((1 : ℝ≥0∞) / Fintype.card Chal)
@@ -2107,13 +2103,10 @@ private theorem fst_eq_of_mem_support_bcsStickyMemoize_liftRight {γ : Type}
       PMF.monad_bind_eq_bind, PMF.mem_support_bind_iff] at hmem
     rcases hmem with ⟨⟨c, p₁⟩, hc, hcont⟩
     rcases p with ⟨⟨tr_MT, tr_FS⟩, flag⟩
-    simp only [bcsStickyMemoize, RandomOracle.memoizeSum, PMF.map_comp, Function.comp_def,
-      PMF.mem_support_map_iff] at hc
-    rcases hc with ⟨⟨c₂, tr_FS₁⟩, _, hpair⟩
-    dsimp only at hpair
+    obtain ⟨⟨c₂, st⟩, hc, hpair⟩ := (PMF.mem_support_map_iff _ _ _).mp hc
+    obtain ⟨tr_FS₁, -, rfl⟩ := RandomOracle.mem_support_memoizeSum_inr.mp hc
     rcases Prod.mk.inj hpair with ⟨rfl, rfl⟩
-    have h := ih c₂ hcont
-    exact h
+    exact (ih c₂ hcont :)
 
 /-- Along a `liftLeft` program run under `bcsStickyMemoize`, if the final sticky flag `p'.2` is
 `false`, then `p'.1.2 = p.1.2` and `bcsExtractTable` is unchanged on every root appearing in the
@@ -2144,10 +2137,8 @@ private theorem extractTable_eq_of_mem_support_bcsStickyMemoize_liftLeft {γ : T
     rcases hmem with ⟨⟨ans, p₁⟩, hans, hcont⟩
     obtain ⟨hflag₁, hfs_eq, hextract_tail⟩ := ih ans hcont
     rcases p with ⟨⟨tr_MT, tr_FS⟩, flag⟩
-    simp only [bcsStickyMemoize, RandomOracle.memoizeSum, PMF.map_comp, Function.comp_def,
-      PMF.mem_support_map_iff] at hans
-    rcases hans with ⟨⟨ans₂, tr_MT₁⟩, hmt, hpair⟩
-    dsimp only at hpair
+    obtain ⟨⟨ans₂, st⟩, hans, hpair⟩ := (PMF.mem_support_map_iff _ _ _).mp hans
+    obtain ⟨tr_MT₁, hmt, rfl⟩ := RandomOracle.mem_support_memoizeSum_inl.mp hans
     rcases Prod.mk.inj hpair with ⟨rfl, rfl⟩
     dsimp only at hflag₁ hfs_eq hextract_tail
     simp only [Bool.or_eq_false_iff, decide_eq_false_iff_not] at hflag₁
