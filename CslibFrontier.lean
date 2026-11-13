@@ -1630,6 +1630,7 @@ public import CslibFrontier.Computability.Circuit.Inputization
 public import CslibFrontier.Computability.Circuit.Iteration
 public import CslibFrontier.Computability.Circuit.KernelVector
 public import CslibFrontier.Computability.Circuit.Linearize
+public import CslibFrontier.Computability.Circuit.Local
 public import CslibFrontier.Computability.Circuit.MapLines
 public import CslibFrontier.Computability.Circuit.MapOp
 public import CslibFrontier.Computability.Circuit.Metric
@@ -1818,6 +1819,7 @@ public import CslibFrontier.Computability.Complexity.Classes.AWPP.Lowness
 public import CslibFrontier.Computability.Complexity.Classes.AWPP.OracleWeights
 public import CslibFrontier.Computability.Complexity.Classes.AWPP.WPP
 public import CslibFrontier.Computability.Complexity.Classes.Advice
+public import CslibFrontier.Computability.Complexity.Classes.Advice.LengthComparison
 public import CslibFrontier.Computability.Complexity.Classes.Advice.OneBit
 public import CslibFrontier.Computability.Complexity.Classes.Alternation
 public import CslibFrontier.Computability.Complexity.Classes.Alternation.DeterministicTime
@@ -5965,6 +5967,7 @@ public import CslibFrontier.Foundations.Probability.Gaussian.Moments
 public import CslibFrontier.Foundations.Probability.Gaussian.Multivariate
 public import CslibFrontier.Foundations.Probability.Gaussian.NoiseOperator
 public import CslibFrontier.Foundations.Probability.Gaussian.NoiseSemigroup
+public import CslibFrontier.Foundations.Probability.Gaussian.OrnsteinUhlenbeck
 public import CslibFrontier.Foundations.Probability.Gaussian.Periodization
 public import CslibFrontier.Foundations.Probability.Gaussian.Poisson
 public import CslibFrontier.Foundations.Probability.Gaussian.PolynomialDense
@@ -6095,9 +6098,11 @@ public import CslibFrontier.Languages.Probabilistic.Oracle.Norm.Init
 public import CslibFrontier.Languages.Probabilistic.Oracle.QueryBoundedSimulation
 public import CslibFrontier.Languages.Probabilistic.Oracle.QueryCount
 public import CslibFrontier.Languages.Probabilistic.Oracle.Run
+public import CslibFrontier.Languages.Probabilistic.Oracle.RunState
 public import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 public import CslibFrontier.Languages.Probabilistic.Oracle.Substitution
 public import CslibFrontier.Languages.Probabilistic.Oracle.Substitution.QueryCount
+public import CslibFrontier.Languages.Probabilistic.Oracle.Substitution.RunWith
 public import CslibFrontier.Languages.Probabilistic.Oracle.Support
 public import CslibFrontier.Languages.Probabilistic.Oracle.Tabulate
 public import CslibFrontier.Languages.Probabilistic.Oracle.Transcript
@@ -6601,6 +6606,7 @@ public import CslibFrontier.MachineLearning.OnlineLearning.SwapRegret
 public import CslibFrontier.MachineLearning.OnlineLearning.WeightedMajority
 public import CslibFrontier.MachineLearning.OnlineLearning.ZeroSum
 public import CslibFrontier.MachineLearning.PACLearning.AgnosticFiniteClass
+public import CslibFrontier.MachineLearning.PACLearning.AgnosticVC
 public import CslibFrontier.MachineLearning.PACLearning.Compression.Basic
 public import CslibFrontier.MachineLearning.PACLearning.Compression.MistakeBound
 public import CslibFrontier.MachineLearning.PACLearning.Compression.Order
@@ -6609,6 +6615,7 @@ public import CslibFrontier.MachineLearning.PACLearning.ERM
 public import CslibFrontier.MachineLearning.PACLearning.EpsilonNet
 public import CslibFrontier.MachineLearning.PACLearning.FiniteClass
 public import CslibFrontier.MachineLearning.PACLearning.GrowthFunction
+public import CslibFrontier.MachineLearning.PACLearning.Halfspaces
 public import CslibFrontier.MachineLearning.PACLearning.MDL
 public import CslibFrontier.MachineLearning.PACLearning.Nonuniform
 public import CslibFrontier.MachineLearning.PACLearning.Realizable
@@ -6616,12 +6623,14 @@ public import CslibFrontier.MachineLearning.PACLearning.RealizableSample
 public import CslibFrontier.MachineLearning.PACLearning.SRM
 public import CslibFrontier.MachineLearning.PACLearning.UniformConvergence
 public import CslibFrontier.MachineLearning.PACLearning.VCDimension
+public import CslibFrontier.MachineLearning.PACLearning.VCUniformConvergence
 public import CslibFrontier.MachineLearning.PACLearning.VCUpperBound
 public import CslibFrontier.MachineLearning.Rademacher.Basic
 public import CslibFrontier.MachineLearning.Rademacher.Classification
 public import CslibFrontier.MachineLearning.Rademacher.Contraction
 public import CslibFrontier.MachineLearning.Rademacher.Generalization
 public import CslibFrontier.MachineLearning.Rademacher.GrowthFunction
+public import CslibFrontier.MachineLearning.Rademacher.Linear
 public import CslibFrontier.MachineLearning.Rademacher.Margin
 public import CslibFrontier.MachineLearning.Replicable.Amplification
 public import CslibFrontier.MachineLearning.Replicable.Basic
@@ -6853,6 +6862,7 @@ public import CslibFrontier.Probability.Product
 public import CslibFrontier.Probability.Product.ConditionalExpectation
 public import CslibFrontier.Probability.Product.Estimator
 public import CslibFrontier.Probability.Product.Event
+public import CslibFrontier.Probability.Product.MapMeasure
 public import CslibFrontier.Probability.Product.Reindex
 public import CslibFrontier.Probability.Product.Resample
 public import CslibFrontier.Probability.Product.Split

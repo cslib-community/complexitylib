@@ -157,7 +157,7 @@ theorem levelTest_gap (generator : List Bool → List Bool) (adversary : OracleD
     (generator <$> BitString.sampleList n) count (sampleGame generator adversary n depth)
   simpa only [sampleGame_replicate generator _ adversary n depth count
     hqueries, expansionGame_generated generator adversary n depth hdepth,
-    expansionGame_uniform generator adversary n depth hdepth] using h
+    expansionGame_uniform generator adversary n depth hdepth, Game.coe_succProbability] using h
 
 /-- Choose a level uniformly and run its single-challenge reduction. Both random choices use
 dyadic ranges, and unused indices reject. The query budget is a fixed function of the parameter. -/

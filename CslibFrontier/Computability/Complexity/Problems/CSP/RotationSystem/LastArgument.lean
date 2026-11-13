@@ -49,8 +49,8 @@ omit [DecidableEq V] in
 /-- The actual argument-position table gains precisely the last argument's indexed pair. -/
 theorem argumentPositions_append_last_argument (F : CSP Rel V) (r : Rel)
     (scope : List V) (v : V) :
-    argumentPositions (F ++ [(r, scope ++ [v])]) =
-      argumentPositions (F ++ [(r, scope)]) ++ [(F.length, scope.length)] := by
+    argumentPositions (F ++ [Constraint.mk r (scope ++ [v])]) =
+      argumentPositions (F ++ [Constraint.mk r scope]) ++ [(F.length, scope.length)] := by
   simp only [argumentPositions, CSP.occurrences_append_last_argument, List.map_append,
     List.map_singleton]
 
@@ -59,8 +59,8 @@ omit [DecidableEq V] in
 Missing constraint indices still read zero on both actual input lists. -/
 theorem scopeLength_append_last_argument (F : CSP Rel V) (r : Rel)
     (scope : List V) (v : V) (i : ℕ) :
-    scopeLength (F ++ [(r, scope ++ [v])]) i =
-      scopeLength (F ++ [(r, scope)]) i + if i = F.length then 1 else 0 := by
+    scopeLength (F ++ [Constraint.mk r (scope ++ [v])]) i =
+      scopeLength (F ++ [Constraint.mk r scope]) i + if i = F.length then 1 else 0 := by
   unfold scopeLength
   simp only [List.map_append, List.map_singleton, List.length_append, List.length_singleton]
   by_cases hi : i < F.length
@@ -82,7 +82,7 @@ theorem scopeLength_append_last_argument (F : CSP Rel V) (r : Rel)
 omit [DecidableEq V] in
 /-- The last declared constraint has its literal supplied scope length, including zero. -/
 theorem scopeLength_last_constraint (F : CSP Rel V) (r : Rel) (scope : List V) :
-    scopeLength (F ++ [(r, scope)]) F.length = scope.length := by
+    scopeLength (F ++ [Constraint.mk r scope]) F.length = scope.length := by
   unfold scopeLength
   rw [List.map_append, List.map_singleton, List.getD_append_right _ _ _ _ (by simp)]
   simp
@@ -91,20 +91,20 @@ omit [DecidableEq V] in
 /-- The only old argument whose native successor changes is the former last argument of
 the last constraint. It now leads to the single appended occurrence. -/
 theorem argumentNextIndex_append_last_argument (F : CSP Rel V) (r : Rel)
-    (scope : List V) (v : V) (o : (F ++ [(r, scope)]).Occurrence) :
-    argumentNextIndex (F ++ [(r, scope ++ [v])]) o.1 o.2 =
+    (scope : List V) (v : V) (o : (F ++ [Constraint.mk r scope]).Occurrence) :
+    argumentNextIndex (F ++ [Constraint.mk r (scope ++ [v])]) o.1 o.2 =
       if o.1.val = F.length ∧ o.2.val + 1 = scope.length then
-        (F ++ [(r, scope)]).occurrences.length
-      else argumentNextIndex (F ++ [(r, scope)]) o.1 o.2 := by
+        (F ++ [Constraint.mk r scope]).occurrences.length
+      else argumentNextIndex (F ++ [Constraint.mk r scope]) o.1 o.2 := by
   by_cases hlast : o.1.val = F.length ∧ o.2.val + 1 = scope.length
   · rw [ite_eq_left hlast]
     let i : ℕ := o.1.val
     let j : ℕ := o.2.val
-    change argumentNextIndex (F ++ [(r, scope ++ [v])]) i j = _
+    change argumentNextIndex (F ++ [Constraint.mk r (scope ++ [v])]) i j = _
     have hi : i = F.length := hlast.1
     have hj : j + 1 = scope.length := hlast.2
-    have hnot : (F.length, scope.length) ∉ argumentPositions (F ++ [(r, scope)]) := by
-      have h := argumentPositions_nodup (F ++ [(r, scope ++ [v])])
+    have hnot : (F.length, scope.length) ∉ argumentPositions (F ++ [Constraint.mk r scope]) := by
+      have h := argumentPositions_nodup (F ++ [Constraint.mk r (scope ++ [v])])
       rw [argumentPositions_append_last_argument] at h
       intro hm
       exact (List.nodup_append.mp h).2.2 _ hm _ (by simp) rfl
@@ -116,13 +116,13 @@ theorem argumentNextIndex_append_last_argument (F : CSP Rel V) (r : Rel)
     simp [argumentPositions]
   · rw [ite_eq_right hlast]
     have hn : o.1.val ≠ F.length ∨
-        o.2.val + 1 < scopeLength (F ++ [(r, scope)]) o.1 := by
+        o.2.val + 1 < scopeLength (F ++ [Constraint.mk r scope]) o.1 := by
       by_cases hi : o.1.val = F.length
       · right
-        have hj : o.2.val < scopeLength (F ++ [(r, scope)]) o.1 := by
+        have hj : o.2.val < scopeLength (F ++ [Constraint.mk r scope]) o.1 := by
           rw [scopeLength_occurrence]
           exact o.2.isLt
-        have hlen : scopeLength (F ++ [(r, scope)]) o.1 = scope.length := by
+        have hlen : scopeLength (F ++ [Constraint.mk r scope]) o.1 = scope.length := by
           simpa only [hi] using scopeLength_last_constraint F r scope
         have he : o.2.val + 1 ≠ scope.length := fun he => hlast ⟨hi, he⟩
         omega
@@ -134,7 +134,7 @@ theorem argumentNextIndex_append_last_argument (F : CSP Rel V) (r : Rel)
     · rw [ite_eq_right hi]
       simp only [Nat.add_zero]
       exact List.idxOf_append_of_mem hq
-    · have hcmp : o.2.val + 1 < scopeLength (F ++ [(r, scope)]) o.1 +
+    · have hcmp : o.2.val + 1 < scopeLength (F ++ [Constraint.mk r scope]) o.1 +
           (if o.1.val = F.length then 1 else 0) := by split_ifs <;> omega
       rw [ite_eq_left hcmp, ite_eq_left hj]
       exact List.idxOf_append_of_mem (by simpa only [ite_eq_left hj] using hq)
@@ -143,22 +143,22 @@ omit [DecidableEq V] in
 /-- The appended argument wraps to the same first argument as the former last argument.
 The actual old occurrence hypothesis covers precisely the nonempty target scope case. -/
 theorem argumentNextIndex_append_last_argument_wrap (F : CSP Rel V) (r : Rel)
-    (scope : List V) (v : V) (o : (F ++ [(r, scope)]).Occurrence)
+    (scope : List V) (v : V) (o : (F ++ [Constraint.mk r scope]).Occurrence)
     (hi : o.1.val = F.length) (hj : o.2.val + 1 = scope.length) :
-    argumentNextIndex (F ++ [(r, scope ++ [v])]) F.length scope.length =
-      argumentNextIndex (F ++ [(r, scope)]) o.1 o.2 := by
+    argumentNextIndex (F ++ [Constraint.mk r (scope ++ [v])]) F.length scope.length =
+      argumentNextIndex (F ++ [Constraint.mk r scope]) o.1 o.2 := by
   let i : ℕ := o.1.val
   let j : ℕ := o.2.val
-  change argumentNextIndex (F ++ [(r, scope ++ [v])]) F.length scope.length =
-    argumentNextIndex (F ++ [(r, scope)]) i j
+  change argumentNextIndex (F ++ [Constraint.mk r (scope ++ [v])]) F.length scope.length =
+    argumentNextIndex (F ++ [Constraint.mk r scope]) i j
   change i = F.length at hi
   change j + 1 = scope.length at hj
   have hq := argumentNextPosition_mem o
-  change (i, if j + 1 < scopeLength (F ++ [(r, scope)]) i then j + 1 else 0) ∈
-    argumentPositions (F ++ [(r, scope)]) at hq
+  change (i, if j + 1 < scopeLength (F ++ [Constraint.mk r scope]) i then j + 1 else 0) ∈
+    argumentPositions (F ++ [Constraint.mk r scope]) at hq
   have hlen := scopeLength_last_constraint F r scope
   rw [hi, hlen] at hq
-  have hq0 : (F.length, 0) ∈ argumentPositions (F ++ [(r, scope)]) := by
+  have hq0 : (F.length, 0) ∈ argumentPositions (F ++ [Constraint.mk r scope]) := by
     simpa only [hj, Nat.lt_irrefl, ite_false] using hq
   unfold argumentNextIndex
   rw [hi, scopeLength_last_constraint, scopeLength_last_constraint]
@@ -169,17 +169,17 @@ theorem argumentNextIndex_append_last_argument_wrap (F : CSP Rel V) (r : Rel)
 /-- The actual source incidence prefix before its last argument edge. Its declarations
 and dense endpoint names are still those of the source, including a now isolated variable. -/
 @[expose] def lastArgumentPrefixGraph (F : CSP Rel V) (r : Rel) (scope : List V) (v : V) : Graph :=
-  ⟨(incidenceGraph (F ++ [(r, scope ++ [v])])).vertices,
-    (F ++ [(r, scope)]).occurrences.map fun (constraint, (_argument, varName)) =>
-      ((F ++ [(r, scope ++ [v])]).distinctVars.idxOf varName,
-        (F ++ [(r, scope ++ [v])]).numVars + constraint)⟩
+  ⟨(incidenceGraph (F ++ [Constraint.mk r (scope ++ [v])])).vertices,
+    (F ++ [Constraint.mk r scope]).occurrences.map fun (constraint, (_argument, varName)) =>
+      ((F ++ [Constraint.mk r (scope ++ [v])]).distinctVars.idxOf varName,
+        (F ++ [Constraint.mk r (scope ++ [v])]).numVars + constraint)⟩
 
 /-- Source incidence is literally this prefix followed by the selected final edge. -/
 theorem incidenceGraph_append_last_argument (F : CSP Rel V) (r : Rel) (scope : List V) (v : V) :
-    incidenceGraph (F ++ [(r, scope ++ [v])]) =
+    incidenceGraph (F ++ [Constraint.mk r (scope ++ [v])]) =
       lastEdgeGraph (lastArgumentPrefixGraph F r scope v)
-        ((F ++ [(r, scope ++ [v])]).distinctVars.idxOf v)
-        ((F ++ [(r, scope ++ [v])]).numVars + F.length) := by
+        ((F ++ [Constraint.mk r (scope ++ [v])]).distinctVars.idxOf v)
+        ((F ++ [Constraint.mk r (scope ++ [v])]).numVars + F.length) := by
   apply Graph.ext
   · rfl
   · rw [incidenceGraph_edges, CSP.occurrences_append_last_argument]
@@ -187,17 +187,18 @@ theorem incidenceGraph_append_last_argument (F : CSP Rel V) (r : Rel) (scope : L
 
 /-- Retained prefix ends and target incidence ends have the same edge/end positions. -/
 @[expose] def lastArgumentDartEquiv (F : CSP Rel V) (r : Rel) (scope : List V) (v : V) :
-    Dart (lastArgumentPrefixGraph F r scope v) ≃ Dart (incidenceGraph (F ++ [(r, scope)])) :=
+    Dart (lastArgumentPrefixGraph F r scope v) ≃
+      Dart (incidenceGraph (F ++ [Constraint.mk r scope])) :=
   (finCongr (by simp [lastArgumentPrefixGraph, incidenceGraph_edges])).prodCongr (Equiv.refl Bool)
 
 /-- Literal source-dense endpoint read on an actual retained target argument occurrence. -/
 theorem vertex_lastArgumentDartEquiv_symm (F : CSP Rel V) (r : Rel) (scope : List V) (v : V)
-    (o : (F ++ [(r, scope)]).Occurrence) (side : Bool) :
+    (o : (F ++ [Constraint.mk r scope]).Occurrence) (side : Bool) :
     ((lastArgumentDartEquiv F r scope v).symm (incidenceDart o side)).vertex =
-      if side then (F ++ [(r, scope ++ [v])]).numVars + o.1
-      else (F ++ [(r, scope ++ [v])]).distinctVars.idxOf o.var := by
-  let S := F ++ [(r, scope ++ [v])]
-  let T := F ++ [(r, scope)]
+      if side then (F ++ [Constraint.mk r (scope ++ [v])]).numVars + o.1
+      else (F ++ [Constraint.mk r (scope ++ [v])]).distinctVars.idxOf o.var := by
+  let S := F ++ [Constraint.mk r (scope ++ [v])]
+  let T := F ++ [Constraint.mk r scope]
   have hidx : T.occurrences.idxOf o.record < T.occurrences.length :=
     List.idxOf_lt_length_of_mem (CSP.mem_occurrences.mpr ⟨o, rfl⟩)
   have hi : incidenceEdgeIndex o < T.occurrences.length := hidx
@@ -218,12 +219,12 @@ theorem vertex_lastArgumentDartEquiv_symm (F : CSP Rel V) (r : Rel) (scope : Lis
 /-- The retained actual occurrences have exactly the same vertex fibers in the source
 prefix and target graph. This allows repeated labels and disappearing unused variables. -/
 theorem vertex_lastArgumentDartEquiv_symm_eq_iff (F : CSP Rel V) (r : Rel)
-    (scope : List V) (v : V) (o p : (F ++ [(r, scope)]).Occurrence) (side other : Bool) :
+    (scope : List V) (v : V) (o p : (F ++ [Constraint.mk r scope]).Occurrence) (side other : Bool) :
     ((lastArgumentDartEquiv F r scope v).symm (incidenceDart o side)).vertex =
         ((lastArgumentDartEquiv F r scope v).symm (incidenceDart p other)).vertex ↔
       (incidenceDart o side).vertex = (incidenceDart p other).vertex := by
-  let S := F ++ [(r, scope ++ [v])]
-  let T := F ++ [(r, scope)]
+  let S := F ++ [Constraint.mk r (scope ++ [v])]
+  let T := F ++ [Constraint.mk r scope]
   have hvars : S.vars = T.vars ++ [v] := by
     simp [S, T, CSP.vars, List.flatMap_append, List.append_assoc]
   have hm (a : T.Occurrence) : a.var ∈ S.distinctVars := by
@@ -279,22 +280,22 @@ theorem lastArgumentDartEquiv_reverse (F : CSP Rel V) (r : Rel) (scope : List V)
 /-- Reinterpret the actual source incidence graph as its retained prefix and last edge.
 The dart equivalence is literal on edge indices and end tags. -/
 @[expose] def lastArgumentSourceRotation (F : CSP Rel V) (r : Rel) (scope : List V) (v : V)
-    (ρ : RotationSystem (incidenceGraph (F ++ [(r, scope ++ [v])]))) :
+    (ρ : RotationSystem (incidenceGraph (F ++ [Constraint.mk r (scope ++ [v])]))) :
     RotationSystem (lastEdgeGraph (lastArgumentPrefixGraph F r scope v)
-      ((F ++ [(r, scope ++ [v])]).distinctVars.idxOf v)
-      ((F ++ [(r, scope ++ [v])]).numVars + F.length)) :=
+      ((F ++ [Constraint.mk r (scope ++ [v])]).distinctVars.idxOf v)
+      ((F ++ [Constraint.mk r (scope ++ [v])]).numVars + F.length)) :=
   ρ.transport (graphEqDartEquiv (incidenceGraph_append_last_argument F r scope v))
     (by intro a b; rw [vertex_graphEqDartEquiv, vertex_graphEqDartEquiv])
 
 /-- Delete the final argument on the original CSP lists. The two explicit transports
 retain all old edge/end positions while accounting for changed dense vertex names. -/
 @[expose] def deleteLastArgumentRotation (F : CSP Rel V) (r : Rel) (scope : List V) (v : V)
-    (ρ : RotationSystem (incidenceGraph (F ++ [(r, scope ++ [v])]))) :
-    RotationSystem (incidenceGraph (F ++ [(r, scope)])) :=
+    (ρ : RotationSystem (incidenceGraph (F ++ [Constraint.mk r (scope ++ [v])]))) :
+    RotationSystem (incidenceGraph (F ++ [Constraint.mk r scope])) :=
   ((lastArgumentSourceRotation F r scope v ρ).deleteLastEdge
     (G := lastArgumentPrefixGraph F r scope v)
-    (u := (F ++ [(r, scope ++ [v])]).distinctVars.idxOf v)
-    (v := (F ++ [(r, scope ++ [v])]).numVars + F.length)).transport
+    (u := (F ++ [Constraint.mk r (scope ++ [v])]).distinctVars.idxOf v)
+    (v := (F ++ [Constraint.mk r (scope ++ [v])]).numVars + F.length)).transport
     (lastArgumentDartEquiv F r scope v) (by exact lastArgumentDartEquiv_vertex_eq_iff F r scope v)
 
 /-- The actual retained incidence prefix declares all of its edge endpoints. -/
@@ -302,15 +303,16 @@ theorem lastArgumentPrefixGraph_endpoints_declared (F : CSP Rel V) (r : Rel)
     (scope : List V) (v : V) :
     ∀ w ∈ (lastArgumentPrefixGraph F r scope v).incidenceVertices,
       w ∈ (lastArgumentPrefixGraph F r scope v).vertices := by
-  apply endpoints_declared_deleteLastEdge (u := (F ++ [(r, scope ++ [v])]).distinctVars.idxOf v)
-    (v := (F ++ [(r, scope ++ [v])]).numVars + F.length)
+  apply endpoints_declared_deleteLastEdge
+    (u := (F ++ [Constraint.mk r (scope ++ [v])]).distinctVars.idxOf v)
+    (v := (F ++ [Constraint.mk r (scope ++ [v])]).numVars + F.length)
   rw [← incidenceGraph_append_last_argument]
-  exact incidenceVertices_declared (F ++ [(r, scope ++ [v])])
+  exact incidenceVertices_declared (F ++ [Constraint.mk r (scope ++ [v])])
 
 /-- Source numerical genus is retained by its literal prefix-plus-last-edge view. -/
 theorem numericalGenusZero_lastArgumentSourceRotation (F : CSP Rel V) (r : Rel)
     (scope : List V) (v : V)
-    (ρ : RotationSystem (incidenceGraph (F ++ [(r, scope ++ [v])])))
+    (ρ : RotationSystem (incidenceGraph (F ++ [Constraint.mk r (scope ++ [v])])))
     (hρ : ρ.NumericalGenusZero) :
     (lastArgumentSourceRotation F r scope v ρ).NumericalGenusZero := by
   exact (ρ.numericalGenusZero_graphEqDartEquiv
@@ -321,19 +323,19 @@ by general edge deletion and positional incidence transport. The source rotation
 repeated variable labels, repeated constraints, arbitrary other components and nullaries. -/
 theorem numericalGenusZero_deleteLastArgumentRotation (F : CSP Rel V) (r : Rel)
     (scope : List V) (v : V)
-    (ρ : RotationSystem (incidenceGraph (F ++ [(r, scope ++ [v])])))
+    (ρ : RotationSystem (incidenceGraph (F ++ [Constraint.mk r (scope ++ [v])])))
     (hρ : ρ.NumericalGenusZero) :
     (deleteLastArgumentRotation F r scope v ρ).NumericalGenusZero := by
   exact numericalGenusZero_deleteLastEdge_transport
-    (S := incidenceGraph (F ++ [(r, scope ++ [v])]))
-    (T := incidenceGraph (F ++ [(r, scope)]))
+    (S := incidenceGraph (F ++ [Constraint.mk r (scope ++ [v])]))
+    (T := incidenceGraph (F ++ [Constraint.mk r scope]))
     (G := lastArgumentPrefixGraph F r scope v)
-    (u := (F ++ [(r, scope ++ [v])]).distinctVars.idxOf v)
-    (v := (F ++ [(r, scope ++ [v])]).numVars + F.length)
+    (u := (F ++ [Constraint.mk r (scope ++ [v])]).distinctVars.idxOf v)
+    (v := (F ++ [Constraint.mk r (scope ++ [v])]).numVars + F.length)
     ρ (incidenceGraph_append_last_argument F r scope v)
     (lastArgumentDartEquiv F r scope v) (lastArgumentDartEquiv_vertex_eq_iff F r scope v)
     (lastArgumentDartEquiv_reverse F r scope v)
-    (incidenceVertices_declared (F ++ [(r, scope ++ [v])]))
-    (incidenceVertices_declared (F ++ [(r, scope)])) hρ
+    (incidenceVertices_declared (F ++ [Constraint.mk r (scope ++ [v])]))
+    (incidenceVertices_declared (F ++ [Constraint.mk r scope])) hρ
 
 end Cslib.Complexity.CSP

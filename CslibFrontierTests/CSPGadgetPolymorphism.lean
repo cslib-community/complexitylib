@@ -29,9 +29,9 @@ example : Cslib.Logic.IsPolymorphism (fun a : Fin 2 → Bool => a 0 && a 1)
   (PPGadget.atom (arity := arity) (sem := sem) ()).isPolymorphism common_and
 
 example (a : Fin 2 → ℕ → Bool)
-    (ha : ∀ j, CSP.eval sem (a j) ([((), [7, 7]), ((), [7, 9])] : CSP Unit ℕ) = true) :
+    (ha : ∀ j, CSP.eval sem (a j) ([⟨(), [7, 7]⟩, ⟨(), [7, 9]⟩] : CSP Unit ℕ) = true) :
     CSP.eval sem (fun i => a 0 i && a 1 i)
-      ([((), [7, 7]), ((), [7, 9])] : CSP Unit ℕ) = true :=
+      ([⟨(), [7, 7]⟩, ⟨(), [7, 9]⟩] : CSP Unit ℕ) = true :=
   common_and.eval _ (by
     intro c hc
     simp only [List.mem_cons, List.not_mem_nil, or_false] at hc
@@ -53,8 +53,8 @@ example : ¬HasPolymorphism pinArity pinSem (fun _ : Fin 0 → Bool => false) :=
 
 -- Positive-arity operations preserve an unsatisfiable false-nullary conjunction vacuously.
 example (a : Fin 1 → ℕ → Bool)
-    (ha : ∀ j, CSP.eval (fun _ _ => false) (a j) ([((), [])] : CSP Unit ℕ) = true) :
-    CSP.eval (fun _ _ => false) (fun i => !(a 0 i)) ([((), [])] : CSP Unit ℕ) = true := by
+    (ha : ∀ j, CSP.eval (fun _ _ => false) (a j) ([⟨(), []⟩] : CSP Unit ℕ) = true) :
+    CSP.eval (fun _ _ => false) (fun i => !(a 0 i)) ([⟨(), []⟩] : CSP Unit ℕ) = true := by
   have h : HasPolymorphism (fun _ : Unit => 0) (fun _ _ => false)
       (fun a : Fin 1 → Bool => !(a 0)) := by
     unfold HasPolymorphism Cslib.Logic.IsPolymorphism booleanRelation

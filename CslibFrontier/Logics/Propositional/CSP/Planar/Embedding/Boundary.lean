@@ -46,7 +46,7 @@ variable {Rel V : Type} [DecidableEq V]
 /-- Append one structural probe with the reversed boundary word. Old constraint/scope
 positions are retained; probe arguments are separate positions even at repeated names. -/
 @[expose] def probeBody (F : CSP Rel V) (ports : List V) : CSP (Option Rel) V :=
-  F.map (fun c => (some c.1, c.2)) ++ [(none, ports.reverse)]
+  F.map (fun c => Constraint.mk (some c.rel) c.scope) ++ [Constraint.mk none ports.reverse]
 
 /-- Delete a suffix of darts by following successors to the first retained dart. The loop
 clock is the supplied list length, never a binary entry or vertex label. Invalid tables

@@ -288,4 +288,18 @@ example : ComputableInPolyTime
     (encView encBool encBool) (encView encBool encBool) := by
   fun_prop
 
+/-! The record encodings keep the former tuple words. -/
+
+example {F : Type} (eF : F ↪ List Bool) (s : Share F) :
+    encShare eF s = encPair eF (encList eF) (s.key, s.tags) :=
+  rfl
+
+example {F Result : Type} (eF : F ↪ List Bool) (eResult : Result ↪ List Bool)
+    (v : View F Result) :
+    encView eF eResult v =
+      encPair (encShare eF) (encPair (encList eF) (encPair (encList eF)
+        (encPair (encPair eF eF) eResult)))
+        (v.share, v.corrections, v.weights, v.reply, v.result) :=
+  rfl
+
 end CslibFrontierTests.Crypto.VOLENative
