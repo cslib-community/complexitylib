@@ -122,10 +122,10 @@ example :
 -- (issuing 2 operations `[Op.same 0 3, Op.union 0 3]`).
 example :
     let p := (eval (spec 6) (spanningForestEdges id sampleGraph) (Partition.discrete 6)).2
-    ((spec 6).runClient p (connectIfNew 0 2)).1 = false ∧
-      ((spec 6).runClient p (connectIfNew 0 2)).2.2 = [.same 0 2] ∧
-      ((spec 6).runClient p (connectIfNew 0 3)).1 = true ∧
-      ((spec 6).runClient p (connectIfNew 0 3)).2.2 = [.same 0 3, .union 0 3] :=
+    (spec 6).clientResult p (connectIfNew 0 2) = false ∧
+      (spec 6).clientHistory p (connectIfNew 0 2) = [.same 0 2] ∧
+      (spec 6).clientResult p (connectIfNew 0 3) = true ∧
+      (spec 6).clientHistory p (connectIfNew 0 3) = [.same 0 3, .union 0 3] :=
   ⟨rfl, rfl, rfl, rfl⟩
 
 -- Existence form of `realized_client` instantiated at `rep_init`.
