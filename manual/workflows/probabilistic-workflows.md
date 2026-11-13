@@ -1533,9 +1533,10 @@ for example a decapsulation filter that checks whether a message was already que
 needs an approximate simulation instead, as in `closeTo_cachedCoupledBotGame_eagerCoupledBotGame`
 in [FujisakiOkamoto/Bot.lean](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Bot.lean).
 
-The checked clients are `Scheme.eval_roIndCcaGame_eq_eagerIndCcaGame` in
+The checked clients are `Scheme.eval_romIndCcaExperiment_eq_eager` in
 [FujisakiOkamoto/Security.lean](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Security.lean),
-with two caches for `G` and `H`, and `Scheme.eval_coupledGame_eq_eagerCoupledGame` in
+with two caches for `G` and `H` and a decapsulation oracle given as a program over both, which
+proves the step once for the `FO-notbot` and `FO^⊥` games, and `Scheme.eval_coupledGame_eq_eagerCoupledGame` in
 [NotBot/Lazy.lean](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/NotBot/Lazy.lean),
 with three caches and a key-derivation query that calls two oracles. Check them with
 `scripts/build.sh --wfail --iofail CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Lazy`.

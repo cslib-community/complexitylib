@@ -622,10 +622,19 @@ simulated FO handler is built from its own `G`, `H` and decapsulation implementa
 hybrid handlers the same way), deterministic oracle adversaries `ROAdversary` on the challenge
 record `KEM.Challenge PK CT K` (fields `pk`, `ct`, `key`; defined in
 [`Encryption/KEM.lean`](../../CslibFrontier/Crypto/Computational/Encryption/KEM.lean)), pathwise
-`(qG, qH)` query budgets `ROQueryBounds` via `OracleComp.IsCostBounded`, the lazy-cached executable game `Scheme.roIndCcaGame`
+`(qG, qH)` query budgets `ROQueryBounds` via `OracleComp.IsCostBounded`, and the lazy-cached executable game `Scheme.roIndCcaGame`
 (`Scheme.indCcaRomAdvantage`) and eager random-oracle game `Scheme.eagerIndCcaGame` with exact
 eager/lazy equivalence (`Scheme.eval_roIndCcaGame_eq_eagerIndCcaGame`,
-`Scheme.indCcaRomAdvantage_eq_eager`), and the keyless simulator `Scheme.simHandler` and IND-CPA
+`Scheme.indCcaRomAdvantage_eq_eager`). Both games are instances of one ROM IND-CCA experiment
+`Scheme.romIndCcaExperiment`, which takes the key generator and the decapsulation oracle as a
+program `romProgram` against the random oracles `ROSpec`; its eager form is
+`Scheme.eagerRomIndCcaExperiment`, and `Scheme.eval_romIndCcaExperiment_eq_eager` proves their
+equivalence once for every decapsulation program. The `@[simp]` bridges
+`Scheme.romIndCcaExperiment_notBot` and `Scheme.eagerRomIndCcaExperiment_notBot` (and
+`Scheme.romIndCcaExperiment_bot`, `Scheme.eagerRomIndCcaExperiment_bot` for `FO^⊥` in `Bot.lean`)
+identify the instances with the named games. For another FO variant, instantiate the experiment
+with its decapsulation program and prove such bridges rather than writing new handlers and a new
+eager/lazy proof. The module also supplies the keyless simulator `Scheme.simHandler` and IND-CPA
 reduction `Scheme.romCpaReduction` (`Scheme.simHitProb`, `Scheme.indCpaAdvantage_romCpaReduction`,
 the query-count row bound `Scheme.sum_simHitProb_le`, and the OW-to-CPA averaging bound
 `Scheme.avg_simHitProb_le_indCpaAdvantage_romCpaReduction`). The IND-CCA theorem itself is

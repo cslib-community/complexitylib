@@ -67,8 +67,14 @@ On top of those definitions, this module formalizes:
    `Scheme.indCcaRomAdvantage`, `Scheme.eagerIndCcaGame`) over the oracle interface
    `ROQuery M CT` (`G`, `H`, and punctured decapsulation rejecting `c = cStar` with `none`),
    together with exact eager/lazy equivalence (`Scheme.eval_roIndCcaGame_eq_eagerIndCcaGame`,
-   `Scheme.indCcaRomAdvantage_eq_eager`), obtained from the generic represented-cache law
-   `RandomOracle.eval_run_interpret_eq_complete_bind`.
+   `Scheme.indCcaRomAdvantage_eq_eager`). Both games are instances of one ROM IND-CCA experiment
+   `Scheme.romIndCcaExperiment`, parameterized by the key generator and the decapsulation oracle
+   (written as a program against the random oracles), whose eager/lazy equivalence
+   `Scheme.eval_romIndCcaExperiment_eq_eager` follows from the generic represented-cache law
+   `RandomOracle.eval_run_interpret_eq_complete_bind`. The `@[simp]` bridges
+   `Scheme.romIndCcaExperiment_notBot` and `Scheme.eagerRomIndCcaExperiment_notBot` identify the
+   `FO-notbot` instance with `roIndCcaGame` and `eagerIndCcaGame`; the `FO^⊥` instance is in
+   `CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Bot`.
 2. **Keyless ROM simulator and IND-CPA reduction** (`Scheme.simHandler`,
    `Scheme.romCpaReduction`, `Scheme.simHitProb`). Neither is a verbatim construction from
    [HofheinzHoevelmannsKiltz2017]; both are adapted to domain-separated `FO-notbot`. `simHandler` is
@@ -112,6 +118,14 @@ On top of those definitions, this module formalizes:
 * `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.eagerIndCcaGame`: eager random-oracle
   IND-CCA game defined directly from `Scheme.keyGenNotBot`, `Scheme.encapsNotBot`, and
   `Scheme.decapsNotBot`.
+* `Cslib.Crypto.Protocols.FujisakiOkamoto.ROSpec`,
+  `Cslib.Crypto.Protocols.FujisakiOkamoto.romProgram`,
+  `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.romIndCcaExperiment`,
+  `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.eagerRomIndCcaExperiment`: the random-oracle
+  signature `G ⊕ₒ H`, the IND-CCA oracle interface as a program against it, and the lazy and
+  eager ROM IND-CCA experiments for any key generator and decapsulation program.
+* `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.notBotDecaps`: the `FO-notbot` decapsulation
+  program, the instance of `romIndCcaExperiment` that gives `roIndCcaGame`.
 * `Cslib.Crypto.Protocols.FujisakiOkamoto.SimState`,
   `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.simHandler`,
   `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.romCpaReduction`,
@@ -120,6 +134,13 @@ On top of those definitions, this module formalizes:
 
 ## Main results
 
+* `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.eval_romIndCcaExperiment_eq_eager`: the lazy
+  ROM IND-CCA experiment has the same output distribution as its eager form, for every key
+  generator and decapsulation program.
+* `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.romIndCcaExperiment_notBot`,
+  `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.eagerRomIndCcaExperiment_notBot`: the
+  `FO-notbot` instance of the experiment is `roIndCcaGame`, and its eager form is
+  `eagerIndCcaGame`.
 * `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.eval_roIndCcaGame_eq_eagerIndCcaGame`,
   `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.indCcaRomAdvantage_eq_eager`:
   the lazy executable game `roIndCcaGame` has the same output distribution and advantage as

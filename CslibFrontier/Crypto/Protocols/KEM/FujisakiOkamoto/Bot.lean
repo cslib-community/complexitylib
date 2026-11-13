@@ -45,7 +45,10 @@ The proof composes four game hops for each challenge bit `b : Bool`:
 1. `eval_roIndCcaBotGame_eq_eagerIndCcaBotGame` and
    `eagerCoupledBotGame_eq_eagerIndCcaBotGame`: lazy/eager equivalence for `roIndCcaBotGame` and
    oracle re-indexing via `coupledH` (`bind_pi_coupledH`), so that valid decapsulations read the
-   ciphertext key table `Hq c` while invalid ciphertexts return `none`.
+   ciphertext key table `Hq c` while invalid ciphertexts return `none`. Both games are the `FO^⊥`
+   instance of the shared ROM IND-CCA experiment (`romIndCcaExperiment_bot`,
+   `eagerRomIndCcaExperiment_bot`), so the lazy/eager step is
+   `Scheme.eval_romIndCcaExperiment_eq_eager`.
 2. `closeTo_cachedCoupledBotGame_eagerCoupledBotGame`: lazy-sampling simulation with `CloseTo`
    error `qD · 2^{-γ}` (the §3.1 ciphertext-validity hop for `T[PKE, G]`), replacing `decT`'s check
    on `G(m')` by a lookup in the cached `G`-queries `gCache`.
@@ -73,6 +76,8 @@ Def. 2.4 / Fig. 4.
 * `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.eagerBotHandler`,
   `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.eagerIndCcaBotGame`: eager random-oracle IND-CCA
   game for `FO^⊥`, defined directly from `Scheme.encapsBot` and `Scheme.decapsBot`.
+* `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.botDecaps`: the `FO^⊥` decapsulation program,
+  whose instance of `Scheme.romIndCcaExperiment` is `roIndCcaBotGame`.
 * `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.simBotCheck`,
   `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.simBotHandler`,
   `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.simBotGame`,
@@ -81,6 +86,10 @@ Def. 2.4 / Fig. 4.
 
 ## Main results
 
+* `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.romIndCcaExperiment_bot`,
+  `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.eagerRomIndCcaExperiment_bot`: the `FO^⊥`
+  instance of the shared ROM IND-CCA experiment is `roIndCcaBotGame`, and its eager form is
+  `eagerIndCcaBotGame`.
 * `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.eval_roIndCcaBotGame_eq_eagerIndCcaBotGame`,
   `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.indCcaBotAdvantage_eq_eager`: exact eager/lazy
   equivalence for `FO^⊥`.
