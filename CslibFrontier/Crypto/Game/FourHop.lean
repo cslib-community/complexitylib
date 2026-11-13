@@ -39,6 +39,5 @@ theorem advantage_four_hop_le {G0 M0 M1 G1 : Game} {c : ℝ≥0}
     (calc Pr[G0] ≈[c] Pr[M0] := approxEq_of_advantage_le h0
       _ ≈[M0.advantage M1] Pr[M1] := approxEq_advantage M0 M1
       _ ≈[c] Pr[G1] := (approxEq_of_advantage_le h1).symm)
-    (by exact_mod_cast le_rfl)
 
 end Cslib.Crypto.Game

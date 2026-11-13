@@ -650,16 +650,16 @@ Game.advantage_le_of_approxEq
   (calc Pr[G₀] = Pr[G₁] := by rw [h₀₁]                     -- Game 0 = Game 1
     _ ≈[ε₁] Pr[G₂] := Game.approxEq_of_advantage_le h₁₂   -- |Game 1 − Game 2| ≤ ε₁
     _ ≈[ε₂] Pr[G₃] := Game.approxEq_of_advantage_le h₂₃)
-  (by exact_mod_cast le_rfl)
 ```
 `Game.approxEq_of_advantage_le` turns an `ℝ≥0` advantage bound into a step, and
 `Game.approxEq_advantage G₀ G₁` charges a step its advantage. `Game.advantage_le_of_approxEq` reads
-the chain back as an `ℝ≥0` advantage bound. `ApproxEq.le_add` and `ApproxEq.sub_le` give the
+the chain back as an `ℝ≥0` advantage bound; pass its second argument, `δ ≤ ε`, only when the bound
+`ε` is looser than the chain's sum of errors. `ApproxEq.le_add` and `ApproxEq.sub_le` give the
 one-sided bounds `Pr[G₀] ≤ Pr[G₁] + ε` and `Pr[G₁] - ε ≤ Pr[G₀]`. The same lemmas apply to
 experiments `e : ProbComp Bool`, since `Pr[e]` and the experiment advantage are those of
 `ProbComp.eval e`. Keep `game_trans` for chains whose hops are proved in place with `peel_binds`,
-where each hop is a local computation rather than a textbook step. In a `calc` chain, `h.trans`
-on `h : x ≈[ε] y` is `ApproxEq.trans`; use `le_trans` for the order. The
+where each hop is a local computation rather than a textbook step. On `h : x ≈[ε] y`, `h.trans`
+is `ApproxEq.trans`; use `le_trans` for the order. The
 [checked examples](../../CslibFrontierTests/Crypto/Hop.lean) cover each form, and
 [FourHop.lean](../../CslibFrontier/Crypto/Game/FourHop.lean) is a library client.
 

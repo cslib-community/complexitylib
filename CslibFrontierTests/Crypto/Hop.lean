@@ -38,12 +38,20 @@ example (G₀ G₁ G₂ G₃ : Game) (ε₁ ε₂ : ℝ≥0) (h₀₁ : G₀ = G
     (calc Pr[G₀] = Pr[G₁] := by rw [h₀₁]
       _ ≈[ε₁] Pr[G₂] := Game.approxEq_of_advantage_le h₁₂
       _ ≈[ε₂] Pr[G₃] := Game.approxEq_of_advantage_le h₂₃)
-    (by exact_mod_cast le_rfl)
+
+-- A looser bound than the chain's sum of errors is proved explicitly.
+example (G₀ G₁ G₂ : Game) (ε : ℝ≥0) (h₀₁ : G₀.advantage G₁ ≤ ε) (h₁₂ : G₁.advantage G₂ ≤ ε) :
+    G₀.advantage G₂ ≤ 3 * ε :=
+  Game.advantage_le_of_approxEq
+    (calc Pr[G₀] ≈[ε] Pr[G₁] := Game.approxEq_of_advantage_le h₀₁
+      _ ≈[ε] Pr[G₂] := Game.approxEq_of_advantage_le h₁₂)
+    (by push_cast; linarith [ε.coe_nonneg])
 
 -- A hop of unknown cost is charged its advantage, and a reversed bound is a reversed hop.
-example (G₀ M G₁ : Game) (c : ℝ≥0) (h₀ : G₀.advantage M ≤ c) (h₁ : G₁.advantage M ≤ c) :
-    Pr[G₀] ≈[c + c] Pr[G₁] :=
-  calc Pr[G₀] ≈[c] Pr[M] := Game.approxEq_of_advantage_le h₀
+example (G₀ M₀ M₁ G₁ : Game) (c : ℝ≥0) (h₀ : G₀.advantage M₀ ≤ c) (h₁ : G₁.advantage M₁ ≤ c) :
+    Pr[G₀] ≈[c + M₀.advantage M₁ + c] Pr[G₁] :=
+  calc Pr[G₀] ≈[c] Pr[M₀] := Game.approxEq_of_advantage_le h₀
+    _ ≈[M₀.advantage M₁] Pr[M₁] := Game.approxEq_advantage M₀ M₁
     _ ≈[c] Pr[G₁] := (Game.approxEq_of_advantage_le h₁).symm
 
 -- A real-valued advantage bound and a hop are the same statement.
