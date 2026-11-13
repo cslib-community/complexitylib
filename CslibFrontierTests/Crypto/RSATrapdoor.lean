@@ -36,9 +36,10 @@ example : (rsa33.publicKey.eval 5 : ℕ) = 26 := by decide
 example (pk : RSAPublicKey) : encRSAPublicKey pk = encPair encNat encNat (pk.N, pk.e) := rfl
 
 /-- An inverter reads the unary security parameter, the public key and the challenge in binary:
-the layout of the word-level inverters in `rsaOneWay_iff_encoded`. -/
-example (x : RSAInput) : encRSAInput x = encPair encUnary (encPair encRSAPublicKey encNat)
-    (x.secParam, x.publicKey, (x.challenge : ℕ)) :=
+the layout of the word-level inverters on keys with `0 < N` in `rsaOneWay_iff_encoded`. -/
+example (x : RSAInput) : encRSAInput x = encPair encUnary (encPair
+    ((Function.Embedding.subtype fun pk : RSAPublicKey => 0 < pk.N).trans encRSAPublicKey) encNat)
+    (x.secParam, ⟨x.publicKey, x.challenge.pos⟩, (x.challenge : ℕ)) :=
   rfl
 
 /-- info: 'Cslib.Crypto.rsaEval_bijective_fin' depends on axioms: [propext, Classical.choice, Quot.sound] -/

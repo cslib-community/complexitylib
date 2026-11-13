@@ -74,9 +74,9 @@ residue. `RSAInverter.IsPPT` asks for one uniform strict PPT machine that reads 
 unary security parameter followed by `N`, `e` and `y` in binary, and writes the returned residue
 in binary. Since RSA evaluation is a bijection on `Fin N`, accepting any preimage is the same as
 recovering the challenge (`rsaInversionGame_eq`). `rsaOneWay_iff_encoded` shows that `RSAOneWay`
-is the assumption over word-level inverters that read the same layout and may output any natural
-number: a word-level answer is reduced modulo `N`, and a typed inverter extends to all words
-(`IsPPTOn.exists_extension`).
+is the assumption over word-level inverters that read the same layout on keys with `0 < N` and may
+output any natural number: a word-level answer is reduced modulo `N`, and a typed inverter extends
+to all words (`IsPPTOn.exists_extension`).
 
 ## References
 
@@ -362,25 +362,30 @@ def RSAOneWay (gen : RSAGen) : Prop :=
     Negligible fun n => Game.succProbability (rsaInversionGame gen inverter n)
 
 /-- **`RSAOneWay` is the word-level RSA assumption.** Quantifying over inverters that read
-`(1ⁿ, (N, e), y)` with binary numbers, each with one uniform strict PPT machine, and may answer with
-any natural number gives the same assumption as quantifying over typed inverters. A word-level
-answer is reduced modulo `N`, which can only help; conversely, a typed inverter extends to all
-words by rerunning its machine and decoding its output (`IsPPTOn.exists_extension`). -/
+`(1ⁿ, (N, e), y)` with binary numbers on keys with `0 < N`, each with one uniform strict PPT
+machine, and may answer with any natural number gives the same assumption as quantifying over typed
+inverters. A word-level answer is reduced modulo `N`, which can only help; conversely, a typed
+inverter extends to all words by rerunning its machine and decoding its output
+(`IsPPTOn.exists_extension`). -/
 theorem rsaOneWay_iff_encoded (gen : RSAGen) :
-    RSAOneWay gen ↔ ∀ W : ℕ → RSAPublicKey × ℕ → ProbComp ℕ,
-      IsPPTOn (encPair encUnary (encPair encRSAPublicKey encNat)) encNat (fun x => W x.1 x.2) →
+    RSAOneWay gen ↔ ∀ W : ℕ → {pk : RSAPublicKey // 0 < pk.N} × ℕ → ProbComp ℕ,
+      IsPPTOn (encPair encUnary (encPair
+          ((Function.Embedding.subtype fun pk : RSAPublicKey => 0 < pk.N).trans encRSAPublicKey)
+          encNat)) encNat (fun x => W x.1 x.2) →
       Negligible fun n => Game.succProbability (do
         let desc ← gen n
         let x ← PMF.uniformOfFintype (Fin desc.modulus)
-        let x' ← ProbComp.eval (W n (desc.publicKey, rsaEval desc.modulus desc.e x))
+        let x' ← ProbComp.eval
+          (W n (⟨desc.publicKey, desc.modulus_pos⟩, rsaEval desc.modulus desc.e x))
         return decide (x' = x)) := by
   constructor
   · intro h W hW
     let A : RSAInverter := fun n pk y =>
-      (fun z => (⟨z % pk.N, Nat.mod_lt _ y.pos⟩ : Fin pk.N)) <$> W n (pk, y)
+      (fun z => (⟨z % pk.N, Nat.mod_lt _ y.pos⟩ : Fin pk.N)) <$> W n (⟨pk, y.pos⟩, y)
     have hA : A.IsPPT := by
       refine ((hW.preprocess (prepare := fun x : RSAInput =>
-          (x.secParam, x.publicKey, (x.challenge : ℕ))) (by fun_prop)).map_with
+          (x.secParam, ⟨x.publicKey, x.challenge.pos⟩, (x.challenge : ℕ)))
+          (.of_eq fun _ => rfl)).map_with
         (f := fun x z => z % x.publicKey.N)
         (ComputableInPolyTime.binary_mod' (by fun_prop) (by fun_prop))).congr fun x => ?_
       simp only [A, Functor.map_map]
@@ -398,13 +403,16 @@ theorem rsaOneWay_iff_encoded (gen : RSAGen) :
     · simp [hz]
   · intro h A hA
     obtain ⟨E, hEppt, hE⟩ := hA.exists_extension ComputableInPolyTime.bitsToNat ofBits_encNat
-    set E' := encPair encUnary (encPair encRSAPublicKey encNat)
+    set E' := encPair encUnary (encPair
+      ((Function.Embedding.subtype fun pk : RSAPublicKey => 0 < pk.N).trans encRSAPublicKey)
+      encNat)
     have hold := h (fun n t => E (E' (n, t)))
       (hEppt.preprocess ComputableInPolyTime.id'.encoding_comp)
     refine negligible_of_le hold fun n => le_of_eq ?_
     rw [rsaInversionGame_eq]
     have hrun (desc : RSADesc) (x : Fin desc.modulus) :
-        ProbComp.eval (E (E' (n, desc.publicKey, rsaEval desc.modulus desc.e x))) =
+        ProbComp.eval
+            (E (E' (n, ⟨desc.publicKey, desc.modulus_pos⟩, rsaEval desc.modulus desc.e x))) =
           (ProbComp.eval (A n desc.publicKey (desc.publicKey.eval x))).map Fin.val := by
       rw [← ProbComp.eval_map]
       exact hE ⟨n, desc.publicKey, desc.publicKey.eval x⟩
