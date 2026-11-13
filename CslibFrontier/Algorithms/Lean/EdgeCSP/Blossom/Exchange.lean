@@ -46,8 +46,8 @@ theorem exchange_of_connector (hF : EdgeInstance F) {f current : OccurrenceLabel
       ValidLabeling sem (pairFlip current o e) := by
   cases o with | mk i oj =>
   let o : Occurrence F := ⟨i, oj⟩
-  let ps := positions vs F[i.val].2
-  let os := outsidePositions F[i.val].2.length ps
+  let ps := positions vs F[i.val].scope
+  let os := outsidePositions F[i.val].scope.length ps
   let a := oldPort f vs o ho
   let c := connectorPort f vs i ht
   let before := transport f vs current (fun _ => false) central
@@ -59,19 +59,19 @@ theorem exchange_of_connector (hF : EdgeInstance F) {f current : OccurrenceLabel
     rw [pairFlip_eq _ hac]
     simp [BitString.flipOn_apply, c, before, transport_connectorPort]
   have hguard := canContract_constraint hf vs i
-  have hrow : (F[i.val].1.contract (localTuple f i) ps).sem row = true := by
+  have hrow : (F[i.val].rel.contract (localTuple f i) ps).sem row = true := by
     have hv := hnew c.1
-    change (contract f vs)[i.val].1.sem row = true at hv
+    change (contract f vs)[i.val].rel.sem row = true at hv
     rw [get_contract_old] at hv
-    have hp : (positions vs F[i.val].2).isEmpty = false := by
+    have hp : (positions vs F[i.val].scope).isEmpty = false := by
       simpa only [List.isEmpty_eq_false_iff] using (mem_touched vs i).mp ht
     simpa only [constraint, hp, Bool.false_eq_true, ↓reduceIte] using hv
   obtain ⟨old, _, hm, hd, he⟩ := contractWitness_spec hguard hrow
-  have hsem : F[i.val].1.sem old = true :=
+  have hsem : F[i.val].rel.sem old = true :=
     sem_eq_true.mpr ⟨(canContract_eq_true.mp hguard).1, hm⟩
-  have hrefLen : (localTuple f i).length = F[i.val].2.length := by simp [localTuple]
+  have hrefLen : (localTuple f i).length = F[i.val].scope.length := by simp [localTuple]
   rw [hrefLen] at he
-  have holdlen : old.length = F[i.val].2.length := by
+  have holdlen : old.length = F[i.val].scope.length := by
     have hh := canContract_eq_true.mp hguard
     have hflen := (wellFormed_eq_true.mp hh.1) (localTuple f i) hh.2.1
     exact ((wellFormed_eq_true.mp hh.1) old hm).trans (hflen.symm.trans hrefLen)
@@ -87,7 +87,7 @@ theorem exchange_of_connector (hF : EdgeInstance F) {f current : OccurrenceLabel
     rw [hread, hct] at hh
     exact of_decide_eq_true hh
   obtain ⟨j, hj, hjdiff, hothers⟩ := deviations_eq_one hdev
-  have hjb : j < F[i.val].2.length := List.mem_range.mp (List.mem_filter.mp hj).1
+  have hjb : j < F[i.val].scope.length := List.mem_range.mp (List.mem_filter.mp hj).1
   let e : Occurrence F := ⟨i, ⟨j, hjb⟩⟩
   have hev : e.var ∈ vs := (mem_positions vs i ⟨j, hjb⟩).mp hj
   have hoe : o ≠ e := fun he => ho (congrArg Occurrence.var he ▸ hev)
@@ -97,12 +97,12 @@ theorem exchange_of_connector (hF : EdgeInstance F) {f current : OccurrenceLabel
   apply (validLabeling_pairFlip_iff hcurrent i oj ⟨j, hjb⟩ (by
     intro hh
     exact hoe (congrArg (Sigma.mk i) hh))).mpr
-  have heq : List.ofFn (BitString.flipOn {oj, (⟨j, hjb⟩ : Fin F[i.val].2.length)}
+  have heq : List.ofFn (BitString.flipOn {oj, (⟨j, hjb⟩ : Fin F[i.val].scope.length)}
       (fun k => current ⟨i, k⟩)) = old := by
     apply List.ext_getElem
     · simpa only [List.length_ofFn] using holdlen.symm
     · intro k hk hko
-      have hkb : k < F[i.val].2.length := by simpa only [List.length_ofFn] using hk
+      have hkb : k < F[i.val].scope.length := by simpa only [List.length_ofFn] using hk
       let q : Occurrence F := ⟨i, ⟨k, hkb⟩⟩
       have hqref : (localTuple f i).getD k false = f q := by simp [localTuple, q, hkb]
       by_cases hkp : k ∈ ps
@@ -112,15 +112,15 @@ theorem exchange_of_connector (hF : EdgeInstance F) {f current : OccurrenceLabel
           intro hh
           have hqo : q = o := congrArg (Sigma.mk i) (Fin.ext hh)
           exact ho (congrArg Occurrence.var hqo ▸ hqv)
-        have hfinO : (⟨k, hkb⟩ : Fin F[i.val].2.length) ≠ oj := fun hh =>
+        have hfinO : (⟨k, hkb⟩ : Fin F[i.val].scope.length) ≠ oj := fun hh =>
           hko0 (congrArg Fin.val hh)
         by_cases hkj : k = j
         · have hdiff : old.getD k false ≠ f q := by
             have hh := hjdiff
             rw [← hkj, hqref] at hh
             exact hh
-          have hmem : (⟨k, hkb⟩ : Fin F[i.val].2.length) ∈
-              ({oj, ⟨j, hjb⟩} : Finset (Fin F[i.val].2.length)) :=
+          have hmem : (⟨k, hkb⟩ : Fin F[i.val].scope.length) ∈
+              ({oj, ⟨j, hjb⟩} : Finset (Fin F[i.val].scope.length)) :=
             mem_insert.mpr (Or.inr (mem_singleton.mpr (Fin.ext hkj)))
           simp only [List.getElem_ofFn, BitString.flipOn_apply, hmem, ↓reduceIte]
           change (!current q) = old[k]
@@ -128,15 +128,15 @@ theorem exchange_of_connector (hF : EdgeInstance F) {f current : OccurrenceLabel
           cases hfq : f q <;> cases hoq : old.getD k false <;> simp_all
         · have heold := hothers k hkp hkj
           rw [hqref] at heold
-          have hmem : (⟨k, hkb⟩ : Fin F[i.val].2.length) ∉
-              ({oj, ⟨j, hjb⟩} : Finset (Fin F[i.val].2.length)) := by
+          have hmem : (⟨k, hkb⟩ : Fin F[i.val].scope.length) ∉
+              ({oj, ⟨j, hjb⟩} : Finset (Fin F[i.val].scope.length)) := by
             simp only [mem_insert, mem_singleton, not_or]
             exact ⟨hfinO, fun hh => hkj (congrArg Fin.val hh)⟩
           simp only [List.getElem_ofFn, BitString.flipOn_apply, hmem, ↓reduceIte]
           exact hqcur.trans ((List.getD_eq_getElem old false hko).symm.trans heold).symm
       · have hqout : q.var ∉ vs := by
           exact (mem_positions vs i ⟨k, hkb⟩).not.mp hkp
-        have hkos : k ∈ os := (mem_outsidePositions vs F[i.val].2 k).mpr
+        have hkos : k ∈ os := (mem_outsidePositions vs F[i.val].scope k).mpr
           ⟨hkb, by simpa only [List.getD_eq_getElem _ _ hkb, Occurrence.var] using hqout⟩
         have hidx := List.idxOf_lt_length_iff.mpr hkos
         have hh := congrArg (fun r => r.getD (os.idxOf k) false) he
@@ -166,11 +166,11 @@ theorem exchange_of_connector (hF : EdgeInstance F) {f current : OccurrenceLabel
         rw [pairFlip_eq _ hac] at hh
         simp only [BitString.flipOn_apply, mem_insert, mem_singleton, hqa, hqc, or_false,
           before, transport_oldPort] at hh
-        have hmem : (⟨k, hkb⟩ : Fin F[i.val].2.length) ∈
-            ({oj, ⟨j, hjb⟩} : Finset (Fin F[i.val].2.length)) ↔ k = oj.val := by
+        have hmem : (⟨k, hkb⟩ : Fin F[i.val].scope.length) ∈
+            ({oj, ⟨j, hjb⟩} : Finset (Fin F[i.val].scope.length)) ↔ k = oj.val := by
           simp [Fin.ext_iff, hkj]
         simp only [List.getElem_ofFn, BitString.flipOn_apply, hmem]
         exact hh.symm.trans (List.getD_eq_getElem old false hko)
-  exact (congrArg F[i.val].1.sem heq).trans hsem
+  exact (congrArg F[i.val].rel.sem heq).trans hsem
 
 end Cslib.Logic.PL.CSP.Blossom

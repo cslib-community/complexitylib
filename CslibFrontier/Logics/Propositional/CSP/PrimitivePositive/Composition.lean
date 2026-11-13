@@ -36,7 +36,7 @@ variable {Rel : Type} {arity : Rel → ℕ} {sem : Rel → List Bool → Bool}
 This also covers nullary constraints. -/
 @[expose] def atom (r : Rel) : PPGadget arity sem (booleanRelation arity sem r) where
   numAux := 0
-  body := [(r, List.ofFn Sum.inl)]
+  body := [⟨r, List.ofFn Sum.inl⟩]
   wellFormed := by
     intro c hc
     simp only [List.mem_singleton] at hc

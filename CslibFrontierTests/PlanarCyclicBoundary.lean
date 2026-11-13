@@ -20,10 +20,10 @@ namespace CslibFrontierTests.PlanarCyclicBoundary
 open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Complexity
 open Cslib.Complexity.CSP Cslib.Complexity.CSP.OrderedBoundary Graph
 
-private abbrev body : CSP Unit (Fin 3) := [((), List.ofFn id)]
+private abbrev body : CSP Unit (Fin 3) := [⟨(), List.ofFn id⟩]
 private abbrev scope : Fin 3 → Fin 3 := Fin.rev
 private abbrev q : Equiv.Perm (Fin 3) := finRotate 3
-private abbrev input : CSP Unit (Fin 3) := body ++ [((), List.ofFn scope)]
+private abbrev input : CSP Unit (Fin 3) := body ++ [Constraint.mk () (List.ofFn scope)]
 private abbrev supplied : RotationCertificate := ⟨[10, 3, 8, 5, 6, 1, 4, 9, 2, 11, 0, 7]⟩
 private abbrev expected : RotationCertificate := ⟨[8, 3, 6, 5, 10, 1, 2, 9, 0, 11, 4, 7]⟩
 
@@ -56,7 +56,7 @@ private theorem target_body_index (j : Fin 3) :
     incidenceEdgeIndex (reindexLastScopeOccurrenceEquiv body () scope q (bodyO j)) = j.val := by
   unfold incidenceEdgeIndex bodyO
   rw [reindexLastScopeOccurrenceEquiv_apply]
-  change (body ++ [((), List.ofFn (scope ∘ q))]).occurrences.idxOf
+  change (body ++ [Constraint.mk () (List.ofFn (scope ∘ q))]).occurrences.idxOf
     (appendOfFnOccurrenceEquiv body () (scope ∘ q) (Sum.inl (bodyOccurrence j))).record = _
   rw [record_appendOfFnOccurrenceEquiv_inl]
   fin_cases j <;> decide +kernel
@@ -66,7 +66,7 @@ private theorem target_probe_index (j : Fin 3) :
       3 + (q.symm j).val := by
   unfold incidenceEdgeIndex probeO
   rw [reindexLastScopeOccurrenceEquiv_apply]
-  change (body ++ [((), List.ofFn (scope ∘ q))]).occurrences.idxOf
+  change (body ++ [Constraint.mk () (List.ofFn (scope ∘ q))]).occurrences.idxOf
     (appendOfFnOccurrenceEquiv body () (scope ∘ q) (Sum.inr (q.symm j))).record = _
   rw [record_appendOfFnOccurrenceEquiv_inr]
   fin_cases j <;> decide +kernel
@@ -129,11 +129,13 @@ example : converted = expected := by
   rw [RotationCertificate.getD_ofRotation] at h
   exact h
 
-example : verifyRotationCertificate (body ++ [((), List.ofFn (scope ∘ q))]) converted = true :=
+example : verifyRotationCertificate (body ++ [Constraint.mk () (List.ofFn (scope ∘ q))])
+    converted = true :=
   verifyRotationCertificate_reindexLastScopeCertificate body () scope q (by intro j; rfl)
     supplied source_rotation (by decide +kernel)
 
-example : verifyRotationCertificate (body ++ [((), List.ofFn (scope ∘ q))]) expected = true := by
+example : verifyRotationCertificate (body ++ [Constraint.mk () (List.ofFn (scope ∘ q))])
+    expected = true := by
   decide +kernel
 
 -- Reflection fails the exact directed commutation condition at this concrete arity.

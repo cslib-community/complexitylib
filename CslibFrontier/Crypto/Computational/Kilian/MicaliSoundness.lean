@@ -1114,23 +1114,12 @@ theorem exists_micaliCSProof_of_mem_NP [DecidableEq α] {enc : α ↪ List Bool}
   obtain ⟨V, c, d, hV, hpcp⟩ := NP_subset_PCP_log enc hL
   have hq : ∀ x ρ, ρ.length = V.coins x → (V.queries (x, ρ)).length ≤ d := by
     intro x ρ hρ
-    simpa using hpcp.2.1 x ρ hρ
-  refine ⟨V, c, d, hV, hpcp.1, hq,
-    fun x => ⟨fun hx => ?_, fun ⟨table, htable⟩ => ?_⟩,
+    simpa using hpcp.length_queries_le x ρ hρ
+  exact ⟨V, c, d, hV, hpcp.coins_le, hq, hpcp.mem_iff_exists_tableVerifier,
     fun x table htable σ m => micaliHonestGame_eq_pure_true V htable σ m,
-    fun P t_FS Q_MT σ m hFS hMT => micaliSoundness_bound V L σ m hpcp.2.2.2 hFS hMT,
+    fun P t_FS Q_MT σ m hFS hMT => micaliSoundness_bound V L σ m hpcp.sound hFS hMT,
     _, fun σ m hTree hFS x table hlen hm hρs =>
       micaliProofBits_micaliProvePure_le_log hlen hm hρs (fun ρ hρ => hq x ρ hρ)
-        (hpcp.1 x)⟩
-  · obtain ⟨proof, hproof⟩ := hpcp.2.2.1 x hx
-    exact ⟨_, by simpa using PCPVerifier.tableVerifier_complete x proof [] hproof⟩
-  · by_contra hx
-    obtain ⟨proof, hproof⟩ := PCPVerifier.tableVerifier_sound x table htable
-    have hs := hpcp.2.2.2 x hx proof
-    have hc : acceptCount (fun y => V.accepts y.1 proof y.2) x (V.coins x) = 2 ^ V.coins x := by
-      simp [acceptCount, hproof]
-    rw [hc] at hs
-    have hp : 0 < 2 ^ V.coins x := Nat.two_pow_pos _
-    lia
+        (hpcp.coins_le x)⟩
 
 end Cslib.Crypto

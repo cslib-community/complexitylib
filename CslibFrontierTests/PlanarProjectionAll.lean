@@ -27,13 +27,13 @@ private noncomputable def cyclic := (Witness.atom arity sem ()).rotate
 
 -- These are the existing original-language bodies: no argument of the original atom is erased.
 example : (atom.project (1 : Fin 3)).body =
-    [((), [Sum.inl 0, Sum.inr (0 : Fin 1), Sum.inl 1])] := by rfl
+    [⟨(), [Sum.inl 0, Sum.inr (0 : Fin 1), Sum.inl 1]⟩] := by rfl
 
 example : (atom.project (2 : Fin 3)).body =
-    [((), [Sum.inl 0, Sum.inl 1, Sum.inr (0 : Fin 1)])] := by rfl
+    [⟨(), [Sum.inl 0, Sum.inl 1, Sum.inr (0 : Fin 1)]⟩] := by rfl
 
 example : (atom.relabelFree (fun i => i + 1)).body =
-    [((), [Sum.inl 1, Sum.inl 2, Sum.inl 0])] := by rfl
+    [⟨(), [Sum.inl 1, Sum.inl 2, Sum.inl 0]⟩] := by rfl
 
 example : verify (atom.project (1 : Fin 3)).body (List.ofFn Sum.inl) middle.certificate = true :=
   middle.accepted
@@ -77,7 +77,7 @@ private noncomputable def unused :=
 example : verify ([] : CSP Empty ℕ) [2 ^ 250, 9] unused.certificate = true := unused.accepted
 
 -- Original false/true nullaries stay present when an unused final port is hidden.
-private abbrev points : CSP Bool ℕ := [(false, []), (true, [])]
+private abbrev points : CSP Bool ℕ := [⟨false, []⟩, ⟨true, []⟩]
 private def pointWitness : Witness points [2 ^ 250, 7, 9] :=
   Witness.ofProbe (by decide) ⟨[0, 3, 2, 5, 4, 1]⟩ (by decide +kernel)
 
