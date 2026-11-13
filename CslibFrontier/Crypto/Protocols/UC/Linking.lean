@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Protocols.UC.Machine
+import CslibFrontier.Languages.Probabilistic.QueryCount.Scale
 import CslibFrontier.Languages.Probabilistic.Simulation
 
 /-!
@@ -194,8 +195,7 @@ theorem isQueryBounded_runFrom {P : Machine I J} {t m : ℕ} (hP : P.IsBounded t
     {program : ProbOracleComp J α} (h : program.IsQueryBounded m) (s : P.State) :
     (P.runFrom program s).IsQueryBounded (m * (t + 1)) :=
   OracleComp.IsCostBounded.run_interpret (isQueryBounded_handler hP)
-    (h.isCostBounded_mul (.of_forall (p := fun _ => True) (fun _ => trivial) _)
-      fun _ _ => le_rfl) s
+    (h.isCostBounded_mul_of_forall_le fun _ => le_rfl) s
 
 /-- A program with at most `m` calls, linked against a machine with at most `t` calls per
 activation and at initialization, makes at most `t + m * (t + 1)` calls. -/

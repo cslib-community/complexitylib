@@ -42,8 +42,6 @@ A budget says nothing about running time.
 * `Cslib.OracleComp.IsCostBounded.add`: budgets for two costs give a budget for their sum.
 * `Cslib.OracleComp.IsCostBounded.run_interpret`: the budget of a program run through a stateful
   handler.
-* `Cslib.OracleComp.IsQueryBounded.isCostBounded_mul`: at most `n` calls, each satisfying a
-  predicate on which calls cost at most `c`, cost at most `n * c`.
 * `Cslib.OracleComp.IsCostBounded.transcript_cost_le`: logged calls respect the budget.
 -/
 
@@ -237,19 +235,6 @@ end QueriesSatisfy
 @[simp] theorem queriesSatisfy_map_iff {p : ι → Prop} (f : α → β) (program : OracleComp spec α) :
     QueriesSatisfy p (f <$> program) ↔ QueriesSatisfy p program :=
   isCostBounded_map_iff f program 0
-
-/-- At most `n` calls, each satisfying `p`, cost at most `n * c` when the calls satisfying `p`
-cost at most `c`. -/
-theorem IsQueryBounded.isCostBounded_mul {p : ι → Prop} {cost : ι → ℕ} {c n : ℕ}
-    {program : OracleComp spec α} (h : program.IsQueryBounded n) (hp : QueriesSatisfy p program)
-    (hcost : ∀ q, p q → cost q ≤ c) : IsCostBounded cost program (n * c) := by
-  induction h with
-  | pure a n => exact .pure a (n * c)
-  | liftBind q cont n _ ih =>
-    obtain ⟨hq, hcont⟩ := QueriesSatisfy.liftBind_iff.mp hp
-    rw [Nat.succ_mul]
-    exact (IsCostBounded.liftBind q cont (n * c) fun a => ih a (hcont a)).mono
-      (Nat.add_le_add_left (hcost q hq) _)
 
 /-! ### Logged calls respect the budget -/
 

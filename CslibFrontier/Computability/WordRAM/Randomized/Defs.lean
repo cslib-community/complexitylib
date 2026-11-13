@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Init
 public import CslibFrontier.Computability.WordRAM.MapOp
 public import CslibFrontier.Languages.Probabilistic.QueryCount.Support
+import CslibFrontier.Languages.Probabilistic.QueryCount.Scale
 
 /-!
 # Randomized word RAMs
