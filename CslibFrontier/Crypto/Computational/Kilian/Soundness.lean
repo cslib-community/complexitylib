@@ -230,7 +230,7 @@ theorem merkleBreaksBinding_kilianBindingOutput {k : List Bool} {x : α} {root :
   have hlen : o₁'.path.length = kilianDepth V x := by
     simp only [merkleVerify, Bool.and_eq_true, beq_iff_eq] at v₁
     exact v₁.1.1
-  simp only [Option.elim, merkleBreaksBinding, MerkleOpening.verify, id, hlen, Bool.and_eq_true,
+  simp only [Option.elim, merkleBreaksBinding, MerkleOpening.verify_id, hlen, Bool.and_eq_true,
     bne_iff_ne, ne_eq, List.cons.injEq, and_true]
   exact ⟨⟨v₁, hp.1 ▸ v₂⟩, hp.2⟩
 
@@ -500,6 +500,9 @@ private theorem computableInPolyTime_kilianOpenings (hV : V.PolyTime enc) :
       (hρs.prod hresponse))
     ((ComputableInPolyTime.zip encNat encKilianOpening).comp (hqueries.prod hanswers))
 
+-- Keeping `ComputableInPolyTime` folded stops the final `exact` from checking defeq by unfolding
+-- it and evaluating the conflict search under the grouped output encoding.
+attribute [local irreducible] ComputableInPolyTime in
 private theorem computableInPolyTime_kilianBindingOutput (hV : V.PolyTime enc)
     (hcoins : ∀ a, V.coins a ≤ c * (Nat.log 2 (enc a).length + 1)) :
     ComputableInPolyTime

@@ -121,6 +121,15 @@ theorem isPPT_constBreaker : IsPPT encMerkleBindingOutput constBreaker := by
   unfold constBreaker
   ppt
 
+-- Encoded words unchanged: the binding output keeps the grouped layout of the former tuple
+-- `(root, position), (leaf₁, path₁), (leaf₂, path₂)`.
+example (out : MerkleBindingOutput) :
+    encMerkleBindingOutput out =
+      encPair (encPair encBits encUnary)
+          (encPair (encPair encBits (encList encBits)) (encPair encBits (encList encBits)))
+        ((out.root, out.position), (out.first.leaf, out.first.path),
+          (out.second.leaf, out.second.path)) := rfl
+
 -- The reduction applies to this adversary for an efficient length-preserving hash.
 example : IsPPT (encPair encBits encBits) (merkleCollisionFinder xorHash constBreaker) :=
   isPPT_merkleCollisionFinder computableInPolyTime_xorHash length_xorHash isPPT_constBreaker
@@ -134,7 +143,7 @@ theorem not_merklePositionBinding_constHash : ¬ MerklePositionBinding constHash
     have hbne : ([false] != [true]) = true := rfl
     have heval :
         ProbComp.eval (merkleBindingGame constHash constBreaker n) = PMF.pure true := by
-      simp only [merkleBindingGame, constBreaker, merkleBreaksBinding, MerkleOpening.verify,
+      simp only [merkleBindingGame, constBreaker, merkleBreaksBinding, MerkleOpening.verify_id,
         merkleVerify, merkleRootOfPath, constHash, pure_bind,
         ProbComp.eval_bind, BitString.eval_sampleList, ProbComp.eval_pure]
       simp [hbne]

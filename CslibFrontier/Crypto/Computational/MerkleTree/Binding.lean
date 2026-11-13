@@ -79,7 +79,8 @@ circuits.
   `Cslib.Crypto.encMerkleOpening`: an opening as a record of a leaf and its path, its verifier for
   leaves under an encoding into bit strings, and the encoding of openings with bit-string leaves.
 * `Cslib.Crypto.MerkleBindingOutput`, `Cslib.Crypto.encMerkleBindingOutput`,
-  `Cslib.Crypto.MerkleBindingAdversary`: the adversary's output, its encoding, and adversaries.
+  `Cslib.Crypto.MerkleBindingAdversary`: the adversary's output, its encoding (the grouped tuple
+  `(root, position), first, second`), and adversaries.
 * `Cslib.Crypto.merkleBreaksBinding`, `Cslib.Crypto.merkleBindingGame`,
   `Cslib.Crypto.MerklePositionBinding`: the position-binding game and security notion.
 * `Cslib.Crypto.merkleCollisionFinder`: the reduction to collision finding.
@@ -144,6 +145,17 @@ the encodings `encLeaf` of the claimed values (`merkleVerify` on `encLeaf o.leaf
 def MerkleOpening.verify {Leaf : Type} (encLeaf : Leaf → List Bool) (d : ℕ) (root : List Bool)
     (i : ℕ) (o : MerkleOpening Leaf) : Bool :=
   merkleVerify H k d root i (encLeaf o.leaf) o.path
+
+@[simp]
+theorem MerkleOpening.verify_mk {Leaf : Type} (encLeaf : Leaf → List Bool) (d : ℕ)
+    (root : List Bool) (i : ℕ) (leaf : Leaf) (path : List (List Bool)) :
+    (⟨leaf, path⟩ : MerkleOpening Leaf).verify H k encLeaf d root i =
+      merkleVerify H k d root i (encLeaf leaf) path := rfl
+
+@[simp]
+theorem MerkleOpening.verify_id (d : ℕ) (root : List Bool) (i : ℕ)
+    (o : MerkleOpening (List Bool)) :
+    o.verify H k id d root i = merkleVerify H k d root i o.leaf o.path := rfl
 
 /-- The encoding of an opening with bit-string leaves: the leaf, then the path. -/
 enc_structure encMerkleOpening : MerkleOpening (List Bool) where
@@ -276,11 +288,71 @@ structure MerkleBindingOutput where
   second : MerkleOpening (List Bool)
   deriving DecidableEq, Repr, Inhabited
 
-/-- The encoding of `MerkleBindingOutput`: bit strings as themselves, the position in unary, as
-in `computableInPolyTime_extractMerkleCollision`. An efficient adversary therefore outputs only
-polynomially bounded positions. -/
-enc_structure encMerkleBindingOutput : MerkleBindingOutput where
-  root : encBits, position : encUnary, first : encMerkleOpening, second : encMerkleOpening
+/-- The encoding of `MerkleBindingOutput`: the root and the position as a pair, then the two
+openings, which is the grouping of the tuple this record replaced. Bit strings are encoded as
+themselves and the position in unary, as in `computableInPolyTime_extractMerkleCollision`, so an
+efficient adversary outputs only polynomially bounded positions. -/
+def encMerkleBindingOutput : MerkleBindingOutput ↪ List Bool :=
+  encOfEquiv
+    { toFun out := ((out.root, out.position), out.first, out.second)
+      invFun | ((root, position), first, second) => ⟨root, position, first, second⟩
+      left_inv _ := rfl
+      right_inv | ((_, _), _, _) => rfl }
+    (encPair (encPair encBits encUnary) (encPair encMerkleOpening encMerkleOpening))
+
+@[simp]
+theorem encMerkleBindingOutput_apply (out : MerkleBindingOutput) :
+    encMerkleBindingOutput out =
+      encPair (encPair encBits encUnary) (encPair encMerkleOpening encMerkleOpening)
+        ((out.root, out.position), out.first, out.second) := rfl
+
+section Fields
+
+variable {γ : Type} {encIn : γ ↪ List Bool} {g : γ → MerkleBindingOutput}
+
+private theorem encMerkleBindingOutput_fields_polyTime :
+    ComputableInPolyTime
+      (fun out : MerkleBindingOutput => ((out.root, out.position), out.first, out.second))
+      encMerkleBindingOutput
+      (encPair (encPair encBits encUnary) (encPair encMerkleOpening encMerkleOpening)) :=
+  ComputableInPolyTime.of_eq fun _ => rfl
+
+@[scoped fun_prop]
+theorem encMerkleBindingOutput_root_polyTime
+    (h : ComputableInPolyTime g encIn encMerkleBindingOutput) :
+    ComputableInPolyTime (fun a => (g a).root) encIn encBits :=
+  encMerkleBindingOutput_fields_polyTime.fst'.fst'.comp h
+
+@[scoped fun_prop]
+theorem encMerkleBindingOutput_position_polyTime
+    (h : ComputableInPolyTime g encIn encMerkleBindingOutput) :
+    ComputableInPolyTime (fun a => (g a).position) encIn encUnary :=
+  encMerkleBindingOutput_fields_polyTime.fst'.snd'.comp h
+
+@[scoped fun_prop]
+theorem encMerkleBindingOutput_first_polyTime
+    (h : ComputableInPolyTime g encIn encMerkleBindingOutput) :
+    ComputableInPolyTime (fun a => (g a).first) encIn encMerkleOpening :=
+  encMerkleBindingOutput_fields_polyTime.snd'.fst'.comp h
+
+@[scoped fun_prop]
+theorem encMerkleBindingOutput_second_polyTime
+    (h : ComputableInPolyTime g encIn encMerkleBindingOutput) :
+    ComputableInPolyTime (fun a => (g a).second) encIn encMerkleOpening :=
+  encMerkleBindingOutput_fields_polyTime.snd'.snd'.comp h
+
+/-- A binding output assembled from polynomial-time fields is polynomial-time. -/
+@[scoped fun_prop]
+theorem encMerkleBindingOutput_mk_polyTime {r : γ → List Bool} {i : γ → ℕ}
+    {o₁ o₂ : γ → MerkleOpening (List Bool)} (hr : ComputableInPolyTime r encIn encBits)
+    (hi : ComputableInPolyTime i encIn encUnary)
+    (ho₁ : ComputableInPolyTime o₁ encIn encMerkleOpening)
+    (ho₂ : ComputableInPolyTime o₂ encIn encMerkleOpening) :
+    ComputableInPolyTime (fun x => MerkleBindingOutput.mk (r x) (i x) (o₁ x) (o₂ x)) encIn
+      encMerkleBindingOutput :=
+  ComputableInPolyTime.of_enc_eq ((hr.prod hi).prod (ho₁.prod ho₂)) fun _ => rfl
+
+end Fields
 
 /-- A position-binding adversary receives the unary security parameter `n` and the hash key, and
 outputs a root, a position and two openings. -/
@@ -329,7 +401,7 @@ theorem isCollision_of_merkleBreaksBinding {k : List Bool} {out : MerkleBindingO
     let col := extractMerkleCollision H k out.first.leaf out.second.leaf out.position
       out.first.path out.second.path
     isCollision H (fun _ _ => true) n k col.1 col.2 = true := by
-  simp only [merkleBreaksBinding, MerkleOpening.verify, id, Bool.and_eq_true, bne_iff_ne,
+  simp only [merkleBreaksBinding, MerkleOpening.verify_id, Bool.and_eq_true, bne_iff_ne,
     ne_eq] at h
   exact isCollision_of_merkleVerify h.1.1 h.1.2 h.2 n
 
