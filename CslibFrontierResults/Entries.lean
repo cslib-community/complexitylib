@@ -105,6 +105,7 @@ import CslibFrontier.Computability.Complexity.Parameterized.WHierarchy.XP
 import CslibFrontier.Computability.Complexity.Problems.HornSAT
 import CslibFrontier.Computability.Complexity.Problems.Primes
 import CslibFrontier.Computability.Complexity.Problems.TwoSAT.PolyTime
+import CslibFrontier.Computability.Complexity.Problems.Permanent.ZeroOne
 import CslibFrontier.Computability.Kolmogorov.Incompleteness
 import CslibFrontier.Computability.Kolmogorov.MINKT
 import CslibFrontier.Computability.Kolmogorov.MINKTStar.Hardness
@@ -720,6 +721,28 @@ register_result "formal-complexity-measure-quarter-density" where
     at least one quarter of all truth tables have measure at least c/4. \
     Natural-number cardinalities with denominators cleared; no computational claim. \
     Theorem 22.3's stronger near-total-density endpoint is not included."
+
+register_result "integer-permanent-to-zero-one-permanent" where
+  title := "The integer permanent reduces to the 0/1 permanent"
+  topic := "counting complexity"
+  sources := [
+    { paper := Goldreich2007Draft, theorem := "Proposition 6.22",
+      locator := "February 2007 draft r3.pdf, PDF p. 24; printed p. 226" }
+  ]
+  theorems := [
+    Cslib.Complexity.intPermanent_eq_recoverPermanent_intTableToZeroOne,
+    Cslib.Complexity.metricReducible_intPermanent_zeroOnePermanent,
+    Cslib.Complexity.computableInPolyTime_intTableToZeroOne,
+    Cslib.Complexity.computableInPolyTime_recoverPermanent,
+    Cslib.Complexity.parsimoniousReducible_natPermanent_zeroOnePermanent
+  ]
+  scope := "Dense integer tables (encIntTable, binary sign-magnitude entries) read as n x n \
+    matrices with missing entries 0, mapped by a native polynomial-time machine to dense 0/1 \
+    tables (encBoolTable); the integer permanent is recovered in polynomial time from the input \
+    and the 0/1 permanent. Entries are reduced modulo 2 n! S^n + 1 with S the sum of absolute \
+    entries (Goldreich uses the maximum), then each residue is replaced by a binary chain of \
+    relay vertices; the 0/1 dimension is n + 2 L n^2. One-query (metric) reduction, a special \
+    case of the source's Cook reduction."
 
 register_result "bpp-proper-subset-ppoly" where
   title := "BPP is strictly contained in P/poly on ordinary bit languages"
