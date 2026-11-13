@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Primitives.Garbling.MixedModulus
 import CslibFrontier.Probability.Product
+import CslibFrontier.Probability.Product.Split
 import CslibFrontier.Probability.Uniform
 
 /-!

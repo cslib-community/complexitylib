@@ -42,8 +42,7 @@ branch at `5ff69ca`.
   `Cslib.Probability.PMF.uniformOfFintype_bind_add_right`,
   `Cslib.Probability.PMF.uniformOfFintype_bind_add_left`: a fixed mask leaves a uniform group
   element uniform (the one-time pad).
-* `Cslib.Probability.PMF.uniformOfFintype_map_comp_dep`,
-  `Cslib.Probability.PMF.uniformOfFintype_map_comp`: a uniform function read through an injection
+* `Cslib.Probability.PMF.uniformOfFintype_map_comp`: a uniform function read through an injection
   is uniform.
 * `Cslib.Probability.PMF.uniformOfFintype_map_sum`,
   `Cslib.Probability.PMF.uniformOfFintype_map_sum_pair`: subset sums are uniform and pairwise
@@ -139,31 +138,15 @@ theorem uniformOfFintype_bind_add_left {β : Type*} (c : G) (f : G → PMF β) :
 
 end Mask
 
-/-- A uniform dependent function read through an injection is uniform. -/
-theorem uniformOfFintype_map_comp_dep {S Q : Type*} [Fintype S] [DecidableEq S] [Fintype Q]
-    [DecidableEq Q] {R : Q → Type*} [∀ q, Fintype (R q)] [∀ q, AddGroup (R q)] {g : S → Q}
-    (hg : Function.Injective g) :
-    (PMF.uniformOfFintype (∀ q, R q)).map (fun f s => f (g s)) =
-      PMF.uniformOfFintype (∀ s, R (g s)) := by
-  classical
-  refine uniformOfFintype_map_of_shift fun c => ?_
-  let d : ∀ q, R q := fun q =>
-    if h : ∃ s, g s = q then cast (congrArg R h.choose_spec) (c h.choose) else 0
-  have hd (s : S) : d (g s) = c s := by
-    have h : ∃ s', g s' = g s := ⟨s, rfl⟩
-    have hcast : ∀ s' (h' : g s' = g s), s' = s → cast (congrArg R h') (c s') = c s := by
-      rintro s' h' rfl
-      rfl
-    simp only [d, dite_eq_left_of_eq_true (eq_true h)]
-    exact hcast h.choose h.choose_spec (hg h.choose_spec)
-  exact ⟨Equiv.addRight d, fun f => funext fun s => by
-    simp only [Equiv.coe_addRight, Pi.add_apply, hd]⟩
-
 /-- A uniform function read through an injection is uniform. -/
 theorem uniformOfFintype_map_comp {S Q R : Type*} [Fintype S] [DecidableEq S] [Fintype Q]
-    [DecidableEq Q] [Fintype R] [AddGroup R] {g : S → Q} (hg : Function.Injective g) :
-    (PMF.uniformOfFintype (Q → R)).map (fun f => f ∘ g) = PMF.uniformOfFintype (S → R) :=
-  uniformOfFintype_map_comp_dep (R := fun _ => R) hg
+    [DecidableEq Q] [Fintype R] [Nonempty R] [AddCommGroup R] {g : S → Q}
+    (hg : Function.Injective g) :
+    (PMF.uniformOfFintype (Q → R)).map (fun f => f ∘ g) = PMF.uniformOfFintype (S → R) := by
+  classical
+  refine uniformOfFintype_map_of_shift fun c => ⟨Equiv.addRight
+    (Function.extend g c 0), fun f => funext fun s => ?_⟩
+  simp [hg.extend_apply]
 
 /-- A finite sum is uniform if any one summand is fresh uniform, regardless of the others. -/
 theorem uniformOfFintype_map_sum_update {ι G : Type*}
