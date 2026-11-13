@@ -73,6 +73,7 @@ import CslibFrontier.Computability.Complexity.Classes.Alternation.SpaceGame
 import CslibFrontier.Computability.Complexity.Classes.BQP.Counting
 import CslibFrontier.Computability.Complexity.Classes.Hierarchy.NondeterministicSpace
 import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Space
+import CslibFrontier.Computability.Complexity.Classes.Space.Separation
 import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Translational
 import CslibFrontier.Computability.Complexity.Classes.IP.Deterministic
 import CslibFrontier.Computability.Complexity.Classes.IP.PerfectSoundness
@@ -5719,3 +5720,20 @@ register_result "valiant-zero-one-permanent-sharp-p-complete" where
     and Barak Definition 9.5, FP with a bit oracle) is derived as a native polynomial-time \
     oracle program reading the permanent's bits. Arora and Barak's XOR-gadget proof and its \
     constant 4^(3m) are not formalized; the proof uses Goldreich's gadget."
+
+register_result "linear-space-ne-np" where
+  title := "Book: linear space is not NP"
+  topic := "space complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 3, Exercise 2",
+      locator := "2007 public draft, printed p. 73 / PDF p. 89" },
+    { paper := Book1974, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Complexity.DSPACE_ne_NP,
+    Cslib.Complexity.DSPACE_pow_ne_of_polyTimeReducible_mem
+  ]
+  scope := "DSPACE encBits (fun n => n) ≠ NP encBits on bit words. DSPACE counts visited work \
+    cells of one native multi-tape machine; the draft's Definition 4.1 counts ever-non-blank \
+    cells. More generally DSPACE (n ^ k), k ≥ 1, differs from every class closed under \
+    polynomial-time many-one reductions, by polynomial space padding and the space hierarchy."
