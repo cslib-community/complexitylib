@@ -37,8 +37,9 @@ scheme's own experiment, which draws the public input and then runs `lrExperimen
 
 * `Cslib.Crypto.TwoStage`: an adversary with a choice stage and a guessing stage.
 * `Cslib.Crypto.TwoStage.IsPPT`: uniform strict PPT for a family of two-stage adversaries.
-* `Cslib.Crypto.MessagePair`, `Cslib.Crypto.MessagePair.select`: a pair of challenge messages and
-  the message selected by a bit.
+* `Cslib.Crypto.MessagePair`, `Cslib.Crypto.MessagePair.select`,
+  `Cslib.Crypto.MessagePair.equivProd`: a pair of challenge messages, the message selected by a
+  bit, and the equivalence with `M × M`.
 * `Cslib.Crypto.encMessagePair`: the encoding of a message pair, laid out as `encPair encM encM`.
 * `Cslib.Crypto.lrExperiment`: the left-or-right experiment on a drawn public input.
 
@@ -103,14 +104,19 @@ def select (pair : MessagePair M) (b : Bool) : M := bif b then pair.msg₁ else 
 
 @[simp] theorem select_true (pair : MessagePair M) : pair.select true = pair.msg₁ := rfl
 
+/-- A message pair is the ordered pair `(msg₀, msg₁)`. -/
+def equivProd : MessagePair M ≃ M × M where
+  toFun pair := (pair.msg₀, pair.msg₁)
+  invFun p := ⟨p.1, p.2⟩
+  left_inv _ := rfl
+  right_inv _ := rfl
+
 end MessagePair
 
-/-- The encoding of a message pair: `msg₀` framed, then `msg₁`, each encoded by `encM`. This is
-the layout of `encPair encM encM` on `(msg₀, msg₁)`. -/
+/-- The encoding of a message pair: the encoding `encPair encM encM` of `(msg₀, msg₁)`, that is
+`msg₀` framed, then `msg₁`. The encoded words are those of the former tuple encoding. -/
 def encMessagePair {M : Type} (encM : M ↪ List Bool) : MessagePair M ↪ List Bool :=
-  ⟨fun pair => encPair encM encM (pair.msg₀, pair.msg₁), fun ⟨a₀, a₁⟩ ⟨b₀, b₁⟩ h => by
-    obtain ⟨h₀, h₁⟩ := Prod.mk.inj ((encPair encM encM).injective h)
-    exact congrArg₂ MessagePair.mk h₀ h₁⟩
+  encOfEquiv MessagePair.equivProd (encPair encM encM)
 
 section Encoding
 
