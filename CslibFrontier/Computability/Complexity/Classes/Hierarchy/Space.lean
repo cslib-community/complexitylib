@@ -350,9 +350,7 @@ theorem setOf_spaceDiagonal_notMem_DSPACE {f G : ℕ → ℕ} (hlog : ∀ n, 4 *
     have hsp : simSpace (desc eS eBit tm) (x.map eBit) (2 ^ G x.length) ≤ s := by
       rw [simSpace_desc]
       exact space_le_of_runsInSpace hrun.2.2 _
-    have hk : (desc eS eBit tm).tapes ≤ D := by
-      simp only [hD, descLen, eDesc_apply, length_encPair, encUnary_apply, List.length_replicate]
-      omega
+    have hk : (desc eS eBit tm).tapes ≤ D := tapes_le _
     refine le_trans ?_ (h₂ _ hk)
     simp only [cfgSpace, cfgSpaceBound, List.length_map, ← hD]
     gcongr
