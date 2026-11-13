@@ -2,6 +2,27 @@
 
 Start with three separate questions: what program is being described, what distribution it denotes, and what machine implements it. `ProbComp α` describes finite-uniform sampling with ordinary `do` notation; `ProbComp.eval` interprets that syntax as a `PMF α`. `ProbOracleComp spec α` adds external requests whose reply types are given by `spec`. The underlying `OracleComp` is a free program over a typed request interface. A PMF supplies mathematical probability semantics; merely writing a PMF does not supply a sampler or a runtime certificate. The [programs and realization reference](../programs-crypto-and-probability/programs-and-realization.md) explains these layers and their sources. [cslib-frontier][complexitylib]
 
+## Witness seedless extraction failure
+
+Import [Extractor/Basic.lean](../../CslibFrontier/Probability/Extractor/Basic.lean).
+For a deterministic `f : BitString n → BitString m` and explicit proofs `hn : 1 ≤ n`
+and `hm : 1 ≤ m`, apply `exists_minEntropy_map_first_eq_pure hn hm f`.
+The resulting source has real min-entropy at least `(n : ℝ) - 1`; its first output
+coordinate (index zero) is a point mass, and its output has statistical distance at
+least `1 / 2` from uniform. `not_isExtractor_bitString` gives the immediate failure
+of extraction with a `Unit` seed and error strictly below `1 / 2`.
+For arbitrary finite nonempty inputs, `exists_minEntropy_map_eq_pure_bool` supplies
+the reusable Boolean-fiber witness, with entropy `log₂ |Input| - 1`.
+
+This formalizes Chapter 16, exercise 7 of the January 8, 2007 Arora–Barak draft,
+printed page 319 (PDF page 335): the source's first coordinate is indexed by one
+in the book. Distance uses the probability convention (half the L1 distance).
+These are information-theoretic distributions; no sampler or runtime is asserted.
+Exercise 12 and the broader extractor objectives in issue #895 remain open.
+The [ordinary-import clients](../../CslibFrontierTests/SeedlessExtractor.lean) check
+`n = m = 1`, multibit identity, sharpness of the distance bound and constant output.
+From a configured checkout, run `scripts/build.sh CslibFrontierTests.SeedlessExtractor`.
+
 ## Transport a distribution bound through a map
 
 Import [TotalVariation/Map.lean](../../CslibFrontier/Foundations/MeasureTheory/Measure/TotalVariation/Map.lean).

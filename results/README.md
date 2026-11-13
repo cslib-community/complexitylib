@@ -14,6 +14,11 @@ keys come from the library modules' citations; their source theorem numbers and 
 `unverified`. The bibliography remains [references.bib](../references.bib); it is not copied
 into another authored manifest.
 
+The collection also records Arora–Barak (January 8, 2007 draft), Chapter 16 exercise 7:
+explicit multibit seedless-extraction impossibility, including the source witness and distance
+bound. See the [checked clients](../CslibFrontierTests/SeedlessExtractor.lean). This bounded
+milestone does not cover exercise 12 or complete the broader extractor objectives (#895).
+
 ## Authoring
 
 For example, an entry records the source paper's theorem name or number separately from its
