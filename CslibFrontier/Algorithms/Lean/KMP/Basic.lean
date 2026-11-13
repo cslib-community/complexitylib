@@ -623,31 +623,17 @@ theorem maxPrefixSuffixUpTo_pred_of_eq_length {α : Type*} [DecidableEq α]
   have hb : borderLen p p.length = maxPrefixSuffixUpTo p p (p.length - 1) := by
     simp only [borderLen, maxBorderLen, List.take_length]
   rw [hb]
-  symm
-  apply eq_maxPrefixSuffixUpTo_iff.mpr
-  set b := maxPrefixSuffixUpTo p p (p.length - 1)
-  refine ⟨maxPrefixSuffixUpTo_le_bound p p (p.length - 1),
-    maxPrefixSuffixUpTo_le_length p p (p.length - 1),
-    (take_maxPrefixSuffixUpTo_isSuffix p p (p.length - 1)).trans hpsuf,
-    fun k hlt hkB hkp hsuf => ?_⟩
-  have hksuf_p : p.take k <:+ p :=
-    List.suffix_of_suffix_length_le hsuf hpsuf (by simp only [List.length_take]; omega)
-  have hle := le_maxPrefixSuffixUpTo (B := p.length - 1) hkB hkp hksuf_p
-  change k ≤ b at hle
-  omega
+  exact maxPrefixSuffixUpTo_congr fun j _ => and_congr_right fun _ =>
+    ⟨fun hsuf => List.suffix_of_suffix_length_le hsuf hpsuf (List.length_take_le' _ _),
+      (·.trans hpsuf)⟩
 
 /-- When `maxPrefixSuffixUpTo p t p.length < p.length`, restricting the bound to `p.length - 1`
 leaves the value unchanged. -/
 theorem maxPrefixSuffixUpTo_pred_of_lt_length {α : Type*} [DecidableEq α]
     {p t : List α} (hlt : maxPrefixSuffixUpTo p t p.length < p.length) :
     maxPrefixSuffixUpTo p t (p.length - 1) = maxPrefixSuffixUpTo p t p.length := by
-  set m := maxPrefixSuffixUpTo p t p.length
-  symm
-  apply eq_maxPrefixSuffixUpTo_iff.mpr
-  refine ⟨by omega, maxPrefixSuffixUpTo_le_length p t p.length,
-    take_maxPrefixSuffixUpTo_isSuffix p t p.length, fun k hklt hkB hkp hsuf => ?_⟩
-  have hle := le_maxPrefixSuffixUpTo (B := p.length) (by omega) hkp hsuf
-  change k ≤ m at hle
-  omega
+  refine maxPrefixSuffixUpTo_congr fun j hj => ⟨fun ⟨_, hsuf⟩ => ⟨hj, hsuf⟩, fun ⟨_, hsuf⟩ => ?_⟩
+  have := le_maxPrefixSuffixUpTo hj hj hsuf
+  exact ⟨by omega, hsuf⟩
 
 end Cslib.Algorithms.Lean.KMP
