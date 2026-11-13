@@ -6647,6 +6647,7 @@ public import CslibFrontier.MachineLearning.Rademacher.Contraction
 public import CslibFrontier.MachineLearning.Rademacher.Generalization
 public import CslibFrontier.MachineLearning.Rademacher.GrowthFunction
 public import CslibFrontier.MachineLearning.Rademacher.Linear
+public import CslibFrontier.MachineLearning.Rademacher.LinearL1
 public import CslibFrontier.MachineLearning.Rademacher.Margin
 public import CslibFrontier.MachineLearning.Replicable.Amplification
 public import CslibFrontier.MachineLearning.Replicable.Basic
