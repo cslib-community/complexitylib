@@ -365,6 +365,29 @@ enc_structure eElementLambda (F : Family) : Element F where
 
 example (F : Family) (x : Element F) : eElementLambda F x = eElement F x := rfl
 
+/-- An element of the type indexed by a unary size. -/
+structure Sized (Carrier : ℕ → Type) where
+  /-- The size. -/
+  size : ℕ
+  /-- The element. -/
+  elt : Carrier size
+
+/-- The parameter `encode` occurs only in the word of `elt`, which goes in the slot `encBits`, so
+`eSizedFields` does not use it. -/
+enc_structure eSized (Carrier : ℕ → Type) (encode : ∀ n, Carrier n ↪ List Bool) :
+    Sized Carrier where
+  size : encUnary, elt : (encode size) using ((encode size).injective)
+
+example (Carrier : ℕ → Type) (encode : ∀ n, Carrier n ↪ List Bool) (x : Sized Carrier) :
+    eSized Carrier encode x = encPair encUnary encBits (x.size, encode x.size x.elt) :=
+  rfl
+
+-- The command marks `eSizedFields` `nolint unusedArguments`, so the linter passes. `Carrier` is
+-- used, because it occurs in the type of `encode`.
+set_option linter.hashCommand false in
+#guard_msgs in
+#lint- only unusedArguments
+
 -- A parameter named like a field that a dependent word reads would be captured by the field.
 /--
 error: enc_structure: the parameter `desc` has the name of a field that the word of `elt` reads; rename the parameter

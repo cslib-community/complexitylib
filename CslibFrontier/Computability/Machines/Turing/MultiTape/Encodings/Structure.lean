@@ -59,7 +59,9 @@ binder in these terms must not reuse the name of an earlier field, and an explic
 they mention must not share its name with an earlier field: the command reports the latter. The
 field rules read the word `encode x.desc x.element`, and the constructor rules take each such
 argument as a dependent function with a certificate for its word. There is no `eS_mk_deg` for such
-a structure, since its tuple holds words rather than fields.
+a structure, since its tuple holds words rather than fields. An explicit parameter that only these
+terms read does not occur in `eSFields`, which still takes it, like every generated declaration;
+the command then marks `eSFields` `nolint unusedArguments`.
 -/
 
 public meta section
@@ -289,6 +291,12 @@ private def checkFields (S : Term) (fs : Array Ident) : CommandElabM (Name × Ar
   elabCommand (← `($vis:visibility abbrev $fields:ident $params* := $encoding))
   let fieldsDecl ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo fields
   addDocStringCore fieldsDecl s!"The tuple of the fields of `{name}`."
+  -- `eSFields` takes every parameter, so that all generated declarations share one argument list.
+  -- A parameter that only a dependent field's word or proof reads reaches no slot.
+  let slotRoots := slots.flatMap (identRoots ·)
+  if ps.zipIdx.any fun (p, i) => !slotRoots.contains p.getId &&
+      !(pts.eraseIdx! i).any (identRoots · |>.contains p.getId) then
+    elabCommand (← `(attribute [nolint unusedArguments] $fields:ident))
   let inj : Term ← if simple then `(fun x y h => by cases x; cases y; simp_all) else do
     -- Match both structures, then recover each field from its word in field order, replacing the
     -- right field by the left one.
