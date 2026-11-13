@@ -4187,6 +4187,7 @@ public import CslibFrontier.Crypto.Computational.CollisionResistantToOneWay
 public import CslibFrontier.Crypto.Computational.Commitment
 public import CslibFrontier.Crypto.Computational.Commitment.Basic
 public import CslibFrontier.Crypto.Computational.Commitment.PublicOperations
+public import CslibFrontier.Crypto.Computational.Commitment.Scheme
 public import CslibFrontier.Crypto.Computational.CompositeResiduosity
 public import CslibFrontier.Crypto.Computational.CramerShoup
 public import CslibFrontier.Crypto.Computational.CramerShoup.Interleaved
