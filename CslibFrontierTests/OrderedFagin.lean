@@ -71,7 +71,7 @@ theorem edgeZeroMax_mem_NP : edgeZeroMaxQuery.encodedLanguage graphVocabulary �
   Definable.encodedLanguage_mem_NP graphVocabulary ⟨edgeZeroMax, fun _ => Iff.rfl⟩
 
 example : ESODefinable edgeZeroMaxQuery :=
-  ESODefinable.of_queryLanguage_mem_NP graphVocabulary edgeZeroMax_mem_NP
+  ESODefinable.of_encodedLanguage_mem_NP graphVocabulary edgeZeroMax_mem_NP
 
 example : encode graphVocabulary (oneEdge true) ∈
     edgeZeroMaxQuery.encodedLanguage graphVocabulary :=

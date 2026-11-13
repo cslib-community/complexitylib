@@ -66,7 +66,7 @@ theorem runs_input {W m n g p A : ℕ} (values : List ℤ)
         ((Nat.le_self_pow (by decide : 18 ≠ 0) (D m)).trans hN)
       let Q := RecordProduct.recordQueryCount n (D m) p V idx
       let qs := RecordProduct.decodedQueries hn a.mem (RecordProduct.recordQueries n (D m) p idx) Q
-      let length := min (pieceSize (D m) g) (n - idx.2.2 * pieceSize (D m) g)
+      let length := min (pieceSize (D m) g) (n - idx.piece * pieceSize (D m) g)
       ∃ y t S, t + 1 ≤ RecordProduct.preparationTime n (D m) g p values +
           RecordProduct.timeBound (m := m) qs + 5 * Nat.sqrt (D m) + 8 * Q +
           (42 * length + 28) * S + 53 ∧
@@ -78,12 +78,12 @@ theorem runs_input {W m n g p A : ℕ} (values : List ℤ)
         (y.regs Reg.found = 0 ∨ y.regs Reg.found = 1) ∧
         S ≤ falsePositiveCount wAB wBC wAC p + y.regs Reg.found ∧
         (y.regs Reg.found = 1 ↔
-          ∃ q ∈ chunkOf wAB (D m) p idx.1 idx.2.1,
-            ∃ c ∈ piece n (D m) g idx.2.2, weightSum wAB wBC wAC q.1 q.2 c = 0) ∧
+          ∃ q ∈ chunkOf wAB (D m) p idx.residue idx.chunk,
+            ∃ c ∈ piece n (D m) g idx.piece, weightSum wAB wBC wAC q.1 q.2 c = 0) ∧
         (y.regs Reg.found = 1 → ∃ u v c : Fin n,
           y.regs Reg.witnessA = u.val ∧ y.regs Reg.witnessB = v.val ∧
-          y.regs Reg.witnessC = c.val ∧ (u, v) ∈ chunkOf wAB (D m) p idx.1 idx.2.1 ∧
-          c ∈ piece n (D m) g idx.2.2 ∧ weightSum wAB wBC wAC u v c = 0) ∧
+          y.regs Reg.witnessC = c.val ∧ (u, v) ∈ chunkOf wAB (D m) p idx.residue idx.chunk ∧
+          c ∈ piece n (D m) g idx.piece ∧ weightSum wAB wBC wAC u v c = 0) ∧
         (∀ u, u < a.regs Instances.heap ∨
           a.regs Instances.heap + CallableProduct.windowSize n Q ≤ u → y.mem u = a.mem u) ∧
         ∀ j : Fin 64, y.regs (productBank (RecordProduct.producerBank j)) = a.regs j := by

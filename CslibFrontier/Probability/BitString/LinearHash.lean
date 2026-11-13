@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Foundations.Data.BitString.List
+public import CslibFrontier.Foundations.Data.BitString.List.Dot
 public import Mathlib.Data.Matrix.Mul
 public import Mathlib.Algebra.Ring.BooleanRing
 public import CslibFrontier.Probability.UniversalHash
@@ -129,7 +130,7 @@ theorem isTwoUniversal_flat (inputBits outputBits : ℕ) :
 /-- A word implementation of binary matrix hashing. Missing seed bits are zero. -/
 def wordHash (count : ℕ) (seed input : List Bool) : List Bool :=
   (listRows count input.length seed).map
-    (fun row => (row.zipWith Bool.and input).foldl Bool.xor false)
+    (fun row => listDot row input)
 
 /-- Every row contributes one output bit, including when the input has length zero. -/
 @[simp] theorem length_wordHash (count : ℕ) (seed input : List Bool) :
@@ -141,7 +142,6 @@ theorem wordHash_eq_ofFn {n m : ℕ} (seed : List Bool) (input : BitString n) :
     wordHash m seed (List.ofFn input) =
       List.ofFn (hash (block (ofList (m * n) seed)) input) := by
   unfold wordHash hash
-  simp only [List.length_ofFn, listRows_eq_ofFn, List.map_ofFn, Function.comp_def,
-    ← dotProduct_eq_foldl]
+  simp only [List.length_ofFn, listRows_eq_ofFn, List.map_ofFn, Function.comp_def, listDot_ofFn]
 
 end Cslib.BitString.LinearHash

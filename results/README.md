@@ -20,7 +20,13 @@ Its chapters 6–7 records distinguish native circuit/randomized endpoints from 
 expected-time and expander-concentration gaps and identify literal source defects.
 Its chapters 8–10 record distinguishes constant-round protocols, counting-oracle interfaces
 and quantitative crypto bounds. Its Chapter 14 record includes a checked degree obstruction to the draft's literal
-circuit-to-determinant statement; it is not a claim of book-wide coverage.
+circuit-to-determinant statement.
+Its chapters 11–13, 15, 21 and 22 distinguish exact endpoints, model restrictions and
+source defects. Chapter 22 preserves the constant-free formula restriction and the open
+corrected density-amplification objective.
+Chapters 16–17 distinguish finite pseudorandomness/coding
+results from uniform machine bounds and general-hardness endpoints; this is not a claim of
+book-wide coverage.
 
 The [Goldreich draft audit](goldreich-2007.md) records a source-pinned chapter-level coverage comparison
 for *Computational Complexity: A Conceptual Perspective*; it is not a claim of book-wide coverage.

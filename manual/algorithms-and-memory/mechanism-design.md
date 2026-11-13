@@ -78,6 +78,29 @@ outcomes, `vcg f` uses the Clarke pivot `clarkePivot` (a `Finset.sup'`). `vcg_is
 `vcg_payment_nonneg` and `vcg_isIR` are Lecture 7, Theorem 2.1 and the remarks after (2) and
 (4). `exists_isDSIC_isWelfareMaximizing` packages them for `[Finite Ω] [Nonempty Ω]`.
 
+`IsDSICOn M V` restricts DSIC to valuation domains `V i`. A single-parameter environment is the
+domain of linear valuations `linearValuation x i v = fun ω => v * x ω i` for an allocation map
+`x : Ω → ι → ℝ` and `v ≥ 0` (`linearDomain x i`). Import
+`CslibFrontier.GameTheory.Mechanism.LinearValuation` to move between the two models:
+
+- `M.toSingleParameter x` runs a general mechanism on the reports `linearProfile x b` of scalar
+  bids `b`. `isDSIC_toSingleParameter_iff` says that it is DSIC in the single-parameter sense
+  exactly when `M.IsDSICOn (linearDomain x)`. `IsDSIC.toSingleParameter` and
+  `IsIR.toSingleParameter` (for `0 ≤ x`) transfer the general properties.
+- In the other direction, `SingleParameter.Mechanism.toMechanism` is a single-parameter mechanism
+  on allocation vectors `Ω = ι → ℝ`, reading bidder `j`'s bid off its reported value of
+  `Pi.single j 1`. `toSingleParameter_toMechanism` recovers the mechanism, and
+  `isDSIC_iff_isDSICOn_toMechanism` restates single-parameter DSIC.
+
+`CslibFrontier.GameTheory.Mechanism.VickreyVCG` specializes VCG to Vickrey. The single-item
+outcomes are `Option ι`, with allocation `singleItem`. The Clarke pivot of the linear valuations of
+`b` is `highestOtherBid b i` (`clarkePivot_linearProfile_singleItem`), so every welfare-maximizing
+rule charges the second price to whoever gets the item (`vcg_payment_linearProfile_singleItem`).
+`winner b` is the Vickrey winner as an outcome (`winner_eq_some`, `winner_eq_none`). Any
+welfare-maximizing rule that picks `winner b` on the linear valuations of `b` makes VCG allocate
+and charge at `b` exactly as `Vickrey.mechanism` (`vcg_toSingleParameter_eq_of_eq_winner`), and
+`exists_vcg_toSingleParameter_eq` provides such a rule for all nonnegative bids.
+
 ## Revenue maximization: virtual values and Myerson's optimal auction
 
 Import `CslibFrontier.GameTheory.Mechanism.OptimalAuction` (Lecture 5; Myerson 1981). Valuations are
@@ -309,6 +332,9 @@ The [checked examples](../../CslibFrontierTests/GameTheory/MechanismDesign.lean)
   implementable.
 - For the linear rule `xᵢ(b) = bᵢ`, Myerson's payment is `bᵢ²/2` and the mechanism is DSIC.
 - In a two-agent public project, VCG charges the pivotal agent its externality `1`.
+- VCG on single-item outcomes, run on linear valuations, is DSIC and individually rational as a
+  single-parameter mechanism, and on bids `(3, 5, 4)` its Vickrey-tie-breaking instance charges
+  bidder `1` the second price `4`.
 - Knapsack feasibility holds and fails on small inputs, and the existence theorems are
   nonvacuous.
 
@@ -481,8 +507,7 @@ distributions whose virtual valuation is unbounded below at `0` (such as `f(v) =
 optimality among Bayesian incentive-compatible mechanisms (Lecture 5, §3.2), the revelation
 principle, first-price equilibria for non-uniform or asymmetric priors and their uniqueness
 (Hartline, §2.9), the all-pay auction, a measurable argmax for virtual-welfare maximization, the
-Green–Laffont/Holmström characterization of DSIC welfare maximizers, a bridge exhibiting
-single-parameter mechanisms as general ones (for example VCG specializing to Vickrey), and any
+Green–Laffont/Holmström characterization of DSIC welfare maximizers, and any
 computational cost of allocation rules. See `ROADMAP.md` and issues #2947, #3001 and #3173.
 
 For facility location, only single-facility mechanisms optimizing expected social cost (sum of

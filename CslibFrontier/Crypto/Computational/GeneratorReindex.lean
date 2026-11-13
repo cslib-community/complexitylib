@@ -195,7 +195,7 @@ theorem indistinguishable {length : ℕ → ℕ} {generator : ℕ → List Bool 
     (Eventually.of_forall (fun size => (lt_length_succ_parameter hge size).le))
   apply negligible_of_eventually_le hdecay
   filter_upwards [eventually_ge_atTop (length 0)] with size hsize
-  simp only [distinguishingGame, PMF.monad_bind_eq_bind]
+  simp only [distinguishingGame_eq_bind, PMF.monad_bind_eq_bind]
   rw [generate_distribution length generator hsize,
     GeneratorPadding.advantage_eq _ _ (parameter_fits hsize) (Nat.lt_succ_self _)]
   simpa only [real, ideal, test, ProbComp.eval_bind, ProbComp.eval_map,
@@ -268,7 +268,7 @@ theorem nonuniformIndistinguishable {length : ℕ → ℕ} {generator : ℕ → 
     simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
     exact (((PolynomiallyBounded.const 2).mul hworstPoly).add (.const 1)).add hadviceWorst
   have hε : Negligible (fun n => advAt n (worstSize n)) := by
-    simpa only [advAt, distinguishingGame, PMF.monad_bind_eq_bind] using
+    simpa only [advAt, distinguishingGame_eq_bind, PMF.monad_bind_eq_bind] using
       (hsecure (fun n => encPair encUnary encBits (worstSize n, advice (worstSize n)))
         hadvicePair).negligible_encoded htest
   have hdecay := hε.comp_of_polynomial_bound (parameter_tendsto length)
@@ -276,7 +276,7 @@ theorem nonuniformIndistinguishable {length : ℕ → ℕ} {generator : ℕ → 
     (Eventually.of_forall (fun size => (lt_length_succ_parameter hge size).le))
   apply negligible_of_eventually_le hdecay
   filter_upwards [eventually_ge_atTop (length 0)] with size hsize
-  simp only [distinguishingGame, PMF.monad_bind_eq_bind]
+  simp only [distinguishingGame_eq_bind, PMF.monad_bind_eq_bind]
   rw [generate_distribution length generator hsize,
     GeneratorPadding.advantage_eq _ _ (parameter_fits hsize) (Nat.lt_succ_self _)]
   exact hworst_max (parameter length size) size (lt_length_succ_parameter hge size).le

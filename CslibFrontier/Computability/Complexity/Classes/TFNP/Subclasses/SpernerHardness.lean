@@ -14,6 +14,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Fin
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.OfBits
 import CslibFrontier.Foundations.Data.BitString.List.LowBits
 import Mathlib.Data.FinEnum
 import Mathlib.Tactic.FinCases
@@ -1133,8 +1134,7 @@ private theorem computableInPolyTime_evalNat {α : Type} {enc : α ↪ List Bool
       ofBits (evalCircuitCode (n a) (code a) (lowBits (n a) (u a)))) enc encNat :=
     .of_tidy (ComputableTidilyInPolyTime.bitsToNat.comp hev.tidy)
   refine hnat.of_enc_eq fun a => ?_
-  simp only [evalNat, Cslib.BitString.lsbValue_eq_foldr_bit]
-  rfl
+  rw [evalNat, ofBits_eq_lsbValue]
 
 private theorem computableInPolyTime_lsbValue {α : Type} {enc : α ↪ List Bool}
     {bits : α → List Bool} (hbits : ComputableInPolyTime bits enc encBits) :
@@ -1142,8 +1142,7 @@ private theorem computableInPolyTime_lsbValue {α : Type} {enc : α ↪ List Boo
   have h : ComputableInPolyTime (fun a => ofBits (bits a)) enc encNat :=
     .of_tidy (ComputableTidilyInPolyTime.bitsToNat.comp hbits.tidy)
   refine h.of_enc_eq fun a => ?_
-  rw [Cslib.BitString.lsbValue_eq_foldr_bit]
-  rfl
+  rw [ofBits_eq_lsbValue]
 
 private theorem computableInPolyTime_div16Sub1 {α : Type} {enc : α ↪ List Bool}
     {f : α → ℕ} (hf : ComputableInPolyTime f enc encNat) :

@@ -940,8 +940,10 @@ theorem Verifier.KnowledgeSound.seqProd
       ¬ relIn₂ x₂ (E₂ x₂ (Transcript.split s₁ s₂ r.1).2 r.2.2)}
   have hsub : (fun r : Transcript (s₁ ++ s₂) × (W₁' × W₂') =>
         (r.1, (V₁.seqProd V₂).outputOn (x₁, x₂) r.1, r.2)) ⁻¹'
-      {r | (∃ y, r.2.1 = some y ∧ relProd relOut₁ relOut₂ y r.2.2) ∧
-        ¬ relProd relIn₁ relIn₂ (x₁, x₂) (Verifier.extractSeqProd E₁ E₂ (x₁, x₂) r.1 r.2.2)} ⊆
+      {r : Execution (s₁ ++ s₂) (S₁' × S₂') (W₁' × W₂') |
+        (∃ y, r.output = some y ∧ relProd relOut₁ relOut₂ y r.result) ∧
+        ¬ relProd relIn₁ relIn₂ (x₁, x₂)
+          (Verifier.extractSeqProd E₁ E₂ (x₁, x₂) r.transcript r.result)} ⊆
       T₁ ∪ T₂ := by
     rintro ⟨τ, w₁', w₂'⟩ ⟨⟨⟨y₁, y₂⟩, hout, hy₁, hy₂⟩, hnot⟩
     rw [Verifier.outputOn_seqProd_eq_some_iff] at hout

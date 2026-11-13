@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Init
 public import CslibFrontier.Computability.Complexity.AffineDisperser.BinaryPolynomial
+public import CslibFrontier.Foundations.Data.BitString.List.Dot
 public import CslibFrontier.Foundations.Data.BitString.List.Operations
 public import CslibFrontier.Foundations.LinearAlgebra.KernelVector
 import CslibFrontier.Foundations.Data.BitString.ZModTwo
@@ -35,7 +36,7 @@ and `Cslib.LinearAlgebra.kernelVec`.
 
 * `Cslib.AffineDisperser.Li.polyTrim`, `polyAdd`, `polyMul`, `polyDivMod`, `polyGcd`,
   `polyComposePow`: explicit bit-list operations for `𝔽₂[X]`.
-* `Cslib.AffineDisperser.Li.dotBool`, `kernelStepBits`, `kernelBasisBits`, `kernelVecBits`:
+* `Cslib.AffineDisperser.Li.kernelStepBits`, `kernelBasisBits`, `kernelVecBits`:
   explicit `𝔽₂` Gaussian elimination returning a canonical nonzero kernel vector when one exists.
 * `Cslib.AffineDisperser.Li.berlekampMatrix`, `berlekampStep`, `berlekampIrreducibleFactor`:
   deterministic Berlekamp factoring algorithm over `𝔽₂`.
@@ -736,10 +737,6 @@ theorem polyOfBits_polyComposePow {q : ℕ} (hq : 0 < q) (f : List Bool) :
 
 /-! ### Boolean Gaussian elimination (`kernelVecBits`) matching `kernelVec` -/
 
-/-- Dot product of two bit-lists over `𝔽₂`. -/
-@[expose] def dotBool (u v : List Bool) : Bool :=
-  (u.zipWith Bool.and v).foldl Bool.xor false
-
 /-- Bit-vector to `Fin n → ZMod 2` interpretation. -/
 @[expose] def bitsToZModVec (n : ℕ) (v : List Bool) : Fin n → ZMod 2 :=
   fun i => bitEquiv.symm (v.getD i.1 false)
@@ -749,10 +746,10 @@ theorem polyOfBits_polyComposePow {q : ℕ} (hq : 0 < q) (f : List Bool) :
     Matrix (Fin r) (Fin n) (ZMod 2) :=
   fun i => bitsToZModVec n (M.getD i.1 [])
 
-private theorem dotBool_eq_dotProduct {n : ℕ} {u v : List Bool}
+private theorem listDot_eq_dotProduct {n : ℕ} {u v : List Bool}
     (hu : u.length = n) (hv : v.length = n) :
-    bitEquiv.symm (dotBool u v) = bitsToZModVec n u ⬝ᵥ bitsToZModVec n v := by
-  unfold dotBool
+    bitEquiv.symm (listDot u v) = bitsToZModVec n u ⬝ᵥ bitsToZModVec n v := by
+  unfold listDot
   have hmap :
       (u.zipWith Bool.and v).map bitEquiv.symm =
         List.ofFn (fun i : Fin n => bitsToZModVec n u i * bitsToZModVec n v i) := by
@@ -765,11 +762,11 @@ private theorem dotBool_eq_dotProduct {n : ℕ} {u v : List Bool}
 
 /-- One elimination step on the candidate basis `N` using row `a`. -/
 @[expose] def kernelStepBits (a : List Bool) (N : List (List Bool)) : List (List Bool) :=
-  let vals := N.map (dotBool a)
+  let vals := N.map (listDot a)
   let p := vals.idxOf true
   if p < N.length then
     let piv := N.getD p []
-    N.map fun v => if dotBool a v then v.zipWith xor piv else v
+    N.map fun v => if listDot a v then v.zipWith xor piv else v
   else N
 
 /-- Basis after processing all rows of `M` starting from `listSingles n`. -/
@@ -792,7 +789,7 @@ theorem length_kernelStepBits {n : ℕ} {a : List Bool} {N : List (List Bool)}
     rw [List.mem_map] at hw
     obtain ⟨v, hv, rfl⟩ := hw
     have hv_len : v.length = n := hN_mem v hv
-    have hpiv_len : (N.getD ((N.map (dotBool a)).idxOf true) []).length = n :=
+    have hpiv_len : (N.getD ((N.map (listDot a)).idxOf true) []).length = n :=
       hN_mem _ (List.getD_mem [] (by simpa using h))
     split_ifs
     · rw [List.length_zipWith, hv_len, hpiv_len, min_self]
@@ -839,18 +836,18 @@ private theorem kernelStepBits_eq_kernelStep {n : ℕ} {a : List Bool} {N : List
       kernelStep (bitsToZModVec n a) (fun j => bitsToZModVec n (N.getD j.1 [])) i := by
   let aZ := bitsToZModVec n a
   let NZ : Fin n → Fin n → ZMod 2 := fun j => bitsToZModVec n (N.getD j.1 [])
-  have hval : ∀ j : Fin n, rowValues aZ NZ j = bitEquiv.symm (dotBool a (N.getD j.1 [])) := by
+  have hval : ∀ j : Fin n, rowValues aZ NZ j = bitEquiv.symm (listDot a (N.getD j.1 [])) := by
     intro j
     have hNj : (N.getD j.1 []).length = n := hN_mem _ (List.getD_mem [] (by omega))
-    rw [rowValues, dotBool_eq_dotProduct ha hNj]
+    rw [rowValues, listDot_eq_dotProduct ha hNj]
   unfold kernelStepBits
   dsimp only
   by_cases hall : ∀ j : Fin n, rowValues aZ NZ j = 0
-  · have hidx : ¬ (N.map (dotBool a)).idxOf true < N.length := by
+  · have hidx : ¬ (N.map (listDot a)).idxOf true < N.length := by
       intro hlt
-      have hlt' : (N.map (dotBool a)).idxOf true < (N.map (dotBool a)).length := by
+      have hlt' : (N.map (listDot a)).idxOf true < (N.map (listDot a)).length := by
         simpa [List.length_map] using hlt
-      have hmem : true ∈ N.map (dotBool a) := List.idxOf_lt_length_iff.mp hlt'
+      have hmem : true ∈ N.map (listDot a) := List.idxOf_lt_length_iff.mp hlt'
       rw [List.mem_map] at hmem
       obtain ⟨v, hv, hdot⟩ := hmem
       obtain ⟨j, hj, rfl⟩ := List.getElem_of_mem hv
@@ -870,18 +867,18 @@ private theorem kernelStepBits_eq_kernelStep {n : ℕ} {a : List Bool} {N : List
   · push Not at hall
     obtain ⟨j₀, hj₀⟩ := hall
     have hj₀_len : j₀.1 < N.length := by omega
-    have htrue : true ∈ N.map (dotBool a) := by
+    have htrue : true ∈ N.map (listDot a) := by
       refine List.mem_map.mpr ⟨N.getD j₀.1 [], List.getD_mem [] hj₀_len, ?_⟩
       have h1 := hval j₀
       rw [h1] at hj₀
       exact (map_eq_one_iff bitEquiv.symm bitEquiv.symm.injective).mp
         ((zmod2_eq_zero_or_one _).resolve_left hj₀)
-    have hp_lt : (N.map (dotBool a)).idxOf true < N.length := by
-      rw [← List.length_map (f := dotBool a)]
+    have hp_lt : (N.map (listDot a)).idxOf true < N.length := by
+      rw [← List.length_map (f := listDot a)]
       exact List.idxOf_lt_length_iff.mpr htrue
-    set p := (N.map (dotBool a)).idxOf true
-    have hp_dot : dotBool a (N.getD p []) = true := by
-      have hp_mem : (N.map (dotBool a))[p]'(by simp [hp_lt]) = true :=
+    set p := (N.map (listDot a)).idxOf true
+    have hp_dot : listDot a (N.getD p []) = true := by
+      have hp_mem : (N.map (listDot a))[p]'(by simp [hp_lt]) = true :=
         List.getElem_idxOf _
       rw [List.getElem_map] at hp_mem
       rw [List.getD_eq_getElem N [] hp_lt]
@@ -890,10 +887,10 @@ private theorem kernelStepBits_eq_kernelStep {n : ℕ} {a : List Bool} {N : List
       intro k hk
       rw [hval k, map_eq_zero_iff bitEquiv.symm bitEquiv.symm.injective, Bool.zero_eq_false]
       by_contra hnt
-      have htk : (N.map (dotBool a))[k.1]'(by simp; omega) = true := by
+      have htk : (N.map (listDot a))[k.1]'(by simp; omega) = true := by
         rw [List.getElem_map, ← List.getD_eq_getElem N [] (by omega)]
         exact Bool.eq_true_of_not_eq_false hnt
-      have hle : p ≤ k.1 := list_idxOf_le_of_getElem (N.map (dotBool a)) (by simp; omega) htk
+      have hle : p ≤ k.1 := list_idxOf_le_of_getElem (N.map (listDot a)) (by simp; omega) htk
       exact absurd hle (not_le.mpr hk)
     have hpiv_eq : pivotVec aZ NZ = NZ ⟨p, by omega⟩ := by
       rcases sum_firstFlags_smul_eq (rowValues aZ NZ) NZ with ⟨h0, _⟩ | ⟨j, hj, hlt, hsum⟩
@@ -917,7 +914,7 @@ private theorem kernelStepBits_eq_kernelStep {n : ℕ} {a : List Bool} {N : List
     have hvi : (N[i.1]'(by omega)).length = n := hN_mem _ (List.getElem_mem _)
     have hpiv_len : (N.getD p []).length = n := hN_mem _ (List.getD_mem [] hp_lt)
     have hi_eq : N[i.1]'(by omega) = N.getD i.1 [] := (List.getD_eq_getElem _ _ (by omega)).symm
-    by_cases hdi : dotBool a (N[i.1]'(by omega)) = true
+    by_cases hdi : listDot a (N[i.1]'(by omega)) = true
     · rw [ite_eq_left hdi]
       have hrv : rowValues aZ NZ i = 1 := by
         rw [hval i, ← hi_eq, hdi]; rfl
@@ -939,7 +936,7 @@ private theorem kernelStepBits_eq_kernelStep {n : ℕ} {a : List Bool} {N : List
       rcases zmod2_eq_zero_or_one (bitEquiv.symm ((N.getD p []).getD k.1 false)) with hc | hc <;>
         rw [hc] <;> rfl
     · rw [ite_eq_right hdi]
-      have hdi' : dotBool a (N[i.1]'(by omega)) = false := Bool.eq_false_of_not_eq_true hdi
+      have hdi' : listDot a (N[i.1]'(by omega)) = false := Bool.eq_false_of_not_eq_true hdi
       have hrv : rowValues aZ NZ i = 0 := by
         rw [hval i, ← hi_eq, hdi']; rfl
       rw [hrv, zero_smul, sub_zero]

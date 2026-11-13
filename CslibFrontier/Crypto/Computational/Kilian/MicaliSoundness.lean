@@ -139,14 +139,14 @@ def AllOpeningsQueriedInTrace (H : List Bool → List Bool → List Bool) (k : L
     (V : PCPVerifier α) (tr : List (List Bool × List Bool)) (x : α)
     (ρs : List (List Bool)) (response : KilianResponse) : Prop :=
   ∀ o ∈ kilianOpenings V x ρs response,
-    PathQueriedInTrace H k tr (kilianPosition V x o.1) [o.2.bit] o.2.path
+    PathQueriedInTrace H k tr (kilianPosition V x o.1) [o.2.leaf] o.2.path
 
 instance (H : List Bool → List Bool → List Bool) (k : List Bool) (V : PCPVerifier α)
     (tr : List (List Bool × List Bool)) (x : α) (ρs : List (List Bool))
     (response : KilianResponse) :
     Decidable (AllOpeningsQueriedInTrace H k V tr x ρs response) :=
   inferInstanceAs (Decidable (∀ o ∈ kilianOpenings V x ρs response,
-    PathQueriedInTrace H k tr (kilianPosition V x o.1) [o.2.bit] o.2.path))
+    PathQueriedInTrace H k tr (kilianPosition V x o.1) [o.2.leaf] o.2.path))
 
 /-- Extract the compact bit table (of length `2 ^ kilianDepth V x`) committed under Merkle root
 `rt` from a recorded hash query-answer trace `tr`, taking the first bit (`headD false`) of each
@@ -261,7 +261,7 @@ theorem exists_collision_of_micaliVerifyPure_of_rejects
     ∃ q₁ ∈ tr.map Prod.fst, ∃ q₂ ∈ tr.map Prod.fst, q₁ ≠ q₂ ∧ H k q₁ = H k q₂ := by
   have hnot_all : ¬ ∀ o ∈ kilianOpenings V x (hFS (x, proof.root)) proof.response,
       extractLeafFromTrace tr (kilianDepth V x) proof.root (kilianPosition V x o.1) =
-        some [o.2.bit] := by
+        some [o.2.leaf] := by
     intro hall
     have hacc : V.accepts x (micaliExtractProof V tr x proof.root) ρ = true := by
       refine accepts_kilianProof hver (fun o ho => ?_) hρ hlen
@@ -276,10 +276,10 @@ theorem exists_collision_of_micaliVerifyPure_of_rejects
     cases hrej
   push Not at hnot_all
   obtain ⟨o, ho, hne⟩ := hnot_all
-  have hpath_o : PathQueriedInTrace H k tr (kilianPosition V x o.1) [o.2.bit] o.2.path :=
+  have hpath_o : PathQueriedInTrace H k tr (kilianPosition V x o.1) [o.2.leaf] o.2.path :=
     hpaths o ho
   have hver_o : merkleVerify H k (kilianDepth V x) proof.root
-      (kilianPosition V x o.1) [o.2.bit] o.2.path = true :=
+      (kilianPosition V x o.1) [o.2.leaf] o.2.path = true :=
     merkleVerify_of_mem_kilianOpenings (H := H) (k := k) hver ho
   exact exists_collision_of_extractLeafFromTrace_ne hcons hpath_o hver_o hne
 
@@ -773,43 +773,9 @@ theorem toOuterMeasure_run_micaliMemoize_not_goodState_le [BEq α] {β : Type}
 
 /-! #### Support invariants of `memoize`, `kilianVerifyProg` and `micaliVerify` -/
 
-private theorem allOpenings_of_mem_support_mapM_merkleVerifyProg
-    (dist : List Bool → PMF (List Bool)) (d : ℕ) (root : List Bool) (V : PCPVerifier α) (x : α)
-    (qa : List (ℕ × KilianOpening)) {tr tr' : List (List Bool × List Bool)} {checks : List Bool}
-    (hnodup : (tr.map Prod.fst).Nodup)
-    (hsupp : ∀ e ∈ tr, e.2 ∈ (dist e.1).support)
-    (hmem : (checks, tr') ∈
-      ((OracleComp.interpret (memoize dist)
-        (qa.mapM fun (a, o) =>
-          merkleVerifyProg d root (kilianPosition V x a) [o.bit] o.path)).run tr).support)
-    {h : List Bool → List Bool} (hcons : TraceConsistentWith h tr') :
-    ∀ o ∈ qa,
-      PathQueriedInTrace (fun _ => h) [] tr' (kilianPosition V x o.1) [o.2.bit] o.2.path := by
-  induction qa generalizing tr checks with
-  | nil =>
-    intro _ ho
-    cases ho
-  | cons hd tl ih =>
-    rcases hd with ⟨a, o⟩
-    supp_cases hmem [List.mapM_cons, run_interpret_bind, run_interpret_pure]
-      with ⟨⟨c, tr₁⟩, hc, ⟨cs, tr₂⟩, hcs, rfl, rfl⟩
-    obtain ⟨hsub₁, hnodup₁, hsupp₁, -⟩ :=
-      mem_support_run_memoize_invariant dist
-        (merkleVerifyProg d root (kilianPosition V x a) [o.bit] o.path) hnodup hsupp hc
-    obtain ⟨hsub₂, -, -, -⟩ :=
-      mem_support_run_memoize_invariant dist _ hnodup₁ hsupp₁ hcs
-    have hcons₁ : TraceConsistentWith h tr₁ := fun p hp => hcons p (hsub₂ p hp)
-    have hhd := pathQueriedInTrace_of_mem_support_merkleVerifyProg dist d root
-      (kilianPosition V x a) [o.bit] o.path hnodup hsupp hc hcons₁
-    intro o' ho'
-    rcases List.mem_cons.mp ho' with rfl | htl
-    · intro q hq
-      exact hsub₂ _ (hhd q hq)
-    · exact ih hnodup₁ hsupp₁ hcs o' htl
-
 private theorem allOpenings_of_mem_support_mapM_kilianCheckProg
     (dist : List Bool → PMF (List Bool)) (V : PCPVerifier α) (x : α) (root : List Bool)
-    (ra : List (List Bool × List KilianOpening))
+    (ra : List (List Bool × List (MerkleOpening Bool)))
     {tr tr' : List (List Bool × List Bool)} {checks : List Bool}
     (hnodup : (tr.map Prod.fst).Nodup)
     (hsupp : ∀ e ∈ tr, e.2 ∈ (dist e.1).support)
@@ -818,7 +784,7 @@ private theorem allOpenings_of_mem_support_mapM_kilianCheckProg
         (ra.mapM fun (ρ, answers) => kilianCheckProg V x root ρ answers)).run tr).support)
     {h : List Bool → List Bool} (hcons : TraceConsistentWith h tr') :
     ∀ p ∈ ra, ∀ o ∈ (V.queries (x, p.1)).zip p.2,
-      PathQueriedInTrace (fun _ => h) [] tr' (kilianPosition V x o.1) [o.2.bit] o.2.path := by
+      PathQueriedInTrace (fun _ => h) [] tr' (kilianPosition V x o.1) [o.2.leaf] o.2.path := by
   induction ra generalizing tr checks with
   | nil =>
     intro _ hp
@@ -832,8 +798,9 @@ private theorem allOpenings_of_mem_support_mapM_kilianCheckProg
     obtain ⟨hsub₂, -, -, -⟩ :=
       mem_support_run_memoize_invariant dist _ hnodup₁ hsupp₁ hcs
     have hcons₁ : TraceConsistentWith h tr₁ := fun p hp => hcons p (hsub₂ p hp)
-    have hhd := allOpenings_of_mem_support_mapM_merkleVerifyProg dist (kilianDepth V x) root V x
-      ((V.queries (x, ρ)).zip answers) hnodup hsupp hsub hcons₁
+    have hhd := pathQueriedInTrace_of_mem_support_mapM_merkleVerifyProg hnodup hsupp hsub
+      (kilianDepth V x) (fun _ => root) (fun b => kilianPosition V x b.1) (fun b => [b.2.leaf])
+      (fun b => b.2.path) (fun ⟨_, _⟩ => rfl) hcons₁
     intro p hp o ho
     rcases List.mem_cons.mp hp with rfl | htl
     · intro q hq
@@ -1147,23 +1114,12 @@ theorem exists_micaliCSProof_of_mem_NP [DecidableEq α] {enc : α ↪ List Bool}
   obtain ⟨V, c, d, hV, hpcp⟩ := NP_subset_PCP_log enc hL
   have hq : ∀ x ρ, ρ.length = V.coins x → (V.queries (x, ρ)).length ≤ d := by
     intro x ρ hρ
-    simpa using hpcp.2.1 x ρ hρ
-  refine ⟨V, c, d, hV, hpcp.1, hq,
-    fun x => ⟨fun hx => ?_, fun ⟨table, htable⟩ => ?_⟩,
+    simpa using hpcp.length_queries_le x ρ hρ
+  exact ⟨V, c, d, hV, hpcp.coins_le, hq, hpcp.mem_iff_exists_tableVerifier,
     fun x table htable σ m => micaliHonestGame_eq_pure_true V htable σ m,
-    fun P t_FS Q_MT σ m hFS hMT => micaliSoundness_bound V L σ m hpcp.2.2.2 hFS hMT,
+    fun P t_FS Q_MT σ m hFS hMT => micaliSoundness_bound V L σ m hpcp.sound hFS hMT,
     _, fun σ m hTree hFS x table hlen hm hρs =>
       micaliProofBits_micaliProvePure_le_log hlen hm hρs (fun ρ hρ => hq x ρ hρ)
-        (hpcp.1 x)⟩
-  · obtain ⟨proof, hproof⟩ := hpcp.2.2.1 x hx
-    exact ⟨_, by simpa using PCPVerifier.tableVerifier_complete x proof [] hproof⟩
-  · by_contra hx
-    obtain ⟨proof, hproof⟩ := PCPVerifier.tableVerifier_sound x table htable
-    have hs := hpcp.2.2.2 x hx proof
-    have hc : acceptCount (fun y => V.accepts y.1 proof y.2) x (V.coins x) = 2 ^ V.coins x := by
-      simp [acceptCount, hproof]
-    rw [hc] at hs
-    have hp : 0 < 2 ^ V.coins x := Nat.two_pow_pos _
-    lia
+        (hpcp.coins_le x)⟩
 
 end Cslib.Crypto

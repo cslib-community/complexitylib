@@ -96,7 +96,7 @@ theorem Reduction.plainLaw_run_bundle {smp : PerChallenge ProbComp s}
     plainLaw ((Reduction.bundle smp R).prover x w >>=
         runStrategy s (Reduction.bundle smp R).verifier.samplers) =
       (plainLaw ((R x.1).prover x.2 w >>= runStrategy s (R x.1).verifier.samplers)).map
-        fun r => (r.1, ((⟨x.1, r.2.1⟩ : Σ θ, S₂ θ), r.2.2)) := by
+        fun r => (r.1, Prod.map (Sigma.mk x.1) _root_.id r.2) := by
   rw [hsmp]
   simp only [Reduction.bundle, Verifier.bundle, bind_assoc, plainLaw_bind]
   rw [PMF.map_bind]
