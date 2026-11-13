@@ -561,7 +561,7 @@ theorem isPPTOn_pedersenToDLAdversary
   refine (hA.preprocess
     (prepare := fun input : ℕ × F.Desc × List Bool =>
       (input.1, encPair F.encDesc encBits input.2)) (by fun_prop)).bind_with ?_
-  have hextract : ComputableTidilyInPolyTime
+  have hextract : ComputableInPolyTime
       (fun p :
           (ℕ × F.Desc × List Bool) ×
             (List Bool × (List Bool × List Bool) × (List Bool × List Bool)) =>
@@ -572,7 +572,7 @@ theorem isPPTOn_pedersenToDLAdversary
         (encPair encBits (encPair (encPair encBits encBits) (encPair encBits encBits))))
       encBits := by
     fun_prop
-  exact hextract.isPPTOn
+  exact hextract.tidy.isPPTOn
 
 /-- **Computational binding of Pedersen commitments under the discrete-logarithm assumption**
 ([Pedersen1991], Section 3, Theorem 3.1; [BonehShoup2023], Section 8.12, Definition 8.8, and

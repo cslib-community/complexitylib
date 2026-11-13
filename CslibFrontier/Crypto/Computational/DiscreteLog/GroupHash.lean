@@ -283,7 +283,7 @@ theorem isPPTOn_groupHashToDLAdversary {blockLen : F.Desc → ℕ}
   unfold groupHashToDLAdversary
   refine hA.bind_with ?_
   have hbt := hblock.tidy
-  have hextract : ComputableTidilyInPolyTime
+  have hextract : ComputableInPolyTime
       (fun p : (ℕ × (F.Desc × List Bool)) × (List Bool × List Bool) =>
         (extractNat (F.order p.1.2.1)
           (ofBits (p.2.2.drop (blockLen p.1.2.1))) (ofBits (p.2.1.take (blockLen p.1.2.1)))
@@ -291,7 +291,7 @@ theorem isPPTOn_groupHashToDLAdversary {blockLen : F.Desc → ℕ}
       (encPair (encPair encUnary (encPair F.encDesc encBits)) (encPair encBits encBits))
       encBits := by
     fun_prop
-  exact hextract.isPPTOn
+  exact hextract.tidy.isPPTOn
 
 /-- **Collision resistance of the discrete-logarithm hash family under the discrete-logarithm
 assumption** ([KatzLindell2020], Section 9.4.2, Theorem 9.79, pp. 358–359): if

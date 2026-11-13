@@ -264,7 +264,7 @@ theorem isPPTOn_rewind {k : ℕ → ℕ} (hk : ComputableInPolyTime k encUnary e
   refine (hrespond.preprocess
     (prepare := fun p : ((((ℕ × F.Desc × List Bool) × List Bool × List Bool) × List Bool) ×
       List Bool) × List Bool => (p.1.1.1.1.1, (p.1.1.1.2.2, p.1.2))) (by fun_prop)).bind_with ?_
-  exact ComputableTidilyInPolyTime.isPPTOn (by fun_prop)
+  exact (ComputableInPolyTime.tidy (by fun_prop)).isPPTOn
 
 /-! ### Security under the discrete-logarithm assumption -/
 

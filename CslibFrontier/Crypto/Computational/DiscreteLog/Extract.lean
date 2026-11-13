@@ -76,38 +76,28 @@ theorem extractNat_cast {q : ℕ} [Fact q.Prime] {c z c' z' : ℕ}
 
 variable {F : PrimeOrderGroupFamily}
 
-/-- The witness `extractNat` is computable in polynomial time, tidily, from the group description
-and the four binary numbers. -/
+/-- The witness `extractNat` is computable in polynomial time from the group description and the
+four binary numbers. -/
 @[fun_prop]
-theorem computableTidilyInPolyTime_extractNat {α : Type} {input : α ↪ List Bool}
-    {d : α → F.Desc} {c z c' z' : α → ℕ} (hd : ComputableTidilyInPolyTime d input F.encDesc)
-    (hc : ComputableTidilyInPolyTime c input encNat)
-    (hz : ComputableTidilyInPolyTime z input encNat)
-    (hc' : ComputableTidilyInPolyTime c' input encNat)
-    (hz' : ComputableTidilyInPolyTime z' input encNat) :
-    ComputableTidilyInPolyTime (fun a => extractNat (F.order (d a)) (c a) (z a) (c' a) (z' a))
+theorem computableInPolyTime_extractNat {α : Type} {input : α ↪ List Bool}
+    {d : α → F.Desc} {c z c' z' : α → ℕ} (hd : ComputableInPolyTime d input F.encDesc)
+    (hc : ComputableInPolyTime c input encNat) (hz : ComputableInPolyTime z input encNat)
+    (hc' : ComputableInPolyTime c' input encNat) (hz' : ComputableInPolyTime z' input encNat) :
+    ComputableInPolyTime (fun a => extractNat (F.order (d a)) (c a) (z a) (c' a) (z' a))
       input encNat := by
+  refine .of_tidy ?_
   have hq : ComputableTidilyInPolyTime (fun a => F.order (d a)) input encNat :=
-    F.computableInPolyTime_order.tidy.comp hd
+    F.computableInPolyTime_order.tidy.comp hd.tidy
   have hdiff {x y : α → ℕ} (hx : ComputableTidilyInPolyTime x input encNat)
       (hy : ComputableTidilyInPolyTime y input encNat) :
       ComputableTidilyInPolyTime
         (fun a => (x a % F.order (d a) + F.order (d a) - y a % F.order (d a)) % F.order (d a))
         input encNat :=
     .binary_mod' (.binary_sub' (.binary_add' (.binary_mod' hx hq) hq) (.binary_mod' hy hq)) hq
-  have hpow := (ComputableInPolyTime.binary_powMod (ComputableInPolyTime.of_tidy (hdiff hc hc'))
+  have hpow := (ComputableInPolyTime.binary_powMod
+    (ComputableInPolyTime.of_tidy (hdiff hc.tidy hc'.tidy))
     (ComputableInPolyTime.of_tidy (.binary_sub' hq (.const 2)))
     (ComputableInPolyTime.of_tidy hq) fun a => (F.prime_order (d a)).pos).tidy
-  exact .binary_mod' (.binary_mul' hpow (hdiff hz hz')) hq
-
-/-- The witness `extractNat` is computable in polynomial time from the group description and the
-four binary numbers. -/
-theorem computableInPolyTime_extractNat {α : Type} {input : α ↪ List Bool}
-    {d : α → F.Desc} {c z c' z' : α → ℕ} (hd : ComputableInPolyTime d input F.encDesc)
-    (hc : ComputableInPolyTime c input encNat) (hz : ComputableInPolyTime z input encNat)
-    (hc' : ComputableInPolyTime c' input encNat) (hz' : ComputableInPolyTime z' input encNat) :
-    ComputableInPolyTime (fun a => extractNat (F.order (d a)) (c a) (z a) (c' a) (z' a))
-      input encNat :=
-  .of_tidy (computableTidilyInPolyTime_extractNat hd.tidy hc.tidy hz.tidy hc'.tidy hz'.tidy)
+  exact .binary_mod' (.binary_mul' hpow (hdiff hz.tidy hz'.tidy)) hq
 
 end Cslib.Crypto.PrimeOrderGroupFamily
