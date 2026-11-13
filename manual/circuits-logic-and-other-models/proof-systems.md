@@ -1660,9 +1660,9 @@ checks the published injectivity lemma reused by these constructors.
 
 These are static finite constructors. Some inverse occurrence maps use finite choice, so
 general projection and cyclic constructors are intentionally `noncomputable`. Fixing a language
-and its templates permits nonuniform certificate preprocessing; it does not supply the
-input-varying native compiler's target-checker and framed polynomial-time proof. No unbounded
-embedding search is claimed. The Figure 1 and NAND-triangle tables in `Embedding.Crossover`
+and its templates permits nonuniform certificate preprocessing. The compiler below supplies
+full target acceptance and framed native polynomial time for fixed trees and languages;
+it does not bound varying-language preprocessing or search for an embedding. The Figure 1 and NAND-triangle tables in `Embedding.Crossover`
 are macro skeletons, not yet expanded original-language substitution.
 
 The lower APIs preserve existing access: import
@@ -1680,8 +1680,71 @@ The boundary convention is Dvořák–Kupec's reverse outer port order, printed 
 and finite surgery are original. Fulla–Živný's indexed positive-arity model and the original
 decision/nullary extension are distinguished from DK's constraint sets; no deduplication or
 geometric equivalence is assumed. OneHot3/CROSS macro expansion, normalization caps and
-Figure-1 substitution, native whole-instance target acceptance, geometric/source comparison
+Figure-1 expanded ordered witnesses, geometric/source comparison
 and bare recognition remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
+
+
+## Certified native ordered-gadget substitution
+
+Import `CslibFrontier.Logics.Propositional.CSP.Planar.Substitution.Genus` for the mathematical
+endpoint. `verifyRotationCertificate_replacementCertificate` proves full checker acceptance
+of the computed `replacementCertificate` on exactly `replaceGadgets B templates F`.
+It takes actual gadgets and checked boundary witnesses, a fixed auxiliary bound, source
+well-formedness and full source-checker acceptance. Neither alphabet must be finite.
+There is no supplied target rotation, genus, order, cofaciality, degree or connectedness
+premise. Repeated names, duplicate rows, indexed positions, unused ports and closed/nullary
+components are retained.
+
+The proof constructs the permutation and endpoint fibers from the occurrence partition,
+and identifies the entire emitted table through the existing certificate lookup API.
+Every target vertex-even labeling internally induces even source and probe labelings.
+Existing face-color exactness and one XOR shift per complete copy align clockwise corner
+colors. Empty free blocks force equal endpoint colors; auxiliary cycles stay local.
+The componentwise cycle-space converse proves `numericalGenusZero_replacementRotation`.
+Color choices occur only in the proof.
+
+Import `CslibFrontier.Computability.PolyTime.CSP.Gadget.PlanarCompiler` for `compileGadgets`,
+or `CslibFrontier.Computability.PolyTime.CSP.Gadget.ConstructionCompiler` for
+`compileConstructions trees`. The latter takes one actual tree per fixed source symbol,
+interprets its original-language `.gadget`, invokes `.orderedWitness` including all enabling
+subtrees, and derives the finite family's maximum auxiliary count internally. It needs no
+separate pin, disequality symbol, boundary blocks or target witness.
+
+The guard checks source arities and the full original source checker. On acceptance the
+output is the literal replacement body and block-spliced table; on rejection it is
+`([], ⟨[0]⟩)`. The empty body is well-formed and the one-entry certificate rejects, including
+when the target alphabet is empty. `verifyRotationCertificate_compileConstructions_iff`
+identifies target acceptance with that guard on every raw input.
+`wellFormed_certifiedSatisfiable_compileConstructions_iff` proves the complete equivalence:
+target well-formedness, checker acceptance and satisfiability hold exactly when all three
+corresponding source conditions hold.
+
+`computableInPolyTime_compileConstructions` certifies ordinary native polynomial time from
+`encCSPRotationCertificate encSrc encNat` to `encCSPRotationCertificate encRel encNat` on all
+raw inputs. Only the fixed source alphabet is finite; the target alphabet and its injective
+encoding are arbitrary. `exists_framed_bound_compileConstructions` bounds the complete framed
+output, including symbols, binary names and binary successor entries. Runtime has no input
+validity premise. Trees and their possibly noncomputable witness/boundary preprocessing are
+fixed nonuniform data. No polynomial preprocessing bound for varying languages or trees,
+Lean code-generation claim for these noncomputable wrappers, or planarity search is asserted.
+
+The [generic low-only client](../../CslibFrontierTests/CSPGadgetGenus.lean) applies complete
+actual-table acceptance without either alphabet finite. The
+[Construction compiler clients](../../CslibFrontierTests/CSPConstructionCompiler.lean) check
+native/specification use with an arbitrary target alphabet and Empty-to-Empty rejection and
+valid-empty acceptance. The [complete tree client](../../CslibFrontierTests/PlanarConstructionBoundary.lean)
+applies the wrapper to its original non-atom tree, including enabling branches, and proves
+target acceptance and SAT/UNSAT with repeated sparse names. The
+[executed substitution tests](../../CslibFrontierTests/CSPGadgetSubstitution.lean) check literal
+bodies/tables and the full checker, including a non-atom body with closed auxiliary and nullary
+components, unused ports, duplicate degree-six rows and sparse `2^250` labels.
+
+Run `scripts/build.sh CslibFrontierTests.CSPGadgetGenus CslibFrontierTests.CSPConstructionCompiler CslibFrontierTests.CSPGadgetSubstitution CslibFrontierTests.PlanarConstructionBoundary --wfail --iofail`.
+This completes supplied-certificate substitution for fixed checked construction families.
+Expanded original-language OneHot3/CROSS and normalization/Figure-1 witnesses, source-model
+comparison, bare recognition, Hanani–Tutte and full dichotomy assembly remain open under
+[#3091](https://github.com/cslib-community/cslib-frontier/issues/3091). The finite PL equivalence
+is already proved; this compiler adds no coordinate-bit or drawing-runtime bound.
 
 
 ## Original-language ordered disequality
@@ -1723,7 +1786,7 @@ provides complete ordinary-import examples for both APIs.
 Run `scripts/build.sh CslibFrontierTests.PlanarSelfDualEnabling CslibFrontierTests.CSPGadgetPolymorphism --wfail --iofail`.
 The existing static grammar now has ordered witnesses. NAND-triangle and OneHot3/CROSS
 macro expansion, normalization/Figure-1 and expanded original-language
-endpoints, native whole-instance target acceptance, geometry/source comparison and recognition
+endpoints, geometry/source comparison and recognition
 remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
 ## Finite crossover gadget semantics
@@ -1742,8 +1805,9 @@ width-guarded interpretations reject malformed scopes. [Crossover clients](../..
 check every standardized shape, both first-gadget outcomes, explicit witnesses and rejected
 boundary tuples, while retaining the existing CNF crossover tests.
 
-These Figure 1 results concern finite relation semantics. Geometric realization and substitution,
-a hardness theorem and a new native runtime certificate remain part of
+These Figure 1 results concern finite relation semantics. Their expanded original-language
+ordered witnesses and planar hardness remain open. The general compiler above applies after
+those witness contracts are proved; it does not supply them. These gaps remain part of
 [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
 ## Ordered normalization from a cyclic exchange failure
@@ -1788,8 +1852,8 @@ The guide composes the construction with its gadget and size bounds using ordina
 
 These are combinatorial and finite-semantic bounds. Relation decisions and a chosen construction
 are fixed-relation data; no uniform native runtime or binary encoded-size bound is asserted.
-Geometric realization of the recorded operations, ordered planar substitution, hardness and
-completion of the full planar dichotomy remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
+Ordered realization of these normalization operations, their expanded original-language
+witnesses, hardness and completion of the full planar dichotomy remain open under [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
 ## Original-language gadgets for the nonselfdual branch
 
@@ -1824,8 +1888,9 @@ tests derive the gadgets from a single one-in-three symbol without primitive pin
 
 These results prove finite primitive-positive semantics. The selected witnesses are fixed-language
 data; no uniform preprocessing cost is asserted. The recorded recipes and concrete bodies support
-subsequent geometric proofs, but do not establish ordered planar substitution, a native reduction
-or planar hardness. Those obligations and the full planar dichotomy remain open under
+the final expanded triangle, whose original-language ordered witness and planar hardness
+still need proofs. The general compiler does not supply those missing witnesses. These gaps
+and the full planar dichotomy remain open under
 [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091).
 
 ## Three resolution representations

@@ -10,6 +10,7 @@ import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Real
 import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.CertificateCycles
 import CslibFrontier.Computability.Complexity.Problems.Graph.RotationSystem.Equality
 import CslibFrontier.Foundations.GroupTheory.Perm.ListCycles
+import CslibFrontier.Foundations.GroupTheory.Perm.ListSplice
 
 /-! Directed successor words and an actual split with an untouched closed component and isolates. -/
 
@@ -24,6 +25,20 @@ example : List.nextInCycles [[], [3], [1, 4, 2], []] 2 = 1 := by decide
 example : List.nextInCycles [[], [3], [1, 4, 2], []] 3 = 3 := by decide
 
 example : List.nextInCycles [[], [3], [1, 4, 2], []] 99 = 99 := by decide
+
+-- The retained word-surgery API fixes the actual outgoing-swap orientation.
+example : (([0, 1] : List (Fin 4)) ++ [2, 3]).formPerm =
+    ([0, 1] : List (Fin 4)).formPerm * ([2, 3] : List (Fin 4)).formPerm *
+      Equiv.swap 1 3 :=
+  List.formPerm_append_of_last_notMem (α := Fin 4)
+    [0, 1] [2, 3] (by decide) (by decide) (by decide)
+
+example : List.ofFn (fun i : Fin 4 => ([0, 1] ++ [2, 3]).formPerm i) =
+    [1, 2, 3, 0] := by decide +kernel
+
+example : ((([0] : List (Fin 4)) ++ [1, 2]) ++ [3]).formPerm =
+    ([0, 3] : List (Fin 4)).formPerm * Equiv.swap 1 2 * Equiv.swap 0 2 :=
+  List.formPerm_split_adjacent_pair (α := Fin 4) [0] [3] 1 2 (by decide) (by decide)
 
 example : (List.cyclePermutation [[], [3], [1, 4, 2], []]).SameCycle 1 2 := by
   exact (List.sameCycle_cyclePermutation_iff_of_mem _ (by decide) [1, 4, 2]

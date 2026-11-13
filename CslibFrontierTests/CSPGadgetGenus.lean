@@ -9,7 +9,12 @@ Authors: Erik Demaine
 import CslibFrontier.Logics.Propositional.CSP.Planar.Substitution.Genus
 
 /-! An ordinary mathematical client applies full actual-table acceptance at arbitrary arity.
-Neither relation alphabet is assumed finite, and no native runtime module is imported. -/
+Neither relation alphabet is assumed finite. Native CSP gadget compilation is not imported;
+the mathematical API retains the existing rotation-checker dependencies. -/
+
+/-- info: Unknown identifier `Cslib.Complexity.CSP.computableInPolyTime_replaceGadgets` -/
+#guard_msgs in
+#check_failure Cslib.Complexity.CSP.computableInPolyTime_replaceGadgets
 
 open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Complexity.CSP
 open Cslib.Complexity.CSP.GadgetRotation Cslib.Complexity.CSP.OrderedBoundary
