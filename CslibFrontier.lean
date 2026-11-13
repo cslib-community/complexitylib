@@ -1,5 +1,8 @@
 module  -- shake: keep-all --deprecated_module: ignore
 
+public import CslibFrontier.Algorithms.Dijkstra.Defs
+public import CslibFrontier.Algorithms.Dijkstra.Invariant
+public import CslibFrontier.Algorithms.Dijkstra.ListInstance
 public import CslibFrontier.Algorithms.Ellipsoid.Basic
 public import CslibFrontier.Algorithms.ExactTriangle.CountPrime
 public import CslibFrontier.Algorithms.ExactTriangle.CountPrime.Extraction
@@ -13,6 +16,8 @@ public import CslibFrontier.Algorithms.ExactTriangle.PieceBounds
 public import CslibFrontier.Algorithms.ExactTriangle.Splitting
 public import CslibFrontier.Algorithms.ExactTriangle.Weights
 public import CslibFrontier.Algorithms.ExactTriangle.Witnesses
+public import CslibFrontier.Algorithms.Karger.FastCut
+public import CslibFrontier.Algorithms.Karger.Graph
 public import CslibFrontier.Algorithms.LatticeReduction.Babai
 public import CslibFrontier.Algorithms.LatticeReduction.LLL
 public import CslibFrontier.Algorithms.LatticeReduction.NearestPlane
@@ -328,10 +333,8 @@ public import CslibFrontier.Algorithms.WordRAM.Deduplicate.Program
 public import CslibFrontier.Algorithms.WordRAM.Dijkstra.Fibonacci
 public import CslibFrontier.Algorithms.WordRAM.Dijkstra.FibonacciStatement
 public import CslibFrontier.Algorithms.WordRAM.Dijkstra.HeapStatement
-public import CslibFrontier.Algorithms.WordRAM.Dijkstra.Invariant
 public import CslibFrontier.Algorithms.WordRAM.Dijkstra.ListEncode
 public import CslibFrontier.Algorithms.WordRAM.Dijkstra.LogLinear
-public import CslibFrontier.Algorithms.WordRAM.Dijkstra.Statement
 public import CslibFrontier.Algorithms.WordRAM.ElementDistinctness
 public import CslibFrontier.Algorithms.WordRAM.ElementDistinctnessRAM
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.BoxRecordWitness.Exec
@@ -536,8 +539,6 @@ public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.WitnessScan.Setup
 public import CslibFrontier.Algorithms.WordRAM.ExactTriangle.WriteMatrices
 public import CslibFrontier.Algorithms.WordRAM.Histogram
 public import CslibFrontier.Algorithms.WordRAM.Karger.Contract
-public import CslibFrontier.Algorithms.WordRAM.Karger.FastCut
-public import CslibFrontier.Algorithms.WordRAM.Karger.Graph
 public import CslibFrontier.Algorithms.WordRAM.Karger.OutputLaw
 public import CslibFrontier.Algorithms.WordRAM.KargerMinCut
 public import CslibFrontier.Algorithms.WordRAM.KargerStein
@@ -1043,6 +1044,7 @@ public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Concentr
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConcentratingReduction
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConcentratingShift
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConcentratingShiftSet
+public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConstantDepth
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Defs
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.DerivativeClosed
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.HardnessToHittingSet
@@ -1081,6 +1083,7 @@ public import CslibFrontier.Computability.Circuit.Arithmetic.SetMultilinearLower
 public import CslibFrontier.Computability.Circuit.Arithmetic.SetMultilinearize
 public import CslibFrontier.Computability.Circuit.Arithmetic.SigmaPi
 public import CslibFrontier.Computability.Circuit.Arithmetic.SumFlatten
+public import CslibFrontier.Computability.Circuit.Arithmetic.Synthesis
 public import CslibFrontier.Computability.Circuit.Arithmetic.VNP
 public import CslibFrontier.Computability.Circuit.Arithmetic.VP
 public import CslibFrontier.Computability.Circuit.Arithmetic.Waring
@@ -1125,6 +1128,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperserCore.Re
 public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperserCore.State
 public import CslibFrontier.Computability.Circuit.Boolean.AltFormula
 public import CslibFrontier.Computability.Circuit.Boolean.AltFormula.TopDown
+public import CslibFrontier.Computability.Circuit.Boolean.Arithmetic
 public import CslibFrontier.Computability.Circuit.Boolean.AtLeast
 public import CslibFrontier.Computability.Circuit.Boolean.BalancedCode
 public import CslibFrontier.Computability.Circuit.Boolean.Barrington
@@ -1918,6 +1922,7 @@ public import CslibFrontier.Computability.Complexity.Classes.FunctionTime.Bounds
 public import CslibFrontier.Computability.Complexity.Classes.FunctionTime.Decide
 public import CslibFrontier.Computability.Complexity.Classes.FunctionTime.WordRAM
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy
+public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.LazyDiagonal
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.LazyDiagonalBounds
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.LogClock
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Nondeterministic
@@ -4437,6 +4442,7 @@ public import CslibFrontier.Crypto.Computational.RSALeastSignificantBit
 public import CslibFrontier.Crypto.Computational.RSATrapdoor
 public import CslibFrontier.Crypto.Computational.RabinFactoring
 public import CslibFrontier.Crypto.Computational.Rompel
+public import CslibFrontier.Crypto.Computational.SIS.Ajtai
 public import CslibFrontier.Crypto.Computational.SIS.Basic
 public import CslibFrontier.Crypto.Computational.SIS.MLKEM.Compress
 public import CslibFrontier.Crypto.Computational.SIS.MLKEM.KPKE
