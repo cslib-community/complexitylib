@@ -22,14 +22,19 @@ vertex keeps the walk in place, so `randomWalk G` is a Markov chain for every gr
 expected hitting and return times of `Cslib.Probability.MarkovChain.hittingTime` apply.
 
 The degrees form a stationary measure: `∑ x, deg x * P x y = deg y`
-(`sum_degree_mul_randomWalk`). Since `∑ x, deg x = 2 |E|`, Kac's formula gives the expected return
-time `E_v[τ⁺_v] = 2 |E| / deg v` in a connected graph (`degree_mul_returnTime_randomWalk`).
-Conditioning on the first step, `E_v[τ⁺_v] = 1 + (1 / deg v) ∑_{u ~ v} E_u[τ_v]`, so the expected
-hitting times of `v` from its neighbors sum to `2 |E| - deg v`. In particular, for every edge
-`{u, v}`, `E_u[τ_v] ≤ 2 |E| - deg v ≤ 2 |E|` (`hittingTime_randomWalk_add_degree_le`,
-`hittingTime_randomWalk_le_of_adj`). This is Exercise 6.19 of Goldreich's draft, which completes
-the proof of his Proposition 6.13 [Goldreich, Exercise 6.19][Goldreich2007Draft]; see also
-[Levin and Peres, Section 10.6][LevinPeres2017]. By the triangle inequality for hitting times,
+(`sum_degree_mul_randomWalk`). Since `∑ x, deg x = 2 |E|`, Kac's formula gives
+`deg v * E_v[τ⁺_v] = 2 |E|` in a connected graph (`degree_mul_returnTime_randomWalk`), that is,
+`E_v[τ⁺_v] = 2 |E| / deg v` when `deg v > 0`. On a single vertex `deg v = 0` and the walk
+stays put (`randomWalk_apply_of_degree_eq_zero`), so `E_v[τ⁺_v] = 1` while `2 |E| / deg v = 0` in
+`ℝ≥0∞`. For `deg v > 0`, conditioning on the first step gives
+`E_v[τ⁺_v] = 1 + (1 / deg v) ∑_{u ~ v} E_u[τ_v]`, so the expected hitting times of `v` from its
+neighbors sum to `2 |E| - deg v` (`degree_add_sum_hittingTime_randomWalk`). In particular, for
+every edge `{u, v}`, `E_u[τ_v] ≤ 2 |E| - deg v ≤ 2 |E|` (`hittingTime_randomWalk_add_degree_le`,
+`hittingTime_randomWalk_le_of_adj`). This is the endpoint of Exercise 6.19 of Goldreich's draft,
+which completes the proof of his Proposition 6.13 [Goldreich, Exercise 6.19][Goldreich2007Draft].
+The proof here goes through Kac's formula and the neighbor sum
+[Levin and Peres, Section 10.6][LevinPeres2017]; Goldreich's guideline instead counts traversals
+of the stationary walk and takes a commute-time limit. By the triangle inequality for hitting times,
 `E_u[τ_v] ≤ ℓ · 2 |E|` along any walk of length `ℓ` from `u` to `v`
 (`hittingTime_randomWalk_le_length_mul`, `hittingTime_randomWalk_le_dist_mul`).
 
@@ -39,7 +44,9 @@ the proof of his Proposition 6.13 [Goldreich, Exercise 6.19][Goldreich2007Draft]
 
 ## Main results
 
-* `Cslib.Probability.MarkovChain.randomWalk_apply`: its transition probabilities.
+* `Cslib.Probability.MarkovChain.randomWalk_apply`,
+  `Cslib.Probability.MarkovChain.randomWalk_apply_of_degree_eq_zero`: its transition
+  probabilities from a vertex with a neighbor and from an isolated vertex.
 * `Cslib.Probability.MarkovChain.sum_degree_mul_randomWalk`: the degrees are stationary.
 * `Cslib.Probability.MarkovChain.degree_mul_returnTime_randomWalk`: `deg v * E_v[τ⁺_v] = 2 |E|`.
 * `Cslib.Probability.MarkovChain.hittingTime_randomWalk_add_degree_le`,
@@ -81,6 +88,16 @@ theorem randomWalk_apply {x : V} (hx : 0 < G.degree x) (y : V) :
     else _root_.PMF.pure x) y = _
   rw [dite_eq_left hne, PMF.uniformOfFinset_apply, card_neighborFinset_eq_degree]
   simp
+
+/-- From an isolated vertex the simple random walk stays put. -/
+theorem randomWalk_apply_of_degree_eq_zero [DecidableEq V] {x : V} (hx : G.degree x = 0) (y : V) :
+    randomWalk G x y = if y = x then 1 else 0 := by
+  have hne : ¬ (G.neighborFinset x).Nonempty := by
+    rw [← card_pos, card_neighborFinset_eq_degree, hx]; exact lt_irrefl 0
+  change (if h : (G.neighborFinset x).Nonempty then PMF.uniformOfFinset _ h
+    else _root_.PMF.pure x) y = _
+  rw [dite_eq_right hne]
+  by_cases h : y = x <;> simp [h, PMF.pure_apply]
 
 theorem randomWalk_apply_of_adj {x y : V} (h : G.Adj x y) :
     randomWalk G x y = (G.degree x : ℝ≥0∞)⁻¹ := by
