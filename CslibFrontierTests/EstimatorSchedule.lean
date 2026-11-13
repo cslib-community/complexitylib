@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
 import CslibFrontier.Computability.LogSpaceDerandomization.EstimatorSchedule
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import Mathlib.Tactic.NormNum
 
 /-!
@@ -77,8 +78,7 @@ example : scaleCutoff 2 2 < 200 := by
       (by decide) (by norm_num) (by decide) (by decide)
       (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
   · norm_num
-    rw [show (4 : ℝ) = 2 ^ (2 : ℕ) by norm_num, Real.logb_pow,
-      Real.logb_self_eq_one (by norm_num)]
+    rw [show (4 : ℝ) = 2 ^ (2 : ℕ) by norm_num, Real.logb_two_pow]
     norm_num
   · rw [precision_dyadic_rates]
     norm_num

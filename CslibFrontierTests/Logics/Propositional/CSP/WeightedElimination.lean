@@ -49,7 +49,7 @@ private def booleRel (r : Bool) : List Bool → Bool
 private def orWt (r : Bool) (xs : List Bool) : ℕ :=
   if booleRel r xs then 1 else 0
 
-private def satCSP : CSP Bool ℕ := [(true, [0, 1]), (false, [0, 1])]
+private def satCSP : CSP Bool ℕ := [⟨true, [0, 1]⟩, ⟨false, [0, 1]⟩]
 
 private theorem satCSP_vars : satCSP.vars.toFinset = {0, 1} := by
   decide
@@ -104,8 +104,8 @@ private def chainWt (_ : Unit) : List Bool → ℕ
   | [true, true] => 5
   | _ => 0
 
-private def sepF1 : CSP Unit ℕ := [((), [0, 1])]
-private def sepF2 : CSP Unit ℕ := [((), [1, 2])]
+private def sepF1 : CSP Unit ℕ := [⟨(), [0, 1]⟩]
+private def sepF2 : CSP Unit ℕ := [⟨(), [1, 2]⟩]
 
 theorem separator_chain_factorization :
     (CSP.partitionFunction chainWt (sepF1 ++ sepF2) =

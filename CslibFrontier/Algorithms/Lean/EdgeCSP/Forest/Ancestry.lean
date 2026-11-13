@@ -74,6 +74,14 @@ theorem ancestry_edges_subset (es : Log F) (v : V) :
       intro a ha
       exact List.mem_cons_of_mem _ (List.mem_append_right _ (ih v ha))
 
+omit [DecidableEq V] in
+/-- Recording an expansion whose input port is fresh leaves the timestamps of the ports
+already used unchanged. -/
+theorem stamp_cons_of_mem_used {e : Expansion F} {es : Log F} {z : Occurrence F}
+    (hu : e.input ∉ es.used) (hz : z ∈ es.used) : stamp (e :: es) z = es.stamp z := by
+  have hne : e.input ≠ z := fun he => hu (he ▸ hz)
+  simp only [stamp, hne, ↓reduceIte]
+
 end Log
 
 namespace Grown
@@ -91,8 +99,7 @@ theorem stamp_eq (hg : Grown sem f rs es) {a : Arc F} (ha : a ∈ es.arcs)
     rcases ha with rfl | ⟨o, ho, rfl⟩ | ha
     · simp [Log.stamp]
     · cases hi
-    · have hne : e.input ≠ a.occurrence := fun he => hu (he.symm ▸ (es.mem_arcs ha).1)
-      simp only [Log.stamp, hne, ↓reduceIte]
+    · rw [Log.stamp_cons_of_mem_used hu (es.mem_arcs ha).1]
       exact ih ha
 
 /-- Reconstructed ancestries are linked incidence trails, without any assumption of path
@@ -129,41 +136,38 @@ theorem ancestry_arcs (hg : Grown sem f rs es) (v : V)
   induction hg generalizing v with
   | nil => simp [Log.ancestry] at hm
   | @cons es e hp hv hu hf hn hfe hs ih =>
+    -- A step of an older ancestry keeps both arcs, since its timestamp is unchanged.
+    have old : ∀ w, s ∈ (es.ancestry w).walk.steps →
+        inArc (Log.stamp (e :: es)) s ∈ Log.arcs (e :: es) ∧
+          outArc (Log.stamp (e :: es)) s ∈ Log.arcs (e :: es) := fun w hm => by
+      obtain ⟨hi, hout⟩ := ih w hm
+      have he : Log.stamp (e :: es) s.1 = es.stamp s.1 :=
+        Log.stamp_cons_of_mem_used hu (es.mem_arcs hi).1
+      simp only [inArc, outArc, he] at hi hout ⊢
+      exact ⟨List.mem_cons_of_mem _ (List.mem_append_right _ hi),
+        List.mem_cons_of_mem _ (List.mem_append_right _ hout)⟩
     simp only [Log.ancestry] at hm
     split at hm
     next o ho =>
-      have hom := List.mem_of_find?_eq_some ho
       rcases List.mem_append.mp hm with hm | hm
-      · obtain ⟨hi, hout⟩ := ih e.input.var hm
-        have hused : s.1 ∈ es.used := (es.mem_arcs hi).1
-        have hne : e.input ≠ s.1 := fun he => hu (he.symm ▸ hused)
-        have he : Log.stamp (e :: es) s.1 = es.stamp s.1 := by simp [Log.stamp, hne]
-        constructor
-        · simpa only [inArc, he, Log.arcs] using
-            List.mem_cons_of_mem (⟨e.input, es.length, true⟩ : Arc F)
-              (List.mem_append_right (e.outputs.map fun o => (⟨o, es.length, false⟩ : Arc F)) hi)
-        · simpa only [outArc, he, Log.arcs] using
-            List.mem_cons_of_mem (⟨e.input, es.length, true⟩ : Arc F)
-              (List.mem_append_right (e.outputs.map fun o => (⟨o, es.length, false⟩ : Arc F)) hout)
-      · have he : s = (e.input, o) := List.mem_singleton.mp hm
-        subst s
+      · exact old _ hm
+      · obtain rfl : s = (e.input, o) := List.mem_singleton.mp hm
         constructor
         · simp [inArc, Log.stamp, Log.arcs]
         · have hout : (⟨o, es.length, false⟩ : Arc F) ∈ Log.arcs (e :: es) :=
-            List.mem_cons_of_mem _ (List.mem_append_left _ (List.mem_map.mpr ⟨o, hom, rfl⟩))
+            List.mem_cons_of_mem _ (List.mem_append_left _
+              (List.mem_map.mpr ⟨o, List.mem_of_find?_eq_some ho, rfl⟩))
           simpa only [outArc, Log.stamp, ↓reduceIte] using hout
-    next =>
-      obtain ⟨hi, hout⟩ := ih v hm
-      have hused : s.1 ∈ es.used := (es.mem_arcs hi).1
-      have hne : e.input ≠ s.1 := fun he => hu (he.symm ▸ hused)
-      have he : Log.stamp (e :: es) s.1 = es.stamp s.1 := by simp [Log.stamp, hne]
-      constructor
-      · simpa only [inArc, he, Log.arcs] using
-          List.mem_cons_of_mem (⟨e.input, es.length, true⟩ : Arc F)
-            (List.mem_append_right (e.outputs.map fun o => (⟨o, es.length, false⟩ : Arc F)) hi)
-      · simpa only [outArc, he, Log.arcs] using
-          List.mem_cons_of_mem (⟨e.input, es.length, true⟩ : Arc F)
-            (List.mem_append_right (e.outputs.map fun o => (⟨o, es.length, false⟩ : Arc F)) hout)
+    next => exact old v hm
+
+/-- When an expansion with a fresh input is recorded, every step of an existing ancestry keeps
+its incoming timestamp, which precedes the new expansion's timestamp `es.length`. -/
+theorem stamp_cons_of_mem_ancestry (hg : Grown sem f rs es) {e : Expansion F}
+    (hu : e.input ∉ es.used) {w : V} {x : Occurrence F × Occurrence F}
+    (hx : x ∈ (es.ancestry w).walk.steps) :
+    Log.stamp (e :: es) x.1 = es.stamp x.1 ∧ es.stamp x.1 < es.length := by
+  have hxa := es.mem_arcs (hg.ancestry_arcs w hx).1
+  exact ⟨Log.stamp_cons_of_mem_used hu hxa.1, hxa.2⟩
 
 /-- An ancestral path visits each copied constraint at most once. Distinct copies of the
 same original constraint remain allowed. -/
@@ -174,54 +178,30 @@ theorem ancestry_copies_injective (hg : Grown sem f rs es) (v : V)
   induction hg generalizing v with
   | nil => simp [Log.ancestry] at hs
   | @cons es e hp hv hu hf hn hfe hsat ih =>
-    have oldstamp : ∀ z ∈ es.used, Log.stamp (e :: es) z = es.stamp z := by
-      intro z hz
-      have hne : e.input ≠ z := fun he => hu (he.symm ▸ hz)
-      simp [Log.stamp, hne]
+    have old : ∀ w, s ∈ (es.ancestry w).walk.steps → t ∈ (es.ancestry w).walk.steps → s = t :=
+      fun w hs ht => ih w hs ht <| by
+        simpa only [inArc, Arc.copy, (hp.stamp_cons_of_mem_ancestry hu hs).1,
+          (hp.stamp_cons_of_mem_ancestry hu ht).1] using hc
+    have htime : Log.stamp (e :: es) s.1 = Log.stamp (e :: es) t.1 := congrArg Prod.snd hc
+    have hnew : Log.stamp (e :: es) e.input = es.length := by simp [Log.stamp]
     cases hfind : e.outputs.find? (fun o => o.var == v) with
     | some o =>
       simp only [Log.ancestry, hfind, Walk.snoc] at hs ht
       rcases List.mem_append.mp hs with hs | hs <;>
         rcases List.mem_append.mp ht with ht | ht
-      · have hsused := (es.mem_arcs (hp.ancestry_arcs _ hs).1).1
-        have htused := (es.mem_arcs (hp.ancestry_arcs _ ht).1).1
-        have hss := oldstamp s.1 hsused
-        have htt := oldstamp t.1 htused
-        apply ih _ hs ht
-        simpa only [inArc, Arc.copy, hss, htt] using hc
-      · have he : t = (e.input, o) := List.mem_singleton.mp ht
-        subst t
-        have hsa := (hp.ancestry_arcs _ hs).1
-        have hsused := (es.mem_arcs hsa).1
-        have hlt := (es.mem_arcs hsa).2
-        have hss := oldstamp s.1 hsused
-        have htime := congrArg Prod.snd hc
-        change Log.stamp (e :: es) s.1 = Log.stamp (e :: es) e.input at htime
-        rw [hss] at htime
-        simp only [Log.stamp, ↓reduceIte] at htime
-        change es.stamp s.1 < es.length at hlt
+      · exact old _ hs ht
+      · obtain rfl : t = (e.input, o) := List.mem_singleton.mp ht
+        have := hp.stamp_cons_of_mem_ancestry hu hs
+        dsimp only at htime
         omega
-      · have he : s = (e.input, o) := List.mem_singleton.mp hs
-        subst s
-        have hta := (hp.ancestry_arcs _ ht).1
-        have htused := (es.mem_arcs hta).1
-        have hlt := (es.mem_arcs hta).2
-        have htt := oldstamp t.1 htused
-        have htime := congrArg Prod.snd hc
-        change Log.stamp (e :: es) e.input = Log.stamp (e :: es) t.1 at htime
-        rw [htt] at htime
-        simp only [Log.stamp, ↓reduceIte] at htime
-        change es.stamp t.1 < es.length at hlt
+      · obtain rfl : s = (e.input, o) := List.mem_singleton.mp hs
+        have := hp.stamp_cons_of_mem_ancestry hu ht
+        dsimp only at htime
         omega
       · exact (List.mem_singleton.mp hs).trans (List.mem_singleton.mp ht).symm
     | none =>
       simp only [Log.ancestry, hfind] at hs ht
-      have hsused := (es.mem_arcs (hp.ancestry_arcs _ hs).1).1
-      have htused := (es.mem_arcs (hp.ancestry_arcs _ ht).1).1
-      have hss := oldstamp s.1 hsused
-      have htt := oldstamp t.1 htused
-      apply ih v hs ht
-      simpa only [inArc, Arc.copy, hss, htt] using hc
+      exact old v hs ht
 
 /-- The reconstructed path of every visited variable starts at one of the supplied roots. -/
 theorem ancestry_start_root (hg : Grown sem f rs es) {v : V}

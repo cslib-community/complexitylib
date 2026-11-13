@@ -42,15 +42,54 @@ namespace Cslib.Complexity
 
 open Cslib.Logic.PL Turing.MultiTapeTM
 
-/-- Binary encoding of a constraint `(R, vs) : Constraint Rel V`. -/
-abbrev encConstraint {Rel V : Type} (encRel : Rel ↪ List Bool) (encV : V ↪ List Bool) :
+/-- Binary encoding of a constraint `⟨R, vs⟩ : Constraint Rel V`: the encoded pair of its relation
+symbol and its scope. -/
+def encConstraint {Rel V : Type} (encRel : Rel ↪ List Bool) (encV : V ↪ List Bool) :
     Constraint Rel V ↪ List Bool :=
-  encPair encRel (encList encV)
+  encOfEquiv Constraint.equivProd (encPair encRel (encList encV))
+
+@[simp]
+theorem encConstraint_apply {Rel V : Type} (encRel : Rel ↪ List Bool) (encV : V ↪ List Bool)
+    (c : Constraint Rel V) :
+    encConstraint encRel encV c = encPair encRel (encList encV) (c.rel, c.scope) :=
+  rfl
 
 /-- Binary encoding of a CSP instance `F : CSP Rel V`. -/
 abbrev encCSP {Rel V : Type} (encRel : Rel ↪ List Bool) (encV : V ↪ List Bool) :
     CSP Rel V ↪ List Bool :=
   encList (encConstraint encRel encV)
+
+section encConstraintRules
+
+variable {Rel V γ : Type} {encRel : Rel ↪ List Bool} {encV : V ↪ List Bool}
+  {encIn : γ ↪ List Bool}
+
+/-- Reading the relation symbol of a polynomial-time constraint is polynomial-time. -/
+@[fun_prop]
+theorem encConstraint_rel_polyTime {g : γ → Constraint Rel V}
+    (h : ComputableInPolyTime g encIn (encConstraint encRel encV)) :
+    ComputableInPolyTime (fun a => (g a).rel) encIn encRel :=
+  (ComputableInPolyTime.fst encRel (encList encV)).comp
+    ((ComputableInPolyTime.of_eq fun _ => rfl).comp h)
+
+/-- Reading the scope of a polynomial-time constraint is polynomial-time. -/
+@[fun_prop]
+theorem encConstraint_scope_polyTime {g : γ → Constraint Rel V}
+    (h : ComputableInPolyTime g encIn (encConstraint encRel encV)) :
+    ComputableInPolyTime (fun a => (g a).scope) encIn (encList encV) :=
+  (ComputableInPolyTime.snd encRel (encList encV)).comp
+    ((ComputableInPolyTime.of_eq fun _ => rfl).comp h)
+
+/-- Building a constraint from a polynomial-time relation symbol and scope is polynomial-time. -/
+@[fun_prop]
+theorem encConstraint_mk_polyTime {r : γ → Rel} {vs : γ → List V}
+    (hr : ComputableInPolyTime r encIn encRel)
+    (hvs : ComputableInPolyTime vs encIn (encList encV)) :
+    ComputableInPolyTime (fun a => (⟨r a, vs a⟩ : Constraint Rel V)) encIn
+      (encConstraint encRel encV) :=
+  (hr.prod hvs).of_enc_eq fun _ => rfl
+
+end encConstraintRules
 
 namespace CSP
 
@@ -89,17 +128,17 @@ private theorem computableInPolyTime_toCNFAt (encRel : Rel ↪ List Bool)
       ComputableInPolyTime (fun R : Rel => sem R w) encRel encBool) :
     ComputableInPolyTime
       (fun c : Constraint Rel V =>
-        ((BitString.enumList r).filter fun w => !sem c.1 w).map (Constraint.forbidClause c.2))
+        ((BitString.enumList r).filter fun w => !sem c.rel w).map (Constraint.forbidClause c.scope))
       (encConstraint encRel encV)
       (encList (encList (encPair encV encBool))) := by
   refine computableInPolyTime_mapFilterConst (BitString.enumList r)
-    (test := fun (c : Constraint Rel V) (w : List Bool) => !sem c.1 w)
-    (f := fun (c : Constraint Rel V) (w : List Bool) => Constraint.forbidClause c.2 w)
+    (test := fun (c : Constraint Rel V) (w : List Bool) => !sem c.rel w)
+    (f := fun (c : Constraint Rel V) (w : List Bool) => Constraint.forbidClause c.scope w)
     (fun w hw => ?_) (fun w _ => ?_)
   · have hsemw := hsem w hw
     fun_prop
   · exact (computableInPolyTime_forbidClause encV).comp
-      ((snd encRel (encList encV)).prod (const w))
+      ((encConstraint_scope_polyTime id').prod (const w))
 
 private theorem computableInPolyTime_constraintToCNFBounded
     (encRel : Rel ↪ List Bool) (encV : V ↪ List Bool) (k : ℕ) (sem : Rel → List Bool → Bool)
@@ -111,26 +150,26 @@ private theorem computableInPolyTime_constraintToCNFBounded
   induction k with
   | zero =>
     have htest : ComputableInPolyTime
-        (fun c : Constraint Rel V => decide (c.2.length = 0))
+        (fun c : Constraint Rel V => decide (c.scope.length = 0))
         (encConstraint encRel encV) encBool := by
       fun_prop
     refine (htest.ite (computableInPolyTime_toCNFAt encRel encV sem 0
         fun w hw => hsem w (by simp [BitString.length_of_mem_enumList hw]))
       (const [])).of_enc_eq fun c => ?_
     simp only [Constraint.toCNFBounded, Constraint.toCNF, Nat.le_zero]
-    by_cases h : c.2.length = 0 <;> simp [h]
+    by_cases h : c.scope.length = 0 <;> simp [h]
   | succ k ih =>
     have htest : ComputableInPolyTime
-        (fun c : Constraint Rel V => decide (c.2.length = k + 1))
+        (fun c : Constraint Rel V => decide (c.scope.length = k + 1))
         (encConstraint encRel encV) encBool := by
       fun_prop
     refine (htest.ite (computableInPolyTime_toCNFAt encRel encV sem (k + 1)
         fun w hw => hsem w (by simp [BitString.length_of_mem_enumList hw]))
       (ih fun w hw => hsem w (hw.trans (Nat.le_succ k)))).of_enc_eq fun c => ?_
     simp only [Constraint.toCNFBounded, Constraint.toCNF]
-    by_cases h1 : c.2.length = k + 1
+    by_cases h1 : c.scope.length = k + 1
     · simp [h1]
-    · have hle : (c.2.length ≤ k + 1) ↔ (c.2.length ≤ k) := by omega
+    · have hle : (c.scope.length ≤ k + 1) ↔ (c.scope.length ≤ k) := by omega
       simp [h1, hle]
 
 /-- Width-guarded compilation of a Boolean CSP instance to a `k`-CNF formula is computable in
