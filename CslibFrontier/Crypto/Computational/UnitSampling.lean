@@ -12,14 +12,14 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.PolyTime
 public import CslibFrontier.Crypto.Game
 public import CslibFrontier.Languages.Probabilistic.UniformNat
 public import Mathlib.Data.Nat.Totient
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Gcd
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Crypto.Computational.Homomorphic.Leveled.ExactSecurity
 import CslibFrontier.Crypto.Game.Statistical
 import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Probability.PMF.UniformSubset
 import CslibFrontier.Probability.StatisticalDistance
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Gcd
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import Mathlib.Data.Nat.Size
 
 /-!

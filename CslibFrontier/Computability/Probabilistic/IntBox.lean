@@ -7,18 +7,18 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Languages.Probabilistic.IntBox
-public import CslibFrontier.Computability.Probabilistic.UniformNat
-public import CslibFrontier.Computability.Probabilistic.Repeat
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.IntBinary
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Unary
+public import CslibFrontier.Computability.Probabilistic.Repeat
+public import CslibFrontier.Computability.Probabilistic.UniformNat
+public import CslibFrontier.Languages.Probabilistic.IntBox
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.BinaryDiv
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
-import CslibFrontier.Tactic.PolyTime
 import CslibFrontier.Tactic.PPT
+import CslibFrontier.Tactic.PolyTime
 
 /-!
 # Strict-PPT integer-box samplers
