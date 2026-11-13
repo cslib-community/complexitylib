@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Computational.Pseudoentropy.RepeatedExtraction
 public import CslibFrontier.Crypto.Computational.Pseudoentropy.Seed
+public import CslibFrontier.Crypto.Computational.Pseudoentropy.SeedSchedule
 import CslibFrontier.Languages.Probabilistic.Norm
 
 /-!
@@ -52,17 +53,17 @@ theorem observation_extraction {pair : SamplablePair} (saved : pair.SeedRealizat
     (key : ∀ n, ProbComp (Key n))
     (hash : ∀ n, Key n → List (pair.Observation n) → BitString (outputBits n))
     (hhash : ∀ n, IsTwoUniversal (ProbComp.eval (key n))
-      (fun key (values : Fin (ExtractionSchedule.count n (saved.length n) (inverseSlack n)) →
+      (fun key (values : Fin (saved.sampleCount inverseSlack n) →
         pair.Observation n) => hash n key (List.ofFn values)))
     (hbudget : ∀ᶠ n in atTop, outputBits n = 0 ∨
-      outputBits n + 2 * (ExtractionSchedule.slack n (saved.length n) (inverseSlack n) : ℝ) ≤
-        ExtractionSchedule.count n (saved.length n) (inverseSlack n) *
+      outputBits n + 2 * (saved.sampleSlack inverseSlack n : ℝ) ≤
+        saved.sampleCount inverseSlack n *
           entropy ((pair.joint n).map Prod.fst)) :
     Game.Indistinguishable
       (fun (test : ∀ n, Key n × BitString (outputBits n) → Game) n =>
         (seededHash (ProbComp.eval (key n))
           (ProbComp.eval (OracleComp.replicate
-            (ExtractionSchedule.count n (saved.length n) (inverseSlack n))
+            (saved.sampleCount inverseSlack n)
               (Prod.fst <$> pair.latentSample n))) (hash n)).bind (test n))
       (fun test n => do
         let result ← do
@@ -85,17 +86,17 @@ theorem observation_word_extraction {pair : SamplablePair} (saved : pair.SeedRea
     (key : ∀ n, ProbComp (Key n))
     (hash : ∀ n, Key n → List (List Bool) → BitString (outputBits n))
     (hhash : ∀ n, IsTwoUniversal (ProbComp.eval (key n))
-      (fun key (values : Fin (ExtractionSchedule.count n (saved.length n) (inverseSlack n)) →
+      (fun key (values : Fin (saved.sampleCount inverseSlack n) →
         pair.Observation n) => hash n key ((List.ofFn values).map (pair.encode n))))
     (hbudget : ∀ᶠ n in atTop, outputBits n = 0 ∨
-      outputBits n + 2 * (ExtractionSchedule.slack n (saved.length n) (inverseSlack n) : ℝ) ≤
-        ExtractionSchedule.count n (saved.length n) (inverseSlack n) *
+      outputBits n + 2 * (saved.sampleSlack inverseSlack n : ℝ) ≤
+        saved.sampleCount inverseSlack n *
           entropy ((pair.joint n).map Prod.fst)) :
     Game.Indistinguishable
       (fun (test : ∀ n, Key n × BitString (outputBits n) → Game) n =>
         (seededHash (ProbComp.eval (key n))
           (ProbComp.eval (OracleComp.replicate
-            (ExtractionSchedule.count n (saved.length n) (inverseSlack n))
+            (saved.sampleCount inverseSlack n)
               (Prod.fst <$> pair.sample n))) (hash n)).bind (test n))
       (fun test n => do
         let result ← do
@@ -113,7 +114,7 @@ theorem observation_word_extraction {pair : SamplablePair} (saved : pair.SeedRea
     simp only [pmf_norm, pair.eval_latentSample, pair.eval_sample]
   dsimp only
   rw [ProbComp.eval_replicate_map hpublic
-    (ExtractionSchedule.count n (saved.length n) (inverseSlack n))]
+    (saved.sampleCount inverseSlack n)]
   simp only [seededHash_eq_bind, PMF.bind_map, Function.comp_def]
 
 /-- Extract the unused seed entropy, preserving the complete pair output and hash seed.
@@ -123,21 +124,20 @@ theorem remainingSeed_extraction {pair : SamplablePair} (saved : pair.SeedRealiz
     (key : ∀ n, ProbComp (Key n))
     (hash : ∀ n, Key n → List (BitString (saved.length n)) → BitString (outputBits n))
     (hhash : ∀ n, IsTwoUniversal (ProbComp.eval (key n))
-      (fun key (values : Fin (ExtractionSchedule.count n (saved.length n) (inverseSlack n)) →
+      (fun key (values : Fin (saved.sampleCount inverseSlack n) →
         BitString (saved.length n)) => hash n key (List.ofFn values)))
     (hbudget : ∀ᶠ n in atTop, outputBits n = 0 ∨
-      outputBits n + 2 * (ExtractionSchedule.slack n (saved.length n) (inverseSlack n) : ℝ) ≤
-        ExtractionSchedule.count n (saved.length n) (inverseSlack n) *
+      outputBits n + 2 * (saved.sampleSlack inverseSlack n : ℝ) ≤
+        saved.sampleCount inverseSlack n *
           (saved.length n - entropy ((pair.joint n).map Prod.fst) -
             conditionalEntropy (pair.joint n))) :
     Game.Indistinguishable
       (fun (test : ∀ n,
           List (pair.Observation n × Bool) × Key n × BitString (outputBits n) → Game) n =>
-        (ProbComp.eval (OracleComp.replicate
-          (ExtractionSchedule.count n (saved.length n) (inverseSlack n))
-            (saved.latentSampleWithSeed n) >>= extractLabels (key n) (hash n))).bind (test n))
+        (ProbComp.eval (extractLabelsReal (saved.latentSampleWithSeed n)
+          (saved.sampleCount inverseSlack n) (key n) (hash n))).bind (test n))
       (fun test n => (extractLabelsIdeal (Output := BitString (outputBits n))
-        (pair.latentSample n) (ExtractionSchedule.count n (saved.length n) (inverseSlack n))
+        (pair.latentSample n) (saved.sampleCount inverseSlack n)
           (key n)).bind (test n)) (fun _ => True) := by
   intro test _
   have h := extractLabels_indistinguishable
@@ -157,7 +157,7 @@ theorem remainingSeed_extraction {pair : SamplablePair} (saved : pair.SeedRealiz
     simp only [ProbComp.eval_map, pair.eval_latentSample, saved.eval_latentSampleWithSeed,
       saved.jointWithSeed_map_fst]
   simp only [extractLabelsIdeal, ProbComp.eval_replicate_congr hpublic
-    (ExtractionSchedule.count n (saved.length n) (inverseSlack n))]
+    (saved.sampleCount inverseSlack n)]
 
 /-- The remaining-seed transition for the actual word sampler. Every observation and label
 stays public; finite representations are confined to the two-universality hypothesis. -/
@@ -166,20 +166,19 @@ theorem remainingSeed_word_extraction {pair : SamplablePair} (saved : pair.SeedR
     (key : ∀ n, ProbComp (Key n))
     (hash : ∀ n, Key n → List (List Bool) → BitString (outputBits n))
     (hhash : ∀ n, IsTwoUniversal (ProbComp.eval (key n))
-      (fun key (values : Fin (ExtractionSchedule.count n (saved.length n) (inverseSlack n)) →
+      (fun key (values : Fin (saved.sampleCount inverseSlack n) →
         BitString (saved.length n)) => hash n key ((List.ofFn values).map List.ofFn)))
     (hbudget : ∀ᶠ n in atTop, outputBits n = 0 ∨
-      outputBits n + 2 * (ExtractionSchedule.slack n (saved.length n) (inverseSlack n) : ℝ) ≤
-        ExtractionSchedule.count n (saved.length n) (inverseSlack n) *
+      outputBits n + 2 * (saved.sampleSlack inverseSlack n : ℝ) ≤
+        saved.sampleCount inverseSlack n *
           (saved.length n - entropy ((pair.joint n).map Prod.fst) -
             conditionalEntropy (pair.joint n))) :
     Game.Indistinguishable
       (fun (test : ∀ n, List (List Bool × Bool) × Key n × BitString (outputBits n) → Game) n =>
-        (ProbComp.eval (OracleComp.replicate
-          (ExtractionSchedule.count n (saved.length n) (inverseSlack n))
-            (saved.sampleWithSeed n) >>= extractLabels (key n) (hash n))).bind (test n))
+        (ProbComp.eval (extractLabelsReal (saved.sampleWithSeed n)
+          (saved.sampleCount inverseSlack n) (key n) (hash n))).bind (test n))
       (fun test n => (extractLabelsIdeal (Output := BitString (outputBits n)) (pair.sample n)
-        (ExtractionSchedule.count n (saved.length n) (inverseSlack n)) (key n)).bind (test n))
+        (saved.sampleCount inverseSlack n) (key n)).bind (test n))
       (fun _ => True) := by
   intro test _
   have h := saved.remainingSeed_extraction inverseSlack outputBits key
@@ -199,10 +198,10 @@ theorem remainingSeed_word_extraction {pair : SamplablePair} (saved : pair.SeedR
     simp only [pair.eval_latentSample, pair.eval_sample, observe]
   have hreal := eval_replicate_extractLabels_map_pair observe List.ofFn
     (saved.latentSampleWithSeed n)
-    (ExtractionSchedule.count n (saved.length n) (inverseSlack n)) (key n) (hash n) hsource
+    (saved.sampleCount inverseSlack n) (key n) (hash n) hsource
   have hideal := extractLabelsIdeal_map_observation (Output := BitString (outputBits n))
     observe (pair.latentSample n)
-    (ExtractionSchedule.count n (saved.length n) (inverseSlack n)) (key n) hpublic
+    (saved.sampleCount inverseSlack n) (key n) hpublic
   have hleft := congrArg (fun law => law.bind (test n)) hreal.symm
   have hright := congrArg (fun law => law.bind (test n)) hideal
   simpa only [pmf_norm, observe] using

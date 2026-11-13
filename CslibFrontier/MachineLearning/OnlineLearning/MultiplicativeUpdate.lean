@@ -57,10 +57,15 @@ The declarations of the experts setting live in the namespace
 
 ## Main results
 
-* `Cslib.MachineLearning.OnlineLearning.Experts.sum_prob`: the learner plays a distribution.
+* `Cslib.MachineLearning.OnlineLearning.Experts.sum_prob`,
+  `Cslib.MachineLearning.OnlineLearning.Experts.prob_pos`: the learner plays a distribution, with
+  full support.
 * `Cslib.MachineLearning.OnlineLearning.Experts.prob_congr`: the distribution in round `t`
   depends only on the losses before round `t`.
-* `Cslib.MachineLearning.OnlineLearning.Experts.log_potential`: the potential is `n` times the
+* `Cslib.MachineLearning.OnlineLearning.Experts.prob_succ`: the distribution is updated
+  multiplicatively and renormalized.
+* `Cslib.MachineLearning.OnlineLearning.Experts.potential_eq_card_mul_prod`,
+  `Cslib.MachineLearning.OnlineLearning.Experts.log_potential`: the potential is `n` times the
   product of the expected update factors.
 * `Cslib.MachineLearning.OnlineLearning.Experts.sum_log_le_log_card_add`: the potential
   inequality.
@@ -138,6 +143,11 @@ theorem potential_pos [Nonempty ι] (hφ : ∀ s < t, ∀ i, 0 < φ (ℓ s i)) :
 theorem prob_nonneg (hφ : ∀ s < t, ∀ i, 0 < φ (ℓ s i)) (i : ι) : 0 ≤ prob φ ℓ t i :=
   div_nonneg (weight_pos hφ i).le (sum_nonneg fun j _ => (weight_pos hφ j).le)
 
+/-- With positive factors, every expert has positive probability. -/
+theorem prob_pos (hφ : ∀ s < t, ∀ i, 0 < φ (ℓ s i)) (i : ι) : 0 < prob φ ℓ t i :=
+  have : Nonempty ι := ⟨i⟩
+  div_pos (weight_pos hφ i) (potential_pos hφ)
+
 /-- With positive factors, the learner plays a probability distribution. -/
 theorem sum_prob [Nonempty ι] (hφ : ∀ s < t, ∀ i, 0 < φ (ℓ s i)) : ∑ i, prob φ ℓ t i = 1 := by
   simp only [prob]
@@ -153,6 +163,15 @@ theorem potential_succ [Nonempty ι] (hφ : ∀ s < t, ∀ i, 0 < φ (ℓ s i)) 
   rw [weight_succ, prob]
   field_simp
 
+/-- The distribution is updated multiplicatively: the probability of expert `i` in round `t + 1`
+is its probability in round `t` times its update factor, normalized by the expected update
+factor. -/
+theorem prob_succ (hφ : ∀ s < t, ∀ i, 0 < φ (ℓ s i)) (i : ι) :
+    prob φ ℓ (t + 1) i =
+      prob φ ℓ t i * φ (ℓ t i) / ∑ j, prob φ ℓ t j * φ (ℓ t j) := by
+  have : Nonempty ι := ⟨i⟩
+  rw [prob, potential_succ hφ, weight_succ, ← div_div, mul_div_right_comm (weight φ ℓ t i), prob]
+
 /-- With positive factors, the expected update factor is positive. -/
 theorem sum_prob_mul_pos [Nonempty ι] (hφ : ∀ s < t + 1, ∀ i, 0 < φ (ℓ s i)) :
     0 < ∑ i, prob φ ℓ t i * φ (ℓ t i) := by
@@ -161,16 +180,25 @@ theorem sum_prob_mul_pos [Nonempty ι] (hφ : ∀ s < t + 1, ∀ i, 0 < φ (ℓ 
   rw [potential_succ hφ'] at h
   exact pos_of_mul_pos_right h (potential_pos hφ').le
 
+/-- The potential is `n` times the product of the expected update factors. -/
+theorem potential_eq_card_mul_prod (hφ : ∀ s < t, ∀ i, 0 < φ (ℓ s i)) :
+    potential φ ℓ t = Fintype.card ι * ∏ s ∈ range t, ∑ i, prob φ ℓ s i * φ (ℓ s i) := by
+  induction t with
+  | zero => rw [potential_zero, range_zero, prod_empty, mul_one]
+  | succ t ih =>
+    have hφ' : ∀ s < t, ∀ i, 0 < φ (ℓ s i) := fun s hs => hφ s (by omega)
+    cases isEmpty_or_nonempty ι
+    · rw [potential, Fintype.card_eq_zero, Nat.cast_zero, zero_mul, sum_of_isEmpty]
+    · rw [potential_succ hφ', ih hφ', prod_range_succ, mul_assoc]
+
 /-- The logarithm of the potential: `log n` plus the logarithms of the expected update factors. -/
 theorem log_potential [Nonempty ι] (hφ : ∀ s < t, ∀ i, 0 < φ (ℓ s i)) :
     log (potential φ ℓ t) =
       log (Fintype.card ι) + ∑ s ∈ range t, log (∑ i, prob φ ℓ s i * φ (ℓ s i)) := by
-  induction t with
-  | zero => simp only [potential_zero, range_zero, sum_empty, add_zero]
-  | succ t ih =>
-    have hφ' : ∀ s < t, ∀ i, 0 < φ (ℓ s i) := fun s hs => hφ s (by omega)
-    rw [potential_succ hφ', log_mul (potential_pos hφ').ne' (sum_prob_mul_pos hφ).ne', ih hφ',
-      sum_range_succ, add_assoc]
+  have hpos : ∀ s ∈ range t, ∑ i, prob φ ℓ s i * φ (ℓ s i) ≠ 0 := fun s hs =>
+    (sum_prob_mul_pos fun r hr => hφ r (by have := mem_range.mp hs; omega)).ne'
+  rw [potential_eq_card_mul_prod hφ, log_mul (Nat.cast_ne_zero.mpr Fintype.card_ne_zero)
+    (prod_ne_zero_iff.mpr hpos), log_prod hpos]
 
 /-- **The potential inequality** [AroraHazanKale2012, proof of Theorem 2.1]: the weight of any
 expert is at most the potential, so for every expert `i`, the logarithms of its update factors sum

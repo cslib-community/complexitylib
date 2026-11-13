@@ -73,18 +73,18 @@ theorem toOuterMeasure_moduleLWEModulusSwitch_failure_le
       let view ← encryptionViewOfKeyLaw (moduleLWEPublicKeyLaw k n q noise (PMF.pure s))
         noise m ephemeralLaw
       pure (s, view)).toOuterMeasure
-        {out | moduleLWEDecrypt
-          (fun j i => (SIS.liftCentered (out.1 j) i : ZMod p))
-          (moduleLWEModulusSwitch p out.2.2) ≠ m} ≤
+        {(s, _, ct) | moduleLWEDecrypt
+          (fun j i => (SIS.liftCentered (s j) i : ZMod p))
+          (moduleLWEModulusSwitch p ct) ≠ m} ≤
       (2 * k + 1) * noise.toOuterMeasure {e | ¬ SIS.inInfNormBound Be e} := by
   classical
   let δ := noise.toOuterMeasure {e | ¬ SIS.inInfNormBound Be e}
   let μ := PMF.pi (fun _ : Fin k => noise)
   let bad : Set ((Fin k → Fin n → ZMod q) ×
       (ModuleLWEPublicKey k n q × ModuleLWECiphertext k n q)) :=
-    {out | moduleLWEDecrypt
-      (fun j i => (SIS.liftCentered (out.1 j) i : ZMod p))
-      (moduleLWEModulusSwitch p out.2.2) ≠ m}
+    {(s, _, ct) | moduleLWEDecrypt
+      (fun j i => (SIS.liftCentered (s j) i : ZMod p))
+      (moduleLWEModulusSwitch p ct) ≠ m}
   have hμ : μ.toOuterMeasure {e | ¬ ModuleSIS.inInfNormBound Be e} ≤ k * δ := by
     simpa [μ, ModuleSIS.inInfNormBound, δ, SIS.inInfNormBound, not_forall,
       Finset.sum_const, nsmul_eq_mul] using

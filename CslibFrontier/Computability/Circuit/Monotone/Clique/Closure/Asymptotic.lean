@@ -59,6 +59,8 @@ has more than `2 ^ (⌊√⌊√n⌋⌋ / 2)` gates, where `⌊√⌊√n⌋⌋ 
 
 public section
 
+open Cslib.BitString.Graph
+
 namespace Cslib.Circuits.Monotone
 
 open Cslib.Circuits.Clique Finset
