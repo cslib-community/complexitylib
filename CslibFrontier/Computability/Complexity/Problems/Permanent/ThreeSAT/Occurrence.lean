@@ -39,7 +39,7 @@ theorem litAt_mem (hφ : WellFormed φ) {o : ℕ} (ho : o < numOcc φ) :
     exact List.getElem_mem hp
   · rw [List.getD_eq_default _ _ (by omega)]
     have hne : φ[o / 3] ≠ [] := List.ne_nil_of_length_pos (by omega)
-    rw [List.getLastD_eq_getLast?, List.getLast?_eq_getLast hne, Option.getD_some]
+    rw [List.getLastD_eq_getLast?, List.getLast?_eq_some_getLast hne, Option.getD_some]
     exact List.getLast_mem hne
 
 /-- Every literal of a clause is a padded literal of it. -/
