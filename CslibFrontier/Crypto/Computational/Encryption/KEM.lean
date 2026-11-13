@@ -30,7 +30,7 @@ key, depending on the hidden bit ([HofheinzHoevelmannsKiltz2017], Section 2.2, D
   2 November 2021), Section 2.2, Definition 2.4.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto
 
