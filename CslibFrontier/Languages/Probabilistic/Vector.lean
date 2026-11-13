@@ -37,6 +37,7 @@ values with the product distribution `PMF.pi`.
   case for closed programs, even for infinite types.
 * `Cslib.ProbComp.eval_pi`, `Cslib.ProbComp.eval_replicateFin`: independent finite coordinates have
   the product law `PMF.pi`.
+* `Cslib.ProbComp.eval_pi_uniform`: independent uniform coordinates are uniform on the tuple.
 * `Cslib.ProbComp.eval_pi_map`, `Cslib.ProbComp.eval_replicateFin_map_coords`: coordinatewise maps
   commute with `pi` and `replicateFin`.
 * `Cslib.ProbComp.eval_bind_restrict_pi`, `Cslib.ProbComp.eval_map_restrict_pi`: restricting
@@ -289,6 +290,12 @@ theorem eval_pi {m : ℕ} {α : Fin m → Type} [∀ i, Finite (α i)]
       rw [ite_eq_right]
       intro hEq
       exact ha (by simpa using (congrFun hEq 0).symm)
+
+/-- Independent uniform coordinates give the uniform distribution on tuples: `eval` of the
+coordinatewise uniform programs is `PMF.uniformOfFintype` on the product. -/
+theorem eval_pi_uniform {m : ℕ} {α : Fin m → Type} [∀ i, Fintype (α i)] [∀ i, Nonempty (α i)] :
+    eval (OracleComp.pi fun i => uniform (α i)) = PMF.uniformOfFintype ((i : Fin m) → α i) := by
+  simp only [eval_pi, eval_uniform, Probability.PMF.pi_uniformOfFintype]
 
 /-- Binding `eval (pi programs)` to a continuation that depends only on `I.restrict r` is
 equivalent to running only the programs in `I` via `piRestrict`. No finiteness assumption on `α`

@@ -75,8 +75,8 @@ example (H : ZMod 4 → ℕ → ZMod 4) (Δ : ZMod 4) (hΔ : col4 Δ = 1) (K : F
 example (x c : ZMod 4) (hc : c = 0 ∨ c = 1) (D : SwitchView (ZMod 4) 2 → ProbComp Bool) :
     Game.advantage (realGame mux toyH col4 ![x, c] D)
         (simGame mux toyH col4 (mux.controls (muxσ x c)) D) =
-      CCR.advantage toyH col4 (reduction mux toyH col4 (muxσ x c) D) ∧
-    CCR.IsTweakUnique (reduction mux toyH col4 (muxσ x c) D) :=
+      CCR.Arithmetic.advantage toyH col4 (reduction mux toyH col4 (muxσ x c) D) ∧
+    CCR.Arithmetic.IsTweakUnique (reduction mux toyH col4 (muxσ x c) D) :=
   ⟨advantage_realGame_simGame mux_wellFormed (mux_satisfies x hc) toyH col4 D,
     isTweakUnique_reduction mux toyH col4 (muxσ x c) D⟩
 

@@ -125,8 +125,8 @@ theorem additiveReconstruct_share {m : ℕ} {G : Type*} [AddCommGroup G]
 
 theorem uniformOfFintype_mem_additiveSources (m : ℕ) (G : Type*)
     [AddCommGroup G] [Fintype G] [Nonempty G] :
-    uniformOfFintype (Fin m → G) ∈ additiveSources m G := fun δ => by
-  simpa using uniformOfFintype_map_equiv (Equiv.addRight δ)
+    uniformOfFintype (Fin m → G) ∈ additiveSources m G := fun δ =>
+  uniformOfFintype_map_add_right δ
 
 private theorem additiveView_eq_of_not_authorized {m : ℕ} {G : Type*} [AddCommGroup G]
     {P : PMF (Fin m → G)} (hP : ∀ δ, P.map (· + δ) = P)

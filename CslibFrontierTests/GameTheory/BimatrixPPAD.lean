@@ -93,8 +93,7 @@ private lemma witness_len_le_of_entry_le {c : BimatrixCode} {x y : List ℚ} {K 
     (hx_len : x.length ≤ 3) (hy_len : y.length ≤ 3)
     (hx : ∀ q ∈ x, (encRat q).length ≤ K) (hy : ∀ q ∈ y, (encRat q).length ≤ K)
     (hK : 2 * (3 * (2 * K + 1)) + 1 + 3 * (2 * K + 1) ≤ 500) :
-    (encWitness ⟨x, y⟩).length ≤
-      120 * (encBimatrix c).length ^ 3 + 400 * (encBimatrix c).length + 100 := by
+    (encWitness ⟨x, y⟩).length ≤ witnessPoly.eval (encBimatrix c).length := by
   have hx' := length_encList_le encRat x hx
   have hy' := length_encList_le encRat y hy
   have hxm : (encList encRat x).length ≤ 3 * (2 * K + 1) :=
@@ -104,7 +103,7 @@ private lemma witness_len_le_of_entry_le {c : BimatrixCode} {x y : List ℚ} {K 
   have hL : 1 ≤ (encBimatrix c).length := by
     rw [encBimatrix_apply, length_encPair]
     omega
-  rw [encWitness_apply, length_encPair]
+  rw [witnessPoly_eval, encWitness_apply, length_encPair]
   dsimp only
   omega
 
@@ -116,7 +115,7 @@ private lemma encRat_length_le_sixteen {q : ℚ} (hn : q.num.natAbs ≤ 10) (hd 
   omega
 
 example : (encWitness ⟨[1 / 2, 1 / 2], [1 / 2, 1 / 2]⟩).length ≤
-    120 * (encBimatrix coordCode).length ^ 3 + 400 * (encBimatrix coordCode).length + 100 := by
+    witnessPoly.eval (encBimatrix coordCode).length := by
   refine witness_len_le_of_entry_le (K := 16) (by decide) (by decide) ?_ ?_ (by decide) <;>
     · intro q hq
       simp only [List.mem_cons, List.not_mem_nil, or_false] at hq
@@ -166,8 +165,7 @@ example : coordCode.BimatrixNash (encWitness ⟨[1, 0], [1, 0]⟩) := by
 /-- `BimatrixNash.isNash` bridges concrete `BimatrixCode` witnesses to `BimatrixGame.IsNash`. -/
 example : ∃ s : StrategyPair,
     encWitness ⟨[1, 0], [1, 0]⟩ = encWitness s ∧
-    coordCode.toGame.IsNash (fun i : Fin coordCode.rows => (s.x.getD i.1 0 : ℝ))
-      (fun j : Fin coordCode.cols => (s.y.getD j.1 0 : ℝ)) :=
+    coordCode.toGame.IsNash (strategyVec s.x) (strategyVec s.y) :=
   BimatrixNash.isNash ((wellFormed_iff_wellFormedB coordCode).2 (by decide)) <| by
     have hw : coordCode.wellFormedB = true := by decide
     simp only [BimatrixNash, hw, ite_true]
@@ -360,8 +358,7 @@ example : SearchReducible encBimatrix encEndOfLine BimatrixNash EndOfLine :=
 equilibrium of `coordCode.toGame`. -/
 example (u : List Bool) (hu : endOfLineRel vertexLen pred succ coordCode u) :
     ∃ s : StrategyPair, extractNash (coordCode, u) = encWitness s ∧
-      coordCode.toGame.IsNash (fun i : Fin coordCode.rows => (s.x.getD i.1 0 : ℝ))
-        (fun j : Fin coordCode.cols => (s.y.getD j.1 0 : ℝ)) :=
+      coordCode.toGame.IsNash (strategyVec s.x) (strategyVec s.y) :=
   BimatrixNash.isNash ((wellFormed_iff_wellFormedB coordCode).2 (by decide))
     (extractNash_sound hu)
 

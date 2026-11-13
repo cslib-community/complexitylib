@@ -8,7 +8,7 @@ which evidence is required. A zero exit status means that command's stated scope
 |---|---|---|
 | Cold editor checkout | `scripts/cache/ensure.sh` | Attempts cache restoration; if imports are still missing, build the affected target or follow the cache guide |
 | Check a complete named client | `scripts/build.sh CslibFrontierTests.NPCompleteness --wfail --iofail` | Builds that client and dependencies; inspect the first error before broadening the build |
-| Check library changes and importing clients | `scripts/check.sh --quick` | Checks the manuals and the changed files' sources, then uses local Git comparison; unsupported layouts fall back to full checks; inspect the reported scope |
+| Check library changes and importing clients | `scripts/check.sh --quick` | Checks the manuals and the changed files' sources, then uses local Git comparison; unsupported layouts fall back to full checks (`--no-full-fallback` reports them instead); inspect the reported scope |
 | Validate the final source locally | `scripts/check.sh` | Checks the manuals and runs every locally runnable required CI step, including the six Lean gates; any failure prevents treating the run as full validation |
 | Add a library module | `lake exe mk_all` | Regenerates the library aggregate; inspect its diff and check the affected client |
 | Check aggregate completeness | `lake exe mk_all --check` | Fails if an aggregate is stale; regenerate it and review the change |

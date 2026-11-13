@@ -323,7 +323,7 @@ theorem loop_while_safe {n K V w : ℕ} {ε : Type}
 The conclusion concerns the existing refinement's whole lower state, with no initialization
 or argument-delivery clock assumed. -/
 theorem initial_loop_safe {K V w : ℕ}
-    (G : Cslib.Algorithms.WordRAM.Dijkstra.ListInstance)
+    (G : Cslib.Algorithms.Dijkstra.ListInstance)
     (hK : G.n * G.maxWeight ≤ K) (hV : G.n * G.maxWeight < V)
     (M : Refinement (spec G.n K V) (Memory.spec w)) (s : Memory.State)
     (hi : M.inv s) (habs : M.abs s = init G) :

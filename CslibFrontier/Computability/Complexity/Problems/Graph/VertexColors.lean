@@ -59,9 +59,7 @@ color. -/
 @[simp]
 theorem colorOf_map {G : Graph} {c : ℕ → ℕ} {v : ℕ} (hv : v ∈ G.vertices) :
     colorOf G (G.vertices.map c) v = c v := by
-  have hlt : G.vertices.idxOf v < G.vertices.length := List.idxOf_lt_length_iff.2 hv
-  rw [colorOf, List.getD_eq_getElem _ _ (by simpa using hlt), List.getElem_map,
-    List.getElem_idxOf hlt]
+  simp [colorOf, List.getD_eq_getElem?_getD, hv]
 
 /-- Reading a color from a list of colors is polynomial-time. -/
 @[fun_prop]

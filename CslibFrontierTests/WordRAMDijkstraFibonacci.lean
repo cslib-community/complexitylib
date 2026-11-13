@@ -21,7 +21,7 @@ coefficient `640` is not carried over to the native program.
 
 @[expose] public section
 
-open Cslib Cslib.WordRAM Cslib.Algorithms.WordRAM.Dijkstra
+open Cslib Cslib.WordRAM Cslib.Algorithms.Dijkstra Cslib.Algorithms.WordRAM.Dijkstra
 open Cslib.Algorithms.Lean.Dijkstra.Native
 
 namespace WordRAMDijkstraFibonacciTests

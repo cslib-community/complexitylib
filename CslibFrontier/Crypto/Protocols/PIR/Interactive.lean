@@ -11,7 +11,7 @@ public import CslibFrontier.Init
 public import CslibFrontier.Languages.Probabilistic.Basic
 public import CslibFrontier.Computability.Communication.Rectangle
 import CslibFrontier.Languages.Probabilistic.Norm
-import CslibFrontier.Probability.PMF.Map
+import CslibFrontier.Probability.PMF.Support
 
 /-!
 # Interactive single-server private information retrieval
@@ -177,18 +177,12 @@ theorem isCorrect_iff : P.IsCorrect ↔ ∀ x i, ∀ c ∈ (ProbComp.eval (P.use
     ∀ d ∈ (ProbComp.eval P.serverCoins).support,
       P.protocol.leafOutput (P.protocol.leaf (x, d) (i, c)) (i, c) = x i := by
   refine forall_congr' fun x => forall_congr' fun i => ?_
-  rw [run, ProbComp.eval_map]
+  rw [run, ProbComp.eval_map, Probability.PMF.map_eq_pure_iff]
   constructor
   · intro h c hc d hd
-    have hmem : P.protocol.leafOutput (P.protocol.leaf (x, d) (i, c)) (i, c) ∈
-        ((ProbComp.eval (P.coins i)).map fun cd =>
-          P.protocol.leafOutput (P.protocol.leaf (x, cd.2) (i, cd.1)) (i, cd.1)).support :=
-      (PMF.mem_support_map_iff _ _ _).2 ⟨(c, d), P.mem_support_coins_iff.mpr ⟨hc, hd⟩, rfl⟩
-    rwa [h, PMF.support_pure, Set.mem_singleton_iff] at hmem
-  · intro h
-    rw [Cslib.Probability.PMF.map_congr_on_support _ _ (Function.const _ (x i))
-      fun cd hcd => h cd.1 (P.mem_support_coins_iff.mp hcd).1 cd.2
-        (P.mem_support_coins_iff.mp hcd).2, PMF.map_const]
+    exact h (c, d) (P.mem_support_coins_iff.mpr ⟨hc, hd⟩)
+  · intro h cd hcd
+    exact h cd.1 (P.mem_support_coins_iff.mp hcd).1 cd.2 (P.mem_support_coins_iff.mp hcd).2
 
 theorem isPrivate_iff : P.IsPrivate ↔
     ∀ x i i', ProbComp.eval (P.transcript x i) = ProbComp.eval (P.transcript x i') := by
