@@ -92,9 +92,12 @@ variable {σ : Signature.{v}} {n₀ n₁ m : ℕ} {K T : Type}
 @[expose, reducible] def YaoIn (n₀ n₁ : ℕ) : Fin 2 → Type :=
   fun i => Fin.cases (motive := fun _ => Type) (Fin n₀ → Bool) (fun _ => Fin n₁ → Bool) i
 
-/-- The garbler's coins: a key for each wire and colour, and a permutation bit for each wire. -/
-@[expose, reducible] def GarblerCoins (C : Circuit σ (n₀ + n₁) m) (K : Type) : Type :=
-  (Wire (n₀ + n₁) C.size × Bool → K) × (Wire (n₀ + n₁) C.size → Bool)
+/-- The garbler's coins. -/
+structure GarblerCoins (C : Circuit σ (n₀ + n₁) m) (K : Type) where
+  /-- The key of each wire and colour. -/
+  key : Wire (n₀ + n₁) C.size × Bool → K
+  /-- The permutation bit of each wire. -/
+  perm : Wire (n₀ + n₁) C.size → Bool
 
 /-- The coins: the garbler's keys and permutation bits; the evaluator uses none. -/
 @[expose, reducible] def YaoCoins (C : Circuit σ (n₀ + n₁) m) (K : Type) : Fin 2 → Type :=
@@ -150,7 +153,7 @@ decode. -/
     ProbComp (GarblerCoins C K) := do
   let key ← ProbComp.uniform (Wire (n₀ + n₁) C.size × Bool → K)
   let perm ← ProbComp.uniform (Wire (n₀ + n₁) C.size → Bool)
-  return (key, perm)
+  return ⟨key, perm⟩
 
 /-- The garbler's coins as a coin tuple. -/
 @[expose] def yaoCoins (C : Circuit σ (n₀ + n₁) m) (c : GarblerCoins C K) :
@@ -215,7 +218,8 @@ variable [AddCommGroup K]
 @[expose] def yaoSend (C : Circuit σ (n₀ + n₁) m) (I : Interpretation σ Bool)
     (F : K → T → K × Bool) (tw : Slot C.topology → T)
     (st : (Fin n₀ → Bool) × GarblerCoins C K) : YaoMessage n₀ C.topology K :=
-  .ofGarbled (garbleWith C I F tw st.2.1 st.2.2) st.1
+  let (x₀, c) := st
+  .ofGarbled (garbleWith C I F tw c.key c.perm) x₀
 
 /-- The oblivious-transfer queries: the garbler offers both labels of each of the evaluator's
 input wires, and the evaluator chooses with its input bits. -/
@@ -229,8 +233,8 @@ input wires, and the evaluator chooses with its input bits. -/
     (motive := fun s => (YaoIn n₀ n₁ s × YaoCoins C K s) ×
       (Round.message (spec := batchOTSpec n₁ (K × Bool)) 0 1
         (YaoMessage n₀ C.topology K)).Received s → (batchOTSpec n₁ (K × Bool)).Query () s)
-    (fun st => fun j => (garbleWith C I F tw st.1.2.1 st.1.2.2).encoding (Fin.natAdd n₀ j))
-    (fun _ st => st.1.1) s st
+    (fun ((_, c), _) j => (garbleWith C I F tw c.key c.perm).encoding (Fin.natAdd n₀ j))
+    (fun _ ((x₁, _), _) => x₁) s st
 
 /-- The outputs: the garbler outputs nothing; the evaluator decodes with the garbler's message and
 the labels from the oblivious transfer. -/
@@ -238,8 +242,8 @@ the labels from the oblivious transfer. -/
     (tw : Slot C.topology → T) (i : Fin 2) (st : YaoFinal C K i) : YaoOut m i :=
   Fin.cases (motive := fun i => YaoFinal C K i → YaoOut m i)
     (fun _ => ())
-    (fun j st => yaoDecode F tw (st.1.2 (Fin.fin_one_eq_zero j ▸ rfl))
-      (st.2 1 (Fin.fin_one_eq_zero j ▸ rfl)))
+    (fun j ((_, msg), ot) => yaoDecode F tw (msg (Fin.fin_one_eq_zero j ▸ rfl))
+      (ot 1 (Fin.fin_one_eq_zero j ▸ rfl)))
     i st
 
 /-- **Yao's protocol** in the batched oblivious-transfer hybrid model. The garbler garbles `C`
@@ -309,8 +313,8 @@ private theorem outputOfView_yao_one [Fintype K] [Nonempty K] (C : Circuit σ (n
     (yaoProtocol C I F tw).outputOfView 1
         ⟨x 1, yaoCoins C c 1, yaoReceived C I F tw (fun i => (x i, yaoCoins C c i)) 1⟩ =
       C.eval I (yaoInput x) :=
-  (yaoDecode_ofGarbled (garbleWith C I F tw c.1 c.2) F tw (x 0) (x 1)).trans
-    (Garbled.run_garbleWith C I F tw c.1 c.2 _)
+  (yaoDecode_ofGarbled (garbleWith C I F tw c.key c.perm) F tw (x 0) (x 1)).trans
+    (Garbled.run_garbleWith C I F tw c.key c.perm _)
 
 /-- The views and outputs of a run of Yao's protocol, from the garbler's coins. -/
 private theorem evalWith_yao [Fintype K] [Nonempty K] (C : Circuit σ (n₀ + n₁) m)
@@ -335,7 +339,7 @@ private theorem evalWith_yao [Fintype K] [Nonempty K] (C : Circuit σ (n₀ + n�
 private theorem eval_garble [Fintype K] [Nonempty K] (C : Circuit σ (n₀ + n₁) m)
     (I : Interpretation σ Bool) (F : K → T → K × Bool) (tw : Slot C.topology → T) :
     ProbComp.eval (garble C I F tw) =
-      (ProbComp.eval (sampleGarblerCoins C K)).map fun c => garbleWith C I F tw c.1 c.2 := by
+      (ProbComp.eval (sampleGarblerCoins C K)).map fun c => garbleWith C I F tw c.key c.perm := by
   simp only [pmf_norm, garble, sampleGarblerCoins]
 
 /-- The evaluator's view in a run with the garbler's coins `c`. -/
@@ -344,19 +348,19 @@ private theorem yaoReceived_one (C : Circuit σ (n₀ + n₁) m)
     (x : (i : Fin 2) → YaoIn n₀ n₁ i) (c : GarblerCoins C K) :
     (⟨x 1, yaoCoins C c 1, yaoReceived C I F tw (fun i => (x i, yaoCoins C c i)) 1⟩ :
         PartyView (YaoIn n₀ n₁) (YaoCoins C K) (yaoSchedule C K) 1) =
-      evaluatorView C (x 1) ((garbleWith C I F tw c.1 c.2).view (yaoInput x)) := by
+      evaluatorView C (x 1) ((garbleWith C I F tw c.key c.perm).view (yaoInput x)) := by
   refine PartyView.ext rfl rfl (Prod.ext ?_ (Prod.ext ?_ rfl))
   · refine Round.received_message_ext fun _ => YaoMessage.ext rfl ?_ rfl
     funext i
-    change (garbleWith C I F tw c.1 c.2).encoding (Fin.castAdd n₁ i) (x 0 i) =
-      (garbleWith C I F tw c.1 c.2).encoding (Fin.castAdd n₁ i) (yaoInput x (Fin.castAdd n₁ i))
+    change (garbleWith C I F tw c.key c.perm).encoding (Fin.castAdd n₁ i) (x 0 i) =
+      (garbleWith C I F tw c.key c.perm).encoding (Fin.castAdd n₁ i) (yaoInput x (Fin.castAdd n₁ i))
     exact congrArg _ (Fin.append_left (x 0 : Fin n₀ → Bool) (x 1 : Fin n₁ → Bool) i).symm
   · refine Round.received_oracle_ext fun s hs => ?_
     fin_cases s
     · simp at hs
     · funext j
-      change (garbleWith C I F tw c.1 c.2).encoding (Fin.natAdd n₀ j) (x 1 j) =
-        (garbleWith C I F tw c.1 c.2).encoding (Fin.natAdd n₀ j) (yaoInput x (Fin.natAdd n₀ j))
+      change (garbleWith C I F tw c.key c.perm).encoding (Fin.natAdd n₀ j) (x 1 j) =
+        (garbleWith C I F tw c.key c.perm).encoding (Fin.natAdd n₀ j) (yaoInput x (Fin.natAdd n₀ j))
       exact congrArg _ (Fin.append_right (x 0 : Fin n₀ → Bool) (x 1 : Fin n₁ → Bool) j).symm
 
 /-- The garbler's view in a run with its coins `c`. -/
