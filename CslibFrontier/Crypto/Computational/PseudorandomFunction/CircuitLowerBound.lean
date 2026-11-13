@@ -133,10 +133,7 @@ returning `[]` on malformed queries. -/
 /-- Run an `OracleDistinguisher` against a fixed `f : BooleanFunction n` at parameter `n`. -/
 @[expose] noncomputable def evalBooleanOracle (adversary : OracleDistinguisher) (n : ℕ)
     (f : BooleanFunction n) : Game :=
-  ProbComp.eval (OracleComp.interpret
-    (OracleComp.sumHandler ProbComp.unifFin
-      (fun request => pure (booleanOracle n f request.2)))
-    (adversary n []))
+  ProbComp.eval ((adversary n []).run fun request => pure (booleanOracle n f request.2))
 
 /-- Real security game for a Boolean PRF ensemble `D : ∀ n, PMF (BooleanFunction n)`. -/
 @[expose] noncomputable def booleanPRFRealGame (D : ∀ n, PMF (BooleanFunction n))
@@ -238,10 +235,10 @@ theorem booleanPRFRealGame_prfFirstBitEnsemble_eq {family : List Bool → List B
     booleanPRFRealGame (prfFirstBitEnsemble family) adversary n =
       ProbComp.eval (prfRealGame family (firstBitDistinguisher adversary) n) := by
   simp only [booleanPRFRealGame, prfFirstBitEnsemble, PMF.bind_map, prfRealGame,
-    ProbComp.eval_bind, BitString.eval_sampleList]
+    ProbOracleComp.run, ProbComp.eval_bind, BitString.eval_sampleList]
   refine PMF.bind_congr_on_support _ _ _ fun key hkey => ?_
   have hklen := BitString.length_of_mem_support_uniformList hkey
-  unfold evalBooleanOracle
+  unfold evalBooleanOracle ProbOracleComp.run
   rw [interpret_firstBitDistinguisher]
   refine congrArg (fun h => ProbComp.eval (OracleComp.interpret
     (OracleComp.sumHandler ProbComp.unifFin h) (adversary n []))) (funext fun request => ?_)
@@ -268,7 +265,7 @@ theorem booleanPRFIdealGame_eq_prfIdealGame (adversary : OracleDistinguisher) {n
   rw [booleanPRFIdealGame, ← KabanetsCai.uniformOfFintype_map_restrictTable hn le_rfl,
     PMF.bind_map, prfIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform]
   refine PMF.bind_congr_on_support _ _ _ fun table _ => ?_
-  unfold evalBooleanOracle
+  unfold evalBooleanOracle ProbOracleComp.run
   rw [interpret_firstBitDistinguisher]
   refine congrArg (fun h => ProbComp.eval (OracleComp.interpret
     (OracleComp.sumHandler ProbComp.unifFin h) (adversary n []))) (funext fun request => ?_)
@@ -616,7 +613,8 @@ private theorem evalBooleanOracle_isolatedVarDistinguisher (n : ℕ) (f : Boolea
     evalBooleanOracle isolatedVarDistinguisher n f =
       PMF.pure (checkIsoAnswers n
         ((isoQueries n).map fun word => (booleanOracle n f word).headD false)) := by
-  simp only [evalBooleanOracle, isolatedVarDistinguisher, OracleComp.interpret_map,
+  simp only [evalBooleanOracle, ProbOracleComp.run, isolatedVarDistinguisher,
+    OracleComp.interpret_map,
     KabanetsCai.interpret_queryTable, map_pure, ProbComp.eval_pure]
 
 private theorem checkIsoAnswers_map_isoQueries {n : ℕ} (hn : 1 ≤ n) (f : BooleanFunction n) :
@@ -906,7 +904,8 @@ private theorem evalBooleanOracle_criticalPathDistinguisher (n : ℕ) (f : Boole
     evalBooleanOracle criticalPathDistinguisher n f =
       PMF.pure (checkCritAnswers n
         ((critQueries n).map fun word => (booleanOracle n f word).headD false)) := by
-  simp only [evalBooleanOracle, criticalPathDistinguisher, OracleComp.interpret_map,
+  simp only [evalBooleanOracle, ProbOracleComp.run, criticalPathDistinguisher,
+    OracleComp.interpret_map,
     KabanetsCai.interpret_queryTable, map_pure, ProbComp.eval_pure]
 
 private def quadAt (n : ℕ) (x y : Fin n) (f : BooleanFunction n) (t : Fin n) : QuadBool :=

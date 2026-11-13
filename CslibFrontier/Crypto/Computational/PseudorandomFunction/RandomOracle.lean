@@ -104,7 +104,7 @@ theorem prfIdealGame_eq_cached (adversary : OracleDistinguisher) (n : ℕ) :
         (adapter query) = PMF.pure (randomFunctionOracle n table query) := by
     by_cases hquery : query.length = n <;> simp [adapter, randomFunctionOracle, hquery]
   rw [ProbComp.eval_map, ProbOracleComp.eval_run_interpret]
-  simpa only [prfIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
+  simpa only [prfIdealGame, ProbOracleComp.run, ProbComp.eval_bind, ProbComp.eval_uniform,
     ProbOracleComp.eval_interpret, ProbComp.eval_pure, PMF.pi_uniformOfFintype,
     ProbOracleComp.interpret_simulate,
     Turing.MultiTapeTM.encBitString_apply, hstep, heager, PMF.monad_bind_eq_bind] using h

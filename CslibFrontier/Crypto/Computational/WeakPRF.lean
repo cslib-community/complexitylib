@@ -87,19 +87,14 @@ adversary's request payload is ignored. -/
 noncomputable def weakPrfRealGame (family : List Bool → List Bool → List Bool)
     (adversary : OracleDistinguisher) (n : ℕ) : ProbComp Bool := do
   let key ← BitString.sampleList n
-  OracleComp.interpret
-    (OracleComp.sumHandler ProbComp.unifFin (fun _ => weakSample n (prfOracle family n key)))
-    (adversary n [])
+  (adversary n []).run fun _ => weakSample n (prfOracle family n key)
 
 /-- Sample one whole random function; every call returns a fresh uniform point and the table's
 answer on it. -/
 @[expose]
 noncomputable def weakPrfIdealGame (adversary : OracleDistinguisher) (n : ℕ) : ProbComp Bool := do
   let table ← ProbComp.uniform (BitString n → BitString n)
-  OracleComp.interpret
-    (OracleComp.sumHandler ProbComp.unifFin
-      (fun _ => weakSample n (randomFunctionOracle n table)))
-    (adversary n [])
+  (adversary n []).run fun _ => weakSample n (randomFunctionOracle n table)
 
 /-- A keyed family evaluated in plain polynomial time whose answers at uniformly random points are
 indistinguishable from those of a random function ([KatzLindell2020], Exercise 3.28). -/
@@ -379,7 +374,7 @@ theorem advantage_weakPrfRealGame_zeroPatch_le (family : List Bool → List Bool
   have heval (f : List Bool → List Bool → List Bool) :
       ProbComp.eval (weakPrfRealGame f adversary n) = (BitString.uniformList n).bind
         (fun key => weakRun n (prfOracle f n key) (adversary n [])) := by
-    simp only [weakPrfRealGame, ProbComp.eval_bind, BitString.eval_sampleList,
+    simp only [weakPrfRealGame, ProbOracleComp.run, ProbComp.eval_bind, BitString.eval_sampleList,
       ProbOracleComp.eval_interpret]
     rfl
   have hagree (key point : List Bool) (hpoint : point ≠ List.replicate n false) :

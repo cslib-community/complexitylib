@@ -143,17 +143,13 @@ def randomCoinOracle (N : ℕ) (table : BitString N → BitString N) (request : 
 /-- The real coin game: a uniform `N`-bit key answers every request with `prfCoins`. -/
 noncomputable def coinRealGame (adversary : OracleDistinguisher) (N : ℕ) : ProbComp Bool := do
   let key ← BitString.sampleList N
-  OracleComp.interpret
-    (OracleComp.sumHandler ProbComp.unifFin (fun request =>
-      pure (coinOracle family key request.2))) (adversary N [])
+  (adversary N []).run fun request => pure (coinOracle family key request.2)
 
 /-- The ideal coin game: a uniform random function on `N` bits answers every request at its
 padding, cut to the requested count. -/
 noncomputable def coinIdealGame (adversary : OracleDistinguisher) (N : ℕ) : ProbComp Bool := do
   let table ← ProbComp.uniform (BitString N → BitString N)
-  OracleComp.interpret
-    (OracleComp.sumHandler ProbComp.unifFin (fun request =>
-      pure (randomCoinOracle N table request.2))) (adversary N [])
+  (adversary N []).run fun request => pure (randomCoinOracle N table request.2)
 
 /-! ### The reduction to the PRF games -/
 
@@ -186,7 +182,8 @@ private theorem interpret_coinDistinguisher (oracle : Unit × List Bool → Prob
 theorem eval_coinRealGame (adversary : OracleDistinguisher) (N : ℕ) :
     ProbComp.eval (coinRealGame family adversary N) =
       ProbComp.eval (prfRealGame family (coinDistinguisher adversary) N) := by
-  simp only [coinRealGame, prfRealGame, ProbComp.eval_bind, BitString.eval_sampleList]
+  simp only [coinRealGame, prfRealGame, ProbOracleComp.run, ProbComp.eval_bind,
+    BitString.eval_sampleList]
   refine PMF.bind_congr_on_support _ _ _ fun key hkey => ?_
   have hlen := BitString.length_of_mem_support_uniformList hkey
   rw [interpret_coinDistinguisher]
@@ -198,7 +195,7 @@ theorem eval_coinRealGame (adversary : OracleDistinguisher) (N : ℕ) :
 theorem eval_coinIdealGame (adversary : OracleDistinguisher) (N : ℕ) :
     ProbComp.eval (coinIdealGame adversary N) =
       ProbComp.eval (prfIdealGame (coinDistinguisher adversary) N) := by
-  simp only [coinIdealGame, prfIdealGame, ProbComp.eval_bind]
+  simp only [coinIdealGame, prfIdealGame, ProbOracleComp.run, ProbComp.eval_bind]
   refine PMF.bind_congr_on_support _ _ _ fun table _ => ?_
   rw [interpret_coinDistinguisher]
   refine congrArg (fun h => ProbComp.eval (OracleComp.interpret
