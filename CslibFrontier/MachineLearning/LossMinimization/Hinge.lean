@@ -114,7 +114,7 @@ i.i.d. examples from `D` and every `u`, `𝔼_S [L_D(A S)] ≤ L_D(u) + r‖u‖
 
 The integrability hypotheses are those of
 `Cslib.MachineLearning.integral_trueRisk_sub_empiricalRisk`; they hold automatically when `Z` is
-finite. -/
+finite with measurable singletons. -/
 theorem IsRLM.integral_trueRisk_hingeLoss_le {Z : Type*} [MeasurableSpace Z] {φ : Z → E}
     {y : Z → ℝ} {ρ : NNReal} (hφ : ∀ z, ‖φ z‖ ≤ ρ) (hy : ∀ z, |y z| ≤ 1) {m : ℕ} {r : ℝ}
     (hr : 0 < r) {A : (Fin m → Z) → E}

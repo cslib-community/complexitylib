@@ -75,7 +75,11 @@ variable [MeasurableSpace Z]
 /-- The **expected replace-one gap** of a learning rule `A` on `m` examples from `D`: the expected
 increase `𝔼_{(S, z'), i} [ℓ(A(S⁽ⁱ⁾), z_i) - ℓ(A S, z_i)]` of the loss on the `i`-th example when
 it is replaced by an independent example `z'`, for a uniformly random index `i`
-[ShalevShwartzBenDavid2014, Theorem 13.2]. Here `S⁽ⁱ⁾` is `Function.update S i z'`. -/
+[ShalevShwartzBenDavid2014, Theorem 13.2]. Here `S⁽ⁱ⁾` is `Function.update S i z'`.
+
+Both terms are Bochner integrals, which are `0` for non-integrable integrands. So a rule whose
+losses are not integrable under `D` has gap `0`, and the gap, and stability defined from it, carry
+information only for integrable losses; the results below assume integrability. -/
 noncomputable def replaceOneGap (ℓ : W → Z → ℝ) (D : Measure Z) {m : ℕ}
     (A : (Fin m → Z) → W) : ℝ :=
   𝔼 i, ∫ p, (ℓ (A (Function.update p.1 i p.2)) (p.1 i) - ℓ (A p.1) (p.1 i))
@@ -121,13 +125,23 @@ private theorem measurePreserving_replaceOne (D : Measure Z) [IsProbabilityMeasu
     _ = μ.prod D := by
         rw [← Measure.map_map hπ.measurable hσ.measurable, hσ.map_eq, hπ.map_eq]
 
+/-- If the loss of `A S` on a fresh example is integrable over the joint distribution, the true risk
+of `A S` is integrable over the samples. -/
+private theorem integrable_trueRisk_comp {ℓ : W → Z → ℝ} {D : Measure Z} [IsProbabilityMeasure D]
+    {m : ℕ} {A : (Fin m → Z) → W}
+    (hint : Integrable (fun p : (Fin m → Z) × Z => ℓ (A p.1) p.2)
+      ((Measure.pi fun _ : Fin m => D).prod D)) :
+    Integrable (fun S => trueRisk ℓ D (A S)) (Measure.pi fun _ : Fin m => D) := by
+  simpa only [trueRisk_def] using hint.integral_prod_left
+
 /-- **The expected generalization gap is the expected replace-one gap**
 [ShalevShwartzBenDavid2014, Theorem 13.2]: for `m > 0` i.i.d. examples from `D`,
 `𝔼_S [L_D(A S) - L_S(A S)] = 𝔼_{(S, z'), i} [ℓ(A(S⁽ⁱ⁾), z_i) - ℓ(A S, z_i)]`.
 
 The hypotheses ask that the loss of `A S` on a fresh example be integrable over the joint
 distribution and its loss on each training example be integrable over the samples; they hold, for
-example, for bounded measurable losses and a measurable rule. -/
+example, for bounded losses that are jointly measurable with a measurable rule, and on finite
+example spaces with measurable singletons. -/
 theorem integral_trueRisk_sub_empiricalRisk (ℓ : W → Z → ℝ) (D : Measure Z)
     [IsProbabilityMeasure D] {m : ℕ} (hm : 0 < m) (A : (Fin m → Z) → W)
     (hint : Integrable (fun p : (Fin m → Z) × Z => ℓ (A p.1) p.2)
@@ -153,8 +167,7 @@ theorem integral_trueRisk_sub_empiricalRisk (ℓ : W → Z → ℝ) (D : Measure
   have htrue : ∫ S, trueRisk ℓ D (A S) ∂μ = ∫ p, ℓ (A p.1) p.2 ∂(μ.prod D) := by
     simp only [trueRisk_def]
     exact (integral_prod _ hint).symm
-  have htrue_int : Integrable (fun S => trueRisk ℓ D (A S)) μ := by
-    simpa only [trueRisk_def] using hint.integral_prod_left
+  have htrue_int : Integrable (fun S => trueRisk ℓ D (A S)) μ := integrable_trueRisk_comp hint
   rw [integral_sub htrue_int (integrable_empiricalRisk_comp ℓ μ A hint'),
     htrue, integral_empiricalRisk_comp ℓ μ A hint', replaceOneGap_def]
   calc ∫ p, ℓ (A p.1) p.2 ∂(μ.prod D) - 𝔼 i, ∫ S, ℓ (A S) (S i) ∂μ
@@ -198,8 +211,8 @@ theorem IsReplaceOneStable.integral_trueRisk_le {ℓ : W → Z → ℝ} {m : ℕ
     ∫ S, trueRisk ℓ D (A S) ∂(Measure.pi fun _ : Fin m => D) ≤
       ∫ S, empiricalRisk ℓ S (A S) ∂(Measure.pi fun _ : Fin m => D) + ε := by
   have h := integral_trueRisk_sub_empiricalRisk ℓ D hm A hint hint'
-  have htrue_int : Integrable (fun S => trueRisk ℓ D (A S)) (Measure.pi fun _ : Fin m => D) := by
-    simpa only [trueRisk_def] using hint.integral_prod_left
+  have htrue_int : Integrable (fun S => trueRisk ℓ D (A S)) (Measure.pi fun _ : Fin m => D) :=
+    integrable_trueRisk_comp hint
   rw [integral_sub htrue_int (integrable_empiricalRisk_comp ℓ _ A hint')] at h
   have := hA D
   linarith

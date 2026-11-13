@@ -31,8 +31,9 @@ The stability rate is half of the rate `2ρ² / (r m)` of [ShalevShwartzBenDavid
 Corollary 13.6]: the source compares the two minimizers through the quadratic growth of one
 objective, while `IsRLM.norm_sub_le` adds the quadratic growth of both. The same rate follows from
 [BousquetElisseeff2002, Theorem 22], which bounds the effect of removing one example by
-`ρ² / (2 r m)` for features of norm at most `1`; a replacement is a removal followed by an
-insertion. The source's bounds follow, and are stated in the source's form.
+`ρ² / (2 r m)` for losses that are `ρ`-Lipschitz in the prediction `⟪w, x⟫` and features of norm
+at most `1`; a replacement is a removal followed by an insertion. The source's bounds follow, and
+are stated in the source's form.
 
 ## Main definitions
 
@@ -246,7 +247,7 @@ end Stability
 at rate `ε`, then for `m > 0` i.i.d. examples from `D` and every `w ∈ K` with `D`-integrable loss,
 `𝔼_S [L_D(A S)] ≤ L_D(w) + R(w) + ε`. The integrability hypotheses are those of
 `Cslib.MachineLearning.integral_trueRisk_sub_empiricalRisk`. -/
-theorem IsRLM.integral_trueRisk_le {E : Type*} [MeasurableSpace Z] {ℓ : E → Z → ℝ} {R : E → ℝ}
+theorem IsRLM.integral_trueRisk_le [MeasurableSpace Z] {ℓ : E → Z → ℝ} {R : E → ℝ}
     {K : Set E} {m : ℕ} {A : (Fin m → Z) → E} (hA : IsRLM ℓ R K A)
     (hR : ∀ w ∈ K, 0 ≤ R w) {ε : ℝ} (hstab : IsReplaceOneStable ℓ A ε) (D : Measure Z)
     [IsProbabilityMeasure D] (hm : 0 < m)
@@ -320,8 +321,9 @@ convex `ρ`-Lipschitz losses on a convex set `K` with `ρ > 0`, a bound `B > 0`,
 examples from `D` and the regularization weight `r = √(2ρ² / (B² m))`, Tikhonov RLM satisfies
 `𝔼_S [L_D(A S)] ≤ L_D(w) + ρ B √(8 / m)` for every `w ∈ K` with `‖w‖ ≤ B` and integrable loss.
 The source states this against `min_{w ∈ H} L_D(w)`; the form here holds for every comparator, so
-it bounds the infimum without assuming that it is attained. With `r = ρ / (B √m)` the same oracle
-inequality gives the smaller excess `2 ρ B / √m`. -/
+it bounds the infimum without assuming that it is attained. Combining `IsRLM.integral_trueRisk_le`
+with the rate `ρ² / (r m)` of `IsRLM.isReplaceOneStable_tikhonov` instead, the weight
+`r = ρ / (B √m)` gives the smaller excess `2 ρ B / √m`. -/
 theorem IsRLM.integral_trueRisk_le_add_sqrt [MeasurableSpace Z] {ℓ : E → Z → ℝ} {K : Set E}
     {m : ℕ} {r : ℝ} {A : (Fin m → Z) → E} (hA : IsRLM ℓ (fun w => r * ‖w‖ ^ 2) K A)
     (hK : Convex ℝ K) (hconv : ∀ z, ConvexOn ℝ K fun w => ℓ w z) {ρ : NNReal}
