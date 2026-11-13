@@ -40,6 +40,11 @@ example (s : Fin 1 → ZMod 4) (e : Fin 2 → ZMod 4) :
       (randomExperiment (R := ZMod 4) (n := 1) (m := 2) fun _ _ => pure true) = 0 := by
   simp
 
+-- The same holds for the games with any secret and error laws.
+example (secretLaw : PMF (Fin 1 → ZMod 4)) (errorLaw : PMF (Fin 2 → ZMod 4)) :
+    LWE.advantage secretLaw errorLaw (fun _ _ => pure true) = 0 := by
+  simp [LWE.advantage, realGame, randomGame]
+
 -- Typed to word: clients reducing on encoded matrices use `DecisionLWE.encoded`.
 example {n m w : ℕ → ℕ} {noise : (κ : ℕ) → PMF (ZMod (2 ^ w κ))} (h : DecisionLWE n m w noise)
     (W : Crypto.Distinguisher) (hW : IsPPT encBool W) :
@@ -47,11 +52,13 @@ example {n m w : ℕ → ℕ} {noise : (κ : ℕ) → PMF (ZMod (2 ^ w κ))} (h 
       (distinguishingGame (uniformEnsemble n m w κ) (W κ)) :=
   h.encoded W hW
 
--- Word to typed: the word-level assumption bounds every typed PPT distinguisher.
+-- Word to typed: the word-level assumption bounds every typed PPT distinguisher's advantage with
+-- a uniform secret and independent errors.
 example {n m w : ℕ → ℕ} {noise : (κ : ℕ) → PMF (ZMod (2 ^ w κ))}
     (h : ComputationallyIndistinguishable (realEnsemble n m w noise) (uniformEnsemble n m w))
     (D : LWE.Distinguisher n m w) (hD : D.IsPPT) :
-    Negligible fun κ => Game.advantage (realGame n m w noise D κ) (randomGame n m w D κ) :=
+    Negligible fun κ => LWE.advantage (PMF.uniformOfFintype (Fin (n κ) → ZMod (2 ^ w κ)))
+      (PMF.pi fun _ : Fin (m κ) => noise κ) (D κ) :=
   (decisionLWE_iff_encoded n m w noise).mpr h D hD
 
 end CslibFrontierTests.DecisionLWE
