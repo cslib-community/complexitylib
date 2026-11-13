@@ -307,14 +307,20 @@ lake exe checkInitImports
 ```
 
 `scripts/check.sh` first runs the live manual checker and its tooling tests, then restores
-optional caches and runs every required step of CI's `ci-checks` job that can run locally, with
-CI's commands (`scripts/full_check.py`): these six Lean gates, the Python tooling tests, source
-hygiene, the encoding readability and projection chain ratchets, documentation pins, and the
-post-build tidy statement ratchet, result registry and changed-file lints. Changed-file checks
-compare with the merge base of `origin/main`, or of `--base REF`. `scripts/full_check.py` records
-why each remaining step stays CI-only (advisory notices, cache plumbing, steps that need GitHub
-context), and its test fails when the workflow gains a step that is neither mirrored nor recorded
-there, or when a mirrored step runs a line or sets an option that the local run does not repeat.
+optional caches and runs every locally reproducible step from CI's parallel `source-checks` and
+`lean-checks` jobs, whose results feed the required `ci-checks` aggregator, with CI's commands
+(`scripts/full_check.py`): these six Lean gates, the Python tooling tests, source hygiene, the
+encoding readability and projection chain ratchets, documentation pins, and the post-build tidy
+statement ratchet, result registry and changed-file lints. Changed-file checks compare with the
+merge base of `origin/main`, or of `--base REF`. `scripts/full_check.py` records why each remaining
+step stays CI-only (advisory notices, cache plumbing, steps that need GitHub context), and its test
+fails when either execution job gains a step that is neither mirrored nor recorded there, when a
+mirrored step runs a line or sets an option that the local run does not repeat, or when the
+required aggregator stops requiring both jobs to succeed and forwarding the Lean job's publication
+output.
+The split overlaps work rather than removing it: it adds another checkout and runner plus the
+aggregator's scheduling time, and saves only source-check time that would otherwise extend the
+slower Lean path. Treat observed wall-time improvements as run-specific, not a fixed reduction.
 After the Lean gates, full mode also re-elaborates built root-package sources whose outputs Lake
 restored from the shared local artifact cache, which keeps no warnings. Quick mode checks the
 affected sources, including unchanged importing clients, built import aggregates and executable

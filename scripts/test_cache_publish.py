@@ -33,21 +33,22 @@ class WorkflowContractTests(unittest.TestCase):
     def test_publication_archive_retention_is_default_off_and_reversible(self):
         text = (REPO / ".github/workflows/lean_action_ci.yml").read_text()
         guide = (REPO / "scripts/cache/README.md").read_text()
-        build = text.split('      - name: "lake build"', 1)[1].split("      - name:", 1)[0]
-        test = text.split('      - name: "lake test"', 1)[1].split("      - name:", 1)[0]
-        lint = text.split('      - name: "lake lint"', 1)[1].split("      - name:", 1)[0]
-        ordinary = text.split("      - name: Save .lake to the Actions cache", 1)[1].split(
+        lean = text.split("  lean-checks:\n", 1)[1].split("\n  ci-checks:\n", 1)[0]
+        build = lean.split('      - name: "lake build"', 1)[1].split("      - name:", 1)[0]
+        test = lean.split('      - name: "lake test"', 1)[1].split("      - name:", 1)[0]
+        lint = lean.split('      - name: "lake lint"', 1)[1].split("      - name:", 1)[0]
+        ordinary = lean.split("      - name: Save .lake to the Actions cache", 1)[1].split(
             "      - name:", 1)[0]
-        experiment = text.split(
+        experiment = lean.split(
             "      - name: Save .lake after cache publication (experiment)", 1)[1].split(
             "      - name:", 1)[0]
         self.assertIn("id: build", build)
         self.assertIn("id: test", test)
         self.assertIn("id: lint", lint)
-        ordinary_at = text.index("      - name: Save .lake to the Actions cache")
-        stage_at = text.index("      - name: Stage cache publication")
-        handoff_at = text.index("      - name: Hand off staged files to the enabled publishers")
-        experiment_at = text.index(
+        ordinary_at = lean.index("      - name: Save .lake to the Actions cache")
+        stage_at = lean.index("      - name: Stage cache publication")
+        handoff_at = lean.index("      - name: Hand off staged files to the enabled publishers")
+        experiment_at = lean.index(
             "      - name: Save .lake after cache publication (experiment)")
         self.assertLess(ordinary_at, stage_at)
         self.assertLess(stage_at, handoff_at)
