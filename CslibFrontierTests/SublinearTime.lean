@@ -46,7 +46,7 @@ example :
       (fun _ => C) (fun _ => 0)) ∧
     ([true].headD false ≠ ([] : List Bool).headD false) := by
   refine ⟨firstBit_computable.exists_const_time_of_isLittleO (p := fun _ => 1) ?_, by decide⟩
-  convert (Asymptotics.isLittleO_const_id_atTop (1 : ℝ)).natCast_atTop using 1
+  convert (Asymptotics.isLittleO_const_id_atTop (1 : ℝ)).natCast_atTop using 1 <;> simp
 
 -- Inclusive boundary: one step on a one-bit prefix is still preserved on its extension.
 example : (firstBitTM.runFrom (firstBitTM.initCfg [true]) 1).output =
@@ -63,4 +63,4 @@ example : (firstBitTM.runFrom (firstBitTM.initCfg []) 1).output ≠
 example : Cslib.Complexity.DTIME encBits (fun _ => 0) =
     Cslib.Complexity.DTIME encBits (fun _ => 1) := by
   apply Cslib.Complexity.DTIME_eq_const_of_isLittleO
-  convert (Asymptotics.isLittleO_const_id_atTop (0 : ℝ)).natCast_atTop using 1
+  convert (Asymptotics.isLittleO_const_id_atTop (0 : ℝ)).natCast_atTop using 1 <;> simp
