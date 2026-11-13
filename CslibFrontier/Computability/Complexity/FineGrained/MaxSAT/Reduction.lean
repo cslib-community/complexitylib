@@ -42,7 +42,8 @@ This module connects `MaxSAT` (`MaxSAT.thresholdCircuit`, `MaxSAT.optimum`) and 
    (and `1 - η` sample-size) subsampling concentration and `2 * δ * m` optimality-loss theorems.
 2. **Threshold compilation (`thresholdToCNF`):** compiles a `ThresholdQuery` in polynomial time via
    `MaxSAT.thresholdCircuit` and `Compiler.toSatCNF` to a 3-CNF formula (`KSAT k` for every `3 ≤ k`)
-   with at most `957 * workSize + 957` variables, satisfiable iff `cutoff ≤ optimum`.
+   with at most `thresholdVarBudget workSize = 957 * workSize + 957` variables, satisfiable iff
+   `cutoff ≤ optimum`.
 3. **Resource transfer from a supplied fixed-width SAT solver:**
    * *Decision transfer:* `DecidableInExpTime`, `DecidableInSubexpTime`, and `P` membership transfer
      from `KSAT k` (`3 ≤ k`) to `ThresholdLanguage` (measured by `workSize`, and by `numVars` on
@@ -51,13 +52,13 @@ This module connects `MaxSAT` (`MaxSAT.thresholdCircuit`, `MaxSAT.optimum`) and 
      `computableInPolyTime_optimum_of_KSAT`):* any native `k`-SAT solver (`3 ≤ k`) with monotone
      variable-count factor `timeRate` and polynomial workspace (witnessed at `timeRate n = 2 ^ n` by
      `FixedWidthSATSolver.exists_bruteForce`) computes exact `MaxSAT` (and bounded-arity Boolean
-     `Max-CSP`) optima at `timeRate (957 * workSize + 957) * poly(L)` in polynomial space; a
+     `Max-CSP`) optima at `timeRate (thresholdVarBudget workSize) * poly(L)` in polynomial space; a
      polynomial-time `k`-SAT decider computes exact optima in polynomial time.
    * *Binary search and witness recovery (`optimumByBinarySearchM`, `optimizeByBinarySearchM`):*
      bisection via `lowerBoundM` followed by unit-clause prefix pinning recovers both the exact
      optimum and an optimal assignment using at most `⌊log₂ m⌋ + 1 + n` queries to a supplied
      `k`-SAT oracle (`TimeM`), and on an `s`-clause subsample of a width-`w` instance queries
-     `k`-SAT only on formulas of at most `957 * ((w + 1) * s + 2 * n) + 957` variables while
+     `k`-SAT only on formulas of at most `thresholdVarBudget ((w + 1) * s + 2 * n)` variables while
      returning an assignment with at most `2 * δ * m` optimality loss with probability at least
      `1 - 2 ^ (n + 1) * exp (-2 * s * δ ^ 2)` (and `≥ 1 - η` under the `η` sample-size bound).
 
@@ -478,9 +479,19 @@ theorem thresholdToCNF_mem_KSAT_iff {k : ℕ} (hk : 3 ≤ k) (q : ThresholdQuery
   simp only [KSAT, ThresholdLanguage, Set.mem_ofPred_eq, satisfiable_thresholdToCNF_iff]
   exact ⟨fun h => h.2, fun h => ⟨fun _ hcl => (length_clause_mem_thresholdToCNF q hcl).trans hk, h⟩⟩
 
-/-- `thresholdToCNF q` uses at most `957 * q.workSize + 957` distinct variables. -/
+/-- The variable budget of `thresholdToCNF` on work size `w`: the compiled 3-CNF of a query of
+work size `w` has at most `thresholdVarBudget w = 957 * w + 957` variables
+(`numVars_thresholdToCNF_le`). -/
+@[expose] def thresholdVarBudget (w : ℕ) : ℕ := 957 * w + 957
+
+/-- A larger work size has a larger variable budget. -/
+theorem thresholdVarBudget_mono : Monotone thresholdVarBudget := fun _ _ h => by
+  unfold thresholdVarBudget
+  omega
+
+/-- `thresholdToCNF q` uses at most `thresholdVarBudget q.workSize` distinct variables. -/
 theorem numVars_thresholdToCNF_le (q : ThresholdQuery) :
-    (thresholdToCNF q).numVars ≤ 957 * q.workSize + 957 := by
+    (thresholdToCNF q).numVars ≤ thresholdVarBudget q.workSize := by
   have hnum := Compiler.numVars_toCNF_le (c := thresholdCircuit q.inst.toPair q.cutoff)
     Boolean.interpretation (fun _ b => b)
     (Circuit.fanInAtMost_of_arity_le Boolean.arity_le_two _)
@@ -491,14 +502,12 @@ theorem numVars_thresholdToCNF_le (q : ThresholdQuery) :
   omega
 
 /-- On an instance whose clauses all have width at most `w`, `thresholdToCNF q` uses at most
-`957 * (w + 1) * m + 957` distinct variables (`m = q.inst.clauses.length`). -/
+`thresholdVarBudget ((w + 1) * m)` distinct variables (`m = q.inst.clauses.length`). -/
 theorem numVars_thresholdToCNF_le_of_width {w : ℕ} (q : ThresholdQuery)
     (hw : ∀ c ∈ q.inst.clauses, c.length ≤ w) :
-    (thresholdToCNF q).numVars ≤ 957 * (w + 1) * q.inst.clauses.length + 957 := by
-  have h1 := numVars_thresholdToCNF_le q
-  have h2 := workSize_le_of_width w q.inst.toPair hw
-  dsimp only [ThresholdQuery.workSize, StructInstance.workSize, StructInstance.toPair] at h1 h2
-  nlinarith
+    (thresholdToCNF q).numVars ≤ thresholdVarBudget ((w + 1) * q.inst.clauses.length) :=
+  (numVars_thresholdToCNF_le q).trans
+    (thresholdVarBudget_mono (workSize_le_of_width w q.inst.toPair hw))
 
 /-- `thresholdToCNF q` has at most `8 * (numVars + 1)` clauses. -/
 theorem length_thresholdToCNF_le (q : ThresholdQuery) :
@@ -775,15 +784,16 @@ private theorem computableInPolyTime_thresholdQueries :
 theorem FixedWidthSATSolver.exists_optimum_algorithm {k : ℕ} (hk : 3 ≤ k)
     (solver : FixedWidthSATSolver k) :
     ∃ d : ℕ, ComputableInO StructInstance.optimum encStructInstance encNat
-      (fun F => solver.timeRate (957 * F.workSize + 957) * ((encStructInstance F).length + 1) ^ d)
+      (fun F => solver.timeRate (thresholdVarBudget F.workSize) *
+        ((encStructInstance F).length + 1) ^ d)
       (fun F => ((encStructInstance F).length + 1) ^ d) := by
   let encP := encPair encStructInstance encCNF
   let guard (p : StructInstance × CNF ℕ) : Bool :=
-    decide (p.2.numVars ≤ 957 * p.1.workSize + 957)
+    decide (p.2.numVars ≤ thresholdVarBudget p.1.workSize)
   have hguard : ComputableInPolyTime guard encP encBool := by
     have hlhs := SAT.computableInPolyTime_numVars.comp (snd encStructInstance encCNF)
-    have hrhs : ComputableInPolyTime (fun p : StructInstance × CNF ℕ => 957 * p.1.workSize + 957)
-        encP encUnary :=
+    have hrhs : ComputableInPolyTime
+        (fun p : StructInstance × CNF ℕ => thresholdVarBudget p.1.workSize) encP encUnary :=
       unary_add' (unary_mul' (const 957)
         (computableInPolyTime_structWorkSize.comp (fst encStructInstance encCNF))) (const 957)
     exact unary_le' hlhs hrhs
@@ -804,21 +814,22 @@ theorem FixedWidthSATSolver.exists_optimum_algorithm {k : ℕ} (hk : 3 ≤ k)
   have hanswer : ComputableInO
       (fun p : StructInstance × CNF ℕ => if guard p then solver.solve p.2 else false)
       encP encBool
-      (fun p => solver.timeRate (957 * p.1.workSize + 957) * ((encP p).length + 1) ^ eMax)
+      (fun p => solver.timeRate (thresholdVarBudget p.1.workSize) * ((encP p).length + 1) ^ eMax)
       (fun p => ((encP p).length + 1) ^ bMax) := by
     refine hite.mono 3 (fun p => ?_) (fun p => ?_)
     · set L := (encP p).length
       have hL1 : 1 ≤ L + 1 := Nat.le_add_left 1 L
-      have hR1 : 1 ≤ solver.timeRate (957 * p.1.workSize + 957) := solver.one_le_timeRate _
+      have hR1 : 1 ≤ solver.timeRate (thresholdVarBudget p.1.workSize) :=
+        solver.one_le_timeRate _
       have hdg : (L + 1) ^ dg ≤
-          solver.timeRate (957 * p.1.workSize + 957) * (L + 1) ^ eMax :=
+          solver.timeRate (thresholdVarBudget p.1.workSize) * (L + 1) ^ eMax :=
         (Nat.pow_le_pow_right hL1 (le_max_left dg _)).trans (Nat.le_mul_of_pos_left _ hR1)
-      have hLlin : L ≤ solver.timeRate (957 * p.1.workSize + 957) * (L + 1) ^ eMax := by
+      have hLlin : L ≤ solver.timeRate (thresholdVarBudget p.1.workSize) * (L + 1) ^ eMax := by
         have h1 : L ≤ (L + 1) ^ 1 := by simp only [pow_one]; omega
         exact (h1.trans (Nat.pow_le_pow_right hL1
           ((le_max_right _ _).trans (le_max_right dg _)))).trans (Nat.le_mul_of_pos_left _ hR1)
       split_ifs with hg_true
-      · have hnv : p.2.numVars ≤ 957 * p.1.workSize + 957 := of_decide_eq_true hg_true
+      · have hnv : p.2.numVars ≤ thresholdVarBudget p.1.workSize := of_decide_eq_true hg_true
         have hmul := Nat.mul_le_mul (solver.mono_timeRate hnv)
           (henc_pow p solver.timeExp (le_max_left _ 1))
         nlinarith
@@ -835,7 +846,7 @@ theorem FixedWidthSATSolver.exists_optimum_algorithm {k : ℕ} (hk : 3 ≤ k)
         omega
       · omega
   obtain ⟨d₁, hlist⟩ := ComputableInO.polynomial_queries
-    (T := fun F : StructInstance => solver.timeRate (957 * F.workSize + 957))
+    (T := fun F : StructInstance => solver.timeRate (thresholdVarBudget F.workSize))
     hanswer computableInPolyTime_thresholdQueries (fun _ => solver.one_le_timeRate _)
   obtain ⟨d₂, hpost⟩ := hlist.polynomial_postprocessing
     computableInPolyTime_optimumFromDecisions (fun _ => solver.one_le_timeRate _)
@@ -919,11 +930,11 @@ theorem optimumByBinarySearchM_ret {k : ℕ} (hk : 3 ≤ k) {solveM : CNF ℕ �
       omega
 
 /-- **Query-cost bound for binary-search optimization:** if `solveM` costs at most `C` ticks on
-every 3-CNF of at most `957 * F.workSize + 957` variables, then `optimumByBinarySearchM` costs at
-most `C * (Nat.log 2 F.clauses.length + 1)` ticks (`≤ ⌊log₂ m⌋ + 1` solver calls). -/
+every 3-CNF of at most `thresholdVarBudget F.workSize` variables, then `optimumByBinarySearchM`
+costs at most `C * (Nat.log 2 F.clauses.length + 1)` ticks (`≤ ⌊log₂ m⌋ + 1` solver calls). -/
 theorem optimumByBinarySearchM_time_le {solveM : CNF ℕ → TimeM ℕ Bool} (F : StructInstance)
     {C : ℕ}
-    (hcost : ∀ φ : CNF ℕ, (∀ c ∈ φ, c.length ≤ 3) → φ.numVars ≤ 957 * F.workSize + 957 →
+    (hcost : ∀ φ : CNF ℕ, (∀ c ∈ φ, c.length ≤ 3) → φ.numVars ≤ thresholdVarBudget F.workSize →
       (solveM φ).time ≤ C) :
     (optimumByBinarySearchM solveM F).time ≤ C * (Nat.log 2 F.clauses.length + 1) := by
   simp only [optimumByBinarySearchM, TimeM.time_bind, TimeM.time_pure, add_zero]
@@ -936,7 +947,8 @@ theorem optimumByBinarySearchM_time_le {solveM : CNF ℕ → TimeM ℕ Bool} (F 
 /-- **End-to-end subsampled sparse MAX-`w`-SAT optimization via a supplied fixed-width SAT solver.**
 Drawing `s` clauses uniformly from `F` (`0 < F.clauses.length`, clause width `≤ w`) and running
 `optimumByBinarySearchM solveM (F.sample ω)` (`3 ≤ k`):
-1. invokes `solveM` only on 3-CNFs of at most `957 * (w + 1) * s + 957` variables, within total cost
+1. invokes `solveM` only on 3-CNFs of at most `thresholdVarBudget ((w + 1) * s)` variables, within
+   total cost
    `C * (Nat.log 2 s + 1)` when `solveM` costs `≤ C` on such formulas; and
 2. with probability at least `1 - 2 ^ (F.numVars + 1) * exp (-2 * s * δ ^ 2)`, estimates `F.optimum`
    within `δ * m` after `(m / s)` rescaling and certifies `2 * δ * m` optimality loss for every
@@ -946,7 +958,7 @@ theorem sample_optimumByBinarySearchM_spec {k w : ℕ} (hk : 3 ≤ k)
     (hspec : ∀ φ : CNF ℕ, (∀ c ∈ φ, c.length ≤ k) → ((solveM φ).ret = true ↔ φ.Satisfiable))
     {F : StructInstance} (hm : 0 < F.clauses.length) (hw : ∀ c ∈ F.clauses, c.length ≤ w)
     (s : ℕ) {C : ℕ}
-    (hcost : ∀ φ : CNF ℕ, (∀ c ∈ φ, c.length ≤ 3) → φ.numVars ≤ 957 * (w + 1) * s + 957 →
+    (hcost : ∀ φ : CNF ℕ, (∀ c ∈ φ, c.length ≤ 3) → φ.numVars ≤ thresholdVarBudget ((w + 1) * s) →
       (solveM φ).time ≤ C)
     {δ : ℝ} (hδ : 0 ≤ δ) :
     (∀ ω : Fin s → Fin F.clauses.length,
@@ -960,12 +972,8 @@ theorem sample_optimumByBinarySearchM_spec {k w : ℕ} (hk : 3 ≤ k)
               ((optimumByBinarySearchM solveM (F.sample ω)).ret : ℝ) -
             (F.optimum : ℝ)| ≤ δ * (F.clauses.length : ℝ)}).toReal := by
   refine ⟨fun ω => ?_, ?_⟩
-  · have hws : (F.sample ω).workSize ≤ (w + 1) * s := F.workSize_sample_le_of_width hw ω
-    have h957 : 957 * (F.sample ω).workSize + 957 ≤ 957 * (w + 1) * s + 957 :=
-      Nat.add_le_add_right
-        ((Nat.mul_le_mul_left 957 hws).trans_eq (Nat.mul_assoc 957 (w + 1) s).symm) 957
-    have ht := optimumByBinarySearchM_time_le (F.sample ω) (C := C) fun φ h3 hvars =>
-      hcost φ h3 (hvars.trans h957)
+  · have ht := optimumByBinarySearchM_time_le (F.sample ω) (C := C) fun φ h3 hvars =>
+      hcost φ h3 (hvars.trans (thresholdVarBudget_mono (F.workSize_sample_le_of_width hw ω)))
     simpa only [StructInstance.sample, List.length_ofFn] using ht
   · have hret : ∀ ω : Fin s → Fin F.clauses.length,
         (optimumByBinarySearchM solveM (F.sample ω)).ret = (F.sample ω).optimum :=
@@ -1074,7 +1082,7 @@ private theorem recoverWitnessLoopM_spec {k : ℕ} (hk : 3 ≤ k)
 private theorem recoverWitnessLoopM_time_le {solveM : CNF ℕ → TimeM ℕ Bool}
     (F : StructInstance) (opt : ℕ) {C : ℕ}
     (hcost : ∀ φ : CNF ℕ, (∀ c ∈ φ, c.length ≤ 3) →
-      φ.numVars ≤ 957 * (F.workSize + 2 * F.numVars) + 957 → (solveM φ).time ≤ C)
+      φ.numVars ≤ thresholdVarBudget (F.workSize + 2 * F.numVars) → (solveM φ).time ≤ C)
     {i rem : ℕ} (hi_rem : i + rem ≤ F.numVars) (acc : CNF ℕ) (hacc_len : acc.length = i)
     (hacc_vars : acc.vars.length = i) (σ : ℕ → Bool) :
     (recoverWitnessLoopM solveM F opt i rem acc σ).time ≤ C * rem := by
@@ -1090,9 +1098,8 @@ private theorem recoverWitnessLoopM_time_le {solveM : CNF ℕ → TimeM ℕ Bool
         List.map_append, List.length_append, List.map_cons, List.map_nil, List.length_cons,
         List.length_nil] at hacc_vars ⊢
       omega
-    have hnv_q : (thresholdToCNF q).numVars ≤ 957 * (F.workSize + 2 * F.numVars) + 957 :=
-      (numVars_thresholdToCNF_le q).trans
-        (Nat.add_le_add_right (Nat.mul_le_mul_left 957 hws_q) 957)
+    have hnv_q : (thresholdToCNF q).numVars ≤ thresholdVarBudget (F.workSize + 2 * F.numVars) :=
+      (numVars_thresholdToCNF_le q).trans (thresholdVarBudget_mono hws_q)
     have hstep : (solveM (thresholdToCNF q)).time ≤ C :=
       hcost (thresholdToCNF q) (fun _ hcl => length_clause_mem_thresholdToCNF q hcl) hnv_q
     dsimp only [q] at hstep
@@ -1136,16 +1143,16 @@ theorem optimizeByBinarySearchM_ret {k : ℕ} (hk : 3 ≤ k) {solveM : CNF ℕ �
 
 /-- **Query-cost bound for `optimizeByBinarySearchM`:** at most
 `C * (Nat.log 2 F.clauses.length + 1 + F.numVars)` ticks when `solveM` costs `≤ C` on 3-CNFs of at
-most `957 * (F.workSize + 2 * F.numVars) + 957` variables. -/
+most `thresholdVarBudget (F.workSize + 2 * F.numVars)` variables. -/
 theorem optimizeByBinarySearchM_time_le {solveM : CNF ℕ → TimeM ℕ Bool} (F : StructInstance)
     {C : ℕ}
     (hcost : ∀ φ : CNF ℕ, (∀ c ∈ φ, c.length ≤ 3) →
-      φ.numVars ≤ 957 * (F.workSize + 2 * F.numVars) + 957 → (solveM φ).time ≤ C) :
+      φ.numVars ≤ thresholdVarBudget (F.workSize + 2 * F.numVars) → (solveM φ).time ≤ C) :
     (optimizeByBinarySearchM solveM F).time ≤
       C * (Nat.log 2 F.clauses.length + 1 + F.numVars) := by
   simp only [optimizeByBinarySearchM, TimeM.time_bind, TimeM.time_pure, add_zero]
   have ht1 := optimumByBinarySearchM_time_le F (C := C) fun φ h3 hnv =>
-    hcost φ h3 (hnv.trans (by omega))
+    hcost φ h3 (hnv.trans (thresholdVarBudget_mono (Nat.le_add_right _ _)))
   have ht2 := recoverWitnessLoopM_time_le F (optimumByBinarySearchM solveM F).ret hcost
     (Nat.zero_add F.numVars).le [] rfl rfl (fun _ => false)
   rw [Nat.mul_add]
@@ -1153,7 +1160,7 @@ theorem optimizeByBinarySearchM_time_le {solveM : CNF ℕ → TimeM ℕ Bool} (F
 
 /-- **Sample-optimization reduction with witness recovery (`3 ≤ k`):** on an `s`-clause subsample of
 a width-`w` instance `F`, `optimizeByBinarySearchM solveM (F.sample ω)` queries `solveM` only on
-3-CNFs of at most `957 * ((w + 1) * s + 2 * F.numVars) + 957` variables within cost
+3-CNFs of at most `thresholdVarBudget ((w + 1) * s + 2 * F.numVars)` variables within cost
 `C * (Nat.log 2 s + 1 + F.numVars)`, and with probability at least
 `1 - 2 ^ (F.numVars + 1) * exp (-2 * s * δ ^ 2)` the returned pair `(optS, xHat)` estimates
 `F.optimum` within `δ * m` (after `(m / s)` rescaling) and satisfies
@@ -1164,7 +1171,7 @@ theorem sample_optimizeByBinarySearchM_spec {k w : ℕ} (hk : 3 ≤ k)
     {F : StructInstance} (hm : 0 < F.clauses.length) (hw : ∀ c ∈ F.clauses, c.length ≤ w)
     (s : ℕ) {C : ℕ}
     (hcost : ∀ φ : CNF ℕ, (∀ c ∈ φ, c.length ≤ 3) →
-      φ.numVars ≤ 957 * ((w + 1) * s + 2 * F.numVars) + 957 → (solveM φ).time ≤ C)
+      φ.numVars ≤ thresholdVarBudget ((w + 1) * s + 2 * F.numVars) → (solveM φ).time ≤ C)
     {δ : ℝ} (hδ : 0 ≤ δ) :
     (∀ ω : Fin s → Fin F.clauses.length,
       (optimizeByBinarySearchM solveM (F.sample ω)).time ≤
@@ -1178,11 +1185,8 @@ theorem sample_optimizeByBinarySearchM_spec {k w : ℕ} (hk : 3 ≤ k)
               ((optimizeByBinarySearchM solveM (F.sample ω)).ret.1 : ℝ) -
             (F.optimum : ℝ)| ≤ δ * (F.clauses.length : ℝ)}).toReal := by
   refine ⟨fun ω => ?_, ?_⟩
-  · have hws : (F.sample ω).workSize ≤ (w + 1) * s := F.workSize_sample_le_of_width hw ω
-    have hbound : 957 * ((F.sample ω).workSize + 2 * (F.sample ω).numVars) + 957 ≤
-        957 * ((w + 1) * s + 2 * F.numVars) + 957 :=
-      Nat.add_le_add_right
-        (Nat.mul_le_mul_left 957 (Nat.add_le_add_right hws (2 * F.numVars))) 957
+  · have hbound := thresholdVarBudget_mono
+      (Nat.add_le_add_right (F.workSize_sample_le_of_width hw ω) (2 * F.numVars))
     have ht := optimizeByBinarySearchM_time_le (F.sample ω) (C := C) fun φ h3 hnv =>
       hcost φ h3 (hnv.trans hbound)
     simpa only [StructInstance.sample, List.length_ofFn] using ht
@@ -1208,7 +1212,7 @@ theorem sample_optimizeByBinarySearchM_spec_of_sample_size {k w : ℕ} (hk : 3 �
     {F : StructInstance} (hm : 0 < F.clauses.length) (hw : ∀ c ∈ F.clauses, c.length ≤ w)
     {s C : ℕ}
     (hcost : ∀ φ : CNF ℕ, (∀ c ∈ φ, c.length ≤ 3) →
-      φ.numVars ≤ 957 * ((w + 1) * s + 2 * F.numVars) + 957 → (solveM φ).time ≤ C)
+      φ.numVars ≤ thresholdVarBudget ((w + 1) * s + 2 * F.numVars) → (solveM φ).time ≤ C)
     {δ η : ℝ} (hδ : 0 ≤ δ) (hη : 0 < η)
     (hs : (F.numVars + 1 : ℝ) * Real.log 2 + Real.log (1 / η) ≤ 2 * (s : ℝ) * δ ^ 2) :
     (∀ ω : Fin s → Fin F.clauses.length,
@@ -1284,7 +1288,7 @@ theorem optimumMaxCSPByBinarySearchM_ret {Rel : Type} {w k : ℕ} (hk : 3 ≤ k)
 theorem optimumMaxCSPByBinarySearchM_time_le {Rel : Type} (w : ℕ) (sem : Rel → List Bool → Bool)
     {solveM : CNF ℕ → TimeM ℕ Bool} (F : MaxCSPInstance Rel ℕ) {C : ℕ}
     (hcost : ∀ φ : CNF ℕ, (∀ c ∈ φ, c.length ≤ 3) →
-      φ.numVars ≤ 957 * (maxCSPToStruct w sem F).workSize + 957 → (solveM φ).time ≤ C) :
+      φ.numVars ≤ thresholdVarBudget (maxCSPToStruct w sem F).workSize → (solveM φ).time ≤ C) :
     (optimumMaxCSPByBinarySearchM w sem solveM F).time ≤
       C * (Nat.log 2 (maxCSPToStruct w sem F).clauses.length + 1) := by
   simp only [optimumMaxCSPByBinarySearchM, TimeM.time_bind, TimeM.time_pure, add_zero]

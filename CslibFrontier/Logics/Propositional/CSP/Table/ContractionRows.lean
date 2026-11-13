@@ -80,9 +80,7 @@ theorem deviations_eq_one {reference row : List Bool} {positions : List ℕ}
 theorem project_getD_idxOf (row : List Bool) (positions : List ℕ) {j : ℕ}
     (hj : j ∈ positions) : (project row positions).getD (positions.idxOf j) false =
       row.getD j false := by
-  have hb := List.idxOf_lt_length_iff.mpr hj
-  rw [List.getD_eq_getElem _ _ (by simpa only [project, List.length_map] using hb)]
-  simp only [project, List.getElem_map, List.getElem_idxOf hb]
+  simp [project, List.getD_eq_getElem?_getD, hj]
 
 /-- A full-width row is determined by its outside projection and its internal bits. -/
 theorem eq_of_project_eq_of_eqOn {reference row : List Bool} {positions : List ℕ}

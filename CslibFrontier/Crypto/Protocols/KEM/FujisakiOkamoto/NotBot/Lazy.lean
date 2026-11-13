@@ -83,17 +83,14 @@ abbrev Tables (M R CT K : Type) : Type :=
 
 /-- `coupledHandler` on represented tables, answered with `RandomOracle.answer`. -/
 private noncomputable def answerHandler (S : Scheme PK SK M R CT K) (pk : PK) (sk : SK)
-    (cStar : CT) (q : ROQuery M CT) : StateT (Tables M R CT K) PMF (ROResp R K q) := fun t =>
-  match q with
-  | .G m =>
-    (RandomOracle.answer (fun _ => ProbComp.eval S.pke.sampleCoins) m t.1).map
-      fun z => (z.1, (z.2, t.2.1, t.2.2))
-  | .H x => S.answerHashH pk sk x t
-  | .decaps c =>
-    if c = cStar then PMF.pure (none, t)
-    else
-      (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) c t.2.2).map
-        fun z => (some z.1, (t.1, t.2.1, z.2))
+    (cStar : CT) (q : ROQuery M CT) : StateT (Tables M R CT K) PMF (ROResp R K q) :=
+  ROQuery.dispatch
+    (fun m t => (RandomOracle.answer (fun _ => ProbComp.eval S.pke.sampleCoins) m t.1).map
+      fun z => (z.1, (z.2, t.2.1, t.2.2)))
+    (S.answerHashH pk sk)
+    (fun c t => (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) c t.2.2).map
+      fun z => (some z.1, (t.1, t.2.1, z.2)))
+    cStar q
 
 /-- Mapping `SimState` to its represented tables turns `coupledHashH` into `answerHashH`. -/
 theorem coupledHashH_map_tablesOf (S : Scheme PK SK M R CT K) (pk : PK) (sk : SK)
@@ -138,10 +135,10 @@ private theorem coupledHandler_map_tablesOf (S : Scheme PK SK M R CT K) (pk : PK
   | decaps c =>
     by_cases hc : c = cStar
     · simp only [coupledHandler, coupledFilterHandler, simFilterDispatch, answerHandler, hc,
-        ↓reduceIte]
+        ↓reduceIte, ROQuery.dispatch]
       exact PMF.pure_map _ _
     · simp only [coupledHandler, coupledFilterHandler, simFilterDispatch, answerHandler, hc,
-        ↓reduceIte, Bool.cond_true]
+        ↓reduceIte, Bool.cond_true, ROQuery.dispatch, filterDecaps]
       change (ProbComp.eval (simHashHq S.sampleKey c st >>= fun vs =>
         pure (some vs.1, vs.2))).map _ = _
       refine Eq.trans ?_ (eval_zoom_memoize_map SimState.hqCache
@@ -182,14 +179,15 @@ private theorem answerHandler_sim (S : Scheme PK SK M R CT K) (pk : PK) (sk : SK
   rcases t with ⟨tG, tH, tQ⟩
   cases q with
   | G m =>
-    simp only [answerHandler, completeTables, eagerStateHandler, eagerCoupledHandler, pmf_norm]
+    simp only [answerHandler, completeTables, eagerStateHandler, eagerCoupledHandler, pmf_norm,
+      ROQuery.dispatch]
     rw [answer_bind_complete]
     · rfl
     · intros; rfl
   | H x =>
     rcases x with ⟨_ | _, m, c⟩
     · simp only [answerHandler, answerHashH, completeTables, eagerStateHandler,
-        eagerCoupledHandler, coupledH, pmf_norm]
+        eagerCoupledHandler, coupledH, pmf_norm, ROQuery.dispatch]
       refine Eq.trans ?_ (answer_bind_complete _ tG m
         (fun x G => (RandomOracle.complete (fun _ => ProbComp.eval S.sampleKey) tH).bind fun H =>
           (RandomOracle.complete (fun _ => ProbComp.eval S.sampleKey) tQ).bind fun Q =>
@@ -206,16 +204,16 @@ private theorem answerHandler_sim (S : Scheme PK SK M R CT K) (pk : PK) (sk : SK
         · pmf_swap
         · intros; rfl
     · simp only [answerHandler, answerHashH, completeTables, eagerStateHandler,
-        eagerCoupledHandler, coupledH, pmf_norm, PMF.map]
+        eagerCoupledHandler, coupledH, pmf_norm, PMF.map, ROQuery.dispatch]
       rw [answer_bind_complete₁]
       · pmf_swap
       · intros; rfl
   | decaps c =>
     by_cases hc : c = cStar
     · simp only [answerHandler, completeTables, eagerStateHandler, eagerCoupledHandler, hc,
-        ↓reduceIte, pmf_norm, PMF.map]
+        ↓reduceIte, pure, StateT.pure, pmf_norm, PMF.map, ROQuery.dispatch]
     · simp only [answerHandler, completeTables, eagerStateHandler, eagerCoupledHandler, hc,
-        ↓reduceIte, pmf_norm, PMF.map]
+        ↓reduceIte, pmf_norm, PMF.map, ROQuery.dispatch]
       rw [answer_bind_complete₂]
       · pmf_swap
       · intros; rfl
@@ -295,7 +293,7 @@ theorem eval_coupledGame_eq_eagerCoupledGame [Fintype M] [Finite R] [Fintype CT]
     simp only [completeTables, tablesOf,
       RandomOracle.complete_ofList_singleton, RandomOracle.ofList_nil,
       RandomOracle.complete_empty, OracleComp.interpret_bind, OracleComp.interpret_query,
-      eagerCoupledHandler, pmf_norm]
+      eagerCoupledHandler, pmf_norm, ROQuery.dispatch]
     pmf_swap
   simp only [hstep]
   pmf_hoist (ProbComp.eval S.sampleMsg)

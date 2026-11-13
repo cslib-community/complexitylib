@@ -186,13 +186,9 @@ theorem SignatureScheme.OneTimeEUFCMA.exists_oneWay {S : SignatureScheme}
   let param (size : ℕ) : ℕ := GeneratorReindex.parameter schedule size
   let f (seed : List Bool) : List Bool :=
     encPair encUnary encBits (param seed.length, (evaluate (param seed.length) seed).1)
-  have hsched : ComputableInPolyTime schedule encUnary encUnary :=
-    have hsucc := ComputableInPolyTime.unary_add.comp
-      (ComputableInPolyTime.id'.prod (.const 1))
-    ComputableInPolyTime.unary_add.comp
-      ((ComputableInPolyTime.unary_add.comp
-        ((uConstMul c ((ComputableInPolyTime.unary_pow d).comp hsucc)).prod .id')).prod
-        (.const 1))
+  have hsched : ComputableInPolyTime schedule encUnary encUnary := by
+    dsimp only [schedule]
+    fun_prop
   have hparam_unary : ComputableInPolyTime param encUnary encUnary :=
     GeneratorReindex.isPolyTime_parameter hsched .id'
   have hparam : ComputableInPolyTime (fun seed : List Bool => param seed.length)

@@ -132,7 +132,7 @@ private theorem keyGenWords_encode {k n q : ℕ} (hq : 0 < q)
       ModuleLWE.encodeSample
         (moduleLWEKeyGen A (fun j i => (s j i : ZMod q)) (fun j i => (e j i : ZMod q))) := by
   simp only [keyGenWords, ModuleSIS.encodeMatrix, ModuleSIS.encodeVec,
-    GeneralSIS.encodeMatrix, GeneralSIS.encodeVec, Decoder.decode_enc]
+    SIS.encodeMatrix, SIS.encodeVec, Decoder.decode_enc]
   rw [keyGenCoefficients_ofFn hq]
   simp only [ModuleLWE.encodeSample, moduleLWEKeyGen_eq_sample,
     ModuleLWE.flattenPolyVec_sample, ← intCast_comp_flattenPolyVec]
@@ -612,10 +612,10 @@ private theorem decryptBits_ofFn {k n q : ℕ} (hq : 0 < q)
 private theorem decryptWords_encode {k n q : ℕ} (hq : 0 < q)
     (s : Fin k → Fin n → ℤ) (ct : ModuleLWECiphertext k n q) :
     decryptWords (((k, n), q), (ModuleSIS.encodeVec s,
-      GeneralSIS.encodeMatrix (extendCiphertext ct))) =
+      SIS.encodeMatrix (extendCiphertext ct))) =
       List.ofFn (moduleLWEDecrypt (fun j i => (s j i : ZMod q)) ct) := by
-  simp only [decryptWords, ModuleSIS.encodeVec, GeneralSIS.encodeMatrix,
-    GeneralSIS.encodeVec, Decoder.decode_enc]
+  simp only [decryptWords, ModuleSIS.encodeVec, SIS.encodeMatrix,
+    SIS.encodeVec, Decoder.decode_enc]
   exact decryptBits_ofFn hq s ct
 
 /-- A single total native function realizes existing deterministic Module-LWE decryption
@@ -630,7 +630,7 @@ theorem exists_computableInPolyTime_moduleLWEDecrypt :
         (s : Fin k → Fin n → ℤ)
         (ct : ModuleLWECiphertext k n q),
         run (((k, n), q), (ModuleSIS.encodeVec s,
-          GeneralSIS.encodeMatrix (extendCiphertext ct))) =
+          SIS.encodeMatrix (extendCiphertext ct))) =
           List.ofFn (moduleLWEDecrypt (fun j i => (s j i : ZMod q)) ct) :=
   ⟨decryptWords, decryptWords_polyTime, fun _ _ _ hq s ct => decryptWords_encode hq s ct⟩
 
