@@ -1629,6 +1629,7 @@ public import CslibFrontier.Computability.Circuit.Inputization
 public import CslibFrontier.Computability.Circuit.Iteration
 public import CslibFrontier.Computability.Circuit.KernelVector
 public import CslibFrontier.Computability.Circuit.Linearize
+public import CslibFrontier.Computability.Circuit.Local
 public import CslibFrontier.Computability.Circuit.MapLines
 public import CslibFrontier.Computability.Circuit.MapOp
 public import CslibFrontier.Computability.Circuit.Metric
