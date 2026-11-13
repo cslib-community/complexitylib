@@ -121,6 +121,21 @@ repository root, check both clients with:
 scripts/build.sh --wfail --iofail CslibFrontierTests.Crypto.DiffieHellman CslibFrontierTests.Crypto.AssumptionNonvacuity
 ```
 
+ElGamal follows the same split. In one group,
+[`ElGamal/Finite.lean`](../../CslibFrontier/Crypto/Computational/ElGamal/Finite.lean) defines the
+typed scheme `elGamal q g : PKE G (ZMod q) G (G × G)` (public key `a • g`, ciphertext
+`(b • g, b • u + m)`), and `advantage_cpaExperiment_elGamal_le` bounds its chosen-plaintext
+advantage by the DDH advantages of `elGamalToDDH valid A false` and `elGamalToDDH valid A true`
+when every element of `G` is a multiple of `g`. The family bit game `F.elGamalCPAGame` in
+[`ElGamal.lean`](../../CslibFrontier/Crypto/Computational/ElGamal.lean) is
+`Game.withSetup (setup n) fun d => (elGamal (F.order d) (F.generator d)).cpaExperiment …` against
+`F.bitAdversary adversary n d`, which holds the game's encodings. The shared game
+`elGamalMsgCPAGameOn` masks encoded message words with `F.add`, so it and the group-element and
+Hashed ElGamal games stay at the word level. The
+[ElGamal checks](../../CslibFrontierTests/Crypto/ElGamalFinite.lean) decrypt with the public key in
+`ZMod 5`, where `a • 1 = a`, to win with advantage `1`, and apply the bound to `bitAdversary`; run
+`scripts/build.sh CslibFrontierTests.Crypto.ElGamalFinite`.
+
 Inversion and prediction are each stated once, for a fixed function and input distribution, in
 [`Crypto/Game/Inversion.lean`](../../CslibFrontier/Crypto/Game/Inversion.lean):
 `inversionExperiment sample f A` draws `x`, gives `A` the image `f x` and accepts any preimage,

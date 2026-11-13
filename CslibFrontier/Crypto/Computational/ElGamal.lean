@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Computational.DiffieHellman
+public import CslibFrontier.Crypto.Computational.ElGamal.Finite
 public import CslibFrontier.Crypto.Computational.Encryption.Basic
 public import CslibFrontier.Probability.BitString.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
@@ -46,7 +47,11 @@ We prove IND-CPA security under DDH in the following settings:
    group elements (`AdmitsGroupElements`). It is instantiated for:
    - **Bit ElGamal** (`elGamalCPAGame`, `elGamalINDCPA`, `DDH.elGamalINDCPA`): `false` and `true`
      are embedded as `0` and `g` (`bitElement`, `encodeBit`), every pair is admissible, and
-     `Encryption.Adversary` chooses two challenge bits.
+     `Encryption.Adversary` chooses two challenge bits. In each group, `elGamalCPAGame` is the
+     chosen-plaintext experiment of the typed scheme `Cslib.Crypto.elGamal`
+     (`CslibFrontier/Crypto/Computational/ElGamal/Finite.lean`) against `bitAdversary`, which holds
+     all of the game's encodings; `elGamalCPAGame_eq_elGamalMsgCPAGameOn` identifies it with the
+     shared game.
    - **Group-element ElGamal** (`Encryption.WordAdversary`, `elGamalGroupCPAGameOn`,
      `DDH.negligible_elGamalGroupCPAGameOn`, [BonehShoup2023], Exercise 11.5(a), p. 459): a
      two-stage word-message adversary chooses two words, and `valid` admits only encoded group
@@ -68,12 +73,14 @@ We prove IND-CPA security under DDH in the following settings:
 
 The reductions are typed distinguishers (`DDHDistinguisher`, `KDFDistinguisher`): they receive
 group elements and encode them only where they build the public key and ciphertext words of the
-IND-CPA adversary, whose games keep their word encodings.
+IND-CPA adversary. The shared, group-element and Hashed ElGamal games keep their word encodings,
+because their messages are words.
 
 ## Limitations
 
 In this module, key generation and challenge encryption in the security games sample exact uniform
-exponents in `ZMod (F.order d)` at the `PMF` level (`PMF.uniformOfFintype (ZMod (F.order d))`),
+exponents in `ZMod (F.order d)` at the `PMF` level (`PMF.uniformOfFintype (ZMod (F.order d))`, or
+the specification sampler `$ᵗ ZMod (F.order d)` of `Cslib.Crypto.elGamal`),
 because an odd prime order `F.order d` cannot be sampled with exact uniformity by a bounded-time
 fair-coin `ProbComp` machine; deterministic public-key computation (`encodeElGamalPublicKey`),
 encryption given randomness (`encodeElGamalEncrypt`, `encodeHashedElGamalEncrypt`), and decryption
@@ -100,10 +107,12 @@ encryption given randomness (`encodeElGamalEncrypt`, `encodeHashedElGamalEncrypt
   admits only group elements ([BonehShoup2023], Exercise 11.5(a), p. 459).
 * `Cslib.Crypto.PrimeOrderGroupFamily.bitElement`, `Cslib.Crypto.PrimeOrderGroupFamily.encodeBit`:
   embedding and polynomial-time encoding of message bits as group elements.
-* `Cslib.Crypto.PrimeOrderGroupFamily.elGamalCPAGame`,
+* `Cslib.Crypto.PrimeOrderGroupFamily.bitAdversary`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.elGamalCPAGame`,
   `Cslib.Crypto.PrimeOrderGroupFamily.elGamalINDCPA`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.elGamalToDDHDistinguisher`: bit ElGamal IND-CPA experiment,
-  security property, and DDH distinguisher.
+  `Cslib.Crypto.PrimeOrderGroupFamily.elGamalToDDHDistinguisher`: the typed adversary a bit
+  adversary plays in each group, the bit ElGamal IND-CPA experiment, its security property, and
+  the DDH distinguisher.
 * `Cslib.Crypto.PrimeOrderGroupFamily.elGamalGroupCPAGameOn`,
   `Cslib.Crypto.PrimeOrderGroupFamily.elGamalGroupToDDHDistinguisher`: group-element ElGamal
   IND-CPA experiment and DDH reduction ([BonehShoup2023], Exercise 11.5(a), p. 459).
@@ -149,7 +158,8 @@ encryption given randomness (`encodeElGamalEncrypt`, `encodeHashedElGamalEncrypt
   `Cslib.Crypto.PrimeOrderGroupFamily.isPPT_elGamalMsgToDDHDistinguisher`,
   `Cslib.Crypto.PrimeOrderGroupFamily.DDH.negligible_elGamalMsgCPAGameOn`: shared typed-message
   ElGamal IND-CPA reduction to DDH.
-* `Cslib.Crypto.PrimeOrderGroupFamily.advantage_elGamalCPAGame_le`,
+* `Cslib.Crypto.PrimeOrderGroupFamily.elGamalCPAGame_eq_elGamalMsgCPAGameOn`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.advantage_elGamalCPAGame_le`,
   `Cslib.Crypto.PrimeOrderGroupFamily.isPPT_elGamalToDDHDistinguisher`,
   `Cslib.Crypto.PrimeOrderGroupFamily.DDH.elGamalINDCPA`: ElGamal IND-CPA security for bit
   messages under DDH ([BonehShoup2023], Exercise 11.5(a), p. 459).
@@ -600,31 +610,43 @@ theorem computableInPolyTime_encodeBit :
     (hd.prod (((ComputableInPolyTime.snd F.encDesc encBool).ite' (.const 1) (.const 0)).prod
       (F.computableInPolyTime_generator.comp hd)))
 
+/-- The typed adversary in group `d` that a bit adversary plays at parameter `n`: it receives the
+public key `u`, gives `adversary` the encoded key `(d, encode u)`, and challenges with the group
+elements of its two bits; on the challenge `(v, e)` it guesses from `(encode v, encode e)`. All
+encodings of the bit ElGamal game are here. -/
+def bitAdversary (adversary : Encryption.Adversary) (n : ℕ) (d : F.Desc) :
+    TwoStage (F.Carrier d) (MessagePair (F.Carrier d)) (F.Carrier d × F.Carrier d) Bool
+      (List Bool) where
+  choose u := (fun choice : Encryption.ChoiceOut Bool =>
+      (⟨F.bitElement d (Encryption.ChoiceOut.msg₀ choice),
+        F.bitElement d (Encryption.ChoiceOut.msg₁ choice)⟩, Encryption.ChoiceOut.state choice)) <$>
+    adversary.choose n (encPair F.encDesc encBits (d, F.encode d u))
+  guess state ct :=
+    adversary.guess n state (encPair encBits encBits (F.encode d ct.1, F.encode d ct.2))
+
 /-- The IND-CPA experiment for ElGamal bit encryption ([BonehShoup2023], Exercise 11.5, p. 459):
-draw `d` from `setup n` and a uniform secret key `α : ZMod (F.order d)`, pass the encoded public
-key `(d, encode (α • g))` to `adversary.choose`, encrypt the selected challenge bit under a fresh
-uniform exponent `β : ZMod (F.order d)`, and pass the saved state and encoded ciphertext to
-`adversary.guess`. -/
+draw `d` from `setup n` and run the chosen-plaintext experiment of ElGamal in `F.Carrier d`
+(`Cslib.Crypto.elGamal`) against `F.bitAdversary adversary n d`. The adversary receives the
+encoded public key `(d, encode (α • g))`, the selected challenge bit is encrypted as its group
+element `bitElement`, and the adversary guesses from the encoded ciphertext. -/
 noncomputable def elGamalCPAGame (setup : ℕ → PMF F.Desc)
-    (adversary : Encryption.Adversary) (bit : Bool) (n : ℕ) : Game := do
-  let d ← setup n
-  let α ← PMF.uniformOfFintype (ZMod (F.order d))
-  let pk := encPair F.encDesc encBits (d, F.encode d (α • F.generator d))
-  let choice ← ProbComp.eval (adversary.choose n pk)
-  let m := if bit then Encryption.ChoiceOut.msg₁ choice else Encryption.ChoiceOut.msg₀ choice
-  let β ← PMF.uniformOfFintype (ZMod (F.order d))
-  let ct := encPair encBits encBits
-    (F.encode d (β • F.generator d),
-      F.encode d ((α * β) • F.generator d + F.bitElement d m))
-  ProbComp.eval (adversary.guess n choice.2 ct)
+    (adversary : Encryption.Adversary) (bit : Bool) (n : ℕ) : Game :=
+  Game.withSetup (setup n) fun d =>
+    (elGamal (F.order d) (F.generator d)).cpaExperiment (fun _ _ _ => true)
+      (F.bitAdversary adversary n d) bit
 
 /-- `elGamalCPAGame` is the unrestricted `encodeBit` specialization of `elGamalMsgCPAGameOn`. -/
 theorem elGamalCPAGame_eq_elGamalMsgCPAGameOn (setup : ℕ → PMF F.Desc)
     (adversary : Encryption.Adversary) (bit : Bool) (n : ℕ) :
     F.elGamalCPAGame setup adversary bit n =
       F.elGamalMsgCPAGameOn (fun _ _ _ _ => true) F.encodeBit setup adversary bit n := by
-  simp only [elGamalCPAGame, elGamalMsgCPAGameOn, ↓reduceIte, F.encodeBit_eq_encode_bitElement,
-    F.add_encode]
+  cases bit <;>
+  simp only [elGamalCPAGame, elGamalMsgCPAGameOn, Game.withSetup, PKE.eval_cpaExperiment, elGamal,
+    bitAdversary, eval_lrExperiment, ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure,
+    ProbComp.eval_uniform, PMF.bind_map, PMF.map_bind, PMF.bind_bind, PMF.pure_bind,
+    PMF.monad_bind_eq_bind, Function.comp_def, ↓reduceIte, Bool.false_eq_true,
+    MessagePair.select_false, MessagePair.select_true, F.encodeBit_eq_encode_bitElement,
+    F.add_encode, smul_smul, mul_comm]
 
 /-- IND-CPA security of ElGamal bit encryption over `F` for a setup law `setup`: every uniform
 strict PPT `Encryption.Adversary` has negligible distinguishing advantage between challenge bit
