@@ -196,6 +196,7 @@ import CslibFrontier.Logics.SecondOrder.WordMSO.McNaughtonPapert
 import CslibFrontier.Logics.SecondOrder.WordMSO.OfRegular
 import CslibFrontier.Logics.SecondOrder.WordMSO.Separation
 import CslibFrontier.Logics.SecondOrder.WordMSO.StarFree
+import CslibFrontier.MachineLearning.Boosting.AdaBoost
 import CslibFrontier.MachineLearning.OnlineLearning.SwapRegret
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.AC0Mod
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.Amplification
@@ -1477,6 +1478,25 @@ register_result "blum-mansour-swap-regret" where
     With Hedge copies and losses in [-1, 1], swap regret is at most η T + n ln n / η, and \
     2 √(T n ln n) with the tuned rate when n ≥ 2 and T ≥ n ln n. Stationary vectors are \
     chosen classically; no running time is charged."
+
+register_result "adaboost-training-error" where
+  title := "AdaBoost training-error bound"
+  topic := "learning theory"
+  sources := [
+    { paper := ShalevShwartzBenDavid2014, theorem := "Theorem 10.2", locator := "pp. 135–137" },
+    { paper := MohriRostamizadehTalwalkar2018, theorem := "Theorem 7.2", locator := "p. 149" }
+  ]
+  theorems := [
+    Cslib.MachineLearning.Boosting.empiricalMiscount_adaBoost_le_prod,
+    Cslib.MachineLearning.Boosting.empiricalMiscount_adaBoost_le_exp,
+    Cslib.MachineLearning.Boosting.IsWeakLearner.empiricalMiscount_adaBoost_eq_zero
+  ]
+  scope := "AdaBoost on a finite labelled sample with a deterministic weak learner mapping \
+    weights on the sample to a Boolean hypothesis. If every round has weighted error < 1, the \
+    training error after T rounds is at most the product of 2 √(ε_t (1 - ε_t)); if every \
+    ε_t ≤ 1/2 - γ with γ ≥ 0, it is at most exp(-2 γ² T), and a weak learner of edge γ gives \
+    a consistent output once log m < 2 γ² T. A round with ε_t = 0 stops AdaBoost with its \
+    consistent hypothesis; vote ties predict false. Generalization is not covered."
 
 register_result "gmw-zero-knowledge" where
   title := "Goldreich–Micali–Wigderson auxiliary-input zero-knowledge proofs for NP"
