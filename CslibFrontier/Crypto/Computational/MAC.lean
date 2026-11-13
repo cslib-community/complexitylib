@@ -84,6 +84,9 @@ $$\Pr[\text{Forge}] \le \mathrm{Adv}_{\mathrm{PRF}}(B(\mathcal{A}), n) + 2^{-n}.
   nonce-based tagging.
 * `Cslib.Crypto.MACScheme`: uniform symmetric message authentication code on `msgLen n`-bit
   messages (defaulting to `n`-bit messages).
+* `Cslib.Crypto.MACScheme.UniqueTag`, `TagLengthLE`: unique valid tags, and a bound on tag
+  length for `msgLen n`-bit messages under keys supported by `keyGen n`
+  (`exists_tag_length_bound_of_length_eq` supplies a polynomial bound).
 * `Cslib.Crypto.MACScheme.signingPairOracle`, `sufCmaGame`, `SUFCMA`: pair-logging tagging oracle
   and strong (fresh-pair) adaptive SUF-CMA experiment and security predicate
   ([Boneh and Shoup, Attack Game 6.1 / Definition 6.2][BonehShoup2023]).
@@ -108,6 +111,8 @@ $$\Pr[\text{Forge}] \le \mathrm{Adv}_{\mathrm{PRF}}(B(\mathcal{A}), n) + 2^{-n}.
 * `Cslib.Crypto.NonceMACScheme.signingPairOracle`, `sufCmaGame`, `eufCmaGame`, `SUFCMA`,
   `EUFCMA`: nonce-respecting adaptive chosen-message security experiments and predicates requiring
   distinct queried nonces (`(tr.map (fun e => e.1.2)).Nodup`).
+* `Cslib.Crypto.NonceMACScheme.freshPairGame`, `UniqueTag`: the nonce SUF-CMA experiment
+  with a fresh-`(msg, nonce)` win condition, and unique valid nonce-MAC tags.
 
 ## Main results
 
