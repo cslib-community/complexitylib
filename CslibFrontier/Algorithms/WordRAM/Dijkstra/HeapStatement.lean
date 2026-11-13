@@ -33,9 +33,15 @@ the distances from the source, with `0` for an unreachable vertex and `d + 1` fo
 * `Cslib.Algorithms.Dijkstra.ListInstance.encode`: the input words of an instance.
 * `Cslib.Algorithms.Dijkstra.ListInstance.outAddr`: the output address of a vertex.
 * `Cslib.Algorithms.WordRAM.Dijkstra.encodeDist`: a distance as a word.
+* `Cslib.Algorithms.WordRAM.Dijkstra.decodeDist`: the distance a word encodes.
 * `Cslib.Algorithms.WordRAM.Dijkstra.LogLinearSpec`: a flat program computes every distance from
   the source within `K (m + 1) (⌊log₂ n⌋ + 1)` instructions.
 * `Cslib.Algorithms.WordRAM.Dijkstra.LogLinearStatement`: some program meets `LogLinearSpec`.
+
+## Main results
+
+* `Cslib.Algorithms.WordRAM.Dijkstra.decodeDist_encodeDist`: decoding inverts the encoding of
+  distances.
 
 ## References
 
@@ -76,6 +82,22 @@ open Cslib.WordRAM Cslib.Algorithms.Dijkstra
 
 /-- A distance as a word: `0` for an unreachable vertex and `d + 1` for distance `d`. -/
 def encodeDist (d : ℕ∞) : ℕ := if d = ⊤ then 0 else d.toNat + 1
+
+/-- The distance a word encodes: `⊤` for `0` and `d` for `d + 1`. -/
+def decodeDist (x : ℕ) : ℕ∞ := if x = 0 then ⊤ else ((x - 1 : ℕ) : ℕ∞)
+
+@[simp]
+theorem encodeDist_decodeDist (x : ℕ) : encodeDist (decodeDist x) = x := by
+  cases x with
+  | zero => simp [decodeDist, encodeDist]
+  | succ x => simp [decodeDist, encodeDist]
+
+/-- Decoding inverts the encoding of distances: a distance word decodes to its distance. -/
+@[simp]
+theorem decodeDist_encodeDist (d : ℕ∞) : decodeDist (encodeDist d) = d := by
+  induction d using ENat.recTopCoe with
+  | top => simp [decodeDist, encodeDist]
+  | coe d => simp [decodeDist, encodeDist]
 
 /-- **Shortest paths in `O((m + 1) log n)` time.** At every word size `w` that holds
 `8 (n + m + 2) (W + 2)`, where `m` is the number of edges and `W` the largest weight, the flat

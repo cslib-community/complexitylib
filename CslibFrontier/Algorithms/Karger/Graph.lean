@@ -16,7 +16,6 @@ import Mathlib.Algebra.Order.Ring.Pow
 import Mathlib.Data.Nat.Log
 import CslibFrontier.Foundations.Analysis.ENNRealOneSubInvPow
 import CslibFrontier.Foundations.Data.Nat.Choose
-import CslibFrontier.Foundations.Data.Nat.Div
 
 /-!
 # Supervertex contractions and Karger's survival bounds
