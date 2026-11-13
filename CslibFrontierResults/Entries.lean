@@ -6,6 +6,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
+import CslibFrontier.Foundations.Combinatorics.Expander.HittingProduct
 import CslibFrontier.Computability.Complexity.Problems.Permanent.Valiant
 import CslibFrontier.Computability.Complexity.Problems.ThreeSAT.Collapse
 import CslibFrontier.Computability.Complexity.Classes.Sparse.Envelope
@@ -5585,3 +5586,20 @@ register_result "valiant-zero-one-permanent-sharp-p-complete" where
     and Barak Definition 9.5, FP with a bit oracle) is derived as a native polynomial-time \
     oracle program reading the permanent's bits. Arora and Barak's XOR-gadget proof and its \
     constant 4^(3m) are not formalized; the proof uses Goldreich's gadget."
+
+register_result "goldreich-expander-varying-density-hitting" where
+  title := "Expander-walk varying-density product and constant-set bound"
+  topic := "pseudorandomness"
+  sources := [
+    { paper := Goldreich2007DraftR4, theorem := "Exercise 8.43, equation (8.24)",
+      locator := "March 2007 draft, printed p. 381 / PDF p. 117" }
+  ]
+  theorems := [
+    Cslib.RotationMap.dens_filter_forall_walkAt_mem_le_product,
+    Cslib.RotationMap.dens_filter_forall_walkAt_mem_le_product_of_spectralExpansion_le,
+    Cslib.RotationMap.dens_filter_forall_walkAt_mem_le_rpow_of_spectralExpansion_le
+  ]
+  scope := "Finite nonempty rotation map with nonempty incident slots; uniform initial vertex \
+    and independent uniform slot choices. Length counts t+1 vertices. Individual densities \
+    retained, with explicit transport to lambda/d and the constant-set real half-length power. \
+    No machine uniformity, runtime or Exercise 8.44 concentration claim."

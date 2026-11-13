@@ -5345,6 +5345,7 @@ public import CslibFrontier.Foundations.Combinatorics.Expander.Existence
 public import CslibFrontier.Foundations.Combinatorics.Expander.Family
 public import CslibFrontier.Foundations.Combinatorics.Expander.FourthMoment
 public import CslibFrontier.Foundations.Combinatorics.Expander.Hitting
+public import CslibFrontier.Foundations.Combinatorics.Expander.HittingProduct
 public import CslibFrontier.Foundations.Combinatorics.Expander.Hom
 public import CslibFrontier.Foundations.Combinatorics.Expander.IteratedProd
 public import CslibFrontier.Foundations.Combinatorics.Expander.KilledWalk
