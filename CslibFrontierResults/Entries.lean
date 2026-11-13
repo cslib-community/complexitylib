@@ -207,6 +207,7 @@ import CslibFrontier.Logics.SecondOrder.WordMSO.McNaughtonPapert
 import CslibFrontier.Logics.SecondOrder.WordMSO.OfRegular
 import CslibFrontier.Logics.SecondOrder.WordMSO.Separation
 import CslibFrontier.Logics.SecondOrder.WordMSO.StarFree
+import CslibFrontier.MachineLearning.LossMinimization.RLM
 import CslibFrontier.MachineLearning.OnlineLearning.SwapRegret
 import CslibFrontier.MachineLearning.PACLearning.MDL
 import CslibFrontier.MachineLearning.PACLearning.Nonuniform
@@ -1614,6 +1615,24 @@ register_result "blum-mansour-swap-regret" where
     With Hedge copies and losses in [-1, 1], swap regret is at most η T + n ln n / η, and \
     2 √(T n ln n) with the tuned rate when n ≥ 2 and T ≥ n ln n. Stationary vectors are \
     chosen classically; no running time is charged."
+
+register_result "rlm-stability" where
+  title := "Stability and oracle inequality of Tikhonov-regularized loss minimization"
+  topic := "statistical learning"
+  sources := [
+    { paper := ShalevShwartzBenDavid2014, theorem := "Corollaries 13.6, 13.8 and 13.9",
+      locator := "Sections 13.3.1 and 13.4" }
+  ]
+  theorems := [
+    Cslib.MachineLearning.IsRLM.isReplaceOneStable_tikhonov,
+    Cslib.MachineLearning.IsRLM.integral_trueRisk_le_tikhonov,
+    Cslib.MachineLearning.IsRLM.integral_trueRisk_le_add_sqrt
+  ]
+  scope := "Regularizer r‖w‖² on a convex subset K of a real inner product space, losses convex \
+    and ρ-Lipschitz on K, m i.i.d. examples from an arbitrary probability measure. The rule \
+    minimizes over K and the comparator ranges over K. The replace-one stability rate proved is \
+    ρ² / (r m), half the source's; the oracle inequalities are stated with the source's \
+    constants. Integrability of the losses of the rule's output is a hypothesis."
 
 register_result "srm-nonuniform-learnability" where
   title := "Countable unions of uniformly convergent classes are nonuniformly learnable by SRM"
