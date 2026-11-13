@@ -12,6 +12,7 @@ public import CslibFrontier.Crypto.Protocols.MPC.Advantage
 public import CslibFrontier.Crypto.Protocols.MPC.BatchOT
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.UniformPoint
+import CslibFrontier.Probability.Uniform.Translate
 
 /-!
 # Three-Message DDH 1-out-of-2 Oblivious Transfer

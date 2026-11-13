@@ -10,7 +10,7 @@ module
 public import CslibFrontier.Probability.HashFamily
 import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Probability.Product
-import CslibFrontier.Probability.Uniform
+import CslibFrontier.Probability.Uniform.Translate
 import Mathlib.Algebra.Group.Equiv.Basic
 
 /-!

@@ -10,6 +10,7 @@ import CslibFrontier.Crypto.Protocols.SecretSharing.AccessStructure.Designs
 import CslibFrontier.Crypto.Protocols.SecretSharing.AccessStructure.Privacy
 import CslibFrontier.Crypto.Protocols.SecretSharing.AccessStructure.Shamir
 import CslibFrontier.Probability.PMF.Coin
+import CslibFrontier.Probability.Uniform.Translate
 import Mathlib.Algebra.Field.ZMod
 
 /-!

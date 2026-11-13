@@ -14,7 +14,7 @@ import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Probability.PMF.UniformBound
-import CslibFrontier.Probability.Uniform
+import CslibFrontier.Probability.Uniform.Translate
 
 /-!
 # Vector Oblivious Linear Evaluation (VOLE), IT-MACs, and a Linear Sigma Protocol

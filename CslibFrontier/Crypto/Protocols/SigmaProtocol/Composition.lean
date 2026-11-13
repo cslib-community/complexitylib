@@ -10,7 +10,7 @@ module
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Basic
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF
-import CslibFrontier.Probability.Uniform
+import CslibFrontier.Probability.Uniform.Translate
 
 /-!
 # AND and OR composition of Sigma protocols

@@ -11,7 +11,7 @@ public import CslibFrontier.Languages.Probabilistic.Basic
 public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 public import Mathlib.Algebra.Module.Pi
 import CslibFrontier.Probability.PMF.Uniform
-import CslibFrontier.Probability.Uniform
+import CslibFrontier.Probability.Uniform.Translate
 
 /-!
 # Affine wire labels for arithmetic garbling

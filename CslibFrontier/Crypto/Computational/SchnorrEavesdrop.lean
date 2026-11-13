@@ -16,7 +16,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Probabilistic.Repeat
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF
-import CslibFrontier.Probability.Uniform
+import CslibFrontier.Probability.Uniform.Translate
 import CslibFrontier.Tactic.Negligible
 import CslibFrontier.Tactic.PPT
 
