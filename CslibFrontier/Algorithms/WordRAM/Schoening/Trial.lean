@@ -138,13 +138,14 @@ structure Frame (φ : CNF (Fin n)) (C A : ℕ) (M : ℕ → ℕ) (x : Data 24) :
   span : C + (encodeClauses φ).length = A
   rest : ∀ a, A + n ≤ a → x.mem a = M a
 
-/-- The frame survives any change that keeps its registers and the memory outside the assignment
-`[A, A + n)`. -/
-theorem Frame.congr {φ : CNF (Fin n)} {C A : ℕ} {M : ℕ → ℕ} {x y : Data 24}
+/-- The frame survives any change that keeps its registers and the memory below `A`, with the
+memory after the assignment described by `M'`. -/
+private theorem Frame.of_regs {φ : CNF (Fin n)} {C A : ℕ} {M M' : ℕ → ℕ} {x y : Data 24}
     (h : Frame φ C A M x) (hz : y.regs zero = x.regs zero) (ho : y.regs one = x.regs one)
     (hc : y.regs cBeg = x.regs cBeg) (ha : y.regs aBase = x.regs aBase)
-    (hn : y.regs nReg = x.regs nReg) (hmem : ∀ a, a < A ∨ A + n ≤ a → y.mem a = x.mem a) :
-    Frame φ C A M y where
+    (hn : y.regs nReg = x.regs nReg) (hmem : ∀ a < A, y.mem a = x.mem a)
+    (hrest : ∀ a, A + n ≤ a → y.mem a = M' a) :
+    Frame φ C A M' y where
   zero_eq := hz.trans h.zero_eq
   one_eq := ho.trans h.one_eq
   cBeg_eq := hc.trans h.cBeg_eq
@@ -154,7 +155,17 @@ theorem Frame.congr {φ : CNF (Fin n)} {C A : ℕ} {M : ℕ → ℕ} {x y : Data
     have hs := h.span
     ram_keep h.clauses using hmem
   span := h.span
-  rest a ha := (hmem a (Or.inr ha)).trans (h.rest a ha)
+  rest := hrest
+
+/-- The frame survives any change that keeps its registers and the memory outside the assignment
+`[A, A + n)`. -/
+theorem Frame.congr {φ : CNF (Fin n)} {C A : ℕ} {M : ℕ → ℕ} {x y : Data 24}
+    (h : Frame φ C A M x) (hz : y.regs zero = x.regs zero) (ho : y.regs one = x.regs one)
+    (hc : y.regs cBeg = x.regs cBeg) (ha : y.regs aBase = x.regs aBase)
+    (hn : y.regs nReg = x.regs nReg) (hmem : ∀ a, a < A ∨ A + n ≤ a → y.mem a = x.mem a) :
+    Frame φ C A M y :=
+  h.of_regs hz ho hc ha hn (fun a ha => hmem a (Or.inl ha))
+    fun a ha => (hmem a (Or.inr ha)).trans (h.rest a ha)
 
 /-- The frame with the memory after the assignment taken as it is. -/
 theorem Frame.self {φ : CNF (Fin n)} {C A : ℕ} {M : ℕ → ℕ} {x : Data 24} (h : Frame φ C A M x) :
@@ -167,17 +178,8 @@ theorem Frame.of_mem_lt {φ : CNF (Fin n)} {C A : ℕ} {M : ℕ → ℕ} {x y : 
     (h : Frame φ C A M x) (hz : y.regs zero = x.regs zero) (ho : y.regs one = x.regs one)
     (hc : y.regs cBeg = x.regs cBeg) (ha : y.regs aBase = x.regs aBase)
     (hn : y.regs nReg = x.regs nReg) (hmem : ∀ a < A, y.mem a = x.mem a) :
-    Frame φ C A y.mem y where
-  zero_eq := hz.trans h.zero_eq
-  one_eq := ho.trans h.one_eq
-  cBeg_eq := hc.trans h.cBeg_eq
-  aBase_eq := ha.trans h.aBase_eq
-  nReg_eq := hn.trans h.nReg_eq
-  clauses := by
-    have hs := h.span
-    ram_keep h.clauses using hmem
-  span := h.span
-  rest _ _ := rfl
+    Frame φ C A y.mem y :=
+  h.of_regs hz ho hc ha hn hmem fun _ _ => rfl
 
 /-- Code that writes none of the frame registers keeps the frame registers. -/
 def PreservesFrame (c : Code .standard 24) : Prop :=
