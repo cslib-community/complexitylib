@@ -82,7 +82,7 @@ security reduction use:
   Standard*][NISTFIPS204]
 -/
 
-public section
+@[expose] public section
 
 namespace Cslib.Crypto.MLDSA
 

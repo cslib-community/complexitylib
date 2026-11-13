@@ -4,10 +4,15 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Karn Seth, Samuel Schlesinger
 -/
 
+module
+
 import CslibFrontier.Crypto.Computational.MLDSA.KeyOnly
 
 /-! Concrete power-of-two and commitment decompositions, the standard parameter sets, and a toy
 instance on which signing, verification and the forgery-to-self-target map are all exercised. -/
+
+-- This regression module checks ordinary imports and exports no test fixtures.
+set_option linter.privateModule false
 
 open Cslib.Crypto Cslib.Crypto.MLDSA
 
