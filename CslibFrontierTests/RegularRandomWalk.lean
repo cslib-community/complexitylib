@@ -4,12 +4,12 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
 
-import CslibFrontier.Probability.MarkovChain.RotationMap
+import CslibFrontier.Probability.MarkovChain.RotationMapVisits
 
 /-!
 # Random walks on regular multigraphs: checked clients for Arora–Barak Exercise 7.9
 
-The parts (b)(i), (c) and (d) of [Arora and Barak, Exercise 7.9][AroraBarak07] in the source's
+The parts (b)(i), (b)(ii), (c) and (d) of [Arora and Barak, Exercise 7.9][AroraBarak07] in the source's
 form, for a `d`-regular multigraph `G : RotationMap V D` on `n = |V|` vertices, and the
 single-edge instance `flip` on `Bool`, where the expected return time is exactly `2`.
 -/
@@ -26,6 +26,15 @@ distribution. -/
 example (hG : G.toSimpleGraph.Connected) (π : PMF V) :
     G.randomWalk.IsStationary π ↔ π = @PMF.uniformOfFintype V _ hG.nonempty :=
   isStationary_randomWalk_iff hG π
+
+/-- (b)(ii): for every `u`, `v`, `ε > 0` there is `k` such that, with probability at least
+`1 - ε`, the number of visits of the `k`-step walk from `u` to `v` lies in
+`[(1 - ε) k / n, (1 + ε) k / n]`. -/
+example (hG : G.toSimpleGraph.Connected) (u v : V) {ε : ℝ} (hε : 0 < ε) :
+    ∃ k, (1 - ε) * (Fintype.card D : ℝ) ^ k ≤
+      #{w : Fin k → D | (G.visits u v w : ℝ) ∈
+        Set.Icc ((1 - ε) * k / Fintype.card V) ((1 + ε) * k / Fintype.card V)} :=
+  exists_visits_mem_Icc hG u v hε
 
 /-- (c): `E_u ≤ 10 n²`, and in fact `E_u = n` on a connected graph. -/
 example (u : V) : returnTime G.randomWalk u ≤ 10 * (Fintype.card V : ℝ≥0∞) ^ 2 :=
