@@ -203,8 +203,8 @@ type and name (`…Experiment`, `…Game`, `…Hybrid`, `…Exp`), reductions an
 pull request when a module it changes has more findings of a category than its entry in
 `scripts/experiment_readability_baseline.json`. Reviewed exceptions, such as a garbling scheme's
 own `encode` and `decode` algorithms (Bellare–Hoang–Rogaway's En and De), go in
-`scripts/experiment_readability_allowlist.txt` with a reason. `--list CslibFrontier/Crypto/Computational/Encryption` lists an area's findings
-for a sweep.
+`scripts/experiment_readability_allowlist.txt` with a reason.
+`--list CslibFrontier/Crypto/Computational/Encryption` lists an area's findings for a sweep.
 
 Public statements write the probability that a program returns `true` as `Pr[e]`, or through
 `Experiment.succProbability` and `Experiment.advantage`, and programs sample uniformly with `$ᵗ α`

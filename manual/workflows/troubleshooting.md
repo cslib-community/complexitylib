@@ -95,7 +95,7 @@ One Lake build runs roughly as many `lean` processes at once as its thread pool 
 Four source-only checks count readability debt per module against a checked-in baseline:
 `scripts/check_encoding_readability.py` (repeated compound encodings,
 `scripts/encoding_readability_baseline.json`), `scripts/check_projection_chains.py` (positional
-projection chains, `scripts/projection_chains_baseline.json`) and
+projection chains, `scripts/projection_chains_baseline.json`),
 `scripts/check_experiment_readability.py` (word plumbing in security experiments and adversary
 types under `CslibFrontier/Crypto`, `scripts/experiment_readability_baseline.json`) and
 `scripts/check_probability_idioms.py` (`ProbComp.eval … true` in public statements and
