@@ -268,8 +268,8 @@ private theorem idealGame_reduction [DecidableEq R] [Fintype L] (S : SwitchSyste
     CCR.Arithmetic.idealGame (reduction S H col σ D) = simGame S H col (S.controls σ) D := by
   have hself : ∀ {α : Type} (p : ProbComp α), OracleComp.interpret ProbComp.unifFin p = p :=
     fun p => OracleComp.interpret_query_eq_self p
-  simp only [CCR.Arithmetic.idealGame, simGame, simulate, reduction, SwitchSystem.controls,
-    OracleComp.interpret_bind, ProbOracleComp.interpret_sample, hself,
+  simp only [CCR.Arithmetic.idealGame, ProbOracleComp.run, simGame, simulate, reduction,
+    SwitchSystem.controls, OracleComp.interpret_bind, ProbOracleComp.interpret_sample, hself,
     interpret_reduceGates_ideal, bind_assoc, pure_bind]
 
 /-! ### The real side -/

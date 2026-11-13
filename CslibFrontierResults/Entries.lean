@@ -33,6 +33,7 @@ import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Sparse
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.SparseOrbit
 import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.NineQuarters
 import CslibFrontier.Computability.Circuit.Boolean.Arithmetic
+import CslibFrontier.Computability.Circuit.Boolean.BitBlastCompiler
 import CslibFrontier.Computability.Circuit.Boolean.BarringtonClass
 import CslibFrontier.Computability.Circuit.Boolean.Braverman.Fooling
 import CslibFrontier.Computability.Circuit.Boolean.Formula.Andreev
@@ -733,6 +734,20 @@ register_result "arithmetic-bit-synthesis-injective-encoding" where
     bits cost at most size * bitBlastCost w additional De Morgan gates. The encoding need not \
     be surjective, admitting odd fields. No free-input compiler, reverse simulation, encoding \
     construction or runtime claim; the full finite-field exercise remains open."
+
+register_result "encoded-circuit-boolean-simulation" where
+  title := "Boolean circuits for left-invertibly encoded bounded-arity computations"
+  topic := "circuit complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 14, Exercise 1 (forward circuit milestone)",
+      locator := "Web draft 2007-01-08, printed p. 265; PDF p. 281" }
+  ]
+  theorems := [Cslib.Circuits.Circuit.exists_encoded_boolean]
+  scope := "Any interpreted circuit of arity at most two, with a supplied w-bit encoding and \
+    decoder left inverse, has a Boolean circuit on N*w free inputs with M*w outputs, costing \
+    at most size * bitBlastCost w gates. Correctness holds on valid encoded inputs, packed \
+    wire-major by blocksEquiv.symm. Constants count as gates and wiring is free. No encoding \
+    construction, reverse general-field simulation or compiler-runtime claim."
 
 register_result "formula-bounds" where
   title := "Formula lower bounds: Khrapchenko's quadratic bound for parity"

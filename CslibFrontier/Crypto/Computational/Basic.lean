@@ -9,7 +9,7 @@ module
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 public import CslibFrontier.Computability.Probabilistic.Parameter
-public import CslibFrontier.Crypto.Game
+public import CslibFrontier.Crypto.Game.Experiment
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF
@@ -72,24 +72,32 @@ def IsPPTTest (test : ℕ → List Bool → PMF Bool) : Prop :=
     exact h.congr heq
   · exact fun h => ⟨adversary, h, fun _ _ => rfl⟩
 
-/-- Give a sample from a distribution to a distinguisher; this law assumes no efficient sampler. -/
+/-- Give a sample from a distribution to a distinguisher: the game `Game.withSetup` whose public
+parameter is the sampled word. This law assumes no efficient sampler. -/
 noncomputable def distinguishingGame (distribution : PMF (List Bool))
-    (adversary : List Bool → ProbComp Bool) : Game := do
-  let word ← distribution
-  ProbComp.eval (adversary word)
+    (adversary : List Bool → ProbComp Bool) : Game :=
+  Game.withSetup distribution adversary
+
+/-- The sampling form of `distinguishingGame`: draw a word, then run the distinguisher on it. -/
+theorem distinguishingGame_eq_bind (distribution : PMF (List Bool))
+    (adversary : List Bool → ProbComp Bool) :
+    distinguishingGame distribution adversary = (do
+      let word ← distribution
+      ProbComp.eval (adversary word)) :=
+  rfl
 
 /-- An actual sampler followed by a distinguisher realizes the corresponding experiment. -/
 theorem eval_bind_eq_distinguishingGame (sample : ProbComp (List Bool))
     (adversary : List Bool → ProbComp Bool) :
     ProbComp.eval (sample >>= adversary) = distinguishingGame (ProbComp.eval sample) adversary :=
-  ProbComp.eval_bind _ _
+  Experiment.eval_bind_eq_withSetup sample adversary
 
 /-- Postprocessing the distinguisher's answer postprocesses the experiment's answer. -/
 theorem distinguishingGame_map (distribution : PMF (List Bool))
     (adversary : List Bool → ProbComp Bool) (f : Bool → Bool) :
     distinguishingGame distribution (fun word => f <$> adversary word) =
       (distinguishingGame distribution adversary).map f := by
-  simp only [pmf_norm, distinguishingGame]
+  simp only [pmf_norm, distinguishingGame_eq_bind]
 
 /-- Each uniform strict PPT distinguisher has negligible advantage between the two ensembles.
 Neither ensemble is required to be efficiently sampleable or polynomially bounded in length. -/
@@ -105,7 +113,7 @@ theorem computationallyIndistinguishable_iff_tests {X Y : ℕ → PMF (List Bool
         (fun test n => (Y n).bind (test n)) IsPPTTest := by
   constructor
   · rintro h test ⟨program, hprogram, heq⟩
-    simpa only [distinguishingGame, PMF.monad_bind_eq_bind, heq] using h program hprogram
+    simpa only [distinguishingGame_eq_bind, PMF.monad_bind_eq_bind, heq] using h program hprogram
   · intro h adversary hadversary
     exact h (fun n input => ProbComp.eval (adversary n input)) (isPPTTest_eval.mpr hadversary)
 
@@ -134,7 +142,7 @@ theorem ComputationallyIndistinguishable.bind {X Y : ℕ → PMF (List Bool)}
   have hefficient : IsPPT encBool (fun n word => do
       let result ← process n word
       adversary n result) := by ppt
-  simpa only [pmf_norm, distinguishingGame] using h _ hefficient
+  simpa only [pmf_norm, distinguishingGame_eq_bind] using h _ hefficient
 
 /-- Efficient parameter-dependent deterministic postprocessing preserves indistinguishability. -/
 theorem ComputationallyIndistinguishable.map {X Y : ℕ → PMF (List Bool)}

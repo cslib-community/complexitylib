@@ -35,6 +35,8 @@ in the soundness argument, never by the polynomial-time verifier.
 * `PCPVerifier.isPolyTime_tableVerifier`: uniform efficiency, including malformed tables.
 * `PCPVerifier.mem_queryTable`: the table records every address queried on a valid random word.
 * `PCPVerifier.tableVerifier_complete`, `PCPVerifier.tableVerifier_sound`: exact proof transfer.
+* `Cslib.Complexity.IsPCPVerifier.mem_iff_exists_tableVerifier`: the tables accepted by the
+  exhaustive check characterize the problem.
 * `Cslib.Complexity.PCP_log_subset_NP`: logarithmic-randomness PCP is contained in NP.
 
 ## References
@@ -66,7 +68,7 @@ variable {V} {enc : α ↪ List Bool} {c : ℕ}
 private theorem coins_unary (hV : V.PolyTime enc)
     (hcoins : ∀ a, V.coins a ≤ c * (Nat.log 2 (enc a).length + 1)) :
     ComputableInPolyTime V.coins enc encUnary :=
-  .binary_to_unary_bounded hV.1 (by fun_prop) hcoins
+  .binary_to_unary_bounded hV.coins (by fun_prop) hcoins
 
 private theorem enum_coins (hV : V.PolyTime enc)
     (hcoins : ∀ a, V.coins a ≤ c * (Nat.log 2 (enc a).length + 1)) :
@@ -85,7 +87,7 @@ theorem isPolyTime_queryTable (hV : V.PolyTime enc)
     (hcoins : ∀ a, V.coins a ≤ c * (Nat.log 2 (enc a).length + 1)) :
     ComputableInPolyTime V.queryTable enc (encList encNat) := by
   have he := enum_coins hV hcoins
-  have hq := hV.2.1
+  have hq := hV.queries
   unfold queryTable
   fun_prop
 
@@ -94,8 +96,8 @@ theorem isPolyTime_tableVerifier (hV : V.PolyTime enc)
     (hcoins : ∀ a, V.coins a ≤ c * (Nat.log 2 (enc a).length + 1)) :
     ComputableInPolyTime V.tableVerifier (encPair enc encBits) encBool := by
   have he := enum_coins hV hcoins
-  have hq := hV.2.1
-  have hv := hV.2.2
+  have hq := hV.queries
+  have hv := hV.verdict
   have ht := isPolyTime_queryTable hV hcoins
   have hinput := ComputableInPolyTime.fst (encPair enc encBits) encBits
   have hword := ComputableInPolyTime.snd (encPair enc encBits) encBits
@@ -160,11 +162,29 @@ namespace Cslib.Complexity
 
 variable {α : Type} {enc : α ↪ List Bool}
 
+/-- For a PCP verifier of `A`, the instances some table makes the exhaustive table check accept
+are exactly the members of `A`. -/
+theorem IsPCPVerifier.mem_iff_exists_tableVerifier {r q : ℕ → ℕ} {V : PCPVerifier α} {A : Set α}
+    (h : IsPCPVerifier enc r q V A) (a : α) :
+    a ∈ A ↔ ∃ table, V.tableVerifier (a, table) = true := by
+  refine ⟨fun ha => ?_, fun ⟨table, htable⟩ => ?_⟩
+  · obtain ⟨proof, hproof⟩ := h.complete a ha
+    exact ⟨_, by simpa using PCPVerifier.tableVerifier_complete a proof [] hproof⟩
+  · by_contra ha
+    obtain ⟨proof, hproof⟩ := PCPVerifier.tableVerifier_sound a table htable
+    have hs := h.sound a ha proof
+    have hc : acceptCount (fun x => V.accepts x.1 proof x.2) a (V.coins a) = 2 ^ V.coins a := by
+      simp [acceptCount, hproof]
+    rw [hc] at hs
+    have hp : 0 < 2 ^ V.coins a := Nat.two_pow_pos _
+    lia
+
 /-- Logarithmically many random bits can be checked exhaustively in NP, regardless of the query
 bound. Binary proof addresses are represented by a polynomial-length table of queried bits. -/
 theorem PCP_log_subset_NP (q : ℕ → ℕ) :
     PCP (fun n => Nat.log 2 n + 1) q enc ⊆ NP enc := by
-  rintro A ⟨V, c, d, hV, hcoins, hqueries, hcomplete, hsound⟩
+  rintro A ⟨V, c, d, hV, hpcp⟩
+  have hcoins := hpcp.coins_le
   obtain ⟨p, hlength⟩ :=
     (PCPVerifier.isPolyTime_queryTable hV hcoins).polyBounded_length.exists_polynomial
   have hbound (a : α) : (V.queryTable a).length ≤ p.eval (enc a).length := by
@@ -173,7 +193,7 @@ theorem PCP_log_subset_NP (q : ℕ → ℕ) :
     fun a => ?_⟩
   constructor
   · intro ha
-    obtain ⟨proof, hproof⟩ := hcomplete a ha
+    obtain ⟨proof, hproof⟩ := hpcp.complete a ha
     let table := PCPVerifier.answers proof (V.queryTable a)
     refine ⟨table ++ List.replicate (p.eval (enc a).length - table.length) false, ?_, ?_⟩
     · have htable : table.length ≤ p.eval (enc a).length := by
@@ -182,14 +202,6 @@ theorem PCP_log_subset_NP (q : ℕ → ℕ) :
       lia
     · exact PCPVerifier.tableVerifier_complete a proof _ hproof
   · rintro ⟨table, _, htable⟩
-    by_contra ha
-    obtain ⟨proof, hproof⟩ := PCPVerifier.tableVerifier_sound a table htable
-    have hs := hsound a ha proof
-    have hc : acceptCount (fun x => V.accepts x.1 proof x.2) a (V.coins a) =
-        2 ^ V.coins a := by
-      simp [acceptCount, hproof]
-    rw [hc] at hs
-    have hp : 0 < 2 ^ V.coins a := Nat.two_pow_pos _
-    lia
+    exact (hpcp.mem_iff_exists_tableVerifier a).2 ⟨table, htable⟩
 
 end Cslib.Complexity
