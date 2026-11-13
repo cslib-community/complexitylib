@@ -229,6 +229,19 @@ theorem isQueryBounded_adapt {program : ProbOracleComp (fun _ : Op × List Bool 
       simp at hlength
   encodeReply _ := ⟨List.ofFn, List.ofFn_injective⟩
 
+/-- The word oracle of `bitString n` answers an `n`-bit word through the typed oracle. -/
+theorem wordOracle_bitString_of_length_eq {n : ℕ} {m : Type → Type v} [Monad m]
+    (oracle : BitString n → m (BitString n)) {word : List Bool} (h : word.length = n) :
+    (bitString n).wordOracle oracle ((), word) =
+      List.ofFn <$> oracle (BitString.ofList n word) := by
+  simp [wordOracle, bitString, h]
+
+/-- The word oracle of `bitString n` answers a word of any other length with `[]`. -/
+theorem wordOracle_bitString_of_length_ne {n : ℕ} {m : Type → Type v} [Monad m]
+    (oracle : BitString n → m (BitString n)) {word : List Bool} (h : word.length ≠ n) :
+    (bitString n).wordOracle oracle ((), word) = pure [] := by
+  simp [wordOracle, bitString, h]
+
 /-- Transport a codec along an equivalence of queries and embeddings of replies. -/
 @[expose] def comap {Q' : Type} {spec' : Q' → Type} (e : Q' ≃ Q)
     (reply : (q : Q') → spec' q ↪ spec (e q)) : OracleCodec Op Q' spec' where

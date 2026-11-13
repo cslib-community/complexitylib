@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Probabilistic.Oracle.Parameter
 public import CslibFrontier.Crypto.Game
 public import CslibFrontier.Foundations.Data.BitString.List
 public import CslibFrontier.Languages.Probabilistic.BitString
+public import CslibFrontier.Languages.Probabilistic.Oracle.Codec
 public import CslibFrontier.Languages.Probabilistic.Oracle.Run
 public import CslibFrontier.Languages.Probabilistic.RandomOracle
 import CslibFrontier.Languages.Probabilistic.RandomOracle.Probabilistic
@@ -38,8 +39,8 @@ with one machine and polynomial for all parameters and auxiliary inputs.
 
 ## Main results
 
-* `Cslib.Crypto.interpret_randomFunctionQuery`, `Cslib.Crypto.isQueryBounded_randomFunctionQuery`:
-  correctness and query cost of the finite-domain adapter.
+* `Cslib.Crypto.wordOracle_bitString_pure`: a fixed table read through `OracleCodec.bitString` is
+  `randomFunctionOracle`, so the ideal game is a finite-domain experiment of the adapted adversary.
 * `Cslib.Crypto.prfIdealGame_eq_lazy`: an exact lazy implementation of the ideal experiment.
 
 ## References
@@ -68,38 +69,22 @@ def prfOracle (family : List Bool → List Bool → List Bool) (n : ℕ) (key qu
 def randomFunctionOracle (n : ℕ) (table : BitString n → BitString n) (query : List Bool) :
     List Bool := if query.length = n then List.ofFn (table (BitString.ofList n query)) else []
 
-/-- Adapt a valid word to the finite domain. Malformed words make no external call. -/
-def randomFunctionQuery (n : ℕ) (query : List Bool) :
-    ProbOracleComp (fun _ : BitString n => BitString n) (List Bool) :=
-  if query.length = n then List.ofFn <$> ProbOracleComp.query (BitString.ofList n query)
-  else pure []
-
-/-- The finite query adapter preserves the word-valued table interface in every lawful monad. -/
-theorem interpret_randomFunctionQuery {m : Type → Type*} [Monad m] [LawfulMonad m]
-    (random : (n : ℕ) → m (Fin (n + 1))) (n : ℕ) (table : BitString n → BitString n)
-    (query : List Bool) :
-    OracleComp.interpret (OracleComp.sumHandler random (fun bits => pure (table bits)))
-      (randomFunctionQuery n query) = pure (randomFunctionOracle n table query) := by
-  by_cases h : query.length = n <;> simp [randomFunctionQuery, randomFunctionOracle, h]
-
-/-- The finite-domain adapter makes at most one external query. -/
-theorem isQueryBounded_randomFunctionQuery (n : ℕ) (query : List Bool) :
-    (randomFunctionQuery n query).IsQueryBounded 1 := by
-  unfold randomFunctionQuery
-  split_ifs
-  · simpa only [map_eq_bind_pure_comp, Function.comp_def, Nat.add_zero] using
-      (ProbOracleComp.IsQueryBounded.query (BitString.ofList n query)).bind fun _ =>
-        OracleComp.IsCostBounded.pure _ 0
-  · exact OracleComp.IsCostBounded.pure [] 1
+/-- A fixed table on `n`-bit strings presents `randomFunctionOracle` on the word channel. -/
+theorem wordOracle_bitString_pure {m : Type → Type*} [Monad m] [LawfulMonad m] (n : ℕ)
+    (table : BitString n → BitString n) :
+    (OracleCodec.bitString n).wordOracle (fun x => (pure (table x) : m (BitString n))) =
+      fun request => pure (randomFunctionOracle n table request.2) := by
+  funext ⟨⟨⟩, query⟩
+  by_cases h : query.length = n
+  · simp [OracleCodec.wordOracle_bitString_of_length_eq _ h, randomFunctionOracle, h]
+  · simp [OracleCodec.wordOracle_bitString_of_length_ne _ h, randomFunctionOracle, h]
 
 open Classical in
 /-- A semantic random-function cache, retaining only the finite-domain answers already used. -/
 noncomputable def lazyRandomFunctionOracle (n : ℕ) (query : List Bool) :
     StateT (RandomOracle.Cache (fun _ : BitString n => BitString n)) PMF (List Bool) :=
-  OracleComp.interpret
-    (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
-      (RandomOracle.answer (fun _ => PMF.uniformOfFintype (BitString n))))
-        (randomFunctionQuery n query)
+  (OracleCodec.bitString n).wordOracle
+    (RandomOracle.answer (fun _ => PMF.uniformOfFintype (BitString n))) ((), query)
 
 /-- Sample one key and reuse it across every adaptive call. -/
 noncomputable def prfRealGame (family : List Bool → List Bool → List Bool)
@@ -121,20 +106,16 @@ theorem prfIdealGame_eq_lazy (adversary : OracleDistinguisher) (n : ℕ) :
           (fun request => lazyRandomFunctionOracle n request.2)) (adversary n [])).run
             (fun _ => none)).map Prod.fst := by
   classical
-  let adapted := OracleComp.interpret
-    (OracleComp.sumHandler (fun k => ProbOracleComp.sample (ProbComp.unifFin k))
-      (fun request : Unit × List Bool => randomFunctionQuery n request.2)) (adversary n [])
-  have h := RandomOracle.uniform_interpret_prob_eq_lazy adapted
-  have heager (table : BitString n → BitString n) (query : List Bool) :
-      OracleComp.interpret
-        (OracleComp.sumHandler ProbComp.unifOracle (fun bits => PMF.pure (table bits)))
-          (randomFunctionQuery n query) = PMF.pure (randomFunctionOracle n table query) :=
-    interpret_randomFunctionQuery ProbComp.unifOracle n table query
-  simpa only [ProbOracleComp.runWith, OracleComp.runWith, adapted, prfIdealGame,
-    ProbComp.eval_bind, ProbComp.eval_uniform, ProbOracleComp.eval_run, ProbComp.eval_pure,
-    OracleComp.interpret_interpret, OracleComp.interpret_sumHandler,
-    ProbOracleComp.interpret_sample, ProbComp.unifFin, OracleComp.interpret_query, heager,
-    lazyRandomFunctionOracle, PMF.monad_bind_eq_bind] using h
+  have h := RandomOracle.uniform_interpret_prob_eq_lazy
+    ((OracleCodec.bitString n).adapt (adversary n []))
+  have heager (table : BitString n → BitString n) :
+      (OracleCodec.bitString n).wordOracle (fun x => PMF.pure (table x)) =
+        fun request => PMF.pure (randomFunctionOracle n table request.2) :=
+    wordOracle_bitString_pure n table
+  simp only [OracleCodec.interpret_adapt, heager, ProbOracleComp.runWith,
+    OracleComp.runWith] at h
+  simpa only [prfIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform, ProbOracleComp.eval_run,
+    ProbComp.eval_pure, lazyRandomFunctionOracle, PMF.monad_bind_eq_bind] using h
 
 /-- A keyed family evaluated in plain polynomial time, secure against every uniform adaptive
 oracle test. -/

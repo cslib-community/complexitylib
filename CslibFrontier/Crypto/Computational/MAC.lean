@@ -1499,10 +1499,10 @@ theorem succProbability_prfIdealGame_macToPrfDistinguisher_le (adversary : Forge
     cases hpair0
     intro x hx
     rw [List.mem_cons]
-    unfold lazyRandomFunctionOracle randomFunctionQuery at hlazy
+    unfold lazyRandomFunctionOracle at hlazy
     by_cases hmsg : msg.length = n
-    · simp only [hmsg, ↓reduceIte, OracleComp.interpret_map, ProbOracleComp.interpret_query,
-        StateT.run_map, PMF.monad_map_eq_map, PMF.mem_support_map_iff] at hlazy
+    · rw [OracleCodec.wordOracle_bitString_of_length_eq _ hmsg] at hlazy
+      simp only [StateT.run_map, PMF.monad_map_eq_map, PMF.mem_support_map_iff] at hlazy
       obtain ⟨⟨v, nextCache₂⟩, hans, hpair2⟩ := hlazy
       cases hpair2
       dsimp only [StateT.run] at hans
@@ -1525,8 +1525,9 @@ theorem succProbability_prfIdealGame_macToPrfDistinguisher_le (adversary : Forge
         · dsimp only at hx
           rw [Function.update_of_ne heq] at hx
           exact Or.inr (hstate x hx)
-    · simp only [hmsg, ↓reduceIte, OracleComp.interpret_pure, StateT.run_pure,
-        PMF.monad_pure_eq_pure, PMF.mem_support_pure_iff, Prod.mk.injEq] at hlazy
+    · rw [OracleCodec.wordOracle_bitString_of_length_ne _ hmsg] at hlazy
+      simp only [StateT.run_pure, PMF.monad_pure_eq_pure, PMF.mem_support_pure_iff,
+        Prod.mk.injEq] at hlazy
       rcases hlazy with ⟨_, rfl⟩
       exact Or.inr (hstate x hx)
   have hstep_bound : ∀ item ∈ phase1.support,
@@ -1548,9 +1549,8 @@ theorem succProbability_prfIdealGame_macToPrfDistinguisher_le (adversary : Forge
         exact hnotMem (BitString.ofFn_ofList hmsgLen ▸ hcache_inv _ hsome)
       simp only [Functor.map_map, OracleComp.interpret_map, StateT.run_map,
         ProbOracleComp.interpret_query, PMF.monad_map_eq_map, PMF.map_comp, Function.comp_def]
-      unfold lazyRandomFunctionOracle randomFunctionQuery
-      simp only [hmsgLen, ↓reduceIte, OracleComp.interpret_map, ProbOracleComp.interpret_query,
-        StateT.run_map, PMF.monad_map_eq_map, PMF.map_comp, Function.comp_def]
+      rw [lazyRandomFunctionOracle, OracleCodec.wordOracle_bitString_of_length_eq _ hmsgLen]
+      simp only [StateT.run_map, PMF.monad_map_eq_map, PMF.map_comp, Function.comp_def]
       dsimp only [StateT.run]
       rw [RandomOracle.answer_of_none _ _ _ hnone]
       simp only [PMF.map_comp, Function.comp_def]
