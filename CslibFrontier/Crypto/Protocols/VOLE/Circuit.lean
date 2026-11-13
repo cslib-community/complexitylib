@@ -269,7 +269,8 @@ theorem circuitCheck_output (statement : (Fin p → F) × (Fin m → F))
       let share ← ProbOracleComp.query
         (spec := voleSenderSpec F (((p + k) + C.size) + 1) ⊕ₒ
           voleReceiverSpec F (((p + k) + C.size) + 1)) (.inr ())
-      return if circuitVerify C statement share t.1 t.2.1 t.2.2.1 then some () else none) := by
+      let (first, r, reply, ()) := t
+      return if circuitVerify C statement share first r reply then some () else none) := by
   unfold Verifier.output circuitCheck
   rw [OracleComp.interpret_bind, OracleComp.interpret_query]
   simp only [OracleComp.sumHandler]

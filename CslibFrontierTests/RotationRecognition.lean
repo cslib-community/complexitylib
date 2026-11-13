@@ -28,8 +28,8 @@ example (I : FixedRotationInput) : subdivide I =
         ((a, b), false), ((b, entry.1.2), (I.orders.getD entry.1.2 none).isSome)]) := rfl
 
 example (F : Frame) (e f : Segment × ℕ) : row F e f =
-    (moveLabels F.vertexCount e.2 e.1 f.1.1 ++
-      moveLabels F.vertexCount f.2 f.1 e.1.1, crossing F.order e.1.1 f.1.1) := rfl
+    ⟨moveLabels F.vertexCount e.2 e.1 f.1.1 ++
+      moveLabels F.vertexCount f.2 f.1 e.1.1, crossing F.order e.1.1 f.1.1⟩ := rfl
 
 example (I : FixedRotationInput) (v : ℕ) (block : List ℕ) : split I v block =
     ⟨⟨List.range (I.graph.vertices.length + 1),

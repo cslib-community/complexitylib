@@ -48,8 +48,8 @@ hops:
    uniform law on `(ZMod (N ^ 2))ˣ` to the uniform law on `(ZMod N)ˣ`. The encryption
    randomness is `unitOrOne N r` for `r` from `ProbComp.sampleModNat`, which is within
    `N / 2 ^ (n + |N|) + (N - φ(N)) / N` of uniform on the units.
-2. The DCR real and ideal games of `dcrDistinguisher A b` differ by its DCR advantage.
-3. The DCR ideal games for `b = false` and `b = true` are equal: multiplying a uniform unit by
+2. The DCR real and random games of `dcrDistinguisher A b` differ by its DCR advantage.
+3. The DCR random games for `b = false` and `b = true` are equal: multiplying a uniform unit by
    the unit `(1 + N) ^ m` gives a uniform unit, whatever `m` is.
 4. Hops 1 and 2 again, for the other bit.
 
@@ -223,8 +223,8 @@ private theorem advantage_gameOn_dcrRealGame_le {gen : ℕ → ProbComp Desc}
     Game.advantage (ProbComp.eval (gameOn validMessages (keyGen gen) encrypt adversary bit n))
       (dcrRealGame (fun n => ProbComp.eval (gen n)) (dcrDistinguisher adversary bit) n) ≤
       5 / 2 ^ n := by
-  simp only [gameOn, keyGen, encrypt, dcrRealGame, dcrDistinguisher, ProbComp.eval_bind,
-    ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.bind_bind,
+  simp only [gameOn, keyGen, encrypt, dcrRealGame, Game.withSetup, dcrRealExperiment,
+    dcrDistinguisher, ProbComp.eval_bind, ProbComp.eval_pure, ProbComp.eval_uniform, PMF.bind_bind,
     PMF.pure_bind, apply_ite ProbComp.eval, ofBits_encNat, ChoiceOut.msg₀, ChoiceOut.msg₁,
     ChoiceOut.msgs]
   refine Game.advantage_bind_le_of_support _ _ _ fun d hd => ?_
@@ -236,14 +236,14 @@ private theorem advantage_gameOn_dcrRealGame_le {gen : ℕ → ProbComp Desc}
   · simp only [hv, Bool.false_eq_true, ↓reduceIte, PMF.bind_const, Game.advantage_self, zero_le]
 
 /-- Ingredient of the proof of [KatzLindell2020], Theorem 15.13 (the case `y` uniform): the DCR
-ideal games of the two reduction distinguishers are equal. -/
-private theorem dcrIdealGame_dcrDistinguisher_false_eq_true (setup : ℕ → PMF Desc)
+random games of the two reduction distinguishers are equal. -/
+private theorem dcrRandomGame_dcrDistinguisher_false_eq_true (setup : ℕ → PMF Desc)
     (adversary : AdversaryOf ℕ) (n : ℕ) :
-    dcrIdealGame setup (dcrDistinguisher adversary false) n =
-      dcrIdealGame setup (dcrDistinguisher adversary true) n := by
-  simp only [dcrIdealGame, dcrDistinguisher, ProbComp.eval_bind, PMF.monad_bind_eq_bind,
-    apply_ite ProbComp.eval, ProbComp.eval_pure, Bool.false_eq_true,
-    ↓reduceIte]
+    dcrRandomGame setup (dcrDistinguisher adversary false) n =
+      dcrRandomGame setup (dcrDistinguisher adversary true) n := by
+  simp only [dcrRandomGame, Game.withSetup, dcrRandomExperiment, dcrDistinguisher,
+    ProbComp.eval_bind, ProbComp.eval_uniform, apply_ite ProbComp.eval, ProbComp.eval_pure,
+    Bool.false_eq_true, ↓reduceIte]
   refine congrArg (PMF.bind _) (funext fun d => ?_)
   rw [PMF.bind_comm, PMF.bind_comm (PMF.uniformOfFintype (ZMod (d.modulus ^ 2))ˣ)]
   refine congrArg (PMF.bind _) (funext fun choice => ?_)
@@ -281,9 +281,9 @@ theorem DCR.indcpaOn_paillier {gen : ℕ → ProbComp Desc}
     refine negligible_of_le ((hD false).add (hD true)) fun n => ?_
     dsimp only [Pi.add_apply]
     refine (Game.advantage_triangle _
-      (dcrIdealGame (fun n => ProbComp.eval (gen n)) (dcrDistinguisher adversary false) n)
+      (dcrRandomGame (fun n => ProbComp.eval (gen n)) (dcrDistinguisher adversary false) n)
       _).trans (add_le_add le_rfl ?_)
-    rw [dcrIdealGame_dcrDistinguisher_false_eq_true]
+    rw [dcrRandomGame_dcrDistinguisher_false_eq_true]
     exact (Game.advantage_comm _ _).le
   have h5 : Negligible fun n => (5 : ℝ≥0) / 2 ^ n := negligible_const_div_two_pow 5
   refine negligible_of_le ((h5.add hmid).add h5) fun n => ?_

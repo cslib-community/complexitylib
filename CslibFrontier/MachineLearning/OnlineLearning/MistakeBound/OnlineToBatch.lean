@@ -8,7 +8,8 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.MachineLearning.OnlineLearning.MistakeBound.Basic
-public import CslibFrontier.MachineLearning.PACLearning.RealizableSample
+public import CslibFrontier.MachineLearning.PACLearning.Realizable
+import CslibFrontier.MachineLearning.PACLearning.RealizableSample
 import Mathlib.Data.Fin.Tuple.Take
 import Mathlib.MeasureTheory.Constructions.Pi
 import Mathlib.MeasureTheory.Integral.Lebesgue.Markov
@@ -23,8 +24,10 @@ only on them, so its error is the probability that `A` errs on the fresh example
 (`lintegral_error_prefixHypothesis_eq`). Summing over `t ≤ m`, the expected total error of the
 `m + 1` prefix hypotheses is the expected number of mistakes of `A` on `z₀, …, z_m`, at most `M`
 (`sum_lintegral_error_prefixHypothesis_le`). So a prefix hypothesis chosen uniformly at random has
-expected error at most `M / (m + 1)`: this is the online-to-batch conversion of
-[Littlestone1989] and [CesaBianchiConconiGentile2004] (locators unverified).
+expected error at most `M / (m + 1)`. This random-stopping bound in expectation is the form used
+by [CesaBianchiConconiGentile2004]. Online-to-batch conversion originates with [Littlestone1989],
+whose conversion keeps the prefix hypotheses and selects one by testing on held-out examples
+(locators unverified).
 
 The library's `IsPACLearnerFor` asks for a deterministic learner. On a sample of size `m`, the
 majority vote `prefixMajority A S` of the `m + 1` prefix hypotheses after `0, …, m` examples errs
@@ -127,14 +130,6 @@ private theorem IsMeasurableLearner.measurable_prefix {A : OnlineLearner α}
   simp only [Function.comp_def, Fin.ofFn_take_eq_take_ofFn] at h
   simpa only [prefixHypothesis, List.take_eq_take_min (i := t), List.length_ofFn] using h
 
-/-- The set of samples on which the hypothesis after `t` examples misclassifies example `i`. -/
-private theorem IsMeasurableLearner.measurableSet_prefix_ne {A : OnlineLearner α}
-    (hA : IsMeasurableLearner A) {m : ℕ} (t : ℕ) (i : Fin m) :
-    MeasurableSet {S : LabeledSample α Bool m | prefixHypothesis A S t (S i).1 ≠ (S i).2} := by
-  have h : Measurable fun S : LabeledSample α Bool m => prefixHypothesis A S t (S i).1 :=
-    (hA.measurable_prefix m t).comp (measurable_id.prodMk (by fun_prop))
-  exact (measurableSet_eq_fun h (by fun_prop)).compl
-
 /-- The misclassification set of `(S, z) ↦ prefixHypothesis A S t` is measurable. -/
 private theorem IsMeasurableLearner.measurableSet_misclassified {A : OnlineLearner α}
     (hA : IsMeasurableLearner A) (m t : ℕ) :
@@ -144,6 +139,12 @@ private theorem IsMeasurableLearner.measurableSet_misclassified {A : OnlineLearn
       prefixHypothesis A p.1 t p.2.1 :=
     (hA.measurable_prefix m t).comp (measurable_fst.prodMk (by fun_prop))
   exact (measurableSet_eq_fun h (by fun_prop)).compl
+
+/-- The set of samples on which the hypothesis after `t` examples misclassifies example `i`. -/
+private theorem IsMeasurableLearner.measurableSet_prefix_ne {A : OnlineLearner α}
+    (hA : IsMeasurableLearner A) {m : ℕ} (t : ℕ) (i : Fin m) :
+    MeasurableSet {S : LabeledSample α Bool m | prefixHypothesis A S t (S i).1 ≠ (S i).2} :=
+  (hA.measurableSet_misclassified m t).preimage (measurable_id.prodMk (measurable_pi_apply i))
 
 /-- The error of the hypothesis after `t` examples is measurable in the sample. -/
 private theorem IsMeasurableLearner.measurable_error_prefix {A : OnlineLearner α}
@@ -157,17 +158,6 @@ private theorem IsMeasurableLearner.measurable_sum_error_prefix {A : OnlineLearn
     Measurable fun S : LabeledSample α Bool m =>
       ∑ t : Fin (m + 1), error D (prefixHypothesis A S t) :=
   Finset.measurable_sum Finset.univ fun (t : Fin (m + 1)) _ => hA.measurable_error_prefix D m t
-
-/-- The expected total error of the hypotheses after `0, …, m` examples is the sum of their
-expected errors. -/
-private theorem IsMeasurableLearner.lintegral_two_mul_sum_error_prefix {A : OnlineLearner α}
-    (hA : IsMeasurableLearner A) (D : Measure (α × Bool)) [SFinite D] (m : ℕ) :
-    ∫⁻ S, 2 * ∑ t : Fin (m + 1), error D (prefixHypothesis A S t)
-        ∂Measure.pi (fun _ : Fin m => D) =
-      2 * ∑ t : Fin (m + 1), ∫⁻ S, error D (prefixHypothesis A S t)
-        ∂Measure.pi (fun _ : Fin m => D) := by
-  rw [lintegral_const_mul _ (hA.measurable_sum_error_prefix D m),
-    lintegral_finsetSum _ fun (t : Fin (m + 1)) _ => hA.measurable_error_prefix D m t]
 
 /-! ### The expected error of a prefix hypothesis -/
 
@@ -242,11 +232,11 @@ private theorem realizable_ofFn {C : ConceptClass α Bool} {m : ℕ} {S : Labele
   obtain ⟨i, rfl⟩ := List.mem_ofFn.mp hp
   exact (hcS i).symm
 
-/-- **Online-to-batch for mistake bounds** [Littlestone1989] [CesaBianchiConconiGentile2004]
-(locators unverified). If the measurable learner `A` has mistake bound `M` on `C` and `D` is
-realizable by `C`, the expected errors of the hypotheses of `A` after `0, 1, …, m` i.i.d.
-examples sum to at most `M`. So the hypothesis after a uniformly random number of examples in
-`{0, …, m}` has expected error at most `M / (m + 1)`. -/
+/-- **Online-to-batch for mistake bounds**, in the random-stopping form of
+[CesaBianchiConconiGentile2004] (locator unverified). If the measurable learner `A` has mistake
+bound `M` on `C` and `D` is realizable by `C`, the expected errors of the hypotheses of `A` after
+`0, 1, …, m` i.i.d. examples sum to at most `M`. So the hypothesis after a uniformly random number
+of examples in `{0, …, m}` has expected error at most `M / (m + 1)`. -/
 theorem sum_lintegral_error_prefixHypothesis_le {A : OnlineLearner α} (hA : IsMeasurableLearner A)
     {C : ConceptClass α Bool} {M : ℕ} (hM : mistakeBound A C ≤ M) {D : Measure (α × Bool)}
     [IsProbabilityMeasure D] (hD : IsRealizableBy D C) (m : ℕ) :
@@ -273,6 +263,17 @@ theorem sum_lintegral_error_prefixHypothesis_le {A : OnlineLearner α} (hA : IsM
         rw [hcount]
         exact_mod_cast (mistakes_le_mistakeBound (realizable_ofFn hS)).trans hM
     _ = M := by simp
+
+/-- Twice the expected total error of the prefix hypotheses is at most `2 M`. -/
+private theorem lintegral_two_mul_sum_error_prefix_le {A : OnlineLearner α}
+    (hA : IsMeasurableLearner A) {C : ConceptClass α Bool} {M : ℕ} (hM : mistakeBound A C ≤ M)
+    {D : Measure (α × Bool)} [IsProbabilityMeasure D] (hD : IsRealizableBy D C) (m : ℕ) :
+    ∫⁻ S, 2 * ∑ t : Fin (m + 1), error D (prefixHypothesis A S t)
+        ∂Measure.pi (fun _ : Fin m => D) ≤ 2 * M := by
+  rw [lintegral_const_mul _ (hA.measurable_sum_error_prefix D m),
+    lintegral_finsetSum _ fun (t : Fin (m + 1)) _ => hA.measurable_error_prefix D m t]
+  gcongr
+  exact sum_lintegral_error_prefixHypothesis_le hA hM hD m
 
 /-! ### The majority vote -/
 
@@ -331,15 +332,8 @@ theorem lintegral_error_prefixMajority_le {A : OnlineLearner α} (hA : IsMeasura
     (m + 1 : ℝ≥0∞) * ∫⁻ S, error D (prefixMajority A S) ∂Measure.pi (fun _ : Fin m => D) ≤
       2 * M := by
   rw [← lintegral_const_mul' _ _ (by simp)]
-  calc ∫⁻ S, (m + 1 : ℝ≥0∞) * error D (prefixMajority A S) ∂Measure.pi (fun _ : Fin m => D)
-      ≤ ∫⁻ S, 2 * ∑ t : Fin (m + 1), error D (prefixHypothesis A S t)
-          ∂Measure.pi (fun _ : Fin m => D) :=
-        lintegral_mono fun S => mul_error_prefixMajority_le hA D S
-    _ = 2 * ∑ t : Fin (m + 1), ∫⁻ S, error D (prefixHypothesis A S t)
-          ∂Measure.pi (fun _ : Fin m => D) := hA.lintegral_two_mul_sum_error_prefix D m
-    _ ≤ 2 * M := by
-        gcongr
-        exact sum_lintegral_error_prefixHypothesis_le hA hM hD m
+  exact (lintegral_mono fun S => mul_error_prefixMajority_le hA D S).trans
+    (lintegral_two_mul_sum_error_prefix_le hA hM hD m)
 
 /-- **Mistake bounds give PAC learners.** If the measurable learner `A` has mistake bound `M` on
 `C`, then the majority vote of its prefix hypotheses is an `(ε, δ)`-PAC learner over the
@@ -354,10 +348,7 @@ theorem isPACLearnerFor_prefixMajority {A : OnlineLearner α} (hA : IsMeasurable
   have hε : (ε.val : ℝ≥0∞) ≠ 0 := by simpa using ε.2.1.ne'
   have hpos : ((m + 1 : ℝ≥0∞)) ≠ 0 := by positivity
   have hmeas := (hA.measurable_sum_error_prefix D m).const_mul 2
-  have hint : ∫⁻ S, 2 * ∑ t : Fin (m + 1), error D (prefixHypothesis A S t) ∂μ ≤ 2 * M := by
-    rw [hA.lintegral_two_mul_sum_error_prefix D m]
-    gcongr
-    exact sum_lintegral_error_prefixHypothesis_le hA hM hD m
+  have hint := lintegral_two_mul_sum_error_prefix_le hA hM hD m
   have hsub : {S : LabeledSample α Bool m | (ε.val : ℝ≥0∞) < error D (prefixMajority A S)} ⊆
       {S | (ε.val : ℝ≥0∞) * (m + 1) ≤ 2 * ∑ t : Fin (m + 1), error D (prefixHypothesis A S t)} := by
     intro S hS
@@ -401,11 +392,8 @@ learnable over its realizable distributions. -/
 theorem isPACLearnable_of_optimalMistakeBound_ne_top [Countable α] [MeasurableSingletonClass α]
     {C : ConceptClass α Bool} (hC : optimalMistakeBound C ≠ ⊤) :
     IsPACLearnable C (realizableDistributions C) := by
-  obtain ⟨A, hA⟩ : ∃ A : OnlineLearner α, mistakeBound A C ≠ ⊤ := by
-    by_contra h
-    exact hC (top_le_iff.mp (le_optimalMistakeBound_iff.mpr fun A =>
-      top_le_iff.mpr (not_not.mp fun hA => h ⟨A, hA⟩)))
+  obtain ⟨A, hA⟩ := optimalMistakeBound_lt_iff.mp (lt_top_iff_ne_top.mpr hC)
   exact isPACLearnable_of_mistakeBound_le (isMeasurableLearner_of_countable A)
-    (M := (mistakeBound A C).toNat) (ENat.natCast_toNat hA).ge
+    (M := (mistakeBound A C).toNat) (ENat.natCast_toNat hA.ne).ge
 
 end Cslib.MachineLearning.OnlineLearning.MistakeBound

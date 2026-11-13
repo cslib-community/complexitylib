@@ -139,6 +139,9 @@ Information-theoretic private information retrieval, following Chor–Goldreich�
 
 ### Concurrent and quantum security
 
+- **NIST post-quantum portfolio** ([#4987](https://github.com/cslib-community/cslib-frontier/issues/4987)): Faithful protocols, exact asymptotic assumptions and checked quantum security reductions for ML-KEM, ML-DSA, SLH-DSA, FN-DSA, HQC and every active additional-signature candidate.
+  Reuse operational quantum-PPT/QROM models and concrete-to-asymptotic reductions; keep source-required sampling, abort, transform and failure obligations explicit, including evolving or unsupported claims.
+
 - **Concurrent composition**: Extend the protocol semantics with environments, scheduling, session identifiers and concurrent executions, and prove a composition theorem with efficient simulators and explicit setup, corruption and communication assumptions.
   Then develop selected adaptive-corruption and non-malleability applications, alongside the static-malicious OT target.
 - **Quantum-secure cryptography**: Define uniform quantum-efficient distinguishers and computational indistinguishability with quantum side information, and justify security reductions for concrete constructions in that model.
@@ -478,8 +481,8 @@ Organize modules by subject, not chapter.
   Also the `ℓ₁` bound `B R √(2 log (2 d) / m)` and kernel classes.
 - **Stability and regularization** ([#4917](https://github.com/cslib-community/cslib-frontier/issues/4917)): true and empirical risk for general losses, the replace-one identity between on-average stability and the expected generalization gap, `2 ρ² / (λ m)` stability of Tikhonov-regularized loss minimization for convex `ρ`-Lipschitz losses, and the resulting learnability of convex-Lipschitz-bounded problems.
   Also smooth losses, high-probability stability bounds (Bousquet–Elisseeff, Feldman–Vondrák) and the stability of SGD.
-- **Online-to-batch conversion** ([#4918](https://github.com/cslib-community/cslib-frontier/issues/4918)): averaging the iterates of an online convex optimizer run on i.i.d. examples, the resulting `B ρ / √T` excess-risk bound for projected SGD, and PAC learners from mistake-bounded online learners by random stopping.
-  Also high-probability conversions, `log T / T` rates for strongly convex losses and running-time bounds.
+- **Online-to-batch conversion** ([#4918](https://github.com/cslib-community/cslib-frontier/issues/4918)): averaging the iterates of an online convex optimizer run on i.i.d. examples, the resulting `B ρ / √T` excess-risk bound for projected SGD, PAC learners from mistake-bounded online learners by random stopping, and high-probability conversions by the Azuma–Hoeffding inequality.
+  Also a high-probability SGD bound, `log T / T` rates for strongly convex losses and running-time bounds.
 - **Multiclass and real-valued learning**: Natarajan and graph dimensions with the multiclass fundamental theorem, pseudo-dimension and fat-shattering dimension, covering numbers, and Dudley's entropy integral by chaining.
 - **Cryptographic hardness of learning** ([#4927](https://github.com/cslib-community/cslib-frontier/issues/4927)): learners for a class containing a pseudorandom function family yield distinguishers, so no efficient learner, even with membership queries, learns polynomial-size circuits if secure generators exist; the converse of learning from natural proofs.
   Also the Kearns–Valiant, Kharitonov and Klivans–Sherstov hardness results, learning algorithms implying circuit lower bounds, and average-case hardness of learning versus one-way functions.

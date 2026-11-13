@@ -31,13 +31,15 @@ in binary (`schnorrEncoding`).
   extractor `schnorrExtract` computes `(c - c')⁻¹ (z - z')` with `extractNat`, inverting by
   Fermat's little theorem, in polynomial time.
 * **Efficient special HVZK** (`efficientSpecialHVZK_schnorr`, Example 19.3): Boneh and Shoup's
-  simulator samples a uniform response `z` and outputs `(z • g - c • u, z)`. The strict PPT
-  program `schnorrSimulateWord` samples `z` with `sampleExp`, which is within statistical
-  distance `1 / 2 ^ n` of uniform on `ZMod q`, so it realizes the simulator up to `1 / 2 ^ n`.
+  simulator samples a uniform response `z` and outputs `(z • g - c • u, z)`. The typed simulator
+  `schnorrSimulator` samples `z` with `sampleExp`, which is within statistical distance
+  `1 / 2 ^ n` of uniform on `ZMod q`, so it realizes the simulator up to `1 / 2 ^ n`. Its strict
+  PPT certificate is the word program `schnorrSimulateWord`, which computes it on encodings
+  (`eval_schnorrSimulateWord`).
 * **Computational special HVZK** (`computationalSpecialHVZK_schnorr`, Definition 20.6): because
-  every output of `schnorrSimulateWord` satisfies `z • g = (z • g - c • u) + c • u` exactly
-  (`accepts_schnorrSimulateWord`, acceptance error `0`), and `1 / 2 ^ n` is negligible along any
-  group-description setup `(setup n).map (n, ·)`, `schnorrSimulateWord` satisfies Definition 20.6
+  every output of `schnorrSimulator` satisfies `z • g = (z • g - c • u) + c • u` exactly
+  (`accepts_schnorrSimulator`, acceptance error `0`), and `1 / 2 ^ n` is negligible along any
+  group-description setup `(setup n).map (n, ·)`, `schnorrSimulator` satisfies Definition 20.6
   with zero acceptance error.
 
 The protocol does not depend on the security parameter; only the simulator's sampling error does.
@@ -49,6 +51,7 @@ The protocol does not depend on the security parameter; only the simulator's sam
   `m`-bit challenges.
 * `Cslib.Crypto.PrimeOrderGroupFamily.schnorrEncoding`: its word encodings.
 * `Cslib.Crypto.PrimeOrderGroupFamily.schnorrExtract`: the extractor, computed with `extractNat`.
+* `Cslib.Crypto.PrimeOrderGroupFamily.schnorrSimulator`: the simulator with `sampleExp`.
 * `Cslib.Crypto.PrimeOrderGroupFamily.schnorrSimulateWord`: the simulator as a strict PPT program
   on words.
 
@@ -57,11 +60,14 @@ The protocol does not depend on the security parameter; only the simulator's sam
 * `Cslib.Crypto.PrimeOrderGroupFamily.efficientSpecialSoundness_schnorr`: efficient special
   soundness.
 * `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_schnorrSimulateWord`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.simulatorRealizedBy_schnorrSimulateWord`: the simulator
-  program is strict PPT and realizes Boneh and Shoup's simulator up to `1 / 2 ^ n`.
+  `Cslib.Crypto.PrimeOrderGroupFamily.eval_schnorrSimulateWord`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.isPPT_schnorrSimulator`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.simulatorRealizedBy_schnorrSimulator`: the word program is
+  strict PPT and computes `schnorrSimulator` on encodings, so `schnorrSimulator` is strict PPT; it
+  realizes Boneh and Shoup's simulator up to `1 / 2 ^ n`.
 * `Cslib.Crypto.PrimeOrderGroupFamily.efficientSpecialHVZK_schnorr`: efficient special HVZK with
   statistical error `1 / 2 ^ n`.
-* `Cslib.Crypto.PrimeOrderGroupFamily.accepts_schnorrSimulateWord`,
+* `Cslib.Crypto.PrimeOrderGroupFamily.accepts_schnorrSimulator`,
   `Cslib.Crypto.PrimeOrderGroupFamily.computationalSpecialHVZK_schnorr`: exact acceptance (`δ = 0`)
   and computational special HVZK (Definition 20.6).
 
@@ -121,9 +127,20 @@ def schnorrExtract (i : ℕ × F.Desc) (_ _ : F.Carrier i.2) (c z c' z' : ZMod (
     ZMod (F.order i.2) :=
   extractNat (F.order i.2) c.val z.val c'.val z'.val
 
+/-- Schnorr's simulator ([BonehShoup2023], Example 19.3) with fair coins: at index `(n, d)`, on a
+statement `u` and a challenge `c`, sample `s` with `sampleExp n d`, read it as the response
+`z = s mod q`, and return the commitment `z • g - c • u` with `z`. -/
+noncomputable def schnorrSimulator :
+    Simulator (ℕ × F.Desc) (fun i => F.Carrier i.2) (fun i => F.Carrier i.2)
+      (fun i => ZMod (F.order i.2)) (fun i => ZMod (F.order i.2)) :=
+  fun i u c => (fun z => (z • F.generator i.2 - c • u, z)) <$>
+    ((Nat.cast : ℕ → ZMod (F.order i.2)) <$> F.sampleExp i.1 i.2)
+
 /-- Schnorr's simulator on words ([BonehShoup2023], Example 19.3): on the index `(n, d)`, an
 encoded statement `u` and a binary challenge `c`, sample `s` with `sampleExp n d` and return the
-encodings of `s • g - c • u` and of `s mod q`. -/
+encodings of `s • g - c • u` and of `s mod q`. It is the strict PPT certificate of
+`schnorrSimulator` (`eval_schnorrSimulateWord`); `SchnorrEavesdrop` also runs it on arbitrary
+challenge words. -/
 noncomputable def schnorrSimulateWord :
     (ℕ × F.Desc) × List Bool × List Bool → ProbComp (List Bool × List Bool)
   | ((n, d), u, c) => do
@@ -183,23 +200,27 @@ theorem closeTo_uniform_sampleExp (n : ℕ) (d : F.Desc) :
   rw [PMF.map_comp, ← PMF.bind_pure_comp, ← PMF.bind_pure_comp]
   exact h
 
-/-- The law of `schnorrSimulateWord` on an encoded statement and challenge: a sampled exponent,
-read modulo `q`, is the response `z`, and the commitment is `z • g - c • u`. -/
-private theorem eval_schnorrSimulateWord (n : ℕ) (d : F.Desc) (u : F.Carrier d)
-    (c : ZMod (F.order d)) :
-    ProbComp.eval (F.schnorrSimulateWord ((n, d), F.encode d u, encNat c.val)) =
-      ((ProbComp.eval (F.sampleExp n d)).map (Nat.cast : ℕ → ZMod (F.order d))).map
-        fun z => (F.encode d (z • F.generator d - c • u), encNat z.val) := by
+/-- On an encoded statement and challenge, `schnorrSimulateWord` computes the encoded output of
+`schnorrSimulator`. -/
+theorem eval_schnorrSimulateWord (i : ℕ × F.Desc) (u : F.Carrier i.2) (c : ZMod (F.order i.2)) :
+    ProbComp.eval (F.schnorrSimulateWord
+        (i, F.schnorrEncoding.statement i u, F.schnorrEncoding.challenge i c)) =
+      (ProbComp.eval (F.schnorrSimulator i u c)).map
+        (Prod.map (F.schnorrEncoding.commitment i) (F.schnorrEncoding.response i)) := by
+  obtain ⟨n, d⟩ := i
   have hneg : ((F.order d - c.val % F.order d : ℕ) : ZMod (F.order d)) = -c := by
     rw [Nat.mod_eq_of_lt (ZMod.val_lt c), Nat.cast_sub (ZMod.val_lt c).le, ZMod.natCast_self,
       ZMod.natCast_zmod_val, zero_sub]
-  rw [schnorrSimulateWord, ProbComp.eval_bind, PMF.map_comp]
-  simp only [ProbComp.eval_pure, encNat_apply, ofBits_bits, F.smul_encode,
-    F.add_encode, hneg,
+  rw [show (F.schnorrEncoding.statement (n, d)) u = F.encode d u from rfl,
+    show (F.schnorrEncoding.challenge (n, d)) c = encNat c.val from rfl,
+    schnorrSimulateWord, ProbComp.eval_bind, schnorrSimulator, ProbComp.eval_map,
+    ProbComp.eval_map, PMF.map_comp, PMF.map_comp]
+  simp only [ProbComp.eval_pure, encNat_apply, ofBits_bits, F.smul_encode, F.add_encode, hneg,
     neg_smul, ← sub_eq_add_neg]
   rw [← PMF.bind_pure_comp]
   congr 1 with a : 1
-  simp only [Function.comp_apply, ZMod.val_natCast]
+  simp only [Function.comp_apply, Prod.map, schnorrEncoding, encodeEmbedding, encScalar,
+    Function.Embedding.coeFn_mk, encNat_apply, ZMod.val_natCast]
 
 /-- `schnorrSimulateWord` is uniform strict PPT in the security parameter, the description and the
 encoded statement and challenge. -/
@@ -241,63 +262,47 @@ theorem isPPTOn_schnorrSimulateWord :
     .of_tidy (ComputableTidilyInPolyTime.natBits.comp (.binary_mod' hs.tidy hq.tidy))
   exact (ht.prod hz).isPPTOn
 
-/-- `schnorrSimulateWord` realizes Schnorr's perfect simulator `linearSimulate`
+/-- `schnorrSimulator` is uniform strict PPT, certified by `schnorrSimulateWord`. -/
+theorem isPPT_schnorrSimulator : Simulator.IsPPT F.schnorrEncoding F.schnorrSimulator :=
+  .of_word F.isPPTOn_schnorrSimulateWord fun i u c => (F.eval_schnorrSimulateWord i u c).symm
+
+/-- `schnorrSimulator` realizes Schnorr's perfect simulator `linearSimulate`
 ([BonehShoup2023], Example 19.3) up to statistical distance `1 / 2 ^ n` at security parameter
 `n`. -/
-theorem simulatorRealizedBy_schnorrSimulateWord :
-    SimulatorRealizedBy F.schnorrEncoding
-      (fun i => linearSimulate (fun _ => LinearMap.toSpanSingleton (ZMod (F.order i.2))
-        (F.Carrier i.2) (F.generator i.2)) id (Function.Embedding.refl _))
-      F.schnorrSimulateWord (fun i => 1 / 2 ^ i.1) := by
+theorem simulatorRealizedBy_schnorrSimulator :
+    SimulatorRealizedBy
+      (fun i : ℕ × F.Desc => linearSimulate (fun _ => LinearMap.toSpanSingleton
+        (ZMod (F.order i.2)) (F.Carrier i.2) (F.generator i.2)) id (Function.Embedding.refl _))
+      F.schnorrSimulator (fun i => 1 / 2 ^ i.1) := by
   intro i u c
-  rw [show (F.schnorrEncoding.statement i) u = F.encode i.2 u from rfl,
-    show (F.schnorrEncoding.challenge i) c = encNat c.val from rfl,
-    eval_schnorrSimulateWord]
-  have hsim : (linearSimulate (fun _ => LinearMap.toSpanSingleton (ZMod (F.order i.2))
-      (F.Carrier i.2) (F.generator i.2)) id (Function.Embedding.refl _) u c).map
-        (Prod.map (F.schnorrEncoding.commitment i) (F.schnorrEncoding.response i)) =
-      (PMF.uniformOfFintype (ZMod (F.order i.2))).map
-        fun z => (F.encode i.2 (z • F.generator i.2 - c • u), encNat z.val) := by
-    rw [linearSimulate, PMF.map_comp]
-    rfl
   have hδ : (((1 / 2 ^ i.1 : ℝ≥0)) : ℝ≥0∞) = 1 / 2 ^ i.1 := by
     rw [ENNReal.coe_div (pow_ne_zero _ two_ne_zero), ENNReal.coe_one, ENNReal.coe_pow,
       ENNReal.coe_ofNat]
-  dsimp only
-  rw [hsim, ← hδ]
+  simp only [schnorrSimulator, ProbComp.eval_map]
+  rw [← hδ]
   exact (F.closeTo_uniform_sampleExp i.1 i.2).map _
 
 /-- **Schnorr's protocol has efficient special HVZK** ([BonehShoup2023], Example 19.3), with
 statistical error `1 / 2 ^ n` at security parameter `n`: the perfect simulator `linearSimulate` is
-realized by the strict PPT program `schnorrSimulateWord`. -/
+realized by the strict PPT simulator `schnorrSimulator`. -/
 theorem efficientSpecialHVZK_schnorr :
     EfficientSpecialHVZK F.schnorrFamily (fun i α u => α • F.generator i.2 = u) F.schnorrEncoding
       (fun i => linearSimulate (fun _ => LinearMap.toSpanSingleton (ZMod (F.order i.2))
         (F.Carrier i.2) (F.generator i.2)) id (Function.Embedding.refl _))
       (fun i => 1 / 2 ^ i.1) where
   specialHVZK _ := schnorr_specialHVZK
-  realized := ⟨_, F.isPPTOn_schnorrSimulateWord, F.simulatorRealizedBy_schnorrSimulateWord⟩
+  realized := ⟨_, F.isPPT_schnorrSimulator, F.simulatorRealizedBy_schnorrSimulator⟩
 
-/-- Every output of `schnorrSimulateWord` on an encoded statement and challenge is an encoded
-accepting conversation (acceptance error `0`): for every sampled `z`, `(z • g - c • u) + c • u =
-z • g`. -/
-theorem accepts_schnorrSimulateWord (i : ℕ × F.Desc) (u : F.Carrier i.2)
-    (c : ZMod (F.order i.2)) :
-    1 ≤ (ProbComp.eval (F.schnorrSimulateWord
-      (i, F.schnorrEncoding.statement i u, F.schnorrEncoding.challenge i c))).toOuterMeasure
-      {w | ∃ t z, w = (F.schnorrEncoding.commitment i t, F.schnorrEncoding.response i z) ∧
-        (F.schnorrFamily i).Accepts u t c z} := by
-  have heq : (ProbComp.eval (F.schnorrSimulateWord
-      (i, F.schnorrEncoding.statement i u, F.schnorrEncoding.challenge i c))).toOuterMeasure
-      {w | ∃ t z, w = (F.schnorrEncoding.commitment i t, F.schnorrEncoding.response i z) ∧
-        (F.schnorrFamily i).Accepts u t c z} = 1 := by
-    rw [show (F.schnorrEncoding.statement i) u = F.encode i.2 u from rfl,
-      show (F.schnorrEncoding.challenge i) c = encNat c.val from rfl,
-      eval_schnorrSimulateWord, PMF.toOuterMeasure_map_apply, PMF.toOuterMeasure_apply_eq_one_iff]
-    intro z _
-    refine ⟨z • F.generator i.2 - c • u, z, rfl, ?_⟩
-    simp only [schnorrFamily, schnorr_accepts_iff, Function.Embedding.refl_apply, sub_add_cancel]
-  exact heq.ge
+/-- Every output of `schnorrSimulator` is an accepting conversation (acceptance error `0`): for
+every sampled `z`, `(z • g - c • u) + c • u = z • g`. -/
+theorem accepts_schnorrSimulator (i : ℕ × F.Desc) (u : F.Carrier i.2) (c : ZMod (F.order i.2)) :
+    (ProbComp.eval (F.schnorrSimulator i u c)).toOuterMeasure
+      {tz | (F.schnorrFamily i).Accepts u tz.1 c tz.2} = 1 := by
+  simp only [schnorrSimulator, ProbComp.eval_map, PMF.toOuterMeasure_map_apply,
+    PMF.toOuterMeasure_apply_eq_one_iff]
+  intro z _
+  simp only [Set.mem_preimage, Set.mem_ofPred_eq, schnorrFamily, schnorr_accepts_iff,
+    Function.Embedding.refl_apply, sub_add_cancel]
 
 /-- **Schnorr's protocol has computational special HVZK** ([BonehShoup2023], Definition 20.6) with
 zero acceptance error (`δ = fun _ => 0`) over any group-description setup `setup : ℕ → PMF F.Desc`
@@ -305,10 +310,10 @@ paired with the security parameter. -/
 theorem computationalSpecialHVZK_schnorr (setup : ℕ → PMF F.Desc) :
     ComputationalSpecialHVZK F.schnorrFamily (fun i α u => α • F.generator i.2 = u)
       F.schnorrEncoding (fun i => F.encScalar i.2) (fun n => (setup n).map (n, ·))
-      F.schnorrSimulateWord (fun _ => 0) := by
-  refine F.simulatorRealizedBy_schnorrSimulateWord.computationalSpecialHVZK_of_accepts
-    (fun _ => schnorr_specialHVZK) F.isPPTOn_schnorrSimulateWord
-    (fun i u c => by simpa only [tsub_zero] using F.accepts_schnorrSimulateWord i u c)
+      F.schnorrSimulator (fun _ => 0) := by
+  refine F.simulatorRealizedBy_schnorrSimulator.computationalSpecialHVZK_of_accepts
+    (fun _ => schnorr_specialHVZK) F.isPPT_schnorrSimulator
+    (fun i u c => by rw [F.accepts_schnorrSimulator i u c, tsub_zero])
     ⟨fun n => (1 / 2 : ℝ≥0) ^ n, negligible_geometric (by norm_num), fun n i hi => ?_⟩
   obtain ⟨d, -, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hi
   dsimp only

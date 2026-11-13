@@ -84,9 +84,9 @@ theorem publicKeyGame_uniformEnsemble (n m w : ℕ → ℕ)
           (fun state ciphertext =>
             ProbComp.eval (adversary.guess security state (serializeCiphertext ciphertext)))
           bit := by
-  simp only [pmf_norm, Encryption.publicKeyGame, LWE.uniformEnsemble, uniformPublicGame,
-    eval_encryptSerialized, Matrix.ofBinary_toBinary, encrypt, eval_sampleCoins,
-    LWE.serializePublicMatrix]
+  simp only [pmf_norm, Encryption.publicKeyGame, Encryption.publicKeyGameOn, ↓reduceIte,
+    LWE.uniformEnsemble, uniformPublicGame, eval_encryptSerialized, Matrix.ofBinary_toBinary,
+    encrypt, eval_sampleCoins, LWE.serializePublicMatrix]
 
 /-- The uniform public-key word gives the typed hiding theorem's full adaptive bound. -/
 theorem advantage_uniformEnsemble_le (n m w : ℕ → ℕ)
@@ -137,7 +137,7 @@ theorem indCPA_of_decisionLWE {n m w η : ℕ → ℕ}
     Encryption.INDCPA (fun k => LWE.keyGenSerialized (n k) (m k) (w k) (η k))
       (fun k => encryptSerialized (n k) (m k) (w k)) := by
   intro adversary hadversary
-  have hsource := hLWE (lweDistinguisher n m w adversary)
+  have hsource := hLWE.encoded (lweDistinguisher n m w adversary)
     (isPPT_lweDistinguisher hn hm hw hadversary)
   have hrows : PolynomiallyBounded (fun k => (n k + 1) * w k) := by
     have : PolynomiallyBounded n := hn.polynomiallyBounded
