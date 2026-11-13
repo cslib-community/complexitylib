@@ -408,19 +408,6 @@ private theorem uniformList_map_listXor {m : ℕ} {u : List Bool} (hu : u.length
   exact heq.trans (BitString.uniformList_map_of_bijective (xorFixedWidth u)
     (involutive_xorFixedWidth u).bijective (length_xorFixedWidth u) m)
 
-private theorem exists_true_listXor_of_ne {m : ℕ} {u v : List Bool}
-    (hu : u.length = m) (hv : v.length = m) (hne : u ≠ v) :
-    ∃ i < m, (BitString.listXor m [u, v]).getD i false = true := by
-  by_contra hall
-  simp only [not_exists, not_and] at hall
-  apply hne (List.ext_getElem (hu.trans hv.symm) fun i hi_u hi_v => ?_)
-  have hi_m : i < m := by omega
-  have hzero := Bool.eq_false_iff.mpr (hall i hi_m)
-  rw [BitString.getD_listXor_pair m u v i hi_m] at hzero
-  have heq_bit : u.getD i false = v.getD i false := by
-    cases h1 : u.getD i false <;> cases h2 : v.getD i false <;> simp_all
-  simpa only [List.getD_eq_getElem _ _ hi_u, List.getD_eq_getElem _ _ hi_v] using heq_bit
-
 private theorem naorYungStep_inversion_eval_eq
     {f : List Bool → List Bool} (hf_len : ∀ w, (f w).length = w.length)
     (hf_bij : Function.Bijective f) (adversary : TargetCollisionFinder) (n : ℕ) :
@@ -495,7 +482,7 @@ theorem succProbability_targetCollisionGame_naorYungStep_le
       · have hδ_eq : δ = BitString.listXor (n + 2) [f w₀, y] :=
           (BitString.listXor_pair_self_left_of_length (f w₀) hδ_len).symm
         have hδ_nz : ∃ i < n + 2, δ.getD i false = true :=
-          hδ_eq ▸ exists_true_listXor_of_ne hfw₀_len hy_len hfy
+          hδ_eq ▸ BitString.exists_getD_listXor_pair_of_ne hfw₀_len hy_len hfy
         have hstep_eq' : naorYungShrink (n + 2) δ (f w₀) = naorYungShrink (n + 2) δ (f w₁) := by
           have hraw : naorYungShrink (n + 2) δ (f (BitString.listRow (n + 2) 0 choice.1)) =
               naorYungShrink (n + 2) δ (f (BitString.listRow (n + 2) 0 w₁)) := hstep_eq

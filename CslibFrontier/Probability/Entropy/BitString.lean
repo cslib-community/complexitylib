@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Foundations.Data.BitString.List
 public import CslibFrontier.Probability.Entropy
 public import CslibFrontier.Probability.StatisticalDistance
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Map
@@ -221,8 +222,7 @@ theorem sum_filter_mass_le_ge_of_entropy_ge {m : ℕ} (hm : 1 ≤ m) (p : PMF (B
         simp [q]
       have hent_pS : entropy pS ≤ m := by
         have hcard := entropy_le_log_card pS
-        rwa [show Fintype.card (BitString m) = 2 ^ m by simp, Nat.cast_pow, Nat.cast_ofNat,
-          Real.logb_pow, Real.logb_self_eq_one (by norm_num), mul_one] at hcard
+        rwa [BitString.logb_card] at hcard
       have hident : ∑ y ∈ S, (p y).toReal * surprisal p y =
           q * entropy pS + q * (-Real.logb 2 q) := by
         rw [entropy_eq_sum_surprisal pS, Finset.mul_sum]
@@ -283,10 +283,7 @@ theorem entropy_ofList_take_ge {m k : ℕ} (hk : k ≤ m) (p : PMF (BitString m)
     rw [PMF.map_comp]
     rfl
   have hcond := conditionalEntropy_le_log_card (p.map split)
-  rw [conditionalEntropy, hjoint, hfst,
-    show Fintype.card (BitString (m - k)) = 2 ^ (m - k) by simp,
-    Nat.cast_pow, Nat.cast_ofNat, Real.logb_pow, Real.logb_self_eq_one (by norm_num),
-    mul_one] at hcond
+  rw [conditionalEntropy, hjoint, hfst, BitString.logb_card] at hcond
   linarith
 
 /-- Appending `k` independent uniform bits to an `m`-bit distribution increases Shannon entropy
@@ -309,7 +306,6 @@ theorem entropy_append_uniform {m k : ℕ} (p : PMF (BitString m)) :
         BitString.ofList (m + k) (List.ofFn x ++ List.ofFn z) := by
     simp only [PMF.map_bind, PMF.map_comp, Function.comp_def, join]
   rw [← hmap, entropy_map_of_injective _ hinj, entropy_prod, entropy_uniform,
-    show Fintype.card (BitString k) = 2 ^ k by simp,
-    Nat.cast_pow, Nat.cast_ofNat, Real.logb_pow, Real.logb_self_eq_one (by norm_num), mul_one]
+    BitString.logb_card]
 
 end Cslib.Probability.PMF

@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import CslibFrontier.Probability.BitString.BinarySymmetricChannel.Capacity
 import CslibFrontier.Probability.BitString.BinarySymmetricChannel.StrongConverse
 import Mathlib.Tactic.NormNum
@@ -66,8 +67,7 @@ example : ∀ᶠ n : ℕ in Filter.atTop, ∀ (E : Fin (2 ^ ⌈(1 / 2 : ℝ) * n
     (by norm_num)] with n hn E D
   have : Nonempty (Fin (2 ^ ⌈(1 / 2 : ℝ) * n⌉₊)) := ⟨⟨0, by positivity⟩⟩
   have h := hn E D (by
-    rw [Fintype.card_fin, Nat.cast_pow, Nat.cast_two, logb_pow, logb_self_eq_one one_lt_two,
-      mul_one]
+    rw [Fintype.card_fin, Nat.cast_pow, Nat.cast_two, logb_two_pow]
     exact Nat.le_ceil _)
   linarith
 
