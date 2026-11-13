@@ -114,7 +114,10 @@ which the PMF concentration bounds apply.
 For a uniform draw on a finite group, import
 [Uniform.lean](../../CslibFrontier/Probability/Uniform.lean): `uniformOfFintype_map_add_left` and
 `uniformOfFintype_bind_add_left`, with their `_right` forms, remove a fixed mask as in the one-time
-pad; `uniformOfFintype_map_addHom` and `uniformOfFintype_map_monoidHom` push the uniform law
+pad, and the `_sub_left` and `_sub_right` forms in
+[Uniform/Translate.lean](../../CslibFrontier/Probability/Uniform/Translate.lean) do the same for
+`c - x` and `x - c`;
+`uniformOfFintype_map_addHom` and `uniformOfFintype_map_monoidHom` push the uniform law
 through a surjective homomorphism; and `uniformOfFintype_map_comp` reads a uniform function
 through an injection. For a dependent function, `uniformOfFintype_map_comp_dep` in
 [Product/Split.lean](../../CslibFrontier/Probability/Product/Split.lean) needs only nonempty
