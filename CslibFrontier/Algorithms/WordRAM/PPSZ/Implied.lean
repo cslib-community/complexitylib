@@ -254,6 +254,48 @@ private theorem odometer_step_spec {base hi k : ℕ} {loop : Code .standard 32} 
   · intro h
     simp [BinOp.eval, hzn h, hzf.s_eq]
 
+/-- The store loop `while jR < bnd do [ adr ← dBase + jR; *adr ← v; jR ← jR + one ]` from word
+`j`: the words `j, …, B - 1` after `Db` become the value `V` that the frame keeps in `v`, and the
+other memory is unchanged. -/
+private theorem storeLoop_spec {v bnd : Fin 32} {V B : ℕ} (hva : v ≠ adr)
+    (hv : ∀ y, ImpFrame w φ τ x b C Tb s Db y → y.regs v = V) (hbadr : bnd ≠ adr)
+    (hbj : bnd ≠ jR) (hB : B ≤ 2 * s) :
+    ∀ (d : ℕ) (y : Data 32), ImpFrame w φ τ x b C Tb s Db y → y.regs bnd = B →
+      y.regs jR + d = B →
+      ∃ z, ExecWithin w (.loop (.lt jR bnd) ram[ adr ← dBase + jR; *adr ← v; jR ← jR + one ])
+          y z (5 * d + 2) ∧ ImpFrame w φ τ x b C Tb s Db z ∧
+        (∀ i, y.regs jR ≤ i → i < B → z.mem (Db + i) = V) ∧
+        ∀ a, a < Db + y.regs jR ∨ Db + B ≤ a → z.mem a = y.mem a
+  | 0, y, hf, hst, hd => by
+    have hc : ¬(Cond.lt jR bnd).Holds y := by simp [Cond.holds_lt, hst]; omega
+    exact ⟨y, (ExecWithin.loop_exit hc).mono (by omega), hf, fun i h1 h2 => by omega,
+      fun _ _ => rfl⟩
+  | d + 1, y, hf, hst, hd => by
+    obtain ⟨j, hj⟩ : ∃ j, y.regs jR = j := ⟨_, rfl⟩
+    rw [hj] at hd ⊢
+    have hc : (Cond.lt jR bnd).Holds y := by simp [Cond.holds_lt, hst, hj]; omega
+    have hf1 : Fits w (Db + j) := hf.fits_le (by omega)
+    have hf2 : Fits w (j + 1) := hf.fits_le (by omega)
+    let y₁ := ((y.set adr (Db + j)).write (Db + j) V).set jR (j + 1)
+    have hrun : ExecWithin w ram[ adr ← dBase + jR; *adr ← v; jR ← jR + one ] y y₁ 3 := by
+      ram_eval [y₁, hf.dBase_eq, hj, hv y hf, hva, hf.one_eq, hf1, hf2]
+    have hy₁ : ImpFrame w φ τ x b C Tb s Db y₁ :=
+      ((hf.set (by decide) _).write (by omega) _).set (by decide) _
+    obtain ⟨z, hz, hzf, hzV, hzm⟩ := storeLoop_spec hva hv hbadr hbj hB d y₁ hy₁
+      (by simp [y₁, hbadr, hbj, hst]) (by simp [y₁]; omega)
+    have hj₁ : y₁.regs jR = j + 1 := by simp [y₁]
+    rw [hj₁] at hzV hzm
+    refine ⟨z, (ExecWithin.loop_iter hc hrun hz).mono (by omega), hzf, fun i h1 h2 => ?_,
+      fun a ha => ?_⟩
+    · rcases Nat.lt_or_ge i (j + 1) with hi | hi
+      · obtain rfl : i = j := by omega
+        rw [hzm _ (by omega)]
+        simp [y₁]
+      · exact hzV i hi h2
+    · rw [hzm a (by omega)]
+      simp only [y₁, Data.set_mem, Data.write_mem]
+      rw [Function.update_of_ne (by omega)]
+
 end Frame
 
 /-- A represented list with a first entry. -/
@@ -305,33 +347,13 @@ theorem initDLoop_spec : ∀ (d : ℕ) (y : Data 32), ImpFrame w φ τ x b C Tb 
     y.regs jR + d = s →
     ∃ z, ExecWithin w initDLoop y z (5 * d + 2) ∧ ImpFrame w φ τ x b C Tb s Db z ∧
       HoldsList (Db + y.regs jR) (List.replicate d C) z.mem ∧
-      ∀ a, a < Db + y.regs jR ∨ Db + s ≤ a → z.mem a = y.mem a
-  | 0, y, hf, hd => by
-    have hc : ¬(Cond.lt jR sReg).Holds y := by simp [Cond.holds_lt, hf.s_eq]; omega
-    exact ⟨y, (ExecWithin.loop_exit hc).mono (by omega), hf, by simp [holdsList_nil],
-      fun _ _ => rfl⟩
-  | d + 1, y, hf, hd => by
-    obtain ⟨j, hj⟩ : ∃ j, y.regs jR = j := ⟨_, rfl⟩
-    rw [hj] at hd ⊢
-    have hc : (Cond.lt jR sReg).Holds y := by simp [Cond.holds_lt, hf.s_eq, hj]; omega
-    have hf1 : Fits w (Db + j) := hf.fits_le (by omega)
-    have hf2 : Fits w (j + 1) := hf.fits_le (by omega)
-    let y₁ := ((y.set adr (Db + j)).write (Db + j) C).set jR (j + 1)
-    have hrun : ExecWithin w initDBody y y₁ 3 := by
-      ram_eval [y₁, initDBody, hf.dBase_eq, hj, hf.cBeg_eq, hf.one_eq, hf1, hf2]
-    have hy₁ : ImpFrame w φ τ x b C Tb s Db y₁ :=
-      ((hf.set (by decide) _).write (by omega) _).set (by decide) _
-    obtain ⟨z, hz, hzf, hzl, hzm⟩ := initDLoop_spec d y₁ hy₁ (by simp [y₁]; omega)
-    have hj₁ : y₁.regs jR = j + 1 := by simp [y₁]
-    rw [hj₁] at hzl hzm
-    refine ⟨z, (ExecWithin.loop_iter hc hrun hz).mono (by omega), hzf, ?_, fun a ha => ?_⟩
-    · rw [List.replicate_succ, holdsList_cons_iff]
-      refine ⟨?_, by simpa [Nat.add_assoc] using hzl⟩
-      rw [hzm _ (by omega)]
-      simp [y₁]
-    · rw [hzm _ (by omega)]
-      simp only [y₁, Data.set_mem, Data.write_mem]
-      rw [Function.update_of_ne (by omega)]
+      ∀ a, a < Db + y.regs jR ∨ Db + s ≤ a → z.mem a = y.mem a := by
+  intro d y hf hd
+  obtain ⟨z, hz, hzf, hzC, hzm⟩ := storeLoop_spec (v := cBeg) (by decide)
+    (fun _ h => h.cBeg_eq) (by decide) (by decide) (by omega) d y hf hf.s_eq hd
+  refine ⟨z, hz, hzf, fun ⟨i, hi⟩ => ?_, hzm⟩
+  simp only [List.length_replicate] at hi
+  simpa [Block.read, Nat.add_assoc] using hzC (y.regs jR + i) (by omega) (by omega)
 
 /-- **Start the clause odometer**: `D` holds `s` copies of the first clause address, and the
 memory outside `D` is unchanged, within `5 s + 3` instructions. -/
@@ -1594,37 +1616,8 @@ theorem zeroLoop_spec : ∀ (d : ℕ) (y : Data 32), ImpFrame w φ τ x b C Tb s
     y.regs stop = 2 * s → y.regs jR + d = 2 * s →
     ∃ z, ExecWithin w zeroLoop y z (5 * d + 2) ∧ ImpFrame w φ τ x b C Tb s Db z ∧
       (∀ i, y.regs jR ≤ i → i < 2 * s → z.mem (Db + i) = 0) ∧
-      ∀ a, a < Db + y.regs jR ∨ Db + 2 * s ≤ a → z.mem a = y.mem a
-  | 0, y, hf, hst, hd => by
-    have hc : ¬(Cond.lt jR stop).Holds y := by simp [Cond.holds_lt, hst]; omega
-    exact ⟨y, (ExecWithin.loop_exit hc).mono (by omega), hf, fun i h1 h2 => by omega,
-      fun _ _ => rfl⟩
-  | d + 1, y, hf, hst, hd => by
-    obtain ⟨j, hj⟩ : ∃ j, y.regs jR = j := ⟨_, rfl⟩
-    rw [hj] at hd ⊢
-    have hc : (Cond.lt jR stop).Holds y := by simp [Cond.holds_lt, hst, hj]; omega
-    have hf1 : Fits w (Db + j) := hf.fits_le (by omega)
-    have hf2 : Fits w (j + 1) := hf.fits_le (by omega)
-    let y₁ := ((y.set adr (Db + j)).write (Db + j) 0).set jR (j + 1)
-    have hrun : ExecWithin w zeroBody y y₁ 3 := by
-      ram_eval [y₁, zeroBody, hf.dBase_eq, hj, hf.zero_eq, hf.one_eq, hf1, hf2]
-    have hy₁ : ImpFrame w φ τ x b C Tb s Db y₁ :=
-      ((hf.set (by decide) _).write (by omega) _).set (by decide) _
-    obtain ⟨z, hz, hzf, hz0, hzm⟩ := zeroLoop_spec d y₁ hy₁ (by simp +decide [y₁, hst])
-      (by simp [y₁]; omega)
-    have hj₁ : y₁.regs jR = j + 1 := by simp [y₁]
-    rw [hj₁] at hz0 hzm
-    refine ⟨z, (ExecWithin.loop_iter hc hrun hz).mono (by omega), hzf, fun i h1 h2 => ?_,
-      fun a ha => ?_⟩
-    · rcases Nat.lt_or_ge i (j + 1) with hi | hi
-      · have hij : i = j := by omega
-        subst hij
-        rw [hzm _ (by omega)]
-        simp [y₁]
-      · exact hz0 i hi h2
-    · rw [hzm a (by omega)]
-      simp only [y₁, Data.set_mem, Data.write_mem]
-      rw [Function.update_of_ne (by omega)]
+      ∀ a, a < Db + y.regs jR ∨ Db + 2 * s ≤ a → z.mem a = y.mem a :=
+  storeLoop_spec (v := zero) (by decide) (fun _ h => h.zero_eq) (by decide) (by decide) le_rfl
 
 /-- **Clear the scratch memory**: the `2 s` words of `D` and `E` become zero, and the other memory
 is unchanged, within `10 s + 4` instructions. -/
