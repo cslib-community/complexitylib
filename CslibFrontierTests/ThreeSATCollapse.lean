@@ -11,7 +11,7 @@ import CslibFrontier.Computability.Complexity.Problems.ThreeSAT.Collapse
 
 /-! Clients of the complete-language collapse bridge, including the actual reduction chain. -/
 
-open Cslib.Complexity
+open Cslib.Complexity Turing.MultiTapeTM
 
 example {α : Type} (enc : α ↪ List Bool) (A : Set α) (hA : A ∈ coNP enc)
     (h : PolyTimeReducible encCNF encCNF ThreeSAT ThreeSATᶜ) : A ∈ NP enc := by
