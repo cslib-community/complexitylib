@@ -17,6 +17,7 @@ import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Languages.Probabilistic.UntilBad.TwoCost
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.Support
 
 /-!
 # CPA Security of Counter (CTR) Mode
@@ -467,7 +468,7 @@ private theorem toOuterMeasure_bad_fresh_le
   · intro q s hs
     cases q with
     | inl i =>
-      exact (toOuterMeasure_lift_eq_zero (bad := fun s : FlagState n => s.2 = true)
+      exact (PMF.toOuterMeasure_lift_eq_zero (bad := fun s : FlagState n => s.2 = true)
         (ProbComp.unifOracle i) s hs).trans_le zero_le
     | inr q =>
       calc (ProbOracleComp.runWith freshStep (ctrQueryProgram counter ℓ b q) s).toOuterMeasure
@@ -480,7 +481,7 @@ private theorem toOuterMeasure_bad_fresh_le
   · intro q s _ x hx _
     cases q with
     | inl i =>
-      rw [snd_eq_of_mem_support_lift hx]
+      rw [PMF.snd_eq_of_mem_support_lift hx]
       exact le_add_right (le_add_right le_rfl)
     | inr q =>
       have hlen := length_of_mem_support_freshQuery counter ℓ b q s hintra hx

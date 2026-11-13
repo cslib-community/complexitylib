@@ -4505,6 +4505,7 @@ public import CslibFrontier.Crypto.Game.CloseTo.UntilBad
 public import CslibFrontier.Crypto.Game.Concrete
 public import CslibFrontier.Crypto.Game.Experiment
 public import CslibFrontier.Crypto.Game.FourHop
+public import CslibFrontier.Crypto.Game.Hop
 public import CslibFrontier.Crypto.Game.Hybrid
 public import CslibFrontier.Crypto.Game.Order
 public import CslibFrontier.Crypto.Game.Retry
@@ -4613,6 +4614,11 @@ public import CslibFrontier.Crypto.Protocols.MPC.OTCommitment.Serial.Receiver
 public import CslibFrontier.Crypto.Protocols.MPC.OTCommitment.Session
 public import CslibFrontier.Crypto.Protocols.MPC.OTCommitment.World
 public import CslibFrontier.Crypto.Protocols.MPC.PolyTime
+public import CslibFrontier.Crypto.Protocols.MPC.PolyTime.Certificates
+public import CslibFrontier.Crypto.Protocols.MPC.PolyTime.Encoding
+public import CslibFrontier.Crypto.Protocols.MPC.PolyTime.InputProgEquiv
+public import CslibFrontier.Crypto.Protocols.MPC.PolyTime.RunEncoded
+public import CslibFrontier.Crypto.Protocols.MPC.PolyTime.Runner
 public import CslibFrontier.Crypto.Protocols.MPC.SPDZ
 public import CslibFrontier.Crypto.Protocols.MPC.SharedMul
 public import CslibFrontier.Crypto.Protocols.MPC.Yao
@@ -6621,6 +6627,7 @@ public import CslibFrontier.Privacy.DifferentialPrivacy.Reconstruction
 public import CslibFrontier.Privacy.DifferentialPrivacy.Sensitivity
 public import CslibFrontier.Privacy.DifferentialPrivacy.SmallUniverse
 public import CslibFrontier.Probability.AdaptiveWeights
+public import CslibFrontier.Probability.ApproxEq
 public import CslibFrontier.Probability.ApproximateCounting
 public import CslibFrontier.Probability.ApproximateCounting.Relative
 public import CslibFrontier.Probability.BitString
@@ -6765,6 +6772,7 @@ public import CslibFrontier.Probability.PMF.Markov
 public import CslibFrontier.Probability.PMF.Option
 public import CslibFrontier.Probability.PMF.Option.Bind
 public import CslibFrontier.Probability.PMF.PolynomialAgreement
+public import CslibFrontier.Probability.PMF.Support
 public import CslibFrontier.Probability.PMF.SupportTsum
 public import CslibFrontier.Probability.PMF.TailQuantile
 public import CslibFrontier.Probability.PMF.ToMeasure

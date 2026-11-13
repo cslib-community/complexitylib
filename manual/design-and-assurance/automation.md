@@ -640,6 +640,29 @@ before peeling the remaining prefix. If `game_trans` reports a `using` count mis
 interactively); if it reports that a hop proof's type does not match the expected hop, verify the
 intermediate game list order and parameter arguments.
 
+When the hop sequence is the argument a reader should follow, as in a headline theorem, write it as
+a `calc` chain instead. Import [Game/Hop.lean](../../CslibFrontier/Crypto/Game/Hop.lean) and
+`open Probability`. A step `Pr[G₁] ≈[ε] Pr[G₂]` says `|Pr[G₁] - Pr[G₂]| ≤ ε`, and the errors of
+consecutive steps add. An `=` step records an exact hop, and a proof of `|x - y| ≤ ε` is accepted as
+a step:
+```lean
+Game.advantage_le_of_approxEq
+  (calc Pr[G₀] = Pr[G₁] := by rw [h₀₁]                     -- Game 0 = Game 1
+    _ ≈[ε₁] Pr[G₂] := Game.approxEq_of_advantage_le h₁₂   -- |Game 1 − Game 2| ≤ ε₁
+    _ ≈[ε₂] Pr[G₃] := Game.approxEq_of_advantage_le h₂₃)
+```
+`Game.approxEq_of_advantage_le` turns an `ℝ≥0` advantage bound into a step, and
+`Game.approxEq_advantage G₀ G₁` charges a step its advantage. `Game.advantage_le_of_approxEq` reads
+the chain back as an `ℝ≥0` advantage bound; pass its second argument, `δ ≤ ε`, only when the bound
+`ε` is looser than the chain's sum of errors. `ApproxEq.le_add` and `ApproxEq.sub_le` give the
+one-sided bounds `Pr[G₀] ≤ Pr[G₁] + ε` and `Pr[G₁] - ε ≤ Pr[G₀]`. The same lemmas apply to
+experiments `e : ProbComp Bool`, since `Pr[e]` and the experiment advantage are those of
+`ProbComp.eval e`. Keep `game_trans` for chains whose hops are proved in place with `peel_binds`,
+where each hop is a local computation rather than a textbook step. On `h : x ≈[ε] y`, `h.trans`
+is `ApproxEq.trans`; use `le_trans` for the order. The
+[checked examples](../../CslibFrontierTests/Crypto/Hop.lean) cover each form, and
+[FourHop.lean](../../CslibFrontier/Crypto/Game/FourHop.lean) is a library client.
+
 ## Step through counter programs
 
 A reachability proof for a counter program (`Turing.CounterProgram.Reaches`) goes through its
