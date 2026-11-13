@@ -664,6 +664,32 @@ counts the points of `y² = x³ + 3x + 3` over `ZMod 7` (Example 9.69 of
 that attain both ends of the bound, and applies each form of the theorem to them. Build it with
 `lake build CslibFrontierTests.Foundations.AlgebraicGeometry.EllipticCurveHasse`.
 
+### HQC fixed-weight support sampling
+
+Import [`HQC/SupportSampling.lean`](../../CslibFrontier/Crypto/Primitives/HQC/SupportSampling.lean)
+for the `SampleSupport2` program from the [HQC v5.1 specification](https://pqc-hqc.org/doc/hqc_specifications_v5.1.pdf),
+p. 19. `sampleSupport2 width n count` draws every word from exactly `width` independent fair bits,
+forms candidate `i + floor(word * (n-i) / 2^width)`, and then resolves collisions in descending
+index order. `scanSupport` retains the ordered output array; `toFinset_scanSupport` proves that
+the literal inner scan gives the same support as the membership-based resolver. For `count ≤ n`,
+every output has exactly `count` positions in `range n`. `eval_idealSupport` proves exact
+uniformity when each shrinking interval is sampled uniformly instead.
+
+[`HQC/SupportDensity.lean`](../../CslibFrontier/Crypto/Primitives/HQC/SupportDensity.lean) proves
+Proposition 6.2.1's two product bounds for the actual multiply-high choices. The remainder
+formulas in Equation (16) are identified by `supportLowerDensity_toReal` and
+`supportUpperDensity_toReal`. Use `sampleSupport2_event_bounds` for a Boolean event and
+`sampleSupport2_payoff_bounds` for a real payoff nonnegative on valid supports. Nonnegativity
+is essential: the source's Lemma 6.5 omits it, and a constant payoff of `-1` refutes that wording.
+[Checked examples](../../CslibFrontierTests/Crypto/HQCSupportSampling.lean) include zero/full weight,
+collision replacement, and `n=5`, `count=2`, `width=3`, where `{2,4}` has actual probability
+`1/16` and ideal probability `1/10`. They also distinguish multiply-high from modulo reduction.
+
+The word-source model assumes independence and uniformity; it does not establish them for an
+XOF. Positions use natural numbers, with checked 16-bit representability conditions for the
+published parameter sets; byte serialization, native runtime, decryption-failure bounds and
+HQC security remain separate obligations under the [post-quantum program](https://github.com/cslib-community/cslib-frontier/issues/4987).
+
 ## Encryption and chosen-message attacks
 
 [AdversaryOf](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/Encryption/Basic.lean#L73) has a first stage choosing two messages and a saved word from the public key, and a second stage guessing from that saved state and the challenge ciphertext. Each stage has a native certificate. `INDCPAOn` explicitly constrains admissible message pairs. `WordINDCPA` requires equal lengths; the general `INDCPAOf` with all pairs is stronger for variable-length word messages. Invalid challenges are made independent of the hidden experiment bit. `Encryption.advantage (gameOn valid keyGen encrypt adversary) n` names the advantage between the two sides of the experiment at parameter `n`, and `INDCPAOn` asks that it be negligible for every admissible adversary; bounds on other two-sided encryption experiments, such as the DEM and CCA games, are stated with the same name.
