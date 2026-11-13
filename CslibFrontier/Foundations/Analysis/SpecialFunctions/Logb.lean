@@ -5,7 +5,8 @@ Authors: Samuel Schlesinger
 -/
 
 module
--- upstream: candidate (Mathlib, `Mathlib/Analysis/SpecialFunctions/Log/Base.lean`)
+-- upstream: candidate (the `Real` lemmas to Mathlib, `Mathlib/Analysis/SpecialFunctions/Log/Base`;
+-- `Cslib.BitString.logb_card` to cslib, beside `Cslib/Foundations/Data/BitString.lean`)
 
 public import CslibFrontier.Init
 public import Cslib.Foundations.Data.BitString
