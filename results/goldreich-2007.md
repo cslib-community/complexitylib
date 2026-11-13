@@ -83,6 +83,24 @@ time, the inclusive prefix boundary, the necessary extension restriction and the
 class. The source's philosophical quantification over reasonable models is represented by
 this precise native model, not by a theorem over all computational models.
 
+## Chapter 4: exact step-counter exercise
+
+Exercise 4.5 (January 2007 `r2.pdf`, PDF page 36 / printed page 152) is covered by
+`Turing.MultiTapeTM.exists_stepCounter` in
+[StepCounter](../CslibFrontier/Computability/Machines/Turing/MultiTape/Combinators/StepCounter.lean).
+The fixed finite native machine receives `encNat n` (least-significant-first binary), visits one
+designated signal state exactly $n$ times, starts outside that state and leaves every visit on
+the next transition. It halts within $c(n+1)$ steps for one uniform constant, including all
+preparation and $n=0$. The draft's default binary-number convention is in December 2006
+`r1.pdf`, PDF page 45 / printed page 20; this differs only in binary digit order.
+
+The construction reuses exact binary-to-unary conversion and the existing native clock, rather
+than counting a rounded budget or output length. The source's displayed endpoint asks for total
+runtime; no logarithmic workspace or per-prefix latency guarantee is inferred. The
+[checked clients](../CslibFrontierTests/StepCounter.lean) instantiate the full machine and check
+zero and positive counts. This completes this exercise endpoint only; the chapter-wide audit
+and other theory-establishing exercises remain under [#4772](https://github.com/cslib-community/cslib-frontier/issues/4772).
+
 ## Chapter 5: Space Complexity
 
 Snapshot: `e39c34b3413b2cd7e08053a14ff8bb36ded4c8dc` (`origin/main`, 2026-11-12),

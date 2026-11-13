@@ -17,7 +17,8 @@ open Cslib Cslib.Crypto
 
 /-- Toy RSA instance `N = 3 * 11 = 33`, `e = 3`, `d = 7` (`3 * 7 ≡ 1 [MOD 20]`). -/
 def rsa33 : RSADesc :=
-  ⟨((3, 11), (3, 7)), ⟨by norm_num, by norm_num, by decide, by decide, by decide⟩⟩
+  { p := 3, q := 11, e := 3, d := 7, hp := by norm_num, hq := by norm_num, hpq := by decide,
+    he := by decide, hed := by decide }
 
 /-! ### Malleability -/
 

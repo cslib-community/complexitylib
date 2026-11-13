@@ -242,8 +242,9 @@ theorem publicKeyGame_uniformEnsemble (n m w : ℕ → ℕ) (adversary : Encrypt
         challengeGame (PMF.uniformOfFintype (PublicKey (n security) (m security) (w security)))
           (typedAdversary adversary security) bit := by
   cases bit <;>
-    simp only [Encryption.publicKeyGame, LWE.uniformEnsemble, challengeGame, Game.withSetup,
-      lrExperiment, typedAdversary, Encryption.AdversaryOf.toTwoStage,
+    simp only [Encryption.publicKeyGame, Encryption.publicKeyGameOn, LWE.uniformEnsemble,
+      challengeGame, Game.withSetup, lrExperiment, typedAdversary,
+      Encryption.AdversaryOf.toTwoStage,
       MessagePair.select_false, MessagePair.select_true, Bool.false_eq_true, ↓reduceIte,
       PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def, ProbComp.eval_bind,
       ProbComp.eval_map, eval_encryptSerialized_toBinary]

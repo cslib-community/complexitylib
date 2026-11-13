@@ -1407,7 +1407,7 @@ theorem eval_prfRealGame_macToPrfDistinguisher
     (adversary : Forger) (n : ℕ) :
     ProbComp.eval (prfRealGame family (macToPrfDistinguisher adversary) n) =
       ProbComp.eval ((prfMAC family hpoly).eufCmaGame adversary n) := by
-  simp only [prfRealGame, MACScheme.eufCmaGame, macToPrfDistinguisher,
+  simp only [prfRealGame, ProbOracleComp.run, MACScheme.eufCmaGame, macToPrfDistinguisher,
     OracleComp.interpret_bind, ProbComp.eval_bind, ProbComp.eval_pure]
   refine PMF.bind_congr_on_support _ _ _ fun sk hsk => ?_
   have hsk' : sk ∈ (ProbComp.eval (BitString.sampleList n)).support := hsk
