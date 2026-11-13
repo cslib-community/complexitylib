@@ -1,462 +1,132 @@
-name: Lean Action CI
+name: Retained Lake snapshot probe
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-  merge_group:
   workflow_dispatch:
 
-# A new run for a pull request cancels that pull request's superseded run. Push runs on `main`
-# share `lean-ci-main` without `cancel-in-progress`: the active `main` run finishes and uploads the
-# `.lake` and remote caches, while intermediate `main` pushes are replaced by the latest `main` tip
-# while pending. Merge-queue groups and manual runs each use their own run id so all of them
-# complete.
-concurrency:
-  group: >-
-    lean-ci-${{
-      github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) ||
-      github.event_name == 'push' && github.ref == 'refs/heads/main' && 'main' ||
-      github.run_id
-    }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+permissions:
+  contents: read
 
-env:
-  CACHE_RECOVERY_GENERATION: ${{ vars.CACHE_RECOVERY_GENERATION || '0' }}
-  COMPLEXITYLIB_CACHE_URLS: ${{ vars.COMPLEXITYLIB_CACHE_URLS }}
-  DISABLE_CACHE_RESTORE: ${{ vars.DISABLE_CACHE_RESTORE }}
-  LAKE_NO_CACHE: ${{ vars.DISABLE_CACHE_RESTORE == 'true' || vars.DISABLE_CACHE_RESTORE == '1' }}
-  MATHLIB_NO_CACHE_ON_UPDATE: ${{ (vars.DISABLE_CACHE_RESTORE == 'true' || vars.DISABLE_CACHE_RESTORE == '1') && '1' || '0' }}
-
+# Benchmark-only branch based on the exact retained snapshot's source revision.
+# No bootstrap, handoff, preliminary build, cache save, or remote publication.
 jobs:
-  cache-origin-checks:
-    name: HTTP cache origin
+  retained-snapshot:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: read
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: '1.27.x'
-          cache: false
-      - name: Test and vet the Linux origin
-        working-directory: tools/cache-origin
-        run: |
-          go test -race -count=1 ./...
-          go vet ./...
-          go test -run='^$' -fuzz=FuzzMapping -fuzztime=10s -parallel=2
-          go build -o "$RUNNER_TEMP/cache-origin" .
-      - name: Test dashboard snapshots and frontend
-        run: |
-          python3 -B -m unittest discover -s scripts -p 'test_cache_dashboard.py'
-          node --check tools/cache-origin/dashboard/app.js
-          node scripts/test_cache_dashboard_frontend.cjs
-      - name: Install nginx for loopback integration tests
-        run: |
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends -y nginx apache2-utils
-      - name: Test actual HTTPS publication, serving and GC
-        env:
-          CACHE_ORIGIN_NGINX_TEST: "1"
-          CACHE_ORIGIN_BIN: ${{ runner.temp }}/cache-origin
-          NGINX_BIN: /usr/sbin/nginx
-        run: python3 -B -m unittest discover -s scripts -p 'test_cache_origin_nginx.py'
-
-  source-checks:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      # Includes the manual checker/builder controls in test_operator_manual.py. These source
-      # checks need only Python: no research exports, publishing tools or Lean installation.
-      - name: Test Python tooling
-        run: python3 -m unittest discover -s scripts -p 'test_*.py'
-      - name: Operator manual links and excerpts
-        run: python3 -B scripts/check_operator_manual.py
-      - name: "Source hygiene"
-        run: python3 -B scripts/check_hygiene.py --check-simp
-      # A compound encoding that three or more public statements of a module spell out needs a
-      # name (#1656). The existing ones are counted per module in
-      # scripts/encoding_readability_baseline.json, which only falls. Pull requests enforce it in
-      # the modules they change, against the first parent of the merge commit as in the
-      # changed-file lints below; merge groups and pushes only report, so that queued PRs written
-      # before an entry was lowered are not ejected. Sources only: no Lean.
-      - name: "Encoding readability ratchet (changed modules)"
-        if: github.event_name == 'pull_request'
-        env:
-          RECORDED_BASE: ${{ github.event.pull_request.base.sha }}
-        run: |
-          set -e
-          BASE=$(git cat-file -p HEAD | sed -n 's/^parent //p' | head -n 1)
-          BASE=${BASE:-$RECORDED_BASE}
-          git fetch --no-tags --depth=1 origin "$BASE"
-          python3 -B scripts/check_encoding_readability.py --base "$BASE"
-      - name: "Encoding readability report"
-        if: github.event_name != 'pull_request'
-        run: python3 -B scripts/check_encoding_readability.py --report
-      # Positional projection chains such as `c.1.2` in public statements and definition bodies
-      # (#1764) are counted per module in scripts/projection_chains_baseline.json. Pull requests
-      # fail when a module they change has more chains than its entry or, unless they raise the
-      # entry, than at the merge base; fewer chains need no baseline edit. Merge groups and
-      # pushes only report. The base is the first parent of the merge commit, as above.
-      # Sources only: no Lean.
-      - name: "Projection chain ratchet (changed modules)"
-        if: github.event_name == 'pull_request'
-        env:
-          RECORDED_BASE: ${{ github.event.pull_request.base.sha }}
-        run: |
-          set -e
-          BASE=$(git cat-file -p HEAD | sed -n 's/^parent //p' | head -n 1)
-          BASE=${BASE:-$RECORDED_BASE}
-          git fetch --no-tags --depth=1 origin "$BASE"
-          python3 -B scripts/check_projection_chains.py --base "$BASE"
-      - name: "Projection chain report"
-        if: github.event_name != 'pull_request'
-        run: python3 -B scripts/check_projection_chains.py --report
-      # Advisory only: tactic blocks on lines a pull request adds or changes that repeat a block
-      # of another proof in the same file or directory nearly verbatim (#3725). Candidates go to
-      # the job summary and appear as notices; the step never fails the job. Sources only: no
-      # Lean, so it runs before the build. Its tests run with the Python tests above. See
-      # scripts/proof_copies.py. The base is the first parent of the merge commit, as above.
-      - name: "Repeated-proof-block notice (advisory)"
-        if: github.event_name == 'pull_request'
-        continue-on-error: true
-        timeout-minutes: 5
-        env:
-          RECORDED_BASE: ${{ github.event.pull_request.base.sha }}
-        run: |
-          BASE=$(git cat-file -p HEAD | sed -n 's/^parent //p' | head -n 1)
-          BASE=${BASE:-$RECORDED_BASE}
-          git fetch --no-tags --depth=1 origin "$BASE"
-          python3 -B scripts/proof_copies.py --base "$BASE" --github
-      # The API documentation (docbuild/) and the guide (guide/) are separate Lake projects that
-      # share the library's toolchain and `.lake/packages`, so their lockfiles must follow the root
-      # pins. Checking here makes a root cslib or Mathlib bump without matching lockfile updates
-      # fail before Lean setup; the Guide workflow also compiles examples for library/pin changes.
-      # This reads only checked-in files: no Lean, network or `.lake`.
-      - name: "Documentation pins"
-        run: python3 -B scripts/check_docs.py --config-only
-
-  lean-checks:
-    runs-on: ubuntu-latest
-    outputs:
-      publication: ${{ steps.upload-publication.outputs.artifact-id }}
-    permissions:
-      contents: read
-      # Main may download the exact landed revision's successful merge-group build artifact.
-      actions: read
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Reclaim unused hosted-runner SDK space
-        continue-on-error: true
-        run: scripts/ci/prepare-runner.sh
-      # The steps below do what lean-action did, with bounded cache retries: install the toolchain,
-      # restore and save `.lake` under the same Actions cache key, then build, test and lint.
-      - name: Restore .lake from the Actions cache
-        id: lake-cache
-        if: vars.DISABLE_CACHE_RESTORE != 'true' && vars.DISABLE_CACHE_RESTORE != '1'
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Restore the exact retained main snapshot
+        id: retained
         uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
           path: ./.lake
-          key: lake-${{ env.CACHE_RECOVERY_GENERATION }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('./lean-toolchain') }}-${{ hashFiles('./lake-manifest.json') }}-${{ github.sha }}
-          restore-keys: lake-${{ env.CACHE_RECOVERY_GENERATION }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('./lean-toolchain') }}-${{ hashFiles('./lake-manifest.json') }}
-      # Restore elan and the toolchain from the Actions cache, or install them with retries
-      # (.github/actions/install-lean, #1426). lean-action is not used: with every feature off it
-      # only reinstalled elan from GitHub releases, without retries, so a release outage failed CI.
+          key: lake-0-Linux-X64-39707a83b53c737bd0252f90b111520c4f52892fb9aa2efa8f7d85a9861e7a74-52aaa34cb1dbb7fe55b090936195255e8e9597fad18b07be863ad1cb7aa313b2-7274dfbe50b5ba72f3b847f4340874dc522590dc
+          fail-on-cache-miss: true
+      - name: Require an exact snapshot hit
+        env:
+          CACHE_HIT: ${{ steps.retained.outputs.cache-hit }}
+        run: test "$CACHE_HIT" = true
+      # This branch removes the composite's save step, retaining restore/install behavior.
       - uses: ./.github/actions/install-lean
-      - name: Restore Mathlib cache with retries
-        if: vars.DISABLE_CACHE_RESTORE != 'true' && vars.DISABLE_CACHE_RESTORE != '1'
-        continue-on-error: true
-        timeout-minutes: 10
-        run: python3 -B scripts/cache/get_mathlib.py --lean-action
-      # The source-check runner has no Lean installation and skips this real build test.
-      # Exercise both compiler setup-input omissions with an isolated, cache-disabled project.
-      - name: Test Lake build handoff reuse
-        working-directory: scripts
+      - name: Measure retained-archive staging and verify OLean contents
         env:
-          COMPLEXITYLIB_TEST_LAKE_HANDOFF: "1"
-        run: >-
-          python3 -B -m unittest
-          test_cache_handoff.HandoffTests.test_real_lake_reuses_module_and_native_outputs_without_setup_inputs
-      - name: Test real Lake cache publication staging
-        run: python3 -B -m unittest scripts.test_cache_publish.RealLakePublicationTests
-      # Download the outputs that `main` CI uploaded for the nearest uploaded ancestor of this
-      # commit, skipping modules that `.lake` already has (scripts/cache/README.md). The script
-      # deepens the depth-1 checkout to 100 generations to find that ancestor. Lake reuses an
-      # output only where a module's input hash matches, so the build below still compiles every
-      # module this commit affects. A miss, a timeout or an unreachable bucket only leaves the
-      # build colder.
-      - name: Restore build outputs from the remote cache
-        if: vars.DISABLE_CACHE_RESTORE != 'true' && vars.DISABLE_CACHE_RESTORE != '1'
-        continue-on-error: true
-        timeout-minutes: 10
-        run: scripts/cache/get-missing.sh
-      # A merge-group build has already checked this exact commit before it lands on main.
-      # Reuse its root outputs without granting merge groups access to the public-cache writer.
-      # Missing, expired or mismatched handoffs leave the ordinary build below unchanged.
-      # Set the repository variable DISABLE_BUILD_HANDOFF=1 to disable this handoff without a commit.
-      - name: Restore validated merge-group build outputs
-        if: >-
-          github.event_name == 'push' && github.ref == 'refs/heads/main' &&
-          vars.DISABLE_CACHE_RESTORE != 'true' && vars.DISABLE_CACHE_RESTORE != '1' &&
-          vars.DISABLE_BUILD_HANDOFF != '1' && vars.DISABLE_BUILD_HANDOFF != 'true'
-        continue-on-error: true
-        timeout-minutes: 10
-        env:
-          GH_TOKEN: ${{ github.token }}
-          DISABLE_BUILD_HANDOFF: ${{ vars.DISABLE_BUILD_HANDOFF }}
-        run: python3 -B scripts/cache_handoff.py restore
-      - name: "lake build"
-        id: build
-        run: lake build --wfail --iofail @cslib-frontier @/mk_all @/checkInitImports @mathlib/lint-style
-      - name: "lake test"
-        id: test
-        run: lake test --wfail --iofail
-      - name: "lake lint"
-        id: lint
-        run: lake lint
-      # As lean-action did: keep a successful build even when tests or linting fail. Only `main`
-      # pushes save: each save is about 2.8 GB, and PR or merge-queue copies would evict `main`'s
-      # entry from the 10 GB Actions cache. Other runs restore `main`'s entry through the
-      # restore-keys prefix and fetch anything newer from the remote cache. The default-off
-      # RETAIN_PUBLICATION_ARCHIVES experiment moves this save after publication when the variable
-      # equals true; Actions string comparisons are case-insensitive.
-      - name: Save .lake to the Actions cache
-        if: >-
-          ${{ !cancelled() && vars.RETAIN_PUBLICATION_ARCHIVES != 'true' &&
-              github.event_name == 'push' && github.ref == 'refs/heads/main' &&
-              vars.DISABLE_CACHE_RESTORE != 'true' && vars.DISABLE_CACHE_RESTORE != '1' &&
-              steps.lake-cache.outputs.cache-hit != 'true' &&
-              (success() || steps.test.outcome == 'failure' || steps.lint.outcome == 'failure') }}
-        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
-        with:
-          path: ./.lake
-          key: ${{ steps.lake-cache.outputs.cache-primary-key }}
-      # Source hygiene that needs the build outputs: each module's count of public statements that
-      # mention tidy computability (#862) must equal its baseline; proofs may use it. See
-      # scripts/check_tidy_surface.py. Its tests on a compiled module need Lean, so the Python
-      # tests at the start skip them; they run here.
-      - name: "Tidy statement ratchet"
+          RESTORED_KEY: ${{ steps.retained.outputs.cache-matched-key }}
         run: |
-          set -e
-          command -v lake
-          test -d .lake/packages
-          python3 -B -m unittest scripts/test_check_tidy_surface.py
-          python3 -B scripts/check_tidy_surface.py
-      - name: "Result registry references"
-        run: python3 -B scripts/results_registry.py --compiled
-      # Lints for the files a pull request adds or changes: names in module docstrings' "Main …"
-      # lists exist, and a new test file does more than restate signatures. See
-      # scripts/check_changed_files.py. The checkout is shallow, so the base commit is fetched
-      # and compared directly. On pull requests, as in the parallel-definition step below, the
-      # base is the first parent of the checked-out merge commit: `pull_request.base.sha` can be
-      # an older tip of `main`, and comparing with it would lint files that later commits on `main`
-      # changed. Merge-group runs keep `merge_group.base_sha`, which is always fetchable.
-      - name: "Changed-file lints"
-        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
-        env:
-          RECORDED_BASE: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
-        run: |
-          set -e
-          BASE=
-          if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
-            BASE=$(git cat-file -p HEAD | sed -n 's/^parent //p' | head -n 1)
-          fi
-          BASE=${BASE:-$RECORDED_BASE}
-          git fetch --no-tags --depth=1 origin "$BASE"
-          python3 -B scripts/check_changed_files.py --base "$BASE"
-      # Advisory only: public definitions that a pull request adds or changes and that share a
-      # large anonymized subterm with an existing definition, or only rename one (AGENTS.md, "New
-      # statements and definitions"), and theorems it adds or changes whose statement the library
-      # or a dependency already proves (#949). Candidates go to the job summary and appear as
-      # notices; the step never fails the job. Its compiled-fixture tests need Lean, so the Python
-      # tests at the start skip them; they run here. See scripts/parallel_defs.py. The comparison
-      # base is the first parent of the checked-out merge commit: `pull_request.base.sha` can be an
-      # older tip of the base branch, and comparing with it would attribute later base commits to
-      # the PR.
-      - name: "Parallel-definition and duplicate-statement notices (advisory)"
-        if: github.event_name == 'pull_request'
-        continue-on-error: true
-        timeout-minutes: 10
-        env:
-          RECORDED_BASE: ${{ github.event.pull_request.base.sha }}
-        run: |
-          BASE=$(git cat-file -p HEAD | sed -n 's/^parent //p' | head -n 1)
-          BASE=${BASE:-$RECORDED_BASE}
-          git fetch --no-tags --depth=1 origin "$BASE"
-          python3 -B scripts/parallel_defs.py --base "$BASE" --github --no-build-check
-          python3 -B scripts/parallel_defs.py --theorems --base "$BASE" --github --no-build-check
-          python3 -B -m unittest scripts/test_parallel_defs.py
-      # Advisory only: backticked Lean names in the PR description that the checked-out merge
-      # commit does not declare (renamed or dropped while the PR evolved). It reads the sources of
-      # the library, the tests, `.lake/packages` and the toolchain, so it runs after
-      # the build; names that the base declared are marked as removed by the PR. Findings go to the
-      # job summary and a notice; the step never fails the job. The body is the event payload's,
-      # i.e. as of the latest push; after editing the description, run
-      # `scripts/check_pr_names.py --pr N` locally. Its tests run with the Python tests at the start.
-      - name: "PR description names (advisory)"
-        if: github.event_name == 'pull_request'
-        continue-on-error: true
-        timeout-minutes: 5
-        env:
-          RECORDED_BASE: ${{ github.event.pull_request.base.sha }}
-        run: |
-          BASE=$(git cat-file -p HEAD | sed -n 's/^parent //p' | head -n 1)
-          BASE=${BASE:-$RECORDED_BASE}
-          git fetch --no-tags --depth=1 origin "$BASE"
-          python3 -B scripts/check_pr_names.py --event "$GITHUB_EVENT_PATH" --base "$BASE" --github
-      - name: "lake exe mk_all --check"
-        run: |
-          set -e
-          lake exe mk_all --check
-      - name: Test import generation with custom source directories
-        run: |
-          test -x .lake/build/bin/mk_all
-          python3 -B -m unittest discover -s scripts -p 'test_mk_all.py'
-      - name: "lake exe lint-style"
-        run: |
-          set -e
-          lake exe lint-style
-      - name: "checkInitImports"
-        run: |
-          set -e
-          lake exe checkInitImports
-      # Stage after every required Lean-side check. Source validation runs independently; the
-      # required `ci-checks` aggregator below keeps a source-failing merge group from landing.
-      - name: Stage merge-group build outputs
-        id: cache-handoff
-        if: >-
-          github.event_name == 'merge_group' &&
-          vars.DISABLE_BUILD_HANDOFF != '1' && vars.DISABLE_BUILD_HANDOFF != 'true'
-        continue-on-error: true
-        timeout-minutes: 10
-        env:
-          DISABLE_BUILD_HANDOFF: ${{ vars.DISABLE_BUILD_HANDOFF }}
-        run: python3 -B scripts/cache_handoff.py pack --output "$RUNNER_TEMP/lean-handoff"
-      - name: Upload merge-group build outputs
-        if: github.event_name == 'merge_group' && steps.cache-handoff.outputs.artifact-name != ''
-        continue-on-error: true
-        timeout-minutes: 10
+          python3 -B -u - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          import platform
+          import subprocess
+          import sys
+          import time
+
+          source_revision = "7274dfbe50b5ba72f3b847f4340874dc522590dc"
+          output = Path(os.environ["RUNNER_TEMP"]) / "retention-probe"
+          output.mkdir()
+
+          def write(name, data):
+              (output / name).write_text(json.dumps(data, indent=2, sort_keys=True) + "\n")
+
+          changed = subprocess.check_output(
+              ["git", "diff", "--name-only", source_revision, "HEAD"], text=True
+          ).splitlines()
+          assert sorted(changed) == [
+              ".github/actions/install-lean/action.yml",
+              ".github/workflows/lean_action_ci.yml",
+          ], changed
+
+          def snapshot():
+              archives = list(Path(".lake/build").rglob("*.ltar"))
+              oleans = {}
+              for path in sorted(Path(".lake/build").rglob("*")):
+                  if path.is_file() and path.name.endswith((".olean", ".olean.private", ".olean.server")):
+                      with path.open("rb") as stream:
+                          digest = hashlib.file_digest(stream, "sha256").hexdigest()
+                      stat = path.stat()
+                      oleans[str(path)] = {"sha256": digest, "bytes": stat.st_size,
+                                          "mtime_ns": stat.st_mtime_ns}
+              return {"archives": {"count": len(archives),
+                                   "bytes": sum(path.stat().st_size for path in archives)},
+                      "oleans": oleans}
+
+          metadata = {
+              "source_revision": source_revision,
+              "workflow_revision": os.environ["GITHUB_SHA"],
+              "restored_key": os.environ["RESTORED_KEY"],
+              "image_os": os.environ.get("ImageOS"),
+              "image_version": os.environ.get("ImageVersion"),
+              "machine": platform.machine(),
+              "kernel": platform.release(),
+              "logical_cores": os.cpu_count(),
+              "available_cores": len(os.sched_getaffinity(0)),
+              "lean_num_threads": os.environ.get("LEAN_NUM_THREADS"),
+              "cpu_info": subprocess.check_output(["lscpu"], text=True),
+              "changed_files": changed,
+          }
+          write("runner.json", metadata)
+          print("PROBE_RUNNER " + json.dumps(metadata, sort_keys=True), flush=True)
+          before = snapshot()
+          assert before["oleans"], "Retained snapshot has no root OLean outputs"
+          assert before["archives"]["count"] > 0, "Retained snapshot has no root archives"
+          write("before.json", before)
+          print("PROBE_BEFORE " + json.dumps({"archives": before["archives"],
+                "olean_files": len(before["oleans"])}), flush=True)
+          started = time.monotonic()
+          result = subprocess.run([
+              sys.executable, "-B", "-u", "scripts/cache/publish.py", "stage",
+              str(Path(os.environ["RUNNER_TEMP"]) / "lake-publication-probe"),
+              "--report", str(output / "staging.json"),
+          ])
+          elapsed = time.monotonic() - started
+          after = snapshot()
+          write("after.json", after)
+          old, new = before["oleans"], after["oleans"]
+          added, removed = sorted(new.keys() - old.keys()), sorted(old.keys() - new.keys())
+          common = old.keys() & new.keys()
+          content_changes = sorted(p for p in common if old[p]["sha256"] != new[p]["sha256"])
+          mtime_changes = sorted(p for p in common if old[p]["mtime_ns"] != new[p]["mtime_ns"])
+          summary = {
+              "stage_exit_code": result.returncode, "stage_subprocess_seconds": elapsed,
+              "archives_before": before["archives"], "archives_after": after["archives"],
+              "olean_files_before": len(old), "olean_files_after": len(new),
+              "olean_files_added": added, "olean_files_removed": removed,
+              "olean_content_changes": content_changes, "olean_mtime_changes": mtime_changes,
+              "olean_contents_unchanged": not (added or removed or content_changes),
+          }
+          write("verification.json", summary)
+          print("PROBE_RESULT " + json.dumps(summary, sort_keys=True), flush=True)
+          assert summary["olean_contents_unchanged"], "Staging changed root OLean contents"
+          sys.exit(result.returncode)
+          PY
+      - name: Upload measurement JSON only
+        if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: ${{ steps.cache-handoff.outputs.artifact-name }}
-          path: ${{ runner.temp }}/lean-handoff/
-          if-no-files-found: error
-          compression-level: 0
-          retention-days: 2
-      # Stage once for every enabled publisher; compilation and archive creation stay here.
-      - name: Stage cache publication
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (vars.LAKE_CACHE_BUCKET != '' || vars.CACHE_SERVER_PUBLISH_ENABLED == 'true')
-        run: python3 scripts/cache/publish.py stage "$RUNNER_TEMP/lake-publication"
-      # Publishers consume this run's own package, never a PR/other-run artifact.
-      - name: Hand off staged files to the enabled publishers
-        id: upload-publication
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && (vars.LAKE_CACHE_BUCKET != '' || vars.CACHE_SERVER_PUBLISH_ENABLED == 'true')
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: lake-publication-${{ github.sha }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/lake-publication
-          compression-level: 0
-          retention-days: 2
-          if-no-files-found: error
-      # Default-off experiment: retain archives created by publication staging for the next run.
-      # This is mutually exclusive with the ordinary pre-publication save above. Ordinary
-      # cache-save failures are warnings, so retention is best-effort.
-      - name: Save .lake after cache publication (experiment)
-        if: >-
-          ${{ !cancelled() && vars.RETAIN_PUBLICATION_ARCHIVES == 'true' &&
-              github.event_name == 'push' && github.ref == 'refs/heads/main' &&
-              vars.DISABLE_CACHE_RESTORE != 'true' && vars.DISABLE_CACHE_RESTORE != '1' &&
-              steps.lake-cache.outputs.cache-hit != 'true' &&
-              steps.build.outcome == 'success' }}
-        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
-        with:
-          path: ./.lake
-          key: ${{ steps.lake-cache.outputs.cache-primary-key }}
-  # Keep the existing required-check context while source-only and Lean validation overlap. The
-  # Lean job may prepare an unused publication artifact when source validation fails, but no
-  # publisher consumes it unless this aggregator succeeds.
-  ci-checks:
-    needs: [source-checks, lean-checks]
-    if: always()
-    runs-on: ubuntu-latest
-    permissions: {}
-    outputs:
-      publication: ${{ needs.lean-checks.outputs.publication }}
-    steps:
-      - name: Require source and Lean validation
-        env:
-          SOURCE_RESULT: ${{ needs.source-checks.result }}
-          LEAN_RESULT: ${{ needs.lean-checks.result }}
-        run: |
-          test "$SOURCE_RESULT" = success
-          test "$LEAN_RESULT" = success
-
-  publish-gcs-cache:
-    needs: ci-checks
-    # No PR/merge-group job can mint an OIDC token. This job only consumes a successful
-    # main-push run's exact staged publication, verified before cloud authentication.
-    if: >-
-      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
-      vars.LAKE_CACHE_BUCKET != '' && needs.ci-checks.result == 'success' &&
-      needs.ci-checks.outputs.publication != ''
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          artifact-ids: ${{ needs.ci-checks.outputs.publication }}
-          merge-multiple: true
-          path: ${{ runner.temp }}/lake-publication
-      - name: Verify this run's publication
-        run: python3 scripts/cache/publish.py verify "$RUNNER_TEMP/lake-publication" --revision "$GITHUB_SHA"
-      - name: Authenticate to the remote cache
-        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
-        with:
-          workload_identity_provider: ${{ vars.LAKE_CACHE_WIF_PROVIDER }}
-          service_account: ${{ vars.LAKE_CACHE_SERVICE_ACCOUNT }}
-      - name: Upload to the remote cache
-        env:
-          LAKE_CACHE_BUCKET: ${{ vars.LAKE_CACHE_BUCKET }}
-        run: scripts/cache/upload.sh "$LAKE_CACHE_BUCKET" "$RUNNER_TEMP/lake-publication"
-
-  publish-mit-cache:
-    needs: [ci-checks, cache-origin-checks]
-    # The package exists only after all validation gates passed. Publishers are independent.
-    if: >-
-      ${{ !cancelled() && github.event_name == 'push' &&
-          github.ref == 'refs/heads/main' && vars.CACHE_SERVER_PUBLISH_ENABLED == 'true' &&
-          needs.ci-checks.result == 'success' &&
-          needs.cache-origin-checks.result == 'success' &&
-          needs.ci-checks.outputs.publication != '' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    # MUST restrict this environment to the main branch before installing its upload password.
-    environment: cache-server-publish
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          artifact-ids: ${{ needs.ci-checks.outputs.publication }}
-          merge-multiple: true
-          path: ${{ runner.temp }}/lake-publication
-      - name: Verify this run's publication
-        run: python3 scripts/cache/publish.py verify "$RUNNER_TEMP/lake-publication" --revision "$GITHUB_SHA"
-      - name: Publish the package over HTTPS
-        env:
-          CACHE_SERVER_PASSWORD: ${{ secrets.CACHE_SERVER_PASSWORD }}
-          CACHE_SERVER_USER: ${{ vars.CACHE_SERVER_USER }}
-          CACHE_SERVER_URL: ${{ vars.CACHE_SERVER_URL }}
-        run: >-
-          python3 scripts/cache/publish.py http "$CACHE_SERVER_URL"
-          "$RUNNER_TEMP/lake-publication"
+          name: retained-snapshot-probe
+          path: ${{ runner.temp }}/retention-probe/*.json
+          if-no-files-found: warn
+          retention-days: 7
