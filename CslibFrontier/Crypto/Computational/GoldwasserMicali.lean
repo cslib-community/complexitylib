@@ -155,10 +155,13 @@ def ofBlum (d : ModulusDesc) (h : IsBlumModulus d.p d.q) : KeyDesc where
 
 end KeyDesc
 
+/-- The parameters `((p, q), z)` of a key; the proof fields are determined by them. -/
+def KeyDesc.toTriple : KeyDesc ↪ (ℕ × ℕ) × ℕ :=
+  ⟨fun k => ((k.p, k.q), k.z), by rintro ⟨⟨p, q⟩, z⟩ ⟨⟨p', q'⟩, z'⟩ h; cases h; rfl⟩
+
 /-- Encoding of `KeyDesc` as the binary triple `((p, q), z)`. -/
 def encKeyDesc : KeyDesc ↪ List Bool :=
-  .trans ⟨fun k => ((k.p, k.q), k.z), by rintro ⟨⟨p, q⟩, z⟩ ⟨⟨p', q'⟩, z'⟩ h; cases h; rfl⟩
-    (encPair (encPair encNat encNat) encNat)
+  KeyDesc.toTriple.trans (encPair (encPair encNat encNat) encNat)
 
 /-! ### Arithmetic encryption, Euler-criterion decryption, and homomorphic multiplication -/
 
@@ -334,7 +337,7 @@ theorem computableInPolyTime_decryptNat {α : Type} {input : α ↪ List Bool}
 theorem isPPTOn_keyGen {gen : ℕ → ProbComp KeyDesc} (hgen : IsPPTOn encUnary encKeyDesc gen) :
     IsPPTOn encUnary (encPair encBits encBits) (keyGen gen) := by
   unfold keyGen
-  have hk := (ComputableInPolyTime.of_eq (f := fun k : KeyDesc => ((k.p, k.q), k.z))
+  have hk := (ComputableInPolyTime.of_eq (f := KeyDesc.toTriple)
     (encIn := encKeyDesc) (encOut := encPair (encPair encNat encNat) encNat) fun _ => rfl).comp
     (ComputableInPolyTime.snd encUnary encKeyDesc)
   have hp := hk.fst'.fst'; have hq := hk.fst'.snd'; have hz := hk.snd'
