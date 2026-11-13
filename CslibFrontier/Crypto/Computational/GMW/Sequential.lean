@@ -124,7 +124,7 @@ theorem runSeq_map {α β : Type} (generator : List Bool → List Bool) (s m : �
     (prog : ProbComp α) (st : Bool × List ProverCoins) :
     runSeq generator s m φ (ProbOracleComp.sample prog) st = (·, st) <$> prog := by
   simp only [runSeq, ProbOracleComp.interpret_sample, OracleComp.run_interpret_lift,
-    ProbComp.unifFin, OracleComp.interpret_query_eq_self]
+    ProbComp.interpret_unifFin]
 
 @[simp] theorem runSeq_query (generator : List Bool → List Bool) (s m : ℕ) (φ : CNF ℕ)
     (q : Unit × List Bool) (st : Bool × List ProverCoins) :

@@ -24,8 +24,8 @@ private def equalTable : Table := ⟨2, [[false, false], [true, true]]⟩
 private def oddTable : Table := ⟨2, [[false, true], [true, false]]⟩
 private def trueTable : Table := ⟨1, [[true]]⟩
 private abbrev badCSP : CSP Table ℕ :=
-  [(repeatedTable, [0, 1, 2, 3, 4]), (equalTable, [1, 2]),
-    (oddTable, [3, 0]), (trueTable, [4])]
+  [⟨repeatedTable, [0, 1, 2, 3, 4]⟩, ⟨equalTable, [1, 2]⟩,
+    ⟨oddTable, [3, 0]⟩, ⟨trueTable, [4]⟩]
 private def labels : OccurrenceLabeling badCSP Bool :=
   fun o => o.1.val == 3 || (o.1.val == 2 && o.2.val == 1)
 private abbrev cp (j : Fin 5) : Occurrence badCSP := ⟨0, j⟩
@@ -91,7 +91,7 @@ example : cycle.IsWalk ∧ cycle.finish = cycle.start ∧ cycle.steps ≠ [] ∧
 example : ¬ ValidLabeling Table.sem ((cycle.take 3).flip labels) := by
   intro h
   have hh := h 0
-  have hn : badCSP[0].1.sem (localTuple ((cycle.take 3).flip labels) 0) = false := by decide
+  have hn : badCSP[0].rel.sem (localTuple ((cycle.take 3).flip labels) 0) = false := by decide
   exact Bool.false_ne_true (hn.symm.trans hh)
 
 example : ¬ [1, 2, 1, 0].Nodup := by decide
@@ -112,10 +112,10 @@ example : ¬ badCSP.Satisfiable Table.sem := by
   simpa [CSP.eval, badCSP, Constraint.eval] using hσ
 
 private def badContraction : CSP Table ℕ :=
-  [(repeatedTable.contract (row 0) [0, 1, 2, 3], [4, 5]),
-    (equalTable.contract [false, false] [0, 1], [6]),
-    (oddTable.contract [false, true] [0, 1], [7]),
-    (trueTable, [4]), (Table.exactlyOne [5, 6, 7], [5, 6, 7])]
+  [⟨repeatedTable.contract (row 0) [0, 1, 2, 3], [4, 5]⟩,
+    ⟨equalTable.contract [false, false] [0, 1], [6]⟩,
+    ⟨oddTable.contract [false, true] [0, 1], [7]⟩,
+    ⟨trueTable, [4]⟩, ⟨Table.exactlyOne [5, 6, 7], [5, 6, 7]⟩]
 
 example : badContraction.Satisfiable Table.sem := by
   refine ⟨fun v => v == 4 || v == 5, ?_⟩
@@ -125,7 +125,7 @@ private def pairedTable : Table :=
   ⟨4, [[false, false, false, false], [true, true, false, false],
     [false, false, true, true], [true, true, true, true]]⟩
 private abbrev freshCSP : CSP Table ℕ :=
-  [(pairedTable, [0, 1, 2, 3]), (equalTable, [1, 2]), (oddTable, [3, 0])]
+  [⟨pairedTable, [0, 1, 2, 3]⟩, ⟨equalTable, [1, 2]⟩, ⟨oddTable, [3, 0]⟩]
 private def freshLabels : OccurrenceLabeling freshCSP Bool :=
   fun o => o.1.val == 2 && o.2.val == 1
 private theorem fresh_edge : EdgeInstance freshCSP := by unfold EdgeInstance; decide

@@ -161,7 +161,7 @@ theorem exists_secure_padded_choice_withAdvice {pair : SamplablePair} {gap : ℕ
     · exact .snd _ _)
   apply h.congr'
   filter_upwards [hchoose] with n hn
-  simp only [distinguishingGame, PMF.monad_bind_eq_bind]
+  simp only [distinguishingGame_eq_bind, PMF.monad_bind_eq_bind]
   exact (GeneratorPadding.advantage_eq _ _ (hbound n (choose n) hn)
       (seedLength_lt_outputLength n (saved.length n) (observationBound n) (densityBound n)
         (choose n))).symm

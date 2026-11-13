@@ -12,6 +12,7 @@ public import Mathlib.Algebra.Order.BigOperators.Expect
 public import Mathlib.Analysis.SpecialFunctions.BinaryEntropy
 public import Mathlib.Analysis.SpecialFunctions.Log.Base
 public import Mathlib.Order.Filter.AtTopBot.Defs
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import CslibFrontier.Foundations.Combinatorics.BinomialTail
 import CslibFrontier.Foundations.Data.BitString.Basic
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
@@ -360,8 +361,7 @@ theorem eventually_exists_lt_decodingError (p : I) {R : ℝ}
   filter_upwards [eventually_one_sub_le_expect_decodingError p hR (ε := (1 - ε) / 2)
     (by linarith)] with n hn k hk E D
   have hM : R * n ≤ Real.logb 2 (Fintype.card (BitString k)) := by
-    rwa [BitString.card, Nat.cast_pow, Nat.cast_two, Real.logb_pow,
-      Real.logb_self_eq_one one_lt_two, mul_one]
+    rwa [BitString.logb_card]
   have h := hn E D hM
   obtain ⟨m, -, hm⟩ := exists_lt_of_lt_expect univ_nonempty (show ε < 𝔼 m, decodingError p E D m
     by linarith)

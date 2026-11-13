@@ -669,8 +669,9 @@ theorem DDH.pseudorandomFunction_naorReingoldSeeded {F : PrimeOrderGroupFamily}
       ProbComp.eval (prfRealGame (F.naorReingoldSeededPRF desc bound expWidth expand)
         adversary n) =
       distinguishingGame (generatorEnsemble expand n) (D_tape n) := by
-    simp only [pmf_norm, prfRealGame, distinguishingGame, generatorEnsemble,
-      ProbOracleComp.eval_interpret, BitString.eval_sampleList, D_tape, eval_prfTapeDistinguisher]
+    simp only [pmf_norm, prfRealGame, ProbOracleComp.run, distinguishingGame_eq_bind,
+      generatorEnsemble, ProbOracleComp.eval_interpret, BitString.eval_sampleList, D_tape,
+      eval_prfTapeDistinguisher]
     refine PMF.bind_congr_on_support _ _ _ fun key hkey => ?_
     have hklen : key.length = n := BitString.length_of_mem_support_uniformList hkey
     congr 1 with q : 1
@@ -691,7 +692,7 @@ theorem DDH.pseudorandomFunction_naorReingoldSeeded {F : PrimeOrderGroupFamily}
             else []))
           (adversary n []) := by
     rw [← BitString.uniformList_take hneed_le]
-    simp only [pmf_norm, distinguishingGame, D_tape, eval_prfTapeDistinguisher]
+    simp only [pmf_norm, distinguishingGame_eq_bind, D_tape, eval_prfTapeDistinguisher]
     congr 1 with x : 1; congr 1 with q : 1
     cases q with
     | inl r => rfl
@@ -703,7 +704,7 @@ theorem DDH.pseudorandomFunction_naorReingoldSeeded {F : PrimeOrderGroupFamily}
       F.naorReingoldHashedIdealGame (fun k => PMF.pure (desc k)) id id bound
         (fun k _ => adversary k []) n := by
     rw [naorReingoldHashedIdealGame_pure_const]
-    simp only [prfIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
+    simp only [prfIdealGame, ProbOracleComp.run, ProbComp.eval_bind, ProbComp.eval_uniform,
       ProbOracleComp.eval_interpret, ProbComp.eval_pure, randomFunctionOracle, id_eq]
   dsimp only
   rw [hreal_eq, hideal_eq]
@@ -981,7 +982,7 @@ theorem DDH.exists_pseudorandomGenerator {F : PrimeOrderGroupFamily} {desc : ℕ
           expWidth n + (inBits n * expWidth n + 1 * (2 * bound (desc n) + 1)) := by
         simp [seedLen, hashLen]
       rw [hsl]
-      simp only [pmf_norm, distinguishingGame]
+      simp only [pmf_norm, distinguishingGame_eq_bind]
       congr 1 with tape : 1
       rw [hinterp (fun q =>
         if q.length = inBits n then
@@ -998,7 +999,7 @@ theorem DDH.exists_pseudorandomGenerator {F : PrimeOrderGroupFamily} {desc : ℕ
       have hfit : seedLen n + 1 ≤ 2 ^ (inBits n) := by
         simpa only [seedLen, inBits] using seedLen_succ_le_two_pow (expWidth n) (hashLen n)
       rw [← uniformOfFintype_map_evalLowBitsHom hfit]
-      simp only [pmf_norm, distinguishingGame]
+      simp only [pmf_norm, distinguishingGame_eq_bind]
       congr 1 with f : 1
       rw [hinterp (fun q =>
         if q.length = inBits n then List.ofFn (f (BitString.ofList (inBits n) q)) else [])]

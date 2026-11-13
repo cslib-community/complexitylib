@@ -14,6 +14,7 @@ public import CslibFrontier.Foundations.Data.BitString.AffineSubspace
 public import CslibFrontier.Probability.MinEntropy
 public import CslibFrontier.Probability.Product
 public import CslibFrontier.Probability.StatisticalDistance
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import CslibFrontier.Foundations.Data.BitString.ZModTwo
 import CslibFrontier.Probability.PMF.Uniform
 import Mathlib.LinearAlgebra.Dimension.Constructions
@@ -369,7 +370,7 @@ theorem minEntropy_uniformAffine {n : ℕ} (A : AffineSubspace Bool (BitString n
     minEntropy (uniformAffine A hA) = (finrank Bool A.direction : ℝ) := by
   rw [uniformAffine, minEntropy_uniformOfFinset, card_affineSubspace_toFinset A hA]
   push_cast
-  rw [Real.logb_pow, Real.logb_self_eq_one (by norm_num), mul_one]
+  rw [Real.logb_two_pow]
 
 /-- Every `(n, k)` affine source has min-entropy `k`. -/
 theorem minEntropy_of_isAffineSource {n k : ℕ} {X : PMF (BitString n)}

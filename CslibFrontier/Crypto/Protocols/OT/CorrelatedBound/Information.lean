@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Init
 public import CslibFrontier.Computability.Communication.Information
 public import CslibFrontier.Probability.MutualInformation.DataProcessing
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Probability.Product
@@ -259,9 +260,7 @@ theorem condMutualInfo_rot_eq [Finite τ] {k : ℕ} (ν : PMF Ω)
     congr 1 with tc : 1
     rw [PMF.map_comp]
     rfl
-  rw [hSC, zero_add, hSY, hTCY, entropy_prod, entropy_uniform, Fintype.card_fun,
-    Fintype.card_bool, Fintype.card_fin, Nat.cast_pow, Nat.cast_ofNat, Real.logb_pow,
-    Real.logb_self_eq_one one_lt_two]
+  rw [hSC, zero_add, hSY, hTCY, entropy_prod, entropy_uniform, BitString.logb_card]
   ring
 
 /-- **Ahlswede–Csiszár-style upper bound on oblivious transfer from correlated randomness**:
