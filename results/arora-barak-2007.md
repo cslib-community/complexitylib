@@ -266,6 +266,22 @@ Snapshot: `b91d5151fd7dc665a5e3efcb466077caf44e690d` (2026-11-12), CSLib pin
 - Exact finite query-measure inequalities are available without a machine-encoding translation.
 - Bounded-error depth minimax and zero-error expected cost are distinct contracts; their separate APIs do not by themselves prove 11.17.
 
+### Expected-cost Yao after the audited snapshot
+
+The later [YaoExpected](../CslibFrontier/Computability/QueryComplexity/YaoExpected.lean)
+formalization fills the historical gap for Theorem 11.17.
+`Cslib.QueryComplexity.zeroErrorComplexity_eq_iSup_distributionalExpectedComplexity` proves the
+numerical equality, and `exists_optimal_expectedCost` supplies an optimal finite-support
+randomized algorithm and a hardest finite-support input distribution. Each distribution also
+has a deterministic minimizer (`exists_computes_distributionalCost_eq`). Coordinate types need
+only be finite; output types may be infinite. Correctness is everywhere, even outside the input
+law's support. Cost counts executed queries, including repeats, with free local computation.
+The source is the same pinned draft, Definitions 11.13 and 11.15–11.16 and Theorem 11.17,
+printed pages 215–216 / PDF pages 231–232. The [checked clients](../CslibFrontierTests/YaoExpected.lean)
+include empty coordinates and natural-number outputs. This does not supply the separate exact
+majority-three example (11.14/11.18), expected machine time, or book-wide coverage under
+[#4711](https://github.com/cslib-community/cslib-frontier/issues/4711).
+
 ## Chapter 12: communication complexity
 
 Snapshot: `b91d5151fd7dc665a5e3efcb466077caf44e690d` (2026-11-12), CSLib pin
