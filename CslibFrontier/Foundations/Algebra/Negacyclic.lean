@@ -500,7 +500,7 @@ def coeffsEquiv : Negacyclic R n ≃ (Fin n → R) where
 instance [DecidableEq R] : DecidableEq (Negacyclic R n) := fun a b =>
   decidable_of_iff (a.coeffs = b.coeffs) Negacyclic.ext_iff.symm
 
-instance [DecidableEq R] [Fintype R] : Fintype (Negacyclic R n) :=
+instance [Fintype R] : Fintype (Negacyclic R n) :=
   Fintype.ofEquiv _ coeffsEquiv.symm
 
 instance [Zero R] : Zero (Negacyclic R n) := ⟨ofCoeffs 0⟩
