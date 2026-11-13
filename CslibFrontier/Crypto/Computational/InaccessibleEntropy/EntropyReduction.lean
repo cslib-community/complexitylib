@@ -13,6 +13,7 @@ public import CslibFrontier.Probability.BitString.AffineHash.ThreeWise
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import CslibFrontier.Probability.HashFamily.Collisions
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Map
@@ -335,27 +336,6 @@ Lemma 5.4, pp. 27–28). -/
   inDigest := zeroPadPrefix n₁ j (Cslib.BitString.LinearHash.hash w.inRows w.base)
 
 open Classical in
-/-- If an event on hash seeds forces a collision of `x` with another candidate, a two-universal
-family bounds its probability by `|candidates| / |Output|`. -/
-private theorem sum_ite_toReal_le_card_div_of_imp {Seed X Y : Type} [Fintype Seed] [Fintype Y]
-    {seed : PMF Seed} {hash : Seed → X → Y} (hhash : IsTwoUniversal seed hash)
-    (cand : Finset X) (x : X) {P : Seed → Prop} {_ : DecidablePred P}
-    (hP : ∀ s, P s → ∃ y ∈ cand, y ≠ x ∧ hash s y = hash s x) :
-    (∑ s, if P s then (seed s).toReal else 0) ≤ (#cand : ℝ) / Fintype.card Y := by
-  calc (∑ s, if P s then (seed s).toReal else 0)
-      ≤ ∑ s, if ∃ y ∈ cand, y ≠ x ∧ hash s y = hash s x then (seed s).toReal else 0 :=
-        sum_le_sum fun s _ => by
-          split_ifs with h₁ h₂
-          · exact le_rfl
-          · exact absurd (hP s h₁) h₂
-          · exact ENNReal.toReal_nonneg
-          · exact le_rfl
-    _ ≤ ((cand.erase x).card : ℝ) / Fintype.card Y := hhash.collision_with_set_le cand x
-    _ ≤ (#cand : ℝ) / Fintype.card Y := by
-      gcongr
-      exact erase_subset _ _
-
-open Classical in
 /-- **`[HHRVW2020]`, Section 5.1.2, Lemma 5.4(ii) (p. 28)**: by two-universality of matrix prefixes
 (`LinearHash.isTwoUniversal_prefix`), the probability over `inRows` that some distinct
 $z' \in L$ collides with $z$ under `inputHashFin f₁ j` is at most $|L| / 2^{\min(j, n_1)}$. -/
@@ -369,8 +349,8 @@ theorem inputHashFin_accessible_collision_le {n₁ m₁ : ℕ} (f₁ : BitString
   have hcard : (Fintype.card (BitString (min j n₁)) : ℝ) = (2 : ℝ) ^ (min j n₁) := by
     simp [BitString]
   rw [← hcard]
-  exact sum_ite_toReal_le_card_div_of_imp
-    (Cslib.BitString.LinearHash.isTwoUniversal_prefix (n := n₁) (Nat.min_le_right j n₁)) L z
+  exact (Cslib.BitString.LinearHash.isTwoUniversal_prefix (n := n₁)
+    (Nat.min_le_right j n₁)).sum_ite_toReal_le_card_div_of_imp L z
     fun rows h => by
       obtain ⟨z', hz', hne, heq⟩ := h
       have hdig := congrArg InputHashedOutput.inDigest heq
@@ -544,7 +524,7 @@ theorem shrunkHashFin_false_positive_le {n₁ m₁ : ℕ} (f₁ : BitString n₁
   have hcard : (Fintype.card (BitString (outHashLen n₁)) : ℝ) = (2 : ℝ) ^ (outHashLen n₁) := by
     simp [BitString]
   rw [← hcard]
-  exact sum_ite_toReal_le_card_div_of_imp htwo cand (inputHashFin f₁ j w) fun outRows h => by
+  exact htwo.sum_ite_toReal_le_card_div_of_imp cand (inputHashFin f₁ j w) fun outRows h => by
     obtain ⟨w', hne, heq⟩ := h
     have hdig := congrArg ShrunkHashOutput.outDigest heq
     dsimp only [shrunkHashFin] at hdig

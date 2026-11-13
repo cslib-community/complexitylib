@@ -11,6 +11,7 @@ public import CslibFrontier.Foundations.BooleanAnalysis.Degree
 public import CslibFrontier.Foundations.BooleanAnalysis.Influence
 public import CslibFrontier.Foundations.Probability.Multilinear.Invariance
 public import Cslib.Probability.PMF
+import CslibFrontier.Foundations.MeasureTheory.MeasurableSpace.Embedding
 import Mathlib.MeasureTheory.Integral.Bochner.SumMeasure
 
 /-!
@@ -65,10 +66,8 @@ namespace Cslib.BitString
 noncomputable def rademacher : Measure ℝ :=
   (Probability.PMF.uniformOfFintype Bool).toMeasure.map signVal
 
-private theorem measurableEmbedding_signVal : MeasurableEmbedding signVal where
-  injective a b h := by revert h; cases a <;> cases b <;> norm_num [signVal]
-  measurable := measurable_of_countable _
-  measurableSet_image' _ _ := (Set.toFinite _).measurableSet
+private theorem measurableEmbedding_signVal : MeasurableEmbedding signVal :=
+  .of_countable fun a b h => by revert h; cases a <;> cases b <;> norm_num [signVal]
 
 instance : IsProbabilityMeasure rademacher := by
   rw [rademacher]; infer_instance
@@ -103,9 +102,7 @@ theorem integral_pi_rademacher (g : (ι → ℝ) → ℝ) :
         (fun x i => signVal (x i)) := by
     rw [rademacher, Measure.pi_map_pi fun _ => (measurable_of_countable _).aemeasurable]
   have hemb : MeasurableEmbedding (fun (x : ι → Bool) i => signVal (x i)) :=
-    { injective := fun x y h => funext fun i => measurableEmbedding_signVal.injective (congrFun h i)
-      measurable := measurable_of_countable _
-      measurableSet_image' := fun _ _ => (Set.toFinite _).measurableSet }
+    .of_countable fun x y h => funext fun i => measurableEmbedding_signVal.injective (congrFun h i)
   rw [hmap, hemb.integral_map, integral_fintype .of_finite, Fintype.expect_eq_sum_div_card,
     sum_div]
   refine sum_congr rfl fun x _ => ?_

@@ -7,6 +7,13 @@ The table selects substantial results demonstrating how the models connect. It i
 
 The [native exact-counting chapter](native-counting.md) separately treats the fixed-width CNF counter and its SAT/ETH/SETH consequences, including the primary-manuscript mapping and the scope of this review.
 
+The [Arora–Barak draft chapters 1–5 audit](../../results/arora-barak-2007.md#chapter-1-the-computational-model)
+compares the computational-model, NP, hierarchy, space and alternation results at a recorded
+revision. It distinguishes exact native endpoints from missing tape-model conversions, general
+integer programming, prenex-QBF normalization, sharp time hierarchies and PH oracle equivalences.
+Its space comparisons explicitly distinguish the library's visited cells from the draft's
+ever-nonblank cells; a bound-preserving equivalence is not claimed.
+
 ## Completeness and containment map
 
 | Endpoint | Models connected | Exact formal boundary and source |
@@ -43,6 +50,26 @@ Shamir's paper establishes the IP/PSPACE characterization; the library reaches i
 Toda's original paper establishes PH containment in randomized parity and polynomial-time reducibility to PP. The library's headline takes the standard counting-oracle form and implements one selected output bit of a #P function. These are related formulations; the exact formal oracle interface and off-encoding quantifiers are part of the library statement. The publisher's original abstract was checked; no claim is made that every intermediate formal lemma was matched to a numbered original lemma. [toda1991][toda1991]
 
 Dinur's paper presents the gap-amplification proof and states the logarithmic-randomness, constant-query PCP theorem with perfect completeness and one-half soundness in its opening definition and Theorem 1.1. cslib-frontier combines Cook–Levin with a concrete encoded gap construction and verifier, then proves the converse by enumerating logarithmically many random strings and reconciling repeated queried addresses. The final fixed alphabet is encoded by seven bits; fixed construction constants are large. No near-linear proof-length bound should be inferred from this asymptotic class equality. [dinur2007][dinur2007] [Formal endpoint construction](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/PCP/Completeness.lean#L17)
+
+## SAT reductions into a decidable envelope
+
+Import [Sparse.Envelope](../../CslibFrontier/Computability/Complexity/Classes/Sparse/Envelope.lean)
+and apply `SAT_mem_P_of_sparse_diff hSG hG hSparse hred`. Here `hred` is a native
+polynomial-time many-one reduction of SAT (under `encCNF`) to a set `S` under an explicit
+encoding `encB`; `hSG : S ⊆ G`, `hG : G ∈ P encB` and `hSparse : G \ S ∈ SPARSE encB`.
+Only the difference is sparse: the envelope `G` can be the entire target domain. No decider
+for `S` is required. This is Goldreich's January 2007 draft Exercise 3.12, using the library's
+prefix-census sparseness convention; summing exact-length polynomial bounds gives that convention.
+
+The proof uses the existing Fortune theorem. For a nonempty difference, it maps reduction
+outputs outside `G` to a fixed element of `G \ S`, obtaining an UNSAT-to-sparse reduction.
+An empty difference gives `S = G ∈ P` directly. These are conditional collapse results, not
+unconditional SAT algorithms: an unconditional instance of the full hypotheses would imply P = NP.
+Run `scripts/build.sh CslibFrontierTests.GoldreichExercises` for
+[complete clients](../../CslibFrontierTests/GoldreichExercises.lean), including the nonsparse
+universal envelope, the sparse-oracle P/poly characterization and NP ∩ coNP oracle lowness.
+The [exercise inventory](../../results/goldreich-2007.md#theory-exercises-chapter-3) distinguishes
+existing theory, missing endpoints and routine representation work.
 
 ## Apply Savitch's theorem
 
@@ -173,6 +200,28 @@ Run `scripts/build.sh CslibFrontierTests.SublinearTime` for the
 machine reads the first bit, demonstrating input-sensitive constant-time behavior. The
 clients check the inclusive prefix boundary, failure beyond the empty prefix, and the zero
 asymptotic bound with DTIME's additive constant.
+
+## Exact native step counters
+
+Import `CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.StepCounter`
+([source](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Combinators/StepCounter.lean))
+for `Turing.MultiTapeTM.exists_stepCounter`. It supplies one finite native deterministic machine
+with a fixed number of work tapes and one designated signal state. Its input is `encNat n`,
+least-significant-first binary. For the resulting `counter`, `counter.signal_count n` says that
+`counter.signalTimes n` has exactly `n` elements; `counter.initial_ne_signal` and
+`counter.leaves_signal` ensure that these are entering-and-leaving events. The uniform bound
+`counter.runsInTime n` is `counter.timeConstant * (n + 1)`, including preparation and zero input.
+
+This is the total-time statement of Goldreich's January 2007 draft Exercise 4.5
+([r2.pdf, PDF page 36 / printed page 152](https://www.wisdom.weizmann.ac.il/~oded/CC/r2.pdf)).
+The machine converts binary to exact unary in linear time, writes it to a work tape, then
+uses the existing clock controller to consume one cell per signal. It counts actual control-state
+visits, rather than emitted output symbols. The
+[checked examples](../../CslibFrontierTests/StepCounter.lean) instantiate the complete machine,
+check zero, one and three signals, and expose the prepared controller's state times.
+Use `Classical.choice exists_stepCounter` when an actual record is needed in a proof; no
+transition-table computation is promised by this existence API. There is no logarithmic-space
+or per-prefix signal-latency guarantee: the preparation may precede all signals.
 
 ## Constructibility and diagonalization
 

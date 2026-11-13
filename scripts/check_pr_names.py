@@ -30,6 +30,8 @@ The check reads source text, not the compiled environment, and errs towards acce
   and `irreducible_def` names, and the names Lean generates (`.mk`, `.rec`, `.ext_iff`, `.eq_1`,
   ...) count as declarations, as do Mathlib's `to_additive` names (explicit, or by the usual
   `prod`/`sum`, `mul`/`add` translation) and `simps` lemmas (`foo_apply`);
+* `enc_structure eS` declares `eS`, `eSFields` and `eS_apply`, including when the command has
+  explicit parameters; field-specific certificate names are outside this source approximation;
 * field notation on a theorem (`foo_le.trans`, `bar_iff.mp`) counts when the theorem is declared;
 * the module, function and class names of `scripts/*.py` count too, for tooling PRs.
 
@@ -146,6 +148,7 @@ IDENT = r"[^\s:({\[⦃⟨,|@]+"
 DECL = re.compile(
     rf"^\s*{ATTRS}{MODIFIERS}(theorem|lemma|def|abbrev|instance|axiom|opaque|irreducible_def|"
     rf"class\s+inductive|structure|class|inductive|coinductive|alias)\s+(.*)$")
+ENC_STRUCTURE = re.compile(rf"^\s*{ATTRS}{MODIFIERS}enc_structure(?:\s+(.*))?$")
 NAMESPACE = re.compile(r"^\s*namespace\s+(\S+)")
 SECTION = re.compile(rf"^\s*{ATTRS}{MODIFIERS}(?:section|mutual)\b")
 END = re.compile(r"^\s*end\b\s*(\S*)")
@@ -201,6 +204,7 @@ def parse_source(text: str, decls: Declarations) -> None:
     member_kind = ""
     member_indent: int | None = None
     awaiting_where = False
+    awaiting_encoder = False
 
     def prefix() -> str:
         return ".".join(s for s in stack if s)
@@ -211,8 +215,8 @@ def parse_source(text: str, decls: Declarations) -> None:
         return f"{prefix()}.{name}" if prefix() else name
 
     # Keep literals for syntax-keyword extraction; mask only comments here.
-    code, _ = masks(text)
-    for raw in code.splitlines():
+    code, syntax = masks(text)
+    for raw, masked in zip(code.splitlines(), syntax.splitlines()):
         line = raw.rstrip()
         if not line.strip():
             continue
@@ -247,6 +251,19 @@ def parse_source(text: str, decls: Declarations) -> None:
                 if fields:
                     for name in fields.group(1).split():
                         decls.add(f"{member_of}.{name}")
+            continue
+        # Respect the member/body context above before recognizing a command. Generated names
+        # need its header, including when only a companion name was searched. Mask literals here;
+        # the unmasked literals above are needed for syntax keywords.
+        encoding = ENC_STRUCTURE.match(masked)
+        if awaiting_encoder or encoding:
+            rest = masked if awaiting_encoder else encoding.group(1) or ""
+            name = first_ident(rest)
+            awaiting_encoder = name is None
+            member_of, member_indent, awaiting_where = None, None, False
+            if name and NAME.match(name):
+                for suffix in ("", "Fields", "_apply"):
+                    decls.add(full(name + suffix))
             continue
         if m := NAMESPACE.match(line):
             stack.append(m.group(1))
@@ -368,6 +385,8 @@ def search_words(token: str) -> set[str]:
     bare = token.lstrip(".").removeprefix("_root_.")
     last = bare.rsplit(".", 1)[-1]
     words = {last.rstrip("'!?")}
+    if last.endswith("Fields") and last != "Fields":
+        words.add(last.removesuffix("Fields"))
     if m := SIMPS_SUFFIX.match(last):
         words.add(m.group(1))
     if re.fullmatch(r"to[A-Z]\w*", last):  # `extends Inhabited` declares `toInhabited`

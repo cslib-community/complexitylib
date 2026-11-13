@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Negligible
 public import Cslib.Probability.PMF
+import CslibFrontier.Probability.PMF.Bind
 
 /-!
 # Security of Boolean experiments
@@ -501,11 +502,8 @@ theorem bind_apply_le_add_bind_apply {β : Type*} (μ : PMF β)
     (h : ∀ x, game1 x b ≤ game2 x b + err x b ∧ game2 x b ≤ game1 x b + err x b) :
     (μ.bind game1) b ≤ (μ.bind game2) b + (μ.bind err) b ∧
       (μ.bind game2) b ≤ (μ.bind game1) b + (μ.bind err) b := by
-  have h1 (f g : β → Game) (hle : ∀ x, f x b ≤ g x b + err x b) :
-      (μ.bind f) b ≤ (μ.bind g) b + (μ.bind err) b := by
-    simp only [PMF.bind_apply, ← tsum_add, ← mul_add]
-    exact tsum_le_tsum fun x => mul_le_mul_of_nonneg_left (hle x) zero_le
-  exact ⟨h1 game1 game2 fun x => (h x).1, h1 game2 game1 fun x => (h x).2⟩
+  exact ⟨Probability.PMF.bind_apply_le_add_on_support μ b fun x _ => (h x).1,
+    Probability.PMF.bind_apply_le_add_on_support μ b fun x _ => (h x).2⟩
 
 /-- Averaging pointwise acceptance-probability bounds `game1 x true ≤ game2 x true + err x true`
 and `game2 x true ≤ game1 x true + err x true` over `μ : PMF β` bounds the `Game.advantage` of the

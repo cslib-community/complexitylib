@@ -4,8 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import CslibFrontier.Crypto.Computational.LWE.Module
 import CslibFrontier.Crypto.Computational.SIS.Ajtai
-import CslibFrontier.Crypto.Computational.SIS.Module
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Tactic.PPT
@@ -213,7 +213,7 @@ distinguishes the real and uniform ensembles with constant advantage `1 / 2`. -/
 theorem not_decisionModuleLWE_zeroNoise :
     ¬DecisionModuleLWE (fun _ => 1) (fun _ => 0) (fun _ => 1) (fun _ => 2) moduleZeroNoise := by
   intro h
-  have hneg := h fourthBitFalse fourthBitFalse_ppt
+  have hneg := h.encoded fourthBitFalse fourthBitFalse_ppt
   have hadv (security : ℕ) : Game.advantage
       (distinguishingGame
         (ModuleLWE.realEnsemble (fun _ => 1) (fun _ => 0) (fun _ => 1) (fun _ => 2)

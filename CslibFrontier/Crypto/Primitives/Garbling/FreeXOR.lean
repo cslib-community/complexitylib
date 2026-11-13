@@ -712,11 +712,10 @@ private theorem eval_run_reduction (f : CCR.Query K T → K × Bool) :
         ProbComp.eval (D (reductionView C.topology H tw (C.eval I x)
           (propagate C.topology free base)
           fun p => f (reductionQuery C I tw x (propagate C.topology free base) p))) := by
-  have hself : ∀ {α : Type} (p : ProbComp α), OracleComp.interpret ProbComp.unifFin p = p :=
-    fun p => OracleComp.interpret_query_eq_self p
   simp only [ProbOracleComp.run, reduction, OracleComp.interpret_bind,
-    ProbOracleComp.interpret_sample, hself, ProbOracleComp.interpret_tabulate, pure_bind,
-    ProbComp.eval_bind, ProbComp.eval_uniform, Finset.mem_toList, Finset.mem_univ, ite_true]
+    ProbOracleComp.interpret_sample, ProbComp.interpret_unifFin, ProbOracleComp.interpret_tabulate,
+    pure_bind, ProbComp.eval_bind, ProbComp.eval_uniform, Finset.mem_toList, Finset.mem_univ,
+    ite_true]
 
 /-- With the circular oracle, the reduction plays the real experiment. -/
 private theorem realGame_reduction

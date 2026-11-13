@@ -57,7 +57,7 @@ example : Fintype.card (lopInstance zeroWeight zeroWeight zeroWeight 16 2 3 ⟨0
 
 -- Residues include negative weights, and are independent of exact zero sums.
 example : (0, 0) ∈ residueClass (fun _ _ : Fin 1 => -1) 3 2 := by decide
-example : IsFalsePositive falseWeight zeroWeight zeroWeight 3 (0, 0, 0) := by decide
+example : IsFalsePositive falseWeight zeroWeight zeroWeight 3 ⟨0, 0, 0⟩ := by decide
 example : ¬ HasZeroTriangle falseWeight zeroWeight zeroWeight := by
   simp [HasZeroTriangle, falseWeight, zeroWeight]
 example : HasZeroTriangle zeroWeight zeroWeight zeroWeight := ⟨0, 0, 0, rfl⟩
@@ -77,7 +77,7 @@ example : runScans falseWeight zeroWeight zeroWeight 16 2
     norm_num [weightSum, falseWeight, zeroWeight]
   simp [runScans, hscan]
 example : runScans zeroWeight zeroWeight zeroWeight 16 2
-    [(⟨(0 : Fin 3), 0, 0⟩, (0, 0)), (⟨0, 0, 1⟩, (1, 1))] = (some (0, 0, 0), 1) := by
+    [(⟨(0 : Fin 3), 0, 0⟩, (0, 0)), (⟨0, 0, 1⟩, (1, 1))] = (some ⟨0, 0, 0⟩, 1) := by
   simp [runScans, scanPiece, piece, pieceSize16, weightSum, zeroWeight, List.finRange_succ]
 
 -- The query at rank 63 ends chunk 0; rank 64 starts chunk 1.

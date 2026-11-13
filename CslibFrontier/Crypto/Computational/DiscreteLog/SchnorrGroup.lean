@@ -155,8 +155,8 @@ theorem encode_injective (d : Desc) : Function.Injective (encode d) := fun _ _ h
     (encNat.injective h))))
 
 /-- Multiplication modulo `p` of encoded residues. -/
-def add (input : Desc × List Bool × List Bool) : List Bool :=
-  (ofBits input.2.1 * ofBits input.2.2 % input.1.modulus).bits
+def add : Desc × List Bool × List Bool → List Bool
+  | (d, x, y) => (ofBits x * ofBits y % d.modulus).bits
 
 /-- `add` multiplies encoded group elements. -/
 theorem add_encode (d : Desc) (x y : Carrier d) :
@@ -164,8 +164,8 @@ theorem add_encode (d : Desc) (x y : Carrier d) :
   simp only [add, encode, ofBits_bits, toMul_add, Subgroup.coe_mul, Units.val_mul, ZMod.val_mul]
 
 /-- Exponentiation modulo `p` of an encoded residue. -/
-def smul (input : Desc × ℕ × List Bool) : List Bool :=
-  (ofBits input.2.2 ^ input.2.1 % input.1.modulus).bits
+def smul : Desc × ℕ × List Bool → List Bool
+  | (d, a, x) => (ofBits x ^ a % d.modulus).bits
 
 /-- `smul` raises encoded group elements to natural powers. -/
 theorem smul_encode (d : Desc) (a : ℕ) (x : Carrier d) :

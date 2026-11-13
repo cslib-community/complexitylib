@@ -669,8 +669,9 @@ theorem DDH.pseudorandomFunction_naorReingoldSeeded {F : PrimeOrderGroupFamily}
       ProbComp.eval (prfRealGame (F.naorReingoldSeededPRF desc bound expWidth expand)
         adversary n) =
       distinguishingGame (generatorEnsemble expand n) (D_tape n) := by
-    simp only [pmf_norm, prfRealGame, distinguishingGame_eq_bind, generatorEnsemble,
-      ProbOracleComp.eval_interpret, BitString.eval_sampleList, D_tape, eval_prfTapeDistinguisher]
+    simp only [pmf_norm, prfRealGame, ProbOracleComp.run, distinguishingGame_eq_bind,
+      generatorEnsemble, ProbOracleComp.eval_interpret, BitString.eval_sampleList, D_tape,
+      eval_prfTapeDistinguisher]
     refine PMF.bind_congr_on_support _ _ _ fun key hkey => ?_
     have hklen : key.length = n := BitString.length_of_mem_support_uniformList hkey
     congr 1 with q : 1
@@ -703,7 +704,7 @@ theorem DDH.pseudorandomFunction_naorReingoldSeeded {F : PrimeOrderGroupFamily}
       F.naorReingoldHashedIdealGame (fun k => PMF.pure (desc k)) id id bound
         (fun k _ => adversary k []) n := by
     rw [naorReingoldHashedIdealGame_pure_const]
-    simp only [prfIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
+    simp only [prfIdealGame, ProbOracleComp.run, ProbComp.eval_bind, ProbComp.eval_uniform,
       ProbOracleComp.eval_interpret, ProbComp.eval_pure, randomFunctionOracle, id_eq]
   dsimp only
   rw [hreal_eq, hideal_eq]
