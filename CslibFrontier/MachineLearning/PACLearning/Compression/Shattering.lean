@@ -10,7 +10,8 @@ module
 public import CslibFrontier.MachineLearning.PACLearning.Compression.Basic
 public import Cslib.MachineLearning.PACLearning.VCDimension
 import CslibFrontier.Foundations.Data.Nat.Choose.Sum
-import Mathlib.Analysis.SpecificLimits.Normed
+import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
+import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Exponential
 
 /-!
 # Sample compression schemes bound the VC dimension
@@ -94,32 +95,11 @@ theorem two_pow_card_le_of_setShatters (κ : SampleCompressionScheme C k) {W : F
       rw [Fin.sum_univ_eq_sum_range (fun j => (n * 2) ^ j), mul_comm 2 n]
       exact Cslib.sum_range_pow_le_add_one_pow _ k
 
-/-- `2 ^ n` eventually exceeds `(2 n + 1) ^ k`. -/
-private theorem exists_forall_pow_lt_two_pow (k : ℕ) :
-    ∃ N : ℕ, ∀ n ≥ N, (2 * n + 1) ^ k < 2 ^ n := by
-  have h := (tendsto_pow_const_div_const_pow_of_one_lt k (by norm_num : (1 : ℝ) < 2)).const_mul
-    ((3 : ℝ) ^ k)
-  rw [mul_zero] at h
-  obtain ⟨N, hN⟩ := Filter.eventually_atTop.1 (h.eventually (gt_mem_nhds zero_lt_one))
-  refine ⟨max N 1, fun n hn => ?_⟩
-  have hn1 : 1 ≤ n := le_of_max_le_right hn
-  have hlt := hN n (le_of_max_le_left hn)
-  have h2 : (0 : ℝ) < 2 ^ n := by positivity
-  rw [← mul_div_assoc, div_lt_one h2, ← mul_pow] at hlt
-  have : ((2 * n + 1 : ℕ) : ℝ) ^ k < ((2 ^ n : ℕ) : ℝ) :=
-    calc ((2 * n + 1 : ℕ) : ℝ) ^ k ≤ (3 * n : ℝ) ^ k := by
-          gcongr
-          push_cast
-          have : (1 : ℝ) ≤ n := by exact_mod_cast hn1
-          linarith
-      _ < 2 ^ n := hlt
-      _ = ((2 ^ n : ℕ) : ℝ) := by push_cast; rfl
-  exact_mod_cast this
-
 /-- **A sample compression scheme of finite size bounds the VC dimension**: a binary class with a
 scheme of size `k` has finite VC dimension. -/
 theorem hasFiniteVCDim (κ : SampleCompressionScheme C k) : HasFiniteVCDim C := by
-  obtain ⟨N, hN⟩ := exists_forall_pow_lt_two_pow k
+  have hpoly : PolynomiallyBounded (fun n => (2 * n + 1) ^ k) := by fun_prop
+  obtain ⟨N, hN⟩ := Filter.eventually_atTop.1 hpoly.eventually_lt_two_pow
   refine hasFiniteVCDim_iff.2 ⟨N, fun W hW => ?_⟩
   by_contra hlt
   exact (hN _ (le_of_not_ge hlt)).not_ge (κ.two_pow_card_le_of_setShatters hW)
