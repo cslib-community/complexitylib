@@ -13,7 +13,8 @@ import CslibFrontier.Crypto.Primitives.Garbling.Foundations
 A trivial scheme on length-indexed bit strings is shown valid and well typed, an adversary with an
 invalid query has advantage zero, a one-bit gate scheme with shape-only side information separates
 `unitSideInfo` from `SideInfo.circ` on a valid `prv.ind` query, its inverters are verified, and the
-reductions between indistinguishability and simulation security (`prv` and `obv`) are instantiated.
+reductions between indistinguishability and simulation security (`prv` and `obv`) are instantiated
+and identified with the generic `indToSim` and `simToInd`.
 Importing both `CslibFrontier.Crypto.Primitives.Garbling.Basic` and
 `CslibFrontier.Crypto.Primitives.Garbling.Foundations` also checks that the point-and-permute
 circuit
@@ -124,6 +125,26 @@ example {σ : Type} (k : ℕ) (B : ObvSimAdversary Bool σ) :
       obvIndAdvantage gateScheme unitSideInfo k
         (obvSimToInd gateScheme unitSideInfo invertUnit B) :=
   obvSimAdvantage_obvSimFromInverter_le _ _ unitSideInfo_compatible unitSideInfo_isInverter k B
+
+/-! The four reductions are the generic `indToSim` and `simToInd` at the `prv` and `obv` views. -/
+
+example {σ : Type} (A : PrvIndAdversary Bool σ) :
+    prvIndToSim gateScheme unitSideInfo A = indToSim (prvIndValid gateScheme unitSideInfo) A :=
+  rfl
+
+example {σ : Type} (A : ObvIndAdversary Bool σ) :
+    obvIndToSim gateScheme unitSideInfo A = indToSim (obvIndValid gateScheme unitSideInfo) A :=
+  rfl
+
+example {σ : Type} (B : PrvSimAdversary Bool σ) :
+    prvSimToInd gateScheme unitSideInfo evInvertUnit B =
+      simToInd (fun q => evInvertUnit () (gateScheme.ev q.fn q.input)) B :=
+  rfl
+
+example {σ : Type} (B : ObvSimAdversary Bool σ) :
+    obvSimToInd gateScheme unitSideInfo invertUnit B =
+      simToInd (fun _ => obvInverterQuery gateScheme invertUnit ()) B :=
+  rfl
 
 /--
 info: 'CslibFrontierTests.Crypto.GarblingScheme.unitSideInfo_isEvInverter' depends on axioms:
