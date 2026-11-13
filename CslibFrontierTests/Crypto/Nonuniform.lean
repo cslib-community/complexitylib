@@ -103,22 +103,6 @@ private theorem fairPair_entropy (n : ℕ) :
   rw [PMF.map_const]
   simp [PMF.entropy_uniform]
 
-/-- An independent uniform hidden bit is guessed correctly with probability exactly one half,
-whatever the predictor. -/
-private theorem predictionExperiment_uniform_bit {O : Type} (o : O) (predictor : O → PMF Bool) :
-    predictionExperiment ((PMF.uniformOfFintype Bool).map (o, ·)) Prod.fst Prod.snd predictor =
-      PMF.uniformOfFintype Bool := by
-  have hbit (guess : Bool) :
-      (PMF.uniformOfFintype Bool).bind (fun bit => PMF.pure (guess == bit)) =
-        PMF.uniformOfFintype Bool := by
-    ext bit
-    cases guess <;> cases bit <;>
-      simp [PMF.bind_apply, tsum_fintype, PMF.uniformOfFintype_apply]
-  simp only [predictionExperiment, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_map,
-    Function.comp_def]
-  rw [PMF.bind_comm]
-  simp only [hbit, PMF.bind_const]
-
 /-- An independent fair hidden bit has zero prediction gap against predictors receiving any
 fixed advice family. -/
 private theorem fairPair_gapWithAdvice (advice : ℕ → List Bool) :
