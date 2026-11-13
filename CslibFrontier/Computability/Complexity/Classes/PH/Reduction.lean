@@ -64,7 +64,7 @@ theorem PolyTimeReducible.mem_SigmaP (h : PolyTimeReducible enc encB A B) (hB : 
     A ∈ SigmaP k enc := by
   obtain ⟨f, hf, hAB⟩ := h
   obtain ⟨ps, V, hps, hV, hBV⟩ := hB
-  obtain ⟨q, hq⟩ := ((encoding_length encB).comp hf).polyBounded.exists_polynomial
+  obtain ⟨q, hq⟩ := hf.polyBounded_length.exists_polynomial
   refine ⟨ps.map (·.comp q),
     fun x => V (f x.1, truncateBlocks ps (encB (f x.1)).length (q.eval (enc x.1).length) x.2),
     by simp [hps], ?_, fun a => ?_⟩

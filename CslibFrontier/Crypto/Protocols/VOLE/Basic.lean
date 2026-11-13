@@ -13,6 +13,7 @@ public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Linear
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Uniform
+import CslibFrontier.Probability.PMF.UniformBound
 
 /-!
 # Vector Oblivious Linear Evaluation (VOLE), IT-MACs, and a Linear Sigma Protocol
@@ -409,18 +410,10 @@ theorem toOuterMeasure_voleVerifyOpening_le [Fintype F]
       {delta : F | ∀ i, x i * delta + v i = x' i * delta + v' i} ≤
       (Fintype.card F : ℝ≥0∞)⁻¹ := by
   classical
-  rw [PMF.toOuterMeasure_uniformOfFintype]
-  have hcard : (Finset.univ.filter (· ∈ {delta : F |
-      ∀ i, x i * delta + v i = x' i * delta + v' i})).card ≤ 1 :=
-    card_filter_voleVerifyOpening_le_one hne
-  have hcard' : ((Finset.univ.filter (· ∈ {delta : F |
-      ∀ i, x i * delta + v i = x' i * delta + v' i})).card : ℝ≥0∞) ≤ 1 := by
-    exact_mod_cast hcard
-  calc ((Finset.univ.filter (· ∈ {delta : F |
-        ∀ i, x i * delta + v i = x' i * delta + v' i})).card : ℝ≥0∞) *
-        (Fintype.card F : ℝ≥0∞)⁻¹
-      ≤ 1 * (Fintype.card F : ℝ≥0∞)⁻¹ := mul_le_mul_of_nonneg_right hcard' zero_le
-    _ = (Fintype.card F : ℝ≥0∞)⁻¹ := one_mul _
+  refine (Probability.PMF.toOuterMeasure_uniformOfFintype_le_div (A := 1) Fintype.card_pos
+    ?_).trans_eq (by rw [Nat.cast_one, one_div])
+  rw [one_mul]
+  exact mul_le_of_le_one_right (Nat.zero_le _) (card_filter_voleVerifyOpening_le_one hne)
 
 end ITMAC
 

@@ -7,7 +7,8 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Computability.Complexity.Reduction.TruthTable
+public import CslibFrontier.Computability.Reduction.TruthTable
+import Mathlib.Data.List.Forall2
 
 /-!
 # Composing truth-table reductions

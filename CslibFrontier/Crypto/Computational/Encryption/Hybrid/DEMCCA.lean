@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Computational.Encryption.Hybrid.CCA
 public import CslibFrontier.Crypto.Computational.Encryption.Authenticated
 public import CslibFrontier.Crypto.Encoding
+public import CslibFrontier.Languages.Probabilistic.Oracle.Substitution
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Probability.PMF.Bind
@@ -92,14 +93,11 @@ noncomputable def hybridDEMContinuation (E : SymmetricCipher)
     (adversary : WordCCA2Adversary) (n : ℕ) (pk sk ctK : List Bool) :
     WordOracleComp Bool Bool := do
   let handler := hybridDEMHandler E decaps decBound n sk ctK
-  let choice ← OracleComp.interpret
-    (OracleComp.sumHandler (fun m => ProbOracleComp.sample (ProbComp.unifFin m)) handler)
-    (adversary.choose n pk)
+  let choice ← ProbOracleComp.simulate handler (adversary.choose n pk)
   if (ChoiceOut.msg₀ choice).length == n && (ChoiceOut.msg₁ choice).length == n then
     let ct ← List.take (ctBound n) <$> ProbOracleComp.query
       (false, encPair encBits encBits (ChoiceOut.msg₀ choice, ChoiceOut.msg₁ choice))
-    OracleComp.interpret
-      (OracleComp.sumHandler (fun m => ProbOracleComp.sample (ProbComp.unifFin m)) handler)
+    ProbOracleComp.simulate handler
       (adversary.guess n (ChoiceOut.state choice)
         (encPair encBits encBits (ctK, ct)))
   else pure false
@@ -196,9 +194,7 @@ private theorem eval_run_substituted_phase {α : Type}
     (program : WordOracleComp Unit α) :
     ProbComp.eval ((OracleComp.interpret
       (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m)) oracle)
-      (OracleComp.interpret
-        (OracleComp.sumHandler (fun m => ProbOracleComp.sample (ProbComp.unifFin m)) handler)
-        program)).run state) =
+      (ProbOracleComp.simulate handler program)).run state) =
       (ProbComp.eval ((OracleComp.interpret
         (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
           (fun request (s : Unit) => pure (reply request, s))) program).run ())).map
@@ -211,7 +207,8 @@ private theorem eval_run_substituted_phase {α : Type}
       have h := congrArg ProbComp.eval (hstep request)
       rw [ProbOracleComp.eval_run_interpret_eq_runWith, ProbComp.eval_pure] at h
       simpa only [PMF.pure_map] using h.symm) program ()
-  rw [ProbOracleComp.eval_run_interpret_eq_runWith, ProbOracleComp.runWith_interpret_sumHandler,
+  rw [ProbOracleComp.simulate, ProbOracleComp.eval_run_interpret_eq_runWith,
+    ProbOracleComp.runWith_interpret_sumHandler,
     ← hsim, ProbOracleComp.eval_run_interpret_eq_runWith]
   simp only [ProbComp.eval_pure]
 
@@ -364,9 +361,8 @@ private theorem isOraclePPTOn_hybridDEMInterpret (E : SymmetricCipher)
     (hsk : ComputableInPolyTime sk input encBits)
     (hctK : ComputableInPolyTime ctK input encBits)
     (hprogram : IsOraclePPTOn input output program) :
-    IsOraclePPTOn input output (fun a => OracleComp.interpret
-      (OracleComp.sumHandler (fun m => ProbOracleComp.sample (ProbComp.unifFin m))
-        (hybridDEMHandler E decaps decBound (n a) (sk a) (ctK a))) (program a)) := by
+    IsOraclePPTOn input output (fun a => ProbOracleComp.simulate
+      (hybridDEMHandler E decaps decBound (n a) (sk a) (ctK a)) (program a)) := by
   have hhandler : IsOraclePPTOn (encPair input (encPair (encFinEnum Unit) encBits)) encBits
       (fun p : α × (Unit × List Bool) =>
         hybridDEMHandler E decaps decBound (n p.1) (sk p.1) (ctK p.1) p.2) :=

@@ -36,6 +36,11 @@ decision, and transfers them along polynomial-time reductions that change the pa
 * `Cslib.Complexity.mem_FTIME_iff_computableInTimeO`: agreement with `FTIME` on length bounds.
 * `Cslib.Complexity.decidableInTimeO_iff_exists_computableInTimeO`: decision as computation of a
   Boolean indicator.
+* `Cslib.Complexity.ComputableInTimeO.ite_polyTime_of_le`,
+  `Cslib.Complexity.DecidableInTimeO.of_computableInTimeO_polyBounded`: guarding by a
+  polynomial-time test, and deciding a polynomial-time test on a function value, within
+  `O(2 ^ x a * (L + 1) ^ e)` for any nonnegative exponent `x`. The exponential-rate and
+  single-machine subexponential versions are both corollaries.
 * `Cslib.Complexity.DecidableInExpTime.of_computableInExpTime_polyBounded`: a polynomial-time test
   on a function value with polynomially bounded output length is decided at the function's rate.
 * `Cslib.Complexity.ComputableInExpTime.of_reduction`,
@@ -188,6 +193,38 @@ theorem ComputableInExpTime.of_computableInPolyTime {μ : α → ℕ}
   refine ComputableInExpTime.of_computableInO hf'.inO 1 d fun a => ?_
   simp
 
+/-- **Guarding by a polynomial-time test.** If `f` is computable within time
+`O(2 ^ x a * (L + 1) ^ e)` and `p`, `g` are computable in polynomial time, then
+`if p a then f a else g a` is computable within time `O(2 ^ y a * (L + 1) ^ e')` for some `e'`,
+for any nonnegative exponent `y` that is at least `x` wherever the test `p` passes. -/
+theorem ComputableInTimeO.ite_polyTime_of_le {x y : α → ℝ} {e : ℕ} {p : α → Bool} {g : α → β}
+    (hf : ComputableInTimeO f encIn encMid fun a => 2 ^ x a * ((encIn a).length + 1) ^ e)
+    (hp : ComputableInPolyTime p encIn encBool) (hg : ComputableInPolyTime g encIn encMid)
+    (hy : ∀ a, 0 ≤ y a) (hxy : ∀ a, p a = true → x a ≤ y a) :
+    ∃ e', ComputableInTimeO (fun a => if p a then f a else g a) encIn encMid
+      fun a => 2 ^ y a * ((encIn a).length + 1) ^ e' := by
+  obtain ⟨t, c, hfO, ht⟩ := hf.exists_computableInO
+  obtain ⟨dp, _, hp'⟩ := hp.exists_degree
+  obtain ⟨dg, _, hg'⟩ := hg.exists_degree
+  refine ⟨dp + dg + e, (ComputableInTimeO.of_computableInO (hp'.inO.ite hfO hg'.inO)
+    fun _ => le_rfl).mono (2 * c + 3) (fun a => ?_) fun _ => by positivity⟩
+  have hX := one_le_two_rpow_mul_pow (L := (encIn a).length) (e := dp + dg + e) (hy a)
+  have hdp := pow_le_two_rpow_mul_pow (L := (encIn a).length) (d := dp) (e := dp + dg + e) (hy a)
+    (by omega)
+  have hdg := pow_le_two_rpow_mul_pow (L := (encIn a).length) (d := dg) (e := dp + dg + e) (hy a)
+    (by omega)
+  have hc : (0 : ℝ) ≤ c := Nat.cast_nonneg c
+  have hcX := mul_nonneg hc (zero_le_one.trans hX)
+  change ((((encIn a).length + 1) ^ dp +
+    if p a then t a else ((encIn a).length + 1) ^ dg : ℕ) : ℝ) ≤ _
+  split_ifs with hpa
+  · have ht' := le_two_mul_mul_of_le_mul_add (ht a)
+      (two_rpow_mul_pow_le_two_rpow_mul_pow (hxy a hpa) (by omega : e ≤ dp + dg + e)) hX
+    push_cast
+    linarith
+  · push_cast
+    linarith
+
 /-- Guarding an exponential-time function by a polynomial-time test and fallback preserves rate
 `δ ≥ 0`. -/
 theorem ComputableInExpTime.ite_polyTime {μ : α → ℕ} {δ : ℝ} (hδ : 0 ≤ δ) {p : α → Bool}
@@ -195,24 +232,37 @@ theorem ComputableInExpTime.ite_polyTime {μ : α → ℕ} {δ : ℝ} (hδ : 0 �
     (hf : ComputableInExpTime f encIn encMid μ δ)
     (hg : ComputableInPolyTime g encIn encMid) :
     ComputableInExpTime (fun a => if p a then f a else g a) encIn encMid μ δ := by
-  obtain ⟨e, hf⟩ := hf
+  obtain ⟨_, hf⟩ := hf
+  exact hf.ite_polyTime_of_le hp hg (fun _ => by positivity) fun _ _ => le_rfl
+
+/-- **Decision from function computation.** If `f` is computable within time
+`O(2 ^ x a * (L + 1) ^ e)` for a nonnegative exponent `x` and its encoded output length is
+polynomially bounded in `L`, then any polynomial-time test on `f a` decides
+`{a | test (f a) = true}` within time `O(2 ^ x a * (L + 1) ^ e')` for some `e'`. -/
+theorem DecidableInTimeO.of_computableInTimeO_polyBounded {x : α → ℝ} {e : ℕ}
+    (hx : ∀ a, 0 ≤ x a)
+    (hf : ComputableInTimeO f encIn encMid fun a => 2 ^ x a * ((encIn a).length + 1) ^ e)
+    (hlen : PolyBounded (fun a => (encIn a).length) (fun a => (encMid (f a)).length))
+    {test : β → Bool} (htest : ComputableInPolyTime test encMid encBool) :
+    ∃ e', DecidableInTimeO {a | test (f a) = true} encIn
+      fun a => 2 ^ x a * ((encIn a).length + 1) ^ e' := by
   obtain ⟨t, c, hfO, ht⟩ := hf.exists_computableInO
-  obtain ⟨dp, _, hp'⟩ := hp.exists_degree
-  obtain ⟨dg, _, hg'⟩ := hg.exists_degree
-  have hcomb := hp'.inO.ite hfO hg'.inO
-  refine ComputableInExpTime.of_computableInO hcomb (2 * c + 3) (dp + dg + e) fun a => ?_
-  have hx : 0 ≤ δ * μ a := by positivity
-  have hX := one_le_two_rpow_mul_pow (L := (encIn a).length) (e := dp + dg + e) hx
-  have ht' : (t a : ℝ) ≤ 2 * c * (2 ^ (δ * μ a) * (((encIn a).length : ℝ) + 1) ^ (dp + dg + e)) :=
-    le_two_mul_mul_of_le_mul_add (ht a) (two_rpow_mul_pow_le_two_rpow_mul_pow le_rfl (by omega)) hX
-  have hdp := pow_le_two_rpow_mul_pow (L := (encIn a).length) (d := dp) (e := dp + dg + e) hx
-    (by omega)
-  have hdg := pow_le_two_rpow_mul_pow (L := (encIn a).length) (d := dg) (e := dp + dg + e) hx
-    (by omega)
-  have hcX := mul_nonneg (Nat.cast_nonneg c : (0 : ℝ) ≤ c) (zero_le_one.trans hX)
-  change ((((encIn a).length + 1) ^ dp +
-    if p a then t a else ((encIn a).length + 1) ^ dg : ℕ) : ℝ) ≤ _
-  split_ifs <;> push_cast <;> linarith
+  obtain ⟨d, _, htest'⟩ := htest.exists_degree
+  obtain ⟨p, q, hp⟩ := hlen.exists_le
+  refine ⟨e + q * d, (DecidableInTimeO.of_computableInO (htest'.inO.comp hfO) (fun _ => Iff.rfl)
+    fun _ => le_rfl).mono (2 * c + 1 + (p + 1) ^ d) (fun a => ?_) fun _ => by positivity⟩
+  have hX := one_le_two_rpow_mul_pow (L := (encIn a).length) (e := e + q * d) (hx a)
+  have ht' := le_two_mul_mul_of_le_mul_add (ht a)
+    (two_rpow_mul_pow_le_two_rpow_mul_pow le_rfl (by omega : e ≤ e + q * d)) hX
+  have hout : (((encMid (f a)).length : ℝ) + 1) ^ d ≤
+      ((p + 1) ^ d : ℕ) * (((encIn a).length : ℝ) + 1) ^ (q * d) := by
+    exact_mod_cast Nat.add_one_pow_le_of_le_mul_pow (Nat.le_add_left 1 _) (hp a) d
+  have hq := mul_le_mul_of_nonneg_left (pow_le_two_rpow_mul_pow (L := (encIn a).length)
+    (d := q * d) (e := e + q * d) (hx a) (by omega)) (Nat.cast_nonneg ((p + 1) ^ d) : (0 : ℝ) ≤ _)
+  have hC : (0 : ℝ) ≤ (2 * c + 1 + (p + 1) ^ d : ℕ) := Nat.cast_nonneg _
+  change ((t a + ((encMid (f a)).length + 1) ^ d : ℕ) : ℝ) ≤ _
+  push_cast at hout hq hC ⊢
+  linarith
 
 /-- **Exact-rate decision from function computation.** If `f` is computable in time
 `2 ^ (δ * μ a) · poly(|a|)` (`δ ≥ 0`) and its encoded output length is polynomially bounded in
@@ -223,25 +273,8 @@ theorem DecidableInExpTime.of_computableInExpTime_polyBounded {μ : α → ℕ} 
     (hlen : PolyBounded (fun a => (encIn a).length) (fun a => (encMid (f a)).length))
     {test : β → Bool} (htest : ComputableInPolyTime test encMid encBool) :
     DecidableInExpTime {a | test (f a) = true} encIn μ δ := by
-  obtain ⟨e, hf⟩ := hf
-  obtain ⟨t, c, hfO, ht⟩ := hf.exists_computableInO
-  obtain ⟨d, _, htest'⟩ := htest.exists_degree
-  obtain ⟨p, q, hp⟩ := hlen.exists_le
-  have hcomp := htest'.inO.comp hfO
-  refine DecidableInExpTime.of_computableInO hcomp (fun _ => Iff.rfl)
-    (2 * c + 1 + (p + 1) ^ d) (e + q * d) fun a => ?_
-  have hx : 0 ≤ δ * μ a := by positivity
-  have hX := one_le_two_rpow_mul_pow (L := (encIn a).length) (e := e + q * d) hx
-  have ht' : (t a : ℝ) ≤ 2 * c * (2 ^ (δ * μ a) * (((encIn a).length : ℝ) + 1) ^ (e + q * d)) :=
-    le_two_mul_mul_of_le_mul_add (ht a) (two_rpow_mul_pow_le_two_rpow_mul_pow le_rfl (by omega)) hX
-  have hout : (((encMid (f a)).length : ℝ) + 1) ^ d ≤
-      ((p + 1) ^ d : ℕ) * (((encIn a).length : ℝ) + 1) ^ (q * d) := by
-    exact_mod_cast Nat.add_one_pow_le_of_le_mul_pow (Nat.le_add_left 1 _) (hp a) d
-  have hq := mul_le_mul_of_nonneg_left (pow_le_two_rpow_mul_pow (L := (encIn a).length)
-    (d := q * d) (e := e + q * d) hx (by omega)) (Nat.cast_nonneg ((p + 1) ^ d) : (0 : ℝ) ≤ _)
-  change ((t a + ((encMid (f a)).length + 1) ^ d : ℕ) : ℝ) ≤ _
-  push_cast at hout hq ⊢
-  linarith
+  obtain ⟨_, hf⟩ := hf
+  exact DecidableInTimeO.of_computableInTimeO_polyBounded (fun _ => by positivity) hf hlen htest
 
 /-- Subexponential function computation with polynomially bounded output length transfers to
 subexponential decision for any polynomial-time output predicate. -/
