@@ -6558,6 +6558,7 @@ public import CslibFrontier.MachineLearning.OnlineLearning.MistakeBound.Basic
 public import CslibFrontier.MachineLearning.OnlineLearning.MistakeBound.Halving
 public import CslibFrontier.MachineLearning.OnlineLearning.MistakeBound.Littlestone
 public import CslibFrontier.MachineLearning.OnlineLearning.MistakeBound.MonotoneDisjunctions
+public import CslibFrontier.MachineLearning.OnlineLearning.MistakeBound.OnlineToBatch
 public import CslibFrontier.MachineLearning.OnlineLearning.MistakeBound.Perceptron
 public import CslibFrontier.MachineLearning.OnlineLearning.MistakeBound.Randomized
 public import CslibFrontier.MachineLearning.OnlineLearning.MistakeBound.SOA
