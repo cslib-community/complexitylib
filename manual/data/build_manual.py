@@ -295,7 +295,8 @@ def main():
         missing = missing_glyphs((out / (stem + '.log')).read_text(errors='replace'))
         if missing:
             raise SystemExit('Glyphs missing from the PDF fonts (add them to MATH in '
-                             'manual/data/build_latex.py, which also serves $...$ math): ' + ', '.join(missing))
+                             'manual/data/build_latex.py, which also serves $...$ math): '
+                             + ', '.join(missing))
         (out / ('agent-manual-build-output.txt' if args.agent_manual else 'manual-build-output.txt')).write_text(result.stdout + result.stderr)
         manifest['pdf_sha256'] = sha(out / (stem + '.pdf'))
         print(base.run(['pdfinfo', str(out / (stem + '.pdf'))]))
