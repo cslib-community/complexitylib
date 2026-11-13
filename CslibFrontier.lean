@@ -2409,7 +2409,9 @@ public import CslibFrontier.Computability.Complexity.Parameterized.WHierarchy.In
 public import CslibFrontier.Computability.Complexity.Parameterized.WHierarchy.XP
 public import CslibFrontier.Computability.Complexity.Problems.BipartitePerfectMatching
 public import CslibFrontier.Computability.Complexity.Problems.BipartitePerfectMatching.Membership
+public import CslibFrontier.Computability.Complexity.Problems.BoundedComputation
 public import CslibFrontier.Computability.Complexity.Problems.BoundedHalting
+public import CslibFrontier.Computability.Complexity.Problems.BoundedTermination
 public import CslibFrontier.Computability.Complexity.Problems.CMMSA
 public import CslibFrontier.Computability.Complexity.Problems.CMMSA.Size
 public import CslibFrontier.Computability.Complexity.Problems.CSP.Affine
@@ -5546,6 +5548,7 @@ public import CslibFrontier.Foundations.Data.BitString.InitialTests
 public import CslibFrontier.Foundations.Data.BitString.Isolation
 public import CslibFrontier.Foundations.Data.BitString.List
 public import CslibFrontier.Foundations.Data.BitString.List.Binary
+public import CslibFrontier.Foundations.Data.BitString.List.Binary.Clock
 public import CslibFrontier.Foundations.Data.BitString.List.BinaryOrder
 public import CslibFrontier.Foundations.Data.BitString.List.Dot
 public import CslibFrontier.Foundations.Data.BitString.List.LowBits
