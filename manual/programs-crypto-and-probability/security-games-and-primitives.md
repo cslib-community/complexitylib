@@ -96,7 +96,12 @@ CDH assumption, weaker than the word-level assumption against adversaries that m
 [#4783](https://github.com/cslib-community/cslib-frontier/issues/4783) tracks restoring the
 word-level form for families with decodable encodings. A DDH distinguisher outputs only a bit, so
 `F.DDH setup` is equivalent to the word-level assumption over distinguishers reading the encoded
-tuple (`ddh_iff_encoded`), and likewise for `SecureKDF` (`secureKDF_iff_encoded`). Efficiency is
+tuple (`ddh_iff_encoded`), and likewise for `SecureKDF` (`secureKDF_iff_encoded`). To prove such
+an equivalence for a new typed adversary, obtain the word adversary with
+`IsPPTOn.exists_bool_factor` (or `IsPPTOn.exists_factor`, given an output decoder), passing the
+generated layout lemma such as `encDDHInput_apply`. The typed adversary *equals* the word adversary
+run on its input's words, so substitute it and apply the word-level assumption, with no
+congruence argument for the game. Efficiency is
 stated on encodings: `CDHAdversary.IsPPT` and `DDHDistinguisher.IsPPT` ask for one uniform strict
 PPT machine that reads `F.encCDHInput` or `F.encDDHInput` and writes the encoded output element or
 the output bit. The inputs are the structures `F.CDHInput` (fields `secParam`, `groupParameters`,

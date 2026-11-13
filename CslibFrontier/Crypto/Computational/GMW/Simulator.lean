@@ -941,7 +941,7 @@ def AdvicePRG {α : Type} (enc : α ↪ List Bool) (generator : List Bool → Li
 
 /-- `AdvicePRG` covers any uniform strict PPT challenge test taking an auxiliary advice value
 `aux n : γ` under an arbitrary encoding `encAux : γ ↪ List Bool`, via
-`IsPPTOn.exists_extension`. -/
+`IsPPTOn.exists_bool_factor`. -/
 theorem AdvicePRG.negligible_encoded {α γ : Type} {enc : α ↪ List Bool} {encAux : γ ↪ List Bool}
     {generator : List Bool → List Bool} {length : ℕ → ℕ}
     (hAdv : AdvicePRG enc generator length)
@@ -957,25 +957,11 @@ theorem AdvicePRG.negligible_encoded {α γ : Type} {enc : α ↪ List Bool} {en
         fun challenge => test ((n, a n, w n, aux n), challenge)))
       (ProbComp.eval (BitString.sampleList (length (n + 7)) >>=
         fun challenge => test ((n, a n, w n, aux n), challenge)))) := by
-  obtain ⟨extension, hextension, heq⟩ :=
-    htest.exists_extension (ComputableInPolyTime.headD false) (fun _ => rfl)
-  let inputBits := encPair (encPair encUnary (encPair enc (encPair encBits encBits))) encBits
-  have hword : IsPPTOn inputBits encBool (fun p => extension (inputBits p)) :=
-    hextension.preprocess (ComputableInPolyTime.of_eq fun _ => rfl)
-  have hkey (n : ℕ) (challenge : List Bool) :
-      ProbComp.eval (extension (inputBits ((n, a n, w n, encAux (aux n)), challenge))) =
-        ProbComp.eval (test ((n, a n, w n, aux n), challenge)) :=
-    heq ((n, a n, w n, aux n), challenge)
-  have hneg := hAdv.2.2 (fun p => extension (inputBits p)) hword a w (fun n => encAux (aux n))
-    ha hw haux
-  refine hneg.congr' (Filter.Eventually.of_forall fun n => ?_)
-  dsimp only
-  have hbind (src : ProbComp (List Bool)) :
-      ProbComp.eval (src >>= fun challenge =>
-        extension (inputBits ((n, a n, w n, encAux (aux n)), challenge))) =
-      ProbComp.eval (src >>= fun challenge => test ((n, a n, w n, aux n), challenge)) := by
-    simp only [ProbComp.eval_bind, hkey]
-  rw [hbind, hbind]
+  obtain ⟨W, hW, hWtest⟩ := htest.exists_bool_factor
+    (words := encPair (encPair encUnary (encPair enc (encPair encBits encBits))) encBits)
+    (toWords := fun x => ((x.1.1, x.1.2.1, x.1.2.2.1, encAux x.1.2.2.2), x.2)) fun _ => rfl
+  obtain rfl : test = _ := funext hWtest
+  exact hAdv.2.2 W hW a w (fun n => encAux (aux n)) ha hw haux
 
 private theorem isPPTOn_gmwViewReduction_pair {α : Type} {enc : α ↪ List Bool}
     {generator : List Bool → List Bool} {length : ℕ → ℕ} {f : α → CNF ℕ}
