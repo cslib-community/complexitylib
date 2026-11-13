@@ -388,8 +388,6 @@ theorem computableInPolyTime_kilianVerify
   have hlength := ComputableInPolyTime.beq
     ((ComputableInPolyTime.length_list (encList encKilianOpening)).comp hresponse)
     ((ComputableInPolyTime.length_list encBits).comp hρs)
-  have hpair := ComputableInPolyTime.fst (encKilianView enc)
-    (encPair encBits (encList encKilianOpening))
   have hρa := ComputableInPolyTime.snd (encKilianView enc)
     (encPair encBits (encList encKilianOpening))
   have hcheck := computableInPolyTime_kilianCheck hH hlen hV hcoins
