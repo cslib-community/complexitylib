@@ -4703,6 +4703,7 @@ public import CslibFrontier.Crypto.Protocols.PIR.SingleServer
 public import CslibFrontier.Crypto.Protocols.PIR.SmoothCode
 public import CslibFrontier.Crypto.Protocols.PIR.SmoothConverse
 public import CslibFrontier.Crypto.Protocols.PIR.Statistical
+public import CslibFrontier.Crypto.Protocols.PKE.ExplicitCoin
 public import CslibFrontier.Crypto.Protocols.PolynomialCommitment.Basic
 public import CslibFrontier.Crypto.Protocols.Quantum.OneTimePad
 public import CslibFrontier.Crypto.Protocols.SSP.Basic

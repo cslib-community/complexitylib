@@ -722,7 +722,7 @@ fixed-weight `y`, then `x`, followed by a uniform public ring word `h`, publishi
 `(h, s = x + circulant h *ᵥ y)` while retaining expanded `y`; `pkeSampleCoins` draws `(r₂, e, r₁)` in
 the source order. `pkeEncrypt` and `pkeDecrypt` implement the two source algorithms with
 `truncate P` retaining exactly the first `n - ℓ` bits, and `toExplicitCoinPKE` supplies the
-existing Fujisaki–Okamoto interface.
+shared explicit-coin PKE interface used by the Fujisaki–Okamoto transform.
 
 The central checked identity `pkeDecryptInput_encrypt` says that the decoder sees `Encode(m)` plus
 the retained prefix of `x * r₂ - r₁ * y + e` (the minus sign is addition over `Bool`). Its proof
@@ -872,7 +872,10 @@ statement is not yet proved. Checked clients are in
 
 For explicit-coin public-key encryption and modular Fujisaki–Okamoto KEM transforms ([hhk17][hhk17],
 ePrint 2017/604 full version dated 2 November 2021), import
-[`FujisakiOkamoto.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto.lean).
+[`PKE/ExplicitCoin.lean`](../../CslibFrontier/Crypto/Protocols/PKE/ExplicitCoin.lean) for the
+generic scheme interface and
+[`FujisakiOkamoto.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto.lean) for the
+transform.
 Unlike the word-level encryption interface used by `encryptKeyEncaps`, `ExplicitCoinPKE` (§2.1)
 exposes a fixed coin type `R`, an arbitrary coin sampler `sampleCoins : ProbComp R` (where the
 paper uses uniform draws and permits key-dependent `R`), and deterministic encryption

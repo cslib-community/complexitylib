@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Primitives.HQC.Syndrome
-public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto
+public import CslibFrontier.Crypto.Protocols.PKE.ExplicitCoin
 import CslibFrontier.Foundations.Data.BitString.Circulant
 import CslibFrontier.Probability.PMF.Support
 
