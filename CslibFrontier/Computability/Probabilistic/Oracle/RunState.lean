@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Probabilistic.Oracle.Parameter
 public import CslibFrontier.Languages.Probabilistic.Oracle.RunState
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 
 /-!
 # Efficient stateful oracle runs
@@ -26,10 +27,9 @@ it here; `run_interpret_preprocess` remains for runs still written with `OracleC
 ## Main results
 
 * `Cslib.Probability.IsOraclePPTOn.isPPTOn_runState`: running an oracle-PPT program against an
-  efficient stateful oracle is PPT.
+  efficient stateful oracle is PPT, with polynomial-time preparation, initial state and allowance.
 * `Cslib.Probability.IsOraclePPT.isPPTOn_runState`: the same for a program parameterized by the
-  unary security parameter and a word, with plain polynomial-time preparation, initial state and
-  allowance.
+  unary security parameter and a word.
 -/
 
 public section
@@ -51,13 +51,13 @@ theorem IsOraclePPTOn.isPPTOn_runState {program : α → WordOracleComp Operatio
     {oracle : Caller → Operation × List Bool → StateT State ProbComp (List Bool)}
     {prepare : Caller → α} {initial : Caller → State} {resources : Caller → List Bool → ℕ}
     (hprogram : IsOraclePPTOn source output program)
-    (hprepare : ComputableTidilyInPolyTime prepare input source)
+    (hprepare : ComputableInPolyTime prepare input source)
     (horacle : IsPPTOn (encHandlerCall input operationEncoding stateEncoding)
       (encPair encBits stateEncoding)
       (fun ⟨caller, request, state⟩ => oracle caller request state))
-    (hinitial : ComputableTidilyInPolyTime initial input stateEncoding)
+    (hinitial : ComputableInPolyTime initial input stateEncoding)
     (invariant : Caller → State → Prop) (hinit : ∀ a, invariant a (initial a))
-    (hresources : ComputableTidilyInPolyTime (fun pair => resources pair.1 pair.2)
+    (hresources : ComputableInPolyTime (fun pair => resources pair.1 pair.2)
       (encPair input encBits) encUnary)
     (hpreserve : ∀ a request state, invariant a state →
       ∀ result ∈ (ProbComp.eval (oracle a request state)).support,
@@ -65,8 +65,8 @@ theorem IsOraclePPTOn.isPPTOn_runState {program : α → WordOracleComp Operatio
         (stateEncoding result.2).length ≤ (stateEncoding state).length + resources a request.2) :
     IsPPTOn input (encPair output stateEncoding)
       (fun a => ((program (prepare a)).runState (oracle a)).run (initial a)) :=
-  hprogram.run_interpret_preprocess (handler := fun a request => oracle a request) hprepare
-    horacle hinitial invariant hinit hresources hpreserve
+  hprogram.run_interpret_preprocess (handler := fun a request => oracle a request) hprepare.tidy
+    horacle hinitial.tidy invariant hinit hresources.tidy hpreserve
 
 /-- Running a parameterized oracle-PPT program against an efficient stateful oracle is PPT in the
 caller, with the final oracle state returned. `prepare` computes the security parameter and word
