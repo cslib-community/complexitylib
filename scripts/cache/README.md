@@ -141,9 +141,10 @@ following builds while preserving the public cache's authorization boundary.
   does not cancel a run whose entry has left the queue: the entry landed inside a later group, or
   its group was rebuilt after an ejection. The *Merge-queue cleanup* workflow
   (`scripts/ci/cancel_stale_merge_groups.py`) cancels such runs after each push to `main` and every
-  10 minutes. It skips runs still going on a live queue branch and runs for the current `main`
-  commit. The handoff above is not affected, since it only uses a completed successful run for the
-  landed commit. Run the script without `--apply` for a dry-run list.
+  10 minutes. It skips runs younger than 5 minutes and runs for the current `main` commit, and
+  cancels a run only after a fresh read of its queue branch returns 404 or another commit; any
+  other error keeps the run. The handoff above is not affected, since it only uses a completed
+  successful run for the landed commit. Run the script without `--apply` for a dry-run list.
 
 ## Automatic restoration
 

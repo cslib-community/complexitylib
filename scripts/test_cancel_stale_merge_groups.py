@@ -14,12 +14,16 @@ sweep = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(sweep)
 
 BRANCH = "gh-readonly-queue/main/pr-4903-269ed430f8633c2a0c0051325e46096a0a6689ec"
-LISTED = "2026-11-13T07:30:00Z"
+LISTED = sweep.timestamp("2026-11-13T07:30:00Z")
 
 
 def run(**overrides):
     return {"id": 1, "event": "merge_group", "status": "in_progress", "head_branch": BRANCH,
             "head_sha": "aaa", "created_at": "2026-11-13T05:58:05Z", **overrides}
+
+
+NOT_FOUND = subprocess.CalledProcessError(1, "gh", stderr="gh: Not Found (HTTP 404)\n")
+SERVER_ERROR = subprocess.CalledProcessError(1, "gh", stderr="gh: Server Error (HTTP 502)\n")
 
 
 class StaleRuns(unittest.TestCase):
@@ -37,8 +41,11 @@ class StaleRuns(unittest.TestCase):
     def test_live_entry_is_kept(self):
         self.assertEqual(self.stale([run()], {BRANCH: "aaa"}), [])
 
-    def test_runs_created_after_the_branch_listing_are_kept(self):
-        self.assertEqual(self.stale([run(created_at="2026-11-13T07:30:01Z")]), [])
+    def test_runs_younger_than_the_minimum_age_are_kept(self):
+        self.assertEqual(self.stale([run(created_at="2026-11-13T07:25:00Z")]), [1])
+        for young in ("2026-11-13T07:25:01Z", "2026-11-13T07:30:00Z", "2026-11-13T07:31:00Z"):
+            with self.subTest(created_at=young):
+                self.assertEqual(self.stale([run(created_at=young)]), [])
 
     def test_current_main_commit_and_other_runs_are_kept(self):
         for other in (run(head_sha="main"), run(status="completed"), run(event="push"),
@@ -51,8 +58,27 @@ class StaleRuns(unittest.TestCase):
         self.assertEqual(self.stale(runs), [3, 2])
 
 
+class BranchHead(unittest.TestCase):
+    def head(self, outcome):
+        def gh(endpoint, **_):
+            self.assertEqual(endpoint, f"repos/o/r/git/ref/heads/{BRANCH}")
+            if isinstance(outcome, Exception):
+                raise outcome
+            return {"object": {"sha": outcome}}
+        with mock.patch.object(sweep, "gh", gh):
+            return sweep.branch_head("o/r", BRANCH)
+
+    def test_only_http_404_means_missing(self):
+        self.assertEqual(self.head("aaa"), "aaa")
+        self.assertIsNone(self.head(NOT_FOUND))
+        with self.assertRaises(subprocess.CalledProcessError):
+            self.head(SERVER_ERROR)
+
+
 class Main(unittest.TestCase):
-    def fake_gh(self, cancel_error=False):
+    """`main` with a fake API whose bulk listing omits BRANCH, as a short listing would."""
+
+    def fake_gh(self, ref, cancel_error=None):
         calls = []
 
         def gh(endpoint, *, method="GET", items=None):
@@ -63,32 +89,62 @@ class Main(unittest.TestCase):
                 return {"sha": "main"}
             if "/runs?" in endpoint:
                 return [run(id=7)] if "status=in_progress" in endpoint else []
+            if endpoint == f"repos/o/r/git/ref/heads/{BRANCH}":
+                if isinstance(ref, Exception):
+                    raise ref
+                return {"ref": "refs/heads/" + BRANCH, "object": {"sha": ref}}
             if cancel_error:
-                raise subprocess.CalledProcessError(1, "gh", stderr="HTTP 409")
+                raise cancel_error
             return None
         return gh, calls
 
-    def main(self, *args, cancel_error=False):
-        gh, calls = self.fake_gh(cancel_error)
+    def main(self, *args, ref=NOT_FOUND, cancel_error=None):
+        gh, calls = self.fake_gh(ref, cancel_error)
         output = io.StringIO()
         with mock.patch.object(sweep, "gh", gh), redirect_stdout(output):
             code = sweep.main(["--repo", "o/r", *args])
-        return code, output.getvalue(), calls
+        self.assertEqual(code, 0)
+        return output.getvalue(), [call for call in calls if call[0] == "POST"]
 
     def test_dry_run_reports_without_cancelling(self):
-        code, output, calls = self.main()
-        self.assertEqual(code, 0)
-        self.assertIn("1 live queue branches; 1 stale merge-group runs", output)
+        output, posts = self.main()
+        self.assertIn("1 live queue branches; 1 candidate merge-group runs", output)
         self.assertIn("would cancel 7 in_progress", output)
-        self.assertNotIn("POST", [method for method, _ in calls])
+        self.assertIn("(branch missing)", output)
+        self.assertEqual(posts, [])
 
-    def test_apply_cancels_and_tolerates_finished_runs(self):
-        code, output, calls = self.main("--apply")
-        self.assertEqual((code, calls[-1]), (0, ("POST", "repos/o/r/actions/runs/7/cancel")))
-        self.assertIn("cancelled 7", output)
-        code, output, _ = self.main("--apply", cancel_error=True)
-        self.assertEqual(code, 0)
-        self.assertIn("::warning::could not cancel 7", output)
+    def test_missing_or_moved_branch_is_cancelled(self):
+        for ref, seen in ((NOT_FOUND, "branch missing"), ("bbb", "branch now at bbb")):
+            with self.subTest(seen=seen):
+                output, posts = self.main("--apply", ref=ref)
+                self.assertEqual(posts, [("POST", "repos/o/r/actions/runs/7/cancel")])
+                self.assertIn(f"cancelled 7 in_progress since 2026-11-13T05:58:05Z {BRANCH} ({seen})",
+                              output)
+
+    def test_branch_still_live_on_a_fresh_read_is_kept(self):
+        output, posts = self.main("--apply", ref="aaa")
+        self.assertEqual(posts, [])
+        self.assertIn("::warning::kept 7", output)
+        self.assertIn("branch still live", output)
+
+    def test_branch_read_errors_keep_the_run(self):
+        errors = (SERVER_ERROR, subprocess.TimeoutExpired("gh", 60), OSError("gh not found"))
+        for error in errors:
+            with self.subTest(error=error):
+                output, posts = self.main("--apply", ref=error)
+                self.assertEqual(posts, [])
+                self.assertIn("::warning::kept 7", output)
+                self.assertIn("could not read its branch", output)
+        output, _ = self.main("--apply", ref=errors[0])
+        self.assertIn("HTTP 502", output)
+
+    def test_cancel_failures_are_warnings(self):
+        for error in (subprocess.CalledProcessError(1, "gh", stderr="HTTP 409"),
+                      subprocess.TimeoutExpired("gh", 60)):
+            with self.subTest(error=error):
+                output, posts = self.main("--apply", cancel_error=error)
+                self.assertEqual(len(posts), 1)
+                self.assertIn("::warning::could not cancel 7", output)
 
 
 if __name__ == "__main__":
