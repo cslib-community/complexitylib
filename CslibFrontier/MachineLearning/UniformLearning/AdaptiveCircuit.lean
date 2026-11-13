@@ -11,7 +11,6 @@ public import CslibFrontier.Foundations.Data.BitString.Basic
 public import CslibFrontier.MachineLearning.UniformLearning.NonadaptiveCircuit
 import CslibFrontier.Computability.Circuit.Boolean.Lookup
 import CslibFrontier.Computability.Circuit.Boolean.Substitution
-import CslibFrontier.Computability.Circuit.Complexity.Composition
 
 /-!
 # Adaptive learners computed by small circuits
