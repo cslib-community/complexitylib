@@ -113,7 +113,7 @@ theorem LogSpaceKDTTReducible.autoreducible_of_compl
     (h : LogSpaceKDTTReducible k encA encA Aᶜ A) :
     LogSpaceKTruthTableAutoreducible k encA A := by
   classical
-  obtain ⟨r, q, hr, hq, hk, hA⟩ := h
+  obtain ⟨r, q, ⟨hr, hq, hk⟩, hA⟩ := h
   apply logSpaceKTruthTableAutoreducible_of_suppression (c := activeSelfQuery encA r q)
     (d := fun p => !p.2.any id) false hr hq (by fun_prop)
     (activeSelfQuery_logspace hr hq hk) hk
@@ -137,7 +137,7 @@ theorem LogSpaceKCTTReducible.autoreducible_of_compl
     (h : LogSpaceKCTTReducible k encA encA Aᶜ A) :
     LogSpaceKTruthTableAutoreducible k encA A := by
   classical
-  obtain ⟨r, q, hr, hq, hk, hA⟩ := h
+  obtain ⟨r, q, ⟨hr, hq, hk⟩, hA⟩ := h
   apply logSpaceKTruthTableAutoreducible_of_suppression (c := activeSelfQuery encA r q)
     (d := fun p => !p.2.all id) true hr hq (by fun_prop)
     (activeSelfQuery_logspace hr hq hk) hk

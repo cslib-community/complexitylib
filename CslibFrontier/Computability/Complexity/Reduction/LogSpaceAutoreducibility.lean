@@ -94,14 +94,14 @@ theorem LogSpaceTruthTableAutoreducible.logSpaceTruthTableReducible
     (h : LogSpaceTruthTableAutoreducible encA A) :
     LogSpaceTruthTableReducible encA encA A A :=
   let ⟨r, q, d, hr, hq, hd, _, hA⟩ := h
-  ⟨r, q, d, hr, hq, hd, hA⟩
+  ⟨r, q, d, ⟨hr, hq, hd⟩, hA⟩
 
 /-- Forgetting query avoidance preserves the query bound. -/
 theorem LogSpaceKTruthTableAutoreducible.logSpaceKTruthTableReducible {k : ℕ}
     (h : LogSpaceKTruthTableAutoreducible k encA A) :
     LogSpaceKTruthTableReducible k encA encA A A :=
   let ⟨r, q, d, hr, hq, hd, hk, _, hA⟩ := h
-  ⟨r, q, d, hr, hq, hd, hk, hA⟩
+  ⟨r, q, d, ⟨hr, hq, hd, hk⟩, hA⟩
 
 /-- Increasing the allowed number of queries preserves autoreducibility. -/
 theorem LogSpaceKTruthTableAutoreducible.mono {k k' : ℕ}
