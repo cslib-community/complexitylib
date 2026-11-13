@@ -28,8 +28,8 @@ variable {Rel V : Type}
 new list. Body occurrences retain their original constraint and argument positions. -/
 noncomputable def reindexLastScopeOccurrenceEquiv (F : CSP Rel V) (r : Rel) {n : ℕ}
     (scope : Fin n → V) (q : Equiv.Perm (Fin n)) :
-    (F ++ [(r, List.ofFn scope)]).Occurrence ≃
-      (F ++ [(r, List.ofFn (scope ∘ q))]).Occurrence :=
+    (F ++ [Constraint.mk r (List.ofFn scope)]).Occurrence ≃
+      (F ++ [Constraint.mk r (List.ofFn (scope ∘ q))]).Occurrence :=
   (appendOfFnOccurrenceEquiv F r scope).symm.trans
     ((Equiv.sumCongr (Equiv.refl F.Occurrence) q.symm).trans
       (appendOfFnOccurrenceEquiv F r (scope ∘ q)))
@@ -46,7 +46,7 @@ theorem reindexLastScopeOccurrenceEquiv_apply (F : CSP Rel V) (r : Rel) {n : ℕ
 repeated variables; only argument positions of the last scope can differ. -/
 theorem header_reindexLastScopeOccurrenceEquiv (F : CSP Rel V) (r : Rel) {n : ℕ}
     (scope : Fin n → V) (q : Equiv.Perm (Fin n))
-    (o : (F ++ [(r, List.ofFn scope)]).Occurrence) :
+    (o : (F ++ [Constraint.mk r (List.ofFn scope)]).Occurrence) :
     ((reindexLastScopeOccurrenceEquiv F r scope q o).1.val,
         (reindexLastScopeOccurrenceEquiv F r scope q o).var) = (o.1.val, o.var) := by
   obtain ⟨o, rfl⟩ := (appendOfFnOccurrenceEquiv F r scope).surjective o

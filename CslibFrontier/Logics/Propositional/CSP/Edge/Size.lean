@@ -33,18 +33,18 @@ variable {Rel V : Type*} [DecidableEq V] {F : CSP Rel V}
 
 /-- Constraints with positive scope, retaining positional multiplicity. -/
 @[expose] def positiveCount (F : CSP Rel V) : ℕ :=
-  (F.filter fun c => !c.2.isEmpty).length
+  (F.filter fun c => !c.scope.isEmpty).length
 
 omit [DecidableEq V] in
 /-- The number of positions is the cardinality of the original dependent occurrence type. -/
 theorem card_occurrence (F : CSP Rel V) : Fintype.card (Occurrence F) = F.vars.length := by
   calc
-    Fintype.card (Occurrence F) = ∑ i : Fin F.length, F[i.val].2.length := by
+    Fintype.card (Occurrence F) = ∑ i : Fin F.length, F[i.val].scope.length := by
       simp [Occurrence, Fintype.card_sigma]
-    _ = (List.ofFn fun i : Fin F.length => F[i.val].2.length).sum := by
+    _ = (List.ofFn fun i : Fin F.length => F[i.val].scope.length).sum := by
       rw [List.sum_ofFn]
-    _ = (F.map fun c => c.2.length).sum := by
-      exact congrArg List.sum (List.ofFn_getElem_eq_map F (fun c => c.2.length))
+    _ = (F.map fun c => c.scope.length).sum := by
+      exact congrArg List.sum (List.ofFn_getElem_eq_map F (fun c => c.scope.length))
     _ = F.vars.length := by simp [vars, List.length_flatMap]
 
 /-- Counting a variable in the occurrence list counts its actual positional fiber. -/
@@ -58,15 +58,15 @@ theorem card_occurrences_var (F : CSP Rel V) (v : V) :
     simpa only [he, List.count_eq_countP, beq_iff_eq] using hc.symm
   calc
     _ = ∑ o : Occurrence F, if o.var = v then 1 else 0 := by simp
-    _ = ∑ i : Fin F.length, ∑ j : Fin F[i.val].2.length,
-        if F[i.val].2[j.val] = v then 1 else 0 := by
+    _ = ∑ i : Fin F.length, ∑ j : Fin F[i.val].scope.length,
+        if F[i.val].scope[j.val] = v then 1 else 0 := by
       rw [Fintype.sum_sigma]
       rfl
-    _ = ∑ i : Fin F.length, F[i.val].2.count v := sum_congr rfl (fun i _ => hlocal _)
+    _ = ∑ i : Fin F.length, F[i.val].scope.count v := sum_congr rfl (fun i _ => hlocal _)
     _ = F.vars.count v := by
       rw [vars, List.count_flatMap]
       simp only [Function.comp_def]
-      rw [← List.ofFn_getElem_eq_map F (fun c => c.2.count v), List.sum_ofFn]
+      rw [← List.ofFn_getElem_eq_map F (fun c => c.scope.count v), List.sum_ofFn]
 
 /-- The two endpoints are exactly the finite fiber over an occurring edge variable. -/
 theorem EdgeInstance.card_occurrences_var (hF : EdgeInstance F) (v : V)
@@ -94,7 +94,7 @@ theorem EdgeInstance.count_vars (hF : EdgeInstance F) {v : V} (hv : v ∈ F.vars
 omit [DecidableEq V] in
 /-- Every actual scope of an edge instance has distinct variable names. -/
 theorem EdgeInstance.scope_nodup (hF : EdgeInstance F) (i : Fin F.length) :
-    F[i.val].2.Nodup := by
+    F[i.val].scope.Nodup := by
   apply List.nodup_iff_injective_get.mpr
   intro j k he
   have hp : (⟨i, j⟩ : Occurrence F) = ⟨i, k⟩ := hF.eq_of_constraint_eq he rfl
@@ -103,7 +103,7 @@ theorem EdgeInstance.scope_nodup (hF : EdgeInstance F) (i : Fin F.length) :
 /-- Distinct scope names and exactly two occurrences characterize an edge instance.
 The count ranges over the actual finite occurrence list, not a declared variable universe. -/
 theorem edgeInstance_of_count_vars
-    (hs : ∀ i : Fin F.length, F[i.val].2.Nodup)
+    (hs : ∀ i : Fin F.length, F[i.val].scope.Nodup)
     (hc : ∀ v ∈ F.vars, F.vars.count v = 2) : EdgeInstance F := by
   have hinj : ∀ o p : Occurrence F, o.var = p.var → o.1 = p.1 → o = p := by
     rintro ⟨i, j⟩ ⟨k, l⟩ hv hi
@@ -151,7 +151,7 @@ theorem positiveCount_le_length_vars (F : CSP Rel V) : F.positiveCount ≤ F.var
   induction F with
   | nil => simp [positiveCount, vars]
   | cons c F ih =>
-    by_cases he : c.2 = []
+    by_cases he : c.scope = []
     · simpa [positiveCount, vars, he] using ih
     · have hp := List.length_pos_iff.mpr he
       simp only [positiveCount, List.filter_cons, vars, List.flatMap_cons,

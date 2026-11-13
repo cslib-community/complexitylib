@@ -361,20 +361,20 @@ theorem ofUnweighted_wtSnd {R : Finset (BitString N × BitString N)} {L : ℕ}
     (ofUnweighted R L hL).wtSnd y = (#{q ∈ R | q.2 = y} : ℝ) := by
   simp [wtSnd, ofUnweighted]
 
+/-- A sum over `S` of terms each equal to `√L / #S` is at most `√L`. -/
+private theorem sum_le_sqrt_of_eq_div_card {α : Type*} {S : Finset α} {L : ℕ} {f : α → ℝ}
+    (hf : ∀ p ∈ S, f p = √L / (#S : ℝ)) : ∑ p ∈ S, f p ≤ √L := by
+  rw [sum_congr rfl hf, sum_const, nsmul_eq_mul, ← mul_div_assoc]
+  simpa only [div_one, mul_one] using mul_div_mul_left_le (c := (#S : ℝ)) (a := √L) (b := 1)
+    (div_nonneg (Real.sqrt_nonneg L) zero_le_one)
+
 theorem ofUnweighted_loadFst_le {R : Finset (BitString N × BitString N)} {L : ℕ}
     (hL : ∀ p ∈ R, ∀ i, p.1 i ≠ p.2 i →
       #{q ∈ R | q.1 i ≠ q.2 i ∧ q.1 = p.1} * #{q ∈ R | q.1 i ≠ q.2 i ∧ q.2 = p.2} ≤ L)
     (x : BitString N) (i : Fin N) :
     (ofUnweighted R L hL).loadFst x i ≤ √L := by
   classical
-  let S := R.filter fun p => p.1 i ≠ p.2 i ∧ p.1 = x
-  calc (ofUnweighted R L hL).loadFst x i = ∑ _p ∈ S, √L / (#S : ℝ) :=
-        sum_congr rfl fun p hp => by simp only [ofUnweighted, S, (mem_filter.1 hp).2.2]
-    _ = (#S : ℝ) * (√L / (#S : ℝ)) := by rw [sum_const, nsmul_eq_mul]
-    _ = (#S : ℝ) * √L / (#S : ℝ) := by rw [mul_div_assoc]
-    _ ≤ √L := by
-      simpa only [div_one, mul_one] using mul_div_mul_left_le (c := (#S : ℝ)) (a := √L) (b := 1)
-        (div_nonneg (Real.sqrt_nonneg L) zero_le_one)
+  exact sum_le_sqrt_of_eq_div_card fun p hp => by simp only [ofUnweighted, (mem_filter.1 hp).2.2]
 
 theorem ofUnweighted_loadSnd_le {R : Finset (BitString N × BitString N)} {L : ℕ}
     (hL : ∀ p ∈ R, ∀ i, p.1 i ≠ p.2 i →
@@ -382,14 +382,7 @@ theorem ofUnweighted_loadSnd_le {R : Finset (BitString N × BitString N)} {L : �
     (y : BitString N) (i : Fin N) :
     (ofUnweighted R L hL).loadSnd y i ≤ √L := by
   classical
-  let S := R.filter fun p => p.1 i ≠ p.2 i ∧ p.2 = y
-  calc (ofUnweighted R L hL).loadSnd y i = ∑ _p ∈ S, √L / (#S : ℝ) :=
-        sum_congr rfl fun p hp => by simp only [ofUnweighted, S, (mem_filter.1 hp).2.2]
-    _ = (#S : ℝ) * (√L / (#S : ℝ)) := by rw [sum_const, nsmul_eq_mul]
-    _ = (#S : ℝ) * √L / (#S : ℝ) := by rw [mul_div_assoc]
-    _ ≤ √L := by
-      simpa only [div_one, mul_one] using mul_div_mul_left_le (c := (#S : ℝ)) (a := √L) (b := 1)
-        (div_nonneg (Real.sqrt_nonneg L) zero_le_one)
+  exact sum_le_sqrt_of_eq_div_card fun p hp => by simp only [ofUnweighted, (mem_filter.1 hp).2.2]
 
 end WeightScheme
 

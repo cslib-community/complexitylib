@@ -73,25 +73,20 @@ private theorem literals_sourceRefinement {n : ℕ} (x : (Fin n → Bool) × (Fi
   let c := Fin.natAdd (Fintype.card (Fin n → Bool)) (Fintype.equivFin _ x.2)
   have hr : sources r = {y | y.1 = x.1} := row_source x.1
   have hc : sources c = {y | y.2 = x.2} := column_source x.2
-  refine Fin.addCases (fun j => ?_) (fun j => ?_) i hi
-  · refine Fin.addCases (fun k hk => ?_) (fun k hk => ?_) j
-    · refine ⟨r, hr ▸ rfl, ?_⟩
-      intro y hy
-      have hy' : y.1 = x.1 := by simpa only [hr, Set.mem_ofPred_eq] using hy
-      simpa only [literals, Fin.addCases_left, Fin.addCases_right, Set.mem_ofPred_eq, hy'] using hk
-    · refine ⟨c, hc ▸ rfl, ?_⟩
-      intro y hy
-      have hy' : y.2 = x.2 := by simpa only [hc, Set.mem_ofPred_eq] using hy
-      simpa only [literals, Fin.addCases_left, Fin.addCases_right, Set.mem_ofPred_eq, hy'] using hk
-  · refine Fin.addCases (fun k hk => ?_) (fun k hk => ?_) j
-    · refine ⟨r, hr ▸ rfl, ?_⟩
-      intro y hy
-      have hy' : y.1 = x.1 := by simpa only [hr, Set.mem_ofPred_eq] using hy
-      simpa only [literals, Fin.addCases_left, Fin.addCases_right, Set.mem_ofPred_eq, hy'] using hk
-    · refine ⟨c, hc ▸ rfl, ?_⟩
-      intro y hy
-      have hy' : y.2 = x.2 := by simpa only [hc, Set.mem_ofPred_eq] using hy
-      simpa only [literals, Fin.addCases_left, Fin.addCases_right, Set.mem_ofPred_eq, hy'] using hk
+  -- Each literal reads only the left or only the right half of a pair.
+  have hdep : (∀ y : (Fin n → Bool) × (Fin n → Bool), y.1 = x.1 → literals y i = literals x i) ∨
+      (∀ y : (Fin n → Bool) × (Fin n → Bool), y.2 = x.2 → literals y i = literals x i) := by
+    refine Fin.addCases (fun j => ?_) (fun j => ?_) i <;>
+      refine Fin.addCases (fun k => ?_) (fun k => ?_) j
+    · exact .inl fun y hy => by simp only [literals, Fin.addCases_left, hy]
+    · exact .inr fun y hy => by simp only [literals, Fin.addCases_left, Fin.addCases_right, hy]
+    · exact .inl fun y hy => by simp only [literals, Fin.addCases_left, Fin.addCases_right, hy]
+    · exact .inr fun y hy => by simp only [literals, Fin.addCases_right, hy]
+  rcases hdep with hdep | hdep
+  · exact ⟨r, hr ▸ rfl, fun y hy =>
+      (hdep y (by simpa only [hr, Set.mem_ofPred_eq] using hy)).trans hi⟩
+  · exact ⟨c, hc ▸ rfl, fun y hy =>
+      (hdep y (by simpa only [hc, Set.mem_ofPred_eq] using hy)).trans hi⟩
 
 /-- Cavalar–Oliveira's graph-to-Boolean cover transfer (Lemmas 39 and 48). The arbitrary
 admissibility predicate includes both unrestricted semifilters and semi-ultrafilters. -/

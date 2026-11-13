@@ -50,6 +50,7 @@ scheme's own experiment, which draws the public input and then runs `lrExperimen
 * `Cslib.Crypto.encMessagePair_msg₀_polyTime`, `Cslib.Crypto.encMessagePair_msg₁_polyTime`,
   `Cslib.Crypto.encMessagePair_mk_polyTime`: polynomial-time projections and construction of an
   encoded message pair.
+* `Cslib.Crypto.eval_lrExperiment`: the output distribution of the left-or-right experiment.
 
 ## References
 
@@ -166,5 +167,20 @@ def lrExperiment {I₁ M C σ : Type} (valid : I₁ → M → M → Bool) (enc :
     A.guess state challenge
   else
     return false
+
+/-- The output distribution of the left-or-right experiment: the adversary chooses a message pair
+and a state; on an admissible pair the challenge encrypts the message selected by `b` and the
+output is the adversary's guess, and on an inadmissible pair the output is `false`. -/
+@[simp] theorem eval_lrExperiment {I₁ M C σ : Type} (valid : I₁ → M → M → Bool)
+    (enc : I₁ → M → ProbComp C) (A : TwoStage I₁ (MessagePair M) C Bool σ) (b : Bool) (x : I₁) :
+    ProbComp.eval (lrExperiment valid enc A b x) =
+      (ProbComp.eval (A.choose x)).bind fun p =>
+        if valid x p.1.msg₀ p.1.msg₁ then
+          (ProbComp.eval (enc x (p.1.select b))).bind fun c => ProbComp.eval (A.guess p.2 c)
+        else PMF.pure false := by
+  simp only [lrExperiment, ProbComp.eval_bind]
+  congr 1
+  funext ⟨pair, state⟩
+  split <;> simp
 
 end Cslib.Crypto

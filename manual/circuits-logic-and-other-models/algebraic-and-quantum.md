@@ -29,7 +29,7 @@ count as gates and wiring is free, with no additive input-size cost. The linked
 [clients](../../CslibFrontierTests/BitBlastEncoding.lean) check addition over `ZMod 3` on all
 field inputs and a zero-cost wiring circuit with repeated outputs. This supplies the forward
 circuit simulation with an explicit encoding. For finite carriers the encoding is supplied
-below; reverse general-field simulation is separate.
+below. The reverse direction is supplied by the ring simulation described below.
 
 For a finite nonempty carrier, import
 [Boolean.FiniteSimulation](../../CslibFrontier/Computability/Circuit/Boolean/FiniteSimulation.lean)
@@ -51,11 +51,13 @@ The generic `bitBlast_program`, `bitBlast` and `bitBlast_synthesis` APIs in
 `enc`, `enc.symm`, `enc.symm_apply_apply`; `bitsOf` accepts the encoding function directly.
 Run `scripts/build.sh CslibFrontierTests.BitBlastEncoding` for
 [clients](../../CslibFrontierTests/BitBlastEncoding.lean) using the odd field `ZMod 3`, an unused
-code word, modulo-three addition and zero-width synthesis over a singleton. This advances one
-synthesis direction of Arora–Barak Chapter 14 Exercise 1. The compiler APIs above supply
-free-input circuit simulation and finite-carrier encoding. Reverse general-field simulation
-remains separate under
-[#4711](https://github.com/cslib-community/cslib-frontier/issues/4711).
+code word, modulo-three addition and zero-width synthesis over a singleton. Together with
+`Boolean.exists_ring_simulation` below, this supplies both constant-factor value-simulation
+directions of Arora–Barak Chapter 14 Exercise 1 for each fixed finite field, with free input
+wires and an explicit finite-carrier encoding. This does not assert formal polynomial identity,
+uniform compiler runtime or correctness of the forward encoding on unused bit words.
+The broader [textbook objective](https://github.com/cslib-community/cslib-frontier/issues/4711)
+remains open.
 
 [SigmaPiOp](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Arithmetic/SigmaPi.lean#L109) permits unbounded sums with edge coefficients and unbounded products. Product depth counts multiplication layers only; weighted sums contribute zero to that depth. Set-multilinearity records that products combine disjoint variable groups. [SPCircuit](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Arithmetic/SPCircuit.lean#L89) provides shared DAGs in this basis. Its `IsSimple` condition requires distinct input wires at product gates; the unfolding bound used by the constant-product-depth lower-bound development assumes this condition.
 
@@ -83,6 +85,25 @@ use the shared topic module directly. Run `scripts/build.sh CslibFrontierTests.A
 for a [client](../../CslibFrontierTests/ArithmeticSynthesis.lean) that interprets string-labelled
 constants as natural-number lengths, without importing VP or giving the labels a semiring.
 
+## Boolean circuits over a ring
+
+Import [Boolean.ArithmeticRing](../../CslibFrontier/Computability/Circuit/Boolean/ArithmeticRing.lean)
+and use `Boolean.exists_ring_simulation (R := R) c` for a ring `R`. It returns an arithmetic
+circuit with at most `5 * c.size` gates. Represent Boolean input `x i` by
+`((x i).toNat : R)`; every output represents the corresponding Boolean output the same way.
+This works in odd characteristic and over infinite rings. It does not assert agreement on
+arbitrary ring-valued inputs. Constants, addition and multiplication are the only arithmetic
+gates; subtraction is implemented using the constant `-1`, which is counted in the budget.
+Wiring is free. The zero/one representation is faithful when `R` is nontrivial.
+
+This supplies the Boolean-to-arithmetic direction of the finite-field exercise independently
+of characteristic. The finite-carrier construction above supplies the field-element encoding
+for the arithmetic-to-Boolean direction.
+These are value simulations, without compiler-runtime or formal-polynomial identity claims.
+Run `scripts/build.sh CslibFrontierTests.BooleanArithmetic` for the
+[complete clients](../../CslibFrontierTests/BooleanArithmetic.lean), including all Boolean
+inputs to a two-output circuit over `ZMod 3`, zero-input constants and zero-cost integer wiring.
+
 ## Boolean and two-element arithmetic circuits
 
 Import [Boolean.Arithmetic](../../CslibFrontier/Computability/Circuit/Boolean/Arithmetic.lean)
@@ -97,7 +118,7 @@ The `arithmetic_simulates_boolean` and `boolean_simulates_arithmetic` gate-budge
 also work with the generic `Circuit.exists_simulationWithCost` API. These are circuit-value
 and nonuniform size results, not formal polynomial identities or certified translation runtimes.
 They establish the GF(2) milestone, not the exercise for every fixed finite field; the latter
-still needs bit encodings and the general-field directions. Existing `Synthesis.bitBlast`
+still needs finite-field encodings and the arithmetic-to-Boolean direction. Existing `Synthesis.bitBlast`
 handles an equivalence to a fixed-width bit cube and should be reused where applicable.
 Run `scripts/build.sh CslibFrontierTests.BooleanArithmetic` for the
 [checked clients](../../CslibFrontierTests/BooleanArithmetic.lean): multiple XOR/AND and OR/NOT
@@ -619,6 +640,8 @@ lake build CslibFrontier.Computability.QueryComplexity.Quantum.DeutschJozsa \
 ```
 
 ## Quantum Fourier transform and exact period finding
+
+The [2007 draft Chapter 20 audit](../../results/arora-barak-2007.md#chapter-20-quantum-computation) maps the numbered quantum results to their precise models. It distinguishes exact period finding from efficient QFT synthesis and general order finding, and records source defects in the factoring and continued-fraction statements.
 
 This is the quantum core of Shor's algorithm in the case where the period divides the register size. It works at the level of states and unitary matrices, using `unitaryEquiv`, `ket` and `measure`; it is not phrased in the query model of the previous section or in the uniform circuits of `BQP`.
 

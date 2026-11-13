@@ -12,6 +12,7 @@ public import CslibFrontier.Languages.Probabilistic.Selection
 import CslibFrontier.Computability.Probabilistic.Selection
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Languages.Probabilistic.Norm
+import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Tactic.PPT
 
 /-!
@@ -100,7 +101,7 @@ theorem eval_predictionGame_selectPredictor (sample : ℕ → ProbComp (List Boo
       ProbComp.eval (OracleComp.selectBest (count n) (trials n)
         (fun i => predictionGame sample (fun n => predict n i) n) >>=
           fun i => predictionGame sample (fun n => predict n i) n) := by
-  simp only [pmf_norm, predictionGame, selectPredictor, bind_pure_comp]
+  simp only [pmf_norm, predictionGame, predictionExperiment, selectPredictor, bind_pure_comp]
   rw [PMF.bind_comm (ProbComp.eval (sample n))]
 
 /-- The selected predictor's error is bounded by every candidate's error plus estimation and
@@ -153,7 +154,7 @@ theorem HasGapWithAdvice.eventually_indexed_error_ge {pair : SamplablePair} {gap
           ((x.1.1.1, x.1.2), x.2))
       fun_prop
     · fun_prop
-  have hselected := hgap.eventually_error_ge _ hefficient
+  have hselected := SamplablePair.hasGapWithAdvice_iff_word.mp hgap _ hefficient
   have hdecay := (negligible_geometric (ratio := (1 / 2 : ℝ≥0)) (by norm_num))
     |>.polynomiallyBounded_mul hcount.polynomiallyBounded
   have hsmall := hdecay.eventually_le_inv_polynomial
@@ -161,6 +162,7 @@ theorem HasGapWithAdvice.eventually_indexed_error_ge {pair : SamplablePair} {gap
       (PolynomiallyBounded.const 2).mul htolerance.polynomiallyBounded)
     (fun n => Nat.mul_pos (by decide) (hpos n))
   filter_upwards [hselected, hsmall] with n hn hsmall
+  rw [PMF.toReal_true_eq_one_sub] at hn
   intro i hi
   have herror := selectPredictor_error_le pair.sample (fun n => predict (n, advice n)) count id
     (fun n => 4 * inverseTolerance n) n i hi (by have := hpos n; positivity)

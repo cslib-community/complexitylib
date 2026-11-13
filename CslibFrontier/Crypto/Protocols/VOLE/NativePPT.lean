@@ -62,144 +62,25 @@ enc_structure encInput : Input where
 
 attribute [fun_prop] encInput_wires_polyTime encInput_gates_polyTime encInput_mk_polyTime
 
-/-- The key and every receiver tag are explicitly encoded (`enc_structure` requires
-unparameterized structures, so this parameterized structure defines the identical field-pair
-embedding). -/
-def encShare {F : Type} (eF : F ↪ List Bool) : Share F ↪ List Bool :=
-  ⟨fun s => encPair eF (encList eF) (s.key, s.tags), fun a b h => by
-    have h' := (encPair eF (encList eF)).injective h
-    cases a; cases b; simp_all⟩
+section Encodings
 
-@[simp]
-theorem encShare_apply {F : Type} (eF : F ↪ List Bool) (s : Share F) :
-    encShare eF s = encPair eF (encList eF) (s.key, s.tags) :=
-  rfl
+variable {F Result : Type}
 
-@[fun_prop]
-theorem encShare_key_polyTime {F γ : Type} {eF : F ↪ List Bool} {encIn : γ ↪ List Bool}
-    {g : γ → Share F} (hg : ComputableInPolyTime g encIn (encShare eF)) :
-    ComputableInPolyTime (fun a => (g a).key) encIn eF :=
-  (ComputableInPolyTime.fst eF (encList eF)).comp
-    ((ComputableInPolyTime.of_eq fun _ => rfl :
-      ComputableInPolyTime (fun s : Share F => (s.key, s.tags)) (encShare eF)
-        (encPair eF (encList eF))).comp hg)
+/-- The key and every receiver tag are explicitly encoded. -/
+enc_structure encShare (eF : F ↪ List Bool) : Share F where
+  key : eF, tags : (encList eF)
 
-@[fun_prop]
-theorem encShare_tags_polyTime {F γ : Type} {eF : F ↪ List Bool} {encIn : γ ↪ List Bool}
-    {g : γ → Share F} (hg : ComputableInPolyTime g encIn (encShare eF)) :
-    ComputableInPolyTime (fun a => (g a).tags) encIn (encList eF) :=
-  (ComputableInPolyTime.snd eF (encList eF)).comp
-    ((ComputableInPolyTime.of_eq fun _ => rfl :
-      ComputableInPolyTime (fun s : Share F => (s.key, s.tags)) (encShare eF)
-        (encPair eF (encList eF))).comp hg)
-
-@[fun_prop]
-theorem encShare_mk_polyTime {F γ : Type} {eF : F ↪ List Bool} {encIn : γ ↪ List Bool}
-    {key : γ → F} {tags : γ → List F}
-    (hkey : ComputableInPolyTime key encIn eF)
-    (htags : ComputableInPolyTime tags encIn (encList eF)) :
-    ComputableInPolyTime (fun a => Share.mk (key a) (tags a)) encIn (encShare eF) :=
-  ComputableInPolyTime.of_enc_eq (hkey.prod htags) fun _ => rfl
-
-/-- The tuple encoding of the fields of `View`. -/
-abbrev encViewFields {F Result : Type} (eF : F ↪ List Bool) (eResult : Result ↪ List Bool) :
-    (Share F × List F × List F × (F × F) × Result) ↪ List Bool :=
-  encPair (encShare eF) (encPair (encList eF)
-    (encPair (encList eF) (encPair (encPair eF eF) eResult)))
+attribute [fun_prop] encShare_key_polyTime encShare_tags_polyTime encShare_mk_polyTime
 
 /-- The complete receiver output, including every correction and transmitted weight. -/
-def encView {F Result : Type} (eF : F ↪ List Bool) (eResult : Result ↪ List Bool) :
-    View F Result ↪ List Bool :=
-  ⟨fun v => encViewFields eF eResult (v.share, v.corrections, v.weights, v.reply, v.result),
-    fun a b h => by
-      have h' := (encViewFields eF eResult).injective h
-      cases a; cases b; simp_all⟩
+enc_structure encView (eF : F ↪ List Bool) (eResult : Result ↪ List Bool) : View F Result where
+  share : (encShare eF), corrections : (encList eF), weights : (encList eF),
+  reply : (encPair eF eF), result : eResult
 
-@[simp]
-theorem encView_apply {F Result : Type} (eF : F ↪ List Bool) (eResult : Result ↪ List Bool)
-    (v : View F Result) :
-    encView eF eResult v =
-      encViewFields eF eResult (v.share, v.corrections, v.weights, v.reply, v.result) :=
-  rfl
+attribute [fun_prop] encView_share_polyTime encView_corrections_polyTime
+  encView_weights_polyTime encView_reply_polyTime encView_result_polyTime encView_mk_polyTime
 
-@[fun_prop]
-theorem encView_share_polyTime {F Result γ : Type} {eF : F ↪ List Bool}
-    {eResult : Result ↪ List Bool} {encIn : γ ↪ List Bool} {g : γ → View F Result}
-    (hg : ComputableInPolyTime g encIn (encView eF eResult)) :
-    ComputableInPolyTime (fun a => (g a).share) encIn (encShare eF) :=
-  (ComputableInPolyTime.fst (encShare eF) _).comp
-    ((ComputableInPolyTime.of_eq fun _ => rfl :
-      ComputableInPolyTime (fun v : View F Result =>
-        (v.share, v.corrections, v.weights, v.reply, v.result))
-        (encView eF eResult) (encViewFields eF eResult)).comp hg)
-
-@[fun_prop]
-theorem encView_corrections_polyTime {F Result γ : Type} {eF : F ↪ List Bool}
-    {eResult : Result ↪ List Bool} {encIn : γ ↪ List Bool} {g : γ → View F Result}
-    (hg : ComputableInPolyTime g encIn (encView eF eResult)) :
-    ComputableInPolyTime (fun a => (g a).corrections) encIn (encList eF) :=
-  ((ComputableInPolyTime.fst (encList eF) _).comp
-    ((ComputableInPolyTime.snd (encShare eF) _).comp
-      ((ComputableInPolyTime.of_eq fun _ => rfl :
-        ComputableInPolyTime (fun v : View F Result =>
-          (v.share, v.corrections, v.weights, v.reply, v.result))
-          (encView eF eResult) (encViewFields eF eResult)).comp hg)))
-
-@[fun_prop]
-theorem encView_weights_polyTime {F Result γ : Type} {eF : F ↪ List Bool}
-    {eResult : Result ↪ List Bool} {encIn : γ ↪ List Bool} {g : γ → View F Result}
-    (hg : ComputableInPolyTime g encIn (encView eF eResult)) :
-    ComputableInPolyTime (fun a => (g a).weights) encIn (encList eF) :=
-  ((ComputableInPolyTime.fst (encList eF) _).comp
-    ((ComputableInPolyTime.snd (encList eF) _).comp
-      ((ComputableInPolyTime.snd (encShare eF) _).comp
-        ((ComputableInPolyTime.of_eq fun _ => rfl :
-          ComputableInPolyTime (fun v : View F Result =>
-            (v.share, v.corrections, v.weights, v.reply, v.result))
-            (encView eF eResult) (encViewFields eF eResult)).comp hg))))
-
-@[fun_prop]
-theorem encView_reply_polyTime {F Result γ : Type} {eF : F ↪ List Bool}
-    {eResult : Result ↪ List Bool} {encIn : γ ↪ List Bool} {g : γ → View F Result}
-    (hg : ComputableInPolyTime g encIn (encView eF eResult)) :
-    ComputableInPolyTime (fun a => (g a).reply) encIn (encPair eF eF) :=
-  ((ComputableInPolyTime.fst (encPair eF eF) eResult).comp
-    ((ComputableInPolyTime.snd (encList eF) _).comp
-      ((ComputableInPolyTime.snd (encList eF) _).comp
-        ((ComputableInPolyTime.snd (encShare eF) _).comp
-          ((ComputableInPolyTime.of_eq fun _ => rfl :
-            ComputableInPolyTime (fun v : View F Result =>
-              (v.share, v.corrections, v.weights, v.reply, v.result))
-              (encView eF eResult) (encViewFields eF eResult)).comp hg)))))
-
-@[fun_prop]
-theorem encView_result_polyTime {F Result γ : Type} {eF : F ↪ List Bool}
-    {eResult : Result ↪ List Bool} {encIn : γ ↪ List Bool} {g : γ → View F Result}
-    (hg : ComputableInPolyTime g encIn (encView eF eResult)) :
-    ComputableInPolyTime (fun a => (g a).result) encIn eResult :=
-  ((ComputableInPolyTime.snd (encPair eF eF) eResult).comp
-    ((ComputableInPolyTime.snd (encList eF) _).comp
-      ((ComputableInPolyTime.snd (encList eF) _).comp
-        ((ComputableInPolyTime.snd (encShare eF) _).comp
-          ((ComputableInPolyTime.of_eq fun _ => rfl :
-            ComputableInPolyTime (fun v : View F Result =>
-              (v.share, v.corrections, v.weights, v.reply, v.result))
-              (encView eF eResult) (encViewFields eF eResult)).comp hg)))))
-
-@[fun_prop]
-theorem encView_mk_polyTime {F Result γ : Type} {eF : F ↪ List Bool}
-    {eResult : Result ↪ List Bool} {encIn : γ ↪ List Bool}
-    {share : γ → Share F} {corrections weights : γ → List F}
-    {reply : γ → F × F} {result : γ → Result}
-    (hshare : ComputableInPolyTime share encIn (encShare eF))
-    (hcorr : ComputableInPolyTime corrections encIn (encList eF))
-    (hweights : ComputableInPolyTime weights encIn (encList eF))
-    (hreply : ComputableInPolyTime reply encIn (encPair eF eF))
-    (hresult : ComputableInPolyTime result encIn eResult) :
-    ComputableInPolyTime (fun a => View.mk (share a) (corrections a) (weights a)
-      (reply a) (result a)) encIn (encView eF eResult) :=
-  ComputableInPolyTime.of_enc_eq
-    (hshare.prod (hcorr.prod (hweights.prod (hreply.prod hresult)))) fun _ => rfl
+end Encodings
 
 variable {F α : Type} [CommRing F] [Finite F]
   {eF : F ↪ List Bool} {input : α ↪ List Bool}
@@ -377,7 +258,7 @@ theorem isPPTOn_simulate (sample : ProbComp F) (receiver : Receiver F I First St
   have hd := hp.fst'.snd'
   have hraw := hp.snd'.fst'
   have hstate := hp.snd'.snd'
-  have hshare := encShare_mk_polyTime hdelta hq
+  have hshare := encShare_mk_polyTime eF hdelta hq
   have hshape := hlayout.comp hinput
   have hlen := (ComputableInPolyTime.length_list encGate).comp (encInput_gates_polyTime hshape)
   have hr := computableInPolyTime_weights hlen hraw

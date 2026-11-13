@@ -42,7 +42,7 @@ open SimpleGraph Cslib.Logic.PL Cslib.Algorithms.Lean Cslib.Algorithms.Lean.Tree
 
 /-- `3`-coloring CSP on `P₄`: edges `0-1`, `1-2`, `2-3`. -/
 @[expose] def path4CSP : CSP Unit (Fin 4) :=
-  [((), [0, 1]), ((), [1, 2]), ((), [2, 3])]
+  [⟨(), [0, 1]⟩, ⟨(), [1, 2]⟩, ⟨(), [2, 3]⟩]
 
 /-- Concrete `NiceTree` covering edges `{0, 1}`, `{1, 2}`, `{2, 3}` with width `1`. -/
 @[expose] def path4NiceTree : NiceTree (Fin 4) :=
@@ -107,7 +107,7 @@ example : (cspDecideRootedM 3 pos3 (neqSem 3) path4CSP path4Rooted).ret = true :
 
 /-- `K₄` all-pairs inequality CSP over `Fin 4`. -/
 @[expose] def k4CSP : CSP Unit (Fin 4) :=
-  [((), [0, 1]), ((), [0, 2]), ((), [0, 3]), ((), [1, 2]), ((), [1, 3]), ((), [2, 3])]
+  [⟨(), [0, 1]⟩, ⟨(), [0, 2]⟩, ⟨(), [0, 3]⟩, ⟨(), [1, 2]⟩, ⟨(), [1, 3]⟩, ⟨(), [2, 3]⟩]
 
 /-- Single-bag `NiceTree` over `Fin 4` introducing `{0, 1, 2, 3}` then forgetting all. -/
 @[expose] def k4NiceTree : NiceTree (Fin 4) :=
@@ -145,7 +145,7 @@ example : ¬CSP.Satisfiable (neqSem 3) k4CSP := by
 
 /-- CSP on `Fin 3` constraining only `{0, 1}`. -/
 @[expose] def activePairCSP : CSP Unit (Fin 3) :=
-  [((), [0, 1])]
+  [⟨(), [0, 1]⟩]
 
 /-- Decomposition over `activePairCSP.activePrimalGraph`: variable `2` is omitted from all bags. -/
 def activePairRooted : activePairCSP.activePrimalGraph.RootedTreeDecomposition 0 where

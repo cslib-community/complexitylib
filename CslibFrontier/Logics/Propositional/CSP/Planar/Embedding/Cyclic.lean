@@ -34,9 +34,11 @@ private noncomputable def reindexOfFn {F : CSP Rel V} {n : ℕ} {v : Fin n → V
     (p q : Equiv.Perm (Fin n))
     (hq : ∀ j, q (finRotate n j) = finRotate n (q j))
     (hrev : ∀ j, (q j).rev = p j.rev) : Witness F (List.ofFn (v ∘ p)) := by
-  let B := F.map (fun c => (some c.1, c.2))
+  let B := F.map (fun c => Constraint.mk (some c.rel) c.scope)
   let scope : Fin n → V := fun j => v j.rev
-  have hs : verifyRotationCertificate (B ++ [(none, List.ofFn scope)]) w.certificate = true := by
+  have hs :
+      verifyRotationCertificate (B ++ [Constraint.mk none (List.ofFn scope)]) w.certificate =
+        true := by
     simpa only [B, scope, probeBody, List.reverse_ofFn] using w.probe_accepted
   have he := (verifyRotationCertificate_eq_true_iff _ _).mp hs
   have hrot := he.choose

@@ -13,9 +13,9 @@ namespace CslibFrontierTests.ThreeXOR
 open Cslib.Logic.PL Cslib.Complexity Turing.MultiTapeTM
 
 /-- Opposite parity requirements on the same three distinct variables. -/
-def inconsistent : CSP Bool ℕ := [(false, [0, 1, 2]), (true, [0, 1, 2])]
+def inconsistent : CSP Bool ℕ := [⟨false, [0, 1, 2]⟩, ⟨true, [0, 1, 2]⟩]
 
-private theorem scopes_inconsistent : ∀ c ∈ inconsistent, c.2.length = 3 := by decide
+private theorem scopes_inconsistent : ∀ c ∈ inconsistent, c.scope.length = 3 := by decide
 
 /-- The compiler introduces no auxiliary variables and emits eight clauses. -/
 example : (inconsistent.toCNFBounded 3 CSP.paritySem).length = 8 := by decide
@@ -40,15 +40,15 @@ example : (inconsistent.toCNFBounded 3 CSP.paritySem).IsExactThreeDistinct :=
   CSP.isExactThreeDistinct_toCNFBounded_parity (by decide)
 
 /-- Repeated variables are permitted: `x ⊕ x ⊕ x = true` is satisfiable by `x = true`. -/
-example : (CSP.toCNFBounded 3 CSP.paritySem [(true, [0, 0, 0])] : CNF ℕ).Satisfiable :=
+example : (CSP.toCNFBounded 3 CSP.paritySem [⟨true, [0, 0, 0]⟩] : CNF ℕ).Satisfiable :=
   ⟨fun _ => true, by decide⟩
 
 /-- The same repeated-variable constraint has exactly one false clause at `x = false`. -/
-example : (CSP.toCNFBounded 3 CSP.paritySem [(true, [0, 0, 0])] : CNF ℕ).countUnsat
+example : (CSP.toCNFBounded 3 CSP.paritySem [⟨true, [0, 0, 0]⟩] : CNF ℕ).countUnsat
     (fun _ => false) = 1 := by decide
 
 /-- An even-parity equation is satisfied by the zero assignment. -/
-example : (CSP.toCNFBounded 3 CSP.paritySem [(false, [0, 1, 2])] : CNF ℕ).eval
+example : (CSP.toCNFBounded 3 CSP.paritySem [⟨false, [0, 1, 2]⟩] : CNF ℕ).eval
     (fun _ => false) = true := by decide
 
 /-- The empty system produces the empty formula and has value zero. -/
@@ -56,10 +56,10 @@ example : (CSP.toCNFBounded 3 CSP.paritySem ([] : CSP Bool ℕ)).unsatVal = 0 :=
   exact (CNF.unsatVal_eq_zero_iff _).2 ⟨fun _ => false, rfl⟩
 
 /-- The total compiler retains a false nullary constraint as an empty clause. -/
-example : CSP.toCNFBounded 3 CSP.paritySem [(true, ([] : List ℕ))] = [[]] := by decide
+example : CSP.toCNFBounded 3 CSP.paritySem [⟨true, ([] : List ℕ)⟩] = [[]] := by decide
 
 /-- A scope beyond the width guard is discarded, outside the stated three-variable domain. -/
-example : CSP.toCNFBounded 3 CSP.paritySem [(true, ([0, 1, 2, 3] : List ℕ))] = [] := by decide
+example : CSP.toCNFBounded 3 CSP.paritySem [⟨true, ([0, 1, 2, 3] : List ℕ)⟩] = [] := by decide
 
 /-- Runtime certificates compose with a real client counting the output clauses. -/
 example : ComputableInPolyTime

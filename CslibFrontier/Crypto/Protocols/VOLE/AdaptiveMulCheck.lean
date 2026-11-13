@@ -133,8 +133,8 @@ private theorem uniform_maskedReply {α : Type} (left right output : ι → Fin 
       ring
   have he := congrArg
     (fun p => p.bind fun a => f (a, maskedMulCheckValue left right output delta q d r - a * delta))
-    (PMF.uniformOfFintype_map_equiv (Equiv.addLeft cross))
-  simpa only [pmf_norm, Equiv.coe_addLeft, hreply] using he
+    (PMF.uniformOfFintype_map_add_left cross)
+  simpa only [pmf_norm, hreply] using he
 
 /-- The full receiver view in one actual interaction. Receiver initialization runs after its
 setup share has been cached and before prover initialization; later effects run in protocol order.
