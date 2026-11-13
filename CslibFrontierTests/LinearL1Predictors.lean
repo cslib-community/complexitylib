@@ -8,6 +8,7 @@ module
 -- upstream: local-only (test driver)
 
 public import CslibFrontier.MachineLearning.Rademacher.LinearL1
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.LogTwoPow
 
 /-!
 # Checks for ℓ₁-bounded linear predictors
@@ -26,10 +27,6 @@ namespace CslibFrontierTests.LinearL1Predictors
 
 open Cslib.MachineLearning Cslib.BitString
 
-theorem log_two_lt_one : Real.log 2 < 1 := by
-  have := Real.log_lt_sub_one_of_pos (by norm_num : (0 : ℝ) < 2) (by norm_num)
-  linarith
-
 /-- Halving weights `(1/2, -1/2)` have ℓ₁ norm `1`. -/
 example : (fun z : Fin 2 → ℝ => ![1 / 2, -1 / 2] ⬝ᵥ z) ∈ l1LinearPredictors id 1 :=
   mem_l1LinearPredictors.2 ⟨![1 / 2, -1 / 2], by norm_num [Fin.sum_univ_two], rfl⟩
@@ -43,7 +40,7 @@ theorem empiricalRademacherComplexity_square_lt (S : Fin 100 → Fin 2 → ℝ)
     ?_
   rw [one_mul, one_mul, Real.sqrt_lt' (by norm_num), show ((2 : ℕ) : ℝ) = 2 by norm_num,
     show (2 : ℝ) * 2 = 2 ^ 2 by norm_num, Real.log_pow]
-  have := log_two_lt_one
+  have := Real.log_two_lt_one
   norm_num
   linarith
 
@@ -61,7 +58,7 @@ theorem signFeature_bound_lt :
     2 * 1 * √(2 * Real.log (2 * (1 : ℕ)) / (10000 : ℕ)) < (1 / 25 : ℝ) := by
   have hs : √(2 * Real.log 2 / 10000) < 1 / 50 := by
     rw [Real.sqrt_lt' (by norm_num)]
-    have := log_two_lt_one
+    have := Real.log_two_lt_one
     linarith
   simp only [Nat.cast_one, mul_one, Nat.cast_ofNat]
   linarith
