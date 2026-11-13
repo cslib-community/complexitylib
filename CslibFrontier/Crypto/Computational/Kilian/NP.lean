@@ -71,15 +71,15 @@ theorem exists_kilianSound_of_mem_NP (hH : HashFamily H) {enc : α ↪ List Bool
             (kilianRespond H V k x table ρs) ≤
           C * (n + 1) ^ 2 * (Nat.log 2 (enc x).length + 1) := by
   obtain ⟨V, c, d, hV, hpcp⟩ := NP_subset_PCP_log enc hL
-  refine ⟨V, c, hV, hpcp.1, fun x => ⟨fun hx => ?_, fun ⟨table, htable⟩ => ?_⟩,
+  refine ⟨V, c, hV, hpcp.coins_le, fun x => ⟨fun hx => ?_, fun ⟨table, htable⟩ => ?_⟩,
     fun x table htable n => eval_kilianHonestGame H V htable n, hH.kilianSound hV hpcp,
     _, fun n k x table ρs hk hn hρs => kilianCommunication_honest_le_log hH.length_eq hk hn hρs
-      (fun ρ hρ => hpcp.2.1 x ρ hρ) (hpcp.1 x)⟩
-  · obtain ⟨proof, hproof⟩ := hpcp.2.2.1 x hx
+      (fun ρ hρ => hpcp.length_queries_le x ρ hρ) (hpcp.coins_le x)⟩
+  · obtain ⟨proof, hproof⟩ := hpcp.complete x hx
     exact ⟨_, by simpa using PCPVerifier.tableVerifier_complete x proof [] hproof⟩
   · by_contra hx
     obtain ⟨proof, hproof⟩ := PCPVerifier.tableVerifier_sound x table htable
-    have hs := hpcp.2.2.2 x hx proof
+    have hs := hpcp.sound x hx proof
     have hc : acceptCount (fun y => V.accepts y.1 proof y.2) x (V.coins x) = 2 ^ V.coins x := by
       simp [acceptCount, hproof]
     rw [hc] at hs

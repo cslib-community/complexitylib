@@ -66,7 +66,7 @@ variable {V} {enc : α ↪ List Bool} {c : ℕ}
 private theorem coins_unary (hV : V.PolyTime enc)
     (hcoins : ∀ a, V.coins a ≤ c * (Nat.log 2 (enc a).length + 1)) :
     ComputableInPolyTime V.coins enc encUnary :=
-  .binary_to_unary_bounded hV.1 (by fun_prop) hcoins
+  .binary_to_unary_bounded hV.coins (by fun_prop) hcoins
 
 private theorem enum_coins (hV : V.PolyTime enc)
     (hcoins : ∀ a, V.coins a ≤ c * (Nat.log 2 (enc a).length + 1)) :
@@ -85,7 +85,7 @@ theorem isPolyTime_queryTable (hV : V.PolyTime enc)
     (hcoins : ∀ a, V.coins a ≤ c * (Nat.log 2 (enc a).length + 1)) :
     ComputableInPolyTime V.queryTable enc (encList encNat) := by
   have he := enum_coins hV hcoins
-  have hq := hV.2.1
+  have hq := hV.queries
   unfold queryTable
   fun_prop
 
@@ -94,8 +94,8 @@ theorem isPolyTime_tableVerifier (hV : V.PolyTime enc)
     (hcoins : ∀ a, V.coins a ≤ c * (Nat.log 2 (enc a).length + 1)) :
     ComputableInPolyTime V.tableVerifier (encPair enc encBits) encBool := by
   have he := enum_coins hV hcoins
-  have hq := hV.2.1
-  have hv := hV.2.2
+  have hq := hV.queries
+  have hv := hV.verdict
   have ht := isPolyTime_queryTable hV hcoins
   have hinput := ComputableInPolyTime.fst (encPair enc encBits) encBits
   have hword := ComputableInPolyTime.snd (encPair enc encBits) encBits
