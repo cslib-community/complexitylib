@@ -6651,6 +6651,8 @@ public import CslibFrontier.MachineLearning.LossMinimization.RLM
 public import CslibFrontier.MachineLearning.LossMinimization.Smooth
 public import CslibFrontier.MachineLearning.LossMinimization.Squared
 public import CslibFrontier.MachineLearning.LossMinimization.Stability
+public import CslibFrontier.MachineLearning.LossMinimization.StochasticGradientDescent
+public import CslibFrontier.MachineLearning.OnlineLearning.ConvexOnlineToBatch
 public import CslibFrontier.MachineLearning.OnlineLearning.FTRL
 public import CslibFrontier.MachineLearning.OnlineLearning.Hedge
 public import CslibFrontier.MachineLearning.OnlineLearning.HighProbabilityOnlineToBatch
