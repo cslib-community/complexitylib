@@ -498,8 +498,8 @@ theorem computationalSpecialHVZK_prgWitnessSigma
           chvzkRealGame (prgWitnessSigma generator length) (fun _ _ _ => True)
             prgWitnessEncoding (fun _ => encBool) PMF.pure adversary n =
           distinguishingGame (generatorEnsemble generator n) (D n) := by
-        simp only [chvzkRealGame, chvzkGameWith, distinguishingGame, D, PMF.monad_bind_eq_bind,
-          PMF.pure_bind, ProbComp.eval_bind]
+        simp only [chvzkRealGame, chvzkGameWith, distinguishingGame_eq_bind, D,
+          PMF.monad_bind_eq_bind, PMF.pure_bind, ProbComp.eval_bind]
         rw [PMF.bind_comm (generatorEnsemble generator n) (ProbComp.eval (adversary.choose n n))]
         refine PMF.bind_congr_on_support _ _ _ fun ⟨⟨xw, yw⟩, state⟩ _ => ?_
         by_cases hy : yw = encUnit ()
@@ -553,8 +553,8 @@ theorem computationalSpecialHVZK_prgWitnessSigma
           chvzkSimGame (fun _ _ _ => True) prgWitnessEncoding (fun _ => encBool)
             PMF.pure (prgWitnessSim length) adversary n =
           distinguishingGame (BitString.uniformList (length n)) (D n) := by
-        simp only [chvzkSimGame, chvzkGameWith, distinguishingGame, D, PMF.monad_bind_eq_bind,
-          PMF.pure_bind, ProbComp.eval_bind]
+        simp only [chvzkSimGame, chvzkGameWith, distinguishingGame_eq_bind, D,
+          PMF.monad_bind_eq_bind, PMF.pure_bind, ProbComp.eval_bind]
         rw [PMF.bind_comm (BitString.uniformList (length n)) (ProbComp.eval (adversary.choose n n))]
         refine PMF.bind_congr_on_support _ _ _ fun ⟨⟨xw, yw⟩, state⟩ _ => ?_
         by_cases hy : yw = encUnit ()

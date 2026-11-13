@@ -506,8 +506,8 @@ theorem exists_familyInverter_inversion_le {m : ℕ → ℕ} {core : ℕ → Lis
           (ProbComp.eval (adversary M (wrappedImage n (core n x₀)))).map fun candidate =>
             reindex m core candidate == wrappedImage n (core n x₀)) := by
       rw [PMF.bind_map]
-      simp only [inversionGame, ProbComp.eval_bind, BitString.eval_sampleList, ProbComp.eval_pure,
-        PMF.map]
+      simp only [inversionGame, inversionExperiment, ProbComp.eval_bind, BitString.eval_sampleList,
+        ProbComp.eval_pure, PMF.map]
       apply PMF.bind_congr_on_support
       intro input hinput
       have hlen : input.length = M := BitString.length_of_mem_support_uniformList hinput
