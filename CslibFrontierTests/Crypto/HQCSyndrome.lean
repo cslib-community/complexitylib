@@ -4,14 +4,15 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import CslibFrontier.Crypto.Game.Experiment
 import CslibFrontier.Crypto.Primitives.HQC.Syndrome
 import Mathlib.Data.Fin.VecNotation
 
-/-! Finite checks for the HQC syndrome laws, parity baselines, and shared third secret. -/
+/-! Finite checks for the HQC syndrome laws, continuation clients, and truncation semantics. -/
 
 namespace CslibFrontierTests.HQCSyndrome
 
-open Cslib Cslib.BitString Cslib.Crypto.HQC Cslib.Probability Finset
+open Cslib Cslib.BitString Cslib.Crypto Cslib.Crypto.HQC Cslib.Probability Finset
 
 -- The source's ideal support sampler supplies exactly the fixed-weight law used by the
 -- distributions, including the boundary layers.
@@ -50,6 +51,47 @@ example :
       PMF.pure false := by
   simpa [syndromeParity] using map_parity_uniformSyndromeLaw 4 1 true
 
+private def parityContinuation (sample : SyndromeSample 4) : Experiment :=
+  pure (parity 4 sample.value)
+
+-- The distribution laws compose directly with the existing security-game continuation API.
+example :
+    Game.withSetup (realSyndromeLaw 4 1 (by decide) true) parityContinuation =
+      PMF.pure false := by
+  change (realSyndromeLaw 4 1 (by decide) true).bind
+      (PMF.pure ∘ fun sample => parity 4 sample.value) = PMF.pure false
+  rw [PMF.bind_pure_comp]
+  simpa [syndromeParity] using map_parity_realSyndromeLaw (n := 4) (w := 1) (by decide) true
+
+example :
+    Game.withSetup (uniformSyndromeLaw 4 1 true) parityContinuation = PMF.pure false := by
+  change (uniformSyndromeLaw 4 1 true).bind
+      (PMF.pure ∘ fun sample => parity 4 sample.value) = PMF.pure false
+  rw [PMF.bind_pure_comp]
+  simpa [syndromeParity] using map_parity_uniformSyndromeLaw 4 1 true
+
+-- Retaining no coordinates produces the unique empty second block.
+example :
+    (realTruncatedSyndromeLaw 4 0 1 (by decide) (by decide) true true).map
+        (fun sample => sample.secondValue) = PMF.pure ![] := by
+  apply PMF.map_eq_pure_iff.mpr
+  intro sample _
+  funext i
+  exact Fin.elim0 i
+
+-- Retaining all coordinates exposes the complete second syndrome from the shared witness.
+example {sample : TruncatedSyndromeSample 4 4}
+    (hs : sample ∈
+      (realTruncatedSyndromeLaw 4 4 1 (by decide) (by decide) true true).support) :
+    ∃ x y z : BitString 4,
+      weight x = 1 ∧ weight y = 1 ∧ weight z = 1 ∧
+        sample.firstValue = syndrome sample.firstBlock x z ∧
+          sample.secondValue = syndrome sample.secondBlock y z := by
+  rw [mem_support_realTruncatedSyndromeLaw_iff] at hs
+  obtain ⟨_, _, x, y, z, hx, hy, hz, hfirst, hsecond⟩ := hs
+  refine ⟨x, y, z, hx, hy, hz, hfirst, ?_⟩
+  simpa using hsecond
+
 private def sharedSecretCounterexample : TruncatedSyndromeSample 4 3 :=
   ⟨delta0, delta0, ![true, true, false, false], ![false, false, true]⟩
 
@@ -75,6 +117,10 @@ private theorem no_shared_third :
             (![false, false, true] : BitString 3) := by
   decide
 
+private theorem mem_weightOne {value : BitString 4} (hvalue : weight value = 1) :
+    value ∈ (PMF.uniformOfFinset (weightLayer 4 1) (weightLayer_nonempty (by decide))).support :=
+  (PMF.mem_support_uniformOfFinset_iff _ value).mpr (mem_weightLayer.mpr hvalue)
+
 /-- An intentionally incorrect variant that redraws the third secret between components. -/
 private noncomputable def redrawnTruncatedSyndromeLaw : PMF (TruncatedSyndromeSample 4 3) := do
   let h₁ ← uniformParity 4 true
@@ -92,10 +138,10 @@ example : sharedSecretCounterexample ∈ redrawnTruncatedSyndromeLaw.support := 
   refine ⟨delta0, ?_, delta0, ?_, e1, ?_, e3, ?_, delta0, ?_, e2, ?_, ?_⟩
   · exact (mem_support_uniformParity true delta0).mpr (by decide)
   · exact (mem_support_uniformParity true delta0).mpr (by decide)
-  · exact (PMF.mem_support_uniformOfFinset_iff _ e1).mpr (mem_weightLayer.mpr (by decide))
-  · exact (PMF.mem_support_uniformOfFinset_iff _ e3).mpr (mem_weightLayer.mpr (by decide))
-  · exact (PMF.mem_support_uniformOfFinset_iff _ delta0).mpr (mem_weightLayer.mpr (by decide))
-  · exact (PMF.mem_support_uniformOfFinset_iff _ e2).mpr (mem_weightLayer.mpr (by decide))
+  · exact mem_weightOne (by decide)
+  · exact mem_weightOne (by decide)
+  · exact mem_weightOne (by decide)
+  · exact mem_weightOne (by decide)
   · exact sharedSecretCounterexample_redrawn
 
 -- No single weight-one `z` can produce both displayed components, so the source law excludes it.
@@ -107,5 +153,38 @@ example : sharedSecretCounterexample ∉
   refine ⟨x, y, z, hx, hy, hz, ?_, ?_⟩
   · simpa only [sharedSecretCounterexample, syndrome_delta0] using hfirst.symm
   · simpa only [sharedSecretCounterexample, syndrome_delta0] using hsecond.symm
+
+private def suffixThree (value : BitString 4) : BitString 3 :=
+  fun i => value ⟨i.val + 1, by omega⟩
+
+/-- An intentionally incorrect variant that retains the last three coordinates. -/
+private noncomputable def suffixTruncatedSyndromeLaw : PMF (TruncatedSyndromeSample 4 3) := do
+  let h₁ ← uniformParity 4 true
+  let h₂ ← uniformParity 4 true
+  let x ← PMF.uniformOfFinset (weightLayer 4 1) (weightLayer_nonempty (by decide))
+  let y ← PMF.uniformOfFinset (weightLayer 4 1) (weightLayer_nonempty (by decide))
+  let z ← PMF.uniformOfFinset (weightLayer 4 1) (weightLayer_nonempty (by decide))
+  return ⟨h₁, h₂, syndrome h₁ x z, suffixThree (syndrome h₂ y z)⟩
+
+private theorem sharedSecretCounterexample_suffix :
+    sharedSecretCounterexample =
+      ⟨delta0, delta0, syndrome delta0 e1 delta0,
+        suffixThree (syndrome delta0 e3 delta0)⟩ := by
+  rw [syndrome_delta0, syndrome_delta0]
+  unfold sharedSecretCounterexample suffixThree delta0 e1 e3
+  congr 1 <;> funext i <;> fin_cases i <;> rfl
+
+-- Retaining a suffix instead of the source's designated prefix admits the displayed sample,
+-- even though the actual source law above excludes it while using the same third secret.
+example : sharedSecretCounterexample ∈ suffixTruncatedSyndromeLaw.support := by
+  simp only [suffixTruncatedSyndromeLaw, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
+    PMF.mem_support_bind_iff, PMF.mem_support_pure_iff]
+  refine ⟨delta0, ?_, delta0, ?_, e1, ?_, e3, ?_, delta0, ?_, ?_⟩
+  · exact (mem_support_uniformParity true delta0).mpr (by decide)
+  · exact (mem_support_uniformParity true delta0).mpr (by decide)
+  · exact mem_weightOne (by decide)
+  · exact mem_weightOne (by decide)
+  · exact mem_weightOne (by decide)
+  · exact sharedSecretCounterexample_suffix
 
 end CslibFrontierTests.HQCSyndrome
