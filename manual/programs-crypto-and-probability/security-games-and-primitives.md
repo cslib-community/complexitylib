@@ -136,7 +136,7 @@ chosen-plaintext advantage by the DDH advantages of `elGamalToDDH valid A false`
 Hashed ElGamal games stay at the word level. The
 [ElGamal checks](../../CslibFrontierTests/Crypto/ElGamalFinite.lean) decrypt with the public key in
 `ZMod 5`, where `a • 1 = a`, to win with advantage `1`, and apply the bound to `bitAdversary`; run
-`scripts/build.sh CslibFrontierTests.Crypto.ElGamalFinite`.
+`scripts/build.sh --wfail --iofail CslibFrontierTests.Crypto.ElGamalFinite`.
 
 Inversion and prediction are each stated once, for a fixed function and input distribution, in
 [`Crypto/Game/Inversion.lean`](../../CslibFrontier/Crypto/Game/Inversion.lean):
