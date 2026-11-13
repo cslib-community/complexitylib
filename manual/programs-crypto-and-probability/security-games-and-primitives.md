@@ -141,18 +141,35 @@ Target collision resistance (universal one-wayness) separates target selection f
 
 For universal one-way hashing from general one-way functions without permutations, [`OneWay.exists_inaccessibleEntropyFamily`](../../CslibFrontier/Crypto/Computational/InaccessibleEntropy/OneWay.lean) constructs an [`InaccessibleEntropyFamily`](../../CslibFrontier/Crypto/Computational/InaccessibleEntropy/Basic.lean) with gap denominator `denom n = 64 * (n + 1)` from any uniform `OneWay` function, proving a weaker constant-threshold adaptation of Haitner–Holenstein–Reingold–Vadhan–Wee, Section 4.2, Theorem 4.5 [hhrvw20][hhrvw20] via the `3`-wise independent Boolean affine hash family [`isThreeWiseIndependentHash_affineHash`](../../CslibFrontier/Probability/BitString/AffineHash/ThreeWise.lean) and prefix-collision seed projection `adjustAffineSeed`: whereas the paper uses threshold `2^(n - i) / n^c` to achieve gap `d log n / n` for every constant `d > 0` under Definition 3.9, the Lean construction fixes one adversary-independent accessible-set family against uniform strict-PPT adversaries, encodes the prefix length in a dyadic `(Nat.log 2 n + 1)`-bit saturating field, and uses constant threshold `2^(n - min r n) / 4` to obtain the smaller inverse-linear gap `1 / (64 * (n + 1))`. The `d log n / n` gap remains open in [#4820](https://github.com/cslib-community/cslib-frontier/issues/4820). Parallel repetition with Hoeffding concentration and dyadic planted-coordinate escape reductions ([`CslibFrontier/Crypto/Computational/InaccessibleEntropy/Repetition.lean`](../../CslibFrontier/Crypto/Computational/InaccessibleEntropy/Repetition.lean), Lemma 5.3) combined with two-universal input/output hashing for `1`-bit shrinkage ([`CslibFrontier/Crypto/Computational/InaccessibleEntropy/EntropyReduction.lean`](../../CslibFrontier/Crypto/Computational/InaccessibleEntropy/EntropyReduction.lean), Lemmas 5.4 and 5.5) then yield [`InaccessibleEntropyFamily.exists_shrinkingCollisionGrid`](../../CslibFrontier/Crypto/Computational/InaccessibleEntropy/Amplify.lean) and [`OneWay.exists_shrinkingCollisionGrid`](../../CslibFrontier/Crypto/Computational/InaccessibleEntropy/Amplify.lean) (Section 5.1.5, Theorem 5.1, STEPS 1–3; this step assumes the fixed accessible-set family rather than Definition 3.9's adversary-dependent one, which remains open in [#4819](https://github.com/cslib-community/cslib-frontier/issues/4819)), producing a [`ShrinkingCollisionGrid`](../../CslibFrontier/Crypto/Computational/InaccessibleEntropy/Amplify.lean) of uniformly polynomial-time `1`-bit shrinking candidates containing an existential candidate sequence (`exists_good_candidate`) collision-resistant on random inputs (`randomCollisionGame`). Although that existential index `goodIdx n` need not be efficiently computable, [`rompelCompression`](../../CslibFrontier/Crypto/Computational/InaccessibleEntropy/TargetCollision.lean) evaluates all `gridCount n` candidates uniformly across `rompelCascadeSteps G n = (2 * gridCount n - 1) * outLen n` XOR-masked `1`-bit shrinking steps under one shared `rompelCascadeSteps G n * inLen n`-bit step-key sequence and concatenates their outputs (`2 * (gridCount n * outLen n) → gridCount n * outLen n`; adapting [hhrvw20][hhrvw20] Section 5.1.4, Lemmas 5.6–5.7, pp. 29–30, and Section 5.1.5, STEP 4, p. 31, and STEP 5(ii–iii), p. 32, using one fresh `inLen n`-bit subkey per `1`-bit step and sharing that sequence across candidates rather than claiming Lemma 5.7's `O(|y| log t)` compact-key bound or STEP 5(iii)'s per-candidate keys; the compact keys remain open in [#4821](https://github.com/cslib-community/cslib-frontier/issues/4821)), with single-stage planted-subkey reduction `rompelCompressionInverter` achieving exact key simulation at multiplicative loss `dyadicSize (gridCount n) * dyadicSize (rompelCascadeSteps G n)` and zero additive error (`ShrinkingCollisionGrid.targetCollisionResistant_rompelCompression`, `OneWay.exists_targetCollisionResistant_keyedCompressionFamily`). Composing with `KeyedCompressionFamily.treeHash` yields `rompelHash` and `OneWay.exists_targetCollisionResistant_keyedHashFamily` ([rompel90][rompel90]; [hhrvw20][hhrvw20] Section 5.1, Theorem 5.1, p. 25), with concrete checks in [`CslibFrontierTests/Crypto/InaccessibleEntropy.lean`](../../CslibFrontierTests/Crypto/InaccessibleEntropy.lean) and [`CslibFrontierTests/Crypto/Rompel.lean`](../../CslibFrontierTests/Crypto/Rompel.lean).
 
-The polynomial interpretation of the module-lattice coefficient vectors is proved in
+The negacyclic ring `R[X]/(X^n + 1)` on coefficient vectors lives in
+[`Foundations/Algebra/Negacyclic.lean`](../../CslibFrontier/Foundations/Algebra/Negacyclic.lean),
+independently of any cryptographic definition. It provides the coefficient-vector operations
+`rotMatrix`, `negacyclicMul` and `innerPoly` together with their algebra and coefficient
+bounds, and the typed ring `Negacyclic R n`: a one-field structure around `coeffs : Fin n → R`
+whose `*` is `negacyclicMul`, a commutative ring and `R`-algebra for commutative `R`. It
+represents the quotient for `n ≠ 0`; at `n = 0` it is the zero ring, a chosen zero-dimensional
+extension, since the quotient there is `R[X]/(2)`.
+`Negacyclic` is a structure rather than a synonym for `Fin n → R`, so the pointwise product of
+the function type cannot be used by mistake. Move between the two views with `ofCoeffs`,
+`coeffs` and `coeffsLinearEquiv`; `coeffs_mul` and `ofCoeffs_innerPoly` translate products and
+inner products. The [checked examples](../../CslibFrontierTests/Foundations/Algebra/Negacyclic.lean)
+include `X^4 = -1` over `ZMod 7` and dimension zero, where `1 = 0`.
+
+The polynomial interpretation is proved in
 [`SIS/Polynomial.lean`](../../CslibFrontier/Crypto/Computational/SIS/Polynomial.lean).
-For `n ≠ 0` and a nontrivial commutative ring `R`, `negacyclicEquiv` identifies `Fin n → R`
-with Mathlib's `AdjoinRoot (X^n + 1)` as an `R`-module, and `negacyclicEquiv_mul` carries
-`negacyclicMul` to quotient multiplication. Use the equivalence's injectivity to reflect
-quotient equalities back to coefficient vectors. `negacyclicEquiv_moduleSISMap` transports the
-existing Module-SIS map to a quotient-ring matrix product. The checked examples in
+For `n ≠ 0` and a nontrivial commutative ring `R`, `negacyclicEquiv` is an `R`-algebra
+equivalence `Negacyclic R n ≃ₐ[R] AdjoinRoot (X^n + 1)`, so `map_mul` carries
+negacyclic multiplication to quotient multiplication and injectivity reflects quotient equalities
+back to coefficient vectors. In
+[`SIS/Module.lean`](../../CslibFrontier/Crypto/Computational/SIS/Module.lean),
+`ofCoeffs_comp_moduleSISMap` reads the existing Module-SIS map as a matrix-vector product over
+`Negacyclic (ZMod q) n` and `moduleSISMap_eq_zero_iff` restates its zero equation there; neither
+needs the quotient. `negacyclicEquiv_mulVec` then carries any such product entrywise to the
+quotient ring. The checked examples in
 [`NegacyclicPolynomial.lean`](../../CslibFrontierTests/Crypto/NegacyclicPolynomial.lean) include
 integers, composite modulus `6`, characteristic `2`, dimension `1`, and reflection of the
-Module-SIS zero equation. The source function type retains pointwise multiplication; use
-`negacyclicMul` for polynomial multiplication. Dimension zero is excluded because its quotient
-is `R/(2)`. This algebraic bridge adds no hardness or runtime claim.
+Module-SIS zero equation. Dimension zero is excluded because its quotient is `R[X]/(2)`, while
+`Negacyclic R 0` is the zero ring. This algebraic bridge adds no hardness or runtime claim.
 
 The pure coefficient identity `negacyclicMul_eq_coeff_mul` is available separately in
 [SIS/Polynomial/Coefficients.lean](../../CslibFrontier/Crypto/Computational/SIS/Polynomial/Coefficients.lean),
