@@ -14,6 +14,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
+import CslibFrontier.Computability.Probabilistic.PPT.Extension
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Tactic.GameHop
@@ -132,6 +133,8 @@ encryption given randomness (`encodeElGamalEncrypt`, `encodeHashedElGamalEncrypt
 
 ## Main results
 
+* `Cslib.Crypto.PrimeOrderGroupFamily.secureKDF_iff_encoded`: `SecureKDF` is the word-level
+  key-derivation assumption.
 * `Cslib.Crypto.PrimeOrderGroupFamily.elGamalDecrypt_elGamalEncrypt`,
   `Cslib.Crypto.PrimeOrderGroupFamily.encodeElGamalPublicKey_eq_encode`,
   `Cslib.Crypto.PrimeOrderGroupFamily.encodeElGamalEncrypt_encode`,
@@ -633,8 +636,10 @@ def elGamalINDCPA (setup : ℕ → PMF F.Desc) : Prop :=
     Encryption.Adversary.IsPPT
 
 /-- The DDH distinguisher constructed from an IND-CPA adversary ([BonehShoup2023], proof of
-Exercise 11.5(a), p. 459): given `(d, u, v, w)`, pass `(d, u)` as the public key, encrypt the
-selected challenge bit by masking with `w`, and return the adversary's guess. -/
+Exercise 11.5(a), p. 459): given group parameters `d` and elements `u`, `v`, `w`, pass the encoded
+public key `(d, encode u)` to the adversary, mask the encoded challenge bit with `encode w` using
+`F.add`, send the ciphertext `(encode v, _)` and return the adversary's guess. It is the
+unrestricted `encodeBit` instance of `elGamalMsgToDDHDistinguisher`. -/
 abbrev elGamalToDDHDistinguisher (adversary : Encryption.Adversary) (bit : Bool) :
     F.DDHDistinguisher :=
   F.elGamalMsgToDDHDistinguisher (fun _ _ _ _ => true) F.encodeBit adversary bit
@@ -963,6 +968,36 @@ def SecureKDF (setup : ℕ → PMF F.Desc) (H : F.Desc × List Bool → List Boo
     (msgLen : ℕ → ℕ) : Prop :=
   Game.Indistinguishable (F.kdfRealGame setup H) (F.kdfIdealGame setup msgLen)
     KDFDistinguisher.IsPPT
+
+/-- **`SecureKDF` is the word-level key-derivation assumption.** Quantifying over distinguishers
+that read `(1ⁿ, d, encode u, encode v, key)` as words, each with one uniform strict PPT machine on
+its flat layout, gives the same assumption as quantifying over typed distinguishers, as for DDH
+(`ddh_iff_encoded`). -/
+theorem secureKDF_iff_encoded (setup : ℕ → PMF F.Desc) (H : F.Desc × List Bool → List Bool)
+    (msgLen : ℕ → ℕ) :
+    F.SecureKDF setup H msgLen ↔
+      ∀ W : ℕ → F.Desc × List Bool × List Bool × List Bool → ProbComp Bool,
+        IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
+          encBool (fun x => W x.1 x.2) →
+        Negligible fun n => Game.advantage
+          (F.kdfRealGame setup H (fun n d u v key => W n (d, F.encode d u, F.encode d v, key)) n)
+          (F.kdfIdealGame setup msgLen
+            (fun n d u v key => W n (d, F.encode d u, F.encode d v, key)) n) := by
+  set E := encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits)))
+  constructor
+  · intro h W hW
+    refine h _ ?_
+    obtain ⟨k, State, hfin, M, c, e, hM⟩ := hW
+    exact ⟨k, State, hfin, M, c, e, fun x => hM (x.secParam, x.groupParameters,
+      F.encode _ x.leftPublic, F.encode _ x.rightPublic, x.key)⟩
+  · intro h D hD
+    obtain ⟨W, ⟨k, State, hfin, M, c, e, hM⟩, hW⟩ := hD.exists_bool_extension
+    have := h (fun n t => W (E (n, t))) ⟨k, State, hfin, M, c, e, fun x => hM (E x)⟩
+    have hgame (n : ℕ) (d : F.Desc) (u v : F.Carrier d) (key : List Bool) :
+        ProbComp.eval (W (E (n, d, F.encode d u, F.encode d v, key))) =
+          ProbComp.eval (D n d u v key) :=
+      hW ⟨⟨n, d, u, v⟩, key⟩
+    simpa only [kdfRealGame, kdfIdealGame, hgame] using this
 
 /-- Run a key-derivation distinguisher as a DDH distinguisher: derive the candidate key
 `H (d, encode w)` from the candidate shared element `w`. -/

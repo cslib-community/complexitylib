@@ -534,26 +534,26 @@ noncomputable def cramerShoupMsgToDDHDistinguisher
     (H : F.Desc × List Bool → List Bool) (isElem : F.Desc × List Bool → Bool)
     (adversary : ADCCA2AdversaryOf Msg AD) (bit : Bool) : F.DDHDistinguisher :=
   fun n d u v w => do
-  let sk ← F.sampleCramerShoupSK n d
-  let pk := F.encodeCramerShoupPublicKey d (F.encode d u) sk
-  let choiceOut ← (OracleComp.interpret
-    (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
-      (F.cramerShoupPhase1Oracle hasAD H isElem d sk))
-    (adversary.choose n pk)).run ()
-  let choice := choiceOut.1
-  let m₀ := encodeMsg (d, csChoiceMsg₀ choice)
-  let m₁ := encodeMsg (d, csChoiceMsg₁ choice)
-  let ad := encodeAD (d, csChoiceAD choice)
-  if isElem (d, m₀) && isElem (d, m₁) then
-    let m := if bit then m₁ else m₀
-    let ct := F.encodeCramerShoupChallenge H d sk (F.encode d v) (F.encode d w) m ad
-    let guessOut ← (OracleComp.interpret
+    let sk ← F.sampleCramerShoupSK n d
+    let pk := F.encodeCramerShoupPublicKey d (F.encode d u) sk
+    let choiceOut ← (OracleComp.interpret
       (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
-        (F.cramerShoupPhase2Oracle hasAD H isElem d sk ct ad))
-      (adversary.guess n choice.2 ct)).run ()
-    return guessOut.1
-  else
-    return false
+        (F.cramerShoupPhase1Oracle hasAD H isElem d sk))
+      (adversary.choose n pk)).run ()
+    let choice := choiceOut.1
+    let m₀ := encodeMsg (d, csChoiceMsg₀ choice)
+    let m₁ := encodeMsg (d, csChoiceMsg₁ choice)
+    let ad := encodeAD (d, csChoiceAD choice)
+    if isElem (d, m₀) && isElem (d, m₁) then
+      let m := if bit then m₁ else m₀
+      let ct := F.encodeCramerShoupChallenge H d sk (F.encode d v) (F.encode d w) m ad
+      let guessOut ← (OracleComp.interpret
+        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
+          (F.cramerShoupPhase2Oracle hasAD H isElem d sk ct ad))
+        (adversary.guess n choice.2 ct)).run ()
+      return guessOut.1
+    else
+      return false
 
 /-- The DDH distinguisher constructed from a group-message 1CCA adversary with associated data
 (`Msg = List Bool`, `encodeMsg = Prod.snd`, `encodeAD = fun p => encAD p.2`). -/

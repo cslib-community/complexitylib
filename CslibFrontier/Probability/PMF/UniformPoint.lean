@@ -14,12 +14,14 @@ import CslibFrontier.Probability.PMF.Bool
 # Hitting a point with a draw
 
 Testing a draw from `μ` for equality with a fixed point `a` accepts with probability `μ a`
-(`bind_pure_decide_eq_apply_true`, `map_decide_eq_apply_true`). For a uniform draw from a nonempty
-finite type `α` this is `(Fintype.card α)⁻¹` (`uniformOfFintype_bind_decide_eq_apply_true`). More
-generally, a Boolean test that accepts at most one value accepts a uniform draw with probability at
-most `(Fintype.card α)⁻¹` (`uniformOfFintype_bind_pure_apply_true_le`). Guessing games use this
-bound: an adversary whose view is independent of a uniform secret guesses it with probability at
-most `1 / |α|`, and so does any test comparing the secret with an injective image of the draw.
+(`bind_pure_decide_eq_apply_true`, `map_decide_eq_apply_true`). The unprimed bind form and the
+uniform form test `a = x`; `bind_pure_decide_eq_apply_true'` and the map form test `x = a`. For a
+uniform draw from a nonempty finite type `α` this is `(Fintype.card α)⁻¹`
+(`uniformOfFintype_bind_decide_eq_apply_true`). More generally, a Boolean test that accepts at most
+one value accepts a uniform draw with probability at most `(Fintype.card α)⁻¹`
+(`uniformOfFintype_bind_pure_apply_true_le`). Guessing games use this bound: an adversary whose
+view is independent of a uniform secret guesses it with probability at most `1 / |α|`, and so does
+any test comparing the secret with an injective image of the draw.
 
 ## Main results
 

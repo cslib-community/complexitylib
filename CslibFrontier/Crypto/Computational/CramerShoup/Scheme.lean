@@ -668,7 +668,7 @@ theorem cramerShoupEncrypt_cramerShoupPublicKey (H : F.Desc × List Bool → Lis
 ([BonehShoup2023], Exercise 12.27, printed p. 522): check
 $f'_{\sigma_1,\tau_1,\sigma_2,\tau_2}(v, w, \rho) = z'$ where $\rho = H'(v, w, e, ad)$, and if so
 output `some (e - f_{σ,τ}(v, w))`. -/
-def cramerShoupDecrypt [∀ d, DecidableEq (F.Carrier d)]
+def cramerShoupDecrypt
     (H : F.Desc × List Bool → List Bool) (d : F.Desc)
     (sk : (ZMod (F.order d) × ZMod (F.order d)) ×
       ((ZMod (F.order d) × ZMod (F.order d)) × (ZMod (F.order d) × ZMod (F.order d))))
@@ -686,7 +686,7 @@ Exercise 12.27, printed pp. 489, 521–522): decrypting an honest encryption und
 `cramerShoupPublicKey d α σ τ σ₁ τ₁ σ₂ τ₂` with `((σ, τ), ((σ₁, τ₁), (σ₂, τ₂)))` and the same
 associated data `ad` recovers `some m`. -/
 @[simp]
-theorem cramerShoupDecrypt_cramerShoupEncrypt [∀ d, DecidableEq (F.Carrier d)]
+theorem cramerShoupDecrypt_cramerShoupEncrypt
     (H : F.Desc × List Bool → List Bool) (d : F.Desc)
     (α σ τ σ₁ τ₁ σ₂ τ₂ β : ZMod (F.order d)) (m : F.Carrier d) (ad : List Bool) :
     F.cramerShoupDecrypt H d ((σ, τ), ((σ₁, τ₁), (σ₂, τ₂)))
@@ -851,7 +851,7 @@ def decodeCramerShoup (H : F.Desc × List Bool → List Bool)
 
 /-- **Word-level Cramer–Shoup decryption matches algebraic `cramerShoupDecrypt` on encoded
 ciphertexts**. -/
-theorem decodeCramerShoup_encode [∀ d, DecidableEq (F.Carrier d)]
+theorem decodeCramerShoup_encode
     (H : F.Desc × List Bool → List Bool) (isElem : F.Desc × List Bool → Bool)
     (hmem : ∀ d x, isElem (d, x) = true ↔ x ∈ Set.range (F.encode d))
     (d : F.Desc) (sk : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ)))

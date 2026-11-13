@@ -361,7 +361,7 @@ encoded tuple `(1ⁿ, d, encode u, encode v, encode w)` as words, each with one 
 machine on its flat layout, gives the same assumption as quantifying over typed distinguishers.
 A typed distinguisher's machine reads exactly that layout; conversely, a word distinguisher is
 typed by encoding its elements, and a typed one extends to all words by rerunning its machine
-(`IsPPTOn.exists_extension`), since its output is a single bit. -/
+(`IsPPTOn.exists_bool_extension`), since its output is a single bit. -/
 theorem ddh_iff_encoded (setup : ℕ → PMF F.Desc) :
     F.DDH setup ↔ ∀ W : ℕ → F.Desc × List Bool × List Bool × List Bool → ProbComp Bool,
       IsPPTOn (encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits))))
@@ -378,10 +378,7 @@ theorem ddh_iff_encoded (setup : ℕ → PMF F.Desc) :
     exact ⟨k, State, hfin, M, c, e, fun x => hM (x.secParam, x.groupParameters,
       F.encode _ x.leftPublic, F.encode _ x.rightPublic, F.encode _ x.candidateShared)⟩
   · intro h D hD
-    obtain ⟨W, ⟨k, State, hfin, M, c, e, hM⟩, hW⟩ :=
-      hD.exists_extension (decode := (· == [true]))
-        (ComputableInPolyTime.beq ComputableInPolyTime.id' (ComputableInPolyTime.const [true]))
-        (fun b => by cases b <;> rfl)
+    obtain ⟨W, ⟨k, State, hfin, M, c, e, hM⟩, hW⟩ := hD.exists_bool_extension
     have := h (fun n t => W (E (n, t))) ⟨k, State, hfin, M, c, e, fun x => hM (E x)⟩
     have hgame (n : ℕ) (d : F.Desc) (u v w : F.Carrier d) :
         ProbComp.eval (W (E (n, d, F.encode d u, F.encode d v, F.encode d w))) =
@@ -442,7 +439,8 @@ theorem isPPT_cdhToDDHDistinguisher {adversary : F.CDHAdversary} (hA : adversary
 /-- **DDH implies CDH** when every supported group at parameter `n` has order at least `m n > 0`
 and `1 / m n` is negligible. The conclusion is the textbook CDH assumption against adversaries that
 output group elements, which is weaker than the word-level CDH assumption;
-[#4783](https://github.com/cslib-community/cslib-frontier/issues/4783) tracks the word-level form. -/
+[#4783](https://github.com/cslib-community/cslib-frontier/issues/4783) tracks the word-level
+form. -/
 theorem DDH.cdh {F : PrimeOrderGroupFamily} {setup : ℕ → PMF F.Desc} (hDDH : F.DDH setup)
     {m : ℕ → ℕ} (hm0 : ∀ n, 0 < m n) (hm : ∀ n, ∀ d ∈ (setup n).support, m n ≤ F.order d)
     (hinv : Negligible fun n => (1 / m n : ℝ≥0)) : F.CDH setup := by

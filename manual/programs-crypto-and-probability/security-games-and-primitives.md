@@ -82,15 +82,15 @@ CDH assumption, weaker than the word-level assumption against adversaries that m
 [#4783](https://github.com/cslib-community/cslib-frontier/issues/4783) tracks restoring the
 word-level form for families with decodable encodings. A DDH distinguisher outputs only a bit, so
 `F.DDH setup` is equivalent to the word-level assumption over distinguishers reading the encoded
-tuple (`ddh_iff_encoded`). Efficiency is stated on encodings: `CDHAdversary.IsPPT` and
-`DDHDistinguisher.IsPPT` ask for one uniform strict PPT machine that reads `F.encCDHInput` or
-`F.encDDHInput` and writes the encoded output element or the output bit. The inputs are the
-structures `F.CDHInput` (fields `secParam`, `groupParameters`, `leftPublic`, `rightPublic`) and
-`F.DDHInput` (adding `candidateShared`); `encCDHInput_apply` and `encDDHInput_apply` give their
-layouts: the unary security parameter, the group parameters and the encoded elements, each framed
-except the last. Setup remains an arbitrary PMF and acquires no PPT certificate. Reductions that
-need exponents use `F.sampleExp n d`, with its `1 / 2 ^ n` statistical error and separate PPT
-theorem `isPPTOn_sampleExp`.
+tuple (`ddh_iff_encoded`), and likewise for `SecureKDF` (`secureKDF_iff_encoded`). Efficiency is
+stated on encodings: `CDHAdversary.IsPPT` and `DDHDistinguisher.IsPPT` ask for one uniform strict
+PPT machine that reads `F.encCDHInput` or `F.encDDHInput` and writes the encoded output element or
+the output bit. The inputs are the structures `F.CDHInput` (fields `secParam`, `groupParameters`,
+`leftPublic`, `rightPublic`) and `F.DDHInput` (adding `candidateShared`); `encCDHInput_apply` and
+`encDDHInput_apply` give their layouts: the unary security parameter, the group parameters and the
+encoded elements, each framed except the last. Setup remains an arbitrary PMF and acquires no PPT
+certificate. Reductions that need exponents use `F.sampleExp n d`, with its `1 / 2 ^ n` statistical
+error and separate PPT theorem `isPPTOn_sampleExp`.
 
 `dlToCDHAdversary` and `cdhToDDHDistinguisher` are the elementary reductions behind
 `CDH.discreteLog` and `DDH.cdh`. Random self-reducibility ([bs23][bs23], Exercises 10.8–10.10)
