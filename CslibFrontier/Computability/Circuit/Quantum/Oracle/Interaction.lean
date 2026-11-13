@@ -79,7 +79,6 @@ private theorem runAtWidths_apply (F : UniformOracleCircuitFamily) (n â„“ q : â„
   subst q
   rw [runAtWidths, run_apply, initialState_apply]
 
-
 /-- Resume on the full saved register, with the original word, request and reply as classical
 input. The common oracle is transported to this description without a fresh sample. -/
 noncomputable def resumeRun (G : UniformOracleCircuitFamily)
