@@ -54,7 +54,8 @@ the uniform seeds `seeds p`: the triples `(ξ, α, β) ∈ ZMod p ^ 3` with `ξ 
 * `Cslib.Algorithms.Lean.SubsetConvThreeSum.card_accepts_add_ge`,
   `four_mul_card_accepts_ge`: the success probability of one trial.
 * `Cslib.Algorithms.Lean.SubsetConvThreeSum.card_rankedPairs`.
-* `Cslib.Algorithms.Lean.SubsetConvThreeSum.card_forall_not_accepts`: independent trials.
+* `Cslib.Algorithms.Lean.SubsetConvThreeSum.card_forall_not`,
+  `Cslib.Algorithms.Lean.SubsetConvThreeSum.card_forall_not_accepts`: independent trials.
 
 ## References
 
@@ -383,17 +384,25 @@ theorem card_rankedPairs (d t : ℕ) : #(rankedPairs d t) = d.choose (2 * t) * (
     rw [card_powersetCard, (mem_powersetCard.mp hZ).2], sum_const, card_powersetCard, card_univ,
     Fintype.card_fin, smul_eq_mul]
 
-/-- **Independent trials**: the tuples of `μ` seeds that all reject `c` are the `μ`-th power of the
-rejecting seeds, so `μ` independent uniform trials all reject with probability `(1 - q) ^ μ`. -/
-theorem card_forall_not_accepts (d t μ : ℕ) (Ag Bg : List ℕ) (c : ℕ) :
-    #((Fintype.piFinset fun _ : Fin μ => seeds p).filter fun ss =>
-        ∀ i, ¬ Accepts d t (ss i) Ag Bg c) =
-      #((seeds p).filter fun s => ¬ Accepts d t s Ag Bg c) ^ μ := by
+omit [Fact p.Prime] in
+/-- **Independent-trial counting equality**: the number of seed tuples all failing `P` equals
+the number of failing seeds raised to the number of trials, including zero trials. -/
+theorem card_forall_not [NeZero p] (P : Seed p → Prop) [DecidablePred P] (μ : ℕ) :
+    #((Fintype.piFinset fun _ : Fin μ => seeds p).filter fun ss => ∀ i, ¬ P (ss i)) =
+      #((seeds p).filter fun s => ¬ P s) ^ μ := by
   rw [← Fintype.card_piFinset_const]
   congr 1
   ext ss
   simp only [mem_filter, Fintype.mem_piFinset]
   exact ⟨fun h i => ⟨h.1 i, h.2 i⟩, fun h => ⟨fun i => (h i).1, fun i => (h i).2⟩⟩
+
+/-- **Independent trials**: the tuples of `μ` seeds that all reject `c` are the `μ`-th power of the
+rejecting seeds, so `μ` independent uniform trials all reject with probability `(1 - q) ^ μ`. -/
+theorem card_forall_not_accepts (d t μ : ℕ) (Ag Bg : List ℕ) (c : ℕ) :
+    #((Fintype.piFinset fun _ : Fin μ => seeds p).filter fun ss =>
+        ∀ i, ¬ Accepts d t (ss i) Ag Bg c) =
+      #((seeds p).filter fun s => ¬ Accepts d t s Ag Bg c) ^ μ :=
+  card_forall_not (fun s => Accepts d t s Ag Bg c) μ
 
 /-! ### The random prime -/
 

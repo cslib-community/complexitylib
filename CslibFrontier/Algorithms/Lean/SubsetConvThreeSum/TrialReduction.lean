@@ -57,8 +57,8 @@ what a trial program returns.
 
 * `Cslib.Algorithms.Lean.SubsetConvThreeSum.ret_reduceM`, `exists_add_eq_of_mem_ret_reduceM`,
   `mem_ret_reduceM_or_isolated`, `time_reduceM`: what the reduction returns and costs.
-* `Cslib.Algorithms.Lean.SubsetConvThreeSum.card_forall_not_le`,
-  `reduceM_miss_le`, `average_le_of_good`, `average_miss_le_of_window`: its error.
+* `Cslib.Algorithms.Lean.SubsetConvThreeSum.reduceM_miss_le`, `average_le_of_good`,
+  `average_miss_le_of_window`: its error.
 
 ## References
 
@@ -239,17 +239,6 @@ theorem time_reduceM (htrial : TrialSpec trial Acc) (seeds : List (Seed p)) (A B
 
 /-! ### Error probability -/
 
-/-- `μ` independent uniform seeds all fail a test `P` for exactly the `μ`-th power of the failing
-seeds. -/
-theorem card_forall_not_le [NeZero p] (P : Seed p → Prop) [DecidablePred P] (μ : ℕ) :
-    #((Fintype.piFinset fun _ : Fin μ => seeds p).filter fun ss => ∀ i, ¬ P (ss i)) =
-      #((seeds p).filter fun s => ¬ P s) ^ μ := by
-  rw [← Fintype.card_piFinset_const]
-  congr 1
-  ext ss
-  simp only [mem_filter, Fintype.mem_piFinset]
-  exact ⟨fun h i => ⟨h.1 i, h.2 i⟩, fun h => ⟨fun i => (h i).1, fun i => (h i).2⟩⟩
-
 /-- **The miss probability for given success counts**: let `c = a + b ∈ C` with `a ∈ A`, `b ∈ B`
 and `P ≤ p ^ 2`. If, whenever `a` and `b` are isolated, at least a `3 P / (4 (p - 1) p ^ 2)`
 fraction of the `(p - 1) p ^ 2` seeds accept `c` (`3 P (p - 1) ≤ 4 #accepting`), then over `μ`
@@ -302,7 +291,7 @@ theorem reduceM_miss_le [Fact p.Prime] (htrial : TrialSpec trial Acc) {P μ : �
     exact List.mem_filter.mpr ⟨hc, decide_eq_true (Or.inr ⟨ss i, List.mem_ofFn.mpr ⟨i, rfl⟩,
       hacc⟩)⟩
   have hNZ : NeZero p := ⟨by omega⟩
-  have hcount := card_forall_not_le (p := p) (fun s => Acc s Ag Bg c) μ
+  have hcount := card_forall_not (p := p) (fun s => Acc s Ag Bg c) μ
   have hsplit := card_filter_add_card_filter_not (s := seeds p) (fun s => Acc s Ag Bg c)
   have hacc' := hacc hia hib
   set R := #((seeds p).filter fun s => ¬ Acc s Ag Bg c)

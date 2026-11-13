@@ -294,6 +294,10 @@ hashes `a ↦ a ξ + α`, `b ↦ b ξ + β` and `c ↦ c ξ + α + β` modulo `p
 bad sums and the error analysis are stated once, for any trial program, in
 `CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.TrialReduction`, and shared with the base-`r`
 reduction of Theorem 3.4.
+The independent-trial counting equality is `card_forall_not` in
+`CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Probability`; `card_forall_not_accepts`
+is its specialization to subset trials. Both count all-rejecting tuples exactly, including
+zero trials, rather than assuming a trial success probability.
 
 - `exists_add_eq_of_mem_ret_threeSumM`: every reported `c` is a sum, for every `p` and all seeds.
 - `ret_threeSumM`, `time_threeSumM`: the output and the exact tick count, which depends on the
