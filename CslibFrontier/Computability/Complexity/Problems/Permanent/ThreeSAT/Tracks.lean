@@ -143,6 +143,8 @@ theorem trackEntry_exit_eq_one (o l : ℕ) :
 
 /-! ### Injectivity, mapping and recovery -/
 
+section Lemmas
+
 variable (hφ : WellFormed φ) {P : Finset ℕ} (hP : P ⊆ range (numOcc φ))
   (a : Fin (numAux φ) → Bool)
 include hφ hP
@@ -307,5 +309,211 @@ theorem trueExactly_of_succOf (hmap : ∀ k, InRows φ P k → InCols φ P (succ
         have := hmap i (Or.inl hi)
         rw [succOf_aux a hi, auxSucc_eq_some hf] at this
         exact memP o this
+
+end Lemmas
+
+/-! ### The count -/
+
+/-- The row vertices for the occurrences `P`, as a set of vertices. -/
+def rowSet (φ : CNF ℕ) (P : Finset ℕ) : Finset (Fin (size φ)) :=
+  univ.filter fun u => InRows φ P u
+
+/-- The column vertices for the occurrences `P`, as a set of vertices. -/
+def colSet (φ : CNF ℕ) (P : Finset ℕ) : Finset (Fin (size φ)) :=
+  univ.filter fun u => InCols φ P u
+
+theorem numAux_le_size (φ : CNF ℕ) : numAux φ ≤ size φ := by unfold size; omega
+
+theorem succOf_lt_size (hφ : WellFormed φ) {P : Finset ℕ} (hP : P ⊆ range (numOcc φ))
+    {k : ℕ} (hk : InRows φ P k) (a : Fin (numAux φ) → Bool) :
+    succOf φ a k < size φ := by
+  rcases hk with hk | ⟨o, hoP, rfl⟩
+  · rw [succOf_aux a hk]; exact auxSucc_lt_size hk _
+  · rw [succOf_exit]; exact exitSucc_lt_size hφ (mem_range.1 (hP hoP))
+
+/-- There are as many row vertices as column vertices. -/
+theorem card_rowSet {P : Finset ℕ} (hP : P ⊆ range (numOcc φ)) :
+    (rowSet φ P).card = (colSet φ P).card := by
+  refine card_bij' (fun u hu => ⟨if u.val < numAux φ then u else u - 3, ?_⟩)
+    (fun u hu => ⟨if u.val < numAux φ then u else u + 3, ?_⟩) ?_ ?_ ?_ ?_
+  · split_ifs <;> omega
+  · simp only [colSet, mem_filter, mem_univ, true_and] at hu
+    split_ifs with h
+    · exact u.2
+    · rcases hu with hu | ⟨o, hoP, he⟩
+      · exact absurd hu h
+      · have := exitIdx_lt_size (φ := φ) (mem_range.1 (hP hoP))
+        unfold exitIdx at this; unfold entryIdx at he; omega
+  · intro u hu
+    simp only [rowSet, colSet, mem_filter, mem_univ, true_and] at hu ⊢
+    rcases hu with hu | ⟨o, hoP, he⟩
+    · simp only [hu, ite_true]; exact Or.inl hu
+    · have := numAux_le_exitIdx φ o
+      have hn : ¬ u.val < numAux φ := by omega
+      simp only [hn, ite_false]
+      refine Or.inr ⟨o, hoP, ?_⟩
+      rw [he]; unfold exitIdx entryIdx; omega
+  · intro u hu
+    simp only [rowSet, colSet, mem_filter, mem_univ, true_and] at hu ⊢
+    rcases hu with hu | ⟨o, hoP, he⟩
+    · simp only [hu, ite_true]; exact Or.inl hu
+    · have := numAux_le_entryIdx φ o
+      have hn : ¬ u.val < numAux φ := by omega
+      simp only [hn, ite_false]
+      refine Or.inr ⟨o, hoP, ?_⟩
+      rw [he]; unfold exitIdx entryIdx; omega
+  · intro u hu
+    ext
+    simp only [rowSet, mem_filter, mem_univ, true_and] at hu
+    by_cases h : u.val < numAux φ
+    · simp [h]
+    · have h3 : ¬ u.val - 3 < numAux φ := by
+        rcases hu with hu | ⟨o, -, he⟩
+        · exact absurd hu h
+        · rw [he]; unfold exitIdx; omega
+      simp only [h, h3, ite_false]
+      rcases hu with hu | ⟨o, -, he⟩
+      · exact absurd hu h
+      · rw [he]; unfold exitIdx; omega
+  · intro u hu
+    ext
+    simp only [colSet, mem_filter, mem_univ, true_and] at hu
+    by_cases h : u.val < numAux φ
+    · simp [h]
+    · have h3 : ¬ u.val + 3 < numAux φ := by omega
+      simp only [h, h3, ite_false]
+      omega
+
+/-- The bijection of an assignment: follow the chosen tracks on the rows. -/
+def bijOfAssign {P : Finset ℕ} (hlt : ∀ k, InRows φ P k → ∀ a, succOf φ a k < size φ)
+    (a : Fin (numAux φ) → Bool) (u : Fin (size φ)) : Fin (size φ) :=
+  if h : InRows φ P u then ⟨succOf φ a u, hlt u h a⟩ else u
+
+/-- The assignment read off a bijection at the auxiliary vertices. -/
+def assignOfBij (f : Fin (size φ) → Fin (size φ)) (i : Fin (numAux φ)) : Bool :=
+  decide ((f ⟨i, lt_of_lt_of_le i.2 (numAux_le_size φ)⟩).val = auxSucc φ i true)
+
+/-- **The count of track bijections**: the permanent sum of the track matrix between the rows and
+the columns of `P` is the number of assignments whose true occurrences are exactly `P`. -/
+theorem permOn_trackMatrix (hφ : WellFormed φ) {P : Finset ℕ}
+    (hP : P ⊆ range (numOcc φ)) :
+    permOn (trackMatrix φ) (rowSet φ P) (colSet φ P) =
+      ((univ : Finset (Fin (numAux φ) → Bool)).filter (TrueExactly φ P)).card := by
+  have hlt : ∀ k, InRows φ P k → ∀ a, succOf φ a k < size φ :=
+    fun k hk a => succOf_lt_size hφ hP hk a
+  rw [permOn_eq_card (M := trackMatrix φ) fun i j => trackEntry_zero_or_one hφ _ _]
+  norm_cast
+  have hval : ∀ (f : Fin (size φ) → Fin (size φ)),
+      f ∈ (bijOn (rowSet φ P) (colSet φ P)).filter
+        (fun f => ∀ i ∈ rowSet φ P, trackMatrix φ i (f i) = 1) →
+      bijOfAssign hlt (assignOfBij f) = f := by
+    intro f hf
+    simp only [mem_filter, mem_bijOn] at hf
+    obtain ⟨⟨-, -, -, hout⟩, hedge⟩ := hf
+    funext u
+    unfold bijOfAssign
+    split_ifs with hu
+    · have hur : u ∈ rowSet φ P := by simp [rowSet, hu]
+      have he := hedge u hur
+      unfold trackMatrix at he
+      ext
+      change succOf φ (assignOfBij f) u = (f u).val
+      rcases hu with hk | ⟨o, hoP, hko⟩
+      · rw [succOf_aux _ hk]
+        rcases (trackEntry_aux_eq_one hφ hk _).1 he with h | h
+        · have : assignOfBij f ⟨u, hk⟩ = true := by
+            simp only [assignOfBij, decide_eq_true_eq]; exact h
+          rw [this, h]
+        · have : assignOfBij f ⟨u, hk⟩ = false := by
+            simp only [assignOfBij, decide_eq_false_iff_not]
+            rw [show (⟨u.val, _⟩ : Fin (size φ)) = u from rfl, h]
+            exact (auxSucc_true_ne_false hφ hk).symm
+          rw [this, h]
+      · rw [hko, succOf_exit]
+        rw [hko] at he
+        exact ((trackEntry_exit_eq_one o _).1 he).symm
+    · exact (hout u (by simpa [rowSet] using hu)).symm
+  symm
+  refine card_bij' (fun a _ => bijOfAssign hlt a) (fun f _ => assignOfBij f) ?_ ?_ ?_ ?_
+  · intro a ha
+    simp only [mem_filter, mem_univ, true_and] at ha
+    simp only [mem_filter, mem_bijOn]
+    have hF : ∀ (u : Fin (size φ)) (hu : InRows φ P u),
+        (bijOfAssign hlt a u).val = succOf φ a u := by
+      intro u hu
+      simp [bijOfAssign, hu]
+    refine ⟨⟨fun u hu => ?_, fun u hu v hv h => ?_, ?_, fun u hu => ?_⟩, fun u hu => ?_⟩
+    · simp only [rowSet, colSet, mem_filter, mem_univ, true_and] at hu ⊢
+      rw [hF u hu]
+      exact inCols_succOf hφ hP a ha hu
+    · simp only [rowSet, mem_filter, mem_univ, true_and] at hu hv
+      have := congrArg Fin.val h
+      rw [hF u hu, hF v hv] at this
+      exact Fin.ext (succOf_injOn hφ hP a ha hu hv this)
+    · intro t ht
+      have hsurj := Finset.surj_on_of_inj_on_of_card_le
+        (s := rowSet φ P) (t := colSet φ P) (fun u _ => bijOfAssign hlt a u)
+        (fun u hu => by
+          simp only [rowSet, colSet, mem_filter, mem_univ, true_and] at hu ⊢
+          rw [hF u hu]
+          exact inCols_succOf hφ hP a ha hu)
+        (fun u v hu hv h => by
+          simp only [rowSet, mem_filter, mem_univ, true_and] at hu hv
+          have := congrArg Fin.val h
+          rw [hF u hu, hF v hv] at this
+          exact Fin.ext (succOf_injOn hφ hP a ha hu hv this))
+        (card_rowSet hP).ge
+      obtain ⟨u, hu, rfl⟩ := hsurj t ht
+      exact ⟨u, hu, rfl⟩
+    · simp [bijOfAssign, rowSet] at hu ⊢
+      simp [hu]
+    · simp only [rowSet, mem_filter, mem_univ, true_and] at hu
+      unfold trackMatrix
+      rw [hF u hu]
+      rcases hu with hk | ⟨o, hoP, hko⟩
+      · rw [succOf_aux a hk, trackEntry_aux_eq_one hφ hk]
+        cases a ⟨u, hk⟩
+        · exact Or.inr rfl
+        · exact Or.inl rfl
+      · rw [hko, succOf_exit, trackEntry_exit_eq_one]
+  · intro f hf
+    simp only [mem_filter, mem_univ, true_and]
+    have hfa := hval f hf
+    simp only [mem_filter, mem_bijOn] at hf
+    obtain ⟨⟨hmaps, -, hsurj, -⟩, -⟩ := hf
+    set a := assignOfBij f
+    have hF : ∀ (u : Fin (size φ)) (hu : InRows φ P u), (f u).val = succOf φ a u := by
+      intro u hu
+      rw [← hfa]
+      simp [bijOfAssign, hu]
+    refine trueExactly_of_succOf hφ hP a (fun k hk => ?_) (fun l hl => ?_)
+    · have hkN : k < size φ := by
+        rcases hk with hk | ⟨o, hoP, rfl⟩
+        · exact lt_of_lt_of_le hk (numAux_le_size φ)
+        · exact exitIdx_lt_size (mem_range.1 (hP hoP))
+      have := hmaps ⟨k, hkN⟩ (by simp [rowSet, hk])
+      simp only [colSet, mem_filter, mem_univ, true_and] at this
+      rwa [hF ⟨k, hkN⟩ hk] at this
+    · have hlN : l < size φ := by
+        rcases hl with hl | ⟨o, hoP, rfl⟩
+        · exact lt_of_lt_of_le hl (numAux_le_size φ)
+        · exact entryIdx_lt_size (mem_range.1 (hP hoP))
+      obtain ⟨u, hu, hul⟩ := hsurj ⟨l, hlN⟩ (by simp [colSet, hl])
+      simp only [rowSet, mem_filter, mem_univ, true_and] at hu
+      refine ⟨u, hu, ?_⟩
+      rw [← hF u hu, hul]
+  · intro a _
+    funext i
+    have hi : InRows φ P i := Or.inl i.2
+    simp only [assignOfBij, bijOfAssign, hi, dite_true]
+    rw [succOf_aux a i.2]
+    have hne := auxSucc_true_ne_false hφ i.2
+    cases h : a i
+    · simp only [decide_eq_false_iff_not]
+      exact hne.symm
+    · simp
+  · intro f hf
+    exact hval f hf
+
 
 end Cslib.Complexity.PermanentThreeSAT
