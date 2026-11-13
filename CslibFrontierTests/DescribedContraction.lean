@@ -111,4 +111,10 @@ example : ∃ K : ℕ, ∀ (q : ℕ × DescribedNetwork (List ℕ)) (E ES Ev : �
 example : SumOps.galois.PolyTime (encPair encUnary (encList encNat)) (encList encNat) :=
   SumOps.galois_polyTime
 
+-- The node record encodes as the earlier nested pair: encoded words are unchanged.
+example {Q T : Type} (encQ : Q ↪ List Bool) (encT : T ↪ List Bool) (x : Node Q T) :
+    encNode encQ encT x = encPair encUnary (encPair (encInput encQ encT) (encPair encBits encUnary))
+      (x.kind, (x.input, (x.word, x.idx))) :=
+  rfl
+
 end CslibFrontierTests.DescribedContraction

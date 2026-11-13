@@ -925,7 +925,8 @@ abbrev encEntryInput : PacketCtx × (List (ℕ × Bool) × List ℕ) ↪ List Bo
 
 /-- The root of coefficient extraction, with the exponents re-encoded in binary. -/
 theorem node_polyTime :
-    ComputableInPolyTime (fun q : PacketCtx × (List (ℕ × Bool) × List ℕ) => q)
+    ComputableInPolyTime (fun q : PacketCtx × (List (ℕ × Bool) × List ℕ) =>
+        (⟨q.1, q.2.1, q.2.2⟩ : CoeffScheme.Node PacketCtx (ℕ × Bool)))
       encEntryInput (CoeffScheme.Terms.encNode PacketCtx.enc (encPair encNat encBool)) := by
   have hβ := (ComputableInPolyTime.snd (encList (encPair encNat encBool)) (encList encUnary)).comp
     (ComputableInPolyTime.snd PacketCtx.enc
@@ -935,9 +936,9 @@ theorem node_polyTime :
     (ComputableInPolyTime.mapWithInput (f := fun _ (k : ℕ) => k) hβ
       (ComputableInPolyTime.unary_to_binary.comp (ComputableInPolyTime.snd _ _))).of_enc_eq
       fun q => by simp
-  exact (ComputableInPolyTime.fst _ _).prod
-    (((ComputableInPolyTime.fst (encList (encPair encNat encBool)) (encList encUnary)).comp
-      (ComputableInPolyTime.snd _ _)).prod hβ')
+  exact CoeffScheme.Terms.encNode_mk_polyTime _ _ (ComputableInPolyTime.fst _ _)
+    ((ComputableInPolyTime.fst (encList (encPair encNat encBool)) (encList encUnary)).comp
+      (ComputableInPolyTime.snd _ _)) hβ'
 
 /-- The source product is polynomial-time, with the exponents in unary. -/
 theorem sourceProduct_polyTime :
@@ -1073,8 +1074,8 @@ theorem entryCertificate_le :
   let E := ((targetModes q.1).length + 2) ^ q.2.1.length
   let z := (q, (packetTerms.value q.1 q.2.1 q.2.2, sourceProduct q.1 q.2.2))
   have hE : 1 ≤ E := Nat.one_le_pow _ _ (by omega)
-  have hnode : (CoeffScheme.Terms.encNode PacketCtx.enc (encPair encNat encBool) q).length ≤
-      (encEntryInput q).length := by
+  have hnode : (CoeffScheme.Terms.encNode PacketCtx.enc (encPair encNat encBool)
+      ⟨q.1, q.2.1, q.2.2⟩).length ≤ (encEntryInput q).length := by
     obtain ⟨ctx, rows, β⟩ := q
     have hβ : (encList encNat β).length ≤ (encList encUnary β).length := by
       simp only [length_encList]
@@ -1084,7 +1085,7 @@ theorem entryCertificate_le :
         rw [Nat.size_eq_bits_len]
         exact (Nat.size_le.mpr Nat.lt_two_pow_self).trans le_rfl
       enc_len
-    enc_len
+    enc_len [CoeffScheme.Terms.encNode_apply]
   have hred1 := hRv _ (reduced_value packetTerms q.1 q.2.1 q.2.2)
   have hred2 := hRv _ (reduced_sourceProduct q.1 q.2.2)
   have hmul : (encMul z).length + 1 ≤ 8 * Z := by
@@ -1096,16 +1097,17 @@ theorem entryCertificate_le :
     omega
   have ho : overhead z ≤ c * (8 * Z) ^ d :=
     (hover z).trans (Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hmul _))
-  have hv := hK₁ q Rv (by simpa only [packetTerms] using hRv)
-  have hz : (CoeffScheme.Terms.encNode PacketCtx.enc (encPair encNat encBool) q).length +
-      (targetModes q.1).length + Rv + 2 ≤ Z := by dsimp only [Z]; omega
-  have hvt : (CoeffScheme.Terms.valueCertificate packetTerms_polyTime).time q ≤
+  have hv := hK₁ ⟨q.1, q.2.1, q.2.2⟩ Rv (by simpa only [packetTerms] using hRv)
+  have hz : (CoeffScheme.Terms.encNode PacketCtx.enc (encPair encNat encBool)
+      ⟨q.1, q.2.1, q.2.2⟩).length + (targetModes q.1).length + Rv + 2 ≤ Z := by
+    dsimp only [Z]; omega
+  have hvt : (CoeffScheme.Terms.valueCertificate packetTerms_polyTime).time ⟨q.1, q.2.1, q.2.2⟩ ≤
       E * (K₁ * Z ^ K₁) := by
     calc
       _ ≤ K₁ * E * Z ^ K₁ :=
         hv.1.trans (Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hz K₁))
       _ = _ := by ring
-  have hvs : (CoeffScheme.Terms.valueCertificate packetTerms_polyTime).space q ≤
+  have hvs : (CoeffScheme.Terms.valueCertificate packetTerms_polyTime).space ⟨q.1, q.2.1, q.2.2⟩ ≤
       K₁ * Z ^ K₁ :=
     hv.2.trans (Nat.mul_le_mul_left _ (Nat.pow_le_pow_left hz K₁))
   have htotal := hK Z (by dsimp only [id, Z]; omega)
@@ -1116,7 +1118,8 @@ theorem entryCertificate_le :
       omega
     have hscaled := hrest.trans (Nat.le_mul_of_pos_left _ hE)
     change cI.time q + (cN.time q +
-      (CoeffScheme.Terms.valueCertificate packetTerms_polyTime).time q + cP.time q) +
+      (CoeffScheme.Terms.valueCertificate packetTerms_polyTime).time ⟨q.1, q.2.1, q.2.2⟩ +
+        cP.time q) +
       cM.time z ≤ _
     nlinarith
   have hs : entryCertificate.space q ≤ overhead z + K₁ * Z ^ K₁ := by
@@ -1124,7 +1127,8 @@ theorem entryCertificate_le :
       dsimp only [overhead, z]
       omega
     change cI.space q + (cN.space q +
-      (CoeffScheme.Terms.valueCertificate packetTerms_polyTime).space q + cP.space q) +
+      (CoeffScheme.Terms.valueCertificate packetTerms_polyTime).space ⟨q.1, q.2.1, q.2.2⟩ +
+        cP.space q) +
       cM.space z ≤ _
     omega
   constructor

@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.GenericRAM.Native.StackRecursionTree
 public import CslibFrontier.Computability.PolyTime.GaloisRingArithmetic
 public import CslibFrontier.Foundations.Data.BitString.List.Binary
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Words
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 public import CslibFrontier.Computability.GenericRAM.Native.BooleanFold
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListLookup
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.DegreeOptionPrimitives
@@ -184,39 +185,52 @@ variable {T : Type}
 
 /-! ### Direct summation as a recursion scheme -/
 
-/-- A node of direct summation: its kind (`0` the sum, `1` an assignment, `2` an entry), the
-precision and the network, and the current word and vertex index. -/
-abbrev Node (Q T : Type) := ℕ × ((Q × DescribedNetwork T) × (List Bool × ℕ))
+/-- A node of direct summation. -/
+structure Node (Q T : Type) where
+  /-- The kind: `0` the sum, `1` an assignment, `2` an entry. -/
+  kind : ℕ
+  /-- The input `(q, d)`: the precision and the network. -/
+  input : Q × DescribedNetwork T
+  /-- The current word: the bits of an assignment. -/
+  word : List Bool
+  /-- The current vertex index. -/
+  idx : ℕ
 
 variable {Q Y : Type} (ops : SumOps Q Y) (eval : T → List Bool → Y)
+
+/-- The precision of a node. -/
+abbrev Node.prec (x : Node Q T) : Q := x.input.1
+
+/-- The network of a node. -/
+abbrev Node.net (x : Node Q T) : DescribedNetwork T := x.input.2
 
 /-- The entry of a node: the evaluator at the descriptor of its vertex and the bits of its word
 on the vertex's ports, or the zero for an index past the vertices. -/
 def entryOf (x : Node Q T) : Y :=
-  (x.2.1.2.vertices[x.2.2.2]?).elim (ops.zero x.2.1.1) fun v => eval v.2 (wordBits x.2.2.1 v.1)
+  (x.net.vertices[x.idx]?).elim (ops.zero x.prec) fun v => eval v.2 (wordBits x.word v.1)
 
 /-- **Direct summation as a recursion scheme.** The sum (kind `0`) has the `2 ^ m` assignments as
 children, adding their values; an assignment (kind `1`) has the entries of the vertices as
 children, multiplying them; an entry (kind `2`) is a leaf. The operations are those at the
 precision of the node, and the accumulator is a counter and a value. -/
 def sumScheme : Scheme (Node Q T) (ℕ × Y) Y where
-  isLeaf x := x.1 == 2
+  isLeaf x := x.kind == 2
   leaf := entryOf ops eval
-  start x := (0, if x.1 = 0 then ops.zero x.2.1.1 else ops.one x.2.1.1)
+  start x := (0, if x.kind = 0 then ops.zero x.prec else ops.one x.prec)
   next x a :=
-    if x.1 = 0 then
-      (if a.1 < 2 ^ x.2.1.2.numEdges then some (1, (x.2.1, (lowBits x.2.1.2.numEdges a.1, 0)))
+    if x.kind = 0 then
+      (if a.1 < 2 ^ x.net.numEdges then some ⟨1, x.input, lowBits x.net.numEdges a.1, 0⟩
         else none)
-    else if x.1 = 1 then
-      (if a.1 < x.2.1.2.vertices.length then
-        some (2, (x.2.1, (x.2.2.1, min x.2.1.2.vertices.length a.1))) else none)
+    else if x.kind = 1 then
+      (if a.1 < x.net.vertices.length then
+        some ⟨2, x.input, x.word, min x.net.vertices.length a.1⟩ else none)
     else none
   absorb x a y :=
-    (a.1 + 1, if x.1 = 0 then ops.add x.2.1.1 a.2 y else ops.mul x.2.1.1 a.2 y)
+    (a.1 + 1, if x.kind = 0 then ops.add x.prec a.2 y else ops.mul x.prec a.2 y)
   finish _ a := a.2
 
 /-- The root of direct summation on `(q, d)`. -/
-def sumRoot (q : Q × DescribedNetwork T) : Node Q T := (0, (q, ([], 0)))
+def sumRoot (q : Q × DescribedNetwork T) : Node Q T := ⟨0, q, [], 0⟩
 
 /-- The weight of a word: the product of the entries at its bits, folded with the operations at
 `q`. -/
@@ -232,7 +246,7 @@ def sumValue (q : Q) (d : DescribedNetwork T) : Y :=
 /-- The shape of a node of direct summation on `q`: it keeps `q`, its kind is at most `2`, its
 word has at most `m` bits and its index is at most the number of vertices. -/
 def NodeShape (q : Q × DescribedNetwork T) (x : Node Q T) : Prop :=
-  x.2.1 = q ∧ x.1 ≤ 2 ∧ x.2.2.1.length ≤ q.2.numEdges ∧ x.2.2.2 ≤ q.2.vertices.length
+  x.input = q ∧ x.kind ≤ 2 ∧ x.word.length ≤ q.2.numEdges ∧ x.idx ≤ q.2.vertices.length
 
 /-- The invariant of direct summation on `q`: nodes have the shape of `NodeShape`, frames also
 have a counter at most `2 ^ m + k` and a reduced value, and every value is reduced or an entry of
@@ -248,9 +262,9 @@ variable {ops eval}
 /-- An entry is a leaf. -/
 theorem eval_entry (q : Q × DescribedNetwork T) {word : List Bool} {v : ℕ}
     (hw : word.length = q.2.numEdges) (hv : v < q.2.vertices.length) :
-    (sumScheme ops eval).Eval (sumInvariant ops eval q) (2, (q, (word, v)))
-      (entryOf ops eval (2, (q, (word, v)))) 1 0 := by
-  refine Scheme.Eval.leaf (R := sumScheme ops eval) ⟨rfl, by omega, hw.le, hv.le⟩ rfl
+    (sumScheme ops eval).Eval (sumInvariant ops eval q) ⟨2, q, word, v⟩
+      (entryOf ops eval ⟨2, q, word, v⟩) 1 0 := by
+  refine Scheme.Eval.leaf (R := sumScheme ops eval) ⟨rfl, le_rfl, hw.le, hv.le⟩ rfl
     (.inr ⟨q.2.vertices[v], List.getElem_mem hv, word, hw, ?_⟩)
   change (q.2.vertices[v]?).elim _ _ = _
   rw [List.getElem?_eq_getElem hv]
@@ -262,7 +276,7 @@ private theorem foldl_take_succ (q : Q) (d : DescribedNetwork T) (word : List Bo
         (ops.one q) =
       ops.mul q ((d.vertices.take c).foldl
         (fun acc v => ops.mul q acc (eval v.2 (wordBits word v.1))) (ops.one q))
-        (entryOf ops eval (2, ((q, d), (word, c)))) := by
+        (entryOf ops eval ⟨2, (q, d), word, c⟩) := by
   rw [List.take_add_one, List.getElem?_eq_getElem hc, Option.toList_some, List.foldl_append]
   simp [entryOf, List.getElem?_eq_getElem hc]
 
@@ -270,19 +284,19 @@ private theorem foldl_take_succ (q : Q) (d : DescribedNetwork T) (word : List Bo
 and one open call. -/
 theorem eval_assign (q : Q) (d : DescribedNetwork T) {word : List Bool}
     (hw : word.length = d.numEdges) :
-    ∃ h ≤ 1, (sumScheme ops eval).Eval (sumInvariant ops eval (q, d)) (1, ((q, d), (word, 0)))
+    ∃ h ≤ 1, (sumScheme ops eval).Eval (sumInvariant ops eval (q, d)) ⟨1, (q, d), word, 0⟩
       (weight ops eval q d word) (d.vertices.length + 1) h := by
   set acc : ℕ → ℕ × Y := fun c => (c, (d.vertices.take c).foldl
     (fun acc v => ops.mul q acc (eval v.2 (wordBits word v.1))) (ops.one q))
-  have hshape : NodeShape (q, d) ((1, ((q, d), (word, 0))) : Node Q T) :=
-    ⟨rfl, by omega, hw.le, Nat.zero_le _⟩
+  have hshape : NodeShape (q, d) (⟨1, (q, d), word, 0⟩ : Node Q T) :=
+    ⟨rfl, by norm_num, hw.le, Nat.zero_le _⟩
   have hred (c : ℕ) : ops.Reduced q (acc c).2 :=
     ops.reduced_foldl q _ (ops.reduced_mul q) _ _ (ops.reduced_one q)
   obtain ⟨h, hh, hloop⟩ := Scheme.Loop.counted (R := sumScheme ops eval)
     (I := sumInvariant ops eval (q, d))
-    (x := (1, ((q, d), (word, 0)))) (acc := acc)
-    (child := fun c => (2, ((q, d), (word, c))))
-    (val := fun c => entryOf ops eval (2, ((q, d), (word, c))))
+    (x := ⟨1, (q, d), word, 0⟩) (acc := acc)
+    (child := fun c => ⟨2, (q, d), word, c⟩)
+    (val := fun c => entryOf ops eval ⟨2, (q, d), word, c⟩)
     (nodes := fun _ => 1) (height := fun _ => 0) d.vertices.length 0
     (fun c hc => by simp [sumScheme, acc, hc, min_eq_right hc.le])
     (by simp [sumScheme, acc])
@@ -294,7 +308,7 @@ theorem eval_assign (q : Q) (d : DescribedNetwork T) {word : List Bool}
     (fun _ _ => le_rfl)
   refine ⟨h + 1, by omega, ?_⟩
   have := Scheme.Eval.call (R := sumScheme ops eval) (I := sumInvariant ops eval (q, d))
-    (x := (1, ((q, d), (word, 0)))) hshape rfl hloop (.inl (hred d.vertices.length))
+    (x := ⟨1, (q, d), word, 0⟩) hshape rfl hloop (.inl (hred d.vertices.length))
   simpa [sumScheme, acc, weight, List.take_length, Finset.sum_const, Finset.card_range] using
     this
 
@@ -321,7 +335,7 @@ theorem eval_sumRoot (q : Q) (d : DescribedNetwork T) :
   obtain ⟨h, hh, hloop⟩ := Scheme.Loop.counted (R := sumScheme ops eval)
     (I := sumInvariant ops eval (q, d))
     (x := sumRoot (q, d)) (acc := acc)
-    (child := fun c => (1, ((q, d), (lowBits d.numEdges c, 0))))
+    (child := fun c => ⟨1, (q, d), lowBits d.numEdges c, 0⟩)
     (val := fun c => weight ops eval q d (lowBits d.numEdges c))
     (nodes := fun _ => d.vertices.length + 1) (height := hgt) (2 ^ d.numEdges) 1
     (fun c hc => by simp [sumScheme, sumRoot, acc, hc])
@@ -448,8 +462,8 @@ abbrev encInput : Q × DescribedNetwork T ↪ List Bool := encPair encQ (encDesc
 
 /-- The encoding of a node: its kind in unary, its input, its word and its vertex index in
 unary. -/
-abbrev encNode : Node Q T ↪ List Bool :=
-  encPair encUnary (encPair (encInput encQ encT) (encPair encBits encUnary))
+enc_structure encNode (eQ : Q ↪ List Bool) (eT : T ↪ List Bool) : Node Q T where
+  kind : encUnary, input : (encInput eQ eT), word : encBits, idx : encUnary
 
 /-- The encoding of an accumulator: the counter in binary and the value. -/
 abbrev encAcc : ℕ × Y ↪ List Bool := encPair encNat encY
@@ -473,31 +487,15 @@ theorem vertices_polyTime :
       (encList (encVertex encT)) :=
   (ComputableInPolyTime.snd _ _).comp (ComputableInPolyTime.of_eq (f := equivProd) fun _ => rfl)
 
-/-- The kind of a node. -/
-theorem kind_polyTime : ComputableInPolyTime (fun x : Node Q T => x.1) (encNode encQ encT)
-    encUnary := ComputableInPolyTime.fst _ _
-
-/-- The input `(q, d)` of a node. -/
-theorem input_polyTime : ComputableInPolyTime (fun x : Node Q T => x.2.1) (encNode encQ encT)
-    (encInput encQ encT) := (ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.snd _ _)
-
 /-- The precision of a node. -/
-theorem precision_polyTime : ComputableInPolyTime (fun x : Node Q T => x.2.1.1)
-    (encNode encQ encT) encQ := (ComputableInPolyTime.fst _ _).comp input_polyTime
+theorem precision_polyTime : ComputableInPolyTime (fun x : Node Q T => x.prec)
+    (encNode encQ encT) encQ :=
+  (ComputableInPolyTime.fst _ _).comp (encNode_input_polyTime encQ encT ComputableInPolyTime.id')
 
 /-- The network of a node. -/
-theorem network_polyTime : ComputableInPolyTime (fun x : Node Q T => x.2.1.2)
-    (encNode encQ encT) (encDescribed encT) := (ComputableInPolyTime.snd _ _).comp input_polyTime
-
-/-- The word of a node. -/
-theorem word_polyTime : ComputableInPolyTime (fun x : Node Q T => x.2.2.1)
-    (encNode encQ encT) encBits :=
-  (ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.snd _ _).snd'
-
-/-- The vertex index of a node. -/
-theorem index_polyTime : ComputableInPolyTime (fun x : Node Q T => x.2.2.2)
-    (encNode encQ encT) encUnary :=
-  (ComputableInPolyTime.snd _ _).comp (ComputableInPolyTime.snd _ _).snd'
+theorem network_polyTime : ComputableInPolyTime (fun x : Node Q T => x.net)
+    (encNode encQ encT) (encDescribed encT) :=
+  (ComputableInPolyTime.snd _ _).comp (encNode_input_polyTime encQ encT ComputableInPolyTime.id')
 
 /-- `2 ^ P`, from `P` in unary. -/
 private theorem twoPow {α : Type} {encIn : α ↪ List Bool} {P : α → ℕ}
@@ -508,54 +506,55 @@ private theorem twoPow {α : Type} {encIn : α ↪ List Bool} {P : α → ℕ}
 /-- **The polynomial-time components of direct summation**, from polynomial-time operations. -/
 theorem sumScheme_polyTime (hops : ops.PolyTime encQ encY) :
     (sumScheme ops eval).PolyTime (encNode encQ encT) (encAcc encY) encY where
-  isLeaf := ComputableInPolyTime.beq kind_polyTime (ComputableInPolyTime.const 2)
+  isLeaf := ComputableInPolyTime.beq (encNode_kind_polyTime encQ encT ComputableInPolyTime.id')
+    (ComputableInPolyTime.const 2)
   start := by
     refine (ComputableInPolyTime.const 0).prod ?_
-    exact (ComputableInPolyTime.ite (ComputableInPolyTime.beq kind_polyTime
-      (ComputableInPolyTime.const 0)) (hops.zero.comp precision_polyTime)
-      (hops.one.comp precision_polyTime)).of_enc_eq fun x => by
+    exact (ComputableInPolyTime.ite (ComputableInPolyTime.beq
+      (encNode_kind_polyTime encQ encT ComputableInPolyTime.id') (ComputableInPolyTime.const 0))
+      (hops.zero.comp precision_polyTime) (hops.one.comp precision_polyTime)).of_enc_eq fun x => by
         simp only [Function.comp_apply, beq_iff_eq]
   next := by
     have hx := ComputableInPolyTime.fst (encNode encQ encT) (encAcc encY)
     have ha := ComputableInPolyTime.snd (encNode encQ encT) (encAcc encY)
-    have hk := kind_polyTime.comp hx
+    have hk := encNode_kind_polyTime encQ encT hx
     have hc := (ComputableInPolyTime.fst encNat encY).comp ha
-    have hq := input_polyTime.comp hx
+    have hq := encNode_input_polyTime encQ encT hx
     have hd := network_polyTime.comp hx
     have hm := numEdges_polyTime.comp hd
     have hlen := (ComputableInPolyTime.length_list _).comp (vertices_polyTime.comp hd)
     have hassign : ComputableInPolyTime (fun p : Node Q T × (ℕ × Y) =>
-        (if p.2.1 < 2 ^ p.1.2.1.2.numEdges then
-          some ((1, (p.1.2.1, (lowBits p.1.2.1.2.numEdges p.2.1, 0))) : Node Q T) else none))
+        (if p.2.1 < 2 ^ p.1.net.numEdges then
+          some (⟨1, p.1.input, lowBits p.1.net.numEdges p.2.1, 0⟩ : Node Q T) else none))
         (encPair (encNode encQ encT) (encAcc encY)) (encOption (encNode encQ encT)) :=
       (ComputableInPolyTime.ite (ComputableInPolyTime.binary_lt' hc (twoPow hm))
         ((ComputableInPolyTime.optionSome (encNode encQ encT)).comp
-          ((ComputableInPolyTime.const (encOut := encUnary) 1).prod
-          (hq.prod ((BooleanFold.decoder_polyTime.comp (hm.prod hc)).prod
-            (ComputableInPolyTime.const (encOut := encUnary) 0)))))
+          (encNode_mk_polyTime encQ encT (ComputableInPolyTime.const (encOut := encUnary) 1) hq
+            (BooleanFold.decoder_polyTime.comp (hm.prod hc))
+            (ComputableInPolyTime.const (encOut := encUnary) 0)))
         (ComputableInPolyTime.const none)).of_enc_eq fun p => by
           simp only [Function.comp_apply, decide_eq_true_eq]
     have hentry : ComputableInPolyTime (fun p : Node Q T × (ℕ × Y) =>
-        (if p.2.1 < p.1.2.1.2.vertices.length then
-          some ((2, (p.1.2.1, (p.1.2.2.1, min p.1.2.1.2.vertices.length p.2.1))) : Node Q T)
+        (if p.2.1 < p.1.net.vertices.length then
+          some (⟨2, p.1.input, p.1.word, min p.1.net.vertices.length p.2.1⟩ : Node Q T)
           else none))
         (encPair (encNode encQ encT) (encAcc encY)) (encOption (encNode encQ encT)) :=
       (ComputableInPolyTime.ite (ComputableInPolyTime.binary_lt' hc
           (ComputableInPolyTime.unary_to_binary.comp hlen))
         ((ComputableInPolyTime.optionSome (encNode encQ encT)).comp
-          ((ComputableInPolyTime.const (encOut := encUnary) 2).prod
-          (hq.prod ((word_polyTime.comp hx).prod
-            (ComputableInPolyTime.binary_min_unary' hlen hc)))))
+          (encNode_mk_polyTime encQ encT (ComputableInPolyTime.const (encOut := encUnary) 2) hq
+            (encNode_word_polyTime encQ encT hx)
+            (ComputableInPolyTime.binary_min_unary' hlen hc)))
         (ComputableInPolyTime.const none)).of_enc_eq fun p => by
           simp only [Function.comp_apply, decide_eq_true_eq]
     refine (ComputableInPolyTime.ite (ComputableInPolyTime.beq hk (ComputableInPolyTime.const 0))
       hassign (ComputableInPolyTime.ite (ComputableInPolyTime.beq hk
         (ComputableInPolyTime.const 1)) hentry (ComputableInPolyTime.const none))).of_enc_eq
       fun p => ?_
-    by_cases h0 : p.1.1 = 0
-    · simp only [sumScheme, Function.comp_apply, h0, beq_self_eq_true, ↓reduceIte]
-    · by_cases h1 : p.1.1 = 1 <;>
-        simp only [sumScheme, Function.comp_apply, h0, h1, beq_iff_eq, ↓reduceIte]
+    by_cases h0 : p.1.kind = 0
+    · simp only [sumScheme, h0, beq_self_eq_true, ↓reduceIte]
+    · by_cases h1 : p.1.kind = 1 <;>
+        simp only [sumScheme, h0, h1, beq_iff_eq, ↓reduceIte]
   absorb := by
     have hx := (ComputableInPolyTime.fst (encNode encQ encT) (encAcc encY)).comp
       (ComputableInPolyTime.fst (encPair (encNode encQ encT) (encAcc encY)) encY)
@@ -566,7 +565,7 @@ theorem sumScheme_polyTime (hops : ops.PolyTime encQ encY) :
     have hr := (ComputableInPolyTime.snd encNat encY).comp ha
     have hP := precision_polyTime.comp hx
     refine (ComputableInPolyTime.binary_add.comp (hc.prod (ComputableInPolyTime.const 1))).prod
-      ((ComputableInPolyTime.ite (ComputableInPolyTime.beq (kind_polyTime.comp hx)
+      ((ComputableInPolyTime.ite (ComputableInPolyTime.beq (encNode_kind_polyTime encQ encT hx)
         (ComputableInPolyTime.const 0))
         (hops.add.comp (hP.prod (hr.prod hy)))
         (hops.mul.comp (hP.prod (hr.prod hy)))).of_enc_eq fun q => ?_)
@@ -575,37 +574,38 @@ theorem sumScheme_polyTime (hops : ops.PolyTime encQ encY) :
 
 /-- The descriptor of a vertex and the bits of the node's word on its ports. -/
 theorem query_polyTime :
-    ComputableInPolyTime (fun p : Node Q T × (List ℕ × T) => (p.2.2, wordBits p.1.2.2.1 p.2.1))
+    ComputableInPolyTime (fun p : Node Q T × (List ℕ × T) => (p.2.2, wordBits p.1.word p.2.1))
       (encPair (encNode encQ encT) (encVertex encT)) (encPair encT encBits) := by
   have hv := ComputableInPolyTime.snd (encNode encQ encT) (encVertex encT)
   have hports := (ComputableInPolyTime.fst (encList encNat) encT).comp hv
-  have hword := word_polyTime.comp (ComputableInPolyTime.fst (encNode encQ encT)
+  have hword := encNode_word_polyTime encQ encT (ComputableInPolyTime.fst (encNode encQ encT)
     (encVertex encT))
   let E := encPair (encNode encQ encT) (encVertex encT)
   have hbit : ComputableInPolyTime (fun z : (Node Q T × (List ℕ × T)) × ℕ =>
-      z.1.1.2.2.1.getD z.2 false) (encPair E encNat) encBool :=
+      z.1.1.word.getD z.2 false) (encPair E encNat) encBool :=
     ComputableInPolyTime.listGetD_binary (encA := encBool) (encL := encBits) false
       (hword.comp (ComputableInPolyTime.fst E encNat)) (ComputableInPolyTime.snd E encNat)
   have hbits := ComputableInPolyTime.listToBits.comp
-    (ComputableInPolyTime.mapWithInput (f := fun p i => p.1.2.2.1.getD i false) hports hbit)
+    (ComputableInPolyTime.mapWithInput (f := fun p i => p.1.word.getD i false) hports hbit)
   exact ((ComputableInPolyTime.snd (encList encNat) encT).comp hv).prod hbits
 
 /-- The vertex of a node, if its index is in range. -/
 noncomputable def vertexCertificate :
-    NativeCertificate (fun x : Node Q T => x.2.1.2.vertices[x.2.2.2]?) (encNode encQ encT)
+    NativeCertificate (fun x : Node Q T => x.net.vertices[x.idx]?) (encNode encQ encT)
       (encOption (encVertex encT)) :=
   NativeCertificate.ofPolyTime (ComputableInPolyTime.getElem?
-    (vertices_polyTime.comp network_polyTime) index_polyTime)
+    (vertices_polyTime.comp network_polyTime)
+    (encNode_idx_polyTime encQ encT ComputableInPolyTime.id'))
 
 /-- The query to the evaluator: the descriptor and the bits on the ports. -/
 noncomputable def queryCertificate :
-    NativeCertificate (fun p : Node Q T × (List ℕ × T) => (p.2.2, wordBits p.1.2.2.1 p.2.1))
+    NativeCertificate (fun p : Node Q T × (List ℕ × T) => (p.2.2, wordBits p.1.word p.2.1))
       (encPair (encNode encQ encT) (encVertex encT)) (encPair encT encBits) :=
   NativeCertificate.ofPolyTime query_polyTime
 
 /-- The zero at the precision of a node. -/
 noncomputable def zeroCertificate (hops : ops.PolyTime encQ encY) :
-    NativeCertificate (fun x : Node Q T => ops.zero x.2.1.1) (encNode encQ encT) encY :=
+    NativeCertificate (fun x : Node Q T => ops.zero x.prec) (encNode encQ encT) encY :=
   NativeCertificate.ofPolyTime (hops.zero.comp precision_polyTime)
 
 variable (eval) in
@@ -614,8 +614,8 @@ native certificate of the evaluator with any bounds. -/
 noncomputable def leafCertificate (hops : ops.PolyTime encQ encY)
     (ev : NativeCertificate (fun q : T × List Bool => eval q.1 q.2) (encPair encT encBits) encY) :
     NativeCertificate (sumScheme ops eval).leaf (encNode encQ encT) encY :=
-  NativeCertificate.option (value := fun x : Node Q T => x.2.1.2.vertices[x.2.2.2]?)
-    (fallback := fun x => ops.zero x.2.1.1) (body := fun p => eval p.2.2 (wordBits p.1.2.2.1 p.2.1))
+  NativeCertificate.option (value := fun x : Node Q T => x.net.vertices[x.idx]?)
+    (fallback := fun x => ops.zero x.prec) (body := fun p => eval p.2.2 (wordBits p.1.word p.2.1))
     vertexCertificate (zeroCertificate hops) (ev.comp queryCertificate)
 
 /-- The time of the leaf step: the vertex lookup, and the zero or the query and the evaluator at
@@ -625,9 +625,9 @@ theorem leafCertificate_time (hops : ops.PolyTime encQ encY)
     (x : Node Q T) :
     (leafCertificate eval hops ev).time x =
       2 * (vertexCertificate (encQ := encQ) (encT := encT)).time x + (encNode encQ encT x).length +
-      (x.2.1.2.vertices[x.2.2.2]?).elim ((zeroCertificate (encT := encT) hops).time x)
+      (x.net.vertices[x.idx]?).elim ((zeroCertificate (encT := encT) hops).time x)
         fun v => (queryCertificate (encQ := encQ) (encT := encT)).time (x, v) +
-          ev.time (v.2, wordBits x.2.2.1 v.1) := rfl
+          ev.time (v.2, wordBits x.word v.1) := rfl
 
 /-- The space of the leaf step. -/
 theorem leafCertificate_space (hops : ops.PolyTime encQ encY)
@@ -635,9 +635,9 @@ theorem leafCertificate_space (hops : ops.PolyTime encQ encY)
     (x : Node Q T) :
     (leafCertificate eval hops ev).space x =
       2 * (vertexCertificate (encQ := encQ) (encT := encT)).space x + (encNode encQ encT x).length +
-      (x.2.1.2.vertices[x.2.2.2]?).elim ((zeroCertificate (encT := encT) hops).space x)
+      (x.net.vertices[x.idx]?).elim ((zeroCertificate (encT := encT) hops).space x)
         fun v => (queryCertificate (encQ := encQ) (encT := encT)).space (x, v) +
-          ev.space (v.2, wordBits x.2.2.1 v.1) := rfl
+          ev.space (v.2, wordBits x.word v.1) := rfl
 
 /-- The number of steps of direct summation: `2 (2 ^ m (k + 1) + 1) - 1`. -/
 def fuel (q : Q × DescribedNetwork T) : ℕ :=
@@ -657,8 +657,8 @@ theorem fuel_polyTime : ComputableInPolyTime (fuel (Q := Q) (T := T)) (encInput 
 /-- The root in polynomial time. -/
 theorem sumRoot_polyTime : ComputableInPolyTime (sumRoot (Q := Q) (T := T)) (encInput encQ encT)
     (encNode encQ encT) :=
-  (ComputableInPolyTime.const 0).prod (ComputableInPolyTime.id'.prod
-    (ComputableInPolyTime.const ([], 0)))
+  encNode_mk_polyTime encQ encT (ComputableInPolyTime.const 0) ComputableInPolyTime.id'
+    (ComputableInPolyTime.const []) (ComputableInPolyTime.const 0)
 
 variable (eval) in
 /-- **One native machine for direct summation over described networks**, from polynomial-time
@@ -734,7 +734,7 @@ theorem length_encNode_le {q : Q × DescribedNetwork T} {x : Node Q T} (hx : Nod
   subst hq
   dsimp only at hw hv
   have hd := length_numEdges_vertices_le (encT := encT) d
-  enc_len
+  enc_len [encNode_apply]
 
 private theorem term_le {c a b d D z : ℕ} (hd : d ≤ D) :
     c * (a * z + b) ^ d ≤ c * (a + b) ^ d * (z + 1) ^ D :=
@@ -822,14 +822,14 @@ theorem contractionCertificate_le [Inhabited Y] (hops : ops.PolyTime encQ encY)
         2 * cv' * (5 * z + 8) ^ dv' := by
       rw [Nat.mul_assoc]; exact Nat.mul_le_mul_left 2 ((hvs x).trans hx8)
     rw [leafCertificate_time, leafCertificate_space]
-    cases hvx : x.2.1.2.vertices[x.2.2.2]? with
+    cases hvx : x.net.vertices[x.idx]? with
     | none =>
       have h3 := (hzt x).trans hx8
       have h3' := (hzs x).trans hx8
       simp only [Option.elim]
       constructor <;> omega
     | some v =>
-      have hmem : v ∈ x.2.1.2.vertices := List.mem_of_getElem? hvx
+      have hmem : v ∈ x.input.2.vertices := List.mem_of_getElem? hvx
       obtain ⟨hq, -, -, -⟩ := hx
       rw [hq] at hmem
       have h3 := hvlen v hmem
@@ -841,7 +841,7 @@ theorem contractionCertificate_le [Inhabited Y] (hops : ops.PolyTime encQ encY)
         omega
       have h4 := (hqt (x, v)).trans hxv
       have h4' := (hqs (x, v)).trans hxv
-      obtain ⟨h5, h5', -⟩ := hE v hmem (wordBits x.2.2.1 v.1) (by simp [wordBits])
+      obtain ⟨h5, h5', -⟩ := hE v hmem (wordBits x.word v.1) (by simp [wordBits])
       simp only [Option.elim]
       constructor <;> omega
   obtain ⟨h, hh, he⟩ := eval_sumRoot (ops := ops) (eval := eval) P d

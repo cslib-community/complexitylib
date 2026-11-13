@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.DescribedContraction
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.PacketEvaluator
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -39,7 +40,8 @@ of `A_p = (ℤ / 2 ^ p)[U] / (f)`.
 The data (`CoeffScheme.Terms`) are, at a context `x : C`, the precision `(p, fl)`, the list of
 the (dense indices of the) modes, and the terms of the row factors: `term x r none` is the local
 term of the row `r`, and `term x r (some k)` the coefficient of the mode `k`. A node of the
-recursion is a context, the rows still to expand and the exponents still needed, as a dense list.
+recursion (`CoeffScheme.Node`) is a context, the rows still to expand and the exponents still
+needed, as a dense list.
 A node with rows `r :: rs` has `m + 1` children for `m` modes: the local term (`c = 0`), and the
 mode `modes[c - 1]` with its exponent lowered (`c ≥ 1`); it adds the products of their values
 with the terms of `r`, skipping the modes with exponent zero. A node without rows is a leaf: one
@@ -63,6 +65,7 @@ reduced coefficient lists (`CoeffScheme.Terms.valueCertificate_le`).
 ## Main definitions
 
 * `Cslib.Circuits.Frontier.CoeffScheme.Terms`: the data of coefficient extraction.
+* `Cslib.Circuits.Frontier.CoeffScheme.Node`: a node of the recursion.
 * `Cslib.Circuits.Frontier.CoeffScheme.Terms.value`: its value.
 * `Cslib.Circuits.Frontier.CoeffScheme.Terms.scheme`: the recursion scheme.
 * `Cslib.Circuits.Frontier.CoeffScheme.Terms.valueCertificate`: one native machine for `value`.
@@ -100,9 +103,14 @@ structure Terms (C Rw : Type) where
   /-- The terms of the row factors. -/
   term : C → Rw → Option ℕ → List ℕ
 
-/-- A node: a context, the rows still to expand, and the exponents still needed, as a dense
-list. -/
-abbrev Node (C Rw : Type) := C × (List Rw × List ℕ)
+/-- A node of the recursion. -/
+structure Node (C Rw : Type) where
+  /-- The context. -/
+  ctx : C
+  /-- The rows still to expand. -/
+  rows : List Rw
+  /-- The exponents still needed, as a dense list. -/
+  exps : List ℕ
 
 /-- The number of nodes of the derivation for `m` modes and `L` rows. -/
 def count (m : ℕ) : ℕ → ℕ
@@ -231,26 +239,26 @@ theorem val_value (x : C) (hm : (S.modes x).Nodup) :
 counted by the accumulator, and adds their contributions at its first row; a node without rows
 is a leaf. -/
 def scheme : Scheme (Node C Rw) (ℕ × List ℕ) (List ℕ) where
-  isLeaf x := x.2.1.isEmpty
-  leaf x := S.leafValue x.1 x.2.2
-  start x := (0, zero (S.prec x.1).2)
+  isLeaf x := x.rows.isEmpty
+  leaf x := S.leafValue x.ctx x.exps
+  start x := (0, zero (S.prec x.ctx).2)
   next x a :=
-    if x.2.1 ≠ [] ∧ a.1 ≤ (S.modes x.1).length then
-      some (x.1, (x.2.1.tail, S.childExps x.1 x.2.2 a.1))
+    if x.rows ≠ [] ∧ a.1 ≤ (S.modes x.ctx).length then
+      some ⟨x.ctx, x.rows.tail, S.childExps x.ctx x.exps a.1⟩
     else none
-  absorb x a y := (a.1 + 1, (x.2.1.head?).elim a.2 fun r =>
-    add (S.prec x.1).1 (S.prec x.1).2 a.2 (S.contrib x.1 r x.2.2 a.1 y))
+  absorb x a y := (a.1 + 1, (x.rows.head?).elim a.2 fun r =>
+    add (S.prec x.ctx).1 (S.prec x.ctx).2 a.2 (S.contrib x.ctx r x.exps a.1 y))
   finish _ a := a.2
 
-/-- The invariant at the root `(x₀, (rows₀, γ₀))`: nodes keep the context, have a suffix of the
+/-- The invariant at the root `⟨x₀, rows₀, γ₀⟩`: nodes keep the context, have a suffix of the
 rows and exponents of the same length below those of the root; frames also have a counter at
 most `m + 1` and a reduced value; values are reduced. -/
 def invariant (x₀ : C) (rows₀ : List Rw) (γ₀ : List ℕ) :
     Invariant (Node C Rw) (ℕ × List ℕ) (List ℕ) :=
-  ⟨fun x => x.1 = x₀ ∧ x.2.1 <:+ rows₀ ∧ x.2.2.length = γ₀.length ∧
-      ∀ j, x.2.2.getD j 0 ≤ γ₀.getD j 0,
-    fun x a => (x.1 = x₀ ∧ x.2.1 <:+ rows₀ ∧ x.2.2.length = γ₀.length ∧
-      ∀ j, x.2.2.getD j 0 ≤ γ₀.getD j 0) ∧ a.1 ≤ (S.modes x₀).length + 1 ∧
+  ⟨fun x => x.ctx = x₀ ∧ x.rows <:+ rows₀ ∧ x.exps.length = γ₀.length ∧
+      ∀ j, x.exps.getD j 0 ≤ γ₀.getD j 0,
+    fun x a => (x.ctx = x₀ ∧ x.rows <:+ rows₀ ∧ x.exps.length = γ₀.length ∧
+      ∀ j, x.exps.getD j 0 ≤ γ₀.getD j 0) ∧ a.1 ≤ (S.modes x₀).length + 1 ∧
       SumOps.galois.Reduced (S.prec x₀) a.2,
     fun y => SumOps.galois.Reduced (S.prec x₀) y⟩
 
@@ -268,7 +276,7 @@ root's and whose exponents are below the root's, the recursion computes `value`,
 theorem eval_value (x₀ : C) (rows₀ : List Rw) (γ₀ : List ℕ) :
     ∀ (rows : List Rw) (γ : List ℕ), rows <:+ rows₀ → γ.length = γ₀.length →
       (∀ j, γ.getD j 0 ≤ γ₀.getD j 0) →
-      ∃ h ≤ rows.length, S.scheme.Eval (S.invariant x₀ rows₀ γ₀) (x₀, (rows, γ))
+      ∃ h ≤ rows.length, S.scheme.Eval (S.invariant x₀ rows₀ γ₀) ⟨x₀, rows, γ⟩
         (S.value x₀ rows γ) (count (S.modes x₀).length rows.length) h
   | [], γ, hs, hl, hγ =>
     ⟨0, le_rfl, Scheme.Eval.leaf (R := S.scheme) ⟨rfl, hs, hl, hγ⟩ rfl
@@ -285,10 +293,10 @@ theorem eval_value (x₀ : C) (rows₀ : List Rw) (γ₀ : List ℕ) :
       ((List.suffix_cons r rs).trans hs) (by rw [length_childExps, hl])
       (fun j => by have := hγ j; rw [getD_childExps]; split_ifs <;> omega)
     choose hgt hhgt heval using hchild
-    have hnode : (S.invariant x₀ rows₀ γ₀).node (x₀, (r :: rs, γ)) := ⟨rfl, hs, hl, hγ⟩
+    have hnode : (S.invariant x₀ rows₀ γ₀).node ⟨x₀, r :: rs, γ⟩ := ⟨rfl, hs, hl, hγ⟩
     obtain ⟨h, hh, hloop⟩ := Scheme.Loop.counted (R := S.scheme)
-      (I := S.invariant x₀ rows₀ γ₀) (x := (x₀, (r :: rs, γ))) (acc := acc)
-      (child := fun c => (x₀, (rs, S.childExps x₀ γ c)))
+      (I := S.invariant x₀ rows₀ γ₀) (x := ⟨x₀, r :: rs, γ⟩) (acc := acc)
+      (child := fun c => ⟨x₀, rs, S.childExps x₀ γ c⟩)
       (val := fun c => S.value x₀ rs (S.childExps x₀ γ c))
       (nodes := fun _ => count m rs.length) (height := hgt) (m + 1) rs.length
       (fun c hc => by
@@ -302,18 +310,18 @@ theorem eval_value (x₀ : C) (rows₀ : List Rw) (γ₀ : List ℕ) :
       (fun c _ => heval c)
       (fun c hc => ⟨hnode, by simp only [acc]; omega, hred c⟩)
       (fun c _ => hhgt c)
-    have hstart : S.scheme.start (x₀, (r :: rs, γ)) = acc 0 := by simp [scheme, acc]
+    have hstart : S.scheme.start ⟨x₀, r :: rs, γ⟩ = acc 0 := by simp [scheme, acc]
     rw [← hstart] at hloop
     refine ⟨h + 1, by simp only [List.length_cons]; omega, ?_⟩
     have := Scheme.Eval.call (R := S.scheme) (I := S.invariant x₀ rows₀ γ₀)
-      (x := (x₀, (r :: rs, γ))) hnode rfl hloop (hred (m + 1))
+      (x := ⟨x₀, r :: rs, γ⟩) hnode rfl hloop (hred (m + 1))
     rw [sum_const, card_range, smul_eq_mul] at this
     exact this
 
-/-- **The root**: from `(x, (rows, γ))`, the recursion computes `value x rows γ` with at most
+/-- **The root**: from `⟨x, rows, γ⟩`, the recursion computes `value x rows γ` with at most
 `(m + 2) ^ L` nodes for `m` modes and `L` rows. -/
 theorem eval_root (x : C) (rows : List Rw) (γ : List ℕ) :
-    ∃ h ≤ rows.length, S.scheme.Eval (S.invariant x rows γ) (x, (rows, γ)) (S.value x rows γ)
+    ∃ h ≤ rows.length, S.scheme.Eval (S.invariant x rows γ) ⟨x, rows, γ⟩ (S.value x rows γ)
       (count (S.modes x).length rows.length) h :=
   S.eval_value x rows γ rows γ (List.suffix_refl _) rfl fun _ => le_rfl
 
@@ -327,8 +335,8 @@ open Turing.MultiTapeTM
 variable {encC : C ↪ List Bool} {encRw : Rw ↪ List Bool}
 
 /-- The encoding of a node: the context, the rows and the exponents in binary. -/
-abbrev encNode (encC : C ↪ List Bool) (encRw : Rw ↪ List Bool) : Node C Rw ↪ List Bool :=
-  encPair encC (encPair (encList encRw) (encList encNat))
+enc_structure encNode (eC : C ↪ List Bool) (eRw : Rw ↪ List Bool) : Node C Rw where
+  ctx : eC, rows : (encList eRw), exps : (encList encNat)
 
 /-- The encoding of an accumulator: the counter and the sum, in binary. -/
 abbrev encAcc : ℕ × List ℕ ↪ List Bool := encPair encNat (encList encNat)
@@ -428,12 +436,11 @@ end Lift
 
 /-- The leaf is polynomial-time. -/
 theorem leafValue_polyTime :
-    ComputableInPolyTime (fun x : Node C Rw => S.leafValue x.1 x.2.2) (encNode encC encRw)
+    ComputableInPolyTime (fun x : Node C Rw => S.leafValue x.ctx x.exps) (encNode encC encRw)
       (encList encNat) := by
-  have hx := ComputableInPolyTime.fst encC (encPair (encList encRw) (encList encNat))
-  have hγ := (ComputableInPolyTime.snd (encList encRw) (encList encNat)).comp
-    (ComputableInPolyTime.snd encC (encPair (encList encRw) (encList encNat)))
-  have htest : ComputableInPolyTime (fun z : Node C Rw × ℕ => z.1.2.2.getD z.2 0 == 0)
+  have hx := encNode_ctx_polyTime encC encRw ComputableInPolyTime.id'
+  have hγ := encNode_exps_polyTime encC encRw ComputableInPolyTime.id'
+  have htest : ComputableInPolyTime (fun z : Node C Rw × ℕ => z.1.exps.getD z.2 0 == 0)
       (encPair (encNode encC encRw) encNat) encBool :=
     ComputableInPolyTime.beq (ComputableInPolyTime.listGetD_binary (encA := encNat) 0
       (hγ.comp (ComputableInPolyTime.fst _ _)) (ComputableInPolyTime.snd _ _))
@@ -444,49 +451,46 @@ theorem leafValue_polyTime :
 /-- **The components of coefficient extraction are polynomial-time.** -/
 theorem scheme_polyTime : S.scheme.PolyTime (encNode encC encRw) encAcc (encList encNat) where
   isLeaf := (ComputableInPolyTime.listIsEmpty (encA := encRw)).comp
-    ((ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.snd _ _))
-  start := (ComputableInPolyTime.const 0).prod (zero_polyTime hS (ComputableInPolyTime.fst _ _))
+    (encNode_rows_polyTime encC encRw ComputableInPolyTime.id')
+  start := (ComputableInPolyTime.const 0).prod
+    (zero_polyTime hS (encNode_ctx_polyTime encC encRw ComputableInPolyTime.id'))
   next := by
     have hn := ComputableInPolyTime.fst (encNode encC encRw) encAcc
-    have hx := (ComputableInPolyTime.fst _ _).comp hn
-    have hrows := (ComputableInPolyTime.fst (encList encRw) (encList encNat)).comp
-      ((ComputableInPolyTime.snd _ _).comp hn)
-    have hγ := (ComputableInPolyTime.snd (encList encRw) (encList encNat)).comp
-      ((ComputableInPolyTime.snd _ _).comp hn)
+    have hx := encNode_ctx_polyTime encC encRw hn
+    have hrows := encNode_rows_polyTime encC encRw hn
+    have hγ := encNode_exps_polyTime encC encRw hn
     have hc := (ComputableInPolyTime.fst encNat (encList encNat)).comp
       (ComputableInPolyTime.snd (encNode encC encRw) encAcc)
     have hm := ComputableInPolyTime.unary_to_binary.comp
       ((ComputableInPolyTime.length_list encNat).comp (hS.modes.comp hx))
     have hsome : ComputableInPolyTime (fun z : Node C Rw × (ℕ × List ℕ) =>
-        some (z.1.1, (z.1.2.1.tail, S.childExps z.1.1 z.1.2.2 z.2.1)))
+        some (⟨z.1.ctx, z.1.rows.tail, S.childExps z.1.ctx z.1.exps z.2.1⟩ : Node C Rw))
         (encPair (encNode encC encRw) encAcc) (encOption (encNode encC encRw)) :=
       (ComputableInPolyTime.optionSome (encNode encC encRw)).comp
-        (hx.prod (((ComputableInPolyTime.tail (encA := encRw)).comp hrows).prod
-          (childExps_polyTime hS hx hγ hc)))
+        (encNode_mk_polyTime encC encRw hx ((ComputableInPolyTime.tail (encA := encRw)).comp hrows)
+          (childExps_polyTime hS hx hγ hc))
     refine (ComputableInPolyTime.ite ((ComputableInPolyTime.listIsEmpty (encA := encRw)).comp hrows)
       (ComputableInPolyTime.const none)
       (ComputableInPolyTime.ite (ComputableInPolyTime.binary_le' hc hm) hsome
         (ComputableInPolyTime.const none))).of_enc_eq fun z => ?_
-    by_cases he : z.1.2.1 = []
+    by_cases he : z.1.rows = []
     · simp [scheme, he]
-    · by_cases hle : z.2.1 ≤ (S.modes z.1.1).length <;> simp [scheme, he, hle]
+    · by_cases hle : z.2.1 ≤ (S.modes z.1.ctx).length <;> simp [scheme, he, hle]
   absorb := by
     have hq := ComputableInPolyTime.fst (encPair (encNode encC encRw) encAcc) (encList encNat)
     have hn := (ComputableInPolyTime.fst (encNode encC encRw) encAcc).comp hq
     have ha := (ComputableInPolyTime.snd (encNode encC encRw) encAcc).comp hq
     have hy := ComputableInPolyTime.snd (encPair (encNode encC encRw) encAcc) (encList encNat)
-    have hx := (ComputableInPolyTime.fst _ _).comp hn
-    have hrows := (ComputableInPolyTime.fst (encList encRw) (encList encNat)).comp
-      ((ComputableInPolyTime.snd _ _).comp hn)
-    have hγ := (ComputableInPolyTime.snd (encList encRw) (encList encNat)).comp
-      ((ComputableInPolyTime.snd _ _).comp hn)
+    have hx := encNode_ctx_polyTime encC encRw hn
+    have hrows := encNode_rows_polyTime encC encRw hn
+    have hγ := encNode_exps_polyTime encC encRw hn
     have hc := (ComputableInPolyTime.fst encNat (encList encNat)).comp ha
     have hs := (ComputableInPolyTime.snd encNat (encList encNat)).comp ha
     let E := encPair (encPair (encNode encC encRw) encAcc) (encList encNat)
     have hbody : ComputableInPolyTime
         (fun w : ((Node C Rw × (ℕ × List ℕ)) × List ℕ) × Rw =>
-          add (S.prec w.1.1.1.1).1 (S.prec w.1.1.1.1).2 w.1.1.2.2
-            (S.contrib w.1.1.1.1 w.2 w.1.1.1.2.2 w.1.1.2.1 w.1.2)) (encPair E encRw)
+          add (S.prec w.1.1.1.ctx).1 (S.prec w.1.1.1.ctx).2 w.1.1.2.2
+            (S.contrib w.1.1.1.ctx w.2 w.1.1.1.exps w.1.1.2.1 w.1.2)) (encPair E encRw)
         (encList encNat) := by
       have h1 := ComputableInPolyTime.fst E encRw
       exact computableInPolyTime_add (precision_polyTime hS (hx.comp h1))
@@ -503,12 +507,11 @@ theorem scheme_polyTime : S.scheme.PolyTime (encNode encC encRw) encAcc (encList
 
 /-- The number of steps: `2 (m + 2) ^ L` for `m` modes and `L` rows, at least the `2 N - 1`
 steps of a derivation with `N ≤ (m + 2) ^ L` nodes. -/
-def fuel (x : Node C Rw) : ℕ := 2 * ((S.modes x.1).length + 2) ^ x.2.1.length
+def fuel (x : Node C Rw) : ℕ := 2 * ((S.modes x.ctx).length + 2) ^ x.rows.length
 
 theorem fuel_polyTime : ComputableInPolyTime S.fuel (encNode encC encRw) encNat := by
-  have hx := ComputableInPolyTime.fst encC (encPair (encList encRw) (encList encNat))
-  have hrows := (ComputableInPolyTime.fst (encList encRw) (encList encNat)).comp
-    (ComputableInPolyTime.snd encC (encPair (encList encRw) (encList encNat)))
+  have hx := encNode_ctx_polyTime encC encRw ComputableInPolyTime.id'
+  have hrows := encNode_rows_polyTime encC encRw ComputableInPolyTime.id'
   exact ComputableInPolyTime.binary_mul' (ComputableInPolyTime.const 2)
     (ComputableInPolyTime.binary_pow' (ComputableInPolyTime.binary_add.comp
       ((ComputableInPolyTime.unary_to_binary.comp ((ComputableInPolyTime.length_list encNat).comp
@@ -531,16 +534,17 @@ noncomputable def runCertificate :
 
 omit hS in
 /-- **The machine computes `value`.** -/
-theorem run_scheme (x : Node C Rw) : S.scheme.run S.fuel id x = some (S.value x.1 x.2.1 x.2.2) := by
-  obtain ⟨h, -, he⟩ := S.eval_root x.1 x.2.1 x.2.2
+theorem run_scheme (x : Node C Rw) :
+    S.scheme.run S.fuel id x = some (S.value x.ctx x.rows x.exps) := by
+  obtain ⟨h, -, he⟩ := S.eval_root x.ctx x.rows x.exps
   refine Scheme.run_eq_some he ?_
-  have := count_le (S.modes x.1).length x.2.1.length
+  have := count_le (S.modes x.ctx).length x.rows.length
   simp only [fuel]
   omega
 
 /-- **Coefficient extraction, as a native certificate** for `value` on every node. -/
 noncomputable def valueCertificate :
-    NativeCertificate (fun x : Node C Rw => S.value x.1 x.2.1 x.2.2) (encNode encC encRw)
+    NativeCertificate (fun x : Node C Rw => S.value x.ctx x.rows x.exps) (encNode encC encRw)
       (encList encNat) :=
   (NativeCertificate.post (runCertificate hS)
     (ComputableInDegree.getD (enc₁ := encList encNat) (enc := encOption (encList encNat))
@@ -566,7 +570,7 @@ omit hS in
 /-- A node of the derivation from a root is at most as long as the root. -/
 theorem length_encNode_le {x₀ : C} {rows₀ : List Rw} {γ₀ : List ℕ} {x : Node C Rw}
     (hx : (S.invariant x₀ rows₀ γ₀).node x) :
-    (encNode encC encRw x).length ≤ (encNode encC encRw (x₀, (rows₀, γ₀))).length := by
+    (encNode encC encRw x).length ≤ (encNode encC encRw ⟨x₀, rows₀, γ₀⟩).length := by
   obtain ⟨hx₀, ⟨pre, hpre⟩, hl, hγ⟩ := hx
   obtain ⟨x', rs, γ⟩ := x
   simp only at hx₀ hpre hl hγ
@@ -580,7 +584,7 @@ theorem length_encNode_le {x₀ : C} {rows₀ : List Rw} {γ₀ : List ℕ} {x :
       change 2 * a.bits.length + 1 ≤ 2 * b.bits.length + 1
       rw [Nat.size_eq_bits_len, Nat.size_eq_bits_len]
       exact Nat.add_le_add_right (Nat.mul_le_mul_left 2 (Nat.size_le_size hab)) 1) γ γ₀ hl hγ
-  enc_len
+  enc_len [encNode_apply]
 
 /-- **The resources of coefficient extraction.** There is `K` such that on a node of length `n`
 with `m` modes and `L` rows, if the reduced values of its precision are at most `Rv` bits long,
@@ -588,11 +592,11 @@ then with `Z = n + m + Rv + 2` the time is at most `K (m + 2) ^ L Z ^ K` and the
 `K Z ^ K`: time `exp(O(L log m))` times a polynomial, in polynomial space. -/
 theorem valueCertificate_le :
     ∃ K : ℕ, ∀ (x : Node C Rw) (Rv : ℕ),
-      (∀ y, SumOps.galois.Reduced (S.prec x.1) y → (encList encNat y).length ≤ Rv) →
-      (valueCertificate hS).time x ≤ K * ((S.modes x.1).length + 2) ^ x.2.1.length *
-          ((encNode encC encRw x).length + (S.modes x.1).length + Rv + 2) ^ K ∧
+      (∀ y, SumOps.galois.Reduced (S.prec x.ctx) y → (encList encNat y).length ≤ Rv) →
+      (valueCertificate hS).time x ≤ K * ((S.modes x.ctx).length + 2) ^ x.rows.length *
+          ((encNode encC encRw x).length + (S.modes x.ctx).length + Rv + 2) ^ K ∧
         (valueCertificate hS).space x ≤
-          K * ((encNode encC encRw x).length + (S.modes x.1).length + Rv + 2) ^ K := by
+          K * ((encNode encC encRw x).length + (S.modes x.ctx).length + Rv + 2) ^ K := by
   obtain ⟨K₀, hK₀⟩ := Scheme.certificate_le (scheme_polyTime hS) (leafCertificate hS)
   have hL := NativeCertificate.ofPolyTime_isPolynomial (leafValue_polyTime hS)
   have hF := NativeCertificate.ofPolyTime_isPolynomial (fuel_polyTime hS)
@@ -610,7 +614,7 @@ theorem valueCertificate_le :
   refine ⟨G + G' + D, fun x Rv hRv => ?_⟩
   obtain ⟨x₀, rows₀, γ₀⟩ := x
   simp only
-  obtain ⟨n, hn⟩ : ∃ n, n = (encNode encC encRw (x₀, (rows₀, γ₀))).length := ⟨_, rfl⟩
+  obtain ⟨n, hn⟩ : ∃ n, n = (encNode encC encRw ⟨x₀, rows₀, γ₀⟩).length := ⟨_, rfl⟩
   obtain ⟨m, hm⟩ : ∃ m, m = (S.modes x₀).length := ⟨_, rfl⟩
   obtain ⟨L, hLen⟩ : ∃ L, L = rows₀.length := ⟨_, rfl⟩
   obtain ⟨Z, hZ⟩ : ∃ Z, Z = n + m + Rv + 2 := ⟨_, rfl⟩
@@ -620,7 +624,7 @@ theorem valueCertificate_le :
   have hLn : L ≤ n := by
     have := length_le_length_encList encRw rows₀
     rw [hn, hLen]
-    enc_len
+    enc_len [encNode_apply]
   have hpowZ {a : ℕ} (ha : a ≤ D) : Z ^ a ≤ W := by
     rw [hW]; exact Nat.pow_le_pow_right (by omega) ha
   have hZW : Z ≤ W := by
@@ -654,26 +658,26 @@ theorem valueCertificate_le :
         length_encPair a
       omega)
     (fun y hy => by have := hRv y hy; omega)
-    (x₀, (rows₀, γ₀)) _ _ _ he
+    ⟨x₀, rows₀, γ₀⟩ _ _ _ he
   obtain ⟨htime, hspace⟩ := hres
   -- The fuel and its clock.
-  have hfuel : S.fuel (x₀, (rows₀, γ₀)) = 2 * (m + 2) ^ L := by simp only [fuel, hm, hLen]
-  have hfuelLen : (encNat (S.fuel (x₀, (rows₀, γ₀)))).length ≤ 2 * Z ^ 2 := by
+  have hfuel : S.fuel ⟨x₀, rows₀, γ₀⟩ = 2 * (m + 2) ^ L := by simp only [fuel, hm, hLen]
+  have hfuelLen : (encNat (S.fuel ⟨x₀, rows₀, γ₀⟩)).length ≤ 2 * Z ^ 2 := by
     have hpow : (m + 2) ^ L < 2 ^ ((m + 2) * L + 1) := by
       calc (m + 2) ^ L ≤ (2 ^ (m + 2)) ^ L :=
             Nat.pow_le_pow_left (Nat.lt_two_pow_self).le _
         _ = 2 ^ ((m + 2) * L) := (pow_mul _ _ _).symm
         _ < 2 ^ ((m + 2) * L + 1) := Nat.pow_lt_pow_right (by norm_num) (by omega)
-    have h1 : S.fuel (x₀, (rows₀, γ₀)) < 2 ^ ((m + 2) * L + 2) := by
+    have h1 : S.fuel ⟨x₀, rows₀, γ₀⟩ < 2 ^ ((m + 2) * L + 2) := by
       rw [hfuel, pow_succ]; omega
     have h2 := Turing.MultiTapeTM.length_encNat_le_of_lt_two_pow h1
     have h3 : (m + 2) * L ≤ Z * Z := Nat.mul_le_mul (by omega) (by omega)
     have h4 : 4 ≤ Z * Z := Nat.mul_le_mul hZ2 hZ2
     rw [sq]
     omega
-  have hclock : ((encNat (S.fuel (x₀, (rows₀, γ₀)))).length + 1) ^ 2 ≤ 9 * W := by
+  have hclock : ((encNat (S.fuel ⟨x₀, rows₀, γ₀⟩)).length + 1) ^ 2 ≤ 9 * W := by
     have hZsq : 1 ≤ Z ^ 2 := Nat.one_le_pow _ _ (by omega)
-    calc ((encNat (S.fuel (x₀, (rows₀, γ₀)))).length + 1) ^ 2 ≤ (3 * Z ^ 2) ^ 2 :=
+    calc ((encNat (S.fuel ⟨x₀, rows₀, γ₀⟩)).length + 1) ^ 2 ≤ (3 * Z ^ 2) ^ 2 :=
           Nat.pow_le_pow_left (by omega) 2
       _ = 9 * Z ^ 4 := by ring
       _ ≤ 9 * W := Nat.mul_le_mul_left _ (hpowZ (by omega))
@@ -690,10 +694,10 @@ theorem valueCertificate_le :
       _ ≤ K₀ * 8 ^ K₀ * W := Nat.mul_le_mul_left _ (hpowZ (by omega))
   have hTL : cl * Z ^ dl ≤ cl * W := Nat.mul_le_mul_left _ (hpowZ (by omega))
   have hSL : cl' * Z ^ dl' ≤ cl' * W := Nat.mul_le_mul_left _ (hpowZ (by omega))
-  have hcf := (hft (x₀, (rows₀, γ₀))).trans (hn ▸ hn1 (c := cf) (show df ≤ D by omega))
-  have hcr := (hrt (x₀, (rows₀, γ₀))).trans (hn ▸ hn1 (c := cr) (show dr ≤ D by omega))
-  have hcf' := (hfs (x₀, (rows₀, γ₀))).trans (hn ▸ hn1 (c := cf') (show df' ≤ D by omega))
-  have hcr' := (hrs (x₀, (rows₀, γ₀))).trans (hn ▸ hn1 (c := cr') (show dr' ≤ D by omega))
+  have hcf := (hft ⟨x₀, rows₀, γ₀⟩).trans (hn ▸ hn1 (c := cf) (show df ≤ D by omega))
+  have hcr := (hrt ⟨x₀, rows₀, γ₀⟩).trans (hn ▸ hn1 (c := cr) (show dr ≤ D by omega))
+  have hcf' := (hfs ⟨x₀, rows₀, γ₀⟩).trans (hn ▸ hn1 (c := cf') (show df' ≤ D by omega))
+  have hcr' := (hrs ⟨x₀, rows₀, γ₀⟩).trans (hn ▸ hn1 (c := cr') (show dr' ≤ D by omega))
   rw [← hn] at htime hspace
   have hWK : W ≤ Z ^ (G + G' + D) := hW ▸ Nat.pow_le_pow_right (by omega) (by omega)
   have hnW : n ≤ W := by omega
@@ -703,9 +707,9 @@ theorem valueCertificate_le :
     obtain ⟨P, hPdef⟩ : ∃ P, P = (m + 2) ^ L := ⟨_, rfl⟩
     rw [← hPdef] at hP ⊢
     obtain ⟨Y, hY⟩ : ∃ Y, Y = K₀ * ((h + 1) * (3 * Z + 1)) ^ K₀ + cl * Z ^ dl +
-        ((encNat (S.fuel (x₀, (rows₀, γ₀)))).length + 1) ^ 2 := ⟨_, rfl⟩
+        ((encNat (S.fuel ⟨x₀, rows₀, γ₀⟩)).length + 1) ^ 2 := ⟨_, rfl⟩
     rw [← hY] at htime
-    have hfP : (S.fuel (x₀, (rows₀, γ₀)) + 1) * Y = (2 * P + 1) * Y := by rw [hfuel, hPdef]
+    have hfP : (S.fuel ⟨x₀, rows₀, γ₀⟩ + 1) * Y = (2 * P + 1) * Y := by rw [hfuel, hPdef]
     have hstep : Y ≤ (K₀ * 8 ^ K₀ + cl + 9) * W := by
       have e : (K₀ * 8 ^ K₀ + cl + 9) * W = K₀ * 8 ^ K₀ * W + cl * W + 9 * W := by ring
       omega
@@ -728,7 +732,7 @@ theorem valueCertificate_le :
           exact Nat.mul_le_mul_left _ (Nat.mul_le_mul (by omega) hWK)
   · rw [valueCertificate_space]
     unfold runCertificate
-    have h1 : (encNat (S.fuel (x₀, (rows₀, γ₀)))).length ≤ 2 * W := by
+    have h1 : (encNat (S.fuel ⟨x₀, rows₀, γ₀⟩)).length ≤ 2 * W := by
       have := hpowZ (show 2 ≤ D by omega); omega
     calc _ ≤ cf' * W + cr' * W + 2 * W + K₀ * 8 ^ K₀ * W + cl' * W + 2 * W := by omega
       _ = G' * W := by rw [hG']; ring

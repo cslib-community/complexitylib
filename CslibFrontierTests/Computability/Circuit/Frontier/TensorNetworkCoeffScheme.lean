@@ -22,7 +22,7 @@ The coefficient of the mode `0` in the product of the two row factors is
 
 namespace CslibFrontierTests.TensorNetworkCoeffScheme
 
-open Cslib Cslib.Circuits.Frontier Cslib.Circuits.Frontier.CoeffScheme
+open Cslib Cslib.Circuits.Frontier Cslib.Circuits.Frontier.CoeffScheme Turing.MultiTapeTM
 
 /-- The data of the test. -/
 def terms : Terms Unit ℕ where
@@ -36,7 +36,7 @@ def terms : Terms Unit ℕ where
 example : terms.value () [1, 2] [1, 0, 0] = [3, 3] := by decide
 
 -- The stack machine, with fuel `2 (2 + 2) ^ 2 = 32`, returns it.
-example : terms.scheme.run terms.fuel id ((), ([1, 2], [1, 0, 0])) = some [3, 3] := by decide
+example : terms.scheme.run terms.fuel id ⟨(), [1, 2], [1, 0, 0]⟩ = some [3, 3] := by decide
 
 -- With both exponents zero, the coefficient of the constant term is `1 * 2 = 2`.
 example : terms.value () [1, 2] [0, 0, 0] = [2, 0] := by decide
@@ -46,8 +46,14 @@ example : terms.value () [1] [2, 0, 0] = [0, 0] := by decide
 
 -- On every node, the run is the value, and the value in `A_p` is `listCoeff`.
 example (x : Node Unit ℕ) :
-    terms.scheme.run terms.fuel id x = some (terms.value x.1 x.2.1 x.2.2) :=
+    terms.scheme.run terms.fuel id x = some (terms.value x.ctx x.rows x.exps) :=
   terms.run_scheme x
+
+-- The node record encodes as the earlier nested pair: encoded words are unchanged.
+example {C Rw : Type} (encC : C ↪ List Bool) (encRw : Rw ↪ List Bool) (x : Node C Rw) :
+    Terms.encNode encC encRw x =
+      encPair encC (encPair (encList encRw) (encList encNat)) (x.ctx, (x.rows, x.exps)) :=
+  rfl
 
 example (rows : List ℕ) (γ : List ℕ) :
     GaloisRingArith.val 3 [1, 1] (terms.value () rows γ) =
