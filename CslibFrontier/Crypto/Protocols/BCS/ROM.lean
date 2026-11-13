@@ -9,7 +9,7 @@ module
 
 public import CslibFrontier.Init
 public import CslibFrontier.Crypto.Protocols.BCS.Basic
-public import CslibFrontier.Crypto.Computational.Kilian.Micali
+public import CslibFrontier.Crypto.Computational.MerkleTree.Prog
 public import CslibFrontier.Crypto.Computational.MerkleTree.ROMExtract
 public import CslibFrontier.Languages.Probabilistic.UntilBad.TwoCost
 import CslibFrontier.Foundations.Data.List.Counting
@@ -1883,45 +1883,6 @@ private theorem validFSChain_of_mem_support_bcsChallengesProg
   simpa only [htake] using
     validFSChain_of_mem_support_bcsChallengesAuxProg x roots r le_rfl hnodup hsupp hmem
 
-private theorem allOpenings_of_mem_support_mapM_merkleVerifyProg
-    (dist : List Bool → PMF (List Bool)) (encSym : Sym → List Bool)
-    (roots : Fin r → List Bool)
-    (qa : List ((Fin r × Fin (2 ^ d)) × MerkleOpening Sym))
-    {tr tr' : List (List Bool × List Bool)} {checks : List Bool}
-    (hnodup : (tr.map Prod.fst).Nodup)
-    (hsupp : ∀ e ∈ tr, e.2 ∈ (dist e.1).support)
-    (hmem : (checks, tr') ∈
-      ((OracleComp.interpret (memoize dist)
-        (qa.mapM fun ((j, idx), ⟨val, path⟩) =>
-          merkleVerifyProg d (roots j) idx.val (encSym val) path)).run tr).support)
-    {h : List Bool → List Bool} (hcons : TraceConsistentWith h tr') :
-    ∀ j idx val path, ((j, idx), ⟨val, path⟩) ∈ qa →
-      PathQueriedInTrace (fun _ => h) [] tr' idx.val (encSym val) path := by
-  induction qa generalizing tr checks with
-  | nil =>
-    intro _ _ _ _ ho
-    cases ho
-  | cons hd tl ih =>
-    rcases hd with ⟨⟨j₀, idx₀⟩, ⟨val₀, path₀⟩⟩
-    simp only [List.mapM_cons, run_interpret_bind, run_interpret_pure, PMF.monad_bind_eq_bind,
-      PMF.monad_pure_eq_pure, PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hmem
-    rcases hmem with ⟨⟨c, tr₁⟩, hc, ⟨cs, tr₂⟩, hcs, rfl, rfl⟩
-    obtain ⟨hsub₁, hnodup₁, hsupp₁, -⟩ :=
-      mem_support_run_memoize_invariant dist
-        (merkleVerifyProg d (roots j₀) idx₀.val (encSym val₀) path₀) hnodup hsupp hc
-    obtain ⟨hsub₂, -, -, -⟩ :=
-      mem_support_run_memoize_invariant dist _ hnodup₁ hsupp₁ hcs
-    have hcons₁ : TraceConsistentWith h tr₁ := fun p hp => hcons p (hsub₂ p hp)
-    have hhd := pathQueriedInTrace_of_mem_support_merkleVerifyProg dist d (roots j₀)
-      idx₀.val (encSym val₀) path₀ hnodup hsupp hc hcons₁
-    intro j idx val path ho
-    rcases List.mem_cons.mp ho with heq | htl
-    · rw [Prod.mk.injEq, Prod.mk.injEq, MerkleOpening.mk.injEq] at heq
-      rcases heq with ⟨⟨rfl, rfl⟩, ⟨rfl, rfl⟩⟩
-      intro q hq
-      exact hsub₂ _ (hhd q hq)
-    · exact ih hnodup₁ hsupp₁ hcs j idx val path htl
-
 /-- Core trace soundness/consistency lemma for `bcsVerifyROM`: when `bcsVerifyROM iop encSym x prf`
 runs from a valid trace state `(tr_MT₁, tr_FS₁)` and returns `(true, (tr_MT₃, tr_FS₂))`, if
 `TraceCollisionFree tr_MT₃` holds, then there exists a challenge vector `chals : Fin r → Chal` such
@@ -1983,8 +1944,11 @@ private theorem exists_validFSChain_and_iopVerify_of_mem_support_bcsVerifyROM
       PMF.mem_support_pure_iff] at hmt_mem
     rcases hmt_mem with ⟨⟨checks, tr_MT_mid⟩, hchecks, hpair_mid⟩
     obtain ⟨_, rfl⟩ := Prod.mk.inj hpair_mid
-    exact allOpenings_of_mem_support_mapM_merkleVerifyProg _ encSym prf.roots _
-      hnodup_MT₁ hsupp_MT₁ hchecks hcons_MT
+    intro j idx val path hq
+    exact pathQueriedInTrace_of_mem_support_mapM_merkleVerifyProg hnodup_MT₁ hsupp_MT₁ hchecks d
+      (fun ((j, _), _) => prf.roots j) (fun ((_, idx), _) => idx.val)
+      (fun (_, o) => encSym o.leaf) (fun (_, o) => o.path) (fun ⟨⟨_, _⟩, ⟨_, _⟩⟩ => rfl)
+      hcons_MT _ hq
   have hver : bcsVerify iop (fun _ => hTree) [] encSym (chainedFS f) x prf = true := by
     have heq := (heval_MT hTree hcons_MT).symm
     rw [evalPure_bcsVerifyOpeningsProg, hchals_eq] at heq
