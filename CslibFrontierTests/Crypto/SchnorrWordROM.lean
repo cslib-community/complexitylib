@@ -104,7 +104,8 @@ private def queries :
 -- Four calls retain three separate cache keys, with no default-key collapse for junk words.
 example :
     OracleComp.runWithAnswers c5
-      ((OracleComp.interpret (FiatShamir.reductionHandler (encPair encBits encBits))
+      ((OracleComp.interpret
+        (ForkingReduction.handler (FiatShamir.signer (encPair encBits encBits)))
         queries).run ⟨[], [], 0, []⟩) [c5, c6, c6] =
       (((c5, c6, c6, c5),
         ⟨[([true], c6, some 2), (encPair encBits encBits ([], Nat.bits 9), c6, some 1),

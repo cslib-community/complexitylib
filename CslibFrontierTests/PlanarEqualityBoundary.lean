@@ -39,7 +39,7 @@ example : hotBoundary.certificate = expected := by
   rw [GadgetWitness.equalDrop_certificate]
   decide +kernel
 
-example : naeAtom.equalDrop.body = [((), [Sum.inl 0, Sum.inl 0, Sum.inl 1])] := rfl
+example : naeAtom.equalDrop.body = [⟨(), [Sum.inl 0, Sum.inl 0, Sum.inl 1]⟩] := rfl
 
 example : verify naeAtom.equalDrop.body (List.ofFn Sum.inl) expected = true := by
   decide +kernel
@@ -68,7 +68,7 @@ private def derivedOne : PPGadget arity hotSem (RelationMinor.pin true) :=
     decide +kernel)
 private noncomputable def derivedOneBoundary : GadgetWitness derivedOne := hotBoundary.projectHead
 
-example : derivedOne.body = [((), [Sum.inr (0 : Fin 1), Sum.inr (0 : Fin 1), Sum.inl 0])] := rfl
+example : derivedOne.body = [⟨(), [Sum.inr (0 : Fin 1), Sum.inr (0 : Fin 1), Sum.inl 0]⟩] := rfl
 example : derivedOneBoundary.certificate = ⟨[2, 3, 0, 5, 6, 1, 4, 7]⟩ := by
   unfold derivedOneBoundary
   rw [GadgetWitness.projectHead_certificate]
@@ -91,7 +91,7 @@ private def derivedZero : PPGadget arity hotSem (RelationMinor.pin false) :=
 private noncomputable def derivedZeroBoundary : GadgetWitness derivedZero :=
   hotBoundary.project (1 : Fin 2)
 
-example : derivedZero.body = [((), [Sum.inl 0, Sum.inl 0, Sum.inr (0 : Fin 1)])] := rfl
+example : derivedZero.body = [⟨(), [Sum.inl 0, Sum.inl 0, Sum.inr (0 : Fin 1)]⟩] := rfl
 example : verify derivedZero.body (List.ofFn Sum.inl) derivedZeroBoundary.certificate = true :=
   derivedZeroBoundary.accepted
 example (a : Fin 1 → Bool) : a ∈ RelationMinor.pin false ↔
@@ -143,7 +143,7 @@ example : repeatedBoundary.equalDrop.certificate = ⟨[4, 3, 0, 1, 8, 7, 2, 5, 6
   rw [GadgetWitness.equalDrop_certificate]
   decide +kernel
 example : repeatedGadget.equalDrop.body =
-    [((), [Sum.inl 0, Sum.inl 0]), ((), [Sum.inl 0, Sum.inl 0])] := rfl
+    [⟨(), [Sum.inl 0, Sum.inl 0]⟩, ⟨(), [Sum.inl 0, Sum.inl 0]⟩] := rfl
 example : verify repeatedGadget.equalDrop.body (List.ofFn Sum.inl)
     ⟨[4, 3, 0, 1, 8, 7, 2, 5, 6, 9]⟩ = true := by decide +kernel
 
@@ -159,7 +159,7 @@ example : verify highAtom.equalDrop.body (List.ofFn Sum.inl)
 private def nullaryGadget : PPGadget (fun _ : Bool => 0) (fun r _ => r)
     (∅ : Set (Fin 2 → Bool)) where
   numAux := 0
-  body := [(false, []), (true, [])]
+  body := [⟨false, []⟩, ⟨true, []⟩]
   wellFormed := by intro c hc; simp only [List.mem_cons, List.not_mem_nil, or_false] at hc
                    rcases hc with rfl | rfl <;> rfl
   correct := by decide +kernel
@@ -176,8 +176,8 @@ example : ∀ (a : Fin 1 → Bool) (b : Fin 0 → Bool),
   decide +kernel
 
 -- The order congruence does not silently require a wellformed rotation table.
-example (a b : ℕ) : verifyArgumentOrder ([((), [7, 7])] : CSP Unit ℕ) ⟨[a, 3, b, 1]⟩ =
-    verifyArgumentOrder ([((), [7, 7])] : CSP Unit ℕ) ⟨[0, 3, 0, 1]⟩ := by
+example (a b : ℕ) : verifyArgumentOrder ([⟨(), [7, 7]⟩] : CSP Unit ℕ) ⟨[a, 3, b, 1]⟩ =
+    verifyArgumentOrder ([⟨(), [7, 7]⟩] : CSP Unit ℕ) ⟨[0, 3, 0, 1]⟩ := by
   apply verifyArgumentOrder_congr
   intro i hi
   change i < 2 at hi

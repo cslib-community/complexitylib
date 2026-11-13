@@ -774,30 +774,9 @@ theorem ampLoop_law {w sb n R : ℕ} {W : Fin n → Fin n → ℕ} {mem₀ : ℕ
         (OracleComp.evalWith (fun _ => Lean.Karger.answerLaw ⟨n, W⟩)
           (if i = 0 then Lean.Karger.minRuns rem
             else OracleComp.iterate rem Lean.Karger.minStep (x.regs bestVal))) := by
-  intro rem
-  induction rem with
-  | zero =>
-    intro i x hiR hinv
-    obtain rfl : i = R := by omega
-    have hc : ¬(Cond.lt trialIdx numTrials).Holds x := by
-      simp [Cond.holds_lt, hinv.regs_trialIdx, hinv.regs_numTrials]
-    rw [ite_eq_right (by omega)]
-    exact (ExecRandLaw.loop_exit hc hinv).mono (fun _ h => h) (by omega) (Nat.zero_le _)
-  | succ rem ih =>
-    intro i x hiR hinv
-    have hc : (Cond.lt trialIdx numTrials).Holds x := by
-      simp [Cond.holds_lt, hinv.regs_trialIdx, hinv.regs_numTrials]
-      omega
-    refine ((ExecRandLaw.loop_iter hc (ampTrialBody_law hn hW (by omega) h1 hdEnd hR_fit htot hinv)
-      (κ := fun b => OracleComp.evalWith (fun _ => Lean.Karger.answerLaw ⟨n, W⟩)
-        (OracleComp.iterate rem Lean.Karger.minStep b)) fun y hy => by
-          have h := ih (i + 1) y (by omega) hy
-          rw [ite_eq_right (Nat.succ_ne_zero i)] at h
-          exact h).congr_law ?_).mono (fun _ h => h) (by rw [add_one_mul]; omega)
-      (by rw [add_one_mul]; omega)
-    by_cases hi : i = 0
-    · simp [hi, Lean.Karger.minRuns, Function.comp_def]
-    · simp [hi, OracleComp.iterate_succ_bind, Lean.Karger.minStep, Function.comp_def]
+  unfold ampLoop
+  exact minRunsLoop_law hR (by omega) (fun _ _ h => h.regs_trialIdx) (fun _ _ h => h.regs_numTrials)
+    fun _ _ hi h => ampTrialBody_law hn hW hi h1 hdEnd hR_fit htot h
 
 /-- **The amplification core runs amplified Karger.** For `1 ≤ R` trials, from a state with
 `srcBase = sb`, `nOrig = n`, `numTrials = R` and `HoldsMatrix x.mem sb n W`, `ampCore` runs within

@@ -33,12 +33,13 @@ variable {Rel : Type} {F : CSP Rel ℕ}
 theorem eval_blackConstraints_iff (arity : Rel → ℕ) (sem : Rel → List Bool → Bool)
     (σ : ℕ → Bool) :
     (blackConstraints arity sem F).eval Table.sem σ = true ↔
-      ∀ i : Fin F.length, 0 < F[i.val].2.length →
-        (differenceTable arity sem F[i.val].1).sem ((blackScope F i F[i.val].2).map σ) = true := by
+      ∀ i : Fin F.length, 0 < F[i.val].scope.length →
+        (differenceTable arity sem F[i.val].rel).sem
+          ((blackScope F i F[i.val].scope).map σ) = true := by
   simp only [CSP.eval, List.all_eq_true]
   constructor
   · intro h i hipos
-    apply h (differenceTable arity sem F[i.val].1, blackScope F i F[i.val].2)
+    apply h ⟨differenceTable arity sem F[i.val].rel, blackScope F i F[i.val].scope⟩
     apply List.mem_map.mpr
     refine ⟨(F[i.val], i.val), List.mem_filter.mpr ⟨?_, ?_⟩, rfl⟩
     · apply List.mem_zipIdx_iff_getElem?.mpr
@@ -49,7 +50,7 @@ theorem eval_blackConstraints_iff (arity : Rel → ℕ) (sem : Rel → List Bool
     obtain ⟨entry, hentry, rfl⟩ := List.mem_map.mp hc
     obtain ⟨hi, he⟩ := List.getElem?_eq_some_iff.mp
       (List.mem_zipIdx_iff_getElem?.mp (List.mem_filter.mp hentry).1)
-    have hpos : 0 < F[entry.2].2.length := by
+    have hpos : 0 < F[entry.2].scope.length := by
       rw [he]
       exact List.length_pos_iff.mpr (by
         simpa only [Bool.not_eq_true', List.isEmpty_eq_false_iff] using
@@ -59,14 +60,14 @@ theorem eval_blackConstraints_iff (arity : Rel → ℕ) (sem : Rel → List Bool
 
 /-- Original variable spins read in the actual scope order. -/
 @[expose] def spinTuple (F : CSP Rel ℕ) (spin : ℕ → Bool) (i : Fin F.length) :
-    Fin F[i.val].2.length → Bool :=
+    Fin F[i.val].scope.length → Bool :=
   fun j => spin (F.distinctVars.idxOf (Occurrence.var (F := F) ⟨i, j⟩))
 
 /-- Local gradient tuples are exactly ordered cyclic differences, even with repeated names. -/
 theorem gradient_blackScope (spin σ : ℕ → Bool)
     (he : ∀ o : F.Occurrence, σ (incidenceEdgeIndex o) =
       (polygonGraph F).edgeGradient spin (polygonDart o false).1) (i : Fin F.length) :
-    (blackScope F i F[i.val].2).map σ = List.ofFn (cyclicDifference (spinTuple F spin i)) := by
+    (blackScope F i F[i.val].scope).map σ = List.ofFn (cyclicDifference (spinTuple F spin i)) := by
   rw [blackScope_eq_ofFn, List.map_ofFn]
   apply congrArg List.ofFn
   funext j
@@ -116,7 +117,7 @@ theorem faceEven_of_body (arity : Rel → ℕ) (sem : Rel → List Bool → Bool
 /-- Scope tuples agree with the original CSP evaluator after dense spin reconstruction. -/
 theorem ofFn_spinTuple (spin : ℕ → Bool) (i : Fin F.length) :
     List.ofFn (spinTuple F spin i) =
-      F[i.val].2.map (fun v => spin (F.distinctVars.idxOf v)) := by
+      F[i.val].scope.map (fun v => spin (F.distinctVars.idxOf v)) := by
   apply List.ext_getElem
   · simp
   · intro j hj hk
@@ -128,7 +129,7 @@ theorem satisfiable_source_of_body (arity : Rel → ℕ) (sem : Rel → List Boo
     (hself : ∀ r, IsSelfComplementary (booleanRelation arity sem r))
     (cert : Graph.RotationCertificate) (hwell : WellFormed arity F)
     (hcert : verifyRotationCertificate F cert = true)
-    (hnonempty : ∀ c ∈ F, nonemptySymbol arity sem c.1 = true)
+    (hnonempty : ∀ c ∈ F, nonemptySymbol arity sem c.rel = true)
     (hsat : (body arity sem F cert).Satisfiable Table.sem) : F.Satisfiable sem := by
   obtain ⟨h, hgenus, horder⟩ := (verifyRotationCertificate_eq_true_iff F cert).mp hcert
   obtain ⟨σ, hσ⟩ := hsat
@@ -148,16 +149,17 @@ theorem satisfiable_source_of_body (arity : Rel → ℕ) (sem : Rel → List Boo
   intro c hc
   obtain ⟨i, hi, rfl⟩ := List.mem_iff_getElem.mp hc
   have hwidth := hwell F[i] (List.getElem_mem hi)
-  change sem F[i].1 (F[i].2.map (fun v => spin (F.distinctVars.idxOf v))) = true
-  by_cases hpos : 0 < F[i].2.length
+  change sem F[i].rel (F[i].scope.map (fun v => spin (F.distinctVars.idxOf v))) = true
+  by_cases hpos : 0 < F[i].scope.length
   · have ht := (eval_blackConstraints_iff arity sem σ).mp hb ⟨i, hi⟩ hpos
     rw [gradient_blackScope spin σ he] at ht
-    have hs := (sem_differenceTable_cyclicDifference arity sem F[i].1
+    have hs := (sem_differenceTable_cyclicDifference arity sem F[i].rel
       (hself _) hwidth (spinTuple F spin ⟨i, hi⟩)).mp ht
     rwa [ofFn_spinTuple] at hs
-  · have hnil : F[i].2 = [] := List.length_eq_zero_iff.mp (by omega)
+  · have hnil : F[i].scope = [] := List.length_eq_zero_iff.mp (by omega)
     rw [hnil, List.map_nil]
-    exact sem_nullary_of_nonempty arity sem F[i].1 (by rw [hnil] at hwidth; simpa using hwidth.symm)
+    exact sem_nullary_of_nonempty arity sem F[i].rel
+      (by rw [hnil] at hwidth; simpa using hwidth.symm)
       ((nonemptySymbol_eq_true_iff arity sem _).mp (hnonempty F[i] (List.getElem_mem hi)))
 
 /-- Every source solution gives a solution of the actual expanded body. Difference tables are
@@ -185,9 +187,9 @@ theorem satisfiable_body_of_source (arity : Rel → ℕ) (sem : Rel → List Boo
     apply (eval_blackConstraints_iff arity sem σ).mpr
     intro i _
     rw [gradient_blackScope spin σ he]
-    apply (sem_differenceTable_cyclicDifference arity sem F[i.val].1 (hself _)
+    apply (sem_differenceTable_cyclicDifference arity sem F[i.val].rel (hself _)
       (hwell F[i.val] (List.getElem_mem i.isLt)) _).mpr
-    have hrow : List.ofFn (spinTuple F spin i) = F[i.val].2.map source := by
+    have hrow : List.ofFn (spinTuple F spin i) = F[i.val].scope.map source := by
       apply List.ext_getElem
       · simp
       · intro j hj hk
@@ -216,7 +218,7 @@ theorem satisfiable_body_of_source (arity : Rel → ℕ) (sem : Rel → List Boo
   have hbτ : (blackConstraints arity sem F).eval Table.sem τ = true := by
     apply (eval_blackConstraints_iff arity sem τ).mpr
     intro i hpos
-    have hrow : (blackScope F i F[i.val].2).map τ = (blackScope F i F[i.val].2).map σ :=
+    have hrow : (blackScope F i F[i.val].scope).map τ = (blackScope F i F[i.val].scope).map σ :=
       List.map_congr_left (fun v hv => hτ v ((blackScope_bounds i).2 v hv))
     rw [hrow]
     exact (eval_blackConstraints_iff arity sem σ).mp hb i hpos
@@ -227,14 +229,14 @@ theorem satisfiable_body_of_source (arity : Rel → ℕ) (sem : Rel → List Boo
 This includes true nullaries, and does not require every language symbol to be nonempty. -/
 theorem nonemptySymbol_of_satisfiable (arity : Rel → ℕ) (sem : Rel → List Bool → Bool)
     (hwell : WellFormed arity F) (hsat : F.Satisfiable sem) :
-    ∀ c ∈ F, nonemptySymbol arity sem c.1 = true := by
+    ∀ c ∈ F, nonemptySymbol arity sem c.rel = true := by
   obtain ⟨σ, hσ⟩ := hsat
   intro c hc
-  have hm : c.2.map σ ∈ sourceRows arity sem c.1 := by
+  have hm : c.scope.map σ ∈ sourceRows arity sem c.rel := by
     apply List.mem_filter.mpr
     exact ⟨mem_enumList.mpr (by simpa only [List.length_map] using hwell c hc),
       List.all_eq_true.mp hσ c hc⟩
-  have hn : sourceRows arity sem c.1 ≠ [] := by
+  have hn : sourceRows arity sem c.rel ≠ [] := by
     intro he
     rw [he] at hm
     contradiction
@@ -250,9 +252,9 @@ theorem satisfiable_compile_iff (arity : Rel → ℕ) (sem : Rel → List Bool �
       WellFormed arity input.1 ∧ verifyRotationCertificate input.1 input.2 = true ∧
         input.1.Satisfiable sem := by
   by_cases hg : (validArity arity input.1 && verifyRotationCertificate input.1 input.2 &&
-      input.1.all (fun c => nonemptySymbol arity sem c.1)) = true
+      input.1.all (fun c => nonemptySymbol arity sem c.rel)) = true
   · have hp : (WellFormed arity input.1 ∧ verifyRotationCertificate input.1 input.2 = true) ∧
-        (∀ c ∈ input.1, nonemptySymbol arity sem c.1 = true) := by
+        (∀ c ∈ input.1, nonemptySymbol arity sem c.rel = true) := by
       simpa only [Bool.and_eq_true, validArity_eq_true_iff, List.all_eq_true] using hg
     rw [compile, ite_eq_left hg]
     constructor

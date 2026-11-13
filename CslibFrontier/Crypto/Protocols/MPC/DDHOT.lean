@@ -12,6 +12,7 @@ public import CslibFrontier.Crypto.Protocols.MPC.Advantage
 public import CslibFrontier.Crypto.Protocols.MPC.BatchOT
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.UniformPoint
+import CslibFrontier.Probability.Uniform.Translate
 
 /-!
 # Three-Message DDH 1-out-of-2 Oblivious Transfer
@@ -533,9 +534,9 @@ theorem idealJoint_ddhOT_sender (g : G) (q : ℕ) [NeZero q] [Module (ZMod q) G]
         (ddhOTReceiverMsg g σ b (c₀.1 • g))), otOutputs x))
   cases σ
   · rfl
-  · conv_lhs => rw [← PMF.uniformOfFintype_map_equiv (Equiv.subLeft c₀.1), PMF.bind_map]
+  · conv_lhs => rw [← PMF.uniformOfFintype_map_sub_left c₀.1, PMF.bind_map]
     refine congrArg (PMF.bind _) (funext fun b => ?_)
-    simp only [Function.comp_apply, Equiv.subLeft_apply, ddhOTReceiverMsg, ↓reduceIte,
+    simp only [Function.comp_apply, ddhOTReceiverMsg, ↓reduceIte,
       sub_smul, sub_sub_cancel]
 
 /-- A corrupted sender has advantage zero against every distinguisher. -/
@@ -592,9 +593,7 @@ private theorem bind_unchosen_right {q : ℕ} [NeZero q] (a : ZMod q)
     have hconst : ∀ s₁ : ZMod q,
         (PMF.uniformOfFintype (ZMod q)).bind (fun r₁ => f r₀ s₀ (r₁ + a * s₁)) =
         (PMF.uniformOfFintype (ZMod q)).bind (fun k => f r₀ s₀ k) := fun s₁ => by
-      change (PMF.uniformOfFintype (ZMod q)).bind
-          ((fun k => f r₀ s₀ k) ∘ Equiv.addRight (a * s₁)) = _
-      rw [← PMF.bind_map, PMF.uniformOfFintype_map_equiv]
+      exact PMF.uniformOfFintype_bind_add_right (a * s₁) (f r₀ s₀)
     simp_rw [hconst]
     ext c
     simp only [PMF.bind_apply, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
@@ -627,11 +626,9 @@ private theorem bind_unchosen_left {q : ℕ} [NeZero q] (a : ZMod q)
       (PMF.uniformOfFintype (ZMod q)).bind (fun k =>
         (PMF.uniformOfFintype (ZMod q)).bind (fun r₁ =>
           (PMF.uniformOfFintype (ZMod q)).bind (fun s₁ => f r₁ s₁ k))) := fun s₀ => by
-    change (PMF.uniformOfFintype (ZMod q)).bind ((fun k =>
-        (PMF.uniformOfFintype (ZMod q)).bind (fun r₁ =>
-          (PMF.uniformOfFintype (ZMod q)).bind (fun s₁ => f r₁ s₁ k))) ∘
-        Equiv.addRight (a * s₀)) = _
-    rw [← PMF.bind_map, PMF.uniformOfFintype_map_equiv]
+    exact PMF.uniformOfFintype_bind_add_right (a * s₀) fun k =>
+      (PMF.uniformOfFintype (ZMod q)).bind fun r₁ =>
+        (PMF.uniformOfFintype (ZMod q)).bind fun s₁ => f r₁ s₁ k
   simp_rw [hconst]
   ext c
   simp only [PMF.bind_apply, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]

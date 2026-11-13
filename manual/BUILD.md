@@ -100,8 +100,10 @@ remain internal anchors, and source Markdown keeps its checkout-relative links. 
 rejects links to uncommitted or locally modified repository targets: commit those targets first
 so the linked content matches the source being reviewed. Uncommitted book prose can still be
 rendered when its external source targets are committed. A successful builder exits
-zero; the full build also prints the PDF metadata. Inspect the output for missing glyphs,
-unresolved references, clipped lines and unreadable tables before distributing it.
+zero; the full build also prints the PDF metadata. The full build fails when XeTeX reports a
+character that the text or code font lacks; map that character to a math-mode command in `MATH`
+in [data/build_latex.py](data/build_latex.py). Inspect the output for unresolved references,
+clipped lines and unreadable tables before distributing it.
 
 Edit the Markdown and regenerate for maintained changes. Do not commit generated TeX, PDF,
 logs, research exports or auxiliary files. The source files and converters are sufficient to reproduce the book.
