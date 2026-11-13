@@ -28,15 +28,14 @@ samplers [SahaiVadhan2003, Lemma 3.5]. The XOR construction also commutes with i
 
 ## Main definitions
 
-* `Cslib.BitString.parityComplete`: the completion of `j` bits to `j + 1` bits of parity `c`.
-* `Cslib.BitString.parityCompleteEquiv`: completion as an equivalence onto the selectors of
-  parity `c`.
+* `Cslib.BitString.parityComplete` and `Cslib.BitString.parityCompleteEquiv`, used below, are
+  defined in `Foundations/Data/BitString/Parity/Complete.lean`.
 
 ## Main results
 
 * `Cslib.Probability.PMF.xorMix_map`: naturality of the XOR construction.
-* `Cslib.Probability.PMF.uniformOfFintype_map_parityComplete`: completed uniform bits are uniform
-  among the selectors of parity `c`.
+* `Cslib.Probability.PMF.uniformOfFintype_map_parityComplete`, used below, is proved in
+  `Probability/BitString/Parity.lean`.
 * `Cslib.Probability.PMF.xorMix_map_uniform`: the XOR construction of two images of uniform seeds is
   an image of uniform selector bits and seeds.
 
@@ -74,7 +73,7 @@ theorem xorMix_map_uniform {γ α : Type*} [Fintype γ] [Nonempty γ] [Fintype �
       (uniformOfFintype (BitString j × (Fin (j + 1) → γ))).map
         (fun p i => bif parityComplete c p.1 i then f₁ (p.2 i) else f₀ (p.2 i)) := by
   have hne : ({b : BitString (j + 1) | parity (j + 1) b = c} : Finset _).Nonempty :=
-    ⟨parityComplete c (fun _ => false), by simp [parity_parityComplete]⟩
+    parity_fiber_nonempty (Nat.succ_pos j) c
   rw [xorMix, dite_eq_left hne, ← uniformOfFintype_map_parityComplete c j hne, PMF.bind_map,
     ← uniformOfFintype_prod, PMF.map_bind]
   congr 1 with r : 1

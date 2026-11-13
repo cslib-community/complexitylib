@@ -13,8 +13,8 @@ namespace CslibFrontierTests.HQCSyndrome
 
 open Cslib Cslib.BitString Cslib.Crypto.HQC Cslib.Probability Finset
 
--- The source's ideal support sampler supplies exactly the fixed-weight law used by the games,
--- including the boundary layers.
+-- The source's ideal support sampler supplies exactly the fixed-weight law used by the
+-- distributions, including the boundary layers.
 example :
     (ProbComp.eval (sampleSupportFrom (idealCandidate 4) 0 0)).map (indicatorVector 4) =
       PMF.uniformOfFinset (weightLayer 4 0) (weightLayer_nonempty (by decide)) :=
@@ -71,7 +71,8 @@ private theorem no_shared_third :
     ¬∃ x y z : BitString 4,
       weight x = 1 ∧ weight y = 1 ∧ weight z = 1 ∧
         x + z = ![true, true, false, false] ∧
-          ∀ i : Fin 3, (y + z) i.castSucc = (![false, false, true] : BitString 3) i := by
+          (y + z) ∘ Fin.castLEEmb (by decide : 3 ≤ 4) =
+            (![false, false, true] : BitString 3) := by
   decide
 
 /-- An intentionally incorrect variant that redraws the third secret between components. -/
@@ -101,15 +102,10 @@ example : sharedSecretCounterexample ∈ redrawnTruncatedSyndromeLaw.support := 
 example : sharedSecretCounterexample ∉
     (realTruncatedSyndromeLaw 4 3 1 (by decide) (by decide) true true).support := by
   rw [mem_support_realTruncatedSyndromeLaw_iff]
-  rintro ⟨_, _, x, y, z, hx, hy, hz, hsample⟩
+  rintro ⟨_, _, x, y, z, hx, hy, hz, hfirst, hsecond⟩
   apply no_shared_third
   refine ⟨x, y, z, hx, hy, hz, ?_, ?_⟩
-  · have h := congrArg TruncatedSyndromeSample.firstValue hsample
-    rw [sharedSecretCounterexample, syndrome_delta0] at h
-    exact h.symm
-  · intro i
-    have h := congrFun (congrArg TruncatedSyndromeSample.secondValue hsample) i
-    simp only [sharedSecretCounterexample, syndrome_delta0] at h
-    exact h.symm
+  · simpa only [sharedSecretCounterexample, syndrome_delta0] using hfirst.symm
+  · simpa only [sharedSecretCounterexample, syndrome_delta0] using hsecond.symm
 
 end CslibFrontierTests.HQCSyndrome

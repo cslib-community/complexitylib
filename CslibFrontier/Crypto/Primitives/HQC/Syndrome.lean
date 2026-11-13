@@ -153,8 +153,8 @@ theorem mem_support_realTruncatedSyndromeLaw_iff {n m w : ℕ} [NeZero n]
       parity n sample.firstBlock = b₁ ∧ parity n sample.secondBlock = b₂ ∧
         ∃ x y z : BitString n,
           weight x = w ∧ weight y = w ∧ weight z = w ∧
-            sample = ⟨sample.firstBlock, sample.secondBlock, syndrome sample.firstBlock x z,
-              syndrome sample.secondBlock y z ∘ Fin.castLEEmb hm⟩ := by
+            sample.firstValue = syndrome sample.firstBlock x z ∧
+              sample.secondValue = syndrome sample.secondBlock y z ∘ Fin.castLEEmb hm := by
   simp only [realTruncatedSyndromeLaw, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
     PMF.mem_support_bind_iff, PMF.mem_support_pure_iff]
   constructor
@@ -164,8 +164,13 @@ theorem mem_support_realTruncatedSyndromeLaw_iff {n m w : ℕ} [NeZero n]
       x, y, z,
       mem_weightLayer.mp ((PMF.mem_support_uniformOfFinset_iff _ x).mp hx),
       mem_weightLayer.mp ((PMF.mem_support_uniformOfFinset_iff _ y).mp hy),
-      mem_weightLayer.mp ((PMF.mem_support_uniformOfFinset_iff _ z).mp hz), rfl⟩
-  · rintro ⟨hh₁, hh₂, x, y, z, hx, hy, hz, hsample⟩
+      mem_weightLayer.mp ((PMF.mem_support_uniformOfFinset_iff _ z).mp hz), rfl, rfl⟩
+  · rintro ⟨hh₁, hh₂, x, y, z, hx, hy, hz, hfirst, hsecond⟩
+    have hsample : sample =
+        ⟨sample.firstBlock, sample.secondBlock, syndrome sample.firstBlock x z,
+          syndrome sample.secondBlock y z ∘ Fin.castLEEmb hm⟩ := by
+      cases sample
+      simp_all
     exact ⟨sample.firstBlock, (mem_support_uniformParity b₁ sample.firstBlock).mpr hh₁,
       sample.secondBlock, (mem_support_uniformParity b₂ sample.secondBlock).mpr hh₂,
       x, (PMF.mem_support_uniformOfFinset_iff _ x).mpr (mem_weightLayer.mpr hx),
