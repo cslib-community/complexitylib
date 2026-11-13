@@ -35,7 +35,9 @@ Exercises:
    - in the multi-bucket regime (`(U, V, w, n_max, base) = (2 ^ 32, 2 ^ 16, 64, 2 ^ 16, 100)`,
      where `numBuckets (2 ^ 16) = 16`): concrete evaluations of `slabSize`, `maxFullSlabs`,
      `maxTailItems`, `reducedTrinomialStep`, `hashSpace`, and `space`, plus verification of
-     `space_le_succinctWords`, `impl`, and `seq_expected_amortized` on `sampleDictOps`.
+     `space_le_succinctWords`, `impl`, and `seq_expected_amortized` on `sampleDictOps`;
+   - the overflow search records (`BucketRef`, `BucketQuery`, `OvfCursor`, `OvfScan`, `OvfEnv`)
+     keep the widths and words of the nested tuples they replaced.
 -/
 
 @[expose] public section
@@ -365,5 +367,37 @@ theorem nonvacuous_seq_expected_amortized_multi :
     sampleDictOps hx₀ hfr₀ (fun _ _ => rfl) validHistory_sampleDictOps_multi
   rcases hmain with ⟨ν₀, ν_final, T_ops, hinit, hsteps, _, hrep, hamort⟩
   exact ⟨ν₀, ν_final, T_ops, hinit, hsteps, hrep, hamort⟩
+
+/-! ## 6. Overflow Search Records Keep Their Tuple Words -/
+
+section OverflowSearchRecords
+
+open Cslib.WordRAM.Realization
+
+example : WordEncoding.width BucketRef = 2 ∧ WordEncoding.width BucketQuery = 3 ∧
+    WordEncoding.width OvfCursor = 4 ∧ WordEncoding.width OvfScan = 5 ∧
+    WordEncoding.width OvfEnv = 39 :=
+  ⟨rfl, rfl, rfl, rfl, rfl⟩
+
+example (r : BucketRef) : WordEncoding.encode r = WordEncoding.encode (r.base, r.bucket) :=
+  rfl
+
+example (q : BucketQuery) :
+    WordEncoding.encode q = WordEncoding.encode ((q.base, q.bucket), q.target) :=
+  rfl
+
+example (c : OvfCursor) :
+    WordEncoding.encode c = WordEncoding.encode ((c.base, c.bucket), (c.index, c.slab)) :=
+  rfl
+
+example (a : OvfScan) : WordEncoding.encode a =
+    WordEncoding.encode ((((a.index, a.slab), a.found), a.foundIndex), a.foundSlot) :=
+  rfl
+
+example (e : OvfEnv) : WordEncoding.encode e =
+    WordEncoding.encode (e.params, ((e.query.base, e.query.bucket), e.query.target)) :=
+  rfl
+
+end OverflowSearchRecords
 
 end CslibFrontierTests.WordRAMSuccinctDictionary

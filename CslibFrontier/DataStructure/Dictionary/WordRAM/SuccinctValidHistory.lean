@@ -883,29 +883,29 @@ theorem validProg_searchMicroChain {U V w n_max h_space : ℕ}
     hw (searchMicroChainProg_spec henv hb hm hinv hchain hc_lt).2.2.1
 
 theorem validProg_resolveOvfStep {U V w n_max h_space : ℕ}
-    {d : (ℕ × ℕ) × (ℕ × ℕ)} {s : Memory.State}
-    (hpre : ResolveOvfStepPre U V w n_max h_space w d s) :
-    ValidProg w (dictFrontier U V w n_max h_space d.1.1) s
-      (resolveOvfStepProg U V w n_max h_space d) := by
+    {c : OvfCursor} {s : Memory.State}
+    (hpre : ResolveOvfStepPre U V w n_max h_space w c s) :
+    ValidProg w (dictFrontier U V w n_max h_space c.base) s
+      (resolveOvfStepProg U V w n_max h_space c) := by
   rcases hpre with ⟨henv, hb, hj_bc, hinv, hp, hb_pos⟩
   have hw : 0 < w := (dictEnvGen_mk_bounds henv).1
   have hb0 : bucketBits n_max ≠ 0 := by omega
   have hK : 0 < slabSize n_max := slabSize_pos n_max
-  have hq_lt : 4 + 3 * d.1.2 < globalMetaLen n_max := gmQIdx_lt hb_pos hb
+  have hq_lt : 4 + 3 * c.bucket < globalMetaLen n_max := gmQIdx_lt hb_pos hb
   have hslab := hinv.multi_slab hb_pos
   unfold resolveOvfStepProg
   simp only [pure_bind]
   refine validProg_bind (validProg_readGM hw hq_lt) ?_
   rw [clientState_readGMProg, clientResult_readGMProg s hq_lt,
-    show 4 + 3 * d.1.2 = gmQIdx d.1.2 from rfl]
+    show 4 + 3 * c.bucket = gmQIdx c.bucket from rfl]
   refine validProg_ite (fun hj_slab => ?_) (fun hj_tail => ?_)
   · refine validProg_ite (fun _ => ?_) (fun _ => validProg_pure _)
     refine validProg_ite (fun _ => ?_) (fun _ => validProg_pure _)
     have hp_eq := hp hj_slab
-    have hs_lt : d.2.1 / slabSize n_max <
-        gmAt d.1.1 U V w n_max h_space s.mem (gmQIdx d.1.2) :=
+    have hs_lt : c.index / slabSize n_max <
+        gmAt c.base U V w n_max h_space s.mem (gmQIdx c.bucket) :=
       (Nat.div_lt_iff_lt_mul hK).2 hj_slab
-    have hp_lt_max : d.2.2 < maxFullSlabs n_max := hp_eq ▸ hslab.ptr_lt_maxFullSlabs hb hs_lt
+    have hp_lt_max : c.slab < maxFullSlabs n_max := hp_eq ▸ hslab.ptr_lt_maxFullSlabs hb hs_lt
     exact validProg_bind (validProg_readGM hw (gmSlabAboveIdx_lt hb_pos hp_lt_max))
       (validProg_pure _)
   · obtain ⟨-, hr_cap⟩ := hinv.tailOffset_lt hb_pos hb hj_bc hj_tail
@@ -914,21 +914,20 @@ theorem validProg_resolveOvfStep {U V w n_max h_space : ℕ}
 
 theorem validProg_ovfStep {U V w n_max h_space : ℕ}
     (hw : 0 < w) (_hb_pos : 0 < bucketBits n_max)
-    {x : ((ℕ × ℕ) × ℕ) × ((((ℕ × ℕ) × ℕ) × ℕ) × ℕ)} {s : Memory.State}
+    {x : BucketQuery × OvfScan} {s : Memory.State}
     (hpre : OvfStepPre U V w n_max h_space w x s) :
-    ValidProg w (dictFrontier U V w n_max h_space x.1.1.1) s
+    ValidProg w (dictFrontier U V w n_max h_space x.1.base) s
       (ovfStepProg U V w n_max h_space x) := by
   rcases hpre with ⟨henv, hb, hj_bc, hinv, hp, hb_pos⟩
   unfold ovfStepProg
   simp only [pure_bind]
   refine validProg_bind
-    (validProg_resolveOvfStep (d := (x.1.1, x.2.1.1.1))
-      ⟨henv, hb, hj_bc, hinv, hp, hb_pos⟩) ?_
+    (validProg_resolveOvfStep (c := x.1.cursor x.2) ⟨henv, hb, hj_bc, hinv, hp, hb_pos⟩) ?_
   rw [clientState_resolveOvfStepProg,
-    (clientResult_resolveOvfStepProg (d := (x.1.1, x.2.1.1.1)) s hb_pos hb hj_bc hinv hp).1]
-  have hphys_lt : slotOf n_max (gmAt x.1.1.1 U V w n_max h_space s.mem) x.1.1.2 x.2.1.1.1.1 <
+    (clientResult_resolveOvfStepProg (c := x.1.cursor x.2) s hb_pos hb hj_bc hinv hp).1]
+  have hphys_lt : slotOf n_max (gmAt x.1.base U V w n_max h_space s.mem) x.1.bucket x.2.index <
       n_max :=
-    (slotOf_lt_and_injective hinv).1 x.1.1.2 hb x.2.1.1.1.1 hj_bc
+    (slotOf_lt_and_injective hinv).1 x.1.bucket hb x.2.index hj_bc
   refine validProg_bind (validProg_readQuot hw hphys_lt) ?_
   exact validProg_ite
     (fun _ => validProg_ite (fun _ => validProg_pure _) (fun _ => validProg_pure _))
@@ -936,31 +935,30 @@ theorem validProg_ovfStep {U V w n_max h_space : ℕ}
 
 theorem validProg_ovfLoop {U V w n_max h_space : ℕ}
     (hw : 0 < w) (hb_pos : 0 < bucketBits n_max)
-    {d : (((ℕ × ℕ) × ℕ) × ((((ℕ × ℕ) × ℕ) × ℕ) × ℕ)) × ℕ} {s : Memory.State}
+    {q : BucketQuery} {acc : OvfScan} {fuel : ℕ} {s : Memory.State}
     (hsafe : iterationSafe (ovfStepProg U V w n_max h_space)
-      (OvfStepPre U V w n_max h_space) w d.1.1 d.2 d.1.2 s) :
-    ValidProg w (dictFrontier U V w n_max h_space d.1.1.1.1) s
-      (ovfLoopProg U V w n_max h_space d) := by
-  unfold ovfLoopProg
-  exact validProg_iterate d.2 d.1.2 s
-    (fun a' s' h => validProg_ovfStep (x := (d.1.1, a')) hw hb_pos h) hsafe
+      (OvfStepPre U V w n_max h_space) w q fuel acc s) :
+    ValidProg w (dictFrontier U V w n_max h_space q.base) s
+      (ovfLoopProg U V w n_max h_space ((q, acc), fuel)) :=
+  validProg_iterate fuel acc s
+    (fun a' _ h => validProg_ovfStep (x := (q, a')) hw hb_pos h) hsafe
 
 theorem validProg_initOvfSearch {U V w n_max h_space : ℕ}
     (hw : 0 < w) (hb_pos : 0 < bucketBits n_max)
-    {d : ℕ × ℕ} {s : Memory.State}
-    (hb : d.2 < numBuckets n_max)
-    (hinv : SlotStoreInv n_max (gmAt d.1 U V w n_max h_space s.mem)) :
-    ValidProg w (dictFrontier U V w n_max h_space d.1) s
-      (initOvfSearchProg U V w n_max h_space d) := by
+    {r : BucketRef} {s : Memory.State}
+    (hb : r.bucket < numBuckets n_max)
+    (hinv : SlotStoreInv n_max (gmAt r.base U V w n_max h_space s.mem)) :
+    ValidProg w (dictFrontier U V w n_max h_space r.base) s
+      (initOvfSearchProg U V w n_max h_space r) := by
   have hb0 : bucketBits n_max ≠ 0 := by omega
-  have hq_lt : 4 + 3 * d.2 < globalMetaLen n_max := gmQIdx_lt hb_pos hb
-  have hr_lt : 4 + 3 * d.2 + 1 < globalMetaLen n_max := gmRIdx_lt hb_pos hb
-  have hbc_eq : gmAt d.1 U V w n_max h_space s.mem (4 + 3 * d.2) * slabSize n_max +
-      gmAt d.1 U V w n_max h_space s.mem (4 + 3 * d.2 + 1) =
-      bCount n_max (gmAt d.1 U V w n_max h_space s.mem) d.2 := by
+  have hq_lt : 4 + 3 * r.bucket < globalMetaLen n_max := gmQIdx_lt hb_pos hb
+  have hr_lt : 4 + 3 * r.bucket + 1 < globalMetaLen n_max := gmRIdx_lt hb_pos hb
+  have hbc_eq : gmAt r.base U V w n_max h_space s.mem (4 + 3 * r.bucket) * slabSize n_max +
+      gmAt r.base U V w n_max h_space s.mem (4 + 3 * r.bucket + 1) =
+      bCount n_max (gmAt r.base U V w n_max h_space s.mem) r.bucket := by
     unfold bCount gmQIdx gmRIdx; simp [hb0, hb]
-  have hbc_le : bCount n_max (gmAt d.1 U V w n_max h_space s.mem) d.2 ≤ n_max :=
-    bCount_le_n_max hinv d.2
+  have hbc_le : bCount n_max (gmAt r.base U V w n_max h_space s.mem) r.bucket ≤ n_max :=
+    bCount_le_n_max hinv r.bucket
   unfold initOvfSearchProg
   simp only [pure_bind]
   refine validProg_bind (validProg_readGM hw hq_lt) ?_
@@ -979,10 +977,10 @@ theorem validProg_initOvfSearch {U V w n_max h_space : ℕ}
     (validProg_pure _)
 
 theorem validProg_searchOverflow {U V w n_max h_space : ℕ}
-    (hw : 0 < w) {d : (ℕ × ℕ) × ℕ} {s : Memory.State}
-    (hpre : SearchOverflowPre U V w n_max h_space w d s) :
-    ValidProg w (dictFrontier U V w n_max h_space d.1.1) s
-      (searchOverflowProg U V w n_max h_space d) := by
+    (hw : 0 < w) {q : BucketQuery} {s : Memory.State}
+    (hpre : SearchOverflowPre U V w n_max h_space w q s) :
+    ValidProg w (dictFrontier U V w n_max h_space q.base) s
+      (searchOverflowProg U V w n_max h_space q) := by
   rcases hpre with ⟨henv, hb, hinv⟩
   unfold searchOverflowProg
   by_cases hb0 : bucketBits n_max = 0
@@ -990,15 +988,10 @@ theorem validProg_searchOverflow {U V w n_max h_space : ℕ}
     exact validProg_pure _
   · simp only [hb0, ↓reduceIte, pure_bind]
     have hb_pos : 0 < bucketBits n_max := Nat.pos_of_ne_zero hb0
-    refine validProg_bind (validProg_initOvfSearch (d := d.1) hw hb_pos hb hinv) ?_
+    refine validProg_bind (validProg_initOvfSearch (r := q.toBucketRef) hw hb_pos hb hinv) ?_
     rw [clientState_initOvfSearchProg]
-    have hsafe := (searchOverflowProg_spec henv hb hinv).2.2.1 hb_pos
     exact validProg_bind
-      (validProg_ovfLoop
-        (d := ((d, ((((min n_max (effBucketCap n_max),
-          ((Memory.spec 0).clientResult s (initOvfSearchProg U V w n_max h_space d.1)).1), 0), 0),
-          0)), ((Memory.spec 0).clientResult s (initOvfSearchProg U V w n_max h_space d.1)).2))
-        hw hb_pos hsafe)
+      (validProg_ovfLoop hw hb_pos ((searchOverflowProg_spec henv hb hinv).2.2.1 hb_pos))
       (validProg_pure _)
 
 theorem validProg_searchBucket {U V w n_max h_space : ℕ}
@@ -1013,7 +1006,8 @@ theorem validProg_searchBucket {U V w n_max h_space : ℕ}
   refine validProg_bind (validProg_searchMicroChain hw hpre) ?_
   rw [(searchMicroChainProg_spec hpre.1 hpre.2.1 hpre.2.2.1 hpre.2.2.2.1 hchain hc_lt).1]
   exact validProg_ite (fun _ => validProg_pure _)
-    (fun _ => validProg_searchOverflow (d := d.1) hw ⟨hpre.1, hpre.2.1, hpre.2.2.2.1⟩)
+    (fun _ => validProg_searchOverflow (q := ⟨⟨d.1.1.1, d.1.1.2⟩, d.1.2⟩) hw
+      ⟨hpre.1, hpre.2.1, hpre.2.2.2.1⟩)
 
 theorem validProg_queryBody {U V w n_max h_space : ℕ}
     (hw : 0 < w) {d : ((ℕ × ℕ) × ℕ) × ℕ} {s : Memory.State}
