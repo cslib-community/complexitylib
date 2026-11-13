@@ -179,8 +179,8 @@ private theorem transcript_cost_phase {State : Type} (cost : Operation → ℕ)
     (h : (result, final, after) ∈
       (ProbOracleComp.runWith (OracleComp.withTranscript oracle) (phase address)
         (state, before)).support) :
-    (after.map fun entry => cost entry.1.1).sum =
-      (before.map fun entry => cost entry.1.1).sum +
+    (after.map fun ⟨⟨operation, _⟩, _⟩ => cost operation).sum =
+      (before.map fun ⟨⟨operation, _⟩, _⟩ => cost operation).sum +
         2 * cost (.inl .gate) + cost (.inl .query) := by
   supp_cases h [phase, gate, command, ProbOracleComp.runWith_bind,
     ProbOracleComp.runWith_map, ProbOracleComp.runWith_query,
@@ -195,8 +195,8 @@ private theorem transcript_cost_round {State : Type} (cost : Operation → ℕ)
     (h : (result, final, after) ∈
       (ProbOracleComp.runWith (OracleComp.withTranscript oracle) (round address)
         (state, before)).support) :
-    (after.map fun entry => cost entry.1.1).sum =
-      (before.map fun entry => cost entry.1.1).sum +
+    (after.map fun ⟨⟨operation, _⟩, _⟩ => cost operation).sum =
+      (before.map fun ⟨⟨operation, _⟩, _⟩ => cost operation).sum +
         (2 * cost (.inl .gate) + cost (.inl .query) + cost (.inr ())) := by
   rw [round, ProbOracleComp.runWith_bind] at h
   rw [PMF.mem_support_bind_iff] at h
@@ -215,8 +215,8 @@ private theorem transcript_cost_walk {State : Type} (cost : Operation → ℕ)
     (h : (result, final, after) ∈
       (ProbOracleComp.runWith (OracleComp.withTranscript oracle) (walk count)
         (state, before)).support) :
-    (after.map fun entry => cost entry.1.1).sum =
-      (before.map fun entry => cost entry.1.1).sum +
+    (after.map fun ⟨⟨operation, _⟩, _⟩ => cost operation).sum =
+      (before.map fun ⟨⟨operation, _⟩, _⟩ => cost operation).sum +
         count * (2 * cost (.inl .gate) + cost (.inl .query) + cost (.inr ())) := by
   induction count generalizing state final result before after with
   | zero =>
@@ -238,8 +238,9 @@ private theorem transcript_cost_prepare {State : Type} (cost : Operation → ℕ
     (h : (result, final, after) ∈
       (ProbOracleComp.runWith (OracleComp.withTranscript oracle) prepare
         (state, before)).support) :
-    (after.map fun entry => cost entry.1.1).sum =
-      (before.map fun entry => cost entry.1.1).sum + 3 * cost (.inl .gate) := by
+    (after.map fun ⟨⟨operation, _⟩, _⟩ => cost operation).sum =
+      (before.map fun ⟨⟨operation, _⟩, _⟩ => cost operation).sum +
+        3 * cost (.inl .gate) := by
   supp_cases h [prepare, gate, command, ProbOracleComp.runWith_bind,
     ProbOracleComp.runWith_map, ProbOracleComp.runWith_query,
     ProbOracleComp.runWith_pure, OracleComp.withTranscript]
@@ -255,7 +256,7 @@ theorem transcript_cost_program {State : Type} (cost : Operation → ℕ)
     (h : (result, final, transcript) ∈
       (ProbOracleComp.runWith (OracleComp.withTranscript oracle) (program count input)
         (state, [])).support) :
-    (transcript.map fun entry => cost entry.1.1).sum =
+    (transcript.map fun ⟨⟨operation, _⟩, _⟩ => cost operation).sum =
       (2 * count + 4) * cost (.inl .gate) + count * cost (.inl .query) +
         count * cost (.inr ()) + cost (.inl .measure) := by
   rw [program, ProbOracleComp.runWith_bind] at h
