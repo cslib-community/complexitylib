@@ -14,6 +14,7 @@ import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.EventBind
 import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Probability.PMF.ToReal
+import CslibFrontier.Tactic.PMFSwap
 
 /-!
 # Sample splitting and composition of replicable algorithms
@@ -319,13 +320,6 @@ private theorem iid_splitSample_bind {X δ : Type*} (D : PMF X) (m₁ m₂ : ℕ
           (Probability.PMF.iid D m₂).bind fun Ssuf => f (Spre, Ssuf) := by
         simp only [PMF.bind_bind, PMF.bind_map, Function.comp_def]
 
-private theorem bind_comm_two {α β γ δ : Type*} (q : PMF α) (p₁ : PMF β) (p₂ : PMF γ)
-    (K : α → β → γ → PMF δ) :
-    (q.bind fun a => p₁.bind fun b => p₂.bind fun c => K a b c) =
-      p₁.bind fun b => p₂.bind fun c => q.bind fun a => K a b c := by
-  rw [PMF.bind_comm]
-  exact PMF.bind_congr_on_support _ _ _ fun b _ => PMF.bind_comm q p₂ _
-
 private theorem seqPair_inner_comm {α δ ω σ τ : Type*}
     (seed₂ : PMF ω) (p₁ : PMF σ) (p₂ : PMF τ)
     (q₁ q₂ : σ → PMF α) (K : α → α → τ → τ → ω → PMF δ) :
@@ -335,33 +329,7 @@ private theorem seqPair_inner_comm {α δ ω σ τ : Type*}
       p₁.bind fun s₁ => p₁.bind fun s₂ =>
         (q₁ s₁).bind fun a₁ => (q₂ s₂).bind fun a₂ =>
           seed₂.bind fun r₂ => p₂.bind fun t₁ => p₂.bind fun t₂ => K a₁ a₂ t₁ t₂ r₂ := by
-  rw [PMF.bind_comm seed₂ p₁]
-  refine PMF.bind_congr_on_support _ _ _ fun s₁ _ => ?_
-  have hS₂' (r₂ : ω) (t₁ : τ) (s₂ : σ) :
-      (p₂.bind fun t₂ => (q₁ s₁).bind fun a₁ => (q₂ s₂).bind fun a₂ => K a₁ a₂ t₁ t₂ r₂) =
-        (q₁ s₁).bind fun a₁ => (q₂ s₂).bind fun a₂ => p₂.bind fun t₂ => K a₁ a₂ t₁ t₂ r₂ :=
-    bind_comm_two p₂ (q₁ s₁) (q₂ s₂) (fun t₂ a₁ a₂ => K a₁ a₂ t₁ t₂ r₂)
-  have hS₁' (r₂ : ω) :
-      (p₂.bind fun t₁ => p₁.bind fun s₂ => p₂.bind fun t₂ =>
-        (q₁ s₁).bind fun a₁ => (q₂ s₂).bind fun a₂ => K a₁ a₂ t₁ t₂ r₂) =
-        p₁.bind fun s₂ => (q₁ s₁).bind fun a₁ => (q₂ s₂).bind fun a₂ =>
-          p₂.bind fun t₁ => p₂.bind fun t₂ => K a₁ a₂ t₁ t₂ r₂ := by
-    have hstep1 :
-        (p₂.bind fun t₁ => p₁.bind fun s₂ => p₂.bind fun t₂ =>
-          (q₁ s₁).bind fun a₁ => (q₂ s₂).bind fun a₂ => K a₁ a₂ t₁ t₂ r₂) =
-          p₂.bind fun t₁ => p₁.bind fun s₂ => (q₁ s₁).bind fun a₁ => (q₂ s₂).bind fun a₂ =>
-            p₂.bind fun t₂ => K a₁ a₂ t₁ t₂ r₂ :=
-      PMF.bind_congr_on_support _ _ _ fun t₁ _ =>
-        PMF.bind_congr_on_support _ _ _ fun s₂ _ => hS₂' r₂ t₁ s₂
-    rw [hstep1, PMF.bind_comm p₂ p₁]
-    refine PMF.bind_congr_on_support _ _ _ fun s₂ _ => ?_
-    exact bind_comm_two p₂ (q₁ s₁) (q₂ s₂)
-      (fun t₁ a₁ a₂ => p₂.bind fun t₂ => K a₁ a₂ t₁ t₂ r₂)
-  have hr₂ := PMF.bind_congr_on_support seed₂ _ _ fun r₂ _ => hS₁' r₂
-  rw [hr₂, PMF.bind_comm seed₂ p₁]
-  refine PMF.bind_congr_on_support _ _ _ fun s₂ _ => ?_
-  exact bind_comm_two seed₂ (q₁ s₁) (q₂ s₂)
-    (fun r₂ a₁ a₂ => p₂.bind fun t₁ => p₂.bind fun t₂ => K a₁ a₂ t₁ t₂ r₂)
+  pmf_swap
 
 private theorem pairedOutput_seqPair {Ω₁ Ω₂ : Type*} {m₁ m₂ : ℕ}
     (A₁ : Algorithm X Ω₁ α m₁) (seed₂ : PMF Ω₂)

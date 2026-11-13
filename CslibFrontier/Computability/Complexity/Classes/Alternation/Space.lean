@@ -153,8 +153,7 @@ theorem RecognizesInSpace.mem_P {c : ℕ}
     (h : atm.RecognizesInSpace enc A fun a => c * (Nat.log2 (enc a).length + 1)) :
     A ∈ P enc := by
   -- the number of reachable views is at most `N a`, a polynomial
-  set D := 2 * (8 + 2 * Nat.card (Option State) + 200 * k) * (c + 1)
-  set N : α → ℕ := fun a => polyClock D (enc a).length
+  set N : α → ℕ := fun a => polyClock (MultiTapeNTM.logSpaceClockExponent k State c) (enc a).length
   have hN : ComputableInPolyTime N enc encUnary := by
     simp only [N, polyClock]
     fun_prop

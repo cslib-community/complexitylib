@@ -131,8 +131,8 @@ theorem oneTimePadScheme_perfectlyComplete : oneTimePadScheme.PerfectlyComplete 
 
 /-- The ideal network port specification of `fcom`. -/
 abbrev fcomIdealNet :=
-  netSpec ((Fin 2 × CommitmentInput) ⊕ CommitmentBackdoor)
-    (Option CommitmentOutput ⊕ Option CommitmentOutput)
+  netSpec (RoutedNetQ 2 CommitmentInput CommitmentBackdoor)
+    (RoutedNetR CommitmentOutput (Option CommitmentOutput))
 
 /-- Explicit simulator for `oneTimePadScheme` in the uncorrupted case (`C = ∅`): when a commitment
 is recorded in `fcom`, `.readCommit` samples and caches a uniform commit bit `c`; `.deliverCommit`
@@ -177,11 +177,11 @@ def oneTimePadEmptySim : PlainCommitmentSim Bool Bool := fun _ _ =>
 private def otpIdealState (κ : ℕ) (st : Option Bool) (s : CommitmentState) :
     (execMachine fcom.toProtocol oneTimePadEmptySim κ ∅).State := (st, s)
 
-private def otpIdealReply (q : (Fin 2 × CommitmentInput) ⊕ PlainNetQ Bool Bool)
-    (r : Option CommitmentOutput ⊕ PlainNetR Bool Bool) :
+private def otpIdealReply (q : RoutedNetQ 2 CommitmentInput (PlainNetQ Bool Bool))
+    (r : RoutedNetR CommitmentOutput (PlainNetR Bool Bool)) :
     execSpec 2 CommitmentInput CommitmentOutput
-      ((Fin 2 × CommitmentInput) ⊕ PlainNetQ Bool Bool)
-      (Option CommitmentOutput ⊕ PlainNetR Bool Bool) (.inr q) := r
+      (RoutedNetQ 2 CommitmentInput (PlainNetQ Bool Bool))
+      (RoutedNetR CommitmentOutput (PlainNetR Bool Bool)) (.inr q) := r
 
 private theorem init_otpIdeal (κ : ℕ) :
     (execMachine fcom.toProtocol oneTimePadEmptySim κ ∅).init =
@@ -340,8 +340,8 @@ the committer's outputs on `.commit b` and `.openCom`, the receiver's outputs be
 arbitrary distinguisher predicate `P : HonestView → Bool`. -/
 def honestViewEnv (b : Bool) (P : HonestView → Bool) :
     Environment 2 CommitmentInput CommitmentOutput
-      ((Fin 2 × CommitmentInput) ⊕ PlainNetQ Bool Bool)
-      (Option CommitmentOutput ⊕ PlainNetR Bool Bool) := fun _ _ => do
+      (RoutedNetQ 2 CommitmentInput (PlainNetQ Bool Bool))
+      (RoutedNetR CommitmentOutput (PlainNetR Bool Bool)) := fun _ _ => do
   let outCom₀ ← ProbOracleComp.query
     (spec := execSpec 2 CommitmentInput CommitmentOutput _ _) (Sum.inl (0, .commit b))
   let outRecPre ← ProbOracleComp.query

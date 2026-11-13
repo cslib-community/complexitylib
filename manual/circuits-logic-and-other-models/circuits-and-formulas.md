@@ -116,11 +116,53 @@ Depth-three bounds use [WeightedThreshold/KaneWilliamsB](../../CslibFrontier/Com
 
 [complexity_le_of_boundedError](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Boolean/BoundedError.lean#L113) instead treats auxiliary bits as uniform randomness and asks for correctness on every input with probability at least two thirds. Adleman's circuit argument hardwires a collection of seeds, giving ordinary circuits of size `O(n(C+n))`; at the family level bounded-error randomness preserves P/poly. The result does not give a uniform method for finding the successful seeds.
 
+For the strict class comparison, import
+[Boolean.NonuniformSeparation](../../CslibFrontier/Computability/Circuit/Boolean/NonuniformSeparation.lean).
+`Boolean.BPP_ssubset_PPoly` states `BPP encBits ⊂ PPoly` for ordinary bit languages.
+`Boolean.exists_mem_PPoly_not_isDecidable` supplies a language with polynomial-size circuits
+and no native deterministic machine decider. This is an existence theorem: it supplies neither
+an explicit circuit-family algorithm nor a decidable separator. The proof reuses uncountably
+many P-selective sets, Ko's theorem and the countability of native deciders. It completes the
+strictness in Goldreich's February 2007 draft Theorem 6.3 (PDF9/printed211), alongside the existing
+Adleman inclusion. Strictness is specific to the infinite bit-language domain: on a finite
+instance type every problem is in P, so BPP and P/poly coincide under any explicit embedding.
+Run `scripts/build.sh CslibFrontierTests.NonuniformSeparation` for
+[complete clients](../../CslibFrontierTests/NonuniformSeparation.lean) deriving a witness outside
+every deterministic time bound and checking the finite-domain equality.
+
 Several representations serve specialized clients. [AltOp](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Boolean/AltFormula.lean#L73) has signed literals at depth zero and lists of opposite-root subformulas at successive depths; depth two reduces to CNF/DNF, and size counts AND/OR nodes. [PosFormula](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Boolean/ReadOnce.lean#L91) separates positive and literal formula syntax for occurrence/restriction arguments. [SemiCircuit](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Boolean/SemiCircuit.lean#L88) augments ranked Boolean gates with affine equations on parameters and auxiliary bits; well-formedness guarantees unique auxiliary extension. Its size is gates plus equations. [Node](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Boolean/Layered.lean#L52) is a serializable list-of-layers representation with constants, copies and NAND nodes. Raw evaluation is total, and a well-formedness predicate justifies compilation to the typed circuit model.
 
 Oracle circuits can make adaptive choices. [Oracle/Selection.lean](../../CslibFrontier/Computability/Circuit/Boolean/Oracle/Selection.lean) builds a selection round, `Boolean.selectionRound src word dflt`. Its `N` oracle gates ask about `N` candidates side by side, each with a query word of length `q`, and a chain of multiplexers keeps the word of the first accepted candidate. When no candidate is accepted, the round keeps the default word `dflt`. Query words, candidate words and the default each read their bits from input wires or constants: a word of sources `ρ` is a substitution, and on the input `x` it reads `Boolean.substitute ρ x`. A round keeps its inputs and appends the selected word (`Boolean.eval_selectionRound`). It has `N` oracle gates (`cost_program_selectionRound` with `OracleOp.queryWeight`), at most one oracle gate on any path (`depthWith_selectionRound_le`) and fan-in at most `max q 2`. `Boolean.selectedWord_prop` shows that the selected word has any property that the default and every accepted candidate's word share. [Accumulate.lean](../../CslibFrontier/Computability/Circuit/Accumulate.lean) chains rounds: `Circuit.accumulate step R` runs `R` steps, and each step reads the inputs and every earlier step's word. `eval_accumulate_block` gives the word of step `r`. Sizes and oracle costs add up over the steps. A fan-in bound common to all steps holds for the chain, and the weighted depth is at most `R` times a common per-step bound. The [checked client](../../CslibFrontierTests/OracleSelection.lean) runs `R` rounds over a truth table `T` of length `2 ^ n`, with one candidate `y` for each table position. By `selectedWord_prop`, each round emits a pair `(y, T y)`. Since each round has `2 ^ n` oracle gates and at most one on any path, the chain has `R * 2 ^ n` oracle gates and oracle depth at most `R`. The anti-checker generator of [#4383](https://github.com/cslib-community/cslib-frontier/issues/4383) is built from these rounds, with query words in the anti-checker oracle's encoding ([anti-checkers](metacomplexity-and-methods.md#anti-checkers)). When the query words do not depend on the input, [Oracle/FixedQueries.lean](../../CslibFrontier/Computability/Circuit/Boolean/Oracle/FixedQueries.lean) gives the simplest non-adaptive circuit, `Boolean.fixedQueryCircuit pts c`. It asks the oracle about the `N` fixed words `pts` and runs the De Morgan circuit `c` on the answers followed by the input (`eval_fixedQueryCircuit`). It has `c.size + N + 2` gates, `N` of them oracle gates, at most one oracle gate on any path and fan-in at most `max w 2`. Learners with a circuit are oracle circuits of this form ([membership-query learners](learning-and-testing.md#membership-query-learners)).
 
 Chen, Hirahara, Oliveira, Pich, Rajgopal and Santhanam measure the oracle gates of a device by their quantity (how many there are), their locality (the largest fan-in of an oracle gate) and their adaptivity (the most oracle gates on a path) [chenhiraharaoliveirapichrajgopalsanthanam2020][chenhiraharaoliveirapichrajgopalsanthanam2020]. Their class `[q, ℓ, a]–C[S]` (Definition 11, p. 13) is [OracleModel.LocalClass](../../CslibFrontier/Computability/Circuit/Boolean/Oracle/LocalClass.lean), stated once for any `OracleModel`, a family of devices with a size and the three measures, and for promise problems. A single oracle language serves every input length. `LocalClass.mono` and `LocalClass.anti` are the monotonicity lemmas. `LocalClass.of_two_pow` handles promise problems on truth tables, whose instances have power-of-two length, so a *separating* device is needed only at the lengths `2 ^ n`; any device within the bounds serves elsewhere. Oracle formulas are `formulaModel`, with `LocalFormulaClass` its class. Oracle circuits are `circuitModel` in [Oracle/LocalCircuit.lean](../../CslibFrontier/Computability/Circuit/Boolean/Oracle/LocalCircuit.lean), with `LocalCircuitClass` its class. For circuits, size is `Circuit.size` (every gate, including NOT and constant gates) and quantity is the cost under `OracleOp.queryWeight`. Locality is `Circuit.QueryArityAtMost`, which bounds only the fan-in of oracle gates; `FanInAtMost` implies it (`QueryArityAtMost.of_fanInAtMost`). Adaptivity is `depthWith OracleOp.queryWeight`. It also counts paths that start at constants, so it can only overstate the source's adaptivity, and a bound on it is a bound in the source's sense. A circuit with no inputs needs a gate for its output, so `LocalCircuitClass.of_two_pow` assumes `1 ≤ S 0`. Formula size counts input leaves only, which lets the formula classes be larger than the source's at a fixed `S`. The [checked client](../../CslibFrontierTests/OracleLocalClass.lean) evaluates the circuit measures on single gates and puts every language in `[1, m, 1]–Circuit[1]` with one oracle gate. It also checks that `LocalFormulaClass` unfolds to its explicit statement. Of their circuit bullets of Proposition 63 (p. 52), the Gap-MCSP `[OPS19]` bullet is `localCircuitClass_gapMCSP` in [Magnification/AntiChecker.lean](../../CslibFrontier/Computability/MCSP/Magnification/AntiChecker.lean) (see [anti-checkers](metacomplexity-and-methods.md#anti-checkers)), and the MCSP `[MMW19]` bullet is `localCircuitClass_MCSP` in [MergeTree/Locality.lean](../../CslibFrontier/Computability/MCSP/Magnification/MergeTree/Locality.lean).
+
+## Exact advice length and one-bit undecidability
+
+Import [Classes.Advice](../../CslibFrontier/Computability/Complexity/Classes/Advice.lean) for
+`PWithAdvice length`. It uses arbitrary advice strings of exactly `length n` bits, depending
+only on input length `n`. The native polynomial-time decider reads `encPair encBits encBits`
+with framed advice first, and its time is polynomial in the complete advice/input pair length.
+The advice family need not be computable. `PWithAdvice_zero_eq_P` recovers P with no advice;
+`P_subset_PWithAdvice length` permits a P decider to ignore advice of any specified length.
+
+[Advice.OneBit](../../CslibFrontier/Computability/Complexity/Classes/Advice/OneBit.lean) proves
+`length_preimage_mem_PWithAdvice_one A` for every set of lengths `A`: the advice bit says
+whether the current length is in `A`. `exists_mem_PWithAdvice_one_not_isDecidable` supplies
+such a language with no native deterministic machine decider, retaining the equal-length
+membership property. This is a nonconstructive existence result; computing the advice would
+contradict undecidability. These are the zero/one-bit endpoints of Goldreich's January 2007
+draft Theorem 3.7, not its subsequent arbitrary advice-hierarchy discussion.
+
+For circuits, import [Boolean.Advice](../../CslibFrontier/Computability/Circuit/Boolean/Advice.lean).
+`mem_PAdvice_iff_exists_mem_PWithAdvice` identifies polynomial advice with the union of
+exact polynomially bounded advice-length classes. `PWithAdvice_subset_PAdvice hlength` and
+`PWithAdvice_subset_PPoly hlength` use an explicit
+`PolynomiallyBounded length` hypothesis to connect the exact-length class to the existing
+polynomial-advice/circuit APIs. Run `scripts/build.sh CslibFrontierTests.OneBitAdvice` for
+[complete clients](../../CslibFrontierTests/OneBitAdvice.lean) assembling one-bit advice,
+polynomial-size circuits, undecidability and length dependence, and checking empty/odd inputs
+to the even-length language. Strict P/1 versus P/poly and the arbitrary advice hierarchy
+remain separate obligations.
 
 ## Nonuniform classes and branching programs
 

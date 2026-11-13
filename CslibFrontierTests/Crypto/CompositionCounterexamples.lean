@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Karn Seth
 -/
 
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pair.Projections
 import CslibFrontier.Crypto.Computational.Encryption.CompositionCounterexamples
 import CslibFrontier.Probability.BitString
 
@@ -238,12 +239,8 @@ example (n : ℕ) :
     simp only [encryptThenMAC, ProbComp.eval_bind, ProbComp.eval_pure,
       PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hct
     obtain ⟨c, hc, tag, htag, rfl⟩ := hct
-    have hunfK : unframe (encPair encBits encBits (ke, km)) = ke := by
-      simp [encPair_apply, unframe_frame_append]
-    have hdropK : dropFrame (encPair encBits encBits (ke, km)) = km := by
-      simp [encPair_apply, dropFrame_frame_append]
-    rw [hunfK] at hc
-    rw [hdropK] at htag
+    rw [unframe_encPair_encBits] at hc
+    rw [dropFrame_encPair_encBits] at htag
     have hcLen : c.length = 2 * n :=
       prfCipher_ciphertext_length echoFamily echoFamily_polyTime echoFamily_length n ke hke m hm
         c hc
@@ -304,12 +301,8 @@ example (n : ℕ) :
     simp only [encryptThenMAC, MACScheme.redundantTag, ProbComp.eval_bind, ProbComp.eval_pure,
       PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hct
     obtain ⟨c, hc, tag, htag, rfl⟩ := hct
-    have hunfK : unframe (encPair encBits encBits (ke, km)) = ke := by
-      simp [encPair_apply, unframe_frame_append]
-    have hdropK : dropFrame (encPair encBits encBits (ke, km)) = km := by
-      simp [encPair_apply, dropFrame_frame_append]
-    rw [hunfK] at hc
-    rw [hdropK] at htag
+    rw [unframe_encPair_encBits] at hc
+    rw [dropFrame_encPair_encBits] at htag
     have hcLen : c.length = 2 * n := hctLen n ke hke m hm c hc
     have htagLen : tag.length ≤ 2 * n := htag_le km hkm c hcLen tag htag
     simp only [length_encPair, encBits_apply, hcLen]

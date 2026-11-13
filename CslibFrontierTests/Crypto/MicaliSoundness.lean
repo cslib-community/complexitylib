@@ -60,7 +60,7 @@ abbrev honestProof : MicaliProof :=
 def openingTrace (hTree : List Bool → List Bool) (proof : MicaliProof) :
     List (List Bool × List Bool) :=
   ((kilianOpenings toyVerifier x (fixedFS (x, proof.root)) proof.response).flatMap fun o =>
-    (merkleInputs (fun _ => hTree) [] [o.2.bit]
+    (merkleInputs (fun _ => hTree) [] [o.2.leaf]
       (kilianPosition toyVerifier x o.1) o.2.path).map fun q => (q, hTree q)).eraseDups
 
 abbrev trHonest : List (List Bool × List Bool) := openingTrace idHash honestProof

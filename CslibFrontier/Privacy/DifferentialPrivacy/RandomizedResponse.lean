@@ -17,7 +17,10 @@ public import Mathlib.Analysis.SpecialFunctions.Log.Basic
 Randomized response [DworkRoth2014, §3.2] is a survey protocol for a yes/no question. The
 respondent flips a coin. On tails they answer truthfully; on heads they flip a second coin and
 answer "Yes" on heads and "No" on tails. `randomizedResponse truth` is this protocol as a
-`ProbComp Bool` program over fair coins, with `true` for "Yes" and for a truthful answer.
+`ProbComp Bool` program over fair coins, with `true` for "Yes" and for a truthful answer. The
+privacy statements apply `DifferentiallyPrivate` to its output law
+`ProbComp.eval (randomizedResponse truth)`: the protocol is a finite program, and only its
+semantics is a `PMF`.
 
 The answer agrees with the truth with probability `3/4` (`eval_randomizedResponse_apply`), so
 randomized response is `(ln 3, 0)`-differentially private for a single respondent

@@ -121,8 +121,7 @@ theorem exists_sinkOfLine {n : α → ℕ} {P S : α × List Bool → List Bool}
 
 /-- `sinkOfLineRel` is total whenever the successor map preserves the vertex bit-length. -/
 theorem isTotalSearch_sinkOfLineRel {n : α → ℕ} {P S : α × List Bool → List Bool}
-    (hS : ∀ a u, u.length = n a → (S (a, u)).length = n a) :
-    IsTotalSearch (sinkOfLineRel n P S) :=
+    (hS : PreservesWidth n S) : IsTotalSearch (sinkOfLineRel n P S) :=
   fun a => exists_sinkOfLine (hS a)
 
 /-! ### `FNP` and `TFNP` membership -/
@@ -147,8 +146,7 @@ theorem sinkOfLineRel_mem_TFNP {enc : α ↪ List Bool} {n : α → ℕ}
     (hn : ComputableInPolyTime n enc encUnary)
     (hP : ComputableInPolyTime P (encPair enc encBits) encBits)
     (hS : ComputableInPolyTime S (encPair enc encBits) encBits)
-    (hS_len : ∀ a u, u.length = n a → (S (a, u)).length = n a) :
-    sinkOfLineRel n P S ∈ TFNP enc :=
+    (hS_len : PreservesWidth n S) : sinkOfLineRel n P S ∈ TFNP enc :=
   ⟨sinkOfLineRel_mem_FNP hn hP hS, isTotalSearch_sinkOfLineRel hS_len⟩
 
 /-! ### The class `PPADS` -/
@@ -162,8 +160,7 @@ def PPADS (enc : α ↪ List Bool) : Set (α → List Bool → Prop) :=
     ComputableInPolyTime n enc encUnary ∧
     ComputableInPolyTime P (encPair enc encBits) encBits ∧
     ComputableInPolyTime S (encPair enc encBits) encBits ∧
-    (∀ a u, u.length = n a → (P (a, u)).length = n a) ∧
-    (∀ a u, u.length = n a → (S (a, u)).length = n a) ∧
+    PreservesWidth n P ∧ PreservesWidth n S ∧
     SearchReducible enc enc R (sinkOfLineRel n P S)}
 
 variable {enc : α ↪ List Bool} {encB : β ↪ List Bool} {R : α → List Bool → Prop}
@@ -174,8 +171,7 @@ theorem mem_PPADS : R ∈ PPADS enc ↔ R ∈ FNP enc ∧
       ComputableInPolyTime n enc encUnary ∧
       ComputableInPolyTime P (encPair enc encBits) encBits ∧
       ComputableInPolyTime S (encPair enc encBits) encBits ∧
-      (∀ a u, u.length = n a → (P (a, u)).length = n a) ∧
-      (∀ a u, u.length = n a → (S (a, u)).length = n a) ∧
+      PreservesWidth n P ∧ PreservesWidth n S ∧
       SearchReducible enc enc R (sinkOfLineRel n P S) :=
   Iff.rfl
 
@@ -184,9 +180,7 @@ theorem sinkOfLineRel_mem_PPADS {n : α → ℕ} {P S : α × List Bool → List
     (hn : ComputableInPolyTime n enc encUnary)
     (hP : ComputableInPolyTime P (encPair enc encBits) encBits)
     (hS : ComputableInPolyTime S (encPair enc encBits) encBits)
-    (hP_len : ∀ a u, u.length = n a → (P (a, u)).length = n a)
-    (hS_len : ∀ a u, u.length = n a → (S (a, u)).length = n a) :
-    sinkOfLineRel n P S ∈ PPADS enc :=
+    (hP_len : PreservesWidth n P) (hS_len : PreservesWidth n S) : sinkOfLineRel n P S ∈ PPADS enc :=
   mem_PPADS.mpr ⟨sinkOfLineRel_mem_FNP hn hP hS, n, P, S, hn, hP, hS, hP_len, hS_len, .refl _ _⟩
 
 /-- `PPADS` is closed under polynomial-time search reductions across arbitrary instance types. -/
@@ -221,9 +215,8 @@ theorem PPADS_subset_PPP : PPADS enc ⊆ PPP enc := by
   have hF : ComputableInPolyTime (ppadToPppMap n P S) (encPair enc encBits) encBits := by
     unfold ppadToPppMap
     fun_prop
-  have hlen (a : α) (u : List Bool) (hu : u.length = n a) :
-      (ppadToPppMap n P S (a, u)).length = n a :=
-    length_ppadToPppMap (hS_len a) hu
+  have hlen : PreservesWidth n (ppadToPppMap n P S) :=
+    fun a _ hu => length_ppadToPppMap (hS_len a) hu
   refine mem_PPP.mpr ⟨hR, n, ppadToPppMap n P S, hn, hF, hlen, hred.trans ?_⟩
   refine .of_isTotalSearch (isTotalSearch_pigeonRel hlen) ComputableInPolyTime.id'
     (g := fun p => if !hasOut n P S p.1 (p.2.take (n p.1))

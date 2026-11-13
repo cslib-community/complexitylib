@@ -109,15 +109,15 @@ private theorem initialized_zero (N : ℕ) (hgeo : D 2 ^ 18 ≤ N) :
   have hQ := RecordProduct.recordQueryCount_pos V (by decide : 3 ≠ 0)
     (by decide : 1 ≤ D 2) hN idx hidx
   have hcard := QuerySpec.card_residueClass wAB (by decide : 3 ≠ 0)
-    (fun q => (V q % (3 : ℤ)).toNat) (by intro pair; rfl) idx.1
+    (fun q => (V q % (3 : ℤ)).toNat) (by intro pair; rfl) idx.residue
   have hpairs := (RecordProduct.output_query_coordinates V wAB (by decide)
-    (by intro u v; rfl) (by decide) hN hout idx.1 idx.2.1 hk).2
+    (by intro u v; rfl) (by decide) hN hout idx.residue idx.chunk hk).2
   rw [hcard] at hpairs
   obtain ⟨pair, hpair, -⟩ := hpairs 0 hQ
-  have hkzero : idx.2.2 = 0 := by
+  have hkzero : idx.piece = 0 := by
     exact (Nat.add_eq_zero_iff.mp hord).2
   let c : Fin N := ⟨0, hn⟩
-  have hc : c ∈ piece N (D 2) 1 idx.2.2 := by
+  have hc : c ∈ piece N (D 2) 1 idx.piece := by
     rw [mem_piece, hkzero]
     exact Nat.zero_div _
   have hz : weightSum wAB wBC wAC pair.1 pair.2 c = 0 := by

@@ -40,8 +40,8 @@ private def ct : ModuleLWECiphertext 1 2 10 := (![![5, 7]], ![1, 4])
 example : (List.ofFn fun i => List.ofFn fun j => (extendCiphertext ct i j).val) =
     [[1, 4], [5, 7]] := by decide
 
-/-- Concrete encoded output uses the existing `GeneralSIS.encodeMatrix`, with no new codec. -/
-example : GeneralSIS.encodeMatrix (extendCiphertext (moduleLWEModulusSwitch 3 ct)) =
+/-- Concrete encoded output uses the existing `SIS.encodeMatrix`, with no new codec. -/
+example : SIS.encodeMatrix (extendCiphertext (moduleLWEModulusSwitch 3 ct)) =
     encList (encList encNat) [[0, 1], [2, 2]] := by
   rw [← modulusSwitchRows_encodeMatrix_extendCiphertext (by decide) (by decide)]
   congr 1

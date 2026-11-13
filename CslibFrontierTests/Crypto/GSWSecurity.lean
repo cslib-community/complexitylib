@@ -44,13 +44,14 @@ private noncomputable def idealTestKeys : PMF (List Bool) :=
 private theorem test_distinguisher_real :
     distinguishingGame (PMF.pure [false])
       (Encryption.keyDistinguisher revealingEncrypt savedKeyAdversary 0) = PMF.pure false := by
-  simp [distinguishingGame, saved_key_reduction]
+  simp [distinguishingGame_eq_bind, saved_key_reduction]
 
 private theorem test_distinguisher_ideal :
     distinguishingGame idealTestKeys
       (Encryption.keyDistinguisher revealingEncrypt savedKeyAdversary 0) =
         PMF.uniformOfFintype Bool := by
-  simp [distinguishingGame, idealTestKeys, PMF.bind_map, saved_key_reduction, Function.comp_def]
+  simp [distinguishingGame_eq_bind, idealTestKeys, PMF.bind_map, saved_key_reduction,
+    Function.comp_def]
 
 private theorem test_public_game (bit : Bool) :
     Encryption.publicKeyGame (PMF.pure [false]) revealingEncrypt savedKeyAdversary bit 0 =
