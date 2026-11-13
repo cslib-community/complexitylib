@@ -243,7 +243,7 @@ theorem identityScheme_simHitProb_diag (m : Fin 4) :
     Scheme.simHitProb, Scheme.romCpaReduction, Scheme.romFilterCpaReduction, queryCiphertextGAdv,
     identityScheme, identityPKE, ExplicitCoinPKE.indCpaGame, ExplicitCoinPKE.encrypt,
     Scheme.simFilterHandler, Scheme.simFilterDispatch, simHashG, OracleComp.interpret_bind,
-    OracleComp.interpret_query, OracleComp.interpret_pure]
+    OracleComp.interpret_query, OracleComp.interpret_pure, ROQuery.dispatch]
   simp [-_root_.PMF.bind_apply, StateT.run, RandomOracle.zoomStateT,
     memoize_of_none _ m [] rfl]
 
@@ -255,7 +255,7 @@ theorem identityScheme_simHitProb_zero_one :
     Scheme.simHitProb, Scheme.romCpaReduction, Scheme.romFilterCpaReduction, queryCiphertextGAdv,
     identityScheme, identityPKE, ExplicitCoinPKE.indCpaGame, ExplicitCoinPKE.encrypt,
     Scheme.simFilterHandler, Scheme.simFilterDispatch, simHashG, OracleComp.interpret_bind,
-    OracleComp.interpret_query, OracleComp.interpret_pure]
+    OracleComp.interpret_query, OracleComp.interpret_pure, ROQuery.dispatch]
   simp [-_root_.PMF.bind_apply, StateT.run, RandomOracle.zoomStateT,
     memoize_of_none _ (0 : Fin 4) [] rfl]
 
@@ -296,7 +296,8 @@ theorem identityUnifKeyScheme_indCcaRomAdvantage_eq_half :
           return decide (kReal = if b then kRand else kReal)) := by
     simp [-bind_pure_comp, Scheme.roIndCcaGame, Scheme.keyGenNotBot,
       identityUnifKeyScheme, identityPKE, checkKeyHAdv, Scheme.roHandler, roHashH,
-      OracleComp.interpret_bind, OracleComp.interpret_query, OracleComp.interpret_pure]
+      OracleComp.interpret_bind, OracleComp.interpret_query, OracleComp.interpret_pure,
+      ROQuery.dispatch]
     simp [StateT.run, RandomOracle.zoomStateT,
       memoize_of_some _ (false, (0 : Fin 4), (0 : Fin 4)) [((false, 0, 0), _)] _ rfl]
   rw [Scheme.indCcaRomAdvantage, hgame false, hgame true, Game.coe_advantage,

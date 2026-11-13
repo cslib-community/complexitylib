@@ -275,7 +275,7 @@ theorem eval_simBotGame_probeDecapsAdv (P : ExplicitCoinPKE PK SK M R CT) (m₀ 
       (S.pke.encDet pk mStar rStar) z hz
   rw [← PMF.bind_const (ProbComp.eval S.sampleKey) (PMF.pure false)]
   congr 1 with kRand : 1
-  dsimp only [Scheme.simFilterHandler, Scheme.simFilterDispatch]
+  dsimp only [Scheme.simFilterHandler, Scheme.simFilterDispatch, ROQuery.dispatch]
   by_cases hm : mStar = m₀
   · have hc : (none : Option CT) = S.pke.encDet pk mStar rStar := by
       simp [S, unspreadScheme, unspreadPointPKE, hm]
@@ -284,7 +284,7 @@ theorem eval_simBotGame_probeDecapsAdv (P : ExplicitCoinPKE PK SK M R CT) (m₀ 
       simp [S, unspreadScheme, unspreadPointPKE, hm]
     have hcheck : Scheme.simBotCheck S.pke pk z.2.gCache none = false := by
       simp [Scheme.simBotCheck, hg, S, unspreadScheme, unspreadPointPKE, hm]
-    simp only [StateT.run, hc, ↓reduceIte, hcheck, Bool.cond_false]
+    simp only [StateT.run, hc, ↓reduceIte, filterDecaps, hcheck, Bool.cond_false]
     change (((pure (none, z.2) : ProbComp (Option K × SimState M R (Option CT) K)).eval.bind
       fun a => PMF.pure (Option.isSome a.1, a.2)).bind fun a => PMF.pure a.1) = PMF.pure false
     simp
@@ -312,7 +312,7 @@ theorem eval_roIndCcaBotGame_probeDecapsAdv (P : ExplicitCoinPKE PK SK M R CT) (
   congr 1 with kReal : 1
   rw [← PMF.bind_const (ProbComp.eval S.sampleKey) (PMF.pure (decide (mStar ≠ m₀)))]
   congr 1 with kRand : 1
-  dsimp only [Scheme.roBotHandler]
+  dsimp only [Scheme.roBotHandler, ROQuery.dispatch]
   by_cases hm : mStar = m₀
   · have hc : (none : Option CT) = S.pke.encDet pk mStar rStar := by
       simp [S, unspreadScheme, unspreadPointPKE, hm]

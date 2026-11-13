@@ -608,7 +608,9 @@ untagged `H(s, c)`. For Random Oracle Model (ROM) IND-CCA games and the keyless 
 on `FO-notbot`, import
 [`FujisakiOkamoto/Security.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Security.lean).
 It defines the ROM query family `ROQuery M CT` (`G`, `H`, and punctured decapsulation rejecting
-`c = cStar` with `none`), pathwise `(qG, qH)` query budgets `ROQueryBounds` via
+`c = cStar` with `none`) and its dispatcher `ROQuery.dispatch`, on which every lazy, eager and
+simulated FO handler is built from its own `G`, `H` and decapsulation implementations (build new
+hybrid handlers the same way), pathwise `(qG, qH)` query budgets `ROQueryBounds` via
 `OracleComp.IsCostBounded`, the lazy-cached executable game `Scheme.roIndCcaGame`
 (`Scheme.indCcaRomAdvantage`) and eager random-oracle game `Scheme.eagerIndCcaGame` with exact
 eager/lazy equivalence (`Scheme.eval_roIndCcaGame_eq_eagerIndCcaGame`,

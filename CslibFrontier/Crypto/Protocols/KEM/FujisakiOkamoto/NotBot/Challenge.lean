@@ -226,7 +226,8 @@ private theorem simHandler_step (S : Scheme PK SK M R CT K) (d : List (M × R) �
   | H x =>
     rcases x with ⟨isFb, m, c⟩
     cases isFb
-    · dsimp only [simFilterHandler, simFilterDispatch, simHashH] at hmem
+    · dsimp only [simFilterHandler, simFilterDispatch, simHashH, ROQuery.dispatch,
+        filterDecaps] at hmem
       change (res, st') ∈ (ProbComp.eval (simHashG S.pke.sampleCoins m st >>= fun z =>
         (if S.pke.encDet pk m z.fst = c then
           simHashHq S.sampleKey c
@@ -245,11 +246,12 @@ private theorem simHandler_step (S : Scheme PK SK M R CT K) (d : List (M × R) �
       · simp only [henc, ↓reduceIte] at hmem₂
         obtain ⟨hg, hq'⟩ := simHashHRaw_support (z := (res, st')) hmem₂
         exact ⟨hg ▸ hsub, fun h => Or.inl (hhq ▸ hq' ▸ h)⟩
-    · dsimp only [simFilterHandler, simFilterDispatch, simHashH] at hmem
+    · dsimp only [simFilterHandler, simFilterDispatch, simHashH, ROQuery.dispatch,
+        filterDecaps] at hmem
       obtain ⟨hg, hq'⟩ := simHashHRaw_support (z := (res, st')) hmem
       exact ⟨hg ▸ List.Subset.refl _, fun h => Or.inl (hq' ▸ h)⟩
   | decaps c =>
-    dsimp only [simFilterHandler, simFilterDispatch] at hmem
+    dsimp only [simFilterHandler, simFilterDispatch, ROQuery.dispatch, filterDecaps] at hmem
     by_cases hc : c = cStar
     · simp only [hc, ↓reduceIte] at hmem
       change (res, st') ∈ (ProbComp.eval (pure (none, st))).support at hmem
@@ -258,12 +260,12 @@ private theorem simHandler_step (S : Scheme PK SK M R CT K) (d : List (M × R) �
       exact ⟨List.Subset.refl _, Or.inl⟩
     · simp only [hc, ↓reduceIte] at hmem
       cases hd : d st.gCache c
-      · simp only [hd, Bool.cond_false] at hmem
+      · simp only [hd, filterDecaps, Bool.cond_false] at hmem
         change (res, st') ∈ (ProbComp.eval (pure (none, st))).support at hmem
         simp only [ProbComp.eval_pure, PMF.mem_support_pure_iff, Prod.mk.injEq] at hmem
         rcases hmem with ⟨-, rfl⟩
         exact ⟨List.Subset.refl _, Or.inl⟩
-      · simp only [hd, Bool.cond_true] at hmem
+      · simp only [hd, filterDecaps, Bool.cond_true] at hmem
         change (res, st') ∈ (ProbComp.eval (simHashHq S.sampleKey c st >>= fun a =>
           pure (some a.fst, a.snd))).support at hmem
         rw [ProbComp.eval_bind, PMF.mem_support_bind_iff] at hmem
@@ -334,7 +336,7 @@ private theorem simHandler_reEnc_le (S : Scheme PK SK M R CT K) (d : List (M × 
     simp only [ROQuery.gCost, ROQuery.hCost, Nat.cast_one, Nat.cast_zero, one_mul, zero_mul,
       zero_add]
     cases isFb
-    · dsimp only [simFilterHandler, simFilterDispatch, simHashH]
+    · dsimp only [simFilterHandler, simFilterDispatch, simHashH, ROQuery.dispatch, filterDecaps]
       change (ProbComp.eval (simHashG S.pke.sampleCoins m st >>= fun z =>
         (if S.pke.encDet pk m z.fst = c then
           simHashHq S.sampleKey c
@@ -351,7 +353,7 @@ private theorem simHandler_reEnc_le (S : Scheme PK SK M R CT K) (d : List (M × 
         exact (simHashHq_support (cStar := cStar) hy).1
       · simp only [henc, ↓reduceIte] at hy
         exact (simHashHRaw_support hy).1
-    · dsimp only [simFilterHandler, simFilterDispatch, simHashH]
+    · dsimp only [simFilterHandler, simFilterDispatch, simHashH, ROQuery.dispatch, filterDecaps]
       exact (toOuterMeasure_gCache_eq_zero _ st
         (fun g => ∃ p ∈ g, S.pke.encDet pk p.1 p.2 = cStar) hst fun y hy =>
         (simHashHRaw_support hy).1).trans_le zero_le
@@ -359,7 +361,7 @@ private theorem simHandler_reEnc_le (S : Scheme PK SK M R CT K) (d : List (M × 
     simp only [ROQuery.gCost, ROQuery.hCost, Nat.cast_zero, zero_mul, add_zero]
     refine (toOuterMeasure_gCache_eq_zero _ st
       (fun g => ∃ p ∈ g, S.pke.encDet pk p.1 p.2 = cStar) hst fun y hy => ?_).le
-    dsimp only [simFilterHandler, simFilterDispatch] at hy
+    dsimp only [simFilterHandler, simFilterDispatch, ROQuery.dispatch, filterDecaps] at hy
     exact gCache_eq_of_mem_support_filterDecaps _ _ _ _ _ _ hy
 
 /-- **Bad-event split**: from the empty state, the simulator records `mStar` in
@@ -459,21 +461,13 @@ private def genHandler (S : Scheme PK SK M R CT K) (d : List (M × R) → CT →
     (gs : M → ProbComp R) (hs : CT → ProbComp K)
     (pk : PK) (cStar : CT) (q : ROQuery M CT) :
     StateT (SimState M R CT K) ProbComp (ROResp R K q) :=
-  match q with
-  | .G m => genHashG gs m
-  | .H (false, m, c) => do
-    let r ← genHashG gs m
-    if S.pke.encDet pk m r = c then genHashHq hs c else simHashHRaw S.sampleKey (false, m, c)
-  | .H (true, m, c) => simHashHRaw S.sampleKey (true, m, c)
-  | .decaps c =>
-    if c = cStar then
-      return none
-    else fun st =>
-      cond (d st.gCache c)
-        ((do
-          let k ← genHashHq hs c
-          return some k) st)
-        ((return none : StateT (SimState M R CT K) ProbComp (Option K)) st)
+  ROQuery.dispatch (genHashG gs)
+    (fun
+      | (false, m, c) => do
+        let r ← genHashG gs m
+        if S.pke.encDet pk m r = c then genHashHq hs c else simHashHRaw S.sampleKey (false, m, c)
+      | (true, m, c) => simHashHRaw S.sampleKey (true, m, c))
+    (filterDecaps (genHashHq hs) d) cStar q
 
 private theorem simFilterHandler_eq_genHandler (S : Scheme PK SK M R CT K)
     (d : List (M × R) → CT → Bool) (pk : PK) (cStar : CT) :
@@ -525,10 +519,8 @@ private theorem eval_genHandler_decaps (S : Scheme PK SK M R CT K)
         ((ProbComp.eval (genHashHq hs c s)).map fun z => (some z.1, z.2))
         (PMF.pure (none, s)) := by
   change ProbComp.eval ((if c = cStar then (return none : StateT (SimState M R CT K) ProbComp
-    (Option K)) else fun st => cond (d st.gCache c)
-      ((do let k ← genHashHq hs c; return some k) st)
-      ((return none : StateT (SimState M R CT K) ProbComp (Option K)) st)) s) = _
-  simp only [hc, ↓reduceIte]
+    (Option K)) else filterDecaps (genHashHq hs) d c) s) = _
+  simp only [hc, ↓reduceIte, filterDecaps]
   cases d s.gCache c
   · exact ProbComp.eval_pure _
   · simp only [Bool.cond_true]
@@ -542,9 +534,7 @@ private theorem eval_genHandler_decaps_self (S : Scheme PK SK M R CT K)
     (hs : CT → ProbComp K) (pk : PK) (cStar : CT) (s : SimState M R CT K) :
     ProbComp.eval (S.genHandler d gs hs pk cStar (.decaps cStar) s) = PMF.pure (none, s) := by
   change ProbComp.eval ((if cStar = cStar then (return none : StateT (SimState M R CT K)
-    ProbComp (Option K)) else fun st => cond (d st.gCache cStar)
-      ((do let k ← genHashHq hs cStar; return some k) st)
-      ((return none : StateT (SimState M R CT K) ProbComp (Option K)) st)) s) = _
+    ProbComp (Option K)) else filterDecaps (genHashHq hs) d cStar) s) = _
   simp only [↓reduceIte]
   exact ProbComp.eval_pure _
 

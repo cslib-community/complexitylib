@@ -161,7 +161,7 @@ private theorem eagerFbHandler_reindex (S : Scheme PK SK M R CT K) (G : M → R)
   | G m => rfl
   | H x => rfl
   | decaps c =>
-    simp only [eagerFbHandler, eagerCoupledHandler]
+    simp only [eagerFbHandler, eagerCoupledHandler, ROQuery.dispatch]
     by_cases hc : c = cStar
     · simp [hc]
     · simp only [hc, ↓reduceIte]

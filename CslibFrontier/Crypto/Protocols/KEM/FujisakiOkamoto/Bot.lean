@@ -178,13 +178,8 @@ under the lazy random oracle `G`, and return `some (H(false, m', c))` on re-encr
 `none` on explicit rejection. -/
 def roBotHandler (S : Scheme PK SK M R CT K) (pk : PK) (sk : SK) (cStar : CT)
     (q : ROQuery M CT) : StateT (ROCache M R CT K) ProbComp (ROResp R K q) :=
-  match q with
-  | .G m => roHashG S.pke.sampleCoins m
-  | .H x => roHashH S.sampleKey x
-  | .decaps c =>
-    if c = cStar then
-      return none
-    else
+  ROQuery.dispatch (roHashG S.pke.sampleCoins) (roHashH S.sampleKey)
+    (fun c =>
       match S.pke.dec sk c with
       | none => return none
       | some m' => do
@@ -193,7 +188,8 @@ def roBotHandler (S : Scheme PK SK M R CT K) (pk : PK) (sk : SK) (cStar : CT)
           let k ← roHashH S.sampleKey (false, m', c)
           return some k
         else
-          return none
+          return none)
+    cStar q
 
 /-- The executable ROM IND-CCA security game for `FO^⊥ = U^⊥ ∘ T` with bit `b : Bool`. When
 `b = false`, the adversary receives the real encapsulated key `kReal = H(false, m*, c*)`; when
@@ -225,10 +221,8 @@ decapsulation queries for `c ≠ cStar` evaluate `S.decapsBot G H pk sk c`. -/
 noncomputable def eagerBotHandler (S : Scheme PK SK M R CT K) (G : M → R)
     (H : Bool × M × CT → K) (pk : PK) (sk : SK) (cStar : CT) (q : ROQuery M CT) :
     PMF (ROResp R K q) :=
-  match q with
-  | .G m => PMF.pure (G m)
-  | .H x => PMF.pure (H x)
-  | .decaps c => PMF.pure (if c = cStar then none else S.decapsBot G H pk sk c)
+  ROQuery.dispatch (PMF.pure ∘ G) (PMF.pure ∘ H) (fun c => PMF.pure (S.decapsBot G H pk sk c))
+    cStar q
 
 /-- The eager random-oracle IND-CCA game for `FO^⊥`, defined directly from `S.pke.keyGen`,
 `S.encapsBot`, and `S.decapsBot` over eagerly sampled random functions `G : M → R` and
@@ -252,17 +246,13 @@ private def roTablesOf (st : ROCache M R CT K) : ROTables M R CT K :=
 
 /-- `roBotHandler` on represented `(tG, tH)` tables via `RandomOracle.answer`. -/
 private noncomputable def answerBotROHandler (S : Scheme PK SK M R CT K) (pk : PK) (sk : SK)
-    (cStar : CT) (q : ROQuery M CT) : StateT (ROTables M R CT K) PMF (ROResp R K q) := fun t =>
-  match q with
-  | .G m =>
-    (RandomOracle.answer (fun _ => ProbComp.eval S.pke.sampleCoins) m t.1).map
-      fun z => (z.1, (z.2, t.2))
-  | .H x =>
-    (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) x t.2).map
-      fun z => (z.1, (t.1, z.2))
-  | .decaps c =>
-    if c = cStar then PMF.pure (none, t)
-    else
+    (cStar : CT) (q : ROQuery M CT) : StateT (ROTables M R CT K) PMF (ROResp R K q) :=
+  ROQuery.dispatch
+    (fun m t => (RandomOracle.answer (fun _ => ProbComp.eval S.pke.sampleCoins) m t.1).map
+      fun z => (z.1, (z.2, t.2)))
+    (fun x t => (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) x t.2).map
+      fun z => (z.1, (t.1, z.2)))
+    (fun c t =>
       match S.pke.dec sk c with
       | none => PMF.pure (none, t)
       | some m' =>
@@ -271,7 +261,8 @@ private noncomputable def answerBotROHandler (S : Scheme PK SK M R CT K) (pk : P
             (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) (false, m', c) t.2).map
               fun z => (some z.1, (y.2, z.2))
           else
-            PMF.pure (none, (y.2, t.2))
+            PMF.pure (none, (y.2, t.2)))
+    cStar q
 
 private theorem roBotHandler_map_roTablesOf (S : Scheme PK SK M R CT K) (pk : PK) (sk : SK)
     (cStar : CT) (q : ROQuery M CT) (st : ROCache M R CT K) :
@@ -288,9 +279,9 @@ private theorem roBotHandler_map_roTablesOf (S : Scheme PK SK M R CT K) (pk : PK
       (fun _ => rfl)
   | decaps c =>
     by_cases hc : c = cStar
-    · simp only [roBotHandler, answerBotROHandler, hc, ↓reduceIte]
+    · simp only [roBotHandler, answerBotROHandler, hc, ↓reduceIte, ROQuery.dispatch]
       exact PMF.pure_map _ _
-    · simp only [roBotHandler, answerBotROHandler, hc, ↓reduceIte]
+    · simp only [roBotHandler, answerBotROHandler, hc, ↓reduceIte, ROQuery.dispatch]
       cases hdec : S.pke.dec sk c with
       | none =>
         exact PMF.pure_map _ _
@@ -342,13 +333,13 @@ private theorem answerBotROHandler_sim [Fintype M] [Finite R] [Fintype CT] [Fini
   cases q with
   | G m =>
     simp only [answerBotROHandler, completeROTables, eagerBotStateHandler, eagerBotHandler,
-      pmf_norm]
+      pmf_norm, ROQuery.dispatch]
     rw [answer_bind_complete]
     · rfl
     · intros; rfl
   | H x =>
     simp only [answerBotROHandler, completeROTables, eagerBotStateHandler, eagerBotHandler,
-      pmf_norm, PMF.map]
+      pmf_norm, PMF.map, ROQuery.dispatch]
     rw [answer_bind_complete₁]
     · pmf_swap
     · intros; rfl
@@ -357,9 +348,10 @@ private theorem answerBotROHandler_sim [Fintype M] [Finite R] [Fintype CT] [Fini
         (fun x => (S.completeROTables x.2).map (x.1, ·)) =
       (S.completeROTables (tG, tH)).bind fun T =>
         (S.eagerBotHandler T.1 T.2 pk sk cStar (.decaps c)).map (·, T)
-    dsimp only [answerBotROHandler, completeROTables, eagerBotHandler, decapsBot, decT, encT]
+    dsimp only [answerBotROHandler, completeROTables, eagerBotHandler, decapsBot, decT, encT,
+      ROQuery.dispatch]
     by_cases hc : c = cStar
-    · simp only [hc, ↓reduceIte, pmf_norm, PMF.map]
+    · simp only [hc, ↓reduceIte, pure, StateT.pure, pmf_norm, PMF.map]
     · simp only [hc, ↓reduceIte]
       cases hdec : S.pke.dec sk c with
       | none =>
@@ -466,14 +458,13 @@ decapsulation queries `c ≠ cStar` return `some (Hq c)` when `decT` accepts `c`
 noncomputable def eagerCoupledBotHandler (S : Scheme PK SK M R CT K) (G : M → R)
     (Hq : CT → K) (Hraw : Bool × M × CT → K) (pk : PK) (sk : SK) (cStar : CT) (q : ROQuery M CT) :
     PMF (ROResp R K q) :=
-  match q with
-  | .G m => PMF.pure (G m)
-  | .H x => PMF.pure (S.coupledH G Hq Hraw pk sk x)
-  | .decaps c =>
-    PMF.pure (if c = cStar then none else
-      match decT S.pke G pk sk c with
-      | some _ => some (Hq c)
-      | none => none)
+  ROQuery.dispatch (PMF.pure ∘ G) (PMF.pure ∘ S.coupledH G Hq Hraw pk sk)
+    (fun c =>
+      PMF.pure
+        (match decT S.pke G pk sk c with
+        | some _ => some (Hq c)
+        | none => none))
+    cStar q
 
 /-- The eager coupled game for `FO^⊥`: independent tables `G`, `Hq`, `Hraw`, challenge
 `c* = Enc(pk, m*; G(m*))` with real key `coupledH (false, m*, c*)`, and decapsulation gated by
@@ -499,7 +490,7 @@ private theorem eagerBotHandler_coupledH (S : Scheme PK SK M R CT K) (G : M → 
   | G m => rfl
   | H x => rfl
   | decaps c =>
-    simp only [eagerBotHandler, eagerCoupledBotHandler, decapsBot]
+    simp only [eagerBotHandler, eagerCoupledBotHandler, decapsBot, ROQuery.dispatch]
     by_cases hc : c = cStar
     · simp [hc]
     · simp only [hc, ↓reduceIte]
@@ -551,15 +542,12 @@ def cachedCoupledBotGame (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT 
 /-- `coupledFilterHandler (cachedCoupledBotCheck S.pke pk sk)` on represented tables
 `(tG, tH, tQ)`. -/
 private noncomputable def answerCachedBotHandler (S : Scheme PK SK M R CT K) (pk : PK) (sk : SK)
-    (cStar : CT) (q : ROQuery M CT) : StateT (Tables M R CT K) PMF (ROResp R K q) := fun t =>
-  match q with
-  | .G m =>
-    (RandomOracle.answer (fun _ => ProbComp.eval S.pke.sampleCoins) m t.1).map
-      fun z => (z.1, (z.2, t.2.1, t.2.2))
-  | .H x => S.answerHashH pk sk x t
-  | .decaps c =>
-    if c = cStar then PMF.pure (none, t)
-    else
+    (cStar : CT) (q : ROQuery M CT) : StateT (Tables M R CT K) PMF (ROResp R K q) :=
+  ROQuery.dispatch
+    (fun m t => (RandomOracle.answer (fun _ => ProbComp.eval S.pke.sampleCoins) m t.1).map
+      fun z => (z.1, (z.2, t.2.1, t.2.2)))
+    (S.answerHashH pk sk)
+    (fun c t =>
       match S.pke.dec sk c with
       | none => PMF.pure (none, t)
       | some m' =>
@@ -570,7 +558,8 @@ private noncomputable def answerCachedBotHandler (S : Scheme PK SK M R CT K) (pk
             (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) c t.2.2).map
               fun z => (some z.1, (t.1, t.2.1, z.2))
           else
-            PMF.pure (none, t)
+            PMF.pure (none, t))
+    cStar q
 
 private theorem cachedCoupledBotHandler_map_tablesOf (S : Scheme PK SK M R CT K) (pk : PK)
     (sk : SK) (cStar : CT) (q : ROQuery M CT) (st : SimState M R CT K) :
@@ -586,11 +575,12 @@ private theorem cachedCoupledBotHandler_map_tablesOf (S : Scheme PK SK M R CT K)
   | H x => exact S.coupledHashH_map_tablesOf pk sk x st
   | decaps c =>
     by_cases hc : c = cStar
-    · simp only [coupledFilterHandler, simFilterDispatch, answerCachedBotHandler, hc, ↓reduceIte]
+    · simp only [coupledFilterHandler, simFilterDispatch, answerCachedBotHandler, hc, ↓reduceIte,
+        ROQuery.dispatch]
       exact PMF.pure_map _ _
-    · dsimp only [coupledFilterHandler, simFilterDispatch, answerCachedBotHandler,
-        cachedCoupledBotCheck, tablesOf, RandomOracle.ofList]
+    · dsimp only [coupledFilterHandler, simFilterDispatch, answerCachedBotHandler, ROQuery.dispatch]
       simp only [hc, ↓reduceIte]
+      dsimp only [filterDecaps, cachedCoupledBotCheck, tablesOf, RandomOracle.ofList]
       cases hdec : S.pke.dec sk c with
       | none => exact PMF.pure_map _ _
       | some m' =>
@@ -662,7 +652,7 @@ private theorem answerCachedBotHandler_closeTo_sim (S : Scheme PK SK M R CT K) {
       (S.completeTables (tG, tH, tQ)).bind (S.eagerCoupledBotStateHandler pk sk cStar (.G m)) by
       rw [h]; exact (CloseTo.refl _).mono zero_le
     simp only [answerCachedBotHandler, completeTables, eagerCoupledBotStateHandler,
-      eagerCoupledBotHandler, pmf_norm]
+      eagerCoupledBotHandler, pmf_norm, ROQuery.dispatch]
     rw [answer_bind_complete]
     · rfl
     · intros; rfl
@@ -673,7 +663,7 @@ private theorem answerCachedBotHandler_closeTo_sim (S : Scheme PK SK M R CT K) {
       rw [h]; exact (CloseTo.refl _).mono zero_le
     rcases x with ⟨_ | _, m, c⟩
     · simp only [answerCachedBotHandler, answerHashH, completeTables, eagerCoupledBotStateHandler,
-        eagerCoupledBotHandler, coupledH, pmf_norm]
+        eagerCoupledBotHandler, coupledH, pmf_norm, ROQuery.dispatch]
       refine Eq.trans ?_ (answer_bind_complete _ tG m
         (fun x G => (RandomOracle.complete (fun _ => ProbComp.eval S.sampleKey) tH).bind fun H =>
           (RandomOracle.complete (fun _ => ProbComp.eval S.sampleKey) tQ).bind fun Q =>
@@ -690,7 +680,7 @@ private theorem answerCachedBotHandler_closeTo_sim (S : Scheme PK SK M R CT K) {
         · pmf_swap
         · intros; rfl
     · simp only [answerCachedBotHandler, answerHashH, completeTables, eagerCoupledBotStateHandler,
-        eagerCoupledBotHandler, coupledH, pmf_norm, PMF.map]
+        eagerCoupledBotHandler, coupledH, pmf_norm, PMF.map, ROQuery.dispatch]
       rw [answer_bind_complete₁]
       · pmf_swap
       · intros; rfl
@@ -702,7 +692,7 @@ private theorem answerCachedBotHandler_closeTo_sim (S : Scheme PK SK M R CT K) {
       ((S.completeTables (tG, tH, tQ)).bind fun T =>
         (S.eagerCoupledBotHandler T.1 T.2.2 T.2.1 pk sk cStar (.decaps c)).map (·, T))
       (ENNReal.ofReal ((2 : ℝ) ^ (-γ)))
-    dsimp only [answerCachedBotHandler, eagerCoupledBotHandler, decT]
+    dsimp only [answerCachedBotHandler, eagerCoupledBotHandler, decT, ROQuery.dispatch]
     have hnone_sim : CloseTo
         ((PMF.pure (none, (tG, tH, tQ))).bind
           fun x : Option K × Tables M R CT K => (S.completeTables x.2).map (x.1, ·))
@@ -908,7 +898,7 @@ theorem closeTo_cachedCoupledBotGame_eagerCoupledBotGame
     dsimp only [eagerCoupledBotGame]
     simp only [completeTables, tablesOf, RandomOracle.complete_ofList_singleton,
       RandomOracle.ofList_nil, RandomOracle.complete_empty, OracleComp.interpret_bind,
-      OracleComp.interpret_query, eagerCoupledBotHandler, pmf_norm, encT]
+      OracleComp.interpret_query, eagerCoupledBotHandler, pmf_norm, encT, ROQuery.dispatch]
     congr 1 with ⟨pk, sk⟩ : 1
     dsimp only
     pmf_hoist (ProbComp.eval S.sampleMsg)
