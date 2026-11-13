@@ -376,38 +376,43 @@ private def checkFlattenedParents (env : Environment) (s : Name)
     ComputableInPolyTime (fun $a : $S => $fieldsOf) $encRef $fieldsTerm))
   let g ← freshIdent `g
   let c ← freshIdent `c
+  let declareProjectionRules (projection : Name) (fn compFn e degBody poly : Term) :
+      CommandElabM Unit := do
+    let deg := app name s!"_{projection}_deg"
+    let degTerm := applied deg
+    elabCommand (← `($vis:visibility theorem $deg:ident $params* :
+      ComputableInDegree $fn $encRef $e 1 1 := $degBody))
+    registerRule deg
+    let inO := app name s!"_{projection}_inO"
+    elabCommand (← `($vis:visibility theorem $inO:ident $params* :
+      ComputableInO $fn $encRef $e $linE $linE := ComputableInDegree.inO_one $degTerm))
+    registerRule inO
+    let budgetRule := app name s!"_{projection}_budget"
+    elabCommand (← `($vis:visibility theorem $budgetRule:ident $params*
+      {γ : Type} {encIn : γ ↪ List Bool} {S : γ → ℕ} {$g : γ → $S}
+      (h : ComputableInSpace $g encIn $encRef S) :
+      ComputableInSpace $compFn encIn $e S :=
+        ComputableInSpace.budget_comp_linear (f := $g) (g := $fn)
+          (ComputableInSpace.of_inO (ComputableInDegree.inO_one $degTerm)) h))
+    registerRule budgetRule
+    let polyRule := app name s!"_{projection}_polyTime"
+    elabCommand (← `($vis:visibility theorem $polyRule:ident $params*
+      {γ : Type} {encIn : γ ↪ List Bool} {$g : γ → $S}
+      (h : ComputableInPolyTime $g encIn $encRef) :
+      ComputableInPolyTime $compFn encIn $e :=
+        ComputableInPolyTime.comp (f := $fn) (g := $g) $poly h))
+    registerRule polyRule
   for f in fs, e in slots, i in Array.range n do
     -- The field read, as a function of the structure and applied to `g c`.
     let fn : Term ← if simple then pure (mkCIdent (s ++ f.getId)) else
       `(fun $a : $S => $(← liftMacroM <| wordOf i a))
     let ofG : Term ← if simple then `($(mkCIdent (s ++ f.getId)) ($g $c)) else
       liftMacroM <| wordOf i (← `(($g $c)))
-    let deg := app name s!"_{f.getId}_deg"
-    let degTerm := applied deg
-    let body ← liftMacroM <| component `Turing.MultiTapeTM.ComputableInDegree fieldsDegTerm i n
-    elabCommand (← `($vis:visibility theorem $deg:ident $params* :
-      ComputableInDegree $fn $encRef $e 1 1 := $body))
-    registerRule deg
-    let inO := app name s!"_{f.getId}_inO"
-    elabCommand (← `($vis:visibility theorem $inO:ident $params* :
-      ComputableInO $fn $encRef $e $linE $linE := ComputableInDegree.inO_one $degTerm))
-    registerRule inO
-    let budgetRule := app name s!"_{f.getId}_budget"
-    elabCommand (← `($vis:visibility theorem $budgetRule:ident $params*
-      {γ : Type} {encIn : γ ↪ List Bool} {S : γ → ℕ} {$g : γ → $S}
-      (h : ComputableInSpace $g encIn $encRef S) :
-      ComputableInSpace (fun $c => $ofG) encIn $e S :=
-        ComputableInSpace.budget_comp_linear (f := $g) (g := $fn)
-          (ComputableInSpace.of_inO (ComputableInDegree.inO_one $degTerm)) h))
-    registerRule budgetRule
+    let compFn : Term ← `(fun $c => $ofG)
+    let degBody ←
+      liftMacroM <| component `Turing.MultiTapeTM.ComputableInDegree fieldsDegTerm i n
     let poly ← liftMacroM <| component `Turing.MultiTapeTM.ComputableInPolyTime fieldsPoly i n
-    let polyRule := app name s!"_{f.getId}_polyTime"
-    elabCommand (← `($vis:visibility theorem $polyRule:ident $params*
-      {γ : Type} {encIn : γ ↪ List Bool} {$g : γ → $S}
-      (h : ComputableInPolyTime $g encIn $encRef) :
-      ComputableInPolyTime (fun $c => $ofG) encIn $e :=
-        ComputableInPolyTime.comp (f := $fn) (g := $g) $poly h))
-    registerRule polyRule
+    declareProjectionRules f.getId fn compFn e degBody poly
   for parent in parents, parentEnc in parentEncs, checked in checkedParents do
     let (path, indices) := checked
     let parentProjs := pathProjs env s path
@@ -420,33 +425,10 @@ private def checkFlattenedParents (env : Environment) (s : Name)
       let fieldDeg ← liftMacroM <|
         component `Turing.MultiTapeTM.ComputableInDegree fieldsDegTerm i n
       parentDeg ← `(ComputableInDegree.prod $fieldDeg $parentDeg)
-    let deg := app name s!"_{parent.getId}_deg"
-    let degTerm := applied deg
-    elabCommand (← `($vis:visibility theorem $deg:ident $params* :
-      ComputableInDegree $parentFn $encRef $parentEnc 1 1 :=
-        ComputableInDegree.of_enc_eq $parentDeg fun _ => rfl))
-    registerRule deg
-    let inO := app name s!"_{parent.getId}_inO"
-    elabCommand (← `($vis:visibility theorem $inO:ident $params* :
-      ComputableInO $parentFn $encRef $parentEnc $linE $linE :=
-        ComputableInDegree.inO_one $degTerm))
-    registerRule inO
-    let budgetRule := app name s!"_{parent.getId}_budget"
-    elabCommand (← `($vis:visibility theorem $budgetRule:ident $params*
-      {γ : Type} {encIn : γ ↪ List Bool} {S : γ → ℕ} {$g : γ → $S}
-      (h : ComputableInSpace $g encIn $encRef S) :
-      ComputableInSpace $parentOfG encIn $parentEnc S :=
-        ComputableInSpace.budget_comp_linear (f := $g) (g := $parentFn)
-          (ComputableInSpace.of_inO (ComputableInDegree.inO_one $degTerm)) h))
-    registerRule budgetRule
-    let polyRule := app name s!"_{parent.getId}_polyTime"
-    elabCommand (← `($vis:visibility theorem $polyRule:ident $params*
-      {γ : Type} {encIn : γ ↪ List Bool} {$g : γ → $S}
-      (h : ComputableInPolyTime $g encIn $encRef) :
-      ComputableInPolyTime $parentOfG encIn $parentEnc :=
-        ComputableInPolyTime.comp (f := $parentFn) (g := $g)
-          (ComputableInDegree.computableInPolyTime $degTerm) h))
-    registerRule polyRule
+    let degTerm := applied (app name s!"_{parent.getId}_deg")
+    let degBody : Term ← `(ComputableInDegree.of_enc_eq $parentDeg fun _ => rfl)
+    let poly : Term ← `(ComputableInDegree.computableInPolyTime $degTerm)
+    declareProjectionRules parent.getId parentFn parentOfG parentEnc degBody poly
   let p ← plainIdent `p
   let comps ← (List.range n).toArray.mapM fun i => do
     let mut t : Term ← `($p)
