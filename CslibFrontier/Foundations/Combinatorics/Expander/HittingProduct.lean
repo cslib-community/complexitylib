@@ -11,6 +11,7 @@ public import CslibFrontier.Foundations.Combinatorics.Expander.Hitting
 public import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import CslibFrontier.Foundations.Combinatorics.Expander.Mixing
 import CslibFrontier.Foundations.Data.Finset.Expect
+import CslibFrontier.Foundations.Data.Finset.Variance
 
 /-!
 # Varying-density hitting bounds for expander walks
@@ -41,25 +42,21 @@ open scoped BigOperators
 variable {V D : Type*} [Fintype V] [Fintype D] [Nonempty V] [Nonempty D]
   [DecidableEq V] (G : RotationMap V D)
 
-omit [DecidableEq V] in
+omit [DecidableEq V] [Nonempty V] in
 /-- A supported function has small second moment after a walk step. -/
 theorem expect_walk_sq_le_dens_add_spectralExpansion_sq {B : Finset V}
     {f : V → ℝ} (hf : ∀ v ∉ B, f v = 0) :
     𝔼 v, G.walk f v ^ 2 ≤
       ((dens B : ℝ) + G.spectralExpansion ^ 2) * 𝔼 v, f v ^ 2 := by
-  have hvar (x : V → ℝ) :
-      𝔼 v, (x v - 𝔼 u, x u) ^ 2 = (𝔼 v, x v ^ 2) - (𝔼 v, x v) ^ 2 := by
-    simp only [sub_sq, expect_add_distrib, expect_sub_distrib, ← expect_mul,
-      ← mul_expect, Fintype.expect_const]
-    ring
   have h := G.expect_walk_pow_sub_expect_sq_le 1 f
   simp only [pow_one, Nat.mul_one] at h
   have hw := G.expect_walk f
-  rw [← hw, hvar, hw, hvar] at h
+  rw [← hw, Fintype.expect_sub_expect_sq, hw, Fintype.expect_sub_expect_sq] at h
   have hs := Fintype.sq_expect_le_dens_mul_expect_sq_of_eq_zero hf
   have hn := mul_nonneg (sq_nonneg G.spectralExpansion) (sq_nonneg (𝔼 v, f v))
   nlinarith
 
+omit [Nonempty V] in
 /-- Restricting the output of a walk to a set of density `ρ` has squared norm at
 most `ρ + η²` times the input squared norm. This is the adjoint of the supported bound. -/
 theorem expect_mask_walk_sq_le (B : Finset V) (f : V → ℝ) :
@@ -94,6 +91,7 @@ private noncomputable def maskedSteps : ℕ → (ℕ → Finset V) → (V → �
   | t + 1, B, f => maskedSteps t (fun i => B (i + 1))
       (fun v => if v ∈ B 0 then G.walk f v else 0)
 
+omit [Nonempty V] in
 private theorem expect_maskedSteps_sq_le (t : ℕ) (B : ℕ → Finset V) (f : V → ℝ) :
     (𝔼 v, G.maskedSteps t B f v ^ 2) ≤
       (∏ i ∈ range t, ((dens (B i) : ℝ) + G.spectralExpansion ^ 2)) *
