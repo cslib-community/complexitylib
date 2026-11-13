@@ -10,17 +10,19 @@ module
 public import CslibFrontier.MachineLearning.PACLearning.UniformConvergence
 public import Mathlib.Analysis.SpecialFunctions.Log.Basic
 public import Mathlib.Analysis.SpecialFunctions.Sqrt
-public import Mathlib.Analysis.SpecificLimits.Basic
+
+import Mathlib.Analysis.SpecificLimits.Basic
 
 /-! # Structural risk minimization
 
 A class `H` has *uniform convergence rate* `ε` over a family `𝒟` of distributions if, for every
 `D ∈ 𝒟`, sample size `m > 0` and confidence `δ > 0`, a sample of `m` i.i.d. examples is
-`ε m δ`-representative for `H` with probability at least `1 - δ`
-[ShalevShwartzBenDavid2014, Definition 4.3, here with an explicit rate instead of a sample
-complexity]. Structural risk minimization (SRM) handles a class `⋃ i, H i` that is a countable
-union of classes `H i` with rates `ε i`. A *weighting* `w` of the indices (positive weights with
-`∑ w i ≤ 1`) splits the confidence `δ` among the classes, and a union bound gives
+`ε m δ`-representative for `H` with probability at least `1 - δ`; with `ε m δ → 0` as `m → ∞`
+this is the uniform convergence property of [ShalevShwartzBenDavid2014, Definition 4.3], with an
+explicit rate instead of a sample complexity. Structural risk minimization (SRM) handles a class
+`⋃ i, H i` that is a countable union of classes `H i` with rates `ε i`. A *weighting* `w` of the
+indices (positive weights with `∑ w i ≤ 1`) splits the confidence `δ` among the classes, and a
+union bound gives
 [ShalevShwartzBenDavid2014, Theorem 7.4]: with probability at least `1 - δ`, every `h ∈ H i`
 satisfies `|L_S(h) - L_D(h)| ≤ ε i m (w i · δ)`. The SRM rule outputs a hypothesis minimizing the
 resulting bound `L_S(h) + ε i m (w i · δ)` over all pairs `(i, h)` with `h ∈ H i`. With the same
@@ -41,9 +43,9 @@ Learners are semantic maps: no running time is claimed.
 
 ## Main results
 
-- `measure_pi_exists_not_isRepresentative_le`: the SRM uniform bound (Theorem 7.4) in
+- `Weighting.measure_pi_exists_not_isRepresentative_le`: the SRM uniform bound (Theorem 7.4) in
   representativeness form.
-- `measure_pi_exists_lt_error_le`: its one-sided form `L_D(h) ≤ L_S(h) + ε i m (w i · δ)`.
+- `Weighting.measure_pi_exists_lt_error_le`: its one-sided form `L_D(h) ≤ L_S(h) + ε i m (w i · δ)`.
 - `hasUniformConvergenceRate_finset`, `hasUniformConvergenceRate_singleton`: Hoeffding rates
   `√(log (2 |H| / δ) / (2 m))` for finite classes and `√(log (2 / δ) / (2 m))` for one hypothesis.
 - `IsSRM.measure_pi_exists_lt_error_le`: the excess-risk guarantee of the SRM rule.
@@ -84,7 +86,7 @@ variable {ι κ : Type*}
 instance : CoeFun (Weighting ι) fun _ => ι → ℝ := ⟨toFun⟩
 
 /-- The geometric weighting `n ↦ 2⁻¹ ^ (n + 1)` of `ℕ`, whose weights sum to `1`. -/
-@[expose] noncomputable def geometric : Weighting ℕ where
+noncomputable def geometric : Weighting ℕ where
   toFun n := (1 / 2 : ℝ) ^ (n + 1)
   pos n := by positivity
   summable := summable_geometric_two.mul_left (1 / 2) |>.congr fun n => by ring
@@ -93,10 +95,12 @@ instance : CoeFun (Weighting ι) fun _ => ι → ℝ := ⟨toFun⟩
       funext fun n => by ring, tsum_mul_left, tsum_geometric_two]
     norm_num
 
-@[simp] theorem geometric_apply (n : ℕ) : geometric n = (1 / 2 : ℝ) ^ (n + 1) := rfl
+@[simp] theorem geometric_apply (n : ℕ) : geometric n = (1 / 2 : ℝ) ^ (n + 1) := by
+  unfold geometric
+  rfl
 
 /-- Pull a weighting back along an injection. -/
-@[expose] noncomputable def comap (w : Weighting κ) {e : ι → κ} (he : e.Injective) :
+noncomputable def comap (w : Weighting κ) {e : ι → κ} (he : e.Injective) :
     Weighting ι where
   toFun i := w (e i)
   pos i := w.pos (e i)
@@ -105,7 +109,9 @@ instance : CoeFun (Weighting ι) fun _ => ι → ℝ := ⟨toFun⟩
     w.tsum_le_one
 
 @[simp] theorem comap_apply (w : Weighting κ) {e : ι → κ} (he : e.Injective) (i : ι) :
-    w.comap he i = w (e i) := rfl
+    w.comap he i = w (e i) := by
+  unfold comap
+  rfl
 
 /-- Every countable type has a weighting. -/
 theorem nonempty [Countable ι] : Nonempty (Weighting ι) :=
@@ -125,9 +131,11 @@ variable {α β : Type*} [MeasurableSpace α] [MeasurableSpace β] [DecidableEq 
 
 /-- The class `H` has *uniform convergence rate* `ε` over the family `𝒟`: for every probability
 measure `D ∈ 𝒟`, sample size `m > 0` and confidence `δ > 0`, `m` i.i.d. examples from `D` fail to
-be `ε m δ`-representative for `H` with probability at most `δ` [ShalevShwartzBenDavid2014,
-Definition 4.3]. The source defines the uniform convergence property through a sample-complexity
-function `m_H(ε, δ)`; the rate `ε m δ` is its inverse in `m`. -/
+be `ε m δ`-representative for `H` with probability at most `δ`. On its own this is weak: for the
+0-1 loss every rate `ε ≥ 1` qualifies. The uniform convergence property of
+[ShalevShwartzBenDavid2014, Definition 4.3], a finite sample complexity `m_H(ε, δ)`, is a rate
+with `ε m δ → 0` as `m → ∞` for every `δ > 0`, the extra hypothesis of
+`isNonuniformLearnable_iUnion`. -/
 @[expose] def HasUniformConvergenceRate (H : ConceptClass α β) (𝒟 : Set (Measure (α × β)))
     (ε : ℕ → ℝ → ℝ) : Prop :=
   ∀ (D : Measure (α × β)) [IsProbabilityMeasure D], D ∈ 𝒟 → ∀ m, 0 < m → ∀ δ : ℝ, 0 < δ →
@@ -149,27 +157,12 @@ theorem hasUniformConvergenceRate_finset {H : Finset (α → β)}
     HasUniformConvergenceRate (H : Set (α → β)) Set.univ
       fun m δ => √(Real.log (2 * H.card / δ) / (2 * m)) := by
   intro D _ _ m hm δ hδ
+  refine measure_pi_not_isRepresentative_le_of_log_le D hH (Real.sqrt_nonneg _) hδ ?_
   set L := Real.log (2 * H.card / δ)
-  refine (measure_pi_not_isRepresentative_le D hH m (Real.sqrt_nonneg _)).trans ?_
-  rcases H.eq_empty_or_nonempty with rfl | hne
-  · simp
-  have hn : (0 : ℝ) < H.card := by exact_mod_cast hne.card_pos
-  have hmR : (0 : ℝ) < m := by exact_mod_cast hm
-  rw [← ENNReal.ofReal_natCast, ← ENNReal.ofReal_mul (Nat.cast_nonneg _)]
-  refine ENNReal.ofReal_le_ofReal ?_
   rcases le_or_gt L 0 with hL | hL
-  · -- `2 |H| / δ ≤ 1`, so the trivial bound `|H| · 2 ≤ δ` already holds.
-    have h1 : 2 * H.card / δ ≤ 1 := by
-      by_contra h
-      exact (Real.log_pos (not_le.1 h)).not_ge hL
-    rw [div_le_one hδ] at h1
-    calc (H.card : ℝ) * (2 * Real.exp (-2 * m * √(L / (2 * m)) ^ 2))
-        ≤ H.card * (2 * 1) := by
-          gcongr
-          exact Real.exp_le_one_iff.2 (by nlinarith [sq_nonneg √(L / (2 * m))])
-      _ ≤ δ := by linarith
-  · rw [Real.sq_sqrt (by positivity), show -2 * (m : ℝ) * (L / (2 * m)) = -L by
-      field_simp, Real.exp_neg, Real.exp_log (by positivity)]
+  · exact hL.trans (by positivity)
+  · have hmR : (0 : ℝ) < m := by exact_mod_cast hm
+    rw [Real.sq_sqrt (by positivity)]
     field_simp
     rfl
 
@@ -252,7 +245,7 @@ variable {α β ι : Type*} [MeasurableSpace α] [MeasurableSpace β] [Decidable
 class `H i` has uniform convergence rate `ε i` over `𝒟` and `w` is a weighting of the countable
 index type, then for every `D ∈ 𝒟`, `m > 0` and `δ > 0`, with probability at least `1 - δ` the
 sample is `ε i m (w i · δ)`-representative for every `H i` simultaneously. -/
-theorem measure_pi_exists_not_isRepresentative_le {H : ι → ConceptClass α β}
+theorem Weighting.measure_pi_exists_not_isRepresentative_le {H : ι → ConceptClass α β}
     {𝒟 : Set (Measure (α × β))} {ε : ι → ℕ → ℝ → ℝ}
     (hH : ∀ i, HasUniformConvergenceRate (H i) 𝒟 (ε i)) (w : Weighting ι)
     (D : Measure (α × β)) [IsProbabilityMeasure D] (hD : D ∈ 𝒟) {m : ℕ} (hm : 0 < m)
@@ -275,7 +268,7 @@ theorem measure_pi_exists_not_isRepresentative_le {H : ι → ConceptClass α β
 
 /-- **The SRM bound** [ShalevShwartzBenDavid2014, Theorem 7.4]: with probability at least `1 - δ`,
 every `h ∈ H i` has `L_D(h) ≤ L_S(h) + ε i m (w i · δ)`. -/
-theorem measure_pi_exists_lt_error_le {H : ι → ConceptClass α β}
+theorem Weighting.measure_pi_exists_lt_error_le {H : ι → ConceptClass α β}
     {𝒟 : Set (Measure (α × β))} {ε : ι → ℕ → ℝ → ℝ}
     (hH : ∀ i, HasUniformConvergenceRate (H i) 𝒟 (ε i)) (w : Weighting ι)
     (D : Measure (α × β)) [IsProbabilityMeasure D] (hD : D ∈ 𝒟) {m : ℕ} (hm : 0 < m)
@@ -285,7 +278,7 @@ theorem measure_pi_exists_lt_error_le {H : ι → ConceptClass α β}
           (empiricalMiscount h S : ℝ) / m + ε i m (w i * δ) < (error D h).toReal} ≤
       ENNReal.ofReal δ := by
   refine (measure_mono fun S => ?_).trans
-    (measure_pi_exists_not_isRepresentative_le hH w D hD hm hδ)
+    (w.measure_pi_exists_not_isRepresentative_le hH D hD hm hδ)
   rintro ⟨i, h, hh, hlt⟩
   exact ⟨i, fun hrep => by linarith [(abs_le.1 (hrep h hh)).1]⟩
 
@@ -302,7 +295,7 @@ theorem IsSRM.measure_pi_exists_lt_error_le {H : ι → ConceptClass α β}
         {S | ∃ i, ∃ h ∈ H i, (error D h).toReal + 2 * pen i < (error D (A S)).toReal} ≤
       ENNReal.ofReal δ := by
   refine (measure_mono fun S => ?_).trans
-    (measure_pi_exists_not_isRepresentative_le hH w D hD hm hδ)
+    (w.measure_pi_exists_not_isRepresentative_le hH D hD hm hδ)
   rintro ⟨j, h, hh, hlt⟩
   by_contra hbad
   have hall : ∀ i, IsRepresentative D (H i) (ε i m (w i * δ)) S := fun i =>

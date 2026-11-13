@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pair.Projections
 import CslibFrontier.Crypto.Computational.DiscreteLog.SchnorrGroup
 import CslibFrontier.Crypto.Computational.DiffieHellman
 import CslibFrontier.Crypto.Computational.DiffieHellman.EncodingBounds
@@ -146,9 +147,9 @@ theorem schnorrGroups_encode_zero (d : schnorrGroups.Desc) :
 theorem dropFrame_dropFrame_unframe_encPair_encDesc (d : schnorrGroups.Desc) (u : List Bool) :
     dropFrame (dropFrame (unframe (encPair schnorrGroups.encDesc encBits (d, u)))) =
       schnorrGroups.encode d (schnorrGroups.generator d) := by
-  have h1 : encPair schnorrGroups.encDesc encBits (d, u) =
-      frame (frame d.1.1.bits ++ (frame d.1.2.1.bits ++ d.1.2.2.bits)) ++ u := rfl
-  rw [h1, unframe_frame_append, dropFrame_frame_append, dropFrame_frame_append]
+  change dropFrame (dropFrame (unframe
+    (encPair (encPair encNat (encPair encNat encNat)) encBits (d.1, u)))) = _
+  rw [unframe_encPair, dropFrame_encPair, dropFrame_encPair]
   exact (SchnorrGroup.encode_generator d).symm
 
 /-- An admissibility predicate for group-element ElGamal over Schnorr groups: both challenge words

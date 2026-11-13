@@ -31,6 +31,7 @@ import CslibFrontier.Languages.Probabilistic.Oracle.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Support
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.BindCompare
 import CslibFrontier.Probability.PMF.Coupling
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Tactic.PolyTime
@@ -2349,9 +2350,9 @@ theorem interleavedHybridGameOn_step_gap {Msg Out : Type} [Inhabited Msg]
           adversary split true n hlt hdecBound,
         eval_cca2GameOn_interleavedToSingleAt_of_lt valid encOut keyGen encrypt decrypt decBound
           adversary split false n hlt hdecBound]
-      refine bind_apply_add_eq_of_support fun keys _ =>
-        bind_apply_add_eq_of_support fun stMid _ =>
-        bind_apply_add_eq_of_support fun stepOut _ => ?_
+      refine PMF.bind_apply_add_eq_on_support fun keys _ =>
+        PMF.bind_apply_add_eq_on_support fun stMid _ =>
+        PMF.bind_apply_add_eq_on_support fun stepOut _ => ?_
       by_cases hcond :
           (stepOut.1.1.isChallenge &&
             valid n keys.1 stepOut.1.1.challengePair.1 stepOut.1.1.challengePair.2) = true
