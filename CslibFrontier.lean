@@ -1819,6 +1819,7 @@ public import CslibFrontier.Computability.Complexity.Classes.AWPP.Lowness
 public import CslibFrontier.Computability.Complexity.Classes.AWPP.OracleWeights
 public import CslibFrontier.Computability.Complexity.Classes.AWPP.WPP
 public import CslibFrontier.Computability.Complexity.Classes.Advice
+public import CslibFrontier.Computability.Complexity.Classes.Advice.LengthComparison
 public import CslibFrontier.Computability.Complexity.Classes.Advice.OneBit
 public import CslibFrontier.Computability.Complexity.Classes.Alternation
 public import CslibFrontier.Computability.Complexity.Classes.Alternation.DeterministicTime
@@ -6606,6 +6607,7 @@ public import CslibFrontier.MachineLearning.OnlineLearning.SwapRegret
 public import CslibFrontier.MachineLearning.OnlineLearning.WeightedMajority
 public import CslibFrontier.MachineLearning.OnlineLearning.ZeroSum
 public import CslibFrontier.MachineLearning.PACLearning.AgnosticFiniteClass
+public import CslibFrontier.MachineLearning.PACLearning.AgnosticVC
 public import CslibFrontier.MachineLearning.PACLearning.Compression.Basic
 public import CslibFrontier.MachineLearning.PACLearning.Compression.MistakeBound
 public import CslibFrontier.MachineLearning.PACLearning.Compression.Order
@@ -6629,6 +6631,7 @@ public import CslibFrontier.MachineLearning.PACLearning.SampleComplexityLower.In
 public import CslibFrontier.MachineLearning.PACLearning.UniformConvergence
 public import CslibFrontier.MachineLearning.PACLearning.VCDimension
 public import CslibFrontier.MachineLearning.PACLearning.VCLowerBound
+public import CslibFrontier.MachineLearning.PACLearning.VCUniformConvergence
 public import CslibFrontier.MachineLearning.PACLearning.VCUpperBound
 public import CslibFrontier.MachineLearning.Rademacher.Basic
 public import CslibFrontier.MachineLearning.Rademacher.Classification
@@ -6867,6 +6870,7 @@ public import CslibFrontier.Probability.Product
 public import CslibFrontier.Probability.Product.ConditionalExpectation
 public import CslibFrontier.Probability.Product.Estimator
 public import CslibFrontier.Probability.Product.Event
+public import CslibFrontier.Probability.Product.MapMeasure
 public import CslibFrontier.Probability.Product.Reindex
 public import CslibFrontier.Probability.Product.Resample
 public import CslibFrontier.Probability.Product.Split

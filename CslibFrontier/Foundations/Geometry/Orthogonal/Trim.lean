@@ -122,33 +122,33 @@ theorem consecutivePairs_length_cutStart (k radius : ℕ) (r : Route) :
     (cutStart k radius r).consecutivePairs.length = r.consecutivePairs.length := by
   simp only [List.consecutivePairs, List.length_zip, List.length_tail, length_cutStart]
 
-/-- The fixed cut preserves proper orthogonality. -/
-theorem isOrthogonal_cutStart {r : Route} (ho : IsOrthogonal r)
-    {k radius : ℕ} (hr : radius < k) : IsOrthogonal (cutStart k radius r) := by
-  have hk : k ≠ 0 := by omega
+/-- A route property preserved by dilation and by shortening a first segment from its start is
+preserved by the fixed cut of an orthogonal route. -/
+private theorem cutStart_of_cut_first {P : Route → Prop} {k radius : ℕ} (hr : radius < k)
+    (hdil : ∀ r, P r → P (dilateRoute k r))
+    (hcut : ∀ {a b c : Point} {r : Route}, P (a :: b :: r) → realPoint c ∈ segment a b →
+      c ≠ b → P (c :: b :: r))
+    {r : Route} (ho : IsOrthogonal r) (hP : P r) : P (cutStart k radius r) := by
   cases r with
-  | nil => exact (isOrthogonal_dilateRoute_iff hk []).2 ho
+  | nil => exact hdil [] hP
   | cons a r =>
     cases r with
-    | nil => exact (isOrthogonal_dilateRoute_iff hk [a]).2 ho
+    | nil => exact hdil [a] hP
     | cons b r =>
       have hab := ho (a, b) (by simp [List.consecutivePairs])
-      exact isOrthogonal_cut_first ((isOrthogonal_dilateRoute_iff hk _).2 ho)
-        (cutPoint_mem_segment hab hr) (cutPoint_ne_endpoint hab hr)
+      exact hcut (hdil _ hP) (cutPoint_mem_segment hab hr) (cutPoint_ne_endpoint hab hr)
+
+/-- The fixed cut preserves proper orthogonality. -/
+theorem isOrthogonal_cutStart {r : Route} (ho : IsOrthogonal r)
+    {k radius : ℕ} (hr : radius < k) : IsOrthogonal (cutStart k radius r) :=
+  cutStart_of_cut_first hr (fun r => (isOrthogonal_dilateRoute_iff (by omega) r).2)
+    isOrthogonal_cut_first ho ho
 
 /-- The fixed cut preserves continuous route simplicity. -/
 theorem isSimple_cutStart {r : Route} (ho : IsOrthogonal r) (hs : IsSimple r)
-    {k radius : ℕ} (hr : radius < k) : IsSimple (cutStart k radius r) := by
-  have hk : k ≠ 0 := by omega
-  cases r with
-  | nil => exact (isSimple_dilateRoute_iff hk []).2 hs
-  | cons a r =>
-    cases r with
-    | nil => exact (isSimple_dilateRoute_iff hk [a]).2 hs
-    | cons b r =>
-      have hab := ho (a, b) (by simp [List.consecutivePairs])
-      exact isSimple_cut_first ((isSimple_dilateRoute_iff hk _).2 hs)
-        (cutPoint_mem_segment hab hr) (cutPoint_ne_endpoint hab hr)
+    {k radius : ℕ} (hr : radius < k) : IsSimple (cutStart k radius r) :=
+  cutStart_of_cut_first hr (fun r => (isSimple_dilateRoute_iff (by omega) r).2)
+    isSimple_cut_first ho hs
 
 /-- Every point of the cut route still belongs to the original dilated route. -/
 theorem support_cutStart_subset {r : Route} (ho : IsOrthogonal r)
@@ -263,21 +263,17 @@ theorem eq_of_inPointBoxes {a b : Point} {k radius : ℕ} (hr : 2 * radius < k)
   rcases b with ⟨bx, by'⟩
   simp only [inPointBox, Prod.smul_mk, Int.nsmul_eq_mul, Int.cast_mul,
     Int.cast_natCast] at ha hb
-  apply Prod.ext
-  · by_contra h
-    have hd : ax + 1 ≤ bx ∨ bx + 1 ≤ ax := by omega
-    rcases hd with hd | hd
-    · have hd' : (ax : ℝ) + 1 ≤ bx := by exact_mod_cast hd
-      nlinarith [ha.2.1, hb.1]
-    · have hd' : (bx : ℝ) + 1 ≤ ax := by exact_mod_cast hd
-      nlinarith [hb.2.1, ha.1]
-  · by_contra h
-    have hd : ay + 1 ≤ by' ∨ by' + 1 ≤ ay := by omega
-    rcases hd with hd | hd
-    · have hd' : (ay : ℝ) + 1 ≤ by' := by exact_mod_cast hd
-      nlinarith [ha.2.2.2, hb.2.2.1]
-    · have hd' : (by' : ℝ) + 1 ≤ ay := by exact_mod_cast hd
-      nlinarith [hb.2.2.2, ha.2.2.1]
+  -- One coordinate at a time: two `radius`-intervals about distinct multiples of `k` are disjoint.
+  have hcoord : ∀ {u v : ℤ} {q : ℝ}, (k : ℝ) * u - radius ≤ q → q ≤ (k : ℝ) * u + radius →
+      (k : ℝ) * v - radius ≤ q → q ≤ (k : ℝ) * v + radius → u = v := by
+    intro u v q hu₁ hu₂ hv₁ hv₂
+    by_contra h
+    rcases lt_or_gt_of_ne h with hd | hd
+    · have hd' : (u : ℝ) + 1 ≤ v := by exact_mod_cast hd
+      nlinarith
+    · have hd' : (v : ℝ) + 1 ≤ u := by exact_mod_cast hd
+      nlinarith
+  exact Prod.ext (hcoord ha.1 ha.2.1 hb.1 hb.2.1) (hcoord ha.2.2.1 ha.2.2.2 hb.2.2.1 hb.2.2.2)
 
 /-- Distinct source vertices have disjoint closed local boxes under a sufficiently large
 integer dilation. -/

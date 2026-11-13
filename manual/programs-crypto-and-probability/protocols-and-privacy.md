@@ -96,7 +96,9 @@ For machine time, use the separate
 certificate. It requires a polynomial-time hash, the digest-length premise
 `hlen`, `V.PolyTime enc`, and `hcoins` bounding `V.coins x` logarithmically in
 `(enc x).length`. Its clock is polynomial in the **received encoded verifier
-input**. `length_kilianVerifierInput_honest_le` bounds that input's framed
+input**: the `KilianView` record of key, statement, root, challenges and
+response, encoded by `encKilianView`. `length_kilianVerifierInput_honest_le`
+bounds that input's framed
 encoding, including the statement; it is not itself a runtime certificate.
 Combining the two bounds gives polynomial time in `n + (enc x).length` on
 honest transcripts when the query bound is polynomial too, as it is for the

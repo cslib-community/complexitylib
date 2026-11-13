@@ -106,7 +106,12 @@ counting tuples when the factors are not uniform. `pi_map_curry` in
 [Product/Reindex.lean](../../CslibFrontier/Probability/Product/Reindex.lean) splits a product
 indexed by `ι × κ` into independent blocks, and `toOuterMeasure_pi_forall` in
 [Product/Event.lean](../../CslibFrontier/Probability/Product/Event.lean) is the probability of a
-box `{u | ∀ i, u i ∈ E i}`. For a uniform draw on a finite group, import
+box `{u | ∀ i, u i ∈ E i}`. To move a finite statistic of i.i.d. samples from a measure into this
+setting, import [Product/MapMeasure.lean](../../CslibFrontier/Probability/Product/MapMeasure.lean):
+`map_measurePi_eq_toMeasure_pi` identifies the image of `Measure.pi μ` under coordinatewise
+measurable maps into finite types with `(pi fun i => ((μ i).map (g i)).toPMF).toMeasure`, after
+which the PMF concentration bounds apply.
+For a uniform draw on a finite group, import
 [Uniform.lean](../../CslibFrontier/Probability/Uniform.lean): `uniformOfFintype_map_add_left` and
 `uniformOfFintype_bind_add_left`, with their `_right` forms, remove a fixed mask as in the one-time
 pad; `uniformOfFintype_map_addHom` and `uniformOfFintype_map_monoidHom` push the uniform law

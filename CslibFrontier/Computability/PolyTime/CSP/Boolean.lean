@@ -37,13 +37,14 @@ theorem computableInPolyTime_validArity {Rel : Type} [Finite Rel]
       (encCSP encRel encNat) encBool := by
   have ha : ComputableInPolyTime arity encRel encUnary := ComputableInPolyTime.of_finite _
   have ht : ComputableInPolyTime
-      (fun c : Constraint Rel ℕ => decide (c.2.length = arity c.1))
+      (fun c : Constraint Rel ℕ => decide (c.scope.length = arity c.rel))
       (encConstraint encRel encNat) encBool :=
     ComputableInPolyTime.decide_eq'
-      ((ComputableInPolyTime.length_list encNat).comp (ComputableInPolyTime.snd _ _))
-      (ha.comp (ComputableInPolyTime.fst _ _))
+      ((ComputableInPolyTime.length_list encNat).comp
+        (encConstraint_scope_polyTime ComputableInPolyTime.id'))
+      (ha.comp (encConstraint_rel_polyTime ComputableInPolyTime.id'))
   change ComputableInPolyTime
-    (fun F : Cslib.Logic.PL.CSP Rel ℕ => F.all (fun c => decide (c.2.length = arity c.1)))
+    (fun F : Cslib.Logic.PL.CSP Rel ℕ => F.all (fun c => decide (c.scope.length = arity c.rel)))
     (encCSP encRel encNat) encBool
   exact ComputableInPolyTime.allWithInput ComputableInPolyTime.id'
     (ht.comp (ComputableInPolyTime.snd _ _))

@@ -516,8 +516,8 @@ not a decision.
   [#858](https://github.com/leanprover/cslib/pull/858).
   [#966](https://github.com/leanprover/cslib/pull/966) would make `sampleComplexity` and `vcDim`
   `ℕ∞`-valued; if it lands, restate the bounds in `FiniteClass`, `VCUpperBound`,
-  `AgnosticFiniteClass` and `GrowthFunction`. `PACLearning/SampleComplexityLower*` vendors the EHKV
-  `Ω(d/ε)` lower bound from
+  `AgnosticFiniteClass`, `AgnosticVC` and `GrowthFunction`. `PACLearning/SampleComplexityLower*`
+  vendors the EHKV `Ω(d/ε)` lower bound from
   [`feat/pac-learning-ehkv-headline`](https://github.com/SamuelSchlesinger/cslib/tree/feat/pac-learning-ehkv-headline);
   submit or update it through that branch, not as a competing copy, and reconcile `VCLowerBound`
   and `FundamentalTheorem` with its names before submitting them.
