@@ -79,13 +79,13 @@ def buildByAdds {α : Type*} [AddCommMonoid α] (xs : List α) : FenwickTree α 
 
 private theorem addAt_append_zero_cons {α : Type*} [AddZeroClass α]
     (pre : List α) (x : α) (rest : List α) :
-    addAt (pre ++ 0 :: rest) pre.length x = (pre ++ [x]) ++ rest := by
+    PrefixSums.addAt (pre ++ 0 :: rest) pre.length x = (pre ++ [x]) ++ rest := by
   induction pre with
   | nil =>
-    simp only [addAt, List.nil_append, List.length_nil, List.getD_cons_zero,
+    simp only [PrefixSums.addAt, List.nil_append, List.length_nil, List.getD_cons_zero,
       zero_add, List.set_cons_zero, List.singleton_append]
   | cons a as ih =>
-    simpa only [addAt, List.cons_append, List.length_cons, List.getD_cons_succ,
+    simpa only [PrefixSums.addAt, List.cons_append, List.length_cons, List.getD_cons_succ,
       List.set_cons_succ] using congrArg (a :: ·) ih
 
 private theorem valid_addFrom {α : Type*} [AddCommMonoid α]
@@ -201,12 +201,12 @@ example :
 
 /-! ## 4. Adaptive `Cslib.DataStructure` client execution and non-vacuity -/
 
-/-- Adaptive client: query `prefixSum 3`; if at least `8`, add `10` at index `4`, else add `2` at
-index `0`; then return `(initialSum, prefixSum 6)`. -/
-def adaptiveClient : (spec ℕ).Client (ℕ × ℕ) :=
-  .liftBind (.prefixSum 3) fun s3 =>
+/-- Adaptive client: query `sum 3`; if at least `8`, add `10` at index `4`, else add `2` at
+index `0`; then return `(initialSum, sum 6)`. -/
+def adaptiveClient : (PrefixSums.spec ℕ).Client (ℕ × ℕ) :=
+  .liftBind (.sum 3) fun s3 =>
     .liftBind (if 8 ≤ s3 then .add 4 10 else .add 0 2) fun _ =>
-      .liftBind (.prefixSum 6) fun s6 =>
+      .liftBind (.sum 6) fun s6 =>
         .pure (s3, s6)
 
 -- On `[3, 1, 4, 1, 5, 9]`, `s3 = 8 ≥ 8`, so branch 1 adds `10` at index `4` (`s6 = 33`);
@@ -234,10 +234,10 @@ example :
     let s := sample6
     let t := ofList s
     Valid t s ∧
-      (run t adaptiveClient).1 = ((spec ℕ).runClient s adaptiveClient).1 ∧
-      Valid (run t adaptiveClient).2.1 ((spec ℕ).runClient s adaptiveClient).2.1 ∧
+      (run t adaptiveClient).1 = ((PrefixSums.spec ℕ).runClient s adaptiveClient).1 ∧
+      Valid (run t adaptiveClient).2.1 ((PrefixSums.spec ℕ).runClient s adaptiveClient).2.1 ∧
       total id (run t adaptiveClient).2.2 ≤
-        ((spec ℕ).runClient s adaptiveClient).2.2.length * Nat.clog 2 (s.length + 1) :=
+        ((PrefixSums.spec ℕ).runClient s adaptiveClient).2.2.length * Nat.clog 2 (s.length + 1) :=
   ⟨valid_ofList sample6, run_correct adaptiveClient (valid_ofList sample6)⟩
 
 /-! ## 5. Positive and negative `Valid` witnesses -/

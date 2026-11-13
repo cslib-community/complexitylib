@@ -5,7 +5,9 @@ Authors: Samuel Schlesinger
 -/
 
 import CslibFrontier.Crypto.Computational.PseudorandomPermutation
+import CslibFrontier.Crypto.Primitives.PRP.Finite
 import CslibFrontier.Foundations.Data.BitString.List.Operations
+import CslibFrontier.Languages.Probabilistic.Oracle.CoinFixing
 import CslibFrontier.Tactic.PolyTime
 
 /-!
@@ -18,6 +20,11 @@ on concrete words, including the rejection of malformed queries and the decrypti
 
 Fixing the private coins of a program that flips a coin and then queries one of two points turns
 it into the deterministic query selected by the fixed coin, without changing its query budget.
+
+For the finite experiments, a one-query adversary run against a deterministic oracle returns the
+oracle's reply. The switching lemma gives it no advantage between a uniform permutation and a
+uniform function, so its PRF and PRP advantages coincide up to zero. Lifted to the bidirectional
+interface it asks the forward direction.
 -/
 
 namespace CslibFrontierTests.Crypto.PseudorandomPermutation
@@ -87,5 +94,37 @@ example (ω : ProbOracleComp.Coins coinThenQuery) :
   unfold coinThenQuery
   simpa using (ProbOracleComp.IsQueryBounded.sample _).bind fun c =>
     ProbOracleComp.IsQueryBounded.query (spec := fun _ : Fin 2 => Bool) (if c = 0 then 0 else 1)
+
+/-! ### Finite experiments -/
+
+/-- Ask the oracle at `false` and return the reply. -/
+def queryFalse : PRF.Adversary Bool Bool := ProbOracleComp.query false
+
+private theorem isQueryBounded_queryFalse : queryFalse.IsQueryBounded 1 :=
+  ProbOracleComp.IsQueryBounded.query false
+
+-- Running against a deterministic oracle returns its reply.
+example (f : Bool → Bool) : queryFalse.run (fun x => pure (f x)) = pure (f false) :=
+  ProbOracleComp.run_query false _
+
+-- One query cannot tell a uniform permutation from a uniform function.
+example :
+    Game.advantage (ProbComp.eval (PRP.idealExperiment queryFalse))
+      (ProbComp.eval (PRF.idealExperiment queryFalse)) = 0 := by
+  have h := PRP.advantage_idealExperiment_prfIdealExperiment_le isQueryBounded_queryFalse
+  rw [show Nat.choose 1 2 = 0 by decide, Nat.cast_zero, zero_div] at h
+  exact_mod_cast le_antisymm h (NNReal.coe_nonneg _)
+
+-- Hence its PRF advantage against a block cipher is at most its PRP advantage.
+example (E : Bool → Equiv.Perm Bool) :
+    (PRF.advantage (fun key => ⇑(E key)) queryFalse : ℝ) ≤ PRP.advantage E queryFalse := by
+  simpa using PRP.prfAdvantage_le_advantage_add E isQueryBounded_queryFalse
+
+-- The lifted adversary asks the forward direction of the bidirectional oracle.
+example (π : Equiv.Perm Bool) :
+    (PRP.StrongAdversary.ofForward queryFalse).run
+      (fun q => pure (RandomPermutation.evalPerm π q)) = pure (π false) := by
+  simp only [PRP.StrongAdversary.run_ofForward, RandomPermutation.evalPerm_forward, queryFalse,
+    ProbOracleComp.run_query]
 
 end CslibFrontierTests.Crypto.PseudorandomPermutation

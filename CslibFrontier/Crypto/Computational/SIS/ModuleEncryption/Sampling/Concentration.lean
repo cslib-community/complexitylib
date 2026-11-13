@@ -37,7 +37,7 @@ no-wrap margin identifying the centered integer lift of every supported scalar d
 theorem toOuterMeasure_moduleLWECBD_noise_tail_le {n w η B : ℕ}
     (hη : 0 < η) (hwrap : 2 * η < 2 ^ w) :
     (PMF.pi (fun _ : Fin n => LWE.noiseLaw w η)).toOuterMeasure
-      {e | ¬ GeneralSIS.inInfNormBound B e} ≤
+      {e | ¬ SIS.inInfNormBound B e} ≤
         n * ENNReal.ofReal (4 * Real.exp (-(B : ℝ) ^ 2 / (2 * η))) := by
   have hscalar : (LWE.noiseLaw w η).toOuterMeasure
       {z | (B : ℤ) < |z.valMinAbs|} ≤
@@ -56,7 +56,7 @@ theorem toOuterMeasure_moduleLWECBD_noise_tail_le {n w η B : ℕ}
   calc
     _ ≤ ∑ _i : Fin n, (LWE.noiseLaw w η).toOuterMeasure
         {z | (B : ℤ) < |z.valMinAbs|} := by
-      simpa only [GeneralSIS.inInfNormBound, not_forall, not_le, Set.mem_ofPred_eq] using
+      simpa only [SIS.inInfNormBound, not_forall, not_le, Set.mem_ofPred_eq] using
         PMF.toOuterMeasure_pi_exists_le
           (fun _ : Fin n => LWE.noiseLaw w η)
           (fun _ => {z | (B : ℤ) < |z.valMinAbs|})

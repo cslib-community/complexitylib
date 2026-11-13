@@ -30,7 +30,7 @@ word to the extension, which reads it exactly as the original machine would.
   no decoder.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Probability
 

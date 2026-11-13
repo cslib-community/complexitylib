@@ -217,9 +217,7 @@ private theorem toFinset_selectDistinct_map_append {l : List γ} {S : Finset γ}
   have hget : ∀ v ∈ l,
       (l.map (fun v => decide (v ∈ S)) ++ u).getD (l.idxOf v) false = decide (v ∈ S) := by
     intro v hv
-    have hlt : l.idxOf v < l.length := List.idxOf_lt_length_iff.2 hv
-    rw [List.getD_append _ _ _ _ (by simpa using hlt),
-      List.getD_eq_getElem _ _ (by simpa using hlt), List.getElem_map, List.getElem_idxOf hlt]
+    simp [List.getD_eq_getElem?_getD, List.getElem?_append_left, List.idxOf_lt_length_iff.2 hv]
   ext v
   rw [List.mem_toFinset, mem_selectDistinct]
   exact ⟨fun ⟨hv, h⟩ => of_decide_eq_true ((hget v hv).symm.trans h),

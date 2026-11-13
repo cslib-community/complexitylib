@@ -256,6 +256,19 @@ theorem index_lt_index {u i j a b : ℕ} (ha : a < u) (hij : i < j) :
     _ ≤ j * u := Nat.mul_le_mul_right u hij
     _ ≤ j * u + b := Nat.le_add_right _ _
 
+/-- Conversely, comparing two keys compares their clusters first, then their low parts: if
+`i * u + a < j * u + b` with `b < u`, then cluster `i` precedes cluster `j`, or they coincide and
+`a < b`. Predecessor and successor queries use this to locate the answer's cluster. -/
+theorem cluster_lt_split {d : ℕ} {i j : Fin (universeSize d)} {a b : ℕ}
+    (hb : b < universeSize d) (h : i.val * universeSize d + a < j.val * universeSize d + b) :
+    i.val < j.val ∨ i = j ∧ a < b := by
+  rcases Nat.lt_trichotomy i.val j.val with hlt | heq | hgt
+  · exact Or.inl hlt
+  · rw [heq] at h
+    exact Or.inr ⟨Fin.ext heq, by omega⟩
+  · have := index_lt_index (b := a) hb hgt
+    omega
+
 /-- Boolean lookup agrees with the mathematical interpretation of every valid tree. -/
 theorem member_iff_contains {t : Tree d} (ht : t.Valid) (x : ℕ) :
     t.member x = true ↔ t.Contains x := by

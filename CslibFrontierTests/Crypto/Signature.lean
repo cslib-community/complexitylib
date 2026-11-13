@@ -74,8 +74,8 @@ example : lamportVerify id (encList encBits
 -- A wrong-length first query returns no Lamport secret but still consumes the one query.
 example : idLamportScheme.oneTimeSigningOracle
       (encList encBits [[false], [true]]) ((), []) [] = pure ([], [[]]) := by
-  simp only [SignatureScheme.oneTimeSigningOracle, idLamportScheme, lamportScheme, lamportSign,
-    frames_encList]
+  simp only [SignatureScheme.oneTimeSigningOracle, SignatureScheme.oneTimeSigningOracleOf,
+    idLamportScheme, lamportScheme, lamportSign, frames_encList]
   rfl
 
 example : idLamportScheme.oneTimeSigningOracle

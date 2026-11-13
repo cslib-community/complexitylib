@@ -17,7 +17,7 @@ public section
 namespace Cslib.Algorithms.Lean.Dijkstra.Tests.NativeBinary
 
 open Cslib.WordRAM Cslib.WordRAM.Realization Cslib.DataStructure
-open Cslib.Algorithms.WordRAM.Dijkstra (ListInstance)
+open Cslib.Algorithms.Dijkstra (ListInstance)
 
 /-- One vertex without an outgoing edge. -/
 @[expose] def singleton : ListInstance := ⟨1, fun _ => [], 0⟩
