@@ -3801,6 +3801,10 @@ public import CslibFrontier.Computability.PolyTime.CSP.Edge.Solver.Step
 public import CslibFrontier.Computability.PolyTime.CSP.Edge.Solver.Storage
 public import CslibFrontier.Computability.PolyTime.CSP.Edge.Solver.Walk
 public import CslibFrontier.Computability.PolyTime.CSP.Gadget
+public import CslibFrontier.Computability.PolyTime.CSP.Gadget.CertifiedRotation
+public import CslibFrontier.Computability.PolyTime.CSP.Gadget.ConstructionCompiler
+public import CslibFrontier.Computability.PolyTime.CSP.Gadget.PlanarCompiler
+public import CslibFrontier.Computability.PolyTime.CSP.Gadget.Rotation
 public import CslibFrontier.Computability.PolyTime.CSP.Gadget.Size
 public import CslibFrontier.Computability.PolyTime.CSP.Occurrence
 public import CslibFrontier.Computability.PolyTime.CSP.Table
