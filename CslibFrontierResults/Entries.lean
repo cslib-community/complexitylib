@@ -127,11 +127,14 @@ import CslibFrontier.Computability.QueryComplexity.Quantum.NayakWuConsequences
 import CslibFrontier.Computability.QueryComplexity.Quantum.PermutationInversion
 import CslibFrontier.Computability.QueryComplexity.Quantum.SpectralAdversary
 import CslibFrontier.Computability.QueryComplexity.Quantum.WeightedAdversary
+import CslibFrontier.Crypto.Computational.MLDSA.KeyOnly
 import CslibFrontier.Crypto.Computational.Nonuniform.ZeroKnowledge
 import CslibFrontier.Crypto.Computational.OneWay.LiuPass
 import CslibFrontier.Crypto.Computational.OneWay.MCSP
 import CslibFrontier.Crypto.Computational.OneWayToPRF
 import CslibFrontier.Crypto.Computational.OneWayToPRG
+import CslibFrontier.Crypto.Computational.SIS.Ajtai
+import CslibFrontier.Crypto.Primitives.PRP.Finite
 import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Bot
 import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot
 import CslibFrontier.Crypto.Protocols.PIR.Block
@@ -4543,6 +4546,67 @@ register_result "cgks-pir-block-retrieval" where
     2 * m ≤ ℓ, in particular n ≤ (ℓ / 2)^2 (Corollary 8, replacing the paper's unrounded \
     n ≤ ℓ² / 4 with the integer subcube condition 2 * m ≤ ℓ, matching n ≤ ℓ² / 4 when ℓ is \
     even)."
+
+register_result "prp-prf-switching" where
+  title := "PRP/PRF switching lemma: a pseudorandom permutation is a pseudorandom function"
+  topic := "cryptography"
+  sources := [
+    { paper := BonehShoup2023, theorem := "Theorem 4.4 and Corollary 4.5",
+      locator := "Section 4.4.3" }
+  ]
+  theorems := [
+    Cslib.Crypto.PRP.advantage_idealExperiment_prfIdealExperiment_le,
+    Cslib.Crypto.PRP.prfAdvantage_le_advantage_add
+  ]
+  scope := "Finite block set D and key set Key, block ciphers E : Key → Equiv.Perm D, and \
+    adaptive oracle adversaries with private coins (PRF.Adversary D D) making at most Q queries \
+    (IsQueryBounded Q). A uniform permutation and a uniform function of D are distinguished \
+    with advantage at most Q.choose 2 / |D|, so the PRF advantage of E is at most its PRP \
+    advantage plus Q.choose 2 / |D|. Concrete information-theoretic bounds; no running time is \
+    charged and no asymptotic form is stated."
+
+register_result "ajtai-collision-sis" where
+  title := "Finding collisions in Ajtai's hash function is no easier than SIS"
+  topic := "cryptography"
+  sources := [
+    { paper := Ajtai1996, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Crypto.IsAjtaiCollision.isSolution_sub,
+    Cslib.Crypto.isSolution_sub_of_abs_le,
+    Cslib.Crypto.ajtaiAdvantage_le_sisAdvantage
+  ]
+  scope := "Ajtai's hash x ↦ A x mod q on integer vectors, for every nonzero modulus q (the two \
+    collision lemmas need no assumption on q), dimensions n × m and bound β, with no primality \
+    or compression assumption. Distinct inputs in [0, β]^m (or [-β, β]^m) with equal hashes \
+    differ by a nonzero solution with ∞-norm at most β (or 2β), and the collision-finding \
+    success probability of any finder against a uniform A ∈ ℤ_q^{n×m} is at most the SIS \
+    success probability of collisionToSIS, which subtracts the two inputs. Ajtai's \
+    worst-case-to-average-case reduction for lattice problems is not formalized; no running \
+    time is charged."
+
+register_result "mldsa-key-only-forgery" where
+  title := "ML-DSA key-only unforgeability from Module-LWE and self-target MSIS"
+  topic := "cryptography"
+  sources := [
+    { paper := DucasEtAl2018, theorem := unverified, locator := unverified },
+    { paper := NISTFIPS204, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Crypto.MLDSA.isSelfTargetSolution_of_verify,
+    Cslib.Crypto.MLDSA.succProbability_koaGame_le_selfTargetGame,
+    Cslib.Crypto.MLDSA.succProbability_koaGame_le
+  ]
+  scope := "Key-only attacks (no signing queries) on ML-DSA verification with valid parameters \
+    and a fixed hash H. A verifying forgery yields a self-target MSIS solution for \
+    [I_k | A | -t] with hash H(HighBits(·), ·) and bound max γ₁ γ₂. For honest keys with \
+    secret coefficients drawn independently from an arbitrary law, the forger's success \
+    probability is at most the advantage of forgeryDistinguisher between honest and uniform \
+    keys plus the success probability of selfTargetReduction against a uniform [A | t]. \
+    Hardness of self-target MSIS is the assumption, not reduced to Module-SIS; the honest-key \
+    term is not routed through the uniform-secret DecisionModuleLWE. Chosen-message security \
+    (signing-oracle simulation in the random-oracle model) and asymptotic packaging are not \
+    formalized; no running time is charged."
 
 register_result "clique-eth-lower-bound" where
   title := "No f(k) n^o(k) or FPT algorithm for Clique under ETH"
