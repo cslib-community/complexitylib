@@ -26,7 +26,7 @@ Consequently input relations need not be invariant under permutations of the uni
 
 ## Main results
 
-* `Cslib.Logic.FO.Ordered.ESODefinable.of_queryLanguage_mem_NP`: every ordered query whose
+* `Cslib.Logic.FO.Ordered.ESODefinable.of_encodedLanguage_mem_NP`: every ordered query whose
   source-only encoding language is in NP is ESO-definable, without assuming invariance under
   permutations of the input relations.
 * `Cslib.Logic.FO.Ordered.ESODefinable.of_powerLanguage`: the ordered version of the Fagin
@@ -61,8 +61,8 @@ theorem Definable.esoDefinable {L : Language.{u, v}} {K : Query L} (hK : Definab
   obtain ⟨φ, hφ⟩ := hK
   exact ⟨ESO.Sentence.ofSentence φ, fun M => (hφ M).trans (ESO.Sentence.realize_ofSentence φ).symm⟩
 
-/-- The existing fixed-sentence encoding is exactly the new arbitrary-query encoding applied
-to the class defined by that sentence. Its size and shape rejection behavior is unchanged. -/
+/-- The encoded language `queryLanguage v φ` of a sentence `φ` is the encoded language of the query
+that `φ` defines. -/
 theorem encodedLanguage_sentence {L : Language} [L.IsRelational] (v : Vocabulary L)
     (φ : (language L).Sentence) :
     Query.encodedLanguage {M : Ordered.Structure L | φ.Realize M} v =
@@ -107,7 +107,7 @@ theorem ESODefinable.of_powerLanguage {L : Language.{u, v}} [L.IsRelational]
 existential second-order logic over the canonical ordered language. The query may depend on
 the fixed ordering of its input relations: no isomorphism-invariance assumption is required.
 This is the ordered converse of Fagin's characterization [Fagin1974], [Immerman1999]. -/
-theorem ESODefinable.of_queryLanguage_mem_NP {L : Language.{u, v}} [L.IsRelational]
+theorem ESODefinable.of_encodedLanguage_mem_NP {L : Language.{u, v}} [L.IsRelational]
     (v : Vocabulary L) {K : Query L} (hNP : K.encodedLanguage v ∈ NP encStructure) :
     ESODefinable K := by
   obtain ⟨k, hk, har, Ψ, hΨ⟩ := v.exists_powerSentence_of_mem_NP hNP

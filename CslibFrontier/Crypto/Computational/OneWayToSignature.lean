@@ -15,6 +15,7 @@ public import CslibFrontier.Languages.Probabilistic.Repeat
 public import CslibFrontier.Languages.Probabilistic.UniformNat
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -186,13 +187,9 @@ theorem SignatureScheme.OneTimeEUFCMA.exists_oneWay {S : SignatureScheme}
   let param (size : ℕ) : ℕ := GeneratorReindex.parameter schedule size
   let f (seed : List Bool) : List Bool :=
     encPair encUnary encBits (param seed.length, (evaluate (param seed.length) seed).1)
-  have hsched : ComputableInPolyTime schedule encUnary encUnary :=
-    have hsucc := ComputableInPolyTime.unary_add.comp
-      (ComputableInPolyTime.id'.prod (.const 1))
-    ComputableInPolyTime.unary_add.comp
-      ((ComputableInPolyTime.unary_add.comp
-        ((uConstMul c ((ComputableInPolyTime.unary_pow d).comp hsucc)).prod .id')).prod
-        (.const 1))
+  have hsched : ComputableInPolyTime schedule encUnary encUnary := by
+    dsimp only [schedule]
+    fun_prop
   have hparam_unary : ComputableInPolyTime param encUnary encUnary :=
     GeneratorReindex.isPolyTime_parameter hsched .id'
   have hparam : ComputableInPolyTime (fun seed : List Bool => param seed.length)
@@ -593,12 +590,6 @@ theorem isPPT_lamportInverter {f : List Bool → List Bool}
     (hkeys.bind_with ((hrun_base.preprocess hprep).bind_with hpost.isPPTOn))
     (ComputableInPolyTime.const []).isPPTOn)).isPPT
 
-private theorem map_bool_apply_true {α : Type*} (p : PMF α) (P : α → Bool) :
-    (p.map P) true = ∑' a, p a * (if P a then 1 else 0) := by
-  rw [PMF.map_apply]
-  refine tsum_congr fun a => ?_
-  cases P a <;> simp
-
 private theorem map_true_le_sum_of_pointwise {β : Type*} {m : ℕ}
     (p : PMF β) (win : β → Bool) (q : ℕ → PMF β) (invWin : ℕ → β → Bool)
     (h : ∀ x, p x * (if win x then 1 else 0) ≤
@@ -606,12 +597,12 @@ private theorem map_true_le_sum_of_pointwise {β : Type*} {m : ℕ}
         if j.val < m then q j.val x * (if invWin j.val x then 1 else 0) else 0) :
     (p.map win) true ≤
       ∑ j : Fin (dyadicSize m), if j.val < m then ((q j.val).map (invWin j.val)) true else 0 := by
-  rw [map_bool_apply_true]
+  rw [PMF.map_apply_true]
   refine (tsum_le_tsum h).trans ?_
   rw [Summable.tsum_finsetSum fun _ _ => CompleteLattice.summable]
   refine le_of_eq (Finset.sum_congr rfl fun j _ => ?_)
   split_ifs
-  · exact (map_bool_apply_true _ _).symm
+  · exact (PMF.map_apply_true _ _).symm
   · simp
 
 private theorem bind_map_true_le_sum {α β : Type*} {m : ℕ} (μ : PMF α)

@@ -13,6 +13,7 @@ public import CslibFrontier.Languages.Probabilistic.QueryCount
 import CslibFrontier.Languages.Probabilistic.Oracle.Interaction
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Languages.Probabilistic.UntilBad.TwoCost
+import CslibFrontier.Probability.PMF.Support
 /-!
 # CPA Security of Output Feedback (OFB) Mode
 
@@ -30,13 +31,13 @@ is equivalent to CPA security.
 
 The proof follows the template of [KatzLindell2020], Theorem 3.33 (CTR mode):
 1. The OFB experiment is the real PRF experiment for a reduction that encrypts with its oracle
-   (`ofbCpaGame_eq_realGame`); the reduction makes one oracle call per encrypted block
+   (`ofbCpaGame_eq_realExperiment`); the reduction makes one oracle call per encrypted block
    (`isQueryBounded_ofbReduction`).
 2. Against a uniform random function, sampled lazily, the reduction's view differs from fresh
    uniform ciphertexts only when some keystream input repeats an earlier input. The chain
    collision bound `toOuterMeasure_badChain_le` limits this event to probability
    `K (K + ℓ) / 2 ^ n` when the queries ask at most `K` blocks in total and at most `ℓ` blocks
-   each (`advantage_idealGame_ofbReduction_le`).
+   each (`advantage_idealExperiment_ofbReduction_le`).
 3. Fresh uniform ciphertexts do not depend on the challenge bit, so the hybrids and the two PRF
    advantages give the final bound (`advantage_ofbCpaGame_le`).
 
@@ -52,10 +53,10 @@ reduction is concrete (`ProbOracleComp`); no native multitape PPT statement is m
 
 ## Main results
 
-* `Cslib.Crypto.ofbCpaGame_eq_realGame`: the OFB experiment is the real PRF experiment for the
+* `Cslib.Crypto.ofbCpaGame_eq_realExperiment`: the OFB experiment is the real PRF experiment for the
   reduction.
 * `Cslib.Crypto.isQueryBounded_ofbReduction`: the reduction makes at most `K` oracle calls.
-* `Cslib.Crypto.advantage_idealGame_ofbReduction_le`: with a uniform random function, the
+* `Cslib.Crypto.advantage_idealExperiment_ofbReduction_le`: with a uniform random function, the
   reduction's view is within `K (K + ℓ) / 2 ^ n` of `blockModeIdealGame`.
 * `Cslib.Crypto.advantage_ofbCpaGame_randomFunction_le`: OFB mode with a uniform random function has
   left-or-right advantage at most `2 K (K + ℓ) / 2 ^ n`.
@@ -122,23 +123,23 @@ noncomputable def ofbReduction (ℓ : ℕ) (b : Bool) (adversary : BlockModeAdve
   blockModeReduction ofbChainQueries ℓ b adversary
 
 /-- Answering the keystream calls with a fixed function `f` computes the OFB chain of `f`. -/
-theorem interpret_ofbChainQueries (f : BitString n → BitString n) (x : BitString n) (k : ℕ) :
-    OracleComp.interpret (sumHandler ProbComp.unifFin fun y => pure (f y))
-      (ofbChainQueries x k) = (pure (ofbChain f x k) : ProbComp (List (BitString n))) := by
+theorem run_ofbChainQueries (f : BitString n → BitString n) (x : BitString n) (k : ℕ) :
+    (ofbChainQueries x k).run (fun y => pure (f y)) = pure (ofbChain f x k) := by
   induction k generalizing x with
-  | zero => simp only [ofbChainQueries, ofbChain, OracleComp.interpret_pure]
+  | zero => rfl
   | succ k ih =>
-    simp only [ofbChainQueries, ofbChain, OracleComp.interpret_bind,
-      ProbOracleComp.interpret_query, ih, pure_bind, OracleComp.interpret_pure]
+    simp only [ofbChainQueries, ofbChain, ProbOracleComp.run_bind, ProbOracleComp.run_query, ih,
+      pure_bind, ProbOracleComp.run_pure]
 
 /-- The OFB experiment for the keyed block function `F` is the real PRF experiment for `F` and
 the reduction `ofbReduction ℓ b adversary`. -/
-theorem ofbCpaGame_eq_realGame {Key : Type} [Fintype Key] [Nonempty Key]
+theorem ofbCpaGame_eq_realExperiment {Key : Type} [Fintype Key] [Nonempty Key]
     (F : Key → BitString n → BitString n) (ℓ : ℕ) (b : Bool) (adversary : BlockModeAdversary n) :
-    ofbCpaGame F ℓ b adversary = PRF.realGame F (ofbReduction ℓ b adversary) :=
-  blockModeCpaGame_eq_realGame (fun key => ofbEncryptBlocks (F key)) ofbChainQueries F ℓ b adversary
-    fun key iv ms =>
-      ⟨ofbChain (F key) iv ms.length, interpret_ofbChainQueries (F key) iv ms.length, rfl⟩
+    ofbCpaGame F ℓ b adversary =
+      ProbComp.eval (PRF.realExperiment F (ofbReduction ℓ b adversary)) :=
+  blockModeCpaGame_eq_realExperiment (fun key => ofbEncryptBlocks (F key)) ofbChainQueries F ℓ b
+    adversary fun key iv ms =>
+      ⟨ofbChain (F key) iv ms.length, run_ofbChainQueries (F key) iv ms.length, rfl⟩
 
 /-- The keystream program makes exactly `k` oracle calls. -/
 theorem isQueryBounded_ofbChainQueries (x : BitString n) (k : ℕ) :
@@ -278,7 +279,7 @@ private theorem toOuterMeasure_bad_fresh_le (ℓ : ℕ) (b : Bool) {adversary : 
   · intro q s hs
     cases q with
     | inl i =>
-      exact (toOuterMeasure_lift_eq_zero (bad := fun s : FlagState n => s.2 = true)
+      exact (PMF.toOuterMeasure_lift_eq_zero (bad := fun s : FlagState n => s.2 = true)
         (ProbComp.unifOracle i) s hs).trans_le zero_le
     | inr q =>
       calc (ProbOracleComp.runWith freshStep (ofbQueryProgram ℓ b q) s).toOuterMeasure
@@ -295,7 +296,7 @@ private theorem toOuterMeasure_bad_fresh_le (ℓ : ℕ) (b : Bool) {adversary : 
   · intro q s _ x hx _
     cases q with
     | inl i =>
-      rw [snd_eq_of_mem_support_lift hx]
+      rw [PMF.snd_eq_of_mem_support_lift hx]
       exact le_add_right (le_add_right le_rfl)
     | inr q =>
       have hlen := length_of_mem_support_freshQuery ℓ b q s hx
@@ -314,16 +315,17 @@ private theorem toOuterMeasure_bad_fresh_le (ℓ : ℕ) (b : Bool) {adversary : 
 most `K` blocks in total, then with a uniform random function the output of the reduction
 `ofbReduction ℓ b adversary` is within `K (K + ℓ) / 2 ^ n` of `blockModeIdealGame`, whatever the
 challenge bit `b`. -/
-theorem advantage_idealGame_ofbReduction_le (ℓ : ℕ) (b : Bool) {adversary : BlockModeAdversary n}
-    {K : ℕ} (h : OracleComp.IsCostBounded (blockModeCost ℓ) adversary K) :
-    (Game.advantage (PRF.idealGame (ofbReduction ℓ b adversary))
+theorem advantage_idealExperiment_ofbReduction_le (ℓ : ℕ) (b : Bool)
+    {adversary : BlockModeAdversary n} {K : ℕ}
+    (h : OracleComp.IsCostBounded (blockModeCost ℓ) adversary K) :
+    (Game.advantage (ProbComp.eval (PRF.idealExperiment (ofbReduction ℓ b adversary)))
         (blockModeIdealGame ℓ adversary) : ℝ) ≤ (K : ℝ) * (K + ℓ) / 2 ^ n := by
   have hfresh := freshGame_eq_blockModeIdealGame ofbChainQueries ℓ b adversary
     fun q iv s => by
       rw [runWith_freshStep_ofbChainQueries, PMF.map_comp]
       exact PMF.map_id _
   rw [ofbReduction, ← hfresh]
-  refine (advantage_idealGame_freshStep_le _).trans ?_
+  refine (advantage_idealExperiment_freshStep_le _).trans ?_
   have hne : ((K * (K + ℓ) : ℕ) : ℝ≥0∞) * ((2 : ℝ≥0∞) ^ n)⁻¹ ≠ ⊤ :=
     ENNReal.mul_ne_top (ENNReal.natCast_ne_top _)
       (ENNReal.inv_ne_top.2 (pow_ne_zero _ two_ne_zero))
@@ -343,14 +345,13 @@ theorem advantage_ofbCpaGame_randomFunction_le (ℓ : ℕ) {adversary : BlockMod
         (ofbCpaGame (fun f : BitString n → BitString n => f) ℓ true adversary) : ℝ) ≤
       2 * ((K : ℝ) * (K + ℓ) / 2 ^ n) := by
   have e : ∀ b, ofbCpaGame (fun f : BitString n → BitString n => f) ℓ b adversary =
-      PRF.idealGame (ofbReduction ℓ b adversary) := fun b => by
-    rw [ofbCpaGame_eq_realGame]
+      ProbComp.eval (PRF.idealExperiment (ofbReduction ℓ b adversary)) := fun b => by
+    rw [ofbCpaGame_eq_realExperiment]
     rfl
   rw [e, e]
-  have h₀ := advantage_idealGame_ofbReduction_le ℓ false h
-  have h₁ := advantage_idealGame_ofbReduction_le ℓ true h
-  have h₂ := advantage_le_two (PRF.idealGame (ofbReduction ℓ false adversary))
-    (blockModeIdealGame ℓ adversary) (PRF.idealGame (ofbReduction ℓ true adversary))
+  have h₀ := advantage_idealExperiment_ofbReduction_le ℓ false h
+  have h₁ := advantage_idealExperiment_ofbReduction_le ℓ true h
+  refine (advantage_le_two _ (blockModeIdealGame ℓ adversary) _).trans ?_
   linarith
 
 /-- **OFB mode is CPA-secure for a pseudorandom function** ([KatzLindell2020], Section 3.6.3,
@@ -365,19 +366,13 @@ theorem advantage_ofbCpaGame_le {Key : Type} [Fintype Key] [Nonempty Key]
     (Game.advantage (ofbCpaGame F ℓ false adversary) (ofbCpaGame F ℓ true adversary) : ℝ) ≤
       PRF.advantage F (ofbReduction ℓ false adversary) +
         PRF.advantage F (ofbReduction ℓ true adversary) + 2 * ((K : ℝ) * (K + ℓ) / 2 ^ n) := by
-  rw [ofbCpaGame_eq_realGame, ofbCpaGame_eq_realGame]
-  have h₀ := advantage_idealGame_ofbReduction_le ℓ false h
-  have h₁ := advantage_idealGame_ofbReduction_le ℓ true h
-  have h₄ := advantage_le_four (PRF.realGame F (ofbReduction ℓ false adversary))
-    (PRF.idealGame (ofbReduction ℓ false adversary)) (blockModeIdealGame ℓ adversary)
-    (PRF.idealGame (ofbReduction ℓ true adversary))
-    (PRF.realGame F (ofbReduction ℓ true adversary))
-  have e₀ : (PRF.advantage F (ofbReduction ℓ false adversary) : ℝ) =
-      Game.advantage (PRF.realGame F (ofbReduction ℓ false adversary))
-        (PRF.idealGame (ofbReduction ℓ false adversary)) := rfl
-  have e₁ : (PRF.advantage F (ofbReduction ℓ true adversary) : ℝ) =
-      Game.advantage (PRF.realGame F (ofbReduction ℓ true adversary))
-        (PRF.idealGame (ofbReduction ℓ true adversary)) := rfl
+  rw [ofbCpaGame_eq_realExperiment, ofbCpaGame_eq_realExperiment]
+  have h₀ := advantage_idealExperiment_ofbReduction_le ℓ false h
+  have h₁ := advantage_idealExperiment_ofbReduction_le ℓ true h
+  refine (advantage_le_four _
+    (ProbComp.eval (PRF.idealExperiment (ofbReduction ℓ false adversary)))
+    (blockModeIdealGame ℓ adversary)
+    (ProbComp.eval (PRF.idealExperiment (ofbReduction ℓ true adversary))) _).trans ?_
   linarith
 
 end Cslib.Crypto

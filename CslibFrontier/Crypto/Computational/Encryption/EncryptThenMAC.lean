@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Computational.Encryption.Authenticated
 public import CslibFrontier.Crypto.Computational.MAC
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pair.Projections
 import CslibFrontier.Crypto.Computational.PseudorandomFunction.RandomOracle
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Captured
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
@@ -274,20 +275,13 @@ noncomputable def encryptThenMAC (E : SymmetricCipher) (M : MACScheme)
     simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.mem_support_bind_iff,
       PMF.mem_support_pure_iff] at hk hct
     obtain ⟨ke, hke, km, hkm, rfl⟩ := hk
-    have hunframe_k : unframe (encPair encBits encBits (ke, km)) = ke := by
-      simp [encPair_apply, unframe_frame_append]
-    have hdrop_k : dropFrame (encPair encBits encBits (ke, km)) = km := by
-      simp [encPair_apply, dropFrame_frame_append]
-    rw [hunframe_k, hdrop_k] at hct
+    rw [unframe_encPair_encBits, dropFrame_encPair_encBits] at hct
     obtain ⟨c, hc, tag, htag, rfl⟩ := hct
-    have hunframe_ct : unframe (encPair encBits encBits (c, tag)) = c := by
-      simp [encPair_apply, unframe_frame_append]
-    have hdrop_ct : dropFrame (encPair encBits encBits (c, tag)) = tag := by
-      simp [encPair_apply, dropFrame_frame_append]
     have hcLen : c.length = M.msgLen n := hctLen n ke hke msg hmsg c hc
     have hver : M.verify km c tag = true := M.verify_sign n km hkm c hcLen tag htag
     have hdec : E.decrypt n ke c = some msg := E.decrypt_encrypt n ke hke msg hmsg c hc
-    rw [hunframe_k, hdrop_k, hunframe_ct, hdrop_ct]
+    rw [unframe_encPair_encBits, dropFrame_encPair_encBits, unframe_encPair_encBits,
+      dropFrame_encPair_encBits]
     simp [hcLen, hver, hdec]
 
 /-! #### Ciphertext-Integrity to SUF-CMA Reduction for Theorem 9.2 -/
@@ -507,12 +501,8 @@ private theorem etm_sufCma_win_eq_ci_win (E : SymmetricCipher) (M : MACScheme)
      (pair.1.length == M.msgLen n) && !queriedPairs.contains pair && M.verify km pair.1 pair.2) =
       (!(queriedPairs.map (encPair encBits encBits)).contains out &&
         ((encryptThenMAC E M hctLen).decrypt n (encPair encBits encBits (ke, km)) out).isSome) := by
-  have hunframe_k : unframe (encPair encBits encBits (ke, km)) = ke := by
-    simp [encPair_apply, unframe_frame_append]
-  have hdrop_k : dropFrame (encPair encBits encBits (ke, km)) = km := by
-    simp [encPair_apply, dropFrame_frame_append]
   dsimp only [encryptThenMAC]
-  rw [hunframe_k, hdrop_k]
+  rw [unframe_encPair_encBits, dropFrame_encPair_encBits]
   by_cases hframe : (encPair encBits encBits (unframe out, dropFrame out) == out) = true
   · by_cases hdec : (E.decrypt n ke (unframe out)).isSome = true
     · simp only [hframe, hdec, Bool.true_and, ↓reduceIte]
@@ -576,13 +566,9 @@ theorem eval_sufCmaGame_etmToMACForger (E : SymmetricCipher) (M : MACScheme)
       s.2.map (encPair encBits encBits))
     (step := by
       intro ⟨⟨⟩, msg⟩ ⟨⟨⟩, queriedPairs⟩
-      have hunframe_k : unframe (encPair encBits encBits (ke, km)) = ke := by
-        simp [encPair_apply, unframe_frame_append]
-      have hdrop_k : dropFrame (encPair encBits encBits (ke, km)) = km := by
-        simp [encPair_apply, dropFrame_frame_append]
       unfold etmToMACHandler SymmetricCipher.ciEncryptionOracle
       dsimp only [encryptThenMAC]
-      rw [hunframe_k, hdrop_k]
+      rw [unframe_encPair_encBits, dropFrame_encPair_encBits]
       by_cases hlenEq : (msg.length == n) = true
       · simp only [hlenEq, ↓reduceIte, ProbOracleComp.runWith_bind, ProbOracleComp.runWith_sample,
           PMF.bind_map, Function.comp_def, PMF.map_bind, ProbComp.eval_bind,
@@ -894,13 +880,9 @@ theorem eval_sufOneTimeGame_etmToOneTimeMACForger (E : SymmetricCipher) (M : MAC
       queriedPairs.map (encPair encBits encBits))
     (step := by
       intro ⟨⟨⟩, msg⟩ queriedPairs
-      have hunframe_k : unframe (encPair encBits encBits (ke, km)) = ke := by
-        simp [encPair_apply, unframe_frame_append]
-      have hdrop_k : dropFrame (encPair encBits encBits (ke, km)) = km := by
-        simp [encPair_apply, dropFrame_frame_append]
       unfold etmOneTimeMACIntermediateOracle SymmetricCipher.oneTimeCIEncryptionOracle
       dsimp only [encryptThenMAC]
-      rw [hunframe_k, hdrop_k, List.isEmpty_map]
+      rw [unframe_encPair_encBits, dropFrame_encPair_encBits, List.isEmpty_map]
       by_cases hcond : (queriedPairs.isEmpty && (msg.length == n)) = true
       · simp only [hcond, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure,
           Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure, PMF.map_bind,
@@ -1076,13 +1058,9 @@ theorem eval_cpaGame_etmToCPAAdversary (E : SymmetricCipher) (M : MACScheme)
     (represent := fun _ : Unit × Unit => ())
     (step := by
       intro ⟨⟨⟩, payload⟩ ⟨⟨⟩, ⟨⟩⟩
-      have hunframe_k : unframe (encPair encBits encBits (ke, km)) = ke := by
-        simp [encPair_apply, unframe_frame_append]
-      have hdrop_k : dropFrame (encPair encBits encBits (ke, km)) = km := by
-        simp [encPair_apply, dropFrame_frame_append]
       unfold etmToCPAHandler SymmetricCipher.cpaEncryptionOracle
       dsimp only [encryptThenMAC]
-      rw [hunframe_k, hdrop_k]
+      rw [unframe_encPair_encBits, dropFrame_encPair_encBits]
       by_cases hlenEq : ((unframe payload).length == n && (dropFrame payload).length == n) = true
       · simp only [hlenEq, ↓reduceIte, ProbOracleComp.runWith_bind, ProbOracleComp.runWith_map,
           ProbOracleComp.runWith_query, ProbOracleComp.runWith_sample, ProbComp.eval_bind,
@@ -1352,13 +1330,9 @@ theorem eval_cpaOneTimeGame_etmToOneTimeCPAAdversary (E : SymmetricCipher) (M : 
             (fun q s => ProbComp.eval (E.oneTimeCPAEncryptionOracle n ke bit q s))
             (etmToOneTimeCPAHandler M n km ((), payload) alreadyQueried) alreadyQueried).map
           (fun result => (result.1.1, result.1.2, result.2))
-      have hunframe_k : unframe (encPair encBits encBits (ke, km)) = ke := by
-        simp [encPair_apply, unframe_frame_append]
-      have hdrop_k : dropFrame (encPair encBits encBits (ke, km)) = km := by
-        simp [encPair_apply, dropFrame_frame_append]
       unfold etmToOneTimeCPAHandler SymmetricCipher.oneTimeCPAEncryptionOracle
       dsimp only [encryptThenMAC]
-      rw [hunframe_k, hdrop_k]
+      rw [unframe_encPair_encBits, dropFrame_encPair_encBits]
       by_cases hcond :
           (!alreadyQueried && ((unframe payload).length == n) &&
             ((dropFrame payload).length == n)) = true

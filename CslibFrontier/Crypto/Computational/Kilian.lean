@@ -71,7 +71,7 @@ adversaries, as in `CollisionResistant`.
 
 ## Main definitions
 
-* `Cslib.Crypto.KilianOpening`, `Cslib.Crypto.KilianResponse`: the prover's answers.
+* `Cslib.Crypto.KilianResponse`: the prover's answers, one `MerkleOpening Bool` per query.
 * `Cslib.Crypto.kilianDepth`, `Cslib.Crypto.kilianPosition`: depth of the committed tree and the
   position of a PCP address.
 * `Cslib.Crypto.kilianCheck`, `Cslib.Crypto.kilianVerify`: the verifier's decision on one
@@ -107,17 +107,9 @@ variable {α : Type} (H : List Bool → List Bool → List Bool) (V : PCPVerifie
 
 /-! ### The verifier -/
 
-/-- An opening of one queried position: the claimed bit of the table and its authentication path. -/
-@[ext]
-structure KilianOpening where
-  /-- The claimed bit at the queried position. -/
-  bit : Bool
-  /-- The Merkle authentication path for the claimed bit. -/
-  path : List (List Bool)
-  deriving DecidableEq, Repr, Inhabited
-
-/-- The prover's last message: for each repetition, one opening per query of the PCP verifier. -/
-abbrev KilianResponse := List (List KilianOpening)
+/-- The prover's last message: for each repetition, one opening per query of the PCP verifier, each
+the claimed bit of the table and its authentication path. -/
+abbrev KilianResponse := List (List (MerkleOpening Bool))
 
 /-- The depth of the tree committing to the compact table of `x`. -/
 def kilianDepth (x : α) : ℕ := Nat.clog 2 (V.queryTable x).length
@@ -127,14 +119,14 @@ def kilianDepth (x : α) : ℕ := Nat.clog 2 (V.queryTable x).length
 def kilianPosition (x : α) (a : ℕ) : ℕ := (V.queryTable x).idxOf a
 
 /-- The verifier's decision on one repetition with random string `ρ`: one opening per query of `V`
-on `(x, ρ)`, each accepted by `merkleVerify` at the position of its address, and `V` accepts the
-opened bits. -/
-def kilianCheck (k : List Bool) (x : α) (root ρ : List Bool) (answers : List KilianOpening) :
-    Bool :=
+on `(x, ρ)`, each accepted (`MerkleOpening.verify`, one-bit leaves) at the position of its address,
+and `V` accepts the opened bits. -/
+def kilianCheck (k : List Bool) (x : α) (root ρ : List Bool)
+    (answers : List (MerkleOpening Bool)) : Bool :=
   answers.length == (V.queries (x, ρ)).length &&
     ((V.queries (x, ρ)).zip answers).all (fun (a, o) =>
-      merkleVerify H k (kilianDepth V x) root (kilianPosition V x a) [o.bit] o.path) &&
-    V.verdict ((x, ρ), answers.map KilianOpening.bit)
+      o.verify H k (fun b => [b]) (kilianDepth V x) root (kilianPosition V x a)) &&
+    V.verdict ((x, ρ), answers.map MerkleOpening.leaf)
 
 /-- The verifier's decision: one answer list per random string, each accepted by `kilianCheck`. -/
 def kilianVerify (k : List Bool) (x : α) (root : List Bool) (ρs : List (List Bool))
@@ -163,7 +155,7 @@ def kilianCommit (k : List Bool) (x : α) (table : List Bool) : List Bool :=
 
 /-- The honest prover's openings for the random string `ρ`: for each query of `V`, the bit of the
 normalized table at its position and the authentication path. -/
-def kilianOpen (k : List Bool) (x : α) (table ρ : List Bool) : List KilianOpening :=
+def kilianOpen (k : List Bool) (x : α) (table ρ : List Bool) : List (MerkleOpening Bool) :=
   (V.queries (x, ρ)).map fun a =>
     ⟨(kilianTable V x table).getD (kilianPosition V x a) false,
       merklePath H k (kilianLeaves (kilianTable V x table)) (kilianPosition V x a)⟩
@@ -210,11 +202,11 @@ theorem kilianCheck_kilianOpen {x : α} {table : List Bool}
     (hρ : ρ.length = V.coins x) :
     kilianCheck H V k x (kilianCommit H V k x table) ρ (kilianOpen H V k x table ρ) = true := by
   have hverdict := List.all_eq_true.mp htable ρ (BitString.mem_enumList.mpr hρ)
-  have hzip (g : ℕ → KilianOpening) : (V.queries (x, ρ)).zip ((V.queries (x, ρ)).map g) =
+  have hzip (g : ℕ → MerkleOpening Bool) : (V.queries (x, ρ)).zip ((V.queries (x, ρ)).map g) =
       (V.queries (x, ρ)).map fun a => (a, g a) := by
     simpa only [List.map_id, id] using List.zip_map' (f := id) (g := g) (l := V.queries (x, ρ))
-  simp only [kilianCheck, kilianOpen, hzip, Bool.and_eq_true, beq_iff_eq, List.length_map,
-    List.all_map, List.all_eq_true, Function.comp_def, List.map_map, true_and]
+  simp only [kilianCheck, MerkleOpening.verify, kilianOpen, hzip, Bool.and_eq_true, beq_iff_eq,
+    List.length_map, List.all_map, List.all_eq_true, Function.comp_def, List.map_map, true_and]
   refine ⟨fun a ha => ?_, ?_⟩
   · have hpos := kilianPosition_lt hρ ha
     have hleaf : (kilianLeaves (kilianTable V x table)).getD (kilianPosition V x a) [] =
@@ -260,11 +252,11 @@ theorem eval_kilianHonestGame {x : α} {table : List Bool}
 
 /-! ### Efficiency -/
 
-/-- The encoding of an opening: the bit, then the authentication path. -/
-enc_structure encKilianOpening : KilianOpening where
-  bit : encBool, path : (encList encBits)
+/-- The encoding of an opening of a bit: the bit, then the authentication path. -/
+enc_structure encKilianOpening : MerkleOpening Bool where
+  leaf : encBool, path : (encList encBits)
 
-attribute [fun_prop] encKilianOpening_bit_polyTime encKilianOpening_path_polyTime
+attribute [fun_prop] encKilianOpening_leaf_polyTime encKilianOpening_path_polyTime
   encKilianOpening_mk_polyTime
 
 /-- The encoding of the prover's last message. -/
@@ -287,7 +279,7 @@ private theorem computableInPolyTime_kilianCheck
     (hlen : ∀ k x, (H k x).length = k.length) (hV : V.PolyTime enc)
     (hcoins : ∀ a, V.coins a ≤ c * (Nat.log 2 (enc a).length + 1))
     {k : γ → List Bool} {x : γ → α} {root ρ : γ → List Bool}
-    {answers : γ → List KilianOpening}
+    {answers : γ → List (MerkleOpening Bool)}
     (hk : ComputableInPolyTime k encIn encBits)
     (hx : ComputableInPolyTime x encIn enc)
     (hroot : ComputableInPolyTime root encIn encBits)
@@ -304,13 +296,13 @@ private theorem computableInPolyTime_kilianCheck
   have hsnd := ComputableInPolyTime.snd encIn (encPair encNat encKilianOpening)
   have ha := (ComputableInPolyTime.fst encNat encKilianOpening).comp hsnd
   have hopening := (ComputableInPolyTime.snd encNat encKilianOpening).comp hsnd
-  have hb := encKilianOpening_bit_polyTime hopening
+  have hb := encKilianOpening_leaf_polyTime hopening
   have hpath := encKilianOpening_path_polyTime hopening
   have hpos : ComputableInPolyTime
-      (fun p : γ × ℕ × KilianOpening => kilianPosition V (x p.1) p.2.1)
+      (fun p : γ × ℕ × MerkleOpening Bool => kilianPosition V (x p.1) p.2.1)
       (encPair encIn (encPair encNat encKilianOpening)) encUnary :=
     ComputableInPolyTime.idxOfWithInput (htable.comp hfst) ha
-  have hleaf : ComputableInPolyTime (fun p : γ × ℕ × KilianOpening => [p.2.2.bit])
+  have hleaf : ComputableInPolyTime (fun p : γ × ℕ × MerkleOpening Bool => [p.2.2.leaf])
       (encPair encIn (encPair encNat encKilianOpening)) encBits :=
     ComputableInPolyTime.bitsCons hb (ComputableInPolyTime.const [])
   have hverify := (computableInPolyTime_merkleVerify hH hlen).comp
@@ -318,8 +310,8 @@ private theorem computableInPolyTime_kilianCheck
       (hleaf.prod hpath)))
   have hall : ComputableInPolyTime
       (fun g => ((V.queries (x g, ρ g)).zip (answers g)).all (fun (a, o) =>
-        merkleVerify H (k g) (kilianDepth V (x g)) (root g)
-          (kilianPosition V (x g) a) [o.bit] o.path))
+        o.verify H (k g) (fun b => [b]) (kilianDepth V (x g)) (root g)
+          (kilianPosition V (x g) a)))
       encIn encBool :=
     ComputableInPolyTime.allWithInput
       ((ComputableInPolyTime.zip encNat encKilianOpening).comp (hqueries.prod hanswers))
@@ -329,10 +321,10 @@ private theorem computableInPolyTime_kilianCheck
     ComputableInPolyTime.beq
       ((ComputableInPolyTime.length_list encKilianOpening).comp hanswers)
       ((ComputableInPolyTime.length_list encNat).comp hqueries)
-  have hbits : ComputableInPolyTime (fun g => (answers g).map KilianOpening.bit) encIn encBits :=
+  have hbits : ComputableInPolyTime (fun g => (answers g).map MerkleOpening.leaf) encIn encBits :=
     ComputableInPolyTime.listToBits.comp
       (ComputableInPolyTime.mapWithInput hanswers
-        (encKilianOpening_bit_polyTime (ComputableInPolyTime.snd encIn encKilianOpening)))
+        (encKilianOpening_leaf_polyTime (ComputableInPolyTime.snd encIn encKilianOpening)))
   have hverdict := hV.2.2.comp ((hx.prod hρ).prod hbits)
   unfold kilianCheck
   exact ComputableInPolyTime.bool_and' (ComputableInPolyTime.bool_and' hlength hall)
