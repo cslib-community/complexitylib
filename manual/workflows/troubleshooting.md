@@ -57,6 +57,8 @@ Lake to restore its missing outputs. `parallel_defs.py` uses the same guard with
 library-only scope; it does not require test or results outputs. Run `scripts/check.sh` explicitly when the checkout and
 resources are ready for full validation, then retry the audit. `--no-build-check` disables
 freshness verification; it does not repair missing artifacts or certify a partial audit.
+`check_changed_files.py --source-only` skips its output-based module-doc name lint and needs
+no build.
 
 This inventory guard is a bounded mitigation, not a read-only Lake mode. For a complete output
 tree, the retained `lake build --no-build` freshness check can still restore or replace outputs,
