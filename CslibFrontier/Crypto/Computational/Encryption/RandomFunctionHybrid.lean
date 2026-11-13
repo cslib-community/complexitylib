@@ -31,7 +31,7 @@ block-cipher modes of operation (such as OFB and CTR):
 - replaces a lazily sampled random function (`PRF.idealExperiment`) by fresh independent uniform
   sampling (`freshStep`) up to the repetition bad event that an oracle query hits a previously
   sampled input;
-- provides the mode-independent left-or-right block-mode query/cost/ideal-game interface
+- provides the mode-independent left-or-right block-mode query/cost/ideal-experiment interface
   (`BlockModeQuery`, `BlockModeSpec`, `BlockModeAdversary`, `blockModeSelect`, `blockModeBlocks`,
   `blockModeCost`, `blockModeOracle`, `blockModeIdealOracle`, `blockModeCpaExperiment`,
   `blockModeIdealExperiment`), generic PRF distinguisher builder (`blockModeQueryProgram`,
