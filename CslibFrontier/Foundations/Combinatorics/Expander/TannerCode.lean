@@ -181,8 +181,9 @@ variable {m : ℕ}
 retained edge `emb e` if that edge is incident to the vertex. -/
 def shortRow (s : Fin d → Fin ℓ → Bool) (A : Fin c → Fin d → Bool)
     (emb : Fin m ↪ (Fin ℓ → Bool) × Fin d) (r : Bool × (Fin ℓ → Bool) × Fin c) : Fin m → Bool :=
-  fun e => if (if r.1 then (emb e).1 + s (emb e).2 else (emb e).1) = r.2.1 then
-    A r.2.2 (emb e).2 else false
+  let (side, u, i) := r
+  fun e => if (if side then (emb e).1 + s (emb e).2 else (emb e).1) = u then
+    A i (emb e).2 else false
 
 /-- A left row of the shortened code checks the left word of the extension. -/
 theorem shortRow_dotProduct_left (s : Fin d → Fin ℓ → Bool) (A : Fin c → Fin d → Bool)
@@ -226,23 +227,24 @@ distinct ports. -/
 theorem weight_shortRow_le (s : Fin d → Fin ℓ → Bool) (A : Fin c → Fin d → Bool)
     (emb : Fin m ↪ (Fin ℓ → Bool) × Fin d) (r : Bool × (Fin ℓ → Bool) × Fin c) :
     weight (shortRow s A emb r) ≤ d := by
+  obtain ⟨side, u, i⟩ := r
   refine (Finset.card_le_card_of_injOn (t := (univ : Finset (Fin d))) (fun e => (emb e).2)
     (fun _ _ => mem_univ _) ?_).trans (by simp)
   intro e he e' he' hee'
   replace he := (Finset.mem_filter.mp (Finset.mem_coe.mp he)).2
   replace he' := (Finset.mem_filter.mp (Finset.mem_coe.mp he')).2
   simp only [shortRow] at he he'
-  have hv : (if r.1 then (emb e).1 + s (emb e).2 else (emb e).1) = r.2.1 := by
+  have hv : (if side then (emb e).1 + s (emb e).2 else (emb e).1) = u := by
     by_contra h; rw [ite_eq_right_of_eq_false _ _ (eq_false h)] at he; exact Bool.false_ne_true he
-  have hv' : (if r.1 then (emb e').1 + s (emb e').2 else (emb e').1) = r.2.1 := by
+  have hv' : (if side then (emb e').1 + s (emb e').2 else (emb e').1) = u := by
     by_contra h; rw [ite_eq_right_of_eq_false _ _ (eq_false h)] at he'
     exact Bool.false_ne_true he'
   simp only at hee'
   refine emb.injective (Prod.ext ?_ hee')
-  cases hr : r.1
-  · simp only [hr, Bool.false_eq_true, ite_false] at hv hv'
+  cases side
+  · simp only [Bool.false_eq_true, ite_false] at hv hv'
     rw [hv, hv']
-  · simp only [hr, ite_true] at hv hv'
+  · simp only [ite_true] at hv hv'
     rw [← add_add_cancel (emb e).1 (s (emb e).2), hv, hee', ← hv', add_add_cancel]
 
 /-- **The shortened Tanner code.** Under the hypotheses of `le_weight_of_isWord`, including

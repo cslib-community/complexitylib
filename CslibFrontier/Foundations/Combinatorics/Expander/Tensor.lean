@@ -61,8 +61,9 @@ variable (G : RotationMap V D) (H : RotationMap V' D')
 /-- Execute a tensor rotation with one call to each component, retaining both return labels. -/
 def tensorRot (rotate : V × D → V × D) (other : V' × D' → V' × D')
     (p : (V × V') × (D × D')) : (V × V') × (D × D') :=
-  let first := rotate (p.1.1, p.2.1)
-  let second := other (p.1.2, p.2.2)
+  let ((v, v'), (i, i')) := p
+  let first := rotate (v, i)
+  let second := other (v', i')
   ((first.1, second.1), (first.2, second.2))
 
 /-- The **tensor product** `G ⊗ H`

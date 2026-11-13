@@ -202,7 +202,7 @@ variable (G : RotationMap V D)
 /-- The **restriction** of `G` to a set `S` of vertices closed under taking neighbors: the
 rotation map of `G` on the darts at the vertices of `S`. -/
 def restrict (S : Set V) (hS : ∀ v ∈ S, ∀ i, G.neighbor v i ∈ S) : RotationMap S D where
-  rot p := (⟨G.neighbor p.1 p.2, hS _ p.1.2 _⟩, (G.rot (p.1, p.2)).2)
+  rot p := (⟨G.neighbor p.1 p.2, hS _ p.1.property _⟩, (G.rot (p.1, p.2)).2)
   rot_involutive p := by
     refine Prod.ext (Subtype.ext ?_) ?_
     · exact G.neighbor_neighbor_rot p.1 p.2
@@ -212,7 +212,8 @@ def restrict (S : Set V) (hS : ∀ v ∈ S, ∀ i, G.neighbor v i ∈ S) : Rotat
 /-- The rotation map of a restriction of `G` is the rotation map of `G`. -/
 @[simp]
 theorem rot_restrict (S : Set V) (hS : ∀ v ∈ S, ∀ i, G.neighbor v i ∈ S) (p : S × D) :
-    (G.restrict S hS).rot p = (⟨G.neighbor p.1 p.2, hS p.1 p.1.2 p.2⟩, (G.rot (p.1, p.2)).2) :=
+    (G.restrict S hS).rot p =
+      (⟨G.neighbor p.1 p.2, hS p.1 p.1.property p.2⟩, (G.rot (p.1, p.2)).2) :=
   rfl
 
 /-- The inclusion of a restriction of `G` into `G` is a homomorphism. -/

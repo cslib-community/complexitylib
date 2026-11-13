@@ -68,7 +68,7 @@ in the permutation model of random regular graphs
 leads to `σ k v`, where it is the edge `(k, true)`, which leads back along the inverse permutation.
 -/
 def ofPerms (σ : K → Equiv.Perm V) : RotationMap V (K × Bool) where
-  rot p := bif p.2.2 then ((σ p.2.1).symm p.1, (p.2.1, false)) else (σ p.2.1 p.1, (p.2.1, true))
+  rot := fun (v, k, b) => bif b then ((σ k).symm v, (k, false)) else (σ k v, (k, true))
   rot_involutive := by
     rintro ⟨v, k, _ | _⟩ <;> simp
 

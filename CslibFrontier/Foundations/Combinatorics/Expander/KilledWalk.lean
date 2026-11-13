@@ -161,6 +161,23 @@ theorem card_filter_le_killTime {m : ℕ} (hm : m ≤ T) :
 
 end KillTime
 
+section KilledLabel
+
+/-- The label of a killed walk: `T` labels of a `D`-regular multigraph and `T` kill signals in
+`Fin q`. It stays a product, which the encoded powering step of the PCP theorem enumerates, counts
+and encodes as one pair; read its parts with `labels` and `signals`. -/
+abbrev KilledLabel (T q : ℕ) (D : Type*) := (Fin T → D) × (Fin T → Fin q)
+
+variable {T q : ℕ}
+
+/-- The labels that a killed walk follows until its kill time. -/
+abbrev KilledLabel.labels (x : KilledLabel T q D) : Fin T → D := x.1
+
+/-- The kill signals of a killed walk, which determine its kill time `killTime x.signals`. -/
+abbrev KilledLabel.signals (x : KilledLabel T q D) : Fin T → Fin q := x.2
+
+end KilledLabel
+
 section Law
 
 variable {T q : ℕ} [NeZero q] [Fintype V] [Fintype D]
@@ -182,8 +199,8 @@ of length `ℓ`: summing a function of its first `ℓ` steps over the walks and 
 `ℓ` sums it `|D| ^ (T - ℓ) (q - 1) ^ ℓ q ^ (T - (ℓ + 1))` times over the walks of length `ℓ`. -/
 theorem sum_ite_killTime_eq {M : Type*} [AddCommMonoid M] {ℓ : ℕ} (hℓ : ℓ < T)
     (F : V × (Fin ℓ → D) → M) :
-    ∑ x : V × (Fin T → D) × (Fin T → Fin q),
-        (if killTime x.2.2 = ℓ then F (x.1, Fin.take ℓ hℓ.le x.2.1) else 0) =
+    ∑ x : V × KilledLabel T q D,
+        (if killTime x.2.signals = ℓ then F (x.1, Fin.take ℓ hℓ.le x.2.labels) else 0) =
       (Fintype.card D ^ (T - ℓ) * ((q - 1) ^ ℓ * q ^ (T - (ℓ + 1)))) • ∑ w, F w := by
   refine (Fintype.sum_equiv (Equiv.prodAssoc V (Fin T → D) (Fin T → Fin q)).symm _
     (fun x ↦ if killTime x.2 = ℓ then F (x.1.1, Fin.take ℓ hℓ.le x.1.2) else 0)
@@ -197,8 +214,8 @@ the walk is killed at its step `ℓ < T` and its first `ℓ` steps satisfy `P` n
 `#{w | P w} |D| ^ (T - ℓ) (q - 1) ^ ℓ q ^ (T - (ℓ + 1))`. -/
 theorem card_filter_killTime_eq_and {ℓ : ℕ} (hℓ : ℓ < T) (P : V × (Fin ℓ → D) → Prop)
     [DecidablePred P] :
-    #{x : V × (Fin T → D) × (Fin T → Fin q) |
-        killTime x.2.2 = ℓ ∧ P (x.1, Fin.take ℓ hℓ.le x.2.1)} =
+    #{x : V × KilledLabel T q D |
+        killTime x.2.signals = ℓ ∧ P (x.1, Fin.take ℓ hℓ.le x.2.labels)} =
       #{w | P w} * (Fintype.card D ^ (T - ℓ) * ((q - 1) ^ ℓ * q ^ (T - (ℓ + 1)))) := by
   rw [card_filter, card_filter, mul_comm, ← smul_eq_mul, ← sum_ite_killTime_eq hℓ]
   simp only [ite_and]
@@ -264,8 +281,8 @@ first `ℓ < T` labels, on the event that the walk is killed at step `ℓ`, aver
 `(1 - 1 / q) ^ ℓ / q` times its average over the walks of length `ℓ`. -/
 theorem expect_prod_ite_killTime_eq [Fintype V] [Nonempty D] {ℓ : ℕ} (hℓ : ℓ < T)
     (F : V × (Fin ℓ → D) → ℝ) :
-    𝔼 x : V × (Fin T → D) × (Fin T → Fin q),
-        (if killTime x.2.2 = ℓ then F (x.1, Fin.take ℓ hℓ.le x.2.1) else 0) =
+    𝔼 x : V × KilledLabel T q D,
+        (if killTime x.2.signals = ℓ then F (x.1, Fin.take ℓ hℓ.le x.2.labels) else 0) =
       (1 - (q : ℝ)⁻¹) ^ ℓ / q * 𝔼 w, F w := by
   rw [Fintype.expect_prod_type, Fintype.expect_prod_type F, mul_expect]
   exact expect_congr rfl fun v _ ↦ expect_ite_killTime_eq hℓ fun r ↦ F (v, r)
@@ -284,11 +301,11 @@ theorem card_filter_killTime_eq_and_splitWalk {T q : ℕ} [NeZero q] [Fintype V]
     {ℓ : ℕ} (hℓ : ℓ < T) (i : Fin ℓ)
     (P : V × D → (Fin i → D) → Prop) (Q : V × D → (Fin (ℓ - (i + 1)) → D) → Prop)
     [∀ d, DecidablePred (P d)] [∀ d, DecidablePred (Q d)] :
-    #{x : V × (Fin T → D) × (Fin T → Fin q) | killTime x.2.2 = ℓ ∧
-        (P (G.walkDart (x.1, Fin.take ℓ hℓ.le x.2.1) i)
-            ((G.pow i).rot (x.1, Fin.take i i.isLt.le (Fin.take ℓ hℓ.le x.2.1))).2 ∧
-          Q (G.walkDart (x.1, Fin.take ℓ hℓ.le x.2.1) i)
-            (G.walkDrop (x.1, Fin.take ℓ hℓ.le x.2.1) (i + 1)).2)} =
+    #{x : V × KilledLabel T q D | killTime x.2.signals = ℓ ∧
+        (P (G.walkDart (x.1, Fin.take ℓ hℓ.le x.2.labels) i)
+            ((G.pow i).rot (x.1, Fin.take i i.isLt.le (Fin.take ℓ hℓ.le x.2.labels))).2 ∧
+          Q (G.walkDart (x.1, Fin.take ℓ hℓ.le x.2.labels) i)
+            (G.walkDrop (x.1, Fin.take ℓ hℓ.le x.2.labels) (i + 1)).2)} =
       (∑ d, #{r | P d r} * #{s | Q d s}) *
         (Fintype.card D ^ (T - ℓ) * ((q - 1) ^ ℓ * q ^ (T - (ℓ + 1)))) := by
   rw [← G.card_filter_splitWalk i P Q]
@@ -312,13 +329,13 @@ at `v` is the walk from `v` along the labels `k`, stopped when it is killed at s
 its rotation map reverses the walk up to that step and leaves the unused labels and the signals
 alone, so that the reverse is killed at the same step. A step of its random walk is a random walk
 on `G` killed before each step with probability `1 / q`, and stopped after `T` steps. -/
-def killedPow : RotationMap V ((Fin T → D) × (Fin T → Fin q)) where
-  rot x :=
-    (((G.pow (killTime x.2.2)).rot (x.1, Fin.take _ (killTime_le x.2.2) x.2.1)).1,
-      fun i ↦ if h : (i : ℕ) < killTime x.2.2 then
-        ((G.pow (killTime x.2.2)).rot (x.1, Fin.take _ (killTime_le x.2.2) x.2.1)).2 ⟨i, h⟩
-        else x.2.1 i,
-      x.2.2)
+def killedPow : RotationMap V (KilledLabel T q D) where
+  rot := fun (v, k, c) ↦
+    (((G.pow (killTime c)).rot (v, Fin.take _ (killTime_le c) k)).1,
+      fun i ↦ if h : (i : ℕ) < killTime c then
+        ((G.pow (killTime c)).rot (v, Fin.take _ (killTime_le c) k)).2 ⟨i, h⟩
+        else k i,
+      c)
   rot_involutive := by
     rintro ⟨v, k, c⟩
     dsimp only
@@ -331,21 +348,21 @@ def killedPow : RotationMap V ((Fin T → D) × (Fin T → Fin q)) where
 
 /-- The edge labelled `(k, c)` at `v` in the killed power leads to the vertex where the walk from
 `v` along `k` is killed. -/
-theorem neighbor_killedPow (v : V) (x : (Fin T → D) × (Fin T → Fin q)) :
-    (G.killedPow T q).neighbor v x = G.walkAt (v, x.1) (killTime x.2) :=
-  G.fst_rot_pow_take (v, x.1) (killTime_le x.2)
+theorem neighbor_killedPow (v : V) (x : KilledLabel T q D) :
+    (G.killedPow T q).neighbor v x = G.walkAt (v, x.labels) (killTime x.signals) :=
+  G.fst_rot_pow_take (v, x.labels) (killTime_le x.signals)
 
 /-- The rotation map of the killed power leaves the kill signals alone. -/
 @[simp]
-theorem snd_snd_rot_killedPow (p : V × (Fin T → D) × (Fin T → Fin q)) :
-    ((G.killedPow T q).rot p).2.2 = p.2.2 :=
+theorem signals_snd_rot_killedPow (p : V × KilledLabel T q D) :
+    ((G.killedPow T q).rot p).2.signals = p.2.signals :=
   rfl
 
 /-- The rotation map of the killed power reverses the walk up to the step at which it is killed. -/
-theorem rot_pow_killTime (p : V × (Fin T → D) × (Fin T → Fin q)) :
-    (G.pow (killTime p.2.2)).rot (p.1, Fin.take _ (killTime_le p.2.2) p.2.1) =
+theorem rot_pow_killTime (p : V × KilledLabel T q D) :
+    (G.pow (killTime p.2.signals)).rot (p.1, Fin.take _ (killTime_le p.2.signals) p.2.labels) =
       (((G.killedPow T q).rot p).1,
-        Fin.take _ (killTime_le p.2.2) ((G.killedPow T q).rot p).2.1) :=
+        Fin.take _ (killTime_le p.2.signals) ((G.killedPow T q).rot p).2.labels) :=
   Prod.ext rfl (take_dite _ _ _).symm
 
 end KilledPow

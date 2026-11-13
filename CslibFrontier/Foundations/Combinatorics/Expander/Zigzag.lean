@@ -125,9 +125,10 @@ variable {V D E : Type*} (G : RotationMap V D) (H : RotationMap D E)
 /-- Execute a zig-zag rotation, retaining the return labels of the zig and zag. -/
 def zigzagRot (rotate : V × D → V × D) (cloud : D × E → D × E)
     (p : (V × D) × (E × E)) : (V × D) × (E × E) :=
-  let a := cloud (p.1.2, p.2.1)
-  let b := rotate (p.1.1, a.1)
-  let c := cloud (b.2, p.2.2)
+  let ((v, k), (i, j)) := p
+  let a := cloud (k, i)
+  let b := rotate (v, a.1)
+  let c := cloud (b.2, j)
   ((b.1, c.1), (c.2, a.2))
 
 /-- The **zig-zag product** `G ⓩ H`

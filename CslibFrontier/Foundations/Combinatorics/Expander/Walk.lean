@@ -375,8 +375,8 @@ def splitWalk (i : Fin t) :
     V × (Fin t → D) ≃ (V × D) × (Fin i → D) × (Fin (t - (i + 1)) → D) where
   toFun p := (G.walkDart p i, ((G.pow i).rot (p.1, Fin.take i i.isLt.le p.2)).2,
     (G.walkDrop p (i + 1)).2)
-  invFun x := (((G.pow i).rot (x.1.1, x.2.1)).1,
-    Fin.append (Fin.snoc ((G.pow i).rot (x.1.1, x.2.1)).2 x.1.2) x.2.2 ∘
+  invFun := fun (q, r, s) => (((G.pow i).rot (q.1, r)).1,
+    Fin.append (Fin.snoc ((G.pow i).rot (q.1, r)).2 q.2) s ∘
       Fin.cast (Nat.add_sub_of_le i.isLt).symm)
   left_inv p := by
     have h : (G.walkAt p i, ((G.pow i).rot (p.1, Fin.take i i.isLt.le p.2)).2) =

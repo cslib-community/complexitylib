@@ -62,7 +62,8 @@ def contractDart (encode : V → W × I) (p : V × D) : W × (I × D) :=
 /-- Decode an occupied slot, rotate there, and encode the result; unused slots are self-loops. -/
 def contractRot (encode : V → W × I) (decode : W × I → Option V)
     (rotate : V × D → V × D) (p : W × (I × D)) : W × (I × D) :=
-  (decode (p.1, p.2.1)).elim p fun v => contractDart encode (rotate (v, p.2.2))
+  let (w, i, d) := p
+  (decode (w, i)).elim (w, i, d) fun v => contractDart encode (rotate (v, d))
 
 variable (encode : V → W × I) (decode : W × I → Option V)
   (h : Function.IsPartialInv encode decode)
@@ -92,9 +93,9 @@ variable (G : RotationMap V D)
 
 /-- The rotation map of `contract encode decode h G` decodes the slot, rotates in `G`, and
 re-encodes the resulting vertex, leaving an unoccupied slot as a self-loop. -/
-theorem rot_contract (p : W × (I × D)) :
-    (contract encode decode h G).rot p =
-      (decode (p.1, p.2.1)).elim p fun v => contractDart encode (G.rot (v, p.2.2)) :=
+theorem rot_contract (w : W) (i : I) (d : D) :
+    (contract encode decode h G).rot (w, i, d) =
+      (decode (w, i)).elim (w, i, d) fun v => contractDart encode (G.rot (v, d)) :=
   rfl
 
 include h in

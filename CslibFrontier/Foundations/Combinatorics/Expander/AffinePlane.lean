@@ -52,7 +52,8 @@ variable (K : Type*) [Field K]
 
 /-- The arithmetic program underlying the affine-plane rotation. -/
 def affinePlaneRot (p : (K × K) × K) : (K × K) × K :=
-  ((p.2, p.1.1 * p.2 - p.1.2), p.1.1)
+  let ((a, b), c) := p
+  ((c, a * c - b), a)
 
 /-- The affine-plane graph: `(a, b)` is adjacent to `(c, d)` when `a * c = b + d`.
 The edge to first coordinate `c` has label `c`, and its reverse has label `a`. -/
