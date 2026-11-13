@@ -244,6 +244,7 @@ import CslibFrontier.MachineLearning.LossMinimization.Squared
 import CslibFrontier.MachineLearning.OnlineLearning.SwapRegret
 import CslibFrontier.MachineLearning.PACBayes.Basic
 import CslibFrontier.MachineLearning.PACBayes.KL
+import CslibFrontier.MachineLearning.PACLearning.AgnosticVCSharp
 import CslibFrontier.MachineLearning.PACLearning.MDL
 import CslibFrontier.MachineLearning.PACLearning.Nonuniform
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.AC0Mod
@@ -2247,6 +2248,25 @@ register_result "pac-bayes-kl" where
     Point masses give the Occam form with log (1 / P {i}). Maurer's log (2√m / δ) for m ≥ 8, \
     the square-root form through binary Pinsker, measurable hypothesis spaces and Catoni's \
     bound are not covered."
+
+register_result "agnostic-vc-sharp-rate" where
+  title := "Sharp agnostic sample complexity of classes of finite VC dimension"
+  topic := "statistical learning"
+  sources := [
+    { paper := ShalevShwartzBenDavid2014, theorem := "Theorem 6.8",
+      locator := "Section 6.4, pp. 72–73" }
+  ]
+  theorems := [
+    Cslib.MachineLearning.PACLearning.measure_pi_not_isRepresentative_le_of_chainingSampleSize_le,
+    Cslib.MachineLearning.PACLearning.isPACLearnerFor_univ_of_chainingSampleSize_le,
+    Cslib.MachineLearning.PACLearning.sampleComplexity_univ_le_chainingSampleSize
+  ]
+  scope := "Upper bounds of items 1 and 2 only, on countable domains with measurable \
+    singletons: uniform convergence and agnostic PAC learning by ERM from \
+    (16384 d + 32 log (4/δ)) / ε² and (65536 d + 128 log (4/δ)) / ε² examples, where d bounds \
+    the shattered sets. The constants are explicit and unoptimized. The lower bounds and the \
+    realizable item 3 are not part of this entry, and uncountable domains need a measurability \
+    hypothesis on the class."
 
 register_result "gmw-zero-knowledge" where
   title := "Goldreich–Micali–Wigderson auxiliary-input zero-knowledge proofs for NP"
