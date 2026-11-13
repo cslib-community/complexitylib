@@ -355,7 +355,7 @@ def constFalse : PRG.Generator Unit (Fin 1 → Bool) := ⟨fun _ _ => false⟩
 /-- Guessing `false` predicts the bit of `constFalse` with probability `1`. -/
 theorem predictionExperiment_constFalse :
     constFalse.predictionExperiment 0 (fun _ => PMF.pure false) = PMF.pure true := by
-  simp [PRG.Generator.predictionExperiment, PRG.Generator.outputDist, constFalse,
+  simp [PRG.Generator.predictionExperiment_eq_bind, PRG.Generator.outputDist, constFalse,
     PMF.monad_bind_eq_bind, PMF.pure_map, Function.comp_def, PMF.bind_const]
 
 /-- **A constant generator is not next-bit unpredictable** at any error below `1 / 2`. -/

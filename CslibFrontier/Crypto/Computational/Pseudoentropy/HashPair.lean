@@ -18,6 +18,7 @@ import CslibFrontier.Computability.Probabilistic.LinearHash
 import CslibFrontier.Computability.Probabilistic.UniformNat
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString.Dot
 import CslibFrontier.Tactic.PolyTime.Init
 
 /-!
@@ -174,7 +175,7 @@ noncomputable def sample (f : List Bool → List Bool) (n : ℕ) : ProbComp (Lis
   let input ← sampleList n
   return (wordObservation (f input) index matrix
     (LinearHash.wordHash (index + 1) matrix input) query,
-    (input.zipWith Bool.and query).foldl Bool.xor false)
+    listDot input query)
 
 /-- The construction is strict PPT whenever the given function is polynomial time. -/
 @[program_certificate]
@@ -194,8 +195,7 @@ theorem isPPTOn_sample (f : List Bool → List Bool)
           ((computableInPolyTime_wordObservation (hinput.trans hf) hindex hmatrix
             (LinearHash.computableInPolyTime_wordHash
               (hindex.unary_add' (.const 1)) hmatrix hinput) hquery).prod
-            ((hinput.bitsZipWithInput Bool.and hquery).bitsFoldlWithInput
-              Bool.xor (.const false))).isPPTOn)))
+            (hinput.bitsListDot hquery)).isPPTOn)))
 
 /-- The executable observation and hidden bit have exactly the finite joint distribution. -/
 theorem eval_sample {n : ℕ} {Image : Type*} (f : List Bool → List Bool)
@@ -215,7 +215,7 @@ theorem eval_sample {n : ℕ} {Image : Type*} (f : List Bool → List Bool)
   simp only [pmf_norm, sample, eval_sampleList, hindex, joint, Seed, ← PMF.uniformOfFintype_prod,
     uniformList]
   simp only [Function.comp_def, hf, hhash, encodeObservation, prefixHash,
-    dotProduct_eq_foldl, PMF.map]
+    listDot_ofFn, PMF.map]
 
 /-- Package the efficient sampler with its finite observation type and exact joint law.
 The image representation is needed for entropy bookkeeping, not as an extra algorithmic oracle. -/

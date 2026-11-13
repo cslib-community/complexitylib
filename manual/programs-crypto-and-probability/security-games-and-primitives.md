@@ -115,6 +115,19 @@ repository root, check both clients with:
 scripts/build.sh --wfail --iofail CslibFrontierTests.Crypto.DiffieHellman CslibFrontierTests.Crypto.AssumptionNonvacuity
 ```
 
+Inversion and prediction are each stated once, for a fixed function and input distribution, in
+[`Crypto/Game/Inversion.lean`](../../CslibFrontier/Crypto/Game/Inversion.lean):
+`inversionExperiment sample f A` draws `x`, gives `A` the image `f x` and accepts any preimage,
+and `predictionExperiment sample f h P` asks `P` for the bit `h x` given `f x`. The word games
+`inversionGame` (one-wayness) and `predictionGame` (hard-core predicates) run them on uniform
+`n`-bit inputs, and the finite Goldreich–Levin reduction uses the same inversion experiment on
+`PMF.uniformOfFintype (BitString n)`; `ProbComp.eval_inversionExperiment` moves a program
+experiment to its distribution. Instantiate these experiments for a new inversion-style notion
+instead of writing another sampling block. The inner product of bit lists is
+[`BitString.listDot`](../../CslibFrontier/Foundations/Data/BitString/List/Dot.lean), which is
+Mathlib's `dotProduct` on `List.ofFn` inputs (`listDot_ofFn`); use it, and its polynomial-time rule
+`ComputableInPolyTime.bitsListDot`, instead of spelling out the zip-and-fold parity.
+
 For a one-bit expanding PRG, [Stretch/Prefix.lean](../../CslibFrontier/Crypto/Computational/Stretch/Prefix.lean)
 proves that `(forwardIterate g ℓ seed).take ℓ` has length `ℓ` and agrees with the first `ℓ`
 emitted bits of every longer run. The premise is global: `length (g seed) = length seed + 1`
