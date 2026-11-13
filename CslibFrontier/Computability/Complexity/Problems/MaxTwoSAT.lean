@@ -134,11 +134,7 @@ theorem isVerifier : IsVerifier encMaxTwoSAT Polynomial.X verifier MaxTwoSAT := 
     refine ⟨x.formula.vars.map σ, by simpa using hvars, fun k => ?_⟩
     simp only [verifier, Bool.and_eq_true, List.all_eq_true, decide_eq_true_eq]
     refine ⟨hlen, hσ.trans (CNF.countP_eval_congr fun v hv => ?_).le⟩
-    have hlt : x.formula.vars.idxOf v < x.formula.vars.length := List.idxOf_lt_length_iff.2 hv
-    have hlt' : x.formula.vars.idxOf v < (x.formula.vars.map σ).length := by simpa using hlt
-    rw [SAT.assignment, List.getD_eq_getElem?_getD, List.getElem?_append_left hlt',
-      List.getElem?_map, List.getElem?_eq_getElem hlt, List.getElem_idxOf hlt]
-    rfl
+    exact (SAT.assignment_vars_map_append _ σ _ hv).symm
 
 /-- Checking the clause widths and counting the satisfied clauses is polynomial-time: the count
 is computed in unary and compared with the binary target. -/
@@ -157,8 +153,7 @@ theorem computableInPolyTime_verifier :
   have hwidth : ComputableInPolyTime
       (fun x : MaxTwoSATInstance × List Bool => x.1.formula.all fun c => decide (c.length ≤ 2))
       (encPair encMaxTwoSAT encBits) encBool :=
-    (show ComputableInPolyTime (fun φ : CNF ℕ => φ.all fun c => decide (c.length ≤ 2))
-      encCNF encBool by unfold encCNF; fun_prop).comp (encMaxTwoSAT_formula_polyTime (fst _ _))
+    (computableInPolyTime_all_length_le 2).comp (encMaxTwoSAT_formula_polyTime (fst _ _))
   exact bool_and' hwidth (binary_le' (encMaxTwoSAT_target_polyTime (fst _ _)) hcount)
 
 /-- `MaxTwoSAT` belongs to `NP`. -/

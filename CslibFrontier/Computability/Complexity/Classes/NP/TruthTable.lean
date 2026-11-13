@@ -77,7 +77,7 @@ every accepted certificate sound, and listing a witness for every query in `B` i
 theorem PolyTimePTTReducible.mem_NP {L : Set α} {B : Set β}
     (h : PolyTimePTTReducible encA encB L B) (hB : B ∈ NP encB) : L ∈ NP encA := by
   classical
-  obtain ⟨r, q, d, hr, hq, hd, hmono, hL⟩ := h
+  obtain ⟨r, q, d, ⟨hr, hq, hd, hmono⟩, hL⟩ := h
   obtain ⟨pB, VB, hVB, hVspec⟩ := hB
   -- Whether the `i`-th listed string is a valid witness for the query `q (a, i)`.
   let confirmed : α → List (List Bool) → ℕ → Bool := fun a ws i =>
@@ -146,24 +146,12 @@ theorem PolyTimePTTReducible.mem_NP {L : Set α} {B : Set β}
     · have hw := Classical.choose_spec ((hVspec _).1 hqB)
       simp [hqB, hw.1]
     · simp [hqB]
-  have hmem : {a | ∃ ws, check (a, ws) = true} ∈ NP encA := by
-    refine mem_NP_of_witness (p := p) (Decoder.list Decoder.bits) hcheck (fun _ _ => Iff.rfl)
-      (fun a ws hws => ⟨canonicalWitnesses hVspec r q a, ?_, (hcanonical_len a).trans (hp a)⟩)
-    change d (a, answers a _) = true
-    rw [hcanonical a]
-    exact le_antisymm (Bool.le_true _) (hws ▸ hbelow a ws)
-  have heq : {a | ∃ ws, check (a, ws) = true} = L := by
-    ext a
-    simp only [Set.mem_ofPred_eq, hL a]
-    constructor
-    · rintro ⟨ws, hws⟩
-      exact le_antisymm (Bool.le_true _) (hws ▸ hbelow a ws)
-    · intro ha
-      exact ⟨canonicalWitnesses hVspec r q a, by
-        change d (a, answers a _) = true
-        rw [hcanonical a]
-        exact ha⟩
-  rwa [heq] at hmem
+  refine mem_NP_of_check (p := p) (Decoder.list Decoder.bits) hcheck
+    (fun a ws hws => (hL a).2 (le_antisymm (Bool.le_true _) (hws ▸ hbelow a ws)))
+    fun a ha => ⟨canonicalWitnesses hVspec r q a, ?_, (hcanonical_len a).trans (hp a)⟩
+  change d (a, answers a _) = true
+  rw [hcanonical a]
+  exact (hL a).1 ha
 
 /-- **NP is closed under polynomial-time disjunctive truth-table reductions**: a certificate is a
 witness for one query in `B`. -/

@@ -4,6 +4,19 @@ This family specifies how often an efficient algorithm can compute or approximat
 
 Levin's distributional framework, which pairs languages with arbitrary ensembles and defines `AvgP`, `HeurP` and dominating reductions, is described in [Distributional problems, AvgP, HeurP and Levin reductions](distributional-complexity.md). Its bridge theorem shows that a Boolean target whose uniform distributional problem lies in `HeurP` is not mildly hard on average.
 
+## Nonuniform circuit hardness and derandomization
+
+The [Arora–Barak chapters 16–17 audit](../../results/arora-barak-2007.md#chapter-16-derandomization-and-extractors)
+compares the draft's circuit hardness with the NW, XOR, hard-core and coding APIs. These
+nonuniform De Morgan circuit predicates differ from the uniform heuristic predicates below.
+The native [BPP derandomization theorem](../../CslibFrontier/Computability/Complexity/Classes/BPP/Derandomization.lean)
+proves `P = BPP` from eventual exponential average-case hardness in `E`; the
+[worst-case theorem](../../CslibFrontier/Computability/Complexity/Classes/BPP/WorstCaseHardness.lean)
+uses eventual exponential worst-case hardness. Neither establishes every general-$S$ tradeoff
+in the draft. Likewise, finite read-once branching-program security for Nisan's generator does
+not itself certify a native space-bounded simulation. Consult the audit for precise declarations,
+source locators, parameter differences and existing development issues.
+
 ## Heuristics, success events, and quantifiers
 
 [MildlyHardOnAverage](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/AverageCase.lean#L94) chooses one polynomial `p : Polynomial ℕ`, positive at every natural input, before quantifying over heuristics. For every `H : List Bool → ProbComp ℕ` with `IsPPTOn encBits encNat H`, there is a length threshold, allowed to depend on `H`, after which
@@ -30,6 +43,8 @@ The actual variants are:
 
 Every row chooses the positive gap polynomial before its heuristic. In the infinitely-often rows the qualifying lengths can depend on that heuristic. There is no claim here that deterministic infinitely-often hardness is equivalent to eventual PPT hardness. The source proves specialization in the expected direction: PPT hardness implies deterministic hardness, and deterministic eventual hardness implies its infinitely-often companion. An ENat target can take `∞`, which no finite output can equal; finiteness therefore matters when connecting those predicates to natural-valued Kolmogorov complexity.
 
+Each row is one of three cores at a fixed correctness test `correct n x v`: [MildlyHardOnAverageWith](../../CslibFrontier/Computability/Complexity/AverageCase.lean) for the PPT rows, `MildlyHardOnAverageDetWith` for the eventual deterministic rows and `MildlyHardOnAverageIOWith` for the infinitely-often rows. The named definitions unfold to their core, so a new correctness event needs no new definition. Each core's `.mono` lemma transfers hardness from a weaker test to a stronger one, and `MildlyHardOnAverageWith.mildlyHardOnAverageDetWith` and `MildlyHardOnAverageDetWith.mildlyHardOnAverageIOWith` give the specializations above for every test.
+
 ## Approximation and finiteness bridges
 
 [MildlyHardOnAverageToOneSidedApprox.mildlyHardOnAverageToApprox](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/AverageCase.lean#L316) converts one-sided `2g` hardness into symmetric `g` hardness when `x ↦ g(x.length)` is natively polynomial time. The proof shifts a purported symmetric approximator downward; the same inverse-polynomial failure gap is preserved. A deterministic companion is provided. These are proved bridges, not definitional identifications. Smaller success windows inherit hardness; approximation hardness also implies exact hardness.
@@ -47,7 +62,7 @@ Write `K^t` for the library's `timeBoundedNat t`, and `OWF` for existence of a f
 | [Polynomial threshold](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/OneWay/LiuPass.lean#L905) | Some such polynomial `p` makes `K^t` mildly hard for every natural-valued clock `t ≥ p` pointwise |
 | [Symmetric approximation](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/OneWay/LiuPass.lean#L922) | For every natural `d`, some such polynomial `p` makes every `K^t`, `t ≥ p`, hard to approximate within `d·(floor(log₂ n)+1)` |
 
-The approximation equivalences also appear with ceiling and floor integer logarithms. The real `d log₂ n` success window follows from the upper-rounded window; it is exposed as an eventual probability bound rather than an extra primitive hardness definition. In the threshold statements `t` itself is not required to be polynomial or computable. The threshold may depend on the OWF and approximation constant, and is obtained from a native polynomial-time generator certificate. These theorems are conditional equivalences; they do not establish that an OWF or a hard `K^t` exists.
+The approximation equivalences also appear with ceiling and floor integer logarithms. The real `d log₂ n` success window follows from the upper-rounded window; it is stated as `MildlyHardOnAverageWith` at the real-window test, and spelled out as an eventual probability bound in the one-way-function theorem, rather than as an extra named hardness definition. In the threshold statements `t` itself is not required to be polynomial or computable. The threshold may depend on the OWF and approximation constant, and is obtained from a native polynomial-time generator certificate. These theorems are conditional equivalences; they do not establish that an OWF or a hard `K^t` exists.
 
 The local proof route goes through conditional entropy-preserving PRGs and the Kolmogorov generator/counting bounds, combined with the Section 4 converse in `OneWay/LiuPassConverse.lean`. The [constant-zero counterexample](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/AverageCase.lean#L586) is a useful negative witness that the generic exact hardness predicate is not automatic.
 

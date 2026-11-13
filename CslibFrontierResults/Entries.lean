@@ -16,17 +16,22 @@ import CslibFrontier.Algorithms.Lean.TrimmedYates
 import CslibFrontier.Algorithms.LinearAlgebra.BareissElimination
 import CslibFrontier.Algorithms.Lean.TreeDecomposition.CSP
 import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
+import CslibFrontier.Computability.Circuit.Arithmetic.BitBlast
 import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.LowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.UpperBound
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.AnyOrder
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Basic
+import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConstantDepth
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConcentratingShiftSet
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.LowerBound
+import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.NoncommABP
+import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ROABP
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.SetMultilinear
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Sparse
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.SparseOrbit
 import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.NineQuarters
+import CslibFrontier.Computability.Circuit.Boolean.Arithmetic
 import CslibFrontier.Computability.Circuit.Boolean.BarringtonClass
 import CslibFrontier.Computability.Circuit.Boolean.Braverman.Fooling
 import CslibFrontier.Computability.Circuit.Boolean.Formula.Andreev
@@ -34,6 +39,7 @@ import CslibFrontier.Computability.Circuit.Boolean.Hastad.Sharp
 import CslibFrontier.Computability.Circuit.Boolean.FormalComplexityMeasure
 import CslibFrontier.Computability.Circuit.Boolean.Khrapchenko
 import CslibFrontier.Computability.Circuit.Boolean.NaturalProof.Generator
+import CslibFrontier.Computability.Circuit.Boolean.NonuniformSeparation
 import CslibFrontier.Computability.Circuit.Boolean.Razborov.MiddleSlice.P
 import CslibFrontier.Computability.Circuit.Boolean.Razborov.Useful
 import CslibFrontier.Computability.Circuit.Boolean.Smolensky
@@ -70,6 +76,7 @@ import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PotentialL
 import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PotentialLineNormalization
 import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.SOPLCollapse
 import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.SpernerHardness
+import CslibFrontier.Computability.Complexity.Classes.Time.Sublinear
 import CslibFrontier.Computability.Complexity.Classes.TimeSpace.Williams
 import CslibFrontier.Computability.Complexity.Classes.Toda
 import CslibFrontier.Computability.Complexity.CookLevin.Completeness
@@ -632,6 +639,23 @@ register_result "braverman" where
     than Braverman's; size and depth count NOT gates and constants; nonuniform and \
     information-theoretic."
 
+register_result "boolean-two-element-arithmetic-simulation" where
+  title := "Boolean and two-element arithmetic circuits have linearly related sizes"
+  topic := "circuit complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 14, Exercise 1 (two-element case)",
+      locator := "Web draft 2007-01-08, printed p. 265; PDF p. 281" }
+  ]
+  theorems := [
+    Cslib.Circuits.Boolean.exists_arithmetic_simulation,
+    Cslib.Circuits.Boolean.exists_boolean_simulation
+  ]
+  scope := "Bool's Boolean ring, with XOR addition and AND multiplication. All outputs and \
+    all inputs are preserved; arithmetic simulates De Morgan circuits with size factor 3, \
+    and De Morgan circuits simulate arithmetic with factor 4. Constants count as gates; \
+    input/output wires are free. Nonuniform existence, not compiler runtime or formal \
+    polynomial equality. This does not complete the arbitrary fixed finite-field exercise."
+
 register_result "formal-complexity-measure-leaf-bound" where
   title := "Formal complexity measures lower-bound constant-free formula leaf size"
   topic := "circuit complexity"
@@ -656,6 +680,38 @@ register_result "formal-complexity-measure-quarter-density" where
     at least one quarter of all truth tables have measure at least c/4. \
     Natural-number cardinalities with denominators cleared; no computational claim. \
     Theorem 22.3's stronger near-total-density endpoint is not included."
+
+register_result "bpp-proper-subset-ppoly" where
+  title := "BPP is strictly contained in P/poly on ordinary bit languages"
+  topic := "circuit complexity"
+  sources := [
+    { paper := Goldreich2007Draft, theorem := "Theorem 6.3",
+      locator := "February 2007 draft r3.pdf, PDF p. 9; printed p. 211" }
+  ]
+  theorems := [
+    Cslib.Circuits.Boolean.not_countable_PPoly,
+    Cslib.Circuits.Boolean.exists_mem_PPoly_not_isDecidable,
+    Cslib.Circuits.Boolean.BPP_ssubset_PPoly
+  ]
+  scope := "Ordinary bit languages with identity encoding encBits: nonuniform polynomial-size \
+    De Morgan circuits strictly contain native seeded-verifier BPP. The witness has no native \
+    machine decider and is obtained nonconstructively using P-selective sets/countability. \
+    No efficient separator or uniform circuit-family construction. Strictness is not asserted \
+    for arbitrary encoded finite instance domains, where the two classes coincide."
+
+register_result "arithmetic-bit-synthesis-injective-encoding" where
+  title := "Arithmetic bit-synthesis with injective fixed-width encodings"
+  topic := "circuit complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 14, Exercise 1 (synthesis-direction milestone)",
+      locator := "Web draft 2007-01-08, printed p. 265; PDF p. 281" }
+  ]
+  theorems := [Cslib.Circuits.Synthesis.bitBlast_arithmetic]
+  scope := "Arithmetic circuits on a semiring with supplied w-bit encoding and total decoder \
+    satisfying a left-inverse law. Given already-available encoded input functions, all output \
+    bits cost at most size * bitBlastCost w additional De Morgan gates. The encoding need not \
+    be surjective, admitting odd fields. No free-input compiler, reverse simulation, encoding \
+    construction or runtime claim; the full finite-field exercise remains open."
 
 register_result "formula-bounds" where
   title := "Formula lower bounds: Khrapchenko's quadratic bound for parity"
@@ -1119,6 +1175,84 @@ register_result "hitting-set-set-multilinear-depth-three" where
     from a source; the perfect hash family is the library's, so the size bound differs from \
     the source's. Existence and size of an explicit set only: no bit complexity and no \
     black-box algorithm model."
+
+register_result "hitting-set-constant-depth" where
+  title := "Subexponential hitting sets for constant-depth formulas from the LST lower bound"
+  topic := "algebraic complexity"
+  sources := [
+    { paper := LimayeSrinivasanTavenas2021, theorem := "Corollary 6, via Lemma 18",
+      locator := "printed p. 5 and §6 p. 13, ECCC TR21-081 rev. 1" },
+    { paper := ChouKumarSolomon2019, theorem := "Theorem 2.3",
+      locator := "printed p. 3 (arXiv:1803.05933v1)" },
+    { paper := BhattacharjeeEtAl2025, theorem := "Theorems 4.1 and 6.1",
+      locator := "printed pp. 19–20 and 28 (arXiv:2506.23214v1)" }
+  ]
+  theorems := [
+    Cslib.Circuits.Arithmetic.eventually_isHittingSet_constantDepthHittingSet_rpow,
+    Cslib.Circuits.Arithmetic.eventually_isHittingSet_constantDepthHittingSet_circuit_rpow,
+    Cslib.Circuits.Arithmetic.eventually_isHittingSet_constantDepthHittingSet,
+    Cslib.Circuits.Arithmetic.eventually_card_constantDepthHittingSet_le,
+    Cslib.Circuits.Arithmetic.eventually_isHittingSet_constantDepthHittingSet_circuit
+  ]
+  scope := "Over a field of characteristic zero, for every product-depth Δ, exponent c and \
+    real ε > 0, for all large n: an explicit set of at most 2^(n^ε) points of Kⁿ containing a \
+    non-root of every nonzero polynomial computed by an unbounded fan-in formula of \
+    product-depth at most Δ with at most n^c nodes, and, at a larger exponent, by a simple \
+    circuit of product-depth at most Δ with at most n^c gates. A finite form of LST \
+    Corollary 6, which is an identity test with running time (s^(Δ+1) n)^O(n^μ) for depth \
+    o(log log log n): here constant product-depth, existence and size of an explicit set with \
+    non-explicit large-n thresholds, no running time or uniformity, characteristic zero only."
+
+register_result "hitting-set-noncommutative-abp" where
+  title := "Quasipolynomial hitting sets of matrices for non-commutative ABPs"
+  topic := "algebraic complexity"
+  sources := [
+    { paper := ForbesShpilka2013,
+      theorem := "Construction 4.1, Lemmas 4.2, 4.3, 4.5 and Theorem 4.6, for homogeneous \
+        layered programs; not Corollary 4.7",
+      locator := "§1.1 pp. 2–3, §4 pp. 22–24 (arXiv:1209.2408v2)" },
+    { paper := AgrawalGurjarKorwarSaxena2015,
+      theorem := "Theorem 1, in the adapted form of hitting-set-roabp-unknown-order",
+      locator := "§1 and §3 of arXiv:1406.7535" }
+  ]
+  theorems := [
+    Cslib.Circuits.Arithmetic.exists_mem_noncommABPHittingSet_lift_ne_zero,
+    Cslib.Circuits.Arithmetic.card_noncommABPHittingSet_le
+  ]
+  scope := "Over a field of characteristic zero, an explicit set of n-tuples of \
+    (d + 1) × (d + 1) matrices such that every nonzero polynomial computed by a homogeneous \
+    layered non-commutative branching program of degree d in n variables with all layers of \
+    width at most W is nonzero at one of the tuples. The set is the image of the hitting set \
+    for read-once oblivious programs in d variables, width W and layer degree n - 1, so its \
+    size is (ndW)^O(log d). The reduction to read-once oblivious programs is that of \
+    Forbes–Shpilka; the hitting set for those is the library's adaptation of \
+    Agrawal–Gurjar–Korwar–Saxena (a different weight family, levels combined one at a \
+    time), not Forbes–Shpilka's generator, so the size is neither paper's bound. Homogeneous \
+    layered programs only. No white-box algorithm and no bit complexity."
+
+register_result "hitting-set-roabp-unknown-order" where
+  title := "Quasipolynomial hitting sets for ROABPs in an unknown order"
+  topic := "algebraic complexity"
+  sources := [
+    { paper := AgrawalGurjarKorwarSaxena2015,
+      theorem := "Theorem 1, for univariate layers, in characteristic zero; Lemmas 6 and 8",
+      locator := "§1 and §3 of arXiv:1406.7535" }
+  ]
+  theorems := [
+    Cslib.Circuits.Arithmetic.isHittingSet_roabpHittingSet,
+    Cslib.Circuits.Arithmetic.card_roabpHittingSet_le,
+    Cslib.Circuits.Arithmetic.roabpPrime_le
+  ]
+  scope := "Over a field of characteristic zero, an explicit set of points of Fⁿ that contains \
+    a non-root of every nonzero n-variate polynomial computed by a width-w read-once \
+    oblivious branching program in some order of the variables with layer entries of degree \
+    at most δ; the set does not depend on the order. Its size is at most \
+    (⌈lg n⌉ + 1) p^⌈lg n⌉ (nδ(nδp + 1 + p)^⌈lg n⌉ + 1) for a prime p ≤ 2(2n²w⁸ + δ + 1), \
+    which is (nδw)^O(log n). Univariate layers only, not the source's sparse-factor layers. \
+    The weights are aⁱ⁺¹ mod p for one prime p instead of the source's (δ + 1)ⁱ mod q over \
+    many primes, and the levels are combined one at a time, so the bound is not the \
+    source's. Characteristic zero only. Existence and size of an explicit set: no bit \
+    complexity and no black-box algorithm model."
 
 register_result "hitting-set-sparse" where
   title := "Ben-Or–Tiwari: a hitting set for sparse polynomials"
@@ -2737,6 +2871,35 @@ register_result "cai-furer-immerman-isomorphism" where
     in C^(k+1) and k-WL is in cai-furer-immerman-graphs; expander base graphs of size O(k) are \
     not formalized."
 
+register_result "native-sublinear-time-collapse" where
+  title := "Sublinear native algorithms have constant runtime"
+  topic := "time complexity"
+  sources := [
+    { paper := Goldreich2007DraftR2, theorem := "Exercise 4.3",
+      locator := "January 2007 draft r2.pdf, PDF p. 35; printed p. 151" }
+  ]
+  theorems := [
+    Turing.MultiTapeTM.exists_uniform_time_of_fast_length,
+    Turing.MultiTapeTM.exists_uniform_time_of_isLittleO,
+    Turing.MultiTapeTM.ComputableInTimeAndSpace.exists_const_time_of_isLittleO
+  ]
+  scope := "A fixed native sequential-input machine with a uniform sublinear clock on every \
+    input word has a global constant clock. One fast width suffices under a uniform total \
+    clock on all words. Raw-bit computability preserves outputs and independent workspace. \
+    No separate input length, random access or arbitrary encoding extension is asserted."
+
+register_result "sublinear-dtime-equals-constant" where
+  title := "Sublinear deterministic time classes equal constant time"
+  topic := "time complexity"
+  sources := [
+    { paper := Goldreich2007DraftR2, theorem := "Exercise 4.3 (decision-class consequence)",
+      locator := "January 2007 draft r2.pdf, PDF p. 35; printed p. 151" }
+  ]
+  theorems := [Cslib.Complexity.DTIME_eq_const_of_isLittleO]
+  scope := "DTIME encBits p equals DTIME encBits 1 for p=o(n), including affine clock constants. \
+    The input is every raw bit word; prefixes of arbitrary encoded instances need not be \
+    valid, so no such encoding-general class identity is claimed."
+
 register_result "translational-time-hierarchy" where
   title := "Deterministic time hierarchy below every power of the logarithm, by translation"
   topic := "time complexity"
@@ -4303,7 +4466,7 @@ register_result "clique-eth-lower-bound" where
     Cslib.Complexity.ETH.clique_not_mem_FPT,
     Cslib.Complexity.DecidableInSubexpTime.threeSAT_of_clique_subexpVertex
   ]
-  scope := "Clause-grouping reduction SAT.groupClique on Clique (encPair encGraph encNat) and \
+  scope := "Clause-grouping reduction SAT.groupClique on Clique encCliqueInstance and \
     ThreeSAT (encCNF). Under ETH (relative to the library's native DecidableInTimeO model), no \
     decider for Clique runs in time f(k) · (|V| + 1)^o(k) · poly(|enc|) or f(k) · (|enc| + 1)^o(k) \
     with arbitrary f and real exponent g(k) satisfying g(k) ≤ ε k for large k; in particular \

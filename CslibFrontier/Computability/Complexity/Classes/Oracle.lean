@@ -11,7 +11,6 @@ public import CslibFrontier.Computability.Complexity.Classes.NP
 public import CslibFrontier.Computability.Complexity.Classes.P
 public import CslibFrontier.Computability.Probabilistic.Oracle
 public import CslibFrontier.Languages.Probabilistic.QueriesWith
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 
 /-!
 # Polynomial time relative to an oracle language

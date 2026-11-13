@@ -91,11 +91,11 @@ example : (⟨D3, 2⟩ : TSPInstance) ∉ TSP := fun h => by
   decide
 
 /-- A triangle has a Hamiltonian cycle. -/
-example : (([0, 1, 2], [(0, 1), (1, 2), (2, 0)]) : Graph) ∈ HamCycle :=
+example : (⟨[0, 1, 2], [(0, 1), (1, 2), (2, 0)]⟩ : Graph) ∈ HamCycle :=
   (HamCycle.heldKarpDecide_toTSP_eq_true_iff _).1 (by decide)
 
 /-- A path on three vertices has none. -/
-example : (([0, 1, 2], [(0, 1), (1, 2)]) : Graph) ∉ HamCycle := fun h => by
+example : (⟨[0, 1, 2], [(0, 1), (1, 2)]⟩ : Graph) ∉ HamCycle := fun h => by
   have := (HamCycle.heldKarpDecide_toTSP_eq_true_iff _).2 h
   revert this
   decide

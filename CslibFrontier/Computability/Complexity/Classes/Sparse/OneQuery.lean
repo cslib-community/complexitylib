@@ -418,7 +418,7 @@ The labels are the signed labels of the disjunctions of pairs of nodes, and the 
 members of the sparse problem whose encodings are at most as long as the longest label. -/
 theorem SAT_mem_P {β : Type} {encB : β ↪ List Bool} {S : Set β} (hS : S ∈ SPARSE encB)
     (h : PolyTimeKTruthTableReducible 1 encCNF encB SAT S) : SAT ∈ P encCNF := by
-  obtain ⟨r, q, d, hr, hq, hd, hr1, hL⟩ := h
+  obtain ⟨r, q, d, ⟨hr, hq, hd, hr1⟩, hL⟩ := h
   have hkey := computableInPolyTime_signedKey hr hq hd
   have hword : ComputableInPolyTime (fun ψ => (signedKey encB r q d ψ).1) encCNF encBits :=
     (fst encBits encBool).comp hkey

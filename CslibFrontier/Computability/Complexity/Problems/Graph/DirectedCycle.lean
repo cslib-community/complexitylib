@@ -14,7 +14,7 @@ public import CslibFrontier.Foundations.Relation.Acyclic
 # Directed cycles
 
 A graph, given by a list of vertices and a list of edges, is read as a directed graph through its
-arcs `(u, v) ∈ G.2` between declared vertices (`Cslib.Complexity.Graph.DirAdj`), as for the
+arcs `(u, v) ∈ G.edges` between declared vertices (`Cslib.Complexity.Graph.DirAdj`), as for the
 directed Hamiltonian problems. A *directed cycle* (`Cslib.Complexity.Graph.IsDirCycle`) is a
 nonempty list of distinct declared vertices whose consecutive vertices, read cyclically
 (`Cycle.Chain`), are joined by arcs; a vertex with a self-loop is a cycle of length one, and two
@@ -62,49 +62,52 @@ open Turing.MultiTapeTM
 
 namespace Graph
 
-/-- The arc relation of a directed graph: an arc `(u, v) ∈ G.2` between declared vertices. -/
-def DirAdj (G : Graph) (u v : ℕ) : Prop := u ∈ G.1 ∧ v ∈ G.1 ∧ (u, v) ∈ G.2
+/-- The arc relation of a directed graph: an arc `(u, v) ∈ G.edges` between declared vertices. -/
+def DirAdj (G : Graph) (u v : ℕ) : Prop := u ∈ G.vertices ∧ v ∈ G.vertices ∧ (u, v) ∈ G.edges
 
 /-- `c` is a directed cycle of `G`: a nonempty list of distinct declared vertices whose
 consecutive vertices, read cyclically, are joined by arcs. A vertex with a self-loop is a cycle of
 length one. -/
 def IsDirCycle (G : Graph) (c : List ℕ) : Prop :=
-  c ≠ [] ∧ c.Nodup ∧ (∀ v ∈ c, v ∈ G.1) ∧ (c : Cycle ℕ).Chain fun u v => (u, v) ∈ G.2
+  c ≠ [] ∧ c.Nodup ∧ (∀ v ∈ c, v ∈ G.vertices) ∧ (c : Cycle ℕ).Chain fun u v => (u, v) ∈ G.edges
 
 /-- `G` is acyclic: it has no directed cycle. -/
 def IsDirAcyclic (G : Graph) : Prop := ∀ c, ¬G.IsDirCycle c
 
 /-- Remove the vertices of `R`: the remaining vertices are those not in `R`, and the arcs are
 kept, so that arcs at removed vertices join no declared vertices. -/
-def deleteVerts (G : Graph) (R : Finset ℕ) : Graph := (G.1.filter fun v => v ∉ R, G.2)
+def deleteVerts (G : Graph) (R : Finset ℕ) : Graph :=
+  ⟨G.vertices.filter fun v => v ∉ R, G.edges⟩
 
 /-- Remove the arcs of `S`, keeping the vertices. -/
-def deleteArcs (G : Graph) (S : Finset (ℕ × ℕ)) : Graph := (G.1, G.2.filter fun e => e ∉ S)
+def deleteArcs (G : Graph) (S : Finset (ℕ × ℕ)) : Graph :=
+  ⟨G.vertices, G.edges.filter fun e => e ∉ S⟩
 
 @[simp]
-theorem mem_deleteVerts_fst {G : Graph} {R : Finset ℕ} {v : ℕ} :
-    v ∈ (G.deleteVerts R).1 ↔ v ∈ G.1 ∧ v ∉ R := by
+theorem mem_deleteVerts_vertices {G : Graph} {R : Finset ℕ} {v : ℕ} :
+    v ∈ (G.deleteVerts R).vertices ↔ v ∈ G.vertices ∧ v ∉ R := by
   simp [deleteVerts]
 
 @[simp]
-theorem deleteVerts_snd (G : Graph) (R : Finset ℕ) : (G.deleteVerts R).2 = G.2 := rfl
+theorem deleteVerts_edges (G : Graph) (R : Finset ℕ) : (G.deleteVerts R).edges = G.edges := rfl
 
 @[simp]
-theorem deleteArcs_fst (G : Graph) (S : Finset (ℕ × ℕ)) : (G.deleteArcs S).1 = G.1 := rfl
+theorem deleteArcs_vertices (G : Graph) (S : Finset (ℕ × ℕ)) :
+    (G.deleteArcs S).vertices = G.vertices := rfl
 
 @[simp]
-theorem mem_deleteArcs_snd {G : Graph} {S : Finset (ℕ × ℕ)} {e : ℕ × ℕ} :
-    e ∈ (G.deleteArcs S).2 ↔ e ∈ G.2 ∧ e ∉ S := by
+theorem mem_deleteArcs_edges {G : Graph} {S : Finset (ℕ × ℕ)} {e : ℕ × ℕ} :
+    e ∈ (G.deleteArcs S).edges ↔ e ∈ G.edges ∧ e ∉ S := by
   simp [deleteArcs]
 
 theorem dirAdj_deleteVerts {G : Graph} {R : Finset ℕ} {u v : ℕ} :
     (G.deleteVerts R).DirAdj u v ↔ G.DirAdj u v ∧ u ∉ R ∧ v ∉ R := by
-  simp only [DirAdj, mem_deleteVerts_fst, deleteVerts_snd]
+  simp only [DirAdj, mem_deleteVerts_vertices, deleteVerts_edges]
   tauto
 
 theorem dirAdj_deleteArcs {G : Graph} {S : Finset (ℕ × ℕ)} {u v : ℕ} :
     (G.deleteArcs S).DirAdj u v ↔ G.DirAdj u v ∧ (u, v) ∉ S := by
-  simp only [DirAdj, deleteArcs_fst, mem_deleteArcs_snd]
+  simp only [DirAdj, deleteArcs_vertices, mem_deleteArcs_edges]
   tauto
 
 /-- Directed cycles are the nonempty lists without repetitions that are closed chains of the arc
@@ -138,8 +141,9 @@ theorem isDirAcyclic_iff_acyclic {G : Graph} : G.IsDirAcyclic ↔ Relation.Acycl
 number of distinct declared vertices, and every arc between declared vertices increases the
 number. -/
 theorem exists_rank_of_isDirAcyclic {G : Graph} (h : G.IsDirAcyclic) :
-    ∃ f : ℕ → ℕ, (∀ v ∈ G.1, f v < G.1.toFinset.card) ∧ ∀ u v, G.DirAdj u v → f u < f v := by
-  obtain ⟨f, hlt, hf⟩ := (isDirAcyclic_iff_acyclic.1 h).exists_rank G.1.toFinset
+    ∃ f : ℕ → ℕ, (∀ v ∈ G.vertices, f v < G.vertices.toFinset.card) ∧
+      ∀ u v, G.DirAdj u v → f u < f v := by
+  obtain ⟨f, hlt, hf⟩ := (isDirAcyclic_iff_acyclic.1 h).exists_rank G.vertices.toFinset
     (fun _ _ h => ⟨List.mem_toFinset.2 h.1, List.mem_toFinset.2 h.2.1⟩)
   exact ⟨f, fun v hv => hlt v (List.mem_toFinset.2 hv), hf⟩
 
@@ -152,7 +156,8 @@ theorem isDirAcyclic_of_rank {G : Graph} {f : ℕ → ℕ} (hf : ∀ u v, G.DirA
 /-- **Acyclicity through topological numberings.** -/
 theorem isDirAcyclic_iff_exists_rank {G : Graph} :
     G.IsDirAcyclic ↔
-      ∃ f : ℕ → ℕ, (∀ v ∈ G.1, f v < G.1.toFinset.card) ∧ ∀ u v, G.DirAdj u v → f u < f v :=
+      ∃ f : ℕ → ℕ, (∀ v ∈ G.vertices, f v < G.vertices.toFinset.card) ∧
+        ∀ u v, G.DirAdj u v → f u < f v :=
   ⟨exists_rank_of_isDirAcyclic, fun ⟨_, _, hf⟩ => isDirAcyclic_of_rank hf⟩
 
 /-- **Feedback vertex sets meet every cycle**: removing the vertices of `R` leaves an acyclic
@@ -164,10 +169,10 @@ theorem isDirAcyclic_deleteVerts_iff {G : Graph} {R : Finset ℕ} :
     by_contra hR
     push Not at hR
     obtain ⟨hne, hnd, hV, hch⟩ := hc
-    exact h c ⟨hne, hnd, fun v hv => mem_deleteVerts_fst.2 ⟨hV v hv, hR v hv⟩, hch⟩
+    exact h c ⟨hne, hnd, fun v hv => mem_deleteVerts_vertices.2 ⟨hV v hv, hR v hv⟩, hch⟩
   · rintro h c ⟨hne, hnd, hV, hch⟩
-    obtain ⟨v, hv, hvR⟩ := h c ⟨hne, hnd, fun v hv => (mem_deleteVerts_fst.1 (hV v hv)).1, hch⟩
-    exact (mem_deleteVerts_fst.1 (hV v hv)).2 hvR
+    obtain ⟨v, hv, hvR⟩ := h c ⟨hne, hnd, fun v hv => (mem_deleteVerts_vertices.1 (hV v hv)).1, hch⟩
+    exact (mem_deleteVerts_vertices.1 (hV v hv)).2 hvR
 
 end Graph
 

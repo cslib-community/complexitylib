@@ -209,7 +209,8 @@ variable names remain binary throughout. The shared arity-check certificate is
 `Cslib.Complexity.CSP.computableInPolyTime_validArity` in `PolyTime.CSP.Boolean`;
 `CSPSAT.polyTimeReducible_of_guard` in `Problems.CSP.Basic` turns any polynomial-time compiler
 that is faithful on well-formed instances, together with a fixed reject instance outside the
-target, into the guarded reduction used by each endpoint.
+target, into the guarded reduction used by each endpoint. It specializes the general
+`PolyTimeReducible.of_guard` in `Reduction.Guard` to the exact-arity test.
 
 [The full checked client](../../CslibFrontierTests/Schaefer.lean) exercises every tractable arm,
 a concrete NAE hard language, arbitrary fixed arities, sparse labels and an empty alphabet.
@@ -231,7 +232,7 @@ variables and include empty/nullary relations. See the [majority examples](../..
 
 The ordinary solvers are also reusable: `TwoSAT.mem_P`
 ([TwoSAT/PolyTime.lean](../../CslibFrontier/Computability/Complexity/Problems/TwoSAT/PolyTime.lean)),
-`HornSAT.mem_P`, `DualHornSAT.mem_P` and `XORSAT.satisfiable_mem_P`. For `TwoSAT`,
+`HornSAT.mem_P`, `DualHornSAT.mem_P` and `XORSAT.mem_P`. For `TwoSAT`,
 `TwoSAT.assignment` constructs a satisfying assignment in polynomial time on binary CNF encodings
 (`TwoSAT.computableInPolyTime_assignment`, `TwoSAT.eval_assignment_of_mem`) by filtering
 occurrence-bounded implication-graph reachability lists (`TwoSAT.reach`). Horn syntax counts
@@ -262,6 +263,14 @@ of general equality elimination. See [clone examples](../../CslibFrontierTests/B
 [gadget examples](../../CslibFrontierTests/CSPGadget.lean) and
 [hardness examples](../../CslibFrontierTests/SchaeferHardness.lean).
 
+For the template, instantiation, replacement and guarded semantic theorems alone, import
+`CslibFrontier.Logics.Propositional.CSP.PrimitivePositive.Replacement`.
+The ordinary `CslibFrontier.Computability.PolyTime.CSP.Gadget` import still supplies those
+same APIs together with their native runtime certificates. The
+[logical-import client](../../CslibFrontierTests/PPGadgetReplacement.lean) computes replacement
+with repeated and sparse binary names and checks that the logical import does not load the
+native theorem. Names, bodies, encodings and runtime bounds are unchanged by this separation.
+
 `CSPSAT.exists_linear_size_reduction_from_threeSAT` supplies one reduction with native
 polynomial-time computation, correctness and the bound
 $n' + m' \le C_\Gamma m \le C_\Gamma(n + m)$. Here `numVars` counts distinct occurring
@@ -272,6 +281,9 @@ constraint and occurrence counts; distinct variables are bounded by occurrences.
 compiler retains a uniform linear bound because an invalid input is nonempty. These are
 combinatorial size bounds; neither linear running time nor linear binary encoding length is
 asserted. See the [checked size clients](../../CslibFrontierTests/SchaeferSize.lean).
+`CslibFrontier.Computability.PolyTime.CSP.Gadget.Size` now imports only the logical replacement
+API: it supplies counts, not the native Gadget certificates it previously exported incidentally.
+Import `...PolyTime.CSP.Gadget` explicitly when using those runtime certificates.
 
 The result is the Boolean dichotomy; symmetric and larger-domain dichotomies are outside its scope.
 
@@ -814,6 +826,15 @@ coordinate-bit/runtime/P bounds and the CSP dichotomy under
 [#3091](https://github.com/cslib-community/cslib-frontier/issues/3091) remain separate obligations.
 
 ## Ordered incidence-to-polygon rotations
+
+For cyclic argument succession without the polygon construction, import
+`CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.ArgumentPermutation`.
+`Cslib.Complexity.CSP.argumentPermutation F` follows each original scope, and
+`sameCycle_argumentPermutation o p` characterizes its orbits by equality of constraint
+positions. Repeated names and identical rows keep distinct occurrences; a nullary row has no
+occurrence to rotate. The [ordinary-import client](../../CslibFrontierTests/CSPArgumentPermutation.lean)
+checks these cases and that this import does not load `polygonGraph`.
+The old `...RotationSystem.Primal.Graph` import publicly retains both names without aliases.
 
 Import `CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Primal.Euler`.
 In `Cslib.Complexity.CSP`, `polygonGraph F` has one listed edge per actual argument occurrence,

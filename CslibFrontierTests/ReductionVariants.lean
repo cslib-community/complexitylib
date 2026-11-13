@@ -32,7 +32,7 @@ example : PolyTimeOneOneReducible encBits encBits {w | true :: w ∈ B} B :=
 
 /-- Asking for both prefixes, and accepting when either is in `B`. -/
 example : PolyTimeDTTReducible encBits encBits {w | false :: w ∈ B ∨ true :: w ∈ B} B := by
-  refine ⟨fun _ => 2, fun x => decide (x.2 = 1) :: x.1, by fun_prop, by fun_prop, fun w => ?_⟩
+  refine ⟨fun _ => 2, fun x => decide (x.2 = 1) :: x.1, ⟨by fun_prop, by fun_prop⟩, fun w => ?_⟩
   constructor
   · rintro (h | h)
     · exact ⟨0, by simp, by simpa using h⟩
@@ -45,7 +45,7 @@ example : PolyTimeDTTReducible encBits encBits {w | false :: w ∈ B ∨ true ::
 
 /-- The same queries, accepting when both are in `B`. -/
 example : PolyTimeCTTReducible encBits encBits {w | false :: w ∈ B ∧ true :: w ∈ B} B := by
-  refine ⟨fun _ => 2, fun x => decide (x.2 = 1) :: x.1, by fun_prop, by fun_prop, fun w => ?_⟩
+  refine ⟨fun _ => 2, fun x => decide (x.2 = 1) :: x.1, ⟨by fun_prop, by fun_prop⟩, fun w => ?_⟩
   constructor
   · rintro ⟨h₀, h₁⟩ i hi
     obtain _ | _ | i := i
@@ -61,8 +61,8 @@ example : PolyTimeKTruthTableReducible 2 encBits encBits
     {w | (false :: w ∈ B) ≠ (true :: w ∈ B)} B := by
   classical
   refine ⟨fun _ => 2, fun x => decide (x.2 = 1) :: x.1,
-    fun x => x.2.headD false ^^ (x.2.drop 1).headD false, by fun_prop, by fun_prop, by fun_prop,
-    fun _ => le_rfl, fun w => ?_⟩
+    fun x => x.2.headD false ^^ (x.2.drop 1).headD false,
+    ⟨by fun_prop, by fun_prop, by fun_prop, fun _ => le_rfl⟩, fun w => ?_⟩
   simp only [truthTableAnswers, Set.mem_preimage]
   by_cases h₀ : false :: w ∈ B <;> by_cases h₁ : true :: w ∈ B <;> simp [List.ofFn_succ, h₀, h₁]
 
@@ -86,7 +86,7 @@ example : PolyTimePTTReducible encBits encBits
     fun x => (x.2.headD false && (x.2.drop 1).headD false) ||
       (x.2.headD false && (x.2.drop 2).headD false) ||
       ((x.2.drop 1).headD false && (x.2.drop 2).headD false),
-    by fun_prop, by fun_prop, by fun_prop, fun _ u v huv => ?_, fun w => ?_⟩
+    ⟨by fun_prop, by fun_prop, by fun_prop, fun _ u v huv => ?_⟩, fun w => ?_⟩
   · dsimp only
     have h₀ := headD_drop_le huv 0
     have h₁ := headD_drop_le huv 1
@@ -110,8 +110,8 @@ example : PolyTimeKTruthTableReducible 4 encBits encBits
       {w | (false :: w ∈ B') ≠ (true :: w ∈ B')} B' := fun B' => by
     classical
     refine ⟨fun _ => 2, fun x => decide (x.2 = 1) :: x.1,
-      fun x => x.2.headD false ^^ (x.2.drop 1).headD false, by fun_prop, by fun_prop, by fun_prop,
-      fun _ => le_rfl, fun w => ?_⟩
+      fun x => x.2.headD false ^^ (x.2.drop 1).headD false,
+      ⟨by fun_prop, by fun_prop, by fun_prop, fun _ => le_rfl⟩, fun w => ?_⟩
     simp only [truthTableAnswers, Set.mem_preimage]
     by_cases h₀ : false :: w ∈ B' <;> by_cases h₁ : true :: w ∈ B' <;>
       simp [List.ofFn_succ, h₀, h₁]

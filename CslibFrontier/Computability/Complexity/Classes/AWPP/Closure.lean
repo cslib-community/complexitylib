@@ -99,8 +99,8 @@ theorem exists_AWPP_gap_eighth (hA : A ∈ AWPP enc) :
   let g1 := majorityGap g D
   let g2 := majorityGap g1 (D ^ 3)
   let g3 := majorityGap g2 ((D ^ 3) ^ 3)
-  have hD3 : D ^ 3 ∈ GapP enc := (GapP.subring enc).pow_mem hD 3
-  have hD9 : (D ^ 3) ^ 3 ∈ GapP enc := (GapP.subring enc).pow_mem hD3 3
+  have hD3 : D ^ 3 ∈ GapP enc := GapP.pow_mem hD 3
+  have hD9 : (D ^ 3) ^ 3 ∈ GapP enc := GapP.pow_mem hD3 3
   have hg3 : g3 ∈ GapP enc :=
     majorityGap_mem (majorityGap_mem (majorityGap_mem hg hD) hD3) hD9
   refine ⟨g3, hg3, p * 27, fun a => ?_⟩

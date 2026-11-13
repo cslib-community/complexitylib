@@ -28,14 +28,14 @@ namespace Cslib.Complexity.Graph.RotationSystem
 open Equiv Perm.CycleSurgery
 
 /-- The actual graph before deleting its last edge; no corner darts are required at points. -/
-@[expose] def lastEdgeGraph (G : Graph) (u v : ℕ) : Graph := (G.1, G.2 ++ [(u, v)])
+@[expose] def lastEdgeGraph (G : Graph) (u v : ℕ) : Graph := ⟨G.vertices, G.edges ++ [(u, v)]⟩
 
 /-- Old darts and the last two ends, in their original edge/end positions. -/
 @[expose] def lastEdgeDartEquiv (G : Graph) (u v : ℕ) :
     Dart (lastEdgeGraph G u v) ≃ Option (Option (Dart G)) :=
   (Equiv.prodCongr
-    (finCongr (show (lastEdgeGraph G u v).2.length = G.2.length + 1 by
-      simp [lastEdgeGraph])) (Equiv.refl Bool)).trans (appendedDartEquiv G.2.length)
+    (finCongr (show (lastEdgeGraph G u v).edges.length = G.edges.length + 1 by
+      simp [lastEdgeGraph])) (Equiv.refl Bool)).trans (appendedDartEquiv G.edges.length)
 
 /-- The two indexed ends of the last listed edge, including when the old graph has no darts. -/
 @[expose] def lastEdgeDart (G : Graph) (u v : ℕ) (b : Bool) : Dart (lastEdgeGraph G u v) :=
@@ -45,9 +45,9 @@ open Equiv Perm.CycleSurgery
 @[simp] theorem vertex_lastEdgeDart (G : Graph) (u v : ℕ) (b : Bool) :
     (lastEdgeDart G u v b).vertex = if b then v else u := by
   cases b
-  · change ((G.2 ++ [(u, v)]).getD G.2.length (0, 0)).1 = u
+  · change ((G.edges ++ [(u, v)]).getD G.edges.length (0, 0)).1 = u
     simp
-  · change ((G.2 ++ [(u, v)]).getD G.2.length (0, 0)).2 = v
+  · change ((G.edges ++ [(u, v)]).getD G.edges.length (0, 0)).2 = v
     simp
 
 /-- Reversal interchanges the two last indexed ends. -/
@@ -63,14 +63,14 @@ theorem reverse_lastEdgeDart (G : Graph) (u v : ℕ) (b : Bool) :
 @[simp] theorem vertex_retainedLastEdgeDart (G : Graph) (u v : ℕ) (d : Dart G) :
     (retainedLastEdgeDart G u v d).vertex = d.vertex := by
   rcases d with ⟨⟨i, hi⟩, b⟩
-  change (if b then ((G.2 ++ [(u, v)]).getD i (0, 0)).2
-    else ((G.2 ++ [(u, v)]).getD i (0, 0)).1) = _
-  have he : (G.2 ++ [(u, v)]).getD i (0, 0) = G.2[i] := by
-    rw [List.getD_eq_getElem _ _ (show i < (G.2 ++ [(u, v)]).length by
+  change (if b then ((G.edges ++ [(u, v)]).getD i (0, 0)).2
+    else ((G.edges ++ [(u, v)]).getD i (0, 0)).1) = _
+  have he : (G.edges ++ [(u, v)]).getD i (0, 0) = G.edges[i] := by
+    rw [List.getD_eq_getElem _ _ (show i < (G.edges ++ [(u, v)]).length by
       simpa only [List.length_append, List.length_singleton] using Nat.lt_succ_of_lt hi)]
     exact List.getElem_append_left hi
   rw [he]
-  change _ = (if b then (G.2.getD i (0, 0)).2 else (G.2.getD i (0, 0)).1)
+  change _ = (if b then (G.edges.getD i (0, 0)).2 else (G.edges.getD i (0, 0)).1)
   rw [List.getD_eq_getElem _ _ hi]
 
 /-- Delete the last two indexed ends from their vertex cycles. The construction works when

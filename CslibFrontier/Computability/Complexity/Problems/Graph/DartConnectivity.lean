@@ -28,11 +28,11 @@ theorem exists_of_adj {G : Graph} {u v : ℕ} (h : G.toSimpleGraph.Adj u v) :
     ∃ d : Dart G, d.vertex = u ∧ d.reverse.vertex = v := by
   obtain ⟨-, h | h⟩ := toSimpleGraph_adj.mp h
   · obtain ⟨i, hi⟩ := List.mem_iff_get.mp h
-    change G.2[i.val] = (u, v) at hi
+    change G.edges[i.val] = (u, v) at hi
     refine ⟨(i, false), ?_, ?_⟩ <;>
       simp [vertex, reverse, edgeEndpoint, hi]
   · obtain ⟨i, hi⟩ := List.mem_iff_get.mp h
-    change G.2[i.val] = (v, u) at hi
+    change G.edges[i.val] = (v, u) at hi
     refine ⟨(i, true), ?_, ?_⟩ <;>
       simp [vertex, reverse, edgeEndpoint, hi]
 
@@ -44,7 +44,7 @@ theorem eq_of_sameComponent {G : Graph} {β : Sort*} (f : Dart G → β)
     (ha : ∀ d, f d = f d.reverse) {d e : Dart G}
     (h : RotationCertificate.SameComponent G d.vertex e.vertex) : f d = f e := by
   obtain ⟨hd, he, ⟨p⟩⟩ := h
-  have hw {u v : {v // v ∈ G.1}} (p : G.induced.Walk u v) :
+  have hw {u v : {v // v ∈ G.vertices}} (p : G.induced.Walk u v) :
       ∀ d e : Dart G, d.vertex = u.val → e.vertex = v.val → f d = f e := by
     induction p with
     | nil =>

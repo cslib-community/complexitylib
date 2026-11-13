@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import CslibFrontier.Computability.Complexity.Problems.SAT.Paddable
 import CslibFrontier.Computability.Complexity.CookLevin.Completeness
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
+import CslibFrontier.Computability.Complexity.Reduction.Nontrivial
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 
 /-!
@@ -43,8 +44,6 @@ of arguments in the report.
 
 ## Main results
 
-* `Cslib.Complexity.polyTimeReducible_of_mem_P`: every language in `P` reduces to every language
-  with a member and a nonmember.
 * `Cslib.Complexity.bermanHartmanisConjecture_iff_paddable`: the conjecture holds exactly when
   every `NP`-complete language of bit strings is paddable.
 * `Cslib.Complexity.BermanHartmanisConjecture.SAT_notMem_P`,
@@ -72,18 +71,6 @@ so that clients can apply the hypothesis to particular languages. -/
 @[expose] def BermanHartmanisConjecture : Prop :=
   ∀ A B : Set (List Bool), NPComplete encBits A → NPComplete encBits B →
     PolyTimeIsomorphic encBits encBits A B
-
-/-- Every language in `P` reduces to every language with a member `b₁` and a nonmember `b₀`:
-decide membership and output `b₁` or `b₀`. -/
-theorem polyTimeReducible_of_mem_P {α β : Type} {encA : α ↪ List Bool} {encB : β ↪ List Bool}
-    {A : Set α} {B : Set β} (hA : A ∈ P encA) {b₁ b₀ : β} (h₁ : b₁ ∈ B) (h₀ : b₀ ∉ B) :
-    PolyTimeReducible encA encB A B := by
-  obtain ⟨f, hf, hfA⟩ := hA
-  refine ⟨fun a => if f a then b₁ else b₀, hf.ite (.const b₁) (.const b₀), fun a => ?_⟩
-  rw [hfA a]
-  cases hfa : f a
-  · simp only [hfa, Bool.false_eq_true, ↓reduceIte, h₀]
-  · simp only [hfa, ↓reduceIte, h₁]
 
 /-- **The conjecture is paddability of every `NP`-complete language** of bit strings. The words
 that decode to satisfiable formulas form a paddable `NP`-complete language, and paddable

@@ -8,8 +8,8 @@ import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.AndreevShar
 
 /-!
 Clients of the `(5/16 + o(1)) n ^ 2` depth-two circuit for Andreev's function: correctness, exact
-gate counts at small parameters, the balanced size identity, the floor-balanced bound, and sign
-coherence of the bottom gates.
+gate counts at small parameters, the balanced size identity, the floor-balanced bound, sign
+coherence of the bottom gates, and the weight-magnitude bounds.
 -/
 
 open Cslib Cslib.Circuits
@@ -69,5 +69,51 @@ example (b m : ℕ) {top : Fin (andreevSharpCircuit b m).size}
 example : andreevSharpScore 1 1 (fun c => c 0) (fun _ => 1) ≤ -(2 : ℝ) ^ 1 := by
   refine (andreevSharpScore_margin (m := 1) _ _ fun _ => le_rfl).2 ?_
   decide
+
+-- Weight magnitudes, with `n = 2 ^ b + b m`: every weight and threshold of every gate satisfies
+-- `27 |w| ≤ 2 n ^ 3 + 54 (n + 1) (n + 4)`.
+example (b m : ℕ) (k : Fin (andreevSharpCircuit b m).size)
+    (a : Fin ((andreevSharpCircuit b m).program.lines k).op.arity) :
+    27 * |((andreevSharpCircuit b m).program.lines k).op.weight a| ≤
+      2 * (2 ^ b + b * m : ℝ) ^ 3 + 54 * (((2 ^ b + b * m : ℝ) + 1) * ((2 ^ b + b * m : ℝ) + 4)) :=
+  abs_weight_andreevSharpCircuit_le k a
+
+-- At `b = m = 4` (`n = 32`) this is `27 |w| ≤ 129688`, so `|w| ≤ 4804`.
+example (k : Fin (andreevSharpCircuit 4 4).size) :
+    |((andreevSharpCircuit 4 4).program.lines k).op.threshold| ≤ 4804 := by
+  have h := abs_threshold_andreevSharpCircuit_le k
+  norm_num at h
+  linarith
+
+-- The bottom gates read by the output gate have input weights at most `2 n`.
+example (b m : ℕ) {top : Fin (andreevSharpCircuit b m).size}
+    (htop : (andreevSharpCircuit b m).outputs 0 = .gate top)
+    {k : Fin (andreevSharpCircuit b m).size}
+    (hk : k ∈ gateSupport (andreevSharpCircuit b m).program top) (i : Fin (2 ^ b + b * m)) :
+    |inputWeight (andreevSharpCircuit b m).program k i| ≤ 2 * (2 ^ b + b * m : ℝ) := by
+  refine abs_inputWeight_andreevSharpCircuit_le (fun h => ?_) i
+  rw [htop] at h
+  cases h
+  exact (mem_gateSupport _ _ _).mp hk (gateWeight_eq_zero_of_le _ _ _ le_rfl)
+
+-- The bottom bound `2 n` is attained up to a constant: at `b = m = 4` the last load gate has
+-- threshold `R = 54`, against `2 n = 64`.
+example : andreevSharpThreshold 4 4 (.inr (.inl ⟨53, by decide⟩)) = 54 := by decide
+
+example : andreevSharpRange 4 4 = 54 := by decide
+
+-- The cubic top weights sit on the weight-one table addresses: `2 N (α ^ 2 - 1)`. At `b = 2`,
+-- `m = 6` (`α = 2`, `n = 16`) this is `24`.
+example : andreevSharpTopTable 2 6 (Pi.single 0 true) = 24 := by
+  have h : BitString.IsSingle (Pi.single (0 : Fin 2) true) := ⟨0, rfl⟩
+  have h0 : (Pi.single (0 : Fin 2) true : BitString 2) ≠ 0 := by decide
+  simp [andreevSharpTopTable, h, h0, andreevSharpAmp]
+
+-- The sharper top-input bound `27 b ^ 2 |v| ≤ 2 n ^ 3 + 54 b ^ 2 n (n + 1)`.
+example (b m : ℕ) (i : Fin (2 ^ b + b * m)) :
+    27 * b ^ 2 * |andreevSharpTopInput b m i| ≤
+      2 * (2 ^ b + b * m : ℤ) ^ 3 +
+        54 * b ^ 2 * ((2 ^ b + b * m : ℤ) * ((2 ^ b + b * m : ℤ) + 1)) :=
+  sq_mul_abs_andreevSharpTopInput_le i
 
 end WeightedThresholdAndreevSharpTests

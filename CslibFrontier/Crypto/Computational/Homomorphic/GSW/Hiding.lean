@@ -12,6 +12,7 @@ public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Basic
 public import CslibFrontier.Probability.BitString.SubsetSum.Matrix
 public import CslibFrontier.Crypto.Game.Statistical
 import CslibFrontier.Languages.Probabilistic.Norm
+import CslibFrontier.Probability.Uniform
 import CslibFrontier.Tactic.PMFSwap
 
 /-!
@@ -61,9 +62,8 @@ theorem uniform_decomposeMatrix_add
       (fun U => decomposeMatrix w (shift + U)) =
     (PMF.uniformOfFintype (Matrix (Fin (n + 1) × Fin w) (Fin (n + 1)) (ZMod (2 ^ w)))).map
       (decomposeMatrix w) := by
-  have h := congrArg (PMF.map (decomposeMatrix w))
-    (PMF.uniformOfFintype_map_equiv (Equiv.addLeft shift))
-  simpa only [PMF.map_comp, Function.comp_def, Equiv.coe_addLeft] using h
+  conv_rhs => rw [← PMF.uniformOfFintype_map_add_left shift, PMF.map_comp]
+  rfl
 
 variable {State : Type}
   (choose : Matrix (Fin m) (Fin (n + 1)) (ZMod (2 ^ w)) → PMF ((Bool × Bool) × State))

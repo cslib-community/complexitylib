@@ -10,10 +10,12 @@ module
 public import CslibFrontier.Computability.Complexity.AcceptCount
 public import CslibFrontier.Computability.Complexity.Classes.BPP
 public import CslibFrontier.Computability.Complexity.Classes.RP
-public import CslibFrontier.Computability.Complexity.FineGrained.CountingExponents
+public import CslibFrontier.Computability.Complexity.FineGrained.Exponents
+public import CslibFrontier.Computability.Complexity.FineGrained.FunctionRates
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Closed
 public import CslibFrontier.Probability.BitString
 import CslibFrontier.Computability.Complexity.Classes.Promise.Probabilistic
+import CslibFrontier.Computability.Complexity.Classes.Time.SampleVerify
 import CslibFrontier.Computability.Complexity.FineGrained.Bounds
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Degree.BitString.Cut
@@ -23,11 +25,6 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OCombinators
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Composition
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Deterministic
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.PairSampler
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Run
 import CslibFrontier.Foundations.Analysis.SublinearEnvelope
 import CslibFrontier.Foundations.Data.BitString.Block
 import CslibFrontier.Foundations.Data.BitString.List
@@ -35,8 +32,6 @@ import CslibFrontier.Foundations.Data.BitString.WordCount
 import CslibFrontier.Foundations.Data.List.OfFn
 import CslibFrontier.Foundations.Data.Nat.Power
 import CslibFrontier.Probability.MajorityVote
-import CslibFrontier.Probability.PMF.Bind
-import Mathlib.Topology.Instances.Real.Lemmas
 
 /-!
 # Parameterized randomized runtime rates, error models, `rETH`, and `rSETH`
@@ -67,7 +62,7 @@ promise-problem runtime bounds:
   `ε ∈ (0, 1 / 2)` (and any one-sided threshold `ε ∈ (0, 1)`) defines the exact same runtime rates
   and exponents.
 * **Randomized `k`-SAT exponents and hypotheses** (`rSatExponent`, `rpSatExponent`, `rETH`,
-  `rSETH`): `0 ≤ rSatExponent k ≤ rpSatExponent k ≤ satExponent k ≤ sharpSatExponent k ≤ 1`,
+  `rSETH`): `0 ≤ rSatExponent k ≤ rpSatExponent k ≤ satExponent k ≤ 1`,
   `rETH ↔ 0 < rSatExponent 3`, `rSETH ↔ Tendsto rSatExponent atTop (𝓝 1)`, `rETH → ETH`, and
   `rSETH → SETH`.
 
@@ -279,11 +274,9 @@ theorem SolvesPromiseInExpTime.mono_measure {Q : PromiseProblem α} {μ μ' : α
 /-- Subexponential deterministic promise solving transfers along linear parameter bounds. -/
 theorem SolvesPromiseInSubexpTime.mono_measure {Q : PromiseProblem α} {μ μ' : α → ℕ} {c : ℕ}
     (hμ : ∀ a, μ a ≤ c * μ' a + c) (h : SolvesPromiseInSubexpTime Q enc μ) :
-    SolvesPromiseInSubexpTime Q enc μ' := by
-  intro δ hδ
-  refine ((h (δ / (c + 1)) (by positivity)).mono_measure hμ (by positivity)).mono ?_
-  rw [mul_div_assoc', div_le_iff₀ (by positivity)]
-  nlinarith
+    SolvesPromiseInSubexpTime Q enc μ' := fun δ hδ =>
+  ((h (δ / (c + 1)) (by positivity)).mono_measure hμ (by positivity)).mono
+    (natCast_mul_div_add_one_le hδ.le c)
 
 /-- Transfer of `SolvesPromiseInExpTime` along a linear-parameter polynomial-time promise
 reduction. -/
@@ -306,12 +299,9 @@ theorem SolvesPromiseInSubexpTime.of_promiseReduction {X : PromiseProblem α} {Y
     (hyes : ∀ a ∈ X.yes, r a ∈ Y.yes) (hno : ∀ a ∈ X.no, r a ∈ Y.no)
     {c : ℕ} (hμ : ∀ a, μB (r a) ≤ c * μA a + c)
     (hY : SolvesPromiseInSubexpTime Y encB μB) :
-    SolvesPromiseInSubexpTime X enc μA := by
-  intro δ hδ
-  refine ((hY (δ / (c + 1)) (by positivity)).of_promiseReduction hr hyes hno hμ
-    (by positivity)).mono ?_
-  rw [mul_div_assoc', div_le_iff₀ (by positivity)]
-  nlinarith
+    SolvesPromiseInSubexpTime X enc μA := fun δ hδ =>
+  ((hY (δ / (c + 1)) (by positivity)).of_promiseReduction hr hyes hno hμ
+    (by positivity)).mono (natCast_mul_div_add_one_le hδ.le c)
 
 /-- On `PromiseProblem.ofSet A`, `SolvesPromiseInTimeO` agrees with `DecidableInTimeO`. -/
 theorem solvesPromiseInTimeO_ofSet_iff {A : Set α} {T : α → ℝ} :
@@ -417,14 +407,9 @@ theorem SolvesWithErrorInExpTime.mono {Q : PromiseProblem α} {E : ErrorModel} {
     {δ δ' : ℝ} (h : SolvesWithErrorInExpTime Q enc E μ δ) (hδ : δ ≤ δ') :
     SolvesWithErrorInExpTime Q enc E μ δ' := by
   obtain ⟨e, h⟩ := h
-  refine ⟨e, h.mono 1 (fun a => ?_) fun _ => by positivity⟩
-  have h₁ : (2 : ℝ) ^ (δ * μ a) ≤ 2 ^ (δ' * μ a) :=
-    Real.rpow_le_rpow_of_exponent_le (by norm_num)
-      (mul_le_mul_of_nonneg_right hδ (Nat.cast_nonneg _))
-  have h₂ := mul_le_mul_of_nonneg_right h₁
-    (by positivity : (0 : ℝ) ≤ (((enc a).length : ℝ) + 1) ^ e)
-  push_cast
-  linarith
+  exact ⟨e, h.mono 1 (fun a => (two_rpow_mul_pow_le_two_rpow_mul_pow
+    (mul_le_mul_of_nonneg_right hδ (Nat.cast_nonneg _)) le_rfl).trans (by simp))
+    fun _ => by positivity⟩
 
 /-- Relaxing the error bounds preserves `SolvesWithErrorInExpTime`. -/
 theorem SolvesWithErrorInExpTime.mono_error {Q : PromiseProblem α} {E₁ E₂ : ErrorModel}
@@ -436,24 +421,17 @@ theorem SolvesWithErrorInExpTime.mono_error {Q : PromiseProblem α} {E₁ E₂ :
 theorem SolvesWithErrorInExpTime.mono_measure {Q : PromiseProblem α} {E : ErrorModel}
     {μ μ' : α → ℕ} {c : ℕ} (hμ : ∀ a, μ a ≤ c * μ' a + c) {δ : ℝ} (hδ : 0 ≤ δ)
     (h : SolvesWithErrorInExpTime Q enc E μ δ) :
-    SolvesWithErrorInExpTime Q enc E μ' (c * δ) := by
-  obtain ⟨e, h⟩ := h
-  refine ⟨e, h.mono ⌈(2 : ℝ) ^ (δ * c)⌉₊ (fun a => ?_) fun _ => by positivity⟩
-  have h₂ := two_rpow_le_natCeil_mul_of_le_mul_add hδ (hμ a)
-  have h₃ := mul_le_mul_of_nonneg_right h₂
-    (by positivity : (0 : ℝ) ≤ (((enc a).length : ℝ) + 1) ^ e)
-  have h₄ : (0 : ℝ) ≤ ⌈(2 : ℝ) ^ (δ * c)⌉₊ := Nat.cast_nonneg _
-  nlinarith
+    SolvesWithErrorInExpTime Q enc E μ' (c * δ) :=
+  let ⟨e, h⟩ := h
+  ⟨e, h.mono _ (fun a => two_rpow_mul_pow_le_natCeil_mul_add hδ (hμ a)) fun _ => by positivity⟩
 
 /-- Subexponential randomized promise solving transfers along linear parameter bounds. -/
 theorem SolvesWithErrorInSubexpTime.mono_measure {Q : PromiseProblem α} {E : ErrorModel}
     {μ μ' : α → ℕ} {c : ℕ} (hμ : ∀ a, μ a ≤ c * μ' a + c)
     (h : SolvesWithErrorInSubexpTime Q enc E μ) :
-    SolvesWithErrorInSubexpTime Q enc E μ' := by
-  intro δ hδ
-  refine ((h (δ / (c + 1)) (by positivity)).mono_measure hμ (by positivity)).mono ?_
-  rw [mul_div_assoc', div_le_iff₀ (by positivity)]
-  nlinarith
+    SolvesWithErrorInSubexpTime Q enc E μ' := fun δ hδ =>
+  ((h (δ / (c + 1)) (by positivity)).mono_measure hμ (by positivity)).mono
+    (natCast_mul_div_add_one_le hδ.le c)
 
 private theorem computableInO_bool_not_linear :
     ComputableInO Bool.not encBool encBool (fun b => (encBool b).length)
@@ -557,44 +535,22 @@ theorem solvesWithErrorInExpTime_deterministic_iff {Q : PromiseProblem α} {μ :
     (hδ : 0 ≤ δ) :
     SolvesWithErrorInExpTime Q enc ErrorModel.deterministic μ δ ↔
       SolvesPromiseInExpTime Q enc μ δ := by
-  have hL_deg (e : ℕ) (he : 1 ≤ e) (a : α) :
-      ((enc a).length : ℝ) ≤ 2 ^ (δ * μ a) * ((enc a).length + 1) ^ e := by
-    have hL1 : (1 : ℝ) ≤ ((enc a).length : ℝ) + 1 :=
-      le_add_of_nonneg_left (Nat.cast_nonneg _)
-    have hX1 : (1 : ℝ) ≤ 2 ^ (δ * μ a) := Real.one_le_rpow (by norm_num) (by positivity)
-    have hpow : ((enc a).length : ℝ) + 1 ≤ (((enc a).length : ℝ) + 1) ^ e :=
-      le_self_pow₀ hL1 (by omega)
-    have hmul : (((enc a).length : ℝ) + 1) ^ e ≤
-        2 ^ (δ * μ a) * (((enc a).length : ℝ) + 1) ^ e :=
-      le_mul_of_one_le_left (by positivity) hX1
-    linarith [hpow.trans hmul]
+  have hL (e : ℕ) (a : α) :
+      ((enc a).length : ℝ) ≤ 2 ^ (δ * μ a) * ((enc a).length + 1) ^ (max e 1) := by
+    have := pow_le_two_rpow_mul_pow (L := (enc a).length) (d := 1) (e := max e 1)
+      (mul_nonneg hδ (Nat.cast_nonneg (μ a))) (le_max_right e 1)
+    rw [pow_one] at this
+    linarith
+  have hmax (e : ℕ) (a : α) : (2 : ℝ) ^ (δ * μ a) * ((enc a).length + 1) ^ e ≤
+      ((1 : ℕ) : ℝ) * (2 ^ (δ * μ a) * ((enc a).length + 1) ^ (max e 1)) + ((1 : ℕ) : ℝ) :=
+    (two_rpow_mul_pow_le_two_rpow_mul_pow le_rfl (le_max_left e 1)).trans (by simp)
   constructor
   · rintro ⟨e, h⟩
-    have h' : SolvesWithErrorInTimeO Q enc ErrorModel.deterministic
-        fun a => 2 ^ (δ * μ a) * ((enc a).length + 1) ^ (max e 1) := by
-      refine h.mono 1 (fun a => ?_) fun _ => by positivity
-      have hL1 : (1 : ℝ) ≤ ((enc a).length : ℝ) + 1 :=
-        le_add_of_nonneg_left (Nat.cast_nonneg _)
-      have hpow : (((enc a).length : ℝ) + 1) ^ e ≤
-          (((enc a).length : ℝ) + 1) ^ (max e 1) := pow_le_pow_right₀ hL1 (le_max_left e 1)
-      have hmul := mul_le_mul_of_nonneg_left hpow (by positivity : (0 : ℝ) ≤ 2 ^ (δ * μ a))
-      push_cast
-      linarith
-    exact ⟨max e 1, (solvesWithErrorInTimeO_deterministic_iff
-      (hL_deg (max e 1) (le_max_right e 1))).mp h'⟩
+    exact ⟨max e 1, (solvesWithErrorInTimeO_deterministic_iff (hL e)).mp
+      (h.mono 1 (hmax e) fun _ => by positivity)⟩
   · rintro ⟨e, g, hQ, hg⟩
-    have hg' : SolvesPromiseInTimeO Q enc
-        fun a => 2 ^ (δ * μ a) * ((enc a).length + 1) ^ (max e 1) := by
-      refine ⟨g, hQ, hg.mono 1 (fun a => ?_) fun _ => by positivity⟩
-      have hL1 : (1 : ℝ) ≤ ((enc a).length : ℝ) + 1 :=
-        le_add_of_nonneg_left (Nat.cast_nonneg _)
-      have hpow : (((enc a).length : ℝ) + 1) ^ e ≤
-          (((enc a).length : ℝ) + 1) ^ (max e 1) := pow_le_pow_right₀ hL1 (le_max_left e 1)
-      have hmul := mul_le_mul_of_nonneg_left hpow (by positivity : (0 : ℝ) ≤ 2 ^ (δ * μ a))
-      push_cast
-      linarith
-    exact ⟨max e 1, (solvesWithErrorInTimeO_deterministic_iff
-      (hL_deg (max e 1) (le_max_right e 1))).mpr hg'⟩
+    exact ⟨max e 1, (solvesWithErrorInTimeO_deterministic_iff (hL e)).mpr
+      ⟨g, hQ, hg.mono 1 (hmax e) fun _ => by positivity⟩⟩
 
 /-- Every deterministic `2 ^ (δ * μ a) · poly(L)` promise solver (`δ ≥ 0`) solves `Q` under any
 error profile `E`. -/
@@ -637,11 +593,8 @@ theorem SolvesWithErrorInExpTime.of_promiseReduction {X : PromiseProblem α} {Y 
     have hn0 : ((encB (r a)).length : ℝ) ≤ l * ((((enc a).length : ℝ) + 1) ^ d + 1) := by
       exact_mod_cast hl a
     nlinarith [(Nat.cast_nonneg l : (0 : ℝ) ≤ l)]
-  have hexp : (2 : ℝ) ^ (δ * μB (r a)) ≤ 2 ^ (δ * c) * X := by
-    rw [← Real.rpow_add (by norm_num)]
-    refine Real.rpow_le_rpow_of_exponent_le (by norm_num) ?_
-    have : (μB (r a) : ℝ) ≤ c * μA a + c := by exact_mod_cast hμ a
-    nlinarith
+  have hexp : (2 : ℝ) ^ (δ * μB (r a)) ≤ 2 ^ (δ * c) * X :=
+    two_rpow_le_two_rpow_mul_of_le_mul_add hδ (hμ a)
   have hpow : (((encB (r a)).length : ℝ) + 1) ^ e ≤ (2 * l + 1) ^ e * P ^ e := by
     rw [← mul_pow]
     exact pow_le_pow_left₀ (by positivity) (by nlinarith) e
@@ -716,12 +669,9 @@ theorem SolvesWithErrorInSubexpTime.of_promiseReduction {X : PromiseProblem α}
     (hyes : ∀ a ∈ X.yes, r a ∈ Y.yes) (hno : ∀ a ∈ X.no, r a ∈ Y.no)
     {c : ℕ} (hμ : ∀ a, μB (r a) ≤ c * μA a + c)
     (hY : SolvesWithErrorInSubexpTime Y encB E μB) :
-    SolvesWithErrorInSubexpTime X enc E μA := by
-  intro δ hδ
-  refine ((hY (δ / (c + 1)) (by positivity)).of_promiseReduction hr hyes hno hμ
-    (by positivity)).mono ?_
-  rw [mul_div_assoc', div_le_iff₀ (by positivity)]
-  nlinarith
+    SolvesWithErrorInSubexpTime X enc E μA := fun δ hδ =>
+  ((hY (δ / (c + 1)) (by positivity)).of_promiseReduction hr hyes hno hμ
+    (by positivity)).mono (natCast_mul_div_add_one_le hδ.le c)
 
 /-! ### Bridges to `MultiTapePTM`, `PromiseBPP`, `PromiseRP`, and `PromiseCoRP` -/
 
@@ -742,9 +692,6 @@ theorem exists_ptm_of_solvesWithErrorInTimeO {Q : PromiseProblem α} {E : ErrorM
       ∀ a ∈ Q.no,
         ((ProbComp.eval (machine.runClosed (clock a) (enc a))) [true]).toReal ≤ E.noErr := by
   obtain ⟨ℓ, V, Tℓ, Sℓ, Tv, Sv, c₀, hℓ, hV, ht, hyes, hno⟩ := h
-  obtain ⟨c₁, ⟨k₁, Q₁, _, tm₁, h₁⟩, -⟩ :=
-    (ComputableInO.of_eq (f := fun a : α => a) (encIn := enc) (encMid := enc) fun _ => rfl).prod hℓ
-  obtain ⟨c₃, ⟨k₃, Q₃, _, tm₃, h₃⟩, -⟩ := hV
   let boundNat (a : α) : ℕ := c₀ * ⌈T a⌉₊ + c₀
   have hboundNat (a : α) (w : List Bool) (hw : w.length = ℓ a) :
       (enc a).length + Tℓ a + Tv (a, w) ≤ boundNat a := by
@@ -754,108 +701,24 @@ theorem exists_ptm_of_solvesWithErrorInTimeO {Q : PromiseProblem α} {E : ErrorM
       push_cast
       linarith [mul_le_mul_of_nonneg_left (Nat.le_ceil (T a)) (Nat.cast_nonneg c₀)]
     exact_mod_cast hta.trans hceil
-  let u (a : α) : List Bool := frame (enc a) ++ List.replicate (ℓ a) true
-  let t₁ (a : α) : ℕ := c₁ * ((enc a).length + Tℓ a + 1)
-  let t₂ (a : α) : ℕ := (u a).length + 1
-  let t₃ (a : α) : ℕ := c₃ * (boundNat a + 1)
-  have hrun₁ (a : α) := (h₁ a).runFrom_of_le (le_refl (t₁ a))
-  have hlen₁ (a : α) : (u a).length ≤ t₁ a := (h₁ a).length_output_le
-  let M₁ : MultiTapePTM k₁ Bool Q₁ := MultiTapePTM.ofDeterministic tm₁
-  have hfirst₁ (a : α) : ∀ final ∈ (ProbComp.eval
-      (M₁.runClosedConfigFrom (t₁ a) (M₁.initialConfig (enc a)))).support,
-      final.tapes.state = none := by
-    intro final hfinal
-    rw [MultiTapePTM.eval_runClosedConfigFrom_ofDeterministic, PMF.mem_support_pure_iff] at hfinal
-    subst hfinal
-    exact (hrun₁ a).1
-  have hout₁ (a : α) : ProbComp.eval (M₁.runClosed (t₁ a) (enc a)) = PMF.pure (u a) := by
-    rw [MultiTapePTM.eval_runClosed_ofDeterministic, (hrun₁ a).2]
-    rfl
-  have hsecond₁ (a : α) : ∀ word ∈ (ProbComp.eval (M₁.runClosed (t₁ a) (enc a))).support,
-      ∀ final ∈ (ProbComp.eval (MultiTapePTM.pairSampler.runClosedConfigFrom (t₂ a)
-        (MultiTapePTM.pairSampler.initialConfig word))).support, final.tapes.state = none := by
-    intro word hword
-    rw [hout₁ a, PMF.mem_support_pure_iff] at hword
-    subst hword
-    exact MultiTapePTM.pairSampler_halted (enc a) (List.replicate (ℓ a) true)
-  let P₁₂ := MultiTapePTM.pairSampler.comp M₁ false
-  let t₁₂ (a : α) : ℕ := t₁ a + (t₁ a + 4 + t₂ a)
-  have heval₁₂ (a : α) : ProbComp.eval (P₁₂.runClosed (t₁₂ a) (enc a)) =
-      (BitString.uniformList (ℓ a)).map (frame (enc a) ++ ·) := by
-    rw [MultiTapePTM.eval_comp M₁ MultiTapePTM.pairSampler false (enc a) (t₁ a) (t₂ a)
-      (hfirst₁ a) (hsecond₁ a), hout₁ a, Probability.PMF.monad_bind_eq_bind, PMF.pure_bind]
-    simpa only [List.length_replicate, u] using
-      MultiTapePTM.eval_pairSampler (enc a) (List.replicate (ℓ a) true)
-  have hhalt₁₂ (a : α) := MultiTapePTM.comp_halted M₁ MultiTapePTM.pairSampler false (enc a)
-    (t₁ a) (t₂ a) (hfirst₁ a) (hsecond₁ a)
-  let M₃ : MultiTapePTM k₃ Bool Q₃ := MultiTapePTM.ofDeterministic tm₃
-  have hrun₃ (a : α) (w : List Bool) (hw : w.length = ℓ a) :=
-    (h₃ (a, w)).runFrom_of_le (J := t₃ a) (Nat.mul_le_mul_left c₃ (by
-      have := hboundNat a w hw
-      omega))
-  have hword (a : α) {word : List Bool}
-      (hword : word ∈ (ProbComp.eval (P₁₂.runClosed (t₁₂ a) (enc a))).support) :
-      ∃ w : List Bool, w.length = ℓ a ∧ word = encPair enc encBits (a, w) := by
-    rw [heval₁₂ a] at hword
-    obtain ⟨w, hw, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hword
-    exact ⟨w, BitString.mem_support_uniformList_iff.mp hw, rfl⟩
-  have hsecond₂ (a : α) : ∀ word ∈ (ProbComp.eval (P₁₂.runClosed (t₁₂ a) (enc a))).support,
-      ∀ final ∈ (ProbComp.eval (M₃.runClosedConfigFrom (t₃ a) (M₃.initialConfig word))).support,
-      final.tapes.state = none := by
-    intro word hw final hfinal
-    obtain ⟨w, hwlen, rfl⟩ := hword a hw
-    rw [MultiTapePTM.eval_runClosedConfigFrom_ofDeterministic, PMF.mem_support_pure_iff] at hfinal
-    subst hfinal
-    exact (hrun₃ a w hwlen).1
-  let P := M₃.comp P₁₂ false
-  let clock (a : α) : ℕ := t₁₂ a + (t₁₂ a + 4 + t₃ a)
-  have hhalt (a : α) := MultiTapePTM.comp_halted P₁₂ M₃ false (enc a) (t₁₂ a) (t₃ a)
-    (hhalt₁₂ a) (hsecond₂ a)
-  have heval (a : α) : ProbComp.eval (P.runClosed (clock a) (enc a)) =
-      (BitString.uniformList (ℓ a)).map fun w => [V (a, w)] := by
-    rw [MultiTapePTM.eval_comp P₁₂ M₃ false (enc a) (t₁₂ a) (t₃ a) (hhalt₁₂ a) (hsecond₂ a),
-      Probability.PMF.monad_bind_eq_bind, heval₁₂ a, PMF.bind_map, ← PMF.bind_pure_comp]
-    refine Probability.PMF.bind_congr_on_support _ _ _ fun w hw => ?_
-    have hwlen : w.length = ℓ a := BitString.mem_support_uniformList_iff.mp hw
-    simp only [Function.comp_apply]
-    rw [MultiTapePTM.eval_runClosed_ofDeterministic]
-    exact congrArg PMF.pure (hrun₃ a w hwlen).2
+  obtain ⟨c, k, State, _, P, hP⟩ := exists_machine_sampleVerify_of_bound hℓ hV hboundNat
+  let clock (a : α) : ℕ := c * boundNat a + c
   have hprob (a : α) (b : Bool) :
       ((ProbComp.eval (P.runClosed (clock a) (enc a))) [b]).toReal =
         (acceptCount (fun p => V p == b) a (ℓ a) : ℝ) / (2 : ℝ) ^ ℓ a := by
-    rw [heval a, BitString.uniformList_map_apply]
+    rw [(hP a).2, BitString.uniformList_map_apply]
     have heq : (Finset.univ.filter fun w : Fin (ℓ a) → Bool => [V (a, List.ofFn w)] = [b]).card =
         acceptCount (fun p => V p == b) a (ℓ a) := by
       simp only [acceptCount, List.cons.injEq, and_true, beq_iff_eq]
     rw [heq, ENNReal.toReal_div, ENNReal.toReal_natCast, ENNReal.toReal_pow, ENNReal.toReal_ofNat]
-  let C_out : ℕ := (6 * c₁ + c₃) * (2 * c₀ + 2) + 14
-  refine ⟨C_out, clock, _, _, inferInstance, P, fun a => ?_, fun a => hhalt a,
+  refine ⟨c * (2 * c₀ + 1), clock, k, State, inferInstance, P, fun a => ?_, fun a => (hP a).1,
     fun a ha => ?_, fun a ha => ?_⟩
-  · have ht₁_le : t₁ a ≤ c₁ * (boundNat a + 1) := Nat.mul_le_mul_left c₁ (by
-      have := hboundNat a (List.replicate (ℓ a) false) (List.length_replicate ..)
-      omega)
-    have hclock_nat : clock a ≤ (6 * c₁ + c₃) * (boundNat a + 1) + 14 := by
-      have := hlen₁ a
-      have h1 := Nat.mul_le_mul_left 6 ht₁_le
-      simp only [clock, t₁₂, t₂, t₃, Nat.add_mul, Nat.mul_assoc]
-      omega
-    have hclockR : (clock a : ℝ) ≤ (6 * c₁ + c₃ : ℕ) * ((boundNat a : ℝ) + 1) + 14 := by
-      exact_mod_cast hclock_nat
-    have hceil : (⌈T a⌉₊ : ℝ) ≤ T a + 1 := (Nat.ceil_lt_add_one (hT a)).le
-    have hbn : (boundNat a : ℝ) + 1 ≤ (2 * c₀ + 2 : ℕ) * T a + (2 * c₀ + 2 : ℕ) := by
-      dsimp only [boundNat]
-      push_cast
-      have hc0 : (0 : ℝ) ≤ c₀ := Nat.cast_nonneg c₀
-      have hTa : 0 ≤ T a := hT a
-      nlinarith
-    have hmul := mul_le_mul_of_nonneg_left hbn (Nat.cast_nonneg (6 * c₁ + c₃))
-    have hexpand : ((6 * c₁ + c₃ : ℕ) : ℝ) *
-        ((2 * c₀ + 2 : ℕ) * T a + (2 * c₀ + 2 : ℕ)) + 14 ≤ C_out * T a + C_out := by
-      dsimp only [C_out]
-      have hTa : 0 ≤ T a := hT a
-      push_cast
-      linarith
-    linarith
+  · have hceil : (⌈T a⌉₊ : ℝ) ≤ T a + 1 := (Nat.ceil_lt_add_one (hT a)).le
+    have hcc₀ : (0 : ℝ) ≤ c * c₀ := by positivity
+    dsimp only [clock, boundNat]
+    push_cast
+    nlinarith [mul_le_mul_of_nonneg_left hceil hcc₀, mul_nonneg hcc₀ (hT a),
+      mul_nonneg (Nat.cast_nonneg c) (hT a)]
   · have hfalse : ((ProbComp.eval (P.runClosed (clock a) (enc a))) [false]).toReal ≤ E.yesErr := by
       rw [hprob a false, div_le_iff₀ (by positivity)]
       simpa only [beq_false] using hyes a ha
@@ -962,51 +825,45 @@ theorem exists_solvesWithErrorInTimeO_poly_iff {Q : PromiseProblem α} {E : Erro
       dsimp only [polyClock]
       rw [Nat.mul_assoc 3]
       exact Nat.mul_le_mul_left cV' (by dsimp only [N] at *; omega)
-    have hscale_gen (W₀ W₁ : α × List Bool → Bool) (a : α)
+    have hscale (W₀ W₁ : α × List Bool → Bool) (a : α)
         (hprefix : ∀ u : List Bool, u.length = ℓ a → ∀ rest : List Bool,
-          W₁ (a, u ++ rest) = W₀ (a, u)) :
-        acceptCount W₁ a (p.eval (enc a).length) =
+          W₁ (a, u ++ rest) = W₀ (a, u)) {B : ℝ}
+        (hB : (acceptCount W₀ a (ℓ a) : ℝ) ≤ B * 2 ^ ℓ a) :
+        (acceptCount W₁ a (p.eval (enc a).length) : ℝ) ≤ B * 2 ^ p.eval (enc a).length := by
+      have hcount : acceptCount W₁ a (p.eval (enc a).length) =
           acceptCount W₀ a (ℓ a) * 2 ^ (p.eval (enc a).length - ℓ a) := by
-      have hsplit : p.eval (enc a).length = ℓ a + (p.eval (enc a).length - ℓ a) :=
-        (Nat.add_sub_of_le (hℓ_le_p a)).symm
-      conv_lhs => rw [hsplit]
-      rw [acceptCount_add]
-      have hterm : ∀ u : Fin (ℓ a) → Bool,
-          acceptCount (fun x => W₁ (x.1, List.ofFn u ++ x.2)) a
-            (p.eval (enc a).length - ℓ a) =
-          if W₀ (a, List.ofFn u) = true then 2 ^ (p.eval (enc a).length - ℓ a) else 0 := by
-        intro u
-        have hcongr : acceptCount (fun x => W₁ (x.1, List.ofFn u ++ x.2)) a
-            (p.eval (enc a).length - ℓ a) =
-            acceptCount (fun _ => W₀ (a, List.ofFn u)) a (p.eval (enc a).length - ℓ a) :=
-          acceptCount_congr (fun rest => hprefix (List.ofFn u) List.length_ofFn rest) _
-        rw [hcongr]
-        cases W₀ (a, List.ofFn u) <;> simp
-      exact (Finset.sum_congr rfl fun u _ => hterm u).trans
-        (by rw [← Finset.sum_filter, Finset.sum_const, smul_eq_mul]; rfl)
-    refine ⟨p, V', hV'_poly, fun a ha => ?_, fun a ha => ?_⟩
-    · have hsc := hscale_gen (fun q => !V q) (fun q => !V' q) a fun u hu rest => by
-        have hlen : ℓ a ≤ (u ++ rest).length := by simp [hu]
-        simp [V', padTake_of_le ℓ a hlen, List.take_left' hu]
+        have hsplit : p.eval (enc a).length = ℓ a + (p.eval (enc a).length - ℓ a) :=
+          (Nat.add_sub_of_le (hℓ_le_p a)).symm
+        conv_lhs => rw [hsplit]
+        rw [acceptCount_add]
+        have hterm : ∀ u : Fin (ℓ a) → Bool,
+            acceptCount (fun x => W₁ (x.1, List.ofFn u ++ x.2)) a
+              (p.eval (enc a).length - ℓ a) =
+            if W₀ (a, List.ofFn u) = true then 2 ^ (p.eval (enc a).length - ℓ a) else 0 := by
+          intro u
+          have hcongr : acceptCount (fun x => W₁ (x.1, List.ofFn u ++ x.2)) a
+              (p.eval (enc a).length - ℓ a) =
+              acceptCount (fun _ => W₀ (a, List.ofFn u)) a (p.eval (enc a).length - ℓ a) :=
+            acceptCount_congr (fun rest => hprefix (List.ofFn u) List.length_ofFn rest) _
+          rw [hcongr]
+          cases W₀ (a, List.ofFn u) <;> simp
+        exact (Finset.sum_congr rfl fun u _ => hterm u).trans
+          (by rw [← Finset.sum_filter, Finset.sum_const, smul_eq_mul]; rfl)
       have hpow_eq : (2 : ℝ) ^ p.eval (enc a).length =
           (2 : ℝ) ^ ℓ a * (2 : ℝ) ^ (p.eval (enc a).length - ℓ a) := by
         rw [← pow_add, Nat.add_sub_of_le (hℓ_le_p a)]
-      rw [hsc, hpow_eq]
+      rw [hcount, hpow_eq]
       push_cast
-      have hy := mul_le_mul_of_nonneg_right (hyes a ha)
+      have h := mul_le_mul_of_nonneg_right hB
         (by positivity : (0 : ℝ) ≤ (2 : ℝ) ^ (p.eval (enc a).length - ℓ a))
       linarith
-    · have hsc := hscale_gen V V' a fun u hu rest => by
-        have hlen : ℓ a ≤ (u ++ rest).length := by simp [hu]
-        simp [V', padTake_of_le ℓ a hlen, List.take_left' hu]
-      have hpow_eq : (2 : ℝ) ^ p.eval (enc a).length =
-          (2 : ℝ) ^ ℓ a * (2 : ℝ) ^ (p.eval (enc a).length - ℓ a) := by
-        rw [← pow_add, Nat.add_sub_of_le (hℓ_le_p a)]
-      rw [hsc, hpow_eq]
-      push_cast
-      have hn := mul_le_mul_of_nonneg_right (hno a ha)
-        (by positivity : (0 : ℝ) ≤ (2 : ℝ) ^ (p.eval (enc a).length - ℓ a))
-      linarith
+    have hV'_prefix (a : α) (u : List Bool) (hu : u.length = ℓ a) (rest : List Bool) :
+        V' (a, u ++ rest) = V (a, u) := by
+      have hlen : ℓ a ≤ (u ++ rest).length := by simp [hu]
+      simp [V', padTake_of_le ℓ a hlen, List.take_left' hu]
+    refine ⟨p, V', hV'_poly, fun a ha => ?_, fun a ha => hscale V V' a (hV'_prefix a) (hno a ha)⟩
+    exact hscale (fun q => !V q) (fun q => !V' q) a
+      (fun u hu rest => congrArg (!·) (hV'_prefix a u hu rest)) (hyes a ha)
   · rintro ⟨p, V, hV, hyes, hno⟩
     have hℓ_poly : ComputableInPolyTime (fun a : α => p.eval (enc a).length) enc encUnary := by
       fun_prop
@@ -1127,16 +984,11 @@ theorem mem_PromiseRP_iff_exists_solvesWithErrorInTimeO {Q : PromiseProblem α} 
       simp only [ErrorModel.rp, ErrorModel.oneSidedRP]
       linarith
     · have hn := (hQ a).2 ha
-      have h0 : acceptCount V a (p.eval (enc a).length) = 0 := by
-        rw [acceptCount, Finset.card_eq_zero, Finset.filter_eq_empty_iff]
-        intro r _
-        rw [hn r]
-        exact Bool.false_ne_true
+      have h0 : acceptCount V a (p.eval (enc a).length) = 0 := acceptCount_eq_zero_iff.2 hn
       simp only [h0, Nat.cast_zero, ErrorModel.rp, ErrorModel.oneSidedRP, zero_mul, le_rfl]
   · rintro ⟨hyes, hno⟩ a
     refine ⟨fun ha => ?_, fun ha r => ?_⟩
-    · change 2 ^ p.eval (enc a).length ≤ 2 * acceptCount V a (p.eval (enc a).length)
-      have hy := hyes a ha
+    · have hy := hyes a ha
       simp only [ErrorModel.rp, ErrorModel.oneSidedRP] at hy
       have hsum : (acceptCount V a (p.eval (enc a).length) : ℝ) +
           acceptCount (fun q => !V q) a (p.eval (enc a).length) =
@@ -1149,11 +1001,7 @@ theorem mem_PromiseRP_iff_exists_solvesWithErrorInTimeO {Q : PromiseProblem α} 
       simp only [ErrorModel.rp, ErrorModel.oneSidedRP, zero_mul] at hn
       have h0 : acceptCount V a (p.eval (enc a).length) = 0 :=
         Nat.eq_zero_of_le_zero (by exact_mod_cast hn)
-      by_contra hne
-      have htrue : V (a, List.ofFn r) = true := Bool.eq_true_of_not_eq_false hne
-      have hpos : 0 < acceptCount V a (p.eval (enc a).length) :=
-        acceptCount_pos_iff.mpr ⟨List.ofFn r, List.length_ofFn, htrue⟩
-      omega
+      exact acceptCount_eq_zero_iff.1 h0 r
 
 /-- **`PromiseCoRP` in terms of `SolvesWithErrorInTimeO`.** -/
 theorem mem_PromiseCoRP_iff_exists_solvesWithErrorInTimeO {Q : PromiseProblem α} :
@@ -1364,6 +1212,15 @@ theorem SolvesWithErrorInTimeO.amplify_twoSided {Q : PromiseProblem α} {T : α 
   have hVmajO : ComputableInO V_maj (encPair enc encBits) encBool _ _ :=
     hmaj_deg.inO.comp hvotesO
   let C_total : ℕ := (2 + 2 * r + Mvotes) * (c + 1) + (2 * r + 1) ^ dmaj
+  -- Majority voting errs only on samples with at most `r` blocks in a good seed set `G`.
+  have hmaj (a : α) (G : Finset (Fin (ℓ a) → Bool)) (hG : (1 - ε₁) * (2 : ℝ) ^ ℓ a ≤ G.card) :
+      ((Finset.univ.filter fun ω : Fin (2 * r) → (Fin (ℓ a) → Bool) =>
+        (Finset.univ.filter fun i => ω i ∈ G).card ≤ r).card : ℝ) ≤
+        ε₂ * (2 : ℝ) ^ ((2 * r) * ℓ a) := by
+    have hcard : (Fintype.card (Fin (ℓ a) → Bool) : ℝ) = (2 : ℝ) ^ ℓ a := by simp
+    have hmom := card_filter_card_filter_le_of_err_lt_half G h0₁ h1₁ (hcard ▸ hG) r
+    rw [hcard, ← pow_mul, mul_comm (ℓ a)] at hmom
+    exact hmom.trans (mul_le_mul_of_nonneg_right hr.le (by positivity))
   refine ⟨fun a => (2 * r) * ℓ a, V_maj, _, _, _, _, C_total, hℓ'O, hVmajO,
     fun a w hw => ?_, fun a ha => ?_, fun a ha => ?_⟩
   · have hbase_a : ((enc a).length + Tℓ a : ℝ) ≤ c * T a + c := by
@@ -1395,22 +1252,15 @@ theorem SolvesWithErrorInTimeO.amplify_twoSided {Q : PromiseProblem α} {T : α 
     have h3 : (0 : ℝ) ≤ ((2 * (r : ℝ) + 1) ^ dmaj) * T a := by positivity
     push_cast at htv ⊢
     linarith
-  · -- Yes-instance error bound via `card_filter_card_filter_le_of_err_lt_half`
+  · -- Yes-instance error bound via `hmaj` on the accepting seeds
     let G : Finset (Fin (ℓ a) → Bool) :=
       Finset.univ.filter fun u => V (a, List.ofFn u) = true
-    have hG : (1 - ε₁) * (Fintype.card (Fin (ℓ a) → Bool) : ℝ) ≤ G.card := by
+    have hG : (1 - ε₁) * (2 : ℝ) ^ ℓ a ≤ G.card := by
       have hy := hyes a ha
       simp only [ErrorModel.twoSided] at hy
       have hsum : (G.card : ℝ) + acceptCount (fun q => !V q) a (ℓ a) = (2 : ℝ) ^ ℓ a := by
         exact_mod_cast acceptCount_add_acceptCount_not V a (ℓ a)
-      have hcard : (Fintype.card (Fin (ℓ a) → Bool) : ℝ) = (2 : ℝ) ^ ℓ a := by simp
-      rw [hcard]
       linarith
-    have hmom := card_filter_card_filter_le_of_err_lt_half G h0₁ h1₁ hG r
-    have hcard_Omega : (Fintype.card (Fin (ℓ a) → Bool) : ℝ) ^ (2 * r) =
-        (2 : ℝ) ^ ((2 * r) * ℓ a) := by
-      simp [pow_mul, mul_comm]
-    rw [hcard_Omega] at hmom
     have hbad_eq : acceptCount (fun q => !V_maj q) a ((2 * r) * ℓ a) =
         (Finset.univ.filter fun ω : Fin (2 * r) → (Fin (ℓ a) → Bool) =>
           (Finset.univ.filter fun i => ω i ∈ G).card ≤ r).card := by
@@ -1420,24 +1270,16 @@ theorem SolvesWithErrorInTimeO.amplify_twoSided {Q : PromiseProblem α} {T : α 
         collectVotesConst_ofFn, List.countP_ofFn, Finset.card_filter, id_eq,
         Bool.not_eq_true', decide_eq_false_iff_not, not_lt, BitString.blocksEquiv_apply, G]
     rw [hbad_eq]
-    simp only [ErrorModel.twoSided]
-    exact hmom.trans (mul_le_mul_of_nonneg_right hr.le (by positivity))
-  · -- No-instance error bound via `card_filter_card_filter_le_of_err_lt_half` on `V = false`
+    exact hmaj a G hG
+  · -- No-instance error bound via `hmaj` on the rejecting seeds
     let G : Finset (Fin (ℓ a) → Bool) :=
       Finset.univ.filter fun u => V (a, List.ofFn u) = false
-    have hG : (1 - ε₁) * (Fintype.card (Fin (ℓ a) → Bool) : ℝ) ≤ G.card := by
+    have hG : (1 - ε₁) * (2 : ℝ) ^ ℓ a ≤ G.card := by
       have hn := hno a ha
       simp only [ErrorModel.twoSided] at hn
       have hsum : (acceptCount V a (ℓ a) : ℝ) + G.card = (2 : ℝ) ^ ℓ a := by
         exact_mod_cast acceptCount_add_card_filter_eq_false (V := V) (a := a) (n := ℓ a)
-      have hcard : (Fintype.card (Fin (ℓ a) → Bool) : ℝ) = (2 : ℝ) ^ ℓ a := by simp
-      rw [hcard]
       linarith
-    have hmom := card_filter_card_filter_le_of_err_lt_half G h0₁ h1₁ hG r
-    have hcard_Omega : (Fintype.card (Fin (ℓ a) → Bool) : ℝ) ^ (2 * r) =
-        (2 : ℝ) ^ ((2 * r) * ℓ a) := by
-      simp [pow_mul, mul_comm]
-    rw [hcard_Omega] at hmom
     have hbad_le : acceptCount V_maj a ((2 * r) * ℓ a) ≤
         (Finset.univ.filter fun ω : Fin (2 * r) → (Fin (ℓ a) → Bool) =>
           (Finset.univ.filter fun i => ω i ∈ G).card ≤ r).card := by
@@ -1462,8 +1304,7 @@ theorem SolvesWithErrorInTimeO.amplify_twoSided {Q : PromiseProblem α} {T : α 
     have hbad_leR : (acceptCount V_maj a ((2 * r) * ℓ a) : ℝ) ≤
         (Finset.univ.filter fun ω : Fin (2 * r) → (Fin (ℓ a) → Bool) =>
           (Finset.univ.filter fun i => ω i ∈ G).card ≤ r).card := by exact_mod_cast hbad_le
-    simp only [ErrorModel.twoSided]
-    exact (hbad_leR.trans hmom).trans (mul_le_mul_of_nonneg_right hr.le (by positivity))
+    exact hbad_leR.trans (hmaj a G hG)
 
 /-- **Two-sided threshold invariance.** Any two error bounds `ε₁, ε₂ ∈ (0, 1 / 2)` yield the exact
 same `SolvesWithErrorInTimeO` predicate (for `0 ≤ T a`). -/
@@ -1652,18 +1493,17 @@ theorem SolvesWithErrorInExpTime.KSAT_of_le {k k' : ℕ} (hk : k ≤ k') {E : Er
       (fun φ hφ => (hmem φ).mp hφ)
       (fun φ hφ hmem' => hφ ((hmem φ).mpr hmem')) hμ hδ
 
-/-- The bounded-error randomized `k`-SAT exponent `s^r_k`: the infimum of `δ ≥ 0` for which
-`KSAT k` is solved with bounded two-sided error within time `2 ^ (δ * n) · poly(L)`. -/
+/-- The bounded-error randomized `k`-SAT exponent `s^r_k`: the infimum (`Cslib.rateExponent`) of
+`δ ≥ 0` for which `KSAT k` is solved with bounded two-sided error within time
+`2 ^ (δ * n) · poly(L)`. -/
 @[expose] noncomputable def rSatExponent (k : ℕ) : ℝ :=
-  sInf {δ | 0 ≤ δ ∧
-    SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF ErrorModel.bounded CNF.numVars δ}
+  rateExponent (SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF ErrorModel.bounded CNF.numVars)
 
-/-- The one-sided (`RP`) randomized `k`-SAT exponent `s^{RP}_k`: the infimum of `δ ≥ 0` for which
-`KSAT k` is solved with `RP` error (`yesErr = 1 / 2`, `noErr = 0`) within time
+/-- The one-sided (`RP`) randomized `k`-SAT exponent `s^{RP}_k`: the infimum (`Cslib.rateExponent`)
+of `δ ≥ 0` for which `KSAT k` is solved with `RP` error (`yesErr = 1 / 2`, `noErr = 0`) within time
 `2 ^ (δ * n) · poly(L)`. -/
 @[expose] noncomputable def rpSatExponent (k : ℕ) : ℝ :=
-  sInf {δ | 0 ≤ δ ∧
-    SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF ErrorModel.rp CNF.numVars δ}
+  rateExponent (SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF ErrorModel.rp CNF.numVars)
 
 /-- **`rETH` (the randomized exponential time hypothesis):** for some `δ > 0`, `3`-SAT cannot be
 solved with bounded two-sided error within time `2 ^ (δ * n) · poly(L)`. -/
@@ -1679,99 +1519,87 @@ width `k` such that `k`-SAT cannot be solved with bounded two-sided error within
     ¬SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF ErrorModel.bounded CNF.numVars (1 - ε)
 
 /-- `rSatExponent k` is independent of the choice of two-sided error threshold `ε ∈ (0, 1 / 2)`. -/
-theorem rSatExponent_eq_sInf_twoSided (k : ℕ) {ε : ℝ} (h0 : 0 < ε) (h1 : ε < 1 / 2) :
-    rSatExponent k = sInf {δ | 0 ≤ δ ∧ SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF
-      (ErrorModel.twoSided ε h0.le h1) CNF.numVars δ} := by
-  unfold rSatExponent ErrorModel.bounded
-  congr 1
-  ext δ
-  exact and_congr_right fun _ =>
-    solvesWithErrorInExpTime_twoSided_iff (by norm_num) (by norm_num) h0 h1
+theorem rSatExponent_eq_rateExponent_twoSided (k : ℕ) {ε : ℝ} (h0 : 0 < ε) (h1 : ε < 1 / 2) :
+    rSatExponent k = rateExponent (SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF
+      (ErrorModel.twoSided ε h0.le h1) CNF.numVars) :=
+  congrArg rateExponent <| funext fun _ =>
+    propext (solvesWithErrorInExpTime_twoSided_iff (by norm_num) (by norm_num) h0 h1)
 
 /-- `rpSatExponent k` is independent of the choice of one-sided `RP` threshold `ε ∈ (0, 1)`. -/
-theorem rpSatExponent_eq_sInf_oneSidedRP (k : ℕ) {ε : ℝ} (h0 : 0 < ε) (h1 : ε < 1) :
-    rpSatExponent k = sInf {δ | 0 ≤ δ ∧ SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF
-      (ErrorModel.oneSidedRP ε h0.le h1) CNF.numVars δ} := by
-  unfold rpSatExponent ErrorModel.rp
-  congr 1
-  ext δ
-  exact and_congr_right fun _ =>
-    solvesWithErrorInExpTime_oneSidedRP_iff (by norm_num) (by norm_num) h0 h1
+theorem rpSatExponent_eq_rateExponent_oneSidedRP (k : ℕ) {ε : ℝ} (h0 : 0 < ε) (h1 : ε < 1) :
+    rpSatExponent k = rateExponent (SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF
+      (ErrorModel.oneSidedRP ε h0.le h1) CNF.numVars) :=
+  congrArg rateExponent <| funext fun _ =>
+    propext (solvesWithErrorInExpTime_oneSidedRP_iff (by norm_num) (by norm_num) h0 h1)
 
-private theorem one_mem_rSatExponents (k : ℕ) :
-    (1 : ℝ) ∈ {δ | 0 ≤ δ ∧ SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF
-      ErrorModel.bounded CNF.numVars δ} :=
-  ⟨zero_le_one, (solvesPromiseInExpTime_ofSet_iff.mpr
-    (KSAT_decidableInExpTime_one k)).solvesWithErrorInExpTime zero_le_one ErrorModel.bounded⟩
-
-private theorem one_mem_rpSatExponents (k : ℕ) :
-    (1 : ℝ) ∈ {δ | 0 ≤ δ ∧ SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF
-      ErrorModel.rp CNF.numVars δ} :=
-  ⟨zero_le_one, (solvesPromiseInExpTime_ofSet_iff.mpr
-    (KSAT_decidableInExpTime_one k)).solvesWithErrorInExpTime zero_le_one ErrorModel.rp⟩
+/-- **Exhaustive search** solves `KSAT k` in randomized time `2 ^ n * poly(L)` under any error
+profile. -/
+theorem KSAT_solvesWithErrorInExpTime_one (k : ℕ) (E : ErrorModel) :
+    SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF E CNF.numVars 1 :=
+  (solvesPromiseInExpTime_ofSet_iff.mpr (KSAT_decidableInExpTime_one k)).solvesWithErrorInExpTime
+    zero_le_one E
 
 /-- `rSatExponent k` is nonnegative. -/
 theorem rSatExponent_nonneg (k : ℕ) : 0 ≤ rSatExponent k :=
-  le_csInf ⟨1, one_mem_rSatExponents k⟩ fun _ h => h.1
+  rateExponent_nonneg _
 
 /-- `rpSatExponent k` is nonnegative. -/
 theorem rpSatExponent_nonneg (k : ℕ) : 0 ≤ rpSatExponent k :=
-  le_csInf ⟨1, one_mem_rpSatExponents k⟩ fun _ h => h.1
+  rateExponent_nonneg _
 
 /-- `rSatExponent k ≤ 1` for every `k`. -/
 theorem rSatExponent_le_one (k : ℕ) : rSatExponent k ≤ 1 :=
-  csInf_le ⟨0, fun _ h => h.1⟩ (one_mem_rSatExponents k)
+  rateExponent_le_one (KSAT_solvesWithErrorInExpTime_one k ErrorModel.bounded)
 
 /-- `rpSatExponent k ≤ 1` for every `k`. -/
 theorem rpSatExponent_le_one (k : ℕ) : rpSatExponent k ≤ 1 :=
-  csInf_le ⟨0, fun _ h => h.1⟩ (one_mem_rpSatExponents k)
+  rateExponent_le_one (KSAT_solvesWithErrorInExpTime_one k ErrorModel.rp)
 
 /-- `rSatExponent k` is bounded by every attainable bounded-error rate `δ ≥ 0`. -/
 theorem rSatExponent_le {k : ℕ} {δ : ℝ} (hδ : 0 ≤ δ)
     (h : SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF ErrorModel.bounded CNF.numVars δ) :
     rSatExponent k ≤ δ :=
-  csInf_le ⟨0, fun _ h => h.1⟩ ⟨hδ, h⟩
+  rateExponent_le hδ h
 
 /-- `rpSatExponent k` is bounded by every attainable `RP` rate `δ ≥ 0`. -/
 theorem rpSatExponent_le {k : ℕ} {δ : ℝ} (hδ : 0 ≤ δ)
     (h : SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF ErrorModel.rp CNF.numVars δ) :
     rpSatExponent k ≤ δ :=
-  csInf_le ⟨0, fun _ h => h.1⟩ ⟨hδ, h⟩
+  rateExponent_le hδ h
 
 /-- Below `rSatExponent k` there is no bounded-error `k`-SAT solver. -/
 theorem not_solvesWithErrorInExpTime_of_lt_rSatExponent {k : ℕ} {δ : ℝ} (hδ₀ : 0 ≤ δ)
     (hδ : δ < rSatExponent k) :
     ¬SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF ErrorModel.bounded CNF.numVars δ :=
-  fun h => absurd (rSatExponent_le hδ₀ h) (not_le.mpr hδ)
+  not_of_lt_rateExponent hδ₀ hδ
 
 /-- An unattainable bounded-error rate bounds `rSatExponent k` from below. -/
 theorem le_rSatExponent_of_not_solvesWithErrorInExpTime {k : ℕ} {δ : ℝ}
     (h : ¬SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF ErrorModel.bounded CNF.numVars δ) :
     δ ≤ rSatExponent k :=
-  le_csInf ⟨1, one_mem_rSatExponents k⟩ fun _ hδ' =>
-    le_of_not_gt fun hlt => h (hδ'.2.mono hlt.le)
+  le_rateExponent (fun _ _ hle h => h.mono hle)
+    (KSAT_solvesWithErrorInExpTime_one k ErrorModel.bounded) h
 
 /-- `rSatExponent` is monotone in the clause width `k`. -/
 theorem rSatExponent_mono : Monotone rSatExponent := fun _ k' hk =>
-  csInf_le_csInf ⟨0, fun _ h => h.1⟩ ⟨1, one_mem_rSatExponents k'⟩ fun _ hδ =>
-    ⟨hδ.1, hδ.2.KSAT_of_le hk hδ.1⟩
+  rateExponent_le_rateExponent (KSAT_solvesWithErrorInExpTime_one k' ErrorModel.bounded)
+    fun _ hδ h => h.KSAT_of_le hk hδ
 
 /-- `rpSatExponent` is monotone in the clause width `k`. -/
 theorem rpSatExponent_mono : Monotone rpSatExponent := fun _ k' hk =>
-  csInf_le_csInf ⟨0, fun _ h => h.1⟩ ⟨1, one_mem_rpSatExponents k'⟩ fun _ hδ =>
-    ⟨hδ.1, hδ.2.KSAT_of_le hk hδ.1⟩
+  rateExponent_le_rateExponent (KSAT_solvesWithErrorInExpTime_one k' ErrorModel.rp)
+    fun _ hδ h => h.KSAT_of_le hk hδ
 
 /-- **Two-sided vs. one-sided `RP` exponent:** `rSatExponent k ≤ rpSatExponent k`. -/
 theorem rSatExponent_le_rpSatExponent (k : ℕ) : rSatExponent k ≤ rpSatExponent k :=
-  le_csInf ⟨1, one_mem_rpSatExponents k⟩ fun _ ⟨hδ, e, h⟩ =>
-    rSatExponent_le hδ ⟨e, h.oneSidedRP_to_twoSided (fun _ => by positivity)
+  rateExponent_le_rateExponent (KSAT_solvesWithErrorInExpTime_one k ErrorModel.rp)
+    fun _ _ ⟨e, h⟩ => ⟨e, h.oneSidedRP_to_twoSided (fun _ => by positivity)
       (by norm_num) (by norm_num)⟩
 
 /-- **One-sided `RP` vs. deterministic exponent:** `rpSatExponent k ≤ satExponent k`. -/
 theorem rpSatExponent_le_satExponent (k : ℕ) : rpSatExponent k ≤ satExponent k :=
-  le_csInf ⟨1, zero_le_one, KSAT_decidableInExpTime_one k⟩ fun _ ⟨hδ, hdec⟩ =>
-    rpSatExponent_le hδ
-      ((solvesPromiseInExpTime_ofSet_iff.mpr hdec).solvesWithErrorInExpTime hδ ErrorModel.rp)
+  rateExponent_le_rateExponent (KSAT_decidableInExpTime_one k) fun _ hδ hdec =>
+    (solvesPromiseInExpTime_ofSet_iff.mpr hdec).solvesWithErrorInExpTime hδ ErrorModel.rp
 
 /-- **Two-sided vs. deterministic exponent:** `rSatExponent k ≤ satExponent k`. -/
 theorem rSatExponent_le_satExponent (k : ℕ) : rSatExponent k ≤ satExponent k :=
@@ -1784,59 +1612,16 @@ theorem rETH_iff_not_solvesWithErrorInSubexpTime :
   simp only [rETH, SolvesWithErrorInSubexpTime, not_forall, exists_prop]
 
 /-- **`rETH` in terms of `rSatExponent`:** `rETH ↔ 0 < rSatExponent 3`. -/
-theorem rETH_iff_rSatExponent_pos : rETH ↔ 0 < rSatExponent 3 := by
-  constructor
-  · rintro ⟨δ, hδ, h⟩
-    exact hδ.trans_le (le_rSatExponent_of_not_solvesWithErrorInExpTime h)
-  · intro h
-    exact ⟨rSatExponent 3 / 2, half_pos h,
-      not_solvesWithErrorInExpTime_of_lt_rSatExponent (half_pos h).le (half_lt_self h)⟩
+theorem rETH_iff_rSatExponent_pos : rETH ↔ 0 < rSatExponent 3 :=
+  (rateExponent_pos_iff (fun _ _ hle h => h.mono hle)
+    (KSAT_solvesWithErrorInExpTime_one 3 ErrorModel.bounded)).symm
 
 /-- **`rSETH` in terms of `rSatExponent`:** `rSETH ↔ rSatExponent k → 1`. -/
-theorem rSETH_iff_tendsto : rSETH ↔ Tendsto rSatExponent atTop (𝓝 1) := by
-  constructor
-  · intro h
-    rw [Metric.tendsto_atTop]
-    intro ε hε
-    set η := min ε 1 / 2
-    have hη : 0 < η := half_pos (lt_min hε one_pos)
-    have hηε : η < ε := (half_lt_self (lt_min hε one_pos)).trans_le (min_le_left ε 1)
-    have hη₁ : 0 ≤ 1 - η := by
-      dsimp only [η]
-      linarith [min_le_right ε 1]
-    obtain ⟨k, hk⟩ := h η hη
-    refine ⟨k, fun k' hk' => ?_⟩
-    have h₁ : 1 - η ≤ rSatExponent k' :=
-      le_rSatExponent_of_not_solvesWithErrorInExpTime fun h' => hk (h'.KSAT_of_le hk' hη₁)
-    have h₂ := rSatExponent_le_one k'
-    rw [Real.dist_eq, abs_sub_lt_iff]
-    constructor <;> linarith
-  · intro h ε hε
-    set η := min ε 1 / 2
-    have hη : 0 < η := half_pos (lt_min hε one_pos)
-    have hηε : η ≤ ε := (half_lt_self (lt_min hε one_pos)).le.trans (min_le_left ε 1)
-    have hη₁ : 0 ≤ 1 - η := by
-      dsimp only [η]
-      linarith [min_le_right ε 1]
-    obtain ⟨k, hk⟩ := (h.eventually (lt_mem_nhds (by linarith : 1 - η < 1))).exists
-    exact ⟨k, fun h' => not_solvesWithErrorInExpTime_of_lt_rSatExponent hη₁ hk
-      (h'.mono (by linarith))⟩
-
-/-- `rSatExponent k` equals the infimum over strictly positive rates `δ > 0`. -/
-theorem rSatExponent_eq_sInf_pos (k : ℕ) :
-    rSatExponent k = sInf {δ : ℝ | 0 < δ ∧
-      SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF ErrorModel.bounded CNF.numVars δ} :=
-  csInf_nonneg_eq_csInf_pos (fun _ _ hle h => h.mono hle)
-    ((solvesPromiseInExpTime_ofSet_iff.mpr
-      (KSAT_decidableInExpTime_one k)).solvesWithErrorInExpTime zero_le_one ErrorModel.bounded)
-
-/-- `rpSatExponent k` equals the infimum over strictly positive rates `δ > 0`. -/
-theorem rpSatExponent_eq_sInf_pos (k : ℕ) :
-    rpSatExponent k = sInf {δ : ℝ | 0 < δ ∧
-      SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF ErrorModel.rp CNF.numVars δ} :=
-  csInf_nonneg_eq_csInf_pos (fun _ _ hle h => h.mono hle)
-    ((solvesPromiseInExpTime_ofSet_iff.mpr
-      (KSAT_decidableInExpTime_one k)).solvesWithErrorInExpTime zero_le_one ErrorModel.rp)
+theorem rSETH_iff_tendsto : rSETH ↔ Tendsto rSatExponent atTop (𝓝 1) :=
+  (tendsto_rateExponent_iff (P := fun k =>
+      SolvesWithErrorInExpTime (ofSet (KSAT k)) encCNF ErrorModel.bounded CNF.numVars)
+    (fun _ _ _ hle h => h.mono hle) (fun k => KSAT_solvesWithErrorInExpTime_one k _)
+    rSatExponent_mono).symm
 
 /-- Dropping any finite prefix `k < K` leaves `⨆ k, rSatExponent k` unchanged. -/
 theorem iSup_ge_rSatExponent_eq_iSup (K : ℕ) :
@@ -1860,18 +1645,8 @@ theorem rETH.eth (h : rETH) : ETH := by
   exact h.trans_le (rSatExponent_le_satExponent 3)
 
 /-- Randomized `SETH` implies deterministic `SETH` (`rSETH → SETH`). -/
-theorem rSETH.seth (h : rSETH) : SETH := by
-  intro ε hε
-  by_cases h1 : 1 ≤ ε
-  · obtain ⟨k, hk⟩ := h 1 one_pos
-    refine ⟨k, fun hdec => hk ?_⟩
-    have h0 : DecidableInExpTime (KSAT k) encCNF CNF.numVars 0 := hdec.mono (by linarith)
-    simpa only [sub_self] using
-      (solvesPromiseInExpTime_ofSet_iff.mpr h0).solvesWithErrorInExpTime le_rfl
-        ErrorModel.bounded
-  · obtain ⟨k, hk⟩ := h ε hε
-    exact ⟨k, fun hdec => hk
-      ((solvesPromiseInExpTime_ofSet_iff.mpr hdec).solvesWithErrorInExpTime (by linarith)
-        ErrorModel.bounded)⟩
+theorem rSETH.seth (h : rSETH) : SETH :=
+  SETH_iff_tendsto.2 <| tendsto_of_tendsto_of_tendsto_of_le_of_le (rSETH_iff_tendsto.1 h)
+    tendsto_const_nhds rSatExponent_le_satExponent satExponent_le_one
 
 end Cslib.Complexity

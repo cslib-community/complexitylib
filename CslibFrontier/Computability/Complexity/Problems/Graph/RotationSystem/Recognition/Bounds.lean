@@ -36,14 +36,11 @@ theorem boundedEndpoints_frame {I : FixedRotationInput} (hI : Valid I) :
   intro segment hs
   obtain ⟨entry, he, hs⟩ := List.mem_flatMap.mp hs
   obtain ⟨hi, hv⟩ := List.getElem?_eq_some_iff.mp (List.mem_zipIdx_iff_getElem?.mp he)
-  have hem : entry.1 ∈ I.graph.2 := by rw [← hv]; exact List.getElem_mem hi
-  have hu : entry.1.1 < I.graph.1.length :=
-    hI.2.1 _ (List.mem_flatMap.mpr ⟨entry.1, hem, by simp⟩)
-  have hw : entry.1.2 < I.graph.1.length :=
-    hI.2.1 _ (List.mem_flatMap.mpr ⟨entry.1, hem, by simp⟩)
-  change segment ∈ [((entry.1.1, I.graph.1.length + 2 * entry.2), _),
-    ((I.graph.1.length + 2 * entry.2, I.graph.1.length + 2 * entry.2 + 1), false),
-    ((I.graph.1.length + 2 * entry.2 + 1, entry.1.2), _)] at hs
+  have hem : entry.1 ∈ I.graph.edges := by rw [← hv]; exact List.getElem_mem hi
+  obtain ⟨hu, hw⟩ := hI.edge_endpoints_lt hem
+  change segment ∈ [((entry.1.1, I.graph.vertices.length + 2 * entry.2), _),
+    ((I.graph.vertices.length + 2 * entry.2, I.graph.vertices.length + 2 * entry.2 + 1), false),
+    ((I.graph.vertices.length + 2 * entry.2 + 1, entry.1.2), _)] at hs
   simp only [List.mem_cons, List.not_mem_nil, or_false] at hs
   rcases hs with rfl | rfl | rfl <;> change _ < subdivisionSize I ∧ _ < subdivisionSize I <;>
     unfold subdivisionSize <;> constructor <;>
