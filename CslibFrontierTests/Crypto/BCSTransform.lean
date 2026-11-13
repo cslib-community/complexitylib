@@ -130,11 +130,11 @@ def forgedProof : BCSProof 2 Bool where
   openings :=
     let tables := bcsHonestTables toyIOP constHash [false, true] encSym toyFS true false
     let chals := bcsHonestChallenges toyIOP constHash [false, true] encSym toyFS true false
-    [(true, merklePath constHash [false, true] (oracleLeaves encSym 1 (tables ⟨0, by decide⟩))
-        (if chals ⟨0, by decide⟩ then 1 else 0)),
-     (xor true (chals ⟨0, by decide⟩),
+    [⟨true, merklePath constHash [false, true] (oracleLeaves encSym 1 (tables ⟨0, by decide⟩))
+        (if chals ⟨0, by decide⟩ then 1 else 0)⟩,
+     ⟨xor true (chals ⟨0, by decide⟩),
         merklePath constHash [false, true] (oracleLeaves encSym 1 (tables ⟨1, by decide⟩))
-          (if chals ⟨1, by decide⟩ then 1 else 0))]
+          (if chals ⟨1, by decide⟩ then 1 else 0)⟩]
 
 -- Under `constHash`, the forged proof passes `bcsVerify` for `x = true`, while `iopVerify` rejects
 -- the committed `w = false` tables, so `bcsExtractTableCollision` extracts an explicit collision.

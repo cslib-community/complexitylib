@@ -26,10 +26,10 @@ quantifiers `∃ x, ∀ y` over the moves (`Cslib.Logic.PL.QBF.rounds`,
 `Cslib.Logic.PL.QBF.eval_rounds_eq_true_iff`), followed by the Cook–Levin tableau of the machine
 on the instance and the moves, its certificate bits linked to the variables of the moves and all
 its other variables quantified existentially. The variables of the moves are the blocks of level
-`0` of the reduction of `Cslib.Computability.Complexity.Classes.Space.TQBF.Reduction`, and the
-tableau is its formula of level `0` (`Cslib.Complexity.TQBF.baseFormula`), so the formula of a game
-(`Cslib.Complexity.TQBF.gameFormula`) holds exactly when the existential player wins the game in
-which the tableau has a satisfying assignment with the moves as certificate
+`0` of the reduction of `CslibFrontier.Computability.Complexity.Classes.Space.TQBF.Reduction`, and
+the tableau is its formula of level `0` (`Cslib.Complexity.TQBF.baseFormula`), so the formula of a
+game (`Cslib.Complexity.TQBF.gameFormula`) holds exactly when the existential player wins the game
+in which the tableau has a satisfying assignment with the moves as certificate
 (`Cslib.Complexity.TQBF.eval_gameFormula`).
 
 For a polynomial-time game verifier, the formula of the game on an instance

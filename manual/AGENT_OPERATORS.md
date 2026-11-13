@@ -141,6 +141,9 @@ When several coordinators share one host, give them a single limit on concurrent
 not only a thread count. Their builds can exhaust the kernel's file handles before its
 processors, and then everyone's builds fail
 ([diagnosis](workflows/troubleshooting.md#diagnose-too-many-open-files-in-system)).
+Have them run `scripts/check.sh --quick --no-full-fallback` during development: a change quick
+mode cannot plan is reported instead of starting a full local check that holds a build slot for
+hours, and CI on the pull request supplies the full run.
 Agents on one host also share Lake's artifact cache, which restores a module that another
 checkout built without its warnings. Full `scripts/check.sh` re-elaborates those built root-package
 sources; quick mode checks affected sources, including unchanged clients, built import aggregates

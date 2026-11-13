@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Game
+public import CslibFrontier.Crypto.Primitives.Garbling.CircularCorrelationRobust
 public import CslibFrontier.Crypto.Primitives.Garbling.Switch.Garble
 public import CslibFrontier.Languages.Probabilistic.Oracle.QueryCount
 
@@ -23,12 +24,13 @@ uniform input labels, and recomputes the labels gate by gate: affine gates and c
 the evaluator would, and the output of each open switch as its source label plus a fresh uniform
 label. It never uses the input, the affine constants or the offset `Δ`.
 
-**Circular correlation robustness** (`CCR`), in the style of Choi et al.
-[ChoiKatzKumaresanZhou2012]: the oracle keyed by a uniform offset `Δ` of colour `1` answers
-`(k, t, s)` with `H (k - Δ) t + s • Δ` (`CCR.oracle`). It must be indistinguishable from an
-oracle answering every query with a fresh uniform label, for adversaries that never repeat a
-tweak (`CCR.IsTweakUnique`); for such adversaries the fresh oracle is, by inspection, a random
-function of the query (this equivalence is not formalized).
+**Circular correlation robustness**, in the arithmetic variant
+`Cslib.Crypto.Garbling.CCR.Arithmetic`, in the style of Choi et al. [ChoiKatzKumaresanZhou2012]: the
+oracle keyed by a uniform offset `Δ` of colour `1` answers `(k, t, s)` with `H (k - Δ) t + s • Δ`
+(`CCR.Arithmetic.oracle`). It must be indistinguishable from an oracle answering every query with a
+fresh uniform label, for adversaries that never repeat a tweak (`CCR.Arithmetic.IsTweakUnique`); for
+such adversaries the fresh oracle is, by inspection, a random function of the query (this
+equivalence is not formalized).
 
 This is an arithmetic variant of the assumption Heath uses, which is the Boolean circular
 correlation robustness of Zahur, Rosulek and Evans [ZahurRosulekEvans2015]: there labels are bit
@@ -65,8 +67,6 @@ as the adaptations stated above.
 
 ## Main definitions
 
-* `Cslib.Crypto.Garbling.CCR.oracle`, `Cslib.Crypto.Garbling.CCR.advantage`: circular
-  correlation robustness.
 * `Cslib.Crypto.Garbling.Switch.SwitchView`: what the evaluator sees.
 * `Cslib.Crypto.Garbling.Switch.simulate`: the simulator from control bits.
 * `Cslib.Crypto.Garbling.Switch.reduction`: the CCR adversary.
@@ -92,47 +92,6 @@ namespace Cslib.Crypto.Garbling
 open SwitchGate Probability
 
 variable {n m N : ℕ} {R L : Type} [CommRing R] [AddCommGroup L] [Module R L]
-
-/-! ### Circular correlation robustness -/
-
-namespace CCR
-
-/-- The oracle keyed by the offset `Δ`: query `(k, t, s)` is answered by
-`H (k - Δ) t + s • Δ`. -/
-def oracle (H : L → ℕ → L) (Δ : L) (q : L × ℕ × R) : L :=
-  H (q.1 - Δ) q.2.1 + q.2.2 • Δ
-
-/-- A CCR adversary: a test with private coins and oracle access to queries `(k, t, s)`. -/
-abbrev Adversary (R L : Type) := ProbOracleComp (fun _ : L × ℕ × R => L) Bool
-
-/-- The keyed experiment: sample a uniform offset of colour `1` and answer with `oracle`. -/
-noncomputable def realGame (H : L → ℕ → L) (col : L →+ ZMod 2) [Fintype L]
-    [Nonempty {Δ : L // col Δ = 1}] (adversary : Adversary R L) : Game :=
-  ProbComp.eval do
-    let Δ ← ProbComp.uniform {Δ : L // col Δ = 1}
-    OracleComp.interpret
-      (OracleComp.sumHandler ProbComp.unifFin fun q => pure (oracle H Δ.1 q)) adversary
-
-/-- The ideal experiment: answer every query with a fresh uniform label. -/
-noncomputable def idealGame [Fintype L] (adversary : Adversary R L) : Game :=
-  ProbComp.eval
-    (OracleComp.interpret (OracleComp.sumHandler ProbComp.unifFin fun _ => ProbComp.uniform L)
-      adversary)
-
-/-- The CCR advantage of `adversary` against `H`. The assumption that it is small is meant only for
-adversaries that never repeat a tweak (`IsTweakUnique`): repeating a query distinguishes the fresh
-oracle from the keyed one. -/
-noncomputable abbrev advantage (H : L → ℕ → L) (col : L →+ ZMod 2) [Fintype L]
-    [Nonempty {Δ : L // col Δ = 1}] (adversary : Adversary R L) : NNReal :=
-  Game.advantage (realGame H col adversary) (idealGame adversary)
-
-/-- The adversary never repeats a tweak: on every path it makes at most one query with each
-tweak `t`. -/
-def IsTweakUnique (adversary : Adversary R L) : Prop :=
-  ∀ t : ℕ, OracleComp.IsCostBounded
-    (Sum.elim (fun _ => 0) fun q : L × ℕ × R => if q.2.1 = t then 1 else 0) adversary 1
-
-end CCR
 
 namespace Switch
 
@@ -197,12 +156,13 @@ noncomputable def simGame [Fintype L] (S : SwitchSystem n m N R) (H : L → ℕ 
 asks the oracle for the difference of its source and output labels. -/
 def reduceGate [DecidableEq R] (H : L → ℕ → L) (col : L →+ ZMod 2)
     (σ : Fin n ⊕ Fin N → R) (i : ℕ) (A : Fin n ⊕ Fin N → L) : SwitchGate n N R →
-      ProbOracleComp (fun _ : L × ℕ × R => L) (Material L × (Fin n ⊕ Fin N → L))
+      ProbOracleComp (fun _ : CCR.Arithmetic.Query L R => L)
+        (Material L × (Fin n ⊕ Fin N → L))
   | affine terms _ y => pure (.none, Function.update A (.inr y) (termSum A terms))
   | switch x y c =>
     if σ c = 0 then pure (.colour (col (A c)), Function.update A (.inr y) (A x + H (A c) i))
     else do
-      let r ← ProbOracleComp.query (A c, i, σ (.inr y) - σ x)
+      let r ← ProbOracleComp.query ⟨A c, i, σ (.inr y) - σ x⟩
       return (.colour (col (A c) + 1), Function.update A (.inr y) (A x + r))
   | join x y => pure (.shift (A y - A x), A)
 
@@ -210,7 +170,7 @@ def reduceGate [DecidableEq R] (H : L → ℕ → L) (col : L →+ ZMod 2)
 def reduceGates [DecidableEq R] (H : L → ℕ → L) (col : L →+ ZMod 2)
     (σ : Fin n ⊕ Fin N → R) :
     ℕ → List (SwitchGate n N R) → (Fin n ⊕ Fin N → L) →
-      ProbOracleComp (fun _ : L × ℕ × R => L) (List (Material L))
+      ProbOracleComp (fun _ : CCR.Arithmetic.Query L R => L) (List (Material L))
   | _, [], _ => pure []
   | i, g :: gs, A => do
     let p ← reduceGate H col σ i A g
@@ -221,7 +181,8 @@ def reduceGates [DecidableEq R] (H : L → ℕ → L) (col : L →+ ZMod 2)
 compute the material gate by gate with the oracle's help at open switches, and run `D`. -/
 noncomputable def reduction [DecidableEq R] [Fintype L] (S : SwitchSystem n m N R)
     (H : L → ℕ → L) (col : L →+ ZMod 2) (σ : Fin n ⊕ Fin N → R)
-    (D : SwitchView L n → ProbComp Bool) : ProbOracleComp (fun _ : L × ℕ × R => L) Bool := do
+    (D : SwitchView L n → ProbComp Bool) :
+    ProbOracleComp (fun _ : CCR.Arithmetic.Query L R => L) Bool := do
   let X ← ProbOracleComp.sample (ProbComp.uniform (Fin n → L))
   let μs ← reduceGates H col σ 0 S.gates (Sum.elim X 0)
   ProbOracleComp.sample (D ⟨μs, X⟩)
@@ -231,7 +192,7 @@ noncomputable def reduction [DecidableEq R] [Fintype L] (S : SwitchSystem n m N 
 private theorem isCostBounded_reduceGate [DecidableEq R] (H : L → ℕ → L) (col : L →+ ZMod 2)
     (σ : Fin n ⊕ Fin N → R) (i t : ℕ) (A : Fin n ⊕ Fin N → L) (g : SwitchGate n N R) :
     OracleComp.IsCostBounded
-      (Sum.elim (fun _ => 0) fun q : L × ℕ × R => if q.2.1 = t then 1 else 0)
+      (Sum.elim (fun _ => 0) fun q : CCR.Arithmetic.Query L R => if q.tweak = t then 1 else 0)
       (reduceGate H col σ i A g) (if i = t then 1 else 0) := by
   cases g with
   | affine terms b y => exact .pure _ _
@@ -240,9 +201,9 @@ private theorem isCostBounded_reduceGate [DecidableEq R] (H : L → ℕ → L) (
     · simp only [reduceGate, hc, ite_true]
       exact .pure _ _
     · simp only [reduceGate, hc, ite_false]
-      refine ((ProbOracleComp.isCostBounded_query (spec := fun _ : L × ℕ × R => L) _
-        (A c, i, σ (.inr y) - σ x)).bind (m := 0) fun r => OracleComp.IsCostBounded.pure _ 0).mono
-        ?_
+      refine ((ProbOracleComp.isCostBounded_query
+        (spec := fun _ : CCR.Arithmetic.Query L R => L) _ ⟨A c, i, σ (.inr y) - σ x⟩).bind (m := 0)
+          fun r => OracleComp.IsCostBounded.pure _ 0).mono ?_
       simp
   | join x y => exact .pure _ _
 
@@ -250,7 +211,7 @@ private theorem isCostBounded_reduceGates [DecidableEq R] (H : L → ℕ → L)
     (col : L →+ ZMod 2) (σ : Fin n ⊕ Fin N → R) (t : ℕ) :
     ∀ (i : ℕ) (gs : List (SwitchGate n N R)) (A : Fin n ⊕ Fin N → L),
       OracleComp.IsCostBounded
-        (Sum.elim (fun _ => 0) fun q : L × ℕ × R => if q.2.1 = t then 1 else 0)
+        (Sum.elim (fun _ => 0) fun q : CCR.Arithmetic.Query L R => if q.tweak = t then 1 else 0)
         (reduceGates H col σ i gs A) (if i ≤ t then 1 else 0)
   | _, [], _ => .pure _ _
   | i, g :: gs, A => by
@@ -263,7 +224,8 @@ private theorem isCostBounded_reduceGates [DecidableEq R] (H : L → ℕ → L)
 tweak `i`. -/
 theorem isTweakUnique_reduction [DecidableEq R] [Fintype L] (S : SwitchSystem n m N R)
     (H : L → ℕ → L) (col : L →+ ZMod 2) (σ : Fin n ⊕ Fin N → R)
-    (D : SwitchView L n → ProbComp Bool) : CCR.IsTweakUnique (reduction S H col σ D) := by
+    (D : SwitchView L n → ProbComp Bool) :
+    CCR.Arithmetic.IsTweakUnique (reduction S H col σ D) := by
   intro t
   refine ((ProbOracleComp.isCostBounded_sample _ _).bind fun X =>
     (isCostBounded_reduceGates H col σ t 0 S.gates (Sum.elim X 0)).bind fun μs =>
@@ -303,10 +265,10 @@ private theorem interpret_reduceGates_ideal [DecidableEq R] [Fintype L] (H : L �
 private theorem idealGame_reduction [DecidableEq R] [Fintype L] (S : SwitchSystem n m N R)
     (H : L → ℕ → L) (col : L →+ ZMod 2) (σ : Fin n ⊕ Fin N → R)
     (D : SwitchView L n → ProbComp Bool) :
-    CCR.idealGame (reduction S H col σ D) = simGame S H col (S.controls σ) D := by
+    CCR.Arithmetic.idealGame (reduction S H col σ D) = simGame S H col (S.controls σ) D := by
   have hself : ∀ {α : Type} (p : ProbComp α), OracleComp.interpret ProbComp.unifFin p = p :=
     fun p => OracleComp.interpret_query_eq_self p
-  simp only [CCR.idealGame, simGame, simulate, reduction, SwitchSystem.controls,
+  simp only [CCR.Arithmetic.idealGame, simGame, simulate, reduction, SwitchSystem.controls,
     OracleComp.interpret_bind, ProbOracleComp.interpret_sample, hself,
     interpret_reduceGates_ideal, bind_assoc, pure_bind]
 
@@ -332,7 +294,7 @@ private theorem interpret_reduceGate_real [DecidableEq R] (H : L → ℕ → L)
     (K A : Fin n ⊕ Fin N → L) (hA : ∀ w ∈ D, A w = wireLabel Δ (K w) (σ w))
     {g : SwitchGate n N R} (hg : g.WellPlaced D) (hσ : g.Holds σ) :
     ∃ A', OracleComp.interpret
-        (OracleComp.sumHandler ProbComp.unifFin fun q => pure (CCR.oracle H Δ q))
+        (OracleComp.sumHandler ProbComp.unifFin fun q => pure (CCR.Arithmetic.oracle H Δ q))
         (reduceGate H col σ i A g) = pure ((garbleGate H col Δ i K g).1, A') ∧
       ∀ w ∈ g.define D, A' w = wireLabel Δ ((garbleGate H col Δ i K g).2 w) (σ w) := by
   -- Away from a newly written wire, both label maps are unchanged.
@@ -372,11 +334,12 @@ private theorem interpret_reduceGate_real [DecidableEq R] (H : L → ℕ → L)
       have hcol : col (A c) + 1 = col (K c) := by
         rw [hc, hc1, wireLabel, one_smul, map_add, hΔ, add_assoc, CharTwo.add_self_eq_zero,
           add_zero]
-      refine ⟨Function.update A (.inr y) (A x + CCR.oracle H Δ (A c, i, σ (.inr y) - σ x)),
+      refine ⟨Function.update A (.inr y)
+          (A x + CCR.Arithmetic.oracle H Δ ⟨A c, i, σ (.inr y) - σ x⟩),
         by simp only [reduceGate, hc0, ite_false, OracleComp.interpret_bind,
           ProbOracleComp.interpret_query, pure_bind, OracleComp.interpret_pure, garbleGate, hcol],
         hnew y _ _ ?_ hg.2.2⟩
-      rw [CCR.oracle, hAc, hx, wireLabel, wireLabel, sub_smul]
+      rw [CCR.Arithmetic.oracle_apply, hAc, hx, wireLabel, wireLabel, sub_smul]
       abel
   | join x y =>
     refine ⟨A, ?_, hA⟩
@@ -391,7 +354,7 @@ private theorem interpret_reduceGates_real [DecidableEq R] (H : L → ℕ → L)
       (K A : Fin n ⊕ Fin N → L), (∀ w ∈ D, A w = wireLabel Δ (K w) (σ w)) →
       SwitchSystem.WellFormedFrom D gs → (∀ g ∈ gs, g.Holds σ) →
       OracleComp.interpret
-        (OracleComp.sumHandler ProbComp.unifFin fun q => pure (CCR.oracle H Δ q))
+        (OracleComp.sumHandler ProbComp.unifFin fun q => pure (CCR.Arithmetic.oracle H Δ q))
         (reduceGates H col σ i gs A) = pure (garbleGates H col Δ i gs K).1
   | _, [], _, _, _, _, _, _ => rfl
   | i, g :: gs, D, K, A, hA, ⟨hg, hgs⟩, hσ => by
@@ -406,12 +369,12 @@ private theorem realGame_reduction [DecidableEq R] [Fintype L] {S : SwitchSystem
     (hS : S.WellFormed) {x : Fin n → R} {σ : Fin n ⊕ Fin N → R} (hσ : S.Satisfies x σ)
     (H : L → ℕ → L) (col : L →+ ZMod 2) [Nonempty {Δ : L // col Δ = 1}]
     (D : SwitchView L n → ProbComp Bool) :
-    CCR.realGame H col (reduction S H col σ D) = realGame S H col x D := by
+    CCR.Arithmetic.realGame H col (reduction S H col σ D) = realGame S H col x D := by
   -- For each offset, the reduction from input labels `X` gives the material of the garbling
   -- with input zero labels `X - x • Δ`.
   have hmat : ∀ (Δ : {Δ : L // col Δ = 1}) (X : Fin n → L),
       OracleComp.interpret
-        (OracleComp.sumHandler ProbComp.unifFin fun q => pure (CCR.oracle H Δ.1 q))
+        (OracleComp.sumHandler ProbComp.unifFin fun q => pure (CCR.Arithmetic.oracle H Δ.1 q))
         (reduceGates H col σ 0 S.gates (Sum.elim X 0)) =
       pure (garbleWith S H col Δ.1 fun i => X i - x i • Δ.1).material := by
     intro Δ X
@@ -424,9 +387,9 @@ private theorem realGame_reduction [DecidableEq R] [Fintype L] {S : SwitchSystem
     PMF.uniformOfFintype_map_equiv (Equiv.addRight fun i => x i • Δ)
   have hself : ∀ {α : Type} (p : ProbComp α), OracleComp.interpret ProbComp.unifFin p = p :=
     fun p => OracleComp.interpret_query_eq_self p
-  simp only [CCR.realGame, realGame, garble, reduction, OracleComp.interpret_bind,
-    ProbOracleComp.interpret_sample, hself, hmat, pure_bind, bind_assoc, ProbComp.eval_bind,
-    ProbComp.eval_uniform]
+  simp only [CCR.Arithmetic.realGame, PRF.realExperiment, ProbOracleComp.run, realGame, garble,
+    reduction, OracleComp.interpret_bind, ProbOracleComp.interpret_sample, hself, hmat, pure_bind,
+    bind_assoc, ProbComp.eval_bind, ProbComp.eval_uniform]
   congr 1
   funext Δ
   conv_lhs => rw [← hshift Δ.1]
@@ -447,8 +410,8 @@ theorem advantage_realGame_simGame [DecidableEq R] [Fintype L] {S : SwitchSystem
     (H : L → ℕ → L) (col : L →+ ZMod 2) [Nonempty {Δ : L // col Δ = 1}]
     (D : SwitchView L n → ProbComp Bool) :
     Game.advantage (realGame S H col x D) (simGame S H col (S.controls σ) D) =
-      CCR.advantage H col (reduction S H col σ D) := by
-  rw [CCR.advantage, realGame_reduction hS hσ H col D, idealGame_reduction S H col σ D]
+      CCR.Arithmetic.advantage H col (reduction S H col σ D) := by
+  rw [CCR.Arithmetic.advantage, realGame_reduction hS hσ H col D, idealGame_reduction S H col σ D]
 
 end Switch
 

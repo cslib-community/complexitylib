@@ -79,17 +79,9 @@ noncomputable def PseudorandomGenerator.zkProofOfReduction
   verifier := GMW.gmwSeqVerifier generator length f k
   prover n a w := GMW.gmwSeqProver generator (n + 7) (length (n + 7)) (f a) w (k n)
   isWitness a w := ThreeSAT.verifier (f a, w)
-  polyTime_isWitness := by
-    have := hf.tidy
-    fun_prop
-  mem_iff_exists_witness a := by
-    rw [hred a]
-    refine ⟨fun ha => ?_, fun ⟨w, hw⟩ => ?_⟩
-    · obtain ⟨w, _, hw⟩ := (ThreeSAT.isVerifier (f a)).mp ha
-      exact ⟨w, hw⟩
-    · simp only [ThreeSAT.verifier, SAT.verifier, Bool.and_eq_true, List.all_eq_true,
-        decide_eq_true_eq] at hw
-      exact ⟨hw.1, SAT.assignment (f a) w, hw.2⟩
+  polyTime_isWitness := (hG.singleZKProofOfReduction hstretch hf hred).polyTime_isWitness
+  mem_iff_exists_witness :=
+    (hG.singleZKProofOfReduction hstretch hf hred).mem_iff_exists_witness
   isOraclePPT_verifier := GMW.isOraclePPTOn_gmwSeqVerifier hG.polyTime hG.length_eq hf hk
   interact n a w prog := GMW.gmwSeqInteract generator (n + 7) (length (n + 7)) (f a) w (k n) prog
   eval_interact n a w prog :=
@@ -168,8 +160,9 @@ theorem PseudorandomGenerator.auxiliaryInputZeroKnowledge_zkProofThreeSAT
 /-- **Sequentially amplified GMW zero knowledge with an NP relation's own witnesses.**
 Given a pseudorandom generator with stretch at least `3 * m + 1`, a Levin reduction `r` from an NP
 relation `R` to `ThreeSAT.npRelation`, and a polynomial-time repetition schedule `k : ℕ → ℕ`, this
-constructs a `ZKProof enc R.language (fun n => (1 / 3) ^ (k n))` whose honest prover maps an
-`R`-witness `w` to `r.forwardWitness (a, w)` and whose bundled witness check is
+is `zkProofOfReduction` for the instance map of `r` with witnesses changed by
+`ZKProof.withRelationWitness`: a `ZKProof enc R.language (fun n => (1 / 3) ^ (k n))` whose honest
+prover maps an `R`-witness `w` to `r.forwardWitness (a, w)` and whose bundled witness check is
 `decide (R.IsWitness a w)`. -/
 noncomputable def PseudorandomGenerator.levinZKProof
     {α : Type} {enc : α ↪ List Bool} {R : NPRelation enc}
@@ -178,39 +171,10 @@ noncomputable def PseudorandomGenerator.levinZKProof
     (hstretch : ∀ m, 3 * m + 1 ≤ length m)
     (r : LevinReduction R ThreeSAT.npRelation)
     (hk : ComputableInPolyTime k encUnary encUnary) :
-    ZKProof enc R.language (fun n => (1 / 3 : ENNReal) ^ (k n)) where
-  verifier := GMW.gmwSeqVerifier generator length r.toFun k
-  prover n a w :=
-    GMW.gmwSeqProver generator (n + 7) (length (n + 7)) (r.toFun a) (r.forwardWitness (a, w)) (k n)
-  isWitness a w := decide (R.IsWitness a w)
-  polyTime_isWitness := R.computableInPolyTime_decide_isWitness
-  mem_iff_exists_witness a := by simp [NPRelation.mem_language]
-  isOraclePPT_verifier :=
-    GMW.isOraclePPTOn_gmwSeqVerifier hG.polyTime hG.length_eq r.computableInPolyTime_toFun hk
-  interact n a w prog :=
-    GMW.gmwSeqInteract generator (n + 7) (length (n + 7)) (r.toFun a)
-      (r.forwardWitness (a, w)) (k n) prog
-  eval_interact n a w prog :=
-    GMW.eval_gmwSeqInteract generator (n + 7) (length (n + 7)) (r.toFun a) _ (k n) prog
-  isPPT_interact _ hV :=
-    (GMW.isPPTOn_gmwSeqInteract hG.polyTime hG.length_eq
-      r.computableInPolyTime_toFun hk hV).preprocess
-      (prepare := fun x : ℕ × α × List Bool × List Bool =>
-        (x.1, x.2.1, r.forwardWitness (x.2.1, x.2.2.1), x.2.2.2))
-      (by have := r.computableInPolyTime_forwardWitness; fun_prop)
-  complete n a w hw :=
-    GMW.acceptProb_gmwSeqVerifier_gmwSeqProver hG.length_eq r.toFun k n a
-      (r.isWitness_forwardWitness a w (of_decide_eq_true hw)).2
-  sound n a ha P :=
-    GMW.acceptProb_gmwSeqVerifier_le hG.length_eq hstretch r.toFun k n a
-      (by rw [← ThreeSAT.language_npRelation]; exact mt (r.mem_language_iff a).2 ha) P
-  zero_knowledge Vstar hV :=
-    ⟨GMW.gmwSeqSimulator enc generator length r.toFun k Vstar,
-      GMW.isPPTOn_gmwSeqSimulator hG.polyTime hG.length_eq r.computableInPolyTime_toFun hk hV,
-      fun _ _ _ ha hw hz hsat =>
-        GMW.gmwSeqView_indistinguishable_gmwSeqSimulator hG r.computableInPolyTime_toFun hk hV ha
-          (r.computableInPolyTime_forwardWitness.comp (ha.prod hw)) hz
-          fun n => (r.isWitness_forwardWitness _ _ (of_decide_eq_true (hsat n))).2⟩
+    ZKProof enc R.language (fun n => (1 / 3 : ENNReal) ^ (k n)) :=
+  (hG.zkProofOfReduction hstretch r.computableInPolyTime_toFun r.mem_language_iff_mem_threeSAT
+      hk).withRelationWitness r
+    fun a w h => (r.isWitness_forwardWitness a w h).2
 
 /-- The bundled witness check of `levinZKProof` is the NP relation `R.IsWitness` itself. -/
 @[simp]
@@ -223,7 +187,7 @@ theorem PseudorandomGenerator.isWitness_levinZKProof
     (hk : ComputableInPolyTime k encUnary encUnary)
     (a : α) (w : List Bool) :
     (hG.levinZKProof hstretch r hk).isWitness a w = true ↔ R.IsWitness a w :=
-  decide_eq_true_iff
+  ZKProof.isWitness_withRelationWitness _ _ _ a w
 
 /-- When `∀ n, n ≤ k n`, `hG.levinZKProof hstretch r hk` has negligible soundness. -/
 theorem PseudorandomGenerator.negligibleSoundness_levinZKProof
@@ -247,15 +211,9 @@ theorem PseudorandomGenerator.auxiliaryInputZeroKnowledge_levinZKProof
     (r : LevinReduction R ThreeSAT.npRelation)
     (hk : ComputableInPolyTime k encUnary encUnary)
     (hAdv : GMW.AdvicePRG enc generator length) :
-    (hG.levinZKProof hstretch r hk).AuxiliaryInputZeroKnowledge := by
-  intro Vstar hV
-  exact ⟨GMW.gmwSeqSimulator enc generator length r.toFun k Vstar,
-    GMW.isPPTOn_gmwSeqSimulator hG.polyTime hG.length_eq r.computableInPolyTime_toFun hk hV,
-    fun _ _ _ _ ha hw hz hz' hsat _ hadv =>
-      hAdv.gmwSeqView_negligible r.computableInPolyTime_toFun hk hV hadv ha
-        (by simpa using
-          r.computableInPolyTime_forwardWitness.polynomiallyBounded_length_prod ha hw)
-        hz hz' fun n => (r.isWitness_forwardWitness _ _ (of_decide_eq_true (hsat n))).2⟩
+    (hG.levinZKProof hstretch r hk).AuxiliaryInputZeroKnowledge :=
+  (hG.auxiliaryInputZeroKnowledge_zkProofOfReduction hstretch r.computableInPolyTime_toFun
+    r.mem_language_iff_mem_threeSAT hk hAdv).withRelationWitness r _
 
 /-- **Soundness-amplified GMW theorem (from a pseudorandom generator).** Given a pseudorandom
 generator with stretch at least `3 * m + 1`, every language `A ∈ NP enc` has a computational

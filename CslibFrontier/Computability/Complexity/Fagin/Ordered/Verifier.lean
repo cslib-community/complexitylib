@@ -193,7 +193,7 @@ structures are ESO-definable exactly when their source-only encoded languages ar
 `NP`. The universe has at least two elements and malformed relation tables are rejected. -/
 theorem esoDefinable_iff_encodedLanguage_mem_NP {L : Language} [L.IsRelational]
     (v : Vocabulary L) (K : Query L) : ESODefinable K ↔ K.encodedLanguage v ∈ NP encStructure :=
-  ⟨ESODefinable.encodedLanguage_mem_NP v, ESODefinable.of_queryLanguage_mem_NP v⟩
+  ⟨ESODefinable.encodedLanguage_mem_NP v, ESODefinable.of_encodedLanguage_mem_NP v⟩
 
 end FO.Ordered
 

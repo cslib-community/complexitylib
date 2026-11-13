@@ -17,13 +17,13 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.PowMod
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Crypto.Negligible.Basic
-import CslibFrontier.Foundations.Data.BitString.Counter
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Tactic.PPT
 import CslibFrontier.Tactic.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.WordsRoundTrip
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.OfBits
 
 /-!
 # Discrete-logarithm collision-resistant hash families
@@ -191,15 +191,6 @@ theorem computableInPolyTime_groupHash {blockLen : F.Desc → ℕ}
   have hped := F.computableInPolyTime_encodePedersenCommit.tidy
   unfold groupHash
   polytime
-
-private theorem ofBits_lt_two_pow (w : List Bool) : ofBits w < 2 ^ w.length := by
-  rw [ofBits, ← Cslib.BitString.lsbValue_eq_foldr_bit]
-  exact Cslib.BitString.lsbValue_lt w
-
-private theorem ofBits_injective_of_length_eq {u v : List Bool} (hlen : u.length = v.length)
-    (heq : ofBits u = ofBits v) : u = v := by
-  apply Cslib.BitString.lsbValue_injective hlen
-  simpa only [ofBits, ← Cslib.BitString.lsbValue_eq_foldr_bit] using heq
 
 /-- **Collision extraction for `groupHash`** (step 2 of the proof of [KatzLindell2020],
 Theorem 9.79, pp. 358–359): if `2 ^ blockLen d ≤ F.order d`, any valid collision `(x, y)` for
