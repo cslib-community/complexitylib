@@ -108,11 +108,6 @@ theorem blockWidth_pos (p : ChallengeParams) {i : Nat} (_hi : i < p.repetitions)
   simp only [blockWidth, largeWidth]
   split <;> omega
 
-theorem nonGrindingBits_add (p : ChallengeParams) :
-    p.nonGrindingBits % p.repetitions +
-        p.nonGrindingBits / p.repetitions * p.repetitions = p.nonGrindingBits := by
-  simpa only [Nat.mul_comm] using Nat.mod_add_div p.nonGrindingBits p.repetitions
-
 theorem blockOffset_zero (p : ChallengeParams) : p.blockOffset 0 = 0 := by
   simp only [blockOffset]
   split <;> simp_all
@@ -142,7 +137,6 @@ theorem blockOffset_repetitions (p : ChallengeParams) :
   have hnot : ¬(p.repetitions < p.largeCount) := Nat.not_lt.mpr p.largeCount_le
   simp only [blockOffset, hnot, ↓reduceIte, largeWidth, Nat.add_sub_cancel]
   have hcount := p.largeCount_le
-  have hdiv := p.nonGrindingBits_add
   rw [Nat.mul_add, Nat.mul_one, Nat.sub_mul]
   have hmul : p.largeCount * (p.nonGrindingBits / p.repetitions) <=
       p.repetitions * (p.nonGrindingBits / p.repetitions) :=
@@ -157,21 +151,18 @@ theorem blockOffset_repetitions (p : ChallengeParams) :
               p.largeCount * (p.nonGrindingBits / p.repetitions))) := by ac_rfl
     _ = p.largeCount + p.repetitions * (p.nonGrindingBits / p.repetitions) := by
       rw [Nat.add_sub_of_le hmul]
-    _ = p.nonGrindingBits := by simpa only [largeCount, Nat.mul_comm] using hdiv
+    _ = p.nonGrindingBits := by
+      simpa only [largeCount] using Nat.mod_add_div p.nonGrindingBits p.repetitions
 
 /-- Every valid source block lies in the non-grinding challenge prefix. -/
 theorem blockOffset_add_width_le (p : ChallengeParams) {i : Nat} (hi : i < p.repetitions) :
     p.blockOffset i + p.blockWidth i <= p.nonGrindingBits := by
   rw [← p.blockOffset_succ]
-  have hmono {a b : Nat} (hab : a <= b) (hb : b <= p.repetitions) :
-      p.blockOffset a <= p.blockOffset b := by
-    induction hab with
-    | refl => exact Nat.le_refl _
-    | @step b hab ih =>
-      rw [p.blockOffset_succ]
-      omega
+  have hmono : Monotone p.blockOffset := monotone_nat_of_le_succ fun j => by
+    rw [p.blockOffset_succ]
+    exact Nat.le_add_right _ _
   calc
-    p.blockOffset (i + 1) <= p.blockOffset p.repetitions := hmono (by omega) (Nat.le_refl _)
+    p.blockOffset (i + 1) <= p.blockOffset p.repetitions := hmono (by omega)
     _ = p.nonGrindingBits := p.blockOffset_repetitions
 
 end ChallengeParams
