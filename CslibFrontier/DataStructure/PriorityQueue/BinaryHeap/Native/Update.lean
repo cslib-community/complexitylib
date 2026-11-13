@@ -19,7 +19,7 @@ are runtime words; the bound and typed operation in the entry domain are proof d
 
 ## Main definitions
 
-* `updateWords`: runtime layout, handle word and key.
+* `UpdateArgument`, `updateWords`: runtime layout, handle word and key.
 * `insertSafe`, `decreaseSafe`: the original indexed-PQ admissibility and heap invariant.
 
 ## Main results
@@ -37,31 +37,53 @@ open Cslib.WordRAM Cslib.WordRAM.Realization Cslib.DataStructure
 open Cslib.DataStructure.Memory
 open Cslib.DataStructure.PriorityQueue.BinaryHeap
 
+/-- Runtime layout and handle word, followed by the new key. -/
+abbrev UpdateArgument := IndexArgument × ℕ
+
+namespace UpdateArgument
+
+/-- The runtime layout. -/
+abbrev heap (d : UpdateArgument) : HeapLayout := d.1.1
+
+/-- The number of handles. -/
+abbrev capacity (d : UpdateArgument) : ℕ := d.1.1.1
+
+/-- The heap layout. -/
+abbrev layout (d : UpdateArgument) : Memory.Layout d.capacity := d.1.1.2
+
+/-- The handle word. -/
+abbrev handle (d : UpdateArgument) : ℕ := d.1.2
+
+/-- The new key. -/
+abbrev key (d : UpdateArgument) : ℕ := d.2
+
+end UpdateArgument
+
 /-- Runtime layout and handle, followed by the new key. -/
 abbrev updateWords := appendWords indexWords (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
 
 /-- Exactly the existing valid insertion at a well-formed heap, with the word handle bound
 visible. The key bound is proof data, not a parameter selecting emitted code. -/
-def insertSafe (w : ℕ) (d : (HeapLayout × ℕ) × ℕ) (s : Memory.State) : Prop :=
-  ∃ (hv : d.1.2 < d.1.1.1) (K : ℕ), d.1.1.2.Valid w K ∧ Memory.Inv d.1.1.2 s ∧
-    IndexedMinPQ.valid K (Memory.abs d.1.1.2 s) (.insert ⟨d.1.2, hv⟩ d.2)
+def insertSafe (w : ℕ) (d : UpdateArgument) (s : Memory.State) : Prop :=
+  ∃ (hv : d.handle < d.capacity) (K : ℕ), d.layout.Valid w K ∧ Memory.Inv d.layout s ∧
+    IndexedMinPQ.valid K (Memory.abs d.layout s) (.insert ⟨d.handle, hv⟩ d.key)
 
 /-- Exactly the existing valid decrease-key at a well-formed heap. -/
-def decreaseSafe (w : ℕ) (d : (HeapLayout × ℕ) × ℕ) (s : Memory.State) : Prop :=
-  ∃ (hv : d.1.2 < d.1.1.1) (K : ℕ), d.1.1.2.Valid w K ∧ Memory.Inv d.1.1.2 s ∧
-    IndexedMinPQ.valid K (Memory.abs d.1.1.2 s) (.decreaseKey ⟨d.1.2, hv⟩ d.2)
+def decreaseSafe (w : ℕ) (d : UpdateArgument) (s : Memory.State) : Prop :=
+  ∃ (hv : d.handle < d.capacity) (K : ℕ), d.layout.Valid w K ∧ Memory.Inv d.layout s ∧
+    IndexedMinPQ.valid K (Memory.abs d.layout s) (.decreaseKey ⟨d.handle, hv⟩ d.key)
 
-private def insertPrefix (d : (HeapLayout × ℕ) × ℕ) : Memory.Prog ℕ := do
-  let S ← d.1.1.2.size.get 0
-  d.1.1.2.size.set 0 (S + 1)
-  d.1.1.2.key.set d.1.2 d.2
-  d.1.1.2.heap.set (S + 1) d.1.2
-  d.1.1.2.pos.set d.1.2 (S + 1)
+private def insertPrefix (d : UpdateArgument) : Memory.Prog ℕ := do
+  let S ← d.layout.size.get 0
+  d.layout.size.set 0 (S + 1)
+  d.layout.key.set d.handle d.key
+  d.layout.heap.set (S + 1) d.handle
+  d.layout.pos.set d.handle (S + 1)
   pure (S + 1)
 
-private def decreasePrefix (d : (HeapLayout × ℕ) × ℕ) : Memory.Prog ℕ := do
-  let p ← d.1.1.2.pos.get d.1.2
-  d.1.1.2.key.set d.1.2 d.2
+private def decreasePrefix (d : UpdateArgument) : Memory.Prog ℕ := do
+  let p ← d.layout.pos.get d.handle
+  d.layout.key.set d.handle d.key
   pure p
 
 private theorem realizes_insertPrefix :
@@ -70,7 +92,7 @@ private theorem realizes_insertPrefix :
   realize
   all_goals
     rcases h with ⟨hv, K, hL, hs, hnone, hk⟩
-    have hp : s.mem (d.1.1.2.base + 2 * d.1.1.1 + 1 + d.1.2) = 0 := by
+    have hp : s.mem (d.layout.base + 2 * d.capacity + 1 + d.handle) = 0 := by
       by_contra hn
       simp [Memory.abs, stateOfMem, hn] at hnone
     have hSn := hs.heap.size_lt hv hp
@@ -81,7 +103,7 @@ private theorem realizes_insertPrefix :
     | exact hmem.fits_of_lt_frontier (Memory.pos_lt hs.arrays_allocated hv)
     | apply hmem.fits_of_lt_frontier
       have hA := hs.arrays_allocated
-      change d.1.1.2.base + (3 * d.1.1.1 + 1) ≤ s.frontier at hA
+      change d.layout.base + (3 * d.capacity + 1) ≤ s.frontier at hA
       omega
 
 private theorem realizes_decreasePrefix :
@@ -95,56 +117,63 @@ private theorem realizes_decreasePrefix :
     | exact hmem.fits_of_lt_frontier (Memory.key_lt hs.arrays_allocated hv)
     | apply hmem.fits_of_lt_frontier
       have hA := hs.arrays_allocated
-      change d.1.1.2.base + (3 * d.1.1.1 + 1) ≤ s.frontier at hA
+      change d.layout.base + (3 * d.capacity + 1) ≤ s.frontier at hA
       omega
 
-private theorem insertPrefix_shape {w : ℕ} {d : (HeapLayout × ℕ) × ℕ} {s : Memory.State}
+private theorem insertPrefix_shape {w : ℕ} {d : UpdateArgument} {s : Memory.State}
     (h : insertSafe w d s) :
-    SiftUp.Shape w (d.1.1, ()) ((Memory.spec 0).clientResult s (insertPrefix d))
+    SiftUp.Shape w (d.heap, ()) ((Memory.spec 0).clientResult s (insertPrefix d))
       ((Memory.spec 0).clientState s (insertPrefix d)) := by
   rcases h with ⟨hv, K, hL, hs, hnone, hk⟩
-  have hp : s.mem (d.1.1.2.base + 2 * d.1.1.1 + 1 + d.1.2) = 0 := by
+  have hp : s.mem (d.layout.base + 2 * d.capacity + 1 + d.handle) = 0 := by
     by_contra hn
     simp [Memory.abs, stateOfMem, hn] at hnone
   have hsz := Memory.size_location hL
-  have hpush := (Memory.heapInv_update_size hL hs.heap (s.mem d.1.1.2.size.base + 1)).push hv
-    (c := d.2) (by rw [Function.update_of_ne (by omega)]; exact hp)
-  refine ⟨hL.n_fits, ?_, s.mem d.1.1.2.size.base + 1, ?_, le_rfl, ?_⟩
+  have hpush := (Memory.heapInv_update_size hL hs.heap (s.mem d.layout.size.base + 1)).push hv
+    (c := d.key) (by rw [Function.update_of_ne (by omega)]; exact hp)
+  refine ⟨hL.n_fits, ?_, s.mem d.layout.size.base + 1, ?_, le_rfl, ?_⟩
   · exact hs.arrays_allocated
   · simp [insertPrefix, StateTransitionSpec.clientResult, -bind_pure_comp]
   · simpa [insertPrefix, StateTransitionSpec.clientResult, StateTransitionSpec.clientState,
       ← bind_pure_comp]
       using hpush.1
 
-private theorem decreasePrefix_shape {w : ℕ} {d : (HeapLayout × ℕ) × ℕ} {s : Memory.State}
+private theorem decreasePrefix_shape {w : ℕ} {d : UpdateArgument} {s : Memory.State}
     (h : decreaseSafe w d s) :
-    SiftUp.Shape w (d.1.1, ()) ((Memory.spec 0).clientResult s (decreasePrefix d))
+    SiftUp.Shape w (d.heap, ()) ((Memory.spec 0).clientResult s (decreasePrefix d))
       ((Memory.spec 0).clientState s (decreasePrefix d)) := by
   rcases h with ⟨hv, K, hL, hs, ⟨k₀, hk₀, hle⟩, hk⟩
-  have hp : s.mem (d.1.1.2.base + 2 * d.1.1.1 + 1 + d.1.2) ≠ 0 := by
+  have hp : s.mem (d.layout.base + 2 * d.capacity + 1 + d.handle) ≠ 0 := by
     intro hn
     simp [Memory.abs, stateOfMem, hn] at hk₀
-  have hkey : s.mem (d.1.1.2.base + d.1.2) = k₀ := by
+  have hkey : s.mem (d.layout.base + d.handle) = k₀ := by
     simpa [Memory.abs, stateOfMem, hp] using hk₀
-  have hdec := hs.heap.decrease hv hp (c := d.2) (by omega)
-  refine ⟨hL.n_fits, ?_, s.mem d.1.1.2.size.base, ?_, ?_, ?_⟩
+  have hdec := hs.heap.decrease hv hp (c := d.key) (by omega)
+  refine ⟨hL.n_fits, ?_, s.mem d.layout.size.base, ?_, ?_, ?_⟩
   · exact hs.arrays_allocated
   · simpa [decreasePrefix, StateTransitionSpec.clientResult, ← bind_pure_comp] using
       Nat.one_le_iff_ne_zero.mpr hp
   · simpa [decreasePrefix, StateTransitionSpec.clientResult, ← bind_pure_comp] using
-      hs.heap.pos_le d.1.2 hv
+      hs.heap.pos_le d.handle hv
   · simpa [decreasePrefix, StateTransitionSpec.clientState, ← bind_pure_comp] using hdec.1
+
+/-- The shared sift-up body, wired to an update's layout and the position its prefix returns. -/
+private theorem realizes_siftUpTail :
+    Realizes .exact
+      (fun d : UpdateArgument × ℕ => PriorityQueue.BinaryHeap.Memory.siftUp d.1.layout d.2)
+      (appendWords updateWords (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding)
+      (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEmbedding
+      (fun w d s => SiftUp.Shape w (d.1.heap, ()) d.2 s) (fun _ _ => 0) :=
+  SiftUp.realizes_siftUp.reindex (fun d : UpdateArgument × ℕ => (d.1.heap, d.2))
+    (appendWords updateWords (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding)
+    ![0, 1, 2, 3, 6] (by intro d i; fin_cases i <;> rfl)
 
 /-- Insert uses its original prefix and the same globally chosen sift body. -/
 theorem realizes_insert :
-    Realizes .exact (fun d : (HeapLayout × ℕ) × ℕ => Memory.insert d.1.1.2 d.1.2 d.2)
+    Realizes .exact (fun d : UpdateArgument => Memory.insert d.layout d.handle d.key)
       updateWords (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEmbedding insertSafe
       (fun _ _ => 0) := by
-  have htail := SiftUp.realizes_siftUp.reindex
-    (fun d : ((HeapLayout × ℕ) × ℕ) × ℕ => (d.1.1.1, d.2))
-    (appendWords updateWords (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding)
-    ![0, 1, 2, 3, 6] (by intro d i; fin_cases i <;> rfl)
-  refine (realizes_insertPrefix.bind₀ htail).congr (fun d => ?_) |>.consequence ?_
+  refine (realizes_insertPrefix.bind₀ realizes_siftUpTail).congr (fun d => ?_) |>.consequence ?_
     (fun _ _ => le_rfl)
   · simp only [insertPrefix, Memory.insert, ← PFunctor.FreeM.bind_eq_bind,
       PFunctor.FreeM.bind_assoc, PFunctor.FreeM.pure_bind]
@@ -153,15 +182,11 @@ theorem realizes_insert :
 
 /-- Decrease-key uses the original write and the same globally chosen sift body. -/
 theorem realizes_decreaseKey :
-    Realizes .exact (fun d : (HeapLayout × ℕ) × ℕ => Memory.decreaseKey d.1.1.2 d.1.2 d.2)
+    Realizes .exact (fun d : UpdateArgument => Memory.decreaseKey d.layout d.handle d.key)
       updateWords (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEmbedding decreaseSafe
       (fun _ _ => 0) := by
-  have htail := SiftUp.realizes_siftUp.reindex
-    (fun d : ((HeapLayout × ℕ) × ℕ) × ℕ => (d.1.1.1, d.2))
-    (appendWords updateWords (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding)
-    ![0, 1, 2, 3, 6] (by intro d i; fin_cases i <;> rfl)
-  refine (realizes_decreasePrefix.bind₀ htail).congr (fun d => ?_) |>.consequence ?_
-    (fun _ _ => le_rfl)
+  refine (realizes_decreasePrefix.bind₀ realizes_siftUpTail).congr (fun d => ?_)
+    |>.consequence ?_ (fun _ _ => le_rfl)
   · simp only [decreasePrefix, Memory.decreaseKey, ← PFunctor.FreeM.bind_eq_bind,
       PFunctor.FreeM.bind_assoc, PFunctor.FreeM.pure_bind]
   · intro w d s _ _ h
