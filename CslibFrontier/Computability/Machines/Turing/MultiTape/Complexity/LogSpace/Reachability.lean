@@ -16,8 +16,8 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 import CslibFrontier.Foundations.Data.Nat.Log
-import Mathlib.Tactic.Linarith
 
 /-!
 # Breadth-first search through the views of a nondeterministic machine
@@ -220,14 +220,6 @@ theorem computableInPolyTime_acceptingView :
     (ComputableInPolyTime.decide_eq' ComputableInPolyTime.finiteCfg_output
       (ComputableInPolyTime.const [true])))
 
-/-- Under a logarithmic space bound, the number of rounds that finds every reachable view is at most
-a polynomial in the input length. -/
-private theorem rounds_le (k : ℕ) (State : Type) (c n : ℕ) :
-    2 ^ (2 * coreLengthBound k State n (c * (Nat.log2 n + 1)) + 1) ≤
-      2 * 2 ^ (2 * (8 + 2 * Nat.card (Option State) + 200 * k) * (c + 1)) *
-        (n + 1) ^ (2 * (8 + 2 * Nat.card (Option State) + 200 * k) * (c + 1)) :=
-  (two_pow_coreLengthBound_log_le k State c n).trans_eq (by rw [polyClock, mul_pow, ← mul_assoc])
-
 /-- The initial view of an encoded instance is polynomial-time. -/
 theorem computableInPolyTime_initView {α : Type} (enc : α ↪ List Bool) :
     ComputableInPolyTime (fun a => ntm.initView (enc a)) enc encFiniteCfg :=
@@ -265,14 +257,12 @@ theorem exists_computableInPolyTime_search {α : Type} {enc : α ↪ List Bool} 
       ComputableInPolyTime (fun a => Cslib.Reachability.search ntm.viewSucc (rounds a)
         (ntm.initView (enc a))) enc (encList encFiniteCfg) := by
   set D := 2 * (8 + 2 * Nat.card (Option State) + 200 * k) * (c + 1)
-  set rounds : α → ℕ := fun a => 2 * 2 ^ D * ((enc a).length + 1) ^ D
-  refine ⟨rounds, fun a => rounds_le k State c _, ?_⟩
+  set rounds : α → ℕ := fun a => polyClock D (enc a).length
+  refine ⟨rounds, fun a => two_pow_coreLengthBound_log_le k State c _, ?_⟩
   -- the number of rounds in unary
-  have hcount : ComputableInPolyTime rounds enc encUnary :=
-    ComputableInPolyTime.unary_mul.comp ((ComputableInPolyTime.const _).prod
-      ((ComputableInPolyTime.unary_pow D).comp (ComputableInPolyTime.unary_add.comp
-        ((ComputableInPolyTime.encoding_length enc).prod
-          (ComputableInPolyTime.const 1)))))
+  have hcount : ComputableInPolyTime rounds enc encUnary := by
+    simp only [rounds, polyClock]
+    fun_prop
   have hinit : ComputableInPolyTime (fun a => [ntm.initView (enc a)]) enc
       (encList encFiniteCfg) :=
     ComputableInPolyTime.cons' (computableInPolyTime_initView enc) (ComputableInPolyTime.const [])
@@ -280,19 +270,13 @@ theorem exists_computableInPolyTime_search {α : Type} {enc : α ↪ List Bool} 
   set bound : α → ℕ := fun a => rounds a *
     (2 * viewLengthBound k State (enc a).length (c * (Nat.log2 (enc a).length + 1)) + 1)
   have hbound : PolyBounded (fun a => (enc a).length) bound := by
-    refine (PolyBounded.of_forall_le (2 * 2 ^ D) D fun a => le_rfl).mul ?_
-    refine .of_forall_le (2 * (10 + 2 * Nat.card (Option State) + 200 * k) * (c + 2) + 1) 1
-      fun a => ?_
-    have hlog := Nat.mul_le_mul_left ((10 + 2 * Nat.card (Option State) + 200 * k) * c)
-      (Nat.log2_le_self (enc a).length)
-    simp only [viewLengthBound, pow_one]
-    generalize 10 + 2 * Nat.card (Option State) + 200 * k = B at *
-    nlinarith
+    simp only [bound, rounds, polyClock, viewLengthBound, Nat.log2_eq_log_two]
+    growth_poly
   have hstates : ∀ a, ∀ i ≤ rounds a, (encList encFiniteCfg
       ((Cslib.Reachability.expand ntm.viewSucc)^[i] [ntm.initView (enc a)])).length ≤ bound a := by
     intro a i _
     exact (length_encList_search_le (hs a) i).trans
-      (Nat.mul_le_mul_right _ (rounds_le k State c _))
+      (Nat.mul_le_mul_right _ (two_pow_coreLengthBound_log_le k State c _))
   exact ComputableInPolyTime.iterate hcount hinit
     (ComputableInPolyTime.expand computableInPolyTime_viewSucc) hbound hstates
 
