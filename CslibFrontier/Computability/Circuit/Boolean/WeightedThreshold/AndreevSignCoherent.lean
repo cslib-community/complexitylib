@@ -13,6 +13,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.WeightedThreshold.Spli
 public import CslibFrontier.Foundations.Combinatorics.CubeSplitting
 public import Mathlib.Analysis.SpecialFunctions.Log.Base
 import CslibFrontier.Foundations.Analysis.SpecialFunctions.FiberCount
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import Mathlib.Algebra.Ring.GeomSum
 
 /-!
@@ -500,7 +501,7 @@ theorem min_le_card_outputBottomGates (c : Circuit signature (2 ^ b + b * m) 1)
       exact_mod_cast this
     calc Real.logb 2 ((G : ℝ) + 1) ≤ Real.logb 2 ((2 : ℝ) ^ (2 * b)) :=
           Real.logb_le_logb_of_le one_lt_two (by linarith) hGN
-      _ = 2 * b := by rw [Real.logb_pow, Real.logb_self_eq_one one_lt_two]; push_cast; ring
+      _ = 2 * b := by exact_mod_cast Real.logb_two_pow (2 * b)
   have hD : ((2 : ℝ) ^ b - 3 * b - 1) / (3 * b) ≤ andreevCubeSplitBound b G := by
     unfold andreevCubeSplitBound
     exact div_le_div₀ (le_max_left _ _) ((by linarith : (2 : ℝ) ^ b - 3 * b - 1 ≤
