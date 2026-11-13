@@ -117,9 +117,7 @@ theorem occurrencePath_length_ge_two {φ : CNF ℕ} {o : Occurrence ℕ}
   have hend := occurrencePath_endpoints ho
   have hi : φ.distinctVars.idxOf o.lit.1 < φ.distinctVars.length := by
     apply List.idxOf_lt_length_of_mem
-    apply CNF.mem_distinctVars.mpr
-    rw [← Cslib.Logic.PL.map_occurrences]
-    exact List.mem_map_of_mem ho
+    exact CNF.mem_distinctVars.mpr (Cslib.Logic.PL.variable_mem_of_mem_occurrences ho)
   have hcenters : Layout.center (φ.distinctVars.idxOf o.lit.1) ≠
       Layout.center (φ.distinctVars.length + o.clause) := by
     intro heq

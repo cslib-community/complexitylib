@@ -241,9 +241,7 @@ theorem ordinary_cell_source_eq {φ : CNF ℕ}
   simp only [Layout.center] at hx
   have hi : φ.distinctVars.idxOf o.lit.1 = φ.distinctVars.idxOf t.lit.1 := by omega
   apply (List.idxOf_inj ?_).1 hi
-  apply CNF.mem_distinctVars.mpr
-  rw [← Cslib.Logic.PL.map_occurrences]
-  exact List.mem_map_of_mem ho
+  exact CNF.mem_distinctVars.mpr (Cslib.Logic.PL.variable_mem_of_mem_occurrences ho)
 
 /-- Two straight passages of a duplicate-free route through the same point are parallel. -/
 private theorem straight_parallel {r : Route} (hn : r.Nodup) {p d e : Point} (hp : p ∈ r)

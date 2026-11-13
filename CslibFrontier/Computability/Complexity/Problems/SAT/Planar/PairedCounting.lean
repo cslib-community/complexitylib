@@ -39,12 +39,6 @@ namespace Cslib.Complexity.SAT.ParsimoniousPlanar
 
 open Cslib.Logic.PL Cslib.Logic.PL.CNF Orthogonal
 
-/-- A used source variable has an indexed literal occurrence, including repeated literals. -/
-private theorem exists_occurrence_of_mem_vars {φ : CNF ℕ} {v : ℕ} (hv : v ∈ φ.vars) :
-    ∃ o ∈ Cslib.Logic.PL.occurrences φ, o.lit.1 = v := by
-  rw [← map_occurrences] at hv
-  exact List.mem_map.mp hv
-
 /-- Every used source cell is retained and receives an ordinary ring. -/
 theorem source_cell_mem_ordinary {φ : CNF ℕ} {v : ℕ} (hv : v ∈ φ.vars) :
     Layout.center (φ.distinctVars.idxOf v) ∈ ordinaryCells φ := by

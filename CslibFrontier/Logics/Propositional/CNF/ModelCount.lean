@@ -55,6 +55,7 @@ with a given one on the variables of the formula (`CNF.modelCount_eq_one_iff`).
   `φ.distinctVars` lists the `φ.numVars` variables of `φ` without repetition.
 * `Cslib.Logic.PL.mem_occurrences`, `Cslib.Logic.PL.mk_mem_occurrences_of_mem_zipIdx`,
   `Cslib.Logic.PL.map_occurrences`, `Cslib.Logic.PL.variable_mem_of_mem_occurrences`,
+  `Cslib.Logic.PL.exists_occurrence_of_mem_vars`,
   `Cslib.Logic.PL.length_occurrences`, `Cslib.Logic.PL.count_map_clause_occurrences`: the literal
   occurrences of `φ`, their variables and the number in each clause.
 * `Cslib.Logic.PL.exists_lt_two_pow_bitsAssignment_eq`,
@@ -137,6 +138,12 @@ theorem variable_mem_of_mem_occurrences {φ : CNF V} {o : Occurrence V}
     (ho : o ∈ occurrences φ) : o.lit.1 ∈ φ.vars := by
   rw [← map_occurrences]
   exact List.mem_map_of_mem ho
+
+/-- Every variable occurrence of a formula is the variable of one of its literal occurrences. -/
+theorem exists_occurrence_of_mem_vars {φ : CNF V} {v : V} (hv : v ∈ φ.vars) :
+    ∃ o ∈ occurrences φ, o.lit.1 = v := by
+  rw [← map_occurrences] at hv
+  exact List.mem_map.mp hv
 
 /-- A formula has one occurrence for each occurrence of a variable. -/
 theorem length_occurrences (φ : CNF V) : (occurrences φ).length = φ.vars.length := by

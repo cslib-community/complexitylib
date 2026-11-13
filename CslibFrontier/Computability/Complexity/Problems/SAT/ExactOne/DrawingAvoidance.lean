@@ -60,9 +60,7 @@ theorem avoidsVariables_of_contacts (hcount : a.clausePoints.length = φ.length)
     ∀ o ∈ Cslib.Logic.PL.occurrences φ, ∀ v ∈ φ.vars,
       realPoint (a.variablePoint v) ∈ support (a.incidenceRoute o) → v = o.lit.1 := by
   intro o ho v hv hp
-  have hv' := hv
-  rw [← Cslib.Logic.PL.map_occurrences] at hv'
-  obtain ⟨t, ht, htv⟩ := List.mem_map.mp hv'
+  obtain ⟨t, ht, htv⟩ := Cslib.Logic.PL.exists_occurrence_of_mem_vars hv
   by_cases hot : o = t
   · subst t
     exact htv.symm
