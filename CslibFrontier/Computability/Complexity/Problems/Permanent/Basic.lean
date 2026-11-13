@@ -8,6 +8,8 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Init
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.IntBinary
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List
 public import Mathlib.LinearAlgebra.Matrix.Permanent
 import CslibFrontier.Foundations.Data.Matrix.Permanent.ZeroOne
 
@@ -22,10 +24,14 @@ for integer tables and `ZeroOnePermanent` for Boolean tables, read as 0/1 matric
 `zeroOnePermanent_eq_card` counts the permutations supported on the `true` entries, that is the
 perfect matchings of the bipartite graph whose biadjacency matrix is the table.
 
+Tables are encoded row by row (`encIntTable`, `encBoolTable`), so the encoded length of an
+`n × n` table is at least `n²`: a dense matrix encoding, as in the books.
+
 ## Main definitions
 
 * `Cslib.Complexity.tableMatrix`, `Cslib.Complexity.boolTableMatrix`: tables as square matrices.
 * `Cslib.Complexity.IntPermanent`, `Cslib.Complexity.ZeroOnePermanent`: their permanents.
+* `Cslib.Complexity.encIntTable`, `Cslib.Complexity.encBoolTable`: dense table encodings.
 
 ## Main results
 
@@ -40,6 +46,17 @@ perfect matchings of the bipartite graph whose biadjacency matrix is the table.
 @[expose] public section
 
 namespace Cslib.Complexity
+
+open Turing.MultiTapeTM
+
+/-- Integer tables, densely: the framed list of rows, each row the framed list of its entries in
+binary sign-magnitude (`encIntBin`). -/
+abbrev encIntTable : List (List ℤ) ↪ List Bool :=
+  encList (encList encIntBin)
+
+/-- Boolean tables, densely: the framed list of rows, each row the framed list of its bits. -/
+abbrev encBoolTable : List (List Bool) ↪ List Bool :=
+  encList (encList encBool)
 
 /-- The square matrix of a table: entry `(i, j)` is entry `j` of row `i`, missing entries are `0`,
 and the size is the number of rows. -/
