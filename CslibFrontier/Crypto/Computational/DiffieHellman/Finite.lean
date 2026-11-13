@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Karn Seth. All rights reserved.
+Copyright (c) 2026 Karn Seth, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Karn Seth
+Authors: Karn Seth, Samuel Schlesinger
 -/
 
 module
@@ -9,66 +9,263 @@ module
 
 public import CslibFrontier.Crypto.Game
 public import CslibFrontier.Languages.Probabilistic.Basic
-public import Mathlib.Data.ZMod.Basic
+public import Mathlib.Algebra.Module.ZMod
+import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.Uniform
+import CslibFrontier.Probability.PMF.UniformPoint
 
 /-!
-# Single-instance Decision Diffie–Hellman games
+# Discrete-logarithm and Diffie–Hellman experiments in a fixed group
 
-Fix an additive group `G`, an element `g : G` and a modulus `q`. The real Decision Diffie–Hellman
-(DDH) game draws independent uniform exponents `a, b : ZMod q` and gives a distinguisher `D` the
-triple `(a.val • g, b.val • g, (a * b).val • g)`. The random game draws a third independent
-uniform exponent `c : ZMod q` and gives `D` the triple `(a.val • g, b.val • g, c.val • g)`. This
-is [BonehShoup2023], Attack Game 10.6, written additively. The advantage of `D` is the
-distinguishing advantage of the two games.
+Fix an additive commutative group `G` that is a `ZMod q`-module, and an element `g : G`. Groups
+are written additively, so the textbook element `g^a` is `a • g` and `g^(ab)` is `(a * b) • g`.
+This module states the discrete-logarithm (DL), Computational Diffie–Hellman (CDH) and Decisional
+Diffie–Hellman (DDH) experiments of [BonehShoup2023], Attack Games 10.4, 10.5 and 10.6, for this
+one group. Adversaries receive and return group elements and exponents; there are no encodings,
+security parameter or setup. Each experiment is a `ProbComp Bool` program, read as the
+challenger's steps, and is evaluated only where its advantage is defined.
 
-These are the concrete games for one fixed group, used as the target of concrete reductions such
-as the receiver-privacy reduction in `CslibFrontier/Crypto/Protocols/MPC/DDHOT.lean`. The
-definitions place no hypothesis on `G`, `g` or `q`; results that use them state what they need,
-for example that `g` generates `G` and `Fintype.card G = q`. The asymptotic assumption over a
-family of prime-order groups is `Cslib.Crypto.PrimeOrderGroupFamily.DDH` in
+The definitions place no hypothesis on `G`, `q` or `g`. Results that use them state what they
+need, for example that `g` generates `G`. The asymptotic assumptions over a family of prime-order
+groups are in `CslibFrontier/Crypto/Computational/DiscreteLog.lean` and
 `CslibFrontier/Crypto/Computational/DiffieHellman.lean`.
 
 ## Main definitions
 
-* `Cslib.Crypto.DDH.realGame`, `Cslib.Crypto.DDH.randomGame`: the real and random DDH games.
-* `Cslib.Crypto.DDH.advantage`: their distinguishing advantage.
+* `Cslib.Crypto.dlExperiment`, `Cslib.Crypto.dlAdvantage`: Attack Game 10.4 and its success
+  probability.
+* `Cslib.Crypto.cdhExperiment`, `Cslib.Crypto.cdhAdvantage`: Attack Game 10.5 and its success
+  probability.
+* `Cslib.Crypto.ddhRealExperiment`, `Cslib.Crypto.ddhRandomExperiment`, `Cslib.Crypto.ddhAdvantage`:
+  the two worlds of Attack Game 10.6 and their distinguishing advantage.
+* `Cslib.Crypto.dlToCDH`, `Cslib.Crypto.cdhToDDH`: the elementary reductions from DL to CDH and
+  from CDH to DDH.
+
+## Main results
+
+* `Cslib.Crypto.uniformOfFintype_bind_smul_add`: when every element of `G` is a multiple of `g`,
+  masking by a uniform `c • g` hides any fixed element (the one-time group mask).
+* `Cslib.Crypto.uniformOfFintype_bind_smul`: when `c ↦ c • g` is a bijection `ZMod q → G`, the
+  element `c • g` for uniform `c` is uniform on `G`.
+* `Cslib.Crypto.dlAdvantage_le_cdhAdvantage_dlToCDH`: DL advantage is at most the CDH advantage
+  of `dlToCDH`, with no hypothesis on the group.
+* `Cslib.Crypto.cdhAdvantage_le_ddhAdvantage_cdhToDDH_add`: when `c ↦ c • g` is injective on
+  `ZMod q` (that is, `g` has order `q`), CDH advantage is at most the DDH advantage of `cdhToDDH`
+  plus `1 / q`. Its two one-sided parts, `ddhRealExperiment_cdhToDDH` and
+  `ddhRandomExperiment_cdhToDDH_apply_true_le`, average over a setup law separately.
 
 ## References
 
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*][BonehShoup2023],
-  Attack Game 10.6.
+  Section 10.5, Attack Games 10.4, 10.5 and 10.6.
 -/
 
 public section
 
-namespace Cslib.Crypto.DDH
+namespace Cslib.Crypto
 
 open scoped NNReal
 
-variable {G : Type} [AddCommGroup G]
+section Experiments
 
-/-- Real DDH game over `(G, g, q)`: samples `a, b ← ZMod q` and feeds
-`(a.val • g, b.val • g, (a * b).val • g)` to `D`. -/
-@[expose] noncomputable def realGame (g : G) (q : ℕ) [NeZero q]
-    (D : G × G × G → ProbComp Bool) : Game :=
-  ProbComp.eval do
-    let a ← ProbComp.uniform (ZMod q)
-    let b ← ProbComp.uniform (ZMod q)
-    D (a.val • g, b.val • g, (a * b).val • g)
+variable {G : Type} [AddCommGroup G] (q : ℕ) [NeZero q] [Module (ZMod q) G] (g : G)
 
-/-- Random DDH game over `(G, g, q)`: samples `a, b, c ← ZMod q` and feeds
-`(a.val • g, b.val • g, c.val • g)` to `D`. -/
-@[expose] noncomputable def randomGame (g : G) (q : ℕ) [NeZero q]
-    (D : G × G × G → ProbComp Bool) : Game :=
-  ProbComp.eval do
-    let a ← ProbComp.uniform (ZMod q)
-    let b ← ProbComp.uniform (ZMod q)
-    let c ← ProbComp.uniform (ZMod q)
-    D (a.val • g, b.val • g, c.val • g)
+/-! ### Discrete logarithm -/
 
-/-- Concrete DDH distinguishing advantage of `D` over `(G, g, q)`. -/
-@[expose] noncomputable def advantage (g : G) (q : ℕ) [NeZero q]
-    (D : G × G × G → ProbComp Bool) : ℝ≥0 :=
-  Game.advantage (realGame g q D) (randomGame g q D)
+/-- The discrete-logarithm experiment ([BonehShoup2023], Attack Game 10.4) in the group generated
+by `g`: the challenger draws a uniform exponent `a` and gives the adversary `a • g` (the textbook
+`g^a`); the adversary wins when it outputs `a`. -/
+@[expose] noncomputable def dlExperiment (A : G → ProbComp (ZMod q)) : ProbComp Bool := do
+  let a ← ProbComp.uniform (ZMod q)
+  let guess ← A (a • g)
+  return guess = a
 
-end Cslib.Crypto.DDH
+/-- The discrete-logarithm advantage of `A`: its success probability in `dlExperiment`. -/
+@[expose] noncomputable def dlAdvantage (A : G → ProbComp (ZMod q)) : ℝ≥0 :=
+  Game.succProbability (ProbComp.eval (dlExperiment q g A))
+
+/-! ### Computational Diffie–Hellman -/
+
+section CDH
+
+variable [DecidableEq G]
+
+/-- The Computational Diffie–Hellman experiment ([BonehShoup2023], Attack Game 10.5) in the group
+generated by `g`: the challenger draws uniform exponents `a` and `b` and gives the adversary
+`a • g` and `b • g` (the textbook `g^a` and `g^b`); the adversary wins when it outputs
+`(a * b) • g`. -/
+@[expose] noncomputable def cdhExperiment (A : G → G → ProbComp G) : ProbComp Bool := do
+  let a ← ProbComp.uniform (ZMod q)
+  let b ← ProbComp.uniform (ZMod q)
+  let z ← A (a • g) (b • g)
+  return z = (a * b) • g
+
+/-- The CDH advantage of `A`: its success probability in `cdhExperiment`. -/
+@[expose] noncomputable def cdhAdvantage (A : G → G → ProbComp G) : ℝ≥0 :=
+  Game.succProbability (ProbComp.eval (cdhExperiment q g A))
+
+end CDH
+
+/-! ### Decisional Diffie–Hellman -/
+
+/-- The real world of the Decisional Diffie–Hellman experiment ([BonehShoup2023], Attack Game
+10.6, Experiment 0) in the group generated by `g`: the challenger draws uniform exponents `a` and
+`b` and gives the distinguisher `a • g`, `b • g` and `(a * b) • g`. The book's challenger also
+draws the unused `γ`; omitting it does not change the distribution. -/
+@[expose] noncomputable def ddhRealExperiment (D : G → G → G → ProbComp Bool) :
+    ProbComp Bool := do
+  let a ← ProbComp.uniform (ZMod q)
+  let b ← ProbComp.uniform (ZMod q)
+  D (a • g) (b • g) ((a * b) • g)
+
+/-- The random world of the Decisional Diffie–Hellman experiment ([BonehShoup2023], Attack Game
+10.6, Experiment 1) in the group generated by `g`: the challenger draws independent uniform
+exponents `a`, `b` and `c` and gives the distinguisher `a • g`, `b • g` and `c • g`. -/
+@[expose] noncomputable def ddhRandomExperiment (D : G → G → G → ProbComp Bool) :
+    ProbComp Bool := do
+  let a ← ProbComp.uniform (ZMod q)
+  let b ← ProbComp.uniform (ZMod q)
+  let c ← ProbComp.uniform (ZMod q)
+  D (a • g) (b • g) (c • g)
+
+/-- The DDH advantage of `D`: its distinguishing advantage between `ddhRealExperiment` and
+`ddhRandomExperiment`. -/
+@[expose] noncomputable def ddhAdvantage (D : G → G → G → ProbComp Bool) : ℝ≥0 :=
+  Game.advantage (ProbComp.eval (ddhRealExperiment q g D))
+    (ProbComp.eval (ddhRandomExperiment q g D))
+
+open Probability in
+/-- The law of `ddhRealExperiment`: uniform exponents `a` and `b` sampled at the `PMF` level. -/
+theorem eval_ddhRealExperiment (D : G → G → G → ProbComp Bool) :
+    ProbComp.eval (ddhRealExperiment q g D) =
+      (PMF.uniformOfFintype (ZMod q)).bind fun a => (PMF.uniformOfFintype (ZMod q)).bind fun b =>
+        ProbComp.eval (D (a • g) (b • g) ((a * b) • g)) := by
+  simp only [ddhRealExperiment, ProbComp.eval_bind, ProbComp.eval_uniform]
+
+open Probability in
+/-- The law of `ddhRandomExperiment`: uniform exponents `a`, `b` and `c` sampled at the `PMF`
+level. -/
+theorem eval_ddhRandomExperiment (D : G → G → G → ProbComp Bool) :
+    ProbComp.eval (ddhRandomExperiment q g D) =
+      (PMF.uniformOfFintype (ZMod q)).bind fun a => (PMF.uniformOfFintype (ZMod q)).bind fun b =>
+        (PMF.uniformOfFintype (ZMod q)).bind fun c =>
+          ProbComp.eval (D (a • g) (b • g) (c • g)) := by
+  simp only [ddhRandomExperiment, ProbComp.eval_bind, ProbComp.eval_uniform]
+
+end Experiments
+
+/-! ### Reductions -/
+
+/-- The discrete-logarithm-to-CDH reduction: given `(u, v)`, ask the discrete-logarithm adversary
+`A` for the exponent of `u`, and multiply `v` by its answer. When `A` returns `a` with `u = a • g`
+and `v = b • g`, the output is `(a * b) • g`. -/
+@[expose] def dlToCDH {G : Type} [AddCommGroup G] {q : ℕ} [Module (ZMod q) G]
+    (A : G → ProbComp (ZMod q)) (u v : G) : ProbComp G := do
+  let a ← A u
+  return a • v
+
+/-- The CDH-to-DDH reduction: given `(u, v, w)`, ask the CDH adversary `A` for the shared element
+of `u` and `v`, and answer whether it is `w`. -/
+@[expose] def cdhToDDH {G : Type} [DecidableEq G] (A : G → G → ProbComp G) (u v w : G) :
+    ProbComp Bool := do
+  let z ← A u v
+  return z = w
+
+/-! ### Uniform masks -/
+
+section Masks
+
+open Probability
+
+variable {G : Type} [AddCommGroup G] {q : ℕ} [NeZero q] [Module (ZMod q) G] {g : G} {α : Type*}
+
+/-- **One-time group mask**: when every element of `G` is a multiple of `g`, adding a fixed `m` to
+`c • g` for uniform `c : ZMod q` leaves the distribution of `c • g` unchanged. -/
+theorem uniformOfFintype_bind_smul_add (hg : Function.Surjective fun c : ZMod q => c • g) (m : G)
+    (f : G → PMF α) :
+    ((PMF.uniformOfFintype (ZMod q)).bind fun c => f (c • g + m)) =
+      (PMF.uniformOfFintype (ZMod q)).bind fun c => f (c • g) := by
+  obtain ⟨μ, rfl⟩ := hg m
+  simp only [← add_smul]
+  exact PMF.uniformOfFintype_bind_equiv (Equiv.addRight μ) fun c => f (c • g)
+
+/-- When `c ↦ c • g` is a bijection `ZMod q → G` (that is, `g` generates `G` and `G` has `q`
+elements), the element `c • g` for uniform `c : ZMod q` is uniform on `G`. -/
+theorem uniformOfFintype_bind_smul [Fintype G] (hg : Function.Bijective fun c : ZMod q => c • g)
+    (f : G → PMF α) :
+    ((PMF.uniformOfFintype (ZMod q)).bind fun c => f (c • g)) =
+      (PMF.uniformOfFintype G).bind f := by
+  rw [← PMF.uniformOfFintype_map_equiv (Equiv.ofBijective _ hg), PMF.bind_map]
+  rfl
+
+end Masks
+
+/-! ### Concrete bounds -/
+
+section Bounds
+
+open Probability
+open scoped ENNReal
+
+variable {G : Type} [AddCommGroup G] [DecidableEq G] (q : ℕ) [NeZero q] [Module (ZMod q) G]
+  (g : G)
+
+/-- **DL is at least as hard as CDH**: whenever `A` finds `a` from `a • g`, `dlToCDH A` outputs
+`a • (b • g) = (a * b) • g`. No hypothesis on `G`, `q` or `g` is needed. -/
+theorem dlAdvantage_le_cdhAdvantage_dlToCDH (A : G → ProbComp (ZMod q)) :
+    dlAdvantage q g A ≤ cdhAdvantage q g (dlToCDH A) := by
+  refine ENNReal.toNNReal_mono (PMF.apply_ne_top _ _) ?_
+  simp only [dlExperiment, cdhExperiment, dlToCDH, ProbComp.eval_bind, ProbComp.eval_pure,
+    ProbComp.eval_uniform, PMF.bind_bind, PMF.pure_bind]
+  refine PMF.bind_apply_mono_on_support _ _ fun a _ => ?_
+  rw [← PMF.bind_const (PMF.uniformOfFintype (ZMod q)) (PMF.bind _ _)]
+  refine PMF.bind_apply_mono_on_support _ _ fun b _ => ?_
+  refine PMF.bind_apply_mono_on_support _ _ fun guess _ => ?_
+  by_cases h : guess = a
+  · simp [h, smul_smul]
+  · simp [h]
+
+/-- In the real DDH world, `cdhToDDH A` runs the CDH experiment for `A`. -/
+@[simp] theorem ddhRealExperiment_cdhToDDH (A : G → G → ProbComp G) :
+    ddhRealExperiment q g (cdhToDDH A) = cdhExperiment q g A := rfl
+
+/-- In the random DDH world, `cdhToDDH A` accepts with probability at most `1 / q` when `g` has
+order `q`: the independent `c • g` equals the adversary's output for at most one `c`. Injectivity
+of `c ↦ c • g` holds when `g` generates `G` and `Nat.card G = q`, and, for prime `q`, when
+`g ≠ 0` (`smul_left_injective`). -/
+theorem ddhRandomExperiment_cdhToDDH_apply_true_le
+    (hg : Function.Injective fun c : ZMod q => c • g) (A : G → G → ProbComp G) :
+    ProbComp.eval (ddhRandomExperiment q g (cdhToDDH A)) true ≤ (q : ℝ≥0∞)⁻¹ := by
+  simp only [ddhRandomExperiment, cdhToDDH, ProbComp.eval_bind, ProbComp.eval_pure,
+    ProbComp.eval_uniform]
+  refine PMF.bind_apply_le_on_support _ fun a _ => ?_
+  refine PMF.bind_apply_le_on_support _ fun b _ => ?_
+  rw [PMF.bind_comm]
+  refine PMF.bind_apply_le_on_support _ fun z _ => ?_
+  refine (PMF.uniformOfFintype_bind_pure_apply_true_le fun c hc c' hc' =>
+    hg ((of_decide_eq_true hc).symm.trans (of_decide_eq_true hc'))).trans_eq ?_
+  rw [ZMod.card]
+
+/-- **CDH is at least as hard as DDH, up to `1 / q`** ([BonehShoup2023], Section 10.5): when `g`
+has order `q`, the CDH advantage of `A` is at most the DDH advantage of `cdhToDDH A` plus
+`1 / q`. -/
+theorem cdhAdvantage_le_ddhAdvantage_cdhToDDH_add
+    (hg : Function.Injective fun c : ZMod q => c • g) (A : G → G → ProbComp G) :
+    cdhAdvantage q g A ≤ ddhAdvantage q g (cdhToDDH A) + 1 / q := by
+  have hrandom :
+      Game.succProbability (ProbComp.eval (ddhRandomExperiment q g (cdhToDDH A))) ≤ 1 / q := by
+    simpa only [one_div, ENNReal.toNNReal_inv, ENNReal.toNNReal_natCast] using
+      ENNReal.toNNReal_mono (by simp [NeZero.ne q])
+        (ddhRandomExperiment_cdhToDDH_apply_true_le q g hg A)
+  calc cdhAdvantage q g A
+      = Game.advantage (ProbComp.eval (ddhRealExperiment q g (cdhToDDH A))) (PMF.pure false) := by
+        rw [Game.advantage_pure_false, ddhRealExperiment_cdhToDDH, cdhAdvantage]
+    _ ≤ ddhAdvantage q g (cdhToDDH A) +
+          Game.advantage (ProbComp.eval (ddhRandomExperiment q g (cdhToDDH A))) (PMF.pure false) :=
+        Game.advantage_triangle _ _ _
+    _ ≤ ddhAdvantage q g (cdhToDDH A) + 1 / q := by
+        rw [Game.advantage_pure_false]; gcongr
+
+end Bounds
+
+end Cslib.Crypto

@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Cslib.Init
+public import CslibFrontier.Init
 
 /-!
 # Key encapsulation challenges
