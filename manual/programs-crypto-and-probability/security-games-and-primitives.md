@@ -102,11 +102,11 @@ error and separate PPT theorem `isPPTOn_sampleExp`.
 random-world half of the latter,
 `probability_ddhRandomExperiment_cdhToDDH_le : Pr[ddhRandomExperiment q g (cdhToDDH A)] ≤ 1 / q`,
 is the step that the family bound averages over setup. Random self-reducibility ([bs23][bs23],
-Exercises 10.8–10.10) works on the same types: `ddhRerandomize` maps a triple `(u, v, w)` to a uniform real triple when
-`w` is the Diffie–Hellman element and to a uniform triple otherwise (`ddhRerandomizeLaw_real`,
-`ddhRerandomizeLaw_random`); `ddhSelfReduceDistinguisher` is its efficient form, so
-`ddh_of_worstCase` derives `F.DDH setup` from worst-case indistinguishability of fixed triple
-families with loss `6 / 2 ^ n`; and `ddhAmplifiedDecider` turns a distinguisher with
+Exercises 10.8–10.10) works on the same types: `ddhRerandomize` maps a triple `(u, v, w)` to a
+uniform real triple when `w` is the Diffie–Hellman element and to a uniform triple otherwise
+(`ddhRerandomizeLaw_real`, `ddhRerandomizeLaw_random`); `ddhSelfReduceDistinguisher` is its
+efficient form, so `ddh_of_worstCase` derives `F.DDH setup` from worst-case indistinguishability of
+fixed triple families with loss `6 / 2 ^ n`; and `ddhAmplifiedDecider` turns a distinguisher with
 inverse-polynomial fixed-group advantage into one that decides every triple except with
 negligible error (`negligible_ddhAmplifiedDecider_error`). The
 [DH client](../../CslibFrontierTests/Crypto/DiffieHellman.lean) checks the DDH input layout,
