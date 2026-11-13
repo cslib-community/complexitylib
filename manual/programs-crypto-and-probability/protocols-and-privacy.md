@@ -239,10 +239,12 @@ trace extraction from Construction 18.5.3 and Lemma 18.5.7, pp. 199 and 207):
 - **Adaptive straight-line ROM knowledge soundness:** `IOPRoundByRoundKnowledgeSoundness` captures
   round-by-round straight-line IOP extraction (and implies `IOPRoundByRoundSoundness` for
   `{x | ∃ w, rel x w}` via `IOPRoundByRoundKnowledgeSoundness.toRoundByRoundSoundness`). In
-  `bcsKnowledgeSoundnessGame`, the extractor reconstructs `bcsExtractWitness` from the prover's own
-  Merkle trace `tr_P` *before* running `bcsVerifyROM`, with zero rewinding; `bcsROMKnowledgeSoundness_bound`
-  and `bcsROMKnowledgeSoundness_bound_of_prover_verifier` (together with the combined-trace variant
-  `bcsROMKnowledgeSoundness_trace_bound`) establish the same explicit two-channel error bound. As in
+  `bcsKnowledgeSoundnessGame`, a single program run once in the memoized ROM, the extractor
+  reconstructs `bcsExtractWitness` from the prover's own Merkle trace `tr_P` *before* running
+  `bcsVerifyROM`, with zero rewinding; `bcsROMKnowledgeSoundness_bound` and
+  `bcsROMKnowledgeSoundness_bound_of_prover_verifier` (together with the combined-trace variant
+  `bcsROMKnowledgeSoundness_trace_bound`, which bounds the named event `BCSExtractionFails`)
+  establish the same explicit two-channel error bound. As in
   `MicaliSoundness.lean`, the separate-budget corollaries require verifier Merkle bounds only for
   `(x, prf) ∈ P.support` (discharged via `isCostBounded_bcsMTCost_bcsVerifyROM_of_queries_le`).
   Concrete two-round examples, including an adaptive prover with out-of-order and oversized
