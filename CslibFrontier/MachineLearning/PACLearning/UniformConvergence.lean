@@ -12,6 +12,7 @@ public import Mathlib.Analysis.Complex.Exponential
 public import Mathlib.MeasureTheory.Constructions.Pi
 import CslibFrontier.Probability.Concentration
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.Product.MapMeasure
 import Mathlib.Probability.ProbabilityMassFunction.Constructions
 
 /-! # Uniform convergence of empirical errors
@@ -89,11 +90,9 @@ theorem measure_pi_le_abs_card_filter_div_sub_measure (μ : Measure Z) [IsProbab
     rw [Nat.cast_zero, mul_zero, zero_mul, Real.exp_zero, mul_one, ENNReal.ofReal_ofNat]
     norm_num
   set q : PMF Bool := (μ.map g).toPMF
-  have hq : q.toMeasure = μ.map g := Measure.toPMF_toMeasure _
   have hmap : (Measure.pi fun _ : Fin m => μ).map (fun S i => g (S i)) =
-      (Cslib.Probability.PMF.pi fun _ : Fin m => q).toMeasure := by
-    rw [Cslib.Probability.PMF.toMeasure_pi, hq]
-    exact Measure.pi_map_pi (fun _ => hg.aemeasurable)
+      (Cslib.Probability.PMF.pi fun _ : Fin m => q).toMeasure :=
+    Cslib.Probability.PMF.map_measurePi_eq_toMeasure_pi _ fun _ => hg
   have hgm : Measurable fun (S : Fin m → Z) i => g (S i) :=
     measurable_pi_iff.2 fun i => hg.comp (measurable_pi_apply i)
   have hqt : (q true).toReal = (μ {z | g z = true}).toReal := by

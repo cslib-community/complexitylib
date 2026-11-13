@@ -7,11 +7,12 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import CslibFrontier.MachineLearning.PACLearning.GrowthFunction
 public import CslibFrontier.MachineLearning.PACLearning.UniformConvergence
-public import CslibFrontier.MachineLearning.PACLearning.VCUpperBound
+public import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import CslibFrontier.Foundations.Combinatorics.Hoeffding
 import CslibFrontier.MachineLearning.PACLearning.DoubleSample
-import Mathlib.Analysis.Complex.ExponentialBounds
+import CslibFrontier.MachineLearning.PACLearning.VCUpperBound
 
 /-! # Uniform convergence from the growth function on countable domains
 
@@ -351,94 +352,39 @@ end Classification
 @[expose] noncomputable def uniformConvergenceSampleSize (d : ℕ) (ε δ : ℝ) : ℝ :=
   16 / ε ^ 2 * (2 * d * Real.log (10 / ε) + Real.log (4 / δ))
 
-/-- `1 ≤ log (c / x)` for `3 ≤ c` and `0 < x ≤ 1`. -/
-private theorem one_le_log_div {c x : ℝ} (hc : 3 ≤ c) (hx : 0 < x) (hx1 : x ≤ 1) :
-    1 ≤ Real.log (c / x) := by
-  rw [Real.le_log_iff_exp_le (by positivity)]
-  calc Real.exp 1 ≤ c := by linarith [Real.exp_one_lt_d9]
-    _ ≤ c / x := by rw [le_div_iff₀ hx]; nlinarith
-
-/-- The arithmetic behind the explicit sample size: `d ≤ 2m` and
-`4 (e (2m) / d) ^ d exp (-m ε² / 8) ≤ δ`. -/
-private theorem uniformConvergenceSampleSize_aux {d m : ℕ} {ε δ : ℝ} (hε : 0 < ε)
-    (hε1 : ε ≤ 1) (hδ : 0 < δ) (hδ1 : δ ≤ 1) (hm : uniformConvergenceSampleSize d ε δ ≤ m) :
-    d ≤ m + m ∧
-      4 * (Real.exp 1 * ((m + m : ℕ) : ℝ) / d) ^ d * Real.exp (-(m * ε ^ 2 / 8)) ≤ δ := by
-  have hd0 : (0 : ℝ) ≤ d := Nat.cast_nonneg d
-  have hε2 : 0 < ε ^ 2 := by positivity
-  have hlog10 : 1 ≤ Real.log (10 / ε) := one_le_log_div (by norm_num) hε hε1
-  have hlog4 : 1 ≤ Real.log (4 / δ) := one_le_log_div (by norm_num) hδ hδ1
-  rw [uniformConvergenceSampleSize, div_mul_eq_mul_div, div_le_iff₀ hε2] at hm
-  have hxm' : (m : ℝ) * ε ^ 2 ≤ m := by
-    have : ε ^ 2 ≤ 1 := by nlinarith
-    nlinarith [Nat.cast_nonneg (α := ℝ) m]
-  set x := (m : ℝ) * ε ^ 2 with hx
-  have hL : 0 ≤ 2 * d * Real.log (10 / ε) :=
-    mul_nonneg (mul_nonneg zero_le_two hd0) (zero_le_one.trans hlog10)
-  have hdlog : (d : ℝ) ≤ 2 * d * Real.log (10 / ε) := by nlinarith
-  have hx16 : 16 ≤ x := by linarith
-  have hdm : d ≤ m + m := by
-    have : (d : ℝ) ≤ m + m := by linarith
-    exact_mod_cast this
-  refine ⟨hdm, ?_⟩
-  set A : ℝ := Real.exp 1 * ((m + m : ℕ) : ℝ) / d with hAdef
-  -- `d log (e (2m) / d) ≤ 2 d log (10 / ε) + m ε² / 16`, from `log y ≤ y - 1` at
-  -- `y = m ε² / (16 d)`.
-  have hclaim : d * Real.log A ≤ 2 * d * Real.log (10 / ε) + x / 16 := by
-    rcases Nat.eq_zero_or_pos d with hd | hdpos
-    · subst hd
-      simp only [Nat.cast_zero, zero_mul, mul_zero, zero_add]
-      linarith
-    have hdR : (0 : ℝ) < d := by exact_mod_cast hdpos
-    have hy : 0 < x / (16 * d) := div_pos (by linarith) (by positivity)
-    have hA : A = 32 * Real.exp 1 / ε ^ 2 * (x / (16 * d)) := by
-      rw [hAdef, hx]
-      push_cast
-      field_simp
-      ring
-    have hlogA : Real.log A ≤ 2 * Real.log (10 / ε) + x / (16 * d) - 1 := by
-      rw [hA, Real.log_mul (by positivity) hy.ne']
-      have h100 : Real.log (100 / ε ^ 2) = 2 * Real.log (10 / ε) := by
-        rw [show (100 : ℝ) / ε ^ 2 = (10 / ε) ^ 2 by ring, Real.log_pow]
-        norm_num
-      have h1 : Real.log (32 * Real.exp 1 / ε ^ 2) ≤ Real.log (100 / ε ^ 2) :=
-        Real.log_le_log (by positivity) (by gcongr; linarith [Real.exp_one_lt_d9])
-      have h2 := Real.log_le_sub_one_of_pos hy
-      linarith
-    calc d * Real.log A ≤ d * (2 * Real.log (10 / ε) + x / (16 * d) - 1) := by gcongr
-      _ = 2 * d * Real.log (10 / ε) + x / 16 - d := by
-          field_simp
-      _ ≤ 2 * d * Real.log (10 / ε) + x / 16 := by linarith
-  have hApow : 0 < A ^ d := by
-    rcases Nat.eq_zero_or_pos d with hd | hdpos
-    · subst hd
-      simp
-    have hdR : (0 : ℝ) < d := by exact_mod_cast hdpos
-    refine pow_pos (div_pos (mul_pos (Real.exp_pos 1) ?_) hdR) d
-    push_cast
-    linarith
-  have hlog4δ : Real.log (4 / δ) = Real.log 4 - Real.log δ := Real.log_div (by norm_num) hδ.ne'
-  have h4A : 0 < 4 * A ^ d := mul_pos (by norm_num) hApow
-  rw [← Real.log_le_log_iff (mul_pos h4A (Real.exp_pos _)) hδ,
-    Real.log_mul h4A.ne' (Real.exp_pos _).ne', Real.log_mul (by norm_num) hApow.ne', Real.log_pow,
-    Real.log_exp]
-  linarith
-
 section SampleSize
 
 variable {Z : Type*}
 
 /-- The explicit sample size makes `4 Π_G(2m) exp (-m ε² / 8) ≤ δ` whenever every finite set
-shattered by `G` has at most `d` points. -/
+shattered by `G` has at most `d` points. The proof applies Sauer's lemma in the form
+`Π_G(2m) ≤ exp (2m / T) T ^ d` (`growthFunction_le_exp_mul_pow`) at `T = (10 / ε)²`. -/
 theorem four_mul_growthFunction_mul_exp_le_of_uniformConvergenceSampleSize_le
     {G : ConceptClass Z Bool} {d : ℕ} (hG : ∀ W : Finset Z, SetShatters G ↑W → W.card ≤ d)
-    {m : ℕ} {ε δ : ℝ} (hε : 0 < ε) (hε1 : ε ≤ 1) (hδ : 0 < δ) (hδ1 : δ ≤ 1)
+    {m : ℕ} {ε δ : ℝ} (hε : 0 < ε) (hε10 : ε ≤ 10) (hδ : 0 < δ)
     (hm : uniformConvergenceSampleSize d ε δ ≤ m) :
     4 * (growthFunction G (m + m) : ℝ) * Real.exp (-(m * ε ^ 2 / 8)) ≤ δ := by
-  obtain ⟨hdm, hineq⟩ := uniformConvergenceSampleSize_aux hε hε1 hδ hδ1 hm
-  refine le_trans ?_ hineq
-  gcongr
-  exact growthFunction_le_exp_one_mul_div_pow hG hdm
+  have hT : 1 ≤ (10 / ε) ^ 2 := one_le_pow₀ (by rw [le_div_iff₀ hε]; linarith)
+  have hexp : ((m + m : ℕ) : ℝ) / (10 / ε) ^ 2 = m * ε ^ 2 / 50 := by
+    push_cast
+    field_simp
+    ring
+  have hmε : 0 ≤ (m : ℝ) * ε ^ 2 := by positivity
+  rw [uniformConvergenceSampleSize, div_mul_eq_mul_div, div_le_iff₀ (by positivity),
+    Real.log_div (by norm_num) hδ.ne'] at hm
+  calc 4 * (growthFunction G (m + m) : ℝ) * Real.exp (-(m * ε ^ 2 / 8))
+      ≤ 4 * (Real.exp (((m + m : ℕ) : ℝ) / (10 / ε) ^ 2) * ((10 / ε) ^ 2) ^ d) *
+          Real.exp (-(m * ε ^ 2 / 8)) := by
+        gcongr
+        exact growthFunction_le_exp_mul_pow hG _ hT
+    _ ≤ δ := by
+        rw [hexp, ← Real.log_le_log_iff (by positivity) hδ,
+          Real.log_mul (by positivity) (Real.exp_pos _).ne',
+          Real.log_mul (by norm_num : (4 : ℝ) ≠ 0) (by positivity),
+          Real.log_mul (Real.exp_pos _).ne' (by positivity), Real.log_exp, Real.log_exp,
+          Real.log_pow, Real.log_pow]
+        push_cast
+        linarith
 
 end SampleSize
 
@@ -452,11 +398,11 @@ then `m` i.i.d. examples fail to be `ε`-representative for `C` with probability
 theorem measure_pi_not_isRepresentative_le_of_uniformConvergenceSampleSize_le
     (D : Measure (α × Bool)) [IsProbabilityMeasure D] {C : ConceptClass α Bool} {d : ℕ}
     (hC : ∀ W : Finset α, SetShatters C ↑W → W.card ≤ d) {m : ℕ} {ε δ : ℝ} (hε : 0 < ε)
-    (hε1 : ε ≤ 1) (hδ : 0 < δ) (hδ1 : δ ≤ 1) (hm : uniformConvergenceSampleSize d ε δ ≤ m) :
+    (hε10 : ε ≤ 10) (hδ : 0 < δ) (hm : uniformConvergenceSampleSize d ε δ ≤ m) :
     Measure.pi (fun _ : Fin m => D) {S | ¬ IsRepresentative D C ε S} ≤ ENNReal.ofReal δ :=
   (measure_pi_not_isRepresentative_le_growthFunction D C m hε.le).trans
     (ENNReal.ofReal_le_ofReal
-      (four_mul_growthFunction_mul_exp_le_of_uniformConvergenceSampleSize_le hC hε hε1 hδ hδ1 hm))
+      (four_mul_growthFunction_mul_exp_le_of_uniformConvergenceSampleSize_le hC hε hε10 hδ hm))
 
 end Classification
 
