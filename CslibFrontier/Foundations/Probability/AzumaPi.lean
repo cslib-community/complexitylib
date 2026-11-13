@@ -25,7 +25,7 @@ coordinates `v ∼ Measure.pi μ` such that
 
 Then `∑ i, Y i` has a sub-Gaussian moment generating function with parameter
 `∑ i, (c i / 2) ^ 2` (`ProbabilityTheory.hasSubgaussianMGF_sum_pi`), so it is at least `ε ≥ 0`
-with probability at most `exp (-2 ε² / ∑ i, c i ^ 2)` (`ProbabilityTheory.measureReal_le_sum_pi`).
+with probability at most `exp (-2 ε² / ∑ i, c i ^ 2)` (`ProbabilityTheory.measure_sum_ge_le_pi`).
 This is the Azuma–Hoeffding inequality [Hoeffding1963; Azuma1967] for the martingale differences
 `Y i` of the natural filtration of the coordinates.
 
@@ -37,16 +37,16 @@ coordinate at a time (`MeasureTheory.integral_integral_update`) and applies Hoef
 (`ProbabilityTheory.hasSubgaussianMGF_of_mem_Icc_of_integral_eq_zero`) for each fixed value of
 the other coordinates, so the coordinate spaces `α j` are arbitrary measurable spaces.
 
-`ProbabilityTheory.HasSubgaussianMGF.measureReal_sqrt_lt_le` is the sub-Gaussian tail bound at
+`ProbabilityTheory.HasSubgaussianMGF.measure_sqrt_lt_le` is the sub-Gaussian tail bound at
 confidence `δ`: a random variable with parameter `c` exceeds `√(2 c ln (1 / δ))` with
 probability at most `δ`.
 
 ## Main results
 
-* `ProbabilityTheory.HasSubgaussianMGF.measureReal_sqrt_lt_le`: the tail bound at confidence `δ`.
+* `ProbabilityTheory.HasSubgaussianMGF.measure_sqrt_lt_le`: the tail bound at confidence `δ`.
 * `ProbabilityTheory.hasSubgaussianMGF_sum_pi`: a sum of bounded martingale differences of
   independent coordinates is sub-Gaussian.
-* `ProbabilityTheory.measureReal_le_sum_pi`: the Azuma–Hoeffding inequality.
+* `ProbabilityTheory.measure_sum_ge_le_pi`: the Azuma–Hoeffding inequality.
 
 ## References
 
@@ -69,7 +69,7 @@ variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {μ : Measure Ω} [IsFiniteMeas
 
 /-- **Sub-Gaussian tail bound at confidence `δ`.** A random variable with a sub-Gaussian moment
 generating function with parameter `c` exceeds `√(2 c ln (1 / δ))` with probability at most `δ`. -/
-theorem HasSubgaussianMGF.measureReal_sqrt_lt_le (h : HasSubgaussianMGF X c μ) {δ : ℝ}
+theorem HasSubgaussianMGF.measure_sqrt_lt_le (h : HasSubgaussianMGF X c μ) {δ : ℝ}
     (hδ : 0 < δ) (hδ1 : δ ≤ 1) :
     μ.real {ω | √(2 * c * log (1 / δ)) < X ω} ≤ δ := by
   have hL : 0 ≤ log (1 / δ) := log_nonneg (by rw [le_div_iff₀ hδ]; simpa using hδ1)
@@ -186,7 +186,7 @@ theorem hasSubgaussianMGF_sum_pi (hY : ∀ i, Measurable (Y i))
 coordinates after `i`, have mean `0` over coordinate `i`, and range over an interval of length
 `c i` as coordinate `i` varies. Then `∑ i, Y i ≥ ε` with probability at most
 `exp (-2 ε² / ∑ i, c i ^ 2)` under `Measure.pi μ`, for every `ε ≥ 0`. -/
-theorem measureReal_le_sum_pi (hY : ∀ i, Measurable (Y i))
+theorem measure_sum_ge_le_pi (hY : ∀ i, Measurable (Y i))
     (hadapted : ∀ i j, i < j → ∀ v z, Y i (Function.update v j z) = Y i v)
     (hmean : ∀ i v, ∫ z, Y i (Function.update v i z) ∂μ i = 0)
     (hrange : ∀ i v, ∃ a : ℝ, ∀ z, Y i (Function.update v i z) ∈ Set.Icc a (a + c i))

@@ -25,7 +25,7 @@ probability at least `1 - δ`
 (`measureReal_average_integral_gt_le`). The differences `∫ f t S dD - f t S (S t)` are martingale
 differences of the natural filtration of the sample, and Hoeffding's lemma bounds each of them on
 an interval of length `b - a`. The Azuma–Hoeffding inequality under a product measure
-(`ProbabilityTheory.measureReal_le_sum_pi`) then bounds their sum. This is the conversion of
+(`ProbabilityTheory.measure_sum_ge_le_pi`) then bounds their sum. This is the conversion of
 [CesaBianchiConconiGentile2004] for bounded losses; there the loss range is `[0, 1]` and the
 deviation term comes from Azuma's inequality (locator and constant unverified).
 
@@ -115,7 +115,7 @@ theorem measureReal_sum_integral_gt_le {f : Fin T → (Fin T → Z) → Z → �
     obtain ⟨S⟩ := nonempty_of_isProbabilityMeasure (Measure.pi fun _ : Fin T => D)
     exact (hab ⟨0, hT⟩ S z).1.trans (hab ⟨0, hT⟩ S z).2
   refine le_trans (measureReal_mono fun S hS => ?_)
-    ((hasSubgaussianMGF_sum_integral_sub hf hfresh hab).measureReal_sqrt_lt_le hδ hδ1)
+    ((hasSubgaussianMGF_sum_integral_sub hf hfresh hab).measure_sqrt_lt_le hδ hδ1)
   have hsq : √(2 * ((T * (‖b - a‖₊ / 2) ^ 2 : ℝ≥0) : ℝ) * log (1 / δ)) =
       (b - a) * √(T * log (1 / δ) / 2) := by
     rw [show (b - a) * √(T * log (1 / δ) / 2) = √((b - a) ^ 2 * (T * log (1 / δ) / 2)) by
