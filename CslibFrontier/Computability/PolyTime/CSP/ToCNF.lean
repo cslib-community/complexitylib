@@ -46,7 +46,7 @@ open Cslib.Logic.PL Turing.MultiTapeTM
 symbol and its scope. -/
 def encConstraint {Rel V : Type} (encRel : Rel ↪ List Bool) (encV : V ↪ List Bool) :
     Constraint Rel V ↪ List Bool :=
-  Constraint.equivProd.toEmbedding.trans (encPair encRel (encList encV))
+  encOfEquiv Constraint.equivProd (encPair encRel (encList encV))
 
 @[simp]
 theorem encConstraint_apply {Rel V : Type} (encRel : Rel ↪ List Bool) (encV : V ↪ List Bool)
