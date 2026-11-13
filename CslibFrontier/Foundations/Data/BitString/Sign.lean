@@ -35,8 +35,8 @@ the Fourier or low-degree theory built on them.
 * `Cslib.BitString.signVal_xor`, `Cslib.BitString.neg_one_pow_toNat_xor`: the sign of an
   exclusive or is the product of the signs.
 * `Cslib.BitString.signVal_mul_self`, `Cslib.BitString.abs_signVal`,
-  `Cslib.BitString.signVal_mul_signVal`, `Cslib.BitString.sq_signVal_sub_signVal`: arithmetic of
-  signs.
+  `Cslib.BitString.signVal_mul_le_abs`, `Cslib.BitString.signVal_mul_signVal`,
+  `Cslib.BitString.sq_signVal_sub_signVal`: arithmetic of signs.
 * `Cslib.BitString.signVal_eq_neg_one_pow`,
   `Cslib.BitString.neg_one_pow_toNat_eq_one_sub_two_mul_bitVal`,
   `Cslib.BitString.signVal_eq_one_sub_two_mul_bitVal`: the readings as powers of `-1` and as
@@ -104,6 +104,10 @@ theorem signVal_mul_self (b : Bool) : signVal b * signVal b = 1 := by
 /-- A sign has absolute value one. -/
 @[simp] theorem abs_signVal (b : Bool) : |signVal b| = 1 := by
   cases b <;> simp
+
+/-- A sign times a real number is at most its absolute value. -/
+theorem signVal_mul_le_abs (b : Bool) (a : ℝ) : signVal b * a ≤ |a| :=
+  (le_abs_self _).trans_eq (by rw [abs_mul, abs_signVal, one_mul])
 
 /-- The product of two signs records whether the bits agree. -/
 theorem signVal_mul_signVal (a b : Bool) : signVal a * signVal b = if a = b then 1 else -1 := by

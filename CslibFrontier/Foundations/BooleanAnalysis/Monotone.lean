@@ -49,6 +49,9 @@ or antitone Boolean function on `n` coordinates with variance `σ²` has total i
   variance.
 * `Cslib.BitString.sum_influence_sq_le_of_monotone`: the squared influences of a monotone function
   sum to at most its variance.
+* `Cslib.BitString.totalInfluence_eq_sum_fourierCoeff_singleton_of_monotone`,
+  `Cslib.BitString.totalInfluence_eq_neg_sum_fourierCoeff_singleton_of_antitone`: the total
+  influence of a monotone function is the sum of its degree-one coefficients.
 * `Cslib.BitString.totalInfluence_le_sqrt_card_mul_of_monotone`,
   `Cslib.BitString.totalInfluence_le_sqrt_card_of_monotone`,
   `Cslib.BitString.totalInfluence_le_sqrt_card_mul_of_antitone`,
@@ -155,16 +158,26 @@ theorem sum_influence_sq_le_of_monotone (hf : Monotone f) :
   simp only [influence_eq_fourierCoeff_singleton_of_monotone hf]
   exact sum_fourierCoeff_singleton_sq_le _
 
+/-- **The total influence of a monotone function** is the sum of its degree-one Fourier
+coefficients, read as signs [O'Donnell, Proposition 2.31][ODonnell2014]. -/
+theorem totalInfluence_eq_sum_fourierCoeff_singleton_of_monotone (hf : Monotone f) :
+    totalInfluence (fun x => signVal (f x)) = ∑ i, fourierCoeff (fun x => signVal (f x)) {i} :=
+  sum_congr rfl fun i _ => influence_eq_fourierCoeff_singleton_of_monotone hf i
+
+/-- The total influence of an antitone function is minus the sum of its degree-one Fourier
+coefficients, read as signs. -/
+theorem totalInfluence_eq_neg_sum_fourierCoeff_singleton_of_antitone (hf : Antitone f) :
+    totalInfluence (fun x => signVal (f x)) = -∑ i, fourierCoeff (fun x => signVal (f x)) {i} := by
+  rw [← sum_neg_distrib]
+  exact sum_congr rfl fun i _ => influence_eq_neg_fourierCoeff_singleton_of_antitone hf i
+
 /-- **Monotone functions have total influence at most `√(n σ²)`**: a monotone Boolean function on
 `n` coordinates, read as signs with variance `σ²`, has total influence at most `√(n σ²)`,
 refining [O'Donnell, Exercise 2.23][ODonnell2014]. -/
 theorem totalInfluence_le_sqrt_card_mul_of_monotone (hf : Monotone f) :
     totalInfluence (fun x => signVal (f x)) ≤
       √(Fintype.card ι * 𝔼 x, (signVal (f x) - 𝔼 y, signVal (f y)) ^ 2) := by
-  have h : totalInfluence (fun x => signVal (f x)) =
-      ∑ i, fourierCoeff (fun x => signVal (f x)) {i} :=
-    sum_congr rfl fun i _ => influence_eq_fourierCoeff_singleton_of_monotone hf i
-  rw [h]
+  rw [totalInfluence_eq_sum_fourierCoeff_singleton_of_monotone hf]
   exact (le_abs_self _).trans (abs_sum_fourierCoeff_singleton_le _)
 
 /-- Antitone functions have total influence at most `√(n σ²)`: an antitone Boolean function on `n`
@@ -172,11 +185,7 @@ coordinates, read as signs with variance `σ²`, has total influence at most `�
 theorem totalInfluence_le_sqrt_card_mul_of_antitone (hf : Antitone f) :
     totalInfluence (fun x => signVal (f x)) ≤
       √(Fintype.card ι * 𝔼 x, (signVal (f x) - 𝔼 y, signVal (f y)) ^ 2) := by
-  have h : totalInfluence (fun x => signVal (f x)) =
-      -∑ i, fourierCoeff (fun x => signVal (f x)) {i} := by
-    rw [← sum_neg_distrib]
-    exact sum_congr rfl fun i _ => influence_eq_neg_fourierCoeff_singleton_of_antitone hf i
-  rw [h]
+  rw [totalInfluence_eq_neg_sum_fourierCoeff_singleton_of_antitone hf]
   exact (neg_le_abs _).trans (abs_sum_fourierCoeff_singleton_le _)
 
 /-- **Monotone functions have total influence at most `√n`**: a monotone Boolean function on `n`
