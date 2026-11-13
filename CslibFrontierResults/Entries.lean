@@ -105,6 +105,8 @@ import CslibFrontier.Computability.Complexity.Parameterized.WHierarchy.XP
 import CslibFrontier.Computability.Complexity.Problems.HornSAT
 import CslibFrontier.Computability.Complexity.Problems.Primes
 import CslibFrontier.Computability.Complexity.Problems.TwoSAT.PolyTime
+import CslibFrontier.Computability.Complexity.Problems.Permanent.ThreeSAT
+import CslibFrontier.Computability.Complexity.Problems.Permanent.Valiant
 import CslibFrontier.Computability.Complexity.Problems.Permanent.ZeroOne
 import CslibFrontier.Computability.Kolmogorov.Incompleteness
 import CslibFrontier.Computability.Kolmogorov.MINKT
@@ -743,6 +745,49 @@ register_result "integer-permanent-to-zero-one-permanent" where
     entries (Goldreich uses the maximum), then each residue is replaced by a binary chain of \
     relay vertices; the 0/1 dimension is n + 2 L n^2. One-query (metric) reduction, a special \
     case of the source's Cook reduction."
+
+register_result "sharp-three-sat-to-integer-permanent" where
+  title := "#3SAT reduces to the integer permanent with a constant factor per clause"
+  topic := "counting complexity"
+  sources := [
+    { paper := Goldreich2007Draft, theorem := "Proposition 6.21",
+      locator := "February 2007 draft r3.pdf, PDF p. 24; printed p. 226" }
+  ]
+  theorems := [
+    Cslib.Complexity.goldreich_prop_6_21,
+    Cslib.Complexity.intPermanent_cnfToPermanentTable,
+    Cslib.Complexity.computableInPolyTime_cnfToPermanentTable,
+    Cslib.Complexity.metricReducible_sharpThreeSAT_intPermanent
+  ]
+  scope := "CNF formulas under encCNF mapped by a native polynomial-time machine to dense \
+    integer tables (encIntTable) with entries in {-1, 0, 1, 2, 3} and permanent 12^m times \
+    SharpThreeSAT, m the number of clauses; Goldreich's Figure 6.3 clause gadget (c = 12). \
+    Short clauses are padded by repetition; formulas with an empty or over-long clause map to \
+    the 1 x 1 zero table, where SharpThreeSAT is 0. Counts range over occurring variables."
+
+register_result "valiant-zero-one-permanent-sharp-p-complete" where
+  title := "Valiant: the 0/1 permanent and bipartite perfect-matching counting are #P-complete"
+  topic := "counting complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Theorem 9.8",
+      locator := "2007-01-08 draft, printed p. 175; PDF p. 191" },
+    { paper := Goldreich2007Draft, theorem := "Theorem 6.20",
+      locator := "February 2007 draft r3.pdf, PDF p. 23; printed p. 225" }
+  ]
+  theorems := [
+    Cslib.Complexity.zeroOnePermanent_sharpPMetricComplete,
+    Cslib.Complexity.zeroOnePermanent_computableInPolyTimeWithOracle,
+    Cslib.Complexity.bipartitePerfectMatchingCount_sharpPMetricComplete,
+    Cslib.Complexity.bipartitePerfectMatchingCount_computableInPolyTimeWithOracle,
+    Cslib.Complexity.intPermanent_sharpPMetricHard
+  ]
+  scope := "Dense Boolean tables (encBoolTable) read as n x n 0/1 matrices, and the bipartite \
+    graphs on Fin n + Fin n they describe (Mathlib perfect matchings). Membership in #P by a \
+    native permutation-matrix verifier; hardness under one-query metric reductions composed \
+    from #3SAT, Goldreich's Propositions 6.21 and 6.22. The books' Cook-reduction form (Arora \
+    and Barak Definition 9.5, FP with a bit oracle) is derived as a native polynomial-time \
+    oracle program reading the permanent's bits. Arora and Barak's XOR-gadget proof and its \
+    constant 4^(3m) are not formalized; the proof uses Goldreich's gadget."
 
 register_result "bpp-proper-subset-ppoly" where
   title := "BPP is strictly contained in P/poly on ordinary bit languages"
