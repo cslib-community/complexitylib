@@ -21,14 +21,15 @@ import CslibFrontier.Computability.Probabilistic.PPT.Extension
 The decision learning-with-errors experiments over a finite commutative ring `R`
 ([Regev2009], [GentrySahaiWaters2013], Section 2): the real experiment `LWE.realExperiment`
 draws a uniform matrix `A` and gives the distinguisher `A` and `A *ᵥ s + e` for a secret `s` and
-an error vector `e`; the random experiment `LWE.randomExperiment` gives it a uniform pair.
+an error vector `e`; the random experiment `LWE.randomExperiment` gives it a uniform pair. For a
+secret law and an error law, the real game `LWE.realGame` draws `s` and `e` and runs the real
+experiment, `LWE.randomGame` runs the random one, and `LWE.advantage` is the distance between them.
 
 `DecisionLWE n m w noise` is the asymptotic assumption at modulus `2 ^ w κ`, with `n κ` secret
-coordinates and `m κ` samples. The real game `LWE.realGame` draws a uniform secret and independent
-errors from `noise κ` and runs the real experiment; `LWE.randomGame` runs the random one. Every
-distinguisher that is uniform strict PPT on encodings (`LWE.Distinguisher.IsPPT`) must have
-negligible advantage between them. A distinguisher machine reads the unary security parameter and
-the row-major binary word of the matrix `[b | A]` (`LWE.encInput_apply`).
+coordinates and `m κ` samples: every distinguisher that is uniform strict PPT on encodings
+(`LWE.Distinguisher.IsPPT`) has negligible advantage between the real game with a uniform secret
+and independent errors from `noise κ` and the random game. A distinguisher machine reads the unary
+security parameter and the row-major binary word of the matrix `[b | A]` (`LWE.encInput_apply`).
 
 A distinguisher outputs a bit, so `DecisionLWE` is the same assumption as the indistinguishability
 of the encoded real and uniform matrices `LWE.realEnsemble` and `LWE.uniformEnsemble` against
@@ -44,12 +45,13 @@ reduction.
 
 * `Cslib.Crypto.LWE.realExperiment`, `Cslib.Crypto.LWE.randomExperiment`: the fixed-instance
   experiments over a finite commutative ring.
+* `Cslib.Crypto.LWE.realGame`, `Cslib.Crypto.LWE.randomGame`, `Cslib.Crypto.LWE.advantage`: the
+  games and advantage for a secret law and an error law.
 * `Cslib.Crypto.LWE.augmentedMatrix`: the matrix `[b | A]` of an LWE sample.
 * `Cslib.Crypto.LWE.Input`, `Cslib.Crypto.LWE.encInput`: the input of a distinguisher at modulus
   `2 ^ w κ` and its encoding.
 * `Cslib.Crypto.LWE.Distinguisher`, `Cslib.Crypto.LWE.Distinguisher.IsPPT`: typed distinguishers
   and their efficiency.
-* `Cslib.Crypto.LWE.realGame`, `Cslib.Crypto.LWE.randomGame`: the games at each security parameter.
 * `Cslib.Crypto.DecisionLWE`: the decision-LWE assumption.
 * `Cslib.Crypto.LWE.publicMatrix`, `Cslib.Crypto.LWE.publicMatrixLaw`: the matrix `[B * t + e | B]`
   and its law, as produced by key generation.
@@ -75,7 +77,7 @@ reduction.
 namespace Cslib.Crypto
 
 open Probability Turing.MultiTapeTM
-open scoped _root_.Matrix
+open scoped _root_.Matrix NNReal
 
 namespace LWE
 
@@ -155,6 +157,37 @@ noncomputable def randomExperiment
       (PMF.uniformOfFintype (Matrix (Fin m) (Fin n) R)).bind fun A =>
         (PMF.uniformOfFintype (Fin m → R)).bind fun b => ProbComp.eval (distinguisher A b) := by
   simp [randomExperiment]
+
+/-- The real decision-LWE game for a secret law and an error law: draw `s ← secretLaw` and
+`e ← errorLaw`, then run `realExperiment s e`. -/
+noncomputable def realGame (secretLaw : PMF (Fin n → R)) (errorLaw : PMF (Fin m → R))
+    (distinguisher : Matrix (Fin m) (Fin n) R → (Fin m → R) → ProbComp Bool) : Game := do
+  let s ← secretLaw
+  let e ← errorLaw
+  ProbComp.eval (realExperiment s e distinguisher)
+
+/-- The random decision-LWE game: run `randomExperiment`. -/
+noncomputable def randomGame
+    (distinguisher : Matrix (Fin m) (Fin n) R → (Fin m → R) → ProbComp Bool) : Game :=
+  ProbComp.eval (randomExperiment distinguisher)
+
+/-- The decision-LWE advantage of a distinguisher for a secret law and an error law. -/
+noncomputable def advantage (secretLaw : PMF (Fin n → R)) (errorLaw : PMF (Fin m → R))
+    (distinguisher : Matrix (Fin m) (Fin n) R → (Fin m → R) → ProbComp Bool) : ℝ≥0 :=
+  Game.advantage (realGame secretLaw errorLaw distinguisher) (randomGame distinguisher)
+
+/-- The real game depends on the distinguisher only through its output distributions. -/
+theorem realGame_congr {secretLaw : PMF (Fin n → R)} {errorLaw : PMF (Fin m → R)}
+    {D D' : Matrix (Fin m) (Fin n) R → (Fin m → R) → ProbComp Bool}
+    (h : ∀ A b, ProbComp.eval (D A b) = ProbComp.eval (D' A b)) :
+    realGame secretLaw errorLaw D = realGame secretLaw errorLaw D' := by
+  simp only [realGame, eval_realExperiment, h]
+
+/-- The random game depends on the distinguisher only through its output distributions. -/
+theorem randomGame_congr {D D' : Matrix (Fin m) (Fin n) R → (Fin m → R) → ProbComp Bool}
+    (h : ∀ A b, ProbComp.eval (D A b) = ProbComp.eval (D' A b)) :
+    randomGame D = randomGame D' := by
+  simp only [randomGame, eval_randomExperiment, h]
 
 end Experiment
 
@@ -264,18 +297,6 @@ writes the distinguisher's output bit. -/
 def Distinguisher.IsPPT (D : Distinguisher n m w) : Prop :=
   IsPPTOn (encInput n m w) encBool fun x => D x.secParam x.matrix x.target
 
-/-- The real decision-LWE game at security parameter `κ`: draw a uniform secret and independent
-errors from `noise κ`, then run `realExperiment`. -/
-noncomputable def realGame (noise : (κ : ℕ) → PMF (ZMod (2 ^ w κ))) (D : Distinguisher n m w)
-    (κ : ℕ) : Game := do
-  let s ← PMF.uniformOfFintype (Fin (n κ) → ZMod (2 ^ w κ))
-  let e ← PMF.pi fun _ : Fin (m κ) => noise κ
-  ProbComp.eval (realExperiment s e (D κ))
-
-/-- The random decision-LWE game at security parameter `κ`: run `randomExperiment`. -/
-noncomputable def randomGame (D : Distinguisher n m w) (κ : ℕ) : Game :=
-  ProbComp.eval (randomExperiment (D κ))
-
 /-! ### Word-level distinguishers -/
 
 variable {n m w}
@@ -284,11 +305,13 @@ variable {n m w}
 def Distinguisher.ofWords (W : Crypto.Distinguisher) : Distinguisher n m w :=
   fun κ A b => W κ (Matrix.toBinary (augmentedMatrix A b))
 
-/-- A word-level distinguisher on the encoded real matrix runs the real game. -/
+/-- A word-level distinguisher on the encoded real matrix runs the real game with a uniform secret
+and independent errors from `noise κ`. -/
 theorem distinguishingGame_realEnsemble (noise : (κ : ℕ) → PMF (ZMod (2 ^ w κ)))
     (W : Crypto.Distinguisher) (κ : ℕ) :
     distinguishingGame (realEnsemble n m w noise κ) (W κ) =
-      realGame n m w noise (Distinguisher.ofWords W) κ := by
+      realGame (PMF.uniformOfFintype (Fin (n κ) → ZMod (2 ^ w κ)))
+        (PMF.pi fun _ : Fin (m κ) => noise κ) (Distinguisher.ofWords W κ) := by
   simp only [distinguishingGame, realEnsemble, publicMatrixLaw, realGame, eval_realExperiment,
     Distinguisher.ofWords, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_map,
     PMF.pure_bind, PMF.bind_bind, Function.comp_def]
@@ -299,32 +322,24 @@ theorem distinguishingGame_realEnsemble (noise : (κ : ℕ) → PMF (ZMod (2 ^ w
 /-- A word-level distinguisher on the encoded uniform matrix runs the random game. -/
 theorem distinguishingGame_uniformEnsemble (W : Crypto.Distinguisher) (κ : ℕ) :
     distinguishingGame (uniformEnsemble n m w κ) (W κ) =
-      randomGame n m w (Distinguisher.ofWords W) κ := by
+      randomGame (Distinguisher.ofWords (n := n) (m := m) (w := w) W κ) := by
   rw [distinguishingGame, uniformEnsemble, ← uniformOfFintype_augmentedMatrix]
   simp only [randomGame, eval_randomExperiment, Distinguisher.ofWords, PMF.monad_bind_eq_bind,
     PMF.bind_map, PMF.bind_bind, Function.comp_def]
-
-/-- The real game depends on the distinguisher only through its output distributions. -/
-theorem realGame_congr {noise : (κ : ℕ) → PMF (ZMod (2 ^ w κ))} {D D' : Distinguisher n m w}
-    (h : ∀ κ A b, ProbComp.eval (D κ A b) = ProbComp.eval (D' κ A b)) (κ : ℕ) :
-    realGame n m w noise D κ = realGame n m w noise D' κ := by
-  simp only [realGame, eval_realExperiment, h]
-
-/-- The random game depends on the distinguisher only through its output distributions. -/
-theorem randomGame_congr {D D' : Distinguisher n m w}
-    (h : ∀ κ A b, ProbComp.eval (D κ A b) = ProbComp.eval (D' κ A b)) (κ : ℕ) :
-    randomGame n m w D κ = randomGame n m w D' κ := by
-  simp only [randomGame, eval_randomExperiment, h]
 
 end LWE
 
 /-- The decision-LWE assumption with `n κ` secret coordinates, `m κ` samples, modulus `2 ^ w κ`
 and error law `noise κ` for each coordinate: every PPT distinguisher has negligible advantage
-between `LWE.realGame` and `LWE.randomGame`. This is a hypothesis against uniform classical strict
-PPT distinguishers, not a theorem of hardness or a claim about quantum adversaries. -/
+between `LWE.realGame`, with a uniform secret and independent errors, and `LWE.randomGame`. This is
+a hypothesis against uniform classical strict PPT distinguishers, not a theorem of hardness or a
+claim about quantum adversaries. -/
 def DecisionLWE (n m w : ℕ → ℕ) (noise : (κ : ℕ) → PMF (ZMod (2 ^ w κ))) : Prop :=
-  Game.Indistinguishable (LWE.realGame n m w noise) (LWE.randomGame n m w)
-    LWE.Distinguisher.IsPPT
+  Game.Indistinguishable
+    (fun (D : LWE.Distinguisher n m w) κ =>
+      LWE.realGame (PMF.uniformOfFintype (Fin (n κ) → ZMod (2 ^ w κ)))
+        (PMF.pi fun _ : Fin (m κ) => noise κ) (D κ))
+    (fun D κ => LWE.randomGame (D κ)) LWE.Distinguisher.IsPPT
 
 /-- **`DecisionLWE` is the word-level decision-LWE assumption.** Quantifying over distinguishers
 that read the encoded matrix `[b | A]` as a word gives the same assumption as quantifying over
@@ -351,8 +366,8 @@ theorem decisionLWE_iff_encoded (n m w : ℕ → ℕ) (noise : (κ : ℕ) → PM
       hW ⟨κ, A, b⟩
     have hneg := h W' hW'
     simpa only [LWE.distinguishingGame_realEnsemble noise W',
-      LWE.distinguishingGame_uniformEnsemble W', LWE.realGame_congr hgame,
-      LWE.randomGame_congr hgame] using hneg
+      LWE.distinguishingGame_uniformEnsemble W', LWE.realGame_congr (hgame _),
+      LWE.randomGame_congr (hgame _)] using hneg
 
 /-- Under `DecisionLWE`, the encoded real and uniform matrices are computationally
 indistinguishable to word-level distinguishers. -/
