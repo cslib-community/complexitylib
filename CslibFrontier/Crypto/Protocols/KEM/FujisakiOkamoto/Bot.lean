@@ -225,184 +225,49 @@ noncomputable def eagerIndCcaBotGame [Fintype M] [Finite R] [Fintype CT] [Finite
   let kStar := if b then kRand else kReal
   OracleComp.interpret (S.eagerBotHandler G H pk sk cStar) (A ⟨pk, cStar, kStar⟩)
 
-/-- Partial-table pair `(tG, tH)` representing `ROCache`. -/
-private abbrev ROTables (M R CT K : Type) : Type :=
-  RandomOracle.Cache (fun _ : M => R) × RandomOracle.Cache (fun _ : Bool × M × CT => K)
+omit [DecidableEq M] in
+/-- `FO^⊥` decapsulation `decapsBotM` as a program over the random oracles. -/
+def botDecaps (S : Scheme PK SK M R CT K) (pk : PK) (sk : SK) (c : CT) :
+    OracleComp (ROSpec M R CT K) (Option K) :=
+  S.decapsBotM (fun m => OracleComp.query (spec := ROSpec M R CT K) (Sum.inl m))
+    (fun x => OracleComp.query (spec := ROSpec M R CT K) (Sum.inr x)) pk sk c
 
-private def roTablesOf (st : ROCache M R CT K) : ROTables M R CT K :=
-  (RandomOracle.ofList st.gCache, RandomOracle.ofList st.hCache)
+/-- `roBotHandler` is the lazy handler of `romProgram` with `FO^⊥` decapsulation. -/
+theorem roBotHandler_eq_romHandler (S : Scheme PK SK M R CT K) (pk : PK) (sk : SK) (cStar : CT) :
+    S.roBotHandler pk sk cStar = S.romHandler (S.botDecaps pk sk) cStar := by
+  funext q
+  refine Eq.trans ?_ (dispatch_eq_interpret_romProgram _ _ cStar q)
+  simp only [roBotHandler, botDecaps, interpret_decapsBotM, OracleComp.interpret_query]
 
-/-- `roBotHandler` on represented `(tG, tH)` tables via `RandomOracle.answer`: decapsulation
-queries `c ≠ cStar` run `decapsBotM` against these table oracles. -/
-private noncomputable def answerBotROHandler (S : Scheme PK SK M R CT K) (pk : PK) (sk : SK)
-    (cStar : CT) (q : ROQuery M CT) : StateT (ROTables M R CT K) PMF (ROResp R K q) :=
-  let G : M → StateT (ROTables M R CT K) PMF R := fun m t =>
-    (RandomOracle.answer (fun _ => ProbComp.eval S.pke.sampleCoins) m t.1).map
-      fun z => (z.1, (z.2, t.2))
-  let H : Bool × M × CT → StateT (ROTables M R CT K) PMF K := fun x t =>
-    (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) x t.2).map
-      fun z => (z.1, (t.1, z.2))
-  ROQuery.dispatch G H (S.decapsBotM G H pk sk) cStar q
+omit [DecidableEq M] in
+/-- `eagerBotHandler` is the eager handler of `romProgram` with `FO^⊥` decapsulation. -/
+theorem eagerBotHandler_eq_romEagerHandler (S : Scheme PK SK M R CT K) (G : M → R)
+    (H : Bool × M × CT → K) (pk : PK) (sk : SK) (cStar : CT) :
+    S.eagerBotHandler G H pk sk cStar = romEagerHandler G H (S.botDecaps pk sk) cStar := by
+  have hd (c : CT) : PMF.pure (S.decapsBot G H pk sk c) = OracleComp.interpret
+      (OracleComp.sumHandler (fun m => PMF.pure (G m)) (fun x => PMF.pure (H x)))
+      (S.botDecaps pk sk c) := by
+    simp only [botDecaps, interpret_decapsBotM, OracleComp.interpret_query]
+    change _ = S.decapsBotM (m := PMF) (pure ∘ G) (pure ∘ H) pk sk c
+    rw [decapsBotM_pure]
+    rfl
+  funext q
+  refine Eq.trans ?_ (dispatch_eq_interpret_romProgram _ _ cStar q)
+  simp only [eagerBotHandler, hd]
+  rfl
 
-/-- A decapsulation query `c ≠ cStar` to `answerBotROHandler` as explicit table operations. -/
-private theorem answerBotROHandler_decaps (S : Scheme PK SK M R CT K) (pk : PK) (sk : SK)
-    {cStar c : CT} (hc : c ≠ cStar) (t : ROTables M R CT K) :
-    S.answerBotROHandler pk sk cStar (.decaps c) t =
-      match S.pke.dec sk c with
-      | none => PMF.pure (none, t)
-      | some m' =>
-        (RandomOracle.answer (fun _ => ProbComp.eval S.pke.sampleCoins) m' t.1).bind fun y =>
-          if S.pke.encDet pk m' y.1 = c then
-            (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) (false, m', c) t.2).map
-              fun z => (some z.1, (y.2, z.2))
-          else
-            PMF.pure (none, (y.2, t.2)) := by
-  simp only [answerBotROHandler, ROQuery.dispatch, hc, ↓reduceIte, decapsBotM_eq]
-  cases S.pke.dec sk c with
-  | none => rfl
-  | some m' =>
-    dsimp only
-    simp only [bind, StateT.bind, PMF.bind_map]
-    congr 1 with a : 1
-    dsimp only [Function.comp_apply]
-    split_ifs
-    · simp only [StateT.bind, Probability.PMF.monad_bind_eq_bind, PMF.bind_map]
-      rfl
-    · rfl
+/-- `roIndCcaBotGame` is the ROM IND-CCA experiment of `FO^⊥`. -/
+@[simp] theorem romIndCcaExperiment_bot (S : Scheme PK SK M R CT K)
+    (A : ROAdversary PK M R CT K) (b : Bool) :
+    S.romIndCcaExperiment S.pke.keyGen S.botDecaps A b = S.roIndCcaBotGame A b := by
+  simp only [romIndCcaExperiment, roIndCcaBotGame, roBotHandler_eq_romHandler]
 
-private theorem roBotHandler_map_roTablesOf (S : Scheme PK SK M R CT K) (pk : PK) (sk : SK)
-    (cStar : CT) (q : ROQuery M CT) (st : ROCache M R CT K) :
-    (ProbComp.eval (S.roBotHandler pk sk cStar q st)).map (fun z => (z.1, roTablesOf z.2)) =
-      S.answerBotROHandler pk sk cStar q (roTablesOf st) := by
-  cases q with
-  | G m =>
-    exact eval_zoom_memoize_map ROCache.gCache (fun st g => { st with gCache := g })
-      S.pke.sampleCoins m st id roTablesOf (fun g => (g, RandomOracle.ofList st.hCache))
-      (fun _ => rfl)
-  | H x =>
-    exact eval_zoom_memoize_map ROCache.hCache (fun st h => { st with hCache := h })
-      S.sampleKey x st id roTablesOf (fun h => (RandomOracle.ofList st.gCache, h))
-      (fun _ => rfl)
-  | decaps c =>
-    by_cases hc : c = cStar
-    · simp only [roBotHandler, answerBotROHandler, hc, ↓reduceIte, ROQuery.dispatch]
-      exact PMF.pure_map _ _
-    · rw [answerBotROHandler_decaps S pk sk hc]
-      simp only [roBotHandler, hc, ↓reduceIte, ROQuery.dispatch, decapsBotM_eq]
-      cases hdec : S.pke.dec sk c with
-      | none =>
-        exact PMF.pure_map _ _
-      | some m' =>
-        change (ProbComp.eval (roHashG S.pke.sampleCoins m' st >>= fun vs =>
-          (if S.pke.encDet pk m' vs.1 = c then do
-            let k ← roHashH S.sampleKey (false, m', c)
-            return some k
-          else return none) vs.2)).map _ = _
-        refine eval_zoom_memoize_bind ROCache.gCache (fun st g => { st with gCache := g })
-          S.pke.sampleCoins m' st
-          (fun r' st' => (if S.pke.encDet pk m' r' = c then do
-            let k ← roHashH S.sampleKey (false, m', c)
-            return some k
-          else return none) st')
-          roTablesOf _ (fun r' gC => ?_)
-        by_cases henc : S.pke.encDet pk m' r' = c
-        · simp only [henc, ↓reduceIte]
-          change (ProbComp.eval (roHashH S.sampleKey (false, m', c) { st with gCache := gC } >>=
-            fun vs => pure (some vs.1, vs.2))).map _ = _
-          refine Eq.trans ?_ (eval_zoom_memoize_map ROCache.hCache
-            (fun st h => { st with hCache := h }) S.sampleKey (false, m', c)
-            { st with gCache := gC } some roTablesOf
-            (fun h => (RandomOracle.ofList gC, h)) (fun _ => rfl))
-          rw [ProbComp.eval_bind, PMF.map_bind]
-          simp only [ProbComp.eval_pure, PMF.pure_map]
-          rfl
-        · simp only [henc, ↓reduceIte]
-          exact PMF.pure_map _ _
-
-private noncomputable def completeROTables [Fintype M] [Finite R] [Fintype CT] [Finite K]
-    (S : Scheme PK SK M R CT K) (t : ROTables M R CT K) :
-    PMF ((M → R) × (Bool × M × CT → K)) :=
-  (RandomOracle.complete (fun _ => ProbComp.eval S.pke.sampleCoins) t.1).bind fun G =>
-  (RandomOracle.complete (fun _ => ProbComp.eval S.sampleKey) t.2).map fun H => (G, H)
-
-private noncomputable def eagerBotStateHandler (S : Scheme PK SK M R CT K) (pk : PK) (sk : SK)
-    (cStar : CT) (q : ROQuery M CT) :
-    StateT ((M → R) × (Bool × M × CT → K)) PMF (ROResp R K q) :=
-  fun T => (S.eagerBotHandler T.1 T.2 pk sk cStar q).map (·, T)
-
-private theorem answerBotROHandler_sim [Fintype M] [Finite R] [Fintype CT] [Finite K]
-    (S : Scheme PK SK M R CT K) (pk : PK) (sk : SK) (cStar : CT) (q : ROQuery M CT)
-    (t : ROTables M R CT K) :
-    (S.answerBotROHandler pk sk cStar q t).bind
-        (fun x => (S.completeROTables x.2).map (x.1, ·)) =
-      (S.completeROTables t).bind (S.eagerBotStateHandler pk sk cStar q) := by
-  rcases t with ⟨tG, tH⟩
-  cases q with
-  | G m =>
-    simp only [answerBotROHandler, completeROTables, eagerBotStateHandler, eagerBotHandler,
-      pmf_norm, ROQuery.dispatch]
-    rw [answer_bind_complete]
-    · rfl
-    · intros; rfl
-  | H x =>
-    simp only [answerBotROHandler, completeROTables, eagerBotStateHandler, eagerBotHandler,
-      pmf_norm, PMF.map, ROQuery.dispatch]
-    rw [answer_bind_complete₁]
-    · pmf_swap
-    · intros; rfl
-  | decaps c =>
-    change (S.answerBotROHandler pk sk cStar (.decaps c) (tG, tH)).bind
-        (fun x => (S.completeROTables x.2).map (x.1, ·)) =
-      (S.completeROTables (tG, tH)).bind fun T =>
-        (S.eagerBotHandler T.1 T.2 pk sk cStar (.decaps c)).map (·, T)
-    by_cases hc : c = cStar
-    · dsimp only [answerBotROHandler, completeROTables, eagerBotHandler, ROQuery.dispatch]
-      simp only [hc, ↓reduceIte, pure, StateT.pure, pmf_norm, PMF.map]
-    · rw [answerBotROHandler_decaps S pk sk hc]
-      dsimp only [completeROTables, eagerBotHandler, decapsBot_eq, ROQuery.dispatch]
-      simp only [hc, ↓reduceIte, decT_eq, encT]
-      cases hdec : S.pke.dec sk c with
-      | none =>
-        simp only [Option.map_none, pmf_norm, PMF.map]
-      | some m' =>
-        simp only [pmf_norm, PMF.map]
-        refine Eq.trans ?_ (answer_bind_complete _ tG m'
-          (fun x G => (RandomOracle.complete (fun _ => ProbComp.eval S.sampleKey) tH).bind fun H =>
-            PMF.pure ((if S.pke.encDet pk m' x.1 = c then some m' else none).map
-              fun m'' => H (false, m'', c), G, H)) (fun _ _ _ => rfl))
-        congr 1 with y : 1
-        by_cases henc : S.pke.encDet pk m' y.1 = c
-        · simp only [henc, ↓reduceIte, Option.map_some, pmf_norm]
-          rw [answer_bind_complete₁]
-          · pmf_swap
-          · intros; rfl
-        · simp only [henc, ↓reduceIte, Option.map_none, pmf_norm]
-
-private theorem eval_run_roBotHandler_eq_eager [Fintype M] [Finite R] [Fintype CT] [Finite K]
-    (S : Scheme PK SK M R CT K) (pk : PK) (sk : SK) (cStar : CT) {α : Type}
-    (prog : OracleComp (ROResp (M := M) (CT := CT) R K) α) (st : ROCache M R CT K) :
-    (ProbComp.eval ((OracleComp.interpret (S.roBotHandler pk sk cStar) prog).run st)).map
-        Prod.fst =
-      (S.completeROTables (roTablesOf st)).bind fun T =>
-        OracleComp.interpret (S.eagerBotHandler T.1 T.2 pk sk cStar) prog := by
-  rw [OracleComp.map_run_interpret ProbComp.isMonadHom_eval]
-  have hmap := congrArg (PMF.map Prod.fst)
-    (OracleComp.run_interpret_map_state
-      (fun q s => ProbComp.eval (S.roBotHandler pk sk cStar q s))
-      (S.answerBotROHandler pk sk cStar) roTablesOf
-      (fun q s => S.roBotHandler_map_roTablesOf pk sk cStar q s) prog st)
-  simp only [PMF.map_comp, Function.comp_def] at hmap
-  rw [hmap, OracleComp.run_interpret_simulation_fst _ (S.eagerBotStateHandler pk sk cStar) _
-    (fun q t => S.answerBotROHandler_sim pk sk cStar q t)]
-  congr 1 with T : 1
-  have hro := congrArg (PMF.map Prod.fst)
-    (OracleComp.run_interpret_readOnly
-      (fun q T' => S.eagerBotHandler T'.1 T'.2 pk sk cStar q) prog T)
-  change ((OracleComp.interpret (S.eagerBotStateHandler pk sk cStar) prog).run T).map Prod.fst =
-    ((OracleComp.interpret (fun q => S.eagerBotHandler T.1 T.2 pk sk cStar q) prog).map
-      (fun a => (a, T))).map Prod.fst at hro
-  rw [PMF.map_comp] at hro
-  exact hro.trans (PMF.map_id _)
+omit [DecidableEq M] in
+/-- `eagerIndCcaBotGame` is the eager ROM IND-CCA experiment of `FO^⊥`. -/
+@[simp] theorem eagerRomIndCcaExperiment_bot [Fintype M] [Finite R] [Fintype CT] [Finite K]
+    (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K) (b : Bool) :
+    S.eagerRomIndCcaExperiment S.pke.keyGen S.botDecaps A b = S.eagerIndCcaBotGame A b := by
+  simp only [eagerRomIndCcaExperiment, eagerIndCcaBotGame, eagerBotHandler_eq_romEagerHandler]
 
 /-- **Eager/lazy equivalence for the `FO^⊥` ROM IND-CCA game**: evaluating the executable
 lazy-cached game `S.roIndCcaBotGame A b` yields the exact same output distribution as the eager
@@ -410,45 +275,8 @@ random-oracle game `S.eagerIndCcaBotGame A b`. -/
 theorem eval_roIndCcaBotGame_eq_eagerIndCcaBotGame [Fintype M] [Finite R] [Fintype CT] [Finite K]
     (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K) (b : Bool) :
     ProbComp.eval (S.roIndCcaBotGame A b) = S.eagerIndCcaBotGame A b := by
-  dsimp only [roIndCcaBotGame, eagerIndCcaBotGame, encapsBot]
-  simp only [pmf_norm, encT]
-  congr 1 with ⟨pk, sk⟩ : 1
-  have hstep (mStar : M) (rStar : R) (kReal kRand : K) :
-      (ProbComp.eval ((OracleComp.interpret (S.roBotHandler pk sk (S.pke.encDet pk mStar rStar))
-          (A ⟨pk, S.pke.encDet pk mStar rStar, if b then kRand else kReal⟩)).run
-          { gCache := [(mStar, rStar)],
-            hCache := [((false, mStar, S.pke.encDet pk mStar rStar), kReal)] })).bind
-          (fun a => PMF.pure a.1) =
-      (pi (Function.update (fun _ : M => ProbComp.eval S.pke.sampleCoins) mStar
-          (PMF.pure rStar))).bind fun G =>
-        (pi (Function.update (fun _ : Bool × M × CT => ProbComp.eval S.sampleKey)
-            (false, mStar, S.pke.encDet pk mStar rStar) (PMF.pure kReal))).bind fun H =>
-          OracleComp.interpret (S.eagerBotHandler G H pk sk (S.pke.encDet pk mStar rStar))
-            (A ⟨pk, S.pke.encDet pk mStar rStar, if b then kRand else kReal⟩) := by
-    change (ProbComp.eval _).map Prod.fst = _
-    rw [eval_run_roBotHandler_eq_eager]
-    simp only [completeROTables, roTablesOf, RandomOracle.complete_ofList_singleton, pmf_norm]
-  simp only [hstep]
-  pmf_hoist (ProbComp.eval S.sampleMsg)
-  congr 1 with mStar : 1
-  let dG : M → PMF R := fun _ => ProbComp.eval S.pke.sampleCoins
-  let dH : Bool × M × CT → PMF K := fun _ => ProbComp.eval S.sampleKey
-  refine Eq.trans ?_ (bind_pi_update dG mStar (fun rStar G =>
-    (pi dH).bind fun H =>
-    (ProbComp.eval S.sampleKey).bind fun kRand =>
-      OracleComp.interpret (S.eagerBotHandler G H pk sk (S.pke.encDet pk mStar rStar))
-        (A ⟨pk, S.pke.encDet pk mStar rStar, if b then kRand else
-          H (false, mStar, S.pke.encDet pk mStar rStar)⟩)))
-  congr 1 with rStar : 1
-  pmf_hoist (pi (Function.update dG mStar (PMF.pure rStar)))
-  congr 1 with G : 1
-  set cStar := S.pke.encDet pk mStar rStar
-  refine Eq.trans ?_ (bind_pi_update dH (false, mStar, cStar) (fun kReal H =>
-    (ProbComp.eval S.sampleKey).bind fun kRand =>
-      OracleComp.interpret (S.eagerBotHandler G H pk sk cStar)
-        (A ⟨pk, cStar, if b then kRand else kReal⟩)))
-  congr 1 with kReal : 1
-  exact PMF.bind_comm _ _ _
+  rw [← romIndCcaExperiment_bot, ← eagerRomIndCcaExperiment_bot]
+  exact S.eval_romIndCcaExperiment_eq_eager _ _ A b
 
 /-- The ROM IND-CCA advantage of `A` against `FO^⊥` equals the distinguishing advantage between
 `S.eagerIndCcaBotGame A false` and `S.eagerIndCcaBotGame A true`. -/
