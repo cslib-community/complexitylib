@@ -84,7 +84,7 @@ example (G : Graph) :
     fastCutLaw 7 G =
       let branch := (contractLaw (G, 6)).bind fun child => fastCutLaw 6 child
       branch.bind fun a => branch.map (min a) := by
-  simpa only [show Cslib.Algorithms.WordRAM.Karger.fastCutThreshold 7 = 6 by decide] using
+  simpa only [show Cslib.Algorithms.Karger.fastCutThreshold 7 = 6 by decide] using
     fastCutLaw_node (by decide : 7 ≤ 7) G
 
 end CslibFrontierTests.KargerFastCutLaw

@@ -24,7 +24,7 @@ handlers each make at most one query makes at most as many queries as `A`.
 * `Cslib.ProbOracleComp.IsQueryBounded.simulate`: one-query handlers preserve query budgets.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.ProbOracleComp
 

@@ -97,7 +97,7 @@ private theorem readIndex_injective (S : Scheme PK SK M R CT K) (G : M → R) (p
     Function.Injective (S.readIndex G pk sk) := by
   rintro (⟨_ | _, m, c⟩ | c) (⟨_ | _, m', c'⟩ | c') h <;>
     simp only [readIndex] at h <;> (try split_ifs at h) <;>
-    simp_all [decT, encT]
+    simp_all [decT_eq, encT]
 
 /-- Reading the independent tables `(Hq, Hraw, Hfb')` through `readIndex` gives independent tables
 `(H, Hfb)`. -/
@@ -161,7 +161,7 @@ private theorem eagerFbHandler_reindex (S : Scheme PK SK M R CT K) (G : M → R)
   | G m => rfl
   | H x => rfl
   | decaps c =>
-    simp only [eagerFbHandler, eagerCoupledHandler]
+    simp only [eagerFbHandler, eagerCoupledHandler, ROQuery.dispatch]
     by_cases hc : c = cStar
     · simp [hc]
     · simp only [hc, ↓reduceIte]
@@ -193,8 +193,8 @@ theorem eagerCoupledGame_eq_eagerFbGame [Fintype M] [Finite R] [Fintype CT] [Fin
                   (ProbComp.eval S.sampleKey).bind fun kRand =>
                     OracleComp.interpret
                       (S.eagerCoupledHandler G Hq Hraw pk sk (encT S.pke G pk mStar))
-                      (A (pk, encT S.pke G pk mStar, if b = true then kRand else
-                        S.coupledH G Hq Hraw pk sk (false, mStar, encT S.pke G pk mStar))) := by
+                      (A ⟨pk, encT S.pke G pk mStar, if b = true then kRand else
+                        S.coupledH G Hq Hraw pk sk (false, mStar, encT S.pke G pk mStar)⟩) := by
         congr 1 with s : 1
         congr 1 with G : 1
         rw [bind_pi_reindex S G pk sk]

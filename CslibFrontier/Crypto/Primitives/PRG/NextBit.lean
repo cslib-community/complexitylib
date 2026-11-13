@@ -14,6 +14,7 @@ import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Bool
+import CslibFrontier.Probability.PMF.UniformPoint
 import CslibFrontier.Probability.Product
 
 /-!
@@ -96,11 +97,6 @@ and output `r` if it accepts and `!r` if it rejects [Boneh and Shoup, Lemma 3.5]
 noncomputable def guessOfDistinguisher (d : Bool → PMF Bool) : PMF Bool := do
   let r ← uniformOfFintype Bool
   (d r).map fun a => if a then r else !r
-
-private theorem map_decide_eq_apply_true {α : Type*} [DecidableEq α] (q : PMF α) (c : α) :
-    (q.map fun a => decide (a = c)) true = q c := by
-  rw [PMF.map_apply]
-  simp
 
 /-- The distinguisher/predictor lemma for a single bit, without subtraction. -/
 private theorem guessOfDistinguisher_apply_add (d : Bool → PMF Bool) (b : Bool) :

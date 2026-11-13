@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Privacy.DifferentialPrivacy.Composition
 public import CslibFrontier.Privacy.DifferentialPrivacy.DiscreteLaplace
+public import CslibFrontier.Privacy.DifferentialPrivacy.Sensitivity
 import CslibFrontier.Probability.PMF.EventBind
 import CslibFrontier.Probability.PMF.Map
 
@@ -161,7 +162,7 @@ the query noise by `2 s` changes them by at most `exp ε₂`. This generalizes
 proof. -/
 theorem DifferentiallyPrivate.aboveThresholdMechanism {D : Type*} {Adj : D → D → Prop}
     {ρ ν : PMF ℤ} {T : ℝ} {fs : List (D → ℝ)} {s : ℤ} {ε₁ ε₂ : ℝ} (hε₂ : 0 ≤ ε₂)
-    (hfs : ∀ f ∈ fs, ∀ ⦃x y⦄, Adj x y → |f x - f y| ≤ s)
+    (hfs : ∀ f ∈ fs, Sensitivity Adj f s)
     (hρ : ∀ r, ρ r ≤ ENNReal.ofReal (Real.exp ε₁) * ρ (r + s))
     (hν : ∀ v, ν v ≤ ENNReal.ofReal (Real.exp ε₂) * ν (v + 2 * s)) :
     DifferentiallyPrivate Adj (Privacy.aboveThresholdMechanism ρ ν T fs) (ε₁ + ε₂) 0 := by
@@ -196,7 +197,7 @@ privacy, however many queries are asked. This is the discrete-noise analogue of
 [DworkRoth2014, Theorem 3.23]. -/
 theorem differentiallyPrivate_aboveThreshold_discreteLaplace {D : Type*} {Adj : D → D → Prop}
     {T : ℝ} {fs : List (D → ℝ)} {Δ : ℕ} (hΔ : 0 < Δ)
-    (hfs : ∀ f ∈ fs, ∀ ⦃x y⦄, Adj x y → |f x - f y| ≤ Δ) {ε : ℝ} (hε : 0 < ε) :
+    (hfs : ∀ f ∈ fs, Sensitivity Adj f Δ) {ε : ℝ} (hε : 0 < ε) :
     DifferentiallyPrivate Adj
       (aboveThresholdMechanism (discreteLaplace (2 * Δ / ε) (by positivity))
         (discreteLaplace (4 * Δ / ε) (by positivity)) T fs) ε 0 := by
@@ -393,7 +394,7 @@ theorem mem_of_mem_sparseStream {fs : List (D → ℝ)} {history : List (Option 
 [DworkRoth2014, Theorem 3.25] for `δ = 0`. -/
 theorem DifferentiallyPrivate.sparse {Adj : D → D → Prop} {ρ ν : PMF ℤ} {T : ℝ}
     {qs : List (Option ℕ) → List (D → ℝ)} {s : ℤ} {ε₁ ε₂ : ℝ} (hε₂ : 0 ≤ ε₂)
-    (hqs : ∀ history, ∀ f ∈ qs history, ∀ ⦃x y⦄, Adj x y → |f x - f y| ≤ s)
+    (hqs : ∀ history, ∀ f ∈ qs history, Sensitivity Adj f s)
     (hρ : ∀ r, ρ r ≤ ENNReal.ofReal (Real.exp ε₁) * ρ (r + s))
     (hν : ∀ v, ν v ≤ ENNReal.ofReal (Real.exp ε₂) * ν (v + 2 * s)) (c : ℕ) :
     DifferentiallyPrivate Adj (Privacy.sparse ρ ν T qs c) (c * (ε₁ + ε₂)) 0 := by
@@ -409,7 +410,7 @@ scales `2 c Δ / ε` and `4 c Δ / ε`, is `(ε, 0)`-differentially private for 
 `Δ ≥ 1` (an integer); the `δ = 0` case of [DworkRoth2014, Theorem 3.25], with discrete noise. -/
 theorem differentiallyPrivate_sparse_discreteLaplace {Adj : D → D → Prop} {T : ℝ}
     {qs : List (Option ℕ) → List (D → ℝ)} {Δ : ℕ} (hΔ : 0 < Δ)
-    (hqs : ∀ history, ∀ f ∈ qs history, ∀ ⦃x y⦄, Adj x y → |f x - f y| ≤ Δ) {c : ℕ} (hc : 0 < c)
+    (hqs : ∀ history, ∀ f ∈ qs history, Sensitivity Adj f Δ) {c : ℕ} (hc : 0 < c)
     {ε : ℝ} (hε : 0 < ε) :
     DifferentiallyPrivate Adj
       (sparse (discreteLaplace (2 * c * Δ / ε) (by positivity))
@@ -435,7 +436,7 @@ unconsumed queries, with discrete Laplace noise of scales `2 c Δ / ε` and `4 c
 `(ε, 0)`-differentially private. -/
 theorem differentiallyPrivate_sparse_sparseStream_discreteLaplace {Adj : D → D → Prop} {T : ℝ}
     {fs : List (D → ℝ)} {Δ : ℕ} (hΔ : 0 < Δ)
-    (hfs : ∀ f ∈ fs, ∀ ⦃x y⦄, Adj x y → |f x - f y| ≤ Δ) {c : ℕ} (hc : 0 < c) {ε : ℝ}
+    (hfs : ∀ f ∈ fs, Sensitivity Adj f Δ) {c : ℕ} (hc : 0 < c) {ε : ℝ}
     (hε : 0 < ε) :
     DifferentiallyPrivate Adj
       (sparse (discreteLaplace (2 * c * Δ / ε) (by positivity))

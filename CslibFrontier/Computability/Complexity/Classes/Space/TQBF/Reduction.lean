@@ -24,7 +24,7 @@ quantified Boolean formula [Sipser, Theorem 8.9][Sipser2013]
 (`Cslib.Complexity.TQBF.savitchFormula`) on the codes, of width `w = 2 * W + 2` for the width `W`
 of the codes, at depth `w`. Each of its `w` levels has `O(w)` tokens, so it has `O(w ^ 2)` tokens
 besides those of its formula of level `0`; it is computed in polynomial time in
-`Cslib.Computability.Complexity.Classes.Space.TQBF.PolyTime`.
+`CslibFrontier.Computability.Complexity.Classes.Space.TQBF.PolyTime`.
 
 Its formula of level `0` must express one step or none between the words held by two blocks. The
 step test of codes is polynomial-time (`Cslib.Complexity.TQBF.computableInPolyTime_edgeTest`),

@@ -1152,22 +1152,6 @@ private theorem listRow_eq_drop_take_of_le {κ n i : ℕ} (hi : i ≤ n) {K : Li
     omega
   unfold BitString.listRow; rw [List.take_append_of_le_length hrem]
 
-private theorem pmf_map_true_le_sum {α : Type*} (μ : PMF α) (D : ℕ)
-    (W : α → Bool) (Wi : Fin D → α → Bool)
-    (hcover : ∀ a ∈ μ.support, W a = true → ∃ s : Fin D, Wi s a = true) :
-    (μ.map W) true ≤ ∑ s : Fin D, (μ.map (Wi s)) true := by
-  let F (j : ℕ) (a : α) : Bool := if hj : j < D then Wi ⟨j, hj⟩ a else false
-  have hmono : (μ.map W) true ≤ (μ.map (fun a => (List.range D).any (fun j => F j a))) true := by
-    refine PMF.map_true_mono μ fun a ha hW => ?_
-    obtain ⟨⟨j, hj⟩, hs⟩ := hcover a ha hW
-    exact List.any_eq_true.mpr ⟨j, List.mem_range.mpr hj, by simp only [F, hj, ↓reduceDIte, hs]⟩
-  refine hmono.trans ((PMF.map_any_range_true_le_sum μ D F).trans ?_)
-  rw [Finset.sum_fin_eq_sum_range]
-  refine Finset.sum_le_sum fun j hj => ?_
-  have hj_lt : j < D := Finset.mem_range.mp hj
-  have hF : F j = Wi ⟨j, hj_lt⟩ := funext fun a => by simp only [F, hj_lt, ↓reduceDIte]
-  simp only [hj_lt, ↓reduceDIte, hF, le_rfl]
-
 /-- **Concrete security bound for `uowhfTreeHash`**: at any security parameter `n ≥ 1` with
 `n ≤ blockLen n`, `1 ≤ maxBlocks n`, and every supported message pair `(m₀, m₁)` of `adversary`
 satisfying `m₀.length ≤ maxBlocks n`, `m₀.length < 2 ^ n`, and `m₁.length < 2 ^ n`, the
@@ -1291,8 +1275,10 @@ theorem succProbability_targetCollisionGame_uowhfTreeHash_le
       beq_iff_eq, length_uowhfCandidateInput, true_and, M]
     exact ⟨hx_ne, hx_col⟩
   have hsum_le : (μ.map W) true ≤ ∑ s : Fin (dyadicSize bound), (slotTrial s.val) true := by
-    refine (pmf_map_true_le_sum μ (dyadicSize bound) W Wi hcover).trans
+    refine (PMF.map_true_le_sum μ Finset.univ (F := Wi) fun a ha hW => ?_).trans
       (Finset.sum_le_sum fun s _ => ?_)
+    · obtain ⟨s, hs⟩ := hcover a ha hW
+      exact ⟨s, Finset.mem_univ _, hs⟩
     by_cases hs : s.val < bound
     · rw [hslot_eq s hs]
     · simp only [Wi, hs, ↓reduceIte, PMF.map_apply, Bool.true_eq_false, tsum_zero, zero_le]

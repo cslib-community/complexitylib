@@ -254,10 +254,6 @@ theorem encOptSolution_mk_polyTime {β γ : Type} {encB : β ↪ List Bool}
 
 /-! ### Pure bisection iteration and `lowerBoundM` bridge -/
 
-/-- Binary bit-length `n.size` is at most `⌊log₂ n⌋ + 1` (with equality for `n > 0`). -/
-theorem size_le_log_two_add_one (n : ℕ) : n.size ≤ Nat.log 2 n + 1 :=
-  Nat.size_le.mpr (Nat.lt_pow_succ_log_self (by decide) n)
-
 /-- One pure step of bisection on `[iv.lo, iv.hi)` for a Boolean test `test`. -/
 def bisectStep (test : ℕ → Bool) (iv : BisectInterval) : BisectInterval :=
   if iv.lo < iv.hi then
