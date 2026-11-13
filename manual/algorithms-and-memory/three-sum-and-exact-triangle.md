@@ -407,10 +407,20 @@ for every modulus and all seeds; `time_vthreeSumM` is the exact cost for given r
 [reduction tests](../../CslibFrontierTests/Algorithms/Lean/VectorReduction.lean) run it with
 `p = 29` and apply `vmiss_le`.
 
-Not formalized: Theorem 3.4's choice of `d = 2 log_ρ n̂ + O(log log N)` and `μ`, the count
-`#balancedPairs`, the expected running time and amplification, the choice of `r`, `δ` and `d` for
-Corollary 3.5, Corollary 3.5 itself, odd k-SUM (Corollary 3.6), the unbalanced and per-query
-forms, and Word-RAM realizations. The [tests](../../CslibFrontierTests/Algorithms/Lean/VectorConvolution.lean) run
+The count of pairs is exact: import
+`CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.BalancedCount` for
+`card_balancedPairs` (`#balancedPairs r d = d! / ((d/r)!)^r · (r!)^(d/r)` for `0 < r`, `r ∣ d`;
+proved by orbit–stabilizer for the permutations of the `d` positions) and `balancedVecs_eq_empty`
+(no balanced vectors when `r ∤ d`). `CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.VectorParameters`
+uses it to choose the number of trials: with `μ = vTrials k e r d`, computed from `k`, `e`, `r`
+and `d` only, `vaverage_miss_le_exp` bounds the miss probability by `#bad / #window + exp (-k)`.
+The [count tests](../../CslibFrontierTests/Algorithms/Lean/BalancedCount.lean) compute
+`#balancedPairs 3 3 = 36` both ways and instantiate the bound.
+
+Not formalized: Theorem 3.4's choice of `d = 2 log_ρ n̂ + O(log log N)`, the lower bound
+`d! / ((d/r)!)^r = r^d / d^{Θ(r)}`, the expected running time and amplification, the choice of
+`r`, `δ` and `d` for Corollary 3.5, Corollary 3.5 itself, odd k-SUM (Corollary 3.6), the
+unbalanced and per-query forms, and Word-RAM realizations. The [tests](../../CslibFrontierTests/Algorithms/Lean/VectorConvolution.lean) run
 `solveM` on `[3]^2` and a base-`3` trial with `p = 29` by kernel reduction. Check with
 
 ```bash

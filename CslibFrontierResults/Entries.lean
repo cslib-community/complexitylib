@@ -17,6 +17,8 @@ import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Reduction
 import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Corollary
 import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.VectorProbability
 import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.VectorReduction
+import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.BalancedCount
+import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.VectorParameters
 import CslibFrontier.Algorithms.Lean.VectorConvolution
 import CslibFrontier.Algorithms.Lean.VectorConvolution.CostBounds
 import CslibFrontier.Algorithms.LinearAlgebra.BareissElimination
@@ -3813,6 +3815,38 @@ register_result "vector-convolution-explicit-cost-timem" where
     sum_{j <= t-s} (t choose j) vectors of size >= s below each query, and the resulting bound \
     on the TimeM cost of the [r]^d convolution. The asymptotic forms of the paper and the choice \
     of r, delta and d for Corollary 3.5 are not formalized."
+
+register_result "integer-3sum-base-r-balanced-pair-count" where
+  title := "Exact number of balanced pairs in the base-r 3SUM trial"
+  topic := "algorithms"
+  sources := [
+    { paper := ChanItakuraMaYu2026, theorem := "Theorem 3.4 (count of P)",
+      locator := "Section 3.2, p. 13" }
+  ]
+  theorems := [
+    Cslib.Algorithms.Lean.SubsetConvThreeSum.card_balancedPairs,
+    Cslib.Algorithms.Lean.SubsetConvThreeSum.card_balancedPairs_mul,
+    Cslib.Algorithms.Lean.SubsetConvThreeSum.balancedVecs_eq_empty
+  ]
+  scope := "For 0 < r and r | d: #P = d!/((d/r)!)^r * (r!)^(d/r) exactly, P the pairs of numbers \
+    below r^d whose base-r digit vectors add up to a balanced vector; none if r does not divide \
+    d. The asymptotic form r^d / d^Theta(r) of the multinomial is not formalized."
+
+register_result "integer-3sum-base-r-trial-number" where
+  title := "Number of trials and miss envelope of the base-r 3SUM reduction"
+  topic := "algorithms"
+  sources := [
+    { paper := ChanItakuraMaYu2026, theorem := "Theorem 3.4 (choice of mu)",
+      locator := "Section 3.2, p. 14" }
+  ]
+  theorems := [
+    Cslib.Algorithms.Lean.SubsetConvThreeSum.lt_three_mul_card_mul_vTrials,
+    Cslib.Algorithms.Lean.SubsetConvThreeSum.vaverage_miss_le_exp
+  ]
+  scope := "mu = vTrials k e r d is computed from k, e, r, d; with mu trials and a uniform prime of \
+    [2^e, 2^(e+1)) with r^d <= 2^e the miss probability is at most #bad/#window + exp(-k), for \
+    0 < r, r | d. The choice of d, the expected running time with these parameters and \
+    Corollaries 3.5 and 3.6 are not formalized."
 
 register_result "integer-3sum-base-r-reduction-timem" where
   title := "Base-r hashing reduction from integer 3SUM to convolution in [r]^d"

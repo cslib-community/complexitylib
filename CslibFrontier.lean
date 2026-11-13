@@ -225,6 +225,7 @@ public import CslibFrontier.Algorithms.Lean.StoerWagner.Basic
 public import CslibFrontier.Algorithms.Lean.Submodular.Basic
 public import CslibFrontier.Algorithms.Lean.Submodular.Greedy
 public import CslibFrontier.Algorithms.Lean.Submodular.MatroidGreedy
+public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.BalancedCount
 public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Corollary
 public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Expectation
 public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.ExpectedCost
@@ -234,6 +235,7 @@ public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Reduction
 public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Repetition
 public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Trial
 public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.TrialReduction
+public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.VectorParameters
 public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.VectorProbability
 public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.VectorReduction
 public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.VectorTrial
