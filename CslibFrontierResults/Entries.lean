@@ -210,6 +210,7 @@ import CslibFrontier.Logics.SecondOrder.WordMSO.StarFree
 import CslibFrontier.MachineLearning.LossMinimization.RLM
 import CslibFrontier.MachineLearning.OnlineLearning.SwapRegret
 import CslibFrontier.MachineLearning.PACLearning.MDL
+import CslibFrontier.MachineLearning.PACLearning.MulticlassPredictors
 import CslibFrontier.MachineLearning.PACLearning.Nonuniform
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.AC0Mod
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.Amplification
@@ -1667,6 +1668,24 @@ register_result "mdl-bound" where
     hypotheses with measurable misclassification sets, for m > 0 and δ > 0. With probability \
     at least 1 - δ every h satisfies L_D(h) ≤ L_S(h) + √((|d h| log 2 + log (2/δ)) / (2m)), \
     which is sharper than the source's |h| + ln (2/δ). Kraft's inequality is Mathlib's."
+
+register_result "natarajan-linear-multiclass" where
+  title := "The Natarajan dimension of linear multiclass predictors is at most the dimension"
+  topic := "statistical learning"
+  sources := [
+    { paper := ShalevShwartzBenDavid2014, theorem := "Theorem 29.7",
+      locator := "Section 29.3.3, p. 406" }
+  ]
+  theorems := [
+    Cslib.MachineLearning.PACLearning.card_le_finrank_of_natarajanShatters_linearArgmaxClass,
+    Cslib.MachineLearning.PACLearning.natarajanDim_linearArgmaxClass_le,
+    Cslib.MachineLearning.PACLearning.natarajanDim_linearArgmaxClass_featureScores_le
+  ]
+  scope := "Argmax predictors of any linear family of real scores with parameters in a \
+    finite-dimensional space, with ties broken toward the smallest label; for a feature map \
+    into Fin d → ℝ the bound is d. The proof orders the two witness labels, since the source's \
+    strict inequalities fail under ties. Corollary 29.8 is covered only by its upper bound k n \
+    (natarajanDim_linearArgmaxClass_multivectorScores_le); its lower bound is not formalized."
 
 register_result "gmw-zero-knowledge" where
   title := "Goldreich–Micali–Wigderson auxiliary-input zero-knowledge proofs for NP"
