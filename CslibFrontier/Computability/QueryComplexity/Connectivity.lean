@@ -17,13 +17,27 @@ import CslibFrontier.Foundations.Data.BitString.PartialAssignment
 # Graph connectivity requires every edge query
 
 The total connectivity function on labelled undirected simple graphs has deterministic query
-complexity `n.choose 2`, one query per possible edge [AroraBarak09] (public draft, Theorem 11.4).
+complexity `n.choose 2`, one query per possible edge [AroraBarak07] (public draft, Theorem 11.4).
 Queries may be
 repeated. The bridge adversary answers false unless deleting the queried edge disconnects the
 remaining possible graph; confirmed edges remain bridges of that graph.
 
 The empty graph is disconnected and the one-vertex graph is connected, following Mathlib's
 conventions. Both functions have zero query complexity.
+
+## Main definitions
+
+* `Cslib.BitString.Graph.connectivity`: the total labelled simple-graph connectivity function.
+
+## Main results
+
+* `Cslib.BitString.Graph.complexity_connectivity`: its exact deterministic query complexity.
+* `Cslib.BitString.Graph.connectivity_zero`, `connectivity_one`: the empty and singleton cases.
+
+## References
+
+* [S. Arora and B. Barak, *Computational Complexity: A Modern Approach*, public draft,
+  Theorem 11.4][AroraBarak07]
 -/
 
 public section
@@ -153,7 +167,7 @@ private theorem free_card_le_depth {n : ℕ} (t : DecisionTree (Fin (edgeCount n
         omega
 
 /-- **Connectivity is evasive:** deciding connectivity of a labelled undirected simple graph
-requires every possible edge in the worst case [AroraBarak09] (public draft, Theorem 11.4). -/
+requires every possible edge in the worst case [AroraBarak07] (public draft, Theorem 11.4). -/
 theorem complexity_connectivity (n : ℕ) :
     DecisionTree.complexity (connectivity n) = n.choose 2 := by
   classical

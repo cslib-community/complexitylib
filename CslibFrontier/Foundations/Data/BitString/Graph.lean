@@ -23,12 +23,13 @@ clique containment and connectivity without importing either application.
 ## Main definitions
 
 * `Cslib.BitString.Graph.Edge`, `edgeCount`, `edgeEquiv`: the possible edges and their numbering.
-* `Cslib.BitString.Graph.graph`: the graph encoded by an input word.
+* `Cslib.BitString.Graph.graph`, `ofGraph`: graph/edge-word conversion.
 
 ## Main results
 
 * `Cslib.BitString.Graph.edgeCount_eq_choose`: the coordinate count is `n.choose 2`.
 * `Cslib.BitString.Graph.graph_adj`: adjacency is the corresponding edge bit.
+* `Cslib.BitString.Graph.graph_ofGraph`, `ofGraph_graph`: both conversions are inverse.
 
 The encoding and its original lemmas were extracted from Samuel Schlesinger's clique module.
 -/

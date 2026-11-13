@@ -231,7 +231,7 @@ register_result "connectivity-evasiveness" where
   title := "Graph connectivity requires every possible edge query"
   topic := "query complexity"
   sources := [
-    { paper := AroraBarak09, theorem := "Theorem 11.4 (2007 public draft)",
+    { paper := AroraBarak07, theorem := "Theorem 11.4 (2007 public draft)",
       locator := "2007 public draft, PDF 228 / printed p. 212" }
   ]
   theorems := [Cslib.BitString.Graph.complexity_connectivity]
