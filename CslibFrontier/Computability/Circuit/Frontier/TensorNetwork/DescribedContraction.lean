@@ -79,6 +79,7 @@ contraction algorithm, with implicit packet tensors as descriptors.
 
 * `Cslib.Circuits.Frontier.SumOps`: ring operations on values, with `SumOps.IsHom` and
   `SumOps.PolyTime`; the instances `SumOps.mod` and `SumOps.galois`.
+* `Cslib.Circuits.Frontier.DescribedNetwork.Node`: a node of direct summation.
 * `Cslib.Circuits.Frontier.DescribedNetwork.sumScheme`: direct summation as a recursion scheme.
 * `Cslib.Circuits.Frontier.DescribedNetwork.sumValue`: its value.
 * `Cslib.Circuits.Frontier.DescribedNetwork.encDescribed`: the encoding of a described network.
