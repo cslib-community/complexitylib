@@ -35,12 +35,12 @@ variable {Rel : Type}
 private theorem computable_equation (encRel : Rel ↪ List Bool) :
     ComputableInPolyTime
       (fun p : Constraint Rel ℕ × AffineEquation ℕ =>
-        p.2.relabel (fun i => p.1.2.getD i 0))
+        p.2.relabel (fun i => p.1.scope.getD i 0))
       (encPair (encConstraint encRel encNat) (encPair (encList encUnary) encBool))
       (encPair (encList encNat) encBool) := by
   have hvars : ComputableInPolyTime
       (fun p : Constraint Rel ℕ × AffineEquation ℕ =>
-        p.2.1.map (fun i => p.1.2.getD i 0))
+        p.2.1.map (fun i => p.1.scope.getD i 0))
       (encPair (encConstraint encRel encNat) (encPair (encList encUnary) encBool))
       (encList encNat) := by
     refine mapWithInput (encA := encUnary) ?_ ?_
@@ -56,7 +56,7 @@ private theorem computable_constraint [Finite Rel] (encRel : Rel ↪ List Bool)
   have ht : ComputableInPolyTime template encRel
       (encList (encPair (encList encUnary) encBool)) := of_finite _
   unfold Constraint.instantiateAffine AffineSystem.relabel
-  exact mapWithInput (ht.comp (fst _ _)) (computable_equation encRel)
+  exact mapWithInput (ht.comp (encConstraint_rel_polyTime id')) (computable_equation encRel)
 
 /-- Fixed affine systems can be instantiated in native polynomial time, with unary local
 positions and binary original variable labels. The bound may depend on the fixed language. -/

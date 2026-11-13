@@ -157,7 +157,7 @@ advantage `1 / 2`. -/
 theorem not_decisionLWE_zeroNoise :
     ¬ DecisionLWE (fun _ => 0) (fun _ => 1) (fun _ => 1) zeroNoise := by
   intro h
-  have hneg := h firstBitFalse firstBitFalse_ppt
+  have hneg := h.encoded firstBitFalse firstBitFalse_ppt
   have hadv (security : ℕ) : Game.advantage
       (distinguishingGame (LWE.realEnsemble (fun _ => 0) (fun _ => 1) (fun _ => 1) zeroNoise
         security) (firstBitFalse security))

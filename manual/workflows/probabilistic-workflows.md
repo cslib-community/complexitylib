@@ -106,7 +106,12 @@ counting tuples when the factors are not uniform. `pi_map_curry` in
 [Product/Reindex.lean](../../CslibFrontier/Probability/Product/Reindex.lean) splits a product
 indexed by `ι × κ` into independent blocks, and `toOuterMeasure_pi_forall` in
 [Product/Event.lean](../../CslibFrontier/Probability/Product/Event.lean) is the probability of a
-box `{u | ∀ i, u i ∈ E i}`. For a uniform draw on a finite group, import
+box `{u | ∀ i, u i ∈ E i}`. To move a finite statistic of i.i.d. samples from a measure into this
+setting, import [Product/MapMeasure.lean](../../CslibFrontier/Probability/Product/MapMeasure.lean):
+`map_measurePi_eq_toMeasure_pi` identifies the image of `Measure.pi μ` under coordinatewise
+measurable maps into finite types with `(pi fun i => ((μ i).map (g i)).toPMF).toMeasure`, after
+which the PMF concentration bounds apply.
+For a uniform draw on a finite group, import
 [Uniform.lean](../../CslibFrontier/Probability/Uniform.lean): `uniformOfFintype_map_add_left` and
 `uniformOfFintype_bind_add_left`, with their `_right` forms, remove a fixed mask as in the one-time
 pad; `uniformOfFintype_map_addHom` and `uniformOfFintype_map_monoidHom` push the uniform law
@@ -189,8 +194,20 @@ over the uniform law by hand. For any law `μ`, `PMF.bind_pure_decide_eq_apply_t
 it: a uniform draw equals `a` with probability `(Fintype.card α)⁻¹`, and
 `PMF.uniformOfFintype_bind_pure_apply_true_le` gives the upper bound `(Fintype.card α)⁻¹` for any
 test accepting at most one value, such as comparing a fixed point with an injective image of the
-draw. The [fixed-group Diffie–Hellman checks](../../CslibFrontierTests/Crypto/DiffieHellmanFinite.lean)
+draw. For an event written as a set, `PMF.toOuterMeasure_uniformOfFintype_le_of_subsingleton` gives
+the same bound when the set has at most one member; for the preimage of a point under an injective
+`f`, supply `Set.subsingleton_singleton.preimage hf`. The
+[fixed-group Diffie–Hellman checks](../../CslibFrontierTests/Crypto/DiffieHellmanFinite.lean)
 compute discrete-logarithm advantages `1 / q` with it.
+
+To compare two-stage experiments at one outcome, import
+[PMF/BindCompare.lean](../../CslibFrontier/Probability/PMF/BindCompare.lean) instead of expanding
+`PMF.bind_apply` into sums. `PMF.bind_apply_add_of_forall` and `PMF.bind_apply_add_eq_on_support`
+carry a pointwise sum identity between continuations over to the experiments,
+`PMF.bind_apply_le_add_of_ne` bounds continuations that are close away from one first-stage result,
+and `PMF.bind_apply_eq_of_good` equates stateful experiments that agree until a bad state. The
+one-sided comparisons on the support are in
+[PMF/Bind.lean](../../CslibFrontier/Probability/PMF/Bind.lean).
 
 Moving a bound between `ℝ≥0∞` and `ℝ` or `ℝ≥0` (`ENNReal.toReal_mono`, `ENNReal.toReal_add`,
 `ENNReal.toNNReal_mono`, `ENNReal.toReal_sum`) needs every term to be finite. Import
@@ -1469,6 +1486,14 @@ split on the private-sampling branch. The forward lift
 [PRP.StrongAdversary.isQueryBounded_ofForward](../../CslibFrontier/Crypto/Primitives/PRP/Finite.lean)
 is a one-line client.
 
+To analyse a substituted program against a stateful oracle, for example in an identical-until-bad
+hop, import
+[Oracle/Substitution/RunWith.lean](../../CslibFrontier/Languages/Probabilistic/Oracle/Substitution/RunWith.lean).
+`ProbOracleComp.runWith_simulate` rewrites `runWith oracle (simulate handler A)` to a run of `A`
+whose queries each run `handler q` against `oracle`. The block-mode reduction
+[blockModeReduction](../../CslibFrontier/Crypto/Computational/Encryption/RandomFunctionHybrid.lean)
+uses it for its fresh-sampling hop and in the CTR and OFB collision bounds.
+
 If an existing proof needs the underlying interpreter, unfold `ProbOracleComp.simulate` to
 reuse its laws and native efficiency certificates. Substitution preserves the free program;
 it does not by itself certify its runtime. This separation follows VCVio's treatment of
@@ -1644,6 +1669,7 @@ When two stateful oracle handlers agree until an internal collision or guessing 
   - `RandomOracle.toOuterMeasure_exists_mem_fst_eq_le` bounds `μ.toOuterMeasure {a | ∃ e ∈ cache, e.1 = f a}` by `cache.length * δ` whenever `∀ q, (μ.map f) q ≤ δ`, and `RandomOracle.map_comp_apply_le_of_injective` transports that guessing bound through an injective key embedding.
   - `RandomOracle.lazyProgramHandler` and `RandomOracle.overwriteProgramHandler` (with flagged counterparts `flaggedLazyProgramHandler` and `flaggedOverwriteProgramHandler` used in [FiatShamir.lean](../../CslibFrontier/Crypto/Protocols/SigmaProtocol/FiatShamir.lean) and [FiatShamirNIZK.lean](../../CslibFrontier/Crypto/Protocols/SigmaProtocol/FiatShamirNIZK.lean)) model a two-channel experiment (`Req ⊕ Query`) whose active `.inl req` calls sample `ts ← samplePre req` with guessing bound `δ` at `point req ts` and either query `memoize (fun _ => dist)` lazily or overwrite `(point req ts, c)` with a fresh `c ← dist`. `closeTo_run_lazyProgramHandler_overwriteProgramHandler_choose_two` and `closeTo_runWith_lazyProgramHandler_overwriteProgramHandler_choose_two` (plus `advantage_runWith_lazyProgramHandler_overwriteProgramHandler_choose_two_le`) bound the programming-collision error by `(q_S * cache.length + q_S * q_H + q_S.choose 2) * δ`, with rectangular corollaries `q_S * (cache.length + q_S + q_H) * δ`.
   - `RandomOracle.toOuterMeasure_collision_memoize_uniform_le` and `RandomOracle.toOuterMeasure_hasOutputCollision_memoize_uniform_le` (with `runWith` variants for `ProbOracleComp`) prove the `q`-query random-oracle output-collision birthday bound `q.choose 2 / Fintype.card Digest` starting from `[]`.
+- **Two independent random oracles as two lists.** When a protocol calls two random oracles, such as a Merkle hash and a Fiat–Shamir challenge oracle, import [RandomOracle/Sum.lean](../../CslibFrontier/Languages/Probabilistic/RandomOracle/Sum.lean) and run it under `RandomOracle.memoizeSum dist₁ dist₂`, which keeps one association list per oracle. `RandomOracle.run_interpret_memoizeSum` shows that the two lists implement the lazy random oracle `RandomOracle.answer (sumHandler dist₁ dist₂)` on their joined cache `Cache.sum (ofList tr₁) (ofList tr₂)`, and `map_fst_run_interpret_memoizeSum_nil` gives the output distribution from empty lists. One call unfolds with `memoizeSum_inl`/`_inr` and inverts with `mem_support_memoizeSum_inl`/`_inr`; `run_interpret_memoizeSum_liftLeft`/`_liftRight` reduce a one-sided subprogram to ordinary `memoize`, and `mem_support_run_interpret_memoizeSum` carries per-list invariants (for example `mem_support_memoize_nodup`). Per-oracle query budgets of embedded subprograms come from `IsCostBounded.liftLeft`/`liftRight` and `liftLeft_of_cost_inl_eq_zero`/`liftRight_of_cost_inr_eq_zero` in [QueryCount/Sum.lean](../../CslibFrontier/Languages/Probabilistic/QueryCount/Sum.lean). `micaliMemoize` and `bcsMemoize` are the two instances.
 
 The [checked clients](../../CslibFrontierTests/Crypto/UntilBadROMFramework.lean) verify concrete sharpness of `toOuterMeasure_bad_choose_two_le` and `HasOutputCollision` at `q = 2` on `Bool` (`= 1 / 2`), exercise `ProbOracleComp.IdenticalUntilBad` and `withBadFlag` on a randomized 2-query client, check exact min-entropy list-key collision mass on `Fin 4`, and compare the nontrivial `3 / 4` sharpened programming bound against the vacuous `3 / 2` rectangular bound at `q_S = 2, q_H = 1, δ = 1 / 4`. Run `scripts/build.sh --wfail --iofail CslibFrontierTests.Crypto.UntilBadROMFramework`. These bounds depend only on pathwise query/cost budgets and PMF semantics; native `IsOraclePPTOn` / `IsPPTOn` runtime certificates remain separate obligations.
 
@@ -2516,7 +2542,9 @@ discontinuous halfspace indicator. Run `scripts/build.sh CslibFrontierTests.Gaus
 from the repository root to check them; the monomial clients are in
 `CslibFrontierTests.GaussianNoiseOperator`.
 
-Smoothness of `U_ρ f` for `|ρ| < 1` (Proposition 11.16) is not formalized.
+Smoothness of `U_ρ f` for `|ρ| < 1` (Proposition 11.16) is not formalized. For the derivative of
+`ρ ↦ U_ρ f` in `L²`, see
+[Differentiate Gaussian noise with the Ornstein–Uhlenbeck operator](#differentiate-gaussian-noise-with-the-ornsteinuhlenbeck-operator).
 
 ## Integrate Hermite polynomials against a Gaussian
 
@@ -2524,7 +2552,7 @@ Gaussian integration by parts is in
 [`CslibFrontier.Foundations.Probability.Gaussian.Stein`](../../CslibFrontier/Foundations/Probability/Gaussian/Stein.lean),
 the Hermite facts in
 [`CslibFrontier.Foundations.Probability.Gaussian.Hermite`](../../CslibFrontier/Foundations/Probability/Gaussian/Hermite.lean),
-and two polynomial identities for Mathlib's probabilists' `Polynomial.hermite` in
+and polynomial identities for Mathlib's probabilists' `Polynomial.hermite` in
 [`CslibFrontier.Foundations.RingTheory.Polynomial.Hermite`](../../CslibFrontier/Foundations/RingTheory/Polynomial/Hermite.lean).
 Open `ProbabilityTheory` and `Polynomial`; `hermite n : ℤ[X]` is evaluated at a real point with
 `aeval x (hermite n)`.
@@ -2558,7 +2586,9 @@ Propositions 11.31 and 11.33 in one and two dimensions, and recover Fact 11.13 f
 repository root to check them.
 
 For completeness of the Hermite basis, Hermite coefficients and Plancherel, see
-[Expand Gaussian functions in the Hermite basis](#expand-gaussian-functions-in-the-hermite-basis).
+[Expand Gaussian functions in the Hermite basis](#expand-gaussian-functions-in-the-hermite-basis);
+for the Hermite differential equation and the Ornstein–Uhlenbeck operator, see
+[Differentiate Gaussian noise with the Ornstein–Uhlenbeck operator](#differentiate-gaussian-noise-with-the-ornsteinuhlenbeck-operator).
 
 ## Expand Gaussian functions in the Hermite basis
 
@@ -2634,6 +2664,131 @@ polynomials in the Hilbert space `L²(γ)` is `0`. The duality argument used her
 which Mathlib does not provide.
 The case `1 ≤ p < 2` follows from `p = 2`, since `‖·‖_p ≤ ‖·‖_2` for a probability measure and
 `L²` is dense in `L^p`, but it is not stated.
+
+## Differentiate Gaussian noise with the Ornstein–Uhlenbeck operator
+
+Import
+[`CslibFrontier.Foundations.Probability.Gaussian.OrnsteinUhlenbeck`](../../CslibFrontier/Foundations/Probability/Gaussian/OrnsteinUhlenbeck.lean)
+and open `MeasureTheory` and `ProbabilityTheory`. Write `γ` for
+`Measure.pi fun _ : ι => gaussianReal 0 1` with `[Fintype ι]`, and `|α|` for the total degree
+`((∑ i, α i : ℕ) : ℝ)`, as the statements do. O'Donnell's Ornstein–Uhlenbeck operator
+`L f = (d/dρ) U_ρ f |_{ρ = 1}` (Definition 11.24) appears in two forms.
+
+- On smooth functions, it is the differential expression `x · ∇f - Δf` (Proposition 11.26).
+  Partial derivatives are derivatives along coordinate lines,
+  `∂ᵢ f z = deriv (fun t => f (Function.update z i t)) (z i)`, and the statements that use them
+  take `[DecidableEq ι]`.
+- On `L²(γ)`, it is `ornsteinUhlenbeck f : Lp ℝ 2 γ`, the Hermite series
+  `∑' α, (|α| * hermiteCoeff f α) • hermiteBasis ι α`, unfolded by `ornsteinUhlenbeck_def`. Its
+  domain is the predicate `MemOrnsteinUhlenbeckDomain f`: `MemLp f 2 γ` and
+  `Summable fun α => |α| ^ 2 * hermiteCoeff f α ^ 2`. Build or split it with
+  `memOrnsteinUhlenbeckDomain_iff`, `.memLp` and `.summable`. Outside the domain,
+  `ornsteinUhlenbeck f` is a junk value; theorems about `L f` assume the domain.
+
+### The differential form
+
+- `Polynomial.X_mul_derivative_hermite_sub n`, in
+  [`CslibFrontier.Foundations.RingTheory.Polynomial.Hermite`](../../CslibFrontier/Foundations/RingTheory/Polynomial/Hermite.lean),
+  is the Hermite differential equation `X * H_n' - H_n'' = n * H_n` in `ℤ[X]` (Exercise 11.10(c)).
+  `mul_deriv_normalizedHermite_sub n x` evaluates it for `h_n`, and
+  `sum_mul_deriv_multiHermite_update_sub α z` is `x · ∇h_α - Δh_α = |α| h_α` (Propositions 11.26
+  and 11.40 on the Hermite basis).
+- `integral_mul_deriv_sub_deriv_deriv_mul_gaussianReal hf hg h₁ h₂ h₃ h₄` is integration by parts
+  `E[(x f' - f'') g] = E[f' g']` under `gaussianReal 0 1` (Proposition 11.28 in one dimension).
+  It needs `Differentiable ℝ (deriv f)`, `Differentiable ℝ g` and integrability of `f' g`,
+  `x f' g`, `f'' g` and `f' g'`; it is Stein's lemma `integral_sub_mul_gaussianReal` applied to
+  `f' g`.
+- `integral_mul_deriv_update_sub_mul_pi_gaussianReal i …` is the same formula for one coordinate
+  under `γ`. `integral_sum_mul_deriv_update_sub_mul_pi_gaussianReal` sums it to
+  `⟨x · ∇f - Δf, g⟩ = ∑ i, ⟨∂ᵢf, ∂ᵢg⟩` (Exercise 11.8). Each of its hypotheses is quantified over
+  `i`, and the differentiability hypotheses also over every line `z`.
+- The reduction to one dimension uses `MeasureTheory.integral_integral_update` and
+  `MeasureTheory.ae_integrable_update` in
+  [`CslibFrontier.Foundations.MeasureTheory.Integral.PiUpdate`](../../CslibFrontier/Foundations/MeasureTheory/Integral/PiUpdate.lean).
+
+### The operator on `L²`
+
+Derivatives of `ρ ↦ U_ρ f` are taken of any family `u : ℝ → Lp ℝ 2 γ` with
+`hu : ∀ ρ, |ρ| ≤ 1 → u ρ =ᵐ[γ] gaussianNoiseOp ρ f`; its values outside `[-1, 1]` do not matter.
+For instance, take
+`u ρ = if hρ : |ρ| ≤ 1 then (hf.gaussianNoiseOp hρ one_le_two).toLp (gaussianNoiseOp ρ f) else 0`,
+where `hu` follows from `MemLp.coeFn_toLp`. The hypothesis on `f` is `MemLp f 2 γ` or
+`MemOrnsteinUhlenbeckDomain f`, as each statement below says.
+
+- **Coordinates.** `hermiteBasis_repr_ornsteinUhlenbeck hf α` and
+  `hermiteCoeff_ornsteinUhlenbeck hf α` give `(L f)^(α) = |α| f̂(α)` for `f` in the domain
+  (Proposition 11.40). `memℓp_two_sum_mul_iff` converts between `Memℓp (fun α => |α| * c α) 2`
+  and `Summable fun α => |α| ^ 2 * c α ^ 2`.
+- **Definition 11.24.** For `f` in the domain,
+  `hasDerivWithinAt_gaussianNoiseOp hf hu` says that `u` has left derivative `L f` at `ρ = 1`
+  (`HasDerivWithinAt u (ornsteinUhlenbeck f) (Set.Iic 1) 1`).
+  `hasDerivWithinAt_gaussianNoiseOp_exp_neg_zero hf hu` is the same in exponential time `ρ = e^{-t}`:
+  `t ↦ u (Real.exp (-t))` has right derivative `-ornsteinUhlenbeck f` at `t = 0`.
+- **Exercise 11.18.** Take `hf : MemLp f 2 γ`.
+  - `eq_ornsteinUhlenbeck_of_hasDerivWithinAt hf hu hg` says that every left derivative `g` at
+    `ρ = 1` equals `ornsteinUhlenbeck f`.
+  - `memOrnsteinUhlenbeckDomain_of_hasDerivWithinAt hf hu hg` says that such a derivative exists
+    only on the domain.
+  - `exists_hasDerivWithinAt_gaussianNoiseOp_iff hf hu` is the resulting equivalence.
+  - `memOrnsteinUhlenbeckDomain_gaussianNoiseOp hf hρ` is part (c): `U_ρ f` is in the domain for
+    every `f ∈ L²` and `|ρ| < 1`.
+  - `MemOrnsteinUhlenbeckDomain.gaussianNoiseOp hf hρ` says that `U_ρ` preserves the domain for
+    `|ρ| ≤ 1`.
+- **Proposition 11.27.** `hasDerivAt_gaussianNoiseOp hf hu hρ` takes `hf : MemLp f 2 γ` and
+  `|ρ| < 1`, including `ρ = 0`. It gives the derivative
+  `∑' α, (|α| * ρ ^ (∑ i, α i - 1) * hermiteCoeff f α) • hermiteBasis ι α`.
+  - `memℓp_mul_pow_mul_hermiteCoeff hf hρ` together with `hermiteBasis_repr_tsum_smul` (in
+    `HermiteExpansion`) reads off its coordinates.
+  - For `ρ ≠ 0`, `hasDerivAt_gaussianNoiseOp_eq_inv_smul_ornsteinUhlenbeck hf hu hρ hρ0` gives
+    `ρ⁻¹ • ornsteinUhlenbeck (gaussianNoiseOp ρ f)` with only `MemLp f 2 γ`.
+  - For `f` in the domain, `hasDerivAt_gaussianNoiseOp_eq_inv_smul_gaussianNoiseOp` gives
+    `ρ⁻¹ U_ρ L f`.
+  - `ornsteinUhlenbeck_gaussianNoiseOp hf hρ` is `L (U_ρ f) = U_ρ (L f)` in `Lp ℝ 2 γ` for
+    `|ρ| ≤ 1`.
+  - `hasDerivAt_gaussianNoiseOp_exp_neg hf hu ht` is `(d/dt) U_{e^{-t}} f = -L U_{e^{-t}} f` for
+    `0 < t`.
+  - On the domain, `hasDerivWithinAt_Icc_gaussianNoiseOp hf hu hρ` gives the series derivative
+    within `Set.Icc (-1) 1` at every `|ρ| ≤ 1`, including the endpoints.
+
+To identify two vectors of `Lp ℝ 2 γ`, compare Hermite coordinates: rewrite with the lemmas above
+and with `hermiteBasis_repr` and `hermiteCoeff_coeFn` from the `HermiteExpansion` module, then
+apply `(hermiteBasis ι).repr.injective`. A derivative is unique, so `HasDerivAt.unique` transfers
+the computed coordinates to any other derivative.
+
+### Checked clients and scope
+
+The checked [`GaussianOrnsteinUhlenbeck.lean` clients](../../CslibFrontierTests/GaussianOrnsteinUhlenbeck.lean)
+cover the following:
+
+- the Hermite equation for `H_2 = X² - 1` and the eigenvalue identity for `h_1`;
+- the value `1` of the integration-by-parts formula for `f = g = id`, for a coordinate on
+  `Unit → ℝ` and for `z₀` on `Fin 2 → ℝ`;
+- for `f = h_β`:
+  - the coordinates of `L h_β`;
+  - `L h_β` as the left derivative at `1`, its uniqueness, and the exponential-time form at
+    `t = 0`;
+  - the derivative at `|ρ| < 1`;
+  - `ρ⁻¹ L U_ρ h_β` and `ρ⁻¹ U_ρ L h_β` at `ρ = 1/2`;
+  - the form for `t > 0`;
+- a function `f = ∑ n, (n + 1)⁻¹ h_n` in `L²` but outside the domain:
+  - `ρ ↦ U_ρ f` has no left derivative at `1`;
+  - `U_{1/2} f` is in the domain;
+  - `ρ ↦ U_ρ f` is still differentiable at `ρ = 1/2`.
+
+Run `scripts/build.sh CslibFrontierTests.GaussianOrnsteinUhlenbeck` from the repository root to
+check them.
+
+Not formalized:
+
+- Proposition 11.26 for general smooth `f`; the identification of `ornsteinUhlenbeck f` with
+  `x · ∇f - Δf` is proved only for Hermite polynomials;
+- the symmetric form `⟨f, L g⟩ = ⟨L f, g⟩` of Proposition 11.28 on `L²`;
+- pointwise, rather than `L²`, derivatives of `U_ρ f`;
+- `L` as a Mathlib unbounded operator (`LinearPMap`). Here it is a function with a separate domain
+  predicate.
+
+The book derives Proposition 11.27 from the semigroup law; here it is read off the Hermite
+expansion of `U_ρ f`.
 
 ## Compare bits with Gaussians by the invariance principle
 

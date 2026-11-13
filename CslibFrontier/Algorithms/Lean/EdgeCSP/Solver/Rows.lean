@@ -26,7 +26,7 @@ namespace Cslib.Logic.PL.CSP.Solver
 Both the number of rows and every actual scope width are explicit hypotheses. -/
 theorem materialize_labels (F : CSP Table ℕ) (rows : List (List Bool))
     (hlen : rows.length = F.length)
-    (hw : ∀ i : Fin F.length, (rows.getD i.val []).length = F[i.val].2.length) :
+    (hw : ∀ i : Fin F.length, (rows.getD i.val []).length = F[i.val].scope.length) :
     (incidenceList F).map (Blossom.labels F rows) = rows.flatten := by
   have he : List.ofFn (fun i : Fin F.length => localTuple (Blossom.labels F rows) i) = rows := by
     apply List.ext_getElem

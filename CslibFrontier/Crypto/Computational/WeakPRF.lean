@@ -14,6 +14,7 @@ import CslibFrontier.Computability.Probabilistic.Oracle.Tidy
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Probability.BitString.List
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.BindCompare
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Tactic.PolyTime
 import CslibFrontier.Tactic.PPT
@@ -342,29 +343,6 @@ private theorem eval_weakSample (n : ℕ) (oracle : List Bool → List Bool) :
       (BitString.uniformList n).bind (fun point => PMF.pure (point ++ oracle point)) := by
   simp only [weakSample, ProbComp.eval_bind, ProbComp.eval_pure, BitString.eval_sampleList]
 
-/-- Pointwise bounds away from one exceptional first-stage result bound a two-stage experiment,
-up to the probability of that result. -/
-private theorem bind_apply_le_add_of_ne {T β : Type} (μ : PMF T) (F G : T → PMF β) (b : β)
-    (bad : T) {ε : ℝ≥0∞} (h : ∀ t, t ≠ bad → F t b ≤ G t b + ε) :
-    μ.bind F b ≤ μ.bind G b + ε + μ bad := by
-  classical
-  have hpoint (t : T) :
-      μ t * F t b ≤ μ t * G t b + μ t * ε + if t = bad then μ bad else 0 := by
-    by_cases ht : t = bad
-    · subst ht
-      rw [ite_eq_left_of_eq_true _ _ (eq_self t)]
-      exact le_add_of_le_right (mul_le_of_le_one_right zero_le (PMF.coe_le_one _ _))
-    · simp only [ht, ↓reduceIte, add_zero]
-      rw [← mul_add]
-      exact mul_le_mul_right (h t ht) _
-  simp only [PMF.bind_apply]
-  calc ∑' t, μ t * F t b
-      ≤ ∑' t, (μ t * G t b + μ t * ε + if t = bad then μ bad else 0) :=
-        tsum_le_tsum hpoint
-    _ = ∑' t, μ t * G t b + ε + μ bad := by
-        rw [tsum_add, tsum_add, ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul,
-          tsum_ite_eq]
-
 /-- Two weak oracles that agree away from the all-zero point give laws that differ by at most
 `2⁻ⁿ` per call. -/
 private theorem weakRun_apply_le {α : Type} (n : ℕ) (first second : List Bool → List Bool)
@@ -383,7 +361,7 @@ private theorem weakRun_apply_le {α : Type} (n : ℕ) (first second : List Bool
     · rw [weakRun_query_bind, weakRun_query_bind]
       simp only [Sum.elim_inr, OracleComp.sumHandler, eval_weakSample, PMF.bind_bind,
         PMF.pure_bind]
-      refine (bind_apply_le_add_of_ne (BitString.uniformList n)
+      refine (PMF.bind_apply_le_add_of_ne (BitString.uniformList n)
         (fun point => weakRun n first (k (point ++ first point)))
         (fun point => weakRun n second (k (point ++ second point))) a
         (List.replicate n false) (ε := (Q : ℝ≥0∞) * (2 ^ n)⁻¹) fun point hpoint => ?_).trans ?_

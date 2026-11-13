@@ -113,8 +113,8 @@ private noncomputable def flipWitness : GadgetWitness flipped :=
   (Witness.atom arity sem ()).flip 1 unequalWitness
 
 example : flipped.body =
-    ([((), [.inl 0, .inr 0, .inl 2]),
-      ((), [.inl 1, .inr 0, .inr 1]), ((), [.inr 1, .inr 1, .inr 2])] :
+    ([⟨(), [.inl 0, .inr 0, .inl 2]⟩,
+      ⟨(), [.inl 1, .inr 0, .inr 1]⟩, ⟨(), [.inr 1, .inr 1, .inr 2]⟩] :
       CSP Unit (Fin 3 ⊕ Fin 3)) := rfl
 
 example : verify flipped.body (List.ofFn Sum.inl) flipWitness.certificate = true :=
@@ -129,8 +129,8 @@ example : ∀ z, flipped.body.eval sem (Sum.elim ![true, false, true] z) = false
 private def different := (PPGadget.atom (arity := arity) (sem := sem) ()).differentDrop unequal
 
 example : different.body =
-    ([((), [.inr 0, .inl 0, .inl 1]),
-      ((), [.inr 0, .inl 0, .inr 1]), ((), [.inr 1, .inr 1, .inr 2])] :
+    ([⟨(), [.inr 0, .inl 0, .inl 1]⟩,
+      ⟨(), [.inr 0, .inl 0, .inr 1]⟩, ⟨(), [.inr 1, .inr 1, .inr 2]⟩] :
       CSP Unit (Fin 2 ⊕ Fin 3)) := rfl
 
 example : verify different.body (List.ofFn Sum.inl)
@@ -173,7 +173,7 @@ example : verify ((emptyGadget 1).cofactor 0 false falsePin).body []
   ((emptyWitness 1).cofactor 0 false falseWitness).accepted
 
 example : ((emptyGadget 1).cofactor 0 false falsePin).body =
-    ([((), [.inr 0, .inr 0, .inr 1])] : CSP Unit (Fin 0 ⊕ Fin 2)) := rfl
+    ([⟨(), [.inr 0, .inr 0, .inr 1]⟩] : CSP Unit (Fin 0 ⊕ Fin 2)) := rfl
 
 example : ((emptyGadget 1).cofactor 0 false falsePin).body.eval sem
     (Sum.elim Fin.elim0 ![false, true]) = true := by decide +kernel
@@ -193,7 +193,7 @@ private def repeatTree := Construction.binaryMeet
   (.atom (arity := countArity) (sem := countSem) 2)
   (.binaryMeet (.atom 2) (.binaryMeet (.atom 2) (.binaryMeet (.atom 2) (.atom 2))))
 
-example : repeatTree.gadget.body = List.replicate 5 (2, [.inl 0, .inl 1]) := rfl
+example : repeatTree.gadget.body = List.replicate 5 ⟨2, [.inl 0, .inl 1]⟩ := rfl
 
 example : repeatTree.gadget.body.vars.count (.inl 0) = 5 := by decide +kernel
 
