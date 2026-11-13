@@ -143,17 +143,13 @@ def randomCoinOracle (N : ℕ) (table : BitString N → BitString N) (request : 
 /-- The real coin game: a uniform `N`-bit key answers every request with `prfCoins`. -/
 noncomputable def coinRealGame (adversary : OracleDistinguisher) (N : ℕ) : ProbComp Bool := do
   let key ← BitString.sampleList N
-  OracleComp.interpret
-    (OracleComp.sumHandler ProbComp.unifFin (fun request =>
-      pure (coinOracle family key request.2))) (adversary N [])
+  (adversary N []).run fun request => pure (coinOracle family key request.2)
 
 /-- The ideal coin game: a uniform random function on `N` bits answers every request at its
 padding, cut to the requested count. -/
 noncomputable def coinIdealGame (adversary : OracleDistinguisher) (N : ℕ) : ProbComp Bool := do
   let table ← ProbComp.uniform (BitString N → BitString N)
-  OracleComp.interpret
-    (OracleComp.sumHandler ProbComp.unifFin (fun request =>
-      pure (randomCoinOracle N table request.2))) (adversary N [])
+  (adversary N []).run fun request => pure (randomCoinOracle N table request.2)
 
 /-! ### The reduction to the PRF games -/
 

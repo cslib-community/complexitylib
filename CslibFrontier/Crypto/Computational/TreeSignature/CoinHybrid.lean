@@ -449,7 +449,7 @@ coins `prfCoins family`. -/
 theorem eval_coinRealGame_treeCoinAdversary (adversary : Forger) (n : ℕ) :
     ProbComp.eval (coinRealGame family (treeCoinAdversary S T depth N inv adversary) (N n)) =
       ProbComp.eval (treeGame S T depth N (prfCoins family) adversary n) := by
-  simp only [coinRealGame, ProbComp.eval_bind, BitString.eval_sampleList,
+  simp only [coinRealGame, ProbOracleComp.run, ProbComp.eval_bind, BitString.eval_sampleList,
     treeCoinAdversary_apply hinv adversary, eval_interpret_eq_evalDet, eval_treeGame]
   refine PMF.bind_congr_on_support _ _ _ fun key _ => ?_
   have hc : ∀ x L, (coinOracle family key (encPair encBits encUnary (x, L))).length ≤ L := by
@@ -466,7 +466,7 @@ coins from a uniform random function on `N n` bits. -/
 theorem eval_coinIdealGame_treeCoinAdversary (adversary : Forger) (n : ℕ) :
     ProbComp.eval (coinIdealGame (treeCoinAdversary S T depth N inv adversary) (N n)) =
       ProbComp.eval (treeIdealGame S T depth N adversary n) := by
-  simp only [coinIdealGame, treeIdealGame, ProbComp.eval_bind,
+  simp only [coinIdealGame, ProbOracleComp.run, treeIdealGame, ProbComp.eval_bind,
     treeCoinAdversary_apply hinv adversary, eval_interpret_eq_evalDet]
   refine PMF.bind_congr_on_support _ _ _ fun table _ => ?_
   have hc : ∀ x L, (randomCoinOracle (N n) table (encPair encBits encUnary (x, L))).length ≤ L := by

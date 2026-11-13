@@ -702,7 +702,7 @@ private theorem eval_prfMultiIdealGame_lubyRackoffAdversary (adversary : OracleD
           PMF.pure (LubyRackoff.feistel3 (tables 0) (tables 1) (tables 2) p)))
           (pairAdversary adversary n) := by
   simp only [prfMultiIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
-    ProbOracleComp.eval_interpret, ProbComp.eval_pure, interpret_pairAdversary]
+    ProbOracleComp.eval_run, ProbComp.eval_pure, interpret_pairAdversary]
   congr 1; funext tables; rw [interpret_lubyRackoffAdversary]; congr 2; funext request; congr 1
   unfold blockOracle; split_ifs with hblock
   · conv_lhs => rw [← joinBlock_splitBlock hblock]
@@ -1067,7 +1067,7 @@ private theorem eval_prfMultiIdealGame_strongLubyRackoffAdversary
           PMF.pure (strongTable (LubyRackoff.feistel4 (tables 0) (tables 1) (tables 2) (tables 3))
             request))) (strongPairAdversary adversary n) := by
   simp only [prfMultiIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
-    ProbOracleComp.eval_interpret, ProbComp.eval_pure, interpret_strongPairAdversary]
+    ProbOracleComp.eval_run, ProbComp.eval_pure, interpret_strongPairAdversary]
   congr 1; funext tables; rw [interpret_strongLubyRackoffAdversary]; congr 2
   funext ⟨inverse, block⟩; congr 1
   have hT (i : Fin 4) : Represents (fun q => (randomFunctionOracle n (tables i) q).take n)
