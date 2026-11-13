@@ -16,7 +16,7 @@ The domain of an FNP relation is an NP language, and every NP language arises th
 
 ## Total-search principle models
 
-The four classical subclasses `PLS`, `PPP`, `PPAD` and `PPA` are defined through uniform polynomial-time families of finite problems on `n(a)`-bit vertices. The dimension function must be computable in unary in polynomial time, so exponentially wide vertices cannot be hidden in a short binary dimension. Local functions receive the original encoded input and a candidate vertex. [TFNP subclasses](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/TFNP/Subclasses.lean#L20)
+The four classical subclasses `PLS`, `PPP`, `PPAD` and `PPA` are defined through uniform polynomial-time families of finite problems on `n(a)`-bit vertices. The dimension function must be computable in unary in polynomial time, so exponentially wide vertices cannot be hidden in a short binary dimension. Local functions receive the original encoded input and a candidate vertex. Every map that returns a vertex must send `n(a)`-bit strings to `n(a)`-bit strings, the condition `PreservesWidth`, so the finite principle applies on each cube. [TFNP subclasses](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/TFNP/Subclasses.lean#L20)
 
 | Class | Finite principle and accepted witness | Encoding/resource choice |
 |---|---|---|

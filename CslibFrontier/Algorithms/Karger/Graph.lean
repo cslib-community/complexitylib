@@ -81,6 +81,8 @@ a machine: the word-RAM programs (`CslibFrontier.Algorithms.WordRAM.Karger.Contr
   edge-proportional contraction on `k` supervertices with probability at least `(k - 2) / k`.
 * `Cslib.Algorithms.Karger.telescope_survival_step`: telescoping multiplication identity
   `((m - 1) / (m + 1)) * (t * (t - 1) / (m * (m - 1))) = t * (t - 1) / ((m + 1) * m)` in `ℝ≥0∞`.
+* `Cslib.Algorithms.Karger.pow_log_two_add_two_le_inv_two_mul`: `Nat.log 2 n + 2` repetitions of a
+  round that fails with probability at most `1 / 2` all fail with probability at most `1 / (2 * n)`.
 * `Cslib.Algorithms.Karger.highProb_failure_le`: elementary Bernoulli amplification bound
   `(1 - 2 / (n * (n - 1))) ^ ((n * (n - 1) / 2) * (Nat.log 2 n + 2)) ≤ 1 / (2 * n)`.
 
@@ -541,27 +543,26 @@ theorem highProbTrials_pos {n : ℕ} (hn : 2 ≤ n) :
     omega
   nlinarith
 
+/-- Amplification by `Nat.log 2 n + 2` independent repetitions: if one round fails with
+probability at most `1 / 2`, all rounds fail with probability at most `1 / (2 * n)`. -/
+theorem pow_log_two_add_two_le_inv_two_mul {p : ℝ≥0∞} (hp : p ≤ 1 / 2) (n : ℕ) :
+    p ^ (Nat.log 2 n + 2) ≤ (1 : ℝ≥0∞) / ((2 * n : ℕ) : ℝ≥0∞) := by
+  refine (pow_le_pow_left' hp _).trans ?_
+  rw [ENNReal.div_pow, one_pow]
+  apply ENNReal.div_le_div_left
+  have hlt : n < 2 ^ (Nat.log 2 n + 1) := Nat.lt_pow_succ_log_self (by omega) n
+  have hle : 2 * n ≤ 2 ^ (Nat.log 2 n + 2) := by
+    rw [pow_succ']
+    omega
+  exact_mod_cast hle
+
 /-- Elementary failure probability bound for `highProbTrials n` independent contractions:
 `(1 - 2 / (n * (n - 1))) ^ ((n * (n - 1) / 2) * (Nat.log 2 n + 2)) ≤ 1 / (2 * n)`. -/
 theorem highProb_failure_le {n : ℕ} (hn : 2 ≤ n) :
     ((1 : ℝ≥0∞) - (2 : ℝ≥0∞) / ((n * (n - 1) : ℕ) : ℝ≥0∞)) ^ highProbTrials n ≤
       (1 : ℝ≥0∞) / ((2 * n : ℕ) : ℝ≥0∞) := by
-  unfold highProbTrials
-  rw [pow_mul]
-  calc
-    (((1 : ℝ≥0∞) - (2 : ℝ≥0∞) / ((n * (n - 1) : ℕ) : ℝ≥0∞)) ^ (n * (n - 1) / 2)) ^
-        (Nat.log 2 n + 2)
-      ≤ ((1 : ℝ≥0∞) / 2) ^ (Nat.log 2 n + 2) :=
-        pow_le_pow_left' (one_sub_two_div_pow_pairs_le_half hn) _
-    _ = (1 : ℝ≥0∞) / ((2 ^ (Nat.log 2 n + 2) : ℕ) : ℝ≥0∞) := by
-        rw [ENNReal.div_pow, one_pow, Nat.cast_pow, Nat.cast_ofNat]
-    _ ≤ (1 : ℝ≥0∞) / ((2 * n : ℕ) : ℝ≥0∞) := by
-        apply ENNReal.div_le_div_left
-        have hlt : n < 2 ^ (Nat.log 2 n + 1) := Nat.lt_pow_succ_log_self (by omega) n
-        have hle : 2 * n ≤ 2 ^ (Nat.log 2 n + 2) := by
-          rw [pow_succ']
-          omega
-        exact_mod_cast hle
+  rw [highProbTrials, pow_mul]
+  exact pow_log_two_add_two_le_inv_two_mul (one_sub_two_div_pow_pairs_le_half hn) n
 
 theorem highProb_failure_le_inv_n {n : ℕ} (hn : 2 ≤ n) :
     ((1 : ℝ≥0∞) - (2 : ℝ≥0∞) / ((n * (n - 1) : ℕ) : ℝ≥0∞)) ^ highProbTrials n ≤
