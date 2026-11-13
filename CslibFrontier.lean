@@ -6633,6 +6633,7 @@ public import CslibFrontier.MachineLearning.PACLearning.VCDimension
 public import CslibFrontier.MachineLearning.PACLearning.VCUniformConvergence
 public import CslibFrontier.MachineLearning.PACLearning.VCUpperBound
 public import CslibFrontier.MachineLearning.Rademacher.Basic
+public import CslibFrontier.MachineLearning.Rademacher.Chaining
 public import CslibFrontier.MachineLearning.Rademacher.Classification
 public import CslibFrontier.MachineLearning.Rademacher.Contraction
 public import CslibFrontier.MachineLearning.Rademacher.Generalization
@@ -6700,6 +6701,7 @@ public import CslibFrontier.Probability.BitString.BinarySymmetricChannel.Achieva
 public import CslibFrontier.Probability.BitString.BinarySymmetricChannel.Capacity
 public import CslibFrontier.Probability.BitString.BinarySymmetricChannel.Converse
 public import CslibFrontier.Probability.BitString.BinarySymmetricChannel.StrongConverse
+public import CslibFrontier.Probability.BitString.Chaining
 public import CslibFrontier.Probability.BitString.CoinFlips
 public import CslibFrontier.Probability.BitString.Collision
 public import CslibFrontier.Probability.BitString.LazyRandomWalk
