@@ -375,11 +375,8 @@ theorem eval_world_worldRealize
     (forger : ProbOracleComp (ForgerSpec M Query Sig Digest) (M × Sig))
     (accept : Bool → M × Sig → List (M × Sig) → Bool) :
     (world scheme sk).eval (worldRealize scheme pk forger accept) = (do
-      let out ←
+      let ((msig, pairs), cache) ←
         ProbOracleComp.runWith (forgerWorldImpl scheme sk) (runLoggedForger forger) []
-      let msig := out.1.1
-      let pairs := out.1.2
-      let cache := out.2
       let verified ← (interpret (oracle Digest) (scheme.verify pk msig.1 msig.2)).run cache
       return accept verified.1 msig pairs) := by
   unfold Interactive.World.eval worldRealize
@@ -397,12 +394,9 @@ theorem eval_world_worldRealize_liftOracleForger
     (prog : OracleComp (ForgerSpec M Query Sig Digest) (M × Sig))
     (accept : Bool → M × Sig → List (M × Sig) → Bool) :
     (world scheme sk).eval (worldRealize scheme pk (liftOracleForger prog) accept) = (do
-      let out ←
+      let ((msig, pairs), cache) ←
         ProbOracleComp.runWith (forgerWorldImpl scheme sk)
           (runLoggedForger (liftOracleForger prog)) []
-      let msig := out.1.1
-      let pairs := out.1.2
-      let cache := out.2
       let verified ← (interpret (oracle Digest) (scheme.verify pk msig.1 msig.2)).run cache
       return accept verified.1 msig pairs) :=
   eval_world_worldRealize scheme pk sk (liftOracleForger prog) accept
