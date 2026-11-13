@@ -258,6 +258,20 @@ formalized. The [checked examples](../../CslibFrontierTests/Crypto/MLDSA.lean) c
 case and a toy instance that signs, verifies, rejects a modified response and yields a self-target
 solution.
 
+The SLH-DSA address-domain layer from FIPS 205 ([fips205][fips205]) is in
+[`SLHDSA/Address.lean`](../../CslibFrontier/Crypto/Primitives/SLHDSA/Address.lean), with checked
+layouts in [`SLHDSAAddress.lean`](../../CslibFrontierTests/Crypto/SLHDSAAddress.lean).
+`Address.toBits` serializes the common layer and tree fields, the seven-valued address type and the
+three type-dependent words as the standard's canonical 32-byte big-endian address.
+`Address.setTypeAndClear` preserves the common fields while clearing all final 12 bytes, and the
+seven typed constructors satisfy the padding, fixed-layer and fixed-height requirements in
+Figures 3–9. `Address.toCompressedBits` is literally the byte-slice projection of Figure 18 used
+by the SHA2 parameter sets; it is injective under `Address.FitsCompressed`, which records that the
+one-byte layer and eight-byte tree fields do not overflow. The unrestricted compressed format is
+not injective, and the checked client exhibits the discarded high tree word. This module does not
+define the FIPS 205 hash instantiations, WOTS+, XMSS, FORS, the hypertree, signing or verification,
+nor does it prove classical or quantum security.
+
 These are implications from hardness assumptions. They do not prove that a concrete OWF, DDH group, LWE family or SIS parameter choice is hard. `DecisionLWE` runs the fixed-instance experiments `LWE.realExperiment` and `LWE.randomExperiment` over `ZMod (2 ^ w)`: a typed distinguisher receives a uniform matrix `A` and either `A t + e`, with independent errors and one shared uniform secret, or an independent uniform vector. For other secret and error laws over any finite commutative ring, `LWE.advantage` is the distance between `LWE.realGame` and `LWE.randomGame`. The distinguisher's machine reads only the row-major binary word of `[b | A]`, and `decisionLWE_iff_encoded` shows that this is the word-level assumption on the serialized public matrix `[B*t+e | B]` (checked in [`CslibFrontierTests/Crypto/DecisionLWE.lean`](../../CslibFrontierTests/Crypto/DecisionLWE.lean)); in [`SIS/Module.lean`](../../CslibFrontier/Crypto/Computational/SIS/Module.lean), `expandModuleMatrix` and `flattenPolyVec` embed negacyclic `ModuleSIS` and `ModuleLWE` instances over `ℤ_q[X]/(X^n+1)` into unstructured `(d * n) × (k * n)` matrices over `ℤ_q` (checked with concrete evaluations and nonvacuity proofs in [`CslibFrontierTests/Crypto/ModuleSIS.lean`](../../CslibFrontierTests/Crypto/ModuleSIS.lean)); [`LWE/Module.lean`](../../CslibFrontier/Crypto/Computational/LWE/Module.lean) states decision Module-LWE as the typed games `ModuleLWE.realGame` and `ModuleLWE.randomGame` for any secret and error laws, whose advantage `ModuleLWE.advantage` is the LWE advantage over the ring `Negacyclic (ZMod q) n` (`ModuleLWE.advantage_eq_lweAdvantage`), and `DecisionModuleLWE` fixes a uniform secret and is the word-level assumption by `decisionModuleLWE_iff_encoded` (checked in [`CslibFrontierTests/Crypto/DecisionModuleLWE.lean`](../../CslibFrontierTests/Crypto/DecisionModuleLWE.lean)); and [`SIS/ModuleEncryption.lean`](../../CslibFrontier/Crypto/Computational/SIS/ModuleEncryption.lean) builds Module-LWE public-key encryption (`moduleLWEKeyGen`, `moduleLWEEncrypt`, `moduleLWEDecrypt`), bounded-noise decryption correctness (`moduleLWEDecrypt_moduleLWEEncrypt_eq`), and two-hop public-key/ciphertext reductions to `ModuleLWE.sampleLaw` (`advantage_realEncryptionView_uniform_le`, `advantage_realEncryptionView_msg_le`, checked in [`CslibFrontierTests/Crypto/ModuleEncryption.lean`](../../CslibFrontierTests/Crypto/ModuleEncryption.lean)); no worst-case lattice reduction is asserted there.
 
 For deterministic native key generation, import
@@ -1296,6 +1310,7 @@ The finite query-only PRG/cipher results, semantic commitment interfaces and uni
 [complexitylib]: ../sources.md#complexitylib
 [cslib]: ../sources.md#cslib
 [fips203]: ../sources.md#fips203
+[fips205]: ../sources.md#fips205
 [fly22]: ../sources.md#fly22
 [ggm86]: ../sources.md#ggm86
 [goldreich04]: ../sources.md#goldreich04

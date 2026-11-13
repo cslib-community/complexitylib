@@ -597,6 +597,11 @@ Amos Fiat, Richard M. Karp, Michael Luby, Lyle A. McGeoch, Daniel D. Sleator and
 
 National Institute of Standards and Technology. *Module-Lattice-Based Key-Encapsulation Mechanism Standard*, Federal Information Processing Standards Publication 203, 2024. https://doi.org/10.6028/NIST.FIPS.203 . Cited for the rounding maps `Compress_d` and `Decompress_d` (Section 4.2.1), `SamplePolyCBD` (Section 4.2.2, Algorithm 8), K-PKE (Section 5, Algorithms 13–15), the internal ML-KEM algorithms (Section 6, Algorithms 16–18), the ML-KEM interface (Section 7, Algorithms 19–21) and the parameter sets (Section 8, Table 2); the Lean modules record the model differences (uniform matrix, sampled coins, coefficient form). The locators follow the structure of the published standard; the PDF was not re-read in this pass.
 
+<a id="fips205"></a>
+## fips205
+
+National Institute of Standards and Technology. *Stateless Hash-Based Digital Signature Standard*, Federal Information Processing Standards Publication 205, 2024. https://doi.org/10.6028/NIST.FIPS.205 . Checked on 2026-11-13 against the official PDF (SHA-256 `8ef34228276f3386d23cb0da8c14592b8cfb0db3358016bba64df7a004f8d13d`): Section 4.2 and Figures 2–9 define the canonical 32-byte address and its seven type-specific layouts; Section 4.3 and Table 1 define the address setters, including clearing the final 12 bytes on every type change; Section 4.4 defines the unsigned big-endian integer encoding; and Section 11.2, Figure 18 and Table 3 define the 22-byte compressed address used by the SHA2 parameter sets. `CslibFrontier.Crypto.Primitives.SLHDSA.Address` formalizes exactly this address-domain layer, not the hash-function instantiations, WOTS+, XMSS, FORS, the hypertree, signing, verification or security analysis.
+
 <a id="fks84"></a>
 ## fks84
 
