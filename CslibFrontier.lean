@@ -2620,6 +2620,7 @@ public import CslibFrontier.Computability.Complexity.Problems.Permanent.ThreeSAT
 public import CslibFrontier.Computability.Complexity.Problems.Permanent.ThreeSAT.Occurrence
 public import CslibFrontier.Computability.Complexity.Problems.Permanent.ThreeSAT.PolyTime
 public import CslibFrontier.Computability.Complexity.Problems.Permanent.ThreeSAT.Tracks
+public import CslibFrontier.Computability.Complexity.Problems.Permanent.Valiant
 public import CslibFrontier.Computability.Complexity.Problems.Permanent.ZeroOne
 public import CslibFrontier.Computability.Complexity.Problems.Permanent.ZeroOne.Basic
 public import CslibFrontier.Computability.Complexity.Problems.Permanent.ZeroOne.Integer

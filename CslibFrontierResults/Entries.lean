@@ -6,6 +6,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
+import CslibFrontier.Computability.Complexity.Problems.Permanent.Valiant
 import CslibFrontier.Computability.Complexity.Problems.ThreeSAT.Collapse
 import CslibFrontier.Computability.Complexity.Classes.Sparse.Envelope
 import CslibFrontier.Computability.Complexity.Classes.Advice.OneBit
@@ -5540,3 +5541,27 @@ register_result "bounded-termination-exponential-completeness" where
     words; canonical native finite-machine triples have exact step-bound semantics. The chosen \
     representation is explicit: no arbitrary-encoding E invariance or sharp simulator bound \
     is claimed. Existing accepting-output-[true] BoundedHalting remains distinct."
+
+register_result "valiant-zero-one-permanent-sharp-p-complete" where
+  title := "Valiant: the 0/1 permanent and bipartite perfect-matching counting are #P-complete"
+  topic := "counting complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Theorem 9.8",
+      locator := "2007-01-08 draft, printed p. 175; PDF p. 191" },
+    { paper := Goldreich2007Draft, theorem := "Theorem 6.20",
+      locator := "February 2007 draft r3.pdf, PDF p. 23; printed p. 225" }
+  ]
+  theorems := [
+    Cslib.Complexity.zeroOnePermanent_sharpPMetricComplete,
+    Cslib.Complexity.zeroOnePermanent_computableInPolyTimeWithOracle,
+    Cslib.Complexity.bipartitePerfectMatchingCount_sharpPMetricComplete,
+    Cslib.Complexity.bipartitePerfectMatchingCount_computableInPolyTimeWithOracle,
+    Cslib.Complexity.intPermanent_sharpPMetricHard
+  ]
+  scope := "Dense Boolean tables (encBoolTable) read as n x n 0/1 matrices, and the bipartite \
+    graphs on Fin n + Fin n they describe (Mathlib perfect matchings). Membership in #P by a \
+    native permutation-matrix verifier; hardness under one-query metric reductions composed \
+    from #3SAT, Goldreich's Propositions 6.21 and 6.22. The books' Cook-reduction form (Arora \
+    and Barak Definition 9.5, FP with a bit oracle) is derived as a native polynomial-time \
+    oracle program reading the permanent's bits. Arora and Barak's XOR-gadget proof and its \
+    constant 4^(3m) are not formalized; the proof uses Goldreich's gadget."
