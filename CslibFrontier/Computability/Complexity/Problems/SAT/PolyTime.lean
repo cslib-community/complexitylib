@@ -44,6 +44,8 @@ Together with `Cslib.Complexity.SAT.isVerifier`, this proves membership in `NP`
   `Cslib.Complexity.SAT.computableInPolyTime_vars_length`: literal, clause and
   variable-occurrence counts for natural-number variables, in unary (`fun_prop` versions of the
   generic `Cslib.Logic.PL.CNF` lemmas).
+* `Cslib.Complexity.computableInPolyTime_all_length_le`: checking that every clause has at most
+  `k` literals, the guard of `k`-SAT, is polynomial-time.
 * `Cslib.Complexity.SAT.mem_NP`: satisfiability belongs to NP.
 * `Cslib.Complexity.UNSAT_mem_coNP`: unsatisfiability belongs to coNP.
 
@@ -149,6 +151,15 @@ theorem mem_NP : SAT ∈ NP encCNF :=
   ⟨Polynomial.X, verifier, computableInPolyTime_verifier, isVerifier⟩
 
 end SAT
+
+open ComputableInPolyTime in
+/-- Checking that every clause has at most `k` literals is polynomial-time. -/
+@[fun_prop]
+theorem computableInPolyTime_all_length_le (k : ℕ) :
+    ComputableInPolyTime (fun φ : CNF ℕ => φ.all fun c => decide (c.length ≤ k)) encCNF
+      encBool := by
+  unfold encCNF
+  fun_prop
 
 /-- Unsatisfiability is in coNP. -/
 theorem UNSAT_mem_coNP : UNSAT ∈ coNP encCNF := by
