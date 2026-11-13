@@ -109,9 +109,6 @@ enc_structure encFamilySimInput (enc : α ↪ List Bool) (m : ℕ) (n : α → �
   outputs : (extendCoalitionBits (len := k index) I)
     using (extendCoalitionBits_injective (len := k index) I)
 
--- The tuple encodings read the size parameters only through the dependent words.
-attribute [nolint unusedArguments] encFamilyRunInputFields encFamilySimInputFields
-
 end FamilyInputEncodings
 
 /-- Serialize party `i`'s `twoPartyMulProtocol` subcoins along any `sharedMulSpec 2` schedule `sc`:

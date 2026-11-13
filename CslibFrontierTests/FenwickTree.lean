@@ -212,19 +212,19 @@ def adaptiveClient : (PrefixSums.spec ℕ).Client (ℕ × ℕ) :=
 -- On `[3, 1, 4, 1, 5, 9]`, `s3 = 8 ≥ 8`, so branch 1 adds `10` at index `4` (`s6 = 33`);
 -- on `[1, 1, 1, 1, 1, 1]`, `s3 = 3 < 8`, so branch 2 adds `2` at index `0` (`s6 = 8`).
 example :
-    (run (ofList sample6) adaptiveClient).1 = (8, 33) ∧
-      (run (ofList sample6) adaptiveClient).2.2 = [2, 2, 2] ∧
-      (run (ofList [1, 1, 1, 1, 1, 1]) adaptiveClient).1 = (3, 8) ∧
-      (run (ofList [1, 1, 1, 1, 1, 1]) adaptiveClient).2.2 = [2, 3, 2] := by
+    (run (ofList sample6) adaptiveClient).value = (8, 33) ∧
+      (run (ofList sample6) adaptiveClient).traces = [2, 2, 2] ∧
+      (run (ofList [1, 1, 1, 1, 1, 1]) adaptiveClient).value = (3, 8) ∧
+      (run (ofList [1, 1, 1, 1, 1, 1]) adaptiveClient).traces = [2, 3, 2] := by
   have hc1 := run_correct adaptiveClient (valid_ofList sample6)
   have hc2 := run_correct adaptiveClient (valid_ofList [1, 1, 1, 1, 1, 1])
   refine ⟨hc1.1.trans (by decide), ?_, hc2.1.trans (by decide), ?_⟩
-  · dsimp only [adaptiveClient, run, step]
+  · dsimp only [adaptiveClient, run, Execution.run, step]
     rw [ret_prefixSumM_eq (valid_ofList sample6) 3]
     simp [sample6, ret_addM, prefixSumM_time_eq_downChain, addM_time_eq_upChain,
       downChain, upChain, lowbit]
   · set ones : List ℕ := [1, 1, 1, 1, 1, 1]
-    dsimp only [adaptiveClient, run, step]
+    dsimp only [adaptiveClient, run, Execution.run, step]
     rw [ret_prefixSumM_eq (valid_ofList ones) 3]
     simp [ones, ret_addM, prefixSumM_time_eq_downChain, addM_time_eq_upChain,
       downChain, upChain, lowbit]
@@ -234,10 +234,10 @@ example :
     let s := sample6
     let t := ofList s
     Valid t s ∧
-      (run t adaptiveClient).1 = ((PrefixSums.spec ℕ).runClient s adaptiveClient).1 ∧
-      Valid (run t adaptiveClient).2.1 ((PrefixSums.spec ℕ).runClient s adaptiveClient).2.1 ∧
-      total id (run t adaptiveClient).2.2 ≤
-        ((PrefixSums.spec ℕ).runClient s adaptiveClient).2.2.length * Nat.clog 2 (s.length + 1) :=
+      (run t adaptiveClient).value = (PrefixSums.spec ℕ).clientResult s adaptiveClient ∧
+      Valid (run t adaptiveClient).state ((PrefixSums.spec ℕ).clientState s adaptiveClient) ∧
+      total id (run t adaptiveClient).traces ≤
+        ((PrefixSums.spec ℕ).clientHistory s adaptiveClient).length * Nat.clog 2 (s.length + 1) :=
   ⟨valid_ofList sample6, run_correct adaptiveClient (valid_ofList sample6)⟩
 
 /-! ## 5. Positive and negative `Valid` witnesses -/

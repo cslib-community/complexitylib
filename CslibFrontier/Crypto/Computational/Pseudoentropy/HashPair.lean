@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.BitString
 public import CslibFrontier.Crypto.Computational.Pseudoentropy.Basic
 public import CslibFrontier.Languages.Probabilistic.LinearHash
 public import CslibFrontier.Languages.Probabilistic.UniformNat
@@ -34,6 +35,8 @@ implements that reduction, and `OneWay` derives the computational prediction gap
 
 ## Main definitions
 
+* `Cslib.Crypto.Pseudoentropy.HashPair.Observation`: the five named public fields.
+* `Cslib.Crypto.Pseudoentropy.HashPair.encObservation`: their word encoding, with a unary index.
 * `Cslib.Crypto.Pseudoentropy.HashPair.joint`: the complete finite hashed-parity experiment.
 * `Cslib.Crypto.Pseudoentropy.HashPair.sample`: its executable sampler.
 * `Cslib.Crypto.Pseudoentropy.HashPair.pair`: package the exact law and efficiency certificate.
@@ -88,9 +91,47 @@ theorem computableInPolyTime_hashCount {α : Type} {encode : α ↪ List Bool}
 /-- A flat matrix seed and an independent parity query, both retained in the public output. -/
 abbrev Seed (n count : ℕ) := BitString (count * n) × BitString n
 
-/-- A public observation records the hash length and exactly that many hash bits. -/
-abbrev Observation (n count : ℕ) (Image : Type*) :=
-  Σ i : Fin count, Seed n count × Image × BitString (i.val + 1)
+/-- The information revealed by the hashed parity experiment. The digest contains exactly the
+number of bits selected by the public index. -/
+structure Observation (n count : ℕ) (Image : Type*) where
+  /-- The image of the hidden input under the function being inverted. -/
+  image : Image
+  /-- The sampled index; the number of revealed hash bits is `index.val + 1`. -/
+  index : Fin count
+  /-- The complete public matrix, flattened row by row. -/
+  matrix : BitString (count * n)
+  /-- The hash of the hidden input under the selected initial rows. -/
+  digest : BitString (index.val + 1)
+  /-- The independent query whose inner product with the input is hidden. -/
+  query : BitString n
+
+private def observationEquiv {n count : ℕ} {Image : Type*} :
+    Observation n count Image ≃
+      (Σ i : Fin count, Seed n count × Image × BitString (i.val + 1)) where
+  toFun observation :=
+    ⟨observation.index, (observation.matrix, observation.query),
+      observation.image, observation.digest⟩
+  invFun := fun ⟨index, (matrix, query), image, digest⟩ => ⟨image, index, matrix, digest, query⟩
+  left_inv _ := rfl
+  right_inv _ := rfl
+
+instance {n count : ℕ} {Image : Type*} [Finite Image] : Finite (Observation n count Image) :=
+  Finite.of_equiv _ observationEquiv.symm
+
+section
+
+variable {n count : ℕ} {Image : Type*}
+
+/-- Encode the image, unary index, matrix bits, digest bits and query bits in that order.
+Every field except the final query is self-delimited. -/
+enc_structure encObservation (encodeImage : Image ↪ List Bool) : Observation n count Image where
+  image : encodeImage using encodeImage.injective,
+  index : ((Fin.valEmbedding (n := count)).trans encUnary),
+  matrix : (encBitString (count * n)),
+  digest : List.ofFn using List.ofFn_injective,
+  query : (encBitString n)
+
+end
 
 /-- Hash with the requested initial rows of the public matrix. -/
 def prefixHash {n count : ℕ} (i : Fin count) (seed : Seed n count) (x : BitString n) :
@@ -113,9 +154,10 @@ theorem prefixHash_isTwoUniversal {n count : ℕ} (i : Fin count) :
 noncomputable def joint {n count : ℕ} [NeZero count] {Image : Type*}
     (f : BitString n → Image) : PMF (Observation n count Image × Bool) :=
   (PMF.uniformOfFintype (Fin count)).bind (fun i =>
-    (PMF.uniformOfFintype (Seed n count)).bind (fun seed =>
+    (PMF.uniformOfFintype (Seed n count)).bind (fun (matrix, query) =>
       (PMF.uniformOfFintype (BitString n)).map (fun x =>
-        ((⟨i, (seed, f x, prefixHash i seed x)⟩ : Observation n count Image), x ⬝ᵥ seed.2))))
+        (({ image := f x, index := i, matrix, digest := prefixHash i (matrix, query) x,
+            query } : Observation n count Image), x ⬝ᵥ query))))
 
 /-- Holenstein's entropy bound for the complete hashed parity experiment. No regularity,
 injectivity, or computational hardness of the function is assumed. -/
@@ -123,7 +165,9 @@ theorem conditionalEntropy_joint_le {n count : ℕ} [NeZero count]
     {Image : Type*} [Finite Image] (f : BitString n → Image) :
     conditionalEntropy (joint (count := count) f) ≤
       ((∑ x, Real.logb 2 (Nat.card {y // f y = f x})) / (2 : ℝ) ^ n + 2) / count := by
-  simpa only [joint, PMF.uniformOfFintype_apply, Fintype.card_fun, Fintype.card_bool,
+  refine (conditionalEntropy_map_fst_ge (joint (count := count) f) observationEquiv).trans ?_
+  simpa only [joint, PMF.map_bind, PMF.map_comp, Function.comp_def, observationEquiv,
+    Equiv.coe_fn_mk, PMF.uniformOfFintype_apply, Fintype.card_fun, Fintype.card_bool,
     Fintype.card_fin, ENNReal.toReal_inv, ENNReal.toReal_natCast, Nat.cast_pow,
     ENNReal.toReal_pow, ENNReal.toReal_ofNat, Nat.cast_ofNat,
     ← Finset.mul_sum, ← div_eq_inv_mul, ← Finset.sum_div] using
@@ -149,23 +193,12 @@ theorem computableInPolyTime_wordObservation {α : Type} {encode : α ↪ List B
       (matrix a) (digest a) (query a)) encode encBits :=
   (himage.prod (hindex.prod (hmatrix.prod (hdigest.prod hquery)))).trans (.of_eq fun _ => rfl)
 
-/-- Encode a finite public observation using the chosen image representation. -/
+/-- Write a finite observation using any image map, without assuming that map is injective.
+For an injective image encoding this is exactly `encObservation`. -/
 def encodeObservation {n count : ℕ} {Image : Type*} (encodeImage : Image → List Bool)
     (observation : Observation n count Image) : List Bool :=
-  let ⟨pos, (matrix, query), image, digest⟩ := observation
-  wordObservation (encodeImage image) pos.val
-    (List.ofFn matrix) (List.ofFn digest) (List.ofFn query)
-
-/-- Encoding loses none of the public information, even though the digest's width varies. -/
-theorem encodeObservation_injective {n count : ℕ} {Image : Type*}
-    (encodeImage : Image ↪ List Bool) :
-    Function.Injective (encodeObservation (n := n) (count := count) encodeImage) := by
-  rintro ⟨i, ⟨matrix, query⟩, image, digest⟩ ⟨j, ⟨matrix', query'⟩, image', digest'⟩ h
-  have hfields := (encPair encBits (encPair encUnary
-    (encPair encBits (encPair encBits encBits)))).injective h
-  obtain rfl : i = j := Fin.ext (congrArg (fun fields => fields.2.1) hfields)
-  simp only [Prod.mk.injEq, List.ofFn_inj, encodeImage.injective.eq_iff] at hfields
-  rcases hfields with ⟨rfl, _, rfl, rfl, rfl⟩; rfl
+  wordObservation (encodeImage observation.image) observation.index.val
+    (List.ofFn observation.matrix) (List.ofFn observation.digest) (List.ofFn observation.query)
 
 /-- Sample the hashed parity pair using only fair bits and ordinary word operations. -/
 noncomputable def sample (f : List Bool → List Bool) (n : ℕ) : ProbComp (List Bool × Bool) := do
@@ -224,7 +257,7 @@ noncomputable def pair {Image : ℕ → Type} [∀ n, Finite (Image n)]
     (finiteFunction : ∀ n, BitString n → Image n) (encodeImage : ∀ n, Image n ↪ List Bool)
     (hencode : ∀ n x, f (List.ofFn x) = encodeImage n (finiteFunction n x)) : SamplablePair where
   Observation n := Observation n (hashCount n) (Image n)
-  encode n := ⟨encodeObservation (encodeImage n), encodeObservation_injective (encodeImage n)⟩
+  encode n := encObservation (encodeImage n)
   joint n := joint (finiteFunction n)
   sample := sample f
   efficient := isPPTOn_sample f hf

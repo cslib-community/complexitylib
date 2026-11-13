@@ -151,11 +151,11 @@ retaining its polarity and its clause/literal position. -/
 def replacementClauses (φ : CNF V) (wire : Occurrence V → List (W × W))
     (fallback : W) : CNF W :=
   φ.zipIdx.map fun c => c.1.zipIdx.map fun l =>
-    ((wire (c.2, l.2, l.1)).getLastD (fallback, fallback) |>.2, l.1.2)
+    ((wire ⟨c.2, l.2, l.1⟩).getLastD (fallback, fallback) |>.2, l.1.2)
 
 /-- The directed-link clauses for every original literal occurrence, including duplicates. -/
 def allLinks (φ : CNF V) (wire : Occurrence V → List (W × W)) : CNF W :=
-  (Cslib.Logic.PL.occurrences φ).flatMap fun o => links o.2.2.2 (wire o)
+  (Cslib.Logic.PL.occurrences φ).flatMap fun o => links o.lit.2 (wire o)
 
 /-- Original clauses at their wire endpoints, followed by all directed links.
 Local cell constraints, such as crossover formulas, are supplied separately by the caller. -/
@@ -167,7 +167,7 @@ theorem eval_replacementClauses_iff (φ : CNF V) (wire : Occurrence V → List (
     (fallback : W) (σ : W → Bool) :
     (replacementClauses φ wire fallback).eval σ = true ↔
       ∀ c ∈ φ.zipIdx, ∃ l ∈ c.1.zipIdx,
-        σ ((wire (c.2, l.2, l.1)).getLastD (fallback, fallback)).2 = l.1.2 := by
+        σ ((wire ⟨c.2, l.2, l.1⟩).getLastD (fallback, fallback)).2 = l.1.2 := by
   rw [replacementClauses, eval_map_eq_true_iff]
   apply forall₂_congr fun c _ => ?_
   rw [Clause.eval_eq_true_iff]
@@ -181,7 +181,7 @@ theorem eval_replacementClauses_iff (φ : CNF V) (wire : Occurrence V → List (
 /-- The global link block holds exactly when every occurrence's wire links hold. -/
 theorem eval_allLinks_iff (φ : CNF V) (wire : Occurrence V → List (W × W)) (σ : W → Bool) :
     (allLinks φ wire).eval σ = true ↔
-      ∀ o ∈ Cslib.Logic.PL.occurrences φ, (links o.2.2.2 (wire o)).eval σ = true := by
+      ∀ o ∈ Cslib.Logic.PL.occurrences φ, (links o.lit.2 (wire o)).eval σ = true := by
   exact eval_flatMap_eq_true_iff σ _ _
 
 /-- Satisfaction projects back to the ordinary source formula when the caller proves local
@@ -191,7 +191,7 @@ theorem eval_assemble_sound (φ : CNF V) (wire : Occurrence V → List (W × W))
     (hne : ∀ o ∈ Cslib.Logic.PL.occurrences φ, wire o ≠ [])
     (hcells : ∀ o ∈ Cslib.Logic.PL.occurrences φ, ∀ c ∈ wire o, σ c.1 = σ c.2)
     (hfirst : ∀ o ∈ Cslib.Logic.PL.occurrences φ,
-      σ ((wire o).headD (fallback, fallback)).1 = τ o.2.2.1)
+      σ ((wire o).headD (fallback, fallback)).1 = τ o.lit.1)
     (h : (assemble φ wire fallback).eval σ = true) : φ.eval τ = true := by
   have h' := h
   rw [assemble, eval_append, Bool.and_eq_true] at h'
@@ -203,7 +203,7 @@ theorem eval_assemble_sound (φ : CNF V) (wire : Occurrence V → List (W × W))
   have ho := mk_mem_occurrences_of_mem_zipIdx hc hl
   apply (Clause.eval_eq_true_iff τ c.1).2
   refine ⟨l.1, List.fst_mem_of_mem_zipIdx hl, ?_⟩
-  have hp := propagate_of_ne_nil σ l.1.2 fallback (wire (c.2, l.2, l.1))
+  have hp := propagate_of_ne_nil σ l.1.2 fallback (wire ⟨c.2, l.2, l.1⟩)
     (hne _ ho) (hcells _ ho) (hw _ ho) hv
   exact (hfirst _ ho).symm.trans hp
 
@@ -214,7 +214,7 @@ theorem eval_assemble_complete (φ : CNF V) (wire : Occurrence V → List (W × 
     (fallback : W) (τ : V → Bool) (σ : W → Bool)
     (hne : ∀ o ∈ Cslib.Logic.PL.occurrences φ, wire o ≠ [])
     (hcompat : ∀ o ∈ Cslib.Logic.PL.occurrences φ, ∀ c ∈ wire o,
-      σ c.1 = τ o.2.2.1 ∧ σ c.2 = τ o.2.2.1)
+      σ c.1 = τ o.lit.1 ∧ σ c.2 = τ o.lit.1)
     (h : φ.eval τ = true) : (assemble φ wire fallback).eval σ = true := by
   rw [assemble, eval_append, Bool.and_eq_true]
   constructor
@@ -226,9 +226,9 @@ theorem eval_assemble_complete (φ : CNF V) (wire : Occurrence V → List (W × 
     obtain ⟨li, hli, rfl⟩ := List.mem_map.mp hl
     refine ⟨li, hli, ?_⟩
     have ho := mk_mem_occurrences_of_mem_zipIdx hc hli
-    have hm : (wire (c.2, li.2, li.1)).getLastD (fallback, fallback) ∈
-        wire (c.2, li.2, li.1) := by
-      cases hw : wire (c.2, li.2, li.1) with
+    have hm : (wire ⟨c.2, li.2, li.1⟩).getLastD (fallback, fallback) ∈
+        wire ⟨c.2, li.2, li.1⟩ := by
+      cases hw : wire ⟨c.2, li.2, li.1⟩ with
       | nil => exact False.elim (hne _ ho hw)
       | cons a rest =>
         rw [List.getLastD_cons]
@@ -236,7 +236,7 @@ theorem eval_assemble_complete (φ : CNF V) (wire : Occurrence V → List (W × 
     exact (hcompat _ ho _ hm).2.trans hv
   · apply (eval_allLinks_iff φ wire σ).2
     intro o ho
-    exact eval_links_of_constant σ o.2.2.2 (τ o.2.2.1) (wire o) (hcompat o ho)
+    exact eval_links_of_constant σ o.lit.2 (τ o.lit.1) (wire o) (hcompat o ho)
 
 /-- Clause replacement preserves all original clause widths. -/
 theorem map_length_replacementClauses (φ : CNF V) (wire : Occurrence V → List (W × W))
@@ -268,7 +268,7 @@ theorem length_vars_allLinks (φ : CNF V) (wire : Occurrence V → List (W × W)
     (allLinks φ wire).vars.length =
       2 * ((Cslib.Logic.PL.occurrences φ).map fun o => (wire o).length - 1).sum := by
   have total (os : List (Occurrence V)) :
-      (CNF.vars (os.flatMap fun o => links o.2.2.2 (wire o))).length =
+      (CNF.vars (os.flatMap fun o => links o.lit.2 (wire o))).length =
         2 * (os.map fun o => (wire o).length - 1).sum := by
     induction os with
     | nil => rfl

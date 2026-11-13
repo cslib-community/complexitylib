@@ -7,16 +7,15 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import Cslib.Foundations.Data.BitString
+public import CslibFrontier.Foundations.Data.BitString.Graph
 public import Mathlib.Combinatorics.SimpleGraph.Clique
 public import Mathlib.Combinatorics.SimpleGraph.Coloring.Vertex
-public import Mathlib.Data.Sym.Card
 
 /-!
 # The clique function
 
 A Boolean function of the possible edges of a graph on `n` vertices, the unordered pairs of distinct
-vertices (`Cslib.Circuits.Clique.Edge`), reads its input as a graph (`Cslib.Circuits.Clique.graph`).
+vertices (`Cslib.BitString.Graph.Edge`), reads its input as a graph (`Cslib.BitString.Graph.graph`).
 The `k`-clique function `Cslib.Circuits.clique n k` says whether that graph has a clique of `k`
 vertices.
 
@@ -31,10 +30,10 @@ circuit computing a separating function, not only of those computing `k`-clique.
 
 ## Main definitions
 
-* `Cslib.Circuits.Clique.Edge`, `Cslib.Circuits.Clique.edgeCount`,
-  `Cslib.Circuits.Clique.edgeEquiv`, `Cslib.Circuits.Clique.edge`: the possible edges, their count,
+* `Cslib.BitString.Graph.Edge`, `Cslib.BitString.Graph.edgeCount`,
+  `Cslib.BitString.Graph.edgeEquiv`, `Cslib.BitString.Graph.edge`: the possible edges, their count,
   their numbering, and the edge between two distinct vertices.
-* `Cslib.Circuits.Clique.graph`: the graph of an input.
+* `Cslib.BitString.Graph.graph`: the graph of an input.
 * `Cslib.Circuits.Clique.Contains`: the input contains all edges inside a set of vertices.
 * `Cslib.Circuits.Clique.CliqueSet`, `Cslib.Circuits.Clique.Coloring`: sets of `k` vertices and
   vertex colourings.
@@ -45,9 +44,9 @@ circuit computing a separating function, not only of those computing `k`-clique.
 
 ## Main results
 
-* `Cslib.Circuits.Clique.edgeCount_eq_choose`: there are `n.choose 2` possible edges.
+* `Cslib.BitString.Graph.edgeCount_eq_choose`: there are `n.choose 2` possible edges.
 * `Cslib.Circuits.clique_eq_true_iff`: the clique function in terms of `SimpleGraph.IsNClique`.
-* `Cslib.Circuits.Clique.graph_adj`: adjacency in the graph of an input.
+* `Cslib.BitString.Graph.graph_adj`: adjacency in the graph of an input.
 * `Cslib.Circuits.clique_ofFinset`, `Cslib.Circuits.clique_ofColoring`,
   `Cslib.Circuits.Clique.colorable_graph_ofColoring`: the test inputs.
 * `Cslib.Circuits.Clique.separates_clique`: `k`-clique separates the graphs with a `k`-clique from
@@ -60,26 +59,11 @@ circuit computing a separating function, not only of those computing `k`-clique.
 
 namespace Cslib.Circuits
 
+open BitString.Graph
+
 namespace Clique
 
 variable {n r : ℕ}
-
-/-- The possible edges of a graph on `n` vertices: unordered pairs of distinct vertices. -/
-abbrev Edge (n : ℕ) : Type := {e : Sym2 (Fin n) // ¬e.IsDiag}
-
-/-- The number of possible edges of a graph on `n` vertices. -/
-abbrev edgeCount (n : ℕ) : ℕ := Fintype.card (Edge n)
-
-/-- A graph on `n` vertices has `n.choose 2` possible edges. -/
-theorem edgeCount_eq_choose (n : ℕ) : edgeCount n = n.choose 2 := by
-  rw [edgeCount, Sym2.card_subtype_not_diag, Fintype.card_fin]
-
-/-- A numbering of the possible edges by the inputs of a circuit. -/
-noncomputable def edgeEquiv (n : ℕ) : Edge n ≃ Fin (edgeCount n) := Fintype.equivFin _
-
-/-- The graph of an input: its edges are the possible edges set to `true`. -/
-def graph (x : Fin (edgeCount n) → Bool) : SimpleGraph (Fin n) :=
-  SimpleGraph.fromEdgeSet {e | ∃ h : ¬e.IsDiag, x (edgeEquiv n ⟨e, h⟩) = true}
 
 /-- The input `x` contains all edges between the vertices of `s`. -/
 def Contains (x : Fin (edgeCount n) → Bool) (s : Finset (Fin n)) : Prop :=
@@ -89,24 +73,6 @@ def Contains (x : Fin (edgeCount n) → Bool) (s : Finset (Fin n)) : Prop :=
 noncomputable instance (x : Fin (edgeCount n) → Bool) (s : Finset (Fin n)) :
     Decidable (Contains x s) :=
   inferInstanceAs (Decidable (∀ _, _))
-
-/-- The edge between two distinct vertices. -/
-def edge {u v : Fin n} (h : u ≠ v) : Edge n := ⟨s(u, v), by simpa using h⟩
-
-/-- The endpoints of `edge h` are `{u, v}`. -/
-@[simp] theorem toFinset_edge {u v : Fin n} (h : u ≠ v) : (edge h).1.toFinset = {u, v} :=
-  Sym2.toFinset_mk_eq
-
-/-- The edge between `u` and `v` is the edge between `v` and `u`. -/
-theorem edge_comm {u v : Fin n} (h : u ≠ v) : edge h = edge (Ne.symm h) :=
-  Subtype.ext Sym2.eq_swap
-
-/-- Two distinct vertices are adjacent in the graph of an input exactly when the input sets the
-edge between them. -/
-theorem graph_adj {x : Fin (edgeCount n) → Bool} {u v : Fin n} (h : u ≠ v) :
-    (graph x).Adj u v ↔ x (edgeEquiv n (edge h)) = true := by
-  rw [graph, SimpleGraph.fromEdgeSet_adj]
-  exact ⟨fun ⟨⟨_, hx⟩, _⟩ => hx, fun hx => ⟨⟨_, hx⟩, h⟩⟩
 
 /-- Containing all edges inside a vertex set is antitone in the vertex set. -/
 theorem Contains.mono {x : Fin (edgeCount n) → Bool} {s t : Finset (Fin n)} (hst : s ⊆ t)
