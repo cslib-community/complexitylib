@@ -52,6 +52,9 @@ is Mathlib's `klDiv`, in nats as in the source.
 
 ## Main results
 
+* `measure_ofReal_div_le_lintegral_le`: Markov's inequality for an average over a prior that does
+  not depend on the sample, shared with the PAC-Bayes-kl bound
+  (`Cslib.MachineLearning.PACBayes.measure_pi_exists_binaryKL_integral_risk_gt`).
 * `measure_pi_exists_integral_risk_gt`: McAllester's bound with `log (√m / δ)`.
 * `measure_pi_exists_integral_risk_gt_log_div`: McAllester's bound with the source's
   `log (m / δ)`.
@@ -116,6 +119,36 @@ private theorem integral_le_sqrt_klDiv_add_log {P Q : Measure ι} [IsProbability
 
 end ChangeOfMeasure
 
+section Markov
+
+variable {Ω : Type*} [MeasurableSpace Ω] [MeasurableSpace ι] [Countable ι]
+  [MeasurableSingletonClass ι]
+
+/-- **Markov's inequality over a prior** [ShalevShwartzBenDavid2014, (31.4)–(31.5)]: if every
+hypothesis `i` has `𝔼_ω F ω i ≤ B` and the prior `P` does not depend on `ω`, then
+`𝔼_ω 𝔼_{i∼P} F ω i ≤ B` by Tonelli's theorem, so the prior average reaches `B / δ` with
+probability at most `δ`. -/
+theorem measure_ofReal_div_le_lintegral_le (μ : Measure Ω) [SFinite μ] (P : Measure ι)
+    [IsProbabilityMeasure P] {F : Ω → ι → ℝ≥0∞} (hF : ∀ i, Measurable fun ω => F ω i) {B : ℝ}
+    (hB : ∀ i, ∫⁻ ω, F ω i ∂μ ≤ ENNReal.ofReal B) (hB0 : 0 < B) {δ : ℝ} (hδ : 0 < δ) :
+    μ {ω | ENNReal.ofReal (B / δ) ≤ ∫⁻ i, F ω i ∂P} ≤ ENNReal.ofReal δ := by
+  have hFm : Measurable (Function.uncurry F) := measurable_from_prod_countable_left hF
+  have hswap : ∫⁻ ω, ∫⁻ i, F ω i ∂P ∂μ ≤ ENNReal.ofReal B := by
+    rw [lintegral_lintegral_swap hFm.aemeasurable]
+    calc ∫⁻ i, ∫⁻ ω, F ω i ∂μ ∂P ≤ ∫⁻ _, ENNReal.ofReal B ∂P := lintegral_mono hB
+      _ = ENNReal.ofReal B := by simp
+  have hthr : ENNReal.ofReal (B / δ) ≠ 0 := by
+    rw [ne_eq, ENNReal.ofReal_eq_zero, not_le]
+    exact div_pos hB0 hδ
+  refine (meas_ge_le_lintegral_div hFm.lintegral_prod_right.aemeasurable hthr
+    ENNReal.ofReal_ne_top).trans ?_
+  refine (ENNReal.div_le_div_right hswap _).trans_eq ?_
+  rw [← ENNReal.ofReal_div_of_pos (div_pos hB0 hδ)]
+  congr 1
+  field_simp
+
+end Markov
+
 section ExponentialMoment
 
 variable (D : Measure Z) [IsProbabilityMeasure D] {ℓ : ι → Z → ℝ}
@@ -136,42 +169,6 @@ private theorem lintegral_exp_sq_risk_sub_le (hℓ : ∀ i, Measurable (ℓ i))
   simp only [trueRisk_def, empiricalRisk_eq_sum_div]
   refine h.trans_eq ?_
   rw [hc, key, Real.sqrt_inv, inv_inv]
-
-variable [MeasurableSpace ι] [Countable ι] [MeasurableSingletonClass ι]
-
-/-- Markov's inequality for the prior-averaged exponential moment: since `P` does not depend on
-the sample, `𝔼_S 𝔼_{h∼P} exp (2 (m - 1) Δ(h)²) ≤ √m`, so the average reaches `√m / δ` with
-probability at most `δ` [ShalevShwartzBenDavid2014, (31.4)–(31.5)]. -/
-private theorem measure_le_lintegral_exp_sq_risk_sub (hℓ : ∀ i, Measurable (ℓ i))
-    (hℓ01 : ∀ i z, ℓ i z ∈ Set.Icc (0 : ℝ) 1) {m : ℕ} (hm : 0 < m) (P : Measure ι)
-    [IsProbabilityMeasure P] {δ : ℝ} (hδ : 0 < δ) :
-    Measure.pi (fun _ : Fin m => D) {S | ENNReal.ofReal (Real.sqrt m / δ) ≤
-      ∫⁻ i, ENNReal.ofReal (Real.exp (2 * (m - 1) * (trueRisk ℓ D i - empiricalRisk ℓ S i) ^ 2))
-        ∂P} ≤ ENNReal.ofReal δ := by
-  set F : (Fin m → Z) → ι → ℝ≥0∞ := fun S i =>
-    ENNReal.ofReal (Real.exp (2 * (m - 1) * (trueRisk ℓ D i - empiricalRisk ℓ S i) ^ 2))
-  have hFm : Measurable (Function.uncurry F) :=
-    measurable_from_prod_countable_left fun i => by
-      have := measurable_empiricalRisk (ℓ := ℓ) m (hℓ i)
-      simp only [Function.uncurry_apply_pair, F]
-      fun_prop
-  have hswap : ∫⁻ S, ∫⁻ i, F S i ∂P ∂Measure.pi (fun _ : Fin m => D) ≤
-      ENNReal.ofReal (Real.sqrt m) := by
-    rw [lintegral_lintegral_swap hFm.aemeasurable]
-    calc ∫⁻ i, ∫⁻ S, F S i ∂Measure.pi (fun _ : Fin m => D) ∂P
-        ≤ ∫⁻ _, ENNReal.ofReal (Real.sqrt m) ∂P :=
-          lintegral_mono fun i => lintegral_exp_sq_risk_sub_le D hℓ hℓ01 hm i
-      _ = ENNReal.ofReal (Real.sqrt m) := by simp
-  have hsqrt : 0 < Real.sqrt m := Real.sqrt_pos.2 (Nat.cast_pos.2 hm)
-  have hthr : ENNReal.ofReal (Real.sqrt m / δ) ≠ 0 := by
-    rw [ne_eq, ENNReal.ofReal_eq_zero, not_le]
-    exact div_pos hsqrt hδ
-  refine (meas_ge_le_lintegral_div hFm.lintegral_prod_right.aemeasurable hthr
-    ENNReal.ofReal_ne_top).trans ?_
-  refine (ENNReal.div_le_div_right hswap _).trans_eq ?_
-  rw [← ENNReal.ofReal_div_of_pos (div_pos hsqrt hδ)]
-  congr 1
-  field_simp
 
 end ExponentialMoment
 
@@ -194,7 +191,9 @@ theorem measure_pi_exists_integral_risk_gt (hℓ : ∀ i, Measurable (ℓ i))
         Real.sqrt (((klDiv Q P).toReal + Real.log (Real.sqrt m / δ)) / (2 * (m - 1))) <
       ∫ i, trueRisk ℓ D i ∂Q} ≤ ENNReal.ofReal δ := by
   refine (measure_mono fun S hS => ?_).trans
-    (measure_le_lintegral_exp_sq_risk_sub D hℓ hℓ01 (by omega) P hδ)
+    (measure_ofReal_div_le_lintegral_le _ P (fun i => by
+      have := measurable_empiricalRisk (ℓ := ℓ) m (hℓ i); fun_prop)
+      (lintegral_exp_sq_risk_sub_le D hℓ hℓ01 (by omega)) (Real.sqrt_pos.2 (by positivity)) hδ)
   obtain ⟨Q, hQ, hQP, hlt⟩ := hS
   by_contra hB
   rw [Set.mem_ofPred_eq, not_le] at hB

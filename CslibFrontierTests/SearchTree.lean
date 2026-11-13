@@ -28,7 +28,7 @@ namespace CslibFrontierTests.SearchTree
 
 open Cslib.DataStructure.SearchTree Cslib.DataStructure.OrderedSet Cslib.DataStructure
 
-def build (xs : List Nat) : BinaryTree Nat := (run .nil (insertAll xs)).2.1
+def build (xs : List Nat) : BinaryTree Nat := (run .nil (insertAll xs)).state
 
 private def medianFirst : BinaryTree Nat := build [4, 2, 6, 1, 3, 5, 7]
 private def sortedFirst : BinaryTree Nat := build [1, 2, 3, 4, 5, 6, 7]
@@ -83,7 +83,7 @@ example :
       successor 0 (.nil : BinaryTree Nat) = none ∧
       searchVisits 0 (.nil : BinaryTree Nat) = 0 ∧
       run (.nil : BinaryTree Nat) (.liftBind (.insert 5) .pure) =
-        ((), BinaryTree.node 5 .nil .nil, [0]) ∧
+        ⟨(), BinaryTree.node 5 .nil .nil, [0]⟩ ∧
       successor 5 (build [5]) = none ∧
       successor 4 (build [5]) = some 5 :=
   ⟨rfl, rfl, rfl, rfl, rfl, rfl⟩
@@ -91,10 +91,10 @@ example :
 -- The shared deletion operation uses successor splicing at a root with two children and retains
 -- the exact charge, including for missing keys and an empty initial tree.
 example :
-    run medianFirst (.liftBind (.delete 4) .pure) = ((), erase 4 medianFirst, [3]) ∧
-      run sortedFirst (.liftBind (.delete 4) .pure) = ((), erase 4 sortedFirst, [5]) ∧
-      run medianFirst (.liftBind (.delete 8) .pure) = ((), medianFirst, [3]) ∧
-      run (.nil : BinaryTree Nat) (.liftBind (.delete 0) .pure) = ((), .nil, [0]) :=
+    run medianFirst (.liftBind (.delete 4) .pure) = ⟨(), erase 4 medianFirst, [3]⟩ ∧
+      run sortedFirst (.liftBind (.delete 4) .pure) = ⟨(), erase 4 sortedFirst, [5]⟩ ∧
+      run medianFirst (.liftBind (.delete 8) .pure) = ⟨(), medianFirst, [3]⟩ ∧
+      run (.nil : BinaryTree Nat) (.liftBind (.delete 0) .pure) = ⟨(), .nil, [0]⟩ :=
   ⟨rfl, rfl, rfl, rfl⟩
 
 private def deleteTwiceAndCheck (x : Nat) : (spec Nat).Client Bool := do
@@ -105,48 +105,48 @@ private def deleteTwiceAndCheck (x : Nat) : (spec Nat).Client Bool := do
 -- A repeated deletion is still charged for its unsuccessful search, and later queries see the
 -- updated state through the same interpreter and representation-independent correctness theorem.
 example :
-    (run medianFirst (deleteTwiceAndCheck 4)).1 = false ∧
-      (run medianFirst (deleteTwiceAndCheck 4)).2.1 = erase 4 medianFirst ∧
-      (run medianFirst (deleteTwiceAndCheck 4)).2.2 = [3, 3, 3] ∧
-      (run medianFirst (deleteTwiceAndCheck 4)).1 =
-        ((spec Nat).runClient (elements medianFirst) (deleteTwiceAndCheck 4)).1 :=
+    (run medianFirst (deleteTwiceAndCheck 4)).value = false ∧
+      (run medianFirst (deleteTwiceAndCheck 4)).state = erase 4 medianFirst ∧
+      (run medianFirst (deleteTwiceAndCheck 4)).traces = [3, 3, 3] ∧
+      (run medianFirst (deleteTwiceAndCheck 4)).value =
+        (spec Nat).clientResult (elements medianFirst) (deleteTwiceAndCheck 4) :=
   ⟨rfl, rfl, rfl, (run_correct _ ⟨ordered_build _, rfl⟩).1⟩
 
 -- Minimum extraction charges the query and the answer-dependent deletion separately. Their
 -- costs differ on the two shapes even though both implement the same finite-set client.
 example :
-    run medianFirst extractMin = (some 1, erase 1 medianFirst, [3, 3]) ∧
-      run sortedFirst extractMin = (some 1, erase 1 sortedFirst, [1, 2]) ∧
-      run (build [5]) extractMin = (some 5, .nil, [1, 1]) ∧
-      run (.nil : BinaryTree Nat) extractMin = (none, .nil, [0]) :=
+    run medianFirst extractMin = ⟨some 1, erase 1 medianFirst, [3, 3]⟩ ∧
+      run sortedFirst extractMin = ⟨some 1, erase 1 sortedFirst, [1, 2]⟩ ∧
+      run (build [5]) extractMin = ⟨some 5, .nil, [1, 1]⟩ ∧
+      run (.nil : BinaryTree Nat) extractMin = ⟨none, .nil, [0]⟩ :=
   ⟨rfl, rfl, rfl, rfl⟩
 
 -- The generic resource certificate applies to the new adaptive deleting client unchanged.
 example :
-    total id (run medianFirst extractMin).2.2 ≤
+    total id (run medianFirst extractMin).traces ≤
       (spec Nat).totalCost (fun s _ => s.card) (elements medianFirst)
-        ((spec Nat).runClient (elements medianFirst) extractMin).2.2 :=
+        ((spec Nat).clientHistory (elements medianFirst) extractMin) :=
   (run_correct extractMin ⟨ordered_build _, rfl⟩).2.2
 
 -- The exact native trace counts minimum and the answer-dependent successor separately, and agrees
 -- with finite-set semantics through the shared realization theorem.
 example :
-    (run medianFirst firstTwo).1 = (some 1, some 2) ∧
-      (run medianFirst firstTwo).2.2 = [3, 3] ∧
-      (run sortedFirst firstTwo).1 = (some 1, some 2) ∧
-      (run sortedFirst firstTwo).2.2 = [1, 2] ∧
-      (run (.nil : BinaryTree Nat) firstTwo).1 = (none, none) ∧
-      (run (.nil : BinaryTree Nat) firstTwo).2.2 = [0] ∧
-      (run (build [5]) firstTwo).1 = (some 5, none) ∧
-      (run medianFirst firstTwo).1 = ((spec Nat).runClient (elements medianFirst) firstTwo).1 :=
+    (run medianFirst firstTwo).value = (some 1, some 2) ∧
+      (run medianFirst firstTwo).traces = [3, 3] ∧
+      (run sortedFirst firstTwo).value = (some 1, some 2) ∧
+      (run sortedFirst firstTwo).traces = [1, 2] ∧
+      (run (.nil : BinaryTree Nat) firstTwo).value = (none, none) ∧
+      (run (.nil : BinaryTree Nat) firstTwo).traces = [0] ∧
+      (run (build [5]) firstTwo).value = (some 5, none) ∧
+      (run medianFirst firstTwo).value = (spec Nat).clientResult (elements medianFirst) firstTwo :=
   ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl, (run_correct firstTwo ⟨ordered_build _, rfl⟩).1⟩
 
 example :
     ∃ t ns, Executes Exec ((insertAll [4, 2, 6]).bind fun _ => firstTwo) .nil
-        ((spec Nat).runClient ∅ ((insertAll [4, 2, 6]).bind fun _ => firstTwo)).1 t ns ∧
-      Rep ((spec Nat).runClient ∅ ((insertAll [4, 2, 6]).bind fun _ => firstTwo)).2.1 t ∧
+        ((spec Nat).clientResult ∅ ((insertAll [4, 2, 6]).bind fun _ => firstTwo)) t ns ∧
+      Rep ((spec Nat).clientState ∅ ((insertAll [4, 2, 6]).bind fun _ => firstTwo)) t ∧
       total id ns ≤ (spec Nat).totalCost (fun s _ => s.card) ∅
-        ((spec Nat).runClient ∅ ((insertAll [4, 2, 6]).bind fun _ => firstTwo)).2.2 :=
+        ((spec Nat).clientHistory ∅ ((insertAll [4, 2, 6]).bind fun _ => firstTwo)) :=
   realized_client _ rep_empty
 
 -- A malformed tree demonstrates why query correctness requires Ordered, and a finite-set

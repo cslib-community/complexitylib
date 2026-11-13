@@ -57,16 +57,9 @@ theorem complexity_le_of_eq_threshold {m j : ℕ} (F : BooleanFunction (n + p))
     complexity interpretation (single g) ≤
       m * (complexity interpretation (single F) + 2) + (2 + m * (2 * (m + 2))) := by
   let f : Fin m → BooleanFunction n := fun i x => F (substitute (appendInputs (ω i)) x)
-  have hg : single g = single (threshold m j) ∘ fun x i => f i x :=
-    funext fun x => funext fun _ => by simp [f, h x, single]
+  have hg : g = fun x => threshold m j fun i => f i x := funext fun x => by simp [f, h x]
   rw [hg]
-  refine (complexity_comp_le _ _).trans (add_le_add ((complexity_pi_le f).trans ?_)
-    (complexity_threshold_le m j))
-  calc ∑ i, complexity interpretation (single (f i))
-      ≤ ∑ _i : Fin m, (complexity interpretation (single F) + 2) :=
-        sum_le_sum fun i _ => complexity_substitute_le _ _
-    _ = m * (complexity interpretation (single F) + 2) := by
-        rw [sum_const, card_univ, Fintype.card_fin, smul_eq_mul]
+  exact complexity_threshold_pi_le_of_le f fun i => complexity_substitute_le _ _
 
 /-- **Adleman's theorem**, for one input length, on a set of inputs. If, for every `x ∈ S`, at
 least two thirds of the random strings `r` have `F (x ++ r) = g x`, then some function agreeing

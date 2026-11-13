@@ -227,8 +227,8 @@ theorem maskedSample_extract_dist_bind_le {α β Seed Output : Type} [Finite α]
       (fun s (bits : Fin count → Bool) => hash s (List.ofFn bits))) {δ slack : ℝ}
     (hdensity : δ ≤ Pr[source >>= mask]) (hslack : 0 ≤ slack)
     {Result : Type*} [Fintype Result] (test : List β × Seed × Output → PMF Result) :
-    dist ((ProbComp.eval (OracleComp.replicate count (maskedSample source observe truth mask)
-      >>= extractLabels seed hash)).bind test)
+    dist ((ProbComp.eval (extractLabelsReal (maskedSample source observe truth mask) count seed
+      hash)).bind test)
       ((extractLabelsIdeal (Output := Output) (observe <$> source) count seed).bind test) ≤
       2 * Real.exp (-2 * slack ^ 2 / (count * (informationBits : ℝ) ^ 2)) +
         Real.sqrt (Fintype.card Output * (2 * (2 : ℝ) ^ (-(count * δ - slack)))) / 2 := by
@@ -265,9 +265,9 @@ theorem maskedSample_weight_extract_dist_bind_le {α β Seed Output : Type} [Fin
       (fun value => listVoteMargin (votes value) (truth value) - threshold))
     (hslack : 0 ≤ slack)
     {Result : Type*} [Fintype Result] (test : List β × Seed × Output → PMF Result) :
-    dist ((ProbComp.eval (OracleComp.replicate count
+    dist ((ProbComp.eval (extractLabelsReal
         (maskedSample source observe truth (fun value => Boosting.sampleWeight bound numerator
-          threshold (votes value) (truth value))) >>= extractLabels seed hash)).bind test)
+          threshold (votes value) (truth value))) count seed hash)).bind test)
       ((extractLabelsIdeal (Output := Output) (observe <$> source) count seed).bind test) ≤
       2 * Real.exp (-2 * slack ^ 2 / (count * (sourceBits + Nat.log 2 bound + 2 : ℕ) ^ 2)) +
         Real.sqrt (Fintype.card Output * (2 * (2 : ℝ) ^ (-(count * δ - slack)))) / 2 := by
