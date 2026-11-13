@@ -5318,6 +5318,7 @@ public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Cy
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.CycleDarts
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Geodesic
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Maps
+public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.NearVertex
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Realization
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Subdivision
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Tree

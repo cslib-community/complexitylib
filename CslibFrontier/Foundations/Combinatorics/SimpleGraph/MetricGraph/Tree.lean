@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Geodesic
 public import Mathlib.Combinatorics.SimpleGraph.Acyclic
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Maps
+import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.NearVertex
 import Mathlib.Tactic.Linarith
 
 /-!
@@ -1057,57 +1058,12 @@ theorem dist_vertex_mem_step_dart [Finite V] {v : V} {p : MetricGraph W} {r : �
       have h2 := walkLength_nonneg W.weight W.weight_nonneg q'
       rw [← hq, walkLength_cons]
       exact h1.trans_le (le_add_of_nonneg_right h2)
-  induction p using ind with
-  | vertex u =>
-    by_cases huv : v = u
-    · subst huv
-      simp only [_root_.dist_self] at hr
-      linarith
-    · have := hvd_ge huv
-      rw [dist_vertex] at hr
-      linarith
-  | edgePoint d t ht0 ht1 =>
-    rw [dist_vertex_edgePoint] at hr
-    by_cases hfst : d.fst = v
-    · have hright : r < vertexDist W.graph W.weight v d.snd + (1 - (t : ℝ)) * W.weight d.edge := by
-        have h1 := hvd_ge (hfst ▸ d.fst_ne_snd)
-        have h2 : 0 ≤ (1 - (t : ℝ)) * W.weight d.edge :=
-          mul_nonneg (unitInterval.one_sub_nonneg t) (W.dart_weight_nonneg d)
-        linarith
-      have hmin_eq : min (vertexDist W.graph W.weight v d.fst + (t : ℝ) * W.weight d.edge)
-          (vertexDist W.graph W.weight v d.snd + (1 - (t : ℝ)) * W.weight d.edge) =
-          vertexDist W.graph W.weight v d.fst + (t : ℝ) * W.weight d.edge := by
-        rcases min_choice (vertexDist W.graph W.weight v d.fst + (t : ℝ) * W.weight d.edge)
-            (vertexDist W.graph W.weight v d.snd + (1 - (t : ℝ)) * W.weight d.edge) with
-          hm | hm <;> linarith
-      rw [hmin_eq, hfst, vertexDist_self W.weight_nonneg, zero_add] at hr
-      exact ⟨d, t, hfst, ht0, ht1, rfl, hr⟩
-    · by_cases hsnd : d.snd = v
-      · have hleft : vertexDist W.graph W.weight v d.fst + (t : ℝ) * W.weight d.edge > r := by
-          have h1 := hvd_ge (fun h => hfst h.symm)
-          have h2 : 0 ≤ (t : ℝ) * W.weight d.edge := mul_nonneg t.2.1 (W.dart_weight_nonneg d)
-          linarith
-        have hmin_eq : min (vertexDist W.graph W.weight v d.fst + (t : ℝ) * W.weight d.edge)
-            (vertexDist W.graph W.weight v d.snd + (1 - (t : ℝ)) * W.weight d.edge) =
-            vertexDist W.graph W.weight v d.snd + (1 - (t : ℝ)) * W.weight d.edge := by
-          rcases min_choice (vertexDist W.graph W.weight v d.fst + (t : ℝ) * W.weight d.edge)
-              (vertexDist W.graph W.weight v d.snd + (1 - (t : ℝ)) * W.weight d.edge) with
-            hm | hm <;> linarith
-        rw [hmin_eq, hsnd, vertexDist_self W.weight_nonneg, zero_add] at hr
-        refine ⟨d.symm, unitInterval.symm t, hsnd,
-          by simp only [unitInterval.coe_symm_eq]; linarith,
-          by simp only [unitInterval.coe_symm_eq]; linarith,
-          (edgePoint_symm d t).symm, ?_⟩
-        simpa only [unitInterval.coe_symm_eq, Dart.edge_symm] using hr
-      · have h1 := hvd_ge (fun h => hfst h.symm)
-        have h2 := hvd_ge (fun h => hsnd h.symm)
-        have hnn1 : 0 ≤ (t : ℝ) * W.weight d.edge := mul_nonneg t.2.1 (W.dart_weight_nonneg d)
-        have hnn2 : 0 ≤ (1 - (t : ℝ)) * W.weight d.edge :=
-          mul_nonneg (unitInterval.one_sub_nonneg t) (W.dart_weight_nonneg d)
-        rcases min_choice (vertexDist W.graph W.weight v d.fst + (t : ℝ) * W.weight d.edge)
-            (vertexDist W.graph W.weight v d.snd + (1 - (t : ℝ)) * W.weight d.edge) with hm | hm
-        · linarith
-        · linarith
+  rcases eq_vertex_or_edgePoint_of_dist_vertex_lt (v := v) (p := p)
+      (fun u hu => by rw [hr, dist_vertex]; exact hvd_ge (Ne.symm hu)) with
+    rfl | ⟨d, t, hfst, ht0, ht1, rfl, hd⟩
+  · rw [_root_.dist_self] at hr
+    linarith
+  · exact ⟨d, t, hfst, ht0, ht1, rfl, hd.symm.trans hr⟩
 
 /-- Every triple of points in a tree metric graph has a point lying on shortest paths between
 all three pairs. -/

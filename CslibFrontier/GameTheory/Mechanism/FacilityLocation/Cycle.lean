@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.Cycle
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.CycleDarts
+import CslibFrontier.Foundations.Combinatorics.SimpleGraph.MetricGraph.NearVertex
 public import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Basic
 public import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Dictatorship
 import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Interval
@@ -126,56 +127,6 @@ private theorem dist_edgePoint_ray_same {V : Type*} (W : WeightedGraph V) [Finit
   rw [dist_edgePoint_edgePoint_of_abs_sub_le_half d_x hhalf]
   exact habs
 
-/-- If distinct vertices are at least `vmin` apart, a point on an edge not incident to `v` is at
-least `vmin` from `v`. -/
-private theorem le_dist_vertex_edgePoint_of_ne {V : Type*} {W : WeightedGraph V} [Finite V]
-    {vmin : ℝ} (hvmin : ∀ u w : V, u ≠ w → vmin ≤ dist (vertex u : MetricGraph W) (vertex w))
-    {v : V} {d : W.graph.Dart} (t : unitInterval) (h₁ : v ≠ d.fst) (h₂ : v ≠ d.snd) :
-    vmin ≤ dist (vertex v : MetricGraph W) (edgePoint d t) := by
-  have hv₁ := hvmin v d.fst h₁
-  have hv₂ := hvmin v d.snd h₂
-  rw [dist_vertex] at hv₁ hv₂
-  rw [dist_vertex_edgePoint]
-  exact le_min (by linarith [mul_nonneg t.2.1 (W.dart_weight_nonneg d)])
-    (by linarith [mul_nonneg (sub_nonneg.mpr t.2.2) (W.dart_weight_nonneg d)])
-
-/-- If distinct vertices are at least `vmin` apart, a point on a dart out of `v` closer than `vmin`
-to `v` is at distance its offset along the dart. -/
-private theorem dist_vertex_edgePoint_of_fst_eq {V : Type*} {W : WeightedGraph V} [Finite V]
-    {vmin : ℝ} (hvmin : ∀ u w : V, u ≠ w → vmin ≤ dist (vertex u : MetricGraph W) (vertex w))
-    {v : V} {d : W.graph.Dart} (hfst : d.fst = v) (t : unitInterval)
-    (hlt : dist (vertex v : MetricGraph W) (edgePoint d t) < vmin) :
-    dist (vertex v : MetricGraph W) (edgePoint d t) = (t : ℝ) * W.weight d.edge := by
-  have hv := hvmin v d.snd (hfst ▸ d.adj.ne)
-  rw [dist_vertex] at hv
-  rw [dist_vertex_edgePoint, hfst, vertexDist_self W.weight_nonneg, zero_add] at hlt ⊢
-  have hb : vmin ≤ W.graph.vertexDist W.weight v d.snd + (1 - (t : ℝ)) * W.weight d.edge := by
-    linarith [mul_nonneg (sub_nonneg.mpr t.2.2) (W.dart_weight_nonneg d)]
-  exact min_eq_left (((min_lt_iff.mp hlt).resolve_right hb.not_gt).trans_le hb).le
-
-/-- If distinct vertices are at least `vmin` apart, a point closer than `vmin` to a vertex `v` is
-`v` itself or an interior point of a dart out of `v`, at distance its offset along the dart. -/
-private theorem eq_vertex_or_edgePoint_of_dist_lt {V : Type*} {W : WeightedGraph V} [Finite V]
-    {vmin : ℝ} (hvmin : ∀ u w : V, u ≠ w → vmin ≤ dist (vertex u : MetricGraph W) (vertex w))
-    {v : V} {p : MetricGraph W} (hp : dist (vertex v : MetricGraph W) p < vmin) :
-    p = vertex v ∨ ∃ (d : W.graph.Dart) (t : unitInterval),
-      d.fst = v ∧ 0 < (t : ℝ) ∧ (t : ℝ) < 1 ∧ p = edgePoint d t ∧
-        dist (vertex v : MetricGraph W) p = (t : ℝ) * W.weight d.edge := by
-  induction p using MetricGraph.ind with
-  | vertex u =>
-    by_cases huv : u = v
-    · left; rw [huv]
-    · exact absurd hp (hvmin v u (Ne.symm huv)).not_gt
-  | edgePoint d t ht0 ht1 =>
-    right
-    by_cases hfst : d.fst = v
-    · exact ⟨d, t, hfst, ht0, ht1, rfl, dist_vertex_edgePoint_of_fst_eq hvmin hfst t hp⟩
-    by_cases hsnd : d.snd = v
-    · rw [← edgePoint_symm d t] at hp ⊢
-      exact ⟨d.symm, unitInterval.symm t, hsnd, sub_pos.mpr ht1, sub_lt_self 1 ht0, rfl,
-        dist_vertex_edgePoint_of_fst_eq hvmin hsnd _ hp⟩
-    exact absurd hp (le_dist_vertex_edgePoint_of_ne hvmin t (Ne.symm hfst) (Ne.symm hsnd)).not_gt
-
 private theorem half_step_third_dart_bound {V : Type*} (W : WeightedGraph V) [Finite V]
     [MeasurableSpace (MetricGraph W)] [OpensMeasurableSpace (MetricGraph W)]
     {v : V} {d_a d_b d : W.graph.Dart}
@@ -254,7 +205,8 @@ private theorem half_step_third_dart_bound {V : Type*} (W : WeightedGraph V) [Fi
       _ = r' + (r' + r_y) := by rw [hvb', hb'y2]
       _ = 5 / 2 * r_y := by dsimp only [r']; ring
   have hvy2_lt : dist (vertex v : MetricGraph W) y₂ ≤ 3 * δ := by linarith
-  rcases eq_vertex_or_edgePoint_of_dist_lt hvmin (hvy2_lt.trans_lt (by linarith)) with
+  rcases eq_vertex_or_edgePoint_of_dist_vertex_lt (v := v) (p := y₂)
+      (fun u hu => by linarith [hvmin v u hu.symm]) with
     hv_eq | ⟨d₂, t₂, hd₂_fst, ht20, ht21, hy2_eq, hvy2_eq⟩
   · exfalso
     rw [hv_eq, _root_.dist_comm, dist_vertex_edgePoint, hb_fst, vertexDist_self W.weight_nonneg,
@@ -638,7 +590,8 @@ private theorem local_invariance_circle {V : Type*} (W : WeightedGraph V) [Finit
             dist_triangle _ _ _
         _ ≤ |sa| + |sa - sb| := add_le_add hdsa.le (hdab ▸ hda_y)
         _ ≤ 3 * δ := by linarith [abs_le.mpr hsa, abs_le.mpr hsb, abs_sub sa sb]
-    rcases eq_vertex_or_edgePoint_of_dist_lt hvmin (hvy_3.trans_lt (by linarith)) with
+    rcases eq_vertex_or_edgePoint_of_dist_vertex_lt (v := v) (p := y)
+        (fun u hu => by linarith [hvmin v u hu.symm]) with
       hv_eq | ⟨d, t, hd_fst, ht0, ht1, hy_eq, hvy_eq⟩
     · have h0_mem : (0 : ℝ) ∈ Set.Icc (-δ) δ := ⟨by linarith, hδ_pos.le⟩
       refine ⟨0, h0_mem, ?_⟩
@@ -1437,19 +1390,16 @@ private theorem extend_dir_half {V : Type*} (W : WeightedGraph V) [Finite V]
       | vertex u =>
         intro _ hdu hdby_v hdb0y_v
         rw [ha_ep, _root_.dist_comm] at hdu
-        have hlt := hdu.trans_lt (show η' < vmin by linarith [hη'.2])
-        have hu_end : u = d.fst ∨ u = d.snd := by
-          by_contra hne
-          push Not at hne
-          exact (le_dist_vertex_edgePoint_of_ne hvmin _ hne.1 hne.2).not_gt hlt
-        rcases hu_end with rfl | rfl
-        · rw [dist_vertex_edgePoint_of_fst_eq hvmin rfl _ hlt] at hdu
+        have hnear : ∀ w, w ≠ u →
+            dist (vertex u : MetricGraph W) (edgePoint d ⟨t, ht0.le, ht1.le⟩) <
+              dist (vertex u : MetricGraph W) (vertex w) :=
+          fun w hw => by linarith [hvmin u w hw.symm, hη'.2]
+        rcases fst_eq_or_snd_eq_of_dist_vertex_edgePoint_lt hnear with rfl | rfl
+        · rw [dist_vertex_edgePoint_of_fst_eq rfl (hnear _ d.adj.ne.symm)] at hdu
           exact kill_circle_shift (vertex d.fst) hdby_v hdb0y_v (ρ := -(t * W.weight d.edge))
             (by rw [abs_neg, abs_of_pos (mul_pos ht0 hw)]; linarith [hη'.2, hη_pos.le, hdu])
             (by rw [← hend.1]; ring_nf)
-        · rw [← edgePoint_symm] at hdu hlt
-          rw [dist_vertex_edgePoint_of_fst_eq hvmin (v := d.snd) rfl _ hlt,
-            unitInterval.coe_symm_eq, Dart.edge_symm] at hdu
+        · rw [dist_vertex_edgePoint_of_snd_eq rfl (hnear _ d.adj.ne)] at hdu
           exact kill_circle_shift (vertex d.snd) hdby_v hdb0y_v (ρ := (1 - t) * W.weight d.edge)
             (by rw [abs_of_pos (mul_pos (sub_pos.mpr ht1) hw)]; linarith [hη'.2, hη_pos.le, hdu])
             hend.2.symm
@@ -1816,7 +1766,8 @@ private theorem extend_dir_half {V : Type*} (W : WeightedGraph V) [Finite V]
         rw [← hs_v]; exact hday_le.trans hη'.2
       have hfull_v := circleMap_eq_edgePoint_of_vertex hs.1 hδ₁ hmap
       change y = a
-      rcases eq_vertex_or_edgePoint_of_dist_lt hvmin (hy_close.trans_lt (by linarith)) with
+      rcases eq_vertex_or_edgePoint_of_dist_vertex_lt (v := v) (p := y)
+          (fun u hu => by linarith [hvmin v u hu.symm]) with
         hv_eq | ⟨d', t', hd'_fst, ht'0, ht'1, hy_eq, hvy_eq⟩
       · rw [hv_eq]; exact hs_v.symm
       exfalso
