@@ -43,6 +43,8 @@ polynomial-time oracle program that reads the bits of the 0/1 permanent from its
   Arora and Barak's Definition 9.5.
 * `Cslib.Complexity.bipartitePerfectMatchingCount_sharpPMetricComplete`: Goldreich's Theorem
   6.20, counting perfect matchings of bipartite graphs.
+* `Cslib.Complexity.bipartitePerfectMatchingCount_computableInPolyTimeWithOracle`: the
+  corresponding oracle form for bipartite perfect-matching counts.
 
 ## References
 
