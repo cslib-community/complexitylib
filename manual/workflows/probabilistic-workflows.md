@@ -1467,6 +1467,14 @@ split on the private-sampling branch. The forward lift
 [PRP.StrongAdversary.isQueryBounded_ofForward](../../CslibFrontier/Crypto/Primitives/PRP/Finite.lean)
 is a one-line client.
 
+To analyse a substituted program against a stateful oracle, for example in an identical-until-bad
+hop, import
+[Oracle/Substitution/RunWith.lean](../../CslibFrontier/Languages/Probabilistic/Oracle/Substitution/RunWith.lean).
+`ProbOracleComp.runWith_simulate` rewrites `runWith oracle (simulate handler A)` to a run of `A`
+whose queries each run `handler q` against `oracle`. The block-mode reduction
+[blockModeReduction](../../CslibFrontier/Crypto/Computational/Encryption/RandomFunctionHybrid.lean)
+uses it for its fresh-sampling hop and in the CTR and OFB collision bounds.
+
 If an existing proof needs the underlying interpreter, unfold `ProbOracleComp.simulate` to
 reuse its laws and native efficiency certificates. Substitution preserves the free program;
 it does not by itself certify its runtime. This separation follows VCVio's treatment of
