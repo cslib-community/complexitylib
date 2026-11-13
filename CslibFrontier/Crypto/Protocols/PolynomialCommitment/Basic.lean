@@ -69,6 +69,8 @@ says that the rows of `M` are codewords of `G` or close to codewords.
 ## Main definitions
 
 * `Cslib.Crypto.Protocols.PolyCommitScheme`: syntax of a polynomial commitment scheme.
+* `Cslib.Crypto.Protocols.PolyCommitScheme.Opening`: an evaluation opening, a claimed value and
+  its proof.
 * `Cslib.Crypto.Protocols.PolyCommitScheme.EvalComplete`,
   `Cslib.Crypto.Protocols.PolyCommitScheme.OpenValueCorrect`,
   `Cslib.Crypto.Protocols.PolyCommitScheme.CommitmentBinding`,
@@ -123,6 +125,14 @@ universe u
 
 /-! ### Polynomial commitment scheme interface -/
 
+/-- An evaluation opening: the claimed value of a committed polynomial at a query point, with the
+proof that the verifier checks against the commitment. -/
+structure PolyCommitScheme.Opening (F Proof : Type u) where
+  /-- The claimed evaluation. -/
+  value : F
+  /-- The opening proof. -/
+  proof : Proof
+
 /-- A polynomial commitment scheme over polynomial representation `Poly`, commitment randomness
 `Randomness`, evaluation point type `Point`, value type `F`, commitment type `Commit`, and opening
 proof type `Proof` [Kate, Zaverucha and Goldberg][KateZaveruchaGoldberg2010]. -/
@@ -134,7 +144,7 @@ structure PolyCommitScheme (Poly Randomness Point F Commit Proof : Type u) where
   /-- Commit to a polynomial using explicit randomness. -/
   commit : Poly → Randomness → Commit
   /-- Open a committed polynomial at a point, returning the claimed value and an opening proof. -/
-  openEval : Poly → Randomness → Point → F × Proof
+  openEval : Poly → Randomness → Point → PolyCommitScheme.Opening F Proof
   /-- Deterministic verification of a claimed evaluation `(y, π)` at point `z` against `c`. -/
   verifyEval : Commit → Point → F → Proof → Bool
 
@@ -151,15 +161,15 @@ instance (c : Commit) (z : Point) (y : F) (π : Proof) : Decidable (S.AcceptsEva
   inferInstanceAs (Decidable (S.verifyEval c z y π = true))
 
 /-- Evaluation completeness: for every valid polynomial `p`, commitment randomness `r`, and query
-point `z`, the honest opening proof `(openEval p r z).2` is accepted for the true evaluation
+point `z`, the honest opening proof `(openEval p r z).proof` is accepted for the true evaluation
 `eval p z` on `commit p r`. -/
 @[expose] def EvalComplete : Prop :=
   ∀ p r z, S.ValidPoly p →
-    S.verifyEval (S.commit p r) z (S.eval p z) (S.openEval p r z).2 = true
+    S.verifyEval (S.commit p r) z (S.eval p z) (S.openEval p r z).proof = true
 
-/-- Honest opening value correctness: the value component of `openEval p r z` is `eval p z`. -/
+/-- Honest opening value correctness: the value of `openEval p r z` is `eval p z`. -/
 @[expose] def OpenValueCorrect : Prop :=
-  ∀ p r z, S.ValidPoly p → (S.openEval p r z).1 = S.eval p z
+  ∀ p r z, S.ValidPoly p → (S.openEval p r z).value = S.eval p z
 
 /-- Commitment binding: no two distinct valid polynomials produce the same commitment. -/
 @[expose] def CommitmentBinding : Prop :=
@@ -199,7 +209,7 @@ variable {S}
 /-- Under `EvalComplete` and `OpenValueCorrect`, both components of `openEval p r z` verify. -/
 theorem EvalComplete.verifyEval_openEval (hcomp : S.EvalComplete) (hval : S.OpenValueCorrect)
     {p : Poly} (hp : S.ValidPoly p) (r : Randomness) (z : Point) :
-    S.verifyEval (S.commit p r) z (S.openEval p r z).1 (S.openEval p r z).2 = true := by
+    S.verifyEval (S.commit p r) z (S.openEval p r z).value (S.openEval p r z).proof = true := by
   rw [hval p r z hp]
   exact hcomp p r z hp
 
@@ -209,7 +219,7 @@ theorem EvaluationBinding.eq_eval_of_verifyEval (hbind : S.EvaluationBinding)
     (hcomp : S.EvalComplete) {p : Poly} (hp : S.ValidPoly p) (r : Randomness) (z : Point)
     {y : F} {π : Proof} (hver : S.verifyEval (S.commit p r) z y π = true) :
     y = S.eval p z :=
-  hbind (S.commit p r) z y π (S.eval p z) (S.openEval p r z).2 hver (hcomp p r z hp)
+  hbind (S.commit p r) z y π (S.eval p z) (S.openEval p r z).proof hver (hcomp p r z hp)
 
 /-- If evaluation completeness and evaluation binding hold, and valid polynomials are determined by
 their evaluations, then commitment binding holds. -/
@@ -246,7 +256,7 @@ evaluation. -/
   eval p z := p.eval z
   ValidPoly p := p.natDegree ≤ d
   commit p _ := p
-  openEval p _ z := (p.eval z, ())
+  openEval p _ z := { value := p.eval z, proof := () }
   verifyEval c z y _ := decide (c.natDegree ≤ d ∧ c.eval z = y)
 
 theorem direct_evalComplete (F : Type) [CommSemiring F] [DecidableEq F] (d : ℕ) :

@@ -38,6 +38,8 @@ Lindeberg's replacement method.
 * `MeasureTheory.integral_integral_update_measure`, `MeasureTheory.integral_integral_update`: the
   integral forms, for integrable `F`; for instance
   `∫ v, ∫ z, F (update v i z) ∂μ i ∂Measure.pi μ = ∫ v, F v ∂Measure.pi μ`.
+* `MeasureTheory.ae_integrable_update`: for integrable `F`, almost every line along coordinate `i`
+  carries an integrable restriction of `F`.
 * `MeasureTheory.integral_integral_update_swap`: the same with the coordinate `i` integrated last,
   `∫ z, ∫ v, F (update v i z) ∂Measure.pi μ ∂μ i = ∫ v, F v ∂Measure.pi μ`.
 * `MeasureTheory.integral_apply_eval_eq_integral_integral`: if `Φ v` ignores coordinate `i`, then
@@ -129,6 +131,14 @@ theorem integral_integral_update {E : Type*} [NormedAddCommGroup E] [NormedSpace
     {F : (∀ j, X j) → E} (hF : Integrable F (Measure.pi μ)) (i : ι) :
     ∫ v, ∫ z, F (Function.update v i z) ∂μ i ∂Measure.pi μ = ∫ v, F v ∂Measure.pi μ := by
   simpa using integral_integral_update_measure μ i (μ i) (F := F) (by simpa using hF)
+
+/-- For integrable `F` on a product of probability measures, the restriction
+`z ↦ F (Function.update v i z)` of `F` to the line through `v` along coordinate `i` is
+`μ i`-integrable for almost every `v`. -/
+theorem ae_integrable_update {E : Type*} [NormedAddCommGroup E] {F : (∀ j, X j) → E}
+    (hF : Integrable F (Measure.pi μ)) (i : ι) :
+    ∀ᵐ v ∂Measure.pi μ, Integrable (fun z => F (Function.update v i z)) (μ i) :=
+  ((measurePreserving_update μ i).integrable_comp_of_integrable hF).prod_right_ae
 
 /-- **Fubini over one coordinate, outer form.** Integrating `F` against a product of probability
 measures is the same as first fixing coordinate `i` to `z`, averaging over the other coordinates,

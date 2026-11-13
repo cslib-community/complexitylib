@@ -17,6 +17,8 @@ public import CslibFrontier.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Pr
 
 * `PrunedQuery.exec_suffix`: one real quotient computation and timestamp insertion,
   within ten native instructions, with its complete memory and register frame.
+* `PrunedQuery.exec_selectDigit`, `PrunedQuery.exec_selectDigit_skip`: the native child-digit
+  filter shared by the scan and the accumulation.
 -/
 
 @[expose] public section
@@ -80,6 +82,34 @@ theorem exec_suffix {w : ℕ} (child : Bool) (x : Data registers) (q : ℕ)
 private theorem dispatch_preserves (child : Bool) (i : Fin registers) :
     ¬SuffixLocal i → (scanDispatch child).Preserves i := by decide +kernel +revert
 
+/-- The native child-digit filter, shared by the scan and the accumulation: a selected query
+passes the comparison with digit nine, or else the comparison with the current term, and
+runs `C`. -/
+theorem exec_selectDigit {w T q : ℕ} {C : Code .standard registers} {x y : Data registers}
+    (hd : x.regs digit = q % 10) (h9 : x.regs nine = 9) (hsel : selected true (x.regs term) q)
+    (hy : ExecWithin w C x y T) :
+    ExecWithin w (ram[ if digit = nine then [ ⟪C⟫ ] else [
+      if digit = term then [ ⟪C⟫ ] else [ temporary ← temporary ] ] ]) x y (T + 3) := by
+  have hchoice : q % 10 = 9 ∨ q % 10 = x.regs term := hsel
+  by_cases hfirst : q % 10 = 9
+  · exact (ExecWithin.branch_pos (by simpa only [Cond.holds_eq, hd, h9] using hfirst) hy).mono
+      (by omega)
+  · have hsecond := hchoice.resolve_left hfirst
+    exact ExecWithin.branch_neg (by simpa only [Cond.holds_eq, hd, h9] using hfirst)
+      (ExecWithin.branch_pos (by simpa only [Cond.holds_eq, hd] using hsecond) hy)
+
+/-- An unselected query fails both comparisons of the child-digit filter and runs its no-op. -/
+theorem exec_selectDigit_skip {w q : ℕ} {C : Code .standard registers} {x : Data registers}
+    (hd : x.regs digit = q % 10) (h9 : x.regs nine = 9)
+    (hsel : ¬selected true (x.regs term) q) :
+    ExecWithin w (ram[ if digit = nine then [ ⟪C⟫ ] else [
+      if digit = term then [ ⟪C⟫ ] else [ temporary ← temporary ] ] ])
+      x (x.set temporary (x.regs temporary)) 5 := by
+  have hfirst : q % 10 ≠ 9 := fun h => hsel (Or.inl h)
+  have hsecond : q % 10 ≠ x.regs term := fun h => hsel (Or.inr h)
+  exact ExecWithin.branch_neg (by simpa only [Cond.holds_eq, hd, h9] using hfirst)
+    (ExecWithin.branch_neg (by simpa only [Cond.holds_eq, hd] using hsecond) ExecWithin.copy)
+
 /-- Execute the actual query filter and unique insertion. The numerical selection is proved
 from the two real digit comparisons; it is not a supplied child-set certificate. -/
 theorem exec_scanDispatch {w : ℕ} (child : Bool) (x : Data registers) (q : ℕ)
@@ -105,16 +135,7 @@ theorem exec_scanDispatch {w : ℕ} (child : Bool) (x : Data registers) (q : ℕ
     have he : ExecWithin w (scanDispatch child) x y 14 := by
       cases child with
       | false => exact hy.mono (by decide)
-      | true =>
-        have hm : q % 10 = 9 ∨ q % 10 = x.regs term := hsel
-        by_cases hfirst : q % 10 = 9
-        · exact (ExecWithin.branch_pos (by
-            simpa only [Cond.holds_eq, hdigit, h9] using hfirst) hy).mono (by decide)
-        · have hsecond := hm.resolve_left hfirst
-          exact (ExecWithin.branch_neg (by
-            simpa only [Cond.holds_eq, hdigit, h9] using hfirst)
-            (ExecWithin.branch_pos (by simpa only [Cond.holds_eq, hdigit] using hsecond) hy)).mono
-              (by decide)
+      | true => exact (exec_selectDigit hdigit h9 hsel hy).mono (by decide)
     refine ⟨y, he, ?_, ?_, fun i hi => he.regs_eq (dispatch_preserves child i hi)⟩
     · by_cases hseen : x.mem (x.regs stamps + shortened child q) = x.regs epoch <;>
         simpa [hsel, hseen] using hc
@@ -123,13 +144,8 @@ theorem exec_scanDispatch {w : ℕ} (child : Bool) (x : Data registers) (q : ℕ
   · have hchild : child = true := by
       cases child <;> simp_all [selected]
     subst hchild
-    have hfirst : q % 10 ≠ 9 := fun h => hsel (Or.inl h)
-    have hsecond : q % 10 ≠ x.regs term := fun h => hsel (Or.inr h)
     let y := x.set temporary (x.regs temporary)
-    have he : ExecWithin w (scanDispatch true) x y 5 :=
-      ExecWithin.branch_neg (by simpa only [Cond.holds_eq, hdigit, h9] using hfirst)
-        (ExecWithin.branch_neg (by simpa only [Cond.holds_eq, hdigit] using hsecond)
-          ExecWithin.copy)
+    have he : ExecWithin w (scanDispatch true) x y 5 := exec_selectDigit_skip hdigit h9 hsel
     refine ⟨y, he.mono (by decide), ?_, ?_,
       fun i hi => he.regs_eq (dispatch_preserves true i hi)⟩
     · simp [hsel, y, childCount, temporary]

@@ -173,7 +173,7 @@ example : Game.succProbability (ProbComp.eval
     (coinIdealGame (treeCoinAdversary seededToy seededToySeeded (fun _ => 1)
       (coinParam oscBudget) (coinParamInv oscBudget) cheatForger) 5)) = 0 := by
   have h5 : coinParam oscBudget (coinParamInv oscBudget 5) ≠ 5 := by decide
-  simp [coinIdealGame, treeCoinAdversary, h5, Game.succProbability]
+  simp [coinIdealGame, ProbOracleComp.run, treeCoinAdversary, h5, Game.succProbability]
 
 -- At every `N n = coinParam oscBudget n`, `cheatForger` wins `coinRealGame` with exact
 -- probability `1`.
