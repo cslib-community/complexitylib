@@ -70,6 +70,7 @@ import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Nondeterministic
 import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Space
 import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Translational
 import CslibFrontier.Computability.Complexity.Classes.IP.Deterministic
+import CslibFrontier.Computability.Complexity.Classes.IP.PerfectSoundness
 import CslibFrontier.Computability.Complexity.Classes.IP.Shamir
 import CslibFrontier.Computability.Complexity.Classes.Ladner.Density
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.Complement
@@ -576,24 +577,30 @@ register_result "shamir" where
     decided by one deterministic machine in polynomial space; arbitrary injective encodings."
 
 register_result "dip-eq-np" where
-  title := "Deterministic interactive proofs decide exactly NP; perfect soundness gives NP"
+  title := "Deterministic interactive proofs decide exactly NP"
   topic := "interactive proofs"
   sources := [
     { paper := AroraBarak07, theorem := "Theorem 8.3",
-      locator := "web draft 2007-01-08, Section 8.1 (printed p. 148, PDF p. 164)" },
+      locator := "web draft 2007-01-08, Section 8.1 (printed p. 148, PDF p. 164)" }
+  ]
+  theorems := [Cslib.Complexity.dIP_eq_NP]
+  scope := "dIP is the coin-free case of the IP model: a deterministic word-query verifier run \
+    against every randomized stateful prover, strict oracle PPT (one machine, one polynomial \
+    clock), completeness 1 and soundness 0; arbitrary injective encodings."
+
+register_result "perfect-soundness-ip-subset-np" where
+  title := "Interactive proofs with perfect soundness are in NP"
+  topic := "interactive proofs"
+  sources := [
     { paper := Goldreich2007DraftR5, theorem := "Proposition 9.2",
       locator := "April 2007 draft r5.pdf, PDF p. 9; printed p. 391" }
   ]
-  theorems := [
-    Cslib.Complexity.dIP_eq_NP,
-    Cslib.Complexity.IsInteractiveProof.mem_NP
-  ]
-  scope := "dIP is the coin-free case of the IP model: a deterministic word-query verifier run \
-    against every randomized stateful prover, strict oracle PPT (one machine, one polynomial \
-    clock), completeness 1 and soundness 0; arbitrary injective encodings. Perfect soundness \
-    gives NP for every strict oracle-PPT IP verifier with any positive completeness; the \
-    source's perfect-completeness assumption is dropped. The certificate is a transcript of at \
-    most t messages and replies of at most t bits with the t coins, t the clock."
+  theorems := [Cslib.Complexity.IsInteractiveProof.mem_NP,
+    Cslib.Complexity.mem_NP_of_exists_pos_acceptProb]
+  scope := "Perfect soundness gives NP for every strict oracle-PPT IP verifier with any \
+    positive completeness; the source's perfect-completeness assumption is dropped. The \
+    certificate is a transcript of at most t messages and replies of at most t bits with the \
+    t coins, t the clock; arbitrary injective encodings."
 
 register_result "toda" where
   title := "Toda: a counting oracle decides the polynomial hierarchy"

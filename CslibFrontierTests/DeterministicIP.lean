@@ -5,7 +5,7 @@ Authors: Christian Reitwiessner
 -/
 
 module
--- upstream: local-only (tests of deterministic interactive proofs and perfect soundness)
+-- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.Classes.IP.Deterministic
 import CslibFrontier.Computability.Complexity.Reduction
