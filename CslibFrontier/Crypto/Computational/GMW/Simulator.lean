@@ -895,13 +895,12 @@ samples, and the verifier interaction; the verifier may retain its private coins
 theorem isPPTOn_gmwViewReduction {α : Type} {enc : α ↪ List Bool}
     {generator : List Bool → List Bool} {length : ℕ → ℕ} {f : α → CNF ℕ}
     {Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool)}
-    {adversary : ℕ → α → List Bool → List Bool → ProbComp Bool}
+    {adversary : ZKDistinguisher α}
     (hg : ComputableInPolyTime generator encBits encBits)
     (hlen : ∀ s, (generator s).length = length s.length)
     (hf : ComputableInPolyTime f enc encCNF)
     (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun (n, a, z) => Vstar n a z))
-    (hadv : IsPPTOn (encPair (encInstanceAuxInput enc) encBits) encBool
-      (fun ((n, a, z), view) => adversary n a z view)) :
+    (hadv : adversary.IsPPT enc) :
     IsPPTOn
       (encPair (encInstanceWitnessAuxInput enc) encBits) encBool
       (fun ((n, a, w, z), challenge) =>
