@@ -249,14 +249,16 @@ Lemma 6.1 to a rejecting protocol on one matrix and evaluates two predictors; ru
 proves Lemma 6.2. Take a distribution `ν : PMF (BitString n)`, `m ≥ 1`, and a protocol of depth
 `d` solving `composeKW g` on `X × X`. `exists_accuracy_ge` gives a formula of `binaryCost` depth
 at most `d + 1` whose `accuracy ν g` is at least `1/2 + (2ᵐ ρ - 1) / (2 (2ᵐ - 1))`, where
-`ρ = density ν X` is the mass of `X` under the row product `Probability.PMF.pi`. The quantitative
+`ρ = density ν X` is the mass of `X` under the row product `Probability.PMF.pi`. For a nonempty
+finite `S`, `density_uniformOfFinset` and `accuracy_uniformOfFinset` express these quantities as
+`|X| / |S|ᵐ` and the fraction of `S` where the formula agrees with `g`, respectively. The quantitative
 core is `density_le_of_forall_accuracy_le`: if every formula of depth `d + 1` has accuracy at most
 `1/2 + α`, then `ρ ≤ 2⁻ᵐ + 2α(1 - 2⁻ᵐ)`. It is the source's recursion `M_{r+1} ≤ M_r / 2 + α`,
 which fixes all rows but one with `Probability.PMF.sum_pi_mul_update`. The
 [predictor client](../../CslibFrontierTests/CircuitDenseRestrictionPredictor.lean) applies
 Lemma 6.2 to a two-bit protocol on one-row matrices, giving formula depth at most three; run
 `scripts/build.sh CslibFrontierTests.CircuitDenseRestrictionPredictor`.
-Three general formula tools prepare Lemma 6.3; the lemma itself is not proved yet.
+Three general formula tools prepare Lemma 6.3, completed below by `HardSet`.
 [MajorityFormula](../../CslibFrontier/Computability/Circuit/Boolean/MajorityFormula.lean) gives
 Lemma 3.7 for formulas. `majTreeFormula L V` computes `Cslib.majTree` of the values of `V`, at
 three AND/OR levels per majority level. `exists_eq_of_forall_sum_ne_le` turns a weighted family
@@ -309,14 +311,16 @@ every `X ⊆ Sᵐ` with `(2^{m-1} + 1) |S|ᵐ ≤ 3 · 2^{m-1} |X|` (relative de
 then bounds `formulaDepth g` by the least `t` without a hard set. The
 [dense-core client](../../CslibFrontierTests/CircuitDenseCore.lean) checks the exact threshold. It
 also applies the theorem to a function on 80 bits of formula depth above 76: every dense `X`,
-including a half-density subset of `S²`, needs at least 7 bits. Run
+including a half-density subset of `S²` rounded up to an integer cardinality, needs at least
+7 bits. This subset has exactly half density when `|S|²` is even. Run
 `scripts/build.sh CslibFrontierTests.CircuitDenseCore`. Lemmas 6.4–6.5 and Theorem 6.6 are not
 formalized yet, nor are Theorems 1.6 and 1.8.
 
 
-This covers submission 865 through Theorem 1.5: the upper bound, Lemma 5.2, Theorems 1.1, 1.2
-and 1.5, and Corollaries 1.3 and 1.4. The composition/core results (Theorems 1.6–1.8) remain
-open in [#4665](https://github.com/cslib-community/cslib-frontier/issues/4665).
+This covers the upper bound, Lemma 5.2, Theorems 1.1, 1.2, 1.5 and 1.7, and Corollaries 1.3
+and 1.4 of submission 865. Theorems 1.6 and 1.8, the random-function results (Lemmas 6.4–6.5
+and Theorem 6.6), and the Section 6.5 tightness remark remain open in
+[#4665](https://github.com/cslib-community/cslib-frontier/issues/4665).
 
 The Karchmer–Wigderson relation asks parties holding opposite outputs of a Boolean function to find a differing coordinate. The monotone version asks for the ordered 1-versus-0 coordinate. Circuit/formula modules prove correspondences with De Morgan or monotone formula depth and leaf count. This bridge turns lower bounds on communication into formula lower bounds, preserving the relevant cost convention. See [Boolean KW](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Boolean/KarchmerWigderson.lean) and [monotone KW](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Monotone/KarchmerWigderson.lean).
 

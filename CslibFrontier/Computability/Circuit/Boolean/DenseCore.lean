@@ -8,8 +8,6 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Circuit.Boolean.HardSet
-import CslibFrontier.Probability.PMF.Event
-import CslibFrontier.Probability.PMF.Uniform
 import Mathlib.Tactic
 
 /-!
@@ -45,9 +43,6 @@ is not formalized.
 
 ## Main results
 
-* `Cslib.Circuits.Boolean.density_uniformOfFinset`,
-  `Cslib.Circuits.Boolean.accuracy_uniformOfFinset`: density and accuracy under the uniform
-  distribution on a set.
 * `Cslib.Circuits.Boolean.two_thirds_le_half_add`: the threshold arithmetic.
 * `Cslib.Circuits.Boolean.le_ecomplexity_composeKW_of_hard`: dense subsets of a hard set are hard.
 * `Cslib.Circuits.Boolean.exists_core`: Theorem 1.7.
@@ -67,42 +62,6 @@ namespace Cslib.Circuits.Boolean
 open Formula Cslib.Communication Cslib.Probability.PMF
 
 variable {n : ℕ}
-
-/-- Under the uniform distribution on `S`, a set `X ⊆ Sᵐ` of matrices has density
-`|X| / |S|ᵐ`, its relative density in the core `Sᵐ`. -/
-theorem density_uniformOfFinset {m : ℕ} {S : Finset (BitString n)} (hS : S.Nonempty)
-    {X : Finset (Fin m → BitString n)} (hXS : ∀ Z ∈ X, ∀ i, Z i ∈ S) :
-    density (uniformOfFinset S hS) (X : Set (Fin m → BitString n)) =
-      X.card / (S.card : ℝ) ^ m := by
-  classical
-  have hw (Z : Fin m → BitString n) (hZ : Z ∈ X) :
-      ((pi fun _ : Fin m => uniformOfFinset S hS) Z).toReal = ((S.card : ℝ)⁻¹) ^ m := by
-    rw [pi_apply, ENNReal.toReal_prod]
-    simp [hXS Z hZ]
-  rw [density]
-  calc _ = ∑ Z ∈ X, ((pi fun _ : Fin m => uniformOfFinset S hS) Z).toReal := by
-        rw [← Finset.sum_filter_add_sum_filter_not Finset.univ (· ∈ X)]
-        rw [Finset.sum_eq_zero (s := Finset.univ.filter fun Z => Z ∉ X) fun Z hZ => by
-          simp [(Finset.mem_filter.1 hZ).2]]
-        rw [add_zero, Finset.filter_mem_eq_inter, Finset.univ_inter]
-        exact Finset.sum_congr rfl fun Z hZ => by simp [hZ]
-    _ = ∑ _Z ∈ X, ((S.card : ℝ)⁻¹) ^ m := Finset.sum_congr rfl hw
-    _ = X.card / (S.card : ℝ) ^ m := by
-        rw [Finset.sum_const, nsmul_eq_mul, inv_pow, div_eq_mul_inv]
-
-/-- Under the uniform distribution on `S`, the accuracy of a formula is the fraction of `S` where
-it agrees with `g`. -/
-theorem accuracy_uniformOfFinset {S : Finset (BitString n)} (hS : S.Nonempty)
-    (g : BitString n → Bool) (F : Formula signature n) :
-    accuracy (uniformOfFinset S hS) g F =
-      (S.filter fun x => F.eval interpretation x = g x).card / (S.card : ℝ) := by
-  classical
-  have h : accuracy (uniformOfFinset S hS) g F =
-      ((uniformOfFinset S hS).toOuterMeasure {x | F.eval interpretation x = g x}).toReal := by
-    rw [toOuterMeasure_apply_toReal, accuracy]
-    exact Finset.sum_congr rfl fun x _ => by split_ifs <;> simp_all
-  rw [h, toOuterMeasure_uniformOfFinset_toReal]
-  rfl
 
 /-- At relative density `ρ ≥ (1 + 2^{1-m})/3`, the accuracy bound of Lemma 6.2 is at least
 `2/3`: `1/2 + (2ᵐ ρ - 1)/(2 (2ᵐ - 1)) ≥ 1/2 + 1/6`, with equality at the threshold. -/
