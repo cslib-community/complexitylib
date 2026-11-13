@@ -388,6 +388,24 @@ set_option linter.hashCommand false in
 #guard_msgs in
 #lint- only unusedArguments
 
+/-! A parameter that nothing reads leaves `…Fields` linted, also next to a parameter that only a
+dependent field reads. These come after the `#lint-` check above, which they would fail. -/
+
+/-- Points, with a parameter that nothing reads. -/
+enc_structure eJunkPoint (junk : ℕ) : Point where x : encNat, y : encBits, z : (encList encUnary)
+
+/-- Sized elements, with a parameter that nothing reads. -/
+enc_structure eJunkSized (Carrier : ℕ → Type) (encode : ∀ n, Carrier n ↪ List Bool) (junk : ℕ) :
+    Sized Carrier where
+  size : encUnary, elt : (encode size) using ((encode size).injective)
+
+run_meta do
+  for decl in [``eJunkPointFields, ``eJunkSizedFields] do
+    unless ← Batteries.Tactic.Lint.shouldBeLinted `unusedArguments decl do
+      throwError "{decl} is marked nolint unusedArguments"
+  if ← Batteries.Tactic.Lint.shouldBeLinted `unusedArguments ``eSizedFields then
+    throwError "eSizedFields is not marked nolint unusedArguments"
+
 -- A parameter named like a field that a dependent word reads would be captured by the field.
 /--
 error: enc_structure: the parameter `desc` has the name of a field that the word of `elt` reads; rename the parameter

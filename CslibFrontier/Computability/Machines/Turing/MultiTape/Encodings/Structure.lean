@@ -60,8 +60,10 @@ they mention must not share its name with an earlier field: the command reports 
 field rules read the word `encode x.desc x.element`, and the constructor rules take each such
 argument as a dependent function with a certificate for its word. There is no `eS_mk_deg` for such
 a structure, since its tuple holds words rather than fields. An explicit parameter that only these
-terms read does not occur in `eSFields`, which still takes it, like every generated declaration;
-the command then marks `eSFields` `nolint unusedArguments`.
+terms read does not occur in `eSFields`, which still takes it, like every generated declaration.
+The command then marks `eSFields` `nolint unusedArguments`, provided these terms read every
+parameter missing from its slots and from the other parameters' types. Otherwise `eSFields` stays
+linted, so a parameter that only the structure type mentions, or that nothing reads, is reported.
 -/
 
 public meta section
@@ -292,10 +294,17 @@ private def checkFields (S : Term) (fs : Array Ident) : CommandElabM (Name × Ar
   let fieldsDecl ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo fields
   addDocStringCore fieldsDecl s!"The tuple of the fields of `{name}`."
   -- `eSFields` takes every parameter, so that all generated declarations share one argument list.
-  -- A parameter that only a dependent field's word or proof reads reaches no slot.
+  -- A parameter that only a dependent field's word or proof reads reaches no slot. Mark
+  -- `eSFields` only when those terms read every parameter missing from the slots and from the
+  -- other parameters' types, so that the linter still reports a parameter that nothing reads.
   let slotRoots := slots.flatMap (identRoots ·)
-  if ps.zipIdx.any fun (p, i) => !slotRoots.contains p.getId &&
-      !(pts.eraseIdx! i).any (identRoots · |>.contains p.getId) then
+  let missing := ps.zipIdx.filter fun (p, i) => !slotRoots.contains p.getId &&
+    !(pts.eraseIdx! i).any (identRoots · |>.contains p.getId)
+  let depRoots := (Array.range n).flatMap fun i =>
+    match hws[i]! with
+    | some hw => identRoots es[i]! ++ identRoots hw
+    | none => #[]
+  if !missing.isEmpty && missing.all (depRoots.contains ·.1.getId) then
     elabCommand (← `(attribute [nolint unusedArguments] $fields:ident))
   let inj : Term ← if simple then `(fun x y h => by cases x; cases y; simp_all) else do
     -- Match both structures, then recover each field from its word in field order, replacing the
