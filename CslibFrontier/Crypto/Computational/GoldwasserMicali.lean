@@ -667,8 +667,8 @@ theorem advantage_publicKeyGame_qrPublicKeyLaw_le {setup : ℕ → PMF ModulusDe
   have hhop (bit : Bool) :
       Game.advantage (Encryption.publicKeyGame (qrPublicKeyLaw setup n) encrypt adversary bit n)
         (idealGame bit) ≤ 5 / 2 ^ n := by
-    simp only [Encryption.publicKeyGame, qrPublicKeyLaw, idealGame, PMF.monad_bind_eq_bind,
-      PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
+    simp only [Encryption.publicKeyGame, Encryption.publicKeyGameOn, ↓reduceIte, qrPublicKeyLaw,
+      idealGame, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
     refine Game.advantage_bind_le_of_support _ _ _ fun d hd =>
       Game.advantage_bind_le_nnreal _ _ _ fun y =>
         Game.advantage_bind_le_nnreal _ _ _ fun _ =>
@@ -848,49 +848,27 @@ theorem advantage_encryptBits_idealEncryptBits_le (d : ModulusDesc) (n : ℕ)
 def validBoundedWords (maxLen : ℕ → ℕ) (n : ℕ) (_pk : List Bool) (m₀ m₁ : List Bool) : Bool :=
   (m₀.length == m₁.length) && decide (m₀.length ≤ maxLen n)
 
+/-- `validBoundedWords maxLen` is computable in polynomial time on the challenge-pair input when
+`maxLen` is unary polynomial-time computable. -/
+theorem computableInPolyTime_validBoundedWords {maxLen : ℕ → ℕ}
+    (hmax : ComputableInPolyTime maxLen encUnary encUnary) :
+    ComputableInPolyTime (fun ⟨n, pk, m₀, m₁⟩ => validBoundedWords maxLen n pk m₀ m₁)
+      (encChallengePairInput encBits) encBool := by
+  have hmaxT := hmax.tidy
+  exact ComputableInPolyTime.of_tidy (by unfold validBoundedWords; polytime)
+
 /-- Chosen-message experiment for `encryptWord` under a given public-key `PMF` law and
 `validBoundedWords maxLen`. -/
-noncomputable def publicKeyWordGame (maxLen : ℕ → ℕ) (keys : PMF (List Bool))
-    (adversary : Encryption.WordAdversary) (bit : Bool) (n : ℕ) : Game := do
-  let pk ← keys
-  let choice ← ProbComp.eval (adversary.choose n pk)
-  if validBoundedWords maxLen n pk (ChoiceOut.msg₀ choice) (ChoiceOut.msg₁ choice) then
-    let ct ← ProbComp.eval
-      (encryptWord n pk (if bit then ChoiceOut.msg₁ choice else ChoiceOut.msg₀ choice))
-    ProbComp.eval (adversary.guess n (ChoiceOut.state choice) ct)
-  else
-    pure false
+noncomputable abbrev publicKeyWordGame (maxLen : ℕ → ℕ) (keys : PMF (List Bool))
+    (adversary : Encryption.WordAdversary) (bit : Bool) (n : ℕ) : Game :=
+  Encryption.publicKeyGameOn (validBoundedWords maxLen) keys encryptWord adversary bit n
 
-/-- Public-key distinguisher for bounded-word `encryptWord` with a hidden fair challenge bit. -/
-noncomputable def wordKeyDistinguisher (maxLen : ℕ → ℕ)
-    (adversary : Encryption.WordAdversary) : Distinguisher := fun n pk => do
-  let choice ← adversary.choose n pk
-  let bit ← ProbComp.uniform Bool
-  if validBoundedWords maxLen n pk (ChoiceOut.msg₀ choice) (ChoiceOut.msg₁ choice) then
-    let ct ← encryptWord n pk (if bit then ChoiceOut.msg₁ choice else ChoiceOut.msg₀ choice)
-    let guess ← adversary.guess n (ChoiceOut.state choice) ct
-    return guess ^^ bit
-  else
-    return false ^^ bit
-
-/-- **Multi-bit QR reduction distinguisher** via Goldwasser–Micali lossy public keys. -/
+/-- **Multi-bit QR reduction distinguisher** via Goldwasser–Micali lossy public keys: the
+public-key replacement distinguisher for `encryptWord` and `validBoundedWords maxLen`. -/
 noncomputable def qrWordDistinguisher (maxLen : ℕ → ℕ) (adversary : Encryption.WordAdversary)
     (n : ℕ) (input : ℕ × ℕ) : ProbComp Bool :=
-  wordKeyDistinguisher maxLen adversary n (encPair encNat encNat input)
-
-/-- `wordKeyDistinguisher maxLen adversary` is uniformly strict PPT whenever `maxLen` is unary
-polynomial-time computable and `adversary` is strict PPT. -/
-theorem isPPT_wordKeyDistinguisher {maxLen : ℕ → ℕ}
-    (hmax : ComputableInPolyTime maxLen encUnary encUnary)
-    {adversary : Encryption.WordAdversary} (hA : adversary.IsPPT) :
-    IsPPT encBool (wordKeyDistinguisher maxLen adversary) := by
-  have hmaxT := hmax.tidy; have hchoose := hA.choose; have hguess := hA.guess
-  have hvalid : ComputableTidilyInPolyTime
-      (fun p : ((ℕ × List Bool) × ((List Bool × List Bool) × List Bool)) × Bool =>
-        validBoundedWords maxLen p.1.1.1 p.1.1.2 (ChoiceOut.msg₀ p.1.2) (ChoiceOut.msg₁ p.1.2))
-      (encPair (encPair (encPair encUnary encBits) (encChoiceOut encBits)) encBool) encBool := by
-    unfold validBoundedWords ChoiceOut.msg₀ ChoiceOut.msg₁ ChoiceOut.msgs; polytime
-  unfold Probability.IsPPT wordKeyDistinguisher; ppt
+  Encryption.keyDistinguisherOn (validBoundedWords maxLen) encryptWord adversary n
+    (encPair encNat encNat input)
 
 /-- `qrWordDistinguisher maxLen adversary` is uniformly strict PPT whenever `maxLen` is unary
 polynomial-time computable and `adversary` is strict PPT. -/
@@ -899,37 +877,10 @@ theorem isPPTOn_qrWordDistinguisher {maxLen : ℕ → ℕ}
     {adversary : Encryption.WordAdversary} (hA : adversary.IsPPT) :
     IsPPTOn (encPair encUnary (encPair encNat encNat)) encBool
       (fun input => qrWordDistinguisher maxLen adversary input.1 input.2) :=
-  (isPPT_wordKeyDistinguisher hmax hA).on.preprocess
+  (Encryption.isPPT_keyDistinguisherOn (computableInPolyTime_validBoundedWords hmax)
+    isPPTOn_encryptWord hA).on.preprocess
     ((ComputableInPolyTime.fst encUnary (encPair encNat encNat)).prod
       (ComputableInPolyTime.snd encUnary (encPair encNat encNat)).encoding_comp)
-
-private theorem distinguishingGame_wordKeyDistinguisher (maxLen : ℕ → ℕ) (keys : PMF (List Bool))
-    (adversary : Encryption.WordAdversary) (n : ℕ) :
-    distinguishingGame keys (wordKeyDistinguisher maxLen adversary n) =
-      (PMF.uniformOfFintype Bool).bind fun bit =>
-        (publicKeyWordGame maxLen keys adversary bit n).map (fun guess => guess ^^ bit) := by
-  simp only [distinguishingGame, wordKeyDistinguisher, publicKeyWordGame, ProbComp.eval_bind,
-    ProbComp.eval_uniform, ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.map_bind,
-    apply_ite ProbComp.eval]
-  pmf_swap with bit pk choice
-  cases validBoundedWords maxLen n pk (ChoiceOut.msg₀ choice) (ChoiceOut.msg₁ choice) with
-  | false =>
-    simp only [Bool.false_eq_true, ↓reduceIte, PMF.monad_pure_eq_pure, PMF.pure_map]
-  | true =>
-    simp only [↓reduceIte, PMF.map_bind]; rfl
-
-private theorem advantage_publicKeyWordGame_le (maxLen : ℕ → ℕ) (real ideal : PMF (List Bool))
-    (adversary : Encryption.WordAdversary) (n : ℕ) :
-    Game.advantage (publicKeyWordGame maxLen real adversary false n)
-      (publicKeyWordGame maxLen real adversary true n) ≤
-      2 * Game.advantage
-        (distinguishingGame real (wordKeyDistinguisher maxLen adversary n))
-        (distinguishingGame ideal (wordKeyDistinguisher maxLen adversary n)) +
-      Game.advantage (publicKeyWordGame maxLen ideal adversary false n)
-        (publicKeyWordGame maxLen ideal adversary true n) := by
-  rw [distinguishingGame_wordKeyDistinguisher, distinguishingGame_wordKeyDistinguisher]
-  exact Game.advantage_le_two_mul_uniform_bool_xor (publicKeyWordGame maxLen real adversary · n)
-    (publicKeyWordGame maxLen ideal adversary · n)
 
 /-- **Quantitative multi-bit Goldwasser–Micali IND-CPA bound**: via lossy quadratic-residue public
 keys, bitwise encryption of equal-length words of length at most `maxLen n` reduces to
@@ -944,8 +895,8 @@ theorem advantage_publicKeyWordGame_le_qr (maxLen : ℕ → ℕ) {setup : ℕ �
       2 * Game.advantage (qrRealGame setup (qrWordDistinguisher maxLen adversary) n)
         (qrIdealGame setup (qrWordDistinguisher maxLen adversary) n) +
       (10 * maxLen n : ℝ≥0) / 2 ^ n := by
-  have hrep := advantage_publicKeyWordGame_le maxLen (publicKeyLaw setup n) (qrPublicKeyLaw setup n)
-    adversary n
+  have hrep := Encryption.advantage_publicKeyGameOn_le (validBoundedWords maxLen)
+    (publicKeyLaw setup n) (qrPublicKeyLaw setup n) encryptWord adversary n
   rw [distinguishingGame_publicKeyLaw, distinguishingGame_qrPublicKeyLaw,
     Game.advantage_comm (qrIdealGame _ _ n)] at hrep
   let idealWordGame (bit : Bool) : Game := do
@@ -972,9 +923,9 @@ theorem advantage_publicKeyWordGame_le_qr (maxLen : ℕ → ℕ) {setup : ℕ �
       Game.advantage
         (publicKeyWordGame maxLen (qrPublicKeyLaw setup n) adversary bit n)
         (idealWordGame bit) ≤ (maxLen n : ℝ≥0) * (5 / 2 ^ n) := by
-    simp only [publicKeyWordGame, qrPublicKeyLaw, idealWordGame, encryptWord,
-      PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, ProbComp.eval_map, PMF.bind_bind,
-      PMF.pure_bind, PMF.bind_map, Function.comp_def]
+    simp only [publicKeyWordGame, Encryption.publicKeyGameOn, qrPublicKeyLaw, idealWordGame,
+      encryptWord, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, ProbComp.eval_map,
+      PMF.bind_bind, PMF.pure_bind, PMF.bind_map, Function.comp_def]
     refine Game.advantage_bind_le_of_support _ _ _ fun d hd =>
       Game.advantage_bind_le_nnreal _ _ _ fun y =>
         Game.advantage_bind_le_nnreal _ _ _ fun choice => ?_
@@ -1005,7 +956,9 @@ theorem indcpaOn_goldwasserMicali_bits {maxLen : ℕ → ℕ}
     (hQR : QuadraticResiduosityHard setup) :
     Encryption.INDCPAOn (validBoundedWords maxLen) encBits (keyGen gen) encryptWord := by
   intro adversary hA
-  have hk := hkeys (wordKeyDistinguisher maxLen adversary) (isPPT_wordKeyDistinguisher hmax hA)
+  have hk := hkeys (Encryption.keyDistinguisherOn (validBoundedWords maxLen) encryptWord adversary)
+    (Encryption.isPPT_keyDistinguisherOn (computableInPolyTime_validBoundedWords hmax)
+      isPPTOn_encryptWord hA)
   have hD := hQR (qrWordDistinguisher maxLen adversary) (isPPTOn_qrWordDistinguisher hmax hA)
   obtain ⟨c, d, hlen⟩ := hmax.isPPTOn.length_le
   have hpoly : PolynomiallyBounded maxLen := PolynomiallyBounded.of_forall_le c d fun n => by
@@ -1021,9 +974,10 @@ theorem indcpaOn_goldwasserMicali_bits {maxLen : ℕ → ℕ}
     congr 1; ring
   refine negligible_of_le ((hk.add hk).add hmid) fun n => ?_
   dsimp only [Pi.add_apply]
-  rw [← two_mul, Encryption.eval_gameOn, Encryption.eval_gameOn]
-  exact advantage_publicKeyWordGame_le maxLen
-    ((ProbComp.eval (keyGen gen n)).map Prod.fst) (publicKeyLaw setup n) adversary n
+  rw [← two_mul, Encryption.eval_gameOn_eq_publicKeyGameOn,
+    Encryption.eval_gameOn_eq_publicKeyGameOn]
+  exact Encryption.advantage_publicKeyGameOn_le (validBoundedWords maxLen)
+    ((ProbComp.eval (keyGen gen n)).map Prod.fst) (publicKeyLaw setup n) encryptWord adversary n
 
 /-! ### Necessity of `J_N(z) = +1`: polynomial-time Jacobi-symbol attack on `jacobiNegSet` -/
 
@@ -1081,9 +1035,9 @@ theorem advantage_jacobiAttackAdversary_eq_one (d : ModulusDesc)
   have hgame (bit : Bool) :
       Encryption.publicKeyGame (PMF.pure pk) encrypt jacobiAttackAdversary bit n =
         PMF.pure bit := by
-    simp only [Encryption.publicKeyGame, jacobiAttackAdversary, pk, ProbComp.eval_pure,
-      PMF.monad_bind_eq_bind, PMF.pure_bind, ChoiceOut.msg₀_mk, ChoiceOut.msg₁_mk,
-      ChoiceOut.state_mk]
+    simp only [Encryption.publicKeyGame, Encryption.publicKeyGameOn, ↓reduceIte,
+      jacobiAttackAdversary, pk, ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.pure_bind,
+      ChoiceOut.msg₀_mk, ChoiceOut.msg₁_mk, ChoiceOut.state_mk]
     rw [encrypt, unframe_encPair_encNat, dropFrame_encPair_encNat, ofBits_encNat, ofBits_encNat]
     simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind, ofBits_encNat]
     have hstep (r : ℕ) :

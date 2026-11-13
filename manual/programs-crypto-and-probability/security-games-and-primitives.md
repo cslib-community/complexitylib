@@ -536,6 +536,21 @@ bits of a key-leaking scheme and rewrite `gameOn` into the typed experiment; run
 `scripts/build.sh CslibFrontierTests.Crypto.PKEScheme`. The PPT transfer is checked in
 [`CslibFrontierTests/Crypto/Experiment.lean`](../../CslibFrontierTests/Crypto/Experiment.lean).
 
+To replace the honest public-key distribution by another law, such as lossy or uniform keys, import
+[`Encryption/PublicKeyReplacement.lean`](../../CslibFrontier/Crypto/Computational/Encryption/PublicKeyReplacement.lean).
+`publicKeyGameOn valid keys encrypt adversary bit n` is `gameOn valid` with its public key drawn
+from `keys` (`eval_gameOn_eq_publicKeyGameOn`). `keyDistinguisherOn valid encrypt adversary` is the
+single hidden-bit reduction between two key laws, and `advantage_publicKeyGameOn_le` bounds the
+chosen-message advantage under the real law by twice its advantage plus the advantage under the
+replacement law. `isPPT_keyDistinguisherOn` certifies it from a polynomial-time `valid`, native
+encryption and a PPT adversary. The unrestricted names `publicKeyGame`, `keyDistinguisher`,
+`eval_game_eq_publicKeyGame`, `isPPT_keyDistinguisher` and `advantage_publicKeyGame_le` are the
+`valid := fun _ _ _ _ => true` case. Goldwasser–Micali uses both forms (single bits and bounded
+words); Regev, dual Regev and GSW use the unrestricted one. A proof that unfolds `publicKeyGame` or
+`keyDistinguisher` also unfolds `publicKeyGameOn` or `keyDistinguisherOn`, plus `↓reduceIte` under
+`simp only`. The orientation, factor-two and inadmissible-pair checks are in
+[`CslibFrontierTests/Crypto/GSWSecurity.lean`](../../CslibFrontierTests/Crypto/GSWSecurity.lean).
+
 [CCA2AdversaryOf](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/Encryption/CCA.lean#L266) exposes adaptive decryption before and after the challenge; the second handler rejects the exact challenge ciphertext. The multi-challenge interface in [`CCA.lean`](../../CslibFrontier/Crypto/Computational/Encryption/CCA.lean) (`MultiCCA2AdversaryOf`, `INDCCA2MultiOn`) is a two-phase **batch** model, whereas [`CCA/Interleaved.lean`](../../CslibFrontier/Crypto/Computational/Encryption/CCA/Interleaved.lean) (`InterleavedCCA2AdversaryOf`, `interleavedCcaOracle`, `INDCCA2InterleavedOn`) formalizes Boneh–Shoup Attack Game 12.1 and Definition 12.1 ([bs23][bs23], §12.1, pp. 467–468) with a single stateful combined encryption-and-decryption oracle that tracks the list `S` of challenge ciphertexts generated so far, allowing arbitrary adaptive interleaving of `.challenge m₀ m₁` and `.decrypt c` queries (including decryption of a ciphertext `c` before a later challenge happens to produce `c`) and proving equivalence with both 1CCA and phased batch multi-challenge CCA (`indcca2InterleavedOn_iff_indcca2On`, `indcca2InterleavedOn_iff_indcca2MultiOn`, and `advantage_interleavedCca2GameOn`, with concrete checks in [`CslibFrontierTests/Crypto/CCAInterleaved.lean`](../../CslibFrontierTests/Crypto/CCAInterleaved.lean)). Encodings are part of the security boundary: the inspected Cramer–Shoup parser [decodeCramerShoup](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/CramerShoup/Scheme.lean#L876) requires canonical framing, so a different raw serialization of the challenge does not silently bypass the equality check.
 
 The endpoint [DDH.indcca2On_cramerShoup](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/CramerShoup.lean#L1688) (together with its batch multi-challenge lift `DDH.indcca2MultiOn_cramerShoup` and fully adaptive interleaved multi-challenge lift [`DDH.indcca2InterleavedOn_cramerShoup`](../../CslibFrontier/Crypto/Computational/Encryption/CCA/Interleaved.lean)) combines DDH, collision resistance, negligible inverse group order, and explicit efficient public operations. Approximate modular sampling and its statistical error are accounted for. Other clients include ElGamal, hybrid encryption, authenticated encryption and encrypt-then-MAC; they instantiate the same staged/oracle security schemas. Homomorphic schemes add circuit functionality and are treated [separately](homomorphic-encryption.md).

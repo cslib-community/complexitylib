@@ -84,9 +84,9 @@ theorem publicKeyGame_uniformEnsemble (n m w : ℕ → ℕ)
           (fun state ciphertext =>
             ProbComp.eval (adversary.guess security state (serializeCiphertext ciphertext)))
           bit := by
-  simp only [pmf_norm, Encryption.publicKeyGame, LWE.uniformEnsemble, uniformPublicGame,
-    eval_encryptSerialized, Matrix.ofBinary_toBinary, encrypt, eval_sampleCoins,
-    LWE.serializePublicMatrix]
+  simp only [pmf_norm, Encryption.publicKeyGame, Encryption.publicKeyGameOn, ↓reduceIte,
+    LWE.uniformEnsemble, uniformPublicGame, eval_encryptSerialized, Matrix.ofBinary_toBinary,
+    encrypt, eval_sampleCoins, LWE.serializePublicMatrix]
 
 /-- The uniform public-key word gives the typed hiding theorem's full adaptive bound. -/
 theorem advantage_uniformEnsemble_le (n m w : ℕ → ℕ)
