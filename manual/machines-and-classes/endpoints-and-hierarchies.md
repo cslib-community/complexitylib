@@ -44,6 +44,26 @@ Toda's original paper establishes PH containment in randomized parity and polyno
 
 Dinur's paper presents the gap-amplification proof and states the logarithmic-randomness, constant-query PCP theorem with perfect completeness and one-half soundness in its opening definition and Theorem 1.1. cslib-frontier combines Cook–Levin with a concrete encoded gap construction and verifier, then proves the converse by enumerating logarithmically many random strings and reconciling repeated queried addresses. The final fixed alphabet is encoded by seven bits; fixed construction constants are large. No near-linear proof-length bound should be inferred from this asymptotic class equality. [dinur2007][dinur2007] [Formal endpoint construction](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/PCP/Completeness.lean#L17)
 
+## SAT reductions into a decidable envelope
+
+Import [Sparse.Envelope](../../CslibFrontier/Computability/Complexity/Classes/Sparse/Envelope.lean)
+and apply `SAT_mem_P_of_sparse_diff hSG hG hSparse hred`. Here `hred` is a native
+polynomial-time many-one reduction of SAT (under `encCNF`) to a set `S` under an explicit
+encoding `encB`; `hSG : S ⊆ G`, `hG : G ∈ P encB` and `hSparse : G ∖ S ∈ SPARSE encB`.
+Only the difference is sparse: the envelope `G` can be the entire target domain. No decider
+for `S` is required. This is Goldreich's January 2007 draft Exercise 3.12, using the library's
+prefix-census sparseness convention; summing exact-length polynomial bounds gives that convention.
+
+The proof uses the existing Fortune theorem. For a nonempty difference, it maps reduction
+outputs outside `G` to a fixed element of `G ∖ S`, obtaining an UNSAT-to-sparse reduction.
+An empty difference gives `S = G ∈ P` directly. These are conditional collapse results, not
+unconditional SAT algorithms: an unconditional instance of the full hypotheses would imply P = NP.
+Run `scripts/build.sh CslibFrontierTests.GoldreichExercises` for
+[complete clients](../../CslibFrontierTests/GoldreichExercises.lean), including the nonsparse
+universal envelope, the sparse-oracle P/poly characterization and NP ∩ coNP oracle lowness.
+The [exercise inventory](../../results/goldreich-2007.md#theory-exercises-chapter-3) distinguishes
+existing theory, missing endpoints and routine representation work.
+
 ## Apply Savitch's theorem
 
 Import `CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic.Savitch` and work in
