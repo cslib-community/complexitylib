@@ -245,31 +245,23 @@ private def budget (K : ℕ) (v : N) : ℕ :=
 private theorem stops_subset_accepted {K : ℕ} {v : N} : P.stops K v ⊆ P.accepted :=
   fun _ hx => hx.1.mem_accepted hx.1.accepts (eqOn_refl _ _)
 
-private theorem finite_values_of_nonempty_contexts (hfin : P.accepted.Finite) {v : N}
-    {c₀ : ↥(P.scope v)ᶜ → U} (hc₀ : c₀ ∈ P.contexts v) : (P.values v).Finite := by
+/-- When the accepted set is finite, so are the pairs of a value and a context of a node: they
+make up the rectangle of the node, which lies in the accepted set. -/
+private theorem finite_values_prod_contexts (hfin : P.accepted.Finite) (v : N) :
+    (P.values v ×ˢ P.contexts v).Finite := by
   classical
   let e := Equiv.piEquivPiSubtypeProd (· ∈ P.scope v) fun _ => U
-  have hinj : Function.Injective fun y => e.symm (y, c₀) :=
-    e.symm.injective.comp (Prod.mk_left_injective c₀)
-  refine (hfin.subset ?_).of_finite_image hinj.injOn
-  rintro _ ⟨y, hy, rfl⟩
-  refine P.rectangle_subset v ?_
-  change e (e.symm (y, c₀)) ∈ P.values v ×ˢ P.contexts v
-  rw [e.apply_symm_apply]
-  exact ⟨hy, hc₀⟩
+  have hrect : rectangle (P.scope v) (P.values v) (P.contexts v) =
+      e ⁻¹' (P.values v ×ˢ P.contexts v) := Set.ext fun _ => mem_rectangle
+  exact (hrect ▸ hfin.subset (P.rectangle_subset v)).of_preimage e.surjective
+
+private theorem finite_values_of_nonempty_contexts (hfin : P.accepted.Finite) {v : N}
+    {c₀ : ↥(P.scope v)ᶜ → U} (hc₀ : c₀ ∈ P.contexts v) : (P.values v).Finite :=
+  (P.finite_values_prod_contexts hfin v).of_prod_left ⟨c₀, hc₀⟩
 
 private theorem finite_contexts_of_nonempty_values (hfin : P.accepted.Finite) {v : N}
-    {y₀ : ↥(P.scope v) → U} (hy₀ : y₀ ∈ P.values v) : (P.contexts v).Finite := by
-  classical
-  let e := Equiv.piEquivPiSubtypeProd (· ∈ P.scope v) fun _ => U
-  have hinj : Function.Injective fun c => e.symm (y₀, c) :=
-    e.symm.injective.comp (Prod.mk_right_injective y₀)
-  refine (hfin.subset ?_).of_finite_image hinj.injOn
-  rintro _ ⟨c, hc, rfl⟩
-  refine P.rectangle_subset v ?_
-  change e (e.symm (y₀, c)) ∈ P.values v ×ˢ P.contexts v
-  rw [e.apply_symm_apply]
-  exact ⟨hy₀, hc⟩
+    {y₀ : ↥(P.scope v) → U} (hy₀ : y₀ ∈ P.values v) : (P.contexts v).Finite :=
+  (P.finite_values_prod_contexts hfin v).of_prod_right ⟨y₀, hy₀⟩
 
 private theorem finite_values_of_disjoint_occurs (hfin : P.accepted.Finite) {v c w : N}
     {x₀ : ι → U} (hx₀ : P.Occurs x₀ v) (hx₀_w : (P.scope w).domRestrict x₀ ∈ P.values w)

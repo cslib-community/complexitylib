@@ -674,7 +674,10 @@ private theorem gmwViewReduction_advantage {Î± : Type} (generator : List Bool â†
   have hr : ProbComp.eval (replAttempt >>= outer) =
       ProbComp.eval (OracleComp.replicate (totalLen (f a)) replacement >>= inner) := by
     simp only [replAttempt, gmwRealUniformPads, replacement, inner, bind_assoc]
-  rw [sequenceTest_advantage, ho, hr, sequenceTest_advantage, mul_assoc]
+  have hattempts := sequenceTest_advantage replAttempt origAttempt (n + 1) test
+  have hpads := sequenceTest_advantage replacement original (totalLen (f a)) inner
+  simp only [Experiment.advantage] at hattempts hpads
+  rw [hattempts, ho, hr, hpads, mul_assoc]
   simp only [ProbComp.eval_bind]; rfl
 
 /-- Pointwise finite GMW view reduction for every valid instance, witness and auxiliary word.

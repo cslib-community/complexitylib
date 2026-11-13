@@ -60,35 +60,35 @@ variable {Rel : Type*} {V : Type*}
 
 /-- The primal graph of `F`: distinct variables sharing a constraint scope are adjacent. -/
 @[expose] def primalGraph (F : CSP Rel V) : SimpleGraph V where
-  Adj u v := u ≠ v ∧ ∃ c ∈ F, u ∈ c.2 ∧ v ∈ c.2
+  Adj u v := u ≠ v ∧ ∃ c ∈ F, u ∈ c.scope ∧ v ∈ c.scope
   symm := ⟨fun _ _ ⟨hne, c, hc, hu, hv⟩ => ⟨hne.symm, c, hc, hv, hu⟩⟩
   loopless := ⟨fun _ ⟨hne, _⟩ => hne rfl⟩
 
 theorem primalGraph_adj {F : CSP Rel V} {u v : V} :
-    F.primalGraph.Adj u v ↔ u ≠ v ∧ ∃ c ∈ F, u ∈ c.2 ∧ v ∈ c.2 :=
+    F.primalGraph.Adj u v ↔ u ≠ v ∧ ∃ c ∈ F, u ∈ c.scope ∧ v ∈ c.scope :=
   Iff.rfl
 
 instance instDecidableRelPrimalGraphAdj [DecidableEq V] (F : CSP Rel V) :
     DecidableRel F.primalGraph.Adj := fun u v =>
-  inferInstanceAs (Decidable (u ≠ v ∧ ∃ c ∈ F, u ∈ c.2 ∧ v ∈ c.2))
+  inferInstanceAs (Decidable (u ≠ v ∧ ∃ c ∈ F, u ∈ c.scope ∧ v ∈ c.scope))
 
 /-- The scope of every constraint of `F` forms a clique in `F.primalGraph`. -/
 theorem isClique_scope_of_mem [DecidableEq V] (F : CSP Rel V) {c : Constraint Rel V}
-    (hc : c ∈ F) : F.primalGraph.IsClique (c.2.toFinset : Set V) := fun _ hu _ hv huv =>
+    (hc : c ∈ F) : F.primalGraph.IsClique (c.scope.toFinset : Set V) := fun _ hu _ hv huv =>
   ⟨huv, c, hc, List.mem_toFinset.1 hu, List.mem_toFinset.1 hv⟩
 
 /-- Every constraint scope of `F` lies in some bag of any nice tree decomposition of
 `F.primalGraph`. -/
 theorem exists_coversFinset_scope_of_mem [DecidableEq V] {F : CSP Rel V}
     (N : F.primalGraph.NiceTreeDecomposition) {c : Constraint Rel V} (hc : c ∈ F) :
-    N.tree.CoversFinset c.2.toFinset :=
+    N.tree.CoversFinset c.scope.toFinset :=
   N.exists_coversFinset_of_isClique (F.isClique_scope_of_mem hc)
 
 /-- Every constraint scope of `F` lies in some bag of any rooted tree decomposition of
 `F.primalGraph`. -/
 theorem exists_bag_subset_scope_of_mem [DecidableEq V] {F : CSP Rel V} {n : ℕ}
     (R : F.primalGraph.RootedTreeDecomposition n) {c : Constraint Rel V} (hc : c ∈ F) :
-    ∃ i, c.2.toFinset ⊆ R.bag i :=
+    ∃ i, c.scope.toFinset ⊆ R.bag i :=
   R.exists_subset_bag_of_isClique (F.isClique_scope_of_mem hc)
 
 /-- The primal graph induced on the active variables `F.vars.toFinset`. -/
@@ -101,7 +101,7 @@ instance instDecidableRelActivePrimalGraphAdj [DecidableEq V] (F : CSP Rel V) :
   F.instDecidableRelPrimalGraphAdj u.1 v.1
 
 theorem mem_vars_finset_of_mem [DecidableEq V] {F : CSP Rel V} {c : Constraint Rel V}
-    (hc : c ∈ F) {v : V} (hv : v ∈ c.2) : v ∈ F.vars.toFinset :=
+    (hc : c ∈ F) {v : V} (hv : v ∈ c.scope) : v ∈ F.vars.toFinset :=
   List.mem_toFinset.2 (List.mem_flatMap.2 ⟨c, hc, hv⟩)
 
 /-- Lift a nice tree decomposition of `F.activePrimalGraph` into `NiceTree V` preserving validity,
@@ -132,9 +132,9 @@ theorem liftActiveNiceTree_subtreeVerts [DecidableEq V] {F : CSP Rel V}
 
 theorem liftActiveNiceTree_coversFinset [DecidableEq V] {F : CSP Rel V}
     (N : F.activePrimalGraph.NiceTreeDecomposition) {c : Constraint Rel V} (hc : c ∈ F) :
-    (liftActiveNiceTree N).CoversFinset c.2.toFinset := by
+    (liftActiveNiceTree N).CoversFinset c.scope.toFinset := by
   let K : Finset {v : V // v ∈ F.vars.toFinset} :=
-    c.2.toFinset.subtype fun v => v ∈ F.vars.toFinset
+    c.scope.toFinset.subtype fun v => v ∈ F.vars.toFinset
   have hK : F.activePrimalGraph.IsClique (K : Set {v : V // v ∈ F.vars.toFinset}) := by
     rintro ⟨u, hu⟩ huK ⟨w, hw⟩ hwK huw
     simp only [Finset.mem_coe, Finset.mem_subtype, List.mem_toFinset, K] at huK hwK
@@ -142,7 +142,7 @@ theorem liftActiveNiceTree_coversFinset [DecidableEq V] {F : CSP Rel V}
     exact F.isClique_scope_of_mem hc (List.mem_toFinset.2 huK) (List.mem_toFinset.2 hwK) hne
   have hcov :=
     NiceTree.coversFinset_map Subtype.val_injective (N.exists_coversFinset_of_isClique hK)
-  have hImg : K.image Subtype.val = c.2.toFinset := by
+  have hImg : K.image Subtype.val = c.scope.toFinset := by
     ext v
     simp only [Finset.mem_image, Finset.mem_subtype, Subtype.exists, K, List.mem_toFinset]
     constructor
@@ -179,7 +179,7 @@ noncomputable def subtreeSatSet [Finite D] (sem : Rel → List D → Bool)
   letI := Fintype.ofFinite (↑(S ∩ U) → D)
   exact Finset.univ.filter fun σ =>
     (∀ v : ↑(S ∩ U), v.1 ∈ B → σ v = α v.1) ∧
-      ∀ c ∈ F, c.2.toFinset ⊆ S → c.eval sem (extendSubtree S U σ α) = true
+      ∀ c ∈ F, c.scope.toFinset ⊆ S → c.eval sem (extendSubtree S U σ α) = true
 
 /-- Number of satisfying partial extensions of `α` on `S ∩ U`. -/
 noncomputable def subtreeSatCount [Finite D] (sem : Rel → List D → Bool)
@@ -190,16 +190,16 @@ private theorem mem_subtreeSatSet [Finite D] {sem : Rel → List D → Bool} {F 
     {U S B : Finset V} {α : V → D} {σ : ↑(S ∩ U) → D} :
     σ ∈ subtreeSatSet sem F U S B α ↔
       (∀ v : ↑(S ∩ U), v.1 ∈ B → σ v = α v.1) ∧
-        ∀ c ∈ F, c.2.toFinset ⊆ S → c.eval sem (extendSubtree S U σ α) = true := by
+        ∀ c ∈ F, c.scope.toFinset ⊆ S → c.eval sem (extendSubtree S U σ α) = true := by
   classical
   unfold subtreeSatSet
   simp only [Finset.mem_filter, Finset.mem_univ, true_and]
 
 private theorem extendSubtree_eval_congr {sem : Rel → List D → Bool} {F : CSP Rel V}
     {U S₁ S₂ : Finset V} (hU : F.vars.toFinset ⊆ U) {c : Constraint Rel V} (hc : c ∈ F)
-    (hc1 : c.2.toFinset ⊆ S₁) (hc2 : c.2.toFinset ⊆ S₂)
+    (hc1 : c.scope.toFinset ⊆ S₁) (hc2 : c.scope.toFinset ⊆ S₂)
     {σ₁ : ↑(S₁ ∩ U) → D} {σ₂ : ↑(S₂ ∩ U) → D} {α₁ α₂ : V → D}
-    (hagree : ∀ v (hv1 : v ∈ S₁ ∩ U) (hv2 : v ∈ S₂ ∩ U), v ∈ c.2 → σ₁ ⟨v, hv1⟩ = σ₂ ⟨v, hv2⟩) :
+    (hagree : ∀ v (hv1 : v ∈ S₁ ∩ U) (hv2 : v ∈ S₂ ∩ U), v ∈ c.scope → σ₁ ⟨v, hv1⟩ = σ₂ ⟨v, hv2⟩) :
     c.eval sem (extendSubtree S₁ U σ₁ α₁) = c.eval sem (extendSubtree S₂ U σ₂ α₂) := by
   refine Constraint.eval_congr fun v hv => ?_
   have hvU : v ∈ U := hU (F.mem_vars_finset_of_mem hc hv)
@@ -210,7 +210,7 @@ private theorem extendSubtree_eval_congr {sem : Rel → List D → Bool} {F : CS
 
 private theorem extendSubtree_eval_bag {sem : Rel → List D → Bool} {F : CSP Rel V}
     {U S B : Finset V} (hU : F.vars.toFinset ⊆ U) {c : Constraint Rel V} (hc : c ∈ F)
-    (hcS : c.2.toFinset ⊆ S) (hcB : c.2.toFinset ⊆ B)
+    (hcS : c.scope.toFinset ⊆ S) (hcB : c.scope.toFinset ⊆ B)
     {σ : ↑(S ∩ U) → D} {α : V → D} (hσB : ∀ v : ↑(S ∩ U), v.1 ∈ B → σ v = α v.1) :
     c.eval sem (extendSubtree S U σ α) = c.eval sem α := by
   refine Constraint.eval_congr fun v hv => ?_
@@ -241,7 +241,7 @@ theorem subtreeSatCount_congr [Finite D] (sem : Rel → List D → Bool) {F : CS
 
 theorem subtreeSatCount_empty_eq_modelCountOn [Fintype D] [Inhabited D]
     (sem : Rel → List D → Bool) {F : CSP Rel V}
-    {U S : Finset V} (hU : F.vars.toFinset ⊆ U) (hF : ∀ c ∈ F, c.2.toFinset ⊆ S) (α : V → D) :
+    {U S : Finset V} (hU : F.vars.toFinset ⊆ U) (hF : ∀ c ∈ F, c.scope.toFinset ⊆ S) (α : V → D) :
     subtreeSatCount sem F U S ∅ α = CSP.modelCountOn sem F (S ∩ U) := by
   unfold subtreeSatCount modelCountOn
   congr 1
@@ -272,7 +272,7 @@ theorem subtreeSatCount_root_eq_modelCount [Fintype D] [Inhabited D]
     (sem : Rel → List D → Bool) {F : CSP Rel V}
     {S : Finset V} (hS : F.vars.toFinset ⊆ S) (α : V → D) :
     subtreeSatCount sem F F.vars.toFinset S ∅ α = CSP.modelCount sem F := by
-  have hF : ∀ c ∈ F, c.2.toFinset ⊆ S := fun c hc =>
+  have hF : ∀ c ∈ F, c.scope.toFinset ⊆ S := fun c hc =>
     Finset.Subset.trans (fun v hv => F.mem_vars_finset_of_mem hc (List.mem_toFinset.1 hv)) hS
   rw [subtreeSatCount_empty_eq_modelCountOn sem Finset.Subset.rfl hF α,
     Finset.inter_eq_right.2 hS, modelCount]
@@ -280,13 +280,13 @@ theorem subtreeSatCount_root_eq_modelCount [Fintype D] [Inhabited D]
 theorem subtreeSatCount_leaf [Finite D] [Inhabited D] (sem : Rel → List D → Bool)
     (F : CSP Rel V) (U : Finset V) (α : V → D) :
     subtreeSatCount sem F U ∅ ∅ α =
-      if ∀ c ∈ F, c.2 = [] → c.eval sem (fun _ => default) = true then 1 else 0 := by
+      if ∀ c ∈ F, c.scope = [] → c.eval sem (fun _ => default) = true then 1 else 0 := by
   let σ₀ : ↑((∅ : Finset V) ∩ U) → D := fun x =>
     absurd (Finset.mem_inter.1 x.2).1 (Finset.notMem_empty _)
   have huniq : ∀ σ : ↑((∅ : Finset V) ∩ U) → D, σ = σ₀ := fun σ =>
     funext fun x => absurd (Finset.mem_inter.1 x.2).1 (Finset.notMem_empty _)
   unfold subtreeSatCount
-  by_cases hc : ∀ c ∈ F, c.2 = [] → c.eval sem (fun _ => default) = true
+  by_cases hc : ∀ c ∈ F, c.scope = [] → c.eval sem (fun _ => default) = true
   · have hSing : subtreeSatSet sem F U ∅ ∅ α = {σ₀} := by
       ext σ
       simp only [mem_subtreeSatSet, Finset.mem_singleton]
@@ -296,11 +296,11 @@ theorem subtreeSatCount_leaf [Finite D] [Inhabited D] (sem : Rel → List D → 
       · rintro rfl
         refine ⟨fun x => absurd (Finset.mem_inter.1 x.2).1 (Finset.notMem_empty _), ?_⟩
         intro c hcF hcSub
-        have hcNil : c.2 = [] := by
-          cases hc2 : c.2 with
+        have hcNil : c.scope = [] := by
+          cases hc2 : c.scope with
           | nil => rfl
           | cons v vs =>
-            have hv : v ∈ c.2.toFinset := List.mem_toFinset.2 (by simp [hc2])
+            have hv : v ∈ c.scope.toFinset := List.mem_toFinset.2 (by simp [hc2])
             exact absurd (hcSub hv) (Finset.notMem_empty _)
         have hev := hc c hcF hcNil
         rwa [Constraint.eval_congr (fun v hv => by simp [hcNil] at hv)] at hev
@@ -311,21 +311,22 @@ theorem subtreeSatCount_leaf [Finite D] [Inhabited D] (sem : Rel → List D → 
       rw [mem_subtreeSatSet] at hσ
       apply hc
       intro c hcF hcNil
-      have hsub : c.2.toFinset ⊆ ∅ := by simp [hcNil]
+      have hsub : c.scope.toFinset ⊆ ∅ := by simp [hcNil]
       have hev := hσ.2 c hcF hsub
       rwa [Constraint.eval_congr (fun v hv => by simp [hcNil] at hv)] at hev
     rw [hEmpty, Finset.card_empty, ite_eq_right hc]
 
 theorem subtreeSatCount_introduce [Finite D] (sem : Rel → List D → Bool) {F : CSP Rel V}
     {U S B : Finset V} {v : V} (hvS : v ∉ S) (hBS : B ⊆ S) (hU : F.vars.toFinset ⊆ U)
-    (hcov : ∀ c ∈ F, c.2.toFinset ⊆ insert v S → c.2.toFinset ⊆ S ∨ c.2.toFinset ⊆ insert v B)
+    (hcov : ∀ c ∈ F, c.scope.toFinset ⊆ insert v S →
+      c.scope.toFinset ⊆ S ∨ c.scope.toFinset ⊆ insert v B)
     (α : V → D) :
     subtreeSatCount sem F U (insert v S) (insert v B) α =
-      if ∀ c ∈ F, c.2.toFinset ⊆ insert v B → v ∈ c.2 → c.eval sem α = true then
+      if ∀ c ∈ F, c.scope.toFinset ⊆ insert v B → v ∈ c.scope → c.eval sem α = true then
         subtreeSatCount sem F U S B α
       else 0 := by
   classical
-  by_cases hAll : ∀ c ∈ F, c.2.toFinset ⊆ insert v B → v ∈ c.2 → c.eval sem α = true
+  by_cases hAll : ∀ c ∈ F, c.scope.toFinset ⊆ insert v B → v ∈ c.scope → c.eval sem α = true
   · rw [ite_eq_left hAll]
     unfold subtreeSatCount
     refine Finset.card_bij
@@ -336,7 +337,7 @@ theorem subtreeSatCount_introduce [Finite D] (sem : Rel → List D → Bool) {F 
     · intro σ hσ
       simp only [mem_subtreeSatSet] at hσ ⊢
       refine ⟨fun x hxB => hσ.1 _ (Finset.mem_insert_of_mem hxB), fun c hc hcS => ?_⟩
-      have hcIS : c.2.toFinset ⊆ insert v S := hcS.trans (Finset.subset_insert v S)
+      have hcIS : c.scope.toFinset ⊆ insert v S := hcS.trans (Finset.subset_insert v S)
       rw [extendSubtree_eval_congr hU hc hcS hcIS (fun _ _ _ _ => rfl)]
       exact hσ.2 c hc hcIS
     · intro σ₁ hσ₁ σ₂ hσ₂ hEq
@@ -367,9 +368,9 @@ theorem subtreeSatCount_introduce [Finite D] (sem : Rel → List D → Bool) {F 
                 exact hτ.1 _ ((Finset.mem_insert.1 hxB).resolve_left hxv)
               · rfl
             rw [extendSubtree_eval_bag hU hc hcIS hcIB hσB]
-            by_cases hvc : v ∈ c.2
+            by_cases hvc : v ∈ c.scope
             · exact hAll c hc hcIB hvc
-            · have hcS : c.2.toFinset ⊆ S := fun w hw =>
+            · have hcS : c.scope.toFinset ⊆ S := fun w hw =>
                 (Finset.mem_insert.1 (hcIS hw)).resolve_left fun h =>
                   hvc (h ▸ List.mem_toFinset.1 hw)
               rw [← extendSubtree_eval_bag hU hc hcS
@@ -381,7 +382,7 @@ theorem subtreeSatCount_introduce [Finite D] (sem : Rel → List D → Bool) {F 
   · rw [ite_eq_right hAll]
     push Not at hAll
     obtain ⟨c, hc, hcIB, hvc, hcEval⟩ := hAll
-    have hcIS : c.2.toFinset ⊆ insert v S :=
+    have hcIS : c.scope.toFinset ⊆ insert v S :=
       hcIB.trans (Finset.insert_subset_insert v hBS)
     unfold subtreeSatCount
     rw [Finset.card_eq_zero, Finset.eq_empty_iff_forall_notMem]
@@ -451,7 +452,7 @@ theorem subtreeSatCount_forget [Fintype D] [Inhabited D] (sem : Rel → List D �
 theorem subtreeSatCount_join [Finite D] (sem : Rel → List D → Bool) {F : CSP Rel V}
     {U S_L S_R B : Finset V} (hdisj : Disjoint (S_L \ B) S_R) (hBLS : B ⊆ S_L)
     (hU : F.vars.toFinset ⊆ U)
-    (hcov : ∀ c ∈ F, c.2.toFinset ⊆ S_L ∪ S_R → c.2.toFinset ⊆ S_L ∨ c.2.toFinset ⊆ S_R)
+    (hcov : ∀ c ∈ F, c.scope.toFinset ⊆ S_L ∪ S_R → c.scope.toFinset ⊆ S_L ∨ c.scope.toFinset ⊆ S_R)
     (α : V → D) :
     subtreeSatCount sem F U (S_L ∪ S_R) B α =
       subtreeSatCount sem F U S_L B α * subtreeSatCount sem F U S_R B α := by
@@ -469,10 +470,10 @@ theorem subtreeSatCount_join [Finite D] (sem : Rel → List D → Bool) {F : CSP
     simp only [Finset.mem_product, mem_subtreeSatSet] at hσ ⊢
     refine ⟨⟨fun x hxB => hσ.1 _ hxB, fun c hc hcL => ?_⟩,
       ⟨fun x hxB => hσ.1 _ hxB, fun c hc hcR => ?_⟩⟩
-    · have hcU : c.2.toFinset ⊆ S_L ∪ S_R := hcL.trans Finset.subset_union_left
+    · have hcU : c.scope.toFinset ⊆ S_L ∪ S_R := hcL.trans Finset.subset_union_left
       rw [extendSubtree_eval_congr hU hc hcL hcU (fun _ _ _ _ => rfl)]
       exact hσ.2 c hc hcU
-    · have hcU : c.2.toFinset ⊆ S_L ∪ S_R := hcR.trans Finset.subset_union_right
+    · have hcU : c.scope.toFinset ⊆ S_L ∪ S_R := hcR.trans Finset.subset_union_right
       rw [extendSubtree_eval_congr hU hc hcR hcU (fun _ _ _ _ => rfl)]
       exact hσ.2 c hc hcU
   · intro σ₁ _ σ₂ _ hEq
@@ -530,9 +531,9 @@ extensions on `T.subtreeVerts ∩ U` extending `α` on `T.bag`. -/
 @[expose] noncomputable def specDPCount (sem : Rel → List D → Bool) (F : CSP Rel V)
     (U : Finset V) : NiceTree V → (V → D) → ℕ
   | .leaf, _ =>
-    if ∀ c ∈ F, c.2 = [] → c.eval sem (fun _ => default) = true then 1 else 0
+    if ∀ c ∈ F, c.scope = [] → c.eval sem (fun _ => default) = true then 1 else 0
   | .introduce v child, α =>
-    if ∀ c ∈ F, c.2.toFinset ⊆ insert v child.bag → v ∈ c.2 → c.eval sem α = true then
+    if ∀ c ∈ F, c.scope.toFinset ⊆ insert v child.bag → v ∈ c.scope → c.eval sem α = true then
       specDPCount sem F U child α
     else 0
   | .forget v child, α =>
@@ -545,10 +546,10 @@ extensions on `T.subtreeVerts ∩ U` extending `α` on `T.bag`. -/
 @[expose] noncomputable def specDPDecide (sem : Rel → List D → Bool) (F : CSP Rel V)
     (U : Finset V) : NiceTree V → (V → D) → Bool
   | .leaf, _ =>
-    F.all fun c => !decide (c.2 = []) || c.eval sem (fun _ => default)
+    F.all fun c => !decide (c.scope = []) || c.eval sem (fun _ => default)
   | .introduce v child, α =>
     (F.all fun c =>
-      !(decide (c.2.toFinset ⊆ insert v child.bag) && decide (v ∈ c.2)) || c.eval sem α) &&
+      !(decide (c.scope.toFinset ⊆ insert v child.bag) && decide (v ∈ c.scope)) || c.eval sem α) &&
       specDPDecide sem F U child α
   | .forget v child, α =>
     if v ∈ U then decide (∃ d : D, specDPDecide sem F U child (Function.update α v d) = true)
@@ -559,22 +560,22 @@ extensions on `T.subtreeVerts ∩ U` extending `α` on `T.bag`. -/
 theorem specDPCount_eq_subtreeSatCount (sem : Rel → List D → Bool) {F : CSP Rel V}
     {U : Finset V} (hU : F.vars.toFinset ⊆ U) :
     ∀ {T : NiceTree V}, T.LocalValid →
-      (∀ c ∈ F, c.2.toFinset ⊆ T.subtreeVerts → T.CoversFinset c.2.toFinset) →
+      (∀ c ∈ F, c.scope.toFinset ⊆ T.subtreeVerts → T.CoversFinset c.scope.toFinset) →
       ∀ α, specDPCount sem F U T α = subtreeSatCount sem F U T.subtreeVerts T.bag α
   | .leaf, _, _, α => by
     simp only [specDPCount, NiceTree.subtreeVerts, NiceTree.bag]
     exact (subtreeSatCount_leaf sem F U α).symm
   | .introduce v child, hval, hcov, α => by
-    have hcov_child : ∀ c ∈ F, c.2.toFinset ⊆ child.subtreeVerts →
-        child.CoversFinset c.2.toFinset := fun c hc hcSub => by
+    have hcov_child : ∀ c ∈ F, c.scope.toFinset ⊆ child.subtreeVerts →
+        child.CoversFinset c.scope.toFinset := fun c hc hcSub => by
       rcases hcov c hc (hcSub.trans (Finset.subset_insert _ _)) with hbag | hsub
-      · have hvc : v ∉ c.2 := fun hv => hval.1 (hcSub (List.mem_toFinset.2 hv))
-        have hcBag : c.2.toFinset ⊆ child.bag := fun w hw =>
+      · have hvc : v ∉ c.scope := fun hv => hval.1 (hcSub (List.mem_toFinset.2 hv))
+        have hcBag : c.scope.toFinset ⊆ child.bag := fun w hw =>
           (Finset.mem_insert.1 (hbag hw)).resolve_left fun h => hvc (h ▸ List.mem_toFinset.1 hw)
         exact NiceTree.coversFinset_of_subset_bag hcBag
       · exact hsub
-    have hcov_step : ∀ c ∈ F, c.2.toFinset ⊆ insert v child.subtreeVerts →
-        c.2.toFinset ⊆ child.subtreeVerts ∨ c.2.toFinset ⊆ insert v child.bag :=
+    have hcov_step : ∀ c ∈ F, c.scope.toFinset ⊆ insert v child.subtreeVerts →
+        c.scope.toFinset ⊆ child.subtreeVerts ∨ c.scope.toFinset ⊆ insert v child.bag :=
       fun c hc hcSub => by
         rcases hcov c hc hcSub with hbag | hsub
         · exact Or.inr hbag
@@ -583,8 +584,8 @@ theorem specDPCount_eq_subtreeSatCount (sem : Rel → List D → Bool) {F : CSP 
     rw [subtreeSatCount_introduce sem hval.1 child.bag_subset_subtreeVerts hU hcov_step α,
       specDPCount_eq_subtreeSatCount sem hU hval.2 hcov_child α]
   | .forget v child, hval, hcov, α => by
-    have hcov_child : ∀ c ∈ F, c.2.toFinset ⊆ child.subtreeVerts →
-        child.CoversFinset c.2.toFinset := fun c hc hcSub => by
+    have hcov_child : ∀ c ∈ F, c.scope.toFinset ⊆ child.subtreeVerts →
+        child.CoversFinset c.scope.toFinset := fun c hc hcSub => by
       rcases hcov c hc hcSub with hbag | hsub
       · exact NiceTree.coversFinset_of_subset_bag (hbag.trans (Finset.erase_subset v _))
       · exact hsub
@@ -596,29 +597,30 @@ theorem specDPCount_eq_subtreeSatCount (sem : Rel → List D → Bool) {F : CSP 
     · exact specDPCount_eq_subtreeSatCount sem hU hval.2 hcov_child (Function.update α v default)
   | .join left right, hval, hcov, α => by
     obtain ⟨hbag, hdisj, hcL, hcR⟩ := hval
-    have hcov_L : ∀ c ∈ F, c.2.toFinset ⊆ left.subtreeVerts →
-        left.CoversFinset c.2.toFinset := fun c hc hcSub => by
+    have hcov_L : ∀ c ∈ F, c.scope.toFinset ⊆ left.subtreeVerts →
+        left.CoversFinset c.scope.toFinset := fun c hc hcSub => by
       rcases hcov c hc (hcSub.trans Finset.subset_union_left) with hB | hL | hR
       · exact NiceTree.coversFinset_of_subset_bag hB
       · exact hL
-      · have hsubR : c.2.toFinset ⊆ right.subtreeVerts :=
+      · have hsubR : c.scope.toFinset ⊆ right.subtreeVerts :=
           NiceTree.coversFinset_subset_subtreeVerts hR
         refine NiceTree.coversFinset_of_subset_bag fun v hv => ?_
         by_contra hnot
         exact Finset.disjoint_left.1 hdisj (Finset.mem_sdiff.2 ⟨hcSub hv, hnot⟩) (hsubR hv)
     have hdisjR := NiceTree.disjoint_join_right hbag hdisj
-    have hcov_R : ∀ c ∈ F, c.2.toFinset ⊆ right.subtreeVerts →
-        right.CoversFinset c.2.toFinset := fun c hc hcSub => by
+    have hcov_R : ∀ c ∈ F, c.scope.toFinset ⊆ right.subtreeVerts →
+        right.CoversFinset c.scope.toFinset := fun c hc hcSub => by
       rcases hcov c hc (hcSub.trans Finset.subset_union_right) with hB | hL | hR
       · exact NiceTree.coversFinset_of_subset_bag (hbag ▸ hB)
-      · have hsubL : c.2.toFinset ⊆ left.subtreeVerts :=
+      · have hsubL : c.scope.toFinset ⊆ left.subtreeVerts :=
           NiceTree.coversFinset_subset_subtreeVerts hL
         refine NiceTree.coversFinset_of_subset_bag fun v hv => ?_
         by_contra hnot
         exact Finset.disjoint_left.1 hdisjR (Finset.mem_sdiff.2 ⟨hcSub hv, hnot⟩) (hsubL hv)
       · exact hR
-    have hcov_step : ∀ c ∈ F, c.2.toFinset ⊆ left.subtreeVerts ∪ right.subtreeVerts →
-        c.2.toFinset ⊆ left.subtreeVerts ∨ c.2.toFinset ⊆ right.subtreeVerts := fun c hc hcSub => by
+    have hcov_step : ∀ c ∈ F, c.scope.toFinset ⊆ left.subtreeVerts ∪ right.subtreeVerts →
+        c.scope.toFinset ⊆ left.subtreeVerts ∨ c.scope.toFinset ⊆ right.subtreeVerts :=
+        fun c hc hcSub => by
       rcases hcov c hc hcSub with hB | hL | hR
       · exact Or.inl (hB.trans left.bag_subset_subtreeVerts)
       · exact Or.inl (NiceTree.coversFinset_subset_subtreeVerts hL)
@@ -639,7 +641,7 @@ theorem specDPCount_pos_iff_specDPDecide (sem : Rel → List D → Bool) (F : CS
     split_ifs with h
     · simp only [Nat.zero_lt_one, true_iff]
       intro c hc
-      by_cases hc2 : c.2 = []
+      by_cases hc2 : c.scope = []
       · exact Or.inr (h c hc hc2)
       · exact Or.inl hc2
     · simp only [lt_self_iff_false, false_iff, not_forall, exists_prop]
@@ -652,8 +654,8 @@ theorem specDPCount_pos_iff_specDPDecide (sem : Rel → List D → Bool) (F : CS
     split_ifs with h
     · rw [ih α, iff_and_self]
       intro _ c hc
-      by_cases hcb : c.2.toFinset ⊆ insert v child.bag
-      · by_cases hvc : v ∈ c.2
+      by_cases hcb : c.scope.toFinset ⊆ insert v child.bag
+      · by_cases hvc : v ∈ c.scope
         · exact Or.inr (h c hc hcb hvc)
         · exact Or.inl (Or.inr hvc)
       · exact Or.inl (Or.inl hcb)
@@ -678,7 +680,7 @@ theorem specDPCount_pos_iff_specDPDecide (sem : Rel → List D → Bool) (F : CS
 
 theorem specDPCount_eq_modelCount (sem : Rel → List D → Bool) {F : CSP Rel V}
     {T : NiceTree V} (hval : T.LocalValid) (hbag : T.bag = ∅)
-    (hsub : F.vars.toFinset ⊆ T.subtreeVerts) (hcov : ∀ c ∈ F, T.CoversFinset c.2.toFinset)
+    (hsub : F.vars.toFinset ⊆ T.subtreeVerts) (hcov : ∀ c ∈ F, T.CoversFinset c.scope.toFinset)
     (α : V → D) :
     specDPCount sem F F.vars.toFinset T α = CSP.modelCount sem F := by
   rw [specDPCount_eq_subtreeSatCount sem Finset.Subset.rfl hval (fun c hc _ => hcov c hc) α,
@@ -686,7 +688,7 @@ theorem specDPCount_eq_modelCount (sem : Rel → List D → Bool) {F : CSP Rel V
 
 theorem specDPDecide_eq_true_iff_satisfiable (sem : Rel → List D → Bool) {F : CSP Rel V}
     {T : NiceTree V} (hval : T.LocalValid) (hbag : T.bag = ∅)
-    (hsub : F.vars.toFinset ⊆ T.subtreeVerts) (hcov : ∀ c ∈ F, T.CoversFinset c.2.toFinset)
+    (hsub : F.vars.toFinset ⊆ T.subtreeVerts) (hcov : ∀ c ∈ F, T.CoversFinset c.scope.toFinset)
     (α : V → D) :
     specDPDecide sem F F.vars.toFinset T α = true ↔ CSP.Satisfiable sem F := by
   rw [← specDPCount_pos_iff_specDPDecide, specDPCount_eq_modelCount sem hval hbag hsub hcov α,

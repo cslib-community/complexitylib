@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Probability.Extractor.Basic
 public import CslibFrontier.Probability.BitString.LinearHash
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import CslibFrontier.Probability.MinEntropy.LeftoverHash
 
 /-!
@@ -113,7 +114,6 @@ theorem isStrongExtractor (n m : ℕ) {δ : ℝ} (hδ : 0 < δ) {k : ℝ}
     IsStrongExtractor (fun (x : BitString n) (rows : Fin m → BitString n) => hash rows x) k
       (δ / 2) := by
   refine (isTwoUniversal n m).isStrongExtractor_of_logb_le hδ ?_
-  rwa [show Fintype.card (BitString m) = 2 ^ m by simp, Nat.cast_pow, Nat.cast_ofNat,
-    Real.logb_pow, Real.logb_self_eq_one (by norm_num), mul_one]
+  rwa [BitString.logb_card]
 
 end Cslib.BitString.LinearHash
