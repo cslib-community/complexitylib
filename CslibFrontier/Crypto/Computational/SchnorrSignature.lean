@@ -14,7 +14,6 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
-import CslibFrontier.Foundations.Data.BitString.Counter
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Tactic.Negligible
 import CslibFrontier.Tactic.PPT
@@ -78,9 +77,7 @@ eavesdropping security are provided by `SchnorrIdentification` and `SchnorrEaves
   key generation, commitment, response, signing, verification, and commitment recovery.
 * `Cslib.Crypto.PrimeOrderGroupFamily.encSchnorrBitsInput`: the input encoding `(d, a, b, c)` of
   the bit-level response and commitment-recovery maps.
-* `Cslib.Crypto.PrimeOrderGroupFamily.challengeEmbedding`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.schnorrBitSigma`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.schnorrFamilyROMScheme`,
+* `Cslib.Crypto.PrimeOrderGroupFamily.schnorrFamilyROMScheme`,
   `Cslib.Crypto.PrimeOrderGroupFamily.schnorrScalarROMScheme`: Fiat–Shamir ROM Schnorr signature
   schemes over `F` with `m`-bit and scalar challenges.
 
@@ -458,25 +455,6 @@ theorem schnorrSigVerifyBits_commitment_mem_range (d : F.Desc) (u : F.Carrier d)
   exact ⟨_, ((F.schnorrSigVerifyBits_eq_true_iff d u msg t z roOut).mp h).symm⟩
 
 /-! ### 2. Typed ROM scheme instantiation and Pointcheval–Stern / Bellare–Neven security bound -/
-
-/-- When `2 ^ m ≤ F.order d`, `m`-bit challenges `BitString m` embed injectively into
-`ZMod (F.order d)` via their binary values. -/
-def challengeEmbedding (d : F.Desc) {m : ℕ} (hm : 2 ^ m ≤ F.order d) :
-    BitString m ↪ ZMod (F.order d) where
-  toFun c := (ofBits (List.ofFn c) : ZMod (F.order d))
-  inj' c c' h := by
-    rw [ZMod.natCast_eq_natCast_iff', ofBits, ofBits, ← BitString.lsbValue_eq_foldr_bit,
-      ← BitString.lsbValue_eq_foldr_bit,
-      Nat.mod_eq_of_lt ((BitString.lsbValue_lt _).trans_le (by simpa using hm)),
-      Nat.mod_eq_of_lt ((BitString.lsbValue_lt _).trans_le (by simpa using hm))] at h
-    exact List.ofFn_injective (BitString.lsbValue_injective (by simp) h)
-
-/-- Schnorr's Sigma protocol in `F.Carrier d` with `m`-bit challenges `BitString m` when
-`2 ^ m ≤ F.order d`. -/
-noncomputable def schnorrBitSigma (d : F.Desc) {m : ℕ} (hm : 2 ^ m ≤ F.order d) :
-    SigmaProtocol (ZMod (F.order d)) (F.Carrier d) (F.Carrier d) (BitString m)
-      (ZMod (F.order d)) :=
-  schnorr (F.challengeEmbedding d hm) (F.generator d)
 
 /-- **Schnorr's Fiat–Shamir ROM signature scheme with `m`-bit challenges** over `F.Carrier d`
 ([BonehShoup2023], Sections 19.2–19.3; [Schnorr1991]; [PointchevalStern2000]). -/

@@ -54,7 +54,7 @@ theorem askParty_polyBounded {AdvQ AdvR : Type} :
 
 /-- With no corruptions, the environment sees the functionality's bit, whatever the adversary. -/
 theorem eval_exec_askParty (b : Bool) {AdvQ AdvR : Type}
-    (S : Adversary 1 AdvQ AdvR ((Fin 1 × Unit) ⊕ Unit) (Option Bool ⊕ Unit)) (κ : ℕ)
+    (S : ExecAdversary 1 Unit Bool Unit Unit AdvQ AdvR) (κ : ℕ)
     (z : List Bool) : (exec (bitFunc b).toProtocol S ∅ askParty κ z).eval = PMF.pure b := by
   simp only [exec, Machine.run, Machine.link, askParty, execMachine, Machine.comp,
     Machine.closeProgram_bind, Machine.closeProgram_map, Machine.closeProgram_sample,
@@ -69,7 +69,7 @@ theorem eval_exec_askParty (b : Bool) {AdvQ AdvR : Type}
 /-- When party `0` is corrupted, the environment cannot reach it: the router answers `none`, so
 `askParty` outputs `false`, whatever the functionality and the adversary. -/
 theorem eval_exec_askParty_corrupt (b : Bool) {AdvQ AdvR : Type}
-    (S : Adversary 1 AdvQ AdvR ((Fin 1 × Unit) ⊕ Unit) (Option Bool ⊕ Unit)) (κ : ℕ)
+    (S : ExecAdversary 1 Unit Bool Unit Unit AdvQ AdvR) (κ : ℕ)
     (z : List Bool) : (exec (bitFunc b).toProtocol S {0} askParty κ z).eval = PMF.pure false := by
   simp only [exec, Machine.run, Machine.link, askParty, execMachine, Machine.comp,
     Machine.closeProgram_bind, Machine.closeProgram_map, Machine.closeProgram_sample,
@@ -84,7 +84,7 @@ theorem eval_exec_askParty_corrupt (b : Bool) {AdvQ AdvR : Type}
 
 /-- Every simulator loses: `askParty` tells `bitFunc true` from `bitFunc false` with certainty. -/
 theorem advantage_bitFunc {AdvQ AdvR : Type}
-    (A S : Adversary 1 AdvQ AdvR ((Fin 1 × Unit) ⊕ Unit) (Option Bool ⊕ Unit)) (κ : ℕ)
+    (A S : ExecAdversary 1 Unit Bool Unit Unit AdvQ AdvR) (κ : ℕ)
     (z : List Bool) :
     advantage (bitFunc true).toProtocol (bitFunc false).toProtocol A S ∅ askParty κ z = 1 := by
   rw [advantage, eval_exec_askParty, eval_exec_askParty, Game.advantage_pure_false]

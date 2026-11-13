@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Computational.MLDSA.Basic
 public import CslibFrontier.Crypto.Game
 public import CslibFrontier.Probability.Product
+import CslibFrontier.Crypto.Game.Order
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Bind
 import Mathlib.Tactic.Linarith
@@ -24,13 +25,18 @@ against a *uniform* key into a solution of the *self-target* Module-SIS problem 
 `[I_k | A | -t]`. This module formalizes both steps for key-only attacks (no signing queries,
 fixed hash function), with explicit reductions:
 
-* **Self-target MSIS.** `IsSelfTargetSolution G ζ pk M u z c` says that `(u, z, c)` is a solution
-  for message `M`: `‖u‖_∞, ‖z‖_∞ ≤ ζ`, `c ∈ B_τ`, and `G(u + A z - c t, M) = c` for the hash `G`.
+* **Self-target MSIS.** `IsSelfTargetSolution G ζ pk s` says that the candidate
+  `s = (M, u, z, c)` (a `SelfTargetCandidate`) is a solution: `‖u‖_∞, ‖z‖_∞ ≤ ζ`, `c ∈ B_τ`, and
+  `G(u + A z - c t, M) = c` for the hash `G`.
 * **From a forgery to a self-target solution.** If `(z, c)` verifies on `M`, write
   `w' = A z - c t` and `u = -LowBits(w')`. Then `u + w' = 2 γ₂ · HighBits(w')`, whose high bits
-  are again `HighBits(w')` by uniqueness of the decomposition, so `(u, z, c)` is a self-target
-  solution for the hash `G(v, M) = H(HighBits(v), M)` with `ζ = max γ₁ γ₂`
-  (`isSelfTargetSolution_of_verify`). This step is deterministic and holds for every key.
+  are again `HighBits(w')` by uniqueness of the decomposition, so `(M, u, z, c)`
+  (`SelfTargetCandidate.ofForgery`) is a self-target solution for the hash
+  `G(v, M) = H(HighBits(v), M)` with `ζ = max γ₁ γ₂` (`isSelfTargetSolution_of_verify`). This step
+  is deterministic and holds for every key.
+* **Experiments.** For a fixed public key, `koaExperiment` and `selfTargetExperiment` are
+  `ProbComp Bool` programs. The games `koaGame`, `keyDistinguishGame` and `selfTargetGame` draw
+  the key from a key distribution and run the experiment on it.
 * **Key-only unforgeability.** For honest keys (`keyLaw`), the success probability of any
   key-only forger is at most the advantage of the explicit distinguisher `forgeryDistinguisher`
   between honest and uniform keys (`uniformKeyLaw`), plus the success probability of the explicit
@@ -49,13 +55,17 @@ model); that step, and the asymptotic packaging, are not formalized here.
 
 ## Main definitions
 
-* `Cslib.Crypto.MLDSA.selfTargetMap`, `Cslib.Crypto.MLDSA.IsSelfTargetSolution`,
-  `Cslib.Crypto.MLDSA.selfTargetHash`: self-target MSIS for `[I_k | A | -t]`.
-* `Cslib.Crypto.MLDSA.forgeryLowPart`: the low part `-LowBits(A z - c t)` of a forgery.
+* `Cslib.Crypto.MLDSA.selfTargetMap`, `Cslib.Crypto.MLDSA.SelfTargetCandidate`,
+  `Cslib.Crypto.MLDSA.IsSelfTargetSolution`, `Cslib.Crypto.MLDSA.selfTargetHash`: self-target
+  MSIS for `[I_k | A | -t]`.
+* `Cslib.Crypto.MLDSA.forgeryLowPart`, `Cslib.Crypto.MLDSA.SelfTargetCandidate.ofForgery`: the
+  low part `-LowBits(A z - c t)` of a forgery and the candidate it gives.
 * `Cslib.Crypto.MLDSA.keyLaw`, `Cslib.Crypto.MLDSA.uniformKeyLaw`: honest and uniform keys.
+* `Cslib.Crypto.MLDSA.koaExperiment`, `Cslib.Crypto.MLDSA.selfTargetExperiment`: the key-only
+  forgery and self-target experiments for a fixed public key.
 * `Cslib.Crypto.MLDSA.koaGame`, `Cslib.Crypto.MLDSA.keyDistinguishGame`,
-  `Cslib.Crypto.MLDSA.selfTargetGame`: the key-only forgery, key-distinguishing and self-target
-  experiments.
+  `Cslib.Crypto.MLDSA.selfTargetGame`: the same experiments, and key distinguishing, with the key
+  drawn from a key distribution.
 * `Cslib.Crypto.MLDSA.forgeryDistinguisher`, `Cslib.Crypto.MLDSA.selfTargetReduction`: the
   explicit reductions.
 
@@ -95,17 +105,27 @@ def selfTargetMap (pk : PublicKey P) (u : Fin P.k → Fin P.n → ZMod P.q)
 /-- A self-target hash, mapping a vector of `R_q^k` and a message to a challenge. -/
 abbrev SelfTargetHash := (Fin P.k → Fin P.n → ZMod P.q) × List Bool → (Fin P.n → ZMod P.q)
 
-/-- `(u, z, c)` solves self-target MSIS for `[I_k | A | -t]`, the hash `G`, the bound `ζ` and the
-message `M`: `‖u‖_∞ ≤ ζ`, `‖z‖_∞ ≤ ζ`, `c ∈ B_τ` and `G(u + A z - c t, M) = c`. -/
-def IsSelfTargetSolution (G : SelfTargetHash P) (ζ : ℕ) (pk : PublicKey P) (msg : List Bool)
-    (u : Fin P.k → Fin P.n → ZMod P.q) (z : Fin P.ℓ → Fin P.n → ZMod P.q)
-    (c : Fin P.n → ZMod P.q) : Prop :=
-  ModuleSIS.inInfNormBound ζ u ∧ ModuleSIS.inInfNormBound ζ z ∧ InBall P.τ c ∧
-    G (selfTargetMap P pk u z c, msg) = c
+/-- A candidate solution `(M, u, z, c)` to self-target MSIS: a message, a low part
+`u ∈ R_q^k`, a response `z ∈ R_q^ℓ` and a challenge `c ∈ R_q`. -/
+structure SelfTargetCandidate where
+  /-- The message. -/
+  msg : List Bool
+  /-- The low part `u`. -/
+  u : Fin P.k → Fin P.n → ZMod P.q
+  /-- The response `z`. -/
+  z : Fin P.ℓ → Fin P.n → ZMod P.q
+  /-- The challenge `c`. -/
+  c : Fin P.n → ZMod P.q
 
-instance (G : SelfTargetHash P) (ζ : ℕ) (pk : PublicKey P) (msg : List Bool)
-    (u : Fin P.k → Fin P.n → ZMod P.q) (z : Fin P.ℓ → Fin P.n → ZMod P.q)
-    (c : Fin P.n → ZMod P.q) : Decidable (IsSelfTargetSolution P G ζ pk msg u z c) :=
+/-- `s = (M, u, z, c)` solves self-target MSIS for `[I_k | A | -t]`, the hash `G` and the bound `ζ`:
+`‖u‖_∞ ≤ ζ`, `‖z‖_∞ ≤ ζ`, `c ∈ B_τ` and `G(u + A z - c t, M) = c`. -/
+def IsSelfTargetSolution (G : SelfTargetHash P) (ζ : ℕ) (pk : PublicKey P)
+    (s : SelfTargetCandidate P) : Prop :=
+  ModuleSIS.inInfNormBound ζ s.u ∧ ModuleSIS.inInfNormBound ζ s.z ∧ InBall P.τ s.c ∧
+    G (selfTargetMap P pk s.u s.z s.c, s.msg) = s.c
+
+instance (G : SelfTargetHash P) (ζ : ℕ) (pk : PublicKey P) (s : SelfTargetCandidate P) :
+    Decidable (IsSelfTargetSolution P G ζ pk s) :=
   inferInstanceAs (Decidable (_ ∧ _ ∧ _ ∧ _))
 
 /-- The self-target hash induced by an ML-DSA hash: `G(v, M) = H(HighBits(v), M)`. -/
@@ -114,17 +134,22 @@ def selfTargetHash (H : Hash P) : SelfTargetHash P :=
 
 /-- The low part `u = -LowBits(A z - c t)` of a candidate signature `(z, c)`. -/
 def forgeryLowPart (pk : PublicKey P) (σ : Signature P) : Fin P.k → Fin P.n → ZMod P.q :=
-  fun i j => -((lowBits P.q P.γ₂ (verifierCommitment P pk σ.1 σ.2 i j) : ℤ) : ZMod P.q)
+  fun i j => -((lowBits P.q P.γ₂ (verifierCommitment P pk σ.z σ.c i j) : ℤ) : ZMod P.q)
+
+/-- The self-target candidate `(M, -LowBits(A z - c t), z, c)` read off a forgery `(M, (z, c))`. -/
+def SelfTargetCandidate.ofForgery (pk : PublicKey P) (msg : List Bool) (σ : Signature P) :
+    SelfTargetCandidate P :=
+  ⟨msg, forgeryLowPart P pk σ, σ.z, σ.c⟩
 
 variable {P}
 
 /-- `u + (A z - c t) = 2 γ₂ · HighBits(A z - c t)` for the low part `u` of `(z, c)`. -/
 theorem selfTargetMap_forgeryLowPart [NeZero P.q] (pk : PublicKey P) (σ : Signature P) :
-    selfTargetMap P pk (forgeryLowPart P pk σ) σ.1 σ.2 = fun i j =>
-      ((highBits P.q P.γ₂ (verifierCommitment P pk σ.1 σ.2 i j) * (2 * P.γ₂ : ℕ) : ℤ) :
+    selfTargetMap P pk (forgeryLowPart P pk σ) σ.z σ.c = fun i j =>
+      ((highBits P.q P.γ₂ (verifierCommitment P pk σ.z σ.c i j) * (2 * P.γ₂ : ℕ) : ℤ) :
         ZMod P.q) := by
   funext i j
-  have h := intCast_highBits_mul_add_lowBits (γ₂ := P.γ₂) (verifierCommitment P pk σ.1 σ.2 i j)
+  have h := intCast_highBits_mul_add_lowBits (γ₂ := P.γ₂) (verifierCommitment P pk σ.z σ.c i j)
   rw [Int.cast_add] at h
   simp only [selfTargetMap, forgeryLowPart, Pi.add_apply]
   linear_combination -h
@@ -134,9 +159,10 @@ then `(-LowBits(A z - c t), z, c)` solves self-target MSIS for `[I_k | A | -t]`,
 `H(HighBits(·), ·)` and the bound `max γ₁ γ₂`. -/
 theorem isSelfTargetSolution_of_verify (hP : P.Valid) {H : Hash P} {pk : PublicKey P}
     {msg : List Bool} {σ : Signature P} (h : verify P H pk msg σ = true) :
-    IsSelfTargetSolution P (selfTargetHash P H) (max P.γ₁ P.γ₂) pk msg
-      (forgeryLowPart P pk σ) σ.1 σ.2 := by
+    IsSelfTargetSolution P (selfTargetHash P H) (max P.γ₁ P.γ₂) pk
+      (SelfTargetCandidate.ofForgery P pk msg σ) := by
   have : NeZero P.q := ⟨by have := hP.one_lt_q; omega⟩
+  simp only [IsSelfTargetSolution, SelfTargetCandidate.ofForgery]
   simp only [verify, Bool.and_eq_true, decide_eq_true_eq] at h
   obtain ⟨⟨hz, hc⟩, hH⟩ := h
   have hγq : (2 * P.γ₂ : ℤ) < P.q := by
@@ -146,8 +172,8 @@ theorem isSelfTargetSolution_of_verify (hP : P.Valid) {H : Hash P} {pk : PublicK
     exact_mod_cast this
   refine ⟨fun i j => ?_, fun i j => ?_, hc, ?_⟩
   · -- `‖u‖_∞ ≤ γ₂`.
-    set b := lowBits P.q P.γ₂ (verifierCommitment P pk σ.1 σ.2 i j)
-    have hb := abs_lowBits_le (q := P.q) hP.γ₂_pos (verifierCommitment P pk σ.1 σ.2 i j)
+    set b := lowBits P.q P.γ₂ (verifierCommitment P pk σ.z σ.c i j)
+    have hb := abs_lowBits_le (q := P.q) hP.γ₂_pos (verifierCommitment P pk σ.z σ.c i j)
     change |(-((b : ℤ) : ZMod P.q)).valMinAbs| ≤ (max P.γ₁ P.γ₂ : ℕ)
     rw [← Int.cast_neg, (ZMod.valMinAbs_spec _ (-b)).mpr ⟨rfl, ?_⟩]
     · rw [abs_neg]
@@ -192,51 +218,56 @@ noncomputable def uniformKeyLaw [NeZero P.q] : PMF (PublicKey P) := do
   let t ← PMF.uniformOfFintype (Fin P.k → Fin P.n → ZMod P.q)
   return ⟨A, t⟩
 
-/-- The key-only forgery experiment: sample a public key, run the forger on it, and accept when
-its output `(M, σ)` verifies. -/
+/-- The key-only forgery experiment for a fixed public key `pk`: run the forger on `pk` and accept
+when its output `(M, σ)` verifies. -/
+def koaExperiment (H : Hash P) (pk : PublicKey P)
+    (adv : PublicKey P → ProbComp (List Bool × Signature P)) : ProbComp Bool := do
+  let (msg, σ) ← adv pk
+  return verify P H pk msg σ
+
+/-- The self-target MSIS experiment for the matrix `[I_k | A | -t]` of a fixed public key `pk`:
+accept when the solver's candidate is a self-target solution. -/
+def selfTargetExperiment (G : SelfTargetHash P) (ζ : ℕ) (pk : PublicKey P)
+    (B : PublicKey P → ProbComp (SelfTargetCandidate P)) : ProbComp Bool := do
+  let s ← B pk
+  return decide (IsSelfTargetSolution P G ζ pk s)
+
+/-- The key-only forgery game: draw a public key from `keys` and run `koaExperiment`. -/
 noncomputable def koaGame (keys : PMF (PublicKey P)) (H : Hash P)
-    (adv : PublicKey P → ProbComp (List Bool × Signature P)) : Game := do
-  let pk ← keys
-  let forgery ← ProbComp.eval (adv pk)
-  return verify P H pk forgery.1 forgery.2
+    (adv : PublicKey P → ProbComp (List Bool × Signature P)) : Game :=
+  keys.bind fun pk => (koaExperiment P H pk adv).eval
 
-/-- The key-distinguishing experiment: sample a public key and output the distinguisher's bit. -/
+/-- The key-distinguishing game: draw a public key from `keys` and output the distinguisher's
+bit. -/
 noncomputable def keyDistinguishGame (keys : PMF (PublicKey P))
-    (D : PublicKey P → ProbComp Bool) : Game := do
-  let pk ← keys
-  ProbComp.eval (D pk)
+    (D : PublicKey P → ProbComp Bool) : Game :=
+  keys.bind fun pk => (D pk).eval
 
-/-- The self-target MSIS experiment for the matrix `[I_k | A | -t]` of a sampled key: accept when
-the solver's output is a self-target solution. -/
+/-- The self-target MSIS game: draw a public key from `keys` and run `selfTargetExperiment`. -/
 noncomputable def selfTargetGame (keys : PMF (PublicKey P)) (G : SelfTargetHash P) (ζ : ℕ)
-    (B : PublicKey P → ProbComp (List Bool × (Fin P.k → Fin P.n → ZMod P.q) ×
-      (Fin P.ℓ → Fin P.n → ZMod P.q) × (Fin P.n → ZMod P.q))) : Game := do
-  let pk ← keys
-  let out ← ProbComp.eval (B pk)
-  return decide (IsSelfTargetSolution P G ζ pk out.1 out.2.1 out.2.2.1 out.2.2.2)
+    (B : PublicKey P → ProbComp (SelfTargetCandidate P)) : Game :=
+  keys.bind fun pk => (selfTargetExperiment P G ζ pk B).eval
 
-/-- The Module-LWE reduction: run the forger and output whether its forgery verifies. -/
+/-- The Module-LWE reduction: run the forger and output whether its forgery verifies, that is,
+run `koaExperiment` on the given key. -/
 def forgeryDistinguisher (H : Hash P) (adv : PublicKey P → ProbComp (List Bool × Signature P))
-    (pk : PublicKey P) : ProbComp Bool := do
-  let forgery ← adv pk
-  return verify P H pk forgery.1 forgery.2
+    (pk : PublicKey P) : ProbComp Bool :=
+  koaExperiment P H pk adv
 
-/-- The self-target MSIS reduction: run the forger on `(A, t)` and output its message, the low
-part of its signature, and the signature. -/
+/-- The self-target MSIS reduction: run the forger on `(A, t)` and read its forgery as a
+self-target candidate. -/
 def selfTargetReduction (adv : PublicKey P → ProbComp (List Bool × Signature P))
-    (pk : PublicKey P) : ProbComp (List Bool × (Fin P.k → Fin P.n → ZMod P.q) ×
-      (Fin P.ℓ → Fin P.n → ZMod P.q) × (Fin P.n → ZMod P.q)) := do
-  let forgery ← adv pk
-  return (forgery.1, forgeryLowPart P pk forgery.2, forgery.2.1, forgery.2.2)
+    (pk : PublicKey P) : ProbComp (SelfTargetCandidate P) := do
+  let (msg, σ) ← adv pk
+  return SelfTargetCandidate.ofForgery P pk msg σ
 
 variable {P}
 
-/-- The forgery experiment is the key-distinguishing experiment of `forgeryDistinguisher`. -/
+/-- The forgery game is the key-distinguishing game of `forgeryDistinguisher`. -/
 theorem koaGame_eq_keyDistinguishGame (keys : PMF (PublicKey P)) (H : Hash P)
     (adv : PublicKey P → ProbComp (List Bool × Signature P)) :
-    koaGame P keys H adv = keyDistinguishGame P keys (forgeryDistinguisher P H adv) := by
-  simp only [koaGame, keyDistinguishGame, forgeryDistinguisher, ProbComp.eval_bind,
-    ProbComp.eval_pure, Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure]
+    koaGame P keys H adv = keyDistinguishGame P keys (forgeryDistinguisher P H adv) :=
+  rfl
 
 /-- **Forging reduces to self-target MSIS.** For every key distribution, a key-only forger
 succeeds at most as often as `selfTargetReduction` solves self-target MSIS for the hash
@@ -246,17 +277,15 @@ theorem succProbability_koaGame_le_selfTargetGame (hP : P.Valid) (keys : PMF (Pu
     (koaGame P keys H adv).succProbability ≤
       (selfTargetGame P keys (selfTargetHash P H) (max P.γ₁ P.γ₂)
         (selfTargetReduction P adv)).succProbability := by
-  apply ENNReal.toNNReal_mono (PMF.apply_ne_top _ _)
-  simp only [koaGame, selfTargetGame, selfTargetReduction, ProbComp.eval_bind,
-    ProbComp.eval_pure, Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure,
-    PMF.bind_bind, PMF.pure_bind]
-  refine Probability.PMF.bind_apply_mono_on_support _ _ fun pk _ => ?_
-  refine Probability.PMF.bind_apply_mono_on_support _ _ fun forgery _ => ?_
-  by_cases hv : verify P H pk forgery.1 forgery.2 = true
+  refine Game.succProbability_mono
+    (Probability.PMF.bind_apply_mono_on_support _ _ fun pk _ => ?_)
+  simp only [koaExperiment, selfTargetExperiment, selfTargetReduction, bind_assoc, pure_bind,
+    ProbComp.eval_bind, ProbComp.eval_pure]
+  refine Probability.PMF.bind_apply_mono_on_support _ _ fun ⟨msg, σ⟩ _ => ?_
+  by_cases hv : verify P H pk msg σ = true
   · rw [hv, decide_eq_true (isSelfTargetSolution_of_verify hP hv)]
   · rw [Bool.not_eq_true] at hv
-    rw [hv]
-    simp
+    simp [hv]
 
 /-- **Key-only unforgeability from Module-LWE and self-target MSIS.** Against honest keys, the
 success probability of a key-only forger is at most the advantage of `forgeryDistinguisher` in
@@ -271,10 +300,7 @@ theorem succProbability_koaGame_le (hP : P.Valid) [NeZero P.q] (secret : PMF (ZM
           (selfTargetReduction P adv)).succProbability := by
   have hst := succProbability_koaGame_le_selfTargetGame hP (uniformKeyLaw P) H adv
   rw [koaGame_eq_keyDistinguishGame] at hst ⊢
-  rw [← NNReal.coe_le_coe] at hst ⊢
-  rw [NNReal.coe_add, Game.coe_advantage]
-  linarith [le_abs_self
-    (((keyDistinguishGame P (keyLaw P secret) (forgeryDistinguisher P H adv)).succProbability :
-      ℝ) - (keyDistinguishGame P (uniformKeyLaw P) (forgeryDistinguisher P H adv)).succProbability)]
+  rw [add_comm]
+  exact (Game.succProbability_le_add_of_advantage_le le_rfl).trans (add_le_add hst le_rfl)
 
 end Cslib.Crypto.MLDSA

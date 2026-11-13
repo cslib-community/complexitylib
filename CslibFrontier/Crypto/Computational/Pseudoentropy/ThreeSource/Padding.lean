@@ -28,9 +28,8 @@ one, preparing later reindexing by the actual seed length.
 
 * `exists_common_seedLength`: one increasing efficient schedule bounds every entry's seed length.
 * `isPolyTime_paddedGenerate`, `length_paddedGenerate`: efficient evaluation with one-bit stretch.
-* `exists_secure_padded_choice_withAdvice`, `exists_secure_padded_choice`: padding preserves a
-  choice secure against every uniform indexed test, relative to fixed advice and in the uniform
-  case.
+* `exists_secure_padded_choice_withAdvice`: padding preserves a choice secure against every
+  uniform indexed test.
 
 ## References
 
@@ -173,29 +172,5 @@ theorem exists_secure_padded_choice_withAdvice {pair : SamplablePair} {gap : ℕ
   exact (GeneratorPadding.advantage_eq _ _ (hbound n (choose n) hn)
     (seedLength_lt_outputLength n (saved.length n) (observationBound n) (densityBound n)
       (choose n))).symm
-
-/-- Padding preserves one secure choice against every uniform indexed test. -/
-theorem exists_secure_padded_choice {pair : SamplablePair} {gap : ℕ → ℝ}
-    (hpair : pair.HasGap gap) (saved : pair.SeedRealization)
-    {observationBound densityBound common : ℕ → ℕ}
-    (bounds : PaddingBounds saved observationBound densityBound common)
-    (hgap : ∀ᶠ n in atTop, 4 / (dyadicSize (densityBound n) : ℝ) ≤ gap n) :
-    ∃ choose : ℕ → ℕ,
-      (∀ᶠ n in atTop, choose n < size (saved.length n) (densityBound n)) ∧
-      ∀ test : ℕ → ℕ → List Bool → ProbComp Bool,
-        IsPPTOn (encPair (encPair encUnary encUnary) encBits)
-          encBool (fun ((n, i), word) => test n i word) →
-        Negligible (fun n => Game.advantage
-          (((uniformList (common n)).map (paddedGenerate n (saved.length n) (observationBound n)
-            (densityBound n) (common n) (choose n) (saved.evaluate n))).bind
-              (fun word => ProbComp.eval (test n (choose n) word)))
-          ((uniformList (common n + 1)).bind
-            (fun word => ProbComp.eval (test n (choose n) word)))) := by
-  obtain ⟨choose, hchoose, hsecure⟩ := exists_secure_padded_choice_withAdvice
-    (SamplablePair.hasGap_iff_hasGapWithAdvice_nil.mp hpair) saved bounds hgap
-  refine ⟨choose, hchoose, fun test htest => ?_⟩
-  have hp1 := ComputableInPolyTime.fst (encPair (encPair encUnary encBits) encUnary) encBits
-  have htest' := htest.preprocess ((hp1.fst'.fst'.prod hp1.snd').prod (.snd _ _))
-  exact hsecure (fun a => test a.1) htest'
 
 end Cslib.Crypto.Pseudoentropy.EntropyGrid

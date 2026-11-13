@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Privacy.DifferentialPrivacy.Basic
+public import CslibFrontier.Privacy.DifferentialPrivacy.Sensitivity
 public import Mathlib.Analysis.SpecialFunctions.Log.Basic
 public import Mathlib.Order.ConditionallyCompleteLattice.Finset
 
@@ -15,7 +16,8 @@ public import Mathlib.Order.ConditionallyCompleteLattice.Finset
 # The exponential mechanism
 
 Fix a finite nonempty range `R` and a utility score `u : D → R → ℝ` whose sensitivity in the
-dataset argument is at most `Δ > 0`: `|u x r - u y r| ≤ Δ` for adjacent `x`, `y` and every `r`.
+dataset argument is at most `Δ > 0`: `|u x r - u y r| ≤ Δ` for adjacent `x`, `y` and every `r`
+(`PointwiseSensitivity Adj u Δ`).
 The exponential mechanism outputs `r` with probability proportional to `exp (ε u(x, r) / (2 Δ))`
 [DworkRoth2014, Definition 3.4] (`exponentialMechanism`). It is `(ε, 0)`-differentially private
 [DworkRoth2014, Theorem 3.10] (`differentiallyPrivate_exponentialMechanism`).
@@ -85,7 +87,7 @@ private theorem exp_le_exp_half_mul_exp {Δ ε a b : ℝ} (hΔ : 0 < Δ) (hε : 
 /-- The exponential mechanism is `(ε, 0)`-differentially private for every `ε ≥ 0` when the
 utility score has sensitivity at most `Δ > 0` [DworkRoth2014, Theorem 3.10]. -/
 theorem differentiallyPrivate_exponentialMechanism {Adj : D → D → Prop} {u : D → R → ℝ}
-    {Δ ε : ℝ} (hΔ : 0 < Δ) (hε : 0 ≤ ε) (hu : ∀ ⦃x y⦄, Adj x y → ∀ r, |u x r - u y r| ≤ Δ) :
+    {Δ ε : ℝ} (hΔ : 0 < Δ) (hε : 0 ≤ ε) (hu : PointwiseSensitivity Adj u Δ) :
     DifferentiallyPrivate Adj (exponentialMechanism u Δ ε) ε 0 := by
   refine DifferentiallyPrivate.of_apply_le fun x y hxy r => ?_
   rw [exponentialMechanism_apply, exponentialMechanism_apply,

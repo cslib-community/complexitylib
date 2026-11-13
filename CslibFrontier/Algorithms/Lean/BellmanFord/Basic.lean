@@ -34,7 +34,7 @@ A weighted directed graph is given by adjacency lists `adj : V → List (V × W)
 allowed. Weights lie in a linearly ordered cancellative additive commutative monoid `W` (for
 example `ℤ`, `ℚ` or `ℝ`), and estimates in `WithTop W`, with `⊤` for "no walk found yet". Walks
 are paths (`Quiver.Path`) in the quiver `Cslib.Algorithms.Lean.BellmanFord.Vertex adj`, as for
-Dijkstra's `Cslib.Algorithms.WordRAM.Dijkstra.Instance.dist`, and
+Dijkstra's `Cslib.Algorithms.Dijkstra.Instance.dist`, and
 `Cslib.Algorithms.Lean.BellmanFord.walkWeight` is the sum of the edge weights.
 
 The algorithm is given a list `vs` of all the vertices (`hvs : ∀ v, v ∈ vs`). It starts from `0` at

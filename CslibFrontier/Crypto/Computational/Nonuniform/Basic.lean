@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import CslibFrontier.Crypto.Computational.Nonuniform.Advice
 public import CslibFrontier.Crypto.Computational.OneWay
 public import CslibFrontier.Crypto.Computational.PseudorandomGenerator
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -39,8 +40,6 @@ These are definitions, not assertions that such primitives exist.
 
 ## Main definitions
 
-* `Cslib.Crypto.encAdvisedInput`: the input encoding `((1ⁿ, advice), x)` of an adversary with
-  advice.
 * `Cslib.Crypto.IndistinguishableWithAdvice`: indistinguishability against uniform strict PPT
   tests given one fixed advice family.
 * `Cslib.Crypto.NonuniformlyIndistinguishable`: indistinguishability with every polynomially
@@ -84,20 +83,6 @@ namespace Cslib.Crypto
 open Probability Turing.MultiTapeTM
 open scoped NNReal ENNReal
 
-/-- Input `((1ⁿ, advice), x)` of an adversary with advice: the parameter `n` in unary paired
-with the advice word, then the challenge word `x`. The pair `(n, advice)` is framed, and within it
-the parameter; `x` is not. -/
-abbrev encAdvisedInput : (ℕ × List Bool) × List Bool ↪ List Bool :=
-  encPair (encPair encUnary encBits) encBits
-
-/-- A uniform adversary is an advice adversary that ignores its advice. -/
-private theorem isPPTOn_dropAdvice {β : Type} {output : β ↪ List Bool}
-    {adversary : ℕ → List Bool → ProbComp β} (h : IsPPT output adversary) :
-    IsPPTOn encAdvisedInput output
-      (fun input : (ℕ × List Bool) × List Bool => adversary input.1.1 input.2) :=
-  h.on.preprocess (input := encPair (encPair encUnary encBits) encBits)
-    (prepare := fun input : (ℕ × List Bool) × List Bool => (input.1.1, input.2)) (by fun_prop)
-
 /-- Two ensembles are **indistinguishable with advice** `advice` when each uniform strict PPT
 test reading the parameter `n`, the advice word `advice n` and a sample has negligible advantage.
 The advice family is not bounded here; its length is charged to the test's clock, which is
@@ -126,12 +111,9 @@ theorem computationallyIndistinguishable_iff_indistinguishableWithAdvice_nil
     ComputationallyIndistinguishable X Y ↔ IndistinguishableWithAdvice (fun _ => []) X Y := by
   constructor
   · intro h test htest
-    have hprepare : ComputableInPolyTime (fun input : ℕ × List Bool => ((input.1, []), input.2))
-        (encPair encUnary encBits) (encPair (encPair encUnary encBits) encBits) := by fun_prop
-    exact h (fun n word => test ((n, []), word)) (htest.preprocess hprepare)
+    exact h (fun n word => test ((n, []), word)) htest.nilAdvice
   · intro h adversary hadversary
-    have hneg := h (fun input => adversary input.1.1 input.2) (isPPTOn_dropAdvice hadversary)
-    simpa only using hneg
+    exact h (fun input => adversary input.1.1 input.2) hadversary.dropAdvice
 
 /-- Efficient parameter-dependent deterministic postprocessing preserves indistinguishability
 with advice. -/
@@ -296,16 +278,11 @@ theorem oneWay_iff_inversionHardWithAdvice_nil {f : List Bool → List Bool} :
       ComputableInPolyTime f encBits encBits ∧ InversionHardWithAdvice f (fun _ => []) := by
   constructor
   · intro h
-    refine ⟨h.polyTime, .of_inversion_negligible fun adversary hPPT => ?_⟩
-    have hprepare : ComputableInPolyTime (fun input : ℕ × List Bool => ((input.1, []), input.2))
-        (encPair encUnary encBits) (encPair (encPair encUnary encBits) encBits) := by fun_prop
-    exact h.inversion_negligible (fun n image => adversary ((n, []), image))
-      (hPPT.preprocess hprepare)
+    exact ⟨h.polyTime, .of_inversion_negligible fun adversary hPPT =>
+      h.inversion_negligible (fun n image => adversary ((n, []), image)) hPPT.nilAdvice⟩
   · rintro ⟨hf, h⟩
-    refine OneWay.of_inversion_negligible hf fun adversary hPPT => ?_
-    have hneg := h.inversion_negligible (fun input => adversary input.1.1 input.2)
-      (isPPTOn_dropAdvice hPPT)
-    simpa only using hneg
+    exact OneWay.of_inversion_negligible hf fun adversary hPPT =>
+      h.inversion_negligible (fun input => adversary input.1.1 input.2) hPPT.dropAdvice
 
 /-- A function is **nonuniformly one-way** when one deterministic polynomial-time algorithm
 evaluates it and inversion is hard with every polynomially bounded advice family. -/
