@@ -647,9 +647,19 @@ the typed experiment of the scheme with key generation `keyGen n` and encryption
 played by `adversary.toTwoStage n`. Rewrite advantages with
 `Encryption.advantage_gameOn_eq_cpaExperiment`: `Encryption.advantage` applies `gameOn`
 partially, so `rw` with the experiment equation does not reach it. `AdversaryOf.isPPT_toTwoStage`
-turns a word-level PPT certificate into a `TwoStage.IsPPT` family. The
+turns a word-level PPT certificate into a `TwoStage.IsPPT` family. For chosen-plaintext attacks
+with an encryption oracle, import
+[`Encryption/PublicKeyCPA.lean`](../../CslibFrontier/Crypto/Computational/Encryption/PublicKeyCPA.lean):
+the stages of a `PKE.CPAOracleAdversary` are oracle programs over the typed oracle
+`E.encrypt pk`, and `PKE.cpaOracleExperiment_eq_cpaExperiment` rewrites
+`E.cpaOracleExperiment valid A b` into `E.cpaExperiment valid (A.toTwoStage E) b`, where
+`A.toTwoStage E` answers the queries itself under the public key it saved
+([katzlindell20][katzlindell20], Proposition 12.3, at one scheme). At parameter `n`,
+`Encryption.cpaOracleGameOn_eq_cpaOracleExperiment` says that the word-level game is this typed
+experiment, played by `adversary.toCPAOracleAdversary n`. The
 [checked examples](../../CslibFrontierTests/Crypto/PKEScheme.lean) separate the two challenge
-bits of a key-leaking scheme and rewrite `gameOn` into the typed experiment; run
+bits of a key-leaking scheme, with and without the oracle, and rewrite `gameOn` and
+`cpaOracleGameOn` into the typed experiments; run
 `scripts/build.sh CslibFrontierTests.Crypto.PKEScheme`. The PPT transfer is checked in
 [`CslibFrontierTests/Crypto/Experiment.lean`](../../CslibFrontierTests/Crypto/Experiment.lean).
 
