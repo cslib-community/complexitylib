@@ -17,7 +17,7 @@ namespace CslibFrontierTests.CSPLastArgument
 open Cslib.Logic.PL Cslib.Complexity CSP CSP.OrderedBoundary Graph Graph.RotationSystem
 
 private abbrev noneBefore : CSP Unit ℕ := []
-private abbrev twoVars : CSP Unit ℕ := [((), [7, 99])]
+private abbrev twoVars : CSP Unit ℕ := [⟨(), [7, 99]⟩]
 
 private def twoVarsRotation : RotationSystem (incidenceGraph twoVars) where
   rotate := Equiv.swap ((⟨0, by decide⟩, true) : Dart (incidenceGraph twoVars))
@@ -36,7 +36,8 @@ private theorem twoVarsGenus : twoVarsRotation.NumericalGenusZero := by
 example : lastArgumentPrefixGraph noneBefore () [7] 99 = ⟨[0, 1, 2], [(0, 2)]⟩ := by
   decide +kernel
 
-example : incidenceGraph (noneBefore ++ [((), [7])]) = ⟨[0, 1], [(0, 1)]⟩ := by decide +kernel
+example : incidenceGraph (noneBefore ++ [Constraint.mk () [7]]) = ⟨[0, 1], [(0, 1)]⟩ :=
+  by decide +kernel
 
 example : RotationCertificate.ofRotation
     (deleteLastArgumentRotation noneBefore () [7] 99 twoVarsRotation) = ⟨[0, 1]⟩ := by
@@ -45,15 +46,15 @@ example : RotationCertificate.ofRotation
 example : (deleteLastArgumentRotation noneBefore () [7] 99 twoVarsRotation).NumericalGenusZero :=
   numericalGenusZero_deleteLastArgumentRotation noneBefore () [7] 99 twoVarsRotation twoVarsGenus
 
-example : verifyRotationCertificate (noneBefore ++ [((), [7])])
+example : verifyRotationCertificate (noneBefore ++ [Constraint.mk () [7]])
     (RotationCertificate.ofRotation
       (deleteLastArgumentRotation noneBefore () [7] 99 twoVarsRotation)) = true := by decide +kernel
 
-example : verifyRotationCertificate (noneBefore ++ [((), [7])])
+example : verifyRotationCertificate (noneBefore ++ [Constraint.mk () [7]])
     (restrictPrefix 2 ⟨[0, 3, 2, 1]⟩) = true :=
   verifyRotationCertificate_restrictPrefix_lastArgument noneBefore () [7] 99 _ (by decide +kernel)
 
-private abbrev repeated : CSP Unit ℕ := [((), [7, 7])]
+private abbrev repeated : CSP Unit ℕ := [⟨(), [7, 7]⟩]
 
 private def repeatedRotation : RotationSystem (incidenceGraph repeated) where
   rotate := Equiv.swap ((⟨0, by decide⟩, false) : Dart (incidenceGraph repeated))
@@ -65,12 +66,12 @@ example : RotationCertificate.ofRotation
     (deleteLastArgumentRotation noneBefore () [7] 7 repeatedRotation) = ⟨[0, 1]⟩ := by
   decide +kernel
 
-example : verifyRotationCertificate (noneBefore ++ [((), [7])])
+example : verifyRotationCertificate (noneBefore ++ [Constraint.mk () [7]])
     (RotationCertificate.ofRotation
       (deleteLastArgumentRotation noneBefore () [7] 7 repeatedRotation)) = true := by decide +kernel
 
-private abbrev nullaryBefore : CSP Unit ℕ := [((), [])]
-private abbrev unaryAfterNullary : CSP Unit ℕ := nullaryBefore ++ [((), [2 ^ 250])]
+private abbrev nullaryBefore : CSP Unit ℕ := [⟨(), []⟩]
+private abbrev unaryAfterNullary : CSP Unit ℕ := nullaryBefore ++ [Constraint.mk () [2 ^ 250]]
 
 private def unaryRotation : RotationSystem (incidenceGraph unaryAfterNullary) where
   rotate := Equiv.refl _
@@ -78,18 +79,19 @@ private def unaryRotation : RotationSystem (incidenceGraph unaryAfterNullary) wh
 
 -- The remaining variable disappears entirely, and both distinct nullary constraints stay.
 -- These are two point components with conventional faces, with no supplied dart.
-example : incidenceGraph (nullaryBefore ++ [((), [])]) = ⟨[0, 1], []⟩ := by decide +kernel
+example : incidenceGraph (nullaryBefore ++ [Constraint.mk () []]) = ⟨[0, 1], []⟩ :=
+  by decide +kernel
 
 example : RotationCertificate.ofRotation
     (deleteLastArgumentRotation nullaryBefore () [] (2 ^ 250) unaryRotation) = ⟨[]⟩ := by
   decide +kernel
 
-example : verifyRotationCertificate (nullaryBefore ++ [((), [])])
+example : verifyRotationCertificate (nullaryBefore ++ [Constraint.mk () []])
     (RotationCertificate.ofRotation
       (deleteLastArgumentRotation nullaryBefore () [] (2 ^ 250) unaryRotation)) = true := by
   decide +kernel
 
-example : verifyRotationCertificate (nullaryBefore ++ [((), [])])
+example : verifyRotationCertificate (nullaryBefore ++ [Constraint.mk () []])
     (restrictPrefix 0 ⟨[0, 1]⟩) = true :=
   verifyRotationCertificate_restrictPrefix_lastArgument nullaryBefore () [] (2 ^ 250) _
     (by decide +kernel)
@@ -108,23 +110,24 @@ example : (deleteLastArgumentRotation nullaryBefore () [] (2 ^ 250)
 example : restrictPrefix 8 ⟨[0, 3, 2, 5, 4, 7, 6, 9, 8, 1]⟩ =
     ⟨[0, 3, 2, 5, 4, 7, 6, 1]⟩ := by decide +kernel
 
-example : verifyRotationCertificate (noneBefore ++ [((), [7, 8, 9, 10])])
+example : verifyRotationCertificate (noneBefore ++ [Constraint.mk () [7, 8, 9, 10]])
     (restrictPrefix 8 ⟨[0, 3, 2, 5, 4, 7, 6, 9, 8, 1]⟩) = true :=
   verifyRotationCertificate_restrictPrefix_lastArgument noneBefore () [7, 8, 9, 10] 11 _
     (by decide +kernel)
 
 example : RotationCertificate.verifyGenusZero
-    (incidenceGraph (noneBefore ++ [((), [7, 8, 9, 10])])) ⟨[0, 7, 2, 1, 4, 3, 6, 5]⟩ = true ∧
-    verifyRotationCertificate (noneBefore ++ [((), [7, 8, 9, 10])])
+    (incidenceGraph (noneBefore ++ [Constraint.mk () [7, 8, 9, 10]])) ⟨[0, 7, 2, 1, 4, 3, 6, 5]⟩ =
+      true ∧
+    verifyRotationCertificate (noneBefore ++ [Constraint.mk () [7, 8, 9, 10]])
       ⟨[0, 7, 2, 1, 4, 3, 6, 5]⟩ = false := by decide +kernel
 
 -- Argument-position arithmetic needs no equality decision on the variable domain.
-example {V : Type} (v : V) : argumentNextIndex [((), [v, v, v])] 0 2 = 0 := rfl
+example {V : Type} (v : V) : argumentNextIndex [⟨(), [v, v, v]⟩] 0 2 = 0 := rfl
 
 example {V : Type} (v : V) :
-    argumentNextIndex [((), [v, v, v])] 0 2 <
-      (Cslib.Logic.PL.CSP.occurrences ([((), [v, v, v])] : CSP Unit V)).length :=
+    argumentNextIndex [⟨(), [v, v, v]⟩] 0 2 <
+      (Cslib.Logic.PL.CSP.occurrences ([⟨(), [v, v, v]⟩] : CSP Unit V)).length :=
   argumentNextIndex_lt_occurrences
-    (F := [((), [v, v, v])]) ⟨(0 : Fin 1), (2 : Fin 3)⟩
+    (F := [⟨(), [v, v, v]⟩]) ⟨(0 : Fin 1), (2 : Fin 3)⟩
 
 end CslibFrontierTests.CSPLastArgument

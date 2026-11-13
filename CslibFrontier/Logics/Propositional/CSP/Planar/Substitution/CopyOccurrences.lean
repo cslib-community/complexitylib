@@ -49,7 +49,7 @@ theorem argumentSuccessor_instantiatedOccurrence {n : ℕ} {R : Set (Fin n → B
 private def replacementLocalOccurrence
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (B : ℕ) (F : CSP Src ℕ) (i : Fin F.length)
-    (o : (gadgets F[i.val].1).body.Occurrence) :
+    (o : (gadgets F[i.val].rel).body.Occurrence) :
     (instantiate B F.zipIdx[i.val].2 F.zipIdx[i.val].1.2
       (gadgets F.zipIdx[i.val].1.1).template).Occurrence := by
   have he : F.zipIdx[i.val] = (F[i.val], i.val) := by
@@ -59,13 +59,13 @@ private def replacementLocalOccurrence
           simpa only [List.length_zipIdx] using i.isLt))
   have hbody := congrArg (fun entry : Constraint Src ℕ × ℕ =>
     instantiate B entry.2 entry.1.2 (gadgets entry.1.1).template) he
-  exact hbody.symm ▸ instantiatedOccurrence (gadgets F[i.val].1) B i.val F[i.val].2 o
+  exact hbody.symm ▸ instantiatedOccurrence (gadgets F[i.val].rel) B i.val F[i.val].scope o
 
 /-- Copy an actual local occurrence through the exact original replacement operation. -/
 def replacementOccurrence
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (B : ℕ) (F : CSP Src ℕ) (i : Fin F.length)
-    (o : (gadgets F[i.val].1).body.Occurrence) :
+    (o : (gadgets F[i.val].rel).body.Occurrence) :
     (replaceGadgets B (fun r => (gadgets r).template) F).Occurrence :=
   CSP.flatMapOccurrence F.zipIdx
     (fun ⟨⟨relation, scope⟩, i⟩ => instantiate B i scope (gadgets relation).template)
@@ -90,7 +90,7 @@ private theorem argumentSuccessor_cast {H K : CSP Rel ℕ} (h : H = K) (o : H.Oc
 private theorem argumentSuccessor_replacementLocalOccurrence
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (B : ℕ) (F : CSP Src ℕ) (i : Fin F.length)
-    (o : (gadgets F[i.val].1).body.Occurrence) :
+    (o : (gadgets F[i.val].rel).body.Occurrence) :
     argumentSuccessor (replacementLocalOccurrence gadgets B F i o) =
       replacementLocalOccurrence gadgets B F i (argumentSuccessor o) := by
   unfold replacementLocalOccurrence
@@ -99,9 +99,9 @@ private theorem argumentSuccessor_replacementLocalOccurrence
 private theorem record_replacementLocalOccurrence
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (B : ℕ) (F : CSP Src ℕ) (i : Fin F.length)
-    (o : (gadgets F[i.val].1).body.Occurrence) :
+    (o : (gadgets F[i.val].rel).body.Occurrence) :
     (replacementLocalOccurrence gadgets B F i o).record =
-      (instantiatedOccurrence (gadgets F[i.val].1) B i.val F[i.val].2 o).record := by
+      (instantiatedOccurrence (gadgets F[i.val].rel) B i.val F[i.val].scope o).record := by
   unfold replacementLocalOccurrence
   exact record_cast _ _
 
@@ -110,7 +110,7 @@ table. This identifies positions, without rank preservation assumptions about de
 theorem incidenceEdgeIndex_replacementOccurrence
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (B : ℕ) (F : CSP Src ℕ) (i : Fin F.length)
-    (o : (gadgets F[i.val].1).body.Occurrence) :
+    (o : (gadgets F[i.val].rel).body.Occurrence) :
     incidenceEdgeIndex (replacementOccurrence gadgets B F i o) =
       occurrencePrefix (fun r => (gadgets r).template) F i.val + incidenceEdgeIndex o := by
   unfold replacementOccurrence replaceGadgets
@@ -135,12 +135,12 @@ This offset counts rows, independently of their arities or repeated relation rec
 theorem replacementOccurrence_constraint
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (B : ℕ) (F : CSP Src ℕ) (i : Fin F.length)
-    (o : (gadgets F[i.val].1).body.Occurrence) :
+    (o : (gadgets F[i.val].rel).body.Occurrence) :
     (replacementOccurrence gadgets B F i o).1.val =
-      ((F.take i.val).flatMap fun row => (gadgets row.1).template).length + o.1.val := by
+      ((F.take i.val).flatMap fun row => (gadgets row.rel).template).length + o.1.val := by
   have hp (k : ℕ) : ((F.zipIdx.take k).flatMap fun entry =>
       instantiate B entry.2 entry.1.2 (gadgets entry.1.1).template).length =
-      ((F.take k).flatMap fun row => (gadgets row.1).template).length := by
+      ((F.take k).flatMap fun row => (gadgets row.rel).template).length := by
     simp only [List.length_flatMap, instantiate, PPGadget.template, CSP.relabel,
       List.length_map]
     conv_rhs => rw [← List.zipIdx_map_fst 0 F, List.map_take, List.map_map]
@@ -156,7 +156,7 @@ theorem replacementOccurrence_constraint
 theorem replacementOccurrence_argument
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (B : ℕ) (F : CSP Src ℕ) (i : Fin F.length)
-    (o : (gadgets F[i.val].1).body.Occurrence) :
+    (o : (gadgets F[i.val].rel).body.Occurrence) :
     (replacementOccurrence gadgets B F i o).2.val = o.2.val := by
   unfold replacementOccurrence replaceGadgets
   rw [CSP.flatMapOccurrence_argument]
@@ -169,7 +169,7 @@ Neither local nor source scope names need to be distinct. -/
 theorem argumentSuccessor_replacementOccurrence
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (B : ℕ) (F : CSP Src ℕ) (i : Fin F.length)
-    (o : (gadgets F[i.val].1).body.Occurrence) :
+    (o : (gadgets F[i.val].rel).body.Occurrence) :
     argumentSuccessor (replacementOccurrence gadgets B F i o) =
       replacementOccurrence gadgets B F i (argumentSuccessor o) := by
   unfold replacementOccurrence replaceGadgets
@@ -179,9 +179,9 @@ theorem argumentSuccessor_replacementOccurrence
 theorem var_replacementOccurrence
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (B : ℕ) (F : CSP Src ℕ) (i : Fin F.length)
-    (o : (gadgets F[i.val].1).body.Occurrence) :
+    (o : (gadgets F[i.val].rel).body.Occurrence) :
     (replacementOccurrence gadgets B F i o).var =
-      Sum.elim (fun a => 2 * F[i.val].2.getD a.val 0)
+      Sum.elim (fun a => 2 * F[i.val].scope.getD a.val 0)
         (fun j => 2 * (B * i.val + j.val) + 1) o.var := by
   unfold replacementOccurrence replaceGadgets
   rw [CSP.var_flatMapOccurrence]
@@ -198,7 +198,7 @@ theorem exists_replacementOccurrence
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (B : ℕ) (F : CSP Src ℕ)
     (o : (replaceGadgets B (fun r => (gadgets r).template) F).Occurrence) :
-    ∃ (i : Fin F.length) (p : (gadgets F[i.val].1).body.Occurrence),
+    ∃ (i : Fin F.length) (p : (gadgets F[i.val].rel).body.Occurrence),
       replacementOccurrence gadgets B F i p = o := by
   obtain ⟨i, hi, p, hp⟩ := exists_gadgetCopy gadgets B F (incidenceEdgeIndex_lt_vars o)
   refine ⟨⟨i, hi⟩, p, incidenceEdgeIndex_injective ?_⟩
@@ -210,31 +210,31 @@ row. Repeated relation records and nullary rows are not identified. -/
 theorem replacementOccurrence_constraint_eq_iff
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (B : ℕ) (F : CSP Src ℕ) (i k : Fin F.length)
-    (o : (gadgets F[i.val].1).body.Occurrence)
-    (p : (gadgets F[k.val].1).body.Occurrence) :
+    (o : (gadgets F[i.val].rel).body.Occurrence)
+    (p : (gadgets F[k.val].rel).body.Occurrence) :
     (replacementOccurrence gadgets B F i o).1 =
       (replacementOccurrence gadgets B F k p).1 ↔ i.val = k.val ∧ o.1.val = p.1.val := by
   rw [Fin.ext_iff, replacementOccurrence_constraint, replacementOccurrence_constraint]
   constructor
-  · exact List.flatMap_prefix_add_injective F (fun row => (gadgets row.1).template)
+  · exact List.flatMap_prefix_add_injective F (fun row => (gadgets row.rel).template)
       i.isLt (by simpa only [PPGadget.template, CSP.relabel, List.length_map] using o.1.isLt)
       k.isLt (by simpa only [PPGadget.template, CSP.relabel, List.length_map] using p.1.isLt)
   · rintro ⟨hi, hp⟩
     exact congrArg₂ (fun a b =>
-      ((F.take a).flatMap fun row => (gadgets row.1).template).length + b) hi hp
+      ((F.take a).flatMap fun row => (gadgets row.rel).template).length + b) hi hp
 
 /-- The exact replacement retains every copy/local occurrence identity. In particular
 coincident free labels and duplicate source rows never identify their indexed edges. -/
 theorem replacementOccurrence_injective
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (B : ℕ) (F : CSP Src ℕ) :
-    Function.Injective (fun p : (i : Fin F.length) × (gadgets F[i.val].1).body.Occurrence =>
+    Function.Injective (fun p : (i : Fin F.length) × (gadgets F[i.val].rel).body.Occurrence =>
       replacementOccurrence gadgets B F p.1 p.2) := by
   rintro ⟨i, o⟩ ⟨k, p⟩ he
   have hindex := congrArg incidenceEdgeIndex he
   rw [incidenceEdgeIndex_replacementOccurrence, incidenceEdgeIndex_replacementOccurrence] at hindex
-  have hlocal (j : Fin F.length) (q : (gadgets F[j.val].1).body.Occurrence) :
-      incidenceEdgeIndex q < (gadgets F[j.val].1).template.vars.length := by
+  have hlocal (j : Fin F.length) (q : (gadgets F[j.val].rel).body.Occurrence) :
+      incidenceEdgeIndex q < (gadgets F[j.val].rel).template.vars.length := by
     simpa only [PPGadget.template, vars_relabel, List.length_map] using
       incidenceEdgeIndex_lt_vars q
   have hpos := copyIndex_injective (fun r => (gadgets r).template) F
@@ -250,7 +250,7 @@ The inverse is proof-side finite choice; the executed compiler continues to use 
 @[expose] noncomputable def replacementOccurrenceEquiv
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (B : ℕ) (F : CSP Src ℕ) :
-    ((i : Fin F.length) × (gadgets F[i.val].1).body.Occurrence) ≃
+    ((i : Fin F.length) × (gadgets F[i.val].rel).body.Occurrence) ≃
       (replaceGadgets B (fun r => (gadgets r).template) F).Occurrence :=
   Equiv.ofBijective (fun p => replacementOccurrence gadgets B F p.1 p.2)
     ⟨replacementOccurrence_injective gadgets B F, fun o => by
@@ -261,7 +261,7 @@ The inverse is proof-side finite choice; the executed compiler continues to use 
 @[simp] theorem replacementOccurrenceEquiv_apply
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (B : ℕ) (F : CSP Src ℕ) (i : Fin F.length)
-    (o : (gadgets F[i.val].1).body.Occurrence) :
+    (o : (gadgets F[i.val].rel).body.Occurrence) :
     replacementOccurrenceEquiv gadgets B F ⟨i, o⟩ = replacementOccurrence gadgets B F i o := rfl
 
 end Cslib.Complexity.CSP.GadgetRotation

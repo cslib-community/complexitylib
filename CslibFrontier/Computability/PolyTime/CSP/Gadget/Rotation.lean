@@ -70,13 +70,13 @@ theorem computableInPolyTime_occurrencePrefix [Finite Src]
       (encList (encPair encBool encUnary)) := .of_finite _
   unfold occurrencePrefix
   have hflat : ComputableInPolyTime (fun p : CSP Src ℕ × ℕ =>
-      (p.1.take p.2).flatMap fun c => (templates c.1).vars)
+      (p.1.take p.2).flatMap fun c => (templates c.rel).vars)
       (encPair (encCSP encSrc encNat) encUnary) (encList (encPair encBool encUnary)) := by
     apply ComputableInPolyTime.flatMapWithInput (encA := encConstraint encSrc encNat)
     · unfold encCSP
       fun_prop
-    · exact ht.comp (g := fun p : (CSP Src ℕ × ℕ) × Constraint Src ℕ => p.2.1)
-        (by unfold encConstraint; fun_prop)
+    · exact ht.comp (g := fun p : (CSP Src ℕ × ℕ) × Constraint Src ℕ => p.2.rel)
+        (by fun_prop)
   fun_prop
 
 /-- Shift unary occurrence positions by a unary prefix; this is independent of labels. -/
@@ -145,7 +145,7 @@ theorem computableInPolyTime_blockAtRecord [Finite Src]
   · unfold encBlockRecordInput
     fun_prop
   · refine hb.comp (g := fun p : (CSP Src ℕ × (ℕ × ℕ)) × (Constraint Src ℕ × ℕ) =>
-      (p.2.1.1, (occurrencePrefix templates p.1.1 p.2.2, p.1.2.2))) ?_
+      (p.2.1.rel, (occurrencePrefix templates p.1.1 p.2.2, p.1.2.2))) ?_
     have hp' : ComputableInPolyTime
         (fun p : (CSP Src ℕ × (ℕ × ℕ)) × (Constraint Src ℕ × ℕ) =>
           occurrencePrefix templates p.1.1 p.2.2)
@@ -244,7 +244,7 @@ private theorem shiftBlocks_polyTime :
 private theorem auxiliaryCycles_polyTime [Finite Src] (encSrc : Src ↪ List Bool)
     (templates : Src → CSP Rel (Bool × ℕ)) (auxiliaryBlocks : Src → List (List ℕ)) :
     ComputableInPolyTime (fun F : CSP Src ℕ => F.zipIdx.flatMap fun entry =>
-      (auxiliaryBlocks entry.1.1).map (shiftBlock (occurrencePrefix templates F entry.2)))
+      (auxiliaryBlocks entry.1.rel).map (shiftBlock (occurrencePrefix templates F entry.2)))
       (encCSP encSrc encNat) (encList (encList encUnary)) := by
   have ha : ComputableInPolyTime auxiliaryBlocks encSrc (encList (encList encUnary)) :=
     .of_finite _
@@ -255,12 +255,12 @@ private theorem auxiliaryCycles_polyTime [Finite Src] (encSrc : Src ↪ List Boo
   apply ComputableInPolyTime.flatMapWithInput hz
   refine shiftBlocks_polyTime.comp
     (g := fun p : CSP Src ℕ × (Constraint Src ℕ × ℕ) =>
-      (occurrencePrefix templates p.1 p.2.2, auxiliaryBlocks p.2.1.1)) ?_
+      (occurrencePrefix templates p.1 p.2.2, auxiliaryBlocks p.2.1.rel)) ?_
   apply ComputableInPolyTime.prod
   · exact hp.comp (g := fun p : CSP Src ℕ × (Constraint Src ℕ × ℕ) => (p.1, p.2.2))
       (by fun_prop)
-  · exact ha.comp (g := fun p : CSP Src ℕ × (Constraint Src ℕ × ℕ) => p.2.1.1)
-      (by unfold encConstraint; fun_prop)
+  · exact ha.comp (g := fun p : CSP Src ℕ × (Constraint Src ℕ × ℕ) => p.2.1.rel)
+      (by fun_prop)
 
 /-- The full list of target variable cycles is native polynomial-time on every raw input.
 The fixed local words may be precomputed nonuniformly; no planarity search is executed. -/

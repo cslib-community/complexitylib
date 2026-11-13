@@ -314,9 +314,10 @@ new unit drop-ins if necessary, inspecting any queue policy before restoring a s
 the affected services. Keep the original mounted store intact; neither update nor rollback
 formats disks, deletes real build objects or replaces `state/lock`. Never roll back to exposed
 credentials. For a new installation, obtain exact-head human review and complete host
-commissioning before enabling CI publication. Before selecting MIT as the default reader,
+commissioning before enabling CI publication. Before selecting MIT as the preferred reader,
 complete a real-build cold restore, exercise recovery and obtain separate cutover approval. Keep GCS
-publication and the opt-in MIT-first/GCS-second mirror list during testing.
+publication; the default order remains GCS-first/MIT-second. The MIT-first/GCS-second
+mirror list remains an explicit override during testing.
 
 References: [nginx request limits](https://nginx.org/en/docs/http/ngx_http_limit_req_module.html),
 [connection limits](https://nginx.org/en/docs/http/ngx_http_limit_conn_module.html),

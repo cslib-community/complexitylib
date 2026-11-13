@@ -53,7 +53,7 @@ theorem replacementCycles_word_fiber
       (CSP.mem_distinctVars.mp hv)⟩
   · obtain ⟨i, block, hb, rfl⟩ := hw
     obtain ⟨j, hj, rfl⟩ := List.mem_iff_getElem.mp hb
-    let a : Fin (gadgets F[i.val].1).numAux := ⟨j, by
+    let a : Fin (gadgets F[i.val].rel).numAux := ⟨j, by
       simpa only [length_auxiliaryBoundaryBlocks] using hj⟩
     refine ⟨2 * (B * i.val + j) + 1, fun index => ?_⟩
     have h := mem_shifted_auxiliaryBlock_iff_targetName gadgets witnesses B hB F i.isLt a index

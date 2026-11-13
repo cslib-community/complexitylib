@@ -35,8 +35,8 @@ variable {Src Rel : Type} {arity : Rel → ℕ} {sem : Rel → List Bool → Boo
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (witnesses : ∀ r, GadgetWitness (gadgets r)) (B : ℕ) (F : CSP Src ℕ) (i : Fin F.length)
     (x : Fin (incidenceGraph (replaceGadgets B (fun r => (gadgets r).template) F)).edges.length →
-      Bool) : Fin (srcArity F[i.val].1) → Bool :=
-  fun a => (((freeBoundaryBlocks (gadgets F[i.val].1) (witnesses F[i.val].1)).getD a.val []).map
+      Bool) : Fin (srcArity F[i.val].rel) → Bool :=
+  fun a => (((freeBoundaryBlocks (gadgets F[i.val].rel) (witnesses F[i.val].rel)).getD a.val []).map
     fun j => (List.ofFn x).getD
       (occurrencePrefix (fun r => (gadgets r).template) F i.val + j) false).sum
 
@@ -50,8 +50,8 @@ theorem sum_copiedFreeLabels_eq_false
       Bool)
     (hx : (incidenceGraph (replaceGadgets B (fun r => (gadgets r).template) F)).VertexEven x) :
     (List.ofFn (copiedFreeLabels gadgets witnesses B F i x)).sum = false := by
-  let g := gadgets F[i.val].1
-  let w := witnesses F[i.val].1
+  let g := gadgets F[i.val].rel
+  let w := witnesses F[i.val].rel
   let bit := fun j => (List.ofFn x).getD
     (occurrencePrefix (fun r => (gadgets r).template) F i.val + j) false
   have htotal : ((List.range g.body.occurrences.length).map bit).sum = false := by
@@ -78,7 +78,7 @@ theorem sum_copiedFreeLabels_eq_false
   rw [List.flatten_append, List.map_append, List.sum_append, haux, htotal] at hp
   have hfree : ((freeBoundaryBlocks g w).flatten.map bit).sum = false := by
     simpa only [← Bool.zero_eq_false, add_zero] using hp
-  change (List.ofFn fun a : Fin (srcArity F[i.val].1) =>
+  change (List.ofFn fun a : Fin (srcArity F[i.val].rel) =>
     (((freeBoundaryBlocks g w).getD a.val []).map bit).sum).sum = false
   rw [List.ofFn_getD_eq_map_of_length (fun block : List ℕ => (block.map bit).sum) []
     (length_freeBoundaryBlocks g w)]

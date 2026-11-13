@@ -39,7 +39,7 @@ variable {Src Rel : Type}
 /-- Number of target occurrences contributed by the actual preceding source constraints. -/
 @[expose] def occurrencePrefix (templates : Src → CSP Rel (Bool × ℕ))
     (F : CSP Src ℕ) (index : ℕ) : ℕ :=
-  ((F.take index).flatMap fun c => (templates c.1).vars).length
+  ((F.take index).flatMap fun c => (templates c.rel).vars).length
 
 /-- Shift one local occurrence block into its literal position in the flat-mapped body. -/
 @[expose] def shiftBlock (offset : ℕ) (block : List ℕ) : List ℕ :=
@@ -87,7 +87,7 @@ theorem mem_replacementCycles_iff (templates : Src → CSP Rel (Bool × ℕ))
     (c : Graph.RotationCertificate) (word : List ℕ) :
     word ∈ replacementCycles templates freeBlocks auxiliaryBlocks F c ↔
       (∃ v ∈ F.distinctVars, variableBlock templates freeBlocks F c v = word) ∨
-        ∃ i : Fin F.length, ∃ block ∈ auxiliaryBlocks F[i.val].1,
+        ∃ i : Fin F.length, ∃ block ∈ auxiliaryBlocks F[i.val].rel,
           shiftBlock (occurrencePrefix templates F i.val) block = word := by
   simp only [replacementCycles, List.mem_append, List.mem_map, List.mem_flatMap]
   apply or_congr Iff.rfl

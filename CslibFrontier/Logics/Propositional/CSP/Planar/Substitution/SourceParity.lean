@@ -108,7 +108,7 @@ theorem vertexParity_sourceEdgeLabels_constraint
   rw [vertexParity_eq_sum_scope]
   have hn := hF F[o.1.val] (List.getElem_mem o.1.isLt)
   rw [List.ofFn_congr hn]
-  have he := congrArg List.ofFn (funext fun a : Fin (srcArity F[o.1.val].1) =>
+  have he := congrArg List.ofFn (funext fun a : Fin (srcArity F[o.1.val].rel) =>
     sourceEdgeLabels_incidenceDart gadgets witnesses B F x
       (⟨o.1, Fin.cast hn.symm a⟩ : F.Occurrence) true a rfl)
   rw [he]

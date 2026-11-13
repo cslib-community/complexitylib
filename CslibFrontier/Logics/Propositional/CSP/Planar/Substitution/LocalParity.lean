@@ -32,16 +32,17 @@ theorem vertexParity_copiedEdgeLabels_auxiliary
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (witnesses : ∀ r, GadgetWitness (gadgets r)) (B : ℕ)
     (hB : ∀ r, (gadgets r).numAux ≤ B) (F : CSP Src ℕ) (i : Fin F.length)
-    (a : Fin (gadgets F[i.val].1).numAux)
+    (a : Fin (gadgets F[i.val].rel).numAux)
     (x : Fin (incidenceGraph (replaceGadgets B (fun r => (gadgets r).template) F)).edges.length →
       Bool)
     (hx : (incidenceGraph (replaceGadgets B (fun r => (gadgets r).template) F)).VertexEven x)
-    (o : (gadgets F[i.val].1).body.Occurrence) (ho : o.var = Sum.inr a) :
-    (incidenceGraph (gadgets F[i.val].1).body).vertexParity
+    (o : (gadgets F[i.val].rel).body.Occurrence) (ho : o.var = Sum.inr a) :
+    (incidenceGraph (gadgets F[i.val].rel).body).vertexParity
       (copiedEdgeLabels gadgets B F i x) (incidenceDart o false).vertex = false := by
-  let word := (auxiliaryBoundaryBlocks (gadgets F[i.val].1) (witnesses F[i.val].1)).getD a.val []
+  let word :=
+    (auxiliaryBoundaryBlocks (gadgets F[i.val].rel) (witnesses F[i.val].rel)).getD a.val []
   have hn : word.Nodup := nodup_auxiliaryBoundaryBlock _ _ a
-  have hw (j : ℕ) : j ∈ word ↔ ∃ p : (gadgets F[i.val].1).body.Occurrence,
+  have hw (j : ℕ) : j ∈ word ↔ ∃ p : (gadgets F[i.val].rel).body.Occurrence,
       incidenceEdgeIndex p = j ∧ p.var = o.var := by
     rw [ho]
     exact mem_auxiliaryBoundaryBlock_iff _ _ a j

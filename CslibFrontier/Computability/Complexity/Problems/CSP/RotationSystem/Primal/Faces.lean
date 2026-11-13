@@ -136,7 +136,7 @@ noncomputable def polygonFaceOrbitEquiv (r : Graph.RotationSystem (incidenceGrap
 /-- Every positive constraint position, including duplicate constraint records, has exactly
 one scope orbit. Nullary constraints are explicitly excluded by the hypothesis. -/
 noncomputable def argumentOrbitEquiv (F : CSP Rel V)
-    (hPos : ∀ i : Fin F.length, 0 < F[i.val].2.length) :
+    (hPos : ∀ i : Fin F.length, 0 < F[i.val].scope.length) :
     Quotient (Equiv.Perm.SameCycle.setoid (argumentPermutation F)) ≃ Fin F.length where
   toFun := Quotient.lift Sigma.fst (fun _ _ h => sameCycle_argumentPermutation _ _ |>.mp h)
   invFun i := Quotient.mk _ ⟨i, ⟨0, hPos i⟩⟩
@@ -150,7 +150,7 @@ noncomputable def argumentOrbitEquiv (F : CSP Rel V)
 positive scope, and one white face per incidence face. -/
 noncomputable def polygonFaceEquiv (r : Graph.RotationSystem (incidenceGraph F))
     (hOrder : RespectsArgumentOrder r)
-    (hPos : ∀ i : Fin F.length, 0 < F[i.val].2.length) :
+    (hPos : ∀ i : Fin F.length, 0 < F[i.val].scope.length) :
     (polygonRotation r).Face ≃ Fin F.length ⊕ r.Face :=
   (polygonFaceOrbitEquiv r).trans
     (Equiv.sumCongr (argumentOrbitEquiv F hPos) (incidenceFaceOrbitEquiv r hOrder).symm)
@@ -158,7 +158,7 @@ noncomputable def polygonFaceEquiv (r : Graph.RotationSystem (incidenceGraph F))
 /-- The black face of an occurrence is indexed by its actual constraint position. -/
 theorem polygonFaceEquiv_black (r : Graph.RotationSystem (incidenceGraph F))
     (hOrder : RespectsArgumentOrder r)
-    (hPos : ∀ i : Fin F.length, 0 < F[i.val].2.length) (o : F.Occurrence) :
+    (hPos : ∀ i : Fin F.length, 0 < F[i.val].scope.length) (o : F.Occurrence) :
     polygonFaceEquiv r hOrder hPos (Quotient.mk _ (polygonDart o false)) = .inl o.1 := by
   let e : Quotient (Equiv.Perm.SameCycle.setoid
       (Equiv.sumCongr (argumentPermutation F) (incidenceSquarePermutation r))) ≃
@@ -196,7 +196,7 @@ theorem incidenceFaceOrbitEquiv_mk_false (r : Graph.RotationSystem (incidenceGra
 dart `o`. This states the conjugation, not merely an equality of face counts. -/
 theorem polygonFaceEquiv_white (r : Graph.RotationSystem (incidenceGraph F))
     (hOrder : RespectsArgumentOrder r)
-    (hPos : ∀ i : Fin F.length, 0 < F[i.val].2.length) (o : F.Occurrence) :
+    (hPos : ∀ i : Fin F.length, 0 < F[i.val].scope.length) (o : F.Occurrence) :
     polygonFaceEquiv r hOrder hPos
       (Quotient.mk _ (polygonDart ((argumentPermutation F).symm o) true)) =
       .inr (Quotient.mk _ (incidenceDart o false)) := by
@@ -219,7 +219,7 @@ theorem polygonFaceEquiv_white (r : Graph.RotationSystem (incidenceGraph F))
 /-- Each edge has distinct black and white incident faces, even for a listed loop. -/
 theorem polygon_edge_faces_distinct (r : Graph.RotationSystem (incidenceGraph F))
     (hOrder : RespectsArgumentOrder r)
-    (hPos : ∀ i : Fin F.length, 0 < F[i.val].2.length) (o : F.Occurrence) :
+    (hPos : ∀ i : Fin F.length, 0 < F[i.val].scope.length) (o : F.Occurrence) :
     (Quotient.mk _ (polygonDart o false) : (polygonRotation r).Face) ≠
       Quotient.mk _ (polygonDart o true) := by
   have hw := polygonFaceEquiv_white r hOrder hPos (argumentPermutation F o)
@@ -232,19 +232,19 @@ theorem polygon_edge_faces_distinct (r : Graph.RotationSystem (incidenceGraph F)
 /-- The black face at an actual constraint position. Positive scopes provide its darts. -/
 @[expose] noncomputable def blackFace (r : Graph.RotationSystem (incidenceGraph F))
     (hOrder : RespectsArgumentOrder r)
-    (hPos : ∀ i : Fin F.length, 0 < F[i.val].2.length) (i : Fin F.length) :
+    (hPos : ∀ i : Fin F.length, 0 < F[i.val].scope.length) (i : Fin F.length) :
     (polygonRotation r).Face := (polygonFaceEquiv r hOrder hPos).symm (.inl i)
 
 /-- The white face corresponding to an original incidence face. -/
 @[expose] noncomputable def whiteFace (r : Graph.RotationSystem (incidenceGraph F))
     (hOrder : RespectsArgumentOrder r)
-    (hPos : ∀ i : Fin F.length, 0 < F[i.val].2.length) (f : r.Face) :
+    (hPos : ∀ i : Fin F.length, 0 < F[i.val].scope.length) (f : r.Face) :
     (polygonRotation r).Face := (polygonFaceEquiv r hOrder hPos).symm (.inr f)
 
 /-- Every argument dart of a constraint represents its indexed black face. -/
 theorem blackFace_eq_mk (r : Graph.RotationSystem (incidenceGraph F))
     (hOrder : RespectsArgumentOrder r)
-    (hPos : ∀ i : Fin F.length, 0 < F[i.val].2.length) (o : F.Occurrence) :
+    (hPos : ∀ i : Fin F.length, 0 < F[i.val].scope.length) (o : F.Occurrence) :
     blackFace r hOrder hPos o.1 = Quotient.mk _ (polygonDart o false) := by
   unfold blackFace
   rw [Equiv.symm_apply_eq]
@@ -253,7 +253,7 @@ theorem blackFace_eq_mk (r : Graph.RotationSystem (incidenceGraph F))
 /-- A variable dart's incidence face gives the white face on the preceding polygon edge. -/
 theorem whiteFace_eq_mk (r : Graph.RotationSystem (incidenceGraph F))
     (hOrder : RespectsArgumentOrder r)
-    (hPos : ∀ i : Fin F.length, 0 < F[i.val].2.length) (o : F.Occurrence) :
+    (hPos : ∀ i : Fin F.length, 0 < F[i.val].scope.length) (o : F.Occurrence) :
     whiteFace r hOrder hPos (Quotient.mk _ (incidenceDart o false)) =
       Quotient.mk _ (polygonDart ((argumentPermutation F).symm o) true) := by
   unfold whiteFace
@@ -263,7 +263,7 @@ theorem whiteFace_eq_mk (r : Graph.RotationSystem (incidenceGraph F))
 /-- Every face is covered by the indexed black or white map. -/
 theorem exists_blackFace_or_whiteFace (r : Graph.RotationSystem (incidenceGraph F))
     (hOrder : RespectsArgumentOrder r)
-    (hPos : ∀ i : Fin F.length, 0 < F[i.val].2.length) (f : (polygonRotation r).Face) :
+    (hPos : ∀ i : Fin F.length, 0 < F[i.val].scope.length) (f : (polygonRotation r).Face) :
     (∃ i, blackFace r hOrder hPos i = f) ∨ (∃ w, whiteFace r hOrder hPos w = f) := by
   obtain ⟨i | w, h⟩ := (polygonFaceEquiv r hOrder hPos).symm.surjective f
   · exact .inl ⟨i, h⟩

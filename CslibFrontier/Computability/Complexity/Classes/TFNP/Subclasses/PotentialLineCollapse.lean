@@ -508,13 +508,11 @@ theorem mem_EOPL_of_sinkOfPotentialLine_endOfLine (hR : R ∈ FNP enc)
     (hP₁ : ComputableInPolyTime P₁ (encPair enc encBits) encBits)
     (hS₁ : ComputableInPolyTime S₁ (encPair enc encBits) encBits)
     (hV₁ : ComputableInPolyTime V₁ (encPair enc encBits) encNat)
-    (hP₁_len : ∀ a u, u.length = n₁ a → (P₁ (a, u)).length = n₁ a)
-    (hS₁_len : ∀ a u, u.length = n₁ a → (S₁ (a, u)).length = n₁ a)
+    (hP₁_len : PreservesWidth n₁ P₁) (hS₁_len : PreservesWidth n₁ S₁)
     (hn₂ : ComputableInPolyTime n₂ enc encUnary)
     (hP₂ : ComputableInPolyTime P₂ (encPair enc encBits) encBits)
     (hS₂ : ComputableInPolyTime S₂ (encPair enc encBits) encBits)
-    (hP₂_len : ∀ a u, u.length = n₂ a → (P₂ (a, u)).length = n₂ a)
-    (hS₂_len : ∀ a u, u.length = n₂ a → (S₂ (a, u)).length = n₂ a)
+    (hP₂_len : PreservesWidth n₂ P₂) (hS₂_len : PreservesWidth n₂ S₂)
     {g₁ g₂ : α × List Bool → List Bool}
     (hg₁ : ComputableInPolyTime g₁ (encPair enc encBits) encBits)
     (hg₂ : ComputableInPolyTime g₂ (encPair enc encBits) encBits)
@@ -534,12 +532,10 @@ theorem mem_EOPL_of_sinkOfPotentialLine_endOfLine (hR : R ∈ FNP enc)
   have hg : ComputableInPolyTime g (encPair enc encBits) encBits := by
     simp only [g, sinkTest]
     fun_prop
-  have hSucc_len (a : α) (w : List Bool) (hw : w.length = n₂ a + n₁ a + 1) :
-      (soplPpadSucc n₁ P₁ S₁ V₁ n₂ P₂ S₂ (a, w)).length = n₂ a + n₁ a + 1 :=
-    length_soplPpadSucc (hP₁_len a) (hS₁_len a) (hS₂_len a) hw
-  have hPred_len (a : α) (w : List Bool) (hw : w.length = n₂ a + n₁ a + 1) :
-      (soplPpadPred n₁ P₁ S₁ V₁ n₂ P₂ S₂ (a, w)).length = n₂ a + n₁ a + 1 :=
-    length_soplPpadPred (hP₁_len a) (hS₁_len a) (hP₂_len a) hw
+  have hSucc_len : PreservesWidth (fun a => n₂ a + n₁ a + 1) (soplPpadSucc n₁ P₁ S₁ V₁ n₂ P₂ S₂) :=
+    fun a _ hw => length_soplPpadSucc (hP₁_len a) (hS₁_len a) (hS₂_len a) hw
+  have hPred_len : PreservesWidth (fun a => n₂ a + n₁ a + 1) (soplPpadPred n₁ P₁ S₁ V₁ n₂ P₂ S₂) :=
+    fun a _ hw => length_soplPpadPred (hP₁_len a) (hS₁_len a) (hP₂_len a) hw
   refine ⟨hR, fun a => n₂ a + n₁ a + 1, soplPpadPred n₁ P₁ S₁ V₁ n₂ P₂ S₂,
     soplPpadSucc n₁ P₁ S₁ V₁ n₂ P₂ S₂, soplPpadPotential V₁ n₂ (fun a => 2 ^ m a), hN,
     computableInPolyTime_soplPpadPred hn₁ hP₁ hS₁ hV₁ hn₂ hP₂ hS₂,

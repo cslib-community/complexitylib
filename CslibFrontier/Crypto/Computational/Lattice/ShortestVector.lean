@@ -76,8 +76,13 @@ section Normed
 variable {E : Type*} [NormedAddCommGroup E]
 
 /-- `v` solves search `SVP_γ` on `L`: it is a nonzero vector of `L` with `‖v‖ ≤ γ · λ₁(L)`. -/
-def SVP.IsSolution (γ : ℝ) (L : Submodule ℤ E) (v : E) : Prop :=
-  v ∈ L ∧ v ≠ 0 ∧ ‖v‖ ≤ γ * minimum L
+structure SVP.IsSolution (γ : ℝ) (L : Submodule ℤ E) (v : E) : Prop where
+  /-- The solution is a vector of `L`. -/
+  mem : v ∈ L
+  /-- The solution is nonzero. -/
+  ne_zero : v ≠ 0
+  /-- The solution is within the factor `γ` of the first minimum: `‖v‖ ≤ γ · λ₁(L)`. -/
+  norm_le : ‖v‖ ≤ γ * minimum L
 
 /-- A YES instance `(L, d)` of `GapSVP_γ`: `λ₁(L) ≤ d`. -/
 def GapSVP.IsYes (L : Submodule ℤ E) (d : ℝ) : Prop :=
@@ -99,7 +104,7 @@ noncomputable def GapSVP.decideOfSVP (γ d : ℝ) (v : E) : Bool :=
 
 theorem SVP.IsSolution.mono {γ γ' : ℝ} {L : Submodule ℤ E} {v : E} (hv : SVP.IsSolution γ L v)
     (hγ : γ ≤ γ') : SVP.IsSolution γ' L v :=
-  ⟨hv.1, hv.2.1, hv.2.2.trans (mul_le_mul_of_nonneg_right hγ (minimum_nonneg L))⟩
+  ⟨hv.mem, hv.ne_zero, hv.norm_le.trans (mul_le_mul_of_nonneg_right hγ (minimum_nonneg L))⟩
 
 /-- For `γ ≥ 1` no instance of `GapSVP_γ` is both a YES and a NO instance. -/
 theorem GapSVP.not_isYes_and_isNo {γ : ℝ} (hγ : 1 ≤ γ) (L : Submodule ℤ E) (d : ℝ) :
@@ -114,8 +119,8 @@ solution with `γ · d` answers `GapSVP_γ` correctly on `(L, d)`. -/
 theorem GapSVP.isCorrect_decideOfSVP {γ : ℝ} (hγ : 0 ≤ γ) {L : Submodule ℤ E} {v : E}
     (hv : SVP.IsSolution γ L v) (d : ℝ) : GapSVP.IsCorrect γ L d (GapSVP.decideOfSVP γ d v) := by
   refine ⟨fun hy => decide_eq_true ?_, fun hn => decide_eq_false (not_le.2 ?_)⟩
-  · exact hv.2.2.trans (mul_le_mul_of_nonneg_left hy hγ)
-  · exact lt_of_lt_of_le hn (minimum_le_norm hv.1 hv.2.1)
+  · exact hv.norm_le.trans (mul_le_mul_of_nonneg_left hy hγ)
+  · exact lt_of_lt_of_le hn (minimum_le_norm hv.mem hv.ne_zero)
 
 variable [ProperSpace E]
 
@@ -128,9 +133,9 @@ theorem SVP.exists_isSolution_one {L : Submodule ℤ E} [DiscreteTopology L] (hL
 /-- On a discrete lattice, `SVP_γ` has solutions only for `γ ≥ 1`. -/
 theorem SVP.IsSolution.one_le {γ : ℝ} {L : Submodule ℤ E} [DiscreteTopology L] {v : E}
     (hv : SVP.IsSolution γ L v) : 1 ≤ γ := by
-  have hL : L ≠ ⊥ := (Submodule.ne_bot_iff L).2 ⟨v, hv.1, hv.2.1⟩
+  have hL : L ≠ ⊥ := (Submodule.ne_bot_iff L).2 ⟨v, hv.mem, hv.ne_zero⟩
   have hpos := minimum_pos hL
-  have h := (minimum_le_norm hv.1 hv.2.1).trans hv.2.2
+  have h := (minimum_le_norm hv.mem hv.ne_zero).trans hv.norm_le
   by_contra hγ
   nlinarith
 
@@ -146,13 +151,18 @@ return fewer vectors than the rank; for a full-rank lattice `n` is the dimension
 (`ZLattice.rank`). For a discrete lattice in a finite-dimensional space `finrank ℤ L` is its rank;
 on a `ℤ`-submodule that is not finitely generated `finrank ℤ L` is the junk value `0`, so the
 predicate is meant for discrete lattices. -/
-def SIVP.IsSolution (γ : ℝ) (L : Submodule ℤ E) (v : Fin (finrank ℤ L) → E) : Prop :=
-  LinearIndependent ℝ v ∧ ∀ i, v i ∈ L ∧ ‖v i‖ ≤ γ * successiveMinimum L (finrank ℤ L)
+structure SIVP.IsSolution (γ : ℝ) (L : Submodule ℤ E) (v : Fin (finrank ℤ L) → E) : Prop where
+  /-- The vectors are linearly independent over `ℝ`. -/
+  linearIndependent : LinearIndependent ℝ v
+  /-- Every vector lies in `L`. -/
+  mem : ∀ i, v i ∈ L
+  /-- Every vector has norm at most `γ · λ_n(L)`. -/
+  norm_le : ∀ i, ‖v i‖ ≤ γ * successiveMinimum L (finrank ℤ L)
 
 theorem SIVP.IsSolution.mono {γ γ' : ℝ} {L : Submodule ℤ E} {v : Fin (finrank ℤ L) → E}
     (hv : SIVP.IsSolution γ L v) (hγ : γ ≤ γ') : SIVP.IsSolution γ' L v :=
-  ⟨hv.1, fun i => ⟨(hv.2 i).1, (hv.2 i).2.trans
-    (mul_le_mul_of_nonneg_right hγ (successiveMinimum_nonneg L _))⟩⟩
+  ⟨hv.linearIndependent, hv.mem, fun i => (hv.norm_le i).trans
+    (mul_le_mul_of_nonneg_right hγ (successiveMinimum_nonneg L _))⟩
 
 /-- On a full-rank discrete lattice of positive dimension `n` in a finite-dimensional space,
 `SIVP_γ` has solutions only for `γ ≥ 1`. -/
@@ -162,10 +172,10 @@ theorem SIVP.IsSolution.one_le [FiniteDimensional ℝ E] [ProperSpace E] {γ : �
   have hrank : finrank ℤ L = finrank ℝ E := ZLattice.rank ℝ L
   have hn' : 1 ≤ finrank ℤ L := by omega
   let i₀ : Fin (finrank ℤ L) := ⟨0, hn'⟩
-  have hL : L ≠ ⊥ := (Submodule.ne_bot_iff L).2 ⟨v i₀, (hv.2 i₀).1, hv.1.ne_zero i₀⟩
-  have hr : 0 ≤ γ * successiveMinimum L (finrank ℤ L) := (norm_nonneg _).trans (hv.2 i₀).2
-  have hle := successiveMinimum_le_of_linearIndependent hv.1 (fun i => (hv.2 i).1) hr
-    (fun i => (hv.2 i).2)
+  have hL : L ≠ ⊥ :=
+    (Submodule.ne_bot_iff L).2 ⟨v i₀, hv.mem i₀, hv.linearIndependent.ne_zero i₀⟩
+  have hr : 0 ≤ γ * successiveMinimum L (finrank ℤ L) := (norm_nonneg _).trans (hv.norm_le i₀)
+  have hle := successiveMinimum_le_of_linearIndependent hv.linearIndependent hv.mem hr hv.norm_le
   have hpos := (minimum_pos hL).trans_le (minimum_le_successiveMinimum L hL hn' hrank.le)
   by_contra hγ
   nlinarith
@@ -203,9 +213,14 @@ nonzero vector of `L` with `‖v‖ ≤ γ · det(L)^{1/n}`. The predicate carri
 discreteness assumption, and `covolume L` has its meaning as the lattice determinant only for
 full-rank discrete lattices (`[DiscreteTopology L] [IsZLattice ℝ L]`), which is where the
 predicate should be read. -/
-def HSVP.IsSolution (γ : ℝ) (L : Submodule ℤ (EuclideanSpace ℝ ι)) (v : EuclideanSpace ℝ ι) :
-    Prop :=
-  v ∈ L ∧ v ≠ 0 ∧ ‖v‖ ≤ γ * covolume L ^ ((Fintype.card ι : ℝ)⁻¹)
+structure HSVP.IsSolution (γ : ℝ) (L : Submodule ℤ (EuclideanSpace ℝ ι))
+    (v : EuclideanSpace ℝ ι) : Prop where
+  /-- The solution is a vector of `L`. -/
+  mem : v ∈ L
+  /-- The solution is nonzero. -/
+  ne_zero : v ≠ 0
+  /-- The solution is within the factor `γ` of the root determinant: `‖v‖ ≤ γ · det(L)^{1/n}`. -/
+  norm_le : ‖v‖ ≤ γ * covolume L ^ ((Fintype.card ι : ℝ)⁻¹)
 
 /-- By Minkowski's bound `λ₁(L) ≤ √n · det(L)^{1/n}`, an `SVP_γ` solution with `γ ≥ 0` on a
 full-rank lattice in `EuclideanSpace ℝ ι`, `n = |ι| ≥ 1`, solves `HSVP_{γ√n}`. -/
@@ -213,7 +228,7 @@ theorem SVP.IsSolution.hsvp [Nonempty ι] {γ : ℝ} (hγ : 0 ≤ γ)
     {L : Submodule ℤ (EuclideanSpace ℝ ι)} [DiscreteTopology L] [IsZLattice ℝ L]
     {v : EuclideanSpace ℝ ι} (hv : SVP.IsSolution γ L v) :
     HSVP.IsSolution (γ * Real.sqrt (Fintype.card ι)) L v := by
-  refine ⟨hv.1, hv.2.1, hv.2.2.trans ?_⟩
+  refine ⟨hv.mem, hv.ne_zero, hv.norm_le.trans ?_⟩
   rw [mul_assoc]
   exact mul_le_mul_of_nonneg_left (minimum_le_sqrt_mul_covolume_rpow L) hγ
 

@@ -213,7 +213,27 @@ theorem nonvacuous_fin3_weighted_sampling :
   simpa only [Fintype.card_fin, hnv, Nat.cast_ofNat] using
     F.exists_sample_score_abs_sub_ge_le neqFin3 (by decide) 20 hw (by norm_num)
 
-/-! ### 5. Fixed-width SAT reduction, `O(log m)` binary search, and native solver transfer -/
+/-! ### 5. Encoded words of constraints and `Max-CSP` instances
+
+`Constraint` is a structure and `MaxCSPInstance` stores a `CSP`, but the encodings still write
+the same words as the pair encodings they replaced (`encMaxConstraint` encoded `(c.rel, c.scope)`
+with `encPair encRel (encList encNat)`). -/
+
+example {Rel V : Type} (encRel : Rel ↪ List Bool) (encV : V ↪ List Bool) (c : Constraint Rel V) :
+    encConstraint encRel encV c = encPair encRel (encList encV) (c.rel, c.scope) := rfl
+
+example {Rel : Type} (encRel : Rel ↪ List Bool) (F : MaxCSPInstance Rel ℕ) :
+    encMaxCSPInstance encRel F =
+      encPair encUnary (encList (encPair encRel (encList encNat)))
+        (F.numVars, F.constraints.map fun c => (c.rel, c.scope)) := by
+  simp only [encMaxCSPInstance_apply, encPair_apply, encList, Function.Embedding.coeFn_mk,
+    List.flatMap_map, Function.comp_def, encConstraint_apply]
+
+example : encMaxCSPInstance encUnit xorCycleCSP =
+    encPair encUnary (encList (encPair encUnit (encList encNat)))
+      (3, [((), [0, 1]), ((), [1, 2]), ((), [0, 2])]) := rfl
+
+/-! ### 6. Fixed-width SAT reduction, `O(log m)` binary search, and native solver transfer -/
 
 /-- Unsatisfiable 4-clause 2-CNF instance (`optimum = 3`). -/
 def fourClauseInst : StructInstance where

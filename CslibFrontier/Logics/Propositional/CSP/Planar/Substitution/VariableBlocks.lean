@@ -107,7 +107,7 @@ theorem range_incidenceBlocks_eq (templates : Src → CSP Rel (Bool × ℕ))
 The only arity premise is equality of the actual source scope and local free-word lengths. -/
 theorem flatten_incidenceBlocks_eq (templates : Src → CSP Rel (Bool × ℕ))
     (freeBlocks : Src → List (List ℕ)) (F : CSP Src ℕ)
-    (hfree : ∀ c ∈ F, (freeBlocks c.1).length = c.2.length) :
+    (hfree : ∀ c ∈ F, (freeBlocks c.rel).length = c.scope.length) :
     ((List.range F.occurrences.length).flatMap fun i =>
       incidenceBlock templates freeBlocks F (2 * i)) =
       F.zipIdx.flatMap fun ⟨⟨relation, _⟩, i⟩ =>

@@ -33,7 +33,7 @@ variable {Src Rel : Type} {arity : Rel → ℕ} {sem : Rel → List Bool → Boo
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (B : ℕ) (F : CSP Src ℕ) (i : Fin F.length)
     (x : Fin (incidenceGraph (replaceGadgets B (fun r => (gadgets r).template) F)).edges.length →
-      Bool) : Fin (incidenceGraph (gadgets F[i.val].1).body).edges.length → Bool :=
+      Bool) : Fin (incidenceGraph (gadgets F[i.val].rel).body).edges.length → Bool :=
   fun j => (List.ofFn x).getD
     (occurrencePrefix (fun r => (gadgets r).template) F i.val + j.val) false
 
@@ -42,7 +42,7 @@ theorem copiedEdgeLabels_incidenceDart
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (B : ℕ) (F : CSP Src ℕ) (i : Fin F.length)
     (x : Fin (incidenceGraph (replaceGadgets B (fun r => (gadgets r).template) F)).edges.length →
-      Bool) (o : (gadgets F[i.val].1).body.Occurrence) (side : Bool) :
+      Bool) (o : (gadgets F[i.val].rel).body.Occurrence) (side : Bool) :
     copiedEdgeLabels gadgets B F i x (incidenceDart o side).1 =
       x (incidenceDart (replacementOccurrence gadgets B F i o) side).1 := by
   unfold copiedEdgeLabels
@@ -58,8 +58,8 @@ theorem vertexParity_copiedEdgeLabels_constraint
     (x : Fin (incidenceGraph (replaceGadgets B (fun r => (gadgets r).template) F)).edges.length →
       Bool)
     (hx : (incidenceGraph (replaceGadgets B (fun r => (gadgets r).template) F)).VertexEven x)
-    (o : (gadgets F[i.val].1).body.Occurrence) :
-    (incidenceGraph (gadgets F[i.val].1).body).vertexParity
+    (o : (gadgets F[i.val].rel).body.Occurrence) :
+    (incidenceGraph (gadgets F[i.val].rel).body).vertexParity
       (copiedEdgeLabels gadgets B F i x) (incidenceDart o true).vertex = false := by
   rw [vertexParity_incidenceDart]
   have h := sum_copied_constraint_eq_false gadgets B F i o x hx

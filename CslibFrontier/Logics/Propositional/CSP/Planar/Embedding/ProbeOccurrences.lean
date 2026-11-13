@@ -131,7 +131,7 @@ theorem record_bodyOccurrence (F : CSP Rel V) (ports : List V) (o : F.Occurrence
 omit [DecidableEq V] in
 /-- Appending the probe retains the complete original scope at each indexed body row. -/
 theorem scope_bodyOccurrence (F : CSP Rel V) (ports : List V) (o : F.Occurrence) :
-    (probeBody F ports)[(bodyOccurrence F ports o).1.val].2 = F[o.1.val].2 := by
+    (probeBody F ports)[(bodyOccurrence F ports o).1.val].2 = F[o.1.val].scope := by
   have hrow : (bodyOccurrence F ports o).1.val = o.1.val :=
     congrArg Prod.fst (record_bodyOccurrence F ports o)
   simp [hrow, probeBody, o.1.isLt]

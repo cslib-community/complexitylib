@@ -44,7 +44,7 @@ theorem getElem_template_vars_occurrence {n : ℕ} {R : Set (Fin n → Bool)}
 theorem copyIndex_lt_gadgetOccurrence
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (B : ℕ) (F : CSP Src ℕ) {i : ℕ} (hi : i < F.length)
-    (o : (gadgets F[i].1).body.Occurrence) :
+    (o : (gadgets F[i].rel).body.Occurrence) :
     occurrencePrefix (fun r => (gadgets r).template) F i + incidenceEdgeIndex o <
       (replaceGadgets B (fun r => (gadgets r).template) F).vars.length := by
   apply copyIndex_lt B _ F hi
@@ -55,13 +55,13 @@ theorem copyIndex_lt_gadgetOccurrence
 theorem getElem_vars_gadgetCopy
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (B : ℕ) (F : CSP Src ℕ) {i : ℕ} (hi : i < F.length)
-    (o : (gadgets F[i].1).body.Occurrence) :
+    (o : (gadgets F[i].rel).body.Occurrence) :
     (replaceGadgets B (fun r => (gadgets r).template) F).vars[
       occurrencePrefix (fun r => (gadgets r).template) F i + incidenceEdgeIndex o]'
         (copyIndex_lt_gadgetOccurrence gadgets B F hi o) =
-      Sum.elim (fun a => 2 * F[i].2.getD a.val 0)
+      Sum.elim (fun a => 2 * F[i].scope.getD a.val 0)
         (fun j => 2 * (B * i + j.val) + 1) o.var := by
-  have hj : incidenceEdgeIndex o < (gadgets F[i].1).template.vars.length := by
+  have hj : incidenceEdgeIndex o < (gadgets F[i].rel).template.vars.length := by
     simpa only [PPGadget.template, vars_relabel, List.length_map] using
       incidenceEdgeIndex_lt_vars o
   have h := getElem_vars_copyIndex B (fun r => (gadgets r).template) F hi hj
@@ -76,14 +76,14 @@ theorem exists_gadgetCopy
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (B : ℕ) (F : CSP Src ℕ) {index : ℕ}
     (hi : index < (replaceGadgets B (fun r => (gadgets r).template) F).vars.length) :
-    ∃ (i : ℕ) (hi : i < F.length) (o : (gadgets F[i].1).body.Occurrence),
+    ∃ (i : ℕ) (hi : i < F.length) (o : (gadgets F[i].rel).body.Occurrence),
       occurrencePrefix (fun r => (gadgets r).template) F i + incidenceEdgeIndex o = index := by
   obtain ⟨i, hi, j, hj, he⟩ := exists_copyIndex B (fun r => (gadgets r).template) F hi
-  have hb : j < (incidenceGraph (gadgets F[i].1).body).edges.length := by
+  have hb : j < (incidenceGraph (gadgets F[i].rel).body).edges.length := by
     simp only [PPGadget.template, vars_relabel, List.length_map] at hj
     simpa only [incidenceGraph_edges, List.length_map, ← CSP.map_occurrences,
       List.length_map] using hj
-  obtain ⟨o, ho⟩ := exists_incidenceEdgeIndex (F := (gadgets F[i].1).body) j hb
+  obtain ⟨o, ho⟩ := exists_incidenceEdgeIndex (F := (gadgets F[i].rel).body) j hb
   exact ⟨i, hi, o, by rw [ho]; exact he.symm⟩
 
 /-- Every copied variable-word entry is a bounded target position carrying precisely its
@@ -92,12 +92,12 @@ theorem shifted_boundaryBlock_spec
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (witnesses : ∀ r, GadgetWitness (gadgets r)) (B : ℕ) (F : CSP Src ℕ)
     {i : ℕ} (hi : i < F.length)
-    (v : Fin (srcArity F[i].1) ⊕ Fin (gadgets F[i].1).numAux) {index : ℕ}
+    (v : Fin (srcArity F[i].rel) ⊕ Fin (gadgets F[i].rel).numAux) {index : ℕ}
     (hm : index ∈ shiftBlock (occurrencePrefix (fun r => (gadgets r).template) F i)
-      (boundaryBlock (gadgets F[i].1) (witnesses F[i].1) v)) :
+      (boundaryBlock (gadgets F[i].rel) (witnesses F[i].rel) v)) :
     index < (replaceGadgets B (fun r => (gadgets r).template) F).vars.length ∧
       (replaceGadgets B (fun r => (gadgets r).template) F).vars.getD index 0 =
-        Sum.elim (fun a => 2 * F[i].2.getD a.val 0)
+        Sum.elim (fun a => 2 * F[i].scope.getD a.val 0)
           (fun j => 2 * (B * i + j.val) + 1) v := by
   obtain ⟨o, ho, hvar⟩ := (mem_shiftBlock_boundaryBlock_iff _ _ _ v index).mp hm
   rw [← ho]
@@ -109,11 +109,11 @@ theorem shifted_boundaryBlock_spec
 theorem getD_vars_of_mem_shifted_freeBlock
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (witnesses : ∀ r, GadgetWitness (gadgets r)) (B : ℕ) (F : CSP Src ℕ)
-    {i : ℕ} (hi : i < F.length) (a : Fin (srcArity F[i].1)) {index : ℕ}
+    {i : ℕ} (hi : i < F.length) (a : Fin (srcArity F[i].rel)) {index : ℕ}
     (hm : index ∈ shiftBlock (occurrencePrefix (fun r => (gadgets r).template) F i)
-      ((freeBoundaryBlocks (gadgets F[i].1) (witnesses F[i].1)).getD a.val [])) :
+      ((freeBoundaryBlocks (gadgets F[i].rel) (witnesses F[i].rel)).getD a.val [])) :
     (replaceGadgets B (fun r => (gadgets r).template) F).vars.getD index 0 =
-      2 * F[i].2.getD a.val 0 := by
+      2 * F[i].scope.getD a.val 0 := by
   simpa only [Sum.elim_inl] using
     (shifted_boundaryBlock_spec gadgets witnesses B F hi (Sum.inl a) hm).2
 
@@ -121,9 +121,9 @@ theorem getD_vars_of_mem_shifted_freeBlock
 theorem getD_vars_of_mem_shifted_auxiliaryBlock
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (witnesses : ∀ r, GadgetWitness (gadgets r)) (B : ℕ) (F : CSP Src ℕ)
-    {i : ℕ} (hi : i < F.length) (a : Fin (gadgets F[i].1).numAux) {index : ℕ}
+    {i : ℕ} (hi : i < F.length) (a : Fin (gadgets F[i].rel).numAux) {index : ℕ}
     (hm : index ∈ shiftBlock (occurrencePrefix (fun r => (gadgets r).template) F i)
-      ((auxiliaryBoundaryBlocks (gadgets F[i].1) (witnesses F[i].1)).getD a.val [])) :
+      ((auxiliaryBoundaryBlocks (gadgets F[i].rel) (witnesses F[i].rel)).getD a.val [])) :
     (replaceGadgets B (fun r => (gadgets r).template) F).vars.getD index 0 =
       2 * (B * i + a.val) + 1 := by
   simpa only [Sum.elim_inr] using

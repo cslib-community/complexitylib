@@ -47,13 +47,13 @@ variable {Src Rel : Type} {arity : Rel → ℕ} {sem : Rel → List Bool → Boo
   {srcArity : Src → ℕ} {srcSem : Src → List Bool → Bool}
 
 private def sourcePort (F : CSP Src ℕ) (hF : WellFormed srcArity F) (i : Fin F.length)
-    (a : Fin (srcArity F[i.val].1)) : F.Occurrence :=
+    (a : Fin (srcArity F[i.val].rel)) : F.Occurrence :=
   ⟨i, Fin.cast (hF F[i.val] (List.getElem_mem i.isLt)).symm a⟩
 
 private theorem argumentSuccessor_sourcePort (F : CSP Src ℕ) (hF : WellFormed srcArity F)
-    (i : Fin F.length) (a : Fin (srcArity F[i.val].1)) :
+    (i : Fin F.length) (a : Fin (srcArity F[i.val].rel)) :
     argumentSuccessor (sourcePort F hF i a) =
-      sourcePort F hF i (finRotate (srcArity F[i.val].1) a) := by
+      sourcePort F hF i (finRotate (srcArity F[i.val].rel) a) := by
   apply CSP.Occurrence.eq_of_positions
   · rfl
   · simp only [argumentSuccessor, sourcePort, val_finRotate, Fin.val_cast,
@@ -64,7 +64,7 @@ private theorem sourceEdgeLabels_sourcePort
     (witnesses : ∀ r, GadgetWitness (gadgets r)) (B : ℕ) (F : CSP Src ℕ)
     (hF : WellFormed srcArity F) (i : Fin F.length)
     (x : Fin (incidenceGraph (replaceGadgets B (fun r => (gadgets r).template) F)).edges.length →
-      Bool) (a : Fin (srcArity F[i.val].1)) (side : Bool) :
+      Bool) (a : Fin (srcArity F[i.val].rel)) (side : Bool) :
     sourceEdgeLabels gadgets witnesses B F x (incidenceDart (sourcePort F hF i a) side).1 =
       copiedFreeLabels gadgets witnesses B F i x a :=
   sourceEdgeLabels_incidenceDart gadgets witnesses B F x (sourcePort F hF i a) side a rfl
@@ -79,36 +79,36 @@ private theorem exists_copy_colorShifts
     (Ps : Dart (incidenceGraph F) → Bool) (hs : ∀ d, Ps (r.rotate d) = Ps d.reverse)
     (hxs : ∀ d, (Ps d ^^ Ps d.reverse) = sourceEdgeLabels gadgets witnesses B F x d.1)
     (Pg : ∀ i : Fin F.length,
-      Dart (incidenceGraph (probeBody (gadgets F[i.val].1).body (List.ofFn Sum.inl))) → Bool)
+      Dart (incidenceGraph (probeBody (gadgets F[i.val].rel).body (List.ofFn Sum.inl))) → Bool)
     (hg : ∀ (i : Fin F.length)
-      (d : Dart (incidenceGraph (probeBody (gadgets F[i.val].1).body (List.ofFn Sum.inl)))),
-      Pg i ((witnesses F[i.val].1).probeRotation.rotate d) = Pg i d.reverse)
+      (d : Dart (incidenceGraph (probeBody (gadgets F[i.val].rel).body (List.ofFn Sum.inl)))),
+      Pg i ((witnesses F[i.val].rel).probeRotation.rotate d) = Pg i d.reverse)
     (hxg : ∀ (i : Fin F.length)
-      (d : Dart (incidenceGraph (probeBody (gadgets F[i.val].1).body (List.ofFn Sum.inl)))),
+      (d : Dart (incidenceGraph (probeBody (gadgets F[i.val].rel).body (List.ofFn Sum.inl)))),
       (Pg i d ^^ Pg i d.reverse) = copiedProbeLabels gadgets witnesses B F i x d.1) :
-    ∀ i : Fin F.length, ∃ K : Bool, (srcArity F[i.val].1 = 0 → K = false) ∧
-      (∀ a, (Pg i (incidenceDart (gadgetProbeOccurrence (gadgets F[i.val].1) a) false) ^^ K) =
+    ∀ i : Fin F.length, ∃ K : Bool, (srcArity F[i.val].rel = 0 → K = false) ∧
+      (∀ a, (Pg i (incidenceDart (gadgetProbeOccurrence (gadgets F[i.val].rel) a) false) ^^ K) =
         Ps (incidenceDart (sourcePort F hF i a) true)) ∧
-      ∀ a, (Pg i (incidenceDart (gadgetProbeOccurrence (gadgets F[i.val].1) a) true) ^^ K) =
+      ∀ a, (Pg i (incidenceDart (gadgetProbeOccurrence (gadgets F[i.val].rel) a) true) ^^ K) =
         Ps (incidenceDart (sourcePort F hF i a) false) := by
   intro i
   apply Cslib.BitString.exists_uniform_colorSeam
     (fun a => Ps (incidenceDart (sourcePort F hF i a) true))
     (fun a => Ps (incidenceDart (sourcePort F hF i a) false))
-    (fun a => Pg i (incidenceDart (gadgetProbeOccurrence (gadgets F[i.val].1) a) false))
-    (fun a => Pg i (incidenceDart (gadgetProbeOccurrence (gadgets F[i.val].1) a) true))
+    (fun a => Pg i (incidenceDart (gadgetProbeOccurrence (gadgets F[i.val].rel) a) false))
+    (fun a => Pg i (incidenceDart (gadgetProbeOccurrence (gadgets F[i.val].rel) a) true))
   · intro a
     rw [← argumentSuccessor_sourcePort F hF i a, ← hr (sourcePort F hF i a)]
     exact hs (incidenceDart (sourcePort F hF i a) true)
   · intro a
     have h := hg i (incidenceDart
-      (gadgetProbeOccurrence (gadgets F[i.val].1) (finRotate (srcArity F[i.val].1) a)) true)
-    rw [(witnesses F[i.val].1).respectsArgumentOrder_probeRotation,
+      (gadgetProbeOccurrence (gadgets F[i.val].rel) (finRotate (srcArity F[i.val].rel) a)) true)
+    rw [(witnesses F[i.val].rel).respectsArgumentOrder_probeRotation,
       argumentSuccessor_gadgetProbeOccurrence_reverse] at h
     exact h.symm
   · intro a
     have hleft := hxs (incidenceDart (sourcePort F hF i a) true)
-    have hright := hxg i (incidenceDart (gadgetProbeOccurrence (gadgets F[i.val].1) a) false)
+    have hright := hxg i (incidenceDart (gadgetProbeOccurrence (gadgets F[i.val].rel) a) false)
     rw [sourceEdgeLabels_sourcePort] at hleft
     rw [copiedProbeLabels_marker] at hright
     exact hleft.trans hright.symm
@@ -117,17 +117,17 @@ private noncomputable def copyColors
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (F : CSP Src ℕ)
     (Pg : ∀ i : Fin F.length,
-      Dart (incidenceGraph (probeBody (gadgets F[i.val].1).body (List.ofFn Sum.inl))) → Bool)
+      Dart (incidenceGraph (probeBody (gadgets F[i.val].rel).body (List.ofFn Sum.inl))) → Bool)
     (K : Fin F.length → Bool)
-    (q : Σ i : Fin F.length, (gadgets F[i.val].1).body.Occurrence) (side : Bool) : Bool :=
+    (q : Σ i : Fin F.length, (gadgets F[i.val].rel).body.Occurrence) (side : Bool) : Bool :=
   Pg q.1 (incidenceDart
-    (bodyOccurrence (gadgets F[q.1.val].1).body (List.ofFn Sum.inl) q.2) side) ^^ K q.1
+    (bodyOccurrence (gadgets F[q.1.val].rel).body (List.ofFn Sum.inl) q.2) side) ^^ K q.1
 
 private noncomputable def replacementColors
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (B : ℕ) (F : CSP Src ℕ)
     (Pg : ∀ i : Fin F.length,
-      Dart (incidenceGraph (probeBody (gadgets F[i.val].1).body (List.ofFn Sum.inl))) → Bool)
+      Dart (incidenceGraph (probeBody (gadgets F[i.val].rel).body (List.ofFn Sum.inl))) → Bool)
     (K : Fin F.length → Bool) :
     Dart (incidenceGraph (replaceGadgets B (fun r => (gadgets r).template) F)) → Bool :=
   fun d =>
@@ -139,13 +139,13 @@ private theorem replacementColors_incidenceDart
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (B : ℕ) (F : CSP Src ℕ)
     (Pg : ∀ i : Fin F.length,
-      Dart (incidenceGraph (probeBody (gadgets F[i.val].1).body (List.ofFn Sum.inl))) → Bool)
+      Dart (incidenceGraph (probeBody (gadgets F[i.val].rel).body (List.ofFn Sum.inl))) → Bool)
     (K : Fin F.length → Bool) (i : Fin F.length)
-    (o : (gadgets F[i.val].1).body.Occurrence) (side : Bool) :
+    (o : (gadgets F[i.val].rel).body.Occurrence) (side : Bool) :
     replacementColors gadgets B F Pg K
         (incidenceDart (replacementOccurrence gadgets B F i o) side) =
-      (Pg i (incidenceDart (bodyOccurrence (gadgets F[i.val].1).body (List.ofFn Sum.inl) o) side) ^^
-        K i) := by
+      (Pg i (incidenceDart
+        (bodyOccurrence (gadgets F[i.val].rel).body (List.ofFn Sum.inl) o) side) ^^ K i) := by
   have hd := (incidenceDartEquiv
     (replaceGadgets B (fun r => (gadgets r).template) F)).symm_apply_apply
       (replacementOccurrence gadgets B F i o, side)
@@ -167,14 +167,14 @@ private theorem replacementColors_xor_reverse
     (x : Fin (incidenceGraph (replaceGadgets B (fun r => (gadgets r).template) F)).edges.length →
       Bool)
     (Pg : ∀ i : Fin F.length,
-      Dart (incidenceGraph (probeBody (gadgets F[i.val].1).body (List.ofFn Sum.inl))) → Bool)
+      Dart (incidenceGraph (probeBody (gadgets F[i.val].rel).body (List.ofFn Sum.inl))) → Bool)
     (K : Fin F.length → Bool)
     (hxg : ∀ (i : Fin F.length)
-      (d : Dart (incidenceGraph (probeBody (gadgets F[i.val].1).body (List.ofFn Sum.inl)))),
+      (d : Dart (incidenceGraph (probeBody (gadgets F[i.val].rel).body (List.ofFn Sum.inl)))),
       (Pg i d ^^ Pg i d.reverse) = copiedProbeLabels gadgets witnesses B F i x d.1) :
     ∀ d, (replacementColors gadgets B F Pg K d ^^
       replacementColors gadgets B F Pg K d.reverse) = x d.1 := by
-  have h (i : Fin F.length) (o : (gadgets F[i.val].1).body.Occurrence) (side : Bool) :
+  have h (i : Fin F.length) (o : (gadgets F[i.val].rel).body.Occurrence) (side : Bool) :
       (replacementColors gadgets B F Pg K
           (incidenceDart (replacementOccurrence gadgets B F i o) side)
         ^^ replacementColors gadgets B F Pg K
@@ -183,7 +183,7 @@ private theorem replacementColors_xor_reverse
     rw [replacementColors_incidenceDart, replacementColors_incidenceDart]
     rw [Bool.xor_assoc, Bool.xor_left_comm (K i), Bool.xor_self, Bool.xor_false]
     have he := hxg i (incidenceDart
-      (bodyOccurrence (gadgets F[i.val].1).body (List.ofFn Sum.inl) o) side)
+      (bodyOccurrence (gadgets F[i.val].rel).body (List.ofFn Sum.inl) o) side)
     rw [copiedProbeLabels_bodyOccurrence] at he
     exact he
   intro d
@@ -204,12 +204,12 @@ private theorem replacementColors_rotate_constraint
     (hB : ∀ r, (gadgets r).numAux ≤ B) (F : CSP Src ℕ) (hF : WellFormed srcArity F)
     (c : RotationCertificate) (hc : RotationCertificate.verifyRotation (incidenceGraph F) c = true)
     (Pg : ∀ i : Fin F.length,
-      Dart (incidenceGraph (probeBody (gadgets F[i.val].1).body (List.ofFn Sum.inl))) → Bool)
+      Dart (incidenceGraph (probeBody (gadgets F[i.val].rel).body (List.ofFn Sum.inl))) → Bool)
     (K : Fin F.length → Bool)
     (hg : ∀ (i : Fin F.length)
-      (d : Dart (incidenceGraph (probeBody (gadgets F[i.val].1).body (List.ofFn Sum.inl)))),
-      Pg i ((witnesses F[i.val].1).probeRotation.rotate d) = Pg i d.reverse)
-    (i : Fin F.length) (o : (gadgets F[i.val].1).body.Occurrence) :
+      (d : Dart (incidenceGraph (probeBody (gadgets F[i.val].rel).body (List.ofFn Sum.inl)))),
+      Pg i ((witnesses F[i.val].rel).probeRotation.rotate d) = Pg i d.reverse)
+    (i : Fin F.length) (o : (gadgets F[i.val].rel).body.Occurrence) :
     replacementColors gadgets B F Pg K
       ((replacementRotation gadgets witnesses B hB F hF c hc).rotate
         (incidenceDart (replacementOccurrence gadgets B F i o) true)) =
@@ -218,8 +218,8 @@ private theorem replacementColors_rotate_constraint
   rw [respectsArgumentOrder_replacementRotation, argumentSuccessor_replacementOccurrence,
     replacementColors_incidenceDart, replacementColors_incidenceDart]
   have h := hg i (incidenceDart
-    (bodyOccurrence (gadgets F[i.val].1).body (List.ofFn Sum.inl) o) true)
-  rw [(witnesses F[i.val].1).respectsArgumentOrder_probeRotation,
+    (bodyOccurrence (gadgets F[i.val].rel).body (List.ofFn Sum.inl) o) true)
+  rw [(witnesses F[i.val].rel).respectsArgumentOrder_probeRotation,
     argumentSuccessor_bodyOccurrence] at h
   exact congrArg (fun b => b ^^ K i) h
 
@@ -227,17 +227,17 @@ private theorem replacementColors_copyIndex
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (B : ℕ) (F : CSP Src ℕ)
     (Pg : ∀ i : Fin F.length,
-      Dart (incidenceGraph (probeBody (gadgets F[i.val].1).body (List.ofFn Sum.inl))) → Bool)
+      Dart (incidenceGraph (probeBody (gadgets F[i.val].rel).body (List.ofFn Sum.inl))) → Bool)
     (K : Fin F.length → Bool) (i : Fin F.length)
-    (o : (gadgets F[i.val].1).body.Occurrence) :
+    (o : (gadgets F[i.val].rel).body.Occurrence) :
     (Dart.colorAtIndex (replacementColors gadgets B F Pg K)
         (2 * (occurrencePrefix (fun r => (gadgets r).template) F i.val + incidenceEdgeIndex o)),
       Dart.colorAtIndex (replacementColors gadgets B F Pg K)
         (2 * (occurrencePrefix (fun r => (gadgets r).template) F i.val +
           incidenceEdgeIndex o) + 1)) =
-      (Pg i (incidenceDart (bodyOccurrence (gadgets F[i.val].1).body
+      (Pg i (incidenceDart (bodyOccurrence (gadgets F[i.val].rel).body
           (List.ofFn Sum.inl) o) false) ^^ K i,
-        Pg i (incidenceDart (bodyOccurrence (gadgets F[i.val].1).body
+        Pg i (incidenceDart (bodyOccurrence (gadgets F[i.val].rel).body
           (List.ofFn Sum.inl) o) true) ^^ K i) := by
   have hfalse : (incidenceDart (replacementOccurrence gadgets B F i o) false).index =
       2 * (occurrencePrefix (fun r => (gadgets r).template) F i.val +
@@ -256,9 +256,9 @@ private theorem map_shiftBlock_replacementColors
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (B : ℕ) (F : CSP Src ℕ)
     (Pg : ∀ i : Fin F.length,
-      Dart (incidenceGraph (probeBody (gadgets F[i.val].1).body (List.ofFn Sum.inl))) → Bool)
+      Dart (incidenceGraph (probeBody (gadgets F[i.val].rel).body (List.ofFn Sum.inl))) → Bool)
     (K : Fin F.length → Bool) (i : Fin F.length) (word : List ℕ)
-    (hw : ∀ j ∈ word, ∃ o : (gadgets F[i.val].1).body.Occurrence,
+    (hw : ∀ j ∈ word, ∃ o : (gadgets F[i.val].rel).body.Occurrence,
       incidenceEdgeIndex o = j) :
     ((shiftBlock (occurrencePrefix (fun r => (gadgets r).template) F i.val) word).map
       fun j => (Dart.colorAtIndex (replacementColors gadgets B F Pg K) (2 * j),
@@ -270,11 +270,11 @@ private theorem map_shiftBlock_replacementColors
   intro j hj
   obtain ⟨o, rfl⟩ := hw j hj
   rw [replacementColors_copyIndex]
-  have hfalse : (incidenceDart (bodyOccurrence (gadgets F[i.val].1).body
+  have hfalse : (incidenceDart (bodyOccurrence (gadgets F[i.val].rel).body
       (List.ofFn Sum.inl) o) false).index = 2 * incidenceEdgeIndex o := by
     change 2 * incidenceEdgeIndex (bodyOccurrence _ _ o) + 0 = _
     rw [incidenceEdgeIndex_bodyOccurrence, Nat.add_zero]
-  have htrue : (incidenceDart (bodyOccurrence (gadgets F[i.val].1).body
+  have htrue : (incidenceDart (bodyOccurrence (gadgets F[i.val].rel).body
       (List.ofFn Sum.inl) o) true).index = 2 * incidenceEdgeIndex o + 1 := by
     change 2 * incidenceEdgeIndex (bodyOccurrence _ _ o) + 1 = _
     rw [incidenceEdgeIndex_bodyOccurrence]
@@ -284,17 +284,17 @@ private theorem isChain_shifted_boundaryColors
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (witnesses : ∀ r, GadgetWitness (gadgets r)) (B : ℕ) (F : CSP Src ℕ)
     (Pg : ∀ i : Fin F.length,
-      Dart (incidenceGraph (probeBody (gadgets F[i.val].1).body (List.ofFn Sum.inl))) → Bool)
+      Dart (incidenceGraph (probeBody (gadgets F[i.val].rel).body (List.ofFn Sum.inl))) → Bool)
     (K : Fin F.length → Bool) (i : Fin F.length)
-    (v : Fin (srcArity F[i.val].1) ⊕ Fin (gadgets F[i.val].1).numAux) (entry exit : Bool)
+    (v : Fin (srcArity F[i.val].rel) ⊕ Fin (gadgets F[i.val].rel).numAux) (entry exit : Bool)
     (hc : List.IsChain (fun p q : Bool × Bool => p.2 = q.1)
-      ((entry, entry) :: (boundaryBlock (gadgets F[i.val].1) (witnesses F[i.val].1) v).map
+      ((entry, entry) :: (boundaryBlock (gadgets F[i.val].rel) (witnesses F[i.val].rel) v).map
         (fun j => (Dart.colorAtIndex (Pg i) (2 * j), Dart.colorAtIndex (Pg i) (2 * j + 1))) ++
         [(exit, exit)])) :
     List.IsChain (fun p q : Bool × Bool => p.2 = q.1)
       ((entry ^^ K i, entry ^^ K i) ::
         ((shiftBlock (occurrencePrefix (fun r => (gadgets r).template) F i.val)
-          (boundaryBlock (gadgets F[i.val].1) (witnesses F[i.val].1) v)).map
+          (boundaryBlock (gadgets F[i.val].rel) (witnesses F[i.val].rel) v)).map
           fun j => (Dart.colorAtIndex (replacementColors gadgets B F Pg K) (2 * j),
             Dart.colorAtIndex (replacementColors gadgets B F Pg K) (2 * j + 1))) ++
         [(exit ^^ K i, exit ^^ K i)]) := by
@@ -312,37 +312,37 @@ private theorem isChain_shifted_freeColors
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (witnesses : ∀ r, GadgetWitness (gadgets r)) (B : ℕ) (F : CSP Src ℕ)
     (Pg : ∀ i : Fin F.length,
-      Dart (incidenceGraph (probeBody (gadgets F[i.val].1).body (List.ofFn Sum.inl))) → Bool)
-    (K : Fin F.length → Bool) (i : Fin F.length) (a : Fin (srcArity F[i.val].1))
+      Dart (incidenceGraph (probeBody (gadgets F[i.val].rel).body (List.ofFn Sum.inl))) → Bool)
+    (K : Fin F.length → Bool) (i : Fin F.length) (a : Fin (srcArity F[i.val].rel))
     (hg : ∀ d : Dart (incidenceGraph
-      (probeBody (gadgets F[i.val].1).body (List.ofFn Sum.inl))),
-      Pg i ((witnesses F[i.val].1).probeRotation.rotate d) = Pg i d.reverse) :
-    let marker := incidenceDart (gadgetProbeOccurrence (gadgets F[i.val].1) a) false
+      (probeBody (gadgets F[i.val].rel).body (List.ofFn Sum.inl))),
+      Pg i ((witnesses F[i.val].rel).probeRotation.rotate d) = Pg i d.reverse) :
+    let marker := incidenceDart (gadgetProbeOccurrence (gadgets F[i.val].rel) a) false
     List.IsChain (fun p q : Bool × Bool => p.2 = q.1)
       ((Pg i marker.reverse ^^ K i, Pg i marker.reverse ^^ K i) ::
         ((shiftBlock (occurrencePrefix (fun r => (gadgets r).template) F i.val)
-          ((freeBoundaryBlocks (gadgets F[i.val].1) (witnesses F[i.val].1)).getD a.val [])).map
+          ((freeBoundaryBlocks (gadgets F[i.val].rel) (witnesses F[i.val].rel)).getD a.val [])).map
           fun j => (Dart.colorAtIndex (replacementColors gadgets B F Pg K) (2 * j),
             Dart.colorAtIndex (replacementColors gadgets B F Pg K) (2 * j + 1))) ++
         [(Pg i marker ^^ K i, Pg i marker ^^ K i)]) := by
   exact isChain_shifted_boundaryColors gadgets witnesses B F Pg K i (Sum.inl a) _ _
-    (isChain_freeBoundaryBlock_colors (gadgets F[i.val].1) (witnesses F[i.val].1) a (Pg i) hg)
+    (isChain_freeBoundaryBlock_colors (gadgets F[i.val].rel) (witnesses F[i.val].rel) a (Pg i) hg)
 
 private theorem isChain_incidenceBlock_colors
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (witnesses : ∀ r, GadgetWitness (gadgets r)) (B : ℕ) (F : CSP Src ℕ)
     (hF : WellFormed srcArity F) (Ps : Dart (incidenceGraph F) → Bool)
     (Pg : ∀ i : Fin F.length,
-      Dart (incidenceGraph (probeBody (gadgets F[i.val].1).body (List.ofFn Sum.inl))) → Bool)
+      Dart (incidenceGraph (probeBody (gadgets F[i.val].rel).body (List.ofFn Sum.inl))) → Bool)
     (K : Fin F.length → Bool)
     (hg : ∀ (i : Fin F.length)
-      (d : Dart (incidenceGraph (probeBody (gadgets F[i.val].1).body (List.ofFn Sum.inl)))),
-      Pg i ((witnesses F[i.val].1).probeRotation.rotate d) = Pg i d.reverse)
+      (d : Dart (incidenceGraph (probeBody (gadgets F[i.val].rel).body (List.ofFn Sum.inl)))),
+      Pg i ((witnesses F[i.val].rel).probeRotation.rotate d) = Pg i d.reverse)
     (hKvar : ∀ (i : Fin F.length) a,
-      (Pg i (incidenceDart (gadgetProbeOccurrence (gadgets F[i.val].1) a) true) ^^ K i) =
+      (Pg i (incidenceDart (gadgetProbeOccurrence (gadgets F[i.val].rel) a) true) ^^ K i) =
         Ps (incidenceDart (sourcePort F hF i a) false))
     (hKcenter : ∀ (i : Fin F.length) a,
-      (Pg i (incidenceDart (gadgetProbeOccurrence (gadgets F[i.val].1) a) false) ^^ K i) =
+      (Pg i (incidenceDart (gadgetProbeOccurrence (gadgets F[i.val].rel) a) false) ^^ K i) =
         Ps (incidenceDart (sourcePort F hF i a) true)) (o : F.Occurrence) :
     List.IsChain (fun p q : Bool × Bool => p.2 = q.1)
       ((Ps (incidenceDart o false), Ps (incidenceDart o false)) ::
@@ -352,7 +352,7 @@ private theorem isChain_incidenceBlock_colors
           fun j => (Dart.colorAtIndex (replacementColors gadgets B F Pg K) (2 * j),
             Dart.colorAtIndex (replacementColors gadgets B F Pg K) (2 * j + 1))) ++
         [(Ps (incidenceDart o true), Ps (incidenceDart o true))]) := by
-  let a : Fin (srcArity F[o.1.val].1) :=
+  let a : Fin (srcArity F[o.1.val].rel) :=
     Fin.cast (hF F[o.1.val] (List.getElem_mem o.1.isLt)) o.2
   have ho : sourcePort F hF o.1 a = o := by
     apply CSP.Occurrence.eq_of_positions
@@ -378,16 +378,16 @@ private theorem isChain_variableBlock_colors
     (Ps : Dart (incidenceGraph F) → Bool)
     (hs : ∀ d, Ps ((RotationCertificate.decode _ c hc).rotate d) = Ps d.reverse)
     (Pg : ∀ i : Fin F.length,
-      Dart (incidenceGraph (probeBody (gadgets F[i.val].1).body (List.ofFn Sum.inl))) → Bool)
+      Dart (incidenceGraph (probeBody (gadgets F[i.val].rel).body (List.ofFn Sum.inl))) → Bool)
     (K : Fin F.length → Bool)
     (hg : ∀ (i : Fin F.length)
-      (d : Dart (incidenceGraph (probeBody (gadgets F[i.val].1).body (List.ofFn Sum.inl)))),
-      Pg i ((witnesses F[i.val].1).probeRotation.rotate d) = Pg i d.reverse)
+      (d : Dart (incidenceGraph (probeBody (gadgets F[i.val].rel).body (List.ofFn Sum.inl)))),
+      Pg i ((witnesses F[i.val].rel).probeRotation.rotate d) = Pg i d.reverse)
     (hKvar : ∀ (i : Fin F.length) a,
-      (Pg i (incidenceDart (gadgetProbeOccurrence (gadgets F[i.val].1) a) true) ^^ K i) =
+      (Pg i (incidenceDart (gadgetProbeOccurrence (gadgets F[i.val].rel) a) true) ^^ K i) =
         Ps (incidenceDart (sourcePort F hF i a) false))
     (hKcenter : ∀ (i : Fin F.length) a,
-      (Pg i (incidenceDart (gadgetProbeOccurrence (gadgets F[i.val].1) a) false) ^^ K i) =
+      (Pg i (incidenceDart (gadgetProbeOccurrence (gadgets F[i.val].rel) a) false) ^^ K i) =
         Ps (incidenceDart (sourcePort F hF i a) true)) (v : ℕ) (hv : v ∈ F.vars) :
     ∃ color : Bool, List.IsChain (fun p q : Bool × Bool => p.2 = q.1)
       ((color, color) :: ((variableBlock (fun r => (gadgets r).template)
@@ -425,21 +425,21 @@ private theorem isChain_shifted_auxiliaryColors
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (witnesses : ∀ r, GadgetWitness (gadgets r)) (B : ℕ) (F : CSP Src ℕ)
     (Pg : ∀ i : Fin F.length,
-      Dart (incidenceGraph (probeBody (gadgets F[i.val].1).body (List.ofFn Sum.inl))) → Bool)
-    (K : Fin F.length → Bool) (i : Fin F.length) (a : Fin (gadgets F[i.val].1).numAux)
+      Dart (incidenceGraph (probeBody (gadgets F[i.val].rel).body (List.ofFn Sum.inl))) → Bool)
+    (K : Fin F.length → Bool) (i : Fin F.length) (a : Fin (gadgets F[i.val].rel).numAux)
     (hg : ∀ d : Dart (incidenceGraph
-      (probeBody (gadgets F[i.val].1).body (List.ofFn Sum.inl))),
-      Pg i ((witnesses F[i.val].1).probeRotation.rotate d) = Pg i d.reverse) :
+      (probeBody (gadgets F[i.val].rel).body (List.ofFn Sum.inl))),
+      Pg i ((witnesses F[i.val].rel).probeRotation.rotate d) = Pg i d.reverse) :
     ∃ color : Bool, List.IsChain (fun p q : Bool × Bool => p.2 = q.1)
       ((color, color) ::
         ((shiftBlock (occurrencePrefix (fun r => (gadgets r).template) F i.val)
-          ((auxiliaryBoundaryBlocks (gadgets F[i.val].1) (witnesses F[i.val].1)).getD
+          ((auxiliaryBoundaryBlocks (gadgets F[i.val].rel) (witnesses F[i.val].rel)).getD
             a.val [])).map
           fun j => (Dart.colorAtIndex (replacementColors gadgets B F Pg K) (2 * j),
             Dart.colorAtIndex (replacementColors gadgets B F Pg K) (2 * j + 1))) ++
         [(color, color)]) := by
   obtain ⟨color, hc⟩ := isChain_auxiliaryBoundaryBlock_colors
-    (gadgets F[i.val].1) (witnesses F[i.val].1) a (Pg i) hg
+    (gadgets F[i.val].rel) (witnesses F[i.val].rel) a (Pg i) hg
   exact ⟨color ^^ K i,
     isChain_shifted_boundaryColors gadgets witnesses B F Pg K i (Sum.inr a) color color hc⟩
 
@@ -469,16 +469,16 @@ theorem numericalGenusZero_replacementRotation
       ((r.vertexEven_iff_exists_faceColors (incidenceVertices_declared F) hrgenus _).mp
         (vertexEven_sourceEdgeLabels gadgets witnesses B hB F hF c hraw x hx))
   have hlocal (i : Fin F.length) : ∃ P : Dart (incidenceGraph
-      (probeBody (gadgets F[i.val].1).body (List.ofFn Sum.inl))) → Bool,
+      (probeBody (gadgets F[i.val].rel).body (List.ofFn Sum.inl))) → Bool,
       (∀ d : Dart (incidenceGraph
-        (probeBody (gadgets F[i.val].1).body (List.ofFn Sum.inl))),
-        P ((witnesses F[i.val].1).probeRotation.rotate d) = P d.reverse) ∧
+        (probeBody (gadgets F[i.val].rel).body (List.ofFn Sum.inl))),
+        P ((witnesses F[i.val].rel).probeRotation.rotate d) = P d.reverse) ∧
         ∀ d : Dart (incidenceGraph
-          (probeBody (gadgets F[i.val].1).body (List.ofFn Sum.inl))),
+          (probeBody (gadgets F[i.val].rel).body (List.ofFn Sum.inl))),
           (P d ^^ P d.reverse) = copiedProbeLabels gadgets witnesses B F i x d.1 := by
-    apply ((witnesses F[i.val].1).probeRotation.exists_faceColors_iff_exists_dartColors _).mp
-    apply ((witnesses F[i.val].1).probeRotation.vertexEven_iff_exists_faceColors
-      (incidenceVertices_declared _) (witnesses F[i.val].1).numericalGenusZero_probeRotation _).mp
+    apply ((witnesses F[i.val].rel).probeRotation.exists_faceColors_iff_exists_dartColors _).mp
+    apply ((witnesses F[i.val].rel).probeRotation.vertexEven_iff_exists_faceColors
+      (incidenceVertices_declared _) (witnesses F[i.val].rel).numericalGenusZero_probeRotation _).mp
     exact vertexEven_copiedProbeLabels gadgets witnesses B hB F i x hx
   choose Pg hg hxg using hlocal
   choose K hKzero hKcenter hKvar using
@@ -502,7 +502,7 @@ theorem numericalGenusZero_replacementRotation
         hKvar hKcenter v (CSP.mem_distinctVars.mp hv)
     · obtain ⟨i, block, hb, rfl⟩ := hw
       obtain ⟨j, hj, rfl⟩ := List.mem_iff_getElem.mp hb
-      let a : Fin (gadgets F[i.val].1).numAux := ⟨j, by
+      let a : Fin (gadgets F[i.val].rel).numAux := ⟨j, by
         simpa only [length_auxiliaryBoundaryBlocks] using hj⟩
       have h := isChain_shifted_auxiliaryColors gadgets witnesses B F Pg K i a (hg i)
       simpa only [a, List.getD_eq_getElem _ _ hj] using h

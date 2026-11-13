@@ -17,8 +17,8 @@ import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 # The hard-core model as a weighted CSP
 
 The hard-core instance of a graph on the vertices `0, …, n - 1` with edge list `E`
-(`CSP.hardCore n E`) has a vertex constraint `(false, [v])` for every vertex and an edge
-constraint `(true, [u, v])` for every edge `(u, v)`. Under the hard-core weights with fugacity `t`
+(`CSP.hardCore n E`) has a vertex constraint `⟨false, [v]⟩` for every vertex and an edge
+constraint `⟨true, [u, v]⟩` for every edge `(u, v)`. Under the hard-core weights with fugacity `t`
 (`CSP.hardCoreWeight t`), a vertex constraint weighs `t` when its variable is `true`, and an edge
 constraint weighs zero when both its variables are `true`. So the partition function is the sum of
 `t ^ |S|` over the independent sets `S` of the graph (`CSP.partitionFunction_hardCore`); with
@@ -53,7 +53,7 @@ and one otherwise; an edge constraint (`true`) weighs zero at `[true, true]` and
 /-- The hard-core instance of the graph on the vertices `0, …, n - 1` with edge list `E`: a vertex
 constraint for every vertex and an edge constraint for every edge. -/
 @[expose] def hardCore (n : ℕ) (E : List (ℕ × ℕ)) : CSP Bool ℕ :=
-  (List.range n).map (fun v => (false, [v])) ++ E.map fun e => (true, [e.1, e.2])
+  (List.range n).map (fun v => ⟨false, [v]⟩) ++ E.map fun e => ⟨true, [e.1, e.2]⟩
 
 variable {n : ℕ} {E : List (ℕ × ℕ)}
 

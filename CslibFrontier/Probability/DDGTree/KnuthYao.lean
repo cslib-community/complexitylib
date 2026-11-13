@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Probability.DDGTree
 public import CslibFrontier.Probability.Entropy
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import CslibFrontier.Probability.PMF.ToReal
 import Mathlib.Analysis.SpecificLimits.Basic
 
@@ -246,8 +247,7 @@ theorem knuthYaoCost_eq_negMulLogb_iff (hx0 : 0 ≤ x) (hx1 : x ≤ 1) :
     rw [← this, inv_pow]
   · rintro (rfl | ⟨m, rfl⟩)
     · simp
-    · rw [knuthYaoCost_inv_two_pow, inv_pow, Real.logb_inv, Real.logb_pow,
-        Real.logb_self_eq_one (by norm_num)]
+    · rw [knuthYaoCost_inv_two_pow, inv_pow, Real.logb_inv, Real.logb_two_pow]
       ring
 
 end Real

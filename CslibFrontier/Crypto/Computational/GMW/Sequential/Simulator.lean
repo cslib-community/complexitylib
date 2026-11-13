@@ -22,6 +22,7 @@ import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.Repeat
 import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
+import CslibFrontier.Languages.Probabilistic.Iteration.Chain
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Logics.Propositional.CNF.PolyTime
 import CslibFrontier.Probability.PMF.Bind
@@ -305,15 +306,6 @@ theorem eval_replicate_iterate_sessionWithPadsStep {tapes : ℕ} {Control : Type
     refine congrArg (PMF.bind _) (funext fun st' => ?_)
     simpa only [ProbComp.eval_bind] using ih st'
 
-private theorem eval_iterate_congr {α : Type} {f g : α → ProbComp α}
-    (h : ∀ x, ProbComp.eval (f x) = ProbComp.eval (g x)) (K : ℕ) (x : α) :
-    ProbComp.eval (OracleComp.iterate K f x) = ProbComp.eval (OracleComp.iterate K g x) := by
-  induction K generalizing x with
-  | zero => rfl
-  | succ K ih =>
-    simp only [OracleComp.iterate_succ_bind, ProbComp.eval_bind, h x]
-    exact congrArg (PMF.bind _) (funext ih)
-
 theorem eval_replicate_runAllSessionsWithPads_prg {tapes : ℕ} {Control : Type}
     (machine : _root_.Turing.MultiTapePTM tapes Bool Control Unit)
     (generator : List Bool → List Bool) (s m limit att K : ℕ) (φ : CNF ℕ) (w word : List Bool) :
@@ -359,7 +351,7 @@ theorem eval_replicate_runAllSessionsWithPads_uniform {tapes : ℕ} {Control : T
     simp only [simSessionStep, ProbComp.eval_map]
     rw [ProbComp.eval_replicate_congr
       (eval_game1_eq_eval_gmwSimAttempt generator hw (sessionStep machine limit cur.1 2 cur.2))]
-  rw [eval_iterate_congr hcongr] at hiter
+  rw [ProbComp.eval_iterate_congr hcongr] at hiter
   have hbind := congrArg
     (fun d => d.bind (fun st' => ProbComp.eval (finishSessionRun machine limit st'))) hiter
   simp only [pmf_norm, runAllSessionsWithPads] at hbind ⊢
@@ -966,7 +958,7 @@ theorem gmwSeqView_advantage_le {α : Type} {enc : α ↪ List Bool}
     rw [← eval_gmwSeqInteract,
       eval_gmwSeqInteract_eq_machine_of_isOraclePPTOn generator s m K φ w machine c d hspec n a z,
       eval_gmwSeqInteract_runOracle_eq_iterate_realSessionStep]
-    simp only [pmf_norm, distinguishingGame, post, st₀, T, word, encIn]
+    simp only [pmf_norm, distinguishingGame_eq_bind, post, st₀, T, word, encIn]
     rfl
   let guessGame : Game :=
     (ProbComp.eval (OracleComp.iterate K
@@ -976,8 +968,8 @@ theorem gmwSeqView_advantage_le {α : Type} {enc : α ↪ List Bool}
       (adversary n a z) =
     (ProbComp.eval (OracleComp.iterate K
       (simSessionStep machine generator s m T att φ) st₀)).bind post := by
-    simp only [pmf_norm, gmwSeqSimulator, encIn, hV, ↓reduceDIte, machine, c, d, distinguishingGame,
-      post, st₀, T, word, s, m, att, K, φ]
+    simp only [pmf_norm, gmwSeqSimulator, encIn, hV, ↓reduceDIte, machine, c, d,
+      distinguishingGame_eq_bind, post, st₀, T, word, s, m, att, K, φ]
     rfl
   have h1 : Game.advantage
       ((ProbComp.eval (OracleComp.iterate K
@@ -1007,6 +999,7 @@ theorem gmwSeqView_advantage_le {α : Type} {enc : α ↪ List Bool}
   have hseq := sequenceTest_advantage
     (BitString.sampleList m) (generator <$> BitString.sampleList s)
     (K * (att * totalLen φ)) testPads
+  simp only [Experiment.advantage] at hseq
   rw [hprg_eq, hunif_eq] at hseq
   have hred_eq : sequenceTest (BitString.sampleList m) (generator <$> BitString.sampleList s)
       (K * (att * totalLen φ)) testPads =
@@ -1251,7 +1244,8 @@ theorem gmwSeqView_indistinguishable_gmwSeqSimulator {α : Type} {enc : α ↪ L
   have herr := hgeom.polynomiallyBounded_mul hk_poly
   apply negligible_of_le (herr.add_fun (hneg.polynomiallyBounded_mul hloss))
   intro n
-  simpa only [pmf_norm, distinguishingGame, BitString.eval_sampleList, generatorEnsemble, red] using
+  simpa only [pmf_norm, distinguishingGame_eq_bind, BitString.eval_sampleList, generatorEnsemble,
+    red] using
     gmwSeqView_advantage_le generator length f k hV (fun n _ _ view => adversary n view)
       n (a n) (w n) (z n) (hw_sat n)
 

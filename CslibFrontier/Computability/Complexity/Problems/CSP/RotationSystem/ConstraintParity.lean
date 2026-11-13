@@ -48,10 +48,11 @@ theorem map_incidenceList_edgeLabels (x : Fin (incidenceGraph F).edges.length �
 theorem vertexParity_eq_sum_scope
     (x : Fin (incidenceGraph F).edges.length → Bool) (o : F.Occurrence) :
     (incidenceGraph F).vertexParity x (incidenceDart o true).vertex =
-      (List.ofFn fun j : Fin F[o.1.val].2.length =>
+      (List.ofFn fun j : Fin F[o.1.val].scope.length =>
         x (incidenceDart (⟨o.1, j⟩ : F.Occurrence) true).1).sum := by
   let i := o.1
-  let word := List.ofFn fun j : Fin F[i.val].2.length => incidenceDart (⟨i, j⟩ : F.Occurrence) true
+  let word := List.ofFn fun j : Fin F[i.val].scope.length =>
+    incidenceDart (⟨i, j⟩ : F.Occurrence) true
   have hn : word.Nodup := List.nodup_ofFn.mpr (by
     intro j k hjk
     have heq : (⟨i, j⟩ : F.Occurrence) = ⟨i, k⟩ := incidenceDart_injective true hjk
@@ -80,10 +81,10 @@ theorem sum_scope_eq_false_of_constraintParity
     (hx : ∀ o : F.Occurrence,
       (incidenceGraph F).vertexParity x (incidenceDart o true).vertex = false)
     (i : Fin F.length) :
-    (List.ofFn fun j : Fin F[i.val].2.length =>
+    (List.ofFn fun j : Fin F[i.val].scope.length =>
       x (incidenceDart (⟨i, j⟩ : F.Occurrence) true).1).sum = false := by
-  by_cases he : F[i.val].2.length = 0
-  · have hn : (List.ofFn fun j : Fin F[i.val].2.length =>
+  by_cases he : F[i.val].scope.length = 0
+  · have hn : (List.ofFn fun j : Fin F[i.val].scope.length =>
         x (incidenceDart (⟨i, j⟩ : F.Occurrence) true).1) = [] :=
       List.eq_nil_iff_length_eq_zero.mpr (by simpa only [List.length_ofFn] using he)
     simp [hn, Bool.zero_eq_false]
@@ -102,7 +103,7 @@ theorem sum_edgeLabels_eq_false_of_constraintParity
   rw [← map_incidenceList_edgeLabels, CSP.incidenceList, List.map_flatten, List.map_ofFn,
     List.sum_flatten, List.map_ofFn]
   have hs (i : Fin F.length) :
-      (List.ofFn fun j : Fin F[i.val].2.length =>
+      (List.ofFn fun j : Fin F[i.val].scope.length =>
         x (incidenceDart (⟨i, j⟩ : F.Occurrence) false).1).sum = false := by
     simpa only [incidenceDart] using sum_scope_eq_false_of_constraintParity x hx i
   simp only [List.map_ofFn, Function.comp_def]

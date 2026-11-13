@@ -35,7 +35,7 @@ variable {Src Rel : Type} {arity : Rel → ℕ} {sem : Rel → List Bool → Boo
     (witnesses : ∀ r, GadgetWitness (gadgets r)) (B : ℕ) (F : CSP Src ℕ) (i : Fin F.length)
     (x : Fin (incidenceGraph (replaceGadgets B (fun r => (gadgets r).template) F)).edges.length →
       Bool) :
-    Fin (incidenceGraph (probeBody (gadgets F[i.val].1).body (List.ofFn Sum.inl))).edges.length →
+    Fin (incidenceGraph (probeBody (gadgets F[i.val].rel).body (List.ofFn Sum.inl))).edges.length →
       Bool :=
   probeEdgeLabels _ _
     (fun a => copiedFreeLabels gadgets witnesses B F i x
@@ -48,8 +48,8 @@ theorem sum_freeBoundaryBlock_copiedEdgeLabels
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (witnesses : ∀ r, GadgetWitness (gadgets r)) (B : ℕ) (F : CSP Src ℕ) (i : Fin F.length)
     (x : Fin (incidenceGraph (replaceGadgets B (fun r => (gadgets r).template) F)).edges.length →
-      Bool) (a : Fin (srcArity F[i.val].1)) :
-    (((freeBoundaryBlocks (gadgets F[i.val].1) (witnesses F[i.val].1)).getD a.val []).map
+      Bool) (a : Fin (srcArity F[i.val].rel)) :
+    (((freeBoundaryBlocks (gadgets F[i.val].rel) (witnesses F[i.val].rel)).getD a.val []).map
       fun j => (List.ofFn (copiedEdgeLabels gadgets B F i x)).getD j false).sum =
         copiedFreeLabels gadgets witnesses B F i x a := by
   unfold copiedFreeLabels
@@ -65,9 +65,9 @@ theorem copiedProbeLabels_marker
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (witnesses : ∀ r, GadgetWitness (gadgets r)) (B : ℕ) (F : CSP Src ℕ) (i : Fin F.length)
     (x : Fin (incidenceGraph (replaceGadgets B (fun r => (gadgets r).template) F)).edges.length →
-      Bool) (a : Fin (srcArity F[i.val].1)) (side : Bool) :
+      Bool) (a : Fin (srcArity F[i.val].rel)) (side : Bool) :
     copiedProbeLabels gadgets witnesses B F i x
-      (incidenceDart (gadgetProbeOccurrence (gadgets F[i.val].1) a) side).1 =
+      (incidenceDart (gadgetProbeOccurrence (gadgets F[i.val].rel) a) side).1 =
         copiedFreeLabels gadgets witnesses B F i x a := by
   unfold copiedProbeLabels gadgetProbeOccurrence
   rw [probeEdgeLabels_probeOccurrence]
@@ -77,9 +77,9 @@ theorem copiedProbeLabels_bodyOccurrence
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (witnesses : ∀ r, GadgetWitness (gadgets r)) (B : ℕ) (F : CSP Src ℕ) (i : Fin F.length)
     (x : Fin (incidenceGraph (replaceGadgets B (fun r => (gadgets r).template) F)).edges.length →
-      Bool) (o : (gadgets F[i.val].1).body.Occurrence) (side : Bool) :
+      Bool) (o : (gadgets F[i.val].rel).body.Occurrence) (side : Bool) :
     copiedProbeLabels gadgets witnesses B F i x
-      (incidenceDart (bodyOccurrence (gadgets F[i.val].1).body (List.ofFn Sum.inl) o) side).1 =
+      (incidenceDart (bodyOccurrence (gadgets F[i.val].rel).body (List.ofFn Sum.inl) o) side).1 =
         x (incidenceDart (replacementOccurrence gadgets B F i o) side).1 := by
   unfold copiedProbeLabels
   rw [probeEdgeLabels_bodyOccurrence, copiedEdgeLabels_incidenceDart]
@@ -90,14 +90,14 @@ theorem vertexParity_copiedProbeLabels_marker_variable
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (witnesses : ∀ r, GadgetWitness (gadgets r)) (B : ℕ) (F : CSP Src ℕ) (i : Fin F.length)
     (x : Fin (incidenceGraph (replaceGadgets B (fun r => (gadgets r).template) F)).edges.length →
-      Bool) (a : Fin (srcArity F[i.val].1)) :
-    (incidenceGraph (probeBody (gadgets F[i.val].1).body (List.ofFn Sum.inl))).vertexParity
+      Bool) (a : Fin (srcArity F[i.val].rel)) :
+    (incidenceGraph (probeBody (gadgets F[i.val].rel).body (List.ofFn Sum.inl))).vertexParity
       (copiedProbeLabels gadgets witnesses B F i x)
-      (incidenceDart (gadgetProbeOccurrence (gadgets F[i.val].1) a) false).vertex = false := by
+      (incidenceDart (gadgetProbeOccurrence (gadgets F[i.val].rel) a) false).vertex = false := by
   unfold copiedProbeLabels gadgetProbeOccurrence
   rw [vertexParity_probeEdgeLabels_marker_variable _ _ (List.nodup_ofFn.mpr Sum.inl_injective)
-    (witnesses F[i.val].1)]
-  have he := getD_freeBoundaryBlocks (gadgets F[i.val].1) (witnesses F[i.val].1) a
+    (witnesses F[i.val].rel)]
+  have he := getD_freeBoundaryBlocks (gadgets F[i.val].rel) (witnesses F[i.val].rel) a
   unfold gadgetProbeOccurrence at he
   rw [← he]
   rw [sum_freeBoundaryBlock_copiedEdgeLabels]
@@ -112,17 +112,17 @@ theorem vertexParity_copiedProbeLabels_marker_constraint
     (x : Fin (incidenceGraph (replaceGadgets B (fun r => (gadgets r).template) F)).edges.length →
       Bool)
     (hx : (incidenceGraph (replaceGadgets B (fun r => (gadgets r).template) F)).VertexEven x)
-    (a : Fin (srcArity F[i.val].1)) :
-    (incidenceGraph (probeBody (gadgets F[i.val].1).body (List.ofFn Sum.inl))).vertexParity
+    (a : Fin (srcArity F[i.val].rel)) :
+    (incidenceGraph (probeBody (gadgets F[i.val].rel).body (List.ofFn Sum.inl))).vertexParity
       (copiedProbeLabels gadgets witnesses B F i x)
-      (incidenceDart (gadgetProbeOccurrence (gadgets F[i.val].1) a) true).vertex = false := by
+      (incidenceDart (gadgetProbeOccurrence (gadgets F[i.val].rel) a) true).vertex = false := by
   unfold copiedProbeLabels gadgetProbeOccurrence
   rw [vertexParity_probeEdgeLabels_probe_constraint]
   apply Eq.trans ?_ (sum_copiedFreeLabels_eq_false gadgets witnesses B hB F i x hx)
   apply congrArg List.sum
-  have hlen : (List.ofFn (Sum.inl : Fin (srcArity F[i.val].1) →
-      Fin (srcArity F[i.val].1) ⊕ Fin (gadgets F[i.val].1).numAux)).length =
-      srcArity F[i.val].1 := List.length_ofFn
+  have hlen : (List.ofFn (Sum.inl : Fin (srcArity F[i.val].rel) →
+      Fin (srcArity F[i.val].rel) ⊕ Fin (gadgets F[i.val].rel).numAux)).length =
+      srcArity F[i.val].rel := List.length_ofFn
   rw [List.ofFn_congr hlen]
   congr 1
 
@@ -136,11 +136,11 @@ theorem vertexEven_copiedProbeLabels
     (x : Fin (incidenceGraph (replaceGadgets B (fun r => (gadgets r).template) F)).edges.length →
       Bool)
     (hx : (incidenceGraph (replaceGadgets B (fun r => (gadgets r).template) F)).VertexEven x) :
-    (incidenceGraph (probeBody (gadgets F[i.val].1).body (List.ofFn Sum.inl))).VertexEven
+    (incidenceGraph (probeBody (gadgets F[i.val].rel).body (List.ofFn Sum.inl))).VertexEven
       (copiedProbeLabels gadgets witnesses B F i x) := by
-  let g := gadgets F[i.val].1
-  let ports := List.ofFn (Sum.inl : Fin (srcArity F[i.val].1) →
-    Fin (srcArity F[i.val].1) ⊕ Fin g.numAux)
+  let g := gadgets F[i.val].rel
+  let ports := List.ofFn (Sum.inl : Fin (srcArity F[i.val].rel) →
+    Fin (srcArity F[i.val].rel) ⊕ Fin g.numAux)
   let t : Fin ports.length → Bool := fun a => copiedFreeLabels gadgets witnesses B F i x
     ⟨a.val, by simpa only [ports, List.length_ofFn] using a.isLt⟩
   have hlabels : copiedProbeLabels gadgets witnesses B F i x =
@@ -169,7 +169,7 @@ theorem vertexEven_copiedProbeLabels
           exact vertexParity_copiedEdgeLabels_auxiliary gadgets witnesses B hB F i a x hx o ho
       · rw [hlabels, vertexParity_probeEdgeLabels_body_constraint]
         exact vertexParity_copiedEdgeLabels_constraint gadgets B F i x hx o
-    · let a : Fin (srcArity F[i.val].1) := ⟨j.val, by
+    · let a : Fin (srcArity F[i.val].rel) := ⟨j.val, by
         simpa only [ports, List.length_ofFn] using j.isLt⟩
       have he : probeOccurrence g.body ports j = gadgetProbeOccurrence g a := by
         unfold gadgetProbeOccurrence

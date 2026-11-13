@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Communication.Randomized
 public import CslibFrontier.Computability.Communication.Rectangle
 public import CslibFrontier.Probability.MutualInformation
 public import Mathlib.Basic.Real.ENatENNReal
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import CslibFrontier.Probability.PMF.Map
 
 /-!
@@ -439,7 +440,7 @@ theorem logb_leafCount_le_depth (p : Protocol X Y Z) : Real.logb 2 p.leafCount �
   calc Real.logb 2 p.leafCount ≤ Real.logb 2 ((2 : ℝ) ^ p.depth) :=
         Real.logb_le_logb_of_le (by norm_num) (by exact_mod_cast p.leafCount_pos)
           (by exact_mod_cast p.leafCount_le_two_pow_depth)
-    _ = p.depth := by rw [Real.logb_pow, Real.logb_self_eq_one (by norm_num), mul_one]
+    _ = p.depth := Real.logb_two_pow p.depth
 
 /-- The joint law of Alice's input, Bob's input and the leaf that `p` reaches, on inputs drawn
 from `μ`. -/

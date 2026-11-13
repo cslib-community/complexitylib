@@ -32,21 +32,21 @@ vertex-even labeling. No local planarity or source validity assumption is needed
 theorem sum_copied_constraint_eq_false
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (B : ℕ) (F : CSP Src ℕ) (i : Fin F.length)
-    (o : (gadgets F[i.val].1).body.Occurrence)
+    (o : (gadgets F[i.val].rel).body.Occurrence)
     (x : Fin (incidenceGraph (replaceGadgets B (fun r => (gadgets r).template) F)).edges.length →
       Bool)
     (hx : (incidenceGraph (replaceGadgets B (fun r => (gadgets r).template) F)).VertexEven x) :
-    (((CSP.incidenceList (gadgets F[i.val].1).body).filter
+    (((CSP.incidenceList (gadgets F[i.val].rel).body).filter
       (fun p => decide (p.1 = o.1))).map fun p =>
         x (incidenceDart (replacementOccurrence gadgets B F i p) true).1).sum = false := by
   let T := replaceGadgets B (fun r => (gadgets r).template) F
-  let selected := (CSP.incidenceList (gadgets F[i.val].1).body).filter
+  let selected := (CSP.incidenceList (gadgets F[i.val].rel).body).filter
     (fun p => decide (p.1 = o.1))
   let e := replacementOccurrence gadgets B F i
   have hinj : Function.Injective (fun p => incidenceDart (e p) true) := by
     intro p q he
     have hcopy : e p = e q := incidenceDart_injective true he
-    have hs : (⟨i, p⟩ : (j : Fin F.length) × (gadgets F[j.val].1).body.Occurrence) = ⟨i, q⟩ :=
+    have hs : (⟨i, p⟩ : (j : Fin F.length) × (gadgets F[j.val].rel).body.Occurrence) = ⟨i, q⟩ :=
       replacementOccurrence_injective gadgets B F hcopy
     exact eq_of_heq (Sigma.mk.inj hs).2
   have hn : (selected.map fun p => incidenceDart (e p) true).Nodup :=

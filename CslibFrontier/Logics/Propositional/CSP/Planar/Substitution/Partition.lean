@@ -44,7 +44,7 @@ theorem flatten_replacementCycles_perm
   let templates := fun r => (gadgets r).template
   let free := fun r => freeBoundaryBlocks (gadgets r) (witnesses r)
   let aux := fun r => auxiliaryBoundaryBlocks (gadgets r) (witnesses r)
-  have hfree : ∀ row ∈ F, (free row.1).length = row.2.length := by
+  have hfree : ∀ row ∈ F, (free row.rel).length = row.scope.length := by
     intro row hr
     exact (length_freeBoundaryBlocks _ _).trans (hF row hr).symm
   have hp := flatten_variableBlocks_perm templates free F c hc

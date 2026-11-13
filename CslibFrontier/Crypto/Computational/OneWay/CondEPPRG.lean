@@ -391,8 +391,8 @@ private theorem trivialInverter_succ_ge {g : List Bool → List Bool} {imgLen : 
         ∑ x' : BitString k, (PMF.uniformOfFintype (BitString k) x').toReal *
           (if f x' = f x then 1 else 0) := by
     rw [Game.coe_succProbability]
-    simp only [pmf_norm, inversionGame, trivialInverter, BitString.eval_sampleList,
-      BitString.uniformList, bind_apply_toReal, PMF.pure_apply, hfeq]
+    simp only [pmf_norm, inversionGame, inversionExperiment, trivialInverter,
+      BitString.eval_sampleList, BitString.uniformList, bind_apply_toReal, PMF.pure_apply, hfeq]
     refine Finset.sum_congr rfl fun x _ => congrArg _ (Finset.sum_congr rfl fun x' _ => ?_)
     by_cases h : f x' = f x <;> simp [h]
   rw [heval]
@@ -1057,7 +1057,7 @@ private theorem wordHash_take {a count : ℕ} (h : a ≤ count) (seed input : Li
 private theorem wordHash_succ (a : ℕ) (seed input : List Bool) :
     LinearHash.wordHash (a + 1) seed input =
       LinearHash.wordHash a seed input ++
-        [((listRow input.length a seed).zipWith Bool.and input).foldl Bool.xor false] := by
+        [listDot (listRow input.length a seed) input] := by
   simp [LinearHash.wordHash, listRows, List.range_succ]
 
 /-- On `BitString` inputs, `LinearHash.wordHash m` with `m ≤ count` agrees with
@@ -2390,8 +2390,8 @@ private theorem inversionGame_succProbability_eq (g : List Bool → List Bool) {
         (((ProbComp.eval (adversary k (List.ofFn (f x₀)))).map
           (fun w => decide (g w = List.ofFn (f x₀)))) true).toReal := by
   rw [Game.coe_succProbability]
-  simp only [pmf_norm, inversionGame, BitString.eval_sampleList, BitString.uniformList,
-    PMF.bind_apply_toReal, beq_eq_decide]
+  simp only [pmf_norm, inversionGame, inversionExperiment, BitString.eval_sampleList,
+    BitString.uniformList, PMF.bind_apply_toReal, beq_eq_decide]
   refine Finset.sum_congr rfl fun x₀ _ => ?_
   rw [hf x₀]
   rfl

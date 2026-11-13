@@ -28,7 +28,7 @@ its ordered scope index. No distinctness assumption on variables or constraints 
 theorem incidenceEdgeIndex_eq_prefix {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
     (o : F.Occurrence) : incidenceEdgeIndex o = (CSP.vars (F.take o.1.val)).length + o.2.val := by
   let f := fun c : Constraint Rel V × ℕ =>
-    c.1.2.zipIdx.map fun v => (c.2, v.2, v.1)
+    c.1.scope.zipIdx.map fun v => (c.2, v.2, v.1)
   have hp (i : ℕ) : ((F.zipIdx.take i).flatMap f).length = (CSP.vars (F.take i)).length := by
     simp only [f, List.length_flatMap, List.length_map, List.length_zipIdx, CSP.vars]
     conv_rhs => rw [← List.zipIdx_map_fst 0 F, List.map_take, List.map_map]

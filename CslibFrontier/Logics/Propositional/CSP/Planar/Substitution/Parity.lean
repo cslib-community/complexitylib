@@ -61,14 +61,14 @@ theorem sum_auxiliaryBlock_eq_false
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (witnesses : ∀ r, GadgetWitness (gadgets r)) (B : ℕ)
     (hB : ∀ r, (gadgets r).numAux ≤ B) (F : CSP Src ℕ) (i : Fin F.length)
-    (a : Fin (gadgets F[i.val].1).numAux)
+    (a : Fin (gadgets F[i.val].rel).numAux)
     (x : Fin (incidenceGraph (replaceGadgets B (fun r => (gadgets r).template) F)).edges.length →
       Bool)
     (hx : (incidenceGraph (replaceGadgets B (fun r => (gadgets r).template) F)).VertexEven x) :
     ((shiftBlock (occurrencePrefix (fun r => (gadgets r).template) F i.val)
-      ((auxiliaryBoundaryBlocks (gadgets F[i.val].1) (witnesses F[i.val].1)).getD a.val [])).map
+      ((auxiliaryBoundaryBlocks (gadgets F[i.val].rel) (witnesses F[i.val].rel)).getD a.val [])).map
         fun j => (List.ofFn x).getD j false).sum = false := by
-  have hn := (nodup_auxiliaryBoundaryBlock (gadgets F[i.val].1) (witnesses F[i.val].1) a).map
+  have hn := (nodup_auxiliaryBoundaryBlock (gadgets F[i.val].rel) (witnesses F[i.val].rel) a).map
     (f := (occurrencePrefix (fun r => (gadgets r).template) F i.val + ·))
     (fun _ _ h => Nat.add_left_cancel h)
   exact sum_eq_false_of_vertexEven_word x hx _ hn (2 * (B * i.val + a.val) + 1) 0

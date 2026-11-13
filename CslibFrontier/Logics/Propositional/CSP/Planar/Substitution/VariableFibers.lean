@@ -45,14 +45,14 @@ theorem mem_variableBlock_iff_targetName
   constructor
   · rintro ⟨s, hvar, hm⟩
     let a : Fin (srcArity s.relation) := ⟨s.2.val, by
-      change s.2.val < srcArity F[s.1.val].1
+      change s.2.val < srcArity F[s.1.val].rel
       rw [← hF F[s.1.val] (List.getElem_mem s.1.isLt)]
       exact s.2.isLt⟩
     obtain ⟨hb, hname⟩ := shifted_boundaryBlock_spec gadgets witnesses B F s.1.isLt
       (Sum.inl a) hm
     refine ⟨hb, ?_⟩
     rw [hname]
-    change 2 * F[s.1.val].2.getD s.2.val 0 = 2 * v
+    change 2 * F[s.1.val].scope.getD s.2.val 0 = 2 * v
     rw [List.getD_eq_getElem _ _ s.2.isLt]
     change 2 * s.var = 2 * v
     rw [hvar]
@@ -63,18 +63,18 @@ theorem mem_variableBlock_iff_targetName
     cases hlocal : o.var with
     | inl a =>
       simp only [hlocal, Sum.elim_inl] at hname
-      have hscope : F[i].2.getD a.val 0 = v := by omega
-      have harg : a.val < F[i].2.length := by
+      have hscope : F[i].scope.getD a.val 0 = v := by omega
+      have harg : a.val < F[i].scope.length := by
         rw [hF F[i] (List.getElem_mem hi)]
         exact a.isLt
       let s : F.Occurrence := ⟨⟨i, hi⟩, ⟨a.val, harg⟩⟩
       have hsvar : s.var = v := by
-        change F[i].2[a.val] = v
+        change F[i].scope[a.val] = v
         rw [← List.getD_eq_getElem _ 0 harg]
         exact hscope
       refine ⟨s, hsvar, ?_⟩
       change index ∈ shiftBlock (occurrencePrefix (fun r => (gadgets r).template) F i)
-        ((freeBoundaryBlocks (gadgets F[i].1) (witnesses F[i].1)).getD a.val [])
+        ((freeBoundaryBlocks (gadgets F[i].rel) (witnesses F[i].rel)).getD a.val [])
       exact (mem_shiftBlock_boundaryBlock_iff _ _ _ (Sum.inl a) index).mpr ⟨o, ho, hlocal⟩
     | inr j =>
       simp only [hlocal, Sum.elim_inr] at hname
@@ -86,9 +86,9 @@ theorem mem_shifted_auxiliaryBlock_iff_targetName
     (gadgets : ∀ r, PPGadget arity sem (booleanRelation srcArity srcSem r))
     (witnesses : ∀ r, GadgetWitness (gadgets r)) (B : ℕ)
     (hB : ∀ r, (gadgets r).numAux ≤ B) (F : CSP Src ℕ)
-    {i : ℕ} (hi : i < F.length) (a : Fin (gadgets F[i].1).numAux) (index : ℕ) :
+    {i : ℕ} (hi : i < F.length) (a : Fin (gadgets F[i].rel).numAux) (index : ℕ) :
     index ∈ shiftBlock (occurrencePrefix (fun r => (gadgets r).template) F i)
-      ((auxiliaryBoundaryBlocks (gadgets F[i].1) (witnesses F[i].1)).getD a.val []) ↔
+      ((auxiliaryBoundaryBlocks (gadgets F[i].rel) (witnesses F[i].rel)).getD a.val []) ↔
       index < (replaceGadgets B (fun r => (gadgets r).template) F).vars.length ∧
         (replaceGadgets B (fun r => (gadgets r).template) F).vars.getD index 0 =
           2 * (B * i + a.val) + 1 := by
