@@ -20,35 +20,38 @@ projective garbling scheme with an extra algorithm `rerand` that takes a garbled
 returns a fresh-looking garbled circuit `gc'` together with one label permutation per input wire.
 Applying the permutations to the input labels of `gc` gives the input labels of `gc'`, so an
 evaluator holding an encoding for `gc` can move to `gc'` without the garbler. All randomness is
-explicit: `garble f r` garbles `f` with coins `r`, and `rerand gc r'` rerandomizes with coins `r'`.
-Decoding is folded into `evaluate`.
+explicit: `garble f r` garbles `f` with coins `r`, returning a `Garbled` record (the circuit and
+its label pairs), and `rerand gc r'` rerandomizes with coins `r'`, returning a `Rerandomized`
+record (the new circuit and its wire permutations). Decoding is folded into `evaluate`.
 Unlike `Cslib.Crypto.Garbling.Scheme`
 (`CslibFrontier/Crypto/Primitives/Garbling/Scheme.lean`), which is typed by `List Bool`,
 indexed by a security parameter, and intentionally omits projective structure,
 `RerandomizableGarbling` exposes per-wire label pairs so per-wire permutations can act directly
 on encodings.
 
-*Randomness composition* (`RandomnessComposition`) says that a rerandomized garbling is itself an
-honest garbling, with coins `explainGb r r'` computed from the garbling coins and the
-rerandomization coins, and that two rerandomizations compose into one with coins
-`explainRerand r₁ r₂`. The garbling half adapts the randomness-composition property of
-Definition 3, while `explainRerand` is an explicit two-step rerandomization-composition axiom of
-this formalization. With `garble_explainGb`, correctness of fresh garblings implies correctness of
-rerandomized ones (`rerandCorrect_of_correct`).
+*Randomness composition* (`RandomnessComposition`) says that a rerandomized garbling
+(`rerandGarbled`) is itself an honest garbling, with coins `explainGb r r'` computed from the
+garbling coins and the rerandomization coins, and that two rerandomizations (`rerandTwice`)
+compose into one with coins `explainRerand r₁ r₂`. The garbling half adapts the
+randomness-composition property of Definition 3, while `explainRerand` is an explicit two-step
+rerandomization-composition axiom of this formalization. With `garble_explainGb`, correctness of
+fresh garblings implies correctness of rerandomized ones (`rerandCorrect_of_correct`).
 
-Two security notions are compared, each as a pair of probabilistic programs; the projective
-encoding is `encode`, and `permEncoding` and `permInput` apply wire permutations.
+Two security notions are compared. Each has a view record handed to the distinguisher, a real
+and an ideal sampler of that view, the two experiments running a distinguisher on the sampled
+view, and an advantage; the projective encoding is `encode`, and `permEncoding` and `permInput`
+apply wire permutations.
 
-* **Rerandomization privacy** (`rerandReal`, `rerandIdeal`; adapting Definition 3): given the
-  garbling coins `r`, the rerandomized circuit and the rerandomized encoding of `x` look like a
-  fresh garbling of `f` with an honest encoding of `x`.
+* **Rerandomization privacy** (`RerandView`, `rerandRealView`, `rerandIdealView`; adapting
+  Definition 3): given the garbling coins `r`, the rerandomized circuit and the rerandomized
+  encoding of `x` look like a fresh garbling of `f` with an honest encoding of `x`.
 * **Explainability** (adapting Definition 9, p. 33 of ePrint 2024/383). Explainable garbling
-  (`explainGbReal`, `explainGbIdeal`): given an encoding of `x` for `gc` and a rerandomization of
-  `gc` over uniformly sampled garbling and rerandomization coins, the coins `explainGb r r'` look
-  like the coins of a fresh garbling. Explainable rerandomization (`explainRerandReal`,
-  `explainRerandIdeal`): given a rerandomization `gc₁` of `gc` and a rerandomization `gc₂` of
-  `gc₁` over uniformly sampled coins, the coins `explainRerand r₁ r₂` look like coins that
-  rerandomize `gc` directly.
+  (`ExplainGbView`, `explainGbRealView`, `explainGbIdealView`): given an encoding of `x` for `gc`
+  and a rerandomization of `gc` over uniformly sampled garbling and rerandomization coins, the
+  coins `explainGb r r'` look like the coins of a fresh garbling. Explainable rerandomization
+  (`ExplainRerandView`, `explainRerandRealView`, `explainRerandIdealView`): given a
+  rerandomization `gc₁` of `gc` and a rerandomization `gc₂` of `gc₁` over uniformly sampled coins,
+  the coins `explainRerand r₁ r₂` look like coins that rerandomize `gc` directly.
 
 This development proves two generic single-instance reductions relating sampled-coin
 explainability to rerandomization privacy under explicit algebraic invertibility hypotheses
@@ -56,51 +59,70 @@ explainability to rerandomization privacy under explicit algebraic invertibility
 garbling *equals* the rerandomization-privacy advantage of `explainGbReduction`
 (`explainGbAdvantage_eq`). The advantage against explainable rerandomization is at most the sum of
 the rerandomization-privacy advantages of two reductions (`explainRerandAdvantage_le`), through one
-intermediate hybrid. Both reductions use the inverse data of `RandomnessComposition.Invertible`
-(introduced for this development): the garbling explanation is a bijection in the garbling coins
-with an explicit inverse, the rerandomization explanation is a bijection in its first argument, and
-some rerandomization coins undo each rerandomization step. The rerandomization bound also assumes
-that the label action respects composition of permutations.
+intermediate hybrid: the right reduction run on the ideal rerandomization-privacy view, which has
+the same law as the left reduction on that view. Running the right reduction on the real view is
+the ideal explainable-rerandomization experiment, by definition
+(`rerandRealExperiment_explainRerandReductionRight`). Both reductions use the inverse data of
+`RandomnessComposition.Invertible` (introduced for this development): the garbling explanation is
+a bijection in the garbling coins with an explicit inverse, the rerandomization explanation is a
+bijection in its first argument, and some rerandomization coins undo each rerandomization step.
+The rerandomization bound also assumes that the label action respects composition of permutations.
 
 When the explanation maps are bijective in their *second* argument, rerandomization privacy and the
-stronger fixed-coin explainability variants (`explainGbFixedReal`, `explainRerandFixedReal`, which
-hold the base coins `r` and `r₁` fixed rather than sampling them) hold with zero error
-(`eval_explainGbFixedReal`, `eval_explainRerandFixedReal`, `eval_rerandReal`).
+stronger fixed-coin explainability variants (`explainGbFixedRealView`,
+`explainRerandFixedRealView`, which hold the base coins `r` and `r₁` fixed rather than sampling
+them) hold with zero error, as equalities of view laws (`eval_explainGbFixedRealView`,
+`eval_explainRerandFixedRealView`, `eval_rerandRealView`).
 
 ## Scope
 
-In `explainGbReal`/`explainGbIdeal` and `explainRerandReal`/`explainRerandIdeal`, the garbling and
-rerandomization coins are sampled uniformly (matching the sampled-coin experiment structure of
-Definition 9 in ePrint 2024/383, p. 33), whereas the fixed-coin variants `explainGbFixed*` and
-`explainRerandFixed*` appear in the zero-error bijectivity lemmas. On the hypothesis side,
-`rerandReal` samples `r` uniformly whereas Definition 3 quantifies over fixed `r`; because privacy
-at every fixed `r` implies privacy for uniformly sampled `r`, the sampled-`r` assumption used by
-the reductions is weaker. The generic reductions `explainGbAdvantage_eq` and
-`explainRerandAdvantage_le`, together with the two-step composition field `explainRerand` and the
-inverse structure `RandomnessComposition.Invertible`, are results and hypotheses of this
-development rather than transcriptions of a numbered theorem in the paper. All statements are
-single-instance: the function, input and distinguisher are fixed, and running time is not tracked,
-so no asymptotic security or efficiency of the reductions is claimed.
+In `explainGbRealView`/`explainGbIdealView` and `explainRerandRealView`/`explainRerandIdealView`,
+the garbling and rerandomization coins are sampled uniformly (matching the sampled-coin experiment
+structure of Definition 9 in ePrint 2024/383, p. 33): each samples the base coins and runs its
+fixed-coin variant `explainGbFixed*View` or `explainRerandFixed*View`, which appear in the
+zero-error bijectivity lemmas. On the hypothesis side, `rerandRealView` samples `r` uniformly
+whereas Definition 3 quantifies over fixed `r`; because privacy at every fixed `r` implies privacy
+for uniformly sampled `r`, the sampled-`r` assumption used by the reductions is weaker. The generic
+reductions `explainGbAdvantage_eq` and `explainRerandAdvantage_le`, together with the two-step
+composition field `explainRerand` and the inverse structure `RandomnessComposition.Invertible`, are
+results and hypotheses of this development rather than transcriptions of a numbered theorem in the
+paper. All statements are single-instance: the function, input and distinguisher are fixed, and
+running time is not tracked, so no asymptotic security or efficiency of the reductions is claimed.
 
 ## Main definitions
 
-* `Cslib.Crypto.Garbling.RerandomizableGarbling`: an RGS with explicit coins.
+* `Cslib.Crypto.Garbling.RerandomizableGarbling`: an RGS with explicit coins, with outputs
+  `Cslib.Crypto.Garbling.RerandomizableGarbling.Garbled` and
+  `Cslib.Crypto.Garbling.RerandomizableGarbling.Rerandomized`.
 * `Cslib.Crypto.Garbling.RerandomizableGarbling.encode`,
   `Cslib.Crypto.Garbling.RerandomizableGarbling.permEncoding`,
   `Cslib.Crypto.Garbling.RerandomizableGarbling.permInput`: projective encoding and permutations.
+* `Cslib.Crypto.Garbling.RerandomizableGarbling.evalGarbled`,
+  `Cslib.Crypto.Garbling.RerandomizableGarbling.rerandGarbled`,
+  `Cslib.Crypto.Garbling.RerandomizableGarbling.rerandTwice`: evaluating a garbling, and
+  rerandomizing it once or twice.
 * `Cslib.Crypto.Garbling.RerandomizableGarbling.Correct`,
   `Cslib.Crypto.Garbling.RerandomizableGarbling.RerandCorrect`: correctness.
 * `Cslib.Crypto.Garbling.RerandomizableGarbling.RandomnessComposition`: randomness composition.
 * `Cslib.Crypto.Garbling.RerandomizableGarbling.RandomnessComposition.Invertible`: the inverse
   data used by the reductions.
-* `Cslib.Crypto.Garbling.RerandomizableGarbling.rerandReal`,
-  `Cslib.Crypto.Garbling.RerandomizableGarbling.rerandIdeal`,
-  `Cslib.Crypto.Garbling.RerandomizableGarbling.explainGbReal`,
-  `Cslib.Crypto.Garbling.RerandomizableGarbling.explainGbIdeal`,
-  `Cslib.Crypto.Garbling.RerandomizableGarbling.explainRerandReal`,
-  `Cslib.Crypto.Garbling.RerandomizableGarbling.explainRerandIdeal`, and the fixed-coin
-  variants `explainGbFixedReal`, `explainGbFixedIdeal`, `explainRerandFixedReal`,
-  `explainRerandFixedIdeal`: the experiments.
+* `Cslib.Crypto.Garbling.RerandomizableGarbling.RerandView`,
+  `Cslib.Crypto.Garbling.RerandomizableGarbling.ExplainGbView`,
+  `Cslib.Crypto.Garbling.RerandomizableGarbling.ExplainRerandView`: what the distinguisher sees.
+* `Cslib.Crypto.Garbling.RerandomizableGarbling.rerandRealView`,
+  `Cslib.Crypto.Garbling.RerandomizableGarbling.rerandIdealView`,
+  `Cslib.Crypto.Garbling.RerandomizableGarbling.explainGbRealView`,
+  `Cslib.Crypto.Garbling.RerandomizableGarbling.explainGbIdealView`,
+  `Cslib.Crypto.Garbling.RerandomizableGarbling.explainRerandRealView`,
+  `Cslib.Crypto.Garbling.RerandomizableGarbling.explainRerandIdealView`, and the fixed-coin
+  variants `explainGbFixedRealView`, `explainGbFixedIdealView`, `explainRerandFixedRealView`,
+  `explainRerandFixedIdealView`: the view samplers.
+* `Cslib.Crypto.Garbling.RerandomizableGarbling.rerandRealExperiment`,
+  `Cslib.Crypto.Garbling.RerandomizableGarbling.rerandIdealExperiment`,
+  `Cslib.Crypto.Garbling.RerandomizableGarbling.explainGbRealExperiment`,
+  `Cslib.Crypto.Garbling.RerandomizableGarbling.explainGbIdealExperiment`,
+  `Cslib.Crypto.Garbling.RerandomizableGarbling.explainRerandRealExperiment`,
+  `Cslib.Crypto.Garbling.RerandomizableGarbling.explainRerandIdealExperiment`: the experiments.
 * `Cslib.Crypto.Garbling.RerandomizableGarbling.explainGbReduction`,
   `Cslib.Crypto.Garbling.RerandomizableGarbling.explainRerandReductionLeft`,
   `Cslib.Crypto.Garbling.RerandomizableGarbling.explainRerandReductionRight`: the reductions.
@@ -118,11 +140,12 @@ so no asymptotic security or efficiency of the reductions is claimed.
   algebraic lemmas.
 * `Cslib.Crypto.Garbling.RerandomizableGarbling.rerandCorrect_of_correct`.
 * `Cslib.Crypto.Garbling.RerandomizableGarbling.explainGbAdvantage_eq`.
-* `Cslib.Crypto.Garbling.RerandomizableGarbling.explainRerandAdvantage_le`.
-* `Cslib.Crypto.Garbling.RerandomizableGarbling.eval_rerandReal`,
-  `Cslib.Crypto.Garbling.RerandomizableGarbling.eval_explainGbFixedReal`,
-  `Cslib.Crypto.Garbling.RerandomizableGarbling.eval_explainRerandFixedReal`: zero error under
-  bijectivity in the second argument.
+* `Cslib.Crypto.Garbling.RerandomizableGarbling.explainRerandAdvantage_le`, with
+  `Cslib.Crypto.Garbling.RerandomizableGarbling.rerandRealExperiment_explainRerandReductionRight`.
+* `Cslib.Crypto.Garbling.RerandomizableGarbling.eval_rerandRealView`,
+  `Cslib.Crypto.Garbling.RerandomizableGarbling.eval_explainGbFixedRealView`,
+  `Cslib.Crypto.Garbling.RerandomizableGarbling.eval_explainRerandFixedRealView`: zero error
+  under bijectivity in the second argument.
 
 ## References
 
@@ -137,6 +160,22 @@ namespace Cslib.Crypto.Garbling
 
 open Probability
 open scoped NNReal
+
+/-- The output of garbling: a garbled circuit and, for each of the `m` input wires, its pair of
+labels for the bits `false` and `true`. -/
+@[ext] structure RerandomizableGarbling.Garbled (GC Label : Type) (m : ℕ) where
+  /-- The garbled circuit. -/
+  circuit : GC
+  /-- The labels of each input wire, for the bits `false` and `true`. -/
+  labels : Fin m → Label × Label
+
+/-- The output of rerandomization: a rerandomized circuit and one label permutation per input
+wire, carrying the labels of the old circuit to those of the new one. -/
+@[ext] structure RerandomizableGarbling.Rerandomized (GC Perm : Type) (m : ℕ) where
+  /-- The rerandomized circuit. -/
+  circuit : GC
+  /-- The label permutation of each input wire. -/
+  perm : Fin m → Perm
 
 /-- A projective rerandomizable garbling scheme for functions `F` on `m` input bits, with explicit
 garbling coins `Coins` and rerandomization coins `RerandCoins`. `garble f r` returns a garbled
@@ -164,9 +203,9 @@ structure RerandomizableGarbling (F : Type) (m : ℕ) where
   /-- The function computed by a description. -/
   evalFn : F → (Fin m → Bool) → Out
   /-- Garbling with given coins. -/
-  garble : F → Coins → GC × (Fin m → Label × Label)
+  garble : F → Coins → RerandomizableGarbling.Garbled GC Label m
   /-- Rerandomization with given coins. -/
-  rerand : GC → RerandCoins → GC × (Fin m → Perm)
+  rerand : GC → RerandCoins → RerandomizableGarbling.Rerandomized GC Perm m
   /-- The action of permutations on labels. -/
   act : Perm → Label → Label
   /-- Composition of permutations, meant as `p` followed by `q`. -/
@@ -203,18 +242,33 @@ theorem encode_permEncoding (π : Fin m → G.Perm) (e : Fin m → G.Label × G.
   simp only [encode, permEncoding, permInput]
   split <;> rfl
 
-/-- Correctness of fresh garblings: evaluating `garble f r` on the encoding of `x` gives `f x`. -/
-def Correct : Prop :=
-  ∀ (f : F) (x : Fin m → Bool) (r : G.Coins),
-    G.evaluate (G.garble f r).1 (G.encode (G.garble f r).2 x) = G.evalFn f x
+/-- Evaluate a garbling on input `x`: run its circuit on the encoding of `x`. -/
+def evalGarbled (g : Garbled G.GC G.Label m) (x : Fin m → Bool) : G.Out :=
+  G.evaluate g.circuit (G.encode g.labels x)
 
-/-- Correctness of rerandomized garblings: evaluating the rerandomized circuit on the encoding
-of `x` under the permuted encoding table gives `f x`. -/
+/-- Rerandomize a garbling with coins `r'`: the rerandomized circuit, with the labels permuted by
+the rerandomization's wire permutations. -/
+def rerandGarbled (g : Garbled G.GC G.Label m) (r' : G.RerandCoins) :
+    Garbled G.GC G.Label m :=
+  let q := G.rerand g.circuit r'
+  { circuit := q.circuit, labels := G.permEncoding q.perm g.labels }
+
+/-- Rerandomize `gc` with coins `r₁` and then `r₂`: the final circuit, with each wire's two
+permutations composed. -/
+def rerandTwice (gc : G.GC) (r₁ r₂ : G.RerandCoins) : Rerandomized G.GC G.Perm m :=
+  let q₁ := G.rerand gc r₁
+  let q₂ := G.rerand q₁.circuit r₂
+  { circuit := q₂.circuit, perm := fun i => G.comp (q₁.perm i) (q₂.perm i) }
+
+/-- Correctness of fresh garblings: evaluating `garble f r` on `x` gives `f x`. -/
+def Correct : Prop :=
+  ∀ (f : F) (x : Fin m → Bool) (r : G.Coins), G.evalGarbled (G.garble f r) x = G.evalFn f x
+
+/-- Correctness of rerandomized garblings: evaluating the rerandomization of `garble f r` on `x`
+gives `f x`. -/
 def RerandCorrect : Prop :=
   ∀ (f : F) (x : Fin m → Bool) (r : G.Coins) (r' : G.RerandCoins),
-    G.evaluate (G.rerand (G.garble f r).1 r').1
-      (G.encode (G.permEncoding (G.rerand (G.garble f r).1 r').2 (G.garble f r).2) x) =
-      G.evalFn f x
+    G.evalGarbled (G.rerandGarbled (G.garble f r) r') x = G.evalFn f x
 
 /-- Randomness composition. A rerandomization of `garble f r` with coins `r'`, with its permuted
 encoding table, is the honest garbling of `f` with coins `explainGb r r'`; and rerandomizing
@@ -226,14 +280,10 @@ structure RandomnessComposition where
   /-- The rerandomization coins that explain two rerandomization steps. -/
   explainRerand : G.RerandCoins → G.RerandCoins → G.RerandCoins
   garble_explainGb : ∀ (f : F) (r : G.Coins) (r' : G.RerandCoins),
-    G.garble f (explainGb r r') =
-      ((G.rerand (G.garble f r).1 r').1,
-        G.permEncoding (G.rerand (G.garble f r).1 r').2 (G.garble f r).2)
+    G.garble f (explainGb r r') = G.rerandGarbled (G.garble f r) r'
   rerand_explainRerand : ∀ (f : F) (r : G.Coins) (r₁ r₂ : G.RerandCoins),
-    G.rerand (G.garble f r).1 (explainRerand r₁ r₂) =
-      ((G.rerand (G.rerand (G.garble f r).1 r₁).1 r₂).1,
-        fun i => G.comp ((G.rerand (G.garble f r).1 r₁).2 i)
-          ((G.rerand (G.rerand (G.garble f r).1 r₁).1 r₂).2 i))
+    G.rerand (G.garble f r).circuit (explainRerand r₁ r₂) =
+      G.rerandTwice (G.garble f r).circuit r₁ r₂
 
 variable {G}
 
@@ -242,8 +292,8 @@ rerandomized ones. -/
 theorem rerandCorrect_of_correct (rc : G.RandomnessComposition) (h : G.Correct) :
     G.RerandCorrect := by
   intro f x r r'
-  have hg := rc.garble_explainGb f r r'
-  rw [← h f x (rc.explainGb r r'), hg]
+  rw [← rc.garble_explainGb]
+  exact h f x (rc.explainGb r r')
 
 /-- Inverse data for randomness composition, used by the reductions from rerandomization privacy
 to explainability: `unexplainGb · r'` inverts `explainGb · r'`, `explainRerand` is a bijection in
@@ -258,155 +308,229 @@ structure RandomnessComposition.Invertible (rc : G.RandomnessComposition) where
   /-- Coins that undo a rerandomization step. -/
   invRerand : G.RerandCoins ≃ G.RerandCoins
   rerand_invRerand : ∀ (gc : G.GC) (r' : G.RerandCoins),
-    (G.rerand (G.rerand gc r').1 (invRerand r')).1 = gc
+    (G.rerand (G.rerand gc r').circuit (invRerand r')).circuit = gc
   act_invRerand : ∀ (gc : G.GC) (r' : G.RerandCoins) (i : Fin m) (L : G.Label),
-    G.act ((G.rerand (G.rerand gc r').1 (invRerand r')).2 i) (G.act ((G.rerand gc r').2 i) L) = L
+    G.act ((G.rerand (G.rerand gc r').circuit (invRerand r')).perm i)
+      (G.act ((G.rerand gc r').perm i) L) = L
 
 variable (G)
 
-/-! ### Experiments -/
+/-! ### Views -/
 
-/-- Rerandomization privacy, real: garble with uniform coins `r`, rerandomize with uniform coins,
-and output `r`, the rerandomized circuit and the permuted encoding of `x`. -/
-noncomputable def rerandReal (f : F) (x : Fin m → Bool) :
-    ProbComp (G.Coins × G.GC × (Fin m → G.Label)) := do
+/-- What a rerandomization-privacy distinguisher sees. -/
+structure RerandView where
+  /-- The coins of the base garbling. -/
+  coins : G.Coins
+  /-- The challenge circuit. -/
+  circuit : G.GC
+  /-- The evaluator's input labels for the challenge circuit. -/
+  input : Fin m → G.Label
+
+/-- What an explainable-garbling distinguisher sees. -/
+structure ExplainGbView where
+  /-- The evaluator's input labels for the base circuit. -/
+  input : Fin m → G.Label
+  /-- The base circuit. -/
+  base : G.GC
+  /-- The challenge circuit. -/
+  candidate : G.GC
+  /-- The garbling coins claimed to produce the challenge circuit. -/
+  coins : G.Coins
+
+/-- What an explainable-rerandomization distinguisher sees. -/
+structure ExplainRerandView where
+  /-- The base circuit. -/
+  base : G.GC
+  /-- The evaluator's input labels for the first rerandomization. -/
+  input : Fin m → G.Label
+  /-- The first rerandomization of the base circuit. -/
+  rerandomized : G.GC
+  /-- The challenge circuit. -/
+  candidate : G.GC
+  /-- The rerandomization coins claimed to carry the base circuit to the challenge circuit. -/
+  coins : G.RerandCoins
+
+/-! ### View samplers -/
+
+/-- Rerandomization privacy, real view: garble with uniform coins `r`, rerandomize with uniform
+coins, and show `r`, the rerandomized circuit and the permuted encoding of `x`. -/
+noncomputable def rerandRealView (f : F) (x : Fin m → Bool) : ProbComp G.RerandView := do
   let r ← ProbComp.uniform G.Coins
   let r' ← ProbComp.uniform G.RerandCoins
   let g := G.garble f r
-  let q := G.rerand g.1 r'
-  return (r, q.1, G.permInput q.2 (G.encode g.2 x))
+  let q := G.rerand g.circuit r'
+  return { coins := r, circuit := q.circuit, input := G.permInput q.perm (G.encode g.labels x) }
 
-/-- Rerandomization privacy, ideal: output uniform coins `r` together with an independent fresh
+/-- Rerandomization privacy, ideal view: uniform coins `r` together with an independent fresh
 garbling and the encoding of `x`. -/
-noncomputable def rerandIdeal (f : F) (x : Fin m → Bool) :
-    ProbComp (G.Coins × G.GC × (Fin m → G.Label)) := do
+noncomputable def rerandIdealView (f : F) (x : Fin m → Bool) : ProbComp G.RerandView := do
   let r ← ProbComp.uniform G.Coins
   let s ← ProbComp.uniform G.Coins
   let g := G.garble f s
-  return (r, g.1, G.encode g.2 x)
+  return { coins := r, circuit := g.circuit, input := G.encode g.labels x }
 
-/-- Explainable garbling, real (sampled garbling coins): output the encoding of `x` and the
-circuit of a garbling with uniform coins `r`, a rerandomization of that circuit with uniform
-coins `r'`, and the explanation `explainGb r r'`. -/
-noncomputable def explainGbReal (rc : G.RandomnessComposition) (f : F) (x : Fin m → Bool) :
-    ProbComp ((Fin m → G.Label) × G.GC × G.GC × G.Coins) := do
-  let r ← ProbComp.uniform G.Coins
+/-- Explainable garbling with fixed garbling coins `r`, real view: the encoding of `x` and the
+circuit of `garble f r`, a rerandomization of that circuit with uniform coins `r'`, and the
+explanation `explainGb r r'`. -/
+noncomputable def explainGbFixedRealView (rc : G.RandomnessComposition) (f : F)
+    (x : Fin m → Bool) (r : G.Coins) : ProbComp G.ExplainGbView := do
   let r' ← ProbComp.uniform G.RerandCoins
   let g := G.garble f r
-  return (G.encode g.2 x, g.1, (G.rerand g.1 r').1, rc.explainGb r r')
+  return {
+    input := G.encode g.labels x, base := g.circuit,
+    candidate := (G.rerand g.circuit r').circuit, coins := rc.explainGb r r' }
 
-/-- Explainable garbling, ideal (sampled garbling coins): the third and fourth components are a
-fresh garbled circuit and its coins. -/
-noncomputable def explainGbIdeal (f : F) (x : Fin m → Bool) :
-    ProbComp ((Fin m → G.Label) × G.GC × G.GC × G.Coins) := do
-  let r ← ProbComp.uniform G.Coins
+/-- Explainable garbling with fixed garbling coins `r`, ideal view: the challenge is a fresh
+garbled circuit and its coins. -/
+noncomputable def explainGbFixedIdealView (f : F) (x : Fin m → Bool) (r : G.Coins) :
+    ProbComp G.ExplainGbView := do
   let s ← ProbComp.uniform G.Coins
   let g := G.garble f r
-  return (G.encode g.2 x, g.1, (G.garble f s).1, s)
+  return {
+    input := G.encode g.labels x, base := g.circuit,
+    candidate := (G.garble f s).circuit, coins := s }
 
-/-- Explainable rerandomization, real (sampled coins): garble with coins `r`, rerandomize with
-`r₁` and then `r₂`, and output the base circuit, the encoding of `x` for the first
-rerandomization, both rerandomized circuits and the explanation `explainRerand r₁ r₂`. -/
-noncomputable def explainRerandReal (rc : G.RandomnessComposition) (f : F) (x : Fin m → Bool) :
-    ProbComp (G.GC × (Fin m → G.Label) × G.GC × G.GC × G.RerandCoins) := do
+/-- Explainable garbling, real view (sampled garbling coins). -/
+noncomputable def explainGbRealView (rc : G.RandomnessComposition) (f : F) (x : Fin m → Bool) :
+    ProbComp G.ExplainGbView := do
   let r ← ProbComp.uniform G.Coins
-  let r₁ ← ProbComp.uniform G.RerandCoins
+  G.explainGbFixedRealView rc f x r
+
+/-- Explainable garbling, ideal view (sampled garbling coins). -/
+noncomputable def explainGbIdealView (f : F) (x : Fin m → Bool) : ProbComp G.ExplainGbView := do
+  let r ← ProbComp.uniform G.Coins
+  G.explainGbFixedIdealView f x r
+
+/-- Explainable rerandomization with fixed coins `r` and `r₁`, real view: garble with coins `r`,
+rerandomize with `r₁` and then uniform `r₂`, and show the base circuit, the encoding of `x` for
+the first rerandomization, both rerandomized circuits and the explanation `explainRerand r₁ r₂`. -/
+noncomputable def explainRerandFixedRealView (rc : G.RandomnessComposition) (f : F)
+    (x : Fin m → Bool) (r : G.Coins) (r₁ : G.RerandCoins) : ProbComp G.ExplainRerandView := do
   let r₂ ← ProbComp.uniform G.RerandCoins
   let g := G.garble f r
-  let q := G.rerand g.1 r₁
-  return (g.1, G.permInput q.2 (G.encode g.2 x), q.1, (G.rerand q.1 r₂).1, rc.explainRerand r₁ r₂)
+  let q := G.rerand g.circuit r₁
+  return {
+    base := g.circuit, input := G.permInput q.perm (G.encode g.labels x),
+    rerandomized := q.circuit, candidate := (G.rerand q.circuit r₂).circuit,
+    coins := rc.explainRerand r₁ r₂ }
 
-/-- Explainable rerandomization, ideal (sampled coins): the fourth and fifth components are a
+/-- Explainable rerandomization with fixed coins `r` and `r₁`, ideal view: the challenge is a
 direct rerandomization of the base circuit and its coins. -/
-noncomputable def explainRerandIdeal (f : F) (x : Fin m → Bool) :
-    ProbComp (G.GC × (Fin m → G.Label) × G.GC × G.GC × G.RerandCoins) := do
+noncomputable def explainRerandFixedIdealView (f : F) (x : Fin m → Bool) (r : G.Coins)
+    (r₁ : G.RerandCoins) : ProbComp G.ExplainRerandView := do
+  let s ← ProbComp.uniform G.RerandCoins
+  let g := G.garble f r
+  let q := G.rerand g.circuit r₁
+  return {
+    base := g.circuit, input := G.permInput q.perm (G.encode g.labels x),
+    rerandomized := q.circuit, candidate := (G.rerand g.circuit s).circuit, coins := s }
+
+/-- Explainable rerandomization, real view (sampled coins). -/
+noncomputable def explainRerandRealView (rc : G.RandomnessComposition) (f : F)
+    (x : Fin m → Bool) : ProbComp G.ExplainRerandView := do
   let r ← ProbComp.uniform G.Coins
   let r₁ ← ProbComp.uniform G.RerandCoins
-  let s ← ProbComp.uniform G.RerandCoins
-  let g := G.garble f r
-  let q := G.rerand g.1 r₁
-  return (g.1, G.permInput q.2 (G.encode g.2 x), q.1, (G.rerand g.1 s).1, s)
+  G.explainRerandFixedRealView rc f x r r₁
 
-/-- Explainable garbling with fixed garbling coins `r`, real. -/
-noncomputable def explainGbFixedReal (rc : G.RandomnessComposition) (f : F) (x : Fin m → Bool)
-    (r : G.Coins) : ProbComp ((Fin m → G.Label) × G.GC × G.GC × G.Coins) := do
-  let r' ← ProbComp.uniform G.RerandCoins
-  let g := G.garble f r
-  return (G.encode g.2 x, g.1, (G.rerand g.1 r').1, rc.explainGb r r')
+/-- Explainable rerandomization, ideal view (sampled coins). -/
+noncomputable def explainRerandIdealView (f : F) (x : Fin m → Bool) :
+    ProbComp G.ExplainRerandView := do
+  let r ← ProbComp.uniform G.Coins
+  let r₁ ← ProbComp.uniform G.RerandCoins
+  G.explainRerandFixedIdealView f x r r₁
 
-/-- Explainable garbling with fixed garbling coins `r`, ideal. -/
-noncomputable def explainGbFixedIdeal (f : F) (x : Fin m → Bool) (r : G.Coins) :
-    ProbComp ((Fin m → G.Label) × G.GC × G.GC × G.Coins) := do
-  let s ← ProbComp.uniform G.Coins
-  let g := G.garble f r
-  return (G.encode g.2 x, g.1, (G.garble f s).1, s)
+/-! ### Experiments and advantages -/
 
-/-- Explainable rerandomization with fixed coins `r` and `r₁`, real. -/
-noncomputable def explainRerandFixedReal (rc : G.RandomnessComposition) (f : F)
-    (x : Fin m → Bool) (r : G.Coins) (r₁ : G.RerandCoins) :
-    ProbComp (G.GC × (Fin m → G.Label) × G.GC × G.GC × G.RerandCoins) := do
-  let r₂ ← ProbComp.uniform G.RerandCoins
-  let g := G.garble f r
-  let q := G.rerand g.1 r₁
-  return (g.1, G.permInput q.2 (G.encode g.2 x), q.1, (G.rerand q.1 r₂).1, rc.explainRerand r₁ r₂)
+/-- The real rerandomization-privacy experiment: `D` guesses on the real view. -/
+noncomputable def rerandRealExperiment (f : F) (x : Fin m → Bool)
+    (D : G.RerandView → ProbComp Bool) : ProbComp Bool := do
+  let v ← G.rerandRealView f x
+  D v
 
-/-- Explainable rerandomization with fixed coins `r` and `r₁`, ideal. -/
-noncomputable def explainRerandFixedIdeal (f : F) (x : Fin m → Bool) (r : G.Coins)
-    (r₁ : G.RerandCoins) :
-    ProbComp (G.GC × (Fin m → G.Label) × G.GC × G.GC × G.RerandCoins) := do
-  let s ← ProbComp.uniform G.RerandCoins
-  let g := G.garble f r
-  let q := G.rerand g.1 r₁
-  return (g.1, G.permInput q.2 (G.encode g.2 x), q.1, (G.rerand g.1 s).1, s)
+/-- The ideal rerandomization-privacy experiment: `D` guesses on the ideal view. -/
+noncomputable def rerandIdealExperiment (f : F) (x : Fin m → Bool)
+    (D : G.RerandView → ProbComp Bool) : ProbComp Bool := do
+  let v ← G.rerandIdealView f x
+  D v
 
-/-! ### Advantages and reductions -/
+/-- The real explainable-garbling experiment: `D` guesses on the real view. -/
+noncomputable def explainGbRealExperiment (rc : G.RandomnessComposition) (f : F)
+    (x : Fin m → Bool) (D : G.ExplainGbView → ProbComp Bool) : ProbComp Bool := do
+  let v ← G.explainGbRealView rc f x
+  D v
 
-/-- The advantage of `D` in telling `rerandReal` from `rerandIdeal`. -/
+/-- The ideal explainable-garbling experiment: `D` guesses on the ideal view. -/
+noncomputable def explainGbIdealExperiment (f : F) (x : Fin m → Bool)
+    (D : G.ExplainGbView → ProbComp Bool) : ProbComp Bool := do
+  let v ← G.explainGbIdealView f x
+  D v
+
+/-- The real explainable-rerandomization experiment: `D` guesses on the real view. -/
+noncomputable def explainRerandRealExperiment (rc : G.RandomnessComposition) (f : F)
+    (x : Fin m → Bool) (D : G.ExplainRerandView → ProbComp Bool) : ProbComp Bool := do
+  let v ← G.explainRerandRealView rc f x
+  D v
+
+/-- The ideal explainable-rerandomization experiment: `D` guesses on the ideal view. -/
+noncomputable def explainRerandIdealExperiment (f : F) (x : Fin m → Bool)
+    (D : G.ExplainRerandView → ProbComp Bool) : ProbComp Bool := do
+  let v ← G.explainRerandIdealView f x
+  D v
+
+/-- The advantage of `D` in telling the real rerandomization-privacy view from the ideal one. -/
 noncomputable def rerandAdvantage (f : F) (x : Fin m → Bool)
-    (D : G.Coins × G.GC × (Fin m → G.Label) → ProbComp Bool) : ℝ≥0 :=
-  Game.advantage (ProbComp.eval (do let v ← G.rerandReal f x; D v))
-    (ProbComp.eval (do let v ← G.rerandIdeal f x; D v))
+    (D : G.RerandView → ProbComp Bool) : ℝ≥0 :=
+  Game.advantage (ProbComp.eval (G.rerandRealExperiment f x D))
+    (ProbComp.eval (G.rerandIdealExperiment f x D))
 
-/-- The advantage of `D` in telling `explainGbReal` from `explainGbIdeal`. -/
+/-- The advantage of `D` in telling the real explainable-garbling view from the ideal one. -/
 noncomputable def explainGbAdvantage (rc : G.RandomnessComposition) (f : F) (x : Fin m → Bool)
-    (D : (Fin m → G.Label) × G.GC × G.GC × G.Coins → ProbComp Bool) : ℝ≥0 :=
-  Game.advantage (ProbComp.eval (do let v ← G.explainGbReal rc f x; D v))
-    (ProbComp.eval (do let v ← G.explainGbIdeal f x; D v))
+    (D : G.ExplainGbView → ProbComp Bool) : ℝ≥0 :=
+  Game.advantage (ProbComp.eval (G.explainGbRealExperiment rc f x D))
+    (ProbComp.eval (G.explainGbIdealExperiment f x D))
 
-/-- The advantage of `D` in telling `explainRerandReal` from `explainRerandIdeal`. -/
+/-- The advantage of `D` in telling the real explainable-rerandomization view from the ideal
+one. -/
 noncomputable def explainRerandAdvantage (rc : G.RandomnessComposition) (f : F)
-    (x : Fin m → Bool)
-    (D : G.GC × (Fin m → G.Label) × G.GC × G.GC × G.RerandCoins → ProbComp Bool) : ℝ≥0 :=
-  Game.advantage (ProbComp.eval (do let v ← G.explainRerandReal rc f x; D v))
-    (ProbComp.eval (do let v ← G.explainRerandIdeal f x; D v))
+    (x : Fin m → Bool) (D : G.ExplainRerandView → ProbComp Bool) : ℝ≥0 :=
+  Game.advantage (ProbComp.eval (G.explainRerandRealExperiment rc f x D))
+    (ProbComp.eval (G.explainRerandIdealExperiment f x D))
+
+/-! ### Reductions -/
 
 /-- The rerandomization-privacy distinguisher built from an explainable-garbling distinguisher:
-on `(r, gc, X)` it runs `D` on `X`, `gc`, the circuit of `garble f r` and the coins `r`. -/
-def explainGbReduction (f : F)
-    (D : (Fin m → G.Label) × G.GC × G.GC × G.Coins → ProbComp Bool) :
-    G.Coins × G.GC × (Fin m → G.Label) → ProbComp Bool :=
-  fun (r, gc, X) => D (X, gc, (G.garble f r).1, r)
+it shows `D` the challenge input labels and circuit as the base, and the circuit of
+`garble f v.coins` with those coins as the challenge. -/
+def explainGbReduction (f : F) (D : G.ExplainGbView → ProbComp Bool) :
+    G.RerandView → ProbComp Bool :=
+  fun v => D {
+    input := v.input, base := v.circuit, candidate := (G.garble f v.coins).circuit,
+    coins := v.coins }
 
 /-- The first rerandomization-privacy distinguisher built from an explainable-rerandomization
-distinguisher: on `(r, gc, X)` it samples `s`, takes the base circuit garbled with coins
-`unexplainGb r s`, and runs `D` on it, `X`, `gc`, its rerandomization with coins `s`, and `s`. -/
+distinguisher: it samples `s`, takes the base circuit garbled with coins `unexplainGb v.coins s`,
+and shows `D` that base, the challenge input labels and circuit, the base's rerandomization with
+coins `s`, and `s`. -/
 noncomputable def explainRerandReductionLeft {rc : G.RandomnessComposition}
-    (hinv : rc.Invertible) (f : F)
-    (D : G.GC × (Fin m → G.Label) × G.GC × G.GC × G.RerandCoins → ProbComp Bool) :
-    G.Coins × G.GC × (Fin m → G.Label) → ProbComp Bool := fun (r, gc, X) => do
+    (hinv : rc.Invertible) (f : F) (D : G.ExplainRerandView → ProbComp Bool) :
+    G.RerandView → ProbComp Bool := fun v => do
   let s ← ProbComp.uniform G.RerandCoins
-  let base := (G.garble f (hinv.unexplainGb r s)).1
-  D (base, X, gc, (G.rerand base s).1, s)
+  let base := (G.garble f (hinv.unexplainGb v.coins s)).circuit
+  D {
+    base := base, input := v.input, rerandomized := v.circuit,
+    candidate := (G.rerand base s).circuit, coins := s }
 
 /-- The second rerandomization-privacy distinguisher built from an explainable-rerandomization
-distinguisher: on `(r, gc, X)` it samples `s`, takes the base circuit garbled with coins `r`,
-and runs `D` on it, `X`, `gc`, its rerandomization with coins `s`, and `s`. -/
+distinguisher: it samples `s`, takes the base circuit garbled with coins `v.coins`, and shows `D`
+that base, the challenge input labels and circuit, the base's rerandomization with coins `s`, and
+`s`. -/
 noncomputable def explainRerandReductionRight (f : F)
-    (D : G.GC × (Fin m → G.Label) × G.GC × G.GC × G.RerandCoins → ProbComp Bool) :
-    G.Coins × G.GC × (Fin m → G.Label) → ProbComp Bool := fun (r, gc, X) => do
+    (D : G.ExplainRerandView → ProbComp Bool) : G.RerandView → ProbComp Bool := fun v => do
   let s ← ProbComp.uniform G.RerandCoins
-  let base := (G.garble f r).1
-  D (base, X, gc, (G.rerand base s).1, s)
+  let base := (G.garble f v.coins).circuit
+  D {
+    base := base, input := v.input, rerandomized := v.circuit,
+    candidate := (G.rerand base s).circuit, coins := s }
 
 /-! ### Permutation lemmas -/
 
@@ -423,8 +547,8 @@ theorem permInput_comp
 /-- The permutations of the undoing rerandomization step invert those of the original step. -/
 theorem RandomnessComposition.Invertible.permInput_invRerand {rc : G.RandomnessComposition}
     (hinv : rc.Invertible) (gc : G.GC) (r' : G.RerandCoins) (X : Fin m → G.Label) :
-    G.permInput (G.rerand (G.rerand gc r').1 (hinv.invRerand r')).2
-      (G.permInput (G.rerand gc r').2 X) = X :=
+    G.permInput (G.rerand (G.rerand gc r').circuit (hinv.invRerand r')).perm
+      (G.permInput (G.rerand gc r').perm X) = X :=
   funext fun i => hinv.act_invRerand gc r' i (X i)
 
 /-- `explainGb · r'` is a bijection. -/
@@ -513,116 +637,116 @@ end Reindex
 explainable-garbling advantage of `D` equals the rerandomization-privacy advantage of
 `explainGbReduction f D`. -/
 theorem explainGbAdvantage_eq (rc : G.RandomnessComposition) (hinv : rc.Invertible) (f : F)
-    (x : Fin m → Bool) (D : (Fin m → G.Label) × G.GC × G.GC × G.Coins → ProbComp Bool) :
+    (x : Fin m → Bool) (D : G.ExplainGbView → ProbComp Bool) :
     G.explainGbAdvantage rc f x D = G.rerandAdvantage f x (G.explainGbReduction f D) := by
-  have hreal : ProbComp.eval (do let v ← G.explainGbReal rc f x; D v) =
-      ProbComp.eval (do let v ← G.rerandReal f x; G.explainGbReduction f D v) := by
-    simp only [explainGbReal, rerandReal, explainGbReduction, bind_assoc, pure_bind,
+  have hreal : ProbComp.eval (G.explainGbRealExperiment rc f x D) =
+      ProbComp.eval (G.rerandRealExperiment f x (G.explainGbReduction f D)) := by
+    simp only [explainGbRealExperiment, explainGbRealView, explainGbFixedRealView,
+      rerandRealExperiment, rerandRealView, explainGbReduction, bind_assoc, pure_bind,
       ProbComp.eval_bind, ProbComp.eval_uniform]
     refine bind_bind_uniform_reindex (fun r' r => rc.explainGb r r') hinv.explainGb_bijective
       hinv.invRerand fun r r' => ?_
     rw [rc.garble_explainGb]
-    dsimp only
+    dsimp only [rerandGarbled]
     rw [hinv.rerand_invRerand, encode_permEncoding, hinv.permInput_invRerand]
-  have hideal : ProbComp.eval (do let v ← G.explainGbIdeal f x; D v) =
-      ProbComp.eval (do let v ← G.rerandIdeal f x; G.explainGbReduction f D v) := by
-    simp only [explainGbIdeal, rerandIdeal, explainGbReduction, bind_assoc, pure_bind,
+  have hideal : ProbComp.eval (G.explainGbIdealExperiment f x D) =
+      ProbComp.eval (G.rerandIdealExperiment f x (G.explainGbReduction f D)) := by
+    simp only [explainGbIdealExperiment, explainGbIdealView, explainGbFixedIdealView,
+      rerandIdealExperiment, rerandIdealView, explainGbReduction, bind_assoc, pure_bind,
       ProbComp.eval_bind, ProbComp.eval_uniform]
     exact PMF.bind_comm _ _ _
   rw [explainGbAdvantage, rerandAdvantage, hreal, hideal]
 
-variable (G) in
-/-- The intermediate hybrid of the explainable-rerandomization argument: the encoding and the
-first rerandomized circuit come from an independent fresh garbling. -/
-private noncomputable def explainRerandHybrid (f : F)
-    (x : Fin m → Bool) : ProbComp (G.GC × (Fin m → G.Label) × G.GC × G.GC × G.RerandCoins) := do
-  let r ← ProbComp.uniform G.Coins
-  let t ← ProbComp.uniform G.Coins
-  let s ← ProbComp.uniform G.RerandCoins
-  let g := G.garble f r
-  let h := G.garble f t
-  return (g.1, G.encode h.2 x, h.1, (G.rerand g.1 s).1, s)
+/-- Running the right reduction on the real rerandomization-privacy view is the ideal
+explainable-rerandomization experiment. -/
+@[simp] theorem rerandRealExperiment_explainRerandReductionRight (f : F) (x : Fin m → Bool)
+    (D : G.ExplainRerandView → ProbComp Bool) :
+    G.rerandRealExperiment f x (G.explainRerandReductionRight f D) =
+      G.explainRerandIdealExperiment f x D :=
+  rfl
 
 /-- **Explainable rerandomization from rerandomization privacy.** If the label action respects
 composition of permutations, then for every distinguisher `D` the explainable-rerandomization
 advantage of `D` is at most the sum of the rerandomization-privacy advantages of
-`explainRerandReductionLeft hinv f D` and `explainRerandReductionRight f D`. -/
+`explainRerandReductionLeft hinv f D` and `explainRerandReductionRight f D`. The intermediate
+hybrid is the right reduction on the ideal view, which equals the left reduction on the ideal
+view. -/
 theorem explainRerandAdvantage_le (rc : G.RandomnessComposition) (hinv : rc.Invertible)
     (hcomp : ∀ (p q : G.Perm) (L : G.Label), G.act (G.comp p q) L = G.act q (G.act p L))
-    (f : F) (x : Fin m → Bool)
-    (D : G.GC × (Fin m → G.Label) × G.GC × G.GC × G.RerandCoins → ProbComp Bool) :
+    (f : F) (x : Fin m → Bool) (D : G.ExplainRerandView → ProbComp Bool) :
     G.explainRerandAdvantage rc f x D ≤
       G.rerandAdvantage f x (G.explainRerandReductionLeft hinv f D) +
         G.rerandAdvantage f x (G.explainRerandReductionRight f D) := by
-  have hreal : ProbComp.eval (do let v ← G.explainRerandReal rc f x; D v) =
-      ProbComp.eval (do let v ← G.rerandReal f x; G.explainRerandReductionLeft hinv f D v) := by
-    simp only [explainRerandReal, rerandReal, explainRerandReductionLeft, bind_assoc, pure_bind,
+  have hreal : ProbComp.eval (G.explainRerandRealExperiment rc f x D) =
+      ProbComp.eval (G.rerandRealExperiment f x (G.explainRerandReductionLeft hinv f D)) := by
+    simp only [explainRerandRealExperiment, explainRerandRealView, explainRerandFixedRealView,
+      rerandRealExperiment, rerandRealView, explainRerandReductionLeft, bind_assoc, pure_bind,
       ProbComp.eval_bind, ProbComp.eval_uniform]
     refine bind_bind_bind_uniform_reindex (fun s r => rc.explainGb r s) hinv.explainGb_bijective
       rc.explainRerand hinv.explainRerand_bijective hinv.invRerand fun r r₁ r₂ => ?_
-    rw [hinv.unexplainGb_explainGb, rc.garble_explainGb, rc.rerand_explainRerand]
-    dsimp only
+    rw [hinv.unexplainGb_explainGb, rc.garble_explainGb]
+    dsimp only [rerandGarbled]
+    rw [rc.rerand_explainRerand]
+    dsimp only [rerandTwice]
     rw [hinv.rerand_invRerand, encode_permEncoding, permInput_comp hcomp,
       hinv.permInput_invRerand]
-  have hhyb : ProbComp.eval (do let v ← explainRerandHybrid G f x; D v) =
-      ProbComp.eval (do let v ← G.rerandIdeal f x; G.explainRerandReductionLeft hinv f D v) := by
-    simp only [explainRerandHybrid, rerandIdeal, explainRerandReductionLeft, bind_assoc,
-      pure_bind, ProbComp.eval_bind, ProbComp.eval_uniform]
+  have hhyb : ProbComp.eval (G.rerandIdealExperiment f x (G.explainRerandReductionRight f D)) =
+      ProbComp.eval (G.rerandIdealExperiment f x (G.explainRerandReductionLeft hinv f D)) := by
+    simp only [rerandIdealExperiment, rerandIdealView, explainRerandReductionRight,
+      explainRerandReductionLeft, bind_assoc, pure_bind, ProbComp.eval_bind,
+      ProbComp.eval_uniform]
     refine bind_bind_bind_uniform_reindex_fst (fun s r => rc.explainGb r s)
       hinv.explainGb_bijective fun r t s => ?_
     rw [hinv.unexplainGb_explainGb]
-  have hhyb' : ProbComp.eval (do let v ← explainRerandHybrid G f x; D v) =
-      ProbComp.eval (do let v ← G.rerandIdeal f x; G.explainRerandReductionRight f D v) := by
-    simp only [explainRerandHybrid, rerandIdeal, explainRerandReductionRight, bind_assoc,
-      pure_bind, ProbComp.eval_bind, ProbComp.eval_uniform]
-  have hideal : ProbComp.eval (do let v ← G.explainRerandIdeal f x; D v) =
-      ProbComp.eval (do let v ← G.rerandReal f x; G.explainRerandReductionRight f D v) := by
-    simp only [explainRerandIdeal, rerandReal, explainRerandReductionRight, bind_assoc, pure_bind,
-      ProbComp.eval_bind, ProbComp.eval_uniform]
   calc G.explainRerandAdvantage rc f x D
-      ≤ Game.advantage (ProbComp.eval (do let v ← G.explainRerandReal rc f x; D v))
-          (ProbComp.eval (do let v ← explainRerandHybrid G f x; D v)) +
-        Game.advantage (ProbComp.eval (do let v ← explainRerandHybrid G f x; D v))
-          (ProbComp.eval (do let v ← G.explainRerandIdeal f x; D v)) :=
+      ≤ Game.advantage (ProbComp.eval (G.explainRerandRealExperiment rc f x D))
+          (ProbComp.eval (G.rerandIdealExperiment f x (G.explainRerandReductionRight f D))) +
+        Game.advantage
+          (ProbComp.eval (G.rerandIdealExperiment f x (G.explainRerandReductionRight f D)))
+          (ProbComp.eval (G.explainRerandIdealExperiment f x D)) :=
         Game.advantage_triangle _ _ _
     _ = _ := by
-        rw [rerandAdvantage, rerandAdvantage, Game.advantage_comm
-          (ProbComp.eval (do let v ← G.rerandReal f x; G.explainRerandReductionRight f D v))]
-        exact congrArg₂ (· + ·) (by rw [hreal, hhyb]) (by rw [hhyb', hideal])
+        rw [rerandAdvantage, rerandAdvantage, rerandRealExperiment_explainRerandReductionRight,
+          Game.advantage_comm (ProbComp.eval (G.explainRerandIdealExperiment f x D)), hreal, hhyb]
 
 /-! ### Zero error under bijectivity in the second argument -/
 
 /-- If `explainGb r` is a bijection for every `r`, rerandomization privacy holds with zero
-error. -/
-theorem eval_rerandReal (rc : G.RandomnessComposition)
+error: the real and ideal views have the same law. -/
+theorem eval_rerandRealView (rc : G.RandomnessComposition)
     (h : ∀ r, Function.Bijective (rc.explainGb r)) (f : F) (x : Fin m → Bool) :
-    ProbComp.eval (G.rerandReal f x) = ProbComp.eval (G.rerandIdeal f x) := by
-  simp only [rerandReal, rerandIdeal, ProbComp.eval_bind, ProbComp.eval_uniform,
+    ProbComp.eval (G.rerandRealView f x) = ProbComp.eval (G.rerandIdealView f x) := by
+  simp only [rerandRealView, rerandIdealView, ProbComp.eval_bind, ProbComp.eval_uniform,
     ProbComp.eval_pure]
   refine congrArg _ (funext fun r => bind_uniform_comp (h r) fun r' => ?_)
-  rw [rc.garble_explainGb, encode_permEncoding]
+  rw [rc.garble_explainGb]
+  dsimp only [rerandGarbled]
+  rw [encode_permEncoding]
 
 /-- If `explainGb r` is a bijection, explainable garbling with fixed coins `r` holds with zero
 error. -/
-theorem eval_explainGbFixedReal (rc : G.RandomnessComposition) (f : F) (x : Fin m → Bool)
+theorem eval_explainGbFixedRealView (rc : G.RandomnessComposition) (f : F) (x : Fin m → Bool)
     (r : G.Coins) (h : Function.Bijective (rc.explainGb r)) :
-    ProbComp.eval (G.explainGbFixedReal rc f x r) =
-      ProbComp.eval (G.explainGbFixedIdeal f x r) := by
-  simp only [explainGbFixedReal, explainGbFixedIdeal, ProbComp.eval_bind, ProbComp.eval_uniform,
-    ProbComp.eval_pure]
+    ProbComp.eval (G.explainGbFixedRealView rc f x r) =
+      ProbComp.eval (G.explainGbFixedIdealView f x r) := by
+  simp only [explainGbFixedRealView, explainGbFixedIdealView, ProbComp.eval_bind,
+    ProbComp.eval_uniform, ProbComp.eval_pure]
   refine bind_uniform_comp h fun r' => ?_
   rw [rc.garble_explainGb]
+  rfl
 
 /-- If `explainRerand r₁` is a bijection, explainable rerandomization with fixed coins `r` and
 `r₁` holds with zero error. -/
-theorem eval_explainRerandFixedReal (rc : G.RandomnessComposition) (f : F) (x : Fin m → Bool)
-    (r : G.Coins) (r₁ : G.RerandCoins) (h : Function.Bijective (rc.explainRerand r₁)) :
-    ProbComp.eval (G.explainRerandFixedReal rc f x r r₁) =
-      ProbComp.eval (G.explainRerandFixedIdeal f x r r₁) := by
-  simp only [explainRerandFixedReal, explainRerandFixedIdeal, ProbComp.eval_bind,
+theorem eval_explainRerandFixedRealView (rc : G.RandomnessComposition) (f : F)
+    (x : Fin m → Bool) (r : G.Coins) (r₁ : G.RerandCoins)
+    (h : Function.Bijective (rc.explainRerand r₁)) :
+    ProbComp.eval (G.explainRerandFixedRealView rc f x r r₁) =
+      ProbComp.eval (G.explainRerandFixedIdealView f x r r₁) := by
+  simp only [explainRerandFixedRealView, explainRerandFixedIdealView, ProbComp.eval_bind,
     ProbComp.eval_uniform, ProbComp.eval_pure]
   refine bind_uniform_comp h fun r₂ => ?_
   rw [rc.rerand_explainRerand]
+  rfl
 
 end RerandomizableGarbling
 

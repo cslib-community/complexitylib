@@ -8,41 +8,29 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Algorithms.WordRAM.Dijkstra.HeapStatement
-public import CslibFrontier.Algorithms.WordRAM.Dijkstra.Invariant
 import CslibFrontier.Foundations.Data.List.Lookup
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Data.List.GetD
 
 /-!
-# Dijkstra's algorithm: the adjacency-list input words and edge-scan relaxation
+# Dijkstra's algorithm: the adjacency-list input words
 
-This file reads the input words `Cslib.Algorithms.WordRAM.Dijkstra.ListInstance.encode` of an
+This file reads the input words `Cslib.Algorithms.Dijkstra.ListInstance.encode` of an
 adjacency-list instance back from the initial memory of a word RAM: `n`, the source, the offsets
 of the adjacency lists and the targets and weights of the edges each sit at the address used by
 the original linked memory client and the retained word-RAM priority-queue interface. Memory past
 the input is `0`.
 
-It also defines the effect of scanning the edges out of a vertex on one distance word
-(`Cslib.Algorithms.WordRAM.Dijkstra.edgesWord`), and shows that it is the relaxation of the
-weight-matrix instance (`Cslib.Algorithms.WordRAM.Dijkstra.decode_edgesWord`): the scan of all
-parallel edges to a vertex has the effect of the lightest one.
-
 ## Main definitions
 
-* `Cslib.Algorithms.WordRAM.Dijkstra.ListInstance.dbase`: the first address past the input.
-* `Cslib.Algorithms.WordRAM.Dijkstra.edgeWord`, `Cslib.Algorithms.WordRAM.Dijkstra.edgesWord`:
-  the relaxation of a distance word through one edge, and through a list of edges.
+* `Cslib.Algorithms.Dijkstra.ListInstance.dbase`: the first address past the input.
 
 ## Main results
 
-* `Cslib.Algorithms.WordRAM.Dijkstra.ListInstance.encode_length`: the input has `n + 2 m + 3`
-  words.
-* `Cslib.Algorithms.WordRAM.Dijkstra.ListInstance.init_offset`,
-  `Cslib.Algorithms.WordRAM.Dijkstra.ListInstance.init_target`,
-  `Cslib.Algorithms.WordRAM.Dijkstra.ListInstance.init_weight`: the input words in the initial
-  memory.
-* `Cslib.Algorithms.WordRAM.Dijkstra.decode_edgesWord`: the scan of the edges out of a vertex
-  relaxes the tentative distances.
+* `Cslib.Algorithms.Dijkstra.ListInstance.encode_length`: the input has `n + 2 m + 3` words.
+* `Cslib.Algorithms.Dijkstra.ListInstance.init_offset`,
+  `Cslib.Algorithms.Dijkstra.ListInstance.init_target`,
+  `Cslib.Algorithms.Dijkstra.ListInstance.init_weight`: the input words in the initial memory.
 
 ## References
 
@@ -53,11 +41,9 @@ parallel edges to a vertex has the effect of the lightest one.
 
 @[expose] public section
 
-namespace Cslib.Algorithms.WordRAM.Dijkstra
+namespace Cslib.Algorithms.Dijkstra.ListInstance
 
 open Cslib.WordRAM
-
-namespace ListInstance
 
 variable (G : ListInstance) {r : ℕ}
 
@@ -188,21 +174,6 @@ theorem init_past {a : ℕ} (ha : G.dbase ≤ a) : (Data.init G.encode : Data r)
   obtain ⟨a, rfl⟩ := Nat.exists_eq_succ_of_ne_zero hz
   rw [Data.init_mem_succ, List.getD_eq_default _ _ (by simpa using hl)]
 
-/-- Every edge weight is at most the largest weight. -/
-theorem le_maxWeight {u : Fin G.n} {e : Fin G.n × ℕ} (he : e ∈ G.adj u) : e.2 ≤ G.maxWeight := by
-  have h1 : e.2 ≤ ((G.adj u).map Prod.snd).foldr max 0 :=
-    List.le_max_of_le (List.mem_map_of_mem he) le_rfl
-  exact h1.trans (Finset.le_sup (f := fun u => ((G.adj u).map Prod.snd).foldr max 0)
-    (Finset.mem_univ u))
-
-/-- The largest weight of the weight-matrix instance is at most the largest edge weight. -/
-theorem toInstance_maxWeight_le : G.toInstance.maxWeight ≤ G.maxWeight := by
-  refine Finset.sup_le fun uv _ => ?_
-  change (G.lightest uv.1 uv.2).getD 0 ≤ G.maxWeight
-  cases h : G.lightest uv.1 uv.2 with
-  | none => simp
-  | some c => exact G.le_maxWeight ((G.lightest_eq_some_iff.mp h).1)
-
 /-- The original adjacency-list input fits whenever the advertised Dijkstra word envelope fits. -/
 theorem inputFits_encode (G : ListInstance) {w : ℕ}
     (hw_in : Fits w (8 * (G.n + G.m + 2) * (G.maxWeight + 2))) :
@@ -226,62 +197,6 @@ theorem inputFits_encode (G : ListInstance) {w : ℕ}
       · have hc := G.le_maxWeight he
         exact hw_in.of_le (by nlinarith)
 
-end ListInstance
-
-/-- The relaxation of the distance word `d` through an edge of weight `c` from a vertex with
-distance word `b ≠ 0`. -/
-def edgeWord (b c d : ℕ) : ℕ := if d = 0 then b + c else if b + c < d then b + c else d
-
-/-- The relaxation of the distance word `d` of `v` through the edges to `v` in the list `es`, in
-order, from a vertex with distance word `b`. -/
-def edgesWord {N : ℕ} (b : ℕ) (es : List (Fin N × ℕ)) (v : Fin N) (d : ℕ) : ℕ :=
-  es.foldl (fun d e => if e.1 = v then edgeWord b e.2 d else d) d
-
-/-- The relaxation through one edge decodes to the relaxation of the tentative distance. -/
-private theorem decode_edgeWord {b : ℕ} (hb : b ≠ 0) (c d : ℕ) :
-    decodeDist (edgeWord b c d) = min (decodeDist d) (decodeDist b + c) := by
-  obtain ⟨b, rfl⟩ := Nat.exists_eq_succ_of_ne_zero hb
-  have he : b.succ + c - 1 = b + c := by omega
-  cases d with
-  | zero => simp [edgeWord, decodeDist, he]
-  | succ d =>
-    simp only [edgeWord, Nat.succ_ne_zero, ite_false]
-    by_cases h : b.succ + c < d.succ
-    · have hc : (b : ℕ∞) + c ≤ d := by exact_mod_cast (by omega : b + c ≤ d)
-      simp [h, decodeDist, he, hc]
-    · have hc : (d : ℕ∞) ≤ (b : ℕ∞) + c := by exact_mod_cast (by omega : d ≤ b + c)
-      simp [h, decodeDist, hc]
-
-/-- The relaxation through the edges to `v` in `es` decodes to the relaxation through the
-lightest of them. -/
-private theorem decode_edgesWord_list {N : ℕ} {b : ℕ} (hb : b ≠ 0) (es : List (Fin N × ℕ))
-    (v : Fin N) (d : ℕ) :
-    decodeDist (edgesWord b es v d) =
-      match (es.filterMap fun e => if e.1 = v then some e.2 else none).min? with
-      | none => decodeDist d
-      | some c => min (decodeDist d) (decodeDist b + c) := by
-  induction es generalizing d with
-  | nil => rfl
-  | cons e es ih =>
-    rw [edgesWord, List.foldl_cons, ← edgesWord, ih]
-    by_cases he : e.1 = v
-    · simp only [List.filterMap_cons, he, ↓reduceIte, List.min?_cons]
-      cases es.filterMap (fun e => if e.1 = v then some e.2 else none) |>.min? with
-      | none => simp [decode_edgeWord hb]
-      | some c =>
-        simp only [decode_edgeWord hb, Option.elim_some]
-        rw [min_assoc, min_add_add_left, Nat.mono_cast.map_min]
-    · simp only [List.filterMap_cons, he, ↓reduceIte]
-
-/-- **The scan of the edges out of `u` relaxes the tentative distances.** If `b ≠ 0` is the
-distance word of `u` and `d` that of `v`, the relaxation of `d` through the edges from `u` to `v`
-decodes to the relaxation of the tentative distance of `v` in the weight-matrix instance. -/
-theorem decode_edgesWord (G : ListInstance) {D : Fin G.n → ℕ∞} {u v : Fin G.n} {b d : ℕ}
-    (hb : b ≠ 0) (hu : D u = decodeDist b) (hv : D v = decodeDist d) :
-    decodeDist (edgesWord b (G.adj u) v d) = G.toInstance.relax D u v := by
-  rw [decode_edgesWord_list hb, ← hu, ← hv]
-  rfl
-
-end Cslib.Algorithms.WordRAM.Dijkstra
+end Cslib.Algorithms.Dijkstra.ListInstance
 
 end

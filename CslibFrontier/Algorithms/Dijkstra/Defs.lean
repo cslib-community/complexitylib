@@ -13,27 +13,27 @@ public import Mathlib.Data.ENat.Lattice
 public import Mathlib.Data.Fintype.Prod
 
 /-!
-# Dijkstra's algorithm on the word RAM: statements
+# The single-source shortest-path problem
 
 This file defines the single-source shortest-path problem solved by Dijkstra's algorithm
-[Dijkstra][Dijkstra1959] [Cormen et al., Section 24.3][CLRS2009].
+[Dijkstra][Dijkstra1959] [Cormen et al., Section 24.3][CLRS2009]. Nothing here refers to a
+machine: the word-RAM statements (`CslibFrontier.Algorithms.WordRAM.Dijkstra.HeapStatement`) and
+the interface client (`CslibFrontier.Algorithms.Lean.Dijkstra.Client`) both import it.
 
-An instance (`Cslib.Algorithms.WordRAM.Dijkstra.Instance`) is a directed graph on `Fin n` with
+An instance (`Cslib.Algorithms.Dijkstra.Instance`) is a directed graph on `Fin n` with
 natural-number edge weights, given by its weight matrix, and a source vertex. The distance
-`Cslib.Algorithms.WordRAM.Dijkstra.Instance.dist` is the infimum, in `ℕ∞`, of the weights of the
+`Cslib.Algorithms.Dijkstra.Instance.dist` is the infimum, in `ℕ∞`, of the weights of the
 paths (`Quiver.Path`, `Quiver.Path.addWeight`) between two vertices; it is `⊤` when there is no
-path. A program writes a distance as a word with `0` for an unreachable vertex and `d + 1` for
-distance `d` (`Cslib.Algorithms.WordRAM.Dijkstra.encodeDist`).
+path.
 
 ## Main definitions
 
-* `Cslib.Algorithms.WordRAM.Dijkstra.Instance`: a weighted directed graph with a source.
-* `Cslib.Algorithms.WordRAM.Dijkstra.Instance.dist`: the shortest-path distance.
-* `Cslib.Algorithms.WordRAM.Dijkstra.encodeDist`: a distance as a word.
+* `Cslib.Algorithms.Dijkstra.Instance`: a weighted directed graph with a source.
+* `Cslib.Algorithms.Dijkstra.Instance.dist`: the shortest-path distance.
 
 ## Main results
 
-* `Cslib.Algorithms.WordRAM.Dijkstra.Instance.dist_self`: every vertex is at distance `0` from
+* `Cslib.Algorithms.Dijkstra.Instance.dist_self`: every vertex is at distance `0` from
   itself.
 
 ## References
@@ -45,7 +45,7 @@ distance `d` (`Cslib.Algorithms.WordRAM.Dijkstra.encodeDist`).
 
 @[expose] public section
 
-namespace Cslib.Algorithms.WordRAM.Dijkstra
+namespace Cslib.Algorithms.Dijkstra
 
 /-- An instance of the **single-source shortest-path problem**: a directed graph on `Fin n` with
 natural-number edge weights, given by its weight matrix, and a source vertex. The entry
@@ -88,7 +88,4 @@ def maxWeight : ℕ :=
 
 end Instance
 
-/-- A distance as a word: `0` for an unreachable vertex and `d + 1` for distance `d`. -/
-def encodeDist (d : ℕ∞) : ℕ := if d = ⊤ then 0 else d.toNat + 1
-
-end Cslib.Algorithms.WordRAM.Dijkstra
+end Cslib.Algorithms.Dijkstra

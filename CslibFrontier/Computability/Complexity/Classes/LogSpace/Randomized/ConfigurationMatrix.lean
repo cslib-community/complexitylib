@@ -364,8 +364,7 @@ theorem exists_configMatrix_of_mem_BPL (h : A ∈ BPL enc) :
         (a ∉ A → ((1 - (2 : ℚ)⁻¹ • M.liveConfigMatrix ℚ V)⁻¹ *ᵥ
           FiniteCfg.acceptVec ℚ V) ⟨_, hinit⟩ ≤ 1 / 3) := by
   obtain ⟨k, State, hfin, M, c, hM⟩ := h
-  refine ⟨k, State, hfin, M, 2 * (8 + 2 * Nat.card (Option State) + 200 * k) * (c + 1),
-    fun a => ?_⟩
+  refine ⟨k, State, hfin, M, MultiTapeNTM.logSpaceClockExponent k State c, fun a => ?_⟩
   obtain ⟨hs, t, ht, hmem, hnot⟩ := hM a
   obtain ⟨V, hreach, hV, hcard⟩ := M.exists_finset_reachable hs
   have hinit : M.toNTM.initView (enc a) ∈ V := (hreach _).mpr .refl
