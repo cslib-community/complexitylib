@@ -11,6 +11,7 @@ public import CslibFrontier.Crypto.Computational.Encryption.EncryptThenMAC
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pair.Projections
 import CslibFrontier.Computability.Probabilistic.Oracle.Composition
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
@@ -398,10 +399,6 @@ private theorem eval_run_encForgeOracle_encryptThenMAC_eq (E : SymmetricCipher) 
         (etmForgeJointOracle E M n ke km)) prog).run [])).map
       (fun (a, s') => (a, s'.map Prod.fst)) := by
   rw [ProbOracleComp.eval_run_interpret, ProbOracleComp.eval_run_interpret]
-  have hunframe_k : unframe (encPair encBits encBits (ke, km)) = ke := by
-    simp [encPair_apply, unframe_frame_append]
-  have hdrop_k : dropFrame (encPair encBits encBits (ke, km)) = km := by
-    simp [encPair_apply, dropFrame_frame_append]
   exact (ProbOracleComp.run_interpret_map_state
     (oracle := fun q s => ProbComp.eval (etmForgeJointOracle E M n ke km q s))
     (oracle' := fun q s =>
@@ -412,7 +409,7 @@ private theorem eval_run_encForgeOracle_encryptThenMAC_eq (E : SymmetricCipher) 
       intro ⟨⟨⟩, msg⟩ queriedPairs
       unfold etmForgeJointOracle SymmetricCipher.encForgeOracle
       dsimp only [encryptThenMAC]
-      rw [hunframe_k, hdrop_k]
+      rw [unframe_encPair_encBits, dropFrame_encPair_encBits]
       split_ifs <;> simp [ProbComp.eval_bind, ProbComp.eval_pure, PMF.map_bind, PMF.pure_map,
         PMF.map_comp, Function.comp_def])
     prog []).symm
@@ -601,12 +598,8 @@ theorem succProbability_encForgeGame_encryptThenMAC_le (E : SymmetricCipher) (M 
         PMF.bind_map, PMF.bind_map]
       refine Probability.PMF.map_true_mono _ fun out hout hwin => ?_
       have hinv := mem_support_etmForgeJointOracle E M n ke km (adversary n []) out.1 out.2 hout
-      have hunframe_k : unframe (encPair encBits encBits (ke, km)) = ke := by
-        simp [encPair_apply, unframe_frame_append]
-      have hdrop_k : dropFrame (encPair encBits encBits (ke, km)) = km := by
-        simp [encPair_apply, dropFrame_frame_append]
       dsimp only [Function.comp_def, encryptThenMAC] at hwin ⊢
-      rw [hunframe_k, hdrop_k] at hwin
+      rw [unframe_encPair_encBits, dropFrame_encPair_encBits] at hwin
       split_ifs at hwin with hcond
       · simp only [Bool.and_eq_true, Bool.not_eq_true'] at hwin hcond
         have hpairCond : ((encPair encBits encBits (unframe out.1, dropFrame out.1) == out.1) &&

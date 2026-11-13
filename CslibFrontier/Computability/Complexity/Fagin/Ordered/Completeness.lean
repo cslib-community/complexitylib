@@ -143,7 +143,7 @@ ordered first-order reductions. -/
 theorem Reduces.esoDefinable {L L' : Language} [L.IsRelational] [L'.IsRelational]
     (v : Vocabulary L) (v' : Vocabulary L') {K : Query L} {K' : Query L'}
     (h : Reduces K K') (hK' : ESODefinable K') : ESODefinable K :=
-  ESODefinable.of_queryLanguage_mem_NP v
+  ESODefinable.of_encodedLanguage_mem_NP v
     (h.encodedLanguage_mem_NP v v' (hK'.encodedLanguage_mem_NP v'))
 
 /-! ### Unconditional `≤_qfp`, `≤_fop`, and `≤_fo` completeness for ordered `NP` -/
@@ -538,8 +538,7 @@ theorem cnfToOrdered_mem_iff (φ : PL.CNF ℕ) :
       have hi_n : vs.idxOf x < n :=
         lt_of_lt_of_le (lt_of_lt_of_le hi_lt (Nat.le_add_right _ _)) (le_max_right (2 : ℕ) _)
       let v : Fin n := ⟨vs.idxOf x, hi_n⟩
-      have hget_v : vs.getD v.val 0 = x := by
-        rw [List.getD_eq_getElem _ _ hi_lt, List.getElem_idxOf hi_lt]
+      have hget_v : vs.getD v.val 0 = x := by simp [v, List.getD_eq_getElem?_getD, hx_vs]
       have hrel : (FO.cnf.vocabulary.decode (cnfToOrdered φ)).RelMap (FO.cnf.lit b) ![c, v] := by
         refine (relMap_decode_cnfToOrdered φ b c v).mpr ?_
         simp only [cnfToOrderedEntry, vs, hout, ↓reduceIte, decide_eq_true_eq]

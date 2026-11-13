@@ -100,14 +100,14 @@ theorem PRG.wordFamily_realExperiment {generator : List Bool → List Bool} {len
       (fun bits => ProbComp.eval (adversary n (List.ofFn bits))) =
         distinguishingGame (generatorEnsemble generator n) (adversary n) := by
   rw [generatorEnsemble_eq_outputDist hlen]
-  simp only [pmf_norm, distinguishingGame, PRG.Generator.realExperiment]
+  simp only [pmf_norm, distinguishingGame_eq_bind, PRG.Generator.realExperiment]
 
 /-- The ideal finite test sees exactly the uniform word of the declared output length. -/
 theorem PRG.wordFamily_idealExperiment (length : ℕ → ℕ) (adversary : Distinguisher) (n : ℕ) :
     Generator.idealExperiment
       (fun bits : BitString (length n) => ProbComp.eval (adversary n (List.ofFn bits))) =
         distinguishingGame (BitString.uniformList (length n)) (adversary n) := by
-  simp only [pmf_norm, Generator.idealExperiment, distinguishingGame, BitString.uniformList]
+  simp only [pmf_norm, Generator.idealExperiment, distinguishingGame_eq_bind, BitString.uniformList]
 
 /-- Finite-family security against uniformly realizable tests is exactly computational
 indistinguishability of the generated and uniform word ensembles. -/
@@ -144,13 +144,13 @@ noncomputable def prgIdealGame (length : ℕ → ℕ) (adversary : Distinguisher
     (adversary : Distinguisher) (n : ℕ) :
     ProbComp.eval (prgRealGame generator adversary n) =
       distinguishingGame (generatorEnsemble generator n) (adversary n) := by
-  simp [prgRealGame, distinguishingGame, generatorEnsemble, PMF.bind_map, Function.comp_def]
+  simp [prgRealGame, distinguishingGame_eq_bind, generatorEnsemble, PMF.bind_map, Function.comp_def]
 
 /-- The ideal program denotes the uniform-word experiment. -/
 @[simp] theorem eval_prgIdealGame (length : ℕ → ℕ) (adversary : Distinguisher) (n : ℕ) :
     ProbComp.eval (prgIdealGame length adversary n) =
       distinguishingGame (BitString.uniformList (length n)) (adversary n) := by
-  simp [prgIdealGame, distinguishingGame]
+  simp [prgIdealGame, distinguishingGame_eq_bind]
 
 /-- The real experiment is an efficient program when its generator and distinguisher are. -/
 @[program_certificate]

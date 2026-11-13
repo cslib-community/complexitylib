@@ -7,19 +7,20 @@ Authors: Karn Seth
 module
 -- upstream: candidate
 
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.PowMod
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.Words
 public import CslibFrontier.Crypto.Computational.CompositeResiduosity
 public import CslibFrontier.Crypto.Computational.Encryption.Basic
+public import CslibFrontier.Crypto.Computational.UnitSampling
 public import CslibFrontier.Languages.Probabilistic.UniformNat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Captured
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Gcd
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.PowMod
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.WordsRoundTrip
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pair.Projections
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.UniformNat
 import CslibFrontier.Probability.PMF
@@ -90,14 +91,6 @@ open Probability Turing.MultiTapeTM BalancedModulus
 
 /-! ### Arithmetic on natural numbers -/
 
-/-- Modular exponentiation `x ^ e mod M`. For the degenerate modulus `M = 0` it returns `1`
-instead of the unreduced power, so that it is computable in polynomial time on every input. -/
-def powMod (M x e : ℕ) : ℕ := if M = 0 then 1 else x ^ e % M
-
-/-- The encryption randomness that is used: `r` itself when it is a unit modulo `N`, and `1`
-otherwise. -/
-def unitOrOne (N r : ℕ) : ℕ := if Nat.gcd r N = 1 then r else 1
-
 /-- The Paillier ciphertext `(1 + N) ^ m * r ^ N mod N ^ 2` ([KatzLindell2020],
 Construction 15.11). -/
 def ciphertext (N m r : ℕ) : ℕ := powMod (N ^ 2) (1 + N) m * powMod (N ^ 2) r N % N ^ 2
@@ -106,15 +99,6 @@ def ciphertext (N m r : ℕ) : ℕ := powMod (N ^ 2) (1 + N) m * powMod (N ^ 2) 
 Construction 15.11): `((c ^ t mod N ^ 2) - 1) / N * t⁻¹ mod N`, where `t⁻¹ mod N` is computed as
 `t ^ (t - 1) mod N`. -/
 def decryptNat (N t c : ℕ) : ℕ := (powMod (N ^ 2) c t - 1) / N * powMod N t (t - 1) % N
-
-theorem coprime_unitOrOne (N r : ℕ) : (unitOrOne N r).Coprime N := by
-  unfold unitOrOne
-  split_ifs with h
-  · exact h
-  · exact Nat.coprime_one_left N
-
-theorem powMod_of_ne_zero {M : ℕ} (hM : M ≠ 0) (x e : ℕ) : powMod M x e = x ^ e % M := by
-  simp [powMod, hM]
 
 /-- A Paillier ciphertext is `(1 + N) ^ m * r ^ N` modulo `N ^ 2`. -/
 theorem natCast_ciphertext {N : ℕ} (hN : N ≠ 0) (m r : ℕ) :
@@ -179,37 +163,6 @@ def addCiphertexts (pk ct₁ ct₂ : List Bool) : List Bool :=
   encNat (ofBits ct₁ * ofBits ct₂ % ofBits pk ^ 2)
 
 /-! ### Efficiency -/
-
-/-- `powMod` is computable in polynomial time. -/
-theorem computableInPolyTime_powMod {α : Type} {input : α ↪ List Bool} {M x e : α → ℕ}
-    (hM : ComputableInPolyTime M input encNat) (hx : ComputableInPolyTime x input encNat)
-    (he : ComputableInPolyTime e input encNat) :
-    ComputableInPolyTime (fun a => powMod (M a) (x a) (e a)) input encNat := by
-  have hpow := ComputableInPolyTime.binary_powMod hx he
-    (ComputableInPolyTime.binary_add'
-      (ComputableInPolyTime.binary_sub' hM (ComputableInPolyTime.const 1))
-      (ComputableInPolyTime.const 1)) fun _ => Nat.succ_pos _
-  have h := ComputableInPolyTime.ite_decide (condition := fun a => M a = 0)
-    (ComputableInPolyTime.decide_eq' hM (ComputableInPolyTime.const 0))
-    (ComputableInPolyTime.const 1) hpow
-  have heq : (fun a => powMod (M a) (x a) (e a)) =
-      fun a => if M a = 0 then 1 else x a ^ e a % (M a - 1 + 1) := by
-    funext a
-    unfold powMod
-    split_ifs with h0
-    · rfl
-    · rw [Nat.sub_add_cancel (Nat.one_le_iff_ne_zero.mpr h0)]
-  rw [heq]
-  exact h
-
-/-- `unitOrOne` is computable in polynomial time. -/
-theorem computableInPolyTime_unitOrOne {α : Type} {input : α ↪ List Bool} {N r : α → ℕ}
-    (hN : ComputableInPolyTime N input encNat) (hr : ComputableInPolyTime r input encNat) :
-    ComputableInPolyTime (fun a => unitOrOne (N a) (r a)) input encNat := by
-  unfold unitOrOne
-  exact ComputableInPolyTime.ite_decide
-    (ComputableInPolyTime.decide_eq' (ComputableInPolyTime.binary_gcd' hr hN)
-      (ComputableInPolyTime.const 1)) hr (ComputableInPolyTime.const 1)
 
 /-- Squaring is computable in polynomial time. -/
 theorem computableInPolyTime_sq {α : Type} {input : α ↪ List Bool} {N : α → ℕ}
@@ -307,16 +260,6 @@ theorem computableInPolyTime_addCiphertexts :
 
 /-! ### Correctness and the additive homomorphism -/
 
-/-- The first component of the binary encoding of a pair of natural numbers. -/
-theorem unframe_encPair_encNat (a b : ℕ) :
-    unframe (encPair encNat encNat (a, b)) = encNat a := by
-  simp only [encPair_apply, unframe_frame_append]
-
-/-- The second component of the binary encoding of a pair of natural numbers. -/
-theorem dropFrame_encPair_encNat (a b : ℕ) :
-    dropFrame (encPair encNat encNat (a, b)) = encNat b := by
-  simp only [encPair_apply, dropFrame_frame_append]
-
 /-- Key pairs in the support of `keyGen gen n` come from a valid description. -/
 theorem exists_of_mem_support_keyGen {gen : ℕ → ProbComp Desc} {n : ℕ}
     {keys : List Bool × List Bool} (hkeys : keys ∈ (ProbComp.eval (keyGen gen n)).support) :
@@ -340,7 +283,7 @@ theorem exists_of_mem_support_encrypt {n N m : ℕ} {ct : List Bool}
 private theorem decrypt_encPair (d : Desc) (c : ℕ) :
     decrypt (encPair encNat encNat (d.modulus, d.totient)) (encNat c) =
       encNat (decryptNat d.modulus d.modulus.totient c) := by
-  rw [decrypt, unframe_encPair_encNat, dropFrame_encPair_encNat, ofBits_encNat, ofBits_encNat,
+  rw [decrypt, unframe_encPair, dropFrame_encPair, ofBits_encNat, ofBits_encNat,
     ofBits_encNat, d.totient_eq]
 
 /-- **Perfect correctness of Paillier encryption** ([KatzLindell2020], Construction 15.11): for

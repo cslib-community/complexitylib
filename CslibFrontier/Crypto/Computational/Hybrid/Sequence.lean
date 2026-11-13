@@ -286,17 +286,17 @@ theorem ComputationallyIndistinguishable.replicate_bind {orig repl : ℕ → Pro
   have horig_eq : distinguishingGame
       (ProbComp.eval (OracleComp.replicate (count n) (orig n) >>= process n)) (adversary n) =
       ProbComp.eval (OracleComp.replicate (count n) (orig n) >>= test n) := by
-    simp only [pmf_norm, distinguishingGame, test]
+    simp only [pmf_norm, distinguishingGame_eq_bind, test]
   have hrepl_eq : distinguishingGame
       (ProbComp.eval (OracleComp.replicate (count n) (repl n) >>= process n)) (adversary n) =
       ProbComp.eval (OracleComp.replicate (count n) (repl n) >>= test n) := by
-    simp only [pmf_norm, distinguishingGame, test]
+    simp only [pmf_norm, distinguishingGame_eq_bind, test]
   have hred_orig : distinguishingGame (ProbComp.eval (orig n)) (red n) =
       ProbComp.eval (orig n >>= sequenceTest (repl n) (orig n) (count n) (test n)) := by
-    simp only [distinguishingGame, PMF.monad_bind_eq_bind, red, ProbComp.eval_bind]
+    simp only [distinguishingGame_eq_bind, PMF.monad_bind_eq_bind, red, ProbComp.eval_bind]
   have hred_repl : distinguishingGame (ProbComp.eval (repl n)) (red n) =
       ProbComp.eval (repl n >>= sequenceTest (repl n) (orig n) (count n) (test n)) := by
-    simp only [distinguishingGame, PMF.monad_bind_eq_bind, red, ProbComp.eval_bind]
+    simp only [distinguishingGame_eq_bind, PMF.monad_bind_eq_bind, red, ProbComp.eval_bind]
   rw [horig_eq, hrepl_eq, hred_orig, hred_repl, NNReal.coe_mul, NNReal.coe_natCast,
     Game.coe_advantage, Game.coe_advantage, hgap, abs_mul, Nat.abs_cast]
 
