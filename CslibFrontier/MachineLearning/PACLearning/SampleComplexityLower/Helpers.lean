@@ -105,8 +105,10 @@ theorem hypothesisError_eq_of_inter_eq {α : Type*} [MeasurableSpace α]
 /-- If a measure `P` on `α` gives zero mass to the complement of a finite set
 `W`, then the product measure `P^m` gives zero mass to the complement of
 `W^m`. -/
+-- vendored: the unused `[MeasurableSingletonClass α]` argument is dropped (`unusedArguments`
+-- linter).
 theorem pi_measure_compl_zero
-    {α : Type*} [MeasurableSpace α] [MeasurableSingletonClass α]
+    {α : Type*} [MeasurableSpace α]
     {W : Finset α} {P : Measure α} [SigmaFinite P]
     (hP_supp : P (↑W : Set α)ᶜ = 0)
     {m : ℕ} :

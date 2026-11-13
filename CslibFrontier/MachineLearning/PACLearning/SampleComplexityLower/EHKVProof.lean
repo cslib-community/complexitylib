@@ -39,7 +39,8 @@ under a realizable distribution `D = P.map (x ↦ (x, c x))` is performed in
   for Learning*][EHKV1989]
 -/
 
-@[expose] public section
+-- vendored: plain `public section`; the section exposes no definition (local changed-file lint).
+public section
 
 open MeasureTheory Set Finset
 open scoped ENNReal

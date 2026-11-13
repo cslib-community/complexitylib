@@ -54,7 +54,8 @@ change-of-variables `pi_map_sampleOf` below.
   for Learning*][EHKV1989]
 -/
 
-@[expose] public section
+-- vendored: plain `public section`; the section exposes no definition (local changed-file lint).
+public section
 
 open MeasureTheory Set Finset
 open scoped ENNReal NNReal
@@ -170,8 +171,9 @@ collapses to the marginal-space `hypothesisError P (h ⁻¹' {true}) (c ⁻¹' {
 The hypothesis `h` need not be measurable: since `D` is supported on a finite
 set, every set in `α × Bool` is null-measurable w.r.t. `D`, and
 `Measure.map_apply₀` applies. -/
+-- vendored: the unused `[IsProbabilityMeasure P]` argument is dropped (`unusedArguments` linter).
 private lemma error_map_eq_hypothesisError_set_finite_supp
-    {P : Measure α} [IsProbabilityMeasure P]
+    {P : Measure α}
     {W : Finset α} (hP_supp : P (↑W : Set α)ᶜ = 0)
     {c : α → Bool} (hc_meas : Measurable c) (h : α → Bool) :
     error (P.map (fun x : α => (x, c x))) h =

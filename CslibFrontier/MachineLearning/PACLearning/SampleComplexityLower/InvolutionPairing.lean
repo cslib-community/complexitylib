@@ -33,7 +33,8 @@ points. At least one concept per pair forces large error.
   for Learning*][EHKV1989]
 -/
 
-@[expose] public section
+-- vendored: plain `public section`; the section exposes no definition (local changed-file lint).
+public section
 
 open MeasureTheory Set Finset
 open scoped ENNReal
