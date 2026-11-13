@@ -30,6 +30,8 @@ clients depend on it.
 * `Turing.MultiTapeTM.ofBits_lt_two_pow`, `Turing.MultiTapeTM.ofBits_injective_of_length_eq`: a
   word of length `m` reads below `2 ^ m`, and words of one length are determined by their values.
 * `Turing.MultiTapeTM.ofBits_append`: reading a concatenation shifts the second word past the first.
+* `Turing.MultiTapeTM.ofBits_lowBits`: the `W` low-order digits (`Cslib.BitString.lowBits`) of
+  `x < 2 ^ W` read as `x`.
 * `Turing.MultiTapeTM.ofBits_ofFn_ofList`: padding a word with `false` to a fixed width
   (`Cslib.BitString.ofList`) does not change its value.
 -/
@@ -66,6 +68,12 @@ theorem ofBits_injective_of_length_eq {u v : List Bool} (hlen : u.length = v.len
 theorem ofBits_append (u v : List Bool) :
     ofBits (u ++ v) = ofBits u + 2 ^ u.length * ofBits v := by
   simp only [ofBits_eq_lsbValue, Cslib.BitString.lsbValue_append]
+
+/-- The `W` low-order digits of `x < 2 ^ W` read as `x`. -/
+theorem ofBits_lowBits {W x : ℕ} (hx : x < 2 ^ W) :
+    ofBits (Cslib.BitString.lowBits W x) = x := by
+  rw [ofBits_eq_lsbValue]
+  exact Cslib.BitString.lsbValue_lowBits hx
 
 /-- Padding a word to `n` bits with `false` does not change the number it reads as. -/
 theorem ofBits_ofFn_ofList (word : List Bool) (n : ℕ) (h : word.length ≤ n) :

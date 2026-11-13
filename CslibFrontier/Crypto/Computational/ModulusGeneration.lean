@@ -128,8 +128,8 @@ either run fails. -/
 /-- Reading `low ++ [true]` least significant bit first puts a one above `low`. -/
 private theorem ofBits_append_true (low : List Bool) :
     ofBits (low ++ [true]) = 2 ^ low.length + ofBits low := by
-  rw [ofBits_eq_lsbValue, ofBits_eq_lsbValue, BitString.lsbValue_append,
-    BitString.lsbValue_singleton, Bool.toNat_true, mul_one, add_comm]
+  rw [ofBits_append, ofBits_eq_lsbValue [true], BitString.lsbValue_singleton, Bool.toNat_true,
+    mul_one, add_comm]
 
 /-- `2 ^ n` is twice `2 ^ (n - 1)` for positive `n`. -/
 private theorem two_pow_eq_two_mul {n : ℕ} (hn : 0 < n) : 2 ^ n = 2 * 2 ^ (n - 1) := by
