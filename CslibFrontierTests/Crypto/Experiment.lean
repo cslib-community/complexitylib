@@ -4,8 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-module
-
+import CslibFrontier.Computability.Probabilistic.PPT.Composition
 import CslibFrontier.Crypto.Computational.TwoStage
 import CslibFrontier.Crypto.Computational.Encryption.Basic
 
@@ -21,7 +20,8 @@ open scoped NNReal
 
 -- The experiment that always wins has success probability one.
 example : (Experiment.succProbability (pure true) : ℝ) = 1 := by
-  rw [Experiment.coe_succProbability, ProbComp.probability_pure, if_pos rfl]
+  rw [Experiment.coe_succProbability, ProbComp.probability_pure]
+  rfl
 
 -- The constant experiments are distinguished with advantage one, read as `|Pr[e₀] - Pr[e₁]|`.
 example : (Experiment.advantage (pure true) (pure false) : ℝ) = 1 := by
@@ -44,7 +44,10 @@ example (real sim : ProbComp ℕ) (h : ProbComp.eval real = ProbComp.eval sim)
 -- Averaging over a uniform parameter: the game that returns its parameter succeeds with
 -- probability one half.
 example : (Game.succProbability (Game.withSetup (PMF.uniformOfFintype Bool) pure) : ℝ) = 1 / 2 := by
-  simp [Game.withSetup, Game.succProbability, PMF.bind_pure, PMF.uniformOfFintype_apply]
+  have h : Game.withSetup (PMF.uniformOfFintype Bool) pure = PMF.uniformOfFintype Bool := by
+    simp only [Game.withSetup, ProbComp.eval_pure, PMF.bind_pure]
+  rw [h, Game.coe_succProbability, PMF.uniformOfFintype_apply, Fintype.card_bool]
+  norm_num
 
 -- Only supported parameters matter: with the point law at `true`, experiments that differ
 -- completely at `false` give games with advantage zero.
@@ -58,7 +61,8 @@ example (exp₀ exp₁ : Bool → Experiment) (h : exp₀ true = exp₁ true) :
   exact (Game.advantage_self _).le
 
 -- A bound on every supported success probability bounds the game.
-example (setup : PMF ℕ) (exp : ℕ → Experiment) (h : ∀ n, Experiment.succProbability (exp n) ≤ 1 / 4) :
+example (setup : PMF ℕ) (exp : ℕ → Experiment)
+    (h : ∀ n, Experiment.succProbability (exp n) ≤ 1 / 4) :
     Game.succProbability (Game.withSetup setup exp) ≤ 1 / 4 :=
   Game.succProbability_withSetup_le setup exp fun n _ => h n
 
@@ -97,11 +101,19 @@ example : TwoStage.IsPPT encBits (encMessagePair encBits) encBits encBool encBit
   guess := ComputableInPolyTime.isPPTOn (ComputableInPolyTime.const true)
 
 -- Swapping the challenge messages is polynomial time on the message-pair encoding.
-example : ComputableInPolyTime (fun pair : MessagePair (List Bool) => MessagePair.mk pair.msg₁ pair.msg₀)
+example : ComputableInPolyTime
+    (fun pair : MessagePair (List Bool) => MessagePair.mk pair.msg₁ pair.msg₀)
     (encMessagePair encBits) (encMessagePair encBits) :=
   encMessagePair_mk_polyTime (encMessagePair_msg₁_polyTime .id') (encMessagePair_msg₀_polyTime .id')
 
 /-! ### Word-level adversaries are the instance `σ := List Bool` -/
+
+-- Encoded words unchanged: a message pair and its saved state are encoded exactly as the word
+-- choice output `((m₀, m₁), state)` under `Encryption.encChoiceOut`.
+example {Msg : Type} (encMsg : Msg ↪ List Bool) (pair : MessagePair Msg) (state : List Bool) :
+    encPair (encMessagePair encMsg) encBits (pair, state) =
+      Encryption.encChoiceOut encMsg ((pair.msg₀, pair.msg₁), state) :=
+  rfl
 
 /-- The two-stage family of a word-level chosen-message adversary: the same stages, with the
 challenge pair as a `MessagePair`. -/
@@ -115,7 +127,7 @@ def ofWord {Msg : Type} (adversary : Encryption.AdversaryOf Msg) :
 example {Msg : Type} (encMsg : Msg ↪ List Bool) (adversary : Encryption.AdversaryOf Msg)
     (h : adversary.IsPPT encMsg) :
     TwoStage.IsPPT encBits (encMessagePair encMsg) encBits encBool encBits (ofWord adversary) where
-  choose := h.choose.on.map (ComputableInPolyTime.of_eq fun _ => rfl)
+  choose := IsPPTOn.map h.choose.on (ComputableInPolyTime.of_eq fun _ => rfl)
   guess := h.guess
 
 end CslibFrontierTests.Experiment
