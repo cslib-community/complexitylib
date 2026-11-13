@@ -176,8 +176,8 @@ theorem partialTraceLeft_resumeDensity (request : Fin r → Bool)
   have hscalar (c : ℝ) (σ : Matrix ((Fin (G.description n (x.length + r + s)).width → Bool) × κ)
       ((Fin (G.description n (x.length + r + s)).width → Bool) × κ) ℂ) :
       partialTraceLeft (c • σ) = c • partialTraceLeft σ := by
-    rw [← IsScalarTower.algebraMap_smul ℂ c σ, partialTraceLeft_smul,
-      IsScalarTower.algebraMap_smul]
+    simpa only [partialTraceLeftLinearMap_apply] using
+      (partialTraceLeftLinearMap _ κ).map_smul_of_tower c σ
   simp only [hscalar, partialTraceLeft_densityConj_kronecker (matrix_isometry _)]
   rw [← sum_smul, Probability.PMF.sum_toReal, one_smul]
 
@@ -218,6 +218,15 @@ noncomputable def runClassicalQuery
     (classicalDensityBranch
       (fun z => fun i => z.1 (Fin.castLEEmb (F.wellFormed n x.length).output_le i)) request
       (F.runDensityWithReference n x (hF.oracle n x.length hx H) κ ρ))
+
+/-- The complete execution is a sum of retained request branches followed by reply averaging. -/
+theorem runClassicalQuery_apply (ρ) :
+    G.runClassicalQuery hG n x H κ F hF hx s hnext hkeep service ρ =
+      ∑ request, G.resumeDensity hG n x hnext hkeep H κ request (service H request)
+        (classicalDensityBranch
+          (fun z => fun i => z.1 (Fin.castLEEmb (F.wellFormed n x.length).output_le i)) request
+          (F.runDensityWithReference n x (hF.oracle n x.length hx H) κ ρ)) := by
+  rfl
 
 /-- One classical interaction preserves positivity, including on subnormalized inputs. -/
 theorem runClassicalQuery_posSemidef {ρ} (hρ : ρ.PosSemidef) :
