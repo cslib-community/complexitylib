@@ -2629,6 +2629,7 @@ public import CslibFrontier.Computability.Complexity.Problems.PlanarPositiveOneI
 public import CslibFrontier.Computability.Complexity.Problems.PlanarThreeSATThree
 public import CslibFrontier.Computability.Complexity.Problems.Primes
 public import CslibFrontier.Computability.Complexity.Problems.Primes.MillerRabin
+public import CslibFrontier.Computability.Complexity.Problems.QUADEQ
 public import CslibFrontier.Computability.Complexity.Problems.SAT
 public import CslibFrontier.Computability.Complexity.Problems.SAT.Declared
 public import CslibFrontier.Computability.Complexity.Problems.SAT.ExactOne.Drawing
@@ -6655,6 +6656,7 @@ public import CslibFrontier.Logics.Propositional.CSP.PrimitivePositive.Compositi
 public import CslibFrontier.Logics.Propositional.CSP.PrimitivePositive.Operations
 public import CslibFrontier.Logics.Propositional.CSP.PrimitivePositive.Polymorphism
 public import CslibFrontier.Logics.Propositional.CSP.PrimitivePositive.Replacement
+public import CslibFrontier.Logics.Propositional.CSP.Quadratic
 public import CslibFrontier.Logics.Propositional.CSP.Table
 public import CslibFrontier.Logics.Propositional.CSP.Table.ContractionRows
 public import CslibFrontier.Logics.Propositional.CSP.Table.CyclicDifference
