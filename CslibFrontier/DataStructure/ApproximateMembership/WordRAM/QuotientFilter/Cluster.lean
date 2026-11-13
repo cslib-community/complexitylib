@@ -2537,6 +2537,34 @@ theorem clientResult_boundedWhile_zero_snd {δ : Type}
       (boundedWhile (fun _ (st : ℕ × ℕ) => 0 < st.2) body d fuel (c, 0)) = (c, 0) := by
   cases fuel <;> simp [boundedWhile]
 
+/-- A bounded counting loop whose state-preserving step reads the flag `full cnt`, advancing
+`(cnt, rem)` to `(cnt + 1, rem - 1)` while it is set and stopping with `rem = 0` otherwise, ends
+at the first unset count `a` once its fuel and budget suffice. -/
+private theorem clientResult_countWhile {δ : Type}
+    (body : δ × (ℕ × ℕ) → Memory.Prog (ℕ × ℕ)) (d : δ) (s : Memory.State) (full : ℕ → Bool)
+    {a : ℕ} (hstate : ∀ x, (Memory.spec 0).clientState s (body (d, x)) = s)
+    (hresult : ∀ cnt ≤ a, ∀ rem, (Memory.spec 0).clientResult s (body (d, (cnt, rem))) =
+      if (full cnt).toNat = 0 then (cnt, 0) else (cnt + 1, rem - 1))
+    (hfull : ∀ c < a, full c = true) (hempty : full a = false) :
+    ∀ fuel cnt rem, cnt ≤ a → a - cnt < fuel → a - cnt < rem →
+      (Memory.spec 0).clientResult s
+        (boundedWhile (fun _ (st : ℕ × ℕ) => 0 < st.2) body d fuel (cnt, rem)) = (a, 0) := by
+  intro fuel
+  induction fuel with
+  | zero => intro _ _ _ hlt _; omega
+  | succ fuel ih =>
+    intro cnt rem hcnt hfuel hrem
+    have hg : 0 < rem := by omega
+    simp only [boundedWhile, hg, ↓reduceIte]
+    rw [StateTransitionSpec.clientResult_bind, hstate, hresult cnt hcnt]
+    rcases lt_or_eq_of_le hcnt with hlt | rfl
+    · rw [hfull cnt hlt]
+      simp only [Bool.toNat_true, one_ne_zero, ↓reduceIte]
+      exact ih (cnt + 1) (rem - 1) (by omega) (by omega) (by omega)
+    · rw [hempty]
+      simp only [Bool.toNat_false, ↓reduceIte]
+      exact clientResult_boundedWhile_zero_snd _ _ _ _ _
+
 theorem clientResult_backLen_aux (base w w₀ n k : ℕ)
     (q : Fin (2 ^ quotBits w₀ n)) (r : Fin (2 ^ remBits w₀ k)) (opTag : ℕ)
     (s : Memory.State) {a : ℕ} (ha_lt : a < 2 ^ quotBits w₀ n)
@@ -2548,24 +2576,15 @@ theorem clientResult_backLen_aux (base w w₀ n k : ℕ)
     ∀ fuel cnt rem, cnt ≤ a → a - cnt < fuel → a - cnt < rem →
       (Memory.spec 0).clientResult s
         (boundedWhile (fun _ (st : ℕ × ℕ) => 0 < st.2) backLenStep
-          (mkClusterInput base w w₀ n k q r opTag) fuel (cnt, rem)) = (a, 0) := by
-  intro fuel
-  induction fuel with
-  | zero => intro _ _ _ hlt _; omega
-  | succ fuel ih =>
-    intro cnt rem hcnt hfuel hrem
-    have hg : 0 < rem := by omega
-    simp only [boundedWhile, hg, ↓reduceIte]
-    rw [StateTransitionSpec.clientResult_bind, clientState_backLenStep, clientResult_backLenStep]
-    simp only [mkClusterInput_0, mkClusterInput_3, clientResult_readFull_mk,
-      maskedSlot_backSlot q (a := cnt + 1) (by omega)]
-    rcases lt_or_eq_of_le hcnt with hlt | rfl
-    · rw [hfull cnt hlt]
-      simp only [Bool.toNat_true, one_ne_zero, ↓reduceIte]
-      exact ih (cnt + 1) (rem - 1) (by omega) (by omega) (by omega)
-    · rw [hempty]
-      simp only [Bool.toNat_false, ↓reduceIte]
-      exact clientResult_boundedWhile_zero_snd _ _ _ _ _
+          (mkClusterInput base w w₀ n k q r opTag) fuel (cnt, rem)) = (a, 0) :=
+  clientResult_countWhile backLenStep _ s
+    (fun c => (extractFilterState base w w₀ n k s.mem).isFull (backSlot (quotBits w₀ n) q (c + 1)))
+    (fun _ => clientState_backLenStep _ _)
+    (fun cnt hcnt rem => by
+      rw [clientResult_backLenStep]
+      simp only [mkClusterInput_0, mkClusterInput_3, clientResult_readFull_mk,
+        maskedSlot_backSlot q (a := cnt + 1) (by omega)])
+    hfull hempty
 
 theorem clientResult_backLen_mk {U : ℕ} {S : Finset (Fin U)} (base w w₀ n k : ℕ)
     {quot : Fin U → Fin (2 ^ quotBits w₀ n)} {rem : Fin U → Fin (2 ^ remBits w₀ k)}
@@ -2596,23 +2615,14 @@ theorem clientResult_fwdLen_aux (base w w₀ n k : ℕ)
     ∀ fuel cnt rem, cnt ≤ t → t - cnt < fuel → t - cnt < rem →
       (Memory.spec 0).clientResult s
         (boundedWhile (fun _ (st : ℕ × ℕ) => 0 < st.2) fwdLenStep
-          (mkClusterInput base w w₀ n k q r opTag) fuel (cnt, rem)) = (t, 0) := by
-  intro fuel
-  induction fuel with
-  | zero => intro _ _ _ hlt _; omega
-  | succ fuel ih =>
-    intro cnt rem hcnt hfuel hrem
-    have hg : 0 < rem := by omega
-    simp only [boundedWhile, hg, ↓reduceIte]
-    rw [StateTransitionSpec.clientResult_bind, clientState_fwdLenStep, clientResult_fwdLenStep]
-    simp only [mkClusterInput_0, clientResult_readFull_mk, maskedSlot_probeSlot q cnt]
-    rcases lt_or_eq_of_le hcnt with hlt | rfl
-    · rw [hfull cnt hlt]
-      simp only [Bool.toNat_true, one_ne_zero, ↓reduceIte]
-      exact ih (cnt + 1) (rem - 1) (by omega) (by omega) (by omega)
-    · rw [hempty]
-      simp only [Bool.toNat_false, ↓reduceIte]
-      exact clientResult_boundedWhile_zero_snd _ _ _ _ _
+          (mkClusterInput base w w₀ n k q r opTag) fuel (cnt, rem)) = (t, 0) :=
+  clientResult_countWhile fwdLenStep _ s
+    (fun c => (extractFilterState base w w₀ n k s.mem).isFull (probeSlot (quotBits w₀ n) q c))
+    (fun _ => clientState_fwdLenStep _ _)
+    (fun cnt _ rem => by
+      rw [clientResult_fwdLenStep]
+      simp only [mkClusterInput_0, clientResult_readFull_mk, maskedSlot_probeSlot q cnt])
+    hfull hempty
 
 theorem clientResult_fwdLen_mk {U : ℕ} {S : Finset (Fin U)} (base w w₀ n k : ℕ)
     {quot : Fin U → Fin (2 ^ quotBits w₀ n)} {rem : Fin U → Fin (2 ^ remBits w₀ k)}
