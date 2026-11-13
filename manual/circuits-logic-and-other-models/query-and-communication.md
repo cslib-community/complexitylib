@@ -274,8 +274,21 @@ of `depthFunctions n t` (`eval_mem_depthFunctions`), and
 formulas should range over these functions, since syntactic formulas of bounded `binaryCost`
 depth are infinitely many. The [machinery client](../../CslibFrontierTests/CircuitHardSetMachinery.lean)
 checks all three on small inputs; run `scripts/build.sh CslibFrontierTests.CircuitHardSetMachinery`.
-The rest of Lemma 6.3 (the hard distribution, removing heavy points and the rounding with
-Bernstein's inequality) and Lemmas 6.4–6.5 and Theorem 6.6 are not formalized yet.
+[HardDistribution](../../CslibFrontier/Computability/Circuit/Boolean/HardDistribution.lean)
+proves the first two steps of the proof of Lemma 6.3. `exists_hardDistribution` assumes
+`d + 18 + 3 ⌈log₂ n⌉ < formulaDepth g`. It gives a distribution `μ` under which every formula of
+`binaryCost` depth at most `d` has `accuracy μ g` below `9/16`. The proof uses minimax
+(`Probability.PMF.exists_forall_toOuterMeasure_le`) and then Lemma 3.7 for formulas with
+`ε = 1/16`. `exists_spread_hardDistribution` takes such a `μ` with `d ≥ ⌈log₂ n⌉ + ⌈log₂ K⌉` and
+memorizes `g` on the `K` heaviest points. Conditioning on the rest gives `ν` with
+`7 K ν(x) < 1` and accuracy below `9/14` for every formula of depth at most `d`.
+`exists_spread_hardDistribution_of_lt_formulaDepth` chains the two steps. `exists_lt_formulaDepth`
+shows that its hypothesis is satisfiable: if `(4n + 4)^{2^t} < 2 · 2^{2^n}`, some function has
+formula depth above `t`. The [hard-distribution client](../../CslibFrontierTests/CircuitHardDistribution.lean)
+applies both steps to such a function on 60 bits; run
+`scripts/build.sh CslibFrontierTests.CircuitHardDistribution`. Lemma 6.3 still needs its last
+step: rounding `ν` to a random set, Bernstein's inequality, and the union bound over
+`depthFunctions`. Lemmas 6.4–6.5 and Theorem 6.6 are not formalized yet either.
 
 
 This covers submission 865 through Theorem 1.5: the upper bound, Lemma 5.2, Theorems 1.1, 1.2
