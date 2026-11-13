@@ -766,24 +766,35 @@ theorem FilterInv.card_filter_quot_mem_cyclicInterval_eq {U b f n : ℕ} {S : Fi
       (probeSlot b (hinv.clusterStart hS_lt q))) = hinv.clusterLen hS_lt q
   rw [← runOffset_eq_card_filter_image S quot rem _ hlen_le, hvalid.runOffset_eq]
 
+/-- Under `FilterInv`, the bucket of an empty slot has no run. -/
+theorem FilterInv.bucketRun_eq_nil_of_isFull_eq_false {U b f n : ℕ} {S : Finset (Fin U)}
+    {quot : Fin U → Fin (2 ^ b)} {rem : Fin U → Fin (2 ^ f)} {st : FilterState b f}
+    (hinv : FilterInv n S quot rem st) {p : Fin (2 ^ b)} (hp : st.isFull p = false) :
+    bucketRun S quot rem p = [] := by
+  have h1 := hinv.isOcc_eq p
+  rw [(hinv.empty_slot p hp).1] at h1
+  cases h : bucketRun S quot rem p
+  · rfl
+  · simp [h] at h1
+
 /-- A home slot whose forward cluster length is zero is unoccupied, so its bucket run is empty. -/
-private theorem FilterInv.isOcc_eq_false_of_fwdLen_eq_zero {U b f n : ℕ} {S : Finset (Fin U)}
+theorem FilterInv.isOcc_eq_false_of_fwdLen_eq_zero {U b f n : ℕ} {S : Finset (Fin U)}
     {quot : Fin U → Fin (2 ^ b)} {rem : Fin U → Fin (2 ^ f)} {st : FilterState b f}
     (hinv : FilterInv n S quot rem st) (hS_lt : #S < 2 ^ b) (q : Fin (2 ^ b))
     (ht : hinv.fwdLen hS_lt q = 0) :
     st.isOcc q = false ∧ bucketRun S quot rem q = [] := by
-  have hfull_q : st.isFull q = false := by
-    have h1 := hinv.isFull_probeSlot_fwdLen hS_lt q
-    change st.isFull (probeSlot b q (hinv.fwdLen hS_lt q)) = false at h1
-    rw [ht, probeSlot_zero] at h1
-    exact h1
-  have hocc_q : st.isOcc q = false := (hinv.empty_slot q hfull_q).1
-  refine ⟨hocc_q, ?_⟩
-  have h1 := hinv.isOcc_eq q
-  rw [hocc_q] at h1
-  cases h : bucketRun S quot rem q
-  · rfl
-  · simp [h] at h1
+  have hfull_q := hinv.isFull_probeSlot_fwdLen hS_lt q
+  rw [ht, probeSlot_zero] at hfull_q
+  exact ⟨(hinv.empty_slot q hfull_q).1, hinv.bucketRun_eq_nil_of_isFull_eq_false hfull_q⟩
+
+/-- The home slot of a stored key starts a nonempty forward full run. -/
+theorem FilterInv.fwdLen_pos_of_mem {U b f n : ℕ} {S : Finset (Fin U)}
+    {quot : Fin U → Fin (2 ^ b)} {rem : Fin U → Fin (2 ^ f)} {st : FilterState b f}
+    (hinv : FilterInv n S quot rem st) (hS_lt : #S < 2 ^ b) {u : Fin U} (hu : u ∈ S) :
+    0 < hinv.fwdLen hS_lt (quot u) :=
+  Nat.pos_of_ne_zero fun ht =>
+    (bucketRun_eq_nil_iff S quot rem _).mp (hinv.isOcc_eq_false_of_fwdLen_eq_zero hS_lt _ ht).2
+      u hu rfl
 
 /-- **Pointwise dyadic scale-overload bound for quotient-filter clusters**: for any hash family
 `h : Θ → Fin U₀ → Fin (2 ^ b₀)`, seed `i : Θ`, and key `u : Fin U₀`, the cluster length minus one
@@ -797,68 +808,33 @@ theorem FilterInv.clusterLen_sub_one_le_sum_scaleOverload
     ((hinv.clusterLen hS_lt (h i u) - 1 : ℕ) : ℝ) ≤
       ∑ j ∈ Finset.Icc 1 b₀,
         (2 ^ j : ℝ) * (if scaleOverload b₀ h (S.erase u) u j i then (1 : ℝ) else 0) := by
-  set q := h i u
-  set a := hinv.backLen hS_lt q
-  set t := hinv.fwdLen hS_lt q
-  set ℓ := hinv.clusterLen hS_lt q
+  set a := hinv.backLen hS_lt (h i u)
+  set t := hinv.fwdLen hS_lt (h i u)
+  set ℓ := hinv.clusterLen hS_lt (h i u)
   set k₀ := ℓ - 1
   have hℓ_eq : ℓ = a + t := rfl
-  have hℓ_le_S : ℓ ≤ #S := hinv.clusterLen_le_card hS_lt q
-  have hcard_J : #(S.filter fun x => h i x ∈ cyclicInterval b₀ q a ℓ) = ℓ :=
-    hinv.card_filter_quot_mem_cyclicInterval_eq hS_lt q
-  -- A single overloaded scale `r` with `k₀ ≤ 2 ^ r` already bounds `k₀` by the sum.
-  have key : ∀ r ∈ Finset.Icc 1 b₀, k₀ ≤ 2 ^ r → scaleOverload b₀ h (S.erase u) u r i →
-      (k₀ : ℝ) ≤ ∑ r ∈ Finset.Icc 1 b₀,
-        (2 ^ r : ℝ) * (if scaleOverload b₀ h (S.erase u) u r i then (1 : ℝ) else 0) := by
-    intro r hr hk_le hov
-    calc (k₀ : ℝ) ≤ (2 ^ r : ℝ) := by exact_mod_cast hk_le
-      _ = (2 ^ r : ℝ) * (if scaleOverload b₀ h (S.erase u) u r i then (1 : ℝ) else 0) := by
-          simp [hov]
-      _ ≤ _ := by
-          refine Finset.single_le_sum
-            (f := fun r =>
-              (2 ^ r : ℝ) * (if scaleOverload b₀ h (S.erase u) u r i then (1 : ℝ) else 0))
-            (fun r _ => ?_) hr
-          split_ifs <;> positivity
-  -- The dyadic scale `j = log₂ x + 1` of a length `x ≤ ℓ` is overloaded once the cluster
-  -- interval holds `2 ^ log₂ x` keys of `S.erase u`; it then bounds `k₀` when `k₀ ≤ 2 ^ j`.
-  have scale : ∀ x, 1 ≤ x → x ≤ ℓ → a < 2 ^ (Nat.log 2 x + 1) → ℓ ≤ 2 ^ (Nat.log 2 x + 1) →
-      2 ^ Nat.log 2 x ≤ #((S.erase u).filter fun y => h i y ∈ cyclicInterval b₀ q a ℓ) →
-      k₀ ≤ 2 ^ (Nat.log 2 x + 1) →
-      (k₀ : ℝ) ≤ ∑ r ∈ Finset.Icc 1 b₀,
-        (2 ^ r : ℝ) * (if scaleOverload b₀ h (S.erase u) u r i then (1 : ℝ) else 0) := by
-    intro x hx1 hxℓ ha hℓ hcard hk
-    have h2x_le : 2 ^ Nat.log 2 x ≤ x := Nat.pow_log_le_self 2 (by omega)
-    have hj_le_b : Nat.log 2 x + 1 ≤ b₀ := by
-      have hpow_lt : 2 ^ Nat.log 2 x < 2 ^ b₀ := by omega
-      have := (Nat.pow_lt_pow_iff_right (by decide)).mp hpow_lt
-      omega
-    refine key _ (Finset.mem_Icc.mpr ⟨Nat.le_add_left 1 _, hj_le_b⟩) hk ?_
-    dsimp only [scaleOverload]
-    change 2 ^ (Nat.log 2 x + 1 - 1) ≤
-      #((S.erase u).filter fun y => h i y ∈ scaleWindow b₀ q (Nat.log 2 x + 1))
-    rw [Nat.add_sub_cancel]
-    refine hcard.trans (Finset.card_le_card fun y hy => ?_)
-    simp only [Finset.mem_filter] at hy ⊢
-    exact ⟨hy.1, cyclicInterval_subset_scaleWindow q ha hℓ hy.2⟩
+  have hℓ_le_S : ℓ ≤ #S := hinv.clusterLen_le_card hS_lt (h i u)
+  have hcard_J : #(S.filter fun x => h i x ∈ cyclicInterval b₀ (h i u) a ℓ) = ℓ :=
+    hinv.card_filter_quot_mem_cyclicInterval_eq hS_lt (h i u)
   by_cases hk₀ : 1 ≤ k₀
   · by_cases ht_pos : 1 ≤ t
     · -- The scale of `k₀`: removing `u` loses at most one key of the cluster interval.
       have hk₀_lt : k₀ < 2 ^ (Nat.log 2 k₀ + 1) := Nat.lt_pow_succ_log_self (by decide) k₀
-      refine scale k₀ hk₀ (by omega) (by omega) (by omega)
-        ((Nat.pow_log_le_self 2 (by omega)).trans ?_) hk₀_lt.le
+      refine le_sum_scaleOverload_of_cyclicInterval h (S.erase u) u i (x := k₀) (a := a) (len := ℓ)
+        hk₀ (by omega) (by omega) (by omega) ((Nat.pow_log_le_self 2 (by omega)).trans ?_)
+        hk₀_lt.le
       rw [Finset.filter_erase]
       have := Finset.pred_card_le_card_erase
-        (s := S.filter fun x => h i x ∈ cyclicInterval b₀ q a ℓ) (a := u)
+        (s := S.filter fun x => h i x ∈ cyclicInterval b₀ (h i u) a ℓ) (a := u)
       omega
     · -- With an empty home slot `u ∉ S`, so the scale of `ℓ` sees the whole cluster.
-      obtain ⟨-, hrun_nil⟩ := hinv.isOcc_eq_false_of_fwdLen_eq_zero hS_lt q (by omega)
-      have hu_notMem : u ∉ S := fun hu_mem =>
-        (bucketRun_eq_nil_iff S (h i) rem q).mp hrun_nil u hu_mem rfl
-      have herase_eq : S.erase u = S := Finset.erase_eq_of_notMem hu_notMem
+      have hu_notMem : u ∉ S := fun hu_mem => by
+        have : 0 < t := hinv.fwdLen_pos_of_mem hS_lt hu_mem
+        omega
       have hℓ_lt : ℓ < 2 ^ (Nat.log 2 ℓ + 1) := Nat.lt_pow_succ_log_self (by decide) ℓ
-      refine scale ℓ (by omega) le_rfl (by omega) hℓ_lt.le ?_ (by omega)
-      rw [herase_eq, hcard_J]
+      refine le_sum_scaleOverload_of_cyclicInterval h (S.erase u) u i (x := ℓ) (a := a) (len := ℓ)
+        (by omega) (by omega) (by omega) hℓ_lt.le ?_ (by omega)
+      rw [Finset.erase_eq_of_notMem hu_notMem, hcard_J]
       exact Nat.pow_log_le_self 2 (by omega)
   · have hk0 : k₀ = 0 := by omega
     rw [hk0, Nat.cast_zero]

@@ -3339,35 +3339,12 @@ theorem FilterInv.calcTargetSlot_lt_calcDeleteStop_of_mem {U b f n : ℕ}
     let ℓ := hinv.clusterLen hS_lt q
     calcTargetSlot st o a ℓ (rem u) < calcDeleteStop st o a ℓ := by
   intro q o a ℓ
-  let t := hinv.fwdLen hS_lt q
   have hq_probe : q = probeSlot b o a := by
     dsimp only [o, FilterInv.clusterStart]
     have h1 := probeSlot_backSlot_add q a 0
     rw [add_zero, probeSlot_zero] at h1
     exact h1.symm
-  have ha_lt : a < ℓ := by
-    have hr_mem : rem u ∈ bucketRun S quot rem q :=
-      (mem_bucketRun_iff S quot rem q (rem u)).mpr ⟨u, hu, rfl, rfl⟩
-    have hocc_q : st.isOcc q = true := by
-      rw [hinv.isOcc_eq q]
-      cases h : bucketRun S quot rem q with
-      | nil => simp [h] at hr_mem
-      | cons _ _ => rfl
-    have hfull_q : st.isFull q = true := by
-      cases h : st.isFull q
-      · have := (hinv.empty_slot q h).1
-        rw [hocc_q] at this
-        cases this
-      · rfl
-    have ht_pos : 0 < t := by
-      rcases Nat.eq_zero_or_pos t with ht0 | hpos
-      · have h1 := hinv.isFull_probeSlot_fwdLen hS_lt q
-        change st.isFull (probeSlot b q t) = false at h1
-        rw [ht0, probeSlot_zero, hfull_q] at h1
-        cases h1
-      · exact hpos
-    change a < a + t
-    omega
+  have ha_lt : a < ℓ := Nat.lt_add_of_pos_right (hinv.fwdLen_pos_of_mem hS_lt hu)
   have hvalid₀ : IntervalValid S quot rem st o ℓ := hinv.intervalValid_cluster hS_lt q
   obtain ⟨_ha_lt_e, _he_le_ℓ, he_run, _⟩ := hvalid₀.calcDeleteStop_spec hinv.isOcc_eq ha_lt
   have hs_eq := hvalid₀.calcTargetSlot_eq hinv.isOcc_eq ha_lt (rem u)

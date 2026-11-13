@@ -284,7 +284,7 @@
  "CslibFrontier/Crypto/Protocols/VOLE/MaskedMulCheck.lean": 3,
  "CslibFrontier/Crypto/Protocols/VOLE/Native.lean": 2,
  "CslibFrontier/DataStructure/AVLTree/Impl.lean": 8,
- "CslibFrontier/DataStructure/ApproximateMembership/WordRAM/QuotientFilter/Cluster.lean": 393,
+ "CslibFrontier/DataStructure/ApproximateMembership/WordRAM/QuotientFilter/Cluster.lean": 390,
  "CslibFrontier/DataStructure/Dictionary/WordRAM/Succinct.lean": 2,
  "CslibFrontier/DataStructure/Dictionary/WordRAM/SuccinctBucketOps.lean": 47,
  "CslibFrontier/DataStructure/Dictionary/WordRAM/SuccinctChainOps.lean": 75,
