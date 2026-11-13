@@ -16,7 +16,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Logics.Propositional.CNF.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryPair
 
 /-!
 # 3SAT with at most three occurrences per variable
@@ -77,22 +77,16 @@ theorem numberCopy_injective : Function.Injective numberCopy := by
   rcases h with ⟨rfl, rfl, rfl⟩
   rfl
 
-private theorem computableInPolyTime_pair :
-    ComputableInPolyTime (fun p : ℕ × ℕ => Nat.pair p.1 p.2)
-      (encPair encNat encNat) encNat := by
-  unfold Nat.pair
-  fun_prop
-
 /-- Numbering copies is polynomial-time without expanding the original binary label. -/
 @[fun_prop]
 theorem computableInPolyTime_numberCopy :
     ComputableInPolyTime numberCopy (encPair encNat (encPair encUnary encUnary)) encNat := by
   have hi : ComputableInPolyTime (fun p : ℕ × ℕ => Nat.pair p.1 p.2)
       (encPair encUnary encUnary) encNat :=
-    computableInPolyTime_pair.comp
+    ComputableInPolyTime.binary_pair.comp
       ((ComputableInPolyTime.unary_to_binary.comp (ComputableInPolyTime.fst _ _)).prod
         (ComputableInPolyTime.unary_to_binary.comp (ComputableInPolyTime.snd _ _)))
-  exact computableInPolyTime_pair.comp
+  exact ComputableInPolyTime.binary_pair.comp
     ((ComputableInPolyTime.fst _ _).prod (hi.comp (ComputableInPolyTime.snd _ _)))
 
 /-- Check clause widths, literal-occurrence bounds, and a satisfying assignment. -/
