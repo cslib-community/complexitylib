@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Privacy.DifferentialPrivacy.Basic
+public import CslibFrontier.Privacy.DifferentialPrivacy.Sensitivity
 public import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Mathlib.Analysis.SpecificLimits.Basic
 
@@ -18,8 +19,8 @@ The two-sided geometric distribution with ratio `α ∈ [0, 1)` gives each integ
 `(1 - α) / (1 + α) · α ^ |z|` (`twoSidedGeometric`). Adding it to the value of a count query is
 the `α`-geometric mechanism [GhoshRoughgardenSundararajan2012, Example 2.1]. The masses of
 neighboring integers differ by a factor of at most `α⁻¹`, so adding this noise to an
-integer-valued query of sensitivity `Δ` is `(Δ · ln α⁻¹, 0)`-differentially private
-(`differentiallyPrivate_addNoise_twoSidedGeometric`).
+integer-valued query `q` of sensitivity `Δ` (`Sensitivity Adj (fun x => (q x : ℝ)) Δ`) is
+`(Δ · ln α⁻¹, 0)`-differentially private (`differentiallyPrivate_addNoise_twoSidedGeometric`).
 
 With `α = exp (-1 / t)` it is the discrete Laplace distribution with scale `t`
 (`discreteLaplace`, `discreteLaplace_apply`) [CanonneKamathSteinke2020, Definition 28]. Adding
@@ -241,7 +242,7 @@ theorem addNoise_toOuterMeasure_le_natAbs_sub (q : D → ℤ) (noise : PMF ℤ) 
 /-- If shifting the noise by at most `Δ` changes each mass by a factor of at most `exp ε`, then
 adding it to a query of sensitivity `Δ` is `(ε, 0)`-differentially private. -/
 theorem DifferentiallyPrivate.addNoise {Adj : D → D → Prop} {q : D → ℤ} {noise : PMF ℤ} {Δ ε : ℝ}
-    (hq : ∀ ⦃x y⦄, Adj x y → |(q x : ℝ) - q y| ≤ Δ)
+    (hq : Sensitivity Adj (fun x => (q x : ℝ)) Δ)
     (hnoise : ∀ z d : ℤ, |(d : ℝ)| ≤ Δ → noise z ≤ ENNReal.ofReal (Real.exp ε) * noise (z + d)) :
     DifferentiallyPrivate Adj (Privacy.addNoise q noise) ε 0 :=
   of_apply_le fun x y hxy r => by
@@ -280,7 +281,7 @@ two-sided geometric noise with ratio `α ∈ (0, 1)` to an integer-valued query 
 is `(Δ · ln α⁻¹, 0)`-differentially private. For a count query (`Δ = 1`) this is the source's
 `α`-differential privacy. -/
 theorem differentiallyPrivate_addNoise_twoSidedGeometric {Adj : D → D → Prop} {q : D → ℤ}
-    {Δ : ℝ} (hq : ∀ ⦃x y⦄, Adj x y → |(q x : ℝ) - q y| ≤ Δ) (h0 : 0 < α) (h1 : α < 1) :
+    {Δ : ℝ} (hq : Sensitivity Adj (fun x => (q x : ℝ)) Δ) (h0 : 0 < α) (h1 : α < 1) :
     DifferentiallyPrivate Adj (addNoise q (twoSidedGeometric α h0.le h1))
       (Δ * Real.log α⁻¹) 0 :=
   DifferentiallyPrivate.addNoise hq fun z d hd => twoSidedGeometric_apply_le h0 h1 z d hd
@@ -316,8 +317,8 @@ theorem discreteLaplace_apply (t : ℝ) (ht : 0 < t) (z : ℤ) :
 /-- Adding discrete Laplace noise of scale `Δ / ε` to an integer-valued query of sensitivity
 `Δ > 0` is `(ε, 0)`-differentially private [CanonneKamathSteinke2020, Lemma 29]. -/
 theorem differentiallyPrivate_addNoise_discreteLaplace {D : Type*} {Adj : D → D → Prop}
-    {q : D → ℤ} {Δ : ℝ} (hΔ : 0 < Δ) (hq : ∀ ⦃x y⦄, Adj x y → |(q x : ℝ) - q y| ≤ Δ) {ε : ℝ}
-    (hε : 0 < ε) :
+    {q : D → ℤ} {Δ : ℝ} (hΔ : 0 < Δ) (hq : Sensitivity Adj (fun x => (q x : ℝ)) Δ)
+    {ε : ℝ} (hε : 0 < ε) :
     DifferentiallyPrivate Adj (addNoise q (discreteLaplace (Δ / ε) (by positivity))) ε 0 := by
   have := differentiallyPrivate_addNoise_twoSidedGeometric hq (Real.exp_pos (-1 / (Δ / ε)))
     (Real.exp_lt_one_iff.mpr (div_neg_of_neg_of_pos (by norm_num) (by positivity)))

@@ -3228,6 +3228,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.L
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.Words
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Nondeterministic
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolySpace
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Basic
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Fold
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Plain
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
@@ -4358,6 +4359,7 @@ public import CslibFrontier.Crypto.Computational.NaorReingold
 public import CslibFrontier.Crypto.Computational.NaorReingold.PRF
 public import CslibFrontier.Crypto.Computational.NaorReingold.Security
 public import CslibFrontier.Crypto.Computational.NaorYung
+public import CslibFrontier.Crypto.Computational.Nonuniform.Advice
 public import CslibFrontier.Crypto.Computational.Nonuniform.Basic
 public import CslibFrontier.Crypto.Computational.Nonuniform.ZeroKnowledge
 public import CslibFrontier.Crypto.Computational.OneWay
@@ -4843,6 +4845,7 @@ public import CslibFrontier.DataStructure.Paging.LRU
 public import CslibFrontier.DataStructure.Paging.LowerBound
 public import CslibFrontier.DataStructure.Paging.Marking
 public import CslibFrontier.DataStructure.PrefixSums.CellProbe.LowerBound
+public import CslibFrontier.DataStructure.PrefixSums.Spec
 public import CslibFrontier.DataStructure.PrefixSums.WordRAM.Dynamic
 public import CslibFrontier.DataStructure.PrefixSums.WordRAM.Query
 public import CslibFrontier.DataStructure.PrefixSums.WordRAM.Tree
@@ -6593,6 +6596,7 @@ public import CslibFrontier.Privacy.DifferentialPrivacy.PrivacyLoss
 public import CslibFrontier.Privacy.DifferentialPrivacy.RandomReconstruction
 public import CslibFrontier.Privacy.DifferentialPrivacy.RandomizedResponse
 public import CslibFrontier.Privacy.DifferentialPrivacy.Reconstruction
+public import CslibFrontier.Privacy.DifferentialPrivacy.Sensitivity
 public import CslibFrontier.Privacy.DifferentialPrivacy.SmallUniverse
 public import CslibFrontier.Probability.AdaptiveWeights
 public import CslibFrontier.Probability.ApproximateCounting

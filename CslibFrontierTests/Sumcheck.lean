@@ -38,10 +38,10 @@ theorem partialSum_P : partialSum P (![] : Fin 0 → ZMod 3) = 1 := by
   simp [point]
 
 /-- The true claim. -/
-example : rel P 0 (![], 1) () := partialSum_P
+example : rel P 0 ⟨![], 1⟩ () := partialSum_P
 
 /-- A false claim. -/
-example : ¬ rel P 0 (![], 0) () := by
+example : ¬ rel P 0 ⟨![], 0⟩ () := by
   simp [rel, partialSum_P]
 
 /-- Sumcheck with the final check is perfectly complete on this instance. -/

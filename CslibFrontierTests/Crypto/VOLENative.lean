@@ -180,9 +180,8 @@ example :
   have hcheck := maskedMulCheckReceiverSimulate_accepts leftWire leftWire outWire
     (constantReceiver.strategy 2 List.ofFn (Fin.val (n := 1)))
     (inputOfMaps leftWire leftWire outWire) hv
-  have hfalse : ¬ (maskedMulCheckValue leftWire leftWire outWire falseView.1.1 falseView.1.2
-      falseView.2.1.1 falseView.2.1.2.1 =
-        falseView.2.1.2.2.1.1 * falseView.1.1 + falseView.2.1.2.2.1.2) := by decide
+  have hfalse : ¬ MaskedMulCheckAccepts leftWire leftWire outWire falseView.1 falseView.2.1 := by
+    decide
   exact hfalse hcheck
 
 
