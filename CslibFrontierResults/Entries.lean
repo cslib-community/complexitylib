@@ -4656,7 +4656,8 @@ register_result "ofb-mode-cpa" where
   title := "OFB mode is CPA-secure for a pseudorandom function"
   topic := "cryptography"
   sources := [
-    { paper := KatzLindell2020, theorem := unverified, locator := "Section 3.6.3, p. 92" }
+    { paper := KatzLindell2020, theorem := "unnumbered statement that OFB mode is CPA-secure",
+      locator := "Section 3.6.3, p. 92" }
   ]
   theorems := [
     Cslib.Crypto.advantage_ofbCpaGame_le
