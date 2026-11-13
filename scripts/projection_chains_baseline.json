@@ -351,6 +351,7 @@
  "CslibFrontier/Logics/FirstOrder/Problems/ColoringReduction.lean": 7,
  "CslibFrontier/Logics/FirstOrder/Raw/Graph.lean": 6,
  "CslibFrontier/Logics/FirstOrder/ZeroOneLaw/Relational/ExtensionAxiom.lean": 2,
+ "CslibFrontier/Logics/FirstOrder/ZeroOneLaw/Relational/ExtensionProbability.lean": 2,
  "CslibFrontier/Logics/Propositional/CNF/Compact/Relabel.lean": 3,
  "CslibFrontier/Logics/Propositional/CNF/ModelCount.lean": 4,
  "CslibFrontier/Logics/Propositional/CNF/Occurrence.lean": 1,
