@@ -73,8 +73,11 @@ The polynomial interpretation is proved in
 For `n ≠ 0` and a nontrivial commutative ring `R`, `negacyclicEquiv` is an `R`-algebra
 equivalence `Negacyclic R n ≃ₐ[R] AdjoinRoot (X^n + 1)`, so `map_mul` carries
 negacyclic multiplication to quotient multiplication and injectivity reflects quotient equalities
-back to coefficient vectors. `ofCoeffs_comp_moduleSISMap` reads the existing Module-SIS map as a
-matrix product over `Negacyclic R n`; composing with `RingHom.map_mulVec` transports it to the
+back to coefficient vectors. In
+[`SIS/Module.lean`](../../CslibFrontier/Crypto/Computational/SIS/Module.lean),
+`ofCoeffs_comp_moduleSISMap` reads the existing Module-SIS map as a matrix-vector product over
+`Negacyclic (ZMod q) n` and `moduleSISMap_eq_zero_iff` restates its zero equation there; neither
+needs the quotient. `negacyclicEquiv_mulVec` then carries any such product entrywise to the
 quotient ring. The checked examples in
 [`NegacyclicPolynomial.lean`](../../CslibFrontierTests/Crypto/NegacyclicPolynomial.lean) include
 integers, composite modulus `6`, characteristic `2`, dimension `1`, and reflection of the

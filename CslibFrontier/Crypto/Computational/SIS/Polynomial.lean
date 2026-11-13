@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Crypto.Computational.SIS.Module
+public import CslibFrontier.Foundations.Algebra.Negacyclic
 public import Mathlib.RingTheory.AdjoinRoot
 import Mathlib.Algebra.Group.Fin.Basic
 
@@ -18,8 +18,8 @@ The ring `Negacyclic R n` represents `R[X]/(X^n + 1)` on coefficient vectors. Th
 identifies it with Mathlib's canonical quotient `AdjoinRoot (X^n + 1)` as an `R`-algebra, for
 positive `n` over a nontrivial commutative ring. No primality or irreducibility assumption is
 needed. The positive-dimension restriction matters: at `n = 0` the quotient is `R/(2)`, while
-`Negacyclic R 0` is the zero ring. It also writes the coefficient-level Module-SIS map as a
-matrix-vector product over `Negacyclic (ZMod q) n`.
+`Negacyclic R 0` is the zero ring. Matrix-vector products, such as the Module-SIS map read
+through `ofCoeffs_comp_moduleSISMap`, transport entrywise to the quotient.
 
 ## Main definitions
 
@@ -28,7 +28,7 @@ matrix-vector product over `Negacyclic (ZMod q) n`.
 ## Main results
 
 * `negacyclicEquiv_apply`: the equivalence evaluates a coefficient vector at the residue of `X`.
-* `ofCoeffs_comp_moduleSISMap`: the Module-SIS map is `A *ᵥ z` over `Negacyclic (ZMod q) n`.
+* `negacyclicEquiv_mulVec`: the equivalence maps `A *ᵥ z` entrywise to the quotient ring.
 
 ## References
 
@@ -140,12 +140,10 @@ theorem negacyclicEquiv_apply (hn : n ≠ 0) (a : Negacyclic R n) :
       ∑ i, algebraMap R _ (a.coeffs i) * AdjoinRoot.root ((X : R[X]) ^ n + 1) ^ (i : ℕ) :=
   negacyclicLinearEquiv_apply hn a.coeffs
 
-/-- The coefficient-level Module-SIS map is the matrix-vector product `A *ᵥ z` over
-`Negacyclic (ZMod q) n`. -/
-theorem ofCoeffs_comp_moduleSISMap {d k q : ℕ}
-    (A : Matrix (Fin d) (Fin k) (Fin n → ZMod q)) (z : Fin k → Fin n → ZMod q) :
-    ofCoeffs ∘ moduleSISMap A z = A.map ofCoeffs *ᵥ (ofCoeffs ∘ z) := by
-  funext i
-  exact ofCoeffs_innerPoly (A i) z
+/-- Matrix-vector products over `Negacyclic R n` map entrywise to the quotient ring. -/
+theorem negacyclicEquiv_mulVec (hn : n ≠ 0) {d k : ℕ}
+    (A : Matrix (Fin d) (Fin k) (Negacyclic R n)) (z : Fin k → Negacyclic R n) :
+    negacyclicEquiv hn ∘ (A *ᵥ z) = A.map (negacyclicEquiv hn) *ᵥ (negacyclicEquiv hn ∘ z) :=
+  funext fun i => RingHom.map_mulVec (negacyclicEquiv hn).toRingEquiv.toRingHom A z i
 
 end Cslib.Crypto

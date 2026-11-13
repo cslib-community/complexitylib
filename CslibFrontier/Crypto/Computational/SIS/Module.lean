@@ -111,6 +111,8 @@ lattice problems over the negacyclic polynomial ring `R_q = ℤ_q[X] / (X^n + 1)
   `Cslib.Crypto.GeneralSIS.isSolution_of_isAjtaiCollision`,
   `Cslib.Crypto.GeneralSIS.succProbability_ajtaiCollisionGame_le`: collision extraction and game
   reduction for Ajtai's hash function over arbitrary moduli.
+* `Cslib.Crypto.ofCoeffs_comp_moduleSISMap`, `Cslib.Crypto.moduleSISMap_eq_zero_iff`: the
+  Module-SIS map and its zero equation as `A *ᵥ z` over the ring `Negacyclic (ZMod q) n`.
 * `Cslib.Crypto.expandModuleMatrix_mulVec`,
   `Cslib.Crypto.expandModuleMatrix_mulVec_eq_zero_iff`: block-anticirculant matrix-vector
   product agrees with `moduleSISMap` after coefficient flattening.
@@ -461,6 +463,23 @@ theorem moduleSISMap_add {d k n q : ℕ}
     moduleSISMap A (y + z) = moduleSISMap A y + moduleSISMap A z := by
   funext i
   simp only [moduleSISMap, Pi.add_apply, negacyclicMul_add, Finset.sum_add_distrib]
+
+/-- The coefficient-level Module-SIS map is the matrix-vector product `A *ᵥ z` over
+`Negacyclic (ZMod q) n`. -/
+theorem ofCoeffs_comp_moduleSISMap {d k n q : ℕ}
+    (A : Matrix (Fin d) (Fin k) (Fin n → ZMod q)) (z : Fin k → Fin n → ZMod q) :
+    Negacyclic.ofCoeffs ∘ moduleSISMap A z =
+      A.map Negacyclic.ofCoeffs *ᵥ (Negacyclic.ofCoeffs ∘ z) :=
+  funext fun i => Negacyclic.ofCoeffs_innerPoly (A i) z
+
+/-- A coefficient-level Module-SIS zero equation is the zero equation of `A *ᵥ z` over
+`Negacyclic (ZMod q) n`. -/
+theorem moduleSISMap_eq_zero_iff {d k n q : ℕ}
+    (A : Matrix (Fin d) (Fin k) (Fin n → ZMod q)) (z : Fin k → Fin n → ZMod q) :
+    moduleSISMap A z = 0 ↔ A.map Negacyclic.ofCoeffs *ᵥ (Negacyclic.ofCoeffs ∘ z) = 0 := by
+  rw [← ofCoeffs_comp_moduleSISMap]
+  simp only [funext_iff, Function.comp_apply, Pi.zero_apply, Negacyclic.ext_iff,
+    Negacyclic.coeffs_zero]
 
 /-- Parameter family for Module-SIS over `ℤ_q[X] / (X^n + 1)` ([Lyubashevsky2012],
 [DucasEtAl2018]). -/
