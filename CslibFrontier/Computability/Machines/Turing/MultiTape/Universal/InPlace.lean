@@ -10,6 +10,7 @@ module
 -- that the unused-tactic linter flags are dropped
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Translate
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Machine
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Space
 import Mathlib.Tactic.GCongr
@@ -237,6 +238,17 @@ public theorem inputSymbol_scan (x : List ℕ) (p : ℕ) :
   · simp [List.drop_of_length_le h, show p - x.length ≠ 0 by omega]
 
 /-! ### The fold -/
+
+/-- A simulated machine at one point of its run: its description and its configuration. -/
+public structure Sim where
+  /-- The description of the simulated machine. -/
+  desc : Desc
+  /-- The configuration of the simulated machine. -/
+  cfg : SCfg
+
+/-- The encoding of a simulated machine: the framed description, then the configuration, which
+is the word `encPair eDesc eCfg (desc, cfg)`. -/
+public enc_structure eSim : Sim where desc : eDesc, cfg : eCfg
 
 /-- The state of the fold: the description and the configuration, then the number of steps left,
 the countdown and the symbol read so far. -/
