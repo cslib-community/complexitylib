@@ -60,6 +60,8 @@ within `ε` of `f` when `μ` computes `f` with error `ε`. So `adeg_ε(f) ≤ R_
 
 public section
 
+open scoped NNReal
+
 namespace Cslib
 
 open Convexity Finset BitString RandomizedDecisionTree
@@ -153,7 +155,8 @@ theorem Computes.one_sub_two_mul_mul_blockSensitivity_le_depth (h : μ.Computes 
 
 /-- A randomized decision tree computing `f` with error `ε` gives a real function of degree at most
 its depth within `ε` of `f`: the probability that the tree drawn outputs `1`. -/
-theorem Computes.approxDegree_le_depth (h : μ.Computes ε f) : approxDegree ε f ≤ μ.depth := by
+theorem Computes.approxDegree_le_depth {ε : ℝ≥0} (h : μ.Computes ε f) :
+    approxDegree ε f ≤ μ.depth := by
   classical
   set p : BitString n → ℝ := ∑ t ∈ μ.weights.support, μ.weights t • fun y => bitVal ℝ (t.eval y)
   have hp (y : BitString n) : p y = μ.weights.sum fun t w => w * bitVal ℝ (t.eval y) := by
@@ -181,28 +184,28 @@ end RandomizedDecisionTree
 
 namespace QueryComplexity
 
-variable {n : ℕ} {ε : ℝ}
+variable {n : ℕ} {ε : ℝ≥0}
 
 /-- **Nisan's bound**: `(1 - 2ε) bs(f) ≤ R_ε(f)` for `ε ≥ 0`. -/
-theorem one_sub_two_mul_mul_blockSensitivity_le_randomizedComplexity (hε : 0 ≤ ε)
-    (f : BooleanFunction n) : (1 - 2 * ε) * blockSensitivity f ≤ randomizedComplexity ε f := by
-  obtain ⟨μ, hμ, hd⟩ := exists_computes_depth_eq_randomizedComplexity hε f
+theorem one_sub_two_mul_mul_blockSensitivity_le_randomizedComplexity
+    (f : BooleanFunction n) :
+    (1 - 2 * (ε : ℝ)) * blockSensitivity f ≤ randomizedComplexity ε f := by
+  obtain ⟨μ, hμ, hd⟩ := exists_computes_depth_eq_randomizedComplexity (ε := ε) f
   exact hd ▸ hμ.one_sub_two_mul_mul_blockSensitivity_le_depth
 
 /-- **Nisan's bound** for bounded error: `bs(f) ≤ 3 R(f)`, for `R = R_{1/3}`. -/
 theorem blockSensitivity_le_three_mul_randomizedComplexity (f : BooleanFunction n) :
     blockSensitivity f ≤ 3 * randomizedComplexity (1 / 3) f := by
   have := one_sub_two_mul_mul_blockSensitivity_le_randomizedComplexity
-    (by norm_num : (0 : ℝ) ≤ 1 / 3) f
+    (ε := 1 / 3) f
+  norm_num only [NNReal.coe_div, NNReal.coe_one, NNReal.coe_ofNat] at this
   have h : (blockSensitivity f : ℝ) ≤ 3 * randomizedComplexity (1 / 3) f := by linarith
   exact_mod_cast h
 
 /-- **Approximate degree is at most randomized complexity**: `adeg_ε(f) ≤ R_ε(f)`. -/
-theorem approxDegree_le_randomizedComplexity (ε : ℝ) (f : BooleanFunction n) :
+theorem approxDegree_le_randomizedComplexity (ε : ℝ≥0) (f : BooleanFunction n) :
     approxDegree ε f ≤ randomizedComplexity ε f := by
-  rcases lt_or_ge ε 0 with hε | hε
-  · exact (approxDegree_eq_zero_of_neg hε).trans_le (Nat.zero_le _)
-  obtain ⟨μ, hμ, hd⟩ := exists_computes_depth_eq_randomizedComplexity hε f
+  obtain ⟨μ, hμ, hd⟩ := exists_computes_depth_eq_randomizedComplexity (ε := ε) f
   exact hd ▸ hμ.approxDegree_le_depth
 
 end QueryComplexity
@@ -211,29 +214,31 @@ namespace DecisionTree
 
 open QueryComplexity
 
-variable {n : ℕ} {ε : ℝ}
+variable {n : ℕ} {ε : ℝ≥0}
 
 /-- `(1 - 2ε)³ D(f) ≤ R_ε(f)³` for `ε ≥ 0`, from `D(f) ≤ bs(f)³` and Nisan's bound. -/
-theorem one_sub_two_mul_pow_three_mul_complexity_le (hε : 0 ≤ ε) (f : BooleanFunction n) :
-    (1 - 2 * ε) ^ 3 * complexity f ≤ (randomizedComplexity ε f : ℝ) ^ 3 := by
-  rcases le_or_gt (1 - 2 * ε) 0 with h | h
+theorem one_sub_two_mul_pow_three_mul_complexity_le (f : BooleanFunction n) :
+    (1 - 2 * (ε : ℝ)) ^ 3 * complexity f ≤ (randomizedComplexity ε f : ℝ) ^ 3 := by
+  rcases le_or_gt (1 - 2 * (ε : ℝ)) 0 with h | h
   · exact (mul_nonpos_of_nonpos_of_nonneg (Odd.pow_nonpos (by decide) h)
       (Nat.cast_nonneg _)).trans (by positivity)
   have hD : (complexity f : ℝ) ≤ (blockSensitivity f : ℝ) ^ 3 := by
     exact_mod_cast complexity_le_blockSensitivity_pow_three f
-  calc (1 - 2 * ε) ^ 3 * complexity f ≤ (1 - 2 * ε) ^ 3 * (blockSensitivity f : ℝ) ^ 3 := by gcongr
-    _ = ((1 - 2 * ε) * blockSensitivity f) ^ 3 := by ring
+  calc
+    (1 - 2 * (ε : ℝ)) ^ 3 * complexity f ≤
+        (1 - 2 * (ε : ℝ)) ^ 3 * (blockSensitivity f : ℝ) ^ 3 := by gcongr
+    _ = ((1 - 2 * (ε : ℝ)) * blockSensitivity f) ^ 3 := by ring
     _ ≤ (randomizedComplexity ε f : ℝ) ^ 3 :=
         pow_le_pow_left₀ (by positivity)
-          (one_sub_two_mul_mul_blockSensitivity_le_randomizedComplexity hε f) 3
+          (one_sub_two_mul_mul_blockSensitivity_le_randomizedComplexity f) 3
 
 /-- **Deterministic and randomized decision tree complexity are polynomially related**
 [Nisan1991]: `D(f) ≤ 27 R(f)³` for the bounded-error randomized complexity `R = R_{1/3}`, from
 `bs(f) ≤ 3 R(f)` and `D(f) ≤ bs(f)³`. -/
 theorem complexity_le_mul_randomizedComplexity_pow_three (f : BooleanFunction n) :
     complexity f ≤ 27 * randomizedComplexity (1 / 3) f ^ 3 := by
-  have := one_sub_two_mul_pow_three_mul_complexity_le (by norm_num : (0 : ℝ) ≤ 1 / 3) f
-  rw [show (1 - 2 * (1 / 3 : ℝ)) ^ 3 = 1 / 27 by norm_num] at this
+  have := one_sub_two_mul_pow_three_mul_complexity_le (ε := 1 / 3) f
+  norm_num only [NNReal.coe_div, NNReal.coe_one, NNReal.coe_ofNat] at this
   have h : (complexity f : ℝ) ≤ 27 * (randomizedComplexity (1 / 3) f : ℝ) ^ 3 := by linarith
   exact_mod_cast h
 

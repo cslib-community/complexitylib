@@ -59,53 +59,49 @@ trees erring with probability at most `ε` on every input
 
 @[expose] public section
 
+open scoped NNReal
+
 namespace Cslib
 
 open Convexity RandomizedDecisionTree
 
 namespace QueryComplexity
 
-variable {ι β : Type*} {f : (ι → Bool) → β} {ν : StdSimplex ℝ (ι → Bool)} {ε : ℝ} {d : ℕ}
+variable {ι β : Type*} {f : (ι → Bool) → β} {ν : StdSimplex ℝ (ι → Bool)} {ε : ℝ≥0} {d : ℕ}
   {t : DecisionTree ι β}
 
 /-- The distributional complexity `D^ν_ε(f)`: the least depth of a decision tree that errs with
-probability at most `ε` on inputs drawn from `ν`. It is `0` when no decision tree qualifies, which
-over finitely many variables happens exactly for `ε < 0`. -/
-noncomputable def distributionalComplexity (ε : ℝ) (ν : StdSimplex ℝ (ι → Bool))
+probability at most the nonnegative budget `ε` on inputs drawn from `ν`. The finite coordinate
+space ensures that the feasible set is nonempty. -/
+-- Finiteness restricts the public domain; `sInf` itself does not require it.
+@[nolint unusedArguments]
+noncomputable def distributionalComplexity [Finite ι] (ε : ℝ≥0) (ν : StdSimplex ℝ (ι → Bool))
     (f : (ι → Bool) → β) : ℕ :=
   sInf {d | ∃ t : DecisionTree ι β, t.distributionalError ν f ≤ ε ∧ t.depth ≤ d}
+
+variable [Finite ι]
 
 theorem distributionalComplexity_le_depth (h : t.distributionalError ν f ≤ ε) :
     distributionalComplexity ε ν f ≤ t.depth :=
   Nat.sInf_le ⟨t, h, le_rfl⟩
 
-/-- `D^ν_ε(f) = 0` for `ε < 0`, where no decision tree qualifies. -/
-private theorem distributionalComplexity_of_neg (hε : ε < 0) : distributionalComplexity ε ν f = 0 :=
-  Nat.sInf_eq_zero.mpr <| Or.inr <| Set.eq_empty_of_forall_notMem fun _ ⟨_, h, _⟩ =>
-    (not_le.mpr hε) (DecisionTree.distributionalError_nonneg.trans h)
-
-variable [Finite ι]
-
 /-- For `ε ≥ 0` the distributional complexity is attained: some decision tree of depth
 `D^ν_ε(f)` errs with probability at most `ε` on inputs drawn from `ν`. -/
-theorem exists_distributionalError_le_depth_eq_distributionalComplexity (hε : 0 ≤ ε)
+theorem exists_distributionalError_le_depth_eq_distributionalComplexity
     (ν : StdSimplex ℝ (ι → Bool)) (f : (ι → Bool) → β) : ∃ t : DecisionTree ι β,
       t.distributionalError ν f ≤ ε ∧ t.depth = distributionalComplexity ε ν f := by
   obtain ⟨t, ht, -⟩ := DecisionTree.exists_computes_depth_eq_complexity f
   obtain ⟨t', ht', hd⟩ := Nat.sInf_mem (s := {d | ∃ t : DecisionTree ι β,
-    t.distributionalError ν f ≤ ε ∧ t.depth ≤ d}) ⟨_, t, ht.distributionalError_eq_zero.trans_le hε,
-      le_rfl⟩
+    t.distributionalError ν f ≤ ε ∧ t.depth ≤ d})
+      ⟨_, t, ht.distributionalError_eq_zero.trans_le ε.coe_nonneg, le_rfl⟩
   exact ⟨t', ht', le_antisymm hd (distributionalComplexity_le_depth ht')⟩
 
 /-- **The easy direction of Yao's principle**: `D^ν_ε(f) ≤ R_ε(f)` for every distribution `ν` on
 the inputs. To bound `R_ε(f)` below, it suffices to find a distribution on which every shallow
 decision tree errs often. -/
-theorem distributionalComplexity_le_randomizedComplexity (ε : ℝ) (ν : StdSimplex ℝ (ι → Bool))
+theorem distributionalComplexity_le_randomizedComplexity (ε : ℝ≥0) (ν : StdSimplex ℝ (ι → Bool))
     (f : (ι → Bool) → β) : distributionalComplexity ε ν f ≤ randomizedComplexity ε f := by
-  rcases lt_or_ge ε 0 with hε | hε
-  · rw [distributionalComplexity_of_neg hε]
-    exact Nat.zero_le _
-  obtain ⟨μ, hμ, hd⟩ := exists_computes_depth_eq_randomizedComplexity hε f
+  obtain ⟨μ, hμ, hd⟩ := exists_computes_depth_eq_randomizedComplexity (ε := ε) f
   obtain ⟨t, ht, hνt⟩ := hμ.exists_distributionalError_le ν
   exact (distributionalComplexity_le_depth hνt).trans ((depth_le_depth ht).trans_eq hd)
 
@@ -113,7 +109,7 @@ theorem distributionalComplexity_le_randomizedComplexity (ε : ℝ) (ν : StdSim
 `ν` on the inputs some decision tree of depth at most `d` errs with probability at most `ε` on
 inputs drawn from `ν`, then some randomized decision tree of depth at most `d` computes `f` with
 error `ε`. -/
-theorem exists_computes_of_forall_exists_distributionalError_le
+theorem exists_computes_of_forall_exists_distributionalError_le {ε : ℝ}
     (h : ∀ ν : StdSimplex ℝ (ι → Bool), ∃ t : DecisionTree ι β,
       t.depth ≤ d ∧ t.distributionalError ν f ≤ ε) :
     ∃ μ : RandomizedDecisionTree ι β, μ.Computes ε f ∧ μ.depth ≤ d := by
@@ -153,17 +149,14 @@ theorem randomizedComplexity_le_iff_forall_distributionalComplexity_le :
       ∀ ν : StdSimplex ℝ (ι → Bool), distributionalComplexity ε ν f ≤ d := by
   refine ⟨fun h ν => (distributionalComplexity_le_randomizedComplexity ε ν f).trans h,
     fun h => ?_⟩
-  rcases lt_or_ge ε 0 with hε | hε
-  · rw [randomizedComplexity_of_neg hε]
-    exact Nat.zero_le _
   obtain ⟨μ, hμ, hd⟩ := exists_computes_of_forall_exists_distributionalError_le fun ν =>
-    let ⟨t, ht, hd⟩ := exists_distributionalError_le_depth_eq_distributionalComplexity hε ν f
+    let ⟨t, ht, hd⟩ := exists_distributionalError_le_depth_eq_distributionalComplexity (ε := ε) ν f
     ⟨t, hd.trans_le (h ν), ht⟩
   exact (randomizedComplexity_le_depth hμ).trans hd
 
 /-- **Yao's minimax principle**: the randomized decision tree complexity is the largest
 distributional complexity over the distributions on the inputs, `R_ε(f) = ⨆ ν, D^ν_ε(f)`. -/
-theorem randomizedComplexity_eq_iSup_distributionalComplexity (ε : ℝ) (f : (ι → Bool) → β) :
+theorem randomizedComplexity_eq_iSup_distributionalComplexity (ε : ℝ≥0) (f : (ι → Bool) → β) :
     randomizedComplexity ε f = ⨆ ν : StdSimplex ℝ (ι → Bool), distributionalComplexity ε ν f := by
   have hbdd : BddAbove (Set.range fun ν : StdSimplex ℝ (ι → Bool) =>
       distributionalComplexity ε ν f) :=
@@ -175,7 +168,7 @@ theorem randomizedComplexity_eq_iSup_distributionalComplexity (ε : ℝ) (f : (�
 
 /-- **Yao's minimax principle**, with a hardest distribution: some distribution `ν` on the inputs
 has `D^ν_ε(f) = R_ε(f)`. -/
-theorem exists_distributionalComplexity_eq_randomizedComplexity (ε : ℝ) (f : (ι → Bool) → β) :
+theorem exists_distributionalComplexity_eq_randomizedComplexity (ε : ℝ≥0) (f : (ι → Bool) → β) :
     ∃ ν : StdSimplex ℝ (ι → Bool), distributionalComplexity ε ν f = randomizedComplexity ε f := by
   have hbdd : BddAbove (Set.range fun ν : StdSimplex ℝ (ι → Bool) =>
       distributionalComplexity ε ν f) :=

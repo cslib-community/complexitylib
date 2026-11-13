@@ -83,7 +83,27 @@ It also refutes the hypothesis for `n²`. Build with
 lake build CslibFrontier.Foundations.Data.Nat.MasterTheoremAsymptotics CslibFrontierTests.MasterTheorem
 ```
 
+## Branching-vector recurrences and SAT search trees
+
+[BranchingVector.lean](../../CslibFrontier/Foundations/Data/BranchingVector.lean) solves exact-exponential search-tree recurrences governed by a positive integer decrease vector `steps = [a₁, …, a_b]` (`aᵢ > 0`) via the characteristic sum `Cslib.BranchingVector.charSum steps r = ∑_{d ∈ steps} r ^ (-d)` [Fomin–Kratsch][fominkratsch10]. Whenever `1 ≤ r` satisfies `charSum steps r ≤ 1`, any `BranchingRecurrence T steps C` (`T n ≤ max C (∑_{d ∈ steps, d ≤ n} S (n - d))` for strict-prefix upper bounds `S`) obeys `T n ≤ C * r ^ n` (`BranchingRecurrence.le_mul_pow`, and `T n ≤ r ^ n` at `C = 1` via `le_pow`).
+
+For explicit multi-way search trees, `Cslib.BranchingVector.BranchingTree σ` equips states with `isLeaf`, `children`, `measure : σ → ℕ`, and `steps : List ℕ` such that every non-leaf expansion has child measure drops dominating some sublist of `steps`. When `1 ≤ r` and `charSum T.steps r ≤ 1`:
+
+- `T.leafCount_le_pow` bounds the number of leaves from `s` by `r ^ T.measure s`;
+- `T.nodeCount_le_mul_pow` bounds total internal and leaf nodes by `(T.measure s + 1) * r ^ T.measure s`;
+- `T.workCost_le_mul_nodeCount` and `T.workCost_le_mul_pow` separate per-node overhead `nodeWork u ≤ W` multiplicatively as `workCost nodeWork s ≤ W * nodeCount s ≤ W * (T.measure s + 1) * r ^ T.measure s`, without folding polynomial node work into the exponential base `r`;
+- `T.iff_exists_leaf`, `T.sum_leaves_eq`, and `T.le_sum_leaves` transport Boolean predicates and additive or subadditive invariants from `s` across `T.leaves s`.
+
+Closed-form sub-`2` branching factors are provided for Fibonacci splits `[1, 2]` (`goldenBranchFactor = (1 + √5) / 2`, `charSum_fibonacci`) and `k`-clause prefix splits `prefixSteps k = [1, 2, …, k]` (`prefixBranchFactor k = 2 - (1 / 2) ^ k < 2` for `k ≥ 1`, `charSum_prefixSteps_le_one`).
+
+[CNF/Branching.lean](../../CslibFrontier/Logics/Propositional/CNF/Branching.lean) connects `BranchingTree` to propositional CNF search while keeping covering and partitioning branch rules distinct in their types (`CNF.BranchMode.covering` versus `.partitioning` in `CNF.BranchRule`):
+
+- `CNF.CoversModels φ branches` preserves `Satisfiable` (`CoversModels.satisfiable_iff`) and bounds `φ.modelCountOn declared` from above by the sum of branch counts (`modelCountOn_le_sum`), whereas `CNF.PartitionsModels φ branches` requires every satisfying assignment of `φ` to satisfy **exactly one** branch, giving exact model-count additivity (`PartitionsModels.modelCountOn_eq_sum`).
+- Binary variable splitting (`varSplitRule v`) partitions models unconditionally. Naive clause literal branching (`clauseCoverRule c`, creating one branch `[l] :: φ` per `l ∈ c`) covers models when `c ∈ φ` (`coversModels_clauseCoverBranches`), but **does not partition models**: `not_partitionsModels_clauseCoverBranches_two` refutes `PartitionsModels` on a two-literal clause with distinct variables.
+- Disjoint prefix branching (`clausePrefixBranches c φ`, asserting `[l₁]`, `[¬l₁, l₂]`, …, `[¬l₁, …, ¬l_{b-1}, l_b]`) partitions models whenever `φ` entails `c` (`partitionsModels_clausePrefixBranches`). Eliminating assigned variables along non-tautological clauses of width at most `k` yields `CNF.clausePrefixTree k`: on `n = declared.card` variables, `modelCountOn_eq_sum_clausePrefixTree_leaves` proves exact leaf model-count conservation (`∑_{l ∈ leaves} (if [] ∈ l.formula then 0 else 2 ^ l.unassigned.card)`), `satisfiable_iff_exists_clausePrefixTree_leaf` characterizes satisfiability, `leafCount_clausePrefixTree_le` bounds leaves by `(2 - (1 / 2) ^ k) ^ n` (`k ≥ 1`), and `leafCount_clausePrefixTree_two_le` specializes `k = 2` to `((1 + √5) / 2) ^ n`. Checked examples live in [BranchingAndSchoening.lean](../../CslibFrontierTests/BranchingAndSchoening.lean).
+
 [bfprt73]: ../sources.md#bfprt73
 [clrs09]: ../sources.md#clrs09
+[fominkratsch10]: ../sources.md#fominkratsch10
 [knuth98]: ../sources.md#knuth98
 [pohl72]: ../sources.md#pohl72

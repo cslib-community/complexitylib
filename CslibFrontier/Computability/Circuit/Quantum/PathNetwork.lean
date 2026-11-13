@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Circuit.Quantum.PathSum
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.ExplicitTables
 import CslibFrontier.Foundations.Data.List.Boole
+import CslibFrontier.Foundations.Data.List.GetD
 import CslibFrontier.Foundations.Data.List.SumIndicator
 import Mathlib.Data.List.GetD
 import Mathlib.Data.List.OfFn
@@ -548,9 +549,8 @@ private theorem entry_gateVertex (neg : R) (X : List Bool) (gs : List GateCode) 
       simp only [Option.map_some, BitString.testBit_lsbValue]
       have hmem : 2 * (c * (occurrences gs).length + w) + 1 ∈ gatePorts gs c i :=
         List.mem_append_right _ (List.mem_filterMap.mpr ⟨j, hj, by simp [inPort, hl]⟩)
-      have hlt := List.idxOf_lt_length_of_mem hmem
-      rw [List.getD_eq_getElem _ _ (by simpa using hlt), List.getElem_map,
-        List.getElem_idxOf hlt]
+      rw [List.getD_eq_getElem?_getD, List.getElem?_map, List.getElem?_idxOf hmem,
+        Option.map_some, Option.getD_some]
       congr 1
       omega
   · refine List.map_congr_left fun k hk => ?_
@@ -743,7 +743,7 @@ theorem contraction_network {R : Type*} [CommRing R] (S : List ℕ) (X : List Bo
   set Xf : ℕ → Bool := fun j => X.getD j false
   -- every gate has at most three qubits
   have hq3 (i : ℕ) (hi : i < gs.length) : (qubits (gs.getD i default)).length ≤ 3 :=
-    length_qubits_le_three (hgs _ (List.getD_eq_getElem _ default hi ▸ List.getElem_mem hi))
+    length_qubits_le_three (hgs _ (List.getD_mem default hi))
   -- the products of the gate vertices of a copy
   let P : (ℕ → Bool) → R := fun y => ((List.range gs.length).map fun i =>
     gateEntry (-1 : R) (gs.getD i default)
@@ -947,9 +947,9 @@ theorem maxDegree_network_le (neg : R) (S : List ℕ) (X : List Bool) {gs : List
   simp only [vertices_network, List.mem_append, List.mem_map, List.mem_range,
     List.mem_singleton] at hv
   rcases hv with (((⟨i, hi, rfl⟩ | ⟨i, hi, rfl⟩) | ⟨w, -, rfl⟩) | rfl) | ⟨w, -, rfl⟩
-  · have := hgs _ (List.getD_eq_getElem _ default hi ▸ List.getElem_mem hi)
+  · have := hgs _ (List.getD_mem default hi)
     exact (length_gatePorts_le gs 0 i).trans (by omega)
-  · have := hgs _ (List.getD_eq_getElem _ default hi ▸ List.getElem_mem hi)
+  · have := hgs _ (List.getD_mem default hi)
     exact (length_gatePorts_le gs 1 i).trans (by omega)
   · unfold glueVertex
     split_ifs <;> simp
@@ -965,7 +965,7 @@ theorem length_table_network (neg : R) (S : List ℕ) (X : List Bool) {gs : List
     List.mem_singleton] at hv
   have hgate (c i : ℕ) (hi : i < gs.length) :
       (gateVertex neg X gs c i).2.length = 2 ^ (gateVertex neg X gs c i).1.length := by
-    have := hgs _ (List.getD_eq_getElem _ default hi ▸ List.getElem_mem hi)
+    have := hgs _ (List.getD_mem default hi)
     simp only [gateVertex]
     rw [boundedTable_eq _ ((length_gatePorts_le gs c i).trans (by omega)), List.length_map,
       List.length_range]
@@ -1056,7 +1056,7 @@ theorem sum_readers {gs : List GateCode} (hnd : ∀ g ∈ gs, (qubits g).Nodup) 
   set q := qs.getD u 0
   have hgate (i : ℕ) (hi : i < gs.length) :
       (qubits (gs.getD i default)).Nodup :=
-    hnd _ (List.getD_eq_getElem _ default hi ▸ List.getElem_mem hi)
+    hnd _ (List.getD_mem default hi)
   by_cases hlast : lastOcc qs q qs.length = some u
   · -- the last occurrence: no gate reads it
     rw [ite_eq_left hlast]
@@ -1238,8 +1238,7 @@ theorem isRowsFirstBipartite_network (neg : R) (S : List ℕ) (X : List Bool) {g
     (hnd : ∀ g ∈ gs, (qubits g).Nodup) :
     (network neg S X gs).2.IsRowsFirstBipartite (network neg S X gs).1 := by
   have hnd' (i : ℕ) (hi : i ∈ List.range gs.length) : (qubits (gs.getD i default)).Nodup :=
-    hnd _ (List.getD_eq_getElem _ default (List.mem_range.mp hi) ▸
-      List.getElem_mem (List.mem_range.mp hi))
+    hnd _ (List.getD_mem default (List.mem_range.mp hi))
   refine ⟨?_, fun e he => ⟨?_, ?_⟩⟩
   · -- every port names an edge
     intro v hv p hp

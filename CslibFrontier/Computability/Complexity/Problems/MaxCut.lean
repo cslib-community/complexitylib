@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Complexity.Problems.Partition
 public import CslibFrontier.Computability.Complexity.Classes.NP.Witness
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -21,14 +22,14 @@ import Mathlib.Data.List.GetD
 /-!
 # Weighted maximum cut
 
-`MaxCut` is the set of pairs `(E, W)` of a list `E` of weighted edges `((u, v), w)` and a bound
-`W` such that some set `S` of vertices cuts edges of total weight at least `W` [Karp1972]
+`MaxCut` is the set of `MaxCutInstance` values `(edges, bound)` such that some set `S` of
+vertices cuts edges of total weight at least `bound` [Karp1972]
 [Garey and Johnson, Problem ND16][GareyJohnson1979]: an edge crosses the cut when exactly one of
 its endpoints lies in `S`. Vertices, weights and the bound are natural numbers in binary
-(`encNat`). The edge list is a weighted multigraph: parallel edges add their weights and
-self-loops never cross a cut. Weights may be zero. `MaxCut.cutWeight` reads the weight of a cut
-from an encodable edge list, without a vertex type; `Cslib.WeightedCut.cutWeight` is the
-corresponding weight for a weight matrix on a `Fintype`.
+(`encNat`). The edge list is a weighted multigraph of `MaxCut.WeightedEdge`: parallel edges add
+their weights and self-loops never cross a cut. Weights may be zero. `MaxCut.cutWeight` reads the
+weight of a cut from an encodable edge list, without a vertex type; `Cslib.WeightedCut.cutWeight`
+is the corresponding weight for a weight matrix on a `Fintype`.
 
 Karp's reduction from `Partition` takes the complete graph on the positions `0, …, n - 1` of the
 numbers `a`, with weight `a[i] * a[j]` on the edge between positions `i < j`
@@ -39,9 +40,12 @@ of two input numbers, so the reduction is polynomial in the binary encoding.
 
 ## Main definitions
 
+* `Cslib.Complexity.MaxCut.WeightedEdge`, `Cslib.Complexity.MaxCut.encWeightedEdge`: weighted
+  edges and their binary encoding.
 * `Cslib.Complexity.MaxCut.crosses`, `Cslib.Complexity.MaxCut.cutWeight`: edges crossing a cut
   and the weight of a cut.
-* `Cslib.Complexity.MaxCut`, `Cslib.Complexity.encMaxCut`.
+* `Cslib.Complexity.MaxCutInstance`, `Cslib.Complexity.encMaxCut`, `Cslib.Complexity.MaxCut`:
+  problem instances, binary encoding and decision set.
 * `Cslib.Complexity.MaxCut.verifier`: a subset verifier selecting the side `S` of the cut among
   the endpoints.
 * `Cslib.Complexity.Partition.productEdges`, `Cslib.Complexity.Partition.toMaxCut`: Karp's
@@ -65,7 +69,7 @@ of two input numbers, so the reduction is polynomial in the binary encoding.
 * [R. M. Karp, *Reducibility among combinatorial problems*][Karp1972]
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 
@@ -73,84 +77,97 @@ open Turing.MultiTapeTM ComputableInPolyTime
 
 namespace MaxCut
 
-/-- Whether the edge `(u, v)` crosses the cut whose sides are given by `side`. -/
-def crosses (side : ℕ → Bool) (e : ℕ × ℕ) : Bool := side e.1 != side e.2
+/-- A weighted edge between `u` and `v` of weight `weight`. -/
+structure WeightedEdge where
+  /-- The first endpoint. -/
+  u : ℕ
+  /-- The second endpoint. -/
+  v : ℕ
+  /-- The edge weight. -/
+  weight : ℕ
+  deriving DecidableEq, Repr
+
+/-- Weighted edges are encoded as `(u, v, weight)` in binary. -/
+enc_structure encWeightedEdge : WeightedEdge where
+  u : encNat, v : encNat, weight : encNat
+
+attribute [fun_prop] encWeightedEdge_u_polyTime encWeightedEdge_v_polyTime
+  encWeightedEdge_weight_polyTime encWeightedEdge_mk_polyTime
+
+/-- Whether the edge `e` crosses the cut whose sides are given by `side`. -/
+@[expose] def crosses (side : ℕ → Bool) (e : WeightedEdge) : Bool := side e.u != side e.v
 
 /-- The weight of the cut `side` in the weighted edges `E`: the total weight of the crossing
 edges. Parallel edges add their weights; self-loops never cross. -/
-def cutWeight (E : List ((ℕ × ℕ) × ℕ)) (side : ℕ → Bool) : ℕ :=
-  ((E.filter fun e => crosses side e.1).map Prod.snd).sum
+@[expose] def cutWeight (E : List WeightedEdge) (side : ℕ → Bool) : ℕ :=
+  ((E.filter fun e => crosses side e).map WeightedEdge.weight).sum
 
 /-- The endpoints of the weighted edges `E`, in order and with repetitions. -/
-def endpoints (E : List ((ℕ × ℕ) × ℕ)) : List ℕ := (E.map Prod.fst).flatMap fun e => [e.1, e.2]
+@[expose] def endpoints (E : List WeightedEdge) : List ℕ := E.flatMap fun e => [e.u, e.v]
 
-theorem cutWeight_append (E F : List ((ℕ × ℕ) × ℕ)) (side : ℕ → Bool) :
+theorem cutWeight_append (E F : List WeightedEdge) (side : ℕ → Bool) :
     cutWeight (E ++ F) side = cutWeight E side + cutWeight F side := by
   simp only [cutWeight, List.filter_append, List.map_append, List.sum_append]
 
 /-- The weight of a cut depends only on the sides of the endpoints. -/
-theorem cutWeight_congr {E : List ((ℕ × ℕ) × ℕ)} {side side' : ℕ → Bool}
+theorem cutWeight_congr {E : List WeightedEdge} {side side' : ℕ → Bool}
     (h : ∀ v ∈ endpoints E, side v = side' v) : cutWeight E side = cutWeight E side' := by
   unfold cutWeight
   congr 2
   refine List.filter_congr fun e he => ?_
-  have he' : e.1 ∈ E.map Prod.fst := List.mem_map_of_mem he
-  have h₁ : e.1.1 ∈ endpoints E := List.mem_flatMap.2 ⟨e.1, he', by simp⟩
-  have h₂ : e.1.2 ∈ endpoints E := List.mem_flatMap.2 ⟨e.1, he', by simp⟩
+  have h₁ : e.u ∈ endpoints E := List.mem_flatMap.2 ⟨e, he, by simp⟩
+  have h₂ : e.v ∈ endpoints E := List.mem_flatMap.2 ⟨e, he, by simp⟩
   simp only [crosses, h _ h₁, h _ h₂]
 
-theorem length_endpoints (E : List ((ℕ × ℕ) × ℕ)) : (endpoints E).length = 2 * E.length := by
+theorem length_endpoints (E : List WeightedEdge) : (endpoints E).length = 2 * E.length := by
   induction E with
   | nil => rfl
   | cons e E ih =>
-    simp only [endpoints, List.map_cons, List.flatMap_cons, List.length_append, List.length_cons,
+    simp only [endpoints, List.flatMap_cons, List.length_append, List.length_cons,
       List.length_nil] at ih ⊢
     omega
 
 end MaxCut
 
-/-- Instances of `MaxCut` are encoded as a list of weighted edges `((u, v), w)` and a bound, all
-in binary. -/
-abbrev encMaxCut : List ((ℕ × ℕ) × ℕ) × ℕ ↪ List Bool :=
-  encPair (encList (encPair (encPair encNat encNat) encNat)) encNat
+/-- An instance of **weighted maximum cut**: a list of weighted edges and a target cut weight
+bound. -/
+structure MaxCutInstance where
+  /-- The weighted edges of the multigraph. -/
+  edges : List MaxCut.WeightedEdge
+  /-- The target cut weight bound. -/
+  bound : ℕ
+  deriving DecidableEq, Repr
 
-/-- **Weighted maximum cut** [Karp1972]: the weighted edges `E` have a cut of weight at least
-`W`, a set `S` of vertices such that the edges with exactly one endpoint in `S` have total weight
-at least `W`. -/
-def MaxCut : Set (List ((ℕ × ℕ) × ℕ) × ℕ) :=
-  {x | ∃ S : Finset ℕ, x.2 ≤ MaxCut.cutWeight x.1 (fun v => decide (v ∈ S))}
+/-- Instances of `MaxCut` are encoded as the framed list of weighted edges followed by the bound,
+all in binary. -/
+enc_structure encMaxCut : MaxCutInstance where
+  edges : (encList MaxCut.encWeightedEdge), bound : encNat
+
+attribute [fun_prop] encMaxCut_edges_polyTime encMaxCut_bound_polyTime encMaxCut_mk_polyTime
+
+/-- **Weighted maximum cut** [Karp1972]: the weighted edges `edges` have a cut of weight at least
+`bound`, a set `S` of vertices such that the edges with exactly one endpoint in `S` have total
+weight at least `bound`. -/
+@[expose] def MaxCut : Set MaxCutInstance :=
+  {x | ∃ S : Finset ℕ, x.bound ≤ MaxCut.cutWeight x.edges (fun v => decide (v ∈ S))}
 
 namespace MaxCut
 
 /-- The check of a side `S` of a cut, given as a list: the cut has weight at least the bound. -/
-def check (x : List ((ℕ × ℕ) × ℕ) × ℕ) (S : List ℕ) : Bool :=
-  decide (x.2 ≤ cutWeight x.1 fun v => decide (v ∈ S))
+@[expose] def check (x : MaxCutInstance) (S : List ℕ) : Bool :=
+  decide (x.bound ≤ cutWeight x.edges fun v => decide (v ∈ S))
 
 /-- The verifier for `MaxCut`, a subset verifier (`Cslib.Complexity.subsetVerifier`): select the
 side of the cut among the endpoints and check the weight of the cut. -/
-def verifier : (List ((ℕ × ℕ) × ℕ) × ℕ) × List Bool → Bool :=
-  subsetVerifier (fun x => endpoints x.1) (Function.uncurry check)
+@[expose] def verifier : MaxCutInstance × List Bool → Bool :=
+  subsetVerifier (fun x => endpoints x.edges) (Function.uncurry check)
 
 /-- The check of a side of a cut is polynomial-time. -/
 theorem computableInPolyTime_check :
     ComputableInPolyTime (Function.uncurry check) (encPair encMaxCut (encList encNat))
       encBool := by
-  have hE : ComputableInPolyTime (fun y : (List ((ℕ × ℕ) × ℕ) × ℕ) × List ℕ => y.1.1)
-      (encPair encMaxCut (encList encNat)) (encList (encPair (encPair encNat encNat) encNat)) :=
-    (fst _ _).comp (fst _ _)
-  have htest : ComputableInPolyTime
-      (fun p : ((List ((ℕ × ℕ) × ℕ) × ℕ) × List ℕ) × ((ℕ × ℕ) × ℕ) =>
-        crosses (fun v => decide (v ∈ p.1.2)) p.2.1)
-      (encPair (encPair encMaxCut (encList encNat)) (encPair (encPair encNat encNat) encNat))
-      encBool := by
-    unfold crosses
-    exact bne (decide_mem ((snd _ _).comp (fst _ _)) ((fst _ _).comp ((fst _ _).comp (snd _ _))))
-      (decide_mem ((snd _ _).comp (fst _ _)) ((snd _ _).comp ((fst _ _).comp (snd _ _))))
-  have hsum : ComputableInPolyTime List.sum (encList encNat) encNat := by fun_prop
-  change ComputableInPolyTime (fun y : (List ((ℕ × ℕ) × ℕ) × ℕ) × List ℕ => check y.1 y.2) _ _
-  unfold check cutWeight
-  exact binary_le' ((snd _ _).comp (fst _ _))
-    (hsum.comp ((map (snd _ _)).comp (filterWithInput hE htest)))
+  unfold Function.uncurry check cutWeight crosses
+  fun_prop
 
 /-- The `MaxCut` verifier is polynomial-time. -/
 @[fun_prop]
@@ -160,13 +177,13 @@ theorem computableInPolyTime_verifier :
     (by unfold endpoints; fun_prop) computableInPolyTime_check
 
 /-- A side of a cut may be taken among the endpoints. -/
-theorem mem_MaxCut_iff_endpoints {x : List ((ℕ × ℕ) × ℕ) × ℕ} :
-    x ∈ MaxCut ↔ ∃ S : Finset ℕ, (∀ v ∈ S, v ∈ endpoints x.1) ∧
-      x.2 ≤ cutWeight x.1 (fun v => decide (v ∈ S)) := by
+theorem mem_MaxCut_iff_endpoints {x : MaxCutInstance} :
+    x ∈ MaxCut ↔ ∃ S : Finset ℕ, (∀ v ∈ S, v ∈ endpoints x.edges) ∧
+      x.bound ≤ cutWeight x.edges (fun v => decide (v ∈ S)) := by
   classical
   constructor
   · rintro ⟨S, hS⟩
-    refine ⟨S.filter (· ∈ endpoints x.1), fun v hv => (Finset.mem_filter.1 hv).2, ?_⟩
+    refine ⟨S.filter (· ∈ endpoints x.edges), fun v hv => (Finset.mem_filter.1 hv).2, ?_⟩
     rwa [cutWeight_congr (side' := fun v => decide (v ∈ S)) fun v hv => by
       simp [Finset.mem_filter, hv]]
   · rintro ⟨S, -, hS⟩
@@ -175,13 +192,14 @@ theorem mem_MaxCut_iff_endpoints {x : List ((ℕ × ℕ) × ℕ) × ℕ} :
 /-- `MaxCut.verifier` verifies `MaxCut` with certificates of twice the length of the encoded
 instance. -/
 theorem isVerifier : IsVerifier encMaxCut (2 * Polynomial.X) verifier MaxCut := by
-  have hset : MaxCut = {x | ∃ S : Finset ℕ, (∀ v ∈ S, v ∈ endpoints x.1) ∧
-      x.2 ≤ cutWeight x.1 (fun v => decide (v ∈ S))} :=
+  have hset : MaxCut = {x | ∃ S : Finset ℕ, (∀ v ∈ S, v ∈ endpoints x.edges) ∧
+      x.bound ≤ cutWeight x.edges (fun v => decide (v ∈ S))} :=
     Set.ext fun _ => mem_MaxCut_iff_endpoints
   rw [hset]
   refine isVerifier_subsetVerifier (fun x => ?_) fun x l _ _ => ?_
-  · have : x.1.length ≤ (encMaxCut x).length :=
-      length_le_length_encPair (encPair (encPair encNat encNat) encNat) encNat x
+  · rw [encMaxCut_apply]
+    have : x.edges.length ≤ (encMaxCutFields (x.edges, x.bound)).length :=
+      (length_le_length_encList _ _).trans (length_le_encPair_left _ _ (x.edges, x.bound))
     simp only [length_endpoints, Polynomial.eval_mul, Polynomial.eval_ofNat, Polynomial.eval_X]
     omega
   · simp only [Function.uncurry_apply_pair, check, decide_eq_true_eq, List.mem_toFinset]
@@ -196,17 +214,11 @@ end MaxCut
 theorem mem_Partition_iff_exists_side {a : List ℕ} :
     a ∈ Partition ↔ ∃ side : ℕ → Bool,
       2 * (((List.range a.length).filter side).map (a.getD · 0)).sum = a.sum := by
-  have hmask (w : List Bool) : maskSelect a w =
-      ((List.range a.length).filter fun i => w.getD i false).map (a.getD · 0) := by
-    have hz : a.zipIdx = (List.range a.length).map fun i => (a.getD i 0, i) := by
-      refine List.ext_getElem (by simp) fun i h₁ h₂ => ?_
-      simp [List.getElem?_eq_getElem (List.length_zipIdx ▸ h₁ : i < a.length)]
-    simp only [maskSelect, hz, List.filter_map, List.map_map, Function.comp_def]
   rw [mem_Partition_iff_sublist]
   constructor
   · rintro ⟨s, hs, hsum⟩
     obtain ⟨w, -, rfl⟩ := exists_maskSelect_eq hs
-    exact ⟨fun i => w.getD i false, by rwa [← hmask]⟩
+    exact ⟨fun i => w.getD i false, by rwa [← maskSelect_eq_map_filter_range a w 0]⟩
   · rintro ⟨side, hside⟩
     refine ⟨_, ?_, hside⟩
     conv_rhs => rw [← List.map_getD_range a 0]
@@ -216,13 +228,13 @@ namespace Partition
 
 /-- The weighted edges of the complete graph on the positions `0, …, n - 1` of the numbers `a`:
 the edge between positions `i < j` has weight `a[i] * a[j]`. -/
-def productEdges (a : List ℕ) (n : ℕ) : List ((ℕ × ℕ) × ℕ) :=
-  (List.range n).flatMap fun j => (List.range j).map fun i => ((i, j), a.getD i 0 * a.getD j 0)
+@[expose] def productEdges (a : List ℕ) (n : ℕ) : List MaxCut.WeightedEdge :=
+  (List.range n).flatMap fun j => (List.range j).map fun i => ⟨i, j, a.getD i 0 * a.getD j 0⟩
 
 /-- **Karp's reduction from `Partition` to `MaxCut`** [Karp1972]: the complete graph on the
 positions of the numbers `a`, weighted by products, with bound `⌈a.sum² / 4⌉`. -/
-def toMaxCut (a : List ℕ) : List ((ℕ × ℕ) × ℕ) × ℕ :=
-  (productEdges a a.length, (a.sum * a.sum + 3) / 4)
+@[expose] def toMaxCut (a : List ℕ) : MaxCutInstance :=
+  ⟨productEdges a a.length, (a.sum * a.sum + 3) / 4⟩
 
 /-- A cut of the complete graph weighted by products has the weight of the product of the sums
 of its two sides. -/
@@ -234,7 +246,7 @@ theorem cutWeight_productEdges (a : List ℕ) (side : ℕ → Bool) (n : ℕ) :
   | zero => rfl
   | succ n ih =>
     have hstep : productEdges a (n + 1) = productEdges a n ++
-        (List.range n).map fun i => ((i, n), a.getD i 0 * a.getD n 0) := by
+        (List.range n).map fun i => ⟨i, n, a.getD i 0 * a.getD n 0⟩ := by
       simp only [productEdges, List.range_succ, List.flatMap_append, List.flatMap_cons,
         List.flatMap_nil, List.append_nil]
     rw [hstep, MaxCut.cutWeight_append, ih]

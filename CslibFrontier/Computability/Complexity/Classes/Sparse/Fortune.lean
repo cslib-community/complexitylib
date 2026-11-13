@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Computability.Complexity.Classes.NP.SelfReduction
+public import CslibFrontier.Computability.Complexity.Problems.SAT.Units
 public import CslibFrontier.Computability.Complexity.Classes.Sparse
 public import CslibFrontier.Computability.Complexity.Reduction
 import CslibFrontier.Computability.Complexity.CookLevin.Completeness
@@ -166,20 +166,17 @@ def accepts (key : CNF ℕ → List Bool) (c : ℕ) (φ : CNF ℕ) : Bool :=
 
 /-- A formula with unit clauses is satisfiable only if the formula is. -/
 theorem mem_SAT_of_units_append {a : List (Literal ℕ)} {φ : CNF ℕ}
-    (h : units a ++ φ ∈ SAT) : φ ∈ SAT := by
-  obtain ⟨σ, hσ⟩ := h
-  rw [CNF.eval_append, Bool.and_eq_true] at hσ
-  exact ⟨σ, hσ.2⟩
+    (h : units a ++ φ ∈ SAT) : φ ∈ SAT :=
+  let ⟨σ, hσ⟩ := h
+  ⟨σ, ((eval_units_append σ a φ).1 hσ).2⟩
 
 /-- A satisfiable node has a satisfiable child: fix the next occurrence `v` to its value under a
 satisfying assignment. -/
 theorem exists_child_mem_SAT {a : List (Literal ℕ)} {φ : CNF ℕ} (v : ℕ)
     (h : units a ++ φ ∈ SAT) : ∃ b, units (a ++ [(v, b)]) ++ φ ∈ SAT := by
   obtain ⟨σ, hσ⟩ := h
-  rw [CNF.eval_append, Bool.and_eq_true, eval_units] at hσ
-  refine ⟨σ v, σ, ?_⟩
-  rw [CNF.eval_append, Bool.and_eq_true, eval_units]
-  refine ⟨fun l hl => ?_, hσ.2⟩
+  rw [eval_units_append] at hσ
+  refine ⟨σ v, σ, (eval_units_append ..).2 ⟨fun l hl => ?_, hσ.2⟩⟩
   rcases List.mem_append.1 hl with hl | hl
   · exact hσ.1 l hl
   · rw [List.mem_singleton.1 hl]
@@ -204,24 +201,20 @@ theorem verifier_units_append_iff {a : List (Literal ℕ)} {φ : CNF ℕ}
     (ha : ∀ v ∈ φ.vars, v ∈ a.map Prod.fst) :
     verifier (units a ++ φ, a.map Prod.snd) = true ↔ units a ++ φ ∈ SAT := by
   refine ⟨fun h => ⟨_, h⟩, fun ⟨τ, hτ⟩ => ?_⟩
-  have hτ' := hτ
-  rw [CNF.eval_append, Bool.and_eq_true, eval_units] at hτ'
+  have hτ' := (eval_units_append τ a φ).1 hτ
   rw [verifier, CNF.eval_congr fun v hv => ?_]
   · exact hτ
   · have hva : v ∈ a.map Prod.fst := by
-      rw [CNF.vars, List.flatten_append, List.map_append, ← CNF.vars, ← CNF.vars,
-        vars_units] at hv
-      rcases List.mem_append.1 hv with hv | hv
-      · exact hv
-      · exact ha v hv
+      rw [vars_units_append] at hv
+      exact (List.mem_append.1 hv).elim id (ha v)
     have hlt : (a.map Prod.fst).idxOf v < a.length := by
       simpa using List.idxOf_lt_length_iff.2 hva
     have hfst : (a[(a.map Prod.fst).idxOf v]).1 = v := by
       have := List.getElem_idxOf (List.idxOf_lt_length_iff.2 hva)
       simpa only [List.getElem_map] using this
-    rw [assignment, CNF.vars, List.flatten_append, List.map_append, ← CNF.vars, ← CNF.vars,
-      vars_units, List.idxOf_append_of_mem hva, List.getD_eq_getElem _ _ (by simpa using hlt),
-      List.getElem_map, ← hτ'.1 _ (List.getElem_mem hlt), hfst]
+    rw [assignment, vars_units_append, List.idxOf_append_of_mem hva,
+      List.getD_eq_getElem _ _ (by simpa using hlt), List.getElem_map,
+      ← hτ'.1 _ (List.getElem_mem hlt), hfst]
 
 /-! ### Pruned searches
 
@@ -376,18 +369,9 @@ of length at most `L (4 L + 5)`, where `L` is the length of the encoding of `φ`
 theorem length_encNode_le {φ : CNF ℕ} {a : List (Literal ℕ)} (ha : ∀ l ∈ a, l.1 ∈ φ.vars)
     (hlen : a.length ≤ φ.vars.length) :
     (encList (encPair encNat encBool) a).length ≤
-      (encCNF φ).length * (4 * (encCNF φ).length + 5) := by
-  have hlit : ∀ l ∈ a, (encPair encNat encBool l).length ≤ 2 * (encCNF φ).length + 2 := by
-    intro l hl
-    have := length_encNat_le_of_mem_vars (ha l hl)
-    rw [length_encPair, encBool_apply, List.length_singleton]
-    omega
-  have hlen' : a.length ≤ (encCNF φ).length := hlen.trans (length_vars_le φ)
-  calc (encList (encPair encNat encBool) a).length
-      ≤ a.length * (2 * (2 * (encCNF φ).length + 2) + 1) := length_encList_le _ _ hlit
-    _ ≤ (encCNF φ).length * (4 * (encCNF φ).length + 5) := by
-      rw [show 2 * (2 * (encCNF φ).length + 2) + 1 = 4 * (encCNF φ).length + 5 by ring]
-      exact Nat.mul_le_mul_right _ hlen'
+      (encCNF φ).length * (4 * (encCNF φ).length + 5) :=
+  (length_encList_le_of_mem_vars ha).trans
+    (Nat.mul_le_mul_right _ (hlen.trans (length_vars_le φ)))
 
 /-- Checking a leaf with the verifier is polynomial-time. -/
 theorem computableInPolyTime_verifier_units_append :

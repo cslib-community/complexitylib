@@ -37,7 +37,7 @@ open Cslib.Complexity Cslib.Complexity.KCenter Cslib.Algorithms.Lean.KCenter
 
 /-- The path `10 - 20 - 30`, with `10` declared twice and an edge `30 - 40` to the undeclared
 vertex `40`. -/
-private def path3 : Graph := ([10, 20, 10, 30], [(10, 20), (30, 20), (30, 40)])
+private def path3 : Graph := ⟨[10, 20, 10, 30], [(10, 20), (30, 20), (30, 40)]⟩
 
 example : path3.distinctVertices = [10, 20, 30] := by decide
 
@@ -73,10 +73,10 @@ private def endpoint : List (List ℕ) × ℕ → List ℕ := fun _ => [0]
 
 example : centerLabels middle path3 1 = [20] := by decide
 
-example : decideDominatingSet middle (path3, 1) = true := by decide
+example : decideDominatingSet middle ⟨path3, 1⟩ = true := by decide
 
 /-- A `2`-approximate answer does not dominate: the decider needs `ρ < 2`. -/
-example : decideDominatingSet endpoint (path3, 1) = false := by decide
+example : decideDominatingSet endpoint ⟨path3, 1⟩ = false := by decide
 
 private instance : NeZero (domMatrix path3).length := ⟨by decide⟩
 
@@ -87,11 +87,11 @@ example : radius (fun i j => (TSP.finDist (domMatrix path3) i j : ℕ)) {0} = (2
 
 /-- `k` above the number of distinct vertices is rejected, as `DominatingSet` asks for exactly
 `k` vertices. -/
-example : decideDominatingSet middle (path3, 4) = false := by decide
+example : decideDominatingSet middle ⟨path3, 4⟩ = false := by decide
 
 /-- With `k = 0`, only the graph without vertices is accepted. -/
-example : decideDominatingSet middle (path3, 0) = false ∧
-    decideDominatingSet middle (([], []), 0) = true := by decide
+example : decideDominatingSet middle ⟨path3, 0⟩ = false ∧
+    decideDominatingSet middle ⟨⟨[], []⟩, 0⟩ = true := by decide
 
 /-! ### 3. The hypotheses of the hardness theorem -/
 

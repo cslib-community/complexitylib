@@ -108,21 +108,22 @@ theorem LocalSelfReductionQuery.suffix_length {x y : List Bool}
 
 variable {α β : Type} {encA : α ↪ List Bool} {A : Set α}
 
-/-- Definition 3.1, tt clause, using the existing native indexed reduction contract. -/
+/-- Definition 3.1, tt clause, using the existing native indexed reduction contract. The
+resource conditions and locality form the admissibility predicate of `TruthTableReducibleBy`. -/
 @[expose] def LogSpaceTruthTableSelfReducible (encA : α ↪ List Bool) (A : Set α) : Prop :=
   ∃ (r : α → ℕ) (q : α × ℕ → α) (d : α × List Bool → Bool),
-    ComputableInLogSpace r encA encUnary ∧
-    ComputableInLogSpace q (encPair encA encUnary) encA ∧
-    ComputableInLogSpace d (encPair encA encBits) encBool ∧
-    (∀ a i, i < r a → LocalSelfReductionQuery (encA a) (encA (q (a, i)))) ∧
+    ((ComputableInLogSpace r encA encUnary ∧
+      ComputableInLogSpace q (encPair encA encUnary) encA ∧
+      ComputableInLogSpace d (encPair encA encBits) encBool) ∧
+      ∀ a i, i < r a → LocalSelfReductionQuery (encA a) (encA (q (a, i)))) ∧
     ∀ a, a ∈ A ↔ d (a, truthTableAnswers (q ⁻¹' A) r a) = true
 
 /-- Every local tt self-reduction is a query-avoiding tt autoreduction. -/
 theorem LogSpaceTruthTableSelfReducible.logSpaceTruthTableAutoreducible
     (h : LogSpaceTruthTableSelfReducible encA A) :
-    LogSpaceTruthTableAutoreducible encA A := by
-  obtain ⟨r, q, d, hr, hq, hd, hlocal, hA⟩ := h
-  exact ⟨r, q, d, hr, hq, hd, fun a i hi heq => (hlocal a i hi).ne (congrArg encA heq), hA⟩
+    LogSpaceTruthTableAutoreducible encA A :=
+  TruthTableReducibleBy.mono
+    (fun _ _ _ ⟨hg, hlocal⟩ => ⟨hg, fun a i hi heq => (hlocal a i hi).ne (congrArg encA heq)⟩) h
 
 /-- Every language already in `L` has a zero-query local self-reduction.
 The unused query generator is identity and is deliberately not constrained. -/
@@ -130,8 +131,8 @@ theorem LogSpaceTruthTableSelfReducible.of_mem_L (h : A ∈ L encA) :
     LogSpaceTruthTableSelfReducible encA A := by
   obtain ⟨d, hd, hA⟩ := h
   exact ⟨fun _ => 0, Prod.fst, fun p => d p.1,
-    ComputableInLogSpace.const 0, by fun_prop, by fun_prop,
-    fun _ _ hi => (Nat.not_lt_zero _ hi).elim, fun a => hA a⟩
+    ⟨⟨ComputableInLogSpace.const 0, by fun_prop, by fun_prop⟩,
+      fun _ _ hi => (Nat.not_lt_zero _ hi).elim⟩, fun a => hA a⟩
 
 /-- Definition 3.2's disjunctive clause, including either zero-query base answer. -/
 @[expose] def LogSpaceDTTSelfReducible (encA : α ↪ List Bool) (A : Set α) : Prop :=
@@ -156,7 +157,7 @@ theorem LogSpaceDTTSelfReducible.logSpaceTruthTableSelfReducible
     (h : LogSpaceDTTSelfReducible encA A) : LogSpaceTruthTableSelfReducible encA A := by
   obtain ⟨r, q, base, hr, hq, hb, hlocal, hA⟩ := h
   refine ⟨r, q, fun p => if r p.1 = 0 then base p.1 else p.2.any id,
-    hr, hq, by fun_prop, hlocal, fun a => ?_⟩
+    ⟨⟨hr, hq, by fun_prop⟩, hlocal⟩, fun a => ?_⟩
   classical
   rw [hA a]
   by_cases hz : r a = 0
@@ -168,7 +169,7 @@ theorem LogSpaceCTTSelfReducible.logSpaceTruthTableSelfReducible
     (h : LogSpaceCTTSelfReducible encA A) : LogSpaceTruthTableSelfReducible encA A := by
   obtain ⟨r, q, base, hr, hq, hb, hlocal, hA⟩ := h
   refine ⟨r, q, fun p => if r p.1 = 0 then base p.1 else p.2.all id,
-    hr, hq, by fun_prop, hlocal, fun a => ?_⟩
+    ⟨⟨hr, hq, by fun_prop⟩, hlocal⟩, fun a => ?_⟩
   classical
   rw [hA a]
   by_cases hz : r a = 0

@@ -7,6 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: vendored crei:crei/tidy-universal @7f7c0696 (unsubmitted)
 -- The newer version of cslib PR #1112 @0b9e55ce, which is on an older base.
+-- vendored: the loop states are `State ⊕ Unit`, those of `repeatUntilBlank` since cslib #1151
 
 public import Mathlib.Basic.Finite.Sum
 public import Mathlib.Order.Interval.Finset.Nat
@@ -121,7 +122,7 @@ public abbrev IterateWhileRoundState (State : Type*) :=
 /-- The states of `Turing.MultiTapeTM.iterateWhile`. -/
 public abbrev IterateWhileState (State : Type*) :=
   ((Unit ⊕ RewindState) ⊕ RewindWorkState) ⊕
-    RepeatUntilBlankState (IterateWhileRoundState State) ⊕
+    (IterateWhileRoundState State ⊕ Unit) ⊕
       (MarkWorkState ⊕ (Unit ⊕ RewindState) ⊕ MarkWorkState) ⊕ Unit ⊕ RewindWorkState
 
 section Machine

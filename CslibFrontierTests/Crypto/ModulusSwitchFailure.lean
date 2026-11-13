@@ -16,7 +16,7 @@ open Cslib Cslib.Crypto Probability ProbComp
 open scoped Matrix ENNReal
 
 private noncomputable def noise (η : ℕ) : PMF (Fin 1 → ZMod 32) :=
-  PMF.pi fun _ => Homomorphic.GSW.noiseLaw 5 η
+  PMF.pi fun _ => LWE.noiseLaw 5 η
 
 private noncomputable def secrets : PMF (Fin 1 → Fin 1 → ZMod 32) := PMF.pi fun _ => noise 1
 
@@ -29,7 +29,7 @@ private noncomputable def sampledView (η : ℕ) := do
 private def failure : Set ((Fin 1 → Fin 1 → ZMod 32) ×
     (ModuleLWEPublicKey 1 1 32 × ModuleLWECiphertext 1 1 32)) :=
   {out | moduleLWEDecrypt
-    (fun j i => (GeneralSIS.liftCentered (out.1 j) i : ZMod 16))
+    (fun j i => (SIS.liftCentered (out.1 j) i : ZMod 16))
     (moduleLWEModulusSwitch 16 out.2.2) ≠ ![true]}
 
 private theorem secrets_bound {s} (hs : s ∈ secrets.support) :
@@ -37,9 +37,9 @@ private theorem secrets_bound {s} (hs : s ∈ secrets.support) :
   moduleLWECenteredBinomial_inInfNormBound (by decide) hs
 
 private theorem noise_eq_map (η : ℕ) :
-    noise η = (Homomorphic.GSW.noiseLaw 5 η).map (fun z => ![z]) := by
+    noise η = (LWE.noiseLaw 5 η).map (fun z => ![z]) := by
   have h := congrArg (fun law : PMF (ZMod 32) => law.map (fun z => ![z]))
-    (PMF.pi_map_eval (fun _ : Fin 1 => Homomorphic.GSW.noiseLaw 5 η) 0)
+    (PMF.pi_map_eval (fun _ : Fin 1 => LWE.noiseLaw 5 η) 0)
   rw [PMF.map_comp] at h
   have hid : (fun f : Fin 1 → ZMod 32 => ![f 0]) = id := by
     funext f i
@@ -50,7 +50,7 @@ private theorem noise_eq_map (η : ℕ) :
   exact h
 
 private theorem noise_one_tail :
-    (noise 1).toOuterMeasure {e | ¬ GeneralSIS.inInfNormBound 1 e} = 0 := by
+    (noise 1).toOuterMeasure {e | ¬ SIS.inInfNormBound 1 e} = 0 := by
   rw [PMF.toOuterMeasure_apply_eq_zero_iff, Set.disjoint_left]
   intro e he hbad
   apply hbad
@@ -65,13 +65,13 @@ private theorem noise_one_tail :
   exact_mod_cast hb
 
 private theorem noise_two_tail :
-    (noise 2).toOuterMeasure {e | ¬ GeneralSIS.inInfNormBound 1 e} = (1 / 8 : ℝ≥0∞) := by
+    (noise 2).toOuterMeasure {e | ¬ SIS.inInfNormBound 1 e} = (1 / 8 : ℝ≥0∞) := by
   classical
-  rw [noise_eq_map, Homomorphic.GSW.noiseLaw, eval_sampleCenteredBinomial_eq_map]
+  rw [noise_eq_map, LWE.noiseLaw, eval_sampleCenteredBinomial_eq_map]
   simp only [PMF.map_comp, BitString.uniformList, PMF.toOuterMeasure_map_apply]
   rw [PMF.toOuterMeasure_uniformOfFintype]
   have hc : (Finset.univ.filter (fun bits : Fin 4 → Bool =>
-      ¬ GeneralSIS.inInfNormBound 1
+      ¬ SIS.inInfNormBound 1
         (![((((List.ofFn bits).take 2).count true : ℤ) -
           ((List.ofFn bits).drop 2).count true : ZMod 32)]))).card = 2 := by decide
   change (↑(Finset.univ.filter _).card : ℝ≥0∞) / Fintype.card (Fin 4 → Bool) = _
@@ -178,7 +178,7 @@ example : 0 < ((sampledView 2).toOuterMeasure failure).toReal := by
   rw [PMF.toOuterMeasure_toReal_pos_iff]
   refine ⟨(![![-1]], (key, ciphertext)), ?_, witness_support⟩
   change moduleLWEDecrypt
-    (fun j i => (GeneralSIS.liftCentered ((![![-1]] : Fin 1 → Fin 1 → ZMod 32) j) i :
+    (fun j i => (SIS.liftCentered ((![![-1]] : Fin 1 → Fin 1 → ZMod 32) j) i :
       ZMod 16)) (moduleLWEModulusSwitch 16 ciphertext) ≠ ![true]
   rw [switched_ciphertext]
   decide

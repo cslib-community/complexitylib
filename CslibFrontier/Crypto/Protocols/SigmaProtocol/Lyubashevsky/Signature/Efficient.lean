@@ -102,7 +102,6 @@ theorem computableInPolyTime_lyubashevskySignCommitment :
     ComputableInPolyTime lyubashevskySignCommitment
       encLyubashevskySignWithRandomness encBits := by
   unfold lyubashevskySignCommitment encLyubashevskySignWithRandomness encLyubashevskySignInput
-    encLyubashevskyParams LyubashevskyParams.n LyubashevskyParams.m LyubashevskyParams.q
   fun_prop
 
 /-- Polynomial-time computation of the native response. -/
@@ -112,7 +111,6 @@ theorem computableInPolyTime_lyubashevskySignResponse :
       (encPair encLyubashevskySignWithRandomness encBits)
       (encList encIntBin) := by
   unfold lyubashevskySignResponse encLyubashevskySignWithRandomness encLyubashevskySignInput
-    encLyubashevskyParams LyubashevskyParams.m LyubashevskyParams.k
   fun_prop
 
 /-- The actual signing postprocessing is polynomial-time for a polynomial-time hash. -/
@@ -133,12 +131,11 @@ theorem computableInPolyTime_lyubashevskySignPostprocess
     ((ComputableInPolyTime.id').prod hh)
   have hm : ComputableInPolyTime (fun x : LyubashevskySignInput × List ℤ => x.1.1.m)
       e encUnary := by
-    unfold e encLyubashevskySignInput encLyubashevskyParams LyubashevskyParams.m
+    unfold e encLyubashevskySignInput
     fun_prop
   have hb : ComputableInPolyTime
       (fun x : LyubashevskySignInput × List ℤ => x.1.1.γ - x.1.1.β) e encNat := by
-    unfold e encLyubashevskySignInput encLyubashevskyParams
-      LyubashevskyParams.γ LyubashevskyParams.β
+    unfold e encLyubashevskySignInput
     fun_prop
   have hc := computableInPolyTime_inBoxList.comp (hm.prod (hb.prod hz))
   exact hc.ite' ((ComputableInPolyTime.optionSome (encPair encBits encBits)).comp
@@ -160,15 +157,15 @@ theorem isPPTOn_lyubashevskySignAttemptNative
       (lyubashevskySignAttemptNative hash) := by
   have hγ : ComputableInPolyTime (fun x : LyubashevskySignInput => x.1.γ)
       encLyubashevskySignInput encNat := by
-    unfold LyubashevskyParams.γ encLyubashevskySignInput encLyubashevskyParams
+    unfold encLyubashevskySignInput
     fun_prop
   have hm : ComputableInPolyTime (fun x : LyubashevskySignInput => x.1.m)
       encLyubashevskySignInput encUnary := by
-    unfold LyubashevskyParams.m encLyubashevskySignInput encLyubashevskyParams
+    unfold encLyubashevskySignInput
     fun_prop
   have hw : ComputableInPolyTime (fun x : LyubashevskySignInput => x.1.width)
       encLyubashevskySignInput encUnary := by
-    unfold LyubashevskyParams.width encLyubashevskySignInput encLyubashevskyParams
+    unfold encLyubashevskySignInput
     fun_prop
   exact (isPPTOn_sampleIntBoxList hγ hm hw).map_with
     (computableInPolyTime_lyubashevskySignPostprocess hhash)
@@ -273,13 +270,10 @@ theorem closeTo_lyubashevskySignAttemptNative (hash : List Bool × List Bool →
   have hreal :
       ProbComp.eval (lyubashevskySignAttemptNative hash (lyubashevskySignInput p S y.1 msg)) =
       (ProbComp.eval (sampleIntBoxVec p.γ p.m p.width)).map post := by
-    have hlist : ProbComp.eval (sampleIntBoxList p.γ p.m p.width) =
-        (ProbComp.eval (sampleIntBoxVec p.γ p.m p.width)).map List.ofFn := by
-      rw [eval_sampleIntBoxVec_eq_iid, sampleIntBoxList, ProbComp.eval_replicate_iid]
     change ProbComp.eval
       ((fun r => lyubashevskySignPostprocess hash (lyubashevskySignInput p S y.1 msg, r)) <$>
         sampleIntBoxList p.γ p.m p.width) = _
-    rw [ProbComp.eval_map, hlist, PMF.map_comp]
+    rw [ProbComp.eval_map, eval_sampleIntBoxList_eq_map_ofFn, PMF.map_comp]
     rfl
   rw [hideal, hreal]
   exact (closeTo_uniform_intBox_sampleIntBoxVec p.γ p.m p.width).map post

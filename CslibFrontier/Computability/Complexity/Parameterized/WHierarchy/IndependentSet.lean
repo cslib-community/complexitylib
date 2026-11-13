@@ -68,7 +68,7 @@ namespace IndependentSet
 /-- The edges of `G` between distinct declared vertices, as pairs of positions in
 `G.distinctVertices`. -/
 def edgeIndices (G : Graph) : List (ℕ × ℕ) :=
-  (G.2.filter fun e => decide (e.1 ∈ G.1 ∧ e.2 ∈ G.1 ∧ e.1 ≠ e.2)).map fun e =>
+  (G.edges.filter fun e => decide (e.1 ∈ G.vertices ∧ e.2 ∈ G.vertices ∧ e.1 ≠ e.2)).map fun e =>
     (G.distinctVertices.idxOf e.1, G.distinctVertices.idxOf e.2)
 
 /-- The gates of the circuit on `n` inputs for the edges `E`: the negation of every input, the
@@ -218,7 +218,7 @@ private def vertexSet (G : Graph) (x : BitString (toCircuit G).1) : Finset ℕ :
       Fin.ext ((List.Nodup.getElem_inj_iff G.nodup_distinctVertices).1 h)⟩
 
 private theorem mem_vertexSet {G : Graph} {x : BitString (toCircuit G).1} {v : ℕ} :
-    v ∈ vertexSet G x ↔ ∃ h : v ∈ G.1,
+    v ∈ vertexSet G x ↔ ∃ h : v ∈ G.vertices,
       x ⟨G.distinctVertices.idxOf v,
         List.idxOf_lt_length_iff.2 (Graph.mem_distinctVertices.2 h)⟩ = true := by
   simp only [vertexSet, Finset.mem_map, Finset.mem_filter, Finset.mem_univ, true_and]
@@ -234,7 +234,7 @@ private theorem edgeIndices_iff (G : Graph) (x : BitString (toCircuit G).1) :
     (∀ e ∈ edgeIndices G, ¬((List.ofFn x).getD e.1 false = true ∧
       (List.ofFn x).getD e.2 false = true)) ↔
       G.toSimpleGraph.IsIndepSet (vertexSet G x : Set ℕ) := by
-  have hget : ∀ a (ha : a ∈ G.1), (List.ofFn x).getD (G.distinctVertices.idxOf a) false =
+  have hget : ∀ a (ha : a ∈ G.vertices), (List.ofFn x).getD (G.distinctVertices.idxOf a) false =
       x ⟨G.distinctVertices.idxOf a,
         List.idxOf_lt_length_iff.2 (Graph.mem_distinctVertices.2 ha)⟩ := fun a ha => by
     rw [List.getD_eq_getElem _ _ (by
@@ -269,8 +269,8 @@ private theorem edgeIndices_iff (G : Graph) (x : BitString (toCircuit G).1) :
 when `G` has an independent set of `k` declared vertices. -/
 theorem toCircuit_satisfiableWithWeight_iff (G : Graph) (k : ℕ) :
     (toCircuit G).2.SatisfiableWithWeight Unbounded.interpretation k ↔
-      (G, k) ∈ IndependentSet := by
-  rw [mem_IndependentSet_iff]
+      (⟨G, k⟩ : IndependentSetInstance) ∈ IndependentSet := by
+  rw [mem_IndependentSet_iff_mk]
   constructor
   · rintro ⟨x, hk, hx⟩
     rw [eval_toCircuit, decide_eq_true_eq, edgeIndices_iff] at hx
@@ -428,34 +428,36 @@ theorem computableInPolyTime_circuitCode :
 
 /-- **The instance of `WCS 1 3` of a graph and a target**: the circuit of the graph, of weft at most
 `1` and depth at most `3`, with the target as weight. -/
-def toWCS : Graph × ℕ → WeftCircuit 1 3 × ℕ
-  | (G, k) => (⟨toCircuit G, weft_toCircuit_le G, depth_toCircuit_le G⟩, k)
+def toWCS (x : IndependentSetInstance) : WCSInstance 1 3 :=
+  ⟨⟨toCircuit x.graph, weft_toCircuit_le x.graph, depth_toCircuit_le x.graph⟩, x.m⟩
 
-/-- The instance of `WCS 1 3` of `(G, k)` is a yes-instance exactly when `G` has an independent
-set of `k` declared vertices. -/
-theorem toWCS_mem_WCS_iff (x : Graph × ℕ) : toWCS x ∈ WCS 1 3 ↔ x ∈ IndependentSet :=
-  toCircuit_satisfiableWithWeight_iff x.1 x.2
+/-- The instance of `WCS 1 3` of `x` is a yes-instance exactly when `x.graph` has an independent
+set of `x.m` declared vertices. -/
+theorem toWCS_mem_WCS_iff (x : IndependentSetInstance) :
+    toWCS x ∈ WCS 1 3 ↔ x ∈ IndependentSet :=
+  toCircuit_satisfiableWithWeight_iff x.graph x.m
 
 /-- Building the instance of `WCS 1 3` is polynomial-time. -/
 theorem computableInPolyTime_toWCS :
-    ComputableInPolyTime toWCS (encPair encGraph encNat) (encWCS 1 3) := by
+    ComputableInPolyTime toWCS encIndependentSetInstance (encWCS 1 3) := by
   have hc := computableInPolyTime_circuitCode
   have hV := Graph.computableInPolyTime_distinctVertices
   have h : ComputableInPolyTime
-      (fun x : Graph × ℕ => ((x.1.distinctVertices.length, circuitCode x.1), x.2))
-      (encPair encGraph encNat)
+      (fun x : IndependentSetInstance =>
+        ((x.graph.distinctVertices.length, circuitCode x.graph), x.m))
+      encIndependentSetInstance
       (encPair (encPair encUnary (Circuit.encCode Unbounded.encOp)) encNat) := by
     fun_prop
   refine h.of_enc_eq fun x => ?_
   obtain ⟨G, k⟩ := x
-  simp only [toWCS, encPair_apply, encWeftCircuit_apply, Circuit.encCircuit_apply,
+  simp only [toWCS, encWCS_apply, encPair_apply, encWeftCircuit_apply, Circuit.encCircuit_apply,
     code_toCircuit]
   rfl
 
 /-- **`IndependentSet` fpt-reduces to `WCS 1 3`**, by a polynomial-time reduction that keeps the
 parameter. -/
 theorem fptReducible_WCS :
-    FPTReducible (encPair encGraph encNat) (encWCS 1 3) Prod.snd Prod.snd IndependentSet
+    FPTReducible encIndependentSetInstance (encWCS 1 3) (·.m) WCSInstance.weight IndependentSet
       (WCS 1 3) :=
   FPTReducible.of_computableInPolyTime computableInPolyTime_toWCS (h := id)
     (fun _ => le_rfl) fun x => (toWCS_mem_WCS_iff x).symm
@@ -463,11 +465,11 @@ theorem fptReducible_WCS :
 end IndependentSet
 
 /-- **Independent Set is in `W[1]`** [Cygan et al., Section 13.3][CyganEtAl2015]. -/
-theorem IndependentSet_mem_W : IndependentSet ∈ W 1 (encPair encGraph encNat) Prod.snd :=
+theorem IndependentSet_mem_W : IndependentSet ∈ W 1 encIndependentSetInstance (·.m) :=
   ⟨3, IndependentSet.fptReducible_WCS⟩
 
 /-- **Clique is in `W[1]`** [Cygan et al., Section 13.3][CyganEtAl2015]. -/
-theorem Clique_mem_W : Clique ∈ W 1 (encPair encGraph encNat) Prod.snd :=
+theorem Clique_mem_W : Clique ∈ W 1 encCliqueInstance (·.m) :=
   fptReducible_Clique_IndependentSet.mem_W IndependentSet_mem_W
 
 end Cslib.Complexity

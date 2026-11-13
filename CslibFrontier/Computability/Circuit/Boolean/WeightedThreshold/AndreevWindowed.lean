@@ -19,12 +19,14 @@ This module constructs the windowed depth-two weighted threshold circuit
 [#2347](https://github.com/cslib-community/cslib-frontier/issues/2347)).
 
 Given a prefix length `r ≤ b` and a window half-width `B : ℕ`, the circuit sums only over subsets
-`S ⊆ {0, …, r - 1}` (`andreevPrefixSubsets b r`, of size `t = 2 ^ r`) and telescopes each
-`altLinear (u^±_S(w))` only over the integer window `[μ_{S,σ} - B, μ_{S,σ} + B]` of length `2 * B`
-centered at `μ_{S,σ} = ±⌊(#S * m) / 2⌋` (`andreevWindowCenter`). This uses `4 * 2 ^ r * B` bottom
-threshold gates (`4 * 2 ^ r * B + 1` total gates) with bottom weights in `{-2, -1, 0, 1, 2}`.
+`S ⊆ {0, …, r - 1}` (`andreevPrefixSubsets b r`, of size `t = 2 ^ r`) the two staircases of the
+exact circuit `andreevCircuit` (`andreevStairForm`: `X_S(w) + t_S(w)` and `t_S(w)`), telescoping
+each `altLinear (andreevStairForm b m S τ w)` only over the integer window `[μ_S - B, μ_S + B]` of
+length `2 * B` centered at `μ_S = ⌊(#S * m) / 2⌋` (`andreevWindowCenter`). This uses
+`4 * 2 ^ r * B` bottom threshold gates (`4 * 2 ^ r * B + 1` total gates) with bottom weights in
+`{-2, -1, 0, 1, 2}`.
 
-Whenever every `u^±_S(w)` for `S ∈ andreevPrefixSubsets b r` lies in its window
+Whenever both staircase forms for every `S ∈ andreevPrefixSubsets b r` lie in the window
 (`andreevInWindow b m r B w`), `andreevWindowedCircuit b m r B` agrees with the untruncated
 subcube predictor `andreevSubcubeEval b m r w = decide (andreevSubcubeScore b m r w ≤ 0)`.
 At `r = b`, `andreevSubcubeEval b m b w = andreev b m w` on every input, so
@@ -34,13 +36,13 @@ At `r = b`, `andreevSubcubeEval b m b w = andreev b m w` on every input, so
 
 * `andreevPrefixCoords`, `andreevPrefixSubsets`: the first `r` block coordinates and their `2 ^ r`
   subsets.
-* `andreevWindowCenter`, `andreevWindowLower`: window center `±⌊(#S * m) / 2⌋` and lower endpoint
-  `μ_{S,σ} - B`.
+* `andreevWindowCenter`, `andreevWindowLower`: window center `⌊(#S * m) / 2⌋` and lower endpoint
+  `μ_S - B`.
 * `andreevWindowedCircuit`, `andreevWindowedCircuitEvalInt`: explicit depth-two weighted threshold
   circuit with `4 * 2 ^ r * B` bottom gates and its choice-free integer evaluator.
 * `andreevSubcubeScore`, `andreevSubcubeEval`, `andreevInWindow`: untruncated subcube Fourier sum,
-  Boolean predictor, and the event that all `u^±_S(w)` for `S ∈ andreevPrefixSubsets b r` lie
-  within `B` of `andreevWindowCenter m S σ`.
+  Boolean predictor, and the event that both staircase forms `andreevStairForm b m S τ w` for
+  every `S ∈ andreevPrefixSubsets b r` lie within `B` of `andreevWindowCenter m S`.
 
 ## Main results
 
@@ -103,8 +105,8 @@ theorem andreevPrefixSubsets_self (b : ℕ) : andreevPrefixSubsets b b = univ :=
   ext S; simp [subset_univ]
 
 /-- Index type for the bottom gates of `andreevWindowedCircuit b m r B`:
-a prefix subset `S ∈ andreevPrefixSubsets b r`, a sign bit `σ : Bool`, and a window step
-`k : Fin (2 * B)`. -/
+a prefix subset `S ∈ andreevPrefixSubsets b r`, a staircase selector `τ : Bool` (`true` for
+`X_S + t_S`, `false` for `t_S`, as in `AndreevBottomIndex`), and a window step `k : Fin (2 * B)`. -/
 abbrev AndreevWindowedBottomIndex (b r B : ℕ) : Type :=
   {S : Finset (Fin b) // S ∈ andreevPrefixSubsets b r} × Bool × Fin (2 * B)
 
@@ -128,51 +130,54 @@ noncomputable def andreevWindowedBottomEquiv (b r B : ℕ) :
 
 /-! ### Window parameters and untruncated subcube predictor -/
 
-/-- Integer center `μ_{S,σ} = ±⌊(#S * m) / 2⌋` of the window for `(S, σ)`. -/
-def andreevWindowCenter {b : ℕ} (m : ℕ) (S : Finset (Fin b)) (σ : Bool) : ℤ :=
-  if σ then ((#S * m) / 2 : ℕ) else -(((#S * m) / 2 : ℕ) : ℤ)
+/-- Integer center `μ_S = ⌊(#S * m) / 2⌋` of the window for subset `S`, shared by both
+staircases. -/
+def andreevWindowCenter {b : ℕ} (m : ℕ) (S : Finset (Fin b)) : ℤ :=
+  ((#S * m) / 2 : ℕ)
 
-/-- Lower endpoint `ℓ_{S,σ,B} = μ_{S,σ} - B` of the window of length `2 * B` for `(S, σ)`. -/
-def andreevWindowLower {b : ℕ} (m B : ℕ) (S : Finset (Fin b)) (σ : Bool) : ℤ :=
-  andreevWindowCenter m S σ - B
+/-- Lower endpoint `ℓ_{S,B} = μ_S - B` of the window of length `2 * B` for subset `S`. -/
+def andreevWindowLower {b : ℕ} (m B : ℕ) (S : Finset (Fin b)) : ℤ :=
+  andreevWindowCenter m S - B
 
-/-- Integer threshold of windowed bottom gate `(S, σ, k)`. -/
-def andreevWindowedBottomThresholdInt (b m B : ℕ) (S : Finset (Fin b)) (σ : Bool)
+/-- Integer threshold `ℓ_{S,B} + k + 1 - [τ] C_S` of windowed bottom gate `(S, τ, k)`. -/
+def andreevWindowedBottomThresholdInt (b m B : ℕ) (S : Finset (Fin b)) (τ : Bool)
     (k : Fin (2 * B)) : ℤ :=
-  andreevWindowLower m B S σ + k + 1 - andreevTableOffset b S
+  andreevWindowLower m B S + k + 1 - (if τ then andreevTableOffset b S else 0)
 
-/-- Integer top-gate weight on windowed bottom gate `(S, σ, k)`. -/
-def andreevWindowedTopWeightInt (b m B : ℕ) (S : Finset (Fin b)) (σ : Bool)
+/-- Integer top-gate weight on windowed bottom gate `(S, τ, k)`: the signed step
+`andreevStairSign b τ * (φ(ℓ_{S,B} + k + 1) - φ(ℓ_{S,B} + k))` of `altLinear`. -/
+def andreevWindowedTopWeightInt (b m B : ℕ) (S : Finset (Fin b)) (τ : Bool)
     (k : Fin (2 * B)) : ℤ :=
-  -(-1 : ℤ) ^ (2 ^ b) *
-    (altLinear (andreevWindowLower m B S σ + k + 1) - altLinear (andreevWindowLower m B S σ + k))
+  andreevStairSign b τ *
+    (altLinear (andreevWindowLower m B S + k + 1) - altLinear (andreevWindowLower m B S + k))
 
 /-- Integer threshold of the top gate of `andreevWindowedCircuit b m r B`. -/
 def andreevWindowedTopThresholdInt (b m r B : ℕ) : ℤ :=
-  ∑ S ∈ andreevPrefixSubsets b r, ∑ σ : Bool,
-    (-1 : ℤ) ^ (2 ^ b) * altLinear (andreevWindowLower m B S σ)
+  -∑ S ∈ andreevPrefixSubsets b r, ∑ τ : Bool,
+    andreevStairSign b τ * altLinear (andreevWindowLower m B S)
 
-/-- Choice-free computable evaluation of windowed bottom gate `(S, σ, k)` on input `w`. -/
-def andreevWindowedBottomEvalInt (b m B : ℕ) (S : Finset (Fin b)) (σ : Bool) (k : Fin (2 * B))
+/-- Choice-free computable evaluation of windowed bottom gate `(S, τ, k)` on input `w`. -/
+def andreevWindowedBottomEvalInt (b m B : ℕ) (S : Finset (Fin b)) (τ : Bool) (k : Fin (2 * B))
     (w : BitString (2 ^ b + b * m)) : Bool :=
-  decide (andreevWindowedBottomThresholdInt b m B S σ k ≤
-    ∑ i : Fin (2 ^ b + b * m), andreevBottomWeightInt b m S σ i * (w i).toNat)
+  decide (andreevWindowedBottomThresholdInt b m B S τ k ≤
+    ∑ i : Fin (2 ^ b + b * m), andreevStairWeightInt b m S τ i * (w i).toNat)
 
-/-- Windowed bottom gate `(S, σ, k)` evaluates to `decide (ℓ_{S,σ,B} + k + 1 ≤ u^±_S(w))`. -/
-theorem andreevWindowedBottomEvalInt_eq_decide (b m B : ℕ) (S : Finset (Fin b)) (σ : Bool)
+/-- Windowed bottom gate `(S, τ, k)` evaluates to
+`decide (ℓ_{S,B} + k + 1 ≤ andreevStairForm b m S τ w)`. -/
+theorem andreevWindowedBottomEvalInt_eq_decide (b m B : ℕ) (S : Finset (Fin b)) (τ : Bool)
     (k : Fin (2 * B)) (w : BitString (2 ^ b + b * m)) :
-    andreevWindowedBottomEvalInt b m B S σ k w =
-      decide (andreevWindowLower m B S σ + k + 1 ≤ andreevLinearForm b m S σ w) := by
-  rw [andreevWindowedBottomEvalInt, sum_andreevBottomWeightInt_mul,
+    andreevWindowedBottomEvalInt b m B S τ k w =
+      decide (andreevWindowLower m B S + k + 1 ≤ andreevStairForm b m S τ w) := by
+  rw [andreevWindowedBottomEvalInt, sum_andreevStairWeightInt_mul,
     andreevWindowedBottomThresholdInt]
   exact decide_eq_decide.mpr ⟨by omega, by omega⟩
 
 /-- Choice-free computable evaluation of the full windowed depth-two threshold network. -/
 def andreevWindowedCircuitEvalInt (b m r B : ℕ) (w : BitString (2 ^ b + b * m)) : Bool :=
   decide (andreevWindowedTopThresholdInt b m r B ≤
-    ∑ S ∈ andreevPrefixSubsets b r, ∑ σ : Bool, ∑ k : Fin (2 * B),
-      andreevWindowedTopWeightInt b m B S σ k *
-        (andreevWindowedBottomEvalInt b m B S σ k w).toNat)
+    ∑ S ∈ andreevPrefixSubsets b r, ∑ τ : Bool, ∑ k : Fin (2 * B),
+      andreevWindowedTopWeightInt b m B S τ k *
+        (andreevWindowedBottomEvalInt b m B S τ k w).toNat)
 
 /-- The untruncated subcube Fourier sum
 `G_{b,m,r}(w) = ∑_{S ∈ andreevPrefixSubsets b r} X_S(w) * χ_S(andreevParities b m w)`. -/
@@ -197,54 +202,36 @@ theorem andreevSubcubeEval_self (b m : ℕ) (w : BitString (2 ^ b + b * m)) :
 
 /-! ### In-window event and pointwise agreement -/
 
-/-- The event that for every `S ∈ andreevPrefixSubsets b r` and `σ : Bool`,
-`u^±_S(w)` lies in the window `[andreevWindowLower m B S σ, andreevWindowLower m B S σ + 2 * B]`. -/
+/-- The event that for every `S ∈ andreevPrefixSubsets b r` and `τ : Bool`, the staircase form
+`andreevStairForm b m S τ w` lies in the window
+`[andreevWindowLower m B S, andreevWindowLower m B S + 2 * B]`. -/
 def andreevInWindow (b m r B : ℕ) (w : BitString (2 ^ b + b * m)) : Prop :=
-  ∀ S ∈ andreevPrefixSubsets b r, ∀ σ : Bool,
-    andreevWindowLower m B S σ ≤ andreevLinearForm b m S σ w ∧
-      andreevLinearForm b m S σ w ≤ andreevWindowLower m B S σ + (2 * B : ℕ)
+  ∀ S ∈ andreevPrefixSubsets b r, ∀ τ : Bool,
+    andreevWindowLower m B S ≤ andreevStairForm b m S τ w ∧
+      andreevStairForm b m S τ w ≤ andreevWindowLower m B S + (2 * B : ℕ)
 
 instance (b m r B : ℕ) (w : BitString (2 ^ b + b * m)) :
     Decidable (andreevInWindow b m r B w) := by
   unfold andreevInWindow; infer_instance
 
 /-- On any input `w` satisfying `andreevInWindow b m r B w`, the top-gate weighted sum minus the
-top-gate threshold equals `-2 * andreevSubcubeScore b m r w`. -/
+top-gate threshold equals `-andreevSubcubeScore b m r w`. -/
 theorem sum_andreevWindowedTopWeightInt_sub_threshold_of_inWindow {b m r B : ℕ}
     {w : BitString (2 ^ b + b * m)} (hw : andreevInWindow b m r B w) :
-    (∑ S ∈ andreevPrefixSubsets b r, ∑ σ : Bool, ∑ k : Fin (2 * B),
-      andreevWindowedTopWeightInt b m B S σ k *
-        (andreevWindowedBottomEvalInt b m B S σ k w).toNat) -
-      andreevWindowedTopThresholdInt b m r B = -2 * andreevSubcubeScore b m r w := by
-  have hsign_sq : (-1 : ℤ) ^ (2 ^ b) * (-1 : ℤ) ^ (2 ^ b) = 1 := by
-    rw [← pow_add, ← two_mul, pow_mul]; simp
-  rw [andreevWindowedTopThresholdInt, andreevSubcubeScore, ← sum_sub_distrib, mul_sum]
+    (∑ S ∈ andreevPrefixSubsets b r, ∑ τ : Bool, ∑ k : Fin (2 * B),
+      andreevWindowedTopWeightInt b m B S τ k *
+        (andreevWindowedBottomEvalInt b m B S τ k w).toNat) -
+      andreevWindowedTopThresholdInt b m r B = -andreevSubcubeScore b m r w := by
+  rw [andreevWindowedTopThresholdInt, andreevSubcubeScore, sub_neg_eq_add, ← sum_add_distrib,
+    ← sum_neg_distrib]
   refine sum_congr rfl fun S hS => ?_
-  rw [← sum_sub_distrib]
-  have htele (σ : Bool) :
-      (∑ k : Fin (2 * B), andreevWindowedTopWeightInt b m B S σ k *
-        (andreevWindowedBottomEvalInt b m B S σ k w).toNat) -
-        (-1 : ℤ) ^ (2 ^ b) * altLinear (andreevWindowLower m B S σ) =
-        -(-1 : ℤ) ^ (2 ^ b) * altLinear (andreevLinearForm b m S σ w) := by
-    have hsum := sum_sub_mul_decide_le altLinear (hw S hS σ).1 (hw S hS σ).2
-    simp only [andreevWindowedTopWeightInt, andreevWindowedBottomEvalInt_eq_decide,
-      mul_assoc, ← mul_sum]
-    rw [← hsum]; ring
-  simp only [Fintype.sum_bool, htele]
-  have hpol := altLinear_add_add_altLinear_sub (andreevTableScore b m S w)
-    (andreevBlockSum b m S w)
-  have hplus : andreevLinearForm b m S true w =
-      andreevTableScore b m S w + andreevBlockSum b m S w := by simp [andreevLinearForm]
-  have hminus : andreevLinearForm b m S false w =
-      andreevTableScore b m S w - andreevBlockSum b m S w := by
-    simp [andreevLinearForm, sub_eq_add_neg]
-  rw [hplus, hminus, ← mul_add, hpol, negOnePow_andreevTableScore, negOnePow_andreevBlockSum]
-  calc -(-1 : ℤ) ^ (2 ^ b) *
-        (2 * (-1 : ℤ) ^ (2 ^ b) * andreevTableScore b m S w * chi ℤ S (andreevParities b m w))
-      = -2 * ((-1 : ℤ) ^ (2 ^ b) * (-1 : ℤ) ^ (2 ^ b)) *
-          (andreevTableScore b m S w * chi ℤ S (andreevParities b m w)) := by ring
-    _ = -2 * (andreevTableScore b m S w * chi ℤ S (andreevParities b m w)) := by
-          rw [hsign_sq, mul_one]
+  rw [← sum_add_distrib, ← sum_andreevStairSign_mul_altLinear]
+  refine sum_congr rfl fun τ _ => ?_
+  have hsum := sum_sub_mul_decide_le altLinear (hw S hS τ).1 (hw S hS τ).2
+  simp only [andreevWindowedTopWeightInt, andreevWindowedBottomEvalInt_eq_decide, mul_assoc,
+    ← mul_sum]
+  rw [← hsum]
+  ring
 
 /-- On any input `w` satisfying `andreevInWindow b m r B w`, `andreevWindowedCircuitEvalInt`
 agrees with `andreevSubcubeEval b m r w`. -/
@@ -269,7 +256,7 @@ noncomputable abbrev andreevWindowedBottomOp (b m r B : ℕ)
     (j : Fin (4 * #(andreevPrefixSubsets b r) * B)) : Op :=
   let idx := (andreevWindowedBottomEquiv b r B).symm j
   { arity := 2 ^ b + b * m
-    weight := fun i => (andreevBottomWeightInt b m idx.1.1 idx.2.1 i : ℝ)
+    weight := fun i => (andreevStairWeightInt b m idx.1.1 idx.2.1 i : ℝ)
     threshold := (andreevWindowedBottomThresholdInt b m B idx.1.1 idx.2.1 idx.2.2 : ℝ) }
 
 /-- The top output gate of `andreevWindowedCircuit b m r B`. -/
@@ -358,24 +345,23 @@ theorem abs_weight_andreevWindowedBottomOp_le (b m r B : ℕ)
     (j : Fin (4 * #(andreevPrefixSubsets b r) * B)) (i : Fin (2 ^ b + b * m)) :
     |(andreevWindowedBottomOp b m r B j).weight i| ≤ 2 := by
   unfold andreevWindowedBottomOp; dsimp only
-  exact_mod_cast abs_andreevBottomWeightInt_le b m
+  exact_mod_cast abs_andreevStairWeightInt_le b m
     ((andreevWindowedBottomEquiv b r B).symm j).1.1
     ((andreevWindowedBottomEquiv b r B).symm j).2.1 i
 
 /-- Every integer top-gate weight in `andreevWindowedCircuit b m r B` has absolute value at most
 `b * m + 2 * B + 1`. -/
-theorem abs_andreevWindowedTopWeightInt_le (b m B : ℕ) (S : Finset (Fin b)) (σ : Bool)
+theorem abs_andreevWindowedTopWeightInt_le (b m B : ℕ) (S : Finset (Fin b)) (τ : Bool)
     (k : Fin (2 * B)) :
-    |andreevWindowedTopWeightInt b m B S σ k| ≤ b * m + 2 * B + 1 := by
+    |andreevWindowedTopWeightInt b m B S τ k| ≤ b * m + 2 * B + 1 := by
   have hS : #S * m ≤ b * m :=
     Nat.mul_le_mul_right m ((card_le_univ S).trans_eq (Fintype.card_fin b))
   have hdiv : 2 * ((#S * m) / 2) ≤ #S * m := Nat.mul_div_le (#S * m) 2
   have hk : (k : ℕ) < 2 * B := k.isLt
-  rw [andreevWindowedTopWeightInt, abs_mul, abs_neg, abs_pow, abs_neg, abs_one, one_pow, one_mul,
-    altLinear_add_one_sub, abs_mul, Int.abs_negOnePow, one_mul]
-  cases σ <;>
-    simp only [andreevWindowLower, andreevWindowCenter, ↓reduceIte, Bool.false_eq_true] <;>
-    exact abs_le.mpr ⟨by omega, by omega⟩
+  have hsign : |andreevStairSign b τ| = 1 := by cases τ <;> simp [andreevStairSign]
+  rw [andreevWindowedTopWeightInt, abs_mul, hsign, one_mul, altLinear_add_one_sub, abs_mul,
+    Int.abs_negOnePow, one_mul, andreevWindowLower, andreevWindowCenter]
+  exact abs_le.mpr ⟨by omega, by omega⟩
 
 /-- The top gate of `andreevWindowedCircuit b m r B` has real weights of absolute value at most
 `b * m + 2 * B + 1`. -/
@@ -490,22 +476,23 @@ theorem cast_andreevTableScore_flipTable (b m : ℕ) (S : Finset (Fin b))
     cases p <;> cases v <;> norm_num
   have hscore : (andreevTableScore b m S (andreevFlipTable b m S w) : ℝ) =
       ∑ c : BitString b,
-        (1 - 2 * ((w (andreevTableIndex b m (BitString.equivFin b c))).toNat : ℝ)) := by
+        (1 - 2 * ((andreevTable b m w c).toNat : ℝ)) := by
     simp only [andreevTableScore, Int.cast_sum, Int.cast_mul, Int.cast_sub, Int.cast_one,
       Int.cast_ofNat, Int.cast_natCast]
     refine sum_congr rfl fun c _ => ?_
     have hchi : ((chi ℤ S c : ℤ) : ℝ) = (-1 : ℝ) ^ (parityOn S c).toNat := by
       rw [chi_eq_neg_one_pow_parityOn]; push_cast; rfl
     rw [hchi]
-    simpa [andreevFlipTable, andreevTableIndex] using
-      hxor (parityOn S c) (w (andreevTableIndex b m (BitString.equivFin b c)))
+    simpa [andreevFlipTable, andreevTable, andreevTableIndex] using
+      hxor (parityOn S c) (andreevTable b m w c)
   have hcard : (#{i ∈ andreevTableSupport b m | w i = true} : ℝ) =
-      ∑ c : BitString b, ((w (andreevTableIndex b m (BitString.equivFin b c))).toNat : ℝ) := by
+      ∑ c : BitString b, ((andreevTable b m w c).toNat : ℝ) := by
     rw [andreevTableSupport, card_filter, sum_map]
     simp only [Function.Embedding.coeFn_mk, Nat.cast_sum]
     rw [← (BitString.equivFin b).sum_comp
       (fun idx => ((if w (andreevTableIndex b m idx) = true then 1 else 0 : ℕ) : ℝ))]
     refine sum_congr rfl fun c _ => ?_
+    simp only [andreevTable]
     cases w (andreevTableIndex b m (BitString.equivFin b c)) <;> simp
   rw [hscore, hcard, sum_sub_distrib, ← mul_sum]
   simp only [sum_const, card_univ, BitString.card, nsmul_eq_mul, Nat.cast_pow, Nat.cast_ofNat]

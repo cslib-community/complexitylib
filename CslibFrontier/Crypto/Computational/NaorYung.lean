@@ -24,9 +24,11 @@ import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Bool
+import CslibFrontier.Probability.BitString.List
 import CslibFrontier.Tactic.PolyTime.Init
 import CslibFrontier.Probability.PMF.Finiteness
 import CslibFrontier.Crypto.Game.Order
+import Mathlib.Data.List.GetD
 
 /-!
 # Naor–Yung universal one-way hash functions from one-way permutations
@@ -261,8 +263,8 @@ private theorem eq_of_take_append_drop_eq {m p : ℕ} (hp : p < m) {c₀ c₁ : 
     rwa [List.getElem?_eq_getElem hlen_L, List.getElem?_eq_getElem hlen_R, Option.some.injEq,
       List.getElem_append_left (by omega), List.getElem_append_left (by omega),
       List.getElem_take, List.getElem_take] at hget
-  · simpa only [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi₀,
-      List.getElem?_eq_getElem hi₁, Option.getD_some] using hp₀.trans hp₁.symm
+  · simpa only [List.getD_eq_getElem _ _ hi₀, List.getD_eq_getElem _ _ hi₁] using
+      hp₀.trans hp₁.symm
   · have hget := congrArg (fun l => l[i - 1]?) heq
     rwa [List.getElem?_append_right (by omega), List.getElem?_append_right (by omega),
       htake₀, htake₁, List.getElem?_drop, List.getElem?_drop,
@@ -381,32 +383,6 @@ theorem isPPT_naorYungStepInverter
     ((ha.choose.preprocess (.of_tidy hn0)).bind_with
       ((ha.find.preprocess (.of_tidy (hn1.prod (hq.snd'.snd'.prod hδ1)))).bind_with hcb.isPPTOn))
 
-private def xorFixedWidth (u y : List Bool) : List Bool :=
-  if y.length = u.length then BitString.listXor u.length [u, y] else y
-
-private theorem length_xorFixedWidth (u y : List Bool) :
-    (xorFixedWidth u y).length = y.length := by
-  unfold xorFixedWidth; split_ifs with h
-  · rw [BitString.length_listXor, h]
-  · rfl
-
-private theorem involutive_xorFixedWidth (u : List Bool) :
-    Function.Involutive (xorFixedWidth u) := by
-  intro y; unfold xorFixedWidth
-  by_cases h : y.length = u.length
-  · simp [h, BitString.length_listXor, BitString.listXor_pair_self_left_of_length u h]
-  · simp [h]
-
-private theorem uniformList_map_listXor {m : ℕ} {u : List Bool} (hu : u.length = m) :
-    (BitString.uniformList m).map (fun y => BitString.listXor m [u, y]) =
-      BitString.uniformList m := by
-  have heq : (BitString.uniformList m).map (fun y => BitString.listXor m [u, y]) =
-      (BitString.uniformList m).map (xorFixedWidth u) := by
-    refine PMF.bind_congr_on_support _ _ _ fun y hy => ?_
-    simp [xorFixedWidth, BitString.length_of_mem_support_uniformList hy, hu]
-  exact heq.trans (BitString.uniformList_map_of_bijective (xorFixedWidth u)
-    (involutive_xorFixedWidth u).bijective (length_xorFixedWidth u) m)
-
 private theorem exists_true_listXor_of_ne {m : ℕ} {u v : List Bool}
     (hu : u.length = m) (hv : v.length = m) (hne : u ≠ v) :
     ∃ i < m, (BitString.listXor m [u, v]).getD i false = true := by
@@ -418,8 +394,7 @@ private theorem exists_true_listXor_of_ne {m : ℕ} {u v : List Bool}
   rw [BitString.getD_listXor_pair m u v i hi_m] at hzero
   have heq_bit : u.getD i false = v.getD i false := by
     cases h1 : u.getD i false <;> cases h2 : v.getD i false <;> simp_all
-  simpa only [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi_u,
-    List.getElem?_eq_getElem hi_v, Option.getD_some] using heq_bit
+  simpa only [List.getD_eq_getElem _ _ hi_u, List.getD_eq_getElem _ _ hi_v] using heq_bit
 
 private theorem naorYungStep_inversion_eval_eq
     {f : List Bool → List Bool} (hf_len : ∀ w, (f w).length = w.length)
@@ -433,7 +408,7 @@ private theorem naorYungStep_inversion_eval_eq
             PMF.pure (f (if f w₁ == y then w₁ else w₀) == y)))) := by
   have hlt_false : ¬ (n + 2 < 2) := by omega
   have hsub : n + 2 - 2 = n := by omega
-  simp only [inversionGame, naorYungStepInverter, hlt_false, ↓reduceIte, hsub,
+  simp only [inversionGame, inversionExperiment, naorYungStepInverter, hlt_false, ↓reduceIte, hsub,
     ProbComp.eval_bind, ProbComp.eval_pure, BitString.eval_sampleList, PMF.bind_bind,
     PMF.pure_bind]
   trans ((BitString.uniformList (n + 2)).map f).bind (fun y =>
@@ -446,11 +421,14 @@ private theorem naorYungStep_inversion_eval_eq
   · rw [BitString.uniformList_map_of_bijective f hf_bij hf_len (n + 2), PMF.bind_comm]
     refine PMF.bind_congr_on_support _ _ _ fun choice _ => ?_
     let w₀ := BitString.listRow (n + 2) 0 choice.1
-    have hfw₀ : (f w₀).length = n + 2 :=
-      (hf_len w₀).trans (BitString.length_listRow (n + 2) 0 choice.1)
-    conv_rhs => rw [← uniformList_map_listXor hfw₀, PMF.bind_map]
+    have hmask :
+        (BitString.uniformList (n + 2)).map (fun y => BitString.listXor (n + 2) [f w₀, y]) =
+          BitString.uniformList (n + 2) := by
+      simp only [BitString.listXor_pair_comm _ (f w₀)]
+      exact BitString.uniformList_map_listXor (n + 2) (f w₀)
+    conv_rhs => rw [← hmask, PMF.bind_map]
     refine PMF.bind_congr_on_support _ _ _ fun y hy => ?_
-    dsimp only [Function.comp_def, w₀] at hfw₀ ⊢
+    dsimp only [Function.comp_def, w₀]
     simp only [BitString.listXor_pair_self_left_of_length _
       (BitString.length_of_mem_support_uniformList hy)]
 
@@ -728,13 +706,11 @@ private theorem listRow_lt_take {width count j : ℕ} (hj : j < count) (word : L
   by_cases hlt : j * width + col < word.length
   · have hlt_take : j * width + col < (word.take (count * width)).length := by
       rw [List.length_take]; omega
-    simp [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hlt,
-      List.getElem?_eq_getElem hlt_take, List.getElem_take]
+    rw [List.getD_eq_getElem _ _ hlt_take, List.getD_eq_getElem _ _ hlt, List.getElem_take]
   · have hge_w : word.length ≤ j * width + col := by omega
     have hge_take : (word.take (count * width)).length ≤ j * width + col := by
       rw [List.length_take]; omega
-    simp [List.getD_eq_getElem?_getD, List.getElem?_eq_none hge_w,
-      List.getElem?_eq_none hge_take]
+    rw [List.getD_eq_default _ _ hge_take, List.getD_eq_default _ _ hge_w]
 
 theorem naorYungCascadeInput_take_eq (f : List Bool → List Bool) {n i : ℕ}
     (K x : List Bool) :
@@ -830,8 +806,7 @@ theorem exists_naorYungCascadeInput_collision
     intro j hj₀ hj₁
     have hj_lt : j < n + 1 := by simpa only [BitString.length_listRow] using hj₀
     have hget := hbits_all j (Nat.zero_le j) hj_lt
-    simpa only [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hj₀,
-      List.getElem?_eq_getElem hj₁, Option.getD_some] using hget
+    simpa only [List.getD_eq_getElem _ _ hj₀, List.getD_eq_getElem _ _ hj₁] using hget
   apply hne
   rw [← eq_listRow_zero_append_one hx₀, ← eq_listRow_zero_append_one hx₁, hS0, hrow1_eq]
 

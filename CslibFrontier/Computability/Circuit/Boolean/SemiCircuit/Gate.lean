@@ -565,6 +565,24 @@ theorem exists_and_form {op : Bool → Bool → Bool} (h : ¬ IsAffineOp op) :
   · rw [h1]; cases α <;> cases β <;> rfl
   · rw [h3]; cases α <;> cases β <;> rfl
 
+theorem and_form_spec {op : Bool → Bool → Bool} (h : ¬ IsAffineOp op) (x y : Bool) :
+    op x y = (((x ^^ decide (op true false = op true true)) &&
+      (y ^^ decide (op false true = op true true))) ^^
+      op (decide (op true false = op true true)) (decide (op false true = op true true))) := by
+  obtain ⟨α, β, γ, H⟩ := exists_and_form h
+  have hα : α = decide (op true false = op true true) := by
+    rw [H true false, H true true]
+    cases α <;> cases β <;> cases γ <;> rfl
+  have hβ : β = decide (op false true = op true true) := by
+    rw [H false true, H true true]
+    cases α <;> cases β <;> cases γ <;> rfl
+  have hγ : γ = op (decide (op true false = op true true))
+      (decide (op false true = op true true)) := by
+    rw [←hα, ←hβ, H]
+    cases α <;> cases β <;> cases γ <;> rfl
+  rw [←hγ, ←hα, ←hβ]
+  exact H x y
+
 /-- An AND-type operation takes both values. -/
 theorem exists_eq_of_not_isAffineOp' {op : Bool → Bool → Bool} (h : ¬ IsAffineOp op) (δ : Bool) :
     ∃ a b, op a b = δ := by

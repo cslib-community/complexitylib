@@ -100,10 +100,11 @@ private noncomputable def compile (machine : MultiTapePTM k Bool State)
 
 private def finish (machine : MultiTapePTM k Bool State) (coins input outer : List Bool) :
     Cfg (k + r + 3) Bool (PrepareState ⊕ MarkWorkState ⊕ Option State) outer :=
-  Sequential.rightCfg (Sequential.rightCfg (inCfg true
+  ((inCfg true
     (embed (tapes k r)
       (stopped (machine.runClosedConfigFromCoins coins (machine.initialConfig input))
-        (tapeOfList coins) coins.length) (fun _ _ => none) (fun _ => 0)) outer))
+        (tapeOfList coins) coins.length) (fun _ _ => none) (fun _ => 0)) outer).mapState
+    (Option.map .inr)).mapState (Option.map .inr)
 
 private theorem runFrom_compile (machine : MultiTapePTM k Bool State)
     (prepare : MultiTapeTM (r + 2) Bool PrepareState) (coins input outer : List Bool) (t s : ℕ)
@@ -116,7 +117,7 @@ private theorem runFrom_compile (machine : MultiTapePTM k Bool State)
     (initial k r coins input (some (some machine.initial))) (coins.length + 1)
   simp only [inCfgHom_apply, runFrom_initial] at hr
   have hq : (machine.replay.extendTapes (tapes k r)).inputFromTape.q₀ = some machine.initial := by
-    simp [inputFromTape, q₀_ofTr, replay]
+    simp [inputFromTape, MultiTapeTM.adapt, q₀_ofTr, replay]
   have hm := runFrom_mark (k := k) (r := r) coins input outer
   have hs := runFrom_seq (tm₁ := (machine.replay.extendTapes (tapes k r)).inputFromTape) hm rfl
     (by simpa only [hq, Cfg.withState, initial, wordsCfg, inCfg] using hr) rfl
@@ -124,12 +125,12 @@ private theorem runFrom_compile (machine : MultiTapePTM k Bool State)
   have hqseq : ((markFlag (k + r + 1) (some true)).seq
       (machine.replay.extendTapes (tapes k r)).inputFromTape).q₀ =
         Sum.inl (markWork Bool (some true)).q₀ := by
-    simp [MultiTapeTM.seq, q₀_ofTr, markFlag]
+    simp [MultiTapeTM.seq, MultiTapeTM.combine, q₀_ofTr, markFlag]
   have hc := runFrom_seq (tm₁ := (markFlag (k + r + 1) (some true)).seq
       (machine.replay.extendTapes (tapes k r)).inputFromTape) hp rfl
-    (by simpa [hqseq, Cfg.withState, Sequential.leftCfg, wordsCfg, Cfg.mapState] using hs) rfl
-  simpa [compile, initCfg_eq_wordsCfg, Sequential.leftCfg, wordsCfg, Cfg.mapState,
-    MultiTapeTM.seq, q₀_ofTr, finish, inCfg] using hc
+    (by simpa [hqseq, Cfg.withState, Cfg.mapState, wordsCfg] using hs) rfl
+  simpa [compile, initCfg_eq_wordsCfg, Cfg.mapState, wordsCfg, MultiTapeTM.seq,
+    MultiTapeTM.combine, q₀_ofTr, finish, inCfg] using hc
 
 end Replay
 

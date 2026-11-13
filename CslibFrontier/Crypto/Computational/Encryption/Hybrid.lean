@@ -1145,9 +1145,8 @@ def otpDecrypt (_ : ℕ) (k ct : List Bool) : Bool :=
 
 /-- One-time pad decryption inverts one-time pad encryption on every supported ciphertext. -/
 theorem otpDecrypt_otpEncrypt (n : ℕ) (k : List Bool) (bit : Bool) :
-    otpDecrypt n k [k.headD false ^^ bit] = bit := by
-  unfold otpDecrypt
-  cases k.headD false <;> cases bit <;> rfl
+    otpDecrypt n k [k.headD false ^^ bit] = bit :=
+  Bool.bne_self_left (k.headD false) bit
 
 /-- One-time pad encryption is uniform strict PPT. -/
 @[fun_prop]

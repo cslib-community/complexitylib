@@ -7,21 +7,22 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import CslibFrontier.Computability.Circuit.Boolean.CountingBound
 public import CslibFrontier.Computability.Circuit.Boolean.Formula.Poly
 public import CslibFrontier.Computability.Circuit.Boolean.Formula.Restriction
 public import CslibFrontier.Computability.Languages.Slice
 public import CslibFrontier.Computability.MCSP.Partial
 public import CslibFrontier.Computability.MCSP.SuccinctNP
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
-import CslibFrontier.Foundations.Combinatorics.FiniteCover.Basic
+import CslibFrontier.Foundations.Combinatorics.FiniteCover
 import CslibFrontier.Foundations.Combinatorics.MajorityVote
+import CslibFrontier.Foundations.Data.Fintype.AgreeOn
 import Cslib.Computability.Circuit.Boolean.Counting
 import Mathlib.Algebra.Order.Archimedean.Real.Basic
 import Mathlib.Algebra.Order.Floor.Semiring
 import Mathlib.Data.Finset.Card
 import Mathlib.Data.Fintype.BigOperators
 import Mathlib.Data.Fintype.Pi
-import Mathlib.Data.Nat.Choose.Sum
 
 /-!
 # Formula Magnification for Succinct, Partial, and Approximate MCSP
@@ -42,7 +43,9 @@ Santhanam [OliveiraSanthanam2018]:
 * **Lemma 26 and one-sided Theorem 27** ([OliveiraSanthanam2018, Section 3.3, Lemma 26 and
   Theorem 27, p. 21]; compare [OliveiraSanthanam2018, Section 1.2, Theorem 5, p. 8]): deterministic
   counting form of Lemma 26 and one-sided zero-error average-case De Morgan formula magnification
-  from `MCSP[s]` to `SuccinctMCSP` and `NP ⊄ FormulaPolyOn`.
+  from `MCSP[s]` to `SuccinctMCSP` and `NP ⊄ FormulaPolyOn`. Theorem 5 itself, with its threshold
+  and ternary devices, is stated in
+  `CslibFrontier.Computability.MCSP.FormulaMagnification.SublinearAverageCase`.
 
 ## Source Statements (ECCC TR18-139)
 
@@ -142,7 +145,8 @@ yes-instance fraction is at most `1/2`, modulo the formula encoding of three-val
    are `computableFunctions n s` (defined via `Cslib.Circuits.complexity interpretation`), and
    `card_computableFunctions_le_two_pow` bounds `(computableFunctions n s).card ≤ 2 ^ M` with
    `M = computableFunctionsLogBound n s = (s + 1) * (2 * Nat.clog 2 (n + s + 1) + 3)` from
-   `Cslib.Circuits.Boolean.card_computableFunctions_mul_factorial_le`.
+   `Cslib.Circuits.Boolean.card_computableFunctions_mul_factorial_le`; both are in
+   `CslibFrontier.Computability.Circuit.Boolean.CountingBound`.
 6. **Conclusion (`FormulaPolyOn` and `NP ⊄ FormulaPolyOn` in Theorem 1/17 and Theorem 5/27)**:
    Generalizing the word-level formula projection
    (`exists_formula_ofFunction_SuccinctMCSP_of_agrees`) to any language `L : Language Bool`
@@ -164,8 +168,6 @@ yes-instance fraction is at most `1/2`, modulo the formula encoding of three-val
   projections for `SuccinctMCSP.enc`.
 * `Cslib.ApproxMCSP.noSet`, `Cslib.ApproxMCSP`: the approximate `(1, 1 - 1 / k)-MCSP` promise
   problem [OliveiraSanthanam2018, Appendix A, Definition 41, p. 34].
-* `Cslib.Circuits.Boolean.computableFunctionsLogBound`: explicit `s log(n + s)` exponent bound
-  `(s + 1) * (2 * Nat.clog 2 (n + s + 1) + 3)` for `(computableFunctions n s).card`.
 * `Cslib.Circuits.Boolean.approxMCSPQueryEncLength`,
   `Cslib.Circuits.Boolean.avgCaseMCSPQueryEncLength`: encoded query lengths for the worst-case
   (Lemma 16 / Theorem 17) and zero-error average-case (Lemma 26 / Theorem 27) reductions.
@@ -183,18 +185,16 @@ yes-instance fraction is at most `1/2`, modulo the formula encoding of three-val
   `Cslib.Circuits.Boolean.exists_mem_lt_formulaSize_succinctMCSP_of_queryList`: deterministic
   multi-query formula projection (building block for
   [OliveiraSanthanam2018, Section 3.1, Lemma 16, p. 14]).
-* `Cslib.Circuits.Boolean.two_pow_mul_pred_pow_lt`,
-  `Cslib.Circuits.Boolean.exists_seed_tuple_of_one_sided_error`,
+* `Cslib.Circuits.Boolean.exists_seed_tuple_of_one_sided_error`,
   `Cslib.Circuits.Boolean.exists_seed_tuple_of_one_sided_error_real`: finite-probability Adleman
-  derandomization lemma from `Cslib.exists_cover_of_scaled_card_lt`.
+  derandomization lemma from `Cslib.exists_cover_of_density`.
 * `Cslib.Circuits.Boolean.exists_formula_separating_gapMCSP_of_succinctMCSP`,
   `Cslib.Circuits.Boolean.exists_formula_separating_gapMCSP_of_succinctMCSP_real`,
   `Cslib.Circuits.Boolean.exists_lt_formulaSize_succinctMCSP_of_gapMCSP`,
   `Cslib.Circuits.Boolean.exists_formula_separating_gapMCSP_of_partialMCSP`: Stage 2 derandomization
   of an assumed one-sided sample projection
   ([OliveiraSanthanam2018, Section 3.1, Lemma 16, p. 14]).
-* `Cslib.Circuits.Boolean.card_computableFunctions_le_two_pow`,
-  `Cslib.Circuits.Boolean.card_le_two_mul_filter_notMem_succinctMCSP`,
+* `Cslib.Circuits.Boolean.card_le_two_mul_filter_notMem_succinctMCSP`,
   `Cslib.Circuits.Boolean.exists_formula_separating_approxMCSP_of_succinctMCSP`,
   `Cslib.Circuits.Boolean.exists_lt_formulaSize_succinctMCSP_of_approxMCSP`,
   `Cslib.Circuits.Boolean.exists_formula_separating_approxMCSP_of_succinctMCSP_inst`,
@@ -593,71 +593,21 @@ theorem formulaSize_slice_yesSet_le (s : ℕ → ℕ) (n : ℕ) :
 
 /-! ### Stage 2: Finite-probability Adleman derandomization of a one-sided sample projection -/
 
-private theorem two_mul_pow_le_succ_pow (m : ℕ) :
-    2 * m ^ (m + 1) ≤ (m + 1) ^ (m + 1) := by
-  rw [add_pow, Finset.sum_range_succ, Finset.sum_range_succ]
-  simp only [Nat.cast_id]
-  have h1 : m ^ (m + 1) * 1 ^ (m + 1 - (m + 1)) * (m + 1).choose (m + 1) = m ^ (m + 1) := by
-    simp
-  have h2 : m ^ m * 1 ^ (m + 1 - m) * (m + 1).choose m = m ^ (m + 1) + m ^ m := by grind
-  rw [h1, h2]
-  omega
-
-/-- **Elementary exponential inequality for Adleman amplification:** for every `k ≥ 1` and `N : ℕ`,
-`2 ^ N * (k - 1) ^ (k * (N + 1)) < k ^ (k * (N + 1))`, corresponding to the real inequality
-`2 ^ N * (1 - 1 / k) ^ (k * (N + 1)) < 1`. -/
-theorem two_pow_mul_pred_pow_lt {N k : ℕ} (hk : 1 ≤ k) :
-    2 ^ N * (k - 1) ^ (k * (N + 1)) < k ^ (k * (N + 1)) := by
-  set m := k - 1
-  have hm : m + 1 = k := Nat.sub_add_cancel hk
-  have hbase : 2 * m ^ k ≤ k ^ k := by
-    simpa only [hm] using two_mul_pow_le_succ_pow m
-  have hpow : (2 * m ^ k) ^ (N + 1) ≤ (k ^ k) ^ (N + 1) :=
-    Nat.pow_le_pow_left hbase (N + 1)
-  rw [mul_pow, ← pow_mul, ← pow_mul] at hpow
-  rcases eq_or_ne m 0 with hm0 | hm0
-  · have hkt : k * (N + 1) ≠ 0 := Nat.mul_ne_zero (by omega) (Nat.succ_ne_zero N)
-    rw [hm0, zero_pow hkt, mul_zero]
-    exact Nat.pos_of_ne_zero (pow_ne_zero _ (by omega))
-  · have hmpos : 0 < m ^ (k * (N + 1)) := Nat.pos_of_ne_zero (pow_ne_zero _ hm0)
-    have h2pos : 0 < 2 ^ N := by positivity
-    have hlt : 2 ^ N * m ^ (k * (N + 1)) < 2 ^ (N + 1) * m ^ (k * (N + 1)) := by
-      rw [pow_succ]
-      nlinarith
-    exact hlt.trans_le hpow
-
 /-- **Finite-probability Adleman amplification lemma.** If `no ⊆ BitString N` is a set of negative
 inputs and, for every `T ∈ no`, at least a `1 / k`-fraction of the seeds `ω : Ω` satisfy
 `Good T ω` (`Fintype.card Ω ≤ k * (Finset.univ.filter (Good T)).card`), then there exists a tuple
 `ωs : Fin (k * (N + 1)) → Ω` of `k * (N + 1)` seeds such that every `T ∈ no` is witnessed by at
-least one `ωs j`. Derived from `Cslib.exists_cover_of_scaled_card_lt`. -/
+least one `ωs j`. This is `Cslib.exists_cover_of_density` for the obligations `no`. -/
 theorem exists_seed_tuple_of_one_sided_error {Ω : Type*} [Fintype Ω] [Nonempty Ω]
     {N k : ℕ} (hk : 1 ≤ k) (no : Finset (BitString N))
     (Good : BitString N → Ω → Prop) [∀ T ω, Decidable (Good T ω)]
     (hgood : ∀ T ∈ no, Fintype.card Ω ≤ k * (Finset.univ.filter (Good T)).card) :
     ∃ ωs : Fin (k * (N + 1)) → Ω, ∀ T ∈ no, ∃ j : Fin (k * (N + 1)), Good T (ωs j) := by
   classical
-  have hcover : ∃ ωs : Fin (k * (N + 1)) → Ω, ∀ T : no, ∃ j, Good T.1 (ωs j) := by
-    apply exists_cover_of_scaled_card_lt (fun ω (T : no) => Good T.1 ω) (k - 1) k (k * (N + 1))
-    · intro ⟨T, hT⟩
-      rw [Fintype.card_subtype_compl, Fintype.card_subtype]
-      dsimp only
-      have hg := hgood T hT
-      have hle : (Finset.univ.filter (Good T)).card ≤ Fintype.card Ω :=
-        Finset.card_le_univ _
-      have hk1 : k * Fintype.card Ω = (k - 1) * Fintype.card Ω + Fintype.card Ω := by
-        conv_lhs => rw [← Nat.sub_add_cancel hk, add_mul, one_mul]
-      have hsub : k * (Fintype.card Ω - (Finset.univ.filter (Good T)).card) +
-          k * (Finset.univ.filter (Good T)).card = k * Fintype.card Ω := by
-        rw [← mul_add, Nat.sub_add_cancel hle]
-      change k * (Fintype.card Ω - (Finset.univ.filter (Good T)).card) ≤ (k - 1) * Fintype.card Ω
-      omega
-    · have hno_card : Fintype.card no ≤ 2 ^ N := by
-        rw [Fintype.card_coe]
-        exact (Finset.card_le_univ no).trans (by simp [BitString])
-      exact (Nat.mul_le_mul_right _ hno_card).trans_lt (two_pow_mul_pred_pow_lt hk)
-  obtain ⟨ωs, hωs⟩ := hcover
-  exact ⟨ωs, fun T hT => hωs ⟨T, hT⟩⟩
+  obtain ⟨ωs, h⟩ := exists_cover_of_density (fun ω (T : no) => Good T.1 ω) k N hk
+    (by rw [Fintype.card_coe]; exact (Finset.card_le_univ no).trans (by simp [BitString]))
+    (fun T => by simpa [Fintype.card_subtype] using hgood T.1 T.2)
+  exact ⟨ωs, fun T hT => h ⟨T, hT⟩⟩
 
 /-- `⌈1 / δ⌉₊` is a positive integer when `0 < δ`. -/
 private theorem one_le_natCeil_one_div {δ : ℝ} (hδ : 0 < δ) : 1 ≤ ⌈1 / δ⌉₊ :=
@@ -908,46 +858,6 @@ end ApproxMCSP
 
 namespace Circuits.Boolean
 
-/-- An explicit `s log(n + s)` upper bound on `log₂ (computableFunctions n s).card`, derived from
-`card_computableFunctions_mul_factorial_le`. -/
-def computableFunctionsLogBound (n s : ℕ) : ℕ :=
-  (s + 1) * (2 * Nat.clog 2 (n + s + 1) + 3)
-
-/-- The number of `n`-input Boolean functions of De Morgan circuit complexity at most `s` is at most
-`2 ^ computableFunctionsLogBound n s`. -/
-theorem card_computableFunctions_le_two_pow (n s : ℕ) :
-    (computableFunctions n s).card ≤ 2 ^ computableFunctionsLogBound n s := by
-  set L := Nat.clog 2 (n + s + 1)
-  have hns : n + s + 1 ≤ 2 ^ L := Nat.le_pow_clog (by decide) (n + s + 1)
-  have hs1 : s + 1 ≤ 2 ^ L := (by omega : s + 1 ≤ n + s + 1).trans hns
-  have hns0 : n + s ≤ 2 ^ L := (by omega : n + s ≤ n + s + 1).trans hns
-  have hbase : 5 * (n + s + 1) ^ 2 ≤ 2 ^ (2 * L + 3) := by
-    calc 5 * (n + s + 1) ^ 2
-        ≤ 8 * (2 ^ L) ^ 2 := Nat.mul_le_mul (by decide) (Nat.pow_le_pow_left hns 2)
-      _ = 2 ^ (2 * L + 3) := by
-        rw [← pow_mul, pow_add]
-        ring
-  have hpow : (5 * (n + s + 1) ^ 2) ^ s ≤ 2 ^ (s * (2 * L + 3)) := by
-    calc (5 * (n + s + 1) ^ 2) ^ s
-        ≤ (2 ^ (2 * L + 3)) ^ s := Nat.pow_le_pow_left hbase s
-      _ = 2 ^ (s * (2 * L + 3)) := by rw [← pow_mul, mul_comm]
-  have hends : (s + 1) * (n + s) ≤ 2 ^ (2 * L + 3) := by
-    calc (s + 1) * (n + s)
-        ≤ 2 ^ L * 2 ^ L := Nat.mul_le_mul hs1 hns0
-      _ = 2 ^ (2 * L) := by rw [← pow_add, two_mul]
-      _ ≤ 2 ^ (2 * L + 3) := Nat.pow_le_pow_right (by decide) (by omega)
-  calc (computableFunctions n s).card
-      ≤ (computableFunctions n s).card * s.factorial :=
-        Nat.le_mul_of_pos_right _ (Nat.factorial_pos s)
-    _ ≤ (s + 1) * (5 * (n + s + 1) ^ 2) ^ s * (n + s) :=
-        card_computableFunctions_mul_factorial_le n s
-    _ = ((s + 1) * (n + s)) * (5 * (n + s + 1) ^ 2) ^ s := by ring
-    _ ≤ 2 ^ (2 * L + 3) * 2 ^ (s * (2 * L + 3)) := Nat.mul_le_mul hends hpow
-    _ = 2 ^ computableFunctionsLogBound n s := by
-        rw [← pow_add, computableFunctionsLogBound]
-        congr 1
-        ring
-
 open Classical in
 /-- **Oliveira–Santhanam Stage 1: random-sampling union bound over `computableFunctions n s`
 [OliveiraSanthanam2018, Section 3.1, Lemma 16, p. 14].**
@@ -1015,7 +925,7 @@ theorem card_le_two_mul_filter_notMem_succinctMCSP {n s k M : ℕ} (hk : 1 ≤ k
           rw [pow_succ']
           ring
       _ < k ^ (k * ((M + 1) + 1)) * (2 ^ n) ^ q :=
-          Nat.mul_lt_mul_of_pos_right (two_pow_mul_pred_pow_lt (N := M + 1) hk) hΩpos
+          Nat.mul_lt_mul_of_pos_right (Nat.two_pow_mul_pred_pow_mul_succ_lt hk (M + 1)) hΩpos
       _ = k ^ q * (2 ^ n) ^ q := rfl
   have h2Bad : 2 * Bad.card < Fintype.card (Fin q → BitString n) := by
     have hlt' : 2 * Bad.card < (2 ^ n) ^ q := lt_of_mul_lt_mul_left hlt (Nat.zero_le _)
@@ -1027,6 +937,72 @@ theorem card_le_two_mul_filter_notMem_succinctMCSP {n s k M : ℕ} (hk : 1 ≤ k
           SuccinctMCSP.Instance.ofFunction f (Finset.univ.image ω) s ∈ SuccinctMCSP)
   change Fintype.card (Fin q → BitString n) ≤ 2 * Good.card
   omega
+
+open Classical in
+/-- **Seed selection for the Oliveira–Santhanam reduction**
+[OliveiraSanthanam2018, Section 3.1, proof of Lemma 16, p. 14]. If `1 ≤ k n`, `s₁ n ≤ s₂ n` and
+`(computableFunctions n (s₂ n)).card ≤ 2 ^ M`, there are `2 ^ n` tuples of `k n * (M + 2)` inputs
+such that the sampled `SuccinctMCSP` queries at threshold `s₂ n` all accept every truth table in
+`GapMCSP.yesSet s₁`, and some query rejects every truth table in `ApproxMCSP.noSet s₂ k`. For
+`1 ≤ n` a coordinate projection is not a no-instance, so the union bound runs over fewer than
+`2 ^ (2 ^ n)` no-instances and `2 ^ n` tuples suffice; for `n = 0` there is only one tuple. -/
+theorem exists_seeds_approxMCSP {s₁ s₂ k : ℕ → ℕ} {n M : ℕ} (hk : 1 ≤ k n)
+    (hs : s₁ n ≤ s₂ n) (hcard : (computableFunctions n (s₂ n)).card ≤ 2 ^ M) :
+    ∃ ωs : Fin (2 ^ n) → Fin (k n * (M + 2)) → BitString n,
+      (∀ T : BitString (2 ^ n), List.ofFn T ∈ GapMCSP.yesSet s₁ → ∀ j,
+        SuccinctMCSP.Instance.ofFunction ((MCSP.truthTable n).symm T)
+          (Finset.univ.image (ωs j)) (s₂ n) ∈ SuccinctMCSP) ∧
+      (∀ T : BitString (2 ^ n), List.ofFn T ∈ ApproxMCSP.noSet s₂ k → ∃ j,
+        SuccinctMCSP.Instance.ofFunction ((MCSP.truthTable n).symm T)
+          (Finset.univ.image (ωs j)) (s₂ n) ∉ SuccinctMCSP) := by
+  classical
+  set q := k n * (M + 2)
+  let good : BitString (2 ^ n) → Finset (Fin q → BitString n) := fun T =>
+    Finset.univ.filter fun ω => SuccinctMCSP.Instance.ofFunction
+      ((MCSP.truthTable n).symm T) (Finset.univ.image ω) (s₂ n) ∉ SuccinctMCSP
+  have hgood : ∀ T : BitString (2 ^ n), List.ofFn T ∈ ApproxMCSP.noSet s₂ k →
+      Fintype.card (Fin q → BitString n) ≤ 2 * (good T).card := fun T hT =>
+    card_le_two_mul_filter_notMem_succinctMCSP hk hcard (ApproxMCSP.ofFn_mem_noSet_iff.mp hT)
+  have hyes : ∀ (ωs : Fin (2 ^ n) → Fin q → BitString n) (T : BitString (2 ^ n)),
+      List.ofFn T ∈ GapMCSP.yesSet s₁ → ∀ j,
+        SuccinctMCSP.Instance.ofFunction ((MCSP.truthTable n).symm T)
+          (Finset.univ.image (ωs j)) (s₂ n) ∈ SuccinctMCSP := fun _ T hT _ =>
+    SuccinctMCSP.ofFunction_mem_of_complexity_le ((GapMCSP.ofFn_mem_yesSet_iff.mp hT).trans hs) _
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · -- There is only one tuple of inputs, and it is good for every no-instance.
+    let ω₀ : Fin q → BitString 0 := fun _ => Fin.elim0
+    refine ⟨fun _ => ω₀, hyes _, fun T hT => ⟨⟨0, Nat.one_pos⟩, ?_⟩⟩
+    obtain ⟨ω, hω⟩ : (good T).Nonempty := by
+      rw [← Finset.card_pos]
+      have h1 := hgood T hT
+      have h2 : 0 < Fintype.card (Fin q → BitString 0) := Fintype.card_pos
+      omega
+    rw [Subsingleton.elim ω₀ ω]
+    exact (Finset.mem_filter.mp hω).2
+  · -- A coordinate projection is not a no-instance, so there are fewer than `2 ^ (2 ^ n)`.
+    have hproj : List.ofFn (MCSP.truthTable n fun x : BitString n => x ⟨0, hn⟩) ∉
+        ApproxMCSP.noSet s₂ k := fun h => by
+      have h' := GapMCSP.ofFn_mem_noSet_iff.mp (ApproxMCSP.ofFn_mem_gapMCSP_noSet_of_mem_noSet hk h)
+      rw [Equiv.symm_apply_apply, complexity_single_proj] at h'
+      exact Nat.not_lt_zero _ h'
+    let noFinset : Finset (BitString (2 ^ n)) :=
+      Finset.univ.filter fun T => List.ofFn T ∈ ApproxMCSP.noSet s₂ k
+    have hno_card : Fintype.card noFinset < 2 ^ (2 ^ n) := by
+      rw [Fintype.card_coe]
+      calc noFinset.card < (Finset.univ : Finset (BitString (2 ^ n))).card :=
+            Finset.card_lt_card (Finset.filter_ssubset.mpr ⟨_, Finset.mem_univ _, hproj⟩)
+        _ = 2 ^ (2 ^ n) := by simp [BitString]
+    obtain ⟨ωs, hωs⟩ := exists_cover_of_scaled_card_lt (S := Fin q → BitString n) (W := noFinset)
+      (fun ω T => ω ∈ good T.1) 1 2 (2 ^ n)
+      (fun T => by
+        have h := hgood T.1 (Finset.mem_filter.mp T.2).2
+        have hle := Finset.card_le_univ (good T.1)
+        rw [Fintype.card_subtype_compl, Fintype.card_coe]
+        omega)
+      (by simpa only [one_pow, mul_one] using hno_card)
+    refine ⟨ωs, hyes ωs, fun T hT => ?_⟩
+    obtain ⟨j, hj⟩ := hωs ⟨T, Finset.mem_filter.mpr ⟨Finset.mem_univ _, hT⟩⟩
+    exact ⟨j, (Finset.mem_filter.mp hj).2⟩
 
 /-- **End-to-end Oliveira–Santhanam formula construction for any language agreeing with
 `SuccinctMCSP` [OliveiraSanthanam2018, Section 3.1, Lemma 16, p. 14].**
@@ -1048,18 +1024,7 @@ theorem exists_formula_separating_approxMCSP_of_agrees
       (∀ T : BitString (2 ^ n), List.ofFn T ∈ ApproxMCSP.noSet s₂ k →
         F.eval interpretation T = false) := by
   classical
-  set q := k n * (M + 2)
-  let noFinset : Finset (BitString (2 ^ n)) :=
-    Finset.univ.filter fun T => List.ofFn T ∈ ApproxMCSP.noSet s₂ k
-  have hno_card : Fintype.card noFinset ≤ 2 ^ (2 ^ n) := by
-    rw [Fintype.card_coe]
-    exact (Finset.card_le_univ noFinset).trans (by simp [BitString])
-  obtain ⟨ωs, hωs⟩ := exists_forall_exists_apply_mem (Ω := Fin q → BitString n) hno_card
-    (fun T : noFinset => Finset.univ.filter fun ω : Fin q → BitString n =>
-      SuccinctMCSP.Instance.ofFunction
-        ((MCSP.truthTable n).symm T.1) (Finset.univ.image ω) (s₂ n) ∉ SuccinctMCSP)
-    (fun ⟨T, hT⟩ => card_le_two_mul_filter_notMem_succinctMCSP hk hcard
-      (ApproxMCSP.ofFn_mem_noSet_iff.mp (Finset.mem_filter.mp hT).2))
+  obtain ⟨ωs, hyes, hno⟩ := exists_seeds_approxMCSP (s₁ := s₁) hk hs hcard
   let qs : List (Finset (BitString n) × ℕ) :=
     List.ofFn fun j => (Finset.univ.image (ωs j), s₂ n)
   obtain ⟨F, hFeval, hFleaf⟩ := exists_formula_all_ofFunction_SuccinctMCSP_of_agrees hag n qs
@@ -1074,23 +1039,19 @@ theorem exists_formula_separating_approxMCSP_of_agrees
         obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hp
         refine hB (Finset.univ.image (ωs j)).card ?_
         calc (Finset.univ.image (ωs j)).card
-            ≤ (Finset.univ : Finset (Fin q)).card := Finset.card_image_le
-          _ = q := by simp)
-    simpa only [qs, List.length_map, List.length_ofFn, smul_eq_mul] using hmap
-  refine ⟨F, hFleaf.trans hsum, fun T hyes => ?_, fun T hnoT => ?_⟩
+            ≤ (Finset.univ : Finset (Fin (k n * (M + 2)))).card := Finset.card_image_le
+          _ = k n * (M + 2) := by simp)
+    refine hmap.trans ?_
+    simp only [qs, List.length_map, List.length_ofFn, smul_eq_mul]
+    exact Nat.mul_le_mul_right B (Nat.le_succ _)
+  refine ⟨F, hFleaf.trans hsum, fun T hT => ?_, fun T hT => ?_⟩
   · rw [hFeval T, decide_eq_true_eq]
     intro p hp
     obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hp
-    have hcomp : complexity interpretation (single ((MCSP.truthTable n).symm T)) ≤ s₂ n :=
-      (GapMCSP.ofFn_mem_yesSet_iff.mp hyes).trans hs
-    exact SuccinctMCSP.ofFunction_mem_of_complexity_le hcomp _
+    exact hyes T hT j
   · rw [hFeval T, decide_eq_false_iff_not, not_forall]
-    have hmem : T ∈ noFinset := Finset.mem_filter.mpr ⟨Finset.mem_univ T, hnoT⟩
-    obtain ⟨j, hj⟩ := hωs ⟨T, hmem⟩
-    have hj' : SuccinctMCSP.Instance.ofFunction
-        ((MCSP.truthTable n).symm T) (Finset.univ.image (ωs j)) (s₂ n) ∉ SuccinctMCSP :=
-      (Finset.mem_filter.mp hj).2
-    exact ⟨(Finset.univ.image (ωs j), s₂ n), fun h => hj' (h (List.mem_ofFn.mpr ⟨j, rfl⟩))⟩
+    obtain ⟨j, hj⟩ := hno T hT
+    exact ⟨_, fun h => hj (h (List.mem_ofFn.mpr ⟨j, rfl⟩))⟩
 
 /-- **End-to-end Oliveira–Santhanam formula construction for approximate `(1, 1 - 1 / k)-MCSP`
 [OliveiraSanthanam2018, Section 3.1, Lemma 16, p. 14].**
@@ -1258,17 +1219,6 @@ theorem not_NP_subset_FormulaPolyOn_of_approxMCSP_hard
     not_succinctMCSP_mem_FormulaPolyOn_of_approxMCSP_hard hs hk hhard
       (hsub SuccinctMCSP.mem_NP)
 
-/-- Elementary polynomial upper bound on `computableFunctionsLogBound n s`: since
-`Nat.clog 2 (n + s + 1) ≤ n + s + 1`, we have
-`computableFunctionsLogBound n s ≤ (s + 1) * (2 * (n + s + 1) + 3)`. -/
-theorem computableFunctionsLogBound_le_poly (n s : ℕ) :
-    computableFunctionsLogBound n s ≤ (s + 1) * (2 * (n + s + 1) + 3) := by
-  have hclog : Nat.clog 2 (n + s + 1) ≤ n + s + 1 :=
-    (Nat.clog_le_iff_le_pow (by decide)).mpr (Nat.lt_two_pow_self).le
-  dsimp only [computableFunctionsLogBound]
-  exact Nat.mul_le_mul_left (s + 1)
-    (Nat.add_le_add_right (Nat.mul_le_mul_left 2 hclog) 3)
-
 /-- When `s` is polynomially bounded, `fun n => computableFunctionsLogBound n (s n)` is polynomially
 bounded. -/
 theorem polynomiallyBounded_computableFunctionsLogBound {s : ℕ → ℕ}
@@ -1394,23 +1344,7 @@ theorem card_filter_agreesOn_eq_two_pow (n : ℕ) (S : Finset (BitString n))
     · exact Finset.mem_filter.mpr ⟨Finset.mem_univ _, (Finset.mem_filter.mp hT).2⟩
     · refine Finset.mem_filter.mpr ⟨Finset.mem_univ _, ?_⟩
       simpa using (Finset.mem_filter.mp hf).2
-  have hpi : (Finset.univ.filter fun f : BooleanFunction n => ∀ y ∈ S, f y = g y) =
-      Fintype.piFinset (fun y : BitString n =>
-        if y ∈ S then ({g y} : Finset Bool) else Finset.univ) := by
-    ext f
-    simp only [Finset.mem_filter, Finset.mem_univ, true_and, Fintype.mem_piFinset]
-    refine ⟨fun hf y => ?_, fun hf y hy => ?_⟩
-    · split_ifs with hy
-      · exact Finset.mem_singleton.mpr (hf y hy)
-      · exact Finset.mem_univ (f y)
-    · have hfy := hf y
-      simp only [hy, ↓reduceIte, Finset.mem_singleton] at hfy
-      exact hfy
-  rw [hbij, hpi, Fintype.card_piFinset]
-  simp only [apply_ite Finset.card, Finset.prod_ite, Finset.prod_const,
-    Finset.card_singleton, one_pow, one_mul, Finset.filter_not, Finset.filter_mem_eq_inter,
-    Finset.univ_inter, Finset.card_sdiff_of_subset (Finset.subset_univ S), Finset.card_univ,
-    Fintype.card_bool]
+  rw [hbij, Fintype.card_filter_forall_mem_eq, Fintype.card_bool, Finset.card_compl]
   simp [BitString]
 
 open Classical in

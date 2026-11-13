@@ -130,7 +130,6 @@ example : ∃ (f : List Bool → Bool) (h : TM2Computable (encList (encFinEnum B
           h.StacksBounded space) ∧
       (∀ xs, xs ∈ {xs : List Bool | xs.isEmpty = true} ↔ f xs = true) :=
   Cslib.Complexity.mem_PSPACE_iff_tm2.mp
-    (Cslib.Complexity.mem_PSPACE_of_computableInPolySpace
-      (.of_polyTime (.of_tidy (.listIsEmpty' (encFinEnum Bool)))) (fun _ => Iff.rfl))
+    ⟨_, .of_polyTime (.of_tidy (.listIsEmpty' (encFinEnum Bool))), fun _ => Iff.rfl⟩
 
 end CslibFrontierTests.MathlibTM2Reverse

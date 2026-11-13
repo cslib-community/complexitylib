@@ -12,25 +12,29 @@ public import CslibFrontier.Computability.Probabilistic.UniformNat
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.Repeat
+import CslibFrontier.Computability.Probabilistic.Retry
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import CslibFrontier.Tactic.PolyTime.Init
 
 /-!
 # Strict fair-bit implementations of bounded sampling
 
-Every attempt is sampled and stored before searching, and all coordinates and output framing
-are charged. The unary certificates charge the numerical bound, radius, dimension and attempt
-count. They do not imply polynomial dependence on the logarithm of a cryptographic modulus.
-Failure remains in the certified program's output.
+Except in the early-stopping sampler, every attempt is sampled and stored before searching, and
+all coordinates and output framing are charged. The unary certificates charge the numerical
+bound, radius, dimension and attempt count. They do not imply polynomial dependence on the
+logarithm of a cryptographic modulus. Failure remains in the certified program's output.
 
 ## Main results
 
 * `Cslib.Probability.isPPTOn_sampleUniformInterval`: unary-bound interval sampling.
 * `Cslib.Probability.isPPTOn_sampleUniformInterval_binary`: binary bounds with an efficient unary
   attempt budget, including exponentially large interval bounds.
+* `Cslib.Probability.isPPTOn_sampleUniformIntervalRetry`: the early-stopping sampler, with binary
+  bounds and a unary attempt budget.
 * `Cslib.Probability.isPPTOn_sampleIntegerBox`: unary-radius runtime-dimensional boxes.
 * `Cslib.Probability.length_enc_sampleIntegerBox`: a bound for the complete framed output.
 -/
@@ -83,6 +87,37 @@ theorem isPPTOn_sampleUniformInterval_binary {α : Type} {input : α ↪ List Bo
     (ComputableInPolyTime.findWithInput (.snd input (encList encNat))
       (ComputableInPolyTime.binary_lt' (.snd e1 encNat)
         (((ComputableInPolyTime.fst e1 encNat).trans (.fst input (encList encNat))).trans hbound)))
+
+open ComputableInPolyTime in
+/-- Early stopping is strict PPT for binary bounds and a unary attempt budget. Each attempt draws
+`bound.size` bits, a width computed in polynomial time from the binary bound. -/
+@[program_certificate]
+theorem isPPTOn_sampleUniformIntervalRetry {α : Type} {input : α ↪ List Bool}
+    {bound attempts : α → ℕ}
+    (hbound : ComputableInPolyTime bound input encNat)
+    (hattempts : ComputableInPolyTime attempts input encUnary) :
+    IsPPTOn input (encOption encNat)
+      (fun a => sampleUniformIntervalRetry (bound a) (attempts a)) := by
+  have hattempt : IsPPTOn input (encOption encNat)
+      (fun a => sampleUniformIntervalAttempt (bound a)) := by
+    have hdraw := ComputableInPolyTime.sampleBinaryNat (binary_size.comp hbound)
+    have hcheck : ComputableInPolyTime
+        (fun p : α × ℕ => if p.2 < bound p.1 then some p.2 else none)
+        (encPair input encNat) (encOption encNat) := by
+      have hcond := binary_lt' (snd input encNat) (hbound.comp (fst input encNat))
+      have hyes : ComputableInPolyTime (fun p : α × ℕ => (some p.2 : Option ℕ))
+          (encPair input encNat) (encOption encNat) := by fun_prop
+      exact (ComputableInPolyTime.ite' hcond hyes (const none)).of_enc_eq fun p => by
+        by_cases h : p.2 < bound p.1 <;> simp [h]
+    exact hdraw.map_with hcheck
+  have hgood : ComputableInPolyTime (fun o : Option ℕ => o.isSome) (encOption encNat) encBool := by
+    fun_prop
+  have hjoin : ComputableInPolyTime (Option.join (α := ℕ))
+      (encOption (encOption encNat)) (encOption encNat) :=
+    ((ComputableInPolyTime.of_tidy
+      (ComputableTidilyInPolyTime.optionGetD (encOption encNat))).comp
+        (id'.prod (const none))).of_enc_eq fun oo => by cases oo <;> rfl
+  exact (IsPPTOn.retry hattempt hgood hattempts).map hjoin
 
 /-- A runtime-varying integer box is sampled in uniform strict PPT when the numerical radius,
 dimension and per-coordinate attempt budget are efficiently supplied in unary. The full

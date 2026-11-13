@@ -47,11 +47,11 @@ COMMAND = re.compile(
 # `open Foo in`, `set_option … in` and `#guard_msgs in` prefix the command that follows.
 COMMAND_PREFIX = re.compile(r"(?<![\w'.!?])in\Z")
 # Tokens that decide where a theorem statement ends: brackets, `:=`, binders in the statement
-# that take their own `:=`, `match`/`fun` alternatives, a `where` body and equation clauses.
+# that take their own `:=`, `match … with`/`fun` alternatives, a `where` body and equation clauses.
 STATEMENT_TOKEN = re.compile(
     r"(?P<open>[([{⟨⦃])|(?P<close>[)\]}⟩⦄])|(?P<assign>:=)|(?P<bar>\|(?![|>]))"
     r"|(?<![\w'.!?])(?:(?P<binder>let|letI|have|haveI)|(?P<alternatives>match|fun(?=\s*\|))"
-    r"|(?P<where>where))(?![\w'!?])"
+    r"|(?P<where>where)|(?P<with>with))(?![\w'!?])"
 )
 # `let x ← e` in `do` notation binds without a `:=` of its own.
 DO_BIND = re.compile(r"[^=←\n]*←")
@@ -220,9 +220,15 @@ def signature_end(statement: str) -> tuple[int, int]:
     The body begins at the first `:=` outside brackets that does not complete a `let`, `letI`,
     `have` or `haveI` in the statement; at a `where` structure-instance body; or at a line that
     begins equation clauses `| pattern => …`. A `let x ← e` in `do` notation has no `:=`, and
-    a `|` after `match` or `fun` begins one of its alternatives.
+    a `|` after `match … with` or `fun` begins one of its alternatives; a `|` in the
+    discriminants, as in `match a || b with`, does not. Later alternatives may not start left
+    of the first one, so a line that starts with `|` further left closes that `match`, and once
+    every `match` is closed it may begin the theorem's equation clauses, as after
+    `… = match acc with | some x => … | none => …`.
     """
-    depth, pending, alternatives = 0, 0, False
+    # One entry per open `match`/`fun`, innermost last: "with" until a `match` reaches its
+    # `with`, then `None` until its first alternative, then that alternative's column.
+    depth, pending, columns = 0, 0, []
     for token in STATEMENT_TOKEN.finditer(statement):
         kind, start = token.lastgroup, token.start()
         if kind == "open":
@@ -238,11 +244,25 @@ def signature_end(statement: str) -> tuple[int, int]:
                 return start, token.end()
             pending -= 1
         elif kind == "alternatives":
-            alternatives = True
+            columns.append("with" if token[0] == "match" else None)
+        elif kind == "with":
+            if columns and columns[-1] == "with":
+                columns[-1] = None
         elif kind == "where":
             return start, token.end()
-        elif kind == "bar" and not (pending or alternatives) and _starts_equations(statement, start):
-            return start, start
+        elif kind == "bar":
+            if columns and columns[-1] == "with":
+                continue
+            line = statement.rfind("\n", 0, start) + 1
+            column = start - line
+            if columns and columns[-1] is None:
+                columns[-1] = column
+                continue
+            if not statement[line:start].strip():
+                while columns and isinstance(columns[-1], int) and column < columns[-1]:
+                    columns.pop()
+            if not (pending or columns) and _starts_equations(statement, start):
+                return start, start
     raise ValueError("Theorem has neither a top-level := body nor equation clauses")
 
 
@@ -323,6 +343,31 @@ theorem absolute_argument (x : Int) : Eq
 theorem or_patterns : ∀ n : Nat, n = n
   | 0 | 1 => rfl
   | _ => rfl
+theorem match_statement (n : Nat) : ∀ o : Option Nat,
+    o.getD n = match o with | some k => k | none => n
+  | some _ => rfl
+  | none => rfl
+theorem match_lines : ∀ n : Nat, n = match n with
+    | 0 => 0
+    | k + 1 => k + 1 := by
+  intro n; cases n <;> rfl
+theorem nested_match (o p : Option Nat) :
+    (o.bind fun _ => p).isSome =
+      match o with
+      | some _ =>
+        match p with
+        | some _ => true
+        | none => false
+      | none => false := by
+  cases o <;> cases p <;> rfl
+theorem bar_discriminant (a b : Bool) : (a || b) = match a || b with
+    | true => true
+    | false => false := by
+  cases a <;> cases b <;> rfl
+theorem match_discriminant (n : Nat) : 0 = match match n with | 0 => 0 | _ => 1 with
+    | 0 => 0
+    | _ => 0 := by
+  cases n <;> rfl
 theorem structure_body : Nonempty Nat where
   out := ⟨0⟩
 theorem statement_have (i : Fin 3) :
@@ -339,8 +384,9 @@ end Sample
     assert [(r["name"], r["body_lines"]) for r in rows] == [
         ("short", 1), ("term", 1), ("quoted", 1), ("separate_attribute", 1), ("equations", 2),
         ("type_let", 1), ("after_annotated", 1), ("after_multi_line", 1), ("do_let", 1),
-        ("absolute", 1), ("absolute_argument", 1), ("or_patterns", 2), ("structure_body", 1),
-        ("statement_have", 1), ("prefixed", 1)
+        ("absolute", 1), ("absolute_argument", 1), ("or_patterns", 2), ("match_statement", 2),
+        ("match_lines", 1), ("nested_match", 1), ("bar_discriminant", 1),
+        ("match_discriminant", 1), ("structure_body", 1), ("statement_have", 1), ("prefixed", 1)
     ]
     for row in rows[-2:]:
         assert row["name"] in sample.splitlines()[row["line"] - 1]

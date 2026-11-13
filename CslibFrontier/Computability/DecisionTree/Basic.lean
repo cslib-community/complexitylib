@@ -269,16 +269,20 @@ theorem exists_computes [Fintype ι] (f : (ι → Bool) → β) :
   exact ⟨queryAll f Finset.univ.toList fun _ => false, fun x => by simp [eval_queryAll],
     (depth_queryAll_le f _ _).trans_eq (by simp)⟩
 
-/-- The decision tree complexity of `f`: the least depth of a decision tree computing it. It is
-`0` when no decision tree computes `f`, which can only happen over infinitely many variables. -/
-noncomputable def complexity (f : (ι → Bool) → β) : ℕ :=
+/-- The decision tree complexity of `f` on finitely many variables: the least depth of a
+decision tree computing it. Finiteness ensures that the set of feasible depths is nonempty. -/
+-- Finiteness restricts the public domain; `sInf` itself does not require it.
+@[nolint unusedArguments]
+noncomputable def complexity [Finite ι] (f : (ι → Bool) → β) : ℕ :=
   sInf {d | ∃ t : DecisionTree ι β, t.Computes f ∧ t.depth ≤ d}
+
+section Finite
+
+variable [Finite ι]
 
 theorem complexity_le_depth {f : (ι → Bool) → β} {t : DecisionTree ι β} (ht : t.Computes f) :
     complexity f ≤ t.depth :=
   Nat.sInf_le ⟨t, ht, le_rfl⟩
-
-variable [Finite ι]
 
 /-- Some decision tree computing `f` has depth exactly its decision tree complexity. -/
 theorem exists_computes_depth_eq_complexity (f : (ι → Bool) → β) :
@@ -314,7 +318,8 @@ theorem complexity_eq_zero_iff {f : (ι → Bool) → β} : complexity f = 0 ↔
     exact Nat.le_zero.1 (complexity_le_depth (t := leaf (f fun _ => false))
       fun x => h (fun _ => false) x)
 
-omit [Finite ι] in
+end Finite
+
 /-- Decision tree complexity is at most the number of variables. -/
 theorem complexity_le_card [Fintype ι] (f : (ι → Bool) → β) : complexity f ≤ Fintype.card ι := by
   obtain ⟨t, ht, hd⟩ := exists_computes f

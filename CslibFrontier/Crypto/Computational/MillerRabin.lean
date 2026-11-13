@@ -127,11 +127,8 @@ private theorem two_mul_card_verifier_false_le {n : ℕ} (hn : ¬ n.Prime) :
   have h := (Complexity.MillerRabin.decidesWithOneSidedError n).1
   rw [eval_two_mul_X_length] at h
   have hyes := h (by simpa using hn)
-  have hsplit := Finset.card_filter_add_card_filter_not
-    (s := (Finset.univ : Finset (Fin (2 * n.size) → Bool)))
-    (fun r => Complexity.MillerRabin.verifier (n, List.ofFn r) = true)
-  simp only [Finset.card_univ, Fintype.card_fun, Fintype.card_fin, Fintype.card_bool,
-    Bool.not_eq_true] at hsplit
+  have hsplit := Complexity.acceptCount_add_card_filter_eq_false
+    (V := Complexity.MillerRabin.verifier) (a := n) (n := 2 * n.size)
   omega
 
 /-- A count that is at most half of `2 ^ k` has probability at most `1 / 2` out of `2 ^ k`. -/

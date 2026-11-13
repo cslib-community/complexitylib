@@ -11,6 +11,7 @@ public import CslibFrontier.Crypto.Computational.GeneratorReindex
 public import CslibFrontier.Crypto.Computational.PseudorandomFunction
 public import CslibFrontier.Crypto.Computational.Signature
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.EraseDupsBy
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
@@ -23,8 +24,9 @@ import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Probability.PMF
+import CslibFrontier.Tactic.EncLen
 import CslibFrontier.Tactic.Negligible
-import CslibFrontier.Tactic.PolyTime.Init
+import CslibFrontier.Tactic.PPT
 
 /-!
 # Uniform message authentication codes and PRF-based MACs
@@ -635,19 +637,6 @@ theorem eval_eufCmaGame_eq_signingPairOracle (M : MACScheme)
   rw [M.eval_run_signingOracle_eq_map_fst_signingPairOracle sk (adversary n []), PMF.bind_map]
   rfl
 
-private theorem pmf_bind_pure_bool_le {α : Type} (p : PMF α) (f g : α → Bool)
-    (hfg : ∀ a ∈ p.support, f a = true → g a = true) :
-    (p.bind (fun a => PMF.pure (f a))) true ≤
-      (p.bind (fun a => PMF.pure (g a))) true := by
-  rw [PMF.bind_apply, PMF.bind_apply]
-  refine tsum_le_tsum fun a => ?_
-  by_cases ha : a ∈ p.support
-  · refine mul_le_mul_of_nonneg_left ?_ zero_le
-    cases hf : f a
-    · simp
-    · rw [hfg a ha hf]
-  · simp [(p.apply_eq_zero_iff a).mpr ha]
-
 /-- A fresh message makes a fresh pair, so on any key law and pair-logging run the fresh-message
 check succeeds with probability at most the fresh-pair check. -/
 private theorem bind_eufCheck_le_bind_sufCheck (M : MACScheme) (n : ℕ) (keys : PMF (List Bool))
@@ -660,7 +649,7 @@ private theorem bind_eufCheck_le_bind_sufCheck (M : MACScheme) (n : ℕ) (keys :
         M.verify sk out.1.1 out.1.2)) true := by
   rw [PMF.bind_apply, PMF.bind_apply]
   refine tsum_le_tsum fun sk => ?_
-  refine mul_le_mul_of_nonneg_left (pmf_bind_pure_bool_le _ _ _ fun out _ hout => ?_) zero_le
+  refine mul_le_mul_of_nonneg_left (Probability.PMF.map_true_mono _ fun out _ hout => ?_) zero_le
   simp only [Bool.and_eq_true, Bool.not_eq_true'] at hout ⊢
   refine ⟨⟨hout.1.1, ?_⟩, hout.2⟩
   rw [Bool.eq_false_iff]
@@ -1145,18 +1134,8 @@ theorem isOraclePPT_reindexForger {ℓ : ℕ → ℕ}
   have hparam : ComputableInPolyTime
       (fun p : ℕ × List Bool => GeneratorReindex.parameter ℓ p.1)
       (encPair encUnary encBits) encUnary :=
-    GeneratorReindex.isPolyTime_parameter hℓ (by fun_prop)
-  have hℓcomp : ComputableInPolyTime
-      (fun p : ℕ × List Bool => ℓ (GeneratorReindex.parameter ℓ p.1))
-      (encPair encUnary encBits) encUnary :=
-    hℓ.comp hparam
-  apply IsOraclePPTOn.isOraclePPT
-  unfold reindexForger
-  exact IsOraclePPTOn.cond' (by fun_prop)
-    (hadversary.preprocess'
-      (prepare := fun p : ℕ × List Bool => (GeneratorReindex.parameter ℓ p.1, p.2)) (by fun_prop))
-    ((ComputableInPolyTime.const (([] : List Bool), ([] : List Bool))).isOraclePPTOn
-      (Operation := Unit))
+    GeneratorReindex.isPolyTime_parameter hℓ (by polytime)
+  ppt [reindexForger]
 
 /-- For a strictly monotone schedule `ℓ`, `(M.reindex ℓ hℓ).sufCmaGame adversary n` is identical to
 `M.sufCmaGame (reindexForger ℓ adversary) (ℓ n)`. -/
@@ -1336,8 +1315,7 @@ theorem isOraclePPT_macToPrfDistinguisher {adversary : Forger}
       (encPair encBits (encList encBits))
       (fun pair : (ℕ × List Bool) × ((Unit × List Bool) × List (List Bool)) =>
         macLogHandler pair.1.1 pair.2.1 pair.2.2) := by
-    unfold macLogHandler
-    exact (IsOraclePPTOn.query_take' () (by fun_prop) (by fun_prop)).map_with' (by fun_prop)
+    ppt [macLogHandler]
   have hrun : IsOraclePPTOn (encPair encUnary encBits)
       (encPair (encPair encBits encBits) (encList encBits))
       (fun caller : ℕ × List Bool =>
@@ -1350,21 +1328,15 @@ theorem isOraclePPT_macToPrfDistinguisher {adversary : Forger}
       (prepare := fun caller : ℕ × List Bool => (caller.1, ([] : List Bool)))
       (initial := fun _ => ([] : List (List Bool)))
       (resources := fun caller query => caller.1 + 2 * query.length + 2)
-      (by fun_prop) hhandler (ComputableInPolyTime.const [])
-      (fun _ _ => True) (fun _ => trivial) (by fun_prop)
+      (by polytime) hhandler (ComputableInPolyTime.const [])
+      (fun _ _ => True) (fun _ => trivial) (by polytime)
     intro caller request queried _ result hresult
     unfold macLogHandler at hresult
     obtain ⟨tag, htag, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hresult
     obtain ⟨rawTag, _, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp htag
     refine ⟨trivial, (List.length_take_le _ _).trans (by lia), ?_⟩
-    simp only [encList_cons, List.length_append, length_frame, encBits_apply]
-    lia
-  unfold macToPrfDistinguisher
-  refine (hrun.bind_with (IsOraclePPTOn.cond' ?_
-      ((IsOraclePPTOn.query_take' () (by fun_prop) (by fun_prop)).map_with' (by fun_prop))
-      ((ComputableInPolyTime.const false).isOraclePPTOn (Operation := Unit)))).isOraclePPT
-  simp only [List.contains_eq_mem]
-  fun_prop
+    enc_len
+  ppt [macToPrfDistinguisher]
 
 private theorem run_macLogHandler_eq_signingOracle
     {family : List Bool → List Bool → List Bool}
@@ -2077,8 +2049,7 @@ theorem succProbability_eufCmaGame_le_sufCmaGame (M : NonceMACScheme)
   refine ENNReal.toNNReal_mono (PMF.apply_ne_top _ true) ?_
   rw [PMF.bind_apply, PMF.bind_apply]
   refine tsum_le_tsum fun sk => ?_
-  refine mul_le_mul_of_nonneg_left
-    (MACScheme.pmf_bind_pure_bool_le _ _ _ fun out _ hout => ?_) zero_le
+  refine mul_le_mul_of_nonneg_left (Probability.PMF.map_true_mono _ fun out _ hout => ?_) zero_le
   simp only [Bool.and_eq_true, Bool.not_eq_true'] at hout ⊢
   refine ⟨⟨ hout.1.1, ?_ ⟩, hout.2⟩
   rw [Bool.eq_false_iff]

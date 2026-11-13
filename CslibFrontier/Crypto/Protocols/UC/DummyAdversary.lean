@@ -52,8 +52,10 @@ running time.
 
 * `Cslib.Crypto.Protocols.UC.liftAdversary_id`, `Cslib.Crypto.Protocols.UC.liftAdversary_comp`: the
   adversary's place in front of the network respects forwarding and composition.
-* `Cslib.Crypto.Protocols.UC.exec_eq_exec_dummy`, `Cslib.Crypto.Protocols.UC.exec_compSim`,
-  `Cslib.Crypto.Protocols.UC.advantage_compSim`: absorbing the adversary into the environment.
+* `Cslib.Crypto.Protocols.UC.exec_dummyAdversary`,
+  `Cslib.Crypto.Protocols.UC.exec_eq_exec_dummy`, `Cslib.Crypto.Protocols.UC.exec_compSim`,
+  `Cslib.Crypto.Protocols.UC.advantage_compSim`: running the dummy adversary and absorbing an
+  adversary into the environment.
 * `Cslib.Crypto.Protocols.UC.compSim_polyBounded`,
   `Cslib.Crypto.Protocols.UC.absorbAdversary_polyBounded`,
   `Cslib.Crypto.Protocols.UC.eval_absorbPoly`, `Cslib.Crypto.Protocols.UC.eval_absorbPoly_mono`:
@@ -232,10 +234,19 @@ talks to the network through the dummy adversary. -/
     (Z : Environment n In Out AdvQ AdvR) : Environment n In Out NetQ NetR :=
   fun κ z => (liftAdversary (A κ C)).link (Z κ z)
 
+/-- Running the UC execution with `dummyAdversary` is running the environment directly against
+`corruptRouter C (π κ C)`. -/
+@[simp] theorem exec_dummyAdversary (π : Protocol n In Out NetQ NetR) (C : Finset (Fin n))
+    (Z : Environment n In Out (RoutedNetQ n In NetQ) (RoutedNetR Out NetR))
+    (κ : ℕ) (z : List Bool) :
+    exec π (dummyAdversary n _ _) C Z κ z = (corruptRouter C (π κ C)).run (Z κ z) := by
+  simp only [exec, execMachine, dummyAdversary, Machine.run_comp, liftAdversary_id,
+    Machine.link_id]
+
 /-- Running an adversary is running the dummy adversary with the adversary absorbed into the
 environment. -/
 theorem exec_eq_exec_dummy (π : Protocol n In Out NetQ NetR)
-    (A : Adversary n AdvQ AdvR ((Fin n × In) ⊕ NetQ) (Option Out ⊕ NetR)) (C : Finset (Fin n))
+    (A : ExecAdversary n In Out NetQ NetR AdvQ AdvR) (C : Finset (Fin n))
     (Z : Environment n In Out AdvQ AdvR) (κ : ℕ) (z : List Bool) :
     exec π A C Z κ z =
       exec π (dummyAdversary n _ _) C (absorbAdversary C A Z) κ z := by
@@ -245,9 +256,9 @@ theorem exec_eq_exec_dummy (π : Protocol n In Out NetQ NetR)
 /-- Running the black-box simulator is running the dummy-adversary simulator with the adversary
 absorbed into the environment. -/
 theorem exec_compSim (φ : Protocol n In Out NetQ₂ NetR₂)
-    (S_D : Adversary n ((Fin n × In) ⊕ NetQ₁) (Option Out ⊕ NetR₁) ((Fin n × In) ⊕ NetQ₂)
-      (Option Out ⊕ NetR₂))
-    (A : Adversary n AdvQ AdvR ((Fin n × In) ⊕ NetQ₁) (Option Out ⊕ NetR₁)) (C : Finset (Fin n))
+    (S_D : Adversary n (RoutedNetQ n In NetQ₁) (RoutedNetR Out NetR₁) (RoutedNetQ n In NetQ₂)
+      (RoutedNetR Out NetR₂))
+    (A : ExecAdversary n In Out NetQ₁ NetR₁ AdvQ AdvR) (C : Finset (Fin n))
     (Z : Environment n In Out AdvQ AdvR) (κ : ℕ) (z : List Bool) :
     exec φ (compSim S_D A) C Z κ z = exec φ S_D C (absorbAdversary C A Z) κ z := by
   simp only [exec, execMachine, Machine.run_comp, compSim, absorbAdversary, liftAdversary_comp,
@@ -262,9 +273,9 @@ theorem exec_compSim (φ : Protocol n In Out NetQ₂ NetR₂)
 /-- The advantage against an adversary and its black-box simulator is the advantage against the
 dummy adversary and the core simulator, for the absorbed environment. -/
 theorem advantage_compSim (π : Protocol n In Out NetQ₁ NetR₁) (φ : Protocol n In Out NetQ₂ NetR₂)
-    (S_D : Adversary n ((Fin n × In) ⊕ NetQ₁) (Option Out ⊕ NetR₁) ((Fin n × In) ⊕ NetQ₂)
-      (Option Out ⊕ NetR₂))
-    (A : Adversary n AdvQ AdvR ((Fin n × In) ⊕ NetQ₁) (Option Out ⊕ NetR₁)) (C : Finset (Fin n))
+    (S_D : Adversary n (RoutedNetQ n In NetQ₁) (RoutedNetR Out NetR₁) (RoutedNetQ n In NetQ₂)
+      (RoutedNetR Out NetR₂))
+    (A : ExecAdversary n In Out NetQ₁ NetR₁ AdvQ AdvR) (C : Finset (Fin n))
     (Z : Environment n In Out AdvQ AdvR) (κ : ℕ) (z : List Bool) :
     advantage π φ A (compSim S_D A) C Z κ z =
       advantage π φ (dummyAdversary n _ _) S_D C (absorbAdversary C A Z) κ z := by
@@ -273,9 +284,9 @@ theorem advantage_compSim (π : Protocol n In Out NetQ₁ NetR₁) (φ : Protoco
 /-- The black-box simulator for the dummy adversary is the core simulator. -/
 theorem advantage_compSim_dummy (π : Protocol n In Out NetQ₁ NetR₁)
     (φ : Protocol n In Out NetQ₂ NetR₂)
-    (S_D : Adversary n ((Fin n × In) ⊕ NetQ₁) (Option Out ⊕ NetR₁) ((Fin n × In) ⊕ NetQ₂)
-      (Option Out ⊕ NetR₂)) (C : Finset (Fin n))
-    (Z : Environment n In Out ((Fin n × In) ⊕ NetQ₁) (Option Out ⊕ NetR₁)) (κ : ℕ)
+    (S_D : Adversary n (RoutedNetQ n In NetQ₁) (RoutedNetR Out NetR₁) (RoutedNetQ n In NetQ₂)
+      (RoutedNetR Out NetR₂)) (C : Finset (Fin n))
+    (Z : Environment n In Out (RoutedNetQ n In NetQ₁) (RoutedNetR Out NetR₁)) (κ : ℕ)
     (z : List Bool) :
     advantage π φ (dummyAdversary n _ _) (compSim S_D (dummyAdversary n _ _)) C Z κ z =
       advantage π φ (dummyAdversary n _ _) S_D C Z κ z := by
@@ -341,11 +352,11 @@ simulator with advantage at most `ε pZ κ`, whatever the corrupted parties. -/
 @[expose] def EmulatesDummyWithin (π : Protocol n In Out NetQ₁ NetR₁)
     (φ : Protocol n In Out NetQ₂ NetR₂) (pD : Polynomial ℕ) (ε : Polynomial ℕ → ℕ → ℝ≥0) :
     Prop :=
-  ∃ S_D : Adversary n ((Fin n × In) ⊕ NetQ₁) (Option Out ⊕ NetR₁) ((Fin n × In) ⊕ NetQ₂)
-      (Option Out ⊕ NetR₂),
+  ∃ S_D : Adversary n (RoutedNetQ n In NetQ₁) (RoutedNetR Out NetR₁) (RoutedNetQ n In NetQ₂)
+      (RoutedNetR Out NetR₂),
     S_D.PolyBounded pD ∧
       ∀ (C : Finset (Fin n))
-        (Z : Environment n In Out ((Fin n × In) ⊕ NetQ₁) (Option Out ⊕ NetR₁))
+        (Z : Environment n In Out (RoutedNetQ n In NetQ₁) (RoutedNetR Out NetR₁))
         (pZ : Polynomial ℕ), Z.PolyBounded pZ → ∀ (κ : ℕ) (z : List Bool),
           advantage π φ (dummyAdversary n _ _) S_D C Z κ z ≤ ε pZ κ
 
@@ -355,11 +366,11 @@ adversary `A` with budget `pA`, the black-box simulator `compSim S_D A` has adva
 @[expose] def EmulatesBlackBoxWithin (π : Protocol n In Out NetQ₁ NetR₁)
     (φ : Protocol n In Out NetQ₂ NetR₂) (pD : Polynomial ℕ)
     (ε : Polynomial ℕ → Polynomial ℕ → ℕ → ℝ≥0) : Prop :=
-  ∃ S_D : Adversary n ((Fin n × In) ⊕ NetQ₁) (Option Out ⊕ NetR₁) ((Fin n × In) ⊕ NetQ₂)
-      (Option Out ⊕ NetR₂),
+  ∃ S_D : Adversary n (RoutedNetQ n In NetQ₁) (RoutedNetR Out NetR₁) (RoutedNetQ n In NetQ₂)
+      (RoutedNetR Out NetR₂),
     S_D.PolyBounded pD ∧
       ∀ (AdvQ AdvR : Type)
-        (A : Adversary n AdvQ AdvR ((Fin n × In) ⊕ NetQ₁) (Option Out ⊕ NetR₁))
+        (A : ExecAdversary n In Out NetQ₁ NetR₁ AdvQ AdvR)
         (pA : Polynomial ℕ), A.PolyBounded pA →
         ∀ (C : Finset (Fin n)) (Z : Environment n In Out AdvQ AdvR) (pZ : Polynomial ℕ),
           Z.PolyBounded pZ → ∀ (κ : ℕ) (z : List Bool),
@@ -417,12 +428,12 @@ such that, for each polynomial environment budget, one negligible function bound
 every such environment, for all corrupted parties and auxiliary inputs. -/
 @[expose] def EmulatesDummy (π : Protocol n In Out NetQ₁ NetR₁)
     (φ : Protocol n In Out NetQ₂ NetR₂) : Prop :=
-  ∃ (S_D : Adversary n ((Fin n × In) ⊕ NetQ₁) (Option Out ⊕ NetR₁) ((Fin n × In) ⊕ NetQ₂)
-      (Option Out ⊕ NetR₂)) (pD : Polynomial ℕ),
+  ∃ (S_D : Adversary n (RoutedNetQ n In NetQ₁) (RoutedNetR Out NetR₁) (RoutedNetQ n In NetQ₂)
+      (RoutedNetR Out NetR₂)) (pD : Polynomial ℕ),
     S_D.PolyBounded pD ∧
       ∀ pZ : Polynomial ℕ, ∃ ν : ℕ → ℝ≥0, Negligible ν ∧
         ∀ (C : Finset (Fin n))
-          (Z : Environment n In Out ((Fin n × In) ⊕ NetQ₁) (Option Out ⊕ NetR₁)),
+          (Z : Environment n In Out (RoutedNetQ n In NetQ₁) (RoutedNetR Out NetR₁)),
           Z.PolyBounded pZ → ∀ (κ : ℕ) (z : List Bool),
             advantage π φ (dummyAdversary n _ _) S_D C Z κ z ≤ ν κ
 

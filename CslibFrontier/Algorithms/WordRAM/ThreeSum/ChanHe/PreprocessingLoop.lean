@@ -169,14 +169,10 @@ private theorem execute_next_root {a : Traversal.Arena} {w U : ℕ} {l : Fronten
     omega
   have hready : b.Ready w := rootArena_ready hw hceil
   have hinput : Traversal.RootInput b w e s.nodes p := by
-    refine ⟨hp.bounded h.bounded, ?_, hloaded, ?_, ?_, ?_, ?_, ?_, rfl, ?_, ?_,
-      pcount, le_rfl, ?_, ?_, ?_⟩
-    · exact h.controls.congr (fun i hi => hpr i (Or.inr (by
-        simp only [List.mem_cons, List.not_mem_nil, or_false] at hi
-        omega)) (by
-          intro he
-          subst i
-          norm_num [address] at hi))
+    refine ⟨hp.bounded h.bounded,
+      h.controls.of_regs_71_96 (fun i hi hi' => hpr i (Or.inr hi) (by
+        simp only [ne_eq, Fin.ext_iff, address]; omega)),
+      hloaded, ?_, ?_, ?_, ?_, ?_, rfl, ?_, ?_, pcount, le_rfl, ?_, ?_, ?_⟩
     · rw [hmem]
       exact entry_stored hkeys h.frontend hi
     · dsimp only [b, rootArena]
@@ -255,10 +251,8 @@ private theorem forest_body_exec {a : Traversal.Arena} {w U : ℕ} {l : Frontend
       exact ⟨_, by omega, hload.seq (hroot.seq hz)⟩
   · constructor
     · exact hz.bounded hy.bounded
-    · exact hy.controls.congr fun i hi => zreg i (by
-        simp only [List.mem_cons, List.not_mem_nil, or_false] at hi
-        simp only [ne_eq, Fin.ext_iff, current]
-        omega)
+    · exact hy.controls.of_regs_71_96 fun i _ hi => zreg i (by
+        simp only [ne_eq, Fin.ext_iff, current]; omega)
     · exact h.frontend.frame hcard (fun p hp => hprefix p (hp.trans_le hfront))
     · exact (zouter _ (by decide) (by decide) (by decide)).trans h.descriptors
     · exact (zouter _ (by decide) (by decide) (by decide)).trans h.roots

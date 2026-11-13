@@ -56,7 +56,7 @@ theorem finTimeLayer_compactCoinMatrix_eq_clockedCoinCount (B T : ℕ) (w : List
 This interprets the initialized writer's payload on the same consecutive IDs as the BPL theorem. -/
 theorem finTimeLayer_compactCoinMatrix_eq_clockedCoinTable (D d : ℕ) (w : List Bool)
     (u v : Fin (clockedVertexBound (k := k) D d w.length)) :
-    finTimeLayer (2 * (2 * (w.length + 1)) ^ d)
+    finTimeLayer (polyClock d w.length)
         (compactCoinMatrix machine R (radix D w.length) w) u v =
       (((clockedCoinTable machine D d w).getD
           (2 * (u.val * clockedVertexBound (k := k) D d w.length + v.val)) false).toNat +

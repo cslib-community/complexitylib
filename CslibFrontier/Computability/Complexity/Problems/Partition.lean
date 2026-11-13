@@ -76,23 +76,24 @@ theorem mem_Partition_iff_sublist {l : List ℕ} :
 
 namespace Partition
 
-/-- The verifier for `Partition`: the numbers selected by the certificate mask hold half of the
-total sum. -/
-def verifier (x : List ℕ × List Bool) : Bool := decide (2 * (maskSelect x.1 x.2).sum = x.1.sum)
+/-- The verifier for `Partition`, a mask verifier (`Cslib.Complexity.maskVerifier`): the numbers
+selected by the certificate mask hold half of the total sum. -/
+def verifier : List ℕ × List Bool → Bool :=
+  maskVerifier id fun x => decide (2 * x.2.sum = x.1.sum)
 
 /-- `Partition.verifier` verifies `Partition` with certificates as long as the encoded list. -/
 theorem isVerifier : IsVerifier (encList encNat) Polynomial.X verifier Partition := by
-  intro l
-  simp only [mem_Partition_iff, Polynomial.eval_X, verifier, decide_eq_true_eq]
-  simpa only [Multiset.sum_coe] using exists_le_iff_exists_maskSelect
-    (length_le_length_encList encNat l) (fun s => 2 * s.sum = l.sum)
+  rw [show Partition = {l : List ℕ | ∃ s ≤ (l : Multiset ℕ), 2 * s.sum = l.sum} from
+    Set.ext fun _ => mem_Partition_iff]
+  exact isVerifier_maskVerifier (items := id)
+    (fun l => by rw [Polynomial.eval_X]; exact length_le_length_encList encNat l)
+    fun _ _ _ => by simp
 
 /-- The `Partition` verifier is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_verifier :
-    ComputableInPolyTime verifier (encPair (encList encNat) encBits) encBool := by
-  unfold verifier
-  fun_prop
+    ComputableInPolyTime verifier (encPair (encList encNat) encBits) encBool :=
+  computableInPolyTime_maskVerifier (encγ := encNat) (by fun_prop) (by fun_prop)
 
 /-- `Partition` belongs to `NP`. -/
 theorem mem_NP : Partition ∈ NP (encList encNat) :=
@@ -103,10 +104,12 @@ end Partition
 namespace SubsetSum
 
 /-- The reduction from `SubsetSum` to `Partition`: append `a.sum + 1` and `2 * t + 1`. -/
-def toPartition (x : List ℕ × ℕ) : List ℕ := x.1 ++ [x.1.sum + 1, 2 * x.2 + 1]
+def toPartition (x : SubsetSumInstance) : List ℕ :=
+  x.numbers ++ [x.numbers.sum + 1, 2 * x.target + 1]
 
 /-- **Correctness of the reduction to `Partition`.** -/
-theorem toPartition_mem_iff (x : List ℕ × ℕ) : toPartition x ∈ Partition ↔ x ∈ SubsetSum := by
+theorem toPartition_mem_iff (x : SubsetSumInstance) :
+    toPartition x ∈ Partition ↔ x ∈ SubsetSum := by
   obtain ⟨l, t⟩ := x
   rw [mem_Partition_iff_sublist, mem_SubsetSum_iff_sublist]
   constructor

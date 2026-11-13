@@ -30,8 +30,10 @@ The quantifier order is `∀ d > 0, ∀ᶠ n, ∃ F`. The lower-bound consequenc
 hard lengths at one fixed positive reciprocal exponent. No single simultaneously subexponential
 formula family is inferred from this order. Arbitrary parameter schedules need no computability
 assumption: the single binary NP witness receives the thresholds and samples in its input.
-The concrete rounded `2 ^ (sqrt n)` specialization and a conventional ternary-device formulation
-of Theorem 5 are separate from this asymptotic one-sided result.
+The concrete threshold `⌊2 ^ √n⌋₊` and the conventional ternary-device formulation of
+[OliveiraSanthanam2018, Section 1.2, Theorem 5, p. 8] are in
+`CslibFrontier.Computability.MCSP.FormulaMagnification.SublinearAverageCase`, which translates
+these unknown masks into zero-error devices.
 
 ## Main results
 

@@ -20,9 +20,11 @@ open Cslib Cslib.Probability Cslib.Crypto Cslib.Crypto.Protocols.SigmaProtocol
 open Turing.MultiTapeTM
 open scoped ENNReal NNReal
 
-example : lyubashevskySigningParams 0 = ((1, 1, 1, 0), (2, 4, 1)) := rfl
+example : lyubashevskySigningParams 0 =
+    { n := 1, m := 1, k := 1, width := 0, q := 2, γ := 4, β := 1 } := rfl
 
-example : lyubashevskySigningParams 1 = ((2, 2, 2, 1), (4, 16, 2)) := rfl
+example : lyubashevskySigningParams 1 =
+    { n := 2, m := 2, k := 2, width := 1, q := 4, γ := 16, β := 2 } := rfl
 
 /-- A nonzero bounded secret and zero randomness yield a non-aborted response at λ=1. -/
 example : lyubashevskySignPostprocess (fun _ => [true, true])
@@ -33,11 +35,11 @@ example : lyubashevskySignPostprocess (fun _ => [true, true])
 example : ProbComp.eval (lyubashevskySignBoundedNative (fun _ => [true])
     ((lyubashevskySigningParams 0, [[-1]], [[1]], []), 1)) = PMF.pure none := by
   have hp : lyubashevskySignPostprocess (fun _ => [true])
-      ((((1, 1, 1, 0), (2, 4, 1)), [[-1]], [[1]], []), [-4]) = none := by decide
+      (({ n := 1, m := 1, k := 1, width := 0, q := 2, γ := 4, β := 1 },
+        [[-1]], [[1]], []), [-4]) = none := by decide
   simp [lyubashevskySignBoundedNative, lyubashevskySignAttemptNative,
     sampleIntBoxList, sampleIntBox, ProbComp.sampleModNat, OracleComp.replicate,
-    lyubashevskySigningParams, LyubashevskyParams.m, LyubashevskyParams.width,
-    LyubashevskyParams.γ, boxShift, hp]
+    lyubashevskySigningParams, boxShift, hp]
 
 /-- A typed hash genuinely selects its challenge from the commitment. -/
 def hashZero : Unit × (Fin 1 → ZMod 2) → BitString 1 :=

@@ -118,15 +118,6 @@ theorem SAT_decidableInExpTime_one : DecidableInExpTime SAT encCNF CNF.numVars 1
   simpa using hB.of_exhaustiveSearch hf hν hfA (c := 0) (fun _ _ => Nat.zero_le _)
     (M := 1) (K := 0) (fun φ => by simp) le_rfl
 
-open ComputableInPolyTime in
-/-- Checking that every clause has at most `k` literals is polynomial-time. -/
-@[fun_prop]
-theorem computableInPolyTime_all_length_le (k : ℕ) :
-    ComputableInPolyTime (fun φ : CNF ℕ => φ.all fun c => decide (c.length ≤ k)) encCNF
-      encBool := by
-  unfold encCNF
-  fun_prop
-
 /-- `k`-SAT is `SAT` restricted to the formulas whose clauses have at most `k` literals. -/
 theorem KSAT_eq_inter (k : ℕ) {B : Set (CNF ℕ)} (hB : KSAT k ⊆ B) (hBSAT : B ⊆ SAT) :
     KSAT k = {φ | (φ.all fun c => decide (c.length ≤ k)) = true} ∩ B := by

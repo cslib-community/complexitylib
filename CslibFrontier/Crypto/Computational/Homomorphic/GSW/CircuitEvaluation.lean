@@ -118,7 +118,7 @@ integer error has every coordinate bounded by `bound`. This is GSW's "B-bounded 
 def BoundedError (n w : ℕ) (secret : List Bool) (bound : ℕ) (μ : Bool)
     (ciphertext : List Bool) : Prop :=
   ciphertext.length = ((n + 1) * w) ^ 2 ∧
-    ∃ error, HasError (decodeSecret n w secret) (decodeCiphertext n w ciphertext) μ error ∧
+    ∃ error, HasError (LWE.decodeSecret n w secret) (decodeCiphertext n w ciphertext) μ error ∧
       ∀ i, (error i).natAbs ≤ bound
 
 namespace BoundedError
@@ -162,23 +162,23 @@ theorem boundedError_constSerialized (n w : ℕ) (secret : List Bool) (μ : Bool
 
 /-- Every supported fresh encryption under a supported key has error bounded by `m * η`. -/
 theorem boundedError_encryptSerialized {n m w η : ℕ} {keys : List Bool × List Bool}
-    (hkeys : keys ∈ (ProbComp.eval (keyGenSerialized n m w η)).support) (μ : Bool)
+    (hkeys : keys ∈ (ProbComp.eval (LWE.keyGenSerialized n m w η)).support) (μ : Bool)
     {ciphertext : List Bool}
     (hciphertext : ciphertext ∈ (ProbComp.eval (encryptSerialized n m w keys.1 μ)).support) :
     BoundedError n w keys.2 (m * η) μ ciphertext := by
-  rw [eval_keyGenSerialized, PMF.mem_support_map_iff] at hkeys
+  rw [LWE.eval_keyGenSerialized, PMF.mem_support_map_iff] at hkeys
   obtain ⟨typedKeys, htypedKeys, rfl⟩ := hkeys
   rw [eval_encryptSerialized_serializePublicMatrix, PMF.mem_support_map_iff] at hciphertext
   obtain ⟨typedCiphertext, htypedCiphertext, rfl⟩ := hciphertext
-  simp only [keyGen, ProbComp.eval_bind, ProbComp.eval_pure,
+  simp only [LWE.keyGen, ProbComp.eval_bind, ProbComp.eval_pure,
     PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at htypedKeys
   obtain ⟨inputs, hinputs, rfl⟩ := htypedKeys
   obtain ⟨coins, rfl⟩ := (mem_support_encrypt_iff _ _ _).mp htypedCiphertext
   refine ⟨length_serializeCiphertext _, encryptionError coins inputs.error, ?_, fun i => ?_⟩
-  · rw [decode_serializeSecret, decode_serializeCiphertext]
+  · rw [LWE.decode_serializeSecret, decode_serializeCiphertext]
     exact encryptWithCoins_hasError inputs.publicPart inputs.secret inputs.error μ coins
   · simpa using encryptionError_natAbs_le coins inputs.error
-      ((mem_support_sampleKeyInputs_iff _ _ _ _ _).mp hinputs) i
+      ((LWE.mem_support_sampleKeyInputs_iff _ _ _ _ _).mp hinputs) i
 
 /-- Evaluate one layered node on serialized ciphertexts. Copies are cut to the ciphertext width,
 which leaves every complete ciphertext unchanged and bounds malformed wires. -/
@@ -291,7 +291,7 @@ when `4 * m * η * (N + 1) ^ (2 * d) < 2 ^ w` for the circuit's depth `d`. The o
 the exact square ciphertext width. This is the bounded-depth correctness of
 [GentrySahaiWaters2013, Sections 3.3 and 3.4] for the library's decoder. -/
 theorem evaluateCircuit_correct {m η : ℕ} (hw : 0 < w) {keys : List Bool × List Bool}
-    (hkeys : keys ∈ (ProbComp.eval (keyGenSerialized n m w η)).support)
+    (hkeys : keys ∈ (ProbComp.eval (LWE.keyGenSerialized n m w η)).support)
     (C : Σ k, Circuit signature k 1)
     (hmargin : 4 * m * η * ((n + 1) * w + 1) ^ (2 * C.2.depth) < 2 ^ w)
     {bits : List Bool} {inputs : List (List Bool)} (hbits : bits.length = C.1)

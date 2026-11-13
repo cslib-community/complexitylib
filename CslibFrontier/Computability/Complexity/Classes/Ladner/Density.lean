@@ -13,7 +13,7 @@ import CslibFrontier.Computability.Complexity.Classes.EXP.Decidable
 import CslibFrontier.Computability.Complexity.Classes.Immune
 import CslibFrontier.Computability.Complexity.Classes.Inclusions
 import CslibFrontier.Computability.Complexity.Classes.NP.Closure
-import CslibFrontier.Computability.Complexity.Reduction.Isomorphism.Conjecture
+import CslibFrontier.Computability.Complexity.Reduction.Nontrivial
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BoundedSearch
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -337,7 +337,7 @@ theorem exists_mem_NP_notMem_P_lt {B : Set (List Bool)}
       PolyTimeReducible encBits encBits A B ∧ ¬PolyTimeReducible encBits encBits B A := by
   have hdec : IsDecidable B encBits := isDecidable_of_mem_EXP (NP_subset_EXP hBNP)
   obtain ⟨G, hG, hnotP, hAB, hBA⟩ := exists_mem_P_ite_empty_lt hdec hB
-  refine ⟨G.ite ∅ B, ite_mem_NP hG (P_subset_NP empty_mem_P) hBNP, hnotP,
+  refine ⟨G.ite ∅ B, ite_mem_NP hG empty_mem_NP hBNP, hnotP,
     fun hcomp => hBA (hcomp.2 encBits B hBNP), hAB, hBA⟩
 
 /-- **If `P ≠ NP`, every `NP`-complete problem on bit words has an `NP`-intermediate problem

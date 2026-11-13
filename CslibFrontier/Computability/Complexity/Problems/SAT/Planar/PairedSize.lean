@@ -126,21 +126,18 @@ theorem width_crossingClauses (p : Point) :
 theorem width_links (sites : List Point) (r : Route) :
     ∀ c ∈ links sites r, c.1.length = 2 := by
   intro c hc
-  obtain ⟨e, _, hc⟩ := List.mem_flatMap.mp hc
-  simp only [List.mem_cons, List.not_mem_nil, or_false] at hc
-  rcases hc with rfl | rfl <;> rfl
+  obtain ⟨e, _, rfl | rfl⟩ := mem_links.mp hc <;> rfl
 
 /-- Width-three inputs produce structured formulas of width at most three. -/
 theorem width_rawFormula {φ : CNF ℕ} (h : ∀ c ∈ φ, c.length ≤ 3) :
     ∀ c ∈ rawFormula φ, c.length ≤ 3 := by
   intro c hc
   obtain ⟨d, hd, rfl⟩ := List.mem_map.mp hc
-  simp only [placedClauses, List.mem_append, List.mem_flatMap] at hd
-  rcases hd with ((hd | ⟨p, _, hd⟩) | ⟨p, _, hd⟩) | ⟨o, _, hd⟩
+  rcases mem_placedClauses.mp hd with hd | ⟨p, _, hd⟩ | ⟨p, _, hd⟩ | ⟨o, _, hd⟩
   · exact width_originalClauses h _ d hd
   · exact (width_ordinaryClauses p d hd).le.trans (by decide)
   · exact width_crossingClauses p d hd
-  · exact (width_links _ _ d hd).le.trans (by decide)
+  · exact (width_links _ _ d (mem_links.mpr hd)).le.trans (by decide)
 
 /-- Compaction preserves the width-three guarantee. -/
 theorem width_formula {φ : CNF ℕ} (h : ∀ c ∈ φ, c.length ≤ 3) :

@@ -36,6 +36,8 @@ search problems by the finite combinatorial principle that guarantees a solution
 ## Main definitions
 
 * `Cslib.Complexity.zeroVertex`: the distinguished origin `0 ^ n = List.replicate n false`.
+* `Cslib.Complexity.PreservesWidth`: a family of maps sends `n a`-bit strings to `n a`-bit strings;
+  this is the side condition on the maps of every uniform family below.
 * `Cslib.Complexity.localOptRel`: the local-search relation for `PLS`.
 * `Cslib.Complexity.pigeonRel`: the pigeonhole relation for `PPP`.
 * `Cslib.Complexity.hasOut`, `Cslib.Complexity.hasIn`, `Cslib.Complexity.endOfLineRel`: active
@@ -81,6 +83,11 @@ def zeroVertex (n : ℕ) : List Bool := List.replicate n false
 theorem length_zeroVertex (n : ℕ) : (zeroVertex n).length = n :=
   List.length_replicate
 
+/-- `F` preserves the bit-width `n`: on every instance `a`, it maps strings of length `n a` to
+strings of length `n a`, so `F (a, ·)` restricts to a map of the cube `{0, 1} ^ (n a)`. -/
+def PreservesWidth (n : α → ℕ) (F : α × List Bool → List Bool) : Prop :=
+  ∀ a u, u.length = n a → (F (a, u)).length = n a
+
 /-- Bit strings of length `n` as a subtype. -/
 private abbrev Vertex (n : ℕ) : Type := {u : List Bool // u.length = n}
 
@@ -116,7 +123,7 @@ theorem exists_localOpt {n : α → ℕ} {N : α × List Bool → List Bool} {C 
 
 /-- `localOptRel` is total whenever the neighbor map preserves the vertex bit-length. -/
 theorem isTotalSearch_localOptRel {n : α → ℕ} {N : α × List Bool → List Bool}
-    {C : α × List Bool → ℕ} (hN : ∀ a u, u.length = n a → (N (a, u)).length = n a) :
+    {C : α × List Bool → ℕ} (hN : PreservesWidth n N) :
     IsTotalSearch (localOptRel n N C) :=
   fun a => exists_localOpt (hN a)
 
@@ -152,8 +159,7 @@ theorem exists_pigeon {n : α → ℕ} {F : α × List Bool → List Bool} {a : 
 
 /-- `pigeonRel` is total whenever `F` preserves the vertex bit-length. -/
 theorem isTotalSearch_pigeonRel {n : α → ℕ} {F : α × List Bool → List Bool}
-    (hF : ∀ a u, u.length = n a → (F (a, u)).length = n a) :
-    IsTotalSearch (pigeonRel n F) :=
+    (hF : PreservesWidth n F) : IsTotalSearch (pigeonRel n F) :=
   fun a => exists_pigeon (hF a)
 
 /-! ### Directed end-of-line principle (`PPAD`) -/
@@ -288,8 +294,7 @@ theorem exists_endOfLine {n : α → ℕ} {P S : α × List Bool → List Bool} 
 
 /-- `endOfLineRel` is total whenever the successor map preserves the vertex bit-length. -/
 theorem isTotalSearch_endOfLineRel {n : α → ℕ} {P S : α × List Bool → List Bool}
-    (hS : ∀ a u, u.length = n a → (S (a, u)).length = n a) :
-    IsTotalSearch (endOfLineRel n P S) :=
+    (hS : PreservesWidth n S) : IsTotalSearch (endOfLineRel n P S) :=
   fun a => exists_endOfLine (hS a)
 
 /-! ### Undirected parity / handshake principle (`PPA`) -/
@@ -430,9 +435,7 @@ theorem exists_leaf {n : α → ℕ} {N₁ N₂ : α × List Bool → List Bool}
 
 /-- `leafRel` is total whenever both neighbor maps preserve the vertex bit-length. -/
 theorem isTotalSearch_leafRel {n : α → ℕ} {N₁ N₂ : α × List Bool → List Bool}
-    (hN₁ : ∀ a u, u.length = n a → (N₁ (a, u)).length = n a)
-    (hN₂ : ∀ a u, u.length = n a → (N₂ (a, u)).length = n a) :
-    IsTotalSearch (leafRel n N₁ N₂) :=
+    (hN₁ : PreservesWidth n N₁) (hN₂ : PreservesWidth n N₂) : IsTotalSearch (leafRel n N₁ N₂) :=
   fun a => exists_leaf (hN₁ a) (hN₂ a)
 
 /-! ### Reducing directed end-of-line (`PPAD`) to undirected parity (`PPA`) -/

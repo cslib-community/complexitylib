@@ -47,6 +47,23 @@ theorem original_header {m n : ℕ}
   · rfl
   · rfl
 
+/-- Any memory block realizing the five header words agrees with the original `QueriedProduct`
+header at offsets below `5`. -/
+theorem header_readback {m n b : ℕ}
+    (X : Matrix (Fin n) (Fin (D m)) ℤ) (Y : Matrix (Fin (D m)) (Fin n) ℤ)
+    (qs : List (Fin n × Fin n)) (mem : ℕ → ℕ)
+    (hhead : (Block.mk b 5).Realizes mem
+      ![4 + 2 * (n * D m) + 2 * qs.length, 19 * m, m, n, qs.length])
+    {a : ℕ} (ha : a < 5) :
+    mem (b + a) =
+      (State.init (QueriedProduct.input true (19 * m) X Y qs) : State 160).data.mem a := by
+  have hh := hhead ⟨a, ha⟩
+  have hs := original_header X Y qs ⟨a, ha⟩
+  change mem (b + a) = _ at hh
+  change (State.init (QueriedProduct.input true (19 * m) X Y qs) : State 160).data.mem
+    (0 + a) = _ at hs
+  exact hh.trans (by simpa only [Nat.zero_add] using hs.symm)
+
 /-- Exact readback of the five header words and three copied spans identifies the entire
 unchanged original input. This is a pure consequence of those native stores and copies. -/
 theorem local_input {m n b : ℕ}
@@ -67,12 +84,7 @@ theorem local_input {m n b : ℕ}
   intro a ha
   unfold QueriedProduct.inputEnd at ha
   by_cases h5 : a < 5
-  · have hh := hhead ⟨a, h5⟩
-    have hs := original_header X Y qs ⟨a, h5⟩
-    change mem (b + a) = _ at hh
-    change (State.init (QueriedProduct.input true (19 * m) X Y qs) : State 160).data.mem
-      (0 + a) = _ at hs
-    exact hh.trans (by simpa only [Nat.zero_add] using hs.symm)
+  · exact header_readback X Y qs mem hhead h5
   by_cases hl : a < 5 + n * D m
   · have h := hleft (a - 5) (by omega)
     simpa only [Nat.add_assoc, Nat.add_sub_of_le (by omega : 5 ≤ a)] using h

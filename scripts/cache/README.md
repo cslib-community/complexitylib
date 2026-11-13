@@ -7,7 +7,11 @@ everything it needs.
 module built in one checkout (a worktree, an agent sandbox, a second clone) is reused by every
 other checkout on the same machine with the same inputs. Outputs are hard-linked back into
 `.lake/build`. `lake cache clean` empties it; it lives in the Lean toolchain's directory under
-`~/.elan` unless `LAKE_CACHE_DIR` says otherwise.
+`~/.elan` unless `LAKE_CACHE_DIR` says otherwise. A restored module's warnings are not replayed,
+so `--wfail` can pass locally where CI fails. Full `scripts/check.sh` re-elaborates built
+root-package sources restored this way; quick mode checks affected sources, including unchanged
+clients, built import aggregates and executable helpers
+([troubleshooting](../../manual/workflows/troubleshooting.md#diagnose-warnings-that-only-ci-reports)).
 
 **Remote cache.** CI uploads the build outputs of every commit on `main`; `scripts/cache/get.sh`
 downloads them for the nearest cached ancestor of your `HEAD`:
@@ -18,8 +22,10 @@ scripts/build.sh --wfail --iofail   # restore caches, then build changed or miss
 
 A complete set of library and test outputs is about 200 MB compressed (November 2026). Outputs
 are platform independent (`platformIndependent = true`), so Linux CI builds serve macOS checkouts.
-`COMPLEXITYLIB_CACHE_URL` overrides the location; set it to an empty string to skip the
-cslib-frontier download. To test MIT first with GCS fallback, use:
+The default reader tries GCS first, then MIT if GCS misses, fails or times out.
+`COMPLEXITYLIB_CACHE_URL` overrides the entire list with one origin; set it to an empty string
+to skip the cslib-frontier download. `COMPLEXITYLIB_CACHE_URLS` replaces the default ordered list
+when the single-URL override is unset. To test MIT first with GCS fallback, use:
 
 ```bash
 COMPLEXITYLIB_CACHE_URLS='https://complexitycache.csail.mit.edu https://storage.googleapis.com/complexitylib-lake-cache' \
@@ -29,9 +35,10 @@ COMPLEXITYLIB_CACHE_URLS='https://complexitycache.csail.mit.edu https://storage.
 The ordered list applies only when the single-URL override is unset. Each origin gets a finite
 attempt, including revision lookup and artifact downloads; partial downloads remain available
 for the next origin. If every origin misses or fails, the normal build compiles the remainder.
-This wrapper uses the native Lake reader and mapping/archive format. The checked-in default
-remains GCS until the MIT cold-restore checks pass. CI can use the same ordered list through
-the repository variable `COMPLEXITYLIB_CACHE_URLS`; it does not enable MIT publication.
+This wrapper uses the native Lake reader and mapping/archive format. CI can override the same
+ordered list through the repository variable `COMPLEXITYLIB_CACHE_URLS`; this setting does not
+enable publication. GCS remains the preferred origin. MIT fallback is enabled so a GCS budget
+shutdown does not force an otherwise cacheable build to compile from source.
 
 `COMPLEXITYLIB_CACHE_ORIGIN_TIMEOUT` bounds each Complexitylib origin attempt (default 180
 seconds; accepted range 0.1–600). Mapping lookups made by the missing-only helper also have
@@ -209,24 +216,26 @@ be combined with `--copy-cslib` or `--copy-packages`; the default seeded behavio
 Downloaded `.olean` files are trusted by Lean: imported modules are not re-checked by the
 kernel, and their compiled code (tactics, macros, initializers) runs during your build. Whoever
 can write to the cache could therefore make a false theorem appear proved or run code on your
-machine. For the current GCS-only reader default, this is no more trust than building `main`
-already requires:
+machine. Both default origins receive the same staged outputs from validated `main` builds,
+but have different publication credentials and operators:
 
 - Only push runs on `main` in this repository can obtain the GCS writer identity. It uses
   GitHub OIDC through Workload Identity Federation, restricted to this repository, main ref and
   push event. Pull requests, forks, merge groups and other branches cannot obtain that identity.
 - The GCS writer can create objects but cannot delete them, so it cannot replace existing
-  objects. The optional MIT publisher instead receives an upload password only in its final
-  protected job step. Its additional trust roots are described in the migration section below.
+  objects. The MIT publisher instead receives an upload password only in its final protected
+  job step. MIT fallback also trusts that credential and the MIT origin operator, as described
+  in the migration section below.
   Lake checks every downloaded artifact against the hash recorded in its mapping.
 
 Merge-gating CI also reuses these outputs. Lean CI on pull requests, merge-queue groups and
 `main` pushes restores modules that earlier `main` runs uploaded instead of compiling them, so a
-module restored this way is not re-checked by the kernel in that run. Reading GCS adds no party to
-trust. CI already restores `.lake` from the GitHub Actions cache, where runs on `main` save the
-copies that other branches and pull requests fall back to, and Lake reuses those outputs in the
-same way. The GCS remote cache's writers are a subset of those runs, so both caches hold what code
-already on `main` built (the Actions cache also holds a pull request's own earlier runs).
+module restored this way is not re-checked by the kernel in that run. CI already restores
+`.lake` from the GitHub Actions cache, where runs on `main` save the copies that other branches
+and pull requests fall back to, and Lake reuses those outputs in the
+same way. Both remote publishers normally receive only validated `main` outputs; this does
+not protect against a compromised publisher or origin (the Actions cache also holds a pull
+request's own earlier runs).
 
 Lake reuses an output only for a module whose input hash (its source, the outputs of its
 imports, its options and the toolchain) matches the one uploaded. Every module that differs from
@@ -239,11 +248,12 @@ When nothing is cached, CI compiles everything, as before.
 
 The cache contains only build outputs of commits on `main` (sources that are public in this
 repository); build logs and machine paths are not uploaded. Downloads remain anonymous HTTPS
-requests to Google Cloud Storage until a separately reviewed reader cutover.
+requests to GCS or, when GCS restoration fails, MIT. An explicit origin override can change
+that order or select a single origin.
 
 ## MIT origin migration
 
-The optional [HTTP origin](../../tools/cache-origin/README.md) uses nginx for HTTPS,
+The fallback [HTTP origin](../../tools/cache-origin/README.md) uses nginx for HTTPS,
 upload authentication and public file serving, plus a small Linux Go executable for synchronous
 publication and garbage collection. MIT owns the VM, operating-system updates, DNS/TLS,
 credentials, bounded storage and monitoring. The repository supplies source and operator examples,
@@ -253,8 +263,9 @@ The deployed MIT origin is **https://complexitycache.csail.mit.edu**. The
 [dated deployment status](../../tools/cache-origin/README.md#mit-deployment-status) records the
 installed source and completed host checks. As of November 7, 2026, main CI publishes real builds
 successfully to MIT and GCS, and `cache-server-publish` is restricted to `main`. GCS remains the
-default reader. A real MIT cold restore, recovery exercise and separate reader-cutover approval
-remain before changing that default.
+preferred reader, with MIT as the default fallback. Making MIT the preferred origin remains a
+separate decision; the real MIT cold restore and recovery exercise remain tracked in
+[#2503](https://github.com/cslib-community/cslib-frontier/issues/2503).
 
 After all required Lean checks, `publish.py stage` records the exact clean producer revision
 and SHA-256 inventory once. GCS and the separate MIT publisher job consume those same staged bytes.
@@ -279,14 +290,14 @@ Lake's native artifact hash is 64-bit and not cryptographically secure. Existing
 conflicting writes, but GC retains no permanent key ledger. Retention frees server storage and
 does not revoke downloaded outputs. The [security contract and recovery procedure](../../tools/cache-origin/SECURITY.md)
 explain this boundary and cleanup of **both origins, Actions caches/handoffs and local caches**
-before rebuilding with restoration disabled. The GCS-only trust description above applies until
-the explicit reader cutover.
+before rebuilding with restoration disabled. These MIT trust requirements apply whenever a
+reader reaches the fallback, as well as to an explicit MIT-first override.
 
 For a new installation, commission the actual server before enabling publication: verify TLS,
 upload authentication, Unix-socket permissions, service restart, storage limits and GC; prove
 concurrent conflicting uploads cannot replace a key; test unauthorized PUT and all DELETE requests.
-Before reader cutover, cold-restore a real build through the public HTTPS origin and exercise
-recovery. CI checks the same nginx routes over loopback TLS, but cannot establish
+Before making MIT the preferred reader, cold-restore a real build through the public HTTPS
+origin and exercise recovery. CI checks the same nginx routes over loopback TLS, but cannot establish
 the target host's identity, permissions or disk configuration.
 
 A repository administrator can prepare the GitHub environment `cache-server-publish`, restrict it
@@ -300,11 +311,11 @@ installation, keep publication disabled until the commissioning evidence and int
 | Environment variable | `CACHE_SERVER_URL=https://complexitycache.csail.mit.edu` (origin without a path) |
 | Repository variable | `CACHE_SERVER_PUBLISH_ENABLED` (`false` until commissioning passes) |
 
-Enabling publication does not change readers. Keep GCS publication and the GCS default URL during
-commissioning. A later small PR can change the single default `COMPLEXITYLIB_CACHE_URL` after a
-cold restore from the public MIT URL succeeds; retain GCS long enough to observe the new origin,
-then disable and remove it in another reviewed change. At every stage, an empty cache remains an
-optional performance loss rather than a build failure.
+Enabling publication does not change readers. The checked-in reader order is GCS first, MIT
+second. Keep both publishers enabled so either origin can serve the same validated revision.
+Making MIT primary or removing GCS requires a separate reviewed change after the cold-restore
+and recovery checks; enabling fallback does not complete those checks. At every stage, an
+empty cache remains an optional performance loss rather than a build failure.
 
 For emergency recovery, `DISABLE_CACHE_RESTORE=true` disables the updated restoration helpers,
 Actions `.lake` restoration/saving and merge-group handoffs. Updated workflows also disable
@@ -317,7 +328,7 @@ Neither variable changes Lake's artifact IDs or ordinary retention.
 This PR does not complete repository-managed provisioning or automated upgrades. Those remain
 open under [#2503](https://github.com/cslib-community/cslib-frontier/issues/2503); the
 [milestone scope](../../tools/cache-origin/SECURITY.md#scope-of-2506-and-remaining-2503-work) separates
-the source/host checks from reader activation and integration approval.
+the source/host checks from remaining cold-restore, recovery and preferred-reader decisions.
 
 ## Maintainer runbook
 
@@ -331,7 +342,7 @@ creates, in order (each step can be rerun alone, e.g. `setup-gcs.sh alert`):
 | `project` | the project, billing link and APIs |
 | `bucket` | `gs://complexitylib-lake-cache` (`us-east1`), public read by object name without listing, no soft delete or versioning, revision mappings expire after 180 days |
 | `writer` | the GitHub identity pool and provider, and the `lake-cache-writer` service account (create + read on the bucket only) |
-| `budget` | a monthly budget (default 10 USD) with alerts at 50/90/100 % and a Pub/Sub topic |
+| `budget` | a monthly budget (default 100 USD, overridden by `BUDGET_USD`) with alerts at 50/90/100 % and a Pub/Sub topic |
 | `killswitch` | a Cloud Run function that removes public read when the budget is reached or the egress alert fires |
 | `alert` | an alert on more than 20 GB sent per hour, to the kill switch and `ALERT_EMAIL` |
 | `variables` | prints the `gh variable set` commands for the three repository variables |
@@ -347,8 +358,10 @@ and soon reach the budget. Workflows that read the bucket therefore restore `.la
 Actions cache first and download only what it lacks. The budget alerts and the kill switch bound
 abuse of the public bucket.
 
-**After the kill switch fires.** Downloads fail and builds fall back to compiling. Check the egress
-graph and the function's log, then restore public read:
+**After the kill switch fires.** GCS downloads fail and readers try MIT; if it also misses or
+fails, builds compile the remaining outputs. The switch keeps objects and writer permissions,
+so successful uploads do not establish public-reader health. Check the egress graph and the
+function's log before restoring public read:
 
 ```bash
 gcloud storage buckets add-iam-policy-binding gs://complexitylib-lake-cache \
