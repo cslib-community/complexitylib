@@ -274,6 +274,7 @@
  "CslibFrontier/Crypto/Protocols/SigmaProtocol/Abort/RandomOracle.lean": 2,
  "CslibFrontier/Crypto/Protocols/SigmaProtocol/Lyubashevsky/NativeExtract.lean": 6,
  "CslibFrontier/Crypto/Protocols/SigmaProtocol/Lyubashevsky/Signature/View.lean": 2,
+ "CslibFrontier/Crypto/Protocols/Signature/RandomOracle.lean": 4,
  "CslibFrontier/Crypto/Protocols/VOLE/AdaptiveMulCheck.lean": 2,
  "CslibFrontier/Crypto/Protocols/VOLE/Circuit.lean": 2,
  "CslibFrontier/Crypto/Protocols/VOLE/CircuitPrivacy.lean": 5,
