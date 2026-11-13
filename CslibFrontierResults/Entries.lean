@@ -42,6 +42,7 @@ import CslibFrontier.Computability.Circuit.Boolean.Arithmetic
 import CslibFrontier.Computability.Circuit.Boolean.BitBlastCompiler
 import CslibFrontier.Computability.Circuit.Boolean.FiniteSimulation
 import CslibFrontier.Computability.Circuit.Boolean.BarringtonClass
+import CslibFrontier.Computability.Circuit.Boolean.ParityNC1
 import CslibFrontier.Computability.Circuit.Boolean.Braverman.Fooling
 import CslibFrontier.Computability.Circuit.Boolean.Formula.Andreev
 import CslibFrontier.Computability.Circuit.Boolean.Hastad.Sharp
@@ -52,6 +53,7 @@ import CslibFrontier.Computability.Circuit.Boolean.NonuniformSeparation
 import CslibFrontier.Computability.Circuit.Boolean.Razborov.MiddleSlice.P
 import CslibFrontier.Computability.Circuit.Boolean.Razborov.Useful
 import CslibFrontier.Computability.Circuit.Boolean.Smolensky
+import CslibFrontier.Foundations.BooleanAnalysis.OrDegree
 import CslibFrontier.Computability.Circuit.NNF.Negation.Separation
 import CslibFrontier.Computability.Communication.Discrepancy
 import CslibFrontier.Computability.Communication.Discrepancy.Spectral
@@ -781,6 +783,33 @@ register_result "boolean-two-element-arithmetic-simulation" where
     and De Morgan circuits simulate arithmetic with factor 4. Constants count as gates; \
     input/output wires are free. Nonuniform existence, not compiler runtime or formal \
     polynomial equality. This does not complete the arbitrary fixed finite-field exercise."
+
+register_result "or-exact-degree" where
+  title := "Polynomials computing OR on the cube have full degree"
+  topic := "circuit complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 13, Exercise 6",
+      locator := "Web draft 2007-01-08, printed p. 252; PDF p. 268" }
+  ]
+  theorems := [Cslib.BitString.card_le_totalDegree_of_eval_eq_or,
+    Cslib.BitString.le_totalDegree_of_eval_eq_or_zmod,
+    Cslib.BitString.totalDegree_orPoly]
+  scope := "Every polynomial over a nontrivial commutative ring, multilinear or not, that \
+    agrees with OR at the 0/1 points has total degree at least the number of variables; \
+    1 - prod (1 - X_i) attains it. The GF(q) corollary is stated over ZMod q with q prime. \
+    Exact representation only; no approximate-degree statement."
+
+register_result "parity-nc-one" where
+  title := "Parity is in NC¹"
+  topic := "circuit complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 13, Exercise 7 (PARITY)",
+      locator := "Web draft 2007-01-08, printed p. 253; PDF p. 269" }
+  ]
+  theorems := [Cslib.Circuits.Boolean.parity_mem_NC_one]
+  scope := "Nonuniform NC¹: polynomial-size fan-in-two De Morgan circuit families of depth \
+    O(log n), negations free. Proved by an explicit balanced XOR formula of depth \
+    2 ceil(log2 n), not by the Karchmer–Wigderson game the exercise suggests."
 
 register_result "formal-complexity-measure-leaf-bound" where
   title := "Formal complexity measures lower-bound constant-free formula leaf size"
