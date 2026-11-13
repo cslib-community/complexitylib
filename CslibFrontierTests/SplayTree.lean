@@ -101,7 +101,7 @@ example :
 -- 3. Self-adjusting `insert`, `erase`, `split`, `join`, `minimum`, and `successor`, including
 -- duplicate-insert and absent-erase set-idempotence.
 def build (xs : List ℕ) : BinaryTree ℕ :=
-  (run .nil (insertAll xs)).tree
+  (run .nil (insertAll xs)).state
 
 theorem ordered_build (xs : List ℕ) : Ordered (build xs) := by
   obtain ⟨_, ⟨hord, _⟩, _⟩ := run_correct_empty (insertAll xs)
@@ -192,9 +192,9 @@ private def repeatContains7 : (spec ℕ).Client (Bool × Bool) :=
 example :
     let r := run rightSpine7 repeatContains7
     r.value = (true, true) ∧
-      r.rotations = [6, 0] ∧
-      rootKey r.tree = some 7 ∧
-      Rep (elements rightSpine7) r.tree := by
+      r.traces = [6, 0] ∧
+      rootKey r.state = some 7 ∧
+      Rep (elements rightSpine7) r.state := by
   intro r
   obtain ⟨_, hrep, _⟩ :=
     run_correct repeatContains7 (s := elements rightSpine7) ⟨ordered_rightSpine7, rfl⟩
@@ -213,14 +213,15 @@ example :
     let r := run .nil buildAndQueryClient
     let (_, _, history) := (spec ℕ).runClient ∅ buildAndQueryClient
     r.value = (some 1, some 2, some 1) ∧
-      elements r.tree = ({2, 3, 4, 5, 6, 7} : Finset ℕ) ∧
-      (total id r.rotations : ℝ) ≤ realHistoryCost ∅ history ∧
-      total id r.rotations ≤ (spec ℕ).totalCost amortizedCharge ∅ history := by
+      elements r.state = ({2, 3, 4, 5, 6, 7} : Finset ℕ) ∧
+      (total id r.traces : ℝ) ≤ realHistoryCost ∅ history ∧
+      total id r.traces ≤ (spec ℕ).totalCost amortizedCharge ∅ history := by
   intro r
   have hc := run_correct_empty buildAndQueryClient
   dsimp only at hc
   obtain ⟨_, ⟨_, helt_rep⟩, hcost⟩ := hc
-  have hreal := executes_rotations_le_realHistoryCost_of_empty (run_exec buildAndQueryClient .nil)
+  have hreal := executes_rotations_le_realHistoryCost_of_empty
+    (Execution.executes_run SplayTree.step buildAndQueryClient .nil)
   have helt :
       (let (_, finalState, _) := (spec ℕ).runClient ∅ buildAndQueryClient
        finalState) = ({2, 3, 4, 5, 6, 7} : Finset ℕ) := by decide

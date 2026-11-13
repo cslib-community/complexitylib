@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Basic
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF
+import CslibFrontier.Probability.Uniform.Translate
 
 /-!
 # AND and OR composition of Sigma protocols
@@ -277,8 +278,8 @@ theorem orProof_specialHVZK (hs₀ : P₀.SpecialHVZK R₀ simulate₀)
     | .inl x, y, hxy, c => by
       rw [orProof_transcript_inl, orSimulate]
       simp only [← hs₀.transcript_eq x y.1 hxy, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
-      conv_lhs => rw [← PMF.uniformOfFintype_map_equiv (Equiv.subLeft c), PMF.bind_map]
-      simp only [Function.comp_def, Equiv.subLeft_apply, sub_sub_cancel]
+      conv_lhs => rw [← PMF.uniformOfFintype_map_sub_left c, PMF.bind_map]
+      simp only [Function.comp_def, sub_sub_cancel]
       exact congrArg _ (funext fun _ => PMF.bind_comm _ _ _)
     | .inr x, y, hxy, c => by
       rw [orProof_transcript_inr, orSimulate]

@@ -151,47 +151,47 @@ example : ¬ CSP.HasPolymorphism arity dualSem (Cslib.parity 3) := by
   exact Bool.false_ne_true (hf ▸ ht)
 
 -- Sparse binary labels and repeated scope positions; the same gate accepts x ∧ x → y.
-example : [(Rel.gate, [2 ^ 100, 2 ^ 100, 7]), (.positive, [2 ^ 100]), (.positive, [7])]
+example : [⟨Rel.gate, [2 ^ 100, 2 ^ 100, 7]⟩, ⟨.positive, [2 ^ 100]⟩, ⟨.positive, [7]⟩]
     ∈ CSPSAT arity hornSem := by
   exact ⟨by decide, fun _ => true, by decide⟩
 
-example : [(Rel.gate, [2 ^ 100, 2 ^ 100, 7]), (.positive, [2 ^ 100]), (.negative, [7])]
+example : [⟨Rel.gate, [2 ^ 100, 2 ^ 100, 7]⟩, ⟨.positive, [2 ^ 100]⟩, ⟨.negative, [7]⟩]
     ∉ CSPSAT arity hornSem := by
   rintro ⟨_, σ, hσ⟩
   cases hx : σ (2 ^ 100) <;> cases hy : σ 7 <;>
     simp [CSP.eval, Constraint.eval, hornSem, hy] at hσ
 
-example : [(Rel.gate, [2 ^ 100, 2 ^ 100, 7]), (.positive, [2 ^ 100]), (.positive, [7])]
+example : [⟨Rel.gate, [2 ^ 100, 2 ^ 100, 7]⟩, ⟨.positive, [2 ^ 100]⟩, ⟨.positive, [7]⟩]
     ∈ CSPSAT arity dualSem := by
   exact ⟨by decide, fun _ => false, by decide⟩
 
-example : [(Rel.gate, [2 ^ 100, 2 ^ 100, 7]), (.positive, [2 ^ 100]), (.negative, [7])]
+example : [⟨Rel.gate, [2 ^ 100, 2 ^ 100, 7]⟩, ⟨.positive, [2 ^ 100]⟩, ⟨.negative, [7]⟩]
     ∉ CSPSAT arity dualSem := by
   rintro ⟨_, σ, hσ⟩
   cases hx : σ (2 ^ 100) <;> cases hy : σ 7 <;>
     simp [CSP.eval, Constraint.eval, dualSem, hornSem, hy] at hσ
 
 -- Malformed nullary scopes are semantically true, but CSPSAT rejects them on both branches.
-example : CSP.Satisfiable hornSem ([(Rel.top, [7])] : CSP Rel ℕ) ∧
-    [(Rel.top, [7])] ∉ CSPSAT arity hornSem := by
+example : CSP.Satisfiable hornSem ([⟨Rel.top, [7]⟩] : CSP Rel ℕ) ∧
+    [⟨Rel.top, [7]⟩] ∉ CSPSAT arity hornSem := by
   refine ⟨⟨fun _ => false, rfl⟩, ?_⟩
   rintro ⟨hw, _⟩
-  have h := hw (.top, [7]) (by simp)
+  have h := hw ⟨.top, [7]⟩ (by simp)
   simp [arity] at h
 
-example : CSP.Satisfiable dualSem ([(Rel.top, [7])] : CSP Rel ℕ) ∧
-    [(Rel.top, [7])] ∉ CSPSAT arity dualSem := by
+example : CSP.Satisfiable dualSem ([⟨Rel.top, [7]⟩] : CSP Rel ℕ) ∧
+    [⟨Rel.top, [7]⟩] ∉ CSPSAT arity dualSem := by
   refine ⟨⟨fun _ => false, rfl⟩, ?_⟩
   rintro ⟨hw, _⟩
-  have h := hw (.top, [7]) (by simp)
+  have h := hw ⟨.top, [7]⟩ (by simp)
   simp [arity] at h
 
-example : [(Rel.top, [])] ∈ CSPSAT arity hornSem ∧
-    [(Rel.top, [])] ∈ CSPSAT arity dualSem := by
+example : [⟨Rel.top, []⟩] ∈ CSPSAT arity hornSem ∧
+    [⟨Rel.top, []⟩] ∈ CSPSAT arity dualSem := by
   exact ⟨⟨by decide, fun _ => false, rfl⟩, ⟨by decide, fun _ => false, rfl⟩⟩
 
-example : [(Rel.bottom, [])] ∉ CSPSAT arity hornSem ∧
-    [(Rel.empty, [7])] ∉ CSPSAT arity dualSem := by
+example : [⟨Rel.bottom, []⟩] ∉ CSPSAT arity hornSem ∧
+    [⟨Rel.empty, [7]⟩] ∉ CSPSAT arity dualSem := by
   constructor <;> rintro ⟨_, σ, hσ⟩
   · exact Bool.false_ne_true hσ
   · simp [CSP.eval, Constraint.eval, dualSem, hornSem] at hσ
@@ -226,11 +226,11 @@ example : PolyTimeReducible (encCSP (encFinite Rel) encNat) encCNF
     (fun R => (CNF.isHorn_relabel _ _).mpr
       (by cases R <;> simp [localFormula, CNF.IsHorn, Clause.IsHorn]))
 
-example : CSP.instantiateCNF 0 template [(Rel.gate, [2 ^ 100, 2 ^ 100, 7])] =
+example : CSP.instantiateCNF 0 template [⟨Rel.gate, [2 ^ 100, 2 ^ 100, 7]⟩] =
     [[(2 ^ 100, false), (2 ^ 100, false), (7, true)]] := by decide
 
 example : HornSAT.solve (CSP.instantiateCNF 0 template
-    [(Rel.gate, [2 ^ 100, 2 ^ 100, 7]), (.positive, [2 ^ 100]), (.negative, [7])]) = false := by
+    [⟨Rel.gate, [2 ^ 100, 2 ^ 100, 7]⟩, ⟨.positive, [2 ^ 100]⟩, ⟨.negative, [7]⟩]) = false := by
   decide
 
 example : PolyTimeReducible (encCSP (encFinite Rel) encNat) encCNF
@@ -241,10 +241,10 @@ example : PolyTimeReducible (encCSP (encFinite Rel) encNat) encCNF
       cases R <;> simp [localFormula, CNF.IsHorn, Clause.IsHorn])
 
 example : DualHornSAT.solve (CSP.instantiateCNF 0 dualTemplate
-    [(Rel.gate, [2 ^ 100, 2 ^ 100, 7]), (.positive, [2 ^ 100]), (.negative, [7])]) = false := by
+    [⟨Rel.gate, [2 ^ 100, 2 ^ 100, 7]⟩, ⟨.positive, [2 ^ 100]⟩, ⟨.negative, [7]⟩]) = false := by
   decide
 
-example : CSP.validArity arity ([(Rel.gate, [2 ^ 100, 7]), (.gate, [0, 1, 2, 3])] : CSP Rel ℕ) =
+example : CSP.validArity arity ([⟨Rel.gate, [2 ^ 100, 7]⟩, ⟨.gate, [0, 1, 2, 3]⟩] : CSP Rel ℕ) =
     false := by decide
 
 -- Identifying variables never deduplicates literal occurrences or makes non-Horn syntax Horn.

@@ -303,6 +303,18 @@ methods together:
 realize [BinaryHeap.Native.realizes_insert, BinaryHeap.Native.realizes_decreaseKey]
 ```
 
+A program argument, `pure` result or `iterate` loop state can be a documented `structure`
+instead of a nested tuple. Give it the former tuple's words with
+[`WordEncoding.ofEquiv`](../../CslibFrontier/Computability/WordRAM/Realization/WordEncoding/Equiv.lean)
+and an exposed equivalence that lists the fields in tuple order; `realize` then accepts field
+projections as operands and anonymous constructors as results, with unchanged glue and
+certificates. The [cluster scan](../../CslibFrontier/DataStructure/ApproximateMembership/WordRAM/QuotientFilter/Cluster.lean)
+of the quotient filter keeps its environment, loop state and step context this way, and its
+[tests](../../CslibFrontierTests/WordRAMQuotientFilter.lean) check that each record keeps its
+tuple's words. A record input suits a certificate whose callers pass a record; method calls
+match on products and sigma types only, so a certificate whose callers pass separate curried
+arguments keeps a tuple input and names its components with accessors.
+
 Zero local work is an absorbed grading: the callee still has its certified native allowance
 against memory charge. It does not mean zero machine instructions.
 Nonzero local work is retained at the call's actual argument and reached memory. Binds sum

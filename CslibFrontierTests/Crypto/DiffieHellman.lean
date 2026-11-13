@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pair.Projections
 import CslibFrontier.Crypto.Computational.DiscreteLog.SchnorrGroup
 import CslibFrontier.Crypto.Computational.DiffieHellman
 import CslibFrontier.Crypto.Computational.DiffieHellman.EncodingBounds
@@ -146,9 +147,9 @@ theorem schnorrGroups_encode_zero (d : schnorrGroups.Desc) :
 theorem dropFrame_dropFrame_unframe_encPair_encDesc (d : schnorrGroups.Desc) (u : List Bool) :
     dropFrame (dropFrame (unframe (encPair schnorrGroups.encDesc encBits (d, u)))) =
       schnorrGroups.encode d (schnorrGroups.generator d) := by
-  have h1 : encPair schnorrGroups.encDesc encBits (d, u) =
-      frame (frame d.1.1.bits ++ (frame d.1.2.1.bits ++ d.1.2.2.bits)) ++ u := rfl
-  rw [h1, unframe_frame_append, dropFrame_frame_append, dropFrame_frame_append]
+  change dropFrame (dropFrame (unframe
+    (encPair (encPair encNat (encPair encNat encNat)) encBits (d.1, u)))) = _
+  rw [unframe_encPair, dropFrame_encPair, dropFrame_encPair]
   exact (SchnorrGroup.encode_generator d).symm
 
 /-- An admissibility predicate for group-element ElGamal over Schnorr groups: both challenge words
@@ -749,10 +750,10 @@ example (setupProb : ℕ → ProbComp schnorrGroups.Desc)
           (schnorrGroups.linearHashKDF keyLen (fun d => (schnorrGroups.encDesc d).length))
           Encryption.otpWordEncrypt hashedWordAdversary true n) := by
   refine hDDH.negligible_hashedElGamalCipherCPAGameOn_linearHashKDF
-    Encryption.demOneTimeWordINDCPA_otpWordEncrypt hsetup hkey_poly
-    (ComputableInPolyTime.encoding_length schnorrGroups.encDesc)
-    (fun _ => Nat.two_pow_pos _) hkey (fun _ d _ x => schnorrGroups_encode_length_le d x)
-    hsize ?_ computableInPolyTime_equalLengthWords (fun _ _ _ _ _ h => h)
+    Encryption.demOneTimeWordINDCPA_otpWordEncrypt hsetup
+    ⟨fun _ => Nat.two_pow_pos _, hkey, fun _ d _ x => schnorrGroups_encode_length_le d x, hsize, ?_⟩
+    hkey_poly (ComputableInPolyTime.encoding_length schnorrGroups.encDesc)
+    computableInPolyTime_equalLengthWords (fun _ _ _ _ _ h => h)
     Encryption.isPPTOn_otpWordEncrypt hashedWordAdversary_isPPT
   have h : (fun n => (2 : ℝ≥0) ^ n / ((2 ^ (2 * n) : ℕ) : ℝ≥0)) =
       fun n => (1 / (2 ^ n : ℕ) : ℝ≥0) := by
@@ -844,10 +845,10 @@ example (setupProb : ℕ → ProbComp schnorrGroups.Desc)
   have hout_poly : ComputableInPolyTime (fun _ : ℕ => 4) encUnary encUnary :=
     ComputableInPolyTime.const 4
   refine hDDH.negligible_hashedElGamalCipherCPAGameOn_linearHashKDF_of_demOneTimeKeyINDCPAOn
-    (Encryption.demOneTimeKeyWordINDCPA_otpKeyWordEncrypt (fun _ => 4)) hsetup hout_poly hkey_poly
-    (ComputableInPolyTime.encoding_length schnorrGroups.encDesc)
-    (fun _ => Nat.two_pow_pos _) hkey (fun _ d _ x => schnorrGroups_encode_length_le d x)
-    hsize ?_ computableInPolyTime_equalLengthWords (fun _ _ _ _ _ h => h)
+    (Encryption.demOneTimeKeyWordINDCPA_otpKeyWordEncrypt (fun _ => 4)) hsetup
+    ⟨fun _ => Nat.two_pow_pos _, hkey, fun _ d _ x => schnorrGroups_encode_length_le d x, hsize, ?_⟩
+    hout_poly hkey_poly (ComputableInPolyTime.encoding_length schnorrGroups.encDesc)
+    computableInPolyTime_equalLengthWords (fun _ _ _ _ _ h => h)
     (Encryption.isPPTOn_otpKeyWordEncrypt hout_poly) hashedWordAdversary_isPPT
   have h : (fun n => (2 : ℝ≥0) ^ 4 / ((2 ^ n : ℕ) : ℝ≥0)) =
       fun n => (16 : ℝ≥0) * (1 / (2 ^ n : ℕ) : ℝ≥0) := by

@@ -11,8 +11,10 @@ public import CslibFrontier.Crypto.Computational.Encryption.Hybrid.CCA
 public import CslibFrontier.Crypto.Computational.Encryption.Authenticated
 public import CslibFrontier.Crypto.Encoding
 public import CslibFrontier.Languages.Probabilistic.Oracle.Substitution
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pair.Projections
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
+import CslibFrontier.Languages.Probabilistic.Oracle.Substitution.RunWith
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Computability.Probabilistic.Oracle.Substitution
 import CslibFrontier.Tactic.PPT
@@ -173,8 +175,7 @@ theorem run_hybridDEMHandler_after (E : SymmetricCipher)
       · simp [hd, List.take_of_length_le (hbound _)]
     · have hne : request.2 ≠ encPair encBits encBits (ctK, ctD) := by
         intro h
-        apply hk
-        simpa only [encPair_apply, encBits_apply, unframe_frame_append] using congrArg unframe h
+        exact hk ((congrArg unframe h).trans (unframe_encPair_encBits _ _ _))
       simp only [hybridDEMHandler, hybridDecrypt, beq_iff_eq, hc, hk, hne, ↓reduceIte,
         OracleComp.interpret_pure, StateT.run_pure]
   · have hne : request.2 ≠ encPair encBits encBits (ctK, ctD) := by
@@ -207,9 +208,8 @@ private theorem eval_run_substituted_phase {α : Type}
       have h := congrArg ProbComp.eval (hstep request)
       rw [ProbOracleComp.eval_run_interpret_eq_runWith, ProbComp.eval_pure] at h
       simpa only [PMF.pure_map] using h.symm) program ()
-  rw [ProbOracleComp.simulate, ProbOracleComp.eval_run_interpret_eq_runWith,
-    ProbOracleComp.runWith_interpret_sumHandler,
-    ← hsim, ProbOracleComp.eval_run_interpret_eq_runWith]
+  rw [ProbOracleComp.eval_run_interpret_eq_runWith, ProbOracleComp.runWith_simulate, ← hsim,
+    ProbOracleComp.eval_run_interpret_eq_runWith]
   simp only [ProbComp.eval_pure]
 
 private theorem eval_run_hybridDEMContinuation (E : SymmetricCipher)
@@ -293,9 +293,7 @@ theorem eval_hybridDEMGame (E : SymmetricCipher)
     (decaps : ℕ → List Bool → List Bool → Option (List Bool))
     (ctBound : ℕ → ℕ) (decBound : ℕ → List Bool → ℕ)
     (adversary : WordCCA2Adversary) (bit : Bool) (n : ℕ)
-    (hct : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n → ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support,
-        ct.length ≤ ctBound n)
+    (hct : E.CiphertextLengthLE n (ctBound n))
     (hdec : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
       ∀ ct, (encOption encBits (E.decrypt n k ct)).length ≤ decBound n ct) :
     ProbComp.eval (hybridDEMGame E keyGen encaps decaps adversary bit n) =

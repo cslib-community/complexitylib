@@ -86,7 +86,7 @@ private theorem exists_of_derives {d : ℕ} (hd : d < Multigraph.minBalancedCut 
   | empty => exact ⟨∅, Multigraph.edgeCut_empty ends, parityOn_empty χ, by simp; omega⟩
   | mem he hS =>
     obtain ⟨v, hv⟩ := mem_tseitin.1 he
-    simp only [Prod.mk.injEq] at hv
+    simp only [ParityEquation.mk.injEq] at hv
     obtain ⟨rfl, rfl⟩ := hv
     refine ⟨{v}, Multigraph.edgeCut_singleton ends v, parityOn_singleton v χ, ?_⟩
     refine Multigraph.three_mul_card_lt_of_card_edgeCut_lt (ends := ends) (S := {v}) ?_

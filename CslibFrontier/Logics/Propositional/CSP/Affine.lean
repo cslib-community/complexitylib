@@ -49,14 +49,19 @@ namespace Cslib.Logic.PL
 variable {V : Type*}
 
 /-- An affine parity equation: a list of variables, with repetitions, and its right-hand side. -/
-abbrev AffineEquation (V : Type*) := List V × Bool
+structure AffineEquation (V : Type*) where
+  /-- The variables summed, with repetitions; repeated occurrences cancel in pairs. -/
+  vars : List V
+  /-- The right-hand side of the equation. -/
+  rhs : Bool
+deriving DecidableEq, Repr
 
 /-- A finite conjunction of affine parity equations. -/
 abbrev AffineSystem (V : Type*) := List (AffineEquation V)
 
 /-- The sum of the listed bits equals the right-hand side in the Boolean ring. -/
 @[expose] def AffineEquation.Holds (e : AffineEquation V) (a : V → Bool) : Prop :=
-  (e.1.map a).sum = e.2
+  (e.vars.map a).sum = e.rhs
 
 /-- Every equation in the system holds. -/
 @[expose] def AffineSystem.Holds (F : AffineSystem V) (a : V → Bool) : Prop :=
@@ -64,7 +69,7 @@ abbrev AffineSystem (V : Type*) := List (AffineEquation V)
 
 /-- Two occurrences of the same variable cancel, with no condition on the remaining list. -/
 theorem AffineEquation.holds_cons_cons (v : V) (vs : List V) (b : Bool) (a : V → Bool) :
-    AffineEquation.Holds (v :: v :: vs, b) a ↔ AffineEquation.Holds (vs, b) a := by
+    AffineEquation.Holds ⟨v :: v :: vs, b⟩ a ↔ AffineEquation.Holds ⟨vs, b⟩ a := by
   simp [Holds, ← add_assoc, BooleanRing.add_self]
 
 /-- Ternary parity on the existing Boolean cube is coordinatewise addition of three tuples. -/
@@ -89,12 +94,12 @@ theorem AffineEquation.isPolymorphism_parity (e : AffineEquation V) :
     IsPolymorphism (Cslib.parity 3) {a | e.Holds a} := by
   rw [isPolymorphism_parity_iff]
   intro x hx y hy z hz
-  have hadd (x y : V → Bool) : (e.1.map (x + y)).sum =
-      (e.1.map x).sum + (e.1.map y).sum := by
-    induction e.1 with
+  have hadd (x y : V → Bool) : (e.vars.map (x + y)).sum =
+      (e.vars.map x).sum + (e.vars.map y).sum := by
+    induction e.vars with
     | nil => simp
     | cons v vs ih => simp only [List.map_cons, List.sum_cons, Pi.add_apply, ih]; abel
-  change (e.1.map (x + y + z)).sum = e.2
+  change (e.vars.map (x + y + z)).sum = e.rhs
   rw [hadd, hadd, hx, hy, hz, BooleanRing.add_self, zero_add]
 
 /-- Every conjunction of affine equations is preserved by ternary parity. -/
@@ -155,7 +160,7 @@ theorem exists_separating_affineEquation [Finite V] {R : Set (V → Bool)}
         simp [g, LinearMap.mem_ker.mp (hker hmem)]
       rw [hadd] at hz
       cases hb' : g b <;> cases hc' : g c <;> simp_all
-    refine ⟨(S.toList, Cslib.parityOn S c), ?_, ?_⟩
+    refine ⟨⟨S.toList, Cslib.parityOn S c⟩, ?_, ?_⟩
     · intro b hb
       change (S.toList.map b).sum = Cslib.parityOn S c
       rw [Finset.sum_map_toList, ← Cslib.parityOn_eq_sum]
@@ -168,7 +173,7 @@ theorem exists_separating_affineEquation [Finite V] {R : Set (V → Bool)}
       have hgac : g (a + c) = false := by rw [hadd, hgc, Bool.xor_self]
       have : g (a + c) = true := by simpa [g] using hf
       exact Bool.false_ne_true (hgac.symm.trans this)
-  · exact ⟨([], true), fun b hb => (hne ⟨b, hb⟩).elim, by simp [AffineEquation.Holds]⟩
+  · exact ⟨⟨[], true⟩, fun b hb => (hne ⟨b, hb⟩).elim, by simp [AffineEquation.Holds]⟩
 
 /-- **Parity preservation iff affine definability.** Empty and nullary relations are included;
 there are no auxiliary variables. The defining system is finite, with no claimed size bound. -/
@@ -182,7 +187,7 @@ theorem isPolymorphism_parity_iff_exists_affineSystem [Finite V] (R : Set (V →
     have hex (a : V → Bool) : ∃ e : AffineEquation V,
         (∀ b ∈ R, e.Holds b) ∧ (a ∉ R → ¬e.Holds a) := by
       by_cases ha : a ∈ R
-      · exact ⟨([], false), by simp [AffineEquation.Holds, Bool.zero_eq_false],
+      · exact ⟨⟨[], false⟩, by simp [AffineEquation.Holds, Bool.zero_eq_false],
           fun h => (h ha).elim⟩
       · obtain ⟨e, he, hbad⟩ := exists_separating_affineEquation hR ha
         exact ⟨e, he, fun _ => hbad⟩

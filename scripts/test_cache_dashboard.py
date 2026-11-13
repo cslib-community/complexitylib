@@ -115,15 +115,21 @@ class StoreTests(unittest.TestCase):
         self.lock.chmod(0o600)
         self.old_inode = self.lock.stat().st_ino
 
+    def public_directory(self, *parts):
+        path = self.root / "public"
+        for part in Path(*parts).parts:
+            path /= part
+            path.mkdir(mode=0o755, exist_ok=True)
+            path.chmod(0o755)
+        return path
+
     def artifact(self, number, data):
-        path = self.root / f"public/a0/{collector.SCOPE}/{number:016x}.art"
-        path.parent.mkdir(parents=True, exist_ok=True)
+        path = self.public_directory("a0", collector.SCOPE) / f"{number:016x}.art"
         path.write_bytes(data)
         path.chmod(0o444)
 
     def mapping(self, revision, references, offset=0):
-        path = self.root / f"public/r0/{collector.SCOPE}/tc/lean-toolchain/{revision}.jsonl"
-        path.parent.mkdir(parents=True, exist_ok=True)
+        path = self.public_directory("r0", collector.SCOPE, "tc", "lean-toolchain") / f"{revision}.jsonl"
         data = '"2026-03-17"\n' + "".join(json.dumps([f"{n:016x}", f"{ref:016x}.ltar"]) + "\n" for n, ref in enumerate(references))
         path.write_text(data)
         path.chmod(0o444)
@@ -147,6 +153,21 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(snapshot["latest"]["module_count"], 3)
         self.assertEqual(snapshot["builds"][1]["mapping_requests"], 7)
         self.assertEqual(self.lock.stat().st_ino, self.old_inode)
+
+    def test_fixture_under_group_writable_umask_and_unsafe_directory(self):
+        previous = os.umask(0o002)
+        try:
+            self.artifact(1, b"one")
+            self.mapping("a" * 40, [1])
+            snapshot = collector.storage_snapshot(self.root, NOW, {})
+            self.assertEqual(snapshot["storage"]["artifact_count"], 1)
+            self.assertEqual(snapshot["storage"]["mapping_count"], 1)
+            self.assertEqual(os.umask(0o002), 0o002)
+            (self.root / "public/r0" / collector.SCOPE / "tc").chmod(0o775)
+            with self.assertRaises(collector.SnapshotUnavailable):
+                collector.storage_snapshot(self.root, NOW, {})
+        finally:
+            os.umask(previous)
 
     def test_busy_lock_is_nonblocking_and_previous_snapshot_remains_stale(self):
         import fcntl

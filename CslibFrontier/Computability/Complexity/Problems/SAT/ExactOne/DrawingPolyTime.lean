@@ -203,8 +203,7 @@ theorem sourceEdgeIndex :
     have hl : ComputableTidilyInPolyTime
         (fun p : CNF ℕ × (ℕ × ℕ) => (p.1.getD p.2.1 []).getD p.2.2 (0, true))
         (encPair encCNF (encPair encUnary encUnary)) (encPair encNat encBool) := by fun_prop
-    simpa only [Function.comp_def, sourceOccurrence, Cslib.Logic.PL.encOccurrence] using
-      hi.prod (hj.prod hl)
+    exact (hi.prod (hj.prod hl)).of_enc_eq fun _ => rfl
 
 private theorem graphDrawing :
     ComputableInPolyTime

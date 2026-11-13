@@ -82,17 +82,17 @@ theorem isEvenDeltaMatroid_evenTable (width : ℕ) :
 /-- Chain tail with the accumulated parity variable first. Each recursive step consumes one
 actual boundary entry and allocates one fresh binary name. -/
 @[expose] def parityChainTail (fresh first : ℕ) : List ℕ → CSP Table ℕ
-  | [] => [(evenTable 1, [first])]
-  | [b] => [(evenTable 2, [first, b])]
-  | [b, c] => [(evenTable 3, [first, b, c])]
+  | [] => [⟨evenTable 1, [first]⟩]
+  | [b] => [⟨evenTable 2, [first, b]⟩]
+  | [b, c] => [⟨evenTable 3, [first, b, c]⟩]
   | b :: c :: d :: rest =>
-    (evenTable 3, [first, b, fresh]) :: parityChainTail (fresh + 1) fresh (c :: d :: rest)
+    ⟨evenTable 3, [first, b, fresh]⟩ :: parityChainTail (fresh + 1) fresh (c :: d :: rest)
 
 /-- Width-three expansion, retaining the original boundary order. Names below `fresh` are
 reserved for the caller; an empty boundary is the true nullary parity table. -/
 @[expose] def parityChain (fresh : ℕ) (scope : List ℕ) : CSP Table ℕ :=
   match scope with
-  | [] => [(evenTable 0, [])]
+  | [] => [⟨evenTable 0, []⟩]
   | first :: rest => parityChainTail fresh first rest
 
 /-- Exactly the requested number of chain constraints. -/
@@ -120,23 +120,23 @@ theorem length_parityChain (fresh : ℕ) (scope : List ℕ) :
 /-- Every output table and scope has matching width at most three. -/
 theorem parityChainTail_width (fresh first : ℕ) (rest : List ℕ)
     (c : Constraint Table ℕ) (hc : c ∈ parityChainTail fresh first rest) :
-    c.1.arity = c.2.length ∧ c.2.length ≤ 3 ∧
-      ∃ n ≤ 3, c.1 = evenTable n := by
+    c.rel.arity = c.scope.length ∧ c.scope.length ≤ 3 ∧
+      ∃ n ≤ 3, c.rel = evenTable n := by
   induction rest using List.twoStepInduction generalizing fresh first with
   | nil =>
-    have he : c = (evenTable 1, [first]) := by
+    have he : c = ⟨evenTable 1, [first]⟩ := by
       simpa only [parityChainTail, List.mem_singleton] using hc
     subst c
     exact ⟨rfl, by change 1 ≤ 3; omega, 1, by omega, rfl⟩
   | singleton b =>
-    have he : c = (evenTable 2, [first, b]) := by
+    have he : c = ⟨evenTable 2, [first, b]⟩ := by
       simpa only [parityChainTail, List.mem_singleton] using hc
     subst c
     exact ⟨rfl, by change 2 ≤ 3; omega, 2, by omega, rfl⟩
   | cons_cons b d rest _ ih =>
     cases rest with
     | nil =>
-      have he : c = (evenTable 3, [first, b, d]) := by
+      have he : c = ⟨evenTable 3, [first, b, d]⟩ := by
         simpa only [parityChainTail, List.mem_singleton] using hc
       subst c
       exact ⟨rfl, by change 3 ≤ 3; omega, 3, by omega, rfl⟩
@@ -149,11 +149,11 @@ theorem parityChainTail_width (fresh first : ℕ) (rest : List ℕ)
 /-- The actual expansion uses only nonempty even delta-matroid relations. -/
 theorem parityChain_tables (fresh : ℕ) (scope : List ℕ)
     (c : Constraint Table ℕ) (hc : c ∈ parityChain fresh scope) :
-    c.1.arity = c.2.length ∧ c.2.length ≤ 3 ∧
-      IsEvenDeltaMatroid (booleanRelation arity sem c.1) := by
+    c.rel.arity = c.scope.length ∧ c.scope.length ≤ 3 ∧
+      IsEvenDeltaMatroid (booleanRelation arity sem c.rel) := by
   cases scope with
   | nil =>
-    have he : c = (evenTable 0, []) := by simpa [parityChain] using hc
+    have he : c = ⟨evenTable 0, []⟩ := by simpa [parityChain] using hc
     subst c
     exact ⟨rfl, by decide, isEvenDeltaMatroid_evenTable 0⟩
   | cons first rest =>
@@ -334,20 +334,20 @@ theorem parityChain_names_lt (fresh : ℕ) (scope : List ℕ)
 theorem parityChainTail_scopes_nodup (fresh first : ℕ) (rest : List ℕ)
     (hnd : (first :: rest).Nodup) (hbound : ∀ v ∈ first :: rest, v < fresh)
     (constraint : Constraint Table ℕ) (hc : constraint ∈ parityChainTail fresh first rest) :
-    constraint.2.Nodup := by
+    constraint.scope.Nodup := by
   induction rest using List.twoStepInduction generalizing fresh first with
   | nil =>
-    have he : constraint = (evenTable 1, [first]) := by simpa [parityChainTail] using hc
+    have he : constraint = ⟨evenTable 1, [first]⟩ := by simpa [parityChainTail] using hc
     subst constraint
     exact hnd
   | singleton b =>
-    have he : constraint = (evenTable 2, [first, b]) := by simpa [parityChainTail] using hc
+    have he : constraint = ⟨evenTable 2, [first, b]⟩ := by simpa [parityChainTail] using hc
     subst constraint
     exact hnd
   | cons_cons b c rest _ ih =>
     cases rest with
     | nil =>
-      have he : constraint = (evenTable 3, [first, b, c]) := by
+      have he : constraint = ⟨evenTable 3, [first, b, c]⟩ := by
         simpa [parityChainTail] using hc
       subst constraint
       exact hnd
@@ -376,10 +376,10 @@ theorem parityChainTail_scopes_nodup (fresh first : ℕ) (rest : List ℕ)
 theorem parityChain_scopes_nodup (fresh : ℕ) (scope : List ℕ) (hnd : scope.Nodup)
     (hbound : ∀ v ∈ scope, v < fresh)
     (constraint : Constraint Table ℕ) (hc : constraint ∈ parityChain fresh scope) :
-    constraint.2.Nodup := by
+    constraint.scope.Nodup := by
   cases scope with
   | nil =>
-    have he : constraint = (evenTable 0, []) := by simpa [parityChain] using hc
+    have he : constraint = ⟨evenTable 0, []⟩ := by simpa [parityChain] using hc
     subst constraint
     exact List.nodup_nil
   | cons first rest => exact parityChainTail_scopes_nodup fresh first rest hnd hbound constraint hc

@@ -14,6 +14,7 @@ public import CslibFrontier.Computability.WordRAM.Notation
 public import CslibFrontier.Computability.WordRAM.Randomized.Expected
 public import CslibFrontier.Computability.WordRAM.Time
 public import CslibFrontier.Foundations.NumberTheory.Harmonic
+import CslibFrontier.Computability.WordRAM.Randomized.LoopSegment
 import CslibFrontier.Computability.WordRAM.SymbolicExec
 import Mathlib.Data.List.Sort
 import Mathlib.Data.Rat.BigOperators
@@ -1331,32 +1332,8 @@ theorem outerBody_spec {w : ℕ} {input : List ℕ} {x : Data 16}
       hI.hw hp₅_stack hVS (hstack_eq ▸ hI.no_ext_inv) hI.perm hI.modifies
   choose y t hspec using hpart_all
   refine ⟨S₀, vlo, vhi, hstack_eq, hp_hi.2.1, y, t, ?_, fun k => (hspec k).2⟩
-  -- Note `p₅.set tmp k.val` determines `k.val` uniquely via `.regs tmp`!
-  let m₂_fn : Data 16 → ProbComp (Data 16 × ℕ) := fun d =>
-    if h : d.regs tmp < vhi - vlo - 1 + 1 then
-      pure (y ⟨d.regs tmp, h⟩, t ⟨d.regs tmp, h⟩)
-    else pure (d, 0)
-  have hseq := ExecRand.seq e_pop (m₂ := m₂_fn)
-    fun z hz => by
-      obtain ⟨k, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
-      have hreg : (p₅.set tmp k.val).regs tmp = k.val := by simp
-      dsimp only [m₂_fn]
-      simp only [hreg, k.isLt, ↓reduceDIte]
-      exact (hspec k).1.execRand
-  have hm_simpl : (do
-      let z₁ ← (fun k : Fin (vhi - vlo - 1 + 1) => (p₅.set tmp k.val, 8)) <$>
-        ProbComp.unifFin (vhi - vlo - 1)
-      let z₂ ← m₂_fn z₁.1
-      pure (z₂.1, z₁.2 + z₂.2)) =
-      ((fun k : Fin (vhi - vlo - 1 + 1) => (y k, 8 + t k)) <$>
-        ProbComp.unifFin (vhi - vlo - 1)) := by
-    simp only [← bind_pure_comp, bind_assoc, pure_bind]
-    refine congrArg (ProbComp.unifFin (vhi - vlo - 1) >>= ·) (funext fun k => ?_)
-    have hreg : (p₅.set tmp k.val).regs tmp = k.val := by simp
-    dsimp only [m₂_fn]
-    simp only [hreg, k.isLt, ↓reduceDIte, pure_bind]
-  rw [outerBody, ← hm_simpl]
-  exact hseq
+  rw [outerBody]
+  exact execRand_seq_det_map e_pop fun k => (hspec k).1
 
 /-- Quadratic worst-case step potential `∑_{(a,b) ∈ S} 20 * (b - a) ^ 2`. -/
 def stepPotential (n : ℕ) (x : Data 16) : ℕ :=
@@ -1418,15 +1395,15 @@ private theorem sum_childStack_le {M : Type*} [AddCommMonoid M] [PartialOrder M]
 
 private theorem outerBody_worstCase_step {w : ℕ} {input : List ℕ} {x : Data 16}
     (hI : OuterInv w input x) (hc : (Cond.lt zero sp).Holds x) :
-    ∃ T_b R_b, ExecRandWithin w outerBody x
+    ∃ T_b, ExecRandWithin w outerBody x
       (fun y => OuterInv w input y ∧
         T_b + 2 + stepPotential input.length y ≤ stepPotential input.length x ∧
-        R_b + callPotential input.length y ≤ callPotential input.length x) T_b R_b := by
+        1 + callPotential input.length y ≤ callPotential input.length x) T_b 1 := by
   obtain ⟨S₀, vlo, vhi, hstack, hge2, y, t, hexec, hspec⟩ := outerBody_spec hI hc
   let m := vhi - vlo
   have hm_def : m = vhi - vlo := rfl
   have hm2 : 2 ≤ m := by omega
-  refine ⟨11 * m + 31, 1, ⟨_, hexec, ?_, ?_⟩⟩
+  refine ⟨11 * m + 31, _, hexec, ?_, ?_⟩
   · exact (OracleComp.isCostBounded_map_iff _ _ _).mpr (ProbComp.isQueryBounded_unifFin (m - 1))
   · intro z hz
     obtain ⟨k, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
@@ -1487,27 +1464,12 @@ private theorem outerBody_drift_step {w : ℕ} {input : List ℕ} {x : Data 16}
   have hm_def : m = vhi - vlo := rfl
   have hm2 : 2 ≤ m := by omega
   have hm_eq : vhi - vlo - 1 + 1 = m := by omega
-  refine ⟨_, hexec, ?_, ?_⟩
-  · intro z hz
-    obtain ⟨k, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
-    obtain ⟨_, hIy, hread_yk⟩ := hspec k
-    let u := memSlice vlo vhi x.mem
-    let m₁ := u.countP (· < u[k.val]'(by have := k.isLt; simp [u]; omega))
-    let m₂ := u.countP (u[k.val]'(by have := k.isLt; simp [u]; omega) < ·)
-    change readStack input.length (y k) =
-      (if 2 ≤ m₂ then (if 2 ≤ m₁ then S₀ ++ [(vlo, vlo + m₁)] else S₀) ++ [(vhi - m₂, vhi)]
-       else (if 2 ≤ m₁ then S₀ ++ [(vlo, vlo + m₁)] else S₀)) at hread_yk
-    have hm12_le : m₁ + m₂ ≤ m - 1 := by
-      have hpiv_in : u[k.val]'(by have := k.isLt; simp [u]; omega) ∈ u := List.getElem_mem _
-      have hc_le := countP_lt_add_gt_le hpiv_in
-      have hlen_u : u.length = m := length_memSlice vlo vhi x.mem
-      omega
-    have h := sum_childStack_le (fun d => d - 1) (fun _ => Nat.zero_le _)
-      (by omega : m₂ ≤ vhi - vlo) hread_yk
-    refine ⟨hIy, ?_⟩
-    simp only [callPotential, hstack, List.map_append, List.sum_append, List.map_singleton,
-      List.sum_singleton]
-    omega
+  refine ⟨_, hexec, fun z hz => ?_, ?_⟩
+  · -- The worst-case step runs on the same distribution and spends one call per pivot.
+    obtain ⟨_, mb, hmb, -, hpot⟩ := outerBody_worstCase_step hI hc
+    obtain rfl := hexec.unique hmb
+    obtain ⟨⟨hIz, -, hcall⟩, -⟩ := hpot z hz
+    exact ⟨hIz, by omega⟩
   · rw [ProbComp.expect_map, ProbComp.expect_unifFin]
     set baseCost : ℝ := (S₀.map fun p => subCost (p.2 - p.1)).sum
     have hbase_nn : 0 ≤ baseCost := list_sum_subCost_nonneg S₀
@@ -1776,7 +1738,7 @@ theorem quicksort_correct_and_bounds {w : ℕ} {input : List ℕ}
       (fun y => OuterInv w input y ∧ ¬(Cond.lt zero sp).Holds y)
       (stepPotential n x_init + 2) (callPotential n x_init) :=
     ExecRandWithin.loop_potential (OuterInv w input) (stepPotential n) (callPotential n)
-      (fun s hs hc => outerBody_worstCase_step hs hc) hI_init
+      (fun s hs hc => let ⟨T_b, h⟩ := outerBody_worstCase_step hs hc; ⟨T_b, 1, h⟩) hI_init
   have hstep_init : stepPotential n x_init ≤ 20 * n ^ 2 := by
     rw [stepPotential, hstack_init]
     split_ifs <;> simp

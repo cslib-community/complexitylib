@@ -22,7 +22,7 @@ example {Rel V W : Type} (F : CSP Rel V) (f : V → W) :
   CSP.occurrences_relabel F f
 
 private def rename (n : ℕ) : ℕ := if n = 7 then 11 else 10
-private def F : CSP Unit ℕ := [((), [2, 7, 2]), ((), [])]
+private def F : CSP Unit ℕ := [⟨(), [2, 7, 2]⟩, ⟨(), []⟩]
 private def φ : CNF ℕ := [[(2, true), (7, false), (2, false)], []]
 
 private theorem usedInjection : Set.InjOn rename {v | v ∈ F.vars} := by

@@ -253,7 +253,8 @@ example :
 /-! Listing the fields of a parent instead of the parent field flattens them into the tuple. -/
 
 /-- Triples, as the flat tuple of their three fields. -/
-enc_structure eFlat : Triple where fst : encNat, snd : encBool, w : encUnary
+enc_structure eFlat : Triple flattened toPair : ePair where
+  fst : encNat, snd : encBool, w : encUnary
 
 example (t : Triple) : eFlat t = encPair encNat (encPair encBool encUnary) (t.fst, t.snd, t.w) :=
   rfl
@@ -266,6 +267,10 @@ example : ComputableInDegree (fun p : ℕ × Bool × ℕ => Triple.mk ⟨p.1, p.
 -- The flattened field rules read through the parent projection.
 example {α : Type} {enc : α ↪ List Bool} {f : α → Triple} (hf : ComputableInPolyTime f enc eFlat) :
     ComputableInPolyTime (fun a => Triple.mk ⟨(f a).fst, (f a).snd⟩ (f a).w) enc eFlat := by
+  fun_prop
+
+example {α : Type} {enc : α ↪ List Bool} {f : α → Triple} (hf : ComputableInPolyTime f enc eFlat) :
+    ComputableInPolyTime (fun a => (f a).toPair) enc ePair := by
   fun_prop
 
 /-! A field whose type depends on an earlier field is encoded by an injective word function of the
@@ -316,7 +321,7 @@ structure ElementPair (F : Family) extends Element F where
   other : F.Carrier desc
 
 /-- Element pairs, flattening the parent: byte-compatible with a hand-written five-word tuple. -/
-enc_structure eElementPair (F : Family) : ElementPair F where
+enc_structure eElementPair (F : Family) : ElementPair F flattened toElement : (eElement F) where
   size : encUnary, desc : F.encDesc, elt : (F.encode desc) using (F.encode_injective desc),
   other : (F.encode desc) using (F.encode_injective desc)
 
@@ -337,12 +342,26 @@ example (F : Family) {α : Type} {enc : α ↪ List Bool} {S : α → ℕ} {f : 
     ComputableInSpace (fun a => F.encode (f a).desc (f a).other) enc encBits S :=
   eElementPair_other_budget F hf
 
--- The parent projection follows from the parent's constructor rule and the flattened field rules.
+-- The explicit flattened-parent metadata generates the projection rule directly.
+example (F : Family) :
+    ComputableInDegree (fun x : ElementPair F => x.toElement)
+      (eElementPair F) (eElement F) 1 1 := by
+  fun_prop
+
+example (F : Family) :
+    ComputableInO (fun x : ElementPair F => x.toElement) (eElementPair F) (eElement F)
+      (fun x => (eElementPair F x).length) (fun x => (eElementPair F x).length) := by
+  fun_prop
+
+example (F : Family) {α : Type} {enc : α ↪ List Bool} {S : α → ℕ} {f : α → ElementPair F}
+    (hf : ComputableInSpace f enc (eElementPair F) S) :
+    ComputableInSpace (fun a => (f a).toElement) enc (eElement F) S := by
+  fun_prop
+
 example (F : Family) {α : Type} {enc : α ↪ List Bool} {f : α → ElementPair F}
     (hf : ComputableInPolyTime f enc (eElementPair F)) :
-    ComputableInPolyTime (fun a => (f a).toElement) enc (eElement F) :=
-  eElement_mk_polyTime F (eElementPair_size_polyTime F hf) (eElementPair_desc_polyTime F hf)
-    (eElementPair_elt_polyTime F hf)
+    ComputableInPolyTime (fun a => (f a).toElement) enc (eElement F) := by
+  fun_prop
 
 /-- An element with a second element of the same type, keeping the parent as one field. -/
 structure ElementTagged (F : Family) extends Element F where
@@ -364,6 +383,62 @@ enc_structure eElementLambda (F : Family) : Element F where
   elt : (F.encode desc) using (fun ⦃_ _⦄ h => F.encode_injective desc h)
 
 example (F : Family) (x : Element F) : eElementLambda F x = eElement F x := rfl
+
+/-- An element of the type indexed by a unary size. -/
+structure Sized (Carrier : ℕ → Type) where
+  /-- The size. -/
+  size : ℕ
+  /-- The element. -/
+  elt : Carrier size
+
+/-- The parameter `encode` occurs only in the word of `elt`, which goes in the slot `encBits`, so
+`eSizedFields` does not use it. -/
+enc_structure eSized (Carrier : ℕ → Type) (encode : ∀ n, Carrier n ↪ List Bool) :
+    Sized Carrier where
+  size : encUnary, elt : (encode size) using ((encode size).injective)
+
+example (Carrier : ℕ → Type) (encode : ∀ n, Carrier n ↪ List Bool) (x : Sized Carrier) :
+    eSized Carrier encode x = encPair encUnary encBits (x.size, encode x.size x.elt) :=
+  rfl
+
+/-- A slot-local `encode` shadows the parameter, which only the word of `elt` uses. -/
+enc_structure eSizedShadow (Carrier : ℕ → Type) (encode : ∀ n, Carrier n ↪ List Bool) :
+    Sized Carrier where
+  size : (let encode := encUnary; encode), elt : (encode size) using ((encode size).injective)
+
+-- The command marks `eSizedFields` and `eSizedShadowFields` `nolint unusedArguments`, so the
+-- linter passes. `Carrier` is used, because it occurs in the type of `encode`.
+set_option linter.hashCommand false in
+#guard_msgs in
+#lint- only unusedArguments
+
+/-! A parameter that nothing uses leaves `…Fields` linted: alone, next to a parameter that only a
+dependent field uses, or when a proof-local binder shares its name. These come after the `#lint-`
+check above, which they would fail. -/
+
+/-- Points, with a parameter that nothing reads. -/
+enc_structure eJunkPoint (junk : ℕ) : Point where x : encNat, y : encBits, z : (encList encUnary)
+
+/-- Sized elements, with a parameter that nothing reads. -/
+enc_structure eJunkSized (Carrier : ℕ → Type) (encode : ∀ n, Carrier n ↪ List Bool) (junk : ℕ) :
+    Sized Carrier where
+  size : encUnary, elt : (encode size) using ((encode size).injective)
+
+/-- Sized elements, with a parameter that nothing uses and a proof-local binder of its name. -/
+enc_structure eSizedLetJunk (Carrier : ℕ → Type) (encode : ∀ n, Carrier n ↪ List Bool)
+    (junk : ℕ) : Sized Carrier where
+  size : encUnary, elt : (encode size) using (let junk := (encode size).injective; junk)
+
+-- Fully used encodings (`ePoint`, and `eElement`, whose dependent field also reads `F`) stay
+-- linted as usual.
+run_meta do
+  for decl in [``eJunkPointFields, ``eJunkSizedFields, ``eSizedLetJunkFields, ``ePointFields,
+      ``eElementFields] do
+    unless ← Batteries.Tactic.Lint.shouldBeLinted `unusedArguments decl do
+      throwError "{decl} is marked nolint unusedArguments"
+  for decl in [``eSizedFields, ``eSizedShadowFields] do
+    if ← Batteries.Tactic.Lint.shouldBeLinted `unusedArguments decl then
+      throwError "{decl} is not marked nolint unusedArguments"
 
 -- A parameter named like a field that a dependent word reads would be captured by the field.
 /--
@@ -432,6 +507,27 @@ error: enc_structure: missing field `snd` of `Triple`; the fields of `Triple` in
 -/
 #guard_msgs in
 enc_structure eFlatMissing : Triple where fst : encNat, w : encUnary
+
+/-- error: enc_structure: `missingParent` is not a field of `Triple` -/
+#guard_msgs in
+enc_structure eUnknownParent : Triple flattened missingParent : ePair where
+  fst : encNat, snd : encBool, w : encUnary
+
+/-- error: enc_structure: `w` is a field of `Triple`, but not a parent field -/
+#guard_msgs in
+enc_structure eNonParent : Triple flattened w : encUnary where
+  fst : encNat, snd : encBool, w : encUnary
+
+/-- error: enc_structure: parent field `toPair` is not flattened by the listed fields -/
+#guard_msgs in
+enc_structure eUnflattenedParent : Triple flattened toPair : ePair where
+  toPair : ePair, w : encUnary
+
+/-- error: enc_structure: flattened parent `toPair` is listed twice -/
+#guard_msgs in
+enc_structure eDuplicateParent : Triple
+    flattened toPair : ePair flattened toPair : ePair where
+  fst : encNat, snd : encBool, w : encUnary
 
 /-- error: enc_structure: `Nat` is not a structure -/
 #guard_msgs in

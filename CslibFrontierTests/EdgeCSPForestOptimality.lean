@@ -20,9 +20,9 @@ private def tableSem (r : List (List Bool)) (x : List Bool) : Bool := r.contains
 -- The feasible-pair graph at 000 is the connected path 0--1--2. The pinned tuple 101 is
 -- nevertheless infeasible: reaching a coordinate is insufficient for augmentation.
 private abbrev pathInstance : CSP (List (List Bool)) ℕ :=
-  [([[false, false, false], [true, true, false], [false, true, true]],
-      [2 ^ 100, 2 ^ 200, 2 ^ 250]),
-    ([[true]], [2 ^ 100]), ([[false]], [2 ^ 200]), ([[true]], [2 ^ 250])]
+  [⟨[[false, false, false], [true, true, false], [false, true, true]],
+      [2 ^ 100, 2 ^ 200, 2 ^ 250]⟩,
+    ⟨[[true]], [2 ^ 100]⟩, ⟨[[false]], [2 ^ 200]⟩, ⟨[[true]], [2 ^ 250]⟩]
 
 private def pathLabels : pathInstance.OccurrenceLabeling Bool :=
   fun o => o.1.val == 1 || o.1.val == 3
@@ -74,8 +74,8 @@ example {y : Fin 3 → Bool} (hy : y ∈ pathRelation) :
 -- Odd local parity is permitted: the binary relation has tuples 10 and 01, whereas both
 -- unary endpoints are pinned to zero. One defect is unavoidable.
 private abbrev oddInstance : CSP (List (List Bool)) ℕ :=
-  [([[true, false], [false, true]], [7, 2 ^ 240]),
-    ([[false]], [7]), ([[false]], [2 ^ 240])]
+  [⟨[[true, false], [false, true]], [7, 2 ^ 240]⟩,
+    ⟨[[false]], [7]⟩, ⟨[[false]], [2 ^ 240]⟩]
 
 private def oddLabels : oddInstance.OccurrenceLabeling Bool :=
   fun o => o.1.val == 0 && o.2.val == 0
@@ -120,7 +120,7 @@ example : IsOptimalLabeling (fun _ _ => false)
 
 -- Fresh search can exhaust even when its base labeling violates a nullary constraint.
 -- This prevents dropping validity from the optimality endpoint.
-private abbrev rejected : CSP Unit ℕ := [((), [])]
+private abbrev rejected : CSP Unit ℕ := [⟨(), []⟩]
 
 example : search (fun _ _ => false) (F := rejected) (fun _ => false) = .exhausted [] := by
   decide +kernel

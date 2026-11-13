@@ -18,7 +18,7 @@ private def equalitySem (_ : Unit) : List Bool → Bool
   | _ => false
 
 -- The identical constraint values retain two different positional identities.
-private abbrev doubled : CSP Unit ℕ := [((), [0, 1]), ((), [0, 1])]
+private abbrev doubled : CSP Unit ℕ := [⟨(), [0, 1]⟩, ⟨(), [0, 1]⟩]
 private def bad : doubled.OccurrenceLabeling Bool := fun o => o.1.val == 1
 private def good : doubled.OccurrenceLabeling Bool := fun _ => false
 
@@ -73,7 +73,7 @@ example : ∃ w : Walk doubled, w.IsAugmenting equalitySem bad ∧ w.start ≠ 0
   omega
 
 -- A two-step walk crosses an internally consistent variable.
-private abbrev triangle : CSP Unit ℕ := [((), [0, 1]), ((), [1, 2]), ((), [2, 0])]
+private abbrev triangle : CSP Unit ℕ := [⟨(), [0, 1]⟩, ⟨(), [1, 2]⟩, ⟨(), [2, 0]⟩]
 private def triangleBad : triangle.OccurrenceLabeling Bool := fun o => o.1.val != 0
 private def triangleGood : triangle.OccurrenceLabeling Bool := fun _ => false
 
@@ -98,7 +98,7 @@ example : ¬ closed.IsFWalk equalitySem bad := fun h => h.2 rfl
 -- Opposing unary singleton relations have different common parities. There is one unavoidable
 -- defect, and there is no augmentation. Evenness does not mean that every local parity is zero.
 private def unitSem (r : Bool) (xs : List Bool) : Bool := xs == [r]
-private abbrev opposing : CSP Bool ℕ := [(false, [7]), (true, [7])]
+private abbrev opposing : CSP Bool ℕ := [⟨false, [7]⟩, ⟨true, [7]⟩]
 private def unitLabels : opposing.OccurrenceLabeling Bool := fun o => o.1.val == 1
 
 private theorem opposing_edge : opposing.EdgeInstance := by
@@ -131,7 +131,7 @@ example : ¬ opposing.Satisfiable unitSem := by
 
 -- No occurrences in empty or nullary instances; nullary validity still matters.
 private abbrev empty : CSP Bool ℕ := []
-private abbrev nullary : CSP Bool ℕ := [(true, [])]
+private abbrev nullary : CSP Bool ℕ := [⟨true, []⟩]
 private def nullarySem (r : Bool) (_ : List Bool) : Bool := r
 
 example (f : empty.OccurrenceLabeling Bool) : defects f = ∅ := by
@@ -149,7 +149,7 @@ example : EdgeInstance.EvenConstraints nullarySem nullary := by
     parity_eq := by decide }
 example : (defects (F := nullary) (fun _ => false)).card = 0 := by decide
 example : nullary.Satisfiable nullarySem := ⟨fun _ => false, rfl⟩
-example : ¬ CSP.Satisfiable nullarySem ([(false, [])] : CSP Bool ℕ) := by
+example : ¬ CSP.Satisfiable nullarySem ([⟨false, []⟩] : CSP Bool ℕ) := by
   rintro ⟨_, h⟩
   cases h
 
@@ -161,7 +161,7 @@ private def shortcutSem (r : Bool) : List Bool → Bool
   | [a] => r && !a
   | _ => false
 private abbrev shortcut : CSP Bool ℕ :=
-  [(false, [0, 1, 2, 3]), (true, [1, 2]), (true, [0]), (true, [3])]
+  [⟨false, [0, 1, 2, 3]⟩, ⟨true, [1, 2]⟩, ⟨true, [0]⟩, ⟨true, [3]⟩]
 private def shortcutLabels : shortcut.OccurrenceLabeling Bool := fun _ => false
 private abbrev shortcutWalk : Walk shortcut :=
   ⟨0, [(⟨⟨0, by decide⟩, ⟨0, by decide⟩⟩, ⟨⟨0, by decide⟩, ⟨1, by decide⟩⟩),

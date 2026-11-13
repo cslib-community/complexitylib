@@ -9,7 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Protocols.MPC.PolyTime.Encoding
 public import CslibFrontier.Computability.Complexity.Problems.CircuitValue.Compilation
--- `import all`: reads the private encoders `extendCoalitionBits`, `encOTSubCoins`,
+-- `import all`: reads the private view-word layout `gmwViewWord` and encoders `encOTSubCoins`,
 -- `encOTOracleAnswers` and `encPairsMsgReceived` that the word-level runners emit.
 import all CslibFrontier.Crypto.Protocols.MPC.PolyTime.Encoding
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
@@ -1044,16 +1044,24 @@ private theorem simOutStep_growth (m : ℕ) [NeZero m] (I : Finset (Fin m))
     (fun _ => by dsimp only [finishOutStep]; split_ifs <;> simp)
     (fun _ => by dsimp only [finishOutStep]; split_ifs <;> simp)
 
-/-- Assemble party `i`'s 7-tuple view word from its 7 `List Bool` components, matching
-`encGMWPartyView`. -/
+/-- Party `i`'s view word `gmwViewWord` from the seven per-party component words. -/
 private def packPartyViewWord {m : ℕ}
     (x_bits r_bits c1_bits ot_coins in_shares ot_ans out_msgs : Fin m → List Bool)
     (i : Fin m) : List Bool :=
-  encPair
-    (encPair (encPair encBits encBits) (encPair encBits encBits))
-    (encPair encBits (encPair encBits encBits))
-    (((x_bits i, r_bits i), (c1_bits i, ot_coins i)),
-     (in_shares i, (ot_ans i, out_msgs i)))
+  gmwViewWord (x_bits i) (r_bits i) (c1_bits i) (ot_coins i) (in_shares i) (ot_ans i) (out_msgs i)
+
+private theorem computableTidilyInPolyTime_gmwViewWord {α : Type} {input : α ↪ List Bool}
+    {x r c1 otc ins ota out : α → List Bool}
+    (hx : ComputableTidilyInPolyTime x input encBits)
+    (hr : ComputableTidilyInPolyTime r input encBits)
+    (hc1 : ComputableTidilyInPolyTime c1 input encBits)
+    (hotc : ComputableTidilyInPolyTime otc input encBits)
+    (hins : ComputableTidilyInPolyTime ins input encBits)
+    (hota : ComputableTidilyInPolyTime ota input encBits)
+    (hout : ComputableTidilyInPolyTime out input encBits) :
+    ComputableTidilyInPolyTime
+      (fun a => gmwViewWord (x a) (r a) (c1 a) (otc a) (ins a) (ota a) (out a)) input encBits :=
+  (((hx.prod hr).prod (hc1.prod hotc)).prod (hins.prod (hota.prod hout))).encoded
 
 /-- Assemble the final `List Bool` output of `Protocol.runEncoded` from all 8 `Fin m → List Bool`
 components `(x_bits, r_bits, c1_bits, in_shares)` and
@@ -1094,19 +1102,10 @@ private theorem computableTidilyInPolyTime_packPartyViewWord {α : Type} {input 
   have hrest1 := comp' (snd ePi (encPair ePi (encPair ePi ePi))) hacc3
   have hot_a := comp' (fst ePi (encPair ePi ePi)) hrest1
   have hout_m := comp' (fst ePi ePi) (comp' (snd ePi (encPair ePi ePi)) hrest1)
-  have htuple : ComputableTidilyInPolyTime
-      (fun a =>
-        (((x_bits a i, r_bits a i), (c1_bits a i, (acc3 a).1 i)),
-         (in_shares a i, ((acc3 a).2.1 i, (acc3 a).2.2.1 i))))
-      input
-      (encPair
-        (encPair (encPair encBits encBits) (encPair encBits encBits))
-        (encPair encBits (encPair encBits encBits))) :=
-    ((((comp' (pi_apply encBits i) hx).prod (comp' (pi_apply encBits i) hr)).prod
-      ((comp' (pi_apply encBits i) hc1).prod (comp' (pi_apply encBits i) hot_c))).prod
-      ((comp' (pi_apply encBits i) hin).prod
-        ((comp' (pi_apply encBits i) hot_a).prod (comp' (pi_apply encBits i) hout_m))))
-  exact htuple.encoded
+  exact computableTidilyInPolyTime_gmwViewWord (comp' (pi_apply encBits i) hx)
+    (comp' (pi_apply encBits i) hr) (comp' (pi_apply encBits i) hc1)
+    (comp' (pi_apply encBits i) hot_c) (comp' (pi_apply encBits i) hin)
+    (comp' (pi_apply encBits i) hot_a) (comp' (pi_apply encBits i) hout_m)
 
 private theorem computableTidilyInPolyTime_packRealOutput {α : Type} {input : α ↪ List Bool}
     {m : ℕ} {x_bits r_bits c1_bits in_shares : α → Fin m → List Bool}
@@ -1171,54 +1170,19 @@ private theorem isPPTOn_sampleTwoPiBits {α : Type} {input : α ↪ List Bool}
   have h2_pair := h2.pair (snd input ePi)
   simpa only [sampleTwoPiBits, bind_map_left] using h1.keep_input.bind h2_pair
 
-private theorem computableTidilyInPolyTime_familyRunInput_unpack
-    {α : Type} {encA : α ↪ List Bool} {m : ℕ} {n : α → ℕ} :
-    ComputableTidilyInPolyTime
-      (fun inp : FamilyRunInput α m n =>
-        (inp.1,
-          List.ofFn ((Cslib.BitString.blocksEquiv (α := Bool) (m := m) (k := n inp.1)).symm inp.2)))
-      (encFamilyRunInput encA m n) (encPair encA encBits) :=
-  of_eq fun _ => rfl
-
-private theorem computableTidilyInPolyTime_familyRunInput_fst
-    {α : Type} {encA : α ↪ List Bool} {m : ℕ} {n : α → ℕ} :
-    ComputableTidilyInPolyTime (fun inp : FamilyRunInput α m n => inp.1)
-      (encFamilyRunInput encA m n) encA := by
-  have hres := comp' (fst encA encBits)
-    (computableTidilyInPolyTime_familyRunInput_unpack (encA := encA) (m := m) (n := n))
-  exact hres
-
 private theorem computableTidilyInPolyTime_familyRunInput_bits
     {α : Type} {encA : α ↪ List Bool} {m : ℕ} {n : α → ℕ}
     (hn : ComputableTidilyInPolyTime n encA encUnary) :
     ComputableTidilyInPolyTime
-      (fun (inp : FamilyRunInput α m n) (i : Fin m) => List.ofFn (inp.2 i))
+      (fun (inp : FamilyRunInput α m n) (i : Fin m) => List.ofFn (inp.inputs i))
       (encFamilyRunInput encA m n) (encPi encBits) := by
-  have ha := computableTidilyInPolyTime_familyRunInput_fst (encA := encA) (m := m) (n := n)
-  have hword := comp' (snd encA encBits)
-    (computableTidilyInPolyTime_familyRunInput_unpack (encA := encA) (m := m) (n := n))
+  have ha := (encFamilyRunInput_index_polyTime encA m n ComputableInPolyTime.id').tidy
+  have hword := (encFamilyRunInput_inputs_polyTime encA m n ComputableInPolyTime.id').tidy
   refine pi fun i => ?_
   convert bitsRowWithInput (comp' hn ha) (const i.val) hword using 1
   funext inp
-  rw [Cslib.BitString.listRow_eq_ofFn (n inp.1) i,
+  rw [Cslib.BitString.listRow_eq_ofFn (n inp.index) i,
     Cslib.BitString.ofList_ofFn, Cslib.BitString.block_blocksEquiv_symm]
-
-private theorem computableTidilyInPolyTime_familySimInput_unpack
-    {α : Type} {encA : α ↪ List Bool} {m : ℕ} {n k : α → ℕ} {I : Finset (Fin m)} :
-    ComputableTidilyInPolyTime
-      (fun inp : FamilySimInput α m n k I =>
-        (inp.1, (extendCoalitionBits I inp.2.1, extendCoalitionBits I inp.2.2)))
-      (encFamilySimInput encA m n k I) (encPair encA (encPair encBits encBits)) :=
-  of_eq fun _ => rfl
-
-private theorem computableTidilyInPolyTime_familySimInput_fst
-    {α : Type} {encA : α ↪ List Bool} {m : ℕ} {n k : α → ℕ} {I : Finset (Fin m)} :
-    ComputableTidilyInPolyTime (fun inp : FamilySimInput α m n k I => inp.1)
-      (encFamilySimInput encA m n k I) encA := by
-  have hres := comp' (fst encA (encPair encBits encBits))
-    (computableTidilyInPolyTime_familySimInput_unpack
-      (encA := encA) (m := m) (n := n) (k := k) (I := I))
-  exact hres
 
 private theorem listRow_extendCoalitionBits {m len : ℕ} (I : Finset (Fin m))
     (vI : (i : I) → BitString len) (i : Fin m) :
@@ -1233,16 +1197,15 @@ private theorem listRow_extendCoalitionBits {m len : ℕ} (I : Finset (Fin m))
 
 private theorem computableTidilyInPolyTime_familySimInput_bits
     {α : Type} {encA : α ↪ List Bool} {m : ℕ} {n k len : α → ℕ} {I : Finset (Fin m)}
-    (v : (inp : FamilySimInput α m n k I) → (i : I) → BitString (len inp.1))
+    (v : (inp : FamilySimInput α m n k I) → (i : I) → BitString (len inp.index))
     (hlen : ComputableTidilyInPolyTime len encA encUnary)
     (hword : ComputableTidilyInPolyTime (fun inp => extendCoalitionBits I (v inp))
       (encFamilySimInput encA m n k I) encBits) :
     ComputableTidilyInPolyTime
       (fun (inp : FamilySimInput α m n k I) (i : Fin m) =>
-        if hi : i ∈ I then List.ofFn (v inp ⟨i, hi⟩) else List.replicate (len inp.1) false)
+        if hi : i ∈ I then List.ofFn (v inp ⟨i, hi⟩) else List.replicate (len inp.index) false)
       (encFamilySimInput encA m n k I) (encPi encBits) := by
-  have ha := computableTidilyInPolyTime_familySimInput_fst
-    (encA := encA) (m := m) (n := n) (k := k) (I := I)
+  have ha := (encFamilySimInput_index_polyTime encA m n k I ComputableInPolyTime.id').tidy
   refine pi fun i => ?_
   convert bitsRowWithInput (comp' hlen ha) (const i.val) hword using 1
   funext inp
@@ -1253,30 +1216,28 @@ private theorem computableTidilyInPolyTime_familySimInput_x_bits
     (hn : ComputableTidilyInPolyTime n encA encUnary) :
     ComputableTidilyInPolyTime
       (fun (inp : FamilySimInput α m n k I) (i : Fin m) =>
-        if hi : i ∈ I then List.ofFn (inp.2.1 ⟨i, hi⟩) else List.replicate (n inp.1) false)
+        if hi : i ∈ I then List.ofFn (inp.inputs ⟨i, hi⟩) else List.replicate (n inp.index) false)
       (encFamilySimInput encA m n k I) (encPi encBits) :=
-  computableTidilyInPolyTime_familySimInput_bits (fun inp => inp.2.1) hn
-    (comp' (fst encBits encBits) (comp' (snd encA (encPair encBits encBits))
-      computableTidilyInPolyTime_familySimInput_unpack))
+  computableTidilyInPolyTime_familySimInput_bits (fun inp => inp.inputs) hn
+    (encFamilySimInput_inputs_polyTime encA m n k I ComputableInPolyTime.id').tidy
 
 private theorem computableTidilyInPolyTime_familySimInput_y_bits
     {α : Type} {encA : α ↪ List Bool} {m : ℕ} {n k : α → ℕ} {I : Finset (Fin m)}
     (hk : ComputableTidilyInPolyTime k encA encUnary) :
     ComputableTidilyInPolyTime
       (fun (inp : FamilySimInput α m n k I) (i : Fin m) =>
-        if hi : i ∈ I then List.ofFn (inp.2.2 ⟨i, hi⟩) else List.replicate (k inp.1) false)
+        if hi : i ∈ I then List.ofFn (inp.outputs ⟨i, hi⟩) else List.replicate (k inp.index) false)
       (encFamilySimInput encA m n k I) (encPi encBits) :=
-  computableTidilyInPolyTime_familySimInput_bits (fun inp => inp.2.2) hk
-    (comp' (snd encBits encBits) (comp' (snd encA (encPair encBits encBits))
-      computableTidilyInPolyTime_familySimInput_unpack))
+  computableTidilyInPolyTime_familySimInput_bits (fun inp => inp.outputs) hk
+    (encFamilySimInput_outputs_polyTime encA m n k I ComputableInPolyTime.id').tidy
 
 /-- Word-level runner for `Protocol.runEncoded` applied to `gmwOT14RandomizedProtocol` on a
 polynomial-time circuit code family `D : α → List (Boolean.Op × List ℕ) × List ℕ`. -/
 private noncomputable def realRunWord {α : Type} (m : ℕ) [NeZero m] (coins n k : α → ℕ)
     (D : α → List (Boolean.Op × List ℕ) × List ℕ)
     (inp : FamilyRunInput α m n) : WordOracleComp Unit (List Bool) := do
-  let a := inp.1
-  let x_bits : Fin m → List Bool := fun i => List.ofFn (inp.2 i)
+  let a := inp.index
+  let x_bits : Fin m → List Bool := fun i => List.ofFn (inp.inputs i)
   let rc ← ProbOracleComp.sample
     (sampleTwoPiBits m (fun _ => coins a) (fun _ => (n a + coins a) * (m - 1)))
   let in_shares := step1Wires m (n a + coins a) x_bits rc.1 rc.2
@@ -1292,11 +1253,11 @@ private noncomputable def realRunWord {α : Type} (m : ℕ) [NeZero m] (coins n 
 private noncomputable def simRunWord {α : Type} (m : ℕ) [NeZero m] (coins n k : α → ℕ)
     (D : α → List (Boolean.Op × List ℕ) × List ℕ)
     (I : Finset (Fin m)) (inp : FamilySimInput α m n k I) : ProbComp (List Bool) := do
-  let a := inp.1
+  let a := inp.index
   let x_bits : Fin m → List Bool := fun i =>
-    if hi : i ∈ I then List.ofFn (inp.2.1 ⟨i, hi⟩) else List.replicate (n a) false
+    if hi : i ∈ I then List.ofFn (inp.inputs ⟨i, hi⟩) else List.replicate (n a) false
   let y_bits : Fin m → List Bool := fun i =>
-    if hi : i ∈ I then List.ofFn (inp.2.2 ⟨i, hi⟩) else List.replicate (k a) false
+    if hi : i ∈ I then List.ofFn (inp.outputs ⟨i, hi⟩) else List.replicate (k a) false
   let rc ← sampleTwoPiBits m (fun i => if i ∈ I then coins a else 0)
     (fun _ => (n a + coins a) * (m - 1))
   let in_shares := step1Wires m (n a + coins a) x_bits rc.1 rc.2
@@ -1322,7 +1283,7 @@ private theorem isOraclePPTOn_realRunWord {α : Type} {encA : α ↪ List Bool}
   let e1 := encPair e0 eRC
   let e2 := encPair e1 (encStep2Acc m)
   let e3 := encPair e2 (encStep3Acc m)
-  have ha0 := computableTidilyInPolyTime_familyRunInput_fst (encA := encA) (m := m) (n := n)
+  have ha0 := (encFamilyRunInput_index_polyTime encA m n ComputableInPolyTime.id').tidy
   have hx0 := computableTidilyInPolyTime_familyRunInput_bits (encA := encA) (m := m) hn
   have hcoins0 := comp' hcoins ha0
   have hn0 := comp' hn ha0
@@ -1401,8 +1362,7 @@ private theorem isPPTOn_simRunWord {α : Type} {encA : α ↪ List Bool}
   let e1 := encPair e0 eRC
   let e2 := encPair e1 (encStep2Acc m)
   let e3 := encPair e2 (encStep3Acc m)
-  have ha0 := computableTidilyInPolyTime_familySimInput_fst
-    (encA := encA) (m := m) (n := n) (k := k) (I := I)
+  have ha0 := (encFamilySimInput_index_polyTime encA m n k I ComputableInPolyTime.id').tidy
   have hx0 := computableTidilyInPolyTime_familySimInput_x_bits
     (encA := encA) (m := m) (k := k) (I := I) hn
   have hy0 := computableTidilyInPolyTime_familySimInput_y_bits
@@ -1410,7 +1370,7 @@ private theorem isPPTOn_simRunWord {α : Type} {encA : α ↪ List Bool}
   have hcoins0 := comp' hcoins ha0
   have hn0 := comp' hn ha0
   have hw1_0 : ∀ i : Fin m, ComputableTidilyInPolyTime
-      (fun inp : FamilySimInput α m n k I => if i ∈ I then coins inp.1 else 0) e0 encUnary := by
+      (fun inp : FamilySimInput α m n k I => if i ∈ I then coins inp.index else 0) e0 encUnary := by
     intro i
     by_cases hi : i ∈ I
     · simpa only [hi, ↓reduceIte] using hcoins0

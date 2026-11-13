@@ -97,6 +97,9 @@ theorem exec_splitBody {w : ℕ} (L a : ℕ) (x : Data 96) (hx : SplitProgress L
   have hmFit : Fits w (x.regs maskPower * 2) := hfit.of_le (by omega)
   have hjFit : Fits w (x.regs level + 1) := hfit.of_le (by omega)
   have hrest : L - x.regs level = L - (x.regs level + 1) + 1 := by omega
+  have hpres : ∀ i ∈ splitParameterRegisters, splitBody.Preserves i := by
+    simp only [splitBody, Code.Preserves, Op.dest, Op.bin]
+    decide
   by_cases houter : x.regs residue % 7 < 3
   · have hmul : Fits w (x.regs residue % 7 * x.regs outerPower) :=
       hfit.of_le (by nlinarith)
@@ -113,13 +116,7 @@ theorem exec_splitBody {w : ℕ} (L a : ℕ) (x : Data 96) (hx : SplitProgress L
         hdFit, hrFit, hmFit, hjFit, hmul, hadd, hpower, houter,
         digit, residue, temporary, outerAcc, outerPower, maskPower, level, one, two,
         three, seven, Fin.mk.injEq]
-    have hfixed : SplitParameters L y := hx.fixed.of_eq (by
-      intro i hi
-      apply he.regs_eq
-      have hf : ∀ i ∈ splitParameterRegisters, splitBody.Preserves i := by
-        simp only [splitBody, Code.Preserves, Op.dest, Op.bin]
-        decide
-      exact hf i hi)
+    have hfixed : SplitParameters L y := hx.fixed.of_eq fun i hi => he.regs_eq (hpres i hi)
     have hmval := hx.mask_value
     have hoval := hx.outer_value
     have hival := hx.inner_value
@@ -163,13 +160,7 @@ theorem exec_splitBody {w : ℕ} (L a : ℕ) (x : Data 96) (hx : SplitProgress L
         hx.fixed.seven, hdFit, hrFit, hmFit, hjFit, hsub, hmul, hadd, hpower, hmask, houter,
         digit, residue, temporary, innerAcc, innerPower, maskAcc, maskPower, level,
         one, two, three, four, seven, Fin.mk.injEq]
-    have hfixed : SplitParameters L y := hx.fixed.of_eq (by
-      intro i hi
-      apply he.regs_eq
-      have hf : ∀ i ∈ splitParameterRegisters, splitBody.Preserves i := by
-        simp only [splitBody, Code.Preserves, Op.dest, Op.bin]
-        decide
-      exact hf i hi)
+    have hfixed : SplitParameters L y := hx.fixed.of_eq fun i hi => he.regs_eq (hpres i hi)
     have hmval := hx.mask_value
     have hoval := hx.outer_value
     have hival := hx.inner_value

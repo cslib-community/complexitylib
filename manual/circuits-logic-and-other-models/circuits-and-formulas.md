@@ -161,12 +161,68 @@ exact polynomially bounded advice-length classes. `PWithAdvice_subset_PAdvice hl
 polynomial-advice/circuit APIs. Run `scripts/build.sh CslibFrontierTests.OneBitAdvice` for
 [complete clients](../../CslibFrontierTests/OneBitAdvice.lean) assembling one-bit advice,
 polynomial-size circuits, undecidability and length dependence, and checking empty/odd inputs
-to the even-length language. Strict P/1 versus P/poly and the arbitrary advice hierarchy
-remain separate obligations.
+to the even-length language. The hierarchy API below supplies strict P/1 versus P/poly
+and separates arbitrary strictly increasing advice schedules under eventual capacity.
+
+### Compare exact advice lengths carefully
+
+Import [Advice.LengthComparison](../../CslibFrontier/Computability/Complexity/Classes/Advice/LengthComparison.lean)
+for `PWithAdvice_subset_of_lt hlt`, where `hlt : ∀ n, lower n < upper n`.
+The new advice appends a `true` delimiter and fills the remaining space with `false` bits.
+The decider uses binary-word normalization to discard those trailing false bits and removes
+the delimiter. It recovers every original advice word, including empty words and words
+ending in false bits, without computing either bound. The complete-pair polynomial-time
+convention is preserved because the new advice is longer.
+
+`PWithAdvice_subset_succ length` is the one-extra-bit case. The complete
+[clients](../../CslibFrontierTests/AdviceLengthComparison.lean) also apply the theorem to a
+growing gap and an arbitrary positive gap; run
+`scripts/build.sh CslibFrontierTests.AdviceLengthComparison`.
+
+Strict positivity matters: do not replace it with arbitrary pointwise monotonicity.
+`exists_nonmonotone_advice_bounds` gives polynomially bounded lower/gap functions, an unbounded
+gap and a language lost by the corresponding upper exact-length class. The gap is not required
+to be strictly positive. An arbitrary exact length can encode information in whether advice is
+empty; a fixed upper length can remove that information. Polynomial growth of a bound does
+not mean the bound is computable. The
+[source qualification](../../results/goldreich-2007.md#exact-advice-length-comparison-a-model-qualification)
+distinguishes the draft's displayed hypotheses, its positivity prose and the author's official
+fixed-one-bit addendum. The inclusion theorem alone does not prove strict separation;
+strict separation is supplied by the hierarchy API below.
+
+### Apply the strict advice hierarchy
+
+Import [Advice.Hierarchy](../../CslibFrontier/Computability/Complexity/Classes/Advice/Hierarchy.lean)
+and apply `PWithAdvice_ssubset_of_lt hlt hcap`. Here `hlt : ∀ n, lower n < upper n` is
+pointwise strict growth, and `hcap : ∀ᶠ n in Filter.atTop, upper n ≤ 2 ^ n` is eventual
+truth-table capacity. Neither function must be computable. The proof chooses advice by
+countability and uses a fixed native decoder: interpret the input as a binary index, capped
+at the advice length, then read the indexed bit or return false. Capping avoids an
+exponential unary intermediate. The clock is polynomial in the complete encoded pair,
+including advice; exponential advice is therefore allowed by this contract.
+
+`PWithAdvice_pred_ssubset hpos hcap` removes exactly one bit from a positive upper bound.
+The positivity hypothesis is essential for natural-number subtraction. For constant advice,
+`PWithAdvice_const_ssubset_succ k` needs no hypotheses: capacity eventually holds even when
+short inputs have fewer possible values than advice bits. These theorems use exact membership,
+with no allowance for finitely many erroneous inputs.
+
+For circuits, import
+[Boolean.Advice.Hierarchy](../../CslibFrontier/Computability/Circuit/Boolean/Advice/Hierarchy.lean).
+`PWithAdvice_const_ssubset_PPoly k` proves every constant exact-advice class strictly smaller
+than P/poly. At `k = 1` this supplies Goldreich's strict P/1 endpoint. Run
+`scripts/build.sh CslibFrontierTests.AdviceHierarchy` for
+[complete clients](../../CslibFrontierTests/AdviceHierarchy.lean) extracting a two-bit
+separating language, recovering the P/0 boundary, allowing constant five-bit advice on short
+inputs, and applying the theorem to the exponential truth-table schedule.
 
 ## Nonuniform classes and branching programs
 
 [PolylogDepth](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Boolean/DepthClasses.lean#L51) defines polynomial-size families with depth bounded by `c(floor(log2 n)+1)^i`. The De Morgan, unbounded, majority and modular bases give NC, AC, TC and ACMod hierarchies. Exponent zero gives constant-depth classes. The families are nonuniform: one circuit may be chosen independently at every length. `ACC0` is the union over fixed moduli at least two, and the library proves its Boolean closure and inclusion in TC0. See [ACC0](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Boolean/ACC0/Basic.lean) and [TC0](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Boolean/TC0.lean).
+
+To place a concrete language in NC¹, bound its formula depth and apply `mem_NC_one_iff_formulaDepth_le` from [BarringtonClass](../../CslibFrontier/Computability/Circuit/Boolean/BarringtonClass.lean): depth `c (⌊log₂ n⌋ + 1)` at every length suffices. [ParityNC1](../../CslibFrontier/Computability/Circuit/Boolean/ParityNC1.lean) does this for parity with the balanced XOR formula of depth `2 ⌈log₂ n⌉` (`formulaDepth_parity_le_two_mul_clog`), giving `parity_mem_NC_one`; `majority_mem_NC_one` in [ThresholdNC1](../../CslibFrontier/Computability/Circuit/Boolean/ThresholdNC1.lean) uses a carry-save circuit instead. Together they are Arora–Barak's draft Chapter 13, Exercise 7.
+
+Why Razborov–Smolensky must *approximate* OR: exact representation needs full degree. In [OrDegree](../../CslibFrontier/Foundations/BooleanAnalysis/OrDegree.lean), `card_le_totalDegree_of_eval_eq_or` shows that over every nontrivial commutative ring, any polynomial in `MvPolynomial ι R`, multilinear or not, that agrees with OR at the points `bitPoint x` has `totalDegree` at least `Fintype.card ι`. `orPoly` (`1 - ∏ᵢ (1 - Xᵢ)`) attains it (`eval_orPoly`, `totalDegree_orPoly`), and `le_totalDegree_of_eval_eq_or_zmod` states the `GF(q)` case of Arora–Barak's draft Chapter 13, Exercise 6. The proof reads a polynomial's values on the cube as an element of `lowDegree R ι D` (`eval_mem_lowDegree` in [Mobius](../../CslibFrontier/Foundations/BooleanAnalysis/Mobius.lean)) and evaluates the subset Möbius transform at the full set, where it must vanish below full degree (`subsetMobius_eq_zero_of_mem_lowDegree`). The same two steps give exact-degree lower bounds for other functions. [OrDegreeParityNC1](../../CslibFrontierTests/OrDegreeParityNC1.lean) has checked uses of both results.
 
 For the modulus two, where parity is a single gate, [Razborov/MiddleSlice.lean](../../CslibFrontier/Computability/Circuit/Boolean/Razborov/MiddleSlice.lean) separates `P` from `AC0Mod 2` with a middle slice: `middleSlice n` accepts the `n`-bit strings with exactly `⌈n/2⌉ - ⌊√(n+1)⌋/10` zeros (`sliceLevel_eq`). `middleSlice_notMem_AC0Mod_two` places it outside `AC0Mod 2`; [Razborov/MiddleSlice/P.lean](../../CslibFrontier/Computability/Circuit/Boolean/Razborov/MiddleSlice/P.lean), kept apart so that the lower bound does not import the Turing machine library, decides it by counting in unary (`middleSlice_mem_P`) and packages the separation (`exists_mem_P_notMem_AC0Mod_two`). [ACC0.lean](../../CslibFrontier/Computability/Circuit/Boolean/ACC0.lean) combines it with parity for odd primes, so `exists_mem_P_notMem_AC0Mod` gives `P ⊄ AC0Mod p` for every prime `p`. Through `exactlyCircuitOfMajority`, the slice also keeps majority out of `AC0Mod 2`, so `Smolensky.majority_notMem_AC0Mod`, `Smolensky.TC0_not_subset_AC0Mod` and `Smolensky.AC0Mod_ssubset_TC0` hold for every prime ([Smolensky/Majority.lean](../../CslibFrontier/Computability/Circuit/Boolean/Smolensky/Majority.lean)). `AC0Mod_ssubset_ACC0` still needs an odd prime: at `p = 2` it would need some language of `ACC0` outside `AC0Mod 2`, such as `MOD_3`, and no such lower bound is in the library. The lower bound goes through Razborov's GF(2) rank method in [Razborov/RankProperty.lean](../../CslibFrontier/Computability/Circuit/Boolean/Razborov/RankProperty.lean). The zero-sum matrix of a function at level `a` is indexed by the `a`-subsets of the inputs, with entry at `(I, J)` the sum of the function over the points vanishing on `I ∪ J`. Functions of degree `D` over `ZMod 2` with `D + 2a < n` have zero matrix, and a function supported on `E` has rank at most `#E`. Smolensky's approximation (`Smolensky.exists_lowDegree_approx`) then bounds the rank of a depth-`d` circuit's matrix by `size · 2^n / 2^ℓ` when `ℓ^d + 2a < n` (`rank_mul_two_pow_le_size`). The rank test (`rankTest n a`, rank at least `C(n, a)/2`) accepts at least half of all functions (`two_pow_two_pow_le_two_mul_ncard_rankTest`) and the indicator `exactWeight (n - a)` of the points with exactly `a` zeros, whose matrix is the identity (`exactWeight_mem_rankTest`). Near the middle level, `two_mul_two_pow_le_size_of_mem_rankTest` gives size at least `2 · 2^ℓ / (5(n+1))` whenever `ℓ^d + 2 ≤ 2s`, where `a = ⌈n/2⌉ - s` and `100s² ≤ n+1`. The test is a variant (one square matrix, threshold `C(n, a)/2`) of the property sketched by Carmosino, Impagliazzo, Kabanets and Kolokolova. [Razborov/Natural.lean](../../CslibFrontier/Computability/Circuit/Boolean/Razborov/Natural.lean) decides it from truth tables with De Morgan circuits of `173 · 8^n` gates (`synthesis_truthTableTest_rankTest`), through the Gauss–Jordan rank circuits of [GF2Rank.lean](../../CslibFrontier/Computability/Circuit/Boolean/GF2Rank.lean), so along any level function `a` the rank property `rankProperty a` is `P/poly`-natural (`isNatural_PPoly_rankProperty`). Along `sliceLevel` it is also useful against `AC0Mod 2` (`isUseful_AC0Mod_two_rankProperty` in [Razborov/Useful.lean](../../CslibFrontier/Computability/Circuit/Boolean/Razborov/Useful.lean)), at an explicit input length polylogarithmic in the circuit size (truth tables quasi-polynomial in it); [the metacomplexity chapter](metacomplexity-and-methods.md#natural-proofs-and-cryptographic-assumptions) states it. Depth and size count every gate, including NOT and constants.
 

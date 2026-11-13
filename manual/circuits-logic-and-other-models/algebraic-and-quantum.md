@@ -28,8 +28,22 @@ on valid encoded inputs, with no source semantics promised for unused code words
 count as gates and wiring is free, with no additive input-size cost. The linked
 [clients](../../CslibFrontierTests/BitBlastEncoding.lean) check addition over `ZMod 3` on all
 field inputs and a zero-cost wiring circuit with repeated outputs. This supplies the forward
-circuit simulation with an explicit encoding; constructing encodings and the reverse general-field
-simulation remain separate obligations of the finite-field exercise.
+circuit simulation with an explicit encoding. For finite carriers the encoding is supplied
+below. The reverse direction is supplied by the ring simulation described below.
+
+For a finite nonempty carrier, import
+[Boolean.FiniteSimulation](../../CslibFrontier/Computability/Circuit/Boolean/FiniteSimulation.lean)
+and use `c.exists_finite_boolean I hArity`. No encoding argument is needed: the theorem uses
+`BitString.fintypeEncoding F`, which enumerates `F` by `Fintype.equivFin` and applies the
+existing least-significant-bit-first `indexBits` embedding. Each value occupies
+`w = Nat.clog 2 (Fintype.card F)` bits. Pack inputs as
+`BitString.blocksEquiv.symm (BitString.fintypeEncoding F ∘ x)`; every output has the same
+layout. The size bound is `c.size * bitBlastCost w`, a constant factor for a fixed carrier.
+The encoding is fixed independently of the circuit. This proves the arithmetic-to-Boolean
+direction for any fixed finite field, under these explicit value and gate-count conventions.
+The enumeration and total decoder are noncomputable: there is no uniform encoding or compiler
+runtime certificate. The [clients](../../CslibFrontierTests/BitBlastEncoding.lean) include
+`ZMod 3` with no supplied encoding and a singleton carrier requiring zero bits and zero gates.
 
 The generic `bitBlast_program`, `bitBlast` and `bitBlast_synthesis` APIs in
 [Boolean.BitBlast](../../CslibFrontier/Computability/Circuit/Boolean/BitBlast.lean) now take
@@ -37,10 +51,13 @@ The generic `bitBlast_program`, `bitBlast` and `bitBlast_synthesis` APIs in
 `enc`, `enc.symm`, `enc.symm_apply_apply`; `bitsOf` accepts the encoding function directly.
 Run `scripts/build.sh CslibFrontierTests.BitBlastEncoding` for
 [clients](../../CslibFrontierTests/BitBlastEncoding.lean) using the odd field `ZMod 3`, an unused
-code word, modulo-three addition and zero-width synthesis over a singleton. This advances one
-synthesis direction of Arora–Barak Chapter 14 Exercise 1, including compilation on free input
-wires. Encoding construction and the reverse general-field direction remain open under
-[#4711](https://github.com/cslib-community/cslib-frontier/issues/4711).
+code word, modulo-three addition and zero-width synthesis over a singleton. Together with
+`Boolean.exists_ring_simulation` below, this supplies both constant-factor value-simulation
+directions of Arora–Barak Chapter 14 Exercise 1 for each fixed finite field, with free input
+wires and an explicit finite-carrier encoding. This does not assert formal polynomial identity,
+uniform compiler runtime or correctness of the forward encoding on unused bit words.
+The broader [textbook objective](https://github.com/cslib-community/cslib-frontier/issues/4711)
+remains open.
 
 [SigmaPiOp](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Arithmetic/SigmaPi.lean#L109) permits unbounded sums with edge coefficients and unbounded products. Product depth counts multiplication layers only; weighted sums contribute zero to that depth. Set-multilinearity records that products combine disjoint variable groups. [SPCircuit](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Arithmetic/SPCircuit.lean#L89) provides shared DAGs in this basis. Its `IsSimple` condition requires distinct input wires at product gates; the unfolding bound used by the constant-product-depth lower-bound development assumes this condition.
 
@@ -68,6 +85,25 @@ use the shared topic module directly. Run `scripts/build.sh CslibFrontierTests.A
 for a [client](../../CslibFrontierTests/ArithmeticSynthesis.lean) that interprets string-labelled
 constants as natural-number lengths, without importing VP or giving the labels a semiring.
 
+## Boolean circuits over a ring
+
+Import [Boolean.ArithmeticRing](../../CslibFrontier/Computability/Circuit/Boolean/ArithmeticRing.lean)
+and use `Boolean.exists_ring_simulation (R := R) c` for a ring `R`. It returns an arithmetic
+circuit with at most `5 * c.size` gates. Represent Boolean input `x i` by
+`((x i).toNat : R)`; every output represents the corresponding Boolean output the same way.
+This works in odd characteristic and over infinite rings. It does not assert agreement on
+arbitrary ring-valued inputs. Constants, addition and multiplication are the only arithmetic
+gates; subtraction is implemented using the constant `-1`, which is counted in the budget.
+Wiring is free. The zero/one representation is faithful when `R` is nontrivial.
+
+This supplies the Boolean-to-arithmetic direction of the finite-field exercise independently
+of characteristic. The finite-carrier construction above supplies the field-element encoding
+for the arithmetic-to-Boolean direction.
+These are value simulations, without compiler-runtime or formal-polynomial identity claims.
+Run `scripts/build.sh CslibFrontierTests.BooleanArithmetic` for the
+[complete clients](../../CslibFrontierTests/BooleanArithmetic.lean), including all Boolean
+inputs to a two-output circuit over `ZMod 3`, zero-input constants and zero-cost integer wiring.
+
 ## Boolean and two-element arithmetic circuits
 
 Import [Boolean.Arithmetic](../../CslibFrontier/Computability/Circuit/Boolean/Arithmetic.lean)
@@ -81,9 +117,13 @@ zero-input and pure-wiring circuits are included.
 The `arithmetic_simulates_boolean` and `boolean_simulates_arithmetic` gate-budget certificates
 also work with the generic `Circuit.exists_simulationWithCost` API. These are circuit-value
 and nonuniform size results, not formal polynomial identities or certified translation runtimes.
-They establish the GF(2) milestone, not the exercise for every fixed finite field; the latter
-still needs bit encodings and the general-field directions. Existing `Synthesis.bitBlast`
-handles an equivalence to a fixed-width bit cube and should be reused where applicable.
+For an arbitrary fixed finite field, use `c.exists_finite_boolean I hArity`
+with the encoding of the finite carrier above for the arithmetic-to-Boolean direction,
+and `Boolean.exists_ring_simulation` for the Boolean-to-arithmetic direction. Together
+they give both value simulations with constant factors for that field. The forward
+guarantee covers every output on valid encoded inputs. Uniform compiler/runtime
+certificates, formal-polynomial identities and behavior on unused code words are
+outside these statements.
 Run `scripts/build.sh CslibFrontierTests.BooleanArithmetic` for the
 [checked clients](../../CslibFrontierTests/BooleanArithmetic.lean): multiple XOR/AND and OR/NOT
 outputs, zero-input constants and zero-gate wiring.
@@ -477,7 +517,15 @@ The [native generator endpoint](https://github.com/cslib-community/cslib-frontie
 
 Arbitrary unitary matrices are semantic objects. The [GateCode](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Quantum/Code.lean#L98) interface supplies a finite basis of Hadamard, NOT, controlled-NOT and Toffoli codes, with explicit target/control indices and well-formedness. The [UniformCircuitFamily](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Quantum/Uniform.lean#L79) structure requires native polynomial-time generation of both the well-formed gate list and the positive register width from unary input length. The width is at least the input length. Unary wire/width encodings prevent an uncharged exponentially large register address. Inputs are followed by zero ancillas; acceptance measures qubit zero, and postselection conditions on qubit one.
 
-[BQP](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/BQP.lean#L69) uses one such family for a language under a supplied injective instance encoding: every encoded member is accepted with probability at least two thirds, and every encoded nonmember with probability at most one third. Polynomial circuit size follows from the native polynomial-time generator. The model and its gate-set convention are owned here.
+For coherent function access, import [Oracle/Code.lean](../../CslibFrontier/Computability/Circuit/Quantum/Oracle/Code.lean). An `OracleGateCode` is an existing `PhaseGateCode` or a query; elementary instructions include phase and controlled-phase gates and their inverses, with ordinary gate codes embedded as `(false, g)`. For a function from `a` bits to `b` bits, a query uses the first `a` wires as its argument and the following `b` wires as an XOR response register. `OracleCircuit.toCircuit m H codes` interprets the description using the same fixed `H` throughout; the resulting `Circuit` supplies unitary evolution and final measurement. `gateCount` and `queryCount` count elementary gates and oracle calls separately. Require `∀ g ∈ codes, g.WellFormed a b m`: the total interpreter skips malformed instructions, and `length_toCircuit` proves that a well-formed description executes every instruction.
+
+The [placed-query API](../../CslibFrontier/Computability/Circuit/Quantum/Oracle/Basic.lean) also permits an arbitrary injective wire placement. `queryRegisters` identifies argument, response and unused wires, with component equations for callers. [Oracle/ValueQuery.lean](../../CslibFrontier/Computability/Circuit/Quantum/Oracle/ValueQuery.lean) supplies `xorQuery_eq_valueOracle`, which proves agreement with the existing `valueOracle addStep` semantics on arbitrary states; `xorQuery_eval_twice` proves coherent cancellation. [Checked clients](../../CslibFrontierTests/QuantumOracleCircuit.lean) exercise a one-bit identity hash, entanglement with real and complex relative phases, interference after query/unquery, malformed codes and separate costs. This finite operational layer does not certify uniform quantum polynomial time or sample a random oracle. Classical signing/decapsulation access, mixed or entangled auxiliary information, gate approximation and full QROM security remain separate obligations under [#4987](https://github.com/cslib-community/cslib-frontier/issues/4987).
+
+For native uniform generation, import [Oracle/Uniform.lean](../../CslibFrontier/Computability/Circuit/Quantum/Oracle/Uniform.lean). A `UniformOracleCircuitFamily` receives the security parameter `n` and classical input length `ℓ` separately, both in unary. Its one native polynomial-time generator returns all register sizes and instructions. Every size and wire address is charged by the encoding, so `exists_resource_bound` bounds both active qubits and instruction count. `exists_computable_resource_bound` gives a computable polynomial schedule that works for every `ℓ ≤ L n` whenever `L` is polynomially bounded; `L` itself need not be computable. [Oracle/Resources.lean](../../CslibFrontier/Computability/Circuit/Quantum/Oracle/Resources.lean) keeps qubit, elementary-gate and query budgets independent.
+
+`initialState` places a supplied quantum state after the encoded classical input `(n, x)`, leaving zero ancillas elsewhere. `run` is the resulting isometry with a fixed oracle; `output` measures the declared prefix and returns a bit word. Its supported words have the declared output length. The [varying checked client](../../CslibFrontierTests/QuantumOracleUniform.lean) natively generates growing query counts and wire addresses, cancels query/unquery pairs for every oracle, and returns the original encoded input followed by the bit decoded from `(|0⟩ ± i|1⟩)/√2`. This certifies uniform generation and the stated pure-state execution. Efficient preparation of supplied states, inaccessible entangled references, consistent random-oracle sampling across widths, classical interaction and gate approximation remain open under [#4987](https://github.com/cslib-community/cslib-frontier/issues/4987).
+
+[BQP](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/BQP.lean#L69) uses an oracle-free `UniformCircuitFamily` for a language under a supplied injective instance encoding: every encoded member is accepted with probability at least two thirds, and every encoded nonmember with probability at most one third. Polynomial circuit size follows from the native polynomial-time generator. The model and its gate-set convention are owned here.
 
 **Controlled phase gates.** [PhaseCode.lean](../../CslibFrontier/Computability/Circuit/Quantum/PhaseCode.lean) adds the phase gate `S = diag(1, i)`, the controlled phase gate `Λ(S)` and their inverses. A code `(true, (inv, t, cs))` names the gate on qubits `t :: cs`, with at most one control; `(false, g)` is an ordinary gate code. A `UniformPhaseCircuitFamily` over the extended set has the same uniformity, width, input and acceptance conventions as a `UniformCircuitFamily`. [`mem_BQP_iff_phase`](../../CslibFrontier/Computability/Complexity/Classes/BQP/PhaseGates.lean) shows that both kinds of families define the same `BQP`.
 
@@ -517,6 +565,8 @@ These models connect to tensor networks through [the path-network construction](
 **Controlled circuits and reflections.** These modules are infrastructure for Shi's constructive synthesis of real rotations from the Hadamard and Toffoli gates [shi03][shi03], the route chosen for [#3350](https://github.com/cslib-community/cslib-frontier/issues/3350). In [the controlled-circuit module](../../CslibFrontier/Computability/Circuit/Quantum/Controlled.lean), a circuit with no gate on qubit `j` never changes it (`Circuit.matrix_eq_zero_of_ne`), so it commutes with the projection `projOutcomes` onto a value of `j` (`Circuit.eval_projOutcomes_bit`). Well-formed gate codes run backwards undo themselves (`Circuit.eval_ofCodes_reverse`). `Circuit.IsControlled c C D` says that `C` does nothing when qubit `c` is zero and runs `D` when it is one. Adding the control `c` to classical codes gives such a circuit (`Circuit.isControlled_addControl`). So does conjugating a controlled circuit by codes that avoid `c` (`Circuit.IsControlled.conj`), and controlled circuits compose (`Circuit.IsControlled.append`). Together these build `Λ(T)` from a Toffoli gate for `T = H[a] Λ(σ_x)[a, b] H[a]`. This `T` is a variant of Shi's `T_{π/4} = σ_x[b] T`, without the final `σ_x` on `b`; it is a real involution with the same entry `⟨00|T|00⟩ = 1/2`. In [the phase-oracle module](../../CslibFrontier/Computability/Circuit/Quantum/PhaseOracle.lean), `H X H = Z` holds exactly (`Gate.hadamard_mul_not_mul_hadamard`). Computing a bit classically, flipping its phase and uncomputing therefore negates exactly the amplitudes on which the bit is one (`Circuit.eval_ofCodes_phaseOracleCodes`). With a Toffoli-gate AND on zeroed scratch qubits, this gives the reflection about the all-zero string of a set of qubits (`Circuit.eval_ofCodes_reflectZeroCodes`). [The plane-rotation module](../../CslibFrontier/Foundations/LinearAlgebra/PlaneRotation.lean) proves the Grover geometry for linear maps. Write `v(φ) = cos φ • a + sin φ • e`. If `R_a` negates `a` and fixes `e`, and `R_b` negates `b = v(π/2 - γ)` and fixes `v(-γ)`, then `R_b R_a` maps `v(φ)` to `-v(φ - 2γ)`, so `T` rounds map it to `(-1)^T v(φ - 2Tγ)` (`LinearAlgebra.iterate_reflection_comp_reflection`). Shi's reflection `R` along `1̃ = b` fixes `b`, so on the plane `R = -R_b`, and his Grover iterate `(R Λ̄(σ_z))^T` maps `v(φ)` to `v(φ - 2Tγ)` without the sign. Shi's approximation of a real rotation (his Lemma 4.5 and Theorem 4.6) and the class equality are not yet formalized. The [checked client](../../CslibFrontierTests/QuantumReflection.lean) proves that the Toffoli codes are the controlled `T`. It also checks that the reflection negates `|00⟩` and fixes `|10⟩`, and that two reflections at angle `π/4` turn `ℝ²` by a quarter. Build it with `lake build CslibFrontierTests.QuantumReflection`.
 
 ## Quantum verifiers and QMA
+
+[Input.lean](../../CslibFrontier/Computability/Circuit/Quantum/Input.lean) provides `embedState`, a linear isometry that places a quantum state on selected qubits while fixing the other qubits to a basis string. Its basis-state and linear-expansion equations let clients prepare an input register without importing verifier families. `Circuit.eval_mapWires_embedState` moves circuit evaluation through this embedding, so a client can prove its state transformation on the small register once. `glue_blockEmb_inputState` identifies a basis state in the block after the input with initialization from the concatenated word. The [checked client](../../CslibFrontierTests/QuantumInput.lean) distinguishes the two unit states `(|0⟩ ± i|1⟩)/√2` by applying `S†` and then `H` on a qubit whose position depends on two input lengths, preserving the other qubits. Build it with `lake build CslibFrontierTests.QuantumInput`.
 
 A [UniformVerifierFamily](../../CslibFrontier/Computability/Circuit/Quantum/Verifier.lean) is a uniform circuit family together with a witness length, itself computed in polynomial time from the unary input length. On an input word of length n, the circuit starts with the input on qubits `0, …, n-1`, an arbitrary pure witness state on the next `witnessLength n` qubits, and zeros elsewhere. It accepts when the final measurement finds qubit zero in state one. The acceptance probability is a quadratic form in the witness, and on a basis witness it is the ordinary circuit run on the input word followed by the witness bits. [PromiseQMA c s](../../CslibFrontier/Computability/Complexity/Classes/QMA.lean) asks that some unit witness reach at least `c n` on every encoded yes-instance and that every unit witness stay at most `s n` on every encoded no-instance. `QMA` is the `(2/3, 1/3)` decision version.
 
