@@ -313,6 +313,17 @@ def filterDecaps (Hq : CT → StateT (SimState M R CT K) ProbComp K)
 
 end LazyOracles
 
+/-- The random oracles `G : M → R` and `H : Bool × M × CT → K` as one interface. -/
+abbrev ROSpec (M R CT K : Type) := (fun _ : M => R) ⊕ₒ (fun _ : Bool × M × CT => K)
+
+/-- Each query of a ROM IND-CCA game as a program over the random oracles: `G` and `H` are
+forwarded, decapsulation of `cStar` is refused, and any other ciphertext runs `decaps`. -/
+def romProgram [DecidableEq CT] (decaps : CT → OracleComp (ROSpec M R CT K) (Option K))
+    (cStar : CT) :
+    (q : ROQuery M CT) → OracleComp (ROSpec M R CT K) (ROResp R K q) :=
+  ROQuery.dispatch (fun m => OracleComp.query (spec := ROSpec M R CT K) (Sum.inl m))
+    (fun x => OracleComp.query (spec := ROSpec M R CT K) (Sum.inr x)) decaps cStar
+
 namespace Scheme
 
 variable [DecidableEq M] [DecidableEq CT]
@@ -465,17 +476,6 @@ of the experiment is the oracle program `romProgram`, so
 `RandomOracle.eval_run_interpret_eq_complete_bind` replaces both caches by complete tables in one
 step, and `RandomOracle.bind_complete_sum` splits the completed table into `G` and `H`
 (`eval_romIndCcaExperiment_eq_eager`). -/
-
-/-- The random oracles `G : M → R` and `H : Bool × M × CT → K` as one interface. -/
-abbrev ROSpec (M R CT K : Type) := (fun _ : M => R) ⊕ₒ (fun _ : Bool × M × CT => K)
-
-omit [DecidableEq M] in
-/-- Each query of a ROM IND-CCA game as a program over the random oracles: `G` and `H` are
-forwarded, decapsulation of `cStar` is refused, and any other ciphertext runs `decaps`. -/
-def romProgram (decaps : CT → OracleComp (ROSpec M R CT K) (Option K)) (cStar : CT) :
-    (q : ROQuery M CT) → OracleComp (ROSpec M R CT K) (ROResp R K q) :=
-  ROQuery.dispatch (fun m => OracleComp.query (spec := ROSpec M R CT K) (Sum.inl m))
-    (fun x => OracleComp.query (spec := ROSpec M R CT K) (Sum.inr x)) decaps cStar
 
 /-- The lazy handler of a ROM IND-CCA game: `romProgram` against the lazy oracles `roHashG` and
 `roHashH`. -/
