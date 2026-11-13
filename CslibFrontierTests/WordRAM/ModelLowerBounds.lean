@@ -18,20 +18,21 @@ namespace Cslib.WordRAM.Tests.ModelLowerBounds
 
 open Cslib.Algorithms.WordRAM.ThreeSum
 
--- Both sides of the adversary are actual repeated-value integer inputs.
-example : ¬Cslib.Algorithms.ThreeSum.HasSolution
-    (fun i : Fin (hardInput 0).length => (hardInput 0)[i]) :=
+-- Both sides of the adversary are actual repeated-value integer inputs in the promise domain.
+example (κ : ℕ) : ¬Cslib.Algorithms.ThreeSum.HasSolution
+    (fun i : Fin (hardInputBounded κ 0).val.length => (hardInputBounded κ 0).val[i]) :=
   hardInput_no_solution 0
 
-example : Cslib.Algorithms.ThreeSum.HasSolution
-    (fun i : Fin ((hardInput 1).set 2 0).length => ((hardInput 1).set 2 0)[i]) :=
+example (κ : ℕ) : Cslib.Algorithms.ThreeSum.HasSolution
+    (fun i : Fin (hardInputSetBounded κ 1 0).val.length =>
+      (hardInputSetBounded κ 1 0).val[i]) :=
   hardInput_set_solution 1 0 (by decide)
 
 -- The zero-square output requires exactly the charged halt, with no stores.
 example : InputFits 0 [] := by decide
 
 example : ExecutesList 0 ([.halt 0] : Program .standard 1) (.init []) [] 1 := by
-  refine ⟨.init [], 0, 0, .refl _, rfl, ?_, rfl⟩
+  refine ⟨.init [], 0, 0, .refl _, rfl, ?_, by decide, rfl⟩
   exact outputList_init []
 
 -- This actual initialized program changes a zero data cell and returns the one-entry matrix.
@@ -54,7 +55,7 @@ theorem oneOutput_executes : ExecutesList 1 oneOutput (.init [0]) [1] 4 := by
   have h₃ : Next 1 oneOutput ⟨2, x₂⟩ ⟨3, x₃⟩ := by
     simp [Next, step, oneOutput, Op.eval, Data.put, Fits, x₃]
   refine ⟨⟨3, x₃⟩, 3, 0,
-    ((Relation.RelatesInSteps.single h₁).tail _ _ _ _ h₂).tail _ _ _ _ h₃, ?_, ?_, rfl⟩
+    ((Relation.RelatesInSteps.single h₁).tail _ _ _ _ h₂).tail _ _ _ _ h₃, ?_, ?_, by decide, rfl⟩
   · simp [step, oneOutput, x₃, Data.set]
   · simp [outputList, x₃, x₂, x₁, x, Data.set, Data.write, Data.init]
 
@@ -70,5 +71,25 @@ example (κ : ℕ) : Decision.Admissible κ [1, -1, 0]
   simp only [List.mem_cons, List.not_mem_nil, or_false] at hz
   have habs : |z| ≤ (1 : ℤ) := by rcases hz with rfl | rfl | rfl <;> norm_num
   exact habs.trans (by exact_mod_cast hpow)
+
+-- Every promised input admits a fitting width at the size-only threshold, so the promised-domain
+-- sublinear lower bound is nonvacuous and matches the upper theorem's domain.
+example (κ : ℕ) : InputAdmissible
+    (fun _ (input : Decision.MagnitudeBoundedInput κ) => input.val.map Signed.encode)
+    (fun input W => Decision.width κ 123357 input.val.length ≤ W) := by
+  intro input
+  obtain ⟨W, hW, hfit⟩ := inputAdmissible_of_widthIndependent
+    (fun input : Decision.MagnitudeBoundedInput κ => input.val.map Signed.encode)
+    (fun input => Decision.width κ 123357 input.val.length) input
+  exact ⟨W, hW, hfit⟩
+
+example (κ : ℕ) :
+    ¬UniformDecidableInO .standard
+      {input : Decision.MagnitudeBoundedInput κ |
+        Cslib.Algorithms.ThreeSum.HasSolution (fun i : Fin input.val.length => input.val[i])}
+      (fun _ input => input.val.map Signed.encode) (fun input => input.val.length)
+      (fun n _ => ⌈(n : ℝ) ^ (1 / 2 : ℝ)⌉₊)
+      (fun input W => Decision.width κ 123357 input.val.length ≤ W) :=
+  not_uniformDecidableInO_sublinear .standard κ (by norm_num)
 
 end Cslib.WordRAM.Tests.ModelLowerBounds

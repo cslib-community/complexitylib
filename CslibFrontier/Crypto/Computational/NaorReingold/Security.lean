@@ -1450,12 +1450,12 @@ private theorem advantage_naorReingoldDescGame_le (F : PrimeOrderGroupFamily)
             push_cast; ring
     · simp [hk]
   have hAdvRealApprox : Game.advantage exactDDHReal ddhReal ≤ ε := by
-    simp only [ddhReal, ddhRealGame, eval_ddhRealExperiment, PMF.monad_bind_eq_bind,
+    simp only [ddhReal, ddhRealGame, Game.withSetup, eval_ddhRealExperiment,
       eval_naorReingoldDescToDDHDistinguisher F inLen adv n]
     peel_binds d α β i
     exact hstep_err d d_mem α β (α * β) i
   have hAdvRandomApprox : Game.advantage exactDDHRandom ddhRandom ≤ ε := by
-    simp only [ddhRandom, ddhRandomGame, eval_ddhRandomExperiment, PMF.monad_bind_eq_bind,
+    simp only [ddhRandom, ddhRandomGame, Game.withSetup, eval_ddhRandomExperiment,
       eval_naorReingoldDescToDDHDistinguisher F inLen adv n]
     peel_binds d α β γ i
     exact hstep_err d d_mem α β γ i

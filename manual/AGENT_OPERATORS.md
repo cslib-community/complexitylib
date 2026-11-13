@@ -78,14 +78,18 @@ Assign review to an agent that did not design or implement the change. For examp
 
 > Independently review PR `<number>` at its current revision. Read the actual definitions and
 > statements. Check the mathematical claim, API and representative client, including the model,
-> encodings, hypotheses and resource bounds. Read new and changed proofs against the rest of
+> encodings, hypotheses and resource bounds.
+> Check public API usability in a representative `module` client with ordinary imports of the API.
+> Read new and changed proofs against the rest of
 > their files, and report any substantial argument the change repeats that another proof or an
 > existing lemma already makes. Follow a representative caller: check whether named accessors,
 > matcher/range facts and generated certificates remove representation work, and compare any
 > sibling implementation or conversion bridge. Assess whether the proof strategy, invariant and
 > helper statements fit that use. Review the impact on both manuals and any affected
 > results-inventory entry. Report concrete findings and a verdict, stating what you checked and
-> what remains uncertain.
+> what remains uncertain. If queueing is authorized, first verify that named review holds are
+> cleared and required CI/manual material is reviewed. Use the helper from trusted current `main` for the approved
+> PR head; do not start `--wait` while completing CI will produce material still needing review.
 
 Ask the reviewer to consider whether a different statement, API, invariant or proof strategy
 would make the result clearer to state, prove and use, while preserving its mathematical strength.
@@ -113,18 +117,29 @@ Make the scope and authority clear. A coordinator request can say:
 > manuals as part of every review, including any justified no-impact assessment. Arrange
 > non-author review for your own changes. Report what landed, remaining objectives and blockers.
 
-Reviewers with write access queue the exact heads they approve, so an approved PR does not wait for
-a coordinator ([Approve and queue](../AGENTS.md#approve-and-queue)). To keep a PR for your own
-review, say so in the PR or its linked issue: agents then approve it without queueing, and you or
-someone you name queues it. Agents without write access can prepare and review work but cannot
-queue it. Coordinators queue approved heads still waiting and monitor the merge queue through
+Reviewers with write access queue the exact heads they approve using the
+[helper from trusted current main](workflows/agent-operations.md#queue-approved-work-and-keep-its-approval),
+so an approved PR does not wait for a coordinator ([Approve and queue](../AGENTS.md#approve-and-queue)).
+To keep a PR for your own review, say so in the PR or its linked issue: agents then approve it
+without queueing, and you or someone you name queues it. Agents without write access can prepare
+and review work but cannot queue it. Coordinators queue approved heads still waiting and monitor
+the merge queue through
 landing. [Coordinator duties](../AGENTS.md#coordinators) define the details.
 
 An approval with review still pending is conditional. Ask for a final handoff that links the
 earlier proof/API/caller judgment and resolves the named source, notice and manual-review holds.
 The queue helper's `--wait` option queues automatically when CI passes; do not start it while
 newly produced reports or pages still need inspection. A green check alone does not release
-those holds. This needs a coverage decision, not another full review of unchanged code.
+those holds. Updating `main` does not upgrade an already-running copy; have its owner stop an
+old waiter before replacing it after hold clearance. This needs a coverage decision, not another
+full review of unchanged code.
+
+If discussion changes after a helper starts waiting, its final reread stops that enqueue.
+Have the reviewer inspect the new or edited discussion and any holds before rerunning for the
+still-approved head; no extra approval count is required. The guard covers the PR body,
+comments, submitted reviews and inline threads, including edits and resolution changes. It does
+not inspect linked issues or prevent a change racing with the enqueue mutation. Existing queue
+entries are left in place, so coordinators still need to track review holds through landing.
 
 When the queue ejects a PR whose only conflict is in `references.bib`, the coordinator or author
 can run `python3 scripts/resolve_bib_conflict.py origin/<branch>` after `git fetch origin` to
@@ -141,6 +156,12 @@ When several coordinators share one host, give them a single limit on concurrent
 not only a thread count. Their builds can exhaust the kernel's file handles before its
 processors, and then everyone's builds fail
 ([diagnosis](workflows/troubleshooting.md#diagnose-too-many-open-files-in-system)).
+On Linux hosts and containers, local whole-library gates (`lake test`, `lake lint`,
+`lake exe checkInitImports`, and full `scripts/check.sh`) also need `vm.max_map_count` well above
+the stock `65530` kernel default (`262144` or higher; `python3 scripts/check_vm_map_count.py`
+checks this before full runs) so single-process whole-library imports do not fail with misleading
+`.olean` file-read errors
+([diagnosis](workflows/troubleshooting.md#diagnose-failed-to-read-file-on-whole-library-imports)).
 Have them run `scripts/check.sh --quick --no-full-fallback` during development: a change quick
 mode cannot plan is reported instead of starting a full local check that holds a build slot for
 hours, and CI on the pull request supplies the full run.
@@ -163,6 +184,10 @@ When an agent drifts, name the mismatch: the theorem became conditional, the mod
 example cannot be followed, or the task expanded beyond the agreed scope. Ask it to preserve
 the useful work, state the remaining objective and return to a concrete next step. When two
 agents overlap, have the coordinator resolve ownership before either overwrites the other's work.
+
+Ask for a PR description that explains the setting, central idea and result to someone who has
+not followed the task. Use the [writing guidance and example](../AGENTS.md#writing-in-issues-and-prs)
+to judge whether the explanation gives you enough context to understand the change.
 
 For a handoff, request the issue and PR, branch and revision, actual validation, review state,
 remaining work and the next action. Put that record in the issue/PR or commit, according to the

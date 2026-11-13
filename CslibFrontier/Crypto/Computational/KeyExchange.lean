@@ -153,9 +153,6 @@ structure View (T : Type) (K : T → Type) where
 enc_structure encView (encT : T ↪ List Bool) (encK : (t : T) → K t ↪ List Bool) : View T K where
   transcript : encT, key : (encK transcript) using ((encK transcript).injective)
 
--- The tuple encoding holds the key as a word in the slot `encBits`; only `encView` reads `encK`.
-attribute [nolint unusedArguments] encViewFields
-
 /-- The real view: run the protocol honestly and pair the transcript with Alice's key. This is
 what the adversary sees in `KE^eav` with hidden bit `0` ([KatzLindell2020], p. 391). -/
 @[expose]
@@ -366,8 +363,9 @@ theorem realGame_dhKeyExchange (setup : ℕ → PMF F.Desc)
     (adversary : Eavesdropper F.DHTranscript F.DHKey) (n : ℕ) :
     (F.dhKeyExchange setup).realGame adversary n =
       F.ddhRealGame setup (F.dhEavToDDH adversary) n := by
+  rw [ddhRealGame, Game.withSetup]
   simp only [KeyExchange.realGame, dhKeyExchange, KeyExchange.withSetup_realView_bind,
-    withSetup_realView_dhExecution, ddhRealGame, PMF.monad_bind_eq_bind]
+    withSetup_realView_dhExecution]
 
 /-- With the uniform group element as ideal key, the ideal eavesdropping experiment on
 Diffie–Hellman is the random DDH experiment. -/
@@ -375,8 +373,9 @@ theorem idealGame_dhKeyExchange (setup : ℕ → PMF F.Desc)
     (adversary : Eavesdropper F.DHTranscript F.DHKey) (n : ℕ) :
     (F.dhKeyExchange setup).idealGame (fun _ => F.dhIdealKey) adversary n =
       F.ddhRandomGame setup (F.dhEavToDDH adversary) n := by
+  rw [ddhRandomGame, Game.withSetup]
   simp only [KeyExchange.idealGame, dhKeyExchange, KeyExchange.withSetup_idealView_bind,
-    withSetup_idealView_dhExecution, ddhRandomGame, PMF.monad_bind_eq_bind]
+    withSetup_idealView_dhExecution]
 
 open scoped KeyExchange in
 /-- The distinguisher `dhEavToDDH` is uniform strict PPT when the eavesdropper is. -/

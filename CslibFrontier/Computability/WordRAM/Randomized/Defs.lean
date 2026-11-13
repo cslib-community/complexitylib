@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Init
 public import CslibFrontier.Computability.WordRAM.MapOp
 public import CslibFrontier.Languages.Probabilistic.QueryCount.Support
+import CslibFrontier.Languages.Probabilistic.QueryCount.Scale
 
 /-!
 # Randomized word RAMs
@@ -585,31 +586,11 @@ theorem runRand_queriesSatisfy_fits (w : ℕ) (p : Program B r) (T : ℕ) (cfg :
   | zero => exact .pure _
   | succ T ih => exact (stepRand_queriesSatisfy_fits w p cfg).bind ih
 
-private theorem isCostBounded_of_queriesSatisfy_mul {α : Type} {pred : ℕ → Prop} {cost : ℕ → ℕ}
-    {c R : ℕ} {program : ProbComp α}
-    (hsat : OracleComp.QueriesSatisfy pred program)
-    (hq : program.IsQueryBounded R)
-    (hc : ∀ q, pred q → cost q ≤ c) :
-    OracleComp.IsCostBounded cost program (R * c) := by
-  induction hq with
-  | pure a n => exact .pure a (n * c)
-  | liftBind q cont n _ ih =>
-    obtain ⟨hq_pred, hcont_sat⟩ := OracleComp.QueriesSatisfy.liftBind_iff.mp hsat
-    have hstep : OracleComp.IsCostBounded cost (OracleComp.query q >>= cont) (n * c + cost q) :=
-      .liftBind q cont (n * c) fun a => ih a (hcont_sat a)
-    exact hstep.mono (by
-      have := hc q hq_pred
-      calc
-        n * c + cost q ≤ n * c + c := Nat.add_le_add_left this _
-        _ = (n + 1) * c := (Nat.succ_mul n c).symm)
-
 /-- At word size `w`, `R` `rand` calls cost at most `R * w` entropy bits. -/
 theorem RandCallsBounded.randBitsBounded {w T R : ℕ} {p : Program B r} {s : State r}
     (h : RandCallsBounded w p s T R) :
     RandBitsBounded w p s T (R * w) :=
-  isCostBounded_of_queriesSatisfy_mul
-    (runRand_queriesSatisfy_fits w p T (.running s))
-    h
+  OracleComp.IsQueryBounded.isCostBounded_mul h (runRand_queriesSatisfy_fits w p T (.running s))
     fun _ hfit => unifBitCost_le_of_fits hfit
 
 -- Keep `runRand` irreducible for downstream clients so `whnf` (and linters inspecting `Set.Mem`

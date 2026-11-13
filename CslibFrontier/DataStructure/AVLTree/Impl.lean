@@ -10,6 +10,7 @@ module
 public import CslibFrontier.DataStructure.AVLTree.Erase
 public import CslibFrontier.DataStructure.OrderedSet.Spec
 public import CslibFrontier.DataStructure.StateTransition.Resource
+public import CslibFrontier.DataStructure.StateTransition.StepFunction
 
 /-!
 # Stateful ordered-set realization by height-balanced AVL trees
@@ -35,7 +36,7 @@ instructions.
 ## Main definitions
 
 * `step`, `Exec`, `run`: concrete AVL operations, native execution relation, and executable client
-  runner with exact internal-node-visit traces.
+  runner with exact internal-node-visit traces, built with `Cslib.DataStructure.Execution.ofStep`.
 * `Rep`, `impl`: AVL representation relation (`Valid t ∧ elements t = s`) and
   `Cslib.DataStructure.StateTransitionImpl` of `Cslib.DataStructure.OrderedSet.spec α`.
 * `charge`: representation-independent logarithmic node-visit budget
@@ -67,17 +68,16 @@ variable {α : Type} [LinearOrder α]
 
 /-- Execute a single `OrderedSet.Op α` on an AVL tree, returning the updated tree, answer, and
 internal-node-visit count. -/
-@[expose] def step (t : AVLTree α) (o : Op α) : AVLTree α × (spec α).Result o × ℕ :=
+@[expose] def step (t : AVLTree α) (o : Op α) : StepResult (AVLTree α) ℕ ((spec α).Result o) :=
   match o with
-  | .contains x => (t, contains x t, searchVisits x t)
-  | .insert x => (insert x t, (), searchVisits x t)
-  | .delete x => (erase x t, (), eraseVisits x t)
-  | .minimum => (t, minimum t, minimumVisits t)
-  | .successor x => (t, successor x t, successorVisits x t)
+  | .contains x => ⟨t, contains x t, searchVisits x t⟩
+  | .insert x => ⟨insert x t, (), searchVisits x t⟩
+  | .delete x => ⟨erase x t, (), eraseVisits x t⟩
+  | .minimum => ⟨t, minimum t, minimumVisits t⟩
+  | .successor x => ⟨t, successor x t, successorVisits x t⟩
 
 /-- Native execution relation for `OrderedSet.spec α` over `AVLTree α`. -/
-@[expose] def Exec : Execution (spec α) (AVLTree α) ℕ :=
-  fun t o a t' n => step t o = (t', a, n)
+abbrev Exec : Execution (spec α) (AVLTree α) ℕ := Execution.ofStep step
 
 /-- Representation relation coupling a mathematical `Finset α` with a valid AVL tree `t`. -/
 @[expose] def Rep (s : Finset α) (t : AVLTree α) : Prop :=
@@ -95,32 +95,17 @@ theorem rep_empty : Rep (∅ : Finset α) .nil :=
 
 /-- Semantic realization of `OrderedSet.spec α` by `AVLTree α`. -/
 @[expose] def impl : StateTransitionImpl (spec α) (Exec (α := α)) :=
-  StateTransitionImpl.ofFn
-    (rep := Rep)
-    (total := fun {_ t} o _ _ =>
-      match h : step t o with
-      | (t', a, n) => ⟨a, t', n, h⟩)
-    (correct := by
-      intro s t o a t' n hr _ he
-      obtain ⟨ht, rfl⟩ := hr
-      cases o with
-      | contains x =>
-        cases he
-        refine ⟨?_, ht, rfl⟩
-        have h := contains_eq_true ht.ordered x
-        by_cases hx : x ∈ elements t <;> simp_all
-      | insert x =>
-        cases he
-        exact ⟨rfl, valid_insert ht x, elements_insert x t⟩
-      | delete x =>
-        cases he
-        exact ⟨rfl, valid_erase ht x, elements_erase ht.ordered x⟩
-      | minimum =>
-        cases he
-        exact ⟨(minimum_spec ht.ordered).eq_least, ht, rfl⟩
-      | successor x =>
-        cases he
-        exact ⟨(successor_spec ht.ordered x).eq_least, ht, rfl⟩)
+  StateTransitionImpl.ofStep (D := spec α) Rep step fun {_ t} o hr _ => by
+    obtain ⟨ht, rfl⟩ := hr
+    cases o with
+    | contains x =>
+      refine ⟨?_, ht, rfl⟩
+      have h := contains_eq_true ht.ordered x
+      by_cases hx : x ∈ elements t <;> simp_all [step]
+    | insert x => exact ⟨rfl, valid_insert ht x, elements_insert x t⟩
+    | delete x => exact ⟨rfl, valid_erase ht x, elements_erase ht.ordered x⟩
+    | minimum => exact ⟨(minimum_spec ht.ordered).eq_least, ht, rfl⟩
+    | successor x => exact ⟨(successor_spec ht.ordered x).eq_least, ht, rfl⟩
 
 /-- `impl.rep` is definitionally `Rep`. -/
 @[simp]
@@ -154,42 +139,29 @@ theorem nodeVisitBound : Bound (impl (α := α)) id charge := by
 additive `2 * Nat.log 2 (s.card + 1)` node-visit bounds along its chosen history. -/
 theorem realized_client {β : Type} (p : (spec α).Client β)
     {s : Finset α} {t : AVLTree α} (hr : Rep s t) :
-    ∃ t' ns, Executes Exec p t ((spec α).runClient s p).1 t' ns ∧
-      Rep ((spec α).runClient s p).2.1 t' ∧
-      total id ns ≤ (spec α).totalCost charge s ((spec α).runClient s p).2.2 := by
-  have hv := (spec α).validHistory_of_forall_valid (fun _ _ => trivial)
-    s ((spec α).runClient s p).2.2
-  exact Bound.exists_executes nodeVisitBound p hr hv
+    let (value, finalState, history) := (spec α).runClient s p
+    ∃ t' ns, Executes Exec p t value t' ns ∧ Rep finalState t' ∧
+      total id ns ≤ (spec α).totalCost charge s history :=
+  nodeVisitBound.exists_executes p hr
+    ((spec α).validHistory_of_forall_valid (fun _ _ => trivial) s _)
 
 /-- Execute an `OrderedSet` client concretely on an AVL tree, recording exact node visits per
 operation. -/
-@[expose] def run {β : Type} (t : AVLTree α) :
-    (spec α).Client β → β × AVLTree α × List ℕ
-  | .pure a => (a, t, [])
-  | .liftBind o k =>
-      let (t', a, c) := step t o
-      let (res, t'', cs) := run t' (k a)
-      (res, t'', c :: cs)
-
-/-- The concrete runner produces a valid `Executes Exec` derivation. -/
-theorem run_exec {β : Type} (p : (spec α).Client β) (t : AVLTree α) :
-    Executes Exec p t (run t p).1 (run t p).2.1 (run t p).2.2 := by
-  induction p generalizing t with
-  | pure a => exact .pure a t
-  | liftBind o k ih => exact .call rfl (ih _ _)
+abbrev run {β : Type} (t : AVLTree α) (p : (spec α).Client β) :
+    RunResult (AVLTree α) ℕ β :=
+  Execution.run step t p
 
 /-- Running the concrete AVL interpreter agrees with abstract `Finset α` semantics, preserves `Rep`,
 and satisfies the additive logarithmic node-visit bound. -/
 theorem run_correct {β : Type} (p : (spec α).Client β)
     {s : Finset α} {t : AVLTree α} (hr : Rep s t) :
-    (run t p).1 = ((spec α).runClient s p).1 ∧
-      Rep ((spec α).runClient s p).2.1 (run t p).2.1 ∧
-      total id (run t p).2.2 ≤
-        (spec α).totalCost charge s ((spec α).runClient s p).2.2 := by
-  have hv := (spec α).validHistory_of_forall_valid (fun _ _ => trivial)
-    s ((spec α).runClient s p).2.2
-  have hexec := run_exec p t
+    let (value, finalState, history) := (spec α).runClient s p
+    (run t p).value = value ∧ Rep finalState (run t p).state ∧
+      total id (run t p).traces ≤ (spec α).totalCost charge s history := by
+  have hv := (spec α).validHistory_of_forall_valid (fun _ _ => trivial) s
+    ((spec α).clientHistory s p)
+  have hexec := Execution.executes_run step p t
   have hc := impl.correct_client hr hv hexec
-  exact ⟨hc.1, hc.2, Bound.client nodeVisitBound hr hv hexec⟩
+  exact ⟨hc.1, hc.2, nodeVisitBound.client hr hv hexec⟩
 
 end Cslib.DataStructure.AVLTree

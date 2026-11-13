@@ -14,7 +14,8 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 
 The generic constructor and evaluation certificates compose with arbitrary variable encodings
 and specialize to the binary encoding of SAT. Exactly-one constraints count distinct variables,
-including when the input list contains repetitions.
+including when the input list contains repetitions. Literal occurrence records keep the encoded
+words of the right-nested tuple and expose their fields to `fun_prop`.
 -/
 
 namespace CslibFrontierTests.CNFPolyTime
@@ -63,5 +64,21 @@ example : CNF.exactlyOne ([] : List ℕ) = [[]] := rfl
 example : (CNF.exactlyOne [7, 7]).eval (fun _ => true) = true := rfl
 
 example : (CNF.exactlyOne [7, 9]).eval (fun _ => true) = false := rfl
+
+-- Occurrences record clause and literal positions, keeping repeated literals.
+example : occurrences [[(7, true), (7, true)], [(9, false)]] =
+    [⟨0, 0, (7, true)⟩, ⟨0, 1, (7, true)⟩, ⟨1, 0, (9, false)⟩] := by decide
+
+-- The occurrence record has the same encoded words as the right-nested tuple
+-- `(clause, pos, lit)`.
+example {V : Type} (enc : V ↪ List Bool) (o : Occurrence V) :
+    encOccurrence enc o = encPair encUnary (encPair encUnary (encPair enc encBool))
+      (o.clause, o.pos, o.lit) := rfl
+
+-- Field reads compose through the generated rules without unfolding the encoding.
+example {α V : Type} {encA : α ↪ List Bool} (enc : V ↪ List Bool) {f : α → Occurrence V}
+    (hf : ComputableInPolyTime f encA (encOccurrence enc)) :
+    ComputableInPolyTime (fun a => ((f a).clause, (f a).lit.1)) encA (encPair encUnary enc) := by
+  fun_prop
 
 end CslibFrontierTests.CNFPolyTime

@@ -484,6 +484,25 @@ theorem nextLen_le_length {α : Type*} [DecidableEq α] (p : List α) (k : ℕ) 
       exact ih (borderLen p k) (borderLen_lt (by omega) hp)
     · exact Nat.zero_le _
 
+/-- `maxPrefixSuffixUpTo p t B` depends only on which positive lengths `j + 1 ≤ p.length` are
+admissible, that is, at most the bound and naming a prefix of `p` that is a suffix of the word. -/
+private theorem maxPrefixSuffixUpTo_congr {α : Type*} [DecidableEq α] {p t t' : List α}
+    {B B' : ℕ}
+    (h : ∀ j, j + 1 ≤ p.length →
+      (j + 1 ≤ B ∧ p.take (j + 1) <:+ t ↔ j + 1 ≤ B' ∧ p.take (j + 1) <:+ t')) :
+    maxPrefixSuffixUpTo p t B = maxPrefixSuffixUpTo p t' B' := by
+  have h' : ∀ k, k ≤ p.length → (k ≤ B ∧ p.take k <:+ t ↔ k ≤ B' ∧ p.take k <:+ t') := by
+    rintro (_ | j) hk
+    · simp only [Nat.zero_le, List.take_zero, List.nil_suffix, and_self]
+    · exact h j hk
+  apply eq_maxPrefixSuffixUpTo_iff.mpr
+  have hm := (h' _ (maxPrefixSuffixUpTo_le_length p t B)).mp
+    ⟨maxPrefixSuffixUpTo_le_bound p t B, take_maxPrefixSuffixUpTo_isSuffix p t B⟩
+  refine ⟨hm.1, maxPrefixSuffixUpTo_le_length p t B, hm.2, fun k hlt hkB hkp hsuf => ?_⟩
+  obtain ⟨hkB', hsuf'⟩ := (h' k hkp).mpr ⟨hkB, hsuf⟩
+  have := le_maxPrefixSuffixUpTo hkB' hkp hsuf'
+  omega
+
 /-- Master KMP step theorem: for any bound `B < p.length` and word `t`, extending `t` by one
 character `c` updates `maxPrefixSuffixUpTo p t B` via `nextLen p · c`. -/
 theorem maxPrefixSuffixUpTo_append_singleton {α : Type*} [DecidableEq α]
@@ -517,8 +536,6 @@ theorem maxPrefixSuffixUpTo_append_singleton {α : Type*} [DecidableEq α]
   suffices hrec : ∀ m, m < p.length →
       nextLen p m c = maxPrefixSuffixUpTo p (p.take m ++ [c]) (m + 1) by
     rw [hrec k hkp]
-    symm
-    apply eq_maxPrefixSuffixUpTo_iff.mpr
     have hiff_pos : ∀ j, j ≤ B →
         (p.take (j + 1) <:+ t ++ [c] ↔ j ≤ k ∧ p.take (j + 1) <:+ p.take k ++ [c]) := by
       intro j hjB
@@ -536,24 +553,10 @@ theorem maxPrefixSuffixUpTo_append_singleton {α : Type*} [DecidableEq α]
           exact ⟨Nat.le_of_lt hjlt, hjsuf_k, hjc⟩
       · rintro ⟨hjk, hjsuf_k, hjc⟩
         exact ⟨hjsuf_k.trans hksuf, hjc⟩
-    set u := maxPrefixSuffixUpTo p (p.take k ++ [c]) (k + 1)
-    have hu_le : u ≤ k + 1 := maxPrefixSuffixUpTo_le_bound p (p.take k ++ [c]) (k + 1)
-    have hu_p : u ≤ p.length := maxPrefixSuffixUpTo_le_length p (p.take k ++ [c]) (k + 1)
-    have hu_suf : p.take u <:+ p.take k ++ [c] :=
-      take_maxPrefixSuffixUpTo_isSuffix p (p.take k ++ [c]) (k + 1)
-    refine ⟨by omega, hu_p, ?_, fun s hslt hs_le hsp hssuf => ?_⟩
-    · rcases Nat.eq_zero_or_pos u with hu0 | hupos
-      · rw [hu0]; exact List.nil_suffix
-      · obtain ⟨j, hj⟩ : ∃ j, u = j + 1 := ⟨u - 1, by omega⟩
-        rw [hj] at hu_suf ⊢
-        exact (hiff_pos j (by omega)).mpr ⟨by omega, hu_suf⟩
-    · rcases Nat.eq_zero_or_pos s with rfl | hspos
-      · omega
-      · obtain ⟨j, rfl⟩ : ∃ j, s = j + 1 := ⟨s - 1, by omega⟩
-        have hjk_suf := (hiff_pos j (by omega)).mp hssuf
-        have hle := le_maxPrefixSuffixUpTo (B := k + 1) (by omega) hsp hjk_suf.2
-        change j + 1 ≤ u at hle
-        omega
+    refine maxPrefixSuffixUpTo_congr fun j hj => ⟨fun ⟨hjB, hsuf⟩ => ?_, fun ⟨hjk, hsuf⟩ => ?_⟩
+    · obtain ⟨hjk, hsuf'⟩ := (hiff_pos j (by omega)).mp hsuf
+      exact ⟨by omega, hsuf'⟩
+    · exact ⟨by omega, (hiff_pos j (by omega)).mpr ⟨by omega, hsuf⟩⟩
   intro m hm
   induction m using Nat.strongRecOn with
   | ind m ih =>
@@ -579,34 +582,19 @@ theorem maxPrefixSuffixUpTo_append_singleton {α : Type*} [DecidableEq α]
         borderLen_eq_maxPrefixSuffixUpTo (Nat.le_of_lt hm)
       have hbsuf : p.take b <:+ p.take m :=
         hb_eq ▸ take_maxPrefixSuffixUpTo_isSuffix p (p.take m) (m - 1)
-      apply eq_maxPrefixSuffixUpTo_iff.mpr
-      set u := maxPrefixSuffixUpTo p (p.take b ++ [c]) (b + 1)
-      have hu_le : u ≤ b + 1 := maxPrefixSuffixUpTo_le_bound p (p.take b ++ [c]) (b + 1)
-      have hu_p : u ≤ p.length := maxPrefixSuffixUpTo_le_length p (p.take b ++ [c]) (b + 1)
-      have hu_suf : p.take u <:+ p.take b ++ [c] :=
-        take_maxPrefixSuffixUpTo_isSuffix p (p.take b ++ [c]) (b + 1)
-      refine ⟨by omega, hu_p, ?_, fun s hslt hs_le hsp hssuf => ?_⟩
-      · rcases Nat.eq_zero_or_pos u with hu0 | hupos
-        · rw [hu0]; exact List.nil_suffix
-        · obtain ⟨j, hj⟩ : ∃ j, u = j + 1 := ⟨u - 1, by omega⟩
-          rw [hj] at hu_suf ⊢
-          rw [take_succ_isSuffix_append_iff (by omega)] at hu_suf ⊢
-          exact ⟨hu_suf.1.trans hbsuf, hu_suf.2⟩
-      · rcases Nat.eq_zero_or_pos s with rfl | hspos
-        · omega
-        · obtain ⟨j, rfl⟩ : ∃ j, s = j + 1 := ⟨s - 1, by omega⟩
-          rw [take_succ_isSuffix_append_iff (by omega)] at hssuf
-          have hjm : j ≠ m := fun hjeq => hmatch (hjeq ▸ hssuf.2)
-          have hj_le_m1 : j ≤ m - 1 := by omega
-          have hjb : j ≤ b :=
-            hb_eq ▸ le_maxPrefixSuffixUpTo (B := m - 1) hj_le_m1 (by omega) hssuf.1
-          have hjsuf_b : p.take j <:+ p.take b :=
-            List.suffix_of_suffix_length_le hssuf.1 hbsuf (by simp only [List.length_take]; omega)
-          have hj1_suf_b : p.take (j + 1) <:+ p.take b ++ [c] :=
-            (take_succ_isSuffix_append_iff (by omega)).mpr ⟨hjsuf_b, hssuf.2⟩
-          have hle := le_maxPrefixSuffixUpTo (B := b + 1) (by omega) hsp hj1_suf_b
-          change j + 1 ≤ u at hle
-          omega
+      -- A border of `p.take m` extends by `c` exactly when it extends past the border `b`,
+      -- since `p.take m` itself does not extend (`p[m] ≠ c`).
+      refine maxPrefixSuffixUpTo_congr fun j hj => ?_
+      rw [take_succ_isSuffix_append_iff (by omega), take_succ_isSuffix_append_iff (by omega)]
+      constructor
+      · rintro ⟨hjb, hjsuf, hjc⟩
+        exact ⟨by omega, hjsuf.trans hbsuf, hjc⟩
+      · rintro ⟨hjm, hjsuf, hjc⟩
+        have hjm' : j ≠ m := fun hjeq => hmatch (hjeq ▸ hjc)
+        have hjb : j ≤ b :=
+          hb_eq ▸ le_maxPrefixSuffixUpTo (B := m - 1) (by omega) (by omega) hjsuf
+        exact ⟨by omega, List.suffix_of_suffix_length_le hjsuf hbsuf
+          (by simp only [List.length_take]; omega), hjc⟩
 
 /-- Recurrence for the KMP prefix function (`[CLRS2009]`, Lemma 32.6 and Corollary 32.7): for
 `1 ≤ q < p.length`, `borderLen p (q + 1) = nextLen p (borderLen p q) p[q]`. -/
@@ -635,31 +623,17 @@ theorem maxPrefixSuffixUpTo_pred_of_eq_length {α : Type*} [DecidableEq α]
   have hb : borderLen p p.length = maxPrefixSuffixUpTo p p (p.length - 1) := by
     simp only [borderLen, maxBorderLen, List.take_length]
   rw [hb]
-  symm
-  apply eq_maxPrefixSuffixUpTo_iff.mpr
-  set b := maxPrefixSuffixUpTo p p (p.length - 1)
-  refine ⟨maxPrefixSuffixUpTo_le_bound p p (p.length - 1),
-    maxPrefixSuffixUpTo_le_length p p (p.length - 1),
-    (take_maxPrefixSuffixUpTo_isSuffix p p (p.length - 1)).trans hpsuf,
-    fun k hlt hkB hkp hsuf => ?_⟩
-  have hksuf_p : p.take k <:+ p :=
-    List.suffix_of_suffix_length_le hsuf hpsuf (by simp only [List.length_take]; omega)
-  have hle := le_maxPrefixSuffixUpTo (B := p.length - 1) hkB hkp hksuf_p
-  change k ≤ b at hle
-  omega
+  exact maxPrefixSuffixUpTo_congr fun j _ => and_congr_right fun _ =>
+    ⟨fun hsuf => List.suffix_of_suffix_length_le hsuf hpsuf (List.length_take_le' _ _),
+      (·.trans hpsuf)⟩
 
 /-- When `maxPrefixSuffixUpTo p t p.length < p.length`, restricting the bound to `p.length - 1`
 leaves the value unchanged. -/
 theorem maxPrefixSuffixUpTo_pred_of_lt_length {α : Type*} [DecidableEq α]
     {p t : List α} (hlt : maxPrefixSuffixUpTo p t p.length < p.length) :
     maxPrefixSuffixUpTo p t (p.length - 1) = maxPrefixSuffixUpTo p t p.length := by
-  set m := maxPrefixSuffixUpTo p t p.length
-  symm
-  apply eq_maxPrefixSuffixUpTo_iff.mpr
-  refine ⟨by omega, maxPrefixSuffixUpTo_le_length p t p.length,
-    take_maxPrefixSuffixUpTo_isSuffix p t p.length, fun k hklt hkB hkp hsuf => ?_⟩
-  have hle := le_maxPrefixSuffixUpTo (B := p.length) (by omega) hkp hsuf
-  change k ≤ m at hle
-  omega
+  refine maxPrefixSuffixUpTo_congr fun j hj => ⟨fun ⟨_, hsuf⟩ => ⟨hj, hsuf⟩, fun ⟨_, hsuf⟩ => ?_⟩
+  have := le_maxPrefixSuffixUpTo hj hj hsuf
+  exact ⟨by omega, hsuf⟩
 
 end Cslib.Algorithms.Lean.KMP

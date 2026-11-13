@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.DecisionTree.Cost
-public import CslibFrontier.Foundations.Data.BitString.PartialAssignment
+public import CslibFrontier.Foundations.Data.BitString.PartialAssignment.Agreement
 
 /-!
 # Removing repeated decision-tree queries
@@ -67,10 +67,7 @@ private theorem prune_spec (t : DecisionTree ι β) (ρ : PartialAssignment ι)
         simp only [prune, hρ, eval_node, weightedCost_node, hxi, Bool.cond_true]
         exact ⟨he, by omega⟩
     | none =>
-      have hupdate : PartialAssignment.Agrees (Function.update ρ i (some (x i))) x := by
-        apply PartialAssignment.agrees_iff_fill_eq.mpr
-        rw [PartialAssignment.fill_update, PartialAssignment.agrees_iff_fill_eq.mp hx,
-          Function.update_eq_self]
+      have hupdate := hx.update (i := i) rfl
       cases hxi : x i with
       | false =>
         have hx' : PartialAssignment.Agrees (Function.update ρ i (some false)) x := by
