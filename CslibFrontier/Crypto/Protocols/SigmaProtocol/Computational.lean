@@ -349,7 +349,7 @@ theorem SimulatorRealizedBy.advantage_chvzkExperiment_le
     (A : TwoStage Unit (X i × Y i) (T i × C i × Z i) Bool σ) :
     Game.advantage (chvzkExperiment (R i) (fun x y => ((P i).conversation x y).map some) A)
       (chvzkExperiment (R i) (fun _ y => simulatedConversation enc sim i y) A) ≤ ε :=
-  advantage_chvzkExperiment_le
+  SigmaProtocol.advantage_chvzkExperiment_le
     (fun _ _ hxy => (h.closeTo_simulatedConversation hS hxy).mono hδ) A
 
 /-- When `δ i ≤ ε` on `(setup n).support`, a program realizing a perfect special HVZK simulator has
