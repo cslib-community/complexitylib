@@ -20,7 +20,8 @@ example : (PMF.pure (fun _ : Fin 1 => false)).map (fun x => x 0) = PMF.pure fals
 
 example : ¬ IsExtractor (fun (x : BitString 1) (_ : Unit) => x) 0 (1 / 4) := by
   simpa only [id, Nat.cast_one, Nat.cast_ofNat, sub_self,
-    show (2 : ℝ) - 1 = 1 by norm_num, show (3 : ℝ) - 1 = 2 by norm_num] using not_isExtractor_bitString (n := 1) (m := 1) (by decide) (by decide)
+    show (2 : ℝ) - 1 = 1 by norm_num, show (3 : ℝ) - 1 = 2 by norm_num] using
+    not_isExtractor_bitString (n := 1) (m := 1) (by decide) (by decide)
     id (ε := 1 / 4) (by norm_num)
 
 -- The witness specializes to identity on two bits without losing the first-coordinate law.
@@ -28,14 +29,16 @@ example : ∃ (source : PMF (BitString 2)) (b : Bool),
     1 ≤ minEntropy source ∧ (source.map id).map (fun x => x ⟨0, by decide⟩) = PMF.pure b ∧
     1 / 2 ≤ dist (source.map id) (PMF.uniformOfFintype (BitString 2)) := by
   simpa only [id, Nat.cast_one, Nat.cast_ofNat, sub_self,
-    show (2 : ℝ) - 1 = 1 by norm_num, show (3 : ℝ) - 1 = 2 by norm_num] using exists_minEntropy_map_first_eq_pure (n := 2) (m := 2)
+    show (2 : ℝ) - 1 = 1 by norm_num, show (3 : ℝ) - 1 = 2 by norm_num] using
+    exists_minEntropy_map_first_eq_pure (n := 2) (m := 2)
     (by decide) (by decide) id
 
 -- Constant multibit output also fails with a singleton seed.
 example : ¬ IsExtractor (fun (_ : BitString 3) (_ : Unit) =>
     (fun _ : Fin 2 => true)) 2 (1 / 4) := by
   simpa only [id, Nat.cast_one, Nat.cast_ofNat, sub_self,
-    show (2 : ℝ) - 1 = 1 by norm_num, show (3 : ℝ) - 1 = 2 by norm_num] using not_isExtractor_bitString (n := 3) (m := 2) (by decide) (by decide)
+    show (2 : ℝ) - 1 = 1 by norm_num, show (3 : ℝ) - 1 = 2 by norm_num] using
+    not_isExtractor_bitString (n := 3) (m := 2) (by decide) (by decide)
     (fun _ _ => true) (ε := 1 / 4) (by norm_num)
 
 -- The lower bound is sharp for identity on two bits.
