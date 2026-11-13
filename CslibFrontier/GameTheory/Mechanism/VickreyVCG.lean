@@ -19,19 +19,25 @@ allocated `singleItem ω i`, which is `1` when `ω = some i` and `0` otherwise. 
 valuations of scalar bids `b`, the Clarke pivot of bidder `i` is the highest other bid
 (`clarkePivot_linearProfile_singleItem`). So for every welfare-maximizing outcome rule, whatever
 its tie-breaking, the VCG payment is the second price `highestOtherBid b i` charged to the winner
-(`vcg_payment_linearProfile_singleItem`). Choosing the welfare-maximizing rule that breaks ties as
-the Vickrey auction does makes VCG, run on linear valuations, coincide with
-`SingleParameter.Vickrey.mechanism` on nonnegative bids (`exists_vcg_toSingleParameter_eq`). This
-is the specialization of VCG to Vickrey ([Roughgarden2013CS364A], Lecture 7, §2).
+(`vcg_payment_linearProfile_singleItem`). `winner b` is the Vickrey winner as a single-item
+outcome. Every welfare-maximizing rule that chooses it makes VCG, run on linear valuations,
+allocate and charge as `SingleParameter.Vickrey.mechanism`
+(`vcg_toSingleParameter_eq_of_eq_winner`), and on nonnegative bids such a rule exists
+(`exists_vcg_toSingleParameter_eq`). This is the
+specialization of VCG to Vickrey ([Roughgarden2013CS364A], Lecture 7, §2).
 
 ## Main definitions
 
 * `Cslib.GameTheory.SingleParameter.Vickrey.singleItem`: the allocation of a single-item outcome.
+* `Cslib.GameTheory.SingleParameter.Vickrey.winner`: the Vickrey winner as a single-item outcome
+  (`winner_eq_some`, `winner_eq_none`).
 
 ## Main results
 
 * `Cslib.GameTheory.SingleParameter.Vickrey.vcg_payment_linearProfile_singleItem`: VCG charges the
   second price, for any welfare-maximizing rule.
+* `Cslib.GameTheory.SingleParameter.Vickrey.vcg_toSingleParameter_eq_of_eq_winner`: VCG with
+  Vickrey's tie-breaking allocates and charges as the Vickrey auction.
 * `Cslib.GameTheory.SingleParameter.Vickrey.exists_vcg_toSingleParameter_eq`: the Vickrey auction
   is VCG on single-item outcomes.
 
@@ -141,22 +147,28 @@ open Classical in
 /-- The winner of the Vickrey auction as a single-item outcome. -/
 noncomputable def winner (b : ι → ℝ) : Option ι := if h : ∃ i, Wins b i then some h.choose else none
 
+/-- The unique Vickrey winner, when there is one, is the single-item outcome. -/
+theorem winner_eq_some {b : ι → ℝ} {k : ι} (hk : Wins b k) : winner b = some k := by
+  unfold winner
+  split_ifs with h
+  · exact congrArg some (h.choose_spec.unique hk)
+  · exact absurd ⟨k, hk⟩ h
+
+/-- Without a Vickrey winner, which happens only when there are no bidders (`exists_wins`), nobody
+gets the item. -/
+theorem winner_eq_none {b : ι → ℝ} (h : ¬∃ k, Wins b k) : winner b = none :=
+  dite_eq_right h
+
 theorem singleItem_winner (b : ι → ℝ) : singleItem (winner b) = allocation b := by
   funext i
   by_cases h : ∃ k, Wins b k
   · obtain ⟨k, hk⟩ := h
-    have hw : winner b = some k := by
-      unfold winner
-      split_ifs with h'
-      · exact congrArg some (h'.choose_spec.unique hk)
-      · exact absurd ⟨k, hk⟩ h'
-    rw [hw, singleItem_some]
+    rw [winner_eq_some hk, singleItem_some]
     by_cases hki : k = i
     · subst hki
       rw [ite_eq_left rfl, allocation_eq_one_iff.2 hk]
     · rw [ite_eq_right hki, allocation_eq_zero_iff.2 fun hi => hki (hk.unique hi)]
-  · have hw : winner b = none := dite_eq_right h
-    rw [hw, singleItem_none, allocation_eq_zero_iff.2 fun hi => h ⟨i, hi⟩]
+  · rw [winner_eq_none h, singleItem_none, allocation_eq_zero_iff.2 fun hi => h ⟨i, hi⟩]
 
 /-- Every single-item outcome allocates a feasible 0-1 vector. -/
 theorem singleItem_mem_singleItemFeasible (ω : Option ι) : singleItem ω ∈ singleItemFeasible := by
@@ -200,6 +212,21 @@ private theorem isWelfareMaximizing_vickreyRule {f₀ : (ι → Option ι → �
     rw [ite_eq_right h]
     exact hf₀ B ω
 
+/-- **VCG with Vickrey's tie-breaking charges as Vickrey**: if a welfare-maximizing outcome rule
+`f` gives the item to the Vickrey winner on the linear valuations of the bids `b`, then VCG, run
+on linear valuations, allocates and charges at `b` exactly as the Vickrey auction. -/
+theorem vcg_toSingleParameter_eq_of_eq_winner {f : (ι → Option ι → ℝ) → Option ι}
+    (hf : GameTheory.Mechanism.IsWelfareMaximizing f) {b : ι → ℝ}
+    (hfb : f (linearProfile singleItem b) = winner b) :
+    ((vcg f).toSingleParameter singleItem).allocation b = mechanism.allocation b ∧
+      ((vcg f).toSingleParameter singleItem).payment b = mechanism.payment b := by
+  refine ⟨?_, ?_⟩
+  · change singleItem (f (linearProfile singleItem b)) = allocation b
+    rw [hfb, singleItem_winner]
+  · funext i
+    change (vcg f).payment (linearProfile singleItem b) i = highestOtherBid b i * allocation b i
+    rw [vcg_payment_linearProfile_singleItem hf, hfb, singleItem_winner]
+
 /-- **The Vickrey auction is VCG** ([Roughgarden2013CS364A], Lecture 7, §2): some
 welfare-maximizing outcome rule `f` on single-item outcomes makes the VCG mechanism, run on linear
 valuations, allocate and charge exactly as the Vickrey auction on every nonnegative bid profile. -/
@@ -210,13 +237,7 @@ theorem exists_vcg_toSingleParameter_eq :
           ((vcg f).toSingleParameter singleItem).payment b = mechanism.payment b := by
   obtain ⟨f₀, hf₀⟩ := GameTheory.Mechanism.exists_isWelfareMaximizing (ι := ι) (Ω := Option ι)
   have hf := isWelfareMaximizing_vickreyRule hf₀
-  refine ⟨vickreyRule f₀, hf, fun b hb => ⟨?_, ?_⟩⟩
-  · change singleItem (vickreyRule f₀ (linearProfile singleItem b)) = allocation b
-    rw [vickreyRule_linearProfile f₀ hb, singleItem_winner]
-  · funext i
-    change (vcg (vickreyRule f₀)).payment (linearProfile singleItem b) i =
-      highestOtherBid b i * allocation b i
-    rw [vcg_payment_linearProfile_singleItem hf, vickreyRule_linearProfile f₀ hb,
-      singleItem_winner]
+  exact ⟨vickreyRule f₀, hf, fun b hb =>
+    vcg_toSingleParameter_eq_of_eq_winner hf (vickreyRule_linearProfile f₀ hb)⟩
 
 end Cslib.GameTheory.SingleParameter.Vickrey

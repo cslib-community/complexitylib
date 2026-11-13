@@ -96,8 +96,10 @@ domain of linear valuations `linearValuation x i v = fun ω => v * x ω i` for a
 outcomes are `Option ι`, with allocation `singleItem`. The Clarke pivot of the linear valuations of
 `b` is `highestOtherBid b i` (`clarkePivot_linearProfile_singleItem`), so every welfare-maximizing
 rule charges the second price to whoever gets the item (`vcg_payment_linearProfile_singleItem`).
-`exists_vcg_toSingleParameter_eq` picks a welfare-maximizing rule with Vickrey's tie-breaking whose
-VCG mechanism allocates and charges exactly as `Vickrey.mechanism` on nonnegative bids.
+`winner b` is the Vickrey winner as an outcome (`winner_eq_some`, `winner_eq_none`). Any
+welfare-maximizing rule that picks `winner b` on the linear valuations of `b` makes VCG allocate
+and charge at `b` exactly as `Vickrey.mechanism` (`vcg_toSingleParameter_eq_of_eq_winner`), and
+`exists_vcg_toSingleParameter_eq` provides such a rule for all nonnegative bids.
 
 ## Revenue maximization: virtual values and Myerson's optimal auction
 

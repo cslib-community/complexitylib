@@ -197,6 +197,10 @@ example : ∃ f : (Fin 3 → Option (Fin 3) → ℝ) → Option (Fin 3), Mechani
   rw [(h _ fun i => by fin_cases i <;> norm_num).2]
   exact vickrey_three_bids.2.1
 
+/-- On bids `(3, 5, 4)` the Vickrey outcome gives the item to bidder `1`. -/
+example : winner ![(3 : ℝ), 5, 4] = some 1 :=
+  winner_eq_some vickrey_three_bids.1
+
 /-- A single-parameter mechanism is its general form on linear valuations of allocation
 vectors. -/
 example : (mechanism (ι := Fin 3)).toMechanism.toSingleParameter id = mechanism :=
