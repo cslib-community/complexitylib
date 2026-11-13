@@ -624,7 +624,7 @@ private theorem rompelBase_inversion_succProbability_eq (g : List Bool → List 
                 (y + gFin x))).bind fun s =>
               ProbComp.eval (A n (RompelBaseInput.mk x s.1 s.2 rBits).packWord) >>=
                 fun raw => PMF.pure (g (raw.take n) == List.ofFn y) := by
-    simp only [inversionGame, rompelBaseInverter, ProbComp.eval_bind,
+    simp only [inversionGame, inversionExperiment, rompelBaseInverter, ProbComp.eval_bind,
       Cslib.BitString.eval_sampleList, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind,
       PMF.monad_bind_eq_bind]
     dsimp only [gFin]

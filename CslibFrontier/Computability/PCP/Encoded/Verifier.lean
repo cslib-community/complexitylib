@@ -244,14 +244,14 @@ theorem polyTime_edgeVerifier (width : ℕ) (decode : (Fin width → Bool) → �
     (heval : ComputableInPolyTime (fun p : C × α × α => eval p.1 p.2.1 p.2.2)
       (encPair enc (encPair alphabet alphabet)) encBool) :
     (edgeVerifier width decode eval).PolyTime (encoding enc) := by
-  refine ⟨?_, ?_, ?_⟩
-  · exact ComputableInPolyTime.unary_to_binary.comp (by
+  constructor
+  case coins =>
+    exact ComputableInPolyTime.unary_to_binary.comp (by
       change ComputableInPolyTime (fun g : Graph C => Nat.clog 2 g.edges.length)
         (encoding enc) encUnary
       fun_prop)
-  · unfold edgeVerifier
-    fun_prop
-  · unfold edgeVerifier
+  all_goals
+    unfold edgeVerifier
     fun_prop
 
 end Graph

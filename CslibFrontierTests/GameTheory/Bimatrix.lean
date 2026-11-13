@@ -5,14 +5,18 @@ Authors: Samuel Schlesinger
 -/
 
 import CslibFrontier.GameTheory.Bimatrix.BestResponsePolytope
+import CslibFrontier.GameTheory.Bimatrix.CostGame
 import CslibFrontier.GameTheory.Bimatrix.Existence
+import CslibFrontier.GameTheory.Strategic.Correlated
 
 /-!
 # Bimatrix games, vertices and the Lemke–Howson parity theorem
 
 * The `3 × 2` game (3.3) of [vonStengel2007] has the pure equilibrium (top row, left column) and
   the two mixed equilibria `((4/5, 1/5, 0), (2/3, 1/3))` and `((0, 1/3, 2/3), (1/3, 2/3))`
-  computed there; we check all three.
+  computed there; we check all three. Through `isNash_iff_isMixedNash` the first mixed one is a
+  mixed Nash equilibrium of `stengel.toCostGame`, so cost-game results such as
+  `IsMixedNash.isCorrelatedEquilibrium` apply.
 * The coordination game `A = B = 1` (the identity matrix) on any finite set of pure strategies is
   nondegenerate, so `IsNondegenerate.odd_ncard_isNash` applies to it. With two strategies it has
   the three equilibria (both pure pairs and uniform mixing).
@@ -73,6 +77,22 @@ theorem stengel_isNash_mixed₂ : stengel.IsNash ![0, 1 / 3, 2 / 3] ![1 / 3, 2 /
     fin_cases i <;> fin_cases i' <;> norm_num [stengel, mulVec, dotProduct, Fin.sum_univ_two]
   · revert hj
     fin_cases j <;> fin_cases j' <;> norm_num [stengel, vecMul, dotProduct, Fin.sum_univ_three]
+
+/-- Through `isNash_iff_isMixedNash`, the first mixed equilibrium of (3.3) is a mixed Nash
+equilibrium of the cost game `stengel.toCostGame`. -/
+theorem stengel_toCostGame_isMixedNash :
+    stengel.toCostGame.IsMixedNash (profile ![4 / 5, 1 / 5, 0] ![2 / 3, 1 / 3]) :=
+  isNash_iff_isMixedNash.1 stengel_isNash_mixed₁
+
+/-- Cost-game results then apply: the product distribution of that equilibrium is a correlated
+equilibrium. -/
+example : ∃ σ, stengel.toCostGame.IsCorrelatedEquilibrium σ :=
+  ⟨_, stengel_toCostGame_isMixedNash.isCorrelatedEquilibrium⟩
+
+/-- The bridge also runs backwards: the mixed Nash condition of the cost game recovers the
+bimatrix equilibrium. -/
+example : stengel.IsNash ![4 / 5, 1 / 5, 0] ![2 / 3, 1 / 3] :=
+  isNash_iff_isMixedNash.2 stengel_toCostGame_isMixedNash
 
 /-- Against `y = (2/3, 1/3)` the bottom row is not a best response: `A y = (3, 3, 2)`
 ([vonStengel2007], Section 3.2), so `y` has only two pure best responses. -/

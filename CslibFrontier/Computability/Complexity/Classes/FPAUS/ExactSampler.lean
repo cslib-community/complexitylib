@@ -1193,7 +1193,7 @@ theorem interpret_boundedConditionalOracleSample (R : SelfReducible enc W)
         OracleComp.interpret_bind]
       simp only [handler, ProbOracleComp.interpret_sample,
         OracleComp.interpret_pure, bind_pure_comp]
-      exact congrArg _ (OracleComp.interpret_query_eq_self _)
+      exact congrArg _ (ProbComp.interpret_unifFin _)
     · rfl
   simp only [boundedConditionalOracleSample, boundedConditionalSample]
   rw [OracleComp.interpret_bind, interpret_sumHandler_query_pure, pure_bind,

@@ -18,6 +18,7 @@ import CslibFrontier.Crypto.Game.UntilBad
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Languages.Probabilistic.RandomOracle.Probabilistic
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.Support
 import Mathlib.Tactic.Linarith
 
 /-!
@@ -25,15 +26,15 @@ import Mathlib.Tactic.Linarith
 
 Shared random-function hybrid and left-or-right block-mode CPA experiment machinery for symmetric
 block-cipher modes of operation (such as OFB and CTR):
-- replaces a lazily sampled random function (`PRF.idealGame`) by fresh independent uniform sampling
-  (`freshStep`) up to the repetition bad event that an oracle query hits a previously sampled
-  input;
+- replaces a lazily sampled random function (`PRF.idealExperiment`) by fresh independent uniform
+  sampling (`freshStep`) up to the repetition bad event that an oracle query hits a previously
+  sampled input;
 - provides the mode-independent left-or-right block-mode query/cost/ideal-game interface
   (`BlockModeQuery`, `BlockModeSpec`, `BlockModeAdversary`, `blockModeSelect`, `blockModeBlocks`,
   `blockModeCost`, `blockModeOracle`, `blockModeIdealOracle`, `blockModeCpaGame`,
   `blockModeIdealGame`), generic PRF distinguisher builder (`blockModeQueryProgram`,
   `blockModeReduction`), real-game / query-bound / ideal-game lifting lemmas
-  (`blockModeCpaGame_eq_realGame`, `isQueryBounded_blockModeReduction`,
+  (`blockModeCpaGame_eq_realExperiment`, `isQueryBounded_blockModeReduction`,
   `freshGame_eq_blockModeIdealGame`), and advantage triangle helpers.
 
 ## Main definitions
@@ -56,16 +57,15 @@ block-cipher modes of operation (such as OFB and CTR):
 
 ## Main results
 
-* `Cslib.Crypto.idealGame_eq_runWith_lazyStep`: `PRF.idealGame` equals running `lazyStep` from
-  `([], false)`.
+* `Cslib.Crypto.idealExperiment_eq_runWith_lazyStep`: `PRF.idealExperiment` equals running
+  `lazyStep` from `([], false)`.
 * `Cslib.Crypto.advantage_lazy_fresh_le`: the advantage between `lazyStep` and `freshStep` is at
   most the bad-flag probability under `freshStep`.
-* `Cslib.Crypto.advantage_idealGame_freshStep_le`: the advantage between `PRF.idealGame` and
-  `freshStep` is at most the bad-flag probability under `freshStep`.
-* `Cslib.Crypto.snd_eq_of_mem_support_lift`, `Cslib.Crypto.toOuterMeasure_lift_eq_zero`: lifted
-  private-coin support and zero-bad-event lemmas.
+* `Cslib.Crypto.advantage_idealExperiment_freshStep_le`: the advantage between
+  `PRF.idealExperiment` and `freshStep` is at most the bad-flag probability under `freshStep`.
 * `Cslib.Crypto.length_blockModeSelect`, `Cslib.Crypto.blockModeBlocks_le`,
-  `Cslib.Crypto.blockModeCpaGame_eq_realGame`, `Cslib.Crypto.isQueryBounded_blockModeReduction`,
+  `Cslib.Crypto.blockModeCpaGame_eq_realExperiment`,
+  `Cslib.Crypto.isQueryBounded_blockModeReduction`,
   `Cslib.Crypto.freshGame_eq_blockModeIdealGame`: shared left-or-right block-mode CPA lemmas.
 * `Cslib.Crypto.advantage_le_two`, `Cslib.Crypto.advantage_le_four`: two-step and four-step
   triangle-inequality bounds for `Game.advantage`.
@@ -107,26 +107,6 @@ input raises the flag. -/
 noncomputable def freshStep (x : BitString n) : StateT (FlagState n) PMF (BitString n) :=
   fun s => (PMF.uniformOfFintype (BitString n)).map fun u =>
     (u, ((x, u) :: s.1, s.2 || (s.1.lookup x).isSome))
-
-/-- Lifting a state-free `PMF` into `StateT` preserves the state on the entire support. -/
-theorem snd_eq_of_mem_support_lift {α σ : Type} {p : PMF α} {s : σ} {z : α × σ}
-    (hz : z ∈ ((StateT.lift p : StateT σ PMF α) s).support) : z.2 = s := by
-  simp only [StateT.lift, Probability.PMF.monad_bind_eq_bind,
-    Probability.PMF.monad_pure_eq_pure, PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hz
-  obtain ⟨_, -, rfl⟩ := hz
-  rfl
-
-/-- Lifting a state-free `PMF` from a non-bad state hits a bad state with zero outer measure. -/
-theorem toOuterMeasure_lift_eq_zero {α σ : Type} {bad : σ → Prop} (p : PMF α) (s : σ)
-    (hs : ¬bad s) : ((StateT.lift p : StateT σ PMF α) s).toOuterMeasure {x | bad x.2} = 0 := by
-  rw [PMF.toOuterMeasure_apply_eq_zero_iff, Set.disjoint_left]
-  intro x hx hbad
-  exact hs ((snd_eq_of_mem_support_lift hx) ▸ hbad)
-
-private theorem prop_of_mem_support_map {α β : Type} {p : PMF α} {f : α → β} {z : β}
-    (hz : z ∈ (p.map f).support) {P : β → Prop} (h : ∀ a, P (f a)) : P z := by
-  obtain ⟨a, -, rfl⟩ := (PMF.mem_support_map_iff f p z).1 hz
-  exact h a
 
 private theorem flag_of_mem_support_pure {y : BitString n}
     {c : List (BitString n × BitString n)} {z : BitString n × FlagState n}
@@ -178,39 +158,44 @@ private theorem identicalUntilBad_lazyStep_freshStep :
         have h2 : ((PMF.uniformOfFintype (BitString n)).map fun u =>
             (u, ((x, u) :: s.1, true))) (a, s') = 0 :=
           (PMF.apply_eq_zero_iff _ _).2 fun hz =>
-            hs' (prop_of_mem_support_map hz (P := fun z => z.2.2 = true) fun _ => rfl)
+            hs' (by
+              obtain ⟨_, -, h⟩ := (PMF.mem_support_map_iff _ _ _).1 hz
+              exact (congrArg (fun z => z.2.2) h).symm)
         rw [h1, h2]
   absorb_first q s hs x hx := by
     have hs' : s.2 = true := hs
     cases q with
     | inl i =>
-      rw [snd_eq_of_mem_support_lift hx]
+      rw [PMF.snd_eq_of_mem_support_lift hx]
       exact hs
     | inr y =>
       change x ∈ (lazyStep y s).support at hx
       simp only [lazyStep] at hx
       split at hx
       · exact flag_of_mem_support_pure hx
-      · exact prop_of_mem_support_map hx (P := fun z => z.2.2 = true) fun _ => hs'
+      · obtain ⟨_, -, rfl⟩ := (PMF.mem_support_map_iff _ _ _).1 hx
+        exact hs'
   absorb_second q s hs x hx := by
     have hs' : s.2 = true := hs
     cases q with
     | inl i =>
-      rw [snd_eq_of_mem_support_lift hx]
+      rw [PMF.snd_eq_of_mem_support_lift hx]
       exact hs
     | inr y =>
       change x ∈ (freshStep y s).support at hx
-      exact prop_of_mem_support_map hx (P := fun z => z.2.2 = true) fun _ => by simp [hs']
+      obtain ⟨_, -, rfl⟩ := (PMF.mem_support_map_iff _ _ _).1 hx
+      simp [hs']
 
-/-- `PRF.idealGame` against a uniform random function on `BitString n` equals the output of
+/-- `PRF.idealExperiment` against a uniform random function on `BitString n` equals the output of
 `ProbOracleComp.runWith lazyStep program ([], false)`. -/
-theorem idealGame_eq_runWith_lazyStep (program : PRF.Adversary (BitString n) (BitString n)) :
-    PRF.idealGame program = (ProbOracleComp.runWith lazyStep program ([], false)).map Prod.fst := by
+theorem idealExperiment_eq_runWith_lazyStep (program : PRF.Adversary (BitString n) (BitString n)) :
+    ProbComp.eval (PRF.idealExperiment program) =
+      (ProbOracleComp.runWith lazyStep program ([], false)).map Prod.fst := by
   rw [← runWith_memoize_eq]
   have h := RandomOracle.interpret_prob_eq_memoize
     (fun _ : BitString n => PMF.uniformOfFintype (BitString n)) program
   rw [← h]
-  simp only [PRF.idealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
+  simp only [PRF.idealExperiment, ProbOracleComp.run, ProbComp.eval_bind, ProbComp.eval_uniform,
     ProbOracleComp.eval_interpret, ProbComp.eval_pure, PMF.pi_uniformOfFintype,
     Probability.PMF.monad_bind_eq_bind]
 
@@ -226,14 +211,15 @@ theorem advantage_lazy_fresh_le (program : PRF.Adversary (BitString n) (BitStrin
   rw [identicalUntilBad_lazyStep_freshStep.bad_eq] at h
   exact h
 
-/-- The advantage between `PRF.idealGame` and fresh independent sampling `freshStep` is bounded by
-the probability of raising the repetition flag under `freshStep`. -/
-theorem advantage_idealGame_freshStep_le (program : PRF.Adversary (BitString n) (BitString n)) :
-    (Game.advantage (PRF.idealGame program)
+/-- The advantage between `PRF.idealExperiment` and fresh independent sampling `freshStep` is
+bounded by the probability of raising the repetition flag under `freshStep`. -/
+theorem advantage_idealExperiment_freshStep_le
+    (program : PRF.Adversary (BitString n) (BitString n)) :
+    (Game.advantage (ProbComp.eval (PRF.idealExperiment program))
         ((ProbOracleComp.runWith freshStep program ([], false)).map Prod.fst) : ℝ) ≤
       ((ProbOracleComp.runWith freshStep program ([], false)).toOuterMeasure
         {x | x.2.repeated = true}).toReal := by
-  rw [idealGame_eq_runWith_lazyStep]
+  rw [idealExperiment_eq_runWith_lazyStep]
   exact advantage_lazy_fresh_le program
 
 /-- Two-hop triangle inequality for real-valued `Game.advantage`. -/
@@ -358,8 +344,9 @@ noncomputable def blockModeReduction
     adversary : ProbOracleComp (fun _ : BitString n => BitString n) Bool)
 
 /-- When `keystream iv ms.length` evaluates with `F key` to the mask XORed by `enc key iv ms`,
-`blockModeCpaGame enc` equals `PRF.realGame F (blockModeReduction keystream ℓ b adversary)`. -/
-theorem blockModeCpaGame_eq_realGame {Key : Type} [Fintype Key] [Nonempty Key]
+`blockModeCpaGame enc` equals the law of
+`PRF.realExperiment F (blockModeReduction keystream ℓ b adversary)`. -/
+theorem blockModeCpaGame_eq_realExperiment {Key : Type} [Fintype Key] [Nonempty Key]
     (enc : Key → BitString n → List (BitString n) → List (BitString n))
     (keystream : BitString n → ℕ →
       ProbOracleComp (fun _ : BitString n => BitString n) (List (BitString n)))
@@ -367,12 +354,11 @@ theorem blockModeCpaGame_eq_realGame {Key : Type} [Fintype Key] [Nonempty Key]
     (adversary : BlockModeAdversary n)
     (hks : ∀ key iv ms,
       ∃ raw : List (BitString n),
-        OracleComp.interpret (sumHandler ProbComp.unifFin fun y => pure (F key y))
-          (keystream iv ms.length) = (pure raw : ProbComp (List (BitString n))) ∧
+        (keystream iv ms.length).run (fun y => pure (F key y)) = pure raw ∧
         List.zipWith (· + ·) raw ms = enc key iv ms) :
     blockModeCpaGame enc ℓ b adversary =
-      PRF.realGame F (blockModeReduction keystream ℓ b adversary) := by
-  unfold blockModeCpaGame PRF.realGame blockModeReduction
+      ProbComp.eval (PRF.realExperiment F (blockModeReduction keystream ℓ b adversary)) := by
+  unfold blockModeCpaGame PRF.realExperiment ProbOracleComp.run blockModeReduction
   congr 1
   refine bind_congr fun key => ?_
   rw [OracleComp.interpret_interpret]

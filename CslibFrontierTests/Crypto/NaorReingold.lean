@@ -149,14 +149,8 @@ theorem isQueryBounded_singleQueryDistinguisher (n : ℕ) (aux : List Bool) :
 /-- Uniform strict-PPT certificate for the lazy-sampling DDH distinguisher built from
 `singleQueryDistinguisher` on `schnorrGroups`. -/
 example :
-    IsPPTOn
-      (encPair encUnary
-        (encPair schnorrGroups.encDesc (encPair encBits (encPair encBits encBits))))
-      encBool
-      (fun input =>
-        schnorrGroups.naorReingoldToDDHDistinguisher (fun _ => 2) singleQueryDistinguisher
-          input.1 input.2) :=
-  schnorrGroups.isPPTOn_naorReingoldToDDHDistinguisher
+    (schnorrGroups.naorReingoldToDDHDistinguisher (fun _ => 2) singleQueryDistinguisher).IsPPT :=
+  schnorrGroups.isPPT_naorReingoldToDDHDistinguisher
     (ComputableInPolyTime.const 2) isOraclePPT_singleQueryDistinguisher
 
 /-- Concrete finite quantitative Leftover Hash Lemma bound on `d23` (`order d23 = 11`, `B = 6`,
@@ -191,7 +185,7 @@ example (n : ℕ) :
         (Game.advantage
           (schnorrGroups.ddhRealGame (fun _ => PMF.pure d23)
             (schnorrGroups.naorReingoldToDDHDistinguisher (fun _ => 2) singleQueryDistinguisher) n)
-          (schnorrGroups.ddhIdealGame (fun _ => PMF.pure d23)
+          (schnorrGroups.ddhRandomGame (fun _ => PMF.pure d23)
             (schnorrGroups.naorReingoldToDDHDistinguisher (fun _ => 2) singleQueryDistinguisher) n)
           + 2 * (4 / (2 : ℝ≥0) ^ n) +
           (∑' d, (PMF.pure d23 : PMF schnorrGroups.Desc) d *

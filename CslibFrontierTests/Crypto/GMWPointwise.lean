@@ -20,6 +20,14 @@ def satFormula : CNF ℕ := [[(0, true), (1, false)]]
 theorem satFormula_verified : ThreeSAT.verifier (satFormula, [true, false]) = true := by
   decide
 
+/-! The record encodings keep the encoded words of the tuples they replaced. -/
+
+example (coins : GMW.ProverCoins) :
+    GMW.encProverCoins coins = encPair encBits (encList encBits) (coins.bits, coins.seeds) := rfl
+
+example (state : GMW.TwoRoundState) :
+    GMW.encTwoRoundState state = encPair encUnary encBits (state.round, state.challenge) := rfl
+
 example : GMW.totalLen satFormula = 36 := by decide
 
 /-- Keep one private coin and one commitment bit, derive the challenge from both, and retain
@@ -48,11 +56,11 @@ theorem adaptiveVerifier_isOraclePPTOn :
 /-- A deterministic two-round handler exposes the verifier's complete output jointly with the
 recorded challenge. Private randomness is still sampled and appears unchanged in the output. -/
 theorem runTwoRound_adaptiveVerifier (n : ℕ) (φ : CNF ℕ) (z : List Bool) (b : Bool) :
-    GMW.runTwoRound (fun _ => [b]) id (adaptiveVerifier n φ z) (0, [false, false, false]) =
+    GMW.runTwoRound (fun _ => [b]) id (adaptiveVerifier n φ z) .init =
       (fun coins =>
         let ch := List.take 3 ([b] ++ coins ++ [false, false, false])
         let row := BitString.listRow 3 0 ch
-        (coins ++ [b] ++ ch ++ List.take 2 row ++ z, (2, row))) <$>
+        (coins ++ [b] ++ ch ++ List.take 2 row ++ z, ⟨2, row⟩)) <$>
           BitString.sampleList 1 := by
   simp [adaptiveVerifier, GMW.runTwoRound_bind, GMW.runTwoRound_map, GMW.twoRoundStep]
 

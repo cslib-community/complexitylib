@@ -392,27 +392,9 @@ private theorem mul_keepProb_eq_min (P : Scheme ι S R Q A) [DecidableEq Q]
         (ProbComp.eval (ProbComp.bernoulliRat (smoothKeepRatio P i₀ i s q)) true).toReal =
       min (ProbComp.eval (P.serverQuery s i₀) q).toReal
         (ProbComp.eval (P.serverQuery s i) q).toReal := by
-  set p₀ : ℚ := ProbComp.evalRat (P.serverQuery s i₀) q
-  set pᵢ : ℚ := ProbComp.evalRat (P.serverQuery s i) q
-  have hp₀R : (p₀ : ℝ) = (ProbComp.eval (P.serverQuery s i₀) q).toReal :=
-    ProbComp.coe_evalRat_eq_toReal_eval _ _
-  have hpᵢR : (pᵢ : ℝ) = (ProbComp.eval (P.serverQuery s i) q).toReal :=
-    ProbComp.coe_evalRat_eq_toReal_eval _ _
-  rw [← hp₀R, ← hpᵢR, smoothKeepRatio]
-  change (pᵢ : ℝ) * (ProbComp.eval (ProbComp.bernoulliRat (if pᵢ ≤ p₀ then 1 else p₀ / pᵢ))
-    true).toReal = min (p₀ : ℝ) (pᵢ : ℝ)
-  by_cases hle : pᵢ ≤ p₀
-  · rw [ite_eq_left hle, ProbComp.toReal_eval_bernoulliRat_true_of_mem_Icc zero_le_one le_rfl,
-      Rat.cast_one, mul_one, min_eq_right (by exact_mod_cast hle)]
-  · rw [ite_eq_right hle]
-    have hlt : p₀ < pᵢ := lt_of_not_ge hle
-    have hp₀_nonneg : 0 ≤ p₀ := ProbComp.evalRat_nonneg _ _
-    have hpᵢ_pos : 0 < pᵢ := hp₀_nonneg.trans_lt hlt
-    have hdiv0 : 0 ≤ p₀ / pᵢ := div_nonneg hp₀_nonneg hpᵢ_pos.le
-    have hdiv1 : p₀ / pᵢ ≤ 1 := (div_le_one hpᵢ_pos).mpr hlt.le
-    rw [ProbComp.toReal_eval_bernoulliRat_true_of_mem_Icc hdiv0 hdiv1, Rat.cast_div]
-    have hpᵢR_ne : (pᵢ : ℝ) ≠ 0 := by exact_mod_cast hpᵢ_pos.ne'
-    rw [mul_div_cancel₀ _ hpᵢR_ne, min_eq_left (by exact_mod_cast hlt.le)]
+  rw [← ProbComp.coe_evalRat_eq_toReal_eval (P.serverQuery s i),
+    ← ProbComp.coe_evalRat_eq_toReal_eval (P.serverQuery s i₀), smoothKeepRatio]
+  exact ProbComp.mul_toReal_eval_bernoulliRat_true_eq_min (ProbComp.evalRat_nonneg _ _)
 
 /-- **Smoothness of the GKST decoder**: against every received word `y` (obliviously), each
 position `j : SmoothPos P i₀` is read at most `(|S| + 1) / |SmoothPos P i₀|` times in

@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 public import CslibFrontier.Computability.Probabilistic.Parameter
 public import CslibFrontier.Crypto.Game
+public import CslibFrontier.Crypto.Game.Inversion
 public import CslibFrontier.Languages.Probabilistic.BitString
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Crypto.Negligible.Basic
@@ -31,7 +32,7 @@ one-way functions or permutations exist.
 
 ## Main definitions
 
-* `Cslib.Crypto.inversionGame`: sample a challenge and test the inverter's candidate preimage.
+* `Cslib.Crypto.inversionGame`: the inversion experiment on uniform `n`-bit inputs.
 * `Cslib.Crypto.OneWay`, `Cslib.Crypto.OneWayPermutation`: uniform computational assumptions.
 
 ## Main results
@@ -62,19 +63,18 @@ open scoped NNReal
 /-- An inverter receives the unary parameter and the image of the sampled input. -/
 abbrev Inverter := ℕ → List Bool → ProbComp (List Bool)
 
-/-- The inversion experiment accepts any preimage of its challenge. -/
+/-- The inversion game at length `n`: `Cslib.Crypto.inversionExperiment` for `f` on a uniform
+`n`-bit input, with the inverter told `n`. Any preimage of the challenge is accepted. -/
 noncomputable def inversionGame (f : List Bool → List Bool) (adversary : Inverter) (n : ℕ) :
-    ProbComp Bool := do
-  let input ← BitString.sampleList n
-  let candidate ← adversary n (f input)
-  return f candidate == f input
+    ProbComp Bool :=
+  inversionExperiment (BitString.sampleList n) f (adversary n)
 
 /-- Run the complete inversion experiment on its unary parameter. -/
 @[program_certificate]
 theorem isPPTOn_inversionGame {f : List Bool → List Bool} {adversary : Inverter}
     (hf : ComputableInPolyTime f encBits encBits) (ha : IsPPT encBits adversary) :
     IsPPTOn encUnary encBool (inversionGame f adversary) := by
-  unfold inversionGame
+  unfold inversionGame inversionExperiment
   ppt
 
 /-- The inversion experiment is uniformly PPT, independently of the unused auxiliary input. -/
@@ -141,10 +141,8 @@ theorem inversionGame_eq_of_injective (f : List Bool → List Bool) (hf : Functi
     inversionGame f adversary n = (do
       let input ← BitString.sampleList n
       let candidate ← adversary n (f input)
-      return candidate == input) := by
-  have heq (candidate input : List Bool) : (f candidate == f input) = (candidate == input) := by
-    simp only [beq_eq_decide, hf.eq_iff]
-  simp only [inversionGame, heq]
+      return candidate == input) :=
+  inversionExperiment_eq_of_injective _ hf _
 
 /-- An inverter that, told the input length, always returns a preimage makes the experiment
 always succeed. -/
@@ -153,7 +151,7 @@ theorem eval_inversionGame_of_rightInverse (f : List Bool → List Bool)
     ProbComp.eval (inversionGame f (fun n y => pure (inverse n y)) n) = PMF.pure true := by
   have hgame : ProbComp.eval (inversionGame f (fun n y => pure (inverse n y)) n) =
       (BitString.uniformList n).map fun x => f (inverse n (f x)) == f x := by
-    simp [inversionGame]
+    simp [inversionGame, inversionExperiment]
   rw [hgame, ← PMF.bind_pure_comp, PMF.bind_congr_on_support _ _ (fun _ => PMF.pure true)
     fun x hx => by
       rw [Function.comp_apply, ← BitString.length_of_mem_support_uniformList hx, h,

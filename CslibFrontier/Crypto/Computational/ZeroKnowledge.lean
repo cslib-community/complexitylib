@@ -20,12 +20,16 @@ import CslibFrontier.Logics.Propositional.CNF.PolyTime
 
 Goldreich, Micali, and Wigderson [GoldreichMicaliWigderson1991] proved that if one-way functions
 exist, then every language in `NP` has a computational zero-knowledge interactive proof system.
-This module defines computational zero-knowledge interactive proofs (`ZeroKnowledgeProof`) together
+This module defines computational zero-knowledge interactive proofs with a soundness bound
+`soundness : ℕ → ENNReal` indexed by the security parameter (`ZKProof enc A soundness`), together
 with explicit public API predicates distinguishing restricted polynomial-time-generable
 zero-knowledge (`GenerableZeroKnowledge`) from general auxiliary-input zero-knowledge over
-arbitrary polynomially bounded valid families (`AuxiliaryInputZeroKnowledge`), and constructs a
-proof system for `ThreeSAT` and hence for every language in `NP` via `ThreeSAT_npHard` and Naor's
-bit commitment scheme [Naor1991] (`CslibFrontier.Crypto.Computational.Commitment`).
+arbitrary polynomially bounded valid families (`AuxiliaryInputZeroKnowledge`). It constructs the
+single-session GMW proof system, with soundness `1 / 3`, for `ThreeSAT` and for every language
+Karp-reducible to it, using Naor's bit commitment scheme [Naor1991]
+(`CslibFrontier.Crypto.Computational.Commitment`). Sequential repetition to negligible soundness
+is in `CslibFrontier.Crypto.Computational.ZeroKnowledge.Amplification`, which states the
+existence theorems for every language in `NP`.
 
 ### Protocol design and source credit
 
@@ -42,17 +46,17 @@ entries.
 ### Restricted versus general auxiliary-input zero-knowledge and witness conventions
 
 * **Restricted polynomial-time-generable zero-knowledge (`GenerableZeroKnowledge`,
-  `ZeroKnowledgeProof.zero_knowledge`, `ZeroKnowledgeProof.generableZeroKnowledge`).**
+  `ZKProof.zero_knowledge`, `ZKProof.generableZeroKnowledge`).**
   Matching the library's uniform strict-PPT cryptographic conventions
   (`ComputationallyIndistinguishable`), `GenerableZeroKnowledge` quantifies over uniform strict
   oracle PPT malicious verifiers `Vstar` (producing one efficient witness-free simulator `S` per
   `Vstar` before the choice of families) and deterministic polynomial-time-generable families of
   instances `a : ℕ → α`, valid witnesses `w : ℕ → List Bool` (`∀ n, isWitness (a n) (w n) = true`),
   and auxiliary inputs `z : ℕ → List Bool` (`ComputableInPolyTime · encUnary _`). Fixed-instance
-  zero-knowledge (`ZeroKnowledgeProof.zero_knowledge_const`) is an immediate corollary for constant
+  zero-knowledge (`ZKProof.zero_knowledge_const`) is an immediate corollary for constant
   families `fun _ => a` and `fun _ => w`.
 * **General auxiliary-input zero-knowledge (`AuxiliaryInputZeroKnowledge`,
-  `ZeroKnowledgeProof.AuxiliaryInputZeroKnowledge`).**
+  `ZKProof.AuxiliaryInputZeroKnowledge`).**
   Quantifies over the same uniform strict oracle PPT malicious verifiers `Vstar` and chooses one
   efficient witness-free simulator `S` per `Vstar` before the choice of families, and then ranges
   over arbitrary polynomially bounded families of instances `a : ℕ → α`, valid witnesses
@@ -65,17 +69,16 @@ entries.
   (`UnboundedAuxiliaryInputZeroKnowledge`, `InstanceAuxiliaryInputZeroKnowledge`).
   Under the explicit advice-PRG premise `GMW.AdvicePRG`
   (from `GMW.gmwView_negligible_of_advice_prg`), the GMW proof systems satisfy
-  `ZeroKnowledgeProof.AuxiliaryInputZeroKnowledge`
-  (`PseudorandomGenerator.auxiliaryInputZeroKnowledge_zeroKnowledgeProofOfReduction`,
-  `PseudorandomGenerator.auxiliaryInputZeroKnowledge_zeroKnowledgeProofThreeSAT`); this module does
+  `ZKProof.AuxiliaryInputZeroKnowledge`
+  (`PseudorandomGenerator.auxiliaryInputZeroKnowledge_singleZKProofOfReduction`,
+  `PseudorandomGenerator.auxiliaryInputZeroKnowledge_singleZKProofThreeSAT`); this module does
   not derive `GMW.AdvicePRG` from uniform PRG or one-way function assumptions.
-* **Bundled witness relation (`ZeroKnowledgeProof.isWitness`).** `ZeroKnowledgeProof` bundles its
+* **Bundled witness relation (`ZKProof.isWitness`).** `ZKProof` bundles its
   own polynomial-time witness predicate `isWitness : α → List Bool → Bool` characterizing `A`
   (`mem_iff_exists_witness`). No witness-length bound is imposed, so `isWitness` by itself need not
-  be an `NP` relation; membership in `IP` (`mem_IP`) does not need one, and in `zero_knowledge`
-  the witness family `w : ℕ → List Bool` is polynomial-time-generable in `1^n`. In
-  `PseudorandomGenerator.zeroKnowledgeProofOfReduction` and
-  `PseudorandomGenerator.exists_zeroKnowledgeProof_of_mem_NP`, the bundled predicate
+  be an `NP` relation; membership in `IP` (`ZKProof.mem_IP`) does not need one, and in
+  `zero_knowledge` the witness family `w : ℕ → List Bool` is polynomial-time-generable in `1^n`. In
+  `PseudorandomGenerator.singleZKProofOfReduction`, the bundled predicate
   `isWitness a w := ThreeSAT.verifier (f a, w)` checks a `ThreeSAT` witness for the Karp-reduced
   formula `f a` rather than a witness for the original `NP` verifier of `A`.
 
@@ -84,36 +87,33 @@ entries.
 * `Cslib.Crypto.GenerableZeroKnowledge`: uniform computational zero-knowledge over deterministic
   polynomial-time-generable instance, valid-witness, and auxiliary-input families.
 * `Cslib.Crypto.AuxiliaryInputZeroKnowledge`,
-  `Cslib.Crypto.ZeroKnowledgeProof.AuxiliaryInputZeroKnowledge`: general auxiliary-input
+  `Cslib.Crypto.ZKProof.AuxiliaryInputZeroKnowledge`: general auxiliary-input
   computational zero-knowledge over arbitrary polynomially bounded valid families against
   full-input uniform strict PPT distinguishers.
-* `Cslib.Crypto.ZeroKnowledgeProof`: a computational zero-knowledge interactive proof system for a
+* `Cslib.Crypto.ZKProof`: a computational zero-knowledge interactive proof system for a
   language `A`, bundling a uniform strict oracle PPT verifier, an honest prover with a uniform
-  strict PPT interaction realization, perfect completeness, soundness `1 / 3` against unbounded
-  provers, and `GenerableZeroKnowledge`.
-* `Cslib.Crypto.PseudorandomGenerator.zeroKnowledgeProofOfReduction`,
-  `Cslib.Crypto.PseudorandomGenerator.zeroKnowledgeProofThreeSAT`: GMW zero-knowledge proof
-  systems for any language Karp-reducible to `ThreeSAT` and for `ThreeSAT` itself.
+  strict PPT interaction realization, perfect completeness, soundness `soundness n` against
+  unbounded provers, and `GenerableZeroKnowledge`.
+* `Cslib.Crypto.PseudorandomGenerator.singleZKProofOfReduction`,
+  `Cslib.Crypto.PseudorandomGenerator.singleZKProofThreeSAT`: single-session GMW
+  zero-knowledge proof systems, with soundness `1 / 3`, for any language Karp-reducible to
+  `ThreeSAT` and for `ThreeSAT` itself.
 
 ## Main results
 
 * `Cslib.Crypto.AuxiliaryInputZeroKnowledge.generableZeroKnowledge`,
-  `Cslib.Crypto.ZeroKnowledgeProof.AuxiliaryInputZeroKnowledge.generableZeroKnowledge`:
+  `Cslib.Crypto.ZKProof.AuxiliaryInputZeroKnowledge.generableZeroKnowledge`:
   general auxiliary-input zero-knowledge implies poly-time-generable zero-knowledge.
-* `Cslib.Crypto.ZeroKnowledgeProof.isInteractiveProof`, `Cslib.Crypto.ZeroKnowledgeProof.mem_IP`:
-  every language with a `ZeroKnowledgeProof` belongs to `IP`.
-* `Cslib.Crypto.ZeroKnowledgeProof.zero_knowledge_const`,
-  `Cslib.Crypto.ZeroKnowledgeProof.AuxiliaryInputZeroKnowledge.zero_knowledge_const`:
+* `Cslib.Crypto.ZKProof.isInteractiveProof`, `Cslib.Crypto.ZKProof.mem_IP`:
+  every language with a `ZKProof` whose soundness bound is at most `1 / 3` at some security
+  parameter belongs to `IP`.
+* `Cslib.Crypto.ZKProof.zero_knowledge_const`,
+  `Cslib.Crypto.ZKProof.AuxiliaryInputZeroKnowledge.zero_knowledge_const`:
   fixed-instance computational zero-knowledge.
-* `Cslib.Crypto.PseudorandomGenerator.exists_zeroKnowledgeProof_of_mem_NP`,
-  `Cslib.Crypto.OneWay.exists_zeroKnowledgeProof_of_mem_NP`: GMW zero-knowledge proof systems for
-  every language in `NP` from any pseudorandom generator (with stretch `3 * k + 1`) or one-way
-  function, establishing `GenerableZeroKnowledge`.
-* `Cslib.Crypto.PseudorandomGenerator.auxiliaryInputZeroKnowledge_zeroKnowledgeProofOfReduction`,
-  `Cslib.Crypto.PseudorandomGenerator.auxiliaryInputZeroKnowledge_zeroKnowledgeProofThreeSAT`,
-  `Cslib.Crypto.PseudorandomGenerator.exists_auxiliaryInputZeroKnowledge_of_mem_NP`:
-  general `AuxiliaryInputZeroKnowledge` for the GMW proof systems under the explicit advice-PRG
-  premise `GMW.AdvicePRG`.
+* `Cslib.Crypto.PseudorandomGenerator.auxiliaryInputZeroKnowledge_singleZKProofOfReduction`,
+  `Cslib.Crypto.PseudorandomGenerator.auxiliaryInputZeroKnowledge_singleZKProofThreeSAT`:
+  general `AuxiliaryInputZeroKnowledge` for the single-session GMW proof systems under the explicit
+  advice-PRG premise `GMW.AdvicePRG`.
 
 ## References
 
@@ -257,8 +257,11 @@ theorem GenerableZeroKnowledge.advantage_negligible {α : Type} {enc : α ↪ Li
 /-! ### Bundled computational zero-knowledge proof systems -/
 
 /-- A computational zero-knowledge interactive proof system for a language `A : Set α` (with
-instance encoding `enc : α ↪ List Bool`), indexed by a security parameter `n : ℕ` [Goldreich,
-Micali, and Wigderson][GoldreichMicaliWigderson1991].
+instance encoding `enc : α ↪ List Bool`), indexed by a security parameter `n : ℕ`, with soundness
+bound `soundness : ℕ → ENNReal` [Goldreich, Micali, and Wigderson][GoldreichMicaliWigderson1991].
+The single-session GMW systems have `soundness := fun _ => 1 / 3`; sequential repetition gives
+`fun n => (1 / 3) ^ (k n)`
+(`CslibFrontier.Crypto.Computational.ZeroKnowledge.Amplification`).
 
 * `verifier n a`: the honest verifier's interactive program on security parameter `n` and
   instance `a`, certified uniform strict oracle PPT in `(1^n, a)` by `isOraclePPT_verifier`.
@@ -268,10 +271,10 @@ Micali, and Wigderson][GoldreichMicaliWigderson1991].
   (`mem_iff_exists_witness`). No witness-length bound is imposed, so `isWitness` by itself need
   not be an `NP` relation (in `zero_knowledge`, `w` is polynomial-time-generable in `1^n`). When
   constructed via a Karp reduction `f : α → CNF ℕ` to `ThreeSAT`
-  (`PseudorandomGenerator.zeroKnowledgeProofOfReduction`),
+  (`PseudorandomGenerator.singleZKProofOfReduction`),
   `isWitness a w` is `ThreeSAT.verifier (f a, w)`, checking a `ThreeSAT` witness for `f a`.
-* `complete` and `sound`: completeness `1` for valid witnesses and soundness error at most `1 / 3`
-  against all computationally unbounded stateful provers `P : Prover Unit`.
+* `complete` and `sound`: completeness `1` for valid witnesses and soundness error at most
+  `soundness n` against all computationally unbounded stateful provers `P : Prover Unit`.
 * `zero_knowledge`: **uniform zero-knowledge with poly-time-generable families**
   (`GenerableZeroKnowledge enc prover isWitness`). For every uniform strict oracle PPT malicious
   verifier `Vstar` (taking security parameter `n`, instance `a`, and auxiliary input `z`), there is
@@ -281,8 +284,8 @@ Micali, and Wigderson][GoldreichMicaliWigderson1991].
   `w : ℕ → List Bool`, and auxiliary inputs `z : ℕ → List Bool`
   (`ComputableInPolyTime · encUnary _`). The stronger general auxiliary-input property over
   arbitrary polynomially bounded valid families is stated separately as
-  `ZeroKnowledgeProof.AuxiliaryInputZeroKnowledge`. -/
-structure ZeroKnowledgeProof {α : Type} (enc : α ↪ List Bool) (A : Set α) where
+  `ZKProof.AuxiliaryInputZeroKnowledge`. -/
+structure ZKProof {α : Type} (enc : α ↪ List Bool) (A : Set α) (soundness : ℕ → ENNReal) where
   /-- The honest verifier, indexed by security parameter `n` and instance `a`. -/
   verifier : ℕ → α → WordOracleComp Unit Bool
   /-- The honest prover strategy, taking security parameter `n`, instance `a`, and witness `w`. -/
@@ -316,57 +319,36 @@ structure ZeroKnowledgeProof {α : Type} (enc : α ↪ List Bool) (A : Set α) w
   honest verifier with probability `1`. -/
   complete : ∀ n a w, isWitness a w = true → acceptProb (verifier n a) (prover n a w) = 1
   /-- Soundness: for every `a ∉ A` and every computationally unbounded stateful prover `P`, the
-  verifier accepts with probability at most `1 / 3`. -/
-  sound : ∀ n, ∀ a ∉ A, ∀ P : Prover Unit, acceptProb (verifier n a) P ≤ 1 / 3
+  verifier accepts with probability at most `soundness n`. -/
+  sound : ∀ n, ∀ a ∉ A, ∀ P : Prover Unit, acceptProb (verifier n a) P ≤ soundness n
   /-- Uniform computational zero-knowledge with poly-time-generable auxiliary input against all
   uniform strict oracle PPT malicious verifiers, quantified over polynomial-time-generable
   families of instances `a`, valid witnesses `w`, and auxiliary inputs `z`. -/
   zero_knowledge : GenerableZeroKnowledge enc prover isWitness
 
-private theorem ZeroKnowledgeProof.polyTime_isWitness_tidy {α : Type} {enc : α ↪ List Bool}
-    {A : Set α} (h : ZeroKnowledgeProof enc A) :
-    ComputableTidilyInPolyTime (fun p : α × List Bool => h.isWitness p.1 p.2)
-      (encPair enc encBits) encBool := by
-  simpa only [← computableInPolyTime_iff_computableTidilyInPolyTime] using h.polyTime_isWitness
+namespace ZKProof
 
-private theorem ZeroKnowledgeProof.zero_knowledge_tidy {α : Type} {enc : α ↪ List Bool}
-    {A : Set α} (h : ZeroKnowledgeProof enc A) :
-    ∀ Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool),
-      IsOraclePPTOn (encInstanceAuxInput enc) encBits
-        (fun p : ℕ × α × List Bool => Vstar p.1 p.2.1 p.2.2) →
-      ∃ S : ℕ → α → List Bool → ProbComp (List Bool),
-        IsPPTOn (encInstanceAuxInput enc) encBits (fun p : ℕ × α × List Bool => S p.1 p.2.1 p.2.2) ∧
-        ∀ (a : ℕ → α) (w z : ℕ → List Bool),
-          ComputableTidilyInPolyTime a encUnary enc →
-          ComputableTidilyInPolyTime w encUnary encBits →
-          ComputableTidilyInPolyTime z encUnary encBits →
-          (∀ n, h.isWitness (a n) (w n) = true) →
-          ComputationallyIndistinguishable
-            (fun n => ((h.prover n (a n) (w n)).run (Vstar n (a n) (z n))
-              (h.prover n (a n) (w n)).init).map Prod.fst)
-            (fun n => ProbComp.eval (S n (a n) (z n))) := by
-  simpa only [GenerableZeroKnowledge, ← computableInPolyTime_iff_computableTidilyInPolyTime]
-    using h.zero_knowledge
+variable {α : Type} {enc : α ↪ List Bool} {A : Set α} {soundness soundness' : ℕ → ENNReal}
 
-namespace ZeroKnowledgeProof
-
-variable {α : Type} {enc : α ↪ List Bool} {A : Set α}
+/-- Weaken the soundness bound of a `ZKProof` along a pointwise inequality. -/
+def mono (zk : ZKProof enc A soundness) (hle : ∀ n, soundness n ≤ soundness' n) :
+    ZKProof enc A soundness' :=
+  { zk with sound := fun n a ha P => (zk.sound n a ha P).trans (hle n) }
 
 /-- Named projection for the restricted polynomial-time-generable zero-knowledge property bundled by
-`ZeroKnowledgeProof`. -/
-theorem generableZeroKnowledge (zk : ZeroKnowledgeProof enc A) :
+`ZKProof`. -/
+theorem generableZeroKnowledge (zk : ZKProof enc A soundness) :
     GenerableZeroKnowledge enc zk.prover zk.isWitness :=
   zk.zero_knowledge
 
-/-- General auxiliary-input computational zero-knowledge for a bundled `ZeroKnowledgeProof` system,
-ranging over arbitrary polynomially bounded instance, valid-witness, and auxiliary-input
-families. -/
-def AuxiliaryInputZeroKnowledge (zk : ZeroKnowledgeProof enc A) : Prop :=
+/-- General auxiliary-input computational zero-knowledge for a bundled `ZKProof` system, ranging
+over arbitrary polynomially bounded instance, valid-witness, and auxiliary-input families. -/
+def AuxiliaryInputZeroKnowledge (zk : ZKProof enc A soundness) : Prop :=
   Cslib.Crypto.AuxiliaryInputZeroKnowledge enc zk.prover zk.isWitness
 
 /-- General auxiliary-input zero-knowledge for `zk` implies the bundled restricted
 `GenerableZeroKnowledge` guarantee. -/
-theorem AuxiliaryInputZeroKnowledge.generableZeroKnowledge {zk : ZeroKnowledgeProof enc A}
+theorem AuxiliaryInputZeroKnowledge.generableZeroKnowledge {zk : ZKProof enc A soundness}
     (h : zk.AuxiliaryInputZeroKnowledge) :
     GenerableZeroKnowledge enc zk.prover zk.isWitness :=
   Cslib.Crypto.AuxiliaryInputZeroKnowledge.generableZeroKnowledge h
@@ -375,7 +357,7 @@ theorem AuxiliaryInputZeroKnowledge.generableZeroKnowledge {zk : ZeroKnowledgePr
 fixed instance `a`, valid witness `w`, and arbitrary polynomially bounded auxiliary-input family
 `z : ℕ → List Bool`, the real and simulated views have negligible distinguishing advantage against
 every full-input uniform strict PPT distinguisher. -/
-theorem AuxiliaryInputZeroKnowledge.zero_knowledge_const {zk : ZeroKnowledgeProof enc A}
+theorem AuxiliaryInputZeroKnowledge.zero_knowledge_const {zk : ZKProof enc A soundness}
     (h : zk.AuxiliaryInputZeroKnowledge)
     {Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool)}
     (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun ⟨n, a, z⟩ => Vstar n a z)) :
@@ -399,10 +381,10 @@ theorem AuxiliaryInputZeroKnowledge.zero_knowledge_const {zk : ZeroKnowledgeProo
   exact ⟨S, hS_ppt, fun a w z hw hz adversary hadv =>
     hS_zk (fun _ => a) (fun _ => w) z z (.const _) (.const _) hz hz (fun _ => hw) adversary hadv⟩
 
-/-- At every security parameter `n`, the honest verifier of a zero-knowledge proof system is an
-interactive proof for `A` with completeness `2 / 3` and soundness `1 / 3`. -/
-theorem isInteractiveProof (zk : ZeroKnowledgeProof enc A) (n : ℕ) :
-    IsInteractiveProof (zk.verifier n) A (2 / 3) (1 / 3) where
+/-- At any security parameter `n`, the honest verifier of a `ZKProof` is an interactive proof for
+`A` with completeness `2 / 3` and soundness `soundness n`. -/
+theorem isInteractiveProof (zk : ZKProof enc A soundness) (n : ℕ) :
+    IsInteractiveProof (zk.verifier n) A (2 / 3) (soundness n) where
   complete a ha := by
     obtain ⟨w, hw⟩ := (zk.mem_iff_exists_witness a).mp ha
     refine ⟨zk.prover n a w, ?_⟩
@@ -410,16 +392,20 @@ theorem isInteractiveProof (zk : ZeroKnowledgeProof enc A) (n : ℕ) :
     exact ENNReal.div_le_of_le_mul (by norm_num)
   sound a ha P := zk.sound n a ha P
 
-/-- Every language with a zero-knowledge interactive proof system belongs to `IP`. -/
-theorem mem_IP (zk : ZeroKnowledgeProof enc A) : A ∈ IP enc := by
-  refine ⟨zk.verifier 0, ?_, zk.isInteractiveProof 0⟩
-  have h := zk.isOraclePPT_verifier
+/-- Any `ZKProof` whose soundness bound is at most `1 / 3` at some security parameter `n` places
+`A ∈ IP enc`. -/
+theorem mem_IP (zk : ZKProof enc A soundness) (h : ∃ n, soundness n ≤ 1 / 3) :
+    A ∈ IP enc := by
+  obtain ⟨n, hn⟩ := h
+  refine ⟨zk.verifier n, ?_, ⟨fun a ha => (zk.isInteractiveProof n).complete a ha,
+    fun a ha P => (zk.sound n a ha P).trans hn⟩⟩
+  have hV := zk.isOraclePPT_verifier
   fun_prop
 
 /-- Fixed-instance computational zero-knowledge: for every fixed instance `a` and valid witness `w`
 (`zk.isWitness a w = true`), and every polynomial-time auxiliary input family `z : ℕ → List Bool`,
 the real interaction output and simulator output are computationally indistinguishable. -/
-theorem zero_knowledge_const (zk : ZeroKnowledgeProof enc A)
+theorem zero_knowledge_const (zk : ZKProof enc A soundness)
     {Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool)}
     (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun ⟨n, a, z⟩ => Vstar n a z)) :
     ∃ S : ℕ → α → List Bool → ProbComp (List Bool),
@@ -431,27 +417,28 @@ theorem zero_knowledge_const (zk : ZeroKnowledgeProof enc A)
           (fun n => ((zk.prover n a w).run (Vstar n a (z n))
             (zk.prover n a w).init).map Prod.fst)
           (fun n => ProbComp.eval (S n a (z n))) := by
-  obtain ⟨S, hS_ppt, hS_zk⟩ := zk.zero_knowledge_tidy Vstar hV
+  obtain ⟨S, hS_ppt, hS_zk⟩ := zk.zero_knowledge Vstar hV
   exact ⟨S, hS_ppt, fun a w z hw hz =>
-    hS_zk (fun _ => a) (fun _ => w) z (const a) (const w) hz.tidy (fun _ => hw)⟩
+    hS_zk (fun _ => a) (fun _ => w) z (const a).computableInPolyTime
+      (const w).computableInPolyTime hz (fun _ => hw)⟩
 
-end ZeroKnowledgeProof
+end ZKProof
 
 /-! ### GMW zero-knowledge proof systems -/
 
-/-- Construct the Goldreich–Micali–Wigderson zero-knowledge proof system for any language `A` with
-a polynomial-time many-one reduction `f : α → CNF ℕ` to `ThreeSAT`, using a pseudorandom generator
-with stretch at least `3 * k + 1` and the 3-copy masked-3SAT commitment protocol in
-`Cslib.Crypto.GMW`. The bundled witness check `isWitness a w` is `ThreeSAT.verifier (f a, w)` on
-the reduced formula `f a`. -/
-noncomputable def PseudorandomGenerator.zeroKnowledgeProofOfReduction
+/-- Construct the single-session Goldreich–Micali–Wigderson zero-knowledge proof system, with
+soundness `1 / 3`, for any language `A` with a polynomial-time many-one reduction
+`f : α → CNF ℕ` to `ThreeSAT`, using a pseudorandom generator with stretch at least `3 * k + 1`
+and the 3-copy masked-3SAT commitment protocol in `Cslib.Crypto.GMW`. The bundled witness check
+`isWitness a w` is `ThreeSAT.verifier (f a, w)` on the reduced formula `f a`. -/
+noncomputable def PseudorandomGenerator.singleZKProofOfReduction
     {α : Type} {enc : α ↪ List Bool} {A : Set α}
     {generator : List Bool → List Bool} {length : ℕ → ℕ}
     (hG : PseudorandomGenerator generator length)
     (hstretch : ∀ k, 3 * k + 1 ≤ length k)
     {f : α → CNF ℕ} (hf : ComputableInPolyTime f enc encCNF)
     (hred : ∀ a, a ∈ A ↔ f a ∈ ThreeSAT) :
-    ZeroKnowledgeProof enc A where
+    ZKProof enc A (fun _ => 1 / 3) where
   verifier := GMW.gmwVerifier generator length f
   prover n a w := GMW.gmwProver generator (n + 7) (length (n + 7)) (f a) w
   isWitness a w := ThreeSAT.verifier (f a, w)
@@ -481,10 +468,10 @@ noncomputable def PseudorandomGenerator.zeroKnowledgeProofOfReduction
           hw_sat⟩
 
 /-- Under the explicit advice-PRG premise `GMW.AdvicePRG enc generator length`, the GMW proof
-system `hG.zeroKnowledgeProofOfReduction hstretch hf hred` satisfies general auxiliary-input
-zero-knowledge (`ZeroKnowledgeProof.AuxiliaryInputZeroKnowledge`) across all arbitrary polynomially
-bounded valid instance, witness, and auxiliary-input families. -/
-theorem PseudorandomGenerator.auxiliaryInputZeroKnowledge_zeroKnowledgeProofOfReduction
+system `hG.singleZKProofOfReduction hstretch hf hred` satisfies general auxiliary-input
+zero-knowledge (`ZKProof.AuxiliaryInputZeroKnowledge`) across all arbitrary polynomially bounded
+valid instance, witness, and auxiliary-input families. -/
+theorem PseudorandomGenerator.auxiliaryInputZeroKnowledge_singleZKProofOfReduction
     {α : Type} {enc : α ↪ List Bool} {A : Set α}
     {generator : List Bool → List Bool} {length : ℕ → ℕ}
     (hG : PseudorandomGenerator generator length)
@@ -492,79 +479,33 @@ theorem PseudorandomGenerator.auxiliaryInputZeroKnowledge_zeroKnowledgeProofOfRe
     {f : α → CNF ℕ} (hf : ComputableInPolyTime f enc encCNF)
     (hred : ∀ a, a ∈ A ↔ f a ∈ ThreeSAT)
     (hAdv : GMW.AdvicePRG enc generator length) :
-    (hG.zeroKnowledgeProofOfReduction hstretch hf hred).AuxiliaryInputZeroKnowledge := by
+    (hG.singleZKProofOfReduction hstretch hf hred).AuxiliaryInputZeroKnowledge := by
   intro Vstar hV
   exact ⟨GMW.gmwSimulator generator length f Vstar,
     GMW.isPPTOn_gmwSimulator hG.polyTime hG.length_eq hf hV,
     fun _ _ _ _ ha hw hz hz' hw_sat _ hadv =>
       hAdv.gmwView_negligible hf hV hadv ha hw hz hz' hw_sat⟩
 
-/-- The Goldreich–Micali–Wigderson computational zero-knowledge proof system for `ThreeSAT`, built
-from any pseudorandom generator with stretch at least `3 * k + 1` via the 3-copy masked-3SAT
-commitment protocol in `Cslib.Crypto.GMW`. -/
-noncomputable def PseudorandomGenerator.zeroKnowledgeProofThreeSAT
+/-- The single-session Goldreich–Micali–Wigderson computational zero-knowledge proof system for
+`ThreeSAT`, with soundness `1 / 3`, built from any pseudorandom generator with stretch at least
+`3 * k + 1` via the 3-copy masked-3SAT commitment protocol in `Cslib.Crypto.GMW`. -/
+noncomputable def PseudorandomGenerator.singleZKProofThreeSAT
     {generator : List Bool → List Bool} {length : ℕ → ℕ}
     (hG : PseudorandomGenerator generator length)
     (hstretch : ∀ k, 3 * k + 1 ≤ length k) :
-    ZeroKnowledgeProof encCNF ThreeSAT :=
-  hG.zeroKnowledgeProofOfReduction hstretch (by fun_prop) (fun _ => Iff.rfl)
+    ZKProof encCNF ThreeSAT (fun _ => 1 / 3) :=
+  hG.singleZKProofOfReduction hstretch (by fun_prop) (fun _ => Iff.rfl)
 
 /-- Under the explicit advice-PRG premise `GMW.AdvicePRG encCNF generator length`, the GMW proof
-system `hG.zeroKnowledgeProofThreeSAT hstretch` satisfies general auxiliary-input zero-knowledge
-(`ZeroKnowledgeProof.AuxiliaryInputZeroKnowledge`). -/
-theorem PseudorandomGenerator.auxiliaryInputZeroKnowledge_zeroKnowledgeProofThreeSAT
+system `hG.singleZKProofThreeSAT hstretch` satisfies general auxiliary-input zero-knowledge
+(`ZKProof.AuxiliaryInputZeroKnowledge`). -/
+theorem PseudorandomGenerator.auxiliaryInputZeroKnowledge_singleZKProofThreeSAT
     {generator : List Bool → List Bool} {length : ℕ → ℕ}
     (hG : PseudorandomGenerator generator length)
     (hstretch : ∀ k, 3 * k + 1 ≤ length k)
     (hAdv : GMW.AdvicePRG encCNF generator length) :
-    (hG.zeroKnowledgeProofThreeSAT hstretch).AuxiliaryInputZeroKnowledge :=
-  hG.auxiliaryInputZeroKnowledge_zeroKnowledgeProofOfReduction hstretch (by fun_prop)
+    (hG.singleZKProofThreeSAT hstretch).AuxiliaryInputZeroKnowledge :=
+  hG.auxiliaryInputZeroKnowledge_singleZKProofOfReduction hstretch (by fun_prop)
     (fun _ => Iff.rfl) hAdv
-
-/-- **Goldreich–Micali–Wigderson theorem (from a pseudorandom generator).** Given a pseudorandom
-generator with stretch at least `3 * k + 1` (such as `fun k => 3 * k + 1`), every language
-`A ∈ NP enc` has a computational zero-knowledge interactive proof system
-[Goldreich, Micali, and Wigderson][GoldreichMicaliWigderson1991] in the uniform
-polynomial-time-generable sense (`GenerableZeroKnowledge`). -/
-theorem PseudorandomGenerator.exists_zeroKnowledgeProof_of_mem_NP
-    {α : Type} {enc : α ↪ List Bool} {A : Set α}
-    {generator : List Bool → List Bool} {length : ℕ → ℕ}
-    (hG : PseudorandomGenerator generator length)
-    (hstretch : ∀ k, 3 * k + 1 ≤ length k)
-    (hA : A ∈ NP enc) :
-    Nonempty (ZeroKnowledgeProof enc A) := by
-  obtain ⟨f, hf, hred⟩ := ThreeSAT_npHard enc A hA
-  exact ⟨hG.zeroKnowledgeProofOfReduction hstretch hf hred⟩
-
-/-- **Goldreich–Micali–Wigderson theorem under an explicit advice-PRG premise.** Given a
-pseudorandom generator with stretch at least `3 * k + 1` that also satisfies the advice-supplied
-premise `GMW.AdvicePRG enc generator length`, every language `A ∈ NP enc` has a computational
-zero-knowledge interactive proof system satisfying general auxiliary-input zero-knowledge
-(`ZeroKnowledgeProof.AuxiliaryInputZeroKnowledge`) across all polynomially bounded valid families.
-This theorem takes `GMW.AdvicePRG` as an explicit hypothesis rather than deriving it from uniform
-`PseudorandomGenerator` or `OneWay` security. -/
-theorem PseudorandomGenerator.exists_auxiliaryInputZeroKnowledge_of_mem_NP
-    {α : Type} {enc : α ↪ List Bool} {A : Set α}
-    {generator : List Bool → List Bool} {length : ℕ → ℕ}
-    (hG : PseudorandomGenerator generator length)
-    (hstretch : ∀ k, 3 * k + 1 ≤ length k)
-    (hAdv : GMW.AdvicePRG enc generator length)
-    (hA : A ∈ NP enc) :
-    ∃ zk : ZeroKnowledgeProof enc A, zk.AuxiliaryInputZeroKnowledge := by
-  obtain ⟨f, hf, hred⟩ := ThreeSAT_npHard enc A hA
-  exact ⟨hG.zeroKnowledgeProofOfReduction hstretch hf hred,
-    hG.auxiliaryInputZeroKnowledge_zeroKnowledgeProofOfReduction hstretch hf hred hAdv⟩
-
-/-- **Goldreich–Micali–Wigderson theorem (from a one-way function).** If a one-way function exists,
-then every language `A ∈ NP enc` has a computational zero-knowledge interactive proof system
-[Goldreich, Micali, and Wigderson][GoldreichMicaliWigderson1991], in the uniform-family sense of
-`GenerableZeroKnowledge` (`ZeroKnowledgeProof.zero_knowledge`): instances, witnesses and auxiliary
-inputs range over polynomial-time-generable families rather than arbitrary ones. -/
-theorem OneWay.exists_zeroKnowledgeProof_of_mem_NP
-    {α : Type} {enc : α ↪ List Bool} {A : Set α}
-    {f : List Bool → List Bool} (hf : OneWay f) (hA : A ∈ NP enc) :
-    Nonempty (ZeroKnowledgeProof enc A) := by
-  obtain ⟨G, hG⟩ := hf.exists_pseudorandomGenerator_three_mul
-  exact hG.exists_zeroKnowledgeProof_of_mem_NP (fun _ => le_rfl) hA
 
 end Cslib.Crypto
