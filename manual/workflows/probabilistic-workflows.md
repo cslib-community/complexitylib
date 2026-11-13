@@ -106,7 +106,16 @@ counting tuples when the factors are not uniform. `pi_map_curry` in
 [Product/Reindex.lean](../../CslibFrontier/Probability/Product/Reindex.lean) splits a product
 indexed by `ι × κ` into independent blocks, and `toOuterMeasure_pi_forall` in
 [Product/Event.lean](../../CslibFrontier/Probability/Product/Event.lean) is the probability of a
-box `{u | ∀ i, u i ∈ E i}`. For a biased bit, use `coin p` from
+box `{u | ∀ i, u i ∈ E i}`. For a uniform draw on a finite group, import
+[Uniform.lean](../../CslibFrontier/Probability/Uniform.lean): `uniformOfFintype_map_add_left` and
+`uniformOfFintype_bind_add_left`, with their `_right` forms, remove a fixed mask as in the one-time
+pad; `uniformOfFintype_map_addHom` and `uniformOfFintype_map_monoidHom` push the uniform law
+through a surjective homomorphism; and `uniformOfFintype_map_comp` reads a uniform function
+through an injection. For a dependent function, `uniformOfFintype_map_comp_dep` in
+[Product/Split.lean](../../CslibFrontier/Probability/Product/Split.lean) needs only nonempty
+fibres. On any finite type, `uniformOfFintype_bind_bijective` in
+[PMF/Uniform.lean](../../CslibFrontier/Probability/PMF/Uniform.lean) changes variables in a uniform
+draw along a bijection. For a biased bit, use `coin p` from
 [PMF/Coin.lean](../../CslibFrontier/Probability/PMF/Coin.lean), with `p : unitInterval`; Mathlib's
 `PMF.bernoulli` is deprecated. `toMeasure_coin` identifies `(coin p).toMeasure` with Mathlib's
 `ProbabilityTheory.bernoulliMeasure true false p`, and `entropy_coin` in
@@ -171,6 +180,17 @@ The same module records that pairing with a constant (`snd_eq_of_mem_support_map
 into `StateT` (`snd_eq_of_mem_support_lift`, `toOuterMeasure_lift_eq_zero`) keeps the state fixed on
 the support. The [checked examples](../../CslibFrontierTests/PMFSupport.lean) cover each direction;
 run `scripts/build.sh CslibFrontierTests.PMFSupport`.
+
+For a guessing bound, import
+[PMF/UniformPoint.lean](../../CslibFrontier/Probability/PMF/UniformPoint.lean) instead of summing
+over the uniform law by hand. For any law `μ`, `PMF.bind_pure_decide_eq_apply_true μ a` (and its
+`'` and `map_` forms for the other comparison order and for `μ.map`) says an equality test against
+`a` accepts with probability `μ a`. `PMF.uniformOfFintype_bind_decide_eq_apply_true a` specializes
+it: a uniform draw equals `a` with probability `(Fintype.card α)⁻¹`, and
+`PMF.uniformOfFintype_bind_pure_apply_true_le` gives the upper bound `(Fintype.card α)⁻¹` for any
+test accepting at most one value, such as comparing a fixed point with an injective image of the
+draw. The [fixed-group Diffie–Hellman checks](../../CslibFrontierTests/Crypto/DiffieHellmanFinite.lean)
+compute discrete-logarithm advantages `1 / q` with it.
 
 Moving a bound between `ℝ≥0∞` and `ℝ` or `ℝ≥0` (`ENNReal.toReal_mono`, `ENNReal.toReal_add`,
 `ENNReal.toNNReal_mono`, `ENNReal.toReal_sum`) needs every term to be finite. Import
@@ -1438,6 +1458,14 @@ response types are preserved. For the cryptographic clients, inspect
 [hybridDEMContinuation](../../CslibFrontier/Crypto/Computational/Encryption/Hybrid/DEMCCA.lean)
 and [hybridKEMCCAContinuation](../../CslibFrontier/Crypto/Computational/Encryption/Hybrid/CompositionCCA.lean):
 each phase names only the oracle simulation it needs.
+
+To bound a substituted program's queries, import
+[Oracle/Substitution/QueryCount.lean](../../CslibFrontier/Languages/Probabilistic/Oracle/Substitution/QueryCount.lean).
+`hQ.simulate hhandler` keeps the adversary's budget `hQ` when every handler program makes at
+most one query, and `isCostBounded_simulate` does the same for general costs. Neither needs a case
+split on the private-sampling branch. The forward lift
+[PRP.StrongAdversary.isQueryBounded_ofForward](../../CslibFrontier/Crypto/Primitives/PRP/Finite.lean)
+is a one-line client.
 
 If an existing proof needs the underlying interpreter, unfold `ProbOracleComp.simulate` to
 reuse its laws and native efficiency certificates. Substitution preserves the free program;

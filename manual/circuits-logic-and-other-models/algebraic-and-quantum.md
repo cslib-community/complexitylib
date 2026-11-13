@@ -8,6 +8,26 @@ Algebraic and quantum developments reuse the generic circuit architecture while 
 
 [affineSignature](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Arithmetic.lean#L67) makes an entire arbitrary-arity affine combination one gate. The [FullOp](https://github.com/leanprover/cslib/blob/254e30e6d4299c51323aaeaf5f51a4763b375d4a/Cslib/Computability/Circuit/Signature.lean#L37) model is broader still: any operation depending on at most a fixed number of values is primitive. Over the full binary basis, tests and selections can cost one gate, and `Synthesis.full_sum`, `full_dot` and `full_chain` bound counts of these operations. An algebraic operation count in that model is not automatically a bound in the restricted addition/multiplication basis, nor a bound on binary integer/rational computation. [cslib][cslib] See [full-basis synthesis](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/FullArithmetic.lean).
 
+For encoded arithmetic values, import
+[Arithmetic.BitBlast](../../CslibFrontier/Computability/Circuit/Arithmetic/BitBlast.lean).
+`Synthesis.bitBlast_arithmetic enc decode hdecode c φ hφ` synthesizes every encoded output of
+an arithmetic circuit from the already-available bits of `φ`, within
+`c.size * bitBlastCost w` additional Boolean gates. The encoding is any function to `w` bits
+with `Function.LeftInverse decode enc`; it need not fill the bit cube, so odd-sized carriers
+are supported. The budget and all-output guarantee are unchanged from bijective bit-blasting.
+No behavior on unused code words or reverse Boolean-to-field simulation is asserted.
+
+The generic `bitBlast_program`, `bitBlast` and `bitBlast_synthesis` APIs in
+[Boolean.BitBlast](../../CslibFrontier/Computability/Circuit/Boolean/BitBlast.lean) now take
+`enc`, `decode` and the left-inverse proof explicitly. Existing equivalence callers pass
+`enc`, `enc.symm`, `enc.symm_apply_apply`; `bitsOf` accepts the encoding function directly.
+Run `scripts/build.sh CslibFrontierTests.BitBlastEncoding` for
+[clients](../../CslibFrontierTests/BitBlastEncoding.lean) using the odd field `ZMod 3`, an unused
+code word, modulo-three addition and zero-width synthesis over a singleton. This advances one
+synthesis direction of Arora–Barak Chapter 14 Exercise 1; encoding construction, free-input
+circuit compilation and the reverse general-field direction remain open under
+[#4711](https://github.com/cslib-community/cslib-frontier/issues/4711).
+
 [SigmaPiOp](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Arithmetic/SigmaPi.lean#L109) permits unbounded sums with edge coefficients and unbounded products. Product depth counts multiplication layers only; weighted sums contribute zero to that depth. Set-multilinearity records that products combine disjoint variable groups. [SPCircuit](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Arithmetic/SPCircuit.lean#L89) provides shared DAGs in this basis. Its `IsSimple` condition requires distinct input wires at product gates; the unfolding bound used by the constant-product-depth lower-bound development assumes this condition.
 
 The [constant-depth arithmetic abstract](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/CslibFrontierAbstracts/ConstantDepthArithmeticAbstract.lean), since retired, states an iterated-matrix-multiplication lower bound over any field for the specified simple Sigma–Pi circuits and product-depth convention. Its finite exponent involves the matrix-chain parameter and `4^Delta-1`; the asymptotic regime chooses the chain length roughly `log log n`. Source annotations credit the Limaye–Srinivasan–Tavenas development and the stated reduction through set-multilinearization. This survey does not remove the simplicity hypothesis or identify the bound with unrestricted arbitrary repeated-wire product syntax.

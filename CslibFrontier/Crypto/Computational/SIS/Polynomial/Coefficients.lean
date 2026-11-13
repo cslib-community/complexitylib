@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Crypto.Computational.SIS.Module
+public import CslibFrontier.Foundations.Algebra.Negacyclic
 public import Mathlib.Algebra.Polynomial.CoeffList
 import Mathlib.Algebra.Polynomial.OfFn
 
