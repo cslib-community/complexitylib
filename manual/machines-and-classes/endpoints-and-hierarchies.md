@@ -7,6 +7,13 @@ The table selects substantial results demonstrating how the models connect. It i
 
 The [native exact-counting chapter](native-counting.md) separately treats the fixed-width CNF counter and its SAT/ETH/SETH consequences, including the primary-manuscript mapping and the scope of this review.
 
+The [Arora–Barak draft chapters 1–5 audit](../../results/arora-barak-2007.md#chapter-1-the-computational-model)
+compares the computational-model, NP, hierarchy, space and alternation results at a recorded
+revision. It distinguishes exact native endpoints from missing tape-model conversions, general
+integer programming, prenex-QBF normalization, sharp time hierarchies and PH oracle equivalences.
+Its space comparisons explicitly distinguish the library's visited cells from the draft's
+ever-nonblank cells; a bound-preserving equivalence is not claimed.
+
 ## Completeness and containment map
 
 | Endpoint | Models connected | Exact formal boundary and source |
@@ -173,6 +180,28 @@ Run `scripts/build.sh CslibFrontierTests.SublinearTime` for the
 machine reads the first bit, demonstrating input-sensitive constant-time behavior. The
 clients check the inclusive prefix boundary, failure beyond the empty prefix, and the zero
 asymptotic bound with DTIME's additive constant.
+
+## Exact native step counters
+
+Import `CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.StepCounter`
+([source](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Combinators/StepCounter.lean))
+for `Turing.MultiTapeTM.exists_stepCounter`. It supplies one finite native deterministic machine
+with a fixed number of work tapes and one designated signal state. Its input is `encNat n`,
+least-significant-first binary. For the resulting `counter`, `counter.signal_count n` says that
+`counter.signalTimes n` has exactly `n` elements; `counter.initial_ne_signal` and
+`counter.leaves_signal` ensure that these are entering-and-leaving events. The uniform bound
+`counter.runsInTime n` is `counter.timeConstant * (n + 1)`, including preparation and zero input.
+
+This is the total-time statement of Goldreich's January 2007 draft Exercise 4.5
+([r2.pdf, PDF page 36 / printed page 152](https://www.wisdom.weizmann.ac.il/~oded/CC/r2.pdf)).
+The machine converts binary to exact unary in linear time, writes it to a work tape, then
+uses the existing clock controller to consume one cell per signal. It counts actual control-state
+visits, rather than emitted output symbols. The
+[checked examples](../../CslibFrontierTests/StepCounter.lean) instantiate the complete machine,
+check zero, one and three signals, and expose the prepared controller's state times.
+Use `Classical.choice exists_stepCounter` when an actual record is needed in a proof; no
+transition-table computation is promised by this existence API. There is no logarithmic-space
+or per-prefix signal-latency guarantee: the preparation may precede all signals.
 
 ## Constructibility and diagonalization
 

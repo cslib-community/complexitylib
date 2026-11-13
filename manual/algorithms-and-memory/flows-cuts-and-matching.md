@@ -22,6 +22,7 @@ The output cut and the per-cut bound are in `CslibFrontier.Algorithms.Lean.Karge
 The [checked examples](../../CslibFrontierTests/KargerMinCutCount.lean) count by brute force the `C(4, 2) = 6` minimum cuts of the unit 4-cycle, where the bound is tight, and the `C(5, 2) = 10` minimum cuts of the unit 5-cycle. They also instantiate both theorems on the 4-cycle. The empty graph on four vertices has `7` non-trivial minimum cuts. The filter, which then also contains `∅`, has `8 > C(4, 2)` elements, so `0 < minCut W₀` is needed.
 
 Not formalized:
+
 - the `O((2n)^(2α))` bound on `α`-minimal cuts (Theorem 8.4 of the source);
 - the enumeration and the cactus representation of all minimum cuts;
 - the per-cut bound for the recursive Karger–Stein algorithm.
@@ -42,6 +43,7 @@ Import `CslibFrontier.Algorithms.Lean.StoerWagner.Basic` ([Basic.lean](../../Csl
   The charges are annotations; they are not derived from the Lean evaluation, which uses closures. One-time setup is not charged: the weight matrix is taken as given, and the initial map `part = id` of the original vertices to supervertices is free. The bound `n ^ 3 + 4 n ^ 2` is loose. Summing the charges by hand, a phase on `m ≥ 3` supervertices costs `m ^ 2 + 6 m + 2 n + 1`, so the charged time is `n ^ 3 / 3 + O(n ^ 2)` (`509` against the bound `768` on the 8-vertex example); only the weaker bound is proved.
 
 The [checked examples](../../CslibFrontierTests/StoerWagner.lean) test three graphs against brute force over all vertex sets. The first is a weighted 4-cycle. The second is the 8-vertex example graph of [Stoer and Wagner][stoerwagner97], with edge weights from a secondary reproduction (Wikipedia's article). It has minimum cut `4`, and search from its vertex `2` gives the ordering `2, 3, 4, 7, 8, 6, 5, 1` of the worked example's first phase, with cut of the phase `5`. The third is the Boost Graph Library example, which asserts minimum cut weight `7`. The examples also show that an ordering without the MA property can end in a pair whose last-vertex cut is not minimal. They cover a disconnected graph and `n = 0, 1, 2`. Not formalized:
+
 - the `O(n m + n² log n)` priority-queue version;
 - real weights (rational weights need scaling);
 - enumeration of all minimum cuts;
@@ -200,6 +202,7 @@ Egerváry's theorem is available without running the algorithm. `exists_isMinCos
 These results are about matchings in arbitrary finite graphs, not necessarily bipartite. They are stated on Mathlib's `SimpleGraph` and `SimpleGraph.Subgraph.IsMatching`, not on the bipartite `L × R → Bool` model above. This mathematical layer is complemented by the native unweighted endpoint below.
 
 [CslibFrontier/Foundations/Combinatorics/SimpleGraph/Berge.lean](../../CslibFrontier/Foundations/Combinatorics/SimpleGraph/Berge.lean) defines:
+
 - `Subgraph.IsAugmentingPath M p`: a path between distinct uncovered vertices that alternates in Mathlib's `IsAlternating` sense;
 - `Subgraph.augment M p`: `M ∆ E(p)`;
 - `Subgraph.IsMaximumMatching`: a matching with at least as many edges, counted by `Set.encard`, as every matching.
@@ -207,12 +210,14 @@ These results are about matchings in arbitrary finite graphs, not necessarily bi
 `IsAugmentingPath.isMatching_augment` and `ncard_verts_augment` show that augmenting gives a matching covering two more vertices. `IsMatching.isMaximumMatching_iff_forall_not_isAugmentingPath` is Berge's lemma for finite graphs ([Berge 1957][berge57], Theorem 1; [Schrijver's lecture notes][schrijver17], Theorem 3.2). It is proved from `IsMatching.exists_isAugmentingPath_of_ncard_lt`, using the odd-degree vertices of a component of `M ∆ M'`. `exists_isMaximumMatching` gives a maximum matching of a finite graph, and `IsPerfectMatching.isMaximumMatching` shows that perfect matchings are maximum. The bipartite Berge theorem in `MaxFlow/AugmentingPath` is a separate statement in its own model; neither is derived from the other.
 
 [CslibFrontier/Foundations/Combinatorics/SimpleGraph/TutteBerge.lean](../../CslibFrontier/Foundations/Combinatorics/SimpleGraph/TutteBerge.lean) proves the Tutte–Berge formula ([Berge 1958][berge58]; [Schrijver's lecture notes][schrijver17], Theorem 5.1) with vertex counts, writing `o(G - U)` as `((⊤ : G.Subgraph).deleteVerts U).coe.oddComponents.ncard`:
+
 - `IsMatching.ncard_verts_add_ncard_oddComponents_le` (weak duality): `|V(M)| + o(G - U) ≤ |V| + |U|`.
 - `exists_isMatching_ncard_verts_add_ncard_oddComponents_eq` (strong duality) is derived from Mathlib's `SimpleGraph.tutte` by adjoining `d` universal vertices, where `d` is the maximum deficiency.
 - `IsMatching.isMaximumMatching_iff_exists_ncard_verts_add_ncard_oddComponents_eq`: a single `U` certifies that a matching is maximum.
 - `IsMaximumMatching.isLeast_two_mul_ncard_edgeSet`: `2ν(G)` is the least value of `|V| + |U| - o(G - U)`.
 
 The [checked instances](../../CslibFrontierTests/GeneralMatching.lean) cover three graphs:
+
 - On the path `0 - 1 - 2 - 3`, an explicit walk is an augmenting path for `{12}`.
 - On the `5`-cycle, `U = ∅` certifies the matching `{01, 23}`.
 - On the star `K_{1,3}`, `U = {0}` certifies the matching `{01}`.
@@ -272,6 +277,7 @@ or finite-language premise. This endpoint does not establish weighted/min-cost m
 tight classical cubic or `O(|V|²|E|)` operation count.
 
 Still open ([#3337](https://github.com/cslib-community/cslib-frontier/issues/3337)):
+
 - Edmonds' blossom-contraction lemma ([Schrijver's lecture notes][schrijver17], Theorem 5.2);
 - an executable blossom algorithm with its `O(|V|²|E|)` bound;
 - weighted general matching;
@@ -288,6 +294,7 @@ The algorithmic layer is stated on explicit objects. `IsExchSource`, `IsExchSink
 The executable solver is in `CslibFrontier.Algorithms.Lean.Matroid.Intersection.Solver` ([CslibFrontier/Algorithms/Lean/Matroid/Intersection/Solver.lean](../../CslibFrontier/Algorithms/Lean/Matroid/Intersection/Solver.lean)). Its independence tests are effectful, `Finset α → m Bool` for a monad `m`. One phase (`exchTablesM`) computes the sources, sinks and arcs of the exchange digraph of the current `I` by tests. It then runs a multi-source breadth-first search, `Cslib.Reachability.findWalk` ([CslibFrontier/Algorithms/Reachability/ShortestWalk.lean](../../CslibFrontier/Algorithms/Reachability/ShortestWalk.lean)). The search returns either a shortest source-to-sink walk (`isShortestSrcTgtWalk_of_findWalk_eq_inl`) or the reachable vertices, which form a separator (`isSrcTgtSeparator_of_findWalk_eq_inr`). `maxCommonIndepM` runs at most `n + 1` phases from `∅` on the `n` distinct candidates and returns `(I, U)`, where `U` is the set of unreachable candidates. `maxCommonIndep` is the same program with Boolean tests (`maxCommonIndepM_pure`). For tests that decide `M₁` and `M₂`, `maxCommonIndep_spec` (Theorem 10.8) shows that `I` is a maximum common independent subset of `es.toFinset` and that `U ⊆ es.toFinset` satisfies `I.card = M₁.eRk U + M₂.eRk (es.toFinset \ U)`, so `U` is a checkable optimality certificate. Breadth-first search and list bookkeeping are pure host computation. The tests are issued with core `List.filterM`. The general facts about it are `List.filterM_pure` and `Cslib.IsMonadHom.map_filterM` in [CslibFrontier/Foundations/Control/Monad/FilterM.lean](../../CslibFrontier/Foundations/Control/Monad/FilterM.lean), and `Cslib.FreeM.countQueries_filterM` in [CslibFrontier/Algorithms/Lean/Query/FreeM/FilterM.lean](../../CslibFrontier/Algorithms/Lean/Query/FreeM/FilterM.lean).
 
 `CslibFrontier.Algorithms.Lean.Query.Matroid.Intersection` ([CslibFrontier/Algorithms/Lean/Query/Matroid/Intersection.lean](../../CslibFrontier/Algorithms/Lean/Query/Matroid/Intersection.lean)) runs the solver in `FreeM (IndepPairQuery α)`. Here `IndepPairQuery α = IndepQuery α ⊕ IndepQuery α`, one independence oracle per matroid, and `IndepPairQuery.left`/`right`/`pair` split and join oracles. Only the independence tests are counted. `eval_matroidIntersection_spec` is the correctness theorem for oracles with `ImplementsMatroid (left oracle) M₁` and `ImplementsMatroid (right oracle) M₂`. On `n` distinct candidates a phase from `I` makes exactly `2(n - |I|)(1 + |I|)` queries (`countQueries_exchTablesM_of_nodup`). For every oracle, even one that implements no matroid, `matroidIntersection_upperBound` gives a `Cslib.Query.UpperBound` of `2n(n + 1)²` in the list length. For oracles implementing matroids, `countQueries_matroidIntersection` gives the exact count `∑_{r=0}^{ν} 2(n - r)(1 + r)`, where `ν` is the size of the output, and `countQueries_matroidIntersection_le` bounds it by `2n(ν + 1)²`. These counts describe this implementation, which rebuilds the exchange digraph in every phase. The source states only polynomial running time. The [solver tests](../../CslibFrontierTests/MatroidIntersectionSolver.lean) check:
+
 - shortest-walk and separator outcomes of the search;
 - a bipartite matching run that needs a three-vertex augmenting walk, with 20 queries;
 - a colourful-forest run (a graphic matroid against a colour partition matroid) that exchanges an edge, with 40 queries;

@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Crypto.Computational.SIS.Module
+public import CslibFrontier.Crypto.Computational.LWE.Module
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Uniform
@@ -49,9 +49,9 @@ Module-LWE sample masked by the encoded message:
    deterministically (`moduleLWEDecrypt_moduleLWEEncrypt_eq`).
 4. **Public-key pseudorandomness from `DecisionModuleLWE` and Module-LWE advantage bounds for
    ciphertexts**:
-   - Replacing the honest public key `(A, A · s + e)` with a uniform pair `(A, b)` is directly an
-     instance of `DecisionModuleLWE k k n q noise` (`moduleLWEPublicKeyLaw_eq_sampleLaw`,
-     `publicKey_indistinguishable_of_decisionModuleLWE`).
+   - Replacing the honest public key `(A, A · s + e)` with a uniform pair `(A, b)` is the
+     word-level form of `DecisionModuleLWE k k n q noise` (`moduleLWEPublicKeyLaw_eq_sampleLaw`,
+     `publicKey_indistinguishable_of_decisionModuleLWE`, via `DecisionModuleLWE.encoded`).
    - Under a uniform public key `(A, b)`, stacking `b` above `Aᵀ` via `extendPublicKeyMatrix` and
      `v` above `u` via `extendCiphertext` embeds `(pk, moduleLWEEncrypt pk r e₁ e₂ m)` into a
      `(k + 1) × k` Module-LWE sample masked by `(0, Fin.cons (encodePolyMsg q m) 0)`
@@ -463,7 +463,7 @@ theorem publicKey_indistinguishable_of_decisionModuleLWE (k n q : ℕ → ℕ)
     ComputationallyIndistinguishable
       (fun s => (moduleLWEPublicKeyLaw (k s) (n s) (q s) (noise s)).map ModuleLWE.encodeSample)
       (ModuleLWE.uniformEnsemble k k n q) :=
-  h
+  h.encoded
 
 /-- Embed a public key `pk = (A, b)` into a `(k + 1) × k` module matrix by placing `b` as row `0`
 and the rows of `Aᵀ` as rows `Fin.succ i`. -/
