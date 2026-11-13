@@ -31,6 +31,8 @@ The distance-to-uniform estimate is the Cauchy–Schwarz step in the leftover ha
 
 * `Cslib.Probability.PMF.collisionProbability_eq_probability`: independent-sample experiment.
 * `Cslib.Probability.PMF.collisionProbability_le_of_mass_le`: pointwise mass upper bounds.
+* `Cslib.Probability.PMF.exists_le_toReal_of_le_collisionProbability`: a heavy point from a lower
+  bound on the collision probability.
 * `Cslib.Probability.PMF.collisionProbability_pos`, `collisionProbability_le_one`,
   `toReal_le_sqrt_of_collisionProbability_le`: elementary bounds.
 * `Cslib.Probability.PMF.collisionProbability_sq_le_sum_pow_three`: Jensen, `‖p‖₂⁴ ≤ ‖p‖₃³`.
@@ -112,6 +114,22 @@ theorem collisionProbability_le_of_mass_le (p : PMF α) {bound : ℝ}
 /-- The collision probability is at most `1`. -/
 theorem collisionProbability_le_one (p : PMF α) : collisionProbability p ≤ 1 :=
   collisionProbability_le_of_mass_le p fun a => toReal_apply_le_one p a
+
+/-- Some point has mass at least any lower bound on the collision probability. -/
+theorem exists_le_toReal_of_le_collisionProbability (p : PMF α) {c : ℝ}
+    (h : c ≤ collisionProbability p) : ∃ a, c ≤ (p a).toReal := by
+  by_contra hlt
+  simp only [not_exists, not_le] at hlt
+  obtain ⟨a₀, ha₀⟩ := p.support_nonempty
+  have hpos : 0 < (p a₀).toReal :=
+    ENNReal.toReal_pos ((PMF.mem_support_iff p a₀).mp ha₀) (p.apply_ne_top a₀)
+  have hle (a : α) : (p a).toReal ^ 2 ≤ c * (p a).toReal := by
+    nlinarith [hlt a, ENNReal.toReal_nonneg (a := p a)]
+  have hlt₀ : (p a₀).toReal ^ 2 < c * (p a₀).toReal := by nlinarith [hlt a₀]
+  have hsum : collisionProbability p < ∑' a, c * (p a).toReal :=
+    (summable_collision p).tsum_lt_tsum hle hlt₀ ((summable_toReal p).mul_left c)
+  rw [tsum_mul_left, tsum_toReal, mul_one] at hsum
+  exact (h.trans_lt hsum).false
 
 /-- The squared mass of each point is at most the collision probability. -/
 theorem toReal_sq_le_collisionProbability (p : PMF α) (a : α) :

@@ -41,13 +41,15 @@ a simple fixed-width key split instead needs a supported real-key length contrac
 * `Cslib.Crypto.Encryption.hybridKEMCCAContinuation`: both adaptive hybrid phases.
 * `Cslib.Crypto.Encryption.hybridToKEMCCA`: the fixed-bit KEM reduction.
 * `Cslib.Crypto.Encryption.hybridToKEMCCAHiddenBit`: the single reduction for the factor-two bound.
+* `Cslib.Crypto.Encryption.HybridCCAReductions`: a KEM distinguisher and a one-time symmetric
+  adversary with the concrete `2 * KEM advantage + symmetric CCA advantage` bound.
 
 ## Main results
 
 * `Cslib.Crypto.Encryption.eval_kemCCARealGame_hybridToKEMCCA`,
   `Cslib.Crypto.Encryption.eval_kemCCAIdealGame_hybridToKEMCCA`: exact actual-game identities.
-* `Cslib.Crypto.Encryption.exists_hybridCCA_reductions`: native reductions and the concrete
-  `2 * KEM advantage + symmetric CCA advantage` bound, uniformly for every parameter.
+* `Cslib.Crypto.Encryption.exists_hybridCCA_reductions`: native `HybridCCAReductions` for every
+  PPT adversary, uniformly for every parameter.
 * `Cslib.Crypto.Encryption.hybrid_indcca2On`: n-bit-message adaptive CCA security.
 * `Cslib.Crypto.Encryption.isPPTOn_hybridCCAGame`: native honest-game runtime.
 * `Cslib.Crypto.Encryption.hybridDecrypt_postprocessed_hybridEncrypt`: separate supported-key
@@ -729,6 +731,39 @@ theorem hybrid_indcca2On (E : SymmetricCipher)
     advantage_hybridCCA_le_two_mul E keyLen F keyGen encaps decaps decBound adversary n
       (hlaw n) (hcorrect n) (hdecBound n)
 
+/-- The two reductions of Exercise 12.5(a) for the postprocessed KEM–DEM hybrid against
+`adversary`: a KEM CCA distinguisher `kem` and a one-time symmetric CCA adversary `dem`, both
+oracle PPT, such that at every `n` the hybrid's `n`-bit-message CCA advantage is at most twice
+`kem`'s real-versus-ideal KEM advantage plus `dem`'s advantage in `E.ccaOneTimeGame`. -/
+structure HybridCCAReductions (E : SymmetricCipher) (keyLen : ℕ → ℕ)
+    (F : ℕ → List Bool → List Bool) (keyGen : ℕ → ProbComp (List Bool × List Bool))
+    (encaps : ℕ → List Bool → ProbComp (List Bool × List Bool))
+    (decaps : ℕ → List Bool → List Bool → Option (List Bool))
+    (adversary : WordCCA2Adversary) where
+  /-- The KEM CCA distinguisher. -/
+  kem : OracleDistinguisher
+  /-- The one-time symmetric CCA adversary. -/
+  dem : CCAAdversary
+  /-- `kem` is oracle PPT. -/
+  kem_isOraclePPT : IsOraclePPT encBool kem
+  /-- `dem` is oracle PPT. -/
+  dem_isOraclePPT : IsOraclePPT encBool dem
+  /-- The hybrid advantage is at most twice the KEM advantage plus the symmetric advantage. -/
+  advantage_le : ∀ n,
+    let encaps' := fun n pk => (fun kc => (F n kc.1, kc.2)) <$> encaps n pk
+    let decaps' := fun n sk ct => (decaps n sk ct).map (F n)
+    Game.advantage
+      (ProbComp.eval (cca2GameOn
+        (fun n _ m0 m1 => (m0.length == n) && (m1.length == n)) encBits keyGen
+        (hybridEncrypt encaps' E.encrypt) (hybridDecrypt decaps' E.decrypt) adversary false n))
+      (ProbComp.eval (cca2GameOn
+        (fun n _ m0 m1 => (m0.length == n) && (m1.length == n)) encBits keyGen
+        (hybridEncrypt encaps' E.encrypt) (hybridDecrypt decaps' E.decrypt) adversary true n)) ≤
+      2 * Game.advantage (ProbComp.eval (kemCCARealGame keyGen encaps decaps kem n))
+        (ProbComp.eval (kemCCAIdealGame keyLen keyGen encaps decaps kem n)) +
+      Game.advantage (ProbComp.eval (E.ccaOneTimeGame dem false n))
+        (ProbComp.eval (E.ccaOneTimeGame dem true n))
+
 /-- The complete concrete reduction of Exercise 12.5(a), with both native adversaries and the
 actual symmetric CCA game. The reduction code and polynomial clocks are fixed before `n`.
 No security assumption is needed for this quantitative statement. -/
@@ -748,34 +783,19 @@ theorem exists_hybridCCA_reductions (E : SymmetricCipher)
     (hcorrect : ∀ n keys, keys ∈ (ProbComp.eval (keyGen n)).support →
       ∀ kc ∈ (ProbComp.eval (encaps n keys.1)).support, decaps n keys.2 kc.2 = some kc.1)
     (adversary : WordCCA2Adversary) (hA : adversary.IsPPT) :
-    let encaps' := fun n pk => (fun kc => (F n kc.1, kc.2)) <$> encaps n pk
-    let decaps' := fun n sk ct => (decaps n sk ct).map (F n)
-    ∃ (Bkem : OracleDistinguisher) (Bs : CCAAdversary),
-      IsOraclePPT encBool Bkem ∧ IsOraclePPT encBool Bs ∧ ∀ n,
-      Game.advantage
-        (ProbComp.eval (cca2GameOn
-          (fun n _ m0 m1 => (m0.length == n) && (m1.length == n)) encBits keyGen
-          (hybridEncrypt encaps' E.encrypt) (hybridDecrypt decaps' E.decrypt) adversary false n))
-        (ProbComp.eval (cca2GameOn
-          (fun n _ m0 m1 => (m0.length == n) && (m1.length == n)) encBits keyGen
-          (hybridEncrypt encaps' E.encrypt) (hybridDecrypt decaps' E.decrypt) adversary true n)) ≤
-        2 * Game.advantage (ProbComp.eval (kemCCARealGame keyGen encaps decaps Bkem n))
-          (ProbComp.eval (kemCCAIdealGame keyLen keyGen encaps decaps Bkem n)) +
-        Game.advantage (ProbComp.eval (E.ccaOneTimeGame Bs false n))
-          (ProbComp.eval (E.ccaOneTimeGame Bs true n)) := by
-  dsimp only
+    Nonempty (HybridCCAReductions E keyLen F keyGen encaps decaps adversary) := by
   obtain ⟨decBound, hdecPoly, hdec⟩ := exists_decryption_length_bound hkeyGen hdecaps
   obtain ⟨ctBound, hctPoly, hct⟩ := E.exists_ciphertext_length_bound_of_length_eq
   obtain ⟨symBound, hsymPoly, hsym⟩ := E.exists_decryption_length_bound
-  refine ⟨hybridToKEMCCAHiddenBit E F decBound adversary,
+  refine ⟨⟨hybridToKEMCCAHiddenBit E F decBound adversary,
     hybridToOneTimeCCAAdversary E keyGen
       (fun n pk => (fun kc => (F n kc.1, kc.2)) <$> encaps n pk)
       (fun n sk ct => (decaps n sk ct).map (F n)) ctBound symBound adversary,
     isOraclePPT_hybridToKEMCCAHiddenBit E hF hdecPoly hA,
     isOraclePPT_hybridToOneTimeCCAAdversary E hkeyGen
       (isPPTOn_postprocessed_encaps hF hencaps)
-      (computableInPolyTime_postprocessed_decaps hF hdecaps) hctPoly hsymPoly hA, ?_⟩
-  intro n
+      (computableInPolyTime_postprocessed_decaps hF hdecaps) hctPoly hsymPoly hA, fun n => ?_⟩⟩
+  dsimp only
   have h := advantage_hybridCCA_le_two_mul E keyLen F keyGen encaps decaps decBound
     adversary n (hlaw n) (hcorrect n) (hdec n)
   dsimp only at h

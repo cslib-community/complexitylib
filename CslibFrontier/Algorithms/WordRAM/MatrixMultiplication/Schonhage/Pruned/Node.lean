@@ -23,6 +23,8 @@ public import CslibFrontier.Computability.WordRAM.Heap
 
 ## Main results
 
+* `PrunedQuery.KernelRegs.exec_loadFrame`: the frame load at depth `d` in the fixed workspace
+  layout.
 * `PrunedQuery.exec_node_zero`: the terminal node case, with the existing mathematical result,
   concrete frame and timestamp preservation, and charged native continuation.
 
@@ -112,6 +114,31 @@ theorem KernelRegs.of_step {w T L f a b : ℕ} {x y : Data registers}
   · exact (he.regs_eq (by decide : step.Preserves nine)).trans h.nine_eq
   · exact (he.regs_eq (by decide : step.Preserves frameWidth)).trans h.frameWidth_eq
 
+/-- `exec_loadFrame` for a controller state at depth `d ≤ L`: the loaded frame words and the
+computed row pointers, written in the fixed workspace layout of `KernelRegs`. -/
+theorem KernelRegs.exec_loadFrame {w L f a b d : ℕ} {x : Data registers}
+    (hregs : KernelRegs L f a b x) (hd : x.regs level = d) (hdL : d ≤ L)
+    (hw : Fits w (8 * f + 64 * (L + 1) * 10 ^ L + 128)) :
+    ∃ u, ExecWithin w loadFrame x u 17 ∧ u.mem = x.mem ∧
+      u.regs frame = f + 4 * d ∧ u.regs count = x.mem (f + 4 * d) ∧
+      u.regs leafPrefix = x.mem (f + 4 * d + 1) ∧ u.regs stride = x.mem (f + 4 * d + 2) ∧
+      u.regs term = x.mem (f + 4 * d + 3) ∧
+      u.regs listBase = f + 4 * (L + 1) + d * 10 ^ L ∧
+      u.regs valueBase = f + 4 * (L + 1) + (L + 1) * 10 ^ L + d * 10 ^ L ∧
+      u.regs nextLevel = d + 1 ∧
+      u.regs childList = f + 4 * (L + 1) + (d + 1) * 10 ^ L ∧
+      u.regs childValues = f + 4 * (L + 1) + (L + 1) * 10 ^ L + (d + 1) * 10 ^ L ∧
+      (∀ i, ¬LoadFrameLocal i → u.regs i = x.regs i) := by
+  have hpow : 1 ≤ (10 : ℕ) ^ L := Nat.one_le_pow L _ (by decide)
+  have hL : L + 1 ≤ (L + 1) * 10 ^ L := by nlinarith only [hpow]
+  have hmul : (d + 1) * 10 ^ L ≤ (L + 1) * 10 ^ L := Nat.mul_le_mul_right _ (by omega)
+  obtain ⟨u, hu, humem, huf, huc, hup, hus, hut, hul, huv, hun, huch, hucv, hureg⟩ :=
+    PrunedQuery.exec_loadFrame x hregs.one_eq hregs.frameWidth_eq (hw.of_le (by
+      rw [hregs.frames_eq, hregs.lists_eq, hregs.values_eq, hregs.span_eq, hd]
+      nlinarith only [hpow, hL, hmul]))
+  simp only [hregs.frames_eq, hregs.lists_eq, hregs.values_eq, hregs.span_eq, hd]
+    at huf huc hup hus hut hul huv hun huch hucv
+  exact ⟨u, hu, humem, huf, huc, hup, hus, hut, hul, huv, hun, huch, hucv, hureg⟩
 /-- The terminal induction case is a proved actual controller iteration. The requested values
 are the existing `Pruned.result`; an empty set leaves the value row untouched. The memory
 frame and timestamp bound hold at the same final state as the charged continuation. -/
@@ -210,18 +237,11 @@ theorem exec_node_enter {w L f a0 b0 d N : ℕ} (x : Data registers)
   have hmul : (d + 1) * 10 ^ L ≤ (L + 1) * 10 ^ L :=
     Nat.mul_le_mul_right _ (by omega)
   have hL : L + 1 ≤ (L + 1) * 10 ^ L := by nlinarith only [hpow]
-  obtain ⟨u, hu, humem, huf, huc, _, _, _, hul, huv, _, _, _, hureg⟩ :=
-    exec_loadFrame x hregs.one_eq hregs.frameWidth_eq (hw.of_le (by
-      rw [hregs.frames_eq, hregs.lists_eq, hregs.values_eq, hregs.span_eq, hd]
-      nlinarith only [hpow, hmul, hL, hdL, hcap]))
+  obtain ⟨u, hu, humem, huf', huc, _, _, _, hul', huv', _, _, _, hureg⟩ :=
+    hregs.exec_loadFrame hd hdL.le hw
   have fixed (i : Fin registers) (hi : ¬LoadFrameLocal i) : u.regs i = x.regs i :=
     hureg i hi
-  have huf' : u.regs frame = f + 4 * d := by simpa only [hregs.frames_eq, hd] using huf
-  have hul' : u.regs listBase = f + 4 * (L + 1) + d * 10 ^ L := by
-    simpa only [hregs.lists_eq, hregs.span_eq, hd] using hul
-  have huv' : u.regs valueBase = f + 4 * (L + 1) + (L + 1) * 10 ^ L + d * 10 ^ L := by
-    simpa only [hregs.values_eq, hregs.span_eq, hd] using huv
-  have hc : u.regs count = N := by simpa only [hregs.frames_eq, hd, hN] using huc
+  have hc : u.regs count = N := huc.trans hN
   have hu0 := (fixed nil (by decide)).trans hregs.nil_eq
   have hu1 := (fixed one (by decide)).trans hregs.one_eq
   have hu4 := (fixed frameWidth (by decide)).trans hregs.frameWidth_eq

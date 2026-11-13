@@ -31,16 +31,16 @@ open Turing.MultiTapeTM Cslib.Logic.PL
 /-- Actual scope occurrences plus constraint positions are bounded by the full CSP bit length. -/
 theorem scopes_add_constraints_le {Rel V : Type} (encRel : Rel ↪ List Bool) (encV : V ↪ List Bool)
     (F : CSP Rel V) :
-    (F.map fun c => c.2.length).sum + F.length ≤ (encCSP encRel encV F).length := by
+    (F.map fun c => c.scope.length).sum + F.length ≤ (encCSP encRel encV F).length := by
   induction F with
   | nil => simp [encCSP]
   | cons c F ih =>
-    have hs := length_le_length_encList encV c.2
+    have hs := length_le_length_encList encV c.scope
     have he : (encCSP encRel encV (c :: F)).length =
         2 * (encConstraint encRel encV c).length + 1 + (encCSP encRel encV F).length := by
       simp only [encCSP, length_encList, List.map_cons, List.sum_cons]
     rw [he]
-    simp only [encConstraint, length_encPair, List.map_cons, List.sum_cons, List.length_cons]
+    simp only [encConstraint_apply, length_encPair, List.map_cons, List.sum_cons, List.length_cons]
     omega
 
 /-- Dense incidence vertices and listed occurrences are each bounded by original encoded size. -/
@@ -50,7 +50,7 @@ theorem incidence_sizes_le {Rel V : Type} [DecidableEq V]
       (CSP.incidenceGraph F).2.length ≤ (encCSP encRel encV F).length := by
   have hb := scopes_add_constraints_le encRel encV F
   have hn : F.numVars ≤ F.vars.length := List.toFinset_card_le _
-  have hv : F.vars.length = (F.map fun c => c.2.length).sum := by
+  have hv : F.vars.length = (F.map fun c => c.scope.length).sum := by
     simp only [CSP.vars, List.length_flatMap]
   rw [hv] at hn
   rw [CSP.length_vertices_incidenceGraph, CSP.length_edges_incidenceGraph]
@@ -72,7 +72,7 @@ theorem length_encoding_compile_le_of_sizes {I : FixedRotationInput} (hI : Valid
     (XORSAT.encoding (compile I)).length ≤
       9 * K ^ 2 * (32 * (Nat.log2 (9 * K ^ 2) + 1) + 21) := by
   have hF := boundedEndpoints_frame hI
-  have hlabels : ∀ r ∈ compileFrame (frame I), ∀ d ∈ r.1,
+  have hlabels : ∀ r ∈ compileFrame (frame I), ∀ d ∈ r.vars,
       (encNat d).length ≤ Nat.log2 (9 * K ^ 2) + 1 := by
     intro r hr d hd
     obtain ⟨e, he, f, hf, _, _, rfl⟩ := mem_compileFrame.mp hr
@@ -83,12 +83,12 @@ theorem length_encoding_compile_le_of_sizes {I : FixedRotationInput} (hI : Valid
   have hrows : (compileFrame (frame I)).length ≤ 9 * K ^ 2 :=
     (length_compileFrame_le _).trans (by nlinarith [Nat.pow_le_pow_left hm 2])
   have hbits : ∀ r ∈ compileFrame (frame I),
-      (XORSAT.equationEncoding r).length ≤ 16 * (Nat.log2 (9 * K ^ 2) + 1) + 10 := by
+      (encAffineEquation encNat r).length ≤ 16 * (Nat.log2 (9 * K ^ 2) + 1) + 10 := by
     intro r hr
     have hh := framed_row_length_le (width_compileFrame hr) (hlabels r hr)
     omega
-  have hb := length_encList_le XORSAT.equationEncoding (compileFrame (frame I)) hbits
-  change (encList XORSAT.equationEncoding (compileFrame (frame I))).length ≤ _
+  have hb := length_encList_le (encAffineEquation encNat) (compileFrame (frame I)) hbits
+  change (encList (encAffineEquation encNat) (compileFrame (frame I))).length ≤ _
   exact hb.trans (by nlinarith)
 
 /-- A valid original CSP split query has the full memo bit bound with `K=B+1`. -/

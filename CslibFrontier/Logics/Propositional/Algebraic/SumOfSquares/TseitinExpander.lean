@@ -91,7 +91,7 @@ which have `120` labels and edge expansion at least `1 / 6000`
 (`Cslib.RotationMap.le_edgeExpansion_expander`), together with `h(G) |V| / 3 ≤ e(G)`. -/
 theorem exists_forall_sos_refutableInDegree_le :
     ∀ n ≥ 2, ∃ m ≤ 120 * n, ∃ P : ParitySystem (Fin m),
-      P.length = n ∧ (∀ e ∈ P, #e.1 ≤ 120) ∧ (∀ a, ¬ P.Holds a) ∧
+      P.length = n ∧ (∀ e ∈ P, #e.vars ≤ 120) ∧ (∀ a, ¬ P.Holds a) ∧
       ∀ (R : Type u) [CommRing R] [LinearOrder R] [IsStrictOrderedRing R] (d : ℕ),
         SOS.RefutableInDegree (P.toPolys R) d → n ≤ 18000 * d := by
   intro n hn

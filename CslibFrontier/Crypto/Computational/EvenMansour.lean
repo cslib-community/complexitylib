@@ -204,24 +204,15 @@ theorem length_evenMansourPostKeyWord_of_eq {n : ℕ} {k₂ y : List Bool}
     (evenMansourPostKeyWord k₂ y).length = n := by
   simp [hk₂, hy]
 
-private theorem zipWith_xor_self_right :
-    ∀ msg pad : List Bool, msg.length = pad.length →
-      List.zipWith Bool.xor (List.zipWith Bool.xor msg pad) pad = msg
-  | [], [], _ => rfl
-  | m :: msg, b :: pad, h => by
-    simp only [List.length_cons, Nat.add_right_cancel_iff] at h
-    simp only [List.zipWith_cons_cons, zipWith_xor_self_right msg pad h]
-    cases m <;> cases b <;> rfl
-
 /-- Applying `evenMansourPreKeyWord k₁` twice cancels on equal-length words. -/
 @[simp] theorem evenMansourPreKeyWord_self (k₁ x : List Bool) (h : x.length = k₁.length) :
     evenMansourPreKeyWord k₁ (evenMansourPreKeyWord k₁ x) = x :=
-  zipWith_xor_self_right x k₁ h
+  BitString.zipWith_xor_self_right x k₁ h
 
 /-- Applying `evenMansourPostKeyWord k₂` twice cancels on equal-length words. -/
 @[simp] theorem evenMansourPostKeyWord_self (k₂ y : List Bool) (h : y.length = k₂.length) :
     evenMansourPostKeyWord k₂ (evenMansourPostKeyWord k₂ y) = y :=
-  zipWith_xor_self_right y k₂ h
+  BitString.zipWith_xor_self_right y k₂ h
 
 /-- On `BitString n`, `evenMansourPreKeyWord` computes `x + k₁`. -/
 theorem evenMansourPreKeyWord_ofFn {n : ℕ} (k₁ x : BitString n) :
@@ -1034,10 +1025,7 @@ theorem singleKeyEvenMansourKeyedWordOracle_eq_twoPermWordOracle {n : ℕ}
     (n : ℕ) : ProbComp Bool := do
   let π ← ProbComp.uniform (Equiv.Perm (BitString n))
   let key ← BitString.sampleList (2 * n)
-  OracleComp.interpret
-    (OracleComp.sumHandler ProbComp.unifFin
-      (fun request => pure (evenMansourKeyedWordOracle n π key request)))
-    (adversary n [])
+  (adversary n []).run fun request => pure (evenMansourKeyedWordOracle n π key request)
 
 /-- The real word-oracle single-key Even–Mansour experiment: sample a uniform permutation `π` of
 `BitString n` and a uniform `n`-bit key `key`, and run `adversary n []` against
@@ -1046,10 +1034,7 @@ theorem singleKeyEvenMansourKeyedWordOracle_eq_twoPermWordOracle {n : ℕ}
     (adversary : EvenMansourDistinguisher) (n : ℕ) : ProbComp Bool := do
   let π ← ProbComp.uniform (Equiv.Perm (BitString n))
   let key ← BitString.sampleList n
-  OracleComp.interpret
-    (OracleComp.sumHandler ProbComp.unifFin
-      (fun request => pure (singleKeyEvenMansourKeyedWordOracle n π key request)))
-    (adversary n [])
+  (adversary n []).run fun request => pure (singleKeyEvenMansourKeyedWordOracle n π key request)
 
 /-- The ideal word-oracle Even–Mansour experiment: sample two independent uniform permutations
 `E, π` of `BitString n` and run `adversary n []` against `evenMansourTwoPermWordOracle n E π`. -/
@@ -1057,10 +1042,7 @@ theorem singleKeyEvenMansourKeyedWordOracle_eq_twoPermWordOracle {n : ℕ}
     (n : ℕ) : ProbComp Bool := do
   let E ← ProbComp.uniform (Equiv.Perm (BitString n))
   let π ← ProbComp.uniform (Equiv.Perm (BitString n))
-  OracleComp.interpret
-    (OracleComp.sumHandler ProbComp.unifFin
-      (fun request => pure (evenMansourTwoPermWordOracle n E π request)))
-    (adversary n [])
+  (adversary n []).run fun request => pure (evenMansourTwoPermWordOracle n E π request)
 
 /-- Translate a single word-oracle request into a typed `EvenMansourSpec (BitString n)` query,
 returning `[]` on malformed words of length `≠ n` without querying. -/
@@ -1188,7 +1170,7 @@ theorem eval_evenMansourWordRealGame (adversary : EvenMansourDistinguisher) (n :
     ProbComp.eval (evenMansourWordRealGame adversary n) =
       evenMansourProbRealGame (evenMansourWordAdapter n (adversary n [])) := by
   simp only [pmf_norm, evenMansourWordRealGame, evenMansourProbRealGame, ProbComp.eval_uniform,
-    BitString.eval_sampleList, ProbOracleComp.eval_interpret]
+    BitString.eval_sampleList, ProbOracleComp.eval_run]
   congr 1 with π : 1
   rw [← PMF.uniformOfFintype_map_equiv (twoKeyEquiv n), PMF.bind_map, BitString.uniformList,
     PMF.bind_map]
@@ -1204,7 +1186,7 @@ theorem eval_singleKeyEvenMansourWordRealGame (adversary : EvenMansourDistinguis
     ProbComp.eval (singleKeyEvenMansourWordRealGame adversary n) =
       singleKeyEvenMansourProbRealGame (evenMansourWordAdapter n (adversary n [])) := by
   simp only [pmf_norm, singleKeyEvenMansourWordRealGame, singleKeyEvenMansourProbRealGame,
-    ProbComp.eval_uniform, BitString.eval_sampleList, ProbOracleComp.eval_interpret]
+    ProbComp.eval_uniform, BitString.eval_sampleList, ProbOracleComp.eval_run]
   congr 1 with π : 1
   rw [BitString.uniformList, PMF.bind_map]
   congr 1 with k : 1
@@ -1219,7 +1201,7 @@ theorem eval_evenMansourWordIdealGame (adversary : EvenMansourDistinguisher) (n 
     ProbComp.eval (evenMansourWordIdealGame adversary n) =
       evenMansourProbIdealGame (evenMansourWordAdapter n (adversary n [])) := by
   simp only [pmf_norm, evenMansourWordIdealGame, evenMansourProbIdealGame, ProbComp.eval_uniform,
-    ProbOracleComp.eval_interpret, evalProbTwoPerms_evenMansourWordAdapter]
+    ProbOracleComp.eval_run, evalProbTwoPerms_evenMansourWordAdapter]
 
 /-- **Word-oracle two-key Even–Mansour security bound** ([EvenMansour1997];
 [BonehShoup2023], Theorem 4.14): any word-oracle distinguisher making at most `Q_e` cipher queries

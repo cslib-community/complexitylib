@@ -148,6 +148,17 @@ theorem initSetup_exec {w : ℕ} {s : Data 32} (hw : Fits w 5) :
     Exec w initSetup s (initSetupData s) 9 := by
   ram_eval [initSetup, initSetupData]
 
+/-- One size step at depth `k`, as in `sizeBody` and `tableBody`, writes `universeSize k + 1`,
+`span (k + 1)` (computed as `(universeSize k + 1) * span k + 5`) and `universeSize (k + 1)`; each
+is at most `span (k + 1)`. -/
+private theorem sizeStep_le (k : ℕ) :
+    universeSize k + 1 ≤ span (k + 1) ∧ (universeSize k + 1) * span k + 5 = span (k + 1) ∧
+      universeSize k * universeSize k ≤ span (k + 1) := by
+  have hu_le : universeSize (k + 1) ≤ span (k + 1) := universeSize_le_span (k + 1)
+  have huk_le : universeSize k + 1 ≤ universeSize (k + 1) := by
+    have := two_le_universeSize k; rw [universeSize_succ]; nlinarith
+  exact ⟨huk_le.trans hu_le, Nat.add_comm _ _, hu_le⟩
+
 /-- State after one iteration of `sizeBody` at depth `k`. -/
 private def sizeBodyData (s : Data 32) (k : ℕ) : Data 32 :=
   (((((s.set tmp (universeSize k + 1)).set tmp ((universeSize k + 1) * span k)).set
@@ -159,16 +170,11 @@ private theorem sizeBody_exec {w d k : ℕ} {s : Data 32} (hk : k < d) (hspan : 
     (hq : s.regs q = universeSize k) (ht : s.regs t = span k) (hhigh : s.regs high = k) :
     ExecWithin w sizeBody s (sizeBodyData s k) 6 := by
   have hle : span (k + 1) ≤ span d := span_mono (by omega)
-  have hu_le : universeSize (k + 1) ≤ span (k + 1) := universeSize_le_span (k + 1)
-  have huk_le : universeSize k + 1 ≤ universeSize (k + 1) := by
-    have := two_le_universeSize k; rw [universeSize_succ]; nlinarith
-  have h_prod_le : (universeSize k + 1) * span k + 5 = span (k + 1) := by
-    rw [span_succ]; omega
+  obtain ⟨hf1_le, hspan_eq, hf4_le⟩ := sizeStep_le k
   -- `ram_eval` derives the bound of the product `(universeSize k + 1) * span k` from `hf3`.
   have hf1 : Fits w (universeSize k + 1) := hspan.of_le (by omega)
   have hf3 : Fits w ((universeSize k + 1) * span k + 5) := hspan.of_le (by omega)
-  have hf4 : Fits w (universeSize k * universeSize k) :=
-    hspan.of_le (by rw [← universeSize_succ]; omega)
+  have hf4 : Fits w (universeSize k * universeSize k) := hspan.of_le (by omega)
   have hf5 : Fits w (k + 1) := hd.of_le (by omega)
   ram_eval [sizeBody, sizeBodyData, h1, h5, hq, ht, hhigh]
 
@@ -198,10 +204,7 @@ theorem sizeLoop_spec {w d : ℕ} (rem : ℕ) {k : ℕ} {s : Data 32} (hk : k + 
       simp +decide [Cond.holds_lt, hhigh, hdepth, hk_lt]
     have hbody := sizeBody_exec hk_lt hspan hd h1 h5 hq ht hhigh
     let s₁ := sizeBodyData s k
-    have hs₁_t : s₁.regs t = span (k + 1) := by
-      change (universeSize k + 1) * span k + 5 = span (k + 1)
-      rw [span_succ]
-      omega
+    have hs₁_t : s₁.regs t = span (k + 1) := (sizeStep_le k).2.1
     obtain ⟨z, hz, hz0, hz1, hz2, hz3, hz4, hz5, hzr, hzd, hzq, hzt, hzm⟩ :=
       ih (k := k + 1) (s := s₁) (by omega)
         (by simpa +decide [s₁, sizeBodyData] using h0)
@@ -248,17 +251,12 @@ private theorem tableBody_exec {w base d k : ℕ} {s : Data 32} (hk : k < d)
     (hq : s.regs q = universeSize k) (ht : s.regs t = span k) (hhigh : s.regs high = k) :
     ExecWithin w tableBody s (tableBodyData s (base + span d + 2 * (k + 1)) k) 10 := by
   have hle : span (k + 1) ≤ span d := span_mono (by omega)
-  have hu_le : universeSize (k + 1) ≤ span (k + 1) := universeSize_le_span (k + 1)
-  have huk_le : universeSize k + 1 ≤ universeSize (k + 1) := by
-    have := two_le_universeSize k; rw [universeSize_succ]; nlinarith
-  have h_prod_le : (universeSize k + 1) * span k + 5 = span (k + 1) := by
-    rw [span_succ]; omega
+  obtain ⟨hf1_le, hspan_eq, hf4_le⟩ := sizeStep_le k
   -- Bounds that need the non-`Fits` facts above; `ram_eval` reads them from context.
   have hf_sp2 : Fits w (base + span d + 2 * (k + 1) + 1 + 1) := ha.of_le (by omega)
   have hf1 : Fits w (universeSize k + 1) := ha.of_le (by omega)
   have hf3 : Fits w ((universeSize k + 1) * span k + 5) := ha.of_le (by omega)
-  have hf4 : Fits w (universeSize k * universeSize k) :=
-    ha.of_le (by rw [← universeSize_succ]; omega)
+  have hf4 : Fits w (universeSize k * universeSize k) := ha.of_le (by omega)
   ram_eval [tableBody, tableBodyData, h1, h5, hsp, hq, ht, hhigh]
 
 /-- Lookup-table invariant up to depth `m`: for all `j ≤ m`, `mem (tbl + 2 * j) = splitSize j`
@@ -310,10 +308,7 @@ theorem tableLoop_spec {w base d : ℕ} (rem : ℕ) {k : ℕ} {s : Data 32} (hk 
       change sp₀ + 1 + 1 = base + span d + 2 * (k + 1 + 1)
       dsimp only [sp₀]
       omega
-    have hs₁_t : s₁.regs t = span (k + 1) := by
-      change (universeSize k + 1) * span k + 5 = span (k + 1)
-      rw [span_succ]
-      omega
+    have hs₁_t : s₁.regs t = span (k + 1) := (sizeStep_le k).2.1
     have hs₁_mem_away : ∀ a, a ≠ sp₀ → a ≠ sp₀ + 1 → s₁.mem a = s.mem a := by
       intro a ha0 ha1
       simp only [s₁, tableBodyData, Data.set_mem, Data.write_mem]

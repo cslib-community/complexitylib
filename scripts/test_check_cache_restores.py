@@ -150,7 +150,8 @@ class MainTests(Fixture):
         self.write("Demo/Base.lean", "def value : Nat := 2\n")
         self.trace("Demo/Base", synthetic=True, log=[])
 
-    def run_main(self, returncode: int, output: str) -> tuple[int, str, list[str]]:
+    def run_main(self, returncode: int, output: str,
+                 argv: list[str] | None = None) -> tuple[int, str, list[str]]:
         calls = []
 
         def elaborate(root, rel):
@@ -160,7 +161,7 @@ class MainTests(Fixture):
         out, err = io.StringIO(), io.StringIO()
         with patch.object(c, "elaborate", side_effect=elaborate), \
              redirect_stdout(out), redirect_stderr(err):
-            status = c.main([], self.root)
+            status = c.main(argv or [], self.root)
         return status, out.getvalue() + err.getvalue(), calls
 
     def test_clean_restored_file_passes(self) -> None:
@@ -179,6 +180,52 @@ class MainTests(Fixture):
 
     def test_failed_elaboration_fails(self) -> None:
         self.assertEqual(self.run_main(1, "")[0], 1)
+
+    def test_progress_announces_count_and_current_file_before_elaboration(self) -> None:
+        self.trace("DemoTests/Client", synthetic=True, log=[])
+        out = io.StringIO()
+
+        def elaborate(root, rel):
+            self.assertIn(rel, out.getvalue())
+            self.assertNotIn("cleanly", out.getvalue())
+            return subprocess.CompletedProcess([], 0, "")
+
+        with patch.object(c, "elaborate", side_effect=elaborate) as run, \
+             patch.object(c.time, "monotonic", side_effect=[10, 10.5, 12, 17]), \
+             redirect_stdout(out):
+            self.assertEqual(c.main(["--progress"], self.root), 0)
+        self.assertEqual(run.call_count, 2)
+        self.assertIn("checking 2 source(s) serially", out.getvalue())
+        self.assertIn("[1/2]: Demo/Base.lean (elapsed 0.5s)", out.getvalue())
+        self.assertIn("[2/2]: DemoTests/Client.lean (elapsed 2.0s)", out.getvalue())
+        self.assertIn("cleanly (2) in 7.0s", out.getvalue())
+
+    def test_ci_is_quiet_by_default_but_progress_can_be_requested(self) -> None:
+        with patch.dict(os.environ, {"CI": "true"}):
+            self.assertNotIn("Cache-restore audit", self.run_main(0, "")[1])
+            self.assertIn("Cache-restore audit", self.run_main(0, "", ["--progress"])[1])
+        with patch.dict(os.environ, {"CI": ""}):
+            self.assertIn("Cache-restore audit", self.run_main(0, "")[1])
+            self.assertNotIn("Cache-restore audit", self.run_main(0, "", ["--quiet"])[1])
+
+    def test_quiet_does_not_hide_warnings_or_change_failure(self) -> None:
+        status, out, calls = self.run_main(0, "warning: retained\n", ["--quiet"])
+        self.assertEqual((status, calls), (1, ["Demo/Base.lean"]))
+        self.assertNotIn("Cache-restore audit", out)
+        self.assertIn("FAIL  Demo/Base.lean", out)
+        self.assertIn("warning: retained", out)
+        self.assertIn("Audit elapsed", out)
+
+    def test_cancellation_does_not_continue_or_report_completion(self) -> None:
+        self.trace("DemoTests/Client", synthetic=True, log=[])
+        out = io.StringIO()
+        with patch.object(c, "elaborate", side_effect=KeyboardInterrupt) as run, \
+             redirect_stdout(out), self.assertRaises(KeyboardInterrupt):
+            c.main(["--progress"], self.root)
+        self.assertEqual(run.call_count, 1)
+        self.assertIn("[1/2]: Demo/Base.lean", out.getvalue())
+        self.assertNotIn("[2/2]", out.getvalue())
+        self.assertNotIn("cleanly", out.getvalue())
 
     def test_invalid_scope_fails_instead_of_becoming_an_empty_check(self) -> None:
         for contents in ('{"files": []}', '[1]', '["missing.lean"]', 'null', 'not JSON'):

@@ -23,23 +23,23 @@ namespace Cslib.Logic.PL.CSP
 
 /-- Appending a nullary scope leaves the variable-occurrence word unchanged. -/
 theorem vars_append_nullary {Rel V : Type} (F : CSP Rel V) (r : Rel) :
-    (F ++ [(r, [])]).vars = F.vars := by
+    (F ++ [Constraint.mk r []]).vars = F.vars := by
   simp [CSP.vars]
 
 /-- A trailing nullary constraint contributes no indexed argument record. -/
 theorem occurrences_append_nullary {Rel V : Type} (F : CSP Rel V) (r : Rel) :
-    (F ++ [(r, [])]).occurrences = F.occurrences := by
+    (F ++ [Constraint.mk r []]).occurrences = F.occurrences := by
   simp [CSP.occurrences, CSP.varCNF, Cslib.Logic.PL.occurrences,
     List.zipIdx_append, List.flatMap_append]
 
 /-- First-occurrence variable names remain literal when a nullary scope is appended. -/
 theorem distinctVars_append_nullary {Rel V : Type} [DecidableEq V] (F : CSP Rel V) (r : Rel) :
-    (F ++ [(r, [])]).distinctVars = F.distinctVars := by
+    (F ++ [Constraint.mk r []]).distinctVars = F.distinctVars := by
   simp only [CSP.distinctVars, vars_append_nullary]
 
 /-- Nullary constraints do not introduce variable names. -/
 theorem numVars_append_nullary {Rel V : Type} [DecidableEq V] (F : CSP Rel V) (r : Rel) :
-    (F ++ [(r, [])]).numVars = F.numVars := by
+    (F ++ [Constraint.mk r []]).numVars = F.numVars := by
   simp only [CSP.numVars, vars_append_nullary]
 
 end Cslib.Logic.PL.CSP

@@ -94,30 +94,36 @@ variable (F : PrimeOrderGroupFamily)
 noncomputable def schnorrSampleChallenge (i : ℕ × F.Desc) : ProbComp (ZMod (F.order i.2)) :=
   (Nat.cast : ℕ → ZMod (F.order i.2)) <$> F.sampleExp i.1 i.2
 
-/-- Word-level challenge sampler for `F.schnorrFamily`: sample `s ← F.sampleExp n d` and output the
-binary encoding of `s mod q`. -/
-noncomputable def schnorrSampleChallengeWord (i : ℕ × F.Desc) : ProbComp (List Bool) := do
-  let s ← F.sampleExp i.1 i.2
-  pure (s % F.order i.2).bits
-
-theorem isPPTOn_schnorrSampleChallengeWord :
-    IsPPTOn (encPair encUnary F.encDesc) encBits (schnorrSampleChallengeWord F) := by
+/-- One machine samples the encoded challenges of `schnorrSampleChallenge` from the encoded index:
+it samples `s ← F.sampleExp n d` and writes the binary encoding of `s mod q`. -/
+theorem isPPTOn_schnorrSampleChallenge :
+    IsPPTOn (encPair encUnary F.encDesc) encBits
+      fun i => F.schnorrEncoding.challenge i <$> schnorrSampleChallenge F i := by
   let encIdx := encPair encUnary F.encDesc
   have hn : ComputableInPolyTime (fun i : ℕ × F.Desc => i.1) encIdx encUnary := by fun_prop
   have hd : ComputableInPolyTime (fun i : ℕ × F.Desc => i.2) encIdx F.encDesc := by fun_prop
-  change IsPPTOn encIdx encBits fun i => F.sampleExp i.1 i.2 >>= fun s =>
-    pure (s % F.order i.2).bits
-  refine (F.isPPTOn_sampleExp hn hd).bind_with ?_
-  let encMid := encPair encIdx encNat
-  have hd' : ComputableInPolyTime (fun p : (ℕ × F.Desc) × ℕ => p.1.2) encMid F.encDesc := by
-    fun_prop
-  have hs : ComputableInPolyTime (fun p : (ℕ × F.Desc) × ℕ => p.2) encMid encNat := by
-    fun_prop
-  have hq := F.computableInPolyTime_order.comp hd'
-  have hz : ComputableInPolyTime (fun p : (ℕ × F.Desc) × ℕ => (p.2 % F.order p.1.2).bits)
-      encMid encBits :=
-    .of_tidy (ComputableTidilyInPolyTime.natBits.comp (.binary_mod' hs.tidy hq.tidy))
-  exact hz.isPPTOn
+  have hword : IsPPTOn encIdx encBits fun i => F.sampleExp i.1 i.2 >>= fun s =>
+      pure (s % F.order i.2).bits := by
+    refine (F.isPPTOn_sampleExp hn hd).bind_with ?_
+    let encMid := encPair encIdx encNat
+    have hd' : ComputableInPolyTime (fun p : (ℕ × F.Desc) × ℕ => p.1.2) encMid F.encDesc := by
+      fun_prop
+    have hs : ComputableInPolyTime (fun p : (ℕ × F.Desc) × ℕ => p.2) encMid encNat := by
+      fun_prop
+    have hq := F.computableInPolyTime_order.comp hd'
+    have hz : ComputableInPolyTime (fun p : (ℕ × F.Desc) × ℕ => (p.2 % F.order p.1.2).bits)
+        encMid encBits :=
+      .of_tidy (ComputableTidilyInPolyTime.natBits.comp (.binary_mod' hs.tidy hq.tidy))
+    exact hz.isPPTOn
+  refine hword.congr fun i => ?_
+  rw [schnorrSampleChallenge, ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_map,
+    PMF.map_comp]
+  simp only [ProbComp.eval_pure]
+  rw [← PMF.bind_pure_comp]
+  congr 1 with s : 1
+  simp only [Function.comp_apply, PrimeOrderGroupFamily.schnorrEncoding,
+    PrimeOrderGroupFamily.encScalar, Function.Embedding.coeFn_mk, encNat_apply,
+    ZMod.val_natCast]
 
 theorem closeTo_schnorrSampleChallenge (i : ℕ × F.Desc) :
     CloseTo (PMF.uniformOfFintype (ZMod (F.order i.2)))
@@ -127,18 +133,6 @@ theorem closeTo_schnorrSampleChallenge (i : ℕ × F.Desc) :
       ENNReal.coe_ofNat]
   rw [schnorrSampleChallenge, ProbComp.eval_map, ← hδ]
   exact F.closeTo_uniform_sampleExp i.1 i.2
-
-theorem eval_schnorrSampleChallengeWord (i : ℕ × F.Desc) :
-    ProbComp.eval (schnorrSampleChallengeWord F i) =
-      (ProbComp.eval (schnorrSampleChallenge F i)).map (F.schnorrEncoding.challenge i) := by
-  rw [schnorrSampleChallengeWord, schnorrSampleChallenge, ProbComp.eval_bind, ProbComp.eval_map,
-    PMF.map_comp]
-  simp only [ProbComp.eval_pure]
-  rw [← PMF.bind_pure_comp]
-  congr 1 with s : 1
-  simp only [Function.comp_apply, PrimeOrderGroupFamily.schnorrEncoding,
-    PrimeOrderGroupFamily.encScalar, Function.Embedding.coeFn_mk, encNat_apply,
-    ZMod.val_natCast]
 
 /-- **Schnorr's interactive reduction family is `EfficientHVZK`** with simulation error `0` and
 realization error `1 / 2 ^ n + 1 / 2 ^ n`. -/
@@ -154,9 +148,8 @@ theorem schnorrFamily_interactive_efficientHVZK :
   F.efficientSpecialHVZK_schnorr.efficientHVZK F.schnorrFamily
     (fun i => commitRealizedBy_schnorr (Function.Embedding.refl _) (F.generator i.2))
     (fun i => eval_schnorrSimComp (Function.Embedding.refl _) (F.generator i.2))
-    (isPPTOn_schnorrSampleChallengeWord F)
+    (isPPTOn_schnorrSampleChallenge F)
     (closeTo_schnorrSampleChallenge F)
-    (eval_schnorrSampleChallengeWord F)
 
 end SchnorrFamily
 

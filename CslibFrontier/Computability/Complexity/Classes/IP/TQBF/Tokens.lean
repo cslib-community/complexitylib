@@ -220,9 +220,14 @@ variable {F : Type}
 
 /-! ### The verifier on a stream of tokens -/
 
-/-- A query of the verifier on a stream of tokens: the current subformula, the tokens that follow
-it, and the current point. -/
-abbrev QueryAt (F : Type) := ArithQBF ℕ × List (ArithQBF.Kind × ℕ) × (ℕ → F)
+/-- A query of the verifier on a stream of tokens. -/
+structure QueryAt (F : Type) where
+  /-- The current subformula. -/
+  formula : ArithQBF ℕ
+  /-- The tokens that follow the current subformula. -/
+  rest : List (ArithQBF.Kind × ℕ)
+  /-- The current point. -/
+  point : ℕ → F
 
 variable [CommRing F] [DecidableEq F] (sampler : ProbComp F) (D : ℕ)
 
@@ -236,13 +241,13 @@ def verifyAt : ArithQBF ℕ → List (ArithQBF.Kind × ℕ) → (ℕ → F) → 
   | .bot, _, _, c => pure (decide (c = 0))
   | .not e, rest, r, c => verifyAt e rest r (1 - c)
   | .bin o e₁ e₂, rest, r, c => do
-    let l ← ProbOracleComp.query (spec := fun _ : QueryAt F => List F) (.bin o e₁ e₂, rest, r)
+    let l ← ProbOracleComp.query (spec := fun _ : QueryAt F => List F) ⟨.bin o e₁ e₂, rest, r⟩
     if o.apply (l.getD 0 0) (l.getD 1 0) = c then
       let b ← verifyAt e₁ (e₂.tokens ++ rest) r (l.getD 0 0)
       if b then verifyAt e₂ rest r (l.getD 1 0) else pure false
     else pure false
   | .op o v e, rest, r, c => do
-    let l ← ProbOracleComp.query (spec := fun _ : QueryAt F => List F) (.op o v e, rest, r)
+    let l ← ProbOracleComp.query (spec := fun _ : QueryAt F => List F) ⟨.op o v e, rest, r⟩
     let s := l.take (D + 1)
     if o.apply (r v) (evalCoeffList 0 s) (evalCoeffList 1 s) = c then
       let z ← ProbOracleComp.sample sampler
@@ -326,7 +331,7 @@ to every query about a subformula all of whose variables lie in `xs` agrees with
 makes the verifier accept with certainty every true claim about a formula whose variables lie in
 `xs` and whose operators have bodies of degree at most `D` in their variable. -/
 theorem run_verifyAt_of_agreesAt (f : QueryAt F → List F) (xs : List ℕ)
-    (hf : ∀ e' rest' r', (∀ w ∈ e'.vars, w ∈ xs) → AgreesAt D (f (e', rest', r')) e' r')
+    (hf : ∀ q : QueryAt F, (∀ w ∈ q.formula.vars, w ∈ xs) → AgreesAt D (f q) q.formula q.point)
     (e : ArithQBF ℕ) (he : ∀ w ∈ e.vars, w ∈ xs) (hD : e.maxRoundDegree ≤ D)
     (rest : List (ArithQBF.Kind × ℕ)) (r : ℕ → F) (s : Unit) :
     runWith (fun q s => PMF.pure (f q, s)) (verifyAt sampler D e rest r (e.eval r)) s =
@@ -340,7 +345,7 @@ theorem run_verifyAt_of_agreesAt (f : QueryAt F → List F) (xs : List ℕ)
     rw [ArithQBF.maxRoundDegree, max_le_iff] at hD
     have he₁ : ∀ w ∈ e₁.vars, w ∈ xs := fun w hw => he w (List.mem_append_left _ hw)
     have he₂ : ∀ w ∈ e₂.vars, w ∈ xs := fun w hw => he w (List.mem_append_right _ hw)
-    obtain ⟨h₁, h₂⟩ := hf (.bin o e₁ e₂) rest r he
+    obtain ⟨h₁, h₂⟩ := hf ⟨.bin o e₁ e₂, rest, r⟩ he
     rw [verifyAt, ProbOracleComp.runWith_bind, ProbOracleComp.runWith_query]
     simp only [PMF.pure_bind, h₁, h₂, ArithQBF.eval_bin, ↓reduceIte]
     rw [ProbOracleComp.runWith_bind, ih₁ he₁ hD.1, PMF.pure_bind]
@@ -348,8 +353,8 @@ theorem run_verifyAt_of_agreesAt (f : QueryAt F → List F) (xs : List ℕ)
   | op o v e ih =>
     rw [ArithQBF.maxRoundDegree, max_le_iff] at hD
     have he' : ∀ w ∈ e.vars, w ∈ xs := fun w hw => he w (List.mem_cons_of_mem v hw)
-    have hlist : (f (.op o v e, rest, r)).take (D + 1) = coeffsBelow (e.restrict r v) (D + 1) :=
-      hf (.op o v e) rest r he
+    have hlist : (f ⟨.op o v e, rest, r⟩).take (D + 1) = coeffsBelow (e.restrict r v) (D + 1) :=
+      hf ⟨.op o v e, rest, r⟩ he
     rw [verifyAt, ProbOracleComp.runWith_bind, ProbOracleComp.runWith_query]
     have hval (z : F) : evalCoeffList z (coeffsBelow (e.restrict r v) (D + 1)) =
         e.eval (Function.update r v z) := by

@@ -46,6 +46,9 @@ apply to adaptive learners. The randomized test that draws `ω` and `z` is not f
 * `Cslib.MachineLearning.UniformLearning.QueryLearner.expect_dens_agrees_le`: **an unqueried point
   is a fair coin**. Against a uniformly random function and a uniform point, the learner with any
   seed agrees with the function with probability at most `1 / 2 + q / 2 ^ (N + 1)`.
+* `Cslib.MachineLearning.UniformLearning.le_expect_dens_eq`: hypotheses with error at most `ε`
+  except on a `δ` fraction of the indices agree with their targets with probability at least
+  `(1 - δ) (1 - ε)`.
 * `Cslib.MachineLearning.UniformLearning.QueryLearner.exists_le_expect_dens_agrees`: some seed
   makes the test accept the members of the family with probability at least `(1 - δ) (1 - ε)`.
 * `Cslib.MachineLearning.UniformLearning.QueryLearner.exists_dens_agrees_sub_dens_agrees`:
@@ -147,6 +150,31 @@ theorem expect_dens_agrees_le {A : QueryLearner ι Ω} {q : ℕ} (hA : A.Queries
     _ ≤ 1 / 2 + (q / 2 ^ Fintype.card ι) / 2 := by gcongr
     _ = 1 / 2 + q / 2 ^ (Fintype.card ι + 1) := by rw [pow_succ]; ring
 
+/-- **Accurate hypotheses agree on average.** Let `K` be a finite index set, and for each `k` let
+`h k` be a hypothesis for the target `F k`. If at most a `δ` fraction of the indices have error
+above `ε ≤ 1`, then `h k` and `F k` agree at a uniform point with probability at least
+`(1 - δ) (1 - ε)`, over a uniform index and point: an accurate hypothesis agrees on at least a
+`1 - ε` fraction of the points. -/
+theorem _root_.Cslib.MachineLearning.UniformLearning.le_expect_dens_eq {K : Type*} [Fintype K]
+    [Nonempty K] (F h : K → (ι → Bool) → Bool) {ε δ : ℝ} (hε : ε ≤ 1)
+    (hbad : (dens {k | ε < uniformError (F k) (h k)} : ℝ) ≤ δ) :
+    (1 - δ) * (1 - ε) ≤ 𝔼 k, (dens {z | h k z = F k z} : ℝ) := by
+  -- the agreement of an index is one minus the error of its hypothesis
+  have hk (k : K) : (1 - ε) * (1 - if ε < uniformError (F k) (h k) then 1 else 0) ≤
+      (dens {z | h k z = F k z} : ℝ) := by
+    have herr := uniformError_eq_one_sub_dens (F k) (h k)
+    split_ifs with hlt
+    · rw [sub_self, mul_zero]
+      positivity
+    · rw [sub_zero, mul_one]
+      linarith [not_lt.1 hlt]
+  calc (1 - δ) * (1 - ε)
+      ≤ (1 - ε) * (1 - dens {k | ε < uniformError (F k) (h k)}) := by
+        nlinarith [mul_nonneg (sub_nonneg.2 hε) (sub_nonneg.2 hbad)]
+    _ = 𝔼 k, (1 - ε) * (1 - if ε < uniformError (F k) (h k) then 1 else 0) := by
+        rw [← mul_expect, expect_sub_distrib, Fintype.expect_const, Fintype.expect_boole]
+    _ ≤ 𝔼 k, (dens {z | h k z = F k z} : ℝ) := expect_le_expect fun k _ => hk k
+
 variable {Key : Type*} [Fintype Key] [Nonempty Key]
 
 /-- **The learner is accurate on the family.** Let `A` learn, with error `ε` and confidence
@@ -168,27 +196,11 @@ theorem exists_le_expect_dens_agrees {A : QueryLearner ι Ω} {μ : PMF Ω}
   have hbad' : (dens {key | ε < uniformError (F key) ((A ω).eval (F key))} : ℝ) ≤ δ := by
     rw [Finset.nnratCast_dens]
     exact hbad
-  -- the acceptance probability on a key is one minus the error of the hypothesis
-  have hkey (key : Key) : (1 - ε) * (1 - if ε < uniformError (F key) ((A ω).eval (F key)) then 1
-      else 0) ≤ 𝔼 z, (if A.agrees ω z (F key) = true then (1 : ℝ) else 0) := by
-    have herr := uniformError_eq_one_sub_dens (F key) ((A ω).eval (F key))
-    rw [Fintype.expect_boole]
-    simp only [agrees_eq_true_iff]
-    split_ifs with h
-    · rw [sub_self, mul_zero]
-      positivity
-    · rw [sub_zero, mul_one]
-      linarith [not_lt.1 h]
-  calc (1 - δ) * (1 - ε)
-      ≤ (1 - ε) * (1 - dens {key | ε < uniformError (F key) ((A ω).eval (F key))}) := by
-        nlinarith [mul_nonneg (sub_nonneg.2 hε) (sub_nonneg.2 hbad')]
-    _ = 𝔼 key, (1 - ε) * (1 - if ε < uniformError (F key) ((A ω).eval (F key)) then 1 else 0) := by
-        rw [← mul_expect, expect_sub_distrib, Fintype.expect_const, Fintype.expect_boole]
-    _ ≤ 𝔼 key, 𝔼 z, (if A.agrees ω z (F key) = true then (1 : ℝ) else 0) :=
-        expect_le_expect fun key _ => hkey key
-    _ = 𝔼 z, (dens {key | A.agrees ω z (F key) = true} : ℝ) := by
-        rw [expect_comm]
-        exact expect_congr rfl fun z _ => Fintype.expect_boole _
+  refine (le_expect_dens_eq F (fun key => (A ω).eval (F key)) hε hbad').trans_eq ?_
+  -- exchange the averages over keys and points
+  simp only [← Fintype.expect_boole]
+  rw [expect_comm]
+  simp only [agrees_eq_true_iff]
 
 /-- **Learners distinguish pseudorandom functions from random functions** [Valiant1984].
 Let `A` make at most `q` queries and learn, with error `ε ≤ 1` and confidence `1 - δ`, a class

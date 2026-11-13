@@ -48,6 +48,8 @@ concatenation (`left ++ right`) are uncharged (`0` ticks).
   `Cslib.RealRoot.isolatedRoot_strictMono`, `Cslib.RealRoot.isolateRoots_bijective`:
   correctness, ordering, completeness, and strictly monotone bijection onto real roots of any
   separable (squarefree) polynomial.
+* `Cslib.RealRoot.not_two_roots_of_width_le`: at the Mignotte bisection depth, an interval of
+  the dyadic width contains at most one real root.
 * `Cslib.RealRoot.isolateRootsM_time_le`: upper bound on the `TimeM ℕ` bisection/evaluation ticks
   in terms of `natDegree` and `mignotteBisectionDepth`.
 * `Cslib.RealRoot.polyIsolatedRoot_mem`, `Cslib.RealRoot.polyIsolatedRoot_strictMono`,
@@ -422,6 +424,22 @@ theorem natDegree_ge_two_of_two_roots {cs : List ℚ} (hsep : (ofCoeffList cs).S
     Polynomial.natDegree_map_eq_of_injective (algebraMap ℚ ℝ).injective _
   omega
 
+/-- At the Mignotte bisection depth, an interval `[a, b]` of the dyadic width
+`2 * cauchyBoundNat cs / 2 ^ depth` contains no two distinct real roots of a separable
+`ofCoeffList cs`. -/
+theorem not_two_roots_of_width_le {cs : List ℚ} (hsep : (ofCoeffList cs).Separable)
+    {α β : ℝ} (hα : ((ofCoeffList cs).map (algebraMap ℚ ℝ)).IsRoot α)
+    (hβ : ((ofCoeffList cs).map (algebraMap ℚ ℝ)).IsRoot β) (hαβ : α < β) {a b : ℚ}
+    (haα : (a : ℝ) ≤ α) (hβb : β ≤ (b : ℝ)) {depth : ℕ}
+    (hdepth : depth = mignotteBisectionDepth cs)
+    (hwidth : (b - a : ℝ) ≤ 2 * (cauchyBoundNat cs : ℝ) / (2 : ℝ) ^ depth) : False := by
+  have hsep_w := dyadic_width_lt_root_sep hsep
+    (natDegree_ge_two_of_two_roots hsep hα hβ hαβ.ne) hα hβ hαβ.ne
+  rw [← hdepth, abs_of_neg (sub_neg.mpr hαβ), neg_sub] at hsep_w
+  have hw' : (b : ℝ) - (a : ℝ) ≤ 2 * (cauchyBoundNat cs : ℝ) / (2 : ℝ) ^ depth := by
+    simpa only [Rat.cast_sub] using hwidth
+  linarith
+
 private theorem unique_root_Ioc_of_card_eq_one {cs : List ℚ} (hsep : (ofCoeffList cs).Separable)
     {u v : ℚ} (huv : u ≤ v)
     (hcnt : sturmVariationsList (sturmSeqList cs) u -
@@ -516,15 +534,7 @@ private theorem refineLeftLoopM_spec {cs : List ℚ} (hsep : (ofCoeffList cs).Se
     have huR_root : ((ofCoeffList cs).map (algebraMap ℚ ℝ)).IsRoot (u : ℝ) := by
       rw [IsRoot.def, ← eval_rat_eq_zero_iff]
       exact hu_root
-    have hne : (u : ℝ) ≠ r := hur.ne
-    have hd2 : 2 ≤ (ofCoeffList cs).natDegree :=
-      natDegree_ge_two_of_two_roots hsep huR_root hr_root hne
-    have hsep_width := dyadic_width_lt_root_sep hsep hd2 huR_root hr_root hne
-    rw [← hdepth, abs_of_neg (sub_neg.mpr hur), neg_sub] at hsep_width
-    have hr_sub : r - (u : ℝ) ≤ (v : ℝ) - (u : ℝ) := by linarith
-    have hw' : (v : ℝ) - (u : ℝ) ≤ 2 * (cauchyBoundNat cs : ℝ) / (2 : ℝ) ^ depth := by
-      simpa only [Rat.cast_sub] using hwidth
-    linarith
+    exact not_two_roots_of_width_le hsep huR_root hr_root hur le_rfl hrv hdepth hwidth
   | fuel + 1, depth, u, v, vu, vv, hsum, huv, hvu, hvv, hcnt, hu_root, hwidth => by
     let pR := (ofCoeffList cs).map (algebraMap ℚ ℝ)
     let m := (u + v) / 2
@@ -758,14 +768,8 @@ private theorem isolateIocM_spec {cs : List ℚ} (hsep : (ofCoeffList cs).Separa
               2 ≤ (pR.roots.toFinset.filter (fun r => (u : ℝ) < r ∧ r ≤ (v : ℝ))).card := by
             rw [← card_roots_Ioc_eq hsep huv, ← hvu, ← hvv]
             exact hc2
-          obtain ⟨α, β, hα, hβ, _, hαβ, hβv⟩ := exists_two_roots_Ioc_of_two_le hpR0 hcard
-          have hd2 : 2 ≤ (ofCoeffList cs).natDegree :=
-            natDegree_ge_two_of_two_roots hsep hα hβ hαβ.ne
-          have hsep_w := dyadic_width_lt_root_sep hsep hd2 hα hβ hαβ.ne
-          rw [← hdepth, abs_of_neg (sub_neg.mpr hαβ), neg_sub] at hsep_w
-          have hw' : (v : ℝ) - (u : ℝ) ≤ 2 * (cauchyBoundNat cs : ℝ) / (2 : ℝ) ^ depth := by
-            simpa only [Rat.cast_sub] using hwidth
-          linarith
+          obtain ⟨α, β, hα, hβ, huα, hαβ, hβv⟩ := exists_two_roots_Ioc_of_two_le hpR0 hcard
+          exact not_two_roots_of_width_le hsep hα hβ hαβ huα.le hβv hdepth hwidth
         | succ fuel' =>
           simp only [TimeM.ret_bind, sturmVariationsM_ret, TimeM.ret_pure]
           let m := (u + v) / 2

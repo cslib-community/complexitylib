@@ -68,6 +68,24 @@ use the shared topic module directly. Run `scripts/build.sh CslibFrontierTests.A
 for a [client](../../CslibFrontierTests/ArithmeticSynthesis.lean) that interprets string-labelled
 constants as natural-number lengths, without importing VP or giving the labels a semiring.
 
+## Boolean circuits over a ring
+
+Import [Boolean.ArithmeticRing](../../CslibFrontier/Computability/Circuit/Boolean/ArithmeticRing.lean)
+and use `Boolean.exists_ring_simulation (R := R) c` for a ring `R`. It returns an arithmetic
+circuit with at most `5 * c.size` gates. Represent Boolean input `x i` by
+`((x i).toNat : R)`; every output represents the corresponding Boolean output the same way.
+This works in odd characteristic and over infinite rings. It does not assert agreement on
+arbitrary ring-valued inputs. Constants, addition and multiplication are the only arithmetic
+gates; subtraction is implemented using the constant `-1`, which is counted in the budget.
+Wiring is free. The zero/one representation is faithful when `R` is nontrivial.
+
+This supplies the Boolean-to-arithmetic direction of the finite-field exercise independently
+of characteristic. The arithmetic-to-Boolean direction needs an encoding of field elements.
+These are value simulations, without compiler-runtime or formal-polynomial identity claims.
+Run `scripts/build.sh CslibFrontierTests.BooleanArithmetic` for the
+[complete clients](../../CslibFrontierTests/BooleanArithmetic.lean), including all Boolean
+inputs to a two-output circuit over `ZMod 3`, zero-input constants and zero-cost integer wiring.
+
 ## Boolean and two-element arithmetic circuits
 
 Import [Boolean.Arithmetic](../../CslibFrontier/Computability/Circuit/Boolean/Arithmetic.lean)
@@ -82,7 +100,7 @@ The `arithmetic_simulates_boolean` and `boolean_simulates_arithmetic` gate-budge
 also work with the generic `Circuit.exists_simulationWithCost` API. These are circuit-value
 and nonuniform size results, not formal polynomial identities or certified translation runtimes.
 They establish the GF(2) milestone, not the exercise for every fixed finite field; the latter
-still needs bit encodings and the general-field directions. Existing `Synthesis.bitBlast`
+still needs finite-field encodings and the arithmetic-to-Boolean direction. Existing `Synthesis.bitBlast`
 handles an equivalence to a fixed-width bit cube and should be reused where applicable.
 Run `scripts/build.sh CslibFrontierTests.BooleanArithmetic` for the
 [checked clients](../../CslibFrontierTests/BooleanArithmetic.lean): multiple XOR/AND and OR/NOT
@@ -477,6 +495,10 @@ The [native generator endpoint](https://github.com/cslib-community/cslib-frontie
 
 Arbitrary unitary matrices are semantic objects. The [GateCode](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Quantum/Code.lean#L98) interface supplies a finite basis of Hadamard, NOT, controlled-NOT and Toffoli codes, with explicit target/control indices and well-formedness. The [UniformCircuitFamily](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Quantum/Uniform.lean#L79) structure requires native polynomial-time generation of both the well-formed gate list and the positive register width from unary input length. The width is at least the input length. Unary wire/width encodings prevent an uncharged exponentially large register address. Inputs are followed by zero ancillas; acceptance measures qubit zero, and postselection conditions on qubit one.
 
+For coherent function access, import [Oracle/Code.lean](../../CslibFrontier/Computability/Circuit/Quantum/Oracle/Code.lean). An `OracleGateCode` is an existing `PhaseGateCode` or a query; elementary instructions include phase and controlled-phase gates and their inverses, with ordinary gate codes embedded as `(false, g)`. For a function from `a` bits to `b` bits, a query uses the first `a` wires as its argument and the following `b` wires as an XOR response register. `OracleCircuit.toCircuit m H codes` interprets the description using the same fixed `H` throughout; the resulting `Circuit` supplies unitary evolution and final measurement. `gateCount` and `queryCount` count elementary gates and oracle calls separately. Require `∀ g ∈ codes, g.WellFormed a b m`: the total interpreter skips malformed instructions, and `length_toCircuit` proves that a well-formed description executes every instruction.
+
+The [placed-query API](../../CslibFrontier/Computability/Circuit/Quantum/Oracle/Basic.lean) also permits an arbitrary injective wire placement. `queryRegisters` identifies argument, response and unused wires, with component equations for callers. [Oracle/ValueQuery.lean](../../CslibFrontier/Computability/Circuit/Quantum/Oracle/ValueQuery.lean) supplies `xorQuery_eq_valueOracle`, which proves agreement with the existing `valueOracle addStep` semantics on arbitrary states; `xorQuery_eval_twice` proves coherent cancellation. [Checked clients](../../CslibFrontierTests/QuantumOracleCircuit.lean) exercise a one-bit identity hash, entanglement with real and complex relative phases, interference after query/unquery, malformed codes and separate costs. This finite operational layer does not certify uniform quantum polynomial time or sample a random oracle. Classical signing/decapsulation access, quantum auxiliary information, gate approximation and full QROM security remain separate obligations under [#4987](https://github.com/cslib-community/cslib-frontier/issues/4987).
+
 [BQP](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/BQP.lean#L69) uses one such family for a language under a supplied injective instance encoding: every encoded member is accepted with probability at least two thirds, and every encoded nonmember with probability at most one third. Polynomial circuit size follows from the native polynomial-time generator. The model and its gate-set convention are owned here.
 
 **Controlled phase gates.** [PhaseCode.lean](../../CslibFrontier/Computability/Circuit/Quantum/PhaseCode.lean) adds the phase gate `S = diag(1, i)`, the controlled phase gate `Λ(S)` and their inverses. A code `(true, (inv, t, cs))` names the gate on qubits `t :: cs`, with at most one control; `(false, g)` is an ordinary gate code. A `UniformPhaseCircuitFamily` over the extended set has the same uniformity, width, input and acceptance conventions as a `UniformCircuitFamily`. [`mem_BQP_iff_phase`](../../CslibFrontier/Computability/Complexity/Classes/BQP/PhaseGates.lean) shows that both kinds of families define the same `BQP`.
@@ -604,6 +626,8 @@ lake build CslibFrontier.Computability.QueryComplexity.Quantum.DeutschJozsa \
 ```
 
 ## Quantum Fourier transform and exact period finding
+
+The [2007 draft Chapter 20 audit](../../results/arora-barak-2007.md#chapter-20-quantum-computation) maps the numbered quantum results to their precise models. It distinguishes exact period finding from efficient QFT synthesis and general order finding, and records source defects in the factoring and continued-fraction statements.
 
 This is the quantum core of Shor's algorithm in the case where the period divides the register size. It works at the level of states and unitary matrices, using `unitaryEquiv`, `ket` and `measure`; it is not phrased in the query model of the previous section or in the uniform circuits of `BQP`.
 

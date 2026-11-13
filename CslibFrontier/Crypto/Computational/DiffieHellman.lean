@@ -26,6 +26,7 @@ import CslibFrontier.Languages.Probabilistic.Concentration
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Uniform
+import CslibFrontier.Probability.Uniform
 import CslibFrontier.Tactic.GameHop
 import CslibFrontier.Tactic.Negligible
 import CslibFrontier.Tactic.PolyTime.Init
@@ -507,7 +508,7 @@ theorem ddhRerandomizeLaw_real (d : F.Desc) (α β : ZMod (F.order d)) :
           (α' * (β + s₂)) • F.generator d)) =
       ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun β' =>
         PMF.pure (α' • F.generator d, β' • F.generator d, (α' * β') • F.generator d)) :=
-    PMF.uniformOfFintype_bind_equiv (Equiv.addLeft β)
+    PMF.uniformOfFintype_bind_add_left β
       (fun β' => PMF.pure (α' • F.generator d, β' • F.generator d, (α' * β') • F.generator d))
   have hs₁ (r : ZMod (F.order d)) :
       ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun s₁ =>
@@ -518,7 +519,7 @@ theorem ddhRerandomizeLaw_real (d : F.Desc) (α β : ZMod (F.order d)) :
         (PMF.uniformOfFintype (ZMod (F.order d))).bind fun β' =>
           PMF.pure (α' • F.generator d, β' • F.generator d, (α' * β') • F.generator d)) := by
     simp_rw [hs₂]
-    exact PMF.uniformOfFintype_bind_equiv (Equiv.addLeft (r * α))
+    exact PMF.uniformOfFintype_bind_add_left (r * α)
       (fun α' => (PMF.uniformOfFintype (ZMod (F.order d))).bind fun β' =>
         PMF.pure (α' • F.generator d, β' • F.generator d, (α' * β') • F.generator d))
   simp_rw [hs₁, PMF.bind_const]
@@ -537,7 +538,7 @@ theorem ddhRerandomizeLaw_random (d : F.Desc) {α β γ : ZMod (F.order d)} (hγ
       ((PMF.uniformOfFintype (ZMod (F.order d))).bind fun β' =>
         PMF.pure (α' • F.generator d, β' • F.generator d,
           (α' * β' + r * (γ - α * β)) • F.generator d)) :=
-    PMF.uniformOfFintype_bind_equiv (Equiv.addLeft β)
+    PMF.uniformOfFintype_bind_add_left β
       (fun β' => PMF.pure (α' • F.generator d, β' • F.generator d,
         (α' * β' + r * (γ - α * β)) • F.generator d))
   have hs₁ (r : ZMod (F.order d)) :
@@ -550,7 +551,7 @@ theorem ddhRerandomizeLaw_random (d : F.Desc) {α β γ : ZMod (F.order d)} (hγ
           PMF.pure (α' • F.generator d, β' • F.generator d,
             (α' * β' + r * (γ - α * β)) • F.generator d)) := by
     simp_rw [hs₂]
-    exact PMF.uniformOfFintype_bind_equiv (Equiv.addLeft (r * α))
+    exact PMF.uniformOfFintype_bind_add_left (r * α)
       (fun α' => (PMF.uniformOfFintype (ZMod (F.order d))).bind fun β' =>
         PMF.pure (α' • F.generator d, β' • F.generator d,
           (α' * β' + r * (γ - α * β)) • F.generator d))

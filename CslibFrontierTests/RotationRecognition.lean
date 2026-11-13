@@ -17,7 +17,7 @@ They do not prove the still separate algebraic/topological criterion. -/
 open Cslib.Complexity Cslib.Complexity.Graph Cslib.Complexity.Graph.RotationRecognition
 open Cslib.Logic.PL
 
-private def body (scopes : List (List ℕ)) : CSP Bool ℕ := scopes.map fun scope => (true, scope)
+private def body (scopes : List (List ℕ)) : CSP Bool ℕ := scopes.map fun scope => ⟨true, scope⟩
 
 -- The named components preserve the literal compiler used by the native certificates.
 example (I : FixedRotationInput) : subdivide I =
@@ -28,8 +28,8 @@ example (I : FixedRotationInput) : subdivide I =
         ((a, b), false), ((b, entry.1.2), (I.orders.getD entry.1.2 none).isSome)]) := rfl
 
 example (F : Frame) (e f : Segment × ℕ) : row F e f =
-    (moveLabels F.vertexCount e.2 e.1 f.1.1 ++
-      moveLabels F.vertexCount f.2 f.1 e.1.1, crossing F.order e.1.1 f.1.1) := rfl
+    ⟨moveLabels F.vertexCount e.2 e.1 f.1.1 ++
+      moveLabels F.vertexCount f.2 f.1 e.1.1, crossing F.order e.1.1 f.1.1⟩ := rfl
 
 example (I : FixedRotationInput) (v : ℕ) (block : List ℕ) : split I v block =
     ⟨⟨List.range (I.graph.vertices.length + 1),
@@ -76,19 +76,19 @@ example : (split allFree 0 [0]).graph.edges = [(2, 0), (0, 1), (0, 1), (2, 0)] :
 example {F : CSP Bool ℕ} {c : RotationCertificate} (h : recoverCSP F = some c) :
     CSP.verifyRotationCertificate F c = true := recoverCSP_sound h
 
-example : ofCSP ([(true, [0]), (true, []), (true, [0])] : CSP Bool ℕ) =
-  ofCSP ([(false, [0]), (false, []), (false, [0])] : CSP Bool ℕ) := by decide +kernel
+example : ofCSP ([⟨true, [0]⟩, ⟨true, []⟩, ⟨true, [0]⟩] : CSP Bool ℕ) =
+  ofCSP ([⟨false, [0]⟩, ⟨false, []⟩, ⟨false, [0]⟩] : CSP Bool ℕ) := by decide +kernel
 
 private noncomputable def checkedCSP (F : CSP Bool ℕ) : Bool :=
   (recoverCSP F).elim false fun c => CSP.verifyRotationCertificate F c
 
 example : checkedCSP (body [[0, 1, 2], [0, 2, 1]]) = true := by decide +kernel
 example : checkedCSP (body [[0, 0, 0]]) = true := by decide +kernel
-example : checkedCSP ([(false, []), (true, [])] : CSP Bool ℕ) = true := by decide +kernel
+example : checkedCSP ([⟨false, []⟩, ⟨true, []⟩] : CSP Bool ℕ) = true := by decide +kernel
 
 -- Huge unused relation metadata changes neither dense scopes nor fixed/free words.
-example : ofCSP ([(2 ^ 250, [0, 0]), (0, [])] : CSP ℕ ℕ) =
-    ofCSP ([(0, [0, 0]), (0, [])] : CSP ℕ ℕ) := by decide +kernel
+example : ofCSP ([⟨2 ^ 250, [0, 0]⟩, ⟨0, []⟩] : CSP ℕ ℕ) =
+    ofCSP ([⟨0, [0, 0]⟩, ⟨0, []⟩] : CSP ℕ ℕ) := by decide +kernel
 
 -- The native program is uniform on arbitrary raw binary names and relation metadata.
 example : Turing.MultiTapeTM.ComputableInPolyTime (recoverCSP (Rel := ℕ) (V := ℕ))

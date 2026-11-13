@@ -85,7 +85,7 @@ theorem countable (hd : IsPrefixFreeDescription C d) : C.Countable :=
 
 /-- The *Kraft weighting* `h ↦ 2^-|d h|` of a class with a prefix-free description: by Kraft's
 inequality [Kraft1949] the weights sum to at most `1`. -/
-@[expose] noncomputable def weighting (hd : IsPrefixFreeDescription C d) : Weighting C where
+noncomputable def weighting (hd : IsPrefixFreeDescription C d) : Weighting C where
   toFun h := (1 / 2 : ℝ) ^ (d h).length
   pos _ := by positivity
   summable := by
@@ -103,7 +103,9 @@ inequality [Kraft1949] the weights sum to at most `1`. -/
       fun h h' heq => Subtype.ext (hd.injOn h.2 h'.2 (congrArg Subtype.val heq))
 
 @[simp] theorem weighting_apply (hd : IsPrefixFreeDescription C d) (h : C) :
-    hd.weighting h = (1 / 2 : ℝ) ^ (d h).length := rfl
+    hd.weighting h = (1 / 2 : ℝ) ^ (d h).length := by
+  unfold weighting
+  rfl
 
 /-- `log (2 / (2^-k δ)) = k log 2 + log (2 / δ)`. -/
 private theorem log_two_div_mul (k : ℕ) {δ : ℝ} (hδ : 0 < δ) :
@@ -123,10 +125,9 @@ theorem measure_pi_exists_le_abs_sub_le (hd : IsPrefixFreeDescription C d)
         {S | ∃ h ∈ C, √(((d h).length * Real.log 2 + Real.log (2 / δ)) / (2 * m)) <
           |(empiricalMiscount h S : ℝ) / m - (error D h).toReal|} ≤ ENNReal.ofReal δ := by
   have : Countable C := hd.countable.to_subtype
-  refine (measure_mono fun S => ?_).trans (measure_pi_exists_not_isRepresentative_le
+  refine (measure_mono fun S => ?_).trans (hd.weighting.measure_pi_exists_not_isRepresentative_le
     (H := fun h : C => ({(h : α → β)} : ConceptClass α β))
-    (fun h => hasUniformConvergenceRate_singleton (hmeas h h.2)) hd.weighting D (mem_univ D)
-    hm hδ)
+    (fun h => hasUniformConvergenceRate_singleton (hmeas h h.2)) D (mem_univ D) hm hδ)
   rintro ⟨h, hh, hlt⟩
   refine ⟨⟨h, hh⟩, fun hrep => ?_⟩
   have := hrep h rfl

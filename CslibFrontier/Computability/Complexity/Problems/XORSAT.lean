@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Logics.Propositional.CSP.Affine
+public import CslibFrontier.Computability.PolyTime.CSP.AffineEquation
 public import CslibFrontier.Computability.Complexity.Problems.XORSAT.Dense
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.EraseDupsBy
 import CslibFrontier.Foundations.Data.List.EraseDupsBy
@@ -18,7 +18,8 @@ import Mathlib.Algebra.BigOperators.Group.List.Basic
 
 The input is an ordinary list of parity equations on natural-number variable labels, with
 arbitrary repetitions and Boolean right-hand sides. Labels use the existing binary `encNat`,
-equations use the existing pair encoding, and systems use the existing framed-list encoding.
+equations use `Cslib.Complexity.encAffineEquation` (a framed label list, then the right-hand side
+bit), and systems use the existing framed-list encoding.
 No bound on the numerical value of a variable label is imposed.
 
 The compiler lists the occurring labels without duplicates and computes each coefficient as the
@@ -57,16 +58,12 @@ open Turing.MultiTapeTM Cslib.Logic.PL
 /-- A conjunction of parity equations on arbitrarily large natural-number variable labels. -/
 abbrev System := AffineSystem ℕ
 
-/-- A row is encoded by a framed list of binary labels and a Boolean right-hand side. -/
-@[expose] def equationEncoding : AffineEquation ℕ ↪ List Bool :=
-  encPair (encList encNat) encBool
-
 /-- Ordinary framed-list encoding of sparse equations with binary labels. -/
-@[expose] def encoding : System ↪ List Bool := encList equationEncoding
+@[expose] def encoding : System ↪ List Bool := encList (encAffineEquation encNat)
 
 /-- The occurring variable labels, each retained once, in order of first occurrence. -/
 @[expose] def labels (F : System) : List ℕ :=
-  (F.flatMap Prod.fst).eraseDupsBy fun a b => Decidable.decide (a = b)
+  (F.flatMap AffineEquation.vars).eraseDupsBy fun a b => Decidable.decide (a = b)
 
 /-- The coefficient of a variable is the parity of its occurrences. -/
 @[expose] def coefficient (vs : List ℕ) (v : ℕ) : Bool :=
@@ -74,7 +71,7 @@ abbrev System := AffineSystem ℕ
 
 /-- Compress occurring labels, keeping one Boolean coefficient for each label. -/
 @[expose] def compile (F : System) : Dense.Input :=
-  ⟨(labels F).length, F.map fun e => ⟨(labels F).map (coefficient e.1), e.2⟩⟩
+  ⟨(labels F).length, F.map fun e => ⟨(labels F).map (coefficient e.vars), e.rhs⟩⟩
 
 /-- Native dense Gaussian elimination after compression of binary variable labels. -/
 @[expose] def solve (F : System) : Bool := Dense.decide (compile F)
@@ -84,7 +81,7 @@ abbrev System := AffineSystem ℕ
 
 /-- The compressed label list contains precisely the occurring labels. -/
 theorem mem_labels {F : System} {v : ℕ} :
-    v ∈ labels F ↔ ∃ e ∈ F, v ∈ e.1 := by
+    v ∈ labels F ↔ ∃ e ∈ F, v ∈ e.vars := by
   simp only [labels, List.mem_eraseDupsBy_eq, List.mem_flatMap]
 
 /-- There is one compressed coordinate per distinct occurring variable. -/
@@ -93,7 +90,7 @@ theorem nodup_labels (F : System) : (labels F).Nodup :=
 
 /-- Compression allocates at most one column per variable occurrence in the input. -/
 theorem length_labels_le (F : System) :
-    (labels F).length ≤ (F.flatMap Prod.fst).length :=
+    (labels F).length ≤ (F.flatMap AffineEquation.vars).length :=
   (List.eraseDupsBy_sublist _).length_le
 
 /-- Every compiled row has exactly the declared width. -/
@@ -136,8 +133,8 @@ private theorem sum_coefficients (l vs : List ℕ) (hl : l.Nodup)
 
 /-- Compiled rows evaluate exactly as their sparse input equations, including repetitions. -/
 theorem dot_compile_row (F : System) (e : AffineEquation ℕ) (he : e ∈ F) (a : ℕ → Bool) :
-    Dense.dot ((labels F).map (coefficient e.1)) ((labels F).map a) =
-      (e.1.map a).sum := by
+    Dense.dot ((labels F).map (coefficient e.vars)) ((labels F).map a) =
+      (e.vars.map a).sum := by
   rw [dot_map]
   exact sum_coefficients _ _ (nodup_labels F)
     (fun v hv => mem_labels.mpr ⟨e, he, hv⟩) a
@@ -148,7 +145,7 @@ theorem holds_compile (F : System) (a : ℕ → Bool) :
   constructor
   · intro h e he
     have hh := h _ (List.mem_map.mpr ⟨e, he, rfl⟩)
-    change Dense.dot ((labels F).map (coefficient e.1)) ((labels F).map a) = e.2 at hh
+    change Dense.dot ((labels F).map (coefficient e.vars)) ((labels F).map a) = e.rhs at hh
     rwa [dot_compile_row F e he a] at hh
   · intro h r hr
     obtain ⟨e, he, rfl⟩ := List.mem_map.mp hr
@@ -193,7 +190,7 @@ theorem solve_eq_true_iff (F : System) : solve F = true ↔ Satisfiable F := by
 
 private theorem labels_polyTime :
     ComputableInPolyTime labels encoding (encList encNat) := by
-  unfold labels encoding equationEncoding
+  unfold labels encoding
   fun_prop
 
 private theorem sum_polyTime :
@@ -221,7 +218,7 @@ theorem computableInPolyTime_compile : ComputableInPolyTime compile encoding Den
   have hvars := labels_polyTime
   have hcoeff := coefficient_polyTime.computableInPolyTime
   unfold compile
-  unfold encoding equationEncoding at hvars ⊢
+  unfold encoding at hvars ⊢
   fun_prop
 
 end
