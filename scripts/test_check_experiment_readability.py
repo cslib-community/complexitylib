@@ -71,8 +71,9 @@ class ExperimentTests(unittest.TestCase):
         self.assertEqual(categories(
             "def fooGame (A : Adv) : (n : ℕ) → Bool → ProbOracleComp Spec Bool :=\n"
             "  fun n b => pure (encBits n).isEmpty\n"
-            "def barGame (A : Adv) : ℕ → ProbComp (List Bool) := fun n => pure (encBits n)\n"),
-            ["encoding"])
+            "def barGame (A : Adv) : ℕ → ProbComp (List Bool) := fun n => pure (encBits n)\n"
+            "def lrExperiment (A : Adv) (b : Bool) : Crypto.Experiment := A (encBits b)\n"),
+            ["encoding", "encoding"])
 
     def test_names_and_shadowing(self) -> None:
         # A codec binder counts; a binder of another type shadows a codec of the same name when it

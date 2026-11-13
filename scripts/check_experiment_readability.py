@@ -12,8 +12,9 @@ appearing only in a named efficiency predicate such as `A.IsPPT`. It reads the p
 under `CslibFrontier/Crypto/`, outside `Internal` namespaces and modules and leaving out
 declarations marked `@[program_certificate]` or `@[fun_prop]`. It classifies them by type and name:
 
-* an *experiment* returns `Game`, `PMF Bool`, `ProbComp Bool` or an oracle computation of a
-  `Bool` (the codomain after the last top-level arrow), and the last word of its name is `Game`,
+* an *experiment* returns `Game`, `Experiment` (an abbreviation of `ProbComp Bool`), `PMF Bool`,
+  `ProbComp Bool` or an oracle computation of a `Bool` (the codomain after the last top-level
+  arrow), and the last word of its name is `Game`,
   `Experiment` or `Hybrid`, possibly extended (`cdhGame`, `treeGameWith`, `cramerShoupGame3Half`),
   or `Exp`, optionally followed by `On`, `Of`, digits, subscripts or primes (`prvIndExp`); or it
   is named `game`, `gameOn` or `experiment`;
@@ -101,7 +102,8 @@ ADVERSARY_TYPE_NAME = re.compile(rf"{ROLES}(?:Of)?$")
 ADVERSARY_BINDER = re.compile(
     r"(?:A|B|D|adversary|adv|distinguisher|forger|inverter|predictor|attacker)[0-9₀-₉']*$")
 EXPERIMENT_TYPE = re.compile(
-    r"\(?\s*(?:[\w']+\.)*(?:Game|PMF\s+Bool|ProbComp\s+Bool|(?:Word|Prob)?OracleComp\b.*\bBool)"
+    r"\(?\s*(?:[\w']+\.)*(?:Game|Experiment|PMF\s+Bool|ProbComp\s+Bool"
+    r"|(?:Word|Prob)?OracleComp\b.*\bBool)"
     r"\s*\)?", re.S)
 WORD = re.compile(r"(?<![\w'.])(?:List\s+Bool|WordOracleComp)(?![\w'!?])")
 EVAL = re.compile(r"(?<![\w'!?])(?:[\w']+\.)*(?:ProbComp|OracleComp|WordOracleComp)\.eval[\w']*"
