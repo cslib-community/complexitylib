@@ -39,6 +39,10 @@ direction of [OliveiraSanthanam2017, Theorem 8, (1) ⇒ (5)]; with the converse 
 it closes the loop between learning and natural properties.
 
 The model differs from the source as follows.
+* **Accurate learners.** The theorem needs `(1 - δ) (1 - ε)` to exceed `1 / 2 + q / 2 ^ (n + 1)`, so
+  it covers strong or confidence-amplified learners. The non-trivial learners of
+  [OliveiraSanthanam2017, Theorem 8, item (1)], with error `1 / 2 - 1 / n ^ k` and success
+  probability `1 / n`, have `(1 - δ) (1 - ε)` below `1 / 2` and are not covered as stated.
 * **Uniform seeds from a small set.** The learner's seeds are uniform on a set of size `2 ^ O(n)`,
   so the property averages exactly over all seeds and points instead of sampling them; arbitrary
   seed distributions are not handled.
@@ -140,7 +144,7 @@ open Finset
 
 /-- A negated threshold of `m` functions costs at most their complexities, the threshold, and one
 negation. -/
-theorem complexity_not_threshold_pi_le {n m j : ℕ} (f : Fin m → BooleanFunction n) :
+private theorem complexity_not_threshold_pi_le {n m j : ℕ} (f : Fin m → BooleanFunction n) :
     complexity interpretation (single fun x => !threshold m j fun i => f i x) ≤
       ∑ i, complexity interpretation (single (f i)) + (2 + m * (2 * (m + 2))) + 1 := by
   refine (complexity_not_le _).trans (Nat.add_le_add_right ?_ 1)

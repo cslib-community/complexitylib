@@ -3297,7 +3297,9 @@ register_result "learning-natural-property" where
     functions on which the seed-averaged agreement is below (1 - delta)(1 - eps); it is decided \
     by an exact threshold over all seeds and points, so constructivity is P/poly by circuit size, \
     not the source's BPP-natural form, and arbitrary seed distributions are not covered. The \
-    random-function bound is the fair-coin argument, not the source's small-hypothesis lemma."
+    random-function bound is the fair-coin argument, not the source's small-hypothesis lemma. \
+    The accuracy gap restricts it to strong or confidence-amplified learners; the source's \
+    non-trivial (1/2 - 1/n^k, 1/n) learners of item (1) are not covered as stated."
 
 register_result "nw-reconstruction-learner" where
   title := "Carmosino–Impagliazzo–Kabanets–Kolokolova: the Nisan–Wigderson reconstruction as a \
