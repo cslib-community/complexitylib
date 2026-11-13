@@ -55,7 +55,7 @@ noncomputable def uniformParity (n : ℕ) [NeZero n] (b : Bool) : PMF (BitString
   PMF.uniformOfFinset _ (parity_fiber_nonempty (Nat.pos_of_ne_zero (NeZero.ne n)) b)
 
 /-- The support is exactly the chosen parity fiber. -/
-@[simp] theorem mem_support_uniformParity {n : ℕ} [NeZero n] (b : Bool) (x : BitString n) :
+theorem mem_support_uniformParity {n : ℕ} [NeZero n] (b : Bool) (x : BitString n) :
     x ∈ (uniformParity n b).support ↔ parity n x = b := by
   simp [uniformParity]
 
