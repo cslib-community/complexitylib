@@ -22,6 +22,7 @@ import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.Repeat
 import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
+import CslibFrontier.Languages.Probabilistic.Iteration.Chain
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Logics.Propositional.CNF.PolyTime
 import CslibFrontier.Probability.PMF.Bind
@@ -305,15 +306,6 @@ theorem eval_replicate_iterate_sessionWithPadsStep {tapes : ℕ} {Control : Type
     refine congrArg (PMF.bind _) (funext fun st' => ?_)
     simpa only [ProbComp.eval_bind] using ih st'
 
-private theorem eval_iterate_congr {α : Type} {f g : α → ProbComp α}
-    (h : ∀ x, ProbComp.eval (f x) = ProbComp.eval (g x)) (K : ℕ) (x : α) :
-    ProbComp.eval (OracleComp.iterate K f x) = ProbComp.eval (OracleComp.iterate K g x) := by
-  induction K generalizing x with
-  | zero => rfl
-  | succ K ih =>
-    simp only [OracleComp.iterate_succ_bind, ProbComp.eval_bind, h x]
-    exact congrArg (PMF.bind _) (funext ih)
-
 theorem eval_replicate_runAllSessionsWithPads_prg {tapes : ℕ} {Control : Type}
     (machine : _root_.Turing.MultiTapePTM tapes Bool Control Unit)
     (generator : List Bool → List Bool) (s m limit att K : ℕ) (φ : CNF ℕ) (w word : List Bool) :
@@ -359,7 +351,7 @@ theorem eval_replicate_runAllSessionsWithPads_uniform {tapes : ℕ} {Control : T
     simp only [simSessionStep, ProbComp.eval_map]
     rw [ProbComp.eval_replicate_congr
       (eval_game1_eq_eval_gmwSimAttempt generator hw (sessionStep machine limit cur.1 2 cur.2))]
-  rw [eval_iterate_congr hcongr] at hiter
+  rw [ProbComp.eval_iterate_congr hcongr] at hiter
   have hbind := congrArg
     (fun d => d.bind (fun st' => ProbComp.eval (finishSessionRun machine limit st'))) hiter
   simp only [pmf_norm, runAllSessionsWithPads] at hbind ⊢
