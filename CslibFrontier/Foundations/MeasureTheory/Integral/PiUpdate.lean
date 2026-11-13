@@ -40,6 +40,8 @@ Lindeberg's replacement method.
   `∫ v, ∫ z, F (update v i z) ∂μ i ∂Measure.pi μ = ∫ v, F v ∂Measure.pi μ`.
 * `MeasureTheory.integral_integral_update_swap`: the same with the coordinate `i` integrated last,
   `∫ z, ∫ v, F (update v i z) ∂Measure.pi μ ∂μ i = ∫ v, F v ∂Measure.pi μ`.
+* `MeasureTheory.integral_apply_eval_eq_integral_integral`: if `Φ v` ignores coordinate `i`, then
+  `∫ v, Φ v (v i) ∂Measure.pi μ = ∫ v, ∫ z, Φ v z ∂μ i ∂Measure.pi μ`.
 * `MeasureTheory.integral_pi_piecewise_insert_sub`: one step of the hybrid argument.
 * `MeasureTheory.abs_integral_pi_sub_le_sum`: the hybrid argument, bounding
   `|∫ F ∂Measure.pi ν - ∫ F ∂Measure.pi μ|` by a sum of one-coordinate bounds.
@@ -138,6 +140,18 @@ theorem integral_integral_update_swap {E : Type*} [NormedAddCommGroup E] [Normed
       F (Function.update v i z)) ((Measure.pi μ).prod (μ i)) :=
     (measurePreserving_update μ i).integrable_comp_of_integrable hF
   rw [← integral_integral_swap hint, integral_integral_update μ hF i]
+
+/-- **Evaluating at a fresh coordinate.** If `Φ v` does not depend on coordinate `i` of `v`, then
+evaluating it at `v i` has the same integral as evaluating it at an independent draw from `μ i`:
+`∫ v, Φ v (v i) ∂Measure.pi μ = ∫ v, ∫ z, Φ v z ∂μ i ∂Measure.pi μ`. In online-to-batch arguments,
+`Φ v` is the loss of the hypothesis played before example `i` was seen. -/
+theorem integral_apply_eval_eq_integral_integral {E : Type*} [NormedAddCommGroup E]
+    [NormedSpace ℝ E] {i : ι} {Φ : (∀ j, X j) → X i → E}
+    (hΦ : ∀ v z, Φ (Function.update v i z) = Φ v)
+    (hint : Integrable (fun v => Φ v (v i)) (Measure.pi μ)) :
+    ∫ v, Φ v (v i) ∂Measure.pi μ = ∫ v, ∫ z, Φ v z ∂μ i ∂Measure.pi μ := by
+  rw [← integral_integral_update μ hint i]
+  simp only [hΦ, Function.update_self]
 
 /-! ### Hybrids of two product measures -/
 
