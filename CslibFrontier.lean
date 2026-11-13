@@ -1918,6 +1918,7 @@ public import CslibFrontier.Computability.Complexity.Classes.FunctionTime.Bounds
 public import CslibFrontier.Computability.Complexity.Classes.FunctionTime.Decide
 public import CslibFrontier.Computability.Complexity.Classes.FunctionTime.WordRAM
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy
+public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.LazyDiagonal
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.LazyDiagonalBounds
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.LogClock
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Nondeterministic
