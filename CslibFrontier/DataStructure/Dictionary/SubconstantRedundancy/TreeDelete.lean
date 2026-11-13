@@ -9,8 +9,6 @@ module
 
 public import CslibFrontier.Init
 public import CslibFrontier.DataStructure.Dictionary.SubconstantRedundancy.TreeInsert
-import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.Ring
 
 /-!
 # Quotient-Recovering Deletion (`Algorithm 3`) in the Multi-Level Dictionary Tree

@@ -14,11 +14,8 @@ public import CslibFrontier.DataStructure.Dictionary.Minimap
 public import CslibFrontier.DataStructure.Dictionary.SuccinctBucket
 public import CslibFrontier.Foundations.Data.Nat.IterLog
 public import Mathlib.Analysis.SpecialFunctions.Pow.NthRootLemmas
-import CslibFrontier.Foundations.Data.Nat.Choose
-import CslibFrontier.Foundations.Data.Nat.Choose.Vandermonde
 import CslibFrontier.Foundations.Data.Nat.Log
 import CslibFrontier.Foundations.Data.Nat.Power
-import Mathlib.Analysis.Complex.ExponentialBounds
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
 import Mathlib.Tactic.Ring
@@ -65,23 +62,25 @@ In [LiLiangYuZhou2024] (`arXiv:2310.20536v1`):
     `nLow ℓ = nFloor ℓ - delta ℓ` and `nHigh ℓ = nFloor ℓ + delta ℓ` (`n - 1` and `n` at `ℓ = 0`),
     ID bit-widths `idBits ℓ = 4 * Nat.clog 2 (2 * nFloor ℓ)`, and quotient ranges `quotUniv ℓ`
     satisfy the exact conservation identity `numNodes ℓ * 2 ^ idBits ℓ * quotUniv ℓ = paddedUniv`
-    at every level `1 ≤ ℓ ≤ k` (`numNodes_mul_two_pow_idBits_mul_quotUniv`).
-* **Shared root value pool (Section 5.2 adaptation for arbitrary value bound `V`)**:
+    at every level `1 ≤ ℓ ≤ k` (`TreeSchedule.numNodes_mul_idUniv_mul_quotUniv`).
+* **Shared root value pool capacity (Section 5.2 adaptation for arbitrary value bound `V`)**:
   Section 5.2 (PDF pp. 28–29 / printed pp. 27–28) analyzes key-only root tables where `O(Δ_1)`
   unused root slots per root cost `O((N / n_1) * Δ_1 * log U) = O(N / log ^ 2 N)` bits. For general
   values in `Fin V` (with no upper bound on `log₂ V`), storing `⌈log₂ V⌉` bits inside every unused
-  root slot would waste `Θ((n / log ^ 3 n) * log₂ V)` bits. Instead, root tables store `(x_quot,
-  valPtr)` (`O(log U)` bits) indexing a shared root value pool of exact capacity
-  `rootValPoolCap = n - numNodes 2 * nLow 2`, so total value slots across the entire tree equal `n`
-  (`n_leaves` in leaf minimaps plus `n - n_leaves` in inner/root value arrays) and total bit usage
-  is bounded by `infoBits U V n + O(R)` unconditionally for **all** `1 ≤ V`.
+  root slot would waste `Θ((n / log ^ 3 n) * log₂ V)` bits. Instead, the bit-budget layout in
+  `BitBudget.lean` allocates a shared root value pool of exact capacity
+  `rootValPoolCap = n - numNodes 2 * nLow 2` (while the pure `TreeState` model stores `Fin V` values
+  directly in `RootNode` and satisfies `rootKeyCount ≤ rootValPoolCap`), so total value slots across
+  the entire tree equal `n` (`TreeSchedule.total_value_slots_eq_cap`) and total bit usage in
+  `Params.lean` is bounded by `infoBits U V n + O(R)` unconditionally for **all** `1 ≤ V`.
 
 ## Scope and explicit out-of-scope gaps
 
-This module covers only the pure parameter schedule and bit-budget accounting for the Section 5
-large-parameter polynomial-`U` milestone (`n / log₂ ^ 0.1 n ≤ R ≤ n`, `n ^ (1 + α_min) ≤ U ≤
-n ^ (1 + α_max)`). Node data structures (`StorageNode.lean`), pure tree operations and expected
-rehashing (`TreeModel.lean`), Word-RAM `Memory.Prog` compilation, Section 4 small-parameter adapter
+This module covers the integer-exact parameter schedule and value-slot conservation identities for
+the Section 5 large-parameter polynomial-`U` milestone (`n / log₂ ^ 0.1 n ≤ R ≤ n`,
+`n ^ (1 + α_min) ≤ U ≤ n ^ (1 + α_max)`). Bit-budget accounting (`BitBudget.lean`, `Params.lean`),
+node data structures (`StorageNode.lean`), pure tree operations and expected rehashing
+(`TreeModel.lean`), Word-RAM `Memory.Prog` compilation, Section 4 small-parameter adapter
 trees (`R < n / log₂ ^ 0.1 n`), strong history independence, dynamic resizing in `|S|`, and
 super-polynomial key universes (`U > n ^ (1 + α_max)`) are out of scope here.
 
@@ -124,10 +123,10 @@ open Finset
 /-! ## Section 1: Information benchmark, clamped redundancy, and integer schedule -/
 
 /-- Exact integer ceiling `⌈log₂(C(U, n) * V ^ n)⌉` of the information-theoretic dictionary bit
-lower bound, avoiding per-key ceiling loss when `V` is not a power of two. -/
-@[expose]
-def infoBits (U V n : ℕ) : ℕ :=
-  Nat.clog 2 (U.choose n * V ^ n)
+lower bound (`Minimap.infoBits U n V`), avoiding per-key ceiling loss when `V` is not a power of
+two. -/
+abbrev infoBits (U V n : ℕ) : ℕ :=
+  Minimap.infoBits U n V
 
 /-- Minimum clamped redundancy ratio `r₀ = 256` (`2 ^ 8`), chosen so leaf target sizes `r ^ 9`
 dominate `(150 * m) ^ 3` in the child-router moment concentration inequality across all `R ≤ n`. -/

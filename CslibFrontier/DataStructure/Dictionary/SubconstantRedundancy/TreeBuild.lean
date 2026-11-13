@@ -9,14 +9,13 @@ module
 
 public import CslibFrontier.Init
 public import CslibFrontier.DataStructure.Dictionary.SubconstantRedundancy.TreeDelete
-import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.Ring
 
 /-!
 # Subtree Seed Resampling and Canonical Multi-Level Tree Construction
 
 This file formalizes good-seed existence (`exists_goodSubtreeSeeds`, `exists_allGoodSeeds`,
-`exists_allGoodSeeds_localized`) and canonical bottom-up tree construction (`buildTreeFromSeeds`)
+`exists_allGoodSeeds_localized_pair`) and canonical bottom-up tree
+construction (`buildTreeFromSeeds`)
 for the subconstant-redundancy dictionary tree of Tianxiao Li, Jingxun Liang, Huacheng Yu, and
 Renfei Zhou, *Dynamic Dictionary with Subconstant Wasted Bits per Key*
 ([LiLiangYuZhou2024, Sections 5.2 and 5.5];
@@ -33,8 +32,9 @@ printed pp. 26–29 and 33).
 ## Main results
 
 * `TreeSchedule.exists_goodSubtreeSeeds`, `TreeSchedule.exists_allGoodSeeds`,
-  `TreeSchedule.exists_allGoodSeeds_localized`: existence of good subtree/forest seed assignments
-  under `ConcentrationReady` across both `DoubleTabulation` and small-node `trinomialPolyHash`.
+  `TreeSchedule.exists_allGoodSeeds_localized_pair`: existence of good subtree/forest seed
+  assignments under `ConcentrationReady` across both `DoubleTabulation` and small-node
+  `trinomialPolyHash`.
 * `TreeSchedule.wellFormedPadded_buildTreeFromSeeds`: `WellFormedPadded` for `buildTreeFromSeeds`.
 
 ## References
@@ -114,10 +114,129 @@ private theorem updateSeedsAtLevel_self {P : TreeSchedule} (base : P.SeedAssignm
     (updateSeedsAtLevel base ℓ₀ u₀ L hL f).seed L hL v = f v hsub := by
   dsimp only [updateSeedsAtLevel]; rw [dite_eq_left rfl, dite_eq_left hsub]
 
-/-- **Subtree good-seed existence (`Algorithm 4` resampling)**: whenever `#S ∈ [nLow 0, nHigh 0]`
-and all strict ancestors `j < ℓ₀` of `u₀` have good seeds in `base`, there exists `seeds'` agreeing
-with `base` outside `InSubtree ℓ₀ u₀` whose every node in `InSubtree ℓ₀ u₀` satisfies
-`IsGoodNodeSeed` on `S`. -/
+/-- **Paired subtree good-seed existence (`Algorithm 4` resampling)**: whenever `#S₁, #S₂ ∈
+[nLow 0, nHigh 0]` and all strict ancestors `j < ℓ₀` of `u₀` have good seeds in `base` on both `S₁`
+and `S₂`, there exists `seeds'` agreeing with `base` outside `InSubtree ℓ₀ u₀` whose every node in
+`InSubtree ℓ₀ u₀` satisfies `IsGoodNodeSeed` on both `S₁` and `S₂`. -/
+theorem exists_goodSubtreeSeeds_pair {P : TreeSchedule} (hcr : P.ConcentrationReady)
+    (base : P.SeedAssignment) {S₁ S₂ : Finset (Fin P.paddedUniv)}
+    (hcard₁ : P.nLow 0 ≤ #S₁ ∧ #S₁ ≤ P.nHigh 0)
+    (hcard₂ : P.nLow 0 ≤ #S₂ ∧ #S₂ ≤ P.nHigh 0)
+    {ℓ₀ : ℕ} (hℓ₀ : ℓ₀ ≤ P.depth) (u₀ : Fin (P.numNodes ℓ₀))
+    (hanc₁ : ∀ (j : ℕ) (hj : j < ℓ₀),
+      P.IsGoodNodeSeed j (base.seed j (hj.le.trans hℓ₀) (P.ancestorAt hj.le u₀))
+        (base.primSetAt S₁ j (hj.le.trans hℓ₀) (P.ancestorAt hj.le u₀)))
+    (hanc₂ : ∀ (j : ℕ) (hj : j < ℓ₀),
+      P.IsGoodNodeSeed j (base.seed j (hj.le.trans hℓ₀) (P.ancestorAt hj.le u₀))
+        (base.primSetAt S₂ j (hj.le.trans hℓ₀) (P.ancestorAt hj.le u₀))) :
+    ∃ seeds' : P.SeedAssignment,
+      (∀ (j : ℕ) (hj : j ≤ P.depth) (v : Fin (P.numNodes j)),
+        ¬ P.InSubtree ℓ₀ u₀ j v → seeds'.seed j hj v = base.seed j hj v) ∧
+      (∀ (j : ℕ) (hj : j ≤ P.depth) (v : Fin (P.numNodes j)),
+        P.InSubtree ℓ₀ u₀ j v →
+          P.IsGoodNodeSeed j (seeds'.seed j hj v) (seeds'.primSetAt S₁ j hj v) ∧
+          P.IsGoodNodeSeed j (seeds'.seed j hj v) (seeds'.primSetAt S₂ j hj v)) := by
+  have hstep : ∀ (t : ℕ) (ht : ℓ₀ + t ≤ P.depth),
+      ∃ s : P.SeedAssignment,
+        (∀ j hj v, ¬ P.InSubtree ℓ₀ u₀ j v → s.seed j hj v = base.seed j hj v) ∧
+        (∀ j hj v, P.InSubtree ℓ₀ u₀ j v → j ≤ ℓ₀ + t →
+          P.IsGoodNodeSeed j (s.seed j hj v) (s.primSetAt S₁ j hj v) ∧
+          P.IsGoodNodeSeed j (s.seed j hj v) (s.primSetAt S₂ j hj v)) := by
+    intro t
+    induction t with
+    | zero =>
+      intro ht
+      obtain ⟨hinj₁, hb₁, _⟩ := base.ancestorsGood_invariants hcard₁ ℓ₀ hℓ₀ u₀ hanc₁
+      obtain ⟨hinj₂, hb₂, _⟩ := base.ancestorsGood_invariants hcard₂ ℓ₀ hℓ₀ u₀ hanc₂
+      have hcp₁ : #(base.primSetAt S₁ ℓ₀ hℓ₀ u₀) = #(base.activeAt S₁ ℓ₀ hℓ₀ u₀) :=
+        card_image_of_injOn hinj₁
+      have hcp₂ : #(base.primSetAt S₂ ℓ₀ hℓ₀ u₀) = #(base.activeAt S₂ ℓ₀ hℓ₀ u₀) :=
+        card_image_of_injOn hinj₂
+      have hex₀ := P.exists_isGoodNodeSeed_pair hcr hℓ₀
+        (base.primSetAt S₁ ℓ₀ hℓ₀ u₀) (base.primSetAt S₂ ℓ₀ hℓ₀ u₀)
+        (hcp₁ ▸ hb₁.1) (hcp₁ ▸ hb₁.2) (hcp₂ ▸ hb₂.1) (hcp₂ ▸ hb₂.2)
+      let g₀ := Classical.choose hex₀
+      have hg₀ := Classical.choose_spec hex₀
+      let s₀ := updateSeedsAtLevel base ℓ₀ u₀ ℓ₀ hℓ₀ fun _ _ => g₀
+      refine ⟨s₀, fun j hj v hnot => updateSeedsAtLevel_outside base ℓ₀ u₀ hℓ₀ _ hj v hnot, ?_⟩
+      intro j hj v ⟨h0j, hanc_v⟩ hjle
+      have hj_eq : ℓ₀ = j := by omega
+      subst hj_eq
+      have hv : u₀ = v := by simpa only [P.ancestorAt_refl] using hanc_v.symm
+      subst hv
+      have hp₁ : s₀.primSetAt S₁ ℓ₀ hj u₀ = base.primSetAt S₁ ℓ₀ hℓ₀ u₀ :=
+        SeedAssignment.primSetAt_congr_ancestors S₁ hj u₀ fun i hi =>
+          updateSeedsAtLevel_ne base ℓ₀ u₀ hℓ₀ _ (hi.le.trans hj) _ (by omega)
+      have hp₂ : s₀.primSetAt S₂ ℓ₀ hj u₀ = base.primSetAt S₂ ℓ₀ hℓ₀ u₀ :=
+        SeedAssignment.primSetAt_congr_ancestors S₂ hj u₀ fun i hi =>
+          updateSeedsAtLevel_ne base ℓ₀ u₀ hℓ₀ _ (hi.le.trans hj) _ (by omega)
+      rw [hp₁, hp₂, updateSeedsAtLevel_self base ℓ₀ u₀ hℓ₀ _ u₀ (P.inSubtree_refl u₀)]
+      exact hg₀
+    | succ t ih =>
+      intro ht1
+      obtain ⟨s_t, hout_t, hgood_t⟩ := ih (by omega)
+      let L := ℓ₀ + (t + 1)
+      have hanc_of : ∀ {A : Finset (Fin P.paddedUniv)}
+          (hancA : ∀ (j : ℕ) (hj : j < ℓ₀),
+            P.IsGoodNodeSeed j (base.seed j (hj.le.trans hℓ₀) (P.ancestorAt hj.le u₀))
+              (base.primSetAt A j (hj.le.trans hℓ₀) (P.ancestorAt hj.le u₀)))
+          (hgA : ∀ j hj v, P.InSubtree ℓ₀ u₀ j v → j ≤ ℓ₀ + t →
+            P.IsGoodNodeSeed j (s_t.seed j hj v) (s_t.primSetAt A j hj v))
+          (v : Fin (P.numNodes L)), P.InSubtree ℓ₀ u₀ L v → ∀ (j : ℕ) (hj : j < L),
+            P.IsGoodNodeSeed j (s_t.seed j (hj.le.trans ht1) (P.ancestorAt hj.le v))
+              (s_t.primSetAt A j (hj.le.trans ht1) (P.ancestorAt hj.le v)) := by
+        intro A hancA hgA v ⟨h0L, hanc_v⟩ j hj
+        by_cases h0j : ℓ₀ ≤ j
+        · exact hgA j (hj.le.trans ht1) (P.ancestorAt hj.le v)
+            ⟨h0j, by rw [P.ancestorAt_trans h0j hj.le v, hanc_v]⟩ (by omega)
+        · have hjlt0 : j < ℓ₀ := by omega
+          have htr : P.ancestorAt hj.le v = P.ancestorAt hjlt0.le u₀ := by
+            rw [← hanc_v, P.ancestorAt_trans hjlt0.le h0L v]
+          rw [htr, hout_t j _ _ (fun ⟨hge, _⟩ => h0j hge),
+            SeedAssignment.primSetAt_congr_ancestors A _ _ fun i _ =>
+              hout_t i _ _ fun ⟨hge, _⟩ => by omega]
+          exact hancA j hjlt0
+      have hex_L : ∀ (v : Fin (P.numNodes L)), P.InSubtree ℓ₀ u₀ L v →
+          ∃ g : P.NodeSeed L,
+            P.IsGoodNodeSeed L g (s_t.primSetAt S₁ L ht1 v) ∧
+            P.IsGoodNodeSeed L g (s_t.primSetAt S₂ L ht1 v) := by
+        intro v hv
+        obtain ⟨hinj₁, hb₁, _⟩ := s_t.ancestorsGood_invariants hcard₁ L ht1 v
+          (hanc_of hanc₁ (fun j hj w hw hle => (hgood_t j hj w hw hle).1) v hv)
+        obtain ⟨hinj₂, hb₂, _⟩ := s_t.ancestorsGood_invariants hcard₂ L ht1 v
+          (hanc_of hanc₂ (fun j hj w hw hle => (hgood_t j hj w hw hle).2) v hv)
+        have hcp₁ : #(s_t.primSetAt S₁ L ht1 v) = #(s_t.activeAt S₁ L ht1 v) :=
+          card_image_of_injOn hinj₁
+        have hcp₂ : #(s_t.primSetAt S₂ L ht1 v) = #(s_t.activeAt S₂ L ht1 v) :=
+          card_image_of_injOn hinj₂
+        exact P.exists_isGoodNodeSeed_pair hcr ht1
+          (s_t.primSetAt S₁ L ht1 v) (s_t.primSetAt S₂ L ht1 v)
+          (hcp₁ ▸ hb₁.1) (hcp₁ ▸ hb₁.2) (hcp₂ ▸ hb₂.1) (hcp₂ ▸ hb₂.2)
+      let f_L : ∀ v : Fin (P.numNodes L), P.InSubtree ℓ₀ u₀ L v → P.NodeSeed L :=
+        fun v hv => Classical.choose (hex_L v hv)
+      let s_next := updateSeedsAtLevel s_t ℓ₀ u₀ L ht1 f_L
+      refine ⟨s_next,
+        fun j hj v hnot =>
+          (updateSeedsAtLevel_outside s_t ℓ₀ u₀ ht1 f_L hj v hnot).trans (hout_t j hj v hnot),
+        ?_⟩
+      intro j hj v hsub hjle
+      have hp₁ : s_next.primSetAt S₁ j hj v = s_t.primSetAt S₁ j hj v :=
+        SeedAssignment.primSetAt_congr_ancestors S₁ hj v fun i hi =>
+          updateSeedsAtLevel_ne s_t ℓ₀ u₀ ht1 f_L (hi.le.trans hj) _ (by omega)
+      have hp₂ : s_next.primSetAt S₂ j hj v = s_t.primSetAt S₂ j hj v :=
+        SeedAssignment.primSetAt_congr_ancestors S₂ hj v fun i hi =>
+          updateSeedsAtLevel_ne s_t ℓ₀ u₀ ht1 f_L (hi.le.trans hj) _ (by omega)
+      rw [hp₁, hp₂]
+      by_cases hjL : j = L
+      · subst hjL
+        rw [updateSeedsAtLevel_self s_t ℓ₀ u₀ ht1 f_L v hsub]
+        exact Classical.choose_spec (hex_L v hsub)
+      · rw [updateSeedsAtLevel_ne s_t ℓ₀ u₀ ht1 f_L hj v hjL]
+        exact hgood_t j hj v hsub (by omega)
+  obtain ⟨s, hout, hgood⟩ := hstep (P.depth - ℓ₀) (by omega)
+  exact ⟨s, hout, fun j hj v hsub => hgood j hj v hsub (by omega)⟩
+
+/-- **Subtree good-seed existence (`Algorithm 4` resampling)** on a single set `S`. -/
 theorem exists_goodSubtreeSeeds {P : TreeSchedule} (hcr : P.ConcentrationReady)
     (base : P.SeedAssignment) {S : Finset (Fin P.paddedUniv)}
     (hcard0 : P.nLow 0 ≤ #S ∧ #S ≤ P.nHigh 0) {ℓ₀ : ℕ} (hℓ₀ : ℓ₀ ≤ P.depth)
@@ -131,87 +250,8 @@ theorem exists_goodSubtreeSeeds {P : TreeSchedule} (hcr : P.ConcentrationReady)
       (∀ (j : ℕ) (hj : j ≤ P.depth) (v : Fin (P.numNodes j)),
         P.InSubtree ℓ₀ u₀ j v →
           P.IsGoodNodeSeed j (seeds'.seed j hj v) (seeds'.primSetAt S j hj v)) := by
-  have hstep : ∀ (t : ℕ) (ht : ℓ₀ + t ≤ P.depth),
-      ∃ s : P.SeedAssignment,
-        (∀ j hj v, ¬ P.InSubtree ℓ₀ u₀ j v → s.seed j hj v = base.seed j hj v) ∧
-        (∀ j hj v, P.InSubtree ℓ₀ u₀ j v → j ≤ ℓ₀ + t →
-          P.IsGoodNodeSeed j (s.seed j hj v) (s.primSetAt S j hj v)) := by
-    intro t
-    induction t with
-    | zero =>
-      intro ht
-      obtain ⟨hinj₀, hb₀, _⟩ := base.ancestorsGood_invariants hcard0 ℓ₀ hℓ₀ u₀ hanc₀
-      have hcard_prim₀ : #(base.primSetAt S ℓ₀ hℓ₀ u₀) = #(base.activeAt S ℓ₀ hℓ₀ u₀) :=
-        card_image_of_injOn hinj₀
-      have hex₀ := P.exists_isGoodNodeSeed hcr hℓ₀ (base.primSetAt S ℓ₀ hℓ₀ u₀)
-        (hcard_prim₀ ▸ hb₀.1) (hcard_prim₀ ▸ hb₀.2)
-      let g₀ := Classical.choose hex₀
-      have hg₀ : P.IsGoodNodeSeed ℓ₀ g₀ (base.primSetAt S ℓ₀ hℓ₀ u₀) := Classical.choose_spec hex₀
-      let s₀ := updateSeedsAtLevel base ℓ₀ u₀ ℓ₀ hℓ₀ fun _ _ => g₀
-      refine ⟨s₀, fun j hj v hnot => updateSeedsAtLevel_outside base ℓ₀ u₀ hℓ₀ _ hj v hnot, ?_⟩
-      intro j hj v hsub hjle
-      obtain ⟨h0j, hanc_v⟩ := hsub
-      have hj_eq : ℓ₀ = j := by omega
-      subst hj_eq
-      have hv : u₀ = v := by simpa only [P.ancestorAt_refl] using hanc_v.symm
-      subst hv
-      have hprim_eq : s₀.primSetAt S ℓ₀ hj u₀ = base.primSetAt S ℓ₀ hℓ₀ u₀ :=
-        SeedAssignment.primSetAt_congr_ancestors S hj u₀ fun i hi =>
-          updateSeedsAtLevel_ne base ℓ₀ u₀ hℓ₀ _ (hi.le.trans hj) _ (by omega)
-      rw [hprim_eq, updateSeedsAtLevel_self base ℓ₀ u₀ hℓ₀ _ u₀ (P.inSubtree_refl u₀)]
-      exact hg₀
-    | succ t ih =>
-      intro ht1
-      obtain ⟨s_t, hout_t, hgood_t⟩ := ih (by omega)
-      let L := ℓ₀ + (t + 1)
-      have hanc_L : ∀ (v : Fin (P.numNodes L)), P.InSubtree ℓ₀ u₀ L v →
-          ∀ (j : ℕ) (hj : j < L),
-            P.IsGoodNodeSeed j (s_t.seed j (hj.le.trans ht1) (P.ancestorAt hj.le v))
-              (s_t.primSetAt S j (hj.le.trans ht1) (P.ancestorAt hj.le v)) := by
-        intro v ⟨h0L, hanc_v⟩ j hj
-        by_cases h0j : ℓ₀ ≤ j
-        · refine hgood_t j (hj.le.trans ht1) (P.ancestorAt hj.le v)
-            ⟨h0j, by rw [P.ancestorAt_trans h0j hj.le v, hanc_v]⟩ (by omega)
-        · have hjlt0 : j < ℓ₀ := by omega
-          have htr : P.ancestorAt hj.le v = P.ancestorAt hjlt0.le u₀ := by
-            rw [← hanc_v, P.ancestorAt_trans hjlt0.le h0L v]
-          rw [htr]
-          have hnot_j : ¬ P.InSubtree ℓ₀ u₀ j (P.ancestorAt hjlt0.le u₀) := fun ⟨hge, _⟩ =>
-            h0j hge
-          have hprim_eq : s_t.primSetAt S j (hjlt0.le.trans hℓ₀) (P.ancestorAt hjlt0.le u₀) =
-              base.primSetAt S j (hjlt0.le.trans hℓ₀) (P.ancestorAt hjlt0.le u₀) :=
-            SeedAssignment.primSetAt_congr_ancestors S _ _ fun i hi =>
-              hout_t i _ _ fun ⟨hge, _⟩ => by omega
-          rw [hout_t j _ _ hnot_j, hprim_eq]
-          exact hanc₀ j hjlt0
-      have hex_L : ∀ (v : Fin (P.numNodes L)), P.InSubtree ℓ₀ u₀ L v →
-          ∃ g : P.NodeSeed L, P.IsGoodNodeSeed L g (s_t.primSetAt S L ht1 v) := by
-        intro v hv
-        obtain ⟨hinj_v, hb_v, _⟩ := s_t.ancestorsGood_invariants hcard0 L ht1 v (hanc_L v hv)
-        have hcp : #(s_t.primSetAt S L ht1 v) = #(s_t.activeAt S L ht1 v) :=
-          card_image_of_injOn hinj_v
-        exact P.exists_isGoodNodeSeed hcr ht1 (s_t.primSetAt S L ht1 v)
-          (hcp ▸ hb_v.1) (hcp ▸ hb_v.2)
-      let f_L : ∀ v : Fin (P.numNodes L), P.InSubtree ℓ₀ u₀ L v → P.NodeSeed L :=
-        fun v hv => Classical.choose (hex_L v hv)
-      let s_next := updateSeedsAtLevel s_t ℓ₀ u₀ L ht1 f_L
-      refine ⟨s_next,
-        fun j hj v hnot =>
-          (updateSeedsAtLevel_outside s_t ℓ₀ u₀ ht1 f_L hj v hnot).trans (hout_t j hj v hnot),
-        ?_⟩
-      intro j hj v hsub hjle
-      have hprim_eq : s_next.primSetAt S j hj v = s_t.primSetAt S j hj v :=
-        SeedAssignment.primSetAt_congr_ancestors S hj v fun i hi =>
-          updateSeedsAtLevel_ne s_t ℓ₀ u₀ ht1 f_L (hi.le.trans hj) _ (by omega)
-      rw [hprim_eq]
-      by_cases hjL : j = L
-      · subst hjL
-        rw [updateSeedsAtLevel_self s_t ℓ₀ u₀ ht1 f_L v hsub]
-        exact Classical.choose_spec (hex_L v hsub)
-      · rw [updateSeedsAtLevel_ne s_t ℓ₀ u₀ ht1 f_L hj v hjL]
-        exact hgood_t j hj v hsub (by omega)
-  obtain ⟨s, hout, hgood⟩ := hstep (P.depth - ℓ₀) (by omega)
-  exact ⟨s, hout, fun j hj v hsub => hgood j hj v hsub (by omega)⟩
+  obtain ⟨s, hout, hgood⟩ := exists_goodSubtreeSeeds_pair hcr base hcard0 hcard0 hℓ₀ u₀ hanc₀ hanc₀
+  exact ⟨s, hout, fun j hj v hsub => (hgood j hj v hsub).1⟩
 
 /-- **Global good-seed existence** for any `S` with `#S ∈ [nLow 0, nHigh 0]`. -/
 theorem exists_allGoodSeeds {P : TreeSchedule} (hcr : P.ConcentrationReady)
@@ -224,10 +264,11 @@ theorem exists_allGoodSeeds {P : TreeSchedule} (hcr : P.ConcentrationReady)
     (fun _ hj => False.elim (by omega))
   exact ⟨seeds, hcard0, fun ℓ hℓ v => hgood ℓ hℓ v ⟨Nat.zero_le ℓ, Subsingleton.elim _ u₀⟩⟩
 
-/-- **Localized subtree seed repair** after a single-key update at `x`: if `base.AllGoodSeeds S`,
-`S'` agrees with `S` off `u₀ = base.nodeAt ℓ₀ hℓ₀ x`, `#S' ∈ [nLow 0, nHigh 0]`, and all levels
-`< ℓ₀` remain good on `S'`, resampling only `InSubtree ℓ₀ u₀` yields `seeds'.AllGoodSeeds S'`. -/
-theorem exists_allGoodSeeds_localized {P : TreeSchedule} (hcr : P.ConcentrationReady)
+/-- **Simultaneous pre/post-update localized subtree seed repair**: if `base.AllGoodSeeds S`, `S'`
+agrees with `S` off `u₀`, `#S' ∈ [nLow 0, nHigh 0]`, and all levels `< ℓ₀` remain good on `S'`,
+resampling only `InSubtree ℓ₀ u₀` yields `seeds'` simultaneously good on both `S` and `S'` so
+`rehashSubtree` can run on `S` followed by the normal-path update to `S'`. -/
+theorem exists_allGoodSeeds_localized_pair {P : TreeSchedule} (hcr : P.ConcentrationReady)
     (base : P.SeedAssignment) {S S' : Finset (Fin P.paddedUniv)}
     (hbase : base.AllGoodSeeds S) (hcard0' : P.nLow 0 ≤ #S' ∧ #S' ≤ P.nHigh 0)
     {ℓ₀ : ℕ} (hℓ₀ : ℓ₀ ≤ P.depth) (u₀ : Fin (P.numNodes ℓ₀))
@@ -238,32 +279,38 @@ theorem exists_allGoodSeeds_localized {P : TreeSchedule} (hcr : P.ConcentrationR
     ∃ seeds' : P.SeedAssignment,
       (∀ (j : ℕ) (hj : j ≤ P.depth) (v : Fin (P.numNodes j)),
         ¬ P.InSubtree ℓ₀ u₀ j v → seeds'.seed j hj v = base.seed j hj v) ∧
-      seeds'.AllGoodSeeds S' := by
-  obtain ⟨seeds', hout, hsub_good⟩ := exists_goodSubtreeSeeds hcr base hcard0' hℓ₀ u₀
+      seeds'.AllGoodSeeds S ∧ seeds'.AllGoodSeeds S' := by
+  obtain ⟨seeds', hout, hsub_good⟩ := exists_goodSubtreeSeeds_pair hcr base hbase.1 hcard0' hℓ₀ u₀
+    (fun j hj => hbase.2 j (hj.le.trans hℓ₀) (P.ancestorAt hj.le u₀))
     (fun j hj => hbelow j hj (P.ancestorAt hj.le u₀))
-  refine ⟨seeds', hout, hcard0', fun j hj w => ?_⟩
-  by_cases hsub : P.InSubtree ℓ₀ u₀ j w
-  · exact hsub_good j hj w hsub
-  · have hprim_eq : seeds'.primSetAt S' j hj w = base.primSetAt S' j hj w :=
-      SeedAssignment.primSetAt_congr_ancestors S' hj w fun i hi =>
-        hout i (hi.le.trans hj) _ (P.not_inSubtree_ancestor_of_not_inSubtree hi.le hsub)
-    rw [hout j hj w hsub, hprim_eq]
-    by_cases hjlt : j < ℓ₀
-    · exact hbelow j hjlt w
-    · have h0j : ℓ₀ ≤ j := by omega
-      have hanc_ne : P.ancestorAt h0j w ≠ u₀ := fun he => hsub ⟨h0j, he⟩
-      have hact_eq : base.activeAt S' j hj w = base.activeAt S j hj w := by
-        ext x
-        simp only [SeedAssignment.mem_activeAt_iff]
-        rcases hdiff x with hiff | hnx0
-        · rw [hiff]
-        · have hnw : base.nodeAt j hj x ≠ w := fun h =>
-            hanc_ne (by rw [← h, base.ancestorAt_nodeAt h0j hj x, hnx0])
-          simp [hnw]
-      have hp_eq : base.primSetAt S' j hj w = base.primSetAt S j hj w := by
-        dsimp only [SeedAssignment.primSetAt]; rw [hact_eq]
-      rw [hp_eq]
+  refine ⟨seeds', hout, ⟨hbase.1, fun j hj w => ?_⟩, ⟨hcard0', fun j hj w => ?_⟩⟩
+  · by_cases hsub : P.InSubtree ℓ₀ u₀ j w
+    · exact (hsub_good j hj w hsub).1
+    · rw [hout j hj w hsub,
+        SeedAssignment.primSetAt_congr_ancestors S hj w fun i hi =>
+          hout i (hi.le.trans hj) _ (P.not_inSubtree_ancestor_of_not_inSubtree hi.le hsub)]
       exact hbase.2 j hj w
+  · by_cases hsub : P.InSubtree ℓ₀ u₀ j w
+    · exact (hsub_good j hj w hsub).2
+    · rw [hout j hj w hsub,
+        SeedAssignment.primSetAt_congr_ancestors S' hj w fun i hi =>
+          hout i (hi.le.trans hj) _ (P.not_inSubtree_ancestor_of_not_inSubtree hi.le hsub)]
+      by_cases hjlt : j < ℓ₀
+      · exact hbelow j hjlt w
+      · have h0j : ℓ₀ ≤ j := by omega
+        have hanc_ne : P.ancestorAt h0j w ≠ u₀ := fun he => hsub ⟨h0j, he⟩
+        have hact_eq : base.activeAt S' j hj w = base.activeAt S j hj w := by
+          ext x
+          simp only [SeedAssignment.mem_activeAt_iff]
+          rcases hdiff x with hiff | hnx0
+          · rw [hiff]
+          · have hnw : base.nodeAt j hj x ≠ w := fun h =>
+              hanc_ne (by rw [← h, base.ancestorAt_nodeAt h0j hj x, hnx0])
+            simp [hnw]
+        have hp_eq : base.primSetAt S' j hj w = base.primSetAt S j hj w := by
+          dsimp only [SeedAssignment.primSetAt]; rw [hact_eq]
+        rw [hp_eq]
+        exact hbase.2 j hj w
 
 /-! ## Section 2: `ValidStoreLvl`, canonical bottom-up storage levels, and `buildTreeFromSeeds` -/
 

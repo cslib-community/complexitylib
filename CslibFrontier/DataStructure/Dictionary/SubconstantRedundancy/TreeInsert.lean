@@ -9,8 +9,6 @@ module
 
 public import CslibFrontier.Init
 public import CslibFrontier.DataStructure.Dictionary.SubconstantRedundancy.TreeQuery
-import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.Ring
 
 /-!
 # Normal-Path Fresh Insertion in the Multi-Level Dictionary Tree

@@ -9,16 +9,17 @@ module
 
 public import CslibFrontier.Init
 public import CslibFrontier.DataStructure.Dictionary.SubconstantRedundancy.Params
+import CslibFrontier.Foundations.Data.Finset.Density
 
 /-!
-# Subconstant-Redundancy Tree Nodes, Regime-Switched Seeds, and Metadata Separation
+# Regime-Switched Child-Router and Node-Level Hash Seeds
 
-This file formalizes the pure node-level storage structures, regime-switched hash-seed spaces,
-seed-failure concentration bounds, and Section 5.6 metadata-versus-payload separation for the
-multi-level dictionary tree of Tianxiao Li, Jingxun Liang, Huacheng Yu, and Renfei Zhou,
-*Dynamic Dictionary with Subconstant Wasted Bits per Key* ([LiLiangYuZhou2024, Sections 5.2, 5.4,
-5.5, and 5.6]; [arXiv:2310.20536v1](https://arxiv.org/abs/2310.20536v1), PDF pp. 27–36 /
-printed pp. 26–35).
+This file formalizes the regime-switched child-router seed family (`RouterSeed`), grouped per-node
+hash-seed spaces (`NodeSeed`), and unified seed-failure concentration bounds for the multi-level
+dictionary tree of Tianxiao Li, Jingxun Liang, Huacheng Yu, and Renfei Zhou, *Dynamic Dictionary
+with Subconstant Wasted Bits per Key* ([LiLiangYuZhou2024, Sections 5.4 and 5.5];
+[arXiv:2310.20536v1](https://arxiv.org/abs/2310.20536v1), PDF pp. 32–34 / printed pp. 31–33).
+Pure node storage structures and Section 5.6 metadata separation are defined in `StorageNode.lean`.
 
 ## Regime-switched child routing (formalization adaptation)
 
@@ -49,8 +50,6 @@ Both regimes satisfy the identical bucket-window failure bound `≤ 1 / (nFloor 
   `TreeSchedule.routerPerm`: regime-switched child-router seed family and Feistel bijection.
 * `TreeSchedule.PrimId`, `TreeSchedule.NodeSeed`, `TreeSchedule.IsGoodNodeSeed`: grouped per-node
   hash seed `g_u` (`Section 5.5`, PDF p. 34 / printed p. 33) and collision/load-balance predicate.
-* `WaitingList`, `StorageTableMeta`, `StorageTable`, `LeafMeta`, `LeafNode`, `InnerNode`,
-  `RootNode`, `RootValPool`: pure node storage types with Section 5.6 metadata-only slot location.
 
 ## Main results
 
@@ -59,8 +58,9 @@ Both regimes satisfy the identical bucket-window failure bound `≤ 1 / (nFloor 
 * `TreeSchedule.smallRouterDegree_le`: constant `O_{ε, α}(1)` polynomial degree below threshold.
 * `TreeSchedule.dens_routerRound_outside_bounds_le`: unified `1 / (nFloor ℓ) ^ 2` child-load failure
   bound across both child-router regimes (`Lemma 5.1(c)`, PDF p. 32 / printed p. 31).
-* `TreeSchedule.dens_not_isGoodNodeSeed_le`, `TreeSchedule.exists_isGoodNodeSeed`: unified
-  `3 / (nFloor ℓ) ^ 2` node-seed failure bound (`Section 5.5`, PDF p. 34 / printed p. 33).
+* `TreeSchedule.dens_not_isGoodNodeSeed_le`, `TreeSchedule.exists_isGoodNodeSeed`,
+  `TreeSchedule.exists_isGoodNodeSeed_pair`: unified `3 / (nFloor ℓ) ^ 2` node-seed failure bound
+  and good-seed existence (`Section 5.5`, PDF p. 34 / printed p. 33).
 
 ## References
 
@@ -84,16 +84,6 @@ whenever `nLow ℓ < childRouterThreshold epsInv alphaInv` (`Section 5.4` small-
 @[expose]
 def smallRouterMaxDegree (epsInv alphaInv : ℕ) : ℕ :=
   2 * FeistelPerm.childRouterHalfInd (4 * FeistelPerm.childRouterThreshold epsInv alphaInv)
-
-private theorem dens_of_equiv {α β : Type*} [Fintype α] [Fintype β] (e : α ≃ β)
-    (Q : β → Prop) [DecidablePred Q] [DecidablePred fun a => Q (e a)] :
-    dens {b : β | Q b} = dens {a : α | Q (e a)} := by
-  have hset : ({b : β | Q b} : Finset β) = ({a : α | Q (e a)} : Finset α).map e.toEmbedding := by
-    ext b
-    simp only [mem_filter, mem_univ, true_and, mem_map, Equiv.toEmbedding_apply]
-    exact ⟨fun hb => ⟨e.symm b, by simpa only [e.apply_symm_apply] using hb, e.apply_symm_apply b⟩,
-      fun ⟨a, ha, hab⟩ => hab ▸ ha⟩
-  rw [dens_eq_card_div_card, dens_eq_card_div_card, hset, card_map, Fintype.card_congr e]
 
 private theorem dens_prod_le_of_good {α β : Type*} [Fintype α] [Nonempty α] [DecidableEq α]
     [Fintype β] [Nonempty β] (G : Finset α) (Q : α → β → Prop)
@@ -409,7 +399,7 @@ theorem dens_routerRound_outside_bounds_le (hcr : P.ConcentrationReady) {ℓ : �
     intro f hf b
     exact hcr.window_contained ℓ hℓ #S (FeistelPerm.bucketLoad f S b) hlo hhi (hf b).1 (hf b).2
   by_cases hdt : P.usesDoubleTabRouter ℓ
-  · rw [dens_of_equiv (P.routerSeedDoubleTabEquiv hdt)]
+  · rw [← Fintype.dens_filter_comp_equiv (P.routerSeedDoubleTabEquiv hdt)]
     have hthresh : FeistelPerm.childRouterThreshold P.epsInv P.alphaInv ≤ #S := hdt.trans hlo
     have hm_mono : FeistelPerm.childRouterHalfInd #S ≤
         FeistelPerm.childRouterHalfInd (P.nHigh ℓ) := by
@@ -448,7 +438,7 @@ theorem dens_routerRound_outside_bounds_le (hcr : P.ConcentrationReady) {ℓ : �
       exact_mod_cast hnat
     exact ((NNRat.cast_le.mpr (dens_le_dens hsub)).trans hbase).trans
       (one_div_le_one_div_of_le (sq_pos_of_pos hnF_pos) h4S)
-  · rw [dens_of_equiv (P.routerSeedTrinomialEquiv hdt)]
+  · rw [← Fintype.dens_filter_comp_equiv (P.routerSeedTrinomialEquiv hdt)]
     let m_hi := FeistelPerm.childRouterHalfInd (P.nHigh ℓ)
     let L_hi := Nat.clog 2 (max (P.nHigh ℓ) 2)
     have hm_eq : m_hi = 3 * L_hi + 4 := FeistelPerm.childRouterHalfInd_eq (P.nHigh ℓ)
@@ -700,7 +690,7 @@ theorem dens_not_isGoodNodeSeed_le (hcr : P.ConcentrationReady) {ℓ : ℕ} (h�
   have hnF_pos : (0 : ℝ) < (P.nFloor ℓ : ℝ) := Nat.cast_pos.mpr (P.nFloor_pos ℓ hℓ)
   cases ℓ with
   | zero =>
-    rw [dens_of_equiv P.nodeSeedZeroEquiv]
+    rw [← Fintype.dens_filter_comp_equiv P.nodeSeedZeroEquiv]
     have hsub0 : (Finset.univ.filter fun a : P.RouterSeed 0 =>
         ¬ P.IsGoodNodeSeed 0 (P.nodeSeedZeroEquiv a) S) ⊆
         Finset.univ.filter fun θ : P.RouterSeed 0 =>
@@ -723,7 +713,7 @@ theorem dens_not_isGoodNodeSeed_le (hcr : P.ConcentrationReady) {ℓ : ℕ} (h�
     have hid_le := FeistelPerm.dens_not_injOn_idCompressorHead_le_two_div_sq S0 hhi
       (P.nFloor_pos (j + 1) hℓ) (hcr.id_collision_bound (j + 1) (by omega) hℓ)
     by_cases hlt : j + 1 < P.depth
-    · rw [dens_of_equiv (P.nodeSeedInnerEquiv hlt)]
+    · rw [← Fintype.dens_filter_comp_equiv (P.nodeSeedInnerEquiv hlt)]
       have hsL : P.branchBits (j + 1) ≤ P.idBits (j + 1) := by
         have := P.idBits_step_le (j + 1) (by omega) hlt
         omega
@@ -786,7 +776,7 @@ theorem dens_not_isGoodNodeSeed_le (hcr : P.ConcentrationReady) {ℓ : ℕ} (h�
         _ ≤ 2 / (P.nFloor (j + 1) : ℝ) ^ 2 + 1 / (P.nFloor (j + 1) : ℝ) ^ 2 :=
             add_le_add hG_bound le_rfl
         _ = 3 / (P.nFloor (j + 1) : ℝ) ^ 2 := by ring
-    · rw [dens_of_equiv (P.nodeSeedLeafEquiv hlt)]
+    · rw [← Fintype.dens_filter_comp_equiv (P.nodeSeedLeafEquiv hlt)]
       have hsub_lf : (Finset.univ.filter fun idS : FeistelPerm.IdCompressorSeed (P.idBits (j + 1))
           (P.idCompRightUniv (j + 1)) =>
           ¬ P.IsGoodNodeSeed (j + 1) ((P.nodeSeedLeafEquiv hlt) idS) S) ⊆
@@ -849,6 +839,65 @@ theorem exists_isGoodNodeSeed (hcr : P.ConcentrationReady) {ℓ : ℕ} (hℓ : �
     exact Nat.pos_of_mul_pos_left (lhs_pos.trans_le hge)
   obtain ⟨g, hg⟩ := card_pos.mp hgood_pos
   exact ⟨g, (mem_filter.mp hg).2⟩
+
+/-- Every pair of valid primitive-ID sets `S₁, S₂` (`nLow ℓ ≤ #Sᵢ ≤ nHigh ℓ`) admits a single
+seed `g : P.NodeSeed ℓ` simultaneously satisfying `IsGoodNodeSeed` on both `S₁` and `S₂`. -/
+theorem exists_isGoodNodeSeed_pair (hcr : P.ConcentrationReady) {ℓ : ℕ} (hℓ : ℓ ≤ P.depth)
+    (S₁ S₂ : Finset (P.PrimId ℓ))
+    (hlo₁ : P.nLow ℓ ≤ #S₁) (hhi₁ : #S₁ ≤ P.nHigh ℓ)
+    (hlo₂ : P.nLow ℓ ≤ #S₂) (hhi₂ : #S₂ ≤ P.nHigh ℓ) :
+    ∃ g : P.NodeSeed ℓ, P.IsGoodNodeSeed ℓ g S₁ ∧ P.IsGoodNodeSeed ℓ g S₂ := by
+  classical
+  by_contra hno
+  simp only [not_exists, not_and] at hno
+  have huniv : (Finset.univ : Finset (P.NodeSeed ℓ)) ⊆
+      (Finset.univ.filter fun g => ¬ P.IsGoodNodeSeed ℓ g S₁) ∪
+        (Finset.univ.filter fun g => ¬ P.IsGoodNodeSeed ℓ g S₂) := by
+    intro g _
+    rw [mem_union, mem_filter, mem_filter]
+    by_cases hg₁ : P.IsGoodNodeSeed ℓ g S₁
+    · exact Or.inr ⟨mem_univ g, hno g hg₁⟩
+    · exact Or.inl ⟨mem_univ g, hg₁⟩
+  have h1 := P.card_isGoodNodeSeed_ge hcr hℓ S₁ hlo₁ hhi₁
+  have h2 := P.card_isGoodNodeSeed_ge hcr hℓ S₂ hlo₂ hhi₂
+  have hp1 : #{g : P.NodeSeed ℓ | P.IsGoodNodeSeed ℓ g S₁} +
+      #{g : P.NodeSeed ℓ | ¬ P.IsGoodNodeSeed ℓ g S₁} = Fintype.card (P.NodeSeed ℓ) :=
+    card_filter_add_card_filter_not _
+  have hp2 : #{g : P.NodeSeed ℓ | P.IsGoodNodeSeed ℓ g S₂} +
+      #{g : P.NodeSeed ℓ | ¬ P.IsGoodNodeSeed ℓ g S₂} = Fintype.card (P.NodeSeed ℓ) :=
+    card_filter_add_card_filter_not _
+  have hcard_le : Fintype.card (P.NodeSeed ℓ) ≤
+      #{g : P.NodeSeed ℓ | ¬ P.IsGoodNodeSeed ℓ g S₁} +
+        #{g : P.NodeSeed ℓ | ¬ P.IsGoodNodeSeed ℓ g S₂} := by
+    rw [← Finset.card_univ]
+    exact (card_le_card huniv).trans (card_union_le _ _)
+  have hnF6 := hcr.six_le_nFloor ℓ hℓ
+  have h36 : 36 ≤ (P.nFloor ℓ) ^ 2 := by nlinarith
+  have hc_pos : 0 < Fintype.card (P.NodeSeed ℓ) := Fintype.card_pos
+  have hsub : ((P.nFloor ℓ) ^ 2 - 3) * Fintype.card (P.NodeSeed ℓ) +
+      3 * Fintype.card (P.NodeSeed ℓ) = (P.nFloor ℓ) ^ 2 * Fintype.card (P.NodeSeed ℓ) := by
+    rw [← Nat.add_mul, Nat.sub_add_cancel (by omega)]
+  have hd1 : (P.nFloor ℓ) ^ 2 * #{g : P.NodeSeed ℓ | P.IsGoodNodeSeed ℓ g S₁} +
+      (P.nFloor ℓ) ^ 2 * #{g : P.NodeSeed ℓ | ¬ P.IsGoodNodeSeed ℓ g S₁} =
+      (P.nFloor ℓ) ^ 2 * Fintype.card (P.NodeSeed ℓ) := by
+    rw [← Nat.mul_add, hp1]
+  have hd2 : (P.nFloor ℓ) ^ 2 * #{g : P.NodeSeed ℓ | P.IsGoodNodeSeed ℓ g S₂} +
+      (P.nFloor ℓ) ^ 2 * #{g : P.NodeSeed ℓ | ¬ P.IsGoodNodeSeed ℓ g S₂} =
+      (P.nFloor ℓ) ^ 2 * Fintype.card (P.NodeSeed ℓ) := by
+    rw [← Nat.mul_add, hp2]
+  have hb1 : (P.nFloor ℓ) ^ 2 * #{g : P.NodeSeed ℓ | ¬ P.IsGoodNodeSeed ℓ g S₁} ≤
+      3 * Fintype.card (P.NodeSeed ℓ) := by omega
+  have hb2 : (P.nFloor ℓ) ^ 2 * #{g : P.NodeSeed ℓ | ¬ P.IsGoodNodeSeed ℓ g S₂} ≤
+      3 * Fintype.card (P.NodeSeed ℓ) := by omega
+  have htot : (P.nFloor ℓ) ^ 2 * Fintype.card (P.NodeSeed ℓ) ≤
+      6 * Fintype.card (P.NodeSeed ℓ) := by
+    calc (P.nFloor ℓ) ^ 2 * Fintype.card (P.NodeSeed ℓ)
+        ≤ (P.nFloor ℓ) ^ 2 * (#{g : P.NodeSeed ℓ | ¬ P.IsGoodNodeSeed ℓ g S₁} +
+            #{g : P.NodeSeed ℓ | ¬ P.IsGoodNodeSeed ℓ g S₂}) := Nat.mul_le_mul_left _ hcard_le
+      _ = (P.nFloor ℓ) ^ 2 * #{g : P.NodeSeed ℓ | ¬ P.IsGoodNodeSeed ℓ g S₁} +
+            (P.nFloor ℓ) ^ 2 * #{g : P.NodeSeed ℓ | ¬ P.IsGoodNodeSeed ℓ g S₂} := Nat.mul_add ..
+      _ ≤ 6 * Fintype.card (P.NodeSeed ℓ) := by omega
+  nlinarith
 
 end TreeSchedule
 

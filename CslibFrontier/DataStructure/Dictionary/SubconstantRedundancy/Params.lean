@@ -9,12 +9,10 @@ module
 
 public import CslibFrontier.Init
 public import CslibFrontier.DataStructure.Dictionary.SubconstantRedundancy.NodeSlackBounds
-import CslibFrontier.Foundations.Data.Nat.Choose
 import CslibFrontier.Foundations.Data.Nat.Log
 import CslibFrontier.Foundations.Data.Nat.Power
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.NormNum
-import Mathlib.Tactic.Positivity
 import Mathlib.Tactic.Ring
 
 /-!
@@ -31,7 +29,7 @@ multi-level dictionary tree of [LiLiangYuZhou2024] (`arXiv:2310.20536v1`, Sectio
 ```
 
 for an explicit universal constant `spaceConst` across all
-`ValidRegime U V n R p_min q_min p_max q_max` (with zero upper bound on the value universe `V`).
+`ValidRegime U V n R p_min q_min p_max q_max` (with no upper bound on `V`).
 
 ## Main definitions
 
@@ -57,24 +55,6 @@ namespace Cslib.DataStructure.Dictionary.SubconstantRedundancy
 
 open Cslib.DataStructure.Dictionary
 open Finset
-
-private theorem descFactorial_le_pow_self (m : ℕ) : ∀ j : ℕ, m.descFactorial j ≤ m ^ j
-  | 0 => le_rfl
-  | j + 1 => by
-    rw [Nat.descFactorial_succ, pow_succ']
-    exact Nat.mul_le_mul (Nat.sub_le m j) (descFactorial_le_pow_self m j)
-
-private theorem choose_le_pow_self (m j : ℕ) : m.choose j ≤ m ^ j := by
-  have h := descFactorial_le_pow_self m j
-  rw [Nat.descFactorial_eq_factorial_mul_choose] at h
-  exact (Nat.le_mul_of_pos_left _ (Nat.factorial_pos j)).trans h
-
-private theorem add_one_le_two_pow : ∀ d : ℕ, d + 1 ≤ 2 ^ d
-  | 0 => le_rfl
-  | d + 1 => by
-    have ih := add_one_le_two_pow d
-    rw [pow_succ']
-    omega
 
 private theorem leafAndClmul_of_schedule (P : TreeSchedule) {n r L t : ℕ}
     (hn2 : 2 ≤ n) (hL_eq : L = Nat.log 2 n) (h2M : 2560000 ≤ L)
@@ -130,7 +110,7 @@ private theorem leafAndClmul_of_schedule (P : TreeSchedule) {n r L t : ℕ}
   have hexp_half : (48 * (s + 1)) * 2 ^ (9 * s + 10) ≤ L / 2 := by
     obtain ⟨d, hd⟩ := Nat.exists_eq_add_of_le hs_ge
     have h48 : 48 * (s + 1) ≤ 2 ^ (11 + d) := by
-      have hd1 := add_one_le_two_pow d
+      have hd1 : d + 1 ≤ 2 ^ d := Nat.succ_le_of_lt d.lt_two_pow_self
       have h11 : (2 : ℕ) ^ 11 = 2048 := by norm_num
       calc 48 * (s + 1) = 1488 + 48 * d := by omega
         _ ≤ 2048 * (d + 1) := by omega
@@ -188,7 +168,7 @@ private theorem leafAndClmul_of_schedule (P : TreeSchedule) {n r L t : ℕ}
     have hn1 : 1 ≤ n_leaf := P.nLow_pos le_rfl
     have hqt := Minimap.queryTableSize_le (U' := U_leaf) (n' := n_leaf)
       (X := P.quotUniv P.depth * P.valBound) hn1
-    have hch : U_leaf.choose n_leaf ≤ U_leaf ^ n_leaf := choose_le_pow_self U_leaf n_leaf
+    have hch : U_leaf.choose n_leaf ≤ U_leaf ^ n_leaf := U_leaf.choose_le_pow n_leaf
     have h2n : 2 * n_leaf ≤ 2 ^ (9 * s + 11) := by
       calc 2 * n_leaf ≤ 2 * 2 ^ (9 * s + 10) := Nat.mul_le_mul_left 2 hn_leaf_le
         _ = 2 ^ (9 * s + 11) := (pow_succ' 2 _).symm
@@ -293,7 +273,7 @@ private theorem dfs_of_schedule (P : TreeSchedule) {n r L t : ℕ}
       have hm_ge : 9 ≤ m := by omega
       obtain ⟨d, hd⟩ := Nat.exists_eq_add_of_le hm_ge
       have ht_2m : t ≤ 2 ^ m := by
-        have hd1 := add_one_le_two_pow d
+        have hd1 : d + 1 ≤ 2 ^ d := Nat.succ_le_of_lt d.lt_two_pow_self
         have h9 : (2 : ℕ) ^ 9 = 512 := by norm_num
         calc t ≤ 32 * m + 31 := by omega
           _ = 319 + 32 * d := by omega
@@ -424,7 +404,7 @@ private theorem dfs_of_schedule (P : TreeSchedule) {n r L t : ℕ}
             _ = 2 ^ (P.idBits P.depth + 1) := (pow_succ' 2 _).symm
         have hcl_leaf : Nat.clog 2 ((2 ^ P.idBits P.depth).choose n' * (2 * n') ^ n') ≤
             889 * t ^ 12 := by
-          have hch := choose_le_pow_self (2 ^ P.idBits P.depth) n'
+          have hch := (2 ^ P.idBits P.depth).choose_le_pow n'
           refine Nat.clog_le_of_le_pow ?_
           calc (2 ^ P.idBits P.depth).choose n' * (2 * n') ^ n'
               ≤ (2 ^ P.idBits P.depth) ^ n' * (2 ^ (P.idBits P.depth + 1)) ^ n' :=
@@ -726,8 +706,8 @@ theorem redundancySlack_le_mul_effRedundancy {U V n R p_min q_min p_max q_max : 
 def spaceConst : ℕ := 160000
 
 /-- **Headline Section 5 Pure Tree Bit-Budget Bound** (`[LiLiangYuZhou2024, Sections 5.2 & 5.6]`):
-across all `ValidRegime U V n R p_min q_min p_max q_max` (with zero upper bound on the value bound
-`V`), the total representation bits of `(canonicalSchedule h)` satisfy
+across all `ValidRegime U V n R p_min q_min p_max q_max` (with no upper bound on `V`),
+the total representation bits of `(canonicalSchedule h)` satisfy
 `(canonicalSchedule h).totalTreeBits ≤ infoBits U V n + spaceConst * R`. -/
 theorem totalTreeBits_le_infoBits_add {U V n R p_min q_min p_max q_max : ℕ}
     (h : ValidRegime U V n R p_min q_min p_max q_max) :

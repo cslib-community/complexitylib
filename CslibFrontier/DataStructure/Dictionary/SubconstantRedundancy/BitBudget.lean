@@ -12,22 +12,19 @@ public import CslibFrontier.DataStructure.Dictionary.SubconstantRedundancy.Sched
 import CslibFrontier.Foundations.Data.Nat.Choose
 import CslibFrontier.Foundations.Data.Nat.Choose.Vandermonde
 import CslibFrontier.Foundations.Data.Nat.Log
-import CslibFrontier.Foundations.Data.Nat.Power
-import Mathlib.Analysis.Complex.ExponentialBounds
 import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.Positivity
 import Mathlib.Tactic.Ring
 
 /-!
 # Multi-Level Subconstant-Redundancy Bit-Budget Accounting and Information Conservation
 
 This module builds on `CslibFrontier.DataStructure.Dictionary.SubconstantRedundancy.Schedule` to
-formalize the complete Section 5 bit-budget accounting (`totalTreeBits`), the polynomial-universe
-large-parameter regime (`ValidRegime`), the canonical Section 5 parameter instantiation
-(`canonicalSchedule`), its concentration readiness (`canonicalSchedule_concentrationReady`), and
-the end-to-end pure space bound `totalTreeBits ≤ infoBits U V n + spaceConst * R`
-([LiLiangYuZhou2024, Sections 5.1–5.2 and 5.4–5.6];
+formalize the Section 5 pure bit-budget accounting (`totalTreeBits`, `redundancySlack`) and general
+`TreeSchedule` information-conservation bound `totalTreeBits ≤ infoBits paddedUniv valBound cap +
+redundancySlack` ([LiLiangYuZhou2024, Sections 5.1–5.2 and 5.4–5.6];
 [arXiv:2310.20536v1](https://arxiv.org/abs/2310.20536v1), PDF pp. 25–36 / printed pp. 24–35).
+For the canonical Section 5 parameter instantiation (`canonicalSchedule`) and end-to-end bound
+`totalTreeBits ≤ infoBits U V n + spaceConst * R`, see `Canonical.lean` and `Params.lean`.
 
 ## Source mapping, adaptations, and scope
 
@@ -36,15 +33,16 @@ the end-to-end pure space bound `totalTreeBits ≤ infoBits U V n + spaceConst *
   - Leaf nodes (`ℓ = k`) store fixed-capacity minimaps (`Minimap.FixedEncoded`, `m = nLow k`),
     contributing `allLeavesBits ≤ infoBits paddedUniv V n_L + 3 * numNodes k` via Vandermonde's
     inequality (`allLeavesBits_le_padded_infoBits_add`).
-  - Inner nodes (`2 ≤ ℓ < k`) store `SuccinctBucket` metadata + `(quot, val)` slots; root nodes
-    (`ℓ = 1`) store `SuccinctBucket` metadata + `(quot, localSlotIdx)` slots indexing a slab+tail
-    shared root value pool (`SuccinctBucket.globalMetaLen rootValPoolCap * globalPtrBits
-    rootValPoolCap` directory bits + `rootValPoolCap` `⌈log₂ V⌉`-bit value slots), avoiding `V`
-    overhead on unused root capacity (`totalTreeBits_le_padded_infoBits_add`).
+  - Inner nodes (`2 ≤ ℓ < k`) budget `SuccinctBucket` metadata + `(quot, val)` slots; root nodes
+    (`ℓ = 1`) budget `SuccinctBucket` metadata + `(quot, localSlotIdx)` slots together with a
+    slab-and-tail shared root value pool (`rootPoolDirBits` directory overhead + `rootValPoolCap`
+    `⌈log₂ V⌉`-bit value slots), avoiding `V` overhead on unused root capacity
+    (`totalTreeBits_le_padded_infoBits_add`; the pure `TreeState` model in `TreeCore.lean` stores
+    root values inline and satisfies `rootKeyCount ≤ rootValPoolCap`).
   - Non-root waiting lists (`allWaitingListsBits`), regime-switched child-router and ID-compressor
     seeds (`allHashSeedsBits`), and all four shared global lookup tables (`sharedTablesBits`:
     leaf dynamic-matching permutations, shared minimap lookup table, Four-Russians `clmul` table,
-    and Section 5.6 level-3 DFS subtree lookup table) sum to `O(R_eff) ≤ O(R)` bits.
+    and Section 5.6 level-3 DFS subtree lookup table) enter `redundancySlack`.
 * **Small-node child-router regime switch (`Section 5.4` & `Claim B.2` adaptation)**:
   Nodes with `nLow ℓ ≥ childRouterThreshold epsInv alphaInv` use Thorup's `DoubleTabulation`
   (`ChildRouterSeed`), whereas nodes with `nLow ℓ < childRouterThreshold epsInv alphaInv` switch
@@ -60,13 +58,10 @@ the end-to-end pure space bound `totalTreeBits ≤ infoBits U V n + spaceConst *
 * `Cslib.DataStructure.Dictionary.SubconstantRedundancy.waitingListBits`,
   `succinctTableMetaBits`, `TreeSchedule.routerSeedBits`, `TreeSchedule.nodeHashSeedBits`,
   `TreeSchedule.nodeMetaBits`, `TreeSchedule.subtreeMetaBits`, `TreeSchedule.allLeavesBits`,
-  `TreeSchedule.allInnerTablesBits`, `TreeSchedule.allRootTablesBits`,
-  `TreeSchedule.allWaitingListsBits`, `TreeSchedule.allHashSeedsBits`,
-  `TreeSchedule.sharedTablesBits`, `TreeSchedule.totalTreeBits`, `TreeSchedule.redundancySlack`:
-  complete node, subtree, and global table bit-budget accounting.
-* `Cslib.DataStructure.Dictionary.SubconstantRedundancy.routerEpsInv`, `routerAlphaInv`,
-  `thresholdLogN`, `thresholdN`, `ValidRegime`, `canonicalSchedule`, `spaceConst`:
-  large-parameter polynomial-universe regime and canonical Section 5 schedule.
+  `TreeSchedule.allInnerTablesBits`, `TreeSchedule.rootSlabSize`, `TreeSchedule.rootPoolDirBits`,
+  `TreeSchedule.allRootTablesBits`, `TreeSchedule.allWaitingListsBits`,
+  `TreeSchedule.allHashSeedsBits`, `TreeSchedule.sharedTablesBits`, `TreeSchedule.totalTreeBits`,
+  `TreeSchedule.redundancySlack`: complete node, subtree, and global table bit-budget accounting.
 
 ## Main results
 
@@ -74,10 +69,6 @@ the end-to-end pure space bound `totalTreeBits ≤ infoBits U V n + spaceConst *
   `TreeSchedule.nonLeaf_infoBits_conservation`,
   `TreeSchedule.totalTreeBits_le_padded_infoBits_add`: general `TreeSchedule` bit conservation
   (`totalTreeBits ≤ infoBits paddedUniv V cap + redundancySlack`, valid for all `1 ≤ V`).
-* `canonicalSchedule_concentrationReady`: `canonicalSchedule` satisfies `ConcentrationReady` across
-  the entire `ValidRegime`.
-* `totalTreeBits_le_infoBits_add`: end-to-end pure bit-budget bound
-  `totalTreeBits ≤ infoBits U V n + spaceConst * R`.
 
 ## References
 
@@ -409,7 +400,7 @@ def redundancySlack : ℕ :=
     rootExtra * q_base + P.rootPoolDirBits +
     P.allWaitingListsBits + P.allHashSeedsBits + P.sharedTablesBits
 
-/-- **General `TreeSchedule` bit-budget bound** (for all `1 ≤ valBound`, with zero upper bound on
+/-- **General `TreeSchedule` bit-budget bound** (for all `1 ≤ valBound`, with no upper bound on
 `valBound`): whenever `cap ≤ N_ℓ * (nFloor ℓ + 1)` across `1 ≤ ℓ < depth` and
 `3 * cap ≤ paddedUniv`, `totalTreeBits ≤ infoBits paddedUniv valBound cap + redundancySlack`. -/
 theorem totalTreeBits_le_padded_infoBits_add

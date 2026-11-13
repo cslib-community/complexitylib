@@ -9,8 +9,6 @@ module
 
 public import CslibFrontier.Init
 public import CslibFrontier.DataStructure.Dictionary.SubconstantRedundancy.TreeBuild
-import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.Ring
 
 /-!
 # Localized Subtree Rehashing (`Algorithm 4`) in the Multi-Level Dictionary Tree

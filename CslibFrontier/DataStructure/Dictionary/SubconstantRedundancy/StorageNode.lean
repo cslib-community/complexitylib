@@ -29,9 +29,9 @@ theorems from `NodeSeeds`.
   (`Section 5.6` ID-only slot locator `locateSlot`, bit width `succinctTableMetaBits`) from
   `(quot, val)` payload slots.
 * `TreeSchedule.LeafMeta`, `TreeSchedule.LeafNode`, `TreeSchedule.InnerMeta`,
-  `TreeSchedule.InnerNode`, `TreeSchedule.RootMeta`, `TreeSchedule.RootNode`,
-  `TreeSchedule.RootValPool`: leaf (`Minimap.FixedEncoded`), inner, and root node representations
-  with explicit metadata projections (`toMeta`, `LeafMeta.locateSlot`) for DFS metadata packing.
+  `TreeSchedule.InnerNode`, `TreeSchedule.RootMeta`, `TreeSchedule.RootNode`: leaf
+  (`Minimap.FixedEncoded`), inner, and root node representations with explicit metadata projections
+  (`toMeta`, `LeafMeta.locateSlot`) for DFS metadata packing.
 
 ## Main results
 
@@ -40,8 +40,8 @@ theorems from `NodeSeeds`.
 * `StorageTable.query_overwrite`, `StorageTable.query_insert`, `StorageTable.query_delete`,
   `StorageTable.query_replace`, `StorageTable.query_ofFinset`: exact `Function.update` equations for
   storage-table operations.
-* `TreeSchedule.rootKeys_le_rootValPoolCap`: active root values across all `N_1` roots fit inside
-  the shared `RootValPool` of capacity `rootValPoolCap`.
+* `TreeSchedule.rootKeys_le_rootValPoolCap`: active root values across all `N_1` roots never exceed
+  `rootValPoolCap` (`TreeState.rootKeyCount_le_rootValPoolCap`).
 
 ## References
 
@@ -907,12 +907,6 @@ structure RootNode where
 def RootNode.toMeta (nd : P.RootNode) : P.RootMeta where
   seed := nd.seed
   tableMeta := nd.table.tableMeta
-
-/-- Shared root value pool of `rootValPoolCap = cap - N_2 * nLow 2` slots (`Section 5.2`). -/
-structure RootValPool where
-  /-- Shared root value slots indexed by `Fin rootValPoolCap`. -/
-  slots : Fin P.rootValPoolCap → Option (Fin P.valBound)
-  deriving DecidableEq
 
 /-- When all leaf minimaps (`nLow depth` keys each) and inner storage tables (`tableCap ℓ` keys
 each) are at full capacity and total active keys `totalActive ≤ cap`, total keys stored across all

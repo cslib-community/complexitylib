@@ -9,10 +9,8 @@ module
 
 public import CslibFrontier.Init
 public import CslibFrontier.DataStructure.Dictionary.SubconstantRedundancy.BitBudget
-import CslibFrontier.Foundations.Data.Nat.Choose
 import CslibFrontier.Foundations.Data.Nat.Log
 import CslibFrontier.Foundations.Data.Nat.Power
-import Mathlib.Analysis.Complex.ExponentialBounds
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
 import Mathlib.Tactic.Ring
@@ -23,11 +21,11 @@ import Mathlib.Tactic.Ring
 This module builds on `CslibFrontier.DataStructure.Dictionary.SubconstantRedundancy.Schedule` and
 `CslibFrontier.DataStructure.Dictionary.SubconstantRedundancy.BitBudget` to formalize the
 polynomial-universe large-parameter regime (`ValidRegime`), the canonical Section 5 parameter
-instantiation (`canonicalSchedule`), its probabilistic concentration readiness
-(`canonicalSchedule_concentrationReady`), and the end-to-end pure bit-budget bound
-`totalTreeBits ≤ infoBits U V n + spaceConst * R` ([LiLiangYuZhou2024, Sections 5.1–5.2 and
-5.4–5.6]; [arXiv:2310.20536v1](https://arxiv.org/abs/2310.20536v1), PDF pp. 25–36 / printed
-pp. 24–35).
+instantiation (`canonicalSchedule`), and its probabilistic concentration readiness
+(`canonicalSchedule_concentrationReady`) ([LiLiangYuZhou2024, Sections 5.1–5.2 and 5.4–5.6];
+[arXiv:2310.20536v1](https://arxiv.org/abs/2310.20536v1), PDF pp. 25–36 / printed pp. 24–35).
+For the end-to-end pure bit-budget bound `totalTreeBits ≤ infoBits U V n + spaceConst * R`, see
+`Params.lean`.
 
 ## Scope and adaptations
 

@@ -10,8 +10,6 @@ module
 public import CslibFrontier.Init
 public import CslibFrontier.DataStructure.Dictionary.SubconstantRedundancy.StorageNode
 public import CslibFrontier.DataStructure.Dictionary.SubconstantRedundancy.TreeRouting
-import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.Ring
 
 /-!
 # Multi-Level Dictionary Tree State, Section 5.6 Metadata, and Subtree Capacity Laws

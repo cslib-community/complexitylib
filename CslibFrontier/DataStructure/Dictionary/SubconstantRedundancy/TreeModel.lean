@@ -12,8 +12,6 @@ public import CslibFrontier.DataStructure.Dictionary.SubconstantRedundancy.Param
 public import CslibFrontier.DataStructure.Dictionary.SubconstantRedundancy.StorageNode
 public import CslibFrontier.DataStructure.Dictionary.SubconstantRedundancy.RehashBounds
 public import CslibFrontier.DataStructure.Dictionary.SubconstantRedundancy.TreeRehash
-import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.Ring
 
 /-!
 # Pure Multi-Level Subconstant-Redundancy Dictionary Tree Model
@@ -34,16 +32,17 @@ insertion (`TreeInsert.lean`), `Algorithm 3` (`deleteAndGetQuotient`, PDF p. 31 
 `TreeRehash.lean`).
 
 In addition, this file provides:
-1. Internal single-key padded updates `rawInsertFresh` and `rawDeleteMem` combining the normal
-   `O(depth)` path with localized subtree seed repair (`exists_allGoodSeeds_localized`).
+1. Internal single-key padded updates `rawInsertFresh` and `rawDeleteMem` combining localized
+   subtree rehashing (`TreeState.rehashSubtree`, `exists_allGoodSeeds_localized_pair`) with the
+   normal `O(depth)` update path (`normalInsertFresh`, `normalDeleteMem`).
 2. The external dictionary interface `TreeSchedule.initTree`, `TreeState.insert`, and
    `TreeState.delete` maintaining sentinel padding (`|S_padded| ∈ {cap - 1, cap}`, `Section 4,
    Footnote 5`, PDF p. 12 / printed p. 11; `Section 5`, PDF p. 26 / printed p. 25) and satisfying
    the exact `Dictionary.State` `Function.update` laws (`query_initTree`, `query_insert`,
    `query_delete`).
 3. The trajectory bridge `primSetAt_validPrimIdSeq` connecting multi-step update trajectories
-   without strict-ancestor rehashes directly to `RehashBounds.ValidPrimIdSeq`, `Claim 5.4`, and
-   `Lemma 5.3`.
+   without strict-ancestor rehashes directly to `RehashBounds.ValidPrimIdSeq` and `Claim 5.4`
+   (`prob_survives_window_of_ancestorFree`).
 
 ## Formalization adaptations and explicit scope boundaries
 
@@ -52,9 +51,10 @@ In addition, this file provides:
   redundancy `r ≥ max 256 (2 ^ log* n)` holds across all `n / log₂ ^ 0.1 n ≤ R ≤ n` without
   inflating `thresholdN`.
 * **Small-node child-router regime switch (`NodeSeeds.lean`)**: nodes with
-  `nFloor ℓ ≥ FeistelPerm.childRouterThreshold 100 2` use `FeistelPerm.ChildRouterSeed`
-  (`DoubleTabulation`), while deeper nodes below `childRouterThreshold 100 2` switch to exact
-  `(2 * m)`-wise `FeistelPerm.trinomialPolyHash` (`m = childRouterHalfInd (nFloor ℓ) = O(1)`,
+  `FeistelPerm.childRouterThreshold P.epsInv P.alphaInv ≤ P.nLow ℓ` use
+  `FeistelPerm.ChildRouterSeed` (`DoubleTabulation`), while deeper nodes with
+  `P.nLow ℓ < FeistelPerm.childRouterThreshold P.epsInv P.alphaInv` switch to exact `(2 * m)`-wise
+  `Cslib.Probability.trinomialPolyHash` (`m = FeistelPerm.childRouterHalfInd (P.nHigh ℓ) = O(1)`,
   adapting `[LiLiangYuZhou2024, Sections 5.1 & 5.4, Claim B.2]`, PDF pp. 27, 32–33, 41 /
   printed pp. 26, 31–32, 40).
 * **Out of scope**: Word-RAM `Memory.Prog` compilation and lookup-table realization, Section 4
@@ -102,107 +102,123 @@ namespace TreeState
 
 variable {P : TreeSchedule}
 
-private def hasBadSeedOn (seeds : P.SeedAssignment) (S' : Finset (Fin P.paddedUniv))
+/-- Whether `seeds` has a failing node seed at level `ℓ` on `S'`. -/
+@[expose]
+def hasBadSeedOn (seeds : P.SeedAssignment) (S' : Finset (Fin P.paddedUniv))
     (ℓ : ℕ) : Prop :=
   ∃ hℓ : ℓ ≤ P.depth, ∃ w : Fin (P.numNodes ℓ),
     ¬ P.IsGoodNodeSeed ℓ (seeds.seed ℓ hℓ w) (seeds.primSetAt S' ℓ hℓ w)
 
-open scoped Classical in
-private noncomputable def repairBadSeedsTree (hcr : P.ConcentrationReady)
-    (scheme : DynamicMatching.Scheme (2 ^ P.idBits P.depth) (P.nLow P.depth))
-    (seeds : P.SeedAssignment) (S_cur : Finset (Fin P.paddedUniv))
-    (d' : P.PaddedDict) (sentCount : ℕ) (z : Fin P.paddedUniv)
+theorem not_isGoodNodeSeed_at_changed {seeds : P.SeedAssignment}
+    {S_cur S' : Finset (Fin P.paddedUniv)} {z : Fin P.paddedUniv}
     (hgood : seeds.AllGoodSeeds S_cur)
-    (hcard' : P.nLow 0 ≤ #(P.paddedDom d') ∧ #(P.paddedDom d') ≤ P.nHigh 0)
-    (hdiff_z : ∀ y, (y ∈ P.paddedDom d' ↔ y ∈ S_cur) ∨ y = z)
-    (h_bad : ∃ ℓ, hasBadSeedOn seeds (P.paddedDom d') ℓ) : P.TreeState :=
-  let ℓ₀ := Nat.find h_bad
-  have hℓ₀ : ℓ₀ ≤ P.depth := (Nat.find_spec h_bad).1
-  let u₀ := seeds.nodeAt ℓ₀ hℓ₀ z
-  have hdiff : ∀ y, (y ∈ P.paddedDom d' ↔ y ∈ S_cur) ∨ seeds.nodeAt ℓ₀ hℓ₀ y = u₀ := fun y =>
-    (hdiff_z y).elim Or.inl fun hy => Or.inr (congrArg (seeds.nodeAt ℓ₀ hℓ₀) hy)
-  have hbelow : ∀ (j : ℕ) (hj : j < ℓ₀) (w : Fin (P.numNodes j)),
-      P.IsGoodNodeSeed j (seeds.seed j (hj.le.trans hℓ₀) w)
-        (seeds.primSetAt (P.paddedDom d') j (hj.le.trans hℓ₀) w) := fun j hj w => by
-    by_contra hnot; exact Nat.find_min h_bad hj ⟨hj.le.trans hℓ₀, w, hnot⟩
-  let hex := exists_allGoodSeeds_localized hcr seeds hgood hcard' hℓ₀ u₀ hdiff hbelow
-  P.buildTreeFromSeeds scheme d' sentCount (Classical.choose hex) (Classical.choose_spec hex).2
+    (hdiff_z : ∀ y, (y ∈ S' ↔ y ∈ S_cur) ∨ y = z)
+    {ℓ₀ : ℕ} (hℓ₀ : ℓ₀ ≤ P.depth) {w_bad : Fin (P.numNodes ℓ₀)}
+    (hw_bad : ¬ P.IsGoodNodeSeed ℓ₀ (seeds.seed ℓ₀ hℓ₀ w_bad) (seeds.primSetAt S' ℓ₀ hℓ₀ w_bad)) :
+    ¬ P.IsGoodNodeSeed ℓ₀ (seeds.seed ℓ₀ hℓ₀ (seeds.nodeAt ℓ₀ hℓ₀ z))
+      (seeds.primSetAt S' ℓ₀ hℓ₀ (seeds.nodeAt ℓ₀ hℓ₀ z)) := by
+  by_cases hwz : w_bad = seeds.nodeAt ℓ₀ hℓ₀ z
+  · rwa [← hwz]
+  · have hact_eq : seeds.activeAt S' ℓ₀ hℓ₀ w_bad = seeds.activeAt S_cur ℓ₀ hℓ₀ w_bad := by
+      ext y
+      simp only [SeedAssignment.mem_activeAt_iff]
+      rcases hdiff_z y with hiff | rfl
+      · exact and_congr_left' hiff
+      · exact ⟨fun ⟨_, hn⟩ => False.elim (hwz hn.symm),
+          fun ⟨_, hn⟩ => False.elim (hwz hn.symm)⟩
+    have hp_eq : seeds.primSetAt S' ℓ₀ hℓ₀ w_bad = seeds.primSetAt S_cur ℓ₀ hℓ₀ w_bad := by
+      dsimp only [SeedAssignment.primSetAt]; rw [hact_eq]
+    exact False.elim (hw_bad (hp_eq ▸ hgood.2 ℓ₀ hℓ₀ w_bad))
 
 open scoped Classical in
-private theorem repairBadSeedsTree_spec (hcr : P.ConcentrationReady)
-    (scheme : DynamicMatching.Scheme (2 ^ P.idBits P.depth) (P.nLow P.depth))
-    (seeds : P.SeedAssignment) (S_cur : Finset (Fin P.paddedUniv))
-    (d' : P.PaddedDict) (sentCount : ℕ) (z : Fin P.paddedUniv)
-    (hgood : seeds.AllGoodSeeds S_cur)
-    (hcard' : P.nLow 0 ≤ #(P.paddedDom d') ∧ #(P.paddedDom d') ≤ P.nHigh 0)
-    (hdiff_z : ∀ y, (y ∈ P.paddedDom d' ↔ y ∈ S_cur) ∨ y = z)
-    (h_bad : ∃ ℓ, hasBadSeedOn seeds (P.paddedDom d') ℓ) :
-    let st' := repairBadSeedsTree hcr scheme seeds S_cur d' sentCount z hgood hcard' hdiff_z h_bad
-    st'.sentCount = sentCount ∧
+private noncomputable def rehashBeforeUpdate (hcr : P.ConcentrationReady)
+    {scheme : DynamicMatching.Scheme (2 ^ P.idBits P.depth) (P.nLow P.depth)}
+    (st : P.TreeState) {d : P.PaddedDict} {storeLvl : Fin P.paddedUniv → ℕ}
+    (hwf : st.WellFormedPadded scheme d storeLvl)
+    (S' : Finset (Fin P.paddedUniv)) (z : Fin P.paddedUniv)
+    (hcard' : P.nLow 0 ≤ #S' ∧ #S' ≤ P.nHigh 0)
+    (hdiff_z : ∀ y, (y ∈ S' ↔ y ∈ P.paddedDom d) ∨ y = z)
+    (h_bad : ∃ ℓ, hasBadSeedOn st.seeds S' ℓ) : P.TreeState :=
+  let ℓ₀ := Nat.find h_bad
+  have hℓ₀ : ℓ₀ ≤ P.depth := (Nat.find_spec h_bad).1
+  let u₀ := st.seeds.nodeAt ℓ₀ hℓ₀ z
+  have hdiff : ∀ y, (y ∈ S' ↔ y ∈ P.paddedDom d) ∨ st.seeds.nodeAt ℓ₀ hℓ₀ y = u₀ := fun y =>
+    (hdiff_z y).elim Or.inl fun hy => Or.inr (congrArg (st.seeds.nodeAt ℓ₀ hℓ₀) hy)
+  have hbelow : ∀ (j : ℕ) (hj : j < ℓ₀) (w : Fin (P.numNodes j)),
+      P.IsGoodNodeSeed j (st.seeds.seed j (hj.le.trans hℓ₀) w)
+        (st.seeds.primSetAt S' j (hj.le.trans hℓ₀) w) := fun j hj w => by
+    by_contra hnot; exact Nat.find_min h_bad hj ⟨hj.le.trans hℓ₀, w, hnot⟩
+  let hex := exists_allGoodSeeds_localized_pair hcr st.seeds hwf.goodSeeds hcard'
+    hℓ₀ u₀ hdiff hbelow
+  have ⟨hout, hg_cur, _⟩ := Classical.choose_spec hex
+  st.rehashSubtree hwf ℓ₀ hℓ₀ u₀ (Classical.choose hex) hout hg_cur
+
+open scoped Classical in
+private theorem rehashBeforeUpdate_spec (hcr : P.ConcentrationReady)
+    {scheme : DynamicMatching.Scheme (2 ^ P.idBits P.depth) (P.nLow P.depth)}
+    (st : P.TreeState) {d : P.PaddedDict} {storeLvl : Fin P.paddedUniv → ℕ}
+    (hwf : st.WellFormedPadded scheme d storeLvl)
+    (S' : Finset (Fin P.paddedUniv)) (z : Fin P.paddedUniv)
+    (hcard' : P.nLow 0 ≤ #S' ∧ #S' ≤ P.nHigh 0)
+    (hdiff_z : ∀ y, (y ∈ S' ↔ y ∈ P.paddedDom d) ∨ y = z)
+    (h_bad : ∃ ℓ, hasBadSeedOn st.seeds S' ℓ) :
+    let st₁ := rehashBeforeUpdate hcr st hwf S' z hcard' hdiff_z h_bad
+    st₁.sentCount = st.sentCount ∧
+    st₁.seeds.AllGoodSeeds S' ∧
     (∃ (ℓ₀ : ℕ) (hℓ₀ : ℓ₀ ≤ P.depth),
-      ¬ P.IsGoodNodeSeed ℓ₀ (seeds.seed ℓ₀ hℓ₀ (seeds.nodeAt ℓ₀ hℓ₀ z))
-        (seeds.primSetAt (P.paddedDom d') ℓ₀ hℓ₀ (seeds.nodeAt ℓ₀ hℓ₀ z)) ∧
+      ¬ P.IsGoodNodeSeed ℓ₀ (st.seeds.seed ℓ₀ hℓ₀ (st.seeds.nodeAt ℓ₀ hℓ₀ z))
+        (st.seeds.primSetAt S' ℓ₀ hℓ₀ (st.seeds.nodeAt ℓ₀ hℓ₀ z)) ∧
       ∀ (j : ℕ) (hj : j ≤ P.depth) (w : Fin (P.numNodes j)),
-        ¬ P.InSubtree ℓ₀ (seeds.nodeAt ℓ₀ hℓ₀ z) j w →
-          st'.seeds.seed j hj w = seeds.seed j hj w) ∧
-    ∃ storeLvl' : Fin P.paddedUniv → ℕ, st'.WellFormedPadded scheme d' storeLvl' := by
-  dsimp only [repairBadSeedsTree]
+        ¬ P.InSubtree ℓ₀ (st.seeds.nodeAt ℓ₀ hℓ₀ z) j w →
+          st₁.seeds.seed j hj w = st.seeds.seed j hj w) ∧
+    ∃ storeLvl₁ : Fin P.paddedUniv → ℕ, st₁.WellFormedPadded scheme d storeLvl₁ := by
+  dsimp only [rehashBeforeUpdate]
   let ℓ₀ := Nat.find h_bad
   obtain ⟨hℓ₀, w_bad, hw_bad⟩ := Nat.find_spec h_bad
-  let u₀ := seeds.nodeAt ℓ₀ hℓ₀ z
-  have hdiff : ∀ y, (y ∈ P.paddedDom d' ↔ y ∈ S_cur) ∨ seeds.nodeAt ℓ₀ hℓ₀ y = u₀ := fun y =>
-    (hdiff_z y).elim Or.inl fun hy => Or.inr (congrArg (seeds.nodeAt ℓ₀ hℓ₀) hy)
+  let u₀ := st.seeds.nodeAt ℓ₀ hℓ₀ z
+  have hdiff : ∀ y, (y ∈ S' ↔ y ∈ P.paddedDom d) ∨ st.seeds.nodeAt ℓ₀ hℓ₀ y = u₀ := fun y =>
+    (hdiff_z y).elim Or.inl fun hy => Or.inr (congrArg (st.seeds.nodeAt ℓ₀ hℓ₀) hy)
   have hbelow : ∀ (j : ℕ) (hj : j < ℓ₀) (w : Fin (P.numNodes j)),
-      P.IsGoodNodeSeed j (seeds.seed j (hj.le.trans hℓ₀) w)
-        (seeds.primSetAt (P.paddedDom d') j (hj.le.trans hℓ₀) w) := fun j hj w => by
+      P.IsGoodNodeSeed j (st.seeds.seed j (hj.le.trans hℓ₀) w)
+        (st.seeds.primSetAt S' j (hj.le.trans hℓ₀) w) := fun j hj w => by
     by_contra hnot; exact Nat.find_min h_bad hj ⟨hj.le.trans hℓ₀, w, hnot⟩
-  have h_not_good : ¬ P.IsGoodNodeSeed ℓ₀ (seeds.seed ℓ₀ hℓ₀ u₀)
-      (seeds.primSetAt (P.paddedDom d') ℓ₀ hℓ₀ u₀) := by
-    by_cases hwz : w_bad = u₀
-    · exact hwz ▸ hw_bad
-    · have hact_eq : seeds.activeAt (P.paddedDom d') ℓ₀ hℓ₀ w_bad =
-          seeds.activeAt S_cur ℓ₀ hℓ₀ w_bad := by
-        ext y
-        simp only [SeedAssignment.mem_activeAt_iff]
-        rcases hdiff_z y with hiff | rfl
-        · exact and_congr_left' hiff
-        · exact ⟨fun ⟨_, hn⟩ => False.elim (hwz hn.symm),
-            fun ⟨_, hn⟩ => False.elim (hwz hn.symm)⟩
-      have hp_eq : seeds.primSetAt (P.paddedDom d') ℓ₀ hℓ₀ w_bad =
-          seeds.primSetAt S_cur ℓ₀ hℓ₀ w_bad := by
-        dsimp only [SeedAssignment.primSetAt]; rw [hact_eq]
-      exact False.elim (hw_bad (hp_eq ▸ hgood.2 ℓ₀ hℓ₀ w_bad))
-  refine ⟨by simp, ⟨ℓ₀, hℓ₀, h_not_good, fun j hj w hnot => ?_⟩, _,
-    P.wellFormedPadded_buildTreeFromSeeds scheme d' sentCount _ _⟩
-  rw [P.seeds_buildTreeFromSeeds]
-  exact (Classical.choose_spec
-    (exists_allGoodSeeds_localized hcr seeds hgood hcard' hℓ₀ u₀ hdiff hbelow)).1 j hj w hnot
+  let hex := exists_allGoodSeeds_localized_pair hcr st.seeds hwf.goodSeeds hcard'
+    hℓ₀ u₀ hdiff hbelow
+  have hspec := Classical.choose_spec hex
+  obtain ⟨hout, hg_cur, hg_new⟩ := hspec
+  have hsd₁ := st.seeds_rehashSubtree hwf ℓ₀ hℓ₀ u₀ (Classical.choose hex) hout hg_cur
+  refine ⟨st.sentCount_rehashSubtree hwf ℓ₀ hℓ₀ u₀ (Classical.choose hex) hout hg_cur,
+    by rw [hsd₁]; exact hg_new,
+    ⟨ℓ₀, hℓ₀, not_isGoodNodeSeed_at_changed hwf.goodSeeds hdiff_z hℓ₀ hw_bad, fun j hj w hnot => by
+      rw [hsd₁]; exact hout j hj w hnot⟩,
+    st.wellFormedPadded_rehashSubtree hwf ℓ₀ hℓ₀ u₀ (Classical.choose hex) hout hg_cur⟩
 
 open scoped Classical in
 /-- Internal fresh-key insertion on `st` (`x ∉ paddedDom d`, `#S' ∈ [nLow 0, nHigh 0]`): runs
-`normalInsertFresh` when `st.seeds` stays good on `Insert.insert x S`, and otherwise resamples only
-the subtree rooted at the highest failing node `(ℓ₀, nodeAt ℓ₀ x)`. -/
+`normalInsertFresh` when `st.seeds` stays good on `Insert.insert x S`, and otherwise invokes
+`st.rehashSubtree` (`Algorithm 4`) at the highest failing node `(ℓ₀, nodeAt ℓ₀ x)` followed by
+`normalInsertFresh`. -/
 noncomputable def rawInsertFresh (hcr : P.ConcentrationReady)
     (scheme : DynamicMatching.Scheme (2 ^ P.idBits P.depth) (P.nLow P.depth))
     (st : P.TreeState) (x : Fin P.paddedUniv) (v : Fin P.valBound) : P.TreeState :=
   let d_cur : P.PaddedDict := st.rawQuery scheme
   let S_cur := P.paddedDom d_cur
-  let d' := Function.update d_cur x (some v)
-  let S' := P.paddedDom d'
-  if h_norm : ∃ storeLvl, st.WellFormedPadded scheme d_cur storeLvl ∧
-      x ∉ S_cur ∧ st.seeds.AllGoodSeeds (Insert.insert x S_cur) then
-    let spec := Classical.choose_spec h_norm
-    let spec2 := spec.2
-    st.normalInsertFresh spec.1 x v spec2.1 spec2.2
-  else if h_pre : st.seeds.AllGoodSeeds S_cur ∧ (P.nLow 0 ≤ #S' ∧ #S' ≤ P.nHigh 0) then
-    if h_bad : ∃ ℓ, hasBadSeedOn st.seeds S' ℓ then
-      repairBadSeedsTree hcr scheme st.seeds S_cur d' st.sentCount x h_pre.1 h_pre.2
-        (fun y => if hyx : y = x then Or.inr hyx else Or.inl (by simp [d', S_cur, hyx])) h_bad
+  let S' := Insert.insert x S_cur
+  if h_wf : ∃ storeLvl, st.WellFormedPadded scheme d_cur storeLvl ∧
+      x ∉ S_cur ∧ (P.nLow 0 ≤ #S' ∧ #S' ≤ P.nHigh 0) then
+    have ⟨hwf, hx_fresh, hcard'⟩ := Classical.choose_spec h_wf
+    if hgood' : st.seeds.AllGoodSeeds S' then
+      st.normalInsertFresh hwf x v hx_fresh hgood'
     else
-      have hgood' : st.seeds.AllGoodSeeds S' :=
-        ⟨h_pre.2, fun ℓ hℓ w => by
-          by_contra hnot; exact h_bad ⟨ℓ, hℓ, w, hnot⟩⟩
-      P.buildTreeFromSeeds scheme d' st.sentCount st.seeds hgood'
+      have h_bad : ∃ ℓ, hasBadSeedOn st.seeds S' ℓ := by
+        by_contra hno
+        exact hgood' ⟨hcard', fun ℓ hℓ w => by by_contra hn; exact hno ⟨ℓ, hℓ, w, hn⟩⟩
+      have hdiff_x : ∀ y, (y ∈ S' ↔ y ∈ S_cur) ∨ y = x := fun y =>
+        if hyx : y = x then Or.inr hyx else Or.inl ⟨fun hm => (mem_insert.mp hm).resolve_left hyx,
+          mem_insert_of_mem⟩
+      let st₁ := rehashBeforeUpdate hcr st hwf S' x hcard' hdiff_x h_bad
+      have ⟨_, hg₁, _, hex_wf₁⟩ := rehashBeforeUpdate_spec hcr st hwf S' x hcard' hdiff_x h_bad
+      st₁.normalInsertFresh (Classical.choose_spec hex_wf₁) x v hx_fresh hg₁
   else st
 
 open scoped Classical in
@@ -226,52 +242,59 @@ theorem wellFormedPadded_rawInsertFresh (hcr : P.ConcentrationReady)
     ∃ storeLvl' : Fin P.paddedUniv → ℕ,
       st'.WellFormedPadded scheme (Function.update d x (some v)) storeLvl' := by
   have hd_eq : st.rawQuery scheme = d := funext (st.rawQuery_eq hwf)
-  let d' := Function.update d x (some v)
-  have hS'_eq : P.paddedDom d' = Insert.insert x (P.paddedDom d) := P.paddedDom_update_some d x v
+  let S' := Insert.insert x (P.paddedDom d)
   dsimp only [rawInsertFresh]
   simp only [hd_eq]
-  by_cases h_norm : ∃ sl, st.WellFormedPadded scheme d sl ∧
-      x ∉ P.paddedDom d ∧ st.seeds.AllGoodSeeds (Insert.insert x (P.paddedDom d))
-  · rw [dite_eq_left h_norm]
-    let spec := Classical.choose_spec h_norm
-    exact ⟨st.sentCount_normalInsertFresh spec.1 x v spec.2.1 spec.2.2,
-      Or.inl (st.seeds_normalInsertFresh spec.1 x v spec.2.1 spec.2.2),
-      _, st.wellFormedPadded_normalInsertFresh spec.1 x v spec.2.1 spec.2.2⟩
-  · rw [dite_eq_right h_norm]
-    have h_pre : st.seeds.AllGoodSeeds (P.paddedDom d) ∧
-        (P.nLow 0 ≤ #(P.paddedDom d') ∧ #(P.paddedDom d') ≤ P.nHigh 0) :=
-      ⟨hwf.goodSeeds, hS'_eq ▸ hcard'⟩
-    rw [dite_eq_left h_pre]
-    by_cases h_bad : ∃ ℓ, hasBadSeedOn st.seeds (P.paddedDom d') ℓ
-    · rw [dite_eq_left h_bad]
-      obtain ⟨hsc, ⟨ℓ₀, hℓ₀, hng, hout⟩, sl', hwfp'⟩ :=
-        repairBadSeedsTree_spec hcr scheme st.seeds (P.paddedDom d) d' st.sentCount x
-          h_pre.1 h_pre.2
-          (fun y => if hyx : y = x then Or.inr hyx else Or.inl (by simp [d', hyx])) h_bad
-      exact ⟨hsc, Or.inr ⟨ℓ₀, hℓ₀, hS'_eq ▸ hng, hout⟩, sl', hwfp'⟩
-    · rw [dite_eq_right h_bad]
-      have hgood' : st.seeds.AllGoodSeeds (P.paddedDom d') :=
-        ⟨h_pre.2, fun ℓ hℓ w => by by_contra hnot; exact h_bad ⟨ℓ, hℓ, w, hnot⟩⟩
-      exact False.elim (h_norm ⟨storeLvl, hwf, hx_fresh, hS'_eq ▸ hgood'⟩)
+  have h_wf : ∃ sl, st.WellFormedPadded scheme d sl ∧
+      x ∉ P.paddedDom d ∧ (P.nLow 0 ≤ #S' ∧ #S' ≤ P.nHigh 0) := ⟨storeLvl, hwf, hx_fresh, hcard'⟩
+  rw [dite_eq_left h_wf]
+  have ⟨hwf₀, hx₀, hcard₀⟩ := Classical.choose_spec h_wf
+  by_cases hgood' : st.seeds.AllGoodSeeds S'
+  · rw [dite_eq_left hgood']
+    exact ⟨st.sentCount_normalInsertFresh hwf₀ x v hx₀ hgood',
+      Or.inl (st.seeds_normalInsertFresh hwf₀ x v hx₀ hgood'),
+      _, st.wellFormedPadded_normalInsertFresh hwf₀ x v hx₀ hgood'⟩
+  · rw [dite_eq_right hgood']
+    have h_bad : ∃ ℓ, hasBadSeedOn st.seeds S' ℓ := by
+      by_contra hno
+      exact hgood' ⟨hcard₀, fun ℓ hℓ w => by by_contra hn; exact hno ⟨ℓ, hℓ, w, hn⟩⟩
+    have hdiff_x : ∀ y, (y ∈ S' ↔ y ∈ P.paddedDom d) ∨ y = x := fun y =>
+      if hyx : y = x then Or.inr hyx else Or.inl ⟨fun hm => (mem_insert.mp hm).resolve_left hyx,
+        mem_insert_of_mem⟩
+    let st₁ := rehashBeforeUpdate hcr st hwf₀ S' x hcard₀ hdiff_x h_bad
+    have ⟨hsc₁, hg₁, hloc, hex_wf₁⟩ :=
+      rehashBeforeUpdate_spec hcr st hwf₀ S' x hcard₀ hdiff_x h_bad
+    have hwf₁ := Classical.choose_spec hex_wf₁
+    obtain ⟨ℓ₀, hℓ₀, hng, hout⟩ := hloc
+    refine ⟨(st₁.sentCount_normalInsertFresh hwf₁ x v hx₀ hg₁).trans hsc₁,
+      Or.inr ⟨ℓ₀, hℓ₀, hng, fun j hj w hnot => ?_⟩,
+      _, st₁.wellFormedPadded_normalInsertFresh hwf₁ x v hx₀ hg₁⟩
+    rw [st₁.seeds_normalInsertFresh hwf₁ x v hx₀ hg₁]
+    exact hout j hj w hnot
 
 open scoped Classical in
 /-- Internal member-key deletion on `st` (`z ∈ paddedDom d`, `#S' ∈ [nLow 0, nHigh 0]`): runs
-`normalDeleteMem` (`Algorithm 3`) when `st.seeds` stays good on `S.erase z`, and otherwise
-resamples only `InSubtree ℓ₀ (nodeAt ℓ₀ z)` at the highest failing level `ℓ₀`. -/
+`normalDeleteMem` (`Algorithm 3`) when `st.seeds` stays good on `S.erase z`, and otherwise invokes
+`st.rehashSubtree` (`Algorithm 4`) at `(ℓ₀, nodeAt ℓ₀ z)` followed by `normalDeleteMem`. -/
 noncomputable def rawDeleteMem (hcr : P.ConcentrationReady)
     (scheme : DynamicMatching.Scheme (2 ^ P.idBits P.depth) (P.nLow P.depth))
     (st : P.TreeState) (z : Fin P.paddedUniv) : P.TreeState :=
   let d_cur : P.PaddedDict := st.rawQuery scheme
   let S_cur := P.paddedDom d_cur
-  let d' := Function.update d_cur z none
-  let S' := P.paddedDom d'
-  if st.seeds.AllGoodSeeds S' then
+  let S' := S_cur.erase z
+  if hgood' : st.seeds.AllGoodSeeds S' then
     st.normalDeleteMem scheme z
-  else if h_pre : st.seeds.AllGoodSeeds S_cur ∧ (P.nLow 0 ≤ #S' ∧ #S' ≤ P.nHigh 0) then
-    if h_bad : ∃ ℓ, hasBadSeedOn st.seeds S' ℓ then
-      repairBadSeedsTree hcr scheme st.seeds S_cur d' st.sentCount z h_pre.1 h_pre.2
-        (fun y => if hyz : y = z then Or.inr hyz else Or.inl (by simp [d', S_cur, hyz])) h_bad
-    else st.normalDeleteMem scheme z
+  else if h_wf : ∃ storeLvl, st.WellFormedPadded scheme d_cur storeLvl ∧
+      z ∈ S_cur ∧ (P.nLow 0 ≤ #S' ∧ #S' ≤ P.nHigh 0) then
+    have ⟨hwf, _, hcard'⟩ := Classical.choose_spec h_wf
+    have h_bad : ∃ ℓ, hasBadSeedOn st.seeds S' ℓ := by
+      by_contra hno
+      exact hgood' ⟨hcard', fun ℓ hℓ w => by by_contra hn; exact hno ⟨ℓ, hℓ, w, hn⟩⟩
+    have hdiff_z : ∀ y, (y ∈ S' ↔ y ∈ S_cur) ∨ y = z := fun y =>
+      if hyz : y = z then Or.inr hyz
+      else Or.inl ⟨mem_of_mem_erase, fun hm => mem_erase.mpr ⟨hyz, hm⟩⟩
+    let st₁ := rehashBeforeUpdate hcr st hwf S' z hcard' hdiff_z h_bad
+    st₁.normalDeleteMem scheme z
   else st
 
 open scoped Classical in
@@ -295,30 +318,33 @@ theorem wellFormedPadded_rawDeleteMem (hcr : P.ConcentrationReady)
     ∃ storeLvl' : Fin P.paddedUniv → ℕ,
       st'.WellFormedPadded scheme (Function.update d z none) storeLvl' := by
   have hd_eq : st.rawQuery scheme = d := funext (st.rawQuery_eq hwf)
-  let d' := Function.update d z none
-  have hS'_eq : P.paddedDom d' = (P.paddedDom d).erase z := P.paddedDom_update_none d z
+  let S' := (P.paddedDom d).erase z
   dsimp only [rawDeleteMem]
   simp only [hd_eq]
-  by_cases hgood' : st.seeds.AllGoodSeeds (P.paddedDom d')
-  · rw [ite_eq_left hgood']
-    obtain ⟨hsc, hsd, sl', hwf'⟩ := wellFormedPadded_normalDeleteMem hwf hz (hS'_eq ▸ hgood')
+  by_cases hgood' : st.seeds.AllGoodSeeds S'
+  · rw [dite_eq_left hgood']
+    obtain ⟨hsc, hsd, sl', hwf'⟩ := wellFormedPadded_normalDeleteMem hwf hz hgood'
     exact ⟨hsc, Or.inl hsd, sl', hwf'⟩
-  · rw [ite_eq_right hgood']
-    have h_pre : st.seeds.AllGoodSeeds (P.paddedDom d) ∧
-        (P.nLow 0 ≤ #(P.paddedDom d') ∧ #(P.paddedDom d') ≤ P.nHigh 0) :=
-      ⟨hwf.goodSeeds, hS'_eq ▸ hcard'⟩
-    rw [dite_eq_left h_pre]
-    have h_bad : ∃ ℓ, hasBadSeedOn st.seeds (P.paddedDom d') ℓ := by
+  · rw [dite_eq_right hgood']
+    have h_wf : ∃ sl, st.WellFormedPadded scheme d sl ∧
+        z ∈ P.paddedDom d ∧ (P.nLow 0 ≤ #S' ∧ #S' ≤ P.nHigh 0) := ⟨storeLvl, hwf, hz, hcard'⟩
+    rw [dite_eq_left h_wf]
+    have ⟨hwf₀, hz₀, hcard₀⟩ := Classical.choose_spec h_wf
+    have h_bad : ∃ ℓ, hasBadSeedOn st.seeds S' ℓ := by
       by_contra hno
-      exact hgood' ⟨h_pre.2, fun ℓ hℓ w => by by_contra hn; exact hno ⟨ℓ, hℓ, w, hn⟩⟩
-    rw [dite_eq_left h_bad]
-    obtain ⟨hsc, ⟨ℓ₀, hℓ₀, hng, hout⟩, sl', hwfp'⟩ :=
-      repairBadSeedsTree_spec hcr scheme st.seeds (P.paddedDom d) d' st.sentCount z
-        h_pre.1 h_pre.2
-        (fun y => if hyz : y = z then Or.inr hyz else Or.inl (by simp [d', hyz])) h_bad
-    exact ⟨hsc, Or.inr ⟨ℓ₀, hℓ₀, hS'_eq ▸ hng, hout⟩, sl', hwfp'⟩
+      exact hgood' ⟨hcard₀, fun ℓ hℓ w => by by_contra hn; exact hno ⟨ℓ, hℓ, w, hn⟩⟩
+    have hdiff_z : ∀ y, (y ∈ S' ↔ y ∈ P.paddedDom d) ∨ y = z := fun y =>
+      if hyz : y = z then Or.inr hyz
+      else Or.inl ⟨mem_of_mem_erase, fun hm => mem_erase.mpr ⟨hyz, hm⟩⟩
+    let st₁ := rehashBeforeUpdate hcr st hwf₀ S' z hcard₀ hdiff_z h_bad
+    obtain ⟨hsc₁, hg₁', ⟨ℓ₀, hℓ₀, hng, hout⟩, sl₁, hwf₁⟩ :=
+      rehashBeforeUpdate_spec hcr st hwf₀ S' z hcard₀ hdiff_z h_bad
+    obtain ⟨hsc, hsd, sl', hwf'⟩ := wellFormedPadded_normalDeleteMem hwf₁ hz₀ hg₁'
+    refine ⟨hsc.trans hsc₁, Or.inr ⟨ℓ₀, hℓ₀, hng, fun j hj w hnot => ?_⟩, sl', hwf'⟩
+    rw [hsd]
+    exact hout j hj w hnot
 
-private theorem WellFormedPadded.withSentCount
+theorem WellFormedPadded.withSentCount
     {scheme : DynamicMatching.Scheme (2 ^ P.idBits P.depth) (P.nLow P.depth)}
     {st : P.TreeState} {d : P.PaddedDict} {storeLvl : Fin P.paddedUniv → ℕ}
     (hwf : st.WellFormedPadded scheme d storeLvl) (sc : ℕ) :
@@ -372,9 +398,9 @@ end TreeState
 
 /-! ## Section 2: External Dictionary Interface (`initTree`, `insert`, `delete`) -/
 
-private theorem nLow_zero_eq (P : TreeSchedule) : P.nLow 0 = P.cap - 1 := by rfl
+theorem nLow_zero_eq (P : TreeSchedule) : P.nLow 0 = P.cap - 1 := by rfl
 
-private theorem nHigh_zero_eq (P : TreeSchedule) : P.nHigh 0 = P.cap := by rfl
+theorem nHigh_zero_eq (P : TreeSchedule) : P.nHigh 0 = P.cap := by rfl
 
 /-- Initialize an empty external dictionary (`Dictionary.empty P.univ`) padded with `P.cap`
 sentinel keys (`Section 4, Footnote 5` & `Section 5`). -/

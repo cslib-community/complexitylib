@@ -37,18 +37,21 @@ Subconstant Wasted Bits per Key* ([LiLiangYuZhou2024, Section 5.5];
    (`expectedSubseqSuccesses_le`), while geometric rejection sampling at each `Rehash(u)` call takes
    at most `12 / 11 ≤ 2` expected seed trials (`expectedRejectionTrials_le_two`) without recursing
    to children on failed trials (`Algorithm 4` Lines 3–5).
-3. **Multi-level telescoping (`Lemma 5.3`):** Multiplying the level recurrence
+3. **Multi-level telescoping (`Lemma 5.3` recurrence step):** Multiplying the level recurrence
    `a_{ℓ + 1} ≤ a_ℓ * B_ℓ + 20 * M / n_{ℓ + 1} ^ 2` by `n_{ℓ + 1}` and using `2 * n_{j + 1} ≤
-   B_j * n_{j + 1} ≤ n_j` yields `O(n + M)` expected work at every level and
-   `≤ 42 * (n + M) * log* n` total expected rehashing work across `ValidRegime`
-   (`canonicalSchedule_rehashWork_le_mul_logStar`).
+   B_j * n_{j + 1} ≤ n_j` yields `O(n + M)` expected work per level and
+   `≤ 42 * (n + M) * log* n` across `ValidRegime` given levelwise bounds `hbase` and `hstep`
+   (`rehashWork_of_level_recurrence`, `canonicalSchedule_rehashWork_le_mul_logStar`). The online
+   `OracleComp` execution model in `TreeExec.lean` instantiates `hbase` and `hstep` unconditionally
+   across any admissible `Dynamic.spec` history (`expectedCost_execHistory_le`,
+   `canonicalSchedule_expectedCost_execHistory_le`).
 
 ## Main definitions
 
 * `TreeSchedule.rehashWindow`, `TreeSchedule.ValidPrimIdSeq`: look-ahead window `⌈n_ℓ ^ 2 / 10⌉` and
   valid primitive-ID trajectories.
-* `TreeSchedule.expectedSubseqSuccesses`: exact expected successful rehashes of a node `u` across a
-  valid oblivious subsequence of `T` updates.
+* `TreeSchedule.expectedSubseqSuccesses`, `seqChanges`: exact expected successful rehashes of a node
+  `u` across a valid oblivious subsequence of `T` steps and active-change count.
 * `TreeSchedule.LevelSubseqBatch`: partition of `≤ M` oblivious updates across `K` maximal
   ancestor-rehash-free subsequences at level `ℓ`.
 
@@ -58,11 +61,11 @@ Subconstant Wasted Bits per Key* ([LiLiangYuZhou2024, Section 5.5];
   `TreeSchedule.prob_goodNodeSeed_survives_window_ge_half`,
   `TreeSchedule.condProb_goodNodeSeed_survives_window_ge_half`: `Claim 5.4` survival probability
   `≥ 1 / 2`.
-* `TreeSchedule.expectedSubseqSuccesses_le`, `TreeSchedule.sum_expectedSubseqSuccesses_le`:
-  `1 + 20 * T / n_ℓ ^ 2` bound per maximal subsequence and `K + 20 * M / n_ℓ ^ 2` summed over `K`
-  subsequences.
+* `TreeSchedule.expectedSubseqSuccesses_le`, `TreeSchedule.expectedSubseqSuccesses_le_of_changes`,
+  `TreeSchedule.sum_expectedSubseqSuccesses_le`: `1 + 20 * T / n_ℓ ^ 2` and active-change bounds per
+  maximal subsequence, and `K + 20 * M / n_ℓ ^ 2` summed over `K` subsequences.
 * `TreeSchedule.rehashWork_of_level_recurrence`, `canonicalSchedule_rehashWork_le_mul_logStar`:
-  `Lemma 5.3` multi-level expected rehashing work bound `O((n + M) * log* n)`.
+  multi-level recurrence-telescoping step of `Lemma 5.3` (completed end-to-end in `TreeExec.lean`).
 
 ## References
 
@@ -533,6 +536,267 @@ theorem expectedSubseqSuccesses_le (hcr : P.ConcentrationReady) {ℓ : ℕ} (h�
           nlinarith [hgap_ge2, hBW_le]
         exact le_trans (div_nonneg hnum_nonneg hG₀_real.le) hcalc
 
+/-- Congruence helper for `expectedSubseqSuccesses` across equal lengths `T₁ = T₂`. -/
+private theorem expectedSubseqSuccesses_congr (ℓ : ℕ) {T₁ T₂ : ℕ} (hT : T₁ = T₂)
+    {s₁ : Fin (T₁ + 1) → Finset (P.PrimId ℓ)} {s₂ : Fin (T₂ + 1) → Finset (P.PrimId ℓ)}
+    (hs : ∀ (k : ℕ) (hk₁ : k < T₁ + 1) (hk₂ : k < T₂ + 1), s₁ ⟨k, hk₁⟩ = s₂ ⟨k, hk₂⟩) :
+    P.expectedSubseqSuccesses ℓ T₁ s₁ = P.expectedSubseqSuccesses ℓ T₂ s₂ := by
+  subst hT
+  congr 1
+  exact funext fun ⟨k, hk⟩ => hs k hk hk
+
+/-- Number of active transitions `i : Fin T` where `seq i.succ ≠ seq i.castSucc`. -/
+def seqChanges {α : Type*} [DecidableEq α] {T : ℕ} (seq : Fin (T + 1) → α) : ℕ :=
+  #(Finset.univ.filter fun i : Fin T => seq i.succ ≠ seq i.castSucc)
+
+/-- Number of active transitions in `(s₀, ss)` where consecutive sets differ. -/
+@[expose]
+def listChanges {α : Type*} [DecidableEq α] : α → List α → ℕ
+  | _, [] => 0
+  | s₀, s₁ :: ss => (if s₁ = s₀ then 0 else 1) + listChanges s₁ ss
+
+private def dedupAdj {α : Type*} [DecidableEq α] : α → List α → List α
+  | _, [] => []
+  | s₀, s₁ :: ss => if s₁ = s₀ then dedupAdj s₁ ss else s₁ :: dedupAdj s₁ ss
+
+private theorem length_dedupAdj {α : Type*} [DecidableEq α] :
+    ∀ (s₀ : α) (ss : List α), (dedupAdj s₀ ss).length = listChanges s₀ ss
+  | _, [] => rfl
+  | s₀, s₁ :: ss => by
+    dsimp only [dedupAdj, listChanges]
+    by_cases h : s₁ = s₀
+    · rw [ite_eq_left h, ite_eq_left h, Nat.zero_add, length_dedupAdj]
+    · rw [ite_eq_right h, ite_eq_right h, List.length_cons, length_dedupAdj, Nat.add_comm]
+
+private theorem mem_dedupAdj {α : Type*} [DecidableEq α] :
+    ∀ {s₀ x : α} {ss : List α}, x ∈ dedupAdj s₀ ss → x ∈ ss
+  | _, _, [], h => h
+  | s₀, _, s₁ :: ss, h => by
+    dsimp only [dedupAdj] at h
+    by_cases he : s₁ = s₀
+    · rw [ite_eq_left he] at h
+      exact List.mem_cons_of_mem s₁ (mem_dedupAdj h)
+    · rw [ite_eq_right he] at h
+      rcases List.mem_cons.mp h with rfl | hm
+      · exact List.mem_cons_self
+      · exact List.mem_cons_of_mem s₁ (mem_dedupAdj hm)
+
+private theorem listChanges_ofFn {α : Type*} [DecidableEq α] :
+    ∀ {T : ℕ} (seq : Fin (T + 1) → α),
+      listChanges (seq 0) (List.ofFn fun i : Fin T => seq i.succ) = seqChanges seq
+  | 0, _ => by simp [listChanges, seqChanges]
+  | m + 1, seq => by
+    rw [List.ofFn_succ]
+    dsimp only [listChanges, Fin.succ_zero_eq_one]
+    have hih := listChanges_ofFn (fun i : Fin (m + 1) => seq i.succ)
+    rw [Fin.succ_zero_eq_one] at hih
+    rw [hih]
+    dsimp only [seqChanges]
+    have hsplit : #(Finset.univ.filter fun i : Fin (m + 1) => seq i.succ ≠ seq i.castSucc) =
+        (if seq 1 = seq 0 then 0 else 1) +
+          #(Finset.univ.filter fun j : Fin m => (seq j.succ.succ) ≠ (seq j.castSucc.succ)) := by
+      have hsum : ∀ {k : ℕ} (p : Fin k → Prop), [DecidablePred p] →
+          #(Finset.univ.filter p) = ∑ i : Fin k, if p i then 1 else 0 := by
+        intro _ p _; simp [Finset.sum_boole]
+      rw [hsum, Fin.sum_univ_succ]
+      congr 1
+      · by_cases h10 : seq 1 = seq 0
+        · have hf : ¬ (seq (0 : Fin (m + 1)).succ ≠ seq (0 : Fin (m + 1)).castSucc) := by
+            simpa using h10
+          rw [ite_eq_left h10, ite_eq_right hf]
+        · have ht : seq (0 : Fin (m + 1)).succ ≠ seq (0 : Fin (m + 1)).castSucc := by
+            simpa using h10
+          rw [ite_eq_right h10, ite_eq_left ht]
+      · rw [hsum fun j : Fin m => seq j.succ.succ ≠ seq j.castSucc.succ]
+        refine Finset.sum_congr rfl fun j _ => ?_
+        rw [Fin.castSucc_succ]
+    rw [hsplit]
+
+/-- Step-by-step online expected remaining rehashes starting from seed `g` across `seq 1, …, seq T`:
+keeps `g` while `IsGoodNodeSeed` holds (`0` cost) and restarts `expectedSubseqSuccesses` at the
+first failing step. -/
+@[expose]
+noncomputable def expectedRemRehashes (ℓ : ℕ) :
+    ∀ (T : ℕ), (Fin (T + 1) → Finset (P.PrimId ℓ)) → P.NodeSeed ℓ → ℝ
+  | 0, _, _ => 0
+  | m + 1, seq, g =>
+    open scoped Classical in
+    let tail : Fin (m + 1) → Finset (P.PrimId ℓ) := fun i => seq i.succ
+    if P.IsGoodNodeSeed ℓ g (seq 1) then
+      expectedRemRehashes ℓ m tail g
+    else
+      P.expectedSubseqSuccesses ℓ m tail
+
+open scoped Classical in
+/-- `expectedSubseqSuccesses` equals `1` plus the uniform average over `G₀` of
+`expectedRemRehashes`. -/
+theorem expectedSubseqSuccesses_eq_one_add_avg_rem (ℓ : ℕ) :
+    ∀ (T : ℕ) (seq : Fin (T + 1) → Finset (P.PrimId ℓ)),
+      P.expectedSubseqSuccesses ℓ T seq =
+        let G₀ := Finset.univ.filter fun g : P.NodeSeed ℓ => P.IsGoodNodeSeed ℓ g (seq 0)
+        1 + (∑ g ∈ G₀, P.expectedRemRehashes ℓ T seq g) / (#G₀ : ℝ) := by
+  have hrem_eq : ∀ (T : ℕ) (seq : Fin (T + 1) → Finset (P.PrimId ℓ)) (g : P.NodeSeed ℓ),
+      P.expectedRemRehashes ℓ T seq g =
+        if hfail : ∃ j : ℕ, ∃ hj : j < T, ¬ P.IsGoodNodeSeed ℓ g (seq ⟨j + 1, by omega⟩) then
+          P.expectedSubseqSuccesses ℓ (T - (Nat.find hfail + 1))
+            (P.suffixPrimIdSeq seq (Nat.succ_le_of_lt (Nat.find_spec hfail).1))
+        else 0 := by
+    intro T
+    induction T with
+    | zero =>
+      intro seq g
+      dsimp only [expectedRemRehashes]
+      rw [dite_eq_right]
+      rintro ⟨_, hj, _⟩; omega
+    | succ m ih =>
+      intro seq g
+      let tail : Fin (m + 1) → Finset (P.PrimId ℓ) := fun i => seq i.succ
+      dsimp only [expectedRemRehashes]
+      by_cases hg1 : P.IsGoodNodeSeed ℓ g (seq 1)
+      · rw [ite_eq_left hg1, ih tail g]
+        have hiff : (∃ j : ℕ, ∃ hj : j < m, ¬ P.IsGoodNodeSeed ℓ g (tail ⟨j + 1, by omega⟩)) ↔
+            (∃ j : ℕ, ∃ hj : j < m + 1, ¬ P.IsGoodNodeSeed ℓ g (seq ⟨j + 1, by omega⟩)) := by
+          constructor
+          · rintro ⟨j, hj, hb⟩
+            exact ⟨j + 1, by omega, hb⟩
+          · rintro ⟨j, hj, hb⟩
+            rcases j with _ | j'
+            · exact False.elim (hb hg1)
+            · exact ⟨j', by omega, hb⟩
+        by_cases hft : ∃ j : ℕ, ∃ hj : j < m, ¬ P.IsGoodNodeSeed ℓ g (tail ⟨j + 1, by omega⟩)
+        · have hf := hiff.mp hft
+          rw [dite_eq_left hft, dite_eq_left hf]
+          have hft_lt : Nat.find hft < m := (Nat.find_spec hft).1
+          have hf_lt : Nat.find hf < m + 1 := (Nat.find_spec hf).1
+          have hfind : Nat.find hf = Nat.find hft + 1 := by
+            refine le_antisymm (Nat.find_min' hf ⟨by omega, (Nat.find_spec hft).2⟩) ?_
+            rcases hfn : Nat.find hf with _ | k
+            · have hb0 := (Nat.find_spec hf).2
+              simp only [hfn, Nat.zero_add] at hb0
+              exact False.elim (hb0 hg1)
+            · refine Nat.succ_le_succ (Nat.find_min' hft ?_)
+              have hspec := (Nat.find_spec hf).2
+              exact ⟨by omega, by simpa only [hfn, tail, Fin.succ] using hspec⟩
+          refine P.expectedSubseqSuccesses_congr ℓ (by omega) fun k hk₁ hk₂ => ?_
+          dsimp only [suffixPrimIdSeq, tail, Fin.succ]
+          exact congrArg seq (Fin.ext (by dsimp only; omega))
+        · have hf : ¬ ∃ j : ℕ, ∃ hj : j < m + 1,
+              ¬ P.IsGoodNodeSeed ℓ g (seq ⟨j + 1, by omega⟩) := mt hiff.mpr hft
+          rw [dite_eq_right hft, dite_eq_right hf]
+      · rw [ite_eq_right hg1]
+        have hf : ∃ j : ℕ, ∃ hj : j < m + 1,
+            ¬ P.IsGoodNodeSeed ℓ g (seq ⟨j + 1, by omega⟩) := ⟨0, Nat.zero_lt_succ m, hg1⟩
+        rw [dite_eq_left hf]
+        have hfind0 : Nat.find hf = 0 := Nat.eq_zero_of_le_zero (Nat.find_min' hf ⟨by omega, hg1⟩)
+        refine P.expectedSubseqSuccesses_congr ℓ (by omega) fun k hk₁ hk₂ => ?_
+        dsimp only [tail, suffixPrimIdSeq, Fin.succ]
+        exact congrArg seq (Fin.ext (by dsimp only; omega))
+  intro T seq
+  rw [expectedSubseqSuccesses]
+  simp only [hrem_eq]
+
+/-- Convert `(s₀, ss)` into `Fin (ss.length + 1) → α`. -/
+@[expose]
+noncomputable def seqOfHeadList {α : Type*} (s₀ : α) (ss : List α) :
+    Fin (ss.length + 1) → α :=
+  Fin.cons s₀ ss.get
+
+private theorem expectedRem_and_subseq_ofHeadList (ℓ : ℕ) :
+    ∀ (ss : List (Finset (P.PrimId ℓ))) (s₀ : Finset (P.PrimId ℓ)),
+      (∀ g : P.NodeSeed ℓ, P.IsGoodNodeSeed ℓ g s₀ →
+        P.expectedRemRehashes ℓ ss.length (seqOfHeadList s₀ ss) g =
+          P.expectedRemRehashes ℓ (dedupAdj s₀ ss).length
+            (seqOfHeadList s₀ (dedupAdj s₀ ss)) g) ∧
+      P.expectedSubseqSuccesses ℓ ss.length (seqOfHeadList s₀ ss) =
+        P.expectedSubseqSuccesses ℓ (dedupAdj s₀ ss).length
+          (seqOfHeadList s₀ (dedupAdj s₀ ss)) := by
+  classical
+  intro ss
+  induction ss with
+  | nil =>
+    intro s₀
+    exact ⟨fun _ _ => rfl, rfl⟩
+  | cons s₁ tail ih =>
+    intro s₀
+    obtain ⟨ih_rem, ih_sub⟩ := ih s₁
+    have htail_eq : (fun i : Fin tail.length.succ => (seqOfHeadList s₀ (s₁ :: tail)) i.succ) =
+        seqOfHeadList s₁ tail := by
+      ext i
+      cases i using Fin.cases <;> rfl
+    have hrem : ∀ g : P.NodeSeed ℓ, P.IsGoodNodeSeed ℓ g s₀ →
+        P.expectedRemRehashes ℓ (s₁ :: tail).length (seqOfHeadList s₀ (s₁ :: tail)) g =
+          P.expectedRemRehashes ℓ (dedupAdj s₀ (s₁ :: tail)).length
+            (seqOfHeadList s₀ (dedupAdj s₀ (s₁ :: tail))) g := by
+      intro g hg0
+      dsimp only [dedupAdj]
+      by_cases h10 : s₁ = s₀
+      · subst h10
+        rw [ite_eq_left rfl]
+        dsimp only [List.length_cons, expectedRemRehashes]
+        have hc1 : seqOfHeadList s₁ (s₁ :: tail) 1 = s₁ := rfl
+        rw [hc1, ite_eq_left hg0, htail_eq]
+        exact ih_rem g hg0
+      · rw [ite_eq_right h10]
+        dsimp only [List.length_cons, expectedRemRehashes]
+        have hc1 : seqOfHeadList s₀ (s₁ :: tail) 1 = s₁ := rfl
+        have hc2 : seqOfHeadList s₀ (s₁ :: dedupAdj s₁ tail) 1 = s₁ := rfl
+        have hdtail : (fun i : Fin (dedupAdj s₁ tail).length.succ =>
+            (seqOfHeadList s₀ (s₁ :: dedupAdj s₁ tail)) i.succ) =
+            seqOfHeadList s₁ (dedupAdj s₁ tail) := by
+          ext i
+          cases i using Fin.cases <;> rfl
+        rw [hc1, hc2, htail_eq, hdtail]
+        by_cases hg1 : P.IsGoodNodeSeed ℓ g s₁
+        · rw [ite_eq_left hg1, ite_eq_left hg1]; exact ih_rem g hg1
+        · rw [ite_eq_right hg1, ite_eq_right hg1]; exact ih_sub
+    refine ⟨hrem, ?_⟩
+    rw [P.expectedSubseqSuccesses_eq_one_add_avg_rem ℓ (s₁ :: tail).length _,
+      P.expectedSubseqSuccesses_eq_one_add_avg_rem ℓ (dedupAdj s₀ (s₁ :: tail)).length _]
+    have h0₁ : seqOfHeadList s₀ (s₁ :: tail) 0 = s₀ := rfl
+    have h0₂ : seqOfHeadList s₀ (dedupAdj s₀ (s₁ :: tail)) 0 = s₀ := rfl
+    dsimp only
+    rw [h0₁, h0₂]
+    congr 2
+    exact Finset.sum_congr rfl fun g hg => hrem g (mem_filter.mp hg).2
+
+/-- `List`-form stutter-invariant subsequence bound on `(s₀, ss)`. -/
+theorem expectedSubseqSuccesses_seqOfHeadList_le (hcr : P.ConcentrationReady) {ℓ : ℕ}
+    (hℓ : ℓ ≤ P.depth) (s₀ : Finset (P.PrimId ℓ)) (ss : List (Finset (P.PrimId ℓ)))
+    (h0 : P.nLow ℓ ≤ #s₀ ∧ #s₀ ≤ P.nHigh ℓ)
+    (hss : ∀ s ∈ ss, P.nLow ℓ ≤ #s ∧ #s ≤ P.nHigh ℓ) :
+    P.expectedSubseqSuccesses ℓ ss.length (seqOfHeadList s₀ ss) ≤
+      1 + 20 * (listChanges s₀ ss : ℝ) / (P.nFloor ℓ : ℝ) ^ 2 := by
+  rw [(P.expectedRem_and_subseq_ofHeadList ℓ ss s₀).2, ← length_dedupAdj s₀ ss]
+  refine P.expectedSubseqSuccesses_le hcr hℓ _ _ fun j => ?_
+  refine Fin.cases h0 (fun i => ?_) j
+  dsimp only [seqOfHeadList]
+  rw [Fin.cons_succ]
+  exact hss _ (mem_dedupAdj (List.get_mem (dedupAdj s₀ ss) i))
+
+/-- **Stutter-invariant subsequence bound**: unchanged steps `seq i.succ = seq i.castSucc` never
+cause a good seed to fail, so `expectedSubseqSuccesses ℓ T seq` is bounded in terms of the number
+`seqChanges seq` of actual set changes rather than raw step count `T`. -/
+theorem expectedSubseqSuccesses_le_of_changes (hcr : P.ConcentrationReady) {ℓ : ℕ}
+    (hℓ : ℓ ≤ P.depth) (T : ℕ) (seq : Fin (T + 1) → Finset (P.PrimId ℓ))
+    (hvalid : P.ValidPrimIdSeq ℓ T seq) :
+    P.expectedSubseqSuccesses ℓ T seq ≤
+      1 + 20 * (seqChanges seq : ℝ) / (P.nFloor ℓ : ℝ) ^ 2 := by
+  let ls := List.ofFn fun i : Fin T => seq i.succ
+  have heq_seq : P.expectedSubseqSuccesses ℓ T seq =
+      P.expectedSubseqSuccesses ℓ ls.length (seqOfHeadList (seq 0) ls) := by
+    refine P.expectedSubseqSuccesses_congr ℓ (List.length_ofFn).symm fun k hk₁ hk₂ => ?_
+    rcases k with _ | k'
+    · rfl
+    · dsimp only [seqOfHeadList]
+      rw [show (⟨k' + 1, hk₂⟩ : Fin (ls.length + 1)) =
+        (⟨k', Nat.lt_of_succ_lt_succ hk₂⟩ : Fin ls.length).succ from rfl,
+        Fin.cons_succ, List.get_ofFn]
+      exact congrArg seq (Fin.ext rfl)
+  rw [heq_seq, ← listChanges_ofFn seq]
+  refine P.expectedSubseqSuccesses_seqOfHeadList_le hcr hℓ (seq 0) ls (hvalid 0) fun s hs => ?_
+  obtain ⟨r, rfl⟩ := List.mem_ofFn.mp hs
+  exact hvalid r.succ
+
 /-- Batch of `K` maximal ancestor-rehash-free subsequences across level-`ℓ` nodes during `M`
 oblivious updates (`∑ r, lengths r ≤ M`). -/
 structure LevelSubseqBatch (ℓ K M : ℕ) where
@@ -591,7 +855,7 @@ private theorem sum_inv_nFloor_le_two_div {ℓ : ℕ} (hℓ : ℓ ≤ P.depth) :
     rw [Finset.sum_range_succ]
     linarith [ih hm_lt.le]
 
-/-- **Multi-level expected rehashing work bound (`Lemma 5.3` over abstract `TreeSchedule`)**:
+/-- **Multi-level recurrence-telescoping bound (`Lemma 5.3` over abstract `TreeSchedule`)**:
 for any nonneg level-wise expected successful-rehash counts `succRehashes : ℕ → ℝ` satisfying the
 top-level initialization + update bound `succRehashes 0 ≤ 1 + 20 * M / (nFloor 0) ^ 2` and the
 parent-to-child recurrence
@@ -599,7 +863,8 @@ parent-to-child recurrence
 the total expected rehashing work across all levels `0 ≤ ℓ ≤ depth` (charging `2 * nFloor ℓ` per
 successful rehash to include `≤ 2` expected rejection-sampling seed trials) is at most
 `14 * (depth + 1) * (cap + M)` ([LiLiangYuZhou2024, Section 5.5, Lemma 5.3];
-[arXiv:2310.20536v1](https://arxiv.org/abs/2310.20536v1), PDF pp. 34–35 / printed pp. 33–34). -/
+[arXiv:2310.20536v1](https://arxiv.org/abs/2310.20536v1), PDF pp. 34–35 / printed pp. 33–34;
+instantiated unconditionally for `OracleComp` tree histories in `TreeExec.lean`). -/
 theorem rehashWork_of_level_recurrence (hcr : P.ConcentrationReady) {M : ℕ}
     {succRehashes : ℕ → ℝ}
     (hnonneg : ∀ ℓ ≤ P.depth, 0 ≤ succRehashes ℓ)
@@ -669,11 +934,14 @@ theorem ValidRegime.treeDepth_add_one_le_three_mul_logStar
   have h3 := h.three_le_logStar
   omega
 
-/-- **End-to-end `Lemma 5.3` expected rehashing work bound across `ValidRegime`**:
-over initialization and `M` oblivious dictionary updates, total expected rehashing work across all
-levels of `canonicalSchedule h` is at most `42 * (n + M) * Nat.logStar n`
+/-- **Recurrence-telescoping `Lemma 5.3` bound across `ValidRegime`**:
+given level-wise expected successful-rehash counts `succRehashes : ℕ → ℝ` satisfying `hbase` and
+`hstep` over `M` single-key padded updates, total expected rehashing work across all levels of
+`canonicalSchedule h` is at most `42 * (n + M) * Nat.logStar n`
 ([LiLiangYuZhou2024, Section 5.5, Lemma 5.3];
-[arXiv:2310.20536v1](https://arxiv.org/abs/2310.20536v1), PDF pp. 34–35 / printed pp. 33–34). -/
+[arXiv:2310.20536v1](https://arxiv.org/abs/2310.20536v1), PDF pp. 34–35 / printed pp. 33–34;
+see `canonicalSchedule_expectedCost_execHistory_le` in `TreeExec.lean` for the unconditional
+bound over `M` external `Dynamic.Op` updates). -/
 theorem canonicalSchedule_rehashWork_le_mul_logStar
     {U V n R p_min q_min p_max q_max M : ℕ}
     (h : ValidRegime U V n R p_min q_min p_max q_max)
