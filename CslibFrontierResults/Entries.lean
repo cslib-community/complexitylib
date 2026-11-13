@@ -1695,7 +1695,7 @@ register_result "pac-bayes-kl" where
   topic := "statistical learning"
   sources := [
     { paper := Seeger2002, theorem := "Theorem 1 and Appendix A",
-      locator := "Section 1, p. 239, and pp. 264–265" },
+      locator := "Section 1.3, p. 239, and pp. 264–265" },
     { paper := Maurer2004, theorem := "Lemma 3", locator := "Section 2, p. 4" }
   ]
   theorems := [

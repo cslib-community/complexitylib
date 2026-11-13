@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Init
 public import Mathlib.InformationTheory.KullbackLeibler.KLFun
+import CslibFrontier.Foundations.Combinatorics.BinomialTail
 import Mathlib.Analysis.Convex.SpecificFunctions.Basic
 
 /-!
@@ -140,21 +141,21 @@ theorem choose_mul_pow_mul_exp_binaryKL_le_one {p : ℝ} (hp : p ∈ Icc (0 : �
         rw [← hmq] at this
         exact pos_of_mul_pos_right this (Nat.cast_nonneg m)
   have hterm : (m.choose k : ℝ) * p ^ k * (1 - p) ^ (m - k) * Real.exp (m * binaryKL q p) =
-      q ^ k * (1 - q) ^ (m - k) * m.choose k := by
+      m.choose k * q ^ k * (1 - q) ^ (m - k) := by
     rw [hexp]
     calc (m.choose k : ℝ) * p ^ k * (1 - p) ^ (m - k) *
           ((q / p) ^ k * ((1 - q) / (1 - p)) ^ (m - k))
         = (p * (q / p)) ^ k * ((1 - p) * ((1 - q) / (1 - p))) ^ (m - k) * m.choose k := by
           rw [mul_pow, mul_pow]; ring
-      _ = q ^ k * (1 - q) ^ (m - k) * m.choose k := by
-        rw [mul_div_cancel₀ _ hp0.ne', mul_div_cancel₀ _ (sub_pos.2 hp1).ne']
+      _ = m.choose k * q ^ k * (1 - q) ^ (m - k) := by
+        rw [mul_div_cancel₀ _ hp0.ne', mul_div_cancel₀ _ (sub_pos.2 hp1).ne']; ring
   rw [hterm]
-  calc q ^ k * (1 - q) ^ (m - k) * m.choose k
-      ≤ ∑ j ∈ Finset.range (m + 1), q ^ j * (1 - q) ^ (m - j) * m.choose j :=
-        Finset.single_le_sum (f := fun j => q ^ j * (1 - q) ^ (m - j) * m.choose j)
+  calc (m.choose k : ℝ) * q ^ k * (1 - q) ^ (m - k)
+      ≤ ∑ j ∈ Finset.range (m + 1), (m.choose j : ℝ) * q ^ j * (1 - q) ^ (m - j) :=
+        Finset.single_le_sum (f := fun j => (m.choose j : ℝ) * q ^ j * (1 - q) ^ (m - j))
           (fun j _ => by have := sub_nonneg.2 hq1; positivity)
           (Finset.mem_range.2 (Nat.lt_succ_of_le hk))
-    _ = 1 := by rw [← add_pow, add_sub_cancel, one_pow]
+    _ = 1 := Cslib.sum_choose_mul_pow_eq_one m q
 
 /-- `q ↦ c klFun (α + β q)` is convex on `[0, 1]` when `c ≥ 0` and `α + β q ≥ 0` there. -/
 private theorem convexOn_mul_klFun_affine {c α β : ℝ} (hc : 0 ≤ c)
