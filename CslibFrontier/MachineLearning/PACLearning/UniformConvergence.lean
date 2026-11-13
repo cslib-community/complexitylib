@@ -13,6 +13,7 @@ public import Mathlib.Analysis.SpecialFunctions.Log.Basic
 public import Mathlib.MeasureTheory.Constructions.Pi
 import CslibFrontier.Probability.Concentration
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.Product.MapMeasure
 import Mathlib.Probability.ProbabilityMassFunction.Constructions
 
 /-! # Uniform convergence of empirical errors
@@ -29,8 +30,10 @@ is the agnostic route to PAC learning: no concept of the class needs to fit the 
 The domain and label spaces are arbitrary measurable spaces. Each hypothesis needs a measurable
 misclassification set; `measurableSet_misclassified` supplies this for measurable hypotheses with
 `Bool` labels. Hoeffding's inequality is the library's finite-PMF form
-(`Cslib.Probability.PMF.pi_sum_abs_sub_mean_ge`), applied to the Bernoulli indicators of
-misclassification.
+(`Cslib.Probability.PMF.pi_sum_abs_sub_mean_ge`), applied to the Bernoulli indicator of a
+measurable event; the empirical error of a hypothesis is the relative frequency of its
+misclassification set. Uniform convergence for infinite classes of finite VC dimension is in
+`VCUniformConvergence.lean`.
 
 ## Main definitions
 
@@ -38,6 +41,8 @@ misclassification.
 
 ## Main results
 
+- `measure_pi_le_abs_card_filter_div_sub_measure`: Hoeffding's inequality for the relative
+  frequency of one measurable event.
 - `measure_pi_le_abs_empiricalMiscount_div_sub_error`: Hoeffding's inequality for the empirical
   error of one hypothesis.
 - `measure_pi_not_isRepresentative_le`: uniform convergence for a finite class.
@@ -67,65 +72,56 @@ variable {α β : Type*} [MeasurableSpace α] [MeasurableSpace β] [DecidableEq 
     (S : LabeledSample α β m) : Prop :=
   ∀ h ∈ C, |(empiricalMiscount h S : ℝ) / m - (error D h).toReal| ≤ ε
 
-/-- **Hoeffding's inequality for the empirical error of one hypothesis** [Hoeffding1963]: under `m`
-i.i.d. examples from `D`, the empirical error of `h` differs from `error D h` by at least `ε` with
-probability at most `2 exp (-2 m ε²)`. The domain is an arbitrary measurable space; only the
-misclassification set of `h` must be measurable. -/
-theorem measure_pi_le_abs_empiricalMiscount_div_sub_error (D : Measure (α × β))
-    [IsProbabilityMeasure D] {h : α → β} (hh : MeasurableSet {p : α × β | h p.1 ≠ p.2})
-    (m : ℕ) {ε : ℝ} (hε : 0 ≤ ε) :
-    Measure.pi (fun _ : Fin m => D)
-        {S | ε ≤ |(empiricalMiscount h S : ℝ) / m - (error D h).toReal|} ≤
+section Hoeffding
+
+variable {Z : Type*} [MeasurableSpace Z]
+
+/-- **Hoeffding's inequality for a relative frequency** [Hoeffding1963]: under `m` i.i.d. samples
+from `μ`, the fraction of sample points where a measurable `g : Z → Bool` is `true` differs from
+`μ {g = true}` by at least `ε` with probability at most `2 exp (-2 m ε²)`. -/
+theorem measure_pi_le_abs_card_filter_div_sub_measure (μ : Measure Z) [IsProbabilityMeasure μ]
+    {g : Z → Bool} (hg : Measurable g) (m : ℕ) {ε : ℝ} (hε : 0 ≤ ε) :
+    Measure.pi (fun _ : Fin m => μ)
+        {S | ε ≤ |((Finset.univ.filter fun i => g (S i) = true).card : ℝ) / m -
+          (μ {z | g z = true}).toReal|} ≤
       ENNReal.ofReal (2 * Real.exp (-2 * m * ε ^ 2)) := by
   classical
   rcases Nat.eq_zero_or_pos m with rfl | hm
   · refine prob_le_one.trans ?_
     rw [Nat.cast_zero, mul_zero, zero_mul, Real.exp_zero, mul_one, ENNReal.ofReal_ofNat]
     norm_num
-  set f : α × β → Bool := fun p => decide (h p.1 ≠ p.2)
-  have hf : Measurable f := by
-    refine measurable_to_countable' fun b => ?_
-    cases b
-    · have : f ⁻¹' {false} = {p : α × β | h p.1 ≠ p.2}ᶜ := by
-        ext p; simp [f]
-      rw [this]; exact hh.compl
-    · have : f ⁻¹' {true} = {p : α × β | h p.1 ≠ p.2} := by
-        ext p; simp [f]
-      rw [this]; exact hh
-  set q : PMF Bool := (D.map f).toPMF
-  have hq : q.toMeasure = D.map f := Measure.toPMF_toMeasure _
-  have hmap : (Measure.pi fun _ : Fin m => D).map (fun S i => f (S i)) =
-      (Cslib.Probability.PMF.pi fun _ : Fin m => q).toMeasure := by
-    rw [Cslib.Probability.PMF.toMeasure_pi, hq]
-    exact Measure.pi_map_pi (fun _ => hf.aemeasurable)
-  have hfm : Measurable fun (S : Fin m → α × β) i => f (S i) :=
-    measurable_pi_iff.2 fun i => hf.comp (measurable_pi_apply i)
-  have hqt : (q true).toReal = (error D h).toReal := by
-    rw [Measure.toPMF_apply, Measure.map_apply hf (measurableSet_singleton _)]
-    congr 2
-    ext p; simp [f]
+  set q : PMF Bool := (μ.map g).toPMF
+  have hmap : (Measure.pi fun _ : Fin m => μ).map (fun S i => g (S i)) =
+      (Cslib.Probability.PMF.pi fun _ : Fin m => q).toMeasure :=
+    Cslib.Probability.PMF.map_measurePi_eq_toMeasure_pi _ fun _ => hg
+  have hgm : Measurable fun (S : Fin m → Z) i => g (S i) :=
+    measurable_pi_iff.2 fun i => hg.comp (measurable_pi_apply i)
+  have hqt : (q true).toReal = (μ {z | g z = true}).toReal := by
+    rw [Measure.toPMF_apply, Measure.map_apply hg (measurableSet_singleton _)]
+    rfl
   set score : Fin m → Bool → ℝ := fun _ b => if b = true then 1 else 0
   have hscore : ∀ i b, b ∈ q.support → score i b ∈ Set.Icc (0 : ℝ) 1 := by
     intro i b _
     cases b <;> simp [score]
-  have hcount (S : Fin m → α × β) :
-      (empiricalMiscount h S : ℝ) = ∑ i, score i (f (S i)) := by
-    simp only [empiricalMiscount, score, f, Finset.card_filter, Nat.cast_sum, Nat.cast_ite,
-      Nat.cast_one, Nat.cast_zero, decide_eq_true_eq]
-  have hmean : ∑ i : Fin m, ∑ a, (q a).toReal * score i a = m * (error D h).toReal := by
+  have hcount (S : Fin m → Z) :
+      ((Finset.univ.filter fun i => g (S i) = true).card : ℝ) = ∑ i, score i (g (S i)) := by
+    simp only [score, Finset.card_filter, Nat.cast_sum, Nat.cast_ite, Nat.cast_one, Nat.cast_zero]
+  have hmean : ∑ i : Fin m, ∑ a, (q a).toReal * score i a = m * (μ {z | g z = true}).toReal := by
     simp only [score, Fintype.sum_bool, ite_true, mul_one, Bool.false_eq_true, ite_false,
       mul_zero, add_zero, Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul, hqt]
   have hmR : (0 : ℝ) < m := Nat.cast_pos.2 hm
-  have hpre : {S : LabeledSample α β m |
-      ε ≤ |(empiricalMiscount h S : ℝ) / m - (error D h).toReal|} =
-      (fun S i => f (S i)) ⁻¹' {b : Fin m → Bool |
+  have hpre : {S : Fin m → Z | ε ≤ |((Finset.univ.filter fun i => g (S i) = true).card : ℝ) / m -
+          (μ {z | g z = true}).toReal|} =
+      (fun S i => g (S i)) ⁻¹' {b : Fin m → Bool |
         m * ε ≤ |∑ i, score i (b i) - ∑ i : Fin m, ∑ a, (q a).toReal * score i a|} := by
     ext S
     simp only [Set.mem_ofPred_eq, Set.mem_preimage, hmean, ← hcount]
-    rw [show (empiricalMiscount h S : ℝ) - m * (error D h).toReal =
-        m * ((empiricalMiscount h S : ℝ) / m - (error D h).toReal) by field_simp,
+    rw [show ((Finset.univ.filter fun i => g (S i) = true).card : ℝ) -
+          m * (μ {z | g z = true}).toReal =
+        m * (((Finset.univ.filter fun i => g (S i) = true).card : ℝ) / m -
+          (μ {z | g z = true}).toReal) by field_simp,
       abs_mul, abs_of_pos hmR, mul_le_mul_iff_right₀ hmR]
-  rw [hpre, ← Measure.map_apply hfm (Set.toFinite _).measurableSet, hmap,
+  rw [hpre, ← Measure.map_apply hgm (Set.toFinite _).measurableSet, hmap,
     PMF.toMeasure_apply_eq_toOuterMeasure]
   have hne : (Cslib.Probability.PMF.pi fun _ : Fin m => q).toOuterMeasure
       {b : Fin m → Bool |
@@ -137,6 +133,38 @@ theorem measure_pi_le_abs_empiricalMiscount_div_sub_error (D : Measure (α × β
   congr 2
   simp only [Fintype.card_fin, one_pow, mul_one]
   field_simp
+
+end Hoeffding
+
+/-- **Hoeffding's inequality for the empirical error of one hypothesis** [Hoeffding1963]: under `m`
+i.i.d. examples from `D`, the empirical error of `h` differs from `error D h` by at least `ε` with
+probability at most `2 exp (-2 m ε²)`. The domain is an arbitrary measurable space; only the
+misclassification set of `h` must be measurable. -/
+theorem measure_pi_le_abs_empiricalMiscount_div_sub_error (D : Measure (α × β))
+    [IsProbabilityMeasure D] {h : α → β} (hh : MeasurableSet {p : α × β | h p.1 ≠ p.2})
+    (m : ℕ) {ε : ℝ} (hε : 0 ≤ ε) :
+    Measure.pi (fun _ : Fin m => D)
+        {S | ε ≤ |(empiricalMiscount h S : ℝ) / m - (error D h).toReal|} ≤
+      ENNReal.ofReal (2 * Real.exp (-2 * m * ε ^ 2)) := by
+  set f : α × β → Bool := fun p => decide (h p.1 ≠ p.2)
+  have hf : Measurable f := by
+    refine measurable_to_countable' fun b => ?_
+    cases b
+    · have : f ⁻¹' {false} = {p : α × β | h p.1 ≠ p.2}ᶜ := by
+        ext p; simp [f]
+      rw [this]; exact hh.compl
+    · have : f ⁻¹' {true} = {p : α × β | h p.1 ≠ p.2} := by
+        ext p; simp [f]
+      rw [this]; exact hh
+  have hset : {p : α × β | f p = true} = {p : α × β | h p.1 ≠ p.2} := by
+    ext p
+    simp only [f, Set.mem_ofPred_eq, decide_eq_true_eq]
+  have hcount (S : LabeledSample α β m) :
+      empiricalMiscount h S = (Finset.univ.filter fun i => f (S i) = true).card := by
+    simp only [empiricalMiscount, f, decide_eq_true_eq]
+  have h := measure_pi_le_abs_card_filter_div_sub_measure D hf m hε
+  simp only [hset] at h
+  simpa only [hcount, error] using h
 
 /-- **Uniform convergence for a finite class** [ShalevShwartzBenDavid2014, Section 4.2]: `m` i.i.d.
 examples fail to be `ε`-representative for a finite class `H` with probability at most
