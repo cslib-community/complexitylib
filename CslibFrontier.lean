@@ -3742,6 +3742,7 @@ public import CslibFrontier.Computability.PolyTime.CNF.GreedyParityContext
 public import CslibFrontier.Computability.PolyTime.CNF.GreedyParitySearch
 public import CslibFrontier.Computability.PolyTime.CNF.SparseCNFLeafCounter
 public import CslibFrontier.Computability.PolyTime.CNF.SparsePolyCompile
+public import CslibFrontier.Computability.PolyTime.CSP.AffineEquation
 public import CslibFrontier.Computability.PolyTime.CSP.AffineTemplate
 public import CslibFrontier.Computability.PolyTime.CSP.Boolean
 public import CslibFrontier.Computability.PolyTime.CSP.CNFTemplate

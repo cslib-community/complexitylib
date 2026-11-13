@@ -72,7 +72,7 @@ theorem length_encoding_compile_le_of_sizes {I : FixedRotationInput} (hI : Valid
     (XORSAT.encoding (compile I)).length ≤
       9 * K ^ 2 * (32 * (Nat.log2 (9 * K ^ 2) + 1) + 21) := by
   have hF := boundedEndpoints_frame hI
-  have hlabels : ∀ r ∈ compileFrame (frame I), ∀ d ∈ r.1,
+  have hlabels : ∀ r ∈ compileFrame (frame I), ∀ d ∈ r.vars,
       (encNat d).length ≤ Nat.log2 (9 * K ^ 2) + 1 := by
     intro r hr d hd
     obtain ⟨e, he, f, hf, _, _, rfl⟩ := mem_compileFrame.mp hr
@@ -83,12 +83,12 @@ theorem length_encoding_compile_le_of_sizes {I : FixedRotationInput} (hI : Valid
   have hrows : (compileFrame (frame I)).length ≤ 9 * K ^ 2 :=
     (length_compileFrame_le _).trans (by nlinarith [Nat.pow_le_pow_left hm 2])
   have hbits : ∀ r ∈ compileFrame (frame I),
-      (XORSAT.equationEncoding r).length ≤ 16 * (Nat.log2 (9 * K ^ 2) + 1) + 10 := by
+      (encAffineEquation encNat r).length ≤ 16 * (Nat.log2 (9 * K ^ 2) + 1) + 10 := by
     intro r hr
     have hh := framed_row_length_le (width_compileFrame hr) (hlabels r hr)
     omega
-  have hb := length_encList_le XORSAT.equationEncoding (compileFrame (frame I)) hbits
-  change (encList XORSAT.equationEncoding (compileFrame (frame I))).length ≤ _
+  have hb := length_encList_le (encAffineEquation encNat) (compileFrame (frame I)) hbits
+  change (encList (encAffineEquation encNat) (compileFrame (frame I))).length ≤ _
   exact hb.trans (by nlinarith)
 
 /-- A valid original CSP split query has the full memo bit bound with `K=B+1`. -/
