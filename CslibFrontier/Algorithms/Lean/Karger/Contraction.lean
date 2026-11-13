@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Algorithms.WordRAM.Karger.Graph
+public import CslibFrontier.Algorithms.Karger.Graph
 public import CslibFrontier.DataStructure.StateTransition.Randomized
 public import CslibFrontier.Foundations.Combinatorics.WeightedCut.Blocks
 public import CslibFrontier.Languages.Probabilistic.Iteration
@@ -132,7 +132,7 @@ oracle is a separate, deterministic hop, and `Refinement.toRandomized` with
 namespace Cslib.Algorithms.Lean.Karger
 
 open scoped ENNReal
-open Cslib.WeightedCut Cslib.Algorithms.WordRAM.Karger Cslib.DataStructure
+open Cslib.WeightedCut Cslib.Algorithms.Karger Cslib.DataStructure
 
 /-! ## The contraction structure -/
 

@@ -44,19 +44,19 @@ example (n : ℕ) :
 noncomputable def emptyZKProof : ZKProof encBits (∅ : Set (List Bool)) (fun _ => 1 / 3) where
   verifier _ _ := pure false
   prover _ _ _ :=
-    { State := ℕ × List Bool
-      init := (0, [false, false, false])
+    { State := GMW.TwoRoundState
+      init := .init
       respond := fun q s => PMF.pure (GMW.twoRoundStep (fun _ => []) (fun _ => []) q.2 s) }
   isWitness _ _ := false
   polyTime_isWitness := by fun_prop
   mem_iff_exists_witness a := by simp
   isOraclePPT_verifier := by fun_prop
   interact _ _ _ prog :=
-    Prod.fst <$> GMW.runTwoRound (fun _ => []) (fun _ => []) prog (0, [false, false, false])
+    Prod.fst <$> GMW.runTwoRound (fun _ => []) (fun _ => []) prog .init
   eval_interact _ _ _ prog :=
     (ProbComp.eval_map _ _).trans
       (congrArg (PMF.map Prod.fst)
-        (GMW.eval_runTwoRound (fun _ => []) (fun _ => []) prog (0, [false, false, false])))
+        (GMW.eval_runTwoRound (fun _ => []) (fun _ => []) prog .init))
   isPPT_interact {Vstar} hV := by
     have hrun := GMW.isPPTOn_runTwoRound hV
       (input := encPair encUnary (encPair encBits (encPair encBits encBits)))
@@ -77,19 +77,19 @@ satisfiable witness families. -/
 noncomputable def univZKProof : ZKProof encBits (Set.univ : Set (List Bool)) (fun _ => 1 / 3) where
   verifier _ _ := pure true
   prover _ _ _ :=
-    { State := ℕ × List Bool
-      init := (0, [false, false, false])
+    { State := GMW.TwoRoundState
+      init := .init
       respond := fun q s => PMF.pure (GMW.twoRoundStep (fun _ => []) (fun _ => []) q.2 s) }
   isWitness _ _ := true
   polyTime_isWitness := by fun_prop
   mem_iff_exists_witness a := by simp
   isOraclePPT_verifier := by fun_prop
   interact _ _ _ prog :=
-    Prod.fst <$> GMW.runTwoRound (fun _ => []) (fun _ => []) prog (0, [false, false, false])
+    Prod.fst <$> GMW.runTwoRound (fun _ => []) (fun _ => []) prog .init
   eval_interact _ _ _ prog :=
     (ProbComp.eval_map _ _).trans
       (congrArg (PMF.map Prod.fst)
-        (GMW.eval_runTwoRound (fun _ => []) (fun _ => []) prog (0, [false, false, false])))
+        (GMW.eval_runTwoRound (fun _ => []) (fun _ => []) prog .init))
   isPPT_interact {Vstar} hV := by
     have hrun := GMW.isPPTOn_runTwoRound hV
       (input := encPair encUnary (encPair encBits (encPair encBits encBits)))
@@ -102,7 +102,7 @@ noncomputable def univZKProof : ZKProof encBits (Set.univ : Set (List Bool)) (fu
   sound _ _ ha := absurd (Set.mem_univ _) ha
   zero_knowledge {Vstar} hV := by
     refine ⟨fun n a z => Prod.fst <$>
-      GMW.runTwoRound (fun _ => []) (fun _ => []) (Vstar n a z) (0, [false, false, false]),
+      GMW.runTwoRound (fun _ => []) (fun _ => []) (Vstar n a z) .init,
       ?_, fun _ _ _ _ _ _ _ => ?_⟩
     · have hrun := GMW.isPPTOn_runTwoRound hV
         (input := encPair encUnary (encPair encBits encBits))
@@ -114,7 +114,7 @@ noncomputable def univZKProof : ZKProof encBits (Set.univ : Set (List Bool)) (fu
     · convert ComputationallyIndistinguishable.refl _ using 2 with n
       exact (ProbComp.eval_map _ _).trans
         (congrArg (PMF.map Prod.fst)
-          (GMW.eval_runTwoRound (fun _ => []) (fun _ => []) _ (0, [false, false, false])))
+          (GMW.eval_runTwoRound (fun _ => []) (fun _ => []) _ .init))
 
 /-- Unconditional general auxiliary-input zero-knowledge for `univZKProof` across all
 arbitrary polynomially bounded valid instance, witness, and auxiliary-input families. -/
@@ -122,7 +122,7 @@ theorem univZKProof_auxiliaryInputZeroKnowledge :
     univZKProof.AuxiliaryInputZeroKnowledge := by
   intro Vstar hV
   refine ⟨fun n a z => Prod.fst <$>
-    GMW.runTwoRound (fun _ => []) (fun _ => []) (Vstar n a z) (0, [false, false, false]),
+    GMW.runTwoRound (fun _ => []) (fun _ => []) (Vstar n a z) .init,
     ?_, fun a w z _ _ _ _ _ _ _ _ => ?_⟩
   · have hrun := GMW.isPPTOn_runTwoRound hV
       (input := encPair encUnary (encPair encBits encBits))
@@ -134,12 +134,12 @@ theorem univZKProof_auxiliaryInputZeroKnowledge :
   · convert negligible_zero using 2 with n
     have heq :
         ProbComp.eval (Prod.fst <$> GMW.runTwoRound (fun _ => []) (fun _ => [])
-          (Vstar n (a n) (z n)) (0, [false, false, false])) =
+          (Vstar n (a n) (z n)) .init) =
         ((univZKProof.prover n (a n) (w n)).run (Vstar n (a n) (z n))
           (univZKProof.prover n (a n) (w n)).init).map Prod.fst :=
       (ProbComp.eval_map _ _).trans
         (congrArg (PMF.map Prod.fst)
-          (GMW.eval_runTwoRound (fun _ => []) (fun _ => []) _ (0, [false, false, false])))
+          (GMW.eval_runTwoRound (fun _ => []) (fun _ => []) _ .init))
     rw [heq, Game.advantage_self]
 
 -- The stronger-to-restricted bridge recovers `GenerableZeroKnowledge` from
