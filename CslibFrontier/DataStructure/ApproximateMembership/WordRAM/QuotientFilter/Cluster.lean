@@ -34,6 +34,9 @@ open Cslib.DataStructure
 open Cslib.DataStructure.HashFamily.WordRAM
 open Cslib.DataStructure.Dictionary.WordRAM.LinearProbing
 
+-- Preserve the ordinary simplifier behavior formerly supplied by this module's duplicate rule.
+attribute [simp] Cslib.WordRAM.Realization.memoryCost_bind'
+
 /-! ## Section 1: Cluster operation input tuple (`ClusterInput`) -/
 
 /-- The 15-word input tuple passed to the quotient-filter cluster operation program:
