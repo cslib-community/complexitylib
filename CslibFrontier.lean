@@ -4672,6 +4672,7 @@ public import CslibFrontier.Crypto.Primitives.Garbling.SizeLowerBound
 public import CslibFrontier.Crypto.Primitives.Garbling.Switch.Basic
 public import CslibFrontier.Crypto.Primitives.Garbling.Switch.Garble
 public import CslibFrontier.Crypto.Primitives.Garbling.Switch.Oblivious
+public import CslibFrontier.Crypto.Primitives.HQC.Correctness
 public import CslibFrontier.Crypto.Primitives.HQC.PKE
 public import CslibFrontier.Crypto.Primitives.HQC.SupportDensity
 public import CslibFrontier.Crypto.Primitives.HQC.SupportSampling
