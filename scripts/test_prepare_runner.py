@@ -58,9 +58,11 @@ class PrepareRunnerTests(unittest.TestCase):
         self.assertEqual(len(commands), 2)
 
     def test_workflow_reclaims_space_before_restoring_cache(self):
-        workflow = (ROOT / ".github/workflows/lean_action_ci.yml").read_text()
-        self.assertLess(workflow.index("scripts/ci/prepare-runner.sh"),
-                        workflow.index("- name: Restore .lake from the Actions cache"))
+        for name in ("lean_action_ci.yml", "guide.yml"):
+            with self.subTest(workflow=name):
+                workflow = (ROOT / ".github/workflows" / name).read_text()
+                self.assertLess(workflow.index("run: scripts/ci/prepare-runner.sh"),
+                                workflow.index("- name: Restore .lake from the Actions cache"))
 
 
 if __name__ == "__main__":

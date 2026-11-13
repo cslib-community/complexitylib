@@ -4663,6 +4663,14 @@ public import CslibFrontier.Crypto.Protocols.SecretSharing.AccessStructure.Basic
 public import CslibFrontier.Crypto.Protocols.SecretSharing.AccessStructure.Designs
 public import CslibFrontier.Crypto.Protocols.SecretSharing.AccessStructure.Privacy
 public import CslibFrontier.Crypto.Protocols.SecretSharing.AccessStructure.Shamir
+public import CslibFrontier.Crypto.Protocols.SecretSharing.ImperfectRandomness
+public import CslibFrontier.Crypto.Protocols.SecretSharing.ImperfectRandomness.AllOutOfR
+public import CslibFrontier.Crypto.Protocols.SecretSharing.ImperfectRandomness.OddSources
+public import CslibFrontier.Crypto.Protocols.SecretSharing.ImperfectRandomness.ThresholdEntropy
+public import CslibFrontier.Crypto.Protocols.SecretSharing.ImperfectRandomness.TwoOutOfN
+public import CslibFrontier.Crypto.Protocols.SecretSharing.ImperfectRandomness.TwoPartyTightness
+public import CslibFrontier.Crypto.Protocols.SecretSharing.ImperfectRandomness.ZeroSumPads
+public import CslibFrontier.Crypto.Protocols.SecretSharing.ImperfectRandomnessBinary
 public import CslibFrontier.Crypto.Protocols.SecretSharing.Shamir.Linear
 public import CslibFrontier.Crypto.Protocols.SecretSharing.Shamir.Product
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Abort
@@ -5092,6 +5100,7 @@ public import CslibFrontier.Foundations.BooleanAnalysis.AffineDegree
 public import CslibFrontier.Foundations.BooleanAnalysis.Affinity
 public import CslibFrontier.Foundations.BooleanAnalysis.Anticoncentration
 public import CslibFrontier.Foundations.BooleanAnalysis.Bernoulli
+public import CslibFrontier.Foundations.BooleanAnalysis.BernoulliPMF
 public import CslibFrontier.Foundations.BooleanAnalysis.Bonami
 public import CslibFrontier.Foundations.BooleanAnalysis.BooleanQuotient
 public import CslibFrontier.Foundations.BooleanAnalysis.BucketWeight
@@ -6034,6 +6043,8 @@ public import CslibFrontier.GameTheory.Congestion.PLS
 public import CslibFrontier.GameTheory.Congestion.PigouBound
 public import CslibFrontier.GameTheory.Congestion.Stability
 public import CslibFrontier.GameTheory.Congestion.StrongNash
+public import CslibFrontier.GameTheory.FairDivision.EFX
+public import CslibFrontier.GameTheory.FairDivision.EFXApproximation
 public import CslibFrontier.GameTheory.Mechanism.Bayesian
 public import CslibFrontier.GameTheory.Mechanism.CriticalBid
 public import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Basic
@@ -6820,6 +6831,7 @@ public import CslibFrontier.Probability.PMF.Filter
 public import CslibFrontier.Probability.PMF.Finiteness
 public import CslibFrontier.Probability.PMF.Map
 public import CslibFrontier.Probability.PMF.Markov
+public import CslibFrontier.Probability.PMF.MonotoneCoupling
 public import CslibFrontier.Probability.PMF.Option
 public import CslibFrontier.Probability.PMF.Option.Bind
 public import CslibFrontier.Probability.PMF.PolynomialAgreement
@@ -6897,6 +6909,7 @@ public import CslibFrontier.Probability.StochasticDomination.Adapted
 public import CslibFrontier.Probability.StochasticDomination.Basic
 public import CslibFrontier.Probability.StochasticDomination.PoissonBinomial
 public import CslibFrontier.Probability.StochasticDomination.Stopping
+public import CslibFrontier.Probability.Thinning
 public import CslibFrontier.Probability.TupleSampler
 public import CslibFrontier.Probability.Uniform
 public import CslibFrontier.Probability.UniformNat

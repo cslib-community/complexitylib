@@ -91,7 +91,8 @@ cache above.
 
 ## Hosted-runner disk space
 
-Before restoring `.lake`, Lean CI runs `scripts/ci/prepare-runner.sh` to remove the unused
+Before restoring `.lake`, Lean CI and the Guide workflow run
+`scripts/ci/prepare-runner.sh` to remove the unused
 Android and .NET SDKs and report available disk space. It runs only on GitHub-hosted Linux
 runners; local and self-hosted invocations skip cleanup. The Lean toolchain, compiler, Python,
 Node actions, repository and caches are retained. Cleanup is optional; all validation still runs
