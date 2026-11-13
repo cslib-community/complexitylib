@@ -126,11 +126,13 @@ theorem edgeCount_ne_zero_of_adj {x y : V} (h : G.toSimpleGraph.Adj x y) : G.edg
 
 /-! ### Kac's formula on a component -/
 
+omit [DecidableEq V] in
 open Classical in
 /-- The uniform measure on the connected component of `u` is stationary. -/
 theorem sum_component_mul_randomWalk (u y : V) :
     ∑ x, (if G.toSimpleGraph.Reachable u x then 1 else 0) * G.randomWalk x y =
       if G.toSimpleGraph.Reachable u y then 1 else 0 := by
+  classical
   by_cases hy : G.toSimpleGraph.Reachable u y
   · rw [ite_eq_left hy]
     have : ∀ x, (if G.toSimpleGraph.Reachable u x then 1 else 0) * G.randomWalk x y =
@@ -373,9 +375,11 @@ theorem eq_of_forall_sum_edgeCount_mul_eq (hG : G.toSimpleGraph.Preconnected) {f
   have hall : ∀ v, v ∈ S := fun v => G.mem_of_reachable hS (show m ∈ S from rfl) (hG m v)
   exact (hall x).trans (hall y).symm
 
+omit [DecidableEq V] in
 /-- The uniform distribution is stationary for the random walk on a regular multigraph. -/
 theorem isStationary_uniform_randomWalk [Nonempty V] :
     G.randomWalk.IsStationary (PMF.uniformOfFintype V) := by
+  classical
   ext y
   rw [PMF.bind_apply, tsum_fintype]
   simp only [PMF.uniformOfFintype_apply]
@@ -384,10 +388,12 @@ theorem isStationary_uniform_randomWalk [Nonempty V] :
   rw [← Nat.cast_sum, G.sum_edgeCount,
     ENNReal.mul_inv_cancel card_D_ne_zero (ENNReal.natCast_ne_top _), mul_one]
 
+omit [DecidableEq V] in
 /-- **Arora–Barak, Exercise 7.9(b)(i).** On a connected regular multigraph, the uniform
 distribution is the unique stationary distribution of the random walk. -/
 theorem isStationary_randomWalk_iff (hG : G.toSimpleGraph.Connected) (π : PMF V) :
     G.randomWalk.IsStationary π ↔ π = @PMF.uniformOfFintype V _ hG.nonempty := by
+  classical
   have := hG.nonempty
   refine ⟨fun h => ?_, fun h => h ▸ isStationary_uniform_randomWalk⟩
   -- stationarity as an averaging identity in `ℝ≥0∞`
