@@ -203,9 +203,9 @@ theorem succProbability_inversionGame_le {H : List Bool → List Bool → List B
   have key : ProbComp.eval (inversionGame (keyDigest H) adversary (3 * n + r)) true ≤
       ProbComp.eval (collisionGame H (fun _ _ => true) (finder H adversary r) n) true +
         ((1 / 2 : ℝ≥0) ^ n : ℝ≥0) := by
-    simp only [inversionGame, collisionGame, finder, ProbComp.eval_bind, ProbComp.eval_pure,
-      BitString.eval_sampleList, hsplit, PMF.bind_bind, PMF.bind_map, PMF.pure_bind,
-      Function.comp_def]
+    simp only [inversionGame, inversionExperiment, collisionGame, finder, ProbComp.eval_bind,
+      ProbComp.eval_pure, BitString.eval_sampleList, hsplit, PMF.bind_bind, PMF.bind_map,
+      PMF.pure_bind, Function.comp_def]
     refine (PMF.bind_apply_le_add_on_support _ true fun key hkey => ?_).trans
       (add_le_add le_rfl (PMF.bind_apply_le_on_support _ hguess))
     refine PMF.bind_apply_le_add_on_support _ true fun message hmessage => ?_

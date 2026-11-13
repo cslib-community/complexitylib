@@ -20,7 +20,7 @@ private def requireBit : PCPVerifier (Bool × ℕ) where
   verdict := fun p => p.1.1.1 && p.2.getD 0 false && p.2.getD 1 false
 
 private theorem requireBit_polyTime : requireBit.PolyTime (encPair encBool encNat) := by
-  refine ⟨?_, ?_, ?_⟩ <;> unfold requireBit <;> fun_prop
+  constructor <;> unfold requireBit <;> fun_prop
 
 private theorem requireBit_coins (a : Bool × ℕ) :
     requireBit.coins a ≤ 1 * (Nat.log 2 (encPair encBool encNat a).length + 1) := by
@@ -69,16 +69,16 @@ example : ∃ proof, ∀ word, word.length = 1 → requireBit.accepts (true, 2 ^
 
 private theorem requireBit_isPCPVerifier :
     IsPCPVerifier (encPair encBool encNat) (fun n => Nat.log 2 n + 1) (fun _ => 2)
-      requireBit {a | a.1 = true} := by
-  refine ⟨?_, ?_, ?_, ?_⟩
-  · simpa only [one_mul] using requireBit_coins
-  · intro a word _
-    simp [requireBit]
-  · rintro ⟨bit, address⟩ hbit
+      requireBit {a | a.1 = true} where
+  coins_le := by simpa only [one_mul] using requireBit_coins
+  length_queries_le a word _ := by simp [requireBit]
+  complete := by
+    rintro ⟨bit, address⟩ hbit
     refine ⟨List.replicate (address + 1) true, fun word _ => ?_⟩
     simp only [Set.mem_ofPred_eq] at hbit
     simp [PCPVerifier.accepts, PCPVerifier.answers, requireBit, hbit]
-  · rintro ⟨bit, address⟩ hbit proof
+  sound := by
+    rintro ⟨bit, address⟩ hbit proof
     have hb : bit = false := Bool.eq_false_iff.mpr hbit
     subst bit
     change 2 * (Finset.univ.filter fun _ : Fin 1 → Bool => false = true).card ≤ 2 ^ 1
@@ -112,7 +112,7 @@ example : noQueries.tableVerifier ((), []) = true := by decide
 example (enc : Unit ↪ List Bool) : ComputableInPolyTime noQueries.tableVerifier
     (encPair enc encBits) encBool := by
   apply PCPVerifier.isPolyTime_tableVerifier (c := 0)
-  · refine ⟨?_, ?_, ?_⟩ <;> unfold noQueries <;> fun_prop
+  · constructor <;> unfold noQueries <;> fun_prop
   · simp [noQueries]
 
 example : ∃ proof, ∀ word, word.length = 0 → noQueries.accepts () proof word = true :=

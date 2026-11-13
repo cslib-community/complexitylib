@@ -272,8 +272,8 @@ example : ProbComp.eval (completeSenderReal 0
     (PMF.uniformOfFintype Bool).map (fun bit =>
       (Phased.Observation.idle, Phased.Observation.idle, bit)) := by
   simp [completeSenderReal, BitString.sampleList, ProbOracleComp.interpret_sample,
-    OracleComp.run_interpret_lift, ProbComp.unifFin, OracleComp.interpret_query_eq_self,
-    Session.initial, Session.receipt, Session.observation]
+    OracleComp.run_interpret_lift, ProbComp.interpret_unifFin, Session.initial, Session.receipt,
+    Session.observation]
 
 -- Zero rounds permit a real opening to true, while the tie-false ideal extractor aborts it.
 example : ProbComp.eval (completeSenderIdeal 0 (commands [(.seal, []), (.open true, [])])) =

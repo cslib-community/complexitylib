@@ -77,7 +77,7 @@ theorem inversion_le (f : List Bool → List Bool) (bound : ℕ → ℕ) (advers
       Game.succProbability (ProbComp.eval (inversionGame f
         (fun n image => adversary n (BitString.padWord (bound n) image)) n)) := by
   apply ENNReal.toNNReal_mono (PMF.apply_ne_top _ _)
-  simp only [inversionGame, ProbComp.eval_bind, BitString.eval_sampleList]
+  simp only [inversionGame, inversionExperiment, ProbComp.eval_bind, BitString.eval_sampleList]
   apply PMF.bind_apply_mono_on_support _ true
   intro input hinput
   have hlen : input.length = n := BitString.length_of_mem_support_uniformList hinput

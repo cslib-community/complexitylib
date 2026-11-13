@@ -190,10 +190,12 @@ noncomputable def lineStep (W : (Fin (C.width i) → Bool) → F) :
           (.inr (.inl ()))
         return if C.lineAccepts i x q then some (C.lineClaim i x q c.1) else none }
 
+/-- On the line polynomial `q` and the challenge `t`, the line step outputs the claim at `t` if it
+accepts `q`. -/
 theorem lineStep_outputOn (W : (Fin (C.width i) → Bool) → F) (x : SumcheckEnd C F i)
-    (τ : Transcript (Sumcheck.roundSpec F)) :
-    (C.lineStep i W).verifier.outputOn x τ =
-      if C.lineAccepts i x τ.1 then some (C.lineClaim i x τ.1 τ.2.1) else none :=
+    (q : Polynomial F) (t : F) :
+    (C.lineStep i W).verifier.outputOn x (q, t, ()) =
+      if C.lineAccepts i x q then some (C.lineClaim i x q t) else none :=
   rfl
 
 /-- The claims about layer `i` that are true. -/
@@ -233,7 +235,7 @@ theorem lineStep_complete (W : (Fin (C.width i) → Bool) → F) :
   rw [PMF.toOuterMeasure_bind_apply]
   refine Probability.PMF.tsum_mul_le_of_forall_le _ fun t => le_of_eq ?_
   refine (PMF.toOuterMeasure_pure_apply _ _).trans (ite_eq_right fun h => h ⟨?_, ?_⟩)
-  · exact (C.lineStep_outputOn i W x _).trans (ite_eq_left hacc)
+  · exact (C.lineStep_outputOn i W x _ _).trans (ite_eq_left hacc)
   · exact (eval_restrictLine _ _ W t).symm
 
 /-- **The line step is round-by-round sound** with error `width i / |F|`: a false last sumcheck
