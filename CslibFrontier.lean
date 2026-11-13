@@ -6668,6 +6668,7 @@ public import CslibFrontier.MachineLearning.UniformLearning.CryptoHardness
 public import CslibFrontier.MachineLearning.UniformLearning.CryptoHardness.Circuit
 public import CslibFrontier.MachineLearning.UniformLearning.CryptoHardness.GGM
 public import CslibFrontier.MachineLearning.UniformLearning.CryptoHardness.Inversion
+public import CslibFrontier.MachineLearning.UniformLearning.CryptoHardness.OneWayInversion
 public import CslibFrontier.MachineLearning.UniformLearning.KushilevitzMansour
 public import CslibFrontier.MachineLearning.UniformLearning.LowDegree
 public import CslibFrontier.MachineLearning.UniformLearning.LowDegreeClasses

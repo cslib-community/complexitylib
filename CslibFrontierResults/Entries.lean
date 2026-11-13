@@ -216,6 +216,7 @@ import CslibFrontier.MachineLearning.UniformLearning.CIKK.Amplification
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.Complexity
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.Learner
 import CslibFrontier.MachineLearning.UniformLearning.CryptoHardness.GGM
+import CslibFrontier.MachineLearning.UniformLearning.CryptoHardness.OneWayInversion
 import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson
 import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson.BestOf
 import CslibFrontier.Probability.Extractor.TwoSource
@@ -3396,6 +3397,25 @@ register_result "learning-hardness-from-generators" where
     have such tests, so none reaches (1 - delta)(1 - eps) > 3/4. Running time is not modelled. \
     The distinguisher fixes the learner's seed and comparison point by averaging; it is a \
     nonuniform circuit test."
+
+register_result "learning-from-no-weak-owf" where
+  title := "Without weak one-way functions, polynomial-time keyed families are learnable on \
+    average"
+  topic := "meta-complexity"
+  sources := [
+    { paper := BlumFurstKearnsLipton1993, theorem := unverified, locator := unverified },
+    { paper := ImpagliazzoLevin1990, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.MachineLearning.UniformLearning.OneWayInversion.exists_learner_of_not_exists_weakOneWay
+  ]
+  scope := "Conditional on the nonexistence of weak one-way functions. For a polynomial-time \
+    predicate F n (K ++ x) with polynomial-time key length k n and sample count m n, and every \
+    positive polynomial q, a uniform strict PPT inverter for the labelling map gives a learner \
+    whose key has uniform error above eps with probability at most \
+    1/q n + 2^(k n) (1 - eps)^(m n), for a uniform key and m n uniform examples, on infinitely \
+    many n. Uniform examples only; no samplable distributions or membership queries; the \
+    converse is not formalized."
 
 register_result "nw-reconstruction-learner" where
   title := "Carmosino–Impagliazzo–Kabanets–Kolokolova: the Nisan–Wigderson reconstruction as a \
