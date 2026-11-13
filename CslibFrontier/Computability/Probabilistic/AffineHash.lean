@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Probabilistic.LinearHash
 public import CslibFrontier.Probability.BitString.AffineHash.ThreeWise
 public import CslibFrontier.Probability.BitString.AffineHash.Word
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString.Dot
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
 import CslibFrontier.Computability.Probabilistic.Sampling
@@ -111,20 +112,18 @@ theorem computableInPolyTime_wordAdjustAffineSeed {α : Type} {encode : α ↪ L
     ComputableInPolyTime.bitsRowWithInput (hn.comp hfst) hsnd (hmatBits.comp hfst)
   have hdot : ComputableInPolyTime
       (fun p : α × ℕ =>
-        ((listRow (n p.1) p.2 ((seed p.1).take (k p.1 * n p.1))).zipWith Bool.and
-          (listXor (n p.1) [y p.1, y₀ p.1])).foldl Bool.xor false)
+        listDot (listRow (n p.1) p.2 ((seed p.1).take (k p.1 * n p.1)))
+          (listXor (n p.1) [y p.1, y₀ p.1]))
       (encPair encode encUnary) encBool :=
-    ComputableInPolyTime.bitsFoldlWithInput Bool.xor
-      (ComputableInPolyTime.bitsZipWithInput Bool.and hrow (hdiff.comp hfst))
-      (ComputableInPolyTime.const false)
+    ComputableInPolyTime.bitsListDot hrow (hdiff.comp hfst)
   have hlt : ComputableInPolyTime (fun p : α × ℕ => decide (p.2 < r p.1))
       (encPair encode encUnary) encBool :=
     ComputableInPolyTime.unary_lt.comp (hsnd.prod (hr.comp hfst))
   have hcond : ComputableInPolyTime
       (fun p : α × ℕ =>
         decide (p.2 < r p.1) &&
-          ((listRow (n p.1) p.2 ((seed p.1).take (k p.1 * n p.1))).zipWith Bool.and
-            (listXor (n p.1) [y p.1, y₀ p.1])).foldl Bool.xor false)
+          listDot (listRow (n p.1) p.2 ((seed p.1).take (k p.1 * n p.1)))
+            (listXor (n p.1) [y p.1, y₀ p.1]))
       (encPair encode encUnary) encBool :=
     ComputableInPolyTime.bool_and.comp (hlt.prod hdot)
   have hadjRow : ComputableInPolyTime
@@ -141,7 +140,7 @@ theorem computableInPolyTime_wordAdjustAffineSeed {α : Type} {encode : α ↪ L
       let diff := listXor (n a) [y a, y₀ a]
       let mask := listSingle (n a) (diff.idxOf true)
       let row := listRow (n a) i ((seed a).take (k a * n a))
-      let dot := (row.zipWith Bool.and diff).foldl Bool.xor false
+      let dot := listDot row diff
       if decide (i < r a) && dot then listXor (n a) [row, mask] else row)
     (ComputableInPolyTime.range.comp hk) hstep
   exact ComputableInPolyTime.bitsAppend (ComputableInPolyTime.bitsFlatten hrows) hshift

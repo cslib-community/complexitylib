@@ -146,14 +146,14 @@ theorem exists_secure_amplified_choice_withAdvice {pair : SamplablePair} {gap : 
     (choose := fun n => (advice n, choose n))
     hgen hcommonPlain (isPolyTime_count saved hdensityPlain hcommonPlain)
     (fun adversary hadversary => by
-      simpa only [distinguishingGame, PMF.monad_bind_eq_bind] using
+      simpa only [distinguishingGame_eq_bind, PMF.monad_bind_eq_bind] using
         hsecure.negligible_encoded (test := fun ((n, context), word) => adversary n context word)
           hadversary)
   refine ⟨choose, hchoose, IndistinguishableWithAdvice.of_negligible_encoded fun test htest => ?_⟩
   unfold amplifiedGenerate
   refine (h (fun n context word => test ((n, context), word))
     (htest.congr fun ⟨⟨_, _⟩, _⟩ => rfl)).congr' (Eventually.of_forall fun n => ?_)
-  simp only [distinguishingGame, PMF.monad_bind_eq_bind]
+  simp only [distinguishingGame_eq_bind, PMF.monad_bind_eq_bind]
   rw [length_add_count]
 
 end Cslib.Crypto.Pseudoentropy.EntropyGrid

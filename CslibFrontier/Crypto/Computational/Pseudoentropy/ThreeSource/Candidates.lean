@@ -233,7 +233,7 @@ theorem exists_secure_choice_withAdvice {pair : SamplablePair} {gap : ℕ → �
       ((input.1.1.1, (input.1.1.2, input.1.2)), input.2)) (by fun_prop))
   unfold seedLength outputLength generate
   simp_rw [ThreeSource.eval_generate_of_realization saved _ _ _ _ _ _ (hfits _)]
-  simpa only [distinguishingGame, PMF.monad_bind_eq_bind, ProbComp.eval_bind,
+  simpa only [distinguishingGame_eq_bind, PMF.monad_bind_eq_bind, ProbComp.eval_bind,
     BitString.eval_sampleList] using h
 
 /-- A linear grid precision suffices for the gap already obtained from a general one-way

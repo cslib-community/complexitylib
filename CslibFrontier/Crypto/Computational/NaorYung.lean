@@ -408,7 +408,7 @@ private theorem naorYungStep_inversion_eval_eq
             PMF.pure (f (if f w₁ == y then w₁ else w₀) == y)))) := by
   have hlt_false : ¬ (n + 2 < 2) := by omega
   have hsub : n + 2 - 2 = n := by omega
-  simp only [inversionGame, naorYungStepInverter, hlt_false, ↓reduceIte, hsub,
+  simp only [inversionGame, inversionExperiment, naorYungStepInverter, hlt_false, ↓reduceIte, hsub,
     ProbComp.eval_bind, ProbComp.eval_pure, BitString.eval_sampleList, PMF.bind_bind,
     PMF.pure_bind]
   trans ((BitString.uniformList (n + 2)).map f).bind (fun y =>
