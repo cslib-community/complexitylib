@@ -134,11 +134,7 @@ theorem isVerifier : IsVerifier encMaxTwoSAT Polynomial.X verifier MaxTwoSAT := 
     refine ⟨x.formula.vars.map σ, by simpa using hvars, fun k => ?_⟩
     simp only [verifier, Bool.and_eq_true, List.all_eq_true, decide_eq_true_eq]
     refine ⟨hlen, hσ.trans (CNF.countP_eval_congr fun v hv => ?_).le⟩
-    have hlt : x.formula.vars.idxOf v < x.formula.vars.length := List.idxOf_lt_length_iff.2 hv
-    have hlt' : x.formula.vars.idxOf v < (x.formula.vars.map σ).length := by simpa using hlt
-    rw [SAT.assignment, List.getD_eq_getElem?_getD, List.getElem?_append_left hlt',
-      List.getElem?_map, List.getElem?_eq_getElem hlt, List.getElem_idxOf hlt]
-    rfl
+    exact (SAT.assignment_vars_map_append _ σ _ hv).symm
 
 /-- Checking the clause widths and counting the satisfied clauses is polynomial-time: the count
 is computed in unary and compared with the binary target. -/

@@ -228,9 +228,9 @@ theorem two_mul_reducedChunkBits_lt_of_fits_space {w base w₀ b b' k : ℕ}
 
 @[simp]
 theorem extractTop_val (base w₀ : ℕ) (mem : ℕ → ℕ) :
-    (extractTop base w₀ mem).val = (Tabulation.extractWord (w₀ - 1) (mem base)).val := by
-  change (Tabulation.extractWord (w₀ - 1) (mem (base + (0 : Fin 1).val))).val =
-    (Tabulation.extractWord (w₀ - 1) (mem base)).val
+    (extractTop base w₀ mem).val = (Cslib.WordRAM.wordOfNat (w₀ - 1) (mem base)).val := by
+  change (Cslib.WordRAM.wordOfNat (w₀ - 1) (mem (base + (0 : Fin 1).val))).val =
+    (Cslib.WordRAM.wordOfNat (w₀ - 1) (mem base)).val
   rw [Fin.val_zero, Nat.add_zero]
 
 theorem getLimb_extractBot_val (base w₀ b b' k : ℕ) (mem : ℕ → ℕ)
@@ -239,7 +239,7 @@ theorem getLimb_extractBot_val (base w₀ b b' k : ℕ) (mem : ℕ → ℕ)
     let c := reducedChunkBits t
     let L := reducedLimbCount t
     getLimb c (extractBot base w₀ b b' k mem j).val m.val =
-      (Tabulation.extractWord c (mem (base + 1 + (m.val + L * j.val)))).val := by
+      (Cslib.WordRAM.wordOfNat c (mem (base + 1 + (m.val + L * j.val)))).val := by
   intro t c L
   have hc := reducedChunkBits_pos t
   let f : Fin L → Fin (2 ^ c) := fun m' =>
@@ -860,7 +860,7 @@ theorem mem_support_resampleComp {base w w₀ b b' k : ℕ} {x : Data 240}
     have hlt_val : z1.1.mem base < 2 ^ (w₀ - 1) := by
       simpa only [Nat.add_zero] using hlt1 0 Nat.one_pos
     change z2.1.mem base = (extractTop base w₀ z2.1.mem).val
-    rw [extractTop_val, hm_eq, Tabulation.extractWord_val_of_lt hlt_val]
+    rw [extractTop_val, hm_eq, Cslib.WordRAM.wordOfNat_val_of_lt hlt_val]
   · intro j m
     have hidx_lt : m.val + L * j.val < k * L := by
       calc m.val + L * j.val < L + L * j.val := Nat.add_lt_add_right m.isLt _
@@ -870,7 +870,7 @@ theorem mem_support_resampleComp {base w w₀ b b' k : ℕ} {x : Data 240}
       hlt2 (m.val + L * j.val) hidx_lt
     change z2.1.mem (base + 1 + (m.val + L * j.val)) =
       getLimb c (extractBot base w₀ b b' k z2.1.mem j).val m.val
-    rw [getLimb_extractBot_val, Tabulation.extractWord_val_of_lt hlt_val]
+    rw [getLimb_extractBot_val, Cslib.WordRAM.wordOfNat_val_of_lt hlt_val]
   · dsimp only [resampleSteps, seedWords, L, t]
     rw [hsteps1, hsteps2]
     ring

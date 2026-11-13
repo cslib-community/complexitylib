@@ -89,15 +89,11 @@ along the occurrences of `ψ` describe `σ`: the certificate assignment at `f x`
 theorem assignment_relabel_vars_map_append {V : Type*} {f : V → ℕ} (hf : Function.Injective f)
     (ψ : CNF V) (σ : V → Bool) (v : List Bool) {x : V} (hx : x ∈ ψ.vars) :
     assignment (ψ.relabel f) (ψ.vars.map σ ++ v) (f x) = σ x := by
-  rw [assignment, CNF.vars_relabel]
-  have hlt : (ψ.vars.map f).idxOf (f x) < (ψ.vars.map f).length :=
-    List.idxOf_lt_length_iff.2 (List.mem_map_of_mem hx)
-  have hget := List.getElem_idxOf hlt
-  rw [List.getElem_map] at hget
-  have hlt' : (ψ.vars.map f).idxOf (f x) < ψ.vars.length := by simpa using hlt
-  rw [List.getD_eq_getElem?_getD, List.getElem?_append_left (by simpa using hlt),
-    List.getElem?_map, List.getElem?_eq_getElem hlt', Option.map_some, Option.getD_some,
-    hf hget]
+  have : Nonempty V := ⟨x⟩
+  have h := assignment_vars_map_append (ψ.relabel f) (σ ∘ Function.invFun f) v
+    (by rw [CNF.vars_relabel]; exact List.mem_map_of_mem hx)
+  rwa [CNF.vars_relabel, List.map_map, Function.comp_assoc, Function.invFun_comp hf,
+    Function.comp_id, Function.comp_apply, Function.leftInverse_invFun hf] at h
 
 /-- The verifier of `SAT`, on `ψ.relabel f` for an injective `f` and the values of `σ` along the
 occurrences of `ψ` followed by any bits, evaluates `ψ` under `σ`. -/

@@ -19,7 +19,7 @@ namespace CslibFrontierTests.ChromaticNumber
 
 open Cslib.Complexity Turing.MultiTapeTM
 
-private def triangle : Graph := ([0, 1, 2], [(0, 1), (1, 2), (2, 0)])
+private def triangle : Graph := ⟨[0, 1, 2], [(0, 1), (1, 2), (2, 0)]⟩
 
 /-! ### Headline results -/
 
@@ -53,11 +53,11 @@ example : (⟨triangle, 2 ^ 64⟩ : ChromaticNumberInstance) ∈ ChromaticNumber
   exact ⟨id, by decide, fun u _ v _ huv => huv.ne⟩
 
 -- Without colors, exactly the graphs without declared vertices are colorable.
-example : (⟨(([] : List ℕ), [(0, 1)]), 0⟩ : ChromaticNumberInstance) ∈ ChromaticNumber := by
+example : (⟨⟨([] : List ℕ), [(0, 1)]⟩, 0⟩ : ChromaticNumberInstance) ∈ ChromaticNumber := by
   rw [mem_ChromaticNumber_iff, mem_KColoring_iff]
   exact ⟨id, by simp, by simp⟩
 
-example : (⟨(([5] : List ℕ), []), 0⟩ : ChromaticNumberInstance) ∉ ChromaticNumber := by
+example : (⟨⟨([5] : List ℕ), []⟩, 0⟩ : ChromaticNumberInstance) ∉ ChromaticNumber := by
   rw [mem_ChromaticNumber_iff, mem_KColoring_iff]
   rintro ⟨c, hc, -⟩
   exact Nat.not_lt_zero _ (hc 5 (by simp))
@@ -71,12 +71,12 @@ example : triangle.induced.chromaticNumber ≤ 3 :=
 /-! ### Witnesses -/
 
 -- A color is read at the first occurrence of a vertex, with `0` past the end of the list.
-example : colorOf ([5, 7, 5], []) [2, 0, 1] 5 = 2 ∧ colorOf ([5, 7, 5], []) [2, 0, 1] 7 = 0 ∧
-    colorOf ([5, 7], []) [2] 7 = 0 ∧ colorOf ([5, 7], []) [2, 3] 9 = 0 :=
+example : colorOf ⟨[5, 7, 5], []⟩ [2, 0, 1] 5 = 2 ∧ colorOf ⟨[5, 7, 5], []⟩ [2, 0, 1] 7 = 0 ∧
+    colorOf ⟨[5, 7], []⟩ [2] 7 = 0 ∧ colorOf ⟨[5, 7], []⟩ [2, 3] 9 = 0 :=
   ⟨rfl, rfl, rfl, rfl⟩
 
-example : colorOf ([5, 7], []) ([5, 7].map fun v => v + 1) 7 = 8 :=
-  colorOf_map (G := ([5, 7], [])) (by simp)
+example : colorOf ⟨[5, 7], []⟩ ([5, 7].map fun v => v + 1) 7 = 8 :=
+  colorOf_map (G := ⟨[5, 7], []⟩) (by simp)
 
 -- Compositional `fun_prop` synthesis for colors read from computed lists.
 example : ComputableInPolyTime (fun p : (Graph × List ℕ) × ℕ => colorOf p.1.1 p.1.2 0)

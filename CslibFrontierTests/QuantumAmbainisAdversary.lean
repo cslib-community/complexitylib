@@ -4,11 +4,21 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import CslibFrontier.Computability.QueryComplexity.Quantum.AmbainisAdversary.Symmetric
-import CslibFrontier.Computability.QueryComplexity.Quantum.AmbainisAdversary.Tribes
-import CslibFrontier.Computability.QueryComplexity.Quantum.AmbainisAdversary.WeightLayers
-import CslibFrontier.Computability.QueryComplexity.Quantum.UnknownSearch
-import CslibFrontierTests.QuantumPolynomial
+module
+-- upstream: candidate
+
+public import CslibFrontier.Computability.QueryComplexity.Quantum.AmbainisAdversary.Symmetric
+public import CslibFrontier.Computability.QueryComplexity.Quantum.AmbainisAdversary.Tribes
+public import CslibFrontier.Computability.QueryComplexity.Quantum.AmbainisAdversary.WeightLayers
+public import CslibFrontier.Computability.QueryComplexity.Quantum.UnknownSearch
+public import CslibFrontierTests.QuantumPolynomial
+public import Mathlib.Data.Finset.Defs
+public import Mathlib.Data.Finset.Card
+public import Mathlib.Basic.Real.Basic
+public import CslibFrontier.Foundations.Quantum.Measurement
+public import CslibFrontier.Foundations.BooleanAnalysis.Tribes
+public import Cslib.Foundations.Data.BitString
+public import CslibFrontier.Foundations.Data.BitString.Weight
 
 /-! Ambainis's adversary method: a concrete relation that meets the counting hypotheses of the
 core bound (with nonempty `R`), and the parity, threshold, majority, Tribes, `AND`-of-`OR`s and
@@ -20,6 +30,9 @@ namespace CslibFrontierTests.QuantumAmbainisAdversary
 
 open Cslib Cslib.Quantum Cslib.BitString Finset
 open CslibFrontierTests.QuantumPolynomial
+
+public section
+
 
 /-! ### The core bound on a concrete relation
 
@@ -174,4 +187,6 @@ example (N : ℕ) (hN : 2 ≤ N) :
     rw [threshold_apply, decide_eq_false (by omega), bitVal_false] at this
     linarith
 
+
+end
 end CslibFrontierTests.QuantumAmbainisAdversary

@@ -12,6 +12,7 @@ public import CslibFrontier.DataStructure.ApproximateMembership.WordRAM.Quotient
 public import CslibFrontier.Computability.WordRAM.Realization.WhileAbsorb
 public import CslibFrontier.Computability.WordRAM.Realization.Witness
 import CslibFrontier.Computability.WordRAM.SymbolicExec.Call
+import CslibFrontier.Foundations.Data.List.Sort
 import CslibFrontier.Tactic.Realize
 
 /-!
@@ -3363,7 +3364,7 @@ theorem FilterInv.calcTargetSlot_lt_calcDeleteStop_of_mem {U b f n : ℕ}
   have hr_mem : rem u ∈ bucketRun S quot rem (probeSlot b o a) :=
     (mem_bucketRun_iff S quot rem _ (rem u)).mpr ⟨u, hu, hq_probe, rfl⟩
   have hpw := pairwise_le_bucketRun S quot rem (probeSlot b o a)
-  have her := erase_eq_take_append_drop_of_pairwise hpw hr_mem
+  have her := hpw.erase_eq_take_append_drop hr_mem
   have hcnt_lt :
       (bucketRun S quot rem (probeSlot b o a)).countP (· < rem u) <
         (bucketRun S quot rem (probeSlot b o a)).length := by
@@ -3631,7 +3632,7 @@ theorem map_extractRemSeed_eval_remInitComp (base w w₀ n : ℕ) (x : Data rQF)
       have := Nat.one_le_two_pow (n := w₀ - 1)
       have := γ.isLt
       omega
-    dsimp only [extractRemSeed, remInitData, Data.write, Tabulation.extractWord, e]
+    dsimp only [extractRemSeed, remInitData, Data.write, Cslib.WordRAM.wordOfNat, e]
     simp [hlt]
   rw [hcomp, ProbComp.eval_unifFin, PMF.uniformOfFintype_map_equiv]
 

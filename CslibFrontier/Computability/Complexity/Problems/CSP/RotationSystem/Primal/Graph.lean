@@ -7,7 +7,7 @@ Authors: Erik Demaine
 module
 -- upstream: candidate
 
-public import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem
+public import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Darts
 public import CslibFrontier.Foundations.GroupTheory.Perm.Fin
 import Mathlib.Data.List.GetD
 
@@ -73,12 +73,12 @@ Invalid records return the supplied variable's dense name; actual occurrences ne
 
 /-- Dense occurring variables and one listed cyclic-scope edge per occurrence. -/
 @[expose] def polygonGraph (F : CSP Rel V) : Graph :=
-  (List.range F.numVars, F.occurrences.map fun (i, j, v) =>
-    (F.distinctVars.idxOf v, polygonNext F i j v))
+  ⟨List.range F.numVars, F.occurrences.map fun (i, j, v) =>
+    (F.distinctVars.idxOf v, polygonNext F i j v)⟩
 
 /-- The polygon construction keeps exactly the incidence edge positions. -/
 @[simp] theorem length_edges_polygonGraph (F : CSP Rel V) :
-    (polygonGraph F).2.length = (incidenceGraph F).2.length := by
+    (polygonGraph F).edges.length = (incidenceGraph F).edges.length := by
   simp [polygonGraph, incidenceGraph_edges]
 
 /-- Every argument occurrence retains its own listed polygon edge. -/
@@ -88,7 +88,7 @@ Invalid records return the supplied variable's dense name; actual occurrences ne
 
 /-- The listed edge at an occurrence has its two prescribed dense endpoints. -/
 theorem getElem_polygonEdge (o : F.Occurrence) :
-    (polygonGraph F).2[incidenceEdgeIndex o]'((polygonDart o false).1.isLt) =
+    (polygonGraph F).edges[incidenceEdgeIndex o]'((polygonDart o false).1.isLt) =
       (F.distinctVars.idxOf o.var, F.distinctVars.idxOf (argumentSuccessor o).var) := by
   simp only [polygonGraph, List.getElem_map, incidenceEdgeIndex]
   rw [List.getElem_idxOf (List.idxOf_lt_length_of_mem (CSP.mem_occurrences.mpr ⟨o, rfl⟩))]
@@ -99,8 +99,8 @@ theorem getElem_polygonEdge (o : F.Occurrence) :
     (polygonDart o side).vertex =
       if side then F.distinctVars.idxOf (argumentSuccessor o).var
       else F.distinctVars.idxOf o.var := by
-  change (if side then ((polygonGraph F).2.getD (incidenceEdgeIndex o) (0, 0)).2
-    else ((polygonGraph F).2.getD (incidenceEdgeIndex o) (0, 0)).1) = _
+  change (if side then ((polygonGraph F).edges.getD (incidenceEdgeIndex o) (0, 0)).2
+    else ((polygonGraph F).edges.getD (incidenceEdgeIndex o) (0, 0)).1) = _
   rw [List.getD_eq_getElem _ _ (by
     rw [length_edges_polygonGraph]; exact incidenceEdgeIndex_lt o)]
   exact congrArg (fun edge : ℕ × ℕ => if side then edge.2 else edge.1)
@@ -131,7 +131,7 @@ indices from the existing occurrence enumeration; it chooses no graph or rotatio
 
 /-- The exact edge-position map: one edge for each actual argument occurrence. -/
 @[expose] noncomputable def polygonEdgeEquiv (F : CSP Rel V) :
-    F.Occurrence ≃ Fin (polygonGraph F).2.length :=
+    F.Occurrence ≃ Fin (polygonGraph F).edges.length :=
   Equiv.ofBijective (fun o => (polygonDart o false).1) ⟨by
     intro o p h
     exact incidenceEdgeIndex_injective (congrArg Fin.val h), fun i => by
@@ -141,26 +141,12 @@ indices from the existing occurrence enumeration; it chooses no graph or rotatio
 
 /-- Edge count is exactly the number of ordered occurrences, rather than distinct pairs. -/
 theorem length_edges_polygonGraph_eq_card (F : CSP Rel V) :
-    (polygonGraph F).2.length = Fintype.card F.Occurrence := by
+    (polygonGraph F).edges.length = Fintype.card F.Occurrence := by
   simpa only [Fintype.card_fin] using (Fintype.card_congr (polygonEdgeEquiv F)).symm
-
-/-- Occurrence/end coordinates on the existing incidence graph. -/
-@[expose] noncomputable def incidenceDartEquiv (F : CSP Rel V) :
-    F.Occurrence × Bool ≃ Graph.Dart (incidenceGraph F) :=
-  Equiv.ofBijective (fun x => incidenceDart x.1 x.2) ⟨by
-    rintro ⟨o, b⟩ ⟨p, c⟩ h
-    exact Prod.ext (incidenceEdgeIndex_injective (congrArg (fun d => d.1.val) h))
-      (congrArg (fun d : Graph.Dart (incidenceGraph F) => d.2) h), fun d => by
-    obtain ⟨o, ho⟩ := exists_incidenceDart d
-    exact ⟨(o, d.2), ho⟩⟩
 
 /-- The forward polygon coordinate map is the explicit occurrence/end map. -/
 @[simp] theorem polygonDartEquiv_apply (x : F.Occurrence × Bool) :
     polygonDartEquiv F x = polygonDart x.1 x.2 := rfl
-
-/-- The forward incidence coordinate map is the existing occurrence/end map. -/
-@[simp] theorem incidenceDartEquiv_apply (x : F.Occurrence × Bool) :
-    incidenceDartEquiv F x = incidenceDart x.1 x.2 := rfl
 
 omit [DecidableEq V] in
 /-- The scope permutation has exactly one orbit per nonempty constraint position. -/
@@ -193,8 +179,8 @@ theorem sameCycle_argumentPermutation (o p : F.Occurrence) :
     rw [zpow_natCast, ← Equiv.Perm.iterate_eq_pow, hi, Equiv.Perm.iterate_eq_pow, hn]
 
 /-- Both ends of every polygon edge are declared dense occurring variables. -/
-theorem polygonGraph_endpoints {edge : ℕ × ℕ} (he : edge ∈ (polygonGraph F).2) :
-    edge.1 ∈ (polygonGraph F).1 ∧ edge.2 ∈ (polygonGraph F).1 := by
+theorem polygonGraph_endpoints {edge : ℕ × ℕ} (he : edge ∈ (polygonGraph F).edges) :
+    edge.1 ∈ (polygonGraph F).vertices ∧ edge.2 ∈ (polygonGraph F).vertices := by
   obtain ⟨record, hrecord, rfl⟩ := List.mem_map.mp he
   obtain ⟨o, rfl⟩ := CSP.mem_occurrences.mp hrecord
   simp only [CSP.Occurrence.record, polygonNext_occurrence, polygonGraph, List.mem_range]
@@ -207,7 +193,7 @@ theorem polygonGraph_endpoints {edge : ℕ × ℕ} (he : edge ∈ (polygonGraph 
 
 /-- Dense vertex count is bounded by actual scope occurrences, independent of label sizes. -/
 theorem length_vertices_polygonGraph_le (F : CSP Rel V) :
-    (polygonGraph F).1.length ≤ (polygonGraph F).2.length := by
+    (polygonGraph F).vertices.length ≤ (polygonGraph F).edges.length := by
   have h := F.vars.toFinset_card_le
   simpa only [polygonGraph, List.length_range, List.length_map, CSP.length_occurrences,
     CSP.numVars, CSP.vars, List.length_flatMap] using h
@@ -224,7 +210,7 @@ theorem polygon_scope_word (i : Fin F.length) :
 /-- With positive actual scopes, constraint positions are also bounded by occurrences. -/
 theorem length_constraints_le_polygon_edges
     (hPos : ∀ i : Fin F.length, 0 < F[i.val].2.length) :
-    F.length ≤ (polygonGraph F).2.length := by
+    F.length ≤ (polygonGraph F).edges.length := by
   have h := CSP.length_le_length_vars (F := F) (fun c hc => by
     obtain ⟨i, hi, rfl⟩ := List.mem_iff_getElem.mp hc
     exact hPos ⟨i, hi⟩)

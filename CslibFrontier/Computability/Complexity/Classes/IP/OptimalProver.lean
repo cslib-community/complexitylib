@@ -99,7 +99,7 @@ theorem after_query_bind_cons (m : List Bool) (next : List Bool → WordQueryCom
       if m' = m then after (next y) h else none := rfl
 
 /-- What remains after a concatenation is what remains of what remains. -/
-private theorem after_append (p : WordQueryComp Unit α) (h e : History) :
+theorem after_append (p : WordQueryComp Unit α) (h e : History) :
     after p (h ++ e) = (after p h).bind (after · e) := by
   induction h generalizing p with
   | nil => simp

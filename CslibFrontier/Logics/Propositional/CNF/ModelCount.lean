@@ -53,7 +53,8 @@ with a given one on the variables of the formula (`CNF.modelCount_eq_one_iff`).
 * `Cslib.Logic.PL.CNF.mem_distinctVars`, `Cslib.Logic.PL.CNF.nodup_distinctVars`,
   `Cslib.Logic.PL.CNF.distinctVars_toFinset`, `Cslib.Logic.PL.CNF.length_distinctVars`:
   `φ.distinctVars` lists the `φ.numVars` variables of `φ` without repetition.
-* `Cslib.Logic.PL.mem_occurrences`, `Cslib.Logic.PL.map_occurrences`,
+* `Cslib.Logic.PL.mem_occurrences`, `Cslib.Logic.PL.mk_mem_occurrences_of_mem_zipIdx`,
+  `Cslib.Logic.PL.map_occurrences`,
   `Cslib.Logic.PL.length_occurrences`: the literal occurrences of `φ` and their variables.
 * `Cslib.Logic.PL.exists_lt_two_pow_bitsAssignment_eq`,
   `Cslib.Logic.PL.CNF.satisfiable_iff_exists_bitsAssignment`: satisfiability is a search over
@@ -84,6 +85,11 @@ abbrev Occurrence (V : Type*) : Type _ := ℕ × ℕ × Literal V
 /-- The occurrences of literals in a formula. -/
 def occurrences (φ : CNF V) : List (Occurrence V) :=
   φ.zipIdx.flatMap fun c => c.1.zipIdx.map fun l => (c.2, l.2, l.1)
+
+/-- An indexed clause of `φ` and an indexed literal of that clause form an occurrence. -/
+theorem mk_mem_occurrences_of_mem_zipIdx {φ : CNF V} {c : Clause V} {i j : ℕ} {l : Literal V}
+    (hc : (c, i) ∈ φ.zipIdx) (hl : (l, j) ∈ c.zipIdx) : (i, j, l) ∈ occurrences φ :=
+  List.mem_flatMap.mpr ⟨(c, i), hc, List.mem_map.mpr ⟨(l, j), hl, rfl⟩⟩
 
 /-- Membership in `occurrences φ` as valid clause and literal indices. -/
 theorem mem_occurrences {φ : CNF V} {o : Occurrence V} :

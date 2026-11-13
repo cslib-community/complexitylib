@@ -8,7 +8,9 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Probability.SmallBias
+public import CslibFrontier.Foundations.Data.BitString.ZModTwo
 import CslibFrontier.Foundations.Combinatorics.Hoeffding
+import CslibFrontier.Foundations.Data.BitString.Parity.DotProduct
 
 /-!
 # Short `ε`-biased lists exist
@@ -31,11 +33,19 @@ over the fewer than `2^|ι|` nonempty sets leaves an `ε`-biased list. This is t
 for the `ε`-biased shifts in [OpenAI2026ETH, proof of Lemma 6.1, (6.2)]; such lists are the
 generators of small-bias Cayley graphs [Naor and Naor][NaorNaor1993].
 
+## Main definitions
+
+* `Cslib.BitString.IsSmallBiasMultiset`: `ε`-biased multisets over `(ZMod 2) ^ r`.
+
 ## Main results
 
 * `Cslib.BitString.sum_chi_eq`: the sum of a character over a list counts the odd parities.
 * `Cslib.BitString.card_biased_le`: few lists are biased at a fixed nonempty set.
 * `Cslib.BitString.exists_isSmallBias_map_of_exp_lt`: short `ε`-biased lists exist.
+* `Cslib.BitString.exists_isSmallBias_map_of_ceil_le`,
+  `Cslib.BitString.exists_isSmallBias_bitString_of_ceil`,
+  `Cslib.BitString.exists_isSmallBiasMultiset_of_rat`: explicit `⌈4 (r + 1) / ε²⌉` existence
+  bounds on bit strings and `(ZMod 2) ^ r` multisets.
 
 ## References
 
@@ -179,5 +189,120 @@ theorem exists_isSmallBias_map_of_exp_lt [NeZero d] {ε : ℝ} (hε : 0 ≤ ε)
   rw [bias_uniformOfFintype_map, Fintype.expect_eq_sum_div_card, Fintype.card_fin, abs_div,
     abs_of_pos hd, div_le_iff₀ hd]
   exact (hs S hS).le
+
+section Threshold
+
+omit [DecidableEq ι] in
+/-- For `ε > 0` and `d ≥ ⌈4 (|ι| + 1) / ε²⌉`, the probabilistic-method union bound
+`2 · 2^|ι| · exp (-ε² d / 2) < 1` holds. -/
+theorem exp_neg_lt_of_ceil_le {ε : ℝ} (hε : 0 < ε)
+    (hd : Nat.ceil (4 * ((Fintype.card ι : ℝ) + 1) / ε ^ 2) ≤ d) :
+    2 * 2 ^ Fintype.card ι * exp (-(ε ^ 2 * d / 2)) < 1 := by
+  have hceil : 4 * ((Fintype.card ι : ℝ) + 1) / ε ^ 2 ≤ d :=
+    (Nat.le_ceil _).trans (by exact_mod_cast hd)
+  have hε2 : 0 < ε ^ 2 := sq_pos_of_pos hε
+  have hexp_ge : 2 * ((Fintype.card ι : ℝ) + 1) ≤ ε ^ 2 * d / 2 := by
+    have hmul : 4 * ((Fintype.card ι : ℝ) + 1) ≤ ε ^ 2 * d :=
+      (div_le_iff₀ hε2).mp hceil |>.trans (le_of_eq (by ring))
+    linarith
+  have he2 : (3 : ℝ) ≤ exp 2 := by linarith [add_one_le_exp (2 : ℝ)]
+  have hpow3 : (2 : ℝ) * 2 ^ Fintype.card ι < 3 ^ (Fintype.card ι + 1) := by
+    have h23 : (2 : ℝ) ^ Fintype.card ι ≤ 3 ^ Fintype.card ι :=
+      pow_le_pow_left₀ (by norm_num) (by norm_num) _
+    have h2pos : (0 : ℝ) < (2 : ℝ) ^ Fintype.card ι := by positivity
+    rw [pow_succ']
+    nlinarith
+  have hpow_exp : (3 : ℝ) ^ (Fintype.card ι + 1) ≤ exp (ε ^ 2 * d / 2) := by
+    refine (pow_le_pow_left₀ (by norm_num) he2 (Fintype.card ι + 1)).trans ?_
+    rw [← Real.exp_nat_mul]
+    refine Real.exp_le_exp.mpr ?_
+    push_cast
+    linarith
+  have hlt_exp : 2 * 2 ^ Fintype.card ι < exp (ε ^ 2 * d / 2) := hpow3.trans_le hpow_exp
+  have hpos : 0 < exp (ε ^ 2 * d / 2) := Real.exp_pos _
+  rw [Real.exp_neg, mul_inv_lt_iff₀ hpos, one_mul]
+  exact hlt_exp
+
+/-- **Short `ε`-biased lists of size `⌈4 (|ι| + 1) / ε²⌉`**: for `ε > 0` and
+`d ≥ ⌈4 (|ι| + 1) / ε²⌉`, an `ε`-biased list of `d` bit strings on `ι` exists. -/
+theorem exists_isSmallBias_map_of_ceil_le [NeZero d] {ε : ℝ} (hε : 0 < ε)
+    (hd : Nat.ceil (4 * ((Fintype.card ι : ℝ) + 1) / ε ^ 2) ≤ d) :
+    ∃ s : Fin d → ι → Bool, IsSmallBias ε ((uniformOfFintype (Fin d)).map s) :=
+  exists_isSmallBias_map_of_exp_lt hε.le (exp_neg_lt_of_ceil_le hε hd)
+
+/-- **Explicit `⌈4 (r + 1) / ε²⌉` size bound**: for every `r` and `ε > 0`, putting
+`d = ⌈4 (r + 1) / ε²⌉` gives `0 < d` and an `ε`-biased list of length `d`. -/
+theorem exists_isSmallBias_bitString_of_ceil (r : ℕ) {ε : ℝ} (hε : 0 < ε) :
+    0 < Nat.ceil (4 * ((r : ℝ) + 1) / ε ^ 2) ∧
+      ∃ (_ : NeZero (Nat.ceil (4 * ((r : ℝ) + 1) / ε ^ 2)))
+        (s : Fin (Nat.ceil (4 * ((r : ℝ) + 1) / ε ^ 2)) → BitString r),
+        IsSmallBias ε ((uniformOfFintype _).map s) := by
+  have hd_pos : 0 < Nat.ceil (4 * ((r : ℝ) + 1) / ε ^ 2) := Nat.ceil_pos.mpr (by positivity)
+  have hd : NeZero (Nat.ceil (4 * ((r : ℝ) + 1) / ε ^ 2)) := ⟨hd_pos.ne'⟩
+  refine ⟨hd_pos, hd, exists_isSmallBias_map_of_ceil_le hε ?_⟩
+  simpa only [Fintype.card_fin] using le_rfl
+
+/-- An `ε`-biased multiset over `(ZMod 2) ^ r` (`[NaorNaor1993]`): every nontrivial linear
+character `x ↦ (-1) ^ (a ⬝ᵥ x).val` (`a ≠ 0`) has average at most `ε` in absolute value. -/
+def IsSmallBiasMultiset (r : ℕ) (ε : ℝ) (M : Multiset (Fin r → ZMod 2)) : Prop :=
+  0 < Multiset.card M ∧
+    ∀ a : Fin r → ZMod 2, a ≠ 0 →
+      |(M.map fun x => (-1 : ℝ) ^ (a ⬝ᵥ x).val).sum / Multiset.card M| ≤ ε
+
+/-- Unfolding lemma for `IsSmallBiasMultiset`. -/
+theorem isSmallBiasMultiset_iff {r : ℕ} {ε : ℝ} {M : Multiset (Fin r → ZMod 2)} :
+    IsSmallBiasMultiset r ε M ↔
+      0 < Multiset.card M ∧
+        ∀ a : Fin r → ZMod 2, a ≠ 0 →
+          |(M.map fun x => (-1 : ℝ) ^ (a ⬝ᵥ x).val).sum / Multiset.card M| ≤ ε :=
+  Iff.rfl
+
+private theorem neg_one_pow_dotProduct_eq_chi {r : ℕ} (a x : Fin r → ZMod 2) :
+    (-1 : ℝ) ^ (a ⬝ᵥ x).val =
+      chi ℝ {i : Fin r | bitEquiv (a i) = true} (fun i => bitEquiv (x i)) := by
+  have hval : ∀ z : ZMod 2, (-1 : ℝ) ^ z.val = signVal (bitEquiv z) := fun z => by
+    have hz : z = 0 ∨ z = 1 := by revert z; decide
+    rcases hz with rfl | rfl
+    · simp [bitEquiv, signVal]
+    · norm_num [ZMod.val_one, bitEquiv, signVal]
+  have hdot : bitEquiv (a ⬝ᵥ x) =
+      (fun i => bitEquiv (x i)) ⬝ᵥ (fun i => bitEquiv (a i)) := by
+    rw [dotProduct_comm]
+    simp only [dotProduct, map_sum, map_mul]
+  rw [hval, hdot, dotProduct_eq_parityOn, chi_eq_signVal_parityOn]
+
+/-- **Existence of `ε`-biased multisets over `(ZMod 2) ^ r`**: for every `r : ℕ` and rational
+`0 < ε`, there exists an `ε`-biased multiset of size `⌈4 (r + 1) / ε²⌉`. -/
+theorem exists_isSmallBiasMultiset_of_rat (r : ℕ) {ε : ℚ} (hε : 0 < ε) :
+    ∃ M : Multiset (Fin r → ZMod 2),
+      Multiset.card M = Nat.ceil (4 * ((r : ℝ) + 1) / (ε : ℝ) ^ 2) ∧
+      IsSmallBiasMultiset r (ε : ℝ) M := by
+  have hεR : (0 : ℝ) < (ε : ℝ) := by exact_mod_cast hε
+  obtain ⟨hd_pos, _, s, hs⟩ := exists_isSmallBias_bitString_of_ceil r hεR
+  let d := Nat.ceil (4 * ((r : ℝ) + 1) / (ε : ℝ) ^ 2)
+  let sZ : Fin d → Fin r → ZMod 2 := fun j i => bitEquiv.symm (s j i)
+  refine ⟨Multiset.ofList (List.ofFn sZ), ?_, ?_, fun a ha => ?_⟩
+  · simp [d]
+  · simp [d, hd_pos]
+  · have hsum : (Multiset.map (fun x => (-1 : ℝ) ^ (a ⬝ᵥ x).val)
+        (Multiset.ofList (List.ofFn sZ))).sum =
+        ∑ j : Fin d, chi ℝ {i : Fin r | bitEquiv (a i) = true} (s j) := by
+      rw [Multiset.map_coe, Multiset.sum_coe, List.map_ofFn, List.sum_ofFn]
+      refine Finset.sum_congr rfl fun j _ => ?_
+      have hsj : (fun i => bitEquiv (sZ j i)) = s j := by
+        funext i
+        exact bitEquiv.apply_symm_apply (s j i)
+      simpa only [Function.comp_apply, hsj] using neg_one_pow_dotProduct_eq_chi a (sZ j)
+    have hS : ({i : Fin r | bitEquiv (a i) = true} : Finset (Fin r)).Nonempty := by
+      obtain ⟨i, hi⟩ := Function.ne_iff.mp ha
+      refine ⟨i, mem_filter.mpr ⟨mem_univ i, ?_⟩⟩
+      exact Bool.eq_true_of_not_eq_false fun h =>
+        hi (bitEquiv.injective (h.trans bitEquiv.map_zero.symm))
+    have hbias := hs {i : Fin r | bitEquiv (a i) = true} hS
+    rw [bias_uniformOfFintype_map, Fintype.expect_eq_sum_div_card, Fintype.card_fin] at hbias
+    rw [hsum, Multiset.coe_card, List.length_ofFn]
+    exact hbias
+
+end Threshold
 
 end Cslib.BitString

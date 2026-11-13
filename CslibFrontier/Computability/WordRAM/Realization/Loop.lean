@@ -35,12 +35,14 @@ uses one fixed body emitter and static registers for the mutable state and count
 * `bodyBank_layout`, `bodySlot_injective`, `stateSlot_ne_bodySlot`,
   `regs_comp_append_eq_appendWords`, `loopEmit_not_readsWidth`: the body bank's register premises,
   the state words read back as appended words, and width-freedom of the loop.
+* `iterationWork_zero`: evaluate local work when the body has no local-work charge.
 * `Realizes.Witness.loopEmit_spec`: the loop emitter with additive per-iteration overhead.
 * `Realizes.Witness.iterateRuntime`, `Realizes.iterateRuntime`: one uniform body witness or
   certificate realizes a runtime-bounded loop.
 
 The iteration grading and realization are original infrastructure over the existing free monad
 and structured Word-RAM code. No additional program syntax or memory model is introduced.
+Fixed-environment transport laws are provided by the `LoopCongr` module.
 -/
 
 @[expose] public section
@@ -66,6 +68,13 @@ def iterationWork (body : δ × σ → Memory.Prog σ) (work : (δ × σ) → Me
       work (d, a) s + iterationWork body work d n
         ((Memory.spec 0).clientResult s (body (d, a)))
         ((Memory.spec 0).clientState s (body (d, a))) + 1
+
+/-- With no body-local work, the local grade is exactly one control unit per iteration. -/
+@[simp] theorem iterationWork_zero (body : δ × σ → Memory.Prog σ) (d : δ) (n : ℕ) (a : σ)
+    (s : Memory.State) : iterationWork body (fun _ _ => 0) d n a s = n := by
+  induction n generalizing a s with
+  | zero => rfl
+  | succ n ih => simp only [iterationWork, ih, Nat.zero_add]
 
 /-- Every executed body must satisfy its explicit domain at the reached state. -/
 def iterationSafe (body : δ × σ → Memory.Prog σ)

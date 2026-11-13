@@ -357,19 +357,19 @@ theorem all_polyTime_problem_bridges :
         Complexity.ThreeColoring (Ordered.ThreeColorable.encodedLanguage graphVocabulary) ∧
       PolyTimeReducible encStructure encGraph
         (Ordered.ThreeColorable.encodedLanguage graphVocabulary) Complexity.ThreeColoring) ∧
-    (PolyTimeReducible (encPair encGraph encNat) encStructure
+    (PolyTimeReducible encIndependentSetInstance encStructure
         Complexity.IndependentSet
         (Ordered.IndependentSet.encodedLanguage sizedGraphVocabulary) ∧
-      PolyTimeReducible encStructure (encPair encGraph encNat)
+      PolyTimeReducible encStructure encIndependentSetInstance
         (Ordered.IndependentSet.encodedLanguage sizedGraphVocabulary)
         Complexity.IndependentSet) ∧
-    (PolyTimeReducible (encPair encGraph encNat) encStructure
+    (PolyTimeReducible encCliqueInstance encStructure
         Complexity.Clique (Ordered.Clique.encodedLanguage sizedGraphVocabulary) ∧
-      PolyTimeReducible encStructure (encPair encGraph encNat)
+      PolyTimeReducible encStructure encCliqueInstance
         (Ordered.Clique.encodedLanguage sizedGraphVocabulary) Complexity.Clique) ∧
-    (PolyTimeReducible (encPair encGraph encNat) encStructure
+    (PolyTimeReducible encVertexCoverInstance encStructure
         Complexity.VertexCover (Ordered.VertexCover.encodedLanguage sizedGraphVocabulary) ∧
-      PolyTimeReducible encStructure (encPair encGraph encNat)
+      PolyTimeReducible encStructure encVertexCoverInstance
         (Ordered.VertexCover.encodedLanguage sizedGraphVocabulary) Complexity.VertexCover) :=
   ⟨⟨threeSAT_polyTimeReducible_orderedThreeSAT, orderedThreeSAT_polyTimeReducible_threeSAT⟩,
     ⟨threeColoring_polyTimeReducible_orderedSimpleThreeColorable,

@@ -25,6 +25,10 @@ A set is **mitotic** if it can be split by an easy separator `S` into two disjoi
 [Ambos-Spies][AmbosSpies1984]. Mitoticity is the structural splitting property of complete sets
 [Glaßer, Pavan, Selman and Zhang][GlasserPavanSelmanZhang2008].
 
+The truth-table autoreducible notions group their resource conditions with query avoidance into
+the admissibility predicate of `TruthTableReducibleBy`, `DTTReducibleBy` or `CTTReducibleBy`, so
+their forgetful maps, complement closure and duality are applications of the kernel lemmas.
+
 ## Main definitions
 
 * `Cslib.Complexity.PolyTimeManyOneAutoreducible`: polynomial-time many-one autoreducibility.
@@ -53,6 +57,8 @@ A set is **mitotic** if it can be split by an easy separator `S` into two disjoi
   `not_polyTimeManyOneAutoreducible_compl_singleton`).
 * Exact characterizations: a set in `P` (or `L`) is many-one autoreducible if and only if neither
   it nor its complement is a singleton.
+* `Cslib.Complexity.MitoticWith.mono`: mitoticity is monotone in the separator class and the
+  reduction; the implications between the mitoticity notions are instances.
 * Mitoticity implies autoreducibility (standard argument of [Ambos-Spies 1984][AmbosSpies1984]
   adapted to truth-table reductions): every `dtt`-, `k-tt`-, `btt`-, or `tt`-mitotic set is
   correspondingly `dtt`-, `k-tt`-, `btt`-, or `tt`-autoreducible unconditionally, and a
@@ -135,18 +141,18 @@ theorem LogSpaceManyOneAutoreducible.compl (h : LogSpaceManyOneAutoreducible enc
 queries the input instance `a`. -/
 def PolyTimeKTruthTableAutoreducible (k : ℕ) (encA : α ↪ List Bool) (A : Set α) : Prop :=
   ∃ (r : α → ℕ) (q : α × ℕ → α) (d : α × List Bool → Bool),
-    ComputableInPolyTime r encA encUnary ∧
-    ComputableInPolyTime q (encPair encA encUnary) encA ∧
-    ComputableInPolyTime d (encPair encA encBits) encBool ∧
-    (∀ a, r a ≤ k) ∧ (∀ a i, i < r a → q (a, i) ≠ a) ∧
+    ((ComputableInPolyTime r encA encUnary ∧
+      ComputableInPolyTime q (encPair encA encUnary) encA ∧
+      ComputableInPolyTime d (encPair encA encBits) encBool ∧
+      ∀ a, r a ≤ k) ∧
+      ∀ a i, i < r a → q (a, i) ≠ a) ∧
     ∀ a, a ∈ A ↔ d (a, truthTableAnswers (q ⁻¹' A) r a) = true
 
 /-- A `k`-truth-table autoreduction is a `k`-truth-table reduction. -/
 theorem PolyTimeKTruthTableAutoreducible.polyTimeKTruthTableReducible {k : ℕ}
     (h : PolyTimeKTruthTableAutoreducible k encA A) :
     PolyTimeKTruthTableReducible k encA encA A A :=
-  let ⟨r, q, d, hr, hq, hd, hrk, _, hA⟩ := h
-  ⟨r, q, d, hr, hq, hd, hrk, hA⟩
+  TruthTableReducibleBy.mono (fun _ _ _ h => h.1) h
 
 /-- `A` is bounded truth-table autoreducible. -/
 def PolyTimeBTTAutoreducible (encA : α ↪ List Bool) (A : Set α) : Prop :=
@@ -162,76 +168,70 @@ theorem PolyTimeBTTAutoreducible.polyTimeBTTReducible (h : PolyTimeBTTAutoreduci
 without querying `a`. -/
 def PolyTimeDTTAutoreducible (encA : α ↪ List Bool) (A : Set α) : Prop :=
   ∃ (r : α → ℕ) (q : α × ℕ → α),
-    ComputableInPolyTime r encA encUnary ∧
-    ComputableInPolyTime q (encPair encA encUnary) encA ∧
-    (∀ a i, i < r a → q (a, i) ≠ a) ∧ ∀ a, a ∈ A ↔ ∃ i < r a, q (a, i) ∈ A
+    ((ComputableInPolyTime r encA encUnary ∧
+      ComputableInPolyTime q (encPair encA encUnary) encA) ∧
+      ∀ a i, i < r a → q (a, i) ≠ a) ∧
+    ∀ a, a ∈ A ↔ ∃ i < r a, q (a, i) ∈ A
 
 /-- A disjunctive truth-table autoreduction is a disjunctive truth-table reduction. -/
 theorem PolyTimeDTTAutoreducible.polyTimeDTTReducible (h : PolyTimeDTTAutoreducible encA A) :
     PolyTimeDTTReducible encA encA A A :=
-  let ⟨r, q, hr, hq, _, hA⟩ := h
-  ⟨r, q, hr, hq, hA⟩
+  DTTReducibleBy.mono (fun _ _ h => h.1) h
 
 /-- `A` is conjunctive truth-table autoreducible: accepting exactly when every query is in `A`,
 without querying `a`. -/
 def PolyTimeCTTAutoreducible (encA : α ↪ List Bool) (A : Set α) : Prop :=
   ∃ (r : α → ℕ) (q : α × ℕ → α),
-    ComputableInPolyTime r encA encUnary ∧
-    ComputableInPolyTime q (encPair encA encUnary) encA ∧
-    (∀ a i, i < r a → q (a, i) ≠ a) ∧ ∀ a, a ∈ A ↔ ∀ i < r a, q (a, i) ∈ A
+    ((ComputableInPolyTime r encA encUnary ∧
+      ComputableInPolyTime q (encPair encA encUnary) encA) ∧
+      ∀ a i, i < r a → q (a, i) ≠ a) ∧
+    ∀ a, a ∈ A ↔ ∀ i < r a, q (a, i) ∈ A
 
 /-- A conjunctive truth-table autoreduction is a conjunctive truth-table reduction. -/
 theorem PolyTimeCTTAutoreducible.polyTimeCTTReducible (h : PolyTimeCTTAutoreducible encA A) :
     PolyTimeCTTReducible encA encA A A :=
-  let ⟨r, q, hr, hq, _, hA⟩ := h
-  ⟨r, q, hr, hq, hA⟩
+  CTTReducibleBy.mono (fun _ _ h => h.1) h
 
 /-- `A` is polynomial-time truth-table autoreducible: a truth-table reduction whose query generator
 never queries the input instance. -/
 def PolyTimeTruthTableAutoreducible (encA : α ↪ List Bool) (A : Set α) : Prop :=
   ∃ (r : α → ℕ) (q : α × ℕ → α) (d : α × List Bool → Bool),
-    ComputableInPolyTime r encA encUnary ∧
-    ComputableInPolyTime q (encPair encA encUnary) encA ∧
-    ComputableInPolyTime d (encPair encA encBits) encBool ∧
-    (∀ a i, i < r a → q (a, i) ≠ a) ∧
+    ((ComputableInPolyTime r encA encUnary ∧
+      ComputableInPolyTime q (encPair encA encUnary) encA ∧
+      ComputableInPolyTime d (encPair encA encBits) encBool) ∧
+      ∀ a i, i < r a → q (a, i) ≠ a) ∧
     ∀ a, a ∈ A ↔ d (a, truthTableAnswers (q ⁻¹' A) r a) = true
 
 /-- A truth-table autoreduction is a truth-table reduction. -/
 theorem PolyTimeTruthTableAutoreducible.polyTimeTruthTableReducible
     (h : PolyTimeTruthTableAutoreducible encA A) :
     PolyTimeTruthTableReducible encA encA A A :=
-  let ⟨r, q, d, hr, hq, hd, _, hA⟩ := h
-  ⟨r, q, d, hr, hq, hd, hA⟩
+  TruthTableReducibleBy.mono (fun _ _ _ h => h.1) h
 
 /-- A many-one autoreduction is a `1`-truth-table autoreduction. -/
 theorem PolyTimeManyOneAutoreducible.polyTimeKTruthTableAutoreducible_one
-    (h : PolyTimeManyOneAutoreducible encA A) : PolyTimeKTruthTableAutoreducible 1 encA A := by
-  obtain ⟨f, ⟨hf, hne⟩, hA⟩ := h
-  refine ⟨fun _ => 1, fun x => f x.1, fun x => x.2.headD false, by fun_prop, by fun_prop,
-    by fun_prop, fun _ => le_rfl, fun a _ _ => hne a, fun a => ?_⟩
-  rw [hA a]
-  simp [truthTableAnswers]
+    (h : PolyTimeManyOneAutoreducible encA A) : PolyTimeKTruthTableAutoreducible 1 encA A :=
+  ManyOneReducibleBy.truthTableReducibleBy (fun _ ⟨hf, hne⟩ =>
+    ⟨⟨by fun_prop, by fun_prop, by fun_prop, fun _ => le_rfl⟩, fun a _ _ => hne a⟩) h
 
 /-- A many-one autoreduction is a disjunctive truth-table autoreduction. -/
 theorem PolyTimeManyOneAutoreducible.polyTimeDTTAutoreducible
-    (h : PolyTimeManyOneAutoreducible encA A) : PolyTimeDTTAutoreducible encA A := by
-  obtain ⟨f, ⟨hf, hne⟩, hA⟩ := h
-  exact ⟨fun _ => 1, fun x => f x.1, by fun_prop, by fun_prop, fun a _ _ => hne a,
-    fun a => by simp [hA a]⟩
+    (h : PolyTimeManyOneAutoreducible encA A) : PolyTimeDTTAutoreducible encA A :=
+  ManyOneReducibleBy.dttReducibleBy
+    (fun _ ⟨hf, hne⟩ => ⟨⟨by fun_prop, by fun_prop⟩, fun a _ _ => hne a⟩) h
 
 /-- A many-one autoreduction is a conjunctive truth-table autoreduction. -/
 theorem PolyTimeManyOneAutoreducible.polyTimeCTTAutoreducible
-    (h : PolyTimeManyOneAutoreducible encA A) : PolyTimeCTTAutoreducible encA A := by
-  obtain ⟨f, ⟨hf, hne⟩, hA⟩ := h
-  exact ⟨fun _ => 1, fun x => f x.1, by fun_prop, by fun_prop, fun a _ _ => hne a,
-    fun a => by simp [hA a]⟩
+    (h : PolyTimeManyOneAutoreducible encA A) : PolyTimeCTTAutoreducible encA A :=
+  ManyOneReducibleBy.cttReducibleBy
+    (fun _ ⟨hf, hne⟩ => ⟨⟨by fun_prop, by fun_prop⟩, fun a _ _ => hne a⟩) h
 
 /-- Allowing more queries in a `k`-truth-table autoreduction. -/
 theorem PolyTimeKTruthTableAutoreducible.mono {k k' : ℕ}
     (h : PolyTimeKTruthTableAutoreducible k encA A) (hk : k ≤ k') :
     PolyTimeKTruthTableAutoreducible k' encA A :=
-  let ⟨r, q, d, hr, hq, hd, hrk, hne, hA⟩ := h
-  ⟨r, q, d, hr, hq, hd, fun a => (hrk a).trans hk, hne, hA⟩
+  TruthTableReducibleBy.mono
+    (fun _ _ _ ⟨⟨hr, hq, hd, hrk⟩, hne⟩ => ⟨⟨hr, hq, hd, fun a => (hrk a).trans hk⟩, hne⟩) h
 
 /-- A `k`-truth-table autoreduction is a bounded truth-table autoreduction. -/
 theorem PolyTimeKTruthTableAutoreducible.polyTimeBTTAutoreducible {k : ℕ}
@@ -241,8 +241,8 @@ theorem PolyTimeKTruthTableAutoreducible.polyTimeBTTAutoreducible {k : ℕ}
 /-- A bounded truth-table autoreduction is a truth-table autoreduction. -/
 theorem PolyTimeBTTAutoreducible.polyTimeTruthTableAutoreducible
     (h : PolyTimeBTTAutoreducible encA A) : PolyTimeTruthTableAutoreducible encA A :=
-  let ⟨_, r, q, d, hr, hq, hd, _, hne, hA⟩ := h
-  ⟨r, q, d, hr, hq, hd, hne, hA⟩
+  let ⟨_, h⟩ := h
+  TruthTableReducibleBy.mono (fun _ _ _ ⟨⟨hr, hq, hd, _⟩, hne⟩ => ⟨⟨hr, hq, hd⟩, hne⟩) h
 
 /-- A many-one autoreduction is a bounded truth-table autoreduction. -/
 theorem PolyTimeManyOneAutoreducible.polyTimeBTTAutoreducible
@@ -254,67 +254,31 @@ theorem PolyTimeManyOneAutoreducible.polyTimeTruthTableAutoreducible
     (h : PolyTimeManyOneAutoreducible encA A) : PolyTimeTruthTableAutoreducible encA A :=
   h.polyTimeBTTAutoreducible.polyTimeTruthTableAutoreducible
 
-private theorem computableInPolyTime_any_answers :
-    ComputableInPolyTime (fun x : α × List Bool => x.2.any id) (encPair encA encBits) encBool :=
-  ComputableInPolyTime.anyWithEncoding (encA := encBool) (encL := encBits)
-    (test := fun p : α × Bool => p.2) (.snd encA encBool) (.fst encA encBits)
-    (.snd encA encBits)
-
-private theorem computableInPolyTime_all_answers :
-    ComputableInPolyTime (fun x : α × List Bool => x.2.all id) (encPair encA encBits) encBool :=
-  ComputableInPolyTime.allWithEncoding (encA := encBool) (encL := encBits)
-    (test := fun p : α × Bool => p.2) (.snd encA encBool) (.fst encA encBits)
-    (.snd encA encBits)
-
 /-- A disjunctive truth-table autoreduction is a truth-table autoreduction. -/
 theorem PolyTimeDTTAutoreducible.polyTimeTruthTableAutoreducible
-    (h : PolyTimeDTTAutoreducible encA A) : PolyTimeTruthTableAutoreducible encA A := by
-  obtain ⟨r, q, hr, hq, hne, hA⟩ := h
-  refine ⟨r, q, fun x => x.2.any id, hr, hq, computableInPolyTime_any_answers, hne, fun a => ?_⟩
-  rw [hA a]
-  simp [truthTableAnswers, List.any_eq_true, List.mem_ofFn, Fin.exists_iff]
+    (h : PolyTimeDTTAutoreducible encA A) : PolyTimeTruthTableAutoreducible encA A :=
+  DTTReducibleBy.truthTableReducibleBy
+    (fun _ _ ⟨⟨hr, hq⟩, hne⟩ => ⟨⟨hr, hq, by fun_prop⟩, hne⟩) h
 
 /-- A conjunctive truth-table autoreduction is a truth-table autoreduction. -/
 theorem PolyTimeCTTAutoreducible.polyTimeTruthTableAutoreducible
-    (h : PolyTimeCTTAutoreducible encA A) : PolyTimeTruthTableAutoreducible encA A := by
-  obtain ⟨r, q, hr, hq, hne, hA⟩ := h
-  refine ⟨r, q, fun x => x.2.all id, hr, hq, computableInPolyTime_all_answers, hne, fun a => ?_⟩
-  rw [hA a]
-  simp [truthTableAnswers, List.all_eq_true, List.mem_ofFn, Fin.forall_iff]
+    (h : PolyTimeCTTAutoreducible encA A) : PolyTimeTruthTableAutoreducible encA A :=
+  CTTReducibleBy.truthTableReducibleBy
+    (fun _ _ ⟨⟨hr, hq⟩, hne⟩ => ⟨⟨hr, hq, by fun_prop⟩, hne⟩) h
 
 /-- Complement duality between disjunctive and conjunctive truth-table autoreducibility. -/
 theorem polyTimeDTTAutoreducible_iff_polyTimeCTTAutoreducible_compl :
-    PolyTimeDTTAutoreducible encA A ↔ PolyTimeCTTAutoreducible encA Aᶜ := by
-  constructor
-  · rintro ⟨r, q, hr, hq, hne, hA⟩
-    exact ⟨r, q, hr, hq, hne, fun a => by simp [hA a]⟩
-  · rintro ⟨r, q, hr, hq, hne, hA⟩
-    refine ⟨r, q, hr, hq, hne, fun a => ?_⟩
-    have := not_congr (hA a)
-    simp only [Set.mem_compl_iff, not_not, not_forall, exists_prop] at this
-    exact this
-
-private theorem computableInPolyTime_negate_combiner {d : α × List Bool → Bool}
-    (hd : ComputableInPolyTime d (encPair encA encBits) encBool) :
-    ComputableInPolyTime (fun x : α × List Bool => !d (x.1, x.2.map (!·)))
-      (encPair encA encBits) encBool := by
-  have hmap : ComputableInPolyTime (fun x : α × List Bool => x.2.map (!·))
-      (encPair encA encBits) encBits :=
-    ComputableInPolyTime.bitsMapWithInput (f := fun _ b => !b)
-      (.snd encA encBits) (by fun_prop)
-  have hd' : ComputableInPolyTime (fun x : α × List Bool => d (x.1, x.2.map (!·)))
-      (encPair encA encBits) encBool := by fun_prop
-  fun_prop
+    PolyTimeDTTAutoreducible encA A ↔ PolyTimeCTTAutoreducible encA Aᶜ :=
+  dttReducibleBy_iff_cttReducibleBy_compl
 
 /-- `k`-truth-table autoreducibility is preserved under taking complements. -/
 theorem PolyTimeKTruthTableAutoreducible.compl {k : ℕ}
     (h : PolyTimeKTruthTableAutoreducible k encA A) :
-    PolyTimeKTruthTableAutoreducible k encA Aᶜ := by
-  obtain ⟨r, q, d, hr, hq, hd, hrk, hne, hA⟩ := h
-  refine ⟨r, q, fun x => !d (x.1, x.2.map (!·)), hr, hq,
-    computableInPolyTime_negate_combiner hd, hrk, hne, fun a => ?_⟩
-  rw [Set.mem_compl_iff, hA a, show q ⁻¹' Aᶜ = (q ⁻¹' A)ᶜ from rfl, truthTableAnswers_compl]
-  simp [List.map_map, Function.comp_def]
+    PolyTimeKTruthTableAutoreducible k encA Aᶜ :=
+  TruthTableReducibleBy.compl_right
+    (fun _ _ _ ⟨⟨hr, hq, hd, hrk⟩, hne⟩ => ⟨⟨hr, hq, by fun_prop, hrk⟩, hne⟩) <|
+  TruthTableReducibleBy.compl_left
+    (fun _ _ _ ⟨⟨hr, hq, hd, hrk⟩, hne⟩ => ⟨⟨hr, hq, by fun_prop, hrk⟩, hne⟩) h
 
 /-- Bounded truth-table autoreducibility is preserved under taking complements. -/
 theorem PolyTimeBTTAutoreducible.compl (h : PolyTimeBTTAutoreducible encA A) :
@@ -324,12 +288,11 @@ theorem PolyTimeBTTAutoreducible.compl (h : PolyTimeBTTAutoreducible encA A) :
 
 /-- Truth-table autoreducibility is preserved under taking complements. -/
 theorem PolyTimeTruthTableAutoreducible.compl (h : PolyTimeTruthTableAutoreducible encA A) :
-    PolyTimeTruthTableAutoreducible encA Aᶜ := by
-  obtain ⟨r, q, d, hr, hq, hd, hne, hA⟩ := h
-  refine ⟨r, q, fun x => !d (x.1, x.2.map (!·)), hr, hq,
-    computableInPolyTime_negate_combiner hd, hne, fun a => ?_⟩
-  rw [Set.mem_compl_iff, hA a, show q ⁻¹' Aᶜ = (q ⁻¹' A)ᶜ from rfl, truthTableAnswers_compl]
-  simp [List.map_map, Function.comp_def]
+    PolyTimeTruthTableAutoreducible encA Aᶜ :=
+  TruthTableReducibleBy.compl_right
+    (fun _ _ _ ⟨⟨hr, hq, hd⟩, hne⟩ => ⟨⟨hr, hq, by fun_prop⟩, hne⟩) <|
+  TruthTableReducibleBy.compl_left
+    (fun _ _ _ ⟨⟨hr, hq, hd⟩, hne⟩ => ⟨⟨hr, hq, by fun_prop⟩, hne⟩) h
 
 /-! ### Autoreducibility of sets in `P` and degenerate obstructions -/
 
@@ -338,8 +301,9 @@ internally in polynomial time. -/
 theorem PolyTimeKTruthTableAutoreducible.of_mem_P (k : ℕ) (hA : A ∈ P encA) :
     PolyTimeKTruthTableAutoreducible k encA A := by
   obtain ⟨g, hg, hAg⟩ := hA
-  exact ⟨fun _ => 0, fun x => x.1, fun x => g x.1, by fun_prop, by fun_prop, by fun_prop,
-    fun _ => Nat.zero_le _, fun _ _ hi => (Nat.not_lt_zero _ hi).elim, hAg⟩
+  exact ⟨fun _ => 0, fun x => x.1, fun x => g x.1,
+    ⟨⟨by fun_prop, by fun_prop, by fun_prop, fun _ => Nat.zero_le _⟩,
+      fun _ _ hi => (Nat.not_lt_zero _ hi).elim⟩, hAg⟩
 
 /-- Every problem in `P` is bounded truth-table autoreducible. -/
 theorem PolyTimeBTTAutoreducible.of_mem_P (hA : A ∈ P encA) :
@@ -560,6 +524,17 @@ when `R` is transitive) [Ambos-Spies 1984][AmbosSpies1984]. -/
 def MitoticWith (𝒞 : Set (Set α)) (R : Set α → Set α → Prop) (A : Set α) : Prop :=
   ∃ S ∈ 𝒞, ReducibleEquiv R A (A ∩ S) ∧ ReducibleEquiv R A (A \ S)
 
+/-- Mutual reducibility is monotone in the reduction. -/
+theorem ReducibleEquiv.mono {R R' : Set α → Set α → Prop} {B : Set α} (h : ReducibleEquiv R A B)
+    (hR : ∀ X Y, R X Y → R' X Y) : ReducibleEquiv R' A B :=
+  ⟨hR _ _ h.1, hR _ _ h.2⟩
+
+/-- Mitoticity is monotone in the class of separators and in the reduction. -/
+theorem MitoticWith.mono {𝒞 𝒞' : Set (Set α)} {R R' : Set α → Set α → Prop}
+    (h : MitoticWith 𝒞 R A) (h𝒞 : 𝒞 ⊆ 𝒞') (hR : ∀ X Y, R X Y → R' X Y) : MitoticWith 𝒞' R' A :=
+  let ⟨S, hS, h₁, h₂⟩ := h
+  ⟨S, h𝒞 hS, h₁.mono hR, h₂.mono hR⟩
+
 /-- `A` is polynomial-time many-one mitotic [Ambos-Spies 1984][AmbosSpies1984]. -/
 def PolyTimeManyOneMitotic (encA : α ↪ List Bool) (A : Set α) : Prop :=
   MitoticWith (P encA) (PolyTimeReducible encA encA) A
@@ -592,42 +567,29 @@ def PolyTimeTruthTableMitotic (encA : α ↪ List Bool) (A : Set α) : Prop :=
 
 /-- A logspace mitotic set is polynomial-time mitotic. -/
 theorem LogSpaceManyOneMitotic.polyTimeManyOneMitotic (h : LogSpaceManyOneMitotic encA A) :
-    PolyTimeManyOneMitotic encA A := by
-  obtain ⟨S, hS, h₁, h₂⟩ := h
-  exact ⟨S, L_subset_P hS,
-    ⟨h₁.1.polyTimeReducible, h₁.2.polyTimeReducible⟩,
-    ⟨h₂.1.polyTimeReducible, h₂.2.polyTimeReducible⟩⟩
+    PolyTimeManyOneMitotic encA A :=
+  MitoticWith.mono h L_subset_P fun _ _ h => h.polyTimeReducible
 
 /-- Many-one mitoticity implies `1`-truth-table mitoticity. -/
 theorem PolyTimeManyOneMitotic.polyTimeKTruthTableMitotic_one (h : PolyTimeManyOneMitotic encA A) :
-    PolyTimeKTruthTableMitotic 1 encA A := by
-  obtain ⟨S, hS, h₁, h₂⟩ := h
-  exact ⟨S, hS,
-    ⟨h₁.1.polyTimeKTruthTableReducible_one, h₁.2.polyTimeKTruthTableReducible_one⟩,
-    ⟨h₂.1.polyTimeKTruthTableReducible_one, h₂.2.polyTimeKTruthTableReducible_one⟩⟩
+    PolyTimeKTruthTableMitotic 1 encA A :=
+  MitoticWith.mono h subset_rfl fun _ _ h => h.polyTimeKTruthTableReducible_one
 
 /-- Many-one mitoticity implies disjunctive truth-table mitoticity. -/
 theorem PolyTimeManyOneMitotic.polyTimeDTTMitotic (h : PolyTimeManyOneMitotic encA A) :
-    PolyTimeDTTMitotic encA A := by
-  obtain ⟨S, hS, h₁, h₂⟩ := h
-  exact ⟨S, hS,
-    ⟨h₁.1.polyTimeDTTReducible, h₁.2.polyTimeDTTReducible⟩,
-    ⟨h₂.1.polyTimeDTTReducible, h₂.2.polyTimeDTTReducible⟩⟩
+    PolyTimeDTTMitotic encA A :=
+  MitoticWith.mono h subset_rfl fun _ _ h => h.polyTimeDTTReducible
 
 /-- Allowing more queries in `k`-truth-table mitoticity. -/
 theorem PolyTimeKTruthTableMitotic.mono {k k' : ℕ}
     (h : PolyTimeKTruthTableMitotic k encA A) (hk : k ≤ k') :
-    PolyTimeKTruthTableMitotic k' encA A := by
-  obtain ⟨S, hS, h₁, h₂⟩ := h
-  exact ⟨S, hS, ⟨h₁.1.mono hk, h₁.2.mono hk⟩, ⟨h₂.1.mono hk, h₂.2.mono hk⟩⟩
+    PolyTimeKTruthTableMitotic k' encA A :=
+  MitoticWith.mono h subset_rfl fun _ _ h => h.mono hk
 
 /-- `k`-truth-table mitoticity implies bounded truth-table mitoticity. -/
 theorem PolyTimeKTruthTableMitotic.polyTimeBTTMitotic {k : ℕ}
-    (h : PolyTimeKTruthTableMitotic k encA A) : PolyTimeBTTMitotic encA A := by
-  obtain ⟨S, hS, h₁, h₂⟩ := h
-  exact ⟨S, hS,
-    ⟨h₁.1.polyTimeBTTReducible, h₁.2.polyTimeBTTReducible⟩,
-    ⟨h₂.1.polyTimeBTTReducible, h₂.2.polyTimeBTTReducible⟩⟩
+    (h : PolyTimeKTruthTableMitotic k encA A) : PolyTimeBTTMitotic encA A :=
+  MitoticWith.mono h subset_rfl fun _ _ h => h.polyTimeBTTReducible
 
 /-- Many-one mitoticity implies bounded truth-table mitoticity. -/
 theorem PolyTimeManyOneMitotic.polyTimeBTTMitotic (h : PolyTimeManyOneMitotic encA A) :
@@ -636,19 +598,13 @@ theorem PolyTimeManyOneMitotic.polyTimeBTTMitotic (h : PolyTimeManyOneMitotic en
 
 /-- Disjunctive truth-table mitoticity implies truth-table mitoticity. -/
 theorem PolyTimeDTTMitotic.polyTimeTruthTableMitotic (h : PolyTimeDTTMitotic encA A) :
-    PolyTimeTruthTableMitotic encA A := by
-  obtain ⟨S, hS, h₁, h₂⟩ := h
-  exact ⟨S, hS,
-    ⟨h₁.1.polyTimeTruthTableReducible, h₁.2.polyTimeTruthTableReducible⟩,
-    ⟨h₂.1.polyTimeTruthTableReducible, h₂.2.polyTimeTruthTableReducible⟩⟩
+    PolyTimeTruthTableMitotic encA A :=
+  MitoticWith.mono h subset_rfl fun _ _ h => h.polyTimeTruthTableReducible
 
 /-- Bounded truth-table mitoticity implies truth-table mitoticity. -/
 theorem PolyTimeBTTMitotic.polyTimeTruthTableMitotic (h : PolyTimeBTTMitotic encA A) :
-    PolyTimeTruthTableMitotic encA A := by
-  obtain ⟨S, hS, h₁, h₂⟩ := h
-  exact ⟨S, hS,
-    ⟨h₁.1.polyTimeTruthTableReducible, h₁.2.polyTimeTruthTableReducible⟩,
-    ⟨h₂.1.polyTimeTruthTableReducible, h₂.2.polyTimeTruthTableReducible⟩⟩
+    PolyTimeTruthTableMitotic encA A :=
+  MitoticWith.mono h subset_rfl fun _ _ h => h.polyTimeTruthTableReducible
 
 /-- Many-one mitoticity implies truth-table mitoticity. -/
 theorem PolyTimeManyOneMitotic.polyTimeTruthTableMitotic (h : PolyTimeManyOneMitotic encA A) :
@@ -706,16 +662,20 @@ private theorem mitoticQueryCount_le {s : α → Bool} {r₀ : α → ℕ} {q₀
   simpa [mitoticQueryCount, mitoticKeptIndices] using
     List.length_filter_le (fun i => (s (q₀ (a, i)) != s a)) (List.range (r₀ a))
 
+/-- Each of the first `mitoticQueryCount` queries is a kept first-stage query. -/
+private theorem mitoticQuery_mem {s : α → Bool} {r₀ : α → ℕ} {q₀ : α × ℕ → α} {a : α} {j : ℕ}
+    (hj : j < mitoticQueryCount s r₀ q₀ a) :
+    ∃ i ∈ mitoticKeptIndices s r₀ q₀ a, q₀ (a, i) = mitoticQuery s r₀ q₀ (a, j) := by
+  have hj' : j < ((mitoticKeptIndices s r₀ q₀ a).map fun i => q₀ (a, i)).length := by
+    simpa [mitoticQueryCount] using hj
+  apply List.mem_map.mp
+  simp only [mitoticQuery, List.getElem?_eq_getElem hj', Option.getD_some]
+  exact List.getElem_mem hj'
+
 private theorem mitoticQuery_ne {s : α → Bool} {r₀ : α → ℕ} {q₀ : α × ℕ → α} {a : α} {j : ℕ}
     (hj : j < mitoticQueryCount s r₀ q₀ a) :
     mitoticQuery s r₀ q₀ (a, j) ≠ a := by
-  have hj' : j < ((mitoticKeptIndices s r₀ q₀ a).map fun i => q₀ (a, i)).length := by
-    simpa [mitoticQueryCount] using hj
-  have hmem : mitoticQuery s r₀ q₀ (a, j) ∈
-      (mitoticKeptIndices s r₀ q₀ a).map fun i => q₀ (a, i) := by
-    simp only [mitoticQuery, List.getElem?_eq_getElem hj', Option.getD_some]
-    exact List.getElem_mem hj'
-  obtain ⟨i, hi, hq⟩ := List.mem_map.mp hmem
+  obtain ⟨i, hi, hq⟩ := mitoticQuery_mem hj
   obtain ⟨-, hkeep⟩ := List.mem_filter.mp hi
   intro heq
   rw [hq, heq, bne_self_eq_false] at hkeep
@@ -793,6 +753,43 @@ private theorem mitoticCombiner_spec {S : Set α} {s : α → Bool} (hsS : ∀ a
     simp only [Set.mem_preimage, Set.mem_sdiff, hsS (q₂ (a, i))]
     by_cases hqA : q₂ (a, i) ∈ A <;> cases hqS : s (q₂ (a, i)) <;> simp [hqA]
 
+/-- The autoreduction behind "mitotic implies autoreducible": given truth-table reductions of `A`
+to `A ∩ S` and to `A \ S` for a polynomial-time separator `s` of `S`, use the one for the side of
+`a` and keep only its queries on the opposite side of `S` from `a`. -/
+private theorem exists_mitotic_autoreduction {S : Set α} {s : α → Bool}
+    (hs : ComputableInPolyTime s encA encBool) (hsS : ∀ a, a ∈ S ↔ s a = true)
+    {r₁ r₂ : α → ℕ} {q₁ q₂ : α × ℕ → α} {d₁ d₂ : α × List Bool → Bool}
+    (hr₁ : ComputableInPolyTime r₁ encA encUnary)
+    (hq₁ : ComputableInPolyTime q₁ (encPair encA encUnary) encA)
+    (hd₁ : ComputableInPolyTime d₁ (encPair encA encBits) encBool)
+    (hA₁ : ∀ a, a ∈ A ↔ d₁ (a, truthTableAnswers (q₁ ⁻¹' (A ∩ S)) r₁ a) = true)
+    (hr₂ : ComputableInPolyTime r₂ encA encUnary)
+    (hq₂ : ComputableInPolyTime q₂ (encPair encA encUnary) encA)
+    (hd₂ : ComputableInPolyTime d₂ (encPair encA encBits) encBool)
+    (hA₂ : ∀ a, a ∈ A ↔ d₂ (a, truthTableAnswers (q₂ ⁻¹' (A \ S)) r₂ a) = true) :
+    ∃ (r : α → ℕ) (q : α × ℕ → α) (d : α × List Bool → Bool),
+      ComputableInPolyTime r encA encUnary ∧
+      ComputableInPolyTime q (encPair encA encUnary) encA ∧
+      ComputableInPolyTime d (encPair encA encBits) encBool ∧
+      (∀ a, r a ≤ max (r₁ a) (r₂ a)) ∧ (∀ a i, i < r a → q (a, i) ≠ a) ∧
+      ∀ a, a ∈ A ↔ d (a, truthTableAnswers (q ⁻¹' A) r a) = true := by
+  let r₀ : α → ℕ := fun a => if s a then r₂ a else r₁ a
+  have hr₀ : ComputableInPolyTime r₀ encA encUnary := ComputableInPolyTime.ite hs hr₂ hr₁
+  let q₀ : α × ℕ → α := fun x => if s x.1 then q₂ x else q₁ x
+  have hq₀ : ComputableInPolyTime q₀ (encPair encA encUnary) encA := by
+    dsimp only [q₀]; fun_prop
+  let d₀ : α × List Bool → Bool := fun x => if s x.1 then d₂ x else d₁ x
+  have hd₀ : ComputableInPolyTime d₀ (encPair encA encBits) encBool := by
+    dsimp only [d₀]; fun_prop
+  exact ⟨mitoticQueryCount s r₀ q₀, mitoticQuery s r₀ q₀, mitoticCombiner s r₀ q₀ d₀,
+    computableInPolyTime_mitoticQueryCount hs hr₀ hq₀,
+    computableInPolyTime_mitoticQuery hs hr₀ hq₀,
+    computableInPolyTime_mitoticCombiner hs hr₀ hq₀ hd₀,
+    fun a => (mitoticQueryCount_le a).trans
+      (by dsimp only [r₀]; split_ifs <;> [exact le_max_right _ _; exact le_max_left _ _]),
+    fun a j hj => mitoticQuery_ne hj,
+    fun a => mitoticCombiner_spec hsS hA₁ hA₂ a⟩
+
 /-- **Every polynomial-time disjunctive truth-table mitotic set is disjunctive truth-table
 autoreducible**, unconditionally (standard argument of [Ambos-Spies 1984][AmbosSpies1984] adapted
 to `dtt` reductions). Queries landing on the same side of the separator `S` as the input `a`
@@ -800,27 +797,21 @@ cannot belong to the opposite piece (`A ∩ S` when `a ∉ S`, or `A ∖ S` when
 filtered out before querying `A`. -/
 theorem PolyTimeDTTMitotic.polyTimeDTTAutoreducible (h : PolyTimeDTTMitotic encA A) :
     PolyTimeDTTAutoreducible encA A := by
-  obtain ⟨S, ⟨s, hs, hsS⟩, ⟨⟨r₁, q₁, hr₁, hq₁, hA₁⟩, -⟩, ⟨⟨r₂, q₂, hr₂, hq₂, hA₂⟩, -⟩⟩ := h
+  obtain ⟨S, ⟨s, hs, hsS⟩, ⟨⟨r₁, q₁, ⟨hr₁, hq₁⟩, hA₁⟩, -⟩, ⟨⟨r₂, q₂, ⟨hr₂, hq₂⟩, hA₂⟩, -⟩⟩ := h
   let r₀ : α → ℕ := fun a => if s a then r₂ a else r₁ a
   have hr₀ : ComputableInPolyTime r₀ encA encUnary := ComputableInPolyTime.ite hs hr₂ hr₁
   let q₀ : α × ℕ → α := fun x => if s x.1 then q₂ x else q₁ x
   have hq₀ : ComputableInPolyTime q₀ (encPair encA encUnary) encA := by
     dsimp only [q₀]; fun_prop
   refine ⟨mitoticQueryCount s r₀ q₀, mitoticQuery s r₀ q₀,
-    computableInPolyTime_mitoticQueryCount hs hr₀ hq₀,
-    computableInPolyTime_mitoticQuery hs hr₀ hq₀,
-    fun a j hj => mitoticQuery_ne hj, fun a => ?_⟩
+    ⟨⟨computableInPolyTime_mitoticQueryCount hs hr₀ hq₀,
+      computableInPolyTime_mitoticQuery hs hr₀ hq₀⟩,
+      fun a j hj => mitoticQuery_ne hj⟩, fun a => ?_⟩
   have hexists : (∃ j < mitoticQueryCount s r₀ q₀ a, mitoticQuery s r₀ q₀ (a, j) ∈ A) ↔
       ∃ i < r₀ a, (s (q₀ (a, i)) != s a) = true ∧ q₀ (a, i) ∈ A := by
     constructor
     · rintro ⟨j, hj, hjA⟩
-      have hj' : j < ((mitoticKeptIndices s r₀ q₀ a).map fun i => q₀ (a, i)).length := by
-        simpa [mitoticQueryCount] using hj
-      have hmem : (mitoticQuery s r₀ q₀ (a, j)) ∈
-          (mitoticKeptIndices s r₀ q₀ a).map fun i => q₀ (a, i) := by
-        simp only [mitoticQuery, List.getElem?_eq_getElem hj', Option.getD_some]
-        exact List.getElem_mem hj'
-      obtain ⟨i, hi, hqi⟩ := List.mem_map.mp hmem
+      obtain ⟨i, hi, hqi⟩ := mitoticQuery_mem hj
       obtain ⟨hir, hkeep⟩ := List.mem_filter.mp hi
       exact ⟨i, List.mem_range.mp hir, hkeep, hqi ▸ hjA⟩
     · rintro ⟨i, hi, hkeep, hiA⟩
@@ -846,24 +837,11 @@ reductions). -/
 theorem PolyTimeKTruthTableMitotic.polyTimeKTruthTableAutoreducible {k : ℕ}
     (h : PolyTimeKTruthTableMitotic k encA A) :
     PolyTimeKTruthTableAutoreducible k encA A := by
-  obtain ⟨S, ⟨s, hs, hsS⟩, ⟨⟨r₁, q₁, d₁, hr₁, hq₁, hd₁, hrk₁, hA₁⟩, -⟩,
-    ⟨⟨r₂, q₂, d₂, hr₂, hq₂, hd₂, hrk₂, hA₂⟩, -⟩⟩ := h
-  let r₀ : α → ℕ := fun a => if s a then r₂ a else r₁ a
-  have hr₀ : ComputableInPolyTime r₀ encA encUnary := ComputableInPolyTime.ite hs hr₂ hr₁
-  let q₀ : α × ℕ → α := fun x => if s x.1 then q₂ x else q₁ x
-  have hq₀ : ComputableInPolyTime q₀ (encPair encA encUnary) encA := by
-    dsimp only [q₀]; fun_prop
-  let d₀ : α × List Bool → Bool := fun x => if s x.1 then d₂ x else d₁ x
-  have hd₀ : ComputableInPolyTime d₀ (encPair encA encBits) encBool := by
-    dsimp only [d₀]; fun_prop
-  refine ⟨mitoticQueryCount s r₀ q₀, mitoticQuery s r₀ q₀, mitoticCombiner s r₀ q₀ d₀,
-    computableInPolyTime_mitoticQueryCount hs hr₀ hq₀,
-    computableInPolyTime_mitoticQuery hs hr₀ hq₀,
-    computableInPolyTime_mitoticCombiner hs hr₀ hq₀ hd₀,
-    fun a => (mitoticQueryCount_le a).trans
-      (by dsimp only [r₀]; split_ifs <;> [exact hrk₂ a; exact hrk₁ a]),
-    fun a j hj => mitoticQuery_ne hj,
-    fun a => mitoticCombiner_spec hsS hA₁ hA₂ a⟩
+  obtain ⟨S, ⟨s, hs, hsS⟩, ⟨⟨r₁, q₁, d₁, ⟨hr₁, hq₁, hd₁, hrk₁⟩, hA₁⟩, -⟩,
+    ⟨⟨r₂, q₂, d₂, ⟨hr₂, hq₂, hd₂, hrk₂⟩, hA₂⟩, -⟩⟩ := h
+  obtain ⟨r, q, d, hr, hq, hd, hrr, hne, hA⟩ :=
+    exists_mitotic_autoreduction hs hsS hr₁ hq₁ hd₁ hA₁ hr₂ hq₂ hd₂ hA₂
+  exact ⟨r, q, d, ⟨⟨hr, hq, hd, fun a => (hrr a).trans (max_le (hrk₁ a) (hrk₂ a))⟩, hne⟩, hA⟩
 
 /-- **Every polynomial-time bounded truth-table mitotic set is bounded truth-table autoreducible**,
 unconditionally (standard argument of [Ambos-Spies 1984][AmbosSpies1984] adapted to `btt`
@@ -871,14 +849,9 @@ reductions). -/
 theorem PolyTimeBTTMitotic.polyTimeBTTAutoreducible (h : PolyTimeBTTMitotic encA A) :
     PolyTimeBTTAutoreducible encA A := by
   obtain ⟨S, hS, ⟨⟨k₁, h₁⟩, ⟨k₁', h₁'⟩⟩, ⟨⟨k₂, h₂⟩, ⟨k₂', h₂'⟩⟩⟩ := h
-  let k := max (max k₁ k₁') (max k₂ k₂')
-  have hmit : PolyTimeKTruthTableMitotic k encA A :=
-    ⟨S, hS,
-      ⟨h₁.mono ((le_max_left _ _).trans (le_max_left _ _)),
-       h₁'.mono ((le_max_right _ _).trans (le_max_left _ _))⟩,
-      ⟨h₂.mono ((le_max_left _ _).trans (le_max_right _ _)),
-       h₂'.mono ((le_max_right _ _).trans (le_max_right _ _))⟩⟩
-  exact ⟨k, hmit.polyTimeKTruthTableAutoreducible⟩
+  have hmit : PolyTimeKTruthTableMitotic (k₁ + k₁' + k₂ + k₂') encA A :=
+    ⟨S, hS, ⟨h₁.mono (by omega), h₁'.mono (by omega)⟩, ⟨h₂.mono (by omega), h₂'.mono (by omega)⟩⟩
+  exact ⟨_, hmit.polyTimeKTruthTableAutoreducible⟩
 
 /-- **Every polynomial-time truth-table mitotic set is truth-table autoreducible**,
 unconditionally (standard argument of [Ambos-Spies 1984][AmbosSpies1984] adapted to `tt`
@@ -886,22 +859,11 @@ reductions). -/
 theorem PolyTimeTruthTableMitotic.polyTimeTruthTableAutoreducible
     (h : PolyTimeTruthTableMitotic encA A) :
     PolyTimeTruthTableAutoreducible encA A := by
-  obtain ⟨S, ⟨s, hs, hsS⟩, ⟨⟨r₁, q₁, d₁, hr₁, hq₁, hd₁, hA₁⟩, -⟩,
-    ⟨⟨r₂, q₂, d₂, hr₂, hq₂, hd₂, hA₂⟩, -⟩⟩ := h
-  let r₀ : α → ℕ := fun a => if s a then r₂ a else r₁ a
-  have hr₀ : ComputableInPolyTime r₀ encA encUnary := ComputableInPolyTime.ite hs hr₂ hr₁
-  let q₀ : α × ℕ → α := fun x => if s x.1 then q₂ x else q₁ x
-  have hq₀ : ComputableInPolyTime q₀ (encPair encA encUnary) encA := by
-    dsimp only [q₀]; fun_prop
-  let d₀ : α × List Bool → Bool := fun x => if s x.1 then d₂ x else d₁ x
-  have hd₀ : ComputableInPolyTime d₀ (encPair encA encBits) encBool := by
-    dsimp only [d₀]; fun_prop
-  exact ⟨mitoticQueryCount s r₀ q₀, mitoticQuery s r₀ q₀, mitoticCombiner s r₀ q₀ d₀,
-    computableInPolyTime_mitoticQueryCount hs hr₀ hq₀,
-    computableInPolyTime_mitoticQuery hs hr₀ hq₀,
-    computableInPolyTime_mitoticCombiner hs hr₀ hq₀ hd₀,
-    fun a j hj => mitoticQuery_ne hj,
-    fun a => mitoticCombiner_spec hsS hA₁ hA₂ a⟩
+  obtain ⟨S, ⟨s, hs, hsS⟩, ⟨⟨r₁, q₁, d₁, ⟨hr₁, hq₁, hd₁⟩, hA₁⟩, -⟩,
+    ⟨⟨r₂, q₂, d₂, ⟨hr₂, hq₂, hd₂⟩, hA₂⟩, -⟩⟩ := h
+  obtain ⟨r, q, d, hr, hq, hd, -, hne, hA⟩ :=
+    exists_mitotic_autoreduction hs hsS hr₁ hq₁ hd₁ hA₁ hr₂ hq₂ hd₂ hA₂
+  exact ⟨r, q, d, ⟨⟨hr, hq, hd⟩, hne⟩, hA⟩
 
 /-- **Every polynomial-time many-one mitotic set is disjunctive truth-table autoreducible**,
 unconditionally [Ambos-Spies 1984][AmbosSpies1984]. -/

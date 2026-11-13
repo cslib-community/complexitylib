@@ -34,7 +34,7 @@ public section
 namespace Cslib.Complexity.Graph
 
 /-- Boolean spin difference at each listed edge occurrence, including loops and parallels. -/
-@[expose] def edgeGradient (G : Graph) (spin : ℕ → Bool) : Fin G.2.length → Bool :=
+@[expose] def edgeGradient (G : Graph) (spin : ℕ → Bool) : Fin G.edges.length → Bool :=
   fun i => spin (Dart.vertex (G := G) (i, false)) ^^
     spin (Dart.vertex (G := G) (i, true))
 
@@ -59,16 +59,16 @@ variable {G : Graph} (r : RotationSystem G)
 open Classical in
 /-- Parity of the edge labels on all darts of one actual face. The two ends of an edge are
 separate summands, so repeated edge traversals have their proper multiplicity. -/
-@[expose] noncomputable def faceParity (x : Fin G.2.length → Bool) (f : r.Face) : Bool :=
+@[expose] noncomputable def faceParity (x : Fin G.edges.length → Bool) (f : r.Face) : Bool :=
   parityOn (Finset.univ.filter fun d : Dart G => (Quotient.mk _ d : r.Face) = f)
     (fun d => x d.1)
 
 /-- Every actual face orbit has even Boolean edge parity, including singleton orbits. -/
-@[expose] def FaceEven (x : Fin G.2.length → Bool) : Prop :=
+@[expose] def FaceEven (x : Fin G.edges.length → Bool) : Prop :=
   ∀ f : r.Face, r.faceParity x f = false
 
 /-- Reading face parity from a dart uses exactly its permutation orbit. -/
-theorem faceParity_mk (x : Fin G.2.length → Bool) (d : Dart G) :
+theorem faceParity_mk (x : Fin G.edges.length → Bool) (d : Dart G) :
     r.faceParity x (Quotient.mk _ d) =
       parityOn (Finset.univ.filter fun e : Dart G => r.faceNext.SameCycle d e)
         (fun e => x e.1) := by
@@ -80,7 +80,7 @@ theorem faceParity_mk (x : Fin G.2.length → Bool) (d : Dart G) :
     Equiv.Perm.SameCycle.setoid, Equiv.Perm.sameCycle_comm]
 
 /-- Quantifying over dart representatives covers every actual face, including fixed points. -/
-theorem faceEven_iff_dart (x : Fin G.2.length → Bool) :
+theorem faceEven_iff_dart (x : Fin G.edges.length → Bool) :
     r.FaceEven x ↔ ∀ d : Dart G, r.faceParity x (Quotient.mk _ d) = false := by
   constructor
   · exact fun h d => h _
@@ -88,7 +88,7 @@ theorem faceEven_iff_dart (x : Fin G.2.length → Bool) :
     induction f using Quotient.inductionOn with | _ d => exact h d
 
 /-- Canonical face IDs compute parity on the same actual orbit, with dart multiplicity. -/
-theorem faceParity_eq_sum_faceId (x : Fin G.2.length → Bool) (d : Dart G) :
+theorem faceParity_eq_sum_faceId (x : Fin G.edges.length → Bool) (d : Dart G) :
     r.faceParity x (Quotient.mk _ d) =
       ∑ e : Dart G, if r.faceId e = r.faceId d then x e.1 else 0 := by
   classical
@@ -98,7 +98,7 @@ theorem faceParity_eq_sum_faceId (x : Fin G.2.length → Bool) (d : Dart G) :
   simp only [r.faceId_eq_iff, Equiv.Perm.sameCycle_comm]
 
 /-- Face parity is additive in edge labels. -/
-theorem faceParity_add (x y : Fin G.2.length → Bool) (f : r.Face) :
+theorem faceParity_add (x y : Fin G.edges.length → Bool) (f : r.Face) :
     r.faceParity (x + y) f = (r.faceParity x f ^^ r.faceParity y f) := by
   classical
   change r.faceParity (x + y) f = r.faceParity x f + r.faceParity y f
@@ -122,7 +122,7 @@ theorem faceEven_edgeGradient (spin : ℕ → Bool) : r.FaceEven (G.edgeGradient
   exact BooleanRing.add_self _
 
 /-- Face-even assignments are closed under exclusive-or addition. -/
-theorem FaceEven.add {x y : Fin G.2.length → Bool}
+theorem FaceEven.add {x y : Fin G.edges.length → Bool}
     (hx : r.FaceEven x) (hy : r.FaceEven y) : r.FaceEven (x + y) := by
   intro f
   rw [faceParity_add, hx f, hy f]

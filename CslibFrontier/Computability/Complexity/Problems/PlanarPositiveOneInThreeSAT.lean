@@ -75,12 +75,16 @@ paired with a finite integer orthogonal drawing of its incidence graph. -/
   formula : CNF ℕ
   /-- The supplied integer orthogonal incidence drawing. -/
   drawing : Graph.OrthogonalDrawing
-  deriving DecidableEq, Repr
+  deriving DecidableEq, Repr, Inhabited
 
 /-- Binary encoding of a CNF formula and its supplied orthogonal incidence drawing. -/
 enc_structure encDrawnPlanarPositiveOneInExactThreeSATThree :
     DrawnPlanarPositiveOneInExactThreeSATThreeInstance where
   formula : encCNF, drawing : Graph.encOrthogonalDrawing
+
+attribute [fun_prop] encDrawnPlanarPositiveOneInExactThreeSATThree_formula_polyTime
+  encDrawnPlanarPositiveOneInExactThreeSATThree_drawing_polyTime
+  encDrawnPlanarPositiveOneInExactThreeSATThree_mk_polyTime
 
 /-- Positive exact-three, occurrence-three exact-one formulas with an integer orthogonal
 incidence drawing whose full real segments meet only at common incident endpoints. -/

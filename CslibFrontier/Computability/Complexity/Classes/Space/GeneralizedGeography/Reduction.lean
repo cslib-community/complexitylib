@@ -121,14 +121,14 @@ def formulaArcs (xs : List ℕ) (ψ : CNF ℕ) : List (ℕ × ℕ) :=
 /-- **The graph of a formula**: its arcs, and as vertices the top of the first diamond and the
 targets of the arcs. -/
 def formulaGraph (xs : List ℕ) (ψ : CNF ℕ) : Graph :=
-  (topNode 0 :: (formulaArcs xs ψ).map Prod.snd, formulaArcs xs ψ)
+  ⟨topNode 0 :: (formulaArcs xs ψ).map Prod.snd, formulaArcs xs ψ⟩
 
 /-- **The reduction from `TQBFCNF`**: the graph of the formula, from the top of the first diamond,
 when the formula is closed, and a graph without arcs otherwise. -/
 def reduce (x : List (ℕ × ℕ) × CNF ℕ) : GeneralizedGeographyInstance :=
   if x.2.all (fun c => c.all fun l => decide (l.1 ∈ QBF.roundVars x.1)) then
     ⟨formulaGraph (QBF.roundVars x.1) x.2, topNode 0⟩
-  else ⟨([0], []), 0⟩
+  else ⟨⟨[0], []⟩, 0⟩
 
 /-! ### The arcs -/
 
@@ -322,6 +322,7 @@ theorem geographyWins_formulaGraph_iff {vis : List ℕ} {v : ℕ} :
     (formulaGraph xs ψ).GeographyWins vis v ↔ ∃ w, (v, w) ∈ formulaArcs xs ψ ∧ w ∉ vis ∧
       ¬(formulaGraph xs ψ).GeographyWins (w :: vis) w := by
   rw [Graph.geographyWins_iff]
+  dsimp only [formulaGraph]
   refine exists_congr fun w => ⟨fun ⟨h, _, h'⟩ => ⟨h, h'⟩, fun ⟨h, h'⟩ => ⟨h, ?_, h'⟩⟩
   exact List.mem_cons_of_mem _ (List.mem_map_of_mem (f := Prod.snd) h)
 

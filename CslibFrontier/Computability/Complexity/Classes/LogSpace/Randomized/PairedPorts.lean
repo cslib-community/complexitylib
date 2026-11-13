@@ -281,14 +281,13 @@ theorem compactPairedPorts_outWeight (machine : MultiTapePTM k Bool State)
 /-! ### Clocked paired ports on consecutive identifiers -/
 
 /-- Paired-port structure on the finite clocked transition matrix
-`finTimeLayer (2 * (2 * (w.length + 1)) ^ d) (compactCoinMatrix machine R (radix D w.length) w)`
+`finTimeLayer (polyClock d w.length) (compactCoinMatrix machine R (radix D w.length) w)`
 indexed by `Fin (clockedVertexBound D d w.length)`. -/
 noncomputable def clockedCompactPairedPorts (machine : MultiTapePTM k Bool State)
     (R : Type*) [Field R] (D d : ℕ) (w : List Bool) :
-    (finTimeLayer (2 * (2 * (w.length + 1)) ^ d)
+    (finTimeLayer (polyClock d w.length)
       (compactCoinMatrix machine R (radix D w.length) w)).PairedPorts 2 (inPortBound machine) :=
-  (compactPairedPorts machine R (radix D w.length) w).finTimeLayer
-    (2 * (2 * (w.length + 1)) ^ d)
+  (compactPairedPorts machine R (radix D w.length) w).finTimeLayer (polyClock d w.length)
 
 /-- Exact agreement between `(clockedCompactPairedPorts ...).outPort` and `clockedOutPort`. -/
 theorem clockedCompactPairedPorts_outPort_val (machine : MultiTapePTM k Bool State)
@@ -302,7 +301,7 @@ theorem clockedCompactPairedPorts_outPort_val (machine : MultiTapePTM k Bool Sta
   let n := w.length
   let B := radix D n
   let N := vertexBound (k := k) B
-  let T := 2 * (2 * (n + 1)) ^ d
+  let T := polyClock d n
   have hmap : ((clockedCompactPairedPorts machine R D d w).outPort a p).map
       (fun (b, q) => (b.val, q.val)) =
       ((((compactPairedPorts machine R B w).finTimeLayer T).outPort a p).map
@@ -346,7 +345,7 @@ theorem clockedCompactPairedPorts_inPort_val (machine : MultiTapePTM k Bool Stat
   let n := w.length
   let B := radix D n
   let N := vertexBound (k := k) B
-  let T := 2 * (2 * (n + 1)) ^ d
+  let T := polyClock d n
   have hmap : ((clockedCompactPairedPorts machine R D d w).inPort b q).map
       (fun (a, p) => (a.val, p.val)) =
       ((((compactPairedPorts machine R B w).finTimeLayer T).inPort b q).map
@@ -390,7 +389,7 @@ theorem clockedCompactPairedPorts_outWeight (machine : MultiTapePTM k Bool State
   let n := w.length
   let B := radix D n
   let N := vertexBound (k := k) B
-  let T := 2 * (2 * (n + 1)) ^ d
+  let T := polyClock d n
   rw [clockedCompactPairedPorts, Matrix.PairedPorts.finTimeLayer_outWeight_apply]
   dsimp only [clockedOutCount, clockedOutCountWithSymbol]
   by_cases hdiv : a.val / N < T
@@ -437,7 +436,7 @@ theorem exists_compactTimeLayer_of_mem_RL (h : A ∈ RL enc) :
         let D := radixExponent State c
         let B := radix D w.length
         let N := vertexBound (k := k) B
-        let T := 2 * (2 * (w.length + 1)) ^ d
+        let T := polyClock d w.length
         let P := compactCoinMatrix M ℝ B w
         let e₀ := compactAcceptVec (k := k) (State := State) ℝ B w.length
         let S := finTimeLayer T P
@@ -452,34 +451,17 @@ theorem exists_compactTimeLayer_of_mem_RL (h : A ∈ RL enc) :
         p ∈ Set.Icc 0 1 ∧
         (a ∈ A → 1 / 2 ≤ p x₀) ∧ (a ∉ A → p x₀ = 0) := by
   classical
-  obtain ⟨k, State, _, M, c, d, hM⟩ := exists_polyClock_of_mem_RL h
+  obtain ⟨k, State, _, M, c, d, hM, herr⟩ := exists_polyClock_of_mem_RL h
   let : Fintype State := Fintype.ofFinite State
-  refine ⟨k, State, inferInstance, M, c, d, fun a => ?_⟩
-  obtain ⟨hs, hT, hmem, hnot⟩ := hM a
-  refine ⟨hs, ?_⟩
-  dsimp only
-  have hP0 := compactCoinMatrix_nonneg (machine := M) (R := ℝ)
-    (radix (radixExponent State c) (enc a).length) (enc a)
-  have hP1 := compactCoinMatrix_mulVec_one_le (machine := M) (R := ℝ)
-    (radix (radixExponent State c) (enc a).length) (enc a)
-  refine ⟨hT, ?_, finTimeLayer_isStrictUpperTriangular _ _, finTimeLayer_nonneg hP0 _,
-    finTimeLayer_mulVec_one_le hP1 _, ?_, one_sub_finTimeLayer_mulVec _ _ _,
-    inv_one_sub_finTimeLayer_mulVec _ _ _,
-    finTimeLayerPotential_mem_Icc hP0 hP1 (compactAcceptVec_mem_Icc _ _) _, ?_, ?_⟩
-  · rw [Fintype.card_fin]
-    exact (Nat.le_succ _).trans (clockedVertexBound_add_one_le_pow
-      (k := k) (radixExponent State c) d (enc a).length)
-  · intro x
-    unfold finTimeLayerReward timeLayerReward compactAcceptVec
-    dsimp only [Function.comp_apply]
-    split_ifs <;> simp
-  · intro ha
-    rw [finTimeLayer_compactCoinMatrix_acceptance, le_div_iff₀ (by positivity)]
+  refine ⟨k, State, inferInstance, M, c, d, fun a => ⟨hM.runsInSpace a, ?_⟩⟩
+  obtain ⟨hmem, hnot⟩ := herr a
+  obtain ⟨hcard, hS, hS0, hS1, he, hp, hinv, hIcc⟩ := compactTimeLayer_polyClock M c d (enc a)
+  refine ⟨hM.runsInTime a, hcard, hS, hS0, hS1, he, hp, hinv, hIcc, fun ha => ?_, fun ha => ?_⟩
+  · rw [finTimeLayer_compactCoinMatrix_acceptance, le_div_iff₀ (by positivity)]
     have hc := (Nat.cast_le (α := ℝ)).mpr (hmem ha)
     push_cast at hc
     linarith
-  · intro ha
-    rw [finTimeLayer_compactCoinMatrix_acceptance]
+  · rw [finTimeLayer_compactCoinMatrix_acceptance]
     simp [hnot ha]
 
 /-- Port queries `(a, u, p)` of a `Cslib.Complexity.PairedTimeLayerFamily`: the instance `a` under
@@ -673,7 +655,7 @@ noncomputable def PairedTimeLayerFamily.ofMachine {k : ℕ} {State : Type} [Fint
     PairedTimeLayerFamily enc :=
   let D := radixExponent State c
   let x₀ (a : α) : Fin (clockedVertexBound (k := k) D d (enc a).length) :=
-    (timeLayerEquiv (2 * (2 * ((enc a).length + 1)) ^ d)
+    (timeLayerEquiv (polyClock d (enc a).length)
       (vertexBound (k := k) (radix D (enc a).length))).symm
       (toLex (0, compactStart M c (hs a)))
   have henc : ComputableInLogSpace (fun a : α => enc a) enc encBits :=
@@ -695,21 +677,21 @@ noncomputable def PairedTimeLayerFamily.ofMachine {k : ℕ} {State : Type} [Fint
     dim_pos a := (x₀ a).pos
     dim_le_pow a := (Nat.le_succ _).trans
       (clockedVertexBound_add_one_le_pow (k := k) D d (enc a).length)
-    matrix a := finTimeLayer (2 * (2 * ((enc a).length + 1)) ^ d)
+    matrix a := finTimeLayer (polyClock d (enc a).length)
       (compactCoinMatrix M ℝ (radix D (enc a).length) (enc a))
     isStrictUpperTriangular _ := finTimeLayer_isStrictUpperTriangular _ _
     matrix_nonneg a := finTimeLayer_nonneg
       (compactCoinMatrix_nonneg (machine := M) (R := ℝ) (radix D (enc a).length) (enc a)) _
     matrix_mulVec_one_le a := finTimeLayer_mulVec_one_le
       (compactCoinMatrix_mulVec_one_le (machine := M) (R := ℝ) (radix D (enc a).length) (enc a)) _
-    reward a := finTimeLayerReward (2 * (2 * ((enc a).length + 1)) ^ d)
+    reward a := finTimeLayerReward (polyClock d (enc a).length)
       (compactAcceptVec (k := k) (State := State) ℝ (radix D (enc a).length) (enc a).length)
     reward_eq_zero_or_one a x := by
       unfold clockedVertexBound at x
       rw [finTimeLayerReward_eq_clockedAccept]
       cases clockedAccept (k := k) (State := State)
-        (radix D (enc a).length) (enc a).length (2 * (2 * ((enc a).length + 1)) ^ d) x <;> simp
-    potential a := finTimeLayerPotential (2 * (2 * ((enc a).length + 1)) ^ d)
+        (radix D (enc a).length) (enc a).length (polyClock d (enc a).length) x <;> simp
+    potential a := finTimeLayerPotential (polyClock d (enc a).length)
       (compactCoinMatrix M ℝ (radix D (enc a).length) (enc a))
       (compactAcceptVec (k := k) (State := State) ℝ (radix D (enc a).length) (enc a).length)
     one_sub_mulVec_potential _ := one_sub_finTimeLayer_mulVec _ _ _
@@ -722,14 +704,14 @@ noncomputable def PairedTimeLayerFamily.ofMachine {k : ℕ} {State : Type} [Fint
     ports a := clockedCompactPairedPorts M ℝ D d (enc a)
     startNat a := startID M.toNTM (radix D (enc a).length)
     acceptBool a u := clockedAccept (k := k) (State := State)
-      (radix D (enc a).length) (enc a).length (2 * (2 * ((enc a).length + 1)) ^ d) u
+      (radix D (enc a).length) (enc a).length (polyClock d (enc a).length) u
     outCount a u p := clockedOutCount M D d (enc a) u p
     outPortNat a u p := clockedOutPort M D d (enc a) u p
     inPortNat a v q := clockedInPort M D d (enc a) v q
     val_start a := val_clockedStart M c _ (hs a)
     reward_eq_acceptBool a u := finTimeLayerReward_eq_clockedAccept
       (k := k) (State := State) (R := ℝ) (radix D (enc a).length) (enc a).length
-      (2 * (2 * ((enc a).length + 1)) ^ d) u
+      (polyClock d (enc a).length) u
     acceptBool_eq_false_of_ge := fun _ {_} hu => clockedAccept_eq_false_of_ge_bound hu
     outCount_le_two a u p := clockedOutCount_le_two M D d (enc a) u p
     outWeight_eq_outCount a u p := clockedCompactPairedPorts_outWeight M ℝ D d (enc a) u p
@@ -764,8 +746,8 @@ theorem PairedTimeLayerFamily.ofMachine_potential_start {k : ℕ} {State : Type}
     (enc : α ↪ List Bool) (M : MultiTapePTM k Bool State) (c d : ℕ)
     (hs : ∀ a, M.toNTM.RunsInSpace (enc a) (c * (Nat.log2 (enc a).length + 1))) (a : α) :
     (ofMachine enc M c d hs).potential a ((ofMachine enc M c d hs).start a) =
-      (M.acceptCoins (enc a) (2 * (2 * ((enc a).length + 1)) ^ d) : ℝ) /
-        2 ^ (2 * (2 * ((enc a).length + 1)) ^ d) := by
+      (M.acceptCoins (enc a) (polyClock d (enc a).length) : ℝ) /
+        2 ^ (polyClock d (enc a).length) := by
   dsimp only [ofMachine]
   rw [finTimeLayer_compactCoinMatrix_acceptance]
 

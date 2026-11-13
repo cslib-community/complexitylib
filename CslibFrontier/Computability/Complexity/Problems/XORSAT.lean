@@ -36,17 +36,21 @@ the chosen equations are fixed independently of the input.
 * `Cslib.Complexity.XORSAT.encoding`: lists of equations with binary variable labels.
 * `Cslib.Complexity.XORSAT.compile`: compress labels and cancel repeated occurrences.
 * `Cslib.Complexity.XORSAT.solve`: compile, then perform Gaussian elimination.
+* `Cslib.Complexity.XORSAT`: the satisfiable systems.
 
 ## Main results
 
 * `Cslib.Complexity.XORSAT.solve_eq_true_iff`: correctness for ordinary parity systems.
-* `Cslib.Complexity.XORSAT.solve_polyTime`: a native multi-tape polynomial-time certificate.
-* `Cslib.Complexity.XORSAT.satisfiable_mem_P`: ordinary XOR-SAT is in `P`.
+* `Cslib.Complexity.XORSAT.computableInPolyTime_solve`: a native multi-tape polynomial-time
+  certificate.
+* `Cslib.Complexity.XORSAT.mem_P`: ordinary XOR-SAT is in `P`.
 -/
 
 public section
 
-namespace Cslib.Complexity.XORSAT
+namespace Cslib.Complexity
+
+namespace XORSAT
 
 open Turing.MultiTapeTM Cslib.Logic.PL
 
@@ -213,7 +217,7 @@ open scoped _root_.Cslib.Complexity.XORSAT.Dense
 
 /-- Label compression is itself a native polynomial-time computation. Binary labels are only
 compared, never expanded into a table indexed by their numerical value. -/
-theorem compile_polyTime : ComputableInPolyTime compile encoding Dense.encInput := by
+theorem computableInPolyTime_compile : ComputableInPolyTime compile encoding Dense.encInput := by
   have hvars := labels_polyTime
   have hcoeff := coefficient_polyTime.computableInPolyTime
   unfold compile
@@ -223,11 +227,18 @@ theorem compile_polyTime : ComputableInPolyTime compile encoding Dense.encInput 
 end
 
 /-- Ordinary XOR-SAT is decided in polynomial time by native multi-tape machines. -/
-theorem solve_polyTime : ComputableInPolyTime solve encoding encBool :=
-  Dense.decide_polyTime.comp compile_polyTime
+theorem computableInPolyTime_solve : ComputableInPolyTime solve encoding encBool :=
+  Dense.computableInPolyTime_decide.comp computableInPolyTime_compile
+
+end XORSAT
+
+/-- Ordinary XOR-SAT: the satisfiable systems of parity equations. -/
+@[expose] def XORSAT : Set XORSAT.System := {F | XORSAT.Satisfiable F}
+
+theorem mem_XORSAT {F : XORSAT.System} : F ∈ XORSAT ↔ XORSAT.Satisfiable F := Iff.rfl
 
 /-- Ordinary systems of affine parity equations, with sparse binary variable labels, are in P. -/
-theorem satisfiable_mem_P : {F : System | Satisfiable F} ∈ P encoding :=
-  ⟨solve, solve_polyTime, fun F => (solve_eq_true_iff F).symm⟩
+theorem XORSAT.mem_P : XORSAT ∈ P XORSAT.encoding :=
+  ⟨solve, computableInPolyTime_solve, fun F => (solve_eq_true_iff F).symm⟩
 
-end Cslib.Complexity.XORSAT
+end Cslib.Complexity

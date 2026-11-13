@@ -52,6 +52,10 @@ This module formalizes:
   `Cslib.Complexity.PolyTimeIsomorphic.refl`,
   `Cslib.Complexity.PolyTimeIsomorphic.symm`,
   `Cslib.Complexity.PolyTimeIsomorphic.trans`.
+* The three one-one variants are instances of `Cslib.Complexity.ManyOneReducibleBy`:
+  `Cslib.Complexity.polyTimeInvertibleOneOneReducible_iff_manyOneReducibleBy`,
+  `Cslib.Complexity.polyTimeLengthIncreasingOneOneReducible_iff_manyOneReducibleBy`,
+  `Cslib.Complexity.polyTimeInvertibleLengthIncreasingOneOneReducible_iff_manyOneReducibleBy`.
 * Reflexivity and transitivity of `≤₁,ᵢ`; transitivity of `≤₁,ₗᵢ` and `≤₁,ᵢₗ`:
   `Cslib.Complexity.PolyTimeInvertibleOneOneReducible.refl`,
   `Cslib.Complexity.PolyTimeInvertibleOneOneReducible.trans`,
@@ -189,31 +193,34 @@ def PolyTimeInvertibleOneOneReducible (encA : α ↪ List Bool) (encB : β ↪ L
       Function.LeftInverse g f) ∧
     ∀ a, a ∈ A ↔ f a ∈ B
 
+/-- Invertible one-one reducibility is many-one reducibility by the polynomial-time maps with a
+polynomial-time left inverse. -/
+theorem polyTimeInvertibleOneOneReducible_iff_manyOneReducibleBy :
+    PolyTimeInvertibleOneOneReducible encA encB A B ↔
+      ManyOneReducibleBy (fun f => ∃ g : β → α, ComputableInPolyTime f encA encB ∧
+        ComputableInPolyTime g encB encA ∧ Function.LeftInverse g f) A B :=
+  Iff.rfl
+
 /-- The identity is a polynomial-time-invertible one-one reduction. -/
 @[refl]
 theorem PolyTimeInvertibleOneOneReducible.refl (encA : α ↪ List Bool) (A : Set α) :
     PolyTimeInvertibleOneOneReducible encA encA A A :=
-  ⟨id, ⟨id, ComputableInPolyTime.id', ComputableInPolyTime.id', fun _ => rfl⟩, fun _ => Iff.rfl⟩
+  ManyOneReducibleBy.refl ⟨id, .id', .id', fun _ => rfl⟩ A
 
 /-- Polynomial-time-invertible one-one reductions compose. -/
 @[trans]
 theorem PolyTimeInvertibleOneOneReducible.trans
     (hAB : PolyTimeInvertibleOneOneReducible encA encB A B)
     (hBC : PolyTimeInvertibleOneOneReducible encB encC B C) :
-    PolyTimeInvertibleOneOneReducible encA encC A C := by
-  obtain ⟨f₁, ⟨g₁, hf₁, hg₁, hleft₁⟩, h₁⟩ := hAB
-  obtain ⟨f₂, ⟨g₂, hf₂, hg₂, hleft₂⟩, h₂⟩ := hBC
-  refine ⟨f₂ ∘ f₁, ⟨g₁ ∘ g₂, hf₂.comp hf₁, hg₁.comp hg₂, fun a => ?_⟩, fun a => ?_⟩
-  · dsimp
-    rw [hleft₂, hleft₁]
-  · rw [Function.comp_apply, ← h₂ (f₁ a), ← h₁ a]
+    PolyTimeInvertibleOneOneReducible encA encC A C :=
+  ManyOneReducibleBy.trans (fun _ _ ⟨g₁, hf₁, hg₁, hleft₁⟩ ⟨g₂, hf₂, hg₂, hleft₂⟩ =>
+    ⟨g₁ ∘ g₂, hf₂.comp hf₁, hg₁.comp hg₂, hleft₂.comp hleft₁⟩) hAB hBC
 
 /-- An invertible one-one reduction from `A` to `B` is one from `Aᶜ` to `Bᶜ`. -/
 theorem PolyTimeInvertibleOneOneReducible.compl
     (h : PolyTimeInvertibleOneOneReducible encA encB A B) :
-    PolyTimeInvertibleOneOneReducible encA encB Aᶜ Bᶜ := by
-  obtain ⟨f, hf, hAB⟩ := h
-  exact ⟨f, hf, fun a => not_congr (hAB a)⟩
+    PolyTimeInvertibleOneOneReducible encA encB Aᶜ Bᶜ :=
+  ManyOneReducibleBy.compl h
 
 /-- A polynomial-time isomorphism is an invertible one-one reduction. -/
 theorem PolyTimeIsomorphic.polyTimeInvertibleOneOneReducible
@@ -225,9 +232,8 @@ theorem PolyTimeIsomorphic.polyTimeInvertibleOneOneReducible
 /-- An invertible one-one reduction is an injective one-one reduction. -/
 theorem PolyTimeInvertibleOneOneReducible.polyTimeOneOneReducible
     (h : PolyTimeInvertibleOneOneReducible encA encB A B) :
-    PolyTimeOneOneReducible encA encB A B := by
-  obtain ⟨f, ⟨_, hf, _, hleft⟩, hAB⟩ := h
-  exact ⟨f, ⟨hf, hleft.injective⟩, hAB⟩
+    PolyTimeOneOneReducible encA encB A B :=
+  ManyOneReducibleBy.mono (fun _ ⟨_, hf, _, hleft⟩ => ⟨hf, hleft.injective⟩) h
 
 /-- An invertible one-one reduction is a many-one reduction. -/
 theorem PolyTimeInvertibleOneOneReducible.polyTimeReducible
@@ -259,31 +265,34 @@ def PolyTimeLengthIncreasingOneOneReducible (encA : α ↪ List Bool) (encB : β
       ∀ a, (encA a).length < (encB (f a)).length) ∧
     ∀ a, a ∈ A ↔ f a ∈ B
 
+/-- Length-increasing one-one reducibility is many-one reducibility by the injective,
+length-increasing polynomial-time maps. -/
+theorem polyTimeLengthIncreasingOneOneReducible_iff_manyOneReducibleBy :
+    PolyTimeLengthIncreasingOneOneReducible encA encB A B ↔
+      ManyOneReducibleBy (fun f => ComputableInPolyTime f encA encB ∧ Function.Injective f ∧
+        ∀ a, (encA a).length < (encB (f a)).length) A B :=
+  Iff.rfl
+
 /-- Length-increasing one-one reductions compose. -/
 @[trans]
 theorem PolyTimeLengthIncreasingOneOneReducible.trans
     (hAB : PolyTimeLengthIncreasingOneOneReducible encA encB A B)
     (hBC : PolyTimeLengthIncreasingOneOneReducible encB encC B C) :
-    PolyTimeLengthIncreasingOneOneReducible encA encC A C := by
-  obtain ⟨f₁, ⟨hf₁, hfi₁, hlen₁⟩, h₁⟩ := hAB
-  obtain ⟨f₂, ⟨hf₂, hfi₂, hlen₂⟩, h₂⟩ := hBC
-  refine ⟨f₂ ∘ f₁, ⟨hf₂.comp hf₁, hfi₂.comp hfi₁, fun a => ?_⟩, fun a => ?_⟩
-  · exact (hlen₁ a).trans (hlen₂ (f₁ a))
-  · rw [Function.comp_apply, ← h₂ (f₁ a), ← h₁ a]
+    PolyTimeLengthIncreasingOneOneReducible encA encC A C :=
+  ManyOneReducibleBy.trans (fun f₁ _ ⟨hf₁, hfi₁, hlen₁⟩ ⟨hf₂, hfi₂, hlen₂⟩ =>
+    ⟨hf₂.comp hf₁, hfi₂.comp hfi₁, fun a => (hlen₁ a).trans (hlen₂ (f₁ a))⟩) hAB hBC
 
 /-- A length-increasing one-one reduction from `A` to `B` is one from `Aᶜ` to `Bᶜ`. -/
 theorem PolyTimeLengthIncreasingOneOneReducible.compl
     (h : PolyTimeLengthIncreasingOneOneReducible encA encB A B) :
-    PolyTimeLengthIncreasingOneOneReducible encA encB Aᶜ Bᶜ := by
-  obtain ⟨f, hf, hAB⟩ := h
-  exact ⟨f, hf, fun a => not_congr (hAB a)⟩
+    PolyTimeLengthIncreasingOneOneReducible encA encB Aᶜ Bᶜ :=
+  ManyOneReducibleBy.compl h
 
 /-- A length-increasing one-one reduction is an injective one-one reduction. -/
 theorem PolyTimeLengthIncreasingOneOneReducible.polyTimeOneOneReducible
     (h : PolyTimeLengthIncreasingOneOneReducible encA encB A B) :
-    PolyTimeOneOneReducible encA encB A B := by
-  obtain ⟨f, ⟨hf, hfi, _⟩, hAB⟩ := h
-  exact ⟨f, ⟨hf, hfi⟩, hAB⟩
+    PolyTimeOneOneReducible encA encB A B :=
+  ManyOneReducibleBy.mono (fun _ ⟨hf, hfi, _⟩ => ⟨hf, hfi⟩) h
 
 /-- A length-increasing one-one reduction is a many-one reduction. -/
 theorem PolyTimeLengthIncreasingOneOneReducible.polyTimeReducible
@@ -318,40 +327,42 @@ def PolyTimeInvertibleLengthIncreasingOneOneReducible (encA : α ↪ List Bool)
       ∀ a, (encA a).length < (encB (f a)).length) ∧
     ∀ a, a ∈ A ↔ f a ∈ B
 
+/-- Invertible, length-increasing one-one reducibility is many-one reducibility by the
+length-increasing polynomial-time maps with a polynomial-time left inverse. -/
+theorem polyTimeInvertibleLengthIncreasingOneOneReducible_iff_manyOneReducibleBy :
+    PolyTimeInvertibleLengthIncreasingOneOneReducible encA encB A B ↔
+      ManyOneReducibleBy (fun f => ∃ g : β → α, ComputableInPolyTime f encA encB ∧
+        ComputableInPolyTime g encB encA ∧ Function.LeftInverse g f ∧
+        ∀ a, (encA a).length < (encB (f a)).length) A B :=
+  Iff.rfl
+
 /-- Length-increasing, invertible one-one reductions compose. -/
 @[trans]
 theorem PolyTimeInvertibleLengthIncreasingOneOneReducible.trans
     (hAB : PolyTimeInvertibleLengthIncreasingOneOneReducible encA encB A B)
     (hBC : PolyTimeInvertibleLengthIncreasingOneOneReducible encB encC B C) :
-    PolyTimeInvertibleLengthIncreasingOneOneReducible encA encC A C := by
-  obtain ⟨f₁, ⟨g₁, hf₁, hg₁, hleft₁, hlen₁⟩, h₁⟩ := hAB
-  obtain ⟨f₂, ⟨g₂, hf₂, hg₂, hleft₂, hlen₂⟩, h₂⟩ := hBC
-  refine ⟨f₂ ∘ f₁, ⟨g₁ ∘ g₂, hf₂.comp hf₁, hg₁.comp hg₂, fun a => ?_, fun a => ?_⟩, fun a => ?_⟩
-  · dsimp
-    rw [hleft₂, hleft₁]
-  · exact (hlen₁ a).trans (hlen₂ (f₁ a))
-  · rw [Function.comp_apply, ← h₂ (f₁ a), ← h₁ a]
+    PolyTimeInvertibleLengthIncreasingOneOneReducible encA encC A C :=
+  ManyOneReducibleBy.trans (fun f₁ _ ⟨g₁, hf₁, hg₁, hleft₁, hlen₁⟩ ⟨g₂, hf₂, hg₂, hleft₂, hlen₂⟩ =>
+    ⟨g₁ ∘ g₂, hf₂.comp hf₁, hg₁.comp hg₂, hleft₂.comp hleft₁,
+      fun a => (hlen₁ a).trans (hlen₂ (f₁ a))⟩) hAB hBC
 
 /-- An invertible, length-increasing one-one reduction from `A` to `B` is one from `Aᶜ` to `Bᶜ`. -/
 theorem PolyTimeInvertibleLengthIncreasingOneOneReducible.compl
     (h : PolyTimeInvertibleLengthIncreasingOneOneReducible encA encB A B) :
-    PolyTimeInvertibleLengthIncreasingOneOneReducible encA encB Aᶜ Bᶜ := by
-  obtain ⟨f, hf, hAB⟩ := h
-  exact ⟨f, hf, fun a => not_congr (hAB a)⟩
+    PolyTimeInvertibleLengthIncreasingOneOneReducible encA encB Aᶜ Bᶜ :=
+  ManyOneReducibleBy.compl h
 
 /-- An invertible, length-increasing one-one reduction is an invertible one-one reduction. -/
 theorem PolyTimeInvertibleLengthIncreasingOneOneReducible.polyTimeInvertibleOneOneReducible
     (h : PolyTimeInvertibleLengthIncreasingOneOneReducible encA encB A B) :
-    PolyTimeInvertibleOneOneReducible encA encB A B := by
-  obtain ⟨f, ⟨g, hf, hg, hleft, _⟩, hAB⟩ := h
-  exact ⟨f, ⟨g, hf, hg, hleft⟩, hAB⟩
+    PolyTimeInvertibleOneOneReducible encA encB A B :=
+  ManyOneReducibleBy.mono (fun _ ⟨g, hf, hg, hleft, _⟩ => ⟨g, hf, hg, hleft⟩) h
 
 /-- An invertible, length-increasing one-one reduction is a length-increasing one-one reduction. -/
 theorem PolyTimeInvertibleLengthIncreasingOneOneReducible.polyTimeLengthIncreasingOneOneReducible
     (h : PolyTimeInvertibleLengthIncreasingOneOneReducible encA encB A B) :
-    PolyTimeLengthIncreasingOneOneReducible encA encB A B := by
-  obtain ⟨f, ⟨_, hf, _, hleft, hlen⟩, hAB⟩ := h
-  exact ⟨f, ⟨hf, hleft.injective, hlen⟩, hAB⟩
+    PolyTimeLengthIncreasingOneOneReducible encA encB A B :=
+  ManyOneReducibleBy.mono (fun _ ⟨_, hf, _, hleft, hlen⟩ => ⟨hf, hleft.injective, hlen⟩) h
 
 /-- An invertible, length-increasing one-one reduction is an injective one-one reduction. -/
 theorem PolyTimeInvertibleLengthIncreasingOneOneReducible.polyTimeOneOneReducible
