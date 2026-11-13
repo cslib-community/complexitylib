@@ -4519,6 +4519,7 @@ public import CslibFrontier.Crypto.Computational.ZeroKnowledge.Amplification
 public import CslibFrontier.Crypto.Computational.ZeroKnowledge.AuxClock
 public import CslibFrontier.Crypto.Computational.ZeroKnowledge.Levin
 public import CslibFrontier.Crypto.Computational.ZeroKnowledge.Soundness
+public import CslibFrontier.Crypto.Computational.ZeroKnowledge.View
 public import CslibFrontier.Crypto.Encoding
 public import CslibFrontier.Crypto.Game
 public import CslibFrontier.Crypto.Game.CloseTo
