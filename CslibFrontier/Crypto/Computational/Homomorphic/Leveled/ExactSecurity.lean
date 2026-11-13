@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import CslibFrontier.Computability.Probabilistic.CoinTape.Realization
 public import CslibFrontier.Crypto.Computational.Homomorphic.Leveled.Security
 public import CslibFrontier.Crypto.Computational.Homomorphic.Leveled.Size
 public import CslibFrontier.Crypto.Game.Statistical
@@ -14,7 +15,6 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List.Size
-import CslibFrontier.Computability.Probabilistic.CoinTape.Bounds
 import CslibFrontier.Crypto.Computational.Homomorphic.KeyChain.Size
 import CslibFrontier.Crypto.Game.CloseTo.UniformNat
 import CslibFrontier.Crypto.Game.FourHop
@@ -38,9 +38,9 @@ for [Gentry2009, Section 2, Theorem 4, p. 171], up to a constant factor in the l
 the theorem's running-time clause:
 
 1. **Exact `(2 * budget n) * (capacity n)` hybrid loss and `sampleModNat` bridge**:
-   * `Scheme.exactKeyChainHybridGame` and `Scheme.exactLinkAdversary` sample the reverse link index
-     uniformly from `Fin (depth n)` and the secret-bit index uniformly from `Fin (capacity n)` when
-     both bounds are positive, achieving the exact key-chain advantage identity with loss
+   * `Scheme.exactKeyChainHybridExperiment` and `Scheme.exactLinkAdversary` sample the reverse link
+     index uniformly from `Fin (depth n)` and the secret-bit index uniformly from `Fin (capacity n)`
+     when both bounds are positive, achieving the exact key-chain advantage identity with loss
      `(depth n : ℝ≥0) * capacity n` (`Scheme.publicKeyChainHybrid_advantage_exactLinkAdversary`)
      and no `dyadicSize` factor.
    * `Leveled.exactLeveledAdversary` combines the two key-chain hybrid hops and the zero-link hop
@@ -66,17 +66,20 @@ the theorem's running-time clause:
      secret width `width`, and base key/ciphertext lengths.
    * `Scheme.linkStateLengthBound` and `Scheme.length_activeLinkState_le` bound the bit length of
      every active reduction state saved by `Scheme.chooseLinkAt`.
-   * `Leveled.exists_leveledAdversary_overhead` packages polynomial length bounds and seeded
-     replay laws for the base scheme's `keyGen`/`encrypt` and for `adversary`'s two stages at the
-     leveled public-key and ciphertext sizes, polynomial boundedness of the coin-count formulas
-     `Leveled.leveledChooseCoinBudget` and `Leveled.leveledGuessCoinBudget`, and strict-PPT
-     certificates for `leveledAdversary` and `modLeveledAdversary`. It contains no replay law for
-     `leveledAdversary` itself and no running-time comparison with `adversary`.
+   * `Leveled.exists_overheadRealization` chooses one `Leveled.OverheadBudget` of polynomial
+     envelopes and, for every chain depth and secret capacity, a `Leveled.OverheadRealization`:
+     `CoinTapeRealization`s of the base scheme's `keyGen`/`encrypt` and of `adversary`'s two stages
+     at the leveled public-key and ciphertext sizes. The coin-count formulas
+     `Leveled.leveledChooseCoinBudget` and `Leveled.leveledGuessCoinBudget` are polynomially
+     bounded at these envelopes. There is no replay law for `leveledAdversary` itself and no
+     running-time comparison with `adversary`.
 
 ## Main definitions
 
-* `Cslib.Crypto.Homomorphic.Scheme.exactKeyChainHybridGame`: exact uniform
-  `Fin depth × Fin capacity` key-chain hybrid game.
+* `Cslib.Crypto.Homomorphic.Scheme.linkBitExperiment`: one link's uniform `Fin capacity`
+  bit-hybrid experiment.
+* `Cslib.Crypto.Homomorphic.Scheme.exactKeyChainHybridExperiment`: exact uniform
+  `Fin depth × Fin capacity` key-chain hybrid experiment.
 * `Cslib.Crypto.Homomorphic.Scheme.exactLinkAdversary`: uniform-index two-stage key-chain reduction.
 * `Cslib.Crypto.Homomorphic.Scheme.sampleModIndex`: modular residue sampler capped for unary
   output.
@@ -91,6 +94,9 @@ the theorem's running-time clause:
 * `Cslib.Crypto.Homomorphic.Leveled.leveledChooseCoinBudget`,
   `Cslib.Crypto.Homomorphic.Leveled.leveledGuessCoinBudget`: coin-count formulas for the two
   stages of `leveledAdversary`, proved polynomially bounded here.
+* `Cslib.Crypto.Homomorphic.Leveled.OverheadBudget`,
+  `Cslib.Crypto.Homomorphic.Leveled.OverheadRealization`: polynomial component envelopes and the
+  coin-tape realizations of the reduction's four native components at those envelopes.
 
 ## Main results
 
@@ -108,9 +114,8 @@ the theorem's running-time clause:
   modular leveled reduction, whose bound multiplies the loss factor by the sum of the base
   advantage and a statistical tail (`2 / 2 ^ n` in the `2 * n`-coin specialization).
 * `Cslib.Crypto.Homomorphic.Leveled.length_encPublicKey_support_publicKeyChainHybrid_le`,
-  `Cslib.Crypto.Homomorphic.Leveled.exists_leveledAdversary_overhead`: explicit polynomial
-  artifact-length bounds, component replay laws, polynomially bounded coin-count formulas and
-  strict-PPT certificates for `leveledAdversary` and `modLeveledAdversary`.
+  `Cslib.Crypto.Homomorphic.Leveled.exists_overheadRealization`: explicit polynomial
+  artifact-length bounds and component coin-tape realizations.
 
 ## References
 
@@ -129,45 +134,78 @@ variable (E : Scheme)
 
 /-! ### Exact uniform-index key-chain hybrids and reduction -/
 
+/-- One link's bit-hybrid experiment: draw a bit index `j` uniformly from `Fin capacity`, run the
+link hybrid at `j` (world `false`) or `j + 1` (world `true`) when `j < width`, and reject
+otherwise. -/
+noncomputable def linkBitExperiment (n beforeCount afterCount width capacity : ℕ)
+    [NeZero capacity] (test : (List (List Bool) × List (List (List Bool))) → Experiment)
+    (bit : Bool) : Experiment := do
+  let j ← ProbComp.uniform (Fin capacity)
+  if j.val < width then
+    E.publicKeyLinkHybrid n beforeCount afterCount (j.val + if bit then 1 else 0) >>= test
+  else pure false
+
+theorem eval_linkBitExperiment (n beforeCount afterCount width capacity : ℕ) [NeZero capacity]
+    (test : (List (List Bool) × List (List (List Bool))) → Experiment) (bit : Bool) :
+    ProbComp.eval (E.linkBitExperiment n beforeCount afterCount width capacity test bit) =
+      (PMF.uniformOfFintype (Fin capacity)).bind fun j => if j.val < width then
+        ProbComp.eval (E.publicKeyLinkHybrid n beforeCount afterCount
+          (j.val + if bit then 1 else 0) >>= test)
+      else PMF.pure false := by
+  simp only [linkBitExperiment, ProbComp.eval_bind, ProbComp.eval_uniform, apply_ite,
+    ProbComp.eval_pure]
+
 /-- Telescope the bit hybrids of one link over `Fin capacity` without dyadic rounding. -/
 theorem publicKeyLinkHybrid_exact_gap (n beforeCount afterCount width capacity : ℕ)
     [NeZero capacity]
     (hwidth : ∀ keys ∈ (ProbComp.eval (E.keyGen n)).support, keys.2.length = width)
     (hcapacity : width ≤ capacity)
-    (test : (List (List Bool) × List (List (List Bool))) → ProbComp Bool) :
-    (Game.succProbability (ProbComp.eval
-      (E.publicKeyChainHybrid n (beforeCount + afterCount + 1) (beforeCount + 1) >>= test)) : ℝ) -
-      Game.succProbability (ProbComp.eval
-        (E.publicKeyChainHybrid n (beforeCount + afterCount + 1) beforeCount >>= test)) =
+    (test : (List (List Bool) × List (List (List Bool))) → Experiment) :
+    (Experiment.succProbability
+      (E.publicKeyChainHybrid n (beforeCount + afterCount + 1) (beforeCount + 1) >>= test) : ℝ) -
+      Experiment.succProbability
+        (E.publicKeyChainHybrid n (beforeCount + afterCount + 1) beforeCount >>= test) =
       (capacity : ℝ) *
-        (Game.succProbability ((PMF.uniformOfFintype (Fin capacity)).bind
-          (fun j => if j.val < width then ProbComp.eval
-            (E.publicKeyLinkHybrid n beforeCount afterCount j.val >>= test) else PMF.pure false)) -
-        Game.succProbability ((PMF.uniformOfFintype (Fin capacity)).bind
-          (fun j => if j.val < width then ProbComp.eval
-            (E.publicKeyLinkHybrid n beforeCount afterCount (j.val + 1) >>= test)
-            else PMF.pure false))) := by
+        (Experiment.succProbability
+            (E.linkBitExperiment n beforeCount afterCount width capacity test false) -
+          Experiment.succProbability
+            (E.linkBitExperiment n beforeCount afterCount width capacity test true)) := by
   have h := Game.succProbability_hybrid_average
     (fun j => ProbComp.eval (E.publicKeyLinkHybrid n beforeCount afterCount j >>= test))
     width capacity hcapacity
-  simpa only [ProbComp.eval_bind, E.eval_publicKeyLinkHybrid_zero,
-    E.eval_publicKeyLinkHybrid_length n beforeCount afterCount width hwidth] using h
+  simpa only [Experiment.succProbability, eval_linkBitExperiment, ProbComp.eval_bind,
+    E.eval_publicKeyLinkHybrid_zero, E.eval_publicKeyLinkHybrid_length n beforeCount afterCount
+      width hwidth, Bool.false_eq_true, ↓reduceIte, Nat.add_zero] using h
 
-/-- Average reverse link indices in `Fin depth` and forward bit indices in `Fin capacity` when
-both ranges are positive; otherwise reject in both worlds. -/
-noncomputable def exactKeyChainHybridGame (n depth width capacity : ℕ)
-    (test : (List (List Bool) × List (List (List Bool))) → ProbComp Bool) (bit : Bool) : Game :=
+/-- The exact key-chain hybrid experiment: when `0 < depth` and `0 < capacity`, draw a reverse
+link index `i` uniformly from `Fin depth` and run that link's bit-hybrid experiment; otherwise
+reject in both worlds. -/
+noncomputable def exactKeyChainHybridExperiment (n depth width capacity : ℕ)
+    (test : (List (List Bool) × List (List (List Bool))) → Experiment) (bit : Bool) :
+    Experiment :=
   if h : 0 < depth ∧ 0 < capacity then
     have : NeZero depth := ⟨h.1.ne'⟩
     have : NeZero capacity := ⟨h.2.ne'⟩
     do
-      let i ← PMF.uniformOfFintype (Fin depth)
-      let j ← PMF.uniformOfFintype (Fin capacity)
-      if j.val < width then
-        ProbComp.eval (E.publicKeyLinkHybrid n (depth - i.val - 1) i.val
-          (j.val + if bit then 1 else 0) >>= test)
-      else pure false
+      let i ← ProbComp.uniform (Fin depth)
+      E.linkBitExperiment n (depth - i.val - 1) i.val width capacity test bit
   else pure false
+
+theorem eval_exactKeyChainHybridExperiment_of_pos (n depth width capacity : ℕ)
+    [NeZero depth] [NeZero capacity]
+    (test : (List (List Bool) × List (List (List Bool))) → Experiment) (bit : Bool) :
+    ProbComp.eval (E.exactKeyChainHybridExperiment n depth width capacity test bit) =
+      (PMF.uniformOfFintype (Fin depth)).bind fun i => ProbComp.eval
+        (E.linkBitExperiment n (depth - i.val - 1) i.val width capacity test bit) := by
+  rw [exactKeyChainHybridExperiment,
+    dite_eq_left_of_eq_true (eq_true ⟨Nat.pos_of_neZero depth, Nat.pos_of_neZero capacity⟩),
+    ProbComp.eval_bind, ProbComp.eval_uniform]
+
+theorem exactKeyChainHybridExperiment_of_not_pos (n depth width capacity : ℕ)
+    (h : ¬(0 < depth ∧ 0 < capacity))
+    (test : (List (List Bool) × List (List (List Bool))) → Experiment) (bit : Bool) :
+    E.exactKeyChainHybridExperiment n depth width capacity test bit = pure false :=
+  dite_eq_right_of_eq_false (eq_false h)
 
 /-- When all supported secrets have length zero, the real-link and zero-link hybrids coincide. -/
 private theorem eval_publicKeyChainHybrid_of_width_zero (n depth : ℕ)
@@ -194,37 +232,35 @@ private theorem eval_publicKeyChainHybrid_of_width_zero (n depth : ℕ)
   exact hstep depth le_rfl
 
 /-- The real-to-zero public-key gap equals `(depth : ℝ) * capacity` times the signed gap of
-`exactKeyChainHybridGame`, with no dyadic rounding factor. -/
+`exactKeyChainHybridExperiment`, with no dyadic rounding factor. -/
 theorem publicKeyChainHybrid_exact_gap (n depth width capacity : ℕ)
     (hwidth : ∀ keys ∈ (ProbComp.eval (E.keyGen n)).support, keys.2.length = width)
     (hcapacity : width ≤ capacity)
-    (test : (List (List Bool) × List (List (List Bool))) → ProbComp Bool) :
-    (Game.succProbability (ProbComp.eval (E.publicKeyChainHybrid n depth depth >>= test)) : ℝ) -
-      Game.succProbability (ProbComp.eval (E.publicKeyChainHybrid n depth 0 >>= test)) =
+    (test : (List (List Bool) × List (List (List Bool))) → Experiment) :
+    (Experiment.succProbability (E.publicKeyChainHybrid n depth depth >>= test) : ℝ) -
+      Experiment.succProbability (E.publicKeyChainHybrid n depth 0 >>= test) =
       (depth : ℝ) * capacity *
-        (Game.succProbability (E.exactKeyChainHybridGame n depth width capacity test false) -
-          Game.succProbability (E.exactKeyChainHybridGame n depth width capacity test true)) := by
+        (Experiment.succProbability (E.exactKeyChainHybridExperiment n depth width capacity test
+            false) -
+          Experiment.succProbability (E.exactKeyChainHybridExperiment n depth width capacity test
+            true)) := by
   by_cases hpos : 0 < depth ∧ 0 < capacity
   · have : NeZero depth := ⟨hpos.1.ne'⟩
     have : NeZero capacity := ⟨hpos.2.ne'⟩
     let games := fun i => ProbComp.eval (E.publicKeyChainHybrid n depth (depth - i) >>= test)
-    let original := fun i => (PMF.uniformOfFintype (Fin capacity)).bind
-      (fun j => if j.val < width then ProbComp.eval
-        (E.publicKeyLinkHybrid n (depth - i - 1) i j.val >>= test) else PMF.pure false)
-    let replacement := fun i => (PMF.uniformOfFintype (Fin capacity)).bind
-      (fun j => if j.val < width then ProbComp.eval
-        (E.publicKeyLinkHybrid n (depth - i - 1) i (j.val + 1) >>= test) else PMF.pure false)
+    let world (bit : Bool) := fun i => ProbComp.eval
+      (E.linkBitExperiment n (depth - i - 1) i width capacity test bit)
     have hstep (i : ℕ) (hi : i < depth) :
         (Game.succProbability (games i) : ℝ) - Game.succProbability (games (i + 1)) =
           (capacity : ℝ) *
-            (Game.succProbability (original i) - Game.succProbability (replacement i)) := by
+            (Game.succProbability (world false i) - Game.succProbability (world true i)) := by
       have hdepth : depth - i - 1 + i + 1 = depth := by omega
       have hbefore : depth - i - 1 + 1 = depth - i := by omega
       have h := E.publicKeyLinkHybrid_exact_gap n (depth - i - 1) i width capacity
         hwidth hcapacity test
       rw [hdepth, hbefore] at h
-      simpa only [games, original, replacement, Nat.sub_sub] using h
-    have h := Game.succProbability_hybrid_reduction games original replacement
+      simpa only [games, world, Nat.sub_sub] using h
+    have h := Game.succProbability_hybrid_reduction games (world false) (world true)
       depth depth le_rfl capacity hstep
     have hfin (g : ℕ → Game) :
         ((PMF.uniformOfFintype (Fin depth)).bind
@@ -232,29 +268,11 @@ theorem publicKeyChainHybrid_exact_gap (n depth width capacity : ℕ)
         ((PMF.uniformOfFintype (Fin depth)).bind fun i : Fin depth => g i.val) := by
       congr 1; funext i
       simp only [i.isLt, ↓reduceIte]
-    rw [hfin original, hfin replacement] at h
-    have hfalse :
-        E.exactKeyChainHybridGame n depth width capacity test false =
-          (PMF.uniformOfFintype (Fin depth)).bind fun i : Fin depth => original i.val := by
-      unfold exactKeyChainHybridGame
-      rw [dite_eq_left_of_eq_true (eq_true hpos)]
-      simp only [original, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-        Bool.false_eq_true, ↓reduceIte, Nat.add_zero]
-    have htrue :
-        E.exactKeyChainHybridGame n depth width capacity test true =
-          (PMF.uniformOfFintype (Fin depth)).bind fun i : Fin depth => replacement i.val := by
-      unfold exactKeyChainHybridGame
-      rw [dite_eq_left_of_eq_true (eq_true hpos)]
-      simp only [replacement, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, ↓reduceIte]
-    rw [hfalse, htrue]
-    simpa only [games, Nat.sub_zero, Nat.sub_self] using h
-  · have hfalse : E.exactKeyChainHybridGame n depth width capacity test false = pure false := by
-      unfold exactKeyChainHybridGame
-      exact dite_eq_right_of_eq_false (eq_false hpos)
-    have htrue : E.exactKeyChainHybridGame n depth width capacity test true = pure false := by
-      unfold exactKeyChainHybridGame
-      exact dite_eq_right_of_eq_false (eq_false hpos)
-    rw [hfalse, htrue, sub_self, mul_zero]
+    rw [hfin, hfin] at h
+    simpa only [Experiment.succProbability, eval_exactKeyChainHybridExperiment_of_pos, games,
+      world, Nat.sub_zero, Nat.sub_self] using h
+  · simp only [Experiment.succProbability, exactKeyChainHybridExperiment_of_not_pos E _ _ _ _ hpos,
+      ProbComp.eval_pure, sub_self, mul_zero]
     rcases Nat.eq_zero_or_pos depth with rfl | hdepth
     · simp
     · have hcap0 : capacity = 0 := by omega
@@ -281,18 +299,21 @@ noncomputable def exactLinkAdversary (depth capacity : ℕ → ℕ)
     else pure rejectLinkChoice
   guess := E.guessLink test
 
-/-- `exactLinkAdversary` realizes `exactKeyChainHybridGame` at each challenge bit. -/
+/-- `exactLinkAdversary` realizes `exactKeyChainHybridExperiment` at each challenge bit. -/
 theorem eval_exactLinkAdversary (depth capacity : ℕ → ℕ)
     (test : ℕ → (List (List Bool) × List (List (List Bool))) → ProbComp Bool)
     (n width : ℕ) (bit : Bool)
     (hwidth : ∀ keys ∈ (ProbComp.eval (E.keyGen n)).support, keys.2.length = width) :
     ProbComp.eval (Encryption.game E.keyGen E.encrypt
       (E.exactLinkAdversary depth capacity test) bit n) =
-        E.exactKeyChainHybridGame n (depth n) width (capacity n) (test n) bit := by
+        ProbComp.eval (E.exactKeyChainHybridExperiment n (depth n) width (capacity n) (test n)
+          bit) := by
   by_cases hpos : 0 < depth n ∧ 0 < capacity n
   · have : NeZero (depth n) := ⟨hpos.1.ne'⟩
     have : NeZero (capacity n) := ⟨hpos.2.ne'⟩
-    dsimp only [Encryption.game, Encryption.gameOn, exactLinkAdversary, exactKeyChainHybridGame]
+    rw [eval_exactKeyChainHybridExperiment_of_pos]
+    simp only [eval_linkBitExperiment]
+    dsimp only [Encryption.game, Encryption.gameOn, exactLinkAdversary]
     simp only [dite_eq_left_of_eq_true (eq_true hpos), ↓reduceIte, bind_assoc,
       ProbComp.eval_uniform, pmf_norm]
     peel_binds i j
@@ -300,10 +321,10 @@ theorem eval_exactLinkAdversary (depth capacity : ℕ → ℕ)
       linkAdversaryAt, ProbComp.eval_bind, PMF.monad_pure_eq_pure] using
       E.eval_linkAdversaryAt (fun _ => depth n - i.val - 1) (fun _ => i.val)
         (fun _ => j.val) test n width bit hwidth
-  · dsimp only [Encryption.game, Encryption.gameOn, exactLinkAdversary, exactKeyChainHybridGame]
+  · rw [exactKeyChainHybridExperiment_of_not_pos E _ _ _ _ hpos]
+    dsimp only [Encryption.game, Encryption.gameOn, exactLinkAdversary]
     simp only [dite_eq_right_of_eq_false (eq_false hpos), ↓reduceIte, rejectLinkChoice,
-      ProbComp.eval_bind, ProbComp.eval_pure, PMF.pure_bind, guessLink_reject, PMF.bind_const,
-      PMF.monad_pure_eq_pure]
+      ProbComp.eval_bind, ProbComp.eval_pure, PMF.pure_bind, guessLink_reject, PMF.bind_const]
 
 /-- Signed key-chain hybrid gap in terms of `exactLinkAdversary`, with exact factor
 `(depth n : ℝ) * capacity n`. -/
@@ -1324,197 +1345,230 @@ theorem polynomiallyBounded_leveledGuessCoinBudget
   unfold leveledGuessCoinBudget
   fun_prop
 
-/-- Polynomial artifact-length, component replay and native-efficiency witnesses for the
-leveled reduction motivated by [Gentry2009], Section 2, Theorem 4, p. 171. These witnesses do not
-assert the source's multiplicative runtime comparison.
-Given uniform strict-PPT certificates for `E.keyGen`, `E.encrypt`, and `adversary`,
-polynomial-time unary certificates for `budget` and `capacity`, and supported base secret keys
-all of length `width n ≤ capacity n`, there exist explicit polynomial bounds:
-* `pkBound n = c_kg * (n + 1) ^ d_kg` on base key lengths and key-generation coin count,
-* `ctBound n = c_enc * (2 * n + 2 * pkBound n + 5) ^ d_enc` on base ciphertext lengths and coin
-  count,
-* `pubLen n = publicKeyLengthBound (2 * budget n) (capacity n) (pkBound n) (ctBound n)` on every
-  serialized leveled public key passed to `adversary.choose n`,
-* `advChooseBudget n = c_ch * (2 * n + pubLen n + 2) ^ d_ch` and
-  `advGuessBudget n = c_gu * (2 * n + 2 * advChooseBudget n + ctBound n + 4) ^ d_gu` on
-  `adversary`'s own coin and output-state lengths at the leveled public-key and ciphertext sizes,
-such that:
-1. Key generation has native replay using `pkBound n` coins, and supported base keys obey the
-   stated public-key and secret-capacity bounds. Every bounded base public key has native
-   encryption replay using `ctBound n` coins, and every supported ciphertext fits that bound.
-2. Every supported public artifact
-   `artifact ∈ (ProbComp.eval (E.publicKeyChainHybrid n (2 * budget n) cut)).support`
-   has `(encPublicKey artifact).length ≤ pubLen n`.
-3. On every public key `pk'` of length at most `pubLen n`, `adversary.choose n pk'` is realized by a
-   total polynomial-time seeded evaluator using `advChooseBudget n` fair coins and produces saved
-   states of length at most `advChooseBudget n`.
-4. On every saved state of length at most `advChooseBudget n` and tagged ciphertext of length at
-   most `ctBound n + 1`, `adversary.guess n state ct'` is realized by a total polynomial-time seeded
-   evaluator using `advGuessBudget n` fair coins.
-5. Both `leveledAdversary` and `modLeveledAdversary` are uniform strict PPT, and the coin-count
-   formulas `leveledChooseCoinBudget` and `leveledGuessCoinBudget` are polynomially bounded in
-   `n`. -/
-theorem exists_leveledAdversary_overhead {E : Scheme}
-    (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) E.keyGen)
-    (hencrypt : IsPPTOn (encKeyedInput encBool) encBits
-      (fun (n, pk, bit) => E.encrypt n pk bit))
-    {adversary : Encryption.Adversary} (hadversary : adversary.IsPPT)
-    {width budget capacity : ℕ → ℕ}
-    (hwidth : ∀ n keys, keys ∈ (ProbComp.eval (E.keyGen n)).support → keys.2.length = width n)
-    (hcapacity_le : ∀ n, width n ≤ capacity n)
-    (hbudget : ComputableInPolyTime budget encUnary encUnary)
+/-- Polynomial envelopes for the four native components of a leveled reduction. Each envelope
+`c * (m + 1) ^ d` is evaluated at the largest encoded input that the reduction passes to that
+component: base key generation at `1ⁿ`, base encryption at a bounded base public key,
+`adversary.choose` at a bounded serialized leveled public key, and `adversary.guess` at a bounded
+saved state with a tagged base ciphertext. -/
+structure OverheadBudget where
+  /-- Factor of the base key-generation envelope. -/
+  keyFactor : ℕ
+  /-- Degree of the base key-generation envelope. -/
+  keyDegree : ℕ
+  /-- Factor of the base encryption envelope. -/
+  encFactor : ℕ
+  /-- Degree of the base encryption envelope. -/
+  encDegree : ℕ
+  /-- Factor of the message-selection envelope. -/
+  chooseFactor : ℕ
+  /-- Degree of the message-selection envelope. -/
+  chooseDegree : ℕ
+  /-- Factor of the guessing envelope. -/
+  guessFactor : ℕ
+  /-- Degree of the guessing envelope. -/
+  guessDegree : ℕ
+
+namespace OverheadBudget
+
+variable (B : OverheadBudget) (depth capacity : ℕ → ℕ)
+
+/-- Coins for, and length of every supported key pair from, base key generation. -/
+def keyCoins (n : ℕ) : ℕ := B.keyFactor * (n + 1) ^ B.keyDegree
+
+/-- Coins for, and length of every supported ciphertext from, base encryption under a public key
+of length at most `B.keyCoins n`. -/
+def encCoins (n : ℕ) : ℕ := B.encFactor * (2 * n + 2 * B.keyCoins n + 5) ^ B.encDegree
+
+/-- Bound on every serialized leveled public key of chain depth `depth n`. -/
+def publicKeyLength (n : ℕ) : ℕ :=
+  publicKeyLengthBound (depth n) (capacity n) (B.keyCoins n) (B.encCoins n)
+
+/-- Coins for, and saved-state length of, `adversary.choose` on a leveled public key of length at
+most `B.publicKeyLength depth capacity n`. -/
+def chooseCoins (n : ℕ) : ℕ :=
+  B.chooseFactor * (2 * n + B.publicKeyLength depth capacity n + 2) ^ B.chooseDegree
+
+/-- Coins for `adversary.guess` on a saved state of length at most
+`B.chooseCoins depth capacity n` and a tagged ciphertext of length at most `B.encCoins n + 1`. -/
+def guessCoins (n : ℕ) : ℕ :=
+  B.guessFactor *
+    (2 * n + 2 * B.chooseCoins depth capacity n + B.encCoins n + 4) ^ B.guessDegree
+
+theorem computableInPolyTime_keyCoins : ComputableInPolyTime B.keyCoins encUnary encUnary := by
+  unfold keyCoins
+  fun_prop
+
+theorem computableInPolyTime_encCoins : ComputableInPolyTime B.encCoins encUnary encUnary := by
+  unfold encCoins keyCoins
+  fun_prop
+
+variable {depth capacity}
+
+theorem computableInPolyTime_chooseCoins (hdepth : ComputableInPolyTime depth encUnary encUnary)
     (hcapacity : ComputableInPolyTime capacity encUnary encUnary) :
-    ∃ (c_kg d_kg c_enc d_enc c_ch d_ch c_gu d_gu : ℕ)
-      (evalKey : ℕ → List Bool → List Bool × List Bool)
-      (evalEncrypt : ℕ × List Bool × Bool → List Bool → List Bool)
-      (evalChoose : ℕ × List Bool → List Bool → (Bool × Bool) × List Bool)
-      (evalGuess : ℕ × List Bool × List Bool → List Bool → Bool),
-      let pkBound (n : ℕ) := c_kg * (n + 1) ^ d_kg
-      let ctBound (n : ℕ) := c_enc * (2 * n + 2 * pkBound n + 5) ^ d_enc
-      let pubLen (n : ℕ) :=
-        publicKeyLengthBound (2 * budget n) (capacity n) (pkBound n) (ctBound n)
-      let advChooseBudget (n : ℕ) := c_ch * (2 * n + pubLen n + 2) ^ d_ch
-      let advGuessBudget (n : ℕ) :=
-        c_gu * (2 * n + 2 * advChooseBudget n + ctBound n + 4) ^ d_gu
-      ComputableInPolyTime (fun (n, coins) => evalKey n coins)
-        (encPair encUnary encBits) (encPair encBits encBits) ∧
-      ComputableInPolyTime (fun (x, coins) => evalEncrypt x coins)
-        (encPair (encKeyedInput encBool) encBits) encBits ∧
-      ComputableInPolyTime (fun (x, coins) => evalChoose x coins)
-        (encPair (encPair encUnary encBits) encBits)
-        (encPair (encPair encBool encBool) encBits) ∧
-      ComputableInPolyTime (fun (x, coins) => evalGuess x coins)
-        (encPair Encryption.encGuessInput encBits) encBool ∧
-      (∀ n, ProbComp.eval (E.keyGen n) =
-        (BitString.uniformList (pkBound n)).map (evalKey n)) ∧
-      (∀ n keys, keys ∈ (ProbComp.eval (E.keyGen n)).support →
-        keys.1.length ≤ pkBound n ∧ keys.2.length ≤ capacity n) ∧
-      (∀ n pk bit, pk.length ≤ pkBound n →
-        ProbComp.eval (E.encrypt n pk bit) =
-          (BitString.uniformList (ctBound n)).map (evalEncrypt (n, pk, bit)) ∧
-        ∀ ct ∈ (ProbComp.eval (E.encrypt n pk bit)).support, ct.length ≤ ctBound n) ∧
-      (∀ n cut artifact,
-        artifact ∈ (ProbComp.eval (E.publicKeyChainHybrid n (2 * budget n) cut)).support →
-          (encPublicKey artifact).length ≤ pubLen n) ∧
-      (∀ n pk', pk'.length ≤ pubLen n →
-        ProbComp.eval (adversary.choose n pk') =
-          (BitString.uniformList (advChooseBudget n)).map (evalChoose (n, pk')) ∧
-        ∀ choice ∈ (ProbComp.eval (adversary.choose n pk')).support,
-          choice.2.length ≤ advChooseBudget n) ∧
-      (∀ n state ct', state.length ≤ advChooseBudget n → ct'.length ≤ ctBound n + 1 →
-        ProbComp.eval (adversary.guess n state ct') =
-          (BitString.uniformList (advGuessBudget n)).map (evalGuess (n, state, ct'))) ∧
-      PolynomiallyBounded (fun n =>
-        leveledChooseCoinBudget (2 * budget n) (capacity n) (pkBound n) (ctBound n)
-          (advChooseBudget n)) ∧
-      PolynomiallyBounded (fun n =>
-        leveledGuessCoinBudget (2 * budget n) (capacity n) (ctBound n)
-          (advChooseBudget n) (advGuessBudget n)) ∧
-      (leveledAdversary E (fun n => 2 * budget n) capacity adversary).IsPPT ∧
-      (modLeveledAdversary E (fun n => 2 * n) (fun n => 2 * budget n) capacity
-        adversary).IsPPT := by
-  obtain ⟨c_kg, d_kg, evalKey, hevalKey, _, hkey_law, hkey_len⟩ :=
-    hkeyGen.exists_total_seeded_evaluator_with_length
-  have hkg_len (n keys) (hkeys : keys ∈ (ProbComp.eval (E.keyGen n)).support) :
-      keys.1.length + keys.2.length ≤ c_kg * (n + 1) ^ d_kg := by
-    have hlen := hkey_len n keys hkeys
-    simp only [length_encPair, encBits_apply, encUnary_apply, List.length_replicate] at hlen
-    omega
-  obtain ⟨c_enc, d_enc, evalEncrypt, hevalEncrypt, _, henc_law, henc_len⟩ :=
-    hencrypt.exists_total_seeded_evaluator_with_length
-  obtain ⟨c_ch, d_ch, evalChoose, hevalChoose, _, hchoose_law, hchoose_len⟩ :=
-    hadversary.choose.on.exists_total_seeded_evaluator_with_length
-  obtain ⟨c_gu, d_gu, evalGuess, hevalGuess, _, hguess_law⟩ :=
-    hadversary.guess.exists_total_seeded_evaluator
-  let pkBound (n : ℕ) := c_kg * (n + 1) ^ d_kg
-  let ctBound (n : ℕ) := c_enc * (2 * n + 2 * pkBound n + 5) ^ d_enc
-  let pubLen (n : ℕ) :=
-    publicKeyLengthBound (2 * budget n) (capacity n) (pkBound n) (ctBound n)
-  let advChooseBudget (n : ℕ) := c_ch * (2 * n + pubLen n + 2) ^ d_ch
-  let advGuessBudget (n : ℕ) :=
-    c_gu * (2 * n + 2 * advChooseBudget n + ctBound n + 4) ^ d_gu
-  have hdepth : ComputableInPolyTime (fun n => 2 * budget n) encUnary encUnary := by fun_prop
-  have hd : PolynomiallyBounded (fun n => 2 * budget n) := hdepth.polynomiallyBounded
-  have hc : PolynomiallyBounded capacity := hcapacity.polynomiallyBounded
-  have hpk : PolynomiallyBounded pkBound := by dsimp only [pkBound]; fun_prop
-  have hct : PolynomiallyBounded ctBound := by dsimp only [ctBound]; fun_prop
-  have hpub : PolynomiallyBounded pubLen := by
-    dsimp only [pubLen, publicKeyLengthBound]
-    fun_prop
-  have hch : PolynomiallyBounded advChooseBudget := by
-    dsimp only [advChooseBudget]
-    fun_prop
-  refine ⟨c_kg, d_kg, c_enc, d_enc, c_ch, d_ch, c_gu, d_gu, evalKey, evalEncrypt, evalChoose,
-    evalGuess, hevalKey, hevalEncrypt, hevalChoose, hevalGuess, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
-    isPPT_leveledAdversary hencrypt hadversary hkeyGen hdepth hcapacity,
-    isPPT_modLeveledAdversary_two_mul hkeyGen hencrypt hadversary hdepth hcapacity⟩
-  · intro n
-    exact hkey_law n (pkBound n) (by simp [pkBound, encUnary_apply])
-  · intro n keys hkeys
-    have hlen := hkg_len n keys hkeys
-    have hw := hwidth n keys hkeys
-    have hc := hcapacity_le n
-    exact ⟨by dsimp only [pkBound]; omega, by omega⟩
-  · intro n pk bit hpk
-    change pk.length ≤ pkBound n at hpk
-    have hin : (encPair encUnary (encPair encBits encBool) (n, pk, bit)).length + 1 ≤
-        2 * n + 2 * pkBound n + 5 := by
-      simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply,
-        encBool_apply, List.length_singleton]
-      omega
-    have hbound : c_enc *
-        ((encPair encUnary (encPair encBits encBool) (n, pk, bit)).length + 1) ^ d_enc ≤
-        ctBound n := Nat.mul_le_mul_left c_enc (Nat.pow_le_pow_left hin d_enc)
-    exact ⟨henc_law (n, pk, bit) (ctBound n) hbound,
-      fun ct hct => (henc_len (n, pk, bit) ct hct).trans hbound⟩
-  · intro n cut artifact hart
-    apply length_encPublicKey_support_publicKeyChainHybrid_le n (2 * budget n) cut (capacity n)
-      (pkBound n) (ctBound n)
-    · intro keys hkeys
-      have hlen := hkg_len n keys hkeys
-      have hw := hwidth n keys hkeys
-      have hcap := hcapacity_le n
-      dsimp only [pkBound]
-      exact ⟨by omega, by omega⟩
-    · intro keys hkeys b ct hct
-      have hpk : keys.1.length ≤ pkBound n := by
-        have hlen := hkg_len n keys hkeys
-        dsimp only [pkBound]
+    ComputableInPolyTime (B.chooseCoins depth capacity) encUnary encUnary := by
+  unfold chooseCoins publicKeyLength publicKeyLengthBound encCoins keyCoins
+  fun_prop
+
+theorem computableInPolyTime_guessCoins (hdepth : ComputableInPolyTime depth encUnary encUnary)
+    (hcapacity : ComputableInPolyTime capacity encUnary encUnary) :
+    ComputableInPolyTime (B.guessCoins depth capacity) encUnary encUnary := by
+  unfold guessCoins chooseCoins publicKeyLength publicKeyLengthBound encCoins keyCoins
+  fun_prop
+
+/-- The message-selection coin count of `leveledAdversary` at these envelopes is polynomially
+bounded. -/
+theorem polynomiallyBounded_leveledChooseCoinBudget
+    (hdepth : ComputableInPolyTime depth encUnary encUnary)
+    (hcapacity : ComputableInPolyTime capacity encUnary encUnary) :
+    PolynomiallyBounded (fun n => leveledChooseCoinBudget (depth n) (capacity n)
+      (B.keyCoins n) (B.encCoins n) (B.chooseCoins depth capacity n)) :=
+  Leveled.polynomiallyBounded_leveledChooseCoinBudget hdepth.polynomiallyBounded
+    hcapacity.polynomiallyBounded B.computableInPolyTime_keyCoins.polynomiallyBounded
+    B.computableInPolyTime_encCoins.polynomiallyBounded
+    (B.computableInPolyTime_chooseCoins hdepth hcapacity).polynomiallyBounded
+
+/-- The guessing coin count of `leveledAdversary` at these envelopes is polynomially bounded. -/
+theorem polynomiallyBounded_leveledGuessCoinBudget
+    (hdepth : ComputableInPolyTime depth encUnary encUnary)
+    (hcapacity : ComputableInPolyTime capacity encUnary encUnary) :
+    PolynomiallyBounded (fun n => leveledGuessCoinBudget (depth n) (capacity n)
+      (B.encCoins n) (B.chooseCoins depth capacity n) (B.guessCoins depth capacity n)) :=
+  Leveled.polynomiallyBounded_leveledGuessCoinBudget hdepth.polynomiallyBounded
+    hcapacity.polynomiallyBounded B.computableInPolyTime_encCoins.polynomiallyBounded
+    (B.computableInPolyTime_chooseCoins hdepth hcapacity).polynomiallyBounded
+    (B.computableInPolyTime_guessCoins hdepth hcapacity).polynomiallyBounded
+
+end OverheadBudget
+
+/-- Native coin-tape realizations of the four components of a leveled reduction at the
+envelopes `B`, for chain depth `depth` and secret capacity `capacity`. Base key generation is
+realized everywhere; base encryption on public keys of length at most `B.keyCoins n`;
+`adversary.choose` on leveled public keys of length at most `B.publicKeyLength depth capacity n`;
+and `adversary.guess` on saved states of length at most `B.chooseCoins depth capacity n` with
+ciphertexts of length at most `B.encCoins n + 1`. -/
+structure OverheadRealization (E : Scheme) (adversary : Encryption.Adversary)
+    (depth capacity : ℕ → ℕ) (B : OverheadBudget) where
+  /-- Base key generation from `B.keyCoins n` coins. -/
+  keyGen : CoinTapeRealization encUnary (encPair encBits encBits) E.keyGen Set.univ B.keyCoins
+  /-- Base encryption from `B.encCoins n` coins under bounded public keys. -/
+  encrypt : CoinTapeRealization (encKeyedInput encBool) encBits
+    (fun (n, pk, bit) => E.encrypt n pk bit)
+    {(n, pk, _) : ℕ × List Bool × Bool | pk.length ≤ B.keyCoins n}
+    (fun (n, _, _) => B.encCoins n)
+  /-- Message selection from `B.chooseCoins depth capacity n` coins on bounded public keys. -/
+  choose : CoinTapeRealization (encPair encUnary encBits)
+    (Encryption.encChoiceOut encBool) (fun (n, pk) => adversary.choose n pk)
+    {(n, pk) : ℕ × List Bool | pk.length ≤ B.publicKeyLength depth capacity n}
+    (fun (n, _) => B.chooseCoins depth capacity n)
+  /-- Guessing from `B.guessCoins depth capacity n` coins on bounded states and ciphertexts. -/
+  guess : CoinTapeRealization Encryption.encGuessInput encBool
+    (fun (n, state, ct) => adversary.guess n state ct)
+    {(n, state, ct) : ℕ × List Bool × List Bool |
+      state.length ≤ B.chooseCoins depth capacity n ∧ ct.length ≤ B.encCoins n + 1}
+    (fun (n, _, _) => B.guessCoins depth capacity n)
+
+/-- Polynomial component envelopes and native coin-tape realizations for the leveled reduction
+motivated by [Gentry2009], Section 2, Theorem 4, p. 171. One choice of envelopes serves every
+chain depth and secret capacity. Strict PPT of `leveledAdversary` and `modLeveledAdversary` is
+`isPPT_leveledAdversary` and `isPPT_modLeveledAdversary_two_mul`; the coin counts of
+`leveledAdversary` at these envelopes are polynomially bounded
+(`OverheadBudget.polynomiallyBounded_leveledChooseCoinBudget`,
+`OverheadBudget.polynomiallyBounded_leveledGuessCoinBudget`). None of these results asserts the
+source's multiplicative runtime comparison. -/
+theorem exists_overheadRealization {E : Scheme}
+    (hkeyGen : IsPPTOn encUnary (encPair encBits encBits) E.keyGen)
+    (hencrypt : IsPPTOn (encKeyedInput encBool) encBits (fun (n, pk, bit) => E.encrypt n pk bit))
+    {adversary : Encryption.Adversary} (hadversary : adversary.IsPPT) :
+    ∃ B : OverheadBudget, ∀ depth capacity : ℕ → ℕ,
+      Nonempty (OverheadRealization E adversary depth capacity B) := by
+  obtain ⟨c_kg, d_kg, hkg⟩ := hkeyGen.exists_coinTapeRealization
+  obtain ⟨c_enc, d_enc, henc⟩ := hencrypt.exists_coinTapeRealization
+  obtain ⟨c_ch, d_ch, hch⟩ := hadversary.choose.on.exists_coinTapeRealization
+  obtain ⟨c_gu, d_gu, hgu⟩ := hadversary.guess.exists_coinTapeRealization
+  let B : OverheadBudget := ⟨c_kg, d_kg, c_enc, d_enc, c_ch, d_ch, c_gu, d_gu⟩
+  refine ⟨B, fun depth capacity => ?_⟩
+  obtain ⟨keyGen⟩ := hkg Set.univ B.keyCoins fun n _ => by
+    simp [B, OverheadBudget.keyCoins, encUnary_apply]
+  obtain ⟨encrypt⟩ := henc {(n, pk, _) : ℕ × List Bool × Bool | pk.length ≤ B.keyCoins n}
+    (fun (n, _, _) => B.encCoins n)
+    (by
+      rintro ⟨n, pk, bit⟩ hpk
+      change pk.length ≤ B.keyCoins n at hpk
+      have hin : (encPair encUnary (encPair encBits encBool) (n, pk, bit)).length + 1 ≤
+          2 * n + 2 * B.keyCoins n + 5 := by
+        simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply,
+          encBool_apply, List.length_singleton]
         omega
-      have hlen := henc_len (n, keys.1, b) ct hct
-      simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply,
-        encBool_apply, List.length_singleton] at hlen
-      have hin : (2 * n + 1 + (2 * keys.1.length + 1 + 1)) + 1 ≤
-          2 * n + 2 * pkBound n + 5 := by omega
-      exact hlen.trans (Nat.mul_le_mul_left c_enc (Nat.pow_le_pow_left hin d_enc))
-    · exact hart
-  · intro n pk' hpk'
-    change pk'.length ≤ pubLen n at hpk'
-    have hin : (encPair encUnary encBits (n, pk')).length + 1 ≤ 2 * n + pubLen n + 2 := by
-      simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
-      omega
-    have hch_le :
-        c_ch * ((encPair encUnary encBits (n, pk')).length + 1) ^ d_ch ≤ advChooseBudget n :=
-      Nat.mul_le_mul_left c_ch (Nat.pow_le_pow_left hin d_ch)
-    refine ⟨hchoose_law (n, pk') (advChooseBudget n) hch_le, fun choice hchoice => ?_⟩
-    have hchoice2 : choice.2.length ≤
-        (encPair (encPair encBool encBool) encBits choice).length := by
-      simp only [length_encPair, encBool_apply, List.length_singleton, encBits_apply]
-      omega
-    exact (hchoice2.trans (hchoose_len (n, pk') choice hchoice)).trans hch_le
-  · intro n state ct' hstate hct'
-    change state.length ≤ advChooseBudget n at hstate
-    change ct'.length ≤ ctBound n + 1 at hct'
-    apply hguess_law (n, state, ct') (advGuessBudget n)
-    have hin : (encPair encUnary (encPair encBits encBits) (n, state, ct')).length + 1 ≤
-        2 * n + 2 * advChooseBudget n + ctBound n + 4 := by
-      simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
-      omega
-    exact Nat.mul_le_mul_left c_gu (Nat.pow_le_pow_left hin d_gu)
-  · exact polynomiallyBounded_leveledChooseCoinBudget hd hc hpk hct hch
-  · have hgu : PolynomiallyBounded advGuessBudget := by
-      dsimp only [advGuessBudget]
-      fun_prop
-    exact polynomiallyBounded_leveledGuessCoinBudget hd hc hct hch hgu
+      exact Nat.mul_le_mul_left c_enc (Nat.pow_le_pow_left hin d_enc))
+  obtain ⟨choose⟩ := hch
+    {(n, pk) : ℕ × List Bool | pk.length ≤ B.publicKeyLength depth capacity n}
+    (fun (n, _) => B.chooseCoins depth capacity n)
+    (by
+      rintro ⟨n, pk⟩ hpk
+      change pk.length ≤ B.publicKeyLength depth capacity n at hpk
+      have hin : (encPair encUnary encBits (n, pk)).length + 1 ≤
+          2 * n + B.publicKeyLength depth capacity n + 2 := by
+        simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
+        omega
+      exact Nat.mul_le_mul_left c_ch (Nat.pow_le_pow_left hin d_ch))
+  obtain ⟨guess⟩ := hgu
+    {(n, state, ct) : ℕ × List Bool × List Bool |
+      state.length ≤ B.chooseCoins depth capacity n ∧ ct.length ≤ B.encCoins n + 1}
+    (fun (n, _, _) => B.guessCoins depth capacity n)
+    (by
+      rintro ⟨n, state, ct⟩ ⟨hstate, hct⟩
+      have hin : (encPair encUnary (encPair encBits encBits) (n, state, ct)).length + 1 ≤
+          2 * n + 2 * B.chooseCoins depth capacity n + B.encCoins n + 4 := by
+        simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
+        omega
+      exact Nat.mul_le_mul_left c_gu (Nat.pow_le_pow_left hin d_gu))
+  exact ⟨⟨keyGen, encrypt, choose, guess⟩⟩
+
+namespace OverheadRealization
+
+variable {E : Scheme} {adversary : Encryption.Adversary} {depth capacity : ℕ → ℕ}
+  {B : OverheadBudget} (R : OverheadRealization E adversary depth capacity B)
+include R
+
+/-- Supported base keys have public keys within the key-generation envelope and, under the
+secret-capacity hypothesis, secrets within `capacity n`. -/
+theorem length_keys_le
+    (hsecret : ∀ n keys, keys ∈ (ProbComp.eval (E.keyGen n)).support →
+      keys.2.length ≤ capacity n)
+    (n : ℕ) : ∀ keys ∈ (ProbComp.eval (E.keyGen n)).support,
+      keys.1.length ≤ B.keyCoins n ∧ keys.2.length ≤ capacity n := by
+  intro keys hkeys
+  have hlen := R.keyGen.length_le n trivial keys hkeys
+  simp only [length_encPair, encBits_apply] at hlen
+  exact ⟨by omega, hsecret n keys hkeys⟩
+
+/-- Every supported leveled public artifact of chain depth `depth n` fits
+`B.publicKeyLength depth capacity n`. -/
+theorem length_encPublicKey_le
+    (hsecret : ∀ n keys, keys ∈ (ProbComp.eval (E.keyGen n)).support →
+      keys.2.length ≤ capacity n)
+    {n cut : ℕ} {artifact : List (List Bool) × List (List (List Bool))}
+    (hartifact : artifact ∈ (ProbComp.eval (E.publicKeyChainHybrid n (depth n) cut)).support) :
+    (encPublicKey artifact).length ≤ B.publicKeyLength depth capacity n :=
+  length_encPublicKey_support_publicKeyChainHybrid_le n (depth n) cut (capacity n)
+    (B.keyCoins n) (B.encCoins n) (R.length_keys_le hsecret n)
+    (fun keys hkeys bit ct hct =>
+      R.encrypt.length_le (n, keys.1, bit) (R.length_keys_le hsecret n keys hkeys).1 ct hct)
+    hartifact
+
+/-- Every supported choice on a bounded public key saves a state within the message-selection
+envelope. -/
+theorem length_state_le {n : ℕ} {pk : List Bool}
+    (hpk : pk.length ≤ B.publicKeyLength depth capacity n)
+    {choice : (Bool × Bool) × List Bool}
+    (hchoice : choice ∈ (ProbComp.eval (adversary.choose n pk)).support) :
+    choice.2.length ≤ B.chooseCoins depth capacity n := by
+  have hlen := R.choose.length_le (n, pk) hpk choice hchoice
+  simp only [length_encPair, encBool_apply, List.length_singleton, encBits_apply] at hlen
+  change _ ≤ B.chooseCoins depth capacity n at hlen
+  omega
+
+end OverheadRealization
 
 end Cslib.Crypto.Homomorphic.Leveled

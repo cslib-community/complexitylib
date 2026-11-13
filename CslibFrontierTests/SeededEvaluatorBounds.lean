@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import CslibFrontier.Computability.Probabilistic.CoinTape.Bounds
+import CslibFrontier.Computability.Probabilistic.CoinTape.Realization
 import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Tactic.PPT
 
@@ -65,5 +66,19 @@ example : ∃ (c d : ℕ) (evaluate : List Bool → List Bool → List Bool),
   · intro word
     apply hlength word word
     simp only [program, BitString.eval_sampleList, BitString.mem_support_uniformList_iff]
+
+-- A realization at a caller-chosen budget on a restricted domain: words of length at most three
+-- replay from twice the envelope, and every supported output fits that budget.
+example : ∃ c d : ℕ, Nonempty (CoinTapeRealization encBits encBits program
+    {word | word.length ≤ 3} fun word => 2 * (c * (word.length + 1) ^ d)) := by
+  obtain ⟨c, d, h⟩ := program_ppt.exists_coinTapeRealization
+  exact ⟨c, d, h _ _ fun word _ => by simp only [encBits_apply]; omega⟩
+
+example (c d : ℕ) (R : CoinTapeRealization encBits encBits program
+    {word | word.length ≤ 3} fun word => 2 * (c * (word.length + 1) ^ d)) :
+    BitString.uniformList 2 =
+      (BitString.uniformList (2 * (c * 3 ^ d))).map (R.evaluate [true, false]) := by
+  simpa only [program, BitString.eval_sampleList, List.length_cons, List.length_nil] using
+    R.eval_eq [true, false] (by simp)
 
 end CslibFrontierTests.SeededEvaluatorBounds

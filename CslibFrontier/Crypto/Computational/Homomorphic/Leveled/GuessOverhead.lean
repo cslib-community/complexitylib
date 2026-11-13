@@ -155,9 +155,9 @@ theorem exists_modLinkAdversary_guess_coin_evaluator {E : Scheme}
     (hencrypt : IsPPTOn (encPair encUnary (encPair encBits encBool)) encBits
       (fun (n, pk, bit) => E.encrypt n pk bit))
     {adversary : Encryption.Adversary} (hadversary : adversary.IsPPT)
-    {width coins budget capacity : ℕ → ℕ}
-    (hwidth : ∀ n keys, keys ∈ (ProbComp.eval (E.keyGen n)).support → keys.2.length = width n)
-    (hcapacity_le : ∀ n, width n ≤ capacity n)
+    {coins budget capacity : ℕ → ℕ}
+    (hsecret : ∀ n keys, keys ∈ (ProbComp.eval (E.keyGen n)).support →
+      keys.2.length ≤ capacity n)
     (hbudget : ComputableInPolyTime budget encUnary encUnary)
     (hcapacity : ComputableInPolyTime capacity encUnary encUnary) (bit : Bool) :
     ∃ (encCoins chooseCoins guessCoins : ℕ → ℕ)
@@ -178,43 +178,35 @@ theorem exists_modLinkAdversary_guess_coin_evaluator {E : Scheme}
           (BitString.uniformList (Leveled.leveledGuessCoinBudget (2 * budget n) (capacity n)
             (encCoins n) (chooseCoins n) (guessCoins n))).map
               (evaluate (n, choice.2, challenge)) := by
-  obtain ⟨c_kg, d_kg, c_enc, d_enc, c_ch, d_ch, c_gu, d_gu, _, evalEncrypt, evalChoose, evalGuess,
-    _, hevalEncrypt, hevalChoose, hevalGuess, _, hkeys, henc, _, hchoose, hguess, _, hpoly, _, _⟩ :=
-      Leveled.exists_leveledAdversary_overhead hkeyGen hencrypt hadversary hwidth hcapacity_le
-        hbudget hcapacity
-  let pkBound := fun n => c_kg * (n + 1) ^ d_kg
-  let ctBound := fun n => c_enc * (2 * n + 2 * pkBound n + 5) ^ d_enc
-  let pubLen := fun n =>
-    Leveled.publicKeyLengthBound (2 * budget n) (capacity n) (pkBound n) (ctBound n)
-  let chooseCoins := fun n => c_ch * (2 * n + pubLen n + 2) ^ d_ch
-  let guessCoins := fun n => c_gu * (2 * n + 2 * chooseCoins n + ctBound n + 4) ^ d_gu
-  let evaluate := fun (n, state, challenge) tape => guessLinkCoins evalEncrypt
-    (fun input seed => Leveled.publicKeyGameCoins evalChoose evalEncrypt evalGuess bit
-      (chooseCoins input.1) (ctBound input.1) input seed) n (ctBound n) (capacity n)
-      state challenge tape
-  have hctBound : ComputableInPolyTime ctBound encUnary encUnary := by
-    dsimp only [ctBound, pkBound]
-    fun_prop
-  have hchooseCoins : ComputableInPolyTime chooseCoins encUnary encUnary := by
-    dsimp only [chooseCoins, pubLen, Leveled.publicKeyLengthBound, ctBound, pkBound]
-    fun_prop
-  have hguessCoins : ComputableInPolyTime guessCoins encUnary encUnary := by
-    dsimp only [guessCoins]
-    fun_prop
-  refine ⟨ctBound, chooseCoins, guessCoins, evaluate, hctBound, hchooseCoins, hguessCoins,
-    ?_, hpoly, ?_⟩
-  · apply computableInPolyTime_modLinkGuessCoins hevalChoose hevalEncrypt hevalGuess bit
-      hchooseCoins hctBound hcapacity
+  obtain ⟨B, hB⟩ := Leveled.exists_overheadRealization hkeyGen hencrypt hadversary
+  obtain ⟨R⟩ := hB (fun n => 2 * budget n) capacity
+  have hdepth : ComputableInPolyTime (fun n => 2 * budget n) encUnary encUnary := by fun_prop
+  have hencCoins := B.computableInPolyTime_encCoins
+  have hchooseCoins := B.computableInPolyTime_chooseCoins hdepth hcapacity
+  let chooseCoins := B.chooseCoins (fun n => 2 * budget n) capacity
+  let evaluate := fun (n, state, challenge) tape => guessLinkCoins R.encrypt.evaluate
+    (fun input seed => Leveled.publicKeyGameCoins R.choose.evaluate R.encrypt.evaluate
+      R.guess.evaluate bit (chooseCoins input.1) (B.encCoins input.1) input seed) n
+      (B.encCoins n) (capacity n) state challenge tape
+  refine ⟨B.encCoins, chooseCoins, B.guessCoins (fun n => 2 * budget n) capacity, evaluate,
+    hencCoins, hchooseCoins, B.computableInPolyTime_guessCoins hdepth hcapacity, ?_,
+    B.polynomiallyBounded_leveledGuessCoinBudget hdepth hcapacity, ?_⟩
+  · apply computableInPolyTime_modLinkGuessCoins R.choose.efficient R.encrypt.efficient
+      R.guess.efficient bit hchooseCoins hencCoins hcapacity
     all_goals fun_prop
   · intro n target htarget choice hchoice message challenge hchallenge
-    have htargetLength := (hkeys n target htarget).1
-    have hchallengeLength := (henc n target.1 message htargetLength).2 challenge hchallenge
+    have hkeys := R.length_keys_le hsecret n
+    have hchallengeLength :=
+      R.encrypt.length_le (n, target.1, message) (hkeys target htarget).1 challenge hchallenge
     have hlaw := E.eval_modLinkAdversary_guess_eq_map_coins_of_bounds adversary coins
-      (fun n => 2 * budget n) capacity evalChoose evalEncrypt evalGuess bit n (pkBound n)
-      (ctBound n) (chooseCoins n) (guessCoins n) target challenge choice (hkeys n) htarget
+      (fun n => 2 * budget n) capacity R.choose.evaluate R.encrypt.evaluate R.guess.evaluate bit n
+      (B.keyCoins n) (B.encCoins n) (chooseCoins n)
+      (B.guessCoins (fun n => 2 * budget n) capacity n) target challenge choice hkeys htarget
       hchoice hchallengeLength
-      (fun pk hpk message => henc n pk message hpk)
-      (fun artifact hlen => hchoose n (Leveled.encPublicKey artifact) hlen) (hguess n)
+      (fun pk hpk message => R.encrypt.eval_eq_and_length_le (a := (n, pk, message)) hpk)
+      (fun artifact hpk => ⟨R.choose.eval_eq (n, Leveled.encPublicKey artifact) hpk,
+        fun _ hchosen => R.length_state_le hpk hchosen⟩)
+      (fun state ct hstate hct => R.guess.eval_eq (n, state, ct) ⟨hstate, hct⟩)
     rw [hlaw]
     congr 1
 

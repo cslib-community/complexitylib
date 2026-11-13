@@ -285,60 +285,39 @@ example (n : ℕ) (keys : List Bool × List Bool)
     obtain ⟨nonce, rfl⟩ := hct
     simp
 
--- Quantitative polynomial coin-budget, artifact-length, and seeded-evaluator overhead package.
-example :
-    ∃ (c_kg d_kg c_enc d_enc c_ch d_ch c_gu d_gu : ℕ)
-      (evalKey : ℕ → List Bool → List Bool × List Bool)
-      (evalEncrypt : (ℕ × List Bool × Bool) → List Bool → List Bool)
-      (evalChoose : (ℕ × List Bool) → List Bool → ((Bool × Bool) × List Bool))
-      (evalGuess : (ℕ × List Bool × List Bool) → List Bool → Bool),
-      let pkBound (n : ℕ) := c_kg * (n + 1) ^ d_kg
-      let ctBound (n : ℕ) := c_enc * (2 * n + 2 * pkBound n + 5) ^ d_enc
-      let pubLen (n : ℕ) :=
-        publicKeyLengthBound (2 * (n + 1)) 2 (pkBound n) (ctBound n)
-      let advChooseBudget (n : ℕ) := c_ch * (2 * n + pubLen n + 2) ^ d_ch
-      let advGuessBudget (n : ℕ) :=
-        c_gu * (2 * n + 2 * advChooseBudget n + ctBound n + 4) ^ d_gu
-      ComputableInPolyTime (fun (n, coins) => evalKey n coins)
-        (encPair encUnary encBits) (encPair encBits encBits) ∧
-      ComputableInPolyTime (fun (x, coins) => evalEncrypt x coins)
-        (encPair (encPair encUnary (encPair encBits encBool)) encBits) encBits ∧
-      ComputableInPolyTime (fun (x, coins) => evalChoose x coins)
-        (encPair (encPair encUnary encBits) encBits)
-        (encPair (encPair encBool encBool) encBits) ∧
-      ComputableInPolyTime (fun (x, coins) => evalGuess x coins)
-        (encPair (encPair encUnary (encPair encBits encBits)) encBits) encBool ∧
-      (∀ n, ProbComp.eval (fixture.keyGen n) =
-        (BitString.uniformList (pkBound n)).map (evalKey n)) ∧
-      (∀ n keys, keys ∈ (ProbComp.eval (fixture.keyGen n)).support →
-        keys.1.length ≤ pkBound n ∧ keys.2.length ≤ 2) ∧
-      (∀ n pk bit, pk.length ≤ pkBound n →
-        ProbComp.eval (fixture.encrypt n pk bit) =
-          (BitString.uniformList (ctBound n)).map (evalEncrypt (n, pk, bit)) ∧
-        ∀ ct ∈ (ProbComp.eval (fixture.encrypt n pk bit)).support, ct.length ≤ ctBound n) ∧
-      (∀ n cut artifact,
-        artifact ∈ (ProbComp.eval (fixture.publicKeyChainHybrid n (2 * (n + 1)) cut)).support →
-          (encPublicKey artifact).length ≤ pubLen n) ∧
-      (∀ n pk', pk'.length ≤ pubLen n →
-        ProbComp.eval (adversary.choose n pk') =
-          (BitString.uniformList (advChooseBudget n)).map (evalChoose (n, pk')) ∧
-        ∀ choice ∈ (ProbComp.eval (adversary.choose n pk')).support,
-          choice.2.length ≤ advChooseBudget n) ∧
-      (∀ n state ct', state.length ≤ advChooseBudget n → ct'.length ≤ ctBound n + 1 →
-        ProbComp.eval (adversary.guess n state ct') =
-          (BitString.uniformList (advGuessBudget n)).map (evalGuess (n, state, ct'))) ∧
-      PolynomiallyBounded (fun n =>
-        leveledChooseCoinBudget (2 * (n + 1)) 2 (pkBound n) (ctBound n)
-          (advChooseBudget n)) ∧
-      PolynomiallyBounded (fun n =>
-        leveledGuessCoinBudget (2 * (n + 1)) 2 (ctBound n)
-          (advChooseBudget n) (advGuessBudget n)) ∧
-      (leveledAdversary fixture (fun n => 2 * (n + 1)) (fun _ => 2) adversary).IsPPT ∧
-      (modLeveledAdversary fixture (fun n => 2 * n) (fun n => 2 * (n + 1))
-        (fun _ => 2) adversary).IsPPT :=
-  exists_leveledAdversary_overhead keyGen_ppt encrypt_ppt adversary_ppt
-    (budget := fun n => n + 1) (capacity := fun _ => 2) (width := fun _ => 2)
-    secret_width (fun _ => le_rfl) (by fun_prop) (by fun_prop)
+-- One choice of component envelopes realizes all four native components at every chain depth
+-- and secret capacity.
+example : ∃ B : OverheadBudget, ∀ depth capacity : ℕ → ℕ,
+    Nonempty (OverheadRealization fixture adversary depth capacity B) :=
+  exists_overheadRealization keyGen_ppt encrypt_ppt adversary_ppt
+
+-- From the realization: exact encryption replay and the ciphertext bound for every supported
+-- key, the public-key bound for every leveled artifact, and polynomial composite coin counts.
+example (B : OverheadBudget) (R : OverheadRealization fixture adversary (fun n => 2 * (n + 1))
+    (fun _ => 2) B) (n : ℕ) (keys : List Bool × List Bool)
+    (hkeys : keys ∈ (ProbComp.eval (fixture.keyGen n)).support) (bit : Bool) :
+    ProbComp.eval (fixture.encrypt n keys.1 bit) =
+      (BitString.uniformList (B.encCoins n)).map (R.encrypt.evaluate (n, keys.1, bit)) ∧
+    ∀ ct ∈ (ProbComp.eval (fixture.encrypt n keys.1 bit)).support, ct.length ≤ B.encCoins n :=
+  R.encrypt.eval_eq_and_length_le (a := (n, keys.1, bit))
+    (R.length_keys_le (fun n keys hkeys => (secret_width n keys hkeys).le) n keys hkeys).1
+
+example (B : OverheadBudget) (R : OverheadRealization fixture adversary (fun n => 2 * (n + 1))
+    (fun _ => 2) B) (n cut : ℕ) (artifact : List (List Bool) × List (List (List Bool)))
+    (hartifact : artifact ∈
+      (ProbComp.eval (fixture.publicKeyChainHybrid n (2 * (n + 1)) cut)).support) :
+    (encPublicKey artifact).length ≤
+      publicKeyLengthBound (2 * (n + 1)) 2 (B.keyCoins n) (B.encCoins n) :=
+  R.length_encPublicKey_le (fun n keys hkeys => (secret_width n keys hkeys).le) hartifact
+
+example (B : OverheadBudget) :
+    PolynomiallyBounded (fun n => leveledChooseCoinBudget (2 * (n + 1)) 2 (B.keyCoins n)
+      (B.encCoins n) (B.chooseCoins (fun n => 2 * (n + 1)) (fun _ => 2) n)) ∧
+    PolynomiallyBounded (fun n => leveledGuessCoinBudget (2 * (n + 1)) 2 (B.encCoins n)
+      (B.chooseCoins (fun n => 2 * (n + 1)) (fun _ => 2) n)
+      (B.guessCoins (fun n => 2 * (n + 1)) (fun _ => 2) n)) :=
+  ⟨B.polynomiallyBounded_leveledChooseCoinBudget (by fun_prop) (by fun_prop),
+    B.polynomiallyBounded_leveledGuessCoinBudget (by fun_prop) (by fun_prop)⟩
 
 
 -- Both adversary stages use a number of random bits that depends on their actual input.
@@ -387,7 +366,7 @@ example (depthBudget : ℕ → ℕ)
   obtain ⟨encCoins, chooseCoins, guessCoins, evaluate, _, _, _, hevaluate, hpoly, hlaw⟩ :=
     Scheme.exists_modLinkAdversary_guess_coin_evaluator keyGen_ppt encrypt_ppt
       inputSizedAdversary_ppt (coins := fun _ => 0) (budget := depthBudget)
-      (capacity := fun _ => 2) (width := fun _ => 2) secret_width (fun _ => le_rfl)
+      (capacity := fun _ => 2) (fun n keys hkeys => (secret_width n keys hkeys).le)
       hdepthBudget (by fun_prop) bit
   exact ⟨encCoins, chooseCoins, guessCoins, evaluate, hevaluate, hpoly, hlaw⟩
 
@@ -459,7 +438,7 @@ example (indexCoins depthBudget : ℕ → ℕ)
   obtain ⟨keyCoins, encCoins, chooseCoins, guessCoins, evaluate, _, _, _, _, hevaluate,
     hpoly, hlaw⟩ := exists_modLeveledGame_coin_evaluator keyGen_ppt encrypt_ppt
       inputSizedAdversary_ppt (coins := indexCoins) (budget := depthBudget)
-      (capacity := fun _ => 2) (width := fun _ => 2) secret_width (fun _ => le_rfl)
+      (capacity := fun _ => 2) (fun n keys hkeys => (secret_width n keys hkeys).le)
       hindexCoins hdepthBudget (by fun_prop)
   exact ⟨keyCoins, encCoins, chooseCoins, guessCoins, evaluate, hevaluate, hpoly, hlaw⟩
 
@@ -545,7 +524,8 @@ private theorem eval_one_slot_link (testBit bit : Bool) (n : ℕ) :
       (fixture.exactLinkAdversary (fun _ => 1) (fun _ => 1)
         (publicKeyGame fixture adversary testBit)) bit n) = PMF.pure testBit := by
   rw [fixture.eval_exactLinkAdversary _ _ _ n 2 bit (secret_width n)]
-  simp [Scheme.exactKeyChainHybridGame, eval_publicKeyGame]
+  simp [Scheme.eval_exactKeyChainHybridExperiment_of_pos, Scheme.eval_linkBitExperiment,
+    eval_publicKeyGame]
 
 -- The one-slot selector has no claimed improvement over the ideal factor `3`. Its two actual
 -- worlds have probabilities 1/4 and 1/2 after one attempt, retaining the fourth abort outcome.
