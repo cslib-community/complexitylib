@@ -15,6 +15,8 @@ import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
+import CslibFrontier.Languages.Probabilistic.Oracle.Norm
+import CslibFrontier.Languages.Probabilistic.Oracle.Substitution
 import CslibFrontier.Languages.Probabilistic.RandomOracle.Probabilistic
 import CslibFrontier.Tactic.SuppCases
 
@@ -229,12 +231,18 @@ theorem expansionGame_generated (generator : List Bool → List Bool)
   simpa [expansionGame, hybridGame, ProbOracleComp.eval_run_interpret_eq_runWith,
     expandCache, PMF.map_comp, Function.comp_def] using houtput.symm
 
+/-- The eager proof game samples every prefix label before running the client. -/
+private noncomputable def prefixTableGame (n depth width : ℕ)
+    (respond : List Bool → List Bool → List Bool) (program : WordOracleComp Unit Bool) :
+    ProbComp Bool := do
+  let table ← ProbComp.uniform (BitString depth → BitString width)
+  OracleComp.interpret (OracleComp.sumHandler ProbComp.unifFin (fun request =>
+    pure (if request.2.length = n then respond request.2
+      (List.ofFn (table (BitString.ofList depth (request.2.take depth)))) else []))) program
+
 private theorem prefix_eager (n depth width : ℕ) (hdepth : depth ≤ n)
     (respond : List Bool → List Bool → List Bool) (program : WordOracleComp Unit Bool) :
-    (PMF.uniformOfFintype (BitString depth → BitString width)).bind (fun table =>
-      OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle (fun request =>
-        PMF.pure (if request.2.length = n then respond request.2
-          (List.ofFn (table (BitString.ofList depth (request.2.take depth)))) else []))) program) =
+    ProbComp.eval (prefixTableGame n depth width respond program) =
       ((OracleComp.interpret (OracleComp.sumHandler
         (fun k => StateT.lift (ProbComp.unifOracle k)) (fun request cache =>
           if request.2.length = n then
@@ -249,9 +257,8 @@ private theorem prefix_eager (n depth width : ℕ) (hdepth : depth ≤ n)
   have h := RandomOracle.interpret_prob_eq_memoize_map
     (⟨List.ofFn, List.ofFn_injective⟩ : BitString depth ↪ List Bool) List.ofFn
     (fun _ => PMF.uniformOfFintype (BitString width)) (fun _ => BitString.uniformList width)
-    (fun _ => rfl) (OracleComp.interpret
-      (OracleComp.sumHandler (fun k => ProbOracleComp.sample (ProbComp.unifFin k))
-        (fun request : Unit × List Bool => adapter request.2)) program)
+    (fun _ => rfl)
+    (ProbOracleComp.simulate (fun request : Unit × List Bool => adapter request.2) program)
   have hstep (query : List Bool) : OracleComp.interpret
       (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
         (fun key => memoize (fun _ : List Bool => BitString.uniformList width) (List.ofFn key)))
@@ -273,9 +280,9 @@ private theorem prefix_eager (n depth width : ℕ) (hdepth : depth ≤ n)
           (adapter query) = PMF.pure (if query.length = n then
         respond query (List.ofFn (table (BitString.ofList depth (query.take depth)))) else []) := by
     by_cases hquery : query.length = n <;> simp [adapter, hquery, PMF.pure_map]
-  simpa only [PMF.pi_uniformOfFintype, OracleComp.interpret_interpret,
-    OracleComp.interpret_sumHandler, ProbOracleComp.interpret_sample, ProbComp.unifFin,
-    OracleComp.interpret_query, Function.Embedding.coeFn_mk, hstep, heval,
+  simpa only [prefixTableGame, ProbComp.eval_bind, ProbComp.eval_uniform,
+    ProbOracleComp.eval_interpret, ProbComp.eval_pure, PMF.pi_uniformOfFintype,
+    ProbOracleComp.interpret_simulate, Function.Embedding.coeFn_mk, hstep, heval,
     PMF.monad_bind_eq_bind] using h
 
 private def childrenEquiv (n : ℕ) : BitString (2 * n) ≃ (Bool → BitString n) :=
@@ -327,41 +334,28 @@ theorem expansionGame_uniform (generator : List Bool → List Bool) (adversary :
     (n depth : ℕ) (hdepth : depth < n) :
     ProbComp.eval (expansionGame generator (BitString.sampleList (2 * n)) adversary n depth) =
       ProbComp.eval (hybridGame generator adversary n (depth + 1)) := by
-  let earlier := fun table : BitString depth → BitString (2 * n) =>
-    OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle (fun request =>
-      PMF.pure (if request.2.length = n then eval generator
-        (selectChild n (List.ofFn (table (BitString.ofList depth (request.2.take depth))))
-          (request.2[depth]?.getD false)) (request.2.drop (depth + 1)) else []))) (adversary n [])
-  let later := fun table : BitString (depth + 1) → BitString n =>
-    OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle (fun request =>
-      PMF.pure (if request.2.length = n then eval generator
-        (List.ofFn (table (BitString.ofList (depth + 1) (request.2.take (depth + 1)))))
-          (request.2.drop (depth + 1)) else []))) (adversary n [])
-  have hearlier := prefix_eager n depth (2 * n) hdepth.le
-    (fun query expansion => eval generator (selectChild n expansion (query[depth]?.getD false))
-      (query.drop (depth + 1))) (adversary n [])
-  have hlater := prefix_eager n (depth + 1) n (by lia)
-    (fun query seed => eval generator seed (query.drop (depth + 1))) (adversary n [])
+  let fromParent := fun query expansion : List Bool =>
+    eval generator (selectChild n expansion (query[depth]?.getD false)) (query.drop (depth + 1))
+  let fromChild := fun query seed : List Bool => eval generator seed (query.drop (depth + 1))
   calc
-    _ = (PMF.uniformOfFintype (BitString depth → BitString (2 * n))).bind earlier := by
-      dsimp only [earlier]
-      rw [hearlier]
-      simp only [expansionGame, ProbComp.eval_map, ProbOracleComp.eval_run_interpret_eq_runWith]
+    _ = ProbComp.eval (prefixTableGame n depth (2 * n) fromParent (adversary n [])) := by
+      rw [prefix_eager n depth (2 * n) hdepth.le]
+      simp only [expansionGame, runWith_norm, pmf_norm]
       congr 4 with request cache : 2
       by_cases hquery : request.2.length = n
       · simp only [pmf_norm, expansionOracle, hquery, ite_true, ProbComp.eval_memoize,
           BitString.eval_sampleList, BitString.uniformList_take (Nat.le_refl (2 * n))]
         rfl
       · simp [expansionOracle, hquery]
-    _ = (PMF.uniformOfFintype (BitString (depth + 1) → BitString n)).bind later := by
+    _ = ProbComp.eval (prefixTableGame n (depth + 1) n fromChild (adversary n [])) := by
+      simp only [prefixTableGame, ProbComp.eval_bind, ProbComp.eval_uniform]
       rw [← PMF.uniformOfFintype_map_equiv (childTableEquiv n depth), PMF.bind_map]
-      simp only [earlier, later, Function.comp_def, ofFn_childTable]
+      simp only [fromParent, fromChild, Function.comp_def, ofFn_childTable]
     _ = _ := by
-      dsimp only [later]
-      rw [hlater]
-      simp only [hybridGame, ProbComp.eval_map, ProbOracleComp.eval_run_interpret_eq_runWith]
+      rw [prefix_eager n (depth + 1) n (by lia)]
+      simp only [hybridGame, runWith_norm, pmf_norm]
       congr 4 with request cache : 2
       by_cases hquery : request.2.length = n <;>
-        simp [frontierOracle, hquery, ProbComp.eval_memoize, PMF.map, Function.comp_def]
+        simp [frontierOracle, hquery, fromChild, ProbComp.eval_memoize, PMF.map, Function.comp_def]
 
 end Cslib.Crypto.GGM

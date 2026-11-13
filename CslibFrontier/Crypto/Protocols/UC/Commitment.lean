@@ -299,14 +299,14 @@ theorem corruptRouter_fcom_isBounded (κ : ℕ) (C : Finset (Fin 2)) :
 /-- Adversaries (and simulators) facing `fcom`: environment queries `AdvQ` with replies `AdvR`,
 and access to the party ports and backdoor of `fcom` on the network side. -/
 abbrev FcomAdversary (AdvQ AdvR : Type) : Type 1 :=
-  Adversary 2 AdvQ AdvR ((Fin 2 × CommitmentInput) ⊕ CommitmentBackdoor)
-    (Option CommitmentOutput ⊕ Option CommitmentOutput)
+  ExecAdversary 2 CommitmentInput CommitmentOutput CommitmentBackdoor (Option CommitmentOutput)
+    AdvQ AdvR
 
 /-- Deterministic transition of `corruptRouter {1} (fcom.toProtocol κ {1})` on the network port
 while `fcom` is in state `CommitmentState.committed b recDel` (independent of `b`). -/
 @[expose] def fcomCommittedStep
-    (q : (Fin 2 × CommitmentInput) ⊕ CommitmentBackdoor) (recDel : Bool) :
-    (Option CommitmentOutput ⊕ Option CommitmentOutput) × Bool :=
+    (q : RoutedNetQ 2 CommitmentInput CommitmentBackdoor) (recDel : Bool) :
+    RoutedNetR CommitmentOutput (Option CommitmentOutput) × Bool :=
   match q with
   | .inl (i, x) =>
     if i = 0 then (.inl none, recDel)
@@ -324,8 +324,8 @@ while `fcom` is in state `CommitmentState.committed b recDel` (independent of `b
 `recDel : Bool` and not on `b`. -/
 @[expose] def fcomCommittedView :
     Machine OracleSpec.empty
-      (netSpec ((Fin 2 × CommitmentInput) ⊕ CommitmentBackdoor)
-        (Option CommitmentOutput ⊕ Option CommitmentOutput)) where
+      (netSpec (RoutedNetQ 2 CommitmentInput CommitmentBackdoor)
+        (RoutedNetR CommitmentOutput (Option CommitmentOutput))) where
   State := Bool
   init := pure false
   handle q recDel := pure (fcomCommittedStep q recDel)
@@ -343,7 +343,7 @@ theorem fcomCommittedView_isBounded : fcomCommittedView.IsBounded 0 :=
 `corruptRouter {1} (fcom.toProtocol κ {1})` steps `recDel` according to `fcomCommittedStep q recDel`
 and keeps the committed bit at `b`. -/
 theorem handle_corruptRouter_fcom_committed (κ : ℕ) (b : Bool)
-    (q : (Fin 2 × CommitmentInput) ⊕ CommitmentBackdoor) (recDel : Bool) :
+    (q : RoutedNetQ 2 CommitmentInput CommitmentBackdoor) (recDel : Bool) :
     ((corruptRouter ({1} : Finset (Fin 2)) (fcom.toProtocol κ {1})).handle (.inr q)).run
       (.committed b recDel) =
       Prod.map _root_.id (.committed b) <$> (fcomCommittedView.handle q).run recDel := by
@@ -357,8 +357,8 @@ network program against `corruptRouter {1} (fcom.toProtocol κ {1})` from
 `fcomCommittedView`. -/
 theorem runFrom_fcom_committed (κ : ℕ) (b : Bool) {α : Type}
     (program : ProbOracleComp
-      (netSpec ((Fin 2 × CommitmentInput) ⊕ CommitmentBackdoor)
-        (Option CommitmentOutput ⊕ Option CommitmentOutput)) α)
+      (netSpec (RoutedNetQ 2 CommitmentInput CommitmentBackdoor)
+        (RoutedNetR CommitmentOutput (Option CommitmentOutput))) α)
     (recDel : Bool) :
     (corruptRouter ({1} : Finset (Fin 2)) (fcom.toProtocol κ {1})).runFrom
       (liftNet program) (.committed b recDel) =
@@ -373,18 +373,18 @@ theorem runFrom_fcom_committed (κ : ℕ) (b : Bool) {α : Type}
     rcases q with k | q
     · have h₁ : liftNet (n := 2) (In := CommitmentInput) (Out := CommitmentOutput)
           (OracleComp.query
-            (spec := probOracleSpec (netSpec ((Fin 2 × CommitmentInput) ⊕ CommitmentBackdoor)
-              (Option CommitmentOutput ⊕ Option CommitmentOutput)))
+            (spec := probOracleSpec (netSpec (RoutedNetQ 2 CommitmentInput CommitmentBackdoor)
+              (RoutedNetR CommitmentOutput (Option CommitmentOutput))))
             (Sum.inl k)) =
           ProbOracleComp.sample (ProbComp.unifFin k) := by
         rw [← liftNet_sample
-          (NetQ := (Fin 2 × CommitmentInput) ⊕ CommitmentBackdoor)
-          (NetR := Option CommitmentOutput ⊕ Option CommitmentOutput)]
+          (NetQ := RoutedNetQ 2 CommitmentInput CommitmentBackdoor)
+          (NetR := RoutedNetR CommitmentOutput (Option CommitmentOutput))]
         rfl
       have h₂ : fcomCommittedView.runFrom
           (OracleComp.query
-            (spec := probOracleSpec (netSpec ((Fin 2 × CommitmentInput) ⊕ CommitmentBackdoor)
-              (Option CommitmentOutput ⊕ Option CommitmentOutput)))
+            (spec := probOracleSpec (netSpec (RoutedNetQ 2 CommitmentInput CommitmentBackdoor)
+              (RoutedNetR CommitmentOutput (Option CommitmentOutput))))
             (Sum.inl k)) (fcomCommittedState recDel) =
           (fun a => (a, fcomCommittedState recDel)) <$>
             ProbOracleComp.sample (ProbComp.unifFin k) :=
@@ -395,8 +395,8 @@ theorem runFrom_fcom_committed (κ : ℕ) (b : Bool) {α : Type}
     · rw [liftNet_bind]
       have h₁ : (corruptRouter ({1} : Finset (Fin 2)) (fcom.toProtocol κ {1})).runFrom
           (liftNet (OracleComp.query
-            (spec := probOracleSpec (netSpec ((Fin 2 × CommitmentInput) ⊕ CommitmentBackdoor)
-              (Option CommitmentOutput ⊕ Option CommitmentOutput)))
+            (spec := probOracleSpec (netSpec (RoutedNetQ 2 CommitmentInput CommitmentBackdoor)
+              (RoutedNetR CommitmentOutput (Option CommitmentOutput))))
             (Sum.inr q))) (fcomRouterState κ {1} (.committed b recDel)) =
           pure ((fcomCommittedStep q recDel).1,
             fcomRouterState κ {1} (.committed b (fcomCommittedStep q recDel).2)) := by
@@ -404,8 +404,8 @@ theorem runFrom_fcom_committed (κ : ℕ) (b : Bool) {α : Type}
         exact handle_corruptRouter_fcom_committed κ b q recDel
       have h₂ : fcomCommittedView.runFrom
           (OracleComp.query
-            (spec := probOracleSpec (netSpec ((Fin 2 × CommitmentInput) ⊕ CommitmentBackdoor)
-              (Option CommitmentOutput ⊕ Option CommitmentOutput)))
+            (spec := probOracleSpec (netSpec (RoutedNetQ 2 CommitmentInput CommitmentBackdoor)
+              (RoutedNetR CommitmentOutput (Option CommitmentOutput))))
             (Sum.inr q)) (fcomCommittedState recDel) =
           pure ((fcomCommittedStep q recDel).1,
             fcomCommittedState (fcomCommittedStep q recDel).2) := rfl
@@ -453,7 +453,7 @@ theorem runFrom_fcom_committed (κ : ℕ) (b : Bool) {α : Type}
 /-- **Post-commit binding of `fcom`:** from `CommitmentState.active bStar phase`, every activation
 of `fcom.toProtocol` factors through `fcomLocked bStar`. -/
 theorem handle_fcom_locked (κ : ℕ) (C : Finset (Fin 2)) (bStar : Bool)
-    (q : (Fin 2 × CommitmentInput) ⊕ CommitmentBackdoor) (phase : CommitmentPhase) :
+    (q : RoutedNetQ 2 CommitmentInput CommitmentBackdoor) (phase : CommitmentPhase) :
     ((fcom.toProtocol κ C).handle q).run (.active bStar phase) =
       Prod.map _root_.id (.active bStar) <$> ((fcomLocked bStar).handle q).run phase := by
   rcases q with ⟨i, x⟩ | q
@@ -519,8 +519,8 @@ inductive ReceiverState (CommitMsg : Type) : Type
 /-- A simulator for the dummy adversary of a two-party plain-model commitment scheme with messages
 `CommitMsg` and `OpenMsg` against the ideal commitment functionality `fcom`. -/
 abbrev PlainCommitmentSim (CommitMsg OpenMsg : Type) : Type 1 :=
-  FcomAdversary ((Fin 2 × CommitmentInput) ⊕ PlainNetQ CommitMsg OpenMsg)
-    (Option CommitmentOutput ⊕ PlainNetR CommitMsg OpenMsg)
+  FcomAdversary (RoutedNetQ 2 CommitmentInput (PlainNetQ CommitMsg OpenMsg))
+    (RoutedNetR CommitmentOutput (PlainNetR CommitMsg OpenMsg))
 
 /-- A two-party plain-model bit-commitment scheme with commit message type `CommitMsg` and opening
 message type `OpenMsg`:
@@ -731,8 +731,8 @@ the commit message `c` to receiver `1`, instructs committer `0` to open, forward
 message `o` to receiver `1`, and checks whether receiver `1` outputs `some (.opened b)`. -/
 @[expose] def honestCommitEnv (b : Bool) :
     Environment 2 CommitmentInput CommitmentOutput
-      ((Fin 2 × CommitmentInput) ⊕ PlainNetQ CommitMsg OpenMsg)
-      (Option CommitmentOutput ⊕ PlainNetR CommitMsg OpenMsg) := fun _ _ => do
+      (RoutedNetQ 2 CommitmentInput (PlainNetQ CommitMsg OpenMsg))
+      (RoutedNetR CommitmentOutput (PlainNetR CommitMsg OpenMsg)) := fun _ _ => do
   let _ ← ProbOracleComp.query
     (spec := execSpec 2 CommitmentInput CommitmentOutput _ _) (Sum.inl (0, .commit b))
   let r₁ ← ProbOracleComp.query
@@ -916,8 +916,8 @@ environment reads the opening message `o` from the network, and the environment 
 verification `scheme.verify κ c o` internally to test whether `res = some b`. -/
 @[expose] def corruptReceiverEnv (scheme : PlainCommitmentScheme CommitMsg OpenMsg) (b : Bool) :
     Environment 2 CommitmentInput CommitmentOutput
-      ((Fin 2 × CommitmentInput) ⊕ PlainNetQ CommitMsg OpenMsg)
-      (Option CommitmentOutput ⊕ PlainNetR CommitMsg OpenMsg) := fun κ _ => do
+      (RoutedNetQ 2 CommitmentInput (PlainNetQ CommitMsg OpenMsg))
+      (RoutedNetR CommitmentOutput (PlainNetR CommitMsg OpenMsg)) := fun κ _ => do
   let _ ← ProbOracleComp.query
     (spec := execSpec 2 CommitmentInput CommitmentOutput _ _) (Sum.inl (0, .commit b))
   let r₁ ← ProbOracleComp.query
@@ -941,15 +941,15 @@ theorem corruptReceiverEnv_polyBounded {scheme : PlainCommitmentScheme CommitMsg
     {pV : Polynomial ℕ} (hV : ∀ κ c o, (scheme.verify κ c o).IsQueryBounded (pV.eval κ))
     (b : Bool) : (corruptReceiverEnv scheme b).PolyBounded (pV + 4) := fun κ _ => by
   simp only [Polynomial.eval_add, Polynomial.eval_ofNat, corruptReceiverEnv]
-  have h₂ (c : CommitMsg) (r₂ : Option CommitmentOutput ⊕ PlainNetR CommitMsg OpenMsg) :
+  have h₂ (c : CommitMsg) (r₂ : RoutedNetR CommitmentOutput (PlainNetR CommitMsg OpenMsg)) :
       (match r₂ with
       | .inr (.openMsg (some o)) => do
         let res ← ProbOracleComp.sample (scheme.verify κ c o)
         return decide (res = some b)
       | _ => return false :
         ProbOracleComp (execSpec 2 CommitmentInput CommitmentOutput
-          ((Fin 2 × CommitmentInput) ⊕ PlainNetQ CommitMsg OpenMsg)
-          (Option CommitmentOutput ⊕ PlainNetR CommitMsg OpenMsg)) Bool).IsQueryBounded
+          (RoutedNetQ 2 CommitmentInput (PlainNetQ CommitMsg OpenMsg))
+          (RoutedNetR CommitmentOutput (PlainNetR CommitMsg OpenMsg))) Bool).IsQueryBounded
         (pV.eval κ) := by
     rcases r₂ with _ | ⟨_ | o | _⟩
     · exact OracleComp.IsCostBounded.pure _ (pV.eval κ)
@@ -960,7 +960,7 @@ theorem corruptReceiverEnv_polyBounded {scheme : PlainCommitmentScheme CommitMsg
         exact (OracleComp.isCostBounded_map_iff _ _ _).mpr
           (Machine.isQueryBounded_sample (hV κ c o))
     · exact OracleComp.IsCostBounded.pure _ (pV.eval κ)
-  have h₁ (r₁ : Option CommitmentOutput ⊕ PlainNetR CommitMsg OpenMsg) :
+  have h₁ (r₁ : RoutedNetR CommitmentOutput (PlainNetR CommitMsg OpenMsg)) :
       (match r₁ with
       | .inr (.commitMsg (some c)) => do
         let _ ← ProbOracleComp.query
@@ -974,8 +974,8 @@ theorem corruptReceiverEnv_polyBounded {scheme : PlainCommitmentScheme CommitMsg
         | _ => return false
       | _ => return false :
         ProbOracleComp (execSpec 2 CommitmentInput CommitmentOutput
-          ((Fin 2 × CommitmentInput) ⊕ PlainNetQ CommitMsg OpenMsg)
-          (Option CommitmentOutput ⊕ PlainNetR CommitMsg OpenMsg)) Bool).IsQueryBounded
+          (RoutedNetQ 2 CommitmentInput (PlainNetQ CommitMsg OpenMsg))
+          (RoutedNetR CommitmentOutput (PlainNetR CommitMsg OpenMsg))) Bool).IsQueryBounded
         (1 + (1 + pV.eval κ)) := by
     rcases r₁ with _ | ⟨c | _ | _⟩
     · exact OracleComp.IsCostBounded.pure _ (1 + (1 + pV.eval κ))
@@ -1018,7 +1018,7 @@ theorem eval_exec_real_corruptReceiverEnv [DecidableEq CommitMsg] [DecidableEq O
 functionality view `fcomCommittedView`: initializes `S₁ κ {1}` and runs its activation on
 `.inr .readCommit` from `recDel = false`. -/
 def simCommit (S₁ : PlainCommitmentSim CommitMsg OpenMsg) (κ : ℕ) :
-    ProbComp (((Option CommitmentOutput ⊕ PlainNetR CommitMsg OpenMsg) × (S₁ κ {1}).State) ×
+    ProbComp ((RoutedNetR CommitmentOutput (PlainNetR CommitMsg OpenMsg) × (S₁ κ {1}).State) ×
       Bool) := do
   let st₀ ← (S₁ κ {1}).init
   Machine.closeProgram
@@ -1029,7 +1029,7 @@ def simCommit (S₁ : PlainCommitmentSim CommitMsg OpenMsg) (κ : ℕ) :
 `fcom` has opened bit `b`. -/
 def simOpen (S₁ : PlainCommitmentSim CommitMsg OpenMsg)
     (b : Bool) (κ : ℕ) (st₁ : (S₁ κ {1}).State) (recDel₁ : Bool) :
-    ProbComp (Option CommitmentOutput ⊕ PlainNetR CommitMsg OpenMsg) :=
+    ProbComp (RoutedNetR CommitmentOutput (PlainNetR CommitMsg OpenMsg)) :=
   (Prod.fst ∘ Prod.fst) <$> Machine.closeProgram
     ((corruptRouter ({1} : Finset (Fin 2)) (fcom.toProtocol κ {1})).runFrom
       (liftNet (((S₁ κ {1}).handle (.inr .readOpen)).run st₁))
@@ -1066,8 +1066,8 @@ independent of the target bit `b`: run `simCommit S₁ κ` and, if it produces a
 deliver `c` to honest receiver `1` and return `some (st₁, recDel₁)`. -/
 @[expose] def corruptCommitterPrefix (S₁ : PlainCommitmentSim CommitMsg OpenMsg) (κ : ℕ) :
     ProbOracleComp (execSpec 2 CommitmentInput CommitmentOutput
-      ((Fin 2 × CommitmentInput) ⊕ PlainNetQ CommitMsg OpenMsg)
-      (Option CommitmentOutput ⊕ PlainNetR CommitMsg OpenMsg))
+      (RoutedNetQ 2 CommitmentInput (PlainNetQ CommitMsg OpenMsg))
+      (RoutedNetR CommitmentOutput (PlainNetR CommitMsg OpenMsg)))
       (Option ((S₁ κ {1}).State × Bool)) := do
   let ((r₁, st₁), recDel₁) ← ProbOracleComp.sample (simCommit S₁ κ)
   match r₁ with
@@ -1085,8 +1085,8 @@ receiver `1`, and check whether receiver `1` outputs `some (.opened b)`. -/
     (b : Bool) (κ : ℕ) :
     Option ((S₁ κ {1}).State × Bool) →
     ProbOracleComp (execSpec 2 CommitmentInput CommitmentOutput
-      ((Fin 2 × CommitmentInput) ⊕ PlainNetQ CommitMsg OpenMsg)
-      (Option CommitmentOutput ⊕ PlainNetR CommitMsg OpenMsg)) Bool
+      (RoutedNetQ 2 CommitmentInput (PlainNetQ CommitMsg OpenMsg))
+      (RoutedNetR CommitmentOutput (PlainNetR CommitMsg OpenMsg))) Bool
   | some (st₁, recDel₁) => do
     let recOut ← ProbOracleComp.query
       (spec := execSpec 2 CommitmentInput CommitmentOutput _ _) (Sum.inl (1, .query))
@@ -1109,8 +1109,8 @@ receiver `1`, and check whether receiver `1` outputs `some (.opened b)`. -/
 `corruptCommitterPrefix S₁ κ` followed by `corruptCommitterSuffix S₁ b κ`. -/
 @[expose] def corruptCommitterEnv (S₁ : PlainCommitmentSim CommitMsg OpenMsg) (b : Bool) :
     Environment 2 CommitmentInput CommitmentOutput
-      ((Fin 2 × CommitmentInput) ⊕ PlainNetQ CommitMsg OpenMsg)
-      (Option CommitmentOutput ⊕ PlainNetR CommitMsg OpenMsg) := fun κ _ => do
+      (RoutedNetQ 2 CommitmentInput (PlainNetQ CommitMsg OpenMsg))
+      (RoutedNetR CommitmentOutput (PlainNetR CommitMsg OpenMsg)) := fun κ _ => do
   let pre ← corruptCommitterPrefix S₁ κ
   corruptCommitterSuffix S₁ b κ pre
 
@@ -1135,7 +1135,7 @@ theorem corruptCommitterEnv_polyBounded {S₁ : PlainCommitmentSim CommitMsg Ope
       (corruptCommitterSuffix S₁ b κ pre).IsQueryBounded (pS.eval κ + 3) := by
     rcases pre with _ | ⟨st₁, recDel₁⟩
     · exact OracleComp.IsCostBounded.pure false (pS.eval κ + 3)
-    · have hopen (r₂ : Option CommitmentOutput ⊕ PlainNetR CommitMsg OpenMsg) :
+    · have hopen (r₂ : RoutedNetR CommitmentOutput (PlainNetR CommitMsg OpenMsg)) :
           (match r₂ with
           | .inr (.openMsg (some o)) => do
             let _ ← ProbOracleComp.query
@@ -1146,8 +1146,8 @@ theorem corruptCommitterEnv_polyBounded {S₁ : PlainCommitmentSim CommitMsg Ope
             return decide (openOut = some (.opened b))
           | _ => return false :
             ProbOracleComp (execSpec 2 CommitmentInput CommitmentOutput
-              ((Fin 2 × CommitmentInput) ⊕ PlainNetQ CommitMsg OpenMsg)
-              (Option CommitmentOutput ⊕ PlainNetR CommitMsg OpenMsg)) Bool).IsQueryBounded
+              (RoutedNetQ 2 CommitmentInput (PlainNetQ CommitMsg OpenMsg))
+              (RoutedNetR CommitmentOutput (PlainNetR CommitMsg OpenMsg))) Bool).IsQueryBounded
             (1 + 1) := by
         rcases r₂ with _ | ⟨_ | o | _⟩
         · exact OracleComp.IsCostBounded.pure _ (1 + 1)
@@ -1174,8 +1174,8 @@ theorem corruptCommitterEnv_polyBounded {S₁ : PlainCommitmentSim CommitMsg Ope
           else
             return false :
             ProbOracleComp (execSpec 2 CommitmentInput CommitmentOutput
-              ((Fin 2 × CommitmentInput) ⊕ PlainNetQ CommitMsg OpenMsg)
-              (Option CommitmentOutput ⊕ PlainNetR CommitMsg OpenMsg)) Bool).IsQueryBounded
+              (RoutedNetQ 2 CommitmentInput (PlainNetQ CommitMsg OpenMsg))
+              (RoutedNetR CommitmentOutput (PlainNetR CommitMsg OpenMsg))) Bool).IsQueryBounded
             (pS.eval κ + 2) := by
         split_ifs
         · exact (Machine.isQueryBounded_sample (isQueryBounded_simOpen (hS κ) b st₁ recDel₁)).bind
