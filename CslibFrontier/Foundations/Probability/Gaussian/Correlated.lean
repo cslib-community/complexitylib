@@ -68,7 +68,9 @@ one coordinate is `1 / 2 - arccos ρ / (2π)` (Example 11.19); both rest on Shep
   forms (11.2) and (11.1).
 * `ProbabilityTheory.integral_correlatedGaussian_ite_pos_mul_ite_pos`: Corollary 11.20 on the
   line.
-* `ProbabilityTheory.correlatedGaussianPi_eq_map`,
+* `ProbabilityTheory.correlatedGaussianPi_eq_map_pi`,
+  `ProbabilityTheory.correlatedGaussianPi_eq_map`,
+  `ProbabilityTheory.correlatedGaussianPi_one`,
   `ProbabilityTheory.correlatedGaussianPi_map_eval`,
   `ProbabilityTheory.correlatedGaussianPi_map_fst`,
   `ProbabilityTheory.correlatedGaussianPi_map_snd`,
@@ -461,6 +463,14 @@ instance isProbabilityMeasure_correlatedGaussianPi (ρ : ℝ) :
     IsProbabilityMeasure (correlatedGaussianPi ι ρ) :=
   inferInstanceAs (IsProbabilityMeasure (Measure.map _ _))
 
+/-- `ρ`-correlated vectors are assembled from mutually independent `ρ`-correlated coordinate
+pairs. This is the definition of `correlatedGaussianPi`. -/
+theorem correlatedGaussianPi_eq_map_pi (ρ : ℝ) :
+    correlatedGaussianPi ι ρ =
+      (Measure.pi fun _ : ι => correlatedGaussian ρ).map
+        fun p => (fun i => (p i).1, fun i => (p i).2) := by
+  rw [correlatedGaussianPi]
+
 /-- **`ρ`-correlated vectors from independent ones**
 [O'Donnell, Definition 11.10, Remark 11.11][ODonnell2014]:
 `(z, z')` is `ρ`-correlated when `z` is a standard Gaussian vector and `z' = ρ z + √(1 - ρ²) g`
@@ -479,6 +489,17 @@ theorem correlatedGaussianPi_eq_map (ρ : ℝ) :
   change ((Measure.pi fun _ : ι => ((gaussianReal 0 1).prod (gaussianReal 0 1)).map _).map _) = _
   rw [← h1, Measure.map_map (by fun_prop) (by fun_prop)]
   rfl
+
+/-- `1`-correlated Gaussian vectors are `(z, z)` for a standard Gaussian vector `z`. -/
+theorem correlatedGaussianPi_one :
+    correlatedGaussianPi ι 1 =
+      (Measure.pi fun _ : ι => gaussianReal 0 1).map fun z => (z, z) := by
+  have h : (fun q : (ι → ℝ) × (ι → ℝ) => (q.1, fun i => 1 * q.1 i + √(1 - 1 ^ 2) * q.2 i)) =
+      (fun z => (z, z)) ∘ Prod.fst := by
+    funext q
+    simp only [one_mul, one_pow, sub_self, sqrt_zero, zero_mul, add_zero, Function.comp_apply]
+  rw [correlatedGaussianPi_eq_map, h, ← Measure.map_map (by fun_prop) measurable_fst,
+    Measure.map_fst_prod, measure_univ, one_smul]
 
 /-- The coordinate pairs of `ρ`-correlated vectors are `ρ`-correlated. -/
 theorem correlatedGaussianPi_map_eval (ρ : ℝ) (i : ι) :

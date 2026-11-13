@@ -6178,6 +6178,7 @@ public import CslibFrontier.Foundations.Probability.Combinatorics.BinomialRandom
 public import CslibFrontier.Foundations.Probability.CoordinateExpectation
 public import CslibFrontier.Foundations.Probability.CoordinateFactorization
 public import CslibFrontier.Foundations.Probability.EfronStein
+public import CslibFrontier.Foundations.Probability.Gaussian.Borell
 public import CslibFrontier.Foundations.Probability.Gaussian.CDF
 public import CslibFrontier.Foundations.Probability.Gaussian.CenteredTail
 public import CslibFrontier.Foundations.Probability.Gaussian.CoefficientFiber

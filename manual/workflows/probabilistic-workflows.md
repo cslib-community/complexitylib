@@ -2682,7 +2682,9 @@ Most theorems assume `|ρ| ≤ 1`, since `√(1 - ρ²)` is `0` in Lean outside 
   [Evaluate the Gaussian quadrant probability](#evaluate-the-gaussian-quadrant-probability).
 - `correlatedGaussian_zero`, `correlatedGaussian_one` and `correlatedGaussian_neg_one` give the
   pair at `ρ = 0, 1, -1`, and `correlatedGaussian_map_neg_snd ρ` says that negating `z'` turns a
-  `ρ`-correlated pair into a `-ρ`-correlated one.
+  `ρ`-correlated pair into a `-ρ`-correlated one. For vectors, `correlatedGaussianPi_eq_map_pi`
+  unfolds the product over coordinates, `correlatedGaussianPi_eq_map` writes `z'` as
+  `ρ z + √(1 - ρ²) g`, and `correlatedGaussianPi_one` gives `(z, z)` at `ρ = 1`.
 - For one coordinate, `gaussianNoiseStability_indicator_Iic_eval hρ i` gives
   `1 / 2 - arccos ρ / (2 * π)` for the indicator of `z i ≤ 0`. For any measurable function of a
   projection, `gaussianNoiseStability_comp_dotProduct` reduces stability to an integral against
@@ -3111,6 +3113,9 @@ measure on `ℝ`. That file proves continuity without atoms, strict monotonicity
   `gaussianQuadrant_half_half` (`1 / 2 - arccos ρ / (2 * π)`).
 - Comparison with independence (Exercise 11.19 (c)): `mul_le_gaussianQuadrant` for `ρ ∈ [0, 1]`
   and `gaussianQuadrant_le_mul` for `ρ ∈ [-1, 0]`.
+- Regularity, for `|ρ| ≤ 1`: `lipschitzWith_gaussianQuadrant hρ` (`2`-Lipschitz on `ℝ × ℝ`),
+  `continuous_gaussianQuadrant hρ` and `measurable_gaussianQuadrant hρ` for the uncurried
+  function, and `Measurable.gaussianQuadrant hρ ha hb` for `x ↦ Λ_ρ(a x, b x)`.
 
 The checked [`GaussianQuadrant.lean` clients](../../CslibFrontierTests/GaussianQuadrant.lean)
 evaluate `Λ_{1/2}(1 / 2) = 1 / 3`, the cases `ρ = 0, 1, -1`, both reflections and a clamped
@@ -3120,7 +3125,72 @@ from the repository root to check them.
 
 The comparison in (c) is non-strict, and the derivative formula of Exercise 11.19 (d) is not
 proved. Borell's Isoperimetric Theorem, that halfspaces maximize `Stab_ρ` among sets of volume
-`α`, is not part of this module.
+`α`, is not part of this module; for its reduction to one dimension, see
+[Reduce Borell's Isoperimetric Theorem to one dimension](#reduce-borells-isoperimetric-theorem-to-one-dimension).
+
+## Reduce Borell's Isoperimetric Theorem to one dimension
+
+Import
+[`CslibFrontier.Foundations.Probability.Gaussian.Borell`](../../CslibFrontier/Foundations/Probability/Gaussian/Borell.lean)
+and open the `ProbabilityTheory` namespace. Write `Φ` for `cdf (gaussianReal 0 1)`, `γ` for
+`Measure.pi fun _ : ι => gaussianReal 0 1`, `E_γ f` for `∫ z, f z ∂γ` and `(z, z')` for a pair
+drawn from `correlatedGaussianPi ι ρ`. The module formalizes the structural part of the
+Mossel–Neeman proof (O'Donnell, Exercises 11.26 and 11.27); the one-dimensional inequality itself
+stays a hypothesis.
+
+- The two predicates. `TwoFunctionBorellInequality ρ ι` says that for measurable
+  `f, g : (ι → ℝ) → ℝ` with values in `[0, 1]`,
+  `E[gaussianQuadrant ρ (f z) (g z')] ≤ gaussianQuadrant ρ (E_γ f) (E_γ g)`.
+  `TwoSetBorellInequality ρ ι` says that for measurable `A`, `B`,
+  `(correlatedGaussianPi ι ρ).real (A ×ˢ B) ≤ gaussianQuadrant ρ (γ.real A) (γ.real B)`. Unfold
+  them with `twoFunctionBorellInequality_iff` and `twoSetBorellInequality_iff`. Both are meant
+  for `ρ ∈ [0, 1]`; the book states them for `ρ ∈ (0, 1)`, and they fail for `ρ ∈ [-1, 0)`.
+- Tensorization (Exercise 11.27). For `hι : TwoFunctionBorellInequality ρ ι`, `hι.sum hρ hκ`
+  passes from `ι` and `κ` to `ι ⊕ κ`, `h.of_equiv e` relabels the coordinates along `e : ι ≃ κ`,
+  and `twoFunctionBorellInequality_of_isEmpty ρ` covers dimension `0`. Together they give
+  `h.of_fin_one hρ ι`: the case `Fin 1` implies every finite `ι`. `sum` and `of_fin_one` need
+  `hρ : |ρ| ≤ 1`; relabelling and dimension `0` need nothing. The splitting lemmas `pi_gaussianReal_sum` and `correlatedGaussianPi_sum` and the
+  relabelling lemmas `measurePreserving_pi_gaussianReal_comp_symm` and
+  `correlatedGaussianPi_map_comp_symm` are public.
+- From functions to sets and back (Exercise 11.26 (a), (b)). `h.twoSetBorellInequality hρ` turns
+  the two-function form into the two-set form, through `integral_gaussianQuadrant_indicator`.
+  For `0 ≤ ρ ≤ 1`, `h.gaussianNoiseStability_le hρ0 hρ1 hf hf01` is Borell's theorem for
+  `[0, 1]`-valued `f`: `gaussianNoiseStability ρ f ≤ gaussianQuadrant ρ (E_γ f) (E_γ f)`. Its
+  `_of_ae` form takes `AEStronglyMeasurable f γ` and values in `[0, 1]` almost everywhere, and
+  `_of_integral_eq_half` concludes `≤ 1 / 2 - arccos ρ / (2 * π)` when `E_γ f = 1 / 2`.
+  Conversely, `TwoSetBorellInequality.twoFunctionBorellInequality` takes the two-set form in
+  `ι ⊕ Unit` to the two-function form in `ι`.
+- Equality cases (Exercise 11.26 (c)). For `a ≠ 0`,
+  `measureReal_correlatedGaussianPi_setOf_dotProduct_le_prod ρ ha b₁ b₂` shows that the parallel
+  halfspaces `a ⬝ᵥ z ≤ b₁` and `a ⬝ᵥ z ≤ b₂` attain the two-set bound, and
+  `integral_gaussianQuadrant_indicator_setOf_dotProduct_le hρ ha b₁ b₂` restates it for their
+  indicators.
+  `integral_gaussianQuadrant_cdf_dotProduct_add ρ a b₁ b₂` gives equality for
+  `f z = Φ (a ⬝ᵥ z + b₁)` and `g z = Φ (a ⬝ᵥ z + b₂)`, for any `a`.
+- The whole reduction. `h.twoSetBorellInequality_of_fin_one hρ ι` and
+  `h.gaussianNoiseStability_le_of_fin_one hρ0 hρ1 hf hf01` start from
+  `h : TwoFunctionBorellInequality ρ (Fin 1)`. As non-vacuity checks,
+  `twoFunctionBorellInequality_zero ι` and `twoFunctionBorellInequality_one ι` prove the
+  predicate outright at `ρ = 0` and `ρ = 1`.
+
+The checked [`GaussianBorell.lean` clients](../../CslibFrontierTests/GaussianBorell.lean) take a
+hypothetical one-dimensional inequality to `Fin 3`: the two-set bound, Borell's bound for a
+`[0, 1]`-valued `f`, the volume-`1 / 2` bound for a set and, through
+`twoFunctionBorellInequality_iff`, the two-function bound for `f z = Φ (z 0)` and `g = 1 / 2`.
+They apply the converse from `Fin 2 ⊕ Unit` to `Fin 2`, and give the unconditional two-set
+bounds at `ρ = 0` and `ρ = 1`; at `ρ = 1`, through `twoSetBorellInequality_iff`, the bound is
+`≤ min (γ.real A) (γ.real B)`. They check both equality cases, for the halfspaces
+`z₀ + z₁ ≤ 1` and `z₀ + z₁ ≤ -2` and for `Φ (z₀ - 1)` and `Φ (z₀ + 3)`. Finally they prove
+`¬ TwoSetBorellInequality (-(1 / 2)) (Fin 1)`: the half-lines `z ≤ 0` and `z ≥ 0` give
+`1 / 3 > 1 / 6`. Run
+`scripts/build.sh CslibFrontierTests.GaussianBorell` from the repository root to check them.
+
+The one-dimensional two-function inequality (Exercises 11.28 and 11.29) is not proved, so
+Borell's Isoperimetric Theorem itself remains a conditional result here. The book's
+`[-1, 1]`-valued volume-`1 / 2` form, `Stab_ρ[f] ≤ 1 - 2 / π * arccos ρ` for `E_γ f = 0`, is not
+stated; it follows from `_of_integral_eq_half` applied to `fun z => (1 + f z) / 2`.
+Exercise 11.25 (sets suffice) is not needed, since the two-function route handles
+`[0, 1]`-valued `f` directly.
 
 ## Compare bits with Gaussians by the invariance principle
 
