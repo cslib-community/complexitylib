@@ -912,12 +912,12 @@ theorem gmwSeqView_advantage_le {α : Type} {enc : α ↪ List Bool}
     (generator : List Bool → List Bool) (length : ℕ → ℕ) (f : α → CNF ℕ) (k : ℕ → ℕ)
     {Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool)}
     (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun (n, a, z) => Vstar n a z))
-    (adversary : ℕ → α → List Bool → List Bool → ProbComp Bool)
+    (adversary : ZKDistinguisher α)
     (n : ℕ) (a : α) (w z : List Bool) (hw : ThreeSAT.verifier (f a, w) = true) :
     Game.advantage
         (distinguishingGame
-          (((gmwSeqProver generator (n + 7) (length (n + 7)) (f a) w (k n)).run (Vstar n a z)
-            (gmwSeqProver generator (n + 7) (length (n + 7)) (f a) w (k n)).init).map Prod.fst)
+          (zkRealView (gmwSeqProver generator (n + 7) (length (n + 7)) (f a) w (k n))
+            (Vstar n a z))
           (adversary n a z))
         (distinguishingGame
           (ProbComp.eval (gmwSeqSimulator enc generator length f k Vstar n a z))
@@ -1101,14 +1101,13 @@ private theorem isPPTOn_gmwSeqViewReduction_aux {α Aux : Type}
 theorem isPPTOn_gmwSeqViewReduction {α : Type} {enc : α ↪ List Bool}
     {generator : List Bool → List Bool} {length k : ℕ → ℕ} {f : α → CNF ℕ}
     {Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool)}
-    {adversary : ℕ → α → List Bool → List Bool → ProbComp Bool}
+    {adversary : ZKDistinguisher α}
     (hg : ComputableInPolyTime generator encBits encBits)
     (hlen : ∀ s, (generator s).length = length s.length)
     (hf : ComputableInPolyTime f enc encCNF)
     (hk : ComputableInPolyTime k encUnary encUnary)
     (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun (n, a, z) => Vstar n a z))
-    (hadv : IsPPTOn (encPair (encInstanceAuxInput enc) encBits) encBool
-      (fun ((n, a, z), view) => adversary n a z view)) :
+    (hadv : adversary.IsPPT enc) :
     IsPPTOn
       (encPair (encInstanceWitnessAuxInput enc) encBits) encBool
       (fun ((n, a, w, z), challenge) =>
@@ -1146,13 +1145,12 @@ distinguisher-auxiliary families. -/
 theorem AdvicePRG.gmwSeqView_negligible {α : Type} {enc : α ↪ List Bool}
     {generator : List Bool → List Bool} {length k : ℕ → ℕ} {f : α → CNF ℕ}
     {Vstar : ℕ → α → List Bool → WordOracleComp Unit (List Bool)}
-    {adversary : ℕ → α → List Bool → List Bool → ProbComp Bool}
+    {adversary : ZKDistinguisher α}
     (hAdv : AdvicePRG enc generator length)
     (hf : ComputableInPolyTime f enc encCNF)
     (hk : ComputableInPolyTime k encUnary encUnary)
     (hV : IsOraclePPTOn (encInstanceAuxInput enc) encBits (fun (n, a, z) => Vstar n a z))
-    (hadv : IsPPTOn (encPair (encInstanceAuxInput enc) encBits) encBool
-      (fun ((n, a, z'), view) => adversary n a z' view))
+    (hadv : adversary.IsPPT enc)
     {a : ℕ → α} {w z z' : ℕ → List Bool}
     (ha : PolynomiallyBounded (fun n => (enc (a n)).length))
     (hw : PolynomiallyBounded (fun n => (w n).length))
@@ -1161,10 +1159,8 @@ theorem AdvicePRG.gmwSeqView_negligible {α : Type} {enc : α ↪ List Bool}
     (hw_sat : ∀ n, ThreeSAT.verifier (f (a n), w n) = true) :
     Negligible (fun n => Game.advantage
       (distinguishingGame
-        (((gmwSeqProver generator (n + 7) (length (n + 7)) (f (a n)) (w n) (k n)).run
-          (Vstar n (a n) (z n))
-          (gmwSeqProver generator (n + 7) (length (n + 7)) (f (a n)) (w n) (k n)).init).map
-            Prod.fst)
+        (zkRealView (gmwSeqProver generator (n + 7) (length (n + 7)) (f (a n)) (w n) (k n))
+          (Vstar n (a n) (z n)))
         (adversary n (a n) (z' n)))
       (distinguishingGame
         (ProbComp.eval (gmwSeqSimulator enc generator length f k Vstar n (a n) (z n)))
@@ -1210,9 +1206,8 @@ theorem gmwSeqView_indistinguishable_gmwSeqSimulator {α : Type} {enc : α ↪ L
     (hz : ComputableInPolyTime z encUnary encBits)
     (hw_sat : ∀ n, ThreeSAT.verifier (f (a n), w n) = true) :
     ComputationallyIndistinguishable
-      (fun n => ((gmwSeqProver generator (n + 7) (length (n + 7)) (f (a n)) (w n) (k n)).run
-        (Vstar n (a n) (z n))
-        (gmwSeqProver generator (n + 7) (length (n + 7)) (f (a n)) (w n) (k n)).init).map Prod.fst)
+      (fun n => zkRealView (gmwSeqProver generator (n + 7) (length (n + 7)) (f (a n)) (w n) (k n))
+        (Vstar n (a n) (z n)))
       (fun n => ProbComp.eval (gmwSeqSimulator enc generator length f k Vstar n (a n) (z n))) := by
   intro adversary hadversary
   let encIn := encPair encUnary (encPair enc encBits)

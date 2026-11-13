@@ -114,7 +114,10 @@ which the PMF concentration bounds apply.
 For a uniform draw on a finite group, import
 [Uniform.lean](../../CslibFrontier/Probability/Uniform.lean): `uniformOfFintype_map_add_left` and
 `uniformOfFintype_bind_add_left`, with their `_right` forms, remove a fixed mask as in the one-time
-pad; `uniformOfFintype_map_addHom` and `uniformOfFintype_map_monoidHom` push the uniform law
+pad, and the `_sub_left` and `_sub_right` forms in
+[Uniform/Translate.lean](../../CslibFrontier/Probability/Uniform/Translate.lean) do the same for
+`c - x` and `x - c`;
+`uniformOfFintype_map_addHom` and `uniformOfFintype_map_monoidHom` push the uniform law
 through a surjective homomorphism; and `uniformOfFintype_map_comp` reads a uniform function
 through an injection. For a dependent function, `uniformOfFintype_map_comp_dep` in
 [Product/Split.lean](../../CslibFrontier/Probability/Product/Split.lean) needs only nonempty
@@ -1633,17 +1636,28 @@ lists in a record or several caches for several oracles, rather than running a p
    and answering every call from the table. `RandomOracle.bind_complete_sum` then splits the
    completed table into one independent table per oracle.
 
+The checked clients are `Scheme.eval_romIndCcaExperiment_eq_eager` in
+[FujisakiOkamoto/Security.lean](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Security.lean),
+with two caches for `G` and `H` and a decapsulation oracle given as a program over both, which
+proves the step once for the `FO-notbot` and `FO^⊥` games, and
+`Scheme.eval_coupledGame_eq_eagerCoupledGame` in
+[NotBot/Lazy.lean](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/NotBot/Lazy.lean),
+with three caches and a key-derivation query that calls two oracles. Check them, and the
+approximate client below, with
+`scripts/build.sh --wfail --iofail CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Bot`.
+
 This proves an exact equality, so step 3 fails when a handler also inspects its caches directly,
 for example a decapsulation filter that checks whether a message was already queried. Such a hop
-needs an approximate simulation instead, as in `closeTo_cachedCoupledBotGame_eagerCoupledBotGame`
-in [FujisakiOkamoto/Bot.lean](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Bot.lean).
-
-The checked clients are `Scheme.eval_roIndCcaGame_eq_eagerIndCcaGame` in
-[FujisakiOkamoto/Security.lean](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Security.lean),
-with two caches for `G` and `H`, and `Scheme.eval_coupledGame_eq_eagerCoupledGame` in
-[NotBot/Lazy.lean](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/NotBot/Lazy.lean),
-with three caches and a key-derivation query that calls two oracles. Check them with
-`scripts/build.sh --wfail --iofail CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Lazy`.
+needs an approximate simulation instead. Import
+[Simulation/CloseTo.lean](../../CslibFrontier/Languages/Probabilistic/Simulation/CloseTo.lean) and
+apply `OracleComp.closeTo_run_interpret_simulation_readOnly` with
+`relate s := RandomOracle.complete distribution (rep s)` and a cost function that charges only the
+calls that read the cache. For each call, `RandomOracle.eval_run_interpret_bind_complete` gives the
+joint law of the answer and the completed final cache. On the calls that answer as a lazy oracle
+this is already the eager side, so only the cache-reading calls need a statistical-distance bound.
+The checked client is `closeTo_cachedCoupledBotGame_eagerCoupledBotGame` in
+[FujisakiOkamoto/Bot.lean](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Bot.lean),
+whose `G` and `H` calls are exact and whose decapsulation call costs `2^{-γ}` by spreadness.
 
 ## Certify an adaptive oracle client
 
