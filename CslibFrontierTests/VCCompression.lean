@@ -11,16 +11,12 @@ import CslibFrontier.MachineLearning.OnlineLearning.MistakeBound.Thresholds
 no two points. Take a consistent learner reading `⌈vcSampleSize 1 (1/3) (1/2)⌉` examples. For
 every nonempty realizable sample, some distribution on subsamples makes it wrong at each example
 with probability at most `1/3`. The resulting compression scheme for VC dimension `1` keeps at most
-`6921 * 244` examples, and through the compression bound it learns the thresholds. -/
+`6921 * 244` examples, and through the compression bound it learns the thresholds. Compressibility
+and finite VC dimension are equivalent, which here recovers finite VC dimension from the scheme. -/
 
 namespace CslibFrontierTests.VCCompression
 
 open Cslib.MachineLearning.PACLearning Cslib.MachineLearning.OnlineLearning.MistakeBound
-
-/-- The thresholds on `ℕ` shatter no two points. -/
-theorem card_le_one_of_setShatters_thresholdClass (W : Finset ℕ)
-    (hW : SetShatters thresholdClass ↑W) : W.card ≤ 1 :=
-  not_lt.1 fun h => not_setShatters_thresholdClass h hW
 
 /-- Voting over subsamples for the thresholds, at accuracy `1/3` and confidence `1/2`. -/
 theorem exists_pmf_subsample {m : ℕ} (hm : 0 < m) {S : LabeledSample ℕ Bool m}
@@ -68,5 +64,10 @@ example : vcCompressionSize 1 ≤ 6921 * 244 := by
     push_cast at h1 h2 ⊢
     nlinarith
   exact Nat.mul_le_mul hT hs
+
+/-- The thresholds have a scheme of finite size, so they have finite VC dimension: the converse
+direction of `SampleCompressionScheme.exists_iff_hasFiniteVCDim`. -/
+example : HasFiniteVCDim thresholdClass :=
+  SampleCompressionScheme.exists_iff_hasFiniteVCDim.1 ⟨_, ⟨thresholdScheme⟩⟩
 
 end CslibFrontierTests.VCCompression

@@ -11,6 +11,7 @@ public import CslibFrontier.MachineLearning.PACLearning.Compression.Basic
 public import CslibFrontier.MachineLearning.PACLearning.VCUniformConvergence
 public import CslibFrontier.MachineLearning.PACLearning.VCUpperBound
 public import Mathlib.Probability.ProbabilityMassFunction.Basic
+import CslibFrontier.MachineLearning.PACLearning.Compression.Shattering
 import CslibFrontier.MachineLearning.PACLearning.DualVCDimension
 import CslibFrontier.MachineLearning.PACLearning.EpsilonApproximation
 import CslibFrontier.Probability.Minimax
@@ -72,6 +73,9 @@ The compression maps are semantic; no running time is claimed.
   every example.
 - `SampleCompressionScheme.exists_of_hasFiniteVCDim`: every binary class of finite VC dimension
   has a sample compression scheme of finite size.
+- `SampleCompressionScheme.exists_iff_hasFiniteVCDim`: a binary class has a sample compression
+  scheme of finite size if and only if it has finite VC dimension (the converse is
+  `SampleCompressionScheme.hasFiniteVCDim`).
 
 ## References
 
@@ -346,6 +350,13 @@ noncomputable def ofVCDim {C : ConceptClass α Bool} {d : ℕ}
 theorem exists_of_hasFiniteVCDim {C : ConceptClass α Bool} (hC : HasFiniteVCDim C) :
     ∃ k, Nonempty (SampleCompressionScheme C k) :=
   ⟨_, ⟨ofVCDim fun _ hW => hW.card_le_vcDim hC⟩⟩
+
+/-- **A binary class has a sample compression scheme of finite size if and only if it has finite VC
+dimension**: the Moran–Yehudayoff theorem together with its easy converse
+(`SampleCompressionScheme.hasFiniteVCDim`). -/
+theorem exists_iff_hasFiniteVCDim {C : ConceptClass α Bool} :
+    (∃ k, Nonempty (SampleCompressionScheme C k)) ↔ HasFiniteVCDim C :=
+  ⟨fun ⟨_, ⟨κ⟩⟩ => κ.hasFiniteVCDim, exists_of_hasFiniteVCDim⟩
 
 end SampleCompressionScheme
 

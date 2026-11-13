@@ -24,9 +24,10 @@ inject into the lists of at most `k` (point, label) pairs over `W`, of which the
 `(2 n + 1) ^ k`. Since `2 ^ n` eventually exceeds `(2 n + 1) ^ k`, the shattered sets are bounded.
 
 This is the standard counting argument. Together with the theorem of Moran and Yehudayoff that
-every class of finite VC dimension has a compression scheme of finite size (being formalized under
-issue #4914), it shows that a binary class has a sample compression scheme of finite size if and
-only if it has finite VC dimension. No measurability is involved.
+every class of finite VC dimension has a compression scheme of finite size
+(`SampleCompressionScheme.exists_of_hasFiniteVCDim`), it shows that a binary class has a sample
+compression scheme of finite size if and only if it has finite VC dimension
+(`SampleCompressionScheme.exists_iff_hasFiniteVCDim`). No measurability is involved.
 
 ## Main results
 

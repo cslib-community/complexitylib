@@ -165,6 +165,11 @@ theorem not_setShatters_thresholdClass {W : Finset ℕ} (hW : 1 < W.card) :
   exact ha' ⟨by simp only [Set.mem_preimage, Set.mem_singleton_iff, thresholdConcept_apply,
     decide_eq_true_eq]; omega, ha⟩
 
+/-- The thresholds shatter at most one point. -/
+theorem card_le_one_of_setShatters_thresholdClass (W : Finset ℕ)
+    (hW : SetShatters thresholdClass (W : Set ℕ)) : W.card ≤ 1 :=
+  not_lt.1 fun h => not_setShatters_thresholdClass h hW
+
 theorem setShatters_singleton_thresholdClassUpTo {N x : ℕ} (hx : x < N) :
     SetShatters (thresholdClassUpTo N) ({x} : Set ℕ) := by
   intro W' hW'
@@ -179,7 +184,7 @@ theorem vcDim_eq_one_of_subset_thresholdClass {C : ConceptClass ℕ Bool} (hC : 
     (x : ℕ) (hx : SetShatters C ({x} : Set ℕ)) : vcDim C = 1 := by
   have hub : ∀ n ∈ {n : ℕ | ∃ W : Finset ℕ, W.card = n ∧ SetShatters C (W : Set ℕ)}, n ≤ 1 := by
     rintro n ⟨W, rfl, hW⟩
-    exact not_lt.mp fun h => not_setShatters_thresholdClass h (hW.superset hC)
+    exact card_le_one_of_setShatters_thresholdClass W (hW.superset hC)
   refine le_antisymm (csSup_le' hub) ?_
   simpa using (show SetShatters C (({x} : Finset ℕ) : Set ℕ) by simpa using hx).card_le_vcDim
     ⟨1, hub⟩

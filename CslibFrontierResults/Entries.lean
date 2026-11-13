@@ -211,6 +211,7 @@ import CslibFrontier.Logics.SecondOrder.WordMSO.StarFree
 import CslibFrontier.MachineLearning.LossMinimization.RLM
 import CslibFrontier.MachineLearning.OnlineLearning.SwapRegret
 import CslibFrontier.MachineLearning.PACBayes.Basic
+import CslibFrontier.MachineLearning.PACLearning.Compression.VCDimension
 import CslibFrontier.MachineLearning.PACLearning.MDL
 import CslibFrontier.MachineLearning.PACLearning.Nonuniform
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.AC0Mod
@@ -1669,6 +1670,24 @@ register_result "mdl-bound" where
     hypotheses with measurable misclassification sets, for m > 0 and δ > 0. With probability \
     at least 1 - δ every h satisfies L_D(h) ≤ L_S(h) + √((|d h| log 2 + log (2/δ)) / (2m)), \
     which is sharper than the source's |h| + ln (2/δ). Kraft's inequality is Mathlib's."
+
+register_result "moran-yehudayoff-compression" where
+  title := "Classes of finite VC dimension have sample compression schemes of size 2^O(d)"
+  topic := "statistical learning"
+  sources := [
+    { paper := MoranYehudayoff2016, theorem := "Theorems 1.3 and 1.4",
+      locator := "statements in §1.3, p. 5; proof in §3, pp. 8–9 (arXiv:1503.06960v2)" }
+  ]
+  theorems := [
+    Cslib.MachineLearning.PACLearning.SampleCompressionScheme.exists_of_hasFiniteVCDim,
+    Cslib.MachineLearning.PACLearning.SampleCompressionScheme.exists_iff_hasFiniteVCDim
+  ]
+  scope := "Binary classes on an arbitrary domain, realizable samples; a scheme keeps an ordered \
+    list of indices, so no side information is used. The explicit size vcCompressionSize d is \
+    ⌈uniformConvergenceSampleSize (2^(d+1) - 1) (1/4) (1/2)⌉ · ⌈vcSampleSize d (1/4) (1/2)⌉, \
+    which is 2^O(d), not the source's O(d* d) form of Theorem 1.4: the ε-approximations used \
+    have size O(d* log (1/ε) / ε²). The maps are semantic; no running time is claimed. The \
+    converse (finite size implies finite VC dimension) is the standard counting argument."
 
 register_result "pac-bayes-mcallester" where
   title := "McAllester's PAC-Bayes bound and its Occam corollary"

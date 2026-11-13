@@ -14,11 +14,6 @@ namespace CslibFrontierTests.DualVCDimension
 
 open Cslib.MachineLearning.PACLearning Cslib.MachineLearning.OnlineLearning.MistakeBound
 
-/-- The thresholds on `ℕ` shatter no two points. -/
-theorem card_le_one_of_setShatters_thresholdClass (W : Finset ℕ)
-    (hW : SetShatters thresholdClass ↑W) : W.card ≤ 1 :=
-  not_lt.1 fun h => not_setShatters_thresholdClass h hW
-
 /-- So the dual class of the thresholds shatters at most `2 ^ 2 - 1 = 3` thresholds. -/
 example (F : Finset ↥thresholdClass) (hF : SetShatters (dualClass thresholdClass) ↑F) :
     F.card ≤ 3 :=
