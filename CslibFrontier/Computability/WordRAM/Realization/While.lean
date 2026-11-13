@@ -242,13 +242,19 @@ private theorem whileBank_layout {n : ℕ} {frontier : Fin r} {src : Fin (k + l)
 /-- The native loop invariant at source state `q`: bounded registers holding the memory state, the
 environment words and the state bank, with every register outside the frontier and the scratch
 bank unchanged from the entry data `x`. -/
-private def WhileInv (input : δ ↪ (Fin k → ℕ)) (output : σ ↪ (Fin l → ℕ)) {n : ℕ}
+private structure WhileInv (input : δ ↪ (Fin k → ℕ)) (output : σ ↪ (Fin l → ℕ)) {n : ℕ}
     (frontier : Fin r) (src : Fin (k + l) → Fin r) (tmp : Fin (l + (l + n + 1) + 1) → Fin r)
-    (w : ℕ) (d : δ) (x : Data r) (q : σ × Memory.State) (y : Data r) : Prop :=
-  y.Bounded w ∧ memoryState frontier y = q.2 ∧
-    (∀ i, y.regs (src (Fin.castAdd l i)) = input d i) ∧
-    (∀ i, y.regs (tmp (whileStateSlot i)) = output q.1 i) ∧
-    ∀ i, i ≠ frontier → (∀ j, tmp j ≠ i) → y.regs i = x.regs i
+    (w : ℕ) (d : δ) (x : Data r) (q : σ × Memory.State) (y : Data r) : Prop where
+  /-- Every register of `y` fits in `w` bits. -/
+  bounded : y.Bounded w
+  /-- The frontier and memory of `y` encode the memory state of `q`. -/
+  memory : memoryState frontier y = q.2
+  /-- The environment registers hold the input words of `d`. -/
+  env : ∀ i, y.regs (src (Fin.castAdd l i)) = input d i
+  /-- The state bank holds the words of the source state `q.1`. -/
+  state : ∀ i, y.regs (tmp (whileStateSlot i)) = output q.1 i
+  /-- Registers outside the frontier and the scratch bank are unchanged from `x`. -/
+  frame : ∀ i, i ≠ frontier → (∀ j, tmp j ≠ i) → y.regs i = x.regs i
 
 /-- Copying the initial state words into the state bank establishes the invariant. -/
 private theorem whileInv_entry (input : δ ↪ (Fin k → ℕ)) (output : σ ↪ (Fin l → ℕ)) {n : ℕ}
@@ -329,7 +335,7 @@ theorem whileBounded {B : Basis} (input : δ ↪ (Fin k → ℕ)) (output : σ �
     let I := WhileInv input output frontier src tmp w d x
     have hcond (q : σ × Memory.State) (y : Data r) (hI : I q y) :
         (cond.rename bs).Holds y ↔ guard d q.1 :=
-      test_rename cond bs y _ (regs_comp_append_eq_appendWords input output hI.2.2.1 hI.2.2.2.1)
+      test_rename cond bs y _ (regs_comp_append_eq_appendWords input output hI.env hI.state)
     have step (q : σ × Memory.State) (y : Data r) (hI : I q y)
         (hdom : safe w (d, q.1) q.2)
         (hvalid : (Memory.spec w).ValidHistory q.2
@@ -337,15 +343,15 @@ theorem whileBounded {B : Basis} (input : δ ↪ (Fin k → ℕ)) (output : σ �
         ∃ z, ExecWithin w (whileBody emit frontier src tmp) y z
             (C * (memoryCost (body (d, q.1)) q.2 + work (d, q.1) q.2 + 1) + (l + 1)) ∧
           I (iterationStep body d q) z := by
-      obtain ⟨u, hu, hum, huo, huf⟩ := hrun w (d, q.1) y hI.1
-        (regs_comp_append_eq_appendWords input output hI.2.2.1 hI.2.2.2.1)
-        (hI.2.1 ▸ hdom) (hI.2.1 ▸ hvalid)
-      rw [hI.2.1] at hu hum huo
+      obtain ⟨u, hu, hum, huo, huf⟩ := hrun w (d, q.1) y hI.bounded
+        (regs_comp_append_eq_appendWords input output hI.env hI.state)
+        (hI.memory ▸ hdom) (hI.memory ▸ hvalid)
+      rw [hI.memory] at hu hum huo
       rw [clientState_width] at hum
       simp only [clientResult_width] at huo
       obtain ⟨z, hz, hzm, hzs, hzf⟩ := copyBank_exec (B := B)
         (fun i : Fin l => bt (Fin.castAdd (n + 1) i)) st idle hst houtdis w u
-      exact ⟨z, hu.seq hz, whileInv_step input output hd hf hs hI ((hu.seq hz).bounded hI.1)
+      exact ⟨z, hu.seq hz, whileInv_step input output hd hf hs hI ((hu.seq hz).bounded hI.bounded)
         hum huo huf hzm hzs hzf⟩
     have aux : ∀ fuel q y, I q y → whileSafe guard body safe w d fuel q.1 q.2 →
         (Memory.spec w).ValidHistory q.2
@@ -469,7 +475,7 @@ theorem whileBounded {B : Basis} (input : δ ↪ (Fin k → ℕ)) (output : σ �
   let I := WhileInv input output frontier src tmp w d x
   have hcond (q : σ × Memory.State) (y : Data r) (hI : I q y) :
       (cond.rename bs).Holds y ↔ guard d q.1 :=
-    test_rename cond bs y _ (regs_comp_append_eq_appendWords input output hI.2.2.1 hI.2.2.2.1)
+    test_rename cond bs y _ (regs_comp_append_eq_appendWords input output hI.env hI.state)
   have step (q : σ × Memory.State) (y : Data r) (hI : I q y)
       (hdom : safe w (d, q.1) q.2)
       (hvalid : (Memory.spec w).ValidHistory q.2
@@ -477,17 +483,17 @@ theorem whileBounded {B : Basis} (input : δ ↪ (Fin k → ℕ)) (output : σ �
       ∃ z, ExecBounded w (z.regs frontier) (whileBody emit frontier src tmp) y z
           (C * (memoryCost (body (d, q.1)) q.2 + work (d, q.1) q.2 + 1) + (l + 1)) ∧
         I (iterationStep body d q) z := by
-    obtain ⟨u, hu, hum, huo, huf⟩ := hrun w (d, q.1) y hI.1
-      (regs_comp_append_eq_appendWords input output hI.2.2.1 hI.2.2.2.1)
-      (hI.2.1 ▸ hdom) (hI.2.1 ▸ hvalid)
-    rw [hI.2.1] at hu hum huo
+    obtain ⟨u, hu, hum, huo, huf⟩ := hrun w (d, q.1) y hI.bounded
+      (regs_comp_append_eq_appendWords input output hI.env hI.state)
+      (hI.memory ▸ hdom) (hI.memory ▸ hvalid)
+    rw [hI.memory] at hu hum huo
     rw [clientState_width] at hum
     simp only [clientResult_width] at huo
     obtain ⟨z, hz, hzm, hzs, hzf⟩ := copyBank_execBounded (B := B)
       (fun i : Fin l => bt (Fin.castAdd (n + 1) i)) st idle hst houtdis w (u.regs frontier) u
     have hseq := hu.seq hz
     rw [← hzf frontier (fun i => hf _)] at hseq
-    exact ⟨z, hseq, whileInv_step input output hd hf hs hI (hseq.bounded hI.1)
+    exact ⟨z, hseq, whileInv_step input output hd hf hs hI (hseq.bounded hI.bounded)
       hum huo huf hzm hzs hzf⟩
   have aux : ∀ fuel q y, I q y → whileSafe guard body safe w d fuel q.1 q.2 →
       (Memory.spec w).ValidHistory q.2
@@ -518,8 +524,8 @@ theorem whileBounded {B : Basis} (input : δ ↪ (Fin k → ℕ)) (output : σ �
         obtain ⟨u, hu, hIu⟩ := step q y hI hdom.1 hb
         obtain ⟨z, hz, hIz⟩ := ih (iterationStep body d q) u hIu hdom.2 ht
         have hu_le : u.regs frontier ≤ z.regs frontier := by
-          have hu_fr := congrArg Memory.State.frontier hIu.2.1
-          have hz_fr := congrArg Memory.State.frontier hIz.2.1
+          have hu_fr := congrArg Memory.State.frontier hIu.memory
+          have hz_fr := congrArg Memory.State.frontier hIz.memory
           change u.regs frontier = (iterationStep body d q).2.frontier at hu_fr
           change z.regs frontier = ((Memory.spec 0).clientState (iterationStep body d q).2
             (boundedWhile guard body d fuel (iterationStep body d q).1)).frontier at hz_fr
