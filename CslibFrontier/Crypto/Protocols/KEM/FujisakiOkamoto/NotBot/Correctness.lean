@@ -398,9 +398,9 @@ theorem advantage_coupledFilterGame_simFilterGame_le [Fintype M] [Nonempty M]
     (Game.advantage (ProbComp.eval (S.coupledFilterGame d₁ A b))
         (ProbComp.eval (S.simFilterGame d₂ A b)) : ℝ) ≤
       ((qG + qH + 1 : ℕ) : ℝ) * δ := by
-  have hcost (inp : PK × CT × K) :
-      OracleComp.IsCostBounded ROQuery.ghCost (A inp) (qG + qH) := by
-    have ⟨hG, hH⟩ := hq inp
+  have hcost (ch : KEM.Challenge PK CT K) :
+      OracleComp.IsCostBounded ROQuery.ghCost (A ch) (qG + qH) := by
+    have ⟨hG, hH⟩ := hq ch
     convert OracleComp.IsCostBounded.add hG hH using 1
     funext q; cases q <;> rfl
   set E : ℝ≥0∞ := S.pke.keyGen.expect fun x =>

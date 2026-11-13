@@ -263,7 +263,7 @@ theorem eval_coupledGame_eq_eagerCoupledGame [Fintype M] [Finite R] [Fintype CT]
         (ProbComp.eval S.sampleKey).bind fun kRand =>
           (ProbComp.eval ((OracleComp.interpret
             (S.coupledHandler pk sk (S.pke.encDet pk mStar rStar))
-            (A (pk, S.pke.encDet pk mStar rStar, if b then kRand else z.1))).run z.2)).bind
+            (A ⟨pk, S.pke.encDet pk mStar rStar, if b then kRand else z.1⟩)).run z.2)).bind
             fun a => PMF.pure a.1) =
       (pi (Function.update (fun _ : M => ProbComp.eval S.pke.sampleCoins) mStar
           (PMF.pure rStar))).bind fun G =>
@@ -271,19 +271,19 @@ theorem eval_coupledGame_eq_eagerCoupledGame [Fintype M] [Finite R] [Fintype CT]
         (pi (α := fun _ : Bool × M × CT => K) (fun _ => ProbComp.eval S.sampleKey)).bind fun H =>
         (pi (α := fun _ : CT => K) (fun _ => ProbComp.eval S.sampleKey)).bind fun Q =>
           OracleComp.interpret (S.eagerCoupledHandler G Q H pk sk (S.pke.encDet pk mStar rStar))
-            (A (pk, S.pke.encDet pk mStar rStar, if b then kRand else
-              S.coupledH G Q H pk sk (false, mStar, S.pke.encDet pk mStar rStar))) := by
+            (A ⟨pk, S.pke.encDet pk mStar rStar, if b then kRand else
+              S.coupledH G Q H pk sk (false, mStar, S.pke.encDet pk mStar rStar)⟩) := by
     set cStar := S.pke.encDet pk mStar rStar
     have hP (kRand : K) :
         (ProbComp.eval ((OracleComp.interpret (S.coupledHandler pk sk cStar)
           (OracleComp.query (spec := ROResp (M := M) (CT := CT) R K)
             (ROQuery.H (false, mStar, cStar)) >>= fun k =>
-              A (pk, cStar, if b then kRand else k))).run
+              A ⟨pk, cStar, if b then kRand else k⟩)).run
           { gCache := [(mStar, rStar)] })).map Prod.fst =
         (ProbComp.eval ((S.coupledHashH pk sk (false, mStar, cStar)).run
           { gCache := [(mStar, rStar)] })).bind (fun z =>
           (ProbComp.eval ((OracleComp.interpret (S.coupledHandler pk sk cStar)
-            (A (pk, cStar, if b then kRand else z.1))).run z.2)).bind fun a => PMF.pure a.1) := by
+            (A ⟨pk, cStar, if b then kRand else z.1⟩)).run z.2)).bind fun a => PMF.pure a.1) := by
       rw [OracleComp.run_interpret_bind, OracleComp.run_interpret_query]
       simp only [pmf_norm]
       rfl

@@ -148,23 +148,25 @@ def KilianSound (enc : α ↪ List Bool) (L : Set α) : Prop :=
 
 /-- The openings of a response, each with the PCP address it opens. -/
 def kilianOpenings (x : α) (ρs : List (List Bool)) (response : KilianResponse) :
-    List (ℕ × KilianOpening) :=
+    List (ℕ × MerkleOpening Bool) :=
   (ρs.zip response).flatMap fun (ρ, answers) => (V.queries (x, ρ)).zip answers
 
 /-- The first pair of openings, one from each list, of a common position to different bits. -/
-def kilianConflict (x : α) (openings₁ openings₂ : List (ℕ × KilianOpening)) :
-    Option ((ℕ × KilianOpening) × (ℕ × KilianOpening)) :=
+def kilianConflict (x : α) (openings₁ openings₂ : List (ℕ × MerkleOpening Bool)) :
+    Option ((ℕ × MerkleOpening Bool) × (ℕ × MerkleOpening Bool)) :=
   (openings₁.flatMap fun o₁ => openings₂.map fun o₂ => (o₁, o₂)).find?
     fun ((a₁, o₁), (a₂, o₂)) =>
-      kilianPosition V x a₁ == kilianPosition V x a₂ && o₁.bit != o₂.bit
+      kilianPosition V x a₁ == kilianPosition V x a₂ && o₁.leaf != o₂.leaf
 
 /-- The binding adversary's output from two lists of openings against `root`: the conflicting
 pair found by `kilianConflict`, as two openings of its position with one-bit leaves. -/
 def kilianBindingOutput (x : α) (root : List Bool)
-    (openings₁ openings₂ : List (ℕ × KilianOpening)) : MerkleBindingOutput :=
-  (kilianConflict V x openings₁ openings₂).elim ((root, 0), ([], []), ([], []))
+    (openings₁ openings₂ : List (ℕ × MerkleOpening Bool)) : MerkleBindingOutput :=
+  (kilianConflict V x openings₁ openings₂).elim
+    { root, position := 0, first := ⟨[], []⟩, second := ⟨[], []⟩ }
     fun ((a, o₁), (_, o₂)) =>
-      ((root, kilianPosition V x a), ([o₁.bit], o₁.path), ([o₂.bit], o₂.path))
+      { root, position := kilianPosition V x a, first := ⟨[o₁.leaf], o₁.path⟩,
+        second := ⟨[o₂.leaf], o₂.path⟩ }
 
 /-- The position-binding adversary built from a cheating prover: run its first stage once and its
 second stage on two independent challenges, and output a conflicting pair of openings. -/
@@ -184,14 +186,15 @@ variable {H V}
 /-- Every opening of an accepted response passes `merkleVerify` at its position. -/
 theorem merkleVerify_of_mem_kilianOpenings {k : List Bool} {x : α} {root : List Bool}
     {ρs : List (List Bool)} {response : KilianResponse}
-    (h : kilianVerify H V k x root ρs response = true) {a : ℕ} {o : KilianOpening}
+    (h : kilianVerify H V k x root ρs response = true) {a : ℕ} {o : MerkleOpening Bool}
     (ho : (a, o) ∈ kilianOpenings V x ρs response) :
-    merkleVerify H k (kilianDepth V x) root (kilianPosition V x a) [o.bit] o.path = true := by
+    merkleVerify H k (kilianDepth V x) root (kilianPosition V x a) [o.leaf] o.path = true := by
   simp only [kilianVerify, Bool.and_eq_true, beq_iff_eq, List.all_eq_true] at h
   simp only [kilianOpenings, List.mem_flatMap] at ho
   obtain ⟨⟨ρ, answers⟩, hmem, ho⟩ := ho
   have hc := h.2 _ hmem
-  simp only [kilianCheck, Bool.and_eq_true, beq_iff_eq, List.all_eq_true] at hc
+  simp only [kilianCheck, MerkleOpening.verify, Bool.and_eq_true, beq_iff_eq, List.all_eq_true]
+    at hc
   exact hc.1.2 _ ho
 
 /-- **Two accepted runs that disagree break position binding**: if two responses against one root
@@ -200,10 +203,10 @@ breaks binding. -/
 theorem merkleBreaksBinding_kilianBindingOutput {k : List Bool} {x : α} {root : List Bool}
     {ρs₁ ρs₂ : List (List Bool)} {response₁ response₂ : KilianResponse}
     (h₁ : kilianVerify H V k x root ρs₁ response₁ = true)
-    (h₂ : kilianVerify H V k x root ρs₂ response₂ = true) {a₁ a₂ : ℕ} {o₁ o₂ : KilianOpening}
+    (h₂ : kilianVerify H V k x root ρs₂ response₂ = true) {a₁ a₂ : ℕ} {o₁ o₂ : MerkleOpening Bool}
     (ho₁ : (a₁, o₁) ∈ kilianOpenings V x ρs₁ response₁)
     (ho₂ : (a₂, o₂) ∈ kilianOpenings V x ρs₂ response₂)
-    (hpos : kilianPosition V x a₁ = kilianPosition V x a₂) (hb : o₁.bit ≠ o₂.bit) :
+    (hpos : kilianPosition V x a₁ = kilianPosition V x a₂) (hb : o₁.leaf ≠ o₂.leaf) :
     merkleBreaksBinding H k (kilianBindingOutput V x root (kilianOpenings V x ρs₁ response₁)
       (kilianOpenings V x ρs₂ response₂)) = true := by
   set openings₁ := kilianOpenings V x ρs₁ response₁
@@ -227,8 +230,8 @@ theorem merkleBreaksBinding_kilianBindingOutput {k : List Bool} {x : α} {root :
   have hlen : o₁'.path.length = kilianDepth V x := by
     simp only [merkleVerify, Bool.and_eq_true, beq_iff_eq] at v₁
     exact v₁.1.1
-  simp only [Option.elim, merkleBreaksBinding, hlen, Bool.and_eq_true, bne_iff_ne, ne_eq,
-    List.cons.injEq, and_true]
+  simp only [Option.elim, merkleBreaksBinding, MerkleOpening.verify_id, hlen, Bool.and_eq_true,
+    bne_iff_ne, ne_eq, List.cons.injEq, and_true]
   exact ⟨⟨v₁, hp.1 ▸ v₂⟩, hp.2⟩
 
 /-! ### Acceptance with a consistent table -/
@@ -242,7 +245,7 @@ def kilianProof (V : PCPVerifier α) (x : α) (π : ℕ → Bool) : List Bool :=
 /-- Opened positions lie inside the compact table. -/
 private theorem kilianPosition_lt_of_mem_kilianOpenings {x : α} {ρs : List (List Bool)}
     {response : KilianResponse} (hρs : ∀ ρ ∈ ρs, ρ.length = V.coins x)
-    {o : ℕ × KilianOpening} (ho : o ∈ kilianOpenings V x ρs response) :
+    {o : ℕ × MerkleOpening Bool} (ho : o ∈ kilianOpenings V x ρs response) :
     kilianPosition V x o.1 < (V.queryTable x).length := by
   simp only [kilianOpenings, List.mem_flatMap] at ho
   obtain ⟨⟨ρ, answers⟩, hmem, ho⟩ := ho
@@ -253,7 +256,7 @@ the proof spelled by `π` on every random string of the right length. -/
 theorem accepts_kilianProof {k : List Bool} {x : α} {root : List Bool}
     {ρs : List (List Bool)} {response : KilianResponse}
     (h : kilianVerify H V k x root ρs response = true) {π : ℕ → Bool}
-    (hcons : ∀ o ∈ kilianOpenings V x ρs response, o.2.bit = π (kilianPosition V x o.1))
+    (hcons : ∀ o ∈ kilianOpenings V x ρs response, o.2.leaf = π (kilianPosition V x o.1))
     {ρ : List Bool} (hρ : ρ ∈ ρs) (hlen : ρ.length = V.coins x) :
     V.accepts x (kilianProof V x π) ρ = true := by
   simp only [kilianVerify, Bool.and_eq_true, beq_iff_eq, List.all_eq_true] at h
@@ -312,7 +315,7 @@ private noncomputable def kilianWins (L : Set α) (s : List Bool × (α × List 
 private def kilianOpens (s : List Bool × (α × List Bool) × List Bool)
     (r : List (List Bool) × KilianResponse) (j : ℕ) (b : Bool) : Bool :=
   (kilianOpenings V s.2.1.1 r.1 r.2).any fun o =>
-    kilianPosition V s.2.1.1 o.1 == j && o.2.bit == b
+    kilianPosition V s.2.1.1 o.1 == j && o.2.leaf == b
 
 private theorem eval_kilianSoundnessGame (L : Set α) (P : KilianProver α) (n : ℕ) :
     ProbComp.eval (kilianSoundnessGame H V L P n) =
@@ -446,7 +449,7 @@ theorem succProbability_kilianSoundnessGame_le (L : Set α) (P : KilianProver α
         intro ρ hρ
         refine accepts_kilianProof hwin.2 (fun o ho => ?_) hρ
           (length_of_mem_support_kilianRun hr ρ hρ)
-        exact hcons (kilianPosition V s.2.1.1 o.1) o.2.bit
+        exact hcons (kilianPosition V s.2.1.1 o.1) o.2.leaf
           (List.any_eq_true.mpr ⟨o, ho, by simp⟩)
       rw [← PMF.toOuterMeasure_map_apply, map_fst_kilianRun] at hsub
       refine (ENNReal.toReal_mono (by simp) (hsub.trans
@@ -467,8 +470,11 @@ section Efficiency
 
 variable {enc : α ↪ List Bool} {c : ℕ}
 
+/-- A PCP address paired with its opening, as in `kilianOpenings`. -/
+private abbrev AddressedOpening := ℕ × MerkleOpening Bool
+
 /-- The encoding of an opening together with its address. -/
-private abbrev encAddressed : ℕ × KilianOpening ↪ List Bool := encPair encNat encKilianOpening
+private abbrev encAddressed : AddressedOpening ↪ List Bool := encPair encNat encKilianOpening
 
 private theorem computableInPolyTime_kilianOpenings (hV : V.PolyTime enc) :
     ComputableInPolyTime
@@ -487,16 +493,20 @@ private theorem computableInPolyTime_kilianOpenings (hV : V.PolyTime enc) :
   have hqueries := hV.2.1.comp ((hx.comp hpf).prod hρ)
   unfold kilianOpenings
   exact ComputableInPolyTime.flatMapWithInput
-    (f := fun (p : α × List (List Bool) × KilianResponse) (q : List Bool × List KilianOpening) =>
+    (f := fun (p : α × List (List Bool) × KilianResponse)
+      (q : List Bool × List (MerkleOpening Bool)) =>
       (V.queries (p.1, q.1)).zip q.2)
     ((ComputableInPolyTime.zip encBits (encList encKilianOpening)).comp
       (hρs.prod hresponse))
     ((ComputableInPolyTime.zip encNat encKilianOpening).comp (hqueries.prod hanswers))
 
+-- Keeping `ComputableInPolyTime` folded stops the final `exact` from checking defeq by unfolding
+-- it and evaluating the conflict search under the grouped output encoding.
+attribute [local irreducible] ComputableInPolyTime in
 private theorem computableInPolyTime_kilianBindingOutput (hV : V.PolyTime enc)
     (hcoins : ∀ a, V.coins a ≤ c * (Nat.log 2 (enc a).length + 1)) :
     ComputableInPolyTime
-      (fun p : (α × List Bool) × List (ℕ × KilianOpening) × List (ℕ × KilianOpening) =>
+      (fun p : (α × List Bool) × List AddressedOpening × List AddressedOpening =>
         kilianBindingOutput V p.1.1 p.1.2 p.2.1 p.2.2)
       (encPair (encPair enc encBits) (encPair (encList encAddressed) (encList encAddressed)))
       encMerkleBindingOutput := by
@@ -514,15 +524,15 @@ private theorem computableInPolyTime_kilianBindingOutput (hV : V.PolyTime enc)
   have htable := (PCPVerifier.isPolyTime_queryTable hV hcoins).comp hx
   -- The list of all pairs.
   have hpairs : ComputableInPolyTime
-      (fun g : (α × List Bool) × List (ℕ × KilianOpening) × List (ℕ × KilianOpening) =>
+      (fun g : (α × List Bool) × List AddressedOpening × List AddressedOpening =>
         g.2.1.flatMap fun o₁ => g.2.2.map fun o₂ => (o₁, o₂))
       E (encList (encPair encAddressed encAddressed)) :=
     ComputableInPolyTime.flatMapWithInput
-      (f := fun (g : (α × List Bool) × List (ℕ × KilianOpening) × List (ℕ × KilianOpening))
-        (o₁ : ℕ × KilianOpening) => g.2.2.map fun o₂ => (o₁, o₂)) ho₁
+      (f := fun (g : (α × List Bool) × List AddressedOpening × List AddressedOpening)
+        (o₁ : AddressedOpening) => g.2.2.map fun o₂ => (o₁, o₂)) ho₁
       (ComputableInPolyTime.mapWithInput
-        (f := fun (q : ((α × List Bool) × List (ℕ × KilianOpening) × List (ℕ × KilianOpening)) ×
-          (ℕ × KilianOpening)) (o₂ : ℕ × KilianOpening) => (q.2, o₂))
+        (f := fun (q : ((α × List Bool) × List AddressedOpening × List AddressedOpening) ×
+          AddressedOpening) (o₂ : AddressedOpening) => (q.2, o₂))
         (ho₂.comp (ComputableInPolyTime.fst E encAddressed))
         (((ComputableInPolyTime.snd E encAddressed).comp
           (ComputableInPolyTime.fst (encPair E encAddressed) encAddressed)).prod
@@ -536,8 +546,8 @@ private theorem computableInPolyTime_kilianBindingOutput (hV : V.PolyTime enc)
   have ha₂ := (ComputableInPolyTime.fst encNat encKilianOpening).comp hq₂
   have hop₁ := (ComputableInPolyTime.snd encNat encKilianOpening).comp hq₁
   have hop₂ := (ComputableInPolyTime.snd encNat encKilianOpening).comp hq₂
-  have hb₁ := encKilianOpening_bit_polyTime hop₁
-  have hb₂ := encKilianOpening_bit_polyTime hop₂
+  have hb₁ := encKilianOpening_leaf_polyTime hop₁
+  have hb₂ := encKilianOpening_leaf_polyTime hop₂
   have hpath₁ := encKilianOpening_path_polyTime hop₁
   have hpath₂ := encKilianOpening_path_polyTime hop₂
   have hpos₁ := ComputableInPolyTime.idxOfWithInput (htable.comp hg) ha₁
@@ -545,23 +555,25 @@ private theorem computableInPolyTime_kilianBindingOutput (hV : V.PolyTime enc)
   have htest := ComputableInPolyTime.bool_and.comp ((ComputableInPolyTime.beq hpos₁ hpos₂).prod
     (ComputableInPolyTime.bool_not.comp (ComputableInPolyTime.beq hb₁ hb₂)))
   have hconflict := ComputableInPolyTime.findWithInput
-    (test := fun (g : (α × List Bool) × List (ℕ × KilianOpening) × List (ℕ × KilianOpening))
-      (q : (ℕ × KilianOpening) × (ℕ × KilianOpening)) =>
-        kilianPosition V g.1.1 q.1.1 == kilianPosition V g.1.1 q.2.1 && q.1.2.bit != q.2.2.bit)
+    (test := fun (g : (α × List Bool) × List AddressedOpening × List AddressedOpening)
+      (q : AddressedOpening × AddressedOpening) =>
+        kilianPosition V g.1.1 q.1.1 == kilianPosition V g.1.1 q.2.1 && q.1.2.leaf != q.2.2.leaf)
     hpairs htest
-  have hbody := ((hroot.comp hg).prod hpos₁).prod
-    ((ComputableInPolyTime.bitsCons hb₁ (ComputableInPolyTime.const [])).prod hpath₁ |>.prod
-      ((ComputableInPolyTime.bitsCons hb₂ (ComputableInPolyTime.const [])).prod
-        hpath₂))
+  have hopening₁ := encMerkleOpening_mk_polyTime
+    (ComputableInPolyTime.bitsCons hb₁ (ComputableInPolyTime.const [])) hpath₁
+  have hopening₂ := encMerkleOpening_mk_polyTime
+    (ComputableInPolyTime.bitsCons hb₂ (ComputableInPolyTime.const [])) hpath₂
+  have hbody := encMerkleBindingOutput_mk_polyTime (hroot.comp hg) hpos₁ hopening₁ hopening₂
+  have hempty : ComputableInPolyTime (fun _ => (⟨[], []⟩ : MerkleOpening (List Bool))) E
+      encMerkleOpening := ComputableInPolyTime.const _
   unfold kilianBindingOutput kilianConflict
   exact ComputableInPolyTime.optionElimWithInput
-    (body := fun (g : (α × List Bool) × List (ℕ × KilianOpening) × List (ℕ × KilianOpening))
-      (q : (ℕ × KilianOpening) × (ℕ × KilianOpening)) =>
-        ((g.1.2, kilianPosition V g.1.1 q.1.1), ([q.1.2.bit], q.1.2.path),
-          ([q.2.2.bit], q.2.2.path)))
-    hconflict ((hroot.prod (ComputableInPolyTime.const 0)).prod
-      (ComputableInPolyTime.const ((([] : List Bool), ([] : List (List Bool))),
-        (([] : List Bool), ([] : List (List Bool)))))) hbody
+    (body := fun (g : (α × List Bool) × List AddressedOpening × List AddressedOpening)
+      (q : AddressedOpening × AddressedOpening) =>
+        { root := g.1.2, position := kilianPosition V g.1.1 q.1.1,
+          first := ⟨[q.1.2.leaf], q.1.2.path⟩, second := ⟨[q.2.2.leaf], q.2.2.path⟩ })
+    hconflict (encMerkleBindingOutput_mk_polyTime hroot (ComputableInPolyTime.const 0) hempty
+      hempty) hbody
 
 /-- **The reduction is efficient**: the binding adversary of a strict PPT cheating prover is strict
 PPT, for a polynomial-time PCP verifier with `O(log n)` random bits. -/
