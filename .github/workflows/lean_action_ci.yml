@@ -142,7 +142,7 @@ jobs:
         run: python3 -B scripts/check_docs.py --config-only
 
   lean-checks:
-    runs-on: ubuntu-latest
+    runs-on: cslib-ubuntu-24.04-8core
     outputs:
       publication: ${{ steps.upload-publication.outputs.artifact-id }}
     permissions:
