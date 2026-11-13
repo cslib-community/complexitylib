@@ -668,7 +668,7 @@ Their current dispositions are:
 
 | Exercise | Endpoint and disposition |
 |---|---|
-| 14 §1 | Finite-field arithmetic versus Boolean circuits up to constant factors. **GF(2) milestone:** [Boolean/Arithmetic.lean](../CslibFrontier/Computability/Circuit/Boolean/Arithmetic.lean) proves same-carrier simulations with size factors three and four, preserving every output. The arbitrary fixed finite-field endpoint remains open; it needs explicit bit representations. |
+| 14 §1 | Finite-field arithmetic versus Boolean circuits up to constant factors. **Covered for the explicit value/size conventions:** [Boolean/FiniteSimulation.lean](../CslibFrontier/Computability/Circuit/Boolean/FiniteSimulation.lean) supplies a fixed logarithmic-width encoding and an all-output Boolean simulation over every finite nonempty carrier, with constant gate factor for each fixed carrier. [Boolean/ArithmeticRing.lean](../CslibFrontier/Computability/Circuit/Boolean/ArithmeticRing.lean) gives the reverse zero/one-input value simulation with factor five over any ring. Constants count as gates and wires are free. Correctness of the forward direction is on valid encoded inputs; no uniform compiler runtime or formal-polynomial identity is asserted. The earlier [GF(2) simulations](../CslibFrontier/Computability/Circuit/Boolean/Arithmetic.lean) have factors three and four. |
 | 14 §2 | Circuit depth versus exponential-size straight-line programs. **Source specification needed:** the short prompt does not fix the two directions, costs or parameter relation sufficiently for a formal endpoint. |
 | 14 §3 | The draft only asks “Bauer-Strassen lemma?” **Source specification needed:** select and cite a precise differentiation theorem before implementation; do not silently repair the name and infer a statement. |
 | 14 §4 | Algebraic-machine time to computation-tree depth. **Source issue:** the prompt uses running-time parameter `T` and concludes depth `O(d)` without defining `d`. A corrected endpoint also needs the absent machine/tree model. |
@@ -676,11 +676,15 @@ Their current dispositions are:
 | 14 §6 | The draft only asks “Shamir's trick?” **Source specification needed:** no exact algorithm, machine model or bound is given in the exercise. |
 
 This is a first exercise inventory, not a complete classification of every chapter's exercises.
-The GF(2) simulations concern values in `Bool`'s Boolean ring, not equality of formal
-polynomials. They use existing gate replacement and four-gate XOR synthesis; no new carrier,
-compiler-runtime claim or general finite-field completion is implied. Their
-[clients](../CslibFrontierTests/BooleanArithmetic.lean) include multiple outputs and zero-cost
-wiring. The remaining theoretical exercises stay under
+The GF(2) simulations concern values in `Bool`'s Boolean ring and use existing gate replacement
+and four-gate XOR synthesis. Those two-element lemmas alone do not establish the general
+finite-field endpoint: that endpoint instead combines the fixed finite encoding with the
+ring simulation, as in the row above. These are value and gate-size results, without uniform
+compiler-runtime or formal-polynomial-identity claims. The checked clients in
+[BooleanArithmetic](../CslibFrontierTests/BooleanArithmetic.lean) and
+[BitBlastEncoding](../CslibFrontierTests/BitBlastEncoding.lean) include odd characteristic,
+multiple outputs, unused code words, zero-width encoding and zero-cost wiring. The remaining
+theoretical exercises stay under
 [#4711](https://github.com/cslib-community/cslib-frontier/issues/4711).
 
 ## Chapter 15: average-case complexity
