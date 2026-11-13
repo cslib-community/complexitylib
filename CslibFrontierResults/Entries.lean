@@ -97,6 +97,7 @@ import CslibFrontier.Computability.Complexity.FineGrained.Sparsification
 import CslibFrontier.Computability.Complexity.Gradel
 import CslibFrontier.Computability.Complexity.ImmermanVardi
 import CslibFrontier.Computability.Complexity.Parameterized.WHierarchy.XP
+import CslibFrontier.Computability.Complexity.Problems.BoundedTermination
 import CslibFrontier.Computability.Complexity.Problems.HornSAT
 import CslibFrontier.Computability.Complexity.Problems.Primes
 import CslibFrontier.Computability.Complexity.Problems.TwoSAT.PolyTime
@@ -4774,3 +4775,24 @@ register_result "ddnnf-negation-separation" where
     with c > 0) is derived from a family of such expanders with γ > 0 on unboundedly many \
     vertex counts, which is Proposition 5.2 of the paper \
     and is a hypothesis, not proved (#4668)."
+
+register_result "bounded-termination-exponential-completeness" where
+  title := "Any-output bounded termination is in E but outside P and is EXP-complete"
+  topic := "computational complexity"
+  sources := [
+    { paper := Goldreich2007DraftR2, theorem := "Exercises 4.6–4.7",
+      locator := "PDF p. 36, printed p. 152; bounded universal function: \
+        PDF p. 28, printed p. 144" }
+  ]
+  theorems := [
+    Cslib.Complexity.BoundedTermination.mem_E,
+    Cslib.Complexity.BoundedTermination.notMem_P,
+    Cslib.Complexity.BoundedTermination.polyTimeComplete_EXP,
+    Cslib.Complexity.BoundedTermination.mk_desc_mem_iff,
+    Cslib.Complexity.BoundedTermination.mem_reencode_iff
+  ]
+  scope := "Plain bit-word language with total description/input decoders and an MSB-first binary \
+    clock; any halted output is allowed. E membership and EXP Karp-completeness hold on all \
+    words; canonical native finite-machine triples have exact step-bound semantics. The chosen \
+    representation is explicit: no arbitrary-encoding E invariance or sharp simulator bound \
+    is claimed. Existing accepting-output-[true] BoundedHalting remains distinct."

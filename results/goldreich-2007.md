@@ -83,6 +83,37 @@ time, the inclusive prefix boundary, the necessary extension restriction and the
 class. The source's philosophical quantification over reasonable models is represented by
 this precise native model, not by a theorem over all computational models.
 
+## Theory exercises 4.6–4.7: any-output bounded termination
+
+[BoundedTermination](../CslibFrontier/Computability/Complexity/Problems/BoundedTermination.lean)
+proves `mem_E`, `notMem_P` and `polyTimeComplete_EXP`: bounded halting with **any output**
+is in $E \setminus P$ and is EXP-complete under polynomial-time many-one reductions.
+The source is the January 2007 `r2.pdf`, PDF page 36 / printed page 152; its bounded universal
+function is defined on PDF page 28 / printed page 144. SHA256:
+`40c735ae7a67331b4b008e09b21bc7b65103937c05a148fac222e5b72d253704`.
+
+The representation uses a framed description, framed input and MSB-first binary clock.
+Total decoders interpret every word, and the class theorems hold on all words.
+`mk_desc_mem_iff` proves exact native finite-machine halting semantics on canonical triples;
+`mem_reencode_iff` connects every word to its decoded canonical triple. This is a selected
+representation convention, permitted by the December 2006 `r1.pdf` discussion in §1.2.2.3
+(PDF page 47 / printed page 22), rather than an identification with an unspecified textbook
+bit encoding. No encoding-independent $E$ invariance is claimed.
+
+The old `BoundedHalting` language requires output `[true]` and remains distinct. Its
+EXP-hardness is reused through a fixed complement decider and the exact-step `partialize`
+wrapper, with a polynomial-time all-ones-clock reduction to any-output termination.
+Shared framing and capped simulation are extracted into `BoundedComputation`, and the
+existing acceptance client is migrated without changing its mathematical meaning.
+[Checked examples](../CslibFrontierTests/BoundedTermination.lean) distinguish empty/false
+halting output from acceptance, include a continuing emitter, zero and exact-bound clocks,
+and instantiate the native-machine and all-word endpoints.
+
+This supplies these two exercises in the stated representation. It does not establish the
+sharp simulator lower bound of Theorem 4.5 or complete the remaining Chapter 4 exercises;
+the broader [coverage task](https://github.com/cslib-community/cslib-frontier/issues/4772)
+remains open.
+
 ## Chapter 5: Space Complexity
 
 Snapshot: `e39c34b3413b2cd7e08053a14ff8bb36ded4c8dc` (`origin/main`, 2026-11-12),

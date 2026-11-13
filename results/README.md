@@ -29,7 +29,9 @@ results from uniform machine bounds and general-hardness endpoints; this is not 
 book-wide coverage.
 
 The [Goldreich draft audit](goldreich-2007.md) records a source-pinned chapter-level coverage comparison
-for *Computational Complexity: A Conceptual Perspective*; it is not a claim of book-wide coverage.
+for *Computational Complexity: A Conceptual Perspective*, including the any-output bounded-termination
+endpoints of Exercises 4.6–4.7 in the documented total-decoder representation. It is not a claim of
+book-wide coverage.
 
 ## Authoring
 
