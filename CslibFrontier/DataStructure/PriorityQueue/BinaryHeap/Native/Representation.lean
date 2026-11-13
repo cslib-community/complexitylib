@@ -87,6 +87,22 @@ theorem Rep.supported {w n K base : ℕ} {hn : Fits w n} {hK : Fits w K}
   hr.congr hmem (le_of_eq (hreg _ Program.code_input_frontier).symm)
     (fun i => hreg _ (Program.code_input_argument i)) hx'
 
+/-- Registers holding the dimension, the count address, the unit length and the base hold the
+layout words of the compact heap at `base`. -/
+theorem layout_arguments {n base : ℕ} {y : Data Program.registers}
+    (hn : y.regs Program.code.nReg = n) (hcount : y.regs (Program.argument 1) = base + n)
+    (hlen : y.regs (Program.argument 2) = 1) (hbase : y.regs Program.code.baseReg = base) :
+    ∀ i : Fin 4, y.regs (Program.argument (Fin.castAdd 2 i)) =
+      layoutWords ⟨n, Memory.compactLayout n base⟩ i := by
+  intro i
+  fin_cases i
+  · change y.regs (Program.argument 0) = n
+    rwa [Program.code_nReg] at hn
+  · exact hcount
+  · exact hlen
+  · change y.regs (Program.argument 3) = base
+    rwa [Program.code_baseReg] at hbase
+
 /-- The single global native fresh initializer produces the existing Backend representation
 and the actual persistent layout words. Its local-zero assumption is restricted to `space n`;
 all other memory cells, including inaccessible cells, remain literally unchanged. -/
@@ -103,16 +119,7 @@ theorem initFresh_rep {w n K base : ℕ} (hn : Fits w n) (hK : Fits w K)
   obtain ⟨y, he, hb, hm, hf, hyn, hybase, hcount, hlen, hi, ha⟩ :=
     Program.initFresh_exec x hx hfront hnlive hfit hz
   rw [Program.code_frontier] at hi ha
-  refine ⟨y, he, hm, hf, (Backend.rep_iff _ _ _).mpr ⟨hi, ha, hb⟩, ?_⟩
-  intro i
-  fin_cases i
-  · change y.regs (Program.argument 0) = n
-    rwa [Program.code_nReg] at hyn
-  · change y.regs (Program.argument 1) = base + n
-    exact hcount
-  · change y.regs (Program.argument 2) = 1
-    exact hlen
-  · change y.regs (Program.argument 3) = base
-    rwa [Program.code_baseReg] at hybase
+  exact ⟨y, he, hm, hf, (Backend.rep_iff _ _ _).mpr ⟨hi, ha, hb⟩,
+    layout_arguments hyn hcount hlen hybase⟩
 
 end Cslib.DataStructure.PriorityQueue.BinaryHeap.Native.Representation

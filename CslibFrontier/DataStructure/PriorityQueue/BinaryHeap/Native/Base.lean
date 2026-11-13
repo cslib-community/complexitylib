@@ -69,18 +69,8 @@ private theorem setup_rep {w n K base : ℕ} (hn : Fits w n) (hK : Fits w K)
       rw [hm]
       exact hz a (Block.mem_footprint.mpr ha))
   rw [Program.code_frontier] at hi ha
-  refine ⟨y, he, hfront, ⟨(Backend.rep_iff _ _ _).mpr ⟨hi, ha, hy⟩, ?_⟩,
-    fun a _ => congrFun hm a⟩
-  intro i
-  fin_cases i
-  · change y.regs (Program.argument 0) = n
-    rwa [Program.code_nReg] at hyn
-  · change y.regs (Program.argument 1) = base + n
-    exact hcount
-  · change y.regs (Program.argument 2) = 1
-    exact hlen
-  · change y.regs (Program.argument 3) = base
-    rwa [Program.code_baseReg] at hyb
+  exact ⟨y, he, hfront, ⟨(Backend.rep_iff _ _ _).mpr ⟨hi, ha, hy⟩,
+    Representation.layout_arguments hyn hcount hlen hyb⟩, fun a _ => congrFun hm a⟩
 
 private noncomputable def baseImpl {w n K base : ℕ}
     (hS : Fits w (base + space n)) (hK : Fits w K) :
