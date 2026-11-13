@@ -809,6 +809,8 @@ private theorem computableInPolyTime_handlerBound
   have hL := hfst.encoding_comp.trans ComputableInPolyTime.length_bits
   have hW := (ComputableInPolyTime.snd enc encBits).trans ComputableInPolyTime.length_bits
   have hb := hfst.trans hbound
+  -- An explicit chain: `fun_prop` on this goal exhausts the default heartbeat budget at `whnf`,
+  -- unfolding `(enc pair.1).length` for the generic encoding `enc`.
   open ComputableInPolyTime in
   have h2L1 := unary_add' (unary_mul' (const 2) hL) (const 1)
   exact unary_add'
