@@ -665,7 +665,7 @@ def kilianCommitProg (V : PCPVerifier α) (x : α) (table : List Bool) :
 
 /-- Oracle-program computation of the Kilian openings for a single random string `ρ`. -/
 def kilianOpenProg (V : PCPVerifier α) (x : α) (table : List Bool) (ρ : List Bool) :
-    OracleComp MerkleHashSpec (List KilianOpening) :=
+    OracleComp MerkleHashSpec (List (MerkleOpening Bool)) :=
   let t := kilianTable V x table
   let leaves := kilianLeaves t
   (V.queries (x, ρ)).mapM fun a => do
@@ -681,14 +681,14 @@ def kilianRespondProg (V : PCPVerifier α) (x : α) (table : List Bool) (ρs : L
 /-- Oracle-program verification of a single Kilian repetition against `root` on random
 string `ρ`. -/
 def kilianCheckProg (V : PCPVerifier α) (x : α) (root : List Bool) (ρ : List Bool)
-    (answers : List KilianOpening) : OracleComp MerkleHashSpec Bool := do
+    (answers : List (MerkleOpening Bool)) : OracleComp MerkleHashSpec Bool := do
   let queries := V.queries (x, ρ)
   let depth := kilianDepth V x
   let checks ← (queries.zip answers).mapM fun (a, o) =>
-    merkleVerifyProg depth root (kilianPosition V x a) [o.bit] o.path
+    merkleVerifyProg depth root (kilianPosition V x a) [o.leaf] o.path
   return answers.length == queries.length &&
     checks.all id &&
-    V.verdict ((x, ρ), answers.map KilianOpening.bit)
+    V.verdict ((x, ρ), answers.map MerkleOpening.leaf)
 
 /-- Oracle-program verification of all Kilian repetitions against `root` and challenges `ρs`. -/
 def kilianVerifyProg (V : PCPVerifier α) (x : α) (root : List Bool) (ρs : List (List Bool))
@@ -720,7 +720,7 @@ theorem evalPure_kilianRespondProg (h : List Bool → List Bool) (V : PCPVerifie
 
 @[simp]
 theorem evalPure_kilianCheckProg (h : List Bool → List Bool) (V : PCPVerifier α) (x : α)
-    (root : List Bool) (ρ : List Bool) (answers : List KilianOpening) :
+    (root : List Bool) (ρ : List Bool) (answers : List (MerkleOpening Bool)) :
     OracleComp.evalPure h (kilianCheckProg V x root ρ answers) =
       kilianCheck (fun _ => h) V [] x root ρ answers := by
   simp only [kilianCheckProg, OracleComp.evalPure_bind, OracleComp.evalPure_mapM,
@@ -728,7 +728,7 @@ theorem evalPure_kilianCheckProg (h : List Bool → List Bool) (V : PCPVerifier 
   congr 2
   refine List.all_congr rfl ?_
   rintro ⟨a, o⟩
-  simp
+  simp [MerkleOpening.verify]
 
 @[simp]
 theorem evalPure_kilianVerifyProg (h : List Bool → List Bool) (V : PCPVerifier α) (x : α)

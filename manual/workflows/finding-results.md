@@ -14,6 +14,11 @@ Read the defining module's imports and namespace before importing it. A file und
 
 Before applying a result, identify its input/output types and encoding, quantified witnesses, size parameter, charged resource, uniformity and side conditions. In particular, check whether a machine is chosen once before all inputs, whether the bound is eventually or pointwise, and whether the theorem requires a valid representation. If these disagree with the [contract you chose](choosing-models.md), find a transport theorem or prove the missing conversion. Changing notation does not establish a model bridge.
 
+The [Arora–Barak 2007 draft audit](../../results/arora-barak-2007.md) compares numbered
+source statements with declarations at recorded snapshots, including model restrictions, source
+errors and endpoints not located. Use its chapter tables when a nearby theorem name alone does
+not establish textbook coverage; the corrected density-amplification objective remains open.
+
 For textbook-oriented searches, the [Goldreich draft audit](../../results/goldreich-2007.md)
 maps chapters 5–7 to declarations and remaining endpoints. Check its snapshot and model notes:
 visited-cell versus binary-space accounting and uniform versus nonuniform hardness can prevent

@@ -23,6 +23,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pair.Projections
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Replay.Simulation
 import CslibFrontier.Computability.Probabilistic.Oracle.Composition
 import CslibFrontier.Computability.Probabilistic.Oracle.Substitution
@@ -340,12 +341,10 @@ private theorem interpret_id_bitQuery {β : Type} {encβ : β ↪ List Bool} {f 
   change [(OracleComp.interpret (m := Id) (languageOracle A)
     (search (unframe (encPair encβ encNat (b, i))) N)).testBit
       (min (ofBits (dropFrame (encPair encβ encNat (b, i)))) N)] = _
-  have hu : unframe (encPair encβ encNat (b, i)) = encβ b := unframe_frame_append _ _
   have hd : ofBits (dropFrame (encPair encβ encNat (b, i))) = i := by
-    change ofBits (dropFrame (frame (encβ b) ++ encNat i)) = i
-    rw [dropFrame_frame_append]
+    rw [dropFrame_encPair]
     exact Decoder.nat.decode_enc i
-  rw [hu, hd, interpret_id_search (F := f b) (fun k => hA (b, k)) hfN]
+  rw [unframe_encPair, hd, interpret_id_search (F := f b) (fun k => hA (b, k)) hfN]
   congr 1
   rcases le_total i N with hi | hi
   · rw [Nat.min_eq_left hi]

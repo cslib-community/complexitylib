@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Security
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Union
+import CslibFrontier.Probability.PMF.UniformPoint
 import CslibFrontier.Probability.Product
 
 /-!
@@ -179,11 +180,10 @@ theorem decapsNoCheck_of_dec_eq_some (S : Scheme PK SK M R CT K) (H : Bool × M 
 `dk` and challenge ciphertext `cStar`: decapsulation queries use `decapsNoCheck` and reject
 `cStar`. -/
 noncomputable def eagerNoCheckOracle (S : Scheme PK SK M R CT K) (G : M → R)
-    (H : Bool × M × CT → K) (dk : ImplicitSK PK SK M) (cStar : CT) :
-    (q : ROQuery M CT) → PMF (ROResp R K q)
-  | .G m => PMF.pure (G m)
-  | .H x => PMF.pure (H x)
-  | .decaps c => PMF.pure (if c = cStar then none else some (S.decapsNoCheck H dk c))
+    (H : Bool × M × CT → K) (dk : ImplicitSK PK SK M) (cStar : CT) (q : ROQuery M CT) :
+    PMF (ROResp R K q) :=
+  ROQuery.dispatch (PMF.pure ∘ G) (PMF.pure ∘ H) (fun c => PMF.pure (some (S.decapsNoCheck H dk c)))
+    cStar q
 
 /-- The eager ROM IND-CCA game of `FO-notbot` with decapsulation `decapsNoCheck`; otherwise as
 `eagerIndCcaGame`. -/
@@ -195,7 +195,7 @@ noncomputable def eagerNoCheckGame [Fintype M] [Finite R] [Fintype CT] [Finite K
   let (cStar, kReal) ← ProbComp.eval (S.encapsNotBot G H pk)
   let kRand ← ProbComp.eval S.sampleKey
   OracleComp.interpret (S.eagerNoCheckOracle G H dk cStar)
-    (A (pk, cStar, if b then kRand else kReal))
+    (A ⟨pk, cStar, if b then kRand else kReal⟩)
 
 end Scheme
 
@@ -220,10 +220,10 @@ def leakBits [DecidableEq K] (c : CT) :
 /-- The bit-recovery adversary: it reads off a candidate message `m̂` bit by bit with
 `leakBits`, then outputs whether `H(false, m̂, c*)` equals the challenge key. -/
 def leakAdv [DecidableEq K] : ROAdversary PK (Fin n → Bool) R (CT × Option (Fin n)) K :=
-  fun (_, cStar, kStar) => do
-    let bits ← leakBits (R := R) (K := K) cStar.1 (List.finRange n)
-    let k ← OracleComp.query (ROQuery.H (false, fun i => (bits.lookup i).getD false, cStar))
-    return decide (k = kStar)
+  fun ch => do
+    let bits ← leakBits (R := R) (K := K) ch.ct.1 (List.finRange n)
+    let k ← OracleComp.query (ROQuery.H (false, fun i => (bits.lookup i).getD false, ch.ct))
+    return decide (k = ch.key)
 
 variable [DecidableEq K]
 
@@ -246,17 +246,16 @@ theorem roQueryBounds_leakAdv :
     ROQueryBounds (leakAdv (PK := PK) (R := R) (CT := CT) (K := K) (n := n)) 0 (n + 1) := by
   have h (cost : ROQuery (Fin n → Bool) (CT × Option (Fin n)) → ℕ) (k : ℕ)
       (hd : ∀ x, cost (.decaps x) = 0) (hH : ∀ x, cost (.H x) = k)
-      (inp : PK × (CT × Option (Fin n)) × K) :
-      OracleComp.IsCostBounded cost (leakAdv (R := R) inp) (n * k + k) := by
-    obtain ⟨_, cStar, kStar⟩ := inp
+      (ch : KEM.Challenge PK (CT × Option (Fin n)) K) :
+      OracleComp.IsCostBounded cost (leakAdv (R := R) ch) (n * k + k) := by
     dsimp only [leakAdv]
     refine OracleComp.IsCostBounded.bind ?_ fun bits => ?_
     · simpa using
-        isCostBounded_leakBits (R := R) (K := K) cost k hd hH cStar.1 (List.finRange n)
+        isCostBounded_leakBits (R := R) (K := K) cost k hd hH ch.ct.1 (List.finRange n)
     · exact ((OracleComp.IsCostBounded.query _).bind fun _ => .pure _ 0).mono (by simp [hH])
-  intro inp
-  exact ⟨by simpa using h ROQuery.gCost 0 (fun _ => rfl) (fun _ => rfl) inp,
-    by simpa using h ROQuery.hCost 1 (fun _ => rfl) (fun _ => rfl) inp⟩
+  intro ch
+  exact ⟨by simpa using h ROQuery.gCost 0 (fun _ => rfl) (fun _ => rfl) ch,
+    by simpa using h ROQuery.hCost 1 (fun _ => rfl) (fun _ => rfl) ch⟩
 
 /-- The candidate message that `leakAdv` reads off for the challenge `(c, none)` when `c`
 decrypts to `m`: bit `i` is read as `true` iff `H(false, m i, (c, some i))` agrees with
@@ -285,25 +284,12 @@ theorem interpret_leakAdv (S : Scheme PK SK (Fin n → Bool) R (CT × Option (Fi
     (G : (Fin n → Bool) → R) (H : Bool × (Fin n → Bool) × (CT × Option (Fin n)) → K)
     (dk : ImplicitSK PK SK (Fin n → Bool)) (c : CT) (m : Fin n → Bool)
     (hdec : ∀ i, S.pke.dec dk.sk (c, some i) = some fun _ => m i) (pk : PK) (k : K) :
-    OracleComp.interpret (S.eagerNoCheckOracle G H dk (c, none)) (leakAdv (pk, (c, none), k)) =
+    OracleComp.interpret (S.eagerNoCheckOracle G H dk (c, none)) (leakAdv ⟨pk, (c, none), k⟩) =
       PMF.pure (decide (H (false, leakGuess H m c, (c, none)) = k)) := by
   have hguess : (fun i => ((List.finRange n).map fun i => (i, leakGuess H m c i)).lookup i
       |>.getD false) = leakGuess H m c :=
     funext fun i => by rw [List.lookup_graph _ (List.mem_finRange i)]; rfl
   simp [leakAdv, interpret_leakBits S G H dk c m hdec, Scheme.eagerNoCheckOracle, hguess]
-
-/-- A Boolean test of one sample against a fixed value has the value's probability. -/
-private theorem bind_pure_decide_eq_apply {γ : Type} [DecidableEq γ] (μ : PMF γ) (w : γ) :
-    (μ.bind fun v => PMF.pure (decide (v = w))) true = μ w := by
-  rw [PMF.bind_apply, tsum_eq_single w]
-  · simp
-  · intro v hv
-    simp [hv]
-
-/-- `bind_pure_decide_eq_apply` with the comparison written the other way round. -/
-private theorem bind_pure_decide_eq_apply' {γ : Type} [DecidableEq γ] (μ : PMF γ) (w : γ) :
-    (μ.bind fun v => PMF.pure (decide (w = v))) true = μ w := by
-  simpa only [@eq_comm _ w] using bind_pure_decide_eq_apply μ w
 
 /-- The probability of an outcome of a deterministic function of one sample. -/
 private theorem bind_pure_apply_eq_toOuterMeasure {α β : Type} (μ : PMF α) (f : α → β) (y : β) :
@@ -328,7 +314,7 @@ private theorem pi_toOuterMeasure_eq {ι γ : Type} [Fintype ι] [Fintype γ] [N
   have h := pi_map_eval (Function.update (fun _ : ι => uniformOfFintype γ) b (PMF.pure w)) a
   rw [Function.update_of_ne hab] at h
   generalize hμ : pi (Function.update (fun _ : ι => uniformOfFintype γ) b (PMF.pure w)) = μ at h ⊢
-  rw [← uniformOfFintype_apply w, ← bind_pure_decide_eq_apply _ w, ← h, PMF.bind_map]
+  rw [← uniformOfFintype_apply w, ← bind_pure_decide_eq_apply_true' _ w, ← h, PMF.bind_map]
   rfl
 
 /-- Union bound: some pair among `|J|` pairs of distinct coordinates of a uniform random
@@ -391,7 +377,7 @@ theorem advantage_eagerNoCheckGame_leakAdv [Finite R] [Fintype CT] [Fintype K] [
     have hdec := leakyPKE_dec_some (hcorr pk sk hk m (G m) ((mem_support_pi_iff _ _).1 hG m))
     simp only [encT_leakyPKE, ite_true,
       interpret_leakAdv ⟨leakyPKE P, sampleMsg, sampleKey⟩ G H ⟨sk, pk, s⟩ _ m hdec]
-    rw [hkey, bind_pure_decide_eq_apply', uniformOfFintype_apply]
+    rw [hkey, bind_pure_decide_eq_apply_true, uniformOfFintype_apply]
   have h0 : (⟨leakyPKE P, sampleMsg, sampleKey⟩ :
       Scheme PK SK (Fin n → Bool) R (CT × Option (Fin n)) K).eagerNoCheckGame leakAdv false false ≤
         n * (Fintype.card K : ℝ≥0∞)⁻¹ := by

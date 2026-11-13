@@ -15,6 +15,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.P
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Captured
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pair.Projections
 import CslibFrontier.Computability.Probabilistic.Oracle.Composition
 import CslibFrontier.Computability.Probabilistic.UniformNat
 import CslibFrontier.Crypto.Game.Hybrid
@@ -834,22 +835,13 @@ theorem eval_cpaGame_detCPAAdversary_false (E : SymmetricCipher) (n : ℕ)
   simp only [cpaGame, detCPAAdversary, OracleComp.interpret_bind, OracleComp.interpret_map,
     OracleComp.interpret_pure, ProbOracleComp.interpret_query, StateT.run_bind, StateT.run_map,
     StateT.run_pure, ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure]
-  have hpair1 : unframe (encPair encBits encBits (List.replicate n false, List.replicate n true)) =
-      List.replicate n false ∧
-      dropFrame (encPair encBits encBits (List.replicate n false, List.replicate n true)) =
-      List.replicate n true := by
-    simp [encPair_apply, unframe_frame_append, dropFrame_frame_append]
-  have hpair2 : unframe (encPair encBits encBits (List.replicate n false, List.replicate n false)) =
-      List.replicate n false ∧
-      dropFrame (encPair encBits encBits (List.replicate n false, List.replicate n false)) =
-      List.replicate n false := by
-    simp [encPair_apply, unframe_frame_append, dropFrame_frame_append]
   trans (ProbComp.eval (E.keyGen n)).bind (fun _ => PMF.pure true)
   · refine PMF.bind_congr_on_support _ _ _ fun ke hke => ?_
     unfold cpaEncryptionOracle
     dsimp only [StateT.run]
-    simp only [hpair1.1, hpair1.2, hpair2.1, hpair2.2, List.length_replicate, beq_self_eq_true,
-      Bool.and_self, ↓reduceIte, Bool.false_eq_true, ProbComp.eval_bind, ProbComp.eval_pure,
+    simp only [unframe_encPair_encBits, dropFrame_encPair_encBits, List.length_replicate,
+      beq_self_eq_true, Bool.and_self, ↓reduceIte, Bool.false_eq_true, ProbComp.eval_bind,
+      ProbComp.eval_pure,
       PMF.map_bind, PMF.pure_map, PMF.bind_bind, PMF.pure_bind]
     trans (ProbComp.eval (E.encrypt n ke (List.replicate n false))).bind (fun _ => PMF.pure true)
     · refine PMF.bind_congr_on_support _ _ _ fun c₁ hc₁ => ?_
@@ -874,16 +866,6 @@ theorem eval_cpaGame_detCPAAdversary_true (E : SymmetricCipher) {n : ℕ} (hn : 
   simp only [cpaGame, detCPAAdversary, OracleComp.interpret_bind, OracleComp.interpret_map,
     OracleComp.interpret_pure, ProbOracleComp.interpret_query, StateT.run_bind, StateT.run_map,
     StateT.run_pure, ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure]
-  have hpair1 : unframe (encPair encBits encBits (List.replicate n false, List.replicate n true)) =
-      List.replicate n false ∧
-      dropFrame (encPair encBits encBits (List.replicate n false, List.replicate n true)) =
-      List.replicate n true := by
-    simp [encPair_apply, unframe_frame_append, dropFrame_frame_append]
-  have hpair2 : unframe (encPair encBits encBits (List.replicate n false, List.replicate n false)) =
-      List.replicate n false ∧
-      dropFrame (encPair encBits encBits (List.replicate n false, List.replicate n false)) =
-      List.replicate n false := by
-    simp [encPair_apply, unframe_frame_append, dropFrame_frame_append]
   have hneMsg : List.replicate n true ≠ List.replicate n false := by
     obtain ⟨m, rfl⟩ := Nat.exists_eq_succ_of_ne_zero (by lia : n ≠ 0)
     simp
@@ -891,8 +873,8 @@ theorem eval_cpaGame_detCPAAdversary_true (E : SymmetricCipher) {n : ℕ} (hn : 
   · refine PMF.bind_congr_on_support _ _ _ fun ke hke => ?_
     unfold cpaEncryptionOracle
     dsimp only [StateT.run]
-    simp only [hpair1.1, hpair1.2, hpair2.1, hpair2.2, List.length_replicate, beq_self_eq_true,
-      Bool.and_self, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure,
+    simp only [unframe_encPair_encBits, dropFrame_encPair_encBits, List.length_replicate,
+      beq_self_eq_true, Bool.and_self, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure,
       PMF.map_bind, PMF.pure_map, PMF.bind_bind, PMF.pure_bind]
     trans (ProbComp.eval (E.encrypt n ke (List.replicate n true))).bind (fun _ => PMF.pure false)
     · refine PMF.bind_congr_on_support _ _ _ fun c₁ hc₁ => ?_
@@ -2704,15 +2686,6 @@ private theorem ciCombined_captured_bind_eq_one {α : Type} (E : SymmetricCipher
   have hct : x.2.1.2.2 = ct := by rw [hinv.1]
   rw [hct, hinv.2, hwin, PMF.pure_apply_self]
 
-private theorem ennreal_tsum_finsetSum {α β : Type*}
-    (s : Finset β) (f : α → β → ℝ≥0∞) :
-    (∑' a, ∑ b ∈ s, f a b) = ∑ b ∈ s, ∑' a, f a b := by
-  classical
-  induction s using Finset.induction_on with
-  | empty => simp
-  | insert b s hb ih =>
-    simp only [Finset.sum_insert hb, tsum_add, ih]
-
 private theorem eval_ccaRejectWithBadOracle_false (E : SymmetricCipher) (n : ℕ) (k : List Bool)
     (bit : Bool) (request : Bool × List Bool) (queried : List (List Bool)) :
     ProbComp.eval (E.ccaRejectWithBadOracle n k bit request (queried, false)) =
@@ -2813,7 +2786,7 @@ private theorem bad_ccaRejectWithBad_le_sum_ciCombined {α : Type} (E : Symmetri
             tsum_le_tsum fun a => mul_le_mul_of_nonneg_left (ih a queried) zero_le
         _ = _ := by
           simp only [Finset.mul_sum]
-          rw [ennreal_tsum_finsetSum]
+          rw [Summable.tsum_finsetSum fun _ _ => CompleteLattice.summable]
           refine Finset.sum_congr rfl fun j _ => ?_
           simp only [← PMF.bind_apply]
     | inr request =>
@@ -2871,7 +2844,7 @@ private theorem bad_ccaRejectWithBad_le_sum_ciCombined {α : Type} (E : Symmetri
                     mul_le_mul_of_nonneg_left (ih ct (ct :: queried)) zero_le
               _ = _ := by
                 simp only [Finset.mul_sum]
-                rw [ennreal_tsum_finsetSum]
+                rw [Summable.tsum_finsetSum fun _ _ => CompleteLattice.summable]
                 refine Finset.sum_congr rfl fun j _ => ?_
                 simp only [PMF.bind_apply]
           exact hle.trans le_self_add
@@ -3001,7 +2974,7 @@ theorem advantage_ccaGame_ccaRejectGame_le_sum (E : SymmetricCipher) (ctBound Q 
     conv_lhs =>
       arg 2; ext j
       rw [PMF.bind_apply]
-    rw [← ennreal_tsum_finsetSum]
+    rw [← Summable.tsum_finsetSum fun _ _ => CompleteLattice.summable]
     refine tsum_congr fun k => ?_
     rw [Finset.mul_sum]
   have hCCA_eq : pCCA = ∑' k : List Bool, ProbComp.eval (E.keyGen n) k *
@@ -3816,7 +3789,7 @@ private theorem bad_oneTimeCCARejectWithBad_le_sum_oneTimeCICombined {α : Type}
             tsum_le_tsum fun a => mul_le_mul_of_nonneg_left (ih a queried) zero_le
         _ = _ := by
           simp only [Finset.mul_sum]
-          rw [ennreal_tsum_finsetSum]
+          rw [Summable.tsum_finsetSum fun _ _ => CompleteLattice.summable]
           refine Finset.sum_congr rfl fun j _ => ?_
           simp only [← PMF.bind_apply]
     | inr request =>
@@ -3874,7 +3847,7 @@ private theorem bad_oneTimeCCARejectWithBad_le_sum_oneTimeCICombined {α : Type}
                     mul_le_mul_of_nonneg_left (ih ct [ct]) zero_le
               _ = _ := by
                 simp only [Finset.mul_sum]
-                rw [ennreal_tsum_finsetSum]
+                rw [Summable.tsum_finsetSum fun _ _ => CompleteLattice.summable]
                 refine Finset.sum_congr rfl fun j _ => ?_
                 simp only [PMF.bind_apply]
           exact hle.trans le_self_add
@@ -4016,7 +3989,7 @@ private theorem advantage_ccaOneTimeGame_ccaOneTimeRejectGame_le_sum (E : Symmet
     conv_lhs =>
       arg 2; ext j
       rw [PMF.bind_apply]
-    rw [← ennreal_tsum_finsetSum]
+    rw [← Summable.tsum_finsetSum fun _ _ => CompleteLattice.summable]
     refine tsum_congr fun k => ?_
     rw [Finset.mul_sum]
   have hCCA_eq : pCCA = ∑' k : List Bool, ProbComp.eval (E.keyGen n) k *
