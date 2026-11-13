@@ -70,15 +70,15 @@ entries.
   Under the explicit advice-PRG premise `GMW.AdvicePRG`
   (from `GMW.gmwView_negligible_of_advice_prg`), the GMW proof systems satisfy
   `ZKProof.AuxiliaryInputZeroKnowledge`
-  (`PseudorandomGenerator.auxiliaryInputZeroKnowledge_zeroKnowledgeProofOfReduction`,
-  `PseudorandomGenerator.auxiliaryInputZeroKnowledge_zeroKnowledgeProofThreeSAT`); this module does
+  (`PseudorandomGenerator.auxiliaryInputZeroKnowledge_singleZKProofOfReduction`,
+  `PseudorandomGenerator.auxiliaryInputZeroKnowledge_singleZKProofThreeSAT`); this module does
   not derive `GMW.AdvicePRG` from uniform PRG or one-way function assumptions.
 * **Bundled witness relation (`ZKProof.isWitness`).** `ZKProof` bundles its
   own polynomial-time witness predicate `isWitness : α → List Bool → Bool` characterizing `A`
   (`mem_iff_exists_witness`). No witness-length bound is imposed, so `isWitness` by itself need not
   be an `NP` relation; membership in `IP` (`ZKProof.mem_IP`) does not need one, and in
   `zero_knowledge` the witness family `w : ℕ → List Bool` is polynomial-time-generable in `1^n`. In
-  `PseudorandomGenerator.zeroKnowledgeProofOfReduction`, the bundled predicate
+  `PseudorandomGenerator.singleZKProofOfReduction`, the bundled predicate
   `isWitness a w := ThreeSAT.verifier (f a, w)` checks a `ThreeSAT` witness for the Karp-reduced
   formula `f a` rather than a witness for the original `NP` verifier of `A`.
 
@@ -94,8 +94,8 @@ entries.
   language `A`, bundling a uniform strict oracle PPT verifier, an honest prover with a uniform
   strict PPT interaction realization, perfect completeness, soundness `soundness n` against
   unbounded provers, and `GenerableZeroKnowledge`.
-* `Cslib.Crypto.PseudorandomGenerator.zeroKnowledgeProofOfReduction`,
-  `Cslib.Crypto.PseudorandomGenerator.zeroKnowledgeProofThreeSAT`: single-session GMW
+* `Cslib.Crypto.PseudorandomGenerator.singleZKProofOfReduction`,
+  `Cslib.Crypto.PseudorandomGenerator.singleZKProofThreeSAT`: single-session GMW
   zero-knowledge proof systems, with soundness `1 / 3`, for any language Karp-reducible to
   `ThreeSAT` and for `ThreeSAT` itself.
 
@@ -110,8 +110,8 @@ entries.
 * `Cslib.Crypto.ZKProof.zero_knowledge_const`,
   `Cslib.Crypto.ZKProof.AuxiliaryInputZeroKnowledge.zero_knowledge_const`:
   fixed-instance computational zero-knowledge.
-* `Cslib.Crypto.PseudorandomGenerator.auxiliaryInputZeroKnowledge_zeroKnowledgeProofOfReduction`,
-  `Cslib.Crypto.PseudorandomGenerator.auxiliaryInputZeroKnowledge_zeroKnowledgeProofThreeSAT`:
+* `Cslib.Crypto.PseudorandomGenerator.auxiliaryInputZeroKnowledge_singleZKProofOfReduction`,
+  `Cslib.Crypto.PseudorandomGenerator.auxiliaryInputZeroKnowledge_singleZKProofThreeSAT`:
   general `AuxiliaryInputZeroKnowledge` for the single-session GMW proof systems under the explicit
   advice-PRG premise `GMW.AdvicePRG`.
 
@@ -271,7 +271,7 @@ The single-session GMW systems have `soundness := fun _ => 1 / 3`; sequential re
   (`mem_iff_exists_witness`). No witness-length bound is imposed, so `isWitness` by itself need
   not be an `NP` relation (in `zero_knowledge`, `w` is polynomial-time-generable in `1^n`). When
   constructed via a Karp reduction `f : α → CNF ℕ` to `ThreeSAT`
-  (`PseudorandomGenerator.zeroKnowledgeProofOfReduction`),
+  (`PseudorandomGenerator.singleZKProofOfReduction`),
   `isWitness a w` is `ThreeSAT.verifier (f a, w)`, checking a `ThreeSAT` witness for `f a`.
 * `complete` and `sound`: completeness `1` for valid witnesses and soundness error at most
   `soundness n` against all computationally unbounded stateful provers `P : Prover Unit`.
@@ -431,7 +431,7 @@ soundness `1 / 3`, for any language `A` with a polynomial-time many-one reductio
 `f : α → CNF ℕ` to `ThreeSAT`, using a pseudorandom generator with stretch at least `3 * k + 1`
 and the 3-copy masked-3SAT commitment protocol in `Cslib.Crypto.GMW`. The bundled witness check
 `isWitness a w` is `ThreeSAT.verifier (f a, w)` on the reduced formula `f a`. -/
-noncomputable def PseudorandomGenerator.zeroKnowledgeProofOfReduction
+noncomputable def PseudorandomGenerator.singleZKProofOfReduction
     {α : Type} {enc : α ↪ List Bool} {A : Set α}
     {generator : List Bool → List Bool} {length : ℕ → ℕ}
     (hG : PseudorandomGenerator generator length)
@@ -468,10 +468,10 @@ noncomputable def PseudorandomGenerator.zeroKnowledgeProofOfReduction
           hw_sat⟩
 
 /-- Under the explicit advice-PRG premise `GMW.AdvicePRG enc generator length`, the GMW proof
-system `hG.zeroKnowledgeProofOfReduction hstretch hf hred` satisfies general auxiliary-input
+system `hG.singleZKProofOfReduction hstretch hf hred` satisfies general auxiliary-input
 zero-knowledge (`ZKProof.AuxiliaryInputZeroKnowledge`) across all arbitrary polynomially bounded
 valid instance, witness, and auxiliary-input families. -/
-theorem PseudorandomGenerator.auxiliaryInputZeroKnowledge_zeroKnowledgeProofOfReduction
+theorem PseudorandomGenerator.auxiliaryInputZeroKnowledge_singleZKProofOfReduction
     {α : Type} {enc : α ↪ List Bool} {A : Set α}
     {generator : List Bool → List Bool} {length : ℕ → ℕ}
     (hG : PseudorandomGenerator generator length)
@@ -479,7 +479,7 @@ theorem PseudorandomGenerator.auxiliaryInputZeroKnowledge_zeroKnowledgeProofOfRe
     {f : α → CNF ℕ} (hf : ComputableInPolyTime f enc encCNF)
     (hred : ∀ a, a ∈ A ↔ f a ∈ ThreeSAT)
     (hAdv : GMW.AdvicePRG enc generator length) :
-    (hG.zeroKnowledgeProofOfReduction hstretch hf hred).AuxiliaryInputZeroKnowledge := by
+    (hG.singleZKProofOfReduction hstretch hf hred).AuxiliaryInputZeroKnowledge := by
   intro Vstar hV
   exact ⟨GMW.gmwSimulator generator length f Vstar,
     GMW.isPPTOn_gmwSimulator hG.polyTime hG.length_eq hf hV,
@@ -489,23 +489,23 @@ theorem PseudorandomGenerator.auxiliaryInputZeroKnowledge_zeroKnowledgeProofOfRe
 /-- The single-session Goldreich–Micali–Wigderson computational zero-knowledge proof system for
 `ThreeSAT`, with soundness `1 / 3`, built from any pseudorandom generator with stretch at least
 `3 * k + 1` via the 3-copy masked-3SAT commitment protocol in `Cslib.Crypto.GMW`. -/
-noncomputable def PseudorandomGenerator.zeroKnowledgeProofThreeSAT
+noncomputable def PseudorandomGenerator.singleZKProofThreeSAT
     {generator : List Bool → List Bool} {length : ℕ → ℕ}
     (hG : PseudorandomGenerator generator length)
     (hstretch : ∀ k, 3 * k + 1 ≤ length k) :
     ZKProof encCNF ThreeSAT (fun _ => 1 / 3) :=
-  hG.zeroKnowledgeProofOfReduction hstretch (by fun_prop) (fun _ => Iff.rfl)
+  hG.singleZKProofOfReduction hstretch (by fun_prop) (fun _ => Iff.rfl)
 
 /-- Under the explicit advice-PRG premise `GMW.AdvicePRG encCNF generator length`, the GMW proof
-system `hG.zeroKnowledgeProofThreeSAT hstretch` satisfies general auxiliary-input zero-knowledge
+system `hG.singleZKProofThreeSAT hstretch` satisfies general auxiliary-input zero-knowledge
 (`ZKProof.AuxiliaryInputZeroKnowledge`). -/
-theorem PseudorandomGenerator.auxiliaryInputZeroKnowledge_zeroKnowledgeProofThreeSAT
+theorem PseudorandomGenerator.auxiliaryInputZeroKnowledge_singleZKProofThreeSAT
     {generator : List Bool → List Bool} {length : ℕ → ℕ}
     (hG : PseudorandomGenerator generator length)
     (hstretch : ∀ k, 3 * k + 1 ≤ length k)
     (hAdv : GMW.AdvicePRG encCNF generator length) :
-    (hG.zeroKnowledgeProofThreeSAT hstretch).AuxiliaryInputZeroKnowledge :=
-  hG.auxiliaryInputZeroKnowledge_zeroKnowledgeProofOfReduction hstretch (by fun_prop)
+    (hG.singleZKProofThreeSAT hstretch).AuxiliaryInputZeroKnowledge :=
+  hG.auxiliaryInputZeroKnowledge_singleZKProofOfReduction hstretch (by fun_prop)
     (fun _ => Iff.rfl) hAdv
 
 end Cslib.Crypto

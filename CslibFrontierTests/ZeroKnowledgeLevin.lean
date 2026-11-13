@@ -36,9 +36,9 @@ reduction: its witnesses are SAT certificates, and its honest prover runs on the
 example {generator : List Bool → List Bool} {length : ℕ → ℕ}
     (hG : PseudorandomGenerator generator length) (hstretch : ∀ k, 3 * k + 1 ≤ length k)
     (φ : Cslib.Logic.PL.CNF ℕ) (w : List Bool) (hw : SAT.npRelation.IsWitness φ w) (n : ℕ) :
-    acceptProb ((hG.levinZeroKnowledgeProof hstretch toThreeSATLevinReduction).verifier n φ)
-      ((hG.levinZeroKnowledgeProof hstretch toThreeSATLevinReduction).prover n φ w) = 1 :=
-  (hG.levinZeroKnowledgeProof hstretch toThreeSATLevinReduction).complete n φ w
-    ((hG.isWitness_levinZeroKnowledgeProof hstretch _ φ w).2 hw)
+    acceptProb ((hG.levinSingleZKProof hstretch toThreeSATLevinReduction).verifier n φ)
+      ((hG.levinSingleZKProof hstretch toThreeSATLevinReduction).prover n φ w) = 1 :=
+  (hG.levinSingleZKProof hstretch toThreeSATLevinReduction).complete n φ w
+    ((hG.isWitness_levinSingleZKProof hstretch _ φ w).2 hw)
 
 end CslibFrontierTests.ZeroKnowledgeLevin

@@ -41,6 +41,8 @@ GMW systems have `soundness := fun _ => 1 / 3`, and sequential repetition
 * `Cslib.Crypto.negligible_pow_of_lt_one`, `Cslib.Crypto.negligible_one_third_pow`,
   `Cslib.Crypto.ZKProof.negligibleSoundness_one_third_pow`: geometric soundness decay under
   repetition count `n ≤ k n`.
+* `Cslib.Crypto.one_third_pow_succ_le`: `(1 / 3) ^ (n + 1) ≤ 1 / 3`, for weakening an amplified
+  system to the single-session bound with `ZKProof.mono`.
 -/
 
 @[expose] public section
@@ -116,6 +118,12 @@ theorem negligible_one_third_pow {k : ℕ → ℕ} (hk : ∀ n, n ≤ k n) :
     rw [ENNReal.toNNReal_div, ENNReal.toNNReal_one, ENNReal.toNNReal_ofNat]
     norm_num
   simpa only [ENNReal.toNNReal_pow] using negligible_pow_of_lt_one hlt hk
+
+/-- Any positive number of repetitions is at least as sound as one round:
+`(1 / 3) ^ (n + 1) ≤ 1 / 3`. With `ZKProof.mono`, this turns a sequentially amplified system into
+one with the single-session bound `fun _ => 1 / 3`. -/
+theorem one_third_pow_succ_le (n : ℕ) : (1 / 3 : ENNReal) ^ (n + 1) ≤ 1 / 3 :=
+  pow_le_of_le_one zero_le (by norm_num) n.succ_ne_zero
 
 /-- A `ZKProof` with soundness `(1 / 3) ^ (k n)` for `∀ n, n ≤ k n` has negligible soundness. -/
 theorem ZKProof.negligibleSoundness_one_third_pow {k : ℕ → ℕ}

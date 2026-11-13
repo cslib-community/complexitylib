@@ -394,4 +394,13 @@ example {f : List Bool → List Bool} (hf : NonuniformOneWay f) :
       hzkRel.unboundedAuxiliaryInputZeroKnowledge,
       hzkRel.instanceAuxiliaryInputZeroKnowledge⟩⟩
 
+-- `ZKProof.mono` keeps the witness check and auxiliary-input zero knowledge, so the single-session
+-- `1 / 3` statement for an NP relation's own witnesses follows from the amplified one.
+example {α : Type} {enc : α ↪ List Bool} {f : List Bool → List Bool} (hf : NonuniformOneWay f)
+    (R : Complexity.NPRelation enc) :
+    ∃ zk : ZKProof enc R.language (fun _ => 1 / 3),
+      (∀ a w, zk.isWitness a w = true ↔ R.IsWitness a w) ∧ zk.AuxiliaryInputZeroKnowledge :=
+  let ⟨zk, hw, _, hzk⟩ := hf.exists_zkProof_of_npRelation R
+  ⟨zk.mono one_third_pow_succ_le, hw, hzk⟩
+
 end CslibFrontierTests.Crypto.Nonuniform

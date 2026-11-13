@@ -186,14 +186,25 @@ example {generator : List Bool → List Bool} {length : ℕ → ℕ}
     (hG : PseudorandomGenerator generator length)
     (hstretch : ∀ k, 3 * k + 1 ≤ length k)
     (hAdv : GMW.AdvicePRG encCNF generator length) :
-    (hG.zeroKnowledgeProofThreeSAT hstretch).AuxiliaryInputZeroKnowledge :=
-  hG.auxiliaryInputZeroKnowledge_zeroKnowledgeProofThreeSAT hstretch hAdv
+    (hG.singleZKProofThreeSAT hstretch).AuxiliaryInputZeroKnowledge :=
+  hG.auxiliaryInputZeroKnowledge_singleZKProofThreeSAT hstretch hAdv
 
 -- Weakening the soundness bound: an amplified proof system is in particular `1 / 3`-sound.
 example {f : List Bool → List Bool} (hf : OneWay f) :
     Nonempty (ZKProof encCNF ThreeSAT (fun _ => 1 / 3)) :=
   let ⟨zk, _⟩ := hf.exists_zkProof_of_mem_NP ThreeSAT.mem_NP
-  ⟨zk.mono fun n => pow_le_of_le_one zero_le (by norm_num) n.succ_ne_zero⟩
+  ⟨zk.mono one_third_pow_succ_le⟩
+
+-- `ZKProof.mono` keeps the witness check and auxiliary-input zero knowledge, so the strongest
+-- single-session `1 / 3` existence statement for an NP relation's own witnesses follows from the
+-- amplified one.
+example {α : Type} {enc : α ↪ List Bool} {generator : List Bool → List Bool} {length : ℕ → ℕ}
+    (hG : PseudorandomGenerator generator length) (hstretch : ∀ k, 3 * k + 1 ≤ length k)
+    (hAdv : GMW.AdvicePRG enc generator length) (R : NPRelation enc) :
+    ∃ zk : ZKProof enc R.language (fun _ => 1 / 3),
+      (∀ a w, zk.isWitness a w = true ↔ R.IsWitness a w) ∧ zk.AuxiliaryInputZeroKnowledge :=
+  let ⟨zk, hw, _, hzk⟩ := hG.exists_auxiliaryInputZKProof_of_npRelation hstretch hAdv R
+  ⟨zk.mono one_third_pow_succ_le, hw, hzk⟩
 
 -- Machine-level input-tape prefix locality: a `fuel`-step run on `u ++ v` depends only on
 -- `u ++ v.take fuel`.
@@ -278,9 +289,9 @@ example {generator : List Bool → List Bool} {length : ℕ → ℕ}
     (hG : PseudorandomGenerator generator length)
     (hstretch : ∀ k, 3 * k + 1 ≤ length k)
     (hAdv : GMW.AdvicePRG encCNF generator length) :
-    (hG.zeroKnowledgeProofThreeSAT hstretch).UnboundedAuxiliaryInputZeroKnowledge ∧
-      (hG.zeroKnowledgeProofThreeSAT hstretch).InstanceAuxiliaryInputZeroKnowledge :=
-  let hzk := hG.auxiliaryInputZeroKnowledge_zeroKnowledgeProofThreeSAT hstretch hAdv
+    (hG.singleZKProofThreeSAT hstretch).UnboundedAuxiliaryInputZeroKnowledge ∧
+      (hG.singleZKProofThreeSAT hstretch).InstanceAuxiliaryInputZeroKnowledge :=
+  let hzk := hG.auxiliaryInputZeroKnowledge_singleZKProofThreeSAT hstretch hAdv
   ⟨hzk.unboundedAuxiliaryInputZeroKnowledge, hzk.instanceAuxiliaryInputZeroKnowledge⟩
 
 -- Polynomial-count sequential repetition of any strict oracle PPT verifier is strict oracle PPT.
