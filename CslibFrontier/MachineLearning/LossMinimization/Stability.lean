@@ -37,6 +37,10 @@ sample `S⁽ⁱ⁾` of [ShalevShwartzBenDavid2014, Section 13.2].
 * `Cslib.MachineLearning.integral_trueRisk_sub_empiricalRisk`: the expected generalization gap
   `𝔼_S [L_D(A S) - L_S(A S)]` equals the expected replace-one gap
   [ShalevShwartzBenDavid2014, Theorem 13.2].
+* `Cslib.MachineLearning.integral_update_eval`: replacing the `i`-th example by a fresh one and
+  keeping the replaced example as the fresh one preserves expectations.
+* `Cslib.MachineLearning.integral_trueRisk_le_of_replaceOneGap_le`: a rule whose expected
+  replace-one gap under `D` is at most `ε` generalizes at rate `ε` under `D`.
 * `Cslib.MachineLearning.IsReplaceOneStable.integral_trueRisk_le`: a stable rule generalizes:
   `𝔼_S [L_D(A S)] ≤ 𝔼_S [L_S(A S)] + ε`.
 * `Cslib.MachineLearning.isReplaceOneStable_of_forall_le`: a rule whose loss on every example
@@ -125,6 +129,23 @@ private theorem measurePreserving_replaceOne (D : Measure Z) [IsProbabilityMeasu
     _ = μ.prod D := by
         rw [← Measure.map_map hπ.measurable hσ.measurable, hσ.map_eq, hπ.map_eq]
 
+/-- **Replacing one example by a fresh one preserves expectations**: for `m` i.i.d. examples and an
+independent example `z'` from `D`, `𝔼 [g(S⁽ⁱ⁾, z_i)] = 𝔼 [g(S, z')]`, where `S⁽ⁱ⁾` is
+`Function.update S i z'`. -/
+theorem integral_update_eval (D : Measure Z) [IsProbabilityMeasure D] {m : ℕ} (i : Fin m)
+    (g : (Fin m → Z) × Z → ℝ) :
+    ∫ p, g (Function.update p.1 i p.2, p.1 i) ∂(Measure.pi fun _ : Fin m => D).prod D =
+      ∫ p, g p ∂(Measure.pi fun _ : Fin m => D).prod D :=
+  (measurePreserving_replaceOne D i).integral_comp (MeasurableEquiv.ofInvolutive _
+    (replaceOne_involutive i) (measurable_replaceOne i)).measurableEmbedding g
+
+/-- The integrability counterpart of `Cslib.MachineLearning.integral_update_eval`. -/
+theorem integrable_update_eval {D : Measure Z} [IsProbabilityMeasure D] {m : ℕ} (i : Fin m)
+    {g : (Fin m → Z) × Z → ℝ} (hg : Integrable g ((Measure.pi fun _ : Fin m => D).prod D)) :
+    Integrable (fun p => g (Function.update p.1 i p.2, p.1 i))
+      ((Measure.pi fun _ : Fin m => D).prod D) :=
+  (measurePreserving_replaceOne D i).integrable_comp_of_integrable hg
+
 /-- If the loss of `A S` on a fresh example is integrable over the joint distribution, the true risk
 of `A S` is integrable over the samples. -/
 private theorem integrable_trueRisk_comp {ℓ : W → Z → ℝ} {D : Measure Z} [IsProbabilityMeasure D]
@@ -151,15 +172,12 @@ theorem integral_trueRisk_sub_empiricalRisk (ℓ : W → Z → ℝ) (D : Measure
       replaceOneGap ℓ D A := by
   have : Nonempty (Fin m) := ⟨⟨0, hm⟩⟩
   set μ := Measure.pi fun _ : Fin m => D
-  have hR : ∀ i, MeasurePreserving (replaceOne i) (μ.prod D) (μ.prod D) :=
-    measurePreserving_replaceOne D
   -- Each index contributes `∫ ℓ(A(S⁽ⁱ⁾), z_i) = ∫ ℓ(A S, z')` and `∫ ℓ(A S, z_i)`.
   have hfresh : ∀ i, ∫ p, ℓ (A (Function.update p.1 i p.2)) (p.1 i) ∂(μ.prod D) =
       ∫ p, ℓ (A p.1) p.2 ∂(μ.prod D) := fun i =>
-    (hR i).integral_comp (MeasurableEquiv.ofInvolutive _ (replaceOne_involutive i)
-      (measurable_replaceOne i)).measurableEmbedding fun p => ℓ (A p.1) p.2
+    integral_update_eval D i fun p => ℓ (A p.1) p.2
   have hfresh_int : ∀ i, Integrable (fun p => ℓ (A (Function.update p.1 i p.2)) (p.1 i))
-      (μ.prod D) := fun i => (hR i).integrable_comp_of_integrable hint
+      (μ.prod D) := fun i => integrable_update_eval (g := fun p => ℓ (A p.1) p.2) i hint
   have hold : ∀ i, ∫ p, ℓ (A p.1) (p.1 i) ∂(μ.prod D) = ∫ S, ℓ (A S) (S i) ∂μ := fun i => by
     rw [integral_fun_fst (fun S => ℓ (A S) (S i)), probReal_univ, one_smul]
   have hold_int : ∀ i, Integrable (fun p => ℓ (A p.1) (p.1 i)) (μ.prod D) := fun i =>
@@ -199,6 +217,22 @@ theorem IsReplaceOneStable.mono {ℓ : W → Z → ℝ} {m : ℕ} {A : (Fin m �
     (hA : IsReplaceOneStable ℓ A ε) (h : ε ≤ ε') : IsReplaceOneStable ℓ A ε' :=
   fun D _ => (hA D).trans h
 
+/-- If the expected replace-one gap of `A` under `D` is at most `ε`, its expected true risk exceeds
+its expected empirical risk by at most `ε` [ShalevShwartzBenDavid2014, Theorem 13.2]. -/
+theorem integral_trueRisk_le_of_replaceOneGap_le {ℓ : W → Z → ℝ} {m : ℕ} {A : (Fin m → Z) → W}
+    {ε : ℝ} (D : Measure Z) [IsProbabilityMeasure D] (hm : 0 < m)
+    (hint : Integrable (fun p : (Fin m → Z) × Z => ℓ (A p.1) p.2)
+      ((Measure.pi fun _ : Fin m => D).prod D))
+    (hint' : ∀ i, Integrable (fun S => ℓ (A S) (S i)) (Measure.pi fun _ : Fin m => D))
+    (hgap : replaceOneGap ℓ D A ≤ ε) :
+    ∫ S, trueRisk ℓ D (A S) ∂(Measure.pi fun _ : Fin m => D) ≤
+      ∫ S, empiricalRisk ℓ S (A S) ∂(Measure.pi fun _ : Fin m => D) + ε := by
+  have h := integral_trueRisk_sub_empiricalRisk ℓ D hm A hint hint'
+  have htrue_int : Integrable (fun S => trueRisk ℓ D (A S)) (Measure.pi fun _ : Fin m => D) :=
+    integrable_trueRisk_comp hint
+  rw [integral_sub htrue_int (integrable_empiricalRisk_comp ℓ _ A hint')] at h
+  linarith
+
 /-- **Stable rules do not overfit** [ShalevShwartzBenDavid2014, Theorem 13.2 and Definition 13.3]:
 if `A` is replace-one stable at rate `ε`, its expected true risk exceeds its expected empirical risk
 by at most `ε`. -/
@@ -209,13 +243,8 @@ theorem IsReplaceOneStable.integral_trueRisk_le {ℓ : W → Z → ℝ} {m : ℕ
       ((Measure.pi fun _ : Fin m => D).prod D))
     (hint' : ∀ i, Integrable (fun S => ℓ (A S) (S i)) (Measure.pi fun _ : Fin m => D)) :
     ∫ S, trueRisk ℓ D (A S) ∂(Measure.pi fun _ : Fin m => D) ≤
-      ∫ S, empiricalRisk ℓ S (A S) ∂(Measure.pi fun _ : Fin m => D) + ε := by
-  have h := integral_trueRisk_sub_empiricalRisk ℓ D hm A hint hint'
-  have htrue_int : Integrable (fun S => trueRisk ℓ D (A S)) (Measure.pi fun _ : Fin m => D) :=
-    integrable_trueRisk_comp hint
-  rw [integral_sub htrue_int (integrable_empiricalRisk_comp ℓ _ A hint')] at h
-  have := hA D
-  linarith
+      ∫ S, empiricalRisk ℓ S (A S) ∂(Measure.pi fun _ : Fin m => D) + ε :=
+  integral_trueRisk_le_of_replaceOneGap_le D hm hint hint' (hA D)
 
 /-- A function bounded above by a nonnegative constant has integral at most that constant under a
 probability measure, whether or not it is integrable. -/
