@@ -113,7 +113,7 @@ theorem whiteConstraints_scopes_nodup (edges : ℕ) (scopes : List (List ℕ))
     (hnd : ∀ scope ∈ scopes, scope.Nodup)
     (hbound : ∀ scope ∈ scopes, ∀ v ∈ scope, v < edges)
     (constraint : Constraint Table ℕ) (hc : constraint ∈ whiteConstraints edges scopes) :
-    constraint.2.Nodup := by
+    constraint.scope.Nodup := by
   induction scopes generalizing edges with
   | nil => simp [whiteConstraints] at hc
   | cons scope scopes ih =>

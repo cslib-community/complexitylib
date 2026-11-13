@@ -129,14 +129,14 @@ private def signs (c : Clause ℕ) : SignPattern :=
   ⟨(c.getD 0 (0, true)).2, (c.getD 1 (0, true)).2, (c.getD 2 (0, true)).2⟩
 
 private def constraint (c : Clause ℕ) : Constraint SignPattern ℕ :=
-  (signs c, 0 :: c.map (fun l => l.1 + 1))
+  ⟨signs c, 0 :: c.map (fun l => l.1 + 1)⟩
 
 private def valid (φ : CNF ℕ) : Bool := φ.all (fun c => decide (c.length = 3))
 
 /-- The reduction adds the shared reference at zero and shifts original labels by one.
 Malformed exact-three syntax produces a malformed target constraint. -/
 def ofExactThreeSAT (φ : CNF ℕ) : CSP SignPattern ℕ :=
-  if valid φ then φ.map constraint else [(⟨true, true, true⟩, [])]
+  if valid φ then φ.map constraint else [⟨⟨true, true, true⟩, []⟩]
 
 /-- The reference lift does not increase the number of clauses/constraints. An invalid input
 is nonempty, so the singleton malformed reject instance satisfies the same bound. -/
@@ -211,7 +211,7 @@ theorem computableInPolyTime_ofExactThreeSAT :
     ComputableInPolyTime ofExactThreeSAT encCNF enc := by
   unfold ofExactThreeSAT
   exact computable_valid.ite (ComputableInPolyTime.map computable_constraint)
-    (ComputableInPolyTime.const [(SignPattern.mk true true true, [])])
+    (ComputableInPolyTime.const [Constraint.mk (SignPattern.mk true true true) []])
 
 /-- Exact-three SAT reduces to the self-dual reference-lifted CSP in native polynomial time. -/
 theorem polyTimeReducible : PolyTimeReducible encCNF enc ExactThreeSAT SelfDualThreeSAT :=

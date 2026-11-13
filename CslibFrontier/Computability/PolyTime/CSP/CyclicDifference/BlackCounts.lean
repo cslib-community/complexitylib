@@ -40,8 +40,8 @@ theorem mem_vars_blackConstraints (v : ℕ) :
   · intro hv
     obtain ⟨o, ho⟩ := exists_incidenceEdgeIndex (F := F) v (by
       simpa only [incidenceGraph_edges, List.length_map] using hv)
-    refine ⟨(differenceTable arity sem F[o.1.val].1,
-      blackScope F o.1 F[o.1.val].2), ?_, ?_⟩
+    refine ⟨⟨differenceTable arity sem F[o.1.val].rel,
+      blackScope F o.1 F[o.1.val].scope⟩, ?_, ?_⟩
     · refine ⟨(F[o.1.val], o.1.val), List.mem_filter.mpr ⟨?_, ?_⟩, rfl⟩
       · exact List.mem_zipIdx_iff_getElem?.mpr (List.getElem?_eq_getElem o.1.isLt)
       · have hp := Nat.zero_lt_of_lt o.2.isLt
@@ -51,7 +51,7 @@ theorem mem_vars_blackConstraints (v : ℕ) :
 
 /-- Each actual black constraint has a duplicate-free scope. -/
 theorem blackConstraints_scopes_nodup (constraint : Constraint Table ℕ)
-    (hc : constraint ∈ blackConstraints arity sem F) : constraint.2.Nodup := by
+    (hc : constraint ∈ blackConstraints arity sem F) : constraint.scope.Nodup := by
   obtain ⟨entry, he, rfl⟩ := List.mem_map.mp hc
   obtain ⟨hi, hr⟩ := List.getElem?_eq_some_iff.mp
     (List.mem_zipIdx_iff_getElem?.mp (List.mem_filter.mp he).1)
@@ -59,11 +59,11 @@ theorem blackConstraints_scopes_nodup (constraint : Constraint Table ℕ)
 
 /-- Different original constraint positions have disjoint black scopes. -/
 theorem nodup_vars_blackConstraints : (blackConstraints arity sem F).vars.Nodup := by
-  let entries := F.zipIdx.filter fun entry => !entry.1.2.isEmpty
+  let entries := F.zipIdx.filter fun entry => !entry.1.scope.isEmpty
   have hz : F.zipIdx.Nodup := (List.nodup_zipIdx_map_snd F).of_map
   have hnd : entries.Nodup := hz.filter _
   simp only [blackConstraints, CSP.vars, List.flatMap_map]
-  change (entries.flatMap (fun entry => blackScope F entry.2 entry.1.2)).Nodup
+  change (entries.flatMap (fun entry => blackScope F entry.2 entry.1.scope)).Nodup
   rw [List.nodup_flatMap]
   constructor
   · intro entry he
@@ -80,9 +80,9 @@ theorem nodup_vars_blackConstraints : (blackConstraints arity sem F).vars.Nodup 
       (List.mem_zipIdx_iff_getElem?.mp hej.1)
     apply List.disjoint_left.mpr
     intro v hvi hvj
-    have hvi' : v ∈ blackScope F (entries[i]).2 F[(entries[i]).2].2 := by
+    have hvi' : v ∈ blackScope F (entries[i]).2 F[(entries[i]).2].scope := by
       simpa only [hri] using hvi
-    have hvj' : v ∈ blackScope F (entries[j]).2 F[(entries[j]).2].2 := by
+    have hvj' : v ∈ blackScope F (entries[j]).2 F[(entries[j]).2].scope := by
       simpa only [hrj] using hvj
     rw [blackScope_eq_ofFn (⟨_, hci⟩ : Fin F.length)] at hvi'
     rw [blackScope_eq_ofFn (⟨_, hcj⟩ : Fin F.length)] at hvj'

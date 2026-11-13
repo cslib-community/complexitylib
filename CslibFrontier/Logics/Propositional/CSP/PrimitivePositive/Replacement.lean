@@ -63,7 +63,7 @@ end PPGadget
 /-- Replace every source constraint, with disjoint auxiliary namespaces. -/
 @[expose] def replaceGadgets (B : ℕ) (templates : Src → CSP Rel (Bool × ℕ))
     (F : CSP Src ℕ) : CSP Rel ℕ :=
-  F.zipIdx.flatMap fun ((r, scope), index) =>
+  F.zipIdx.flatMap fun (⟨r, scope⟩, index) =>
     instantiate B index scope (templates r)
 
 /-- Exact-arity guarded gadget replacement with an explicit reject instance. -/
@@ -93,7 +93,7 @@ theorem wellFormed_replaceGadgets (B : ℕ) (templates : Src → CSP Rel (Bool �
     WellFormed arity (replaceGadgets B templates F) := by
   intro c hc
   obtain ⟨p, _, hp⟩ := List.mem_flatMap.mp hc
-  exact wellFormed_instantiate B p.2 p.1.2 (templates p.1.1) (h _) c hp
+  exact wellFormed_instantiate B p.2 p.1.scope (templates p.1.rel) (h _) c hp
 
 /-- The guarded compiler produces a well-formed result if its fixed reject instance is
 well formed. -/
@@ -127,16 +127,16 @@ theorem satisfiable_replaceGadgets_iff
   have hev (σ : ℕ → Bool) :
       (replaceGadgets B (fun r => (gadgets r).template) F).eval sem σ = true ↔
       ∀ (i : ℕ) (hi : i < F.length),
-        ((gadgets F[i].1).body.eval sem
-          (Sum.elim (fun j => σ (2 * F[i].2.getD j.val 0))
+        ((gadgets F[i].rel).body.eval sem
+          (Sum.elim (fun j => σ (2 * F[i].scope.getD j.val 0))
             (fun j => σ (2 * (B * i + j.val) + 1)))) = true := by
     rw [replaceGadgets, eval, List.all_flatMap]
     change F.zipIdx.all (fun p =>
-      (instantiate B p.2 p.1.2 (gadgets p.1.1).template).eval sem σ) = true ↔ _
+      (instantiate B p.2 p.1.scope (gadgets p.1.rel).template).eval sem σ) = true ↔ _
     simp only [List.all_eq_true, List.forall_mem_zipIdx', eval_instantiate]
   have scope_eq (σ : ℕ → Bool) (i : ℕ) (hi : i < F.length) :
-      List.ofFn (fun j : Fin (srcArity F[i].1) => σ (F[i].2.getD j.val 0)) =
-        F[i].2.map σ := by
+      List.ofFn (fun j : Fin (srcArity F[i].rel) => σ (F[i].scope.getD j.val 0)) =
+        F[i].scope.map σ := by
     have hlen := hF F[i] (List.getElem_mem hi)
     apply List.ext_getElem
     · simp [hlen]
@@ -148,30 +148,30 @@ theorem satisfiable_replaceGadgets_iff
     refine ⟨fun v => τ (2 * v), ?_⟩
     rw [eval, List.all_eq_true, List.forall_mem_iff_getElem]
     intro i hi
-    have hg := (gadgets F[i].1).correct (fun j => τ (2 * F[i].2.getD j.val 0))
+    have hg := (gadgets F[i].rel).correct (fun j => τ (2 * F[i].scope.getD j.val 0))
     have hr := hg.mpr ⟨_, (hev τ).mp hτ i hi⟩
-    change srcSem F[i].1 (List.ofFn _) = true at hr
+    change srcSem F[i].rel (List.ofFn _) = true at hr
     rw [scope_eq (fun v => τ (2 * v)) i hi] at hr
     exact hr
   · rintro ⟨σ, hσ⟩
-    have hex : ∀ (i : ℕ) (hi : i < F.length), ∃ b : Fin (gadgets F[i].1).numAux → Bool,
-        (gadgets F[i].1).body.eval sem
-          (Sum.elim (fun j => σ (F[i].2.getD j.val 0)) b) = true := by
+    have hex : ∀ (i : ℕ) (hi : i < F.length), ∃ b : Fin (gadgets F[i].rel).numAux → Bool,
+        (gadgets F[i].rel).body.eval sem
+          (Sum.elim (fun j => σ (F[i].scope.getD j.val 0)) b) = true := by
       intro i hi
-      apply ((gadgets F[i].1).correct _).mp
-      change srcSem F[i].1 (List.ofFn _) = true
+      apply ((gadgets F[i].rel).correct _).mp
+      change srcSem F[i].rel (List.ofFn _) = true
       rw [scope_eq]
       exact (List.all_eq_true.mp hσ) F[i] (List.getElem_mem hi)
     choose b hb using hex
     let aux : ℕ → ℕ → Bool := fun i j =>
       if hi : i < F.length then
-        if hj : j < (gadgets F[i].1).numAux then b i hi ⟨j, hj⟩ else false
+        if hj : j < (gadgets F[i].rel).numAux then b i hi ⟨j, hj⟩ else false
       else false
     let τ : ℕ → Bool := fun v =>
       if v % 2 = 0 then σ (v / 2) else aux ((v / 2) / B) ((v / 2) % B)
     refine ⟨τ, (hev τ).mpr fun i hi => ?_⟩
     have hfree (v : ℕ) : τ (2 * v) = σ v := by simp [τ]
-    have haux (j : Fin (gadgets F[i].1).numAux) :
+    have haux (j : Fin (gadgets F[i].rel).numAux) :
         τ (2 * (B * i + j.val) + 1) = b i hi j := by
       have hj : j.val < B := j.isLt.trans_le (hB _)
       have hpos : 0 < B := by omega
@@ -217,7 +217,7 @@ theorem wellFormed_satisfiable_replaceGadgetsGuarded_iff
 
 /-- A fixed malformed target for rejecting invalid source scopes. Any target symbol suffices. -/
 @[expose] def malformedReject (arity : Rel → ℕ) (r : Rel) : CSP Rel ℕ :=
-  [(r, List.replicate (arity r + 1) 0)]
+  [⟨r, List.replicate (arity r + 1) 0⟩]
 
 /-- The fixed reject target fails exact arity independently of its semantics. -/
 theorem not_wellFormed_malformedReject (arity : Rel → ℕ) (r : Rel) :
