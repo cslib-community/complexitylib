@@ -200,6 +200,8 @@ import CslibFrontier.Logics.SecondOrder.WordMSO.OfRegular
 import CslibFrontier.Logics.SecondOrder.WordMSO.Separation
 import CslibFrontier.Logics.SecondOrder.WordMSO.StarFree
 import CslibFrontier.MachineLearning.OnlineLearning.SwapRegret
+import CslibFrontier.MachineLearning.PACLearning.MDL
+import CslibFrontier.MachineLearning.PACLearning.Nonuniform
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.AC0Mod
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.Amplification
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.Complexity
@@ -1511,6 +1513,39 @@ register_result "blum-mansour-swap-regret" where
     With Hedge copies and losses in [-1, 1], swap regret is at most η T + n ln n / η, and \
     2 √(T n ln n) with the tuned rate when n ≥ 2 and T ≥ n ln n. Stationary vectors are \
     chosen classically; no running time is charged."
+
+register_result "srm-nonuniform-learnability" where
+  title := "Countable unions of uniformly convergent classes are nonuniformly learnable by SRM"
+  topic := "statistical learning"
+  sources := [
+    { paper := ShalevShwartzBenDavid2014, theorem := "Theorems 7.3 and 7.5",
+      locator := "Theorem 7.3 in Section 7.1.1, p. 85; Theorem 7.5 in Section 7.2, pp. 87–88" }
+  ]
+  theorems := [
+    Cslib.MachineLearning.PACLearning.isNonuniformLearnable_iUnion,
+    Cslib.MachineLearning.PACLearning.isNonuniformLearnable_of_countable
+  ]
+  scope := "Domain and labels are arbitrary measurable spaces. Uniform convergence is an \
+    explicit rate ε i m δ for m > 0 and δ > 0 with ε i m δ → 0; the learner for accuracy ε and \
+    confidence δ is an SRM rule over pairs (i, h) and may depend on (ε, δ), following the \
+    upstream IsPACLearnable conventions. Countable classes need measurable misclassification \
+    sets. The converse characterization (Theorem 7.2) is not proved."
+
+register_result "mdl-bound" where
+  title := "Minimum description length bound for prefix-free descriptions"
+  topic := "statistical learning"
+  sources := [
+    { paper := ShalevShwartzBenDavid2014, theorem := "Theorem 7.7",
+      locator := "Section 7.3, p. 90" }
+  ]
+  theorems := [
+    Cslib.MachineLearning.PACLearning.IsPrefixFreeDescription.mdl_bound,
+    Cslib.MachineLearning.PACLearning.IsPrefixFreeDescription.measure_pi_exists_le_abs_sub_le
+  ]
+  scope := "Binary descriptions d : (α → β) → List Bool, prefix-free on the class, and \
+    hypotheses with measurable misclassification sets, for m > 0 and δ > 0. With probability \
+    at least 1 - δ every h satisfies L_D(h) ≤ L_S(h) + √((|d h| log 2 + log (2/δ)) / (2m)), \
+    which is sharper than the source's |h| + ln (2/δ). Kraft's inequality is Mathlib's."
 
 register_result "gmw-zero-knowledge" where
   title := "Goldreich–Micali–Wigderson auxiliary-input zero-knowledge proofs for NP"
