@@ -12,6 +12,8 @@ public import CslibFrontier.Probability.BitString
 public import Cslib.Foundations.Data.Nat.PolynomialBound
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Log
+import CslibFrontier.Probability.PMF.Bool
+import CslibFrontier.Probability.PMF.Map
 import Mathlib.Logic.Equiv.Fin.Basic
 
 /-!
@@ -30,6 +32,8 @@ including the zero case.
 * `Cslib.BitString.uniformList_binaryValue`: exact uniformity of binary decoding.
 * `Cslib.BitString.uniformList_boundedBinaryValue`: the capped distribution.
 * `Cslib.Probability.uniformFin_decide_lt`: the exact probability of an index threshold.
+* `Cslib.Probability.sum_uniformFin_mul_ite_le`: the probability that a uniform index is at least
+  a threshold, as a real sum.
 
 ## References
 
@@ -102,6 +106,21 @@ theorem uniformFin_decide_lt (size threshold : ℕ) [NeZero size] :
       (↑(min size threshold) : ENNReal) / size := by
   simp [PMF.map_apply, tsum_fintype, PMF.uniformOfFintype_apply, ← Finset.sum_filter,
     Fin.card_filter_val_lt, div_eq_mul_inv]
+
+/-- A uniform index in `Fin size` is at least `threshold ≤ size` with probability
+`1 - threshold / size`. -/
+theorem sum_uniformFin_mul_ite_le (size threshold : ℕ) [NeZero size] (h : threshold ≤ size) :
+    ∑ i : Fin size, (PMF.uniformOfFintype (Fin size) i).toReal *
+      (if threshold ≤ i.val then (1 : ℝ) else 0) = 1 - threshold / (size : ℝ) := by
+  have hfalse := PMF.map_apply_toReal (PMF.uniformOfFintype (Fin size))
+    (fun i => decide (i.val < threshold)) false
+  rw [PMF.toReal_false_eq_one_sub, uniformFin_decide_lt, min_eq_right h, ENNReal.toReal_div,
+    ENNReal.toReal_natCast, ENNReal.toReal_natCast] at hfalse
+  rw [hfalse]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  by_cases hi : threshold ≤ i.val
+  · simp [hi, Nat.not_lt.mpr hi]
+  · simp [hi, Nat.lt_of_not_le hi]
 
 end Cslib.Probability
 

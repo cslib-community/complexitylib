@@ -41,11 +41,12 @@ def trivialScheme : PlainCommitmentScheme Bool Unit where
   commit _ b := pure (b, ())
   verify _ c _ := pure (some c)
 
-theorem trivialScheme_isPolyBounded : trivialScheme.IsPolyBounded 0 0 := by
-  refine ⟨fun κ b => ?_, fun κ c o => ?_⟩
-  · rw [Polynomial.eval_zero]
+theorem trivialScheme_isPolyBounded : trivialScheme.IsPolyBounded 0 0 where
+  commit κ b := by
+    rw [Polynomial.eval_zero]
     exact OracleComp.IsCostBounded.pure _ 0
-  · rw [Polynomial.eval_zero]
+  verify κ c o := by
+    rw [Polynomial.eval_zero]
     exact OracleComp.IsCostBounded.pure _ 0
 
 theorem trivialScheme_toProtocol_polyBounded : trivialScheme.toProtocol.PolyBounded (0 + 0) :=
@@ -113,12 +114,13 @@ def oneTimePadScheme : PlainCommitmentScheme Bool Bool where
     return (b ^^ mask, mask)
   verify _ c o := pure (some (c ^^ o))
 
-theorem oneTimePadScheme_isPolyBounded : oneTimePadScheme.IsPolyBounded 1 0 := by
-  refine ⟨fun κ b => ?_, fun κ c o => ?_⟩
-  · rw [Polynomial.eval_one]
+theorem oneTimePadScheme_isPolyBounded : oneTimePadScheme.IsPolyBounded 1 0 where
+  commit κ b := by
+    rw [Polynomial.eval_one]
     simp only [oneTimePadScheme, bind_pure_comp]
     exact (OracleComp.isCostBounded_map_iff _ _ _).mpr (OracleComp.IsCostBounded.query 1)
-  · rw [Polynomial.eval_zero]
+  verify κ c o := by
+    rw [Polynomial.eval_zero]
     exact OracleComp.IsCostBounded.pure _ 0
 
 theorem oneTimePadScheme_perfectlyComplete : oneTimePadScheme.PerfectlyComplete := fun κ b => by
@@ -131,8 +133,8 @@ theorem oneTimePadScheme_perfectlyComplete : oneTimePadScheme.PerfectlyComplete 
 
 /-- The ideal network port specification of `fcom`. -/
 abbrev fcomIdealNet :=
-  netSpec ((Fin 2 × CommitmentInput) ⊕ CommitmentBackdoor)
-    (Option CommitmentOutput ⊕ Option CommitmentOutput)
+  netSpec (RoutedNetQ 2 CommitmentInput CommitmentBackdoor)
+    (RoutedNetR CommitmentOutput (Option CommitmentOutput))
 
 /-- Explicit simulator for `oneTimePadScheme` in the uncorrupted case (`C = ∅`): when a commitment
 is recorded in `fcom`, `.readCommit` samples and caches a uniform commit bit `c`; `.deliverCommit`
@@ -177,11 +179,11 @@ def oneTimePadEmptySim : PlainCommitmentSim Bool Bool := fun _ _ =>
 private def otpIdealState (κ : ℕ) (st : Option Bool) (s : CommitmentState) :
     (execMachine fcom.toProtocol oneTimePadEmptySim κ ∅).State := (st, s)
 
-private def otpIdealReply (q : (Fin 2 × CommitmentInput) ⊕ PlainNetQ Bool Bool)
-    (r : Option CommitmentOutput ⊕ PlainNetR Bool Bool) :
+private def otpIdealReply (q : RoutedNetQ 2 CommitmentInput (PlainNetQ Bool Bool))
+    (r : RoutedNetR CommitmentOutput (PlainNetR Bool Bool)) :
     execSpec 2 CommitmentInput CommitmentOutput
-      ((Fin 2 × CommitmentInput) ⊕ PlainNetQ Bool Bool)
-      (Option CommitmentOutput ⊕ PlainNetR Bool Bool) (.inr q) := r
+      (RoutedNetQ 2 CommitmentInput (PlainNetQ Bool Bool))
+      (RoutedNetR CommitmentOutput (PlainNetR Bool Bool)) (.inr q) := r
 
 private theorem init_otpIdeal (κ : ℕ) :
     (execMachine fcom.toProtocol oneTimePadEmptySim κ ∅).init =
@@ -340,8 +342,8 @@ the committer's outputs on `.commit b` and `.openCom`, the receiver's outputs be
 arbitrary distinguisher predicate `P : HonestView → Bool`. -/
 def honestViewEnv (b : Bool) (P : HonestView → Bool) :
     Environment 2 CommitmentInput CommitmentOutput
-      ((Fin 2 × CommitmentInput) ⊕ PlainNetQ Bool Bool)
-      (Option CommitmentOutput ⊕ PlainNetR Bool Bool) := fun _ _ => do
+      (RoutedNetQ 2 CommitmentInput (PlainNetQ Bool Bool))
+      (RoutedNetR CommitmentOutput (PlainNetR Bool Bool)) := fun _ _ => do
   let outCom₀ ← ProbOracleComp.query
     (spec := execSpec 2 CommitmentInput CommitmentOutput _ _) (Sum.inl (0, .commit b))
   let outRecPre ← ProbOracleComp.query

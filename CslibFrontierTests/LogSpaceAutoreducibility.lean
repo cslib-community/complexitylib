@@ -41,10 +41,14 @@ theorem boolSingleton_autoreducible :
 example : LogSpaceTruthTableAutoreducible encBool ({true} : Set Bool) :=
   boolSingleton_autoreducible.logSpaceBTTAutoreducible.logSpaceTruthTableAutoreducible
 
+/-- Complementing keeps the one-query bound. -/
+example : LogSpaceKTruthTableAutoreducible 1 encBool ({true} : Set Bool)ᶜ :=
+  boolSingleton_autoreducible.compl
+
 /-- A zero-query evaluator reads the input; unused queries may equal that input. -/
 example : LogSpaceKTruthTableAutoreducible 0 encBool ({true} : Set Bool) := by
-  refine ⟨fun _ => 0, Prod.fst, Prod.fst, by fun_prop, by fun_prop, by fun_prop,
-    fun _ => le_rfl, fun _ i hi => False.elim (Nat.not_lt_zero i hi), fun a => ?_⟩
+  refine ⟨fun _ => 0, Prod.fst, Prod.fst, ⟨⟨by fun_prop, by fun_prop, by fun_prop,
+    fun _ => le_rfl⟩, fun _ i hi => False.elim (Nat.not_lt_zero i hi)⟩, fun a => ?_⟩
   simp
 
 /-- The singleton is `L`-complete: a logspace decider itself is the many-one map into Bool. -/

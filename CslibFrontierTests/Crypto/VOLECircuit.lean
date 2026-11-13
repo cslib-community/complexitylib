@@ -226,7 +226,7 @@ private theorem falseView_real : falseView ∈
     rw [voleWorld_eval]
     simp [zeroReceiver, circuitCheck, liftProver, liftVerifier, runAgainst,
       ProverStrategy.hoist, VerifierStrategy.hoist, circuitCheckSpec,
-      Cslib.Crypto.Protocols.SigmaProtocol.sigmaSpec, ProbOracleComp.query,
+      threeMoveSpec, ProbOracleComp.query,
       OracleComp.sumHandler, VOLECorrelation.senderView, PMF.map, Function.comp_def,
       OracleComp.interpret_pure, OracleComp.interpret_bind]
   rw [hrun, PMF.mem_support_map_iff]

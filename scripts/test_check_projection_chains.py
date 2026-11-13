@@ -77,7 +77,9 @@ class RuleTests(unittest.TestCase):
         # a nearby chain outside the predicate still counts.
         for head in ("ComputableInPolyTime", "Turing.MultiTapeTM.ComputableInPolyTime",
                      "_root_.Turing.MultiTapeTM.ComputableInPolyTime", "ComputableInSpace",
-                     "Turing.MultiTapeTM.ComputableInSpace", "IsPPT", "Cslib.Crypto.IsPPT"):
+                     "Turing.MultiTapeTM.ComputableInSpace", "IsPPT", "Cslib.Crypto.IsPPT",
+                     # Oracle PPT predicates also carry `@[fun_prop]` lemmas (Memoize, Parameter).
+                     "IsOraclePPT", "IsOraclePPTOn", "Cslib.Probability.IsOraclePPTOn"):
             with self.subTest(head=head):
                 self.assertEqual(chains(f"theorem t : {head} (fun c => c.1.2) e e := sorry\n"),
                                  [])
@@ -156,6 +158,65 @@ class RatchetTests(unittest.TestCase):
         (self.root / "CslibFrontier/B.lean").unlink()
         self.assertEqual(self.run_main("--update-baseline")[0], 0)
         self.assertEqual(self.baseline(), {"CslibFrontier/A.lean": 1})
+
+    def test_removed_chains_need_no_baseline_edit(self) -> None:
+        self.write("CslibFrontier/A.lean", self.module(1))
+        code, out, _ = self.run_main()
+        self.assertEqual(code, 0)
+        self.assertIn("No baseline edit is needed", out)
+        self.assertNotIn("Lower them", out)
+
+    def make_stale(self) -> None:
+        """`main` removes a chain from A without lowering A's entry, 2."""
+        self.write("CslibFrontier/A.lean", self.module(1))
+        self.git("commit", "-qam", "remove a chain")
+        self.git("update-ref", "refs/remotes/origin/main", "HEAD")
+
+    def test_chains_cannot_return_under_a_stale_entry(self) -> None:
+        self.make_stale()
+        self.write("CslibFrontier/A.lean", self.module(2))
+        code, _, err = self.run_main()
+        self.assertEqual(code, 1)
+        self.assertIn("CslibFrontier/A.lean: 2 chain(s), limit 1 (the count at the merge base; "
+                      "baseline 2):", err)
+        self.assertIn("  CslibFrontier/A.lean: above 2", err)
+        self.assertEqual(self.run_main("--all")[0], 0)  # the entry alone still allows 2
+
+    def test_a_re_add_under_a_stale_entry_needs_a_raise_by_hand(self) -> None:
+        self.make_stale()
+        self.write("CslibFrontier/A.lean", self.module(2))
+        # Recording the count would leave the entry at 2, still capped at 1: refuse, write nothing.
+        for args in (("--update-baseline",), ("--update-baseline", "--allow-increase")):
+            with self.subTest(args=args):
+                code, _, err = self.run_main(*args)
+                self.assertEqual(code, 1)
+                self.assertIn("raise the entry by hand above its value at the merge base", err)
+                self.assertIn("  CslibFrontier/A.lean: above 2", err)
+                self.assertEqual(self.baseline()["CslibFrontier/A.lean"], 2)
+        self.write("scripts/projection_chains_baseline.json",
+                   json.dumps({"CslibFrontier/A.lean": 3, "CslibFrontier/B.lean": 1}))
+        self.assertEqual(self.run_main()[0], 0)
+
+    def test_an_entry_the_change_raises_is_its_limit(self) -> None:
+        self.make_stale()
+        self.write("CslibFrontier/A.lean", self.module(3))
+        self.write("scripts/projection_chains_baseline.json",
+                   json.dumps({"CslibFrontier/A.lean": 3, "CslibFrontier/B.lean": 1}))
+        self.assertEqual(self.run_main()[0], 0)
+        # A lowered entry stays capped at the count at the merge base.
+        self.write("scripts/projection_chains_baseline.json",
+                   json.dumps({"CslibFrontier/A.lean": 2, "CslibFrontier/B.lean": 1}))
+        self.write("CslibFrontier/A.lean", self.module(2))
+        self.assertEqual(self.run_main()[0], 1)
+
+    def test_a_moved_module_needs_a_raised_entry(self) -> None:
+        (self.root / "CslibFrontier/B.lean").rename(self.root / "CslibFrontier/C.lean")
+        code, _, err = self.run_main()
+        self.assertEqual(code, 1)
+        self.assertIn("CslibFrontier/C.lean: 1 chain(s), baseline 0:", err)
+        self.assertEqual(self.run_main("--update-baseline", "--allow-increase")[0], 0)
+        self.assertEqual(self.baseline(), {"CslibFrontier/A.lean": 2, "CslibFrontier/C.lean": 1})
+        self.assertEqual(self.run_main()[0], 0)
 
     def test_untouched_modules_are_only_enforced_with_all(self) -> None:
         self.write("CslibFrontier/B.lean", self.module(2))

@@ -24,17 +24,17 @@ def acceptDesc : Desc :=
   ⟨0, 0, [(⟨0, none, []⟩, acceptAct), (⟨0, some 0, []⟩, acceptAct), (⟨0, some 1, []⟩, acceptAct)]⟩
 
 /-- With one step, the accepting machine accepts the input `[true]`. -/
-example : BoundedHalting.mk acceptDesc [true] [true] ∈ BoundedHalting := by
+example : BoundedComputation.mk acceptDesc [true] [true] ∈ BoundedHalting := by
   rw [BoundedHalting.mk_mem_iff]
   decide
 
 /-- The accepting machine also accepts the empty input with the step bound `2`, written `10`. -/
-example : BoundedHalting.mk acceptDesc [] [true, false] ∈ BoundedHalting := by
+example : BoundedComputation.mk acceptDesc [] [true, false] ∈ BoundedHalting := by
   rw [BoundedHalting.mk_mem_iff]
   decide
 
 /-- With the step bound zero, no machine accepts: it has not halted. -/
-example (d : Desc) (x : List Bool) : BoundedHalting.mk d x [] ∉ BoundedHalting := by
+example (d : Desc) (x : List Bool) : BoundedComputation.mk d x [] ∉ BoundedHalting := by
   rw [BoundedHalting.mk_mem_iff]
   intro h
   exact Bool.false_ne_true (congrArg Prod.snd h)

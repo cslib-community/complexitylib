@@ -127,13 +127,19 @@ results:
 - `IsMixedNash.isCoarseCorrelatedEquilibrium`: the product distribution of a mixed Nash equilibrium
   is a coarse correlated equilibrium.
 
+[Bimatrix/CostGame.lean](../../CslibFrontier/GameTheory/Bimatrix/CostGame.lean) is the bridge
+from bimatrix games to cost games. `BimatrixGame.toCostGame` is the two-player cost game indexed
+by `Bool` with the negated payoffs; `PureStrategy M N` lifts both strategy sets to a common
+universe, and `profile x y` packs a strategy pair as a mixed profile (`eq_profile` unpacks any
+profile). `isNash_iff_isMixedNash` states that `G.IsNash x y` holds exactly when
+`G.toCostGame.IsMixedNash (profile x y)`, so results about mixed Nash equilibria of cost games
+apply to bimatrix games. `deviationCost_toCostGame_row` and `deviationCost_toCostGame_column` give
+each player's expected cost vector as the negated matrix–vector product of expected payoffs, by
+`sum_productWeight_mul_apply` in `Mixed.lean`: under the product weights, a function of one
+player's strategy has its expectation under that player's mixed strategy.
 [Bimatrix/Existence.lean](../../CslibFrontier/GameTheory/Bimatrix/Existence.lean) derives
 `BimatrixGame.exists_isNash` for every bimatrix game with nonempty strategy sets, with no
-nondegeneracy hypothesis. It views the game as a two-player cost game indexed by `Bool` with the
-negated payoffs, lifting both strategy sets to a common universe. Each player's expected cost
-vector is the negated matrix–vector product of expected payoffs, by `sum_productWeight_mul_apply`
-in `Mixed.lean`: under the product weights, a function of one player's strategy has its expectation
-under that player's mixed strategy.
+nondegeneracy hypothesis, from Nash's theorem through this bridge.
 
 To check a candidate equilibrium, compute `deviationCost` for each pure strategy and compare it
 with `expectedCost`, which `sum_mul_deviationCost_eq_expectedCost` writes as their average.
@@ -480,10 +486,15 @@ parity argument:
   structures `BimatrixCode` (fields `matA`, `matB`, encoded via `enc_structure encBimatrix` using
   `Turing.MultiTapeTM.encRat`) and `StrategyPair` (fields `x`, `y`, encoded via
   `enc_structure encWitness`),
-  the rational Nash search problem `BimatrixNash` (accepting `[]` on malformed codes),
+  the rational Nash search problem `BimatrixNash` (accepting `[]` on malformed codes; witnesses of
+  well-formed codes have length at most `witnessPoly.eval` of the code length),
   polynomial-time bit-encoded graph maps `pred` and `succ` on `2 * (m + n)` bits, and
   `extractNash`, proving `BimatrixNash_searchReducible_endOfLineRel`, `BimatrixNash_mem_PPAD`,
   `BimatrixNash_mem_TFNP`, `BimatrixNash_isTotalSearch`, and `BimatrixNash_searchReducible_EndOfLine`.
+  `strategyVec` reads a rational strategy list as a real vector, so `BimatrixNash.isNash` states
+  that every witness of a well-formed code decodes to a pair `s` with
+  `c.toGame.IsNash (strategyVec s.x) (strategyVec s.y)`; `isMixedStrategy_strategyVec` gives the
+  mixed-strategy condition from the list's length, nonnegativity and sum.
 
 Executing the Lemke–Howson path as a standalone solver, extending the undirected parity theorem
 directly to degenerate bimatrix games, and proving the Savani–von Stengel exponential lower
@@ -552,7 +563,8 @@ decides `PureNash` on a two-player code, at one equilibrium and two non-equilibr
 the `step` map, clamping, a player with no listed strategy, and out-of-range resources.
 
 [CslibFrontierTests/GameTheory/Bimatrix.lean](../../CslibFrontierTests/GameTheory/Bimatrix.lean) checks
-the three equilibria of von Stengel's `3 × 2` example (3.3). It shows that the identity
+the three equilibria of von Stengel's `3 × 2` example (3.3), and carries one of them through
+`isNash_iff_isMixedNash` to a mixed Nash and correlated equilibrium of `stengel.toCostGame`. It shows that the identity
 coordination game is nondegenerate, so `IsNondegenerate.odd_ncard_isNash` applies. The zero game
 is degenerate, and its infinitely many equilibria show that the hypothesis cannot be dropped;
 `exists_isNash` still applies to it. The file also checks a vertex and a non-vertex of an interval and a degenerate system. Finally, the

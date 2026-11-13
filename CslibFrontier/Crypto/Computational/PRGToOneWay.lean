@@ -113,7 +113,7 @@ theorem succProbability_uniformList_test_le {generator : List Bool → List Bool
     simp [hne]
   have hgame : distinguishingGame (BitString.uniformList (ℓ n)) (test generator adversary n) true ≤
       ((2 : ℝ≥0∞) ^ ℓ n)⁻¹ * (#T : ℝ≥0∞) := by
-    rw [distinguishingGame, PMF.monad_bind_eq_bind, BitString.uniformList, PMF.bind_map,
+    rw [distinguishingGame_eq_bind, PMF.monad_bind_eq_bind, BitString.uniformList, PMF.bind_map,
       PMF.bind_apply, tsum_fintype]
     simp only [PMF.uniformOfFintype_apply, Fintype.card_fun, Fintype.card_bool, Fintype.card_fin,
       Function.comp_apply]

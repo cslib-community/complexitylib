@@ -69,6 +69,20 @@ example (W : ℕ) : ¬Decision.Admissible 1 [6, 0, 0] W := by
   have := h.2 6 (by simp)
   norm_num at this
 
+/-- The high-level complexity certificate has a fitting width for every input in its explicit
+magnitude promise domain. -/
+example (κ : ℕ) : InputAdmissible
+    (fun _ (input : Decision.MagnitudeBoundedInput κ) => input.val.map Signed.encode)
+    (fun input W => Decision.width κ 123357 input.val.length ≤ W) := by
+  obtain ⟨_, hcomp, _⟩ := Decision.uniformDecidableInO_one9992 κ
+  exact hcomp.inputAdmissible
+
+/-- A list outside the magnitude promise cannot be passed as a high-level problem instance. -/
+example : ¬∃ input : Decision.MagnitudeBoundedInput 1, input.val = [6, 0, 0] := by
+  rintro ⟨input, hinput⟩
+  have hbound := input.property 6 (by rw [hinput]; simp)
+  norm_num [hinput] at hbound
+
 private theorem checked_case (input : List ℤ) (bit : ℕ) (hbit : bit ≤ 1)
     (hv : ∀ z ∈ input, |z| ≤ ((input.length + 2) ^ 1 : ℕ))
     (hspec : HasSolution (fun i : Fin input.length => input[i]) ↔ bit = 1) :

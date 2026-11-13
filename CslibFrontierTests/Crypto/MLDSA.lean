@@ -78,18 +78,18 @@ theorem toySk_short : ∀ i j, |(toySk.s₂ i j).valMinAbs| ≤ toy.η := by dec
 def toyMask : Fin toy.ℓ → Fin toy.n → ZMod toy.q := fun _ => ![3, -2]
 
 theorem toy_signAttempt :
-    signAttempt toy toyHash toySk [] toyMask = some (fun _ => ![4, -2], ![1, 0]) := by
+    signAttempt toy toyHash toySk [] toyMask = some ⟨fun _ => ![4, -2], ![1, 0]⟩ := by
   decide +kernel
 
-theorem toy_verify : verify toy toyHash toySk.publicKey [] (fun _ => ![4, -2], ![1, 0]) = true :=
+theorem toy_verify : verify toy toyHash toySk.publicKey [] ⟨fun _ => ![4, -2], ![1, 0]⟩ = true :=
   verify_signAttempt toy_valid toyHash_inBall toySk_short toy_signAttempt
 
 -- Verification is not trivial: changing the response to `z = 1` changes the high bits.
-example : verify toy toyHash toySk.publicKey [] (fun _ => ![1, 0], ![1, 0]) = false := by
+example : verify toy toyHash toySk.publicKey [] ⟨fun _ => ![1, 0], ![1, 0]⟩ = false := by
   decide +kernel
 
 -- Signing with this mask and one attempt can output the signature.
-example : some ((fun _ => ![4, -2], ![1, 0]) : Signature toy) ∈
+example : some (⟨fun _ => ![4, -2], ![1, 0]⟩ : Signature toy) ∈
     (Cslib.ProbComp.eval (sign toy toyHash toySk (pure toyMask) [] 1)).support := by
   simp [sign, toy_signAttempt]
 
@@ -98,8 +98,7 @@ example : signAttempt toy toyHash toySk [] (fun _ => ![0, 0]) = none := by decid
 
 /-- The verifying signature, read as a self-target MSIS solution. -/
 example : IsSelfTargetSolution toy (selfTargetHash toy toyHash) (max toy.γ₁ toy.γ₂)
-    toySk.publicKey [] (forgeryLowPart toy toySk.publicKey (fun _ => ![4, -2], ![1, 0]))
-    (fun _ => ![4, -2]) ![1, 0] :=
+    toySk.publicKey (.ofForgery toy toySk.publicKey [] ⟨fun _ => ![4, -2], ![1, 0]⟩) :=
   isSelfTargetSolution_of_verify toy_valid toy_verify
 
 end MLDSATests

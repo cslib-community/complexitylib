@@ -67,8 +67,8 @@ theorem askParty_polyBounded {AdvQ AdvR : Type} :
 /-- With no corruptions, the environment sees the subroutine's bit through `relay`, whatever the
 adversary. -/
 theorem eval_exec_compose_relay (b : Bool) {AdvQ AdvR : Type}
-    (S : Adversary 1 AdvQ AdvR (RoutedNetQ 1 Unit (Unit ⊕ RoutedNetQ 1 Unit Unit))
-      (RoutedNetR Bool (Unit ⊕ RoutedNetR Bool Unit))) (κ : ℕ) (z : List Bool) :
+    (S : ExecAdversary 1 Unit Bool (Unit ⊕ RoutedNetQ 1 Unit Unit) (Unit ⊕ RoutedNetR Bool Unit)
+      AdvQ AdvR) (κ : ℕ) (z : List Bool) :
     (exec (compose relay (bitFunc b).toProtocol) S ∅ askParty κ z).eval = PMF.pure b := by
   simp only [exec, Machine.run, Machine.link, askParty, execMachine, Machine.comp,
     Machine.closeProgram_bind, Machine.closeProgram_map, Machine.closeProgram_sample,

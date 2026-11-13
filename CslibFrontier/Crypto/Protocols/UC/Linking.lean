@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Protocols.UC.Machine
+import CslibFrontier.Languages.Probabilistic.QueryCount.Scale
 import CslibFrontier.Languages.Probabilistic.Simulation
 
 /-!
@@ -177,16 +178,6 @@ theorem isQueryBounded_sample {program : ProbComp α} {n : ℕ} (h : program.IsQ
     (ProbOracleComp.sample (spec := I) program).IsQueryBounded n :=
   OracleComp.IsCostBounded.interpret (fun _ => OracleComp.IsCostBounded.query _) h
 
-/-- A unit-cost budget `n` gives a budget `n * c` when every call costs `c`. -/
-private theorem isCostBounded_const_of_isQueryBounded {ι : Type} {spec : ι → Type} {β : Type}
-    {program : OracleComp spec β} {n : ℕ} (c : ℕ) (h : program.IsQueryBounded n) :
-    OracleComp.IsCostBounded (fun _ => c) program (n * c) := by
-  induction h with
-  | pure a n => exact .pure a _
-  | liftBind q cont n _ ih =>
-    rw [Nat.succ_mul]
-    exact .liftBind q cont _ ih
-
 /-- Every call of a program run against `P` costs at most `t + 1` calls of `P`'s imports. -/
 private theorem isQueryBounded_handler {P : Machine I J} {t : ℕ} (hP : P.IsBounded t)
     (q : ℕ ⊕ ιJ) (s : P.State) : ((P.handler q).run s).IsQueryBounded (t + 1) := by
@@ -204,7 +195,7 @@ theorem isQueryBounded_runFrom {P : Machine I J} {t m : ℕ} (hP : P.IsBounded t
     {program : ProbOracleComp J α} (h : program.IsQueryBounded m) (s : P.State) :
     (P.runFrom program s).IsQueryBounded (m * (t + 1)) :=
   OracleComp.IsCostBounded.run_interpret (isQueryBounded_handler hP)
-    (isCostBounded_const_of_isQueryBounded (t + 1) h) s
+    (h.isCostBounded_mul_of_forall_le fun _ => le_rfl) s
 
 /-- A program with at most `m` calls, linked against a machine with at most `t` calls per
 activation and at initialization, makes at most `t + m * (t + 1)` calls. -/

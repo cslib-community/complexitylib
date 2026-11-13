@@ -58,7 +58,7 @@ instance fits. -/
 example {α : Type} {encIn : α ↪ List Bool} {A : Set α} (h : A ∈ Complexity.P encIn) :
     ∃ (r : ℕ) (p : Program .additive r) (T : ℕ → ℕ), PolynomiallyBounded T ∧
       ∀ a, ∃ w, p.Answers w ((encIn a).map Bool.toNat) (a ∈ A) (T (encIn a).length) := by
-  obtain ⟨T, hT, k, -, r, p, hp⟩ := uniformPolynomialTime_of_mem_P h
+  obtain ⟨T, hT, k, -, r, p, hp, _⟩ := uniformPolynomialTime_of_mem_P h
   refine ⟨r, p, T, hT, fun a => ⟨logWidth k (encIn a).length + (encIn a).length + 1,
     hp a _ (by dsimp only; omega) ⟨?_, fun v hv => ?_⟩⟩⟩
   · rw [List.length_map]

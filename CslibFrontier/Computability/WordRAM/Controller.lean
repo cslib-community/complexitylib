@@ -230,7 +230,8 @@ theorem executes {f : (s : D.State) → (o : D.Op) → D.State × D.Result o} [D
 
 /-- Inline a dynamic operation after a machine-certified preparation fragment. The body bound
 excludes a halt because execution continues in the caller; only the complete program halts. -/
-theorem call {P : DynamicProgram D r} (C : DynamicCertificate P w) (o : D.Op)
+theorem call {D : DataStructure.StateTransitionSpec.{u, v, 0}}
+    {pre : D.State → Data r → Prop} {P : DynamicProgram D r} (C : DynamicCertificate P w) (o : D.Op)
     {prep : Code .standard r} {setup body : D.State → Data r → ℕ}
     (hp : ∀ s x, pre s x → C.rep s x ∧ D.valid s o)
     (hprep : ∀ s x, pre s x →

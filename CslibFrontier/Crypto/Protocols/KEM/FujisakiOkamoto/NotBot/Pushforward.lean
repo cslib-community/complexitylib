@@ -8,7 +8,6 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Hybrids
-import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Probability.Product.Split
 import CslibFrontier.Tactic.PMFSwap
 
@@ -54,23 +53,6 @@ open scoped ENNReal NNReal
 
 variable {PK SK M R CT K : Type}
 
-/-- An independent product over a sum of index types is the product of the two independent
-products over the summands. -/
-private theorem bind_pi_sum {I J γ β : Type} [Fintype I] [Fintype J] [Finite γ] (μ : PMF γ)
-    (F : (I → γ) → (J → γ) → PMF β) :
-    (pi fun _ : I ⊕ J => μ).bind (fun f => F (fun i => f (Sum.inl i)) fun j => f (Sum.inr j)) =
-      (pi fun _ : I => μ).bind fun a => (pi fun _ : J => μ).bind fun b => F a b := by
-  have hsplit :
-      (pi fun _ : I ⊕ J => μ).map (Equiv.sumArrowEquivProdArrow I J γ) =
-        (pi fun _ : I => μ).bind fun a => (pi fun _ : J => μ).map (a, ·) := by
-    ext ⟨a, b⟩
-    rw [map_equiv_apply, bind_map_prodMk_apply, pi_apply, pi_apply, pi_apply,
-      Fintype.prod_sum_type]
-    rfl
-  have h := congrArg (fun p => p.bind fun ab => F ab.1 ab.2) hsplit
-  simp only [PMF.bind_bind, PMF.map, PMF.pure_bind, Function.comp_def] at h
-  exact h
-
 namespace Scheme
 
 variable [DecidableEq M] [DecidableEq CT]
@@ -97,19 +79,19 @@ private theorem readIndex_injective (S : Scheme PK SK M R CT K) (G : M → R) (p
     Function.Injective (S.readIndex G pk sk) := by
   rintro (⟨_ | _, m, c⟩ | c) (⟨_ | _, m', c'⟩ | c') h <;>
     simp only [readIndex] at h <;> (try split_ifs at h) <;>
-    simp_all [decT, encT]
+    simp_all [decT_eq, encT]
 
 /-- Reading the independent tables `(Hq, Hraw, Hfb')` through `readIndex` gives independent tables
 `(H, Hfb)`. -/
-private theorem bind_pi_reindex [Fintype M] [Fintype CT] [Finite K]
+private theorem bind_keyTable_reindex [Fintype M] [Fintype CT] [Finite K]
     (S : Scheme PK SK M R CT K) (G : M → R) (pk : PK) (sk : SK) {β : Type}
     (F : (Bool × M × CT → K) → (CT → K) → PMF β) :
-    ((pi fun _ : Bool × M × CT => ProbComp.eval S.sampleKey).bind fun H =>
-      (pi fun _ : CT => ProbComp.eval S.sampleKey).bind fun Hfb => F H Hfb) =
-    (pi fun _ : CT => ProbComp.eval S.sampleKey).bind fun Hq =>
-      (pi fun _ : Bool × M × CT => ProbComp.eval S.sampleKey).bind fun Hraw =>
-        (pi fun _ : CT => ProbComp.eval S.sampleKey).bind fun Hfb' =>
+    ((S.keyTable (Bool × M × CT)).bind fun H => (S.keyTable CT).bind fun Hfb => F H Hfb) =
+    (S.keyTable CT).bind fun Hq =>
+      (S.keyTable (Bool × M × CT)).bind fun Hraw =>
+        (S.keyTable CT).bind fun Hfb' =>
           F (S.coupledH G Hq Hraw pk sk) (S.coupledFb G Hq Hfb' pk sk) := by
+  unfold keyTable
   set μ := ProbComp.eval S.sampleKey
   have hR : ((pi fun _ : CT => μ).bind fun Hq =>
       (pi fun _ : Bool × M × CT => μ).bind fun Hraw =>
@@ -118,13 +100,13 @@ private theorem bind_pi_reindex [Fintype M] [Fintype CT] [Finite K]
       (pi fun _ : CT ⊕ ((Bool × M × CT) ⊕ CT) => μ).bind fun f =>
         F (S.coupledH G (fun c => f (.inl c)) (fun x => f (.inr (.inl x))) pk sk)
           (S.coupledFb G (fun c => f (.inl c)) (fun c => f (.inr (.inr c))) pk sk) := by
-    refine Eq.symm ((bind_pi_sum μ fun (Hq : CT → K) (g : (Bool × M × CT) ⊕ CT → K) =>
+    refine Eq.symm ((bind_pi_sum (fun _ => μ) fun (Hq : CT → K) (g : (Bool × M × CT) ⊕ CT → K) =>
       F (S.coupledH G Hq (fun x => g (Sum.inl x)) pk sk)
         (S.coupledFb G Hq (fun c => g (Sum.inr c)) pk sk)).trans ?_)
     congr 1 with Hq : 1
-    exact bind_pi_sum μ fun Hraw Hfb' =>
+    exact bind_pi_sum (fun _ => μ) fun Hraw Hfb' =>
       F (S.coupledH G Hq Hraw pk sk) (S.coupledFb G Hq Hfb' pk sk)
-  rw [hR, ← bind_pi_sum μ F,
+  rw [hR, ← bind_pi_sum (fun _ => μ) F,
     ← pi_map_comp_injective (fun _ : CT ⊕ ((Bool × M × CT) ⊕ CT) => μ)
       (S.readIndex_injective G pk sk),
     PMF.bind_map]
@@ -142,14 +124,13 @@ private theorem bind_pi_reindex [Fintype M] [Fintype CT] [Finite K]
 
 /-- Reading the independent tables `(Hq, Hraw)` through `coupledH` gives an independent table
 `H`. -/
-theorem bind_pi_coupledH [Fintype M] [Fintype CT] [Finite K]
+theorem bind_keyTable_coupledH [Fintype M] [Fintype CT] [Finite K]
     (S : Scheme PK SK M R CT K) (G : M → R) (pk : PK) (sk : SK) {β : Type}
     (F : (Bool × M × CT → K) → PMF β) :
-    ((pi fun _ : Bool × M × CT => ProbComp.eval S.sampleKey).bind fun H => F H) =
-    (pi fun _ : CT => ProbComp.eval S.sampleKey).bind fun Hq =>
-      (pi fun _ : Bool × M × CT => ProbComp.eval S.sampleKey).bind fun Hraw =>
-        F (S.coupledH G Hq Hraw pk sk) := by
-  simpa only [PMF.bind_const] using S.bind_pi_reindex G pk sk (fun H _ => F H)
+    ((S.keyTable (Bool × M × CT)).bind fun H => F H) =
+    (S.keyTable CT).bind fun Hq =>
+      (S.keyTable (Bool × M × CT)).bind fun Hraw => F (S.coupledH G Hq Hraw pk sk) := by
+  simpa only [PMF.bind_const] using S.bind_keyTable_reindex G pk sk (fun H _ => F H)
 
 /-- Under the re-indexing, the oracle of `eagerFbGame` is the oracle of `eagerCoupledGame`. -/
 private theorem eagerFbHandler_reindex (S : Scheme PK SK M R CT K) (G : M → R) (Hq Hfb' : CT → K)
@@ -161,7 +142,7 @@ private theorem eagerFbHandler_reindex (S : Scheme PK SK M R CT K) (G : M → R)
   | G m => rfl
   | H x => rfl
   | decaps c =>
-    simp only [eagerFbHandler, eagerCoupledHandler]
+    simp only [eagerFbHandler, eagerCoupledHandler, ROQuery.dispatch]
     by_cases hc : c = cStar
     · simp [hc]
     · simp only [hc, ↓reduceIte]
@@ -185,19 +166,19 @@ theorem eagerCoupledGame_eq_eagerFbGame [Fintype M] [Finite R] [Fintype CT] [Fin
   dsimp only
   symm
   calc _ = (ProbComp.eval S.sampleMsg).bind fun _ =>
-        (pi fun _ : M => ProbComp.eval S.pke.sampleCoins).bind fun G =>
-          (pi fun _ : CT => ProbComp.eval S.sampleKey).bind fun Hq =>
-            (pi fun _ : Bool × M × CT => ProbComp.eval S.sampleKey).bind fun Hraw =>
-              (pi fun _ : CT => ProbComp.eval S.sampleKey).bind fun _ =>
+        S.coinTable.bind fun G =>
+          (S.keyTable CT).bind fun Hq =>
+            (S.keyTable (Bool × M × CT)).bind fun Hraw =>
+              (S.keyTable CT).bind fun _ =>
                 (ProbComp.eval S.sampleMsg).bind fun mStar =>
                   (ProbComp.eval S.sampleKey).bind fun kRand =>
                     OracleComp.interpret
                       (S.eagerCoupledHandler G Hq Hraw pk sk (encT S.pke G pk mStar))
-                      (A (pk, encT S.pke G pk mStar, if b = true then kRand else
-                        S.coupledH G Hq Hraw pk sk (false, mStar, encT S.pke G pk mStar))) := by
+                      (A ⟨pk, encT S.pke G pk mStar, if b = true then kRand else
+                        S.coupledH G Hq Hraw pk sk (false, mStar, encT S.pke G pk mStar)⟩) := by
         congr 1 with s : 1
         congr 1 with G : 1
-        rw [bind_pi_reindex S G pk sk]
+        rw [bind_keyTable_reindex S G pk sk]
         congr 1 with Hq : 1
         congr 1 with Hraw : 1
         congr 1 with Hfb' : 1

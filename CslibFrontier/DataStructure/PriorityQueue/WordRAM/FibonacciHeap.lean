@@ -11,6 +11,7 @@ public import CslibFrontier.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.Ba
 public import CslibFrontier.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.Cut
 public import CslibFrontier.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.Consolidate
 public import CslibFrontier.DataStructure.PriorityQueue.WordRAM.FibonacciHeap.MinPQ
+public import CslibFrontier.DataStructure.PriorityQueue.WordRAM.Decode
 
 /-!
 # Static-array Word-RAM Fibonacci heap
@@ -206,24 +207,50 @@ abbrev pkgStd : PQPackage .standard rFib := pkg.toStandard
 
 /-! ## Standalone `Basis.standard` `DynamicProgram` and `Amortized` implementations -/
 
+/-- Native conversion normalizes the presence flag and copies lookup keys to the canonical
+payload slot. Its eight-instruction allowance is charged on every standalone call. -/
+def resultRecoding {n K_max w base : ℕ} (hS : Fits w (base + space n)) (hK : Fits w K_max) :
+    NativeResultRecoding (indexedMinPQSpec n K_max).Result .standard rFib w
+      (impl hS hK).toStandard.decode (impl hS hK).toStandard.rep
+      (impl hS hK).toStandard.potential :=
+  code.toStandard.nativeResultRecoding (impl hS hK).toStandard zeroP
+    (hS.of_le (by unfold space; lia)) (fun ⟨_, hregs, _⟩ => hregs.regs_zeroP)
+    (by decide) (by decide) (by decide) (by decide) (by decide) rfl
+
+/-- The source body preserves the opcode bits consumed by native result conversion. -/
+theorem resultRecoding_ready {n K_max w base : ℕ}
+    (hS : Fits w (base + space n)) (hK : Fits w K_max)
+    {s x o y m} (_hr : (impl hS hK).toStandard.rep s x)
+    (_hv : (indexedMinPQSpec n K_max).valid s o)
+    (harg : (impl hS hK).toStandard.argMatch o x.regs)
+    (he : Exec w code.toStandard.code x y m) : (resultRecoding hS hK).ready o y := by
+  change code.argMatch o x.regs at harg
+  have h2 : y.regs tag2 = x.regs tag2 := he.regs_eq (by decide)
+  have h1 : y.regs tag1 = x.regs tag1 := he.regs_eq (by decide)
+  have h0 : y.regs tag0 = x.regs tag0 := he.regs_eq (by decide)
+  change code.toStandard.nativeResultReady o y
+  cases o <;>
+    simp_all only [PQCode.nativeResultReady, PQCode.argMatch, PQCode.toStandard,
+      PQCode.mapSimulates, code] <;> tauto
+
 /-- Standalone `DynamicProgram` implementation of `FibonacciHeap` over `Basis.standard`. -/
 def dynamicProgram {n K_max w base : ℕ} (hS : Fits w (base + space n)) (hK : Fits w K_max) :
     DynamicProgram (indexedMinPQSpec n K_max) rFib :=
-  (impl (n := n) (K_max := K_max) hS hK).toStandard.toDynamicProgram
+  (impl (n := n) (K_max := K_max) hS hK).toStandard.toDynamicProgram (resultRecoding hS hK)
 
 /-- Standalone `DynamicCertificate` for `FibonacciHeap` over `Basis.standard`. -/
 def certificate {n K_max w base : ℕ} (hS : Fits w (base + space n)) (hK : Fits w K_max) :
     DynamicCertificate (dynamicProgram hS hK) w :=
-  (impl hS hK).toStandard.toCertificate
+  (impl hS hK).toStandard.toCertificate (resultRecoding hS hK) (resultRecoding_ready hS hK)
 
 /-- Standalone `Amortized` certificate for `FibonacciHeap` over `Basis.standard`, charging
-`+ 1` per operation for the trailing `halt` instruction. -/
+eight conversion instructions and one trailing `halt` per operation. -/
 theorem amortized {n K_max w base : ℕ} (hS : Fits w (base + space n)) (hK : Fits w K_max) :
     Amortized (certificate hS hK).impl
       DynamicProgram.OperationTrace.instructions
       (fun _ x => potential x)
-      (fun s o => charge n s o + 1) :=
-  (impl hS hK).toStandard.toAmortized
+      (fun s o => charge n s o + 9) :=
+  (impl hS hK).toStandard.toAmortized (resultRecoding hS hK) (resultRecoding_ready hS hK)
 
 /-- Adaptive-client amortized execution bound for any admissible `IndexedMinPQ` client `p` over
 `Basis.standard`. -/
@@ -237,9 +264,10 @@ theorem run_client_amortized {n K_max w base : ℕ} (hS : Fits w (base + space n
         ((indexedMinPQSpec n K_max).runClient s p).1 y traces ∧
       FibInv n K_max w base ((indexedMinPQSpec n K_max).runClient s p).2.1 y ∧
       DataStructure.total DynamicProgram.OperationTrace.instructions traces + potential y ≤
-        (indexedMinPQSpec n K_max).totalCost (fun s o => charge n s o + 1) s
+        (indexedMinPQSpec n K_max).totalCost (fun s o => charge n s o + 9) s
           ((indexedMinPQSpec n K_max).runClient s p).2.2 + potential x :=
-  (impl hS hK).toStandard.run_client_amortized p hr hv
+  (impl hS hK).toStandard.run_client_amortized
+    (resultRecoding hS hK) (resultRecoding_ready hS hK) p hr hv
 
 /-! ## Standalone end-to-end `Basis.exact` flat-program operation-sequence theorems -/
 

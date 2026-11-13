@@ -50,7 +50,7 @@ construction is that of the sources:
 * A monomial `X ^ m` is reduced modulo `Xᵢ ^ 2 = 1` to the product over its odd support
   (`Finsupp.oddSupport`), and `Ẽ` is extended linearly.
 * `Ẽ (q (∏_{i ∈ S} Xᵢ - (-1) ^ b)) = 0` when the product has degree at most `d`: the equation
-  `(S, b)` and every monomial of `q` have total width at most `d`, and summing a derivable equation
+  `⟨S, b⟩` and every monomial of `q` have total width at most `d`, and summing a derivable equation
   shifts `parityValue` by its sign (`ParitySystem.parityValue_symmDiff`).
 * The moment matrix is positive semidefinite (`ParitySystem.sum_sum_mul_parityValue_nonneg`): on
   sets of size at most `d / 2`, "`A ∆ B` is derivable" is an equivalence relation, and
@@ -107,18 +107,18 @@ variable (R : Type*) [CommRing R]
 /-- The **`±1` encoding** of a parity system: the polynomial of every equation, followed by the
 axioms `Xᵢ ^ 2 - 1` for all variables. -/
 noncomputable def toPolys [Fintype σ] (P : ParitySystem σ) : List (MvPolynomial σ R) :=
-  P.map (fun e => parityPoly R e.1 e.2) ++ univ.toList.map fun i => X i ^ 2 - 1
+  P.map (fun e => parityPoly R e.vars e.rhs) ++ univ.toList.map fun i => X i ^ 2 - 1
 
 variable {R}
 
 /-- The members of the `±1` encoding. -/
 theorem mem_toPolys [Fintype σ] {P : ParitySystem σ} {f : MvPolynomial σ R} :
-    f ∈ P.toPolys R ↔ (∃ e ∈ P, parityPoly R e.1 e.2 = f) ∨ ∃ i, X i ^ 2 - 1 = f := by
+    f ∈ P.toPolys R ↔ (∃ e ∈ P, parityPoly R e.vars e.rhs = f) ∨ ∃ i, X i ^ 2 - 1 = f := by
   simp [toPolys]
 
 /-- The polynomial of an equation of `P` belongs to the encoding. -/
 theorem parityPoly_mem_toPolys [Fintype σ] {P : ParitySystem σ} {S : Finset σ} {b : Bool}
-    (h : (S, b) ∈ P) : parityPoly R S b ∈ P.toPolys R :=
+    (h : ⟨S, b⟩ ∈ P) : parityPoly R S b ∈ P.toPolys R :=
   mem_toPolys.2 (.inl ⟨_, h, rfl⟩)
 
 /-- The axiom `Xᵢ ^ 2 - 1` belongs to the encoding. -/
@@ -180,17 +180,17 @@ theorem exists_eval_eq_zero_iff {R : Type*} [Field R] [LinearOrder R] [IsStrictO
     rw [parityPoly, eval_sub, eval_prod, eval_C, sub_eq_zero] at this
     simp only [eval_X] at this
     rw [prod_congr rfl fun i _ => hx' i] at this
-    have hc := BitString.chi_eq_neg_one_pow_parityOn (R := R) e.1 fun i => decide (x i = -1)
+    have hc := BitString.chi_eq_neg_one_pow_parityOn (R := R) e.vars fun i => decide (x i = -1)
     rw [BitString.chi] at hc
     have h := hc.symm.trans this
     revert h
-    cases parityOn e.1 _ <;> cases e.2 <;> simp [h1, h1.symm]
+    cases parityOn e.vars _ <;> cases e.rhs <;> simp [h1, h1.symm]
   · rintro ⟨a, ha⟩
     refine ⟨fun i => (-1) ^ (a i).toNat, fun f hf => ?_⟩
     rcases mem_toPolys.1 hf with ⟨e, he, rfl⟩ | ⟨i, rfl⟩
     · rw [parityPoly, eval_sub, eval_prod, eval_C, sub_eq_zero]
       simp only [eval_X]
-      have hc := BitString.chi_eq_neg_one_pow_parityOn (R := R) e.1 a
+      have hc := BitString.chi_eq_neg_one_pow_parityOn (R := R) e.vars a
       rw [BitString.chi] at hc
       rw [hc, ha e he]
     · rw [eval_sub, eval_pow, eval_X, map_one, sub_eq_zero, ← pow_mul]
@@ -363,7 +363,7 @@ private theorem fn_mul_X_sq_sub_one (q : MvPolynomial σ R) (i : σ) :
 variable [LinearOrder R] [IsStrictOrderedRing R]
 
 private theorem fn_mul_parityPoly (hP : ¬ P.Derives w ∅ true) {S : Finset σ} {b : Bool}
-    (hS : (S, b) ∈ P) (q : MvPolynomial σ R) (hq : (q * parityPoly R S b).totalDegree ≤ w) :
+    (hS : ⟨S, b⟩ ∈ P) (q : MvPolynomial σ R) (hq : (q * parityPoly R S b).totalDegree ≤ w) :
     fn P w (q * parityPoly R S b) = 0 := by
   rcases eq_or_ne q 0 with rfl | hq0
   · rw [zero_mul, map_zero]
