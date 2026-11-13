@@ -40,6 +40,8 @@ values with the product distribution `PMF.pi`.
 * `Cslib.ProbComp.eval_pi_uniform`: independent uniform coordinates are uniform on the tuple.
 * `Cslib.ProbComp.eval_pi_map`, `Cslib.ProbComp.eval_replicateFin_map_coords`: coordinatewise maps
   commute with `pi` and `replicateFin`.
+* `Cslib.ProbComp.eval_bind_pi_update`: resampling one coordinate of `pi programs` from its own
+  program leaves the law unchanged.
 * `Cslib.ProbComp.eval_bind_restrict_pi`, `Cslib.ProbComp.eval_map_restrict_pi`: restricting
   `eval (pi programs)` to `I : Finset (Fin m)` runs only the programs in `I`.
 * `Cslib.ProbComp.eval_replicateFin_map`: list-valued encodings preserve the joint law.
@@ -255,6 +257,26 @@ theorem eval_pi_comm {m k : ℕ} {α : Fin m → Fin k → Type}
     refine congrArg (PMF.map · _) (funext fun rest => ?_)
     ext i s
     exact Fin.cases rfl (fun _ => rfl) s
+
+/-- Resampling one coordinate of `pi programs` from its own program leaves the law unchanged. -/
+theorem eval_bind_pi_update {m : ℕ} {α : Fin m → Type} (programs : (i : Fin m) → ProbComp (α i))
+    (j : Fin m) :
+    (eval (programs j)).bind (fun t => (eval (OracleComp.pi programs)).map fun r =>
+      Function.update r j t) = eval (OracleComp.pi programs) := by
+  induction m with
+  | zero => exact j.elim0
+  | succ m ih =>
+    cases j using Fin.cases with
+    | zero =>
+      simp only [OracleComp.pi_succ, eval_bind, eval_map, PMF.map_bind, PMF.map_comp,
+        Function.comp_def, Fin.update_cons_zero, PMF.bind_const]
+    | succ k =>
+      simp only [OracleComp.pi_succ, eval_bind, eval_map, PMF.map_bind, PMF.map_comp,
+        Function.comp_def, ← Fin.cons_update]
+      rw [PMF.bind_comm]
+      refine congrArg (eval (programs 0)).bind (funext fun x => ?_)
+      conv_rhs => rw [← ih (fun i => programs i.succ) k]
+      simp only [PMF.map_bind, PMF.map_comp, Function.comp_def]
 
 /-- When each coordinate type is finite, `eval (pi programs)` is the independent product
 distribution `PMF.pi`. -/
