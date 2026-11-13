@@ -87,6 +87,31 @@ structural induction handles the unrestricted finite decision trees.
 
 Quantum queries use arbitrary input-independent isometries and a controlled phase oracle, charging only oracle uses. Their definitions and BBBV/polynomial/adversary/Grover endpoints are described in [algebraic and quantum models](algebraic-and-quantum.md). That chapter also covers the exponential separation between quantum and randomized queries for Simon's problem, whose classical side is the randomized decision-tree lower bound [simon_randomized_lower_bound](../../CslibFrontier/Computability/QueryComplexity/Simon.lean). It also covers Deutsch–Jozsa. The deterministic bound `N/2 + 1` is in [DeutschJozsa](../../CslibFrontier/Computability/QueryComplexity/DeutschJozsa.lean). Three random queries with error `1/4` on the promise ([Randomized/DeutschJozsa](../../CslibFrontier/Computability/QueryComplexity/Randomized/DeutschJozsa.lean), through `RandomizedDecisionTree.errorProb_uniformMixture`) show that its quantum advantage holds only for exact algorithms.
 
+### Disjunctions of blocks and the adjacent-pair example
+
+Import [OrBlocks](../../CslibFrontier/Computability/QueryComplexity/OrBlocks.lean) to build a
+function on `Fin n` as an OR of local functions on contiguous blocks of possibly different
+sizes. Give the sizes `sizes : Fin k → ℕ` and a proof `h : ∑ b, sizes b = n`; `blockOf h x b`
+is the restriction of `x` to block `b`, and `orBlocks h g` accepts when some `g b` accepts its
+block. `sensitivityAt_orBlocks` computes the native sensitivity at an input as the sum of local
+sensitivities over the blocks whose flip changes the OR. `sensitivity_orBlocks_le` turns local
+bounds `S₀` on rejected and `S₁` on accepted block inputs into `s ≤ max (k * S₀) S₁`. The
+count-level step is `Cslib.BitString.sum_le_max_of_or`; reuse it for other layouts, as the
+homogeneous `orCopies` of the superquadratic separation does, rather than repeating the case
+split. For the balanced split of `n` items into `k` blocks, use `Fin.balancedBlockSize n k`
+from [BalancedBlocks](../../CslibFrontier/Foundations/Data/Fin/BalancedBlocks.lean), whose sizes
+sum to `n` whenever `0 < k`.
+
+[AdjacentPair](../../CslibFrontier/Computability/QueryComplexity/AdjacentPair.lean) instantiates
+this for Arora–Barak Chapter 11 Exercise 2. `adjacentPairSqrt n` has `Nat.sqrt n` balanced
+blocks and accepts when some block contains exactly two adjacent true bits; overlapping choices
+such as `0110` count. `adjacentPairSqrt_measures` gives, for `n ≥ 4`,
+`Nat.sqrt n ≤ s ≤ 3 * Nat.sqrt n`, `n ≤ 3 * bs` and `bs ≤ C ≤ D ≤ n` for the native measures,
+so sensitivity is `Θ(√n)` and the other three measures are `Θ(n)`. Exact values are not
+claimed. Concrete evaluations at a fixed length need `decide +kernel`, because `Nat.sqrt` does
+not reduce under plain `decide`; the [clients](../../CslibFrontierTests/AdjacentPair.lean) show
+the nonsquare length 7 with blocks of sizes 4 and 3.
+
 ## Connectivity edge queries
 
 Import [QueryComplexity/Connectivity](../../CslibFrontier/Computability/QueryComplexity/Connectivity.lean)

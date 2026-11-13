@@ -7,6 +7,8 @@ not a completeness claim for the book or library. Its sources are Oded Goldreich
 *Computational Complexity: A Conceptual Perspective* dated December 2006 to May 2007, from the
 [author's drafts page](https://www.wisdom.weizmann.ac.il/~oded/cc-drafts.html). File names and SHA-256
 digests are listed in #4772. Numbers and pages belong to those drafts, not the 2008 published edition.
+The end-of-chapter exercises of chapters 2 and 5–10 are classified in the companion
+[exercise inventory](goldreich-2007-exercises.md), which also points to the Chapter 3 and 4 records.
 
 The results registry remains [Entries.lean](../CslibFrontierResults/Entries.lean). A nearby theorem is
 not counted as full coverage.

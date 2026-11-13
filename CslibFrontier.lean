@@ -1335,6 +1335,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.PPoly
 public import CslibFrontier.Computability.Circuit.Boolean.PPoly.Closure
 public import CslibFrontier.Computability.Circuit.Boolean.PPolyHard
 public import CslibFrontier.Computability.Circuit.Boolean.Parity
+public import CslibFrontier.Computability.Circuit.Boolean.ParityNC1
 public import CslibFrontier.Computability.Circuit.Boolean.Polarization
 public import CslibFrontier.Computability.Circuit.Boolean.Polarization.PolyTime
 public import CslibFrontier.Computability.Circuit.Boolean.PolynomialTime
@@ -3910,6 +3911,10 @@ public import CslibFrontier.Computability.PropertyTesting.Linearity
 public import CslibFrontier.Computability.PropertyTesting.LinearityLowerBound
 public import CslibFrontier.Computability.PropertyTesting.Monotonicity.Basic
 public import CslibFrontier.Computability.PropertyTesting.Monotonicity.EdgeTester
+public import CslibFrontier.Computability.QueryComplexity.AdjacentPair
+public import CslibFrontier.Computability.QueryComplexity.AdjacentPair.Balanced
+public import CslibFrontier.Computability.QueryComplexity.AdjacentPair.Blocks
+public import CslibFrontier.Computability.QueryComplexity.AdjacentPair.Local
 public import CslibFrontier.Computability.QueryComplexity.AndOrTree
 public import CslibFrontier.Computability.QueryComplexity.AndOrTree.Randomized
 public import CslibFrontier.Computability.QueryComplexity.ApproximateDegree
@@ -3925,6 +3930,7 @@ public import CslibFrontier.Computability.QueryComplexity.Midrijanis
 public import CslibFrontier.Computability.QueryComplexity.Monotone
 public import CslibFrontier.Computability.QueryComplexity.NisanSzegedy
 public import CslibFrontier.Computability.QueryComplexity.OneSided
+public import CslibFrontier.Computability.QueryComplexity.OrBlocks
 public import CslibFrontier.Computability.QueryComplexity.Quantum.Adversary
 public import CslibFrontier.Computability.QueryComplexity.Quantum.AmbainisAdversary
 public import CslibFrontier.Computability.QueryComplexity.Quantum.AmbainisAdversary.Symmetric
@@ -4563,6 +4569,7 @@ public import CslibFrontier.Crypto.Game.Concrete
 public import CslibFrontier.Crypto.Game.Experiment
 public import CslibFrontier.Crypto.Game.Forgery
 public import CslibFrontier.Crypto.Game.FourHop
+public import CslibFrontier.Crypto.Game.HiddenBit
 public import CslibFrontier.Crypto.Game.Hop
 public import CslibFrontier.Crypto.Game.Hybrid
 public import CslibFrontier.Crypto.Game.Inversion
@@ -4605,6 +4612,7 @@ public import CslibFrontier.Crypto.Primitives.Garbling.Switch.Garble
 public import CslibFrontier.Crypto.Primitives.Garbling.Switch.Oblivious
 public import CslibFrontier.Crypto.Primitives.HQC.SupportDensity
 public import CslibFrontier.Crypto.Primitives.HQC.SupportSampling
+public import CslibFrontier.Crypto.Primitives.HQC.Syndrome
 public import CslibFrontier.Crypto.Primitives.Hash.BlockCipherCompression
 public import CslibFrontier.Crypto.Primitives.Hash.Sponge
 public import CslibFrontier.Crypto.Primitives.IdealCipher.Compression
@@ -5199,6 +5207,7 @@ public import CslibFrontier.Foundations.BooleanAnalysis.Monotone
 public import CslibFrontier.Foundations.BooleanAnalysis.MultilinearExtension
 public import CslibFrontier.Foundations.BooleanAnalysis.Noise
 public import CslibFrontier.Foundations.BooleanAnalysis.OddForm
+public import CslibFrontier.Foundations.BooleanAnalysis.OrDegree
 public import CslibFrontier.Foundations.BooleanAnalysis.PolynomialCorrelation
 public import CslibFrontier.Foundations.BooleanAnalysis.PolynomialThreshold
 public import CslibFrontier.Foundations.BooleanAnalysis.PolynomialThresholdWeight
@@ -5495,6 +5504,8 @@ public import CslibFrontier.Foundations.Data.BitString.MajorityVote
 public import CslibFrontier.Foundations.Data.BitString.Neg
 public import CslibFrontier.Foundations.Data.BitString.PadBlocks
 public import CslibFrontier.Foundations.Data.BitString.Parity
+public import CslibFrontier.Foundations.Data.BitString.Parity.Circulant
+public import CslibFrontier.Foundations.Data.BitString.Parity.Complete
 public import CslibFrontier.Foundations.Data.BitString.Parity.DotProduct
 public import CslibFrontier.Foundations.Data.BitString.Parity.SubsetSum
 public import CslibFrontier.Foundations.Data.BitString.Parity.Weight
@@ -5515,6 +5526,7 @@ public import CslibFrontier.Foundations.Data.BitString.SignWord
 public import CslibFrontier.Foundations.Data.BitString.Single
 public import CslibFrontier.Foundations.Data.BitString.Sum
 public import CslibFrontier.Foundations.Data.BitString.Support
+public import CslibFrontier.Foundations.Data.BitString.Support.Weight
 public import CslibFrontier.Foundations.Data.BitString.Threshold
 public import CslibFrontier.Foundations.Data.BitString.Weight
 public import CslibFrontier.Foundations.Data.BitString.WeightInterval
@@ -5562,6 +5574,7 @@ public import CslibFrontier.Foundations.Data.Code.Sudan
 public import CslibFrontier.Foundations.Data.Code.SudanInterpolant
 public import CslibFrontier.Foundations.Data.ENat.IInf
 public import CslibFrontier.Foundations.Data.Fin.Append
+public import CslibFrontier.Foundations.Data.Fin.BalancedBlocks
 public import CslibFrontier.Foundations.Data.Fin.Counting
 public import CslibFrontier.Foundations.Data.Fin.Order
 public import CslibFrontier.Foundations.Data.Fin.Tuple
@@ -5907,6 +5920,7 @@ public import CslibFrontier.Foundations.LinearAlgebra.Matrix.FourierMotzkin
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.GaussJordan
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.GrenetPermanent
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.GroupCirculant
+public import CslibFrontier.Foundations.LinearAlgebra.Matrix.GroupCirculant.Eigenvalues
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.HessianDeterminant
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.HessianPermanent
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Hyperplane
@@ -6795,6 +6809,7 @@ public import CslibFrontier.Probability.BitString.BinarySymmetricChannel.Convers
 public import CslibFrontier.Probability.BitString.BinarySymmetricChannel.StrongConverse
 public import CslibFrontier.Probability.BitString.CoinFlips
 public import CslibFrontier.Probability.BitString.Collision
+public import CslibFrontier.Probability.BitString.FixedWeight
 public import CslibFrontier.Probability.BitString.LazyRandomWalk
 public import CslibFrontier.Probability.BitString.LinearHash
 public import CslibFrontier.Probability.BitString.LinearHash.Collisions
@@ -6802,6 +6817,7 @@ public import CslibFrontier.Probability.BitString.List
 public import CslibFrontier.Probability.BitString.List.All
 public import CslibFrontier.Probability.BitString.List.Vote
 public import CslibFrontier.Probability.BitString.Massart
+public import CslibFrontier.Probability.BitString.Parity
 public import CslibFrontier.Probability.BitString.Rademacher
 public import CslibFrontier.Probability.BitString.SubsetSum
 public import CslibFrontier.Probability.BitString.SubsetSum.Matrix

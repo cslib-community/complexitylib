@@ -63,15 +63,15 @@ example : identityScheme.decode [false, false] [true] = none := by decide
 
 /-- An adversary asking for a function with one input on empty inputs. -/
 def invalidAdversary : PrvIndAdversary ℕ Unit :=
-  ⟨fun _ => pure ((1, 1, [], []), ()), fun _ _ _ => pure true⟩
+  ⟨fun _ => pure (⟨⟨1, []⟩, ⟨1, []⟩⟩, ()), fun _ _ => pure true⟩
 
 theorem prvIndAdvantage_invalidAdversary (k : ℕ) :
-    prvIndAdvantage identityScheme (SideInfo.circ identityScheme) invalidAdversary k = 0 := by
-  refine prvIndAdvantage_eq_zero_of_invalid _ _ _ _ fun f₀ f₁ x₀ x₁ st hmem => ?_
+    prvIndAdvantage identityScheme (SideInfo.circ identityScheme) k invalidAdversary = 0 := by
+  refine prvIndAdvantage_eq_zero_of_invalid _ _ _ _ fun pair st hmem => ?_
   simp only [invalidAdversary, ProbComp.eval_pure, PMF.support_pure, Set.mem_singleton_iff,
     Prod.mk.injEq] at hmem
-  obtain ⟨⟨rfl, rfl, rfl, rfl⟩, -⟩ := hmem
-  exact fun ⟨_, h, _⟩ => absurd h (by decide)
+  obtain ⟨rfl, -⟩ := hmem
+  decide
 
 /-- A scheme over `Bool` (`false` = identity gate, `true` = negation gate on one-bit inputs). -/
 def gateScheme : Scheme Bool :=
@@ -88,42 +88,42 @@ theorem unitSideInfo_compatible : unitSideInfo.Compatible gateScheme := fun _ =>
 /-- The constant inverter returning the identity gate `false`. -/
 def invertUnit : Unit → Bool := fun _ => false
 
-/-- The `ev`-inverter returning the identity gate `false` together with the target output `y`. -/
-def evInvertUnit : Unit → List Bool → Bool × List Bool := fun _ y => (false, y)
+/-- The `ev`-inverter returning the query of the identity gate `false` on the target output `y`. -/
+def evInvertUnit : Unit → List Bool → Query Bool := fun _ y => ⟨false, y⟩
 
 theorem unitSideInfo_isInverter : unitSideInfo.IsInverter invertUnit := fun _ => rfl
 
-theorem unitSideInfo_isEvInverter : unitSideInfo.IsEvInverter gateScheme evInvertUnit := by
-  intro b x hx f' x' hM
-  obtain ⟨rfl, rfl⟩ := Prod.mk.inj hM.symm
-  exact ⟨rfl, by simpa [gateScheme] using hx, by simp [gateScheme]⟩
+theorem unitSideInfo_isEvInverter : unitSideInfo.IsEvInverter gateScheme evInvertUnit :=
+  fun _ _ hx =>
+    ⟨rfl, by simpa [gateScheme, evInvertUnit] using hx, by simp [gateScheme, evInvertUnit]⟩
 
-example : prvIndValid gateScheme unitSideInfo false true [true] [false] := by decide
+example : prvIndValid gateScheme unitSideInfo ⟨⟨false, [true]⟩, ⟨true, [false]⟩⟩ := by decide
 
-example : ¬ prvIndValid gateScheme (SideInfo.circ gateScheme) false true [true] [false] := by
+example :
+    ¬ prvIndValid gateScheme (SideInfo.circ gateScheme) ⟨⟨false, [true]⟩, ⟨true, [false]⟩⟩ := by
   decide
 
-example {σ : Type} (A : PrvIndAdversary Bool σ) (S : PrvSimulator Unit) (k : ℕ) :
-    prvIndAdvantage gateScheme unitSideInfo A k ≤
-      2 * prvSimAdvantage gateScheme unitSideInfo S (prvIndToSim gateScheme unitSideInfo A) k :=
-  prvIndAdvantage_le_two_mul_prvSimAdvantage_prvIndToSim _ _ unitSideInfo_compatible A S k
+example {σ : Type} (k : ℕ) (S : PrvSimulator Unit) (A : PrvIndAdversary Bool σ) :
+    prvIndAdvantage gateScheme unitSideInfo k A ≤
+      2 * prvSimAdvantage gateScheme unitSideInfo k S (prvIndToSim gateScheme unitSideInfo A) :=
+  prvIndAdvantage_le_two_mul_prvSimAdvantage_prvIndToSim _ _ unitSideInfo_compatible k S A
 
-example {σ : Type} (B : PrvSimAdversary Bool σ) (k : ℕ) :
-    prvSimAdvantage gateScheme unitSideInfo (prvSimFromInverter gateScheme evInvertUnit) B k ≤
-      prvIndAdvantage gateScheme unitSideInfo
-        (prvSimToInd gateScheme unitSideInfo evInvertUnit B) k :=
-  prvSimAdvantage_prvSimFromInverter_le _ _ unitSideInfo_compatible unitSideInfo_isEvInverter B k
+example {σ : Type} (k : ℕ) (B : PrvSimAdversary Bool σ) :
+    prvSimAdvantage gateScheme unitSideInfo k (prvSimFromInverter gateScheme k evInvertUnit) B ≤
+      prvIndAdvantage gateScheme unitSideInfo k
+        (prvSimToInd gateScheme unitSideInfo evInvertUnit B) :=
+  prvSimAdvantage_prvSimFromInverter_le _ _ unitSideInfo_compatible unitSideInfo_isEvInverter k B
 
-example {σ : Type} (A : ObvIndAdversary Bool σ) (S : ObvSimulator Unit) (k : ℕ) :
-    obvIndAdvantage gateScheme unitSideInfo A k ≤
-      2 * obvSimAdvantage gateScheme unitSideInfo S (obvIndToSim gateScheme unitSideInfo A) k :=
-  obvIndAdvantage_le_two_mul_obvSimAdvantage_obvIndToSim _ _ unitSideInfo_compatible A S k
+example {σ : Type} (k : ℕ) (S : ObvSimulator Unit) (A : ObvIndAdversary Bool σ) :
+    obvIndAdvantage gateScheme unitSideInfo k A ≤
+      2 * obvSimAdvantage gateScheme unitSideInfo k S (obvIndToSim gateScheme unitSideInfo A) :=
+  obvIndAdvantage_le_two_mul_obvSimAdvantage_obvIndToSim _ _ unitSideInfo_compatible k S A
 
-example {σ : Type} (B : ObvSimAdversary Bool σ) (k : ℕ) :
-    obvSimAdvantage gateScheme unitSideInfo (obvSimFromInverter gateScheme invertUnit) B k ≤
-      obvIndAdvantage gateScheme unitSideInfo
-        (obvSimToInd gateScheme unitSideInfo invertUnit B) k :=
-  obvSimAdvantage_obvSimFromInverter_le _ _ unitSideInfo_compatible unitSideInfo_isInverter B k
+example {σ : Type} (k : ℕ) (B : ObvSimAdversary Bool σ) :
+    obvSimAdvantage gateScheme unitSideInfo k (obvSimFromInverter gateScheme k invertUnit) B ≤
+      obvIndAdvantage gateScheme unitSideInfo k
+        (obvSimToInd gateScheme unitSideInfo invertUnit B) :=
+  obvSimAdvantage_obvSimFromInverter_le _ _ unitSideInfo_compatible unitSideInfo_isInverter k B
 
 /--
 info: 'CslibFrontierTests.Crypto.GarblingScheme.unitSideInfo_isEvInverter' depends on axioms:
