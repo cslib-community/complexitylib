@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Computational.Homomorphic.Leveled.GameCoinTape
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import CslibFrontier.Crypto.Computational.Homomorphic.Leveled.Overhead
 
 /-!
 # Native complete-game replay from strict PPT
@@ -91,7 +92,8 @@ theorem exists_modLeveledGame_coin_evaluator {E : Scheme}
       capacity B.keyCoins B.encCoins (B.chooseCoins (fun n => 2 * budget n) capacity)
       (B.guessCoins (fun n => 2 * budget n) capacity) bit n (B.keyCoins n)
       (R.keyGen.eval_eq n trivial) (R.length_keys_le hsecret n)
-      (fun pk hpk message => R.encrypt.eval_eq_and_length_le (a := (n, pk, message)) hpk)
+      (fun pk hpk message =>
+        ⟨R.encrypt.eval_eq (n, pk, message) hpk, R.encrypt.length_le (n, pk, message) hpk⟩)
       (fun artifact hpk => ⟨R.choose.eval_eq (n, encPublicKey artifact) hpk,
         fun _ hchoice => R.length_state_le hpk hchoice⟩)
       (fun state ct hstate hct => R.guess.eval_eq (n, state, ct) ⟨hstate, hct⟩)

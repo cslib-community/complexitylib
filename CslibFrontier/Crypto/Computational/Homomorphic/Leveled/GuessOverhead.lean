@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Computational.Homomorphic.Leveled.GuessCoinTape
 public import CslibFrontier.Crypto.Computational.Homomorphic.Leveled.GuessSize
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import CslibFrontier.Crypto.Computational.Homomorphic.Leveled.Overhead
 import CslibFrontier.Probability.PMF.Bind
 
 /-!
@@ -203,7 +204,8 @@ theorem exists_modLinkAdversary_guess_coin_evaluator {E : Scheme}
       (B.keyCoins n) (B.encCoins n) (chooseCoins n)
       (B.guessCoins (fun n => 2 * budget n) capacity n) target challenge choice hkeys htarget
       hchoice hchallengeLength
-      (fun pk hpk message => R.encrypt.eval_eq_and_length_le (a := (n, pk, message)) hpk)
+      (fun pk hpk message =>
+        ⟨R.encrypt.eval_eq (n, pk, message) hpk, R.encrypt.length_le (n, pk, message) hpk⟩)
       (fun artifact hpk => ⟨R.choose.eval_eq (n, Leveled.encPublicKey artifact) hpk,
         fun _ hchosen => R.length_state_le hpk hchosen⟩)
       (fun state ct hstate hct => R.guess.eval_eq (n, state, ct) ⟨hstate, hct⟩)

@@ -70,18 +70,4 @@ theorem IsPPTOn.exists_coinTapeRealization {α β : Type} {input : α ↪ List B
     eval_eq := fun a ha => hlaw a (budget a) (hbudget a ha)
     length_le := fun a ha b hb => (hlength a b hb).trans (hbudget a ha) }⟩⟩
 
-namespace CoinTapeRealization
-
-variable {α β : Type} {input : α ↪ List Bool} {output : β ↪ List Bool}
-  {program : α → ProbComp β} {domain : Set α} {budget : α → ℕ}
-
-/-- The replay law and the output bound at one input of the domain. -/
-theorem eval_eq_and_length_le (R : CoinTapeRealization input output program domain budget)
-    {a : α} (ha : a ∈ domain) :
-    ProbComp.eval (program a) = (BitString.uniformList (budget a)).map (R.evaluate a) ∧
-      ∀ b ∈ (ProbComp.eval (program a)).support, (output b).length ≤ budget a :=
-  ⟨R.eval_eq a ha, R.length_le a ha⟩
-
-end CoinTapeRealization
-
 end Cslib.Probability

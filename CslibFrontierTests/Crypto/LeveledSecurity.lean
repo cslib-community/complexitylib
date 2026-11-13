@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger
 
 import CslibFrontier.Crypto.Computational.Homomorphic.Leveled.Bootstrapping
 import CslibFrontier.Crypto.Computational.Homomorphic.Leveled.GameOverhead
+import CslibFrontier.Crypto.Computational.Homomorphic.Leveled.Overhead
 import CslibFrontier.Crypto.Computational.Homomorphic.Leveled.FlatSecurity
 import CslibFrontier.Tactic.PPT
 
@@ -299,8 +300,8 @@ example (B : OverheadBudget) (R : OverheadRealization fixture adversary (fun n =
     ProbComp.eval (fixture.encrypt n keys.1 bit) =
       (BitString.uniformList (B.encCoins n)).map (R.encrypt.evaluate (n, keys.1, bit)) ∧
     ∀ ct ∈ (ProbComp.eval (fixture.encrypt n keys.1 bit)).support, ct.length ≤ B.encCoins n :=
-  R.encrypt.eval_eq_and_length_le (a := (n, keys.1, bit))
-    (R.length_keys_le (fun n keys hkeys => (secret_width n keys hkeys).le) n keys hkeys).1
+  have hpk := (R.length_keys_le (fun n keys hkeys => (secret_width n keys hkeys).le) n keys hkeys).1
+  ⟨R.encrypt.eval_eq (n, keys.1, bit) hpk, R.encrypt.length_le (n, keys.1, bit) hpk⟩
 
 example (B : OverheadBudget) (R : OverheadRealization fixture adversary (fun n => 2 * (n + 1))
     (fun _ => 2) B) (n cut : ℕ) (artifact : List (List Bool) × List (List (List Bool)))
