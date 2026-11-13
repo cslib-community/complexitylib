@@ -41,6 +41,7 @@ that the reverse is killed at the same step.
 ## Main definitions
 
 * `Cslib.killTime`: the step at which a walk with given kill signals is killed.
+* `Cslib.KilledLabel`: the label of a killed walk, with its `labels` and kill `signals`.
 * `Cslib.RotationMap.killedPow`: the killed power of a rotation map.
 
 ## Main results

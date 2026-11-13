@@ -100,21 +100,22 @@ variable {V D : Type*} (G : RotationMap V D) {T q : ℕ} [NeZero q]
 
 /-- **The reverse of a killed walk retraces it**: its first `m` steps, for `m` at most the kill
 time `ℓ`, lead to the vertex reached after `ℓ - m` steps of the original walk. -/
-theorem neighbor_pow_take_rot_killedPow (p : V × (Fin T → D) × (Fin T → Fin q)) {m : ℕ}
-    (hm : m ≤ killTime p.2.2) :
+theorem neighbor_pow_take_rot_killedPow (p : V × KilledLabel T q D) {m : ℕ}
+    (hm : m ≤ killTime p.2.signals) :
     (G.pow m).neighbor ((G.killedPow T q).rot p).1
-        (Fin.take m (hm.trans (killTime_le _)) ((G.killedPow T q).rot p).2.1) =
-      G.walkAt (p.1, p.2.1) (killTime p.2.2 - m) := by
+        (Fin.take m (hm.trans (killTime_le _)) ((G.killedPow T q).rot p).2.labels) =
+      G.walkAt (p.1, p.2.labels) (killTime p.2.signals - m) := by
   calc (G.pow m).neighbor ((G.killedPow T q).rot p).1
-        (Fin.take m (hm.trans (killTime_le _)) ((G.killedPow T q).rot p).2.1)
+        (Fin.take m (hm.trans (killTime_le _)) ((G.killedPow T q).rot p).2.labels)
       = G.walkAt (((G.killedPow T q).rot p).1,
-          Fin.take _ (killTime_le p.2.2) ((G.killedPow T q).rot p).2.1) m :=
+          Fin.take _ (killTime_le p.2.signals) ((G.killedPow T q).rot p).2.labels) m :=
         (G.walkAt_eq_neighbor_pow (((G.killedPow T q).rot p).1,
-          Fin.take _ (killTime_le p.2.2) ((G.killedPow T q).rot p).2.1) hm).symm
-    _ = G.walkAt ((G.pow (killTime p.2.2)).rot (p.1, Fin.take _ (killTime_le p.2.2) p.2.1)) m := by
+          Fin.take _ (killTime_le p.2.signals) ((G.killedPow T q).rot p).2.labels) hm).symm
+    _ = G.walkAt ((G.pow (killTime p.2.signals)).rot
+          (p.1, Fin.take _ (killTime_le p.2.signals) p.2.labels)) m := by
         rw [G.rot_pow_killTime]
-    _ = G.walkAt (p.1, p.2.1) (killTime p.2.2 - m) := by
-        rw [G.walkAt_rot_pow _ hm, G.walkAt_take (p.1, p.2.1) (killTime_le _) (Nat.sub_le _ _)]
+    _ = G.walkAt (p.1, p.2.labels) (killTime p.2.signals - m) := by
+        rw [G.walkAt_rot_pow _ hm, G.walkAt_take (p.1, p.2.labels) (killTime_le _) (Nat.sub_le _ _)]
 
 end RotationMap
 
@@ -166,13 +167,13 @@ constraint on a killed walk `p` from `v` to `w`, killed at step `ℓ`, holds whe
 `i < ℓ` the constraint of `R` on the dart crossed there holds between the opinion of `v` about the
 vertex reached after the first `i` steps of `p` and the opinion of `w` about the vertex reached
 after the first `ℓ - (i + 1)` steps of the reverse of `p`, which is the same vertex. -/
-def power : RegularConstraintGraph V ((Fin T → D) × (Fin T → Fin q)) (WalkLabels D T → α) where
+def power : RegularConstraintGraph V (KilledLabel T q D) (WalkLabels D T → α) where
   graph := R.graph.killedPow T q
-  rel p a b := ∀ (i : ℕ) (hi : i < killTime p.2.2),
-    R.rel (R.graph.walkDart (p.1, p.2.1) ⟨i, hi.trans_le (killTime_le _)⟩)
-      (a (.take i (hi.le.trans (killTime_le _)) p.2.1))
-      (b (.take (killTime p.2.2 - (i + 1)) ((Nat.sub_le _ _).trans (killTime_le _))
-        ((R.graph.killedPow T q).rot p).2.1))
+  rel p a b := ∀ (i : ℕ) (hi : i < killTime p.2.signals),
+    R.rel (R.graph.walkDart (p.1, p.2.labels) ⟨i, hi.trans_le (killTime_le _)⟩)
+      (a (.take i (hi.le.trans (killTime_le _)) p.2.labels))
+      (b (.take (killTime p.2.signals - (i + 1)) ((Nat.sub_le _ _).trans (killTime_le _))
+        ((R.graph.killedPow T q).rot p).2.labels))
 
 /-- The underlying multigraph of the powered constraint graph is the killed power. -/
 @[simp]
@@ -183,14 +184,14 @@ variable {R T q} in
 /-- A labelling of the powered constraint graph satisfies the killed walk `p` when, at every step
 before it is killed, the opinions of its two ends satisfy the constraint of `R` on the dart crossed
 there. -/
-theorem satisfies_power_iff {A : V → WalkLabels D T → α} {p : V × (Fin T → D) × (Fin T → Fin q)} :
+theorem satisfies_power_iff {A : V → WalkLabels D T → α} {p : V × KilledLabel T q D} :
     (R.power T q).toConstraintGraph.Satisfies A p ↔
-      ∀ (i : ℕ) (hi : i < killTime p.2.2),
-        R.rel (R.graph.walkDart (p.1, p.2.1) ⟨i, hi.trans_le (killTime_le _)⟩)
-          (A p.1 (.take i (hi.le.trans (killTime_le _)) p.2.1))
+      ∀ (i : ℕ) (hi : i < killTime p.2.signals),
+        R.rel (R.graph.walkDart (p.1, p.2.labels) ⟨i, hi.trans_le (killTime_le _)⟩)
+          (A p.1 (.take i (hi.le.trans (killTime_le _)) p.2.labels))
           (A ((R.graph.killedPow T q).rot p).1
-            (.take (killTime p.2.2 - (i + 1)) ((Nat.sub_le _ _).trans (killTime_le _))
-              ((R.graph.killedPow T q).rot p).2.1)) :=
+            (.take (killTime p.2.signals - (i + 1)) ((Nat.sub_le _ _).trans (killTime_le _))
+              ((R.graph.killedPow T q).rot p).2.labels)) :=
   Iff.rfl
 
 /-! ### Completeness -/
@@ -210,24 +211,24 @@ theorem truthful_take (σ : V → α) (v : V) {m : ℕ} (hm : m ≤ T) (k : Fin 
 /-- The truthful opinion of the end of a killed walk, about the walk along the first `m` labels of
 the reverse walk for `m` at most the kill time `ℓ`, is the label of the vertex reached after
 `ℓ - m` steps of the killed walk. -/
-theorem truthful_take_rot_killedPow (σ : V → α) (p : V × (Fin T → D) × (Fin T → Fin q)) {m : ℕ}
-    (hm : m ≤ killTime p.2.2) :
+theorem truthful_take_rot_killedPow (σ : V → α) (p : V × KilledLabel T q D) {m : ℕ}
+    (hm : m ≤ killTime p.2.signals) :
     R.truthful T σ ((R.graph.killedPow T q).rot p).1
-        (.take m (hm.trans (killTime_le _)) ((R.graph.killedPow T q).rot p).2.1) =
-      σ (R.graph.walkAt (p.1, p.2.1) (killTime p.2.2 - m)) :=
+        (.take m (hm.trans (killTime_le _)) ((R.graph.killedPow T q).rot p).2.labels) =
+      σ (R.graph.walkAt (p.1, p.2.labels) (killTime p.2.signals - m)) :=
   congrArg σ (R.graph.neighbor_pow_take_rot_killedPow p hm)
 
 /-- **Between truthful opinions**, the check of the powered constraint graph at a step `i` of a
 killed walk, before it is killed, is the constraint of `R` on the dart crossed at step `i`. -/
-theorem rel_truthful_iff (σ : V → α) (p : V × (Fin T → D) × (Fin T → Fin q)) {i : ℕ}
-    (hi : i < killTime p.2.2) :
-    R.rel (R.graph.walkDart (p.1, p.2.1) ⟨i, hi.trans_le (killTime_le _)⟩)
-        (R.truthful T σ p.1 (.take i (hi.le.trans (killTime_le _)) p.2.1))
+theorem rel_truthful_iff (σ : V → α) (p : V × KilledLabel T q D) {i : ℕ}
+    (hi : i < killTime p.2.signals) :
+    R.rel (R.graph.walkDart (p.1, p.2.labels) ⟨i, hi.trans_le (killTime_le _)⟩)
+        (R.truthful T σ p.1 (.take i (hi.le.trans (killTime_le _)) p.2.labels))
         (R.truthful T σ ((R.graph.killedPow T q).rot p).1
-          (.take (killTime p.2.2 - (i + 1)) ((Nat.sub_le _ _).trans (killTime_le _))
-            ((R.graph.killedPow T q).rot p).2.1)) ↔
+          (.take (killTime p.2.signals - (i + 1)) ((Nat.sub_le _ _).trans (killTime_le _))
+            ((R.graph.killedPow T q).rot p).2.labels)) ↔
       R.toConstraintGraph.Satisfies σ
-        (R.graph.walkDart (p.1, p.2.1) ⟨i, hi.trans_le (killTime_le _)⟩) := by
+        (R.graph.walkDart (p.1, p.2.labels) ⟨i, hi.trans_le (killTime_le _)⟩) := by
   rw [truthful_take, R.truthful_take_rot_killedPow T q σ p (Nat.sub_le _ _),
     Nat.sub_sub_self (Nat.succ_le_of_lt hi), satisfies_toConstraintGraph_iff, neighbor_def,
     fst_rot_walkDart]
@@ -236,7 +237,7 @@ theorem rel_truthful_iff (σ : V → α) (p : V × (Fin T → D) × (Fin T → F
 variable {R T q} in
 /-- The truthful opinions of a labelling satisfying `R` satisfy the powered constraint graph. -/
 private theorem satisfies_power_truthful {σ : V → α} (hσ : ∀ d, R.toConstraintGraph.Satisfies σ d)
-    (p : V × (Fin T → D) × (Fin T → Fin q)) :
+    (p : V × KilledLabel T q D) :
     (R.power T q).toConstraintGraph.Satisfies (R.truthful T σ) p :=
   satisfies_power_iff.2 fun _ hi ↦ (R.rel_truthful_iff T q σ p hi).2 (hσ _)
 
@@ -282,31 +283,31 @@ theorem satisfiable_power_iff (hT : 1 ≤ T) (hq : 2 ≤ q) :
 labelling `A` of the powered constraint graph, relative to a labelling `σ` of `R`, when the step
 comes before `p` is killed, `σ` violates the dart crossed there, and both ends of `p` hold the
 truthful opinions of `σ` at the indices read at that step. -/
-def Hit (A : V → WalkLabels D T → α) (σ : V → α) (p : V × (Fin T → D) × (Fin T → Fin q))
+def Hit (A : V → WalkLabels D T → α) (σ : V → α) (p : V × KilledLabel T q D)
     (i : ℕ) : Prop :=
-  ∃ hi : i < killTime p.2.2,
+  ∃ hi : i < killTime p.2.signals,
     ¬ R.toConstraintGraph.Satisfies σ
-        (R.graph.walkDart (p.1, p.2.1) ⟨i, hi.trans_le (killTime_le _)⟩) ∧
-      A p.1 (.take i (hi.le.trans (killTime_le _)) p.2.1) =
-        R.truthful T σ p.1 (.take i (hi.le.trans (killTime_le _)) p.2.1) ∧
+        (R.graph.walkDart (p.1, p.2.labels) ⟨i, hi.trans_le (killTime_le _)⟩) ∧
+      A p.1 (.take i (hi.le.trans (killTime_le _)) p.2.labels) =
+        R.truthful T σ p.1 (.take i (hi.le.trans (killTime_le _)) p.2.labels) ∧
       A ((R.graph.killedPow T q).rot p).1
-          (.take (killTime p.2.2 - (i + 1)) ((Nat.sub_le _ _).trans (killTime_le _))
-            ((R.graph.killedPow T q).rot p).2.1) =
+          (.take (killTime p.2.signals - (i + 1)) ((Nat.sub_le _ _).trans (killTime_le _))
+            ((R.graph.killedPow T q).rot p).2.labels) =
         R.truthful T σ ((R.graph.killedPow T q).rot p).1
-          (.take (killTime p.2.2 - (i + 1)) ((Nat.sub_le _ _).trans (killTime_le _))
-            ((R.graph.killedPow T q).rot p).2.1)
+          (.take (killTime p.2.signals - (i + 1)) ((Nat.sub_le _ _).trans (killTime_le _))
+            ((R.graph.killedPow T q).rot p).2.labels)
 
 variable {R T q} in
 /-- A killed walk is hit only at steps before it is killed. -/
 theorem Hit.lt_killTime {A : V → WalkLabels D T → α} {σ : V → α}
-    {p : V × (Fin T → D) × (Fin T → Fin q)} {i : ℕ} (h : R.Hit T q A σ p i) : i < killTime p.2.2 :=
+    {p : V × KilledLabel T q D} {i : ℕ} (h : R.Hit T q A σ p i) : i < killTime p.2.signals :=
   h.1
 
 variable {R T q} in
 /-- **A killed walk hit at some step is violated** [Dinur, Section 5][Dinur2005]: at that step, the
 opinions of its ends are truthful, so its check is the constraint of `R` on a violated dart. -/
 theorem not_satisfies_of_hit {A : V → WalkLabels D T → α} {σ : V → α}
-    {p : V × (Fin T → D) × (Fin T → Fin q)} {i : ℕ} (h : R.Hit T q A σ p i) :
+    {p : V × KilledLabel T q D} {i : ℕ} (h : R.Hit T q A σ p i) :
     ¬ (R.power T q).toConstraintGraph.Satisfies A p := by
   obtain ⟨hi, hσ, h₁, h₂⟩ := h
   intro hA

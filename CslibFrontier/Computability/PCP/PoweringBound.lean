@@ -181,37 +181,37 @@ private def SplitHit (A : V → WalkLabels D T → α) (σ : V → α) {ℓ i : 
 /-- A killed walk killed at step `ℓ < T` is hit at its step `i < ℓ` exactly when its walk of length
 `ℓ`, split at step `i`, is hit. -/
 private theorem hit_iff_splitHit (A : V → WalkLabels D T → α) (σ : V → α)
-    (p : V × (Fin T → D) × (Fin T → Fin q)) (hℓ : killTime p.2.2 < T) {i : ℕ}
-    (hi : i < killTime p.2.2) :
+    (p : V × KilledLabel T q D) (hℓ : killTime p.2.signals < T) {i : ℕ}
+    (hi : i < killTime p.2.signals) :
     R.Hit T q A σ p i ↔ R.SplitHit T A σ (hi.le.trans hℓ.le) ((Nat.sub_le _ _).trans hℓ.le)
-      (R.graph.splitWalk ⟨i, hi⟩ (p.1, Fin.take _ hℓ.le p.2.1)) := by
-  let y := R.graph.splitWalk ⟨i, hi⟩ (p.1, Fin.take _ hℓ.le p.2.1)
-  have e₁ : y.1 = R.graph.walkDart (p.1, p.2.1) ⟨i, hi.trans hℓ⟩ :=
-    R.graph.walkDart_take (p.1, p.2.1) hℓ.le ⟨i, hi⟩
+      (R.graph.splitWalk ⟨i, hi⟩ (p.1, Fin.take _ hℓ.le p.2.labels)) := by
+  let y := R.graph.splitWalk ⟨i, hi⟩ (p.1, Fin.take _ hℓ.le p.2.labels)
+  have e₁ : y.1 = R.graph.walkDart (p.1, p.2.labels) ⟨i, hi.trans hℓ⟩ :=
+    R.graph.walkDart_take (p.1, p.2.labels) hℓ.le ⟨i, hi⟩
   -- the reverse of the steps before step `i` leads back to the start of `p`
   have e₂ : R.report T A (hi.le.trans hℓ.le) (y.1.1, y.2.1) =
-      A p.1 (.take i (hi.le.trans hℓ.le) p.2.1) := by
+      A p.1 (.take i (hi.le.trans hℓ.le) p.2.labels) := by
     rw [show (y.1.1, y.2.1) =
-        (R.graph.pow i).rot (p.1, Fin.take i hi.le (Fin.take _ hℓ.le p.2.1)) from
-      Prod.ext (R.graph.fst_rot_pow_take (p.1, Fin.take _ hℓ.le p.2.1) hi.le).symm rfl,
+        (R.graph.pow i).rot (p.1, Fin.take i hi.le (Fin.take _ hℓ.le p.2.labels)) from
+      Prod.ext (R.graph.fst_rot_pow_take (p.1, Fin.take _ hℓ.le p.2.labels) hi.le).symm rfl,
       report_rot_pow]
     rfl
   -- the steps after step `i` lead on to the end of `p`, and their reverse is read there
   have e₃ : R.report T A ((Nat.sub_le _ _).trans hℓ.le) ((R.graph.rot y.1).1, y.2.2) =
-      A ((R.graph.killedPow T q).rot p).1 (.take (killTime p.2.2 - (i + 1))
-        ((Nat.sub_le _ _).trans (killTime_le _)) ((R.graph.killedPow T q).rot p).2.1) := by
+      A ((R.graph.killedPow T q).rot p).1 (.take (killTime p.2.signals - (i + 1))
+        ((Nat.sub_le _ _).trans (killTime_le _)) ((R.graph.killedPow T q).rot p).2.labels) := by
     rw [show ((R.graph.rot y.1).1, y.2.2) =
-        R.graph.walkDrop (p.1, Fin.take _ hℓ.le p.2.1) (i + 1) from
+        R.graph.walkDrop (p.1, Fin.take _ hℓ.le p.2.labels) (i + 1) from
       Prod.ext (R.graph.fst_rot_walkDart _ ⟨i, hi⟩) rfl,
       report, R.graph.rot_pow_walkDrop, R.graph.rot_pow_killTime T q p]
     rfl
   have e₄ : σ (R.graph.rot y.1).1 =
-      R.truthful T σ ((R.graph.killedPow T q).rot p).1 (.take (killTime p.2.2 - (i + 1))
-        ((Nat.sub_le _ _).trans (killTime_le _)) ((R.graph.killedPow T q).rot p).2.1) := by
-    change σ (R.graph.rot (R.graph.walkDart (p.1, Fin.take _ hℓ.le p.2.1) ⟨i, hi⟩)).1 = _
+      R.truthful T σ ((R.graph.killedPow T q).rot p).1 (.take (killTime p.2.signals - (i + 1))
+        ((Nat.sub_le _ _).trans (killTime_le _)) ((R.graph.killedPow T q).rot p).2.labels) := by
+    change σ (R.graph.rot (R.graph.walkDart (p.1, Fin.take _ hℓ.le p.2.labels) ⟨i, hi⟩)).1 = _
     rw [R.truthful_take_rot_killedPow T q σ p (Nat.sub_le _ _),
       Nat.sub_sub_self (Nat.succ_le_of_lt hi), R.graph.fst_rot_walkDart _ ⟨i, hi⟩]
-    exact congrArg σ (R.graph.walkAt_take (p.1, p.2.1) hℓ.le (Nat.succ_le_of_lt hi))
+    exact congrArg σ (R.graph.walkAt_take (p.1, p.2.labels) hℓ.le (Nat.succ_le_of_lt hi))
   rw [SplitHit, e₂, e₃, e₄, e₁, walkDart_fst, ← R.truthful_take T σ p.1 (hi.le.trans hℓ.le)]
   exact ⟨fun ⟨_, h⟩ ↦ h, fun h ↦ ⟨hi, h⟩⟩
 
@@ -224,8 +224,8 @@ end of `d` whose far ends report `σ` truthfully. Split at step `i`, the killed 
 uniformly random dart, and its pieces before and after are independent uniformly random walks. -/
 theorem expect_killTime_eq_and_hit [Fintype V] [Fintype D] [Nonempty D]
     (A : V → WalkLabels D T → α) (σ : V → α) {ℓ i : ℕ} (hℓ : ℓ < T) (hi : i < ℓ) :
-    𝔼 p : V × (Fin T → D) × (Fin T → Fin q),
-        (if killTime p.2.2 = ℓ ∧ R.Hit T q A σ p i then 1 else 0 : ℝ) =
+    𝔼 p : V × KilledLabel T q D,
+        (if killTime p.2.signals = ℓ ∧ R.Hit T q A σ p i then 1 else 0 : ℝ) =
       (1 - (q : ℝ)⁻¹) ^ ℓ / q * 𝔼 d : V × D,
         (if d ∈ R.toConstraintGraph.unsatEdges σ then 1 else 0) * R.truthProb T A σ d.1 i *
           R.truthProb T A σ (R.graph.rot d).1 (ℓ - (i + 1)) := by
@@ -253,7 +253,7 @@ theorem expect_killTime_eq_and_hit [Fintype V] [Fintype D] [Nonempty D]
       mul_assoc]
   rw [hrhs, ← expect_prod_ite_killTime_eq hℓ]
   refine expect_congr rfl fun p _ ↦ ?_
-  by_cases h : killTime p.2.2 = ℓ
+  by_cases h : killTime p.2.signals = ℓ
   · subst h
     simp only [true_and, ite_true, R.hit_iff_splitHit T q A σ p hℓ hi]
   · simp [h]
@@ -264,13 +264,13 @@ open Classical in
 /-- The number of steps at which the killed walk `p` is hit by the labelling `A` of the powered
 constraint graph, relative to the labelling `σ` of `R`. -/
 noncomputable def numHits (A : V → WalkLabels D T → α) (σ : V → α)
-    (p : V × (Fin T → D) × (Fin T → Fin q)) : ℕ :=
+    (p : V × KilledLabel T q D) : ℕ :=
   #{i ∈ range T | R.Hit T q A σ p i}
 
 open Classical in
 /-- The number of hits is the sum of the indicators of the hits at the steps before `T`. -/
 private theorem numHits_eq_sum (A : V → WalkLabels D T → α) (σ : V → α)
-    (p : V × (Fin T → D) × (Fin T → Fin q)) :
+    (p : V × KilledLabel T q D) :
     (R.numHits T q A σ p : ℝ) = ∑ i ∈ range T, if R.Hit T q A σ p i then 1 else 0 := by
   rw [numHits, card_filter]
   push_cast
@@ -280,14 +280,15 @@ open Classical in
 /-- A killed walk hit at step `i` is killed at a single step `i + j + 1`, so the indicators over
 `j ∈ range (H + 1)` sum to at most the indicator of `R.Hit T q A σ p i`. -/
 private theorem sum_ite_killTime_eq_and_hit_le (A : V → WalkLabels D T → α) (σ : V → α)
-    (H i : ℕ) (p : V × (Fin T → D) × (Fin T → Fin q)) :
-    ∑ j ∈ range (H + 1), (if killTime p.2.2 = i + j + 1 ∧ R.Hit T q A σ p i then 1 else 0 : ℝ) ≤
+    (H i : ℕ) (p : V × KilledLabel T q D) :
+    ∑ j ∈ range (H + 1),
+        (if killTime p.2.signals = i + j + 1 ∧ R.Hit T q A σ p i then 1 else 0 : ℝ) ≤
       if R.Hit T q A σ p i then 1 else 0 := by
   by_cases h : R.Hit T q A σ p i
   · have hk := h.lt_killTime
     simp only [h, and_true, ↓reduceIte]
-    rw [sum_congr rfl fun j _ ↦ if_congr (show killTime p.2.2 = i + j + 1 ↔
-      j = killTime p.2.2 - (i + 1) by omega) rfl rfl, sum_ite_eq']
+    rw [sum_congr rfl fun j _ ↦ if_congr (show killTime p.2.signals = i + j + 1 ↔
+      j = killTime p.2.signals - (i + 1) by omega) rfl rfl, sum_ite_eq']
     split_ifs <;> norm_num
   · simp [h]
 
