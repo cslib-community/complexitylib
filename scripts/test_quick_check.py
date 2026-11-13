@@ -586,6 +586,7 @@ class LocalManualGateTests(unittest.TestCase):
                    " def test_control(self):\n"
                    "  self.assertNotEqual(os.environ.get('MANUAL_TEST_FAILURE'), '1')\n"
                    "unittest.main()\n")
+        self.write("scripts/check_vm_map_count.py", "raise SystemExit(0)\n")
         recorder = ('#!/usr/bin/env python3\nimport json,os,sys\n'
                     'with open(os.environ["QUICK_COMMAND_LOG"], "a") as f:\n'
                     ' f.write(json.dumps([sys.argv[0].split("/")[-1], *sys.argv[1:]])+"\\n")\n')

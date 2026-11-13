@@ -50,6 +50,8 @@ step bound; both change only constants. The bounds are explicit
 
 @[expose] public section
 
+open Cslib.BitString.Graph
+
 namespace Cslib.Circuits.Monotone.Closure
 
 open Cslib.Circuits.Clique Finset

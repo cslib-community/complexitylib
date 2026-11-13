@@ -317,7 +317,7 @@ theorem clause_cell_not_mem_crossingSites (φ : CNF ℕ) {i : ℕ} (hi : i < φ.
 
 private theorem occurrencePath_clause_center_iff {φ : CNF ℕ} {o : Occurrence ℕ}
     (ho : o ∈ Cslib.Logic.PL.occurrences φ) {i : ℕ} (hi : i < φ.length) :
-    Layout.center (φ.distinctVars.length + i) ∈ occurrencePath φ o ↔ i = o.1 := by
+    Layout.center (φ.distinctVars.length + i) ∈ occurrencePath φ o ↔ i = o.clause := by
   have hoidx := occurrence_index_lt ho
   have h := Graph.unitPath_center_iff (SAT.incidenceGraph φ)
     (fun _ => SAT.incidenceGraph_endpoints) (fun _ => SAT.incidenceGraph_loopless) hoidx
@@ -326,8 +326,8 @@ private theorem occurrencePath_clause_center_iff {φ : CNF ℕ} {o : Occurrence 
   have hb := SAT.incidenceGraph_bipartite (List.getElem_mem hoidx)
   rw [he] at hb h
   change Layout.center (φ.distinctVars.length + i) ∈ occurrencePath φ o ↔
-    φ.distinctVars.length + i = (List.range _).idxOf (φ.distinctVars.idxOf o.2.2.1) ∨
-      φ.distinctVars.length + i = (List.range _).idxOf (φ.distinctVars.length + o.1) at h
+    φ.distinctVars.length + i = (List.range _).idxOf (φ.distinctVars.idxOf o.lit.1) ∨
+      φ.distinctVars.length + i = (List.range _).idxOf (φ.distinctVars.length + o.clause) at h
   rw [List.idxOf_range_of_lt (by omega), List.idxOf_range_of_lt hb.2.2] at h
   exact h.trans (by omega)
 

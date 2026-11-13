@@ -138,6 +138,11 @@ example (G : ShrinkingCollisionGrid) :
     (rompelCompression G).TargetCollisionResistant ∧ (rompelHash G).TargetCollisionResistant :=
   ⟨G.targetCollisionResistant_rompelCompression, G.targetCollisionResistant_rompelHash⟩
 
+example (F : AdversaryInaccessibleEntropyFamily) :
+    (∃ C : KeyedCompressionFamily, C.TargetCollisionResistant) ∧
+      ∃ H : KeyedHashFamily, H.TargetCollisionResistant :=
+  ⟨F.exists_targetCollisionResistantCompression, F.exists_targetCollisionResistantHash⟩
+
 example {f : List Bool → List Bool} (hf : OneWay f) :
     (∃ C : KeyedCompressionFamily, C.TargetCollisionResistant) ∧
       ∃ H : KeyedHashFamily, H.TargetCollisionResistant :=

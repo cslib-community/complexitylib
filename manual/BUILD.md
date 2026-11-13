@@ -34,6 +34,12 @@ the document and line. Resolve the competing content, remove the conflict marker
 the checks before building either PDF. Deliberately quoted conflict examples must be in a
 code fence; ordinary heading underlines and blockquotes remain valid Markdown.
 
+It also reports a list item directly after a paragraph line. Pandoc reads that item as more of
+the paragraph, so the PDF prints the list as running text although GitHub shows a list. Add a
+blank line before the list, or rewrap a prose line that merely starts with `-`, `+`, `*` or a
+number and a period. Items of an open list, nested ones included, need no blank line. Lists
+inside block quotes are not checked.
+
 To produce the books, also install Pandoc, XeLaTeX and `pdfinfo` (Poppler).
 The main book's model diagrams require
 Graphviz (`dot`); the short agent manual does not invoke it. The TeX installation needs
@@ -100,8 +106,10 @@ remain internal anchors, and source Markdown keeps its checkout-relative links. 
 rejects links to uncommitted or locally modified repository targets: commit those targets first
 so the linked content matches the source being reviewed. Uncommitted book prose can still be
 rendered when its external source targets are committed. A successful builder exits
-zero; the full build also prints the PDF metadata. Inspect the output for missing glyphs,
-unresolved references, clipped lines and unreadable tables before distributing it.
+zero; the full build also prints the PDF metadata. The full build fails when XeTeX reports a
+character that the text or code font lacks; map that character to a math-mode command in `MATH`
+in [data/build_latex.py](data/build_latex.py). Inspect the output for unresolved references,
+clipped lines and unreadable tables before distributing it.
 
 Edit the Markdown and regenerate for maintained changes. Do not commit generated TeX, PDF,
 logs, research exports or auxiliary files. The source files and converters are sufficient to reproduce the book.

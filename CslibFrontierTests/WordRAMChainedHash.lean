@@ -124,22 +124,22 @@ theorem concrete_collision_update_and_miss_exec {x : Data rHash}
     (hr₀ : Rep 16 100 2 16 10 seed₀ s₀ x) :
     let C := impl 16 100 2 16 10 hw_test hS_test hV_test
     ∃ z₁ z₂ z₃ z₄ z₅ z₆ : Data rHash,
-      ExecWithin 16 (opCode 16 2) (C.toDynamicProgram.prepare (.insert u₁ 10) x) z₁
+      ExecWithin 16 (opCode 16 2) (C.prepare (.insert u₁ 10) x) z₁
         (55 + 9 * collCount 2 s₀ u₁ seed₀) ∧
       Rep 16 100 2 16 10 seed₀ s₁ z₁ ∧
-      ExecWithin 16 (opCode 16 2) (C.toDynamicProgram.prepare (.insert u₂ 20) z₁) z₂
+      ExecWithin 16 (opCode 16 2) (C.prepare (.insert u₂ 20) z₁) z₂
         (55 + 9 * collCount 2 s₁ u₂ seed₀) ∧
       Rep 16 100 2 16 10 seed₀ s₂ z₂ ∧
-      ExecWithin 16 (opCode 16 2) (C.toDynamicProgram.prepare (.insert u₁ 30) z₂) z₃
+      ExecWithin 16 (opCode 16 2) (C.prepare (.insert u₁ 30) z₂) z₃
         (55 + 9 * collCount 2 s₂ u₁ seed₀) ∧
       Rep 16 100 2 16 10 seed₀ s₃ z₃ ∧
-      ExecWithin 16 (opCode 16 2) (C.toDynamicProgram.prepare (.query u₁) z₃) z₄
+      ExecWithin 16 (opCode 16 2) (C.prepare (.query u₁) z₃) z₄
         (55 + 9 * collCount 2 s₃ u₁ seed₀) ∧
       @decode 16 100 2 (.query u₁) z₄.regs = some (some 30) ∧
-      ExecWithin 16 (opCode 16 2) (C.toDynamicProgram.prepare (.query u₂) z₄) z₅
+      ExecWithin 16 (opCode 16 2) (C.prepare (.query u₂) z₄) z₅
         (55 + 9 * collCount 2 s₃ u₂ seed₀) ∧
       @decode 16 100 2 (.query u₂) z₅.regs = some (some 20) ∧
-      ExecWithin 16 (opCode 16 2) (C.toDynamicProgram.prepare (.query u₃) z₅) z₆
+      ExecWithin 16 (opCode 16 2) (C.prepare (.query u₃) z₅) z₆
         (55 + 9 * collCount 2 s₃ u₃ seed₀) ∧
       @decode 16 100 2 (.query u₃) z₆.regs = some none := by
   intro C

@@ -37,6 +37,10 @@ These are the forms of convexity and strong convexity assumed by online convex o
 * `StrongConvexOn.add_inner_add_le_of_hasGradientWithinAt`,
   `StrongConvexOn.add_inner_add_le_of_hasGradientAt`: the strongly convex gradient form
   `f x + ⟪g, y - x⟫ + m / 2 * ‖y - x‖ ^ 2 ≤ f y`.
+* `convexOn_of_forall_add_le`, `convexOn_of_forall_add_inner_le`: conversely, a function with a
+  subgradient relative to `K` at every point of `K` is convex on `K`.
+* `abs_sub_le_of_forall_add_inner_le`: subgradients of norm at most `ρ` make the function
+  `ρ`-Lipschitz on `K`.
 
 ## References
 
@@ -92,6 +96,26 @@ theorem ConvexOn.add_le_of_hasFDerivAt (hf : ConvexOn ℝ K f) {x y : F} {f' : F
     f x + f' (y - x) ≤ f y :=
   hf.add_le_of_hasFDerivWithinAt hx hy hd.hasFDerivWithinAt
 
+/-- Conversely, a function with a subgradient relative to `K` at every point of a convex set `K`
+is convex on `K`: if `f x + g x (y - x) ≤ f y` for all `x y ∈ K`, then `f` is convex on `K`. -/
+theorem convexOn_of_forall_add_le (hK : Convex ℝ K) {g : F → F →L[ℝ] ℝ}
+    (hsub : ∀ x ∈ K, ∀ y ∈ K, f x + g x (y - x) ≤ f y) : ConvexOn ℝ K f := by
+  refine ⟨hK, fun x hx y hy a b ha hb hab => ?_⟩
+  set p := a • x + b • y
+  have hp : p ∈ K := hK hx hy ha hb hab
+  have hlin : a * g p (x - p) + b * g p (y - p) = 0 := by
+    have h : a • (x - p) + b • (y - p) = 0 := by
+      simp only [smul_sub, p]
+      rw [show b = 1 - a by linarith]
+      module
+    rw [← smul_eq_mul, ← smul_eq_mul, ← map_smul, ← map_smul, ← map_add, h, map_zero]
+  have e1 := mul_le_mul_of_nonneg_left (hsub p hp x hx) ha
+  have e2 := mul_le_mul_of_nonneg_left (hsub p hp y hy) hb
+  rw [mul_add] at e1 e2
+  have hfp : f p = a * f p + b * f p := by rw [← add_mul, hab, one_mul]
+  simp only [smul_eq_mul]
+  linarith
+
 end Normed
 
 section InnerProduct
@@ -114,6 +138,31 @@ theorem ConvexOn.add_inner_le_of_hasGradientAt (hf : ConvexOn ℝ K f) {x y g : 
     f x + ⟪g, y - x⟫ ≤ f y :=
   hf.add_inner_le_of_hasGradientWithinAt hx hy
     (hasGradientWithinAt_iff_hasFDerivWithinAt.mpr hg.hasFDerivAt.hasFDerivWithinAt)
+
+omit [CompleteSpace E] in
+/-- Conversely, a function with a subgradient relative to `K` at every point of a convex set `K`
+is convex on `K`: if `f x + ⟪g x, y - x⟫ ≤ f y` for all `x y ∈ K`, then `f` is convex on `K`. -/
+theorem convexOn_of_forall_add_inner_le (hK : Convex ℝ K) {g : E → E}
+    (hsub : ∀ x ∈ K, ∀ y ∈ K, f x + ⟪g x, y - x⟫ ≤ f y) : ConvexOn ℝ K f :=
+  convexOn_of_forall_add_le (g := fun x => innerSL ℝ (g x)) hK fun x hx y hy => by
+    simpa only [innerSL_apply_apply] using hsub x hx y hy
+
+omit [CompleteSpace E] in
+/-- Bounded subgradients make a function Lipschitz: if `f x + ⟪g x, y - x⟫ ≤ f y` for `x y ∈ K`
+and `‖g x‖ ≤ ρ` on `K`, then `|f x - f y| ≤ ρ * ‖x - y‖` for `x y ∈ K`. -/
+theorem abs_sub_le_of_forall_add_inner_le {g : E → E} {ρ : ℝ}
+    (hsub : ∀ x ∈ K, ∀ y ∈ K, f x + ⟪g x, y - x⟫ ≤ f y) (hg : ∀ x ∈ K, ‖g x‖ ≤ ρ) {x y : E}
+    (hx : x ∈ K) (hy : y ∈ K) : |f x - f y| ≤ ρ * ‖x - y‖ := by
+  have h1 := hsub x hx y hy
+  have h2 := hsub y hy x hx
+  have b1 : |⟪g x, y - x⟫| ≤ ρ * ‖x - y‖ := by
+    rw [norm_sub_rev]
+    exact (abs_real_inner_le_norm _ _).trans
+      (mul_le_mul_of_nonneg_right (hg x hx) (norm_nonneg _))
+  have b2 : |⟪g y, x - y⟫| ≤ ρ * ‖x - y‖ :=
+    (abs_real_inner_le_norm _ _).trans (mul_le_mul_of_nonneg_right (hg y hy) (norm_nonneg _))
+  rw [abs_le] at b1 b2 ⊢
+  constructor <;> linarith
 
 /-- The first-order bound for an `m`-strongly convex function with a gradient within its domain:
 `f x + ⟪g, y - x⟫ + m / 2 * ‖y - x‖ ^ 2 ≤ f y` for `x y ∈ K`. -/

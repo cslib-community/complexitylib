@@ -61,7 +61,7 @@ example :
       [false, true, false, false, true, false] = Nat.bits 3 := by decide
 
 /-- `isCollisionFor` accepts the concrete `6`-bit collision pair on `(d23, Nat.bits 8)`, and
-`pedersenExtractNat` recovers the discrete logarithm `α = 3`. -/
+`extractNat` recovers the discrete logarithm `α = 3`. -/
 example :
     isCollisionFor (Param := schnorrGroups.Desc × List Bool) (Digest := fun _ => List Bool)
       (schnorrGroups.groupHash (fun _ => 3))
@@ -69,9 +69,9 @@ example :
       0 (d23, Nat.bits 8)
       [false, false, true, true, false, true]
       [false, true, false, false, true, false] = true ∧
-    pedersenExtractNat 11
-      (ofBits [false, false, true]) (ofBits [true, false, true])
-      (ofBits [false, true, false]) (ofBits [false, true, false]) = 3 := by decide
+    extractNat 11
+      (ofBits [false, true, false]) (ofBits [false, false, true])
+      (ofBits [true, false, true]) (ofBits [false, true, false]) = 3 := by decide
 
 /-- The block length `blockLen d = Nat.log 2 (order d)` satisfies the size hypothesis of
 `DiscreteLog.collisionResistantForOn_groupHash` for every Schnorr group, and is non-degenerate on

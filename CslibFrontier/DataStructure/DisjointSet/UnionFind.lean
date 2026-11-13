@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.DataStructure.DisjointSet.Spec
 public import CslibFrontier.DataStructure.StateTransition.Resource
+public import CslibFrontier.DataStructure.StateTransition.StepFunction
 public import Batteries.Data.UnionFind
 public import Mathlib.Data.Nat.Log
 -- `import all` only to unfold `Batteries.UnionFind.find`, `Batteries.UnionFind.checkEquiv` and
@@ -53,7 +54,8 @@ a `Batteries.UnionFind` value is shared non-linearly.
 * `findSteps`, `rankBound`, `findGo`, `compressWithSteps`: computable path-compression step counter
   and kernel-reducible helpers propositionally equal to `Batteries.UnionFind.find`.
 * `State`, `init`, `step`, `Exec`, `Rep`, `impl`, `run`: concrete disjoint-set state,
-  operations, `Cslib.DataStructure.StateTransitionImpl`, and executable client runner.
+  operations, `Cslib.DataStructure.StateTransitionImpl`, and executable client runner, built with
+  `Cslib.DataStructure.Execution.ofStep` and `Cslib.DataStructure.Execution.run`.
 * `charge`: worst-case per-operation step budget on `Fin n`.
 
 ## Main results
@@ -697,7 +699,7 @@ structure State (n : ℕ) where
 /-- Execute a single `DisjointSet.Op n` on `s`, returning the updated state, answer, and step
 count. -/
 @[expose] def step {n : ℕ} (s : State n) (o : Op n) :
-    State n × (spec n).Result o × ℕ :=
+    StepResult (State n) ℕ ((spec n).Result o) :=
   match o with
   | .same x y =>
     let x' : Fin s.uf.size := ⟨x.1, by rw [s.size_eq]; exact x.2⟩
@@ -708,7 +710,7 @@ count. -/
     have hsz₂ : c₂.1.size = n := by exact (compressWithSteps_size c₁.1 y').trans hsz₁
     let r₁ := c₁.2.1.1
     let r₂ := c₂.2.1.1
-    (⟨c₂.1, hsz₂, s.numComp⟩, r₁ == r₂, c₁.2.2 + c₂.2.2)
+    ⟨⟨c₂.1, hsz₂, s.numComp⟩, r₁ == r₂, c₁.2.2 + c₂.2.2⟩
   | .union x y =>
     let x' : Fin s.uf.size := ⟨x.1, by rw [s.size_eq]; exact x.2⟩
     let c₁ := compressWithSteps s.uf x'
@@ -738,12 +740,12 @@ count. -/
       exact hl.trans hsz₂
     let merged := r₁ != r₂
     let numComp' := if merged then s.numComp - 1 else s.numComp
-    (⟨uf', hsz', numComp'⟩, merged, c₁.2.2 + c₂.2.2 + 1)
+    ⟨⟨uf', hsz', numComp'⟩, merged, c₁.2.2 + c₂.2.2 + 1⟩
   | .numComponents =>
-    (s, s.numComp, 1)
+    ⟨s, s.numComp, 1⟩
 
 private theorem step_union_uf_eq {n : ℕ} (s : State n) (x y : Fin n) :
-    (step s (.union x y)).1.uf =
+    (step s (.union x y)).state.uf =
       s.uf.union ⟨x.1, s.size_eq.symm ▸ x.2⟩ ⟨y.1, s.size_eq.symm ▸ y.2⟩ := by
   unfold step Batteries.UnionFind.union
   dsimp only
@@ -755,8 +757,7 @@ private theorem step_union_uf_eq {n : ℕ} (s : State n) (x y : Fin n) :
   exact link_eq_of_eq huf₂ hrx₁ hry₂ _ _
 
 /-- Native execution relation for `DisjointSet.spec n` over `State n`. -/
-@[expose] def Exec (n : ℕ) : Execution (spec n) (State n) ℕ :=
-  fun s o a s' steps => step s o = (s', a, steps)
+abbrev Exec (n : ℕ) : Execution (spec n) (State n) ℕ := Execution.ofStep step
 
 /-- Representation relation coupling an abstract `Partition n` with a concrete `State n`. -/
 @[expose] def Rep {n : ℕ} (p : Partition n) (s : State n) : Prop :=
@@ -785,8 +786,8 @@ theorem rep_init (n : ℕ) : Rep (Partition.discrete n) (init n) := by
 
 private theorem step_correct {n : ℕ} {p : Partition n} {s : State n} (o : Op n)
     (hr : Rep p s) :
-    (step s o).2.1 = ((spec n).stepFn p o).2 ∧
-      Rep ((spec n).stepFn p o).1 (step s o).1 := by
+    (step s o).answer = ((spec n).stepFn p o).2 ∧
+      Rep ((spec n).stepFn p o).1 (step s o).state := by
   obtain ⟨hrank, hrel, hcomp⟩ := hr
   cases o with
   | numComponents =>
@@ -814,7 +815,7 @@ private theorem step_correct {n : ℕ} {p : Partition n} {s : State n} (o : Op n
     have hmerged : (c₁.2.1.1 != c₂.2.1.1) = !p.rel x y :=
       congrArg (!·) <| Bool.eq_iff_iff.mpr
         ((compressWithSteps_root_beq_iff s.uf x' y').trans (hrel x y).symm)
-    have huf_eq : (step s (.union x y)).1.uf = s.uf.union x' y₀ := step_union_uf_eq s x y
+    have huf_eq : (step s (.union x y)).state.uf = s.uf.union x' y₀ := step_union_uf_eq s x y
     refine ⟨hmerged, ?_, ?_, ?_⟩
     · rw [huf_eq]
       exact hrank.union x' y₀
@@ -835,18 +836,7 @@ private theorem step_correct {n : ℕ} {p : Partition n} {s : State n} (o : Op n
 /-- Semantic realization of `DisjointSet.spec n` by `Batteries.UnionFind` with path compression
 and union by rank. -/
 def impl (n : ℕ) : StateTransitionImpl (spec n) (Exec n) :=
-  StateTransitionImpl.ofFn
-    (rep := Rep)
-    (total := fun {_ s} o _ _ =>
-      match h : step s o with
-      | (s', a, steps) => ⟨a, s', steps, h⟩)
-    (correct := by
-      intro p s o a s' steps hr _ he
-      have hc := step_correct o hr
-      have hs : s' = (step s o).1 := (Prod.ext_iff.mp he).1.symm
-      have ha : a = (step s o).2.1 := (Prod.ext_iff.mp (Prod.ext_iff.mp he).2).1.symm
-      rw [ha, hs]
-      exact hc)
+  StateTransitionImpl.ofStep (D := spec n) Rep step fun o hr _ => step_correct o hr
 
 /-- Worst-case per-operation step budget on `Fin n`: at most `Nat.log 2 n + 1` nodes inspected per
 `find`, plus `1` link step in `Op.union` and `1` counter read in `Op.numComponents`. -/
@@ -861,7 +851,7 @@ theorem charge_le (n : ℕ) (p : Partition n) (o : Op n) :
   cases o <;> simp only [charge] <;> omega
 
 private theorem step_steps_le {n : ℕ} {p : Partition n} {s : State n} (o : Op n)
-    (hr : Rep p s) : (step s o).2.2 ≤ charge n p o := by
+    (hr : Rep p s) : (step s o).trace ≤ charge n p o := by
   obtain ⟨hrank, _, _⟩ := hr
   cases o with
   | numComponents =>
@@ -875,8 +865,8 @@ private theorem step_steps_le {n : ℕ} {p : Partition n} {s : State n} (o : Op 
 /-- Per-operation logarithmic step certificate for `impl n`. -/
 theorem stepBound (n : ℕ) : Bound (impl n) id (charge n) := by
   intro p s o a s' steps hr _ he
-  have hsteps : steps = (step s o).2.2 := (Prod.ext_iff.mp (Prod.ext_iff.mp he).2).2.symm
-  rw [id, hsteps]
+  have hsteps : (step s o).trace = steps := congrArg StepResult.trace he
+  rw [id, ← hsteps]
   exact step_steps_le o hr
 
 /-- Uniform per-operation logarithmic step certificate `2 * Nat.log 2 n + 3`. -/
@@ -888,42 +878,28 @@ theorem uniformStepBound (n : ℕ) :
 and satisfying the additive `O(log n)` per-operation step bound. -/
 theorem realized_client {n : ℕ} {β : Type} (client : (spec n).Client β)
     {p : Partition n} {s : State n} (hr : Rep p s) :
-    ∃ s' traces, Executes (Exec n) client s ((spec n).runClient p client).1 s' traces ∧
-      Rep ((spec n).runClient p client).2.1 s' ∧
-      total id traces ≤ (spec n).totalCost (charge n) p ((spec n).runClient p client).2.2 := by
-  have hv := (spec n).validHistory_of_forall_valid (fun _ _ => trivial)
-    p ((spec n).runClient p client).2.2
-  exact Bound.exists_executes (stepBound n) client hr hv
+    let (value, finalState, history) := (spec n).runClient p client
+    ∃ s' traces, Executes (Exec n) client s value s' traces ∧ Rep finalState s' ∧
+      total id traces ≤ (spec n).totalCost (charge n) p history :=
+  Bound.exists_executes (stepBound n) client hr
+    ((spec n).validHistory_of_forall_valid (fun _ _ => trivial) p _)
 
 /-- Execute a disjoint-set client concretely, recording the exact step count of each operation. -/
-@[expose] def run {n : ℕ} {β : Type} (s : State n) :
-    (spec n).Client β → β × State n × List ℕ
-  | .pure a => (a, s, [])
-  | .liftBind o k =>
-      let next := step s o
-      let rest := run next.1 (k next.2.1)
-      (rest.1, rest.2.1, next.2.2 :: rest.2.2)
-
-/-- The concrete runner produces a valid `Executes (Exec n)` derivation. -/
-theorem run_exec {n : ℕ} {β : Type} (client : (spec n).Client β) (s : State n) :
-    Executes (Exec n) client s (run s client).1 (run s client).2.1 (run s client).2.2 := by
-  induction client generalizing s with
-  | pure a => exact .pure a s
-  | liftBind o k ih => exact .call rfl (ih _ _)
+abbrev run {n : ℕ} {β : Type} (s : State n) (client : (spec n).Client β) :
+    RunResult (State n) ℕ β :=
+  Execution.run step s client
 
 /-- Running the concrete union-find interpreter agrees with abstract `Partition n` semantics,
 preserves `Rep`, and satisfies both the exact per-operation and uniform `O(log n)` step bounds. -/
 theorem run_correct {n : ℕ} {β : Type} (client : (spec n).Client β)
     {p : Partition n} {s : State n} (hr : Rep p s) :
-    (run s client).1 = ((spec n).runClient p client).1 ∧
-      Rep ((spec n).runClient p client).2.1 (run s client).2.1 ∧
-      total id (run s client).2.2 ≤
-        (spec n).totalCost (charge n) p ((spec n).runClient p client).2.2 ∧
-      total id (run s client).2.2 ≤
-        ((spec n).runClient p client).2.2.length * (2 * Nat.log 2 n + 3) := by
+    let (value, finalState, history) := (spec n).runClient p client
+    (run s client).value = value ∧ Rep finalState (run s client).state ∧
+      total id (run s client).traces ≤ (spec n).totalCost (charge n) p history ∧
+      total id (run s client).traces ≤ history.length * (2 * Nat.log 2 n + 3) := by
   have hv := (spec n).validHistory_of_forall_valid (fun _ _ => trivial)
-    p ((spec n).runClient p client).2.2
-  have hexec := run_exec client s
+    p ((spec n).clientHistory p client)
+  have hexec := Execution.executes_run step client s
   have hc := (impl n).correct_client hr hv hexec
   exact ⟨hc.1, hc.2, Bound.client (stepBound n) hr hv hexec,
     Bound.client_const (uniformStepBound n) hr hv hexec⟩

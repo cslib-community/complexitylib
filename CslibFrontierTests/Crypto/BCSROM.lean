@@ -399,10 +399,7 @@ example (σ : ℕ) :
 example (σ : ℕ) :
     ((OracleComp.interpret (bcsMemoize σ) (bcsExecROM romIOP encSym adaptiveBCSCheater)).run
         ([], [])).toOuterMeasure
-        {out | match out with
-          | (((s, prf), ok), (tr_MT, _)) =>
-            ok = true ∧
-              ¬ romRel s (romExtract s (bcsExtractOracles decSym false tr_MT 1 prf.roots))} ≤
+        {out | BCSExtractionFails romRel romExtract decSym false out} ≤
       ((3 + 2 : ℕ) : ℝ≥0∞) *
           (1 / 2 + ((3 + 2 : ℕ) : ℝ≥0∞) * ((1 : ℝ≥0∞) / Fintype.card Bool)) +
         ((2 + 4 : ℕ) : ℝ≥0∞) *

@@ -191,8 +191,8 @@ noncomputable def eagerNoCheckOracle (S : Scheme PK SK M R CT K) (G : M → R)
 noncomputable def eagerNoCheckGame [Fintype M] [Finite R] [Fintype CT] [Finite K]
     (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K) (b : Bool) : Game := do
   let (pk, dk) ← ProbComp.eval S.keyGenNotBot
-  let G ← pi (α := fun _ : M => R) (fun _ => ProbComp.eval S.pke.sampleCoins)
-  let H ← pi (α := fun _ : Bool × M × CT => K) (fun _ => ProbComp.eval S.sampleKey)
+  let G ← S.coinTable
+  let H ← S.keyTable (Bool × M × CT)
   let (cStar, kReal) ← ProbComp.eval (S.encapsNotBot G H pk)
   let kRand ← ProbComp.eval S.sampleKey
   OracleComp.interpret (S.eagerNoCheckOracle G H dk cStar)
@@ -374,7 +374,7 @@ theorem advantage_eagerNoCheckGame_leakAdv [Finite R] [Fintype CT] [Fintype K] [
   have h0 : (⟨leakyPKE P, sampleMsg, sampleKey⟩ :
       Scheme PK SK (Fin n → Bool) R (CT × Option (Fin n)) K).eagerNoCheckGame leakAdv false false ≤
         n * (Fintype.card K : ℝ≥0∞)⁻¹ := by
-    simp only [Scheme.eagerNoCheckGame, Scheme.keyGenNotBot, Scheme.encapsNotBot,
+    simp only [Scheme.eagerNoCheckGame, Scheme.keyTable, Scheme.keyGenNotBot, Scheme.encapsNotBot,
       Scheme.encapsBot, ProbComp.eval_bind, ProbComp.eval_pure, PMF.monad_bind_eq_bind,
       PMF.bind_bind, PMF.pure_bind]
     refine bind_apply_le_on_support _ fun ⟨pk, sk⟩ hk => ?_

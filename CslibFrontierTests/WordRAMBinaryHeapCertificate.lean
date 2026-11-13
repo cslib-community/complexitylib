@@ -7,7 +7,9 @@ Authors: Renfei Zhou, Samuel Schlesinger
 import CslibFrontier.DataStructure.PriorityQueue.BinaryHeap.Native.Certificate
 
 /-! The retained adaptive insert/tie/decrease/extract client runs through the new single raw
-heap program, after actual compact initialization. Each operation pays its final halt; host
+heap program, after actual compact initialization. Each operation pays its canonical-result
+identity suffix and
+final halt; host
 continuations and external argument delivery retain the existing DynamicProgram convention. -/
 
 namespace CslibFrontierTests.WordRAMBinaryHeapCertificate
@@ -51,7 +53,7 @@ example :
         (show Fits 10 20 by decide)).rep (IndexedMinPQ.empty 4) y₀ ∧
       Executes ((dynamicProgram 4 20).ExecOp 10) sampleClient y₀ (some (2, 0)) y traces ∧
       DataStructure.total DynamicProgram.OperationTrace.instructions traces ≤
-        (indexedMinPQSpec 4 20).totalCost (fun _ o => operationTime o + 1)
+        (indexedMinPQSpec 4 20).totalCost (fun _ o => operationTime o + 2)
           (IndexedMinPQ.empty 4) ((indexedMinPQSpec 4 20).clientHistory
             (IndexedMinPQ.empty 4) sampleClient) := by
   have hS : Fits 10 (10 + space 4) := by decide
@@ -79,6 +81,32 @@ example :
   refine ⟨y₀, y, traces, he, ?_, (certificate_rep_iff hS hK _ _).mpr hr₀, hex, hcost⟩
   rw [hm]
   rfl
+
+/-- Lookup reads the retained first payload slot, independently of the extraction-key slot. -/
+example (regs : Fin Program.registers → ℕ) (v : Fin 4)
+    (hf : regs Program.code.outFlag = 1) (hv : regs Program.code.outV = 7) :
+    nativeObservation (K := 20) (.getKey v) regs = some (some 7) := by
+  simp only [nativeObservation, WordRAM.PQCode.nativeResultType, ResultType.decode,
+    Function.comp_apply, WordRAM.PQCode.nativeResultBank, ↓reduceIte, hf, one_ne_zero,
+    zero_add, hv, Option.map_some, Option.some.injEq]
+  exact cast_eq _ _
+
+/-- A noncanonical presence tag cannot be interpreted as a successful native lookup. -/
+example (regs : Fin Program.registers → ℕ) (v : Fin 4)
+    (hf : regs Program.code.outFlag = 2) :
+    nativeObservation (K := 20) (.getKey v) regs = none := by
+  simp only [nativeObservation, WordRAM.PQCode.nativeResultType, ResultType.decode,
+    Function.comp_apply, WordRAM.PQCode.nativeResultBank, ↓reduceIte, hf,
+    OfNat.ofNat_ne_zero, OfNat.ofNat_ne_one, Option.map_none]
+
+/-- Extraction rejects an out-of-range handle even when its presence flag is well formed. -/
+example (regs : Fin Program.registers → ℕ)
+    (hf : regs Program.code.outFlag = 1) (hv : regs Program.code.outV = 4) :
+    nativeObservation (n := 4) (K := 20) .extractMin regs = none := by
+  simp only [nativeObservation, WordRAM.PQCode.nativeResultType, ResultType.decode,
+    Function.comp_apply, WordRAM.PQCode.nativeResultBank, ↓reduceIte, hf, one_ne_zero,
+    zero_add, hv, Nat.lt_irrefl, ↓reduceDIte, Option.bind_eq_bind, Option.bind_none,
+    Option.map_none]
 
 -- The domain is meaningful: decreasing an absent handle is not an admissible history.
 example : ¬(indexedMinPQSpec 4 20).ValidHistory (IndexedMinPQ.empty 4) [.decreaseKey 2 0] := by

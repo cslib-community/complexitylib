@@ -1,23 +1,27 @@
-"""`scripts/full_check.py` mirrors CI's required `ci-checks` job, and its runner reports each step.
+"""`scripts/full_check.py` mirrors CI's source and Lean jobs, and its runner reports each step.
 
 The parity test reads `.github/workflows/lean_action_ci.yml` as text (CI's Python has no YAML
-library) and fails closed. Every named `ci-checks` step must be mirrored by `full_check.STEPS`, run
-by `scripts/check.sh` before the cache bootstrap (`PREFLIGHT`), or listed in `CI_ONLY`. The `run`
-script of a mirrored or preflight step may contain only its local commands, in order, and the lines
-in `PLUMBING` (`set -e` and the computation of `BASE`), which the local run replaces by the merge
-base of `--base`; any other line is reported. So is a step key the local run does not reproduce
-(anything outside `MIRRORED_KEYS`, such as `shell`, `continue-on-error` or `timeout-minutes`), a
-working directory or literal environment that differs from CI's, an environment value taken from
-GitHub context other than `CONTEXT_ENV`, a job-level `defaults` or literal `env`, and mirrored
-steps out of CI's order. A step's `if:` condition is not compared: the local run always runs a
-mirrored step, which is the stricter direction for steps that CI runs only on some events.
-`ParityProblemTests` mutates the workflow to check that each kind of drift is reported.
+library) and fails closed. Every named `source-checks` and `lean-checks` step must be mirrored by
+`full_check.STEPS`, run by `scripts/check.sh` before the cache bootstrap (`PREFLIGHT`), or listed in
+`CI_ONLY`. The `run` script of a mirrored or preflight step may contain only its local commands, in
+order, and the lines in `PLUMBING` (`set -e` and the computation of `BASE`), which the local run
+replaces by the merge base of `--base`; any other line is reported. So is a step key the local run
+does not reproduce (anything outside `MIRRORED_KEYS`, such as `shell`, `continue-on-error` or
+`timeout-minutes`), a working directory or literal environment that differs from CI's, an
+environment value taken from GitHub context other than `CONTEXT_ENV`, a job-level `defaults` or
+literal `env`, and mirrored steps out of order within either CI job. A step's `if:` condition is
+not compared: the local run always runs a mirrored step, which is the stricter direction for steps
+that CI runs only on some events. `ParityProblemTests` mutates the workflow to check that each kind
+of drift is reported. Separate aggregator tests require both jobs to succeed and check that its
+publication output is forwarded from `lean-checks`.
 """
 
 import importlib.util
 import io
+import os
 from pathlib import Path
 import re
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -29,7 +33,19 @@ sys.modules[SPEC.name] = full
 SPEC.loader.exec_module(full)
 REPO = Path(__file__).resolve().parent.parent
 WORKFLOW = REPO / ".github/workflows/lean_action_ci.yml"
-JOB = "ci-checks"
+EXECUTION_JOBS = ("source-checks", "lean-checks")
+AGGREGATOR_JOB = "ci-checks"
+SOURCE_CHECK_NAMES = frozenset({
+    "Test Python tooling",
+    "Operator manual links and excerpts",
+    "Source hygiene",
+    "Encoding readability ratchet (changed modules)",
+    "Encoding readability report",
+    "Projection chain ratchet (changed modules)",
+    "Projection chain report",
+    "Repeated-proof-block notice (advisory)",
+    "Documentation pins",
+})
 # The only `run` lines of a mirrored step that the local run does not repeat: they compute CI's
 # base commit, which `full_check.py` passes as `BASE` instead.
 PLUMBING = frozenset({
@@ -117,7 +133,7 @@ def literal_env(lines: list[str]) -> dict[str, str]:
     return env
 
 
-def header_problems(lines: list[str]) -> list[str]:
+def header_problems(lines: list[str], job: str) -> list[str]:
     """Job-level settings that would change how CI runs the mirrored steps."""
     problems, section = [], None
     for line in lines[1:lines.index("    steps:")]:
@@ -126,25 +142,29 @@ def header_problems(lines: list[str]) -> list[str]:
         if re.match(r"    \S", line):
             section = line.strip().split(":", 1)[0]
             if section == "defaults":
-                problems.append(f"{JOB} sets job-level `defaults`, which the local run does not "
+                problems.append(f"{job} sets job-level `defaults`, which the local run does not "
                                 "reproduce")
         elif section == "env" and "${{" not in line:
-            problems.append(f"{JOB} sets job-level `env` {line.strip()!r}, which the local run "
+            problems.append(f"{job} sets job-level `env` {line.strip()!r}, which the local run "
                             "does not reproduce")
     return problems
 
 
 def parity_problems(text: str) -> list[str]:
-    """Each way that the `ci-checks` job of workflow `text` differs from the local check."""
-    problems = header_problems(job_lines(text, JOB))
-    steps = job_steps(text, JOB)
+    """Each way the source and Lean jobs of workflow `text` differ from the local check."""
+    problems = []
+    steps_by_job = {job: job_steps(text, job) for job in EXECUTION_JOBS}
+    for job in EXECUTION_JOBS:
+        problems.extend(header_problems(job_lines(text, job), job))
+    steps = [step for job in EXECUTION_JOBS for step in steps_by_job[job]]
     for step in steps:
         if "name" not in step and "run" in step:
             problems.append(f"an unnamed `run` step ({step['run'].splitlines()[0]!r}) cannot be "
                             "classified; name it")
-    named = {step["name"]: step for step in steps if "name" in step}
-    if len(named) != sum("name" in step for step in steps):
-        problems.append(f"{JOB} has two steps with the same name")
+    named_steps = [step for step in steps if "name" in step]
+    named = {step["name"]: step for step in named_steps}
+    if len(named) != len(named_steps):
+        problems.append("source-checks and lean-checks have two steps with the same name")
     mirrored = {step.name: step for step in full.STEPS}
     homes = (mirrored, full.PREFLIGHT, full.CI_ONLY)
     for name in named:
@@ -153,7 +173,8 @@ def parity_problems(text: str) -> list[str]:
                             "full_check.PREFLIGHT, or record why it stays in CI in "
                             "full_check.CI_ONLY")
     for name in sorted(set().union(*homes) - set(named)):
-        problems.append(f"{name}: listed in full_check, but {JOB} no longer has this step")
+        problems.append(f"{name}: listed in full_check, but CI no longer has this step in either "
+                        "execution job")
     local = [(step.name, step.commands, step.cwd, step.env) for step in full.STEPS]
     local += [(name, (command,), None, {}) for name, command in full.PREFLIGHT.items()]
     for name, commands, cwd, env in local:
@@ -181,24 +202,33 @@ def parity_problems(text: str) -> list[str]:
             if "${{" in value and variable.strip() not in CONTEXT_ENV:
                 problems.append(f"{name}: env {variable.strip()} comes from GitHub context, "
                                 "which the local run does not reproduce")
-    order = [name for name in named if name in mirrored]
-    expected = [step.name for step in full.STEPS if step.name in named]
-    if order != expected:
-        problems.append(f"mirrored steps run in CI in the order {order}, "
-                        f"in full_check.STEPS in the order {expected}")
+    for job, job_entries in steps_by_job.items():
+        order = [step["name"] for step in job_entries
+                 if step.get("name") in mirrored]
+        expected = [step.name for step in full.STEPS if step.name in order]
+        if order != expected:
+            problems.append(f"mirrored steps run in {job} in the order {order}, "
+                            f"in full_check.STEPS in the order {expected}")
     return problems
 
 
 class WorkflowParityTests(unittest.TestCase):
     def setUp(self):
         self.text = WORKFLOW.read_text()
-        self.named = [step for step in job_steps(self.text, JOB) if "name" in step]
+        self.named_by_job = {
+            job: [step for step in job_steps(self.text, job) if "name" in step]
+            for job in EXECUTION_JOBS
+        }
+        self.named = [step for job in EXECUTION_JOBS for step in self.named_by_job[job]]
 
     def test_parser_reads_the_steps_it_compares(self):
         # A parser that silently lost steps would make the parity test vacuous.
         names = [step["name"] for step in self.named]
+        source_names = [step["name"] for step in self.named_by_job["source-checks"]]
+        lean_names = [step["name"] for step in self.named_by_job["lean-checks"]]
+        self.assertEqual(set(source_names), SOURCE_CHECK_NAMES)
         self.assertIn("Tidy statement ratchet", names)
-        self.assertIn("lake build", names)
+        self.assertIn("lake build", lean_names)
         self.assertGreater(len(names), 25)
         handoff = next(step for step in self.named if step["name"] == "Test Lake build handoff reuse")
         local = next(step for step in full.STEPS if step.name == handoff["name"])
@@ -227,6 +257,46 @@ class WorkflowParityTests(unittest.TestCase):
         for step in full.LOCAL_STEPS:
             with self.subTest(step=step.name):
                 self.assertNotIn(step.name, ci | others)
+
+
+class AggregatorTests(unittest.TestCase):
+    def setUp(self):
+        self.text = WORKFLOW.read_text()
+        self.lines = job_lines(self.text, AGGREGATOR_JOB)
+        self.steps = job_steps(self.text, AGGREGATOR_JOB)
+
+    def test_required_context_depends_on_both_jobs_and_forwards_lean_publication(self):
+        header = "\n".join(self.lines[:self.lines.index("    steps:")])
+        self.assertIn("needs: [source-checks, lean-checks]", header)
+        self.assertIn("if: always()", header)
+        self.assertIn("publication: ${{ needs.lean-checks.outputs.publication }}", header)
+        self.assertNotIn("steps.upload-publication.outputs", header)
+        self.assertEqual([step.get("name") for step in self.steps],
+                         ["Require source and Lean validation"])
+        env = self.steps[0]["env"]
+        self.assertIn("SOURCE_RESULT: ${{ needs.source-checks.result }}", env)
+        self.assertIn("LEAN_RESULT: ${{ needs.lean-checks.result }}", env)
+
+    def test_execution_jobs_can_start_in_parallel(self):
+        for job in EXECUTION_JOBS:
+            with self.subTest(job=job):
+                lines = job_lines(self.text, job)
+                header = "\n".join(lines[:lines.index("    steps:")])
+                self.assertNotIn("needs:", header)
+
+    def test_only_two_successful_dependencies_pass(self):
+        script = self.steps[0]["run"]
+        results = ("success", "failure", "cancelled", "skipped")
+        for source_result in results:
+            for lean_result in results:
+                with self.subTest(source=source_result, lean=lean_result):
+                    result = subprocess.run(
+                        ["bash", "-e", "-c", script],
+                        env={**os.environ, "SOURCE_RESULT": source_result,
+                             "LEAN_RESULT": lean_result},
+                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                    self.assertEqual(result.returncode == 0,
+                                     source_result == lean_result == "success", result.stdout)
 
 
 TIDY = "          python3 -B scripts/check_tidy_surface.py\n"
@@ -291,11 +361,11 @@ class ParityProblemTests(unittest.TestCase):
         self.assertReported(problems, "Operator manual links and excerpts", "--strict")
 
     def test_job_level_settings(self):
-        env = "    env:\n      HANDOFF_MEASUREMENT_PLAN:"
+        anchor = "  lean-checks:\n    runs-on: ubuntu-latest\n"
         defaults = "    defaults:\n      run:\n        shell: sh\n"
-        self.assertReported(self.report((env, defaults + env)), "defaults")
-        self.assertReported(self.report((env, f"    env:\n      STRICT: \"1\"\n"
-                                              "      HANDOFF_MEASUREMENT_PLAN:")), "STRICT")
+        env = "    env:\n      STRICT: \"1\"\n"
+        self.assertReported(self.report((anchor, anchor + defaults)), "defaults")
+        self.assertReported(self.report((anchor, anchor + env)), "STRICT")
 
     def test_misindented_key_is_not_absorbed(self):
         with self.assertRaisesRegex(ValueError, "unparsed workflow line"):
@@ -335,11 +405,20 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual((status, out, leftover), (0, "ok    only\n", []))
 
     def test_main_passes_the_base_to_the_steps(self):
-        with patch.object(full, "run_steps", return_value=0) as run:
+        with patch.object(full.check_vm_map_count, "preflight", return_value=0), \
+             patch.object(full, "run_steps", return_value=0) as run:
             self.assertEqual(full.main(["--base", "abc123"]), 0)
             self.assertEqual(run.call_args.args, (full.STEPS + full.LOCAL_STEPS, "abc123"))
             full.main([])
             self.assertEqual(run.call_args.args, (full.STEPS + full.LOCAL_STEPS, "origin/main"))
+
+    def test_main_stops_when_vm_map_count_preflight_fails(self):
+        with patch.object(full.check_vm_map_count, "preflight", return_value=1), \
+             patch.object(full, "run_steps", return_value=0) as run:
+            self.assertEqual(full.main([]), 1)
+            run.assert_not_called()
+            self.assertEqual(full.main(["--skip-map-count-check"]), 0)
+            run.assert_called_once()
 
 
 if __name__ == "__main__":

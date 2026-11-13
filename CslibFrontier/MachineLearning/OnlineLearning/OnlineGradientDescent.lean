@@ -58,12 +58,17 @@ which allow boundary points). `D` bounds the diameter of `K` and `G` the subgrad
 
 * `Cslib.MachineLearning.OnlineLearning.OCO.ogd_sum_inner_le`: for nonincreasing positive step
   sizes, `∑ t ≤ T, ⟪grad t (x t), x t - u⟫ ≤ D ^ 2 / (2 η T) + ∑ t ≤ T, η t ‖grad t (x t)‖ ^ 2 / 2`.
+* `Cslib.MachineLearning.OnlineLearning.OCO.ogd_sum_inner_le_of_const`: for a constant step size
+  `c`, the same with `‖x₀ - u‖ ^ 2 / (2 c)` in place of `D ^ 2 / (2 η T)`.
+* `Cslib.MachineLearning.OnlineLearning.OCO.norm_ogd_sub_le`: `‖x t - x₀‖ ≤ G * ∑ s < t, η s`.
 * `Cslib.MachineLearning.OnlineLearning.OCO.ogd_regret_le_three_halves`: with step sizes
   `D / (G √(t + 1))`, regret at most `3 / 2 * G * D * √T` [Hazan2022, Theorem 3.1].
 * `Cslib.MachineLearning.OnlineLearning.OCO.ogd_regret_le_zinkevich`: with step sizes
   `1 / √(t + 1)`, regret at most `D ^ 2 √T / 2 + (√T - 1 / 2) G ^ 2` [Zinkevich2003, Theorem 1].
 * `Cslib.MachineLearning.OnlineLearning.OCO.ogd_regret_le_fixed`: with the constant step size
   `D / (G √T)` for a known horizon `T`, regret at most `G * D * √T`.
+  `Cslib.MachineLearning.OnlineLearning.OCO.ogd_regret_le_fixed_of_norm_sub_le` needs only
+  `‖x₀ - u‖ ≤ B` instead of a diameter bound, and gives `G * B * √T` with step size `B / (G √T)`.
 * `Cslib.MachineLearning.OnlineLearning.OCO.ogd_regret_le_log`: for `α`-strongly convex losses
   and step sizes `1 / (α (t + 1))`, regret at most `G ^ 2 / (2 α) * (1 + log T)`
   [Hazan2022, Theorem 3.3].
@@ -101,8 +106,9 @@ theorem isPythagoreanProjection_metricProjection {K : Set E} (hne : K.Nonempty)
 omit [InnerProductSpace ℝ E] in
 /-- Unconstrained gradient descent: the identity is a Pythagorean projection onto the whole
 space. Since `Set.univ` has no finite diameter (unless `E` is trivial), and the strongly convex
-hypotheses force a finite diameter (`norm_sub_le_of_strongConvex`), only the per-step bound
-`ogd_two_mul_inner_le` applies to it nontrivially. -/
+hypotheses force a finite diameter (`norm_sub_le_of_strongConvex`), the bounds that apply to it
+nontrivially are those that use only `‖x₀ - u‖`: `ogd_two_mul_inner_le`,
+`ogd_sum_inner_le_of_const` and `ogd_regret_le_fixed_of_norm_sub_le`. -/
 theorem isPythagoreanProjection_id : IsPythagoreanProjection (Set.univ : Set E) id :=
   ⟨fun _ => Set.mem_univ _, fun _ _ _ => le_rfl⟩
 
@@ -128,6 +134,28 @@ theorem ogd_mem (hP : IsPythagoreanProjection K proj) (hx₀ : x₀ ∈ K) (t : 
   cases t with
   | zero => rwa [ogd_zero]
   | succ t => rw [ogd_succ]; exact hP.mem _
+
+/-- Each step of online gradient descent moves at most `η t * G` when the subgradients on `K` have
+norm at most `G`, so `‖x t - x₀‖ ≤ G * ∑ s < t, η s`. -/
+theorem norm_ogd_sub_le (hP : IsPythagoreanProjection K proj) (hx₀ : x₀ ∈ K) {G : ℝ}
+    (hG : ∀ t, ∀ x ∈ K, ‖grad t x‖ ≤ G) (hη : ∀ t, 0 ≤ η t) (t : ℕ) :
+    ‖ogd proj η grad x₀ t - x₀‖ ≤ G * ∑ s ∈ range t, η s := by
+  induction t with
+  | zero => simp
+  | succ t ih =>
+    rw [ogd_succ, sum_range_succ, mul_add]
+    set x := ogd proj η grad x₀ t
+    have hstep : η t * ‖grad t x‖ ≤ G * η t := by
+      rw [mul_comm G]
+      exact mul_le_mul_of_nonneg_left (hG t x (ogd_mem hP hx₀ t)) (hη t)
+    calc ‖proj (x - η t • grad t x) - x₀‖
+        ≤ ‖proj (x - η t • grad t x) - x‖ + ‖x - x₀‖ := norm_sub_le_norm_sub_add_norm_sub _ _ _
+      _ ≤ ‖x - η t • grad t x - x‖ + ‖x - x₀‖ := by
+          gcongr
+          exact hP.norm_sub_le _ x (ogd_mem hP hx₀ t)
+      _ = η t * ‖grad t x‖ + ‖x - x₀‖ := by
+          rw [sub_sub_cancel_left, norm_neg, norm_smul, Real.norm_of_nonneg (hη t)]
+      _ ≤ G * ∑ s ∈ range t, η s + G * η t := by linarith
 
 /-- One step of online gradient descent against a comparator `u ∈ K`:
 `2 ⟪g, x t - u⟫ ≤ (‖x t - u‖ ^ 2 - ‖x (t + 1) - u‖ ^ 2) / η t + η t ‖g‖ ^ 2` with
@@ -199,6 +227,32 @@ theorem ogd_sum_inner_le (hP : IsPythagoreanProjection K proj) (hx₀ : x₀ ∈
   rw [div_add_div _ _ (by positivity) two_ne_zero, le_div_iff₀ (by positivity)]
   have : D ^ 2 / η T * (2 * η T) = 2 * D ^ 2 := by field_simp
   nlinarith
+
+/-- Online gradient descent with a constant step size `c > 0`: against every `u ∈ K`,
+`∑ t < T, ⟪grad t (x t), x t - u⟫ ≤ ‖x₀ - u‖ ^ 2 / (2 c) + c (∑ t < T, ‖grad t (x t)‖ ^ 2) / 2`.
+Only the distance from the starting point to the comparator enters, not the diameter of `K`. -/
+theorem ogd_sum_inner_le_of_const (hP : IsPythagoreanProjection K proj) {c : ℝ} (hc : 0 < c)
+    {u : E} (hu : u ∈ K) (T : ℕ) :
+    ∑ t ∈ range T, ⟪grad t (ogd proj (fun _ => c) grad x₀ t), ogd proj (fun _ => c) grad x₀ t - u⟫ ≤
+      ‖x₀ - u‖ ^ 2 / (2 * c) +
+        c * (∑ t ∈ range T, ‖grad t (ogd proj (fun _ => c) grad x₀ t)‖ ^ 2) / 2 := by
+  -- Telescoping, keeping the final distance term.
+  have key : ∀ T : ℕ, 2 * ∑ t ∈ range T, ⟪grad t (ogd proj (fun _ => c) grad x₀ t),
+      ogd proj (fun _ => c) grad x₀ t - u⟫ + ‖ogd proj (fun _ => c) grad x₀ T - u‖ ^ 2 / c ≤
+      ‖x₀ - u‖ ^ 2 / c + c * ∑ t ∈ range T, ‖grad t (ogd proj (fun _ => c) grad x₀ t)‖ ^ 2 := by
+    intro T
+    induction T with
+    | zero => simp
+    | succ T ih =>
+      have h := ogd_two_mul_inner_le (η := fun _ => c) (x₀ := x₀) (grad := grad) hP hu T hc
+      rw [sum_range_succ, sum_range_succ, mul_add, mul_add]
+      rw [sub_div] at h
+      linarith
+  have h := key T
+  have hpos : 0 ≤ ‖ogd proj (fun _ => c) grad x₀ T - u‖ ^ 2 / c := by positivity
+  have e : ‖x₀ - u‖ ^ 2 / (2 * c) = ‖x₀ - u‖ ^ 2 / c / 2 := by rw [div_div, mul_comm]
+  rw [e]
+  linarith
 
 /-- `∑ t < T + 1, 1 / √(t + 1) ≤ 2 √(T + 1) - 1`. -/
 theorem sum_range_one_div_sqrt_succ_le (T : ℕ) :
@@ -307,6 +361,41 @@ theorem ogd_regret_le_zinkevich {f : ℕ → E → ℝ} (hP : IsPythagoreanProje
   push_cast
   linarith
 
+/-- **Fixed step size, from the distance to the comparator**: for a known horizon `T ≥ 1` and a
+comparator `u ∈ K` with `‖x₀ - u‖ ≤ B`, the constant step size `B / (G √T)` gives regret at most
+`G * B * √T` against `u`. No bound on the diameter of `K` is needed, so `K` may be the whole space;
+this is the regret bound behind [ShalevShwartzBenDavid2014, Theorem 14.8]. -/
+theorem ogd_regret_le_fixed_of_norm_sub_le {f : ℕ → E → ℝ} (hP : IsPythagoreanProjection K proj)
+    (hx₀ : x₀ ∈ K) {B G : ℝ} (hB0 : 0 < B) (hG0 : 0 < G) (hG : ∀ t, ∀ x ∈ K, ‖grad t x‖ ≤ G)
+    (hsub : ∀ t, ∀ x ∈ K, ∀ y ∈ K, f t x + ⟪grad t x, y - x⟫ ≤ f t y) {u : E} (hu : u ∈ K)
+    (hx₀u : ‖x₀ - u‖ ≤ B) {T : ℕ} (hT : 0 < T) :
+    ∑ t ∈ range T, (f t (ogd proj (fun _ => B / (G * √(T : ℝ))) grad x₀ t) - f t u) ≤
+      G * B * √(T : ℝ) := by
+  refine (sum_sub_le_sum_inner hsub (ogd_mem hP hx₀) hu T).trans ?_
+  have hTr : (0 : ℝ) < T := by exact_mod_cast hT
+  have hs : 0 < √(T : ℝ) := sqrt_pos.mpr hTr
+  set c := B / (G * √(T : ℝ)) with hcdef
+  have hc : 0 < c := div_pos hB0 (mul_pos hG0 hs)
+  have h := ogd_sum_inner_le_of_const (grad := grad) (x₀ := x₀) hP hc hu T
+  have h1 : ‖x₀ - u‖ ^ 2 / (2 * c) ≤ G * B * √(T : ℝ) / 2 := by
+    calc ‖x₀ - u‖ ^ 2 / (2 * c) ≤ B ^ 2 / (2 * c) := by gcongr
+      _ = G * B * √(T : ℝ) / 2 := by rw [hcdef]; field_simp
+  have h2 : c * (∑ t ∈ range T, ‖grad t (ogd proj (fun _ => c) grad x₀ t)‖ ^ 2) / 2 ≤
+      G * B * √(T : ℝ) / 2 := by
+    have hsum : ∑ t ∈ range T, ‖grad t (ogd proj (fun _ => c) grad x₀ t)‖ ^ 2 ≤ T * G ^ 2 := by
+      calc ∑ t ∈ range T, ‖grad t (ogd proj (fun _ => c) grad x₀ t)‖ ^ 2
+          ≤ ∑ t ∈ range T, G ^ 2 := sum_le_sum fun t _ =>
+            pow_le_pow_left₀ (norm_nonneg _) (hG t _ (ogd_mem hP hx₀ t)) 2
+        _ = T * G ^ 2 := by simp only [sum_const, card_range, nsmul_eq_mul]
+    have e : c * ((T : ℝ) * G ^ 2) = G * B * √(T : ℝ) := by
+      calc c * ((T : ℝ) * G ^ 2) =
+            (√(T : ℝ) * √(T : ℝ)) * (B / (G * √(T : ℝ)) * G ^ 2) := by
+            rw [mul_self_sqrt hTr.le, hcdef]; ring
+        _ = G * B * √(T : ℝ) := by field_simp
+    have := mul_le_mul_of_nonneg_left hsum hc.le
+    linarith
+  linarith
+
 /-- **Fixed step size**: for a known horizon `T ≥ 1`, the constant step size `D / (G √T)` gives
 regret at most `G * D * √T`. -/
 theorem ogd_regret_le_fixed {f : ℕ → E → ℝ} (hP : IsPythagoreanProjection K proj)
@@ -315,34 +404,8 @@ theorem ogd_regret_le_fixed {f : ℕ → E → ℝ} (hP : IsPythagoreanProjectio
     (hsub : ∀ t, ∀ x ∈ K, ∀ y ∈ K, f t x + ⟪grad t x, y - x⟫ ≤ f t y) {u : E} (hu : u ∈ K)
     {T : ℕ} (hT : 0 < T) :
     ∑ t ∈ range T, (f t (ogd proj (fun _ => D / (G * √(T : ℝ))) grad x₀ t) - f t u) ≤
-      G * D * √(T : ℝ) := by
-  refine (sum_sub_le_sum_inner hsub (ogd_mem hP hx₀) hu T).trans ?_
-  have hTr : (0 : ℝ) < T := by exact_mod_cast hT
-  have hs : 0 < √(T : ℝ) := sqrt_pos.mpr hTr
-  set c := D / (G * √(T : ℝ)) with hcdef
-  have hc : 0 < c := div_pos hD0 (mul_pos hG0 hs)
-  obtain ⟨T', hT'⟩ := Nat.exists_eq_add_of_lt hT
-  rw [zero_add] at hT'
-  have h := ogd_sum_inner_le (grad := grad) (η := fun _ => c) hP hx₀ hD (fun _ => hc)
-    (fun _ _ _ => le_rfl) hu T'
-  rw [← hT'] at h
-  have h2 : ∑ t ∈ range T, c * ‖grad t (ogd proj (fun _ => c) grad x₀ t)‖ ^ 2 ≤
-      T * (c * G ^ 2) := by
-    calc ∑ t ∈ range T, c * ‖grad t (ogd proj (fun _ => c) grad x₀ t)‖ ^ 2
-        ≤ ∑ t ∈ range T, c * G ^ 2 := sum_le_sum fun t _ =>
-          mul_le_mul_of_nonneg_left
-            (pow_le_pow_left₀ (norm_nonneg _) (hG t _ (ogd_mem hP hx₀ t)) 2) hc.le
-      _ = T * (c * G ^ 2) := by simp only [sum_const, card_range, nsmul_eq_mul]
-  have e1 : D ^ 2 / (2 * c) = G * D * √(T : ℝ) / 2 := by
-    rw [hcdef]
-    field_simp
-  have e2 : (T : ℝ) * (c * G ^ 2) = G * D * √(T : ℝ) := by
-    calc (T : ℝ) * (c * G ^ 2) =
-          (√(T : ℝ) * √(T : ℝ)) * (D / (G * √(T : ℝ)) * G ^ 2) := by
-          rw [mul_self_sqrt hTr.le]
-      _ = G * D * √(T : ℝ) := by field_simp
-  rw [e1] at h
-  linarith
+      G * D * √(T : ℝ) :=
+  ogd_regret_le_fixed_of_norm_sub_le hP hx₀ hD0 hG0 hG hsub hu (hD x₀ hx₀ u hu) hT
 
 /-- The strongly convex hypotheses bound the diameter: if `f` satisfies
 `f x + ⟪g x, y - x⟫ + α / 2 * ‖y - x‖ ^ 2 ≤ f y` on `K` with `α > 0` and `‖g x‖ ≤ G` on `K`,

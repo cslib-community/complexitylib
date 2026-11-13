@@ -143,12 +143,16 @@ following builds while preserving the public cache's authorization boundary.
   either the new rename or the rollback, `.lake/build` is absent (with the original outputs
   retained in the temporary staging directory) and the subsequent `lake build` safely recompiles
   from source and the local artifact cache.
+- **Superseded merge-group runs.** Each merge-group run has its own concurrency group, so GitHub
+  does not cancel a run whose entry has left the queue: the entry landed inside a later group, or
+  its group was rebuilt after an ejection. The *Merge-queue cleanup* workflow
+  (`scripts/ci/cancel_stale_merge_groups.py`) cancels such runs after each push to `main` and every
+  10 minutes. It skips runs younger than 5 minutes and runs for the current `main` commit, and
+  cancels a run only after a fresh read of its queue branch returns 404 or another commit; any
+  other error keeps the run. The handoff above is not affected, since it only uses a completed
+  successful run for the landed commit. Run the script without `--apply` for a dry-run list.
 
 ## Automatic restoration
-
-Temporary controlled measurement is specified in [MEASUREMENT.md](MEASUREMENT.md) (#1728).
-Its hooks are disabled without an explicit plan and expire on 2026-11-15. Installing them does
-not authorize study activation or complete #1197's net-benefit requirement.
 
 `scripts/build.sh` runs `scripts/cache/ensure.sh`, then forwards its arguments and exit status to
 `lake build`. `scripts/check.sh` uses the same bootstrap before full or quick validation; a quick
@@ -371,11 +375,34 @@ a long mapping build to recompilation. The real-Lake publication test checks mis
 retained archives with fixed tiny sources and verifies that OLean hashes and mtimes stay unchanged.
 It establishes that mechanism, not a speedup estimate for a full CI build.
 
-For a production comparison, fix the revision, toolchain, thread settings and initial `.lake`
-and artifact-cache contents. CI currently saves its Actions `.lake` snapshot before publication
-staging, so newly packed archives can be absent from that snapshot. Measure archive creation
-and the added save/restore cost before changing this order. Both remote publishers consume the
-same staged files, so this phase delays fresh outputs on both origins.
+By default, CI saves its Actions `.lake` snapshot before publication staging, so newly packed
+archives can be absent from that snapshot. The repository variable
+`RETAIN_PUBLICATION_ARCHIVES=true` enables a reversible experiment: the ordinary save is skipped
+and the same `.lake` path and key are saved after staging and the publisher handoff. Actions string
+comparisons are case-insensitive, so any capitalization of `true` enables the experiment; an absent
+variable or every other value disables it. Retention is best-effort because the pinned cache-save
+action reports ordinary save failures as warnings.
+
+Use adjacent, representative `main` pushes with the same toolchain, thread settings, recovery
+generation and comparable source changes:
+
+1. With the variable absent or unequal to `true` under the case-insensitive comparison, record the
+   source SHA, Actions restore/save duration and bytes, and `CACHE_STAGING_METRICS` archive counts
+   and mapping-build time.
+2. Set the variable to `true` in any capitalization for one `main` push. Record its late save
+   duration and bytes as well as the staging metrics; this run creates the snapshot that can retain
+   new archives.
+3. Keep it at `true` for the next representative `main` push. Compare restore duration and bytes,
+   `archives_before`, and mapping-build wall time with the baseline. Actions cache keys include the
+   commit SHA, so rerunning the first activated SHA cannot replace its already-created key.
+4. Roll back by deleting the variable or setting it to a value other than `true`, ignoring case.
+   The ordinary pre-publication save resumes immediately. A retained snapshot may still be restored
+   until a newer matching snapshot displaces or evicts it; rollback does not delete Actions cache
+   entries.
+
+This protocol tests the ordering change; it does not establish a speedup. Both remote publishers
+consume the same staged files, so the mapping/archive phase still delays fresh outputs on both
+origins.
 
 ## Maintainer runbook
 

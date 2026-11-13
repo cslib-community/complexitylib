@@ -13,6 +13,7 @@ public import CslibFrontier.Probability.Uniform
 public import Mathlib.Algebra.Ring.BooleanRing
 public import Mathlib.Data.Fintype.Powerset
 public import Mathlib.Data.Matrix.Mul
+import CslibFrontier.Probability.PMF.Independence
 import CslibFrontier.Probability.PMF.ToReal
 import Mathlib.Probability.ProbabilityMassFunction.Integrals
 
@@ -168,7 +169,8 @@ private theorem coordinate_error_le {n k : ℕ} (predictor : BitString n → Boo
     have hquery : IndepFun
         (fun masks : Fin k → BitString n => Pi.single i 1 + ∑ j ∈ s, masks j)
         (fun masks : Fin k → BitString n => Pi.single i 1 + ∑ j ∈ t, masks j) μ := by
-      apply PMF.indepFun_of_map_pair _ _ _ (measurable_of_countable _) (measurable_of_countable _)
+      refine (PMF.indepFun_iff_map_pair_eq_bind _ (measurable_of_countable _)
+        (measurable_of_countable _)).2 ?_
       rw [query_pair_uniform i s t (mem_nonemptySubsets s |>.mp hs)
           (mem_nonemptySubsets t |>.mp ht) hst,
         query_uniform i s (mem_nonemptySubsets s |>.mp hs),

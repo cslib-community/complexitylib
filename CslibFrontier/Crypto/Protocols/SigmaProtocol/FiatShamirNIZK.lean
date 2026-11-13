@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Game
+public import CslibFrontier.Crypto.Protocols.SigmaProtocol.ForkingReduction
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Identification
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Linear
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.SchnorrSignature
@@ -125,6 +126,7 @@ machine-level `IsPPT` efficiency bridges for multi-query rewinding reductions ar
   `Cslib.Crypto.Protocols.SigmaProtocol.fiatShamirNIZKRealExtGame`,
   `Cslib.Crypto.Protocols.SigmaProtocol.fiatShamirNIZKSimExtGameOn`,
   `Cslib.Crypto.Protocols.SigmaProtocol.fiatShamirNIZKSimExtGame`,
+  `Cslib.Crypto.Protocols.SigmaProtocol.fiatShamirNIZKFreshStmtGameOn`,
   `Cslib.Crypto.Protocols.SigmaProtocol.fiatShamirNIZKSimExtractWith`,
   `Cslib.Crypto.Protocols.SigmaProtocol.fiatShamirNIZKSimExtract`,
   `Cslib.Crypto.Protocols.SigmaProtocol.fiatShamirNIZKSimExtractGame`: adaptive
@@ -150,7 +152,7 @@ machine-level `IsPPT` efficiency bridges for multi-query rewinding reductions ar
   `Cslib.Crypto.Protocols.SigmaProtocol.succProbability_fiatShamirNIZKSimExtGame_le`,
   `Cslib.Crypto.Protocols.SigmaProtocol.succProbability_fiatShamirNIZKRealExtGameOn_le`,
   `Cslib.Crypto.Protocols.SigmaProtocol.succProbability_fiatShamirNIZKRealExtGame_le`,
-  `Cslib.Crypto.Protocols.SigmaProtocol.succProbability_fiatShamirNIZKFreshStmtGame_le`,
+  `Cslib.Crypto.Protocols.SigmaProtocol.succProbability_fiatShamirNIZKFreshStmtGameOn_le`,
   `Cslib.Crypto.Protocols.SigmaProtocol.succProbability_fiatShamirNIZKRealExtGameOn_le_of_false`:
   adaptive simulation-extractability and simulation-soundness bounds.
 * `Cslib.Crypto.Protocols.SigmaProtocol.linear_unpredictableCommitments_of_injective`,
@@ -759,449 +761,51 @@ theorem advantage_fiatShamirNIZKRealGame_simGame_le [DecidableEq Y] [DecidableEq
     NNReal.coe_add, NNReal.coe_natCast] using
     abs_sub_fiatShamirNIZKRealGame_simGame_le hvalid hHVZK hUnpred hD
 
-/-! ### Rewinding core for ROM proof of knowledge and simulation-extractability -/
+/-! ### The forking reduction for proofs of knowledge -/
 
 namespace FiatShamirNIZK
 
-/-- Named components of a candidate proof verdict in the forking reduction. -/
-private structure ForkOutcome (Y T C Z : Type) where
-  /-- Whether the candidate proof won the experiment. -/
-  won : Bool
-  /-- Target statement `y*` of the candidate proof. -/
-  stmt : Y
-  /-- Commitment `t*` of the candidate proof. -/
-  commitment : T
-  /-- Challenge `c` assigned to `(stmt, commitment)`. -/
-  challenge : C
-  /-- Response `z*` of the candidate proof. -/
-  response : Z
+/-- The final check on a candidate proof `(y, (t, z))`: its point is `(y, t)`, and it wins when
+`admissible y`, `(t, c, z)` is accepting for `y`, and `(y, t)` was not returned by a valid prove
+call. -/
+private def check [DecidableEq Y] [DecidableEq T] (P : SigmaProtocol X Y T C Z)
+    (admissible : Y → Bool) : ForkingReduction.Check Y T C Z (Y × T) (Y × T) where
+  point y t := (y, t)
+  accepts y t c z := admissible y && P.verify y t c z
+  fresh y t proved := !proved.contains (y, t)
 
-/-- State of the rewinding reduction during an adversary run: the random-oracle table with optional
-external query indices, the `(y, t)` pairs returned by valid prove calls, the external query count,
-and the presampled simulator coins. -/
-private structure ReductionState (Y T C S : Type) where
-  /-- Association list of `(y, t)` points with `(challenge, externalQueryIndex?)`. -/
-  table : List ((Y × T) × C × Option ℕ)
-  /-- Statement-commitment pairs `(y, t)` produced by valid prove queries. -/
-  proved : List (Y × T)
-  /-- Number of external random-oracle queries issued so far. -/
-  count : ℕ
-  /-- Remaining presampled simulator coins. -/
-  samples : List S
-
-/-- Reduction handler answering prove calls deterministically from presampled simulator coins and
-hash calls from the recorded table or the external hash oracle. -/
-private def reductionHandler [DecidableEq Y] [DecidableEq T] {S : Type}
-    (valid : X → Y → Bool) (fallback : S)
+/-- Proving without a witness, from one presampled value per call: a valid prove call on `(x, y)`
+evaluates `simEval` to a transcript `(t, c, z)`, returns `(t, z)`, programs the oracle at `(y, t)`
+with `c` and logs `(y, t)`; an invalid call returns `none`. -/
+private def signer {S : Type} (valid : X → Y → Bool) (fallback : S)
     (simEval : S → ∀ x y, valid x y = true → T × C × Z) :
-    (q : (X × Y) ⊕ (Y × T)) →
-      StateT (ReductionState Y T C S) (OracleComp (NIZKHashSpec Y T C))
-        (NIZKDistinguisherSpec X Y T C Z q)
-  | .inl (x, y) => fun st =>
-    if hv : valid x y = true then
-      let (t, c, z) := simEval (st.samples.headD fallback) x y hv
-      pure (some (t, z),
-        ⟨((y, t), c, none) :: st.table, (y, t) :: st.proved, st.count, st.samples.tail⟩)
-    else
-      pure (none, ⟨st.table, st.proved, st.count, st.samples.tail⟩)
-  | .inr yt => fun st =>
-    match st.table.lookup yt with
-    | some entry => pure (entry.1, ⟨st.table, st.proved, st.count, st.samples.tail⟩)
-    | none =>
-      (fun c => (c, ⟨(yt, c, some st.count) :: st.table, st.proved, st.count + 1,
-        st.samples.tail⟩)) <$> OracleComp.query (spec := NIZKHashSpec Y T C) yt
+    ForkingReduction.Signer (X × Y) (Option (T × Z)) (Y × T) C (Y × T) S where
+  fallback := fallback
+  step s q :=
+    if hv : valid q.1 q.2 = true then
+      let v := simEval s q.1 q.2 hv
+      (some (v.1, v.2.2), some ((q.2, v.1), v.2.1, (q.2, v.1)))
+    else (none, none)
 
-/-- Verdict on a candidate output `(y, (t, z))` at challenge `c` and optional query position. -/
-private def verdict [DecidableEq Y] [DecidableEq T] (P : SigmaProtocol X Y T C Z)
-    (admissible : Y → Bool) {S : Type}
-    (cand : (Y × (T × Z)) × ReductionState Y T C S) (c : C) (position : Option ℕ) :
-    Option ℕ × ForkOutcome Y T C Z :=
-  let ((y, t, z), state) := cand
-  let win := admissible y && P.verify y t c z && !state.proved.contains (y, t)
-  (if win then position else none, ⟨win, y, t, c, z⟩)
+/-- A candidate at a point programmed by a valid prove call is not fresh once that call's pair is
+logged. -/
+private theorem rejectsProgrammed [DecidableEq Y] [DecidableEq T] {S W : Type}
+    (P : SigmaProtocol W Y T C Z) (valid : X → Y → Bool) (fallback : S)
+    (simEval : S → ∀ x y, valid x y = true → T × C × Z) (admissible : Y → Bool) :
+    ForkingReduction.RejectsProgrammed (signer valid fallback simEval) (check P admissible) := by
+  intro s q x c l hr y t log hpt hl
+  simp only [signer] at hr
+  split_ifs at hr with hv
+  simp only [Option.some.injEq, Prod.mk.injEq] at hr
+  obtain ⟨rfl, -, rfl⟩ := hr
+  simp only [check] at hpt ⊢
+  rw [hpt]
+  simp [hl]
 
-/-- Final verification step in the forking program, querying `(y, t)` if absent from `table`. -/
-private def finish [DecidableEq Y] [DecidableEq T] (P : SigmaProtocol X Y T C Z)
-    (admissible : Y → Bool) {S : Type}
-    (cand : (Y × (T × Z)) × ReductionState Y T C S) :
-    OracleComp (NIZKHashSpec Y T C) (Option ℕ × ForkOutcome Y T C Z) :=
-  let ((y, t, _), state) := cand
-  match state.table.lookup (y, t) with
-  | some entry => pure (verdict P admissible cand entry.1 entry.2)
-  | none =>
-    (fun c => verdict P admissible cand c (some state.count)) <$>
-      OracleComp.query (spec := NIZKHashSpec Y T C) (y, t)
-
-/-- Presampled online handler corresponding to one `S` draw per query. -/
-private noncomputable def presampledHandler [DecidableEq Y] [DecidableEq T] [Fintype C]
-    [Nonempty C] {S : Type} (valid : X → Y → Bool)
-    (simEval : S → ∀ x y, valid x y = true → T × C × Z) (sample : S) :
-    (q : (X × Y) ⊕ (Y × T)) →
-      StateT (ExtGameState Y T C) PMF (NIZKDistinguisherSpec X Y T C Z q)
-  | .inl (x, y) => fun (cache, proved) =>
-    if hv : valid x y = true then
-      let (t, c, z) := simEval sample x y hv
-      PMF.pure (some (t, z), (((y, t), c) :: cache, (y, t) :: proved))
-    else
-      PMF.pure (none, (cache, proved))
-  | .inr yt => fun (cache, proved) =>
-    (oracle C yt cache).map fun (c, cache') => (c, (cache', proved))
-
-/-- Game-view projection of `ReductionState`. -/
-private def represent {S : Type} (st : ReductionState Y T C S) : ExtGameState Y T C × List S :=
-  ((st.table.map fun e => (e.1, e.2.1), st.proved), st.samples)
-
-private theorem run_interpret_countingUniform_pure [Fintype C] [Nonempty C] {β : Type}
-    (b : β) (n : ℕ) :
-    (interpret countingUniform (pure b : OracleComp (NIZKHashSpec Y T C) β)).run n =
-      PMF.pure (b, n) := rfl
-
-private theorem run_countingUniform [Fintype C] [Nonempty C] (yt : Y × T) (n : ℕ) :
-    (countingUniform (H := C) yt).run n = (PMF.uniformOfFintype C).map (·, n + 1) := rfl
-
-private theorem run_reductionHandler_inl_pos [DecidableEq Y] [DecidableEq T] {S : Type}
-    {valid : X → Y → Bool} (fallback : S)
-    (simEval : S → ∀ x y, valid x y = true → T × C × Z)
-    {x : X} {y : Y} (hv : valid x y = true) (st : ReductionState Y T C S) :
-    (reductionHandler valid fallback simEval (.inl (x, y))).run st =
-      let (t, c, z) := simEval (st.samples.headD fallback) x y hv
-      pure (some (t, z),
-        ⟨((y, t), c, none) :: st.table, (y, t) :: st.proved, st.count, st.samples.tail⟩) := by
-  simp only [reductionHandler, StateT.run, hv, ↓reduceDIte]
-
-private theorem run_reductionHandler_inl_neg [DecidableEq Y] [DecidableEq T] {S : Type}
-    {valid : X → Y → Bool} (fallback : S)
-    (simEval : S → ∀ x y, valid x y = true → T × C × Z)
-    {x : X} {y : Y} (hv : ¬valid x y = true) (st : ReductionState Y T C S) :
-    (reductionHandler valid fallback simEval (.inl (x, y))).run st =
-      pure (none, ⟨st.table, st.proved, st.count, st.samples.tail⟩) := by
-  simp only [reductionHandler, StateT.run, hv, Bool.false_eq_true, ↓reduceDIte]
-
-private theorem run_reductionHandler_inr_some [DecidableEq Y] [DecidableEq T] {S : Type}
-    (valid : X → Y → Bool) (fallback : S)
-    (simEval : S → ∀ x y, valid x y = true → T × C × Z)
-    {yt : Y × T} {st : ReductionState Y T C S} {e : C × Option ℕ}
-    (h : st.table.lookup yt = some e) :
-    (reductionHandler valid fallback simEval (.inr yt)).run st =
-      pure (e.1, ⟨st.table, st.proved, st.count, st.samples.tail⟩) := by
-  simp only [reductionHandler, StateT.run, h]
-
-private theorem run_reductionHandler_inr_none [DecidableEq Y] [DecidableEq T] {S : Type}
-    (valid : X → Y → Bool) (fallback : S)
-    (simEval : S → ∀ x y, valid x y = true → T × C × Z)
-    {yt : Y × T} {st : ReductionState Y T C S} (h : st.table.lookup yt = none) :
-    (reductionHandler valid fallback simEval (.inr yt)).run st =
-      (fun c => (c, ⟨(yt, c, some st.count) :: st.table, st.proved, st.count + 1,
-        st.samples.tail⟩)) <$> OracleComp.query (spec := NIZKHashSpec Y T C) yt := by
-  simp only [reductionHandler, StateT.run, h]
-
-/-- Single-call simulation identity between `reductionHandler` (under `countingUniform`) and
-`withSampleList fallback (presampledHandler valid simEval)`. -/
-private theorem combined_step [DecidableEq Y] [DecidableEq T] [Fintype C] [Nonempty C] {S : Type}
-    (valid : X → Y → Bool) (fallback : S)
-    (simEval : S → ∀ x y, valid x y = true → T × C × Z)
-    (q : (X × Y) ⊕ (Y × T)) (s : ReductionState Y T C S × ℕ) :
-    ((fun result => (result.1.1, result.1.2, result.2)) <$>
-      (interpret countingUniform
-        ((reductionHandler valid fallback simEval q).run s.1)).run s.2).map
-        (fun x => (x.1, represent x.2.1)) =
-      withSampleList fallback (presampledHandler valid simEval) q (represent s.1) := by
-  cases q with
-  | inl xy =>
-    obtain ⟨x, y⟩ := xy
-    by_cases hv : valid x y = true
-    · rw [run_reductionHandler_inl_pos fallback simEval hv, run_interpret_countingUniform_pure]
-      simp only [PMF.monad_map_eq_map, PMF.pure_map, withSampleList, presampledHandler, hv,
-        ↓reduceDIte, represent]
-      rfl
-    · rw [run_reductionHandler_inl_neg fallback simEval hv, run_interpret_countingUniform_pure]
-      simp only [PMF.monad_map_eq_map, PMF.pure_map, withSampleList, presampledHandler, hv,
-        Bool.false_eq_true, ↓reduceDIte, represent]
-  | inr yt =>
-    cases h : s.1.table.lookup yt with
-    | some e =>
-      have hcache : (represent s.1).1.1.lookup yt = some e.1 := by
-        rw [represent, List.lookup_map_snd, h]
-        rfl
-      rw [run_reductionHandler_inr_some valid fallback simEval h]
-      simp only [run_interpret_countingUniform_pure, PMF.monad_map_eq_map, PMF.pure_map,
-        withSampleList, presampledHandler]
-      rw [oracle, memoize_of_some _ _ _ _ hcache]
-      simp only [PMF.monad_pure_eq_pure, PMF.pure_map]
-      rfl
-    | none =>
-      have hcache : (represent s.1).1.1.lookup yt = none := by
-        rw [represent, List.lookup_map_snd, h]
-        rfl
-      rw [run_reductionHandler_inr_none valid fallback simEval h]
-      simp only [interpret_map, interpret_query, StateT.run_map, PMF.monad_map_eq_map,
-        withSampleList, presampledHandler]
-      rw [oracle, memoize_of_none _ _ _ hcache]
-      simp only [run_countingUniform, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-        ← PMF.bind_pure_comp, PMF.bind_bind, PMF.pure_bind, Function.comp_apply]
-      rfl
-
-/-- Game-side final check corresponding to `finish`. -/
-private noncomputable def finishExtGame [DecidableEq Y] [DecidableEq T] [Fintype C] [Nonempty C]
-    (P : SigmaProtocol X Y T C Z) (admissible : Y → Bool)
-    (cand : (Y × (T × Z)) × ExtGameState Y T C) : PMF Bool :=
-  let ((y, t, z), (cache, proved)) := cand
-  (oracle C (y, t) cache).map fun (c, _) =>
-    admissible y && P.verify y t c z && !proved.contains (y, t)
-
-/-- `finish` under `countingUniform` has the exact winning distribution of `finishExtGame`. -/
-private theorem map_run_finish [DecidableEq Y] [DecidableEq T] [Fintype C] [Nonempty C]
-    (P : SigmaProtocol X Y T C Z) (admissible : Y → Bool) {S : Type}
-    (cand : Y × (T × Z)) (st : ReductionState Y T C S) (n : ℕ) :
-    ((interpret countingUniform (finish P admissible (cand, st))).run n).map
-        (fun run => run.1.2.won) =
-      finishExtGame P admissible (cand, (represent st).1) := by
-  obtain ⟨y, t, z⟩ := cand
-  cases h : st.table.lookup (y, t) with
-  | some e =>
-    have hcache : (represent st).1.1.lookup (y, t) = some e.1 := by
-      rw [represent, List.lookup_map_snd, h]
-      rfl
-    simp only [finish, h, run_interpret_countingUniform_pure, PMF.pure_map, finishExtGame, verdict]
-    rw [oracle, memoize_of_some _ _ _ _ hcache]
-    simp only [PMF.monad_pure_eq_pure, PMF.pure_map]
-    rfl
-  | none =>
-    have hcache : (represent st).1.1.lookup (y, t) = none := by
-      rw [represent, List.lookup_map_snd, h]
-      rfl
-    simp only [finish, h, interpret_map, interpret_query, StateT.run_map, PMF.monad_map_eq_map,
-      finishExtGame, verdict]
-    rw [oracle, memoize_of_none _ _ _ hcache]
-    simp only [run_countingUniform, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-      ← PMF.bind_pure_comp, PMF.bind_bind, PMF.pure_bind, Function.comp_apply]
-    rfl
-
-/-- Complete forking program for an `OracleComp` over `NIZKDistinguisherSpec` given presampled
-simulator coins. -/
-private def forkingProg [DecidableEq Y] [DecidableEq T] {S : Type}
-    (P : SigmaProtocol X Y T C Z) (valid : X → Y → Bool) (fallback : S)
-    (simEval : S → ∀ x y, valid x y = true → T × C × Z) (admissible : Y → Bool)
-    (prog : OracleComp (NIZKDistinguisherSpec X Y T C Z) (Y × (T × Z)))
-    (samples : List S) :
-    OracleComp (NIZKHashSpec Y T C) (Option ℕ × ForkOutcome Y T C Z) :=
-  (interpret (reductionHandler valid fallback simEval) prog).run ⟨[], [], 0, samples⟩ >>=
-    finish P admissible
-
-/-- Running `forkingProg` against `countingUniform` has the exact winning law of running `prog`
-against `withSampleList` followed by `finishExtGame`. -/
-private theorem map_run_forkingProg [DecidableEq Y] [DecidableEq T] [Fintype C] [Nonempty C]
-    {S : Type} (P : SigmaProtocol X Y T C Z) (valid : X → Y → Bool) (fallback : S)
-    (simEval : S → ∀ x y, valid x y = true → T × C × Z) (admissible : Y → Bool)
-    (prog : OracleComp (NIZKDistinguisherSpec X Y T C Z) (Y × (T × Z))) (samples : List S) :
-    ((interpret countingUniform
-        (forkingProg P valid fallback simEval admissible prog samples)).run 0).map
-        (fun run => run.1.2.won) =
-      ((interpret (withSampleList fallback (presampledHandler valid simEval)) prog).run
-        (([], []), samples)).bind fun x => finishExtGame P admissible (x.1, x.2.1) := by
-  have hsim := run_interpret_map_state _
-    (withSampleList fallback (presampledHandler valid simEval))
-    (fun s => represent s.1) (combined_step valid fallback simEval)
-    prog (⟨[], [], 0, samples⟩, 0)
-  rw [show represent (⟨[], [], 0, samples⟩ : ReductionState Y T C S) = (([], []), samples)
-    from rfl] at hsim
-  rw [forkingProg, interpret_bind, StateT.run_bind, run_interpret_run_interpret, ← hsim]
-  simp only [pmf_norm]
-  exact congrArg (PMF.bind _) (funext fun r => map_run_finish P admissible r.1 r.2.1 r.2.2)
-
-/-- Table-consistency invariant of `reductionHandler` on a fixed answer list. -/
-private def Consistent (defaultC : C) (answers : List C) {S : Type}
-    (st : ReductionState Y T C S) (queries : List (Y × T)) : Prop :=
-  st.count = queries.length ∧
-    (∀ yt c i, (yt, c, some i) ∈ st.table →
-      queries[i]? = some yt ∧ answers.getD i defaultC = c) ∧
-    ∀ yt c, (yt, c, none) ∈ st.table → yt ∈ st.proved
-
-private theorem consistent_step [DecidableEq Y] [DecidableEq T] (defaultC : C) (answers : List C)
-    {S : Type} (valid : X → Y → Bool) (fallback : S)
-    (simEval : S → ∀ x y, valid x y = true → T × C × Z)
-    (q : (X × Y) ⊕ (Y × T)) (st : ReductionState Y T C S) (queries : List (Y × T))
-    (h : Consistent defaultC answers st queries) :
-    Consistent defaultC answers
-      (runWithAnswers defaultC
-        ((reductionHandler valid fallback simEval q).run st) (answers.drop queries.length)).1.2
-      (queries ++ (runWithAnswers defaultC
-        ((reductionHandler valid fallback simEval q).run st) (answers.drop queries.length)).2) := by
-  obtain ⟨hcount, hpos, hproved⟩ := h
-  cases q with
-  | inl xy =>
-    obtain ⟨x, y⟩ := xy
-    by_cases hv : valid x y = true
-    · rw [run_reductionHandler_inl_pos fallback simEval hv, runWithAnswers_pure, List.append_nil]
-      refine ⟨hcount, fun yt c i hmem => ?_, fun yt c hmem => ?_⟩
-      · simp only [List.mem_cons, Prod.mk.injEq, reduceCtorEq, and_false, false_or] at hmem
-        exact hpos yt c i hmem
-      · simp only [List.mem_cons, Prod.mk.injEq] at hmem
-        rcases hmem with ⟨rfl, -, -⟩ | hmem
-        · exact List.mem_cons_self
-        · exact List.mem_cons_of_mem _ (hproved yt c hmem)
-    · rw [run_reductionHandler_inl_neg fallback simEval hv, runWithAnswers_pure, List.append_nil]
-      exact ⟨hcount, hpos, hproved⟩
-  | inr yt =>
-    cases hl : st.table.lookup yt with
-    | some e =>
-      rw [run_reductionHandler_inr_some valid fallback simEval hl, runWithAnswers_pure,
-        List.append_nil]
-      exact ⟨hcount, hpos, hproved⟩
-    | none =>
-      rw [run_reductionHandler_inr_none valid fallback simEval hl, runWithAnswers_map_query]
-      refine ⟨by simp [hcount], fun yt' c i hmem => ?_, fun yt' c hmem => ?_⟩
-      · simp only [List.mem_cons, Prod.mk.injEq, Option.some.injEq] at hmem
-        rcases hmem with ⟨rfl, rfl, rfl⟩ | hmem
-        · rw [hcount, List.getElem?_concat_length, List.getD_eq_getElem?_getD,
-            List.headD_eq_head?_getD, List.head?_drop]
-          exact ⟨rfl, rfl⟩
-        · obtain ⟨hq, hc⟩ := hpos yt' c i hmem
-          have hi : i < queries.length := (List.getElem?_eq_some_iff.mp hq).1
-          exact ⟨by rw [List.getElem?_append_left hi, hq], hc⟩
-      · simp only [List.mem_cons, Prod.mk.injEq, reduceCtorEq, and_false, false_or] at hmem
-        exact hproved yt' c hmem
-
-/-- Deterministic run characterization of `forkingProg` on fixed hash answers: every winning run
-names an external query index, and every named index `j` queried `(o.stmt, o.commitment)`,
-received challenge `answers.getD j defaultC = o.challenge`, and satisfied `admissible o.stmt` and
-`P.verify o.stmt o.commitment o.challenge o.response = true`. -/
-private theorem runWithAnswers_forkingProg [DecidableEq Y] [DecidableEq T] (defaultC : C)
-    {S : Type} (P : SigmaProtocol X Y T C Z) (valid : X → Y → Bool) (fallback : S)
-    (simEval : S → ∀ x y, valid x y = true → T × C × Z) (admissible : Y → Bool)
-    (prog : OracleComp (NIZKDistinguisherSpec X Y T C Z) (Y × (T × Z)))
-    (samples : List S) (answers : List C)
-    {out : (Option ℕ × ForkOutcome Y T C Z) × List (Y × T)}
-    (hout :
-      runWithAnswers defaultC
-        (forkingProg P valid fallback simEval admissible prog samples) answers = out) :
-    (out.1.2.won = true → out.1.1.isSome) ∧
-      ∀ j, out.1.1 = some j →
-        out.2[j]? = some (out.1.2.stmt, out.1.2.commitment) ∧
-        answers.getD j defaultC = out.1.2.challenge ∧
-        admissible out.1.2.stmt = true ∧
-        P.verify out.1.2.stmt out.1.2.commitment out.1.2.challenge out.1.2.response = true := by
-  have hinv := runWithAnswers_run_interpret_invariant defaultC
-    (reductionHandler valid fallback simEval) answers (Consistent defaultC answers)
-    (consistent_step defaultC answers valid fallback simEval) prog
-    ⟨[], [], 0, samples⟩ [] ⟨rfl, by simp, by simp⟩
-  simp only [List.length_nil, List.drop_zero, List.nil_append] at hinv
-  rw [forkingProg, runWithAnswers_bind] at hout
-  subst hout
-  generalize runWithAnswers defaultC
-    ((interpret (reductionHandler valid fallback simEval) prog).run ⟨[], [], 0, samples⟩) answers =
-      r at hinv ⊢
-  obtain ⟨⟨⟨y, t, z⟩, st⟩, queries⟩ := r
-  obtain ⟨hcount, hpos, hproved⟩ := hinv
-  cases hl : st.table.lookup (y, t) with
-  | some e =>
-    simp only [finish, hl, runWithAnswers_pure, List.append_nil]
-    obtain ⟨l₁, l₂, htable, -⟩ := List.lookup_eq_some_iff.mp hl
-    have hmem : ((y, t), e.1, e.2) ∈ st.table := by
-      rw [htable]
-      exact List.mem_append_right _ List.mem_cons_self
-    obtain ⟨c, position⟩ := e
-    cases position with
-    | none =>
-      have hyt : (y, t) ∈ st.proved := hproved (y, t) c hmem
-      simp [verdict, hyt]
-    | some i =>
-      obtain ⟨hq, hc⟩ := hpos (y, t) c i hmem
-      refine ⟨fun hwin => ?_, fun j hj => ?_⟩
-      · simp only [verdict] at hwin ⊢
-        simpa using hwin
-      · simp only [verdict] at hj ⊢
-        split_ifs at hj with hwin
-        · cases hj
-          simp only [Bool.and_eq_true] at hwin
-          exact ⟨hq, hc, hwin.1.1, hwin.1.2⟩
-  | none =>
-    simp only [finish, hl, runWithAnswers_map_query]
-    refine ⟨fun hwin => ?_, fun j hj => ?_⟩
-    · simp only [verdict] at hwin ⊢
-      simpa using hwin
-    · simp only [verdict] at hj ⊢
-      split_ifs at hj with hwin
-      · cases hj
-        simp only [Bool.and_eq_true] at hwin
-        refine ⟨by rw [hcount, List.getElem?_concat_length], ?_, hwin.1.1, hwin.1.2⟩
-        rw [hcount, List.getD_eq_getElem?_getD, List.headD_eq_head?_getD, List.head?_drop]
-
-/-- `forkingProg` makes at most `Qro + 1` external hash calls when `prog` makes at most `Qro` hash
-calls. -/
-private theorem isQueryBounded_forkingProg [DecidableEq Y] [DecidableEq T] {S : Type}
-    (P : SigmaProtocol X Y T C Z) (valid : X → Y → Bool) (fallback : S)
-    (simEval : S → ∀ x y, valid x y = true → T × C × Z) (admissible : Y → Bool)
-    {prog : OracleComp (NIZKDistinguisherSpec X Y T C Z) (Y × (T × Z))} {Qro : ℕ}
-    (hQro : IsCostBounded (Sum.elim (fun _ => 0) (fun _ => 1)) prog Qro)
-    (samples : List S) :
-    IsQueryBounded (forkingProg P valid fallback simEval admissible prog samples) (Qro + 1) := by
-  have hhandler (q : (X × Y) ⊕ (Y × T)) (st : ReductionState Y T C S) :
-      IsQueryBounded ((reductionHandler valid fallback simEval q).run st)
-        (Sum.elim (fun _ => 0) (fun _ => 1) q) := by
-    cases q with
-    | inl xy =>
-      obtain ⟨x, y⟩ := xy
-      by_cases hv : valid x y = true
-      · rw [run_reductionHandler_inl_pos fallback simEval hv]
-        exact .pure _ _
-      · rw [run_reductionHandler_inl_neg fallback simEval hv]
-        exact .pure _ _
-    | inr yt =>
-      cases hl : st.table.lookup yt with
-      | some e =>
-        rw [run_reductionHandler_inr_some valid fallback simEval hl]
-        exact .pure _ _
-      | none =>
-        rw [run_reductionHandler_inr_none valid fallback simEval hl]
-        exact .liftBind _ _ 0 fun _ => .pure _ 0
-  refine (hQro.run_interpret hhandler ⟨[], [], 0, samples⟩).bind fun cand => ?_
-  obtain ⟨⟨y, t, z⟩, st⟩ := cand
-  cases hl : st.table.lookup (y, t) with
-  | some e =>
-    simp only [finish, hl]
-    exact .pure _ _
-  | none =>
-    simp only [finish, hl]
-    exact .liftBind _ _ 0 fun _ => .pure _ 0
-
-/-- Under `countingUniform`, `forkingProg` wins at most as often as it validly names a query below
-`Qro + 1`. -/
-private theorem map_run_le_validIndex [DecidableEq Y] [DecidableEq T] [Fintype C] [Nonempty C]
-    {S : Type} (P : SigmaProtocol X Y T C Z) (valid : X → Y → Bool) (fallback : S)
-    (simEval : S → ∀ x y, valid x y = true → T × C × Z) (admissible : Y → Bool)
-    {prog : OracleComp (NIZKDistinguisherSpec X Y T C Z) (Y × (T × Z))} {Qro : ℕ}
-    (hQro : IsCostBounded (Sum.elim (fun _ => 0) (fun _ => 1)) prog Qro)
-    (samples : List S) :
-    ((interpret countingUniform
-        (forkingProg P valid fallback simEval admissible prog samples)).run 0).map
-        (fun run => run.1.2.won) true ≤
-      ((interpret countingUniform
-        (forkingProg P valid fallback simEval admissible prog samples)).run 0).bind
-        (fun run => PMF.pure (validIndex (Qro + 1) run.2 run.1.1).isSome) true := by
-  have hbound := isQueryBounded_forkingProg P valid fallback simEval admissible hQro samples
-  let defC := Classical.arbitrary C
-  rw [run_interpret_countingUniform_eq defC _ hbound]
-  simp only [pmf_norm, ← PMF.bind_pure_comp]
-  refine Probability.PMF.bind_apply_mono_on_support _ _ fun h _ => ?_
-  obtain ⟨hwin, hnamed⟩ :=
-    runWithAnswers_forkingProg defC P valid fallback simEval admissible prog samples (List.ofFn h)
-      rfl
-  set run :=
-    runWithAnswers defC (forkingProg P valid fallback simEval admissible prog samples) (List.ofFn h)
-  by_cases hw : run.1.2.won = true
-  · obtain ⟨j, hj⟩ := Option.isSome_iff_exists.mp (hwin hw)
-    have hlt : j < run.2.length := (List.getElem?_eq_some_iff.mp (hnamed j hj).1).1
-    have hle : run.2.length ≤ Qro + 1 := hbound.length_runWithAnswers_le defC (List.ofFn h)
-    have hvalid : (validIndex (Qro + 1) (0 + run.2.length) run.1.1).isSome = true := by
-      rw [hj, zero_add]
-      simp only [validIndex, Option.bind_some]
-      split_ifs with hc
-      · rfl
-      · exact absurd ⟨by omega, hlt⟩ hc
-    rw [hw, hvalid]
-  · rw [Bool.eq_false_iff.mpr hw]
-    simp
+/-- The signer of the plain proof-of-knowledge experiment, which has no prove calls. -/
+private abbrev plainSigner : ForkingReduction.Signer (Empty × Y) (Option (T × Z)) (Y × T) C (Y × T)
+    Unit :=
+  signer (fun e _ => e.elim) () (fun _ e => e.elim)
 
 end FiatShamirNIZK
 
@@ -1238,8 +842,7 @@ private def liftPlainProve (y : Y) (prog : OracleComp (NIZKHashSpec Y T C) (T ×
 
 private theorem isCostBounded_liftPlainProve {y : Y}
     {prog : OracleComp (NIZKHashSpec Y T C) (T × Z)} {Qro : ℕ} (hQro : IsQueryBounded prog Qro) :
-    IsCostBounded (Sum.elim (fun _ => 0) (fun _ => 1))
-      (liftPlainProve (T := T) (C := C) (Z := Z) y prog) Qro := by
+    IsCostBounded hashCost (liftPlainProve (T := T) (C := C) (Z := Z) y prog) Qro := by
   rw [liftPlainProve, isCostBounded_map_iff]
   refine hQro.interpret fun yt => ?_
   exact .liftBind (Sum.inr yt : (Empty × Y) ⊕ (Y × T)) _ 0 fun _ => .pure _ 0
@@ -1247,11 +850,9 @@ private theorem isCostBounded_liftPlainProve {y : Y}
 /-- Plain ROM forking program for `A` on statement `y`. -/
 private def plainForkingProg [DecidableEq Y] [DecidableEq T] (P : SigmaProtocol X Y T C Z)
     (A : NIZKProver Y T C Z) (y : Y) (s : A.Coins) :
-    OracleComp (NIZKHashSpec Y T C) (Option ℕ × FiatShamirNIZK.ForkOutcome Y T C Z) :=
-  let P' : SigmaProtocol Empty Y T C Z :=
-    ⟨Unit, fun e => e.elim, fun e => e.elim, P.verify⟩
-  FiatShamirNIZK.forkingProg P' (fun e _ => e.elim) () (fun _ e => e.elim)
-    (fun y' => decide (y' = y)) (liftPlainProve y (A.prove y s)) []
+    OracleComp (NIZKHashSpec Y T C) (Option ℕ × ForkingReduction.Outcome Y T C Z) :=
+  ForkingReduction.program FiatShamirNIZK.plainSigner
+    (FiatShamirNIZK.check P fun y' => decide (y' = y)) (liftPlainProve y (A.prove y s)) []
 
 /-- **Plain ROM knowledge extractor** ([BonehShoup2023], Section 20.3.4; rewinding via
 [BellareNeven2006], Lemma 1): fork `A` across its at most `Qro + 1` hash queries on statement `y`
@@ -1281,10 +882,8 @@ private theorem pokGame_eq_plainForkingProg [DecidableEq Y] [DecidableEq T] [Fin
     [Nonempty C] (P : SigmaProtocol X Y T C Z) (A : NIZKProver Y T C Z) (y : Y) :
     fiatShamirNIZKPokGame P A y = A.coins.bind fun s =>
       ((interpret countingUniform (plainForkingProg P A y s)).run 0).map
-        fun run => run.1.2.won := by
-  let P' : SigmaProtocol Empty Y T C Z :=
-    ⟨Unit, fun e => e.elim, fun e => e.elim, P.verify⟩
-  simp only [fiatShamirNIZKPokGame, plainForkingProg, FiatShamirNIZK.map_run_forkingProg,
+        fun ((_, outcome), _) => outcome.won := by
+  simp only [fiatShamirNIZKPokGame, plainForkingProg, ForkingReduction.map_run_program,
     PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
   refine congrArg A.coins.bind (funext fun s => ?_)
   have hstep :
@@ -1292,24 +891,21 @@ private theorem pokGame_eq_plainForkingProg [DecidableEq Y] [DecidableEq T] [Fin
         (oracle C yt cache).map
           (fun (c, cache') => (c, ((cache', ([] : List (Y × T))), ([] : List Unit)))) =
         withSampleList ()
-          (FiatShamirNIZK.presampledHandler (T := T) (C := C) (Z := Z)
-            (fun (e : Empty) _ => e.elim) (fun _ e => e.elim))
+          (ForkingReduction.gameHandler (FiatShamirNIZK.plainSigner (Z := Z)))
           (.inr yt) ((cache, []), []) := by
     intro yt cache
-    simp only [pmf_norm, withSampleList, FiatShamirNIZK.presampledHandler, List.tail_nil]
+    simp only [pmf_norm, withSampleList, ForkingReduction.gameHandler, List.tail_nil]
   have hsim := run_interpret_map_state (oracle C)
     (fun yt st =>
-      withSampleList ()
-        (FiatShamirNIZK.presampledHandler (T := T) (C := C) (Z := Z)
-          (fun (e : Empty) _ => e.elim) (fun _ e => e.elim))
+      withSampleList () (ForkingReduction.gameHandler (FiatShamirNIZK.plainSigner (Z := Z)))
         (.inr yt) st)
     (fun cache => ((cache, ([] : List (Y × T))), ([] : List Unit)))
     hstep (A.prove y s) []
   rw [liftPlainProve, run_interpret_map, interpret_interpret]
   simp only [PMF.monad_map_eq_map, PMF.bind_map, interpret_query]
   rw [← hsim]
-  simp only [pmf_norm, FiatShamirNIZK.finishExtGame, fiatShamirNIZKVerify, interpret_map,
-    interpret_query, StateT.run_map]
+  simp only [pmf_norm, ForkingReduction.finishGame, FiatShamirNIZK.check, fiatShamirNIZKVerify,
+    interpret_map, interpret_query, StateT.run_map]
   refine congrArg (PMF.bind _) (funext fun (prf, cache) => ?_)
   simp only [Prod.map_apply, id_eq, decide_true, Bool.true_and, List.contains_nil, Bool.not_false,
     Bool.and_true]
@@ -1329,33 +925,21 @@ private theorem fork_plain_le_extractGame [DecidableEq Y] [DecidableEq T] [Finty
   simp only [pmf_norm, fiatShamirNIZKExtractGame, fiatShamirNIZKExtract]
   rw [← PMF.bind_pure_comp]
   refine Probability.PMF.bind_apply_mono_on_support _ _ fun result hresult => ?_
-  rcases result with _ | ⟨j, out, out'⟩
+  rcases result with _ | ⟨j, ⟨⟨_, o⟩, _⟩, ⟨⟨_, o'⟩, _⟩⟩
   · simp
-  · obtain ⟨s, -, h, h', -, hne, hout, hout', hj, hj', -, query, hq, hq'⟩ :=
-      mem_support_fork hresult
-    let defC := Classical.arbitrary C
-    obtain ⟨-, hnamed⟩ := FiatShamirNIZK.runWithAnswers_forkingProg defC _
-      (fun (e : Empty) _ => e.elim) () (fun _ e => e.elim) (fun y' => decide (y' = y))
-      (liftPlainProve y (A.prove y s)) [] (List.ofFn h) hout.symm
-    obtain ⟨-, hnamed'⟩ := FiatShamirNIZK.runWithAnswers_forkingProg defC _
-      (fun (e : Empty) _ => e.elim) () (fun _ e => e.elim) (fun y' => decide (y' = y))
-      (liftPlainProve y (A.prove y s)) [] (List.ofFn h') hout'.symm
-    obtain ⟨hp, hc, hy, hv⟩ := hnamed j hj
-    obtain ⟨hp', hc', -, hv'⟩ := hnamed' j hj'
-    rw [List.getD_ofFn] at hc hc'
-    have hpoint : (out.1.2.stmt, out.1.2.commitment) = (out'.1.2.stmt, out'.1.2.commitment) :=
-      Option.some.inj (hp.symm.trans (hq.trans (hq'.symm.trans hp')))
-    have hstmt : out.1.2.stmt = y := of_decide_eq_true hy
-    have ht : out.1.2.commitment = out'.1.2.commitment := (Prod.mk.inj hpoint).2
-    have hstmt' : out'.1.2.stmt = y := (Prod.mk.inj hpoint).1.symm.trans hstmt
-    have hacc : P.Accepts y out.1.2.commitment out.1.2.challenge out.1.2.response := by
-      simpa only [SigmaProtocol.Accepts, hstmt] using hv
-    have hacc' : P.Accepts y out.1.2.commitment out'.1.2.challenge out'.1.2.response := by
-      simpa only [SigmaProtocol.Accepts, hstmt', ← ht] using hv'
-    have hR := hsound out.1.2.commitment out.1.2.challenge out.1.2.response
-      out'.1.2.challenge out'.1.2.response (by rw [← hc, ← hc']; exact hne) hacc hacc'
-    obtain ⟨⟨_, o⟩, _⟩ := out
-    obtain ⟨⟨_, o'⟩, _⟩ := out'
+  · obtain ⟨s, -, hpt, hne, hv, hv'⟩ := ForkingReduction.exists_of_mem_support_fork
+      (first := A.coins) FiatShamirNIZK.plainSigner
+      (fun _ => FiatShamirNIZK.check P fun y' => decide (y' = y))
+      (fun _ => FiatShamirNIZK.rejectsProgrammed _ _ _ _ _)
+      (fun s => liftPlainProve y (A.prove y s)) (fun _ => []) hresult
+    simp only [FiatShamirNIZK.check, Prod.mk.injEq, Bool.and_eq_true, decide_eq_true_eq]
+      at hpt hv hv'
+    obtain ⟨hy, ht⟩ := hpt
+    have hacc : P.Accepts y o.commitment o.challenge o.response := by
+      simpa only [SigmaProtocol.Accepts, hv.1] using hv.2
+    have hacc' : P.Accepts y o.commitment o'.challenge o'.response := by
+      simpa only [SigmaProtocol.Accepts, hv'.1, ht] using hv'.2
+    have hR := hsound _ _ _ _ _ hne hacc hacc'
     simp [hR]
 
 /-- **Plain ROM proof of knowledge** for Fiat–Shamir NIZK proofs ([BonehShoup2023], Section 20.3.4,
@@ -1373,16 +957,12 @@ theorem succProbability_fiatShamirNIZKPokGame_le [DecidableEq Y] [DecidableEq T]
       (Qro + 1) / Fintype.card C +
         √((Qro + 1) * Game.succProbability
           (fiatShamirNIZKExtractGame R (fiatShamirNIZKExtract P extract A Qro y) y)) := by
-  have hB : fiatShamirNIZKPokGame P A y true ≤
-      A.coins.bind (fun s => ((interpret countingUniform (plainForkingProg P A y s)).run 0).bind
-        fun run => PMF.pure (validIndex (Qro + 1) run.2 run.1.1).isSome) true := by
-    rw [pokGame_eq_plainForkingProg]
-    exact Probability.PMF.bind_apply_mono_on_support _ _ fun s _ =>
-      FiatShamirNIZK.map_run_le_validIndex _ _ () _ _
-        (isCostBounded_liftPlainProve (hQro s)) []
-  have h := toReal_le_add_sqrt_fork_of_le A.coins (plainForkingProg P A y) (Classical.arbitrary C)
-    (fun s => FiatShamirNIZK.isQueryBounded_forkingProg _ _ () _ _
-      (isCostBounded_liftPlainProve (hQro s)) []) ENNReal.zero_ne_top (hB.trans le_self_add)
+  have h := ForkingReduction.toReal_le_add_sqrt_fork_of_le (p := fiatShamirNIZKPokGame P A y true)
+    A.coins FiatShamirNIZK.plainSigner (fun _ => FiatShamirNIZK.check P fun y' => decide (y' = y))
+    (fun _ => FiatShamirNIZK.rejectsProgrammed _ _ _ _ _)
+    (fun s => liftPlainProve y (A.prove y s)) (fun _ => [])
+    (fun s => isCostBounded_liftPlainProve (hQro s)) ENNReal.zero_ne_top
+    (by rw [pokGame_eq_plainForkingProg, add_zero]; rfl)
     (fork_plain_le_extractGame (hsound y) A Qro) (PMF.apply_ne_top _ _)
   simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal]
   push_cast at h ⊢
@@ -1406,27 +986,24 @@ theorem succProbability_fiatShamirNIZKPokKeyGen_le [DecidableEq Y] [DecidableEq 
               (fun w => w.getD (Classical.arbitrary X)))) := by
   set first : PMF ((X × Y) × A.Coins) :=
     keyGen.bind fun key => A.coins.map fun s => (key, s)
-  let prog : (X × Y) × A.Coins →
-      OracleComp (NIZKHashSpec Y T C) (Option ℕ × FiatShamirNIZK.ForkOutcome Y T C Z) :=
-    fun (key, s) => plainForkingProg P A key.2 s
-  have hB : (keyGen.bind fun (_, y) => fiatShamirNIZKPokGame P A y) true ≤
-      first.bind (fun ks => ((interpret countingUniform (prog ks)).run 0).bind
-        fun run => PMF.pure (validIndex (Qro + 1) run.2 run.1.1).isSome) true := by
-    simp only [pmf_norm, first, prog, pokGame_eq_plainForkingProg]
-    refine Probability.PMF.bind_apply_mono_on_support _ _ fun key _ => ?_
-    exact Probability.PMF.bind_apply_mono_on_support _ _ fun s _ =>
-      FiatShamirNIZK.map_run_le_validIndex _ _ () _ _
-        (isCostBounded_liftPlainProve (hQro key.2 s)) []
-  have hD : (Forking.fork first
-      (forkingAlgorithm (Classical.arbitrary C) (Qro + 1) prog)).map Option.isSome true ≤
+  have hp : (keyGen.bind fun (_, y) => fiatShamirNIZKPokGame P A y) true ≤
+      first.bind (fun ks =>
+        ((interpret countingUniform (plainForkingProg P A ks.1.2 ks.2)).run 0).map
+          fun ((_, outcome), _) => outcome.won) true + 0 := by
+    rw [add_zero]
+    simp only [pmf_norm, first, pokGame_eq_plainForkingProg]
+    exact le_rfl
+  have hD : (Forking.fork first (forkingAlgorithm (Classical.arbitrary C) (Qro + 1)
+      fun ks => plainForkingProg P A ks.1.2 ks.2)).map Option.isSome true ≤
       oneWayGame keyGen R (fun y =>
         (fiatShamirNIZKExtract P extract A Qro y).map
           (fun w => w.getD (Classical.arbitrary X))) true := by
-    have hfork : Forking.fork first (forkingAlgorithm (Classical.arbitrary C) (Qro + 1) prog) =
+    have hfork : Forking.fork first (forkingAlgorithm (Classical.arbitrary C) (Qro + 1)
+        fun ks => plainForkingProg P A ks.1.2 ks.2) =
         keyGen.bind fun key =>
           Forking.fork A.coins
             (forkingAlgorithm (Classical.arbitrary C) (Qro + 1) (plainForkingProg P A key.2)) := by
-      simp only [pmf_norm, first, prog, Forking.fork]
+      simp only [pmf_norm, first, Forking.fork]
       rfl
     rw [hfork, PMF.map_bind]
     simp only [pmf_norm, oneWayGame]
@@ -1435,10 +1012,12 @@ theorem succProbability_fiatShamirNIZKPokKeyGen_le [DecidableEq Y] [DecidableEq 
     simp only [fiatShamirNIZKExtractGame, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
     refine Probability.PMF.bind_apply_mono_on_support _ _ fun res _ => ?_
     cases res <;> simp
-  have h := toReal_le_add_sqrt_fork_of_le first prog (Classical.arbitrary C)
-    (fun (key, s) => FiatShamirNIZK.isQueryBounded_forkingProg _ _ () _ _
-      (isCostBounded_liftPlainProve (hQro key.2 s)) []) ENNReal.zero_ne_top
-    (hB.trans le_self_add) hD (PMF.apply_ne_top _ _)
+  have h := ForkingReduction.toReal_le_add_sqrt_fork_of_le first FiatShamirNIZK.plainSigner
+    (fun ks => FiatShamirNIZK.check P fun y' => decide (y' = ks.1.2))
+    (fun _ => FiatShamirNIZK.rejectsProgrammed _ _ _ _ _)
+    (fun ks => liftPlainProve ks.1.2 (A.prove ks.1.2 ks.2)) (fun _ => [])
+    (fun ks => isCostBounded_liftPlainProve (hQro ks.1.2 ks.2)) ENNReal.zero_ne_top hp hD
+    (PMF.apply_ne_top _ _)
   simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal]
   push_cast at h ⊢
   linarith [ENNReal.toReal_zero]
@@ -1552,14 +1131,33 @@ winning under the same fresh-`(y*, t*)` acceptance condition. -/
     (A : NIZKSimProver X Y T C Z) : Game :=
   fiatShamirNIZKSimExtGameOn (fun _ => true) P simulate valid A
 
+/-- Real fresh-statement experiment with final-statement guard `admissible`: as
+`fiatShamirNIZKRealExtGameOn`, but the output statement `y*` itself must not have been answered by a
+valid prove call. -/
+@[expose] noncomputable def fiatShamirNIZKFreshStmtGameOn [DecidableEq Y] [DecidableEq T]
+    [Fintype C] [Nonempty C] (admissible : Y → Bool) (P : SigmaProtocol X Y T C Z)
+    (valid : X → Y → Bool) (A : NIZKSimProver X Y T C Z) : Game := do
+  let s ← A.coins
+  let ((y, prf), (cache, proved)) ←
+    (interpret (nizkRealExtHandler P valid) (A.prove s)).run ([], [])
+  let (acc, _) ← (interpret (oracle C) (fiatShamirNIZKVerify P y prf)).run cache
+  return (admissible y && acc && !(proved.map Prod.fst).contains y)
+
+/-- The signer of the simulation-extractability reduction: a valid prove call on `(x, y)` reads
+the transcript `src.eval r y` from presampled coins `r`. -/
+private noncomputable abbrev simSigner [Fintype C] [Nonempty C] {simulate : Y → C → PMF (T × Z)}
+    (src : SimCoinSource Y T C Z simulate) (valid : X → Y → Bool) :
+    ForkingReduction.Signer (X × Y) (Option (T × Z)) (Y × T) C (Y × T) src.Coins :=
+  FiatShamirNIZK.signer valid src.coins.support_nonempty.some fun r _ y _ => src.eval r y
+
 /-- Forking program for simulation-extractability using `src : SimCoinSource`. -/
 private noncomputable def simForkingProg [DecidableEq Y] [DecidableEq T] [Fintype C] [Nonempty C]
     {simulate : Y → C → PMF (T × Z)} (P : SigmaProtocol X Y T C Z)
     (src : SimCoinSource Y T C Z simulate) (valid : X → Y → Bool) (admissible : Y → Bool)
     (A : NIZKSimProver X Y T C Z) (s : A.Coins × List src.Coins) :
-    OracleComp (NIZKHashSpec Y T C) (Option ℕ × FiatShamirNIZK.ForkOutcome Y T C Z) :=
-  FiatShamirNIZK.forkingProg P valid src.coins.support_nonempty.some
-    (fun r _ y _ => src.eval r y) admissible (A.prove s.1) s.2
+    OracleComp (NIZKHashSpec Y T C) (Option ℕ × ForkingReduction.Outcome Y T C Z) :=
+  ForkingReduction.program (simSigner src valid) (FiatShamirNIZK.check P admissible)
+    (A.prove s.1) s.2
 
 /-- Joint coin distribution `(s, samples)` for `simForkingProg`. -/
 private noncomputable def simForkCoins [Fintype C] [Nonempty C]
@@ -1584,8 +1182,8 @@ noncomputable def fiatShamirNIZKSimExtractWith [DecidableEq Y] [DecidableEq T]
         match res with
         | none => none
         | some (_, (out, _), (out', _)) =>
-          some (out.2.stmt,
-            extract out.2.stmt out.2.commitment out.2.challenge out.2.response
+          some (out.2.message,
+            extract out.2.message out.2.commitment out.2.challenge out.2.response
               out'.2.challenge out'.2.response)
 
 /-- **Witness-free simulation-extractability rewinding extractor** over finite statement and
@@ -1609,30 +1207,30 @@ both `admissible y*` and `R w* y*`. -/
     | none => false
     | some (y, w) => admissible y && decide (R w y)
 
-private theorem presampledHandler_bind_eq_nizkSimExtHandler [DecidableEq Y] [DecidableEq T]
+private theorem gameHandler_bind_eq_nizkSimExtHandler [DecidableEq Y] [DecidableEq T]
     [Fintype C] [Nonempty C] {simulate : Y → C → PMF (T × Z)}
     (src : SimCoinSource Y T C Z simulate) (valid : X → Y → Bool)
     (q : (X × Y) ⊕ (Y × T)) (st : ExtGameState Y T C) :
-    src.coins.bind (fun r =>
-      FiatShamirNIZK.presampledHandler valid (fun r _ y _ => src.eval r y) r q st) =
+    src.coins.bind (fun r => ForkingReduction.gameHandler (simSigner src valid) r q st) =
       nizkSimExtHandler simulate valid q st := by
   obtain ⟨cache, proved⟩ := st
   cases q with
   | inl xy =>
     obtain ⟨x, y⟩ := xy
     by_cases hv : valid x y = true
-    · simp only [pmf_norm, FiatShamirNIZK.presampledHandler, nizkSimExtHandler, nizkSimProve, hv,
-      ↓reduceDIte, ↓reduceIte]
+    · simp only [pmf_norm, ForkingReduction.gameHandler, FiatShamirNIZK.signer, nizkSimExtHandler,
+        nizkSimProve, hv, ↓reduceDIte, ↓reduceIte, ForkingReduction.recordGame]
       have hmap := congrArg
         (fun μ : PMF (T × C × Z) =>
-          μ.bind fun (t, c, z) => PMF.pure (some (t, z), (((y, t), c) :: cache, (y, t) :: proved)))
+          μ.bind fun v => PMF.pure (some (v.1, v.2.2), (((y, v.1), v.2.1) :: cache,
+            (y, v.1) :: proved)))
         (src.map_eval y)
       simpa only [pmf_norm, simulateConversation] using hmap
     · simp only [Bool.not_eq_true] at hv
-      simp only [FiatShamirNIZK.presampledHandler, hv, Bool.false_eq_true, ↓reduceDIte,
-        nizkSimExtHandler, ↓reduceIte, PMF.bind_const]
+      simp only [ForkingReduction.gameHandler, FiatShamirNIZK.signer, hv, Bool.false_eq_true,
+        ↓reduceDIte, nizkSimExtHandler, ↓reduceIte, ForkingReduction.recordGame, PMF.bind_const]
   | inr yt =>
-    simp only [FiatShamirNIZK.presampledHandler, nizkSimExtHandler, PMF.bind_const]
+    simp only [ForkingReduction.gameHandler, nizkSimExtHandler, PMF.bind_const]
 
 private theorem simExtGameOn_eq_simForkingProg [DecidableEq Y] [DecidableEq T] [Fintype C]
     [Nonempty C] {simulate : Y → C → PMF (T × Z)} (P : SigmaProtocol X Y T C Z)
@@ -1641,21 +1239,19 @@ private theorem simExtGameOn_eq_simForkingProg [DecidableEq Y] [DecidableEq T] [
     fiatShamirNIZKSimExtGameOn admissible P simulate valid A =
       (simForkCoins src A (Qp + Qro)).bind fun s =>
         ((interpret countingUniform (simForkingProg P src valid admissible A s)).run 0).map
-          fun run => run.1.2.won := by
+          fun ((_, outcome), _) => outcome.won := by
   simp only [fiatShamirNIZKSimExtGameOn, simForkCoins, simForkingProg,
-    FiatShamirNIZK.map_run_forkingProg, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
+    ForkingReduction.map_run_program, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
     PMF.bind_bind, PMF.pure_bind]
   refine congrArg A.coins.bind (funext fun s => ?_)
   have hpre := (hA s).isQueryBounded.run_interpret_presample src.coins
-    src.coins.support_nonempty.some
-    (FiatShamirNIZK.presampledHandler valid (fun r _ y _ => src.eval r y)) ([], [])
+    (simSigner src valid).fallback (ForkingReduction.gameHandler (simSigner src valid)) ([], [])
   have hstep :
       (fun q state =>
         src.coins.bind fun value =>
-          FiatShamirNIZK.presampledHandler valid (fun r _ y _ => src.eval r y) value q state) =
+          ForkingReduction.gameHandler (simSigner src valid) value q state) =
       nizkSimExtHandler simulate valid :=
-    funext fun q => funext fun state =>
-      presampledHandler_bind_eq_nizkSimExtHandler src valid q state
+    funext fun q => funext fun state => gameHandler_bind_eq_nizkSimExtHandler src valid q state
   rw [hstep] at hpre
   have hfin :
       ((interpret (nizkSimExtHandler simulate valid) (A.prove s)).run ([], [])).bind
@@ -1663,10 +1259,11 @@ private theorem simExtGameOn_eq_simForkingProg [DecidableEq Y] [DecidableEq T] [
           ((interpret (oracle C) (fiatShamirNIZKVerify P y prf)).run cache).bind
             fun (acc, _) => PMF.pure (admissible y && acc && !proved.contains (y, prf.1))) =
       ((interpret (nizkSimExtHandler simulate valid) (A.prove s)).run ([], [])).bind
-        (FiatShamirNIZK.finishExtGame P admissible) := by
+        (ForkingReduction.finishGame (FiatShamirNIZK.check P admissible)) := by
     refine congrArg (PMF.bind _) (funext fun ((y, prf), (cache, proved)) => ?_)
-    simp only [FiatShamirNIZK.finishExtGame, fiatShamirNIZKVerify, interpret_map, interpret_query,
-      StateT.run_map, PMF.monad_map_eq_map, PMF.bind_map, Function.comp_def]
+    simp only [ForkingReduction.finishGame, FiatShamirNIZK.check, fiatShamirNIZKVerify,
+      interpret_map, interpret_query, StateT.run_map, PMF.monad_map_eq_map, PMF.bind_map,
+      Function.comp_def]
     exact (PMF.bind_pure_comp _ _).symm
   rw [hfin, ← hpre, PMF.bind_bind]
   refine congrArg (PMF.bind _) (funext fun samples => ?_)
@@ -1688,29 +1285,20 @@ private theorem fork_sim_le_simExtractGame [DecidableEq Y] [DecidableEq T] [Fint
   simp only [pmf_norm, fiatShamirNIZKSimExtractGame, fiatShamirNIZKSimExtractWith]
   rw [← PMF.bind_pure_comp]
   refine Probability.PMF.bind_apply_mono_on_support _ _ fun result hresult => ?_
-  rcases result with _ | ⟨j, out, out'⟩
+  rcases result with _ | ⟨j, ⟨⟨_, o⟩, _⟩, ⟨⟨_, o'⟩, _⟩⟩
   · simp
-  · obtain ⟨s, -, h, h', -, hne, hout, hout', hj, hj', -, query, hq, hq'⟩ :=
-      mem_support_fork hresult
-    let defC := Classical.arbitrary C
-    obtain ⟨-, hnamed⟩ := FiatShamirNIZK.runWithAnswers_forkingProg defC P valid
-      src.coins.support_nonempty.some (fun r _ y _ => src.eval r y) admissible
-      (A.prove s.1) s.2 (List.ofFn h) hout.symm
-    obtain ⟨-, hnamed'⟩ := FiatShamirNIZK.runWithAnswers_forkingProg defC P valid
-      src.coins.support_nonempty.some (fun r _ y _ => src.eval r y) admissible
-      (A.prove s.1) s.2 (List.ofFn h') hout'.symm
-    obtain ⟨hp, hc, hadm, hv⟩ := hnamed j hj
-    obtain ⟨hp', hc', -, hv'⟩ := hnamed' j hj'
-    rw [List.getD_ofFn] at hc hc'
-    have hpoint : (out.1.2.stmt, out.1.2.commitment) = (out'.1.2.stmt, out'.1.2.commitment) :=
-      Option.some.inj (hp.symm.trans (hq.trans (hq'.symm.trans hp')))
+  · obtain ⟨s, -, hpt, hne, hv, hv'⟩ := ForkingReduction.exists_of_mem_support_fork
+      (first := simForkCoins src A (Qp + Qro)) (simSigner src valid)
+      (fun _ => FiatShamirNIZK.check P admissible)
+      (fun _ => FiatShamirNIZK.rejectsProgrammed _ _ _ _ _)
+      (fun s => A.prove s.1) (fun s => s.2) hresult
+    simp only [FiatShamirNIZK.check, Prod.mk.injEq, Bool.and_eq_true] at hpt hv hv'
+    obtain ⟨hy, ht⟩ := hpt
     have hacc' :
-        P.Accepts out.1.2.stmt out.1.2.commitment out'.1.2.challenge out'.1.2.response := by
-      simpa only [SigmaProtocol.Accepts, (Prod.mk.inj hpoint).1, (Prod.mk.inj hpoint).2] using hv'
-    have hR := hsound out.1.2.stmt out.1.2.commitment out.1.2.challenge out.1.2.response
-      out'.1.2.challenge out'.1.2.response (by rw [← hc, ← hc']; exact hne) hv hacc'
-    obtain ⟨⟨_, o⟩, _⟩ := out
-    obtain ⟨⟨_, o'⟩, _⟩ := out'
+        P.Accepts o.message o.commitment o'.challenge o'.response := by
+      simpa only [SigmaProtocol.Accepts, hy, ht] using hv'.2
+    have hR := hsound _ _ _ _ _ _ hne hv.2 hacc'
+    have hadm := hv.1
     simp [hadm, hR]
 
 /-- **Derived simulation-extractability against simulated proofs** (general `SimCoinSource` and
@@ -1730,21 +1318,14 @@ theorem succProbability_fiatShamirNIZKSimExtGameOn_le [DecidableEq Y] [Decidable
         √((Qro + 1) * Game.succProbability
           (fiatShamirNIZKSimExtractGame R admissible
             (fiatShamirNIZKSimExtractWith P src extract valid admissible A Qp Qro))) := by
-  set first := simForkCoins src A (Qp + Qro)
-  have hB : fiatShamirNIZKSimExtGameOn admissible P simulate valid A true ≤
-      first.bind (fun s =>
-        ((interpret countingUniform (simForkingProg P src valid admissible A s)).run 0).bind
-          fun run => PMF.pure (validIndex (Qro + 1) run.2 run.1.1).isSome) true := by
-    rw [simExtGameOn_eq_simForkingProg P src valid admissible hA]
-    exact Probability.PMF.bind_apply_mono_on_support _ _ fun s _ =>
-      FiatShamirNIZK.map_run_le_validIndex P valid src.coins.support_nonempty.some
-        (fun r _ y _ => src.eval r y) admissible (hA s.1).2 s.2
-  have h := toReal_le_add_sqrt_fork_of_le first (simForkingProg P src valid admissible A)
-    (Classical.arbitrary C)
-    (fun s => FiatShamirNIZK.isQueryBounded_forkingProg P valid src.coins.support_nonempty.some
-      (fun r _ y _ => src.eval r y) admissible (hA s.1).2 s.2) ENNReal.zero_ne_top
-    (hB.trans le_self_add) (fork_sim_le_simExtractGame hsound src valid admissible A Qp Qro)
-    (PMF.apply_ne_top _ _)
+  have h := ForkingReduction.toReal_le_add_sqrt_fork_of_le
+    (p := fiatShamirNIZKSimExtGameOn admissible P simulate valid A true)
+    (simForkCoins src A (Qp + Qro)) (simSigner src valid)
+    (fun _ => FiatShamirNIZK.check P admissible)
+    (fun _ => FiatShamirNIZK.rejectsProgrammed _ _ _ _ _) (fun s => A.prove s.1) (fun s => s.2)
+    (fun s => (hA s.1).2.of_le fun q => by cases q <;> rfl) ENNReal.zero_ne_top
+    (by rw [simExtGameOn_eq_simForkingProg P src valid admissible hA, add_zero]; rfl)
+    (fork_sim_le_simExtractGame hsound src valid admissible A Qp Qro) (PMF.apply_ne_top _ _)
   simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal]
   push_cast at h ⊢
   linarith [ENNReal.toReal_zero]
@@ -1836,7 +1417,7 @@ theorem succProbability_fiatShamirNIZKRealExtGame_le [DecidableEq Y] [DecidableE
 /-- Fresh-statement corollary: outputting an accepted proof on a statement `y*` never queried on an
 accepted prove call (`!(proved.map Prod.fst).contains y*`) implies `(y*, t*) ∉ proved`, so the same
 simulation-extractability bound applies. -/
-theorem succProbability_fiatShamirNIZKFreshStmtGame_le [DecidableEq Y] [DecidableEq T]
+theorem succProbability_fiatShamirNIZKFreshStmtGameOn_le [DecidableEq Y] [DecidableEq T]
     [Fintype C] [Nonempty C] [DecidableEq C] {W : Type} {P : SigmaProtocol X Y T C Z}
     {R_honest : X → Y → Prop} {R : W → Y → Prop} [∀ w y, Decidable (R w y)]
     {simulate : Y → C → PMF (T × Z)} {extract : Y → T → C → Z → C → Z → W}
@@ -1847,25 +1428,15 @@ theorem succProbability_fiatShamirNIZKFreshStmtGame_le [DecidableEq Y] [Decidabl
     (hUnpred : P.UnpredictableCommitments R_honest δ)
     (src : SimCoinSource Y T C Z simulate) (admissible : Y → Bool)
     {A : NIZKSimProver X Y T C Z} {Qp Qro : ℕ} (hA : A.CallBounded Qp Qro) :
-    (Game.succProbability (do
-      let s ← A.coins
-      let ((y, prf), (cache, proved)) ←
-        (interpret (nizkRealExtHandler P valid) (A.prove s)).run ([], [])
-      let (acc, _) ← (interpret (oracle C) (fiatShamirNIZKVerify P y prf)).run cache
-      return (admissible y && acc && !(proved.map Prod.fst).contains y)) : ℝ) ≤
+    (Game.succProbability (fiatShamirNIZKFreshStmtGameOn admissible P valid A) : ℝ) ≤
       Qp * (Qp + Qro) * δ + (Qro + 1) / Fintype.card C +
         √((Qro + 1) * Game.succProbability
           (fiatShamirNIZKSimExtractGame R admissible
             (fiatShamirNIZKSimExtractWith P src extract valid admissible A Qp Qro))) := by
-  have hmono :
-      (do
-        let s ← A.coins
-        let ((y, prf), (cache, proved)) ←
-          (interpret (nizkRealExtHandler P valid) (A.prove s)).run ([], [])
-        let (acc, _) ← (interpret (oracle C) (fiatShamirNIZKVerify P y prf)).run cache
-        return (admissible y && acc && !(proved.map Prod.fst).contains y) : PMF Bool) true ≤
+  have hmono : fiatShamirNIZKFreshStmtGameOn admissible P valid A true ≤
       fiatShamirNIZKRealExtGameOn admissible P valid A true := by
-    simp only [fiatShamirNIZKRealExtGameOn, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
+    simp only [fiatShamirNIZKFreshStmtGameOn, fiatShamirNIZKRealExtGameOn, PMF.monad_bind_eq_bind,
+      PMF.monad_pure_eq_pure]
     refine Probability.PMF.bind_apply_mono_on_support _ _ fun s _ => ?_
     refine Probability.PMF.bind_apply_mono_on_support _ _ fun ((y, prf), (cache, proved)) _ => ?_
     refine Probability.PMF.bind_apply_mono_on_support _ _ fun (acc, _) _ => ?_
@@ -1880,18 +1451,10 @@ theorem succProbability_fiatShamirNIZKFreshStmtGame_le [DecidableEq Y] [Decidabl
         · simp
         · simp
         · exact absurd ⟨hadm, ha⟩ hacc
-  have hle :
-      (Game.succProbability (do
-        let s ← A.coins
-        let ((y, prf), (cache, proved)) ←
-          (interpret (nizkRealExtHandler P valid) (A.prove s)).run ([], [])
-        let (acc, _) ← (interpret (oracle C) (fiatShamirNIZKVerify P y prf)).run cache
-        return (admissible y && acc && !(proved.map Prod.fst).contains y)) : ℝ) ≤
-      Game.succProbability (fiatShamirNIZKRealExtGameOn admissible P valid A) := by
-    simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal]
-    exact ENNReal.toReal_mono (PMF.apply_ne_top _ _) hmono
-  exact hle.trans
+  refine le_trans ?_
     (succProbability_fiatShamirNIZKRealExtGameOn_le hvalid hsound hHVZK hUnpred src admissible hA)
+  simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal]
+  exact ENNReal.toReal_mono (PMF.apply_ne_top _ _) hmono
 
 /-- **Adaptive simulation-soundness** on false statements: if every statement accepted by
 `admissible` lacks a witness in `R`, then even after `Qp` adaptive prove queries on valid
