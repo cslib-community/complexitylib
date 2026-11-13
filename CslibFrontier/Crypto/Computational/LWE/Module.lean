@@ -361,7 +361,7 @@ theorem Input.words_injective [∀ κ, NeZero (q κ)] :
 variable (m d n q) [∀ κ, NeZero (q κ)]
 
 /-- The encoding of a decision Module-LWE input: the framed unary security parameter followed by
-the encoded pair `(A, b)` (`encInput_apply`). These are the words `realEnsemble` and
+the encoded pair `(A, b)` (`encInput_apply`). Its sample part is the word `realEnsemble` and
 `uniformEnsemble` sample. -/
 def encInput : Input m d n q ↪ List Bool :=
   (⟨Input.words, Input.words_injective⟩ : Input m d n q ↪ _).trans (encPair encUnary encBits)
