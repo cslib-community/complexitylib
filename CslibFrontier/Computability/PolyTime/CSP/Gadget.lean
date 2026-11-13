@@ -16,33 +16,29 @@ import Mathlib.Data.List.Enum
 import Mathlib.Data.List.GetD
 
 /-!
-# Certified fixed-gadget replacement
+# Native polynomial-time fixed-gadget replacement
 
-Each source constraint is replaced by a fixed equality-free gadget. Original variable `v`
-becomes `2*v`; auxiliary port `j` at constraint index `i` becomes `2*(B*i+j)+1`, where
-`B` bounds every gadget's auxiliary count. Repeated source variables are allowed.
-A global exact-arity guard sends malformed inputs to an explicit rejecting target instance.
-The rejection premise concerns only that fixed instance, not a solver or gadget theorem.
+This module certifies native polynomial time for instantiating a template, replacing all
+source constraints and applying the exact-arity guard. The replacement definitions and
+semantic correctness theorems live in `Logics.Propositional.CSP.PrimitivePositive.Replacement`,
+which is publicly imported here.
 
-The native multitape polynomial-time certificate uses binary input/output variable indices,
-unary local template indices and constraint indices, and a finite lookup for the fixed
-source alphabet. This is the equality-free case of [Chen2006CSP], Proposition 3.9, arXiv v1,
-p. 8, with the encoding and malformed-input behavior made explicit.
-
-## Main definitions
-
-* `Cslib.Logic.PL.CSP.PPGadget.template`: uniform local ports for a certified gadget.
-* `Cslib.Logic.PL.CSP.replaceGadgetsGuarded`: exact-arity guarded fixed-gadget replacement.
+The native multitape certificates use binary input/output variable indices, unary local
+template and constraint indices, and a finite lookup for the fixed source alphabet.
+Original variable `v` becomes `2*v`; auxiliary port `j` at constraint index `i` becomes
+`2*(B*i+j)+1`. Repeated variables are allowed, and the guarded compiler uses an explicit
+malformed-input reject instance. The underlying replacement is the equality-free case of
+[Chen2006CSP], Proposition 3.9, arXiv v1, p. 8, with encoding and rejection made explicit.
 
 ## Main results
 
-* `Cslib.Logic.PL.CSP.satisfiable_replaceGadgetsGuarded_iff`: total semantic correctness.
+* `Cslib.Complexity.CSP.computableInPolyTime_instantiate`: native instantiation of one template.
+* `Cslib.Complexity.CSP.computableInPolyTime_replaceGadgets`: native fixed-template replacement.
 * `Cslib.Complexity.CSP.computableInPolyTime_replaceGadgetsGuarded`: native polynomial time
   for fixed finite source alphabets, with binary variable names.
 -/
 
 public section
-
 
 namespace Cslib.Complexity.CSP
 
