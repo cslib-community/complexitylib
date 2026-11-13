@@ -175,12 +175,8 @@ theorem integral_empiricalRisk (ℓ : W → Z → ℝ) (D : Measure Z) [IsProbab
 theorem convexOn_trueRisk [AddCommGroup W] [Module ℝ W] {K : Set W} {ℓ : W → Z → ℝ}
     {D : Measure Z} (hK : Convex ℝ K) (hℓ : ∀ z, ConvexOn ℝ K fun w => ℓ w z)
     (hint : ∀ w ∈ K, Integrable (ℓ w) D) : ConvexOn ℝ K (trueRisk ℓ D) := by
-  refine ⟨hK, fun x hx y hy a b ha hb hab => ?_⟩
-  have hx' := (hint x hx).const_mul a
-  have hy' := (hint y hy).const_mul b
-  simp only [trueRisk_def, smul_eq_mul]
-  rw [← integral_const_mul, ← integral_const_mul, ← integral_add hx' hy']
-  exact integral_mono (hint _ (hK hx hy ha hb hab)) (hx'.add hy') fun z =>
-    (hℓ z).2 hx hy ha hb hab
+  rw [show trueRisk ℓ D = fun w => ∫ z, ℓ w z ∂D from funext (trueRisk_def ℓ D)]
+  exact integral_convexOn_of_integrand_ae (f := fun z w => ℓ w z) hK
+    (Filter.Eventually.of_forall hℓ) hint
 
 end Cslib.MachineLearning
