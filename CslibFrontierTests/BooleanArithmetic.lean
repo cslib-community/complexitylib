@@ -6,6 +6,8 @@ Authors: Christian Reitwiessner
 
 -- upstream: candidate
 import CslibFrontier.Computability.Circuit.Boolean.Arithmetic
+import CslibFrontier.Computability.Circuit.Boolean.ArithmeticRing
+import Mathlib.Data.ZMod.Basic
 import Cslib.Computability.Circuit.Composition
 import CslibFrontier.Computability.Circuit.Pi
 
@@ -72,3 +74,40 @@ example : ∃ d : Circuit (arithSignature Bool) 2 2,
   intro x
   rw [he]
   rfl
+
+-- The new simulation works in odd characteristic and preserves both outputs together.
+example : ∃ d : Circuit (arithSignature (ZMod 3)) 2 2,
+    d.size ≤ 10 ∧ ∀ x : Fin 2 → Bool,
+      d.eval (arithInterpretation (ZMod 3)) (fun i => (x i).toNat) =
+        ![((x 0 || x 1).toNat : ZMod 3), (!(x 0)).toNat] := by
+  obtain ⟨d, hs, he⟩ := Boolean.exists_ring_simulation (R := ZMod 3) booleanPair
+  refine ⟨d, ?_, ?_⟩
+  · simpa [booleanPair] using hs
+  · intro x
+    rw [he]
+    ext i
+    fin_cases i <;> rfl
+
+-- Constants require no source inputs, and both Boolean values are retained in characteristic 3.
+example : ∃ d : Circuit (arithSignature (ZMod 3)) 0 2,
+    d.size ≤ 10 ∧ ∀ x, d.eval (arithInterpretation (ZMod 3)) x = ![0, 1] := by
+  let c : Circuit Boolean.signature 0 2 :=
+    (Circuit.oneGate (Boolean.Op.const false) Fin.elim0).append
+      (Circuit.oneGate (Boolean.Op.const true) Fin.elim0)
+  obtain ⟨d, hs, he⟩ := Boolean.exists_ring_simulation (R := ZMod 3) c
+  refine ⟨d, ?_, ?_⟩
+  · simpa [c] using hs
+  · intro x
+    have hinput : x = (fun i : Fin 0 => ((Fin.elim0 i : Bool).toNat : ZMod 3)) :=
+      funext fun i => Fin.elim0 i
+    rw [hinput, he]
+    ext i
+    fin_cases i <;> rfl
+
+-- The same theorem works over an infinite ring, and wiring costs no gates.
+example : ∃ d : Circuit (arithSignature ℤ) 2 2,
+    d.size = 0 ∧ ∀ x : Fin 2 → Bool,
+      d.eval (arithInterpretation ℤ) (fun i => (x i).toNat) = fun i => ((x i).toNat : ℤ) := by
+  obtain ⟨d, hs, he⟩ := Boolean.exists_ring_simulation (R := ℤ)
+    (Circuit.wiring Boolean.signature id : Circuit Boolean.signature 2 2)
+  exact ⟨d, Nat.eq_zero_of_le_zero hs, he⟩

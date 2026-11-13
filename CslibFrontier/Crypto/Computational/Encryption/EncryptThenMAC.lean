@@ -1778,8 +1778,8 @@ theorem eval_prfRealGame_cpaToPrfDistinguisher (family : List Bool → List Bool
     ProbComp.eval (prfRealGame family (cpaToPrfDistinguisher adversary bit) n) =
       ProbComp.eval ((prfCipher family hpoly hlen).cpaGame adversary bit n) := by
   have hkeyGen : (prfCipher family hpoly hlen).keyGen = BitString.sampleList := rfl
-  simp only [prfRealGame, SymmetricCipher.cpaGame, cpaToPrfDistinguisher, hkeyGen,
-    runWith_norm, pmf_norm]
+  simp only [prfRealGame, ProbOracleComp.run, SymmetricCipher.cpaGame, cpaToPrfDistinguisher,
+    hkeyGen, runWith_norm, pmf_norm]
   refine PMF.bind_congr_on_support _ _ _ fun k hk => ?_
   rw [BitString.eval_sampleList] at hk
   have hkLen : k.length = n := BitString.length_of_mem_support_uniformList hk

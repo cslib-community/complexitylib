@@ -365,6 +365,62 @@ enc_structure eElementLambda (F : Family) : Element F where
 
 example (F : Family) (x : Element F) : eElementLambda F x = eElement F x := rfl
 
+/-- An element of the type indexed by a unary size. -/
+structure Sized (Carrier : ℕ → Type) where
+  /-- The size. -/
+  size : ℕ
+  /-- The element. -/
+  elt : Carrier size
+
+/-- The parameter `encode` occurs only in the word of `elt`, which goes in the slot `encBits`, so
+`eSizedFields` does not use it. -/
+enc_structure eSized (Carrier : ℕ → Type) (encode : ∀ n, Carrier n ↪ List Bool) :
+    Sized Carrier where
+  size : encUnary, elt : (encode size) using ((encode size).injective)
+
+example (Carrier : ℕ → Type) (encode : ∀ n, Carrier n ↪ List Bool) (x : Sized Carrier) :
+    eSized Carrier encode x = encPair encUnary encBits (x.size, encode x.size x.elt) :=
+  rfl
+
+/-- A slot-local `encode` shadows the parameter, which only the word of `elt` uses. -/
+enc_structure eSizedShadow (Carrier : ℕ → Type) (encode : ∀ n, Carrier n ↪ List Bool) :
+    Sized Carrier where
+  size : (let encode := encUnary; encode), elt : (encode size) using ((encode size).injective)
+
+-- The command marks `eSizedFields` and `eSizedShadowFields` `nolint unusedArguments`, so the
+-- linter passes. `Carrier` is used, because it occurs in the type of `encode`.
+set_option linter.hashCommand false in
+#guard_msgs in
+#lint- only unusedArguments
+
+/-! A parameter that nothing uses leaves `…Fields` linted: alone, next to a parameter that only a
+dependent field uses, or when a proof-local binder shares its name. These come after the `#lint-`
+check above, which they would fail. -/
+
+/-- Points, with a parameter that nothing reads. -/
+enc_structure eJunkPoint (junk : ℕ) : Point where x : encNat, y : encBits, z : (encList encUnary)
+
+/-- Sized elements, with a parameter that nothing reads. -/
+enc_structure eJunkSized (Carrier : ℕ → Type) (encode : ∀ n, Carrier n ↪ List Bool) (junk : ℕ) :
+    Sized Carrier where
+  size : encUnary, elt : (encode size) using ((encode size).injective)
+
+/-- Sized elements, with a parameter that nothing uses and a proof-local binder of its name. -/
+enc_structure eSizedLetJunk (Carrier : ℕ → Type) (encode : ∀ n, Carrier n ↪ List Bool)
+    (junk : ℕ) : Sized Carrier where
+  size : encUnary, elt : (encode size) using (let junk := (encode size).injective; junk)
+
+-- Fully used encodings (`ePoint`, and `eElement`, whose dependent field also reads `F`) stay
+-- linted as usual.
+run_meta do
+  for decl in [``eJunkPointFields, ``eJunkSizedFields, ``eSizedLetJunkFields, ``ePointFields,
+      ``eElementFields] do
+    unless ← Batteries.Tactic.Lint.shouldBeLinted `unusedArguments decl do
+      throwError "{decl} is marked nolint unusedArguments"
+  for decl in [``eSizedFields, ``eSizedShadowFields] do
+    if ← Batteries.Tactic.Lint.shouldBeLinted `unusedArguments decl then
+      throwError "{decl} is not marked nolint unusedArguments"
+
 -- A parameter named like a field that a dependent word reads would be captured by the field.
 /--
 error: enc_structure: the parameter `desc` has the name of a field that the word of `elt` reads; rename the parameter

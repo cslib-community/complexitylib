@@ -1130,6 +1130,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperserCore.St
 public import CslibFrontier.Computability.Circuit.Boolean.AltFormula
 public import CslibFrontier.Computability.Circuit.Boolean.AltFormula.TopDown
 public import CslibFrontier.Computability.Circuit.Boolean.Arithmetic
+public import CslibFrontier.Computability.Circuit.Boolean.ArithmeticRing
 public import CslibFrontier.Computability.Circuit.Boolean.AtLeast
 public import CslibFrontier.Computability.Circuit.Boolean.BalancedCode
 public import CslibFrontier.Computability.Circuit.Boolean.Barrington
@@ -1788,6 +1789,7 @@ public import CslibFrontier.Computability.Communication.OneOut
 public import CslibFrontier.Computability.Communication.OneOutLargeRectangle
 public import CslibFrontier.Computability.Communication.OneOutRectangle
 public import CslibFrontier.Computability.Communication.Operations
+public import CslibFrontier.Computability.Communication.Partition
 public import CslibFrontier.Computability.Communication.PartitionJoin
 public import CslibFrontier.Computability.Communication.PaturiSimon
 public import CslibFrontier.Computability.Communication.Protocol
@@ -3120,6 +3122,9 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.MultiPass
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.Reverse
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.StackLoop
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.StepCounter
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.StepCounter.Defs
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.StepCounter.Unary
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.StepMachine
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.StreamFold
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.TakeDropUnary
@@ -4202,6 +4207,7 @@ public import CslibFrontier.Crypto.Computational.DiffieHellman.MultiDDH
 public import CslibFrontier.Crypto.Computational.DiffieHellman.Order
 public import CslibFrontier.Crypto.Computational.DiffieHellman.SampleExp
 public import CslibFrontier.Crypto.Computational.DiscreteLog
+public import CslibFrontier.Crypto.Computational.DiscreteLog.Extract
 public import CslibFrontier.Crypto.Computational.DiscreteLog.GroupHash
 public import CslibFrontier.Crypto.Computational.DiscreteLog.PohligHellman
 public import CslibFrontier.Crypto.Computational.DiscreteLog.SchnorrGroup
@@ -4513,6 +4519,7 @@ public import CslibFrontier.Crypto.Computational.ZeroKnowledge.Amplification
 public import CslibFrontier.Crypto.Computational.ZeroKnowledge.AuxClock
 public import CslibFrontier.Crypto.Computational.ZeroKnowledge.Levin
 public import CslibFrontier.Crypto.Computational.ZeroKnowledge.Soundness
+public import CslibFrontier.Crypto.Computational.ZeroKnowledge.View
 public import CslibFrontier.Crypto.Encoding
 public import CslibFrontier.Crypto.Game
 public import CslibFrontier.Crypto.Game.CloseTo
@@ -6130,7 +6137,9 @@ public import CslibFrontier.Languages.Probabilistic.Selection
 public import CslibFrontier.Languages.Probabilistic.Semantics
 public import CslibFrontier.Languages.Probabilistic.Sharing
 public import CslibFrontier.Languages.Probabilistic.Simulation
+public import CslibFrontier.Languages.Probabilistic.Simulation.CloseTo
 public import CslibFrontier.Languages.Probabilistic.Sum
+public import CslibFrontier.Languages.Probabilistic.Sum.Lift
 public import CslibFrontier.Languages.Probabilistic.Transcript
 public import CslibFrontier.Languages.Probabilistic.Traverse
 public import CslibFrontier.Languages.Probabilistic.Traverse.CoinTape
@@ -6587,6 +6596,9 @@ public import CslibFrontier.Logics.SecondOrder.WordMSO.Separation
 public import CslibFrontier.Logics.SecondOrder.WordMSO.StarFree
 public import CslibFrontier.Logics.SecondOrder.WordMSO.ToRegular
 public import CslibFrontier.MachineLearning.LossMinimization.Basic
+public import CslibFrontier.MachineLearning.LossMinimization.Hinge
+public import CslibFrontier.MachineLearning.LossMinimization.RLM
+public import CslibFrontier.MachineLearning.LossMinimization.Stability
 public import CslibFrontier.MachineLearning.OnlineLearning.FTRL
 public import CslibFrontier.MachineLearning.OnlineLearning.Hedge
 public import CslibFrontier.MachineLearning.OnlineLearning.MistakeBound.Agnostic
@@ -6607,6 +6619,7 @@ public import CslibFrontier.MachineLearning.OnlineLearning.OnlineGradientDescent
 public import CslibFrontier.MachineLearning.OnlineLearning.SwapRegret
 public import CslibFrontier.MachineLearning.OnlineLearning.WeightedMajority
 public import CslibFrontier.MachineLearning.OnlineLearning.ZeroSum
+public import CslibFrontier.MachineLearning.PACBayes.Basic
 public import CslibFrontier.MachineLearning.PACLearning.AgnosticFiniteClass
 public import CslibFrontier.MachineLearning.PACLearning.AgnosticVC
 public import CslibFrontier.MachineLearning.PACLearning.Compression.Basic
@@ -6634,6 +6647,7 @@ public import CslibFrontier.MachineLearning.Rademacher.Contraction
 public import CslibFrontier.MachineLearning.Rademacher.Generalization
 public import CslibFrontier.MachineLearning.Rademacher.GrowthFunction
 public import CslibFrontier.MachineLearning.Rademacher.Linear
+public import CslibFrontier.MachineLearning.Rademacher.LinearL1
 public import CslibFrontier.MachineLearning.Rademacher.Margin
 public import CslibFrontier.MachineLearning.Replicable.Amplification
 public import CslibFrontier.MachineLearning.Replicable.Basic
@@ -6647,6 +6661,7 @@ public import CslibFrontier.MachineLearning.StatisticalQuery.LowerBound
 public import CslibFrontier.MachineLearning.StatisticalQuery.Parity
 public import CslibFrontier.MachineLearning.StatisticalQuery.Simulation
 public import CslibFrontier.MachineLearning.UniformLearning.AC0
+public import CslibFrontier.MachineLearning.UniformLearning.AdaptiveCircuit
 public import CslibFrontier.MachineLearning.UniformLearning.Basic
 public import CslibFrontier.MachineLearning.UniformLearning.BestOf
 public import CslibFrontier.MachineLearning.UniformLearning.CIKK.AC0Mod
@@ -6709,6 +6724,7 @@ public import CslibFrontier.Probability.BitString.SubsetSum
 public import CslibFrontier.Probability.BitString.SubsetSum.Matrix
 public import CslibFrontier.Probability.BitString.ToeplitzHash
 public import CslibFrontier.Probability.BoundedDifferences
+public import CslibFrontier.Probability.ChangeOfMeasure
 public import CslibFrontier.Probability.Chernoff
 public import CslibFrontier.Probability.ChiSquare
 public import CslibFrontier.Probability.Coding.PrefixFreeEntropy
@@ -6905,8 +6921,10 @@ public import CslibFrontier.Probability.StochasticDomination.Adapted
 public import CslibFrontier.Probability.StochasticDomination.Basic
 public import CslibFrontier.Probability.StochasticDomination.PoissonBinomial
 public import CslibFrontier.Probability.StochasticDomination.Stopping
+public import CslibFrontier.Probability.SubGaussian
 public import CslibFrontier.Probability.TupleSampler
 public import CslibFrontier.Probability.Uniform
+public import CslibFrontier.Probability.Uniform.Translate
 public import CslibFrontier.Probability.UniformNat
 public import CslibFrontier.Probability.UniformOrder
 public import CslibFrontier.Probability.UniversalHash

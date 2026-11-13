@@ -181,12 +181,12 @@ noncomputable def manyTimeForger (H : KeyedHashFamily) (sigBound : ℕ → ℕ)
     let n := otsParamInv H M
     if otsParam H n = M then do
       let pk := simPkOf n otvk
-      let out ← (OracleComp.interpret
+      let ((msg, sig), _) ← (OracleComp.interpret
         (OracleComp.sumHandler
           (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
           (manyTimeHandler H sigBound n))
         (adversary n pk)).run ()
-      return otsForgeryOf H n out.1.1 out.1.2
+      return otsForgeryOf H n msg sig
     else
       pure ([], [])
 
@@ -370,7 +370,7 @@ def msgSigDecoder : Decoder (encPair encBits encBits) :=
 @[expose]
 def traceStepDecoder : Decoder encTraceStep :=
   (Decoder.bool.pair (Decoder.bits.pair Decoder.bits)).map
-    (fun p => ⟨p.1, p.2.1, p.2.2⟩)
+    (fun (coin, hashKey, ots) => ⟨coin, hashKey, ots⟩)
     (fun s => (s.coin, s.hashKey, s.ots))
     (fun _ => rfl)
     (fun _ => rfl)
@@ -770,7 +770,8 @@ def tcrStateDecoder : Decoder encTcrSavedState :=
   (Decoder.bool.pair
     ((Decoder.bits.pair Decoder.bits).pair
       (Decoder.bool.pair (Decoder.unary.pair (Decoder.list traceStepDecoder))))).map
-    (fun p => ⟨p.1, p.2.1, p.2.2.1, p.2.2.2.1, p.2.2.2.2⟩)
+    (fun (active, keys, coinAtSlot, remSteps, preTrace) =>
+      ⟨active, keys, coinAtSlot, remSteps, preTrace⟩)
     (fun s => (s.active, s.keys, s.coinAtSlot, s.remSteps, s.preTrace))
     (fun _ => rfl)
     (fun _ => rfl)
