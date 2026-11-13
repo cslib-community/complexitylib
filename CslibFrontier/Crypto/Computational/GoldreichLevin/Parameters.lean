@@ -101,7 +101,7 @@ theorem maskCount_sufficient (n precision : ℕ) (hp : 0 < precision) :
 
 /-- Signed parity correlation is bounded by decoder success and its chosen accuracy.
 This pointwise form allows auxiliary input to be guessed in later reductions. -/
-theorem correlation_le_invertFixed {n : ℕ} {Image : Type*} [DecidableEq Image]
+theorem correlation_le_invertFixed {n : ℕ} {Image : Type*} [BEq Image] [LawfulBEq Image]
     (f : BitString n → Image) (predictor : BitString n → Bool) (x : BitString n)
     (precision : ℕ) (hp : 0 < precision) :
     2 * agreement predictor x - 1 ≤ 1 / (precision : ℝ) +
@@ -119,18 +119,18 @@ theorem correlation_le_invertFixed {n : ℕ} {Image : Type*} [DecidableEq Image]
 
 /-- The same inverter bounds all prediction biases, with an additive error of `1 / precision`.
 When the actual bias exceeds that error, the recovery bound applies to the actual bias itself. -/
-theorem invertSigned_advantage_le {n : ℕ} {Image : Type*} [DecidableEq Image]
+theorem invertSigned_advantage_le {n : ℕ} {Image : Type*} [BEq Image] [LawfulBEq Image]
     {Coins : Image → Type*} [∀ image, Finite (Coins image)]
     (f : BitString n → Image)
     (predictor : (image : Image) → Coins image → BitString n → Bool)
     (coins : (image : Image) → PMF (Coins image)) (precision : ℕ) (hp : 0 < precision) :
-    |(predictionExperiment f predictor coins true).toReal - 1 / 2| ≤
+    |(parityPredictionExperiment f predictor coins true).toReal - 1 / 2| ≤
       1 / (precision : ℝ) +
-        8 * (inversionExperiment f
+        8 * (inversionExperiment (PMF.uniformOfFintype (BitString n)) f
           (invertSigned f predictor coins (maskCount n precision)) true).toReal := by
-  let bias := |(predictionExperiment f predictor coins true).toReal - 1 / 2|
+  let bias := |(parityPredictionExperiment f predictor coins true).toReal - 1 / 2|
   have hpReal : (0 : ℝ) < precision := by exact_mod_cast hp
-  have hsuccess : 0 ≤ (inversionExperiment f
+  have hsuccess : 0 ≤ (inversionExperiment (PMF.uniformOfFintype (BitString n)) f
       (invertSigned f predictor coins (maskCount n precision)) true).toReal :=
     ENNReal.toReal_nonneg
   by_cases h : 1 / (precision : ℝ) ≤ bias
@@ -176,17 +176,17 @@ theorem randomMaskBits_polynomial (degree : ℕ) :
 For each power, multiply the pointwise reduction by that power of the parameter. The precision
 term is at most one and the inversion term tends to zero, giving superpolynomial decay. -/
 theorem negligible_prediction_of_negligible_inversion
-    {Image : ℕ → Type*} [∀ n, DecidableEq (Image n)]
+    {Image : ℕ → Type*} [∀ n, BEq (Image n)] [∀ n, LawfulBEq (Image n)]
     {Coins : (n : ℕ) → Image n → Type*} [∀ n image, Finite (Coins n image)]
     (f : (n : ℕ) → BitString n → Image n)
     (predictor : (n : ℕ) → (image : Image n) → Coins n image → BitString n → Bool)
     (coins : (n : ℕ) → (image : Image n) → PMF (Coins n image))
     (hinversion : ∀ degree, Negligible (fun n =>
-      Game.succProbability (inversionExperiment (f n)
+      Game.succProbability (inversionExperiment (PMF.uniformOfFintype (BitString n)) (f n)
         (invertSigned (f n) (predictor n) (coins n)
           (maskCount n (precision degree n)))))) :
     Negligible (fun n => Game.guessingAdvantage
-      (predictionExperiment (f n) (predictor n) (coins n))) := by
+      (parityPredictionExperiment (f n) (predictor n) (coins n))) := by
   apply negligible_iff_coe.mpr
   simp only [Game.coe_guessingAdvantage]
   apply (Asymptotics.superpolynomialDecay_iff_abs_isBoundedUnder _

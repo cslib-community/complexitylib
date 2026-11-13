@@ -40,7 +40,13 @@ Confirm that `lean-toolchain`, `lake-manifest.json` and dependency sources belon
 scripts/cache/ensure.sh --refresh
 ```
 
-This retries restoration; it does not assert network or cache availability. On a warm local checkout, `COMPLEXITYLIB_CACHE_AUTO=0` opts out of automatic downloads for the wrappers while retaining Lake's input checks. The [cache guide](../../scripts/cache/README.md#automatic-restoration) specifies stamps, retries and seeding.
+This retries restoration; it does not assert network or cache availability. The default reader
+tries GCS, then MIT on a miss, failure or timeout. A GCS `403` can mean its budget kill switch
+removed public access; the cache guide gives the maintainer recovery procedure. An explicit
+`COMPLEXITYLIB_CACHE_URL` selects just that origin and disables mirror fallback. On a warm local
+checkout, `COMPLEXITYLIB_CACHE_AUTO=0` opts out of automatic downloads for the wrappers while
+retaining Lake's input checks. The [cache guide](../../scripts/cache/README.md#automatic-restoration)
+specifies stamps, retries and seeding.
 
 If a small change causes a large rebuild, inspect its imports and exported interface. Public declarations and exposed definition bodies can invalidate dependents. The [build fan-out case study](../history/case-studies.md) explains why widely imported hubs can be costly. A slow rebuild alone does not demonstrate a cache defect.
 

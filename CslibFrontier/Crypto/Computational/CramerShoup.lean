@@ -408,9 +408,8 @@ private theorem advantage_eval_cramerShoupMsgToDDHDistinguisher_le
     (d : F.Desc) (α β γ : ZMod (F.order d)) :
     Game.advantage
       (ProbComp.eval
-        (F.cramerShoupMsgToDDHDistinguisher hasAD encodeMsg encodeAD H isElem adversary bit n
-          (d, F.encode d (α • F.generator d), F.encode d (β • F.generator d),
-            F.encode d (γ • F.generator d))))
+        (F.cramerShoupMsgToDDHDistinguisher hasAD encodeMsg encodeAD H isElem adversary bit n d
+          (α • F.generator d) (β • F.generator d) (γ • F.generator d)))
       (F.cramerShoupChallengeGame hasAD encodeMsg encodeAD H isElem adversary bit n d α β γ) ≤
       6 / 2 ^ n := by
   unfold cramerShoupChallengeGame cramerShoupMsgToDDHDistinguisher
@@ -434,7 +433,7 @@ private theorem advantage_four_le (g₁ g₂ g₃ g₄ : Game) {n : ℕ}
 /-- **Game 1 $\to$ Game 2 bound** ([BonehShoup2023], Section 12.5.3, equation (12.22), printed
 p. 492): the distinguishing advantage between `cramerShoupGame1` and `cramerShoupGame2` is at
 most the DDH advantage of `cramerShoupMsgToDDHDistinguisher` plus `12 / 2 ^ n` (six approximate
-`sampleModNat` secret-key exponent draws in `ddhRealGame` and six in `ddhIdealGame`). -/
+`sampleModNat` secret-key exponent draws in `ddhRealGame` and six in `ddhRandomGame`). -/
 theorem advantage_cramerShoupGame1_game2_le
     (hasAD : Bool) {Msg AD : Type} (encodeMsg : F.Desc × Msg → List Bool)
     (encodeAD : F.Desc × AD → List Bool) (setup : ℕ → PMF F.Desc)
@@ -447,17 +446,17 @@ theorem advantage_cramerShoupGame1_game2_le
       Game.advantage
         (F.ddhRealGame setup
           (F.cramerShoupMsgToDDHDistinguisher hasAD encodeMsg encodeAD H isElem adversary bit) n)
-        (F.ddhIdealGame setup
+        (F.ddhRandomGame setup
           (F.cramerShoupMsgToDDHDistinguisher hasAD encodeMsg encodeAD H isElem adversary bit) n) +
       12 / 2 ^ n := by
   refine advantage_four_le _ _ _ _ ?_ ?_
   · unfold ddhRealGame cramerShoupGame1
-    simp only [PMF.monad_bind_eq_bind]
+    simp only [eval_ddhRealExperiment, PMF.monad_bind_eq_bind]
     peel_binds d α β
     exact F.advantage_eval_cramerShoupMsgToDDHDistinguisher_le hasAD encodeMsg encodeAD H isElem
       hmem adversary bit n d α β (α * β)
-  · unfold ddhIdealGame cramerShoupGame2
-    simp only [PMF.monad_bind_eq_bind]
+  · unfold ddhRandomGame cramerShoupGame2
+    simp only [eval_ddhRandomExperiment, PMF.monad_bind_eq_bind]
     peel_binds d α β γ
     exact F.advantage_eval_cramerShoupMsgToDDHDistinguisher_le hasAD encodeMsg encodeAD H isElem
       hmem adversary bit n d α β γ
@@ -700,7 +699,7 @@ theorem advantage_cramerShoupMsgCCA2Game_game5_le
       Game.advantage
         (F.ddhRealGame setup
           (F.cramerShoupMsgToDDHDistinguisher hasAD encodeMsg encodeAD H isElem adversary bit) n)
-        (F.ddhIdealGame setup
+        (F.ddhRandomGame setup
           (F.cramerShoupMsgToDDHDistinguisher hasAD encodeMsg encodeAD H isElem adversary bit) n) +
       Game.succProbability
         (collisionGameFor setup (F.cramerShoupHashMod H) (fun _ _ _ => true)
@@ -737,12 +736,12 @@ noncomputable abbrev cramerShoupCCA2Bound
   Game.advantage
     (F.ddhRealGame setup
       (F.cramerShoupMsgToDDHDistinguisher hasAD encodeMsg encodeAD H isElem adversary false) n)
-    (F.ddhIdealGame setup
+    (F.ddhRandomGame setup
       (F.cramerShoupMsgToDDHDistinguisher hasAD encodeMsg encodeAD H isElem adversary false) n) +
   Game.advantage
     (F.ddhRealGame setup
       (F.cramerShoupMsgToDDHDistinguisher hasAD encodeMsg encodeAD H isElem adversary true) n)
-    (F.ddhIdealGame setup
+    (F.ddhRandomGame setup
       (F.cramerShoupMsgToDDHDistinguisher hasAD encodeMsg encodeAD H isElem adversary true) n) +
   Game.succProbability
     (collisionGameFor setup (F.cramerShoupHashMod H) (fun _ _ _ => true)
@@ -960,7 +959,7 @@ theorem DDH.cramerShoupMsgINDCCA2
   let Q₁ (n : ℕ) : ℕ := c₁ * (n + Lpk n + 2) ^ d₁
   let Q₂ (n : ℕ) : ℕ := c₂ * (n + Lst n + Lct n + 2) ^ d₂
   have hddh (bit : Bool) :=
-    hDDH _ (F.isPPTOn_cramerShoupMsgToDDHDistinguisher hasAD hencMsg hencAD hH hisElem hA bit)
+    hDDH _ (F.isPPT_cramerShoupMsgToDDHDistinguisher hasAD hencMsg hencAD hH hisElem hA bit)
   have hcr (bit : Bool) :=
     hCR.negligible _
       (F.isPPTOn_cramerShoupMsgToCollisionFinder hasAD hencMsg hencAD hH hisElem hA bit)
