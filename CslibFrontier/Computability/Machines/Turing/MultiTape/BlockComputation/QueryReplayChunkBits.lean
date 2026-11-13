@@ -29,23 +29,6 @@ namespace Turing.MultiTapePTM.BlockComputation.QueryReplay.SupplierChunk
 
 open MultiTapeTM Cslib.BitString Cslib.TreeEval.Ary
 
-private theorem ofBits_ofFn_ofList (word : List Bool) (n : ℕ) (h : word.length ≤ n) :
-    ofBits (List.ofFn (ofList n word)) = ofBits word := by
-  induction word generalizing n with
-  | nil =>
-    have hz : ofList n ([] : List Bool) = fun _ => false := by
-      funext i
-      simp [ofList]
-    rw [hz, List.ofFn_const]
-    exact ofBits_replicate_false n
-  | cons bit word ih =>
-    cases n with
-    | zero => simp at h
-    | succ n =>
-      rw [List.ofFn_succ]
-      change Nat.bit bit (ofBits (List.ofFn (ofList n word))) = Nat.bit bit (ofBits word)
-      rw [ih n (by simpa using h)]
-
 /-- Numeric reads of a complete or partial label chunk agree with the packed encoder.
 Missing high-order bits are zero, including when the chunk width itself is zero. -/
 theorem readNat_ofFn_eq_packBits {b r m : ℕ} (hb : b ≤ r * m)

@@ -150,9 +150,7 @@ theorem mem_support_primeCandidate {n p : ℕ} (hn : 0 < n)
   rw [eval_primeCandidate, PMF.support_map] at hp
   obtain ⟨low, hlow, rfl⟩ := hp
   rw [BitString.mem_support_uniformList_iff] at hlow
-  have hlt : ofBits low < 2 ^ (n - 1) := by
-    rw [ofBits_eq_lsbValue, ← hlow]
-    exact BitString.lsbValue_lt low
+  have hlt : ofBits low < 2 ^ (n - 1) := hlow ▸ ofBits_lt_two_pow low
   have hpow := two_pow_eq_two_mul hn
   simp only [ofBits_append_true, hlow]
   omega
