@@ -95,18 +95,24 @@ distinguisher `T` outputs `b`. `dist_map_of_injective` keeps the distance unchan
 injective relabeling. For a second-moment tail bound on a finite PMF without measure-theoretic side
 conditions, import [PMF/Chebyshev.lean](../../CslibFrontier/Probability/PMF/Chebyshev.lean): by
 `sum_mul_ite_le_sum_mul_sq_div`, the mass where `|f a − m| ≥ c` is at most
-`∑ a, p(a) (f a − m)² / c²`. Import
+`∑ a, p(a) (f a − m)² / c²`. The first-moment form for a function `f` with values in `[0, 1]`
+is `toOuterMeasure_toReal_le_tsum_div` in
+[PMF/Markov.lean](../../CslibFrontier/Probability/PMF/Markov.lean). Import
 [Product/Split.lean](../../CslibFrontier/Probability/Product/Split.lean) to split an independent
 product `pi p` along a predicate `P`: by `pi_map_piEquivPiSubtypeProd`, the coordinates
 satisfying `P` and the remaining coordinates form two independent products. Its corollaries
 `pi_map_restrict` and `pi_map_comp_injective` give the marginal law: restricting `pi p` to the
 coordinates satisfying `P`, or reading it along an injection `e` of index types as
-`fun a k => a (e k)`, gives the independent product of the selected factors. Use these instead of
-counting tuples when the factors are not uniform. `pi_map_curry` in
+`fun a k => a (e k)`, gives the independent product of the selected factors. For a product indexed
+by a sum type `ι ⊕ κ`, `pi_bind_sum` samples the two summands as independent products inside a
+`bind`. Use these instead of counting tuples when the factors are not uniform. `pi_map_curry` in
 [Product/Reindex.lean](../../CslibFrontier/Probability/Product/Reindex.lean) splits a product
 indexed by `ι × κ` into independent blocks, and `toOuterMeasure_pi_forall` in
 [Product/Event.lean](../../CslibFrontier/Probability/Product/Event.lean) is the probability of a
-box `{u | ∀ i, u i ∈ E i}`. For a biased bit, use `coin p` from
+box `{u | ∀ i, u i ∈ E i}`. For `Fin k`-indexed tuples with different factors, `PMF.piFin` in
+[IID.lean](../../CslibFrontier/Probability/IID.lean) generalizes `iid`, and
+[IID/Event.lean](../../CslibFrontier/Probability/IID/Event.lean) gives its box and union bounds
+`toOuterMeasure_piFin_forall` and `toOuterMeasure_toReal_piFin_exists_le`. For a biased bit, use `coin p` from
 [PMF/Coin.lean](../../CslibFrontier/Probability/PMF/Coin.lean), with `p : unitInterval`; Mathlib's
 `PMF.bernoulli` is deprecated. `toMeasure_coin` identifies `(coin p).toMeasure` with Mathlib's
 `ProbabilityTheory.bernoulliMeasure true false p`, and `entropy_coin` in
