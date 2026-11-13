@@ -206,6 +206,7 @@ import CslibFrontier.MachineLearning.UniformLearning.CIKK.AC0Mod
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.Amplification
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.Complexity
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.Learner
+import CslibFrontier.MachineLearning.UniformLearning.CryptoHardness.GGM
 import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson
 import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson.BestOf
 import CslibFrontier.Probability.Extractor.TwoSource
@@ -3253,6 +3254,26 @@ register_result "natural-proofs" where
     P/poly-natural property is useful against P/poly. The generator tests are nonuniform \
     circuits reading the 2k-bit outputs; the barrier's derived tests read whole truth tables \
     of the GGM keyed family. The generator family is a hypothesis, not a constructed object."
+
+register_result "learning-hardness-from-generators" where
+  title := "Subexponentially secure generators rule out learners with small circuits for \
+    polynomial-size circuits"
+  topic := "meta-complexity"
+  sources := [
+    { paper := Valiant1984, theorem := unverified, locator := unverified },
+    { paper := GGM1986, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.MachineLearning.UniformLearning.eventually_le_of_isSubexponentiallySecure,
+    Cslib.MachineLearning.UniformLearning.exists_eventually_not_learns_of_isSubexponentiallySecure
+  ]
+  scope := "Conditional on a subexponentially secure family of length-doubling generators of \
+    polynomial circuit complexity, as in natural-proofs. Learners are membership-query learners \
+    with a De Morgan circuit and q non-adaptive queries on each seed (HasCircuit); running time \
+    is not modelled. For a polynomial s, every c and large n, a learner with S + 7 <= 2^(cn) \
+    gates for the functions of circuit size s n has (1 - delta)(1 - eps) <= 1/2 + q/2^(n+1) + \
+    2^(-cn), so none with q <= 2^(n-1) reaches (1 - delta)(1 - eps) > 3/4. The distinguisher \
+    fixes the learner's seed and comparison point by averaging; it is a nonuniform circuit test."
 
 register_result "nw-reconstruction-learner" where
   title := "Carmosino–Impagliazzo–Kabanets–Kolokolova: the Nisan–Wigderson reconstruction as a \
