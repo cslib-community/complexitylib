@@ -22,11 +22,11 @@ example : wordHash 2 [true, false, true] [true, true] = [true, true] := by decid
 example : wordHash 3 [true, true] [] = [false, false, false] := by decide
 
 example : ProbComp.eval (extract 3 []) = PMF.pure [false, false, false] := by
-  simp [extract, wordHash, listDot, listRows, listRow]
+  simp [extract, wordHash, listRows, listRow]
 
 -- Zero digest bits require no matrix bits, whatever the source length.
 example (input : List Bool) : ProbComp.eval (extract 0 input) = PMF.pure [] := by
-  simp [extract, wordHash, listDot, listRows]
+  simp [extract, wordHash, listRows]
 
 -- The digest marginal can be uniform while the complete output repeats its public seed.
 example : ProbComp.eval (extract 1 [true]) =
