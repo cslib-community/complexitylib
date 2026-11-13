@@ -2194,6 +2194,7 @@ public import CslibFrontier.Computability.Complexity.Classes.Time.Polynomial
 public import CslibFrontier.Computability.Complexity.Classes.Time.SampleVerify
 public import CslibFrontier.Computability.Complexity.Classes.Time.SigmaTwo
 public import CslibFrontier.Computability.Complexity.Classes.Time.SigmaTwoChain
+public import CslibFrontier.Computability.Complexity.Classes.Time.Sublinear
 public import CslibFrontier.Computability.Complexity.Classes.Time.TwoPow
 public import CslibFrontier.Computability.Complexity.Classes.Time.Verifier
 public import CslibFrontier.Computability.Complexity.Classes.Time.WordRAM
@@ -3309,6 +3310,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.S
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Space.SavitchWalk
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.SpaceInTime
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Streaming
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Sublinear
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Translate
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Configuration
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Counting
@@ -3366,6 +3368,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Na
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Option
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Padding
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pair
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pair.Projections
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pi
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Rat
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.StepMachine
@@ -3393,6 +3396,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Halting.Rice
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Halting.SMN
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.HaltsAt
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.InputAt
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.InputPrefix
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.BinaryAddition
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.BinaryComparison
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.BinaryCounter
@@ -6555,6 +6559,7 @@ public import CslibFrontier.MachineLearning.OnlineLearning.MistakeBound.Basic
 public import CslibFrontier.MachineLearning.OnlineLearning.MistakeBound.Halving
 public import CslibFrontier.MachineLearning.OnlineLearning.MistakeBound.Littlestone
 public import CslibFrontier.MachineLearning.OnlineLearning.MistakeBound.MonotoneDisjunctions
+public import CslibFrontier.MachineLearning.OnlineLearning.MistakeBound.OnlineToBatch
 public import CslibFrontier.MachineLearning.OnlineLearning.MistakeBound.Perceptron
 public import CslibFrontier.MachineLearning.OnlineLearning.MistakeBound.Randomized
 public import CslibFrontier.MachineLearning.OnlineLearning.MistakeBound.SOA
