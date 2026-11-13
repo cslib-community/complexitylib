@@ -2704,15 +2704,6 @@ private theorem ciCombined_captured_bind_eq_one {α : Type} (E : SymmetricCipher
   have hct : x.2.1.2.2 = ct := by rw [hinv.1]
   rw [hct, hinv.2, hwin, PMF.pure_apply_self]
 
-private theorem ennreal_tsum_finsetSum {α β : Type*}
-    (s : Finset β) (f : α → β → ℝ≥0∞) :
-    (∑' a, ∑ b ∈ s, f a b) = ∑ b ∈ s, ∑' a, f a b := by
-  classical
-  induction s using Finset.induction_on with
-  | empty => simp
-  | insert b s hb ih =>
-    simp only [Finset.sum_insert hb, tsum_add, ih]
-
 private theorem eval_ccaRejectWithBadOracle_false (E : SymmetricCipher) (n : ℕ) (k : List Bool)
     (bit : Bool) (request : Bool × List Bool) (queried : List (List Bool)) :
     ProbComp.eval (E.ccaRejectWithBadOracle n k bit request (queried, false)) =
@@ -2813,7 +2804,7 @@ private theorem bad_ccaRejectWithBad_le_sum_ciCombined {α : Type} (E : Symmetri
             tsum_le_tsum fun a => mul_le_mul_of_nonneg_left (ih a queried) zero_le
         _ = _ := by
           simp only [Finset.mul_sum]
-          rw [ennreal_tsum_finsetSum]
+          rw [Summable.tsum_finsetSum fun _ _ => CompleteLattice.summable]
           refine Finset.sum_congr rfl fun j _ => ?_
           simp only [← PMF.bind_apply]
     | inr request =>
@@ -2871,7 +2862,7 @@ private theorem bad_ccaRejectWithBad_le_sum_ciCombined {α : Type} (E : Symmetri
                     mul_le_mul_of_nonneg_left (ih ct (ct :: queried)) zero_le
               _ = _ := by
                 simp only [Finset.mul_sum]
-                rw [ennreal_tsum_finsetSum]
+                rw [Summable.tsum_finsetSum fun _ _ => CompleteLattice.summable]
                 refine Finset.sum_congr rfl fun j _ => ?_
                 simp only [PMF.bind_apply]
           exact hle.trans le_self_add
@@ -3001,7 +2992,7 @@ theorem advantage_ccaGame_ccaRejectGame_le_sum (E : SymmetricCipher) (ctBound Q 
     conv_lhs =>
       arg 2; ext j
       rw [PMF.bind_apply]
-    rw [← ennreal_tsum_finsetSum]
+    rw [← Summable.tsum_finsetSum fun _ _ => CompleteLattice.summable]
     refine tsum_congr fun k => ?_
     rw [Finset.mul_sum]
   have hCCA_eq : pCCA = ∑' k : List Bool, ProbComp.eval (E.keyGen n) k *
@@ -3816,7 +3807,7 @@ private theorem bad_oneTimeCCARejectWithBad_le_sum_oneTimeCICombined {α : Type}
             tsum_le_tsum fun a => mul_le_mul_of_nonneg_left (ih a queried) zero_le
         _ = _ := by
           simp only [Finset.mul_sum]
-          rw [ennreal_tsum_finsetSum]
+          rw [Summable.tsum_finsetSum fun _ _ => CompleteLattice.summable]
           refine Finset.sum_congr rfl fun j _ => ?_
           simp only [← PMF.bind_apply]
     | inr request =>
@@ -3874,7 +3865,7 @@ private theorem bad_oneTimeCCARejectWithBad_le_sum_oneTimeCICombined {α : Type}
                     mul_le_mul_of_nonneg_left (ih ct [ct]) zero_le
               _ = _ := by
                 simp only [Finset.mul_sum]
-                rw [ennreal_tsum_finsetSum]
+                rw [Summable.tsum_finsetSum fun _ _ => CompleteLattice.summable]
                 refine Finset.sum_congr rfl fun j _ => ?_
                 simp only [PMF.bind_apply]
           exact hle.trans le_self_add
@@ -4016,7 +4007,7 @@ private theorem advantage_ccaOneTimeGame_ccaOneTimeRejectGame_le_sum (E : Symmet
     conv_lhs =>
       arg 2; ext j
       rw [PMF.bind_apply]
-    rw [← ennreal_tsum_finsetSum]
+    rw [← Summable.tsum_finsetSum fun _ _ => CompleteLattice.summable]
     refine tsum_congr fun k => ?_
     rw [Finset.mul_sum]
   have hCCA_eq : pCCA = ∑' k : List Bool, ProbComp.eval (E.keyGen n) k *

@@ -734,12 +734,8 @@ def fuelUpper (H : KeyedHashFamily) (ckg dkg c d n : ℕ) : ℕ :=
 theorem computableInPolyTime_fuelUpper (H : KeyedHashFamily) (ckg dkg c d : ℕ) :
     ComputableInPolyTime (fuelUpper H ckg dkg c d) encUnary encUnary := by
   have hM := computableInPolyTime_otsParam H
-  have hkg := (ComputableInPolyTime.const ckg).unary_mul'
-    ((ComputableInPolyTime.unary_pow dkg).comp (hM.unary_add' (.const 1)))
-  have hfourN := (ComputableInPolyTime.const 4).unary_mul' .id'
-  have hinner := (hfourN.unary_add' hkg).unary_add' (.const 3)
-  exact (ComputableInPolyTime.const c).unary_mul'
-    ((ComputableInPolyTime.unary_pow d).comp hinner)
+  unfold fuelUpper
+  fun_prop
 
 /-- Saved state passed from `tcrMultiAdversary.choose` to `tcrMultiAdversary.find`. -/
 @[ext]
@@ -1208,13 +1204,6 @@ private theorem exists_slot_of_mem_replayPairs {k : ℕ} {Control : Type}
           simp only [htake, hget, ← hcfg, queryOf, hs, htr, and_self]
         · exact hOld htail
 
-private theorem finset_sum_tsum {ι α : Type*} (s : Finset ι) (f : ι → α → ℝ≥0∞) :
-    (∑ i ∈ s, ∑' a, f i a) = ∑' a, ∑ i ∈ s, f i a := by
-  classical
-  refine Finset.induction_on s (by simp) fun i s hi ih => ?_
-  simp only [Finset.sum_insert hi, ih,
-    ← Summable.tsum_add CompleteLattice.summable CompleteLattice.summable]
-
 private theorem succProbability_map_le_add_sum {α ι : Type*} [Fintype ι] (μ : PMF α)
     (f g : α → Bool) (h : ι → α → Bool)
     (hfg : ∀ x ∈ μ.support, f x = true → g x = true ∨ ∃ i, h i x = true) :
@@ -1222,7 +1211,8 @@ private theorem succProbability_map_le_add_sum {α ι : Type*} [Fintype ι] (μ 
       Game.succProbability (μ.map g) + ∑ i, ((μ.map (h i)) true).toNNReal := by
   have hsum_ennreal : (μ.map f) true ≤ (μ.map g) true + ∑ i, (μ.map (h i)) true := by
     simp only [PMF.map_apply]
-    rw [finset_sum_tsum, ← Summable.tsum_add CompleteLattice.summable CompleteLattice.summable]
+    rw [← Summable.tsum_finsetSum fun _ _ => CompleteLattice.summable,
+      ← Summable.tsum_add CompleteLattice.summable CompleteLattice.summable]
     refine tsum_le_tsum fun sample => ?_
     by_cases hs : sample ∈ μ.support
     · by_cases hw : f sample = true

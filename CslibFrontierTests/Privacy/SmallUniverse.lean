@@ -54,7 +54,7 @@ example : min ((2 : ℕ) : ℝ) (Fintype.card (Fin 33)) / (1 / 40) ≤ Fintype.c
 noise at least `5 / 64` with probability more than `1 / 2` on some dataset. -/
 example : ∃ F : (Fin 80 → Fin 33) → Fin 2 → ℝ,
     (∀ (x : Fin 80 → Fin 33) (σ : Equiv.Perm (Fin 80)), F (x ∘ σ) = F x) ∧
-    (∀ x y : Fin 80 → Fin 33, HammingAdjacent x y → ∀ j, |F x j - F y j| ≤ 1) ∧
+    PointwiseSensitivity HammingAdjacent F 1 ∧
     ∃ x, 2⁻¹ < (PMF.pure (0 : Fin 2 → ℝ)).toOuterMeasure {a | ∃ j, 5 / 64 ≤ |a j - F x j|} := by
   obtain ⟨F, hsymm, hsens, hF⟩ := exists_symmetric_query_forall_exists_half_lt
     (ι := Fin 80) (X := Fin 33) (k := 2) le_rfl (by simp) (ε := 1 / 40) (by norm_num)
@@ -77,7 +77,7 @@ example : ∃ F : (Fin 80 → Fin 33) → Fin 2 → ℝ,
 noise bound is `2 / (1024 / 18) = 9 / 256`. -/
 example : ∃ F : (Fin 36 → Fin 33) → Fin 2 → ℝ,
     (∀ (x : Fin 36 → Fin 33) (σ : Equiv.Perm (Fin 36)), F (x ∘ σ) = F x) ∧
-    (∀ x y : Fin 36 → Fin 33, HammingAdjacent x y → ∀ j, |F x j - F y j| ≤ 1) ∧
+    PointwiseSensitivity HammingAdjacent F 1 ∧
     ∀ M : (Fin 36 → Fin 33) → PMF (Fin 2 → ℝ), DifferentiallyPrivate HammingAdjacent M (1 / 18) 0 →
       ∃ x, 2⁻¹ < (M x).toOuterMeasure {a | ∃ j, 9 / 256 ≤ |a j - F x j|} := by
   obtain ⟨F, hsymm, hsens, hF⟩ := exists_symmetric_query_forall_exists_half_lt

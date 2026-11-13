@@ -14,6 +14,7 @@ import CslibFrontier.Computability.Probabilistic.Memoize
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.BitString
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Languages.Probabilistic.Oracle.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Substitution
@@ -255,7 +256,7 @@ private theorem prefix_eager (n depth width : ℕ) (hdepth : depth ≤ n)
       ProbOracleComp (fun _ : BitString depth => List Bool) (List Bool))
     else pure []
   have h := RandomOracle.interpret_prob_eq_memoize_map
-    (⟨List.ofFn, List.ofFn_injective⟩ : BitString depth ↪ List Bool) List.ofFn
+    (encBitString depth) List.ofFn
     (fun _ => PMF.uniformOfFintype (BitString width)) (fun _ => BitString.uniformList width)
     (fun _ => rfl)
     (ProbOracleComp.simulate (fun request : Unit × List Bool => adapter request.2) program)
@@ -282,7 +283,7 @@ private theorem prefix_eager (n depth width : ℕ) (hdepth : depth ≤ n)
     by_cases hquery : query.length = n <;> simp [adapter, hquery, PMF.pure_map]
   simpa only [prefixTableGame, ProbComp.eval_bind, ProbComp.eval_uniform,
     ProbOracleComp.eval_interpret, ProbComp.eval_pure, PMF.pi_uniformOfFintype,
-    ProbOracleComp.interpret_simulate, Function.Embedding.coeFn_mk, hstep, heval,
+    ProbOracleComp.interpret_simulate, encBitString_apply, hstep, heval,
     PMF.monad_bind_eq_bind] using h
 
 private def childrenEquiv (n : ℕ) : BitString (2 * n) ≃ (Bool → BitString n) :=

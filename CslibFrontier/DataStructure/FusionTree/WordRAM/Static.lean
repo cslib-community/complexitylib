@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.DataStructure.FusionTree.WordRAM.Query
+public import CslibFrontier.DataStructure.OrderedSet.Basic
 
 /-!
 # Static fusion trees for finite sets
@@ -20,13 +21,14 @@ program, whose bounded-size nonuniform code family depends only on physical word
 The explicit arena contract covers the whole allocation frontier, in addition to the keys
 and query fitting words. The returned option is two words: presence in register 32 and a key
 in register 33. This distinguishes absence from key zero without requiring an extra data bit.
+The answer is the conventional inclusive predecessor: the greatest key at most the query,
+`OrderedSet.greatest (s.filter (· ≤ q))`, or `none` when every key exceeds the query.
 
 ## Main definitions
 
 * `Static.orderedKeys`: the elements of a finite set as a strictly increasing list.
 * `Static.tree`: the tree constructed from an arbitrary finite set.
 * `Static.initial`: its actual preprocessed memory and query registers.
-* `Static.IsPredecessor`: conventional inclusive predecessor semantics.
 * `Static.workingWords`: allocated data words plus all 1024 query registers.
 
 ## Main results
@@ -57,11 +59,6 @@ def tree (w : ℕ) (s : Finset ℕ) : Tree := Tree.build (branching w) (orderedK
 /-- Preprocessed memory, query, and base address, with zero initial workspace registers. -/
 noncomputable def initial (w : ℕ) (s : Finset ℕ) (base q : ℕ) : Data QueryProgram.registers :=
   QueryProgram.initial w (orderedKeys s) base q
-
-/-- Conventional inclusive predecessor, with a separate case for absence. -/
-def IsPredecessor (s : Finset ℕ) (q : ℕ) : Option ℕ → Prop
-  | none => ∀ k ∈ s, q < k
-  | some a => a ∈ s ∧ a ≤ q ∧ ∀ k ∈ s, k ≤ q → k ≤ a
 
 /-- All allocated data and working registers. The compiled program has a separate uniform
 size bound of 201051 instructions, including halt; it contains the width-only constants. -/
@@ -100,7 +97,7 @@ theorem query_spec {w base q : ℕ} (s : Finset ℕ) (hw : 2 ≤ w)
           ⟨(QueryProgram.code w).size, y⟩ k ∧
         Executes w (QueryProgram.program w) ⟨0, initial w s base q⟩
           (y.regs QueryProgram.value) (k + 1) ∧
-        IsPredecessor s q (QueryProgram.answer y) ∧
+        QueryProgram.answer y = OrderedSet.greatest (s.filter (· ≤ q)) ∧
         y.mem = (initial w s base q).mem ∧ y.regs QueryProgram.query = q := by
   have hs : (orderedKeys s).Pairwise (· < ·) := s.sortedLT_sort.pairwise
   have hkeys : ∀ k ∈ orderedKeys s, Fits w k := by
@@ -108,12 +105,15 @@ theorem query_spec {w base q : ℕ} (s : Finset ℕ) (hw : 2 ≤ w)
   obtain ⟨hb, _, y, k, ht, hr, he, hy⟩ := QueryProgram.query_spec hw hs hkeys ha hq
   refine ⟨hb, workingWords_le w s, y, k, ?_, hr, he, ?_, hy.mem_eq, hy.query_eq⟩
   · simpa only [orderedKeys, Finset.length_sort] using ht
-  · cases hans : QueryProgram.answer y with
+  · refine (OrderedSet.greatest_eq_iff.mpr ?_).symm
+    cases hans : QueryProgram.answer y with
     | none =>
       have hnone := (QueryProgram.answer_none_iff hs hy).mp hans
-      simpa only [IsPredecessor, orderedKeys, Finset.mem_sort] using hnone
+      simpa only [OrderedSet.GreatestResult, Finset.filter_eq_empty_iff, not_le, orderedKeys,
+        Finset.mem_sort] using hnone
     | some a =>
       have hsome := (QueryProgram.answer_some_iff hs hy).mp hans
-      simpa only [IsPredecessor, orderedKeys, Finset.mem_sort] using hsome
+      simpa only [OrderedSet.GreatestResult, Finset.mem_filter, and_imp, and_assoc, orderedKeys,
+        Finset.mem_sort] using hsome
 
 end Cslib.DataStructure.FusionTree.WordRAM.Static

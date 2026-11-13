@@ -284,6 +284,12 @@ theorem endOfPotentialLineRel_of_sinkOfPotentialLineRel (h : sinkOfPotentialLine
     endOfPotentialLineRel n P S V a u :=
   endOfPotentialLineRel_iff.mpr (.inl h)
 
+/-- The sinks of a potential line are its ends without a potential-increasing outgoing edge. -/
+theorem sinkOfPotentialLineRel_iff : sinkOfPotentialLineRel n P S V a u ↔
+    endOfPotentialLineRel n P S V a u ∧ hasPotentialOut n P S V a u = false := by
+  rw [sinkOfPotentialLineRel_eq, endOfPotentialLineRel_eq, ← hasOut_potential]
+  exact sinkOfLineRel_iff
+
 /-- `endOfPotentialLineRel` is total whenever the successor map preserves the vertex bit-length. -/
 theorem isTotalSearch_endOfPotentialLineRel (hS : ∀ a u, u.length = n a → (S (a, u)).length = n a) :
     IsTotalSearch (endOfPotentialLineRel n P S V) := by

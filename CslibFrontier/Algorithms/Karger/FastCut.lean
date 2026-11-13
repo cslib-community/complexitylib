@@ -8,8 +8,9 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Init
-public import CslibFrontier.Algorithms.WordRAM.Karger.Graph
+public import CslibFrontier.Algorithms.Karger.Graph
 public import CslibFrontier.Languages.Probabilistic.QueryCount.Support
+import CslibFrontier.Foundations.Analysis.ENNRealNatDiv
 import CslibFrontier.Foundations.Analysis.ENNRealOneSubInvPow
 
 /-!
@@ -17,7 +18,10 @@ import CslibFrontier.Foundations.Analysis.ENNRealOneSubInvPow
 
 Combinatorial, arithmetic, and probabilistic foundations for the Karger–Stein recursive global
 minimum cut algorithm (`[KargerStein1996]`, Section 4, Figure 6, Lemmas 4.1–4.3, and the
-minimum-cut-value part of Theorem 4.4; paraphrase) on the randomized word RAM.
+minimum-cut-value part of Theorem 4.4; paraphrase). The definitions are plain arithmetic: the
+recursion of the specification (`CslibFrontier.Algorithms.Lean.Karger.FastCut`) and the word-RAM
+program (`CslibFrontier.Algorithms.WordRAM.KargerStein`) both use them, and the time, query and
+scratch budgets are the ones the program is charged against.
 
 ## Design notes and deviations from `[KargerStein1996]`
 
@@ -49,30 +53,30 @@ minimum-cut-value part of Theorem 4.4; paraphrase) on the randomized word RAM.
 
 ## Main definitions
 
-* `Cslib.Algorithms.WordRAM.Karger.fastCutThreshold`: smallest integer `t ≥ 2` satisfying
+* `Cslib.Algorithms.Karger.fastCutThreshold`: smallest integer `t ≥ 2` satisfying
   `k * (k - 1) ≤ 2 * t * (t - 1)`.
-* `Cslib.Algorithms.WordRAM.Karger.fastCutDepth`,
-  `Cslib.Algorithms.WordRAM.Karger.frameSize`,
-  `Cslib.Algorithms.WordRAM.Karger.fastCutScratch`: recursion depth, per-frame memory footprint, and
+* `Cslib.Algorithms.Karger.fastCutDepth`,
+  `Cslib.Algorithms.Karger.frameSize`,
+  `Cslib.Algorithms.Karger.fastCutScratch`: recursion depth, per-frame memory footprint, and
   root-to-leaf active stack scratch bound.
-* `Cslib.Algorithms.WordRAM.Karger.fastCutNodeTime`,
-  `Cslib.Algorithms.WordRAM.Karger.fastCutNodeQueries`,
-  `Cslib.Algorithms.WordRAM.Karger.fastCutTrials`: explicit time, `rand`-call, and high-probability
+* `Cslib.Algorithms.Karger.fastCutNodeTime`,
+  `Cslib.Algorithms.Karger.fastCutNodeQueries`,
+  `Cslib.Algorithms.Karger.fastCutTrials`: explicit time, `rand`-call, and high-probability
   amplification budgets.
 
 ## Main results
 
-* `Cslib.Algorithms.WordRAM.Karger.two_mul_pot_threshold_le`: quadratic potential halving
+* `Cslib.Algorithms.Karger.two_mul_pot_threshold_le`: quadratic potential halving
   `2 * (fastCutThreshold k - 4) ^ 2 ≤ (k - 4) ^ 2` for every `k ≥ 7`, proved via integer arithmetic
   without real square roots.
-* `Cslib.Algorithms.WordRAM.Karger.fastCutDepth_le_two_mul_log`: recursion depth bound
+* `Cslib.Algorithms.Karger.fastCutDepth_le_two_mul_log`: recursion depth bound
   `fastCutDepth k ≤ 2 * Nat.log 2 k`.
-* `Cslib.Algorithms.WordRAM.Karger.fastCutScratch_le`: total root-to-leaf stack workspace bound
+* `Cslib.Algorithms.Karger.fastCutScratch_le`: total root-to-leaf stack workspace bound
   `fastCutScratch n ≤ 26 * (n * n)` for `n ≥ 2` (`[KargerStein1996]`, Section 4, Lemma 4.2;
   paraphrase).
-* `Cslib.Algorithms.WordRAM.Karger.root_hit_prob_eq`: normalize the root-depth success bound to
+* `Cslib.Algorithms.Karger.root_hit_prob_eq`: normalize the root-depth success bound to
   `1 / (Nat.log 2 n + 15)` (`[KargerStein1996]`, Section 4, Lemma 4.3; paraphrase).
-* `Cslib.Algorithms.WordRAM.Karger.fastCutHighProb_failure_le`: amplified failure bound
+* `Cslib.Algorithms.Karger.fastCutHighProb_failure_le`: amplified failure bound
   `≤ 1 / (2 * n)` (the minimum-cut-value part of `[KargerStein1996]`, Section 4, Theorem 4.4;
   paraphrase), without `Real.log` or `Real.exp`.
 
@@ -84,7 +88,7 @@ minimum-cut-value part of Theorem 4.4; paraphrase) on the randomized word RAM.
 
 @[expose] public section
 
-namespace Cslib.Algorithms.WordRAM.Karger
+namespace Cslib.Algorithms.Karger
 
 open scoped ENNReal
 open Cslib.Probability.PMF
@@ -616,7 +620,7 @@ theorem fastCutHighProb_failure_le (n : ℕ) :
         pow_le_pow_left' (by simpa only [one_div] using
           ENNReal.one_sub_inv_pow_le_inv_two (k := Nat.log 2 n + 15) (by omega)) _
     _ = (1 : ℝ≥0∞) / ((2 ^ (Nat.log 2 n + 2) : ℕ) : ℝ≥0∞) := by
-        simp only [div_eq_mul_inv, mul_pow, one_pow, ENNReal.inv_pow, Nat.cast_pow, Nat.cast_ofNat]
+        rw [ENNReal.div_pow, one_pow, Nat.cast_pow, Nat.cast_ofNat]
     _ ≤ (1 : ℝ≥0∞) / ((2 * n : ℕ) : ℝ≥0∞) := by
         apply ENNReal.div_le_div_left
         have hlt : n < 2 ^ (Nat.log 2 n + 1) := Nat.lt_pow_succ_log_self (by decide) n
@@ -633,4 +637,4 @@ theorem fastCutHighProb_failure_le_inv_n (n : ℕ) :
   apply ENNReal.div_le_div_left
   exact_mod_cast (by omega : n ≤ 2 * n)
 
-end Cslib.Algorithms.WordRAM.Karger
+end Cslib.Algorithms.Karger

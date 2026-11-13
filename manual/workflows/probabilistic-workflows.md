@@ -106,7 +106,16 @@ counting tuples when the factors are not uniform. `pi_map_curry` in
 [Product/Reindex.lean](../../CslibFrontier/Probability/Product/Reindex.lean) splits a product
 indexed by `ι × κ` into independent blocks, and `toOuterMeasure_pi_forall` in
 [Product/Event.lean](../../CslibFrontier/Probability/Product/Event.lean) is the probability of a
-box `{u | ∀ i, u i ∈ E i}`. For a biased bit, use `coin p` from
+box `{u | ∀ i, u i ∈ E i}`. For a uniform draw on a finite group, import
+[Uniform.lean](../../CslibFrontier/Probability/Uniform.lean): `uniformOfFintype_map_add_left` and
+`uniformOfFintype_bind_add_left`, with their `_right` forms, remove a fixed mask as in the one-time
+pad; `uniformOfFintype_map_addHom` and `uniformOfFintype_map_monoidHom` push the uniform law
+through a surjective homomorphism; and `uniformOfFintype_map_comp` reads a uniform function
+through an injection. For a dependent function, `uniformOfFintype_map_comp_dep` in
+[Product/Split.lean](../../CslibFrontier/Probability/Product/Split.lean) needs only nonempty
+fibres. On any finite type, `uniformOfFintype_bind_bijective` in
+[PMF/Uniform.lean](../../CslibFrontier/Probability/PMF/Uniform.lean) changes variables in a uniform
+draw along a bijection. For a biased bit, use `coin p` from
 [PMF/Coin.lean](../../CslibFrontier/Probability/PMF/Coin.lean), with `p : unitInterval`; Mathlib's
 `PMF.bernoulli` is deprecated. `toMeasure_coin` identifies `(coin p).toMeasure` with Mathlib's
 `ProbabilityTheory.bernoulliMeasure true false p`, and `entropy_coin` in
@@ -151,12 +160,26 @@ For a Boolean distribution `p : PMF Bool`, import
 `PMF.apply_true_add_apply_false p : p true + p false = 1` rather than rewriting with `tsum_bool`
 and `PMF.tsum_coe` by hand. Its real forms are `PMF.toReal_true_add_toReal_false` and
 `PMF.toReal_false_eq_one_sub`. The same module bounds Boolean events written as `(p.map E) true`:
-`PMF.map_true_mono`, `PMF.map_true_le_add` and `PMF.map_any_range_true_le_sum` (a union bound),
-and `PMF.map_not_true` for complements. To compose an event bound through `PMF.bind`, use the
-`PMF.toOuterMeasure_bind_*` lemmas in
+`PMF.map_true_mono`, `PMF.map_true_le_add`, the union bounds `PMF.map_true_le_sum` (over any
+`s : Finset ι`) and `PMF.map_any_range_true_le_sum`, `PMF.map_apply_true` (the expectation of the
+indicator of `E`), and `PMF.map_not_true` for complements. A two-stage experiment
+`p.bind fun a => PMF.pure (E a)` is `p.map E` by definition, so these lemmas apply to it directly.
+To compose an event bound through `PMF.bind`, use the `PMF.toOuterMeasure_bind_*` lemmas in
 [PMF/EventBind.lean](../../CslibFrontier/Probability/PMF/EventBind.lean). The
 [checked examples](../../CslibFrontierTests/PMFBool.lean) recover the mass of `false` from the mass of
-`true`; run `scripts/build.sh CslibFrontierTests.PMFBool`.
+`true` and apply the finite union bound; run `scripts/build.sh CslibFrontierTests.PMFBool`.
+
+To show that a pushforward or a two-stage experiment is deterministic, import
+[PMF/Support.lean](../../CslibFrontier/Probability/PMF/Support.lean): `PMF.map_eq_pure_iff` says
+`p.map f = PMF.pure b` exactly when `f a = b` for every `a ∈ p.support`, and
+`PMF.bind_eq_pure_of_forall_mem_support` gives `p.bind f = PMF.pure b` from `f a = PMF.pure b` on the
+support. Perfect-correctness statements of the form `Pr[correct] = 1` written as
+`(...).map isCorrect = PMF.pure true` reduce to a pointwise check this way, and
+`PMF.ne_of_map_eq_pure` separates two distributions whose pushforwards are different point masses.
+The same module records that pairing with a constant (`snd_eq_of_mem_support_map_pair`) or lifting
+into `StateT` (`snd_eq_of_mem_support_lift`, `toOuterMeasure_lift_eq_zero`) keeps the state fixed on
+the support. The [checked examples](../../CslibFrontierTests/PMFSupport.lean) cover each direction;
+run `scripts/build.sh CslibFrontierTests.PMFSupport`.
 
 Moving a bound between `ℝ≥0∞` and `ℝ` or `ℝ≥0` (`ENNReal.toReal_mono`, `ENNReal.toReal_add`,
 `ENNReal.toNNReal_mono`, `ENNReal.toReal_sum`) needs every term to be finite. Import
@@ -1268,6 +1291,23 @@ normal form; it does not unfold support membership or probability masses. The ch
 To prove that two normal forms differ only in the order of independent samples, use `pmf_swap`
 ([Reorder independent samples](../design-and-assurance/automation.md#reorder-independent-samples)).
 
+## Bind a program inside a distribution
+
+A game that has to stay a `PMF`, for example because its setup law is not sampleable, can bind
+programs directly once it imports
+[Lift.lean](../../CslibFrontier/Languages/Probabilistic/Lift.lean). Write
+`let ((x, y), s) ← A.choose ()` instead of `let ((x, y), s) ← ProbComp.eval (A.choose ())`, and end
+the block with `A.guess s c` instead of `ProbComp.eval (A.guess s c)`. The lift is `ProbComp.eval`,
+so the lifted definition equals the explicit one by `rfl`. `simp only [pmf_norm]` rewrites each lift
+back to `ProbComp.eval`, after which the existing law lemmas apply. Use `ProbComp.liftM_eq_eval`
+for a bare `rw` after `unfold`. With the import, any program passed where a distribution is
+expected is lifted silently: `Game.advantage program μ` elaborates. So public statements keep
+naming `ProbComp.eval`, `Pr[e]` or `Experiment` explicitly, and the lift is for definition bodies.
+`Pr[e]` on a program still elaborates to `(ProbComp.eval e true).toReal`. A computational
+experiment that is a program throughout stays a `ProbComp Bool`. The
+[checked examples](../../CslibFrontierTests/ProbabilisticLift.lean) prove a chooser/guesser game
+equal to its explicit form both ways. Run `scripts/build.sh CslibFrontierTests.ProbabilisticLift`.
+
 ## Invert a support membership
 
 A proof that starts from `h : x ∈ m.support` usually needs the intermediate results that produced
@@ -2353,8 +2393,9 @@ root to check them.
 Additivity, `gaussianNoiseOp_add`, holds only `γ`-almost everywhere, because the Bochner integral
 is `0` off the integrable functions; scaling by a constant holds everywhere. For multilinear
 polynomials, the semigroup law `U_ρ U_σ = U_ρσ` and continuity at `ρ = 1`, see
-[Compose Gaussian noise operators](#compose-gaussian-noise-operators). Hermite expansions are not
-part of this module.
+[Compose Gaussian noise operators](#compose-gaussian-noise-operators). For `U_ρ` on Hermite
+expansions (Proposition 11.37), see
+[Expand Gaussian functions in the Hermite basis](#expand-gaussian-functions-in-the-hermite-basis).
 
 ## Compose Gaussian noise operators
 
@@ -2429,8 +2470,83 @@ Propositions 11.31 and 11.33 in one and two dimensions, and recover Fact 11.13 f
 `multiHermite_indicator`. Run `scripts/build.sh CslibFrontierTests.GaussianHermite` from the
 repository root to check them.
 
-Completeness of the Hermite basis (Theorem 11.22), Hermite expansions and Plancherel
-(Definition 11.34, Propositions 11.36 and 11.37) are not formalized here.
+For completeness of the Hermite basis, Hermite coefficients and Plancherel, see
+[Expand Gaussian functions in the Hermite basis](#expand-gaussian-functions-in-the-hermite-basis).
+
+## Expand Gaussian functions in the Hermite basis
+
+Import
+[`CslibFrontier.Foundations.Probability.Gaussian.HermiteExpansion`](../../CslibFrontier/Foundations/Probability/Gaussian/HermiteExpansion.lean)
+for the Hermite basis and expansions, and
+[`CslibFrontier.Foundations.Probability.Gaussian.PolynomialDense`](../../CslibFrontier/Foundations/Probability/Gaussian/PolynomialDense.lean)
+for the density of polynomials. Open `MeasureTheory` and `ProbabilityTheory`, and write `γ` for
+`Measure.pi fun _ : ι => gaussianReal 0 1` on `ι → ℝ` with `[Fintype ι]`. Membership in `L²(γ)` is
+`hf : MemLp f 2 γ`, and `hf.toLp f : Lp ℝ 2 γ` is the class of `f`; `memLp_multiHermite α` supplies
+it for `h_α`.
+
+- `topologicalClosure_span_prod_pow_pi_gaussianReal` says the monomials `∏ i, z i ^ k i` span a
+  dense subspace of `Lp ℝ 2 γ` (Theorem 11.22 for `p = 2`). For a single function,
+  `exists_eLpNorm_sub_eval_lt_pi_gaussianReal hf hε` gives a polynomial
+  `p : MvPolynomial ι ℝ` with `eLpNorm (f - fun z => MvPolynomial.eval z p) 2 γ < ε` for
+  `0 < ε`. `ae_eq_zero_of_forall_integral_mul_prod_pow_eq_zero_pi_gaussianReal hf h` is the
+  underlying fact: an `L²` function orthogonal to every monomial is `0` almost everywhere.
+- `hermiteBasis ι : HilbertBasis (ι → ℕ) ℝ (Lp ℝ 2 γ)` is the Hermite basis (Proposition 11.33),
+  with `hermiteBasis_apply α` identifying its vectors with the classes of `h_α`.
+  `orthonormal_multiHermite` and `topologicalClosure_span_multiHermite` are its two halves. In one
+  dimension, `normalizedHermiteBasis : HilbertBasis ℕ ℝ (Lp ℝ 2 (gaussianReal 0 1))` is
+  Proposition 11.30, with `normalizedHermiteBasis_apply j` giving the class of `h_j` (membership
+  `memLp_normalizedHermite j`, in the `Hermite` module).
+- `hermiteCoeff f α = ∫ z, f z * multiHermite α z ∂γ` is `f̂(α)`, unfolded by `hermiteCoeff_def`;
+  `hermiteBasis_repr hf α` says it is the `α`-th coordinate of `hf.toLp f`, and
+  `hermiteCoeff_coeFn v α` says the same for an element `v` of `L²(γ)`. Conversely,
+  `hermiteBasis_repr_tsum_smul hc α` reads off the coordinates of `∑' β, c β • hermiteBasis ι β`
+  for `c ∈ ℓ²`. `hermiteCoeff_zero f`
+  is the mean `∫ z, f z ∂γ`; `hermiteCoeff_add hf hg α` (both in `L²`), `hermiteCoeff_const_mul`
+  and `hermiteCoeff_congr_ae` give linearity and invariance under `=ᵐ[γ]`.
+- `hermiteCoeff_multiHermite α β` is `if α = β then 1 else 0`. For a finite combination,
+  `hermiteCoeff_sum_mul_multiHermite s c β α` gives `∑ j ∈ s, if β j = α then c j else 0`, and
+  `hermiteCoeff_sum_mul_prod s c T` (with `[DecidableEq ι]`) reads off the coefficient
+  `if T ∈ s then c T else 0` of a multilinear polynomial `∑ S ∈ s, c S * ∏ i ∈ S, z i` at the
+  indicator multi-index of `T` (Remark 11.35).
+- `hasSum_hermiteCoeff_smul hf` is the Hermite expansion `f = ∑ α, f̂(α) h_α` in `Lp ℝ 2 γ`
+  (Definition 11.34), and `tendsto_sum_degree_le_hermiteCoeff_smul hf` (with `[DecidableEq ι]`)
+  its partial sums over `∑ i, α i ≤ k`. Uniqueness holds in both forms: any `c` whose
+  degree-ordered partial sums converge to `hf.toLp f`
+  (`hermiteCoeff_eq_of_tendsto_sum_degree_le hf h`, the book's definition), or with
+  `HasSum (fun α => c α • (memLp_multiHermite α).toLp (multiHermite α)) (hf.toLp f)`
+  (`hermiteCoeff_eq_of_hasSum hf h`), equals `hermiteCoeff f`.
+- Plancherel and Parseval (Proposition 11.36) are `hasSum_hermiteCoeff_mul_hermiteCoeff hf hg` and
+  `hasSum_hermiteCoeff_sq hf`, with `tsum` forms
+  `integral_mul_eq_tsum_hermiteCoeff_mul_hermiteCoeff` and `integral_sq_eq_tsum_hermiteCoeff_sq`.
+- For `|ρ| ≤ 1`, `hermiteCoeff_gaussianNoiseOp hρ hf α` is `(U_ρ f)^(α) = ρ ^ |α| f̂(α)`, and
+  `hasSum_hermiteCoeff_gaussianNoiseOp_smul hρ hf` the expansion of `U_ρ f` (Proposition 11.37).
+  `hasSum_gaussianNoiseStability hρ hf` and `gaussianNoiseStability_eq_tsum hρ hf` give
+  `Stab_ρ[f] = ∑ α, ρ ^ |α| f̂(α)²`.
+
+Like `gaussianNoiseStability`, `hermiteCoeff f` is defined for every `f`, and is `0` at `α` when
+`f * h_α` is not integrable; every expansion theorem takes `MemLp f 2 γ`. The inner product of two
+`L²` classes, `⟪hf.toLp f, hg.toLp g⟫ = ∫ conj (f a) * g a ∂μ`, is
+`MeasureTheory.L2.inner_toLp_toLp` in
+[`CslibFrontier.Foundations.MeasureTheory.Function.L2Space`](../../CslibFrontier/Foundations/MeasureTheory/Function/L2Space.lean).
+To prove that another family `v k` of real `L²(μ)` functions spans a dense subspace, use
+`MeasureTheory.L2.topologicalClosure_span_toLp_eq_top hv h` from the same module, where `h` says
+that every `f ∈ L²(μ)` with `∫ a, f a * v k a ∂μ = 0` for all `k` is `0` almost everywhere.
+
+The checked [`GaussianHermiteExpansion.lean` clients](../../CslibFrontierTests/GaussianHermiteExpansion.lean)
+approximate a halfspace indicator by a polynomial, read basis coordinates in both bases, compute
+`E[(z₀ z₁)²] = 1` and `E[x⁴] = 3` by Parseval and `E[x² h₂] = √2` by Plancherel, read off a
+multilinear polynomial's coefficient, compute the mean `f̂(0) = 1 / 2` of a halfspace indicator,
+truncate expansions by degree, recover Proposition 11.37 from uniqueness and compute
+`Stab_ρ[h_α] = ρ ^ |α|` from the series. Run
+`scripts/build.sh CslibFrontierTests.GaussianHermiteExpansion` from the repository root to check
+them.
+
+Theorem 11.22 is formalized only for `p = 2`, where the orthogonal complement of the
+polynomials in the Hilbert space `L²(γ)` is `0`. The duality argument used here would need, for
+`p > 2`, every continuous linear functional on `L^p` to be integration against an `L^q` function,
+which Mathlib does not provide.
+The case `1 ≤ p < 2` follows from `p = 2`, since `‖·‖_p ≤ ‖·‖_2` for a probability measure and
+`L²` is dense in `L^p`, but it is not stated.
 
 ## Compare bits with Gaussians by the invariance principle
 

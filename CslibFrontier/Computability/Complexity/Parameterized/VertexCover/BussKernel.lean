@@ -307,10 +307,8 @@ theorem graph_mem_iff (hk : cap x = x.k) (hh : (high x).length ≤ cap x) :
       have hva : v ∈ a := (mem_active _).2 ⟨hvl, u, hul, hadj.symm⟩
       have hi := List.idxOf_lt_length_iff.2 hua
       have hj := List.idxOf_lt_length_iff.2 hva
-      have hgi : a.getD (a.idxOf u) 0 = u := by
-        rw [List.getD_eq_getElem _ _ hi, List.getElem_idxOf]
-      have hgj : a.getD (a.idxOf v) 0 = v := by
-        rw [List.getD_eq_getElem _ _ hj, List.getElem_idxOf]
+      have hgi : a.getD (a.idxOf u) 0 = u := by simp [List.getD_eq_getElem?_getD, hua]
+      have hgj : a.getD (a.idxOf v) 0 = v := by simp [List.getD_eq_getElem?_getD, hva]
       have hadj' : (graph ⟨G, k⟩).toSimpleGraph.Adj (a.idxOf u) (a.idxOf v) := by
         refine graph_adj.2 ⟨fun h => hadj.ne (by rw [← hgi, ← hgj, h]), Or.inl ?_⟩
         rw [mem_edges, ← ha, hgi, hgj]
