@@ -30,8 +30,9 @@ OWF-to-PRG construction; merely being hard to predict is not sufficient.
 `SamplablePair.HasGapWithAdvice` gives every predictor an advice word from a fixed family. The
 extraction and generator theorems built on this module are stated relative to such a family; their
 uniform cases follow at empty advice from `hasGap_iff_hasGapWithAdvice_nil` and
-`computationallyIndistinguishable_iff_indistinguishableWithAdvice_nil`, with
-`IsPPT.dropAdvice` and `IsPPTOn.nilAdvice` converting uniform tests and certificates.
+`computationallyIndistinguishable_iff_indistinguishableWithAdvice_nil`. `IsPPT.dropAdvice` and
+`IsPPTOn.nilAdvice` convert uniform tests and certificates; a test over another input shape
+first needs `IsPPTOn.preprocess` to reach the advised word layout.
 
 This interface records the joint law and its sampler. The shared saved-coin interface exposes a
 strict PPT sampler's fair-bit tape as a uniform seed, including unused randomness.

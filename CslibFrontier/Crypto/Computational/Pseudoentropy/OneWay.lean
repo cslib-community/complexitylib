@@ -67,11 +67,11 @@ parameter and word alone. -/
 private theorem exists_advice_budget_le {advice : ℕ → List Bool}
     (hadvice : PolynomiallyBounded (fun n => (advice n).length)) (c d : ℕ) :
     ∃ c' d' : ℕ, ∀ n word,
-      c * ((encPair (encPair encUnary encBits) encBits ((n, advice n), word)).length + 1) ^ d ≤
+      c * ((encAdvisedInput ((n, advice n), word)).length + 1) ^ d ≤
         c' * ((encPair encUnary encBits (n, word)).length + 1) ^ d' := by
   obtain ⟨C, D, hC⟩ := polynomiallyBounded_iff_le.mp hadvice
   refine ⟨c * (2 * C + 4) ^ d, (D + 1) * d, fun n word => ?_⟩
-  simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
+  simp only [encAdvisedInput, length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
   set L := 2 * n + 1 + word.length + 1 with hL
   have hLD : L ≤ L ^ (D + 1) := Nat.le_self_pow (Nat.succ_ne_zero D) L
   have hCL : C * (n + 1) ^ D ≤ C * L ^ (D + 1) :=
@@ -115,8 +115,8 @@ theorem eventually_prediction_entropy_le_withAdvice {f : List Bool → List Bool
     (fun ((((_, word), _), (m, observation)), tape) => (((m, word), observation), tape) :
       (((ℕ × List Bool) × List Bool) × (ℕ × List Bool)) × List Bool →
         ((ℕ × List Bool) × List Bool) × List Bool)
-    (encPair (encPair (encPair (encPair encUnary encBits) encBits) (encPair encUnary encBits))
-      encBits) (encPair (encPair (encPair encUnary encBits) encBits) encBits) by fun_prop)
+    (encPair (encPair encAdvisedInput (encPair encUnary encBits))
+      encBits) (encPair encAdvisedInput encBits) by fun_prop)
   have hinverter := isPPTOn_wordInverter (evaluate := advisedEvaluate)
     (parameter := fun ((n, _), _) => n) (image := fun ((_, _), image) => image) hf hevaluate
     (by fun_prop) (by fun_prop) c' d' 3

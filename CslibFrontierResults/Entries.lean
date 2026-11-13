@@ -17,11 +17,13 @@ import CslibFrontier.Algorithms.Lean.TrimmedYates
 import CslibFrontier.Algorithms.LinearAlgebra.BareissElimination
 import CslibFrontier.Algorithms.Lean.TreeDecomposition.CSP
 import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
+import CslibFrontier.Computability.Circuit.Arithmetic.BitBlast
 import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.LowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.UpperBound
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.AnyOrder
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Basic
+import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConstantDepth
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConcentratingShiftSet
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.LowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.NoncommABP
@@ -30,6 +32,7 @@ import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.SetMultilinear
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Sparse
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.SparseOrbit
 import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.NineQuarters
+import CslibFrontier.Computability.Circuit.Boolean.Arithmetic
 import CslibFrontier.Computability.Circuit.Boolean.BarringtonClass
 import CslibFrontier.Computability.Circuit.Boolean.Braverman.Fooling
 import CslibFrontier.Computability.Circuit.Boolean.Formula.Andreev
@@ -636,6 +639,23 @@ register_result "braverman" where
     than Braverman's; size and depth count NOT gates and constants; nonuniform and \
     information-theoretic."
 
+register_result "boolean-two-element-arithmetic-simulation" where
+  title := "Boolean and two-element arithmetic circuits have linearly related sizes"
+  topic := "circuit complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 14, Exercise 1 (two-element case)",
+      locator := "Web draft 2007-01-08, printed p. 265; PDF p. 281" }
+  ]
+  theorems := [
+    Cslib.Circuits.Boolean.exists_arithmetic_simulation,
+    Cslib.Circuits.Boolean.exists_boolean_simulation
+  ]
+  scope := "Bool's Boolean ring, with XOR addition and AND multiplication. All outputs and \
+    all inputs are preserved; arithmetic simulates De Morgan circuits with size factor 3, \
+    and De Morgan circuits simulate arithmetic with factor 4. Constants count as gates; \
+    input/output wires are free. Nonuniform existence, not compiler runtime or formal \
+    polynomial equality. This does not complete the arbitrary fixed finite-field exercise."
+
 register_result "formal-complexity-measure-leaf-bound" where
   title := "Formal complexity measures lower-bound constant-free formula leaf size"
   topic := "circuit complexity"
@@ -695,6 +715,20 @@ register_result "one-bit-advice-undecidable" where
     decider and has the same membership for all words of equal length. Advice need not be \
     computable; no efficient construction of the undecidable advice family is claimed. \
     Arbitrary advice hierarchies and strict P/1 versus P/poly remain separate."
+
+register_result "arithmetic-bit-synthesis-injective-encoding" where
+  title := "Arithmetic bit-synthesis with injective fixed-width encodings"
+  topic := "circuit complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 14, Exercise 1 (synthesis-direction milestone)",
+      locator := "Web draft 2007-01-08, printed p. 265; PDF p. 281" }
+  ]
+  theorems := [Cslib.Circuits.Synthesis.bitBlast_arithmetic]
+  scope := "Arithmetic circuits on a semiring with supplied w-bit encoding and total decoder \
+    satisfying a left-inverse law. Given already-available encoded input functions, all output \
+    bits cost at most size * bitBlastCost w additional De Morgan gates. The encoding need not \
+    be surjective, admitting odd fields. No free-input compiler, reverse simulation, encoding \
+    construction or runtime claim; the full finite-field exercise remains open."
 
 register_result "formula-bounds" where
   title := "Formula lower bounds: Khrapchenko's quadratic bound for parity"
@@ -1158,6 +1192,33 @@ register_result "hitting-set-set-multilinear-depth-three" where
     from a source; the perfect hash family is the library's, so the size bound differs from \
     the source's. Existence and size of an explicit set only: no bit complexity and no \
     black-box algorithm model."
+
+register_result "hitting-set-constant-depth" where
+  title := "Subexponential hitting sets for constant-depth formulas from the LST lower bound"
+  topic := "algebraic complexity"
+  sources := [
+    { paper := LimayeSrinivasanTavenas2021, theorem := "Corollary 6, via Lemma 18",
+      locator := "printed p. 5 and §6 p. 13, ECCC TR21-081 rev. 1" },
+    { paper := ChouKumarSolomon2019, theorem := "Theorem 2.3",
+      locator := "printed p. 3 (arXiv:1803.05933v1)" },
+    { paper := BhattacharjeeEtAl2025, theorem := "Theorems 4.1 and 6.1",
+      locator := "printed pp. 19–20 and 28 (arXiv:2506.23214v1)" }
+  ]
+  theorems := [
+    Cslib.Circuits.Arithmetic.eventually_isHittingSet_constantDepthHittingSet_rpow,
+    Cslib.Circuits.Arithmetic.eventually_isHittingSet_constantDepthHittingSet_circuit_rpow,
+    Cslib.Circuits.Arithmetic.eventually_isHittingSet_constantDepthHittingSet,
+    Cslib.Circuits.Arithmetic.eventually_card_constantDepthHittingSet_le,
+    Cslib.Circuits.Arithmetic.eventually_isHittingSet_constantDepthHittingSet_circuit
+  ]
+  scope := "Over a field of characteristic zero, for every product-depth Δ, exponent c and \
+    real ε > 0, for all large n: an explicit set of at most 2^(n^ε) points of Kⁿ containing a \
+    non-root of every nonzero polynomial computed by an unbounded fan-in formula of \
+    product-depth at most Δ with at most n^c nodes, and, at a larger exponent, by a simple \
+    circuit of product-depth at most Δ with at most n^c gates. A finite form of LST \
+    Corollary 6, which is an identity test with running time (s^(Δ+1) n)^O(n^μ) for depth \
+    o(log log log n): here constant product-depth, existence and size of an explicit set with \
+    non-explicit large-n thresholds, no running time or uniformity, characteristic zero only."
 
 register_result "hitting-set-noncommutative-abp" where
   title := "Quasipolynomial hitting sets of matrices for non-commutative ABPs"

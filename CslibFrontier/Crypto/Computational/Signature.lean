@@ -61,6 +61,9 @@ We formalize two adaptive chosen-message security notions against uniform strict
 
 ## Main results
 
+* `Cslib.Crypto.SignatureScheme.exists_sign_length_bound`,
+  `Cslib.Crypto.SignatureScheme.exists_sign_length_bound_of_length_eq`: plain polynomial-time bounds
+  on signature lengths, in the security parameter and the message length or on `n`-bit messages.
 * `Cslib.Crypto.SignatureScheme.isPPTOn_run_signingOracleOf`,
   `Cslib.Crypto.SignatureScheme.isPPTOn_run_signingOracle`,
   `Cslib.Crypto.SignatureScheme.isPPTOn_eufCmaGame`, `isPPT_eufCmaGame`: strict PPT certificates
@@ -150,19 +153,39 @@ theorem computableInPolyTime_verify_comp (S : SignatureScheme)
     ComputableInPolyTime (fun a => S.verify (pk a) (msg a) (sig a)) encIn encBool :=
   .of_tidy (S.verify_polyTime.tidy.comp (hpk.tidy.prod (hmsg.tidy.prod hsig.tidy)))
 
+/-- Signatures have polynomially bounded length: some plain polynomial-time `bound n L` bounds
+every signature on a message of length `L` under a key pair sampled at parameter `n`. -/
+theorem exists_sign_length_bound (S : SignatureScheme) :
+    ∃ bound : ℕ → ℕ → ℕ,
+      ComputableInPolyTime (fun p : ℕ × ℕ => bound p.1 p.2) (encPair encUnary encUnary) encUnary ∧
+      ∀ n, ∀ keys ∈ (ProbComp.eval (S.keyGen n)).support, ∀ msg sig,
+        sig ∈ (ProbComp.eval (S.sign keys.2 msg)).support → sig.length ≤ bound n msg.length := by
+  obtain ⟨ck, dk, hlenk⟩ := S.keyGen_ppt.length_le
+  obtain ⟨cs, ds, hlens⟩ := S.sign_ppt.length_le
+  refine ⟨fun n L => cs * (2 * (ck * (n + 1) ^ dk) + L + 2) ^ ds, by fun_prop,
+    fun n keys hkeys msg sig hsig => ?_⟩
+  have hkeyLen := hlenk n keys hkeys
+  simp only [encUnary_apply, List.length_replicate, length_encPair, encBits_apply] at hkeyLen
+  have hsigLen := hlens (keys.2, msg) sig hsig
+  simp only [length_encPair, encBits_apply] at hsigLen
+  exact hsigLen.trans (Nat.mul_le_mul_left cs (Nat.pow_le_pow_left (by lia) ds))
+
+/-- `exists_sign_length_bound` on the scheme's own message space: some plain polynomial-time
+`bound n` bounds every signature on an `n`-bit message under a key pair sampled at parameter `n`. -/
+theorem exists_sign_length_bound_of_length_eq (S : SignatureScheme) :
+    ∃ bound : ℕ → ℕ, ComputableInPolyTime bound encUnary encUnary ∧
+      ∀ n, ∀ keys ∈ (ProbComp.eval (S.keyGen n)).support, ∀ msg, msg.length = n →
+        ∀ sig ∈ (ProbComp.eval (S.sign keys.2 msg)).support, sig.length ≤ bound n := by
+  obtain ⟨bound, hpoly, hbound⟩ := S.exists_sign_length_bound
+  exact ⟨fun n => bound n n, by fun_prop, fun n keys hkeys msg hmsg sig hsig => by
+    simpa only [hmsg] using hbound n keys hkeys msg sig hsig⟩
+
 private theorem computableInPolyTime_signResources (c d : ℕ) :
     ComputableInPolyTime
       (fun pair : (ℕ × (List Bool × List Bool)) × List Bool =>
         c * (2 * pair.1.2.2.length + pair.2.length + 2) ^ d + 2 * pair.2.length + 2)
       (encPair encKeyPairInput encBits) encUnary := by
-  have hskLen := (ComputableInPolyTime.fst
-    (encPair encUnary (encPair encBits encBits)) encBits).snd'.snd'.length_bits_comp
-  have hqLen := (ComputableInPolyTime.snd
-    (encPair encUnary (encPair encBits encBits)) encBits).length_bits_comp
-  exact (((ComputableInPolyTime.const c).unary_mul' ((ComputableInPolyTime.unary_pow d).comp
-    ((((ComputableInPolyTime.const 2).unary_mul' hskLen).unary_add' hqLen).unary_add'
-      (.const 2)))).unary_add' ((ComputableInPolyTime.const 2).unary_mul' hqLen)).unary_add'
-    (.const 2)
+  fun_prop
 
 private theorem computableTidilyInPolyTime_eufPost (S : SignatureScheme) :
     ComputableTidilyInPolyTime
@@ -202,12 +225,10 @@ abbrev signingOracleOf (sign : List Bool → List Bool → ProbComp (List Bool))
     return (sig, request.2 :: queried)
 
 /-- Stateful signing oracle that signs the requested message under `sk` and prepends the message to
-the list of queried messages. -/
+the list of queried messages: `signingOracleOf` instantiated at `S.sign`. -/
 def signingOracle (S : SignatureScheme) (sk : List Bool)
     (request : Unit × List Bool) : StateT (List (List Bool)) ProbComp (List Bool) :=
-  fun queried => do
-    let sig ← S.sign sk request.2
-    return (sig, request.2 :: queried)
+  signingOracleOf S.sign sk request
 
 /-- The EUF-CMA experiment: sample `(pk, sk) ← S.keyGen n`, run the adaptive forger on `(n, pk)`
 with oracle access to `S.signingOracle sk`, and accept when the forger outputs a valid signature on
@@ -329,15 +350,11 @@ abbrev oneTimeSigningOracleOf (sign : List Bool → List Bool → ProbComp (List
       return ([], queried)
 
 /-- One-time signing oracle that answers at most the first signing query using `S.sign sk` and
-returns the empty word without signing on any subsequent query. -/
+returns the empty word without signing on any subsequent query: `oneTimeSigningOracleOf`
+instantiated at `S.sign`. -/
 def oneTimeSigningOracle (S : SignatureScheme) (sk : List Bool)
     (request : Unit × List Bool) : StateT (List (List Bool)) ProbComp (List Bool) :=
-  fun queried =>
-    if queried.isEmpty then do
-      let sig ← S.sign sk request.2
-      return (sig, [request.2])
-    else
-      return ([], queried)
+  oneTimeSigningOracleOf S.sign sk request
 
 /-- The one-time EUF-CMA experiment: sample `(pk, sk) ← S.keyGen n`, run the adaptive forger on
 `(n, pk)` with oracle access to `S.oneTimeSigningOracle sk` (which answers at most one signing
@@ -469,7 +486,7 @@ theorem length_le_one_of_mem_support_run_oneTimeSigningOracle (S : SignatureSche
     (fun q s => ProbComp.eval (S.oneTimeSigningOracle sk q s))
     (fun s => s.length ≤ 1) ?_ prog [] (by simp) result queried h
   intro ⟨⟨⟩, req⟩ s hs a s' hmem
-  rw [oneTimeSigningOracle] at hmem
+  rw [oneTimeSigningOracle, oneTimeSigningOracleOf] at hmem
   split_ifs at hmem with hempty
   · simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.mem_support_bind_iff,
       PMF.mem_support_pure_iff] at hmem
@@ -491,7 +508,7 @@ private theorem run_oneTimeSigningOracle_apply_eq_zero_of_not_agree (S : Signatu
     (fun q s => ProbComp.eval (S.oneTimeSigningOracle sk q s))
     (fun state => ¬ ∀ r ∈ state, agree r) ?_ prog s hs a queried' hmem hq'
   intro ⟨⟨⟩, req⟩ state hstate val next hnext
-  rw [oneTimeSigningOracle] at hnext
+  rw [oneTimeSigningOracle, oneTimeSigningOracleOf] at hnext
   split_ifs at hnext with hempty
   · rw [List.isEmpty_iff] at hempty
     subst hempty
@@ -533,7 +550,8 @@ theorem run_oneTimeSigningOracle_apply_eq_of_agree (S : SignatureScheme) {α : T
       rcases req with ⟨⟨⟩, msg⟩
       change ((ProbComp.eval (S.oneTimeSigningOracle sk₁ ((), msg) s)).bind _) (a, queried') =
         ((ProbComp.eval (S.oneTimeSigningOracle sk₂ ((), msg) s)).bind _) (a, queried')
-      rw [oneTimeSigningOracle, oneTimeSigningOracle]
+      rw [oneTimeSigningOracle, oneTimeSigningOracle, oneTimeSigningOracleOf,
+        oneTimeSigningOracleOf]
       split_ifs with hempty
       · by_cases hmsg : agree msg
         · rw [hagree msg hmsg]
@@ -675,55 +693,16 @@ theorem run_limitToOneQuery_eq_oneTimeSigningOracleOf
   rw [PMF.map_comp] at hproj
   exact hproj.symm.trans (PMF.map_id _)
 
-theorem run_limitToOneQuery_eq_oneTimeSigningOracle (S : SignatureScheme)
-    (bound : ℕ → ℕ → ℕ) (n : ℕ) (pk sk : List Bool)
-    (hbound : ∀ msg sig, sig ∈ (ProbComp.eval (S.sign sk msg)).support →
-      sig.length ≤ bound n msg.length)
-    (prog : WordOracleComp Unit (List Bool × List Bool)) :
-    ProbComp.eval (Prod.map Prod.fst id <$> ((OracleComp.interpret
-      (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
-        (S.signingOracle sk))
-      ((OracleComp.interpret
-        (OracleComp.sumHandler
-          (fun k => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin k)))
-          (oneTimeFilterHandler bound (n, pk)))
-        prog).run false)).run [])) =
-    ProbComp.eval ((OracleComp.interpret
-      (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
-        (S.oneTimeSigningOracle sk)) prog).run []) :=
-  run_limitToOneQuery_eq_oneTimeSigningOracleOf S.sign bound n pk sk hbound prog
-
 /-- Full EUF-CMA security implies one-time EUF-CMA security. -/
 theorem EUFCMA.oneTimeEUFCMA {S : SignatureScheme} (h : S.EUFCMA) : S.OneTimeEUFCMA := by
-  obtain ⟨ck, dk, hlenk⟩ := S.keyGen_ppt.length_le
-  obtain ⟨cs, ds, hlens⟩ := S.sign_ppt.length_le
-  let skBound (n : ℕ) : ℕ := ck * (n + 1) ^ dk
-  let bound (n msgLen : ℕ) : ℕ := cs * (2 * skBound n + msgLen + 2) ^ ds
-  have hsk : ComputableInPolyTime (fun p : ℕ × ℕ => skBound p.1)
-      (encPair encUnary encUnary) encUnary :=
-    (ComputableInPolyTime.const ck).unary_mul' ((ComputableInPolyTime.unary_pow dk).comp
-      ((ComputableInPolyTime.fst encUnary encUnary).unary_add' (.const 1)))
-  have hbound_poly : ComputableInPolyTime (fun p : ℕ × ℕ => bound p.1 p.2)
-      (encPair encUnary encUnary) encUnary :=
-    (ComputableInPolyTime.const cs).unary_mul' ((ComputableInPolyTime.unary_pow ds).comp
-      ((((ComputableInPolyTime.const 2).unary_mul' hsk).unary_add' (.snd _ _)).unary_add'
-        (.const 2)))
+  obtain ⟨bound, hbound_poly, hbound⟩ := S.exists_sign_length_bound
   refine h.of_succProbability_reduction (limitToOneQuery bound)
     (fun _ => isOraclePPT_limitToOneQuery hbound_poly) fun adversary _ n => ?_
   refine le_of_eq (congrArg Game.succProbability ?_)
   simp only [eufOneTimeGame, eufCmaGame, ProbComp.eval_bind, ProbComp.eval_pure]
   refine PMF.bind_congr_on_support _ _ _ fun keys hkeys => ?_
-  have hkeysLen := hlenk n keys hkeys
-  simp only [encUnary_apply, List.length_replicate, length_encPair, encBits_apply] at hkeysLen
-  have hsigBound (msg sig : List Bool) (hsig : sig ∈ (ProbComp.eval (S.sign keys.2 msg)).support) :
-      sig.length ≤ bound n msg.length := by
-    have h1 := hlens (keys.2, msg) sig hsig
-    simp only [length_encPair, encBits_apply] at h1
-    have h2 : 2 * keys.2.length + 1 + msg.length + 1 ≤ 2 * skBound n + msg.length + 2 := by
-      dsimp [skBound]; lia
-    exact h1.trans (Nat.mul_le_mul_left cs (Nat.pow_le_pow_left h2 ds))
-  have hrun := run_limitToOneQuery_eq_oneTimeSigningOracle S bound n keys.1 keys.2 hsigBound
-    (adversary n keys.1)
+  have hrun := run_limitToOneQuery_eq_oneTimeSigningOracleOf S.sign bound n keys.1 keys.2
+    (hbound n keys hkeys) (adversary n keys.1)
   dsimp only [limitToOneQuery]
   rw [OracleComp.interpret_map, StateT.run_map]
   exact (congrArg (fun p : PMF ((List Bool × List Bool) × List (List Bool)) =>
