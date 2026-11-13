@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Foundations.Quantum.DensityMatrix
+public import CslibFrontier.Foundations.Quantum.Bipartite
 import Mathlib.Analysis.InnerProductSpace.Adjoint
 import Mathlib.LinearAlgebra.Matrix.Bilinear
 
@@ -84,6 +85,22 @@ theorem densityConj_pureState [DecidableEq ι] (V : Matrix ι' ι ℂ)
   simp only [densityConj_apply, Matrix.mul_apply, pureState_apply, conjTranspose_apply,
     Matrix.toEuclideanLin, Matrix.toLpLin_apply, mulVec, dotProduct,
     star_sum, star_mul, Finset.mul_sum, Finset.sum_mul, mul_assoc]
+
+/-- On a product pure state, local conjugation evolves the active vector and retains the
+reference vector. Correlated inputs still use the unrestricted joint-matrix operation. -/
+theorem densityConj_kronecker_pureState [Fintype κ] [DecidableEq ι] [DecidableEq κ]
+    (V : Matrix ι' ι ℂ) (ψ : EuclideanSpace ℂ ι) (φ : EuclideanSpace ℂ κ) :
+    densityConj (V ⊗ₖ (1 : Matrix κ κ ℂ)) (pureState (prodState ψ φ)) =
+      pureState (prodState (V.toEuclideanLin ψ) φ) := by
+  rw [densityConj_pureState]
+  congr 1
+  ext p
+  simp only [Matrix.toEuclideanLin, Matrix.toLpLin_apply, prodState_apply]
+  rw [show (prodState ψ φ).ofLp = (fun q => ψ.ofLp q.1 * φ.ofLp q.2) from
+    funext (prodState_apply ψ φ)]
+  simpa only [Matrix.one_mulVec] using
+    congrFun (kronecker_mulVec_mul V (1 : Matrix κ κ ℂ) ψ.ofLp φ.ofLp) p
+
 
 /-- Applying a rectangular isometry to the first system leaves the reference marginal unchanged.
 The input may be mixed or entangled, and need not even be normalized for this identity. -/
