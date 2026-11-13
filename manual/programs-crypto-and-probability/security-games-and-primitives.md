@@ -717,6 +717,29 @@ XOF. Positions use natural numbers, with checked 16-bit representability conditi
 published parameter sets; byte serialization, native runtime, decryption-failure bounds and
 HQC security remain separate obligations under the [post-quantum program](https://github.com/cslib-community/cslib-frontier/issues/4987).
 
+Import [`HQC/PKE.lean`](../../CslibFrontier/Crypto/Primitives/HQC/PKE.lean) for the ideal
+post-expansion algebra of HQC-PKE (§3.6, pp. 38–40). `PKEParams` records the ring, message and
+retained-codeword lengths, the three fixed weights and the decoder radius. `pkeKeyGen` draws
+fixed-weight `y`, then `x`, followed by a uniform public ring word `h`, publishing
+`(h, s = x + circulant h *ᵥ y)` while retaining expanded `y`; `pkeSampleCoins` draws `(r₂, e, r₁)` in
+the source order. `pkeEncrypt` and `pkeDecrypt` implement the two source algorithms with
+`truncate P` retaining exactly the first `n - ℓ` bits, and `toExplicitCoinPKE` supplies the
+shared explicit-coin PKE interface used by the Fujisaki–Okamoto transform.
+
+The central checked identity `pkeDecryptInput_encrypt` says that the decoder sees `Encode(m)` plus
+the retained prefix of `x * r₂ - r₁ * y + e` (the minus sign is addition over `Bool`). Its proof
+uses `circulant_mulVec_comm` and `circulant_mulVec_assoc` to cancel the two public-`h` terms.
+`pkeDecrypt_encrypt_eq_of_weight_le` then consumes the plain encoder/decoder contract
+`DecoderCorrects` and a retained-error weight bound. The
+[checked client](../../CslibFrontierTests/Crypto/HQCPKE.lean) uses positive weights and proper
+one-bit truncation, proves a length-three repetition decoder corrects one error, refutes the same
+contract for a constant decoder, checks key/coin support and runs the packaged PKE.
+
+This module does not replace the source's seeds and XOF with a proved implementation model, build
+the concatenated Reed–Muller/Reed–Solomon codec, establish primitive-prime admissibility or a DFR
+bound, or prove IND-CPA, Fujisaki–Okamoto or KEM security. It is therefore a correctness
+prerequisite, not an HQC security endpoint.
+
 ## Encryption and chosen-message attacks
 
 [AdversaryOf](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/Encryption/Basic.lean#L73) has a first stage choosing two messages and a saved word from the public key, and a second stage guessing from that saved state and the challenge ciphertext. Each stage has a native certificate. `INDCPAOn` explicitly constrains admissible message pairs. `WordINDCPA` requires equal lengths; the general `INDCPAOf` with all pairs is stronger for variable-length word messages. Invalid challenges are made independent of the hidden experiment bit. `Encryption.advantage (gameOn valid keyGen encrypt adversary) n` names the advantage between the two sides of the experiment at parameter `n`, and `INDCPAOn` asks that it be negligible for every admissible adversary; bounds on other two-sided encryption experiments, such as the DEM and CCA games, are stated with the same name.
@@ -851,7 +874,10 @@ statement is not yet proved. Checked clients are in
 
 For explicit-coin public-key encryption and modular Fujisaki–Okamoto KEM transforms ([hhk17][hhk17],
 ePrint 2017/604 full version dated 2 November 2021), import
-[`FujisakiOkamoto.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto.lean).
+[`PKE/ExplicitCoin.lean`](../../CslibFrontier/Crypto/Protocols/PKE/ExplicitCoin.lean) for the
+generic scheme interface and
+[`FujisakiOkamoto.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto.lean) for the
+transform.
 Unlike the word-level encryption interface used by `encryptKeyEncaps`, `ExplicitCoinPKE` (§2.1)
 exposes a fixed coin type `R`, an arbitrary coin sampler `sampleCoins : ProbComp R` (where the
 paper uses uniform draws and permits key-dependent `R`), and deterministic encryption
