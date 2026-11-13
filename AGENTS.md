@@ -766,7 +766,14 @@ works through the Diffie–Hellman example.
    it is `rfl`.
 5. **Typed inputs are records** with named fields, encoded with `enc_structure`
    ([Encodings in statements](#encodings-in-statements), rule 5), so that efficiency
-   certificates read fields.
+   certificates read fields. Migrating a tuple to a record preserves its encoded words, which
+   `IsPPTOn` sees. `enc_structure` frames every field without nested grouping, so a left-grouped
+   tuple such as `encPair (encPair a b) (encPair c d)` gets a different layout. Either nest
+   sub-records so that the generated layout matches, or define the record's encoding with
+   `encOfEquiv` into the former tuple encoding, keeping the named field certificates. Add a checked
+   equality `encX r = <former tuple encoding> (…)` to the tests and state "encoded words
+   unchanged" in the PR. A changed layout needs a coordinator's scope decision and a checked
+   transport of efficiency and security in both directions.
 6. **Shared facts live in shared modules.** Point-hit bounds, masks and uniform pushforwards go in
    small `Probability/` topic modules ([Placement and reuse](#placement-and-reuse)), not in
    private copies.
