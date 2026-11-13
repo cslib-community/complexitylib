@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Protocols.VOLE.Native
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 public import CslibFrontier.Computability.Probabilistic.PPT
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Probabilistic.Repeat
@@ -27,7 +28,7 @@ iterative storage-growth assumption.
 
 ## Main definitions
 
-* `Native.encInput`, `Native.encShare`, `Native.encView`: full data encodings.
+* `Native.encGate`, `Native.encInput`, `Native.encShare`, `Native.encView`: full data encodings.
 
 ## Main results
 
@@ -48,19 +49,38 @@ namespace Cslib.Crypto.Protocols.VOLE.Native
 
 open Probability Turing.MultiTapeTM
 
+/-- Binary wire indices of a single multiplication gate (`left`, then `right` and `output`). -/
+enc_structure encGate : Gate where
+  left : encNat, right : encNat, output : encNat
+
+attribute [fun_prop] encGate_left_polyTime encGate_right_polyTime encGate_output_polyTime
+  encGate_mk_polyTime
+
 /-- Gate indices are binary; the wire count is unary and every listed gate is charged. -/
-def encInput : Input ↪ List Bool :=
-  encPair encUnary (encList (encPair encNat (encPair encNat encNat)))
+enc_structure encInput : Input where
+  wires : encUnary, gates : (encList encGate)
+
+attribute [fun_prop] encInput_wires_polyTime encInput_gates_polyTime encInput_mk_polyTime
+
+section Encodings
+
+variable {F Result : Type}
 
 /-- The key and every receiver tag are explicitly encoded. -/
-def encShare {F : Type} (eF : F ↪ List Bool) : Share F ↪ List Bool :=
-  encPair eF (encList eF)
+enc_structure encShare (eF : F ↪ List Bool) : Share F where
+  key : eF, tags : (encList eF)
+
+attribute [fun_prop] encShare_key_polyTime encShare_tags_polyTime encShare_mk_polyTime
 
 /-- The complete receiver output, including every correction and transmitted weight. -/
-def encView {F Result : Type} (eF : F ↪ List Bool) (eResult : Result ↪ List Bool) :
-    View F Result ↪ List Bool :=
-  encPair (encShare eF) (encPair (encList eF)
-    (encPair (encList eF) (encPair (encPair eF eF) eResult)))
+enc_structure encView (eF : F ↪ List Bool) (eResult : Result ↪ List Bool) : View F Result where
+  share : (encShare eF), corrections : (encList eF), weights : (encList eF),
+  reply : (encPair eF eF), result : eResult
+
+attribute [fun_prop] encView_share_polyTime encView_corrections_polyTime
+  encView_weights_polyTime encView_reply_polyTime encView_result_polyTime encView_mk_polyTime
+
+end Encodings
 
 variable {F α : Type} [CommRing F] [Finite F]
   {eF : F ↪ List Bool} {input : α ↪ List Bool}
@@ -99,50 +119,53 @@ theorem computableInPolyTime_checkValue
       checkValue p.1 p.2.1 p.2.2.1 p.2.2.2)
       (encPair encInput (encPair (encShare eF) (encPair (encList eF) (encList eF)))) eF := by
   let e := encPair encInput (encPair (encShare eF) (encPair (encList eF) (encList eF)))
-  let gateEnc := encPair encNat (encPair encNat encNat)
-  have hg : ComputableInPolyTime (fun p : Input × Share F × List F × List F => p.1.2)
-      e (encList gateEnc) := by unfold e encInput; fun_prop
+  have hg : ComputableInPolyTime (fun p : Input × Share F × List F × List F => p.1.gates)
+      e (encList encGate) := by unfold e; fun_prop
   have hr : ComputableInPolyTime (fun p : Input × Share F × List F × List F =>
-      weights p.1.2.length p.2.2.2) e (encList eF) :=
-    computableInPolyTime_weights ((ComputableInPolyTime.length_list gateEnc).comp hg)
+      weights p.1.gates.length p.2.2.2) e (encList eF) :=
+    computableInPolyTime_weights ((ComputableInPolyTime.length_list encGate).comp hg)
       (by unfold e; fun_prop)
-  have hz := (ComputableInPolyTime.zip gateEnc eF).comp (hg.prod hr)
+  have hz := (ComputableInPolyTime.zip encGate eF).comp (hg.prod hr)
   have hterm : ComputableInPolyTime
-      (fun p : (Input × Share F × List F × List F) × ((ℕ × ℕ × ℕ) × F) =>
-        let adjusted := fun i => p.1.2.1.2.getD i 0 + p.1.2.2.1.getD i 0 * p.1.2.1.1
-        p.2.2 * (adjusted p.2.1.1 * adjusted p.2.1.2.1 -
-          adjusted p.2.1.2.2 * p.1.2.1.1))
-      (encPair e (encPair gateEnc eF)) eF := by
-    have hlookup (index : ((Input × Share F × List F × List F) × ((ℕ × ℕ × ℕ) × F)) → ℕ)
-        (hi : ComputableInPolyTime index (encPair e (encPair gateEnc eF)) encNat) :
-        ComputableInPolyTime (fun p => p.1.2.1.2.getD (index p) 0 +
-          p.1.2.2.1.getD (index p) 0 * p.1.2.1.1)
-          (encPair e (encPair gateEnc eF)) eF := by
-      have hq : ComputableInPolyTime (fun p => p.1.2.1.2.getD (index p) 0)
-          (encPair e (encPair gateEnc eF)) eF :=
-        .of_tidy (ComputableTidilyInPolyTime.listGetD_binary 0
-          (by unfold e encShare; fun_prop) hi.tidy)
+      (fun p : (Input × Share F × List F × List F) × (Gate × F) =>
+        let adjusted := fun i => p.1.2.1.tags.getD i 0 + p.1.2.2.1.getD i 0 * p.1.2.1.key
+        p.2.2 * (adjusted p.2.1.left * adjusted p.2.1.right -
+          adjusted p.2.1.output * p.1.2.1.key))
+      (encPair e (encPair encGate eF)) eF := by
+    have hlookup (index : ((Input × Share F × List F × List F) × (Gate × F)) → ℕ)
+        (hi : ComputableInPolyTime index (encPair e (encPair encGate eF)) encNat) :
+        ComputableInPolyTime (fun p => p.1.2.1.tags.getD (index p) 0 +
+          p.1.2.2.1.getD (index p) 0 * p.1.2.1.key)
+          (encPair e (encPair encGate eF)) eF := by
+      have htags : ComputableInPolyTime
+          (fun p : (Input × Share F × List F × List F) × Gate × F => p.1.2.1.tags)
+          (encPair e (encPair encGate eF)) (encList eF) := by
+        unfold e; fun_prop
+      have hq : ComputableInPolyTime (fun p => p.1.2.1.tags.getD (index p) 0)
+          (encPair e (encPair encGate eF)) eF :=
+        .of_tidy (ComputableTidilyInPolyTime.listGetD_binary 0 htags.tidy hi.tidy)
       have hd : ComputableInPolyTime (fun p => p.1.2.2.1.getD (index p) 0)
-          (encPair e (encPair gateEnc eF)) eF :=
+          (encPair e (encPair encGate eF)) eF :=
         .of_tidy (ComputableTidilyInPolyTime.listGetD_binary 0
           (by unfold e; fun_prop) hi.tidy)
-      unfold e encShare at *
+      unfold e at *
       polytime
-    have hl := hlookup (fun p => p.2.1.1) (by unfold gateEnc; fun_prop)
-    have hr := hlookup (fun p => p.2.1.2.1) (by unfold gateEnc; fun_prop)
-    have ho := hlookup (fun p => p.2.1.2.2) (by unfold gateEnc; fun_prop)
+    have hl := hlookup (fun p => p.2.1.left) (by fun_prop)
+    have hr := hlookup (fun p => p.2.1.right) (by fun_prop)
+    have ho := hlookup (fun p => p.2.1.output) (by fun_prop)
     dsimp only
-    unfold e encShare gateEnc at *
+    unfold e at *
     polytime
   have hsum := (polyTime_sum hadd).comp (ComputableInPolyTime.mapWithInput (f := fun p g =>
-      g.2 * ((p.2.1.2.getD g.1.1 0 + p.2.2.1.getD g.1.1 0 * p.2.1.1) *
-        (p.2.1.2.getD g.1.2.1 0 + p.2.2.1.getD g.1.2.1 0 * p.2.1.1) -
-        (p.2.1.2.getD g.1.2.2 0 + p.2.2.1.getD g.1.2.2 0 * p.2.1.1) * p.2.1.1)) hz hterm)
+      g.2 * ((p.2.1.tags.getD g.1.left 0 + p.2.2.1.getD g.1.left 0 * p.2.1.key) *
+        (p.2.1.tags.getD g.1.right 0 + p.2.2.1.getD g.1.right 0 * p.2.1.key) -
+        (p.2.1.tags.getD g.1.output 0 + p.2.2.1.getD g.1.output 0 * p.2.1.key) * p.2.1.key))
+      hz hterm)
   have hlast : ComputableInPolyTime
-      (fun p : Input × Share F × List F × List F => p.2.1.2.getD p.1.1 0) e eF :=
+      (fun p : Input × Share F × List F × List F => p.2.1.tags.getD p.1.wires 0) e eF :=
     (ComputableInPolyTime.listGetD (encA := eF) 0).comp
-      ((show ComputableInPolyTime (fun p => p.2.1.2) e (encList eF) by
-        unfold e encShare; fun_prop).prod (by unfold e encInput; fun_prop))
+      ((show ComputableInPolyTime (fun p => p.2.1.tags) e (encList eF) by
+        unfold e; fun_prop).prod (by unfold e; fun_prop))
   change ComputableInPolyTime _ e eF
   unfold checkValue
   polytime
@@ -190,7 +213,7 @@ theorem isPPTOn_simulate (sample : ProbComp F) (receiver : Receiver F I First St
       (fun p : I × Share F × List F × List F × State × (F × F) => do
         let state ← receiver.receive p.1 p.2.1 p.2.2.2.2.1 p.2.2.2.2.2
         let result ← receiver.terminal p.1 p.2.1 state
-        return (p.2.1, p.2.2.1, p.2.2.2.1, p.2.2.2.2.2, result)) := by
+        return ⟨p.2.1, p.2.2.1, p.2.2.2.1, p.2.2.2.2.2, result⟩) := by
     apply IsPPTOn.bind_with (left := eState)
     · apply hreceive.preprocess
         (prepare := fun p : I × Share F × List F × List F × State × (F × F) =>
@@ -202,9 +225,8 @@ theorem isPPTOn_simulate (sample : ProbComp F) (receiver : Receiver F I First St
           (I × Share F × List F × List F × State × (F × F)) × State =>
         (p.1.1, p.1.2.1, p.2))
       fun_prop
-    · unfold encView
-      fun_prop
-  unfold simulate encView encShare encInput at *
+    · fun_prop
+  unfold simulate at *
   apply IsPPTOn.bind_with (left := eF)
   · exact hsample.preprocess (ComputableInPolyTime.const ())
   apply IsPPTOn.bind_with (left := encList eF)
@@ -219,10 +241,10 @@ theorem isPPTOn_simulate (sample : ProbComp F) (receiver : Receiver F I First St
   · exact hsample.preprocess (ComputableInPolyTime.const ())
   apply hfinish.preprocess (prepare := fun p :
       (((((I × F) × List F) × State) × List F) × (List F × State)) × F =>
-    (p.1.1.1.1.1.1, (p.1.1.1.1.1.2, p.1.1.1.1.2), p.1.1.2,
-      weights (layout p.1.1.1.1.1.1).2.length p.1.2.1, p.1.2.2,
-      (p.2, checkValue (layout p.1.1.1.1.1.1) (p.1.1.1.1.1.2, p.1.1.1.1.2) p.1.1.2
-        (weights (layout p.1.1.1.1.1.1).2.length p.1.2.1) - p.2 * p.1.1.1.1.1.2)))
+    (p.1.1.1.1.1.1, ⟨p.1.1.1.1.1.2, p.1.1.1.1.2⟩, p.1.1.2,
+      weights (layout p.1.1.1.1.1.1).gates.length p.1.2.1, p.1.2.2,
+      (p.2, checkValue (layout p.1.1.1.1.1.1) ⟨p.1.1.1.1.1.2, p.1.1.1.1.2⟩ p.1.1.2
+        (weights (layout p.1.1.1.1.1.1).gates.length p.1.2.1) - p.2 * p.1.1.1.1.1.2)))
   let e1 := encPair eInput eF
   let e2 := encPair e1 (encList eF)
   let e3 := encPair e2 eState
@@ -236,10 +258,9 @@ theorem isPPTOn_simulate (sample : ProbComp F) (receiver : Receiver F I First St
   have hd := hp.fst'.snd'
   have hraw := hp.snd'.fst'
   have hstate := hp.snd'.snd'
-  have hshare := hdelta.prod hq
+  have hshare := encShare_mk_polyTime eF hdelta hq
   have hshape := hlayout.comp hinput
-  have hlen := (ComputableInPolyTime.length_list
-    (encPair encNat (encPair encNat encNat))).comp hshape.snd'
+  have hlen := (ComputableInPolyTime.length_list encGate).comp (encInput_gates_polyTime hshape)
   have hr := computableInPolyTime_weights hlen hraw
   have hvalue := hc.comp (hshape.prod (hshare.prod (hd.prod hr)))
   have hreply := ha.prod (hsub.comp (hvalue.prod (hmul.comp (ha.prod hdelta))))

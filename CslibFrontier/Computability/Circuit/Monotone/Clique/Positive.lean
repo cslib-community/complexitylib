@@ -42,6 +42,8 @@ a conjunction of two approximators has at most `sunflowerBound p w ^ 2` pairs of
 
 @[expose] public section
 
+open Cslib.BitString.Graph
+
 namespace Cslib.Circuits.Monotone.Positive
 
 open Cslib.Circuits.Clique Finset Approximator

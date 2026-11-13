@@ -27,6 +27,7 @@ prescribed source exits extends to one of the twenty-four ordered three-port ass
 ## Main results
 
 * `sideDirection_directionSide`: cardinal directions are preserved exactly.
+* `portsMatch_iff`: matching is equality at every present indexed port.
 * `choosePorts_spec`: the selected ports are distinct and retain every present source exit.
 
 ## References
@@ -60,9 +61,15 @@ theorem directionSide_injective {v w : Point} (hv : UnitVector v) (hw : UnitVect
 
 /-- Check the source exits that are present in a clause of the indicated length. -/
 def portsMatch (n : Fin 4) (a b c : Fin 4) (s : PortAssignment) : Bool :=
-  (if 0 < n.val then s.1 == a else true) &&
-    (if 1 < n.val then s.2.1 == b else true) &&
-    (if 2 < n.val then s.2.2 == c else true)
+  (if 0 < n.val then s.side 0 == a else true) &&
+    (if 1 < n.val then s.side 1 == b else true) &&
+    (if 2 < n.val then s.side 2 == c else true)
+
+/-- Matching constrains exactly the indexed ports that are present in the source clause. -/
+theorem portsMatch_iff (n : Fin 4) (a b c : Fin 4) (s : PortAssignment) :
+    portsMatch n a b c s = true ↔
+      ∀ j : Fin 3, j.val < n.val → s.side j = PortAssignment.side (a, b, c) j := by
+  fin_cases n <;> simp [portsMatch, Fin.forall_fin_succ, PortAssignment.side, and_assoc]
 
 /-- Select the first ordered collar assignment extending the present source exits. -/
 def choosePorts (n : Fin 4) (a b c : Fin 4) : PortAssignment :=
@@ -86,24 +93,13 @@ theorem choosePorts_spec (n : Fin 4) (a b c : Fin 4)
 
 /-- Each prescribed exit is retained by the selected collar assignment. -/
 theorem choosePorts_matches (n : Fin 4) (a b c : Fin 4)
-    (h : PresentDirectionsDistinct n a b c) :
-    (0 < n.val → (choosePorts n a b c).1 = a) ∧
-      (1 < n.val → (choosePorts n a b c).2.1 = b) ∧
-      (2 < n.val → (choosePorts n a b c).2.2 = c) := by
-  have hm := (choosePorts_spec n a b c h).2
-  simp only [portsMatch, Bool.and_eq_true] at hm
-  constructor
-  · intro hn
-    simpa only [hn, ↓reduceIte, beq_iff_eq] using hm.1.1
-  constructor
-  · intro hn
-    simpa only [hn, ↓reduceIte, beq_iff_eq] using hm.1.2
-  · intro hn
-    simpa only [hn, ↓reduceIte, beq_iff_eq] using hm.2
+    (h : PresentDirectionsDistinct n a b c) (j : Fin 3) (hj : j.val < n.val) :
+    (choosePorts n a b c).side j = PortAssignment.side (a, b, c) j :=
+  (portsMatch_iff n a b c _).mp (choosePorts_spec n a b c h).2 j hj
 
 /-- A literal position identifies its own incidence, including repeated literals. -/
 def sourceOccurrence (φ : CNF ℕ) (i j : ℕ) : Occurrence ℕ :=
-  (i, j, (φ.getD i []).getD j (0, true))
+  ⟨i, j, (φ.getD i []).getD j (0, true)⟩
 
 /-- The actual source edge position of a clause/literal occurrence. -/
 def sourceEdgeIndex (φ : CNF ℕ) (i j : ℕ) : ℕ :=
@@ -149,7 +145,7 @@ theorem sourceEdgeIndex_ne (φ : CNF ℕ) {i j k : ℕ} (hi : i < φ.length)
     sourceEdgeIndex φ i j ≠ sourceEdgeIndex φ i k := by
   intro he
   have he' := (List.idxOf_inj (sourceOccurrence_mem φ hi hj)).mp he
-  exact hjk (congrArg (fun o : Occurrence ℕ => o.2.1) he')
+  exact hjk (congrArg (fun o : Occurrence ℕ => o.pos) he')
 
 /-- Actual source literal exits at the same clause have distinct collar sides. -/
 theorem literalSide_ne {φ : CNF ℕ} {d : Graph.OrthogonalDrawing}
@@ -191,14 +187,11 @@ theorem clausePorts_side {φ : CNF ℕ} {d : Graph.OrthogonalDrawing}
     (hd : Graph.IsPlanarOrthogonalDrawing (SAT.incidenceGraph φ) d) {i : ℕ}
     (hi : i < φ.length) (j : Fin 3) (hj : j.val < φ[i].length) :
     (clausePorts φ d i).side j = literalSide φ d i j.val := by
-  have hm := (clausePorts_spec hd hi).2
-  simp only [portsMatch, Bool.and_eq_true] at hm
   have hn : j.val < min (φ.getD i []).length 3 := by
     rw [List.getD_eq_getElem _ _ hi]
     omega
-  obtain ⟨⟨h₀, h₁⟩, h₂⟩ := hm
-  -- Position `j` is present, so its `portsMatch` conjunct fixes its side.
-  fin_cases j <;> simp_all [PortAssignment.side]
+  have hm := (portsMatch_iff _ _ _ _ _).mp (clausePorts_spec hd hi).2 j hn
+  fin_cases j <;> simpa [PortAssignment.side] using hm
 
 /-- A collar's midpoint is its center plus its cardinal radius vector. -/
 theorem collarOuterPort_eq_center_add : ∀ s : Fin 4,

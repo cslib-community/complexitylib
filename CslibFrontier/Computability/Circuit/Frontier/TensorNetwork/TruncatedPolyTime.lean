@@ -235,8 +235,7 @@ abbrev encEngine (encT : T ↪ List Bool) : List ℕ × ℕ × ℕ × ℕ × Des
 input `y` of the reduction (`encEngine`), framed, then the values `ys` so far, each framed, an
 element of `A_P` as its coefficient list of framed binary numbers. The last component is the
 layout of `encElems` but is spelled `encList (encList encNat)` so that the `omega` steps of
-`TruncatedResources`, whose local `encS` notation is this term, see the same atoms; use `encElems`
-once that notation is replaced by this abbrev (#4077). -/
+`TruncatedResources` see the expected encoding constructors after simplifying `encEngineState`. -/
 abbrev encEngineState (encT : T ↪ List Bool) :
     ℕ × ((List ℕ × ℕ × ℕ × ℕ × DescribedNetwork T) × List (List ℕ)) ↪ List Bool :=
   encPair encNat (encPair (encEngine encT) (encList (encList encNat)))

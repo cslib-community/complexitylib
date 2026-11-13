@@ -10,7 +10,8 @@ module
 public import CslibFrontier.Computability.Complexity.Classes.Ladner.PolyTime
 public import CslibFrontier.Computability.Complexity.Classes.RecursivelyPresentable
 public import CslibFrontier.Computability.Complexity.Reduction
-import CslibFrontier.Computability.Complexity.Classes.Immune
+import CslibFrontier.Computability.Complexity.Classes.P.Closure
+import CslibFrontier.Computability.Complexity.Classes.P.Finite
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.TwoPow
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat

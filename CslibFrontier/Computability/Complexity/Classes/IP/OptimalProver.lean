@@ -99,7 +99,7 @@ theorem after_query_bind_cons (m : List Bool) (next : List Bool → WordQueryCom
       if m' = m then after (next y) h else none := rfl
 
 /-- What remains after a concatenation is what remains of what remains. -/
-private theorem after_append (p : WordQueryComp Unit α) (h e : History) :
+theorem after_append (p : WordQueryComp Unit α) (h e : History) :
     after p (h ++ e) = (after p h).bind (after · e) := by
   induction h generalizing p with
   | nil => simp
@@ -156,14 +156,15 @@ noncomputable def acceptFrom {Operation : Type} (P : Prover Operation) (s : P.St
 @[simp] theorem acceptFrom_none {Operation : Type} (P : Prover Operation) (s : P.State) :
     acceptFrom P s none = 0 := rfl
 
-private theorem acceptFrom_pure {Operation : Type} (P : Prover Operation) (s : P.State) (b : Bool) :
+/-- A finished program accepts exactly when its result is `true`. -/
+theorem acceptFrom_pure {Operation : Type} (P : Prover Operation) (s : P.State) (b : Bool) :
     acceptFrom P s (some (pure b)) = if b then 1 else 0 := by
   simp only [acceptFrom, OracleComp.interpret_pure, StateT.run_pure,
     Probability.PMF.monad_pure_eq_pure, PMF.pure_map, PMF.pure_apply]
   cases b <;> simp
 
 /-- A message is answered by the prover, and what remains continues from its new state. -/
-private theorem acceptFrom_query_bind (P : Prover Unit) (s : P.State) (m : List Bool)
+theorem acceptFrom_query_bind (P : Prover Unit) (s : P.State) (m : List Bool)
     (next : List Bool → WordQueryComp Unit Bool) :
     acceptFrom P s (some (OracleComp.query ((), m) >>= next)) =
       ∑' ys : List Bool × P.State, (P.respond ((), m)).run s ys * acceptFrom P ys.2

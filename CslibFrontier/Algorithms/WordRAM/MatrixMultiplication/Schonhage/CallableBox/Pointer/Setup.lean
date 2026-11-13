@@ -31,6 +31,14 @@ theorem callableBank_injective : Function.Injective callableBank := by
   intro i j h
   exact Fin.ext (congrArg (fun k : Fin 173 => k.val) h)
 
+/-- Registers at or above `163` lie outside the `163`-register callable bank. -/
+theorem callableBank_ne_of_le {i : Fin 173} (hi : 163 ≤ i.val) (j : Fin 163) :
+    callableBank j ≠ i := by
+  intro hj
+  have hv := congrArg Fin.val hj
+  change j.val = i.val at hv
+  omega
+
 /-- The original source data represented in the native pointer front. -/
 @[expose] def view (w b : ℕ) (x : Data 173) : Data 160 :=
   MemoryWindow.view w b (x.comap callableBank)
@@ -46,13 +54,7 @@ theorem exec_source {w W b T : ℕ} {c : Code .standard 160} {v v' : Data 160}
       ∀ i : Fin 173, 163 ≤ i.val → y.regs i = x.regs i := by
   obtain ⟨y, hy, ⟨ym, yf⟩, yr⟩ := ExecWithin.rename_post callableBank_injective
     (MemoryWindow.execWithin he hc hv hmatch hw hfit)
-  refine ⟨y, hy, ym, yf, ?_⟩
-  intro i hi
-  apply yr i
-  intro j hj
-  have hv := congrArg Fin.val hj
-  change j.val = i.val at hv
-  omega
+  exact ⟨y, hy, ym, yf, fun i hi => yr i (callableBank_ne_of_le hi)⟩
 
 private def noStores {r : ℕ} : Code .standard r → Prop
   | .op (.store _ _) => False
@@ -134,10 +136,6 @@ theorem exec_setupLayout {W b m t N Q : ℕ} (x : Data 173)
   · obtain ⟨k, _, he⟩ := hs.seq hy
     exact noStores_mem he (by decide)
   · intro i hi
-    exact (yf i hi).trans (sf i (by
-      intro j hj
-      have hv := congrArg Fin.val hj
-      change j.val = i.val at hv
-      omega))
+    exact (yf i hi).trans (sf i (callableBank_ne_of_le hi))
 
 end Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.PointerBoxProduct

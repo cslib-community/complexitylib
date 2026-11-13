@@ -4,9 +4,9 @@ The library's FHE statements combine three obligations: distributional encryptio
 
 ## Base scheme and concrete assumptions
 
-`LWE.publicMatrixLaw` draws independent uniform `B` and secret `t`, plus independent error entries, and reveals `[B*t+e | B]`. `DecisionLWE` compares the complete row-major binary encoding with the identically shaped uniform matrix against uniform classical strict-PPT distinguishers. This is the exact parameter-family hypothesis used in the reductions; it does not assert worst-case lattice hardness or quantum security.
+`LWE.publicMatrixLaw` draws independent uniform `B` and secret `t`, plus independent error entries, and reveals `[B*t+e | B]`. `DecisionLWE` gives a typed distinguisher a uniform matrix `A` and either `A t + e` or an independent uniform vector; its machine reads the row-major binary word of `[b | A]`. By `decisionLWE_iff_encoded` this is the same assumption as indistinguishability of the complete row-major binary encoding from the identically shaped uniform matrix against uniform classical strict-PPT distinguishers, which is the form the reductions use (`DecisionLWE.encoded`). This is the exact parameter-family hypothesis used in the reductions; it does not assert worst-case lattice hardness or quantum security.
 
-[abstracts/CslibFrontierAbstracts/GSWSecurityAbstract.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/CslibFrontierAbstracts/GSWSecurityAbstract.lean) (since retired; its bridge applied [GSW/Security.lean](../../CslibFrontier/Crypto/Computational/Homomorphic/GSW/Security.lean)) exposes the fresh bit-encryption endpoint. Its security parameter `λ` gives `n = λ+1`, binary modulus width `w = 16 + 8*clog₂(λ+1)`, and sample count `m = (n+1)*w + 2λ`. The centered-binomial error distribution and full serialization are explicit. Key generation and encryption have native certificates, and encryption is a total operation on raw public-key words. The theorem gives the staged chosen-message IND-CPA security of this specified family from its decision-LWE assumption; it is not a generic claim that all bounded-noise GSW choices are secure.
+[abstracts/ComplexityAbstracts/GSWSecurityAbstract.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/abstracts/ComplexityAbstracts/GSWSecurityAbstract.lean) (since retired; its bridge applied [GSW/Security.lean](../../CslibFrontier/Crypto/Computational/Homomorphic/GSW/Security.lean)) exposes the fresh bit-encryption endpoint. Its security parameter `λ` gives `n = λ+1`, binary modulus width `w = 16 + 8*clog₂(λ+1)`, and sample count `m = (n+1)*w + 2λ`. The centered-binomial error distribution and full serialization are explicit. Key generation and encryption have native certificates, and encryption is a total operation on raw public-key words. The theorem gives the staged chosen-message IND-CPA security of this specified family from its decision-LWE assumption; it is not a generic claim that all bounded-noise GSW choices are secure.
 
 The formalization follows the approximate-eigenvector construction of Gentry, Sahai and Waters. The primary ePrint metadata confirms the original construction's matrix-based perspective; the detailed correspondence and parameter adaptations here are grounded in the Lean definitions and their docstrings [gsw13][gsw13].
 
@@ -38,6 +38,29 @@ The exported [CslibFrontier/Crypto/Computational/Homomorphic/GSW/DepthParameters
 The leveled theorem chooses an efficiently computable budget dominating the requested polynomially bounded depth family. The separate [Leveled.schemeFamily_spec](../../CslibFrontier/Crypto/Computational/Homomorphic/Leveled/Bootstrapping.lean) supplies joint polynomial runtime in unary security parameter and depth. The constructions themselves are explicit in [Leveled.Basic](../../CslibFrontier/Crypto/Computational/Homomorphic/Leveled/Basic.lean) and [FixedKey.Basic](../../CslibFrontier/Crypto/Computational/Homomorphic/FixedKey/Basic.lean): the former uses a chain of keys, while the latter reuses one key and encryptions of its own secret bits.
 
 The library also proves quantitative reduction bounds in `GSW/FullyHomomorphic.lean` and [Leveled.ExactSecurity](../../CslibFrontier/Crypto/Computational/Homomorphic/Leveled/ExactSecurity.lean). The former uses power-of-two `dyadicSize` sampling. The latter removes that rounding: each key-chain hop has loss `(2 * budget n) * capacity n`, while the unified `exactLeveledAdversary` has loss `3 * (2 * budget n) * capacity n`. Its strict-PPT modular counterpart has an explicit statistical error bound. `exists_leveledAdversary_overhead` supplies polynomial artifact-length bounds and component evaluator witnesses; polynomial boundedness of its composite coin-budget expressions alone does not identify them with the reduction's execution cost.
+
+To read the dyadic reduction's branch selection, import
+[Leveled.Reduction.Game](../../CslibFrontier/Crypto/Computational/Homomorphic/Leveled/Reduction/Game.lean)
+and inspect `leveledSelectorGame E depth capacity adversary bit n`. It is a `ProbComp Bool`
+program: two independent fair bits choose one of these branches.
+
+| Selector bits | Experiment |
+|---|---|
+| `(false, false)` | The false-world link reduction, with challenge bit `bit` |
+| `(false, true)` | The true-world link reduction, with challenge bit `!bit` because its messages are swapped |
+| `(true, false)` | The zero-link reduction, retained by the two `sampleDyadicCoin` draws; other outcomes reject |
+| `(true, true)` | Return `false` |
+
+`eval_leveledAdversary` identifies the actual reduction's output distribution with this
+program's evaluation. `succProbability_leveledSelectorGame` calculates its weighted acceptance
+once; `succProbability_leveledAdversary` and the exact advantage identity reuse that calculation.
+The factor remains `4 * dyadicSize (depth n) * dyadicSize (capacity n)`.
+The [checked client](../../CslibFrontierTests/Crypto/LeveledSecurity.lean) includes the boundary
+`depth = capacity = 0`: link branches reject, while the zero-link branch accepts in the true
+world with probability `1/16`, retaining its original challenge behavior. Run
+`scripts/build.sh CslibFrontierTests.Crypto.LeveledSecurity` from the repository root.
+This selector is a distributional view of the reduction; its native efficiency remains
+certified for the actual two-stage adversary.
 
 [Leveled.CoinTape](../../CslibFrontier/Crypto/Computational/Homomorphic/Leveled/CoinTape.lean) makes that execution connection for the modular link reduction's choice stage. Supply a key evaluator whose output on `keyCoins` uniform bits has the original key-generation law. `eval_modLinkAdversary_choose_eq_map_coins` then realizes the original choice using exactly `2 * indexCoins + depth * keyCoins` bits: two selector blocks followed by separate blocks for the generated keys. The selector remains binary decoding modulo the range, including its non-power-of-two bias and zero-range behavior. `exists_modLinkAdversary_choose_coin_evaluator` obtains a polynomial component budget and a native polynomial-time replay certificate directly from strict-PPT key generation. [Checked replay examples](../../CslibFrontierTests/Crypto/LeveledCoinTape.lean) inspect saved contexts, independent key seeds, modular bias and rejection. The original choice algorithm and its selection distribution are unchanged.
 

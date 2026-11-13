@@ -31,7 +31,9 @@ sides.
   An efficient simulator for the first, or an efficient extractor for the second, would be a
   strict PPT algorithm computing discrete logarithms. So under `PrimeOrderGroupFamily.DiscreteLog`
   neither is efficient, for any simulator error at most `1/2`
-  (`not_efficientSpecialHVZK_sendWitness`, `not_efficientSpecialSoundness_trustMe`).
+  (`not_efficientSpecialHVZK_sendWitness`, `not_efficientSpecialSoundness_trustMe`). The simulator
+  half holds for every uniform strict PPT word program close to the encoded simulator
+  (`not_wordRealization_sendWitness`), not only for those computing a typed simulator.
 * **Interactive reductions.** Sending the witness is efficiently knowledge sound, and efficiently
   HVZK when the witness is the statement. For discrete logarithms, the verifier that accepts
   without interaction is knowledge sound and sending the witness is HVZK, both with unbounded
@@ -56,11 +58,9 @@ example : PrimeOrderGroupFamily.extractNat 7 3 5 1 2 = 5 := by decide
 probability at least `1 - 1 / 2 ^ n`, for every statement and challenge. -/
 example (n : ℕ) (d : schnorrGroups.Desc) (u : schnorrGroups.Carrier d)
     (c : ZMod (schnorrGroups.order d)) :
-    1 - 1 / 2 ^ n ≤ (ProbComp.eval (schnorrGroups.schnorrSimulateWord
-      ((n, d), schnorrGroups.encode d u, encNat c.val))).toOuterMeasure
-      {w | ∃ t z, w = (schnorrGroups.encode d t, encNat (ZMod.val z)) ∧
-        (schnorrGroups.schnorrFamily (n, d)).Accepts u t c z} :=
-  schnorrGroups.simulatorRealizedBy_schnorrSimulateWord.one_sub_le_accepts
+    1 - 1 / 2 ^ n ≤ (ProbComp.eval (schnorrGroups.schnorrSimulator (n, d) u c)).toOuterMeasure
+      {tz | (schnorrGroups.schnorrFamily (n, d)).Accepts u tz.1 c tz.2} :=
+  schnorrGroups.simulatorRealizedBy_schnorrSimulator.one_sub_le_accepts
     schnorrGroups.efficientSpecialHVZK_schnorr.specialHVZK (n, d) u c
 
 /-! ### Discrete logarithms -/
@@ -126,32 +126,53 @@ theorem specialHVZK_sendWitness (i : ℕ × F.Desc) :
       (choiceSimulate (sendWitnessFamily F i) (dlRel F i)) :=
   sendWitnessSigma_specialHVZK _ (dlRel_total i) fun _ _ _ h h' => dlRel_unique i h h'
 
+/-- Under the discrete-logarithm assumption, no uniform strict PPT word program is within `δ ≤ 1/2`
+of the encoded output of a perfect simulator for sending the witness, on every encoded statement
+and challenge: its commitment word would be the discrete logarithm of its statement. -/
+theorem not_wordRealization_sendWitness (hDL : F.DiscreteLog setup)
+    {simulate : ∀ i : ℕ × F.Desc, F.Carrier i.2 → Bool → PMF (ZMod (F.order i.2) ×
+      ZMod (F.order i.2))}
+    (hS : ∀ i, (sendWitnessFamily F i).SpecialHVZK (dlRel F i) (simulate i))
+    {δ : ℕ × F.Desc → ℝ≥0∞} (hδ : ∀ i, δ i ≤ 1 / 2)
+    {program : (ℕ × F.Desc) × List Bool × List Bool → ProbComp (List Bool × List Bool)}
+    (hprog : IsPPTOn (encSimulatorWordInput (sendWitnessEncoding F).index)
+      (encPair encBits encBits) program)
+    (hreal : WordSimulatorRealizedBy (sendWitnessEncoding F) simulate program δ) : False := by
+  refine not_half_le_discreteLog hDL
+    (adversary := fun n input => Prod.fst <$> program ((n, input.1), input.2, encBool true))
+    ((hprog.preprocess (prepare := fun input : ℕ × F.Desc × List Bool =>
+      ((input.1, input.2.1), input.2.2, encBool true)) (by fun_prop)).map
+        (ComputableInPolyTime.fst _ _)) fun n d α => ?_
+  let guess : Set (List Bool × List Bool) := Prod.fst ⁻¹' {w | (ofBits w : ZMod (F.order d)) = α}
+  have hone : ((simulate (n, d) (α • F.generator d) true).map
+      (Prod.map ((sendWitnessEncoding F).commitment (n, d))
+        ((sendWitnessEncoding F).response (n, d)))).toOuterMeasure guess = 1 := by
+    rw [PMF.toOuterMeasure_map_apply, PMF.toOuterMeasure_apply_eq_one_iff]
+    intro tz htz
+    have hα : tz.1 = α :=
+      dlRel_unique (n, d) (of_decide_eq_true ((hS (n, d)).accepts _ _ tz htz)) rfl
+    change ((ofBits (encNat tz.1.val) : ℕ) : ZMod (F.order d)) = α
+    rw [encNat_apply, ofBits, Nat.foldr_bit_bits, ZMod.natCast_zmod_val, hα]
+  have hclose := hreal (n, d) (α • F.generator d) true guess
+  rw [hone] at hclose
+  rw [ProbComp.eval_map, PMF.toOuterMeasure_map_apply]
+  calc (1 / 2 : ℝ≥0∞) = 1 - 1 / 2 := by rw [one_div, ENNReal.one_sub_inv_two]
+    _ ≤ 1 - δ (n, d) := tsub_le_tsub_left (hδ _) 1
+    _ ≤ _ := tsub_le_iff_right.mpr hclose
+
 /-- **Sending the witness is not efficiently special HVZK** under the discrete-logarithm
-assumption, with any simulator and any error at most `1/2`: the simulator's commitment is the
-discrete logarithm of its statement. -/
+assumption, with any simulator and any error at most `1/2`: the word program that
+`SimulatorRealizedBy.exists_word` extracts from the typed simulator contradicts
+`not_wordRealization_sendWitness`. -/
 theorem not_efficientSpecialHVZK_sendWitness (hDL : F.DiscreteLog setup)
     (simulate : ∀ i : ℕ × F.Desc, F.Carrier i.2 → Bool → PMF (ZMod (F.order i.2) ×
       ZMod (F.order i.2)))
     {δ : ℕ × F.Desc → ℝ≥0∞} (hδ : ∀ i, δ i ≤ 1 / 2) :
     ¬ EfficientSpecialHVZK (sendWitnessFamily F) (dlRel F) (sendWitnessEncoding F) simulate δ := by
   intro h
-  obtain ⟨program, hppt, hreal⟩ := h.realized
-  refine not_half_le_discreteLog hDL
-    (adversary := fun n input => Prod.fst <$> program ((n, input.1), input.2, encBool true))
-    ((hppt.preprocess (prepare := fun input : ℕ × F.Desc × List Bool =>
-      ((input.1, input.2.1), input.2.2, encBool true)) (by fun_prop)).map
-        (ComputableInPolyTime.fst _ _)) fun n d α => ?_
-  have hacc := hreal.one_sub_le_accepts h.specialHVZK (n, d) (α • F.generator d) true
-  calc (1 / 2 : ℝ≥0∞) = 1 - 1 / 2 := by rw [one_div, ENNReal.one_sub_inv_two]
-    _ ≤ 1 - δ (n, d) := tsub_le_tsub_left (hδ _) 1
-    _ ≤ _ := hacc
-    _ ≤ _ := by
-      rw [ProbComp.eval_map, PMF.toOuterMeasure_map_apply]
-      refine MeasureTheory.measure_mono ?_
-      rintro _ ⟨t, z, rfl, ht⟩
-      have hα : t = α := dlRel_unique (n, d) (of_decide_eq_true ht) rfl
-      change ((ofBits (encNat t.val) : ℕ) : ZMod (F.order d)) = α
-      rw [encNat_apply, ofBits, Nat.foldr_bit_bits, ZMod.natCast_zmod_val, hα]
+  obtain ⟨sim, hppt, hsim⟩ := h.realized
+  obtain ⟨program, hprog, hreal⟩ := hsim.exists_word hppt
+  exact not_wordRealization_sendWitness hDL h.specialHVZK hδ hprog hreal
 
 /-! ### Accepting everything is special sound, but not efficiently -/
 

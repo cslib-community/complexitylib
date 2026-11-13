@@ -14,6 +14,7 @@ public import CslibFrontier.Computability.Complexity.Reduction
 public import CslibFrontier.Computability.Complexity.Classes.Space.Closure
 public import CslibFrontier.Computability.Complexity.Classes.Space.Savitch
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolySpace
+import CslibFrontier.Computability.Complexity.Reduction.Word
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
@@ -215,11 +216,8 @@ private theorem alternationSet_mem_PSPACE (ps : List (Polynomial ℕ)) :
         (hV : ComputableInPolyTime V (encPair enc encBits) encBool) :
         alternationSet enc true (p :: ps) V ∈ PSPACE (encPair enc encBits) := by
       -- the remaining quantifiers, after the first block of certificates
-      have hB : {y : (α × List Bool) × List Bool | (y.1.1, y.1.2 ++ y.2) ∈
-          alternationSet enc false ps V} ∈ PSPACE (encPair (encPair enc encBits) encBits) :=
-        PolyTimeReducible.mem_PSPACE ⟨fun y => (y.1.1, y.1.2 ++ y.2),
-          by fun_prop,
-          fun _ => Iff.rfl⟩ (ih false V hV)
+      have hB := (polyTimeReducible_append (alternationSet enc false ps V)).mem_PSPACE
+        (ih false V hV)
       have hℓ : ComputableInPolyTime (fun x : α × List Bool => p.eval (enc x.1).length)
           (encPair enc encBits) encUnary :=
         ((ComputableInPolyTime.unary_eval p).comp

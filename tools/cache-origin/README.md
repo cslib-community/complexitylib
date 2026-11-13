@@ -1,11 +1,11 @@
 # HTTP cache origin
 
-Optional MIT cache origin for [#2503](https://github.com/cslib-community/cslib-frontier/issues/2503)
+MIT fallback cache origin for [#2503](https://github.com/cslib-community/cslib-frontier/issues/2503)
 and [#2506](https://github.com/cslib-community/cslib-frontier/pull/2506). The
 [migration guide](../../scripts/cache/README.md#mit-origin-migration) describes CI publication.
-GCS remains an active CI publisher and the default reader. MIT CI publication is enabled;
-reader cutover remains a separate decision. The source and examples do not provision infrastructure
-or install credentials automatically.
+GCS remains an active CI publisher and the preferred reader; MIT is the default fallback.
+MIT CI publication is enabled. Making MIT the preferred reader remains a separate decision.
+The source and examples do not provision infrastructure or install credentials automatically.
 
 One Linux Go executable has three commands: `serve` accepts synchronous PUTs over a Unix socket,
 `pack` streams a publication package to stdout, and `gc` runs separately under a systemd timer.
@@ -54,8 +54,8 @@ rotation and service restart preserved history and accepted new records. Service
 with no new mail. The collector preserves the host's kernel audit policy.
 
 Initial commissioning used small synthetic packages. By November 7, 2026, main CI was publishing
-real builds successfully to both MIT and GCS. Reader cutover still requires a real MIT cold
-restore and recovery exercise. The
+real builds successfully to both MIT and GCS. MIT fallback is enabled; making it the preferred
+reader still requires a real MIT cold restore and recovery exercise. The
 [migration checklist](../../scripts/cache/README.md#mit-origin-migration) gives the repository
 administrator's configuration and the separate publication/reader cutover steps. Credentials
 and host-specific private configuration must stay outside this repository.
@@ -208,7 +208,7 @@ configuration and real identity/permission behavior before any activation.
 
 Passing source and loopback tests does not establish production commissioning. Not included:
 cryptographic producer attestations, automatic provisioning, OS quota setup, TLS/certificate lifecycle,
-historical backfill, or reader cutover. A stolen publisher credential can still publish malicious
+historical backfill, or a switch to MIT as the preferred reader. A stolen publisher credential can still publish malicious
 bytes under unused or collected keys; the origin operator controls served bytes. SHA-256 detects
 package corruption, not authorized provenance. Keep GCS readers/publication until a separately
 reviewed deployment and cold restore succeed. Follow [incident recovery](SECURITY.md) for every

@@ -51,18 +51,16 @@ variable/clause separation have been checked. -/
 theorem avoidsVariables_of_contacts (hcount : a.clausePoints.length = φ.length)
     (hnd : a.positions.Nodup)
     (hends : ∀ o ∈ Cslib.Logic.PL.occurrences φ,
-      (a.incidenceRoute o).getLast? = some (a.variablePoint o.2.2.1))
+      (a.incidenceRoute o).getLast? = some (a.variablePoint o.lit.1))
     (hcontacts : ∀ o ∈ Cslib.Logic.PL.occurrences φ,
       ∀ t ∈ Cslib.Logic.PL.occurrences φ, o ≠ t →
         ∀ p ∈ support (a.incidenceRoute o), p ∈ support (a.incidenceRoute t) →
-          (o.2.2.1 = t.2.2.1 ∧ p = realPoint (a.variablePoint o.2.2.1)) ∨
-            (o.1 = t.1 ∧ p = realPoint (a.clausePoints.getD o.1 (0, 0)))) :
+          (o.lit.1 = t.lit.1 ∧ p = realPoint (a.variablePoint o.lit.1)) ∨
+            (o.clause = t.clause ∧ p = realPoint (a.clausePoints.getD o.clause (0, 0)))) :
     ∀ o ∈ Cslib.Logic.PL.occurrences φ, ∀ v ∈ φ.vars,
-      realPoint (a.variablePoint v) ∈ support (a.incidenceRoute o) → v = o.2.2.1 := by
+      realPoint (a.variablePoint v) ∈ support (a.incidenceRoute o) → v = o.lit.1 := by
   intro o ho v hv hp
-  have hv' := hv
-  rw [← Cslib.Logic.PL.map_occurrences] at hv'
-  obtain ⟨t, ht, htv⟩ := List.mem_map.mp hv'
+  obtain ⟨t, ht, htv⟩ := Cslib.Logic.PL.exists_occurrence_of_mem_vars hv
   by_cases hot : o = t
   · subst t
     exact htv.symm
@@ -79,21 +77,21 @@ and variable/clause separation have been checked. -/
 theorem avoidsClauses_of_contacts (hcount : a.clausePoints.length = φ.length)
     (hnd : a.positions.Nodup) (hnonempty : ∀ c ∈ φ, c ≠ [])
     (hends : ∀ o ∈ Cslib.Logic.PL.occurrences φ,
-      (a.incidenceRoute o).head? = some (a.clausePoints.getD o.1 (0, 0)))
+      (a.incidenceRoute o).head? = some (a.clausePoints.getD o.clause (0, 0)))
     (hcontacts : ∀ o ∈ Cslib.Logic.PL.occurrences φ,
       ∀ t ∈ Cslib.Logic.PL.occurrences φ, o ≠ t →
         ∀ p ∈ support (a.incidenceRoute o), p ∈ support (a.incidenceRoute t) →
-          (o.2.2.1 = t.2.2.1 ∧ p = realPoint (a.variablePoint o.2.2.1)) ∨
-            (o.1 = t.1 ∧ p = realPoint (a.clausePoints.getD o.1 (0, 0)))) :
+          (o.lit.1 = t.lit.1 ∧ p = realPoint (a.variablePoint o.lit.1)) ∨
+            (o.clause = t.clause ∧ p = realPoint (a.clausePoints.getD o.clause (0, 0)))) :
     ∀ o ∈ Cslib.Logic.PL.occurrences φ, ∀ i < φ.length,
-      realPoint (a.clausePoints.getD i (0, 0)) ∈ support (a.incidenceRoute o) → i = o.1 := by
+      realPoint (a.clausePoints.getD i (0, 0)) ∈ support (a.incidenceRoute o) → i = o.clause := by
   intro o ho i hi hp
   have hlen : 0 < φ[i].length := List.length_pos_iff.mpr (hnonempty _ (List.getElem_mem hi))
-  let t : Occurrence V := (i, 0, φ[i][0])
+  let t : Occurrence V := ⟨i, 0, φ[i][0]⟩
   have ht : t ∈ Cslib.Logic.PL.occurrences φ :=
     Cslib.Logic.PL.mem_occurrences.mpr ⟨hi, hlen, rfl⟩
   by_cases hot : o = t
-  · exact (congrArg Prod.fst hot).symm
+  · exact (congrArg Occurrence.clause hot).symm
   have hpt : realPoint (a.clausePoints.getD i (0, 0)) ∈ support (a.incidenceRoute t) :=
     Or.inl ⟨_, List.mem_of_head? (hends t ht), rfl⟩
   rcases hcontacts o ho t ht hot _ hp hpt with hc | hc

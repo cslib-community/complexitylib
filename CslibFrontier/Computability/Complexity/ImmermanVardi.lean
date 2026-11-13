@@ -12,7 +12,7 @@ public import CslibFrontier.Computability.Complexity.ImmermanVardi.Tableau.Accep
 public import CslibFrontier.Computability.Complexity.ImmermanVardi.Input
 public import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple.LeastFixedPoint
 public import CslibFrontier.Logics.FirstOrder.Ordered.FullTuple.Power
-import CslibFrontier.Computability.Complexity.Fagin.Converse
+import CslibFrontier.Computability.Complexity.ImmermanVardi.Machine
 
 /-!
 # The Immerman–Vardi characterization of polynomial time
@@ -49,39 +49,6 @@ open FirstOrder Language Turing Turing.MultiTapeTM
 
 namespace Cslib.Logic
 
-namespace Vocabulary
-
-variable {L : Language} (v : Vocabulary L)
-
-/-- A single tuple dimension contains the input, runtime, and fixed finite feature tags of a
-polynomial-time native machine, uniformly over well-formed ordered structures. -/
-theorem exists_lfp_power_bound (t : ℕ → ℕ) (ht : Cslib.PolynomiallyBounded t) (tags : ℕ) :
-    ∃ k : ℕ, 1 ≤ k ∧ (∀ i : Fin v.count, v.arity i ≤ k) ∧
-      ∀ a : EncodedStructure, v.WellFormed a → 2 ≤ a.1 →
-        (encStructure a).length + 1 < a.1 ^ k ∧
-        t (encStructure a).length < a.1 ^ k ∧ tags ≤ a.1 ^ k := by
-  obtain ⟨c, d, htime⟩ := Cslib.polynomiallyBounded_iff_le.mp ht
-  obtain ⟨k, hk, har, hpow⟩ := v.exists_pow_bound 0 (c + tags) d
-  refine ⟨k, hk, har, fun a ha hn => ?_⟩
-  obtain ⟨hinput, hclock⟩ := hpow a ha hn
-  simp only [Polynomial.eval_zero, Nat.add_zero] at hinput hclock
-  have hlen : (encStructure a).length + 1 ≤ (frame (encStructure a)).length + 1 := by
-    rw [length_frame]
-    omega
-  have ht' : t (encStructure a).length ≤
-      (c + tags) * ((frame (encStructure a)).length + 1) ^ d :=
-    (htime _).trans (Nat.mul_le_mul (Nat.le_add_right c tags)
-      (Nat.pow_le_pow_left hlen d))
-  have hp : 1 ≤ ((frame (encStructure a)).length + 1) ^ d :=
-    Nat.one_le_pow _ _ (by omega)
-  have htags : tags ≤ (c + tags) * ((frame (encStructure a)).length + 1) ^ d :=
-    calc tags ≤ c + tags := Nat.le_add_left _ _
-         _ = (c + tags) * 1 := (Nat.mul_one _).symm
-         _ ≤ _ := Nat.mul_le_mul_left _ hp
-  exact ⟨by omega, by omega, by omega⟩
-
-end Vocabulary
-
 namespace FO.Ordered
 
 open Cslib.Complexity
@@ -92,50 +59,31 @@ theorem LFPDefinable.of_encodedLanguage_mem_P {L : Language} [L.IsRelational]
     (v : Vocabulary L) {K : Query L} (hK : K.encodedLanguage v ∈ P encStructure) :
     LFPDefinable K := by
   classical
-  obtain ⟨f, ⟨t, _, ht, _, m, State, hfinite, tm, htm⟩, hdec⟩ := hK
-  let _ := hfinite
-  let _ := Fintype.ofFinite State
-  obtain ⟨k, hk, har, hpow⟩ :=
-    v.exists_lfp_power_bound t ht (Fintype.card (ImmermanVardi.Tableau.Tag m State))
+  obtain ⟨m, State, _, tm, htm⟩ := exists_tm_of_encodedLanguage_mem_P v hK
+  obtain ⟨k, hk, har, hb, hdec⟩ := htm (Fintype.card (ImmermanVardi.Tableau.Tag m State))
   let A := {a : EncodedStructure // v.WellFormed a ∧ 2 ≤ a.1}
   let size (a : A) := a.val.1 ^ k
-  let input (a : A) := encStructure a.val
   let inst (a : A) : v.powerLanguage.Structure (Fin (size a)) :=
     v.powerStructure a.val (size a)
   let instSize (a : A) : Fact (2 ≤ size a) := by
     let _ : Fact (2 ≤ a.val.1) := ⟨a.property.2⟩
     exact ⟨FullTupleInterpretation.two_le_pow (n := a.val.1) hk⟩
-  have hb (a : A) :
-      (input a).length + 1 < size a ∧ t (input a).length < size a ∧
-        Fintype.card (ImmermanVardi.Tableau.Tag m State) ≤ size a :=
-    hpow a.val a.property.1 a.property.2
+  have hbA (a : A) := hb a.val a.property.1 a.property.2
   obtain ⟨ψ, hψ⟩ := ImmermanVardi.Tableau.exists_acceptance_sentence
-    (L := v.powerLanguage) (size := size) tm input v.inputSymbol
-    (fun a s p => v.realize_inputSymbol a.property.1
-      ((Nat.lt_succ_self _).trans (hb a).1) s p)
-    (fun a => (hb a).1) (fun a => (hb a).2.2)
+    (L := v.powerLanguage) (size := size) tm (fun a => encStructure a.val) v.inputSymbol
+    (fun a s p => v.realize_inputSymbol a.property.1 ((Nat.lt_succ_self _).trans (hbA a).1) s p)
+    (fun a => (hbA a).1) (fun a => (hbA a).2)
   let I := v.orderedPowerInterpretation k har
   refine ⟨I.onLFPSentence ψ, fun M => ?_⟩
   let a : A := ⟨encode v M, v.wellFormed_encode M (Equiv.refl M), M.size_ge_two⟩
-  have hm := (htm (encode v M)).runFrom_of_le
-    (show t (input a).length ≤ size a - 1 by have := (hb a).2.1; omega)
-  have haccept : ψ.Realize (M := Fin (size a)) Operator.RelEnv.empty Empty.elim ↔
-      f (encode v M) = true := by
-    have hψ' := hψ a
-    have hv (v : Empty → Fin (size a)) : v = Empty.elim := Subsingleton.elim _ _
-    simp only [hv] at hψ'
-    rw [hψ']
-    change ((tm.runFrom (tm.initCfg (encStructure (encode v M))) (size a - 1)).Halted ∧
-      (tm.runFrom (tm.initCfg (encStructure (encode v M))) (size a - 1)).output = [true]) ↔ _
-    simp only [hm.2, encBool_apply, List.singleton_inj]
-    exact ⟨And.right, fun h => ⟨hm.1, h⟩⟩
-  have hquery : M ∈ K ↔ f (encode v M) = true :=
-    (mem_encodedLanguage_encode v K M).symm.trans (hdec (encode v M))
+  have hv (v : Empty → Fin (size a)) : v = Empty.elim := Subsingleton.elim _ _
+  have hψ' := hψ a
+  simp only [hv] at hψ'
   rw [I.realize_onLFPSentence hk ψ]
   have he := v.inputStructure_orderedPowerInterpretation k har hk M
   change I.inputStructure (n := M.size) = inst a at he
   rw [he]
-  exact hquery.trans haccept.symm
+  exact (hdec M).trans hψ'.symm
 
 /-- **Immerman–Vardi:** a single checked FO(LFP) sentence defines an ordered query exactly
 when its source-only language is decidable in native polynomial time. -/

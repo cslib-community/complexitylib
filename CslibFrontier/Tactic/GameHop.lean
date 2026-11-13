@@ -95,9 +95,8 @@ theorem coe_advantage_bind_le_of_support {α : Type*} (μ : PMF α) (game1 game2
 theorem coe_advantage_runStatelessOracle_le_of_support {α : Type}
     (o : List Bool → List Bool) (prog : WordOracleComp Unit α)
     (next₁ next₂ : α → Game) {ε : ℝ}
-    (h : ∀ out ∈ (ProbComp.eval ((OracleComp.interpret
-      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
-        (fun req (s : Unit) => pure (o req.2, s))) prog).run ())).support,
+    (h : ∀ out ∈ (ProbComp.eval
+      ((prog.runState fun req (s : Unit) => pure (o req.2, s)).run ())).support,
       (advantage (next₁ out.1) (next₂ out.1) : ℝ) ≤ ε) :
     (advantage (runStatelessOracle o prog next₁) (runStatelessOracle o prog next₂) : ℝ) ≤ ε :=
   coe_advantage_bind_le_of_support _ _ _ h
@@ -106,9 +105,8 @@ theorem coe_advantage_runStatelessOracle_le_of_support {α : Type}
 theorem closeTo_runStatelessOracle {α : Type}
     (o : List Bool → List Bool) (prog : WordOracleComp Unit α)
     (next₁ next₂ : α → Game) {ε : ℝ≥0∞}
-    (h : ∀ out ∈ (ProbComp.eval ((OracleComp.interpret
-      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
-        (fun req (s : Unit) => pure (o req.2, s))) prog).run ())).support,
+    (h : ∀ out ∈ (ProbComp.eval
+      ((prog.runState fun req (s : Unit) => pure (o req.2, s)).run ())).support,
       CloseTo (next₁ out.1) (next₂ out.1) ε) :
     CloseTo (runStatelessOracle o prog next₁) (runStatelessOracle o prog next₂) ε :=
   CloseTo.bind_right _ h
@@ -117,9 +115,8 @@ theorem closeTo_runStatelessOracle {α : Type}
 theorem runStatelessOracle_congr_on_support {α : Type}
     (o : List Bool → List Bool) (prog : WordOracleComp Unit α)
     (next₁ next₂ : α → Game)
-    (h : ∀ out ∈ (ProbComp.eval ((OracleComp.interpret
-      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
-        (fun req (s : Unit) => pure (o req.2, s))) prog).run ())).support,
+    (h : ∀ out ∈ (ProbComp.eval
+      ((prog.runState fun req (s : Unit) => pure (o req.2, s)).run ())).support,
       next₁ out.1 = next₂ out.1) :
     runStatelessOracle o prog next₁ = runStatelessOracle o prog next₂ :=
   Cslib.Probability.PMF.bind_congr_on_support _ _ _ h

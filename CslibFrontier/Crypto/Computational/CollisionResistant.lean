@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 public import CslibFrontier.Computability.Probabilistic.Parameter
 public import CslibFrontier.Crypto.Game
+public import CslibFrontier.Crypto.Game.Experiment
 public import CslibFrontier.Languages.Probabilistic.BitString
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -42,19 +43,22 @@ families (`valid := fun _ _ => true`).
 
 Following [BonehShoup2023], Section 8.1.1 (Definition 8.2 and Fig. 8.3, printed pp. 290–291), we
 define the general setup-parameterized notions `CollisionFinderFor`, `isCollisionFor`,
-`collisionGameFor`, `CollisionResistantForOn`, and `CollisionResistantFor` for hash families
-`H : (d : Param) → List Bool → Digest d` indexed by a public system parameter `d ← setup n`
-(where `setup : ℕ → PMF Param` need not be efficiently sampleable, matching `PrimeOrderGroupFamily`
-in `DiscreteLog` and `DiffieHellman`, and where `d` subsumes any hash key per footnote 1 on printed
-p. 290). Standard keyed word-level collision resistance (`CollisionFinder`, `CollisionResistantOn`,
-`CollisionResistant`) is the `abbrev` specialization `Param = List Bool`, `Digest _ = List Bool`,
-`encParam = encBits`, `setup n = ProbComp.eval (BitString.sampleList n)`.
+`collisionExperiment`, `collisionGameFor`, `CollisionResistantForOn`, and `CollisionResistantFor`
+for hash families `H : (d : Param) → List Bool → Digest d` indexed by a public system parameter
+`d ← setup n` (where `setup : ℕ → PMF Param` need not be efficiently sampleable, matching
+`PrimeOrderGroupFamily` in `DiscreteLog` and `DiffieHellman`, and where `d` subsumes any hash key
+per footnote 1 on printed p. 290). `collisionExperiment` is the experiment at a fixed `d`, and
+`collisionGameFor` runs it under `Game.withSetup`. Standard keyed word-level collision resistance
+(`CollisionFinder`, `CollisionResistantOn`, `CollisionResistant`) is the `abbrev` specialization
+`Param = List Bool`, `Digest _ = List Bool`, `encParam = encBits`,
+`setup n = ProbComp.eval (BitString.sampleList n)`.
 
 ## Main definitions
 
 * `Cslib.Crypto.CollisionFinderFor`, `Cslib.Crypto.isCollisionFor`,
-  `Cslib.Crypto.collisionGameFor`, `Cslib.Crypto.CollisionResistantForOn`,
-  `Cslib.Crypto.CollisionResistantFor`: setup-parameterized collision-finding experiment and
+  `Cslib.Crypto.collisionExperiment`, `Cslib.Crypto.collisionGameFor`,
+  `Cslib.Crypto.CollisionResistantForOn`, `Cslib.Crypto.CollisionResistantFor`: the
+  collision-finding experiment at a fixed public parameter, its setup-parameterized game, and
   collision resistance for families `H : (d : Param) → List Bool → Digest d` indexed by a public
   setup parameter `d ← setup n` (used for group-indexed $\mathbb{Z}_q$-valued hashes such as
   $H' : \mathbb{G}^3 \to \mathbb{Z}_q$ in Cramer–Shoup).
@@ -160,19 +164,26 @@ theorem isCollisionFor_self {Param : Type} {Digest : Param → Type} [∀ d, Dec
     isCollisionFor H valid n d m m = false := by
   simp [isCollisionFor]
 
-/-- The setup-parameterized collision-finding experiment ([BonehShoup2023], Section 8.1.1,
-Definition 8.2 and Fig. 8.3, printed pp. 290–291): draw `d ← setup n` (where `setup` is an
-arbitrary setup distribution and need not be efficiently sampleable, matching `DiscreteLog` and
-`DDH`), run `adversary n d` to obtain `(m₁, m₂)`, and accept when
-`isCollisionFor H valid n d m₁ m₂` holds. -/
+/-- The collision-finding experiment at security parameter `n` and public parameter `d`
+([BonehShoup2023], Section 8.1.1, Fig. 8.3, printed p. 291): run `adversary n d` to obtain
+`(m₁, m₂)`, and accept when `isCollisionFor H valid n d m₁ m₂` holds. -/
+noncomputable def collisionExperiment {Param : Type} {Digest : Param → Type}
+    [∀ d, DecidableEq (Digest d)]
+    (H : (d : Param) → List Bool → Digest d) (valid : ℕ → Param → List Bool → Bool)
+    (adversary : CollisionFinderFor Param) (n : ℕ) (d : Param) : Experiment := do
+  let pair ← adversary n d
+  return isCollisionFor H valid n d pair.1 pair.2
+
+/-- The setup-parameterized collision-finding game ([BonehShoup2023], Section 8.1.1,
+Definition 8.2 and Fig. 8.3, printed pp. 290–291): draw `d ← setup n` and run
+`collisionExperiment` at `d`. The setup law need not be efficiently sampleable, matching
+`DiscreteLog` and `DDH`. -/
 noncomputable def collisionGameFor {Param : Type} {Digest : Param → Type}
     [∀ d, DecidableEq (Digest d)]
     (setup : ℕ → PMF Param) (H : (d : Param) → List Bool → Digest d)
     (valid : ℕ → Param → List Bool → Bool)
-    (adversary : CollisionFinderFor Param) (n : ℕ) : Game := do
-  let d ← setup n
-  let pair ← ProbComp.eval (adversary n d)
-  return isCollisionFor H valid n d pair.1 pair.2
+    (adversary : CollisionFinderFor Param) (n : ℕ) : Game :=
+  Game.withSetup (setup n) (collisionExperiment H valid adversary n)
 
 /-- Collision resistance of a setup-parameterized hash family `H` on `valid` against every
 uniform strict PPT collision finder ([BonehShoup2023], Section 8.1.1, Definition 8.2 and Fig. 8.3,
@@ -258,7 +269,8 @@ theorem succProbability_collisionGameFor_map_le
       Game.succProbability
         (collisionGameFor setup₁ H₁ valid₁ (fun m p₁ => adversary m (f m p₁)) n) := by
   apply Game.succProbability_mono
-  simp only [collisionGameFor, PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def]
+  simp only [collisionGameFor, Game.withSetup, collisionExperiment, ProbComp.eval_bind,
+    ProbComp.eval_pure, PMF.bind_map, Function.comp_def]
   refine PMF.bind_apply_mono_on_support _ _ fun p₁ hp₁ =>
     PMF.map_true_mono _ fun pair _ hcol => ?_
   rw [isCollisionFor_eq_true_iff] at hcol ⊢
@@ -380,8 +392,8 @@ theorem collisionGameFor_sampleList_eq (H : List Bool → List Bool → List Boo
     collisionGameFor (Param := List Bool) (Digest := fun _ => List Bool)
       (fun m => ProbComp.eval (BitString.sampleList m)) H (fun m _ => valid m) adversary n =
       ProbComp.eval (collisionGame H valid adversary n) := by
-  simp only [collisionGameFor, collisionGame, ProbComp.eval_bind, ProbComp.eval_pure,
-    PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, isCollisionFor_eq_isCollision]
+  simp only [collisionGameFor, Game.withSetup, collisionExperiment, collisionGame,
+    ProbComp.eval_bind, ProbComp.eval_pure, isCollisionFor_eq_isCollision]
 
 /-- Run the complete collision experiment on its unary security parameter. -/
 @[program_certificate]

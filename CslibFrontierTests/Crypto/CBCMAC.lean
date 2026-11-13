@@ -112,34 +112,32 @@ noncomputable example :
       subst hEq; exact twoQueryAdaptiveTree_admissible)
 /-- Concrete instantiation of the 2-to-4-block forgery (`cbcTwoToFourAttack_valid`). -/
 example : let trace := cbcTwoToFourAttack (cbcMacBlocks testPerm 0)
-    trace.1.length = 1 ∧ (∀ q ∈ trace.1, q.length = 2) ∧
-      trace.2.1.length = 4 ∧ cbcForgeryValid testPerm trace :=
+    trace.queries.length = 1 ∧ (∀ q ∈ trace.queries, q.length = 2) ∧
+      trace.message.length = 4 ∧ trace.Valid (cbcMacBlocks testPerm 0) :=
   cbcTwoToFourAttack_valid testPerm
 /-- Concrete instantiation of the 1/2-to-3-block splicing forgery (`cbcToThreeAttack_valid`). -/
 example : let trace := cbcToThreeAttack (cbcMacBlocks testPerm 0)
-    trace.1.length = 2 ∧ trace.2.1.length = 3 ∧ cbcForgeryValid testPerm trace :=
+    trace.queries.length = 2 ∧ trace.message.length = 3 ∧ trace.Valid (cbcMacBlocks testPerm 0) :=
   cbcToThreeAttack_valid testPerm
 /-- Concrete instantiation of the leaked-intermediate-tags forgery (`cbcLeakedTagsAttack_valid`). -/
 example : let trace := cbcLeakedTagsAttack (cbcAllTagsTwo testPerm)
-    trace.1.length = 3 ∧ trace.2.1 ∉ trace.1 ∧
-      (cbcAllTagsTwo testPerm trace.2.1).2 = trace.2.2.2 :=
+    trace.queries.length = 3 ∧ trace.message ∉ trace.queries ∧
+      (cbcAllTagsTwo testPerm trace.message).2 = trace.tag.2 :=
   cbcLeakedTagsAttack_valid (by decide) testPerm
 /-- Concrete instantiation of the random-IV CBC-MAC forgery (`cbcRandomIVAttack_valid`). -/
-example : let forged := cbcRandomIVAttack (cbcRandomIVMac testPerm b0 [0])
-    forged.1 ≠ 0 ∧ cbcRandomIVMac testPerm forged.2.1 [forged.1] = forged.2 :=
+example : let (message, iv', tag) := cbcRandomIVAttack (cbcRandomIVMac testPerm b0 [0])
+    message ≠ 0 ∧ cbcRandomIVMac testPerm iv' [message] = (iv', tag) :=
   cbcRandomIVAttack_valid (by decide) testPerm b0
 /-- Concrete instantiation of the append-length CBC-MAC forgery (`cbcLengthSuffixAttack_valid`). -/
 example : let encodeLength : ℕ → List (BitString 4) := fun _ => [b0]
     let trace := cbcLengthSuffixAttack encodeLength (lengthAppendedCBC testPerm encodeLength)
-    trace.1.length = 3 ∧ (∀ q ∈ trace.1, q.length * 4 < 2 ^ 4) ∧
-      trace.2.1.length * 4 < 2 ^ 4 ∧ trace.2.1 ∉ trace.1 ∧
-      lengthAppendedCBC testPerm encodeLength trace.2.1 = trace.2.2 :=
+    trace.queries.length = 3 ∧ (∀ q ∈ trace.queries, q.length * 4 < 2 ^ 4) ∧
+      trace.message.length * 4 < 2 ^ 4 ∧ trace.Valid (lengthAppendedCBC testPerm encodeLength) :=
   cbcLengthSuffixAttack_valid (by decide) (fun _ => b0) testPerm
 /-- Concrete instantiation of the zero-padded CBC-MAC forgery (`zeroPadAttack_valid`). -/
 example : let trace := zeroPadAttack (zeroPadCBC testPerm 1)
-    trace.1.length = 1 ∧ (∀ q ∈ trace.1, q.length ≤ 1 * 2 ^ 4) ∧
-      trace.2.1.length ≤ 1 * 2 ^ 4 ∧ trace.2.1 ∉ trace.1 ∧
-      zeroPadCBC testPerm 1 trace.2.1 = trace.2.2 :=
+    trace.queries.length = 1 ∧ (∀ q ∈ trace.queries, q.length ≤ 1 * 2 ^ 4) ∧
+      trace.message.length ≤ 1 * 2 ^ 4 ∧ trace.Valid (zeroPadCBC testPerm 1) :=
   zeroPadAttack_valid (by decide) (by decide) testPerm
 /-- `BitString.padBlocks` reads a right-padded bit list as width-`2` blocks, and the floor block
   count drops the trailing odd bit position. -/

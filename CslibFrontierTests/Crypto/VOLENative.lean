@@ -29,11 +29,11 @@ noncomputable def receiver : Receiver Bool Input (List Bool) State Result where
     let coin ← ProbComp.uniform Bool
     return (coin, share, [])
   challenge input share state d := pure
-    (List.replicate input.2.length
-      (state.1 ^^ share.1 ^^ share.2.getD 0 false ^^ d.getD 0 false),
+    (List.replicate input.gates.length
+      (state.1 ^^ share.key ^^ share.tags.getD 0 false ^^ d.getD 0 false),
       (state.1, state.2.1, d))
   receive _ share state reply :=
-    pure (state.1, state.2.1, [reply.1, reply.2, share.1] ++ share.2 ++ state.2.2)
+    pure (state.1, state.2.1, [reply.1, reply.2, share.key] ++ share.tags ++ state.2.2)
   terminal _ share state := pure (state, share)
 
 -- One native certificate covers every wire count and every encoded (even malformed) layout.
@@ -48,13 +48,13 @@ theorem receiver_simulator_ppt :
   · exact ComputableInPolyTime.of_finite _
   · exact .id'
   · fun_prop
-  · unfold receiver stateEncoding encShare encInput
+  · unfold receiver stateEncoding
     ppt
-  · unfold receiver stateEncoding encShare encInput
+  · unfold receiver stateEncoding
     ppt
-  · unfold receiver stateEncoding encShare encInput
+  · unfold receiver stateEncoding
     ppt
-  · unfold receiver resultEncoding stateEncoding encShare encInput
+  · unfold receiver resultEncoding stateEncoding
     ppt
 
 -- The same program simulates every satisfying circuit, including noninjective wire maps.
@@ -74,7 +74,7 @@ example (m : ℕ) :
       (receiver.strategy 1 List.ofFn (Fin.val (n := m))) (fun _ => true)
       (inputOfMaps (fun _ : Fin m => (0 : Fin 1)) (fun _ => 0) (fun _ => 0))).map viewToLists =
       ProbComp.eval (simulate (ProbComp.uniform Bool) receiver id (fun _ _ d => d)
-        (1, List.replicate m (0, 0, 0))) := by
+        ⟨1, List.replicate m ⟨0, 0, 0⟩⟩) := by
   simpa [inputOfMaps] using receiverView_eq_eval_simulate
     (fun _ : Fin m => (0 : Fin 1)) (fun _ => 0) (fun _ => 0)
     (ProbComp.uniform Bool) (ProbComp.eval_uniform _) receiver id (fun _ _ d => d) _ rfl
@@ -82,9 +82,9 @@ example (m : ℕ) :
 
 example :
     (maskedMulCheckReceiverView (Fin.elim0 : Fin 0 → Fin 0) Fin.elim0 Fin.elim0
-      (receiver.strategy 0 List.ofFn (Fin.val (n := 0))) Fin.elim0 (0, [])).map viewToLists =
+      (receiver.strategy 0 List.ofFn (Fin.val (n := 0))) Fin.elim0 ⟨0, []⟩).map viewToLists =
       ProbComp.eval
-        (simulate (ProbComp.uniform Bool) receiver id (fun _ _ d => d) (0, [])) := by
+        (simulate (ProbComp.uniform Bool) receiver id (fun _ _ d => d) ⟨0, []⟩) := by
   simpa [inputOfMaps] using receiverView_eq_eval_simulate
     (Fin.elim0 : Fin 0 → Fin 0) Fin.elim0 Fin.elim0 (ProbComp.uniform Bool)
     (ProbComp.eval_uniform _) receiver id (fun _ _ d => d) _ rfl
@@ -95,24 +95,25 @@ example : weights 3 [true] = [true, false, false] ∧
     weights 1 [false, true] = [false] := by decide
 
 -- A huge binary gate index uses the default, rather than requiring that many wires.
-example : checkValue (1, [(2 ^ 100, 0, 0)])
-    (true, [true, false]) [false] [true] = true := by decide
+example : checkValue ⟨1, [⟨2 ^ 100, 0, 0⟩]⟩
+    ⟨true, [true, false]⟩ [false] [true] = true := by decide
 
 -- The private coin, receiver key, raw tag and correction all affect the chosen weight.
 example :
-    receiver.challenge (1, [(0, 0, 0)]) (false, []) (false, (false, []), []) [false] ≠
-      receiver.challenge (1, [(0, 0, 0)]) (false, []) (true, (false, []), []) [false] := by
+    receiver.challenge ⟨1, [⟨0, 0, 0⟩]⟩ ⟨false, []⟩ (false, ⟨false, []⟩, []) [false] ≠
+      receiver.challenge ⟨1, [⟨0, 0, 0⟩]⟩ ⟨false, []⟩ (true, ⟨false, []⟩, []) [false] := by
   simp [receiver]
 
 -- Every run retains the initial coin and share while the terminal phase reads the cache again.
 example (input : Input) (view : View Bool Result)
     (hv : view ∈ (ProbComp.eval
       (simulate (ProbComp.uniform Bool) receiver id (fun _ _ d => d) input)).support) :
-    view.2.2.2.2.1.2.1 = view.1 ∧ view.2.2.2.2.2 = view.1 ∧
-      view.2.2.2.2.1.2.2 = [view.2.2.2.1.1, view.2.2.2.1.2, view.1.1] ++
-        view.1.2 ++ view.2.1 ∧
-      view.2.2.1 = List.replicate input.2.length
-        (view.2.2.2.2.1.1 ^^ view.1.1 ^^ view.1.2.getD 0 false ^^ view.2.1.getD 0 false) := by
+    view.result.1.2.1 = view.share ∧ view.result.2 = view.share ∧
+      view.result.1.2.2 = [view.reply.1, view.reply.2, view.share.key] ++
+        view.share.tags ++ view.corrections ∧
+      view.weights = List.replicate input.gates.length
+        (view.result.1.1 ^^ view.share.key ^^ view.share.tags.getD 0 false ^^
+          view.corrections.getD 0 false) := by
   simp only [simulate, id_eq, receiver, ProbComp.eval_bind, ProbComp.eval_pure,
     PMF.mem_support_bind_iff, PMF.support_pure, Set.mem_singleton_iff] at hv
   rcases hv with ⟨delta, _, q, _, state, ⟨coin, _, rfl⟩, d, _, chosen, rfl,
@@ -120,7 +121,7 @@ example (input : Input) (view : View Bool Result)
   refine ⟨rfl, rfl, rfl, ?_⟩
   apply List.ext_getElem (by simp [weights])
   intro i hi hi'
-  have hi0 : i < input.2.length := by
+  have hi0 : i < input.gates.length := by
     simpa only [weights, List.length_map, List.length_range] using hi
   simp [weights, hi0]
 
@@ -149,7 +150,7 @@ private theorem falseView_real : falseView ∈
             ()), ())) := by
     simp [maskedMulCheckReceiverView, Receiver.strategy, constantReceiver, World.eval, voleWorld,
       maskedMulCheck, liftProver, liftVerifier, runAgainst, ProverStrategy.hoist,
-      VerifierStrategy.hoist, maskedMulCheckSpec, Cslib.Crypto.Protocols.SigmaProtocol.sigmaSpec,
+      VerifierStrategy.hoist, maskedMulCheckSpec, threeMoveSpec,
       ProbOracleComp.query, ProbOracleComp.sample, ProbOracleComp.runWith,
       OracleComp.sumHandler, VOLECorrelation.senderView, PMF.map, Function.comp_def, PMF.bind_bind]
   rw [hrun]
@@ -172,15 +173,15 @@ example :
       (viewToLists (F := Bool) (Result := Unit) (n := 2) (m := 1)) := by
     rintro ⟨⟨delta, q⟩, ⟨d, r, reply, ⟨⟩⟩, ⟨⟩⟩
       ⟨⟨delta', q'⟩, ⟨d', r', reply', ⟨⟩⟩, ⟨⟩⟩ h
-    simpa only [viewToLists, Prod.mk.injEq, List.ofFn_inj, and_true] using h
+    simpa only [viewToLists, View.mk.injEq, Share.mk.injEq, List.ofFn_inj, Prod.mk.injEq,
+      and_true] using h
   have hv := falseView_real
   rw [PMF.map_injective hinj heq] at hv
   have hcheck := maskedMulCheckReceiverSimulate_accepts leftWire leftWire outWire
     (constantReceiver.strategy 2 List.ofFn (Fin.val (n := 1)))
     (inputOfMaps leftWire leftWire outWire) hv
-  have hfalse : ¬ (maskedMulCheckValue leftWire leftWire outWire falseView.1.1 falseView.1.2
-      falseView.2.1.1 falseView.2.1.2.1 =
-        falseView.2.1.2.2.1.1 * falseView.1.1 + falseView.2.1.2.2.1.2) := by decide
+  have hfalse : ¬ MaskedMulCheckAccepts leftWire leftWire outWire falseView.1 falseView.2.1 := by
+    decide
   exact hfalse hcheck
 
 
@@ -192,7 +193,7 @@ def contextEncoding : Context ↪ List Bool := encPair encInput (encList encBool
 def firstEncoding : FirstMessage ↪ List Bool := encPair (encList encBool) (encList encBool)
 
 def contextFirst (input : Context) (share : Share Bool) (d : List Bool) : FirstMessage :=
-  (d, input.2 ++ [share.1])
+  (d, input.2 ++ [share.key])
 
 noncomputable def contextReceiver : Receiver Bool Context FirstMessage State Result where
   init input share := receiver.init input.1 share
@@ -212,15 +213,15 @@ example : IsPPTOn contextEncoding (encView encBool resultEncoding)
   · exact ComputableInPolyTime.of_finite _
   · unfold contextEncoding
     fun_prop
-  · unfold contextFirst contextEncoding firstEncoding encShare
+  · unfold contextFirst contextEncoding firstEncoding
     polytime
-  · unfold contextReceiver receiver contextEncoding stateEncoding encShare encInput
+  · unfold contextReceiver receiver contextEncoding stateEncoding
     ppt
-  · unfold contextReceiver receiver contextEncoding firstEncoding stateEncoding encShare encInput
+  · unfold contextReceiver receiver contextEncoding firstEncoding stateEncoding
     ppt
-  · unfold contextReceiver receiver contextEncoding stateEncoding encShare encInput
+  · unfold contextReceiver receiver contextEncoding stateEncoding
     ppt
-  · unfold contextReceiver receiver contextEncoding resultEncoding stateEncoding encShare encInput
+  · unfold contextReceiver receiver contextEncoding resultEncoding stateEncoding
     ppt
 
 -- The actual cached-world law carries an arbitrary extra word through every callback.
@@ -236,23 +237,69 @@ example {n m : ℕ} (left right output : Fin m → Fin n) (w : Fin n → Bool)
 
 -- Equal layouts with different extra data really choose different weights.
 example :
-    (contextReceiver.mapFirst contextFirst).challenge ((1, [(0, 0, 0)]), [false])
-      (false, []) (false, (false, []), []) [] ≠
-    (contextReceiver.mapFirst contextFirst).challenge ((1, [(0, 0, 0)]), [true])
-      (false, []) (false, (false, []), []) [] := by
+    (contextReceiver.mapFirst contextFirst).challenge (⟨1, [⟨0, 0, 0⟩]⟩, [false])
+      ⟨false, []⟩ (false, ⟨false, []⟩, []) [] ≠
+    (contextReceiver.mapFirst contextFirst).challenge (⟨1, [⟨0, 0, 0⟩]⟩, [true])
+      ⟨false, []⟩ (false, ⟨false, []⟩, []) [] := by
   simp [Receiver.mapFirst, contextReceiver, contextFirst, receiver]
 
 -- The transformed first message, initial coin, and repeated cached shares survive processing.
 example (input : Context) (view : View Bool Result)
     (hv : view ∈ (ProbComp.eval
       (simulate (ProbComp.uniform Bool) contextReceiver Prod.fst contextFirst input)).support) :
-    view.2.2.2.2.1.2.1 = view.1 ∧ view.2.2.2.2.2 = view.1 ∧
-      view.2.2.2.2.1.2.2 = [view.2.2.2.1.1, view.2.2.2.1.2, view.1.1] ++
-        view.1.2 ++ (input.2 ++ [view.1.1]) ++ view.2.1 := by
+    view.result.1.2.1 = view.share ∧ view.result.2 = view.share ∧
+      view.result.1.2.2 = [view.reply.1, view.reply.2, view.share.key] ++
+        view.share.tags ++ (input.2 ++ [view.share.key]) ++ view.corrections := by
   simp only [simulate, contextReceiver, contextFirst, receiver, ProbComp.eval_bind,
     ProbComp.eval_pure, PMF.mem_support_bind_iff, PMF.support_pure, Set.mem_singleton_iff] at hv
   rcases hv with ⟨delta, _, q, _, state, ⟨coin, _, rfl⟩, d, _, chosen, rfl,
     a, _, processed, rfl, result, rfl, rfl⟩
   simp [List.append_assoc]
+
+-- Extensionality and compositional polynomial-time certificates for `Gate`, `Input`, `Share`,
+-- and `View`.
+example (g₁ g₂ : Gate) (hl : g₁.left = g₂.left) (hr : g₁.right = g₂.right)
+    (ho : g₁.output = g₂.output) : g₁ = g₂ := by
+  ext <;> assumption
+
+example (i₁ i₂ : Input) (hw : i₁.wires = i₂.wires) (hg : i₁.gates = i₂.gates) : i₁ = i₂ := by
+  ext1 <;> assumption
+
+example (s₁ s₂ : Share Bool) (hk : s₁.key = s₂.key) (ht : s₁.tags = s₂.tags) : s₁ = s₂ := by
+  ext1 <;> assumption
+
+example (v₁ v₂ : View Bool Bool) (hs : v₁.share = v₂.share)
+    (hc : v₁.corrections = v₂.corrections) (hw : v₁.weights = v₂.weights)
+    (hr : v₁.reply = v₂.reply) (ho : v₁.result = v₂.result) : v₁ = v₂ := by
+  ext1 <;> assumption
+
+example : ComputableInPolyTime
+    (fun g : Gate => (⟨g.right, g.output, g.left⟩ : Gate)) encGate encGate := by
+  fun_prop
+
+example : ComputableInPolyTime
+    (fun i : Input => (⟨i.wires, i.gates⟩ : Input)) encInput encInput := by
+  fun_prop
+
+example : ComputableInPolyTime
+    (fun v : View Bool Bool =>
+      (⟨⟨v.share.key, v.share.tags⟩, v.weights, v.corrections, v.reply, v.result⟩ :
+        View Bool Bool))
+    (encView encBool encBool) (encView encBool encBool) := by
+  fun_prop
+
+/-! The record encodings keep the former tuple words. -/
+
+example {F : Type} (eF : F ↪ List Bool) (s : Share F) :
+    encShare eF s = encPair eF (encList eF) (s.key, s.tags) :=
+  rfl
+
+example {F Result : Type} (eF : F ↪ List Bool) (eResult : Result ↪ List Bool)
+    (v : View F Result) :
+    encView eF eResult v =
+      encPair (encShare eF) (encPair (encList eF) (encPair (encList eF)
+        (encPair (encPair eF eF) eResult)))
+        (v.share, v.corrections, v.weights, v.reply, v.result) :=
+  rfl
 
 end CslibFrontierTests.Crypto.VOLENative

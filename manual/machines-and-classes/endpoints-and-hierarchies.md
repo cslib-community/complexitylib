@@ -7,22 +7,31 @@ The table selects substantial results demonstrating how the models connect. It i
 
 The [native exact-counting chapter](native-counting.md) separately treats the fixed-width CNF counter and its SAT/ETH/SETH consequences, including the primary-manuscript mapping and the scope of this review.
 
+The [Arora–Barak draft chapters 1–5 audit](../../results/arora-barak-2007.md#chapter-1-the-computational-model)
+compares the computational-model, NP, hierarchy, space and alternation results at a recorded
+revision. It distinguishes exact native endpoints from missing tape-model conversions, general
+integer programming, prenex-QBF normalization, sharp time hierarchies and PH oracle equivalences.
+Its space comparisons explicitly distinguish the library's visited cells from the draft's
+ever-nonblank cells; a bound-preserving equivalence is not claimed.
+
 ## Completeness and containment map
 
 | Endpoint | Models connected | Exact formal boundary and source |
 |---|---|---|
 | Cook–Levin | Native polynomial-time verifier → encoded CNF SAT | [SAT_npComplete](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/CookLevin/Completeness.lean#L52) includes a constructed native polynomial-time reduction. [UNSAT_coNPComplete](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/CookLevin/Completeness.lean#L56) follows for the complement. |
 | Counting Cook–Levin | Accepted verifier witnesses → satisfying assignments | [SharpSAT_sharpPComplete](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/CookLevin/Counting.lean#L57) uses the parsimonious construction; branch/witness multiplicity matters. |
+| TMSAT | Described native machine, input, unary witness length and unary step bound → NP | [TMSAT.npComplete](../../CslibFrontier/Computability/Complexity/Problems/TMSAT.lean) runs the description with the universal function on `frame x ++ u`; hardness maps an `NP` problem to the description of a machine computing its verifier, with the step bound a polynomial bound on that machine's running time. |
 | Savitch at polynomial space | NTM space recognition/deciding → DTM polynomial space | [NPSPACE_eq_PSPACE](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/Space/Savitch.lean#L66), with a native explicit-stack midpoint-reachability implementation. |
 | Savitch for general space | NTM space recognition/deciding → DTM squared space | [NSPACE_subset_DSPACE_sq](../../CslibFrontier/Computability/Complexity/Classes/Space/Nondeterministic/Savitch.lean) assumes only `log₂ n ≤ s(n)` pointwise, with no constructibility hypothesis; `mem_DSPACE_sq_of_recognizesInSpace` also takes recognizers whose branches need not halt. [NL_subset_DSPACE_log2_sq](../../CslibFrontier/Computability/Complexity/Classes/LogSpace/Savitch.lean) is the case `s = log₂`. |
 | Classical one-sided randomized space | RL → NL → deterministic squared-logarithmic space | [RL_subset_DSPACE_log2_sq](../../CslibFrontier/Computability/Complexity/Classes/LogSpace/Savitch.lean) composes the existing accepting-coin-path bridge with native Savitch. This is already a library theorem; the current [reuse/refinement milestone](https://github.com/cslib-community/cslib-frontier/issues/1444) does not claim `RL = L`. |
 | Immerman–Szelepcsényi | Nondeterministic work space and complement | [NSPACE_eq_coNSPACE](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/Space/Nondeterministic.lean#L115) assumes `log₂ n ≤ s(n)` pointwise, with no constructibility hypothesis. [NL_eq_coNL](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/LogSpace/Complement.lean#L88) specializes it. |
 | Nondeterministic space in exponential time | NTM space recognition/deciding → DTM time | [exists_mem_DTIME_of_mem_NSPACE](../../CslibFrontier/Computability/Complexity/Classes/Space/Nondeterministic/DeterministicTime.lean) gives `NSPACE s ⊆ DTIME (2 ^ O(log₂ n + s n))` for every `s`, and `DTIME (2 ^ O(s n))` when `log₂ n ≤ s n`, with no constructibility hypothesis. `RecognizesInSpace.mem_DTIME` covers recognizers whose branches need not halt; `NL_subset_P` is its logarithmic case. |
 | Reingold | Encoded undirected graph connectivity → native logarithmic workspace | [USTCON_mem_L](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/LogSpace/USTCON.lean#L78), with concrete graph transformations and a charged ReadMachine/StepMachine implementation. |
-| TQBF and AP | Native PSPACE, quantified Boolean formulas and binary alternation | [TQBF_pspaceComplete](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/Space/TQBF.lean#L87) and [AP_eq_PSPACE](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/Alternation/Savitch.lean#L379). Until the formal abstracts were retired on 2026-11-08, the [alternation abstract](https://github.com/cslib-community/cslib-frontier/blob/f65cf6aabf60f13270367fea7d080141c7a910f5/abstracts/CslibFrontierAbstracts/AlternationAbstract.lean) restated `AP = PSPACE` over its own alternating machine. |
-| Alternating space | Space-bounded binary alternation ↔ deterministic time | [APSPACE_subset_EXP and AL_subset_P](../../CslibFrontier/Computability/Complexity/Classes/Alternation/Space.lean) mark the reachable views bottom-up. They are proved for recognizers whose branches need not halt. [exists_mem_DTIME_of_mem_ASPACE](../../CslibFrontier/Computability/Complexity/Classes/Alternation/DeterministicTime.lean) is the parametric form `ASPACE s ⊆ DTIME (2 ^ O(log₂ n + s n))`, with no constructibility hypothesis; the converse `DTIME (2 ^ O(s)) ⊆ ASPACE s` and the time–space bridges `ATIME t ⊆ DSPACE t` and `NSPACE s ⊆ ATIME (s ^ 2)` remain open ([#4086](https://github.com/cslib-community/cslib-frontier/issues/4086)). [APSPACE_eq_EXP](../../CslibFrontier/Computability/Complexity/Classes/Alternation/SpaceGame.lean) adds `EXP_subset_APSPACE`: the [circuit-value game](../../CslibFrontier/Computability/Circuit/Boolean/Tableau/ValueGame.lean) on the tableau of an exponential-time decider is a word game on polynomially long positions, which `mem_APSPACE_of_wins_polySpace` puts in `APSPACE`. The retired [alternation abstract](https://github.com/cslib-community/cslib-frontier/blob/f65cf6aabf60f13270367fea7d080141c7a910f5/abstracts/CslibFrontierAbstracts/AlternationAbstract.lean) restated the machine, least-fixed-point acceptance and every-branch-halting bounds, and stated `AP = PSPACE` and `APSPACE = EXP` for every injective encoding. `P ⊆ AL` remains open ([#2873](https://github.com/cslib-community/cslib-frontier/issues/2873)), so the abstract omitted `AL = P`. |
+| TQBF and AP | Native PSPACE, quantified Boolean formulas and binary alternation | [TQBF_pspaceComplete](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/Space/TQBF.lean#L87) and [AP_eq_PSPACE](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/Alternation/Savitch.lean#L379). Until the formal abstracts were retired on 2026-11-08, the [alternation abstract](https://github.com/cslib-community/cslib-frontier/blob/f65cf6aabf60f13270367fea7d080141c7a910f5/abstracts/ComplexityAbstracts/AlternationAbstract.lean) restated `AP = PSPACE` over its own alternating machine. |
+| Alternating space | Space-bounded binary alternation ↔ deterministic time | [APSPACE_subset_EXP and AL_subset_P](../../CslibFrontier/Computability/Complexity/Classes/Alternation/Space.lean) mark the reachable views bottom-up. They are proved for recognizers whose branches need not halt. [exists_mem_DTIME_of_mem_ASPACE](../../CslibFrontier/Computability/Complexity/Classes/Alternation/DeterministicTime.lean) is the parametric form `ASPACE s ⊆ DTIME (2 ^ O(log₂ n + s n))`, with no constructibility hypothesis; the converse `DTIME (2 ^ O(s)) ⊆ ASPACE s` and the time–space bridges `ATIME t ⊆ DSPACE t` and `NSPACE s ⊆ ATIME (s ^ 2)` remain open ([#4086](https://github.com/cslib-community/cslib-frontier/issues/4086)). [APSPACE_eq_EXP](../../CslibFrontier/Computability/Complexity/Classes/Alternation/SpaceGame.lean) adds `EXP_subset_APSPACE`: the [circuit-value game](../../CslibFrontier/Computability/Circuit/Boolean/Tableau/ValueGame.lean) on the tableau of an exponential-time decider is a word game on polynomially long positions, which `mem_APSPACE_of_wins_polySpace` puts in `APSPACE`. The retired [alternation abstract](https://github.com/cslib-community/cslib-frontier/blob/f65cf6aabf60f13270367fea7d080141c7a910f5/abstracts/ComplexityAbstracts/AlternationAbstract.lean) restated the machine, least-fixed-point acceptance and every-branch-halting bounds, and stated `AP = PSPACE` and `APSPACE = EXP` for every injective encoding. `P ⊆ AL` remains open ([#2873](https://github.com/cslib-community/cslib-frontier/issues/2873)), so the abstract omitted `AL = P`. |
 | Directed reachability and 2SAT | Encoded graph/formula problems ↔ NL under logspace many-one reductions | [STCON.logSpaceComplete](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Problems/STCON/Completeness.lean#L90) and [TwoSAT.logSpaceComplete](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Problems/TwoSAT/Completeness.lean#L86). |
 | Sipser–Lautemann | Bounded-error seed verifiers → two quantifier blocks | [BPP_subset_SigmaP_two_inter_PiP_two](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/PH/SipserLautemann.lean#L476). |
+| NP-complete complement reduction | One complete-language reduction → collapse at every encoding | Import [ThreeSAT/Collapse.lean](../../CslibFrontier/Computability/Complexity/Problems/ThreeSAT/Collapse.lean) and apply `PH_eq_NP_of_ThreeSAT_reducible_compl enc h` to a native `encCNF` reduction from ThreeSAT to its complement. |
 | Yap | Nonuniform coNP advice → third polynomial level | [PH_eq_SigmaP_three_of_coNP_subset_NPPoly](../../CslibFrontier/Computability/Complexity/Classes/PH/Yap.lean) collapses `PH` to `Σ₃` (and `Σ₃ ∩ Π₃`) from `coNP ⊆ NP/poly`, or equivalently from `UNSAT ∈ NP/poly` (`PH_eq_SigmaP_three_of_UNSAT_mem_NPPoly`). |
 | Toda | Polynomial hierarchy → a deterministic oracle verifier for one #P function | [PH_subset_PWithSharpPOracle](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/Toda.lean#L116), through randomized parity and a bit-test construction. |
 | Shamir | Stateful private-coin interactive proofs ↔ native PSPACE | [IP_eq_PSPACE](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/IP/Shamir.lean#L61), using encoded TQBF arithmetization for the difficult inclusion. |
@@ -40,9 +49,37 @@ Reingold's paper proves a deterministic logspace algorithm for undirected connec
 
 Shamir's paper establishes the IP/PSPACE characterization; the library reaches it through its own strict native oracle-PPT verifier and stateful-prover semantics. Those semantics support the same class endpoint without claiming all of the paper's extra observations about the particular protocol. The abstract and introductory model statement were checked against the original paper. [shamir1992][shamir1992]
 
+For the Chapter 5 Exercise 3 endpoint, ThreeSAT permits clause width at most three and the
+complement ranges over all CNF Nat, including wider formulas. The hypothesis is a total-language
+many-one reduction. The generic `NPComplete.coNP_subset_NP_of_reducible_compl` bridge in
+[PH/Complete.lean](../../CslibFrontier/Computability/Complexity/Classes/PH/Complete.lean) works
+for any NP-complete language. The [checked clients](../../CslibFrontierTests/ThreeSATCollapse.lean)
+show the complemented reduction chain for arbitrary encoded coNP languages and extract NP
+membership for a raw-bit PH language and its complement. This does not settle Exercise 4.
+
 Toda's original paper establishes PH containment in randomized parity and polynomial-time reducibility to PP. The library's headline takes the standard counting-oracle form and implements one selected output bit of a #P function. These are related formulations; the exact formal oracle interface and off-encoding quantifiers are part of the library statement. The publisher's original abstract was checked; no claim is made that every intermediate formal lemma was matched to a numbered original lemma. [toda1991][toda1991]
 
 Dinur's paper presents the gap-amplification proof and states the logarithmic-randomness, constant-query PCP theorem with perfect completeness and one-half soundness in its opening definition and Theorem 1.1. cslib-frontier combines Cook–Levin with a concrete encoded gap construction and verifier, then proves the converse by enumerating logarithmically many random strings and reconciling repeated queried addresses. The final fixed alphabet is encoded by seven bits; fixed construction constants are large. No near-linear proof-length bound should be inferred from this asymptotic class equality. [dinur2007][dinur2007] [Formal endpoint construction](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/PCP/Completeness.lean#L17)
+
+## SAT reductions into a decidable envelope
+
+Import [Sparse.Envelope](../../CslibFrontier/Computability/Complexity/Classes/Sparse/Envelope.lean)
+and apply `SAT_mem_P_of_sparse_diff hSG hG hSparse hred`. Here `hred` is a native
+polynomial-time many-one reduction of SAT (under `encCNF`) to a set `S` under an explicit
+encoding `encB`; `hSG : S ⊆ G`, `hG : G ∈ P encB` and `hSparse : G \ S ∈ SPARSE encB`.
+Only the difference is sparse: the envelope `G` can be the entire target domain. No decider
+for `S` is required. This is Goldreich's January 2007 draft Exercise 3.12, using the library's
+prefix-census sparseness convention; summing exact-length polynomial bounds gives that convention.
+
+The proof uses the existing Fortune theorem. For a nonempty difference, it maps reduction
+outputs outside `G` to a fixed element of `G \ S`, obtaining an UNSAT-to-sparse reduction.
+An empty difference gives `S = G ∈ P` directly. These are conditional collapse results, not
+unconditional SAT algorithms: an unconditional instance of the full hypotheses would imply P = NP.
+Run `scripts/build.sh CslibFrontierTests.GoldreichExercises` for
+[complete clients](../../CslibFrontierTests/GoldreichExercises.lean), including the nonsparse
+universal envelope, the sparse-oracle P/poly characterization and NP ∩ coNP oracle lowness.
+The [exercise inventory](../../results/goldreich-2007.md#theory-exercises-chapter-3) distinguishes
+existing theory, missing endpoints and routine representation work.
 
 ## Apply Savitch's theorem
 
@@ -140,6 +177,62 @@ The [worst-case endpoint](https://github.com/cslib-community/cslib-frontier/blob
 
 The circuit-hardness hypothesis is not proved by these declarations. It must hold at **all sufficiently large lengths**; an infinitely-often hypothesis and infinitely-often simulation are not formalized by this endpoint. The [circuit-methods account](../circuits-logic-and-other-models/metacomplexity-and-methods.md) owns the nonuniform models. Publisher metadata and abstracts were checked for the three cited sources; the source-to-proof route above is reported from the inspected Lean declarations and module documentation, not from a new full literature proof audit.
 
+## Apply the sublinear-time boundary
+
+Import [Time.Sublinear](../../CslibFrontier/Computability/Complexity/Classes/Time/Sublinear.lean)
+to use `DTIME_eq_const_of_isLittleO hp` on all raw bit words. Its hypothesis is
+`hp : (fun n : ℕ => (p n : ℝ)) =o[Filter.atTop] (fun n : ℕ => (n : ℝ))`.
+It proves `DTIME encBits p = DTIME encBits (fun _ => 1)`, including affine clock constants.
+This is Goldreich's draft Exercise 4.3 for the native sequential-input model.
+
+For functions, import
+[Complexity.Sublinear](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/Sublinear.lean).
+Apply `hf.exists_const_time_of_isLittleO hp` to a certificate
+`hf : ComputableInTimeAndSpace f encBits encOut (fun x => p x.length) s`.
+The result uses a constant time bound, the same output encoding and original independent
+workspace bound `s`. Specify `(p := fun _ => 1)` when a constant clock does not determine
+`p` by unification. The complete clients below show the call and required imports.
+
+The input model matters: length is not supplied separately, and symbols are read sequentially.
+An arbitrary encoding may have invalid prefixes on which a certificate imposes no bound.
+Use the raw `encBits` theorem here; it supplies no random-access or arbitrary-encoding result.
+
+For a fixed machine, `exists_uniform_time_of_fast_length h hN` only needs a uniform total
+clock `h : ∀ x, tm.RunsInTime x (p x.length)` and one width with `hN : p N ≤ N`.
+Longer words follow their `N`-symbol prefixes; a finite maximum over lengths at most `N`
+handles shorter inputs. A fast width alone does not establish totality on shorter inputs.
+The [input-prefix API](../../CslibFrontier/Computability/Machines/Turing/MultiTape/InputPrefix.lean)
+preserves every runtime field through the prefix's length. At the final step the head may
+have reached the extra symbol, but no transition has inspected it yet.
+
+Run `scripts/build.sh CslibFrontierTests.SublinearTime` for the
+[complete clients](../../CslibFrontierTests/SublinearTime.lean). A one-step, zero-workspace
+machine reads the first bit, demonstrating input-sensitive constant-time behavior. The
+clients check the inclusive prefix boundary, failure beyond the empty prefix, and the zero
+asymptotic bound with DTIME's additive constant.
+
+## Exact native step counters
+
+Import `CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.StepCounter`
+([source](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Combinators/StepCounter.lean))
+for `Turing.MultiTapeTM.exists_stepCounter`. It supplies one finite native deterministic machine
+with a fixed number of work tapes and one designated signal state. Its input is `encNat n`,
+least-significant-first binary. For the resulting `counter`, `counter.signal_count n` says that
+`counter.signalTimes n` has exactly `n` elements; `counter.initial_ne_signal` and
+`counter.leaves_signal` ensure that these are entering-and-leaving events. The uniform bound
+`counter.runsInTime n` is `counter.timeConstant * (n + 1)`, including preparation and zero input.
+
+This is the total-time statement of Goldreich's January 2007 draft Exercise 4.5
+([r2.pdf, PDF page 36 / printed page 152](https://www.wisdom.weizmann.ac.il/~oded/CC/r2.pdf)).
+The machine converts binary to exact unary in linear time, writes it to a work tape, then
+uses the existing clock controller to consume one cell per signal. It counts actual control-state
+visits, rather than emitted output symbols. The
+[checked examples](../../CslibFrontierTests/StepCounter.lean) instantiate the complete machine,
+check zero, one and three signals, and expose the prepared controller's state times.
+Use `Classical.choice exists_stepCounter` when an actual record is needed in a proof; no
+transition-table computation is promised by this existence API. There is no logarithmic-space
+or per-prefix signal-latency guarantee: the preparation may precede all signals.
+
 ## Constructibility and diagonalization
 
 [TimeConstructible](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/Constructible.lean#L68) computes the binary value `t(n)` from an arbitrary word of length `n` within `O(t(n))`; it does not build the lower bound `n≤t(n)` into the definition. [SpaceConstructible](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/Constructible.lean#L259) analogously bounds binary computation in `O(s(n))` workspace. Hierarchy theorems state their lower-bound hypotheses explicitly. Unary clock construction is a separate implementation step. Constants, `n`, `(n + 1) ^ k` for every `k`, `2 ^ n` and `2 ^ (2 ^ n)` are time-constructible; the routines behind them write the length of a word in binary and convert between binary and unary in linear time ([BigO/Constructible.lean](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/BigO/Constructible.lean)).
@@ -158,13 +251,43 @@ Deterministic padding goes through the translation lemma [`DTIME_comp_subset_of_
 
 Translation also sharpens the polylogarithmic gap at polynomial bounds. [`DTIME_pow_ssubset_DTIME_of_pow_mul_log_rpow_le`](../../CslibFrontier/Computability/Complexity/Classes/Hierarchy/Translational.lean) proves `DTIME(n^a) ⊊ DTIME(g)` for every integer `a ≥ 1` and real `ε > 0` whenever `n^a (ln n)^ε ≤ g(n)` eventually. It follows from `DTIME_pow_ssubset_DTIME_mul_iterSqrtLog_pow`, `DTIME(n^a) ⊊ DTIME((n · r_p(n))^a)`, where `r_p = iterSqrtLog p` applies `v ↦ ⌊√v⌋ + 1` to `⌊log₂ n⌋ + 1` `p` times and so lies within constant factors of `(log n)^(1/2^p)`. A collapse would travel along the padding chain `g₀(n) = n + 1`, `g_{j+1}(n) = g_j(n) · r_p(g_j(n))` and, after `2^p (k + 1)` steps, cross the polylogarithmic gap of `exists_DTIME_ssubset_DTIME_polylog`. At `2^n` the chain is additive, `g_{j+1}(n) = g_j(n) + ⌊log₂(g_j(n) + 1)⌋ / q + 1`, and `DTIME_two_pow_ssubset_DTIME_of_two_pow_mul_rpow_le` proves `DTIME(2^n) ⊊ DTIME(g)` whenever `2^n n^ε ≤ g(n)` eventually, again a `(log t)^ε` gap at `t = 2^n`. This covers the bounds `n^a` and `2^n` only. It does not give a `(log t)^ε` gap for every time-constructible `t`, and it is not W. J. Paul's hierarchy for a fixed number of tapes, which remains open under [#1572](https://github.com/cslib-community/cslib-frontier/issues/1572).
 
-The [space hierarchy](../../CslibFrontier/Computability/Complexity/Classes/Hierarchy/Space.lean) `DSPACE_ssubset_DSPACE` assumes space-constructible `g`, `⌊log₂ n⌋≤g(n)`, and that every `c f(n)+c` is eventually below `g(n)`: the textbook gap and logarithmic threshold. The diagonal reads its input in place. It diagonalizes only over *tiny* descriptions, of at most `log₂(log₂ n+1)` bits ([TinyDesc.lean](../../CslibFrontier/Computability/Complexity/Classes/Hierarchy/TinyDesc.lean)), so decoding takes logarithmic space; the input of the budgeted universal machine is recomputed on demand rather than stored. Space-constructible bounds are closed under sums and constant multiples, and `⌊log₂ n⌋^(k+1)` is space-constructible ([Constructible/Space.lean](../../CslibFrontier/Computability/Complexity/Classes/Constructible/Space.lean)). Concrete consequences include `L_ssubset_DSPACE_log2_sq`, the polylogarithmic chain `DSPACE_log2_pow_ssubset_DSPACE_log2_pow_succ`, consecutive polynomial-space separation and `L_ssubset_PSPACE`; [the checked examples](../../CslibFrontierTests/SpaceHierarchy.lean) instantiate them. For nondeterministic space, the [diagonal](../../CslibFrontier/Computability/Complexity/Classes/Hierarchy/NondeterministicSpace.lean) `nspaceDiagonal G` asks whether the tiny description accepts within the budget of `G(n)` bits for its configurations, a reachability question that needs no clock. Under the same gap and `4⌊log₂ n⌋≤G(n)` no nondeterministic machine within space `O(f)` recognizes it, so it is not in `NSPACE f` (`nspaceDiagonal_notMem_NSPACE`; [checked examples](../../CslibFrontierTests/NondeterministicSpaceHierarchy.lean)). Conversely, the [universal recognizer within a budget](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Universal/NondeterministicBudget.lean) recognizes its complement within space `O(G(n)+log n)` for space-constructible `G`, so by Immerman–Szelepcsényi it is in `NSPACE G` when `⌊log₂ n⌋≤G(n)` (`nspaceDiagonal_mem_NSPACE`). Hence the nondeterministic space hierarchy `NSPACE_ssubset_NSPACE`, under the same hypotheses as `DSPACE_ssubset_DSPACE`, with `NL_ssubset_NSPACE_log2_sq`, the polylogarithmic chain `NSPACE_log2_pow_ssubset_NSPACE_log2_pow_succ` consecutive polynomial separation `NSPACE_pow_ssubset_NSPACE_pow_succ`, and `NL_ssubset_PSPACE` from Savitch's `NL ⊆ DSPACE(log² n)`.
+The [space hierarchy](../../CslibFrontier/Computability/Complexity/Classes/Hierarchy/Space.lean) `DSPACE_ssubset_DSPACE` assumes space-constructible `g`, `⌊log₂ n⌋≤g(n)`, and that every `c f(n)+c` is eventually below `g(n)`: the textbook gap and logarithmic threshold. The diagonal reads its input in place. It diagonalizes only over *tiny* descriptions, of at most `log₂(log₂ n+1)` bits ([TinyDesc.lean](../../CslibFrontier/Computability/Complexity/Classes/Hierarchy/TinyDesc.lean)), so decoding takes logarithmic space; the input of the budgeted universal machine is recomputed on demand rather than stored. Space-constructible bounds are closed under sums and constant multiples, and `⌊log₂ n⌋^(k+1)` is space-constructible ([Constructible/Space.lean](../../CslibFrontier/Computability/Complexity/Classes/Constructible/Space.lean)). Concrete consequences include `L_ssubset_DSPACE_log2_sq`, the polylogarithmic chain `DSPACE_log2_pow_ssubset_DSPACE_log2_pow_succ`, consecutive polynomial-space separation and `L_ssubset_PSPACE`; [the checked examples](../../CslibFrontierTests/SpaceHierarchy.lean) instantiate them. [`EXPSPACE`](../../CslibFrontier/Computability/Complexity/Classes/EXPSPACE.lean), the union of the classes `DSPACE(2^(n^k))`, contains `PSPACE` and, since time bounds space, `EXP` (`PSPACE_subset_EXPSPACE`, `EXP_subset_EXPSPACE`). [`PSPACE_ssubset_EXPSPACE`](../../CslibFrontier/Computability/Complexity/Classes/EXPSPACE/Separation.lean) separates them on bit words: the diagonal within the budget `4·2^n` is in `DSPACE(2^n)` and in no `DSPACE(n^k)`. `NEXP ⊆ EXPSPACE` is not yet formalized. For nondeterministic space, the [diagonal](../../CslibFrontier/Computability/Complexity/Classes/Hierarchy/NondeterministicSpace.lean) `nspaceDiagonal G` asks whether the tiny description accepts within the budget of `G(n)` bits for its configurations, a reachability question that needs no clock. Under the same gap and `4⌊log₂ n⌋≤G(n)` no nondeterministic machine within space `O(f)` recognizes it, so it is not in `NSPACE f` (`nspaceDiagonal_notMem_NSPACE`; [checked examples](../../CslibFrontierTests/NondeterministicSpaceHierarchy.lean)). Conversely, the [universal recognizer within a budget](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Universal/NondeterministicBudget.lean) recognizes its complement within space `O(G(n)+log n)` for space-constructible `G`, so by Immerman–Szelepcsényi it is in `NSPACE G` when `⌊log₂ n⌋≤G(n)` (`nspaceDiagonal_mem_NSPACE`). Hence the nondeterministic space hierarchy `NSPACE_ssubset_NSPACE`, under the same hypotheses as `DSPACE_ssubset_DSPACE`, with `NL_ssubset_NSPACE_log2_sq`, the polylogarithmic chain `NSPACE_log2_pow_ssubset_NSPACE_log2_pow_succ` consecutive polynomial separation `NSPACE_pow_ssubset_NSPACE_pow_succ`, and `NL_ssubset_PSPACE` from Savitch's `NL ⊆ DSPACE(log² n)`.
 
 ## Exponential-time completeness and separations
+
+[`TMSAT`](../../CslibFrontier/Computability/Complexity/Problems/TMSAT.lean) is the unary-clock, nondeterministic counterpart of bounded halting below. An instance is a `TMSATInstance` `⟨machine, input, witnessLength, steps⟩`, encoded by `encTMSATInstance` with the description in `eDesc`, the input as raw bits, and the last two fields in unary. It is a member when some witness `u` of exactly `witnessLength` bits makes the universal function, run for `steps` steps on `frame input ++ u` (the `NP` pairing `encPair encBits encBits`), report a halted run with output `[true]`; `TMSATInstance.accepts_desc_iff` relates this to `runFrom` on a real machine. `TMSAT.mem_NP` takes certificates as long as the encoded instance and reads their first `witnessLength` bits. `TMSAT.npHard` obtains, from `A ∈ NP enc`, a machine computing the verifier within `c (n + 1) ^ d` steps and maps `a` to that machine's description, `enc a`, the certificate length `p |enc a|` and the step bound `TMSAT.stepPoly p c d` evaluated at `|enc a|`. The [checked client](../../CslibFrontierTests/AroraBarakChapterTwo.lean) decides an accepted instance of a one-step machine and rejects every instance with step bound zero.
+
+The same client exercises [`DirHamPathAny`](../../CslibFrontier/Computability/Complexity/Problems/Hamiltonian/AnyEndpoints.lean), the graphs with a Hamiltonian path between some vertices. A graph without declared vertices is not a member, because a Hamiltonian path is a nonempty list. `DirHamPath.toAny` reduces the designated-endpoint problem to it by shifting every label by two and attaching a source `0 → s + 2` and a sink `t + 2 → 1`, which gives `DirHamPathAny_npComplete`.
 
 [`BoundedHalting`](../../CslibFrontier/Computability/Complexity/Problems/BoundedHalting.lean) is the set of bit words `frame (eDesc d) ++ frame x ++ c` such that the binary machine described by `d` accepts `x` within `binaryValue c` steps. Acceptance means the universal function reports a halted run with output `[true]`. Malformed words are read through the total decoders, so the problem is a plain `Set (List Bool)`. `mk_desc_mem_iff` relates membership on real machine descriptions to `runFrom`. The step bound is written in binary, and that is essential: with a unary bound the simulation is polynomial and the problem is in `P`.
 
 `mem_E` caps the step bound at `2^|w|`, which cannot change the answer because the bound is written inside `w`, and applies the `E` padding lemma. `polyTimeReducible` takes any problem decided within time `c₁ · 2^(p n) + c₂`, with `p` polynomial-time in unary. It maps an instance to the decider's description, the framed encoded instance and `p(n) + c₁ + c₂ + 1` ones. `p n = k n` and `p n = n^k` give `polyTimeHard_E` and `polyTimeHard_EXP`, and with membership `polyTimeComplete_E` and `polyTimeComplete_EXP`. `notMem_P` follows from `P_ssubset_EXP`. To prove another problem `C` hard for `EXP`, reduce bounded halting to it and apply `BoundedHalting.polyTimeHard_EXP.trans` (`PolyTimeHard.trans`).
+
+For **halting with any output**, import
+[`Problems.BoundedTermination`](../../CslibFrontier/Computability/Complexity/Problems/BoundedTermination.lean).
+`BoundedTermination.mem_E`, `notMem_P` and `polyTimeComplete_EXP` establish Goldreich's
+Exercises 4.6–4.7 for the selected word representation. Halting with no output or with `[false]`
+counts here. A machine that emits `true` while continuing to run does not count.
+`BoundedTermination.mk_desc_mem_iff` gives exact native-machine halting at the binary step bound,
+including a halt on the final permitted step.
+
+Both languages construct instances with `BoundedComputation.mk d x c`; the shared
+[`BoundedComputation`](../../CslibFrontier/Computability/Complexity/Problems/BoundedComputation.lean)
+module owns `descOf`, `inputOf`, `clockOf` and their roundtrip lemmas. These names have moved
+from `BoundedHalting`, so update qualified constructor and decoder references accordingly.
+Every word is interpreted through total decoders. `BoundedTermination.mem_reencode_iff`
+relates an arbitrary word to the canonical re-encoding of its decoded fields; membership and
+hardness are proved for the whole word language, rather than only promised canonical inputs.
+Goldreich's [representation discussion](https://www.wisdom.weizmann.ac.il/~oded/CC/r1.pdf#page=47)
+permits total decoders. This chooses such a representation; it does not establish invariance of
+`E` under arbitrary encodings or the sharp simulator bound in Theorem 4.5.
+
+From the repository root, check the complete native-machine and class-level examples with
+`lake build --wfail --iofail CslibFrontierTests.BoundedTermination`.
+The [checked client](../../CslibFrontierTests/BoundedTermination.lean) includes empty and false
+outputs, zero clocks, exact-bound halting, a continuing loop and arbitrary-word normalization.
+The old [acceptance client](../../CslibFrontierTests/BoundedHalting.lean) retains its acceptance
+semantics while using the shared constructor.
 
 [`EXP.Separation`](../../CslibFrontier/Computability/Complexity/Classes/EXP/Separation.lean) proves `P_ssubset_E` with the existing diagonal problem. It proves `E_ssubset_EXP` with the clocked time diagonal for the constructible clock `2^((n+1)^2)`, whose running time is within `2^(n^3)` from `n = 5` on. With bounded halting this gives Book's theorem that `E` is not closed under polynomial-time many-one reductions (`exists_polyTimeReducible_mem_E_notMem_E`). Hence `E` differs from every class closed under them (`E_ne_of_polyTimeReducible_mem`), including `NP` and `PSPACE`. These are inequalities only; neither inclusion is claimed. The [checked client](../../CslibFrontierTests/BoundedHalting.lean) decides two accepted instances of a concrete one-step machine, rejects every instance with step bound zero, and reduces the hierarchy's diagonal problem.
 

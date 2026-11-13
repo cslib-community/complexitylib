@@ -398,7 +398,9 @@ private theorem aeval_bit_apply (p : MvPolynomial ι R) (x : ι → Bool) :
   | mul_X p i hp => simp only [map_mul, Pi.mul_apply, MvPolynomial.aeval_X,
       MvPolynomial.eval_X, hp]
 
-private theorem polynomial_mem_lowDegree (p : MvPolynomial ι R) {q : ℕ}
+/-- The values of a polynomial of total degree at most `q` on the cube, read through `bitVal`,
+lie in `lowDegree R ι q`. -/
+public theorem eval_mem_lowDegree (p : MvPolynomial ι R) {q : ℕ}
     (hp : p.totalDegree ≤ q) :
     (fun x : ι → Bool => MvPolynomial.eval (fun i => bitVal R (x i)) p) ∈ lowDegree R ι q := by
   rw [lowDegree_eq_map_restrictTotalDegree]
@@ -426,7 +428,7 @@ public theorem sum_eval_eq_restricted_subsets [Fintype ι] (q : ℕ)
           else 0 := by
       apply sum_congr rfl
       intro x _
-      exact lowDegree_reconstruction (polynomial_mem_lowDegree (p x) (hp x)) x
+      exact lowDegree_reconstruction (eval_mem_lowDegree (p x) (hp x)) x
     _ = _ := by
       rw [sum_comm]
       apply sum_congr rfl

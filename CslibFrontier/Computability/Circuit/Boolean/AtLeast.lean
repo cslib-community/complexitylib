@@ -10,6 +10,7 @@ module
 public import Cslib.Computability.Circuit.Boolean.Synthesis
 public import Cslib.Computability.Circuit.Boolean.Complexity
 public import CslibFrontier.Foundations.Data.BitString.Threshold
+import CslibFrontier.Computability.Circuit.Complexity
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Algebra.BigOperators.Group.Finset.Piecewise
 import Mathlib.Algebra.Group.Nat.Defs
@@ -38,6 +39,9 @@ size `O(k ^ 2)` on top of them.
 * `Cslib.Circuits.Boolean.synthesis_atLeast`: one threshold function, within `O(k ^ 2)` gates.
 * `Cslib.Circuits.Boolean.complexity_threshold_le`: the threshold functions `Cslib.threshold` on
   `m` variables have circuits with `O(m ^ 2)` gates.
+* `Cslib.Circuits.Boolean.complexity_threshold_pi_le`,
+  `Cslib.Circuits.Boolean.complexity_threshold_pi_le_of_le`: a threshold of `m` functions costs
+  at most their complexities and `O(m ^ 2)` gates.
 -/
 
 @[expose] public section
@@ -152,5 +156,21 @@ theorem complexity_threshold_le (m j : ℕ) :
       omega
     rw [this]
     exact (Synthesis.const false).complexity_le.trans (by omega)
+
+/-- A threshold of `m` functions costs at most their complexities and `O(m ^ 2)` gates. -/
+theorem complexity_threshold_pi_le {m j : ℕ} (f : Fin m → BooleanFunction n) :
+    complexity interpretation (single fun x => threshold m j fun i => f i x) ≤
+      ∑ i, complexity interpretation (single (f i)) + (2 + m * (2 * (m + 2))) :=
+  (complexity_comp_le (fun x i => f i x) (single (threshold m j))).trans
+    (add_le_add (complexity_pi_le f) (complexity_threshold_le m j))
+
+/-- A threshold of `m` functions with circuits of at most `s` gates has at most
+`m s + 2 + 2 m (m + 2)` gates. -/
+theorem complexity_threshold_pi_le_of_le {m j s : ℕ} (f : Fin m → BooleanFunction n)
+    (hf : ∀ i, complexity interpretation (single (f i)) ≤ s) :
+    complexity interpretation (single fun x => threshold m j fun i => f i x) ≤
+      m * s + (2 + m * (2 * (m + 2))) := by
+  refine (complexity_threshold_pi_le f).trans (Nat.add_le_add_right ?_ _)
+  simpa using Finset.sum_le_sum fun i (_ : i ∈ Finset.univ) => hf i
 
 end Cslib.Circuits.Boolean

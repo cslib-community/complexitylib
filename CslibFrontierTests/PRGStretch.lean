@@ -272,10 +272,10 @@ example : ∃ (tGen : Bool × List Bool → ℕ) (csG c : ℕ),
   refine ⟨tGen, csG, ?_⟩
   refine PRGStretch.computableInTimeAndSpace_iterate_captured
     (generator := fun b s => s ++ [b]) (fun _ _ => by simp)
-    hgen.computableInTimeAndSpace (fun x i _ => ?_)
-  have hlen_seed : (PRGStretch.seedAt (fun s => s ++ [x.1.1]) x.1.2 i).length = x.1.2.length :=
-    PRGStretch.length_seedAt_of_forall (fun _ => by simp) x.1.2 i
-  have h := hcsG (x.1.1, PRGStretch.seedAt (fun s => s ++ [x.1.1]) x.1.2 i)
+    hgen.computableInTimeAndSpace (fun b seed _ i _ => ?_)
+  have hlen_seed : (PRGStretch.seedAt (fun s => s ++ [b]) seed i).length = seed.length :=
+    PRGStretch.length_seedAt_of_forall (fun _ => by simp) seed i
+  have h := hcsG (b, PRGStretch.seedAt (fun s => s ++ [b]) seed i)
   simp only [length_encPair, encBits_apply, hlen_seed, pow_one] at h ⊢
   exact h
 

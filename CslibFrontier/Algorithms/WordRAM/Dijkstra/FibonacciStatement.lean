@@ -58,7 +58,7 @@ Both bounds use the exact same word-size hypothesis
 
 namespace Cslib.Algorithms.WordRAM.Dijkstra
 
-open Cslib.WordRAM
+open Cslib.WordRAM Cslib.Algorithms.Dijkstra
 
 /-- **Shortest paths in `O(m + min(n, m + 1) (⌊log₂ n⌋ + 1))` time.** At every word size `w` that
 holds `8 (n + m + 2) (W + 2)`, where `m` is the number of edges and `W` the largest weight, the

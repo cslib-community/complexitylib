@@ -21,7 +21,8 @@ public import CslibFrontier.Computability.WordRAM.Structured
   preserved without unfolding the subroutine's instruction graph.
 * `Code.preserves_rename_of_offset`: a contiguous bank preserves registers outside its interval.
 * `Data.extend_regs_of_eq`, `Data.extend_regs_of_notMem`,
-  `Data.extend_regs_of_forall_ne`: read registers inside or outside an extended bank.
+  `Data.extend_regs_of_forall_ne`, `Data.extend_castLE_regs_of_le`: read registers inside or
+  outside an extended bank.
 * `Data.extend_mem`: an extended state has the actual callee memory.
 
 The range-based register equation and memory projection come from Samuel Schlesinger and
@@ -69,6 +70,15 @@ theorem Data.extend_regs_of_forall_ne {r s : ℕ} {f : Fin r → Fin s}
     (y : Data r) (x : Data s) (i : Fin s) (hi : ∀ j, f j ≠ i) :
     (y.extend f x).regs i = x.regs i :=
   Data.extend_regs_of_notMem y x (by rintro ⟨j, hj⟩; exact hi j hj)
+
+/-- Read a caller register above a `Fin.castLE` low-register bank. -/
+theorem Data.extend_castLE_regs_of_le {r s : ℕ} {hrs : r ≤ s}
+    (y : Data r) (x : Data s) (i : Fin s) (hi : r ≤ i.val) :
+    (y.extend (Fin.castLE hrs) x).regs i = x.regs i :=
+  Data.extend_regs_of_forall_ne y x i fun j hj => by
+    have hv := congrArg Fin.val hj
+    change j.val = i.val at hv
+    omega
 
 /-- Extending registers retains the actual returned memory, including callee writes. -/
 @[simp]

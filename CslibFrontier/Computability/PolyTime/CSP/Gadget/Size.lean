@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Computability.PolyTime.CSP.Gadget
+public import CslibFrontier.Logics.Propositional.CSP.PrimitivePositive.Replacement
 import Mathlib.Algebra.Order.BigOperators.Group.List
 import Mathlib.Data.Finset.Lattice.Fold
 
@@ -39,7 +39,7 @@ variable {Src Rel : Type}
 /-- Each source constraint contributes exactly the constraints in its fixed template. -/
 theorem length_replaceGadgets (B : ℕ) (templates : Src → CSP Rel (Bool × ℕ))
     (F : CSP Src ℕ) :
-    (replaceGadgets B templates F).length = (F.map fun c => (templates c.1).length).sum := by
+    (replaceGadgets B templates F).length = (F.map fun c => (templates c.rel).length).sum := by
   rw [replaceGadgets, List.length_flatMap]
   conv_rhs => rw [← List.zipIdx_map_fst 0 F, List.map_map]
   congr 1
@@ -51,15 +51,15 @@ theorem length_replaceGadgets (B : ℕ) (templates : Src → CSP Rel (Bool × �
 theorem vars_length_replaceGadgets (B : ℕ) (templates : Src → CSP Rel (Bool × ℕ))
     (F : CSP Src ℕ) :
     (replaceGadgets B templates F).vars.length =
-      (F.map fun c => (templates c.1).vars.length).sum := by
-  change ((F.zipIdx.flatMap fun p => instantiate B p.2 p.1.2 (templates p.1.1)).flatMap
-    Prod.snd).length = _
+      (F.map fun c => (templates c.rel).vars.length).sum := by
+  change ((F.zipIdx.flatMap fun p => instantiate B p.2 p.1.scope (templates p.1.rel)).flatMap
+    Constraint.scope).length = _
   rw [List.flatMap_assoc, List.length_flatMap]
   conv_rhs => rw [← List.zipIdx_map_fst 0 F, List.map_map]
   congr 1
   apply List.map_congr_left
   intro p _
-  change (instantiate B p.2 p.1.2 (templates p.1.1)).vars.length = _
+  change (instantiate B p.2 p.1.scope (templates p.1.rel)).vars.length = _
   simp only [instantiate, vars_relabel, List.length_map, Function.comp_apply]
 
 /-- A bound on template occurrences plus constraints bounds distinct output variables plus
@@ -74,10 +74,10 @@ theorem numVars_add_length_replaceGadgets_le (B : ℕ)
   calc
     _ ≤ (replaceGadgets B templates F).vars.length +
         (replaceGadgets B templates F).length := Nat.add_le_add_right hn _
-    _ = (F.map fun c => (templates c.1).vars.length + (templates c.1).length).sum := by
+    _ = (F.map fun c => (templates c.rel).vars.length + (templates c.rel).length).sum := by
       rw [vars_length_replaceGadgets, length_replaceGadgets, List.sum_map_add]
     _ ≤ K * F.length := by
-      have h := List.sum_le_sum (l := F) (g := fun _ => K) (fun c _ => hK c.1)
+      have h := List.sum_le_sum (l := F) (g := fun _ => K) (fun c _ => hK c.rel)
       simpa [Nat.mul_comm] using h
 
 /-- Fixed finite template lookup and a fixed malformed-input reject instance give a linear

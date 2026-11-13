@@ -55,15 +55,15 @@ abbrev WordArgs (k : ℕ) := ℕ × ℕ × ℕ × ℕ × Assignments.Words k
 
 /-- Binary runtime metadata beside the actual label words. -/
 @[expose] noncomputable def encWordArgs : WordArgs k ↪ List Bool :=
-  encPair encNat (encPair encNat (encPair encNat (encPair encNat (Assignments.encWords k))))
+  encPair encNat (encPair encNat (encPair encNat (encPair encNat (Assignments.encWords (k := k)))))
 
 /-- Initialize a total checked supplier from schedule data and explicit label words: the
 previous interval's label and the labels of the window providers. -/
 @[expose] noncomputable def prepareWords (e : Q ≃ Fin s) : WordArgs k → CheckedGate.State k Q :=
   fun (N, b, σ, i, words) =>
     let ports := ScheduleRead.providerMap k (σ, i)
-    match Providers.Labels.combine e (b, ports, words.1, words.2) with
-    | none => .inl words.1
+    match Providers.Labels.combine e (b, ports, words.previous, words.providers) with
+    | none => .inl words.previous
     | some raw =>
       let (positive, negative) := ScheduleRead.origin k 0 (σ, i)
       .inr ((positive, negative, ScheduleRead.fullrow k (σ, i)),
@@ -74,7 +74,7 @@ are read from the assignment counter. -/
 @[expose] noncomputable def prepare (e : Q ≃ Fin s) : Args → CheckedGate.State k Q :=
   fun (N, b, σ, i, limit, counter, stride) =>
     prepareWords e (N, b, σ, i,
-      Assignments.labels k (limit, counter, stride, Encoding.width k s b))
+      Assignments.labels k { limit, counter, stride, width := Encoding.width k s b })
 
 /-- All preparation work from explicit label words uses native space linear in the binary
 metadata and the words. Original input symbols remain on the query input, outside this state. -/
@@ -82,17 +82,19 @@ theorem prepareWords_inSpace (e : Q ≃ Fin s) :
     ComputableInSpace (prepareWords (k := k) e) encWordArgs CheckedGate.encState
       (fun a => (encWordArgs a).length) := by
   have hN := fst encNat (encPair encNat (encPair encNat (encPair encNat
-    (Assignments.encWords k))))
+    (Assignments.encWords (k := k)))))
   have hrest := snd encNat (encPair encNat (encPair encNat (encPair encNat
-    (Assignments.encWords k))))
+    (Assignments.encWords (k := k)))))
   have hb := hrest.fst'
   have hσ := hrest.snd'.fst'
   have hi := hrest.snd'.snd'.fst'
   have hwords := hrest.snd'.snd'.snd'
+  have hprevious := Assignments.encWords_previous_budget hwords
+  have hproviders := Assignments.encWords_providers_budget hwords
   have haddress := budget_prod hσ hi
   have hports := budget_comp_linear (ScheduleRead.providerMap_inSpace k) haddress
   have hcombined := budget_comp_linear (Providers.Labels.combine_inSpace (k := k) e)
-    (budget_prod hb (budget_prod hports (budget_prod hwords.fst' hwords.snd')))
+    (budget_prod hb (budget_prod hports (budget_prod hprevious hproviders)))
   let empty : RawResult k Q := (none, fun _ => 0, .empty, fun _ => [])
   have hget : ComputableInSpace (fun o : Option (RawResult k Q) => o.getD empty)
       (encOption encRawResult) encRawResult (fun o => (encOption encRawResult o).length) :=
@@ -110,11 +112,11 @@ theorem prepareWords_inSpace (e : Q ≃ Fin s) :
     (of_inO (ComputableInO.inr encBits (Gate.encState (k := k) (Q := Q))))
     (budget_prod hcontext hload)
   have hfailure := budget_comp_linear
-    (of_inO (ComputableInO.inl encBits (Gate.encState (k := k) (Q := Q)))) hwords.fst'
+    (of_inO (ComputableInO.inl encBits (Gate.encState (k := k) (Q := Q)))) hprevious
   refine (budget_ite (budget_comp_linear hisSome hcombined) hsuccess hfailure).of_enc_eq ?_
   rintro ⟨N, b, σ, i, words⟩
-  cases hc : Providers.Labels.combine e (b, ScheduleRead.providerMap k (σ, i), words.1,
-      words.2) <;>
+  cases hc : Providers.Labels.combine e (b, ScheduleRead.providerMap k (σ, i), words.previous,
+      words.providers) <;>
     simp [prepareWords, hc, CheckedGate.encState]
 
 /-- All preparation work uses native space linear in actual binary metadata and assignment
@@ -132,7 +134,7 @@ theorem prepare_inSpace (e : Q ≃ Fin s) :
   have hstride := hrest.snd'.snd'.snd'.snd'.snd'
   have hwidth := budget_comp_linear (Encoding.width_inSpace k s) hb
   have hwords := budget_comp_linear (Assignments.labels_inSpace k)
-    (budget_prod hlimit (budget_prod hcounter (budget_prod hstride hwidth)))
+    (Assignments.encArgs_mk_budget hlimit hcounter hstride hwidth)
   exact (budget_comp_linear (prepareWords_inSpace (k := k) e)
     (budget_prod hN (budget_prod hb (budget_prod hrest.snd'.fst'
       (budget_prod hrest.snd'.snd'.fst' hwords))))).of_enc_eq fun _ => rfl

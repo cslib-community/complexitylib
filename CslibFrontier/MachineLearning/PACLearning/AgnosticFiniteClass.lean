@@ -81,20 +81,11 @@ theorem IsERM.measure_pi_lt_error_le_of_log_le (D : Measure (α × β)) [IsProba
     Measure.pi (fun _ : Fin m => D)
         {S | optimalError D (H : Set (α → β)) + ENNReal.ofReal ε < error D (A S)} ≤
       ENNReal.ofReal δ := by
-  refine (hA.measure_pi_lt_error_le D hH hε).trans ?_
-  rw [← ENNReal.ofReal_natCast, ← ENNReal.ofReal_mul (Nat.cast_nonneg _)]
-  refine ENNReal.ofReal_le_ofReal ?_
-  rcases Nat.eq_zero_or_pos H.card with h0 | hn
-  · rw [h0, Nat.cast_zero, zero_mul]
-    exact hδ.le
-  have hn' : (0 : ℝ) < 2 * H.card := by positivity
-  rw [Real.log_div hn'.ne' hδ.ne'] at hm
-  calc (H.card : ℝ) * (2 * Real.exp (-m * ε ^ 2 / 2)) =
-        Real.exp (Real.log (2 * H.card) + -(ε ^ 2 * m / 2)) := by
-        rw [Real.exp_add, Real.exp_log hn', show -(ε ^ 2 * m / 2) = -m * ε ^ 2 / 2 by ring]
-        ring
-    _ ≤ Real.exp (Real.log δ) := Real.exp_le_exp.2 (by linarith)
-    _ = δ := Real.exp_log hδ
+  refine (measure_mono fun S hS => ?_).trans
+    (measure_pi_not_isRepresentative_le_of_log_le D hH (ε := ε / 2) (by positivity) hδ ?_)
+  · exact fun hrep => (not_le.2 hS) (hrep.error_le_optimalError_add hA)
+  · rw [show 2 * (m : ℝ) * (ε / 2) ^ 2 = ε ^ 2 * m / 2 by ring]
+    linarith
 
 end ERM
 

@@ -375,9 +375,7 @@ theorem execute_dequeue {w base capacity : ℕ} {front back : List ℕ} {x : Dat
     have hv : (committed m b).regs (result 3) = optionWords p.2 1 := by
       rw [committed_other m b _ (src_ne_result 0 3).symm (src_ne_result 1 3).symm]
       exact ho 3
-    change some (if (committed m b).regs (result 2) = 0 then none
-      else some ((committed m b).regs (result 3))) = some p.2
-    rw [ht, hv]
+    rw [decode_dequeue, ht, hv]
     cases p.2 <;> rfl
   · rw [hmem]
     exact hi.2.2.2.2.2

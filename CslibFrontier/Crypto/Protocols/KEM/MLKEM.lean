@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Computational.SIS.MLKEM.KPKE
+public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto
 
 /-!
 # ML-KEM: the FIPS 203 implicit-rejection wrapper
@@ -110,7 +111,9 @@ theorem decapsWith_eq [DecidableEq CT] (pke : ExplicitCoinPKE PK SK M R CT) (G :
     decapsWith pke G J dk c =
       if pke.encDet dk.pk m' (G (m', dk.pkHash)).2 = c then (G (m', dk.pkHash)).1
       else J (dk.seed, c) := by
-  unfold decapsWith decT encT
+  unfold decapsWith
+  rw [decT_eq]
+  unfold encT
   rw [hdec]
   by_cases h : pke.encDet dk.pk m' (G (m', dk.pkHash)).2 = c <;> simp [h]
 

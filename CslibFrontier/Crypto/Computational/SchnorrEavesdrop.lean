@@ -16,6 +16,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Probabilistic.Repeat
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF
+import CslibFrontier.Probability.Uniform.Translate
 import CslibFrontier.Tactic.Negligible
 import CslibFrontier.Tactic.PPT
 
@@ -249,10 +250,10 @@ private theorem schnorrHonestTranscript_eq_bind_uniform (d : F.Desc) (α : ZMod 
   rw [PMF.bind_comm]
   refine congrArg (PMF.bind _) (funext fun c => ?_)
   conv_lhs =>
-    rw [← PMF.uniformOfFintype_map_equiv (Equiv.subRight ((ofBits c : ZMod (F.order d)) * α))]
+    rw [← PMF.uniformOfFintype_map_sub_right ((ofBits c : ZMod (F.order d)) * α)]
   rw [PMF.bind_map, ← PMF.bind_pure_comp]
   congr 1 with z : 1
-  simp only [Function.comp_apply, Equiv.subRight_apply, sub_smul, mul_smul, sub_add_cancel]
+  simp only [Function.comp_apply, sub_smul, mul_smul, sub_add_cancel]
 
 variable (F) in
 /-- A strict-PPT honest Schnorr conversation is within statistical distance `1 / 2 ^ n` of an ideal

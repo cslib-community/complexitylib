@@ -7,10 +7,13 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Crypto.Protocols.PIR.Basic
+public import CslibFrontier.Crypto.Protocols.PIR.Collusion
 public import CslibFrontier.Foundations.Data.Code.Hadamard
 public import Mathlib.Data.Nat.Sqrt
+import CslibFrontier.Foundations.Data.BitString.Single
 import CslibFrontier.Languages.Probabilistic.Norm
+import CslibFrontier.Languages.Probabilistic.Semantics
+import CslibFrontier.Probability.Uniform
 
 /-!
 # Subcube schemes for private information retrieval
@@ -103,20 +106,15 @@ theorem eval_serverQuery_twoServer (σ : Bool) (i : ι) :
     ProbComp.eval ((twoServer ι).serverQuery σ i) = PMF.uniformOfFintype (ι → Bool) := by
   rw [Scheme.eval_serverQuery, twoServer]
   simp only [pmf_norm, ProbComp.eval_uniform]
-  exact PMF.uniformOfFintype_map_equiv (Equiv.addRight (Pi.single i σ : ι → Bool))
+  exact PMF.uniformOfFintype_map_add_right (Pi.single i σ : ι → Bool)
 
 /-- The two queries of the two-server scheme add up to `eᵢ`: together, the servers know `i`. -/
 theorem query_add_query_twoServer {i : ι} {r : Unit} {q : Bool → ι → Bool}
     (hrq : (r, q) ∈ (ProbComp.eval ((twoServer ι).query i)).support) :
     q false + q true = Pi.single i true := by
-  simp only [twoServer, ProbComp.eval_bind, ProbComp.eval_pure, ProbComp.eval_uniform,
-    PMF.mem_support_bind_iff, PMF.mem_support_pure_iff, Prod.mk.injEq] at hrq
-  obtain ⟨t, -, -, rfl⟩ := hrq
-  funext j
-  change (t + (Pi.single i false : ι → Bool)) j + (t + (Pi.single i true : ι → Bool)) j =
-    (Pi.single i true : ι → Bool) j
-  rw [show (Pi.single i false : ι → Bool) = 0 from Pi.single_zero i, add_zero, Pi.add_apply,
-    ← add_assoc, BooleanRing.add_self, zero_add]
+  simp only [twoServer, ProbComp.mem_support_eval_uniform_bind_pure, Prod.mk.injEq] at hrq
+  obtain ⟨t, -, rfl⟩ := hrq
+  exact BitString.add_single_false_add_add_single_true t i
 
 /-- **The two-server scheme is private** [CGKS, Section 3.1][ChorGoldreichKushilevitzSudan1998]. -/
 theorem isPrivate_twoServer : (twoServer ι).IsPrivate :=
@@ -173,20 +171,12 @@ theorem eval_serverQuery_cube (σ : D → Bool) (i : D → ι) :
     ProbComp.eval ((cube D ι).serverQuery σ i) = PMF.uniformOfFintype (D → ι → Bool) := by
   rw [Scheme.eval_serverQuery, cube]
   simp only [pmf_norm, ProbComp.eval_uniform]
-  exact PMF.uniformOfFintype_map_equiv
-    (Equiv.addRight (fun l => Pi.single (i l) (σ l) : D → ι → Bool))
+  exact PMF.uniformOfFintype_map_add_right (fun l => Pi.single (i l) (σ l) : D → ι → Bool)
 
 /-- **The subcube scheme is private** [CGKS, Section 3.2][ChorGoldreichKushilevitzSudan1998]. -/
 theorem isPrivate_cube : (cube D ι).IsPrivate :=
   (cube D ι).isPrivate_iff.mpr fun σ i i' => by
     rw [eval_serverQuery_cube, eval_serverQuery_cube]
-
-omit [Fintype D] [DecidableEq D] [Fintype ι] in
-/-- Adding both choices of the flipped coordinate leaves the indicator of the flipped position. -/
-private theorem sum_bool_add_single (t : ι → Bool) (k j : ι) :
-    ∑ b : Bool, (t + (Pi.single k b : ι → Bool)) j = (Pi.single k true : ι → Bool) j := by
-  rw [Fintype.sum_bool, show (Pi.single k false : ι → Bool) = 0 from Pi.single_zero k, add_zero,
-    Pi.add_apply, add_comm, ← add_assoc, BooleanRing.add_self, zero_add]
 
 omit [DecidableEq D] [Fintype ι] in
 private theorem prod_single_eq (i j : D → ι) :
@@ -203,9 +193,8 @@ number of them. -/
 theorem isCorrect_cube : (cube D ι).IsCorrect := by
   rw [Scheme.isCorrect_iff]
   intro x i r q hrq
-  simp only [cube, ProbComp.eval_bind, ProbComp.eval_pure, ProbComp.eval_uniform,
-    PMF.mem_support_bind_iff, PMF.mem_support_pure_iff, Prod.mk.injEq] at hrq
-  obtain ⟨t, -, -, rfl⟩ := hrq
+  simp only [cube, ProbComp.mem_support_eval_uniform_bind_pure, Prod.mk.injEq] at hrq
+  obtain ⟨t, -, rfl⟩ := hrq
   change ∑ σ : D → Bool, ∑ j : D → ι, x j * ∏ l, (t l + (Pi.single (i l) (σ l) : ι → Bool)) (j l) =
     x i
   rw [Finset.sum_comm]
@@ -215,7 +204,9 @@ theorem isCorrect_cube : (cube D ι).IsCorrect := by
         if j = i then 1 else 0 := by
     rw [← prod_single_eq,
       ← Fintype.prod_sum (fun l (b : Bool) => (t l + (Pi.single (i l) b : ι → Bool)) (j l))]
-    exact Finset.prod_congr rfl fun l _ => sum_bool_add_single (t l) (i l) (j l)
+    refine Finset.prod_congr rfl fun l _ => ?_
+    rw [Fintype.sum_bool, add_comm]
+    exact congrFun (BitString.add_single_false_add_add_single_true (t l) (i l)) (j l)
   simp only [← Finset.mul_sum, hcount, mul_ite, mul_one, mul_zero, Finset.sum_ite_eq',
     Finset.mem_univ, ite_true]
 
@@ -246,9 +237,8 @@ theorem query_update_cube {i : D → ι} {r : Unit} {q : (D → Bool) → D → 
     (hrq : (r, q) ∈ (ProbComp.eval ((cube D ι).query i)).support) (σ : D → Bool) (l : D) :
     q (Function.update σ l (!σ l)) =
       Function.update (q σ) l (q σ l + Pi.single (i l) true) := by
-  simp only [cube, ProbComp.eval_bind, ProbComp.eval_pure, ProbComp.eval_uniform,
-    PMF.mem_support_bind_iff, PMF.mem_support_pure_iff, Prod.mk.injEq] at hrq
-  obtain ⟨t, -, -, rfl⟩ := hrq
+  simp only [cube, ProbComp.mem_support_eval_uniform_bind_pure, Prod.mk.injEq] at hrq
+  obtain ⟨t, -, rfl⟩ := hrq
   funext l'
   beta_reduce
   by_cases hl : l' = l
@@ -266,11 +256,10 @@ end Cube
 `n ≤ m ^ 2` has a perfectly correct and perfectly private two-server scheme for `n`-bit databases
 communicating `4 m` bits. -/
 theorem hasScheme_two_of_le_mul_self {n m : ℕ} (h : n ≤ m * m) : HasScheme (Fin n) 2 (4 * m) := by
-  let e : Fin n ↪ Fin m × Fin m := (Fin.castLEEmb h).trans finProdFinEquiv.symm.toEmbedding
-  have hP := (isCorrect_twoServer.rows (Fin m)).comap e
-    |>.hasScheme ((isPrivate_twoServer.rows (Fin m)).comap e)
+  have hP := ((isCorrect_twoServer (ι := Fin m)).rows (Fin m)).hasScheme
+    ((isPrivate_twoServer (ι := Fin m)).rows (Fin m))
   rw [Fintype.card_bool, communication_twoServer_rows, Fintype.card_fin] at hP
-  exact hP.mono (by omega)
+  exact (hP.mono (by omega)).fin_of_le_card (by simpa using h)
 
 /-- Two servers with `4 (⌊√n⌋ + 1)` bits. -/
 theorem hasScheme_two_sqrt (n : ℕ) : HasScheme (Fin n) 2 (4 * (Nat.sqrt n + 1)) :=
@@ -282,10 +271,9 @@ and perfectly private `2 ^ d`-server scheme for `n`-bit databases communicating 
 bits. With `ℓ = ⌈n ^ (1/d)⌉` this is the source's `2 ^ d (d n ^ (1/d) + 1)`. -/
 theorem hasScheme_two_pow_of_le_pow {n d ℓ : ℕ} (h : n ≤ ℓ ^ d) :
     HasScheme (Fin n) (2 ^ d) (2 ^ d * (d * ℓ + 1)) := by
-  let e : Fin n ↪ (Fin d → Fin ℓ) :=
-    (Fin.castLEEmb h).trans finFunctionFinEquiv.symm.toEmbedding
-  have hP := isCorrect_cube.comap e |>.hasScheme (isPrivate_cube.comap e)
-  rwa [Fintype.card_fun, Fintype.card_bool, Fintype.card_fin, communication_cube,
+  have hP := (isCorrect_cube (D := Fin d) (ι := Fin ℓ)).hasScheme isPrivate_cube
+  rw [Fintype.card_fun, Fintype.card_bool, Fintype.card_fin, communication_cube,
     Fintype.card_fin, Fintype.card_fin] at hP
+  exact hP.fin_of_le_card (by simpa using h)
 
 end Cslib.Crypto.Protocols.PIR

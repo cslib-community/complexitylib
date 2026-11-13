@@ -597,3 +597,20 @@ theorem TuringDegree.countable_Iic (d : TuringDegree) : (Set.Iic d).Countable :=
   intro d hd
   induction d using Antisymmetrization.ind with
   | _ f => exact ⟨f, hd, rfl⟩
+
+
+namespace Nat.RecursiveIn.Code
+open Encodable Denumerable _root_.Primrec
+
+instance : Primcodable Code where
+  toEncodable := inferInstance
+  prim := by
+    have : (fun n => Encodable.encode (Encodable.decode (α := Code) n)) = Nat.succ := by
+      ext n
+      simp only [decode_eq_ofNat, encode_some, encode_ofNat]
+    rw [this]
+    exact Primrec.succ
+
+end Code
+end RecursiveIn
+end Nat

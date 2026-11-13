@@ -31,6 +31,7 @@ are polynomials in the length of the encoded pair `(a, w₁)`, hence in the leng
 
 ## Main results
 
+* `Cslib.Complexity.mem_SigmaP_succ_iff`: `Σₖ₊₁` consists of the projections of `Πₖ`.
 * `Cslib.Complexity.SigmaP_succ_subset_SigmaP`: one level of the collapse.
 * `Cslib.Complexity.PH_eq_SigmaP_of_PiP_subset_SigmaP`: `Πₖ ⊆ Σₖ` collapses `PH` to `Σₖ`.
 * `Cslib.Complexity.PH_eq_NP_of_coNP_subset_NP`: `NP = coNP` collapses `PH` to `NP`.
@@ -99,6 +100,18 @@ theorem mem_SigmaP_of_exists {k : ℕ} (hk : 1 ≤ k) {B : Set (α × List Bool)
     refine exists_congr fun v => and_congr_right fun hv => alternation_congr fun u => ?_
     simp [hw, List.append_assoc]
 
+/-- **`Σₖ₊₁` consists of the projections of `Πₖ`**: the problems `{a | ∃ w, |w| = p |enc a| ∧
+(a, w) ∈ B}` for a polynomial `p` and a problem `B` in `Πₖ` on pairs of an instance and a word. -/
+theorem mem_SigmaP_succ_iff {k : ℕ} {A : Set α} :
+    A ∈ SigmaP (k + 1) enc ↔ ∃ (p : Polynomial ℕ) (B : Set (α × List Bool)),
+      B ∈ PiP k (encPair enc encBits) ∧
+        A = {a | ∃ w : List Bool, w.length = p.eval (enc a).length ∧ (a, w) ∈ B} := by
+  refine ⟨fun hA => ?_, ?_⟩
+  · obtain ⟨p, B, hB, hAB⟩ := exists_mem_PiP_of_mem_SigmaP_succ hA
+    exact ⟨p, B, hB, Set.ext hAB⟩
+  · rintro ⟨p, B, hB, rfl⟩
+    exact mem_SigmaP_of_exists (Nat.le_add_left 1 k) (PiP_subset_SigmaP_succ k hB) p
+
 /-- **One level of the collapse.** If `Πₖ ⊆ Σₖ` for problems on pairs of an instance and a word,
 for some `k ≥ 1`, then `Σₖ₊₁ ⊆ Σₖ`: the pairs `(a, w₁)` from which the last `k` quantifiers
 accept form a problem in `Πₖ`, hence in `Σₖ`, and the quantifier over `w₁` merges with its first
@@ -108,10 +121,8 @@ theorem SigmaP_succ_subset_SigmaP {k : ℕ} (hk : 1 ≤ k)
     SigmaP (k + 1) enc ⊆ SigmaP k enc := by
   intro A hA
   -- the pairs of an instance and a first certificate from which the last `k` quantifiers accept
-  obtain ⟨p, B, hB, hA⟩ := exists_mem_PiP_of_mem_SigmaP_succ hA
-  convert mem_SigmaP_of_exists hk (h hB) p using 1
-  ext a
-  exact hA a
+  obtain ⟨p, B, hB, rfl⟩ := mem_SigmaP_succ_iff.mp hA
+  exact mem_SigmaP_of_exists hk (h hB) p
 
 /-! ### The collapses -/
 
@@ -131,9 +142,8 @@ theorem PH_eq_SigmaP_of_PiP_subset_SigmaP {k : ℕ} (hk : 1 ≤ k)
       refine (SigmaP_succ_subset_SigmaP (k := k + j) (by omega) fun A hA => ?_).trans
         (ih encB)
       -- `Πₖ₊ⱼ` is the complement of `Σₖ₊ⱼ ⊆ Σₖ`, within `Πₖ ⊆ Σₖ ⊆ Σₖ₊ⱼ`
-      have hc : Aᶜ ∈ SigmaP k _ := ih _ (compl_mem_SigmaP_of_mem_PiP hA)
-      have := h _ (by simpa using compl_mem_PiP_of_mem_SigmaP hc)
-      exact SigmaP_mono (Nat.le_add_right k j) this
+      have hc : Aᶜ ∈ SigmaP k _ := ih _ (compl_mem_SigmaP_iff.mpr hA)
+      exact SigmaP_mono (Nat.le_add_right k j) (h _ (compl_mem_SigmaP_iff.mp hc))
   refine Set.Subset.antisymm (Set.iUnion_subset fun j => ?_) (SigmaP_subset_PH k)
   rcases le_total j k with hj | hj
   · exact SigmaP_mono hj

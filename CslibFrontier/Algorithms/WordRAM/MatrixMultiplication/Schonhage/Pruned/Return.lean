@@ -63,23 +63,13 @@ theorem exec_node_return {w L f a0 b0 d N k : ℕ} (x : Data registers)
   have hL : L + 1 ≤ (L + 1) * 10 ^ L := by nlinarith only [hpow]
   have hmul : (d + 1) * 10 ^ L ≤ (L + 1) * 10 ^ L :=
     Nat.mul_le_mul_right _ (by omega)
-  obtain ⟨u, hu, humem, huf, huc, _, _, hut, hul, huv, _, _, huch, hureg⟩ :=
-    exec_loadFrame x hregs.one_eq hregs.frameWidth_eq (hw.of_le (by
-      rw [hregs.frames_eq, hregs.lists_eq, hregs.values_eq, hregs.span_eq, hd]
-      nlinarith only [hpow, hL, hmul]))
+  let vb := f + 4 * (L + 1) + (L + 1) * 10 ^ L + d * 10 ^ L
+  obtain ⟨u, hu, humem, huf', huc, _, _, hut, hul', (huv' : u.regs valueBase = vb), _, _,
+      huch', hureg⟩ := hregs.exec_loadFrame hd hdL.le hw
   have fixed (i : Fin registers) (hi : ¬LoadFrameLocal i) : u.regs i = x.regs i :=
     hureg i hi
-  have huf' : u.regs frame = f + 4 * d := by simpa only [hregs.frames_eq, hd] using huf
-  have hul' : u.regs listBase = f + 4 * (L + 1) + d * 10 ^ L := by
-    simpa only [hregs.lists_eq, hregs.span_eq, hd] using hul
-  let vb := f + 4 * (L + 1) + (L + 1) * 10 ^ L + d * 10 ^ L
-  have huv' : u.regs valueBase = vb := by
-    simpa only [hregs.values_eq, hregs.span_eq, hd] using huv
-  have huch' : u.regs childValues = f + 4 * (L + 1) + (L + 1) * 10 ^ L +
-      (d + 1) * 10 ^ L := by
-    simpa only [hregs.values_eq, hregs.span_eq, hd] using huch
-  have huc' : u.regs count = N := by simpa only [hregs.frames_eq, hd, hN] using huc
-  have hut' : u.regs term = k := by simpa only [hregs.frames_eq, hd, hterm] using hut
+  have huc' : u.regs count = N := huc.trans hN
+  have hut' : u.regs term = k := hut.trans hterm
   obtain ⟨v, hv, _, hvmem, hvFrame, _, hvreg⟩ := exec_accumulateLoop u input V B huc'
     (by simpa only [hul', humem] using hinput) hcodes hinj
     (by simpa only [huv', humem] using hparent)

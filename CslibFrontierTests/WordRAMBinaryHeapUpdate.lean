@@ -25,7 +25,7 @@ private def layout : PriorityQueue.BinaryHeap.Memory.Layout 1 :=
 
 private def mem (a : ℕ) : ℕ := if a = 0 then 15 else if a = 100 then 7 else 0
 private def initial : Memory.State := ⟨mem, 4⟩
-private def argument : (HeapLayout × ℕ) × ℕ := ((⟨1, layout⟩, 0), 15)
+private def argument : UpdateArgument := ((⟨1, layout⟩, 0), 15)
 
 private theorem valid : layout.Valid 4 15 :=
   PriorityQueue.BinaryHeap.Memory.valid_compactLayout (by decide +kernel) (by decide +kernel)
@@ -96,7 +96,7 @@ example : ∃ y, ExecWithin 4 (realizes_insert.code (frontier realizes_insert)
 
 private def inserted : Memory.State :=
   (Memory.spec 4).clientState initial (PriorityQueue.BinaryHeap.Memory.insert layout 0 15)
-private def decreaseArgument : (HeapLayout × ℕ) × ℕ := ((⟨1, layout⟩, 0), 7)
+private def decreaseArgument : UpdateArgument := ((⟨1, layout⟩, 0), 7)
 
 private theorem inserted_inv : PriorityQueue.BinaryHeap.Memory.Inv layout inserted :=
   (triple_iff.mp (PriorityQueue.BinaryHeap.Memory.insert_triple valid inv

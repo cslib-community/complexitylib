@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Protocols.UC.Machine
+import CslibFrontier.Languages.Probabilistic.QueryCount.Scale
 import CslibFrontier.Languages.Probabilistic.Simulation
 
 /-!
@@ -27,6 +28,9 @@ most `m` calls, linked against a machine making at most `t` per activation, make
 
 ## Main results
 
+* `Cslib.Crypto.Protocols.UC.Machine.runFrom_map_state`,
+  `Cslib.Crypto.Protocols.UC.Machine.comp_handle_map_state`: state representations that commute
+  with every activation commute with runs and compositions.
 * `Cslib.Crypto.Protocols.UC.Machine.runFrom_comp`: running against a composition.
 * `Cslib.Crypto.Protocols.UC.Machine.link_comp`, `Cslib.Crypto.Protocols.UC.Machine.run_comp`:
   linking is associative.
@@ -53,6 +57,39 @@ variable {ιI ιJ ιE : Type} {I : ιI → Type} {J : ιJ → Type} {E : ιE →
 theorem runFrom_call (M : Machine I E) (q : ℕ ⊕ ιE) (s : M.State) :
     M.runFrom (OracleComp.query q) s = (M.handler q).run s :=
   OracleComp.run_interpret_query _ _ _
+
+/-- A state representation `f` that commutes with every activation commutes with every run. -/
+theorem runFrom_map_state (M₁ M₂ : Machine I E) (f : M₂.State → M₁.State)
+    (h : ∀ q s, (M₁.handle q).run (f s) = Prod.map _root_.id f <$> (M₂.handle q).run s)
+    (program : ProbOracleComp E α) (s : M₂.State) :
+    M₁.runFrom program (f s) = Prod.map _root_.id f <$> M₂.runFrom program s := by
+  induction program using OracleComp.induction generalizing s with
+  | pure a => rfl
+  | query_bind q cont ih =>
+    have hq : (M₁.handler q).run (f s) = Prod.map _root_.id f <$> (M₂.handler q).run s := by
+      cases q with
+      | inl k =>
+        change (StateT.lift (ProbOracleComp.sample (ProbComp.unifFin k))).run (f s) =
+          Prod.map _root_.id f <$> (StateT.lift (ProbOracleComp.sample (ProbComp.unifFin k))).run s
+        simp only [StateT.run_lift, bind_pure_comp, Functor.map_map]
+        rfl
+      | inr e => exact h e s
+    rw [runFrom_bind, runFrom_bind, runFrom_call, runFrom_call, hq, bind_map_left, map_bind]
+    exact bind_congr fun x => ih x.1 x.2
+
+/-- Intertwining the inner machines of a composition intertwines the composed machines on the
+product state. -/
+theorem comp_handle_map_state (A : Machine J E) (P₁ P₂ : Machine I J) (f : P₂.State → P₁.State)
+    (h : ∀ q s, (P₁.handle q).run (f s) = Prod.map _root_.id f <$> (P₂.handle q).run s)
+    (q : ιE) (s : A.State × P₂.State) :
+    ((A.comp P₁).handle q).run (Prod.map _root_.id f s) =
+      Prod.map _root_.id (Prod.map _root_.id f) <$> ((A.comp P₂).handle q).run s := by
+  rcases s with ⟨sA, sP⟩
+  change Equiv.prodAssoc _ _ _ <$> P₁.runFrom ((A.handle q).run sA) (f sP) =
+    Prod.map _root_.id (Prod.map _root_.id f) <$>
+      (Equiv.prodAssoc _ _ _ <$> P₂.runFrom ((A.handle q).run sA) sP)
+  rw [runFrom_map_state P₁ P₂ f h, Functor.map_map, Functor.map_map]
+  rfl
 
 /-- Running against a composition runs against the outer machine, and runs the result against the
 inner machine. -/
@@ -141,16 +178,6 @@ theorem isQueryBounded_sample {program : ProbComp α} {n : ℕ} (h : program.IsQ
     (ProbOracleComp.sample (spec := I) program).IsQueryBounded n :=
   OracleComp.IsCostBounded.interpret (fun _ => OracleComp.IsCostBounded.query _) h
 
-/-- A unit-cost budget `n` gives a budget `n * c` when every call costs `c`. -/
-private theorem isCostBounded_const_of_isQueryBounded {ι : Type} {spec : ι → Type} {β : Type}
-    {program : OracleComp spec β} {n : ℕ} (c : ℕ) (h : program.IsQueryBounded n) :
-    OracleComp.IsCostBounded (fun _ => c) program (n * c) := by
-  induction h with
-  | pure a n => exact .pure a _
-  | liftBind q cont n _ ih =>
-    rw [Nat.succ_mul]
-    exact .liftBind q cont _ ih
-
 /-- Every call of a program run against `P` costs at most `t + 1` calls of `P`'s imports. -/
 private theorem isQueryBounded_handler {P : Machine I J} {t : ℕ} (hP : P.IsBounded t)
     (q : ℕ ⊕ ιJ) (s : P.State) : ((P.handler q).run s).IsQueryBounded (t + 1) := by
@@ -168,7 +195,7 @@ theorem isQueryBounded_runFrom {P : Machine I J} {t m : ℕ} (hP : P.IsBounded t
     {program : ProbOracleComp J α} (h : program.IsQueryBounded m) (s : P.State) :
     (P.runFrom program s).IsQueryBounded (m * (t + 1)) :=
   OracleComp.IsCostBounded.run_interpret (isQueryBounded_handler hP)
-    (isCostBounded_const_of_isQueryBounded (t + 1) h) s
+    (h.isCostBounded_mul_of_forall_le fun _ => le_rfl) s
 
 /-- A program with at most `m` calls, linked against a machine with at most `t` calls per
 activation and at initialization, makes at most `t + m * (t + 1)` calls. -/

@@ -253,18 +253,9 @@ theorem exists_isHardCoreMeasure {f : BooleanFunction n} {s T : ℕ} {δ ε : �
   -- The strict majority of the first `j` predictors.
   let g : BooleanFunction n := fun x => strictMajority j fun l : Fin j => next (margin f next l) x
   have hcomplexity : complexity interpretation (single g) ≤ T * s + (2 + T * (2 * (T + 2))) := by
-    have h : complexity interpretation (single g) ≤
-        ∑ l : Fin j, complexity interpretation (single (next (margin f next l))) +
-          complexity interpretation (single (strictMajority j)) :=
-      (complexity_comp_le (fun x (l : Fin j) => next (margin f next l) x)
-        (single (strictMajority j))).trans
-        (Nat.add_le_add_right (complexity_pi_le fun l : Fin j => next (margin f next l)) _)
-    have hsum : ∑ l : Fin j, complexity interpretation (single (next (margin f next l))) ≤
-        ∑ _l : Fin j, s :=
-      sum_le_sum fun l _ => (hnext (margin f next l) (hdense l l.2)).1
-    simp only [sum_const, card_univ, Fintype.card_fin, smul_eq_mul] at hsum
-    have hmaj : complexity interpretation (single (strictMajority j)) ≤
-        2 + j * (2 * (j + 2)) := complexity_threshold_le j (j / 2 + 1)
+    have h : complexity interpretation (single g) ≤ j * s + (2 + j * (2 * (j + 2))) :=
+      complexity_threshold_pi_le_of_le (j := j / 2 + 1) (fun l : Fin j => next (margin f next l))
+        fun l => (hnext (margin f next l) (hdense l l.2)).1
     have hjT' := hjT.le
     have : j * s + (2 + j * (2 * (j + 2))) ≤ T * s + (2 + T * (2 * (T + 2))) := by
       gcongr

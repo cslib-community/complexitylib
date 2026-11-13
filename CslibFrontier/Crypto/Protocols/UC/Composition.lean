@@ -78,8 +78,6 @@ sessions in one step.
 
 ## Main results
 
-* `Cslib.Crypto.Protocols.UC.Machine.runFrom_map_state`: a state representation that commutes with
-  every activation commutes with every run.
 * `Cslib.Crypto.Protocols.UC.corruptRouter_comp`: routing in front of a composition routes the outer
   machine.
 * `Cslib.Crypto.Protocols.UC.exec_compose_dummy`,
@@ -131,37 +129,11 @@ theorem runFrom_interpret_of_forward (M : Machine I E)
     exact h q s
   rw [runFrom, OracleComp.interpret_interpret, hforward, OracleComp.run_interpret_stateless]
 
-/-- A state representation `f` that commutes with every activation commutes with every run. -/
-theorem runFrom_map_state (M₁ M₂ : Machine I E) (f : M₂.State → M₁.State)
-    (h : ∀ q s, (M₁.handle q).run (f s) = Prod.map _root_.id f <$> (M₂.handle q).run s)
-    (program : ProbOracleComp E α) (s : M₂.State) :
-    M₁.runFrom program (f s) = Prod.map _root_.id f <$> M₂.runFrom program s := by
-  induction program using OracleComp.induction generalizing s with
-  | pure a => rfl
-  | query_bind q cont ih =>
-    have hq : (M₁.handler q).run (f s) = Prod.map _root_.id f <$> (M₂.handler q).run s := by
-      cases q with
-      | inl k =>
-        change (StateT.lift (ProbOracleComp.sample (ProbComp.unifFin k))).run (f s) =
-          Prod.map _root_.id f <$> (StateT.lift (ProbOracleComp.sample (ProbComp.unifFin k))).run s
-        simp only [StateT.run_lift, bind_pure_comp, Functor.map_map]
-        rfl
-      | inr e => exact h e s
-    rw [runFrom_bind, runFrom_bind, runFrom_call, runFrom_call, hq, bind_map_left, map_bind]
-    exact bind_congr fun x => ih x.1 x.2
-
 end Machine
 
 variable {n : ℕ} {In Out NetQ NetR SubIn SubOut NQ NR NQ₁ NR₁ NQ₂ NR₂ α : Type}
 
 /-! ### Hybrid protocols and subroutine replacement -/
-
-/-- The network queries of a subroutine behind static-corruption routing: party inputs of
-corrupted parties, and the subroutine's own network queries. -/
-abbrev RoutedNetQ (n : ℕ) (SubIn NQ : Type) : Type := (Fin n × SubIn) ⊕ NQ
-
-/-- The network replies of a subroutine behind static-corruption routing. -/
-abbrev RoutedNetR (SubOut NR : Type) : Type := Option SubOut ⊕ NR
 
 /-- An `n`-party protocol in the hybrid model of a subroutine with party inputs `SubIn` and outputs
 `SubOut`: for every security parameter and set of corrupted parties, a machine with a party port and
@@ -203,7 +175,7 @@ imported protocol, whose network port is exposed beside the hybrid protocol's ow
 for closed machines. -/
 @[expose] def routeCorrupt {ιI : Type} {I : ιI → Type} (C : Finset (Fin n))
     (P : Machine I (protocolSpec n In Out NetQ NetR)) :
-    Machine I (protocolSpec n In Out ((Fin n × In) ⊕ NetQ) (Option Out ⊕ NetR)) where
+    Machine I (protocolSpec n In Out (RoutedNetQ n In NetQ) (RoutedNetR Out NetR)) where
   State := P.State
   init := P.init
   handle
@@ -388,7 +360,7 @@ private theorem routeCorrupt_handle_inr_inl {ιI : Type} {I : ιI → Type} (C :
       if i ∈ C then (fun p => (Sum.inl p.1, p.2)) <$> (P.handle (.inl (i, x))).run s
       else pure (.inl none, s) := by
   change (if i ∈ C then Sum.inl <$> P.handle (.inl (i, x)) else pure (.inl none) :
-    StateT P.State (ProbOracleComp I) (Option Out ⊕ NetR)).run s = _
+    StateT P.State (ProbOracleComp I) (RoutedNetR Out NetR)).run s = _
   split_ifs
   · exact StateT.run_map _ _ _
   · rfl

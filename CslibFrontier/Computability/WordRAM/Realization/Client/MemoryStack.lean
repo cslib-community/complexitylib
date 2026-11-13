@@ -13,14 +13,16 @@ public import CslibFrontier.Computability.WordRAM.Realization.Glue
 public import CslibFrontier.Computability.WordRAM.Realization.GlueVector
 public import CslibFrontier.Computability.WordRAM.Realization.Primitive
 public import CslibFrontier.DataStructure.Stack.Memory
+import CslibFrontier.Tactic.Realize
 
 /-!
 # Native realizations of the memory-oracle stack
 
 The certificates consume the existing `Stack.Memory` methods unchanged. Every field of the
 runtime layout has a faithful word encoding, so the emitter is chosen before the layout's
-allocation addresses and all operation arguments. Arithmetic, copies, binds and branches have
-explicit local-work charges in addition to the actual memory history.
+allocation addresses and all operation arguments. The fixed public local-work allowances are
+retained; `realize` certifies arithmetic, copies and control through shared closure rules and
+a uniform native exchange factor in addition to the actual memory history.
 
 ## Main definitions
 
@@ -37,9 +39,6 @@ explicit local-work charges in addition to the actual memory history.
 namespace Cslib.WordRAM.Realization.MemoryStack
 
 open Cslib.DataStructure
-
-private abbrev word : ℕ ↪ (Fin 1 → ℕ) := (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
-private abbrev unitWords : Unit ↪ (Fin 0 → ℕ) := (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEmbedding
 
 /-- All four layout fields are retained: count base/length, then items base/length. -/
 def layoutWords : Stack.Memory.Layout ↪ (Fin 4 → ℕ) where
@@ -68,26 +67,19 @@ theorem realizes_size :
       (fun _ _ _ => True) (fun _ _ => 0) := Realizes.read layoutWords 0
 
 /-- Push works uniformly for every runtime layout and value. The visible invariant and spare
-capacity discharge the address and increment fit obligations. The two additions cost six local
-instructions; four bind rules contribute four units of local control work. -/
+capacity discharge the address and increment fit obligations. The fixed local-work allowance
+remains ten; the tactic certifies all glue and control with one uniform exchange factor. -/
 theorem realizes_push :
     Realizes .exact (fun d : Stack.Memory.Layout × ℕ => Stack.Memory.push d.1 d.2)
       pushWords (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEmbedding
       (fun w d s => d.1.Valid w d.1.items.length ∧ Stack.Memory.Inv d.1 s ∧
         s.mem d.1.count.base < d.1.items.length) (fun _ _ => 10) := by
-  let e₁ := appendWords pushWords word
-  let e₂ := appendWords e₁ word
-  let e₃ := appendWords e₂ word
-  let e₄ := appendWords e₃ unitWords
-  apply ((Realizes.read pushWords 0).bind
-    ((Realizes.addWords e₁ 2 5).bind ((Realizes.increment e₂ 5).bind
-      ((Realizes.write e₃ 6 4).bind (Realizes.write e₄ 0 7))))).consequence
-    (hwork := fun _ _ => le_rfl)
-  intro w d s _ hw ⟨hL, hInv, hcap⟩
-  change True ∧ Fits w (d.1.items.base + s.mem d.1.count.base) ∧
-    Fits w (s.mem d.1.count.base + 1) ∧ True ∧ True
-  exact ⟨trivial, hw.fits_of_lt_frontier (hInv.item_lt hcap),
-    hL.capacity_fits.of_le (by omega), trivial, trivial⟩
+  realize
+  all_goals
+    rcases h with ⟨hL, hInv, hcap⟩
+    first
+    | exact hmem.fits_of_lt_frontier (hInv.item_lt hcap)
+    | exact hL.capacity_fits.of_le (by omega)
 
 /-- Pop returns a presence tag and unshifted payload. Its positive branch uses defined exact
 subtraction and performs the existing memory reads/write. All copies and branch/bind overhead
@@ -95,71 +87,13 @@ are charged; the local-work allowance is 19 for either path, including the short
 theorem realizes_pop :
     Realizes .exact Stack.Memory.pop layoutWords optionWords
       (fun w L s => L.Valid w L.items.length ∧ Stack.Memory.Inv L s) (fun _ _ => 19) := by
-  let e₁ := appendWords layoutWords word
-  let e₂ := appendWords e₁ word
-  let e₃ := appendWords e₂ word
-  let e₄ := appendWords e₃ word
-  let e₅ := appendWords e₄ word
-  let e₆ := appendWords e₅ unitWords
-  have hread : Realizes .exact (fun L : Stack.Memory.Layout => Memory.read L.count.base)
-      layoutWords word (fun _ _ _ => True) (fun _ _ => 0) := Realizes.read layoutWords 0
-  have hzero : Realizes .exact (fun _ : Stack.Memory.Layout × ℕ => pure 0) e₁ word
-      (fun _ _ _ => True) (fun _ _ => 1) := by
-    have h := Realizes.glue e₁
-      (GlueComputes.const (B := .exact) (P := fun _ => True) (bound := fun _ => 0)
-        0 (fun _ _ => le_rfl))
-    exact h.consequence (fun w _ _ _ _ _ => ⟨trivial, fits_zero w⟩) (fun _ _ => le_rfl)
-  have hsub : Realizes .exact
-      (fun d : (Stack.Memory.Layout × ℕ) × ℕ => pure (d.1.2 - 1)) e₂ word
-      (fun w d _ => 1 ≤ d.1.2 ∧ Fits w d.1.2) (fun _ _ => 3) := Realizes.decrement e₂ 4
-  have haddr : Realizes .exact
-      (fun d : ((Stack.Memory.Layout × ℕ) × ℕ) × ℕ => pure (d.1.1.1.items.base + d.2))
-      e₃ word (fun w d _ => Fits w (d.1.1.1.items.base + d.2)) (fun _ _ => 3) :=
-    Realizes.addWords e₃ 2 6
-  have hitem : Realizes .exact
-      (fun d : (((Stack.Memory.Layout × ℕ) × ℕ) × ℕ) × ℕ => Memory.read d.2)
-      e₄ word (fun _ _ _ => True) (fun _ _ => 0) := Realizes.read e₄ 7
-  have hwrite : Realizes .exact
-      (fun d : ((((Stack.Memory.Layout × ℕ) × ℕ) × ℕ) × ℕ) × ℕ =>
-        Memory.write d.1.1.1.1.1.count.base d.1.1.2)
-      e₅ unitWords (fun _ _ _ => True) (fun _ _ => 0) := Realizes.write e₅ 0 6
-  have hsome : Realizes .exact
-      (fun d : (((((Stack.Memory.Layout × ℕ) × ℕ) × ℕ) × ℕ) × ℕ) × Unit =>
-        pure (some d.1.2)) e₆ optionWords
-      (fun w d _ => Fits w 1 ∧ Fits w d.1.2) (fun _ _ => 4) := Realizes.returnSome e₆ 8
-  have hpos := (Realizes.bind hsub (Realizes.bind haddr
-    (Realizes.bind hitem (Realizes.bind hwrite hsome)))).consequence
-    (safe' := fun w d s => 1 ≤ d.1.2 ∧ Fits w d.1.2 ∧
-      Fits w (d.1.1.items.base + (d.1.2 - 1)) ∧ Fits w 1 ∧
-      Fits w (s.mem (d.1.1.items.base + (d.1.2 - 1))))
-    (work' := fun _ _ => 14)
-    (by
-      intro w d s _ _ ⟨hpos, hn, ha, h1, hv⟩
-      change (1 ≤ d.1.2 ∧ Fits w d.1.2) ∧
-        Fits w (d.1.1.items.base + (d.1.2 - 1)) ∧ True ∧ True ∧
-        Fits w 1 ∧ Fits w (s.mem (d.1.1.items.base + (d.1.2 - 1)))
-      exact ⟨⟨hpos, hn⟩, ha, trivial, trivial, h1, hv⟩)
-    (fun _ _ => le_rfl)
-  have hbranch := Realizes.branch (.eq 4 5) (Realizes.returnNone e₂) hpos
-  apply (Realizes.bind hread (Realizes.bind hzero hbranch)).consequence
-  · intro w L s hwords hw ⟨hL, hInv⟩
-    have hn : Fits w (s.mem L.count.base) := hw.mem_fits _
+  realize
+  all_goals
+    rcases h with ⟨hL, hInv⟩
     have h1 : Fits w 1 := hL.count_length ▸ hwords 1
-    change True ∧ True ∧ (if s.mem L.count.base = 0 then True else
-      1 ≤ s.mem L.count.base ∧ Fits w (s.mem L.count.base) ∧
-      Fits w (L.items.base + (s.mem L.count.base - 1)) ∧ Fits w 1 ∧
-      Fits w (s.mem (L.items.base + (s.mem L.count.base - 1))))
-    refine ⟨trivial, trivial, ?_⟩
-    split
-    · trivial
-    · have hle := hInv.count_le
-      exact ⟨by omega, hn, hw.fits_of_lt_frontier (hInv.item_lt (by omega)), h1,
-        hw.mem_fits _⟩
-  · intro L s
-    change 0 + (1 + ((if test (.eq 4 5) (e₂ ((L,
-      (Memory.spec 0).clientResult s (Memory.read L.count.base)), 0)) then 4 else 14) + 2) + 1) +
-      1 ≤ 19
-    split <;> omega
+    first
+    | omega
+    | exact hmem.fits_of_lt_frontier (hInv.item_lt (by have := hInv.count_le; omega))
 
 /-- The push's explicit local work is dominated by its actual three-query memory charge. -/
 theorem push_work_bound (L : Stack.Memory.Layout) (v : ℕ) (s : Memory.State) :

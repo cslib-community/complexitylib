@@ -1,6 +1,7 @@
 """Quick-plan safety and command dispatch, with a real broken importing-client fixture."""
 
 import importlib.util
+import io
 import json
 import os
 from pathlib import Path
@@ -17,8 +18,8 @@ quick = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = quick
 SPEC.loader.exec_module(quick)
 REPO = Path(__file__).resolve().parent.parent
-# The audit of changed files restored from the artifact cache, run after the build (#4523).
-RESTORES = [sys.executable, "-B", "scripts/check_cache_restores.py", "--base", "base"]
+# The audit of affected files restored from the artifact cache, run after the build (#4523).
+RESTORES = [sys.executable, "-B", "scripts/check_cache_restores.py"]
 
 
 class QuickCheckTests(unittest.TestCase):
@@ -66,8 +67,32 @@ class QuickCheckTests(unittest.TestCase):
 
     def test_transitive_clients_and_clients_importing_aggregate(self):
         self.write("Demo/Base.lean", "def value : Nat := 2\n")
-        self.assertEqual(self.plan().targets,
+        plan = self.plan()
+        self.assertEqual(plan.targets,
                          ["Demo.Base", "Demo.Middle", "DemoTests.AllClient", "DemoTests.Client"])
+        self.assertEqual(plan.restore_files,
+                         ["Demo/Base.lean", "Demo/Middle.lean", "DemoTests/AllClient.lean",
+                          "DemoTests/Client.lean"])
+        self.assertEqual(plan.restore_built, ["Demo.lean"])
+
+    def test_unused_aggregate_is_not_audited_or_built(self):
+        (self.root / "DemoTests/AllClient.lean").unlink()
+        self.write("DemoTests.lean", "import DemoTests.Client\n")
+        self.commit()
+        self.git("update-ref", "refs/remotes/origin/main", "HEAD")
+        self.write("Demo/Base.lean", "def value : Nat := 2\n")
+        self.write(".lake/build/lib/lean/Demo.trace", '{"synthetic": true}')
+        self.assertEqual(self.plan().restore_built, [])
+
+    def record_command(self, command, plan):
+        """Read the audit's temporary manifest while it exists, then normalize its random path."""
+        if command[:3] == RESTORES:
+            self.assertEqual(command[3], "--files-from")
+            self.assertEqual(json.loads(Path(command[4]).read_text()), plan.restore_files)
+            self.assertEqual(command[5:], [part for path in plan.restore_built
+                                          for part in ("--built-under", path)])
+            return RESTORES
+        return command
 
     def use_glob_test_library(self, globs='["DemoTests.+"]'):
         """Switch the fixture's test library to the repository's glob layout: no aggregator."""
@@ -163,6 +188,35 @@ class QuickCheckTests(unittest.TestCase):
                 else:
                     self.write(path, old)
 
+    def test_aggregate_importing_only_added_modules_keeps_the_quick_plan(self):
+        self.write("Demo/Added.lean", "import Demo.Base\ndef added := value\n")
+        # The aggregate's own importing client is built; the aggregate is audited, not targeted.
+        for text in ("import Demo.Added\nimport Demo.Base\nimport Demo.Middle\n",
+                     # What `lake exe mk_all` writes, as in `CslibFrontier.lean`.
+                     "import Demo.Base\nimport Demo.Middle\npublic import Demo.Added\n"):
+            with self.subTest(text=text):
+                self.write("Demo.lean", text)
+                plan = self.plan()
+                self.assertEqual(plan.targets, ["Demo.Added", "DemoTests.AllClient"])
+                self.assertEqual(plan.restore_built, ["Demo.lean"])
+
+    def test_aggregate_edit_beyond_added_imports_falls_back(self):
+        self.write("Demo/Added.lean", "def added := 1\n")
+        cases = {
+            # A module that exists at the base is not one this change adds.
+            "an existing module": "import Demo.Base\nimport Demo.Middle\nimport Demo.Middle\n",
+            "a removed import": "import Demo.Base\nimport Demo.Added\n",
+            "a reordered import": "import Demo.Middle\nimport Demo.Base\nimport Demo.Added\n",
+            "a trailing comment": "import Demo.Base\nimport Demo.Middle\nimport Demo.Added -- new\n",
+            "other text": "import Demo.Base\nimport Demo.Middle\nimport Demo.Added\n-- note\n",
+            "no added import": "import Demo.Base\nimport Demo.Middle\n\n",
+        }
+        for name, text in cases.items():
+            with self.subTest(name):
+                self.write("Demo.lean", text)
+                with self.assertRaisesRegex(quick.FullCheck, "aggregate Demo changed beyond"):
+                    self.plan()
+
     def test_encoding_baseline_change_runs_its_lint_instead_of_falling_back(self):
         baseline = "scripts/encoding_readability_baseline.json"
         self.write(baseline, "{}\n")
@@ -220,7 +274,7 @@ class QuickCheckTests(unittest.TestCase):
                 calls = []
 
                 def run(root, command, label):
-                    calls.append(command)
+                    calls.append(self.record_command(command, plan))
                     return lint_status if command[0] == "lint" else 0
 
                 with patch.object(quick, "make_plan", return_value=plan), \
@@ -281,7 +335,7 @@ class QuickCheckTests(unittest.TestCase):
                 calls, listings = [], []
 
                 def run(root, command, label):
-                    calls.append(command)
+                    calls.append(self.record_command(command, plan))
                     if command[:2] == ["lake", "lint"]:
                         listing = Path(command[4].removeprefix("--only-modules="))
                         listings.append(listing)
@@ -310,12 +364,14 @@ class QuickCheckTests(unittest.TestCase):
                 ([], 4, [["lake", "exe", "mk_all", "--check"]])):
             with self.subTest(targets=targets):
                 calls = []
+                plan = quick.Plan("base", targets, [], restore_files=["Demo/Base.lean"])
 
                 def run(root, command, label):
+                    command = self.record_command(command, plan)
                     calls.append(command)
                     return audit_status if command == RESTORES else 0
 
-                with patch.object(quick, "make_plan", return_value=quick.Plan("base", targets, [])), \
+                with patch.object(quick, "make_plan", return_value=plan), \
                      patch.object(quick, "run_check", side_effect=run):
                     self.assertEqual(quick.main([], self.root), audit_status if targets else 0)
                 self.assertEqual(calls, expected)
@@ -354,7 +410,10 @@ class QuickCheckTests(unittest.TestCase):
         self.write("tools/Helper.lean", "import Demo.Base\ndef result : Nat := value\n")
         self.add_executable("import Helper")
         self.write("Demo/Base.lean", "def value : Bool := true\n")
-        self.assertIn("@/demoTool", self.plan().targets)
+        plan = self.plan()
+        self.assertIn("@/demoTool", plan.targets)
+        self.assertIn("tools/Tool.lean", plan.restore_files)
+        self.assertEqual(plan.restore_built, ["Demo.lean", "DemoTests.lean", "tools"])
 
     def test_hyphenated_executable_name_is_built_explicitly(self):
         self.add_executable("import Demo.Base", "demo-tool")
@@ -444,6 +503,14 @@ class QuickCheckTests(unittest.TestCase):
             self.assertEqual(run.call_args.args[0],
                              [str(self.root / "scripts/check.sh"), "--base", "example-base"])
 
+    def test_no_full_fallback_reports_the_reason_without_running_the_full_check(self):
+        with patch.object(quick, "make_plan", side_effect=quick.FullCheck("unsafe")), \
+             patch.object(quick.subprocess, "run") as run, \
+             patch("sys.stdout", new_callable=io.StringIO) as out:
+            self.assertEqual(quick.main(["--no-full-fallback"], self.root), quick.NO_FALLBACK_STATUS)
+        run.assert_not_called()
+        self.assertIn("cannot plan this change: unsafe", out.getvalue())
+
     def test_changed_library_and_test_files_get_source_checks(self):
         base = self.git("rev-parse", "HEAD")
         hygiene = [sys.executable, "-B", "scripts/check_hygiene.py", "--check-simp", "--"]
@@ -451,17 +518,22 @@ class QuickCheckTests(unittest.TestCase):
                     [sys.executable, "-B", "scripts/check_encoding_readability.py", "--base", base])
         projection = ("projection chain ratchet",
                       [sys.executable, "-B", "scripts/check_projection_chains.py", "--base", base])
-        labels = ["source hygiene (changed files)", "encoding readability ratchet",
-                  "projection chain ratchet"]
+        source_lints = ("changed-file source lints (doc-name lint skipped)",
+                        [sys.executable, "-B", "scripts/check_changed_files.py", "--base", base,
+                         "--source-only"])
+        labels = ["source hygiene (changed files)", source_lints[0],
+                  "encoding readability ratchet", "projection chain ratchet"]
         with patch.object(quick, "HYGIENE_ROOTS", ("Demo/", "DemoTests/")), \
              patch.object(quick, "RATCHET_ROOT", "Demo/"):
             self.write("DemoTests/Client.lean", "import Demo.Middle\nexample : Nat := middle + 0\n")
             self.assertEqual(self.plan().checks, [
-                ("source hygiene (changed files)", [*hygiene, "DemoTests/Client.lean"])])
+                ("source hygiene (changed files)", [*hygiene, "DemoTests/Client.lean"]),
+                source_lints])
             self.write("Demo/Base.lean", "def value : Nat := 2\n")
             self.assertEqual(self.plan().checks, [
                 ("source hygiene (changed files)",
-                 [*hygiene, "Demo/Base.lean", "DemoTests/Client.lean"]), encoding, projection])
+                 [*hygiene, "Demo/Base.lean", "DemoTests/Client.lean"]), source_lints, encoding,
+                projection])
             # A changed baseline already selects its ratchet; each ratchet runs once.
             for baseline in ("scripts/encoding_readability_baseline.json",
                              "scripts/projection_chains_baseline.json"):
@@ -514,6 +586,7 @@ class LocalManualGateTests(unittest.TestCase):
                    " def test_control(self):\n"
                    "  self.assertNotEqual(os.environ.get('MANUAL_TEST_FAILURE'), '1')\n"
                    "unittest.main()\n")
+        self.write("scripts/check_vm_map_count.py", "raise SystemExit(0)\n")
         recorder = ('#!/usr/bin/env python3\nimport json,os,sys\n'
                     'with open(os.environ["QUICK_COMMAND_LOG"], "a") as f:\n'
                     ' f.write(json.dumps([sys.argv[0].split("/")[-1], *sys.argv[1:]])+"\\n")\n')
@@ -546,6 +619,17 @@ class LocalManualGateTests(unittest.TestCase):
                 self.assertFalse(list(self.root.glob("cslib-frontier-check.*")))
                 self.log.unlink()
         bad = self.run_gate("--not-an-option")
+        self.assertEqual(bad.returncode, 2)
+        self.assertFalse(self.log.exists())
+
+    def test_no_full_fallback_reaches_quick_mode_only(self):
+        result = self.run_gate("--quick", "--no-full-fallback")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        commands = [json.loads(x) for x in self.log.read_text().splitlines()]
+        self.assertEqual(commands[1:], [["quick_check.py", "--base", "origin/main",
+                                         "--no-full-fallback"]])
+        self.log.unlink()
+        bad = self.run_gate("--no-full-fallback")
         self.assertEqual(bad.returncode, 2)
         self.assertFalse(self.log.exists())
 

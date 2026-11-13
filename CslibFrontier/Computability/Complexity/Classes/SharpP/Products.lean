@@ -96,7 +96,7 @@ theorem prod_range_mem {f : α × ℕ → ℕ} {r : α → ℕ}
   obtain ⟨p, V, hV, hf⟩ := mem_SharpP.mp hf
   let width : α × ℕ → ℕ := fun x => p.eval ((encPair enc encUnary) x).length
   let k : α → ℕ := fun a => p.eval (2 * (enc a).length + 1 + r a)
-  let W := andVerifier width V allFalseVerifier
+  let W := padVerifier width V
   have hk : ComputableInPolyTime k enc encUnary := by dsimp [k]; fun_prop
   have hW : ComputableInPolyTime W
       (encPair (encPair enc encUnary) encBits) encBool := by dsimp [W, width]; fun_prop
@@ -111,8 +111,7 @@ theorem prod_range_mem {f : α × ℕ → ℕ} {r : α → ℕ}
   have hle : width (a, i) ≤ k a := by
     simp only [width, k, length_encPair, encUnary_apply, List.length_replicate]
     exact p.eval_mono (by lia [mem_range.mp hi])
-  obtain ⟨n, hn⟩ := Nat.exists_eq_add_of_le hle
-  rw [hn, acceptCount_andVerifier_allFalseVerifier, hf]
+  rw [acceptCount_padVerifier_of_le width V hle, hf]
 
 end SharpP
 
