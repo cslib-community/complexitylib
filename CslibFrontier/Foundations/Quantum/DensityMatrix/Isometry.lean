@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Foundations.Quantum.DensityMatrix
+public import CslibFrontier.Foundations.Quantum.DensityMatrix.Linear
 public import CslibFrontier.Foundations.Quantum.Bipartite
 import Mathlib.Analysis.InnerProductSpace.Adjoint
 import Mathlib.LinearAlgebra.Matrix.Bilinear
@@ -55,6 +55,18 @@ theorem densityConj_apply (V : Matrix ι' ι ℂ) (ρ : Matrix ι ι ℂ) :
     densityConj V ρ = V * ρ * Vᴴ := by
   unfold densityConj
   rfl
+
+/-- Matrix multiplication composes the corresponding state evolutions, including rectangular
+maps between registers of different dimensions. -/
+theorem densityConj_mul {ι'' : Type*} [Fintype ι'] (U : Matrix ι'' ι' ℂ)
+    (V : Matrix ι' ι ℂ) (ρ : Matrix ι ι ℂ) :
+    densityConj (U * V) ρ = densityConj U (densityConj V ρ) := by
+  simp only [densityConj_apply, conjTranspose_mul, Matrix.mul_assoc]
+
+/-- The identity matrix leaves an arbitrary state operator unchanged. -/
+@[simp] theorem densityConj_one [DecidableEq ι] (ρ : Matrix ι ι ℂ) :
+    densityConj (1 : Matrix ι ι ℂ) ρ = ρ := by
+  simp [densityConj_apply]
 
 /-- A rectangular isometry carries every density matrix to a density matrix. -/
 theorem IsDensityMatrix.densityConj [Fintype ι'] [DecidableEq ι] {ρ : Matrix ι ι ℂ}
