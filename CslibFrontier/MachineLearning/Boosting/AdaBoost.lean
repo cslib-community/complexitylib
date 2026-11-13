@@ -7,7 +7,8 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.MachineLearning.OnlineLearning.Hedge
+public import CslibFrontier.Foundations.Data.BitString.Sign
+public import CslibFrontier.MachineLearning.OnlineLearning.MultiplicativeUpdate
 public import Cslib.MachineLearning.PACLearning.VersionSpace
 
 /-!
@@ -17,7 +18,8 @@ AdaBoost [FreundSchapire1997] on a finite labelled sample `S : Fin m → α × B
 learner `A : (Fin m → ℝ) → α → Bool` that maps weights on the sample to a hypothesis. Round `t`
 (a `Round`: weights and hypothesis) has weights `Dₜ`, weighted error `εₜ` and vote weight
 `wₜ = ½ log ((1 - εₜ) / εₜ)`; the next weights multiply `Dₜ i` by `exp (-wₜ yᵢ hₜ(xᵢ))` (signs
-`±1`) and renormalize. The output is the sign of the weighted vote `∑ₜ wₜ hₜ`.
+`±1`, via `BitString.signVal`) and renormalize (`rounds_weights_succ`). The output is the sign of
+the weighted vote `∑ₜ wₜ hₜ`.
 
 The weights are the multiplicative-update distribution of the experts setting
 (`CslibFrontier/MachineLearning/OnlineLearning/MultiplicativeUpdate.lean`) with the sample points
@@ -38,8 +40,11 @@ to `2 √(εₜ (1 - εₜ))`.
 
 ## Main results
 
+* `rounds_weights_succ`: the AdaBoost reweighting step.
 * `sum_mul_exp_pointLoss`: the normalizer of a round is `2 √(ε (1 - ε))`.
 * `empiricalMiscount_adaBoost_le_prod`: the training error is at most `∏ₜ 2 √(εₜ (1 - εₜ))`.
+* `empiricalMiscount_adaBoost_le_exp_sum`: the training error is at most
+  `exp (-2 ∑ₜ (1/2 - εₜ)²)`.
 * `empiricalMiscount_adaBoost_le_exp`: if every `εₜ ≤ 1/2 - γ`, the training error is at most
   `exp (-2 γ² T)`.
 * `IsWeakLearner.empiricalMiscount_adaBoost_eq_zero`: with a weak learner of edge `γ` and
@@ -48,7 +53,7 @@ to `2 √(εₜ (1 - εₜ))`.
 ## Model and differences from the sources
 
 [ShalevShwartzBenDavid2014, Theorem 10.2] states the `exp (-2 γ² T)` bound and proves the product
-form on pp. 135–136; [MohriRostamizadehTalwalkar2018, Theorem 7.2] states both through
+form on pp. 135–137; [MohriRostamizadehTalwalkar2018, Theorem 7.2] states both through
 `exp (-2 ∑ₜ (1/2 - εₜ)²)` and proves the product form. Differences:
 
 * A round with `εₜ = 0` makes `wₜ` infinite in the sources. Here AdaBoost stops at the first such
@@ -73,12 +78,9 @@ public section
 
 namespace Cslib.MachineLearning.Boosting
 
-open Finset Real PACLearning
+open Finset Real PACLearning BitString
 
 variable {α : Type*} {m : ℕ}
-
-/-- The margin of a prediction `b` against a label `y`: `1` if they agree and `-1` otherwise. -/
-@[expose] noncomputable def margin (b y : Bool) : ℝ := if b = y then 1 else -1
 
 /-- The weighted error of `h` on the sample `S` under the weights `D`: the total weight of the
 sample points that `h` labels incorrectly. -/
@@ -89,9 +91,11 @@ sample points that `h` labels incorrectly. -/
 /-- The vote weight `½ log ((1 - ε) / ε)` of a weak hypothesis with weighted error `ε`. -/
 @[expose] noncomputable def voteWeight (ε : ℝ) : ℝ := log ((1 - ε) / ε) / 2
 
-/-- The exponential loss of `h` at the labelled point `z` with vote weight `w`: `w` times the
-negated margin. AdaBoost multiplies the weight of `z` by `exp` of this loss. -/
-noncomputable def pointLoss (w : ℝ) (h : α → Bool) (z : α × Bool) : ℝ := -(w * margin (h z.1) z.2)
+/-- The exponential loss of `h` at the labelled point `z` with vote weight `w`: `-w` if `h` labels
+`z` correctly and `w` otherwise, written with the signs `signVal` of the prediction and the label.
+AdaBoost multiplies the weight of `z` by `exp` of this loss. -/
+noncomputable def pointLoss (w : ℝ) (h : α → Bool) (z : α × Bool) : ℝ :=
+  -(w * (signVal (h z.1) * signVal z.2))
 
 /-- One round of AdaBoost: the weights on the sample and the weak hypothesis chosen for them. -/
 structure Round (α : Type*) (m : ℕ) where
@@ -165,6 +169,16 @@ theorem rounds_zero_weights (i : Fin m) : (rounds S A 0).weights i = 1 / m := by
 theorem sum_rounds_weights [NeZero m] : ∑ i, (rounds S A t).weights i = 1 :=
   sum_prob fun _ _ _ => exp_pos _
 
+/-- **The AdaBoost update** [ShalevShwartzBenDavid2014, Section 10.2]: the weight of a sample point
+is multiplied by `exp (-wₜ yᵢ hₜ(xᵢ))`, its exponential loss, and the weights are renormalized. -/
+theorem rounds_weights_succ (i : Fin m) :
+    (rounds S A (t + 1)).weights i =
+      (rounds S A t).weights i * exp (pointLoss ((rounds S A t).vote S) (rounds S A t).hyp (S i)) /
+        ∑ j, (rounds S A t).weights j *
+          exp (pointLoss ((rounds S A t).vote S) (rounds S A t).hyp (S j)) := by
+  simp only [rounds_weights, ← lossSeq_apply]
+  exact prob_succ (fun _ _ _ => exp_pos _) i
+
 end Rounds
 
 /-- **The AdaBoost normalizer** [ShalevShwartzBenDavid2014, proof of Theorem 10.2]: under a
@@ -184,8 +198,10 @@ theorem sum_mul_exp_pointLoss {S : Fin m → α × Bool} {D : Fin m → ℝ} {h 
       else D i * (exp (voteWeight (weightedError S D h)))⁻¹ := by
     intro i
     by_cases hi : h (S i).1 = (S i).2
-    · rw [ite_eq_right (not_not.mpr hi), pointLoss, margin, ite_eq_left hi, mul_one, exp_neg]
-    · rw [ite_eq_left hi, pointLoss, margin, ite_eq_right hi, mul_neg, mul_one, neg_neg]
+    · rw [ite_eq_right (not_not.mpr hi), pointLoss, signVal_mul_signVal, ite_eq_left hi, mul_one,
+        exp_neg]
+    · rw [ite_eq_left hi, pointLoss, signVal_mul_signVal, ite_eq_right hi, mul_neg, mul_one,
+        neg_neg]
   rw [sum_congr rfl fun i _ => hterm i, sum_ite, ← sum_mul, ← sum_mul, hwrong, hright]
   generalize weightedError S D h = ε at *
   have ha0 : 0 < exp (voteWeight ε) := exp_pos _
@@ -203,9 +219,9 @@ theorem sum_mul_exp_pointLoss {S : Fin m → α × Bool} {D : Fin m → ℝ} {h 
   ring
 
 /-- The weighted vote of the first `T` rounds at `x`: the total vote weight of the hypotheses
-predicting `true` minus that of the hypotheses predicting `false`. -/
+predicting `true` minus that of the hypotheses predicting `false` (`signVal true = -1`). -/
 noncomputable def score (S : Fin m → α × Bool) (A : (Fin m → ℝ) → α → Bool) (T : ℕ) (x : α) : ℝ :=
-  ∑ t ∈ range T, (rounds S A t).vote S * margin ((rounds S A t).hyp x) true
+  -∑ t ∈ range T, (rounds S A t).vote S * signVal ((rounds S A t).hyp x)
 
 open Classical in
 /-- **AdaBoost** [FreundSchapire1997] run for `T` rounds on the sample `S` with the weak learner
@@ -217,20 +233,17 @@ noncomputable def adaBoost (S : Fin m → α × Bool) (A : (Fin m → ℝ) → �
   if h : ∃ t < T, (rounds S A t).error S = 0 then (rounds S A (Nat.find h)).hyp
   else fun x => decide (0 < score S A T x)
 
-/-- The margin against `y` is the product of the signs of `b` and `y`. -/
-theorem margin_eq_mul (b y : Bool) : margin b y = margin b true * margin y true := by
-  cases b <;> cases y <;> norm_num [margin]
-
 section Vote
 
 variable (S : Fin m → α × Bool) (A : (Fin m → ℝ) → α → Bool)
 
-/-- The cumulative loss at a sample point is its negated margin under the weighted vote. -/
+/-- The cumulative loss at a sample point is the weighted vote times the sign of the label: it is
+nonnegative exactly where the vote disagrees with the label. -/
 theorem sum_lossSeq (T : ℕ) (i : Fin m) :
-    ∑ t ∈ range T, lossSeq S A t i = -(score S A T (S i).1 * margin (S i).2 true) := by
-  rw [score, sum_mul, ← sum_neg_distrib]
+    ∑ t ∈ range T, lossSeq S A t i = score S A T (S i).1 * signVal (S i).2 := by
+  rw [score, neg_mul, sum_mul, ← sum_neg_distrib]
   refine sum_congr rfl fun t _ => ?_
-  rw [lossSeq_apply, pointLoss, margin_eq_mul, mul_assoc]
+  rw [lossSeq_apply, pointLoss, mul_assoc]
 
 /-- Where the weighted vote errs, the cumulative loss is nonnegative. -/
 theorem sum_lossSeq_nonneg {T : ℕ} {i : Fin m} (hi : decide (0 < score S A T (S i).1) ≠ (S i).2) :
@@ -238,13 +251,11 @@ theorem sum_lossSeq_nonneg {T : ℕ} {i : Fin m} (hi : decide (0 < score S A T (
   rw [sum_lossSeq]
   cases hy : (S i).2
   · rw [hy, ne_eq, Bool.not_eq_false, decide_eq_true_eq] at hi
-    have : margin false true = -1 := by simp [margin]
-    rw [this]
-    linarith
+    rw [signVal_false, mul_one]
+    exact hi.le
   · rw [hy, ne_eq, Bool.not_eq_true, decide_eq_false_iff_not, not_lt] at hi
-    have : margin true true = 1 := by simp [margin]
-    rw [this]
-    linarith
+    rw [signVal_true, mul_neg_one]
+    exact neg_nonneg.mpr hi
 
 /-- A round with weighted error `0` has a hypothesis consistent with the sample, since every
 sample point has positive weight. -/
@@ -313,38 +324,43 @@ theorem empiricalMiscount_adaBoost_le_prod {T : ℕ} (hlt : ∀ t < T, (rounds S
       rw [potential_eq_card_mul_prod (fun _ _ _ => exp_pos _), Fintype.card_fin,
         prod_congr rfl hstep, mul_comm]
 
-/-- An error at most `1/2 - γ` with `γ ≥ 0` makes the AdaBoost factor at most `exp (-2 γ²)`. -/
-theorem two_mul_sqrt_le_exp {ε γ : ℝ} (hγ : 0 ≤ γ) (hε : ε ≤ 1 / 2 - γ) :
-    2 * √(ε * (1 - ε)) ≤ exp (-(2 * γ ^ 2)) := by
-  have hsq : exp (-(2 * γ ^ 2)) ^ 2 = exp (-(4 * γ ^ 2)) := by
+/-- The AdaBoost factor of an error `ε` is at most `exp (-2 (1/2 - ε)²)`, since
+`4 ε (1 - ε) = 1 - 4 (1/2 - ε)²`. -/
+theorem two_mul_sqrt_le_exp (ε : ℝ) : 2 * √(ε * (1 - ε)) ≤ exp (-(2 * (1 / 2 - ε) ^ 2)) := by
+  have hsq : exp (-(2 * (1 / 2 - ε) ^ 2)) ^ 2 = exp (-(4 * (1 / 2 - ε) ^ 2)) := by
     rw [← exp_nat_mul]
     congr 1
     push_cast
     ring
-  have h4 := add_one_le_exp (-(4 * γ ^ 2))
-  have hprod := mul_nonneg (by linarith : 0 ≤ 1 - 2 * ε - 2 * γ)
-    (by linarith : 0 ≤ 1 - 2 * ε + 2 * γ)
-  have hsqrt : √(ε * (1 - ε)) ≤ exp (-(2 * γ ^ 2)) / 2 := by
+  have h4 := add_one_le_exp (-(4 * (1 / 2 - ε) ^ 2))
+  have hsqrt : √(ε * (1 - ε)) ≤ exp (-(2 * (1 / 2 - ε) ^ 2)) / 2 := by
     rw [sqrt_le_left (by positivity), div_pow, hsq]
     nlinarith
   linarith
 
+/-- **The AdaBoost training-error bound in terms of the edges** [MohriRostamizadehTalwalkar2018,
+Theorem 7.2, (7.3)]: if every round before `T` has weighted error `εₜ < 1`, the fraction of sample
+points that the output of `T` rounds misclassifies is at most `exp (-2 ∑ₜ (1/2 - εₜ)²)`. -/
+theorem empiricalMiscount_adaBoost_le_exp_sum {T : ℕ} (hlt : ∀ t < T, (rounds S A t).error S < 1) :
+    (empiricalMiscount (adaBoost S A T) S : ℝ) / m ≤
+      exp (-(2 * ∑ t ∈ range T, (1 / 2 - (rounds S A t).error S) ^ 2)) := by
+  refine (empiricalMiscount_adaBoost_le_prod S A hlt).trans ?_
+  rw [mul_sum, ← sum_neg_distrib, exp_sum]
+  exact prod_le_prod₀ (fun _ _ => by positivity) fun t _ => two_mul_sqrt_le_exp _
+
 /-- **The AdaBoost training-error bound, exponential form** [ShalevShwartzBenDavid2014,
-Theorem 10.2]: if every round before `T` has weighted error at most `1/2 - γ` with `γ ≥ 0`, the
-fraction of sample points that the output of `T` rounds misclassifies is at most
-`exp (-2 γ² T)`. -/
+Theorem 10.2; MohriRostamizadehTalwalkar2018, Theorem 7.2, (7.4)]: if every round before `T` has
+weighted error at most `1/2 - γ` with `γ ≥ 0`, the fraction of sample points that the output of
+`T` rounds misclassifies is at most `exp (-2 γ² T)`. -/
 theorem empiricalMiscount_adaBoost_le_exp {T : ℕ} {γ : ℝ} (hγ : 0 ≤ γ)
     (hε : ∀ t < T, (rounds S A t).error S ≤ 1 / 2 - γ) :
     (empiricalMiscount (adaBoost S A T) S : ℝ) / m ≤ exp (-(2 * γ ^ 2 * T)) := by
-  refine (empiricalMiscount_adaBoost_le_prod S A fun t ht => by linarith [hε t ht]).trans ?_
-  calc ∏ t ∈ range T, 2 * √((rounds S A t).error S * (1 - (rounds S A t).error S))
-      ≤ ∏ _t ∈ range T, exp (-(2 * γ ^ 2)) :=
-        prod_le_prod₀ (fun _ _ => by positivity) fun t ht =>
-          two_mul_sqrt_le_exp hγ (hε t (mem_range.mp ht))
-    _ = exp (-(2 * γ ^ 2 * T)) := by
-      rw [prod_const, card_range, ← exp_nat_mul]
-      congr 1
-      ring
+  refine (empiricalMiscount_adaBoost_le_exp_sum S A fun t ht => by linarith [hε t ht]).trans ?_
+  have hsum : T * γ ^ 2 ≤ ∑ t ∈ range T, (1 / 2 - (rounds S A t).error S) ^ 2 := by
+    have h := sum_le_sum fun t (ht : t ∈ range T) => pow_le_pow_left₀ hγ
+      (by linarith [hε t (mem_range.mp ht)] : γ ≤ 1 / 2 - (rounds S A t).error S) 2
+    rwa [sum_const, card_range, nsmul_eq_mul] at h
+  exact exp_le_exp.mpr (by nlinarith)
 
 end Vote
 
