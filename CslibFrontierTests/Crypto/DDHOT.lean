@@ -20,7 +20,7 @@ cyclic group `ZMod 5` of order `5` with generator `1 : ZMod 5`:
 * `idealJoint_ddhOT_sender` and `semiHonestAdvantage_ddhOT_sender`: unconditional perfect privacy
   (zero distinguishing advantage) against a corrupted sender.
 * `semiHonestAdvantage_ddhOT_receiver_eq`: computational privacy against a corrupted receiver
-  reduced tightly to `Cslib.Crypto.DDH.advantage`.
+  reduced tightly to the fixed-group DDH advantage `Cslib.Crypto.ddhAdvantage`.
 * `ddhOTUnchecked_malicious_receiver_advantage`: against `ddhOTUncheckedProtocol`, any simulator
   that picks one query bit `τ` and receives only `m_τ` falls short of the malicious receiver's
   simultaneous-recovery success probability on `ZMod 5` by at least `1 - 5⁻¹`. -/
@@ -29,16 +29,14 @@ namespace CslibFrontierTests.Crypto.DDHOT
 
 open Cslib Cslib.Probability Cslib.ProbComp Cslib.Crypto Cslib.Crypto.Protocols.MPC
 
-private theorem zmod5_nsmul_eq_zero : ∀ y : ZMod 5, (5 : ℕ) • y = 0 := by decide
-
 private theorem zmod5_card : Fintype.card (ZMod 5) = 5 := ZMod.card 5
 
-private theorem zmod5_gen : ∀ y : ZMod 5, ∃ k : ZMod 5, k.val • (1 : ZMod 5) = y := by decide
+private theorem zmod5_gen : ∀ y : ZMod 5, ∃ k : ZMod 5, k • (1 : ZMod 5) = y := by decide
 
 -- Pointwise decryption check across all choices of σ, sender messages, and receiver mask in ZMod 5.
 example : ∀ (σ : Bool) (m₀ m₁ b : ZMod 5),
     let c₀ : DDHOTSenderCoins 5 := (2, 1, 3, 4, 2)
-    let u := c₀.1.val • (1 : ZMod 5)
+    let u := c₀.1 • (1 : ZMod 5)
     let v := ddhOTReceiverMsg (1 : ZMod 5) σ b u
     let reply := ddhOTSenderReply (1 : ZMod 5) (m₀, m₁) c₀ v
     ddhOTReceiverOutput σ b reply = (if σ then m₁ else m₀) := by
@@ -66,7 +64,7 @@ example (x : (i : Fin 2) → OTIn (ZMod 5) i) :
     ProbComp.eval (idealJoint (otFunctionality (ZMod 5)) {0}
         (ddhOTSenderSim (1 : ZMod 5) 5) x) =
       (ddhOTProtocol (1 : ZMod 5) 5).realJoint noOracleWorld {0} x :=
-  idealJoint_ddhOT_sender (1 : ZMod 5) 5 zmod5_nsmul_eq_zero x
+  idealJoint_ddhOT_sender (1 : ZMod 5) 5 x
 
 -- Zero semi-honest advantage against a corrupted sender over ZMod 5.
 example (x : (i : Fin 2) → OTIn (ZMod 5) i)
@@ -75,7 +73,7 @@ example (x : (i : Fin 2) → OTIn (ZMod 5) i)
       ((i : Fin 2) → OTOut (ZMod 5) i) → ProbComp Bool) :
     semiHonestAdvantage (ddhOTProtocol (1 : ZMod 5) 5) noOracleWorld
         (otFunctionality (ZMod 5)) {0} (ddhOTSenderSim (1 : ZMod 5) 5) x D = 0 :=
-  semiHonestAdvantage_ddhOT_sender (1 : ZMod 5) 5 zmod5_nsmul_eq_zero x D
+  semiHonestAdvantage_ddhOT_sender (1 : ZMod 5) 5 x D
 
 -- Tight DDH reduction for a corrupted receiver over ZMod 5.
 example (x : (i : Fin 2) → OTIn (ZMod 5) i)
@@ -84,7 +82,7 @@ example (x : (i : Fin 2) → OTIn (ZMod 5) i)
       ((i : Fin 2) → OTOut (ZMod 5) i) → ProbComp Bool) :
     semiHonestAdvantage (ddhOTProtocol (1 : ZMod 5) 5) noOracleWorld
         (otFunctionality (ZMod 5)) {1} (ddhOTReceiverSim (1 : ZMod 5) 5) x D =
-      DDH.advantage (1 : ZMod 5) 5 (ddhOTReduction (1 : ZMod 5) 5 x D) :=
+      ddhAdvantage 5 (1 : ZMod 5) (ddhOTReduction (1 : ZMod 5) 5 x D) :=
   semiHonestAdvantage_ddhOT_receiver_eq (1 : ZMod 5) 5 zmod5_card zmod5_gen x D
 
 -- Unchecked malicious-receiver separation against any simulator choosing one query bit τ.
