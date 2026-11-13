@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.InductiveCounting
+import CslibFrontier.Foundations.Data.Nat.AffineBound
 
 /-!
 # Nondeterministic space classes and their complements
@@ -35,8 +36,9 @@ inductive-counting construction for logarithmic space.
 
 ## Main results
 
-* `Cslib.Complexity.NSPACE_subset_of_le_mul_add`: constant factors and additive constants are
-  absorbed.
+* `Cslib.Complexity.NSPACE_mono_of_le_mul_add`: `NSPACE` absorbs constant factors.
+* `Cslib.Complexity.NSPACE_mono`, `Cslib.Complexity.NSPACE_mono_of_eventually_le`: monotonicity;
+  only the eventual values of the bound matter.
 * `Cslib.Complexity.compl_mem_NSPACE_of_recognizesInSpace`, `Cslib.Complexity.compl_mem_NSPACE`:
   closure under complement.
 * `Cslib.Complexity.mem_NSPACE_of_recognizesInSpace`: recognizers and deciders give the same class.
@@ -70,14 +72,24 @@ def coNSPACE (enc : α ↪ List Bool) (s : ℕ → ℕ) : Set (Set α) := {A | A
 /-- A problem belongs to `coNSPACE` exactly when its complement belongs to `NSPACE`. -/
 theorem mem_coNSPACE : A ∈ coNSPACE enc s ↔ Aᶜ ∈ NSPACE enc s := Iff.rfl
 
-/-- `NSPACE` depends on the space bound only up to a constant factor and an additive constant. -/
-theorem NSPACE_subset_of_le_mul_add {s₁ s₂ : ℕ → ℕ} (c d : ℕ) (h : ∀ n, s₁ n ≤ c * s₂ n + d) :
+/-- `NSPACE` absorbs constant factors: a bound `s₁ n ≤ C * s₂ n + C` puts `NSPACE enc s₁` inside
+`NSPACE enc s₂`. -/
+theorem NSPACE_mono_of_le_mul_add {s₁ s₂ : ℕ → ℕ} {C : ℕ} (h : ∀ n, s₁ n ≤ C * s₂ n + C) :
     NSPACE enc s₁ ⊆ NSPACE enc s₂ := by
   rintro A ⟨k, State, hfin, ntm, c₁, c₂, hA⟩
-  refine ⟨k, State, hfin, ntm, c₁ * c, c₁ * d + c₂, hA.mono fun a => ?_⟩
-  have := Nat.mul_le_mul_left c₁ (h (enc a).length)
-  rw [Nat.mul_add, ← Nat.mul_assoc] at this
-  exact Nat.add_le_add_right this _ |>.trans (by omega)
+  exact ⟨k, State, hfin, ntm, c₁ * C, c₁ * C + c₂,
+    hA.mono fun _ => Nat.mul_add_le_mul_add_of_le_mul_add (h _) c₁ c₂⟩
+
+/-- `NSPACE` is monotone in the space bound. -/
+theorem NSPACE_mono {s₁ s₂ : ℕ → ℕ} (h : ∀ n, s₁ n ≤ s₂ n) : NSPACE enc s₁ ⊆ NSPACE enc s₂ :=
+  NSPACE_mono_of_le_mul_add (C := 1) fun n => by have := h n; omega
+
+/-- `NSPACE` only depends on the space bound eventually: the finitely many other values are
+absorbed by the additive constant. -/
+theorem NSPACE_mono_of_eventually_le {s₁ s₂ : ℕ → ℕ} (h : ∀ᶠ n in Filter.atTop, s₁ n ≤ s₂ n) :
+    NSPACE enc s₁ ⊆ NSPACE enc s₂ :=
+  let ⟨_, hC⟩ := Nat.exists_le_mul_add_of_eventually_le h
+  NSPACE_mono_of_le_mul_add hC
 
 /-- **The complement of a problem recognized within space `O(s)` is decided within space `O(s)`**,
 every branch halting, when `log₂ n ≤ s n`. The recognizer's branches may run forever. -/

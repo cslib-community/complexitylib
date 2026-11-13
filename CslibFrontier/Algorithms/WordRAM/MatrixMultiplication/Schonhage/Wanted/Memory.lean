@@ -120,4 +120,11 @@ theorem Parameters.reframe {L m N Q : ℕ} {x y : Data 96} (hx : Parameters L m 
     | exact (h _ (by decide)).trans hx.inputEnd
     | exact (h _ (by decide)).trans hx.memoryEnd
 
+/-- Persistent scalar contracts survive any bounded execution that syntactically preserves
+`parameterRegisters`. -/
+theorem Parameters.of_exec {w T L m N Q : ℕ} {c : Code .standard 96} {x y : Data 96}
+    (hx : Parameters L m N Q x) (he : ExecWithin w c x y T)
+    (hc : ∀ i ∈ parameterRegisters, c.Preserves i) : Parameters L m N Q y :=
+  hx.reframe fun i hi => he.regs_eq (hc i hi)
+
 end Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage.Wanted

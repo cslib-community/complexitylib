@@ -87,7 +87,8 @@ open Cslib.Logic.PL Turing.MultiTapeTM ComputableInPolyTime
 
 /-- The graphs whose declared vertices can be colored with `k` colors, adjacent vertices getting
 different colors [Karp1972]. -/
-def KColoring (k : ℕ) : Set Graph := {G | (G.toSimpleGraph.induce {v | v ∈ G.1}).Colorable k}
+def KColoring (k : ℕ) : Set Graph :=
+  {G | (G.toSimpleGraph.induce {v | v ∈ G.vertices}).Colorable k}
 
 /-- The graphs whose declared vertices can be colored with three colors, adjacent vertices getting
 different colors [Sipser, Chapter 7][Sipser2013]. -/
@@ -95,13 +96,13 @@ abbrev ThreeColoring : Set Graph := KColoring 3
 
 /-- Membership in `KColoring k` as a coloring by natural numbers below `k`. -/
 theorem mem_KColoring_iff {k : ℕ} {G : Graph} :
-    G ∈ KColoring k ↔ ∃ c : ℕ → ℕ, (∀ v ∈ G.1, c v < k) ∧
-      ∀ u ∈ G.1, ∀ v ∈ G.1, G.toSimpleGraph.Adj u v → c u ≠ c v := by
+    G ∈ KColoring k ↔ ∃ c : ℕ → ℕ, (∀ v ∈ G.vertices, c v < k) ∧
+      ∀ u ∈ G.vertices, ∀ v ∈ G.vertices, G.toSimpleGraph.Adj u v → c u ≠ c v := by
   classical
   rw [KColoring, Set.mem_ofPred_eq, SimpleGraph.colorable_iff_exists_bdd_nat_coloring]
   constructor
   · rintro ⟨C, hC⟩
-    refine ⟨fun v => if h : v ∈ G.1 then C ⟨v, h⟩ else 0, fun v hv => ?_,
+    refine ⟨fun v => if h : v ∈ G.vertices then C ⟨v, h⟩ else 0, fun v hv => ?_,
       fun u hu v hv huv => ?_⟩
     · simpa only [hv, dite_true] using hC ⟨v, hv⟩
     · simpa only [hu, hv, dite_true] using C.valid (v := ⟨u, hu⟩) (w := ⟨v, hv⟩) huv
@@ -121,8 +122,9 @@ def colorOf (k : ℕ) (V : List ℕ) (w : List Bool) (v : ℕ) : ℕ :=
 /-- The verifier for `KColoring k`: every declared vertex gets a color below `k` from the
 certificate, and no two adjacent declared vertices get the same color. -/
 def verifier (k : ℕ) (x : Graph × List Bool) : Bool :=
-  x.1.1.all fun u => decide (colorOf k x.1.1 x.2 u < k) &&
-    x.1.1.all fun v => !(x.1.adjBool u v && decide (colorOf k x.1.1 x.2 u = colorOf k x.1.1 x.2 v))
+  x.1.vertices.all fun u => decide (colorOf k x.1.vertices x.2 u < k) &&
+    x.1.vertices.all fun v =>
+      !(x.1.adjBool u v && decide (colorOf k x.1.vertices x.2 u = colorOf k x.1.vertices x.2 v))
 
 /-- `KColoring.verifier k` verifies `KColoring k` with certificates of `k` bits per symbol of the
 encoded graph. -/
@@ -134,12 +136,12 @@ theorem isVerifier (k : ℕ) :
     Bool.and_eq_false_iff, Graph.adjBool_eq_false_iff, decide_eq_false_iff_not]
   constructor
   · rintro ⟨c, hc, hadj⟩
-    have hcol : ∀ v ∈ G.1,
-        colorOf k G.1 (unaryBlocks k (k * (encGraph G).length) fun i => c (G.1.getD i 0)) v =
-          c v := by
+    have hcol : ∀ v ∈ G.vertices,
+        colorOf k G.vertices (unaryBlocks k (k * (encGraph G).length)
+          fun i => c (G.vertices.getD i 0)) v = c v := by
       intro v hv
-      have hlt : G.1.idxOf v < G.1.length := List.idxOf_lt_length_iff.2 hv
-      have hget : G.1.getD (G.1.idxOf v) 0 = v := by
+      have hlt : G.vertices.idxOf v < G.vertices.length := List.idxOf_lt_length_iff.2 hv
+      have hget : G.vertices.getD (G.vertices.idxOf v) 0 = v := by
         rw [List.getD_eq_getElem _ _ hlt, List.getElem_idxOf hlt]
       have hlen := G.length_vertices_le_encGraph
       rw [colorOf, countP_unaryBlocks (by rw [hget]; exact (hc v hv).le)
@@ -151,7 +153,7 @@ theorem isVerifier (k : ℕ) :
     · exact Or.inr (hadj u hu v hv huv)
     · exact Or.inl huv
   · rintro ⟨w, -, hw⟩
-    refine ⟨colorOf k G.1 w, fun v hv => (hw v hv).1, fun u hu v hv huv => ?_⟩
+    refine ⟨colorOf k G.vertices w, fun v hv => (hw v hv).1, fun u hu v hv huv => ?_⟩
     rcases (hw u hu).2 v hv with h | h
     · exact (h huv).elim
     · exact h
@@ -171,16 +173,15 @@ theorem computableInPolyTime_colorOf (k : ℕ) :
 @[fun_prop]
 theorem computableInPolyTime_verifier (k : ℕ) :
     ComputableInPolyTime (verifier k) (encPair encGraph encBits) encBool := by
-  have hV : ComputableInPolyTime (fun x : Graph × List Bool => x.1.1)
+  have hV : ComputableInPolyTime (fun x : Graph × List Bool => x.1.vertices)
       (encPair encGraph encBits) (encList encNat) := by
-    unfold encGraph
     fun_prop
   have hcol : ComputableInPolyTime
-      (fun p : (Graph × List Bool) × ℕ => colorOf k p.1.1.1 p.1.2 p.2)
+      (fun p : (Graph × List Bool) × ℕ => colorOf k p.1.1.vertices p.1.2 p.2)
       (encPair (encPair encGraph encBits) encNat) encUnary :=
     (computableInPolyTime_colorOf k).comp
-      (g := fun p : (Graph × List Bool) × ℕ => ((p.1.1.1, p.1.2), p.2))
-      (by unfold encGraph; fun_prop)
+      (g := fun p : (Graph × List Bool) × ℕ => ((p.1.1.vertices, p.1.2), p.2))
+      (by fun_prop)
   have hproj : ComputableInPolyTime
       (fun p : ((Graph × List Bool) × ℕ) × ℕ => ((p.1.1.1, p.1.2), p.2))
       (encPair (encPair (encPair encGraph encBits) encNat) encNat)
@@ -247,7 +248,7 @@ def coloringEdges (φ : CNF ℕ) : List (ℕ × ℕ) :=
 /-- The reduction from `SAT` to `ThreeColoring`: the gadget graph of `φ`, whose declared vertices
 are the endpoints of its edges. -/
 def toThreeColoring (φ : CNF ℕ) : Graph :=
-  ((coloringEdges φ).flatMap fun e => [e.1, e.2], coloringEdges φ)
+  ⟨(coloringEdges φ).flatMap fun e => [e.1, e.2], coloringEdges φ⟩
 
 /-! ### Correctness of the reduction -/
 
@@ -394,10 +395,8 @@ private theorem gadgetColoring_palette (φ : CNF ℕ) (σ : ℕ → Bool) (c : �
 private theorem gadgetColoring_literal {φ : CNF ℕ} (σ : ℕ → Bool) {l : Literal ℕ}
     (hl : l.1 ∈ φ.vars) : gadgetColoring φ σ (literalVertex φ l) = literalColor σ l := by
   obtain ⟨x, b⟩ := l
-  have hlt : φ.vars.idxOf x < φ.vars.length := List.idxOf_lt_length_iff.2 hl
   simp only [gadgetColoring, literalVertex, Nat.unpair_pair]
-  rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hlt, Option.getD_some,
-    List.getElem_idxOf hlt]
+  rw [List.getD_eq_getElem?_getD, List.getElem?_idxOf hl, Option.getD_some]
   cases b <;> rfl
 
 private theorem gadgetColoring_output (φ : CNF ℕ) (σ : ℕ → Bool) (i j : ℕ) :
@@ -582,7 +581,7 @@ unary from clause, position and first-occurrence indices, then converted to bina
 @[fun_prop]
 theorem computableInPolyTime_toThreeColoring :
     ComputableInPolyTime toThreeColoring encCNF encGraph := by
-  unfold toThreeColoring encGraph
+  unfold toThreeColoring
   fun_prop
 
 /-! ### Size -/
@@ -591,7 +590,8 @@ theorem computableInPolyTime_toThreeColoring :
 literals, the graph of `SAT.toThreeColoring` has at most `(24 k + 12) m + 9` vertices and edges in
 total, counted as listed. -/
 theorem length_toThreeColoring_le {k : ℕ} {φ : CNF ℕ} (hφ : ∀ c ∈ φ, c.length ≤ k) :
-    (toThreeColoring φ).1.length + (toThreeColoring φ).2.length ≤ (24 * k + 12) * φ.length + 9 := by
+    (toThreeColoring φ).vertices.length + (toThreeColoring φ).edges.length ≤
+      (24 * k + 12) * φ.length + 9 := by
   have hzip : ∀ c ∈ φ.zipIdx, c.1.length ≤ k := fun c hc => by
     obtain ⟨hi, hcl⟩ := List.getElem?_eq_some_iff.1 (List.mem_zipIdx_iff_getElem?.1 hc)
     exact hcl ▸ hφ _ (List.getElem_mem hi)
@@ -610,7 +610,7 @@ theorem length_toThreeColoring_le {k : ℕ} {φ : CNF ℕ} (hφ : ∀ c ∈ φ, 
   have hE : (coloringEdges φ).length ≤ (8 * k + 4) * φ.length + 3 := by
     simp only [coloringEdges, List.length_append, List.length_cons, List.length_nil]
     nlinarith
-  have hV : (toThreeColoring φ).1.length = 2 * (coloringEdges φ).length := by
+  have hV : (toThreeColoring φ).vertices.length = 2 * (coloringEdges φ).length := by
     simp only [toThreeColoring, List.length_flatMap, List.length_cons, List.length_nil,
       List.map_const', List.sum_replicate, smul_eq_mul]
     ring
@@ -633,7 +633,7 @@ def kColoringEdges (m : ℕ) (φ : CNF ℕ) : List (ℕ × ℕ) :=
 /-- The reduction from `SAT` to `KColoring (m + 3)`: the gadget graph of `φ` with `m` universal
 vertices, which take `m` colors of their own. -/
 def toKColoring (m : ℕ) (φ : CNF ℕ) : Graph :=
-  ((kColoringEdges m φ).flatMap fun e => [e.1, e.2], kColoringEdges m φ)
+  ⟨(kColoringEdges m φ).flatMap fun e => [e.1, e.2], kColoringEdges m φ⟩
 
 /-- Gadget vertices are labelled with tags `0`, `1` and `2`. -/
 private theorem unpair_fst_lt_of_mem_coloringEdges {φ : CNF ℕ} {e : ℕ × ℕ}
@@ -806,8 +806,8 @@ theorem computableInPolyTime_toKColoring (m : ℕ) :
     listAppend' computableInPolyTime_coloringEdges
       (flatMapWithInput hrange
         (listAppend' (mapWithInput hends (by fun_prop)) (mapWithInput hr2 (by fun_prop))))
-  unfold toKColoring encGraph
-  exact (flatMapWithInput hke (by fun_prop)).prod hke
+  unfold toKColoring
+  exact encGraph_mk_polyTime (flatMapWithInput hke (by fun_prop)) hke
 
 end SAT
 
@@ -821,13 +821,10 @@ theorem polyTimeReducible_SAT_ThreeColoring :
 three literals is mapped to the gadget graph of the empty clause, which is not 3-colorable. -/
 theorem polyTimeReducible_ThreeSAT_ThreeColoring :
     PolyTimeReducible encCNF encGraph ThreeSAT ThreeColoring := by
-  have hcheck : ComputableInPolyTime (fun φ : CNF ℕ => φ.all fun c => decide (c.length ≤ 3))
-      encCNF encBool :=
-    allWithInput (by unfold encCNF; exact id')
-      (unary_le' ((length_list (encPair encNat encBool)).comp (snd _ _)) (const 3))
   refine ⟨fun φ => if φ.all (fun c => decide (c.length ≤ 3)) then SAT.toThreeColoring φ
     else SAT.toThreeColoring [[]],
-    hcheck.ite SAT.computableInPolyTime_toThreeColoring (const _), fun φ => ?_⟩
+    (computableInPolyTime_all_length_le 3).ite SAT.computableInPolyTime_toThreeColoring
+      (const _), fun φ => ?_⟩
   simp only [ThreeSAT, Set.mem_ofPred_eq]
   split_ifs with h
   · rw [SAT.toThreeColoring_mem_iff, mem_SAT]

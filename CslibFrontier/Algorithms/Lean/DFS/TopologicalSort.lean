@@ -93,7 +93,7 @@ from the vertices `vs` in turn. -/
 def topologicalSort [DecidableEq V] (adj : V → List V) (vs : List V) : List V :=
   (dfs adj vs.length vs).finished
 
-private theorem card_le_length [Fintype V] {vs : List V} (hvs : ∀ v, v ∈ vs) :
+theorem card_le_length [Fintype V] {vs : List V} (hvs : ∀ v, v ∈ vs) :
     Fintype.card V ≤ vs.length := by
   classical
   calc Fintype.card V = (Finset.univ : Finset V).card := rfl

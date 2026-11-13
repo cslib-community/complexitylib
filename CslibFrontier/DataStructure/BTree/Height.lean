@@ -27,6 +27,8 @@ the shape of a tree; they carry no cost content.
 * `IsWF.height_le_log`: the height is at most `Nat.log t ((size + 1) / 2) + 1`, the bound of
   [CLRS2009], Theorem 18.1, with heights counted in nodes rather than edges.
 * `Balanced.height_le_log`: the same bound from the shape alone, without key order.
+* `le_mul_height_of_scan`: a count on trees that spends at most one more than a node's key count
+  at each node along a descent is at most `2 * t * height`.
 
 ## References
 
@@ -35,6 +37,7 @@ the shape of a tree; they carry no cost content.
 
 Ported from `cslib-community/EpsilonEridani` at commit `1966ab476`:
 [EpsilonEridani/Algorithms/Lean/BTree/Height.lean](https://github.com/cslib-community/EpsilonEridani/blob/1966ab476f5db00425c83e19857fd38ba01143c4/EpsilonEridani/Algorithms/Lean/BTree/Height.lean).
+`le_mul_height_of_scan` ported from `cslib-community/EpsilonEridani` PR `#39` at commit `9425389c8`.
 -/
 
 public section
@@ -51,7 +54,8 @@ variable {first : BTree α β} {rest : List (Triple α β)}
 
 /-- A node whose children each hold at least `n - 1` entries holds at least
 `(rest.length + 1) * n - 1`. -/
-theorem le_size_node {n : ℕ} (h₁ : n - 1 ≤ first.size) (h₂ : ∀ e ∈ rest, n - 1 ≤ e.child.size) :
+theorem le_size_node {n : ℕ} (h₁ : n - 1 ≤ first.size)
+    (h₂ : ∀ e ∈ rest, n - 1 ≤ e.child.size) :
     (rest.length + 1) * n - 1 ≤ (node first rest).size := by
   have hs :=
     (rest.map fun e => e.child.size).length_nsmul_le_sum (n - 1) (List.forall_mem_map.2 h₂)
@@ -160,6 +164,33 @@ theorem Balanced.height_le_log (ht : 2 ≤ t) (hb : Balanced tr) (hk : tr ≠ .l
     (Nat.le_div_iff_mul_le (by decide)).2 (by omega)
   have := Nat.le_log_of_pow_le (by omega) hle
   omega
+
+/-! ### Counts along a descent -/
+
+/-- A count on trees that spends at most `rest.length + 1` at a node `.node first rest` beyond
+what it spends in one of the node's children, and nothing on the empty tree, is at most
+`2 * t * height`, for positive `t`, on a tree whose root holds at most `2 * t - 1` keys and whose
+children are occupied. -/
+theorem le_mul_height_of_scan (ht : 0 < t) {f : BTree α β → ℕ} (hleaf : f .leaf = 0)
+    (hnode : ∀ (first : BTree α β) (rest : List (Triple α β)) (B : ℕ),
+      (∀ c ∈ (node first rest).children, f c ≤ B) → f (node first rest) ≤ rest.length + 1 + B)
+    {tr : BTree α β} (hk : tr.rootKeys ≤ 2 * t - 1) (hc : ∀ c ∈ tr.children, Occupied t c) :
+    f tr ≤ 2 * t * tr.height := by
+  induction h : tr.height using Nat.strong_induction_on generalizing tr with
+  | _ n ih =>
+    rcases tr with _ | ⟨first, rest⟩
+    · simp [hleaf]
+    · have hpos := height_succ_le_of_mem_children (tr := node first rest) List.mem_cons_self
+      have hB : ∀ c ∈ (node first rest).children, f c ≤ 2 * t * (n - 1) := fun c hc' => by
+        have hlt := height_succ_le_of_mem_children hc'
+        have ho := hc c hc'
+        exact (ih c.height (by omega) ho.rootKeys_le (fun d hd => ho.of_mem_children hd)
+          rfl).trans (Nat.mul_le_mul_left _ (by omega))
+      have hn : 2 * t * (n - 1) + 2 * t = 2 * t * n := by
+        rw [← Nat.mul_succ]; congr 1; omega
+      have := hnode first rest _ hB
+      rw [rootKeys_node] at hk
+      omega
 
 variable [LinearOrder α]
 

@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.FineGrained
+import CslibFrontier.Computability.Complexity.FineGrained.Bounds
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OCountedIteration
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bounds
@@ -349,9 +350,7 @@ theorem DecidableInSubexpTime.of_exhaustiveSearch {f : α × ℕ → β} {ν : �
   have hδ : 0 < δ := by positivity
   refine ((h δ hδ).of_exhaustiveSearch hf hν hfA hμ hK hδ.le).mono ?_
   have hcδ : (c : ℝ) * δ ≤ ε / 2 := by
-    simp only [δ]
-    rw [mul_div_assoc', div_le_iff₀ (by positivity)]
-    nlinarith
+    simpa only [δ, div_div] using natCast_mul_div_add_one_le (half_pos hε).le c
   linarith
 
 end Cslib.Complexity

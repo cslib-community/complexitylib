@@ -21,7 +21,7 @@ namespace CslibFrontierTests.ColorCoding
 open Cslib.Complexity Turing.MultiTapeTM
 
 /-- The path `0 - 1 - 2 - 3`. -/
-def P4 : Graph := ([0, 1, 2, 3], [(0, 1), (1, 2), (2, 3)])
+def P4 : Graph := ⟨[0, 1, 2, 3], [(0, 1), (1, 2), (2, 3)]⟩
 
 /-! ### k-Path -/
 
@@ -31,7 +31,7 @@ example : P4.IsVertexPath [0, 1, 2, 3] :=
       ← Graph.adjBool_eq_true_iff]
     decide⟩
 
-example : (P4, 4) ∈ LongPath :=
+example : (⟨P4, 4⟩ : LongPathInstance) ∈ LongPath :=
   ⟨[0, 1, 2, 3], ⟨by decide, by decide, by
     simp only [List.isChain_cons_cons, List.isChain_singleton, and_true,
       ← Graph.adjBool_eq_true_iff]
@@ -42,9 +42,9 @@ example : ¬P4.IsVertexPath [0, 2] := fun ⟨_, _, h⟩ => by
   rw [List.isChain_pair, ← Graph.adjBool_eq_true_iff] at h
   exact absurd h (by decide)
 
-example : (P4, 0) ∈ LongPath := mem_LongPath_zero P4
+example : (⟨P4, 0⟩ : LongPathInstance) ∈ LongPath := mem_LongPath_zero P4
 
-example : (P4, 5) ∉ LongPath := not_mem_LongPath_of_lt (by decide)
+example : (⟨P4, 5⟩ : LongPathInstance) ∉ LongPath := not_mem_LongPath_of_lt (by decide)
 
 /-! ### Colorful paths, decided by the dynamic programming -/
 
@@ -109,13 +109,13 @@ example : ColorfulPath ∈
 
 /-! ### Clique and Independent Set -/
 
-example : FPTReducible (encPair encGraph encNat) (encPair encGraph encNat) Prod.snd Prod.snd
+example : FPTReducible encCliqueInstance encIndependentSetInstance (·.m) (·.m)
     Clique IndependentSet :=
   fptReducible_Clique_IndependentSet
 
 -- `Clique` and `IndependentSet` stand or fall together in `FPT`.
-example (h : IndependentSet ∈ FPT (encPair encGraph encNat) Prod.snd) :
-    Clique ∈ FPT (encPair encGraph encNat) Prod.snd :=
+example (h : IndependentSet ∈ FPT encIndependentSetInstance (·.m)) :
+    Clique ∈ FPT encCliqueInstance (·.m) :=
   Clique_mem_FPT_iff.2 h
 
 -- Compositional `fun_prop` clients using the `enc_structure`-generated rules and

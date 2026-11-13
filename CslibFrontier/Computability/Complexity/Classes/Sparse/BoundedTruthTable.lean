@@ -189,18 +189,18 @@ theorem SAT_mem_P_of_polyTimeCTTReducible {β γ : Type} {encB : β ↪ List Boo
     {encC : γ ↪ List Bool} {B : Set β} {S : Set γ} (hS : S ∈ SPARSE encC)
     (hB : PolyTimeCTTReducible encB encC B S) (h : PolyTimeBTTReducible encCNF encB SAT B) :
     SAT ∈ P encCNF := by
-  obtain ⟨k, r, q, d, hr, hq, hd, hk, hL⟩ := h
+  obtain ⟨k, r, q, d, ⟨hr, hq, hd, hk⟩, hL⟩ := h
   obtain ⟨AS, hAS⟩ := exists_polyTimeCTTReducible_encUnary_of_mem_SPARSE hS
   have hred := fun j => exists_polyTimeCTTReducible_hausdorff (j := j) ⟨AS, hB.trans hAS⟩
     hr hq hd hk
-  choose A rj qj hrj hqj hA using hred
+  choose A rj qj hrqj hA using hred
   set C : ℕ → CNF ℕ → Prop :=
     fun j ψ => Hausdorff (fun v => d (ψ, v)) (truthTableAnswers (q ⁻¹' B) r ψ) j
   set D := k / 2 + 1
   set key : ℕ → CNF ℕ → List ℕ := fun j ψ => (List.range (rj j ψ)).map fun i => qj j (ψ, i)
   have hkey (j : ℕ) : ComputableInPolyTime (key j) encCNF (encList encUnary) := by
-    have := hrj j
-    have := hqj j
+    have := (hrqj j).1
+    have := (hrqj j).2
     fun_prop
   have hnode (j : ℕ) : ComputableInPolyTime
       (fun p : CNF ℕ × List (Literal ℕ) => key j (atLeast p.2 ++ p.1))

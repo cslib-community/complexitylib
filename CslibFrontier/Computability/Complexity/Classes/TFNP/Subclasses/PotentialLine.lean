@@ -284,6 +284,12 @@ theorem endOfPotentialLineRel_of_sinkOfPotentialLineRel (h : sinkOfPotentialLine
     endOfPotentialLineRel n P S V a u :=
   endOfPotentialLineRel_iff.mpr (.inl h)
 
+/-- The sinks of a potential line are its ends without a potential-increasing outgoing edge. -/
+theorem sinkOfPotentialLineRel_iff : sinkOfPotentialLineRel n P S V a u ↔
+    endOfPotentialLineRel n P S V a u ∧ hasPotentialOut n P S V a u = false := by
+  rw [sinkOfPotentialLineRel_eq, endOfPotentialLineRel_eq, ← hasOut_potential]
+  exact sinkOfLineRel_iff
+
 /-- `endOfPotentialLineRel` is total whenever the successor map preserves the vertex bit-length. -/
 theorem isTotalSearch_endOfPotentialLineRel (hS : ∀ a u, u.length = n a → (S (a, u)).length = n a) :
     IsTotalSearch (endOfPotentialLineRel n P S V) := by
@@ -713,26 +719,20 @@ theorem sinkOfPotentialLineRel_mem_SOPL
 /-- `EOPL` is closed under polynomial-time search reductions across arbitrary instance types. -/
 theorem SearchReducible.mem_EOPL (h : SearchReducible enc encB R T) (hR : R ∈ FNP enc)
     (hT : T ∈ EOPL encB) : R ∈ EOPL enc := by
-  obtain ⟨-, n, P, S, V, hn, hP, hS, hV, hP_len, hS_len, hT_red⟩ := Complexity.mem_EOPL.mp hT
-  obtain ⟨f, g, hf, hg, -, hsol⟩ := (h.trans hT_red)
-  have hpair := (hf.comp (.fst enc encBits)).prod (.snd enc encBits)
-  refine Complexity.mem_EOPL.mpr ⟨hR, n ∘ f, fun p => P (f p.1, p.2), fun p => S (f p.1, p.2),
-    fun p => V (f p.1, p.2), hn.comp hf, hP.comp hpair, hS.comp hpair, hV.comp hpair,
-    fun a u hu => hP_len (f a) u hu, fun a u hu => hS_len (f a) u hu,
-    .of_isTotalSearch (isTotalSearch_endOfPotentialLineRel fun a u hu => hS_len (f a) u hu)
-      ComputableInPolyTime.id' hg fun a w hw => hsol a w hw⟩
+  obtain ⟨-, n, P, S, V, hn, hP, hS, hV, hP_len, hS_len, hT⟩ := Complexity.mem_EOPL.mp hT
+  obtain ⟨f, hf, h⟩ := (h.trans hT).exists_reindex
+  exact Complexity.mem_EOPL.mpr ⟨hR, n ∘ f, fun p => P (f p.1, p.2), fun p => S (f p.1, p.2),
+    fun p => V (f p.1, p.2), hn.comp hf, by fun_prop, by fun_prop, by fun_prop,
+    fun a => hP_len (f a), fun a => hS_len (f a), h⟩
 
 /-- `SOPL` is closed under polynomial-time search reductions across arbitrary instance types. -/
 theorem SearchReducible.mem_SOPL (h : SearchReducible enc encB R T) (hR : R ∈ FNP enc)
     (hT : T ∈ SOPL encB) : R ∈ SOPL enc := by
-  obtain ⟨-, n, P, S, V, hn, hP, hS, hV, hP_len, hS_len, hT_red⟩ := Complexity.mem_SOPL.mp hT
-  obtain ⟨f, g, hf, hg, -, hsol⟩ := (h.trans hT_red)
-  have hpair := (hf.comp (.fst enc encBits)).prod (.snd enc encBits)
-  refine Complexity.mem_SOPL.mpr ⟨hR, n ∘ f, fun p => P (f p.1, p.2), fun p => S (f p.1, p.2),
-    fun p => V (f p.1, p.2), hn.comp hf, hP.comp hpair, hS.comp hpair, hV.comp hpair,
-    fun a u hu => hP_len (f a) u hu, fun a u hu => hS_len (f a) u hu,
-    .of_isTotalSearch (isTotalSearch_sinkOfPotentialLineRel fun a u hu => hS_len (f a) u hu)
-      ComputableInPolyTime.id' hg fun a w hw => hsol a w hw⟩
+  obtain ⟨-, n, P, S, V, hn, hP, hS, hV, hP_len, hS_len, hT⟩ := Complexity.mem_SOPL.mp hT
+  obtain ⟨f, hf, h⟩ := (h.trans hT).exists_reindex
+  exact Complexity.mem_SOPL.mpr ⟨hR, n ∘ f, fun p => P (f p.1, p.2), fun p => S (f p.1, p.2),
+    fun p => V (f p.1, p.2), hn.comp hf, by fun_prop, by fun_prop, by fun_prop,
+    fun a => hP_len (f a), fun a => hS_len (f a), h⟩
 
 /-! ### Equivalence with the circuit-style solution types -/
 

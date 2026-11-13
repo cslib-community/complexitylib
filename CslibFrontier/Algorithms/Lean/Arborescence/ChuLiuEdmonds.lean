@@ -169,7 +169,7 @@ theorem isInArborescenceParent_iff {G : Digraph V} {r : V} {p : V → V} (hr : p
     fun h => ⟨hr, fun v hv => h.2 ⟨hv, rfl⟩, h.1⟩⟩
 
 /-- The arc cost `∑_{v → w ∈ T} c v w` of a digraph. -/
-def arcCost [Fintype V] [AddCommMonoid β] (T : Digraph V) [DecidableRel T.Adj]
+@[expose] def arcCost [Fintype V] [AddCommMonoid β] (T : Digraph V) [DecidableRel T.Adj]
     (c : V → V → β) : β :=
   ∑ e ∈ Finset.univ.filter (fun e : V × V => T.Adj e.1 e.2), c e.1 e.2
 
@@ -667,10 +667,11 @@ variable [FinEnum V]
 
 /-- The vertices other than `r` with an arc to a vertex other than themselves and `r`. Contraction
 strictly shrinks this set (`liveVertices_ssubset`). -/
-private def liveVertices (a : V → V → Bool) (r : V) : Finset V :=
+@[expose] def liveVertices (a : V → V → Bool) (r : V) : Finset V :=
   Finset.univ.filter fun v => v ≠ r ∧ ∃ w, w ≠ v ∧ w ≠ r ∧ a v w = true
 
-private theorem liveVertices_ssubset {a : V → V → Bool} {f : V → V} {C : Finset V} {x0 r : V}
+/-- Contraction strictly shrinks the set of live vertices. -/
+theorem liveVertices_ssubset {a : V → V → Bool} {f : V → V} {C : Finset V} {x0 r : V}
     (hfC : ∀ y ∈ C, f y ∈ C) (hfa : ∀ y ∈ C, a y (f y) = true ∧ f y ≠ y)
     (hx0 : x0 ∈ C) (hrC : r ∉ C) :
     liveVertices (contractAdj a C x0 r) r ⊂ liveVertices a r := by
@@ -693,7 +694,8 @@ private theorem liveVertices_ssubset {a : V → V → Bool} {f : V → V} {C : F
     obtain ⟨-, w, -, hwr, hadj⟩ := (Finset.mem_filter.mp h).2
     exact hwr ((contractAdj_mem_iff hz (hfa x0 hx0).2).mp hadj)
 
-private theorem liveVertices_card_lt (a : V → V → Bool) (r : V) :
+/-- A graph has strictly fewer live vertices than `FinEnum.card V` (since `r` is not live). -/
+theorem liveVertices_card_lt (a : V → V → Bool) (r : V) :
     (liveVertices a r).card < FinEnum.card V := by
   rw [FinEnum.card_eq_fintypeCard, ← Finset.card_univ]
   refine Finset.card_lt_card ⟨Finset.subset_univ _, fun h => ?_⟩

@@ -191,8 +191,8 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `comparison-tree` | [Monotone/separable comparison queries](circuits-logic-and-other-models/index.md) | information-access |
 | `randomized-query` | [Finite-support randomized decision trees](circuits-logic-and-other-models/index.md) | information-access |
 | `distributional-query` | [Distributional decision-tree complexity](circuits-logic-and-other-models/index.md) | information-access |
-| `cell-probe` | [Adaptive cell-probe trees and deterministic schemes](circuits-logic-and-other-models/query-and-communication.md) | information-access |
-| `randomized-cell-probe` | [Internal-coin cell-probe schemes and zero-error Yao averaging](circuits-logic-and-other-models/query-and-communication.md) | information-access |
+| `cell-probe` | [Adaptive cell-probe trees, deterministic schemes, and Word-RAM simulation](circuits-logic-and-other-models/query-and-communication.md) | information-access |
+| `randomized-cell-probe` | [Internal-coin cell-probe schemes, zero-error Yao averaging, and Las Vegas simulation](circuits-logic-and-other-models/query-and-communication.md) | information-access |
 | `quantum-query` | [Phase-oracle quantum query algorithms](circuits-logic-and-other-models/index.md) | quantum |
 | `deterministic-communication` | [Two-party bit communication trees](circuits-logic-and-other-models/index.md) | communication |
 | `local-oriented-cycle` | [Deterministic LOCAL algorithms on oriented cycles](circuits-logic-and-other-models/query-and-communication.md) | distributed |
@@ -307,7 +307,7 @@ The [module census script](data/census.py) can enumerate every tracked Lean sour
 | `state-transition` | [Relational adaptive data-structure clients](algorithms-and-memory/memory-specifications.md) | state-transition |
 | `randomized-state-transition` | [Randomized state transitions and refinement](algorithms-and-memory/memory-specifications.md) | state-transition |
 | `oblivious-sequence` | [Oblivious operation/transcript contracts](algorithms-and-memory/memory-specifications.md) | state-transition |
-| `cell-probe-data-structure` | [Cell-probe state-transition and oblivious-sequence implementations](algorithms-and-memory/memory-specifications.md) | state-transition |
+| `cell-probe-data-structure` | [Cell-probe data-structure implementations and Word-RAM lower-bound transfer](algorithms-and-memory/memory-specifications.md) | state-transition |
 | `memory-oracle` | [Allocated word-memory oracle](algorithms-and-memory/memory-specifications.md) | memory |
 | `resizable-memory-oracle` | [Word-granular resizable memory specification](algorithms-and-memory/memory-specifications.md) | memory |
 | `native-callable` | [Dynamic programs, controllers and graded realization](algorithms-and-memory/memory-specifications.md) | memory |

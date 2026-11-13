@@ -8,11 +8,11 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Circuit.Boolean.PPoly
+public import CslibFrontier.Computability.Circuit.Boolean.PPoly.Closure
 public import CslibFrontier.Computability.Complexity.Classes.NP.SelfReduction
 public import CslibFrontier.Computability.Complexity.Classes.NP.Witness
 public import CslibFrontier.Computability.Complexity.Classes.PH.Collapse
 import CslibFrontier.Computability.Circuit.Boolean.Advice
-import CslibFrontier.Computability.Complexity.Classes.PH.Projection
 import CslibFrontier.Computability.Complexity.CookLevin.Completeness
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -45,22 +45,20 @@ certificate format of `Cslib.Circuits.Boolean.readCertificate`, padded to a comm
 circuit for an input `x` is read from the block at position `x.length` and evaluated on `x`
 (`Cslib.Circuits.Boolean.evalAdvice`), in polynomial time.
 
-The same advice-string mechanism eliminates alternating quantifiers nonuniformly: if `M ∈ P/poly`,
-replacing `M` by an advice string listing its circuits up to length `2 |x| + 1 + p |x|` turns the
-existential quantifier over `w` of length `p |x|` in `frame x ++ w ∈ M` into a language in `NP`,
-and hardwiring the advice string (`Cslib.Circuits.Boolean.PPoly.of_advice`) shows that the
-existential projection remains in `P/poly` when `NP ⊆ P/poly`
-(`Cslib.Complexity.mem_PPoly_of_exists_frame_append`). Together with closure of `P/poly` under
-complement (`Cslib.Circuits.Boolean.PPolyOn.compl`) and `P ⊆ P/poly`
-(`Cslib.Circuits.Boolean.P_subset_PPolyOn`), induction on `k` gives `Σₖ ⊆ P/poly`,
+The same advice-string mechanism eliminates alternating quantifiers nonuniformly under
+`NP ⊆ P/poly`. `CslibFrontier.Computability.Circuit.Boolean.PPoly.Closure` proves this
+(`Cslib.Complexity.PPolyOn.exists_of_computableInPolyTime_length`) together with closure of `P/poly`
+preimages under polynomial-time many-one reductions
+(`Cslib.Complexity.PolyTimeReducible.mem_PPolyOn`). This module re-exports that file.
+Together with closure of `P/poly` under complement (`Cslib.Circuits.Boolean.PPolyOn.compl`) and
+`P ⊆ P/poly` (`Cslib.Circuits.Boolean.P_subset_PPolyOn`), induction on `k` gives `Σₖ ⊆ P/poly`,
 `Πₖ ⊆ P/poly`, and `PH ⊆ P/poly`
 (`Cslib.Complexity.SigmaP_subset_PPolyOn_of_NP_subset_PPoly`,
 `Cslib.Complexity.PiP_subset_PPolyOn_of_NP_subset_PPoly`,
 `Cslib.Complexity.PH_subset_PPolyOn_of_NP_subset_PPoly`)
 [Karp and Lipton, Section 3][KarpLipton1980], [Arora and Barak, Section 6.4][AroraBarak09].
-Furthermore, `P/poly` preimages are closed under polynomial-time many-one reductions
-(`Cslib.Complexity.PolyTimeReducible.mem_PPolyOn`), so `NP encBits ⊆ PPolyOn encBits` is
-equivalent to `SAT ∈ PPolyOn encCNF` (`Cslib.Complexity.NP_subset_PPolyOn_iff_SAT`).
+With closure under reductions, `NP encBits ⊆ PPolyOn encBits` is equivalent to
+`SAT ∈ PPolyOn encCNF` (`Cslib.Complexity.NP_subset_PPolyOn_iff_SAT`).
 
 ## Main results
 
@@ -70,12 +68,6 @@ equivalent to `SAT ∈ PPolyOn encCNF` (`Cslib.Complexity.NP_subset_PPolyOn_iff_
 * `Cslib.Complexity.PH_eq_SigmaP_two_of_SAT`: **the Karp–Lipton theorem**, if `SAT` has circuits
   of polynomial size, then `PH = Σ₂`.
 * `Cslib.Complexity.PH_eq_SigmaP_two_of_NP_subset_PPoly`: if `NP ⊆ P/poly`, then `PH = Σ₂`.
-* `Cslib.Complexity.PolyTimeReducible.mem_PPolyOn`: preimages of `P/poly` are closed under
-  polynomial-time many-one reductions.
-* `Cslib.Complexity.mem_PPoly_of_exists_frame_append`,
-  `Cslib.Complexity.PPolyOn.exists_of_computableInPolyTime_length`,
-  `Cslib.Complexity.PPolyOn.forall_of_computableInPolyTime_length`: nonuniform existential and
-  universal quantifier elimination in `P/poly` under `NP ⊆ P/poly`.
 * `Cslib.Complexity.SigmaP_subset_PPolyOn_of_NP_subset_PPoly`,
   `Cslib.Complexity.PiP_subset_PPolyOn_of_NP_subset_PPoly`,
   `Cslib.Complexity.PH_subset_PPolyOn_of_NP_subset_PPoly`: if `NP ⊆ P/poly`, then `Σₖ ⊆ P/poly`,
@@ -188,10 +180,8 @@ theorem PiP_two_subset_SigmaP_two_of_SAT (hSAT : SAT ∈ PPolyOn encCNF)
 /-- **Karp–Lipton, `Π₂ = Σ₂`.** If some language in `P/poly` contains exactly the encodings of the
 satisfiable formulas, then `Π₂ = Σ₂`, for every encoding of instances. -/
 theorem PiP_two_eq_SigmaP_two_of_SAT (hSAT : SAT ∈ PPolyOn encCNF)
-    (enc : α ↪ List Bool) : PiP 2 enc = SigmaP 2 enc := by
-  refine (PiP_two_subset_SigmaP_two_of_SAT hSAT enc).antisymm fun A hA => ?_
-  simpa using compl_mem_PiP_of_mem_SigmaP
-    (PiP_two_subset_SigmaP_two_of_SAT hSAT enc (compl_mem_PiP_of_mem_SigmaP hA))
+    (enc : α ↪ List Bool) : PiP 2 enc = SigmaP 2 enc :=
+  PiP_eq_SigmaP_of_PiP_subset_SigmaP (PiP_two_subset_SigmaP_two_of_SAT hSAT enc)
 
 /-! ### The collapse -/
 
@@ -211,133 +201,7 @@ theorem PH_eq_SigmaP_two_of_NP_subset_PPoly
     PH enc = SigmaP 2 enc :=
   PH_eq_SigmaP_two_of_SAT (h encCNF SAT.mem_NP)
 
-/-! ### Nonuniform quantifier elimination and `PH ⊆ P/poly` -/
-
-/-- **Preimages of `P/poly` are closed under polynomial-time reductions.** If `A` reduces to `B`
-in polynomial time and `B` is the preimage under `encB` of a language in `P/poly`, then `A` is
-the preimage under `enc` of a language in `P/poly`: evaluating the circuits for `B` up to the
-polynomial output-length bound of the reduction from an advice string is polynomial-time, and
-hardwiring the advice string (`PPoly.of_advice`) gives circuits of polynomial size. -/
-theorem PolyTimeReducible.mem_PPolyOn {β : Type} {encB : β ↪ List Bool} {A : Set α}
-    {B : Set β} (hAB : PolyTimeReducible enc encB A B)
-    (hB : B ∈ PPolyOn encB) :
-    A ∈ PPolyOn enc := by
-  obtain ⟨f, hf, hiff⟩ := hAB
-  obtain ⟨L_B, hL_B, hLB⟩ := hB
-  obtain ⟨c', d', hf'⟩ := hf.polyBounded_length.exists_le
-  let N : Polynomial ℕ := Polynomial.C c' * (Polynomial.X + 1) ^ d'
-  obtain ⟨S, W, _, α_adv, -, hα, h_eval⟩ := PPoly.exists_evalAdvice hL_B N
-  have hN (a : α) : (encB (f a)).length ≤ N.eval (enc a).length := by
-    refine (hf' a).trans (le_of_eq ?_)
-    simp [N]
-  let g : List Bool × α → Bool := fun x =>
-    evalAdvice (S.eval (enc x.2).length) (W.eval (enc x.2).length) x.1 (encB (f x.2))
-  have hg : ComputableInPolyTime g (encPair encBits enc) encBool := by fun_prop
-  obtain ⟨M, hM, hgM⟩ := PPoly.exists_of_polyTime hg
-  let L : Language Bool := {x : List Bool | frame (α_adv x.length) ++ x ∈ M}
-  refine ⟨L, PPoly.of_advice hM α_adv hα (fun _ => Iff.rfl), fun a => ?_⟩
-  change a ∈ A ↔ frame (α_adv (enc a).length) ++ enc a ∈ M
-  have hgM' := hgM (α_adv (enc a).length, a)
-  rw [encPair_apply, encBits_apply] at hgM'
-  rw [hiff a, hLB (f a), ← hgM']
-  exact (h_eval (enc a).length (encB (f a)) (hN a)).symm
-
-/-- **Nonuniform quantifier elimination.** If every language in `NP` over `Bool` is in `P/poly`
-and `M` is in `P/poly`, then the language of words `x` for which `frame x ++ w ∈ M` for some `w` of
-length `p |x|` is in `P/poly`: replacing `M` by an advice string listing its circuits up to length
-`2 |x| + 1 + p |x|` turns the existential quantifier over `w` into a language in `NP`, and
-hardwiring the advice string (`Cslib.Circuits.Boolean.PPoly.of_advice`) gives circuits of
-polynomial size [Karp and Lipton, Section 3][KarpLipton1980]. -/
-theorem mem_PPoly_of_exists_frame_append
-    (hNP : NP encBits ⊆ PPolyOn encBits)
-    {M : Language Bool} (hM : M ∈ PPoly) (p : Polynomial ℕ) :
-    ({x : List Bool | ∃ w : List Bool, w.length = p.eval x.length ∧ frame x ++ w ∈ M} :
-      Language Bool) ∈ PPoly := by
-  let N : Polynomial ℕ := 2 * Polynomial.X + 1 + p
-  obtain ⟨S, W, _, α_adv, -, hα, h_eval⟩ := PPoly.exists_evalAdvice hM N
-  have hN (n : ℕ) : N.eval n = 2 * n + 1 + p.eval n := by
-    simp [N, Polynomial.eval_add, Polynomial.eval_mul]
-  let V : List Bool × List Bool → Bool := fun z =>
-    evalAdvice (S.eval (dropFrame z.1).length) (W.eval (dropFrame z.1).length) (unframe z.1)
-      (frame (dropFrame z.1) ++ z.2.take (p.eval (dropFrame z.1).length))
-  have hV : ComputableInPolyTime V (encPair encBits encBits) encBool := by fun_prop
-  let D : Language Bool := {z : List Bool | ∃ w : List Bool, w.length = p.eval z.length ∧
-    V (z, w) = true}
-  have hD : D ∈ PPoly := mem_PPolyOn_encBits_iff.1 (hNP ⟨p, V, hV, fun _ => Iff.rfl⟩)
-  refine PPoly.of_advice hD α_adv hα fun x => ?_
-  change (∃ w : List Bool, w.length = p.eval x.length ∧ frame x ++ w ∈ M) ↔
-    (∃ w : List Bool, w.length = p.eval (frame (α_adv x.length) ++ x).length ∧
-      V (frame (α_adv x.length) ++ x, w) = true)
-  have hle : p.eval x.length ≤ p.eval (frame (α_adv x.length) ++ x).length :=
-    p.eval_mono (by simp)
-  have hV_frame (w : List Bool) (hw : w.length = p.eval x.length) :
-      evalAdvice (S.eval x.length) (W.eval x.length) (α_adv x.length) (frame x ++ w) = true ↔
-        frame x ++ w ∈ M :=
-    h_eval x.length (frame x ++ w) (by simp [hN, hw])
-  constructor
-  · rintro ⟨w, hw, hwM⟩
-    refine ⟨w ++ List.replicate (p.eval (frame (α_adv x.length) ++ x).length - w.length) false,
-      by rw [List.length_append, List.length_replicate, hw, Nat.add_sub_cancel' hle], ?_⟩
-    dsimp only [V]
-    rw [unframe_frame_append, dropFrame_frame_append, ← hw, List.take_left]
-    exact (hV_frame w hw).2 hwM
-  · rintro ⟨w, hw, hwV⟩
-    dsimp only [V] at hwV
-    rw [unframe_frame_append, dropFrame_frame_append] at hwV
-    have htake : (w.take (p.eval x.length)).length = p.eval x.length := by
-      rw [List.length_take, hw, Nat.min_eq_left hle]
-    exact ⟨w.take (p.eval x.length), htake, (hV_frame _ htake).1 hwV⟩
-
-/-- **Nonuniform existential quantifier elimination in `PPolyOn`.** Under `NP ⊆ P/poly`, if a
-relation `P : α → List Bool → Prop` is in `PPolyOn (encPair enc encBits)` and the witness length
-`N : α → ℕ` is computable in polynomial time in unary, then `{a | ∃ u, u.length = N a ∧ P a u}` is
-in `PPolyOn enc`. -/
-theorem PPolyOn.exists_of_computableInPolyTime_length
-    (hNP : NP encBits ⊆ PPolyOn encBits) {N : α → ℕ}
-    (hN : ComputableInPolyTime N enc encUnary) {P : α → List Bool → Prop}
-    (hP : {p : α × List Bool | P p.1 p.2} ∈ PPolyOn (encPair enc encBits)) :
-    {a : α | ∃ u : List Bool, u.length = N a ∧ P a u} ∈ PPolyOn enc := by
-  let B : Set (α × List Bool) := {p | P p.1 (p.2.take (N p.1))}
-  have hred : PolyTimeReducible (encPair enc encBits) (encPair enc encBits)
-      B {p : α × List Bool | P p.1 p.2} := by
-    refine ⟨fun p => (p.1, p.2.take (N p.1)), ?_, fun _ => Iff.rfl⟩
-    exact (fst enc encBits).prod (bitsTakeWithInput (snd enc encBits) (hN.comp (fst enc encBits)))
-  obtain ⟨M, hM, hBM⟩ := hred.mem_PPolyOn hP
-  obtain ⟨p, hp⟩ := hN.polyBounded.exists_polynomial
-  refine ⟨{x : List Bool | ∃ w : List Bool, w.length = p.eval x.length ∧ frame x ++ w ∈ M},
-    mem_PPoly_of_exists_frame_append hNP hM p, fun a => ?_⟩
-  have hle : N a ≤ p.eval (enc a).length := hp a
-  constructor
-  · rintro ⟨u, hu, hPu⟩
-    refine ⟨u ++ List.replicate (p.eval (enc a).length - N a) false,
-      by rw [List.length_append, List.length_replicate, hu, Nat.add_sub_cancel' hle], ?_⟩
-    have htake : (u ++ List.replicate (p.eval (enc a).length - N a) false).take (N a) = u := by
-      rw [← hu, List.take_left]
-    have hmem : (a, u ++ List.replicate (p.eval (enc a).length - N a) false) ∈ B := by grind
-    simpa [encPair_apply, encBits_apply] using (hBM _).1 hmem
-  · rintro ⟨w, hw, hwM⟩
-    have hmem : (a, w) ∈ B :=
-      (hBM (a, w)).2 (by simpa [encPair_apply, encBits_apply] using hwM)
-    refine ⟨w.take (N a), ?_, hmem⟩
-    rw [List.length_take, hw, Nat.min_eq_left hle]
-
-/-- **Nonuniform universal quantifier elimination in `PPolyOn`.** Under `NP ⊆ P/poly`, if a
-relation `P : α → List Bool → Prop` is in `PPolyOn (encPair enc encBits)` and the bound `N : α → ℕ`
-is computable in polynomial time in unary, then `{a | ∀ u, u.length = N a → P a u}` is in
-`PPolyOn enc`. -/
-theorem PPolyOn.forall_of_computableInPolyTime_length
-    (hNP : NP encBits ⊆ PPolyOn encBits) {N : α → ℕ}
-    (hN : ComputableInPolyTime N enc encUnary) {P : α → List Bool → Prop}
-    (hP : {p : α × List Bool | P p.1 p.2} ∈ PPolyOn (encPair enc encBits)) :
-    {a : α | ∀ u : List Bool, u.length = N a → P a u} ∈ PPolyOn enc := by
-  have hex : {a : α | ∃ u : List Bool, u.length = N a ∧ ¬ P a u} ∈ PPolyOn enc :=
-    PPolyOn.exists_of_computableInPolyTime_length hNP hN (PPolyOn.compl hP)
-  have h_eq : {a : α | ∀ u : List Bool, u.length = N a → P a u} =
-      {a : α | ∃ u : List Bool, u.length = N a ∧ ¬ P a u}ᶜ := by
-    ext a
-    simp
-  rw [h_eq]
-  exact PPolyOn.compl hex
+/-! ### `PH ⊆ P/poly` under `NP ⊆ P/poly` -/
 
 /-- **Karp–Lipton, `NP ⊆ P/poly ⇒ Σₖ ⊆ P/poly`.** If `NP ⊆ P/poly` over bitstrings, then every
 level `Σₖ` of the polynomial hierarchy, with any encoding of its instances, is in `P/poly`
@@ -351,13 +215,10 @@ theorem SigmaP_subset_PPolyOn_of_NP_subset_PPoly
     exact P_subset_PPolyOn hA
   | succ k ih =>
     intro A hA
-    obtain ⟨p, B, hB, hAB⟩ := exists_mem_PiP_of_mem_SigmaP_succ hA
+    obtain ⟨p, B, hB, rfl⟩ := mem_SigmaP_succ_iff.mp hA
     have hB_PPoly : B ∈ PPolyOn (encPair enc encBits) := by
       simpa using PPolyOn.compl (ih (compl_mem_SigmaP_of_mem_PiP hB))
     have hN : ComputableInPolyTime (fun a : α => p.eval (enc a).length) enc encUnary := by fun_prop
-    have hA_eq : A = {a : α | ∃ w : List Bool, w.length = p.eval (enc a).length ∧ (a, w) ∈ B} :=
-      Set.ext hAB
-    rw [hA_eq]
     exact PPolyOn.exists_of_computableInPolyTime_length hNP hN hB_PPoly
 
 /-- **Karp–Lipton, `NP ⊆ P/poly ⇒ Πₖ ⊆ P/poly`.** If `NP ⊆ P/poly` over bitstrings, then every

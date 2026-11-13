@@ -172,7 +172,6 @@ theorem mem_PSPACE_iff_tm2 {α : Type} {encIn : α ↪ List Bool} {A : Set α} :
       (∀ stack, Finite (h.tm.Γ stack)) ∧
         (∃ space : α → ℕ, PolyBounded (fun a => (encIn a).length) space ∧
           h.StacksBounded space) ∧ (∀ a, a ∈ A ↔ f a = true) := by
-  rw [mem_PSPACE_iff_computableInPolySpace]
   constructor
   · rintro ⟨f, hf, hA⟩
     obtain ⟨h, hfinite, hspace⟩ := hf.exists_tm2Computable

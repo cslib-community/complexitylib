@@ -19,8 +19,7 @@ membership characterizations and size formulas.
 
 ## Main definitions
 
-* `Cslib.Complexity.Diamond.Detour`: a detour `(j, i, s, b)` through clause node `j` across slot
-  `s` of row `i`.
+* `Cslib.Complexity.Diamond.Detour`: a detour through a clause node across a slot of a row.
 * `Cslib.Complexity.Diamond.topNode`, `Cslib.Complexity.Diamond.rowNode`,
   `Cslib.Complexity.Diamond.clauseNode`: vertex labels of a diamond graph.
 * `Cslib.Complexity.Diamond.graph`, `Cslib.Complexity.Diamond.cycleGraph`: diamond graphs and
@@ -48,9 +47,18 @@ namespace Diamond
 
 /-! ### Diamond graphs -/
 
-/-- A detour `(j, i, s, b)`: through the node of clause `j`, across slot `s` of row `i`, left to
-right when `b` is true and right to left otherwise. -/
-abbrev Detour : Type := ℕ × ℕ × ℕ × Bool
+/-- A detour through the node of clause `clause`, across `slot` of `row`, left to right when
+`leftToRight` is true and right to left otherwise. -/
+@[ext] structure Detour : Type where
+  /-- The clause index visited by the detour. -/
+  clause : ℕ
+  /-- The row index containing the slot. -/
+  row : ℕ
+  /-- The slot index within the row. -/
+  slot : ℕ
+  /-- Whether the detour traverses the slot from left to right. -/
+  leftToRight : Bool
+  deriving DecidableEq, Inhabited
 
 /-- The top of diamond `i`, which is also the bottom of diamond `i - 1`. -/
 def topNode (i : ℕ) : ℕ := Nat.pair 0 i
@@ -75,12 +83,12 @@ def diamondArcs (slots : ℕ → ℕ) (i : ℕ) : List (ℕ × ℕ) :=
 
 /-- The arcs of the detour `d`. -/
 def detourArcs (d : Detour) : List (ℕ × ℕ) :=
-  if d.2.2.2 then
-    [(rowNode d.2.1 (3 * d.2.2.1 + 2), clauseNode d.1),
-      (clauseNode d.1, rowNode d.2.1 (3 * d.2.2.1 + 3))]
+  if d.leftToRight then
+    [(rowNode d.row (3 * d.slot + 2), clauseNode d.clause),
+      (clauseNode d.clause, rowNode d.row (3 * d.slot + 3))]
   else
-    [(rowNode d.2.1 (3 * d.2.2.1 + 3), clauseNode d.1),
-      (clauseNode d.1, rowNode d.2.1 (3 * d.2.2.1 + 2))]
+    [(rowNode d.row (3 * d.slot + 3), clauseNode d.clause),
+      (clauseNode d.clause, rowNode d.row (3 * d.slot + 2))]
 
 /-- The arcs of the diamond graph: the diamonds and the detours. -/
 def arcs (N : ℕ) (slots : ℕ → ℕ) (D : List Detour) : List (ℕ × ℕ) :=
@@ -95,24 +103,24 @@ def vertices (N : ℕ) (slots : ℕ → ℕ) (M : ℕ) : List ℕ :=
 /-- The diamond graph with `N` diamonds whose rows have `slots i` slots, `M` clause nodes and the
 detours `D`. -/
 def graph (N : ℕ) (slots : ℕ → ℕ) (M : ℕ) (D : List Detour) : Graph :=
-  (vertices N slots M, arcs N slots D)
+  ⟨vertices N slots M, arcs N slots D⟩
 
 /-- The diamond graph closed by an arc from the bottom of the last diamond to the top of the
 first. -/
 def cycleGraph (N : ℕ) (slots : ℕ → ℕ) (M : ℕ) (D : List Detour) : Graph :=
-  (vertices N slots M, (topNode N, topNode 0) :: arcs N slots D)
+  ⟨vertices N slots M, (topNode N, topNode 0) :: arcs N slots D⟩
 
 /-- The detours go through declared nodes, and the detours across each slot all belong to one
 clause. -/
 structure WellFormed (N : ℕ) (slots : ℕ → ℕ) (M : ℕ) (D : List Detour) : Prop where
-  clause_lt : ∀ d ∈ D, d.1 < M
-  row_lt : ∀ d ∈ D, d.2.1 < N
-  slot_lt : ∀ d ∈ D, d.2.2.1 < slots d.2.1
-  clause_eq : ∀ d ∈ D, ∀ d' ∈ D, d.2.1 = d'.2.1 → d.2.2.1 = d'.2.2.1 → d.1 = d'.1
+  clause_lt : ∀ d ∈ D, d.clause < M
+  row_lt : ∀ d ∈ D, d.row < N
+  slot_lt : ∀ d ∈ D, d.slot < slots d.row
+  clause_eq : ∀ d ∈ D, ∀ d' ∈ D, d.row = d'.row → d.slot = d'.slot → d.clause = d'.clause
 
 /-- Some directions of the rows give every clause `j < M` a detour in the direction of its row. -/
 def Satisfiable (M : ℕ) (D : List Detour) : Prop :=
-  ∃ dir : ℕ → Bool, ∀ j < M, ∃ d ∈ D, d.1 = j ∧ dir d.2.1 = d.2.2.2
+  ∃ dir : ℕ → Bool, ∀ j < M, ∃ d ∈ D, d.clause = j ∧ dir d.row = d.leftToRight
 
 /-! ### Vertices and arcs -/
 
@@ -172,10 +180,10 @@ theorem mem_arcs {u v : ℕ} :
         (∃ a < rowLength slots i - 1, (u = rowNode i a ∧ v = rowNode i (a + 1)) ∨
           (u = rowNode i (a + 1) ∧ v = rowNode i a))) ∨
       (∃ d ∈ D,
-        (d.2.2.2 = true ∧ ((u = rowNode d.2.1 (3 * d.2.2.1 + 2) ∧ v = clauseNode d.1) ∨
-          (u = clauseNode d.1 ∧ v = rowNode d.2.1 (3 * d.2.2.1 + 3)))) ∨
-        (d.2.2.2 = false ∧ ((u = rowNode d.2.1 (3 * d.2.2.1 + 3) ∧ v = clauseNode d.1) ∨
-          (u = clauseNode d.1 ∧ v = rowNode d.2.1 (3 * d.2.2.1 + 2))))) := by
+        (d.leftToRight = true ∧ ((u = rowNode d.row (3 * d.slot + 2) ∧ v = clauseNode d.clause) ∨
+          (u = clauseNode d.clause ∧ v = rowNode d.row (3 * d.slot + 3)))) ∨
+        (d.leftToRight = false ∧ ((u = rowNode d.row (3 * d.slot + 3) ∧ v = clauseNode d.clause) ∨
+          (u = clauseNode d.clause ∧ v = rowNode d.row (3 * d.slot + 2))))) := by
   simp only [arcs, List.mem_append, List.mem_flatMap, List.mem_range]
   refine or_congr ?_ (exists_congr fun d => and_congr_right fun _ => ?_)
   · refine exists_congr fun i => and_congr_right fun _ => ?_
@@ -197,7 +205,7 @@ theorem mem_arcs {u v : ℕ} :
       · exact Or.inr ⟨a, ha, Or.inl h⟩
       · exact Or.inr ⟨a, ha, Or.inr h⟩
   · unfold detourArcs
-    cases hb : d.2.2.2 <;> simp
+    cases hb : d.leftToRight <;> simp
 
 /-- The number of vertices of a diamond graph, counted as listed. -/
 theorem length_vertices (N : ℕ) (slots : ℕ → ℕ) (M : ℕ) :

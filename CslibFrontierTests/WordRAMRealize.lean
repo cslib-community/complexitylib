@@ -300,17 +300,14 @@ example : Realizes .exact square (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
     (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding (fun _ _ _ => True) (fun _ _ => 0) := by
   realize
 
-/-- A non-strict comparison is not a native test. -/
+/-- A non-strict comparison uses a native strict test with swapped alternatives. -/
 def atMost (n : ℕ) : Memory.Prog ℕ := if n ≤ 3 then pure 0 else pure 1
 
-/--
-error: realize: a branch condition must be `a = b`, `a < b` or `a > b` on words, got
-  d ≤ 3
--/
-#guard_msgs in
 example : Realizes .exact atMost (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
-    (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding (fun _ _ _ => True) (fun _ _ => 0) := by
+    (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding (fun w _ _ => Fits w 3)
+    (fun _ _ => 0) := by
   realize
+  all_goals first | exact h | exact h.of_le (by omega)
 
 /-- Recursion on a runtime value is a loop. -/
 def readMany : ℕ → Memory.Prog Unit
@@ -333,15 +330,20 @@ example : Realizes .exact readMany (Equiv.funUnique (Fin 1) ℕ).symm.toEmbeddin
 def countUp (d : ℕ × ℕ) : Memory.Prog ℕ :=
   iterate (fun x : (ℕ × ℕ) × ℕ => pure (x.2 + 1)) d d.2 0
 
-/--
-error: realize: a loop body must begin with a memory query, which pays for the iteration;
-the body begins with
-  PFunctor.FreeM.pure (x.2 + 1)
--/
-#guard_msgs in
+/-- The input's fitting count bounds every increment; the loop retains its control work. -/
 example : Realizes .exact countUp pairWords (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
-    (fun _ _ _ => True) (fun _ _ => 0) := by
+    (fun _ _ _ => True) (fun d _ => d.2) := by
   realize
+  · have hi (n a : ℕ) (t : Memory.State) (ha : a + n ≤ d.2) :
+        iterationSafe (fun x : (ℕ × ℕ) × ℕ => pure (x.2 + 1))
+          (fun w x _ => True ∧ Fits w (x.2 + 1)) w d n a t := by
+      induction n generalizing a t with
+      | zero => trivial
+      | succ n ih =>
+        refine ⟨⟨trivial, (show Fits w d.2 from hwords 1).of_le (by omega)⟩, ?_⟩
+        exact ih (a + 1) t (by omega)
+    simpa only [true_and] using hi d.2 0 s (by omega)
+  · exact (iterationWork_zero (fun x : (ℕ × ℕ) × ℕ => pure (x.2 + 1)) d d.2 0 s).le
 
 /-- Allocation is certified in the exact basis. -/
 def fresh (n : ℕ) : Memory.Prog ℕ := Memory.alloc n

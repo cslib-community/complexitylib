@@ -392,12 +392,18 @@ structure Admissible (n U : ℕ) (S₁ S₂ S₃ : Finset ℤ) : Prop where
   /-- The elements of the third set have absolute value at most `U`. -/
   bdd₃ : Bdd U S₃
 
+/-- Subset monotonicity of `Admissible`. -/
+theorem Admissible.mono {n U : ℕ} {S₁ S₂ S₃ T₁ T₂ T₃ : Finset ℤ}
+    (h : Admissible n U S₁ S₂ S₃) (h₁ : T₁ ⊆ S₁) (h₂ : T₂ ⊆ S₂) (h₃ : T₃ ⊆ S₃) :
+    Admissible n U T₁ T₂ T₃ :=
+  ⟨(card_le_card h₁).trans h.card₁, (card_le_card h₂).trans h.card₂,
+    (card_le_card h₃).trans h.card₃, h.bdd₁.mono h₁, h.bdd₂.mono h₂, h.bdd₃.mono h₃⟩
+
 /-- The sets of a node satisfy the hypotheses that the sets at the root satisfy. -/
 theorem Admissible.of_mem {n U : ℕ} {S₁ S₂ S₃ : Finset ℤ} (h : Admissible n U S₁ S₂ S₃) {ν : Node}
     (hν : ν ∈ reduction n U S₁ S₂ S₃) : Admissible n U ν.S₁ ν.S₂ ν.S₃ :=
   let ⟨s₁, s₂, s₃⟩ := nodes_subset _ _ _ _ _ _ ν hν
-  ⟨(card_le_card s₁).trans h.card₁, (card_le_card s₂).trans h.card₂,
-    (card_le_card s₃).trans h.card₃, h.bdd₁.mono s₁, h.bdd₂.mono s₂, h.bdd₃.mono s₃⟩
+  h.mono s₁ s₂ s₃
 
 /-- **Correctness of the reduction for three sets.**  Let the three sets have at most `n ≥ 1`
 elements each, all of absolute value at most `U`, and let `N ≥ 2 * mPar n U ^ 2`.  Then 3SUM has a

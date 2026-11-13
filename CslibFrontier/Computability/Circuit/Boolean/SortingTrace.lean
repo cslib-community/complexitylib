@@ -70,7 +70,7 @@ private theorem eval_select {a t n m r : ℕ} (cs : Fin a → Fin t) (rs : Fin n
     (select cs rs).eval interpretation (pack c x) = pack (c ∘ cs) (x ∘ rs) := by
   apply ext <;> funext j bit <;>
     simp [controls, records, select, layout, Circuit.eval_wiringOn, pack, BitString.block,
-      flatten, -finProdFinEquiv_symm_apply, -Fin.natAdd_eq_addNat]
+      BitString.blocksEquiv_symm_apply, -finProdFinEquiv_symm_apply, -Fin.natAdd_eq_addNat]
 
 /-- Reverse a comparison layer, reading the saved decision and its complement. -/
 def unlayer (n r : ℕ) : Circuit signature (n * 2 + (n + n) * r) ((n + n) * r) :=
@@ -96,11 +96,12 @@ private theorem unlayer_input {n r : ℕ} (flags : BitString n)
   funext bit
   cases bit using Fin.addCases with
   | left bit =>
-    simp only [Fin.addCases_left, pack, Fin.append_left, flatten, Equiv.symm_apply_apply, pairs]
+    simp only [Fin.addCases_left, pack, Fin.append_left, BitString.blocksEquiv_symm_apply,
+      Equiv.symm_apply_apply, pairs]
   | right bit =>
     cases bit using Fin.addCases <;>
       simp only [Fin.addCases_right, Fin.addCases_left, pack, Fin.append_right, Fin.append_left,
-        flatten, Equiv.symm_apply_apply]
+        BitString.blocksEquiv_symm_apply, Equiv.symm_apply_apply]
 
 private theorem eval_unlayer (n r : ℕ) (flags : BitString n) (x : Fin (n + n) → BitString r) :
     BitString.block ((unlayer n r).eval interpretation (pack (pairs flags) x)) =
@@ -172,11 +173,11 @@ private theorem eval_unchain {a b n r : ℕ} (first : Circuit signature (a * 2 +
   congr 1 with i : 1
   cases i using Fin.addCases with
   | left i =>
-    simp [Circuit.eval_wiringOn, layout, pack, flatten,
+    simp [Circuit.eval_wiringOn, layout, pack, BitString.blocksEquiv_symm_apply,
       -finProdFinEquiv_symm_apply, -Fin.natAdd_eq_addNat]
   | right i =>
-    simp only [Fin.append_right, pack, flatten, BitString.block, Prod.mk.eta,
-      Equiv.apply_symm_apply]
+    simp only [Fin.append_right, pack, BitString.blocksEquiv_symm_apply, BitString.block,
+      Prod.mk.eta, Equiv.apply_symm_apply]
 
 private theorem cost_unchain {a b n r : ℕ} (first : Circuit signature (a * 2 + n * r) (n * r))
     (second : Circuit signature (b * 2 + n * r) (n * r)) (cost : signature.Op → ℕ) :

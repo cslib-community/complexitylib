@@ -115,39 +115,34 @@ theorem mem_Knapsack_iff_sublist {x : KnapsackInstance} :
 
 namespace Knapsack
 
-/-- The verifier for `Knapsack`: the items selected by the certificate mask fit the capacity and
-reach the goal. -/
+/-- The verifier for `Knapsack`, a mask verifier (`Cslib.Complexity.maskVerifier`): the items
+selected by the certificate mask fit the capacity and reach the goal. -/
 @[expose]
-def verifier (x : KnapsackInstance × List Bool) : Bool :=
-  decide (((maskSelect x.1.items x.2).map Item.weight).sum ≤ x.1.capacity) &&
-    decide (x.1.goal ≤ ((maskSelect x.1.items x.2).map Item.value).sum)
+def verifier : KnapsackInstance × List Bool → Bool :=
+  maskVerifier KnapsackInstance.items fun x =>
+    decide ((x.2.map Item.weight).sum ≤ x.1.capacity) &&
+      decide (x.1.goal ≤ (x.2.map Item.value).sum)
 
 /-- `Knapsack.verifier` verifies `Knapsack` with certificates as long as the encoded instance. -/
-theorem isVerifier : IsVerifier encKnapsack Polynomial.X verifier Knapsack := by
-  intro x
-  simp only [Knapsack, Set.mem_ofPred_eq, Polynomial.eval_X, verifier, Bool.and_eq_true,
-    decide_eq_true_eq]
-  have hlen : x.items.length ≤ (encKnapsack x).length := by
-    rw [encKnapsack_apply]
-    exact length_le_length_encPair encItem (encPair encNat encNat)
-      (x.items, x.capacity, x.goal)
-  simpa only [Multiset.map_coe, Multiset.sum_coe] using exists_le_iff_exists_maskSelect hlen
-    (fun s => (s.map Item.weight).sum ≤ x.capacity ∧ x.goal ≤ (s.map Item.value).sum)
+theorem isVerifier : IsVerifier encKnapsack Polynomial.X verifier Knapsack :=
+  isVerifier_maskVerifier (fun x => by
+    rw [Polynomial.eval_X]
+    exact (length_le_length_encList _ _).trans
+      (length_le_encPair_left _ _ (x.items, x.capacity, x.goal)))
+    fun _ _ _ => by simp
 
 /-- The `Knapsack` verifier is polynomial-time: the sums and comparisons are in binary. -/
 @[fun_prop]
 theorem computableInPolyTime_verifier :
     ComputableInPolyTime verifier (encPair encKnapsack encBits) encBool := by
-  have hsel : ComputableInPolyTime
-      (fun x : KnapsackInstance × List Bool => maskSelect x.1.items x.2)
-      (encPair encKnapsack encBits) (encList encItem) :=
-    (computableInPolyTime_maskSelect encItem).comp
-      ((encKnapsack_items_polyTime (fst _ _)).prod (snd _ _))
   have hsum : ComputableInPolyTime List.sum (encList encNat) encNat := by fun_prop
-  have hw := hsum.comp ((map (encItem_weight_polyTime id')).comp hsel)
-  have hv := hsum.comp ((map (encItem_value_polyTime id')).comp hsel)
-  exact bool_and' (binary_le' hw (encKnapsack_capacity_polyTime (fst _ _)))
-    (binary_le' (encKnapsack_goal_polyTime (fst _ _)) hv)
+  have hw := hsum.comp ((map (encItem_weight_polyTime id')).comp
+    (snd encKnapsack (encList encItem)))
+  have hv := hsum.comp ((map (encItem_value_polyTime id')).comp
+    (snd encKnapsack (encList encItem)))
+  exact computableInPolyTime_maskVerifier (encKnapsack_items_polyTime id')
+    (bool_and' (binary_le' hw (encKnapsack_capacity_polyTime (fst _ _)))
+      (binary_le' (encKnapsack_goal_polyTime (fst _ _)) hv))
 
 /-- `Knapsack` belongs to `NP`. -/
 theorem mem_NP : Knapsack ∈ NP encKnapsack :=

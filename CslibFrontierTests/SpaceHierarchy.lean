@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import CslibFrontier.Computability.Complexity.Classes.EXPSPACE.Separation
 import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Space
 import Cslib.Computability.Machines.Turing.MultiTape.Combinators.AlmostConstant
 
@@ -159,5 +160,17 @@ example : DSPACE encBits (· ^ 0) ⊂ DSPACE encBits (· ^ 3) :=
 /-- Strict inclusion `L ⊂ PSPACE` yields an explicit language in `PSPACE \ L`. -/
 example : ∃ A ∈ PSPACE encBits, A ∉ L encBits :=
   Set.exists_of_ssubset L_ssubset_PSPACE
+
+/-- Space `2 ^ n ^ 2` is exponential space. -/
+example : DSPACE encBits (fun n => 2 ^ n ^ 2) ⊆ EXPSPACE encBits :=
+  DSPACE_two_pow_subset_EXPSPACE (by fun_prop)
+
+/-- The chain `L ⊂ PSPACE ⊂ EXPSPACE`. -/
+example : L encBits ⊂ EXPSPACE encBits :=
+  L_ssubset_PSPACE.trans PSPACE_ssubset_EXPSPACE
+
+/-- Time bounds space: `P ⊆ EXP ⊆ EXPSPACE`. -/
+example : P encBits ⊆ EXPSPACE encBits :=
+  P_subset_EXP.trans EXP_subset_EXPSPACE
 
 end CslibFrontierTests.SpaceHierarchy

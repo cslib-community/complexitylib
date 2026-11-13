@@ -15,6 +15,7 @@ public import Mathlib.Topology.UnitInterval
 import Mathlib.Combinatorics.SimpleGraph.Paths
 import Mathlib.Tactic.Linarith
 import Mathlib.Topology.Compactness.Compact
+import Mathlib.Topology.MetricSpace.Infsep
 import Mathlib.Topology.MetricSpace.Pseudo.Lemmas
 
 /-!
@@ -1157,6 +1158,30 @@ noncomputable instance instCompactSpace [Finite V] : CompactSpace (MetricGraph W
       (fun v => ⟨.inl v, rfl⟩) (fun d t => ⟨.inr ⟨d, t⟩, rfl⟩) x
   rw [← isCompact_univ_iff, ← hf_surj.range_eq]
   exact isCompact_range hf_cont
+
+/-- Minimum weight among all darts in a nonempty finite weighted graph. -/
+theorem exists_min_dart_weight [Finite V] (d₀ : W.graph.Dart) :
+    ∃ wmin : ℝ, 0 < wmin ∧ ∀ d : W.graph.Dart, wmin ≤ W.weight d.edge := by
+  classical
+  have : Finite W.graph.Dart := Finite.of_injective Dart.toProd Dart.toProd_injective
+  have hfin : (Set.univ : Set W.graph.Dart).Finite := Set.finite_univ
+  obtain ⟨d₁, _, hd₁⟩ := hfin.toFinset.exists_min_image (fun d : W.graph.Dart => W.weight d.edge)
+    ⟨d₀, hfin.mem_toFinset.mpr (Set.mem_univ d₀)⟩
+  exact ⟨W.weight d₁.edge, W.dart_weight_pos d₁, fun d =>
+    hd₁ d (hfin.mem_toFinset.mpr (Set.mem_univ d))⟩
+
+/-- Distinct vertices of a finite metric graph are uniformly separated: some `vmin > 0` bounds
+the distance between any two of them from below. When there are two vertices, `vmin` is the
+`Set.infsep` of the finite vertex set. -/
+theorem exists_pos_le_dist_vertex [Finite V] :
+    ∃ vmin : ℝ, 0 < vmin ∧
+      ∀ u v : V, u ≠ v → vmin ≤ dist (vertex u : MetricGraph W) (vertex v) := by
+  let S := Set.range (vertex : V → MetricGraph W)
+  by_cases hS : S.Nontrivial
+  · exact ⟨S.infsep, (Set.finite_range _).infsep_pos_iff_nontrivial.mpr hS, fun u v huv =>
+      Set.infsep_le_dist_of_mem ⟨u, rfl⟩ ⟨v, rfl⟩ (vertex_inj.ne.mpr huv)⟩
+  · exact ⟨1, one_pos, fun u v huv =>
+      (hS ⟨_, ⟨u, rfl⟩, _, ⟨v, rfl⟩, vertex_inj.ne.mpr huv⟩).elim⟩
 
 end MetricGraph
 

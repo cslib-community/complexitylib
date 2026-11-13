@@ -16,6 +16,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LinearSpaceArith
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
+import CslibFrontier.Foundations.Data.List.Lookup
 import CslibFrontier.Tactic.EncLen
 import Mathlib.Data.List.GetD
 import Mathlib.Data.List.TakeDrop
@@ -374,10 +375,8 @@ private theorem intervalTables_getD (n : ℕ) (op unit : Code) (leaves : List Co
       exact ih _ _ hlt hs
     · have heq : len = count + 1 := by omega
       subst len
-      simp only [List.getD_eq_getElem?_getD, List.getElem?_append, length_intervalTables,
-        lt_self_iff_false, ↓reduceIte, Nat.sub_self, List.getElem?_cons_zero, Option.getD_some]
-      rw [← List.getD_eq_getElem?_getD, intervalRow_getD n op unit leaves _ start (by omega),
-        length_intervalTables]
+      rw [← length_intervalTables n op unit leaves count, List.getD_append_cons_length,
+        intervalRow_getD n op unit leaves _ start (by omega), length_intervalTables]
       by_cases hc : count = 0
       · subst count
         rw [ite_eq_left rfl]
@@ -413,10 +412,8 @@ private theorem intervalTables_getD_invalid (n : ℕ) (op unit : Code) (leaves :
       exact ih _ _ hlt hs hinvalid
     · have heq : len = count + 1 := by omega
       subst len
-      simp only [List.getD_eq_getElem?_getD, List.getElem?_append, length_intervalTables,
-        lt_self_iff_false, ↓reduceIte, Nat.sub_self, List.getElem?_cons_zero, Option.getD_some]
-      rw [← List.getD_eq_getElem?_getD, intervalRow_getD n op unit leaves _ start hs,
-        length_intervalTables]
+      rw [← length_intervalTables n op unit leaves count, List.getD_append_cons_length,
+        intervalRow_getD n op unit leaves _ start hs, length_intervalTables]
       split
       · exact List.getD_eq_default _ _ (by omega)
       · rw [ite_eq_right (by omega)]

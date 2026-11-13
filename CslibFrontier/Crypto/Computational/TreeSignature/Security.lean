@@ -30,6 +30,7 @@ import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Computability.Probabilistic.UniformNat
 import CslibFrontier.Crypto.Computational.MerkleSignature.Security
 import CslibFrontier.Crypto.Computational.OneWayToPRF
+import CslibFrontier.Foundations.Data.List.GetD
 import CslibFrontier.Foundations.Data.List.Lookup
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
@@ -510,11 +511,8 @@ private abbrev encPlantedCert : PlantedCertState ↪ List Bool :=
 private theorem length_fst_getD_keys_le (keys : List (List Bool × List Bool)) (idx : ℕ) :
     (keys.getD idx ([], [])).1.length ≤ (encKeys keys).length := by
   by_cases h : idx < keys.length
-  · have hmem : keys.getD idx ([], []) ∈ keys := by
-      rw [List.getD_eq_getElem _ _ h]
-      exact List.getElem_mem h
-    exact (length_le_encPair_left encBits encBits _).trans
-      (length_le_encList_of_mem (encPair encBits encBits) hmem)
+  · exact (length_le_encPair_left encBits encBits _).trans
+      (length_le_encList_of_mem (encPair encBits encBits) (List.getD_mem _ h))
   · rw [List.getD_eq_default _ _ (Nat.le_of_not_lt h)]
     exact Nat.zero_le _
 
@@ -1723,19 +1721,11 @@ private theorem bind_map_of_invariant {α₁ β₁ α β : Type}
   exact ⟨by simpa only [PMF.map, PMF.pure_bind, PMF.bind_pure, PMF.bind_bind,
     Function.comp_def] using congrArg (PMF.map Prod.snd) hmain.1, hmain.2⟩
 
-private theorem eval_ite {α : Type} (P : Prop) [Decidable P] (a b : ProbComp α) :
-    ProbComp.eval (if P then a else b) = if P then ProbComp.eval a else ProbComp.eval b := by
-  split_ifs <;> rfl
-
 private theorem run_interpret_ite {ι ext α : Type} {spec : ι → Type}
     (h : (q : ι) → StateT ext PMF (spec q)) (P : Prop) [Decidable P]
     (a b : OracleComp spec α) (s : ext) :
     (OracleComp.interpret h (if P then a else b)).run s =
       if P then (OracleComp.interpret h a).run s else (OracleComp.interpret h b).run s := by
-  split_ifs <;> rfl
-
-private theorem pmf_map_ite {α β : Type} (P : Prop) [Decidable P] (a b : PMF α) (f : α → β) :
-    (if P then a else b).map f = if P then a.map f else b.map f := by
   split_ifs <;> rfl
 
 private theorem iterate_pmf_bind_comm_of_invariant {α β γ : Type}
@@ -2435,7 +2425,7 @@ private theorem jointCoinHandler_step_lazy (S : IndexedSignatureScheme) (T : S.S
     ∀ a s', (a, s') ∈ (jointCoinHandler S T depth M n req s).support →
       jointLazyInv S T M (depth n) n root s' := by
   obtain ⟨cc, ⟨nodes, edges⟩, queried, seenLeaves, bad⟩ := s
-  simp only [jointCoinHandler, lazySignHandler, eval_ite, ProbComp.eval_bind,
+  simp only [jointCoinHandler, lazySignHandler, apply_ite ProbComp.eval, ProbComp.eval_bind,
     BitString.eval_sampleList, ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
   refine (fun h => ⟨h.1, fun a s' hm => h.2 (a, s') hm⟩)
     (treeHandler_map_of_invariant (req.2.length = n) (bad = true)
@@ -3133,7 +3123,7 @@ private theorem localTreeHandler_planted_step (S : IndexedSignatureScheme) (dept
   conv =>
     arg 1
     rhs
-    simp only [run_interpret_ite, pmf_map_ite, OracleComp.run_interpret_bind,
+    simp only [run_interpret_ite, apply_ite (PMF.map _), OracleComp.run_interpret_bind,
       OracleComp.run_interpret_pure, ProbOracleComp.run_interpret_sample, BitString.eval_sampleList,
       Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure, PMF.bind_map,
       PMF.map_bind, PMF.pure_map, Function.comp_def]
@@ -3437,9 +3427,7 @@ private theorem localSignEdge_notrunc (S : IndexedSignatureScheme) {sigCap n : �
     simp only [PMF.pure_map, ProbComp.eval_pure]
   | none =>
     simp only [bind_pure_comp, ProbComp.eval_map, PMF.map_comp, Function.comp_def]
-    have hk_mem : usedKeys.getD idx ([], []) ∈ (ProbComp.eval (S.keyGen n)).support := by
-      rw [List.getD_eq_getElem _ _ hidx]
-      exact hsupp _ (List.getElem_mem hidx)
+    have hk_mem := hsupp _ (List.getD_mem ([], []) hidx)
     refine PMF.map_congr_on_support _ _ _ fun raw hraw => ?_
     have hle := hsigCap _ hk_mem u hu msg hmsg raw hraw
     simp only [List.take_of_length_le hle]
@@ -3501,9 +3489,7 @@ private theorem jointKeysCertify_lazy_spec (S : IndexedSignatureScheme) (depth :
             hvis_inv childIdx uk' vis' hm_v
           exact ⟨⟨hlen', hrv', hrk', hsp', hv'⟩, hcLt, hkeep idx hidx, hidx.trans_le hlenLe⟩⟩
         fun ⟨childIdx, uk', vis'⟩ _ ⟨⟨hlen', hrv', hrk', hsp', hv'⟩, hcLt, hidx_eq, hidx'⟩ => by
-          have hchildMem : uk'.getD childIdx ([], []) ∈ (ProbComp.eval (S.keyGen n)).support := by
-            rw [List.getD_eq_getElem _ _ hcLt]
-            exact hsp' _ (List.getElem_mem hcLt)
+          have hchildMem := hsp' _ (List.getD_mem ([], []) hcLt)
           have hse := localSignEdge_notrunc S hsigCap hsp' hidx' hbu (path := node)
             (Or.inr ⟨_, hchildMem, rfl⟩) edg all
           rw [hidx_eq] at hse
@@ -3537,7 +3523,7 @@ private theorem jointKeysHandler_lazy_step (S : IndexedSignatureScheme) (depth :
       jointKeysInv S n root st' := by
   obtain ⟨uk, ⟨⟨vis, edg⟩, queried, seenLeaves, bad⟩, allSigned⟩ := st
   simp only [lazyStateOfJoint]
-  simp only [jointKeysHandler, lazySignHandler, eval_ite, ProbComp.eval_bind,
+  simp only [jointKeysHandler, lazySignHandler, apply_ite ProbComp.eval, ProbComp.eval_bind,
     BitString.eval_sampleList, ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
   refine (fun h => ⟨h.1, fun ans st' hm => h.2 (ans, st') hm⟩)
     (treeHandler_map_of_invariant (req.2.length = n) (bad = true)
@@ -4362,9 +4348,7 @@ theorem succProbability_lazyTreeGame_le (S : IndexedSignatureScheme)
     have hpos : 0 < keys.length := by
       have := two_le_dyadicSize (slotBound n)
       omega
-    have hk0Mem : keys.getD 0 ([], []) ∈ (ProbComp.eval (S.keyGen n)).support := by
-      rw [List.getD_eq_getElem _ _ hpos]
-      exact hkSupp _ (List.getElem_mem hpos)
+    have hk0Mem := hkSupp _ (List.getD_mem ([], []) hpos)
     have hinit : presampledBoundedInv (depth n) keys Q initPresampledState := by
       refine ⟨List.mem_singleton.mpr rfl, ?_, ?_, ?_, fun _ _ _ _ h => by cases h⟩
       · simp only [List.length_singleton, hkLen]

@@ -71,14 +71,11 @@ theorem runs_input {W n F : ℕ} (values : List ℤ) (hlen : values.length = 3 *
     (envelope_fits values hW).of_le (by dsimp only [envelope]; omega)
   obtain ⟨a, ha, am, an, aF, ab, ac, ad, af⟩ := exec_entryHeader
     (n := n) (F := F) (.init (CountPrime.inputWords n F values)) rfl rfl hfit
-  have word (q : ℕ) : a.mem (3 + q) = Signed.encode (values.getD q 0) := by
-    rw [am]
-    simpa only [Data.init] using CountPrime.input_word n F values q
   obtain ⟨p, mem, y, hy, yf, yiff, yp, yz, frame, yn, yF, ya, yb, yc, yfree⟩ :=
     exec_at values hlen hv a an aF ab ac ad af (by omega) (by omega) (by omega)
-      (fun q _ => word q)
-      (fun q _ => by simpa only [Nat.add_assoc] using word (n * n + q))
-      (fun q _ => by simpa only [Nat.add_assoc] using word (2 * (n * n) + q)) hW
+      (fun q _ => (congrFun am _).trans (CountPrime.input_word n F values q))
+      (fun q _ => (congrFun am _).trans (CountPrime.input_word_add n F values (n * n) q))
+      (fun q _ => (congrFun am _).trans (CountPrime.input_word_add n F values (2 * (n * n)) q)) hW
   have he : ExecWithin W entryProgram (.init (CountPrime.inputWords n F values)) y
       (15 + timeBound n p values mem) := ha.seq hy
   obtain ⟨t, ht, hex⟩ := he

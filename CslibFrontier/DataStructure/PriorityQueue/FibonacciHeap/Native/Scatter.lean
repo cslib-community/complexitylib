@@ -12,6 +12,7 @@ public import CslibFrontier.DataStructure.PriorityQueue.FibonacciHeap.Native.Sou
 public import CslibFrontier.Computability.WordRAM.Realization.WhileAbsorb
 import CslibFrontier.Tactic.Realize
 import CslibFrontier.DataStructure.PriorityQueue.FibonacciHeap.Native.Domain
+import CslibFrontier.DataStructure.Memory.RecordLink
 
 /-!
 # Native consolidation-table steps
@@ -41,34 +42,6 @@ namespace Cslib.DataStructure.PriorityQueue.FibonacciHeap.Native
 open Cslib.WordRAM Cslib.WordRAM.Realization
 open Cslib.DataStructure.PriorityQueue.WordRAM.FibonacciHeap
 
-private def scatterBody (d : Fin 4 → ℕ) : Memory.Prog (Option ℕ × ℕ) := do
-  let deg ← Memory.read (d 1 + 5 * d 0 + d 2)
-  let c ← Memory.read (d 1 + 8 * d 0 + deg)
-  if c = 0 then
-    Memory.write (d 1 + 8 * d 0 + deg) (d 2 + 1)
-    if d 3 < deg then pure (none, deg) else pure (none, d 3)
-  else
-    Memory.write (d 1 + 8 * d 0 + deg) 0
-    let p ← pure (c - 1)
-    let u ← DataStructure.link (E := Memory.spec 0) ((layout (d 0) (d 1)).methods 0)
-      (FibonacciHeap.link (d 2) p)
-    pure (some u, d 3)
-
-private theorem scatterBody_eq (d : Fin 4 → ℕ) : scatterBody d =
-    DataStructure.link (E := Memory.spec 0) ((layout (d 0) (d 1)).methods 0)
-      (scatterStep (d 2, d 3)) := by
-  simp only [scatterBody, scatterStep, DataStructure.link, PFunctor.FreeM.liftM_bind]
-  congr 1 with deg : 1
-  congr 1 with c : 1
-  by_cases hc : c = 0
-  · simp only [hc, ite_true, PFunctor.FreeM.liftM_bind, PFunctor.FreeM.liftM_pure]
-    congr 1 with _ : 1
-    by_cases hmax : d 3 < deg
-    · rw [ite_eq_left hmax, max_eq_right (Nat.le_of_lt hmax)]
-    · rw [ite_eq_right hmax, max_eq_left (Nat.le_of_not_lt hmax)]
-  · simp only [hc, ite_false, PFunctor.FreeM.liftM_bind, PFunctor.FreeM.liftM_pure, pure_bind]
-    rfl
-
 /-- Native compiler conditions for the reached consolidation step. The occupied-slot branch
 uses the same root-link domain at the memory obtained by its actual zero write. -/
 @[expose] def scatterStepSafe (w : ℕ) (d : Fin 4 → ℕ) (s : Memory.State) : Prop :=
@@ -78,44 +51,37 @@ uses the same root-link domain at the memory obtained by its actual zero write. 
      c ≠ 0 → linkSafe w ![d 0, d 1, d 2, c - 1]
        { s with mem := Function.update s.mem (d 1 + 8 * d 0 + deg) 0 })
 
-private theorem realizes_scatterBody : Realizes .exact scatterBody (.refl _)
-    (WordEncoding.encode (α := Option ℕ × ℕ)) scatterStepSafe (fun _ _ => 0) := by
-  have hLink := realizes_link.reindex
-    (fun d : Fin 5 → ℕ => ![d 0, d 1, d 2, d 3]) (.refl _) ![0, 1, 2, 3]
-    (by intro d i; fin_cases i <;> rfl)
-  have hRet : Realizes .exact
-      (fun d : (Fin 5 → ℕ) × ℕ => pure (some d.2, d.1 4))
-      (appendWords (.refl _) (WordEncoding.encode (α := ℕ)))
-      (WordEncoding.encode (α := Option ℕ × ℕ)) (fun w _ _ => Fits w 1) (fun _ _ => 0) := by
-    realize
-    exact h
-  have hNext := (hLink.bind₀ hRet).reindex
-    (fun d : (((ℕ × ℕ) × ℕ) × ℕ) × ℕ => ![d.1.1.1.1, d.1.1.1.2, d.1.1.2, d.1.2, d.2])
-    (WordEncoding.encode (α := (((ℕ × ℕ) × ℕ) × ℕ) × ℕ)) ![0, 1, 2, 3, 4]
-    (by intro d i; fin_cases i <;> rfl)
-  change Realizes .exact
-    (fun d : (((ℕ × ℕ) × ℕ) × ℕ) × ℕ => do
-      let u ← DataStructure.link (E := Memory.spec 0)
-        ((layout d.1.1.1.1 d.1.1.1.2).methods 0) (FibonacciHeap.link d.1.1.2 d.1.2)
-      pure (some u, d.2))
-    (WordEncoding.encode (α := (((ℕ × ℕ) × ℕ) × ℕ) × ℕ))
-    (WordEncoding.encode (α := Option ℕ × ℕ))
-    (fun w d s => linkSafe w ![d.1.1.1.1, d.1.1.1.2, d.1.1.2, d.1.2] s ∧ Fits w 1)
-    (fun _ _ => 0) at hNext
-  unfold scatterBody
-  realize
-  all_goals try first
-    | exact h.1.of_le (by have := h.2.1; have := h.2.2.1; omega)
-    | exact h.2.2.2 (by assumption)
-    | omega
-
 /-- The original consolidation-table step, with all runtime root and maximum-degree words
 faithfully retained. The link's local work and argument staging are charged by the shared rules. -/
 theorem realizes_scatterStep : Realizes .exact
     (fun d : Fin 4 → ℕ => DataStructure.link (E := Memory.spec 0)
       ((layout (d 0) (d 1)).methods 0) (scatterStep (d 2, d 3)))
-    (.refl _) (WordEncoding.encode (α := Option ℕ × ℕ)) scatterStepSafe (fun _ _ => 0) :=
-  realizes_scatterBody.congr scatterBody_eq
+    (.refl _) (WordEncoding.encode (α := Option ℕ × ℕ)) scatterStepSafe (fun _ _ => 0) := by
+  conv =>
+    arg 2
+    ext d
+    simp only [scatterStep, DataStructure.link, rd, wr, Record.read, Record.write,
+      PFunctor.FreeM.bind_eq_bind, PFunctor.FreeM.liftM_bind, PFunctor.FreeM.liftM_lift,
+      PFunctor.FreeM.liftM_pure, pure_bind, Record.lift_ite, Record.Layout.methods, layout]
+  have hLink := realizes_link.reindex
+    (fun d : ((ℕ × ℕ) × ℕ) × ℕ => ![d.1.1.1, d.1.1.2, d.1.2, d.2])
+    (WordEncoding.encode (α := ((ℕ × ℕ) × ℕ) × ℕ)) ![0, 1, 2, 3]
+    (by intro d i; fin_cases i <;> rfl)
+  change Realizes .exact
+    (fun d : ((ℕ × ℕ) × ℕ) × ℕ => PFunctor.FreeM.liftM
+      ((layout d.1.1.1 d.1.1.2).methods 0) (FibonacciHeap.link d.1.2 d.2))
+    (WordEncoding.encode (α := ((ℕ × ℕ) × ℕ) × ℕ)) (WordEncoding.encode (α := ℕ))
+    (fun w d s => linkSafe w ![d.1.1.1, d.1.1.2, d.1.2, d.2] s)
+    (fun _ _ => 0) at hLink
+  simp only [layout] at hLink
+  realize
+  all_goals try first
+    | exact h.1.of_le (by have := h.2.1; have := h.2.2.1; omega)
+    | exact h.2.2.2 (by assumption)
+    | omega
+  all_goals
+    change Fits w (d 1 + 8 * d 0 + s.mem (d 1 + 5 * d 0 + d 2))
+    exact h.1.of_le (by have := h.2.1; have := h.2.2.1; omega)
 
 private theorem scatterStep_progress {n sz w md : ℕ} {z : Fin n} {g : Cell → ℕ}
     {T : FHTree n} {slots : List (FHTree n)} (hfit : Fits w n)

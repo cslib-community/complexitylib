@@ -145,9 +145,9 @@ end ToClique
 open ToClique
 
 /-- **The graph of a circuit of weft one and a weight**, with its clique size. -/
-def toClique {d : ℕ} (x : WCSInstance 1 d) : Graph × ℕ :=
-  (graph d x.circuit.toCircuit.1 x.circuit.toCircuit.2.code.1
-    (x.circuit.toCircuit.2.outputs 0).toNat x.weight, size d x.circuit.toCircuit.1 x.weight)
+def toClique {d : ℕ} (x : WCSInstance 1 d) : CliqueInstance :=
+  ⟨graph d x.circuit.toCircuit.1 x.circuit.toCircuit.2.code.1
+    (x.circuit.toCircuit.2.outputs 0).toNat x.weight, size d x.circuit.toCircuit.1 x.weight⟩
 
 namespace ToClique
 
@@ -365,7 +365,7 @@ private theorem vadj_correct_brackets {n kk : ℕ} {gates : List (Unbounded.Op �
 theorem mem_Clique_of_eval {d n : ℕ} (c : Circuit Unbounded.signature n 1) (hw : c.weft ≤ 1)
     (hd : c.depth ≤ d) {k : ℕ} (x : BitString n) (hk : BitString.weight x = k)
     (hx : c.eval Unbounded.interpretation x 0 = true) :
-    (graph d n c.code.1 (c.outputs 0).toNat k, size d n k) ∈ Clique := by
+    (⟨graph d n c.code.1 (c.outputs 0).toNat k, size d n k⟩ : CliqueInstance) ∈ Clique := by
   classical
   have hkn : k ≤ n := hk ▸ BitString.weight_le_length x
   -- The ones of `x`, enumerated in increasing order.
@@ -393,7 +393,7 @@ theorem mem_Clique_of_eval {d n : ℕ} (c : Circuit Unbounded.signature n 1) (hw
       exact ⟨(mem_indexLists.1 hC).2 j hj, rfl⟩
     rw [know_sound hu hPu hb, getD_ofFn_selected u hs]
   -- The clique: the certificate and the correct bracket of every list of indices.
-  rw [graph, size, min_eq_right (by omega : k ≤ n + 1),
+  rw [ToClique.graph, size, min_eq_right (by omega : k ≤ n + 1),
     Graph.mem_Clique_ofAdj_iff_entries (vadj_self _ _ _)]
   refine ⟨insert (⟨true, cl, []⟩ : Vertex)
       ((indexLists d k).toFinset.image fun C => (⟨false, [], B C⟩ : Vertex)),
@@ -543,11 +543,12 @@ private theorem checks_of_not_refutes {d n kk : ℕ} (c : Circuit Unbounded.sign
 /-- **Soundness of the graph.** If the graph of a circuit has a clique of the size, the circuit
 has a satisfying input with `k` ones. -/
 theorem satisfiableWithWeight_of_mem_Clique {d n : ℕ} (c : Circuit Unbounded.signature n 1)
-    {k : ℕ} (h : (graph d n c.code.1 (c.outputs 0).toNat k, size d n k) ∈ Clique) :
+    {k : ℕ}
+    (h : (⟨graph d n c.code.1 (c.outputs 0).toNat k, size d n k⟩ : CliqueInstance) ∈ Clique) :
     c.SatisfiableWithWeight Unbounded.interpretation k := by
   classical
   set kk := min (n + 1) k with hkk
-  rw [graph, size, ← hkk, Graph.mem_Clique_ofAdj_iff_entries (vadj_self _ _ _)] at h
+  rw [ToClique.graph, size, ← hkk, Graph.mem_Clique_ofAdj_iff_entries (vadj_self _ _ _)] at h
   obtain ⟨T, hTcard, hTv, hTadj⟩ := h
   obtain ⟨⟨cl, hclT, hcl⟩, hcover⟩ := clique_shape hTcard hTv hTadj
   -- The selection, read off the brackets of the one-index lists.
