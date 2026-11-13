@@ -6005,12 +6005,14 @@ public import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Median
 public import CslibFrontier.GameTheory.Mechanism.FacilityLocation.Tree
 public import CslibFrontier.GameTheory.Mechanism.FirstPrice
 public import CslibFrontier.GameTheory.Mechanism.Knapsack
+public import CslibFrontier.GameTheory.Mechanism.LinearValuation
 public import CslibFrontier.GameTheory.Mechanism.Myerson
 public import CslibFrontier.GameTheory.Mechanism.OptimalAuction
 public import CslibFrontier.GameTheory.Mechanism.Revenue
 public import CslibFrontier.GameTheory.Mechanism.SingleParameter
 public import CslibFrontier.GameTheory.Mechanism.VCG
 public import CslibFrontier.GameTheory.Mechanism.Vickrey
+public import CslibFrontier.GameTheory.Mechanism.VickreyVCG
 public import CslibFrontier.GameTheory.Mechanism.VirtualValue
 public import CslibFrontier.GameTheory.MixedStrategy
 public import CslibFrontier.GameTheory.SocialChoice.Arrow
