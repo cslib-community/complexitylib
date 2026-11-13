@@ -2144,6 +2144,7 @@ public import CslibFrontier.Computability.Complexity.Classes.SharpP.Completeness
 public import CslibFrontier.Computability.Complexity.Classes.SharpP.GapMachine
 public import CslibFrontier.Computability.Complexity.Classes.SharpP.Lowness
 public import CslibFrontier.Computability.Complexity.Classes.SharpP.Machine
+public import CslibFrontier.Computability.Complexity.Classes.SharpP.Metric
 public import CslibFrontier.Computability.Complexity.Classes.SharpP.Oracle
 public import CslibFrontier.Computability.Complexity.Classes.SharpP.OracleReplay
 public import CslibFrontier.Computability.Complexity.Classes.SharpP.PaddedCount
@@ -2562,6 +2563,7 @@ public import CslibFrontier.Computability.Complexity.Problems.NAEThreeSAT
 public import CslibFrontier.Computability.Complexity.Problems.OneInThreeSAT
 public import CslibFrontier.Computability.Complexity.Problems.OneInThreeSAT.Reduction
 public import CslibFrontier.Computability.Complexity.Problems.Partition
+public import CslibFrontier.Computability.Complexity.Problems.Permanent.Basic
 public import CslibFrontier.Computability.Complexity.Problems.PlanarPositiveOneInThreeSAT
 public import CslibFrontier.Computability.Complexity.Problems.PlanarThreeSATThree
 public import CslibFrontier.Computability.Complexity.Problems.Primes
