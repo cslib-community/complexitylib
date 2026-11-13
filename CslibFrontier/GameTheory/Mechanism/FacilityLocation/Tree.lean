@@ -530,92 +530,55 @@ private lemma pareto_branch [MeasurableSpace (MetricGraph W)] [OpensMeasurableSp
       dist (f z) (z i) ≤ dist (f (Function.update z i w)) (z i) := fun z i w => by
     simpa only [_root_.dist_comm] using
       (Mechanism.isStrategyProof_deterministic_iff f).mp hf_sp z i w
-  have hconst : ∀ (n : ℕ) (z : ι → MetricGraph W),
-      (Finset.univ.filter fun i => z i ≠ p).card = n →
-      (∀ i, z i = p ∨ z i = x i) → f z = y → f (fun _ => p) = y := by
-    intro n
-    induction n with
-    | zero =>
-      intro z hcard _ hfz
-      have hemp : (Finset.univ.filter fun i => z i ≠ p) = ∅ := Finset.card_eq_zero.mp hcard
-      have heq : z = fun _ => p := by
-        funext i
-        by_contra hne
-        have hi : i ∈ Finset.univ.filter fun i => z i ≠ p := by simp [hne]
-        rw [hemp] at hi
-        exact Finset.notMem_empty i hi
-      simpa [heq] using hfz
-    | succ k ih =>
-      intro z hcard hz_cases hfz
-      have hne : (Finset.univ.filter fun i => z i ≠ p).Nonempty :=
-        Finset.card_pos.mp (hcard ▸ Nat.succ_pos k)
-      obtain ⟨i₀, hi₀⟩ := hne
-      have hi₀_ne : z i₀ ≠ p := (Finset.mem_filter.mp hi₀).2
-      have hi₀_eq : z i₀ = x i₀ := (hz_cases i₀).resolve_left hi₀_ne
-      let z' := Function.update z i₀ p
-      have hball_z' : f z' ∈ interval y v₀ ∧ dist y (f z') ≤ 2 * dist y p := by
-        refine hball p hp_mem (hp_dist.symm ▸ hr_pos) (hp_dist.symm ▸ hr_le_r0) (f z') ?_
-        have := hsp z' i₀ (z i₀)
-        have hupd : Function.update z' i₀ (z i₀) = z := by
-          funext j
-          by_cases hj : j = i₀
-          · subst hj; simp [z']
-          · simp [z', hj]
-        rw [hupd, hfz] at this
-        simpa only [z', Function.update_self, _root_.dist_comm] using this
-      have hxi_mem : p ∈ interval y (x i₀) := by
-        have hxi_le : dist y p ≤ dist y (x i₀) := by
-          have hmem_univ : (Finset.univ : Finset ι).Nonempty := ⟨i₀, Finset.mem_univ i₀⟩
-          have hd : dmin ≤ dist y (x i₀) := by
-            dsimp only [dmin]
-            simp only [hmem_univ, ↓reduceDIte]
-            exact Finset.min'_le _ _ (Finset.mem_image.mpr ⟨i₀, Finset.mem_univ i₀, rfl⟩)
-          have : r ≤ dmin / 3 := min_le_right _ _
-          linarith
-        exact hstem_sub (x i₀) (hall i₀) p hp_mem hxi_le
-      have hfzp_mem : f z' ∈ interval y (x i₀) := by
-        have hfz_le_xi : dist y (f z') ≤ dist y (x i₀) := by
-          have hmem_univ : (Finset.univ : Finset ι).Nonempty := ⟨i₀, Finset.mem_univ i₀⟩
-          have hd : dmin ≤ dist y (x i₀) := by
-            dsimp only [dmin]
-            simp only [hmem_univ, ↓reduceDIte]
-            exact Finset.min'_le _ _ (Finset.mem_image.mpr ⟨i₀, Finset.mem_univ i₀, rfl⟩)
-          have : r ≤ dmin / 3 := min_le_right _ _
-          linarith [hball_z'.2]
-        by_cases hfz_y : f z' = y
-        · rw [hfz_y]
-          exact left_mem_interval y (x i₀)
-        · have hfz_br : f z' ∈ branch y q := by
-            have := (branch_eq_of_mem hT hv₀_mem)
-            rw [← this]
-            exact mem_branch_of_mem_interval hT (mem_branch_self (fun heq => by
-              rw [heq] at hv₀_mem; exact notMem_branch_self y q hv₀_mem)) hball_z'.1 hfz_y
-          exact hstem_sub (x i₀) (hall i₀) (f z') hball_z'.1 hfz_le_xi
-      have hfz_sp := hsp z i₀ p
-      rw [hfz, hi₀_eq] at hfz_sp
-      change dist y (x i₀) ≤ dist (f z') (x i₀) at hfz_sp
-      have he1 := mem_interval_iff.mp hfzp_mem
-      have hd0 : dist y (f z') = 0 := by
-        linarith [_root_.dist_comm (x i₀) y, _root_.dist_comm (x i₀) (f z'),
-          _root_.dist_comm y (f z'), _root_.dist_comm (f z') (x i₀),
-          dist_nonneg (x := y) (y := f z')]
-      have hfz'_eq : f z' = y := (dist_eq_zero.mp hd0).symm
-      have hsub : Finset.univ.filter (fun i => z' i ≠ p) =
-          (Finset.univ.filter fun i => z i ≠ p).erase i₀ := by
-        ext j
-        simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_erase, z']
+  have hr_le_dist : ∀ i, 3 * r ≤ dist y (x i) := fun i => by
+    have hd : dmin ≤ dist y (x i) := by
+      dsimp only [dmin]
+      simp only [show (Finset.univ : Finset ι).Nonempty from ⟨i, Finset.mem_univ i⟩, ↓reduceDIte]
+      exact Finset.min'_le _ _ (Finset.mem_image.mpr ⟨i, Finset.mem_univ i, rfl⟩)
+    have : r ≤ dmin / 3 := min_le_right _ _
+    linarith
+  have hfp : f (fun _ => p) = y := by
+    refine profile_update_induction (P := fun z => f z = y) (y := fun _ => p) rfl ?_
+    intro z _ hfz i₀ hi₀_eq _
+    let z' := Function.update z i₀ p
+    change f z' = y
+    have hball_z' : f z' ∈ interval y v₀ ∧ dist y (f z') ≤ 2 * dist y p := by
+      refine hball p hp_mem (hp_dist.symm ▸ hr_pos) (hp_dist.symm ▸ hr_le_r0) (f z') ?_
+      have := hsp z' i₀ (z i₀)
+      have hupd : Function.update z' i₀ (z i₀) = z := by
+        funext j
         by_cases hj : j = i₀
-        · subst hj; simp
-        · simp [hj]
-      have hcard' : (Finset.univ.filter fun i => z' i ≠ p).card = k := by
-        rw [hsub, Finset.card_erase_of_mem hi₀, hcard]
-        simp
-      have hz'_cases : ∀ i, z' i = p ∨ z' i = x i := fun i => by
-        by_cases hi : i = i₀
-        · subst hi; simp [z']
-        · simpa [z', hi] using hz_cases i
-      exact ih z' hcard' hz'_cases hfz'_eq
-  have hfp : f (fun _ => p) = y := hconst _ x rfl (fun i => Or.inr rfl) rfl
+        · subst hj; simp [z']
+        · simp [z', hj]
+      rw [hupd, hfz] at this
+      simpa only [z', Function.update_self, _root_.dist_comm] using this
+    have hxi_mem : p ∈ interval y (x i₀) := by
+      have hxi_le : dist y p ≤ dist y (x i₀) := by
+        have hd := hr_le_dist i₀
+        linarith
+      exact hstem_sub (x i₀) (hall i₀) p hp_mem hxi_le
+    have hfzp_mem : f z' ∈ interval y (x i₀) := by
+      have hfz_le_xi : dist y (f z') ≤ dist y (x i₀) := by
+        have hd := hr_le_dist i₀
+        linarith [hball_z'.2]
+      by_cases hfz_y : f z' = y
+      · rw [hfz_y]
+        exact left_mem_interval y (x i₀)
+      · have hfz_br : f z' ∈ branch y q := by
+          have := (branch_eq_of_mem hT hv₀_mem)
+          rw [← this]
+          exact mem_branch_of_mem_interval hT (mem_branch_self (fun heq => by
+            rw [heq] at hv₀_mem; exact notMem_branch_self y q hv₀_mem)) hball_z'.1 hfz_y
+        exact hstem_sub (x i₀) (hall i₀) (f z') hball_z'.1 hfz_le_xi
+    have hfz_sp := hsp z i₀ p
+    rw [hfz, hi₀_eq] at hfz_sp
+    change dist y (x i₀) ≤ dist (f z') (x i₀) at hfz_sp
+    have he1 := mem_interval_iff.mp hfzp_mem
+    have hd0 : dist y (f z') = 0 := by
+      linarith [_root_.dist_comm (x i₀) y, _root_.dist_comm (x i₀) (f z'),
+        _root_.dist_comm y (f z'), _root_.dist_comm (f z') (x i₀),
+        dist_nonneg (x := y) (y := f z')]
+    exact (dist_eq_zero.mp hd0).symm
   have hunan : f (fun _ => p) = p := unanimous_of_surjective_isStrategyProof hf_sp hf_onto p
   exact hp_ne_y (hunan.symm.trans hfp)
 

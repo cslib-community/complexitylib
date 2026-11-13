@@ -153,24 +153,24 @@ example : ¬∃ w : List Bool, w.length = Polynomial.X.eval (encPair (encList en
 -- elements (`[3, 5, 3, 7].toFinset.card = 3`).
 example :
     selectDistinct [3, 5, 3, 7] (List.replicate 4 true) = [3, 5, 7] ∧
-    Graph.distinctVertices ([2, 1, 2, 1], []) = [2, 1] ∧
+    Graph.distinctVertices ⟨[2, 1, 2, 1], []⟩ = [2, 1] ∧
     [3, 5, 3, 7].toFinset.card = 3 :=
   ⟨rfl, rfl, (length_selectDistinct_replicate [3, 5, 3, 7]).symm.trans rfl⟩
 
 /-! ### Vertex covers through the subset verifier -/
 
 /-- The path `1 - 2 - 3`. -/
-def path3 : Graph := ([1, 2, 3], [(1, 2), (2, 3)])
+def path3 : Graph := ⟨[1, 2, 3], [(1, 2), (2, 3)]⟩
 
 -- The middle vertex covers both edges; an end vertex or wrong size is rejected; a repeated
 -- declared vertex is selected only at its first occurrence.
 example :
-    VertexCover.verifier ((path3, 1), [false, true, false]) = true ∧
-    VertexCover.verifier ((path3, 1), [true, false, false]) = false ∧
-    VertexCover.verifier ((path3, 1), [true, true, false]) = false ∧
-    VertexCover.verifier (((([2, 2, 1, 3], [(1, 2), (2, 3)]) : Graph), 1),
+    VertexCover.verifier (⟨path3, 1⟩, [false, true, false]) = true ∧
+    VertexCover.verifier (⟨path3, 1⟩, [true, false, false]) = false ∧
+    VertexCover.verifier (⟨path3, 1⟩, [true, true, false]) = false ∧
+    VertexCover.verifier (⟨(⟨[2, 2, 1, 3], [(1, 2), (2, 3)]⟩ : Graph), 1⟩,
       [true, true, false, false]) = true ∧
-    VertexCover.verifier (((([2, 2, 1, 3], [(1, 2), (2, 3)]) : Graph), 1),
+    VertexCover.verifier (⟨(⟨[2, 2, 1, 3], [(1, 2), (2, 3)]⟩ : Graph), 1⟩,
       [false, true, false, false]) = false :=
   ⟨rfl, rfl, rfl, rfl, rfl⟩
 
@@ -187,7 +187,7 @@ example : ((List.range 3).countP fun c =>
 
 example : SAT ∈ NP encCNF := polyTimeReducible_SAT_ThreeSAT.mem_NP ThreeSAT.mem_NP
 
-example : IndependentSet ∈ NP (encPair encGraph encNat) :=
+example : IndependentSet ∈ NP encIndependentSetInstance :=
   polyTimeReducible_IndependentSet_Clique.mem_NP Clique.mem_NP
 
 end CslibFrontierTests.NPWitness

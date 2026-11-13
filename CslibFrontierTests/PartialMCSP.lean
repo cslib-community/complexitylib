@@ -148,21 +148,21 @@ example :
 /-! ### Bipartite Permutation Independent Set -/
 
 /-- An edgeless $n \times n$ bipartite permutation graph is always satisfiable, whereas a self-loop
-on $(0, 0)$ for $n = 1$ (including `bpisOfColoring (([], []), 0)`) is unsatisfiable. -/
+on $(0, 0)$ for $n = 1$ (including `bpisOfColoring (⟨[], []⟩, 0)`) is unsatisfiable. -/
 example (n : ℕ) :
     ((n, []) : BipartitePermutationGraph) ∈ BipartitePermutationIndependentSet ∧
       ((1, [((0, 0), (0, 0))]) : BipartitePermutationGraph) ∉
         BipartitePermutationIndependentSet ∧
-      (BipartitePermutationIndependentSet.bpisOfColoring (([], []), 0)).1 = 1 ∧
-      (BipartitePermutationIndependentSet.bpisOfColoring (([], []), 0)).2 =
+      (BipartitePermutationIndependentSet.bpisOfColoring (⟨[], []⟩, 0)).1 = 1 ∧
+      (BipartitePermutationIndependentSet.bpisOfColoring (⟨[], []⟩, 0)).2 =
         [((0, 0), (0, 0))] ∧
-      BipartitePermutationIndependentSet.bpisOfColoring (([], []), 0) ∉
+      BipartitePermutationIndependentSet.bpisOfColoring (⟨[], []⟩, 0) ∉
         BipartitePermutationIndependentSet := by
   refine ⟨⟨1, 1, fun _ h => by simp at h⟩, ?_, by decide, by decide, ?_⟩
   · rintro ⟨π₁, π₂, h⟩
     exact h ((0, 0), (0, 0)) (by simp) (by decide) (by decide) (by decide) (by decide)
       (Subsingleton.elim (π₁ 0) 0) (Subsingleton.elim (π₂ 0) 0)
-  · have hG : BipartitePermutationIndependentSet.bpisOfColoring (([], []), 0) =
+  · have hG : BipartitePermutationIndependentSet.bpisOfColoring (⟨[], []⟩, 0) =
         (1, [((0, 0), (0, 0))]) := by decide
     rw [hG]
     rintro ⟨π₁, π₂, h⟩

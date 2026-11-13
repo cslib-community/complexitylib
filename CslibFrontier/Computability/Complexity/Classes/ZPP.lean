@@ -70,8 +70,7 @@ def DecidesWithZeroError (enc : α ↪ List Bool) (p : Polynomial ℕ)
   ∀ a, (∀ r : Fin (p.eval (enc a).length) → Bool, ∀ b, V (a, List.ofFn r) = some b →
       (b = true ↔ a ∈ A)) ∧
     2 ^ p.eval (enc a).length ≤
-      2 * (Finset.univ.filter fun r : Fin (p.eval (enc a).length) → Bool =>
-        (V (a, List.ofFn r)).isSome = true).card
+      2 * acceptCount (fun x => (V x).isSome) a (p.eval (enc a).length)
 
 /-- The problems decided with zero error by polynomial-time machines reading polynomially long
 random strings, with respect to the encoding `enc` of instances [Gill][Gill1977],

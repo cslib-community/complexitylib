@@ -4,9 +4,19 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import CslibFrontier.Computability.QueryComplexity.Quantum.Adversary
-import CslibFrontier.Computability.QueryComplexity.Quantum.UnknownSearch
-import CslibFrontierTests.QuantumPolynomial
+module
+-- upstream: candidate
+
+public import CslibFrontier.Computability.QueryComplexity.Quantum.Adversary
+public import Cslib.Foundations.Data.BitString
+public import Cslib.Computability.QueryComplexity.Measures
+public import Mathlib.Data.Fintype.Defs
+public import CslibFrontier.Computability.QueryComplexity.SpectralSensitivity
+public import Mathlib.Algebra.Order.Group.Unbundled.Abs
+public import CslibFrontier.Computability.QueryComplexity.Quantum.UnknownSearch
+public import CslibFrontierTests.QuantumPolynomial
+public import CslibFrontier.Foundations.Quantum.Measurement
+public import CslibFrontier.Computability.QueryComplexity.Quantum.Search
 
 /-! Spectral sensitivity and the quartic bound `D(f) ≤ 20736 T⁴`: the spectral sensitivity of
 parity, and the bounds applied to the exact one-query algorithm `readBit` and to the `OR_N`
@@ -16,6 +26,8 @@ namespace CslibFrontierTests.QuantumAdversary
 
 open Cslib Cslib.Quantum Cslib.BitString Cslib.QueryComplexity Finset
 open CslibFrontierTests.QuantumPolynomial
+
+public section
 
 /-- Every coordinate is sensitive for parity. -/
 theorem sensitiveCoords_parity {n : ℕ} (x : BitString n) : sensitiveCoords (parity n) x = univ :=
@@ -64,5 +76,7 @@ example (N : ℕ) (hN : 0 < N) : N ≤ 1296 * (orRange N + orRange N) ^ 2 :=
   degree_threshold_one_right.symm.trans_le
     (degree_le_mul_sq (orSearch N) (norm_orSearchInit hN) _ (orAccept N)
       (abs_measureProb_run_orSearch_sub_le hN))
+
+end
 
 end CslibFrontierTests.QuantumAdversary

@@ -71,8 +71,8 @@ def language : Set (List Bool) :=
   {w | combine (w, truthTableAnswers (query ⁻¹' oracle) count w) = true}
 
 theorem reduction : PolyTimeTruthTableReducible encBits encBits language oracle :=
-  ⟨count, query, combine, polyTime_count, polyTime_query,
-    polyTime_combine, fun _ => Iff.rfl⟩
+  ⟨count, query, combine, ⟨polyTime_count, polyTime_query, polyTime_combine⟩,
+    fun _ => Iff.rfl⟩
 
 example : language ∈ LWPP encBits ∧ language ∈ WPP encBits :=
   ⟨reduction.mem_LWPP oracle_mem_LWPP,

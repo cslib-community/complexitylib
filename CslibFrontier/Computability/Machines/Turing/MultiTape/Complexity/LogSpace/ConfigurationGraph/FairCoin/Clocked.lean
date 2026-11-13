@@ -31,7 +31,8 @@ reward vector or start field. The initialized matrix payload is supplied by `Clo
 
 ## Main results
 
-* `Turing.MultiTapeNTM.ConfigurationGraph.clockedVertexBound_budget`,
+* `Turing.MultiTapeNTM.ConfigurationGraph.polyClock_budget`,
+  `Turing.MultiTapeNTM.ConfigurationGraph.clockedVertexBound_budget`,
   `Turing.MultiTapeNTM.ConfigurationGraph.clockedAccept_budget`: local native space certificates.
 * `Turing.MultiTapePTM.ConfigurationGraph.clockedCoinCountWithSymbol_le_two`: count bound.
 * `Turing.MultiTapePTM.ConfigurationGraph.eval_clockedCoinCountExpr`: exact expression evaluation.
@@ -45,9 +46,9 @@ open CounterProgram Expr MultiTapeTM ComputableInSpace
 
 variable {k : ℕ}
 
-/-- Number of compact clock/base pairs at the standard polynomial horizon. -/
+/-- Number of compact clock/base pairs at the polynomial horizon `Turing.polyClock d n`. -/
 @[expose] def clockedVertexBound (D d n : ℕ) : ℕ :=
-  (2 * (2 * (n + 1)) ^ d + 1) * vertexBound (k := k) (radix D n)
+  (polyClock d n + 1) * vertexBound (k := k) (radix D n)
 
 /-- The dimension as a counter expression in the original word length. -/
 noncomputable def clockedVertexBoundExpr (k D d : ℕ) (n : Expr) : Expr :=
@@ -57,7 +58,7 @@ noncomputable def clockedVertexBoundExpr (k D d : ℕ) (n : Expr) : Expr :=
 /-- The dimension expression has exactly the polynomial clocked-box value. -/
 @[simp] theorem eval_clockedVertexBoundExpr (k D d : ℕ) (n : Expr) (regs : List ℕ) :
     (clockedVertexBoundExpr k D d n).eval regs = clockedVertexBound (k := k) D d (n.eval regs) := by
-  simp [clockedVertexBoundExpr, clockedVertexBound]
+  simp [clockedVertexBoundExpr, clockedVertexBound, polyClock]
 
 /-- The last layer pays the accepting-halt indicator of the base compact ID. -/
 @[expose] noncomputable def clockedAccept {State : Type} [Fintype State] (B n T u : ℕ) : Bool :=
@@ -66,16 +67,22 @@ noncomputable def clockedVertexBoundExpr (k D d : ℕ) (n : Expr) : Expr :=
 
 variable {α : Type} {enc : α ↪ List Bool} {S : α → ℕ} {B n T u : α → ℕ}
 
+/-- Computing the polynomial clock preserves any common native space budget for the input
+length. The exponent is fixed with the source machine. -/
+theorem polyClock_budget (d : ℕ) (hn : ComputableInSpace n enc encNat S)
+    (hin : (fun a => (enc a).length) ≼ S) :
+    ComputableInSpace (fun a => polyClock d (n a)) enc encNat S := by
+  have htwo : ComputableInSpace (fun _ : α => 2) enc encNat S := budget_const 2 hin
+  exact budget_natMul htwo (budget_natPow (budget_natMul htwo (budget_natSucc hn)) hin d)
+
 /-- Computing the clocked dimension preserves any common native space budget for the input
 length. The exponents are fixed with the source machine. -/
 theorem clockedVertexBound_budget (D d : ℕ) (hn : ComputableInSpace n enc encNat S)
     (hin : (fun a => (enc a).length) ≼ S) :
-    ComputableInSpace (fun a => clockedVertexBound (k := k) D d (n a)) enc encNat S := by
-  have htwo : ComputableInSpace (fun _ : α => 2) enc encNat S := budget_const 2 hin
-  exact budget_natMul
-    (budget_natSucc (budget_natMul htwo
-      (budget_natPow (budget_natMul htwo (budget_natSucc hn)) hin d)))
-    (vertexBound_budget (k := k) (budget_natPow (budget_natAdd hn htwo) hin D) hin)
+    ComputableInSpace (fun a => clockedVertexBound (k := k) D d (n a)) enc encNat S :=
+  budget_natMul (budget_natSucc (polyClock_budget d hn hin))
+    (vertexBound_budget (k := k)
+      (budget_natPow (budget_natAdd hn (budget_const 2 hin)) hin D) hin)
 
 /-- The terminal reward test preserves the native space budget of its binary arguments. -/
 theorem clockedAccept_budget {State : Type} [Fintype State]

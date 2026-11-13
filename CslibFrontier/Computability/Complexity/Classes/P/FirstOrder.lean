@@ -10,7 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.Classes.P.FirstOrder.ModelChecker
 public import CslibFrontier.Computability.Complexity.Classes.P
 public import CslibFrontier.Logics.FirstOrder.Ordered.LeastFixedPoint
-import CslibFrontier.Computability.Complexity.Fagin.Verifier
+import CslibFrontier.Logics.FirstOrder.Encoding.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary

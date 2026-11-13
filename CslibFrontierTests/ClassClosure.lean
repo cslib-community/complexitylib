@@ -12,6 +12,7 @@ import CslibFrontier.Computability.Complexity.Classes.P.Complement
 import CslibFrontier.Computability.Complexity.Classes.PCP.ZeroRandomness
 import CslibFrontier.Computability.Complexity.Classes.PP.Characterization
 import CslibFrontier.Computability.Complexity.Classes.RP.Closure
+import CslibFrontier.Computability.Complexity.Classes.RP.Reduction
 import CslibFrontier.Computability.Complexity.Classes.SharpP.Closure
 import CslibFrontier.Computability.Complexity.Classes.SharpP.Combinators
 import CslibFrontier.Computability.Complexity.Classes.Space.Closure
@@ -68,7 +69,14 @@ example :
     SharpP.mul_mem (SharpP.two_pow_mem _) (SharpP.two_pow_mem _)⟩,
    ⟨SharpP.pow_mem (SharpP.two_pow_mem _) 3,
     SharpP.sum_mem _ fun i _ => SharpP.natCast_mem i⟩,
-   GapP.neg_mem (natCast_mem (GapP.subring encBits) 3)⟩
+   GapP.neg_mem (GapP.natCast_mem 3)⟩
+
+/-- Finite sums, finite products and powers of concrete `GapP` functions. -/
+example :
+    ∑ i ∈ Finset.range 4, ((i : ℕ) : List Bool → ℤ) ∈ GapP encBits ∧
+      ∏ i ∈ Finset.range 3, (-((i : ℕ) : List Bool → ℤ)) ^ 2 ∈ GapP encBits :=
+  ⟨GapP.sum_mem _ fun i _ => GapP.natCast_mem i,
+   GapP.prod_mem _ fun i _ => GapP.pow_mem (GapP.neg_mem (GapP.natCast_mem i)) 2⟩
 
 /-- The complementary count of the constant function `1`. -/
 example : ∃ p : Polynomial ℕ,
@@ -124,6 +132,16 @@ example :
     union_mem_BPP (P_subset_BPP headD_mem_P) (P_subset_BPP hc)⟩,
    ⟨inter_mem_PSPACE (P_subset_PSPACE headD_mem_P) (P_subset_PSPACE hc),
     union_mem_PSPACE (P_subset_PSPACE headD_mem_P) (P_subset_PSPACE hc)⟩⟩
+
+/-- Dropping the first bit reduces the words whose second bit is `true` to the words starting with
+`true`, so they are in `RP`, `coRP` and `ZPP` through the reduction. -/
+example : List.tail ⁻¹' {w : List Bool | w.headD false = true} ∈
+    RP encBits ∩ coRP encBits ∩ ZPP encBits :=
+  have h : PolyTimeReducible encBits encBits (List.tail ⁻¹' {w | w.headD false = true})
+      {w : List Bool | w.headD false = true} :=
+    ⟨List.tail, ComputableInPolyTime.bitsTail, fun _ => Iff.rfl⟩
+  ⟨⟨h.mem_RP (P_subset_RP headD_mem_P), h.mem_coRP (P_subset_coRP headD_mem_P)⟩,
+    h.mem_ZPP (P_subset_ZPP headD_mem_P)⟩
 
 /-! ### `SAT` and `P` -/
 

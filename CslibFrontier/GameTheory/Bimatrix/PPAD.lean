@@ -32,6 +32,8 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.IntBinary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat
 import CslibFrontier.Computability.PolyTime.Int.Table
+import CslibFrontier.Foundations.Data.List.GetD
+import CslibFrontier.Foundations.Data.List.Lookup
 import CslibFrontier.Foundations.Data.List.OfFn
 import CslibFrontier.Foundations.Data.Nat.BinarySize
 import Mathlib.Data.List.GetD
@@ -768,9 +770,7 @@ private lemma scaledEntry_cast {D : ℤ} {q : ℚ} (hdvd : (q.den : ℤ) ∣ D) 
 private lemma list_getD_map_lt {α β : Type*} (f : α → β) (l : List α) (d₀ : α) (d₁ : β)
     {i : ℕ} (hi : i < l.length) :
     (l.map f).getD i d₁ = f (l.getD i d₀) := by
-  rw [List.getD_eq_getElem?_getD, List.getD_eq_getElem?_getD, List.getElem?_map,
-    getElem?_pos l i hi]
-  rfl
+  rw [List.getD_eq_getElem _ _ (by simpa using hi), List.getElem_map, List.getD_eq_getElem _ _ hi]
 
 private lemma clearMat_getD_cast {c : BimatrixCode} (hc : c.WellFormed)
     (i : Fin c.rows) (j : Fin c.cols) :
@@ -783,11 +783,10 @@ private lemma clearMat_getD_cast {c : BimatrixCode} (hc : c.WellFormed)
         (clearScale c : ℚ) * (M.getD i.1 []).getD j.1 0 := by
     intro M hM hlen hrows
     have hi : i.1 < M.length := by rw [hlen]; exact i.2
-    have hrmem : M.getD i.1 [] ∈ M := List.getD_eq_getElem M [] hi ▸ List.getElem_mem hi
+    have hrmem : M.getD i.1 [] ∈ M := List.getD_mem [] hi
     have hrlen : (M.getD i.1 []).length = c.cols := hrows _ hrmem
     have hj : j.1 < (M.getD i.1 []).length := by rw [hrlen]; exact j.2
-    have hqmem : (M.getD i.1 []).getD j.1 0 ∈ M.getD i.1 [] :=
-      List.getD_eq_getElem _ 0 hj ▸ List.getElem_mem hj
+    have hqmem : (M.getD i.1 []).getD j.1 0 ∈ M.getD i.1 [] := List.getD_mem 0 hj
     have h1 : (clearMat (clearScale c) M).getD i.1 [] =
         (M.getD i.1 []).map (scaledEntry (clearScale c)) :=
       list_getD_map_lt (List.map (scaledEntry (clearScale c))) M [] [] hi
@@ -821,7 +820,7 @@ private lemma scaleVecNum_getD_cast {v : List (ℤ × ℕ)} (hv : v.all isCanoni
     ((scaleVecNum (vecProdDen v) v).getD i.1 0 : ℚ) =
       (vecProdDen v : ℚ) * (v.map mkRatOfPair).getD i.1 0 := by
   have hi : i.1 < v.length := by rw [hk]; exact i.2
-  have hpq : v.getD i.1 (0, 0) ∈ v := List.getD_eq_getElem v (0, 0) hi ▸ List.getElem_mem hi
+  have hpq : v.getD i.1 (0, 0) ∈ v := List.getD_mem (0, 0) hi
   have hmem := (List.all_eq_true.1 hv) _ hpq
   simp only [isCanonicalNonnegPair, Bool.and_eq_true, decide_eq_true_eq] at hmem
   have hdvd := den_dvd_vecProdDen hpq
@@ -830,12 +829,10 @@ private lemma scaleVecNum_getD_cast {v : List (ℤ × ℕ)} (hv : v.all isCanoni
   have hneQ : ((v.getD i.1 (0, 0)).2 : ℚ) ≠ 0 := by
     exact_mod_cast (by omega : (v.getD i.1 (0, 0)).2 ≠ 0)
   have hget1 : (scaleVecNum (vecProdDen v) v).getD i.1 0 =
-      (v.getD i.1 (0, 0)).1 * (vecProdDen v).tdiv ((v.getD i.1 (0, 0)).2 : ℤ) := by
-    simp only [scaleVecNum, List.getD_eq_getElem?_getD, List.getElem?_map,
-      getElem?_pos v i.1 hi, Option.map_some, Option.getD_some]
-  have hget2 : (v.map mkRatOfPair).getD i.1 0 = mkRatOfPair (v.getD i.1 (0, 0)) := by
-    simp only [List.getD_eq_getElem?_getD, List.getElem?_map,
-      getElem?_pos v i.1 hi, Option.map_some, Option.getD_some]
+      (v.getD i.1 (0, 0)).1 * (vecProdDen v).tdiv ((v.getD i.1 (0, 0)).2 : ℤ) :=
+    list_getD_map_lt _ v (0, 0) 0 hi
+  have hget2 : (v.map mkRatOfPair).getD i.1 0 = mkRatOfPair (v.getD i.1 (0, 0)) :=
+    list_getD_map_lt mkRatOfPair v (0, 0) 0 hi
   rw [hget1, hget2]
   have htdiv : (vecProdDen v).tdiv ((v.getD i.1 (0, 0)).2 : ℤ) = t := by
     rw [ht, Int.mul_tdiv_cancel_left t hneZ]
@@ -853,9 +850,8 @@ private lemma pay1Vec_getD_cast {c : BimatrixCode} (hc : c.WellFormed)
   have hi : i.1 < (clearMatA c).length := by rw [hlen]; exact i.2
   have hget : (pay1Vec c yl).getD i.1 0 =
       ListMatrix.dotProduct c.cols ((clearMatA c).getD i.1 [])
-        (scaleVecNum (vecProdDen yl) yl) := by
-    simp only [pay1Vec, rowPayoffs, List.getD_eq_getElem?_getD, List.getElem?_map,
-      getElem?_pos (clearMatA c) i.1 hi, Option.map_some, Option.getD_some]
+        (scaleVecNum (vecProdDen yl) yl) :=
+    list_getD_map_lt _ (clearMatA c) [] 0 hi
   rw [hget, dotProduct_eq_fin_sum]
   push_cast
   calc
@@ -890,15 +886,10 @@ private lemma pay2Vec_getD_cast {c : BimatrixCode} (hc : c.WellFormed)
       (transposeRows c.rows c.cols (clearMatB c)) [] 0 hj
   have htr : ∀ i : Fin c.rows,
       (((transposeRows c.rows c.cols (clearMatB c)).getD j.1 []).getD i.1 0) =
-        ((clearMatB c).getD i.1 []).getD j.1 0 := by
-    intro i
-    have ht1 : (transposeRows c.rows c.cols (clearMatB c)).getD j.1 [] =
-        (List.range c.rows).map fun i' => rowEntry (clearMatB c) i' j.1 := by
-      simp only [transposeRows, List.getD_eq_getElem?_getD, List.getElem?_map,
-        List.getElem?_range j.2, Option.map_some, Option.getD_some]
-    rw [ht1]
-    simp only [List.getD_eq_getElem?_getD, List.getElem?_map, List.getElem?_range i.2,
-      Option.map_some, Option.getD_some, rowEntry]
+        ((clearMatB c).getD i.1 []).getD j.1 0 := fun i => by
+    simp only [transposeRows]
+    rw [List.getD_map_range _ [] j.2, List.getD_map_range _ 0 i.2]
+    rfl
   rw [hget, dotProduct_eq_fin_sum]
   push_cast
   calc
@@ -920,14 +911,11 @@ private lemma brCheck_iff {D mix : ℤ} {pays : List ℤ} {k : ℕ} (hk : pays.l
   simp only [brCheck, List.all_eq_true, decide_eq_true_eq]
   constructor
   · intro h i
-    exact h _ (by
-      rw [List.getD_eq_getElem pays 0 (by omega)]
-      exact List.getElem_mem (by omega))
+    exact h _ (List.getD_mem 0 (by omega))
   · intro h v hv
     rcases List.mem_iff_getElem.1 hv with ⟨i, hi, rfl⟩
     have hi' : i < k := by omega
-    simpa only [List.getD_eq_getElem?_getD, getElem?_pos pays i hi, Option.getD_some] using
-      h ⟨i, hi'⟩
+    simpa only [List.getD_eq_getElem pays 0 hi] using h ⟨i, hi'⟩
 
 private lemma bilinear_dotProduct_eq_cast {m n : ℕ} (xl yl : List (ℤ × ℕ)) (pv : List ℤ)
     (C : ℚ) (M : Fin m → Fin n → ℚ)
@@ -1284,7 +1272,7 @@ private lemma orderIsoOfFin_finsetOfList {m n k : ℕ} {L : List ℕ} (hsort : L
   have heq : List.ofFn f = L :=
     hperm.eq_of_pairwise (fun _ _ _ _ h1 h2 => False.elim (Nat.lt_asymm h1 h2)) hsort_ofFn hsort
   have hget := congrArg (fun l => l.getD i.1 0) heq
-  rw [← hget, List.getD_eq_getElem?_getD, List.getElem?_ofFn, dite_eq_left i.2, Option.getD_some]
+  rw [← hget, List.getD_ofFn f i 0]
 
 /-- Positive normalized integer matrix `A` of `c`. -/
 private def posMatA (c : BimatrixCode) : Matrix (Fin c.rows) (Fin c.cols) ℤ :=
@@ -1537,10 +1525,9 @@ private lemma encodeNodes_decode {c : BimatrixCode} {u : List Bool}
     encodeNodes c (decodeT₁ c u) (decodeT₂ c u) = u := by
   refine List.ext_getElem (by simp [encodeNodes, hu]) fun k hk1 hk2 => ?_
   simp only [encodeNodes, List.getElem_map, List.getElem_range]
+  have hget : u.getD k false = u[k] := List.getD_eq_getElem u false hk2
   by_cases hkd : k < c.rows + c.cols
   · rw [ite_eq_left hkd]
-    have hget : u.getD k false = u[k] := by
-      rw [List.getD_eq_getElem?_getD, getElem?_pos u k hk2, Option.getD_some]
     have hkmem : decide (k ∈ decodeT₁ c u) = (u[k] != decide (k < c.rows)) := by
       simp only [decodeT₁, List.mem_filter, List.mem_range, hkd, true_and, hget]
       cases u[k] <;> cases decide (k < c.rows) <;> decide
@@ -1550,8 +1537,6 @@ private lemma encodeNodes_decode {c : BimatrixCode} {u : List Bool}
     have hkd2 : k - (c.rows + c.cols) < c.rows + c.cols := by
       simp only [encodeNodes, List.length_map, List.length_range] at hk1
       omega
-    have hget : u.getD k false = u[k] := by
-      rw [List.getD_eq_getElem?_getD, getElem?_pos u k hk2, Option.getD_some]
     have hkmem : decide (k - (c.rows + c.cols) ∈ decodeT₂ c u) =
         (u[k] != decide (c.rows ≤ k - (c.rows + c.cols))) := by
       have hsumk : c.rows + c.cols + (k - (c.rows + c.cols)) = k := by omega
@@ -1565,9 +1550,7 @@ private lemma decodeT₁_encodeNodes {c : BimatrixCode} (T₁ T₂ : List ℕ) {
     k ∈ decodeT₁ c (encodeNodes c T₁ T₂) ↔ k ∈ T₁ := by
   have hklen : k < (encodeNodes c T₁ T₂).length := by simp [encodeNodes]; omega
   simp only [decodeT₁, List.mem_filter, List.mem_range, hk, true_and]
-  have hget : (encodeNodes c T₁ T₂).getD k false = (encodeNodes c T₁ T₂)[k] := by
-    rw [List.getD_eq_getElem?_getD, getElem?_pos (encodeNodes c T₁ T₂) k hklen, Option.getD_some]
-  rw [hget]
+  rw [List.getD_eq_getElem _ false hklen]
   simp only [encodeNodes, List.getElem_map, List.getElem_range, ite_eq_left hk]
   cases hkT : decide (k ∈ T₁) <;> cases decide (k < c.rows) <;> simp_all
 
@@ -1577,11 +1560,7 @@ private lemma decodeT₂_encodeNodes {c : BimatrixCode} (T₁ T₂ : List ℕ) {
   have hklen : c.rows + c.cols + k < (encodeNodes c T₁ T₂).length := by
     simp [encodeNodes]; omega
   simp only [decodeT₂, List.mem_filter, List.mem_range, hk, true_and]
-  have hget : (encodeNodes c T₁ T₂).getD (c.rows + c.cols + k) false =
-      (encodeNodes c T₁ T₂)[c.rows + c.cols + k] := by
-    rw [List.getD_eq_getElem?_getD,
-      getElem?_pos (encodeNodes c T₁ T₂) (c.rows + c.cols + k) hklen, Option.getD_some]
-  rw [hget]
+  rw [List.getD_eq_getElem _ false hklen]
   have hnotlt : ¬ c.rows + c.cols + k < c.rows + c.cols := by omega
   simp only [encodeNodes, List.getElem_map, List.getElem_range, ite_eq_right hnotlt,
     Nat.add_sub_cancel_left]
@@ -1595,10 +1574,7 @@ private lemma decodeT₁_zeroVertex (c : BimatrixCode) :
     simp only [List.mem_toFinset, List.mem_range, decodeT₁, List.mem_filter, zeroVertex]
     constructor
     · rintro ⟨hk, hne⟩
-      have hfalse : (List.replicate (2 * (c.rows + c.cols)) false).getD k false = false := by
-        rw [List.getD_eq_getElem?_getD, getElem?_pos _ k (by simp; omega),
-          Option.getD_some, List.getElem_replicate]
-      rw [hfalse] at hne
+      rw [List.getD_replicate false (by omega)] at hne
       simpa using hne
     · intro hk
       have hk2 : k < c.rows + c.cols := by omega
@@ -1618,13 +1594,7 @@ private lemma decodeT₂_zeroVertex (c : BimatrixCode) :
       zeroVertex]
     constructor
     · rintro ⟨hk, hne⟩
-      have hfalse :
-          (List.replicate (2 * (c.rows + c.cols)) false).getD (c.rows + c.cols + k) false =
-            false := by
-        rw [List.getD_eq_getElem?_getD,
-          getElem?_pos _ (c.rows + c.cols + k) (by simp; omega),
-          Option.getD_some, List.getElem_replicate]
-      rw [hfalse] at hne
+      rw [List.getD_replicate false (by omega)] at hne
       have hkge : c.rows ≤ k := by simpa using hne
       exact ⟨k - c.rows, by omega, by omega⟩
     · rintro ⟨j, hj, rfl⟩
@@ -2092,12 +2062,9 @@ private lemma subRows_eq_basisMat {m n k : ℕ} (M_int : Matrix (Fin m ⊕ Fin n
     have hent : rowEntry (subRows k allRows T) i.1 j.1 =
         rowEntry allRows (T.getD i.1 0) j.1 := by
       change ((subRows k allRows T).getD i.1 []).getD j.1 0 = rowEntry allRows (T.getD i.1 0) j.1
-      rw [hrow]
-      refine (list_getD_map_lt (fun j' => rowEntry allRows (T.getD i.1 0) j')
-        (List.range k) 0 0 (by simp [hj])).trans ?_
-      simp only [List.getD_eq_getElem?_getD, List.getElem?_range hj, Option.getD_some]
+      rw [hrow, List.getD_map_range _ 0 hj]
     have hord := orderIsoOfFin_finsetOfList hsort hlt hlen hcard i
-    have hmem : T.getD i.1 0 ∈ T := List.getD_eq_getElem T 0 hi ▸ List.getElem_mem hi
+    have hmem : T.getD i.1 0 ∈ T := List.getD_mem 0 hi
     have hlt_i : T.getD i.1 0 < m + n := hlt _ hmem
     have hhall := hall ⟨T.getD i.1 0, hlt_i⟩ j
     rw [hent, hhall]
@@ -2131,8 +2098,7 @@ private lemma cramerVecRows_eq_cramerVec {m n k : ℕ} (M_int : Matrix (Fin m �
     have h1 : (subRhs rhsAll T).getD r.1 0 = rowEntry [rhsAll] 0 (T.getD r.1 0) :=
       list_getD_map_lt _ T 0 0 hr
     rw [h1, rowEntry_single]
-    have hlt_r : T.getD r.1 0 < m + n :=
-      hlt _ (List.getD_eq_getElem T 0 hr ▸ List.getElem_mem hr)
+    have hlt_r : T.getD r.1 0 < m + n := hlt _ (List.getD_mem 0 hr)
     rw [hrhs ⟨T.getD r.1 0, hlt_r⟩]
     have hord := orderIsoOfFin_finsetOfList hsort hlt hlen hcard r
     have hsymm : finSumFinEquiv.symm ⟨T.getD r.1 0, hlt_r⟩ =
@@ -2147,10 +2113,8 @@ private lemma cramerVecRows_eq_cramerVec {m n k : ℕ} (M_int : Matrix (Fin m �
       cv.getD i.1 0 = cramerVec M_int b_int (finsetOfList m n T) hcard i := by
     intro i
     have h1 : cv.getD i.1 0 =
-        detRows (updateColRows k (subRows k allRows T) i.1 (subRhs rhsAll T)) := by
-      dsimp only [cv, cramerVecRows]
-      rw [list_getD_map_lt _ (List.range k) 0 0 (by simp [i.2])]
-      simp only [List.getD_eq_getElem?_getD, List.getElem?_range i.2, Option.getD_some]
+        detRows (updateColRows k (subRows k allRows T) i.1 (subRhs rhsAll T)) :=
+      List.getD_map_range _ 0 i.2
     let B := basisMat M_int (finsetOfList m n T) hcard
     let v : Fin k → ℤ := fun r => b_int ↑(((finsetOfList m n T).orderIsoOfFin hcard) r)
     have hup_len : (updateColRows k (subRows k allRows T) i.1 (subRhs rhsAll T)).length = k := by
@@ -2193,11 +2157,7 @@ private lemma isFeasibleBasisRows_iff {m n k : ℕ}
     intro r
     rw [dotProduct_eq_fin_sum]
     refine Finset.sum_congr rfl fun j _ => ?_
-    have hmap := list_getD_map_lt (fun j' => rowEntry allRows r.1 j') (List.range k) 0 0
-      (by rw [List.length_range]; exact j.2)
-    have hjr : (List.range k).getD j.1 0 = j.1 := by
-      simp only [List.getD_eq_getElem?_getD, List.getElem?_range j.2, Option.getD_some]
-    rw [hmap, hjr, hall r j, hcv j]
+    rw [List.getD_map_range _ 0 j.2, hall r j, hcv j]
   simp only [isFeasibleBasisRows, Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true,
     List.mem_range, hdet, IsFeasibleBasis]
   constructor
@@ -2262,84 +2222,37 @@ private lemma allRowsQ_spec (c : BimatrixCode) (r : Fin (c.rows + c.cols)) (j : 
         fun h => hjr (congrArg Fin.val h).symm
       rw [ite_eq_right hjr, ite_eq_right hjne]
 
+private lemma getD_map_range_sumElim {m n : ℕ} {h : ℕ → ℤ}
+    {f' : Fin m → ℤ} {g' : Fin n → ℤ}
+    (hf : ∀ i : Fin m, h i.1 = f' i)
+    (hg : ∀ j : Fin n, h (m + j.1) = g' j) (r : Fin (m + n)) :
+    ((List.range (m + n)).map h).getD r.1 0 = Sum.elim f' g' (finSumFinEquiv.symm r) := by
+  rw [List.getD_map_range _ 0 r.2]
+  by_cases hr : r.1 < m
+  · have hr' : r = ⟨r.1, by omega⟩ := Fin.ext rfl
+    rw [hr', finSumFinEquiv_symm_of_lt hr, Sum.elim_inl]
+    exact hf ⟨r.1, hr⟩
+  · have hm : m ≤ r.1 := Nat.le_of_not_lt hr
+    rw [finSumFinEquiv_symm_of_le hm r.2, Sum.elim_inr, ← hg ⟨r.1 - m, by omega⟩]
+    exact congrArg h (by dsimp only; omega)
+
 private lemma allRhsP_spec (c : BimatrixCode) (r : Fin (c.rows + c.cols)) :
     (allRhsP c).getD r.1 0 =
-      pertRhsPInt c.rows c.cols ((2 : ℤ) ^ bitBoundVal c) (finSumFinEquiv.symm r) := by
-  have h1 : (allRhsP c).getD r.1 0 =
-      if r.1 < c.rows then 0
-      else ((2 ^ (bitBoundVal c * c.cols) : ℕ) : ℤ) +
-        ((2 ^ (bitBoundVal c * (c.cols - 1 - (r.1 - c.rows))) : ℕ) : ℤ) := by
-    dsimp only [allRhsP]
-    rw [list_getD_map_lt _ (List.range (c.rows + c.cols)) 0 0
-      (by rw [List.length_range]; exact r.2)]
-    simp only [List.getD_eq_getElem?_getD, List.getElem?_range r.2, Option.getD_some]
-  rw [h1]
-  by_cases hr : r.1 < c.rows
-  · have hr' : r = ⟨r.1, by omega⟩ := Fin.ext rfl
-    rw [ite_eq_left hr, hr', finSumFinEquiv_symm_of_lt hr]
-    rfl
-  · have hm : c.rows ≤ r.1 := Nat.le_of_not_lt hr
-    rw [ite_eq_right hr, finSumFinEquiv_symm_of_le hm r.2]
-    change ((2 ^ (bitBoundVal c * c.cols) : ℕ) : ℤ) +
-        ((2 ^ (bitBoundVal c * (c.cols - 1 - (r.1 - c.rows))) : ℕ) : ℤ) =
-      ((2 : ℤ) ^ bitBoundVal c) ^ c.cols +
-        ((2 : ℤ) ^ bitBoundVal c) ^ (c.cols - 1 - (r.1 - c.rows))
-    simp only [Nat.cast_pow, Nat.cast_ofNat, pow_mul]
+      pertRhsPInt c.rows c.cols ((2 : ℤ) ^ bitBoundVal c) (finSumFinEquiv.symm r) :=
+  getD_map_range_sumElim (fun i => ite_eq_left i.2) (fun _ => by simp [pow_mul]) r
 
 private lemma allRhsQ_spec (c : BimatrixCode) (r : Fin (c.rows + c.cols)) :
     (allRhsQ c).getD r.1 0 =
-      pertRhsQInt c.rows c.cols ((2 : ℤ) ^ bitBoundVal c) (finSumFinEquiv.symm r) := by
-  have h1 : (allRhsQ c).getD r.1 0 =
-      if r.1 < c.rows then
-        ((2 ^ (bitBoundVal c * c.rows) : ℕ) : ℤ) +
-          ((2 ^ (bitBoundVal c * (c.rows - 1 - r.1)) : ℕ) : ℤ)
-      else 0 := by
-    dsimp only [allRhsQ]
-    rw [list_getD_map_lt _ (List.range (c.rows + c.cols)) 0 0
-      (by rw [List.length_range]; exact r.2)]
-    simp only [List.getD_eq_getElem?_getD, List.getElem?_range r.2, Option.getD_some]
-  rw [h1]
-  by_cases hr : r.1 < c.rows
-  · have hr' : r = ⟨r.1, by omega⟩ := Fin.ext rfl
-    rw [ite_eq_left hr, hr', finSumFinEquiv_symm_of_lt hr]
-    change ((2 ^ (bitBoundVal c * c.rows) : ℕ) : ℤ) +
-        ((2 ^ (bitBoundVal c * (c.rows - 1 - r.1)) : ℕ) : ℤ) =
-      ((2 : ℤ) ^ bitBoundVal c) ^ c.rows +
-        ((2 : ℤ) ^ bitBoundVal c) ^ (c.rows - 1 - r.1)
-    simp only [Nat.cast_pow, Nat.cast_ofNat, pow_mul]
-  · have hm : c.rows ≤ r.1 := Nat.le_of_not_lt hr
-    rw [ite_eq_right hr, finSumFinEquiv_symm_of_le hm r.2]
-    rfl
+      pertRhsQInt c.rows c.cols ((2 : ℤ) ^ bitBoundVal c) (finSumFinEquiv.symm r) :=
+  getD_map_range_sumElim (fun i => by simp [i.2, pow_mul]) (fun _ => by simp) r
 
 private lemma allIntRhsP_spec (c : BimatrixCode) (r : Fin (c.rows + c.cols)) :
-    (allIntRhsP c).getD r.1 0 = intRhsP c.rows c.cols (finSumFinEquiv.symm r) := by
-  have h1 : (allIntRhsP c).getD r.1 0 = if r.1 < c.rows then 0 else 1 := by
-    dsimp only [allIntRhsP]
-    rw [list_getD_map_lt _ (List.range (c.rows + c.cols)) 0 0
-      (by rw [List.length_range]; exact r.2)]
-    simp only [List.getD_eq_getElem?_getD, List.getElem?_range r.2, Option.getD_some]
-  rw [h1]
-  by_cases hr : r.1 < c.rows
-  · have hr' : r = ⟨r.1, by omega⟩ := Fin.ext rfl
-    rw [ite_eq_left hr, hr', finSumFinEquiv_symm_of_lt hr]
-    rfl
-  · rw [ite_eq_right hr, finSumFinEquiv_symm_of_le (Nat.le_of_not_lt hr) r.2]
-    rfl
+    (allIntRhsP c).getD r.1 0 = intRhsP c.rows c.cols (finSumFinEquiv.symm r) :=
+  getD_map_range_sumElim (fun i => ite_eq_left i.2) (fun _ => by simp) r
 
 private lemma allIntRhsQ_spec (c : BimatrixCode) (r : Fin (c.rows + c.cols)) :
-    (allIntRhsQ c).getD r.1 0 = intRhsQ c.rows c.cols (finSumFinEquiv.symm r) := by
-  have h1 : (allIntRhsQ c).getD r.1 0 = if r.1 < c.rows then 1 else 0 := by
-    dsimp only [allIntRhsQ]
-    rw [list_getD_map_lt _ (List.range (c.rows + c.cols)) 0 0
-      (by rw [List.length_range]; exact r.2)]
-    simp only [List.getD_eq_getElem?_getD, List.getElem?_range r.2, Option.getD_some]
-  rw [h1]
-  by_cases hr : r.1 < c.rows
-  · have hr' : r = ⟨r.1, by omega⟩ := Fin.ext rfl
-    rw [ite_eq_left hr, hr', finSumFinEquiv_symm_of_lt hr]
-    rfl
-  · rw [ite_eq_right hr, finSumFinEquiv_symm_of_le (Nat.le_of_not_lt hr) r.2]
-    rfl
+    (allIntRhsQ c).getD r.1 0 = intRhsQ c.rows c.cols (finSumFinEquiv.symm r) :=
+  getD_map_range_sumElim (fun i => ite_eq_left i.2) (fun _ => by simp) r
 
 private lemma pertP_nondegenerate {c : BimatrixCode} (hc : c.WellFormed) :
     IsNondegenerateSystem
@@ -2836,10 +2749,8 @@ private lemma halfEdgeIndexExec_eq (c : BimatrixCode) (hm : 0 < c.rows)
       rw [hi', finSumFinEquiv_symm_of_lt hi]
       have hget_app : (halfEdgeList T₁ T₂ side).getD i.1 0 =
           (if !side then T₁.map fun x => if decide (x = leaveLabelExec T₁ T₂) then 0 else x
-            else T₁).getD i.1 0 := by
-        dsimp only [halfEdgeList]
-        rw [List.getD_eq_getElem?_getD, List.getD_eq_getElem?_getD,
-          List.getElem?_append_left (by rw [hlhs_len]; exact hi)]
+            else T₁).getD i.1 0 :=
+        List.getD_append _ _ 0 i.1 (by rw [hlhs_len]; exact hi)
       rw [hget_app]
       have hord := orderIsoOfFin_finsetOfList hsort₁ hlt₁ hlen₁ hcard₁ ⟨i.1, hi⟩
       cases side
@@ -2869,8 +2780,7 @@ private lemma halfEdgeIndexExec_eq (c : BimatrixCode) (hm : 0 < c.rows)
           (if side then T₂.map fun x => if decide (x = leaveLabelExec T₁ T₂) then 0 else x
             else T₂).getD (i.1 - c.rows) 0 := by
         dsimp only [halfEdgeList]
-        rw [List.getD_eq_getElem?_getD, List.getD_eq_getElem?_getD,
-          List.getElem?_append_right (by rw [hlhs_len]; exact hge), hlhs_len]
+        rw [List.getD_append_right _ _ 0 i.1 (by rw [hlhs_len]; exact hge), hlhs_len]
       rw [hget_app]
       have hsub : i.1 - c.rows < c.cols := by omega
       have hord := orderIsoOfFin_finsetOfList hsort₂ hlt₂ hlen₂ hcard₂ ⟨i.1 - c.rows, hsub⟩
@@ -3076,39 +2986,35 @@ private lemma isValidNodeExec_zeroVertex {c : BimatrixCode} (hc : c.WellFormed) 
     (card_finsetOfList hsort₁.nodup hlt₁).trans hlen₁
   have hcard₂ : (finsetOfList c.rows c.cols ((List.range c.cols).map (· + c.rows))).card =
       c.cols := (card_finsetOfList hsort₂.nodup hlt₂).trans hlen₂
+  have ho₁ (i : Fin c.rows) :
+      ((finsetOfList c.rows c.cols (List.range c.rows)).orderIsoOfFin hcard₁ i).1 = Sum.inl i := by
+    have ho := orderIsoOfFin_finsetOfList hsort₁ hlt₁ hlen₁ hcard₁ i
+    rw [List.getD_eq_getElem _ 0 (by simp [i.2]), List.getElem_range] at ho
+    apply finSumFinEquiv.injective
+    ext
+    exact ho
+  have ho₂ (i : Fin c.cols) :
+      ((finsetOfList c.rows c.cols ((List.range c.cols).map (· + c.rows))).orderIsoOfFin
+        hcard₂ i).1 = Sum.inr i := by
+    have ho := orderIsoOfFin_finsetOfList hsort₂ hlt₂ hlen₂ hcard₂ i
+    rw [List.getD_map_range _ 0 i.2] at ho
+    apply finSumFinEquiv.injective
+    ext
+    simp only [finSumFinEquiv_apply_right, Fin.val_natAdd]
+    omega
   have hB₁_neg : basisMat (intMatP (posMatB c))
       (finsetOfList c.rows c.cols (List.range c.rows)) hcard₁ = -1 := by
     ext i j
-    have hi : ((finsetOfList c.rows c.cols (List.range c.rows)).orderIsoOfFin hcard₁ i).1 =
-        Sum.inl i := by
-      have ho := orderIsoOfFin_finsetOfList hsort₁ hlt₁ hlen₁ hcard₁ i
-      have hget : (List.range c.rows).getD i.1 0 = i.1 := by
-        simp only [List.getD_eq_getElem?_getD, List.getElem?_range i.2, Option.getD_some]
-      rw [hget] at ho
-      apply finSumFinEquiv.injective
-      ext
-      exact ho
     dsimp only [basisMat, Matrix.submatrix_apply, id_eq]
-    rw [hi, intMatP_inl]
+    rw [ho₁ i, intMatP_inl]
     by_cases hij : i = j
     · subst hij; simp
     · simp [hij]
   have hB₂_neg : basisMat (intMatQ (posMatA c))
       (finsetOfList c.rows c.cols ((List.range c.cols).map (· + c.rows))) hcard₂ = -1 := by
     ext i j
-    have hi : ((finsetOfList c.rows c.cols ((List.range c.cols).map (· + c.rows))).orderIsoOfFin
-        hcard₂ i).1 = Sum.inr i := by
-      have ho := orderIsoOfFin_finsetOfList hsort₂ hlt₂ hlen₂ hcard₂ i
-      have hget : ((List.range c.cols).map (· + c.rows)).getD i.1 0 = i.1 + c.rows := by
-        rw [list_getD_map_lt _ _ 0 0 (by rw [List.length_range]; exact i.2)]
-        simp only [List.getD_eq_getElem?_getD, List.getElem?_range i.2, Option.getD_some]
-      rw [hget] at ho
-      apply finSumFinEquiv.injective
-      ext
-      simp only [finSumFinEquiv_apply_right, Fin.val_natAdd]
-      omega
     dsimp only [basisMat, Matrix.submatrix_apply, id_eq]
-    rw [hi, intMatQ_inr]
+    rw [ho₂ i, intMatQ_inr]
     by_cases hij : i = j
     · subst hij; simp
     · simp [hij]
@@ -3130,16 +3036,7 @@ private lemma isValidNodeExec_zeroVertex {c : BimatrixCode} (hc : c.WellFormed) 
         dsimp only [cramerVec]
         rw [Matrix.mulVec_cramer]
         ext i
-        have hi : (finsetOfList c.rows c.cols (List.range c.rows) |>.orderIsoOfFin hcard₁ i).1 =
-            Sum.inl i := by
-          have ho := orderIsoOfFin_finsetOfList hsort₁ hlt₁ hlen₁ hcard₁ i
-          have hget : (List.range c.rows).getD i.1 0 = i.1 := by
-            simp only [List.getD_eq_getElem?_getD, List.getElem?_range i.2, Option.getD_some]
-          rw [hget] at ho
-          apply finSumFinEquiv.injective
-          ext
-          exact ho
-        simp only [Pi.smul_apply, smul_eq_mul, Pi.zero_apply, hi, pertRhsPInt, Sum.elim_inl,
+        simp only [Pi.smul_apply, smul_eq_mul, Pi.zero_apply, ho₁ i, pertRhsPInt, Sum.elim_inl,
           mul_zero]
       rw [hB₁_neg, Matrix.neg_mulVec, Matrix.one_mulVec, neg_eq_zero] at hmul
       exact hmul
@@ -3169,18 +3066,7 @@ private lemma isValidNodeExec_zeroVertex {c : BimatrixCode} (hc : c.WellFormed) 
         dsimp only [cramerVec]
         rw [Matrix.mulVec_cramer]
         ext i
-        have hi : ((finsetOfList c.rows c.cols ((List.range c.cols).map (· + c.rows))).orderIsoOfFin
-            hcard₂ i).1 = Sum.inr i := by
-          have ho := orderIsoOfFin_finsetOfList hsort₂ hlt₂ hlen₂ hcard₂ i
-          have hget : ((List.range c.cols).map (· + c.rows)).getD i.1 0 = i.1 + c.rows := by
-            rw [list_getD_map_lt _ _ 0 0 (by rw [List.length_range]; exact i.2)]
-            simp only [List.getD_eq_getElem?_getD, List.getElem?_range i.2, Option.getD_some]
-          rw [hget] at ho
-          apply finSumFinEquiv.injective
-          ext
-          simp only [finSumFinEquiv_apply_right, Fin.val_natAdd]
-          omega
-        simp only [Pi.smul_apply, smul_eq_mul, Pi.zero_apply, hi, pertRhsQInt, Sum.elim_inr,
+        simp only [Pi.smul_apply, smul_eq_mul, Pi.zero_apply, ho₂ i, pertRhsQInt, Sum.elim_inr,
           mul_zero]
       rw [hB₂_neg, Matrix.neg_mulVec, Matrix.one_mulVec, neg_eq_zero] at hmul
       exact hmul
@@ -4248,7 +4134,7 @@ private lemma normalizeRatPairs_spec {k : ℕ} {nums : List ℤ} (hlen : nums.le
     intro x hx
     rcases List.mem_iff_getElem.1 hx with ⟨i, hi, rfl⟩
     have hi' : i < k := hlen ▸ hi
-    simpa [List.getD_eq_getElem?_getD, getElem?_pos nums i hi] using hnn ⟨i, hi'⟩
+    simpa only [List.getD_eq_getElem nums 0 hi] using hnn ⟨i, hi'⟩
   refine ⟨by simp [ps, normalizeRatPairs, hlen], ?_, ?_⟩
   · rw [List.all_eq_true]
     intro pq hpq
@@ -4515,8 +4401,8 @@ private lemma strategy_pair_size_bd {k H L : ℕ} (hkL : k ≤ L) (hH_sz : H.siz
   rcases List.mem_iff_getElem.1 hnum with ⟨idx, hidx, rfl⟩
   have hidx' : idx < k := hlen ▸ hidx
   let i : Fin k := ⟨idx, hidx'⟩
-  have hnum_eq : num_l[idx] = num_l.getD i.1 0 := by
-    simp only [i, List.getD_eq_getElem?_getD, getElem?_pos num_l idx hidx, Option.getD_some]
+  have hnum_eq : num_l[idx] = num_l.getD i.1 0 :=
+    (List.getD_eq_getElem num_l 0 hidx).symm
   have hbd_num : num_l[idx].natAbs ≤ k.factorial * H ^ k := by
     rw [hnum_eq]
     have hbi := hbd i

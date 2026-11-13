@@ -226,7 +226,7 @@ private theorem rounds_le (k : ℕ) (State : Type) (c n : ℕ) :
     2 ^ (2 * coreLengthBound k State n (c * (Nat.log2 n + 1)) + 1) ≤
       2 * 2 ^ (2 * (8 + 2 * Nat.card (Option State) + 200 * k) * (c + 1)) *
         (n + 1) ^ (2 * (8 + 2 * Nat.card (Option State) + 200 * k) * (c + 1)) :=
-  (two_pow_coreLengthBound_log_le k State c n).trans_eq (by rw [mul_pow, ← mul_assoc])
+  (two_pow_coreLengthBound_log_le k State c n).trans_eq (by rw [polyClock, mul_pow, ← mul_assoc])
 
 /-- The initial view of an encoded instance is polynomial-time. -/
 theorem computableInPolyTime_initView {α : Type} (enc : α ↪ List Bool) :

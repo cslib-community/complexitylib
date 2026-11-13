@@ -46,4 +46,83 @@ theorem getD_argmin_le {x : α} (hx : x ∈ l) (d : α) : f ((l.argmin f).getD d
   rw [hm, Option.getD_some]
   exact le_of_mem_argmin hx hm
 
+theorem argmin_map_equiv {α γ : Type*} {δ : Type*} [LinearOrder δ]
+    (e : α → γ) (l : List α) (f : γ → δ) :
+    (l.argmin (f ∘ e)).map e = (l.map e).argmin f := by
+  unfold List.argmin
+  rw [List.foldl_map]
+  have hgen : ∀ (acc : Option α),
+      (l.foldl (fun a b => List.argAux (fun x y => (f ∘ e) x < (f ∘ e) y) a b) acc).map e =
+        l.foldl (fun a b => List.argAux (fun x y => f x < f y) a (e b)) (acc.map e) := by
+    intro acc
+    induction l generalizing acc with
+    | nil => rfl
+    | cons x l ih =>
+      simp only [List.foldl_cons]
+      have harg : (List.argAux (fun x y => (f ∘ e) x < (f ∘ e) y) acc x).map e =
+          List.argAux (fun x y => f x < f y) (acc.map e) (e x) := by
+        cases acc with
+        | none => rfl
+        | some c =>
+          unfold List.argAux
+          simp only [Option.map_some, Function.comp_apply]
+          split_ifs <;> rfl
+      rw [← harg]
+      exact ih _
+  simpa using hgen none
+
+theorem argmin_congr_mem {α δ : Type*} [LinearOrder δ] (all l : List α) {f g : α → δ}
+    (hl : ∀ x ∈ l, x ∈ all) (hfg : ∀ x ∈ all, f x = g x) :
+    l.argmin f = l.argmin g := by
+  have hinv : ∀ (m : List α) (acc : Option α),
+      (∀ z, acc = some z → z ∈ all) →
+      (∀ x ∈ m, x ∈ all) →
+      m.foldl (List.argAux fun a b => f a < f b) acc =
+        m.foldl (List.argAux fun a b => g a < g b) acc := by
+    intro m
+    induction m with
+    | nil => intro acc _ _; rfl
+    | cons x m ih =>
+      intro acc hacc hm
+      have hx : x ∈ all := hm x List.mem_cons_self
+      have hm' : ∀ y ∈ m, y ∈ all := fun y hy => hm y (List.mem_cons_of_mem _ hy)
+      have hstep :
+          List.argAux (fun a b => f a < f b) acc x =
+            List.argAux (fun a b => g a < g b) acc x := by
+        cases acc with
+        | none => rfl
+        | some z => simp only [List.argAux, hfg x hx, hfg z (hacc z rfl)]
+      simp only [List.foldl_cons, hstep]
+      refine ih _ (fun z hz => ?_) hm'
+      cases acc with
+      | none =>
+        have : x = z := by simpa [List.argAux] using hz
+        exact this ▸ hx
+      | some y =>
+        dsimp only [List.argAux] at hz
+        split_ifs at hz <;> simp only [Option.some.injEq] at hz
+        · exact hz ▸ hx
+        · exact hz ▸ hacc y rfl
+  exact hinv l none (fun _ h => by simp at h) hl
+
+theorem isSome_argmin_filter {α δ : Type*} [LinearOrder δ] (l : List α) (p : α → Bool)
+    (f : α → δ) : ((l.filter p).argmin f).isSome = l.any p := by
+  by_cases h : ∃ x ∈ l, p x = true
+  · obtain ⟨x, hx1, hx2⟩ := h
+    have hne : l.filter p ≠ [] := List.ne_nil_of_mem (List.mem_filter.mpr ⟨hx1, hx2⟩)
+    obtain ⟨m, hm⟩ := List.exists_argmin_eq_some (f := f) hne
+    rw [hm, Option.isSome_some]
+    symm
+    exact List.any_eq_true.mpr ⟨x, hx1, hx2⟩
+  · have hnil : l.filter p = [] := by
+      rw [List.filter_eq_nil_iff]
+      intro x hx hpx
+      exact h ⟨x, hx, by simpa using hpx⟩
+    rw [hnil, List.argmin_nil, Option.isSome_none]
+    symm
+    rw [Bool.eq_false_iff]
+    intro hbad
+    exact h (List.any_eq_true.mp hbad)
+
+
 end List

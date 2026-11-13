@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.Exponents
 public import CslibFrontier.Computability.Complexity.FineGrained.SparsificationRounds
 public import CslibFrontier.Logics.Propositional.ClauseSet.Sparsification.Tree
 public import CslibFrontier.Logics.Propositional.ClauseSet.Sparsification.PolyTime
+import CslibFrontier.Computability.Complexity.FineGrained.Bounds
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
 import CslibFrontier.Foundations.Data.List.Fold
 import CslibFrontier.Foundations.Data.Nat.Power
@@ -762,10 +763,7 @@ theorem DecidableInSubexpTime.numVars_of_length {k : ℕ}
   obtain ⟨c, hc⟩ := exists_decidableInExpTime_numVars_of_length k (half_pos hδ)
   have hδ' : 0 < δ / 2 / (c + 1) := by positivity
   refine (hc _ hδ'.le (h _ hδ')).mono ?_
-  have hc0 : (0 : ℝ) ≤ c := Nat.cast_nonneg c
-  have : (c : ℝ) * (δ / 2 / (c + 1)) ≤ δ / 2 := by
-    rw [mul_div_assoc', div_le_iff₀ (by positivity)]
-    nlinarith
+  have h := natCast_mul_div_add_one_le (half_pos hδ).le c
   linarith
 
 /-- **The exponential time hypothesis in terms of clauses** [ImpagliazzoPaturiZane2001]: `ETH`

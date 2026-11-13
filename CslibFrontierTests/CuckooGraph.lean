@@ -33,7 +33,6 @@ Verifies concrete decidable instances of the cuckoo walk dichotomy (`HasAltPath`
 namespace CslibFrontierTests.CuckooGraph
 
 open Cslib Cslib.Probability
-open Cslib.DataStructure.Dictionary.WordRAM.CuckooHashing
 open Cslib.DataStructure.Dictionary.CuckooHashing
 
 /-! ## 1. Concrete decidable checks of the walk dichotomy (Case A, Case B, injective contrast) -/

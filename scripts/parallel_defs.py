@@ -81,6 +81,7 @@ from urllib.parse import quote
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 import check_changed_files as ccf  # noqa: E402
+import lean_outputs as lo  # noqa: E402
 
 BUILD_DIR = ROOT / ".lake/build/lib/lean"
 READER = ROOT / "scripts/ParallelDefs.lean"
@@ -375,8 +376,7 @@ def annotations(found: list[Finding] | list[Group], limit: int) -> list[str]:
 # --- Driver -------------------------------------------------------------------------------------
 
 def outputs_current() -> bool:
-    return subprocess.run(["lake", "build", "--no-build", "CslibFrontier"], cwd=ROOT,
-                          capture_output=True).returncode == 0
+    return lo.lake_outputs_current(("CslibFrontier",))
 
 
 def publish(report: str, github: bool) -> None:

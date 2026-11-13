@@ -140,6 +140,17 @@ private theorem bind_pi_reindex [Fintype M] [Fintype CT] [Finite K]
     simp only [readIndex, coupledFb]
     split_ifs <;> rfl
 
+/-- Reading the independent tables `(Hq, Hraw)` through `coupledH` gives an independent table
+`H`. -/
+theorem bind_pi_coupledH [Fintype M] [Fintype CT] [Finite K]
+    (S : Scheme PK SK M R CT K) (G : M → R) (pk : PK) (sk : SK) {β : Type}
+    (F : (Bool × M × CT → K) → PMF β) :
+    ((pi fun _ : Bool × M × CT => ProbComp.eval S.sampleKey).bind fun H => F H) =
+    (pi fun _ : CT => ProbComp.eval S.sampleKey).bind fun Hq =>
+      (pi fun _ : Bool × M × CT => ProbComp.eval S.sampleKey).bind fun Hraw =>
+        F (S.coupledH G Hq Hraw pk sk) := by
+  simpa only [PMF.bind_const] using S.bind_pi_reindex G pk sk (fun H _ => F H)
+
 /-- Under the re-indexing, the oracle of `eagerFbGame` is the oracle of `eagerCoupledGame`. -/
 private theorem eagerFbHandler_reindex (S : Scheme PK SK M R CT K) (G : M → R) (Hq Hfb' : CT → K)
     (Hraw : Bool × M × CT → K) (pk : PK) (sk : SK) (s : M) (cStar : CT) (q : ROQuery M CT) :

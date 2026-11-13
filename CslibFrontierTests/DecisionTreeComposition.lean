@@ -56,6 +56,13 @@ private theorem complexity_parityAnd {ι : Type*} [Fintype ι] (κ : ι → Type
   rw [parityOn_update_not (mem_univ p.1)]
   cases parityOn univ (fun _ : ι => true) <;> decide
 
+-- Infinitely many empty blocks still have a finite total coordinate domain.
+example : complexity (fun _ : (Σ _ : ℕ, Fin 0) → Bool => true) = 0 := by
+  have ht : (DecisionTree.leaf true : DecisionTree ℕ Bool).Computes (fun _ => true) :=
+    fun _ => rfl
+  have h := complexity_blockCompose_le (κ := fun _ : ℕ => Fin 0) ht (fun _ _ => false)
+  exact Nat.le_zero.mp h
+
 -- The new block-composition rule constructs the matching uniform upper bound.
 example (m n : ℕ) : complexity (parityAnd (fun _ : Fin m => Fin n)) ≤ m * n := by
   have h := complexity_blockCompose_le_mul (parity m)

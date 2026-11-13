@@ -4,12 +4,17 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
 
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pi
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunPropLists
-import CslibFrontier.Tactic.PolyTime
+module
+-- upstream: local-only (structure-encoding regression tests)
+
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pi
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.FunPropLists
+public import CslibFrontier.Tactic.PolyTime
 
 /-! Tests of `enc_structure`. -/
+
+public section
 
 namespace CslibFrontierTests.StructureEncoding
 
@@ -182,6 +187,7 @@ enc_structure encHittingSet : HittingSetInstance where
   ground : (encList encNat), sets : (encList (encList encNat)), k : encNat
 
 /-- Transform a problem instance using named fields without unfolding `encHittingSet`. -/
+@[expose]
 def prependZeroToSets (I : HittingSetInstance) : HittingSetInstance where
   ground := 0 :: I.ground
   sets := I.sets.map fun S => 0 :: S
@@ -211,6 +217,7 @@ structure Triple extends Inner.Pair where
   w : ℕ
 
 /-- Not the projection `Inner.Pair.fst`: under `open Inner`, `Pair.fst` could name either. -/
+@[expose]
 def Pair.fst (p : Inner.Pair) : ℕ := p.fst + 1
 
 open Inner in
@@ -336,6 +343,50 @@ example (F : Family) {α : Type} {enc : α ↪ List Bool} {f : α → ElementPai
     ComputableInPolyTime (fun a => (f a).toElement) enc (eElement F) :=
   eElement_mk_polyTime F (eElementPair_size_polyTime F hf) (eElementPair_desc_polyTime F hf)
     (eElementPair_elt_polyTime F hf)
+
+/-- An element with a second element of the same type, keeping the parent as one field. -/
+structure ElementTagged (F : Family) extends Element F where
+  /-- The second element. -/
+  other : F.Carrier desc
+
+/-- A dependent word may read a listed parent field through a dotted name. -/
+enc_structure eElementTagged (F : Family) : ElementTagged F where
+  toElement : (eElement F),
+  other : (F.encode toElement.desc) using (F.encode_injective toElement.desc)
+
+example (F : Family) (x : ElementTagged F) :
+    eElementTagged F x = encPair (eElement F) encBits (x.toElement, F.encode x.desc x.other) :=
+  rfl
+
+/-- The injectivity proof may be a lambda: the command supplies its expected type. -/
+enc_structure eElementLambda (F : Family) : Element F where
+  size : encUnary, desc : F.encDesc,
+  elt : (F.encode desc) using (fun ⦃_ _⦄ h => F.encode_injective desc h)
+
+example (F : Family) (x : Element F) : eElementLambda F x = eElement F x := rfl
+
+-- A parameter named like a field that a dependent word reads would be captured by the field.
+/--
+error: enc_structure: the parameter `desc` has the name of a field that the word of `elt` reads; rename the parameter
+-/
+#guard_msgs in
+enc_structure eClash (F : Family) (desc : F.Desc) : Element F where
+  size : encUnary, desc : F.encDesc, elt : (F.encode desc) using (F.encode_injective desc)
+
+/-! Generated binders keep plain names, so callers may pass them by name. -/
+
+example (p : Point) : ePoint p = ePointFields (p.x, p.y, p.z) := ePoint_apply (a := p)
+
+-- Only the binders that collide with the parameters `γ` and `encIn` are renamed.
+example (γ : Type) (encIn : γ ↪ List Bool) {α : Type} {enc : α ↪ List Bool}
+    {description : α → γ} {left right : α → List Bool}
+    (hd : ComputableInPolyTime description enc encIn)
+    (hl : ComputableInPolyTime left enc encBits)
+    (hr : ComputableInPolyTime right enc encBits) :
+    ComputableInPolyTime
+      (fun a => { description := description a, left := left a, right := right a })
+      enc (eDescribedPairCollision γ encIn) :=
+  eDescribedPairCollision_mk_polyTime γ encIn (x0 := description) (h0 := hd) (h1 := hl) (h2 := hr)
 
 /-! The command checks the field list before declaring anything. Each error names the field. -/
 

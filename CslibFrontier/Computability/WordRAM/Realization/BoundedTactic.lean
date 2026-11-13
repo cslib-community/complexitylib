@@ -40,11 +40,11 @@ theorem iterate₀ {δ : Type} {k l : ℕ} {σ : Type}
       ((input.prodMap output).trans (Fin.appendEquiv k l).toEmbedding)
       output safe (fun _ _ => 0))
     (hquery : ∀ x s, 1 ≤ memoryCost (body x) s) :
-    RealizesBounded .exact (fun d : (δ × σ) × ℕ => iterate body d.1.1 d.2 d.1.2)
+    RealizesBounded .exact (fun ((d, a), fuel) => iterate body d fuel a)
       ((((input.prodMap output).trans (Fin.appendEquiv k l).toEmbedding).prodMap
         (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding).trans
           (Fin.appendEquiv (k + l) 1).toEmbedding) output
-      (fun w d s => iterationSafe body safe w d.1.1 d.2 d.1.2 s) (fun _ _ => 0) :=
+      (fun w ((d, a), fuel) s => iterationSafe body safe w d fuel a s) (fun _ _ => 0) :=
   (iterateRuntime input output h).mono_mul 1 fun ((d, a), fuel) s => by
     have := iterationWork_zero_le body hquery d fuel a s
     dsimp only
@@ -80,16 +80,21 @@ open Lean Meta Elab Tactic Cslib.WordRAM.Realization in
 /-- Map a `Realizes` proof-combinator constant to its `RealizesBounded` counterpart. -/
 def mapRealizesConst (c : Name) : Option Name :=
   [(``Realizes.consequence, ``RealizesBounded.consequence),
+   (``Realizes.consequence_work, ``RealizesBounded.consequence_work),
    (``Realizes.consequence_valid, ``RealizesBounded.consequence_valid),
    (``Realizes.congr, ``RealizesBounded.congr), (``Realizes.reindex, ``RealizesBounded.reindex),
    (``Realizes.mono_mul, ``RealizesBounded.mono_mul), (``Realizes.pure₀, ``RealizesBounded.pure₀),
    (``Realizes.bind₀_of_run, ``RealizesBounded.bind₀_of_run),
+   (``Realizes.bind, ``RealizesBounded.bind),
    (``Realizes.read, ``RealizesBounded.read), (``Realizes.write, ``RealizesBounded.write),
    (``Realizes.alloc, ``RealizesBounded.alloc),
    (``Realizes.allocDirty, ``RealizesBounded.allocDirty),
    (``Realizes.branch₀, ``RealizesBounded.branch₀),
+   (``Realizes.branch, ``RealizesBounded.branch),
    (``Realizes.iterate₀, ``RealizesBounded.iterate₀),
-   (``Realizes.while₀, ``RealizesBounded.while₀)].lookup c
+   (``Realizes.iterateRuntime, ``RealizesBounded.iterateRuntime),
+   (``Realizes.while₀, ``RealizesBounded.while₀),
+   (``Realizes.whileBounded, ``RealizesBounded.whileBounded)].lookup c
 
 open Lean Meta Elab Tactic Cslib.WordRAM.Realization in
 /-- Translate the `Realizes` proof spine to `RealizesBounded` without touching client terms. -/
