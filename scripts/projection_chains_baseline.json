@@ -80,8 +80,6 @@
  "CslibFrontier/Computability/Complexity/Classes/IP/Games/Repetition.lean": 5,
  "CslibFrontier/Computability/Complexity/Classes/IP/PSPACE.lean": 1,
  "CslibFrontier/Computability/Complexity/Classes/IP/Simulation.lean": 13,
- "CslibFrontier/Computability/Complexity/Classes/IP/TQBF.lean": 13,
- "CslibFrontier/Computability/Complexity/Classes/IP/TQBF/Verifier.lean": 18,
  "CslibFrontier/Computability/Complexity/Classes/LogSpace/FirstOrder/ConfigurationGraph.lean": 5,
  "CslibFrontier/Computability/Complexity/Classes/MIP/NEXP.lean": 12,
  "CslibFrontier/Computability/Complexity/Classes/Oracle/BakerGillSolovay.lean": 3,
