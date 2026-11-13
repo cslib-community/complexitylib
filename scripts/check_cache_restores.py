@@ -2,7 +2,7 @@
 """Re-elaborate local Lean files whose build outputs came from Lake's artifact cache (#4523).
 
 Usage: python3 scripts/check_cache_restores.py [--files-from JSON] [--built-under PATH ...]
-                                            [--progress | --quiet]
+                                            [--jobs N] [--progress | --quiet]
 
 `lakefile.toml` enables Lake's local artifact cache, which checkouts on the same machine share.
 Lake stores a module's outputs there whenever it builds them, also when the build logged warnings.
@@ -22,26 +22,34 @@ traces are checked too.
 It runs `lake -q lean` on each selected file whose trace is synthetic and fails when the command
 fails or prints anything at all: `lake lean` exits 0 after warnings, and `--iofail` rejects
 informational output too. `lake lean` first builds the file's imports and replays their logs, so
-a reported message can also come from an import. Files are elaborated one at a time. This local
-audit does not change Lake: a bare `lake build` still cannot replay a cached module's messages.
-Outside CI, progress lists the selected count and each source before elaboration, with elapsed
-audit time. `--progress` enables those lines in CI; `--quiet` suppresses them locally. Failures
-and the final summary are always printed.
+a reported message can also come from an import. Up to 8 files are elaborated concurrently by
+default (`--jobs N` or `CSLIB_FRONTIER_CACHE_AUDIT_JOBS=N`, `N >= 1`), with `LEAN_NUM_THREADS=1`
+in each worker when `N > 1` so parallel workers do not multiply Lean's internal thread pool, and
+failures are reported in deterministic source-path order. This local audit does not change Lake:
+a bare `lake build` still cannot replay a cached module's messages. Outside CI, progress lists the
+selected count, worker count and each source before elaboration, with elapsed audit time.
+`--progress` enables those lines in CI; `--quiet` suppresses them locally. Failures and the final
+summary are always printed.
 """
 
 from __future__ import annotations
 
 import argparse
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
+import concurrent.futures
 import json
 import os
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
+import threading
 import time
 import tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
+JOBS_ENV = "CSLIB_FRONTIER_CACHE_AUDIT_JOBS"
+DEFAULT_JOBS_CAP = 8
 
 
 def layout(root: Path) -> tuple[Path, list[Path]]:
@@ -108,10 +116,48 @@ def restored_files(root: Path, files: list[str] | None = None,
             if (trace := trace_path(rel, lib_dir, dirs)) is None or restored(trace)]
 
 
-def elaborate(root: Path, rel: str) -> subprocess.CompletedProcess:
+def resolve_jobs(cli_jobs: int | None, env: Mapping[str, str] = os.environ) -> int:
+    """Worker limit from `--jobs`, `CSLIB_FRONTIER_CACHE_AUDIT_JOBS`, or bounded CPU count."""
+    if cli_jobs is not None:
+        jobs = cli_jobs
+    elif raw := env.get(JOBS_ENV, "").strip():
+        try:
+            jobs = int(raw)
+        except ValueError as error:
+            raise ValueError(f"{JOBS_ENV} must be an integer >= 1, got {raw!r}") from error
+    else:
+        jobs = min(DEFAULT_JOBS_CAP, max(1, os.cpu_count() or 1))
+    if jobs < 1:
+        raise ValueError(f"--jobs must be >= 1, got {jobs}")
+    return jobs
+
+
+def elaborate(root: Path, rel: str,
+              env: Mapping[str, str] | None = None) -> subprocess.CompletedProcess:
     """Elaborate `rel` with its library's options, without writing build outputs."""
-    return subprocess.run(["lake", "-q", "lean", f"./{rel}"], cwd=root, text=True,
-                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    base_env = os.environ if env is None else env
+    # `lake lean` creates a temporary `--setup` file via `IO.FS.createTempFile` without removing
+    # it; scoping temporary directories per invocation prevents `/tmp` growth across large audits.
+    with tempfile.TemporaryDirectory(prefix="cslib-frontier-lean-") as tmpdir:
+        run_env = {**base_env, "TMPDIR": tmpdir, "TEMP": tmpdir, "TMP": tmpdir}
+        return subprocess.run(["lake", "-q", "lean", f"./{rel}"], cwd=root, env=run_env,
+                              text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+
+def report_result(rel: str, result: subprocess.CompletedProcess, failed: list[str],
+                  print_lock: threading.Lock | None) -> None:
+    """Record and print any elaboration failure or message for `rel`."""
+    if result.returncode or result.stdout.strip():
+        failed.append(rel)
+        # `lake lean` first builds the file's imports and replays their logs, so a message can
+        # also come from an import that this checkout built with warnings.
+        message = (f"FAIL  {rel} (restored or missing trace; messages from it or its "
+                   f"imports)\n{result.stdout.rstrip()}")
+        if print_lock is None:
+            print(message, flush=True)
+        else:
+            with print_lock:
+                print(message, flush=True)
 
 
 def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
@@ -121,6 +167,9 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
                         help="JSON list of affected source paths; default: all built root sources")
     parser.add_argument("--built-under", action="append", default=[],
                         help="also check built sources at this file or under this directory")
+    parser.add_argument("--jobs", "-j", type=int,
+                        help=f"concurrent elaborations (>= 1; default: ${JOBS_ENV} or up to "
+                             f"{DEFAULT_JOBS_CAP})")
     progress = parser.add_mutually_exclusive_group()
     progress.add_argument("--progress", action="store_true", dest="progress",
                           help="show source-by-source progress, including in CI")
@@ -130,6 +179,7 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
     args = parser.parse_args(argv)
     started = time.monotonic()
     try:
+        jobs = resolve_jobs(args.jobs)
         selected = json.loads(args.files_from.read_text()) if args.files_from else None
         if args.files_from and (not isinstance(selected, list)
                                 or any(not isinstance(rel, str) for rel in selected)):
@@ -138,20 +188,58 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
     except (OSError, ValueError) as error:
         print(f"Cannot audit restored sources: {error}", file=sys.stderr)
         return 1
+    workers = min(jobs, max(1, len(files)))
+    worker_env = ({**os.environ, "LEAN_NUM_THREADS": "1"}
+                  if jobs > 1 and os.environ.get("LEAN_NUM_THREADS") != "1" else None)
     if args.progress:
-        print(f"Cache-restore audit: checking {len(files)} source(s) serially.", flush=True)
-    failed = []
-    for index, rel in enumerate(files, 1):
+        mode = "serially" if workers == 1 else f"with {workers} worker(s)"
+        print(f"Cache-restore audit: checking {len(files)} source(s) {mode}.", flush=True)
+    failed: list[str] = []
+    print_lock = threading.Lock() if workers > 1 else None
+
+    def run_one(index: int, rel: str) -> subprocess.CompletedProcess:
         if args.progress:
-            print(f"Cache-restore audit [{index}/{len(files)}]: {rel} "
-                  f"(elapsed {time.monotonic() - started:.1f}s)", flush=True)
-        result = elaborate(root, rel)
-        if result.returncode or result.stdout.strip():
-            failed.append(rel)
-            # `lake lean` first builds the file's imports and replays their logs, so a message can
-            # also come from an import that this checkout built with warnings.
-            print(f"FAIL  {rel} (restored or missing trace; messages from it or its "
-                  f"imports)\n{result.stdout.rstrip()}", flush=True)
+            line = (f"Cache-restore audit [{index + 1}/{len(files)}]: {rel} "
+                    f"(elapsed {time.monotonic() - started:.1f}s)")
+            if print_lock is None:
+                print(line, flush=True)
+            else:
+                with print_lock:
+                    print(line, flush=True)
+        return elaborate(root, rel) if worker_env is None else elaborate(root, rel, env=worker_env)
+
+    if workers == 1:
+        for index, rel in enumerate(files):
+            report_result(rel, run_one(index, rel), failed, None)
+    else:
+        next_submit = 0
+        next_report = 0
+        completed: dict[int, subprocess.CompletedProcess] = {}
+        in_flight: dict[concurrent.futures.Future[subprocess.CompletedProcess], int] = {}
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=workers)
+        try:
+            while next_submit < len(files) and len(in_flight) < workers:
+                in_flight[executor.submit(run_one, next_submit, files[next_submit])] = next_submit
+                next_submit += 1
+            while in_flight:
+                done, _ = concurrent.futures.wait(
+                    in_flight, return_when=concurrent.futures.FIRST_COMPLETED)
+                for future in sorted(done, key=in_flight.__getitem__):
+                    index = in_flight.pop(future)
+                    completed[index] = future.result()
+                while next_report in completed:
+                    report_result(files[next_report], completed.pop(next_report), failed,
+                                  print_lock)
+                    next_report += 1
+                while next_submit < len(files) and len(in_flight) < workers:
+                    in_flight[executor.submit(run_one, next_submit,
+                                              files[next_submit])] = next_submit
+                    next_submit += 1
+        except BaseException:
+            executor.shutdown(wait=False, cancel_futures=True)
+            raise
+        else:
+            executor.shutdown(wait=True)
     elapsed = time.monotonic() - started
     if failed:
         print(f"Re-elaborating {len(failed)} file(s) with restored or missing traces "

@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from unittest.mock import patch
@@ -154,7 +155,7 @@ class MainTests(Fixture):
                  argv: list[str] | None = None) -> tuple[int, str, list[str]]:
         calls = []
 
-        def elaborate(root, rel):
+        def elaborate(root, rel, env=None):
             calls.append(rel)
             return subprocess.CompletedProcess([], returncode, output)
 
@@ -185,7 +186,7 @@ class MainTests(Fixture):
         self.trace("DemoTests/Client", synthetic=True, log=[])
         out = io.StringIO()
 
-        def elaborate(root, rel):
+        def elaborate(root, rel, env=None):
             self.assertIn(rel, out.getvalue())
             self.assertNotIn("cleanly", out.getvalue())
             return subprocess.CompletedProcess([], 0, "")
@@ -193,12 +194,37 @@ class MainTests(Fixture):
         with patch.object(c, "elaborate", side_effect=elaborate) as run, \
              patch.object(c.time, "monotonic", side_effect=[10, 10.5, 12, 17]), \
              redirect_stdout(out):
-            self.assertEqual(c.main(["--progress"], self.root), 0)
+            self.assertEqual(c.main(["--progress", "--jobs", "1"], self.root), 0)
         self.assertEqual(run.call_count, 2)
         self.assertIn("checking 2 source(s) serially", out.getvalue())
         self.assertIn("[1/2]: Demo/Base.lean (elapsed 0.5s)", out.getvalue())
         self.assertIn("[2/2]: DemoTests/Client.lean (elapsed 2.0s)", out.getvalue())
         self.assertIn("cleanly (2) in 7.0s", out.getvalue())
+
+    def test_parallel_progress_and_deterministic_failure_order(self) -> None:
+        self.write("Demo/A.lean", "def a := 1\n")
+        self.trace("Demo/A", synthetic=True, log=[])
+        self.trace("DemoTests/Client", synthetic=True, log=[])
+        second_finished = threading.Event()
+
+        def elaborate(root, rel, env=None):
+            if rel == "Demo/A.lean":
+                self.assertTrue(second_finished.wait(timeout=5))
+                return subprocess.CompletedProcess([], 0, "warning: first file finished second\n")
+            if rel == "Demo/Base.lean":
+                second_finished.set()
+                return subprocess.CompletedProcess([], 0, "warning: second file finished first\n")
+            return subprocess.CompletedProcess([], 0, "")
+
+        out, err = io.StringIO(), io.StringIO()
+        with patch.object(c, "elaborate", side_effect=elaborate), \
+             redirect_stdout(out), redirect_stderr(err):
+            self.assertEqual(c.main(["--progress", "--jobs", "2"], self.root), 1)
+        stdout = out.getvalue()
+        self.assertIn("checking 3 source(s) with 2 worker(s).", stdout)
+        self.assertLess(stdout.index("FAIL  Demo/A.lean"), stdout.index("FAIL  Demo/Base.lean"))
+        self.assertNotIn("FAIL  DemoTests/Client.lean", stdout)
+        self.assertIn("Re-elaborating 2 file(s)", err.getvalue())
 
     def test_ci_is_quiet_by_default_but_progress_can_be_requested(self) -> None:
         with patch.dict(os.environ, {"CI": "true"}):
@@ -221,11 +247,84 @@ class MainTests(Fixture):
         out = io.StringIO()
         with patch.object(c, "elaborate", side_effect=KeyboardInterrupt) as run, \
              redirect_stdout(out), self.assertRaises(KeyboardInterrupt):
-            c.main(["--progress"], self.root)
+            c.main(["--progress", "--jobs", "1"], self.root)
         self.assertEqual(run.call_count, 1)
         self.assertIn("[1/2]: Demo/Base.lean", out.getvalue())
         self.assertNotIn("[2/2]", out.getvalue())
         self.assertNotIn("cleanly", out.getvalue())
+
+    def test_parallel_cancellation_stops_submitting_remaining_files(self) -> None:
+        for i in range(4):
+            self.write(f"Demo/Extra{i}.lean", f"def e{i} := {i}\n")
+            self.trace(f"Demo/Extra{i}", synthetic=True, log=[])
+        both_started = threading.Barrier(2, timeout=5)
+        main_exited = threading.Event()
+        calls: list[str] = []
+
+        def elaborate(root, rel, env=None):
+            calls.append(rel)
+            both_started.wait()
+            if rel == "Demo/Base.lean":
+                raise KeyboardInterrupt
+            main_exited.wait(timeout=5)
+            return subprocess.CompletedProcess([], 0, "")
+
+        out = io.StringIO()
+        try:
+            with patch.object(c, "elaborate", side_effect=elaborate), \
+                 redirect_stdout(out), self.assertRaises(KeyboardInterrupt):
+                c.main(["--progress", "--jobs", "2"], self.root)
+            self.assertEqual(calls, ["Demo/Base.lean", "Demo/Extra0.lean"])
+            self.assertNotIn("cleanly", out.getvalue())
+        finally:
+            main_exited.set()
+
+    def test_jobs_flag_env_override_and_validation(self) -> None:
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop(c.JOBS_ENV, None)
+            with patch.object(c.os, "cpu_count", return_value=64):
+                self.assertEqual(c.resolve_jobs(None), c.DEFAULT_JOBS_CAP)
+            with patch.object(c.os, "cpu_count", return_value=3):
+                self.assertEqual(c.resolve_jobs(None), 3)
+            with patch.object(c.os, "cpu_count", return_value=None):
+                self.assertEqual(c.resolve_jobs(None), 1)
+        with patch.dict(os.environ, {c.JOBS_ENV: "4"}):
+            self.assertEqual(c.resolve_jobs(None), 4)
+            self.assertEqual(c.resolve_jobs(2), 2)
+        with patch.dict(os.environ, {c.JOBS_ENV: "  "}):
+            with patch.object(c.os, "cpu_count", return_value=5):
+                self.assertEqual(c.resolve_jobs(None), 5)
+        for bad_cli in (0, -3):
+            err = io.StringIO()
+            with redirect_stderr(err):
+                self.assertEqual(c.main(["--jobs", str(bad_cli)], self.root), 1)
+            self.assertIn("--jobs must be >= 1", err.getvalue())
+        for bad_env in ("0", "-1", "many"):
+            err = io.StringIO()
+            with patch.dict(os.environ, {c.JOBS_ENV: bad_env}), redirect_stderr(err):
+                self.assertEqual(c.main([], self.root), 1)
+            self.assertIn("Cannot audit restored sources", err.getvalue())
+
+    def test_worker_env_bounds_lean_threads_and_cleans_temp_setup_dir(self) -> None:
+        seen: list[tuple[str | None, Path]] = []
+
+        def fake_run(cmd, *, cwd, env, text, stdout, stderr):
+            tmpdir = Path(env["TMPDIR"])
+            self.assertTrue(tmpdir.is_dir())
+            self.assertEqual(env["TEMP"], str(tmpdir))
+            self.assertEqual(env["TMP"], str(tmpdir))
+            (tmpdir / "tmp.setup").write_text("{}")
+            seen.append((env.get("LEAN_NUM_THREADS"), tmpdir))
+            return subprocess.CompletedProcess(cmd, 0, "")
+
+        with patch.dict(os.environ, {"LEAN_NUM_THREADS": "8"}), \
+             patch.object(c.subprocess, "run", side_effect=fake_run), \
+             redirect_stdout(io.StringIO()):
+            self.assertEqual(c.main(["--jobs", "4", "--quiet"], self.root), 0)
+            self.assertEqual(c.main(["--jobs", "1", "--quiet"], self.root), 0)
+        self.assertEqual([threads for threads, _ in seen], ["1", "8"])
+        for _, tmpdir in seen:
+            self.assertFalse(tmpdir.exists())
 
     def test_invalid_scope_fails_instead_of_becoming_an_empty_check(self) -> None:
         for contents in ('{"files": []}', '[1]', '["missing.lean"]', 'null', 'not JSON'):
@@ -335,6 +434,85 @@ class RealLakeTests(IsolatedLakeFixture):
                     self.assertEqual(check([], self.root), 1, out.getvalue())
                 self.assertIn("deprecated", out.getvalue())
                 self.assertIn(f"FAIL  {warning_file}", out.getvalue())
+
+    def test_parallel_real_lake_elaborates_concurrently_and_orders_failures(self) -> None:
+        for index, peer in ((0, 1), (1, 0)):
+            self.write(f"Demo/P{index}.lean", f"""import Lean.Elab.Command
+#eval show Lean.Elab.Command.CommandElabM Unit from do
+  if ← (System.FilePath.mk "barrier.arm").pathExists then
+    IO.FS.writeFile "p{index}.ready" ""
+    let mut ready := false
+    for _ in [:500] do
+      if ← (System.FilePath.mk "p{peer}.ready").pathExists then
+        ready := true
+        break
+      IO.sleep 20
+    unless ready do
+      Lean.logError "concurrent elaboration barrier timed out"
+""")
+        self.write("Demo.lean", "import Demo.P0\nimport Demo.P1\n")
+        first = self.lake("build", "--wfail", "--iofail", "Demo.P0", "Demo.P1")
+        self.assertEqual(first.returncode, 0, first.stdout + first.stderr)
+        shutil.rmtree(self.root / ".lake/build")
+        restored = self.lake("build", "--wfail", "--iofail", "Demo.P0", "Demo.P1")
+        self.assertEqual(restored.returncode, 0, restored.stdout + restored.stderr)
+        for index in (0, 1):
+            trace = self.root / f".lake/build/lib/lean/Demo/P{index}.trace"
+            if not c.restored(trace):
+                self.skipTest("this Lake rebuilt the module instead of restoring it")
+
+        # Negative control: with `--jobs 1`, `P0` cannot rendezvous with `P1`.
+        self.write("Demo/P0_short.lean", (self.root / "Demo/P0.lean").read_text().replace(
+            "[:500]", "[:15]"))
+        self.write("Demo/P1_short.lean", (self.root / "Demo/P1.lean").read_text().replace(
+            "[:500]", "[:15]"))
+        self.trace("Demo/P0_short", synthetic=True, log=[])
+        self.trace("Demo/P1_short", synthetic=True, log=[])
+        self.write("barrier.arm", "")
+        short_scope = self.root / "short.json"
+        short_scope.write_text(json.dumps(["Demo/P0_short.lean", "Demo/P1_short.lean"]))
+        serial_out = io.StringIO()
+        with redirect_stdout(serial_out), redirect_stderr(serial_out):
+            self.assertEqual(
+                c.main(["--files-from", str(short_scope), "--jobs", "1", "--quiet"], self.root), 1)
+        self.assertIn("concurrent elaboration barrier timed out", serial_out.getvalue())
+        for name in ("p0.ready", "p1.ready", "Demo/P0_short.lean", "Demo/P1_short.lean"):
+            (self.root / name).unlink(missing_ok=True)
+        for name in ("P0_short.trace", "P1_short.trace"):
+            (self.root / ".lake/build/lib/lean/Demo" / name).unlink(missing_ok=True)
+
+        # Positive parallel check: `P0` and `P1` elaborate simultaneously with no lock output
+        # and leave no temporary `--setup` files behind.
+        tmpdir = tempfile.TemporaryDirectory()
+        self.addCleanup(tmpdir.cleanup)
+        pair_scope = self.root / "pair.json"
+        pair_scope.write_text(json.dumps(["Demo/P0.lean", "Demo/P1.lean"]))
+        parallel_out = io.StringIO()
+        with patch.dict(os.environ, {"TMPDIR": tmpdir.name}), \
+             redirect_stdout(parallel_out), redirect_stderr(parallel_out):
+            self.assertEqual(
+                c.main(["--files-from", str(pair_scope), "--jobs", "2", "--quiet"], self.root), 0,
+                parallel_out.getvalue())
+        self.assertTrue((self.root / "p0.ready").is_file())
+        self.assertTrue((self.root / "p1.ready").is_file())
+        self.assertEqual(list(Path(tmpdir.name).iterdir()), [])
+
+        # Deterministic failure ordering across concurrent real Lake elaborations.
+        self.write("Demo/WarnA.lean", """import Lean.Elab.Command
+#eval show Lean.Elab.Command.CommandElabM Unit from do IO.sleep 150
+theorem warnA : 1 = 2 := by sorry
+""")
+        self.write("Demo/WarnB.lean", "theorem warnB : 1 = 2 := by sorry\n")
+        self.trace("Demo/WarnA", synthetic=True, log=[])
+        self.trace("Demo/WarnB", synthetic=True, log=[])
+        warn_scope = self.root / "warn.json"
+        warn_scope.write_text(json.dumps(["Demo/WarnA.lean", "Demo/WarnB.lean"]))
+        warn_out = io.StringIO()
+        with redirect_stdout(warn_out), redirect_stderr(io.StringIO()):
+            self.assertEqual(
+                c.main(["--files-from", str(warn_scope), "--jobs", "2", "--quiet"], self.root), 1)
+        self.assertLess(warn_out.getvalue().index("FAIL  Demo/WarnA.lean"),
+                        warn_out.getvalue().index("FAIL  Demo/WarnB.lean"))
 
 
 if __name__ == "__main__":
