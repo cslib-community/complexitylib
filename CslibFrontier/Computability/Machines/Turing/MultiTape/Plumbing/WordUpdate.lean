@@ -34,4 +34,12 @@ theorem tapeOfList_set {Symbol : Type*} (w : List Symbol) {i : ℕ} (hi : i < w.
       simp [hi]
     · simp [h, Ne.symm h]
 
+/-- Replacing the first cell after a fixed prefix preserves that prefix and the trailing suffix. -/
+theorem update_tapeOfList_append_cons {Symbol : Type*} (pre suffix : List Symbol)
+    (b b' : Symbol) :
+    Function.update (tapeOfList (pre ++ b :: suffix)) (pre.length : ℤ) (some b') =
+      tapeOfList (pre ++ b' :: suffix) := by
+  rw [← tapeOfList_set _ (by simp), List.set_append_right _ _ le_rfl]
+  simp
+
 end Turing

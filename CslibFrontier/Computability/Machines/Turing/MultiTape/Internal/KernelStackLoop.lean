@@ -39,8 +39,6 @@ phases between them, one round, and the whole run.
 
 ## Main results
 
-* `Turing.MultiTapeTM.StackLoopKernel.transformsTapes_onWords_embed`: `onWords` on embedded tapes,
-  with every other tape arbitrary.
 * `Turing.MultiTapeTM.StackLoopKernel.runs_stackLoop`: the run of the machine on a stack loop that
   halts with an empty stack.
 -/
@@ -196,39 +194,6 @@ current value. -/
     fin_cases x <;> fin_cases y <;> simp_all [Fin.natAdd_inj]⟩
 
 /-! ### Specifications on embedded tapes -/
-
-/-- **`onWords` on embedded tapes**, with every other tape arbitrary: the input on the tape
-selected for the input of `onWords`, its other tapes blank. -/
-theorem transformsTapes_onWords_embed {k K : ℕ} {Symbol S : Type*} {tm : MultiTapeTM k Symbol S}
-    {x y : List Symbol} {t s : ℕ}
-    (h : TransformsTapes tm (fun inp ws => inp = x ∧ ws = fun _ => [])
-      (fun _ _ ws' e => ws' = (fun _ => []) ∧ e = y) t s) (mark : Symbol)
-    (e : Fin (k + 1 + 2) ↪ Fin K) :
-    TransformsTapes ((tm.onWords mark).extendTapes e)
-      (fun _ ws => ws (e (Fin.natAdd (k + 1) 0)) = x ∧
-        ∀ j ≠ Fin.natAdd (k + 1) 0, ws (e j) = [])
-      (fun _ ws ws' em => ws' = Function.update ws (e ((Fin.last k).castAdd 2)) y ∧ em = [])
-      (t + y.length + 6) (s + 2 * x.length + 2 * y.length + 3 * k + 18 + (K - (k + 1 + 2))) := by
-  refine ((ComputesTidilyInTimeAndSpace.onWords mark h).extendTapes e).imp
-    (fun _ ws ⟨hx, hb⟩ => ?_)
-    (fun _ ws ws' _ _ ⟨⟨hv, hy⟩, hx⟩ => ⟨?_, hy⟩) le_rfl le_rfl
-  · funext j
-    by_cases hj : j = Fin.natAdd (k + 1) 0
-    · subst hj
-      simp [hx]
-    · rw [Function.update_of_ne hj]
-      exact hb j hj
-  · funext l
-    by_cases hl : l ∈ Set.range e
-    · obtain ⟨j, rfl⟩ := hl
-      have : ws' (e j) = Function.update (fun j => ws (e j)) ((Fin.last k).castAdd 2) y j :=
-        congrFun hv j
-      rw [this]
-      by_cases hj : j = (Fin.last k).castAdd 2
-      · subst hj
-        simp
-      · rw [Function.update_of_ne hj, Function.update_of_ne (e.injective.ne hj)]
-    · rw [hx l hl, Function.update_of_ne fun h => hl ⟨_, h.symm⟩]
 
 /-! ### Runs of the phases -/
 

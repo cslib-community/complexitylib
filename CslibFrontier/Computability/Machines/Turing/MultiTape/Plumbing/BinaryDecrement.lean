@@ -62,12 +62,6 @@ private def cfg {S : Type} {input : List Bool} (q : Option S) (ip : Fin (input.l
     (out w : List Bool) (p : ℕ) : Cfg 1 Bool S input :=
   ⟨q, ip, fun _ => tapeOfList w, fun _ => (p : ℤ), out⟩
 
-private theorem tape_update (pre suffix : List Bool) (b b' : Bool) :
-    Function.update (tapeOfList (pre ++ b :: suffix)) (pre.length : ℤ) (some b') =
-      tapeOfList (pre ++ b' :: suffix) := by
-  rw [← tapeOfList_set _ (by simp), List.set_append_right _ _ le_rfl]
-  simp
-
 /-- The borrow scan never touches any digit after the first one. It also works after an already
 processed prefix, which is what permits induction without copying that prefix. -/
 private theorem runFrom_borrow {input : List Bool} (ip : Fin (input.length + 2))
@@ -82,12 +76,12 @@ private theorem runFrom_borrow {input : List Bool} (ip : Fin (input.length + 2))
     cases b with
     | true =>
       simp [zeros, decrement, runFrom, step_of_state, tr_ofTr,
-        borrow, cfg, Action.apply, Cfg.workTapeSymbols, tape_update]
+        borrow, cfg, Action.apply, Cfg.workTapeSymbols, update_tapeOfList_append_cons]
     | false =>
       have hs : borrow.step (cfg (some ()) ip out (pre ++ false :: w) pre.length) =
           cfg (some ()) ip out ((pre ++ [true]) ++ w) (pre ++ [true]).length := by
         simp [step_of_state, tr_ofTr, borrow, cfg, Action.apply, Cfg.workTapeSymbols,
-          tape_update, List.append_assoc]
+          update_tapeOfList_append_cons, List.append_assoc]
       rw [show zeros (false :: w) + 1 = zeros w + 1 + 1 by simp [zeros],
         runFrom, Function.iterate_succ_apply, hs, ← runFrom, ih]
       simp [cfg, zeros, decrement, List.append_assoc, Nat.add_assoc, Int.add_comm]

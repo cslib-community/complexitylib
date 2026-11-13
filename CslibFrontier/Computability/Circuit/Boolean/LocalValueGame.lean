@@ -161,6 +161,21 @@ theorem wins_position_nonconst (c : Claim α) (hc : ∀ b, D.op c.wire ≠ .cons
   cases player D c <;>
     simp [wins_false_cons_cons_iff, wins_true_cons_cons_iff, update_cons]
 
+/-- A nonconstant local value equation is exactly the current player's next-claim obligation. -/
+theorem value_eq_iff_next (value : α → Bool) (c : Claim α)
+    (hv : value c.wire = D.eval value c.wire) (hc : ∀ b, D.op c.wire ≠ .const b) :
+    value c.wire = c.value ↔
+      if player D c then ∀ b, value (next D c b).wire = (next D c b).value
+      else ∃ b, value (next D c b).wire = (next D c b).value := by
+  rw [hv]
+  cases ho : D.op c.wire with
+  | const b => exact False.elim (hc b ho)
+  | not | and | or =>
+    cases hval : c.value <;> cases h₀ : value (D.child c.wire false) <;>
+      cases h₁ : value (D.child c.wire true) <;>
+      simp [player, next, Decoder.eval, ho, hval, h₀, h₁,
+        Bool.forall_bool, Bool.exists_bool]
+
 /-- Local semantic equations and decreasing rank suffice for correctness of every query. -/
 theorem wins_position_iff {rank : α → ℕ} (hd : D.Descends rank) (value : α → Bool)
     (hv : ∀ a, value a = D.eval value a) (c : Claim α) :
@@ -181,11 +196,7 @@ theorem wins_position_iff {rank : α → ℕ} (hd : D.Descends rank) (value : α
       rw [wins_position_nonconst c hc]
       have hi (b : Bool) := ih _ (hn ▸ rank_next_lt hd c hc b) (next D c b) rfl
       simp only [hi]
-      rw [hv c.wire]
-      cases hval : c.value <;> cases h₀ : value (D.child c.wire false) <;>
-        cases h₁ : value (D.child c.wire true) <;>
-        simp [player, next, Decoder.eval, ho, hval, h₀, h₁,
-          Bool.forall_bool, Bool.exists_bool]
+      exact (value_eq_iff_next value c (hv c.wire) hc).symm
 
 /-- All branches terminate within the rank of the starting query. -/
 theorem ends_position {rank : α → ℕ} (hd : D.Descends rank) (c : Claim α) :

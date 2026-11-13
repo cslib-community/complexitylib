@@ -120,6 +120,11 @@ noncomputable def machine {S : Type} (leaf : Bool → Bool → MultiTapeATM (k +
     (carry claim : Bool) : MultiTapeATM (k + 6) Bool (State S) :=
   ofTMs (fun b => MultiTapeTM.ofTr (.header carry claim) (tr leaf b)) (universal leaf)
 
+@[simp] theorem machine_q₀ {S : Type} (leaf : Bool → Bool → MultiTapeATM (k + 6) Bool S)
+    (carry claim : Bool) :
+    (machine leaf carry claim).toPTM.toNTM.q₀ = .header carry claim := by
+  simp [machine, ofTMs, MultiTapePTM.toNTM, MultiTapeMachine.toNTM, MultiTapePTM.branches]
+
 /-- Resume this same controller at a selector, retaining the selected input claim in control. -/
 noncomputable def continuation {S : Type} (leaf : Bool → Bool → MultiTapeATM (k + 6) Bool S)
     (carry : Bool) (p : Fin 7) (bit : Bool) : MultiTapeATM (k + 6) Bool (State S) :=
@@ -863,13 +868,30 @@ theorem acceptsWithin_budget {S : Type} {w : ℕ}
       0 := by
   simp [config, MultiTapeTM.embed, baseConfig, MultiTapeTM.outCfg, storage]
 
+/-- The six core tape words, including the status bit and cleared selector flags. -/
+theorem config_core_tape {input : List Bool} (height bits path unary : List Bool)
+    (frontier : ℤ) (status : Bool) (i : Fin 6) :
+    (config (scratch := scratch) (input := input) height bits path unary frontier status).workTapes
+      (coreEmb k i) = tapeOfList (![height, bits, path, [status], unary, []] i) := by
+  simp only [config, MultiTapeTM.embed, MultiTapeTM.partialInv_embed]
+  fin_cases i <;> rfl
+
+/-- The core heads: the persistent path is at its right blank and unary depth at its frontier. -/
+theorem config_core_head {input : List Bool} (height bits path unary : List Bool)
+    (frontier : ℤ) (status : Bool) (i : Fin 6) :
+    (config (scratch := scratch) (input := input) height bits path unary frontier
+      status).workTapePos
+      (coreEmb k i) = (![0, 0, (path.length : ℤ), 0, frontier, 0] i) := by
+  simp only [config, MultiTapeTM.embed, MultiTapeTM.partialInv_embed]
+  fin_cases i <;> rfl
+
 /-- Controller tape 2 holds the persistent root-to-leaf path. -/
 @[simp] theorem config_path_tape {input : List Bool} (height bits path unary : List Bool)
     (frontier : ℤ) (status : Bool) :
     (config (scratch := scratch) (input := input) height bits path unary frontier status).workTapes
       (coreEmb k 2) = tapeOfList path := by
-  simp only [config, MultiTapeTM.embed, MultiTapeTM.partialInv_embed]
-  rfl
+  simpa using config_core_tape (scratch := scratch) (input := input)
+    height bits path unary frontier status 2
 
 /-- The persistent path head is parked at its right blank. -/
 @[simp] theorem config_path_head {input : List Bool} (height bits path unary : List Bool)
@@ -877,23 +899,23 @@ theorem acceptsWithin_budget {S : Type} {w : ℕ}
     (config (scratch := scratch) (input := input) height bits path unary frontier
       status).workTapePos
       (coreEmb k 2) = path.length := by
-  simp only [config, MultiTapeTM.embed, MultiTapeTM.partialInv_embed]
-  rfl
+  simpa using config_core_head (scratch := scratch) (input := input)
+    height bits path unary frontier status 2
 
 /-- Controller tape 1 holds the current little-endian bit-index word. -/
 @[simp] theorem config_bits_tape {input : List Bool} (height bits path unary : List Bool)
     (frontier : ℤ) (status : Bool) :
     (config (scratch := scratch) (input := input) height bits path unary frontier status).workTapes
       (coreEmb k 1) = tapeOfList bits := by
-  simp only [config, MultiTapeTM.embed, MultiTapeTM.partialInv_embed]
-  rfl
+  simpa using config_core_tape (scratch := scratch) (input := input)
+    height bits path unary frontier status 1
 
 /-- The current bit-index word is ready for reading at its first cell. -/
 @[simp] theorem config_bits_head {input : List Bool} (height bits path unary : List Bool)
     (frontier : ℤ) (status : Bool) :
     (config (scratch := scratch) (input := input) height bits path unary frontier
       status).workTapePos (coreEmb k 1) = 0 := by
-  simp only [config, MultiTapeTM.embed, MultiTapeTM.partialInv_embed]
-  rfl
+  simpa using config_core_head (scratch := scratch) (input := input)
+    height bits path unary frontier status 1
 
 end Turing.MultiTapeATM.CarrySaveStream
