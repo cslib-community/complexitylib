@@ -45,6 +45,9 @@ influences, which can all be large at once.
   Fourier formulas.
 * `Cslib.BitString.stableInfluence_one`, `Cslib.BitString.totalStableInfluence_one`: at `ρ = 1`
   they are the influence and the total influence.
+* `Cslib.BitString.stableInfluence_mono`, `Cslib.BitString.stableInfluence_noiseOp_le`,
+  `Cslib.BitString.influence_noiseOp_le_stableInfluence`: stable influences increase with the
+  rate, do not increase under noise, and bound the influences of the noised function.
 * `Cslib.BitString.mul_totalStableInfluence_le`,
   `Cslib.BitString.mul_totalStableInfluence_signVal_le_one`: `δ I^{(1 - δ)}[f] ≤ Var[f]`, which is
   at most one for Boolean `f`.
@@ -92,6 +95,30 @@ theorem stableInfluence_nonneg {ρ : ℝ} (hρ : 0 ≤ ρ) (i : ι) (f : (ι →
     0 ≤ stableInfluence ρ i f := by
   rw [stableInfluence_eq_sum]
   exact sum_nonneg fun _ _ => mul_nonneg (pow_nonneg hρ _) (sq_nonneg _)
+
+/-- Stable influences increase with the rate: `Infᵢ^{(ρ)}[f] ≤ Infᵢ^{(ρ')}[f]` for
+`0 ≤ ρ ≤ ρ'`. -/
+theorem stableInfluence_mono {ρ ρ' : ℝ} (hρ : 0 ≤ ρ) (hρρ' : ρ ≤ ρ') (i : ι)
+    (f : (ι → Bool) → ℝ) : stableInfluence ρ i f ≤ stableInfluence ρ' i f :=
+  noiseStability_mono hρ hρρ' (derivative i f)
+
+/-- Noise does not increase stable influences: `Infᵢ^{(ρ)}[T_σ f] ≤ Infᵢ^{(ρ)}[f]` for `0 ≤ ρ`
+and `|σ| ≤ 1`. -/
+theorem stableInfluence_noiseOp_le {ρ σ : ℝ} (hρ : 0 ≤ ρ) (hσ : |σ| ≤ 1) (i : ι)
+    (f : (ι → Bool) → ℝ) : stableInfluence ρ i (noiseOp σ f) ≤ stableInfluence ρ i f := by
+  rw [stableInfluence_eq_sum, stableInfluence_eq_sum]
+  exact sum_le_sum fun S _ =>
+    mul_le_mul_of_nonneg_left (sq_fourierCoeff_noiseOp_le hσ f S) (pow_nonneg hρ _)
+
+/-- The influence of `i` on `T_ρ f` is at most the `ρ`-stable influence of `i` on `f` for
+`0 ≤ ρ ≤ 1`: `Infᵢ[T_ρ f] = ∑_{S ∋ i} ρ ^ (2 |S|) f̂(S) ^ 2 ≤ Infᵢ^{(ρ)}[f]`
+[O'Donnell, proof of Corollary 11.69][ODonnell2014]. -/
+theorem influence_noiseOp_le_stableInfluence {ρ : ℝ} (hρ₀ : 0 ≤ ρ) (hρ₁ : ρ ≤ 1) (i : ι)
+    (f : (ι → Bool) → ℝ) : influence i (noiseOp ρ f) ≤ stableInfluence ρ i f := by
+  rw [influence_eq_sum_fourierCoeff_sq, stableInfluence_eq_sum]
+  refine sum_le_sum fun S _ => ?_
+  rw [fourierCoeff_noiseOp, mul_pow, ← pow_mul]
+  exact mul_le_mul_of_nonneg_right (pow_le_pow_of_le_one hρ₀ hρ₁ (by omega)) (sq_nonneg _)
 
 /-- At `ρ = 1` the total stable influence is the total influence. -/
 theorem totalStableInfluence_one (f : (ι → Bool) → ℝ) :

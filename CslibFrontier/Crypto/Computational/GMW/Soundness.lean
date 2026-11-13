@@ -210,7 +210,7 @@ theorem acceptProb_gmwVerifier_gmwProver {α : Type} {generator : List Bool → 
   let prog : ProbComp Bool := do
     let coins ← sampleHonestCoins s φ w
     Prod.fst <$> runTwoRound (honestReply1 generator m φ coins)
-      (honestReply2 s φ coins) (gmwVerifier generator length f n a) (0, [false, false, false])
+      (honestReply2 s φ coins) (gmwVerifier generator length f n a) .init
   change ProbComp.eval prog true = 1
   have hfalse : ProbComp.eval prog false = 0 := by
     rw [PMF.apply_eq_zero_iff]
@@ -237,20 +237,20 @@ theorem acceptProb_gmwVerifier_gmwProver {α : Type} {generator : List Bool → 
     have hgen_len : ∀ seed ∈ seeds, (generator seed).length = m := fun seed hseed => by
       rw [hlen, hseeds_mem seed hseed]
     have hr1_len :
-        (honestReply1 generator m φ (realBits φ w m₀ m₁ m₂, seeds) r).length = K * m := by
+        (honestReply1 generator m φ ⟨realBits φ w m₀ m₁ m₂, seeds⟩ r).length = K * m := by
       simpa [honestReply1, K, length_realBits] using length_proverReply1_true (r := r)
         (hseeds_len.trans (length_realBits φ w m₀ m₁ m₂).symm) hgen_len
     have hr2_len :
-        (honestReply2 s φ (realBits φ w m₀ m₁ m₂, seeds) ch).length = K * (s + 1) := by
+        (honestReply2 s φ ⟨realBits φ w m₀ m₁ m₂, seeds⟩ ch).length = K * (s + 1) := by
       simpa [honestReply2, K] using length_proverReply2 s φ seeds (length_realBits φ w m₀ m₁ m₂)
     have htake1 := List.take_of_length_le hr1_len.le
     have htake2 := List.take_of_length_le hr2_len.le
     have hfalse_eq := congrArg Prod.fst hfinal
     dsimp only at hfalse_eq
     change false = verifyTranscript generator s m φ r
-        (List.take (K * m) (honestReply1 generator m φ (realBits φ w m₀ m₁ m₂, seeds) r)) ch
+        (List.take (K * m) (honestReply1 generator m φ ⟨realBits φ w m₀ m₁ m₂, seeds⟩ r)) ch
         (List.take (K * (s + 1))
-          (honestReply2 s φ (realBits φ w m₀ m₁ m₂, seeds) (BitString.listRow 3 0 ch))) at hfalse_eq
+          (honestReply2 s φ ⟨realBits φ w m₀ m₁ m₂, seeds⟩ (BitString.listRow 3 0 ch))) at hfalse_eq
     rw [hch_row, htake1, htake2] at hfalse_eq
     exact Bool.false_ne_true (hfalse_eq.trans (verifyTranscript_honest (m₀ := m₀) (m₁ := m₁)
       (m₂ := m₂) (r := r) (ch := ch) hw hseeds_len hseeds_mem hgen_len))

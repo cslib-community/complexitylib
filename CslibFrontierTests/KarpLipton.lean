@@ -35,10 +35,7 @@ theorem bruteSAT_iff (ψ : CNF ℕ) : bruteSAT ψ = true ↔ ψ ∈ SAT := by
     exact ⟨_, hw⟩
   · rintro ⟨τ, hτ⟩
     refine ⟨ψ.vars.map τ, BitString.mem_enumList.2 (by simp), ?_⟩
-    refine (CNF.eval_congr fun v hv => ?_).trans hτ
-    have hlt : ψ.vars.idxOf v < ψ.vars.length := List.idxOf_lt_length_iff.2 hv
-    rw [SAT.assignment, List.getD_eq_getElem _ _ (by simpa using hlt), List.getElem_map,
-      List.getElem_idxOf hlt]
+    exact (CNF.eval_congr fun _ hv => SAT.assignment_vars_map ψ τ hv).trans hτ
 
 /-- `(x₀ ∨ x₁) ∧ ¬x₀`, with literal occurrences `x₀, x₁, x₀`. -/
 def φ₁ : CNF ℕ := [[(0, true), (1, true)], [(0, false)]]

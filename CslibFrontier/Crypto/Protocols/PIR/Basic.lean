@@ -10,7 +10,7 @@ module
 public import CslibFrontier.Init
 public import CslibFrontier.Languages.Probabilistic.Basic
 public import Mathlib.Data.Nat.Log
-import CslibFrontier.Probability.PMF.Map
+import CslibFrontier.Probability.PMF.Support
 
 /-!
 # Private information retrieval
@@ -49,9 +49,12 @@ column `i`, and each server answers it once for every row. Its communication is 
 one-bit answers (`PIR.communication_rows`), the case that Section 3.4 uses. `Scheme.comap`
 restricts a scheme along an embedding of indices, padding the database outside the image with a
 supplied default entry `pad : β`; it turns a scheme for a grid or a cube into one for `Fin n`.
+Both keep the queries of `P` up to reindexing, so `IsPrivate.of_query_eq` transfers privacy to them
+and to the transformations of `PIR.Block`.
 
-`PIR.HasScheme ι k c β` (`β` defaults to `Bool`) says that some `k`-server scheme for databases
-`ι → β` is correct and private and communicates at most `c` bits.
+The existence statement `PIR.HasScheme ι k c β` (some correct, private `k`-server scheme for
+databases `ι → β` communicating at most `c` bits) is the `t = 1` case of `PIR.HasTPrivateScheme`
+and lives in `PIR.Collusion`.
 
 ## Main definitions
 
@@ -64,12 +67,12 @@ supplied default entry `pad : β`; it turns a scheme for a grid or a cube into o
 * `Cslib.Crypto.Protocols.PIR.communication`: the communication cost.
 * `Cslib.Crypto.Protocols.PIR.Scheme.rows`, `Cslib.Crypto.Protocols.PIR.Scheme.comap`: the rows
   transformation and restriction along an embedding.
-* `Cslib.Crypto.Protocols.PIR.HasScheme`: existence of a correct, private scheme with given
-  numbers of servers and bits.
 
 ## Main results
 
 * `Cslib.Crypto.Protocols.PIR.Scheme.isCorrect_iff`: correctness on the support of the queries.
+* `Cslib.Crypto.Protocols.PIR.Scheme.IsPrivate.of_query_eq`: privacy transfers to a scheme whose
+  queries have the law of the queries of a private scheme, up to reindexing.
 * `Cslib.Crypto.Protocols.PIR.Scheme.IsCorrect.rows`,
   `Cslib.Crypto.Protocols.PIR.Scheme.IsPrivate.rows`,
   `Cslib.Crypto.Protocols.PIR.Scheme.IsCorrect.comap`,
@@ -169,17 +172,8 @@ reconstruct the right entry. -/
 theorem isCorrect_iff : P.IsCorrect ↔ ∀ x i r q, (r, q) ∈ (ProbComp.eval (P.query i)).support →
     P.reconstruct i r (fun s => P.answer s x (q s)) = x i := by
   refine forall_congr' fun x => forall_congr' fun i => ?_
-  rw [eval_run]
-  constructor
-  · intro h r q hrq
-    have hmem : P.reconstruct i r (fun s => P.answer s x (q s)) ∈
-        ((ProbComp.eval (P.query i)).map
-          fun rq => P.reconstruct i rq.1 fun s => P.answer s x (rq.2 s)).support :=
-      (PMF.mem_support_map_iff _ _ _).2 ⟨(r, q), hrq, rfl⟩
-    rwa [h, PMF.support_pure, Set.mem_singleton_iff] at hmem
-  · intro h
-    rw [Cslib.Probability.PMF.map_congr_on_support _ _ (Function.const _ (x i))
-      fun rq hrq => h rq.1 rq.2 hrq, PMF.map_const]
+  rw [eval_run, Probability.PMF.map_eq_pure_iff]
+  exact ⟨fun h r q hrq => h (r, q) hrq, fun h rq hrq => h rq.1 rq.2 hrq⟩
 
 theorem isPrivate_iff : P.IsPrivate ↔
     ∀ s i i', ProbComp.eval (P.serverQuery s i) = ProbComp.eval (P.serverQuery s i') := by
@@ -200,6 +194,22 @@ theorem IsPrivate.eval_serverQuery_eq (h : P.IsPrivate) (s : S) (i i' : ι) :
     ProbComp.eval (P.serverQuery s i) = ProbComp.eval (P.serverQuery s i') :=
   P.isPrivate_iff.mp h s i i'
 
+/-- **Privacy transfer.** If the queries that `P'` sends for `i` have the law of the queries that
+the private scheme `P` sends for `f i`, then `P'` is private. The retained states, answers and
+reconstructions of the two schemes are unconstrained. -/
+theorem IsPrivate.of_query_eq {ι' R' A' β' : Type} {P' : Scheme ι' S R' Q A' β'} (h : P.IsPrivate)
+    (f : ι' → ι)
+    (hq : ∀ i,
+      ProbComp.eval (Prod.snd <$> P'.query i) = ProbComp.eval (Prod.snd <$> P.query (f i))) :
+    P'.IsPrivate := by
+  have hview (i : ι') (s : S) :
+      ProbComp.eval (P'.serverQuery s i) = ProbComp.eval (P.serverQuery s (f i)) := by
+    have hs := congrArg (PMF.map fun q => q s) (hq i)
+    simp only [ProbComp.eval_map, PMF.map_comp] at hs
+    rw [eval_serverQuery, eval_serverQuery]
+    exact hs
+  exact fun s i i' => by rw [hview, hview, h.eval_serverQuery_eq]
+
 /-! ### The rows transformation -/
 
 /-- The rows transformation [CGKS, Section 3.4][ChorGoldreichKushilevitzSudan1998]: a database
@@ -219,15 +229,11 @@ theorem run_rows (ρ : Type) (P : Scheme ι S R Q A β) (x : ρ × ι → β) (j
     (P.rows ρ).run x (j, i) = P.run (fun i' => x (j, i')) i := by
   rfl
 
-theorem serverQuery_rows (ρ : Type) (P : Scheme ι S R Q A β) (s : S) (j : ρ) (i : ι) :
-    (P.rows ρ).serverQuery s (j, i) = P.serverQuery s i := by
-  rfl
-
 theorem IsCorrect.rows (ρ : Type) (h : P.IsCorrect) : (P.rows ρ).IsCorrect := fun x ji =>
   h (fun i => x (ji.1, i)) ji.2
 
-theorem IsPrivate.rows (ρ : Type) (h : P.IsPrivate) : (P.rows ρ).IsPrivate := fun s ji ji' =>
-  h s ji.2 ji'.2
+theorem IsPrivate.rows (ρ : Type) (h : P.IsPrivate) : (P.rows ρ).IsPrivate :=
+  h.of_query_eq Prod.snd fun _ => rfl
 
 /-! ### Restriction along an embedding -/
 
@@ -244,18 +250,14 @@ theorem query_comap {ι' : Type} (P : Scheme ι' S R Q A β) (e : ι ↪ ι') (p
     (P.comap e pad).query i = P.query (e i) := by
   rfl
 
-theorem serverQuery_comap {ι' : Type} (P : Scheme ι' S R Q A β) (e : ι ↪ ι') (pad : β) (s : S)
-    (i : ι) : (P.comap e pad).serverQuery s i = P.serverQuery s (e i) := by
-  rfl
-
 theorem IsCorrect.comap {ι' : Type} {P : Scheme ι' S R Q A β} (h : P.IsCorrect) (e : ι ↪ ι')
     (pad : β) : (P.comap e pad).IsCorrect := fun x i => by
   have := h (Function.extend e x fun _ => pad) (e i)
   rwa [e.injective.extend_apply] at this
 
 theorem IsPrivate.comap {ι' : Type} {P : Scheme ι' S R Q A β} (h : P.IsPrivate) (e : ι ↪ ι')
-    (pad : β) : (P.comap e pad).IsPrivate := fun s i i' =>
-  h s (e i) (e i')
+    (pad : β) : (P.comap e pad).IsPrivate :=
+  h.of_query_eq e fun _ => rfl
 
 end Scheme
 
@@ -266,29 +268,5 @@ theorem communication_rows (S Q ρ : Type) [Fintype S] [Fintype Q] [Fintype ρ] 
     communication S Q (ρ → Bool) =
       Fintype.card S * (Nat.clog 2 (Fintype.card Q) + Fintype.card ρ) :=
   communication_of_card_answer S Q _ (by rw [Fintype.card_fun, Fintype.card_bool])
-
-/-! ### Existence of schemes -/
-
-/-- Some `k`-server scheme for databases `ι → β` (by default `β = Bool`) is perfectly correct and
-perfectly private and communicates at most `c` bits. -/
-def HasScheme (ι : Type) (k c : ℕ) (β : Type := Bool) : Prop :=
-  ∃ (S R Q A : Type) (_ : Fintype S) (_ : Fintype Q) (_ : Fintype A) (P : Scheme ι S R Q A β),
-    P.IsCorrect ∧ P.IsPrivate ∧ Fintype.card S = k ∧ communication S Q A ≤ c
-
-theorem hasScheme_iff {ι β : Type} {k c : ℕ} : HasScheme ι k c β ↔
-    ∃ (S R Q A : Type) (_ : Fintype S) (_ : Fintype Q) (_ : Fintype A) (P : Scheme ι S R Q A β),
-      P.IsCorrect ∧ P.IsPrivate ∧ Fintype.card S = k ∧ communication S Q A ≤ c := by
-  rw [HasScheme]
-
-/-- A correct, private scheme witnesses `HasScheme`. -/
-theorem Scheme.IsCorrect.hasScheme {ι S R Q A β : Type} [Fintype S] [Fintype Q] [Fintype A]
-    {P : Scheme ι S R Q A β} (hcorrect : P.IsCorrect) (hprivate : P.IsPrivate) :
-    HasScheme ι (Fintype.card S) (communication S Q A) β :=
-  hasScheme_iff.mpr ⟨S, R, Q, A, _, _, _, P, hcorrect, hprivate, rfl, le_rfl⟩
-
-theorem HasScheme.mono {ι β : Type} {k c c' : ℕ} (h : HasScheme ι k c β) (hc : c ≤ c') :
-    HasScheme ι k c' β := by
-  obtain ⟨S, R, Q, A, _, _, _, P, hcorrect, hprivate, hk, hcomm⟩ := hasScheme_iff.mp h
-  exact hasScheme_iff.mpr ⟨S, R, Q, A, _, _, _, P, hcorrect, hprivate, hk, hcomm.trans hc⟩
 
 end Cslib.Crypto.Protocols.PIR

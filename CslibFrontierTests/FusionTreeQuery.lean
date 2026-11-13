@@ -116,7 +116,7 @@ example :
     ((Static.initial 16 sampleSet 32 7).Bounded 16 ∧
       ∃ y k, k + 1 ≤ 3100000 * (Nat.log 16 sampleSet.card + 1) ∧
         Executes 16 (program 16) ⟨0, Static.initial 16 sampleSet 32 7⟩
-          (y.regs value) (k + 1) ∧ Static.IsPredecessor sampleSet 7 (answer y)) ∧
+          (y.regs value) (k + 1) ∧ answer y = some 3) ∧
     Static.workingWords 16 ∅ ≤ 1042 ∧
     Static.workingWords 16 sampleSet ≤ 1168 * sampleSet.card := by
   refine ⟨?_,
@@ -135,6 +135,7 @@ example :
   · obtain ⟨hb, _, y, k, ht, _, he, hp, _, _⟩ :=
       Static.query_spec (w := 16) (base := 32) (q := 7) sampleSet
         (by decide) (by decide) (Static.arenaFits_of_bound sampleSet (by decide)) (by decide)
-    exact ⟨hb, y, k, ht, he, hp⟩
+    refine ⟨hb, y, k, ht, he, hp.trans ?_⟩
+    decide
 
 end FusionTreeQueryTests

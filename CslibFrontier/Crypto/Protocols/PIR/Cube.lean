@@ -7,10 +7,11 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Crypto.Protocols.PIR.Basic
+public import CslibFrontier.Crypto.Protocols.PIR.Collusion
 public import CslibFrontier.Foundations.Data.Code.Hadamard
 public import Mathlib.Data.Nat.Sqrt
 import CslibFrontier.Languages.Probabilistic.Norm
+import CslibFrontier.Probability.Uniform
 
 /-!
 # Subcube schemes for private information retrieval
@@ -103,7 +104,7 @@ theorem eval_serverQuery_twoServer (σ : Bool) (i : ι) :
     ProbComp.eval ((twoServer ι).serverQuery σ i) = PMF.uniformOfFintype (ι → Bool) := by
   rw [Scheme.eval_serverQuery, twoServer]
   simp only [pmf_norm, ProbComp.eval_uniform]
-  exact PMF.uniformOfFintype_map_equiv (Equiv.addRight (Pi.single i σ : ι → Bool))
+  exact PMF.uniformOfFintype_map_add_right (Pi.single i σ : ι → Bool)
 
 /-- The two queries of the two-server scheme add up to `eᵢ`: together, the servers know `i`. -/
 theorem query_add_query_twoServer {i : ι} {r : Unit} {q : Bool → ι → Bool}
@@ -173,8 +174,7 @@ theorem eval_serverQuery_cube (σ : D → Bool) (i : D → ι) :
     ProbComp.eval ((cube D ι).serverQuery σ i) = PMF.uniformOfFintype (D → ι → Bool) := by
   rw [Scheme.eval_serverQuery, cube]
   simp only [pmf_norm, ProbComp.eval_uniform]
-  exact PMF.uniformOfFintype_map_equiv
-    (Equiv.addRight (fun l => Pi.single (i l) (σ l) : D → ι → Bool))
+  exact PMF.uniformOfFintype_map_add_right (fun l => Pi.single (i l) (σ l) : D → ι → Bool)
 
 /-- **The subcube scheme is private** [CGKS, Section 3.2][ChorGoldreichKushilevitzSudan1998]. -/
 theorem isPrivate_cube : (cube D ι).IsPrivate :=

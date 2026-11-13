@@ -25,10 +25,9 @@ functions in `#P`, is closed under addition, negation and multiplication, a subr
 functions to `ℤ` (`Cslib.Complexity.GapP.subring`)
 [Fenner, Fortnow and Kurtz][FennerFortnowKurtz1994].
 
-For the sum `f₁ + f₂`, the first bit of a certificate chooses which verifier to run
-(`Cslib.Complexity.selectVerifier`); since the two verifiers read certificates of different
-lengths `p₁(n)` and `p₂(n)`, each is padded to `p₁(n) + p₂(n)` bits by requiring the extra bits to
-be `false` (`Cslib.Complexity.acceptCount_andVerifier_allFalseVerifier`). For the product, the two
+For the sum `f₁ + f₂`, the first bit of a certificate chooses which verifier to run, and the bits
+that the chosen verifier does not read must be `false` (`Cslib.Complexity.sumVerifier`,
+`Cslib.Complexity.acceptCount_sumVerifier`). For the product, the two
 verifiers read disjoint parts of the certificate (`Cslib.Complexity.acceptCount_andVerifier`).
 
 ## Main definitions
@@ -53,6 +52,9 @@ verifiers read disjoint parts of the certificate (`Cslib.Complexity.acceptCount_
 * `Cslib.Complexity.GapP.add_mem`, `Cslib.Complexity.GapP.sub_mem'`,
   `Cslib.Complexity.GapP.mul_mem`: `GapP` is closed under addition, subtraction and
   multiplication.
+* `Cslib.Complexity.GapP.natCast_mem`, `Cslib.Complexity.GapP.pow_mem`,
+  `Cslib.Complexity.GapP.sum_mem`, `Cslib.Complexity.GapP.prod_mem`: constants, powers, finite
+  sums and finite products.
 
 ## References
 
@@ -76,17 +78,10 @@ theorem add_mem {f₁ f₂ : α → ℕ} (h₁ : f₁ ∈ SharpP enc) (h₂ : f�
     f₁ + f₂ ∈ SharpP enc := by
   obtain ⟨p₁, V₁, hV₁, hf₁⟩ := mem_SharpP.mp h₁
   obtain ⟨p₂, V₂, hV₂, hf₂⟩ := mem_SharpP.mp h₂
-  refine ⟨p₁ + p₂ + 1, selectVerifier
-      (andVerifier (fun a => p₁.eval (enc a).length) V₁ allFalseVerifier)
-      (andVerifier (fun a => p₂.eval (enc a).length) V₂ allFalseVerifier), by fun_prop,
-    fun a => ?_⟩
-  have e₁ := acceptCount_andVerifier_allFalseVerifier (fun a => p₁.eval (enc a).length) V₁ a
-    (p₂.eval (enc a).length)
-  have e₂ := acceptCount_andVerifier_allFalseVerifier (fun a => p₂.eval (enc a).length) V₂ a
-    (p₁.eval (enc a).length)
-  rw [Nat.add_comm (p₂.eval _)] at e₂
+  refine ⟨p₁ + p₂ + 1, sumVerifier (fun a => p₁.eval (enc a).length)
+      (fun a => p₂.eval (enc a).length) V₁ V₂, by fun_prop, fun a => ?_⟩
   rw [Pi.add_apply, hf₁ a, hf₂ a, Polynomial.eval_add, Polynomial.eval_add, Polynomial.eval_one,
-    acceptCount_selectVerifier, e₁, e₂]
+    acceptCount_sumVerifier]
 
 /-- **`#P` is closed under multiplication**: the two verifiers read disjoint parts of the
 certificate. -/
@@ -231,6 +226,24 @@ theorem sub_mem' {g₁ g₂ : α → ℤ} (h₁ : g₁ ∈ GapP enc) (h₂ : g�
     g₁ - g₂ ∈ GapP enc :=
   (subring enc).sub_mem h₁ h₂
 
+/-- The constant functions with natural values are in `GapP`. -/
+theorem natCast_mem (n : ℕ) : (n : α → ℤ) ∈ GapP enc :=
+  _root_.natCast_mem (subring enc) n
+
+/-- `GapP` is closed under powers. -/
+theorem pow_mem {g : α → ℤ} (h : g ∈ GapP enc) (n : ℕ) : g ^ n ∈ GapP enc :=
+  (subring enc).pow_mem h n
+
+/-- `GapP` is closed under finite sums. -/
+theorem sum_mem {ι : Type*} (s : Finset ι) {g : ι → α → ℤ} (h : ∀ i ∈ s, g i ∈ GapP enc) :
+    ∑ i ∈ s, g i ∈ GapP enc :=
+  (subring enc).sum_mem h
+
+/-- `GapP` is closed under finite products. -/
+theorem prod_mem {ι : Type*} (s : Finset ι) {g : ι → α → ℤ} (h : ∀ i ∈ s, g i ∈ GapP enc) :
+    ∏ i ∈ s, g i ∈ GapP enc :=
+  (subring enc).prod_mem h
+
 end GapP
 
 /-- A polynomial-time unary certificate length can be padded without changing the count. -/
@@ -239,9 +252,8 @@ theorem mem_SharpP_of_polyTime_length {V : α × List Bool → Bool} {r : α →
     (hr : ComputableInPolyTime r enc encUnary) :
     (fun a => acceptCount V a (r a)) ∈ SharpP enc := by
   obtain ⟨p, hle⟩ := hr.polyBounded.exists_polynomial
-  refine ⟨p, andVerifier r V allFalseVerifier, by fun_prop, fun a => ?_⟩
-  obtain ⟨k, hk⟩ := Nat.exists_eq_add_of_le (hle a)
-  rw [hk, acceptCount_andVerifier_allFalseVerifier]
+  exact ⟨p, padVerifier r V, by fun_prop, fun a =>
+    (acceptCount_padVerifier_of_le r V (hle a)).symm⟩
 
 /-- Polynomial-time precomposition preserves the exact accepting count. Padding bits are
 required to be false, so they do not multiply the number of witnesses. -/

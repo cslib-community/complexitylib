@@ -19,6 +19,14 @@ source statements with declarations at recorded snapshots, including model restr
 errors and endpoints not located. Use its chapter tables when a nearby theorem name alone does
 not establish textbook coverage; the corrected density-amplification objective remains open.
 
+For textbook-oriented searches, the [Goldreich draft audit](../../results/goldreich-2007.md)
+maps chapters 5–7 to declarations and remaining endpoints. Check its snapshot and model notes:
+visited-cell versus binary-space accounting and uniform versus nonuniform hardness can prevent
+a nearby theorem from establishing the source statement. Goldreich 6.10 uses bounded-time
+partial answers, matching the library’s ZPP; expected-time ZPP is a separate alternative interface.
+
+For source-specific comparisons, consult the [Goldreich draft audit, chapters 8–9](../../results/goldreich-2007.md#chapter-8-pseudorandom-generators). It distinguishes distribution security from certified generator runtime, and the class-level PCP theorem from stronger verification-time and witness-conversion claims. Its negative searches refer to a recorded snapshot.
+
 ## Build a shared Boolean circuit
 
 <!-- worked-example -->

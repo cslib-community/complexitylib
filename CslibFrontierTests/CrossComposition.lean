@@ -94,7 +94,7 @@ example (h : HasPolyCompression (encList encCNF) (orParam encCNF) {l | ∃ a ∈
 /-! ### Kernels and compressions -/
 
 /-- Buss's kernel for vertex cover gives a polynomial compression. -/
-example : HasPolyCompression (encPair encGraph encNat) Prod.snd VertexCover :=
+example : HasPolyCompression encVertexCoverInstance VertexCoverInstance.k VertexCover :=
   VertexCover_hasPolyKernel.hasPolyCompression
 
 /-- With a constant parameter, the identity on bit strings is no compression, whatever the size

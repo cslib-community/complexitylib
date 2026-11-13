@@ -23,11 +23,12 @@ import CslibFrontier.Foundations.Data.Nat.Power
 /-!
 # Native model-counter consequences across counting, single-machine, randomized, and gap hypotheses
 
-`CslibFrontier.Computability.Complexity.FineGrained.CountingExponents`, `SingleSubexp`,
-`Randomized`, and `GapETH` develop the classical fine-grained rate, error-model, and reduction
-hierarchy without importing `CountingNativeEndpoint`. Mirroring how `CountingNativeEndpoint`
-instantiates `Exponents`, this leaf module connects `CountingNativeEndpoint.exists_declaredCounter`
-and `CountingNativeEndpoint.exists_modelCounter` to those interfaces:
+`CslibFrontier.Computability.Complexity.FineGrained.FunctionRates`, `CountingExponents`,
+`SingleSubexp`, `Randomized`, and `GapETH` develop the classical fine-grained rate, error-model,
+and reduction hierarchy without importing `CountingNativeEndpoint`. Mirroring how
+`CountingNativeEndpoint` instantiates `Exponents`, this leaf module connects
+`CountingNativeEndpoint.exists_declaredCounter` and `CountingNativeEndpoint.exists_modelCounter` to
+those interfaces:
 
 1. **Single-machine `2 ^ o(n)` counting and decision:** because `exists_declaredCounter` adapts its
    branching divisor dynamically with the declared variable count (`interpolationScale =o[atTop]

@@ -98,8 +98,9 @@ example : ¬ HammingAdjacent ![0, 1] ![1, 0] := by
 def countTrue {n : ℕ} (x : Fin n → Bool) : ℤ := ∑ j, if x j = true then 1 else 0
 
 /-- The count query has sensitivity one for Hamming adjacency. -/
-theorem abs_countTrue_sub_le {n : ℕ} {x y : Fin n → Bool} (h : HammingAdjacent x y) :
-    |((countTrue x : ℝ)) - countTrue y| ≤ 1 := by
+theorem sensitivity_countTrue {n : ℕ} :
+    Sensitivity HammingAdjacent (fun x : Fin n → Bool => (countTrue x : ℝ)) 1 := by
+  intro x y h
   by_cases hxy : x = y
   · subst hxy; simp
   obtain ⟨i, hi⟩ := Function.ne_iff.mp hxy
@@ -120,14 +121,13 @@ theorem abs_countTrue_sub_le {n : ℕ} {x y : Fin n → Bool} (h : HammingAdjace
 example {n : ℕ} {α : ℝ} (h0 : 0 < α) (h1 : α < 1) :
     DifferentiallyPrivate HammingAdjacent
       (addNoise (countTrue (n := n)) (twoSidedGeometric α h0.le h1)) (Real.log α⁻¹) 0 := by
-  simpa using differentiallyPrivate_addNoise_twoSidedGeometric (Δ := 1)
-    (fun _ _ h => abs_countTrue_sub_le h) h0 h1
+  simpa using differentiallyPrivate_addNoise_twoSidedGeometric sensitivity_countTrue h0 h1
 
 /-- Discrete Laplace noise of scale `1 / ε` makes the count query `(ε, 0)`-private. -/
 example {n : ℕ} {ε : ℝ} (hε : 0 < ε) :
     DifferentiallyPrivate HammingAdjacent
       (addNoise (countTrue (n := n)) (discreteLaplace (1 / ε) (by positivity))) ε 0 :=
-  differentiallyPrivate_addNoise_discreteLaplace one_pos (fun _ _ h => abs_countTrue_sub_le h) hε
+  differentiallyPrivate_addNoise_discreteLaplace one_pos sensitivity_countTrue hε
 
 /-! ### The two-sided geometric distribution with ratio `1/2` -/
 

@@ -31,10 +31,12 @@ the overwritten string and the old part together determine `(a, b)`.
 * `Cslib.Probability.PMF.mem_support_uniformOfFintype`: every value has positive uniform mass.
 * `Cslib.Probability.PMF.uniformOfFintype_finset_map_val`: subtype and finite-set uniform
   laws agree.
-* `Cslib.Probability.PMF.uniformOfFintype_bind_equiv`: reparametrizing a uniform draw by a
+* `Cslib.Probability.PMF.uniformOfFintype_bind_bijective`,
+  `Cslib.Probability.PMF.uniformOfFintype_bind_equiv`: reparametrizing a uniform draw by a
   bijection leaves an experiment unchanged.
 * `Cslib.Probability.PMF.uniformOfFintype_prod_map_fst`,
-  `Cslib.Probability.PMF.uniformOfFintype_bind_map`: the first component of a uniform pair is
+  `Cslib.Probability.PMF.uniformOfFintype_prod_map_snd`,
+  `Cslib.Probability.PMF.uniformOfFintype_bind_map`: each component of a uniform pair is
   uniform, and mapping over two independent uniform draws is mapping over a uniform pair.
 * `Cslib.Probability.PMF.uniformOfFintype_pi_map_restrict`,
   `Cslib.Probability.PMF.uniformOfFintype_pi_bind_restrict`: restricting a uniform dependent
@@ -81,13 +83,24 @@ theorem uniformOfFintype_finset_map_val (s : Finset α) [Nonempty s] :
   · intro b hb
     simp [Set.indicator_apply, Ne.symm hb]
 
+-- Moved from `CslibFrontier/Crypto/Primitives/Garbling/Rerandomizable.lean`, where it was
+-- private.
+/-- Substituting a bijection `f` into a uniform draw does not change an experiment: if `k'` agrees
+with `k ∘ f`, drawing uniformly from `α` and running `k'` is drawing uniformly from `β` and
+running `k`. -/
+theorem uniformOfFintype_bind_bijective [Fintype α] [Nonempty α] [Fintype β] [Nonempty β]
+    {f : α → β} (hf : Function.Bijective f) {k : β → PMF γ} {k' : α → PMF γ}
+    (hk : ∀ a, k' a = k (f a)) :
+    (uniformOfFintype α).bind k' = (uniformOfFintype β).bind k := by
+  rw [show k' = k ∘ Equiv.ofBijective f hf from funext hk, ← PMF.bind_map,
+    uniformOfFintype_map_equiv]
+
 -- Moved from `CslibFrontier/Crypto/Computational/DiffieHellman.lean` (Samuel Schlesinger), where
 -- it was private, so that the garbling and Diffie–Hellman modules share one statement.
 /-- Reparametrizing a uniform draw by a bijection does not change an experiment. -/
 theorem uniformOfFintype_bind_equiv [Fintype α] [Nonempty α] (e : α ≃ α) (f : α → PMF β) :
-    (uniformOfFintype α).bind (fun a => f (e a)) = (uniformOfFintype α).bind f := by
-  change (uniformOfFintype α).bind (f ∘ e) = (uniformOfFintype α).bind f
-  rw [← PMF.bind_map, uniformOfFintype_map_equiv]
+    (uniformOfFintype α).bind (fun a => f (e a)) = (uniformOfFintype α).bind f :=
+  uniformOfFintype_bind_bijective e.bijective fun _ => rfl
 
 variable [Fintype α] [Nonempty α] [Fintype β] [Nonempty β]
 
@@ -100,6 +113,12 @@ theorem uniformOfFintype_prod_map_fst :
         congr 1 with a : 1
         exact PMF.map_const _ _
     _ = _ := PMF.bind_pure _
+
+/-- The second component of a uniform pair is uniform. -/
+theorem uniformOfFintype_prod_map_snd :
+    (uniformOfFintype (α × β)).map Prod.snd = uniformOfFintype β := by
+  rw [← uniformOfFintype_map_equiv (Equiv.prodComm β α), PMF.map_comp]
+  exact uniformOfFintype_prod_map_fst
 
 /-- Mapping a curried binary function over two independent uniform draws is equivalent to
 mapping the uncurried function over a uniform pair. Iterating this rewrite collapses `n`-ary

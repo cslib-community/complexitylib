@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Primitives.Garbling.MixedModulus
 import CslibFrontier.Probability.Product
+import CslibFrontier.Probability.Product.Split
 import CslibFrontier.Probability.Uniform
 
 /-!
@@ -610,28 +611,6 @@ theorem reduceWith_congr {f g : (q : T × CCRInput μ ℓ) → Label μ ℓ q.2.
       simp only [MixedModulusCircuit.size]; omega) r]
 
 omit [Fintype ι] [DecidableEq ι] [∀ i, NeZero (μ i)] in
-/-- Restricting a uniform dependent function along an injective map gives a uniform function. -/
-private theorem uniformOfFintype_map_comp_of_injective {α S : Type} [Fintype α] [DecidableEq α]
-    {π : α → Type} [∀ a, Fintype (π a)] [∀ a, Nonempty (π a)] [∀ a, AddGroup (π a)] [Fintype S]
-    [DecidableEq S] (q : S → α) (hq : Function.Injective q) :
-    (PMF.uniformOfFintype (∀ a, π a)).map (fun f s => f (q s)) =
-      PMF.uniformOfFintype (∀ s, π (q s)) := by
-  classical
-  apply Cslib.Probability.PMF.uniformOfFintype_map_of_shift
-  intro c
-  let d : ∀ a, π a := fun a =>
-    if h : ∃ s, q s = a then cast (congrArg π h.choose_spec) (c h.choose) else 0
-  have hcast : ∀ s s' (h : q s' = q s), s' = s → cast (congrArg π h) (c s') = c s := by
-    rintro s s' h rfl
-    rfl
-  refine ⟨Equiv.addRight d, fun f => funext fun s => ?_⟩
-  have hd : d (q s) = c s := by
-    have h : ∃ s', q s' = q s := ⟨s, rfl⟩
-    simp only [d, dite_eq_left_of_eq_true (eq_true h)]
-    exact hcast s h.choose h.choose_spec (hq h.choose_spec)
-  simp only [Equiv.coe_addRight, Pi.add_apply, hd]
-
-omit [Fintype ι] [DecidableEq ι] [∀ i, NeZero (μ i)] in
 /-- The rows of a projection gate are uniform when the values of all input values but the active
 one are uniform. -/
 private theorem map_reduceRows_uniformOfFintype {m : ℕ} [NeZero m] {L : Type} [AddCommGroup L]
@@ -734,7 +713,7 @@ theorem bind_reduceWith_uniformOfFintype [Fintype T] [DecidableEq T] {β : Type}
         funext s
         simp only [G, Function.comp_apply, pt, dite_eq_ite]
         rfl
-      rw [hG, ← PMF.map_comp, uniformOfFintype_map_comp_of_injective pt hpt]
+      rw [hG, ← PMF.map_comp, Cslib.Probability.PMF.uniformOfFintype_map_comp_dep hpt]
       exact map_reduceRows_uniformOfFintype v (W.2 - v) (H t i W j)
     calc (PMF.uniformOfFintype (T → CCRTable μ ℓ)).bind
           (fun f => κ (reduceWith (fun q => f q.1 q.2) H tw k (.proj a φ next) A V))

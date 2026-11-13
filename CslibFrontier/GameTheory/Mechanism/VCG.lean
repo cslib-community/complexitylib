@@ -35,15 +35,17 @@ rationality. The finite outcome set is needed for the Clarke pivot and for the e
 welfare-maximizing outcome rule; DSIC of Groves mechanisms holds for any outcome type.
 
 This `Mechanism ι Ω` is separate from `SingleParameter.Mechanism ι`. A single-parameter
-environment is the special case in which agent `i`'s valuation of an allocation is `vᵢ · xᵢ`
-for a private scalar `vᵢ ≥ 0`, and its incentive predicates quantify only over such valuations
-and nonnegative bids. No bridge between the two models (for example VCG specializing to the
-Vickrey auction) is proved yet.
+environment is the special case in which agent `i`'s valuation of an outcome `ω` is `vᵢ · xᵢ(ω)`
+for an allocation map `x` and a private scalar `vᵢ ≥ 0`, and its incentive predicates quantify
+only over such valuations and nonnegative bids. `IsDSICOn` restricts DSIC to valuation domains;
+`CslibFrontier.GameTheory.Mechanism.LinearValuation` identifies single-parameter DSIC with DSIC
+on the domains of linear valuations, and `CslibFrontier.GameTheory.Mechanism.VickreyVCG` shows
+that VCG on single-item outcomes is the Vickrey auction.
 
 ## Main definitions
 
 * `Mechanism`: an outcome rule and a payment rule on reported valuation profiles.
-* `Mechanism.utility`, `Mechanism.IsDSIC`, `Mechanism.IsIR`.
+* `Mechanism.utility`, `Mechanism.IsDSIC`, `Mechanism.IsDSICOn`, `Mechanism.IsIR`.
 * `Mechanism.welfare`, `Mechanism.IsWelfareMaximizing`.
 * `Mechanism.groves`, `Mechanism.clarkePivot`, `Mechanism.vcg`.
 
@@ -97,6 +99,24 @@ reporting `v` instead of `bᵢ` does not lower `i`'s utility ([Roughgarden2013CS
 truthfully gets nonnegative utility, whatever the others report. -/
 @[expose] def IsIR (M : Mechanism ι Ω) : Prop :=
   ∀ (i : ι) (b : ι → Ω → ℝ), 0 ≤ b i → 0 ≤ M.utility i (b i) b
+
+/-- Dominant-strategy incentive compatibility on the valuation domains `V`: for every agent `i`,
+valuation `v ∈ V i` and reports `b` with every `b j ∈ V j`, reporting `v` instead of `bᵢ` does not
+lower `i`'s utility. On the full domains this is `IsDSIC` (`isDSICOn_univ_iff`). Single-parameter
+environments are the domains of linear valuations; see
+`CslibFrontier.GameTheory.Mechanism.LinearValuation`. -/
+@[expose] def IsDSICOn [DecidableEq ι] (M : Mechanism ι Ω) (V : ι → Set (Ω → ℝ)) : Prop :=
+  ∀ (i : ι) (b : ι → Ω → ℝ) (v : Ω → ℝ), (∀ j, b j ∈ V j) → v ∈ V i →
+    M.utility i v b ≤ M.utility i v (Function.update b i v)
+
+/-- A DSIC mechanism is DSIC on every valuation domain. -/
+theorem IsDSIC.isDSICOn [DecidableEq ι] {M : Mechanism ι Ω} (hM : M.IsDSIC)
+    (V : ι → Set (Ω → ℝ)) : M.IsDSICOn V :=
+  fun i b v _ _ => hM i b v
+
+theorem isDSICOn_univ_iff [DecidableEq ι] {M : Mechanism ι Ω} :
+    M.IsDSICOn (fun _ => Set.univ) ↔ M.IsDSIC :=
+  ⟨fun h i b v => h i b v (fun _ => Set.mem_univ _) (Set.mem_univ _), fun h => h.isDSICOn _⟩
 
 variable [Fintype ι]
 
