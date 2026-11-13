@@ -19,6 +19,7 @@ import CslibFrontier.Crypto.Protocols.Cipher.LubyRackoff
 import CslibFrontier.Foundations.Data.BitString.List.Operations
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.CoinFixing
+import CslibFrontier.Languages.Probabilistic.Oracle.Substitution.QueryCount
 import CslibFrontier.Probability.IID
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.Product
@@ -666,23 +667,20 @@ private theorem randomPermOracle_eq_blockOracle (n : ℕ) (π : Equiv.Perm (BitS
 are answered with `[]` without querying. -/
 private noncomputable def pairAdversary (adversary : OracleDistinguisher) (n : ℕ) :
     ProbOracleComp (fun _ : BitString n × BitString n => BitString n × BitString n) Bool :=
-  OracleComp.interpret
-    (OracleComp.sumHandler (fun k => ProbOracleComp.sample (ProbComp.unifFin k))
-      (fun request : Unit × List Bool =>
-        if request.2.length = 2 * n then joinBlock <$> ProbOracleComp.query (splitBlock n request.2)
-        else pure []))
+  ProbOracleComp.simulate
+    (fun request : Unit × List Bool =>
+      if request.2.length = 2 * n then joinBlock <$> ProbOracleComp.query (splitBlock n request.2)
+      else pure [])
     (adversary n [])
 
 private theorem isQueryBounded_pairAdversary {adversary : OracleDistinguisher} {n Q : ℕ}
     (hQ : (adversary n []).IsQueryBounded Q) : (pairAdversary adversary n).IsQueryBounded Q := by
-  refine hQ.interpret fun q => ?_
-  rcases q with k | request
-  · exact ProbOracleComp.IsQueryBounded.sample (ProbComp.unifFin k)
-  · dsimp only [OracleComp.sumHandler]; split_ifs
-    · simpa only [map_eq_bind_pure_comp, Function.comp_def, Nat.add_zero, Sum.elim_inr] using
-        (ProbOracleComp.IsQueryBounded.query (splitBlock n request.2)).bind fun _ =>
-          OracleComp.IsCostBounded.pure _ 0
-    · exact OracleComp.IsCostBounded.pure [] _
+  refine hQ.simulate fun request => ?_
+  split_ifs
+  · simpa only [map_eq_bind_pure_comp, Function.comp_def, Nat.add_zero] using
+      (ProbOracleComp.IsQueryBounded.query (splitBlock n request.2)).bind fun _ =>
+        OracleComp.IsCostBounded.pure _ 0
+  · exact OracleComp.IsCostBounded.pure [] _
 
 private theorem interpret_pairAdversary (adversary : OracleDistinguisher) (n : ℕ)
     (σ : BitString n × BitString n → BitString n × BitString n) :
@@ -691,8 +689,7 @@ private theorem interpret_pairAdversary (adversary : OracleDistinguisher) (n : �
       OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle
         (fun request : Unit × List Bool => PMF.pure (blockOracle n σ request.2)))
         (adversary n []) := by
-  simp only [pairAdversary, OracleComp.interpret_interpret, OracleComp.interpret_sumHandler,
-    ProbOracleComp.interpret_sample, ProbComp.unifFin, OracleComp.interpret_query]
+  rw [pairAdversary, ProbOracleComp.interpret_simulate]
   congr 2; funext request; unfold blockOracle; split_ifs <;> simp [PMF.monad_map_eq_map]
 
 /-- With random round functions, the adapter runs the block-cipher adversary against the Feistel
@@ -1032,25 +1029,22 @@ private theorem strongRandomPermOracle_eq_strongBlockOracle (n : ℕ)
 private noncomputable def strongPairAdversary (adversary : StrongPRPDistinguisher) (n : ℕ) :
     ProbOracleComp (fun _ : Bool × (BitString n × BitString n) => BitString n × BitString n)
       Bool :=
-  OracleComp.interpret
-    (OracleComp.sumHandler (fun k => ProbOracleComp.sample (ProbComp.unifFin k))
-      (fun request : Bool × List Bool =>
-        if request.2.length = 2 * n then
-          joinBlock <$> ProbOracleComp.query (request.1, splitBlock n request.2)
-        else pure []))
+  ProbOracleComp.simulate
+    (fun request : Bool × List Bool =>
+      if request.2.length = 2 * n then
+        joinBlock <$> ProbOracleComp.query (request.1, splitBlock n request.2)
+      else pure [])
     (adversary n [])
 
 private theorem isQueryBounded_strongPairAdversary {adversary : StrongPRPDistinguisher}
     {n Q : ℕ} (hQ : (adversary n []).IsQueryBounded Q) :
     (strongPairAdversary adversary n).IsQueryBounded Q := by
-  refine hQ.interpret fun q => ?_
-  rcases q with k | request
-  · exact ProbOracleComp.IsQueryBounded.sample (ProbComp.unifFin k)
-  · dsimp only [OracleComp.sumHandler]; split_ifs
-    · simpa only [map_eq_bind_pure_comp, Function.comp_def, Nat.add_zero, Sum.elim_inr] using
-        (ProbOracleComp.IsQueryBounded.query (request.1, splitBlock n request.2)).bind fun _ =>
-          OracleComp.IsCostBounded.pure _ 0
-    · exact OracleComp.IsCostBounded.pure [] _
+  refine hQ.simulate fun request => ?_
+  split_ifs
+  · simpa only [map_eq_bind_pure_comp, Function.comp_def, Nat.add_zero] using
+      (ProbOracleComp.IsQueryBounded.query (request.1, splitBlock n request.2)).bind fun _ =>
+        OracleComp.IsCostBounded.pure _ 0
+  · exact OracleComp.IsCostBounded.pure [] _
 
 private theorem interpret_strongPairAdversary (adversary : StrongPRPDistinguisher) (n : ℕ)
     (σ : Equiv.Perm (BitString n × BitString n)) :
@@ -1059,8 +1053,7 @@ private theorem interpret_strongPairAdversary (adversary : StrongPRPDistinguishe
       OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle
         (fun request : Bool × List Bool => PMF.pure (strongBlockOracle n σ request)))
         (adversary n []) := by
-  simp only [strongPairAdversary, OracleComp.interpret_interpret, OracleComp.interpret_sumHandler,
-    ProbOracleComp.interpret_sample, ProbComp.unifFin, OracleComp.interpret_query]
+  rw [strongPairAdversary, ProbOracleComp.interpret_simulate]
   congr 2; funext request; unfold strongBlockOracle strongTable
   split_ifs <;> simp [*, PMF.monad_map_eq_map]
 
