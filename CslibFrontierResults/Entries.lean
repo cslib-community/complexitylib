@@ -124,6 +124,7 @@ import CslibFrontier.Computability.MCSP.Magnification.MergeTree.Locality
 import CslibFrontier.Computability.MCSP.MultiNPHard
 import CslibFrontier.Computability.MCSP.PartialETH
 import CslibFrontier.Computability.MCSP.PartialHardness.Reduction
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.StepCounter
 import CslibFrontier.Computability.PCP.Approximation.UniqueGames.Complexity
 import CslibFrontier.Computability.PCP.Completeness
 import CslibFrontier.Computability.PolyTime.LinearAlgebra.RationalElimination
@@ -3094,6 +3095,23 @@ register_result "sublinear-dtime-equals-constant" where
   scope := "DTIME encBits p equals DTIME encBits 1 for p=o(n), including affine clock constants. \
     The input is every raw bit word; prefixes of arbitrary encoded instances need not be \
     valid, so no such encoding-general class identity is claimed."
+
+register_result "goldreich-exact-step-counter" where
+  title := "Exact native step counter from binary input"
+  topic := "time complexity"
+  sources := [
+    { paper := Goldreich2007DraftR2, theorem := "Exercise 4.5",
+      locator := "January 2007 r2.pdf; PDF page 36 / printed page 152" },
+    { paper := Goldreich2006DraftR1, theorem := "Numbers convention",
+      locator := "December 2006 r1.pdf; PDF page 45 / printed page 20" }
+  ]
+  theorems := [Turing.MultiTapeTM.exists_stepCounter]
+  scope := "One fixed finite deterministic native multitape machine on encNat n, \
+    least-significant-first binary, visits one designated signal state exactly n times. \
+    It starts outside the signal state and leaves each visit on the next transition. \
+    Total runtime, including binary-to-unary preparation, is bounded by c*(n+1) for a \
+    uniform constant c; zero input issues no signals. No logarithmic workspace or \
+    per-prefix signal-latency bound is claimed."
 
 register_result "translational-time-hierarchy" where
   title := "Deterministic time hierarchy below every power of the logarithm, by translation"

@@ -174,6 +174,28 @@ machine reads the first bit, demonstrating input-sensitive constant-time behavio
 clients check the inclusive prefix boundary, failure beyond the empty prefix, and the zero
 asymptotic bound with DTIME's additive constant.
 
+## Exact native step counters
+
+Import `CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.StepCounter`
+([source](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Combinators/StepCounter.lean))
+for `Turing.MultiTapeTM.exists_stepCounter`. It supplies one finite native deterministic machine
+with a fixed number of work tapes and one designated signal state. Its input is `encNat n`,
+least-significant-first binary. For the resulting `counter`, `counter.signal_count n` says that
+`counter.signalTimes n` has exactly `n` elements; `counter.initial_ne_signal` and
+`counter.leaves_signal` ensure that these are entering-and-leaving events. The uniform bound
+`counter.runsInTime n` is `counter.timeConstant * (n + 1)`, including preparation and zero input.
+
+This is the total-time statement of Goldreich's January 2007 draft Exercise 4.5
+([r2.pdf, PDF page 36 / printed page 152](https://www.wisdom.weizmann.ac.il/~oded/CC/r2.pdf)).
+The machine converts binary to exact unary in linear time, writes it to a work tape, then
+uses the existing clock controller to consume one cell per signal. It counts actual control-state
+visits, rather than emitted output symbols. The
+[checked examples](../../CslibFrontierTests/StepCounter.lean) instantiate the complete machine,
+check zero, one and three signals, and expose the prepared controller's state times.
+Use `Classical.choice exists_stepCounter` when an actual record is needed in a proof; no
+transition-table computation is promised by this existence API. There is no logarithmic-space
+or per-prefix signal-latency guarantee: the preparation may precede all signals.
+
 ## Constructibility and diagonalization
 
 [TimeConstructible](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/Constructible.lean#L68) computes the binary value `t(n)` from an arbitrary word of length `n` within `O(t(n))`; it does not build the lower bound `n≤t(n)` into the definition. [SpaceConstructible](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/Constructible.lean#L259) analogously bounds binary computation in `O(s(n))` workspace. Hierarchy theorems state their lower-bound hypotheses explicitly. Unary clock construction is a separate implementation step. Constants, `n`, `(n + 1) ^ k` for every `k`, `2 ^ n` and `2 ^ (2 ^ n)` are time-constructible; the routines behind them write the length of a word in binary and convert between binary and unary in linear time ([BigO/Constructible.lean](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/BigO/Constructible.lean)).

@@ -3122,6 +3122,9 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.MultiPass
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.Reverse
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.StackLoop
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.StepCounter
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.StepCounter.Defs
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.StepCounter.Unary
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.StepMachine
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.StreamFold
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.TakeDropUnary
