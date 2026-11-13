@@ -99,17 +99,22 @@ example (n : ℕ) :
     ProbComp.eval (kilianHonestGame idHash toyVerifier x [true, true] n) = PMF.pure true :=
   eval_kilianHonestGame idHash toyVerifier (by decide) n
 
--- Extensionality and compositional polynomial-time certificates for `KilianOpening`.
-example (o₁ o₂ : KilianOpening) (hbit : o₁.bit = o₂.bit) (hpath : o₁.path = o₂.path) :
+-- Extensionality and compositional polynomial-time certificates for `encKilianOpening`.
+example (o₁ o₂ : MerkleOpening Bool) (hbit : o₁.leaf = o₂.leaf) (hpath : o₁.path = o₂.path) :
     o₁ = o₂ := by
   ext1 <;> assumption
 
 example : ComputableInPolyTime
-    (fun p : Bool × KilianOpening => (⟨!p.1, p.2.path⟩ : KilianOpening))
+    (fun p : Bool × MerkleOpening Bool => (⟨!p.1, p.2.path⟩ : MerkleOpening Bool))
     (encPair encBool encKilianOpening) encKilianOpening := by
   fun_prop
 
-example : ComputableInPolyTime (fun o : KilianOpening => o.bit) encKilianOpening encBool := by
+example : ComputableInPolyTime (fun o : MerkleOpening Bool => o.leaf) encKilianOpening encBool := by
   fun_prop
+
+-- Encoded words unchanged: an opening keeps the former `KilianOpening` layout, the framed bit
+-- followed by the framed path.
+example (o : MerkleOpening Bool) :
+    encKilianOpening o = encPair encBool (encList encBits) (o.leaf, o.path) := rfl
 
 end CslibFrontierTests.Crypto.Kilian

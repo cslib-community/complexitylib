@@ -16,9 +16,9 @@ import CslibFrontier.Tactic.PolyTime.Init
 # Expanding candidates from a pseudoentropy pair
 
 Each entropy-grid entry defines a deterministic polynomial-time expander with its exact seed
-length. One entry is secure against every uniform indexed test; its index may vary arbitrarily
-with the security parameter. The family is indexed by the whole finite grid and never computes
-entropy.
+length. One entry is `IndistinguishableWithAdvice` from uniform for tests that read the advice and
+its index; that index may vary arbitrarily with the security parameter. The family is indexed by
+the whole finite grid and never computes entropy.
 
 These raw candidates have different seed lengths. `ThreeSource.Padding` gives them a common
 seed length and one bit of stretch. Amplification and XOR combination are still needed to turn
@@ -36,8 +36,9 @@ them into one generator.
 * `seedLength_lt_outputLength`, `length_generate`: strict expansion and exact output length.
 * `exists_valid_choice_withAdvice`: every sufficiently fine grid eventually contains a valid
   entry.
-* `exists_secure_choice_withAdvice`: a single proof-only choice works for every uniform indexed
-  test.
+* `exists_secure_choice_withAdvice`: a single proof-only choice is indistinguishable from uniform
+  for tests that read the advice and the index (`IndistinguishableWithAdvice` with advice word
+  `encPair encBits encUnary (advice n, choose n)`).
 
 ## References
 
@@ -181,9 +182,9 @@ theorem exists_valid_choice_withAdvice {pair : SamplablePair} {gap : ℕ → ℝ
     linarith [saved.entropy_chain_rule n, conditionalEntropy_nonneg (saved.jointWithSeed n)]
   exact ⟨fun n => Classical.epsilon _, hexists.mono (fun _ h => Classical.epsilon_spec h)⟩
 
-/-- A single varying candidate is secure relative to fixed advice against every uniform indexed
-test. The choice is made before the test is quantified and is used only in the proof, never by
-`generate`. -/
+/-- A single varying candidate is secure relative to fixed advice: its output is indistinguishable
+from uniform for tests that read both the advice and the candidate index. The choice is made
+before the test is quantified and is used only in the proof, never by `generate`. -/
 theorem exists_secure_choice_withAdvice {pair : SamplablePair} {gap : ℕ → ℝ}
     {advice : ℕ → List Bool} (hpair : pair.HasGapWithAdvice gap advice)
     (saved : pair.SeedRealization)
@@ -195,19 +196,15 @@ theorem exists_secure_choice_withAdvice {pair : SamplablePair} {gap : ℕ → �
     (hgap : ∀ᶠ n in atTop, 4 / (dyadicSize (densityBound n) : ℝ) ≤ gap n) :
     ∃ choose : ℕ → ℕ,
       (∀ᶠ n in atTop, choose n < size (saved.length n) (densityBound n)) ∧
-      ∀ test : ℕ × List Bool → ℕ → List Bool → ProbComp Bool,
-        IsPPTOn (encPair (encPair (encPair encUnary encBits) encUnary) encBits)
-          encBool (fun ((a, i), word) => test a i word) →
-        Negligible (fun n => Game.advantage
-          (((uniformList (seedLength n (saved.length n) (observationBound n) (densityBound n)
-            (choose n))).map (generate n (saved.length n) (observationBound n) (densityBound n)
-              (choose n) (saved.evaluate n))).bind
-                (fun word => ProbComp.eval (test (n, advice n) (choose n) word)))
-          ((uniformList (outputLength n (saved.length n) (observationBound n) (densityBound n)
-            (choose n))).bind
-              (fun word => ProbComp.eval (test (n, advice n) (choose n) word)))) := by
+      IndistinguishableWithAdvice (fun n => encPair encBits encUnary (advice n, choose n))
+        (fun n => (uniformList (seedLength n (saved.length n) (observationBound n)
+          (densityBound n) (choose n))).map (generate n (saved.length n) (observationBound n)
+            (densityBound n) (choose n) (saved.evaluate n)))
+        (fun n => uniformList (outputLength n (saved.length n) (observationBound n)
+          (densityBound n) (choose n))) := by
   obtain ⟨choose, hvalid⟩ := exists_valid_choice_withAdvice hpair saved hgap
   refine ⟨choose, hvalid.mono (fun _ h => h.index_lt), ?_⟩
+  apply IndistinguishableWithAdvice.of_negligible_encoded
   intro test htest
   have hn := ComputableInPolyTime.fst encUnary encUnary
   have hi := ComputableInPolyTime.snd encUnary encUnary
@@ -230,10 +227,14 @@ theorem exists_secure_choice_withAdvice {pair : SamplablePair} {gap : ℕ → �
     (Eventually.of_forall (fun n => by
       simpa only [scale, Nat.cast_mul, Nat.cast_ofNat] using (label_budget ..).le))
     (hvalid.mono (fun _ h => by
-      simpa only [scale, Nat.cast_mul, Nat.cast_ofNat] using h.remaining_budget)) test htest
+      simpa only [scale, Nat.cast_mul, Nat.cast_ofNat] using h.remaining_budget))
+    (fun a i word => test ((a.1, (a.2, i)), word))
+    (htest.preprocess (prepare := fun input : ((ℕ × List Bool) × ℕ) × List Bool =>
+      ((input.1.1.1, (input.1.1.2, input.1.2)), input.2)) (by fun_prop))
   unfold seedLength outputLength generate
   simp_rw [ThreeSource.eval_generate_of_realization saved _ _ _ _ _ _ (hfits _)]
-  simpa only [ProbComp.eval_bind, BitString.eval_sampleList] using h
+  simpa only [distinguishingGame, PMF.monad_bind_eq_bind, ProbComp.eval_bind,
+    BitString.eval_sampleList] using h
 
 /-- A linear grid precision suffices for the gap already obtained from a general one-way
 function. This is a numerical consequence of rounding the denominator up to a power of two. -/

@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Init
 public import CslibFrontier.Algorithms.Karger.Graph
 public import CslibFrontier.Languages.Probabilistic.QueryCount.Support
+import CslibFrontier.Foundations.Analysis.ENNRealNatDiv
 import CslibFrontier.Foundations.Analysis.ENNRealOneSubInvPow
 
 /-!
@@ -619,7 +620,7 @@ theorem fastCutHighProb_failure_le (n : ℕ) :
         pow_le_pow_left' (by simpa only [one_div] using
           ENNReal.one_sub_inv_pow_le_inv_two (k := Nat.log 2 n + 15) (by omega)) _
     _ = (1 : ℝ≥0∞) / ((2 ^ (Nat.log 2 n + 2) : ℕ) : ℝ≥0∞) := by
-        simp only [div_eq_mul_inv, mul_pow, one_pow, ENNReal.inv_pow, Nat.cast_pow, Nat.cast_ofNat]
+        rw [ENNReal.div_pow, one_pow, Nat.cast_pow, Nat.cast_ofNat]
     _ ≤ (1 : ℝ≥0∞) / ((2 * n : ℕ) : ℝ≥0∞) := by
         apply ENNReal.div_le_div_left
         have hlt : n < 2 ^ (Nat.log 2 n + 1) := Nat.lt_pow_succ_log_self (by decide) n

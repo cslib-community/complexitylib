@@ -316,8 +316,48 @@ example {f : List Bool → List Bool} (hf : NonuniformOneWay f) :
       ⟨hbound, hdensity, hcommon, hfits, hsize⟩
       (Filter.Eventually.of_forall Pseudoentropy.EntropyGrid.four_steps_le_owf_gap)
   refine ⟨pair, savedPair, bound, common, choose, hchoose, ?_⟩
-  exact hsecure (fun a _ word => advisedWordDistinguisher (a, word))
-    (by unfold advisedWordDistinguisher; fun_prop)
+  simpa only [distinguishingGame, PMF.monad_bind_eq_bind] using
+    hsecure.negligible_encoded (encAdvice := Turing.MultiTapeTM.encPair
+        Turing.MultiTapeTM.encBits Turing.MultiTapeTM.encUnary)
+      (test := fun input => advisedWordDistinguisher ((input.1.1, input.1.2.1), input.2))
+      (by unfold advisedWordDistinguisher; fun_prop)
+
+open Turing.MultiTapeTM in
+/-- The ThreeSource conclusion `IndistinguishableWithAdvice (fun n => encPair encBits encUnary
+(advice n, choose n)) X Y`, whose tests read `(n, (advice, i))`, implies the former form with an
+indexed test reading `((n, advice), i)`: the named form loses no strength. -/
+example {X Y : ℕ → PMF (List Bool)} {advice : ℕ → List Bool} {choose : ℕ → ℕ}
+    (h : IndistinguishableWithAdvice (fun n => encPair encBits encUnary (advice n, choose n)) X Y) :
+    ∀ test : ℕ × List Bool → ℕ → List Bool → ProbComp Bool,
+      IsPPTOn (encPair (encPair (encPair encUnary encBits) encUnary) encBits)
+        encBool (fun ((a, i), word) => test a i word) →
+      Negligible (fun n => Game.advantage
+        ((X n).bind (fun word => ProbComp.eval (test (n, advice n) (choose n) word)))
+        ((Y n).bind (fun word => ProbComp.eval (test (n, advice n) (choose n) word)))) := by
+  intro test htest
+  simpa only [distinguishingGame, PMF.monad_bind_eq_bind] using
+    h.negligible_encoded (encAdvice := encPair encBits encUnary)
+      (test := fun input => test (input.1.1, input.1.2.1) input.1.2.2 input.2)
+      (htest.preprocess (prepare := fun input : (ℕ × (List Bool × ℕ)) × List Bool =>
+        (((input.1.1, input.1.2.1), input.1.2.2), input.2)) (by fun_prop))
+
+open Turing.MultiTapeTM in
+/-- Conversely, the former indexed-test form implies the named form used by the GeneratorXor
+`hsecure` hypotheses, so restating them requires nothing stronger. -/
+example {X Y : ℕ → PMF (List Bool)} {advice : ℕ → List Bool} {choose : ℕ → ℕ}
+    (h : ∀ test : ℕ × List Bool → ℕ → List Bool → ProbComp Bool,
+      IsPPTOn (encPair (encPair (encPair encUnary encBits) encUnary) encBits)
+        encBool (fun ((a, i), word) => test a i word) →
+      Negligible (fun n => Game.advantage
+        ((X n).bind (fun word => ProbComp.eval (test (n, advice n) (choose n) word)))
+        ((Y n).bind (fun word => ProbComp.eval (test (n, advice n) (choose n) word))))) :
+    IndistinguishableWithAdvice (fun n => encPair encBits encUnary (advice n, choose n)) X Y := by
+  apply IndistinguishableWithAdvice.of_negligible_encoded
+  intro test htest
+  simpa only [distinguishingGame, PMF.monad_bind_eq_bind] using
+    h (fun a i word => test ((a.1, (a.2, i)), word))
+      (htest.preprocess (prepare := fun input : ((ℕ × List Bool) × ℕ) × List Bool =>
+        ((input.1.1.1, (input.1.1.2, input.1.2)), input.2)) (by fun_prop))
 
 /-- Unconditional concrete client of `GeneratorXor.indistinguishableWithAdvice`: combining a
 constant-zero candidate (`index = 0`) with an identity candidate (`index = 1`) yields an ensemble
@@ -351,7 +391,7 @@ example :
     apply GeneratorXor.indistinguishableWithAdvice (choose := fun _ => 1)
       (by fun_prop) (by fun_prop) (by fun_prop) hcand
       (Filter.Eventually.of_forall fun _ => by decide)
-    intro adversary _
+    intro test _
     have hid (n : ℕ) :
         (BitString.uniformList (n + 1)).map (candidate n 1) = BitString.uniformList (n + 1) := by
       simpa only [candidate, one_ne_zero, ↓reduceIte] using
