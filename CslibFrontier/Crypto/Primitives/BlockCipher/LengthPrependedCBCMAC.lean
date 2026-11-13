@@ -214,23 +214,6 @@ noncomputable def lengthPrependedIdealSuccess (n L : ℕ)
     let f ← PMF.uniformOfFintype (LengthPrependedInput n L → BitString n)
     let tree ← D
     return OracleComp.interpret (m := Id) f tree : PMF Bool) true).toReal
-private theorem bind_map_bind_pure {G X Y : Type} (U : PMF G) (D : PMF X) (P : X → Y)
-    (h : G → Y → Bool) :
-    (do let g ← U; let t ← D.map P; return h g t : PMF Bool) =
-      (do let g ← U; let t ← D; return h g (P t) : PMF Bool) := by
-  change U.bind (fun g => (D.map P).bind fun t => PMF.pure (h g t)) =
-    U.bind (fun g => D.bind fun t => PMF.pure (h g (P t)))
-  simp only [PMF.bind_map]
-  rfl
-/-- Precomposing a uniform random function with an injective map gives a uniform random
-  function. -/
-private theorem uniformOfFintype_map_comp {X Y : Type} [Fintype X] [DecidableEq X] [Fintype Y]
-    [DecidableEq Y] {φ : X → Y} (hφ : Function.Injective φ) :
-    (PMF.uniformOfFintype (Y → BitString n)).map (fun f => f ∘ φ) =
-      PMF.uniformOfFintype (X → BitString n) :=
-  PMF.uniformOfFintype_map_addHom
-    { toFun := fun f => f ∘ φ, map_zero' := rfl, map_add' := fun _ _ => rfl }
-    fun g => ⟨Function.extend φ g 0, funext fun x => hφ.extend_apply g 0 x⟩
 /-- The translated distinguisher has the same real-world acceptance probability. -/
 theorem cbcRealSuccess_map_prependLengthQueries {L : ℕ}
     (encodeLength : Fin (L + 1) → BitString n)
@@ -238,9 +221,8 @@ theorem cbcRealSuccess_map_prependLengthQueries {L : ℕ}
     cbcRealSuccess n (L + 1) (D.map (prependLengthQueries encodeLength)) =
       lengthPrependedRealSuccess encodeLength D := by
   unfold cbcRealSuccess lengthPrependedRealSuccess
-  rw [bind_map_bind_pure _ D (prependLengthQueries encodeLength)
-    (fun g t => (cbcQueryRun (cbcMacFinite g) t).1)]
-  simp only [cbcQueryRun_fst, interpret_prependLengthQueries]
+  simp only [Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure, PMF.bind_map]
+  simp only [Function.comp_def, cbcQueryRun_fst, interpret_prependLengthQueries]
   rfl
 /-- The translated distinguisher has the same ideal-world acceptance probability: a uniform
   random function on CBC-MAC inputs, precomposed with the injective map `prependLength`, is a
@@ -251,13 +233,9 @@ theorem cbcIdealSuccess_map_prependLengthQueries {L : ℕ}
     cbcIdealSuccess n (L + 1) (D.map (prependLengthQueries encodeLength)) =
       lengthPrependedIdealSuccess n L D := by
   unfold cbcIdealSuccess lengthPrependedIdealSuccess
-  rw [bind_map_bind_pure _ D (prependLengthQueries encodeLength)
-    (fun f t => (cbcQueryRun f t).1),
-    ← uniformOfFintype_map_comp (prependLength_injective encodeLength)]
-  simp only [cbcQueryRun_fst, interpret_prependLengthQueries]
-  change _ = ((PMF.map _ _).bind _ _).toReal
-  rw [PMF.bind_map]
-  rfl
+  rw [← PMF.uniformOfFintype_map_comp (prependLength_injective encodeLength)]
+  simp only [Probability.PMF.monad_bind_eq_bind, Probability.PMF.monad_pure_eq_pure, PMF.bind_map]
+  simp only [Function.comp_def, cbcQueryRun_fst, interpret_prependLengthQueries]
 /-- **Variable-length security of length-prepended CBC-MAC ([KatzLindell2020], Section 4.4.2,
   Theorems 4.11 and 4.12, pp. 123–124, with Exercise 4.18)**: for an injective length encoding
   and every distribution `D` over distinguishers that ask at most `q` block-aligned messages of at

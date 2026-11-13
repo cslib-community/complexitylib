@@ -106,7 +106,16 @@ counting tuples when the factors are not uniform. `pi_map_curry` in
 [Product/Reindex.lean](../../CslibFrontier/Probability/Product/Reindex.lean) splits a product
 indexed by `ι × κ` into independent blocks, and `toOuterMeasure_pi_forall` in
 [Product/Event.lean](../../CslibFrontier/Probability/Product/Event.lean) is the probability of a
-box `{u | ∀ i, u i ∈ E i}`. For a biased bit, use `coin p` from
+box `{u | ∀ i, u i ∈ E i}`. For a uniform draw on a finite group, import
+[Uniform.lean](../../CslibFrontier/Probability/Uniform.lean): `uniformOfFintype_map_add_left` and
+`uniformOfFintype_bind_add_left`, with their `_right` forms, remove a fixed mask as in the one-time
+pad; `uniformOfFintype_map_addHom` and `uniformOfFintype_map_monoidHom` push the uniform law
+through a surjective homomorphism; and `uniformOfFintype_map_comp` reads a uniform function
+through an injection. For a dependent function, `uniformOfFintype_map_comp_dep` in
+[Product/Split.lean](../../CslibFrontier/Probability/Product/Split.lean) needs only nonempty
+fibres. On any finite type, `uniformOfFintype_bind_bijective` in
+[PMF/Uniform.lean](../../CslibFrontier/Probability/PMF/Uniform.lean) changes variables in a uniform
+draw along a bijection. For a biased bit, use `coin p` from
 [PMF/Coin.lean](../../CslibFrontier/Probability/PMF/Coin.lean), with `p : unitInterval`; Mathlib's
 `PMF.bernoulli` is deprecated. `toMeasure_coin` identifies `(coin p).toMeasure` with Mathlib's
 `ProbabilityTheory.bernoulliMeasure true false p`, and `entropy_coin` in
@@ -151,12 +160,26 @@ For a Boolean distribution `p : PMF Bool`, import
 `PMF.apply_true_add_apply_false p : p true + p false = 1` rather than rewriting with `tsum_bool`
 and `PMF.tsum_coe` by hand. Its real forms are `PMF.toReal_true_add_toReal_false` and
 `PMF.toReal_false_eq_one_sub`. The same module bounds Boolean events written as `(p.map E) true`:
-`PMF.map_true_mono`, `PMF.map_true_le_add` and `PMF.map_any_range_true_le_sum` (a union bound),
-and `PMF.map_not_true` for complements. To compose an event bound through `PMF.bind`, use the
-`PMF.toOuterMeasure_bind_*` lemmas in
+`PMF.map_true_mono`, `PMF.map_true_le_add`, the union bounds `PMF.map_true_le_sum` (over any
+`s : Finset ι`) and `PMF.map_any_range_true_le_sum`, `PMF.map_apply_true` (the expectation of the
+indicator of `E`), and `PMF.map_not_true` for complements. A two-stage experiment
+`p.bind fun a => PMF.pure (E a)` is `p.map E` by definition, so these lemmas apply to it directly.
+To compose an event bound through `PMF.bind`, use the `PMF.toOuterMeasure_bind_*` lemmas in
 [PMF/EventBind.lean](../../CslibFrontier/Probability/PMF/EventBind.lean). The
 [checked examples](../../CslibFrontierTests/PMFBool.lean) recover the mass of `false` from the mass of
-`true`; run `scripts/build.sh CslibFrontierTests.PMFBool`.
+`true` and apply the finite union bound; run `scripts/build.sh CslibFrontierTests.PMFBool`.
+
+To show that a pushforward or a two-stage experiment is deterministic, import
+[PMF/Support.lean](../../CslibFrontier/Probability/PMF/Support.lean): `PMF.map_eq_pure_iff` says
+`p.map f = PMF.pure b` exactly when `f a = b` for every `a ∈ p.support`, and
+`PMF.bind_eq_pure_of_forall_mem_support` gives `p.bind f = PMF.pure b` from `f a = PMF.pure b` on the
+support. Perfect-correctness statements of the form `Pr[correct] = 1` written as
+`(...).map isCorrect = PMF.pure true` reduce to a pointwise check this way, and
+`PMF.ne_of_map_eq_pure` separates two distributions whose pushforwards are different point masses.
+The same module records that pairing with a constant (`snd_eq_of_mem_support_map_pair`) or lifting
+into `StateT` (`snd_eq_of_mem_support_lift`, `toOuterMeasure_lift_eq_zero`) keeps the state fixed on
+the support. The [checked examples](../../CslibFrontierTests/PMFSupport.lean) cover each direction;
+run `scripts/build.sh CslibFrontierTests.PMFSupport`.
 
 Moving a bound between `ℝ≥0∞` and `ℝ` or `ℝ≥0` (`ENNReal.toReal_mono`, `ENNReal.toReal_add`,
 `ENNReal.toNNReal_mono`, `ENNReal.toReal_sum`) needs every term to be finite. Import
