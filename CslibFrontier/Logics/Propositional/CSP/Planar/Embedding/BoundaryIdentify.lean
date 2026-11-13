@@ -40,9 +40,9 @@ noncomputable def Witness.identifyFirstTwoOfFn {F : CSP Rel V} {n : ℕ}
       f a = f b ↔ Function.update id (v 1) (v 0) a = Function.update id (v 1) (v 0) b)
     (hn : (List.ofFn (fun i : Fin (n + 1) => f (v i.succ))).Nodup) :
     Witness (F.relabel f) (List.ofFn (fun i : Fin (n + 1) => f (v i.succ))) := by
-  let B : CSP (Option Rel) V := F.map (fun c => (some c.1, c.2))
+  let B : CSP (Option Rel) V := F.map (fun c => Constraint.mk (some c.rel) c.scope)
   let scope : Fin (n + 2) → V := fun i => v i.rev
-  let S : CSP (Option Rel) V := B ++ [(none, List.ofFn scope)]
+  let S : CSP (Option Rel) V := B ++ [Constraint.mk none (List.ofFn scope)]
   let o : S.Occurrence := appendOfFnOccurrenceEquiv B none scope (Sum.inr (Fin.last (n + 1)))
   let p : S.Occurrence := appendOfFnOccurrenceEquiv B none scope (Sum.inr ⟨n, by omega⟩)
   have ho : o.var = v 0 := by

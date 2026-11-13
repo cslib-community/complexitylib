@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Init
 public import CslibFrontier.Languages.Probabilistic.Basic
 public import Mathlib.Data.Nat.Log
+import CslibFrontier.Foundations.Data.Nat.Clog
 import CslibFrontier.Probability.PMF.Support
 
 /-!
@@ -80,6 +81,9 @@ and lives in `PIR.Collusion`.
   correctness and privacy.
 * `Cslib.Crypto.Protocols.PIR.communication_rows`: the rows transformation multiplies the answer
   length by the number of rows.
+* `Cslib.Crypto.Protocols.PIR.communication_le_of_clog_le`,
+  `Cslib.Crypto.Protocols.PIR.clog_card_fun_le`: communication from per-server query and answer
+  lengths, and the length of a tuple of symbols.
 
 ## References
 
@@ -121,6 +125,19 @@ theorem communication_of_card_answer (S Q A : Type) [Fintype S] [Fintype Q] [Fin
     (hA : Fintype.card A = 2 ^ ℓ) :
     communication S Q A = Fintype.card S * (Nat.clog 2 (Fintype.card Q) + ℓ) := by
   rw [communication_eq, hA, Nat.clog_pow 2 _ (by norm_num)]
+
+/-- Communication is bounded by any per-server bounds on the query and answer lengths. -/
+theorem communication_le_of_clog_le {S Q A : Type} [Fintype S] [Fintype Q] [Fintype A] {q a : ℕ}
+    (hQ : Nat.clog 2 (Fintype.card Q) ≤ q) (hA : Nat.clog 2 (Fintype.card A) ≤ a) :
+    communication S Q A ≤ Fintype.card S * (q + a) := by
+  rw [communication_eq]
+  gcongr
+
+/-- A `κ`-tuple of symbols is encoded in at most `|κ|` times the bits of one symbol. -/
+theorem clog_card_fun_le (κ α : Type) [Fintype κ] [DecidableEq κ] [Fintype α] :
+    Nat.clog 2 (Fintype.card (κ → α)) ≤ Fintype.card κ * Nat.clog 2 (Fintype.card α) := by
+  rw [Fintype.card_fun]
+  exact Nat.clog_pow_le_mul 2 _ _
 
 namespace Scheme
 

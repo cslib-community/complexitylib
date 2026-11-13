@@ -1,8 +1,11 @@
-<!-- Keep the description proportional to the change. See CONTRIBUTING.md. -->
-
-## Change
+<!-- Keep the description proportional to the change. See AGENTS.md#writing-in-issues-and-prs.
+Start directly with prose or choose headings that help explain this particular change. -->
 
 <!-- What changes, why, and which issue does it address?
+Write for a contributor who has not followed the task: introduce the setting, central idea and
+what the result enables before relying on specialized terms or Lean names. For a substantial
+development, explain how the main steps connect and why consequential choices are needed.
+Use an example, equation or before/after comparison when it helps the reader.
 For mathematical changes, state the claim and important assumptions. Where relevant, explain
 the source-to-Lean mapping or why existing definitions could not be reused.
 For API/reuse refactors, identify a representative caller and what it no longer repeats;

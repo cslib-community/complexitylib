@@ -402,7 +402,7 @@ theorem ddhRealGame_elGamalMsgToDDHDistinguisher {Msg : Type}
     (setup : ℕ → PMF F.Desc) (adversary : Encryption.AdversaryOf Msg) (bit : Bool) (n : ℕ) :
     F.ddhRealGame setup (F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary bit) n =
       F.elGamalMsgCPAGameOn valid encodeMsg setup adversary bit n := by
-  simp only [ddhRealGame, eval_ddhRealExperiment, elGamalMsgToDDHDistinguisher,
+  simp only [ddhRealGame, Game.withSetup, eval_ddhRealExperiment, elGamalMsgToDDHDistinguisher,
     elGamalMsgCPAGameOn, ProbComp.eval_bind, PMF.monad_bind_eq_bind, apply_ite ProbComp.eval,
     ProbComp.eval_pure, PMF.monad_pure_eq_pure]
   pmf_swap with d α choice
@@ -426,9 +426,9 @@ theorem ddhRandomGame_elGamalMsgToDDHDistinguisher_false_eq_true {Msg : Type}
     (hsound : F.AdmitsGroupElements encodeMsg valid) :
     F.ddhRandomGame setup (F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary false) n =
       F.ddhRandomGame setup (F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary true) n := by
-  simp only [ddhRandomGame, eval_ddhRandomExperiment, elGamalMsgToDDHDistinguisher,
-    Encryption.ChoiceOut.msg₀, Encryption.ChoiceOut.msg₁, Encryption.ChoiceOut.msgs,
-    ProbComp.eval_bind, PMF.monad_bind_eq_bind, Bool.false_eq_true, ↓reduceIte,
+  simp only [ddhRandomGame, Game.withSetup, eval_ddhRandomExperiment,
+    elGamalMsgToDDHDistinguisher, Encryption.ChoiceOut.msg₀, Encryption.ChoiceOut.msg₁,
+    Encryption.ChoiceOut.msgs, ProbComp.eval_bind, Bool.false_eq_true, ↓reduceIte,
     apply_ite ProbComp.eval, ProbComp.eval_pure]
   pmf_swap with d α β choice
   by_cases hv : valid n (encPair F.encDesc encBits (d, F.encode d (α • F.generator d)))
@@ -932,7 +932,8 @@ structure KDFInput extends F.CDHInput where
 /-- The encoding of a key-derivation input: the fields of its CDH input followed by the key word,
 each framed except the last. This is the layout of `encDDHInput` with the key word in place of the
 encoded candidate shared element. -/
-enc_structure encKDFInput (F : PrimeOrderGroupFamily) : KDFInput F where
+enc_structure encKDFInput (F : PrimeOrderGroupFamily) : KDFInput F
+    flattened toCDHInput : (F.encCDHInput) where
   secParam : encUnary, groupParameters : F.encDesc,
   leftPublic : (F.encode groupParameters) using (F.encode_injective groupParameters),
   rightPublic : (F.encode groupParameters) using (F.encode_injective groupParameters),
@@ -983,19 +984,15 @@ theorem secureKDF_iff_encoded (setup : ℕ → PMF F.Desc) (H : F.Desc × List B
           (F.kdfRealGame setup H (fun n d u v key => W n (d, F.encode d u, F.encode d v, key)) n)
           (F.kdfIdealGame setup msgLen
             (fun n d u v key => W n (d, F.encode d u, F.encode d v, key)) n) := by
-  set E := encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits)))
   constructor
   · intro h W hW
     exact h _ (hW.preprocess (prepare := fun x : F.KDFInput => (x.secParam, x.groupParameters,
       F.encode _ x.leftPublic, F.encode _ x.rightPublic, x.key)) (by fun_prop))
   · intro h D hD
-    obtain ⟨W, hWppt, hW⟩ := hD.exists_bool_extension
-    have := h (fun n t => W (E (n, t))) (hWppt.preprocess ComputableInPolyTime.id'.encoding_comp)
-    have hgame (n : ℕ) (d : F.Desc) (u v : F.Carrier d) (key : List Bool) :
-        ProbComp.eval (W (E (n, d, F.encode d u, F.encode d v, key))) =
-          ProbComp.eval (D n d u v key) :=
-      hW ⟨⟨n, d, u, v⟩, key⟩
-    simpa only [kdfRealGame, kdfIdealGame, hgame] using this
+    obtain ⟨W, hW, hWD⟩ := hD.exists_bool_factor F.encKDFInput_apply
+    obtain rfl : D = fun n d u v key => W (n, d, F.encode d u, F.encode d v, key) :=
+      funext₂ fun n d => funext₃ fun u v key => hWD ⟨⟨n, d, u, v⟩, key⟩
+    exact h (fun n t => W (n, t)) hW
 
 /-- Run a key-derivation distinguisher as a DDH distinguisher: derive the candidate key
 `H (d, encode w)` from the candidate shared element `w`. -/
@@ -1008,8 +1005,8 @@ def kdfToDDHDistinguisher (H : F.Desc × List Bool → List Bool)
     (H : F.Desc × List Bool → List Bool) (distinguisher : F.KDFDistinguisher) (n : ℕ) :
     F.ddhRandomGame setup (F.kdfToDDHDistinguisher H distinguisher) n =
       F.kdfRealGame setup H distinguisher n := by
-  simp only [ddhRandomGame, eval_ddhRandomExperiment, kdfToDDHDistinguisher, kdfRealGame,
-    PMF.monad_bind_eq_bind]
+  simp only [ddhRandomGame, Game.withSetup, eval_ddhRandomExperiment, kdfToDDHDistinguisher,
+    kdfRealGame, PMF.monad_bind_eq_bind]
 
 /-- `kdfToDDHDistinguisher H` is uniform strict PPT whenever `H` is polynomial time and the
 key-derivation distinguisher is uniform strict PPT. -/
@@ -1048,7 +1045,7 @@ exactly. -/
     (n : ℕ) :
     F.ddhRealGame setup (F.hashedElGamalToDDHDistinguisher H adversary bit) n =
       F.hashedElGamalCPAGame setup H adversary bit n := by
-  simp only [ddhRealGame, eval_ddhRealExperiment, kdfToDDHDistinguisher,
+  simp only [ddhRealGame, Game.withSetup, eval_ddhRealExperiment, kdfToDDHDistinguisher,
     hashedElGamalToKDFDistinguisher, hashedElGamalCPAGame, ProbComp.eval_bind,
     PMF.monad_bind_eq_bind]
   pmf_swap

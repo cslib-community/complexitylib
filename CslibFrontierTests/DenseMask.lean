@@ -65,22 +65,13 @@ example (n : ℕ) :
   exact ⟨rfl, fairPair_entropy n⟩
 
 private theorem fairPair_gap : fairPair.HasGap (fun _ => 0) := by
-  intro adversary _
+  intro predictor _
   apply Eventually.of_forall
   intro n
-  have hbit (guess : Bool) : (uniformOfFintype Bool).map (fun bit => guess == bit) =
-      uniformOfFintype Bool := by
-    ext bit
-    cases guess <;> cases bit <;>
-      norm_num [PMF.map_apply, tsum_fintype, Fintype.sum_bool, PMF.uniformOfFintype_apply]
-  have hgame : ProbComp.eval (predictionGame fairPair.sample adversary n) =
-      uniformOfFintype Bool := by
-    simp only [predictionGame, fairPair, ProbComp.eval_bind, ProbComp.eval_map,
-      ProbComp.eval_uniform, ProbComp.eval_pure, PMF.bind_map, Function.comp_def]
-    rw [PMF.bind_comm]
-    change (ProbComp.eval (adversary n [true, false])).bind
-      (fun guess => (uniformOfFintype Bool).map (fun bit => guess == bit)) = _
-    simp only [hbit, PMF.bind_const]
+  have hgame : ProbComp.eval (predictionExperiment (fairPair.latentSample n) Prod.fst Prod.snd
+      (predictor n)) = uniformOfFintype Bool := by
+    simp only [ProbComp.eval_predictionExperiment, fairPair.eval_latentSample]
+    exact predictionExperiment_uniform_bit () _
   rw [hgame, fairPair_entropy]
   norm_num [PMF.uniformOfFintype_apply]
 
@@ -94,8 +85,8 @@ private noncomputable def saved : fairPair.SeedRealization :=
 -- The complete three-source theorem has a real client with positive label output. A zero-gap
 -- pair supplies no expansion claim; the two other digest budgets are deliberately zero.
 example :
-    let count := fun n => ExtractionSchedule.count n (saved.length n) 0
-    let bits := fun n => ExtractionSchedule.slack n (saved.length n) 0
+    let count := saved.sampleCount (fun _ => 0)
+    let bits := saved.sampleSlack (fun _ => 0)
     ComputationallyIndistinguishable
       (fun n => ProbComp.eval
         (ThreeSource.extract (count n) (saved.length n) 2 0 (bits n) 0 (saved.sampleWithSeed n)))
@@ -106,7 +97,7 @@ example :
   apply fairPair_gapNil.extract_three saved
     (bound := fun _ => 2) (inverseSlack := fun _ => 0)
     (observationBits := fun _ => 0) (remainingBits := fun _ => 0)
-    (labelBits := fun n => ExtractionSchedule.slack n (saved.length n) 0)
+    (labelBits := fun n => saved.sampleSlack (fun _ => 0) n)
     (numerator := fun _ => 2) (densityBound := fun _ => 0)
     (by constructor <;> fun_prop)
     (by intro n observation _; exact Nat.le_refl 2)
@@ -117,7 +108,7 @@ example :
   intro n
   have h := ExtractionSchedule.two_slack_eq n (saved.length n) 0
   norm_num [dyadicSize] at h ⊢
-  linarith [Nat.cast_nonneg (α := ℝ) (ExtractionSchedule.slack n (saved.length n) 0)]
+  linarith [Nat.cast_nonneg (α := ℝ) (saved.sampleSlack (fun _ => 0) n)]
 
 -- A positive extraction budget on a real pair. Arbitrary bounded choices need no algorithm;
 -- the test itself must be one uniform efficient family, with the full output available.
@@ -126,8 +117,8 @@ example (choose : ℕ → ℕ) (hchoose : ∀ n, choose n < n + 1)
     (htest : IsPPTOn (encPair (encPair encUnary encUnary)
       (encPair (encList encBits) (encPair encBits encBits))) encBool
         (fun input => test input.1.1 input.1.2 input.2)) :
-    let count := fun n => ExtractionSchedule.count n (saved.length n) 0
-    let bits := fun n => ExtractionSchedule.slack n (saved.length n) 0
+    let count := saved.sampleCount (fun _ => 0)
+    let bits := saved.sampleSlack (fun _ => 0)
     Negligible (fun n => Game.advantage
       (ProbComp.eval do
         let values ← OracleComp.replicate (count n) (fairPair.sample n)
@@ -138,7 +129,7 @@ example (choose : ℕ → ℕ) (hchoose : ∀ n, choose n < n + 1)
   have hlength := saved.length_isPolyTime
   apply fairPair_gapNil.extract_indexed_word_labels saved choose
     (candidates := fun n => n + 1) (inverseSlack := fun _ => 0)
-    (outputBits := fun n _ => ExtractionSchedule.slack n (saved.length n) 0)
+    (outputBits := fun n _ => saved.sampleSlack (fun _ => 0) n)
     (numerator := fun _ _ => 2) (densityBound := fun _ => 0)
     (by fun_prop)
     (ExtractionSchedule.isPolyTime_slack (by fun_prop) (by fun_prop)
@@ -154,7 +145,7 @@ example (choose : ℕ → ℕ) (hchoose : ∀ n, choose n < n + 1)
   intro n
   have h := ExtractionSchedule.two_slack_eq n (saved.length n) 0
   norm_num [dyadicSize] at h ⊢
-  linarith [Nat.cast_nonneg (α := ℝ) (ExtractionSchedule.slack n (saved.length n) 0)]
+  linarith [Nat.cast_nonneg (α := ℝ) (saved.sampleSlack (fun _ => 0) n)]
 
 -- A real zero-gap pair has positive conditional entropy: valid positive-density requests are
 -- nonvacuous. The eventual threshold is shared by all n+1 tests, not chosen once per index.
@@ -209,10 +200,9 @@ private theorem oneBitHash : IsTwoUniversal (uniformOfFintype Bool)
   simp [List.ofFn_succ, hxy]
 
 example (test : List ℕ × Bool × Bool → PMF (Fin 3)) :
-    dist ((ProbComp.eval (OracleComp.replicate 1
+    dist ((ProbComp.eval (extractLabelsReal
         (maskedSample (ProbComp.uniform Bool) (fun bit => if bit then 7 else 11) id
-          (fun _ => pure true)) >>=
-          extractLabels (ProbComp.uniform Bool)
+          (fun _ => pure true)) 1 (ProbComp.uniform Bool)
             (fun key bits => key ^^ bits.headD false))).bind test)
       ((extractLabelsIdeal (Output := Bool)
         ((fun bit => if bit then 7 else 11) <$> ProbComp.uniform Bool) 1
@@ -234,8 +224,8 @@ example (test : List ℕ × Bool × Bool → PMF (Fin 3)) :
 example :
     let source := maskedSample (pure ()) (fun _ => 7) (fun _ => false) (fun _ => pure false)
     let test := fun result : List ℕ × Bool × Bool => PMF.pure (result.2.1 == result.2.2)
-    dist ((ProbComp.eval (OracleComp.replicate 0 source >>=
-        extractLabels (ProbComp.uniform Bool) (fun key _ => key))).bind test)
+    dist ((ProbComp.eval (extractLabelsReal source 0 (ProbComp.uniform Bool)
+        (fun key _ => key))).bind test)
       ((extractLabelsIdeal (Output := Bool) (pure 7) 0 (ProbComp.uniform Bool)).bind test) ≤ 3 := by
   dsimp only
   have h := maskedSample_extract_dist_bind_le (pure ()) (fun _ => 7) (fun _ => false)

@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 import CslibFrontier.Languages.Probabilistic.IdealCipher
 import CslibFrontier.Crypto.Primitives.Hash.BlockCipherCompression
 import CslibFrontier.Crypto.Primitives.IdealCipher.Compression
+import CslibFrontier.Languages.Probabilistic.Notation
 import Mathlib.Data.ZMod.Basic
 import Mathlib.Tactic.NormNum
 
@@ -86,8 +87,8 @@ theorem isQueryBounded_zeroQueryDMAdversary :
   IsCostBounded.pure _ 0
 
 example :
-    ((collisionGame (daviesMeyer (K := Fin 2) (B := ZMod 16))
-      zeroQueryDMAdversary) true).toReal ≤ (1 : ℝ) / 8 := by
+    Pr[collisionGame (daviesMeyer (K := Fin 2) (B := ZMod 16)) zeroQueryDMAdversary] ≤
+      (1 : ℝ) / 8 := by
   have h := daviesMeyer_collisionGame_le isQueryBounded_zeroQueryDMAdversary
   have hcard : Fintype.card (ZMod 16) = 16 := ZMod.card 16
   rw [hcard] at h
@@ -104,8 +105,8 @@ theorem isQueryBounded_oneQueryDMAdversary :
   IsCostBounded.bind (cost := fun _ => 1) (IsCostBounded.query _) fun _ => IsCostBounded.pure _ 0
 
 example :
-    ((collisionGame (daviesMeyer (K := Fin 2) (B := ZMod 16))
-      oneQueryDMAdversary) true).toReal ≤ (3 : ℝ) / 8 := by
+    Pr[collisionGame (daviesMeyer (K := Fin 2) (B := ZMod 16)) oneQueryDMAdversary] ≤
+      (3 : ℝ) / 8 := by
   have h := daviesMeyer_collisionGame_mul_le isQueryBounded_oneQueryDMAdversary
   have hcard : Fintype.card (ZMod 16) = 16 := ZMod.card 16
   rw [hcard] at h

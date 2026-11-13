@@ -210,7 +210,8 @@ theorem HasGapWithAdvice.eventually_exists_indexed_mask {pair : SamplablePair} {
         let value ← pair.latentSample n
         (fun answer => answer == value.2) <$>
           adversary (n, advice n) i (pair.encode n value.1)) := by
-    simp only [pmf_norm, predictionGame, pair.eval_sample, pair.eval_latentSample]
+    simp only [pmf_norm, predictionGame, predictionExperiment, pair.eval_sample,
+      pair.eval_latentSample]
     rfl
   rw [hlaw] at hhard
   change (PMF.conditionalEntropy (pair.joint n) + gap n) / 2 ≤ _ at hhard

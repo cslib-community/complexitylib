@@ -7,70 +7,46 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Crypto.Computational.Signature
-public import CslibFrontier.Crypto.Computational.WordSignature
+public import CslibFrontier.Crypto.Computational.Signature.Bridge
 public import CslibFrontier.Crypto.Protocols.Signature.RandomOracle
-import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
-import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Bind
 
 /-!
-# Bridge between typed `ROMSignature` and computational word signature schemes
+# Signature schemes as random-oracle signature schemes
 
-`Cslib.Crypto.Protocols.ROMSignature.Scheme` models signatures in the random-oracle model with
-typed key and coin laws and shared oracle access to `H : Query → Digest`, whereas
-`Cslib.Crypto.SignatureScheme` and `Cslib.Crypto.WordSignatureScheme` model standard-model
-computational bit-string signature schemes (`List Bool`) with strict PPT certificates.
+A signature scheme that never queries a random oracle is a random-oracle signature scheme
+(`ROMSignature.Scheme`, [BonehShoup2023], Section 13.2.1) with no oracle points: `Query` is
+`Empty`. `Signature.Scheme.toROM` is this view; its signing coins are the signature itself.
 
-This module bridges the two layers by specializing the random oracle to the trivial unit oracle
-(`Query := Empty`, `Digest := Unit`) and routing signing coins through the word-level signing
-distribution `ProbComp.eval (S.sign sk msg)`:
+Its random-oracle forgery experiment `ROMSignature.worldGame`, against the forger
+`Signature.Forger.toROM A`, is the forgery experiment of the scheme against `A`, for every freshness
+condition (`Signature.Scheme.worldGame_toROM`). The random-oracle experiment keeps the signed pairs
+newest first and the forgery experiment oldest first. In particular, the random-oracle EUF-CMA and
+SUF-CMA experiments of `S.toROM` are `S.eufCmaExperiment` and `S.sufCmaExperiment`.
 
-* **Fixed-length `SignatureScheme` bridge (`SignatureScheme.toROMSignatureScheme`,
-  `SignatureScheme.correctOn_toROMSignatureScheme`, `SignatureScheme.liftWordForger`,
-  `SignatureScheme.romEufCmaGame`, `SignatureScheme.eval_eufCmaGame_eq_romEufCmaGame`)**:
-  at security parameter `n`, `S.toROMSignatureScheme n` is a closed `ROMSignature.Scheme` on
-  `List Bool` messages satisfying `ROMSignature.Scheme.CorrectOn (fun msg => msg.length = n)`.
-  Evaluating `S.eufCmaGame adversary n` is equal to `ROMSignature.worldGame` on
-  `S.toROMSignatureScheme n` and `liftWordForger adversary n` with the final-message admissibility
-  guard `msg.length == n` and final-message freshness `!(pairs.map Prod.fst).contains msg`.
-* **Unrestricted-length `WordSignatureScheme` bridge (`WordSignatureScheme.toROMSignatureScheme`,
-  `WordSignatureScheme.correct_toROMSignatureScheme`, `WordSignatureScheme.romEufCmaGame`,
-  `WordSignatureScheme.eval_eufCmaGame_eq_romEufCmaGame`)**:
-  because `WordSignatureScheme.verify_sign` holds for all `msg : List Bool`,
-  `S.toROMSignatureScheme n` satisfies unrestricted `ROMSignature.Scheme.Correct`, and
-  `ProbComp.eval (S.eufCmaGame adversary n)` equals the unguarded `ROMSignature.worldGame` on
-  `S.toROMSignatureScheme n`.
+Through `SignatureScheme.toScheme`, the word-level EUF-CMA games are random-oracle experiments
+too, and honest signatures of `n`-bit messages verify in `(S.toScheme n).toROM`.
 
 ## Main definitions
 
-* `Cslib.Crypto.SignatureScheme.toROMSignatureScheme`: view a `SignatureScheme` at parameter `n` as
-  a closed typed `ROMSignature.Scheme`.
-* `Cslib.Crypto.SignatureScheme.liftWordForger`: lift a computational `Forger` at parameter `n` into
-  the `ProbOracleComp (ROMSignature.ForgerSpec ...)` interface.
-* `Cslib.Crypto.SignatureScheme.romEufCmaGame`: the typed `ROMSignature.worldGame` realization of
-  `SignatureScheme.eufCmaGame`.
-* `Cslib.Crypto.WordSignatureScheme.toROMSignatureScheme`: view a `WordSignatureScheme` at parameter
-  `n` as a closed typed `ROMSignature.Scheme`.
-* `Cslib.Crypto.WordSignatureScheme.romEufCmaGame`: the typed `ROMSignature.worldGame` realization
-  of `WordSignatureScheme.eufCmaGame`.
+* `Cslib.Crypto.Signature.Scheme.toROM`: a signature scheme as a random-oracle signature scheme
+  with no oracle points.
+* `Cslib.Crypto.Signature.Forger.toROM`: a forger as a random-oracle forger that makes no hash
+  calls.
 
 ## Main results
 
-* `Cslib.Crypto.SignatureScheme.correctOn_toROMSignatureScheme`: `S.toROMSignatureScheme n` is
-  correct on `n`-bit messages (`msg.length = n`).
-* `Cslib.Crypto.SignatureScheme.runWith_forgerWorldImpl_runLoggedForger_liftWordForger`,
-  `Cslib.Crypto.SignatureScheme.eval_eufCmaGame_eq_romEufCmaGame`,
-  `Cslib.Crypto.SignatureScheme.succProbability_eufCmaGame_eq_romEufCmaGame`: exact execution and
-  game-law equivalence between `SignatureScheme.eufCmaGame` and `SignatureScheme.romEufCmaGame`.
-* `Cslib.Crypto.WordSignatureScheme.correct_toROMSignatureScheme`: `S.toROMSignatureScheme n`
-  satisfies unrestricted `ROMSignature.Scheme.Correct`.
-* `Cslib.Crypto.WordSignatureScheme.runWith_forgerWorldImpl_runLoggedForger_liftWordForger`,
-  `Cslib.Crypto.WordSignatureScheme.eval_eufCmaGame_eq_romEufCmaGame`,
-  `Cslib.Crypto.WordSignatureScheme.succProbability_eufCmaGame_eq_romEufCmaGame`: exact execution
-  and game-law equivalence between `WordSignatureScheme.eufCmaGame` and
-  `WordSignatureScheme.romEufCmaGame`.
+* `Cslib.Crypto.Signature.Scheme.correctOn_toROM`, `Cslib.Crypto.Signature.Scheme.correct_toROM`:
+  correctness of `S.toROM` on admissible and on all messages.
+* `Cslib.Crypto.Signature.Scheme.worldGame_toROM`: the random-oracle experiment of `S.toROM` is
+  the forgery experiment of `S`.
+* `Cslib.Crypto.Signature.Scheme.worldGame_toROM_eufCma`,
+  `Cslib.Crypto.Signature.Scheme.worldGame_toROM_sufCma`: the EUF-CMA and SUF-CMA instances.
+* `Cslib.Crypto.SignatureScheme.eufCmaGame_eq_worldGame_toROM`,
+  `Cslib.Crypto.WordSignatureScheme.eufCmaGame_eq_worldGame_toROM`,
+  `Cslib.Crypto.SignatureScheme.correctOn_toROM`, `Cslib.Crypto.WordSignatureScheme.correct_toROM`:
+  the word-level instances.
 
 ## References
 
@@ -84,251 +60,196 @@ namespace Cslib.Crypto
 
 open Probability OracleComp Protocols
 
-namespace SignatureScheme
+namespace Signature
 
-/-- View a computational `SignatureScheme` at security parameter `n` as a closed typed
-random-oracle signature scheme (`Query = Empty`, `Digest = Unit`) whose signer coins are the
-signature distribution `ProbComp.eval (S.sign sk msg)`. -/
-noncomputable def toROMSignatureScheme (S : SignatureScheme) (n : ℕ) :
-    ROMSignature.Scheme (List Bool) (List Bool) (List Bool) (List Bool) Empty Unit where
-  keyGen := ProbComp.eval (S.keyGen n)
-  SignCoins := List Bool
-  signCoins sk msg := ProbComp.eval (S.sign sk msg)
-  sign _ _ sig := pure sig
-  verify pk msg sig := pure (S.verify pk msg sig)
+variable {PK SK M Sig : Type}
 
-@[simp]
-theorem toROMSignatureScheme_keyGen (S : SignatureScheme) (n : ℕ) :
-    (S.toROMSignatureScheme n).keyGen = ProbComp.eval (S.keyGen n) := rfl
+/-- The scheme `S` as a random-oracle signature scheme with no oracle points: the signing coins are
+the signature drawn by `S.sign`, and signing and verification make no oracle calls. -/
+noncomputable def Scheme.toROM (S : Scheme PK SK M Sig) :
+    ROMSignature.Scheme PK SK M Sig Empty Unit where
+  keyGen := ProbComp.eval S.keyGen
+  SignCoins := Sig
+  signCoins sk m := ProbComp.eval (S.sign sk m)
+  sign _ _ σ := pure σ
+  verify pk m σ := pure (S.verify pk m σ)
 
-@[simp]
-theorem toROMSignatureScheme_SignCoins (S : SignatureScheme) (n : ℕ) :
-    (S.toROMSignatureScheme n).SignCoins = List Bool := rfl
+@[simp] theorem Scheme.toROM_keyGen (S : Scheme PK SK M Sig) :
+    S.toROM.keyGen = ProbComp.eval S.keyGen := rfl
 
-@[simp]
-theorem toROMSignatureScheme_signCoins (S : SignatureScheme) (n : ℕ) (sk msg : List Bool) :
-    (S.toROMSignatureScheme n).signCoins sk msg = ProbComp.eval (S.sign sk msg) := rfl
+@[simp] theorem Scheme.toROM_verify (S : Scheme PK SK M Sig) (pk : PK) (m : M) (σ : Sig) :
+    S.toROM.verify pk m σ = pure (S.verify pk m σ) := rfl
 
-@[simp]
-theorem toROMSignatureScheme_sign (S : SignatureScheme) (n : ℕ) (sk msg sig : List Bool) :
-    (S.toROMSignatureScheme n).sign sk msg sig = pure sig := rfl
+/-- The forger `A` as a random-oracle forger: each signing query `m` becomes the signing call
+`.inl m`, and private sampling is unchanged. It makes no hash calls. -/
+def Forger.toROM (A : Forger PK M Sig) (pk : PK) :
+    ProbOracleComp (ROMSignature.ForgerSpec M Empty Sig Unit) (M × Sig) :=
+  interpret
+    (sumHandler
+      (fun k => ProbOracleComp.sample (spec := ROMSignature.ForgerSpec M Empty Sig Unit)
+        (ProbComp.unifFin k))
+      (fun m => ProbOracleComp.query (spec := ROMSignature.ForgerSpec M Empty Sig Unit) (.inl m)))
+    (A pk)
 
-@[simp]
-theorem toROMSignatureScheme_verify (S : SignatureScheme) (n : ℕ) (pk msg sig : List Bool) :
-    (S.toROMSignatureScheme n).verify pk msg sig = pure (S.verify pk msg sig) := rfl
+namespace Scheme
 
-/-- The typed ROM view `S.toROMSignatureScheme n` satisfies `ROMSignature.Scheme.CorrectOn` on
-`n`-bit messages (`msg.length = n`). -/
-theorem correctOn_toROMSignatureScheme (S : SignatureScheme) (n : ℕ) :
-    (S.toROMSignatureScheme n).CorrectOn (fun msg => msg.length = n) := by
-  dsimp only [ROMSignature.Scheme.CorrectOn, toROMSignatureScheme,
-    ProbOracleComp.runWith, OracleComp.runWith]
-  intro keys hkeys msg hmsg sig hsig cache signed hsigned verified hverified
-  simp only [OracleComp.interpret_pure, StateT.run_pure,
-    PMF.monad_pure_eq_pure, PMF.mem_support_pure_iff] at hsigned hverified
+/-- `S.toROM` is correct on the messages satisfying `adm` when every honest signature on such a
+message verifies under `S`. -/
+theorem correctOn_toROM {S : Scheme PK SK M Sig} {adm : M → Prop}
+    (h : ∀ keys ∈ (ProbComp.eval S.keyGen).support, ∀ m, adm m →
+      ∀ σ ∈ (ProbComp.eval (S.sign keys.2 m)).support, S.verify keys.1 m σ = true) :
+    S.toROM.CorrectOn adm := by
+  dsimp only [ROMSignature.Scheme.CorrectOn, toROM]
+  intro keys hkeys m hm σ hσ cache signed hsigned verified hverified
+  simp only [interpret_pure, StateT.run_pure, PMF.monad_pure_eq_pure,
+    PMF.mem_support_pure_iff] at hsigned hverified
   subst hsigned hverified
-  exact S.verify_sign n keys hkeys msg hmsg sig hsig
+  exact h keys hkeys m hm σ hσ
 
-/-- Lift a computational `Forger` (`ℕ → List Bool → WordOracleComp Unit (List Bool × List Bool)`)
-at security parameter `n` into the `ProbOracleComp (ROMSignature.ForgerSpec ...)` interface of
-`S.toROMSignatureScheme n`, forwarding private fair-coin samples and routing signing calls
-`((), msg)` to `.inl msg`. -/
-def liftWordForger (adversary : Forger) (n : ℕ) (pk : List Bool) :
-    ProbOracleComp
-      (ROMSignature.ForgerSpec (List Bool) Empty (List Bool) Unit)
-      (List Bool × List Bool) :=
-  OracleComp.interpret
-    (OracleComp.sumHandler
-      (fun k =>
-        ProbOracleComp.sample
-          (spec := ROMSignature.ForgerSpec (List Bool) Empty (List Bool) Unit)
-          (ProbComp.unifFin k))
-      (fun ⟨_, msg⟩ =>
-        ProbOracleComp.query
-          (spec := ROMSignature.ForgerSpec (List Bool) Empty (List Bool) Unit)
-          (.inl msg)))
-    (adversary n pk)
+/-- A correct scheme is a correct random-oracle scheme. -/
+theorem correct_toROM {S : Scheme PK SK M Sig} (h : S.Correct) : S.toROM.Correct :=
+  (ROMSignature.Scheme.correctOn_true_iff _).mp
+    (correctOn_toROM fun keys hkeys m _ σ hσ => h keys hkeys m σ hσ)
 
-/-- Running `liftWordForger adversary n pk` with `ROMSignature.runLoggedForger` in
-`ROMSignature.forgerWorldImpl (S.toROMSignatureScheme n) sk` and projecting the logged
-`(message, signature)` pairs to their messages reproduces `S.signingOracle sk`. -/
-theorem runWith_forgerWorldImpl_runLoggedForger_liftWordForger
-    (S : SignatureScheme) (adversary : Forger) (n : ℕ) (pk sk : List Bool) :
-    (ProbOracleComp.runWith
-      (ROMSignature.forgerWorldImpl (S.toROMSignatureScheme n) sk)
-      (ROMSignature.runLoggedForger (liftWordForger adversary n pk)) []).map
-        (fun ⟨⟨msig, pairs⟩, _⟩ => (msig, pairs.map Prod.fst)) =
-    ProbComp.eval ((OracleComp.interpret
-      (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
-        (S.signingOracle sk)) (adversary n pk)).run []) := by
-  rw [ProbOracleComp.eval_run_interpret_eq_runWith]
-  unfold ROMSignature.runLoggedForger liftWordForger
+variable [Inhabited Sig]
+
+/-- Running `A.toROM` with signing-pair logging against the signer of `S.toROM` at `sk`, and
+reversing the log, is running `A` against the logging signer of `S`. The oracle cache stays
+empty. -/
+private theorem runWith_runLoggedForger_toROM (S : Scheme PK SK M Sig) (A : Forger PK M Sig)
+    (pk : PK) (sk : SK) :
+    (ProbOracleComp.runWith (ROMSignature.forgerWorldImpl S.toROM sk)
+      (ROMSignature.runLoggedForger (A.toROM pk)) []).map
+        (fun ((msig, pairs), _) => (msig, pairs.reverse)) =
+      ProbComp.eval ((A pk).runLogWith (Signer.ofSign S.sign sk)) := by
+  rw [ProbOracleComp.runLogWith, ProbOracleComp.eval_runState]
+  unfold ROMSignature.runLoggedForger Forger.toROM
   have hcomp :
-      OracleComp.interpret
-        (OracleComp.sumHandler
-          (fun k => StateT.lift
-            (ProbOracleComp.sample
-              (spec := ROMSignature.ForgerSpec (List Bool) Empty (List Bool) Unit)
-              (ProbComp.unifFin k)))
+      interpret
+        (sumHandler
+          (fun k => StateT.lift (ProbOracleComp.sample
+            (spec := ROMSignature.ForgerSpec M Empty Sig Unit) (ProbComp.unifFin k)))
           ROMSignature.logSigning)
-        (OracleComp.interpret
-          (OracleComp.sumHandler
-            (fun k =>
-              ProbOracleComp.sample
-                (spec := ROMSignature.ForgerSpec (List Bool) Empty (List Bool) Unit)
-                (ProbComp.unifFin k))
-            (fun ⟨_, msg⟩ =>
-              ProbOracleComp.query
-                (spec := ROMSignature.ForgerSpec (List Bool) Empty (List Bool) Unit)
-                (.inl msg)))
-          (adversary n pk)) =
-      OracleComp.interpret
-        (OracleComp.sumHandler
-          (fun k => StateT.lift
-            (ProbOracleComp.sample
-              (spec := ROMSignature.ForgerSpec (List Bool) Empty (List Bool) Unit)
-              (ProbComp.unifFin k)))
-          (fun ⟨_, msg⟩ => ROMSignature.logSigning (.inl msg)))
-        (adversary n pk) := by
-    rw [OracleComp.interpret_interpret]
+        (interpret
+          (sumHandler
+            (fun k => ProbOracleComp.sample (spec := ROMSignature.ForgerSpec M Empty Sig Unit)
+              (ProbComp.unifFin k))
+            (fun m => ProbOracleComp.query (spec := ROMSignature.ForgerSpec M Empty Sig Unit)
+              (.inl m)))
+          (A pk)) =
+      interpret
+        (sumHandler
+          (fun k => StateT.lift (ProbOracleComp.sample
+            (spec := ROMSignature.ForgerSpec M Empty Sig Unit) (ProbComp.unifFin k)))
+          (fun m => ROMSignature.logSigning (.inl m)))
+        (A pk) := by
+    rw [interpret_interpret]
     congr 1 with q : 1
     cases q with
     | inl k =>
-      simp [OracleComp.sumHandler, ProbOracleComp.sample, ProbComp.unifFin,
-        OracleComp.interpret_query]
-    | inr req =>
-      simp [OracleComp.sumHandler, ProbOracleComp.query, OracleComp.interpret_query]
+      simp [sumHandler, ProbOracleComp.sample, ProbComp.unifFin, interpret_query]
+    | inr m =>
+      simp [sumHandler, ProbOracleComp.query, interpret_query]
   rw [hcomp, ProbOracleComp.runWith_run_interpret, PMF.map_comp]
-  have hsim := ProbOracleComp.runWith_map_state
-    (oracle := fun (q : Unit × List Bool)
-        (state : List (List Bool × List Bool) × List (Empty × Unit)) =>
-      (ProbOracleComp.runWith (ROMSignature.forgerWorldImpl (S.toROMSignatureScheme n) sk)
-        ((ROMSignature.logSigning (.inl q.2)).run state.1) state.2).map
-          (fun ⟨⟨a, b⟩, c⟩ => (a, b, c)))
-    (oracle' := fun q s => ProbComp.eval (S.signingOracle sk q s))
-    (represent := fun (state : List (List Bool × List Bool) × List (Empty × Unit)) =>
-      state.1.map Prod.fst)
-    (step := by
-      intro ⟨⟨⟩, msg⟩ ⟨pairs, curCache⟩
-      change (((OracleComp.interpret (m := StateT (List (Empty × Unit)) PMF)
-        (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
-          (ROMSignature.forgerWorldImpl (S.toROMSignatureScheme n) sk))
-        (ROMSignature.logSigning (.inl msg) pairs)).run curCache).map
-          (fun ⟨⟨a, b⟩, c⟩ => (a, b, c))).map
-            (fun ⟨a, s'⟩ => (a, s'.1.map Prod.fst)) =
-        ProbComp.eval (S.signingOracle sk ((), msg) (pairs.map Prod.fst))
-      simp only [pmf_norm, ROMSignature.logSigning, ROMSignature.forgerWorldImpl,
-        toROMSignatureScheme, signingOracle, OracleComp.sumHandler, ProbOracleComp.query,
-        OracleComp.interpret_bind, OracleComp.interpret_pure, OracleComp.interpret_query,
-        StateT.run_bind, StateT.run_pure, List.map_cons]
-      rw [StateT.run, PMF.bind_bind]
-      refine PMF.bind_congr_on_support _ _ _ fun sig _ => ?_
-      simp)
-    (adversary n pk) ([], [])
-  exact hsim
+  exact ProbOracleComp.runWith_map_state _
+    (fun m log => ProbComp.eval (ProbOracleComp.logOracle (Signer.ofSign S.sign sk) m log))
+    (fun (state : List (M × Sig) × List (Empty × Unit)) => state.1.reverse)
+    (fun m ⟨pairs, cache⟩ => by
+      simp only [ROMSignature.forgerWorldImpl, toROM, StateT.run, interpret_pure,
+        PMF.monad_bind_eq_bind, ROMSignature.logSigning, bind_pure_comp,
+        ProbOracleComp.runWith_map, ProbOracleComp.runWith_query, sumHandler, PMF.map_bind,
+        PMF.map_comp, Function.comp_def]
+      have hpure : ∀ σ : Sig, (pure σ : StateT (List (Empty × Unit)) PMF Sig) cache =
+          PMF.pure (σ, cache) := fun _ => rfl
+      simp only [Prod.map_fst, List.reverse_cons, hpure, PMF.pure_map, ProbOracleComp.logOracle,
+        Signer.ofSign_apply, ProbComp.eval_map]
+      rfl)
+    (A pk) ([], [])
 
-/-- The typed `ROMSignature.worldGame` realization of `S.eufCmaGame adversary n`:
-evaluate `S.toROMSignatureScheme n` in `ROMSignature.world` against `liftWordForger adversary n`
-with the `n`-bit final-message admissibility guard `msg.length == n` and final-message
-freshness `!(pairs.map Prod.fst).contains msg`. -/
-noncomputable def romEufCmaGame (S : SignatureScheme) (adversary : Forger) (n : ℕ) :
-    PMF Bool :=
-  ROMSignature.worldGame (S.toROMSignatureScheme n) (liftWordForger adversary n)
-    (fun verified ⟨msg, _⟩ pairs =>
-      (msg.length == n) && !(pairs.map Prod.fst).contains msg && verified)
-
-/-- Exact game-law correspondence: `ProbComp.eval (S.eufCmaGame adversary n)` is equal to the
-typed `ROMSignature` game `S.romEufCmaGame adversary n`. -/
-theorem eval_eufCmaGame_eq_romEufCmaGame (S : SignatureScheme) (adversary : Forger) (n : ℕ) :
-    ProbComp.eval (S.eufCmaGame adversary n) = S.romEufCmaGame adversary n := by
-  unfold eufCmaGame romEufCmaGame ROMSignature.worldGame
-  simp only [toROMSignatureScheme_keyGen, ProbComp.eval_bind, ProbComp.eval_pure]
-  refine PMF.bind_congr_on_support _ _ _ fun keys _ => ?_
-  rw [ROMSignature.eval_world_worldRealize,
-    ← S.runWith_forgerWorldImpl_runLoggedForger_liftWordForger adversary n keys.1 keys.2]
-  simp only [toROMSignatureScheme_verify, OracleComp.interpret_pure, StateT.run_pure,
-    PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_map, PMF.pure_bind]
+/-- **The random-oracle experiment of `S.toROM` is the forgery experiment of `S`**: for every
+freshness condition `fresh`, the random-oracle experiment that accepts a verified candidate fresh
+for the signed pairs (newest first) has the distribution of `forgeExperiment` with `fresh`. -/
+theorem worldGame_toROM (S : Scheme PK SK M Sig) (fresh : M → Sig → List (M × Sig) → Bool)
+    (A : Forger PK M Sig) :
+    ROMSignature.worldGame S.toROM A.toROM
+        (fun verified (m, σ) pairs => verified && fresh m σ pairs.reverse) =
+      ProbComp.eval
+        (forgeExperiment S.keyGen (.ofSign S.sign) (fun pk _ => S.verify pk) fresh A) := by
+  unfold ROMSignature.worldGame forgeExperiment
+  simp only [toROM_keyGen, ProbComp.eval_bind, ProbComp.eval_pure, PMF.monad_bind_eq_bind]
+  refine PMF.bind_congr_on_support _ _ _ fun ⟨pk, sk⟩ _ => ?_
+  dsimp only
+  rw [ROMSignature.eval_world_worldRealize, ← runWith_runLoggedForger_toROM, PMF.bind_map]
+  simp only [toROM_verify, interpret_pure, StateT.run_pure, PMF.monad_bind_eq_bind,
+    PMF.monad_pure_eq_pure, PMF.pure_bind]
   rfl
 
-/-- The success probability of any computational forger in `S.eufCmaGame adversary n` equals its
-success probability in `S.romEufCmaGame adversary n`. -/
-@[simp]
-theorem succProbability_eufCmaGame_eq_romEufCmaGame
-    (S : SignatureScheme) (adversary : Forger) (n : ℕ) :
-    Game.succProbability (ProbComp.eval (S.eufCmaGame adversary n)) =
-      Game.succProbability (S.romEufCmaGame adversary n) := by
-  rw [S.eval_eufCmaGame_eq_romEufCmaGame adversary n]
+/-- The random-oracle EUF-CMA experiment of `S.toROM` is `S.eufCmaExperiment`. -/
+theorem worldGame_toROM_eufCma [DecidableEq M] (S : Scheme PK SK M Sig) (A : Forger PK M Sig) :
+    ROMSignature.worldGame S.toROM A.toROM
+        (fun verified ⟨m, _⟩ pairs => verified && !(pairs.map Prod.fst).contains m) =
+      ProbComp.eval (S.eufCmaExperiment A) := by
+  refine Eq.trans ?_ (S.worldGame_toROM freshMessage A)
+  congr 1
+  funext verified msig pairs
+  have hmem : ∀ x, x ∈ pairs.reverse.map Prod.fst ↔ x ∈ pairs.map Prod.fst := by
+    simp [List.mem_map]
+  simp only [freshMessage, hmem, List.contains_eq_mem, decide_not]
 
-end SignatureScheme
+/-- The random-oracle SUF-CMA experiment of `S.toROM` is `S.sufCmaExperiment`. -/
+theorem worldGame_toROM_sufCma [DecidableEq M] [DecidableEq Sig] (S : Scheme PK SK M Sig)
+    (A : Forger PK M Sig) :
+    ROMSignature.worldGame S.toROM A.toROM
+        (fun verified msig pairs => verified && !pairs.contains msig) =
+      ProbComp.eval (S.sufCmaExperiment A) := by
+  refine Eq.trans ?_ (S.worldGame_toROM freshPair A)
+  congr 1
+  funext verified msig pairs
+  simp [freshPair]
 
-namespace WordSignatureScheme
+end Scheme
 
-/-- View a computational `WordSignatureScheme` at security parameter `n` as a closed typed
-random-oracle signature scheme (`Query = Empty`, `Digest = Unit`). -/
-noncomputable abbrev toROMSignatureScheme (S : WordSignatureScheme) (n : ℕ) :
-    ROMSignature.Scheme (List Bool) (List Bool) (List Bool) (List Bool) Empty Unit :=
-  S.toSignatureScheme.toROMSignatureScheme n
+end Signature
 
-/-- Because `WordSignatureScheme.verify_sign` holds for all `msg : List Bool`, the typed ROM view
-`S.toROMSignatureScheme n` satisfies unrestricted `ROMSignature.Scheme.Correct`. -/
-theorem correct_toROMSignatureScheme (S : WordSignatureScheme) (n : ℕ) :
-    (S.toROMSignatureScheme n).Correct := by
-  dsimp only [ROMSignature.Scheme.Correct, toROMSignatureScheme,
-    SignatureScheme.toROMSignatureScheme, toSignatureScheme_keyGen, toSignatureScheme_sign,
-    toSignatureScheme_verify, ProbOracleComp.runWith, OracleComp.runWith]
-  intro keys hkeys msg sig hsig cache signed hsigned verified hverified
-  simp only [OracleComp.interpret_pure, StateT.run_pure, PMF.monad_pure_eq_pure,
-    PMF.mem_support_pure_iff] at hsigned hverified
-  subst hsigned hverified
-  exact S.verify_sign n keys.1 keys.2 hkeys msg sig hsig
+/-- At each parameter `n`, the word-level EUF-CMA game is the random-oracle EUF-CMA experiment of
+`(S.toScheme n).toROM`. -/
+theorem SignatureScheme.eufCmaGame_eq_worldGame_toROM (S : SignatureScheme) (adversary : Forger)
+    (n : ℕ) :
+    ProbComp.eval (S.eufCmaGame adversary n) =
+      ROMSignature.worldGame (S.toScheme n).toROM (adversary.toTyped n).toROM
+        (fun verified (⟨m, _⟩ : List Bool × List Bool) pairs =>
+          verified && !(pairs.map Prod.fst).contains m) := by
+  rw [S.eufCmaGame_eq_eufCmaExperiment, ← Signature.Scheme.worldGame_toROM_eufCma]
+  congr 1
+  funext verified msig pairs
+  simp only [List.contains_eq_mem]
+  congr
 
-/-- Running `SignatureScheme.liftWordForger adversary n pk` in
-`ROMSignature.forgerWorldImpl (S.toROMSignatureScheme n) sk` and projecting the logged pairs to
-their messages reproduces `S.signingOracle sk`. -/
-theorem runWith_forgerWorldImpl_runLoggedForger_liftWordForger
-    (S : WordSignatureScheme) (adversary : Forger) (n : ℕ) (pk sk : List Bool) :
-    (ProbOracleComp.runWith
-      (ROMSignature.forgerWorldImpl (S.toROMSignatureScheme n) sk)
-      (ROMSignature.runLoggedForger (SignatureScheme.liftWordForger adversary n pk)) []).map
-        (fun ⟨⟨msig, pairs⟩, _⟩ => (msig, pairs.map Prod.fst)) =
-    ProbComp.eval ((OracleComp.interpret
-      (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
-        (S.signingOracle sk)) (adversary n pk)).run []) :=
-  S.toSignatureScheme.runWith_forgerWorldImpl_runLoggedForger_liftWordForger adversary n pk sk
+/-- At each parameter `n`, honest signatures of `n`-bit messages verify in
+`(S.toScheme n).toROM`. -/
+theorem SignatureScheme.correctOn_toROM (S : SignatureScheme) (n : ℕ) :
+    (S.toScheme n).toROM.CorrectOn (fun m => m.length = n) :=
+  Signature.Scheme.correctOn_toROM fun keys hkeys m hm σ hσ => by
+    simpa [hm] using S.verify_sign n keys hkeys m hm σ hσ
 
-/-- The typed `ROMSignature.worldGame` realization of `WordSignatureScheme.eufCmaGame`:
-evaluate `S.toROMSignatureScheme n` in `ROMSignature.world` against
-`SignatureScheme.liftWordForger adversary n` with unrestricted final-message freshness
-`!(pairs.map Prod.fst).contains msg`. -/
-noncomputable def romEufCmaGame (S : WordSignatureScheme) (adversary : Forger) (n : ℕ) :
-    PMF Bool :=
-  ROMSignature.worldGame (S.toROMSignatureScheme n) (SignatureScheme.liftWordForger adversary n)
-    (fun verified ⟨msg, _⟩ pairs => !(pairs.map Prod.fst).contains msg && verified)
+/-- At each parameter `n`, the unrestricted word-level EUF-CMA game is the random-oracle EUF-CMA
+experiment of `(S.toScheme n).toROM`. -/
+theorem WordSignatureScheme.eufCmaGame_eq_worldGame_toROM (S : WordSignatureScheme)
+    (adversary : Forger) (n : ℕ) :
+    ProbComp.eval (S.eufCmaGame adversary n) =
+      ROMSignature.worldGame (S.toScheme n).toROM (adversary.toTyped n).toROM
+        (fun verified (⟨m, _⟩ : List Bool × List Bool) pairs =>
+          verified && !(pairs.map Prod.fst).contains m) := by
+  rw [S.eufCmaGame_eq_eufCmaExperiment, ← Signature.Scheme.worldGame_toROM_eufCma]
+  congr 1
+  funext verified msig pairs
+  simp only [List.contains_eq_mem]
+  congr
 
-/-- Exact game-law correspondence for unrestricted-length word signature schemes:
-`ProbComp.eval (S.eufCmaGame adversary n)` is equal to `S.romEufCmaGame adversary n`. -/
-theorem eval_eufCmaGame_eq_romEufCmaGame (S : WordSignatureScheme) (adversary : Forger) (n : ℕ) :
-    ProbComp.eval (S.eufCmaGame adversary n) = S.romEufCmaGame adversary n := by
-  unfold eufCmaGame romEufCmaGame ROMSignature.worldGame
-  simp only [toROMSignatureScheme, SignatureScheme.toROMSignatureScheme_keyGen,
-    toSignatureScheme_keyGen, ProbComp.eval_bind, ProbComp.eval_pure]
-  refine PMF.bind_congr_on_support _ _ _ fun keys _ => ?_
-  rw [ROMSignature.eval_world_worldRealize,
-    ← S.runWith_forgerWorldImpl_runLoggedForger_liftWordForger adversary n keys.1 keys.2]
-  simp only [toROMSignatureScheme, SignatureScheme.toROMSignatureScheme_verify,
-    toSignatureScheme_verify, OracleComp.interpret_pure, StateT.run_pure,
-    PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_map, PMF.pure_bind]
-  rfl
-
-/-- The success probability of any computational forger in `S.eufCmaGame adversary n` equals its
-success probability in `S.romEufCmaGame adversary n`. -/
-@[simp]
-theorem succProbability_eufCmaGame_eq_romEufCmaGame
-    (S : WordSignatureScheme) (adversary : Forger) (n : ℕ) :
-    Game.succProbability (ProbComp.eval (S.eufCmaGame adversary n)) =
-      Game.succProbability (S.romEufCmaGame adversary n) := by
-  rw [S.eval_eufCmaGame_eq_romEufCmaGame adversary n]
-
-end WordSignatureScheme
+/-- At each parameter `n`, `(S.toScheme n).toROM` is correct on every message. -/
+theorem WordSignatureScheme.correct_toROM (S : WordSignatureScheme) (n : ℕ) :
+    (S.toScheme n).toROM.Correct :=
+  Signature.Scheme.correct_toROM fun keys hkeys m σ hσ =>
+    S.verify_sign n keys.1 keys.2 hkeys m σ hσ
 
 end Cslib.Crypto

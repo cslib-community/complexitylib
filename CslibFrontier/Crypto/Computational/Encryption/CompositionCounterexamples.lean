@@ -295,9 +295,7 @@ private theorem singleton_contains_false_cons (ct : List Bool) :
 with probability `1` at every security parameter `n` where `ctBound n` bounds ciphertext lengths. -/
 theorem eval_ciOneTimeGame_tailFallback_prependFalseBitCIAdversary (E : SymmetricCipher)
     (bit : Bool) (ctBound : ℕ → ℕ) (n : ℕ)
-    (hctBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
+    (hctBound : E.CiphertextLengthLE n (ctBound n)) :
     ProbComp.eval
       (E.tailFallback.ciOneTimeGame (prependFalseBitCIAdversary bit ctBound) n) =
         PMF.pure true := by
@@ -315,9 +313,7 @@ theorem eval_ciOneTimeGame_tailFallback_prependFalseBitCIAdversary (E : Symmetri
 probability `1` at every security parameter `n` where `ctBound n` bounds ciphertext lengths. -/
 theorem eval_ciGame_tailFallback_prependFalseBitCIAdversary (E : SymmetricCipher)
     (bit : Bool) (ctBound : ℕ → ℕ) (n : ℕ)
-    (hctBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
+    (hctBound : E.CiphertextLengthLE n (ctBound n)) :
     ProbComp.eval
       (E.tailFallback.ciGame (prependFalseBitCIAdversary bit ctBound) n) =
         PMF.pure true := by
@@ -409,9 +405,7 @@ theorem isOraclePPT_tailFallbackCCAAdversary {ctBound : ℕ → ℕ}
 
 private theorem eval_encForgeGame_prependFalseBitCIAdversary (E : SymmetricCipher)
     (bit : Bool) (ctBound : ℕ → ℕ) (n : ℕ)
-    (hctBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
+    (hctBound : E.CiphertextLengthLE n (ctBound n)) :
     ProbComp.eval (E.encForgeGame (prependFalseBitCIAdversary bit ctBound) n) =
       ((ProbComp.eval (E.keyGen n)).bind fun k =>
         (ProbComp.eval (E.encrypt n k (List.replicate n bit))).map fun ct => (k, ct)).bind
@@ -425,9 +419,7 @@ private theorem eval_encForgeGame_prependFalseBitCIAdversary (E : SymmetricCiphe
 
 private theorem eval_ccaOneTimeGame_tailFallback_tailFallbackCCAAdversary (E : SymmetricCipher)
     (bit : Bool) (ctBound : ℕ → ℕ) (n : ℕ)
-    (hctBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
+    (hctBound : E.CiphertextLengthLE n (ctBound n)) :
     ProbComp.eval (E.tailFallback.ccaOneTimeGame (tailFallbackCCAAdversary ctBound) bit n) =
       ((ProbComp.eval (E.keyGen n)).bind fun k =>
         (ProbComp.eval (E.encrypt n k (List.replicate n bit))).map fun ct => (k, ct)).bind
@@ -469,9 +461,7 @@ private theorem encOption_some_replicate_false_beq_true {n : ℕ} (hn : 1 ≤ n)
 
 private theorem one_le_succProbability_ccaOneTimeGame_tailFallback_true (E : SymmetricCipher)
     (ctBound : ℕ → ℕ) (n : ℕ)
-    (hctBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
+    (hctBound : E.CiphertextLengthLE n (ctBound n)) :
     (1 : ℝ≥0) ≤
       Game.succProbability
         (ProbComp.eval
@@ -510,9 +500,7 @@ private theorem one_le_succProbability_ccaOneTimeGame_tailFallback_true (E : Sym
 
 private theorem succProbability_ccaOneTimeGame_tailFallback_false_le (E : SymmetricCipher)
     (ctBound : ℕ → ℕ) (n : ℕ) (hn : 1 ≤ n)
-    (hctBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
+    (hctBound : E.CiphertextLengthLE n (ctBound n)) :
     Game.succProbability
       (ProbComp.eval
         (E.tailFallback.ccaOneTimeGame (tailFallbackCCAAdversary ctBound) false n)) ≤
@@ -796,9 +784,7 @@ end MACScheme
 /-- If `M.EUFCMA` holds, then `encryptThenMAC E M.redundantTag hctLen` satisfies `EncForge`
 ([KatzLindell2020], Exercise 5.4, printed p. 164). -/
 theorem encForge_encryptThenMAC_redundantTag (E : SymmetricCipher) (M : MACScheme)
-    (hctLen : ∀ n ke, ke ∈ (ProbComp.eval (E.keyGen n)).support →
-      ∀ msg, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = M.msgLen n)
+    (hctLen : ∀ n, E.CiphertextLength n (M.msgLen n))
     (heuf : M.EUFCMA) :
     (encryptThenMAC E M.redundantTag hctLen).EncForge :=
   encForge_encryptThenMAC E M.redundantTag hctLen heuf.redundantTag
@@ -841,9 +827,7 @@ private theorem singleton_encPair_contains_false_cons (c tag : List Bool) :
 
 private theorem decrypt_encryptThenMAC_redundantTag_false_cons (E : SymmetricCipher)
     (M : MACScheme)
-    (hctLen : ∀ n ke, ke ∈ (ProbComp.eval (E.keyGen n)).support →
-      ∀ msg, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = M.msgLen n)
+    (hctLen : ∀ n, E.CiphertextLength n (M.msgLen n))
     (n : ℕ) (ke km msg c tag : List Bool)
     (hke : ke ∈ (ProbComp.eval (E.keyGen n)).support)
     (hkm : km ∈ (ProbComp.eval (M.keyGen n)).support)
@@ -861,9 +845,7 @@ private theorem decrypt_encryptThenMAC_redundantTag_false_cons (E : SymmetricCip
 
 private theorem decrypt_encryptThenMAC_redundantTag_of_mem_support (E : SymmetricCipher)
     (M : MACScheme)
-    (hctLen : ∀ n ke, ke ∈ (ProbComp.eval (E.keyGen n)).support →
-      ∀ msg, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = M.msgLen n)
+    (hctLen : ∀ n, E.CiphertextLength n (M.msgLen n))
     {n : ℕ} {k msg ct : List Bool}
     (hk : k ∈ (ProbComp.eval ((encryptThenMAC E M.redundantTag hctLen).keyGen n)).support)
     (hmsg : msg.length = n)
@@ -889,14 +871,9 @@ private theorem decrypt_encryptThenMAC_redundantTag_of_mem_support (E : Symmetri
 `ctBound n` bounds ciphertext lengths. -/
 theorem eval_ciOneTimeGame_encryptThenMAC_redundantTag_etmRedundantCIAdversary
     (E : SymmetricCipher) (M : MACScheme)
-    (hctLen : ∀ n ke, ke ∈ (ProbComp.eval (E.keyGen n)).support →
-      ∀ msg, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = M.msgLen n)
+    (hctLen : ∀ n, E.CiphertextLength n (M.msgLen n))
     (ctBound : ℕ → ℕ) (n : ℕ)
-    (hctBound : ∀ k ∈ (ProbComp.eval ((encryptThenMAC E M.redundantTag hctLen).keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval ((encryptThenMAC E M.redundantTag hctLen).encrypt n k msg)).support,
-        ct.length ≤ ctBound n) :
+    (hctBound : (encryptThenMAC E M.redundantTag hctLen).CiphertextLengthLE n (ctBound n)) :
     ProbComp.eval
       ((encryptThenMAC E M.redundantTag hctLen).ciOneTimeGame
         (etmRedundantCIAdversary ctBound) n) = PMF.pure true := by
@@ -915,14 +892,9 @@ theorem eval_ciOneTimeGame_encryptThenMAC_redundantTag_etmRedundantCIAdversary
 `ctBound n` bounds ciphertext lengths. -/
 theorem eval_ciGame_encryptThenMAC_redundantTag_etmRedundantCIAdversary
     (E : SymmetricCipher) (M : MACScheme)
-    (hctLen : ∀ n ke, ke ∈ (ProbComp.eval (E.keyGen n)).support →
-      ∀ msg, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = M.msgLen n)
+    (hctLen : ∀ n, E.CiphertextLength n (M.msgLen n))
     (ctBound : ℕ → ℕ) (n : ℕ)
-    (hctBound : ∀ k ∈ (ProbComp.eval ((encryptThenMAC E M.redundantTag hctLen).keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval ((encryptThenMAC E M.redundantTag hctLen).encrypt n k msg)).support,
-        ct.length ≤ ctBound n) :
+    (hctBound : (encryptThenMAC E M.redundantTag hctLen).CiphertextLengthLE n (ctBound n)) :
     ProbComp.eval
       ((encryptThenMAC E M.redundantTag hctLen).ciGame
         (etmRedundantCIAdversary ctBound) n) = PMF.pure true := by
@@ -940,9 +912,7 @@ theorem eval_ciGame_encryptThenMAC_redundantTag_etmRedundantCIAdversary
 ([KatzLindell2020], Exercise 5.4, printed p. 164). -/
 theorem not_oneTimeCiphertextIntegrity_encryptThenMAC_redundantTag
     (E : SymmetricCipher) (M : MACScheme)
-    (hctLen : ∀ n ke, ke ∈ (ProbComp.eval (E.keyGen n)).support →
-      ∀ msg, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = M.msgLen n) :
+    (hctLen : ∀ n, E.CiphertextLength n (M.msgLen n)) :
     ¬ (encryptThenMAC E M.redundantTag hctLen).OneTimeCiphertextIntegrity := by
   intro hci
   let ETM := encryptThenMAC E M.redundantTag hctLen
@@ -963,9 +933,7 @@ theorem not_oneTimeCiphertextIntegrity_encryptThenMAC_redundantTag
 ([KatzLindell2020], Exercise 5.4, printed p. 164). -/
 theorem not_ciphertextIntegrity_encryptThenMAC_redundantTag
     (E : SymmetricCipher) (M : MACScheme)
-    (hctLen : ∀ n ke, ke ∈ (ProbComp.eval (E.keyGen n)).support →
-      ∀ msg, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = M.msgLen n) :
+    (hctLen : ∀ n, E.CiphertextLength n (M.msgLen n)) :
     ¬ (encryptThenMAC E M.redundantTag hctLen).CiphertextIntegrity :=
   fun h =>
     not_oneTimeCiphertextIntegrity_encryptThenMAC_redundantTag E M hctLen
@@ -974,18 +942,14 @@ theorem not_ciphertextIntegrity_encryptThenMAC_redundantTag
 /-- `encryptThenMAC E M.redundantTag hctLen` never satisfies `OneTimeAuthenticatedEncryption`. -/
 theorem not_oneTimeAuthenticatedEncryption_encryptThenMAC_redundantTag
     (E : SymmetricCipher) (M : MACScheme)
-    (hctLen : ∀ n ke, ke ∈ (ProbComp.eval (E.keyGen n)).support →
-      ∀ msg, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = M.msgLen n) :
+    (hctLen : ∀ n, E.CiphertextLength n (M.msgLen n)) :
     ¬ (encryptThenMAC E M.redundantTag hctLen).OneTimeAuthenticatedEncryption :=
   fun h => not_oneTimeCiphertextIntegrity_encryptThenMAC_redundantTag E M hctLen h.2
 
 /-- `encryptThenMAC E M.redundantTag hctLen` never satisfies `AuthenticatedEncryption`. -/
 theorem not_authenticatedEncryption_encryptThenMAC_redundantTag
     (E : SymmetricCipher) (M : MACScheme)
-    (hctLen : ∀ n ke, ke ∈ (ProbComp.eval (E.keyGen n)).support →
-      ∀ msg, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = M.msgLen n) :
+    (hctLen : ∀ n, E.CiphertextLength n (M.msgLen n)) :
     ¬ (encryptThenMAC E M.redundantTag hctLen).AuthenticatedEncryption :=
   fun h => not_ciphertextIntegrity_encryptThenMAC_redundantTag E M hctLen h.2
 
@@ -1041,14 +1005,9 @@ theorem isOraclePPT_etmRedundantCCAAdversary {ctBound : ℕ → ℕ}
 `encOption encBits (some (List.replicate n true))`. -/
 theorem eval_ccaOneTimeGame_encryptThenMAC_redundantTag_etmRedundantCCAAdversary
     (E : SymmetricCipher) (M : MACScheme)
-    (hctLen : ∀ n ke, ke ∈ (ProbComp.eval (E.keyGen n)).support →
-      ∀ msg, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = M.msgLen n)
+    (hctLen : ∀ n, E.CiphertextLength n (M.msgLen n))
     (bit : Bool) (ctBound : ℕ → ℕ) (n : ℕ)
-    (hctBound : ∀ k ∈ (ProbComp.eval ((encryptThenMAC E M.redundantTag hctLen).keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval ((encryptThenMAC E M.redundantTag hctLen).encrypt n k msg)).support,
-        ct.length ≤ ctBound n) :
+    (hctBound : (encryptThenMAC E M.redundantTag hctLen).CiphertextLengthLE n (ctBound n)) :
     ProbComp.eval
       ((encryptThenMAC E M.redundantTag hctLen).ccaOneTimeGame
         (etmRedundantCCAAdversary ctBound) bit n) =
@@ -1074,9 +1033,7 @@ theorem eval_ccaOneTimeGame_encryptThenMAC_redundantTag_etmRedundantCCAAdversary
 ([KatzLindell2020], Exercise 5.4, printed p. 164). -/
 theorem not_oneTimeINDCCA_encryptThenMAC_redundantTag
     (E : SymmetricCipher) (M : MACScheme)
-    (hctLen : ∀ n ke, ke ∈ (ProbComp.eval (E.keyGen n)).support →
-      ∀ msg, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = M.msgLen n) :
+    (hctLen : ∀ n, E.CiphertextLength n (M.msgLen n)) :
     ¬ (encryptThenMAC E M.redundantTag hctLen).OneTimeINDCCA := by
   intro hcca
   let ETM := encryptThenMAC E M.redundantTag hctLen
@@ -1102,9 +1059,7 @@ theorem not_oneTimeINDCCA_encryptThenMAC_redundantTag
 ([KatzLindell2020], Exercise 5.4, printed p. 164). -/
 theorem not_indcca_encryptThenMAC_redundantTag
     (E : SymmetricCipher) (M : MACScheme)
-    (hctLen : ∀ n ke, ke ∈ (ProbComp.eval (E.keyGen n)).support →
-      ∀ msg, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = M.msgLen n) :
+    (hctLen : ∀ n, E.CiphertextLength n (M.msgLen n)) :
     ¬ (encryptThenMAC E M.redundantTag hctLen).INDCCA :=
   fun hcca =>
     not_oneTimeINDCCA_encryptThenMAC_redundantTag E M hctLen hcca.oneTimeINDCCA
@@ -1116,9 +1071,7 @@ for any `INDCPA` symmetric cipher `E` and any `EUFCMA` message authentication co
 `OneTimeCiphertextIntegrity`, `CiphertextIntegrity`, `OneTimeINDCCA`, and `INDCCA`. -/
 theorem encryptThenMAC_redundantTag_counterexample
     (E : SymmetricCipher) (M : MACScheme)
-    (hctLen : ∀ n ke, ke ∈ (ProbComp.eval (E.keyGen n)).support →
-      ∀ msg, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = M.msgLen n)
+    (hctLen : ∀ n, E.CiphertextLength n (M.msgLen n))
     (hcpa : E.INDCPA) (heuf : M.EUFCMA) :
     M.redundantTag.EUFCMA ∧ ¬ M.redundantTag.OneTimeSUFCMA ∧ ¬ M.redundantTag.SUFCMA ∧
       (encryptThenMAC E M.redundantTag hctLen).INDCPA ∧

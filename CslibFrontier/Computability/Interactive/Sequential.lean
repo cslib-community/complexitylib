@@ -623,7 +623,8 @@ theorem Reduction.Complete.append {R₁ : Reduction OracleSpec.empty OracleSpec.
   rw [plainLaw_run_reductionAppend]
   refine le_trans (Probability.PMF.toOuterMeasure_bind_le_add _ _ _ _ _ fun r₁ _ hr₁ => ?_)
     (add_le_add hl₁ le_rfl)
-  simp only [Set.mem_preimage, Set.mem_ofPred_eq, not_not] at hr₁
+  simp only [Set.mem_preimage, Set.mem_ofPred_eq, not_not, Execution.output, Execution.result]
+    at hr₁
   obtain ⟨hout, hrel⟩ := hr₁
   have hl₂ := h₂ r₁.2.1 r₁.2.2 hrel
   rw [Reduction.run, World.plain_eval_execute, PMF.toOuterMeasure_map_apply] at hl₂

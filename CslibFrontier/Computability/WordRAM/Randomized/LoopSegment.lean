@@ -45,6 +45,8 @@ depth `b = 0` via `LoopSegment.finish`.
   and word-bound invariance across a `LoopSegment`.
 * `Cslib.WordRAM.execRand_seq_det`: appends a deterministic `ExecWithin` continuation onto a
   randomized `ExecRand` computation as a pure `Functor.map`.
+* `Cslib.WordRAM.execRand_seq_det_map`: appends a deterministic `Exec` continuation, indexed by
+  the sample, onto a randomized prefix that is the pushforward of a sampler.
 
 ## References
 
@@ -253,5 +255,19 @@ theorem execRand_seq_det {B : Basis} {r w T : ℕ} {c₁ c₂ : Code B r} {x : D
     simp only [pure_bind, ← bind_pure_comp]
   rw [heq] at hseq
   exact ⟨g, hseq, hg⟩
+
+/-- A randomized prefix reaching `p a` after `n a` instructions for each sample `a ∼ μ`, followed
+by a deterministic continuation from `p a` to `y a` in `t a` instructions, runs as the pushforward
+of `μ`. -/
+theorem execRand_seq_det_map {B : Basis} {r w : ℕ} {α : Type} {c₁ c₂ : Code B r} {x : Data r}
+    {μ : ProbComp α} {p y : α → Data r} {n t : α → ℕ}
+    (h₁ : ExecRand w c₁ x ((fun a => (p a, n a)) <$> μ))
+    (h₂ : ∀ a, Exec w c₂ (p a) (y a) (t a)) :
+    ExecRand w (.seq c₁ c₂) x ((fun a => (y a, n a + t a)) <$> μ) := by
+  have hc (a : α) : codeComp w c₂ (p a) = pure (y a, t a) := (h₂ a).execRand.codeComp_eq
+  have hseq := ExecRand.seq h₁ (m₂ := codeComp w c₂) fun z hz => by
+    obtain ⟨a, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
+    simpa only [hc] using (h₂ a).execRand
+  simpa only [← bind_pure_comp, bind_assoc, pure_bind, hc] using hseq
 
 end Cslib.WordRAM

@@ -782,9 +782,8 @@ theorem rot_le_mutualInfo
     obtain ⟨⟨sb, ch⟩, _, rfl⟩ := hy
     rw [hout]
     rfl
-  have hAlicePriv : real.map (fun ω => ((ω.2 0, T ω), rotChoices (ω.2 1))) =
-      (real.map fun ω => (ω.2 0, T ω)).bind fun st =>
-        (PMF.uniformOfFintype (Fin k → Bool)).map (st, ·) := by
+  have hAlicePriv : IndepUniform real (fun ω => (ω.2 0, T ω)) (fun ω => rotChoices (ω.2 1)) := by
+    refine ⟨?_⟩
     let proj0 : (((i : ({0} : Finset (Fin 2))) →
         PartyView (Fin.cases A (fun _ => B)) Coins sc i) ×
         ((i : Fin 2) → Fin k → Bool × Bool)) →
@@ -855,9 +854,9 @@ theorem rot_le_mutualInfo
           (PMF.uniformOfFintype (Fin k → Bool)) = _
       exact PMF.map_const _ _
     rw [hRealProj, ← hPriv0, hLHS, ← hMargSimp, hMarginal]
-  have hBobPriv : real.map (fun ω => ((T ω, ω.2 1), rotUnselected (ω.2 0) (ω.2 1))) =
-      (real.map fun ω => (T ω, ω.2 1)).bind fun tr =>
-        (PMF.uniformOfFintype (Fin k → Bool)).map (tr, ·) := by
+  have hBobPriv :
+      IndepUniform real (fun ω => (T ω, ω.2 1)) (fun ω => rotUnselected (ω.2 0) (ω.2 1)) := by
+    refine ⟨?_⟩
     let proj1 : (((i : ({1} : Finset (Fin 2))) →
         PartyView (Fin.cases A (fun _ => B)) Coins sc i) ×
         ((i : Fin 2) → Fin k → Bool × Bool)) →
@@ -1185,9 +1184,8 @@ theorem chosenOT_le_mutualInfo
     dsimp only [ROut, SOut]
     rw [hin0, hin1, hy1, heQ0, heQ0, heQ1]
     cases x1 j <;> simp only [otSelect_false, otSelect_true]
-  have hAlicePriv : real.map (fun ω => ((SOut ω, T ω), rotChoices (ROut ω))) =
-      (real.map fun ω => (SOut ω, T ω)).bind fun st =>
-        (PMF.uniformOfFintype (Fin k → Bool)).map (st, ·) := by
+  have hAlicePriv : IndepUniform real (fun ω => (SOut ω, T ω)) (fun ω => rotChoices (ROut ω)) := by
+    refine ⟨?_⟩
     let sOf : (Fin k → Bool → Bool) → (Fin k → Bool × Bool) :=
       fun x0 j => (x0 j false, x0 j true)
     have hStep0 : ∀ (x0 : Fin k → Bool → Bool) (x1 : Fin k → Bool),
@@ -1275,9 +1273,9 @@ theorem chosenOT_le_mutualInfo
       simp only [hmc]
       exact PMF.bind_pure _
     rw [hMain, hMarg]
-  have hBobPriv : real.map (fun ω => ((T ω, ROut ω), rotUnselected (SOut ω) (ROut ω))) =
-      (real.map fun ω => (T ω, ROut ω)).bind fun tr =>
-        (PMF.uniformOfFintype (Fin k → Bool)).map (tr, ·) := by
+  have hBobPriv :
+      IndepUniform real (fun ω => (T ω, ROut ω)) (fun ω => rotUnselected (SOut ω) (ROut ω)) := by
+    refine ⟨?_⟩
     have hStep1 : ∀ (x1 : Fin k → Bool) (y1 u : Fin k → Bool),
         let x0 := otPairEquiv x1 (y1, u)
         (realCorrelatedWithInput proto source (pairVec (eQ0 x0) (eQ1 x1))).map
@@ -1436,17 +1434,10 @@ theorem commProtocol_rot_le_mutualInfo [Finite X] [Finite Y] {k : ℕ}
     (outB : Y × Fin p.leafCount → Fin k → Bool × Bool)
     (hCorrect : ∀ x y j, (x, y) ∈ μ.support →
       (outB (y, p.leaf x y) j).2 = otSelect (outA (x, p.leaf x y) j) (outB (y, p.leaf x y) j).1)
-    (hAlicePriv : (p.transcriptLaw μ).map
-        (fun q => ((outA (q.1, Prod.snd q.2), Prod.snd q.2),
-          rotChoices (outB (Prod.fst q.2, Prod.snd q.2)))) =
-      ((p.transcriptLaw μ).map fun q => (outA (q.1, Prod.snd q.2), Prod.snd q.2)).bind fun st =>
-        (PMF.uniformOfFintype (Fin k → Bool)).map (st, ·))
-    (hBobPriv : (p.transcriptLaw μ).map
-        (fun q => ((Prod.snd q.2, outB (Prod.fst q.2, Prod.snd q.2)),
-          rotUnselected (outA (q.1, Prod.snd q.2)) (outB (Prod.fst q.2, Prod.snd q.2)))) =
-      ((p.transcriptLaw μ).map fun q =>
-          (Prod.snd q.2, outB (Prod.fst q.2, Prod.snd q.2))).bind fun tr =>
-        (PMF.uniformOfFintype (Fin k → Bool)).map (tr, ·)) :
+    (hAlicePriv : IndepUniform (p.transcriptLaw μ) (fun (x, _, t) => (outA (x, t), t))
+      (fun (_, y, t) => rotChoices (outB (y, t))))
+    (hBobPriv : IndepUniform (p.transcriptLaw μ) (fun (_, y, t) => (t, outB (y, t)))
+      (fun (x, y, t) => rotUnselected (outA (x, t)) (outB (y, t)))) :
     (k : ℝ) ≤ mutualInfo μ := by
   let ν := p.transcriptLaw μ
   have hTrLaw : p.transcriptLaw μ = PMF.map (fun q => (q.1, q.2, p.leaf q.1 q.2)) μ :=
@@ -1495,22 +1486,13 @@ theorem privateCoin_rot_le_mutualInfo [Finite A] [Finite B] {a b k : ℕ}
     (outB : (B × BitString b) × Fin P.leafCount → Fin k → Bool × Bool)
     (hCorrect : ∀ u v j, (u.1, v.1) ∈ source.support →
       (outB (v, P.leaf u v) j).2 = otSelect (outA (u, P.leaf u v) j) (outB (v, P.leaf u v) j).1)
-    (hAlicePriv : (Cslib.Communication.Protocol.transcriptLaw P
-        (Cslib.Communication.PrivateCoin.inputLaw a b source)).map
-        (fun q => ((outA (q.1, Prod.snd q.2), Prod.snd q.2),
-          rotChoices (outB (Prod.fst q.2, Prod.snd q.2)))) =
-      ((Cslib.Communication.Protocol.transcriptLaw P
-          (Cslib.Communication.PrivateCoin.inputLaw a b source)).map
-          fun q => (outA (q.1, Prod.snd q.2), Prod.snd q.2)).bind fun st =>
-        (PMF.uniformOfFintype (Fin k → Bool)).map (st, ·))
-    (hBobPriv : (Cslib.Communication.Protocol.transcriptLaw P
-        (Cslib.Communication.PrivateCoin.inputLaw a b source)).map
-        (fun q => ((Prod.snd q.2, outB (Prod.fst q.2, Prod.snd q.2)),
-          rotUnselected (outA (q.1, Prod.snd q.2)) (outB (Prod.fst q.2, Prod.snd q.2)))) =
-      ((Cslib.Communication.Protocol.transcriptLaw P
-          (Cslib.Communication.PrivateCoin.inputLaw a b source)).map
-          fun q => (Prod.snd q.2, outB (Prod.fst q.2, Prod.snd q.2))).bind fun tr =>
-        (PMF.uniformOfFintype (Fin k → Bool)).map (tr, ·)) :
+    (hAlicePriv : IndepUniform (Cslib.Communication.Protocol.transcriptLaw P
+        (Cslib.Communication.PrivateCoin.inputLaw a b source))
+      (fun (x, _, t) => (outA (x, t), t)) (fun (_, y, t) => rotChoices (outB (y, t))))
+    (hBobPriv : IndepUniform (Cslib.Communication.Protocol.transcriptLaw P
+        (Cslib.Communication.PrivateCoin.inputLaw a b source))
+      (fun (_, y, t) => (t, outB (y, t)))
+      (fun (x, y, t) => rotUnselected (outA (x, t)) (outB (y, t)))) :
     (k : ℝ) ≤ mutualInfo source := by
   let μ := Cslib.Communication.PrivateCoin.inputLaw a b source
   have hMu : μ = source.bind fun ab =>

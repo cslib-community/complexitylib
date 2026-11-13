@@ -72,6 +72,13 @@ jobs:
         run: cp -R guide/.lake/build/site/html-multi docbuild/.lake/build/doc/guide
       - name: Add source history dashboard to the site
         run: cp -R tools/stats/_site docbuild/.lake/build/doc/stats
+      # Built from this run's trimmed declaration index, so the tables match the published API.
+      - name: Add class inclusion tables to the site
+        run: |
+          python3 -m unittest discover -s tools/class_inclusions -p 'test_*.py'
+          python3 tools/class_inclusions/build.py \
+            --index docbuild/.lake/build/doc/declarations/declaration-data.bmp \
+            --output docbuild/.lake/build/doc/class-inclusions
       # GitHub Pages serves 404.html for missing paths. It sends API pages that the
       # module-root rename moved to their new addresses.
       - name: Add the not-found page

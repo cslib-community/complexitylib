@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Probability.Product
+import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF
 import Mathlib.Tactic.Linarith
@@ -24,7 +25,9 @@ applies to distributions on infinite types such as the public-coin protocols of 
 complexity. Applying a function to each sample gives independent samples of the image
 (`iid_map`), and on finite types the draws form the product distribution (`iid_eq_pi`), so
 independent draws of `μ.bind K` are independent draws of `μ` passed through `K` coordinatewise
-(`iid_bind`).
+(`iid_bind`). More generally, `Cslib.Probability.PMF.piFin p` draws each coordinate `i : Fin k`
+independently from its own distribution `p i`, again on arbitrary types; `iid μ k` is the constant
+family (`piFin_const`).
 
 The *majority tail bound* (`iid_card_ge_le`): among `2 r` independent bits, each `true` with
 probability `q ≤ ε ≤ 1 / 2`, at least `r` are `true` with probability at most
@@ -37,11 +40,16 @@ bounds.
 ## Main definitions
 
 * `Cslib.Probability.PMF.iid`: independent draws from a distribution.
+* `Cslib.Probability.PMF.piFin`: independent draws from a `Fin k`-indexed family of distributions.
 
 ## Main results
 
 * `Cslib.Probability.PMF.iid_apply`, `Cslib.Probability.PMF.mem_support_iid_iff`: masses and
   support.
+* `Cslib.Probability.PMF.piFin_apply`, `Cslib.Probability.PMF.piFin_const`,
+  `Cslib.Probability.PMF.piFin_map_eval`: masses, constant families, and marginals of `piFin`.
+* `Cslib.Probability.PMF.piFin_bind`, `Cslib.Probability.PMF.piFin_pair`: coordinatewise kernels
+  and pairing of `piFin`.
 * `Cslib.Probability.PMF.iid_map`, `Cslib.Probability.PMF.iid_eq_pi`,
   `Cslib.Probability.PMF.iid_uniformOfFintype`: images, finite products, and uniform tuples.
 * `Cslib.Probability.PMF.iid_bind`: independent draws through a randomized map.
@@ -65,13 +73,27 @@ noncomputable def iid (μ : PMF α) : (k : ℕ) → PMF (Fin k → α)
       let a ← μ
       (iid μ k).map (Fin.cons a)
 
+/-- Independent draws from a `Fin k`-indexed family of distributions, as a tuple: draw the first
+coordinate, then the others. -/
+noncomputable def piFin : {k : ℕ} → (Fin k → PMF α) → PMF (Fin k → α)
+  | 0, _ => PMF.pure Fin.elim0
+  | _ + 1, p => (p 0).bind fun a => (piFin fun j => p j.succ).map (Fin.cons a)
+
+/-- Independent draws from a constant family are `iid`. -/
+theorem piFin_const (μ : PMF α) : ∀ k : ℕ, piFin (fun _ : Fin k => μ) = iid μ k
+  | 0 => rfl
+  | k + 1 => by
+    simp only [piFin, iid, piFin_const μ k]
+    rfl
+
 /-- A tuple of independent draws has the product of the masses of its coordinates. -/
-@[simp] theorem iid_apply (μ : PMF α) : ∀ {k : ℕ} (v : Fin k → α), iid μ k v = ∏ i, μ (v i)
-  | 0, v => by
-    rw [iid, Fin.prod_univ_zero, Subsingleton.elim v Fin.elim0, PMF.pure_apply_self]
-  | k + 1, v => by
-    rw [iid, monad_bind_eq_bind, PMF.bind_apply, Fin.prod_univ_succ, tsum_eq_single (v 0)]
-    · rw [PMF.map_apply, tsum_eq_single (Fin.tail v), iid_apply μ (Fin.tail v)]
+@[simp] theorem piFin_apply :
+    ∀ {k : ℕ} (p : Fin k → PMF α) (v : Fin k → α), piFin p v = ∏ i, p i (v i)
+  | 0, p, v => by
+    rw [piFin, Fin.prod_univ_zero, Subsingleton.elim v Fin.elim0, PMF.pure_apply_self]
+  | k + 1, p, v => by
+    rw [piFin, PMF.bind_apply, Fin.prod_univ_succ, tsum_eq_single (v 0)]
+    · rw [PMF.map_apply, tsum_eq_single (Fin.tail v), piFin_apply (fun j => p j.succ) (Fin.tail v)]
       · simp [Fin.cons_self_tail, Fin.tail]
       · intro w hw
         simp only [ite_eq_right_iff]
@@ -83,6 +105,67 @@ noncomputable def iid (μ : PMF α) : (k : ℕ) → PMF (Fin k → α)
       simp only [ite_eq_right_iff]
       intro h
       exact absurd (by rw [h, Fin.cons_zero]) ha
+
+/-- Each coordinate of independent draws from a family is distributed as its own law. -/
+theorem piFin_map_eval :
+    ∀ {k : ℕ} (p : Fin k → PMF α) (j : Fin k), (piFin p).map (fun v => v j) = p j
+  | 0, _, j => j.elim0
+  | k + 1, p, j => by
+    refine Fin.cases ?_ (fun j' => ?_) j
+    · simp only [piFin, PMF.map_bind, PMF.map_comp, Function.comp_def, Fin.cons_zero]
+      change (p 0).bind (fun a => (piFin fun j => p j.succ).map (Function.const _ a)) = p 0
+      simp only [PMF.map_const, PMF.bind_pure]
+    · simp only [piFin, PMF.map_bind, PMF.map_comp, Function.comp_def, Fin.cons_succ]
+      change (p 0).bind (fun _ => (piFin fun i => p i.succ).map (fun v => v j')) = p j'.succ
+      rw [piFin_map_eval (fun i => p i.succ) j', PMF.bind_const]
+
+/-- Passing independent draws through coordinatewise kernels gives independent draws of the
+bound distributions. -/
+theorem piFin_bind :
+    ∀ {k : ℕ} (p : Fin k → PMF α) (K : Fin k → α → PMF β),
+      (piFin p).bind (fun x => piFin fun j => K j (x j)) = piFin fun j => (p j).bind (K j)
+  | 0, _, _ => by simp only [piFin, PMF.pure_bind]
+  | _ + 1, p, K => by
+    rw [piFin, piFin, PMF.bind_bind, PMF.bind_bind]
+    refine bind_congr_on_support _ _ _ fun a₀ _ => ?_
+    simp only [PMF.bind_map, Function.comp_def, piFin, Fin.cons_zero, Fin.cons_succ]
+    rw [PMF.bind_comm]
+    refine bind_congr_on_support _ _ _ fun b₀ _ => ?_
+    rw [← PMF.map_bind, piFin_bind (fun j => p j.succ) (fun j => K j.succ)]
+
+/-- Independent draws from two families, paired, are the coordinatewise pairs of independent
+draws from the paired family. -/
+theorem piFin_pair :
+    ∀ {k : ℕ} (p q : Fin k → PMF α),
+      (piFin p).bind (fun y₁ => (piFin q).map fun y₂ => (y₁, y₂)) =
+        (piFin fun j => (p j).bind fun a => (q j).map fun b => (a, b)).map
+          (fun v => (fun j => (v j).1, fun j => (v j).2))
+  | 0, _, _ => by
+    simp only [piFin, PMF.pure_bind, PMF.pure_map]
+    exact congrArg PMF.pure (Prod.ext (funext fun j => j.elim0) (funext fun j => j.elim0))
+  | k + 1, p, q => by
+    simp only [piFin, PMF.bind_bind, PMF.map_bind, PMF.bind_map, PMF.map_comp,
+      Function.comp_def]
+    refine bind_congr_on_support _ _ _ fun a₀ _ => ?_
+    rw [PMF.bind_comm]
+    refine bind_congr_on_support _ _ _ fun b₀ _ => ?_
+    have hL :
+        (piFin fun j => p j.succ).bind (fun y₁ =>
+          (piFin fun j => q j.succ).map fun y₂ => (Fin.cons a₀ y₁, Fin.cons b₀ y₂)) =
+        ((piFin fun j => p j.succ).bind fun y₁ =>
+          (piFin fun j => q j.succ).map fun y₂ => (y₁, y₂)).map
+          (fun pair : (Fin k → α) × (Fin k → α) =>
+            (Fin.cons (α := fun _ => α) a₀ pair.1, Fin.cons (α := fun _ => α) b₀ pair.2)) := by
+      simp only [PMF.map_bind, PMF.map_comp, Function.comp_def]
+    rw [hL, piFin_pair (fun j => p j.succ) (fun j => q j.succ), PMF.map_comp]
+    refine congrArg (fun f => PMF.map f _) ?_
+    funext w
+    exact Prod.ext (funext fun j => Fin.cases rfl (fun _ => rfl) j)
+      (funext fun j => Fin.cases rfl (fun _ => rfl) j)
+
+/-- A tuple of independent draws has the product of the masses of its coordinates. -/
+@[simp] theorem iid_apply (μ : PMF α) {k : ℕ} (v : Fin k → α) : iid μ k v = ∏ i, μ (v i) := by
+  rw [← piFin_const, piFin_apply]
 
 /-- A tuple can be drawn exactly when each of its coordinates can. -/
 theorem mem_support_iid_iff (μ : PMF α) {k : ℕ} (v : Fin k → α) :

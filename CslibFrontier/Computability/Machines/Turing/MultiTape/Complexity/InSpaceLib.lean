@@ -49,12 +49,14 @@ variable {α β γ δ : Type} {encIn : α ↪ List Bool} {encB : β ↪ List Boo
 
 /-! ### Computing within a space budget -/
 
-theorem budget_comp {f : α → β} {g : β → γ} {Sg : β → ℕ}
+theorem budget_comp {α β γ : Type*} {encIn : α ↪ List Bool} {encB : β ↪ List Bool}
+    {encC : γ ↪ List Bool} {Bs : α → ℕ} {f : α → β} {g : β → γ} {Sg : β → ℕ}
     (hg : ComputableInSpace g encB encC Sg) (hf : ComputableInSpace f encIn encB Bs)
     (hS : (fun x => Sg (f x)) ≼ Bs) : ComputableInSpace (fun x => g (f x)) encIn encC Bs :=
   (hg.comp hf).weaken (.add (.refl _) hS)
 
-theorem budget_comp_linear {f : α → β} {g : β → γ}
+theorem budget_comp_linear {α β γ : Type*} {encIn : α ↪ List Bool} {encB : β ↪ List Bool}
+    {encC : γ ↪ List Bool} {Bs : α → ℕ} {f : α → β} {g : β → γ}
     (hg : ComputableInSpace g encB encC fun b => (encB b).length)
     (hf : ComputableInSpace f encIn encB Bs) :
     ComputableInSpace (fun x => g (f x)) encIn encC Bs :=

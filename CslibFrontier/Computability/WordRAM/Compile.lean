@@ -218,15 +218,17 @@ theorem Code.decidesInTime_program {α : Type*} {encode : ℕ → α → List �
 /-- Structured decision procedures are uniform deciders. -/
 theorem UniformDecidableInTime.of_code {α : Type*} {encode : ℕ → α → List ℕ} {A : Set α}
     {time : α → ℕ → ℕ} {allowed : α → ℕ → Prop} (c : Code B r) (out : Fin r)
+    (hadmit : InputAdmissible encode allowed)
     (h : ∀ a w, allowed a w → InputFits w (encode w a) →
       c.Answers out w (encode w a) (a ∈ A) (time a w)) :
     UniformDecidableInTime B A encode (fun a w => time a w + 1) allowed :=
-  ⟨r, c.program out, c.decidesInTime_program out h⟩
+  ⟨r, c.program out, c.decidesInTime_program out h, hadmit⟩
 
 /-- Structured families with bounded compiled code give nonuniform deciders. -/
 theorem DecidableInTime.of_code {α : Type*} {encode : ℕ → α → List ℕ} {A : Set α}
     {time : α → ℕ → ℕ} {allowed : α → ℕ → Prop} (c : ℕ → Code B r) (out : Fin r)
     (hc : ∃ L, ∀ w, (c w).size ≤ L)
+    (hadmit : InputAdmissible encode allowed)
     (h : ∀ a w, allowed a w → InputFits w (encode w a) →
       (c w).Answers out w (encode w a) (a ∈ A) (time a w)) :
     DecidableInTime B A encode (fun a w => time a w + 1) allowed :=
@@ -234,7 +236,7 @@ theorem DecidableInTime.of_code {α : Type*} {encode : ℕ → α → List ℕ} 
   ⟨r, (fun w => (c w).program out), ⟨L + 1, fun w => by
     simpa only [Code.program, List.length_append, Code.length_assemble,
       List.length_cons, List.length_nil] using Nat.add_le_add_right (hL w) 1⟩,
-    fun a w hw hi => (h a w hw hi).program⟩
+    (fun a w hw hi => (h a w hw hi).program), hadmit⟩
 
 /-! ## Reading the word size -/
 

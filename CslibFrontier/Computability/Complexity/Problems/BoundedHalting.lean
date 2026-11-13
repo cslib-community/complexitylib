@@ -7,10 +7,8 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Computability.Complexity.Classes.EXP
-public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Decode
-public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Machine
-public import CslibFrontier.Foundations.Data.BitString.List.Binary
+public import CslibFrontier.Computability.Complexity.Problems.BoundedComputation
+import CslibFrontier.Foundations.Data.BitString.List.Binary.Clock
 import CslibFrontier.Computability.Complexity.Classes.EXP.Decidable
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -20,7 +18,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.PolyTime
 /-!
 # Bounded halting with a binary time bound
 
-The instance `BoundedHalting.mk d x c = frame (eDesc d) ++ frame x ++ c` asks whether the binary
+The instance `BoundedComputation.mk d x c = frame (eDesc d) ++ frame x ++ c` asks whether the binary
 multi-tape machine described by `d` accepts the input `x` within `binaryValue c` steps, that is,
 halts with the output `[true]`. The semantics is that of the universal function
 `Turing.MultiTapeTM.Universal.universal`, which runs a described machine for a given number of
@@ -57,7 +55,7 @@ the classes closed under polynomial-time reductions, such as `NP` and `PSPACE`, 
 ## Main definitions
 
 * `Cslib.Complexity.BoundedHalting`: bounded halting with a binary time bound.
-* `Cslib.Complexity.BoundedHalting.mk`: the instance for a description, an input and a binary
+* `Cslib.Complexity.BoundedComputation.mk`: the instance for a description, an input and a binary
   step bound.
 
 ## Main results
@@ -81,58 +79,23 @@ public section
 
 namespace Cslib.Complexity
 
-namespace BoundedHalting
-
-/-- The description field of a bit word read as an instance: the first framed word, decoded. -/
-noncomputable def descOf (w : List Bool) : Desc := decodeDesc (unframe w)
-
-/-- The input field of a bit word read as an instance: the second framed word. -/
-def inputOf (w : List Bool) : List Bool := unframe (dropFrame w)
-
-/-- The step bound field of a bit word read as an instance, in binary: the rest after the two
-framed words. -/
-def clockOf (w : List Bool) : List Bool := dropFrame (dropFrame w)
-
-/-- The instance asking whether the machine described by `d` accepts `x` within `binaryValue c`
-steps. -/
-def mk (d : Desc) (x c : List Bool) : List Bool := frame (eDesc d) ++ (frame x ++ c)
-
-@[simp]
-theorem descOf_mk (d : Desc) (x c : List Bool) : descOf (mk d x c) = d :=
-  decodeDesc_unframe_frame_append d _
-
-@[simp]
-theorem inputOf_mk (d : Desc) (x c : List Bool) : inputOf (mk d x c) = x := by
-  rw [inputOf, mk, dropFrame_frame_append, unframe_frame_append]
-
-@[simp]
-theorem clockOf_mk (d : Desc) (x c : List Bool) : clockOf (mk d x c) = c := by
-  rw [clockOf, mk, dropFrame_frame_append, dropFrame_frame_append]
-
-/-- The step bound written in an instance is below `2 ^ n` for an instance of length `n`. -/
-theorem binaryValue_clockOf_lt (w : List Bool) : binaryValue (clockOf w) < 2 ^ w.length :=
-  (binaryValue_lt_two_pow _).trans_le (Nat.pow_le_pow_right (by norm_num)
-    ((length_dropFrame_le _).trans (length_dropFrame_le _)))
-
-end BoundedHalting
-
-open BoundedHalting
+open BoundedComputation
 
 /-- **Bounded halting with a binary time bound**: the bit words `w` such that the machine
 described by `descOf w` accepts the input `inputOf w`, i.e. halts with output `[true]`, within the
 number of steps written in binary by `clockOf w`. -/
 def BoundedHalting : Set (List Bool) :=
-  {w | universal (descOf w, (inputOf w).map eBit, binaryValue (clockOf w)) = ([eBit true], true)}
+  {w | run w = ([eBit true], true)}
 
 namespace BoundedHalting
 
 theorem mem_iff {w : List Bool} : w ∈ BoundedHalting ↔
-    universal (descOf w, (inputOf w).map eBit, binaryValue (clockOf w)) = ([eBit true], true) :=
+    run w = ([eBit true], true) :=
   Iff.rfl
 
 theorem mk_mem_iff {d : Desc} {x c : List Bool} :
     mk d x c ∈ BoundedHalting ↔ universal (d, x.map eBit, binaryValue c) = ([eBit true], true) := by
-  rw [mem_iff, descOf_mk, inputOf_mk, clockOf_mk]
+  rw [mem_iff, run_mk]
 
 /-- **Bounded halting on descriptions of machines**: the instance for the description of a
 binary machine accepts exactly when the machine, run on `x` for `binaryValue c` steps, has halted
@@ -149,23 +112,12 @@ theorem mk_desc_mem_iff {k : ℕ} {State : Type} [Fintype State] (eS : State ↪
   · rintro ⟨hhalt, hout⟩
     exact ⟨by rw [hout, List.map_singleton], hhalt⟩
 
-/-- The test with the step bound capped at the unary number `p.2`. -/
-private noncomputable def cappedTest (p : List Bool × ℕ) : Bool :=
-  decide (universal (descOf p.1, (inputOf p.1).map eBit, boundedBinaryValue p.2 (clockOf p.1)) =
-    ([eBit true], true))
-
-private theorem computableInPolyTime_cappedTest :
-    ComputableInPolyTime cappedTest (encPair encBits encUnary) encBool := by
-  unfold cappedTest descOf inputOf clockOf
-  fun_prop
-
-/-- **Bounded halting is in `E`**: the step bound is below `2 ^ |w|`, so capping it there does not
-change the answer, and the capped simulation is polynomial in `w` padded with `2 ^ |w|`. -/
+/-- **Bounded acceptance is in `E`** via the shared capped universal simulation. -/
 theorem mem_E : BoundedHalting ∈ E encBits := by
-  convert setOf_mem_E_of_computableInPolyTime_pad computableInPolyTime_cappedTest using 1
+  convert BoundedComputation.setOf_run_mem_E
+    (p := fun r => decide (r = ([eBit true], true))) (by fun_prop) using 1
   ext w
-  simp only [Set.mem_ofPred_eq, cappedTest, decide_eq_true_eq, mem_iff, boundedBinaryValue_eq,
-    min_eq_right (binaryValue_clockOf_lt w).le]
+  simp only [Set.mem_ofPred_eq, decide_eq_true_eq, mem_iff]
 
 /-- **Bounded halting is in `EXP`.** -/
 theorem mem_EXP : BoundedHalting ∈ EXP encBits :=
@@ -190,18 +142,12 @@ theorem polyTimeReducible {α : Type} {enc : α ↪ List Bool} {A : Set α} {p :
   refine ⟨fun a => mk (desc eS eBit tm) (enc a) (List.replicate (p (enc a).length + c) true),
     ?_, fun a => ?_⟩
   · have henc : ComputableInPolyTime (fun a => enc a) enc encBits := .of_eq fun _ => rfl
-    unfold mk
     fun_prop
   · -- the step bound `2 ^ (p n + c) - 1` exceeds the running time `c₁ * 2 ^ p n + c₂`
     have hc : c₁ * 2 ^ p (enc a).length + c₂ ≤
         binaryValue (List.replicate (p (enc a).length + c) true) := by
-      have h₁ := binaryValue_replicate_true (p (enc a).length + c)
-      have h₂ : 1 ≤ 2 ^ p (enc a).length := Nat.one_le_two_pow
-      have h₃ : 2 ^ p (enc a).length * (c₁ + c₂ + 1) ≤ 2 ^ p (enc a).length * 2 ^ c :=
-        Nat.mul_le_mul_left _ Nat.lt_two_pow_self.le
-      have h₄ : c₂ * 1 ≤ c₂ * 2 ^ p (enc a).length := Nat.mul_le_mul_left _ h₂
-      rw [pow_add] at h₁
-      nlinarith
+      simpa only [c, Nat.add_assoc] using
+        le_binaryValue_replicate_true (p (enc a).length) c₁ c₂
     obtain ⟨hhalt, hout⟩ := (htm a).runFrom_of_le hc
     change _ = [g a] at hout
     rw [mk_desc_mem_iff, hg, hout, List.cons.injEq]

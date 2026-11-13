@@ -75,10 +75,7 @@ example (n : ℕ) : ¬ ∃ cap : ℕ, ∀ msg : List Bool,
   simp only [List.length_replicate] at h
   omega
 
-theorem echoCipher_ctLen :
-    ∀ n ke, ke ∈ (ProbComp.eval (echoCipher.keyGen n)).support →
-      ∀ msg, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (echoCipher.encrypt n ke msg)).support, c.length = n := by
+theorem echoCipher_ctLen : ∀ n, echoCipher.CiphertextLength n n := by
   intro n _ _ msg hmsg c hc
   change c ∈ (ProbComp.eval (pure msg)).support at hc
   rw [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hc
@@ -347,8 +344,7 @@ parameter. -/
 theorem not_oneTimeINDCPA_echoCipher : ¬ echoCipher.OneTimeINDCPA := by
   intro h
   have hneg := h firstBitCPAAdversary isOraclePPT_firstBitCPAAdversary
-  have hcomp := hneg.comp_of_polynomial_bound (index := fun n => n + 1) (bound := fun m => m)
-    (Filter.tendsto_add_atTop_nat 1) (by fun_prop) (Filter.Eventually.of_forall fun n => by omega)
+  have hcomp := hneg.shift 1
   have hconst : Negligible (fun _ : ℕ => (1 : ℝ≥0)) := hcomp.congr fun n => by
     simp [eval_cpaOneTimeGame_firstBitCPAAdversary, Game.advantage, Game.succProbability]
   exact not_negligible_const one_ne_zero hconst
@@ -408,8 +404,7 @@ at every positive parameter. -/
 theorem not_oneTimeINDCCA_echoCipher : ¬ echoCipher.OneTimeINDCCA := by
   intro h
   have hneg := h firstBitCCAAdversary isOraclePPT_firstBitCCAAdversary
-  have hcomp := hneg.comp_of_polynomial_bound (index := fun n => n + 1) (bound := fun m => m)
-    (Filter.tendsto_add_atTop_nat 1) (by fun_prop) (Filter.Eventually.of_forall fun n => by omega)
+  have hcomp := hneg.shift 1
   have hconst : Negligible (fun _ : ℕ => (1 : ℝ≥0)) := hcomp.congr fun n => by
     simp [eval_ccaOneTimeGame_firstBitCCAAdversary, Game.advantage, Game.succProbability]
   exact not_negligible_const one_ne_zero hconst

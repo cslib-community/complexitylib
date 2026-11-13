@@ -84,7 +84,7 @@ theorem circuitCheck_eval_execute (C : Circuit (arithSignature F) (p + k) m)
   congr 1 with v : 1
   simp only [Verifier.execute, OracleComp.interpret_bind, interpret_liftProver,
     circuitCheck_output, OracleComp.interpret_pure]
-  simp only [runStrategy, circuitCheck, circuitCheckSpec, SigmaProtocol.sigmaSpec,
+  simp only [runStrategy, circuitCheck, circuitCheckSpec, threeMoveSpec,
     OracleComp.interpret_bind, OracleComp.interpret_pure,
     ProbOracleComp.interpret_sample,
     PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind,

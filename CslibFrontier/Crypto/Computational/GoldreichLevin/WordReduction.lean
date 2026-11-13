@@ -10,9 +10,11 @@ module
 public import CslibFrontier.Crypto.Computational.GoldreichLevin.WordDecoder
 public import CslibFrontier.Crypto.Computational.Basic
 public import CslibFrontier.Crypto.Computational.OneWay
+public import CslibFrontier.Foundations.Data.BitString.List.Dot
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Notation
 import CslibFrontier.Computability.Probabilistic.CoinTape
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString.Dot
 import CslibFrontier.Tactic.PPT
 
 /-!
@@ -70,7 +72,7 @@ noncomputable def parityPredictionGame (f : List Bool → List Bool) (adversary 
   let x ← BitString.sampleList n
   let query ← BitString.sampleList n
   let guess ← adversary n (f x ++ query)
-  return guess == (x.zipWith Bool.and query).foldl Bool.xor false
+  return guess == listDot x query
 
 /-- The prediction experiment composes sampling, the adversary and Boolean word operations. -/
 @[program_certificate]
@@ -155,10 +157,10 @@ theorem eval_parityPredictionGame (f : List Bool → List Bool) (adversary : Dis
         (evaluate (n, input)))
     (n : ℕ) :
     ProbComp.eval (parityPredictionGame f adversary n) =
-      predictionExperiment (fun bits => f (List.ofFn bits)) (fixedPredictor evaluate c d n)
+      parityPredictionExperiment (fun bits => f (List.ofFn bits)) (fixedPredictor evaluate c d n)
         (fun image => PMF.uniformOfFintype (BitString (coinBudget c d n image.length))) := by
-  simp only [pmf_norm, parityPredictionGame, BitString.eval_sampleList, uniformList,
-    ← dotProduct_eq_foldl, predictionExperiment]
+  simp only [pmf_norm, parityPredictionGame, BitString.eval_sampleList, uniformList, listDot_ofFn,
+    parityPredictionExperiment]
   congr 1 with x : 1
   simp_rw [← fixedPredictor_distribution adversary evaluate c d hrealize,
     PMF.bind_map, Function.comp_def]
@@ -169,13 +171,12 @@ theorem eval_parityPredictionGame (f : List Bool → List Bool) (adversary : Dis
 theorem eval_wordInversionGame (f : List Bool → List Bool)
     (evaluate : (ℕ × List Bool) → List Bool → Bool) (c d degree n : ℕ) :
     ProbComp.eval (inversionGame f (wordInverter f evaluate c d degree) n) =
-      inversionExperiment (fun bits => f (List.ofFn bits))
+      inversionExperiment (PMF.uniformOfFintype (BitString n)) (fun bits => f (List.ofFn bits))
         (invertSigned (fun bits => f (List.ofFn bits)) (fixedPredictor evaluate c d n)
           (fun image => PMF.uniformOfFintype (BitString (coinBudget c d n image.length)))
           (maskCount n (precision degree n))) := by
   simp only [pmf_norm, inversionGame, BitString.eval_sampleList, uniformList, inversionExperiment,
-    wordInverter_eval, beq_eq_decide]
-  rfl
+    wordInverter_eval]
 
 /-- Prediction bias is at most the precision error plus eight times inversion success. -/
 theorem word_prediction_advantage_le (f : List Bool → List Bool) (adversary : Distinguisher)

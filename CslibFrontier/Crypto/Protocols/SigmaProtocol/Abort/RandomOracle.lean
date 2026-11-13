@@ -148,11 +148,11 @@ theorem fiatShamirAbortSign_run_succ (x : X) (y : Y) (msg : M) (K : ℕ) (state 
       (interpret answer
         ((fun c => (coin.1, P.respond x y coin.2 c)) <$>
           OracleComp.query (msg, coin.1))).run state).bind
-      fun first =>
+      fun ((w, response), state') =>
     ((iid (P.commit x y) K).bind fun coins =>
-      (interpret answer (fiatShamirAbortSign P (x, y) msg K coins)).run first.2).map
+      (interpret answer (fiatShamirAbortSign P (x, y) msg K coins)).run state').map
       fun later =>
-        ((first.1.2.map fun z => (first.1.1, z)).orElse (fun _ => later.1), later.2) := by
+        ((response.map fun z => (w, z)).orElse (fun _ => later.1), later.2) := by
   simp only [pmf_norm, iid, Fin.cons_zero, Fin.tail_cons, fiatShamirAbortSign, run_interpret_bind,
     run_interpret_pure, PMF.map]
   congr 1 with coin : 1
@@ -171,7 +171,8 @@ theorem fiatShamirAbortSign_run_eq_of_transcript_eq {x x' : X} {y : Y}
   | succ K ih =>
     rw [fiatShamirAbortSign_run_succ, fiatShamirAbortSign_run_succ,
       fiatShamir_sign_run_eq_of_transcript_eq (fun x => x) P answer h msg state]
-    congr 1 with first : 1
+    congr 1 with ⟨⟨w, response⟩, state'⟩ : 1
+    dsimp only
     rw [ih]
 
 end View

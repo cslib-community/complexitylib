@@ -31,8 +31,8 @@ private def savedKeyAdversary : Encryption.Adversary where
 private theorem saved_key_reduction (security : ℕ) (pk : List Bool) :
     ProbComp.eval (Encryption.keyDistinguisher revealingEncrypt savedKeyAdversary security pk) =
       PMF.pure (pk.headD false) := by
-  simp [Encryption.keyDistinguisher, revealingEncrypt, savedKeyAdversary,
-    PMF.map, Function.comp_def]
+  simp [Encryption.keyDistinguisher, Encryption.keyDistinguisherOn, revealingEncrypt,
+    savedKeyAdversary, PMF.map, Function.comp_def]
 
 example :
     ProbComp.eval (Encryption.keyDistinguisher revealingEncrypt savedKeyAdversary 0 [true]) =
@@ -44,28 +44,30 @@ private noncomputable def idealTestKeys : PMF (List Bool) :=
 private theorem test_distinguisher_real :
     distinguishingGame (PMF.pure [false])
       (Encryption.keyDistinguisher revealingEncrypt savedKeyAdversary 0) = PMF.pure false := by
-  simp [distinguishingGame, saved_key_reduction]
+  simp [distinguishingGame_eq_bind, saved_key_reduction]
 
 private theorem test_distinguisher_ideal :
     distinguishingGame idealTestKeys
       (Encryption.keyDistinguisher revealingEncrypt savedKeyAdversary 0) =
         PMF.uniformOfFintype Bool := by
-  simp [distinguishingGame, idealTestKeys, PMF.bind_map, saved_key_reduction, Function.comp_def]
+  simp [distinguishingGame_eq_bind, idealTestKeys, PMF.bind_map, saved_key_reduction,
+    Function.comp_def]
 
 private theorem test_public_game (bit : Bool) :
     Encryption.publicKeyGame (PMF.pure [false]) revealingEncrypt savedKeyAdversary bit 0 =
       PMF.pure bit := by
-  cases bit <;> simp [Encryption.publicKeyGame, revealingEncrypt, savedKeyAdversary,
-    ProbComp.eval_pure]
+  cases bit <;> simp [Encryption.publicKeyGame, Encryption.publicKeyGameOn, revealingEncrypt,
+    savedKeyAdversary, ProbComp.eval_pure]
 
 private theorem test_ideal_game (bit : Bool) :
     Encryption.publicKeyGame idealTestKeys revealingEncrypt savedKeyAdversary bit 0 =
       PMF.uniformOfFintype Bool := by
   cases bit
-  · simp [Encryption.publicKeyGame, revealingEncrypt, savedKeyAdversary,
-      idealTestKeys, ProbComp.eval_pure, PMF.map]
-  · simpa [Encryption.publicKeyGame, revealingEncrypt, savedKeyAdversary,
-      idealTestKeys, ProbComp.eval_pure, PMF.map, Equiv.boolNot, Function.comp_def] using
+  · simp [Encryption.publicKeyGame, Encryption.publicKeyGameOn, revealingEncrypt,
+      savedKeyAdversary, idealTestKeys, ProbComp.eval_pure, PMF.map]
+  · simpa [Encryption.publicKeyGame, Encryption.publicKeyGameOn, revealingEncrypt,
+      savedKeyAdversary, idealTestKeys, ProbComp.eval_pure, PMF.map, Equiv.boolNot,
+      Function.comp_def] using
       PMF.uniformOfFintype_map_equiv Equiv.boolNot
 
 -- The factor two is attained: a chosen-message gap of one corresponds to a key gap of one half,
@@ -85,6 +87,13 @@ example :
   rw [test_public_game, test_public_game, test_distinguisher_real, test_distinguisher_ideal,
     test_ideal_game, test_ideal_game]
   norm_num [Game.advantage, Game.succProbability, NNReal.nndist_eq, ENNReal.toNNReal_ofNat]
+
+-- On an inadmissible challenge pair both experiments output `false`, so the restricted reduction
+-- returns its hidden bit, whatever the key.
+example (pk : List Bool) :
+    ProbComp.eval (Encryption.keyDistinguisherOn (fun _ _ _ _ => false) revealingEncrypt
+      savedKeyAdversary 0 pk) = PMF.uniformOfFintype Bool := by
+  simp [Encryption.keyDistinguisherOn, savedKeyAdversary]
 
 -- This real client chooses messages as a function of the public key and retains its full word.
 private def adaptiveAdversary : Encryption.Adversary where

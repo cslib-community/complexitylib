@@ -57,7 +57,7 @@ private theorem appendOccurrence_bijective (F H : CSP Rel V) :
   · intro o
     by_cases hi : o.1.val < F.length
     · let i : Fin F.length := ⟨o.1.val, hi⟩
-      let j : Fin F[i.val].2.length := ⟨o.2.val, by
+      let j : Fin F[i.val].scope.length := ⟨o.2.val, by
         simpa only [List.getElem_append_left hi] using o.2.isLt⟩
       exact ⟨Sum.inl ⟨i, j⟩, Occurrence.eq_of_positions rfl rfl⟩
     · have hbound : o.1.val - F.length < H.length := by
@@ -65,7 +65,7 @@ private theorem appendOccurrence_bijective (F H : CSP Rel V) :
         simp only [List.length_append] at this
         omega
       let i : Fin H.length := ⟨o.1.val - F.length, hbound⟩
-      let j : Fin H[i.val].2.length := ⟨o.2.val, by
+      let j : Fin H[i.val].scope.length := ⟨o.2.val, by
         simpa only [List.getElem_append_right (Nat.le_of_not_gt hi)] using o.2.isLt⟩
       exact ⟨Sum.inr ⟨i, j⟩, Occurrence.eq_of_positions (by
         change F.length + (o.1.val - F.length) = o.1.val; omega) rfl⟩
@@ -78,13 +78,13 @@ private theorem appendOccurrence_bijective (F H : CSP Rel V) :
 /-- Original left constraint positions and labels are unchanged. -/
 theorem record_appendOccurrenceEquiv_inl (F H : CSP Rel V) (o : F.Occurrence) :
     (appendOccurrenceEquiv F H (Sum.inl o)).record = o.record := by
-  change (o.1.val, o.2.val, (F ++ H)[o.1.val].2[o.2.val]) = o.record
+  change (o.1.val, o.2.val, (F ++ H)[o.1.val].scope[o.2.val]) = o.record
   simp only [List.getElem_append_left o.1.isLt, Occurrence.record, Occurrence.var]
 
 /-- Original right argument positions and labels are unchanged; constraint positions shift. -/
 theorem record_appendOccurrenceEquiv_inr (F H : CSP Rel V) (o : H.Occurrence) :
     (appendOccurrenceEquiv F H (Sum.inr o)).record = (F.length + o.1.val, o.2.val, o.var) := by
-  change (F.length + o.1.val, o.2.val, (F ++ H)[F.length + o.1.val].2[o.2.val]) = _
+  change (F.length + o.1.val, o.2.val, (F ++ H)[F.length + o.1.val].scope[o.2.val]) = _
   simp only [List.getElem_append_right (Nat.le_add_right F.length o.1.val),
     Nat.add_sub_cancel_left, Occurrence.var]
 
@@ -107,7 +107,7 @@ theorem argumentSuccessor_appendOccurrenceEquiv (F H : CSP Rel V)
     · rfl
     · simp only [argumentSuccessor, appendOccurrenceEquiv, Equiv.ofBijective_apply,
         appendOccurrence, Sum.map_inl, val_finRotate, List.getElem_append_left o.1.isLt]
-      change (if o.2.val + 1 = F[o.1.val].2.length then 0 else o.2.val + 1) =
+      change (if o.2.val + 1 = F[o.1.val].scope.length then 0 else o.2.val + 1) =
         (finRotate _ o.2).val
       rw [val_finRotate]
   | inr o =>
@@ -116,7 +116,7 @@ theorem argumentSuccessor_appendOccurrenceEquiv (F H : CSP Rel V)
     · simp only [argumentSuccessor, appendOccurrenceEquiv, Equiv.ofBijective_apply,
         appendOccurrence, Sum.map_inr, val_finRotate,
         List.getElem_append_right (Nat.le_add_right F.length o.1.val), Nat.add_sub_cancel_left]
-      change (if o.2.val + 1 = H[o.1.val].2.length then 0 else o.2.val + 1) =
+      change (if o.2.val + 1 = H[o.1.val].scope.length then 0 else o.2.val + 1) =
         (finRotate _ o.2).val
       rw [val_finRotate]
 

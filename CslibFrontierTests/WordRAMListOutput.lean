@@ -40,14 +40,43 @@ example : Program.parkHalts ([.op (.const 0 3), .halt 1] : Program .standard 2) 
 /-- Return address `0`, where the input array is stored. -/
 def idProgram : Program .standard 1 := [.halt 0]
 
-theorem idProgram_executesList (w : ℕ) (l : List ℕ) : ExecutesList w idProgram (.init l) l 1 :=
-  ⟨_, 0, 0, .refl _, rfl, outputList_init l, rfl⟩
+theorem idProgram_executesList (w : ℕ) (l : List ℕ) (hl : Fits w l.length) :
+    ExecutesList w idProgram (.init l) l 1 :=
+  ⟨_, 0, 0, .refl _, rfl, outputList_init l, by simpa using hl, rfl⟩
+
+/-- An empty output needs only its header, so it is valid even at width zero. -/
+example : ExecutesList 0 idProgram (.init []) [] 1 :=
+  idProgram_executesList 0 [] (fits_zero 0)
+
+/-- A one-word output may occupy the final valid cell of a one-bit address space. -/
+example : ExecutesList 1 idProgram (.init [0]) [0] 1 :=
+  idProgram_executesList 1 [0] (by decide)
+
+/-- Return the final valid address, whose header would put the output cell out of range. -/
+def boundaryProgram : Program .standard 1 := [.op (.const 0 1), .halt 0]
+
+theorem boundaryProgram_executes : Executes 1 boundaryProgram (.init [1]) 1 2 := by
+  let t : State 1 := ⟨1, (Data.init [1]).set 0 1⟩
+  refine ⟨t, 1, .single ?_, ?_, rfl⟩
+  · apply step_op rfl
+    exact Data.put_of_fits (by decide)
+  · exact step_halt (i := (0 : Fin 1)) rfl
+
+/-- Although the total memory function supplies a zero beyond the address space, it cannot be
+returned as a native output cell. The initialized input itself fits. -/
+example (n : ℕ) : ¬ExecutesList 1 boundaryProgram (.init [1]) [0] n := by
+  rintro ⟨t, m, v, hr, hh, _, hfit, hn⟩
+  have hv := (Executes.unique (⟨t, m, hr, hh, hn⟩ :
+    Executes 1 boundaryProgram (.init [1]) v n) boundaryProgram_executes).1
+  simp [hv, Fits] at hfit
+
+example : InputFits 1 [1] := by decide
 
 /-- A parked run of the identity reaches the self-loop and keeps the input array. -/
-example (w : ℕ) (l : List ℕ) :
+example (w : ℕ) (l : List ℕ) (hl : Fits w l.length) :
     ∃ (i : Fin 1) (x : Data 1), Runs w idProgram.parkHalts (.init l) ⟨1 + i, x⟩ 5 ∧
       outputList x.mem (x.regs i) = l :=
-  (idProgram_executesList w l).runs_parkHalts (by omega)
+  (idProgram_executesList w l hl).runs_parkHalts (by lia)
 
 /-- The identity on framed lists of binary words is polynomial-time, through the headline
 theorem. -/
@@ -56,9 +85,18 @@ example : Turing.MultiTapeTM.ComputableInPolyTime (fun l : List ℕ => l) (encLi
   UniformComputableListInPolyTime.turingComputableInPolyTime checkedOp_polyTime
     (size := List.length)
     ⟨fun _ => 1, .const 1, 1, one_pos, 1, idProgram,
-      fun l w _ _ => ⟨1, idProgram_executesList w l, le_rfl⟩⟩
+      (fun l w _ hi => ⟨1, idProgram_executesList w l hi.1, le_rfl⟩),
+      inputAdmissible_of_widthIndependent id (fun l => logWidth 1 l.length)⟩
     (PolyBounded.self.mono fun l => length_le_length_encList encNat l) (.id' (encIn := _))
     (PolyBounded.self.mono fun l => length_le_length_encList encNat l)
+
+/-- A width-dependent encoding whose sole word never fits cannot certify list computation. -/
+example : ¬UniformComputableListInPolyTime .standard (fun _ : Unit => [])
+    (fun w _ => [2 ^ w]) (fun _ => 0) := by
+  rintro ⟨_, _, _, _, _, _, _, hadmit⟩
+  obtain ⟨w, _, hfit⟩ := hadmit ()
+  have hword := hfit.2 (2 ^ w) (by simp)
+  exact (Nat.lt_irrefl (2 ^ w)) hword
 
 /-! ## Copying to a fresh block -/
 
@@ -79,7 +117,7 @@ def copyProgram : Program .standard 7 := copyCode.program addr
 whenever `2 n + 2` fits a word. -/
 theorem copyCode_exec {w : ℕ} (l : List ℕ) (hw : 2 * l.length + 2 < 2 ^ w) :
     ∃ y, ExecWithin w copyCode (Data.init l) y (7 * l.length + 12) ∧
-      outputList y.mem (y.regs addr) = l := by
+      outputList y.mem (y.regs addr) = l ∧ Fits w (y.regs addr + l.length) := by
   let x : Data 7 := Data.init l
   have h1 : Fits w 1 := fits_iff.mpr (by omega)
   have hn1 : Fits w (1 + l.length) := fits_iff.mpr (by omega)
@@ -102,7 +140,9 @@ theorem copyCode_exec {w : ℕ} (l : List ℕ) (hw : 2 * l.length + 2 < 2 ^ w) :
     ram_eval [z, hys, hyl, hus, hul, hn1]
   refine ⟨z, (hi.seq (hy.seq ht)).mono (by rw [hul]; omega), ?_⟩
   have hza : z.regs addr = 1 + l.length := by simp [z]
-  rw [hza, outputList_eq_iff]
+  rw [hza]
+  refine ⟨?_, fits_iff.mpr (by lia)⟩
+  rw [outputList_eq_iff]
   refine ⟨by simp [z], fun i => ?_⟩
   have hi' : i.val < l.length := i.isLt
   change z.mem (1 + l.length + 1 + i.val) = l[i.val]

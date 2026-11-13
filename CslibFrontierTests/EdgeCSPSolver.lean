@@ -30,29 +30,29 @@ example : Turing.MultiTapeTM.ComputableInPolyTime checkModel
 
 example : Program.decideSAT [] = true := by decide
 example : Program.optimize [] = some [] := by decide
-example : Program.decideSAT [(⟨0, [[]]⟩, [])] = true := by decide
-example : Program.decideSAT [(⟨0, [[], []]⟩, [])] = true := by decide
-example : Program.decideSAT [(⟨0, []⟩, [])] = false := by decide
-example : Program.decideSAT [(⟨0, [[true]]⟩, [])] = false := by decide
-example : Program.decideSAT [(⟨2 ^ 250, [[]]⟩, [])] = false := by decide +kernel
+example : Program.decideSAT [⟨⟨0, [[]]⟩, []⟩] = true := by decide
+example : Program.decideSAT [⟨⟨0, [[], []]⟩, []⟩] = true := by decide
+example : Program.decideSAT [⟨⟨0, []⟩, []⟩] = false := by decide
+example : Program.decideSAT [⟨⟨0, [[true]]⟩, []⟩] = false := by decide
+example : Program.decideSAT [⟨⟨2 ^ 250, [[]]⟩, []⟩] = false := by decide +kernel
 
 -- Two odd singleton relations disagree on their common edge: an unavoidable odd defect.
-example : Program.decideSAT [(unit false, [0]), (unit true, [0])] = false := by decide
-example : Program.decideSAT [(unit true, [0]), (unit true, [0])] = true := by decide
+example : Program.decideSAT [⟨unit false, [0]⟩, ⟨unit true, [0]⟩] = false := by decide
+example : Program.decideSAT [⟨unit true, [0]⟩, ⟨unit true, [0]⟩] = true := by decide
 
 -- Duplicate constraints and duplicate rows retain their positional semantics.
-example : Program.decideSAT [(⟨2, [[false, false], [false, false], [true, true]]⟩, [0, 1]),
-    (equality, [0, 1])] = true := by decide
-example : Program.decideSAT [(equality, [0, 0])] = false := by decide
-example : Program.decideSAT [(unit false, [0])] = false := by decide
-example : Program.decideSAT [(⟨1, [[false], [true]]⟩, [0]),
-    (unit false, [0])] = false := by decide
-example : checkConstraint (⟨4, [[false, false, false, false], [true, true, true, true]]⟩,
-    [0, 1, 2, 3]) = false := by decide
+example : Program.decideSAT [⟨⟨2, [[false, false], [false, false], [true, true]]⟩, [0, 1]⟩,
+    ⟨equality, [0, 1]⟩] = true := by decide
+example : Program.decideSAT [⟨equality, [0, 0]⟩] = false := by decide
+example : Program.decideSAT [⟨unit false, [0]⟩] = false := by decide
+example : Program.decideSAT [⟨⟨1, [[false], [true]]⟩, [0]⟩,
+    ⟨unit false, [0]⟩] = false := by decide
+example : checkConstraint ⟨⟨4, [[false, false, false, false], [true, true, true, true]]⟩,
+    [0, 1, 2, 3]⟩ = false := by decide
 
 private def multiple : CSP Table ℕ :=
-  [(equality, [0, 1]), (equalityTrueFirst, [0, 1]),
-    (equality, [2, 3]), (equalityTrueFirst, [2, 3])]
+  [⟨equality, [0, 1]⟩, ⟨equalityTrueFirst, [0, 1]⟩,
+    ⟨equality, [2, 3]⟩, ⟨equalityTrueFirst, [2, 3]⟩]
 
 -- The first improvement leaves two defects; the second removes them. Both are run by
 -- the original optimization loop, without recursively optimizing any contracted child.
@@ -67,7 +67,7 @@ private abbrev a : ℕ := 2 ^ 100
 private abbrev b : ℕ := 2 ^ 200
 private abbrev c : ℕ := 2 ^ 250
 private def star : CSP Table ℕ :=
-  [(starTable, [a, b, c]), (equality, [b, c]), (unit true, [a])]
+  [⟨starTable, [a, b, c]⟩, ⟨equality, [b, c]⟩, ⟨unit true, [a]⟩]
 
 private def descend (input : EdgeForest.Input) : Option (Program.Frame × EdgeForest.Input) := do
   let .inr (.inr event) ← EdgeForest.run input | none
@@ -86,8 +86,8 @@ example : Program.improve ⟨star, [false, false, false, false, false, true]⟩ 
 example : Program.decideSAT star = false := by decide +kernel
 
 private def outside : CSP Table ℕ :=
-  [(starTable, [a, b, c]), (equality, [b, c]),
-    (equality, [a, 2 ^ 120]), (unit false, [2 ^ 120])]
+  [⟨starTable, [a, b, c]⟩, ⟨equality, [b, c]⟩,
+    ⟨equality, [a, 2 ^ 120]⟩, ⟨unit false, [2 ^ 120]⟩]
 
 -- A child comparison changes the surviving outside equality row. The lift executes the
 -- native comparison-to-augmentation run and then the actual nonempty-prefix blossom lift.
@@ -109,13 +109,13 @@ example : Program.improve
 example : Program.improve ⟨multiple, [false]⟩ = none := by decide
 
 private def triangle : CSP Table ℕ :=
-  [(inequality, [0, 1]), (equality, [1, 2]), (equality, [2, 0])]
+  [⟨inequality, [0, 1]⟩, ⟨equality, [1, 2]⟩, ⟨equality, [2, 0]⟩]
 example : Program.decideSAT triangle = false := by decide +kernel
 
 private def repeated : CSP Table ℕ :=
-  [(⟨4, [[false, false, false, false], [true, true, false, false],
-      [false, false, true, true], [true, true, true, true]]⟩, [0, 1, 2, 3]),
-    (equality, [1, 2]), (inequality, [3, 0])]
+  [⟨⟨4, [[false, false, false, false], [true, true, false, false],
+      [false, false, true, true], [true, true, true, true]]⟩, [0, 1, 2, 3]⟩,
+    ⟨equality, [1, 2]⟩, ⟨inequality, [3, 0]⟩]
 
 example : ((descend
     ⟨repeated, [false, false, false, false, false, false, false, true]⟩).map fun (frame, _) =>
@@ -148,7 +148,7 @@ example : Program.safeImprove ⟨multiple, [false]⟩ = none := by decide
 example : Program.safeImprove
     ⟨multiple, [false, true, false, false, false, false, false, false]⟩ = none := by decide
 example : Program.safeImprove ⟨multiple, List.replicate 8 false⟩ = none := by decide +kernel
-example : Program.safeImprove ⟨[(⟨2 ^ 250, [[]]⟩, [])], []⟩ = none := by decide +kernel
+example : Program.safeImprove ⟨[⟨⟨2 ^ 250, [[]]⟩, []⟩], []⟩ = none := by decide +kernel
 example : Program.safeImprove ⟨[], []⟩ = none := by decide
 
 -- Complete ordinary native certificates have no input-validity runtime premise.
