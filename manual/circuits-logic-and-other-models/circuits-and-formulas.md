@@ -122,6 +122,34 @@ Oracle circuits can make adaptive choices. [Oracle/Selection.lean](../../CslibFr
 
 Chen, Hirahara, Oliveira, Pich, Rajgopal and Santhanam measure the oracle gates of a device by their quantity (how many there are), their locality (the largest fan-in of an oracle gate) and their adaptivity (the most oracle gates on a path) [chenhiraharaoliveirapichrajgopalsanthanam2020][chenhiraharaoliveirapichrajgopalsanthanam2020]. Their class `[q, ℓ, a]–C[S]` (Definition 11, p. 13) is [OracleModel.LocalClass](../../CslibFrontier/Computability/Circuit/Boolean/Oracle/LocalClass.lean), stated once for any `OracleModel`, a family of devices with a size and the three measures, and for promise problems. A single oracle language serves every input length. `LocalClass.mono` and `LocalClass.anti` are the monotonicity lemmas. `LocalClass.of_two_pow` handles promise problems on truth tables, whose instances have power-of-two length, so a *separating* device is needed only at the lengths `2 ^ n`; any device within the bounds serves elsewhere. Oracle formulas are `formulaModel`, with `LocalFormulaClass` its class. Oracle circuits are `circuitModel` in [Oracle/LocalCircuit.lean](../../CslibFrontier/Computability/Circuit/Boolean/Oracle/LocalCircuit.lean), with `LocalCircuitClass` its class. For circuits, size is `Circuit.size` (every gate, including NOT and constant gates) and quantity is the cost under `OracleOp.queryWeight`. Locality is `Circuit.QueryArityAtMost`, which bounds only the fan-in of oracle gates; `FanInAtMost` implies it (`QueryArityAtMost.of_fanInAtMost`). Adaptivity is `depthWith OracleOp.queryWeight`. It also counts paths that start at constants, so it can only overstate the source's adaptivity, and a bound on it is a bound in the source's sense. A circuit with no inputs needs a gate for its output, so `LocalCircuitClass.of_two_pow` assumes `1 ≤ S 0`. Formula size counts input leaves only, which lets the formula classes be larger than the source's at a fixed `S`. The [checked client](../../CslibFrontierTests/OracleLocalClass.lean) evaluates the circuit measures on single gates and puts every language in `[1, m, 1]–Circuit[1]` with one oracle gate. It also checks that `LocalFormulaClass` unfolds to its explicit statement. Of their circuit bullets of Proposition 63 (p. 52), the Gap-MCSP `[OPS19]` bullet is `localCircuitClass_gapMCSP` in [Magnification/AntiChecker.lean](../../CslibFrontier/Computability/MCSP/Magnification/AntiChecker.lean) (see [anti-checkers](metacomplexity-and-methods.md#anti-checkers)), and the MCSP `[MMW19]` bullet is `localCircuitClass_MCSP` in [MergeTree/Locality.lean](../../CslibFrontier/Computability/MCSP/Magnification/MergeTree/Locality.lean).
 
+## Exact advice length and one-bit undecidability
+
+Import [Classes.Advice](../../CslibFrontier/Computability/Complexity/Classes/Advice.lean) for
+`PWithAdvice length`. It uses arbitrary advice strings of exactly `length n` bits, depending
+only on input length `n`. The native polynomial-time decider reads `encPair encBits encBits`
+with framed advice first, and its time is polynomial in the complete advice/input pair length.
+The advice family need not be computable. `PWithAdvice_zero_eq_P` recovers P with no advice;
+`P_subset_PWithAdvice length` permits a P decider to ignore advice of any specified length.
+
+[Advice.OneBit](../../CslibFrontier/Computability/Complexity/Classes/Advice/OneBit.lean) proves
+`length_preimage_mem_PWithAdvice_one A` for every set of lengths `A`: the advice bit says
+whether the current length is in `A`. `exists_mem_PWithAdvice_one_not_isDecidable` supplies
+such a language with no native deterministic machine decider, retaining the equal-length
+membership property. This is a nonconstructive existence result; computing the advice would
+contradict undecidability. These are the zero/one-bit endpoints of Goldreich's January 2007
+draft Theorem 3.7, not its subsequent arbitrary advice-hierarchy discussion.
+
+For circuits, import [Boolean.Advice](../../CslibFrontier/Computability/Circuit/Boolean/Advice.lean).
+`mem_PAdvice_iff_exists_mem_PWithAdvice` identifies polynomial advice with the union of
+exact polynomially bounded advice-length classes. `PWithAdvice_subset_PAdvice hlength` and
+`PWithAdvice_subset_PPoly hlength` use an explicit
+`PolynomiallyBounded length` hypothesis to connect the exact-length class to the existing
+polynomial-advice/circuit APIs. Run `scripts/build.sh CslibFrontierTests.OneBitAdvice` for
+[complete clients](../../CslibFrontierTests/OneBitAdvice.lean) assembling one-bit advice,
+polynomial-size circuits, undecidability and length dependence, and checking empty/odd inputs
+to the even-length language. Strict P/1 versus P/poly and the arbitrary advice hierarchy
+remain separate obligations.
+
 ## Nonuniform classes and branching programs
 
 [PolylogDepth](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Boolean/DepthClasses.lean#L51) defines polynomial-size families with depth bounded by `c(floor(log2 n)+1)^i`. The De Morgan, unbounded, majority and modular bases give NC, AC, TC and ACMod hierarchies. Exponent zero gives constant-depth classes. The families are nonuniform: one circuit may be chosen independently at every length. `ACC0` is the union over fixed moduli at least two, and the library proves its Boolean closure and inclusion in TC0. See [ACC0](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Boolean/ACC0/Basic.lean) and [TC0](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Boolean/TC0.lean).

@@ -6,6 +6,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
+import CslibFrontier.Computability.Complexity.Classes.Advice.OneBit
 import CslibFrontier.Algorithms.Lean.Arborescence.PolyTime
 import CslibFrontier.Algorithms.Lean.DFS.SCC
 import CslibFrontier.Algorithms.Lean.MaxDicut.GoemansWilliamson
@@ -658,6 +659,23 @@ register_result "formal-complexity-measure-quarter-density" where
     at least one quarter of all truth tables have measure at least c/4. \
     Natural-number cardinalities with denominators cleared; no computational claim. \
     Theorem 22.3's stronger near-total-density endpoint is not included."
+
+register_result "one-bit-advice-undecidable" where
+  title := "One bit of advice decides a length-dependent undecidable bit language"
+  topic := "complexity theory"
+  sources := [
+    { paper := Goldreich2007DraftR2, theorem := "Theorem 3.7 (one-bit undecidability endpoint)",
+      locator := "January 2007 draft r2.pdf, PDF p. 6; printed p. 122" }
+  ]
+  theorems := [
+    Cslib.Complexity.length_preimage_mem_PWithAdvice_one,
+    Cslib.Complexity.exists_mem_PWithAdvice_one_not_isDecidable
+  ]
+  scope := "Native polynomial-time decider on framed advice/input pairs, with exactly one \
+    arbitrary advice bit per input length. Some accepted bit language has no native machine \
+    decider and has the same membership for all words of equal length. Advice need not be \
+    computable; no efficient construction of the undecidable advice family is claimed. \
+    Arbitrary advice hierarchies and strict P/1 versus P/poly remain separate."
 
 register_result "formula-bounds" where
   title := "Formula lower bounds: Khrapchenko's quadratic bound for parity"
