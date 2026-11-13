@@ -11,6 +11,42 @@ digests are listed in #4772. Numbers and pages belong to those drafts, not the 2
 The results registry remains [Entries.lean](../CslibFrontierResults/Entries.lean). A nearby theorem is
 not counted as full coverage.
 
+## Theory exercise 4.3: sublinear time
+
+Source: January 2007 `r2.pdf`, PDF35/printed151, SHA-256
+`40c735ae7a67331b4b008e09b21bc7b65103937c05a148fac222e5b72d253704`.
+The complete Chapter 4 theory-exercise pass and remaining endpoints are recorded in
+[#4772](https://github.com/cslib-community/cslib-frontier/issues/4772#issuecomment-6841285129).
+This bounded formalization is tracked by [#4906](https://github.com/cslib-community/cslib-frontier/issues/4906);
+it does not complete that inventory or the book-wide objective.
+
+**Covered in the native sequential-input model.**
+[MultiTape/Complexity/Sublinear](../CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/Sublinear.lean)
+proves `exists_uniform_time_of_isLittleO`: a fixed deterministic machine halting on every
+word within a uniform clock $p(n)=o(n)$ has a global constant halt bound. Neither computability
+nor monotonicity of `p`, nor finiteness of the alphabet or control, is needed for this run theorem.
+`exists_uniform_time_of_fast_length` is stronger: one width with $p(N)\le N$ suffices under
+the uniform total clock on every word, including all shorter inputs.
+
+The source's input-length caveat is explicit. Native control reads only tape symbols;
+length is not supplied as another argument. The
+[input-prefix theorem](../CslibFrontier/Computability/Machines/Turing/MultiTape/InputPrefix.lean)
+compares natural-valued head positions across different input-dependent configurations,
+including both boundaries, and preserves state, heads, work tapes and output through the
+prefix's length. A finite supremum over shorter lengths gives the constant.
+
+`ComputableInTimeAndSpace.exists_const_time_of_isLittleO` preserves the computed function,
+output encoding and original independent workspace bound for input encoding `encBits`.
+[Time/Sublinear](../CslibFrontier/Computability/Complexity/Classes/Time/Sublinear.lean) derives
+`DTIME_eq_const_of_isLittleO`, including affine clock constants. Arbitrary encodings may have
+invalid prefixes, so no encoding-general extension is asserted. Models with free input
+length or random input access are outside this claim.
+
+The [checked clients](../CslibFrontierTests/SublinearTime.lean) exhibit input-sensitive constant
+time, the inclusive prefix boundary, the necessary extension restriction and the zero-bound
+class. The source's philosophical quantification over reasonable models is represented by
+this precise native model, not by a theorem over all computational models.
+
 ## Chapter 5: Space Complexity
 
 Snapshot: `e39c34b3413b2cd7e08053a14ff8bb36ded4c8dc` (`origin/main`, 2026-11-12),
@@ -232,7 +268,7 @@ runtime theorem in 9.19. Conversely, that remaining bridge does not invalidate t
 proved class-level PCP theorem.
 
 For zero knowledge, use the nonuniform OWF endpoint, not just
-`OneWay.exists_zeroKnowledgeProof_of_npRelation`: the latter's generable-family guarantee
+`OneWay.exists_zkProof_of_npRelation`: the latter's generable-family guarantee
 is narrower. The full endpoint has a separate security parameter and polynomially bounded
 families; the instance/auxiliary-input clock bridges are part of its interpretation.
 Neither a witness-preserving honest prover nor soundness against arbitrary provers constitutes

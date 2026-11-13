@@ -50,16 +50,16 @@ using that any uniform `c`-approximate algorithm must achieve ratio `c` at `k = 
 Given `E = xs.toFinset`, consider the capped modular family
 `cappedModular E w cap S = min (∑ x ∈ S ∩ E, w x) cap`:
 * Baseline `baseAdv E`: weight `100` on every `x ∈ E`, cap `159`.
-* High perturbation `highAdv E e`: weight `159` on `e`, `100` on `E \ {e}`, cap `159`.
-* Low perturbation `lowAdv E e`: weight `59` on `e`, `100` on `E \ {e}`, cap `159`.
+* High perturbation `h_e`: weight `159` on `e`, `100` on `E \ {e}`, cap `159`.
+* Low perturbation `l_e`: weight `59` on `e`, `100` on `E \ {e}`, cap `159`.
 
 Every member is nonnegative, monotone, and submodular (`IsSubmodular.min_const` applied to
 `isSubmodular_modularSum`). Whenever `S ∩ E ≠ {e}`, either `e ∉ S ∩ E` (weights on `S ∩ E` are all
 `100`) or `|S ∩ E| ≥ 2` (the sum on `S ∩ E` is at least `59 + 100 = 159`, saturating the cap), so
-`baseAdv E S = highAdv E e S = lowAdv E e S` even if the algorithm queries sets `S` containing
-elements outside `E`. Thus if `alg xs 1` fails to query any `S` with `S ∩ E = {e}`, it returns the
-same output `out` under all three oracles: if `e ∉ out`, `highAdv E e` refutes `c`-approximation
-(`100 < 159 * c`), while if `e ∈ out` (`out = {e}`), `lowAdv E e` refutes `c`-approximation against
+`baseAdv E S = h_e S = l_e S` even if the algorithm queries sets `S` containing elements outside
+`E`. Thus if `alg xs 1` fails to query any `S` with `S ∩ E = {e}`, it returns the same output `out`
+under all three oracles: if `e ∉ out`, `h_e` refutes `c`-approximation (`100 < 159 * c`), while if
+`e ∈ out` (`out = {e}`), `l_e` refutes `c`-approximation against
 any `x ∈ E \ {e}` (`59 < 100 * c`). Injectivity of `e ↦ {e}` inside `(queriedSets ...).image
 (· ∩ E)` then yields `E.card ≤ countQueries`.
 
@@ -168,18 +168,9 @@ theorem isSubmodular_cappedModular {E : Finset α} {w : α → ℝ}
 def halfBaseAdv (E : Finset α) : Finset α → ℝ :=
   cappedModular E (fun _ => 1) 2
 
-private def halfHighAdv (E : Finset α) (e : α) : Finset α → ℝ :=
-  cappedModular E (fun x => if x = e then 2 else 1) 2
-
 /-- Baseline `(59, 100, 159)` capped-modular instance for the `c > 100 / 159` bound. -/
 def baseAdv (E : Finset α) : Finset α → ℝ :=
   cappedModular E (fun _ => 100) 159
-
-private def highAdv (E : Finset α) (e : α) : Finset α → ℝ :=
-  cappedModular E (fun x => if x = e then 159 else 100) 159
-
-private def lowAdv (E : Finset α) (e : α) : Finset α → ℝ :=
-  cappedModular E (fun x => if x = e then 59 else 100) 159
 
 /-- Two capped-modular functions whose weights differ only at `e` agree on every `S` whose
 intersection with `E` is not `{e}`, once any two elements of `E` including `e` reach the cap under
@@ -199,23 +190,78 @@ private theorem cappedModular_eq_of_inter_ne {E S : Finset α} {e : α} {w w' : 
   · congr 1
     exact Finset.sum_congr rfl fun x hx => hwe x fun h => he (h ▸ hx)
 
-private theorem halfBaseAdv_eq_halfHighAdv_of_inter_ne {E S : Finset α} {e : α}
-    (hne : S ∩ E ≠ {e}) :
-    halfBaseAdv E S = halfHighAdv E e S :=
-  cappedModular_eq_of_inter_ne hne (fun _ => by norm_num) (fun x => by split_ifs <;> norm_num)
-    (fun x hx => by simp [hx]) (fun _ _ => by norm_num) (fun y hy => by simp [hy])
+/-- A capped-modular function on a singleton of `E` is the capped weight. -/
+private theorem cappedModular_singleton {E : Finset α} {w : α → ℝ} {cap : ℝ} {e : α}
+    (he : e ∈ E) : cappedModular E w cap {e} = min (w e) cap := by
+  rw [cappedModular_eq_min_sum_inter,
+    Finset.inter_eq_left.mpr (Finset.singleton_subset_iff.mpr he), Finset.sum_singleton]
 
-private theorem baseAdv_eq_highAdv_of_inter_ne {E S : Finset α} {e : α}
-    (hne : S ∩ E ≠ {e}) :
-    baseAdv E S = highAdv E e S :=
-  cappedModular_eq_of_inter_ne hne (fun _ => by norm_num) (fun x => by split_ifs <;> norm_num)
-    (fun x hx => by simp [hx]) (fun _ _ => by norm_num) (fun y hy => by simp [hy])
+/-- A set of at most one element of `E`, avoiding `e`, has value at most the weight `b` of the
+elements other than `e`. -/
+private theorem cappedModular_ite_le {E out : Finset α} {e : α} {a b cap : ℝ} (hb : 0 ≤ b)
+    (hout : out ⊆ E) (he : e ∉ out) (hcard : out.card ≤ 1) :
+    cappedModular E (fun x => if x = e then a else b) cap out ≤ b := by
+  have hsum : (∑ x ∈ out, if x = e then a else b) = ∑ _x ∈ out, b :=
+    Finset.sum_congr rfl fun x hx => by simp [show x ≠ e from fun h => he (h ▸ hx)]
+  rw [cappedModular_eq_min_sum_inter, Finset.inter_eq_left.mpr hout, hsum, Finset.sum_const,
+    nsmul_eq_mul]
+  have hcard_r : (out.card : ℝ) ≤ 1 := by exact_mod_cast hcard
+  exact (min_le_left _ _).trans (by nlinarith)
 
-private theorem baseAdv_eq_lowAdv_of_inter_ne {E S : Finset α} {e : α}
-    (hne : S ∩ E ≠ {e}) :
-    baseAdv E S = lowAdv E e S :=
-  cappedModular_eq_of_inter_ne hne (fun _ => by norm_num) (fun x => by split_ifs <;> norm_num)
-    (fun x hx => by simp [hx]) (fun _ _ => by norm_num) (fun y hy => by norm_num [hy])
+/-- If a run of `alg xs 1` against the uniform capped-modular objective with weight `b` never
+isolates `e` (no queried `S` has `S ∩ E = {e}`), then its output is `c`-approximate for the
+adversary that reweights `e` to `a`, provided any two elements including `e` reach the cap. -/
+private theorem IsSubmodularCardMaxAlg.approx_reweight_of_not_isolated
+    {alg : List α → ℕ → FreeM (ValueQuery α ℝ) (Finset α)} {c : ℝ}
+    (halg : IsSubmodularCardMaxAlg alg c) {xs : List α} {e : α} {a b cap : ℝ}
+    {f : Finset α → ℝ} (hf : f = cappedModular xs.toFinset (fun _ => b) cap)
+    (ha : 0 ≤ a) (hb : 0 ≤ b) (hcap : 0 ≤ cap) (hab : cap ≤ a + b) (hbb : cap ≤ b + b)
+    (hno : ∀ S ∈ ValueQuery.queriedSets (ValueQuery.oracleOf f) (alg xs 1),
+      S ∩ xs.toFinset ≠ {e})
+    {OPT : Finset α} (hOPT : OPT ⊆ xs.toFinset) (hOPT_card : OPT.card ≤ 1) :
+    c * cappedModular xs.toFinset (fun x => if x = e then a else b) cap OPT ≤
+      cappedModular xs.toFinset (fun x => if x = e then a else b) cap
+        ((alg xs 1).eval (ValueQuery.oracleOf f)) := by
+  subst hf
+  have hw : ∀ x, 0 ≤ if x = e then a else b := fun x => by split_ifs <;> assumption
+  rw [ValueQuery.eval_eq_of_agree_on_queriedSets
+    (o₂ := ValueQuery.oracleOf (cappedModular xs.toFinset (fun x => if x = e then a else b) cap))
+    (alg xs 1) fun S hS =>
+    cappedModular_eq_of_inter_ne (hno S hS) (fun _ => hb) hw (fun x hx => by simp [hx])
+      (fun _ _ => hbb) (fun y hy => by simpa [hy] using hab)]
+  exact halg.approx _ (isSubmodular_cappedModular (fun x _ => hw x) cap)
+    (monotone_cappedModular (fun x _ => hw x) cap) (cappedModular_empty hcap) xs 1 OPT hOPT
+    hOPT_card
+
+/-- At budget `1`, the output of `alg` against a capped-modular objective is at most one element
+of the ground set. -/
+private theorem IsSubmodularCardMaxAlg.eval_cappedModular
+    {alg : List α → ℕ → FreeM (ValueQuery α ℝ) (Finset α)} {c : ℝ}
+    (halg : IsSubmodularCardMaxAlg alg c) (xs : List α) {w : α → ℝ} {cap : ℝ}
+    (hw : ∀ x ∈ xs.toFinset, 0 ≤ w x) (hcap : 0 ≤ cap) :
+    (alg xs 1).eval (ValueQuery.oracleOf (cappedModular xs.toFinset w cap)) ⊆ xs.toFinset ∧
+      ((alg xs 1).eval (ValueQuery.oracleOf (cappedModular xs.toFinset w cap))).card ≤ 1 :=
+  ⟨halg.subset_toFinset _ (isSubmodular_cappedModular hw cap) (monotone_cappedModular hw cap)
+      (cappedModular_empty hcap) xs 1,
+    halg.card_le _ (isSubmodular_cappedModular hw cap) (monotone_cappedModular hw cap)
+      (cappedModular_empty hcap) xs 1⟩
+
+/-- If every `e ∈ A` is isolated within `E` by a set that `p` queries, then `p` makes at least
+`A.card` queries. -/
+private theorem card_le_countQueries_of_isolated {γ : Type}
+    (o : {ι : Type} → ValueQuery α ℝ ι → ι) (p : FreeM (ValueQuery α ℝ) γ) {A E : Finset α}
+    (h : ∀ e ∈ A, ∃ S ∈ ValueQuery.queriedSets o p, S ∩ E = {e}) :
+    A.card ≤ p.countQueries o :=
+  calc
+    A.card = (A.image fun e => ({e} : Finset α)).card :=
+        (Finset.card_image_of_injective A fun _ _ h => Finset.singleton_injective h).symm
+    _ ≤ ((ValueQuery.queriedSets o p).image fun S => S ∩ E).card :=
+        Finset.card_le_card fun T hT => by
+          obtain ⟨e, he, rfl⟩ := Finset.mem_image.mp hT
+          obtain ⟨S, hS, hSE⟩ := h e he
+          exact Finset.mem_image.mpr ⟨S, hS, hSE⟩
+    _ ≤ (ValueQuery.queriedSets o p).card := Finset.card_image_le
+    _ ≤ p.countQueries o := ValueQuery.card_queriedSets_le_countQueries o p
 
 /-! ## Lower-bound theorems -/
 
@@ -227,71 +273,24 @@ theorem IsSubmodularCardMaxAlg.card_toFinset_sub_one_le_countQueries
     xs.toFinset.card - 1 ≤
       (alg xs 1).countQueries (ValueQuery.oracleOf (halfBaseAdv xs.toFinset)) := by
   set E := xs.toFinset
-  let o₀ : {ι : Type} → ValueQuery α ℝ ι → ι := ValueQuery.oracleOf (halfBaseAdv E)
-  set Q := ValueQuery.queriedSets o₀ (alg xs 1)
-  have hf₀_sub : IsSubmodular (halfBaseAdv E) :=
-    isSubmodular_cappedModular (fun _ _ => by norm_num) 2
-  have hf₀_mono : Monotone (halfBaseAdv E) :=
-    monotone_cappedModular (fun _ _ => by norm_num) 2
-  have hf₀_empty : halfBaseAdv E ∅ = 0 :=
-    cappedModular_empty (by norm_num)
-  set out := (alg xs 1).eval o₀
-  have hout_sub : out ⊆ E := halg.subset_toFinset _ hf₀_sub hf₀_mono hf₀_empty xs 1
-  have hout_card : out.card ≤ 1 := halg.card_le _ hf₀_sub hf₀_mono hf₀_empty xs 1
-  have hmust_query : ∀ e ∈ E \ out, ∃ S ∈ Q, S ∩ E = {e} := by
-    intro e he_diff
-    rcases Finset.mem_sdiff.mp he_diff with ⟨heE, he_out⟩
-    by_contra hno
-    push Not at hno
-    have hfe_sub : IsSubmodular (halfHighAdv E e) :=
-      isSubmodular_cappedModular (fun x _ => by split_ifs <;> norm_num) 2
-    have hfe_mono : Monotone (halfHighAdv E e) :=
-      monotone_cappedModular (fun x _ => by split_ifs <;> norm_num) 2
-    have hfe_empty : halfHighAdv E e ∅ = 0 :=
-      cappedModular_empty (by norm_num)
-    have hagree : ∀ S ∈ Q, o₀ (.value S) = ValueQuery.oracleOf (halfHighAdv E e) (.value S) :=
-      fun S hS => halfBaseAdv_eq_halfHighAdv_of_inter_ne (hno S hS)
-    have hout_eq : (alg xs 1).eval (ValueQuery.oracleOf (halfHighAdv E e)) = out :=
-      (ValueQuery.eval_eq_of_agree_on_queriedSets (alg xs 1) hagree).symm
-    have happrox := halg.approx (halfHighAdv E e) hfe_sub hfe_mono hfe_empty xs 1 {e}
-      (Finset.singleton_subset_iff.mpr heE) (by simp)
-    rw [hout_eq] at happrox
-    have hopt_val : halfHighAdv E e {e} = 2 := by
-      have hinter : ({e} : Finset α) ∩ E = {e} :=
-        Finset.inter_eq_left.mpr (Finset.singleton_subset_iff.mpr heE)
-      rw [halfHighAdv, cappedModular_eq_min_sum_inter, hinter]
-      norm_num
-    have hout_le : halfHighAdv E e out ≤ 1 := by
-      rw [halfHighAdv, cappedModular_eq_min_sum_inter]
-      have hinter : out ∩ E = out := Finset.inter_eq_left.mpr hout_sub
-      rw [hinter]
-      have hsum : (∑ x ∈ out, if x = e then (2 : ℝ) else 1) = (out.card : ℝ) := by
-        have hcongr : (∑ x ∈ out, if x = e then (2 : ℝ) else 1) = ∑ _x ∈ out, (1 : ℝ) := by
-          refine Finset.sum_congr rfl fun x hx => ?_
-          have hxe : x ≠ e := fun h => he_out (h ▸ hx)
-          simp [hxe]
-        rw [hcongr, Finset.sum_const, nsmul_eq_mul, mul_one]
-      have hcard_r : (out.card : ℝ) ≤ 1 := by exact_mod_cast hout_card
-      exact (min_le_left _ _).trans (hsum.le.trans hcard_r)
-    rw [hopt_val] at happrox
-    linarith
-  have himg_sub : (E \ out).image (fun e => ({e} : Finset α)) ⊆ Q.image (fun S => S ∩ E) := by
-    intro T hT
-    rcases Finset.mem_image.mp hT with ⟨e, he, rfl⟩
-    rcases hmust_query e he with ⟨S, hSQ, hSE⟩
-    exact Finset.mem_image.mpr ⟨S, hSQ, hSE⟩
-  have hcard_diff : E.card - 1 ≤ (E \ out).card := by
-    have h1 : E.card - out.card ≤ (E \ out).card := Finset.le_card_sdiff out E
-    omega
-  have hinj : Function.Injective (fun e : α => ({e} : Finset α)) :=
-    fun _ _ h => Finset.singleton_injective h
-  calc
-    E.card - 1 ≤ (E \ out).card := hcard_diff
-    _ = ((E \ out).image (fun e => ({e} : Finset α))).card :=
-        (Finset.card_image_of_injective (E \ out) hinj).symm
-    _ ≤ (Q.image (fun S => S ∩ E)).card := Finset.card_le_card himg_sub
-    _ ≤ Q.card := Finset.card_image_le
-    _ ≤ (alg xs 1).countQueries o₀ := ValueQuery.card_queriedSets_le_countQueries o₀ (alg xs 1)
+  set out := (alg xs 1).eval (ValueQuery.oracleOf (halfBaseAdv E))
+  obtain ⟨hout_sub, hout_card⟩ : out ⊆ E ∧ out.card ≤ 1 :=
+    halg.eval_cappedModular xs (w := fun _ => 1) (fun _ _ => by norm_num)
+      (by norm_num : (0 : ℝ) ≤ 2)
+  refine ((Nat.sub_le_sub_left hout_card _).trans (Finset.le_card_sdiff _ _)).trans
+    (card_le_countQueries_of_isolated (E := E) _ _ fun e he_diff => ?_)
+  obtain ⟨heE, he_out⟩ := Finset.mem_sdiff.mp he_diff
+  by_contra hno
+  push Not at hno
+  -- Otherwise the run cannot tell `halfBaseAdv E` from the adversary favouring `e`.
+  have happrox := halg.approx_reweight_of_not_isolated (f := halfBaseAdv E)
+    (a := 2) (b := 1) (cap := 2) rfl
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) hno
+    (Finset.singleton_subset_iff.mpr heE) (by simp)
+  rw [cappedModular_singleton heE] at happrox
+  have hout_le := cappedModular_ite_le (a := 2) (cap := 2) zero_le_one hout_sub he_out hout_card
+  norm_num at happrox
+  linarith
 
 /-- **Exact `n`-Query Adversarial Lower Bound at `k = 1`**: for any `c > 100 / 159` and any ground
 list `xs` with `2 ≤ xs.toFinset.card`, every deterministic `c`-approximate algorithm at budget
@@ -306,104 +305,42 @@ theorem IsSubmodularCardMaxAlg.card_toFinset_le_countQueries
     xs.toFinset.card ≤
       (alg xs 1).countQueries (ValueQuery.oracleOf (baseAdv xs.toFinset)) := by
   set E := xs.toFinset
-  let o₀ : {ι : Type} → ValueQuery α ℝ ι → ι := ValueQuery.oracleOf (baseAdv E)
-  set Q := ValueQuery.queriedSets o₀ (alg xs 1)
-  have hf₀_sub : IsSubmodular (baseAdv E) :=
-    isSubmodular_cappedModular (fun _ _ => by norm_num) 159
-  have hf₀_mono : Monotone (baseAdv E) :=
-    monotone_cappedModular (fun _ _ => by norm_num) 159
-  have hf₀_empty : baseAdv E ∅ = 0 :=
-    cappedModular_empty (by norm_num)
-  set out := (alg xs 1).eval o₀
-  have hout_sub : out ⊆ E := halg.subset_toFinset _ hf₀_sub hf₀_mono hf₀_empty xs 1
-  have hout_card : out.card ≤ 1 := halg.card_le _ hf₀_sub hf₀_mono hf₀_empty xs 1
-  have hmust_query : ∀ e ∈ E, ∃ S ∈ Q, S ∩ E = {e} := by
-    intro e heE
-    by_contra hno
-    push Not at hno
-    by_cases he_out : e ∈ out
-    · have hout_eq_singleton : out = {e} := by
-        have hsub_single : {e} ⊆ out := Finset.singleton_subset_iff.mpr he_out
-        exact (Finset.eq_of_subset_of_card_le hsub_single (by simpa using hout_card)).symm
-      have hex_other : ∃ y ∈ E, y ≠ e := by
-        have hne : E ≠ {e} := by
-          intro hEq
-          rw [hEq, Finset.card_singleton] at hcard
-          omega
-        exact ((Finset.nontrivial_iff_ne_singleton heE).2 hne).exists_ne e
-      rcases hex_other with ⟨y, hyE, hye⟩
-      have hlow_sub : IsSubmodular (lowAdv E e) :=
-        isSubmodular_cappedModular (fun x _ => by split_ifs <;> norm_num) 159
-      have hlow_mono : Monotone (lowAdv E e) :=
-        monotone_cappedModular (fun x _ => by split_ifs <;> norm_num) 159
-      have hlow_empty : lowAdv E e ∅ = 0 :=
-        cappedModular_empty (by norm_num)
-      have hagree : ∀ S ∈ Q, o₀ (.value S) = ValueQuery.oracleOf (lowAdv E e) (.value S) :=
-        fun S hS => baseAdv_eq_lowAdv_of_inter_ne (hno S hS)
-      have hout_eq : (alg xs 1).eval (ValueQuery.oracleOf (lowAdv E e)) = out :=
-        (ValueQuery.eval_eq_of_agree_on_queriedSets (alg xs 1) hagree).symm
-      have happrox := halg.approx (lowAdv E e) hlow_sub hlow_mono hlow_empty xs 1 {y}
-        (Finset.singleton_subset_iff.mpr hyE) (by simp)
-      rw [hout_eq, hout_eq_singleton] at happrox
-      have hopt_val : lowAdv E e {y} = 100 := by
-        have hinter : ({y} : Finset α) ∩ E = {y} :=
-          Finset.inter_eq_left.mpr (Finset.singleton_subset_iff.mpr hyE)
-        rw [lowAdv, cappedModular_eq_min_sum_inter, hinter]
-        simp only [Finset.sum_singleton, hye, ↓reduceIte]
-        norm_num
-      have hout_val : lowAdv E e {e} = 59 := by
-        have hinter : ({e} : Finset α) ∩ E = {e} :=
-          Finset.inter_eq_left.mpr (Finset.singleton_subset_iff.mpr heE)
-        rw [lowAdv, cappedModular_eq_min_sum_inter, hinter]
-        norm_num
-      rw [hopt_val, hout_val] at happrox
-      linarith
-    · have hhigh_sub : IsSubmodular (highAdv E e) :=
-        isSubmodular_cappedModular (fun x _ => by split_ifs <;> norm_num) 159
-      have hhigh_mono : Monotone (highAdv E e) :=
-        monotone_cappedModular (fun x _ => by split_ifs <;> norm_num) 159
-      have hhigh_empty : highAdv E e ∅ = 0 :=
-        cappedModular_empty (by norm_num)
-      have hagree : ∀ S ∈ Q, o₀ (.value S) = ValueQuery.oracleOf (highAdv E e) (.value S) :=
-        fun S hS => baseAdv_eq_highAdv_of_inter_ne (hno S hS)
-      have hout_eq : (alg xs 1).eval (ValueQuery.oracleOf (highAdv E e)) = out :=
-        (ValueQuery.eval_eq_of_agree_on_queriedSets (alg xs 1) hagree).symm
-      have happrox := halg.approx (highAdv E e) hhigh_sub hhigh_mono hhigh_empty xs 1 {e}
-        (Finset.singleton_subset_iff.mpr heE) (by simp)
-      rw [hout_eq] at happrox
-      have hopt_val : highAdv E e {e} = 159 := by
-        have hinter : ({e} : Finset α) ∩ E = {e} :=
-          Finset.inter_eq_left.mpr (Finset.singleton_subset_iff.mpr heE)
-        rw [highAdv, cappedModular_eq_min_sum_inter, hinter]
-        norm_num
-      have hout_le : highAdv E e out ≤ 100 := by
-        rw [highAdv, cappedModular_eq_min_sum_inter]
-        have hinter : out ∩ E = out := Finset.inter_eq_left.mpr hout_sub
-        rw [hinter]
-        have hsum : (∑ x ∈ out, if x = e then (159 : ℝ) else 100) = 100 * (out.card : ℝ) := by
-          have hcongr : (∑ x ∈ out, if x = e then (159 : ℝ) else 100) =
-              ∑ _x ∈ out, (100 : ℝ) := by
-            refine Finset.sum_congr rfl fun x hx => ?_
-            have hxe : x ≠ e := fun h => he_out (h ▸ hx)
-            simp [hxe]
-          rw [hcongr, Finset.sum_const, nsmul_eq_mul, mul_comm]
-        have hcard_r : (out.card : ℝ) ≤ 1 := by exact_mod_cast hout_card
-        exact (min_le_left _ _).trans (by linarith)
-      rw [hopt_val] at happrox
-      linarith
-  have himg_sub : E.image (fun e => ({e} : Finset α)) ⊆ Q.image (fun S => S ∩ E) := by
-    intro T hT
-    rcases Finset.mem_image.mp hT with ⟨e, he, rfl⟩
-    rcases hmust_query e he with ⟨S, hSQ, hSE⟩
-    exact Finset.mem_image.mpr ⟨S, hSQ, hSE⟩
-  have hinj : Function.Injective (fun e : α => ({e} : Finset α)) :=
-    fun _ _ h => Finset.singleton_injective h
-  calc
-    E.card = (E.image (fun e => ({e} : Finset α))).card :=
-        (Finset.card_image_of_injective E hinj).symm
-    _ ≤ (Q.image (fun S => S ∩ E)).card := Finset.card_le_card himg_sub
-    _ ≤ Q.card := Finset.card_image_le
-    _ ≤ (alg xs 1).countQueries o₀ := ValueQuery.card_queriedSets_le_countQueries o₀ (alg xs 1)
+  set out := (alg xs 1).eval (ValueQuery.oracleOf (baseAdv E))
+  obtain ⟨hout_sub, hout_card⟩ : out ⊆ E ∧ out.card ≤ 1 :=
+    halg.eval_cappedModular xs (w := fun _ => 100) (fun _ _ => by norm_num)
+      (by norm_num : (0 : ℝ) ≤ 159)
+  refine card_le_countQueries_of_isolated (E := E) _ _ fun e heE => ?_
+  by_contra hno
+  push Not at hno
+  by_cases he_out : e ∈ out
+  · -- The run returns `{e}`, which the adversary penalizing `e` beats with another element.
+    have hout_eq : out = {e} :=
+      (Finset.eq_of_subset_of_card_le (Finset.singleton_subset_iff.mpr he_out)
+        (by simpa using hout_card)).symm
+    have hne : E ≠ {e} := by
+      intro hEq
+      rw [hEq, Finset.card_singleton] at hcard
+      omega
+    obtain ⟨y, hyE, hye⟩ := ((Finset.nontrivial_iff_ne_singleton heE).2 hne).exists_ne e
+    have happrox := halg.approx_reweight_of_not_isolated (f := baseAdv E)
+      (a := 59) (b := 100) (cap := 159) rfl
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) hno
+      (Finset.singleton_subset_iff.mpr hyE) (by simp)
+    rw [show (alg xs 1).eval (ValueQuery.oracleOf (baseAdv E)) = {e} from hout_eq,
+      cappedModular_singleton hyE, cappedModular_singleton heE] at happrox
+    simp only [hye, ↓reduceIte] at happrox
+    norm_num at happrox
+    linarith
+  · -- The run misses `e`, which the adversary favouring `e` rewards.
+    have happrox := halg.approx_reweight_of_not_isolated (f := baseAdv E)
+      (a := 159) (b := 100) (cap := 159) rfl
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) hno
+      (Finset.singleton_subset_iff.mpr heE) (by simp)
+    rw [cappedModular_singleton heE] at happrox
+    have hout_le := cappedModular_ite_le (a := 159) (cap := 159) (by norm_num : (0 : ℝ) ≤ 100)
+      hout_sub he_out hout_card
+    norm_num at happrox
+    linarith
 
 /-- Numerical check: `100 / 159 < 1 - Real.exp (-1)`. -/
 theorem hundred_div_159_lt_one_sub_exp_neg_one :
