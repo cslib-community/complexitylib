@@ -282,7 +282,8 @@ theorem succProbability_collisionGameFor_groupHash_le_discreteLogGame
       Game.succProbability
         (F.discreteLogGame setup (F.groupHashToDLAdversary blockLen adversary) n) := by
   refine ENNReal.toNNReal_mono (PMF.apply_ne_top _ _) ?_
-  dsimp only [collisionGameFor, groupHashSetup, discreteLogGame, groupHashToDLAdversary,
+  dsimp only [collisionGameFor, Game.withSetup, collisionExperiment, groupHashSetup,
+    discreteLogGame, groupHashToDLAdversary,
     PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
   simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind]
   refine PMF.bind_apply_mono_on_support (setup n) true fun d hd => ?_
