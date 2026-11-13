@@ -77,11 +77,11 @@ example (encUnit : Unit ↪ List Bool) : CSPSAT eqArity eqSem ∈ P (encCSP encU
 -- Equality has both satisfying and nonsatisfying tuples, including sparse/repeated scopes.
 example : eqSem () [false, true] = false := by decide
 example : eqSem () [true, true] = true := by decide
-example : [((), [2 ^ 80, 2 ^ 80])] ∈ CSPSAT eqArity eqSem := by
+example : [⟨(), [2 ^ 80, 2 ^ 80]⟩] ∈ CSPSAT eqArity eqSem := by
   exact ⟨by decide, fun _ => false, rfl⟩
-example : [((), [0])] ∉ CSPSAT eqArity eqSem := by
+example : [⟨(), [0]⟩] ∉ CSPSAT eqArity eqSem := by
   intro h
-  have := h.1 ((), [0]) (by simp)
+  have := h.1 ⟨(), [0]⟩ (by simp)
   simp [eqArity] at this
 
 private def naeArity (_ : Unit) : ℕ := 3

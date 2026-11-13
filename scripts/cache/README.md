@@ -143,6 +143,14 @@ following builds while preserving the public cache's authorization boundary.
   either the new rename or the rollback, `.lake/build` is absent (with the original outputs
   retained in the temporary staging directory) and the subsequent `lake build` safely recompiles
   from source and the local artifact cache.
+- **Superseded merge-group runs.** Each merge-group run has its own concurrency group, so GitHub
+  does not cancel a run whose entry has left the queue: the entry landed inside a later group, or
+  its group was rebuilt after an ejection. The *Merge-queue cleanup* workflow
+  (`scripts/ci/cancel_stale_merge_groups.py`) cancels such runs after each push to `main` and every
+  10 minutes. It skips runs younger than 5 minutes and runs for the current `main` commit, and
+  cancels a run only after a fresh read of its queue branch returns 404 or another commit; any
+  other error keeps the run. The handoff above is not affected, since it only uses a completed
+  successful run for the landed commit. Run the script without `--apply` for a dry-run list.
 
 ## Automatic restoration
 
@@ -338,6 +346,44 @@ This PR does not complete repository-managed provisioning or automated upgrades.
 open under [#2503](https://github.com/cslib-community/cslib-frontier/issues/2503); the
 [milestone scope](../../tools/cache-origin/SECURITY.md#scope-of-2506-and-remaining-2503-work) separates
 the source/host checks from remaining cold-restore, recovery and preferred-reader decisions.
+
+## Profile cache publication
+
+Publication reports separate wall times for the mapping/archive build, archive staging and
+inventory hashing. Each phase prints its start and outcome; a successful stage also emits one
+`CACHE_STAGING_METRICS` JSON line. A failed phase keeps its textual diagnostic and command failure.
+The report records the source revision, toolchain, platform,
+explicit `LEAN_NUM_THREADS` value (or null when unset), mapping entries and root `.ltar`
+counts/bytes before and after the mapping build. Archive sizes are logical sizes, including
+hard-linked files; they are not physical disk usage.
+
+From a clean checkout with its dependencies and validated outputs available, stage into a new
+directory outside the checkout and optionally keep the same metrics as JSON:
+
+```bash
+publication_dir=$(mktemp -d)
+python3 -B scripts/cache/publish.py stage "$publication_dir/outputs" \
+  --report "$publication_dir/metrics.json"
+```
+
+This stages local files. The report is kept outside the publication inventory. Wall time and
+the Python process's CPU time are recorded on every platform; completed-child user/system CPU
+times are included where Python's `resource` module is available. Child CPU includes the waited
+command and its waited descendants, not a separate measurement of each subprocess or peak memory.
+
+`lake build ... -o` can create missing per-module archives even when the Lean outputs are warm.
+The pinned Lake implementation calls `packLtar` when output tracking finds no archive
+([source](https://github.com/leanprover/lean4/blob/v4.36.0-rc2/src/lake/Lake/Build/Module.lean#L1336)).
+Compare archive counts, phase CPU/wall time and unchanged compiled outputs before attributing
+a long mapping build to recompilation. The real-Lake publication test checks missing versus
+retained archives with fixed tiny sources and verifies that OLean hashes and mtimes stay unchanged.
+It establishes that mechanism, not a speedup estimate for a full CI build.
+
+For a production comparison, fix the revision, toolchain, thread settings and initial `.lake`
+and artifact-cache contents. CI currently saves its Actions `.lake` snapshot before publication
+staging, so newly packed archives can be absent from that snapshot. Measure archive creation
+and the added save/restore cost before changing this order. Both remote publishers consume the
+same staged files, so this phase delays fresh outputs on both origins.
 
 ## Maintainer runbook
 

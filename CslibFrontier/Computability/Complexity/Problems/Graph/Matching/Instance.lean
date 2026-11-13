@@ -40,8 +40,9 @@ open Cslib.Logic.PL
 /-- An exactly-one choice at every vertex, with every private unmatched port pinned false.
 This instance always has a valid local labeling; consistency is not required by optimization. -/
 @[expose] def matchingInstance (G : Graph) : CSP CSP.Table ℕ :=
-  (G.distinctVertices.map fun v => (CSP.Table.exactlyOne (G.matchingScope v), G.matchingScope v)) ++
-    (G.distinctVertices.map fun v => (CSP.Table.pinTable false, [2 * v + 1]))
+  (G.distinctVertices.map fun v =>
+      Constraint.mk (CSP.Table.exactlyOne (G.matchingScope v)) (G.matchingScope v)) ++
+    (G.distinctVertices.map fun v => Constraint.mk (CSP.Table.pinTable false) [2 * v + 1])
 
 /-- An original edge belongs to a choice scope precisely at its two original endpoints. -/
 theorem mem_matchingScope_even (G : Graph) (v i : ℕ) :
@@ -156,8 +157,8 @@ theorem edgeInstance_matchingInstance (G : Graph) : CSP.EdgeInstance G.matchingI
 theorem evenConstraints_matchingInstance (G : Graph) :
     CSP.EdgeInstance.EvenConstraints CSP.Table.sem G.matchingInstance := by
   have hgood (c : Constraint CSP.Table ℕ) (hc : c ∈ G.matchingInstance) :
-      BitString.IsEvenDeltaMatroid {t : Fin c.2.length → Bool |
-        c.1.sem (List.ofFn t) = true} := by
+      BitString.IsEvenDeltaMatroid {t : Fin c.scope.length → Bool |
+        c.rel.sem (List.ofFn t) = true} := by
     simp only [matchingInstance, List.mem_append, List.mem_map, mem_distinctVertices] at hc
     rcases hc with ⟨v, _, rfl⟩ | ⟨v, _, rfl⟩
     · exact CSP.Table.isEvenDeltaMatroid_exactlyOne _ (List.cons_ne_nil _ _)

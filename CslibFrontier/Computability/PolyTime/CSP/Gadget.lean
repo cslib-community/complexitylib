@@ -75,7 +75,7 @@ theorem computableInPolyTime_replaceGadgets [Finite Src]
   unfold replaceGadgets
   apply flatMapWithInput hz
   exact hi.comp (g := fun p : CSP Src ℕ × (Constraint Src ℕ × ℕ) =>
-    ((p.2.2, p.2.1.2), templates p.2.1.1)) (by fun_prop)
+    ((p.2.2, p.2.1.scope), templates p.2.1.rel)) (by fun_prop)
 
 /-- A total native polynomial-time compiler with an explicit malformed-input reject target. -/
 theorem computableInPolyTime_replaceGadgetsGuarded [Finite Src]

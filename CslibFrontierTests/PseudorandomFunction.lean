@@ -40,7 +40,7 @@ example (n : ℕ) :
           (fun request => cachedRandomFunctionOracle n request.2)) (repeatQuery n [])).run []) =
         PMF.uniformOfFintype Bool := by
   have h : ProbComp.eval (prfIdealGame repeatQuery n) = PMF.uniformOfFintype Bool := by
-    simp only [prfIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
+    simp only [prfIdealGame, ProbOracleComp.run, ProbComp.eval_bind, ProbComp.eval_uniform,
       ProbOracleComp.eval_interpret]
     simpa [repeatQuery, OracleComp.interpret_bind, ProbOracleComp.interpret_sample] using
       (show OracleComp.interpret ProbComp.unifOracle (ProbComp.uniform Bool) =

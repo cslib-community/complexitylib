@@ -29,7 +29,7 @@ private def sourceSem (_ : Unit) : List Bool → Bool
 private def equalityGadget (_ : Unit) :
     PPGadget targetArity targetSem (booleanRelation sourceArity sourceSem ()) where
   numAux := 1
-  body := [(false, [Sum.inl 0, Sum.inr 0]), (false, [Sum.inr 0, Sum.inl 1])]
+  body := [⟨false, [Sum.inl 0, Sum.inr 0]⟩, ⟨false, [Sum.inr 0, Sum.inl 1]⟩]
   wellFormed := by simp [WellFormed, targetArity]
   correct := by
     intro a
@@ -44,25 +44,25 @@ private def equalityGadget (_ : Unit) :
 
 private abbrev templates := fun r => (equalityGadget r).template
 
-example : replaceGadgets 1 templates [((), [7, 7]), ((), [7, 2^100])] =
-    [(false, [14, 1]), (false, [1, 14]),
-      (false, [14, 3]), (false, [3, 2 * 2^100])] := by decide
+example : replaceGadgets 1 templates [⟨(), [7, 7]⟩, ⟨(), [7, 2^100]⟩] =
+    [⟨false, [14, 1]⟩, ⟨false, [1, 14]⟩,
+      ⟨false, [14, 3]⟩, ⟨false, [3, 2 * 2^100]⟩] := by decide
 
-example : (replaceGadgets 1 templates [((), [7, 7])]).Satisfiable targetSem ↔
-    Satisfiable sourceSem ([((), [7, 7])] : CSP Unit ℕ) :=
+example : (replaceGadgets 1 templates [⟨(), [7, 7]⟩]).Satisfiable targetSem ↔
+    Satisfiable sourceSem ([⟨(), [7, 7]⟩] : CSP Unit ℕ) :=
   satisfiable_replaceGadgets_iff equalityGadget 1 (by intro r; rfl)
     _ (by simp [WellFormed, sourceArity])
 
-private def reject : CSP Bool ℕ := [(true, [])]
+private def reject : CSP Bool ℕ := [⟨true, []⟩]
 
 private theorem reject_unsatisfiable : ¬ reject.Satisfiable targetSem := by
   simp [Satisfiable, reject, eval, Constraint.eval, targetSem]
 
-example : replaceGadgetsGuarded sourceArity 1 templates reject [((), [7])] = reject := by
+example : replaceGadgetsGuarded sourceArity 1 templates reject [⟨(), [7]⟩] = reject := by
   decide
 
 example : ¬ (replaceGadgetsGuarded sourceArity 1 templates reject
-    [((), [7])]).Satisfiable targetSem := by
+    [⟨(), [7]⟩]).Satisfiable targetSem := by
   rw [satisfiable_replaceGadgetsGuarded_iff equalityGadget 1 (by intro r; rfl)
     reject reject_unsatisfiable]
   simp [WellFormed, sourceArity]
@@ -87,7 +87,7 @@ private def unequalSem (_ : Unit) : List Bool → Bool := targetSem false
 private def unequalGadget (_ : Unit) :
     PPGadget targetArity targetSem (booleanRelation sourceArity unequalSem ()) where
   numAux := 0
-  body := [(false, [Sum.inl 0, Sum.inl 1])]
+  body := [⟨false, [Sum.inl 0, Sum.inl 1]⟩]
   wellFormed := by simp [WellFormed, targetArity]
   correct := by
     intro a
@@ -95,7 +95,7 @@ private def unequalGadget (_ : Unit) :
 
 -- A well-formed unsatisfiable instance stays unsatisfiable, including the B = 0 case.
 example : ¬ (replaceGadgets 0 (fun r => (unequalGadget r).template)
-    [((), [7, 7])]).Satisfiable targetSem := by
+    [⟨(), [7, 7]⟩]).Satisfiable targetSem := by
   rw [satisfiable_replaceGadgets_iff unequalGadget 0 (by intro r; rfl)
     _ (by simp [WellFormed, sourceArity])]
   simp [Satisfiable, eval, Constraint.eval, unequalSem, targetSem]

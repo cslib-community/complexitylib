@@ -101,7 +101,7 @@ theorem length_body_le (arity : Rel → ℕ) (sem : Rel → List Bool → Bool)
     (body arity sem F cert).length ≤ F.length + F.occurrences.length := by
   have hb : (blackConstraints arity sem F).length ≤ F.length := by
     simpa only [blackConstraints, List.length_map, List.length_zipIdx] using
-      List.length_filter_le (fun entry : Constraint Rel ℕ × ℕ => !entry.1.2.isEmpty) F.zipIdx
+      List.length_filter_le (fun entry : Constraint Rel ℕ × ℕ => !entry.1.scope.isEmpty) F.zipIdx
   have hw := length_whiteConstraints_le F.occurrences.length (whiteScopes F cert)
     (whiteScopes_nonempty cert)
   rw [length_flatten_whiteScopes cert h] at hw
@@ -167,7 +167,7 @@ theorem length_compile_le (arity : Rel → ℕ) (sem : Rel → List Bool → Boo
   split_ifs with hg
   · have hp : (validArity arity input.1 = true ∧
         verifyRotationCertificate input.1 input.2 = true) ∧
-        input.1.all (fun c => nonemptySymbol arity sem c.1) = true := by
+        input.1.all (fun c => nonemptySymbol arity sem c.rel) = true := by
       simpa only [Bool.and_eq_true] using hg
     obtain ⟨h, _, _⟩ := (verifyRotationCertificate_eq_true_iff input.1 input.2).mp hp.1.2
     exact (length_body_le arity sem input.2 h).trans (by omega)
@@ -182,7 +182,7 @@ theorem compile_names_lt (arity : Rel → ℕ) (sem : Rel → List Bool → Bool
   split_ifs at hv with hg
   · have hp : (validArity arity input.1 = true ∧
         verifyRotationCertificate input.1 input.2 = true) ∧
-        input.1.all (fun c => nonemptySymbol arity sem c.1) = true := by
+        input.1.all (fun c => nonemptySymbol arity sem c.rel) = true := by
       simpa only [Bool.and_eq_true] using hg
     obtain ⟨h, _, _⟩ := (verifyRotationCertificate_eq_true_iff input.1 input.2).mp hp.1.2
     exact (body_names_lt arity sem input.2 h v hv).trans (Nat.lt_succ_self _)
@@ -197,7 +197,7 @@ theorem length_vars_compile_le (arity : Rel → ℕ) (sem : Rel → List Bool �
   split_ifs with hg
   · have hp : (validArity arity input.1 = true ∧
         verifyRotationCertificate input.1 input.2 = true) ∧
-        input.1.all (fun c => nonemptySymbol arity sem c.1) = true := by
+        input.1.all (fun c => nonemptySymbol arity sem c.rel) = true := by
       simpa only [Bool.and_eq_true] using hg
     obtain ⟨h, _, _⟩ := (verifyRotationCertificate_eq_true_iff input.1 input.2).mp hp.1.2
     exact (length_vars_body_le arity sem input.2 h).trans (by omega)
