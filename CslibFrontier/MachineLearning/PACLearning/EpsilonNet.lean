@@ -59,8 +59,10 @@ here.
   `μ^m {S not an ε-net} * 2 ^ ⌈εm/2⌉ ≤ 2 Π_G(2m)` when `8 ≤ εm`.
 - `measure_pi_not_isEpsNet_le_of_growthFunction_le`: the failure probability is at most `δ`
   when `2 Π_G(2m) ≤ δ 2 ^ ⌈εm/2⌉`.
-- `growthFunction_le_of_vcSampleSize_le`: the explicit sample size achieves this when every set
-  shattered by `G` has at most `d` points.
+- `le_of_vcSampleSize_le`: the explicit sample size makes `2 N ≤ δ 2 ^ ⌈εm/2⌉` for every
+  `N ≤ exp (2m / T) T ^ d` at `T = 48 / ε`.
+- `growthFunction_le_of_vcSampleSize_le`: the case `N = Π_G(2m)`, when every set shattered by `G`
+  has at most `d` points.
 - `measure_pi_not_isEpsNet_le_of_vcSampleSize_le`: the ε-net theorem with the explicit sample
   size.
 
@@ -209,13 +211,13 @@ private theorem card_filter_swapSamples_mem_mul_two_pow_le (G : ConceptClass Z B
 @[expose] noncomputable def vcSampleSize (d : ℕ) (ε δ : ℝ) : ℝ :=
   8 / ε * (d * Real.log (48 / ε) + Real.log (4 / δ))
 
-/-- The explicit sample size makes `2 Π_G(2m) ≤ δ 2 ^ ⌈εm/2⌉` (and `8 ≤ εm`) whenever every
-finite set shattered by `G` has at most `d` points. The proof applies Sauer's lemma in the form
-`Π_G(2m) ≤ exp (2m / T) T ^ d` (`growthFunction_le_exp_mul_pow`) at `T = 48 / ε`. -/
-theorem growthFunction_le_of_vcSampleSize_le {G : ConceptClass Z Bool} {d : ℕ}
-    (hG : ∀ W : Finset Z, SetShatters G ↑W → W.card ≤ d) {m : ℕ} {ε δ : ℝ} (hε : 0 < ε)
-    (hε1 : ε ≤ 1) (hδ : 0 < δ) (hδ1 : δ ≤ 1) (hm : vcSampleSize d ε δ ≤ m) :
-    8 ≤ ε * m ∧ 2 * (growthFunction G (m + m) : ℝ) ≤ δ * 2 ^ ⌈ε * m / 2⌉₊ := by
+/-- The explicit sample size makes `2 N ≤ δ 2 ^ ⌈εm/2⌉` (and `8 ≤ εm`) for every `N` with
+`N ≤ exp (2m / T) T ^ d` at `T = 48 / ε`, the form of Sauer's lemma used for growth functions
+(`growthFunction_le_exp_mul_pow`). -/
+theorem le_of_vcSampleSize_le {d : ℕ} {m : ℕ} {ε δ N : ℝ} (hε : 0 < ε) (hε1 : ε ≤ 1)
+    (hδ : 0 < δ) (hδ1 : δ ≤ 1) (hm : vcSampleSize d ε δ ≤ m)
+    (hN : N ≤ Real.exp (((m + m : ℕ) : ℝ) / (48 / ε)) * (48 / ε) ^ d) :
+    8 ≤ ε * m ∧ 2 * N ≤ δ * 2 ^ ⌈ε * m / 2⌉₊ := by
   have hT : 1 ≤ 48 / ε := by rw [le_div_iff₀ hε]; linarith
   have hlogT : 0 ≤ Real.log (48 / ε) := Real.log_nonneg hT
   have hlog4 : 1 ≤ Real.log (4 / δ) := by
@@ -232,10 +234,8 @@ theorem growthFunction_le_of_vcSampleSize_le {G : ConceptClass Z Bool} {d : ℕ}
     ring
   have hlog2 : ε * m / 3 ≤ ε * m / 2 * Real.log 2 := by nlinarith [Real.log_two_gt_d9]
   rw [Real.log_div (by norm_num) hδ.ne', show (4 : ℝ) = 2 ^ 2 by norm_num, Real.log_pow] at hm
-  calc 2 * (growthFunction G (m + m) : ℝ)
-      ≤ 2 * (Real.exp (((m + m : ℕ) : ℝ) / (48 / ε)) * (48 / ε) ^ d) := by
-        gcongr
-        exact growthFunction_le_exp_mul_pow hG _ hT
+  calc 2 * N
+      ≤ 2 * (Real.exp (((m + m : ℕ) : ℝ) / (48 / ε)) * (48 / ε) ^ d) := by gcongr
     _ ≤ δ * (2 : ℝ) ^ (ε * m / 2) := by
         rw [hexp, ← Real.log_le_log_iff (by positivity) (by positivity),
           Real.log_mul two_ne_zero (by positivity),
@@ -248,6 +248,16 @@ theorem growthFunction_le_of_vcSampleSize_le {G : ConceptClass Z Bool} {d : ℕ}
         calc (2 : ℝ) ^ (ε * m / 2) ≤ (2 : ℝ) ^ (⌈ε * m / 2⌉₊ : ℝ) :=
               Real.rpow_le_rpow_of_exponent_le (by norm_num) (Nat.le_ceil _)
           _ = 2 ^ ⌈ε * m / 2⌉₊ := Real.rpow_natCast _ _
+
+/-- The explicit sample size makes `2 Π_G(2m) ≤ δ 2 ^ ⌈εm/2⌉` (and `8 ≤ εm`) whenever every
+finite set shattered by `G` has at most `d` points. The proof applies Sauer's lemma in the form
+`Π_G(2m) ≤ exp (2m / T) T ^ d` (`growthFunction_le_exp_mul_pow`) at `T = 48 / ε`. -/
+theorem growthFunction_le_of_vcSampleSize_le {G : ConceptClass Z Bool} {d : ℕ}
+    (hG : ∀ W : Finset Z, SetShatters G ↑W → W.card ≤ d) {m : ℕ} {ε δ : ℝ} (hε : 0 < ε)
+    (hε1 : ε ≤ 1) (hδ : 0 < δ) (hδ1 : δ ≤ 1) (hm : vcSampleSize d ε δ ≤ m) :
+    8 ≤ ε * m ∧ 2 * (growthFunction G (m + m) : ℝ) ≤ δ * 2 ^ ⌈ε * m / 2⌉₊ :=
+  le_of_vcSampleSize_le hε hε1 hδ hδ1 hm
+    (growthFunction_le_exp_mul_pow hG _ (by rw [le_div_iff₀ hε]; linarith))
 
 /-! ### ε-nets -/
 

@@ -11,6 +11,7 @@ public import Cslib.MachineLearning.PACLearning.VCDimension
 public import Mathlib.Data.Fintype.EquivFin
 public import Mathlib.Data.Set.Card
 import Mathlib.Data.Fintype.Powerset
+import Mathlib.Data.Nat.Choose.Bounds
 import CslibFrontier.Foundations.Data.Nat.Choose.Sum
 
 /-!
@@ -452,19 +453,22 @@ private theorem two_mul_choose_two_le (k : ℕ) : 2 * k.choose 2 ≤ k ^ 2 := by
   rw [Nat.choose_two_right, sq]
   exact (Nat.mul_div_le _ _).trans (Nat.mul_le_mul_left _ (Nat.sub_le _ _))
 
+/-- With at least one label, `∑_{i ≤ d} (n choose i) (k choose 2) ^ i` is at most
+`(∑_{i ≤ d} (n choose i)) k ^ (2 d)`, so bounds on partial binomial sums from Sauer's lemma transfer
+to Natarajan's lemma. -/
+theorem natarajanSum_le_sum_choose_mul (n d : ℕ) {k : ℕ} (hk : 0 < k) :
+    natarajanSum n k d ≤ (∑ i ∈ range (d + 1), n.choose i) * k ^ (2 * d) := by
+  rw [pow_mul, sum_mul]
+  refine sum_le_sum fun i hi => Nat.mul_le_mul_left _ ?_
+  calc k.choose 2 ^ i ≤ (k ^ 2) ^ i := Nat.pow_le_pow_left (Nat.choose_le_pow k 2) i
+    _ ≤ (k ^ 2) ^ d := Nat.pow_le_pow_right (by positivity) (Nat.lt_succ_iff.1 (mem_range.1 hi))
+
 /-- The polynomial form of Natarajan's lemma: with at least one label,
 `∑_{i ≤ d} (n choose i) (k choose 2) ^ i` is at most `(n + 1) ^ d k ^ (2 d)`. -/
 theorem natarajanSum_le (n d : ℕ) {k : ℕ} (hk : 0 < k) :
-    natarajanSum n k d ≤ (n + 1) ^ d * k ^ (2 * d) := by
-  have hK : k.choose 2 ≤ k ^ 2 := by have := two_mul_choose_two_le k; omega
-  calc natarajanSum n k d ≤ ∑ i ∈ range (d + 1), n.choose i * (k ^ 2) ^ d := by
-        refine sum_le_sum fun i hi => Nat.mul_le_mul_left _ ?_
-        calc k.choose 2 ^ i ≤ (k ^ 2) ^ i := Nat.pow_le_pow_left hK i
-          _ ≤ (k ^ 2) ^ d :=
-            Nat.pow_le_pow_right (by positivity) (Nat.lt_succ_iff.1 (mem_range.1 hi))
-    _ = (∑ i ∈ range (d + 1), n.choose i) * (k ^ 2) ^ d := (sum_mul _ _ _).symm
-    _ ≤ (n + 1) ^ d * (k ^ 2) ^ d := Nat.mul_le_mul_right _ (sum_range_choose_le_add_one_pow n d)
-    _ = (n + 1) ^ d * k ^ (2 * d) := by rw [← pow_mul]
+    natarajanSum n k d ≤ (n + 1) ^ d * k ^ (2 * d) :=
+  (natarajanSum_le_sum_choose_mul n d hk).trans
+    (Nat.mul_le_mul_right _ (sum_range_choose_le_add_one_pow n d))
 
 /-- **Natarajan's lemma** in the form of [ShalevShwartzBenDavid2014, Lemma 29.4]: a class on a
 finite domain `α` with `k` labels has at most `|α| ^ Ndim(C) k ^ (2 Ndim(C))` members. -/
