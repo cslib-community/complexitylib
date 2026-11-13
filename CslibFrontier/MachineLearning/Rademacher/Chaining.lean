@@ -233,7 +233,7 @@ theorem expect_ciSup_sum_mul_signVal_le_of_hammingDist {ι κ : Type*} [Fintype 
   linarith [hK K]
 
 /-- **Chaining bound for VC classes** [ShalevShwartzBenDavid2014, Lemma 27.4]
-[Vershynin2018, Theorem 8.3.18]: if every finite set shattered by `C` has at most `d` points, the
+[Vershynin2018, Section 8.3]: if every finite set shattered by `C` has at most `d` points, the
 empirical Rademacher complexity of `signClass C` on `m` points is at most `32 √(d / m)`. Unlike
 `empiricalRademacherComplexity_signClass_le_vc`, the bound has no factor `log (m / d)`. -/
 theorem empiricalRademacherComplexity_signClass_le_mul_sqrt {C : ConceptClass α Bool} {d : ℕ}
