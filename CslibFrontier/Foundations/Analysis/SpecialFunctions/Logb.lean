@@ -17,15 +17,17 @@ import CslibFrontier.Foundations.Analysis.SpecialFunctions.LogTwoPow
 
 Mathlib's `Real.logb_rpow` computes `logb b (b ^ x) = x` for a real exponent. Counting,
 entropy and amplification arguments meet the natural-number power `b ^ k` instead, usually
-with `b = 2`. This file states that case once, together with two base-two estimates used by
-the same calculations.
+with `b = 2`. This file states that case once, together with a base-two logarithmic gap bound
+and a real-power bound used by the same calculations.
 
 ## Main results
 
 * `Real.logb_self_pow`: `logb b (b ^ k) = k` for a natural-number exponent, with base-two case
   `Real.logb_two_pow`. `Cslib.BitString.logb_card` reads it as `n` bits in a string of `n`
   bits.
-* `Real.two_rpow_le_half_pow`: `2 ^ x ≤ (1 / 2) ^ n` for real `x ≤ -n`.
+* `Real.two_rpow_le_half_pow`: `2 ^ x ≤ (1 / 2) ^ n` for real `x ≤ -n`, the real-power twin of
+  `Real.exp_le_half_pow` in `SpecialFunctions/ExpBounds`. It lives here because it needs real
+  powers, which `Log/Base` already imports and `ExpBounds` does not.
 * `Real.sub_div_le_logb_sub`: `(b - a) / b ≤ log₂ b - log₂ a` for `0 < a ≤ b`. Since
   `log₂ (b / a) = -log₂ (1 - (b - a) / b)` and `log 2 ≤ 1`, this is the base-two form of
   `-log (1 - t) ≥ t`.
