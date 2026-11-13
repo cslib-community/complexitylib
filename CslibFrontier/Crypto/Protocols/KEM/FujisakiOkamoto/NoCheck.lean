@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Security
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Union
+import CslibFrontier.Probability.PMF.UniformPoint
 import CslibFrontier.Probability.Product
 
 /-!
@@ -290,19 +291,6 @@ theorem interpret_leakAdv (S : Scheme PK SK (Fin n → Bool) R (CT × Option (Fi
     funext fun i => by rw [List.lookup_graph _ (List.mem_finRange i)]; rfl
   simp [leakAdv, interpret_leakBits S G H dk c m hdec, Scheme.eagerNoCheckOracle, hguess]
 
-/-- A Boolean test of one sample against a fixed value has the value's probability. -/
-private theorem bind_pure_decide_eq_apply {γ : Type} [DecidableEq γ] (μ : PMF γ) (w : γ) :
-    (μ.bind fun v => PMF.pure (decide (v = w))) true = μ w := by
-  rw [PMF.bind_apply, tsum_eq_single w]
-  · simp
-  · intro v hv
-    simp [hv]
-
-/-- `bind_pure_decide_eq_apply` with the comparison written the other way round. -/
-private theorem bind_pure_decide_eq_apply' {γ : Type} [DecidableEq γ] (μ : PMF γ) (w : γ) :
-    (μ.bind fun v => PMF.pure (decide (w = v))) true = μ w := by
-  simpa only [@eq_comm _ w] using bind_pure_decide_eq_apply μ w
-
 /-- The probability of an outcome of a deterministic function of one sample. -/
 private theorem bind_pure_apply_eq_toOuterMeasure {α β : Type} (μ : PMF α) (f : α → β) (y : β) :
     (μ.bind fun a => PMF.pure (f a)) y = μ.toOuterMeasure (f ⁻¹' {y}) := by
@@ -326,7 +314,7 @@ private theorem pi_toOuterMeasure_eq {ι γ : Type} [Fintype ι] [Fintype γ] [N
   have h := pi_map_eval (Function.update (fun _ : ι => uniformOfFintype γ) b (PMF.pure w)) a
   rw [Function.update_of_ne hab] at h
   generalize hμ : pi (Function.update (fun _ : ι => uniformOfFintype γ) b (PMF.pure w)) = μ at h ⊢
-  rw [← uniformOfFintype_apply w, ← bind_pure_decide_eq_apply _ w, ← h, PMF.bind_map]
+  rw [← uniformOfFintype_apply w, ← bind_pure_decide_eq_apply_true' _ w, ← h, PMF.bind_map]
   rfl
 
 /-- Union bound: some pair among `|J|` pairs of distinct coordinates of a uniform random
@@ -389,7 +377,7 @@ theorem advantage_eagerNoCheckGame_leakAdv [Finite R] [Fintype CT] [Fintype K] [
     have hdec := leakyPKE_dec_some (hcorr pk sk hk m (G m) ((mem_support_pi_iff _ _).1 hG m))
     simp only [encT_leakyPKE, ite_true,
       interpret_leakAdv ⟨leakyPKE P, sampleMsg, sampleKey⟩ G H ⟨sk, pk, s⟩ _ m hdec]
-    rw [hkey, bind_pure_decide_eq_apply', uniformOfFintype_apply]
+    rw [hkey, bind_pure_decide_eq_apply_true, uniformOfFintype_apply]
   have h0 : (⟨leakyPKE P, sampleMsg, sampleKey⟩ :
       Scheme PK SK (Fin n → Bool) R (CT × Option (Fin n)) K).eagerNoCheckGame leakAdv false false ≤
         n * (Fintype.card K : ℝ≥0∞)⁻¹ := by
