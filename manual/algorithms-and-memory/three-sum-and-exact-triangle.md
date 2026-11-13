@@ -388,9 +388,22 @@ from one `VectorConvolution.solveM` run per split of `balancedSize r d`.
 - `card_vaccepts_add_ge`, `four_mul_card_vaccepts_ge`: for a witness `c = a + b` with isolated
   `a`, `b` and `r ^ d ≤ p`, `#balancedPairs (p - 1) ≤ #accepting seeds + #balancedPairs #L (r !) ^ (d / r)`.
 
-The full reduction of Theorem 3.4 (handling `A_bad`, repetition, a random prime, the choice of `d`
-and `μ`, the expected cost and `#balancedPairs`), the choice of `r`, `δ` and `d` for
-Corollary 3.5, Corollary 3.5 itself and odd k-SUM (Corollary 3.6) are not formalized. The [tests](../../CslibFrontierTests/Algorithms/Lean/VectorConvolution.lean) run
+The reduction itself is `vthreeSumM r d s p seeds A B C` in
+`CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.VectorReduction`: the reduction `reduceM` of
+`TrialReduction` (split off `A_bad`, `B_bad`, list the bad sums, run one trial per seed), shared
+with Theorem 2.3, applied to `vtrialM`. `exists_add_eq_of_mem_ret_vthreeSumM` is one-sided error
+for every modulus and all seeds; `time_vthreeSumM` is the exact cost for given random choices;
+`vmiss_le` bounds the miss probability of `μ` uniform seeds for a good prime `p ≥ r ^ d` by
+`(1 - 3 #balancedPairs / (4 p ^ 2)) ^ μ`; and `vaverage_miss_le` averages over a uniform prime of
+`[2 ^ e, 2 ^ (e + 1))` with `r ^ d ≤ 2 ^ e` (the paper uses `(r ^ d, 2 r ^ d]`), with
+`card_vBadPrimes_le` bounding the bad primes. The
+[reduction tests](../../CslibFrontierTests/Algorithms/Lean/VectorReduction.lean) run it with
+`p = 29` and apply `vmiss_le`.
+
+Not formalized: Theorem 3.4's choice of `d = 2 log_ρ n̂ + O(log log N)` and `μ`, the count
+`#balancedPairs`, the expected running time and amplification, the choice of `r`, `δ` and `d` for
+Corollary 3.5, Corollary 3.5 itself, odd k-SUM (Corollary 3.6), the unbalanced and per-query
+forms, and Word-RAM realizations. The [tests](../../CslibFrontierTests/Algorithms/Lean/VectorConvolution.lean) run
 `solveM` on `[3]^2` and a base-`3` trial with `p = 29` by kernel reduction. Check with
 
 ```bash

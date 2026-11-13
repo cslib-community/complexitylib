@@ -233,7 +233,9 @@ public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Probability
 public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Reduction
 public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Repetition
 public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Trial
+public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.TrialReduction
 public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.VectorProbability
+public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.VectorReduction
 public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.VectorTrial
 public import CslibFrontier.Algorithms.Lean.SuffixArray.Basic
 public import CslibFrontier.Algorithms.Lean.SuffixArray.Kasai
