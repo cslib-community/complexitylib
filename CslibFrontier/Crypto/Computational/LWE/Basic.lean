@@ -273,8 +273,8 @@ theorem Input.words_injective : Function.Injective (Input.words (n := n) (m := m
 variable (n m w)
 
 /-- The encoding of a decision-LWE input: the framed unary security parameter followed by the
-row-major binary word of `[b | A]` (`encInput_apply`). These are the words `realEnsemble` and
-`uniformEnsemble` sample. -/
+row-major binary word of `[b | A]` (`encInput_apply`). Its matrix part is the word `realEnsemble`
+and `uniformEnsemble` sample. -/
 def encInput : Input n m w ↪ List Bool :=
   (⟨Input.words, Input.words_injective⟩ : Input n m w ↪ _).trans (encPair encUnary encBits)
 
