@@ -49,13 +49,13 @@ Dinur's paper presents the gap-amplification proof and states the logarithmic-ra
 Import [Sparse.Envelope](../../CslibFrontier/Computability/Complexity/Classes/Sparse/Envelope.lean)
 and apply `SAT_mem_P_of_sparse_diff hSG hG hSparse hred`. Here `hred` is a native
 polynomial-time many-one reduction of SAT (under `encCNF`) to a set `S` under an explicit
-encoding `encB`; `hSG : S ⊆ G`, `hG : G ∈ P encB` and `hSparse : G ∖ S ∈ SPARSE encB`.
+encoding `encB`; `hSG : S ⊆ G`, `hG : G ∈ P encB` and `hSparse : G \ S ∈ SPARSE encB`.
 Only the difference is sparse: the envelope `G` can be the entire target domain. No decider
 for `S` is required. This is Goldreich's January 2007 draft Exercise 3.12, using the library's
 prefix-census sparseness convention; summing exact-length polynomial bounds gives that convention.
 
 The proof uses the existing Fortune theorem. For a nonempty difference, it maps reduction
-outputs outside `G` to a fixed element of `G ∖ S`, obtaining an UNSAT-to-sparse reduction.
+outputs outside `G` to a fixed element of `G \ S`, obtaining an UNSAT-to-sparse reduction.
 An empty difference gives `S = G ∈ P` directly. These are conditional collapse results, not
 unconditional SAT algorithms: an unconditional instance of the full hypotheses would imply P = NP.
 Run `scripts/build.sh CslibFrontierTests.GoldreichExercises` for
