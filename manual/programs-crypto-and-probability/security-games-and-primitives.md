@@ -836,21 +836,24 @@ equivalence `idealExperiment_eq_runWith_lazyStep`, the bad-flag reduction bounds
 facts `PMF.snd_eq_of_mem_support_lift` and `PMF.toOuterMeasure_lift_eq_zero` live in
 [`Probability/PMF/Support.lean`](../../CslibFrontier/Probability/PMF/Support.lean)), the two- and
 four-hop advantage triangle helpers `advantage_le_two` and `advantage_le_four`, and the shared
-block-mode query, cost, oracle, reduction, and ideal-game interface (`BlockModeQuery`, `BlockModeSpec`,
-`BlockModeAdversary`, `blockModeSelect`, `blockModeBlocks`, `blockModeCost`, `blockModeOracle`,
-`blockModeIdealOracle`, `blockModeCpaGame`, `blockModeIdealGame`, `blockModeQueryProgram`,
-`blockModeReduction`, `blockModeCpaGame_eq_realExperiment`, `isQueryBounded_blockModeReduction`, and
-`freshGame_eq_blockModeIdealGame`).
+block-mode query, cost, oracle, reduction, and ideal-experiment interface (`BlockModeQuery`,
+`BlockModeSpec`, `BlockModeAdversary`, `blockModeSelect`, `blockModeBlocks`, `blockModeCost`,
+`blockModeOracle`, `blockModeIdealOracle`, `blockModeCpaExperiment`, `blockModeIdealExperiment`,
+`blockModeQueryProgram`, `blockModeReduction`, `blockModeCpaExperiment_eq_realExperiment`,
+`isQueryBounded_blockModeReduction`, and `freshGame_eq_blockModeIdealExperiment`). The two
+experiments are `ProbComp Bool` runs of the adversary (`adversary.run`), and the reduction is
+`ProbOracleComp.simulate (blockModeQueryProgram keystream ℓ b) adversary`, so its query bound is
+`isCostBounded_simulate` and the CPA experiment equals `PRF.realExperiment` before evaluation.
 
 For the chosen-plaintext security of random-IV counter (CTR) mode, import
 [`Encryption/CTRMode.lean`](../../CslibFrontier/Crypto/Computational/Encryption/CTRMode.lean)
 (Katz–Lindell 3rd ed., §3.6.3, Figure 3.9, Definition 3.22, Theorem 3.33 [katzlindell20][katzlindell20];
 Boneh–Shoup Chapter 4 [bs23][bs23]). Using the shared `BlockModeAdversary` / `blockModeCost` /
-`blockModeIdealGame` interface, it formalizes the adaptive left-or-right multiple-encryption
+`blockModeIdealExperiment` interface, it formalizes the adaptive left-or-right multiple-encryption
 experiment (`ctrCpaGame`) for any counter schedule `counter : BitString n → ℕ → BitString n`
 satisfying within-query offset distinctness and per-offset IV injectivity, proves exact real-PRF
 correspondence for `ctrReduction` (`ctrCpaGame_eq_realExperiment`, `isQueryBounded_ctrReduction`), bounds
-the idealization collision error relative to `blockModeIdealGame` by `K ^ 2 / 2 ^ n` for `K` total
+the idealization collision error relative to `blockModeIdealExperiment` by `K ^ 2 / 2 ^ n` for `K` total
 queried blocks (`advantage_idealExperiment_ctrReduction_le`), and specializes to the modular-addition
 counter `ctrModCounter` whenever per-query length `ℓ ≤ 2 ^ n` (`ctrModCounter_injOn`,
 `ctrModCounter_injective_left`, `advantage_ctrCpaGame_ctrModCounter_randomFunction_le`,
@@ -867,7 +870,7 @@ where a pair whose lengths differ or exceed `ℓ` blocks encrypts the empty mess
 turns an adversary into a PRF distinguisher that computes the keystream with its oracle
 (`ofbCpaGame_eq_realExperiment`, `isQueryBounded_ofbReduction`). If the queries ask at most `K` blocks in
 total (`OracleComp.IsCostBounded (blockModeCost ℓ) adversary K`), `advantage_idealExperiment_ofbReduction_le`
-bounds the distance from `blockModeIdealGame` by `K * (K + ℓ) / 2^n` using
+bounds the distance from `blockModeIdealExperiment` by `K * (K + ℓ) / 2^n` using
 `toOuterMeasure_badChain_le`. `advantage_ofbCpaGame_le` then bounds the left-or-right advantage by
 the two PRF advantages plus `2 * K * (K + ℓ) / 2^n`, and
 `advantage_ofbCpaGame_randomFunction_le` gives `2 * K * (K + ℓ) / 2^n` for a uniform random
