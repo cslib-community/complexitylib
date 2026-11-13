@@ -476,7 +476,7 @@ private theorem eval_prfRealGame_prfMultiReduction (hfamily : PseudorandomFuncti
     ProbComp.eval (prfRealGame family (prfMultiReduction family t j adversary) n) =
       hybridGame family t j adversary n := by
   classical
-  simp only [prfRealGame, ProbComp.eval_bind, BitString.eval_sampleList,
+  simp only [prfRealGame, ProbOracleComp.run, ProbComp.eval_bind, BitString.eval_sampleList,
     ProbOracleComp.eval_interpret, ProbComp.eval_pure, interpret_prfMultiReduction,
     run_semanticHandler]
   simp only [hybridGame, PMF.monad_bind_eq_bind]
@@ -506,7 +506,7 @@ private theorem eval_prfIdealGame_prfMultiReduction (hfamily : PseudorandomFunct
     ProbComp.eval (prfIdealGame (prfMultiReduction family t j adversary) n) =
       hybridGame family t (j + 1) adversary n := by
   classical
-  simp only [prfIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
+  simp only [prfIdealGame, ProbOracleComp.run, ProbComp.eval_bind, ProbComp.eval_uniform,
     ProbOracleComp.eval_interpret, ProbComp.eval_pure, interpret_prfMultiReduction,
     run_semanticHandler]
   simp only [hybridGame, PMF.monad_bind_eq_bind]

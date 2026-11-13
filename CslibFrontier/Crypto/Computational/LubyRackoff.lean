@@ -623,7 +623,7 @@ theorem eval_prpRealGame_lubyRackoffCipher {family : List Bool → List Bool →
         adversary n) =
       ProbComp.eval (prfMultiRealGame family 3 (lubyRackoffAdversary adversary) n) := by
   simp only [BlockCipher.prpRealGame, BlockCipher.prpOracle, lubyRackoffCipher, prfMultiRealGame,
-    BitString.eval_sampleList, ProbOracleComp.eval_interpret, pmf_norm]
+    ProbOracleComp.run, BitString.eval_sampleList, ProbOracleComp.eval_interpret, pmf_norm]
   peel_binds key
   have hkeyLength : key.length = 3 * n := BitString.length_of_mem_support_uniformList key_mem
   rw [interpret_lubyRackoffAdversary]; congr 2; funext request; congr 1
@@ -742,7 +742,7 @@ theorem advantage_lubyRackoffRandomRounds_prpIdealGame_le (adversary : OracleDis
       (PMF.uniformOfFintype (Equiv.Perm (BitString n × BitString n))).bind fun σ =>
         OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle
           (fun p => PMF.pure (σ p))) (pairAdversary adversary n) := by
-    simp only [prpIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
+    simp only [prpIdealGame, ProbOracleComp.run, ProbComp.eval_bind, ProbComp.eval_uniform,
       ProbOracleComp.eval_interpret, ProbComp.eval_pure, interpret_pairAdversary]
     rw [← PMF.uniformOfFintype_map_equiv (blockEquiv n).permCongr, PMF.bind_map]
     congr 1; funext π; simp only [Function.comp_apply, randomPermOracle_eq_blockOracle]
@@ -967,7 +967,8 @@ theorem eval_strongPRPRealGame_lubyRackoff4Cipher {family : List Bool → List B
         adversary n) =
       ProbComp.eval (prfMultiRealGame family 4 (strongLubyRackoffAdversary adversary) n) := by
   simp only [BlockCipher.strongPRPRealGame, BlockCipher.strongPRPOracle, lubyRackoff4Cipher,
-    prfMultiRealGame, BitString.eval_sampleList, ProbOracleComp.eval_interpret, pmf_norm]
+    prfMultiRealGame, ProbOracleComp.run, BitString.eval_sampleList, ProbOracleComp.eval_interpret,
+    pmf_norm]
   peel_binds key
   have hkeyLength : key.length = 4 * n := BitString.length_of_mem_support_uniformList key_mem
   have hrep {i} (hi : i < 4) := represents_prfOracle_take hfamily.length_eq hkeyLength hi
@@ -1120,7 +1121,7 @@ theorem advantage_lubyRackoff4RandomRounds_strongPRPIdealGame_le
       (PMF.uniformOfFintype (Equiv.Perm (BitString n × BitString n))).bind fun σ =>
         OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle
           (fun request => PMF.pure (strongTable σ request))) (strongPairAdversary adversary n) := by
-    simp only [strongPRPIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
+    simp only [strongPRPIdealGame, ProbOracleComp.run, ProbComp.eval_bind, ProbComp.eval_uniform,
       ProbOracleComp.eval_interpret, ProbComp.eval_pure, interpret_strongPairAdversary]
     rw [← PMF.uniformOfFintype_map_equiv (blockEquiv n).permCongr, PMF.bind_map]
     congr 1; funext π; simp only [Function.comp_apply, strongRandomPermOracle_eq_strongBlockOracle]
