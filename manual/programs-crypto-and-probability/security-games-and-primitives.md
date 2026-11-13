@@ -129,6 +129,7 @@ one-time encryption and hash-then-MAC/EtM remain open in [#2749](https://github.
 
 The Ideal Cipher Model models a block cipher as a key-indexed family of independent random permutation oracles supporting forward and inverse queries. [`IdealCipher.lean`](../../CslibFrontier/Languages/Probabilistic/IdealCipher.lean) formalizes lazy exact and forgetful ideal-cipher caches, proves partial bijection preservation (`uniform_interpret_eq_lazy`), and bounds the distinguishing advantage between a uniform ideal cipher and the forgetful sampler by `(Q.choose 2) * |Block|⁻¹` (`abs_sub_uniformPerm_forgetful_le`). Built upon this, [`Compression.lean`](../../CslibFrontier/Crypto/Primitives/IdealCipher/Compression.lean) models collision resistance (`collisionGame`), records the probability-`1` inverse-query attack on `cipherOutput` (`cipherOutputAdversary_wins`, [katzlindell20][katzlindell20] Exercise 7.23(a)), and proves the Davies–Meyer Ideal-Cipher collision-resistance upper bound of `2 * ((Q + 2).choose 2) * |Block|⁻¹ = ((Q + 2) * (Q + 1)) * |Block|⁻¹` for every `Q`-query adaptive adversary (`daviesMeyer_collisionGame_le`, `daviesMeyer_collisionGame_mul_le`; [katzlindell20][katzlindell20] Theorem 7.5), checked nonvacuously in [`CslibFrontierTests/Crypto/IdealCipherCompression.lean`](../../CslibFrontierTests/Crypto/IdealCipherCompression.lean).
 
+For a fixed keyed function or block cipher over finite types, import [`Primitives/PRF/Finite.lean`](../../CslibFrontier/Crypto/Primitives/PRF/Finite.lean) and [`Primitives/PRP/Finite.lean`](../../CslibFrontier/Crypto/Primitives/PRP/Finite.lean) (Boneh–Shoup §4.1–§4.4 [bs23][bs23]). A `PRF.Adversary D R` is an adaptive oracle program with private coins. `PRF.realExperiment F A` and `PRF.idealExperiment A` are `ProbComp Bool` programs answering its queries with `F key` for a uniform key or with a uniform function `D → R`, and `PRF.advantage` is the distance between their laws. For a block cipher `E : Key → Equiv.Perm D`, `PRP.realExperiment E` is the PRF experiment of `E` and `PRP.idealExperiment` samples a uniform permutation. The switching lemma `PRP.advantage_idealExperiment_prfIdealExperiment_le` bounds the distance between the two ideal experiments by `Q.choose 2 / |D|` for a `Q`-query adversary (Theorem 4.4), and `PRP.prfAdvantage_le_advantage_add` is Corollary 4.5. `PRP.strongRealExperiment` and `PRP.strongIdealExperiment` also answer inverse queries through `RandomPermutation.PermOracleSpec D`; `PRP.StrongAdversary.ofForward` runs a forward adversary there with the same advantage (`PRP.strongAdvantage_ofForward`). These statements are single-instance and track no running time. The word-level `BlockCipher.PRP` switching lemma `advantage_prpIdealGame_randomFunctionIdealGame_le` is derived from the finite one. Checked examples are in [`CslibFrontierTests/Crypto/PseudorandomPermutation.lean`](../../CslibFrontierTests/Crypto/PseudorandomPermutation.lean).
 
 Several independently keyed copies of a pseudorandom function are again pseudorandom: [`PseudorandomFunction.multiKey`](../../CslibFrontier/Crypto/Computational/PseudorandomFunction/MultiKey.lean) answers `t` word channels with the `n`-bit blocks of one `t * n`-bit key, against `t` independent random functions, for every fixed `t`. Its hybrid reduction `prfMultiReduction` simulates the already random channels with a lazy list cache and is itself oracle PPT; the concrete bound sums `t` PRF advantages (Boneh–Shoup, Exercise 4.26). The number of keys is a constant, not a function of the security parameter; the exercise also allows a polynomially bounded number of keys, which this theorem does not cover.
 
@@ -796,15 +797,15 @@ For the shared lazy-versus-fresh random-function hybrid and left-or-right block-
 used by both CTR and OFB mode, import
 [`Encryption/RandomFunctionHybrid.lean`](../../CslibFrontier/Crypto/Computational/Encryption/RandomFunctionHybrid.lean):
 it packages `FlagState`, the caching/fresh step handlers `lazyStep` and `freshStep`, the game
-equivalence `idealGame_eq_runWith_lazyStep`, the bad-flag reduction bounds
-`advantage_lazy_fresh_le` and `advantage_idealGame_freshStep_le` (whose lifted-coin support facts
-`PMF.snd_eq_of_mem_support_lift` and `PMF.toOuterMeasure_lift_eq_zero` live in
+equivalence `idealExperiment_eq_runWith_lazyStep`, the bad-flag reduction bounds
+`advantage_lazy_fresh_le` and `advantage_idealExperiment_freshStep_le` (whose lifted-coin support
+facts `PMF.snd_eq_of_mem_support_lift` and `PMF.toOuterMeasure_lift_eq_zero` live in
 [`Probability/PMF/Support.lean`](../../CslibFrontier/Probability/PMF/Support.lean)), the two- and
 four-hop advantage triangle helpers `advantage_le_two` and `advantage_le_four`, and the shared
 block-mode query, cost, oracle, reduction, and ideal-game interface (`BlockModeQuery`, `BlockModeSpec`,
 `BlockModeAdversary`, `blockModeSelect`, `blockModeBlocks`, `blockModeCost`, `blockModeOracle`,
 `blockModeIdealOracle`, `blockModeCpaGame`, `blockModeIdealGame`, `blockModeQueryProgram`,
-`blockModeReduction`, `blockModeCpaGame_eq_realGame`, `isQueryBounded_blockModeReduction`, and
+`blockModeReduction`, `blockModeCpaGame_eq_realExperiment`, `isQueryBounded_blockModeReduction`, and
 `freshGame_eq_blockModeIdealGame`).
 
 For the chosen-plaintext security of random-IV counter (CTR) mode, import
@@ -814,9 +815,9 @@ Boneh–Shoup Chapter 4 [bs23][bs23]). Using the shared `BlockModeAdversary` / `
 `blockModeIdealGame` interface, it formalizes the adaptive left-or-right multiple-encryption
 experiment (`ctrCpaGame`) for any counter schedule `counter : BitString n → ℕ → BitString n`
 satisfying within-query offset distinctness and per-offset IV injectivity, proves exact real-PRF
-correspondence for `ctrReduction` (`ctrCpaGame_eq_realGame`, `isQueryBounded_ctrReduction`), bounds
+correspondence for `ctrReduction` (`ctrCpaGame_eq_realExperiment`, `isQueryBounded_ctrReduction`), bounds
 the idealization collision error relative to `blockModeIdealGame` by `K ^ 2 / 2 ^ n` for `K` total
-queried blocks (`advantage_idealGame_ctrReduction_le`), and specializes to the modular-addition
+queried blocks (`advantage_idealExperiment_ctrReduction_le`), and specializes to the modular-addition
 counter `ctrModCounter` whenever per-query length `ℓ ≤ 2 ^ n` (`ctrModCounter_injOn`,
 `ctrModCounter_injective_left`, `advantage_ctrCpaGame_ctrModCounter_randomFunction_le`,
 `advantage_ctrCpaGame_ctrModCounter_le`). The reduction is concrete (`ProbOracleComp`); no native
@@ -830,8 +831,8 @@ For the chosen-plaintext security of random-IV OFB mode, import
 for a keyed block function using `BlockModeAdversary`, `blockModeSelect`, and `blockModeBlocks`,
 where a pair whose lengths differ or exceed `ℓ` blocks encrypts the empty message. `ofbReduction`
 turns an adversary into a PRF distinguisher that computes the keystream with its oracle
-(`ofbCpaGame_eq_realGame`, `isQueryBounded_ofbReduction`). If the queries ask at most `K` blocks in
-total (`OracleComp.IsCostBounded (blockModeCost ℓ) adversary K`), `advantage_idealGame_ofbReduction_le`
+(`ofbCpaGame_eq_realExperiment`, `isQueryBounded_ofbReduction`). If the queries ask at most `K` blocks in
+total (`OracleComp.IsCostBounded (blockModeCost ℓ) adversary K`), `advantage_idealExperiment_ofbReduction_le`
 bounds the distance from `blockModeIdealGame` by `K * (K + ℓ) / 2^n` using
 `toOuterMeasure_badChain_le`. `advantage_ofbCpaGame_le` then bounds the left-or-right advantage by
 the two PRF advantages plus `2 * K * (K + ℓ) / 2^n`, and
