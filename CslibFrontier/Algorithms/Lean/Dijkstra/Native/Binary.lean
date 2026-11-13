@@ -51,7 +51,8 @@ namespace Cslib.Algorithms.Lean.Dijkstra.Native.Binary
 
 open Cslib.WordRAM Cslib.WordRAM.Realization Cslib.DataStructure
 open Cslib.DataStructure.Memory Cslib.DataStructure.PriorityQueue
-open Cslib.Algorithms.WordRAM.Dijkstra (ListInstance encodeDist)
+open Cslib.Algorithms.Dijkstra (ListInstance)
+open Cslib.Algorithms.WordRAM.Dijkstra (encodeDist)
 
 private abbrev TargetArgs := ((BinaryHeap.Native.HeapLayout × Block) × ℕ) × (ℕ × ℕ)
 private abbrev word := WordEncoding.encode (α := ℕ)
@@ -113,7 +114,7 @@ private theorem target_realizes : Realizes .exact (fun d : TargetArgs =>
     rw [Dictionary.Memory.decode_of_ne_zero hx0] at hop
     exact hop hc
 
-private theorem targetSafe_of_relax_valid (G : Algorithms.WordRAM.Dijkstra.ListInstance)
+private theorem targetSafe_of_relax_valid (G : Algorithms.Dijkstra.ListInstance)
     {w : ℕ} (H : BinaryHeap.Memory.Layout G.n) (T : Block)
     (hH : H.Valid w (G.n * G.maxWeight))
     (hT : Dictionary.Memory.Valid T w G.n (G.n * G.maxWeight + 1))
@@ -141,7 +142,7 @@ private def relaxInput := appendWords
   (appendWords word (appendWords word word))
 
 private def relaxSafe (w : ℕ) (d : RelaxArgs) (s : Memory.State) : Prop :=
-  ∃ (G : Algorithms.WordRAM.Dijkstra.ListInstance) (H : BinaryHeap.Memory.Layout G.n)
+  ∃ (G : Algorithms.Dijkstra.ListInstance) (H : BinaryHeap.Memory.Layout G.n)
     (hH : H.Valid w (G.n * G.maxWeight))
     (hT : Dictionary.Memory.Valid d.1.1.2 w G.n (G.n * G.maxWeight + 1)) (u : Fin G.n),
     d.1.1.1 = ⟨G.n, H⟩ ∧ d.1.2.1 = G.n ∧ d.1.2.2 = G.m ∧ d.2.1 = u.val ∧
@@ -188,7 +189,7 @@ private theorem relax_realizes : Realizes .exact (fun d : RelaxArgs =>
         ((G.adj u)[i]).2 (AdjacencyList.step_edge G.adj u hi) hv hdu ?_ hfit
       exact G.le_maxWeight (List.getElem_mem hi)
 
-private theorem scan_while_safe (G : Algorithms.WordRAM.Dijkstra.ListInstance)
+private theorem scan_while_safe (G : Algorithms.Dijkstra.ListInstance)
     {w : ℕ} (H : BinaryHeap.Memory.Layout G.n) (T : Block)
     (hH : H.Valid w (G.n * G.maxWeight))
     (hT : Dictionary.Memory.Valid T w G.n (G.n * G.maxWeight + 1))
@@ -232,7 +233,7 @@ private def scanInput := appendWords
   (appendWords word word)
 
 private def scanSafe (w : ℕ) (d : ScanArgs) (s : Memory.State) : Prop :=
-  ∃ (G : Algorithms.WordRAM.Dijkstra.ListInstance) (H : BinaryHeap.Memory.Layout G.n)
+  ∃ (G : Algorithms.Dijkstra.ListInstance) (H : BinaryHeap.Memory.Layout G.n)
     (hH : H.Valid w (G.n * G.maxWeight))
     (hT : Dictionary.Memory.Valid d.1.1.2 w G.n (G.n * G.maxWeight + 1)) (u : Fin G.n),
     d.1.1.1 = ⟨G.n, H⟩ ∧ d.1.2.1 = G.n ∧ d.1.2.2 = G.m ∧ d.2.1 = u.val ∧
@@ -288,7 +289,7 @@ private def stepInput := appendWords
   (appendWords (appendWords BinaryHeap.Native.layoutWords blockWords) (appendWords word word)) word
 
 private def stepSafe (w : ℕ) (d : StepArgs) (s : Memory.State) : Prop :=
-  ∃ (G : Algorithms.WordRAM.Dijkstra.ListInstance) (H : BinaryHeap.Memory.Layout G.n)
+  ∃ (G : Algorithms.Dijkstra.ListInstance) (H : BinaryHeap.Memory.Layout G.n)
     (hH : H.Valid w (G.n * G.maxWeight))
     (hT : Dictionary.Memory.Valid d.1.1.2 w G.n (G.n * G.maxWeight + 1)),
     d.1.1.1 = ⟨G.n, H⟩ ∧ d.1.2.1 = G.n ∧ d.1.2.2 = G.m ∧
@@ -378,7 +379,7 @@ private theorem step_realizes : Realizes .exact (fun d : StepArgs =>
         exact htail.1
 
 private def loopSafe (w : ℕ) (d : StepArgs) (s : Memory.State) : Prop :=
-  ∃ (G : Algorithms.WordRAM.Dijkstra.ListInstance) (H : BinaryHeap.Memory.Layout G.n)
+  ∃ (G : Algorithms.Dijkstra.ListInstance) (H : BinaryHeap.Memory.Layout G.n)
     (hH : H.Valid w (G.n * G.maxWeight))
     (hT : Dictionary.Memory.Valid d.1.1.2 w G.n (G.n * G.maxWeight + 1)),
     d.1.1.1 = ⟨G.n, H⟩ ∧ d.1.2.1 = G.n ∧ d.1.2.2 = G.m ∧
@@ -487,7 +488,7 @@ private theorem loop_realizes : Realizes .exact (fun d : StepArgs =>
     (d := (d, 0)) (d' := ()) (fun a => by omega)
     (fun a => rfl) d.2 d.2
 
-private theorem initial_loop_safe (G : Algorithms.WordRAM.Dijkstra.ListInstance) {w : ℕ}
+private theorem initial_loop_safe (G : Algorithms.Dijkstra.ListInstance) {w : ℕ}
     (hfit : Fits w (8 * (G.n + G.m + 2) * (G.maxWeight + 2))) :
     loopSafe w
       (((⟨G.n, BinaryHeap.Memory.allocated G.n ((Memory.State.init G.encode).frontier + G.n)⟩,
