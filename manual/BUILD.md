@@ -34,6 +34,12 @@ the document and line. Resolve the competing content, remove the conflict marker
 the checks before building either PDF. Deliberately quoted conflict examples must be in a
 code fence; ordinary heading underlines and blockquotes remain valid Markdown.
 
+It also reports a list item directly after a paragraph line. Pandoc reads that item as more of
+the paragraph, so the PDF prints the list as running text although GitHub shows a list. Add a
+blank line before the list, or rewrap a prose line that merely starts with `-`, `+`, `*` or a
+number and a period. Items of an open list, nested ones included, need no blank line. Lists
+inside block quotes are not checked.
+
 To produce the books, also install Pandoc, XeLaTeX and `pdfinfo` (Poppler).
 The main book's model diagrams require
 Graphviz (`dot`); the short agent manual does not invoke it. The TeX installation needs
