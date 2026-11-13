@@ -33,6 +33,7 @@ import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.SetMultilinear
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Sparse
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.SparseOrbit
 import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.NineQuarters
+import CslibFrontier.Computability.Circuit.Boolean.ArithmeticRing
 import CslibFrontier.Computability.Circuit.Boolean.Arithmetic
 import CslibFrontier.Computability.Circuit.Boolean.BitBlastCompiler
 import CslibFrontier.Computability.Circuit.Boolean.BarringtonClass
@@ -726,6 +727,20 @@ register_result "one-bit-advice-undecidable" where
     decider and has the same membership for all words of equal length. Advice need not be \
     computable; no efficient construction of the undecidable advice family is claimed. \
     Arbitrary advice hierarchies and strict P/1 versus P/poly remain separate."
+
+register_result "boolean-ring-arithmetic-simulation" where
+  title := "Boolean circuits simulated over any ring with size factor five"
+  topic := "circuit complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 14, Exercise 1 (Boolean-to-arithmetic direction)",
+      locator := "Web draft 2007-01-08, printed p. 265; PDF p. 281" }
+  ]
+  theorems := [Cslib.Circuits.Boolean.exists_ring_simulation]
+  scope := "Any De Morgan circuit has an arithmetic circuit over any ring with at most \
+    five times its gate count, preserving all outputs on zero/one-represented Boolean inputs. \
+    Arithmetic uses constant/addition/multiplication gates; constants count and wires are free. \
+    The zero/one representation is injective for nontrivial rings. No arbitrary ring-input \
+    agreement, reverse simulation, formal polynomial identity or compiler-runtime claim."
 
 register_result "arithmetic-bit-synthesis-injective-encoding" where
   title := "Arithmetic bit-synthesis with injective fixed-width encodings"
