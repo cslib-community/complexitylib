@@ -18,18 +18,17 @@ protocols and ideal VOLE checks; it carries no security or efficiency assumption
 
 ## Main definitions
 
-* `Cslib.Crypto.Protocols.SigmaProtocol.sigmaSpec`: the three-message specification.
+* `Cslib.Interactive.threeMoveSpec`: the three-message specification.
 -/
 
 public section
 
-namespace Cslib.Crypto.Protocols.SigmaProtocol
+namespace Cslib.Interactive
 
-open Interactive
-
-/-- The three-round public-coin specification of a Sigma protocol with commitments in `T`,
-challenges in `C` and responses in `Z`: prover commitment, verifier challenge, prover response. -/
-@[expose, reducible] def sigmaSpec (T C Z : Type) : Interactive.Spec :=
+/-- The three-round public-coin specification with commitments in `T`, challenges in `C` and
+responses in `Z`: prover commitment, verifier challenge, prover response. The verifier reads both
+prover messages in full. -/
+@[expose, reducible] def threeMoveSpec (T C Z : Type) : Spec :=
   [.prover T (OracleInterface.full T), .verifier C, .prover Z (OracleInterface.full Z)]
 
-end Cslib.Crypto.Protocols.SigmaProtocol
+end Cslib.Interactive

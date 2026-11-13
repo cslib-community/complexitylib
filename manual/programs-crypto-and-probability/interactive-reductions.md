@@ -39,7 +39,7 @@ For fixed-round specifications `s : Spec`, [ToIP.lean](../../CslibFrontier/Compu
 For the commitment/challenge/response message shape alone, import
 `CslibFrontier.Computability.Interactive.ThreeMove`
 ([ThreeMove.lean](../../CslibFrontier/Computability/Interactive/ThreeMove.lean)).
-`Cslib.Crypto.Protocols.SigmaProtocol.sigmaSpec T C Z` gives the three rounds with full-message
+`Cslib.Interactive.threeMoveSpec T C Z` gives the three rounds with full-message
 access to the commitment and response. It specifies only the messages; it assumes no soundness,
 zero knowledge or efficiency. The Sigma-protocol bridge and the
 [ideal VOLE checks](protocols-and-privacy.md#vole-ideal-functionality-it-macs-and-vole-in-the-head) share this

@@ -122,7 +122,7 @@ variable {X Y T C Z : Type}
 /-! ### Specification and transcripts -/
 
 /-- The interactive specification of `P`. -/
-abbrev interactiveSpec (_ : SigmaProtocol X Y T C Z) : Interactive.Spec := sigmaSpec T C Z
+abbrev interactiveSpec (_ : SigmaProtocol X Y T C Z) : Interactive.Spec := threeMoveSpec T C Z
 
 /-- Package a commitment `t`, challenge `c` and response `z` as a transcript of
 `P.interactiveSpec`. -/
@@ -361,7 +361,7 @@ theorem SpecialSoundness.sound {W : Type} {R : W → Y → Prop}
     (h : P.SpecialSoundness R extract) (langOut : Set Unit := Set.univ) :
     P.toInteractiveVerifier.Sound World.plain (language (Function.swap R)) langOut
       (1 / (Fintype.card C : ℝ≥0∞)) := by
-  simpa only [PerChallenge.sum, interactiveSpec, sigmaSpec, add_zero] using
+  simpa only [PerChallenge.sum, interactiveSpec, threeMoveSpec, add_zero] using
     (SpecialSoundness.rbrSound h langOut).sound
 
 /-! ### Knowledge soundness and efficient knowledge soundness transfer -/

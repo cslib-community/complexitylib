@@ -209,7 +209,7 @@ theorem exists_witness_of_circuitChecks (x : Fin p → F) (y : Fin m → F)
 /-- The circuit messages use the existing three-move shape: corrections and linear MAC masks,
 public multiplication weights, then the masked affine reply. -/
 abbrev circuitCheckSpec (C : Circuit (arithSignature F) (p + k) m) : Spec :=
-  SigmaProtocol.sigmaSpec
+  threeMoveSpec
     ((Fin ((p + k) + C.size) → F) × ((Fin p ⊕ Fin C.size ⊕ Fin m) → F))
     (CircuitMulGate C → F) (F × F)
 
@@ -330,7 +330,7 @@ theorem circuitCheck_complete :
             (circuitTrace C x w) c.u c.v r, ()))), some (), ((), ()))) := by
     simp only [World.eval, Reduction.run, Verifier.execute, circuitCheck_output]
     simp only [pmf_norm, circuitCheck, liftProver, runStrategy, circuitCheckSpec,
-      SigmaProtocol.sigmaSpec, ProbOracleComp.interpret_sample, ProbOracleComp.interpret_query,
+      threeMoveSpec, ProbOracleComp.interpret_sample, ProbOracleComp.interpret_query,
       OracleComp.interpret_bind, OracleComp.interpret_pure, voleWorld, ProbOracleComp.runWith_bind,
       ProbOracleComp.runWith_query, ProbOracleComp.runWith_pure, pure_bind,
       VOLECorrelation.senderView]
