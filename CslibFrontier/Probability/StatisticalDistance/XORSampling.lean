@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import CslibFrontier.Probability.BitString.Parity
 public import CslibFrontier.Probability.StatisticalDistance.XOR
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Uniform
@@ -44,40 +45,7 @@ samplers [SahaiVadhan2003, Lemma 3.5]. The XOR construction also commutes with i
 * [A. Sahai, S. Vadhan, *A complete problem for statistical zero knowledge*][SahaiVadhan2003]
 -/
 
-@[expose] public section
-
-namespace Cslib.BitString
-
-/-- The completion of `j` bits `r` to the `j + 1` bits of parity `c` extending them: the last bit
-is `c ⊕ parity r`. -/
-def parityComplete (c : Bool) {j : ℕ} (r : BitString j) : BitString (j + 1) :=
-  Fin.snoc r (c ^^ parity j r)
-
-/-- The completion of `r` to parity `c` has parity `c`. -/
-theorem parity_parityComplete (c : Bool) {j : ℕ} (r : BitString j) :
-    parity (j + 1) (parityComplete c r) = c := by
-  rw [parityComplete, parity_snoc]
-  cases c <;> cases parity j r <;> rfl
-
-/-- Completion to parity `c` is an equivalence onto the bit strings of parity `c`; the inverse
-drops the last bit. -/
-def parityCompleteEquiv (c : Bool) (j : ℕ) :
-    BitString j ≃ {b : BitString (j + 1) // b ∈ ({b | parity (j + 1) b = c} : Finset _)} where
-  toFun r := ⟨parityComplete c r, by simp [parity_parityComplete]⟩
-  invFun b := Fin.init b.1
-  left_inv r := by simp [parityComplete]
-  right_inv b := by
-    obtain ⟨b, hb⟩ := b
-    simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hb
-    apply Subtype.ext
-    simp only [parityComplete]
-    conv_rhs => rw [← Fin.snoc_init_self b]
-    congr 1
-    rw [← Fin.snoc_init_self b, parity_snoc] at hb
-    rw [← hb]
-    cases parity j (Fin.init b) <;> cases b (Fin.last j) <;> rfl
-
-end Cslib.BitString
+public section
 
 namespace Cslib.Probability.PMF
 
@@ -96,16 +64,6 @@ theorem xorMix_map {α β : Type*} [Fintype α] [Fintype β] (p₀ p₁ : PMF α
     congr 1 with i : 1
     cases b i <;> rfl
   · rw [← pi_map]
-
-/-- Completing uniform bits to parity `c` gives a uniform bit string of parity `c`. -/
-theorem uniformOfFintype_map_parityComplete (c : Bool) (j : ℕ)
-    (h : ({b : BitString (j + 1) | parity (j + 1) b = c} : Finset _).Nonempty) :
-    (uniformOfFintype (BitString j)).map (parityComplete c) = uniformOfFinset _ h := by
-  have : Nonempty {b : BitString (j + 1) // b ∈ ({b | parity (j + 1) b = c} : Finset _)} :=
-    h.coe_sort
-  rw [← uniformOfFintype_finset_map_val, ← uniformOfFintype_map_equiv (parityCompleteEquiv c j),
-    PMF.map_comp]
-  rfl
 
 /-- **The XOR construction from uniform bits**: on `j + 1` coordinates, the XOR construction of
 the images of a uniform seed under `f₀` and `f₁` is the image of `j` uniform selector bits `r` and
