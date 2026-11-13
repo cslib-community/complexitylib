@@ -66,6 +66,11 @@ variable {α β : Type*} [MeasurableSpace α] [MeasurableSpace β] [DecidableEq 
     (S : LabeledSample α β m) : Prop :=
   ∀ h ∈ C, |(empiricalMiscount h S : ℝ) / m - (error D h).toReal| ≤ ε
 
+/-- An `ε`-representative sample is `ε'`-representative for every `ε' ≥ ε`. -/
+theorem IsRepresentative.mono {D : Measure (α × β)} {C : ConceptClass α β} {ε ε' : ℝ} {m : ℕ}
+    {S : LabeledSample α β m} (hS : IsRepresentative D C ε S) (hε : ε ≤ ε') :
+    IsRepresentative D C ε' S := fun h hh => (hS h hh).trans hε
+
 /-- **Hoeffding's inequality for the empirical error of one hypothesis** [Hoeffding1963]: under `m`
 i.i.d. examples from `D`, the empirical error of `h` differs from `error D h` by at least `ε` with
 probability at most `2 exp (-2 m ε²)`. The domain is an arbitrary measurable space; only the
