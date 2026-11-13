@@ -7,6 +7,7 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate (Mathlib)
 
+public import CslibFrontier.Init
 public import Mathlib.Algebra.BigOperators.Fin
 
 /-!
