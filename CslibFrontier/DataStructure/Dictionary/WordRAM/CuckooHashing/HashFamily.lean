@@ -218,6 +218,14 @@ private theorem singleHashSpace_of_lt {c_exp n_max : ℕ} (h : n_max < doubleTab
     singleHashSpace c_exp n_max = KWise.space n_max (cuckooK n_max) := by
   simp only [singleHashSpace, DoubleTabulation.provableSpace, h, ↓reduceIte]
 
+/-- Below `doubleTabThreshold c_exp`, the single hash block has the `cuckooK`-wise layout: eight
+header words, `cuckooK n_max` coefficients and a nonempty table. -/
+private theorem singleHashSpace_eq_kwise_of_lt {c_exp n_max : ℕ}
+    (h : n_max < doubleTabThreshold c_exp) :
+    singleHashSpace c_exp n_max = 8 + cuckooK n_max + 2 ^ (2 * KWise.chunkBits n_max) ∧
+      1 ≤ 2 ^ (2 * KWise.chunkBits n_max) :=
+  ⟨singleHashSpace_of_lt h, Nat.one_le_two_pow⟩
+
 /-- From `doubleTabThreshold c_exp` on, a single hash instance occupies a Double Tabulation
 table. -/
 private theorem singleHashSpace_of_not_lt {c_exp n_max : ℕ}
@@ -385,61 +393,45 @@ theorem extractSeed_eq_of_HashPairSeedRep {hashBase c_exp n_max U M : ℕ}
   Prod.ext (extractSingleSeed_eq_of_SingleSeedRep hseed.1)
     (extractSingleSeed_eq_of_SingleSeedRep hseed.2)
 
-theorem SingleTableRep.congr_of_footprint {base c_exp n_max U M : ℕ} {mem mem' : ℕ → ℕ}
+/-- A single-block table representation moves to `base'` in `mem'` when `mem'` agrees with
+`mem` on the block, read at offsets from `base'` and `base` respectively. -/
+private theorem SingleTableRep.of_offset_eq {base base' c_exp n_max U M : ℕ} {mem mem' : ℕ → ℕ}
     (htab : SingleTableRep base c_exp n_max U M mem)
-    (hm : ∀ a, base ≤ a → a < base + singleHashSpace c_exp n_max → mem' a = mem a) :
-    SingleTableRep base c_exp n_max U M mem' := by
+    (hm : ∀ j < singleHashSpace c_exp n_max, mem' (base' + j) = mem (base + j)) :
+    SingleTableRep base' c_exp n_max U M mem' := by
   unfold SingleTableRep at *
   revert htab
   cases h : decide (n_max < doubleTabThreshold c_exp) <;> intro htab
   · trivial
-  · have hlt : n_max < doubleTabThreshold c_exp := of_decide_eq_true h
-    have hsp := singleHashSpace_of_lt hlt
+  · obtain ⟨hsp, hpow⟩ := singleHashSpace_eq_kwise_of_lt (of_decide_eq_true h)
     have hk := thirtyEight_le_cuckooK n_max
-    have hpow : 1 ≤ 2 ^ (2 * KWise.chunkBits n_max) := Nat.one_le_two_pow
-    have hkw : KWise.space n_max (cuckooK n_max) =
-        8 + cuckooK n_max + 2 ^ (2 * KWise.chunkBits n_max) := rfl
     rcases htab with ⟨h0, h1, h2, h3, h4, h5, h6, h7, hcl⟩
-    refine ⟨(hm _ (by omega) (by omega)).trans h0,
-      (hm _ (by omega) (by omega)).trans h1,
-      (hm _ (by omega) (by omega)).trans h2,
-      (hm _ (by omega) (by omega)).trans h3,
-      (hm _ (by omega) (by omega)).trans h4,
-      (hm _ (by omega) (by omega)).trans h5,
-      (hm _ (by omega) (by omega)).trans h6,
-      (hm _ (by omega) (by omega)).trans h7,
-      fun idx hidx => (hm _ (by omega) (by omega)).trans (hcl idx hidx)⟩
+    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, fun idx hidx => ?_⟩
+    · simpa using (hm 0 (by omega)).trans (by simpa using h0)
+    · exact (hm 1 (by omega)).trans h1
+    · exact (hm 2 (by omega)).trans h2
+    · exact (hm 3 (by omega)).trans h3
+    · exact (hm 4 (by omega)).trans h4
+    · exact (hm 5 (by omega)).trans h5
+    · exact (hm 6 (by omega)).trans h6
+    · exact (hm 7 (by omega)).trans h7
+    · rw [show base' + 8 + cuckooK n_max + idx = base' + (8 + cuckooK n_max + idx) by omega,
+          hm (8 + cuckooK n_max + idx) (by omega),
+          show base + (8 + cuckooK n_max + idx) = base + 8 + cuckooK n_max + idx by omega]
+      exact hcl idx hidx
+
+theorem SingleTableRep.congr_of_footprint {base c_exp n_max U M : ℕ} {mem mem' : ℕ → ℕ}
+    (htab : SingleTableRep base c_exp n_max U M mem)
+    (hm : ∀ a, base ≤ a → a < base + singleHashSpace c_exp n_max → mem' a = mem a) :
+    SingleTableRep base c_exp n_max U M mem' :=
+  htab.of_offset_eq fun j hj => hm _ (by omega) (by omega)
 
 theorem SingleTableRep.of_copy_from_hashBase {hashBase c_exp n_max U M : ℕ} {mem : ℕ → ℕ}
     (htab : SingleTableRep hashBase c_exp n_max U M mem)
     (hcopy : ∀ j < singleHashSpace c_exp n_max,
       mem (hash2Base hashBase c_exp n_max + j) = mem (hashBase + j)) :
-    SingleTableRep (hash2Base hashBase c_exp n_max) c_exp n_max U M mem := by
-  unfold SingleTableRep at *
-  revert htab
-  cases h : decide (n_max < doubleTabThreshold c_exp) <;> intro htab
-  · trivial
-  · have hlt : n_max < doubleTabThreshold c_exp := of_decide_eq_true h
-    have hsp := singleHashSpace_of_lt hlt
-    have hk := thirtyEight_le_cuckooK n_max
-    have hpow : 1 ≤ 2 ^ (2 * KWise.chunkBits n_max) := Nat.one_le_two_pow
-    have hkw : KWise.space n_max (cuckooK n_max) =
-        8 + cuckooK n_max + 2 ^ (2 * KWise.chunkBits n_max) := rfl
-    rcases htab with ⟨h0, h1, h2, h3, h4, h5, h6, h7, hcl⟩
-    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, fun idx hidx => ?_⟩
-    · simpa using (hcopy 0 (by omega)).trans (by simpa using h0)
-    · exact (hcopy 1 (by omega)).trans h1
-    · exact (hcopy 2 (by omega)).trans h2
-    · exact (hcopy 3 (by omega)).trans h3
-    · exact (hcopy 4 (by omega)).trans h4
-    · exact (hcopy 5 (by omega)).trans h5
-    · exact (hcopy 6 (by omega)).trans h6
-    · exact (hcopy 7 (by omega)).trans h7
-    · rw [show hash2Base hashBase c_exp n_max + 8 + cuckooK n_max + idx =
-            hash2Base hashBase c_exp n_max + (8 + cuckooK n_max + idx) by omega,
-          hcopy (8 + cuckooK n_max + idx) (by omega),
-          show hashBase + (8 + cuckooK n_max + idx) = hashBase + 8 + cuckooK n_max + idx by omega]
-      exact hcl idx hidx
+    SingleTableRep (hash2Base hashBase c_exp n_max) c_exp n_max U M mem :=
+  htab.of_offset_eq hcopy
 
 theorem HashPairTableRep.congr_of_footprint {hashBase c_exp n_max U M : ℕ} {mem mem' : ℕ → ℕ}
     (htab : HashPairTableRep hashBase c_exp n_max U M mem)
@@ -463,10 +455,7 @@ theorem SingleSeedRep.congr_of_footprint {base c_exp n_max U M : ℕ}
     have hsp := singleHashSpace_of_not_lt hge
     exact hseed.congr_mem (fun a ha1 ha2 => hm a ha1 (by omega))
   · have hlt : n_max < doubleTabThreshold c_exp := of_decide_eq_true h
-    have hsp := singleHashSpace_of_lt hlt
-    have hpow : 1 ≤ 2 ^ (2 * KWise.chunkBits n_max) := Nat.one_le_two_pow
-    have hkw : KWise.space n_max (cuckooK n_max) =
-        8 + cuckooK n_max + 2 ^ (2 * KWise.chunkBits n_max) := rfl
+    obtain ⟨hsp, hpow⟩ := singleHashSpace_eq_kwise_of_lt hlt
     exact hseed.congr_of_footprint (fun a ha1 ha2 => hm a ha1 (by omega))
 
 theorem HashPairSeedRep.congr_of_footprint {hashBase c_exp n_max U M : ℕ}
@@ -503,10 +492,7 @@ theorem extractSingleSeed_congr_of_footprint {base c_exp n_max U M : ℕ} {mem m
     have hsp := singleHashSpace_of_not_lt hge
     exact DoubleTabulation.extractSeed_congr_mem (fun a ha1 ha2 => hm a ha1 (by omega))
   · have hlt : n_max < doubleTabThreshold c_exp := of_decide_eq_true h
-    have hsp := singleHashSpace_of_lt hlt
-    have hpow : 1 ≤ 2 ^ (2 * KWise.chunkBits n_max) := Nat.one_le_two_pow
-    have hkw : KWise.space n_max (cuckooK n_max) =
-        8 + cuckooK n_max + 2 ^ (2 * KWise.chunkBits n_max) := rfl
+    obtain ⟨hsp, hpow⟩ := singleHashSpace_eq_kwise_of_lt hlt
     exact KWise.extractSeeds_congr_of_footprint (fun a ha1 ha2 => hm a ha1 (by omega))
 
 theorem extractSeed_congr_of_footprint {hashBase c_exp n_max U M : ℕ} {mem mem' : ℕ → ℕ}
@@ -892,10 +878,7 @@ theorem resampleSingleCode_execRand {w base c_exp n_max U M : ℕ} {x : Data 19}
       (resampleSingleComp base c_exp n_max U M x) := by
   unfold resampleSingleCode resampleSingleComp
   split_ifs with hlt
-  · have hsp := singleHashSpace_of_lt hlt
-    have hpow : 1 ≤ 2 ^ (2 * KWise.chunkBits n_max) := Nat.one_le_two_pow
-    have hkw : KWise.space n_max (cuckooK n_max) =
-        8 + cuckooK n_max + 2 ^ (2 * KWise.chunkBits n_max) := rfl
+  · obtain ⟨hsp, hpow⟩ := singleHashSpace_eq_kwise_of_lt hlt
     have hfit_end : Fits w (base + 8 + cuckooK n_max) :=
       hfit_space.of_le (by omega)
     have htab_kw : KWise.TableRep base (KWise.chunkBits n_max) U M (cuckooK n_max) x.mem := by
@@ -939,10 +922,7 @@ theorem mem_support_resampleSingleComp {base c_exp n_max U M : ℕ} {x : Data 19
     have h0' : (z₀.1.extend cast18To19 x).regs 0 = base := by
       change ((z₀.1.extend cast18To19 x).comap cast18To19).regs 0 = base
       rw [Data.comap_extend injective_cast18To19, hz0]
-    have hsp := singleHashSpace_of_lt hlt
-    have hpow : 1 ≤ 2 ^ (2 * KWise.chunkBits n_max) := Nat.one_le_two_pow
-    have hkw : KWise.space n_max (cuckooK n_max) =
-        8 + cuckooK n_max + 2 ^ (2 * KWise.chunkBits n_max) := rfl
+    obtain ⟨hsp, hpow⟩ := singleHashSpace_eq_kwise_of_lt hlt
     refine ⟨by simpa [resampleSingleSteps, hlt] using hsteps, h0', ?_, ?_,
       fun a ha => hout a (by omega)⟩
     · unfold SingleTableRep
