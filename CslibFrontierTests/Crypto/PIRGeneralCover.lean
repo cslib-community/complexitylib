@@ -4,12 +4,17 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger, Mayank Rathee
 -/
 
+module
+
 import CslibFrontier.Crypto.Protocols.PIR.GeneralCover
 import CslibFrontier.Crypto.Protocols.PIR.MultiInteractive
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Uniform
 
 /-! # Checked examples for heterogeneous covering PIR, radius-`r` covers, and interactive bounds -/
+
+-- This regression module checks ordinary imports and exports no test fixtures.
+set_option linter.privateModule false
 
 namespace CslibFrontierTests.Crypto.PIRGeneralCover
 
@@ -92,6 +97,18 @@ example : HasIndexedScheme (Fin 243) 7 187 :=
 
 example : HasIndexedScheme (Fin 0) 7 7 :=
   hasIndexedScheme_seven_of_le_pow_five (ℓ := 0) (by decide)
+
+/-- `ExactRadiusOneCover.ofHammingDist` preserves the underlying codeword assignment. -/
+example : (ExactRadiusOneCover.ofHammingDist sevenWordCode sevenWordCode_injective
+    sevenWordCode_covers).code = sevenWordCode := by
+  simp
+
+/-- `emulateCubeQuery` flips the selected coordinate inside `T` and leaves coordinates outside `T`
+unchanged. -/
+example (a : Fin 2 → Fin 3 → Bool) :
+    emulateCubeQuery a {0} (fun _ => (1 : Fin 3)) 0 = a 0 + Pi.single 1 true ∧
+      emulateCubeQuery a {0} (fun _ => (1 : Fin 3)) 1 = a 1 := by
+  simp
 
 /-! ### 3. General radius-`r` and radius-`2` covering-code PIR (`CGKS §3.3, pp. 9–10`) -/
 

@@ -83,6 +83,8 @@ namespace Cslib.Crypto.Protocols.PIR
 
 open Probability Communication
 
+@[expose] public section
+
 /-- A single directional bit event on a server's channel: either sent by the user (`fromUser`) or
 sent by the server (`fromServer`). -/
 inductive ChannelMsg where
@@ -91,6 +93,8 @@ inductive ChannelMsg where
   /-- One bit sent from the server to the user. -/
   | fromServer (b : Bool)
   deriving DecidableEq, Repr
+
+end
 
 /-- Extract the underlying payload bit from a `ChannelMsg`. -/
 @[expose] def ChannelMsg.bit : ChannelMsg → Bool

@@ -121,9 +121,21 @@ variable {D ι : Type} [Fintype D] [Fintype ι] [DecidableEq ι]
 
 /-- Emulate a subcube query at disagreement set `T : Finset D` by flipping coordinate `δ ⟨l, hl⟩` in
 `a l` for every `l ∈ T` and leaving `a l` unchanged outside `T`. -/
-def emulateCubeQuery [DecidableEq D] (a : D → ι → Bool) (T : Finset D) (δ : T → ι) (l : D) :
-    ι → Bool :=
+@[expose] def emulateCubeQuery [DecidableEq D] (a : D → ι → Bool) (T : Finset D) (δ : T → ι)
+    (l : D) : ι → Bool :=
   if h : l ∈ T then a l + Pi.single (δ ⟨l, h⟩) true else a l
+
+omit [Fintype D] [Fintype ι] in
+@[simp] theorem emulateCubeQuery_of_mem [DecidableEq D] (a : D → ι → Bool) (T : Finset D)
+    (δ : T → ι) {l : D} (hl : l ∈ T) :
+    emulateCubeQuery a T δ l = a l + Pi.single (δ ⟨l, hl⟩) true :=
+  dite_eq_left hl
+
+omit [Fintype D] [Fintype ι] in
+@[simp] theorem emulateCubeQuery_of_notMem [DecidableEq D] (a : D → ι → Bool) (T : Finset D)
+    (δ : T → ι) {l : D} (hl : l ∉ T) :
+    emulateCubeQuery a T δ l = a l :=
+  dite_eq_right hl
 
 /-- Multi-coordinate generalization of `PIR.query_update_cube`: for any draw `(r, q)` of
 `PIR.cube D ι` on target `i` and any two words `σ, w : D → Bool`, the query `q w` is obtained from
@@ -225,6 +237,11 @@ noncomputable def ofHammingDist (code : S → D → Bool) (hinj : Function.Injec
       exact Nat.zero_le 1
     · rw [chooseAssign, dite_eq_right hex]
       exact Classical.choose_spec (hc w)
+
+@[simp] theorem code_ofHammingDist (code : S → D → Bool) (hinj : Function.Injective code)
+    (hc : ∀ w, ∃ s, hammingDist (code s) w ≤ 1) :
+    (ofHammingDist code hinj hc).code = code := by
+  rfl
 
 section Partition
 
@@ -476,7 +493,7 @@ structure RadiusBallQuery (D : Type) (r : ℕ) (ι : Type) where
   offsets : coords → ι
 
 /-- Equivalence between `RadiusBallQuery D r ι` and the corresponding dependent pair. -/
-def RadiusBallQuery.sigmaEquiv (D : Type) (r : ℕ) (ι : Type) :
+@[expose] def RadiusBallQuery.sigmaEquiv (D : Type) (r : ℕ) (ι : Type) :
     RadiusBallQuery D r ι ≃ Σ T : {T : Finset D // T.card ≤ r}, (T.1 → ι) where
   toFun u := ⟨⟨u.coords, u.card_coords_le⟩, u.offsets⟩
   invFun := fun ⟨⟨T, hT⟩, δ⟩ => ⟨T, hT, δ⟩
@@ -487,8 +504,8 @@ instance instDecidableEqRadiusBallQuery (D : Type) [DecidableEq D] (r : ℕ) (ι
     [DecidableEq ι] : DecidableEq (RadiusBallQuery D r ι) :=
   (RadiusBallQuery.sigmaEquiv D r ι).decidableEq
 
-instance instFintypeRadiusBallQuery (D : Type) [Fintype D] [DecidableEq D] (r : ℕ) (ι : Type)
-    [Fintype ι] : Fintype (RadiusBallQuery D r ι) :=
+instance instFintypeRadiusBallQuery (D : Type) [Fintype D] [DecidableEq D] (r : ℕ)
+    (ι : Type) [Fintype ι] : Fintype (RadiusBallQuery D r ι) :=
   Fintype.ofEquiv _ (RadiusBallQuery.sigmaEquiv D r ι).symm
 
 /-- A server emulating a Hamming ball of radius `r` tabulates `∑ j ≤ r, C(|D|, j) · |ι| ^ j`
