@@ -77,22 +77,6 @@ noncomputable def matrixInverter {n count : ℕ} [NeZero count] {Image : Type*}
   guessInverter f (predictor image i) (PMF.uniformOfFintype (Fin count → BitString n))
     precision image
 
-private theorem uniform_length_tail (count cutoff : ℕ) [NeZero count] (hcutoff : cutoff ≤ count) :
-    (∑ i : Fin count, (PMF.uniformOfFintype (Fin count) i).toReal *
-      (if cutoff < i.val + 1 then (1 : ℝ) else 0)) = 1 - cutoff / (count : ℝ) := by
-  have hfilter : (Finset.range count).filter (fun i => cutoff < i + 1) =
-      Finset.Ico cutoff count := by
-    ext i
-    simp only [Finset.mem_filter, Finset.mem_range, Finset.mem_Ico]
-    lia
-  have hcount : (count : ℝ) ≠ 0 := by exact_mod_cast NeZero.ne count
-  simp only [PMF.uniformOfFintype_apply, ENNReal.toReal_inv, ENNReal.toReal_natCast,
-    Fintype.card_fin, ← Finset.mul_sum]
-  rw [Fin.sum_univ_eq_sum_range (fun i => if cutoff < i + 1 then (1 : ℝ) else 0),
-    ← Finset.sum_filter, hfilter]
-  simp only [Finset.sum_const, Nat.card_Ico, nsmul_eq_mul, mul_one, Nat.cast_sub hcutoff]
-  field_simp
-
 /-- A digest at most six bits longer than the logarithmic fiber size can be split into
 an almost uniform prefix and a suffix with polynomially many guesses. This split is used only
 in the proof; neither the inverter nor the predictor is given the fiber size. -/
@@ -256,7 +240,7 @@ theorem matrix_fiber_mean_correlation_le {n count : ℕ} [NeZero count] {Image :
         ∑ x : {x // f x = image}, (PMF.uniformOfFintype {x // f x = image} x).toReal *
           (2 * agreement (predictor image i rows
             (LinearHash.hash (rows ∘ Fin.castLE (Nat.succ_le_of_lt i.isLt)) x)) x - 1)) ≤
-      (if cutoff < i.val + 1 then 1 else 0) + 1 / (4 * (count : ℝ)) +
+      (if cutoff ≤ i.val then 1 else 0) + 1 / (4 * (count : ℝ)) +
         128 * (dyadicSize (16 * count) : ℝ) ^ 2 * success i := by
     split_ifs with hlong
     · have hmean :
@@ -279,13 +263,13 @@ theorem matrix_fiber_mean_correlation_le {n count : ℕ} [NeZero count] {Image :
         (predictor image i) precision hp
   calc
     _ ≤ ∑ i : Fin count, (PMF.uniformOfFintype (Fin count) i).toReal *
-        ((if cutoff < i.val + 1 then 1 else 0) + 1 / (4 * (count : ℝ)) +
+        ((if cutoff ≤ i.val then 1 else 0) + 1 / (4 * (count : ℝ)) +
           128 * (dyadicSize (16 * count) : ℝ) ^ 2 * success i) :=
       Finset.sum_le_sum (fun i _ => mul_le_mul_of_nonneg_left (hpoint i) ENNReal.toReal_nonneg)
     _ = _ := by
       simp only [mul_add, Finset.sum_add_distrib, ← Finset.sum_mul,
         sum_toReal, one_mul, mul_left_comm _ (128 * (dyadicSize (16 * count) : ℝ) ^ 2),
-        ← Finset.mul_sum, uniform_length_tail count cutoff hcutoff,
+        ← Finset.mul_sum, sum_uniformFin_mul_ite_le count cutoff hcutoff,
         cutoff, Nat.cast_add, Nat.cast_ofNat,
         matrixInverter, monad_bind_eq_bind, PMF.map_bind, bind_apply_toReal, success]
 

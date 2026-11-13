@@ -30,6 +30,8 @@ including the zero case.
 * `Cslib.BitString.uniformList_binaryValue`: exact uniformity of binary decoding.
 * `Cslib.BitString.uniformList_boundedBinaryValue`: the capped distribution.
 * `Cslib.Probability.uniformFin_decide_lt`: the exact probability of an index threshold.
+* `Cslib.Probability.sum_uniformFin_mul_ite_le`: the probability that a uniform index is at least
+  a threshold, as a real sum.
 
 ## References
 
@@ -102,6 +104,24 @@ theorem uniformFin_decide_lt (size threshold : ℕ) [NeZero size] :
       (↑(min size threshold) : ENNReal) / size := by
   simp [PMF.map_apply, tsum_fintype, PMF.uniformOfFintype_apply, ← Finset.sum_filter,
     Fin.card_filter_val_lt, div_eq_mul_inv]
+
+/-- A uniform index in `Fin size` is at least `threshold ≤ size` with probability
+`1 - threshold / size`. -/
+theorem sum_uniformFin_mul_ite_le (size threshold : ℕ) [NeZero size] (h : threshold ≤ size) :
+    ∑ i : Fin size, (PMF.uniformOfFintype (Fin size) i).toReal *
+      (if threshold ≤ i.val then (1 : ℝ) else 0) = 1 - threshold / (size : ℝ) := by
+  have hfilter : (Finset.range size).filter (fun i => threshold ≤ i) =
+      Finset.Ico threshold size := by
+    ext i
+    simp only [Finset.mem_filter, Finset.mem_range, Finset.mem_Ico]
+    lia
+  have hsize : (size : ℝ) ≠ 0 := by exact_mod_cast NeZero.ne size
+  simp only [PMF.uniformOfFintype_apply, ENNReal.toReal_inv, ENNReal.toReal_natCast,
+    Fintype.card_fin, ← Finset.mul_sum]
+  rw [Fin.sum_univ_eq_sum_range (fun i => if threshold ≤ i then (1 : ℝ) else 0),
+    ← Finset.sum_filter, hfilter]
+  simp only [Finset.sum_const, Nat.card_Ico, nsmul_eq_mul, mul_one, Nat.cast_sub h]
+  field_simp
 
 end Cslib.Probability
 
