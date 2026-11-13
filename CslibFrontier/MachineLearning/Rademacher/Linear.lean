@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.MachineLearning.Rademacher.Margin
 public import Mathlib.Analysis.InnerProductSpace.Basic
+import CslibFrontier.Foundations.Data.Finset.Expect
 import CslibFrontier.Probability.BitString.Rademacher
 import CslibFrontier.Probability.PMF.ToReal
 
@@ -70,17 +71,6 @@ open Cslib.BitString
 
 variable {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E] {Z : Type*}
 
-/-- Jensen's inequality for the square root: a uniform average is at most the square root of the
-average of the squares. -/
-private theorem expect_le_sqrt_expect_sq {κ : Type*} [Fintype κ] (f : κ → ℝ) :
-    𝔼 i, f i ≤ √(𝔼 i, f i ^ 2) := by
-  refine (le_abs_self _).trans (Real.abs_le_sqrt ?_)
-  have h := Finset.expect_mul_sq_le_sq_mul_sq Finset.univ f fun _ => 1
-  simp only [mul_one, one_pow] at h
-  rcases isEmpty_or_nonempty κ with hκ | hκ
-  · simp [Finset.univ_eq_empty]
-  · rwa [Fintype.expect_const, mul_one] at h
-
 /-- The class of **linear predictors** `z ↦ ⟪w, φ z⟫` with weight vector of norm at most `B`, for a
 feature map `φ : Z → E` into a real inner product space. -/
 def linearPredictors (φ : Z → E) (B : ℝ) : Set (Z → ℝ) :=
@@ -124,7 +114,8 @@ theorem empiricalRademacherComplexity_linearPredictors_le_sqrt (φ : Z → E) {B
     _ = B * 𝔼 σ : Fin m → Bool, ‖∑ i, signVal (σ i) • φ (S i)‖ := by rw [Finset.mul_expect]
     _ ≤ B * √(∑ i, ‖φ (S i)‖ ^ 2) := by
         refine mul_le_mul_of_nonneg_left ?_ hB
-        refine (expect_le_sqrt_expect_sq _).trans_eq ?_
+        refine ((le_abs_self _).trans
+          (Real.abs_le_sqrt (Finset.sq_expect_le_expect_sq _ _))).trans_eq ?_
         rw [expect_norm_sum_signVal_smul_sq]
 
 /-- **Rademacher complexity of bounded-norm linear predictors**

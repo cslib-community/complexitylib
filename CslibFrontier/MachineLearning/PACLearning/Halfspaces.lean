@@ -25,8 +25,7 @@ makes the vanishing combination strictly positive. If the parameters can realize
 vector of values at `finrank ℝ V` distinct points, those points are shattered, and the VC dimension
 equals `finrank ℝ V` (`vcDim_positivityClass_eq`). This is the argument of
 [ShalevShwartzBenDavid2014, Theorem 9.2] for an arbitrary finite-dimensional family of linear
-functionals; it is also Dudley's bound for the positivity sets of a finite-dimensional vector
-space of real functions.
+functionals.
 
 Instances:
 * homogeneous halfspaces `x ↦ decide (0 < w ⬝ᵥ x)` in `Fin d → ℝ` have VC dimension `d`
@@ -223,19 +222,11 @@ theorem mem_affineHalfspaces {c : (Fin d → ℝ) → Bool} :
   simp only [affineHalfspaces, mem_positivityClass, Prod.exists]
   rfl
 
-private theorem pi_single_injective :
-    Function.Injective fun k : Fin d => (Pi.single k (1 : ℝ) : Fin d → ℝ) := by
-  intro i j hij
-  by_contra hne
-  have := congrFun hij i
-  simp only [Pi.single_eq_same, Pi.single_eq_of_ne hne] at this
-  exact one_ne_zero this
-
 /-- **The VC dimension of homogeneous halfspaces** in `Fin d → ℝ` is `d`
 [ShalevShwartzBenDavid2014, Theorem 9.2]. -/
 theorem vcDim_homogeneousHalfspaces (d : ℕ) : vcDim (homogeneousHalfspaces d) = d := by
   refine (vcDim_positivityClass_eq (homogeneousForm d) (fun k : Fin d => Pi.single k (1 : ℝ))
-    pi_single_injective (by rw [Fintype.card_fin, finrank_fin_fun])
+    (Pi.single_left_injective one_ne_zero) (by rw [Fintype.card_fin, finrank_fin_fun])
     fun t => ⟨t, fun i => ?_⟩).trans (finrank_fin_fun ℝ)
   simp [dotProduct_single]
 
@@ -252,7 +243,7 @@ theorem vcDim_affineHalfspaces (d : ℕ) : vcDim (affineHalfspaces d) = d + 1 :=
     · rfl
     · exact absurd (congrFun hij j).symm (by simp [x])
     · exact absurd (congrFun hij i) (by simp [x])
-    · exact congrArg some (pi_single_injective hij)
+    · exact congrArg some (Pi.single_left_injective one_ne_zero hij)
   · rintro (_ | i)
     · simp [x]
     · simp [x, dotProduct_single]
