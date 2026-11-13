@@ -6,6 +6,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
+import CslibFrontier.Computability.Complexity.Problems.ThreeSAT.Collapse
 import CslibFrontier.Computability.Complexity.Classes.Sparse.Envelope
 import CslibFrontier.Computability.Complexity.Classes.Advice.OneBit
 import CslibFrontier.Computability.Complexity.Classes.Advice.LengthComparison
@@ -5319,3 +5320,15 @@ register_result "ddnnf-negation-separation" where
     with c > 0) is derived from a family of such expanders with γ > 0 on unboundedly many \
     vertex counts, which is Proposition 5.2 of the paper \
     and is a hypothesis, not proved (#4668)."
+
+register_result "three-sat-complement-ph-collapse" where
+  title := "3SAT reducing to its complement collapses PH to NP"
+  topic := "complexity classes"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 5, Exercise 3",
+      locator := "2007 public draft, printed p. 100 / PDF p. 116" }
+  ]
+  theorems := [Cslib.Complexity.PH_eq_NP_of_ThreeSAT_reducible_compl]
+  scope := "Native polynomial-time many-one reduction with encCNF. ThreeSAT has clause width \
+    at most three; its complement is inside all CNF Nat, including wider formulas. \
+    The conclusion PH enc = NP enc holds for every explicit encoding enc."
