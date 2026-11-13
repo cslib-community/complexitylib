@@ -54,7 +54,7 @@ private def nonrotation : Matrix (Fin 2) (Fin 2) (ZMod 4) := !![0, 0; 0, 1]
 
 private theorem nonrotation_not_encoded
     (A : Matrix (Fin 1) (Fin 1) (Fin 2 → ZMod 4)) :
-    ModuleSIS.encodeMatrix A ≠ GeneralSIS.encodeMatrix nonrotation := by
+    ModuleSIS.encodeMatrix A ≠ SIS.encodeMatrix nonrotation := by
   intro h
   have hrows := (encList (encList encNat)).injective h
   have h00 := congrArg (fun rows : List (List ℕ) => (rows.getD 0 []).getD 0 0) hrows
@@ -67,12 +67,12 @@ private theorem nonrotation_not_encoded
 /-- The actual sampler has signed rotation blocks and excludes a positive scalar-uniform event. -/
 example : ∃ sample : (((ℕ × ℕ) × ℕ) × ℕ) → ProbComp (List Bool),
     IsPPTOn (encPair (encPair (encPair encUnary encUnary) encUnary) encUnary) encBits sample ∧
-    GeneralSIS.encodeMatrix (!![1, 3; 1, 1] : Matrix (Fin 2) (Fin 2) (ZMod 4)) ∈
+    SIS.encodeMatrix (!![1, 3; 1, 1] : Matrix (Fin 2) (Fin 2) (ZMod 4)) ∈
       (ProbComp.eval (sample (((1, 1), 2), 2))).support ∧
-    (ProbComp.eval (sample (((1, 1), 2), 2))) (GeneralSIS.encodeMatrix nonrotation) = 0 ∧
-    GeneralSIS.encodeMatrix nonrotation ∈
+    (ProbComp.eval (sample (((1, 1), 2), 2))) (SIS.encodeMatrix nonrotation) = 0 ∧
+    SIS.encodeMatrix nonrotation ∈
       ((PMF.uniformOfFintype (Matrix (Fin 2) (Fin 2) (ZMod 4))).map
-        GeneralSIS.encodeMatrix).support := by
+        SIS.encodeMatrix).support := by
   obtain ⟨sample, hppt, hlaw⟩ := exists_isPPTOn_sampleEncodedModuleMatrix
   refine ⟨sample, hppt, ?_, ?_, ?_⟩
   · rw [hlaw, PMF.mem_support_map_iff]

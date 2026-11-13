@@ -35,7 +35,7 @@ Module-LWE sample masked by the encoded message:
    `decodePolyMsg`, `decodePolyMsg_encodePolyMsg_add_noise`)**:
    A message bit-vector `m : Fin n → Bool` is encoded into `Fin n → ZMod q` by mapping
    `false ↦ 0` and `true ↦ ⌊q / 2⌋`, and decoded by lifting each coefficient to its centered
-   representative in `(-q/2, q/2]` (`GeneralSIS.liftCentered`) and testing whether its magnitude
+   representative in `(-q/2, q/2]` (`SIS.liftCentered`) and testing whether its magnitude
    exceeds `⌊q / 4⌋`. Whenever `4 * B + 2 < q` and every coefficient of an integer error
    polynomial `err` has magnitude at most `B`, decoding `encodePolyMsg q m + err` recovers `m`
    (`decodePolyMsg_encodePolyMsg_add_noise`).
@@ -445,18 +445,18 @@ def encodePolyMsg {n : ℕ} (q : ℕ) (m : Fin n → Bool) : Fin n → ZMod q :=
   rfl
 
 /-- Decode a noisy ring element `w : Fin n → ZMod q` into `Fin n → Bool` by lifting each
-coefficient to its centered representative `GeneralSIS.liftCentered w i` in `(-q/2, q/2]` and
+coefficient to its centered representative `SIS.liftCentered w i` in `(-q/2, q/2]` and
 testing whether its magnitude exceeds `q / 4` (`false` when `|liftCentered w i| ≤ q / 4`, `true`
 when `|liftCentered w i| > q / 4`). -/
 def decodePolyMsg {n q : ℕ} (w : Fin n → ZMod q) : Fin n → Bool :=
-  fun i => decide (q / 4 < (GeneralSIS.liftCentered w i).natAbs)
+  fun i => decide (q / 4 < (SIS.liftCentered w i).natAbs)
 
 @[simp] theorem decodePolyMsg_apply_eq_false_iff {n q : ℕ} (w : Fin n → ZMod q) (i : Fin n) :
-    decodePolyMsg w i = false ↔ (GeneralSIS.liftCentered w i).natAbs ≤ q / 4 := by
+    decodePolyMsg w i = false ↔ (SIS.liftCentered w i).natAbs ≤ q / 4 := by
   simp [decodePolyMsg]
 
 @[simp] theorem decodePolyMsg_apply_eq_true_iff {n q : ℕ} (w : Fin n → ZMod q) (i : Fin n) :
-    decodePolyMsg w i = true ↔ q / 4 < (GeneralSIS.liftCentered w i).natAbs := by
+    decodePolyMsg w i = true ↔ q / 4 < (SIS.liftCentered w i).natAbs := by
   simp [decodePolyMsg]
 
 /-- **Bounded-error decoding correctness for `encodePolyMsg` and `decodePolyMsg`**: if
@@ -472,8 +472,8 @@ theorem decodePolyMsg_encodePolyMsg_add_noise {n q B : ℕ} (hB : 4 * B + 2 < q)
   cases hmi : m i
   · rw [decodePolyMsg_apply_eq_false_iff]
     have hval :
-        GeneralSIS.liftCentered (encodePolyMsg q m + fun j => (err j : ZMod q)) i = err i := by
-      rw [GeneralSIS.liftCentered, ZMod.valMinAbs_spec]
+        SIS.liftCentered (encodePolyMsg q m + fun j => (err j : ZMod q)) i = err i := by
+      rw [SIS.liftCentered, ZMod.valMinAbs_spec]
       refine ⟨?_, by omega, by omega⟩
       simp only [encodePolyMsg, hmi, Bool.false_eq_true, ↓reduceIte, Pi.add_apply, zero_add]
     rw [hval]
@@ -481,17 +481,17 @@ theorem decodePolyMsg_encodePolyMsg_add_noise {n q B : ℕ} (hB : 4 * B + 2 < q)
   · rw [decodePolyMsg_apply_eq_true_iff]
     by_cases hwrap : (((q / 2 : ℕ) : ℤ) + err i) * 2 ≤ (q : ℤ)
     · have hval :
-          GeneralSIS.liftCentered (encodePolyMsg q m + fun j => (err j : ZMod q)) i =
+          SIS.liftCentered (encodePolyMsg q m + fun j => (err j : ZMod q)) i =
             ((q / 2 : ℕ) : ℤ) + err i := by
-        rw [GeneralSIS.liftCentered, ZMod.valMinAbs_spec]
+        rw [SIS.liftCentered, ZMod.valMinAbs_spec]
         refine ⟨?_, by omega, hwrap⟩
         simp only [encodePolyMsg, hmi, ↓reduceIte, Pi.add_apply, Int.cast_add, Int.cast_natCast]
       rw [hval]
       omega
     · have hval :
-          GeneralSIS.liftCentered (encodePolyMsg q m + fun j => (err j : ZMod q)) i =
+          SIS.liftCentered (encodePolyMsg q m + fun j => (err j : ZMod q)) i =
             ((q / 2 : ℕ) : ℤ) + err i - (q : ℤ) := by
-        rw [GeneralSIS.liftCentered, ZMod.valMinAbs_spec]
+        rw [SIS.liftCentered, ZMod.valMinAbs_spec]
         refine ⟨?_, by omega, by omega⟩
         simp only [encodePolyMsg, hmi, ↓reduceIte, Pi.add_apply, Int.cast_sub, Int.cast_add,
           Int.cast_natCast, ZMod.natCast_self, sub_zero]
@@ -618,32 +618,32 @@ theorem intCast_moduleLWEErrorPoly_liftCentered {k n q : ℕ}
     (s r e e₁ : Fin k → Fin n → ZMod q)
     (e₂ : Fin n → ZMod q) :
     (fun i => (moduleLWEErrorPoly
-        (fun j => GeneralSIS.liftCentered (s j))
-        (fun j => GeneralSIS.liftCentered (r j))
-        (fun j => GeneralSIS.liftCentered (e j))
-        (fun j => GeneralSIS.liftCentered (e₁ j))
-        (GeneralSIS.liftCentered e₂) i : ZMod q)) =
+        (fun j => SIS.liftCentered (s j))
+        (fun j => SIS.liftCentered (r j))
+        (fun j => SIS.liftCentered (e j))
+        (fun j => SIS.liftCentered (e₁ j))
+        (SIS.liftCentered e₂) i : ZMod q)) =
       innerPoly e r - innerPoly e₁ s + e₂ := by
   have her := map_innerPoly (Int.castRingHom (ZMod q))
-    (fun j => GeneralSIS.liftCentered (e j))
-    (fun j => GeneralSIS.liftCentered (r j))
+    (fun j => SIS.liftCentered (e j))
+    (fun j => SIS.liftCentered (r j))
   have hes := map_innerPoly (Int.castRingHom (ZMod q))
-    (fun j => GeneralSIS.liftCentered (e₁ j))
-    (fun j => GeneralSIS.liftCentered (s j))
+    (fun j => SIS.liftCentered (e₁ j))
+    (fun j => SIS.liftCentered (s j))
   change (Int.cast : ℤ → ZMod q) ∘ _ =
-    innerPoly (fun j => (Int.cast : ℤ → ZMod q) ∘ GeneralSIS.liftCentered (e j))
-      (fun j => (Int.cast : ℤ → ZMod q) ∘ GeneralSIS.liftCentered (r j)) at her
+    innerPoly (fun j => (Int.cast : ℤ → ZMod q) ∘ SIS.liftCentered (e j))
+      (fun j => (Int.cast : ℤ → ZMod q) ∘ SIS.liftCentered (r j)) at her
   change (Int.cast : ℤ → ZMod q) ∘ _ =
-    innerPoly (fun j => (Int.cast : ℤ → ZMod q) ∘ GeneralSIS.liftCentered (e₁ j))
-      (fun j => (Int.cast : ℤ → ZMod q) ∘ GeneralSIS.liftCentered (s j)) at hes
-  simp only [GeneralSIS.intCast_comp_liftCentered] at her hes
+    innerPoly (fun j => (Int.cast : ℤ → ZMod q) ∘ SIS.liftCentered (e₁ j))
+      (fun j => (Int.cast : ℤ → ZMod q) ∘ SIS.liftCentered (s j)) at hes
+  simp only [SIS.intCast_comp_liftCentered] at her hes
   funext i
   simp only [moduleLWEErrorPoly, Pi.add_apply, Pi.sub_apply, Int.cast_add, Int.cast_sub]
   have her_i := congrFun her i
   have hes_i := congrFun hes i
   simp only [Function.comp_apply] at her_i hes_i
   rw [her_i, hes_i]
-  simp only [GeneralSIS.liftCentered, ZMod.coe_valMinAbs]
+  simp only [SIS.liftCentered, ZMod.coe_valMinAbs]
 
 /-- **Infinity-norm bound on `moduleLWEErrorPoly`**: if `‖s‖_∞ ≤ B_s`, `‖r‖_∞ ≤ B_r`, and
 `‖e‖_∞, ‖e₁‖_∞, ‖e₂‖_∞ ≤ B_e`, then every coefficient of `moduleLWEErrorPoly s r e e₁ e₂` has
@@ -679,7 +679,7 @@ theorem moduleLWEDecrypt_moduleLWEEncrypt_eq_of_bounds {k n q B_s B_r B_e : ℕ}
     (hr : ModuleSIS.inInfNormBound B_r r)
     (he : ModuleSIS.inInfNormBound B_e e)
     (he₁ : ModuleSIS.inInfNormBound B_e e₁)
-    (he₂ : GeneralSIS.inInfNormBound B_e e₂)
+    (he₂ : SIS.inInfNormBound B_e e₂)
     (m : Fin n → Bool) :
     moduleLWEDecrypt s (moduleLWEEncrypt (moduleLWEKeyGen A s e) r e₁ e₂ m) = m := by
   rw [moduleLWEDecrypt, moduleLWEDecrypt_phase_eq,
@@ -701,7 +701,7 @@ theorem moduleLWEDecrypt_moduleLWEEncrypt_eq {k n q B_s B_r B_e : ℕ}
     (hr : ModuleSIS.inInfNormBound B_r r)
     (he : ModuleSIS.inInfNormBound B_e e)
     (he₁ : ModuleSIS.inInfNormBound B_e e₁)
-    (he₂ : GeneralSIS.inInfNormBound B_e e₂)
+    (he₂ : SIS.inInfNormBound B_e e₂)
     (m : Fin n → Bool) :
     moduleLWEDecrypt s (moduleLWEEncrypt (moduleLWEKeyGen A s e) r e₁ e₂ m) = m := by
   have hle : k * n * B_e * B_s ≤ k * n * B_e * B_r := Nat.mul_le_mul_left (k * n * B_e) hBs
