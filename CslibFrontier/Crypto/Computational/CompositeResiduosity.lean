@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Probabilistic.Parameter
+public import CslibFrontier.Crypto.Computational.CompositeResiduosity.Finite
 public import CslibFrontier.Crypto.Computational.Paillier.Algebra
 public import CslibFrontier.Crypto.Game
 import CslibFrontier.Probability.PMF
@@ -23,7 +24,10 @@ on moduli says that every uniform strict PPT distinguisher has negligible advant
 
 A description of a balanced modulus is its pair of prime factors `(p, q)`, with validity part of
 the type, as for Schnorr groups. Nothing here claims that valid descriptions can be generated
-efficiently; the assumption is stated relative to an arbitrary law on descriptions.
+efficiently; the assumption is stated relative to an arbitrary law on descriptions. The two
+worlds at one fixed modulus are `dcrRealExperiment` and `dcrRandomExperiment` in
+`CslibFrontier/Crypto/Computational/CompositeResiduosity/Finite.lean`; the games here draw a
+modulus and run them.
 
 ## Main definitions
 
@@ -38,6 +42,8 @@ efficiently; the assumption is stated relative to an arbitrary law on descriptio
   description ([KatzLindell2020], Claim 15.7).
 * `Cslib.Crypto.BalancedModulus.Desc.totient_eq`: the computed totient `(p - 1) * (q - 1)` is
   `φ(N)`.
+* `Cslib.Crypto.dcrRealGame_eq_withSetup`, `Cslib.Crypto.dcrIdealGame_eq_withSetup`: the DCR
+  games draw a modulus and run the fixed-modulus experiments.
 
 ## References
 
@@ -141,5 +147,25 @@ def DCR (setup : ℕ → PMF Desc) : Prop :=
   Game.Indistinguishable (dcrRealGame setup) (dcrIdealGame setup) fun distinguisher =>
     IsPPTOn (encPair encUnary (encPair encNat encNat)) encBool
       (fun input => distinguisher input.1 input.2)
+
+/-- The real DCR game draws a modulus and runs `dcrRealExperiment` at that modulus, against the
+distinguisher that receives `N` and the least representative of the challenge. -/
+theorem dcrRealGame_eq_withSetup (setup : ℕ → PMF Desc)
+    (distinguisher : ℕ → ℕ × ℕ → ProbComp Bool) (n : ℕ) :
+    dcrRealGame setup distinguisher n = Game.withSetup (setup n) fun d =>
+      dcrRealExperiment d.modulus fun y =>
+        distinguisher n (d.modulus, (y : ZMod (d.modulus ^ 2)).val) := by
+  simp only [dcrRealGame, Game.withSetup, dcrRealExperiment, ProbComp.eval_bind,
+    ProbComp.eval_uniform, PMF.monad_bind_eq_bind]
+
+/-- The ideal DCR game draws a modulus and runs `dcrRandomExperiment` at that modulus, against the
+distinguisher that receives `N` and the least representative of the challenge. -/
+theorem dcrIdealGame_eq_withSetup (setup : ℕ → PMF Desc)
+    (distinguisher : ℕ → ℕ × ℕ → ProbComp Bool) (n : ℕ) :
+    dcrIdealGame setup distinguisher n = Game.withSetup (setup n) fun d =>
+      dcrRandomExperiment d.modulus fun y =>
+        distinguisher n (d.modulus, (y : ZMod (d.modulus ^ 2)).val) := by
+  simp only [dcrIdealGame, Game.withSetup, dcrRandomExperiment, ProbComp.eval_bind,
+    ProbComp.eval_uniform, PMF.monad_bind_eq_bind]
 
 end Cslib.Crypto

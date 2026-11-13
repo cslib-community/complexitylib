@@ -4165,6 +4165,7 @@ public import CslibFrontier.Crypto.Computational.Commitment
 public import CslibFrontier.Crypto.Computational.Commitment.Basic
 public import CslibFrontier.Crypto.Computational.Commitment.PublicOperations
 public import CslibFrontier.Crypto.Computational.CompositeResiduosity
+public import CslibFrontier.Crypto.Computational.CompositeResiduosity.Finite
 public import CslibFrontier.Crypto.Computational.CramerShoup
 public import CslibFrontier.Crypto.Computational.CramerShoup.ProjectiveHash
 public import CslibFrontier.Crypto.Computational.CramerShoup.Reductions
@@ -4377,6 +4378,7 @@ public import CslibFrontier.Crypto.Computational.OneWayToSignature
 public import CslibFrontier.Crypto.Computational.PRGToOneWay
 public import CslibFrontier.Crypto.Computational.Paillier
 public import CslibFrontier.Crypto.Computational.Paillier.Algebra
+public import CslibFrontier.Crypto.Computational.Paillier.Finite
 public import CslibFrontier.Crypto.Computational.Paillier.Security
 public import CslibFrontier.Crypto.Computational.PedersenCommitment
 public import CslibFrontier.Crypto.Computational.PedersenCommitment.ProbComp
