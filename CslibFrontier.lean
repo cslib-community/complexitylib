@@ -5502,6 +5502,7 @@ public import CslibFrontier.Foundations.Data.Code.LowDegreeExtension.Constant
 public import CslibFrontier.Foundations.Data.Code.LowDegreeExtension.UnitSum
 public import CslibFrontier.Foundations.Data.Code.Multilinearity
 public import CslibFrontier.Foundations.Data.Code.MultilinearitySoundness
+public import CslibFrontier.Foundations.Data.Code.NearestDecoding
 public import CslibFrontier.Foundations.Data.Code.OddCircuit
 public import CslibFrontier.Foundations.Data.Code.OddCircuitAsymptotic
 public import CslibFrontier.Foundations.Data.Code.OddCircuitFourier
@@ -5509,6 +5510,7 @@ public import CslibFrontier.Foundations.Data.Code.ParityCheck
 public import CslibFrontier.Foundations.Data.Code.Plotkin
 public import CslibFrontier.Foundations.Data.Code.Plotkin.Asymptotic
 public import CslibFrontier.Foundations.Data.Code.PuncturedBallFourier
+public import CslibFrontier.Foundations.Data.Code.RadialDecoding
 public import CslibFrontier.Foundations.Data.Code.ReedMuller
 public import CslibFrontier.Foundations.Data.Code.ReedSolomon
 public import CslibFrontier.Foundations.Data.Code.SelfCorrection
