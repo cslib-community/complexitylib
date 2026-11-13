@@ -705,6 +705,25 @@ counts the points of `y² = x³ + 3x + 3` over `ZMod 7` (Example 9.69 of
 that attain both ends of the bound, and applies each form of the theorem to them. Build it with
 `lake build CslibFrontierTests.Foundations.AlgebraicGeometry.EllipticCurveHasse`.
 
+### Faithful block-matrix embeddings
+
+Import [`Matrix/BlockEmbedding.lean`](../../CslibFrontier/Foundations/LinearAlgebra/Matrix/BlockEmbedding.lean)
+to extend a ring representation `R →+* Matrix κ κ S` entrywise to a ring homomorphism from square
+matrices over `R` to flattened block matrices over `S`. `Matrix.blockEmbedding_apply` exposes the
+block entries, while `Matrix.blockEmbedding_injective` says that a faithful entry representation
+remains faithful after flattening. The rational-circuit rank and deformation developments use this
+shared definition instead of owning a specialized copy.
+
+For [QR-UOV Round 3](https://csrc.nist.gov/csrc/media/Projects/pqc-dig-sig/documents/qruov_specifications.pdf),
+Mathlib's `Algebra.leftMulMatrix b` is the injective regular representation `g ↦ Φ_f^g` of
+Equation (4) and Lemma 1 (§3.2, p. 12), and `Matrix.blockEmbedding` is the entrywise lift `ϕ`
+from §4.1, p. 16. The
+[ordinary-module client](../../CslibFrontierTests/Foundations/LinearAlgebra/Matrix/BlockEmbedding.lean)
+checks their composition without defining a parallel quotient-ring representation. This API does
+not construct the symmetrizer `W`, the structured MQ map, the pull-back bijection, signing or
+verification, rank-failure estimates, or the QROM reduction; those remain obligations of the
+[post-quantum program](https://github.com/cslib-community/cslib-frontier/issues/4987).
+
 ### HQC fixed-weight support sampling
 
 Import [`HQC/SupportSampling.lean`](../../CslibFrontier/Crypto/Primitives/HQC/SupportSampling.lean)
