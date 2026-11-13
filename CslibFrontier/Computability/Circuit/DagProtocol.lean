@@ -77,14 +77,25 @@ section Core
 
 variable {σ : Signature} {I : Interpretation σ Bool}
 
+/-- A rectangle with an empty side is separated by a constant, so it suffices to separate
+rectangles containing a pair of inputs. -/
+private theorem exists_sep_of_mem {S : Set (BitString n → Bool)}
+    (hconst : ∀ b, Synthesis I S {fun _ => b} 1) {A B : Set (BitString n)}
+    (h : ∀ x ∈ A, ∀ y ∈ B, ∃ f, Sep f A B ∧ Synthesis I S {f} 1) :
+    ∃ f, Sep f A B ∧ Synthesis I S {f} 1 := by
+  by_cases hA : A.Nonempty
+  swap
+  · exact ⟨fun _ => false, ⟨fun x hx => (hA ⟨x, hx⟩).elim, fun _ _ => rfl⟩, hconst false⟩
+  by_cases hB : B.Nonempty
+  swap
+  · exact ⟨fun _ => true, ⟨fun _ _ => rfl, fun y hy => (hB ⟨y, hy⟩).elim⟩, hconst true⟩
+  exact h _ hA.some_mem _ hB.some_mem
+
 /-- A rectangle containing no pair of inputs is separated by a constant. -/
 private theorem exists_sep_const {S : Set (BitString n → Bool)}
     (hconst : ∀ b, Synthesis I S {fun _ => b} 1) {A B : Set (BitString n)}
-    (h : ∀ x ∈ A, ∀ y ∈ B, False) : ∃ f, Sep f A B ∧ Synthesis I S {f} 1 := by
-  by_cases hA : A.Nonempty
-  · obtain ⟨x, hx⟩ := hA
-    exact ⟨fun _ => true, ⟨fun _ _ => rfl, fun y hy => (h x hx y hy).elim⟩, hconst true⟩
-  · exact ⟨fun _ => false, ⟨fun x hx => (hA ⟨x, hx⟩).elim, fun _ _ => rfl⟩, hconst false⟩
+    (h : ∀ x ∈ A, ∀ y ∈ B, False) : ∃ f, Sep f A B ∧ Synthesis I S {f} 1 :=
+  exists_sep_of_mem hconst fun x hx y hy => (h x hx y hy).elim
 
 variable {S : Set (BitString n → Bool)}
 
@@ -293,14 +304,7 @@ literal `xᵢ` or the literal `¬xᵢ`. -/
 private theorem exists_sep_differsAt (A B : Set (BitString n)) (i : Fin n)
     (h : ∀ x ∈ A, ∀ y ∈ B, DiffersAt x y i) :
     ∃ f, Sep f A B ∧ Synthesis Boolean.interpretation (inputs n) {f} 1 := by
-  by_cases hA : A.Nonempty
-  swap
-  · exact ⟨fun _ => false, ⟨fun x hx => (hA ⟨x, hx⟩).elim, fun _ _ => rfl⟩, Synthesis.const false⟩
-  by_cases hB : B.Nonempty
-  swap
-  · exact ⟨fun _ => true, ⟨fun _ _ => rfl, fun y hy => (hB ⟨y, hy⟩).elim⟩, Synthesis.const true⟩
-  obtain ⟨x₀, hx₀⟩ := hA
-  obtain ⟨y₀, hy₀⟩ := hB
+  refine exists_sep_of_mem Synthesis.const fun x₀ hx₀ y₀ hy₀ => ?_
   have hinput : Synthesis Boolean.interpretation (inputs n) {fun x => x i} 0 :=
     Synthesis.of_mem ⟨i, rfl⟩
   cases hxi : x₀ i
@@ -319,16 +323,7 @@ constant or the literal `xᵢ`. -/
 private theorem exists_sep_exceedsAt (A B : Set (BitString n)) (i : Fin n)
     (h : ∀ x ∈ A, ∀ y ∈ B, ExceedsAt x y i) :
     ∃ f, Sep f A B ∧ Synthesis Monotone.interpretation (inputs n) {f} 1 := by
-  by_cases hA : A.Nonempty
-  swap
-  · exact ⟨fun _ => false, ⟨fun x hx => (hA ⟨x, hx⟩).elim, fun _ _ => rfl⟩,
-      Synthesis.monotone_const false⟩
-  by_cases hB : B.Nonempty
-  swap
-  · exact ⟨fun _ => true, ⟨fun _ _ => rfl, fun y hy => (hB ⟨y, hy⟩).elim⟩,
-      Synthesis.monotone_const true⟩
-  obtain ⟨x₀, hx₀⟩ := hA
-  obtain ⟨y₀, hy₀⟩ := hB
+  refine exists_sep_of_mem Synthesis.monotone_const fun x₀ hx₀ y₀ hy₀ => ?_
   have hinput : Synthesis Monotone.interpretation (inputs n) {fun x => x i} 0 :=
     Synthesis.of_mem ⟨i, rfl⟩
   exact ⟨fun x => x i, ⟨fun x hx => (h x hx y₀ hy₀).1, fun y hy => (h x₀ hx₀ y hy).2⟩,

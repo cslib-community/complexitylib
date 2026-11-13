@@ -46,7 +46,7 @@ private theorem poly_scope : ComputableInPolyTime
     (encPair (encCSP encTable encNat) encRecord) (encList encNat) := by
   unfold scope
   have hget : ComputableInPolyTime
-      (fun p : CSP Table ℕ × Record => p.1.getD p.2.1 (⟨0, []⟩, []))
+      (fun p : CSP Table ℕ × Record => p.1.getD p.2.1 ⟨⟨0, []⟩, []⟩)
       (encPair (encCSP encTable encNat) encRecord) (encConstraint encTable encNat) :=
     ComputableInPolyTime.listGetDWithInput (by fun_prop) (by fun_prop) _
   exact hget.snd'

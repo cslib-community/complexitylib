@@ -26,6 +26,7 @@ import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Crypto.Negligible.Dyadic
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.BindCompare
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Tactic.PolyTime
@@ -2342,18 +2343,6 @@ theorem eval_cca2GameOn_cca2MultiToSingle {Msg Out : Type} [Inhabited Msg]
   simp only [hsample, hguess, PMF.bind_bind]
   exact PMF.bind_comm _ _ _
 
-/-- If two pairs of continuations satisfy `f₁ a b + g₂ a b = f₂ a b + g₁ a b` on the support of
-`p`, then `(p.bind f₁) b + (p.bind g₂) b = (p.bind f₂) b + (p.bind g₁) b`. -/
-theorem bind_apply_add_eq_of_support {α β : Type*} {p : PMF α}
-    {f₁ f₂ g₁ g₂ : α → PMF β} {b : β}
-    (h : ∀ a ∈ p.support, f₁ a b + g₂ a b = f₂ a b + g₁ a b) :
-    p.bind f₁ b + p.bind g₂ b = p.bind f₂ b + p.bind g₁ b := by
-  simp only [PMF.bind_apply, ← tsum_add]
-  refine tsum_congr fun a => ?_
-  by_cases ha : a ∈ p.support
-  · rw [← mul_add, ← mul_add, h a ha]
-  · simp [(PMF.apply_eq_zero_iff p a).mpr ha]
-
 private theorem eval_cca2MultiToSingleAt_cont {Msg Out : Type} [Inhabited Msg]
     (valid : ℕ → List Bool → Msg → Msg → Bool)
     (encOut : Out ↪ List Bool)
@@ -2545,8 +2534,8 @@ theorem cca2MultiHybridGameOn_step_gap {Msg Out : Type} [Inhabited Msg]
                 (cca2Phase1Oracle encOut decrypt n keys.2))
               (adversary.choose n keys.1)).run ()) := ⟨_, fun _ => rfl⟩
     simp only [← hpChoice]
-    refine bind_apply_add_eq_of_support fun keys _ =>
-      bind_apply_add_eq_of_support fun choiceOut _ => ?_
+    refine PMF.bind_apply_add_eq_on_support fun keys _ =>
+      PMF.bind_apply_add_eq_on_support fun choiceOut _ => ?_
     by_cases hall : choiceOut.1.1.all (fun p => valid n keys.1 p.1 p.2) = true
     · by_cases hlt : split < choiceOut.1.1.length
       · have hltDec : decide (split < choiceOut.1.1.length) = true := decide_eq_true hlt

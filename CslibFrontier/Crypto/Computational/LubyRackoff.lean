@@ -17,8 +17,10 @@ import CslibFrontier.Crypto.Game.Concrete
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Crypto.Protocols.Cipher.LubyRackoff
 import CslibFrontier.Foundations.Data.BitString.List.Operations
+import CslibFrontier.Foundations.Data.BitString.Neg
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.CoinFixing
+import CslibFrontier.Languages.Probabilistic.Oracle.Substitution.QueryCount
 import CslibFrontier.Probability.IID
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.Product
@@ -149,9 +151,6 @@ private theorem splitBlock_joinBlock {n : ℕ} (halves : BitString n × BitStrin
     splitBlock n (joinBlock halves) = halves := by
   simp [splitBlock, joinBlock]
 
-private theorem bitString_sub_eq_add {n : ℕ} (a b : BitString n) : a - b = a + b :=
-  funext fun i => BooleanRing.sub_eq_add (a i) (b i)
-
 /-- A word oracle `g` represents `f` on `n`-bit strings. -/
 private abbrev Represents {n : ℕ} (g : List Bool → List Bool) (f : BitString n → BitString n) :
     Prop :=
@@ -172,7 +171,7 @@ private theorem feistelInvRoundWord_joinBlock {n : ℕ} {g : List Bool → List 
         joinBlock (LubyRackoff.feistelInvRound f halves)
   | ⟨_, _⟩ => by
     simp only [feistelInvRoundWord, joinBlock, LubyRackoff.feistelInvRound,
-      List.take_left' List.length_ofFn, List.drop_left' List.length_ofFn, h, bitString_sub_eq_add,
+      List.take_left' List.length_ofFn, List.drop_left' List.length_ofFn, h, BitString.sub_eq_add,
       ← BitString.ofFn_add]
 
 /-- Word-level Feistel rounds compute the Feistel network of the round functions they represent.
@@ -623,7 +622,7 @@ theorem eval_prpRealGame_lubyRackoffCipher {family : List Bool → List Bool →
         adversary n) =
       ProbComp.eval (prfMultiRealGame family 3 (lubyRackoffAdversary adversary) n) := by
   simp only [BlockCipher.prpRealGame, BlockCipher.prpOracle, lubyRackoffCipher, prfMultiRealGame,
-    BitString.eval_sampleList, ProbOracleComp.eval_interpret, pmf_norm]
+    ProbOracleComp.run, BitString.eval_sampleList, ProbOracleComp.eval_interpret, pmf_norm]
   peel_binds key
   have hkeyLength : key.length = 3 * n := BitString.length_of_mem_support_uniformList key_mem
   rw [interpret_lubyRackoffAdversary]; congr 2; funext request; congr 1
@@ -666,23 +665,20 @@ private theorem randomPermOracle_eq_blockOracle (n : ℕ) (π : Equiv.Perm (BitS
 are answered with `[]` without querying. -/
 private noncomputable def pairAdversary (adversary : OracleDistinguisher) (n : ℕ) :
     ProbOracleComp (fun _ : BitString n × BitString n => BitString n × BitString n) Bool :=
-  OracleComp.interpret
-    (OracleComp.sumHandler (fun k => ProbOracleComp.sample (ProbComp.unifFin k))
-      (fun request : Unit × List Bool =>
-        if request.2.length = 2 * n then joinBlock <$> ProbOracleComp.query (splitBlock n request.2)
-        else pure []))
+  ProbOracleComp.simulate
+    (fun request : Unit × List Bool =>
+      if request.2.length = 2 * n then joinBlock <$> ProbOracleComp.query (splitBlock n request.2)
+      else pure [])
     (adversary n [])
 
 private theorem isQueryBounded_pairAdversary {adversary : OracleDistinguisher} {n Q : ℕ}
     (hQ : (adversary n []).IsQueryBounded Q) : (pairAdversary adversary n).IsQueryBounded Q := by
-  refine hQ.interpret fun q => ?_
-  rcases q with k | request
-  · exact ProbOracleComp.IsQueryBounded.sample (ProbComp.unifFin k)
-  · dsimp only [OracleComp.sumHandler]; split_ifs
-    · simpa only [map_eq_bind_pure_comp, Function.comp_def, Nat.add_zero, Sum.elim_inr] using
-        (ProbOracleComp.IsQueryBounded.query (splitBlock n request.2)).bind fun _ =>
-          OracleComp.IsCostBounded.pure _ 0
-    · exact OracleComp.IsCostBounded.pure [] _
+  refine hQ.simulate fun request => ?_
+  split_ifs
+  · simpa only [map_eq_bind_pure_comp, Function.comp_def, Nat.add_zero] using
+      (ProbOracleComp.IsQueryBounded.query (splitBlock n request.2)).bind fun _ =>
+        OracleComp.IsCostBounded.pure _ 0
+  · exact OracleComp.IsCostBounded.pure [] _
 
 private theorem interpret_pairAdversary (adversary : OracleDistinguisher) (n : ℕ)
     (σ : BitString n × BitString n → BitString n × BitString n) :
@@ -691,8 +687,7 @@ private theorem interpret_pairAdversary (adversary : OracleDistinguisher) (n : �
       OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle
         (fun request : Unit × List Bool => PMF.pure (blockOracle n σ request.2)))
         (adversary n []) := by
-  simp only [pairAdversary, OracleComp.interpret_interpret, OracleComp.interpret_sumHandler,
-    ProbOracleComp.interpret_sample, ProbComp.unifFin, OracleComp.interpret_query]
+  rw [pairAdversary, ProbOracleComp.interpret_simulate]
   congr 2; funext request; unfold blockOracle; split_ifs <;> simp [PMF.monad_map_eq_map]
 
 /-- With random round functions, the adapter runs the block-cipher adversary against the Feistel
@@ -705,7 +700,7 @@ private theorem eval_prfMultiIdealGame_lubyRackoffAdversary (adversary : OracleD
           PMF.pure (LubyRackoff.feistel3 (tables 0) (tables 1) (tables 2) p)))
           (pairAdversary adversary n) := by
   simp only [prfMultiIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
-    ProbOracleComp.eval_interpret, ProbComp.eval_pure, interpret_pairAdversary]
+    ProbOracleComp.eval_run, ProbComp.eval_pure, interpret_pairAdversary]
   congr 1; funext tables; rw [interpret_lubyRackoffAdversary]; congr 2; funext request; congr 1
   unfold blockOracle; split_ifs with hblock
   · conv_lhs => rw [← joinBlock_splitBlock hblock]
@@ -742,7 +737,7 @@ theorem advantage_lubyRackoffRandomRounds_prpIdealGame_le (adversary : OracleDis
       (PMF.uniformOfFintype (Equiv.Perm (BitString n × BitString n))).bind fun σ =>
         OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle
           (fun p => PMF.pure (σ p))) (pairAdversary adversary n) := by
-    simp only [prpIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
+    simp only [prpIdealGame, ProbOracleComp.run, ProbComp.eval_bind, ProbComp.eval_uniform,
       ProbOracleComp.eval_interpret, ProbComp.eval_pure, interpret_pairAdversary]
     rw [← PMF.uniformOfFintype_map_equiv (blockEquiv n).permCongr, PMF.bind_map]
     congr 1; funext π; simp only [Function.comp_apply, randomPermOracle_eq_blockOracle]
@@ -967,7 +962,8 @@ theorem eval_strongPRPRealGame_lubyRackoff4Cipher {family : List Bool → List B
         adversary n) =
       ProbComp.eval (prfMultiRealGame family 4 (strongLubyRackoffAdversary adversary) n) := by
   simp only [BlockCipher.strongPRPRealGame, BlockCipher.strongPRPOracle, lubyRackoff4Cipher,
-    prfMultiRealGame, BitString.eval_sampleList, ProbOracleComp.eval_interpret, pmf_norm]
+    prfMultiRealGame, ProbOracleComp.run, BitString.eval_sampleList, ProbOracleComp.eval_interpret,
+    pmf_norm]
   peel_binds key
   have hkeyLength : key.length = 4 * n := BitString.length_of_mem_support_uniformList key_mem
   have hrep {i} (hi : i < 4) := represents_prfOracle_take hfamily.length_eq hkeyLength hi
@@ -1031,25 +1027,22 @@ private theorem strongRandomPermOracle_eq_strongBlockOracle (n : ℕ)
 private noncomputable def strongPairAdversary (adversary : StrongPRPDistinguisher) (n : ℕ) :
     ProbOracleComp (fun _ : Bool × (BitString n × BitString n) => BitString n × BitString n)
       Bool :=
-  OracleComp.interpret
-    (OracleComp.sumHandler (fun k => ProbOracleComp.sample (ProbComp.unifFin k))
-      (fun request : Bool × List Bool =>
-        if request.2.length = 2 * n then
-          joinBlock <$> ProbOracleComp.query (request.1, splitBlock n request.2)
-        else pure []))
+  ProbOracleComp.simulate
+    (fun request : Bool × List Bool =>
+      if request.2.length = 2 * n then
+        joinBlock <$> ProbOracleComp.query (request.1, splitBlock n request.2)
+      else pure [])
     (adversary n [])
 
 private theorem isQueryBounded_strongPairAdversary {adversary : StrongPRPDistinguisher}
     {n Q : ℕ} (hQ : (adversary n []).IsQueryBounded Q) :
     (strongPairAdversary adversary n).IsQueryBounded Q := by
-  refine hQ.interpret fun q => ?_
-  rcases q with k | request
-  · exact ProbOracleComp.IsQueryBounded.sample (ProbComp.unifFin k)
-  · dsimp only [OracleComp.sumHandler]; split_ifs
-    · simpa only [map_eq_bind_pure_comp, Function.comp_def, Nat.add_zero, Sum.elim_inr] using
-        (ProbOracleComp.IsQueryBounded.query (request.1, splitBlock n request.2)).bind fun _ =>
-          OracleComp.IsCostBounded.pure _ 0
-    · exact OracleComp.IsCostBounded.pure [] _
+  refine hQ.simulate fun request => ?_
+  split_ifs
+  · simpa only [map_eq_bind_pure_comp, Function.comp_def, Nat.add_zero] using
+      (ProbOracleComp.IsQueryBounded.query (request.1, splitBlock n request.2)).bind fun _ =>
+        OracleComp.IsCostBounded.pure _ 0
+  · exact OracleComp.IsCostBounded.pure [] _
 
 private theorem interpret_strongPairAdversary (adversary : StrongPRPDistinguisher) (n : ℕ)
     (σ : Equiv.Perm (BitString n × BitString n)) :
@@ -1058,8 +1051,7 @@ private theorem interpret_strongPairAdversary (adversary : StrongPRPDistinguishe
       OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle
         (fun request : Bool × List Bool => PMF.pure (strongBlockOracle n σ request)))
         (adversary n []) := by
-  simp only [strongPairAdversary, OracleComp.interpret_interpret, OracleComp.interpret_sumHandler,
-    ProbOracleComp.interpret_sample, ProbComp.unifFin, OracleComp.interpret_query]
+  rw [strongPairAdversary, ProbOracleComp.interpret_simulate]
   congr 2; funext request; unfold strongBlockOracle strongTable
   split_ifs <;> simp [*, PMF.monad_map_eq_map]
 
@@ -1073,7 +1065,7 @@ private theorem eval_prfMultiIdealGame_strongLubyRackoffAdversary
           PMF.pure (strongTable (LubyRackoff.feistel4 (tables 0) (tables 1) (tables 2) (tables 3))
             request))) (strongPairAdversary adversary n) := by
   simp only [prfMultiIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
-    ProbOracleComp.eval_interpret, ProbComp.eval_pure, interpret_strongPairAdversary]
+    ProbOracleComp.eval_run, ProbComp.eval_pure, interpret_strongPairAdversary]
   congr 1; funext tables; rw [interpret_strongLubyRackoffAdversary]; congr 2
   funext ⟨inverse, block⟩; congr 1
   have hT (i : Fin 4) : Represents (fun q => (randomFunctionOracle n (tables i) q).take n)
@@ -1120,7 +1112,7 @@ theorem advantage_lubyRackoff4RandomRounds_strongPRPIdealGame_le
       (PMF.uniformOfFintype (Equiv.Perm (BitString n × BitString n))).bind fun σ =>
         OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle
           (fun request => PMF.pure (strongTable σ request))) (strongPairAdversary adversary n) := by
-    simp only [strongPRPIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
+    simp only [strongPRPIdealGame, ProbOracleComp.run, ProbComp.eval_bind, ProbComp.eval_uniform,
       ProbOracleComp.eval_interpret, ProbComp.eval_pure, interpret_strongPairAdversary]
     rw [← PMF.uniformOfFintype_map_equiv (blockEquiv n).permCongr, PMF.bind_map]
     congr 1; funext π; simp only [Function.comp_apply, strongRandomPermOracle_eq_strongBlockOracle]
