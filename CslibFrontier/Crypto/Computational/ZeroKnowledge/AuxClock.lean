@@ -46,12 +46,12 @@ condition on `S₀`.
 * `Cslib.Probability.encAuxTriple`: the encoding of a primary input pair and an auxiliary word,
   flattened into a triple.
 * `Cslib.Crypto.UnboundedAuxiliaryInputZeroKnowledge`,
-  `Cslib.Crypto.ZeroKnowledgeProof.UnboundedAuxiliaryInputZeroKnowledge`: family-indexed
+  `Cslib.Crypto.ZKProof.UnboundedAuxiliaryInputZeroKnowledge`: family-indexed
   auxiliary-input zero knowledge against prefix-clocked verifiers (`IsOraclePPTWithAux`) and
   distinguishers (`IsPPTWithAux`) over arbitrary, unbounded auxiliary-input families
   `z : ℕ → List Bool`.
 * `Cslib.Crypto.InstanceAuxiliaryInputZeroKnowledge`,
-  `Cslib.Crypto.ZeroKnowledgeProof.InstanceAuxiliaryInputZeroKnowledge`: Goldreich-style
+  `Cslib.Crypto.ZKProof.InstanceAuxiliaryInputZeroKnowledge`: Goldreich-style
   instance-indexed (`x`-indexed) auxiliary-input zero knowledge with unbounded auxiliary input
   `z : List Bool` and quantifier order `∀ Vstar, ∃ S, ∀ adversary, ... ∀ x w z`.
 
@@ -62,11 +62,11 @@ condition on `S₀`.
   `(a, z.take m)` whenever `m ≥ c * ((input a).length + 1) ^ d`.
 * `Cslib.Crypto.AuxiliaryInputZeroKnowledge.unboundedAuxiliaryInputZeroKnowledge`:
   `AuxiliaryInputZeroKnowledge` implies `UnboundedAuxiliaryInputZeroKnowledge` (with the
-  `ZeroKnowledgeProof` projection of the same name).
+  `ZKProof` projection of the same name).
 * `Cslib.Crypto.UnboundedAuxiliaryInputZeroKnowledge.instanceAuxiliaryInputZeroKnowledge`,
   `Cslib.Crypto.AuxiliaryInputZeroKnowledge.instanceAuxiliaryInputZeroKnowledge`:
   `UnboundedAuxiliaryInputZeroKnowledge` and `AuxiliaryInputZeroKnowledge` imply
-  `InstanceAuxiliaryInputZeroKnowledge` (with the `ZeroKnowledgeProof` projections).
+  `InstanceAuxiliaryInputZeroKnowledge` (with the `ZKProof` projections).
 
 ## References
 
@@ -505,37 +505,37 @@ theorem AuxiliaryInputZeroKnowledge.instanceAuxiliaryInputZeroKnowledge
     InstanceAuxiliaryInputZeroKnowledge enc prover isWitness :=
   h.unboundedAuxiliaryInputZeroKnowledge.instanceAuxiliaryInputZeroKnowledge
 
-namespace ZeroKnowledgeProof
+namespace ZKProof
 
-variable {A : Set α}
+variable {A : Set α} {soundness : ℕ → ENNReal}
 
-/-- Unbounded-`z` family auxiliary-input zero knowledge for a bundled `ZeroKnowledgeProof`. -/
-def UnboundedAuxiliaryInputZeroKnowledge (zk : ZeroKnowledgeProof enc A) : Prop :=
+/-- Unbounded-`z` family auxiliary-input zero knowledge for a bundled `ZKProof`. -/
+def UnboundedAuxiliaryInputZeroKnowledge (zk : ZKProof enc A soundness) : Prop :=
   Cslib.Crypto.UnboundedAuxiliaryInputZeroKnowledge enc zk.prover zk.isWitness
 
 /-- Goldreich-style `x`-indexed auxiliary-input zero knowledge with unbounded `z` for a bundled
-`ZeroKnowledgeProof`. -/
-def InstanceAuxiliaryInputZeroKnowledge (zk : ZeroKnowledgeProof enc A) : Prop :=
+`ZKProof`. -/
+def InstanceAuxiliaryInputZeroKnowledge (zk : ZKProof enc A soundness) : Prop :=
   Cslib.Crypto.InstanceAuxiliaryInputZeroKnowledge enc zk.prover zk.isWitness
 
 /-- `zk.AuxiliaryInputZeroKnowledge` implies `zk.UnboundedAuxiliaryInputZeroKnowledge`. -/
 theorem AuxiliaryInputZeroKnowledge.unboundedAuxiliaryInputZeroKnowledge
-    {zk : ZeroKnowledgeProof enc A} (h : zk.AuxiliaryInputZeroKnowledge) :
+    {zk : ZKProof enc A soundness} (h : zk.AuxiliaryInputZeroKnowledge) :
     zk.UnboundedAuxiliaryInputZeroKnowledge :=
   Cslib.Crypto.AuxiliaryInputZeroKnowledge.unboundedAuxiliaryInputZeroKnowledge h
 
 /-- `zk.UnboundedAuxiliaryInputZeroKnowledge` implies `zk.InstanceAuxiliaryInputZeroKnowledge`. -/
 theorem UnboundedAuxiliaryInputZeroKnowledge.instanceAuxiliaryInputZeroKnowledge
-    {zk : ZeroKnowledgeProof enc A} (h : zk.UnboundedAuxiliaryInputZeroKnowledge) :
+    {zk : ZKProof enc A soundness} (h : zk.UnboundedAuxiliaryInputZeroKnowledge) :
     zk.InstanceAuxiliaryInputZeroKnowledge :=
   Cslib.Crypto.UnboundedAuxiliaryInputZeroKnowledge.instanceAuxiliaryInputZeroKnowledge h
 
 /-- `zk.AuxiliaryInputZeroKnowledge` implies `zk.InstanceAuxiliaryInputZeroKnowledge`. -/
 theorem AuxiliaryInputZeroKnowledge.instanceAuxiliaryInputZeroKnowledge
-    {zk : ZeroKnowledgeProof enc A} (h : zk.AuxiliaryInputZeroKnowledge) :
+    {zk : ZKProof enc A soundness} (h : zk.AuxiliaryInputZeroKnowledge) :
     zk.InstanceAuxiliaryInputZeroKnowledge :=
   Cslib.Crypto.AuxiliaryInputZeroKnowledge.instanceAuxiliaryInputZeroKnowledge h
 
-end ZeroKnowledgeProof
+end ZKProof
 
 end Cslib.Crypto
