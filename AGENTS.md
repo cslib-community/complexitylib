@@ -336,16 +336,21 @@ any Lean examples introduced; a local whole-library rebuild is unnecessary.
 For the edit loop, `scripts/check.sh --quick [--base REF]` builds changed Lean modules and their
 transitive importing clients, then checks import aggregates. The comparison uses the merge base
 with local `origin/main` by default, including committed, staged, unstaged and untracked changes;
-it does not fetch. It also runs source hygiene on the changed library and test files and, when a
-library module changed, the encoding readability and projection chain ratchets: all read only
-sources and take seconds. Quick mode lints only the affected library modules, skips the global
+it does not fetch. It also runs source hygiene and the source-only changed-file lints
+(`scripts/check_changed_files.py --source-only`) on the changed library and test files and,
+when a library module changed, the encoding readability and projection chain ratchets: all read
+only sources and take seconds. Run the same changed-file lints when building targets directly
+instead. Quick mode lints only the affected library modules, skips the global
 test/style/init-import gates and the post-build audits, which need whole-library outputs, and is
-not full validation. Non-Lean changes, deletions/renames, changed aggregates, unsupported layouts
-and ambiguous change/import analysis fall back to the full check. The exceptions are the
-ratchet baselines `scripts/encoding_readability_baseline.json` and
-`scripts/projection_chains_baseline.json`, which no Lean gate reads: a change to one runs its
-ratchet instead. Quick success alone does not satisfy the full validation requirement above;
-documentation-only checks need not invoke quick mode.
+not full validation. Non-Lean changes, deletions/renames, aggregate edits other than the import
+lines `lake exe mk_all` adds for new modules, unsupported layouts and ambiguous change/import
+analysis fall back to the full check. The exceptions are the ratchet baselines
+`scripts/encoding_readability_baseline.json` and `scripts/projection_chains_baseline.json`,
+which no Lean gate reads: a change to one runs its ratchet instead. On a shared host, use
+`--quick --no-full-fallback`: it reports such a change and exits with status 3, so you can build
+the changed modules and clients directly and leave the full run to CI. Quick success alone does
+not satisfy the full validation requirement above; documentation-only checks need not invoke
+quick mode.
 
 `lake exe mk_all` regenerates `CslibFrontier.lean` after adding a file. New test files go in
 `CslibFrontierTests/`; the test library is built from a Lake glob, so there is no aggregator to update.

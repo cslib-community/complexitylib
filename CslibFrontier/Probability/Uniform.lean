@@ -17,6 +17,8 @@ import Mathlib.Algebra.Group.Units.Equiv
 # Uniform sampling and subset sums
 
 A surjective additive homomorphism between finite groups preserves the uniform distribution.
+In particular, translating a uniform group element by a fixed mask leaves it uniform (the
+one-time pad).
 Consequently, the sum over any nonempty subset of independently uniform group elements is
 uniform, and two distinct nonempty subsets give independent uniform sums.
 Replacing any one summand by a fresh uniform value also makes the complete sum uniform.
@@ -32,8 +34,14 @@ branch at `5ff69ca`.
 * `Cslib.Probability.card_mul_card_filter_eq_of_shift`,
   `Cslib.Probability.dens_filter_eq_of_shift`: translations force equal fibers.
 * `Cslib.Probability.PMF.uniformOfFintype_map_of_shift`,
-  `Cslib.Probability.PMF.uniformOfFintype_map_addHom`: uniformity from translations, in particular
-  for surjective additive homomorphisms.
+  `Cslib.Probability.PMF.uniformOfFintype_map_addHom`,
+  `Cslib.Probability.PMF.uniformOfFintype_map_monoidHom`: uniformity from translations, in
+  particular for surjective homomorphisms.
+* `Cslib.Probability.PMF.uniformOfFintype_map_add_right`,
+  `Cslib.Probability.PMF.uniformOfFintype_map_add_left`,
+  `Cslib.Probability.PMF.uniformOfFintype_bind_add_right`,
+  `Cslib.Probability.PMF.uniformOfFintype_bind_add_left`: a fixed mask leaves a uniform group
+  element uniform (the one-time pad).
 * `Cslib.Probability.PMF.uniformOfFintype_map_comp`: a uniform function read through an injection
   is uniform.
 * `Cslib.Probability.PMF.uniformOfFintype_map_sum`,
@@ -100,6 +108,36 @@ theorem uniformOfFintype_map_of_shift {ι G : Type*}
   rw [toReal_uniformOfFintype_map_apply, dens_filter_eq_of_shift hf]
   simp
 
+section Mask
+
+variable {G : Type*} [AddGroup G] [Fintype G]
+
+/-- **One-time pad**: translating a uniform element of a finite group on the right by a fixed
+mask leaves it uniform. -/
+theorem uniformOfFintype_map_add_right (c : G) :
+    (PMF.uniformOfFintype G).map (· + c) = PMF.uniformOfFintype G :=
+  uniformOfFintype_map_equiv (Equiv.addRight c)
+
+/-- **One-time pad**: translating a uniform element of a finite group on the left by a fixed mask
+leaves it uniform. -/
+theorem uniformOfFintype_map_add_left (c : G) :
+    (PMF.uniformOfFintype G).map (c + ·) = PMF.uniformOfFintype G :=
+  uniformOfFintype_map_equiv (Equiv.addLeft c)
+
+/-- Masking a uniform draw on the right does not change an experiment that consumes it. -/
+theorem uniformOfFintype_bind_add_right {β : Type*} (c : G) (f : G → PMF β) :
+    (PMF.uniformOfFintype G).bind (fun x => f (x + c)) = (PMF.uniformOfFintype G).bind f := by
+  conv_rhs => rw [← uniformOfFintype_map_add_right c, PMF.bind_map]
+  rfl
+
+/-- Masking a uniform draw on the left does not change an experiment that consumes it. -/
+theorem uniformOfFintype_bind_add_left {β : Type*} (c : G) (f : G → PMF β) :
+    (PMF.uniformOfFintype G).bind (fun x => f (c + x)) = (PMF.uniformOfFintype G).bind f := by
+  conv_rhs => rw [← uniformOfFintype_map_add_left c, PMF.bind_map]
+  rfl
+
+end Mask
+
 /-- A uniform function read through an injection is uniform. -/
 theorem uniformOfFintype_map_comp {S Q R : Type*} [Fintype S] [DecidableEq S] [Fintype Q]
     [DecidableEq Q] [Fintype R] [Nonempty R] [AddCommGroup R] {g : S → Q}
@@ -116,7 +154,7 @@ theorem uniformOfFintype_map_sum_update {ι G : Type*}
     (PMF.uniformOfFintype G).map (fun value => ∑ j, Function.update values i value j) =
       PMF.uniformOfFintype G := by
   simp only [Finset.sum_update_of_mem (Finset.mem_univ i)]
-  exact uniformOfFintype_map_equiv (Equiv.addRight _)
+  exact uniformOfFintype_map_add_right _
 
 /-- A surjective additive homomorphism of finite groups sends uniform inputs to uniform outputs. -/
 theorem uniformOfFintype_map_addHom {G H : Type*} [AddGroup G] [AddGroup H]
@@ -126,6 +164,15 @@ theorem uniformOfFintype_map_addHom {G H : Type*} [AddGroup G] [AddGroup H]
   intro c
   obtain ⟨g, rfl⟩ := hf c
   exact ⟨Equiv.addRight g, fun a => f.map_add a g⟩
+
+/-- A surjective homomorphism of finite groups sends uniform inputs to uniform outputs. -/
+theorem uniformOfFintype_map_monoidHom {G H : Type*} [Group G] [Group H]
+    [Fintype G] [Fintype H] (f : G →* H) (hf : Function.Surjective f) :
+    (PMF.uniformOfFintype G).map f = PMF.uniformOfFintype H := by
+  rw [← uniformOfFintype_map_equiv (Additive.toMul : Additive G ≃ G), PMF.map_comp,
+    ← uniformOfFintype_map_equiv (Additive.toMul : Additive H ≃ H),
+    ← uniformOfFintype_map_addHom (MonoidHom.toAdditive f) hf, PMF.map_comp]
+  rfl
 
 private theorem sumPair_surjective_of_mem_notMem {ι G : Type*}
     [AddCommGroup G] (s t : Finset ι) {i : ι}
