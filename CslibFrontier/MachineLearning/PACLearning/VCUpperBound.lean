@@ -35,8 +35,8 @@ with every example, so if `error D h > ε` the sample is not an ε-net for the l
 The domain is assumed countable with measurable singletons and the labels are `Bool`; the
 learners are arbitrary semantic maps from samples to hypotheses, and no running time is claimed.
 General domains need a measurability hypothesis on the class and are not formalized here. The
-matching `Ω(d / ε)` lower bound of Ehrenfeucht, Haussler, Kearns and Valiant is being developed
-upstream in CSLib.
+matching `Ω(d / ε)` lower bound of Ehrenfeucht, Haussler, Kearns and Valiant is in `VCLowerBound`,
+and `FundamentalTheorem` combines the two into the realizable characterization of learnability.
 
 ## Main definitions
 

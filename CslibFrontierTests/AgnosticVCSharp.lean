@@ -4,6 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+module
+
 import CslibFrontier.MachineLearning.PACLearning.AgnosticVCSharp
 import CslibFrontierTests.AgnosticVC
 
@@ -37,7 +39,7 @@ example {m : ℕ} {A : Learner ℕ Bool m} (hA : IsERM A thresholds) {ε : ℝ} 
 
 /-- The chaining sample size of thresholds at `ε = δ = 1 / 10` is
 `400 (16384 + 32 log 40) ≤ 6607000`, since `40 ≤ 2 ^ 6`. -/
-theorem chainingSampleSize_tenth_le :
+public theorem chainingSampleSize_tenth_le :
     chainingSampleSize 1 ((1 / 10 : ℝ) / 2) (1 / 10) ≤ 6607000 := by
   have h40 : Real.log (4 / (1 / 10 : ℝ)) ≤ 6 * Real.log 2 := by
     calc Real.log (4 / (1 / 10 : ℝ)) ≤ Real.log ((2 : ℝ) ^ 6) :=
@@ -49,7 +51,7 @@ theorem chainingSampleSize_tenth_le :
 
 /-- **An explicit sharp agnostic sample size**: `6607000` examples learn thresholds on `ℕ` to
 accuracy and confidence `1 / 10` under every distribution, including `noisy`. -/
-theorem isPACLearnerFor_thresholds_univ_chaining :
+public theorem isPACLearnerFor_thresholds_univ_chaining :
     IsPACLearnerFor 6607000 tenth tenth thresholds Set.univ := by
   refine isPACLearnerFor_univ_of_chainingSampleSize_le
     (fun _ hW => card_le_one_of_setShatters_thresholds hW) ?_

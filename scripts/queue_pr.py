@@ -10,9 +10,13 @@ contexts are read from the same commit before selecting each required check's la
 While that check is still running it waits up to `--wait` minutes (default 0: report and stop);
 it always waits briefly for GitHub to compute mergeability. It then enqueues with
 `expectedHeadOid` = SHA, so a push after the approval can never be queued in its place.
+If it sleeps, it snapshots the PR discussion before the first sleep and rereads it just before
+enqueueing. A changed body, comment, submitted review or inline thread stops the waiting enqueue
+so the reviewer can reread and rerun. Check events and reactions are not discussion changes.
 
 It does not judge the approval itself, a hold named in it, or a request for human review in the
-PR or its issue; the reviewer checks those before running it. Its retarget check (a base change
+PR or its issue; the reviewer checks those before running it. The discussion read is not atomic
+with enqueue and does not inspect linked issues. Its retarget check (a base change
 newer than the head's commit date) only catches the common mistake of queueing a stacked PR before
 it merges `main`; `scripts/check_restack.py` is what verifies a restacked head.
 
@@ -74,6 +78,23 @@ query($id: ID!, $after: String!) {
     }
   }
 }"""
+
+PAGE_INFO = "pageInfo { endCursor hasNextPage }"
+COMMENT_FIELDS = "id body updatedAt"
+INLINE_FIELDS = f"{COMMENT_FIELDS} state"
+REVIEW_FIELDS = f"{COMMENT_FIELDS} state submittedAt"
+THREAD_FIELDS = (f"id isResolved comments(first: 100) {{ nodes {{ {INLINE_FIELDS} }} "
+                 f"{PAGE_INFO} }}")
+DISCUSSION_QUERY = f"""
+query($id: ID!) {{
+  node(id: $id) {{
+    ... on PullRequest {{ id body
+      comments(first: 100) {{ nodes {{ {COMMENT_FIELDS} }} {PAGE_INFO} }}
+      reviews(first: 100) {{ nodes {{ {REVIEW_FIELDS} }} {PAGE_INFO} }}
+      reviewThreads(first: 100) {{ nodes {{ {THREAD_FIELDS} }} {PAGE_INFO} }}
+    }}
+  }}
+}}"""
 
 ENQUEUE = """
 mutation($id: ID!, $sha: GitObjectID!) {
@@ -148,6 +169,91 @@ def fetch_pr(owner: str, name: str, number: int) -> dict:
             raise GhError("GitHub returned no matching commit for the next check-context page")
     commit["statusCheckRollup"]["contexts"] = {"nodes": contexts, "pageInfo": info}
     return pr
+
+
+def discussion_nodes(owner: dict, kind: str, field: str, fields: str) -> list[dict]:
+    """Read every page of one discussion connection, pinned to its owning node ID."""
+    page, nodes, cursors, identities = owner, [], set(), set()
+    while True:
+        connection = page.get(field)
+        batch = connection.get("nodes") if isinstance(connection, dict) else None
+        info = connection.get("pageInfo") if isinstance(connection, dict) else None
+        if (not isinstance(batch, list) or any(not isinstance(n, dict) for n in batch)
+                or not isinstance(info, dict) or not isinstance(info.get("hasNextPage"), bool)):
+            raise GhError(f"GitHub returned an incomplete discussion {field} page")
+        for node in batch:
+            identity = node.get("id")
+            if not isinstance(identity, str) or not identity or identity in identities:
+                raise GhError(f"GitHub returned a missing or repeated discussion {field} ID")
+            identities.add(identity)
+        nodes.extend(batch)
+        if not info["hasNextPage"]:
+            return nodes
+        cursor = info.get("endCursor")
+        if not isinstance(cursor, str) or not cursor or cursor in cursors:
+            raise GhError(f"GitHub returned a missing or repeated discussion {field} cursor")
+        cursors.add(cursor)
+        query = f"""
+query($id: ID!, $after: String!) {{
+  node(id: $id) {{
+    ... on {kind} {{ id
+      {field}(first: 100, after: $after) {{ nodes {{ {fields} }} {PAGE_INFO} }}
+    }}
+  }}
+}}"""
+        page = gh_graphql(query, id=owner["id"], after=cursor).get("node")
+        if not isinstance(page, dict) or page.get("id") != owner["id"]:
+            raise GhError(f"GitHub returned no matching node for discussion {field} pagination")
+
+
+def discussion_text(node: dict) -> tuple[str, str, str]:
+    """Keep exact text as well as its edit time, including edits within the same second."""
+    if (not isinstance(node.get("body"), str) or not isinstance(node.get("updatedAt"), str)
+            or not node["updatedAt"]):
+        raise GhError("GitHub returned incomplete discussion text")
+    return node["id"], node["body"], node["updatedAt"]
+
+
+def fetch_discussion(pr_id: str) -> tuple:
+    """Snapshot visible discussion, without interpreting approvals or hold prose.
+
+    Use explicit reviewThreads: timelineItems does not reliably return inline threads. Read
+    all comments, not just the newest, so edits/deletions of older holds are observable. Draft
+    reviews and unpublished inline comments do not change the submitted discussion. GitHub has
+    no expected-discussion lease; this read and the enqueue mutation still have a bounded race.
+    """
+    pr = gh_graphql(DISCUSSION_QUERY, id=pr_id).get("node")
+    if not isinstance(pr, dict) or pr.get("id") != pr_id or not isinstance(pr.get("body"), str):
+        raise GhError("GitHub returned no matching pull request discussion")
+    comments = [discussion_text(c) for c in discussion_nodes(
+        pr, "PullRequest", "comments", COMMENT_FIELDS)]
+    reviews = []
+    for review in discussion_nodes(pr, "PullRequest", "reviews", REVIEW_FIELDS):
+        text = discussion_text(review)
+        state, submitted = review.get("state"), review.get("submittedAt")
+        if (not isinstance(state, str)
+                or state not in {"PENDING", "APPROVED", "CHANGES_REQUESTED", "COMMENTED",
+                                 "DISMISSED"}):
+            raise GhError("GitHub returned an incomplete discussion review state")
+        if state != "PENDING":
+            if not isinstance(submitted, str) or not submitted:
+                raise GhError("GitHub returned no submitted discussion review time")
+            reviews.append((*text, state, submitted))
+    threads = []
+    for thread in discussion_nodes(pr, "PullRequest", "reviewThreads", THREAD_FIELDS):
+        if not isinstance(thread.get("isResolved"), bool):
+            raise GhError("GitHub returned an incomplete discussion thread state")
+        inline = []
+        for comment in discussion_nodes(
+                thread, "PullRequestReviewThread", "comments", INLINE_FIELDS):
+            text = discussion_text(comment)
+            if comment.get("state") not in ("PENDING", "SUBMITTED"):
+                raise GhError("GitHub returned an incomplete inline discussion comment state")
+            if comment["state"] == "SUBMITTED":
+                inline.append(text)
+        if inline:
+            threads.append((thread["id"], thread["isResolved"], tuple(sorted(inline))))
+    return pr["body"], tuple(sorted(comments)), tuple(sorted(reviews)), tuple(sorted(threads))
 
 
 def check_state(pr: dict) -> tuple[str, list[str]]:
@@ -231,6 +337,7 @@ def main(argv: list[str] | None = None) -> int:
     owner, name = args.repo.split("/", 1)
     deadline = time.monotonic() + 60 * args.wait
     retries = MERGEABLE_RETRIES
+    discussion = None
     try:
         while True:
             pr = fetch_pr(owner, name, args.pr)
@@ -239,11 +346,14 @@ def main(argv: list[str] | None = None) -> int:
                 break
             if pr["mergeable"] == "UNKNOWN" and retries > 0:
                 retries -= 1
-                time.sleep(MERGEABLE_SECONDS)
+                delay = MERGEABLE_SECONDS
             elif time.monotonic() < deadline:
-                time.sleep(POLL_SECONDS)
+                delay = POLL_SECONDS
             else:
                 break
+            if discussion is None:
+                discussion = fetch_discussion(pr["id"])
+            time.sleep(delay)
         if status == "queued":
             entry = pr["mergeQueueEntry"]
             print(f"#{args.pr} is already queued at {args.sha[:12]} "
@@ -252,6 +362,10 @@ def main(argv: list[str] | None = None) -> int:
         if status != "ready":
             verb = "not queued yet" if status == "pending" else "not queued"
             print(f"#{args.pr} {verb}: " + "; ".join(reasons) + ".")
+            return 1
+        if discussion is not None and fetch_discussion(pr["id"]) != discussion:
+            print(f"#{args.pr} not queued: its review discussion changed while waiting; "
+                  "reread the PR and any review holds, then rerun the helper.")
             return 1
         entry = (gh_graphql(ENQUEUE, id=pr["id"], sha=args.sha).get("enqueuePullRequest")
                  or {}).get("mergeQueueEntry")

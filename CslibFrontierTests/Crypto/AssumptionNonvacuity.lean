@@ -238,8 +238,7 @@ theorem not_pseudorandomFunction_zeroFamily : ¬ PseudorandomFunction zeroFamily
   have hshift : Negligible fun n => Game.advantage
       (ProbComp.eval (prfRealGame zeroFamily firstBitZero (n + 1)))
       (ProbComp.eval (prfIdealGame firstBitZero (n + 1))) :=
-    hneg.comp_of_polynomial_bound (bound := fun m => m) (Filter.tendsto_add_atTop_nat 1)
-      (by fun_prop) (Filter.Eventually.of_forall fun n => by lia)
+    hneg.shift 1
   simp only [eval_prfRealGame_firstBitZero, eval_prfIdealGame_firstBitZero] at hshift
   refine not_negligible_const ?_ hshift
   norm_num [Game.advantage, Game.succProbability, PMF.uniformOfFintype_apply,

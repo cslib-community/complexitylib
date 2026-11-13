@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Init
 public import CslibFrontier.Algorithms.WordRAM.Quicksort
+import CslibFrontier.Computability.WordRAM.Randomized.LoopSegment
 import CslibFrontier.Computability.WordRAM.SymbolicExec.Call
 import Mathlib.Data.List.Sort
 
@@ -670,32 +671,8 @@ private theorem selectStep_spec {w vbase n k : ℕ} {s₀ : List ℕ} {mem₀ : 
     exact ⟨y, t_pn, hex, ht, hIy, hcases, hlt_m⟩
   choose y t hspec using hpn_all
   refine ⟨y, t, ?_, fun off => (hspec off).2⟩
-  let m₂_fn : Data 16 → ProbComp (Data 16 × ℕ) := fun d =>
-    if h : d.regs tmp < vhi - vlo - 1 + 1 then
-      pure (y ⟨d.regs tmp, h⟩, t ⟨d.regs tmp, h⟩)
-    else pure (d, 0)
-  have hseq := ExecRand.seq esamp_raw (m₂ := m₂_fn) fun z hz => by
-    obtain ⟨off, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hz
-    have hreg : (x.set tmp off.val).regs tmp = off.val := by
-      simp only [Data.set_regs, Function.update_self]
-    dsimp only [m₂_fn]
-    simp only [hreg, off.isLt, ↓reduceDIte]
-    exact (hspec off).1.execRand
-  have hm_eq : (do
-      let z₁ ← (fun off : Fin (vhi - vlo - 1 + 1) => (x.set tmp off.val, 2)) <$>
-        ProbComp.unifFin (vhi - vlo - 1)
-      let z₂ ← m₂_fn z₁.1
-      pure (z₂.1, z₁.2 + z₂.2)) =
-      ((fun off : Fin (vhi - vlo - 1 + 1) => (y off, 2 + t off)) <$>
-        ProbComp.unifFin (vhi - vlo - 1)) := by
-    simp only [← bind_pure_comp, bind_assoc, pure_bind]
-    refine congrArg (ProbComp.unifFin (vhi - vlo - 1) >>= ·) (funext fun off => ?_)
-    have hreg : (x.set tmp off.val).regs tmp = off.val := by
-      simp only [Data.set_regs, Function.update_self]
-    dsimp only [m₂_fn]
-    simp only [hreg, off.isLt, ↓reduceDIte, pure_bind]
-  rw [selectStep, ← hm_eq]
-  exact hseq
+  rw [selectStep]
+  exact execRand_seq_det_map esamp_raw fun off => (hspec off).1
 
 /-- Quadratic worst-case potential `0` for `m < 2` and `10 * m ^ 2` for `m ≥ 2`. -/
 private def stepPotential (x : Data 16) : ℕ :=

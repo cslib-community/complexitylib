@@ -75,10 +75,7 @@ example (n : ℕ) : ¬ ∃ cap : ℕ, ∀ msg : List Bool,
   simp only [List.length_replicate] at h
   omega
 
-theorem echoCipher_ctLen :
-    ∀ n ke, ke ∈ (ProbComp.eval (echoCipher.keyGen n)).support →
-      ∀ msg, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (echoCipher.encrypt n ke msg)).support, c.length = n := by
+theorem echoCipher_ctLen : ∀ n, echoCipher.CiphertextLength n n := by
   intro n _ _ msg hmsg c hc
   change c ∈ (ProbComp.eval (pure msg)).support at hc
   rw [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hc

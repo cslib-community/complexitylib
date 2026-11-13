@@ -24,6 +24,10 @@ Section 31.1, inequality (31.2)]. The proof is Gibbs' inequality for the exponen
 measure `ν.tilted f`, through Mathlib's `integral_llr_tilted_right`; the source derives it from
 Jensen's inequality for discrete distributions, and the measure form covers that case.
 
+For nonnegative `f`, finiteness of `∫ exp f ∂ν` already makes `f` integrable under `μ`, by the
+inequality for the truncations `min f n` and monotone convergence; this applies the inequality to
+unbounded functions, such as the binary relative entropy in the PAC-Bayes-kl bound.
+
 The divergence of a point mass from a probability measure `ν` with an atom at `a` is
 `log (1 / ν {a})`. This evaluates the change-of-measure bound at a point mass, which turns a
 PAC-Bayes bound into an Occam bound.
@@ -32,6 +36,8 @@ PAC-Bayes bound into an Occam bound.
 
 * `Cslib.Probability.integral_le_toReal_klDiv_add_log_integral_exp`: the change-of-measure
   inequality.
+* `Cslib.Probability.integrable_of_lintegral_exp_ne_top`: integrability of nonnegative `f` with
+  `∫ exp f ∂ν < ∞`.
 * `Cslib.Probability.klDiv_dirac_ne_top`, `Cslib.Probability.toReal_klDiv_dirac`: the divergence
   of a point mass.
 
@@ -66,6 +72,46 @@ theorem integral_le_toReal_klDiv_add_log_integral_exp {μ ν : Measure α} [IsPr
   rw [integral_llr_tilted_right hac hfμ hfν hint] at hgibbs
   rw [toReal_klDiv_of_measure_eq hac (by simp)]
   linarith
+
+/-- A nonnegative function whose exponential has finite `ν`-integral is `μ`-integrable whenever
+`KL(μ ‖ ν) < ∞`: by change of measure, its truncations at level `n` have `μ`-integrals at most
+`KL(μ ‖ ν) + log ∫ exp f ∂ν`. -/
+theorem integrable_of_lintegral_exp_ne_top {μ ν : Measure α} [IsProbabilityMeasure μ]
+    [IsProbabilityMeasure ν] (hkl : klDiv μ ν ≠ ⊤) {f : α → ℝ} (hfm : Measurable f)
+    (hf0 : ∀ x, 0 ≤ f x) (hexp : ∫⁻ x, ENNReal.ofReal (Real.exp (f x)) ∂ν ≠ ⊤) :
+    Integrable f μ := by
+  set C := (klDiv μ ν).toReal + Real.log (∫⁻ x, ENNReal.ofReal (Real.exp (f x)) ∂ν).toReal
+  set g : ℕ → α → ℝ := fun n x => min (f x) n
+  have hgm (n : ℕ) : Measurable (g n) := hfm.min measurable_const
+  have hg0 (n : ℕ) (x : α) : 0 ≤ g n x := le_min (hf0 x) (Nat.cast_nonneg n)
+  have hgi (n : ℕ) : Integrable (g n) μ :=
+    Integrable.of_mem_Icc 0 n (hgm n).aemeasurable
+      (ae_of_all _ fun x => ⟨hg0 n x, min_le_right _ _⟩)
+  have hbound (n : ℕ) : ∫ x, g n x ∂μ ≤ C := by
+    have hei : Integrable (fun x => Real.exp (g n x)) ν :=
+      Integrable.of_mem_Icc 0 (Real.exp n) (hgm n).exp.aemeasurable
+        (ae_of_all _ fun x => ⟨(Real.exp_pos _).le, Real.exp_le_exp.2 (min_le_right _ _)⟩)
+    refine (integral_le_toReal_klDiv_add_log_integral_exp hkl (hgi n) hei).trans
+      (add_le_add_right (Real.log_le_log (integral_exp_pos hei) ?_) _)
+    rw [integral_eq_lintegral_of_nonneg_ae (ae_of_all _ fun x => (Real.exp_pos _).le)
+      hei.aestronglyMeasurable]
+    exact ENNReal.toReal_mono hexp (lintegral_mono fun x =>
+      ENNReal.ofReal_le_ofReal (Real.exp_le_exp.2 (min_le_left _ _)))
+  have hsup (x : α) : ⨆ n : ℕ, ENNReal.ofReal (g n x) = ENNReal.ofReal (f x) := by
+    refine le_antisymm (iSup_le fun n => ENNReal.ofReal_le_ofReal (min_le_left _ _)) ?_
+    obtain ⟨n, hn⟩ := exists_nat_ge (f x)
+    exact le_iSup_of_le n (ENNReal.ofReal_le_ofReal (le_min le_rfl hn))
+  have hlin : ∫⁻ x, ENNReal.ofReal (f x) ∂μ ≤ ENNReal.ofReal C := by
+    calc ∫⁻ x, ENNReal.ofReal (f x) ∂μ
+        = ∫⁻ x, ⨆ n : ℕ, ENNReal.ofReal (g n x) ∂μ := lintegral_congr fun x => (hsup x).symm
+      _ = ⨆ n : ℕ, ∫⁻ x, ENNReal.ofReal (g n x) ∂μ :=
+          lintegral_iSup (fun n => (hgm n).ennreal_ofReal) fun n n' h x =>
+            ENNReal.ofReal_le_ofReal (min_le_min_left _ (Nat.cast_le.2 h))
+      _ ≤ ENNReal.ofReal C := iSup_le fun n => by
+          rw [← ofReal_integral_eq_lintegral_ofReal (hgi n) (ae_of_all _ (hg0 n))]
+          exact ENNReal.ofReal_le_ofReal (hbound n)
+  exact ⟨hfm.aestronglyMeasurable,
+    (hasFiniteIntegral_iff_ofReal (ae_of_all _ hf0)).2 (hlin.trans_lt ENNReal.ofReal_lt_top)⟩
 
 section Dirac
 

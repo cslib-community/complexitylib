@@ -6170,16 +6170,16 @@ theorem cuckoo_steps_expected_amortized (w base c_exp n_max U V : ℕ)
       exact uniformOfFinset_le_two_mul_uniformOfFintype hE hcard θ
     have hprep_ok : ∀ p ∈ ν.support,
         p.1 = extractSeed (hashBase base) c_exp n_max U (tableBits n_max)
-          (C.toDynamicProgram.prepare o p.2).mem ∧
-        RepWithKeys w base c_exp n_max U V ks s (C.toDynamicProgram.prepare o p.2) ∧
-        argMatch o (C.toDynamicProgram.prepare o p.2).regs := by
+          (C.prepare o p.2).mem ∧
+        RepWithKeys w base c_exp n_max U V ks s (C.prepare o p.2) ∧
+        argMatch o (C.prepare o p.2).regs := by
       intro p hp
       obtain ⟨hp1, hrep_p⟩ := hsupp p hp
       refine ⟨hp1, ?_, C.prepare_argMatch o p.2⟩
       exact RepWithKeys.supported
-        (C.toDynamicProgram.prepare_regs_of_not_input (i := 0) rfl o p.2)
+        (C.prepare_regs_of_not_input (i := 0) rfl o p.2)
         (fun _ _ => rfl)
-        (C.toDynamicProgram.prepare_bounded hrep_p.1 (C.arguments_fit o hvo))
+        (C.prepare_bounded hrep_p.1 (C.arguments_fit o hvo))
         hrep_p
     have hE' :
         (survivingSeeds (Θ := Seed c_exp n_max U (tableBits n_max)) evalHash1 evalHash2
@@ -6190,12 +6190,12 @@ theorem cuckoo_steps_expected_amortized (w base c_exp n_max U V : ℕ)
           hfit_ev hw hfit_end hfit_V hfit_q
       exact hE'_p₀
     let μ_raw : Seed c_exp n_max U (tableBits n_max) × Data 19 → PMF (Data 19) := fun p =>
-      if hp : RepWithKeys w base c_exp n_max U V ks s (C.toDynamicProgram.prepare o p.2) ∧
-          argMatch o (C.toDynamicProgram.prepare o p.2).regs then
+      if hp : RepWithKeys w base c_exp n_max U V ks s (C.prepare o p.2) ∧
+          argMatch o (C.prepare o p.2).regs then
         Classical.choose
           (opCode_execCodeDist o hfam.rehash_prob_le_half hp.1 hvo hp.2
             hfit_ev hw hfit_end hfit_V hfit_q)
-      else PMF.pure (C.toDynamicProgram.prepare o p.2)
+      else PMF.pure (C.prepare o p.2)
     let μ_step : Seed c_exp n_max U (tableBits n_max) × Data 19 →
         PMF (Seed c_exp n_max U (tableBits n_max) × Data 19) :=
       fun p => (μ_raw p).map fun y =>
@@ -6203,7 +6203,7 @@ theorem cuckoo_steps_expected_amortized (w base c_exp n_max U V : ℕ)
     let T_step : Seed c_exp n_max U (tableBits n_max) × Data 19 → ℝ≥0∞ :=
       fun p => opSeedSteps c_exp n_max U ks p.1 s o
     have hstep_spec : ∀ p ∈ ν.support,
-        ExecCodeDist w (cuckooCode c_exp n_max).code (C.toDynamicProgram.prepare o p.2)
+        ExecCodeDist w (cuckooCode c_exp n_max).code (C.prepare o p.2)
           ((μ_step p).map Prod.snd) (T_step p) ∧
         (μ_step p).map Prod.fst =
           (if p.1 ∈ survivingSeeds evalHash1 evalHash2 (maxEvictions n_max) (stepKeys ks o) then
@@ -6219,8 +6219,8 @@ theorem cuckoo_steps_expected_amortized (w base c_exp n_max U V : ℕ)
           Modifies (Block.mk base C.space).footprint p.2.mem q.2.mem := by
       intro p hp_mem
       obtain ⟨hp1, hrep_prep, harg_prep⟩ := hprep_ok p hp_mem
-      have hp : RepWithKeys w base c_exp n_max U V ks s (C.toDynamicProgram.prepare o p.2) ∧
-          argMatch o (C.toDynamicProgram.prepare o p.2).regs := ⟨hrep_prep, harg_prep⟩
+      have hp : RepWithKeys w base c_exp n_max U V ks s (C.prepare o p.2) ∧
+          argMatch o (C.prepare o p.2).regs := ⟨hrep_prep, harg_prep⟩
       have hspec := Classical.choose_spec
         (opCode_execCodeDist o hfam.rehash_prob_le_half hp.1 hvo hp.2
           hfit_ev hw hfit_end hfit_V hfit_q)

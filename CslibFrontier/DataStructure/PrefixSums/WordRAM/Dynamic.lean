@@ -87,7 +87,12 @@ def program (h w : ℕ) : DynamicProgram (spec h w) 14 where
   encode o j := match o with
     | .add i δ => if j = tag then 0 else if j = delta then δ else i
     | .sum i => if j = tag then 1 else if j = delta then 0 else i
-  decode _ regs := some (regs ans)
+  resultBank _ := ans
+  resultType _ := .nat
+  resultType_eq _ := rfl
+
+@[simp] theorem decode_program (h w : ℕ) (o : (spec h w).Op) (regs : Fin 14 → ℕ) :
+    (program h w).decode o regs = some (regs ans) := rfl
 
 /-- Mathematical description of charged register setup. -/
 def setupData (x : Data 14) : Data 14 :=

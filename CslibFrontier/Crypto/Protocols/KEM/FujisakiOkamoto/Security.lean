@@ -59,7 +59,7 @@ choices:
   random challenge key via `kRand ← S.sampleKey` (rather than a uniform draw on `K`), leaves
   decapsulation queries unbounded and uncounted in `ROQueryBounds`, and requires
   `[Fintype M] [Finite R] [Fintype CT] [Finite K]` on `eagerIndCcaGame` to sample the eager
-  random-oracle tables via `PMF.pi`.
+  random-oracle tables `Scheme.coinTable` and `Scheme.keyTable`.
 
 On top of those definitions, this module formalizes:
 
@@ -364,6 +364,20 @@ noncomputable def indCcaRomAdvantage (S : Scheme PK SK M R CT K)
     (ProbComp.eval (S.roIndCcaGame A false))
     (ProbComp.eval (S.roIndCcaGame A true))
 
+omit [DecidableEq M] [DecidableEq CT] in
+/-- The eager random oracle `G : M → R`: an independent coin `S.pke.sampleCoins` at every
+message. -/
+noncomputable def coinTable [Fintype M] [Finite R] (S : Scheme PK SK M R CT K) : PMF (M → R) :=
+  pi fun _ => ProbComp.eval S.pke.sampleCoins
+
+omit [DecidableEq M] [DecidableEq CT] in
+/-- An eager random oracle `X → K` into the key space: an independent key `S.sampleKey` at every
+point. The FO games draw `H ← S.keyTable (Bool × M × CT)` and their ciphertext-indexed key tables
+`S.keyTable CT` from it. -/
+noncomputable def keyTable [Finite K] (S : Scheme PK SK M R CT K) (X : Type) [Fintype X] :
+    PMF (X → K) :=
+  pi fun _ => ProbComp.eval S.sampleKey
+
 /-- Stateless handler for `S.eagerIndCcaGame`: `G` and `H` are complete functions and
 decapsulation queries for `c ≠ cStar` evaluate `S.decapsNotBot G H dk c`. -/
 noncomputable def eagerHandler (S : Scheme PK SK M R CT K) (G : M → R) (H : Bool × M × CT → K)
@@ -373,14 +387,13 @@ noncomputable def eagerHandler (S : Scheme PK SK M R CT K) (G : M → R) (H : Bo
 
 /-- The eager random-oracle IND-CCA game for `FO-notbot` (standard KEM IND-CCA experiment, not
 separately located in the source map above), defined directly from `S.keyGenNotBot`,
-`S.encapsNotBot`, and `S.decapsNotBot` over eagerly sampled random functions `G : M → R` and
-`H : Bool × M × CT → K` (requiring `[Fintype M] [Finite R] [Fintype CT] [Finite K]` for
-`PMF.pi`) and `kRand ← S.sampleKey`. -/
+`S.encapsNotBot`, and `S.decapsNotBot` over eager random oracles `G ← S.coinTable` and
+`H ← S.keyTable (Bool × M × CT)` and `kRand ← S.sampleKey`. -/
 noncomputable def eagerIndCcaGame [Fintype M] [Finite R] [Fintype CT] [Finite K]
     (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K) (b : Bool) : Game := do
   let (pk, dk) ← ProbComp.eval S.keyGenNotBot
-  let G ← pi (α := fun _ : M => R) (fun _ => ProbComp.eval S.pke.sampleCoins)
-  let H ← pi (α := fun _ : Bool × M × CT => K) (fun _ => ProbComp.eval S.sampleKey)
+  let G ← S.coinTable
+  let H ← S.keyTable (Bool × M × CT)
   let (cStar, kReal) ← ProbComp.eval (S.encapsNotBot G H pk)
   let kRand ← ProbComp.eval S.sampleKey
   let kStar := if b then kRand else kReal
@@ -515,15 +528,15 @@ def romIndCcaExperiment {DK : Type} (S : Scheme PK SK M R CT K) (keyGen : ProbCo
     (OracleComp.interpret (S.romHandler (decaps pk dk) cStar) (A ⟨pk, cStar, kStar⟩)).run st₀
   return guess
 
-/-- The eager ROM IND-CCA experiment: `romIndCcaExperiment` with eagerly sampled random functions
-`G : M → R` and `H : Bool × M × CT → K` and the challenge `S.encapsBot G H pk`. -/
+/-- The eager ROM IND-CCA experiment: `romIndCcaExperiment` with eager random oracles
+`G ← S.coinTable` and `H ← S.keyTable (Bool × M × CT)` and the challenge `S.encapsBot G H pk`. -/
 noncomputable def eagerRomIndCcaExperiment [Fintype M] [Finite R] [Fintype CT] [Finite K]
     {DK : Type} (S : Scheme PK SK M R CT K) (keyGen : ProbComp (PK × DK))
     (decaps : PK → DK → CT → OracleComp (ROSpec M R CT K) (Option K))
     (A : ROAdversary PK M R CT K) (b : Bool) : Game := do
   let (pk, dk) ← ProbComp.eval keyGen
-  let G ← pi (α := fun _ : M => R) (fun _ => ProbComp.eval S.pke.sampleCoins)
-  let H ← pi (α := fun _ : Bool × M × CT => K) (fun _ => ProbComp.eval S.sampleKey)
+  let G ← S.coinTable
+  let H ← S.keyTable (Bool × M × CT)
   let (cStar, kReal) ← ProbComp.eval (S.encapsBot G H pk)
   let kRand ← ProbComp.eval S.sampleKey
   let kStar := if b then kRand else kReal
@@ -633,8 +646,9 @@ theorem eval_romIndCcaExperiment_eq_eager [Fintype M] [Finite R] [Fintype CT] [F
   let dG : M → PMF R := fun _ => ProbComp.eval S.pke.sampleCoins
   let dH : Bool × M × CT → PMF K := fun _ => ProbComp.eval S.sampleKey
   dsimp only [romIndCcaExperiment]
-  simp only [eagerRomIndCcaExperiment, encapsBot, encT, Probability.PMF.monad_bind_eq_bind,
-    ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind]
+  simp only [eagerRomIndCcaExperiment, coinTable, keyTable, encapsBot, encT,
+    Probability.PMF.monad_bind_eq_bind, ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind,
+    PMF.pure_bind]
   congr 1; funext ⟨pk, dk⟩
   have hstep (mStar : M) (rStar : R) (kReal kRand : K) :
       (ProbComp.eval ((OracleComp.interpret

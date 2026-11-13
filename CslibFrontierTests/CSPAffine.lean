@@ -24,7 +24,7 @@ private def sem : Fin 5 → List Bool → Bool :=
   | _ => false
 
 private def template : Fin 5 → AffineSystem ℕ :=
-  ![[([0, 1], false)], [([0, 1], true)], [], [([], true)], [([], true)]]
+  ![[⟨[0, 1], false⟩], [⟨[0, 1], true⟩], [], [⟨[], true⟩], [⟨[], true⟩]]
 
 private theorem templates : CSP.AffineTemplates arity sem template := by
   intro R a
@@ -38,7 +38,7 @@ private theorem preserved : CSP.HasPolymorphism arity sem (parity 3) := by
   · change Cslib.Logic.IsPolymorphism (parity 3)
       {a : Fin 2 → Bool | sem 0 (List.ofFn a) = true}
     have heq : {a : Fin 2 → Bool | sem 0 (List.ofFn a) = true} =
-        {a | AffineEquation.Holds ([0, 1], false) a} := by
+        {a | AffineEquation.Holds ⟨[0, 1], false⟩ a} := by
       ext a
       simp [sem, List.ofFn_succ, AffineEquation.Holds, Bool.zero_eq_false]
     rw [heq]
@@ -46,7 +46,7 @@ private theorem preserved : CSP.HasPolymorphism arity sem (parity 3) := by
   · change Cslib.Logic.IsPolymorphism (parity 3)
       {a : Fin 2 → Bool | sem 1 (List.ofFn a) = true}
     have heq : {a : Fin 2 → Bool | sem 1 (List.ofFn a) = true} =
-        {a | AffineEquation.Holds ([0, 1], true) a} := by
+        {a | AffineEquation.Holds ⟨[0, 1], true⟩ a} := by
       ext a
       simp [sem, List.ofFn_succ, AffineEquation.Holds, Bool.zero_eq_false]
     rw [heq]
@@ -83,7 +83,7 @@ example : [⟨1, [2 ^ 100, 2 ^ 100]⟩] ∉ CSPSAT arity sem := by
 
 -- Compilation retains sparse binary labels rather than expanding their numerical range.
 example : CSPSAT.toXORSAT arity template [⟨1, [2 ^ 100, 2 ^ 120]⟩] =
-    [([2 ^ 100, 2 ^ 120], true)] := by decide
+    [⟨[2 ^ 100, 2 ^ 120], true⟩] := by decide
 
 example : XORSAT.solve (CSPSAT.toXORSAT arity template
     [⟨0, [2 ^ 100, 2 ^ 100]⟩, ⟨1, [2 ^ 100, 2 ^ 120]⟩, ⟨2, []⟩]) = true := by decide
@@ -96,8 +96,8 @@ example : [⟨2, [7]⟩] ∉ CSPSAT arity sem := by
   have := h ⟨2, [7]⟩ (by simp)
   simp [arity] at this
 
-example : CSPSAT.toXORSAT arity template [⟨0, [7]⟩] = [([], true)] := by decide
-example : CSPSAT.toXORSAT arity template [⟨0, [7, 8, 9]⟩] = [([], true)] := by decide
+example : CSPSAT.toXORSAT arity template [⟨0, [7]⟩] = [⟨[], true⟩] := by decide
+example : CSPSAT.toXORSAT arity template [⟨0, [7, 8, 9]⟩] = [⟨[], true⟩] := by decide
 example : XORSAT.solve (CSPSAT.toXORSAT arity template [⟨0, [7]⟩]) = false := by decide
 example : [⟨2, []⟩] ∈ CSPSAT arity sem := by
   exact ⟨by decide, fun _ => false, by decide⟩

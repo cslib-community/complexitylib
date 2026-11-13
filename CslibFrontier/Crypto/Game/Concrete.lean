@@ -12,6 +12,8 @@ public import CslibFrontier.Computability.Probabilistic.Oracle.Time
 public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import CslibFrontier.Crypto.Game.Hybrid
+import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Choose
 import CslibFrontier.Tactic.PolyTime
 
 /-!
@@ -74,13 +76,6 @@ This module provides:
 -/
 
 public section
-
-private theorem choose_two_polynomiallyBounded {Q : ℕ → ℕ} (hQ : Cslib.PolynomiallyBounded Q) :
-    Cslib.PolynomiallyBounded (fun n => (Q n).choose 2) := by
-  refine Cslib.PolynomiallyBounded.mono_of_le (g := fun n => Q n ^ 2) (hQ.pow 2) fun n => ?_
-  change (Q n).choose 2 ≤ Q n ^ 2
-  rw [Nat.choose_two_right, sq]
-  exact (Nat.div_le_self _ 2).trans (Nat.mul_le_mul_left _ (Nat.sub_le _ _))
 
 namespace Cslib.Probability
 
@@ -209,17 +204,8 @@ theorem hybrid {Adversary Resource : Type*}
     IndistinguishableWithin (hyb 0) (fun adversary n => hyb (hops n) adversary n) Within
       (fun n r => ∑ i ∈ Finset.range (hops n), stepErr n r i) := by
   intro n r adversary hw
-  have hchain : ∀ k ≤ hops n,
-      advantage (hyb 0 adversary n) (hyb k adversary n) ≤
-        ∑ i ∈ Finset.range k, stepErr n r i := by
-    intro k hk
-    induction k with
-    | zero => simp
-    | succ k ih =>
-      rw [Finset.sum_range_succ]
-      exact (advantage_triangle _ (hyb k adversary n) _).trans
-        (add_le_add (ih (Nat.le_of_succ_le hk)) (hstep n r k hk adversary hw))
-  exact hchain (hops n) le_rfl
+  refine (advantage_hybrid_le_sum (fun i => hyb i adversary n) (hops n)).trans ?_
+  exact Finset.sum_le_sum fun i hi => hstep n r i (Finset.mem_range.mp hi) adversary hw
 
 /-- Concrete `hops n`-step hybrid argument with a uniform per-hop error `δ n r`. -/
 theorem hybrid_const {Adversary Resource : Type*}
@@ -496,7 +482,7 @@ theorem Indistinguishable.of_birthday_queryBounded_real {Operation β : Type}
     (fun n Q => (k : ℝ≥0) * (Q.choose 2 : ℝ≥0) * base n) hbound
     fun Q hQ => by
       simpa only [Nat.cast_mul] using hbase.polynomiallyBounded_mul
-        ((PolynomiallyBounded.const k).mul (choose_two_polynomiallyBounded hQ))
+        ((PolynomiallyBounded.const k).mul hQ.choose_two)
 
 /-- General auxiliary-input variant of `Game.Indistinguishable.of_queryBounded` for games invoking
 `adversary n (aux n)` along a polynomially bounded auxiliary word length. -/

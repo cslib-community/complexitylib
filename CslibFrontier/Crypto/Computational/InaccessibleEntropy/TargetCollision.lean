@@ -52,8 +52,9 @@ Theorem 5.1, STEPS 4–5, Lemmas 5.6 and 5.7, pp. 29–32):
    `O(|y| log t)` key-length bound (proved from `log n`-bit shrinkage): each `1`-bit step consumes
    its own fresh `G.inLen n`-bit subkey (`rompelKeyLen G n = rompelCascadeSteps G n * G.inLen n`),
    and that single step-key sequence `K` is shared across all `G.gridCount n` candidates rather than
-   indexing separate candidate keys as in STEP 5(iii) (sound because the reduction only needs key
-   simulation at the single existential `goodIdx n`).
+   indexing separate candidate keys as in STEP 5(iii) (sound because for each adversary `adv`, the
+   reduction only needs key simulation at the single existential `goodIdx` for
+   `rompelCompressionInverter G adv`).
 3. **Single-stage planted-subkey reduction (`rompelCompressionInverter`,
    `succProbability_targetCollisionGame_rompelCompression_le`,
    `ShrinkingCollisionGrid.targetCollisionResistant_rompelCompression`)**:
@@ -62,9 +63,12 @@ Theorem 5.1, STEPS 4–5, Lemmas 5.6 and 5.7, pp. 29–32):
    sampling `front`, planting `yStar := listXor (G.inLen n) [zWord, w₀]` so `w₀ ⊕ yStar = zWord`
    while `yStar` remains uniform, and completing `K := front ++ yStar ++ back` achieves exact key
    simulation with multiplicative loss `dyadicSize (G.gridCount n) *
-   dyadicSize (rompelCascadeSteps G n)` and zero additive error.
+   dyadicSize (rompelCascadeSteps G n)` and zero additive error. Because `rompelCompressionInverter`
+   never reads `goodIdx`, the reduction works directly against adversary-dependent `goodIdx` from
+   Definition 3.9 (`AdversaryInaccessibleEntropyFamily`).
 4. **Domain extension to `List Bool` (`rompelHash`,
    `ShrinkingCollisionGrid.targetCollisionResistant_rompelHash`,
+   `AdversaryInaccessibleEntropyFamily.exists_targetCollisionResistantHash`,
    `OneWay.exists_targetCollisionResistant_keyedHashFamily`)**:
    composing `rompelCompression G` with `KeyedCompressionFamily.treeHash` (`uowhfTreeHash`) yields
    an unrestricted computational target collision-resistant `KeyedHashFamily` on `List Bool` from
@@ -100,6 +104,9 @@ Theorem 5.1, STEPS 4–5, Lemmas 5.6 and 5.7, pp. 29–32):
 * `Cslib.Crypto.ShrinkingCollisionGrid.targetCollisionResistant_rompelCompression`,
   `Cslib.Crypto.ShrinkingCollisionGrid.targetCollisionResistant_rompelHash`: target collision
   resistance of `rompelCompression G` and `rompelHash G`.
+* `Cslib.Crypto.AdversaryInaccessibleEntropyFamily.exists_targetCollisionResistantCompression`,
+  `Cslib.Crypto.AdversaryInaccessibleEntropyFamily.exists_targetCollisionResistantHash`: Theorem
+  5.1 directly from Definition 3.9 (`AdversaryInaccessibleEntropyFamily`).
 * `Cslib.Crypto.OneWay.exists_targetCollisionResistant_keyedCompressionFamily`,
   `Cslib.Crypto.OneWay.exists_targetCollisionResistant_keyedHashFamily`: every uniform `OneWay`
   function implies target collision-resistant compression and unrestricted `KeyedHashFamily`
@@ -1006,12 +1013,12 @@ theorem succProbability_targetCollisionGame_rompelCompression_le
 theorem ShrinkingCollisionGrid.targetCollisionResistant_rompelCompression
     (G : ShrinkingCollisionGrid) :
     (rompelCompression G).TargetCollisionResistant := by
-  obtain ⟨goodIdx, hgood_lt, hgood_sec⟩ := G.exists_good_candidate
   apply TargetCollisionResistantOn.of_negligible
   intro adversary hadversary
   have hinv_ppt : IsPPT encBits (rompelCompressionInverter G adversary) :=
     isPPT_rompelCompressionInverter G hadversary
-  have hneg_rand := hgood_sec (rompelCompressionInverter G adversary) hinv_ppt
+  obtain ⟨goodIdx, hgood_lt, hneg_rand⟩ :=
+    G.exists_good_candidate (rompelCompressionInverter G adversary) hinv_ppt
   have hdq_pb : PolynomiallyBounded (fun n => dyadicSize (G.gridCount n)) :=
     dyadicSize_polynomiallyBounded.comp G.polyTime_gridCount.polynomiallyBounded
   have hds_pb : PolynomiallyBounded (fun n => dyadicSize (rompelCascadeSteps G n)) :=
@@ -1033,7 +1040,7 @@ theorem ShrinkingCollisionGrid.targetCollisionResistant_rompelCompression
 /-! ### Unrestricted `KeyedHashFamily` and `OneWay` UOWHF endpoints -/
 
 /-- **Rompel / HHRVW unrestricted `KeyedHashFamily`** (`[Rompel1990]`; `[HHRVW2020]`,
-Section 5.1, Theorem 5.1, p. 25): hashes arbitrary-length bit strings `List Bool` to
+Section 5.1, Theorem 5.1, p. 26): hashes arbitrary-length bit strings `List Bool` to
 `rompelBlockLen G n`-bit digests via `(rompelCompression G).treeHash` (inheriting `uowhfTreeHash`'s
 `< 2 ^ n` finite-parameter tree capacity). -/
 @[expose]
@@ -1047,20 +1054,38 @@ theorem ShrinkingCollisionGrid.targetCollisionResistant_rompelHash
   KeyedCompressionFamily.targetCollisionResistant_treeHash
     G.targetCollisionResistant_rompelCompression
 
+/-- **`[HHRVW2020]`, Section 5.1, Theorem 5.1 (p. 26) from Definition 3.9**: every
+`AdversaryInaccessibleEntropyFamily` yields a target collision-resistant
+`KeyedCompressionFamily`. -/
+theorem AdversaryInaccessibleEntropyFamily.exists_targetCollisionResistantCompression
+    (F : AdversaryInaccessibleEntropyFamily) :
+    ∃ C : KeyedCompressionFamily, C.TargetCollisionResistant := by
+  obtain ⟨G⟩ := F.exists_shrinkingCollisionGrid
+  exact ⟨rompelCompression G, G.targetCollisionResistant_rompelCompression⟩
+
+/-- **`[HHRVW2020]`, Section 5.1, Theorem 5.1 (p. 26) from Definition 3.9**: every
+`AdversaryInaccessibleEntropyFamily` yields an unrestricted target collision-resistant
+`KeyedHashFamily` on `List Bool`. -/
+theorem AdversaryInaccessibleEntropyFamily.exists_targetCollisionResistantHash
+    (F : AdversaryInaccessibleEntropyFamily) :
+    ∃ H : KeyedHashFamily, H.TargetCollisionResistant := by
+  obtain ⟨G⟩ := F.exists_shrinkingCollisionGrid
+  exact ⟨rompelHash G, G.targetCollisionResistant_rompelHash⟩
+
 /-- Every uniform `OneWay` function yields a target collision-resistant `KeyedCompressionFamily`. -/
 theorem OneWay.exists_targetCollisionResistant_keyedCompressionFamily
     {f : List Bool → List Bool} (hf : OneWay f) :
     ∃ C : KeyedCompressionFamily, C.TargetCollisionResistant := by
-  obtain ⟨G⟩ := hf.exists_shrinkingCollisionGrid
-  exact ⟨rompelCompression G, G.targetCollisionResistant_rompelCompression⟩
+  obtain ⟨F⟩ := hf.exists_inaccessibleEntropyFamily
+  exact F.toAdversaryInaccessibleEntropyFamily.exists_targetCollisionResistantCompression
 
 /-- **Rompel–HHRVW universal one-way hash theorem** (`[Rompel1990]`; `[HHRVW2020]`,
-Section 5.1, Theorem 5.1, p. 25): every uniform `OneWay` function implies the existence of an
+Section 5.1, Theorem 5.1, p. 26): every uniform `OneWay` function implies the existence of an
 unrestricted target collision-resistant `KeyedHashFamily` on `List Bool`. -/
 theorem OneWay.exists_targetCollisionResistant_keyedHashFamily
     {f : List Bool → List Bool} (hf : OneWay f) :
     ∃ H : KeyedHashFamily, H.TargetCollisionResistant := by
-  obtain ⟨G⟩ := hf.exists_shrinkingCollisionGrid
-  exact ⟨rompelHash G, G.targetCollisionResistant_rompelHash⟩
+  obtain ⟨F⟩ := hf.exists_inaccessibleEntropyFamily
+  exact F.toAdversaryInaccessibleEntropyFamily.exists_targetCollisionResistantHash
 
 end Cslib.Crypto

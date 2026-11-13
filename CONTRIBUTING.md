@@ -155,8 +155,12 @@ Two places keep projections, as standing exceptions:
 `scripts/check_projection_chains.py` counts the chains of depth 2 or more in each module's public
 statements and public definition bodies, leaving out proofs, these two exceptions and named
 accessors. CI fails a pull request when a module it changes has more chains than its entry in
-`scripts/projection_chains_baseline.json`; a new module starts at 0. Fewer chains pass, and
-`--update-baseline` lowers the entry. `--list PREFIX` shows the remaining chains of an area.
+`scripts/projection_chains_baseline.json`, or than it had at the merge base unless the pull request
+raises the entry; a new module starts at 0. Removing chains needs no baseline edit, which keeps
+pull requests from colliding on neighbouring lines of the baseline in the merge queue; a periodic
+`--update-baseline --all` prunes stale entries. Edit the baseline only to raise an entry on
+purpose, as for a moved module (`--update-baseline --allow-increase`). `--list PREFIX` shows the
+remaining chains of an area.
 
 **Readable encodings** ([#1656](https://github.com/cslib-community/cslib-frontier/issues/1656)).
 An encoding is part of what a statement claims, so statements show it; they should not make the
@@ -207,6 +211,13 @@ file even when `f` is private (Lean v4.36; `unfold f`, `dsimp only [f]` and `rfl
 tests, [#4243](https://github.com/cslib-community/cslib-frontier/issues/4243)). `import all` also
 loads private information, so such edits do reach its clients.
 
+Evidence that a public API is usable must include a representative `module` client with ordinary
+imports of that API, exercising intended operations through exposed bodies or public equations.
+[QuantumOracleModule.lean](CslibFrontierTests/QuantumOracleModule.lean) is an example.
+A test without `module`, or using `import all` for that API, has broader access and cannot
+establish usability for ordinary clients. Intentional internal, metaprogramming and axiom tests
+keep their documented access and supplement this representative evidence.
+
 - **What is a helper.** A helper is proof plumbing: a step meaningful only inside one proof, or a
   fact about a module-local construction, encoding or intermediate quantity. Helpers are `private`
   by default. Keep `@[expose]` for bodies that downstream proofs unfold.
@@ -250,8 +261,8 @@ Tidy computability (`ComputableTidily…`, `ComputesTidily…`, `IsTidy…`) may
 proofs, through `.tidy`, `.of_tidy`, a proof-local `attribute [local fun_prop] … in` or a tidy
 `have`. It never appears in a public statement: a theorem's type, or a definition's type, exposed
 body or fields. Only the raw machine constructions in `scripts/tidy_allowlist.txt` are exempt.
-CI enforces this with `scripts/check_tidy_surface.py`. The existing tidy statements, which #456 is
-restating, are counted per module in `scripts/tidy_surface_baseline.json`, and CI fails when a
+CI enforces this with `scripts/check_tidy_surface.py`. The existing tidy statements, which #862 is
+removing, are counted per module in `scripts/tidy_surface_baseline.json`, and CI fails when a
 module's count differs from its entry. When you remove some, lower the baseline in the same PR
 with `python3 scripts/check_tidy_surface.py --update`, so that they cannot come back. Until your
 PR lands, any other merge that removes tidy statements makes your baseline stale: rebase and
@@ -516,9 +527,11 @@ not a decision.
   [#858](https://github.com/leanprover/cslib/pull/858).
   [#966](https://github.com/leanprover/cslib/pull/966) would make `sampleComplexity` and `vcDim`
   `ℕ∞`-valued; if it lands, restate the bounds in `FiniteClass`, `VCUpperBound`,
-  `AgnosticFiniteClass`, `AgnosticVC` and `GrowthFunction`. Before submission, reconcile names with
-  [`feat/pac-learning-ehkv-headline`](https://github.com/SamuelSchlesinger/cslib/tree/feat/pac-learning-ehkv-headline),
-  which proves the EHKV `Ω(d/ε)` lower bound; do not reprove it locally.
+  `AgnosticFiniteClass`, `AgnosticVC` and `GrowthFunction`. `PACLearning/SampleComplexityLower*`
+  vendors the EHKV `Ω(d/ε)` lower bound from
+  [`feat/pac-learning-ehkv-headline`](https://github.com/SamuelSchlesinger/cslib/tree/feat/pac-learning-ehkv-headline);
+  submit or update it through that branch, not as a competing copy, and reconcile `VCLowerBound`
+  and `FundamentalTheorem` with its names before submitting them.
 * **Tree decompositions.** Upstream `SimpleGraph/TreeDecomposition` through Justin Lai's
   [mathlib4#38334](https://github.com/leanprover-community/mathlib4/pull/38334),
   [#39939](https://github.com/leanprover-community/mathlib4/pull/39939) and

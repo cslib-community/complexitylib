@@ -125,12 +125,7 @@ def Witness.consequenceValid {safe' : ℕ → δ → Memory.State → Prop}
   scratchSize := h.scratchSize
   factor := h.factor
   code := h.code
-  code_spec := by
-    intro r frontier src tmp hi hd hf hs
-    obtain ⟨hnw, hrun⟩ := h.code_spec frontier src tmp hi hd hf hs
-    refine ⟨hnw, fun w d x hx hin hsafe' hv => hrun w d x hx hin ?_ hv⟩
-    exact hsafe w d _ (fun i => congrFun hin i ▸ hx.1 (src i))
-      (wellFormed_memoryState hx) hv hsafe'
+  code_spec := SpecWith.consequence_valid h.code_spec hsafe
 
 /-- Exact source equality changes no witness field or code. -/
 def Witness.congr {p' : δ → Memory.Prog α} (h : Witness B p input output safe work)
