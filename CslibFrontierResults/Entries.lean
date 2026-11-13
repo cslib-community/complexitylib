@@ -3170,12 +3170,14 @@ register_result "learning-hardness-from-generators" where
     Cslib.MachineLearning.UniformLearning.exists_eventually_not_learns_of_isSubexponentiallySecure
   ]
   scope := "Conditional on a subexponentially secure family of length-doubling generators of \
-    polynomial circuit complexity, as in natural-proofs. Learners are membership-query learners \
-    with a De Morgan circuit and q non-adaptive queries on each seed (HasCircuit); running time \
-    is not modelled. For a polynomial s, every c and large n, a learner with S + 7 <= 2^(cn) \
-    gates for the functions of circuit size s n has (1 - delta)(1 - eps) <= 1/2 + q/2^(n+1) + \
-    2^(-cn), so none with q <= 2^(n-1) reaches (1 - delta)(1 - eps) > 3/4. The distinguisher \
-    fixes the learner's seed and comparison point by averaging; it is a nonuniform circuit test."
+    polynomial circuit complexity, as in natural-proofs. For a polynomial s, every c and large n, \
+    a learner whose tests are circuits of at most 2^(cn) gates on truth tables (HasCircuitTests) \
+    for the functions of circuit size s n has (1 - delta)(1 - eps) <= 1/2 + q/2^(n+1) + 2^(-cn). \
+    Learners with q <= 2^(n-1) adaptive membership queries and De Morgan circuits of S <= 2^(cn) \
+    gates in all on each seed (HasAdaptiveCircuit, covering non-adaptive HasCircuit learners) \
+    have such tests, so none reaches (1 - delta)(1 - eps) > 3/4. Running time is not modelled. \
+    The distinguisher fixes the learner's seed and comparison point by averaging; it is a \
+    nonuniform circuit test."
 
 register_result "nw-reconstruction-learner" where
   title := "Carmosino–Impagliazzo–Kabanets–Kolokolova: the Nisan–Wigderson reconstruction as a \

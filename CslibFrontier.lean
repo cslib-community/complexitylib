@@ -6586,6 +6586,7 @@ public import CslibFrontier.MachineLearning.StatisticalQuery.LowerBound
 public import CslibFrontier.MachineLearning.StatisticalQuery.Parity
 public import CslibFrontier.MachineLearning.StatisticalQuery.Simulation
 public import CslibFrontier.MachineLearning.UniformLearning.AC0
+public import CslibFrontier.MachineLearning.UniformLearning.AdaptiveCircuit
 public import CslibFrontier.MachineLearning.UniformLearning.Basic
 public import CslibFrontier.MachineLearning.UniformLearning.BestOf
 public import CslibFrontier.MachineLearning.UniformLearning.CIKK.AC0Mod
