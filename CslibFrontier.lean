@@ -3014,6 +3014,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.WordGameTime
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.BalancedParameters
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.BoundedRawScheduleEndpoint
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.ConcreteEvaluator
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.ConcreteEvaluatorCorrect
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.ConcreteSupplier
@@ -3098,6 +3099,9 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputa
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleBits
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleColumn
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleCounter
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleDecode
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleEndpointInput
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleEndpointQuery
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleRead
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleReadCorrect
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.BlockComputation.ScheduleReadPort
@@ -3487,7 +3491,9 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.App
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.BinaryDecrement
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.BinaryDecrementFlag
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.BinaryIncrement
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.BoundedPositionPairs
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.Branch
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.BranchRunsBetween
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.CarrySaveSelector
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.ClearShadowed
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.CopyBlock
@@ -3504,6 +3510,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.Mar
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.OnWords
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.OutputToTape
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.PositionPairs
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.PositionPairsCore
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.PrepareClock
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.PrepareInput
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.PrepareInput.Space

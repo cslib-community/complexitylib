@@ -110,7 +110,8 @@ private theorem run_row {k : ℕ} (c : Fin (k + 1)) (r : Option (Fin k) → Sign
   rw [hr]
   exact run_field _ _ pre post rest _ _ hp hs
 
-private theorem run_rows {k : ℕ} (c : Fin (k + 1))
+/-- The executable field reader extracts exactly the represented movement column. -/
+theorem run_rows {k : ℕ} (c : Fin (k + 1))
     (rs : List (Option (Fin k) → SignType)) :
     (reader (2 * c.val) (2 * (k - c.val))).run (reader (2 * c.val) (2 * (k - c.val))).q₀
       (ScheduleBits.rows rs) = ScheduleBits.column c rs := by

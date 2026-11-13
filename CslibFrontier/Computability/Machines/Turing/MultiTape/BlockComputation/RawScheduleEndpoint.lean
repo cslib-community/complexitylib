@@ -57,10 +57,14 @@ theorem column_eq (σ : MultiTapePTM.Schedule k q) (h : Fin k) :
 @[expose] def columnTapes : Fin 3 ↪ Fin 5 :=
   ⟨![0, 3, 4], by intro a b h; fin_cases a <;> fin_cases b <;> simp_all⟩
 
+/-- Extract one work-head column while preserving the runtime binary index and raw table. -/
+noncomputable def extract (h : Fin k) :=
+  (ScheduleColumn.machine h.succ).extendTapes columnTapes
+
 /-- Extract a work-head column, position from the binary index, read the current movement, and
 run the native scanner. The raw source and adapter remain outside the three-tape scan. -/
 noncomputable def machine (h : Fin k) (d : Fin 3) :=
-  ((ScheduleColumn.machine h.succ).extendTapes columnTapes).seq
+  (extract h).seq
     ((PositionPairs.machine.seq (RelativeScanDispatch.machine d)).extendTapes (Fin.castAddEmb 2))
 
 /-- Runtime binary index on tape 1 and raw table on tape 3; all five heads start at zero. -/
@@ -95,7 +99,28 @@ private theorem column_embed (input raw index column out : List Bool) :
     simp [embed, h0, h3, h4, hn 1 (Or.inl rfl), hn 2 (Or.inr rfl),
       initialConfig, tapesCfg]
 
-private theorem scan_view (input raw index column out : List Bool) :
+/-- Extracting the selected column preserves the complete raw schedule and any binary-index
+word on tape 1. Both source heads and the adapter return to zero. -/
+theorem runsBetween_extract (input out : List Bool) (σ : MultiTapePTM.Schedule k q)
+    (h : Fin k) (index : List Bool) :
+    RunsBetween (extract h) (initialConfig input (word σ) index out)
+      (tapesCfg input ![RelativeScan.encode (RelativeScanSchedule.column σ h), index, [],
+        word σ, []] 0 0 out)
+      ((8 * k + 10) * q + 14) ((4 * k + 8) * q + 20) := by
+  have he := ScheduleColumn.runsBetween h.succ input out (List.ofFn σ)
+  rw [column_eq, List.length_ofFn] at he
+  change RunsBetween _ (tapesCfg input ![[], word σ, []] 0 0 out)
+    (tapesCfg input ![RelativeScan.encode (RelativeScanSchedule.column σ h), word σ, []]
+      0 0 out) _ _ at he
+  rw [← column_view input (word σ) index out] at he
+  have he' := he.extendTapes columnTapes
+  rw [column_embed input (word σ) index
+    (RelativeScan.encode (RelativeScanSchedule.column σ h)) out] at he'
+  exact he'
+
+/-- The three scan tapes of an extracted-column configuration are exactly the pair-positioning
+input; the preserved raw table and adapter lie outside this view. -/
+theorem prepared_view (input raw index column out : List Bool) :
     viewCfg (Fin.castAddEmb 2 : Fin 3 ↪ Fin 5)
       (tapesCfg input ![column, index, [], raw, []] 0 0 out) =
       PositionPairs.config input column index [] 0 out := by
@@ -119,15 +144,7 @@ theorem runsBetween (input out : List Bool) (σ : MultiTapePTM.Schedule k q)
         (RelativeScanSchedule.result σ i h d))
       ((8 * k + 20) * q + 11 * i.val + 5 * i.val.bits.length + 38)
       ((4 * k + 38) * q + 33 * i.val + 15 * i.val.bits.length + 100) := by
-  have he := ScheduleColumn.runsBetween h.succ input out (List.ofFn σ)
-  rw [column_eq, List.length_ofFn] at he
-  change RunsBetween _ (tapesCfg input ![[], word σ, []] 0 0 out)
-    (tapesCfg input ![RelativeScan.encode (RelativeScanSchedule.column σ h), word σ, []]
-      0 0 out) _ _ at he
-  rw [← column_view input (word σ) i.val.bits out] at he
-  have he' := he.extendTapes columnTapes
-  rw [column_embed input (word σ) i.val.bits
-    (RelativeScan.encode (RelativeScanSchedule.column σ h)) out] at he'
+  have he' := runsBetween_extract input out σ h i.val.bits
   have hp := PositionPairs.runsBetween_bits input
     (RelativeScan.encode (RelativeScanSchedule.column σ h)) out i.val
   have hs := RelativeScanDispatch.runsBetween input out σ i h d
@@ -137,7 +154,7 @@ theorem runsBetween (input out : List Bool) (σ : MultiTapePTM.Schedule k q)
         (RelativeScan.encode (RelativeScanSchedule.column σ h)) i.val out := rfl
   rw [hi] at hp
   have hp' := hp.seq hs
-  rw [← scan_view input (word σ) i.val.bits
+  rw [← prepared_view input (word σ) i.val.bits
     (RelativeScan.encode (RelativeScanSchedule.column σ h)) out] at hp'
   have hs' := hp'.extendTapes (Fin.castAddEmb 2)
   rw [scan_embed] at hs'
