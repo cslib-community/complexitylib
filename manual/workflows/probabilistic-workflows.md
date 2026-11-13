@@ -113,7 +113,9 @@ pad; `uniformOfFintype_map_addHom` and `uniformOfFintype_map_monoidHom` push the
 through a surjective homomorphism; and `uniformOfFintype_map_comp` reads a uniform function
 through an injection. For a dependent function, `uniformOfFintype_map_comp_dep` in
 [Product/Split.lean](../../CslibFrontier/Probability/Product/Split.lean) needs only nonempty
-fibres. For a biased bit, use `coin p` from
+fibres. On any finite type, `uniformOfFintype_bind_bijective` in
+[PMF/Uniform.lean](../../CslibFrontier/Probability/PMF/Uniform.lean) changes variables in a uniform
+draw along a bijection. For a biased bit, use `coin p` from
 [PMF/Coin.lean](../../CslibFrontier/Probability/PMF/Coin.lean), with `p : unitInterval`; Mathlib's
 `PMF.bernoulli` is deprecated. `toMeasure_coin` identifies `(coin p).toMeasure` with Mathlib's
 `ProbabilityTheory.bernoulliMeasure true false p`, and `entropy_coin` in
