@@ -925,9 +925,8 @@ abbrev encEntryInput : PacketCtx × (List (ℕ × Bool) × List ℕ) ↪ List Bo
 
 /-- The root of coefficient extraction at an input of the native packet evaluator: the context,
 the row ports and the dense exponents. -/
-def entryNode (q : PacketCtx × (List (ℕ × Bool) × List ℕ)) :
-    CoeffScheme.Node PacketCtx (ℕ × Bool) :=
-  ⟨q.1, q.2.1, q.2.2⟩
+def entryNode : PacketCtx × (List (ℕ × Bool) × List ℕ) → CoeffScheme.Node PacketCtx (ℕ × Bool)
+  | (ctx, rows, β) => ⟨ctx, rows, β⟩
 
 /-- The root of coefficient extraction, with the exponents re-encoded in binary. -/
 theorem node_polyTime :
