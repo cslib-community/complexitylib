@@ -150,8 +150,9 @@ knowledge soundness bounds:
   `Cslib.Crypto.Protocols.BCS.bcsOpeningsMerkleQueries`,
   `Cslib.Crypto.Protocols.BCS.bcsSoundnessProg`, `Cslib.Crypto.Protocols.BCS.bcsSoundnessGame`,
   `Cslib.Crypto.Protocols.BCS.bcsExecROM`,
-  `Cslib.Crypto.Protocols.BCS.bcsKnowledgeSoundnessGame`: per-channel query costs and ROM soundness
-  and knowledge-soundness experiments.
+  `Cslib.Crypto.Protocols.BCS.bcsKnowledgeSoundnessGame`,
+  `Cslib.Crypto.Protocols.BCS.BCSExtractionFails`: per-channel query costs, ROM soundness and
+  knowledge-soundness experiments, and the straight-line extraction-failure event.
 
 ## Main results
 
@@ -2000,28 +2001,59 @@ theorem isCostBounded_bcsMTCost_bcsExecROM (iop : PublicCoinIOP r d Stmt Wit Sym
       IsCostBounded.pure ((x, prf), ok) 0
 
 open Classical in
-/-- **Straight-line BCS ROM knowledge soundness experiment** (`bcsKnowledgeSoundnessGame`):
-1. Runs the cheating prover `P` under `bcsMemoize σ` from `([], [])`, recording the prover's own
-   Merkle trace `tr_P` and Fiat–Shamir trace `tr_FS`.
-2. Reconstructs a candidate witness `w := bcsExtractWitness iopExtract decSym defaultSym tr_P x
-   prf.roots` *straight-line from `tr_P` alone* (before running the verifier and with zero
-   rewinding).
-3. Runs `bcsVerifyROM iop encSym x prf` from `(tr_P, tr_FS)` to obtain `ok`.
-4. Outputs `true` iff `ok = true` and `¬ rel x w`. -/
+/-- **Straight-line BCS ROM knowledge soundness experiment** (`bcsKnowledgeSoundnessGame`), run
+once in the memoized two-channel ROM `bcsMemoize σ` from the empty traces `([], [])`:
+1. the cheating prover `P` outputs `(x, prf)`;
+2. the Merkle trace `tr_P` recorded so far (the prover's own queries) gives the candidate witness
+   `w := bcsExtractWitness iopExtract decSym defaultSym tr_P x prf.roots`, straight-line from
+   `tr_P` alone, before the verifier runs and with zero rewinding;
+3. `bcsVerifyROM iop encSym x prf` continues in the same oracle to obtain `ok`;
+4. the game outputs `true` iff `ok = true` and `¬ rel x w`. -/
 @[expose] noncomputable def bcsKnowledgeSoundnessGame [BEq Stmt] [BEq Chal]
     [Fintype Chal] [Nonempty Chal] (iop : PublicCoinIOP r d Stmt Wit Sym Chal)
     (rel : Stmt → Wit → Prop) (iopExtract : Stmt → (Fin r → OracleTable d Sym) → Wit)
     (encSym : Sym → List Bool) (decSym : List Bool → Sym) (defaultSym : Sym)
     (P : OracleComp (BCSROMSpec Stmt Chal) (Stmt × BCSProof r Sym)) (σ : ℕ) : PMF Bool :=
-  (((OracleComp.interpret (bcsMemoize σ) P).run ([], [])).bind fun ((x, prf), (tr_P, tr_FS)) =>
+  StateT.run' (s := (([], []) : BCSTraceState Stmt Chal)) do
+    let (x, prf) ← OracleComp.interpret (bcsMemoize σ) P
+    let (tr_P, _) ← get
     let w := bcsExtractWitness iopExtract decSym defaultSym tr_P x prf.roots
-    ((OracleComp.interpret (bcsMemoize σ) (bcsVerifyROM iop encSym x prf)).run (tr_P, tr_FS)).map
-      fun (ok, _) => ok && decide (¬ rel x w))
+    let ok ← OracleComp.interpret (bcsMemoize σ) (bcsVerifyROM iop encSym x prf)
+    return ok && decide (¬ rel x w)
+
+open Classical in
+/-- `bcsKnowledgeSoundnessGame` as a bind: run `P` from `([], [])`, then run `bcsVerifyROM` from
+the prover's final traces `(tr_P, tr_FS)`. -/
+private theorem bcsKnowledgeSoundnessGame_eq_bind [BEq Stmt] [BEq Chal]
+    [Fintype Chal] [Nonempty Chal] (iop : PublicCoinIOP r d Stmt Wit Sym Chal)
+    (rel : Stmt → Wit → Prop) (iopExtract : Stmt → (Fin r → OracleTable d Sym) → Wit)
+    (encSym : Sym → List Bool) (decSym : List Bool → Sym) (defaultSym : Sym)
+    (P : OracleComp (BCSROMSpec Stmt Chal) (Stmt × BCSProof r Sym)) (σ : ℕ) :
+    bcsKnowledgeSoundnessGame iop rel iopExtract encSym decSym defaultSym P σ =
+      ((OracleComp.interpret (bcsMemoize σ) P).run ([], [])).bind fun ((x, prf), (tr_P, tr_FS)) =>
+        let w := bcsExtractWitness iopExtract decSym defaultSym tr_P x prf.roots
+        ((OracleComp.interpret (bcsMemoize σ) (bcsVerifyROM iop encSym x prf)).run
+          (tr_P, tr_FS)).map fun (ok, _) => ok && decide (¬ rel x w) := by
+  simp only [bcsKnowledgeSoundnessGame, StateT.run'_eq, StateT.run_bind, StateT.run_get,
+    StateT.run_pure, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.monad_map_eq_map,
+    PMF.map_bind, PMF.pure_bind]
+  refine congrArg (PMF.bind _) (funext fun ⟨⟨x, prf⟩, ⟨tr_P, tr_FS⟩⟩ => ?_)
+  simp only [PMF.map, PMF.pure_bind, Function.comp_def]
+
+/-- **Straight-line extraction failure** on an output `(((x, prf), ok), (tr_MT, tr_FS))` of
+`bcsExecROM` under `bcsMemoize σ`: the verifier accepts (`ok = true`), but the witness
+`bcsExtractWitness iopExtract decSym defaultSym tr_MT x prf.roots` extracted from the Merkle trace
+`tr_MT` fails `rel x`. -/
+@[expose] def BCSExtractionFails (rel : Stmt → Wit → Prop)
+    (iopExtract : Stmt → (Fin r → OracleTable d Sym) → Wit) (decSym : List Bool → Sym)
+    (defaultSym : Sym) : ((Stmt × BCSProof r Sym) × Bool) × BCSTraceState Stmt Chal → Prop
+  | (((x, prf), ok), (tr_MT, _)) =>
+    ok = true ∧ ¬ rel x (bcsExtractWitness iopExtract decSym defaultSym tr_MT x prf.roots)
 
 /-- **Trace-level straight-line BCS ROM knowledge soundness bound**: on a combined execution of
-`bcsExecROM iop encSym P` under `bcsMemoize σ`, the probability that `bcsVerifyROM` accepts
-`(x, prf)` while `iopExtract x (bcsExtractOracles decSym defaultSym tr_MT d prf.roots)` fails
-`rel x` is at most
+`bcsExecROM iop encSym P` under `bcsMemoize σ`, the probability of `BCSExtractionFails` (the
+verifier accepts `(x, prf)` while the witness extracted from the final Merkle trace `tr_MT` fails
+`rel x`) is at most
 `(t_FS + r) * (ε_rbr + (t_FS + r) * (1 / Fintype.card Chal)) +`
 `Q_MT * ((3 * Q_MT + r * (t_FS + r)) * (1 / 2 ^ σ))`. -/
 theorem bcsROMKnowledgeSoundness_trace_bound [DecidableEq Stmt] [DecidableEq Chal]
@@ -2040,25 +2072,19 @@ theorem bcsROMKnowledgeSoundness_trace_bound [DecidableEq Stmt] [DecidableEq Cha
     (hFS : IsCostBounded bcsFSCost P t_FS)
     (hMT : IsCostBounded bcsMTCost (bcsExecROM iop encSym P) Q_MT) :
     ((OracleComp.interpret (bcsMemoize σ) (bcsExecROM iop encSym P)).run ([], [])).toOuterMeasure
-        {out | match out with
-          | (((x, prf), ok), (tr_MT, _)) =>
-            ok = true ∧
-              ¬ rel x (iopExtract x (bcsExtractOracles decSym defaultSym tr_MT d prf.roots))} ≤
+        {out | BCSExtractionFails rel iopExtract decSym defaultSym out} ≤
       ((t_FS + r : ℕ) : ℝ≥0∞) *
           (ε_rbr + ((t_FS + r : ℕ) : ℝ≥0∞) * ((1 : ℝ≥0∞) / Fintype.card Chal)) +
         (Q_MT : ℝ≥0∞) *
           (((3 * Q_MT + r * (t_FS + r) : ℕ) : ℝ≥0∞) * ((1 : ℝ≥0∞) / 2 ^ σ)) := by
   set run := (OracleComp.interpret (bcsMemoize σ) (bcsExecROM iop encSym P)).run ([], [])
-  set badOut : Set (((Stmt × BCSProof r Sym) × Bool) × BCSTraceState Stmt Chal) :=
-    {out | match out with
-      | (((x, prf), ok), (tr_MT, _)) =>
-        ok = true ∧
-          ¬ rel x (iopExtract x (bcsExtractOracles decSym defaultSym tr_MT d prf.roots))}
   rw [← PMF.toOuterMeasure_apply_inter_support]
-  calc run.toOuterMeasure (badOut ∩ run.support)
+  calc run.toOuterMeasure
+        ({out | BCSExtractionFails rel iopExtract decSym defaultSym out} ∩ run.support)
       ≤ run.toOuterMeasure {out | ¬ BCSGoodState r d Set.univ doomed decSym defaultSym out.2} := by
         refine run.toOuterMeasure.mono
-          fun ⟨⟨⟨x, prf⟩, ok⟩, ⟨tr_MT₃, tr_FS₂⟩⟩ ⟨⟨hok, hnot_rel⟩, hmem⟩ => ?_
+          fun ⟨⟨⟨x, prf⟩, ok⟩, ⟨tr_MT₃, tr_FS₂⟩⟩ ⟨hfails, hmem⟩ => ?_
+        obtain ⟨hok, hnot_rel⟩ := hfails
         subst hok
         simp only [run, bcsExecROM, run_interpret_bind, run_interpret_pure, PMF.monad_bind_eq_bind,
           PMF.monad_pure_eq_pure, PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hmem
@@ -2181,8 +2207,8 @@ private theorem bcsKnowledgeSoundnessGame_eq_sticky [BEq Stmt] [BEq Chal]
           (bcsVerifyROM iop encSym x prf)).run p₁).map
             fun (ok, _) => ok && decide (¬ rel x w)) := by
   classical
-  unfold bcsKnowledgeSoundnessGame
-  rw [← run_interpret_bcsStickyMemoize_map Set.univ doomed decSym defaultSym σ P ([], []) false,
+  rw [bcsKnowledgeSoundnessGame_eq_bind,
+    ← run_interpret_bcsStickyMemoize_map Set.univ doomed decSym defaultSym σ P ([], []) false,
     PMF.bind_map]
   refine congrArg (PMF.bind _) (funext fun ⟨⟨x, prf⟩, ⟨⟨tr_P, tr_FS⟩, flag₁⟩⟩ => ?_)
   dsimp only [Function.comp_def]

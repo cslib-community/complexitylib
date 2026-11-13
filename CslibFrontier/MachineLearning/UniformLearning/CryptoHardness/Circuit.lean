@@ -101,6 +101,17 @@ def HasCircuitTests (A : QueryLearner (Fin n) Ω) (q t : ℕ) : Prop :=
     ∀ ω z, IsCircuitTest t fun T : BitString (2 ^ n) =>
       PMF.pure (A.agrees ω z ((truthTable n).symm T))
 
+/-- A learner with circuit tests agrees with a learner making at most `q` queries. -/
+theorem HasCircuitTests.exists_queriesAtMost {t : ℕ} (hA : A.HasCircuitTests q t) :
+    ∃ B : QueryLearner (Fin n) Ω, B.QueriesAtMost q ∧ ∀ ω, (B ω).eval = (A ω).eval :=
+  hA.1
+
+/-- The tests of a learner with circuit tests of size `t` are circuits of at most `t` gates. -/
+theorem HasCircuitTests.isCircuitTest {t : ℕ} (hA : A.HasCircuitTests q t) (ω : Ω)
+    (z : BitString n) : IsCircuitTest t fun T : BitString (2 ^ n) =>
+      PMF.pure (A.agrees ω z ((truthTable n).symm T)) :=
+  hA.2 ω z
+
 /-- **Comparing a hypothesis with an input costs seven gates.** The function reading `y`, feeding
 `H` with the variables `σ` of `y` followed by the constants `z`, and accepting when the value of `H`
 agrees with the variable `j` of `y`, costs at most seven more gates than `H`: the two constants of
