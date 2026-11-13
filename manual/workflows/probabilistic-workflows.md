@@ -1524,7 +1524,14 @@ along an equivalence of queries, and `withOp` puts one copy of a single-channel 
 channel. In [the Luby–Rackoff reduction](../../CslibFrontier/Crypto/Computational/LubyRackoff.lean),
 `pairCodec` and `strongPairCodec` are built this way, and `pairCodec_wordOracle` and
 `strongPairCodec_wordOracle` are the pointwise equations for its random-permutation games. The
-[checked client](../../CslibFrontierTests/OracleCodec.lean) runs a word adversary with one
+[PRF ideal game](../../CslibFrontier/Crypto/Computational/PseudorandomFunction.lean) and the
+word-level PRP switching lemma adapt along `bitString n` itself, with `wordOracle_bitString_pure`
+as the pointwise equation. [Even–Mansour](../../CslibFrontier/Crypto/Computational/EvenMansour.lean)
+builds `evenMansourCodec` as `withOp` of `bitString` transported by `comap`, and
+`IsWordCallBounded.adapt` keeps its separate cipher and primitive budgets through
+`isCostBounded_adapt`.
+
+The [checked client](../../CslibFrontierTests/OracleCodec.lean) runs a word adversary with one
 malformed and one well-formed request against a stateful typed oracle. Check it with
 `scripts/build.sh --wfail --iofail CslibFrontierTests.OracleCodec`.
 
