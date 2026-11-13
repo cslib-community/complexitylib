@@ -1747,6 +1747,7 @@ public import CslibFrontier.Computability.Communication.DagProtocol
 public import CslibFrontier.Computability.Communication.Discrepancy
 public import CslibFrontier.Computability.Communication.Discrepancy.Extractor
 public import CslibFrontier.Computability.Communication.Discrepancy.Symmetry
+public import CslibFrontier.Computability.Communication.Discrepancy.Transport
 public import CslibFrontier.Computability.Communication.Discrepancy.Xor
 public import CslibFrontier.Computability.Communication.Disjointness
 public import CslibFrontier.Computability.Communication.Distributional
@@ -1759,6 +1760,7 @@ public import CslibFrontier.Computability.Communication.Inclusion
 public import CslibFrontier.Computability.Communication.Information
 public import CslibFrontier.Computability.Communication.InnerProductRank
 public import CslibFrontier.Computability.Communication.KarchmerWigderson
+public import CslibFrontier.Computability.Communication.Lifting.BitStringLifting
 public import CslibFrontier.Computability.Communication.Lifting.Dangerous
 public import CslibFrontier.Computability.Communication.Lifting.DangerousParameters
 public import CslibFrontier.Computability.Communication.Lifting.DangerousProbability

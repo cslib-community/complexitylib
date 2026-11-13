@@ -6,7 +6,7 @@ Authors: Sam
 
 module
 
-import CslibFrontier.Computability.Communication.Lifting.LogarithmicLifting
+import CslibFrontier.Computability.Communication.Lifting.BitStringLifting
 
 /-! Regression clients for arbitrary positive discrepancy exponents and alphabet sizes. -/
 
@@ -45,3 +45,26 @@ example {M : ℝ} (hM : (3 : ℝ) ^ 2048 ≤ M) :
 #print axioms Cslib.Communication.Lifting.exists_general_lifting_parameter
 
 #print axioms Cslib.Communication.Lifting.exists_decisionTree_logarithmic
+
+/-- Alphabet transport also handles an empty bit string and unequal player alphabet sizes. -/
+example (g : BitString 0 → BitString 1 → Bool) :
+    discrepancy (PMF.uniformOfFintype (Fin (2 ^ 0) × Fin (2 ^ 1)))
+      (fun x y => g ((BitString.equivFin 0).symm x) ((BitString.equivFin 1).symm y)) =
+      discrepancy (PMF.uniformOfFintype (BitString 0 × BitString 1)) g :=
+  discrepancy_uniform_comap_equiv (BitString.equivFin 0).symm (BitString.equivFin 1).symm g
+
+/-- A Boolean-function client uses literal bit-string gadget inputs throughout. -/
+example {n b k : ℕ} {η : ℝ}
+    (hk : 1 ≤ k) (hη : 1 ≤ 2 * (k : ℝ) * η) (hn : 2 ≤ n)
+    (hb : (2048 * k ^ 2 : ℕ) * Real.log n ≤ (b : ℝ) * Real.log 2)
+    (g : BitString b → BitString b → Bool) (f : (Fin n → Bool) → Bool)
+    (hd : discrepancy (PMF.uniformOfFintype (BitString b × BitString b)) g ≤
+      (2 : ℝ) ^ (-(η * b)))
+    (p : Protocol (Fin n → BitString b) (Fin n → BitString b) Bool)
+    (hp : ∀ x y, p.run x y = f (fun i => g (x i) (y i))) :
+    ∃ t : DecisionTree (Fin n) Bool, (∀ z, t.eval z = f z) ∧
+      t.depth * b ≤ 768 * k * p.depth :=
+  exists_decisionTree_bitString_of_log_bound hk hη hn hb g hd (fun z o => o = f z) p hp
+
+#print axioms Cslib.Communication.discrepancy_uniform_comap_equiv
+#print axioms Cslib.Communication.Lifting.exists_decisionTree_bitString_of_log_bound

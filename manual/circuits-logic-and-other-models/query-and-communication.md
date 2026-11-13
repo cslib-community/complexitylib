@@ -231,6 +231,12 @@ at most `m^(-η)`, every correct protocol has a correct decision-tree simulation
 [Lifting/LogarithmicLifting](../../CslibFrontier/Computability/Communication/Lifting/LogarithmicLifting.lean)
 checks the logarithmic bound, the equivalent bit-length threshold for `m = 2^b`, and the
 resulting `t.depth*b ≤ 768*k*p.depth`.
+[Lifting/BitStringLifting](../../CslibFrontier/Computability/Communication/Lifting/BitStringLifting.lean)
+exposes this theorem directly for gadgets and protocols on literal `BitString b` inputs.
+`exists_decisionTree_bitString_of_log_bound` accepts discrepancy at most `2^(-η*b)` and
+the bit-length threshold above. It reuses `BitString.equivFin` and `Protocol.comap`, which
+preserves protocol depth. [Discrepancy/Transport](../../CslibFrontier/Computability/Communication/Discrepancy/Transport.lean)
+proves that separate input-alphabet equivalences preserve uniform discrepancy.
 [Lifting/GeneralParameters](../../CslibFrontier/Computability/Communication/Lifting/GeneralParameters.lean)
 uses density levels `m^(1−1/(32k))` and `m^(1−1/(64k))` in its real-base representation.
 [Lifting/ExponentParameters](../../CslibFrontier/Computability/Communication/Lifting/ExponentParameters.lean)
