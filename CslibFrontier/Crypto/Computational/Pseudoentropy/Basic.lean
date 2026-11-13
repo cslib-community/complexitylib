@@ -175,9 +175,6 @@ enc_structure encPredictorInput (pair : SamplablePair) : PredictorInput pair whe
   parameter : encUnary,
   observation : (pair.encode parameter) using (pair.encode parameter).injective
 
--- The field tuple holds the unary parameter and the observation word, whatever the pair.
-attribute [nolint unusedArguments] encPredictorInputFields
-
 /-- The input of an advised predictor: the security parameter, the advice word and an
 observation. -/
 structure AdvisedPredictorInput extends AdvisedParameter where
@@ -190,8 +187,6 @@ enc_structure encAdvisedPredictorInput (pair : SamplablePair) : AdvisedPredictor
   toAdvisedParameter : encAdvisedParameter,
   observation : (pair.encode toAdvisedParameter.parameter) using
     (pair.encode toAdvisedParameter.parameter).injective
-
-attribute [nolint unusedArguments] encAdvisedPredictorInputFields
 
 /-- A uniform predictor: given the security parameter and an observation, guess the hidden bit.
 `Predictor.IsPPT` states its efficiency on encodings. -/
