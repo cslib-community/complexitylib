@@ -246,6 +246,31 @@ names below are in `Cslib.Crypto` unless otherwise indicated.
   Mathlib source searches did not identify the named missing computational endpoints; this is
   not a whole-library semantic audit. No Lean elaboration or axiom-dependency audit was run.
 
+## Chapter 12: arbitrary tiling milestones
+
+This section records three formalized endpoints, not a full chapter audit. The broader
+chapter comparison is tracked by [#4764](https://github.com/cslib-community/cslib-frontier/pull/4764).
+Source pages: printed 224–225 / PDF 240–241 of the pinned draft. Definition 12.6 minimizes over
+arbitrary disjoint monochromatic rectangles, independently of protocol trees.
+
+`RectanglePartition` in [Partition](../CslibFrontier/Computability/Communication/Partition.lean)
+models labelled finite tilings; `tilingNumber` is their minimum in $\mathbb N\cup\{\infty\}$.
+The minimum is attained for finite inputs, including zero for an empty product. Empty pieces
+are allowed and charged, so they cannot improve the minimum.
+
+| Draft result | Disposition and scope |
+|---|---|
+| Lemma 12.8 | **Covered.** `IsFoolingSet.card_le_tilingNumber` in [FoolingSet](../CslibFrontier/Computability/Communication/FoolingSet.lean) bounds every arbitrary tiling and hence its minimum. The stronger labelled-piece bound is also available. |
+| Theorem 12.10 | **Covered.** `rank_communicationMatrix_le_tilingNumber` in [Rank](../CslibFrontier/Computability/Communication/Rank.lean) bounds the zero/one matrix rank over any commutative semiring with the strong rank condition, in particular every field. |
+| Lemma 12.11 | **Covered.** `one_div_discrepancy_le_tilingNumber` in [Discrepancy](../CslibFrontier/Computability/Communication/Discrepancy.lean) proves the reciprocal bound for any PMF on finite input sets. Uniform equal bit cubes specialize to the draft's normalization. |
+
+The existing protocol proofs now specialize these general arguments through the leaf partition.
+The [checked clients](../CslibFrontierTests/CommunicationTilings.lean) include explicit tilings,
+Boolean equality, empty and constant cases, and uniform and nonuniform distributions.
+This establishes no protocol-realization theorem for arbitrary tilings and no communication
+runtime bound. The book-wide theory/exercise objective remains open under
+[#4711](https://github.com/cslib-community/cslib-frontier/issues/4711).
+
 ## Chapter 14: algebraic computation models
 
 Snapshot: `b33272859bedf13f13abe0a6e841a56b41807d5f` on 2026-11-12, with CSLib pin

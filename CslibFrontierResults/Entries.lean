@@ -46,6 +46,8 @@ import CslibFrontier.Computability.Circuit.Boolean.Smolensky
 import CslibFrontier.Computability.Circuit.NNF.Negation.Separation
 import CslibFrontier.Computability.Communication.Discrepancy
 import CslibFrontier.Computability.Communication.Disjointness
+import CslibFrontier.Computability.Communication.FoolingSet
+import CslibFrontier.Computability.Communication.Rank
 import CslibFrontier.Computability.Communication.Nondeterministic.UniqueDisjointness
 import CslibFrontier.Computability.Complexity.Classes.Alternation.DeterministicTime
 import CslibFrontier.Computability.Complexity.Classes.Alternation.Savitch
@@ -816,6 +818,47 @@ register_result "communication" where
     n-bit strings with error 1/3: the least, over distributions on binary protocol trees with \
     error at most 1/3 on every input pair, of the largest tree depth in the support (depth \
     counts unreachable branches). Stated for this infimum rather than per protocol."
+
+register_result "communication-tiling-fooling" where
+  title := "Fooling sets bound arbitrary monochromatic tilings"
+  topic := "communication complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Lemma 12.8",
+      locator := "Web draft 2007-01-08; printed p. 224 / PDF p. 240" }
+  ]
+  theorems := [Cslib.Communication.IsFoolingSet.card_le_partition,
+    Cslib.Communication.IsFoolingSet.card_le_tilingNumber]
+  scope := "A finite fooling set for one label injects into pieces with that label in every \
+    arbitrary finite labelled rectangle partition. Its cardinality bounds the minimum \
+    tilingNumber in extended naturals; no protocol-tree realization is assumed."
+
+register_result "communication-tiling-rank" where
+  title := "Zero/one matrix rank bounds arbitrary monochromatic tilings"
+  topic := "communication complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Theorem 12.10",
+      locator := "Web draft 2007-01-08; printed p. 224 / PDF p. 240" }
+  ]
+  theorems := [Cslib.Communication.RectanglePartition.rank_communicationMatrix_le,
+    Cslib.Communication.rank_communicationMatrix_le_tilingNumber]
+  scope := "The zero/one communication matrix over a commutative semiring with the strong \
+    rank condition has rank at most the true-labelled pieces of every arbitrary tiling, \
+    hence at most the minimum tiling number. Finite columns; fields are included. \
+    This is not a sign-matrix rank bound or a protocol-realization theorem."
+
+register_result "communication-tiling-discrepancy" where
+  title := "Discrepancy bounds the minimum arbitrary monochromatic tiling size"
+  topic := "communication complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Lemma 12.11",
+      locator := "Web draft 2007-01-08; printed p. 225 / PDF p. 241" }
+  ]
+  theorems := [Cslib.Communication.one_le_tilingNumber_mul_discrepancy,
+    Cslib.Communication.one_div_discrepancy_le_tilingNumber]
+  scope := "Any PMF on finite rectangular input sets: one is at most minimum tiling size \
+    times discrepancy, and reciprocal discrepancy is at most that finite minimum. \
+    Uniform equal bit cubes recover the draft normalization. A PMF excludes empty input \
+    products; the tiling model separately permits empty products and charged empty pieces."
 
 register_result "communication-inner-product" where
   title := "Communication: inner product resists randomness"
