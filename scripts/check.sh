@@ -55,6 +55,9 @@ finish() {
 # and these stdlib checks can report drift before a cold checkout restores any build cache.
 run "operator manual links and excerpts" python3 -B scripts/check_operator_manual.py
 run "operator manual tooling tests" python3 -B scripts/test_operator_manual.py
+if ((!quick)); then
+  run "Linux vm.max_map_count preflight" python3 -B scripts/check_vm_map_count.py
+fi
 if ((status)); then
   finish
   exit "$status"

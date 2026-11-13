@@ -154,6 +154,12 @@ When several coordinators share one host, give them a single limit on concurrent
 not only a thread count. Their builds can exhaust the kernel's file handles before its
 processors, and then everyone's builds fail
 ([diagnosis](workflows/troubleshooting.md#diagnose-too-many-open-files-in-system)).
+On Linux hosts and containers, local whole-library gates (`lake test`, `lake lint`,
+`lake exe checkInitImports`, and full `scripts/check.sh`) also need `vm.max_map_count` well above
+the stock `65530` kernel default (`262144` or higher; `python3 scripts/check_vm_map_count.py`
+checks this before full runs) so single-process whole-library imports do not fail with misleading
+`.olean` file-read errors
+([diagnosis](workflows/troubleshooting.md#diagnose-failed-to-read-file-on-whole-library-imports)).
 Have them run `scripts/check.sh --quick --no-full-fallback` during development: a change quick
 mode cannot plan is reported instead of starting a full local check that holds a build slot for
 hours, and CI on the pull request supplies the full run.
