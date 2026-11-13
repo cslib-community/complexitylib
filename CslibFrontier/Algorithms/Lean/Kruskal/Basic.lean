@@ -1110,7 +1110,7 @@ union-find forest steps to `Cost.ufSteps`. -/
     (s : DisjointSet.UnionFind.State n) (sorted : List (WeightedEdge n W)) :
     TimeM Cost (Output n W) :=
   let res := DisjointSet.UnionFind.run s (kruskalClient sorted)
-  ⟨⟨res.1, res.2.1⟩, ⟨0, total id res.2.2⟩⟩
+  ⟨⟨res.value, res.state⟩, ⟨0, total id res.traces⟩⟩
 
 @[simp]
 theorem comparisons_kruskalScanM {n : ℕ} {W : Type}

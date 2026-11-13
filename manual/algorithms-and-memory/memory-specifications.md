@@ -27,6 +27,19 @@ semantics; native call and argument-staging costs need their own realization. Op
 preserves changed memory and history, while an extra-read counterexample shows why equal
 answers and final states alone do not preserve the charged history.
 
+A concrete backend given by a total step function, from a state and an operation to the next
+state, the answer and a native trace such as a cost, supplies only that function and its
+correctness proof; [`StateTransition.StepFunction`](../../CslibFrontier/DataStructure/StateTransition/StepFunction.lean)
+supplies the rest. `Execution.ofStep step` is its execution relation and
+`StateTransitionImpl.ofStep rep step correct` its implementation, where `correct` compares one
+step with the specification's `stepFn` from a represented state. `Execution.run step c p` runs
+an adaptive client, returning a `RunResult` with fields `value`, `state` and `traces` (one trace
+per operation), and `Execution.executes_run` is the matching `Executes` derivation for
+`impl.correct_client` and `Bound.client`. The search-tree, AVL, splay-tree, Fenwick-tree,
+van Emde Boas and union-find backends are built this way; `SearchTree.run_correct` in
+[`SearchTree.Impl`](../../CslibFrontier/DataStructure/SearchTree/Impl.lean) is the shortest
+complete example.
+
 ## Randomized and oblivious interfaces
 
 [RandomizedSpec](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/DataStructure/StateTransition/Randomized.lean#L98) supplies a PMF stateful handler. Support induces the relational specification, while `withCoins` allows clients their own samples. `RandomizedRefinement` requires the exact output/state law, not just a relation between possible outcomes. `run_link` transports this law through adaptive clients. `ExpectedAmortized.client` and `.comp` telescope expected lower-level costs plus potential and compose refinement layers. Until-bad rules transport explicit error bounds when exact equality is unavailable.

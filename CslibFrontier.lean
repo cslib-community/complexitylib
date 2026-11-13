@@ -4985,6 +4985,7 @@ public import CslibFrontier.DataStructure.StateTransition.Oracle
 public import CslibFrontier.DataStructure.StateTransition.Randomized
 public import CslibFrontier.DataStructure.StateTransition.Refinement
 public import CslibFrontier.DataStructure.StateTransition.Resource
+public import CslibFrontier.DataStructure.StateTransition.StepFunction
 public import CslibFrontier.DataStructure.StateTransition.TotalCost
 public import CslibFrontier.DataStructure.StateTransition.WP
 public import CslibFrontier.DataStructure.VanEmdeBoas.Basic
