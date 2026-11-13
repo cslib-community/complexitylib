@@ -83,8 +83,7 @@ modulus `N = p * q` and public nonresidue `z ∈ QNR_N^{+1}`:
 namespace Cslib.Crypto.GoldwasserMicali
 
 open Probability Turing.MultiTapeTM Encryption
-open Paillier (powMod unitOrOne coprime_unitOrOne powMod_of_ne_zero computableInPolyTime_powMod
-  computableInPolyTime_unitOrOne unframe_encPair_encNat dropFrame_encPair_encNat)
+open Paillier (unframe_encPair_encNat dropFrame_encPair_encNat)
 open scoped ENNReal NNReal Cslib.Probability.PMF
 
 local instance (p q : ℕ) [hp : Fact p.Prime] [hq : Fact q.Prime] : NeZero (p * q) :=
