@@ -174,6 +174,7 @@ private theorem queryOrder_totalCost : ∀ x : (Fin 3 → Bool),
       if x 0 = x 1 ∧ x 1 = x 2 then 12 else 16 := by
   decide
 
+/-- Choose one of the six short-circuit majority query orders uniformly. -/
 noncomputable def algorithm : RandomizedDecisionTree (Fin 3) Bool :=
   RandomizedDecisionTree.uniformMixture queryOrder
 
