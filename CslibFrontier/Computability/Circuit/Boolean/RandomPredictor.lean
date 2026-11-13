@@ -35,7 +35,7 @@ matrices.
 The proof follows the source. Expanding `q_τ(g)^k` samples `k` matrices. All `k` predictions are
 correct for at most `2^{N - |J|}` functions `g`, where `J` is the set of distinct rows among the
 `mk` rows (`Finset.card_filter_le_two_pow_card_sub`). The rows form a uniform tuple, so
-`E[2^{-|J|}] ≤ ∏_{r < mk} (1 + r/N)/2` (`Finset.sum_half_pow_card_image_le`). The source's tail
+`E[2^{-|J|}] ≤ ∏_{r < mk} ((1 + r/N)/2)` (`Finset.sum_half_pow_card_image_le`). The source's tail
 takes `k = ⌊N ln 2/m²⌋` and needs `N ≥ 4m²`; here `k = ⌊N/(2m²)⌋`, which needs no assumption on
 `N` and gives the base `e^{1/4}/2 ≤ 2/3`.
 
@@ -87,7 +87,7 @@ p. 17). For a uniformly random `g : {0, 1}ⁿ → {0, 1}` and every `k`,
 Expanding the `k`-th power samples `k` matrices. Given them, all `k` predictions are correct for at
 most `2^{N - |J|}` functions, where `J` is the set of their distinct rows
 (`Finset.card_filter_le_two_pow_card_sub`). The `mk` rows are a uniform tuple, so
-`E[2^{-|J|}] ≤ ∏_{r < mk} (1 + r/N)/2` (`Finset.sum_half_pow_card_image_le`). -/
+`E[2^{-|J|}] ≤ ∏_{r < mk} ((1 + r/N)/2)` (`Finset.sum_half_pow_card_image_le`). -/
 theorem sum_agreeFraction_pow_le (τ : (Fin m → BitString n) → Option (BitString m)) (k : ℕ) :
     (∑ g : BitString n → Bool, agreeFraction τ g ^ k) / 2 ^ 2 ^ n ≤
       (1 / 2) ^ (k * m) * ∏ r ∈ range (k * m), (1 + (r : ℝ) / 2 ^ n) := by
@@ -201,7 +201,8 @@ theorem card_le_agreeFraction_le (τ : (Fin m → BitString n) → Option (BitSt
 open scoped Classical in
 /-- **Lemma 6.4, the tail with explicit constants**: the fraction of functions `g` with
 `q_τ(g) ≥ 2^{1-m}` is at most `(2/3)^{⌊N/(2m²)⌋}`, the source's `2^{-Ω(N/m²)}`. The source's
-`N ≥ 4m²` is not needed: for smaller `N` the bound is `1`, and so it is for `m = 0`. -/
+`N ≥ 4m²` is not needed. For `m > 0` and `N < 2m²`, the exponent is zero and the bound is `1`.
+For `m = 0`, natural-number division by zero also gives exponent zero. -/
 theorem card_le_agreeFraction_le_two_thirds_pow
     (τ : (Fin m → BitString n) → Option (BitString m)) :
     ((univ.filter fun g : BitString n → Bool => 2 * (1 / 2) ^ m ≤ agreeFraction τ g).card : ℝ) /

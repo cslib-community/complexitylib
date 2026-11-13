@@ -35,8 +35,8 @@ example : ((univ.filter fun g : BitString 4 → Bool =>
   card_le_agreeFraction_le_two_thirds_pow (n := 4)
     (fun _ : Fin 1 → BitString 4 => some fun _ => true)
 
-/-- The moment bound at `k = 1`: the expected agreement of a fixed predictor with a random
-function is at most `2^{-m}` (here with the trivial product factor `1 + 0/N`). -/
+/-- The first-moment bound retains the collision product over all `m` rows. Here `m = 3`,
+`N = 4`, so its right-hand side is `(1/8) · 1 · (5/4) · (3/2) = 15/64`. -/
 example (τ : (Fin 3 → BitString 2) → Option (BitString 3)) :
     (∑ g : BitString 2 → Bool, agreeFraction τ g ^ 1) / 2 ^ 2 ^ 2 ≤
       (1 / 2) ^ (1 * 3) * ∏ r ∈ range (1 * 3), (1 + (r : ℝ) / 2 ^ 2) :=

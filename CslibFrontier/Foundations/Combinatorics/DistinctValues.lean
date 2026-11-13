@@ -20,10 +20,12 @@ Two counting facts behind the moment bound of [ChukhinKulikovMihajlinSmal2026], 
 (printed p. 16; PDF p. 17).
 
 * **Distinct values.** For a uniform tuple `w` of `L` values from a set of size `N`, the
-  expectation of `2^{-|{w_r}|}` is at most `∏_{r < L} (1 + r/N)/2`
+  expectation of `2^{-|{w_r}|}` is at most `∏_{r < L} ((1 + r/N)/2)`,
+  equal to `2^{-L} ∏_{r < L} (1 + r/N)`
   (`sum_half_pow_card_image_le`). Revealing the values one by one, the next value repeats an
   earlier one with probability at most `r/N`, and otherwise halves the weight.
-  `prod_one_add_div_le_exp` bounds the product by `2^{-L} exp(L²/(2N))`.
+  `prod_one_add_div_le_exp` bounds the unhalved product by `exp(L²/(2N))`, so the
+  expectation is at most `2^{-L} exp(L²/(2N))`.
 * **Functions fixed on a set.** If any two Boolean functions with a property agree on a set `J`,
   at most `2^{N - |J|}` functions have it (`card_filter_le_two_pow_card_sub`).
 
@@ -41,7 +43,7 @@ namespace Finset
 variable {α : Type*} [Fintype α] [DecidableEq α]
 
 /-- **The average of `2^{-|distinct values|}`.** Summing `(1/2)^{|{w_r}|}` over all tuples
-`w : Fin L → α` gives at most `|α|^L ∏_{r < L} (1 + r/|α|)/2`. -/
+`w : Fin L → α` gives at most `|α|^L ∏_{r < L} ((1 + r/|α|)/2)`. -/
 theorem sum_half_pow_card_image_le (L : ℕ) :
     ∑ w : Fin L → α, ((1 : ℝ) / 2) ^ (univ.image w).card ≤
       (Fintype.card α : ℝ) ^ L * ∏ r ∈ range L, ((1 + (r : ℝ) / Fintype.card α) / 2) := by

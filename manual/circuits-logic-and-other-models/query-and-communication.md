@@ -331,8 +331,9 @@ and 1.8.
 
 
 This covers the upper bound, Lemma 5.2, Theorems 1.1, 1.2, 1.5 and 1.7, and Corollaries 1.3
-and 1.4 of submission 865. Theorems 1.6 and 1.8, the random-function results (Lemmas 6.4–6.5
-and Theorem 6.6), and the Section 6.5 tightness remark remain open in
+and 1.4 of submission 865, together with the random-predictor bound of Lemma 6.4. Theorems 1.6
+and 1.8, the remaining random-function results (Lemma 6.5 and Theorem 6.6), and the Section 6.5
+tightness remark remain open in
 [#4665](https://github.com/cslib-community/cslib-frontier/issues/4665).
 
 The Karchmer–Wigderson relation asks parties holding opposite outputs of a Boolean function to find a differing coordinate. The monotone version asks for the ordered 1-versus-0 coordinate. Circuit/formula modules prove correspondences with De Morgan or monotone formula depth and leaf count. This bridge turns lower bounds on communication into formula lower bounds, preserving the relevant cost convention. See [Boolean KW](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Boolean/KarchmerWigderson.lean) and [monotone KW](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Monotone/KarchmerWigderson.lean).
