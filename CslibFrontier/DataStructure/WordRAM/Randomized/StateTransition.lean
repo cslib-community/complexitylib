@@ -71,6 +71,11 @@ argument preparation can use `call_rename` / `call_rename_ofFn`, whose `B_prep` 
 the preparation code. Compiling a standalone body adds the final halt separately via
 `ExecCodeDist.program_halts`.
 
+Observations use the supplied representation-relative decoder; its mathematical computation is
+uncharged. These inline laws do not supply a native typed-output program. Native typed output
+requires canonical result words, with any conversion justified by a paid
+`Cslib.WordRAM.NativeResultRecoding` certificate.
+
 ## Main definitions
 
 * `Cslib.DataStructure.WordRAM.Randomized.CoupledState`: coupled latent seed, abstract
@@ -133,7 +138,7 @@ structure CoupledState (Seed : Type) (State : Type u) (r : ℕ) : Type u where
   /-- Concrete Word-RAM register and memory state. -/
   data : Data r
 
-/-- Unified standalone and inline subroutine specification/resource certificate for a randomized
+/-- Inline subroutine specification/resource certificate for a randomized
 Word-RAM data structure `P` realizing a relational specification `D` at word width `w`, base
 address `base`, runtime parameters `params`, and initial abstract state `s₀`. -/
 structure StateTransitionImpl {B : Basis} {r_ds k_init : ℕ}
@@ -1380,39 +1385,53 @@ theorem call_rename_ofFn (C : StateTransitionImpl P D w base params s₀)
 /-! ### Projection 6: End-to-end expected-amortized sequence telescope (`steps_expected_amortized`,
 `seq_expected_amortized`, `steps_expected_amortized_ofFn`, `seq_expected_amortized_ofFn`) -/
 
-/-- Reuse the signature-level program and argument-delivery API with the actual instruction basis.
-This projection carries code and the calling convention, without a deterministic certificate. -/
-def toDynamicProgram (C : StateTransitionImpl P D w base params s₀) : DynamicProgram D r_ds B :=
-  P.toDynamicProgram C.encode C.decode
+/-- Deliver externally encoded arguments, preserving maintained memory and persistent registers.
+This mathematical register replacement is not a charged native instruction sequence. -/
+def prepare (C : StateTransitionImpl P D w base params s₀) (o : D.Op) (x : Data r_ds) : Data r_ds :=
+  P.prepare C.encode o x
+
+theorem prepare_bounded (C : StateTransitionImpl P D w base params s₀)
+    {o : D.Op} {x : Data r_ds} (hx : x.Bounded w)
+    (ho : ∀ i, P.input i = true → Fits w (C.encode o i)) :
+    (C.prepare o x).Bounded w :=
+  P.prepare_bounded C.encode hx ho
+
+theorem prepare_regs_of_not_input (C : StateTransitionImpl P D w base params s₀)
+    {i : Fin r_ds} (hi : P.input i = false) (o : D.Op) (x : Data r_ds) :
+    (C.prepare o x).regs i = x.regs i :=
+  P.prepare_regs_of_not_input C.encode hi o x
+
+@[simp] theorem prepare_mem (C : StateTransitionImpl P D w base params s₀)
+    (o : D.Op) (x : Data r_ds) : (C.prepare o x).mem = x.mem := rfl
 
 theorem prepare_rep (C : StateTransitionImpl P D w base params s₀)
     {θ : C.Seed} {s : D.State} {o : D.Op} {x : Data r_ds}
     (hr : C.rep θ s x) (hv : D.valid s o) :
-    C.rep θ s (C.toDynamicProgram.prepare o x) :=
+    C.rep θ s (C.prepare o x) :=
   C.rep_supported
-    (fun _ hi => C.toDynamicProgram.prepare_regs_of_not_input hi o x)
+    (fun _ hi => C.prepare_regs_of_not_input hi o x)
     (fun _ _ => rfl)
-    (C.toDynamicProgram.prepare_bounded (C.bounded hr) (C.arguments_fit _ hv))
+    (C.prepare_bounded (C.bounded hr) (C.arguments_fit _ hv))
     hr
 
 theorem prepare_potential (C : StateTransitionImpl P D w base params s₀)
     {θ : C.Seed} {s : D.State} {o : D.Op} {x : Data r_ds}
     (hr : C.rep θ s x) :
-    C.potential θ (C.toDynamicProgram.prepare o x) = C.potential θ x :=
+    C.potential θ (C.prepare o x) = C.potential θ x :=
   C.potential_supported
-    (fun _ hi => C.toDynamicProgram.prepare_regs_of_not_input hi o x)
+    (fun _ hi => C.prepare_regs_of_not_input hi o x)
     (fun _ _ => rfl)
     hr
 
 theorem prepare_argMatch (C : StateTransitionImpl P D w base params s₀) (o : D.Op) (x : Data r_ds) :
-    C.argMatch o (C.toDynamicProgram.prepare o x).regs :=
+    C.argMatch o (C.prepare o x).regs :=
   C.encode_matches o x.regs
 
 /-- Inductive multi-operation distributional execution relation for a randomized subroutine `C`
 over a relational specification `D`.
 `C.ExecSteps ops ν ν_final T_ops C_ops` witnesses that starting from coupled distribution
 `ν : PMF (CoupledState C.Seed D.State r_ds)`, executing each operation `o` in `ops` by delivering
-arguments via `C.toDynamicProgram.prepare o` and running `P.code` under `ExecCodeDist` produces the
+arguments via `C.prepare o` and running `P.code` under `ExecCodeDist` produces the
 final coupled distribution `ν_final`, angelically witnesses a valid transition `D.step s o s' a` and
 decoded observation `C.decode o q.data.regs = some a` at every step, modifies memory only within
 `[base, base + C.space)`, incurs total expected operation body cost `T_ops`, and accumulates total
@@ -1427,7 +1446,7 @@ inductive ExecSteps (C : StateTransitionImpl P D w base params s₀) :
       {μ_step : CoupledState C.Seed D.State r_ds → PMF (CoupledState C.Seed D.State r_ds)}
       {T_step : CoupledState C.Seed D.State r_ds → ℝ≥0∞} {T_rest C_rest : ℝ≥0∞} :
       (∀ t ∈ ν.support,
-        ExecCodeDist w P.code (C.toDynamicProgram.prepare o t.data)
+        ExecCodeDist w P.code (C.prepare o t.data)
           ((μ_step t).map CoupledState.data) (T_step t) ∧
         ∀ q ∈ (μ_step t).support,
           ∃ a : D.Result o,
@@ -1465,7 +1484,7 @@ theorem steps_expected_amortized (C : StateTransitionImpl P D w base params s₀
     exact ⟨ν, 0, 0, ExecSteps.nil ν, hseed, hrep, by simp⟩
   | cons o os ih =>
     let prepMap : CoupledState C.Seed D.State r_ds → CoupledState C.Seed D.State r_ds :=
-      fun t => ⟨t.seed, t.state, C.toDynamicProgram.prepare o t.data⟩
+      fun t => ⟨t.seed, t.state, C.prepare o t.data⟩
     let ν_prep : PMF (CoupledState C.Seed D.State r_ds) := ν.map prepMap
     obtain ⟨hsingle_prep, hseed_prep⟩ :=
       C.map_state_seed prepMap (fun _ => rfl) (fun _ => rfl) hsingle hseed
@@ -1610,7 +1629,7 @@ inductive ExecStepsOfFn (C : StateTransitionImpl P D w base params s₀)
       {μ_step : C.Seed × Data r_ds → PMF (C.Seed × Data r_ds)}
       {T_step : C.Seed × Data r_ds → ℝ≥0∞} {T_rest : ℝ≥0∞} :
       (∀ p ∈ ν.support,
-        ExecCodeDist w P.code (C.toDynamicProgram.prepare o p.2)
+        ExecCodeDist w P.code (C.prepare o p.2)
           ((μ_step p).map Prod.snd) (T_step p) ∧
         ∀ q ∈ (μ_step p).support,
           C.decode o q.2.regs = some (D.stepFn s o).2 ∧

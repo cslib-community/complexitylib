@@ -263,6 +263,32 @@ The same client exercises [`DirHamPathAny`](../../CslibFrontier/Computability/Co
 
 `mem_E` caps the step bound at `2^|w|`, which cannot change the answer because the bound is written inside `w`, and applies the `E` padding lemma. `polyTimeReducible` takes any problem decided within time `c₁ · 2^(p n) + c₂`, with `p` polynomial-time in unary. It maps an instance to the decider's description, the framed encoded instance and `p(n) + c₁ + c₂ + 1` ones. `p n = k n` and `p n = n^k` give `polyTimeHard_E` and `polyTimeHard_EXP`, and with membership `polyTimeComplete_E` and `polyTimeComplete_EXP`. `notMem_P` follows from `P_ssubset_EXP`. To prove another problem `C` hard for `EXP`, reduce bounded halting to it and apply `BoundedHalting.polyTimeHard_EXP.trans` (`PolyTimeHard.trans`).
 
+For **halting with any output**, import
+[`Problems.BoundedTermination`](../../CslibFrontier/Computability/Complexity/Problems/BoundedTermination.lean).
+`BoundedTermination.mem_E`, `notMem_P` and `polyTimeComplete_EXP` establish Goldreich's
+Exercises 4.6–4.7 for the selected word representation. Halting with no output or with `[false]`
+counts here. A machine that emits `true` while continuing to run does not count.
+`BoundedTermination.mk_desc_mem_iff` gives exact native-machine halting at the binary step bound,
+including a halt on the final permitted step.
+
+Both languages construct instances with `BoundedComputation.mk d x c`; the shared
+[`BoundedComputation`](../../CslibFrontier/Computability/Complexity/Problems/BoundedComputation.lean)
+module owns `descOf`, `inputOf`, `clockOf` and their roundtrip lemmas. These names have moved
+from `BoundedHalting`, so update qualified constructor and decoder references accordingly.
+Every word is interpreted through total decoders. `BoundedTermination.mem_reencode_iff`
+relates an arbitrary word to the canonical re-encoding of its decoded fields; membership and
+hardness are proved for the whole word language, rather than only promised canonical inputs.
+Goldreich's [representation discussion](https://www.wisdom.weizmann.ac.il/~oded/CC/r1.pdf#page=47)
+permits total decoders. This chooses such a representation; it does not establish invariance of
+`E` under arbitrary encodings or the sharp simulator bound in Theorem 4.5.
+
+From the repository root, check the complete native-machine and class-level examples with
+`lake build --wfail --iofail CslibFrontierTests.BoundedTermination`.
+The [checked client](../../CslibFrontierTests/BoundedTermination.lean) includes empty and false
+outputs, zero clocks, exact-bound halting, a continuing loop and arbitrary-word normalization.
+The old [acceptance client](../../CslibFrontierTests/BoundedHalting.lean) retains its acceptance
+semantics while using the shared constructor.
+
 [`EXP.Separation`](../../CslibFrontier/Computability/Complexity/Classes/EXP/Separation.lean) proves `P_ssubset_E` with the existing diagonal problem. It proves `E_ssubset_EXP` with the clocked time diagonal for the constructible clock `2^((n+1)^2)`, whose running time is within `2^(n^3)` from `n = 5` on. With bounded halting this gives Book's theorem that `E` is not closed under polynomial-time many-one reductions (`exists_polyTimeReducible_mem_E_notMem_E`). Hence `E` differs from every class closed under them (`E_ne_of_polyTimeReducible_mem`), including `NP` and `PSPACE`. These are inequalities only; neither inclusion is claimed. The [checked client](../../CslibFrontierTests/BoundedHalting.lean) decides two accepted instances of a concrete one-step machine, rejects every instance with step bound zero, and reduces the hierarchy's diagonal problem.
 
 ## Immunity and complete sets

@@ -361,11 +361,11 @@ class ParityProblemTests(unittest.TestCase):
         self.assertReported(problems, "Operator manual links and excerpts", "--strict")
 
     def test_job_level_settings(self):
-        env = "    env:\n      HANDOFF_MEASUREMENT_PLAN:"
+        anchor = "  lean-checks:\n    runs-on: ubuntu-latest\n"
         defaults = "    defaults:\n      run:\n        shell: sh\n"
-        self.assertReported(self.report((env, defaults + env)), "defaults")
-        self.assertReported(self.report((env, f"    env:\n      STRICT: \"1\"\n"
-                                              "      HANDOFF_MEASUREMENT_PLAN:")), "STRICT")
+        env = "    env:\n      STRICT: \"1\"\n"
+        self.assertReported(self.report((anchor, anchor + defaults)), "defaults")
+        self.assertReported(self.report((anchor, anchor + env)), "STRICT")
 
     def test_misindented_key_is_not_absorbed(self):
         with self.assertRaisesRegex(ValueError, "unparsed workflow line"):
@@ -405,11 +405,20 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual((status, out, leftover), (0, "ok    only\n", []))
 
     def test_main_passes_the_base_to_the_steps(self):
-        with patch.object(full, "run_steps", return_value=0) as run:
+        with patch.object(full.check_vm_map_count, "preflight", return_value=0), \
+             patch.object(full, "run_steps", return_value=0) as run:
             self.assertEqual(full.main(["--base", "abc123"]), 0)
             self.assertEqual(run.call_args.args, (full.STEPS + full.LOCAL_STEPS, "abc123"))
             full.main([])
             self.assertEqual(run.call_args.args, (full.STEPS + full.LOCAL_STEPS, "origin/main"))
+
+    def test_main_stops_when_vm_map_count_preflight_fails(self):
+        with patch.object(full.check_vm_map_count, "preflight", return_value=1), \
+             patch.object(full, "run_steps", return_value=0) as run:
+            self.assertEqual(full.main([]), 1)
+            run.assert_not_called()
+            self.assertEqual(full.main(["--skip-map-count-check"]), 0)
+            run.assert_called_once()
 
 
 if __name__ == "__main__":

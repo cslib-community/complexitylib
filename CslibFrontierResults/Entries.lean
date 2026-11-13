@@ -6,6 +6,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
+import CslibFrontier.Computability.Complexity.Problems.Permanent.Valiant
 import CslibFrontier.Computability.Complexity.Problems.ThreeSAT.Collapse
 import CslibFrontier.Computability.Complexity.Classes.Sparse.Envelope
 import CslibFrontier.Computability.Complexity.Classes.Advice.OneBit
@@ -115,6 +116,7 @@ import CslibFrontier.Computability.Complexity.FineGrained.Sparsification
 import CslibFrontier.Computability.Complexity.Gradel
 import CslibFrontier.Computability.Complexity.ImmermanVardi
 import CslibFrontier.Computability.Complexity.Parameterized.WHierarchy.XP
+import CslibFrontier.Computability.Complexity.Problems.BoundedTermination
 import CslibFrontier.Computability.Complexity.Problems.Hamiltonian.AnyEndpoints
 import CslibFrontier.Computability.Complexity.Problems.HornSAT
 import CslibFrontier.Computability.Complexity.Problems.Permanent.ThreeSAT
@@ -1287,17 +1289,19 @@ register_result "rompel-uowhf" where
   topic := "cryptography"
   sources := [
     { paper := Rompel1990, theorem := unverified, locator := unverified },
-    { paper := HHRVW2020, theorem := "Theorem 5.1", locator := "Section 5.1, p. 25" }
+    { paper := HHRVW2020, theorem := "Theorem 5.1", locator := "Section 5.1, p. 26" }
   ]
   theorems := [
     Cslib.Crypto.ShrinkingCollisionGrid.targetCollisionResistant_rompelHash,
+    Cslib.Crypto.AdversaryInaccessibleEntropyFamily.exists_targetCollisionResistantHash,
     Cslib.Crypto.OneWay.exists_targetCollisionResistant_keyedHashFamily
   ]
-  scope := "Every uniform one-way function on bit strings gives a target collision-resistant \
-    keyed hash family on all bit strings, against uniform strict PPT adversaries that commit to \
-    a target before seeing the key, via the inaccessible-entropy construction of Haitner et al. \
-    `rompelHash` is secure for every shrinking collision grid; the existence theorem obtains a \
-    grid from the one-way function. Each one-bit step takes a fresh subkey, so keys are \
+  scope := "Every uniform polynomial-time function family with inaccessible average max-entropy \
+    against adversary-dependent accessible sets (Definition 3.9, \
+    AdversaryInaccessibleEntropyFamily), and hence every uniform one-way function on bit strings, \
+    gives a target collision-resistant keyed hash family on all bit strings against uniform \
+    strict PPT adversaries that commit to a target before seeing the key. `rompelHash` is secure \
+    for every shrinking collision grid. Each one-bit step takes a fresh subkey, so keys are \
     polynomial but not as compact as the source's O(|y| log t) bound. Asymptotic security."
 
 register_result "resolution" where
@@ -5516,3 +5520,48 @@ register_result "three-sat-complement-ph-collapse" where
   scope := "Native polynomial-time many-one reduction with encCNF. ThreeSAT has clause width \
     at most three; its complement is inside all CNF Nat, including wider formulas. \
     The conclusion PH enc = NP enc holds for every explicit encoding enc."
+
+register_result "bounded-termination-exponential-completeness" where
+  title := "Any-output bounded termination is in E but outside P and is EXP-complete"
+  topic := "computational complexity"
+  sources := [
+    { paper := Goldreich2007DraftR2, theorem := "Exercises 4.6–4.7",
+      locator := "PDF p. 36, printed p. 152; bounded universal function: \
+        PDF p. 28, printed p. 144" }
+  ]
+  theorems := [
+    Cslib.Complexity.BoundedTermination.mem_E,
+    Cslib.Complexity.BoundedTermination.notMem_P,
+    Cslib.Complexity.BoundedTermination.polyTimeComplete_EXP,
+    Cslib.Complexity.BoundedTermination.mk_desc_mem_iff,
+    Cslib.Complexity.BoundedTermination.mem_reencode_iff
+  ]
+  scope := "Plain bit-word language with total description/input decoders and an MSB-first binary \
+    clock; any halted output is allowed. E membership and EXP Karp-completeness hold on all \
+    words; canonical native finite-machine triples have exact step-bound semantics. The chosen \
+    representation is explicit: no arbitrary-encoding E invariance or sharp simulator bound \
+    is claimed. Existing accepting-output-[true] BoundedHalting remains distinct."
+
+register_result "valiant-zero-one-permanent-sharp-p-complete" where
+  title := "Valiant: the 0/1 permanent and bipartite perfect-matching counting are #P-complete"
+  topic := "counting complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Theorem 9.8",
+      locator := "2007-01-08 draft, printed p. 175; PDF p. 191" },
+    { paper := Goldreich2007Draft, theorem := "Theorem 6.20",
+      locator := "February 2007 draft r3.pdf, PDF p. 23; printed p. 225" }
+  ]
+  theorems := [
+    Cslib.Complexity.zeroOnePermanent_sharpPMetricComplete,
+    Cslib.Complexity.zeroOnePermanent_computableInPolyTimeWithOracle,
+    Cslib.Complexity.bipartitePerfectMatchingCount_sharpPMetricComplete,
+    Cslib.Complexity.bipartitePerfectMatchingCount_computableInPolyTimeWithOracle,
+    Cslib.Complexity.intPermanent_sharpPMetricHard
+  ]
+  scope := "Dense Boolean tables (encBoolTable) read as n x n 0/1 matrices, and the bipartite \
+    graphs on Fin n + Fin n they describe (Mathlib perfect matchings). Membership in #P by a \
+    native permutation-matrix verifier; hardness under one-query metric reductions composed \
+    from #3SAT, Goldreich's Propositions 6.21 and 6.22. The books' Cook-reduction form (Arora \
+    and Barak Definition 9.5, FP with a bit oracle) is derived as a native polynomial-time \
+    oracle program reading the permanent's bits. Arora and Barak's XOR-gadget proof and its \
+    constant 4^(3m) are not formalized; the proof uses Goldreich's gadget."

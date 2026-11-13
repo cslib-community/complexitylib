@@ -43,8 +43,9 @@ Dirty allocation does not itself make memory zero, and local zero for one raw in
 not a reusable global allocator precondition. If fresh-zero premises are unavailable, retain the
 linear dirty-clear allowance instead of applying the fresh theorem.
 
-Standalone calls leave external argument delivery, result decoding and host continuation work
-uncharged. For the fully compiled binary-heap Dijkstra client, import
+Standalone native calls charge conversion to the fixed canonical result bank and halt; external
+argument delivery and host continuation work remain uncharged. Generic inline observations retain
+their stated representation convention. For the fully compiled binary-heap Dijkstra client, import
 `CslibFrontier.Algorithms.Lean.Dijkstra.Native.Binary`. In its
 `Cslib.Algorithms.Lean.Dijkstra.Native.Binary` namespace, `realizes_run` certifies the original
 allocated `Memory.run`; `exists_program_state` exports one program/register layout/factor before

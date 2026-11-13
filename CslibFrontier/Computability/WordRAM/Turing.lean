@@ -631,7 +631,7 @@ theorem UniformComputableInPolyTime.turingComputableInPolyTime
     (hsize : PolyBounded (fun a => (encIn a).length) size)
     (hencode : Turing.MultiTapeTM.ComputableInPolyTime encode encIn (encList encNat)) :
     Turing.MultiTapeTM.ComputableInPolyTime f encIn encNat := by
-  obtain ⟨T, hT, k, -, r, p, hp⟩ := h
+  obtain ⟨T, hT, k, -, r, p, hp, _⟩ := h
   exact hp.turingComputableInPolyTime hop hT hsize hencode
 
 end Main

@@ -101,6 +101,20 @@ example :
     some ([1, 0, 1, 7, 0], [some (1, 7), some (2, 7), some (3, 7), none]) := by
   decide +kernel
 
+/-- Native standalone calls execute the paid conversion: a maximal-width lookup key is copied
+unchanged to the canonical slot, then extraction returns the original typed handle/key pair. -/
+example :
+    (do
+      let (x₀, _) ← code.toStandard.toSubroutineCode.initFresh.eval 10 16
+        ⟨initRegs 4 8, fun _ => 0⟩
+      let P := dynamicProgram (n := 4) (K_max := 1023) (w := 10) (base := 8)
+        (by decide) (by decide)
+      let (x₁, _, _) ← P.eval 10 16 (.insert 2 1023) x₀
+      let (x₂, key, _) ← P.eval 10 16 (.getKey 2) x₁
+      let (_, entry, _) ← P.eval 10 16 .extractMin x₂
+      pure (key, entry.map fun e => (e.1.val, e.2))) = some (some 1023, some (2, 1023)) := by
+  decide +kernel
+
 /-! ### 2. Degree-table consolidation and genuine cascading cuts (`n = 9`) -/
 
 /-- Nine inserts followed by `extractMin` consolidate the remaining `8` nodes into a single
@@ -216,7 +230,7 @@ example :
     DataStructure.Amortized (certificate hS hK).impl
       DynamicProgram.OperationTrace.instructions
       (fun _ x => potential x)
-      (fun s o => charge 4 s o + 1) :=
+      (fun s o => charge 4 s o + 9) :=
   amortized _ _
 
 /-- Lift a single `IndexedMinPQ` operation into `Client` for `spec 4 50`. -/
@@ -244,7 +258,7 @@ example :
       DataStructure.Executes ((dynamicProgram hS hK).ExecOp 10) sampleClient y₀
         (some (2, 0)) y traces ∧
       DataStructure.total DynamicProgram.OperationTrace.instructions traces + potential y ≤
-        (indexedMinPQSpec 4 50).totalCost (fun s o => charge 4 s o + 1)
+        (indexedMinPQSpec 4 50).totalCost (fun s o => charge 4 s o + 9)
           (IndexedMinPQ.empty 4)
           ((indexedMinPQSpec 4 50).runClient (IndexedMinPQ.empty 4) sampleClient).2.2 := by
   intro hS hK
@@ -322,6 +336,24 @@ example :
     some [0, 1, 1, 30, 300, 1, 5, 300, 0, 0, 15, 150, 0, 20, 200, 1, 0] := by
   decide +kernel
 
+/-- Allocating a handle writes a real presence tag and stages its payload in the same fixed
+bank used by get/extract; the resulting native calls retain key, satellite value and handle. -/
+example :
+    (do
+      let (x₀, _) ← MinPQ.subroutineCode.toStandard.initFresh.eval 10 16
+        ⟨MinPQ.initRegs 2 8, fun _ => 0⟩
+      let P := MinPQ.dynamicProgram (n_max := 2) (U := 20) (V := 20) (w := 10) (base := 8)
+        (by decide) (by decide) (by decide)
+      let (x₁, h, _) ← P.eval 10 16 (.insert 7 9) x₀
+      match h with
+      | none => none
+      | some h => do
+        let (x₂, entry, _) ← P.eval 10 16 (.get h) x₁
+        let (_, extracted, _) ← P.eval 10 16 .extractMin x₂
+        pure (entry, extracted.map fun e => (e.1, e.2.1, e.2.2.val))) =
+    some (some (7, 9), some (7, 9, 0)) := by
+  decide +kernel
+
 /-- Non-vacuity of `FibonacciHeap.MinPQ.amortized` over `Basis.standard`. -/
 example :
     let hS : Fits 10 (8 + MinPQ.space 4) := by unfold MinPQ.space Fits; decide
@@ -330,7 +362,7 @@ example :
     DataStructure.Amortized (MinPQ.certificate hS hU hV).impl
       DynamicProgram.OperationTrace.instructions
       (fun _ x => MinPQ.potential x)
-      (fun s o => MinPQ.charge 4 s o + 1) :=
+      (fun s o => MinPQ.charge 4 s o + 10) :=
   MinPQ.amortized _ _ _
 
 /-- Lift a single `Cslib.DataStructure.PriorityQueue.MinPQ.Op` into an adaptive `Client`. -/
@@ -366,7 +398,7 @@ example :
         (Cslib.DataStructure.PriorityQueue.MinPQ.empty 4) sampleMinPQClient a s' tr ∧
       DataStructure.total DynamicProgram.OperationTrace.instructions traces + MinPQ.potential y ≤
         (Cslib.DataStructure.PriorityQueue.minPQSpec 4 50 500).totalCostTranscript
-          (fun st o => MinPQ.charge 4 st o + 1)
+          (fun st o => MinPQ.charge 4 st o + 10)
           (Cslib.DataStructure.PriorityQueue.MinPQ.empty 4) tr := by
   intro hS hU hV
   let x₀ : Data MinPQ.rMinPQ := ⟨MinPQ.initRegs 4 8, fun _ => 0⟩

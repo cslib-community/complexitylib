@@ -103,7 +103,7 @@ theorem UniformPolynomialTime.mem_P
     (hsize : PolyBounded (fun a => (encIn a).length) size)
     (hencode : Turing.MultiTapeTM.ComputableInPolyTime encode encIn (encList encNat)) :
     A ∈ Cslib.Complexity.P encIn := by
-  obtain ⟨T, hT, k, -, r, p, hp⟩ := h
+  obtain ⟨T, hT, k, -, r, p, hp, _⟩ := h
   exact Program.DecidesInTime.mem_P hop hT hsize hencode hp
 
 /-! ## `P` on the word RAM -/
@@ -129,7 +129,8 @@ theorem uniformPolynomialTime_of_mem_P {A : Set α} (h : A ∈ Cslib.Complexity.
     fun_prop
   obtain ⟨D, e, hD⟩ := polynomiallyBounded_iff_le.1 hS
   refine ⟨fun n => simTime K (Fintype.card Q) (t n), ?_, D + e + 2, by omega, regs K,
-    simProgram tm.tr tm.q₀ (Fintype.equivFin Q), fun a w hw _ => ?_⟩
+    simProgram tm.tr tm.q₀ (Fintype.equivFin Q), (fun a w hw _ => ?_),
+    inputAdmissible_of_widthIndependent _ _⟩
   · unfold simTime
     exact (PolynomiallyBounded.const _).add (ht.mul (.const _))
   · obtain ⟨hhalt, hout⟩ := (htm a).runFrom_of_le le_rfl

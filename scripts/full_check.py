@@ -38,6 +38,11 @@ import sys
 import tempfile
 from typing import TextIO
 
+try:
+    import check_vm_map_count
+except ModuleNotFoundError:
+    from scripts import check_vm_map_count
+
 ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -103,8 +108,6 @@ PREFLIGHT = {
 }
 
 CI_ONLY = {
-    "Prepare optional handoff measurement":
-        "main-push cache experiment (#1728); needs the GitHub API",
     "Encoding readability report":
         "merge groups and main pushes only; reports and always succeeds",
     "Projection chain report":
@@ -116,8 +119,6 @@ CI_ONLY = {
     "Restore Mathlib cache with retries": "CI cache; check.sh runs scripts/cache/ensure.sh",
     "Restore build outputs from the remote cache":
         "CI cache; check.sh runs scripts/cache/ensure.sh",
-    "Optional controlled handoff measurement":
-        "main-push cache experiment (#1728); needs the GitHub API",
     "Restore validated merge-group build outputs":
         "main pushes only; downloads a merge-group artifact through the GitHub API",
     "Save .lake to the Actions cache": "main pushes only; CI cache",
@@ -131,7 +132,6 @@ CI_ONLY = {
     "Upload merge-group build outputs": "merge groups only; build handoff to main",
     "Stage cache publication": "main pushes only; cache publication",
     "Hand off staged files to the enabled publishers": "main pushes only; cache publication",
-    "Record optional handoff measurement": "main-push cache experiment (#1728)",
 }
 
 
@@ -166,7 +166,11 @@ def main(argv: list[str] | None = None) -> int:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--base", default="origin/main",
                         help="comparison ref; changes are taken from its merge base with HEAD")
+    parser.add_argument("--skip-map-count-check", action="store_true",
+                        help="skip the Linux vm.max_map_count preflight for whole-library imports")
     args = parser.parse_args(argv)
+    if not args.skip_map_count_check and check_vm_map_count.preflight(ROOT, sys.stdout) != 0:
+        return 1
     return run_steps(STEPS + LOCAL_STEPS, args.base)
 
 

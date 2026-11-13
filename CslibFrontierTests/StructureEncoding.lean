@@ -412,6 +412,44 @@ set_option linter.hashCommand false in
 #guard_msgs in
 #lint- only unusedArguments
 
+/-! Encoded fields can belong to a larger universe than their word slots. -/
+
+universe u
+
+/-- A universe-polymorphic image followed by a public flag. -/
+structure TaggedImage (Image : Type u) where
+  /-- The image represented by its chosen word. -/
+  image : Image
+  /-- A flag in the base universe. -/
+  flag : Bool
+
+/-- The image word is framed before the flag, independently of the image's universe. -/
+enc_structure eTaggedImage (Image : Type u) (encodeImage : Image ↪ List Bool) :
+    TaggedImage Image where
+  image : encodeImage using encodeImage.injective, flag : encBool
+
+example (Image : Type u) (encodeImage : Image ↪ List Bool) (x : TaggedImage Image) :
+    eTaggedImage Image encodeImage x = encPair encBits encBool (encodeImage x.image, x.flag) :=
+  rfl
+
+-- Both projections cross from the record's universe to the word/Boolean universe.
+example (Image : Type u) (encodeImage : Image ↪ List Bool) :
+    ComputableInDegree (fun x : TaggedImage Image => (encodeImage x.image).reverse)
+      (eTaggedImage Image encodeImage) encBits 1 1 :=
+  ComputableInDegree.bitsReverse.comp (eTaggedImage_image_deg Image encodeImage)
+
+example (Image : Type u) (encodeImage : Image ↪ List Bool) :
+    ComputableInDegree (fun x : TaggedImage Image => x.flag)
+      (eTaggedImage Image encodeImage) encBool 1 1 := by
+  fun_prop
+
+-- A caller in Type can pass through a larger intermediate record without changing its budget.
+example (Image : Type u) (encodeImage : Image ↪ List Bool)
+    {α : Type} {enc : α ↪ List Bool} {S : α → ℕ} {f : α → TaggedImage Image}
+    (hf : ComputableInSpace f enc (eTaggedImage Image encodeImage) S) :
+    ComputableInSpace (fun a => (f a).flag) enc encBool S := by
+  fun_prop
+
 /-! A parameter that nothing uses leaves `…Fields` linted: alone, next to a parameter that only a
 dependent field uses, or when a proof-local binder shares its name. These come after the `#lint-`
 check above, which they would fail. -/

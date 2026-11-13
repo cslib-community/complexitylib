@@ -125,7 +125,7 @@ theorem uniformDecidableInTimeLogWord_KSAT (k : ℕ) {δ : ℝ} (hδ : 0 < δ) :
   obtain ⟨t, s, A, E, c, hd, ht, hs⟩ := CountingNativeEndpoint.exists_decidableInTimeAndSpace_KSAT k
   obtain ⟨C, k', hk', hU⟩ := uniformDecidableInTimeLogWord_of_decidableInTimeAndSpace hd hs
   obtain ⟨K, -, hK⟩ := SubexponentialSAT.exists_two_pow_mul_interpolationScale_le (A : ℝ) hδ
-  refine ⟨C * c * ⌈K⌉₊ + C, E, k', hk', hU.mono (fun φ _ => ?_) (fun _ _ h => h)⟩
+  refine ⟨C * c * ⌈K⌉₊ + C, E, k', hk', hU.mono (fun φ _ => ?_) (fun _ _ h => h) hU.inputAdmissible⟩
   set X := ⌈(2 : ℝ) ^ ((A : ℝ) * SubexponentialSAT.interpolationScale φ.numVars)⌉₊ with hXdef
   set Z := ⌈(2 : ℝ) ^ (δ * φ.numVars)⌉₊ with hZdef
   set Y := (encCNF φ).length + 1
