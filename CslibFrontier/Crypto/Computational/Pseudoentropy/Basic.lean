@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Computational.Basic
+public import CslibFrontier.Crypto.Computational.Nonuniform.Advice
 public import CslibFrontier.Probability.Entropy
 import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Languages.Probabilistic.Notation
@@ -25,6 +26,12 @@ A strict PPT sampler realizes the joint law exactly.
 `SamplablePair.HasGap` says that every uniform PPT predictor eventually has signed correlation
 at most `1 - H(hidden | observation) - gap`. This is the entropy threshold used in the
 OWF-to-PRG construction; merely being hard to predict is not sufficient.
+
+`SamplablePair.HasGapWithAdvice` gives every predictor an advice word from a fixed family. The
+extraction and generator theorems built on this module are stated relative to such a family; their
+uniform cases follow at empty advice from `hasGap_iff_hasGapWithAdvice_nil` and
+`computationallyIndistinguishable_iff_indistinguishableWithAdvice_nil`, with
+`IsPPT.dropAdvice` and `IsPPTOn.nilAdvice` converting uniform tests and certificates.
 
 This interface records the joint law and its sampler. The shared saved-coin interface exposes a
 strict PPT sampler's fair-bit tape as a uniform seed, including unused randomness.
@@ -138,7 +145,7 @@ family is not bounded here; its length is charged to the predictor's clock. With
 is `HasGap` (`hasGap_iff_hasGapWithAdvice_nil`). -/
 def HasGapWithAdvice (pair : SamplablePair) (gap : ℕ → ℝ) (advice : ℕ → List Bool) : Prop :=
   ∀ adversary : (ℕ × List Bool) × List Bool → ProbComp Bool,
-    IsPPTOn (encPair (encPair encUnary encBits) encBits) encBool adversary →
+    IsPPTOn encAdvisedInput encBool adversary →
     ∀ᶠ n in atTop,
       2 * Pr[predictionGame pair.sample (fun n word => adversary ((n, advice n), word)) n] - 1 ≤
         1 - PMF.conditionalEntropy (pair.joint n) - gap n
@@ -147,14 +154,9 @@ def HasGapWithAdvice (pair : SamplablePair) (gap : ℕ → ℝ) (advice : ℕ �
 ignores its advice, and an advice predictor run on empty advice is a uniform predictor. -/
 theorem hasGap_iff_hasGapWithAdvice_nil {pair : SamplablePair} {gap : ℕ → ℝ} :
     pair.HasGap gap ↔ pair.HasGapWithAdvice gap (fun _ => []) :=
-  ⟨fun h adversary hadversary => h (fun n word => adversary ((n, []), word))
-    (hadversary.preprocess
-      (((ComputableInPolyTime.fst encUnary encBits).prod (.const [])).prod
-        (.snd encUnary encBits))),
-   fun h adversary hadversary => h (fun ((n, _), word) => adversary n word)
-    (hadversary.on.preprocess
-      (((ComputableInPolyTime.fst (encPair encUnary encBits) encBits).trans
-        (.fst encUnary encBits)).prod (.snd _ encBits)))⟩
+  ⟨fun h adversary hadversary => h (fun n word => adversary ((n, []), word)) hadversary.nilAdvice,
+   fun h adversary hadversary => h (fun input => adversary input.1.1 input.2)
+    hadversary.dropAdvice⟩
 
 /-- A smaller requested gap follows from any larger proved gap, with the same advice. -/
 theorem HasGapWithAdvice.mono {pair : SamplablePair} {gap smaller : ℕ → ℝ}
@@ -167,7 +169,7 @@ advised predictor's error. -/
 theorem HasGapWithAdvice.eventually_error_ge {pair : SamplablePair} {gap : ℕ → ℝ}
     {advice : ℕ → List Bool} (hgap : pair.HasGapWithAdvice gap advice)
     (adversary : (ℕ × List Bool) × List Bool → ProbComp Bool)
-    (hefficient : IsPPTOn (encPair (encPair encUnary encBits) encBits) encBool adversary) :
+    (hefficient : IsPPTOn encAdvisedInput encBool adversary) :
     ∀ᶠ n in atTop, (PMF.conditionalEntropy (pair.joint n) + gap n) / 2 ≤
       (ProbComp.eval
         (predictionGame pair.sample (fun n word => adversary ((n, advice n), word)) n)
@@ -184,10 +186,7 @@ theorem HasGap.eventually_error_ge {pair : SamplablePair} {gap : ℕ → ℝ}
     ∀ᶠ n in atTop, (PMF.conditionalEntropy (pair.joint n) + gap n) / 2 ≤
       (ProbComp.eval (predictionGame pair.sample adversary n) false).toReal :=
   (hasGap_iff_hasGapWithAdvice_nil.mp hgap).eventually_error_ge
-    (fun ((n, _), word) => adversary n word)
-    (hefficient.on.preprocess
-      (((ComputableInPolyTime.fst (encPair encUnary encBits) encBits).trans
-        (.fst encUnary encBits)).prod (.snd _ encBits)))
+    (fun input => adversary input.1.1 input.2) hefficient.dropAdvice
 
 /-- A fair-bit predictor has zero correlation, so entropy plus the prediction gap relative to fixed
 advice cannot eventually exceed one. -/

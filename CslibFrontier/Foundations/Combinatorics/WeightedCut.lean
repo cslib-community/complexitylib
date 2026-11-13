@@ -29,7 +29,7 @@ sums the weights between the vertices sent to distinct supervertices
 (`Cslib.WeightedCut.IsContractionOf`). Pulling a cut of the contracted multigraph back to the
 original vertices gives a cut of the same weight (`Cslib.WeightedCut.cutWeight_pullbackCut`), so
 contraction never decreases the global minimum cut weight. Karger's contraction algorithm and the
-Karger–Stein algorithm (`CslibFrontier.Algorithms.WordRAM.Karger.Graph`) are built on these facts.
+Karger–Stein algorithm (`CslibFrontier.Algorithms.Karger.Graph`) are built on these facts.
 
 The multigraphs given by their ends (`Cslib.Multigraph`) have weight matrices with the same cut
 weights; see `CslibFrontier.Foundations.Combinatorics.WeightedCut.Multigraph`.
