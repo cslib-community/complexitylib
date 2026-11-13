@@ -18,7 +18,8 @@ open Turing Turing.MultiTapeTM Turing.MultiTapeATM
 open Cslib Cslib.Circuits.Boolean.CarrySaveQuery
 open Turing.MultiTapeATM.CarryLookaheadCounting
 
-private theorem count_bits (filled : Bool) (bit : Fin 2) :
+/-- Shared empty/positive count fixture for prepared and raw-parameter machine regressions. -/
+theorem count_bits (filled : Bool) (bit : Fin 2) :
     Counting.count (if filled then 2 else 0) 2 (fun _ => true) bit =
       (filled && (bit == 1)) := by
   have hbound : (if filled then 2 else 0) < 2 ^ 2 := by cases filled <;> decide

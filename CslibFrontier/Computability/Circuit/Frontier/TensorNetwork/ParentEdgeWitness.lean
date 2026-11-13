@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Circuit.Frontier.TensorNetwork.NativeChild
+public import CslibFrontier.Computability.Circuit.Boolean.CarrySave.CountingQuery
 public import CslibFrontier.Foundations.Data.BitString.List.LowBits
 public import Mathlib.Data.Nat.Log
 import CslibFrontier.Foundations.Data.List.OfFn
@@ -36,6 +37,7 @@ them must implement and charge those operations on its actual representation.
 
 * `NativeChild.parentEdge_witness_iff`: exact bounded parent-edge witnesses.
 * `NativeChild.portRank_eq_sum_predecessors`: one Boolean test per possible predecessor.
+* `NativeChild.count_portPredecessor`: the ordinary count-bit interface reads those rank bits.
 * `NativeChild.parentEdge_witness_iff_bits`: witnesses checked through bounded count bits.
 -/
 
@@ -134,6 +136,19 @@ theorem length_portEdges_eq_portRank (sel : ℕ × ℕ → ℕ) :
     (portEdges groups g ends sel).length = portRank groups g ends sel ends.length := by
   rw [portEdges, ← List.countP_eq_length_filter]
   rfl
+
+/-- The ordinary count-bit evaluator's answer is exactly the predecessor-rank bit. This also
+covers a full-prefix total; rejecting overflow aliases still requires sufficient precision. -/
+theorem count_portPredecessor (sel : ℕ × ℕ → ℕ) {bound width : ℕ}
+    (hbound : bound ≤ ends.length) (bit : Fin width) :
+    Boolean.CarrySaveQuery.Counting.count ends.length width
+      (portPredecessor groups g ends sel bound) bit =
+        (portRank groups g ends sel bound).testBit bit.val := by
+  rw [Boolean.CarrySaveQuery.Counting.count_apply,
+    portRank_eq_sum_predecessors groups g ends sel hbound]
+  congr 1
+  exact (Fin.sum_univ_eq_sum_range
+    (fun candidate => (portPredecessor groups g ends sel bound candidate).toNat) ends.length).symm
 
 /-- A bounded count proposal is correct exactly when all its low bits match the predecessor
 sum. The strict edge-count bound accommodates a full prefix containing every edge. -/

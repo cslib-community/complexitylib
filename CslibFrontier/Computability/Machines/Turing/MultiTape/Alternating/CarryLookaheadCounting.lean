@@ -37,10 +37,13 @@ open MultiTapeTM Cslib.Circuits.Boolean CarryLookahead.Query
 /-- The common polynomial budget for a native routing round or terminal preparation. -/
 @[expose] def overhead (c d w : ℕ) : ℕ := c * (metadataBound w + 1) ^ d
 
+/-- All finishing-adder rounds and preparations plus the supplied actual root-evaluator clock. -/
+@[expose] def clockOfRoot (c d w rootTime : ℕ) : ℕ :=
+  (2 * Nat.clog 2 (w + 1) + 6) * (overhead c d w + 2) + overhead c d w + rootTime + 1
+
 /-- All routing rounds, terminal preparation, and the actual carry-save counting branch. -/
 @[expose] def clock (c d cRoot dRoot : ℕ) (context : List Bool) (n w : ℕ) : ℕ :=
-  (2 * Nat.clog 2 (w + 1) + 6) * (overhead c d w + 2) + overhead c d w +
-    CarrySaveCountingRoot.clock cRoot dRoot context n w + 1
+  clockOfRoot c d w (CarrySaveCountingRoot.clock cRoot dRoot context n w)
 
 /-- The count's canonical root storage beside the selected sum-bit claim and its control header.
 The carry-save operand index is blank until the terminal machine computes and copies it. -/
@@ -61,25 +64,31 @@ private theorem next_wellFormed {w rounds : ℕ} (u : Cslib.BitString (w + w + 1
   · exact ha.child u bit
   · exact ha.child u bit
 
-/-- A single finite native machine answers every ordinary bit of the predicate count.
-Its clock is uniform in the queried bit and the claimed value, and includes the real terminal
-counting computation on every branch. -/
-theorem exists_evaluator (predicate : List Bool × ℕ → Bool)
-    (hp : ComputableInPolyTime predicate (encPair encBits encNat) encBool) :
-    ∃ (k r q : ℕ) (S : Type) (_ : Finite S)
-      (atm : MultiTapeATM (CarryLookaheadCountingLayout.size k r q) Bool S)
-      (c d cRoot dRoot : ℕ),
-      ∀ (input context : List Bool) (n w : ℕ) (bit : Fin w) (claim : Bool),
-        let start := (initial k r q input context n w bit.val claim).withState
-          (some atm.toPTM.initial)
-        atm.HaltsWithin (clock c d cRoot dRoot context n w) start ∧
-          (atm.AcceptsWithin (clock c d cRoot dRoot context n w) start ↔
-            CarrySaveQuery.Counting.count n w (fun j => predicate (context, j)) bit = claim) := by
-  obtain ⟨k, r, SL, hSL, terminal, cP, dP, cRoot, dRoot, hterminal⟩ :=
-    CountingTerminal.exists_evaluator predicate hp
+/-- Assemble one native finishing-adder machine around an actual terminal machine.
+The machine and constants precede runtime data and root clocks. Its terminal contract is required
+only at the queried parameters. -/
+theorem exists_evaluator_of_terminal (predicate : List Bool × ℕ → Bool)
+    {k r : ℕ} {S : Type} [Finite S]
+    (terminal : MultiTapeATM (CountingTerminalLayout.size k r) Bool S) (cP dP : ℕ) :
+    ∃ (q : ℕ) (Q : Type) (_ : Finite Q)
+      (atm : MultiTapeATM (CarryLookaheadCountingLayout.size k r q) Bool Q) (c d : ℕ),
+      ∀ (input context : List Bool) (n w rootTime : ℕ),
+        (∀ (p : Routing.Position) (hw : p.width = w),
+          let root := CarrySaveQuery.Counting.rootPair n w (fun j => predicate (context, j))
+          let cfg := (CountingTerminalLayout.storage k r input context n w p []).withState
+            (some terminal.toPTM.initial)
+          terminal.HaltsWithin (CountingTerminal.clockOfRoot cP dP w p rootTime) cfg ∧
+            (terminal.AcceptsWithin (CountingTerminal.clockOfRoot cP dP w p rootTime) cfg ↔
+              Terminal.response (CarrySaveQuery.component root false)
+                (CarrySaveQuery.component root true) p hw = true)) →
+        ∀ (bit : Fin w) (claim : Bool),
+          let start := (initial k r q input context n w bit.val claim).withState
+            (some atm.toPTM.initial)
+          atm.HaltsWithin (clockOfRoot c d w rootTime) start ∧
+            (atm.AcceptsWithin (clockOfRoot c d w rootTime) start ↔
+              CarrySaveQuery.Counting.count n w (fun j => predicate (context, j)) bit = claim) := by
   obtain ⟨q, SR, hSR, round, cQ, dQ, hround⟩ :=
     WordGameRound.exists_round Routing.encPosition Routing.step Routing.step_polyTime
-  let := hSL
   let := hSR
   let round' := round.extendTapes (CarryLookaheadCountingLayout.roundEmbedding k r q)
   let terminal' := terminal.extendTapes (CarryLookaheadCountingLayout.terminalEmbedding k r q)
@@ -89,8 +98,8 @@ theorem exists_evaluator (predicate : List Bool × ℕ → Bool)
       (fun m => cQ * (m + 1) ^ dQ + (cP * (m + 1) ^ dP + 2) + 2 * m + 8) := by
     fun_prop
   obtain ⟨c, d, hc⟩ := Cslib.polynomiallyBounded_iff_le.mp hpoly
-  refine ⟨k, r, q, _, inferInstance, atm, c, d, cRoot, dRoot, ?_⟩
-  intro input context n w bit claim
+  refine ⟨q, _, inferInstance, atm, c, d, ?_⟩
+  intro input context n w rootTime hterminal bit claim
   let rounds := Nat.clog 2 (w + 1)
   let root := CarrySaveQuery.Counting.rootPair n w (fun j => predicate (context, j))
   let u := Fin.append (Fin.append (CarrySaveQuery.component root false)
@@ -98,7 +107,7 @@ theorem exists_evaluator (predicate : List Bool × ℕ → Bool)
   let encode := Routing.ofClaim w rounds
   let store := fun a => CarryLookaheadCountingLayout.storage k r q input context n w (encode a)
   let next := LocalValueGame.next (decoder w rounds u)
-  let leafClock := overhead c d w + CarrySaveCountingRoot.clock cRoot dRoot context n w
+  let leafClock := overhead c d w + rootTime
   let potential := fun a : LocalValueGame.Claim Address =>
     rank rounds a.wire * (overhead c d w + 2) + leafClock + 1
   have hlength (a : LocalValueGame.Claim Address) (ha : WellFormed w rounds a.wire) :
@@ -113,28 +122,28 @@ theorem exists_evaluator (predicate : List Bool × ℕ → Bool)
     unfold overhead
     omega
   have hleafCost (a : LocalValueGame.Claim Address) (ha : WellFormed w rounds a.wire) :
-      CountingTerminal.clock cP dP cRoot dRoot context n w (encode a) ≤ leafClock := by
+      CountingTerminal.clockOfRoot cP dP w (encode a) rootTime ≤ leafClock := by
     have hlen := hlength a ha
     have hpow := Nat.mul_le_mul_left cP (Nat.pow_le_pow_left (by omega :
       (Routing.encPosition (encode a)).length + 1 ≤ metadataBound w + 1) dP)
     have hw : w.size ≤ metadataBound w := by unfold metadataBound; omega
     have hbound := hc (metadataBound w)
-    unfold CountingTerminal.clock leafClock overhead
+    unfold CountingTerminal.clockOfRoot leafClock overhead
     omega
   have hspec := WordGameLeaf.spec_of_potential round' terminal' control
     (fun a => Routing.player (encode a)) next store
     (fun a => WellFormed w rounds a.wire) (fun a => value w rounds u a.wire = a.value)
     potential ?_ ?_ ?_ (a := ⟨.sum bit.val, claim⟩)
-    (by exact bit.isLt) (n := clock c d cRoot dRoot context n w)
-    (by simp [potential, leafClock, clock, rank, rounds, Nat.add_assoc])
+    (by exact bit.isLt) (n := clockOfRoot c d w rootTime)
+    (by simp [potential, leafClock, clockOfRoot, rank, rounds, Nat.add_assoc])
   · change atm.HaltsWithin _ _ ∧ (atm.AcceptsWithin _ _ ↔ _) at hspec ⊢
     rw [show atm.toPTM.initial = WordGameLeaf.State.dispatch from
       WordGameLeaf.machine_initial round' terminal' control]
     refine ⟨hspec.1, hspec.2.trans ?_⟩
     rw [value_count_sum_eq]
   · intro a ha hplayer
-    let t := CountingTerminal.clock cP dP cRoot dRoot context n w (encode a)
-    obtain ⟨ht, hv⟩ := hterminal input context n w (encode a) rfl
+    let t := CountingTerminal.clockOfRoot cP dP w (encode a) rootTime
+    obtain ⟨ht, hv⟩ := hterminal (encode a) rfl
     refine ⟨t, ?_, ?_, ?_⟩
     · exact (CarryLookaheadCountingLayout.haltsWithin_terminal_iff terminal q input context n w
         (encode a) (some terminal.toPTM.initial) [] t).mpr ht
@@ -168,5 +177,29 @@ theorem exists_evaluator (predicate : List Bool × ℕ → Bool)
     have h := Routing.value_iff_next w rounds u a hplayer
     simp_rw [Routing.next_ofClaim w rounds u] at h
     simpa only [Routing.ofClaim, Address.address_toData] using h
+
+/-- A single finite native machine answers every ordinary bit of the predicate count.
+Its clock is uniform in the queried bit and the claimed value, and includes the real terminal
+counting computation on every branch. -/
+theorem exists_evaluator (predicate : List Bool × ℕ → Bool)
+    (hp : ComputableInPolyTime predicate (encPair encBits encNat) encBool) :
+    ∃ (k r q : ℕ) (S : Type) (_ : Finite S)
+      (atm : MultiTapeATM (CarryLookaheadCountingLayout.size k r q) Bool S)
+      (c d cRoot dRoot : ℕ),
+      ∀ (input context : List Bool) (n w : ℕ) (bit : Fin w) (claim : Bool),
+        let start := (initial k r q input context n w bit.val claim).withState
+          (some atm.toPTM.initial)
+        atm.HaltsWithin (clock c d cRoot dRoot context n w) start ∧
+          (atm.AcceptsWithin (clock c d cRoot dRoot context n w) start ↔
+            CarrySaveQuery.Counting.count n w (fun j => predicate (context, j)) bit = claim) := by
+  obtain ⟨k, r, SL, hSL, terminal, cP, dP, cRoot, dRoot, hterminal⟩ :=
+    CountingTerminal.exists_evaluator predicate hp
+  let : Finite SL := hSL
+  obtain ⟨q, S, hS, atm, c, d, h⟩ :=
+    exists_evaluator_of_terminal predicate terminal cP dP
+  refine ⟨k, r, q, S, hS, atm, c, d, cRoot, dRoot, ?_⟩
+  intro input context n w bit claim
+  exact h input context n w (CarrySaveCountingRoot.clock cRoot dRoot context n w)
+    (hterminal input context n w) bit claim
 
 end Turing.MultiTapeATM.CarryLookaheadCounting

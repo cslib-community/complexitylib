@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Circuit.Boolean.CarrySave.IteratedQuery
 public import CslibFrontier.Computability.Circuit.Boolean.CarrySave.Reduce
+import CslibFrontier.Foundations.Data.BitString.Binary
 
 /-!
 # Counting Boolean predicates through streamed carry-save queries
@@ -77,6 +78,13 @@ theorem val_count (n w : ℕ) (predicate : ℕ → Bool) :
     (equivFin w (count n w predicate) : ℕ) =
       (∑ j ∈ Finset.range n, (predicate j).toNat) % 2 ^ w := by
   rw [count, val_eval_carryLookaheadAdd_pair, pairVal_rootPair_mod]
+
+/-- Each returned bit is the corresponding bit of the actual predicate count, even when the
+whole count exceeds the precision. This connects native bit queries directly to count tests. -/
+theorem count_apply (n w : ℕ) (predicate : ℕ → Bool) (i : Fin w) :
+    count n w predicate i = (∑ j ∈ Finset.range n, (predicate j).toNat).testBit i.val := by
+  rw [← testBit_equivFin (count n w predicate) i, val_count, Nat.testBit_mod_two_pow]
+  simp only [i.isLt, decide_true, Bool.true_and]
 
 /-- Enough precision for every possible count removes the modulus. -/
 theorem val_count_eq (n w : ℕ) (predicate : ℕ → Bool) (h : n < 2 ^ w) :

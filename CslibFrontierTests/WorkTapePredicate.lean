@@ -83,4 +83,38 @@ example : ∃ (k : ℕ) (S : Type) (_ : Finite S) (atm : MultiTapeATM (k + 2) Bo
     have hn : Cslib.CountingLeaf.runRaw predicate padding = false := by decide
     simp [hn] at hf
 
+private theorem boolIdentity_inO :
+    ComputableInO (fun b : Bool => b) encBool encBool (fun _ => 0) (fun _ => 0) := by
+  refine ⟨6, ⟨0, _, inferInstance, tidyCopy Bool, ?_⟩, ?_⟩
+  · intro b
+    have h := (computesTidily_tidyCopy [b]).mono (show 2 * [b].length + 4 ≤ 6 by simp)
+      (show 0 ≤ 6 by decide)
+    simpa only [encBool_apply, Nat.zero_add, Nat.mul_one] using h.computesInTimeAndSpace
+  · intro b
+    simp
+
+-- A nonconstant predicate with zero nominal budgets still gets a positive common native clock.
+-- The same finite runner returns both answers and restores its query, scratch, marker and heads.
+example : ∃ (k : ℕ) (S : Type) (_ : Finite S)
+    (runner : MultiTapeTM (k + 2) Bool S) (c : ℕ), ∀ outer : List Bool,
+      let yes := runner.runFrom ((config outer [true]).withState (some runner.q₀)) c
+      let no := runner.runFrom ((config outer [false]).withState (some runner.q₀)) c
+      yes.output = [true] ∧ no.output = [false] ∧ yes.state = none ∧ no.state = none ∧
+        yes.inputPos = 0 ∧ no.inputPos = 0 ∧ yes.workTapePos = 0 ∧ no.workTapePos = 0 ∧
+        yes.workTapes (Fin.natAdd k 0) = tapeOfList [true] ∧
+        no.workTapes (Fin.natAdd k 0) = tapeOfList [false] ∧
+        yes.workTapes (Fin.natAdd k 1) = tapeOfList [] ∧
+        no.workTapes (Fin.natAdd k 1) = tapeOfList [] ∧
+        (∀ i : Fin k, yes.workTapes (i.castAdd 2) = tapeOfList []) ∧
+        (∀ i : Fin k, no.workTapes (i.castAdd 2) = tapeOfList []) := by
+  obtain ⟨k, S, hS, runner, c, h⟩ := exists_of_inO boolIdentity_inO
+  refine ⟨k, S, hS, runner, c, ?_⟩
+  intro outer
+  have hy := h true outer
+  have hn := h false outer
+  simp only [Nat.zero_add, Nat.mul_one, encBool_apply] at hy hn
+  dsimp only
+  rw [hy, hn]
+  simp [config, tapesCfg, Cfg.withState, Fin.castAdd_ne_natAdd]
+
 end CslibFrontierTests.WorkTapePredicate

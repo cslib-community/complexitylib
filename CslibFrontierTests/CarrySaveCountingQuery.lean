@@ -21,6 +21,10 @@ example : (equivFin 1 (count 5 1 predicate) : ℕ) = 1 := by
   rw [val_count]
   decide
 
+-- Low-bit queries still match the exact integer count when the whole count overflows.
+example : count 5 2 (fun _ => true) 0 = true ∧ count 5 2 (fun _ => true) 1 = false := by
+  constructor <;> rw [count_apply] <;> decide
+
 example (p : ℕ → Bool) : (equivFin 3 (count 0 3 p) : ℕ) = 0 := by
   rw [val_count]
   simp

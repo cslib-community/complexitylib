@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.Inp
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.FromLeftBlank
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.Deterministic
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO
 
 /-!
 # Native Boolean predicates on serialized work-tape queries
@@ -20,6 +21,11 @@ run restores blank scratch and all heads runs through `inputFromWord`, with a pr
 Two real transitions position and restore the host input head. The six added transitions include
 both marker writes, marker cleanup, and both host-head movements. Serialization is a separate
 charged prerequisite.
+
+`exists_of_inO` retains the input-dependent time function of a plain resource certificate. Native
+normalization first charges `2 t + 3 s + O(1)`; its visited-space bound `s ≤ k (t + 1)` absorbs
+cleanup into the time constant. The virtual-input adapter adds six transitions. It does not scan
+the whole query merely to install the marker, so query length adds no independent time term.
 -/
 
 public section
@@ -77,6 +83,37 @@ theorem haltsWithin {tm : MultiTapeTM k Bool S} {word : List Bool} {answer : Boo
   rw [MultiTapeATM.haltsWithin_ofTMs_const_iff, (runsBetween h outer []).1]
   rfl
 
+private theorem exists_of_tidy {α : Type} {enc : α ↪ List Bool} {f : α → Bool}
+    {t s : α → ℕ} (hf : ComputableTidilyInTimeAndSpace f enc encBool t s) :
+    ∃ (k : ℕ) (S : Type) (_ : Finite S) (runner : MultiTapeTM (k + 2) Bool S),
+      ∀ (a : α) (outer : List Bool),
+        runner.runFrom ((config outer (enc a)).withState (some runner.q₀)) (t a + 6) =
+          (config outer (enc a) [f a]).withState none := by
+  obtain ⟨k, S, hS, tm, htm⟩ := hf
+  refine ⟨k, _, inferInstance, machine tm, ?_⟩
+  intro a outer
+  have hrun : RunsBetween tm (tapesCfg (enc a) (fun _ => []) 0 0 [])
+      (tapesCfg (enc a) (fun _ => []) 0 0 (encBool (f a))) (t a) (s a) := by
+    simpa only [RunsBetween, tapesCfg_zero_withState] using computesTidily_iff_runFrom.mp (htm a)
+  simpa only [encBool_apply, List.nil_append] using (runsBetween hrun outer []).1
+
+/-- A plain input-dependent resource certificate gives one finite native predicate runner at
+an exact common clock `c * (T a + 1)`. The runner preserves the query, clears scratch and marker,
+and restores all heads. Normalization and the six adapter transitions are charged; serializing
+and placing the query remain prerequisites. The clock does not acquire a polynomial envelope. -/
+theorem exists_of_inO {α : Type} {enc : α ↪ List Bool} {f : α → Bool} {T W : α → ℕ}
+    (hf : ComputableInO f enc encBool T W) :
+    ∃ (k : ℕ) (S : Type) (_ : Finite S) (runner : MultiTapeTM (k + 2) Bool S) (c : ℕ),
+      ∀ (a : α) (outer : List Bool),
+        runner.runFrom ((config outer (enc a)).withState (some runner.q₀)) (c * (T a + 1)) =
+          (config outer (enc a) [f a]).withState none := by
+  obtain ⟨c, hf, _⟩ := hf.tidy
+  obtain ⟨k, S, hS, runner, hr⟩ := exists_of_tidy hf
+  refine ⟨k, S, hS, runner, c + 6, ?_⟩
+  intro a outer
+  have hbound : c * (T a + 1) + 6 ≤ (c + 6) * (T a + 1) := by nlinarith
+  rw [runFrom_eq_of_halt _ _ hbound (by rw [hr]; rfl), hr]
+
 /-- Every native polynomial-time Boolean predicate has one finite work-tape runner. Its clock
 is bounded by a polynomial in the serialized input length; constructing that serialization is
 not part of this theorem. The same runner works with any unrelated host input. -/
@@ -87,16 +124,12 @@ theorem exists_of_polyTime {α : Type} {enc : α ↪ List Bool} {f : α → Bool
         runner.runFrom ((config outer (enc a)).withState (some runner.q₀))
           (c * ((enc a).length + 1) ^ d) =
           (config outer (enc a) [f a]).withState none := by
-  obtain ⟨t, s, ht, _, k, S, hS, tm, htm⟩ := hf.tidy
+  obtain ⟨t, s, ht, _, hf⟩ := hf.tidy
+  obtain ⟨k, S, hS, runner, hr⟩ := exists_of_tidy hf
   obtain ⟨c, d, hbound⟩ := (ht.add (PolyBounded.const 6)).exists_le
-  refine ⟨k, _, inferInstance, machine tm, c, d, ?_⟩
+  refine ⟨k, S, hS, runner, c, d, ?_⟩
   intro a outer
-  have hrun : RunsBetween tm (tapesCfg (enc a) (fun _ => []) 0 0 [])
-      (tapesCfg (enc a) (fun _ => []) 0 0 (encBool (f a))) (t a) (s a) := by
-    simpa only [RunsBetween, tapesCfg_zero_withState] using computesTidily_iff_runFrom.mp (htm a)
-  have hr := (runsBetween hrun outer []).1
   rw [runFrom_eq_of_halt _ _ (hbound a) (by rw [hr]; rfl), hr]
-  simp only [encBool_apply, List.nil_append]
 
 /-- The extracted work-tape predicate is also one finite native alternating leaf, with a
 polynomial all-branch bound and exact singleton-output acceptance. -/

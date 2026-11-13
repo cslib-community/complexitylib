@@ -36,10 +36,18 @@ namespace Turing.MultiTapeTM.RelativeScan
   | [] => []
   | s :: ss => negative s :: positive s :: encode ss
 
+/-- Every encoded movement occupies exactly two tape cells. -/
 @[simp] theorem length_encode (ss : List SignType) : (encode ss).length = 2 * ss.length := by
   induction ss with
   | nil => rfl
   | cons s ss ih => simp [encode, ih]; omega
+
+/-- Concatenating movement streams concatenates their physical two-bit words. -/
+@[simp] theorem encode_append (ss ts : List SignType) :
+    encode (ss ++ ts) = encode ss ++ encode ts := by
+  induction ss with
+  | nil => rfl
+  | cons s ss ih => simp [encode, ih]
 
 /-- The consumed offset, final signed distance, and success flag of the scan. -/
 structure Result where

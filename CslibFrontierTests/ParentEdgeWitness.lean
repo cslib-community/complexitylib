@@ -54,6 +54,14 @@ example : 4 = portRank [1, 0] 1 (List.replicate 4 (0, 1)) Prod.fst 4 := by
     Prod.fst (by decide) (by decide)).mpr
   decide
 
+/- The same full-prefix total is read through the actual ordinary count-bit interface. -/
+example : Cslib.Circuits.Boolean.CarrySaveQuery.Counting.count 4 3
+    (portPredecessor [1, 0] 1 (List.replicate 4 (0, 1)) Prod.fst 4) 2 = true := by
+  have h := count_portPredecessor [1, 0] 1 (List.replicate 4 (0, 1)) Prod.fst
+    (bound := 4) (by decide) (2 : Fin 3)
+  rw [List.length_replicate] at h
+  exact h.trans (by decide)
+
 /- Two bits would confuse the full count four with zero. This is why the total-count theorem
 requires edgeCount < 2^width, rather than the non-strict rank bound. -/
 example :

@@ -29,28 +29,33 @@ namespace Turing.MultiTapeATM.CountingTerminal
 open MultiTapeTM Cslib.Circuits.Boolean.CarryLookahead.Query
 open Cslib.Circuits.Boolean.CarrySaveQuery
 
-/-- Preparation, three flag reads, index copying and the actual root-evaluator clock. -/
-@[expose] def clock (cP dP cR dR : ℕ) (context : List Bool) (n w : ℕ)
-    (p : Routing.Position) : ℕ :=
-  cP * ((Routing.encPosition p).length + 1) ^ dP + 2 + 2 * w.size + 8 +
-    CarrySaveCountingRoot.clock cR dR context n w
+/-- Preparation, three flag reads and index copying, followed by a supplied native root clock. -/
+@[expose] def clockOfRoot (cP dP w : ℕ) (p : Routing.Position) (rootTime : ℕ) : ℕ :=
+  cP * ((Routing.encPosition p).length + 1) ^ dP + 2 + 2 * w.size + 8 + rootTime
 
-/-- One finite native terminal evaluates actual carry-save root components from routing metadata.
-Both the machine and all clock constants are uniform over inputs, counts, widths and positions. -/
-theorem exists_evaluator (predicate : List Bool × ℕ → Bool)
-    (hp : ComputableInPolyTime predicate (encPair encBits encNat) encBool) :
-    ∃ (k r : ℕ) (S : Type) (_ : Finite S)
-      (atm : MultiTapeATM (CountingTerminalLayout.size k r) Bool S) (cP dP cR dR : ℕ),
-      ∀ (input context : List Bool) (n w : ℕ) (p : Routing.Position) (hw : p.width = w),
+/-- One finite terminal prepares and dispatches to a fixed native root family. Its machine and
+preparation constants are chosen before the runtime parameters, root clock, or correctness
+contract. Every root branch is evaluated by the supplied machine on its actual initial tapes. -/
+theorem exists_evaluator_of_root (predicate : List Bool × ℕ → Bool) {k : ℕ} {S : Type}
+    [Finite S] (roots : Bool → Bool → MultiTapeATM (k + 12) Bool S) :
+    ∃ (r : ℕ) (SP : Type) (_ : Finite SP)
+      (atm : MultiTapeATM (CountingTerminalLayout.size k r) Bool SP) (cP dP : ℕ),
+      ∀ (input context : List Bool) (n w rootTime : ℕ),
+        (∀ (bit : Fin w) (carry claim : Bool),
+          let cfg := (CarrySaveCountingRoot.initial k input context n w bit.val).withState
+            (some (roots carry claim).toPTM.initial)
+          (roots carry claim).HaltsWithin rootTime cfg ∧
+            ((roots carry claim).AcceptsWithin rootTime cfg ↔
+              component (Counting.rootPair n w (fun j => predicate (context, j))) carry bit =
+                claim)) →
+        ∀ (p : Routing.Position) (hw : p.width = w),
         let root := Counting.rootPair n w (fun j => predicate (context, j))
         let cfg := (CountingTerminalLayout.storage k r input context n w p []).withState
           (some atm.toPTM.initial)
-        atm.HaltsWithin (clock cP dP cR dR context n w p) cfg ∧
-          (atm.AcceptsWithin (clock cP dP cR dR context n w p) cfg ↔
+        atm.HaltsWithin (clockOfRoot cP dP w p rootTime) cfg ∧
+          (atm.AcceptsWithin (clockOfRoot cP dP w p rootTime) cfg ↔
             Terminal.response (component root false) (component root true) p hw = true) := by
-  obtain ⟨k, SR, hSR, roots, cR, dR, hroots⟩ := CarrySaveCountingRoot.exists_evaluator predicate hp
   obtain ⟨r, SP, hSP, prep, cP, dP, hprep⟩ := CountingTerminalPrepare.exists_machine
-  let := hSR
   let := hSP
   let family := fun carry claim => (roots carry claim).extendTapes
     (CountingTerminalLayout.rootTapes k r)
@@ -58,11 +63,10 @@ theorem exists_evaluator (predicate : List Bool × ℕ → Bool)
     (CountingTerminalLayout.rootIndex k r) (CountingTerminalLayout.flags_ne_rootIndex k r) family
   let prepare := prep.extendTapes (CountingTerminalLayout.prepTapes k r)
   let atm := prependTM prepare terminal
-  refine ⟨k, r, _, inferInstance, atm, cP, dP, cR, dR, ?_⟩
-  intro input context n w p hw
+  refine ⟨r, _, inferInstance, atm, cP, dP, ?_⟩
+  intro input context n w rootTime hroots p hw
   let root := Counting.rootPair n w (fun j => predicate (context, j))
   let storage := CountingTerminalLayout.storage k r input context n w p (Terminal.word p)
-  let rootTime := CarrySaveCountingRoot.clock cR dR context n w
   let terminalTime := 2 * w.size + 8 + rootTime
   have hflagHead : storage.workTapePos (CountingTerminalLayout.flags k r) = 0 :=
     CountingTerminalLayout.storage_flags_head k r input context n w p (Terminal.word p)
@@ -86,7 +90,7 @@ theorem exists_evaluator (predicate : List Bool × ℕ → Bool)
     | true =>
       have hi : Terminal.index p < w := hw ▸ Terminal.index_lt hq
       let bit : Fin w := ⟨Terminal.index p, hi⟩
-      have hr := hroots input context n w bit (Terminal.carry p) p.claim
+      have hr := hroots bit (Terminal.carry p) p.claim
       let copied := CountingTerminalDispatch.copied (CountingTerminalLayout.flags k r)
         (CountingTerminalLayout.rootIndex k r) (encNat (Terminal.index p)) storage
       have hview : viewCfg (CountingTerminalLayout.rootTapes k r) copied =
@@ -134,8 +138,34 @@ theorem exists_evaluator (predicate : List Bool × ℕ → Bool)
     (CountingTerminalLayout.storage k r input context n w p []) storage
     (cP * ((Routing.encPosition p).length + 1) ^ dP + 2) terminalTime hrun hhalt
   have hclock : cP * ((Routing.encPosition p).length + 1) ^ dP + 2 + terminalTime =
-      clock cP dP cR dR context n w p := by dsimp only [terminalTime, rootTime, clock]; omega
+      clockOfRoot cP dP w p rootTime := by dsimp only [terminalTime, clockOfRoot]; omega
   rw [hclock] at h
   exact ⟨h.1, h.2.trans haccept⟩
+
+/-- Preparation, three flag reads, index copying and the polynomial-time root evaluator. -/
+@[expose] def clock (cP dP cR dR : ℕ) (context : List Bool) (n w : ℕ)
+    (p : Routing.Position) : ℕ :=
+  clockOfRoot cP dP w p (CarrySaveCountingRoot.clock cR dR context n w)
+
+/-- One finite native terminal evaluates actual carry-save root components from routing metadata.
+Both the machine and all clock constants are uniform over inputs, counts, widths and positions. -/
+theorem exists_evaluator (predicate : List Bool × ℕ → Bool)
+    (hp : ComputableInPolyTime predicate (encPair encBits encNat) encBool) :
+    ∃ (k r : ℕ) (S : Type) (_ : Finite S)
+      (atm : MultiTapeATM (CountingTerminalLayout.size k r) Bool S) (cP dP cR dR : ℕ),
+      ∀ (input context : List Bool) (n w : ℕ) (p : Routing.Position) (hw : p.width = w),
+        let root := Counting.rootPair n w (fun j => predicate (context, j))
+        let cfg := (CountingTerminalLayout.storage k r input context n w p []).withState
+          (some atm.toPTM.initial)
+        atm.HaltsWithin (clock cP dP cR dR context n w p) cfg ∧
+          (atm.AcceptsWithin (clock cP dP cR dR context n w p) cfg ↔
+            Terminal.response (component root false) (component root true) p hw = true) := by
+  obtain ⟨k, SR, hSR, roots, cR, dR, hroots⟩ := CarrySaveCountingRoot.exists_evaluator predicate hp
+  let := hSR
+  obtain ⟨r, S, hS, atm, cP, dP, h⟩ := exists_evaluator_of_root predicate roots
+  refine ⟨k, r, S, hS, atm, cP, dP, cR, dR, ?_⟩
+  intro input context n w p hw
+  exact h input context n w (CarrySaveCountingRoot.clock cR dR context n w)
+    (hroots input context n w) p hw
 
 end Turing.MultiTapeATM.CountingTerminal
