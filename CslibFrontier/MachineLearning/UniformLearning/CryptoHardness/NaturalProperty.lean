@@ -41,8 +41,9 @@ it closes the loop between learning and natural properties.
 The model differs from the source as follows.
 * **Accurate learners.** The theorem needs `(1 - δ) (1 - ε)` to exceed `1 / 2 + q / 2 ^ (n + 1)`, so
   it covers strong or confidence-amplified learners. The non-trivial learners of
-  [OliveiraSanthanam2017, Theorem 8, item (1)], with error `1 / 2 - 1 / n ^ k` and success
-  probability `1 / n`, have `(1 - δ) (1 - ε)` below `1 / 2` and are not covered as stated.
+  [OliveiraSanthanam2017, Theorem 8, item (1)], with error `1 / 2 - 1 / n ^ k` and confidence
+  `1 - 1 / n`, have `(1 - δ) (1 - ε) = (1 - 1 / n) (1 / 2 + 1 / n ^ k)`, which is below `1 / 2` for
+  `k ≥ 2` and `n ≥ 3`; those learners are not covered as stated.
 * **Uniform seeds from a small set.** The learner's seeds are uniform on a set of size `2 ^ O(n)`,
   so the property averages exactly over all seeds and points instead of sampling them; arbitrary
   seed distributions are not handled.
