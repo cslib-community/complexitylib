@@ -371,6 +371,15 @@ private theorem decode?_unpackPair {U' n' X m : ℕ} (hm : m ≤ n')
   rw [queryFin_eq_unpackPair?_bind, ← hget]
   rfl
 
+/-- The slot map of `packPairs`, sending the `i`-th key of `S` to its matched slot, is
+injective. -/
+private theorem matching_orderEmbOfFin_injective {U' n' m : ℕ} (h : DynamicMatching.Scheme U' n')
+    (S : Finset (Fin U')) (hS : S.card = m) (hSle : S.card ≤ n') :
+    Function.Injective fun i : Fin m =>
+      DynamicMatching.matching h S hSle ⟨S.orderEmbOfFin hS i, S.orderEmbOfFin_mem hS i⟩ :=
+  fun _ _ heq => (S.orderEmbOfFin hS).injective
+    (congrArg Subtype.val ((DynamicMatching.matching h S hSle).injective heq))
+
 private theorem unpackPair?_packPairs {U' n' X m : ℕ} (hm : m ≤ n')
     (h : DynamicMatching.Scheme U' n') (S : Finset (Fin U')) (hS : S.card = m)
     (pairs : (a : Fin U') → a ∈ S →
@@ -381,9 +390,7 @@ private theorem unpackPair?_packPairs {U' n' X m : ℕ} (hm : m ≤ n')
   have hSle : S.card ≤ n' := hS.le.trans hm
   let idxMap : Fin m → Fin n' := fun i =>
     DynamicMatching.matching h S hSle ⟨S.orderEmbOfFin hS i, S.orderEmbOfFin_mem hS i⟩
-  have hinj : Function.Injective idxMap := fun i₁ i₂ heq => by
-    have hsub := (DynamicMatching.matching h S hSle).injective heq
-    exact (S.orderEmbOfFin hS).injective (congrArg Subtype.val hsub)
+  have hinj : Function.Injective idxMap := matching_orderEmbOfFin_injective h S hS hSle
   dsimp only [unpackPair?, lookupHeader, packPairs]
   rw [Equiv.symm_apply_apply]
   dsimp only [lookupDecoded]
@@ -864,9 +871,7 @@ private theorem slots_packPairs_of_matchOpt {U' n' X m : ℕ} (hm : m ≤ n')
   refine ⟨ha, ?_⟩
   let idxMap : Fin m → Fin n' := fun i =>
     DynamicMatching.matching h S hSle ⟨S.orderEmbOfFin hS i, S.orderEmbOfFin_mem hS i⟩
-  have hinj : Function.Injective idxMap := fun i₁ i₂ heq => by
-    have hsub := (DynamicMatching.matching h S hSle).injective heq
-    exact (S.orderEmbOfFin hS).injective (congrArg Subtype.val hsub)
+  have hinj : Function.Injective idxMap := matching_orderEmbOfFin_injective h S hS hSle
   set i₀ : Fin m := (S.orderIsoOfFin hS).symm ⟨a, ha⟩
   have hi₀_val : S.orderEmbOfFin hS i₀ = a := by
     change ↑(S.orderIsoOfFin hS ((S.orderIsoOfFin hS).symm ⟨a, ha⟩)) = a
