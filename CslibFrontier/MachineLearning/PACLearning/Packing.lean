@@ -30,19 +30,20 @@ land where they agree, which happens with probability at most `(1 - ε) ^ k ≤ 
 This is Dudley's bound, with a constant in the exponent; Haussler's sharper
 `e (d + 1) (2 e / ε) ^ d` needs a different argument and is not formalized here.
 
-A maximal `ε`-separated subset is also an `ε`-net: every labeling of the set is at Hamming distance
-less than `ε m` from one of its points. The bound is the input to chaining arguments, which need
-nets at every scale whose sizes grow polynomially in `1 / ε`.
+A maximal separated subset is also a net at the same scale
+(`Cslib.Code.exists_subset_pairwise_lt_hammingDist_forall_exists_le`), so the bound also limits the
+size of nets. Chaining arguments need nets at every scale whose sizes grow polynomially in `1 / ε`.
+They give the agnostic sample complexity `O((d + log (1 / δ)) / ε²)` stated in
+[ShalevShwartzBenDavid2014, Theorem 6.8]; the proof in that book (Chapter 28) has an extra
+`log (1 / ε)` factor.
 
 ## Main results
 
-- `exists_injOn_comp_of_two_mul_log_card_lt`: a tuple of `k` indices on which the labelings of an
+- `exists_injOn_comp_of_two_mul_log_card_lt`: a tuple of `k` indices on which the words of an
   `ε`-separated set stay distinct, when `2 log |P| < ε k`.
 - `card_le_growthFunction_of_two_mul_log_card_lt`: an `ε`-separated set of labelings realized by
   `C` has at most `Π_C(k)` elements.
 - `card_le_div_pow_of_le_hammingDist`: with Sauer's lemma, it has at most `(8 / ε) ^ (2 d)`.
-- `exists_subset_le_hammingDist_forall_exists_hammingDist_lt`: a finite set of labelings has a
-  separated subset that is a net at the same scale.
 
 ## References
 
@@ -60,17 +61,17 @@ namespace Cslib.MachineLearning.PACLearning
 
 variable {α : Type*}
 
-/-- **Subsampling.** If any two distinct labelings in `P` differ on at least `ε m` of `m` points
-and `2 log |P| < ε k`, then some `k` of the points, possibly repeated, already distinguish all
-labelings in `P`. -/
-theorem exists_injOn_comp_of_two_mul_log_card_lt {m k : ℕ} (hm : 0 < m)
-    (P : Finset (Fin m → Bool)) {ε : ℝ}
+/-- **Subsampling.** If any two distinct words in `P` differ in at least `ε m` of their `m` letters
+and `2 log |P| < ε k`, then some `k` of the positions, possibly repeated, already distinguish all
+words in `P`. -/
+theorem exists_injOn_comp_of_two_mul_log_card_lt {β : Type*} [DecidableEq β] {m k : ℕ}
+    (hm : 0 < m) (P : Finset (Fin m → β)) {ε : ℝ}
     (hP : ∀ u ∈ P, ∀ v ∈ P, u ≠ v → ε * m ≤ hammingDist u v)
     (hk : 2 * Real.log P.card < ε * k) :
-    ∃ t : Fin k → Fin m, Set.InjOn (fun (u : Fin m → Bool) j => u (t j)) P := by
+    ∃ t : Fin k → Fin m, Set.InjOn (fun (u : Fin m → β) j => u (t j)) P := by
   classical
-  -- The tuples on which a given ordered pair of distinct labelings agree.
-  set agree : (Fin m → Bool) × (Fin m → Bool) → Finset (Fin m) := fun p => univ.filter
+  -- The tuples on which a given ordered pair of distinct words agree.
+  set agree : (Fin m → β) × (Fin m → β) → Finset (Fin m) := fun p => univ.filter
     fun i => p.1 i = p.2 i
   set bad : Finset (Fin k → Fin m) :=
     P.offDiag.biUnion fun p => Fintype.piFinset fun _ : Fin k => agree p
@@ -230,35 +231,5 @@ theorem card_le_div_pow_of_le_hammingDist {C : ConceptClass α Bool} {d : ℕ}
           rw [← mul_pow, hT]
           congr 1
           ring
-
-/-- **Separated nets.** Every finite set `V` of words has a subset whose members pairwise lie at
-Hamming distance at least `r > 0` and which is an `r`-net of `V`: every word of `V` lies at Hamming
-distance less than `r` from one of its members. A separated subset of maximal size works. -/
-theorem exists_subset_le_hammingDist_forall_exists_hammingDist_lt {ι : Type*} [Fintype ι]
-    {β : ι → Type*} [∀ i, DecidableEq (β i)] (V : Finset (∀ i, β i))
-    {r : ℝ} (hr : 0 < r) :
-    ∃ N ⊆ V, (∀ u ∈ N, ∀ v ∈ N, u ≠ v → r ≤ hammingDist u v) ∧
-      ∀ u ∈ V, ∃ v ∈ N, (hammingDist u v : ℝ) < r := by
-  classical
-  set S := V.powerset.filter fun N => ∀ u ∈ N, ∀ v ∈ N, u ≠ v → r ≤ (hammingDist u v : ℝ)
-  obtain ⟨N, hNS, hmax⟩ := S.exists_max_image card ⟨∅, by simp [S]⟩
-  obtain ⟨hNV, hNsep⟩ := by simpa only [S, mem_filter, mem_powerset] using hNS
-  refine ⟨N, hNV, hNsep, fun u hu => ?_⟩
-  by_contra! hfar
-  have huN : u ∉ N := fun h => by
-    have := hfar u h
-    simp only [hammingDist_self, Nat.cast_zero] at this
-    linarith
-  have hins : insert u N ∈ S := by
-    simp only [S, mem_filter, mem_powerset]
-    refine ⟨insert_subset hu hNV, fun a ha b hb hab => ?_⟩
-    rcases mem_insert.1 ha with ha | ha <;> rcases mem_insert.1 hb with hb | hb
-    · exact absurd (ha.trans hb.symm) hab
-    · rw [ha]; exact hfar b hb
-    · rw [hb, hammingDist_comm]; exact hfar a ha
-    · exact hNsep a ha b hb hab
-  have := hmax _ hins
-  rw [card_insert_of_notMem huN] at this
-  omega
 
 end Cslib.MachineLearning.PACLearning
