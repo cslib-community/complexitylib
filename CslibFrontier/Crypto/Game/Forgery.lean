@@ -68,18 +68,26 @@ variable {Q R α : Type}
 
 /-- The stateful handler behind `runLogWith`: ask the policy `O` about the query `q` given the
 log; run its program and append the answered pair, or answer `default` and log nothing. -/
-def logHandler [Inhabited R] (O : List (Q × R) → Q → Option (ProbComp R)) (q : Q) :
+def logOracle [Inhabited R] (O : List (Q × R) → Q → Option (ProbComp R)) (q : Q) :
     StateT (List (Q × R)) ProbComp R := fun log =>
   match O log q with
   | some program => (fun r => (r, log ++ [(q, r)])) <$> program
   | none => pure (default, log)
+
+/-- One call of the logging oracle: run the policy's program and append the answered pair, or
+answer `default` and keep the log. -/
+@[simp] theorem logOracle_run [Inhabited R] (O : List (Q × R) → Q → Option (ProbComp R)) (q : Q)
+    (log : List (Q × R)) :
+    (logOracle O q).run log = match O log q with
+      | some program => (fun r => (r, log ++ [(q, r)])) <$> program
+      | none => pure (default, log) := rfl
 
 /-- Run `A` with fresh private coins against the refusal-aware oracle `O`, which reads the log of
 answered queries. A query that `O` refuses is answered with `default` and not logged. Returns the
 result and the log, in the order the queries were answered. -/
 def runLogWith [Inhabited R] (A : ProbOracleComp (fun _ : Q => R) α)
     (O : List (Q × R) → Q → Option (ProbComp R)) : ProbComp (α × List (Q × R)) :=
-  (OracleComp.interpret (sumHandler (fun n => StateT.lift (ProbComp.unifFin n)) (logHandler O))
+  (OracleComp.interpret (sumHandler (fun n => StateT.lift (ProbComp.unifFin n)) (logOracle O))
     A).run []
 
 /-- **Every logged pair is a possible reply**: a property of query-reply pairs that holds for
@@ -93,7 +101,7 @@ theorem forall_mem_runLogWith [Inhabited R] {O : List (Q × R) → Q → Option 
   rw [runLogWith, eval_run_interpret] at hz
   refine run_interpret_invariant _ (fun log => ∀ p ∈ log, P p) ?_ A [] (by simp) z.1 z.2 hz
   intro q log hlog r log' hstep
-  simp only [logHandler] at hstep
+  simp only [logOracle] at hstep
   cases hprog : O log q with
   | none =>
     simp only [hprog, ProbComp.eval_pure, PMF.mem_support_pure_iff, Prod.mk.injEq] at hstep
@@ -129,7 +137,8 @@ def oneTime (s : Signer SK M Sig) : Signer SK M Sig := fun sk log m =>
 /-- The indexed policy with capacity `cap`: a query `(u, m)` is signed with `sign sk u m` when
 `u < cap` and the index `u` has not been used. -/
 def indexed (cap : ℕ) (sign : SK → ℕ → M → ProbComp Sig) : Signer SK (ℕ × M) Sig :=
-  fun sk log q => if q.1 < cap ∧ q.1 ∉ log.map (·.1.1) then some (sign sk q.1 q.2) else none
+  fun sk log (u, m) =>
+    if u < cap ∧ u ∉ log.map (fun ((v, _), _) => v) then some (sign sk u m) else none
 
 /-- The counter policy with capacity `cap`: the `i`-th answered query is signed with index `i`
 and the signature carries `i`; queries after the first `cap` are refused. -/
