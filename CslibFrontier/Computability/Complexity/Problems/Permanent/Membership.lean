@@ -15,6 +15,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
 import CslibFrontier.Foundations.Data.List.Lookup
+import CslibFrontier.Foundations.Data.Matrix.Permanent.ZeroOne
 import Mathlib.Data.List.GetD
 import Mathlib.Logic.Equiv.Fin.Basic
 
@@ -39,8 +40,6 @@ theorem [Valiant][Valiant1979], [Arora and Barak, Section 9.2][AroraBarak07],
 
 ## Main results
 
-* `Matrix.card_filter_isPermMatrix`: Boolean permutation matrices supported in a relation are as
-  many as the permutations along it.
 * `Cslib.Complexity.ZeroOnePermanent.acceptCount_verifier`: the verifier counts the permanent.
 * `Cslib.Complexity.ZeroOnePermanent.mem_SharpP`: `ZeroOnePermanent ∈ SharpP encBoolTable`.
 
@@ -53,51 +52,6 @@ theorem [Valiant][Valiant1979], [Arora and Barak, Section 9.2][AroraBarak07],
 -/
 
 public section
-
-namespace Matrix
-
-variable {n : ℕ}
-
-/-- **Boolean permutation matrices count permutations.** The Boolean `n × n` matrices with a
-`true` entry in every row, at most one in every row and column, and `true` entries only where
-`r` holds, are as many as the permutations `σ` with `r i (σ i)` for every `i`. -/
-theorem card_filter_isPermMatrix (r : Fin n → Fin n → Prop) [∀ i j, Decidable (r i j)] :
-    (Finset.univ.filter fun M : Fin n → Fin n → Bool =>
-        (∀ i, ∃ j, M i j = true) ∧ (∀ i j k, M i j = true → M i k = true → j = k) ∧
-          (∀ i k j, M i j = true → M k j = true → i = k) ∧
-            ∀ i j, M i j = true → r i j).card =
-      (Finset.univ.filter fun σ : Equiv.Perm (Fin n) => ∀ i, r i (σ i)).card := by
-  classical
-  symm
-  refine Finset.card_bij (fun σ _ i j => decide (σ i = j)) (fun σ hσ => ?_)
-    (fun σ _ τ _ h => ?_) (fun M hM => ?_)
-  · simp only [Finset.mem_filter, Finset.mem_univ, true_and, decide_eq_true_eq] at hσ ⊢
-    refine ⟨fun i => ⟨σ i, rfl⟩, fun i j k hj hk => hj ▸ hk, fun i k j hi hk => ?_,
-      fun i j h => h ▸ hσ i⟩
-    exact σ.injective (hi.trans hk.symm)
-  · ext i
-    have := congrFun (congrFun h i) (σ i)
-    simp only [decide_true] at this
-    exact congrArg Fin.val (of_decide_eq_true this.symm).symm
-  · simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hM
-    obtain ⟨hrow, huniq, hcol, hsupp⟩ := hM
-    choose f hf using hrow
-    have hinj : Function.Injective f := fun i k h => hcol i k (f i) (hf i) (h ▸ hf k)
-    let σ : Equiv.Perm (Fin n) := Equiv.ofBijective f (Finite.injective_iff_bijective.mp hinj)
-    refine ⟨σ, ?_, ?_⟩
-    · simp only [Finset.mem_filter, Finset.mem_univ, true_and]
-      exact fun i => hsupp i (f i) (hf i)
-    funext i j
-    change decide (f i = j) = M i j
-    by_cases h : M i j = true
-    · rw [h, decide_eq_true_iff]
-      exact huniq i (f i) j (hf i) h
-    · rw [Bool.not_eq_true] at h
-      rw [h, decide_eq_false_iff_not]
-      rintro rfl
-      exact absurd (hf i) (by simp [h])
-
-end Matrix
 
 namespace Cslib.Complexity
 

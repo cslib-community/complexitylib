@@ -77,8 +77,8 @@ most `k`, with its number of rows. -/
 variable {k : ℕ} {wt : Rel → List Bool → ℕ} {F : CSP Rel ℕ}
 
 private theorem count_le (hk : ∀ c ∈ F, c.scope.length ≤ k) (i : ℕ) :
-    ((occurrences F.varCNF).map Prod.fst).count i ≤ k := by
-  rw [count_map_fst_occurrences]
+    ((occurrences F.varCNF).map Occurrence.clause).count i ≤ k := by
+  rw [count_map_clause_occurrences]
   by_cases hi : i < F.length
   · rw [CSP.varCNF, List.getD_eq_getElem _ _ (by simpa using hi), List.getElem_map,
       List.length_map]

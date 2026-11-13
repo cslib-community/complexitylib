@@ -66,7 +66,7 @@ class CacheBootstrapTests(unittest.TestCase):
         # manual preflight and its failure behavior are covered in test_quick_check.py, and the
         # cache-restore audit in test_check_cache_restores.py.
         for name in ("scripts/check_operator_manual.py", "scripts/test_operator_manual.py",
-                     "scripts/check_cache_restores.py"):
+                     "scripts/check_vm_map_count.py", "scripts/check_cache_restores.py"):
             self.write(name, "raise SystemExit(0)\n")
         self.write("scripts/full_check.py", FAKE_FULL_CHECK)
         self.write("scripts/cache/get.sh", FAKE_FETCH).chmod(0o755)

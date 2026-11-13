@@ -68,6 +68,8 @@ for circuits computing `k`-clique are their instances.
 
 public section
 
+open Cslib.BitString.Graph
+
 namespace Cslib.Circuits.Monotone
 
 open Cslib.Circuits.Clique

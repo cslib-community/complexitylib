@@ -30,6 +30,8 @@ points with probability at most `1 / (|α| (|α| - 1) ⋯ (|α| - k + 1))`. Thes
   tuples sum to `(Fintype.card α)!`.
 * `Cslib.RandomPermutation.card_extPerms_ofFn_mul_descFactorial_le`: the falling-factorial bound
   `#extPerms * (Fintype.card α).descFactorial k ≤ (Fintype.card α)!` (original).
+* `Cslib.RandomPermutation.card_filter_apply_eq_mul_card_le`: its one-point case: at most
+  `(Fintype.card α)! / Fintype.card α` permutations send a given point to a given value.
 -/
 
 public section
@@ -108,5 +110,17 @@ theorem card_extPerms_ofFn_mul_descFactorial_le {k : ℕ} (xs : Fin k ↪ α) (y
       simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.notMem_empty, iff_false]
       exact fun h => hys fun i j hij => xs.injective (π.injective (by rw [h i, h j, hij]))
     simp [hempty]
+
+/-- The one-point case of `card_extPerms_ofFn_mul_descFactorial_le`: at most
+`(Fintype.card α)! / Fintype.card α` permutations of `α` send `x` to `a`. -/
+theorem card_filter_apply_eq_mul_card_le (x a : α) :
+    (Finset.univ.filter fun π : Equiv.Perm α => π x = a).card * Fintype.card α ≤
+      (Fintype.card α).factorial := by
+  let xs : Fin 1 ↪ α := ⟨![x], fun i j _ => Subsingleton.elim i j⟩
+  have h := card_extPerms_ofFn_mul_descFactorial_le xs ![a]
+  have he : extPerms (List.ofFn fun i : Fin 1 => (xs i, ![a] i)) =
+      Finset.univ.filter fun π : Equiv.Perm α => π x = a := by
+    rw [extPerms_ofFn_eq]; ext π; simp [xs]; rfl
+  rwa [he, Nat.descFactorial_one] at h
 
 end Cslib.RandomPermutation

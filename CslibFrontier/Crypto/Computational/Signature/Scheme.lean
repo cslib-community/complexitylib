@@ -24,6 +24,11 @@ answer ([BonehShoup2023], Section 13.1.1). `oneTimeEufCmaExperiment` is the one-
 Attack Game 13.1, whose oracle answers the first query only. Asymptotic security over a family of
 schemes and the efficiency of the forger are stated on top of these experiments.
 
+An indexed scheme `Signature.IndexedScheme` signs a message at an index below its capacity
+([BonehShoup2023], Definition 14.6). In `IndexedScheme.eufCmaExperiment` the forger picks the index
+of each query and a used index is refused; in `IndexedScheme.counterEufCmaExperiment` the signer
+uses its own counter as the index ([BonehShoup2023], Section 14.6.4).
+
 ## Main definitions
 
 * `Cslib.Crypto.Signature.Scheme`: a signature scheme with typed keys, messages and signatures.
@@ -33,6 +38,8 @@ schemes and the efficiency of the forger are stated on top of these experiments.
   messages.
 * `Cslib.Crypto.Signature.Scheme.eufCmaExperiment`, `sufCmaExperiment`,
   `oneTimeEufCmaExperiment`: the existential, strong and one-time forgery experiments.
+* `Cslib.Crypto.Signature.IndexedScheme`, with `eufCmaExperiment` and `counterEufCmaExperiment`: an
+  indexed signature scheme and its forgery experiments with forger-chosen and counter indices.
 
 ## Main results
 
@@ -44,7 +51,8 @@ schemes and the efficiency of the forger are stated on top of these experiments.
 ## References
 
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*][BonehShoup2023],
-  Section 13.1 (Definition 13.1, Attack Game 13.1 and Section 13.1.1).
+  Section 13.1 (Definition 13.1, Attack Game 13.1 and Section 13.1.1), Definition 14.6 and
+  Section 14.6.4.
 -/
 
 @[expose] public section
@@ -135,5 +143,40 @@ theorem sufCmaExperiment_eq_eufCmaExperiment [DecidableEq M] [DecidableEq Sig]
     hunique A
 
 end Scheme
+
+/-- An indexed signature scheme ([BonehShoup2023], Definition 14.6) with capacity `capacity`:
+it signs a message `m` at an index `u`, and the signer must never use an index twice. -/
+structure IndexedScheme (PK SK M Sig : Type) where
+  /-- Key generation: draw a public key and its secret key. -/
+  keyGen : ProbComp (PK × SK)
+  /-- The number of indices available; the signer uses indices below it. -/
+  capacity : ℕ
+  /-- Sign a message at an index with the secret key. -/
+  sign : SK → ℕ → M → ProbComp Sig
+  /-- Verify a candidate signature on a message at an index under the public key. -/
+  verify : PK → ℕ → M → Sig → Bool
+
+namespace IndexedScheme
+
+variable {PK SK M Sig : Type} [Inhabited Sig] [DecidableEq M]
+
+/-- The indexed forgery experiment ([BonehShoup2023], Definition 14.6): the forger chooses the index
+of each signing query, a query at a used index or at an index `≥ capacity` is refused, and the
+forger wins with a valid signature on any pair `(u, m)` that was never signed. -/
+abbrev eufCmaExperiment (S : IndexedScheme PK SK M Sig) (A : Forger PK (ℕ × M) Sig) :
+    Experiment :=
+  forgeExperiment S.keyGen (.indexed S.capacity S.sign) (fun pk _ (u, m) => S.verify pk u m)
+    freshMessage A
+
+/-- The counter forgery experiment ([BonehShoup2023], Section 14.6.4): the signer keeps a counter,
+signs its `i`-th message at index `i` and publishes `i` with the signature; it refuses once the
+capacity is used up. The forger wins with a valid signature on any message that was never
+signed. -/
+abbrev counterEufCmaExperiment (S : IndexedScheme PK SK M Sig) (A : Forger PK M (ℕ × Sig)) :
+    Experiment :=
+  forgeExperiment S.keyGen (.counter S.capacity S.sign) (fun pk _ m (u, σ) => S.verify pk u m σ)
+    freshMessage A
+
+end IndexedScheme
 
 end Cslib.Crypto.Signature

@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Computational.Pseudoentropy.MatrixExtraction
 public import CslibFrontier.Crypto.Computational.Pseudoentropy.Seed
+public import CslibFrontier.Crypto.Computational.Pseudoentropy.SeedSchedule
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Padding
 import CslibFrontier.Crypto.Computational.Pseudoentropy.SeedExtraction
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
@@ -108,10 +109,10 @@ theorem SamplablePair.SeedRealization.extract_word_observations {pair : Samplabl
     (hbound : ∀ n observation, observation ∈ ((pair.joint n).map Prod.fst).support →
       (pair.encode n observation).length ≤ bound n)
     (hbudget : ∀ᶠ n in atTop, outputBits n = 0 ∨
-      outputBits n + 2 * (ExtractionSchedule.slack n (saved.length n) (inverseSlack n) : ℝ) ≤
-        ExtractionSchedule.count n (saved.length n) (inverseSlack n) *
+      outputBits n + 2 * (saved.sampleSlack inverseSlack n : ℝ) ≤
+        saved.sampleCount inverseSlack n *
           entropy ((pair.joint n).map Prod.fst)) :
-    let count := fun n => ExtractionSchedule.count n (saved.length n) (inverseSlack n)
+    let count := saved.sampleCount inverseSlack
     Game.Indistinguishable
       (fun (test : ℕ → List Bool → Game) n =>
         (ProbComp.eval (OracleComp.replicate (count n) (Prod.fst <$> pair.sample n) >>=
@@ -121,7 +122,7 @@ theorem SamplablePair.SeedRealization.extract_word_observations {pair : Samplabl
       (fun _ => True) := by
   dsimp only
   intro test _
-  let count := fun n => ExtractionSchedule.count n (saved.length n) (inverseSlack n)
+  let count := saved.sampleCount inverseSlack
   let observe (n : ℕ) (value : pair.Observation n) : BitString (2 * bound n + 1) :=
     ofList (2 * bound n + 1) (padWord (bound n) (pair.encode n value))
   let source (n : ℕ) := (fun value => observe n value.1) <$> pair.latentSample n
@@ -193,11 +194,11 @@ The ideal program preserves the complete pair output and independently samples s
 theorem SamplablePair.SeedRealization.extract_word_seeds {pair : SamplablePair}
     (saved : pair.SeedRealization) (inverseSlack outputBits : ℕ → ℕ)
     (hbudget : ∀ᶠ n in atTop, outputBits n = 0 ∨
-      outputBits n + 2 * (ExtractionSchedule.slack n (saved.length n) (inverseSlack n) : ℝ) ≤
-        ExtractionSchedule.count n (saved.length n) (inverseSlack n) *
+      outputBits n + 2 * (saved.sampleSlack inverseSlack n : ℝ) ≤
+        saved.sampleCount inverseSlack n *
           (saved.length n - entropy ((pair.joint n).map Prod.fst) -
             conditionalEntropy (pair.joint n))) :
-    let count := fun n => ExtractionSchedule.count n (saved.length n) (inverseSlack n)
+    let count := saved.sampleCount inverseSlack
     Game.Indistinguishable
       (fun (test : ℕ → List (List Bool × Bool) × List Bool × List Bool → Game) n =>
         (ProbComp.eval (OracleComp.replicate (count n) (saved.sampleWithSeed n) >>=
@@ -206,7 +207,7 @@ theorem SamplablePair.SeedRealization.extract_word_seeds {pair : SamplablePair}
         (count n * saved.length n) (outputBits n))).bind (test n)) (fun _ => True) := by
   dsimp only
   intro test _
-  let count := fun n => ExtractionSchedule.count n (saved.length n) (inverseSlack n)
+  let count := saved.sampleCount inverseSlack
   have h := saved.remainingSeed_word_extraction inverseSlack outputBits
     (fun n => ProbComp.uniform (BitString (outputBits n * (count n * saved.length n))))
     (fun n key values => LinearHash.hash
