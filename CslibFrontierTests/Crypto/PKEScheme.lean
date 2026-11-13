@@ -12,13 +12,13 @@ import CslibFrontier.Crypto.Computational.Encryption.Basic
 A bit scheme that masks the message with its public key is correct, and an adversary that reads
 the mask from the public key wins its chosen-plaintext experiment with certainty, so the typed
 experiment separates the two challenge bits. The word-level experiment `Encryption.gameOn` at one
-parameter is the typed experiment of the scheme with the same algorithms, and a PPT word-level
-adversary gives a PPT two-stage family.
+parameter is the typed experiment of the scheme with the same algorithms; the PPT transfer
+`Encryption.AdversaryOf.isPPT_toTwoStage` is checked in `CslibFrontierTests.Crypto.Experiment`.
 -/
 
 namespace CslibFrontierTests.Crypto.PKEScheme
 
-open Cslib Cslib.Crypto Cslib.Probability Turing.MultiTapeTM
+open Cslib Cslib.Crypto Cslib.Probability
 
 /-- Bit encryption that masks the message with a random key published as the public key. -/
 noncomputable def maskPKE : PKE Bool Bool Bool Bool where
@@ -44,8 +44,9 @@ def unmask : TwoStage Bool (MessagePair Bool) Bool Bool Bool where
 /-- The unmasking adversary outputs the challenge bit with certainty. -/
 theorem eval_cpaExperiment_unmask (b : Bool) :
     ProbComp.eval (maskPKE.cpaExperiment (fun _ _ _ => true) unmask b) = PMF.pure b := by
-  cases b <;>
-    simp [PKE.cpaExperiment, lrExperiment, maskPKE, unmask, ProbComp.eval_bind, ProbComp.eval_pure]
+  have hconst (c : Bool) : (PMF.uniformOfFintype Bool).map (fun _ => c) = PMF.pure c :=
+    PMF.map_const _ _
+  cases b <;> simp [PKE.cpaExperiment, lrExperiment, maskPKE, unmask, hconst]
 
 -- The typed experiment separates the two challenge bits: the advantage is one.
 example : Experiment.advantage (maskPKE.cpaExperiment (fun _ _ _ => true) unmask false)
@@ -64,12 +65,5 @@ example {Msg : Type} (valid : ℕ → List Bool → Msg → Msg → Bool)
         (lrExperiment (valid n) (encrypt n) (adversary.toTwoStage n) bit) := by
   rw [Encryption.gameOn_eq_cpaExperiment valid keyGen encrypt (fun _ _ => none),
     PKE.eval_cpaExperiment]
-
--- A PPT word-level adversary is a PPT two-stage family over the same encodings.
-example {Msg : Type} (encMsg : Msg ↪ List Bool) (adversary : Encryption.AdversaryOf Msg)
-    (h : adversary.IsPPT encMsg) :
-    TwoStage.IsPPT encBits (encMessagePair encMsg) encBits encBool encBits
-      adversary.toTwoStage :=
-  Encryption.AdversaryOf.isPPT_toTwoStage h
 
 end CslibFrontierTests.Crypto.PKEScheme

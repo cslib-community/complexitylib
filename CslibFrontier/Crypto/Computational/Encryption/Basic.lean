@@ -334,7 +334,7 @@ theorem AdversaryOf.isPPT_toTwoStage {Msg : Type} {encMsg : Msg ↪ List Bool}
     {adversary : AdversaryOf Msg} (h : adversary.IsPPT encMsg) :
     TwoStage.IsPPT encBits (encMessagePair encMsg) encBits encBool encBits
       adversary.toTwoStage where
-  choose := h.choose.on.map (ComputableInPolyTime.of_eq fun _ => rfl)
+  choose := IsPPTOn.map h.choose.on (ComputableInPolyTime.of_eq fun _ => rfl)
   guess := h.guess
 
 /-- At each parameter `n`, the word-level experiment `gameOn` is the chosen-plaintext experiment
