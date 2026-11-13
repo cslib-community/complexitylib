@@ -997,7 +997,7 @@ theorem indCPA_of_decisionLWE {n m w η : ℕ → ℕ}
     Encryption.INDCPA (fun k => keyGenSerialized (n k) (m k) (w k))
       (fun k => encryptSerialized (n k) (m k) (w k) (η k)) := by
   intro adversary hadversary
-  have hsource := hLWE (lweDistinguisher n m w adversary)
+  have hsource := hLWE.encoded (lweDistinguisher n m w adversary)
     (isPPT_lweDistinguisher hn hm hw hadversary)
   have herror := negligible_mul_sqrt_pow_two_div_pow_two
     (count := fun _ => 1) (outputBits := fun k => w k * n k) (by fun_prop) hmargin

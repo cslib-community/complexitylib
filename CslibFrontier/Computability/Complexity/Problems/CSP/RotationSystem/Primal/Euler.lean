@@ -39,7 +39,7 @@ variable {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
 positions together with its original incidence faces. All face orbits are counted. -/
 theorem polygon_component_face_card (r : Graph.RotationSystem (incidenceGraph F))
     (hOrder : RespectsArgumentOrder r)
-    (hPos : ∀ i : Fin F.length, 0 < F[i.val].2.length) (root : ℕ) (hr : root < F.numVars) :
+    (hPos : ∀ i : Fin F.length, 0 < F[i.val].scope.length) (root : ℕ) (hr : root < F.numVars) :
     Nat.card {f : (polygonRotation r).Face // ∃ d : Graph.Dart (polygonGraph F),
       SameComponent (polygonGraph F) root d.vertex ∧ Quotient.mk _ d = f} =
     Nat.card {i : Fin F.length // SameComponent (incidenceGraph F) root (F.numVars + i.val)} +
@@ -134,7 +134,7 @@ preserves the existing componentwise numerical genus-zero predicate in both dire
 This includes disconnected and empty instances. It asserts no geometric realization. -/
 theorem numericalGenusZero_polygon_iff (r : Graph.RotationSystem (incidenceGraph F))
     (hOrder : RespectsArgumentOrder r)
-    (hPos : ∀ i : Fin F.length, 0 < F[i.val].2.length) :
+    (hPos : ∀ i : Fin F.length, 0 < F[i.val].scope.length) :
     (polygonRotation r).NumericalGenusZero ↔ r.NumericalGenusZero := by
   classical
   let Euler (G : Graph) (s : Graph.RotationSystem G) (root : ℕ) : Prop :=

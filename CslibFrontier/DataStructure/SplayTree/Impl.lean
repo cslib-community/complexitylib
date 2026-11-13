@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Init
 public import CslibFrontier.DataStructure.SearchTree.Impl
 public import CslibFrontier.DataStructure.SplayTree.AccessLemma
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 
 /-!
 # Self-Adjusting Stateful Ordered-Set Implementation by Splay Trees
@@ -190,7 +191,7 @@ private theorem logb_two_add_one_le_nat_log (n : ℕ) :
     exact_mod_cast hlt.le
   have hpos : (0 : ℝ) < (n : ℝ) + 1 := by grind
   have hlog := Real.logb_le_logb_of_le (b := 2) (by norm_num) hpos hle
-  rw [Real.logb_pow, Real.logb_self_eq_one (b := 2) (by norm_num)] at hlog
+  rw [Real.logb_two_pow] at hlog
   push_cast at hlog
   linarith
 

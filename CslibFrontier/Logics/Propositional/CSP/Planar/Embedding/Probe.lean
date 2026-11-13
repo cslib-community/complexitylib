@@ -236,10 +236,7 @@ theorem restrictPrefix_eq_self_of_verifyRotation {G : Graph} {c : RotationCertif
 certificate is accepted for the literal original-language body without changing the table. -/
 theorem verifyRotationCertificate_probeBody_nil (F : CSP Rel V) (c : RotationCertificate) :
     verifyRotationCertificate (probeBody F []) c = verifyRotationCertificate F c := by
-  have hm : F.map (fun c => (some c.1, c.2)) =
-      F.map (fun (r, scope) => (some r, scope)) := by
-    congr 1
-  simp only [probeBody, List.reverse_nil, hm, verifyRotationCertificate_append_nullary,
+  simp only [probeBody, List.reverse_nil, verifyRotationCertificate_append_nullary,
     verifyRotationCertificate_mapRelation]
 
 /-- At zero ports the canonical executable body restriction returns the very same accepted
@@ -266,7 +263,7 @@ theorem bodyCertificate_accepted_of_probe (F : CSP Rel V) (ports : List V)
     rwa [verifyRotationCertificate_probeBody_nil] at h
   | cons p ports ih =>
     have ht := verifyRotationCertificate_restrictPrefix_lastArgument
-      (F.map (fun c => (some c.1, c.2))) none ports.reverse p c (by
+      (F.map (fun c => Constraint.mk (some c.rel) c.scope)) none ports.reverse p c (by
         simpa only [probeBody, List.reverse_cons] using h)
     have ht' : verifyRotationCertificate (probeBody F ports)
         (restrictPrefix (2 * (probeBody F ports).occurrences.length) c) = true := ht
@@ -300,7 +297,7 @@ theorem verifyRotationCertificate_restrictPrefix_probe_cons (F : CSP Rel V) (p :
     verifyRotationCertificate (probeBody F ports)
       (restrictPrefix (2 * (probeBody F ports).occurrences.length) c) = true := by
   have ht := verifyRotationCertificate_restrictPrefix_lastArgument
-    (F.map (fun c => (some c.1, c.2))) none ports.reverse p c (by
+    (F.map (fun c => Constraint.mk (some c.rel) c.scope)) none ports.reverse p c (by
       simpa only [probeBody, List.reverse_cons] using h)
   exact ht
 

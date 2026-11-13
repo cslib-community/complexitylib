@@ -42,7 +42,8 @@ theorem argumentSuccessor_appendOfFnOccurrenceEquiv_inl (F : CSP Rel V) (r : Rel
   have hbc : b.1.val = o.1.val := congrArg Prod.fst hb
   have haj : a.2.val = o.2.val := congrArg (fun record => record.2.1) ha
   have hbj : b.2.val = (finRotate _ o.2).val := congrArg (fun record => record.2.1) hb
-  have hw : (F ++ [(r, List.ofFn scope)])[a.1.val].2.length = F[o.1.val].2.length := by
+  have hw : (F ++ [Constraint.mk r (List.ofFn scope)])[a.1.val].scope.length =
+    F[o.1.val].scope.length := by
     simp only [hac, List.getElem_append_left o.1.isLt]
   apply Occurrence.eq_of_positions
   · change a.1.val = b.1.val
@@ -64,7 +65,7 @@ theorem argumentSuccessor_appendOfFnOccurrenceEquiv_inr (F : CSP Rel V) (r : Rel
   have hbc : b.1.val = F.length := congrArg Prod.fst hb
   have haj : a.2.val = j.val := congrArg (fun record => record.2.1) ha
   have hbj : b.2.val = (finRotate n j).val := congrArg (fun record => record.2.1) hb
-  have hw : (F ++ [(r, List.ofFn scope)])[a.1.val].2.length = n := by
+  have hw : (F ++ [Constraint.mk r (List.ofFn scope)])[a.1.val].scope.length = n := by
     simp only [hac, List.getElem_append_right (le_refl F.length), Nat.sub_self,
       List.getElem_cons_zero, List.length_ofFn]
   apply Occurrence.eq_of_positions

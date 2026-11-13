@@ -16,6 +16,8 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List.Size
 import CslibFrontier.Computability.Probabilistic.CoinTape.Bounds
 import CslibFrontier.Crypto.Computational.Homomorphic.KeyChain.Size
+import CslibFrontier.Crypto.Game.CloseTo.UniformNat
+import CslibFrontier.Crypto.Game.FourHop
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Tactic.GameHop
@@ -344,46 +346,6 @@ theorem publicKeyChainHybrid_advantage_exactLinkAdversary (depth capacity : ℕ 
 
 /-! ### Strict-PPT `sampleModNat` key-chain reduction and statistical-tail bound -/
 
-/-- Replacing an exact uniform draw on `Fin M` by `ProbComp.sampleModNat width M` changes
-`Game.advantage` of any Boolean continuation by at most `(M : ℝ≥0) / 2 ^ width`. -/
-theorem advantage_bind_sampleModNat_fin_le (width M : ℕ) [NeZero M] (k : ℕ → Game) :
-    Game.advantage
-      ((ProbComp.eval (sampleModNat width M)).bind k)
-      ((PMF.uniformOfFintype (Fin M)).bind fun i => k i.val) ≤
-      (M : ℝ≥0) / 2 ^ width := by
-  have hmod :
-      (ProbComp.eval (sampleModNat width M)).bind k =
-        ((ProbComp.eval (sampleModNat width M)).map (Nat.cast : ℕ → ZMod M)).bind
-          (fun r : ZMod M => k r.val) := by
-    rw [PMF.bind_map, eval_sampleModNat, PMF.bind_map, PMF.bind_map]
-    congr 1 with x : 1
-    simp only [Function.comp_def, ZMod.val_natCast,
-      Nat.mod_eq_of_lt (Nat.mod_lt x.val (NeZero.pos M))]
-  rw [← NNReal.coe_le_coe, hmod, Probability.PMF.uniformOfFintype_fin_bind,
-    Game.advantage_eq_nndist, coe_nndist]
-  exact (PMF.dist_bind_le
-    ((ProbComp.eval (sampleModNat width M)).map (Nat.cast : ℕ → ZMod M))
-    (PMF.uniformOfFintype (ZMod M)) (fun r : ZMod M => k r.val)).trans
-    (by simpa only [NNReal.coe_div, NNReal.coe_natCast, NNReal.coe_pow, NNReal.coe_ofNat] using
-      ProbComp.dist_map_natCast_eval_sampleModNat_le width M)
-
-/-- Replacing exact uniform draws on `Fin M` and then `Fin N` by two `sampleModNat width` draws
-changes `Game.advantage` of any Boolean continuation by at most `(M + N) / 2 ^ width`. -/
-private theorem advantage_bind_sampleModNat_fin_fin_le (width M N : ℕ) [NeZero M] [NeZero N]
-    (k : ℕ → ℕ → Game) :
-    Game.advantage
-      ((ProbComp.eval (sampleModNat width M)).bind fun i =>
-        (ProbComp.eval (sampleModNat width N)).bind fun j => k i j)
-      ((PMF.uniformOfFintype (Fin M)).bind fun i =>
-        (PMF.uniformOfFintype (Fin N)).bind fun j => k i.val j.val) ≤
-      ((M + N : ℕ) : ℝ≥0) / 2 ^ width := by
-  game_trans [(PMF.uniformOfFintype (Fin M)).bind fun i =>
-      (ProbComp.eval (sampleModNat width N)).bind fun j => k i.val j]
-  · exact advantage_bind_sampleModNat_fin_le width M _
-  · peel_binds i
-    exact advantage_bind_sampleModNat_fin_le width N fun j => k i.val j
-  · push_cast; rw [add_div]
-
 /-- Sample a modular residue via `ProbComp.sampleModNat width bound`, capped at `bound` so its
 unary encoding is polynomially bounded even when `bound = 0`. When `0 < bound`, every residue modulo
 `bound` is strictly below `bound`, so `sampleModIndex width bound = sampleModNat width bound`. -/
@@ -516,7 +478,7 @@ theorem advantage_exactLinkAdversary_modLinkAdversary_le
       peel_binds i j
       simp only [i.isLt, j.isLt, ↓reduceIte]
     rw [hexact, hmod, Game.advantage_comm]
-    exact advantage_bind_sampleModNat_fin_fin_le (coins n) (depth n) (capacity n)
+    exact Game.advantage_bind_sampleModNat_fin_fin_le (coins n) (depth n) (capacity n)
       (E.linkRunAt depth capacity test bit n)
   · have hrun_reject (i : ℕ) (hi : i ≤ depth n) (j : ℕ) (hj : j ≤ capacity n) :
         E.linkRunAt depth capacity test bit n i j = PMF.pure false := by
@@ -546,11 +508,6 @@ theorem advantage_exactLinkAdversary_modLinkAdversary_le
     rw [hexact_false, hmod_false, Game.advantage_self]
     exact zero_le
 
-theorem advantage_le_of_triangle_both_div {g₀ g₁ m₀ m₁ : Game} {a b : ℝ≥0}
-    (h₀ : Game.advantage g₀ m₀ ≤ a / b) (h₁ : Game.advantage g₁ m₁ ≤ a / b) :
-    Game.advantage g₀ g₁ ≤ Game.advantage m₀ m₁ + 2 * a / b := by
-  game_trans [m₀, m₁] using [h₀, le_rfl, h₁]
-
 /-- Concrete key-chain hybrid advantage bound via the strict-PPT `modLinkAdversary` reduction:
 when every base secret key in the support of `E.keyGen n` has the same length
 `width ≤ capacity n`, the key-chain advantage is at most `(depth n : ℝ≥0) * capacity n` times the
@@ -572,9 +529,10 @@ theorem publicKeyChainHybrid_advantage_le_modLinkAdversary
   rw [E.publicKeyChainHybrid_advantage_exactLinkAdversary depth capacity test n width
     hwidth hcapacity]
   exact mul_le_mul_of_nonneg_left
-    (advantage_le_of_triangle_both_div
-      (E.advantage_exactLinkAdversary_modLinkAdversary_le coins depth capacity test false n)
-      (E.advantage_exactLinkAdversary_modLinkAdversary_le coins depth capacity test true n))
+    ((Game.advantage_four_hop_le
+        (E.advantage_exactLinkAdversary_modLinkAdversary_le coins depth capacity test false n)
+        (E.advantage_exactLinkAdversary_modLinkAdversary_le coins depth capacity test true n)
+      ).trans_eq (by ring))
     zero_le
 
 /-! ### Explicit bit-length bound for active saved link states -/
@@ -1169,10 +1127,10 @@ theorem advantage_exactLeveledAdversary_modLeveledAdversary_le (E : Scheme)
           exact E.advantage_exactLinkAdversary_modLinkAdversary_le coins depth capacity
             (publicKeyGame E adversary true) (!bit) n
         · simp only [h0, h1, ↓reduceIte, Game.advantage_comm]
-          exact Scheme.advantage_bind_sampleModNat_fin_fin_le (coins n) (depth n) (capacity n)
+          exact Game.advantage_bind_sampleModNat_fin_fin_le (coins n) (depth n) (capacity n)
             (leveledZeroAt E depth adversary bit n)
     · exact (Game.advantage_comm _ _).trans_le
-        (Scheme.advantage_bind_sampleModNat_fin_le (coins n) 3
+        (Game.advantage_bind_sampleModNat_fin_le (coins n) 3
           (modLeveledBranch E coins depth capacity adversary bit n))
     · push_cast; ring_nf; exact le_rfl
   · have heq :
@@ -1207,11 +1165,11 @@ theorem advantage_scheme_le_modLeveledAdversary {E : Scheme}
   rw [advantage_scheme_eq_exactLeveledAdversary D budget capacity adversary n width
     hbudget_pos hcapacity_pos hwidth hcapacity]
   exact mul_le_mul_of_nonneg_left
-    (Scheme.advantage_le_of_triangle_both_div
+    ((Game.advantage_four_hop_le
       (advantage_exactLeveledAdversary_modLeveledAdversary_le E coins
         (fun n => 2 * budget n) capacity adversary false n)
       (advantage_exactLeveledAdversary_modLeveledAdversary_le E coins
-        (fun n => 2 * budget n) capacity adversary true n))
+        (fun n => 2 * budget n) capacity adversary true n)).trans_eq (by ring))
     zero_le
 
 /-- `2 * n`-coin specialization of `advantage_scheme_le_modLeveledAdversary`: under that
