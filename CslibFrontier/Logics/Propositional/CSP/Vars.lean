@@ -40,7 +40,7 @@ theorem length_varCNF (F : CSP Rel V) : F.varCNF.length = F.length := List.lengt
 
 /-- An instance whose scopes are nonempty has at least as many variable occurrences as
 constraints. -/
-theorem length_le_length_vars {F : CSP Rel V} (h : ∀ c ∈ F, 1 ≤ c.2.length) :
+theorem length_le_length_vars {F : CSP Rel V} (h : ∀ c ∈ F, 1 ≤ c.scope.length) :
     F.length ≤ F.vars.length := by
   induction F with
   | nil => simp

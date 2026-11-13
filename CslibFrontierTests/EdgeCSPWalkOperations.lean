@@ -13,7 +13,7 @@ namespace CslibFrontierTests.EdgeCSPWalkOperations
 
 open Cslib.Logic.PL Cslib.Logic.PL.CSP
 
-private abbrev F : CSP Unit ℕ := [((), [0, 1]), ((), [0, 1])]
+private abbrev F : CSP Unit ℕ := [⟨(), [0, 1]⟩, ⟨(), [0, 1]⟩]
 private abbrev a : F.Occurrence := ⟨⟨0, by decide⟩, ⟨0, by decide⟩⟩
 private abbrev b : F.Occurrence := ⟨⟨0, by decide⟩, ⟨1, by decide⟩⟩
 private abbrev c : F.Occurrence := ⟨⟨1, by decide⟩, ⟨1, by decide⟩⟩
@@ -89,7 +89,7 @@ private def reversalSem (r : Fin 3) : List Bool → Bool
   | _ => false
 
 private abbrev reversalInstance : CSP (Fin 3) ℕ :=
-  [(0, [0, 1, 2, 3]), (1, [1, 2]), (2, [0]), (2, [3])]
+  [⟨0, [0, 1, 2, 3]⟩, ⟨1, [1, 2]⟩, ⟨2, [0]⟩, ⟨2, [3]⟩]
 
 private def reversalLabels : reversalInstance.OccurrenceLabeling Bool :=
   fun o => decide (2 ≤ o.1.val)

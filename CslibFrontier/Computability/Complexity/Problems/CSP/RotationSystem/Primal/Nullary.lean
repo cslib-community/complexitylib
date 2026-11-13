@@ -30,7 +30,7 @@ open Cslib.Logic.PL Graph.RotationCertificate Graph.RotationSystem
 variable {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
 
 /-- Indexed constraints having an actual argument; nullary positions have no black dart. -/
-abbrev PositiveConstraint (F : CSP Rel V) := {i : Fin F.length // 0 < F[i.val].2.length}
+abbrev PositiveConstraint (F : CSP Rel V) := {i : Fin F.length // 0 < F[i.val].scope.length}
 
 /-- The argument orbits are exactly the positive constraint positions, retaining duplicates. -/
 noncomputable def argumentOrbitPositiveEquiv (F : CSP Rel V) :
@@ -106,7 +106,7 @@ theorem polygon_edge_faces_distinct_of_occurrence
 
 private theorem positive_of_sameComponent (root : ℕ) (hr : root < F.numVars)
     (i : Fin F.length) (hi : SameComponent (incidenceGraph F) root (F.numVars + i.val)) :
-    0 < F[i.val].2.length := by
+    0 < F[i.val].scope.length := by
   obtain ⟨o, ho⟩ := exists_occurrence_dense root hr
   have hroot : (incidenceDart o false).vertex = root := by
     simpa only [vertex_incidenceDart, Bool.false_eq_true, ↓reduceIte] using ho

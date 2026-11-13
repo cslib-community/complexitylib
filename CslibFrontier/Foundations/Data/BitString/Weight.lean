@@ -13,6 +13,7 @@ public import Mathlib.Algebra.BigOperators.Group.Finset.Defs
 public import Mathlib.Data.Fintype.Sum
 public import Mathlib.Data.Nat.Choose.Basic
 public import Mathlib.InformationTheory.Hamming
+import CslibFrontier.Foundations.Data.BitString.Neg
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import Mathlib.Data.Fintype.BigOperators
@@ -83,7 +84,7 @@ theorem weight_eq_hammingNorm (x : ι → Bool) : weight x = hammingNorm x := by
 /-- The Hamming distance between two bit strings is the weight of their sum. -/
 theorem hammingDist_eq_weight_add (x y : ι → Bool) : hammingDist x y = weight (x + y) := by
   rw [hammingDist_eq_hammingNorm, weight_eq_hammingNorm]
-  exact congrArg hammingNorm (funext fun i => BooleanRing.sub_eq_add (x i) (y i))
+  exact congrArg hammingNorm (BitString.sub_eq_add x y)
 
 /-- The weight is at most the number of coordinates. -/
 theorem weight_le (x : ι → Bool) : weight x ≤ Fintype.card ι :=
