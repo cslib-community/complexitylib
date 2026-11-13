@@ -108,8 +108,6 @@ PREFLIGHT = {
 }
 
 CI_ONLY = {
-    "Prepare optional handoff measurement":
-        "main-push cache experiment (#1728); needs the GitHub API",
     "Encoding readability report":
         "merge groups and main pushes only; reports and always succeeds",
     "Projection chain report":
@@ -121,8 +119,6 @@ CI_ONLY = {
     "Restore Mathlib cache with retries": "CI cache; check.sh runs scripts/cache/ensure.sh",
     "Restore build outputs from the remote cache":
         "CI cache; check.sh runs scripts/cache/ensure.sh",
-    "Optional controlled handoff measurement":
-        "main-push cache experiment (#1728); needs the GitHub API",
     "Restore validated merge-group build outputs":
         "main pushes only; downloads a merge-group artifact through the GitHub API",
     "Save .lake to the Actions cache": "main pushes only; CI cache",
@@ -136,7 +132,6 @@ CI_ONLY = {
     "Upload merge-group build outputs": "merge groups only; build handoff to main",
     "Stage cache publication": "main pushes only; cache publication",
     "Hand off staged files to the enabled publishers": "main pushes only; cache publication",
-    "Record optional handoff measurement": "main-push cache experiment (#1728)",
 }
 
 
