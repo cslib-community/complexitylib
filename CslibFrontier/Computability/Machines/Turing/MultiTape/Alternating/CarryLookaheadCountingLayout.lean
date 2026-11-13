@@ -172,7 +172,7 @@ theorem view_round_config (k r q : ℕ) (input context : List Bool) (n w : ℕ)
         (view_terminal_config k r q input context n w p state header)
       refine hv.trans ?_
       simp [Cfg.withState, CountingTerminalLayout.storage, CountingTerminalLayout.metadata,
-        CountingTerminalLayout.prepTapes, CountingTerminalPrepare.config, tapesCfg]
+        CountingTerminalPrepare.config, tapesCfg]
     · rw [roundEmbedding_other k r q i hm]
       by_cases hc : i = roundControl q
       · subst i

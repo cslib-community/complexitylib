@@ -82,8 +82,7 @@ structure Fields where
     (WordGameRound.tapeWords q fields.header [] [])
 
 /-- The binary height occupies root tape zero. -/
-abbrev height (k r q : ℕ) : Fin (size k r q) :=
-  ⟨0, by unfold size CountingTerminalLayout.size; omega⟩
+abbrev height (k r q : ℕ) : Fin (size k r q) := 0
 
 /-- The unary depth occupies root tape four. -/
 abbrev unary (k r q : ℕ) : Fin (size k r q) :=
@@ -132,7 +131,7 @@ abbrev contextTape (k r q : ℕ) : Fin (size k r q) :=
     simp [words, destination, Fields.get, CarryLookaheadCountingLayout.metadata,
       CarryLookaheadCountingLayout.control, CarryLookaheadCountingLayout.terminalEmbedding,
       CarryLookaheadCountingLayout.roundControl, CountingTerminalLayout.metadata,
-      CountingTerminalLayout.prepTapes, CountingTerminalPrepare.metadata,
+      CountingTerminalPrepare.metadata,
       WordGameRound.tapeWords]
 
 /-- Reading the height tape gives its current binary word. -/
@@ -181,7 +180,7 @@ theorem words_update_field (k r q : ℕ) (context : List Bool) (fields : Fields)
         | right i =>
           fin_cases i <;>
             simp_all [words, Fields.set, destination, CarryLookaheadCountingLayout.metadata,
-              CountingTerminalLayout.metadata, CountingTerminalLayout.prepTapes,
+              CountingTerminalLayout.metadata,
               CountingTerminalPrepare.metadata]
     | right i =>
       cases i using Fin.addCases with
@@ -251,8 +250,8 @@ theorem destination_injective (k r q : ℕ) : Function.Injective (destination k 
     simp only [destination, CarryLookaheadCountingLayout.metadata,
       CarryLookaheadCountingLayout.terminalEmbedding, Fin.castAddEmb_apply,
       CarryLookaheadCountingLayout.control, CarryLookaheadCountingLayout.roundControl,
-      CountingTerminalLayout.metadata, CountingTerminalLayout.prepTapes,
-      CountingTerminalPrepare.metadata, CountingTerminalLayout.size, Fin.natAddEmb_apply,
+      CountingTerminalLayout.metadata,
+      CountingTerminalPrepare.metadata, CountingTerminalLayout.size,
       Fin.val_castAdd, Fin.val_natAdd, Fin.val_zero] at hv
     omega
 

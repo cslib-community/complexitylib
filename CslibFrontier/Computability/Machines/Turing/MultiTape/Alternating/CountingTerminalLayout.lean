@@ -39,11 +39,12 @@ abbrev prepTapes (k r : ℕ) : Fin (r + 1 + 2) ↪ Fin (size k r) := Fin.natAddE
 abbrev rootIndex (k r : ℕ) : Fin (size k r) := rootTapes k r ⟨1, by omega⟩
 
 /-- The separate request word, containing flags followed by a component index. -/
-abbrev flags (k r : ℕ) : Fin (size k r) := prepTapes k r (CountingTerminalPrepare.flags r)
+abbrev flags (k r : ℕ) : Fin (size k r) :=
+  Fin.natAdd (k + 12) (CountingTerminalPrepare.flags r)
 
 /-- The preserved routing-position metadata. -/
 abbrev metadata (k r : ℕ) : Fin (size k r) :=
-  prepTapes k r (CountingTerminalPrepare.metadata r)
+  Fin.natAdd (k + 12) (CountingTerminalPrepare.metadata r)
 
 /-- Initial root storage beside the current metadata and terminal request. The bit index starts
 at zero; the native dispatch copy installs the queried index later. -/
@@ -88,7 +89,7 @@ theorem flags_ne_rootIndex (k r : ℕ) : flags k r ≠ rootIndex k r :=
     (p : Routing.Position) (request : List Bool) :
     (storage k r input context n w p request).workTapes (flags k r) = tapeOfList request := by
   funext z
-  simp [storage, flags, prepTapes, CountingTerminalPrepare.config,
+  simp [storage, flags, CountingTerminalPrepare.config,
     CountingTerminalPrepare.words, tapesCfg]
 
 /-- The routing metadata is retained independently of the prepared request word. -/
@@ -99,7 +100,7 @@ theorem flags_ne_rootIndex (k r : ℕ) : flags k r ≠ rootIndex k r :=
   have hne : CountingTerminalPrepare.metadata r ≠ CountingTerminalPrepare.flags r :=
     (Fin.castAdd_ne_natAdd _ _).symm
   funext z
-  simp [storage, metadata, prepTapes, CountingTerminalPrepare.config,
+  simp [storage, metadata, CountingTerminalPrepare.config,
     CountingTerminalPrepare.words, tapesCfg, hne]
 
 /-- Replacing the routing metadata changes no root tape, request word, head or output. -/
@@ -114,7 +115,7 @@ theorem storage_update_metadata (k r : ℕ) (input context : List Bool) (n w : �
   change Function.update (storage k r input context n w p request).workTapes (metadata k r)
     (tapeOfList (Routing.encPosition p')) j =
       (storage k r input context n w p' request).workTapes j
-  simp only [metadata, prepTapes, Fin.natAddEmb_apply]
+  simp only [metadata]
   cases j using Fin.addCases with
   | left j =>
     rw [Function.update_of_ne (Fin.castAdd_ne_natAdd j _)]
@@ -139,7 +140,7 @@ theorem storage_update_metadata (k r : ℕ) (input context : List Bool) (n w : �
 @[simp] theorem storage_flags_head (k r : ℕ) (input context : List Bool) (n w : ℕ)
     (p : Routing.Position) (request : List Bool) :
     (storage k r input context n w p request).workTapePos (flags k r) = 0 := by
-  simp [storage, flags, prepTapes, CountingTerminalPrepare.config, tapesCfg]
+  simp [storage, flags, CountingTerminalPrepare.config, tapesCfg]
 
 /-- Binary zero leaves the root-index tape blank before dispatch copies a query into it. -/
 @[simp] theorem storage_rootIndex (k r : ℕ) (input context : List Bool) (n w : ℕ)
