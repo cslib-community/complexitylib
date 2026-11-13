@@ -320,7 +320,7 @@ theorem not_collisionResistantFor_constZModHash :
       collisionGameFor (Param := Unit) (Digest := fun _ => ZMod 11)
         (fun _ => PMF.pure ()) constZModHash (fun _ _ _ => true) constZModFinder n =
         PMF.pure true := by
-    simp [collisionGameFor, constZModFinder, constZModHash, isCollisionFor]
+    simp [collisionGameFor, collisionExperiment, constZModFinder, constZModHash, isCollisionFor]
     rfl
   simp [heval, Game.succProbability]
 

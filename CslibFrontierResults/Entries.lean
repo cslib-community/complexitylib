@@ -8,6 +8,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 import CslibFrontierResults.Registry
 import CslibFrontier.Computability.Complexity.Classes.Advice.OneBit
 import CslibFrontier.Computability.Complexity.Classes.Advice.LengthComparison
+import CslibFrontier.Computability.Circuit.Boolean.Advice.Hierarchy
 import CslibFrontier.Algorithms.Lean.Arborescence.PolyTime
 import CslibFrontier.Algorithms.Lean.DFS.SCC
 import CslibFrontier.Algorithms.Lean.MaxDicut.GoemansWilliamson
@@ -18,6 +19,7 @@ import CslibFrontier.Algorithms.Lean.TrimmedYates
 import CslibFrontier.Algorithms.LinearAlgebra.BareissElimination
 import CslibFrontier.Algorithms.Lean.TreeDecomposition.CSP
 import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
+import CslibFrontier.Computability.QueryComplexity.YaoExpected
 import CslibFrontier.Computability.Circuit.Arithmetic.BitBlast
 import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.LowerBound
@@ -132,7 +134,10 @@ import CslibFrontier.Computability.QueryComplexity.Quantum.NayakWuConsequences
 import CslibFrontier.Computability.QueryComplexity.Quantum.PermutationInversion
 import CslibFrontier.Computability.QueryComplexity.Quantum.SpectralAdversary
 import CslibFrontier.Computability.QueryComplexity.Quantum.WeightedAdversary
+import CslibFrontier.Crypto.Computational.GoldreichLevin.HardCore
+import CslibFrontier.Crypto.Computational.InaccessibleEntropy.TargetCollision
 import CslibFrontier.Crypto.Computational.MLDSA.KeyOnly
+import CslibFrontier.Crypto.Computational.NaorYung
 import CslibFrontier.Crypto.Computational.Nonuniform.ZeroKnowledge
 import CslibFrontier.Crypto.Computational.OneWay.LiuPass
 import CslibFrontier.Crypto.Computational.OneWay.MCSP
@@ -218,6 +223,7 @@ import CslibFrontier.MachineLearning.UniformLearning.CIKK.Amplification
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.Complexity
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.Learner
 import CslibFrontier.MachineLearning.UniformLearning.CryptoHardness.GGM
+import CslibFrontier.MachineLearning.UniformLearning.CryptoHardness.NaturalProperty
 import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson
 import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson.BestOf
 import CslibFrontier.Probability.Extractor.TwoSource
@@ -654,6 +660,25 @@ register_result "braverman" where
     than Braverman's; size and depth count NOT gates and constants; nonuniform and \
     information-theoretic."
 
+register_result "yao-zero-error-expected-cost" where
+  title := "Expected-cost Yao minimax with optimal algorithm and hardest input law"
+  topic := "query complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Theorem 11.17; Definitions 11.13, 11.15–11.16",
+      locator := "Web draft 2007-01-08, printed pp. 215–216; PDF pp. 231–232" }
+  ]
+  theorems := [
+    Cslib.QueryComplexity.zeroErrorComplexity_eq_iSup_distributionalExpectedComplexity,
+    Cslib.QueryComplexity.exists_optimal_expectedCost,
+    Cslib.QueryComplexity.exists_computes_distributionalCost_eq,
+    Cslib.QueryComplexity.exists_distributionalExpectedComplexity_eq_zeroErrorComplexity
+  ]
+  scope := "Finite Boolean coordinate space, arbitrary output type, total everywhere-correct \
+    deterministic trees and finitely supported randomized trees. Expected executed queries, \
+    including repeated queries; free local computation. Numerical equality with the maximum \
+    optimized distributional expected cost, both sides attained. No finite-output assumption, \
+    no bounded-error depth substitution, no expected Turing-machine runtime claim."
+
 register_result "boolean-two-element-arithmetic-simulation" where
   title := "Boolean and two-element arithmetic circuits have linearly related sizes"
   topic := "circuit complexity"
@@ -773,6 +798,41 @@ register_result "encoded-circuit-boolean-simulation" where
     wire-major by blocksEquiv.symm. Constants count as gates and wiring is free. No encoding \
     construction, reverse general-field simulation or compiler-runtime claim."
 
+register_result "exact-advice-strict-hierarchy" where
+  title := "Strict exact-advice hierarchy"
+  topic := "complexity theory"
+  sources := [
+    { paper := Goldreich2007DraftR2,
+      theorem := "Theorem 3.7; Exercise 3.3 / Theorem 4.1 with positive gap and capacity",
+      locator := "January 2007 r2.pdf, PDF pp. 6, 16, 22; printed pp. 122, 132, 138" },
+    { paper := GoldreichAdviceHierarchyAddendum,
+      theorem := "Revised Theorem 4.1, positive one-bit difference",
+      locator := "Online addendum, theorem and exact/no-exception technical note" }
+  ]
+  theorems := [
+    Cslib.Complexity.PWithAdvice_ssubset_of_lt,
+    Cslib.Complexity.PWithAdvice_pred_ssubset,
+    Cslib.Complexity.PWithAdvice_const_ssubset_succ
+  ]
+  scope := "Strict pointwise growth and eventual upper truth-table capacity give strict \
+    containment of exact-advice classes, with arbitrary noncomputable bounds/advice and a \
+    native complete-pair polynomial clock. Includes positive predecessor, every constant \
+    advice hierarchy. Does not prove the displayed hierarchy without positivity, or a \
+    separation allowing finitely many errors."
+
+register_result "constant-advice-strict-subset-ppoly" where
+  title := "Every constant advice class is strictly smaller than P/poly"
+  topic := "complexity theory"
+  sources := [
+    { paper := Goldreich2007DraftR2,
+      theorem := "Theorem 3.7, strictness in the following paragraph",
+      locator := "January 2007 r2.pdf, PDF p. 6; printed p. 122" }
+  ]
+  theorems := [Cslib.Circuits.Boolean.PWithAdvice_const_ssubset_PPoly]
+  scope := "Every constant exact-advice class, including P/1, is strictly contained in \
+    P/poly on bit languages. Uses the native full-pair polynomial-time advice class and \
+    its existing polynomial-advice/circuit bridge; no uniform advice is claimed."
+
 register_result "exact-advice-length-comparison-qualification" where
   title := "Unbounded nonnegative gaps do not imply exact-advice containment"
   topic := "complexity theory"
@@ -871,6 +931,63 @@ register_result "cryptography-prf" where
     deterministic polynomial-time evaluator, indistinguishable from a random function by \
     uniform adaptive oracle PPT adversaries with full stateful oracle semantics (negligible \
     advantage); via the one-way-to-PRG theorem and the GGM construction. Asymptotic security."
+
+register_result "goldreich-levin-hard-core" where
+  title := "Goldreich–Levin: every one-way function has a hard-core predicate, and one-way \
+    permutations yield pseudorandom generators"
+  topic := "cryptography"
+  sources := [
+    { paper := GoldreichLevin1989, theorem := unverified, locator := unverified },
+    { paper := Goldreich2007Draft, theorem := "Theorem 7.7",
+      locator := "March 2007 draft r4.pdf, PDF p. 12; printed p. 276" }
+  ]
+  theorems := [
+    Cslib.Crypto.GoldreichLevin.padded_hardCore,
+    Cslib.Crypto.OneWayPermutation.pseudorandomGenerator
+  ]
+  scope := "For every uniform one-way function f on bit strings, the inner product of the two \
+    seed halves is hard-core for the padded function (x, r, s) ↦ (f x, r, s), with at most one \
+    spare bit s so that every seed length is covered, against uniform strict PPT predictors \
+    with negligible bias. This is not a hard-core predicate for f itself. For a length-preserving \
+    one-way permutation, appending that bit gives a deterministic polynomial-time generator with \
+    one-bit stretch, secure against uniform strict PPT distinguishers. Asymptotic security; the \
+    source's explicit runtime and advantage trade-off is not stated."
+
+register_result "naor-yung-uowhf" where
+  title := "Naor–Yung: one-way permutations yield universal one-way hash functions"
+  topic := "cryptography"
+  sources := [
+    { paper := NaorYung1989, theorem := unverified, locator := "Section 3" },
+    { paper := Goldreich2004, theorem := unverified, locator := "Section 6.4.3.2" }
+  ]
+  theorems := [
+    Cslib.Crypto.OneWayPermutation.targetCollisionResistant_naorYungHash,
+    Cslib.Crypto.OneWayPermutation.exists_targetCollisionResistant_keyedHashFamily
+  ]
+  scope := "Every uniform one-way permutation f on bit strings gives a keyed hash family on all \
+    bit strings, with polynomial-time keys, digests and evaluation, that is target \
+    collision-resistant: a uniform strict PPT adversary that commits to a target before seeing \
+    the key finds a distinct colliding input with negligible probability. Each compression step \
+    uses a pivot-deletion quotient instead of the source's universal hash; a binary tree extends \
+    the domain. Asymptotic security; no compact key-length bound."
+
+register_result "rompel-uowhf" where
+  title := "Rompel: one-way functions yield universal one-way hash functions"
+  topic := "cryptography"
+  sources := [
+    { paper := Rompel1990, theorem := unverified, locator := unverified },
+    { paper := HHRVW2020, theorem := "Theorem 5.1", locator := "Section 5.1, p. 25" }
+  ]
+  theorems := [
+    Cslib.Crypto.ShrinkingCollisionGrid.targetCollisionResistant_rompelHash,
+    Cslib.Crypto.OneWay.exists_targetCollisionResistant_keyedHashFamily
+  ]
+  scope := "Every uniform one-way function on bit strings gives a target collision-resistant \
+    keyed hash family on all bit strings, against uniform strict PPT adversaries that commit to \
+    a target before seeing the key, via the inaccessible-entropy construction of Haitner et al. \
+    `rompelHash` is secure for every shrinking collision grid; the existence theorem obtains a \
+    grid from the one-way function. Each one-bit step takes a fresh subkey, so keys are \
+    polynomial but not as compact as the source's O(|y| log t) bound. Asymptotic security."
 
 register_result "resolution" where
   title := "Haken: pigeonhole formulas require long resolution proofs"
@@ -3435,6 +3552,29 @@ register_result "learning-hardness-from-generators" where
     have such tests, so none reaches (1 - delta)(1 - eps) > 3/4. Running time is not modelled. \
     The distinguisher fixes the learner's seed and comparison point by averaging; it is a \
     nonuniform circuit test."
+
+register_result "learning-natural-property" where
+  title := "Oliveira–Santhanam: learners for SIZE s yield P/poly-natural properties useful against \
+    SIZE s"
+  topic := "meta-complexity"
+  sources := [
+    { paper := OliveiraSanthanam2017, theorem := "Theorem 8, (1) ⇒ (5)", locator := unverified }
+  ]
+  theorems := [
+    Cslib.MachineLearning.UniformLearning.isNatural_PPoly_and_isUseful_SIZE,
+    Cslib.MachineLearning.UniformLearning.isNatural_PPoly_lowAgreement,
+    Cslib.MachineLearning.UniformLearning.isUseful_lowAgreement
+  ]
+  scope := "Membership-query learners (adaptive allowed) with uniform seeds from a set of size \
+    2^(c(n+1)), circuit tests of at most 2^(c(n+1)) gates on truth tables (HasCircuitTests), and \
+    accuracy \
+    (1 - delta)(1 - eps) at least 2^(-cn) above 1/2 + q/2^(n+1). The property is the set of \
+    functions on which the seed-averaged agreement is below (1 - delta)(1 - eps); it is decided \
+    by an exact threshold over all seeds and points, so constructivity is P/poly by circuit size, \
+    not the source's BPP-natural form, and arbitrary seed distributions are not covered. The \
+    random-function bound is the fair-coin argument, not the source's small-hypothesis lemma. \
+    The accuracy gap restricts it to strong or confidence-amplified learners; the source's \
+    non-trivial (1/2 - 1/n^k, 1/n) learners of item (1) are not covered as stated."
 
 register_result "nw-reconstruction-learner" where
   title := "Carmosino–Impagliazzo–Kabanets–Kolokolova: the Nisan–Wigderson reconstruction as a \

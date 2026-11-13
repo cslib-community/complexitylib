@@ -286,7 +286,8 @@ private theorem measure_pi_card_lt_le_half (μ : Measure Z) [IsProbabilityMeasur
   set q : PMF Bool := (μ.map g).toPMF
   have hmap : (Measure.pi fun _ : Fin m => μ).map (fun T i => g (T i)) =
       (Cslib.Probability.PMF.pi fun _ : Fin m => q).toMeasure :=
-    Cslib.Probability.PMF.map_measurePi_eq_toMeasure_pi _ fun _ => measurable_of_countable g
+    Cslib.Probability.PMF.map_measurePi_eq_toMeasure_pi _ fun _ =>
+      (measurable_of_countable g).aemeasurable
   have hgm : Measurable fun (T : Fin m → Z) i => g (T i) := measurable_of_countable _
   have hpre : {T : Fin m → Z | ((Finset.univ.filter fun i => g (T i) = true).card : ℝ) <
       ε * m / 2} = (fun T i => g (T i)) ⁻¹'

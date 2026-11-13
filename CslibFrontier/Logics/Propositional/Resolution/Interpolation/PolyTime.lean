@@ -19,6 +19,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Sum
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeListMap
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeOptionPrimitives
 import CslibFrontier.Logics.Propositional.CNF.PolyTime
@@ -133,17 +134,22 @@ private theorem replicate_snoc_binary {Op γ : Type} {encOp : Op ↪ List Bool}
   | zero => exact cons' ((const op).prod (cons' h₁ (cons' h₂ (const [])))) (const [])
   | succ k ih => exact cons' (const (c₀, [])) ih
 
+/-- A candidate step is encoded as the tuple of its fields, with unary positions. -/
+private enc_structure encStep (V : Type) (encV : V ↪ List Bool) : Step V where
+  left : (encList (encPair encV encBool)), leftIndex : encUnary,
+  right : (encList (encPair encV encBool)), rightIndex : encUnary, pivot : encV
+
 /-- Candidate resolution steps are listed in polynomial time. -/
 private theorem candidates_polyTime {V : Type} {encV : V ↪ List Bool} :
     ComputableInPolyTime (candidates (V := V)) (encList (encList (encPair encV encBool)))
-      (encList (encPair (encPair (encList (encPair encV encBool)) encUnary)
-        (encPair (encPair (encList (encPair encV encBool)) encUnary) encV))) := by
+      (encList (encStep V encV)) := by
   have hzip :=
     (ComputableTidilyInPolyTime.zipIdx (encList (encPair encV encBool))).computableInPolyTime
   unfold candidates
   refine flatMapWithInput hzip (flatMapWithInput (hzip.comp (fst _ _))
     (mapWithInput (fst _ _).snd'.fst' ?_))
-  exact (fst _ _).fst'.snd'.prod ((fst _ _).snd'.prod (snd _ _).fst')
+  exact encStep_mk_polyTime V encV (fst _ _).fst'.snd'.fst' (fst _ _).fst'.snd'.snd'
+    (fst _ _).snd'.fst' (fst _ _).snd'.snd' (snd _ _).fst'
 
 section PolymorphicPolyTime
 
@@ -202,23 +208,22 @@ private theorem lineGatesOf_polyTime {Op : Type} {encOp : Op ↪ List Bool}
       (encList (encList (encPair (encSum encNat encZ) encBool)))))
     (encPair (encList (encList (encPair (encSum encNat (encSum encY encZ)) encBool)))
       (encList (encPair (encSum encNat (encSum encY encZ)) encBool))))
-    (encPair (encPair (encList (encPair (encSum encNat (encSum encY encZ)) encBool)) encUnary)
-      (encPair (encPair (encList (encPair (encSum encNat (encSum encY encZ)) encBool)) encUnary)
-        (encSum encNat (encSum encY encZ)))))
-  have hc₁ := hp.snd'.fst'.fst'
-  have hc₂ := hp.snd'.snd'.fst'.fst'
-  have hv := hp.snd'.snd'.snd'
+    (encStep (ℕ ⊕ (Y ⊕ Z)) (encSum encNat (encSum encY encZ))))
+  have ht := hp.snd'
+  have hc₁ := encStep_left_polyTime _ _ ht
+  have hc₂ := encStep_right_polyTime _ _ ht
+  have hv := encStep_pivot_polyTime _ _ ht
   have htest := decide_and (decide_mem hc₁ (hv.prod (const true)))
     (decide_and (decide_mem hc₂ (hv.prod (const false)))
       (decide_eq' (resolvent_polyTime.comp ((hc₁.prod hc₂).prod hv)) hp.fst'.snd'.snd'))
-  have hfind := findWithInput (test := fun q t => decide ((t.2.2, true) ∈ t.1.1 ∧
-    (t.2.2, false) ∈ t.2.1.1 ∧ t.1.1.resolvent t.2.1.1 t.2.2 = q.2.2))
+  have hfind := findWithInput (test := fun q t => decide ((t.pivot, true) ∈ t.left ∧
+    (t.pivot, false) ∈ t.right ∧ t.left.resolvent t.right t.pivot = q.2.2))
     (candidates_polyTime.comp hE) htest
   have hfind_eq : (fun q : (ℕ × (CNF (ℕ ⊕ Y) × CNF (ℕ ⊕ Z))) ×
       (List (Clause (ℕ ⊕ (Y ⊕ Z))) × Clause (ℕ ⊕ (Y ⊕ Z))) => findStep q.2.1 q.2.2) =
       fun x => (candidates x.2.1).find? fun t =>
-        decide ((t.2.2, true) ∈ t.1.1 ∧ (t.2.2, false) ∈ t.2.1.1 ∧
-          t.1.1.resolvent t.2.1.1 t.2.2 = x.2.2) := by
+        decide ((t.pivot, true) ∈ t.left ∧ (t.pivot, false) ∈ t.right ∧
+          t.left.resolvent t.right t.pivot = x.2.2) := by
     funext q
     unfold findStep
     refine congrArg (List.find? · (candidates q.2.1)) (funext fun t => ?_)
@@ -228,17 +233,18 @@ private theorem lineGatesOf_polyTime {Op : Type} {encOp : Op ↪ List Bool}
     (((hp.fst'.fst'.snd'.fst').prod
       ((hbin.comp (unary_add' hm (unary_mul' (const s)
         ((length_list _).comp hp.fst'.snd'.fst')))).prod
-      ((hbin.comp (unary_add' (unary_add' hm (unary_mul' (const s) hp.snd'.fst'.snd'))
-        (const (s - 1)))).prod
-      (hbin.comp (unary_add' (unary_add' hm (unary_mul' (const s) hp.snd'.snd'.fst'.snd'))
-        (const (s - 1))))))).prod hv)
+      ((hbin.comp (unary_add' (unary_add' hm
+        (unary_mul' (const s) (encStep_leftIndex_polyTime _ _ ht))) (const (s - 1)))).prod
+      (hbin.comp (unary_add' (unary_add' hm
+        (unary_mul' (const s) (encStep_rightIndex_polyTime _ _ ht))) (const (s - 1))))))).prod hv)
   unfold lineGatesOf
   exact ite_decide hmemA (const _) (ite_decide hmemB (const _)
     (optionElimWithInput (body := fun (q : (ℕ × (CNF (ℕ ⊕ Y) × CNF (ℕ ⊕ Z))) ×
         (List (Clause (ℕ ⊕ (Y ⊕ Z))) × Clause (ℕ ⊕ (Y ⊕ Z))))
-        (t : (Clause (ℕ ⊕ (Y ⊕ Z)) × ℕ) × (Clause (ℕ ⊕ (Y ⊕ Z)) × ℕ) × (ℕ ⊕ (Y ⊕ Z))) =>
-      step q.1.2.1 (q.1.1 + s * q.2.1.length) (q.1.1 + s * t.1.2 + (s - 1))
-        (q.1.1 + s * t.2.1.2 + (s - 1)) t.2.2) (by rw [hfind_eq]; exact hfind) (const _) hbody))
+        (t : Step (ℕ ⊕ (Y ⊕ Z))) =>
+      step q.1.2.1 (q.1.1 + s * q.2.1.length) (q.1.1 + s * t.leftIndex + (s - 1))
+        (q.1.1 + s * t.rightIndex + (s - 1)) t.pivot) (by rw [hfind_eq]; exact hfind) (const _)
+      hbody))
 
 /-- Fixed-stride interpolant code extraction runs in polynomial time whenever its resolution-step
 gate builder `step` does. -/
