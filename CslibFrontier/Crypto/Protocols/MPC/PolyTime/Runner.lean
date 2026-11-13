@@ -398,23 +398,6 @@ private theorem isPPTOn_pi_sampleList {α : Type} {input : α ↪ List Bool}
     rw [OracleComp.pi_succ]
     simp [ProbComp.eval_bind, ProbComp.eval_map]
 
-/-- Private coin draws `ProbOracleComp.sample d` commute with arbitrary stateful oracle
-computations `m` under `ProbOracleComp.runWith`. -/
-private theorem runWith_sample_comm {ι : Type} {spec : ι → Type} {α β γ State : Type}
-    (oracle : (i : ι) → StateT State PMF (spec i))
-    (d : ProbComp α) (m : ProbOracleComp spec β) (k : α → β → ProbOracleComp spec γ)
-    (s : State) :
-    ProbOracleComp.runWith oracle
-      (ProbOracleComp.sample d >>= fun a => m >>= fun b => k a b) s =
-    ProbOracleComp.runWith oracle
-      (m >>= fun b => ProbOracleComp.sample d >>= fun a => k a b) s := by
-  rw [ProbOracleComp.runWith_sample_bind]
-  conv_lhs => arg 2; ext a; rw [ProbOracleComp.runWith_bind]
-  rw [PMF.bind_comm, ProbOracleComp.runWith_bind]
-  congr 1
-  funext b
-  rw [← ProbOracleComp.runWith_sample_bind]
-
 /-! ### Section 4B: Word-Level Real and Simulated Runners and Their PPT Certificates -/
 
 /-- Any family of distributions `fun a => g a <$> ProbComp.uniform (ι → Bool)` over a finite input

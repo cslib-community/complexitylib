@@ -461,14 +461,6 @@ private theorem outputAt_embed_twoPartyMul {m : ℕ} (parties : Fin 2 ↪ Fin m)
   subst hs
   exact outputAt_twoPartyMulSteps q c₀ rep s
 
-private theorem runWith_sample_congr_eq {ι : Type} {spec : ι → Type} {α γ State : Type}
-    (oracle : (i : ι) → StateT State PMF (spec i))
-    (d₁ d₂ : ProbComp α) (heval : ProbComp.eval d₁ = ProbComp.eval d₂)
-    (k : α → ProbOracleComp spec γ) (s : State) :
-    ProbOracleComp.runWith oracle (ProbOracleComp.sample d₁ >>= k) s =
-      ProbOracleComp.runWith oracle (ProbOracleComp.sample d₂ >>= k) s := by
-  rw [ProbOracleComp.runWith_sample_bind, ProbOracleComp.runWith_sample_bind, heval]
-
 private theorem runWith_sample_runEncoded_compose_twoPartyMul {m : ℕ} {OState : Type}
     {State Out : Fin m → Type} {sc₂ : Schedule m (sharedMulSpec 2)}
     (oracle : Unit × List Bool → StateT OState PMF (List Bool))
@@ -491,7 +483,7 @@ private theorem runWith_sample_runEncoded_compose_twoPartyMul {m : ℕ} {OState 
             ([] : Schedule m (sharedMulSpec 2)))) =
         ProbComp.eval (pure (fun _ : Fin m => ())) := by
       simp [Composition.sampleSubCoins, eval_pi_pure]
-    rw [runWith_sample_congr_eq oracle _ _ hpi]
+    rw [ProbOracleComp.runWith_sample_bind_congr oracle hpi]
     simp [Composition.Steps.compose, Steps.runEncoded, Steps.outputAt, runOTSteps]
   | @message _ Out' s₀ r₀ Msg rest send next ih =>
     let f : ((i : Fin m) →
@@ -536,7 +528,8 @@ private theorem runWith_sample_runEncoded_compose_twoPartyMul {m : ℕ} {OState 
               (Composition.sampleSubCoins (fun _ : Unit => twoPartyMulProtocol) rest)) := by
       simp only [pmf_norm, Composition.sampleSubCoins, eval_pi_pair,
         Composition.eval_pi_sampleSlotCoins, eval_pi_twoPartyMulCoins, ProbComp.eval_uniform]
-    rw [runWith_sample_congr_eq oracle _ _ hpi, ProbOracleComp.sample_bind, bind_assoc]
+    rw [ProbOracleComp.runWith_sample_bind_congr oracle hpi, ProbOracleComp.sample_bind,
+      bind_assoc]
     simp only [ProbOracleComp.sample_map, bind_map_left, runOTSteps]
     rw [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_bind]
     refine congrArg (Bind.bind (ProbOracleComp.runWith oracle
@@ -560,7 +553,8 @@ private theorem runWith_sample_runEncoded_compose_twoPartyMul {m : ℕ} {OState 
       hst_k_i, Steps.runEncoded_embed, runEncoded_twoPartyMulSteps,
       Steps.outputAt_append, Steps.outputAt_mapState, outputAt_embed_twoPartyMul,
       bind_map_left, map_bind, bind_pure_comp, Functor.map_map]
-    rw [runWith_sample_comm, ProbOracleComp.runWith_bind, ProbOracleComp.runWith_bind]
+    rw [ProbOracleComp.runWith_sample_bind_comm, ProbOracleComp.runWith_bind,
+      ProbOracleComp.runWith_bind]
     refine congrArg (PMF.bind _) (funext fun ⟨rep, s₂⟩ => ?_)
     let g : ((i : Fin m) →
           Schedule.SubCoins (spec₁ := sharedMulSpec 2)
@@ -1577,11 +1571,6 @@ private theorem step1SenderShare_ofFn {m N : ℕ} (xr_s : BitString N)
     GMWCircuit.shareInputBits_apply, hbit, hrow]
   rfl
 
-private theorem ofFn_fin_append {n₁ n₂ : ℕ} (u : BitString n₁) (v : BitString n₂) :
-    List.ofFn (Fin.append u v) = List.ofFn u ++ List.ofFn v := by
-  rw [List.ofFn_add]
-  simp [Fin.append_right]
-
 private theorem step1Wires_ofFn {m n coins : ℕ}
     (x : Fin m → BitString n) (r : Fin m → BitString coins)
     (c : Fin m → Fin (n + coins) → Fin (m - 1) → Bool) (i : Fin m) :
@@ -1597,7 +1586,7 @@ private theorem step1Wires_ofFn {m n coins : ℕ}
   dsimp only [step1Wires]
   rw [Cslib.BitString.ofFn_blocksEquiv_symm, List.ofFn_eq_map, List.flatMap_def]
   refine congrArg List.flatten (List.map_congr_left fun s _ => ?_)
-  rw [← ofFn_fin_append (x s) (r s), step1SenderShare_ofFn]
+  rw [← List.ofFn_fin_append (x s) (r s), step1SenderShare_ofFn]
 
 /-! #### Sub-part 4C.3: Step 2 (`progSteps`) Equivalence -/
 

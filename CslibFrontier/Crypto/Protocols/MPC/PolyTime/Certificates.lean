@@ -1110,7 +1110,7 @@ private theorem step1Wires_sim_ofFn {m n coins : ℕ} (I : Finset (Fin m))
   rw [← step1SenderShare_ofFn]
   refine step1SenderShare_congr_getD _ _ _ i fun j hj => ?_
   by_cases hs : s ∈ I
-  · simp only [hs, ↓reduceDIte, GMWCircuit.extendByZero, ofFn_fin_append]
+  · simp only [hs, ↓reduceDIte, GMWCircuit.extendByZero, List.ofFn_fin_append]
   · simp only [hs, ↓reduceDIte, List.append_nil, GMWCircuit.extendByZero]
     have h1 : (List.replicate n false).getD j false = false := by
       by_cases hjn : j < n <;> simp [List.getD_eq_getElem?_getD, hjn]
@@ -1284,8 +1284,9 @@ private theorem runWith_realRunWord_eq_runEncoded {α : Type} (m : ℕ) [NeZero 
   let D := (C a).comp (xorPreludeCircuit m (n a) (coins a))
   dsimp only [Protocol.runEncoded]
   rw [realRunWord,
-    runWith_sample_congr_eq oracle _ _ (eval_pi_gmwSampleCoins (C a)),
-    runWith_sample_congr_eq oracle _ _ (eval_sampleTwoPiBits_real m (coins a) (n a + coins a))]
+    ProbOracleComp.runWith_sample_bind_congr oracle (eval_pi_gmwSampleCoins (C a)),
+    ProbOracleComp.runWith_sample_bind_congr oracle
+      (eval_sampleTwoPiBits_real m (coins a) (n a + coins a))]
   simp only [ProbOracleComp.sample_bind, ProbOracleComp.sample_pure, bind_assoc, pure_bind]
   rw [ProbOracleComp.runWith_bind, ProbOracleComp.runWith_bind]
   refine congrArg (PMF.bind _) (funext fun ⟨r, s₁⟩ => ?_)
