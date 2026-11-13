@@ -147,7 +147,7 @@ theorem distinguishingGame_keyDistinguisher (keys : PMF (List Bool))
     distinguishingGame keys (keyDistinguisher encrypt adversary security) = (do
       let bit ← PMF.uniformOfFintype Bool
       (publicKeyGame keys encrypt adversary bit security).map (fun guess => guess ^^ bit)) := by
-  simp only [distinguishingGame, keyDistinguisher, publicKeyGame, ProbComp.eval_bind,
+  simp only [distinguishingGame_eq_bind, keyDistinguisher, publicKeyGame, ProbComp.eval_bind,
     ProbComp.eval_uniform, ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.map_bind]
   pmf_swap
 
