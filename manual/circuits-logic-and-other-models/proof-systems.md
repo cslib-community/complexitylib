@@ -392,10 +392,15 @@ From the repository root, import
 The namespace is `Cslib.Complexity.Graph.RotationRecognition`. The
 [checked guide clients](../../guide/CslibFrontierGuide/NPCompleteness.lean#frozen-xor-queries-and-checked-recovery)
 show the ordinary imports, concrete validation/failure cases and success contracts.
-The [regression suite](../../CslibFrontierTests/RotationRecognition.lean) additionally exercises
-loops, parallel edges, repeated scopes, nullaries and large binary labels; run
-`scripts/build.sh CslibFrontierTests.RotationRecognition` to check it. Successful compilation
-checks actual solver/recovery evaluations and theorem applications, without proving completeness.
+The [regression suite](../../CslibFrontierTests/RotationRecognition.lean) checks small successful
+recoveries, raw-loop order acceptance and rejection, repeated scopes, nullaries, malformed inputs
+and relation-metadata insensitivity. The [CSP certificate cases](../../CslibFrontierTests/CSPRotationCertificate.lean)
+cover large variable names and supplied-table checking. Run
+`scripts/build.sh CslibFrontierTests.RotationRecognition` to check the recovery examples.
+These kernel-checked evaluations and theorem applications witness particular outcomes; they
+do not prove completeness or check generated code. The
+[profiling and coverage record](https://github.com/cslib-community/cslib-frontier/issues/4972#issuecomment-6845165353)
+explains the choice of small fixtures.
 
 `FixedRotationInput` pairs the existing listed graph with optional complete clockwise dart
 words. `Valid` requires declared vertices exactly `List.range n`, endpoints below `n`, exactly
