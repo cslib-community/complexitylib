@@ -20,7 +20,7 @@ constructors directly, and the live-word layout, glue and certificates match the
 For example, with `structure Cursor where (base : ℕ) (index : ℕ)`:
 
 ```
-def Cursor.equiv : Cursor ≃ ℕ × ℕ where
+@[expose] def Cursor.equiv : Cursor ≃ ℕ × ℕ where
   toFun c := (c.base, c.index)
   invFun := fun (base, index) => ⟨base, index⟩
   left_inv _ := rfl
@@ -31,7 +31,8 @@ instance : WordEncoding Cursor := .ofEquiv Cursor.equiv
 
 Write `invFun` as a pattern-matching lambda, as above. Written with projections
 (`fun p => ⟨p.1, p.2.1, …⟩`), it is the same function, but it reintroduces the positional chains
-that the record removes.
+that the record removes. Expose the equivalence so that importing modules can evaluate a
+record's words, for example to install concrete arguments for a realized program.
 
 ## Main definitions
 
