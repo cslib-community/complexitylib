@@ -4204,6 +4204,7 @@ public import CslibFrontier.Crypto.Computational.Commitment
 public import CslibFrontier.Crypto.Computational.Commitment.Basic
 public import CslibFrontier.Crypto.Computational.Commitment.PublicOperations
 public import CslibFrontier.Crypto.Computational.CompositeResiduosity
+public import CslibFrontier.Crypto.Computational.CompositeResiduosity.Finite
 public import CslibFrontier.Crypto.Computational.CramerShoup
 public import CslibFrontier.Crypto.Computational.CramerShoup.Interleaved
 public import CslibFrontier.Crypto.Computational.CramerShoup.ProjectiveHash
@@ -4423,6 +4424,7 @@ public import CslibFrontier.Crypto.Computational.OneWayToSignature
 public import CslibFrontier.Crypto.Computational.PRGToOneWay
 public import CslibFrontier.Crypto.Computational.Paillier
 public import CslibFrontier.Crypto.Computational.Paillier.Algebra
+public import CslibFrontier.Crypto.Computational.Paillier.Finite
 public import CslibFrontier.Crypto.Computational.Paillier.Security
 public import CslibFrontier.Crypto.Computational.PedersenCommitment
 public import CslibFrontier.Crypto.Computational.PedersenCommitment.ProbComp
@@ -5934,6 +5936,7 @@ public import CslibFrontier.Foundations.MeasureTheory.Integral.CauchySchwarz
 public import CslibFrontier.Foundations.MeasureTheory.Integral.IntervalPrimitive
 public import CslibFrontier.Foundations.MeasureTheory.Integral.Pi
 public import CslibFrontier.Foundations.MeasureTheory.Integral.PiUpdate
+public import CslibFrontier.Foundations.MeasureTheory.MeasurableSpace.Embedding
 public import CslibFrontier.Foundations.MeasureTheory.Measure.TotalVariation.Map
 public import CslibFrontier.Foundations.MeasureTheory.Measure.TotalVariation.Mixture
 public import CslibFrontier.Foundations.ModelTheory.Basic
@@ -5966,6 +5969,7 @@ public import CslibFrontier.Foundations.Order.Changes
 public import CslibFrontier.Foundations.Order.FiniteFixedPoint
 public import CslibFrontier.Foundations.Order.Mirsky
 public import CslibFrontier.Foundations.Order.UpperLower
+public import CslibFrontier.Foundations.Probability.AzumaPi
 public import CslibFrontier.Foundations.Probability.Bonferroni
 public import CslibFrontier.Foundations.Probability.Cauchy
 public import CslibFrontier.Foundations.Probability.Combinatorics.BinomialRandomGraph.Basic
@@ -6620,6 +6624,7 @@ public import CslibFrontier.MachineLearning.LossMinimization.RLM
 public import CslibFrontier.MachineLearning.LossMinimization.Stability
 public import CslibFrontier.MachineLearning.OnlineLearning.FTRL
 public import CslibFrontier.MachineLearning.OnlineLearning.Hedge
+public import CslibFrontier.MachineLearning.OnlineLearning.HighProbabilityOnlineToBatch
 public import CslibFrontier.MachineLearning.OnlineLearning.MistakeBound.Agnostic
 public import CslibFrontier.MachineLearning.OnlineLearning.MistakeBound.Basic
 public import CslibFrontier.MachineLearning.OnlineLearning.MistakeBound.Halving
@@ -6644,12 +6649,14 @@ public import CslibFrontier.MachineLearning.PACLearning.AgnosticVC
 public import CslibFrontier.MachineLearning.PACLearning.Compression.Basic
 public import CslibFrontier.MachineLearning.PACLearning.Compression.MistakeBound
 public import CslibFrontier.MachineLearning.PACLearning.Compression.Order
+public import CslibFrontier.MachineLearning.PACLearning.Compression.Shattering
 public import CslibFrontier.MachineLearning.PACLearning.Compression.Thresholds
 public import CslibFrontier.MachineLearning.PACLearning.DoubleSample
 public import CslibFrontier.MachineLearning.PACLearning.DualVCDimension
 public import CslibFrontier.MachineLearning.PACLearning.ERM
 public import CslibFrontier.MachineLearning.PACLearning.EpsilonNet
 public import CslibFrontier.MachineLearning.PACLearning.FiniteClass
+public import CslibFrontier.MachineLearning.PACLearning.FundamentalTheorem
 public import CslibFrontier.MachineLearning.PACLearning.GrowthFunction
 public import CslibFrontier.MachineLearning.PACLearning.Halfspaces
 public import CslibFrontier.MachineLearning.PACLearning.MDL
@@ -6657,8 +6664,14 @@ public import CslibFrontier.MachineLearning.PACLearning.Nonuniform
 public import CslibFrontier.MachineLearning.PACLearning.Realizable
 public import CslibFrontier.MachineLearning.PACLearning.RealizableSample
 public import CslibFrontier.MachineLearning.PACLearning.SRM
+public import CslibFrontier.MachineLearning.PACLearning.SampleComplexityLower
+public import CslibFrontier.MachineLearning.PACLearning.SampleComplexityLower.AdversarialMeasure
+public import CslibFrontier.MachineLearning.PACLearning.SampleComplexityLower.EHKVProof
+public import CslibFrontier.MachineLearning.PACLearning.SampleComplexityLower.Helpers
+public import CslibFrontier.MachineLearning.PACLearning.SampleComplexityLower.InvolutionPairing
 public import CslibFrontier.MachineLearning.PACLearning.UniformConvergence
 public import CslibFrontier.MachineLearning.PACLearning.VCDimension
+public import CslibFrontier.MachineLearning.PACLearning.VCLowerBound
 public import CslibFrontier.MachineLearning.PACLearning.VCUniformConvergence
 public import CslibFrontier.MachineLearning.PACLearning.VCUpperBound
 public import CslibFrontier.MachineLearning.Rademacher.Basic

@@ -520,9 +520,11 @@ not a decision.
   [#858](https://github.com/leanprover/cslib/pull/858).
   [#966](https://github.com/leanprover/cslib/pull/966) would make `sampleComplexity` and `vcDim`
   `ℕ∞`-valued; if it lands, restate the bounds in `FiniteClass`, `VCUpperBound`,
-  `AgnosticFiniteClass`, `AgnosticVC` and `GrowthFunction`. Before submission, reconcile names with
-  [`feat/pac-learning-ehkv-headline`](https://github.com/SamuelSchlesinger/cslib/tree/feat/pac-learning-ehkv-headline),
-  which proves the EHKV `Ω(d/ε)` lower bound; do not reprove it locally.
+  `AgnosticFiniteClass`, `AgnosticVC` and `GrowthFunction`. `PACLearning/SampleComplexityLower*`
+  vendors the EHKV `Ω(d/ε)` lower bound from
+  [`feat/pac-learning-ehkv-headline`](https://github.com/SamuelSchlesinger/cslib/tree/feat/pac-learning-ehkv-headline);
+  submit or update it through that branch, not as a competing copy, and reconcile `VCLowerBound`
+  and `FundamentalTheorem` with its names before submitting them.
 * **Tree decompositions.** Upstream `SimpleGraph/TreeDecomposition` through Justin Lai's
   [mathlib4#38334](https://github.com/leanprover-community/mathlib4/pull/38334),
   [#39939](https://github.com/leanprover-community/mathlib4/pull/39939) and
