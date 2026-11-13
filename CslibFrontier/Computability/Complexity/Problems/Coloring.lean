@@ -395,10 +395,8 @@ private theorem gadgetColoring_palette (φ : CNF ℕ) (σ : ℕ → Bool) (c : �
 private theorem gadgetColoring_literal {φ : CNF ℕ} (σ : ℕ → Bool) {l : Literal ℕ}
     (hl : l.1 ∈ φ.vars) : gadgetColoring φ σ (literalVertex φ l) = literalColor σ l := by
   obtain ⟨x, b⟩ := l
-  have hlt : φ.vars.idxOf x < φ.vars.length := List.idxOf_lt_length_iff.2 hl
   simp only [gadgetColoring, literalVertex, Nat.unpair_pair]
-  rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hlt, Option.getD_some,
-    List.getElem_idxOf hlt]
+  rw [List.getD_eq_getElem?_getD, List.getElem?_idxOf hl, Option.getD_some]
   cases b <;> rfl
 
 private theorem gadgetColoring_output (φ : CNF ℕ) (σ : ℕ → Bool) (i j : ℕ) :
@@ -823,13 +821,10 @@ theorem polyTimeReducible_SAT_ThreeColoring :
 three literals is mapped to the gadget graph of the empty clause, which is not 3-colorable. -/
 theorem polyTimeReducible_ThreeSAT_ThreeColoring :
     PolyTimeReducible encCNF encGraph ThreeSAT ThreeColoring := by
-  have hcheck : ComputableInPolyTime (fun φ : CNF ℕ => φ.all fun c => decide (c.length ≤ 3))
-      encCNF encBool :=
-    allWithInput (by unfold encCNF; exact id')
-      (unary_le' ((length_list (encPair encNat encBool)).comp (snd _ _)) (const 3))
   refine ⟨fun φ => if φ.all (fun c => decide (c.length ≤ 3)) then SAT.toThreeColoring φ
     else SAT.toThreeColoring [[]],
-    hcheck.ite SAT.computableInPolyTime_toThreeColoring (const _), fun φ => ?_⟩
+    (computableInPolyTime_all_length_le 3).ite SAT.computableInPolyTime_toThreeColoring
+      (const _), fun φ => ?_⟩
   simp only [ThreeSAT, Set.mem_ofPred_eq]
   split_ifs with h
   · rw [SAT.toThreeColoring_mem_iff, mem_SAT]

@@ -116,6 +116,17 @@ theorem ComputableInSubexpTime.mono_measure {μ μ' : α → ℕ} {c : ℕ} (hμ
   ((h (δ / (c + 1)) (by positivity)).mono_measure hμ (by positivity)).mono
     (natCast_mul_div_add_one_le hδ.le c)
 
+/-- `DecidableInTimeO` is `ComputableInTimeO` of a Boolean indicator function. -/
+theorem decidableInTimeO_iff_exists_computableInTimeO {A : Set α} :
+    DecidableInTimeO A encIn T ↔
+      ∃ g : α → Bool, (∀ a, a ∈ A ↔ g a = true) ∧ ComputableInTimeO g encIn encBool T := by
+  constructor
+  · rintro ⟨c, t, s, ht, h⟩
+    obtain ⟨g, hg, hA⟩ := decidableInTimeAndSpace_iff.mp h
+    exact ⟨g, hA, c, t, s, ht, hg⟩
+  · rintro ⟨g, hA, c, t, s, ht, hg⟩
+    exact ⟨c, t, s, ht, decidableInTimeAndSpace_iff.mpr ⟨g, hg, hA⟩⟩
+
 end FunctionBounds
 
 section FunctionMachines
@@ -164,17 +175,6 @@ theorem ComputableInTimeO.of_computableInO {t S : α → ℕ}
   refine ⟨c, _, _, fun a => ?_, hf'⟩
   push_cast
   nlinarith [hT a, (Nat.cast_nonneg c : (0 : ℝ) ≤ c)]
-
-/-- `DecidableInTimeO` is `ComputableInTimeO` of a Boolean indicator function. -/
-theorem decidableInTimeO_iff_exists_computableInTimeO {A : Set α} :
-    DecidableInTimeO A encIn T ↔
-      ∃ g : α → Bool, (∀ a, a ∈ A ↔ g a = true) ∧ ComputableInTimeO g encIn encBool T := by
-  constructor
-  · rintro ⟨c, t, s, ht, h⟩
-    obtain ⟨g, hg, hA⟩ := decidableInTimeAndSpace_iff.mp h
-    exact ⟨g, hA, c, t, s, ht, hg⟩
-  · rintro ⟨g, hA, c, t, s, ht, hg⟩
-    exact ⟨c, t, s, ht, decidableInTimeAndSpace_iff.mpr ⟨g, hg, hA⟩⟩
 
 /-- A `ComputableInO` certificate within `c * (2 ^ (δ * μ a) * (L + 1) ^ e)` gives
 `ComputableInExpTime`. -/

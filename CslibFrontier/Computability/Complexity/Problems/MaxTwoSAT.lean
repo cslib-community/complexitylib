@@ -153,8 +153,7 @@ theorem computableInPolyTime_verifier :
   have hwidth : ComputableInPolyTime
       (fun x : MaxTwoSATInstance × List Bool => x.1.formula.all fun c => decide (c.length ≤ 2))
       (encPair encMaxTwoSAT encBits) encBool :=
-    (show ComputableInPolyTime (fun φ : CNF ℕ => φ.all fun c => decide (c.length ≤ 2))
-      encCNF encBool by unfold encCNF; fun_prop).comp (encMaxTwoSAT_formula_polyTime (fst _ _))
+    (computableInPolyTime_all_length_le 2).comp (encMaxTwoSAT_formula_polyTime (fst _ _))
   exact bool_and' hwidth (binary_le' (encMaxTwoSAT_target_polyTime (fst _ _)) hcount)
 
 /-- `MaxTwoSAT` belongs to `NP`. -/

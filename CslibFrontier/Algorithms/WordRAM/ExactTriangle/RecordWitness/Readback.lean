@@ -39,9 +39,9 @@ theorem record_view {n D g p : ℕ} (values : ℕ → ℤ) (initial y : Data 64)
     let Q := RecordProduct.recordQueryCount n D p values idx
     5 + 3 * (n * n) ≤ y.regs Instances.heap ∧
       base + 6 ≤ y.regs Instances.heap ∧ q + 2 * Q ≤ y.regs Instances.heap ∧
-      idx.2.2 * pieceSize D g ≤ n ∧
+      idx.piece * pieceSize D g ≤ n ∧
       (∀ j : Fin 6, y.mem (base + j.val) =
-        ![idx.1.val, idx.2.2, q, Q, base + 6, base + 6 + n * D] j) ∧
+        ![idx.residue.val, idx.piece, q, Q, base + 6, base + 6 + n * D] j) ∧
       (∀ j < Q, y.mem (q + 2 * j) < n ∧ y.mem (q + 2 * j + 1) < n) ∧
       (∀ j < 5 + 3 * (n * n), y.mem j = initial.mem j) := by
   let wAB := fun a b : Fin n => values (pairIndex (a, b))
@@ -54,16 +54,18 @@ theorem record_view {n D g p : ℕ} (values : ℕ → ℤ) (initial y : Data 64)
   let q := RecordProduct.recordQueries n D p idx
   let Q := RecordProduct.recordQueryCount n D p values idx
   obtain ⟨hk, hj⟩ := (mem_instanceIndices wAB idx).mp hidx
-  have hcard : (residueClass wAB p idx.1).card = C idx.1.val :=
-    QuerySpec.card_residueClass wAB hp _ (by intro pair; rfl) idx.1
-  have hchunk : idx.2.1 < C idx.1.val ⌈/⌉ queryCap n D := by
+  have hcard : (residueClass wAB p idx.residue).card = C idx.residue.val :=
+    QuerySpec.card_residueClass wAB hp _ (by intro pair; rfl) idx.residue
+  have hchunk : idx.chunk < C idx.residue.val ⌈/⌉ queryCap n D := by
     simpa only [numChunks, hcard] using hk
-  have hord := ChunkCatalogue.before_add_lt C (queryCap n D) idx.1.isLt hchunk
+  have hord := ChunkCatalogue.before_add_lt C (queryCap n D) idx.residue.isLt hchunk
   have hiCount : ord < K * H := by
     have hh := Nat.mul_le_mul_right H (Nat.succ_le_of_lt hord)
-    change (ChunkCatalogue.before C (queryCap n D) idx.1.val + idx.2.1) * H + idx.2.2 < K * H
-    change (ChunkCatalogue.before C (queryCap n D) idx.1.val + idx.2.1 + 1) * H ≤ K * H at hh
-    change idx.2.2 < H at hj
+    change (ChunkCatalogue.before C (queryCap n D) idx.residue.val + idx.chunk) * H + idx.piece <
+      K * H
+    change (ChunkCatalogue.before C (queryCap n D) idx.residue.val + idx.chunk + 1) * H ≤ K * H
+      at hh
+    change idx.piece < H at hj
     rw [Nat.add_mul, Nat.one_mul] at hh
     omega
   have hout : y.regs Instances.output = 5 + 6 * N + p + 2 * N * p + 3 * K := h.2.2.2.1
@@ -79,11 +81,11 @@ theorem record_view {n D g p : ℕ} (values : ℕ → ℤ) (initial y : Data 64)
     change q + 2 * Q ≤ 5 + 6 * N + p + 2 * N * p + 3 * K at hq
     rw [hheap, hout]
     omega
-  have hfirst : idx.2.2 * pieceSize D g ≤ n := (piece_start_lt hD hg hj).le
+  have hfirst : idx.piece * pieceSize D g ≤ n := (piece_start_lt hD hg hj).le
   obtain ⟨hdr, -, -⟩ := PreparationSpec.instance_readback values wAB hp
     (by intro a b; rfl) hD hDn hg h idx hidx
   have hcoord := (RecordProduct.output_query_coordinates values wAB hp (by intro a b; rfl)
-    (by omega) hDn h idx.1 idx.2.1 hk).1
+    (by omega) hDn h idx.residue idx.chunk hk).1
   rw [hcard] at hcoord
   dsimp only
   refine ⟨?_, hbase, hqEnd, hfirst, ?_, hcoord, ?_⟩

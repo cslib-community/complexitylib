@@ -18,6 +18,7 @@ import CslibFrontier.Crypto.Game.UntilBad
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Languages.Probabilistic.RandomOracle.Probabilistic
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.Support
 import Mathlib.Tactic.Linarith
 
 /-!
@@ -62,8 +63,6 @@ block-cipher modes of operation (such as OFB and CTR):
   most the bad-flag probability under `freshStep`.
 * `Cslib.Crypto.advantage_idealGame_freshStep_le`: the advantage between `PRF.idealGame` and
   `freshStep` is at most the bad-flag probability under `freshStep`.
-* `Cslib.Crypto.snd_eq_of_mem_support_lift`, `Cslib.Crypto.toOuterMeasure_lift_eq_zero`: lifted
-  private-coin support and zero-bad-event lemmas.
 * `Cslib.Crypto.length_blockModeSelect`, `Cslib.Crypto.blockModeBlocks_le`,
   `Cslib.Crypto.blockModeCpaGame_eq_realGame`, `Cslib.Crypto.isQueryBounded_blockModeReduction`,
   `Cslib.Crypto.freshGame_eq_blockModeIdealGame`: shared left-or-right block-mode CPA lemmas.
@@ -107,26 +106,6 @@ input raises the flag. -/
 noncomputable def freshStep (x : BitString n) : StateT (FlagState n) PMF (BitString n) :=
   fun s => (PMF.uniformOfFintype (BitString n)).map fun u =>
     (u, ((x, u) :: s.1, s.2 || (s.1.lookup x).isSome))
-
-/-- Lifting a state-free `PMF` into `StateT` preserves the state on the entire support. -/
-theorem snd_eq_of_mem_support_lift {α σ : Type} {p : PMF α} {s : σ} {z : α × σ}
-    (hz : z ∈ ((StateT.lift p : StateT σ PMF α) s).support) : z.2 = s := by
-  simp only [StateT.lift, Probability.PMF.monad_bind_eq_bind,
-    Probability.PMF.monad_pure_eq_pure, PMF.mem_support_bind_iff, PMF.mem_support_pure_iff] at hz
-  obtain ⟨_, -, rfl⟩ := hz
-  rfl
-
-/-- Lifting a state-free `PMF` from a non-bad state hits a bad state with zero outer measure. -/
-theorem toOuterMeasure_lift_eq_zero {α σ : Type} {bad : σ → Prop} (p : PMF α) (s : σ)
-    (hs : ¬bad s) : ((StateT.lift p : StateT σ PMF α) s).toOuterMeasure {x | bad x.2} = 0 := by
-  rw [PMF.toOuterMeasure_apply_eq_zero_iff, Set.disjoint_left]
-  intro x hx hbad
-  exact hs ((snd_eq_of_mem_support_lift hx) ▸ hbad)
-
-private theorem prop_of_mem_support_map {α β : Type} {p : PMF α} {f : α → β} {z : β}
-    (hz : z ∈ (p.map f).support) {P : β → Prop} (h : ∀ a, P (f a)) : P z := by
-  obtain ⟨a, -, rfl⟩ := (PMF.mem_support_map_iff f p z).1 hz
-  exact h a
 
 private theorem flag_of_mem_support_pure {y : BitString n}
     {c : List (BitString n × BitString n)} {z : BitString n × FlagState n}
@@ -178,29 +157,33 @@ private theorem identicalUntilBad_lazyStep_freshStep :
         have h2 : ((PMF.uniformOfFintype (BitString n)).map fun u =>
             (u, ((x, u) :: s.1, true))) (a, s') = 0 :=
           (PMF.apply_eq_zero_iff _ _).2 fun hz =>
-            hs' (prop_of_mem_support_map hz (P := fun z => z.2.2 = true) fun _ => rfl)
+            hs' (by
+              obtain ⟨_, -, h⟩ := (PMF.mem_support_map_iff _ _ _).1 hz
+              exact (congrArg (fun z => z.2.2) h).symm)
         rw [h1, h2]
   absorb_first q s hs x hx := by
     have hs' : s.2 = true := hs
     cases q with
     | inl i =>
-      rw [snd_eq_of_mem_support_lift hx]
+      rw [PMF.snd_eq_of_mem_support_lift hx]
       exact hs
     | inr y =>
       change x ∈ (lazyStep y s).support at hx
       simp only [lazyStep] at hx
       split at hx
       · exact flag_of_mem_support_pure hx
-      · exact prop_of_mem_support_map hx (P := fun z => z.2.2 = true) fun _ => hs'
+      · obtain ⟨_, -, rfl⟩ := (PMF.mem_support_map_iff _ _ _).1 hx
+        exact hs'
   absorb_second q s hs x hx := by
     have hs' : s.2 = true := hs
     cases q with
     | inl i =>
-      rw [snd_eq_of_mem_support_lift hx]
+      rw [PMF.snd_eq_of_mem_support_lift hx]
       exact hs
     | inr y =>
       change x ∈ (freshStep y s).support at hx
-      exact prop_of_mem_support_map hx (P := fun z => z.2.2 = true) fun _ => by simp [hs']
+      obtain ⟨_, -, rfl⟩ := (PMF.mem_support_map_iff _ _ _).1 hx
+      simp [hs']
 
 /-- `PRF.idealGame` against a uniform random function on `BitString n` equals the output of
 `ProbOracleComp.runWith lazyStep program ([], false)`. -/

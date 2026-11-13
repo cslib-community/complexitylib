@@ -256,8 +256,7 @@ theorem exists_computableInPolyTime_search {α : Type} {enc : α ↪ List Bool} 
         (c * (Nat.log2 (enc a).length + 1)) + 1) ≤ rounds a) ∧
       ComputableInPolyTime (fun a => Cslib.Reachability.search ntm.viewSucc (rounds a)
         (ntm.initView (enc a))) enc (encList encFiniteCfg) := by
-  set D := 2 * (8 + 2 * Nat.card (Option State) + 200 * k) * (c + 1)
-  set rounds : α → ℕ := fun a => polyClock D (enc a).length
+  set rounds : α → ℕ := fun a => polyClock (logSpaceClockExponent k State c) (enc a).length
   refine ⟨rounds, fun a => two_pow_coreLengthBound_log_le k State c _, ?_⟩
   -- the number of rounds in unary
   have hcount : ComputableInPolyTime rounds enc encUnary := by

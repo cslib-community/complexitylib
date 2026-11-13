@@ -9,6 +9,7 @@ module
 
 import CslibFrontier.Computability.WordRAM.Call
 import CslibFrontier.Computability.WordRAM.RegisterFrame
+import CslibFrontier.Foundations.Data.Nat.Div
 public import CslibFrontier.Init
 public import CslibFrontier.Algorithms.Lean.Karger.Contraction
 public import CslibFrontier.Computability.WordRAM.Heap
@@ -74,6 +75,8 @@ law.
 
 ## Main definitions
 
+* `Cslib.Algorithms.WordRAM.Karger.flattenMatrix`: the row-major `n ^ 2`-word input layout of a
+  weight matrix.
 * `Cslib.Algorithms.WordRAM.Karger.HoldsMatrix`,
   `Cslib.Algorithms.WordRAM.Karger.HoldsWorkspace`,
   `Cslib.Algorithms.WordRAM.Karger.workspaceFootprint`,
@@ -121,6 +124,7 @@ open scoped ENNReal
 open Cslib.WeightedCut
 open Cslib.Probability.PMF
 open Cslib.WordRAM
+open Cslib.Algorithms.Karger
 
 /-! ### Register layout (`r = 16`) -/
 
@@ -160,6 +164,37 @@ abbrev val1 : Fin 16 := 14
 abbrev val2 : Fin 16 := 15
 
 end Reg
+
+/-! ### Row-major input layout of the matrix -/
+
+/-- Row-major `n * n`-element list encoding of `W : Fin n → Fin n → ℕ`. -/
+def flattenMatrix {n : ℕ} (W : Fin n → Fin n → ℕ) : List ℕ :=
+  List.ofFn fun idx : Fin (n * n) =>
+    W ⟨idx.val / n, Nat.div_lt_of_lt_mul idx.isLt⟩
+      ⟨idx.val % n, Nat.mod_lt _
+        (Nat.pos_of_ne_zero fun h0 => Nat.not_lt_zero idx.val (by simpa [h0] using idx.isLt))⟩
+
+@[simp]
+theorem length_flattenMatrix {n : ℕ} (W : Fin n → Fin n → ℕ) :
+    (flattenMatrix W).length = n * n := by
+  simp [flattenMatrix]
+
+theorem getElem_flattenMatrix {n : ℕ} (W : Fin n → Fin n → ℕ) (u v : Fin n) :
+    (flattenMatrix W)[u.val * n + v.val]'(by
+      rw [length_flattenMatrix]
+      nlinarith [u.isLt, v.isLt]) = W u v := by
+  simp only [flattenMatrix, List.getElem_ofFn]
+  have hdiv : (u.val * n + v.val) / n = u.val := Nat.mul_add_div_of_lt _ v.isLt
+  have hmod : (u.val * n + v.val) % n = v.val := Nat.mul_add_mod_of_lt v.isLt
+  congr 1 <;> exact Fin.ext (by assumption)
+
+theorem mem_flattenMatrix_le_totalDoubledWeight {n : ℕ} (W : Fin n → Fin n → ℕ)
+    {x : ℕ} (hx : x ∈ flattenMatrix W) :
+    x ≤ totalDoubledWeight W := by
+  unfold flattenMatrix at hx
+  rw [List.mem_ofFn] at hx
+  rcases hx with ⟨idx, rfl⟩
+  exact entry_le_totalDoubledWeight W _ _
 
 /-! ### Relocatable workspace representation and address geometry -/
 
