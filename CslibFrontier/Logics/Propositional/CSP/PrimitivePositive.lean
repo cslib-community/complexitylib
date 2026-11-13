@@ -79,7 +79,7 @@ private noncomputable def body [Fintype Rel] : CSP Rel (Column R) := by
     inferInstanceAs (Fintype {c : (r : Rel) × (Fin (arity r) → Column R) //
       ∀ t : R, sem c.1 (List.ofFn fun i => c.2 i t) = true})
   exact (Finset.univ.toList : List (Scope arity sem R)).map fun c =>
-    (c.val.1, List.ofFn c.val.2)
+    ⟨c.val.1, List.ofFn c.val.2⟩
 
 /-- All scopes of the canonical conjunction have exact declared arity. -/
 private theorem wellFormed_body [Fintype Rel] : WellFormed arity (body arity sem R) := by

@@ -273,8 +273,8 @@ theorem eval_predictionGame {n imageLength : ℕ} {Image : Type*}
         let coins ← PMF.uniformOfFintype (BitString (coinBudget c d n imageLength))
         matrixPrediction finiteFunction (fixedPredictor encodeImage evaluate c d n imageLength
           coins)) := by
-  simp only [pmf_norm, predictionGame, eval_sample f finiteFunction encodeImage hf, joint, Seed,
-    ← PMF.uniformOfFintype_prod]
+  simp only [pmf_norm, predictionGame, predictionExperiment,
+    eval_sample f finiteFunction encodeImage hf, joint, Seed, ← PMF.uniformOfFintype_prod]
   rw [← PMF.uniformOfFintype_map_equiv (blocksEquiv (m := hashCount n) (k := n)).symm]
   simp only [PMF.bind_map, Function.comp_def, encodeObservation, prefixHash,
     Equiv.apply_symm_apply]
