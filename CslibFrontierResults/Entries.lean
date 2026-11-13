@@ -870,8 +870,8 @@ register_result "goldreich-levin-hard-core" where
   ]
   scope := "For every uniform one-way function f on bit strings, the inner product of the two \
     seed halves is hard-core for the padded function (x, r, s) ↦ (f x, r, s), with at most one \
-    spare bit s so that every seed length is covered, against uniform PPT predictors with \
-    negligible bias. This is not a hard-core predicate for f itself. For a length-preserving \
+    spare bit s so that every seed length is covered, against uniform strict PPT predictors \
+    with negligible bias. This is not a hard-core predicate for f itself. For a length-preserving \
     one-way permutation, appending that bit gives a deterministic polynomial-time generator with \
     one-bit stretch, secure against uniform strict PPT distinguishers. Asymptotic security; the \
     source's explicit runtime and advantage trade-off is not stated."
