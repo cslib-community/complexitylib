@@ -39,12 +39,12 @@ theorem sum_failed_occurrences_le {n D g p : ℕ}
     (hnodup : ∀ idx ∈ I, (queries idx).Nodup)
     (hquery : ∀ idx ∈ I, ∀ q ∈ queries idx, q ∈ (lopInstance wAB wBC wAC D g p idx).W) :
     (∑ idx ∈ I, Nat.count (fun j => ans idx ((queries idx).getD j default) = true ∧
-      scanPiece wAB wBC wAC D g idx.2.2
+      scanPiece wAB wBC wAC D g idx.piece
         ((queries idx).getD j default).1 ((queries idx).getD j default).2 = none)
       (queries idx).length) ≤ falsePositiveCount wAB wBC wAC p := by
   classical
   let P := fun idx j => ans idx ((queries idx).getD j default) = true ∧
-    scanPiece wAB wBC wAC D g idx.2.2
+    scanPiece wAB wBC wAC D g idx.piece
       ((queries idx).getD j default).1 ((queries idx).getD j default).2 = none
   let occurrences : Finset (Σ _ : InstanceIndex p, ℕ) :=
     I.sigma fun idx => (Finset.range (queries idx).length).filter (P idx)

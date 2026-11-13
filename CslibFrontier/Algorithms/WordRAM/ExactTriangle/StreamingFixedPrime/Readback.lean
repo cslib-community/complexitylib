@@ -32,8 +32,8 @@ theorem catalogue_readback {n D g p : ℕ} (values : ℕ → ℤ) (initial a x :
     (hidx : idx ∈ instanceIndices (fun u v : Fin n => values (pairIndex (u, v))) D g p) :
     (∀ k < 3 * (n * n), x.mem (5 + 3 * (n * n) + k) = (values k % (p : ℤ)).toNat) ∧
     (let C := fun rho => Nat.count (fun k => (values k % (p : ℤ)).toNat = rho) (n * n)
-     let chunk := ChunkCatalogue.before C (queryCap n D) idx.1.val + idx.2.1
-     x.mem (chunk * 3 + x.regs Instances.descriptors) = idx.1.val ∧
+     let chunk := ChunkCatalogue.before C (queryCap n D) idx.residue.val + idx.chunk
+     x.mem (chunk * 3 + x.regs Instances.descriptors) = idx.residue.val ∧
      x.mem (chunk * 3 + x.regs Instances.descriptors + 1) =
        RecordProduct.recordQueries n D p idx ∧
      x.mem (chunk * 3 + x.regs Instances.descriptors + 2) =
@@ -41,17 +41,17 @@ theorem catalogue_readback {n D g p : ℕ} (values : ℕ → ℤ) (initial a x :
   let N := n * n
   let C := fun rho => Nat.count (fun k => (values k % (p : ℤ)).toNat = rho) N
   let K := ChunkCatalogue.before C (queryCap n D) p
-  let chunk := ChunkCatalogue.before C (queryCap n D) idx.1.val + idx.2.1
+  let chunk := ChunkCatalogue.before C (queryCap n D) idx.residue.val + idx.chunk
   let desc := 5 + 6 * N + p + 2 * N * p
-  have hcard : (residueClass (fun u v : Fin n => values (pairIndex (u, v))) p idx.1).card =
-      C idx.1.val := QuerySpec.card_residueClass _ hp _ (by intro pair; rfl) idx.1
+  have hcard : (residueClass (fun u v : Fin n => values (pairIndex (u, v))) p idx.residue).card =
+      C idx.residue.val := QuerySpec.card_residueClass _ hp _ (by intro pair; rfl) idx.residue
   have hk := ((mem_instanceIndices _ idx).mp hidx).1
-  have hk' : idx.2.1 < C idx.1.val ⌈/⌉ queryCap n D := by
+  have hk' : idx.chunk < C idx.residue.val ⌈/⌉ queryCap n D := by
     simpa only [numChunks, hcard] using hk
   have hchunk : chunk < K :=
-    ChunkCatalogue.before_add_lt C (queryCap n D) idx.1.isLt hk'
+    ChunkCatalogue.before_add_lt C (queryCap n D) idx.residue.isLt hk'
   have ho : a.regs Instances.output = desc + 3 * K := hout.2.2.2.1
-  have hd := hout.2.2.2.2.2.2.2.2.2.1 idx.1.val idx.1.isLt idx.2.1 hk'
+  have hd := hout.2.2.2.2.2.2.2.2.2.1 idx.residue.val idx.residue.isLt idx.chunk hk'
   constructor
   · intro k hk
     rw [hmem (show 5 + 3 * N + k < a.regs Instances.output by rw [ho]; omega)]
