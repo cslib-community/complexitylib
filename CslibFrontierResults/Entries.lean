@@ -3863,7 +3863,8 @@ register_result "integer-3sum-base-r-reduction-timem" where
   scope := "TimeM unit-cost model with the random prime and seeds as inputs: one-sided error, \
     exact cost for given random choices, and the miss probability over uniform seeds and a \
     uniform prime of [2^e, 2^(e+1)) with r^d <= 2^e (the paper: (r^d, 2 r^d]) as explicit counts. \
-    Not formalized: the choice of d and mu, #P, the expected running time and amplification, \
+    The exact #P and a computed vTrials choice of mu are recorded separately. Not formalized: \
+    selection of d, the asymptotic trial-count bound, expected running time and amplification, \
     Corollaries 3.5 and 3.6, unbalanced/per-query forms and Word-RAM realizations."
 
 register_result "integer-3sum-base-r-trial-timem" where
@@ -3878,9 +3879,10 @@ register_result "integer-3sum-base-r-trial-timem" where
     Cslib.Algorithms.Lean.SubsetConvThreeSum.exists_add_eq_of_vaccepts
   ]
   scope := "One trial for a given prime and seed in the TimeM unit-cost model: what it returns, \
-    its exact cost and soundness. The per-trial success count is recorded separately. Not \
-    formalized: the full reduction (A_bad, repetition, random prime), the expected running time, \
-    the choice of d and mu, Corollaries 3.5 and 3.6."
+    its exact cost and soundness. The success count, given-choice reduction (A_bad, repetition, \
+    prime-window averaging), exact #P and computed vTrials are recorded separately. Not \
+    formalized: selection of d, the asymptotic trial-count bound, expected running time and \
+    amplification, Corollaries 3.5 and 3.6."
 
 register_result "integer-3sum-base-r-trial-success-count" where
   title := "Per-trial success count for base-r hashing from integer 3SUM to vector convolution"
@@ -3893,8 +3895,9 @@ register_result "integer-3sum-base-r-trial-success-count" where
   ]
   scope := "Given isolated witnesses a in Ag subset A and b in Bg subset B with a + b = c and \
     r^d <= p, #P (p - 1) <= #accepting seeds + #P #L (r!)^(d/r). This is a count over seeds \
-    supporting the TimeM reduction, not the full reduction (A_bad, repetition, random prime), \
-    expected running time, parameter choices, or Corollaries 3.5 and 3.6."
+    supporting the separately recorded given-choice TimeM reduction. Exact #P and computed \
+    vTrials are also recorded separately; selection of d, the asymptotic trial-count bound, \
+    expected running time, amplification and Corollaries 3.5 and 3.6 remain open."
 
 register_result "selected-entries-subset-convolution-timem" where
   title := "Selected entries of ranked subset convolution by the trimmed fast zeta transform"
