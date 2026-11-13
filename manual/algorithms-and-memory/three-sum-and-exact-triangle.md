@@ -430,7 +430,8 @@ paper's, and `d` is defined as a least solution rather than as `2 log_ρ n̂ + O
 [dimension tests](../../CslibFrontierTests/Algorithms/Lean/VectorDimension.lean) compute `d = 8`
 for a small input and instantiate the bound.
 
-Not formalized: the expected running time with these parameters, its worst-case conversion and
+Not formalized: the full multinomial `Θ` estimate, the source asymptotic dimension and trial-count
+bounds, the expected running time with these parameters, its worst-case conversion and
 amplification, the choice of `r`, `δ` and `d` for Corollary 3.5, Corollary 3.5 itself, odd k-SUM
 (Corollary 3.6), the unbalanced and per-query forms, and Word-RAM realizations. The [tests](../../CslibFrontierTests/Algorithms/Lean/VectorConvolution.lean) run
 `solveM` on `[3]^2` and a base-`3` trial with `p = 29` by kernel reduction. Check with

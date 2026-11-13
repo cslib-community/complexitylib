@@ -20,12 +20,12 @@ computed from the input, with the bounds that the error analysis needs.
 * **Many balanced pairs** (`pow_mul_le_card_balancedPairs`): for `0 < r`, `r ∣ d`,
   `r ^ d (r !) ^ (d / r) ≤ (d + 1) ^ r #P`, from the exact count `card_balancedPairs_mul` and the
   maximality of the balanced multinomial coefficient (`Nat.pow_mul_pow_factorial_le`). This is the
-  paper's `#P ≥ r ^ d (r!)^{d/r} / d^{Θ(r)}`.
+  explicit lower bound used in the paper's estimate; the full `Θ` estimate remains open.
 * **Few trials** (`three_mul_vTrials_le`):
   `3 r ^ d (r !) ^ (d / r) μ ≤ k 4 ^ (e + 2) (d + 1) ^ r + 3 r ^ d (r !) ^ (d / r)` for
   `μ = vTrials k e r d`; with `2 ^ e < 2 r ^ d` this is
-  `μ ≤ 64 k (d + 1) ^ r r ^ d / (3 (r!)^{d/r}) + 1`, the paper's `μ = Õ(n̂² / r ^ d)` once
-  `ρ ^ d ≈ n̂²` (`ρ = r ^ 2 / (r!)^{1/r}`).
+  `μ ≤ 64 k (d + 1) ^ r r ^ d / (3 (r!)^{d/r}) + 1`. This is an explicit inequality for given
+  `d`, `e`; the source asymptotic trial-count bound `μ = Õ(n̂² / r ^ d)` is not proved here.
 * **Few bad primes** (`twenty_mul_card_badPrimesOf_le`): if
   `480 K |A × B| log₂ M ≤ (2 ^ e - 1) 2 ^ e`, at most a `1/20` fraction of the primes of the
   window `[2 ^ e, 2 ^ (e + 1))` are bad (Markov's inequality `card_badPrimesOf_le` and the prime
@@ -43,7 +43,8 @@ computed from the input, with the bounds that the error analysis needs.
 
 The constants differ from the paper's (`480` instead of `4`, `log₂ M` instead of `lg² N`, the prime
 window `[2 ^ e, 2 ^ (e + 1))` instead of `(r ^ d, 2 r ^ d]`), and the dimension is the least one
-meeting an explicit integer condition, not `2 log_ρ n̂ + O(log log N)` in closed form. The expected
+meeting an explicit integer condition. The full multinomial `Θ` estimate, the source asymptotic
+dimension bound `2 log_ρ n̂ + O(log log N)` and the asymptotic trial-count bound remain open. The expected
 running time with these parameters, its conversion to a worst-case bound, amplification to error
 `O(1/N)`, and Corollaries 3.5 and 3.6 are not formalized.
 

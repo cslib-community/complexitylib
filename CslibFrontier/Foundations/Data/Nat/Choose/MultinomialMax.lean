@@ -22,8 +22,9 @@ balanced coefficient is at least `r ^ d / (d + 1) ^ r` (`pow_mul_pow_factorial_l
 
 `r ^ (r m) (m !) ^ r ≤ (r m + 1) ^ r (r m)!`.
 
-This is the explicit form of `d! / ((d/r)!)^r = r^d / d^{Θ(r)}` used in [ChanItakuraMaYu2026],
-proof of Theorem 3.4.
+This is an explicit lower bound used in the estimate
+`d! / ((d/r)!)^r = r^d / d^{Θ(r)}` in [ChanItakuraMaYu2026], proof of Theorem 3.4. The full
+`Θ` estimate, including a complementary upper bound with polynomial deficit, is not proved here.
 
 ## Main results
 
