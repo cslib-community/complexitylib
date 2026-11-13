@@ -1516,8 +1516,9 @@ lists in a record or several caches for several oracles, rather than running a p
    over it. Write the lazy handler and the complete-table handler as `interpret` of the same
    program, so the game logic is stated once.
 2. Choose `rep : State → RandomOracle.Cache spec`, the cache that the state represents. Build it
-   from one cache per oracle with `RandomOracle.Cache.sum`, and read list caches with
-   `RandomOracle.ofList`.
+   from one cache per oracle with `RandomOracle.Cache.sum` from
+   [RandomOracle/Sum.lean](../../CslibFrontier/Languages/Probabilistic/RandomOracle/Sum.lean),
+   which `Represented.lean` re-exports, and read list caches with `RandomOracle.ofList`.
 3. Prove the per-call step: each lazy handler call, with its next state mapped by `rep`, is
    `RandomOracle.answer` on the represented cache. On a joined cache, `answer_sum_inl` and
    `answer_sum_inr` reduce this to one side, and `RandomOracle.eval_zoom_memoize_map` proves it for

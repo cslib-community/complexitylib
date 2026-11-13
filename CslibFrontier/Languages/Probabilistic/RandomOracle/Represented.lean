@@ -7,8 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Languages.Probabilistic.RandomOracle
-public import CslibFrontier.Languages.Probabilistic.Sum
+public import CslibFrontier.Languages.Probabilistic.RandomOracle.Sum
 import CslibFrontier.Languages.Probabilistic.Semantics
 import CslibFrontier.Languages.Probabilistic.Simulation
 import CslibFrontier.Probability.Product.Split
@@ -23,21 +22,15 @@ game has the law of completing the represented cache once and answering every ca
 completed table (`eval_run_interpret_eq_complete_bind`). The per-call hypothesis is the only
 game-specific step of an eager/lazy argument.
 
-Several oracles are one oracle on the sum of their interfaces. `Cache.sum` joins their caches, so
-that one represented state serves them all, and `bind_complete_sum` splits the completed table back
-into one table per oracle.
-
-## Main definitions
-
-* `Cslib.RandomOracle.Cache.sum`: the cache of `spec₁ ⊕ₒ spec₂` built from one cache for each side.
+Several oracles are one oracle on the sum of their interfaces. `RandomOracle.Cache.sum`, re-exported
+here, joins their caches, so that one represented state serves them all, and `bind_complete_sum`
+splits the completed table back into one table per oracle.
 
 ## Main results
 
 * `Cslib.RandomOracle.run_interpret_eq_complete_bind`,
   `Cslib.RandomOracle.eval_run_interpret_eq_complete_bind`: a handler that is a lazy random oracle
   on a represented cache has the law of the completed table.
-* `Cslib.RandomOracle.answer_sum_inl`, `Cslib.RandomOracle.answer_sum_inr`: a lazy call on one side
-  of a joined cache is a lazy call on that side's cache.
 * `Cslib.RandomOracle.bind_complete_sum`: completing a joined cache completes each side
   independently.
 -/
@@ -100,23 +93,6 @@ universe u
 
 variable {ι₁ ι₂ : Type u} {spec₁ : OracleSpec.{u, u} ι₁} {spec₂ : OracleSpec.{u, u} ι₂}
 
-/-- The cache of the joined interface `spec₁ ⊕ₒ spec₂`: left queries read `c₁`, right queries read
-`c₂`. -/
-@[expose] def Cache.sum (c₁ : Cache spec₁) (c₂ : Cache spec₂) : Cache (spec₁ ⊕ₒ spec₂)
-  | .inl q => c₁ q
-  | .inr q => c₂ q
-
-@[simp] theorem Cache.sum_inl (c₁ : Cache spec₁) (c₂ : Cache spec₂) (q : ι₁) :
-    Cache.sum c₁ c₂ (.inl q) = c₁ q := rfl
-
-@[simp] theorem Cache.sum_inr (c₁ : Cache spec₁) (c₂ : Cache spec₂) (q : ι₂) :
-    Cache.sum c₁ c₂ (.inr q) = c₂ q := rfl
-
-/-- The responses of a joined interface are finite when both sides' responses are. -/
-instance [∀ q, Finite (spec₁ q)] [∀ q, Finite (spec₂ q)] : ∀ q, Finite ((spec₁ ⊕ₒ spec₂) q)
-  | .inl q => inferInstanceAs (Finite (spec₁ q))
-  | .inr q => inferInstanceAs (Finite (spec₂ q))
-
 /-- Completing a joined cache completes its two sides independently. -/
 theorem bind_complete_sum [Fintype ι₁] [Fintype ι₂] [∀ q, Finite (spec₁ q)]
     [∀ q, Finite (spec₂ q)] {γ : Type u} (d₁ : (q : ι₁) → PMF (spec₁ q))
@@ -127,60 +103,6 @@ theorem bind_complete_sum [Fintype ι₁] [Fintype ι₂] [∀ q, Finite (spec�
       (complete d₁ c₁).bind fun t₁ => (complete d₂ c₂).bind fun t₂ => F t₁ t₂ :=
   PMF.bind_pi_sum (β := spec₁ ⊕ₒ spec₂)
     (fun q => (Cache.sum c₁ c₂ q).elim (OracleComp.sumHandler d₁ d₂ q) PMF.pure) F
-
-variable [DecidableEq ι₁] [DecidableEq ι₂]
-
-/-- Recording a left answer in a joined cache records it in the left cache. -/
-theorem Cache.update_sum_inl (c₁ : Cache spec₁) (c₂ : Cache spec₂) (q : ι₁) (v : spec₁ q) :
-    Function.update (Cache.sum c₁ c₂) (.inl q) (some v) =
-      Cache.sum (Function.update c₁ q (some v)) c₂ := by
-  funext q'
-  rcases q' with q' | q'
-  · by_cases h : q' = q
-    · subst h; simp
-    · simp [Function.update_of_ne h, Function.update_of_ne (Sum.inl_injective.ne h)]
-  · simp
-
-/-- Recording a right answer in a joined cache records it in the right cache. -/
-theorem Cache.update_sum_inr (c₁ : Cache spec₁) (c₂ : Cache spec₂) (q : ι₂) (v : spec₂ q) :
-    Function.update (Cache.sum c₁ c₂) (.inr q) (some v) =
-      Cache.sum c₁ (Function.update c₂ q (some v)) := by
-  funext q'
-  rcases q' with q' | q'
-  · simp
-  · by_cases h : q' = q
-    · subst h; simp
-    · simp [Function.update_of_ne h, Function.update_of_ne (Sum.inr_injective.ne h)]
-
-/-- A lazy call on the left side of a joined cache is a lazy call on the left cache. -/
-theorem answer_sum_inl (d₁ : (q : ι₁) → PMF (spec₁ q)) (d₂ : (q : ι₂) → PMF (spec₂ q))
-    (c₁ : Cache spec₁) (c₂ : Cache spec₂) (q : ι₁) :
-    answer (OracleComp.sumHandler d₁ d₂) (.inl q) (Cache.sum c₁ c₂) =
-      (answer d₁ q c₁).map fun z => (z.1, Cache.sum z.2 c₂) := by
-  cases h : c₁ q with
-  | none =>
-    rw [answer_of_none d₁ c₁ q h,
-      answer_of_none (OracleComp.sumHandler d₁ d₂) (Cache.sum c₁ c₂) (.inl q) h, PMF.map_comp]
-    exact congrArg (PMF.map · (d₁ q))
-      (funext fun v => Prod.ext rfl (Cache.update_sum_inl c₁ c₂ q v))
-  | some v =>
-    rw [answer_of_some d₁ c₁ q v h,
-      answer_of_some (OracleComp.sumHandler d₁ d₂) (Cache.sum c₁ c₂) (.inl q) v h, PMF.pure_map]
-
-/-- A lazy call on the right side of a joined cache is a lazy call on the right cache. -/
-theorem answer_sum_inr (d₁ : (q : ι₁) → PMF (spec₁ q)) (d₂ : (q : ι₂) → PMF (spec₂ q))
-    (c₁ : Cache spec₁) (c₂ : Cache spec₂) (q : ι₂) :
-    answer (OracleComp.sumHandler d₁ d₂) (.inr q) (Cache.sum c₁ c₂) =
-      (answer d₂ q c₂).map fun z => (z.1, Cache.sum c₁ z.2) := by
-  cases h : c₂ q with
-  | none =>
-    rw [answer_of_none d₂ c₂ q h,
-      answer_of_none (OracleComp.sumHandler d₁ d₂) (Cache.sum c₁ c₂) (.inr q) h, PMF.map_comp]
-    exact congrArg (PMF.map · (d₂ q))
-      (funext fun v => Prod.ext rfl (Cache.update_sum_inr c₁ c₂ q v))
-  | some v =>
-    rw [answer_of_some d₂ c₂ q v h,
-      answer_of_some (OracleComp.sumHandler d₁ d₂) (Cache.sum c₁ c₂) (.inr q) v h, PMF.pure_map]
 
 end Sum
 
