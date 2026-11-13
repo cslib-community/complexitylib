@@ -13,7 +13,6 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import CslibFrontier.Foundations.Data.BitString.WordCount
-import Mathlib.Logic.Equiv.Fin.Basic
 
 /-!
 # The class ZPP
@@ -135,23 +134,13 @@ theorem ZPP_subset_coRP : ZPP enc ⊆ coRP enc := fun _ hA => ZPP_subset_RP (com
 
 /-! ### Splitting random strings -/
 
-/-- Counting the random strings of length `m + k` by their first `m` and last `k` bits. -/
-private theorem card_filter_take_drop (m k : ℕ) (P : List Bool → List Bool → Prop)
-    [∀ u v, Decidable (P u v)] :
-    (Finset.univ.filter fun r : Fin (m + k) → Bool =>
-      P ((List.ofFn r).take m) ((List.ofFn r).drop m)).card =
-      (Finset.univ.filter fun x : (Fin m → Bool) × (Fin k → Bool) =>
-        P (List.ofFn x.1) (List.ofFn x.2)).card := by
-  rw [BitString.card_filter_ofFn_add m k P, Finset.card_filter, Fintype.sum_prod_type]
-  simp only [Finset.card_filter]
-
 /-- The random strings of length `m + k` whose last `k` bits satisfy `P`. -/
 private theorem card_filter_drop (m k : ℕ) (P : List Bool → Prop) [DecidablePred P] :
     (Finset.univ.filter fun r : Fin (m + k) → Bool => P ((List.ofFn r).drop m)).card =
       2 ^ m * (Finset.univ.filter fun v : Fin k → Bool => P (List.ofFn v)).card := by
-  rw [card_filter_take_drop m k fun _ v => P v, ← Finset.univ_product_univ,
-    Finset.filter_product_right (fun v : Fin k → Bool => P (List.ofFn v)), Finset.card_product]
-  simp
+  have h := BitString.card_filter_take_drop (Nat.le_add_right m k) (fun _ => True) P
+  rw [Nat.add_sub_cancel_left] at h
+  simpa using h
 
 /-- A prefix of the right length is a random string of that length. -/
 private theorem exists_ofFn_eq_take {m k : ℕ} (r : Fin (m + k) → Bool) :

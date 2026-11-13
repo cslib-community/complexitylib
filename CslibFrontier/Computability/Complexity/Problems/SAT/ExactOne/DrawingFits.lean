@@ -16,14 +16,15 @@ import Mathlib.Tactic.Linarith
 # Constant-factor coordinate bounds for the actual positive drawing compiler
 
 Every emitted vertex and route point is bounded on the actual drawing lists. The source drawing
-is dilated by `1080000`, and every local replacement lies in a side-`540000` square. The source
+is dilated by `positiveScale = 1080000`, and every local replacement lies in a side-`540000`
+square. The source
 axis translation and the endpoint cuts fit within the same constant margin. These bounds do
 not require geometric validity of the input drawing.
 
 ## Main results
 
 * `positiveDrawing_fits`: an input rectangle of width `W` and height `H` yields an actual output
-  rectangle with sides `1080000 * (W + 1)` and `1080000 * (H + 1)`.
+  rectangle with sides `positiveScale * (W + 1)` and `positiveScale * (H + 1)`.
 
 ## References
 
@@ -133,7 +134,7 @@ private theorem local_route_bounds (p : ClauseProfile) (s : PortAssignment)
 
 private theorem placed_point_bounds {W H : ℕ} {a q : Point}
     (ha : Rect W H a) (hq : Rect 540000 540000 q) :
-    Rect (1080000 * (W + 1)) (1080000 * (H + 1)) (positiveScale • a + q) := by
+    Rect (positiveScale * (W + 1)) (positiveScale * (H + 1)) (positiveScale • a + q) := by
   dsimp [Rect, positiveScale, Prod.smul_mk, Int.nsmul_eq_mul] at *
   omega
 
@@ -149,7 +150,7 @@ private theorem cut_offset_bounds (a b : Point) :
 private theorem cutStart_points_bounds {W H : ℕ} {r : Route}
     (hr : ∀ q ∈ r, Rect W H q) :
     ∀ q ∈ cutStart positiveScale positiveRadius r,
-      Rect (1080000 * (W + 1)) (1080000 * (H + 1)) (q + positiveTranslation) := by
+      Rect (positiveScale * (W + 1)) (positiveScale * (H + 1)) (q + positiveTranslation) := by
   cases r with
   | nil => simp [cutStart, dilateRoute]
   | cons a r =>
@@ -173,15 +174,15 @@ private theorem cutStart_points_bounds {W H : ℕ} {r : Route}
 theorem positiveExterior_points_fits {φ : CNF ℕ} {d : Graph.OrthogonalDrawing} {W H : ℕ}
     (hd : Graph.drawingFits d W H) (i j : ℕ) :
     ∀ q ∈ positiveExterior φ d i j,
-      0 ≤ q.1 ∧ q.1 ≤ 1080000 * (W + 1) ∧
-        0 ≤ q.2 ∧ q.2 ≤ 1080000 * (H + 1) := by
+      0 ≤ q.1 ∧ q.1 ≤ positiveScale * (W + 1) ∧
+        0 ≤ q.2 ∧ q.2 ≤ positiveScale * (H + 1) := by
   intro q hq
   obtain ⟨x, hx, rfl⟩ := List.mem_map.mp hq
   exact cutStart_points_bounds (sourceRoute_points_bounds hd _ _) x hx
 
 private theorem actual_variablePoint_bounds {φ : CNF ℕ} {d : Graph.OrthogonalDrawing}
     {W H : ℕ} (hd : Graph.drawingFits d W H) (v : CNF.PositiveExactOneCompile.Variable ℕ) :
-    Rect (1080000 * (W + 1)) (1080000 * (H + 1)) (positiveVariablePoint φ d v) := by
+    Rect (positiveScale * (W + 1)) (positiveScale * (H + 1)) (positiveVariablePoint φ d v) := by
   apply getD_property _ _ _ (zero_rect _ _)
   intro q hq
   obtain ⟨⟨w, q⟩, htable, rfl⟩ := List.mem_map.mp hq
@@ -204,7 +205,7 @@ private theorem actual_variablePoint_bounds {φ : CNF ℕ} {d : Graph.Orthogonal
 private theorem actual_clausePoint_bounds {φ : CNF ℕ} {d : Graph.OrthogonalDrawing}
     {W H : ℕ} (hd : Graph.drawingFits d W H) {pc : PositivePlacedClause}
     (hpc : pc ∈ positivePlacedClauses φ d) :
-    Rect (1080000 * (W + 1)) (1080000 * (H + 1)) pc.point := by
+    Rect (positiveScale * (W + 1)) (positiveScale * (H + 1)) pc.point := by
   obtain ⟨⟨c, i⟩, _, hpc⟩ := List.mem_flatMap.mp hpc
   obtain ⟨⟨a, j⟩, _, rfl⟩ := List.mem_map.mp hpc
   exact placed_point_bounds (input_position_bounds hd _ _)
@@ -214,9 +215,9 @@ private theorem actual_incidenceRoute_bounds {φ : CNF ℕ} {d : Graph.Orthogona
     {W H : ℕ} (hd : Graph.drawingFits d W H) (i : ℕ) (c : Clause ℕ) {e : LocalIncidence}
     (he : e ∈ (clauseGeometry φ d i c).incidenceRoutes) :
     ∀ q ∈ positiveIncidenceRoute φ d i c e,
-      Rect (1080000 * (W + 1)) (1080000 * (H + 1)) q := by
+      Rect (positiveScale * (W + 1)) (positiveScale * (H + 1)) q := by
   have hlocal : ∀ q ∈ translate (positiveBoxOrigin φ d i) e.route,
-      Rect (1080000 * (W + 1)) (1080000 * (H + 1)) q := by
+      Rect (positiveScale * (W + 1)) (positiveScale * (H + 1)) q := by
     intro q hq
     obtain ⟨x, hx, rfl⟩ := List.mem_map.mp hq
     rw [add_comm x]
@@ -234,7 +235,8 @@ private theorem actual_incidenceRoute_bounds {φ : CNF ℕ} {d : Graph.Orthogona
 holds for every finite input drawing, including malformed inputs handled by default lookups. -/
 theorem positiveDrawing_fits (φ : CNF ℕ) {d : Graph.OrthogonalDrawing} {W H : ℕ}
     (hd : Graph.drawingFits d W H) :
-    Graph.drawingFits (positiveDrawing φ d) (1080000 * (W + 1)) (1080000 * (H + 1)) := by
+    Graph.drawingFits (positiveDrawing φ d) (positiveScale * (W + 1))
+      (positiveScale * (H + 1)) := by
   constructor
   · intro q hq
     rcases List.mem_append.mp hq with hv | hc

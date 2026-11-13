@@ -45,7 +45,7 @@ example (m : Fin 2 → Bool) :
         (encPair (encPair (encPair encUnary encUnary) encNat)
           (encPair encBits encBits)) encBits ∧
       run (((1, 2), 29), (ModuleSIS.encodeVec rlweS,
-        GeneralSIS.encodeMatrix (extendCiphertext (rlweCt m)))) =
+        SIS.encodeMatrix (extendCiphertext (rlweCt m)))) =
         List.ofFn m := by
   obtain ⟨run, hnative, hrun⟩ := exists_computableInPolyTime_moduleLWEDecrypt
   refine ⟨run, hnative, ?_⟩
@@ -78,7 +78,7 @@ example :
         (encPair (encPair (encPair encUnary encUnary) encNat)
           (encPair encBits encBits)) encBits ∧
       run (((2, 2), 41), (ModuleSIS.encodeVec mlweS,
-        GeneralSIS.encodeMatrix (extendCiphertext mlweCt))) =
+        SIS.encodeMatrix (extendCiphertext mlweCt))) =
         [true, false] := by
   obtain ⟨run, hnative, hrun⟩ := exists_computableInPolyTime_moduleLWEDecrypt
   refine ⟨run, hnative, ?_⟩
@@ -98,13 +98,13 @@ example :
         (encPair (encPair (encPair encUnary encUnary) encNat)
           (encPair encBits encBits)) encBits ∧
       run (((0, 2), 29), (ModuleSIS.encodeVec (0 : Fin 0 → Fin 2 → ℤ),
-        GeneralSIS.encodeMatrix (extendCiphertext ((0, ![0, 14]) : ModuleLWECiphertext 0 2 29)))) =
+        SIS.encodeMatrix (extendCiphertext ((0, ![0, 14]) : ModuleLWECiphertext 0 2 29)))) =
         [false, true] ∧
       run (((1, 0), 29), (ModuleSIS.encodeVec (0 : Fin 1 → Fin 0 → ℤ),
-        GeneralSIS.encodeMatrix (extendCiphertext ((0, 0) : ModuleLWECiphertext 1 0 29)))) =
+        SIS.encodeMatrix (extendCiphertext ((0, 0) : ModuleLWECiphertext 1 0 29)))) =
         [] ∧
       run (((1, 2), 1), (ModuleSIS.encodeVec (![![0, 0]]),
-        GeneralSIS.encodeMatrix (extendCiphertext ((0, 0) : ModuleLWECiphertext 1 2 1)))) =
+        SIS.encodeMatrix (extendCiphertext ((0, 0) : ModuleLWECiphertext 1 2 1)))) =
         [false, false] := by
   obtain ⟨run, hnative, hrun⟩ := exists_computableInPolyTime_moduleLWEDecrypt
   refine ⟨run, hnative, ?_, ?_, ?_⟩
@@ -125,7 +125,7 @@ example :
         (encPair (encPair (encPair encUnary encUnary) encNat)
           (encPair encBits encBits)) encBits ∧
       run (((0, 2), 29), (ModuleSIS.encodeVec (0 : Fin 0 → Fin 2 → ℤ),
-        GeneralSIS.encodeMatrix (extendCiphertext ((0, ![7, 8]) : ModuleLWECiphertext 0 2 29)))) =
+        SIS.encodeMatrix (extendCiphertext ((0, ![7, 8]) : ModuleLWECiphertext 0 2 29)))) =
         [false, true] := by
   obtain ⟨run, hnative, hrun⟩ := exists_computableInPolyTime_moduleLWEDecrypt
   refine ⟨run, hnative, ?_⟩
