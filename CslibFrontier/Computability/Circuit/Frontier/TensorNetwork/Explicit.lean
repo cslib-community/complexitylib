@@ -256,9 +256,8 @@ theorem entry_explicitTable [Zero R] (v : V) (x : Fin m → Bool) :
   simp only [explicitTable, List.getElem_map, List.getElem_range]
   refine N.tensor_congr v _ _ fun e he => ?_
   have hmem : ee e ∈ ps := (N.mem_explicitPorts ee).mpr (by simpa using he)
-  have hidx := List.idxOf_lt_length_of_mem hmem
-  rw [BitString.testBit_lsbValue, List.getD_eq_getElem _ _ (by simpa using hidx), List.getElem_map,
-    List.getElem_idxOf hidx, Function.comp_apply]
+  rw [BitString.testBit_lsbValue]
+  simp [ps, List.getD_eq_getElem?_getD, hmem]
 
 /-- An edge is a port of a vertex at most once. -/
 theorem nodup_explicitPorts (v : V) : (N.explicitPorts ee v).Nodup :=

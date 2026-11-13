@@ -241,12 +241,9 @@ theorem count_eq_modelCount (φ : CNF ℕ) : count φ = φ.modelCount := by
     (fun σ τ _ _ => ?_) (fun i => ?_)
   · constructor
     · intro h v hv
-      have hlt : vs.idxOf v < vs.length :=
-        List.idxOf_lt_length_iff.mpr (CNF.mem_distinctVars.mpr hv)
       have hbit := congrArg (fun n => n.testBit (vs.idxOf v)) (Fin.mk.inj h)
-      simpa only [BitVec.testBit_toNat, BitVec.getLsbD_ofBoolListLE, List.getD_eq_getElem?_getD,
-        List.getElem?_map, List.getElem?_eq_getElem hlt, List.getElem_idxOf hlt, Option.map_some,
-        Option.getD_some] using hbit
+      simpa [vs, BitVec.testBit_toNat, BitVec.getLsbD_ofBoolListLE, List.getD_eq_getElem?_getD,
+        CNF.mem_distinctVars.mpr hv] using hbit
     · intro h
       have hmap : vs.map σ = vs.map τ :=
         List.map_congr_left fun v hv => h v (CNF.mem_distinctVars.mp hv)
@@ -259,12 +256,8 @@ theorem count_eq_modelCount (φ : CNF ℕ) : count φ = φ.modelCount := by
       exact toNat_ofBoolListLE_bitsAssignment φ.nodup_distinctVars i.isLt
     · rintro ⟨σ, hσ, rfl⟩
       refine (CNF.eval_congr fun v hv => ?_).trans hσ
-      have hidx : vs.idxOf v < vs.length :=
-        List.idxOf_lt_length_iff.mpr (CNF.mem_distinctVars.mpr hv)
-      rw [bitsAssignment, BitVec.testBit_toNat, BitVec.getLsbD_ofBoolListLE,
-        List.getD_eq_getElem?_getD, List.getElem?_map, List.getElem?_eq_getElem hidx,
-        List.getElem_idxOf hidx]
-      rfl
+      simp [vs, bitsAssignment, BitVec.testBit_toNat, BitVec.getLsbD_ofBoolListLE,
+        List.getD_eq_getElem?_getD, CNF.mem_distinctVars.mpr hv]
 
 open ComputableInPolyTime in
 private theorem computableInPolyTime_init : ComputableInPolyTime init encCNF encState := by
