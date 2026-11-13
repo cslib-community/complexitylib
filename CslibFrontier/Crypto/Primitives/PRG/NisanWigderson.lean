@@ -257,7 +257,8 @@ theorem predictionExperiment_generator (D : Design ℓ n a m) (f : (Fin n → Bo
       (do
         let w ← uniformOfFintype (Fin ℓ → Bool)
         hardwiredExperiment D f i w predictor) := by
-  simp only [Generator.predictionExperiment, Generator.outputDist, monad_bind_eq_bind, PMF.bind_map]
+  simp only [Generator.predictionExperiment_eq_bind, Generator.outputDist, monad_bind_eq_bind,
+    PMF.bind_map]
   rw [D.uniformOfFintype_bind_eq i]
   simp only [Function.comp_apply, generator_apply, Design.restrict_extend]
   rfl

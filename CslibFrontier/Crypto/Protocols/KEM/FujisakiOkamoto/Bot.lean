@@ -13,7 +13,6 @@ import CslibFrontier.Crypto.Game.CloseTo.UntilBad
 import CslibFrontier.Crypto.Game.Hybrid
 import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Challenge
 import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Correctness
-import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Lazy
 import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Pushforward
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.RandomOracle.Probabilistic
@@ -548,6 +547,59 @@ def cachedCoupledBotGame (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT 
     (b : Bool) : ProbComp Bool :=
   S.coupledFilterGame (cachedCoupledBotCheck S.pke) A b
 
+/-- The three partial tables `(G, Hraw, Hq)` of the coupled game. -/
+private abbrev Tables (M R CT K : Type) : Type :=
+  RandomOracle.Cache (fun _ : M => R) × RandomOracle.Cache (fun _ : Bool × M × CT => K) ×
+    RandomOracle.Cache (fun _ : CT => K)
+
+/-- The represented tables of a `SimState`. -/
+private def tablesOf (st : SimState M R CT K) : Tables M R CT K :=
+  (RandomOracle.ofList st.gCache, RandomOracle.ofList st.hCache, RandomOracle.ofList st.hqCache)
+
+/-- `coupledHashH` on represented tables, answered with `RandomOracle.answer`. -/
+private noncomputable def answerHashH (S : Scheme PK SK M R CT K) (pk : PK) (sk : SK)
+    (x : Bool × M × CT) : StateT (Tables M R CT K) PMF K := fun (tG, tH, tQ) =>
+  match x with
+  | (false, m, c) =>
+    (RandomOracle.answer (fun _ => ProbComp.eval S.pke.sampleCoins) m tG).bind fun y =>
+      if S.pke.encDet pk m y.1 = c ∧ S.pke.dec sk c = some m then
+        (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) c tQ).map
+          fun z => (z.1, (y.2, tH, z.2))
+      else
+        (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) (false, m, c) tH).map
+          fun z => (z.1, (y.2, z.2, tQ))
+  | (true, m, c) =>
+    (RandomOracle.answer (fun _ => ProbComp.eval S.sampleKey) (true, m, c) tH).map
+      fun z => (z.1, (tG, z.2, tQ))
+
+/-- Mapping `SimState` to its represented tables turns `coupledHashH` into `answerHashH`. -/
+private theorem coupledHashH_map_tablesOf (S : Scheme PK SK M R CT K) (pk : PK) (sk : SK)
+    (x : Bool × M × CT) (st : SimState M R CT K) :
+    (ProbComp.eval (S.coupledHashH pk sk x st)).map (fun z => (z.1, tablesOf z.2)) =
+      S.answerHashH pk sk x (tablesOf st) := by
+  rcases x with ⟨_ | _, m, c⟩
+  · change (ProbComp.eval (simHashG S.pke.sampleCoins m st >>= fun vs =>
+        (if S.pke.encDet pk m vs.1 = c ∧ S.pke.dec sk c = some m then
+          simHashHq S.sampleKey c else simHashHRaw S.sampleKey (false, m, c)) vs.2)).map _ = _
+    dsimp only [answerHashH, simHashG]
+    refine eval_zoom_memoize_bind (fun st : SimState M R CT K => st.gCache)
+      (fun st g => { st with gCache := g }) S.pke.sampleCoins m st
+      (fun r st' => (if S.pke.encDet pk m r = c ∧ S.pke.dec sk c = some m then
+          simHashHq S.sampleKey c else simHashHRaw S.sampleKey (false, m, c)) st')
+      tablesOf _ (fun r gC => ?_)
+    by_cases h : S.pke.encDet pk m r = c ∧ S.pke.dec sk c = some m
+    · simp only [h, and_self, ↓reduceIte]
+      exact eval_zoom_memoize_map SimState.hqCache (fun st q => { st with hqCache := q })
+        S.sampleKey c _ (fun k => k) tablesOf
+        (fun q => (RandomOracle.ofList gC, RandomOracle.ofList st.hCache, q)) (fun _ => rfl)
+    · simp only [h, ↓reduceIte]
+      exact eval_zoom_memoize_map (fun st : SimState M R CT K => st.hCache)
+        (fun st h => { st with hCache := h }) S.sampleKey (false, m, c) _ (fun k => k) tablesOf
+        (fun h => (RandomOracle.ofList gC, h, RandomOracle.ofList st.hqCache)) (fun _ => rfl)
+  · exact eval_zoom_memoize_map (fun st : SimState M R CT K => st.hCache)
+      (fun st h => { st with hCache := h }) S.sampleKey (true, m, c) st (fun k => k) tablesOf
+      (fun h => (RandomOracle.ofList st.gCache, h, RandomOracle.ofList st.hqCache)) (fun _ => rfl)
+
 /-- `coupledFilterHandler (cachedCoupledBotCheck S.pke pk sk)` on represented tables
 `(tG, tH, tQ)`. -/
 private noncomputable def answerCachedBotHandler (S : Scheme PK SK M R CT K) (pk : PK) (sk : SK)
@@ -615,6 +667,18 @@ private theorem cachedCoupledBotHandler_map_tablesOf (S : Scheme PK SK M R CT K)
 section CompleteBot
 
 variable [Fintype M] [Finite R] [Fintype CT] [Finite K]
+
+/-- Full tables `(G, Hraw, Hq)` of the eager coupled game. -/
+private abbrev FullTables (M R CT K : Type) : Type :=
+  (M → R) × (Bool × M × CT → K) × (CT → K)
+
+/-- Complete the three represented tables independently. -/
+private noncomputable def completeTables (S : Scheme PK SK M R CT K) :
+    Tables M R CT K → PMF (FullTables M R CT K)
+  | (tG, tH, tQ) =>
+    (RandomOracle.complete (fun _ => ProbComp.eval S.pke.sampleCoins) tG).bind fun G =>
+    (RandomOracle.complete (fun _ => ProbComp.eval S.sampleKey) tH).bind fun H =>
+    (RandomOracle.complete (fun _ => ProbComp.eval S.sampleKey) tQ).map fun Q => (G, H, Q)
 
 private noncomputable def eagerCoupledBotStateHandler (S : Scheme PK SK M R CT K) (pk : PK)
     (sk : SK) (cStar : CT) (q : ROQuery M CT) :

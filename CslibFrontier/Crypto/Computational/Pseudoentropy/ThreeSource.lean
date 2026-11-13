@@ -554,7 +554,7 @@ theorem SamplablePair.HasGapWithAdvice.extract_three {pair : SamplablePair} {gap
     (numerator := fun n _ => numerator n) efficient hfits
     (Eventually.of_forall (by intro n; decide))
     hvalid hfirst hmiddle hlast (fun a _ word => adversary (a, word)) htest
-  simpa only [distinguishingGame, PMF.monad_bind_eq_bind, ProbComp.eval_bind,
+  simpa only [distinguishingGame_eq_bind, PMF.monad_bind_eq_bind, ProbComp.eval_bind,
     BitString.eval_sampleList] using h
 
 end Cslib.Crypto.Pseudoentropy

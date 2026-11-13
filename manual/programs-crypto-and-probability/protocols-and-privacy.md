@@ -119,14 +119,23 @@ application. At `n = 2` its honest transcript has exactly **12 payload bits**,
 attaining the generic bound. Its constant hash exercises accounting only;
 it is not a collision-resistance example.
 
-For Micali's non-interactive random-oracle compilation of Kilian's protocol,
-import `CslibFrontier.Crypto.Computational.Kilian.Micali`
-([`Kilian/Micali.lean`](../../CslibFrontier/Crypto/Computational/Kilian/Micali.lean)).
+Random-oracle constructions over Merkle trees import
+[`MerkleTree/Prog.lean`](../../CslibFrontier/Crypto/Computational/MerkleTree/Prog.lean).
 It lifts Merkle tree commitment, opening and verification to `OracleComp`
 programs (`merkleRootProg`, `merklePathProg`, `merkleVerifyProg`) over
 `MerkleHashSpec`, proves their pure-oracle simulation lemmas under
-`OracleComp.evalPure` and lazy random-oracle opening completeness
-(`merkleVerifyProg_merklePathProg`), and defines the two-channel Micali prover
+`OracleComp.evalPure`
+([`Oracle/EvalPure.lean`](../../CslibFrontier/Languages/Probabilistic/Oracle/EvalPure.lean))
+and lazy random-oracle opening completeness
+(`merkleVerifyProg_merklePathProg`, through `map_fst_runWith_answer_eq_pure` in
+[`RandomOracle/Invariant.lean`](../../CslibFrontier/Languages/Probabilistic/RandomOracle/Invariant.lean)),
+and shows that a memoized verification records every hash step of each checked
+path (`pathQueriedInTrace_of_mem_support_mapM_merkleVerifyProg`).
+
+For Micali's non-interactive random-oracle compilation of Kilian's protocol,
+import `CslibFrontier.Crypto.Computational.Kilian.Micali`
+([`Kilian/Micali.lean`](../../CslibFrontier/Crypto/Computational/Kilian/Micali.lean)).
+It defines the two-channel Micali prover
 and verifier (`micaliProve`, `micaliVerify` over `MicaliSpec α`) where the
 Fiat–Shamir query `Sum.inr (x, root)` includes both the statement `x` and the
 Merkle root. `micaliVerify_micaliProve_eq_true` and
@@ -198,7 +207,7 @@ trace extraction from Construction 18.5.3 and Lemma 18.5.7, pp. 199 and 207):
 - **Two-channel BCS random-oracle execution and completeness:** over
   `BCSROMSpec Stmt Chal := MerkleHashSpec ⊕ₒ BCSFSSpec Stmt Chal` (reusing `MerkleHashSpec`,
   `merkleRootProg`, `merklePathProg`, and `merkleVerifyProg` from
-  [`Kilian/Micali.lean`](../../CslibFrontier/Crypto/Computational/Kilian/Micali.lean)), the left
+  [`MerkleTree/Prog.lean`](../../CslibFrontier/Crypto/Computational/MerkleTree/Prog.lean)), the left
   channel (`Sum.inl`) answers Merkle queries lazily with `BitString.uniformList σ` and the right
   channel (`Sum.inr`) answers transcript-chained Fiat–Shamir queries
   `BCSFSQuery Stmt Chal := Stmt × List (List Bool) × List Chal` lazily with
