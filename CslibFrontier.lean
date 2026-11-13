@@ -1043,6 +1043,7 @@ public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Concentr
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConcentratingReduction
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConcentratingShift
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConcentratingShiftSet
+public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConstantDepth
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Defs
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.DerivativeClosed
 public import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.HardnessToHittingSet

@@ -411,6 +411,24 @@ The theorem is finite: it takes the hardness of one polynomial as a hypothesis. 
 
 **Not certified here.** Positive characteristic (the formula divides by `m`, interpolation by node differences). Power-series roots and the general Lagrange inversion theorem for compositional inverses. Factors other than roots. Circuits (only formulas), depth as opposed to product-depth, and any algorithm or bit-cost bound; `rootCost` is not optimized.
 
+## Subexponential hitting sets for constant-depth formulas
+
+Import [HittingSet/ConstantDepth.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ConstantDepth.lean). This is a finite form of Corollary 6 of Limaye, Srinivasan and Tavenas: the library's lower bound for iterated matrix multiplication, in its formula form `SPFormula.eventually_pow_lt_nodeCount_of_imm` ([CircuitLowerBound.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/CircuitLowerBound.lean)), turned into a hitting set by `isHittingSet_generatorHittingSet_of_hard` of [Roots of polynomial equations and hardness versus randomness](#roots-of-polynomial-equations-and-hardness-versus-randomness). For `[Field K] [CharZero K]`, a product-depth `Δ` and an exponent `c`:
+
+- [eventually_isHittingSet_constantDepthHittingSet_rpow](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ConstantDepth.lean): for every real `ε > 0`, for all large `n`, `constantDepthHittingSet K c ⌈ε⁻¹⌉₊ n` hits `{p | ∃ C : SPFormula K n, C.polynomial = p ∧ C.productDepth ≤ Δ ∧ C.nodeCount ≤ n ^ c}` and has at most `2 ^ (n ^ ε)` points (a real inequality).
+- `eventually_isHittingSet_constantDepthHittingSet_circuit_rpow`: the same for simple circuits (`SPCircuit.IsSimple`) of product-depth at most `Δ` with at most `n ^ c` gates, with the set at exponent `(c + 2) * (2 * Δ + 1)`.
+- `eventually_isHittingSet_constantDepthHittingSet`, `eventually_card_constantDepthHittingSet_le`, `eventually_isHittingSet_constantDepthHittingSet_circuit`: the separate statements at `ε = 1 / t` for a natural number `t ≥ 1`.
+
+The set does not depend on `Δ`. It is the set of values of the Nisan–Wigderson generator of `IMM_{ν,δ}`, with `ν = 2 ^ ⌊log₂ n / 8t⌋` and `δ = ⌊log₂ ⌊log₂ ν⌋⌋`, over a Reed–Solomon design indexed by coefficient vectors, on a grid; the parameters are the definitions in the namespace `ConstantDepthHittingSet`.
+
+Complete client: [ConstantDepthHittingSet.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/ConstantDepthHittingSet.lean) takes the formula `x₀ + x₁` in `n ≥ 2` variables (product-depth zero, three nodes) and obtains, for all large `n`, a point of the set at `c = 2` and `ε = 1 / 2` where it does not vanish, together with the bound `2 ^ √n` on the size of the set; it also instantiates the circuit form. Build it from the repository root with
+
+```bash
+lake build CslibFrontierTests.Computability.Circuit.Arithmetic.ConstantDepthHittingSet
+```
+
+**Not certified here.** Corollary 6 of the source is a deterministic identity test with running time `(s ^ (Δ + 1) n) ^ O(n ^ μ)` for circuits of depth `Δ = o(log log log n)` in characteristic zero; here there is no algorithm, running time, uniformity or bit complexity, only the existence and size of an explicit set, with thresholds "for all large `n`" that are not explicit. Constant product-depth only. Circuits that are not simple. Positive characteristic.
+
 ## Rational formulas and hitting lists
 
 [RatOp](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Rational/Defs.lean#L69) uses rational constants, addition, multiplication and inverse. Evaluation is a relation: an inverse node is defined only when both products with the proposed inverse are one. This supports noncommutative matrix substitution without silently assigning a value at poles. A formula is admissible if some positive-dimensional rational matrix substitution makes it defined, and nonzero if some defined value is nonzero.

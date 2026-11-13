@@ -21,6 +21,7 @@ import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.LowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.UpperBound
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.AnyOrder
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Basic
+import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConstantDepth
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConcentratingShiftSet
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.LowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.NoncommABP
@@ -1158,6 +1159,33 @@ register_result "hitting-set-set-multilinear-depth-three" where
     from a source; the perfect hash family is the library's, so the size bound differs from \
     the source's. Existence and size of an explicit set only: no bit complexity and no \
     black-box algorithm model."
+
+register_result "hitting-set-constant-depth" where
+  title := "Subexponential hitting sets for constant-depth formulas from the LST lower bound"
+  topic := "algebraic complexity"
+  sources := [
+    { paper := LimayeSrinivasanTavenas2021, theorem := "Corollary 6, via Lemma 18",
+      locator := "printed p. 5 and §6 p. 13, ECCC TR21-081 rev. 1" },
+    { paper := ChouKumarSolomon2019, theorem := "Theorem 2.3",
+      locator := "printed p. 3 (arXiv:1803.05933v1)" },
+    { paper := BhattacharjeeEtAl2025, theorem := "Theorems 4.1 and 6.1",
+      locator := "printed pp. 19–20 and 28 (arXiv:2506.23214v1)" }
+  ]
+  theorems := [
+    Cslib.Circuits.Arithmetic.eventually_isHittingSet_constantDepthHittingSet_rpow,
+    Cslib.Circuits.Arithmetic.eventually_isHittingSet_constantDepthHittingSet_circuit_rpow,
+    Cslib.Circuits.Arithmetic.eventually_isHittingSet_constantDepthHittingSet,
+    Cslib.Circuits.Arithmetic.eventually_card_constantDepthHittingSet_le,
+    Cslib.Circuits.Arithmetic.eventually_isHittingSet_constantDepthHittingSet_circuit
+  ]
+  scope := "Over a field of characteristic zero, for every product-depth Δ, exponent c and \
+    real ε > 0, for all large n: an explicit set of at most 2^(n^ε) points of Kⁿ containing a \
+    non-root of every nonzero polynomial computed by an unbounded fan-in formula of \
+    product-depth at most Δ with at most n^c nodes, and, at a larger exponent, by a simple \
+    circuit of product-depth at most Δ with at most n^c gates. A finite form of LST \
+    Corollary 6, which is an identity test with running time (s^(Δ+1) n)^O(n^μ) for depth \
+    o(log log log n): here constant product-depth, existence and size of an explicit set with \
+    non-explicit large-n thresholds, no running time or uniformity, characteristic zero only."
 
 register_result "hitting-set-noncommutative-abp" where
   title := "Quasipolynomial hitting sets of matrices for non-commutative ABPs"
