@@ -197,6 +197,7 @@ import CslibFrontier.Logics.SecondOrder.WordMSO.OfRegular
 import CslibFrontier.Logics.SecondOrder.WordMSO.Separation
 import CslibFrontier.Logics.SecondOrder.WordMSO.StarFree
 import CslibFrontier.MachineLearning.OnlineLearning.SwapRegret
+import CslibFrontier.MachineLearning.PACBayes.Basic
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.AC0Mod
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.Amplification
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.Complexity
@@ -1477,6 +1478,26 @@ register_result "blum-mansour-swap-regret" where
     With Hedge copies and losses in [-1, 1], swap regret is at most η T + n ln n / η, and \
     2 √(T n ln n) with the tuned rate when n ≥ 2 and T ≥ n ln n. Stationary vectors are \
     chosen classically; no running time is charged."
+
+register_result "pac-bayes-mcallester" where
+  title := "McAllester's PAC-Bayes bound and its Occam corollary"
+  topic := "learning theory"
+  sources := [
+    { paper := ShalevShwartzBenDavid2014, theorem := "Theorem 31.1 and Exercise 31.2",
+      locator := "Section 31.1 and 31.3, pp. 416–418" },
+    { paper := McAllester1999, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.MachineLearning.PACBayes.measure_pi_exists_integral_risk_gt,
+    Cslib.MachineLearning.PACBayes.measure_pi_exists_integral_risk_gt_log_div,
+    Cslib.MachineLearning.PACBayes.measure_pi_exists_risk_gt
+  ]
+  scope := "Countable hypothesis index with measurable singletons, a prior fixed before the \
+    sample, measurable losses in [0, 1], m ≥ 2 i.i.d. examples and δ > 0. With probability at \
+    least 1 - δ every posterior Q with KL(Q ‖ P) < ∞, possibly depending on the sample, has \
+    E_Q L_D ≤ E_Q L_S + √((KL(Q ‖ P) + log (m / δ)) / (2 (m - 1))); the proved form has \
+    log (√m / δ). Point masses give the Occam bound with log (1 / P {i}). Measurable \
+    hypothesis spaces, the kl form and Catoni's bound are not covered."
 
 register_result "gmw-zero-knowledge" where
   title := "Goldreich–Micali–Wigderson auxiliary-input zero-knowledge proofs for NP"
