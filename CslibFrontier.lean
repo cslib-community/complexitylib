@@ -1130,6 +1130,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperserCore.St
 public import CslibFrontier.Computability.Circuit.Boolean.AltFormula
 public import CslibFrontier.Computability.Circuit.Boolean.AltFormula.TopDown
 public import CslibFrontier.Computability.Circuit.Boolean.Arithmetic
+public import CslibFrontier.Computability.Circuit.Boolean.ArithmeticRing
 public import CslibFrontier.Computability.Circuit.Boolean.AtLeast
 public import CslibFrontier.Computability.Circuit.Boolean.BalancedCode
 public import CslibFrontier.Computability.Circuit.Boolean.Barrington
@@ -1788,6 +1789,7 @@ public import CslibFrontier.Computability.Communication.OneOut
 public import CslibFrontier.Computability.Communication.OneOutLargeRectangle
 public import CslibFrontier.Computability.Communication.OneOutRectangle
 public import CslibFrontier.Computability.Communication.Operations
+public import CslibFrontier.Computability.Communication.Partition
 public import CslibFrontier.Computability.Communication.PartitionJoin
 public import CslibFrontier.Computability.Communication.PaturiSimon
 public import CslibFrontier.Computability.Communication.Protocol
@@ -6132,6 +6134,7 @@ public import CslibFrontier.Languages.Probabilistic.Semantics
 public import CslibFrontier.Languages.Probabilistic.Sharing
 public import CslibFrontier.Languages.Probabilistic.Simulation
 public import CslibFrontier.Languages.Probabilistic.Sum
+public import CslibFrontier.Languages.Probabilistic.Sum.Lift
 public import CslibFrontier.Languages.Probabilistic.Transcript
 public import CslibFrontier.Languages.Probabilistic.Traverse
 public import CslibFrontier.Languages.Probabilistic.Traverse.CoinTape
@@ -6648,6 +6651,7 @@ public import CslibFrontier.MachineLearning.StatisticalQuery.LowerBound
 public import CslibFrontier.MachineLearning.StatisticalQuery.Parity
 public import CslibFrontier.MachineLearning.StatisticalQuery.Simulation
 public import CslibFrontier.MachineLearning.UniformLearning.AC0
+public import CslibFrontier.MachineLearning.UniformLearning.AdaptiveCircuit
 public import CslibFrontier.MachineLearning.UniformLearning.Basic
 public import CslibFrontier.MachineLearning.UniformLearning.BestOf
 public import CslibFrontier.MachineLearning.UniformLearning.CIKK.AC0Mod
@@ -6908,6 +6912,7 @@ public import CslibFrontier.Probability.StochasticDomination.PoissonBinomial
 public import CslibFrontier.Probability.StochasticDomination.Stopping
 public import CslibFrontier.Probability.TupleSampler
 public import CslibFrontier.Probability.Uniform
+public import CslibFrontier.Probability.Uniform.Translate
 public import CslibFrontier.Probability.UniformNat
 public import CslibFrontier.Probability.UniformOrder
 public import CslibFrontier.Probability.UniversalHash

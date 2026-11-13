@@ -27,7 +27,6 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pair.Proj
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Replay.Simulation
 import CslibFrontier.Computability.Probabilistic.Oracle.Composition
 import CslibFrontier.Computability.Probabilistic.Oracle.Substitution
-import CslibFrontier.Languages.Probabilistic.Simulation
 import Mathlib.Data.Nat.Bitwise
 import Cslib.Foundations.Data.Polynomial.Monotone
 
@@ -49,8 +48,8 @@ problem `{(b, k) | k ≤ f b}` is in `PP`, by the characterisation through `GapP
 (`Cslib.Complexity.BinarySearch.isOraclePPTOn_search`). Hence `P^#P ⊆ P^PP`
 (`Cslib.Complexity.PWithSharpPOracle_subset_PWithPPOracle`): every request of a `P^#P` program
 for bit `i` of `f b`, sent as the code `(b, i)`, is answered by a binary search
-(`Cslib.Complexity.BinarySearch.bitQuery`), substituted into the program by open oracle
-substitution (`Cslib.Probability.IsOraclePPTOn.run_interpret_preprocess_open`). The search reads
+(`Cslib.Complexity.BinarySearch.bitQuery`), substituted into the program by stateless open
+oracle substitution (`Cslib.Probability.IsOraclePPTOn.interpret_preprocess_open'`). The search reads
 the code of `b` and the position `i` from the request without decoding `b`, and runs for
 `r (n) + 1` rounds, for the length `n` of the request and `f b ≤ 2 ^ r (|b|)`.
 
@@ -381,40 +380,16 @@ theorem PWithSharpPOracle_subset_PWithPPOracle : PWithSharpPOracle enc ⊆ PWith
       simp only [bitQuery, OracleComp.interpret_map]
       exact (isOraclePPTOn_search (u := unframe) (N := fun w => r.eval w.length + 1)
         (by fun_prop) (by fun_prop)).map_with' hlast
-    have hhandler : IsOraclePPTOn
-        (encPair enc (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit)))
-        (encPair encBits (encFinEnum Unit))
-        (fun pair : α × (Unit × List Bool) × Unit => (fun reply => (reply, ())) <$>
-          OracleComp.interpret ProbOracleComp.query (bitQuery r pair.2.1)) :=
-      (hG.preprocess' (prepare := fun pair : α × (Unit × List Bool) × Unit => pair.2.1.2)
-        (by fun_prop)).map' (by fun_prop)
-    have hsub := hcert.run_interpret_preprocess_open' (State := Unit)
-      (handler := fun _ q _ => (fun reply => (reply, ())) <$>
-        OracleComp.interpret ProbOracleComp.query (bitQuery r q))
-      (prepare := id) (initial := fun _ => ()) (resources := fun _ _ => 1)
-      ComputableInPolyTime.id' hhandler (ComputableInPolyTime.const ())
-      (fun _ _ => True) (fun _ => trivial) (ComputableInPolyTime.const 1)
-      (fun a request state _ result hresult => by
-        obtain ⟨reply, hreply, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hresult
+    have h := hcert.interpret_preprocess_open' (operationEncoding := encFinEnum Unit)
+      (handler := fun _ q => OracleComp.interpret ProbOracleComp.query (bitQuery r q))
+      (prepare := id) (resources := fun _ _ => 1) ComputableInPolyTime.id'
+      (hG.preprocess' (prepare := fun pair : α × (Unit × List Bool) => pair.2.2) (by fun_prop))
+      (ComputableInPolyTime.const 1) fun _ _ reply hreply => by
         rw [bitQuery, OracleComp.interpret_map] at hreply
         obtain ⟨lo, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hreply
-        exact ⟨trivial, by simp, Nat.le_add_right _ _⟩)
-    refine (hsub.map' (ComputableInPolyTime.fst encBool (encFinEnum Unit))).congr
-      fun a State oracle s => ?_
-    congr 2
-    rw [OracleComp.interpret_interpret, OracleComp.interpret_interpret]
-    have hH : (fun q : Unit × List Bool => OracleComp.interpret (OracleComp.sumHandler
-        (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n)))
-        (fun (q : Unit × List Bool) (_ : Unit) => (fun reply => (reply, ())) <$>
-          OracleComp.interpret ProbOracleComp.query (bitQuery r q)))
-        (ProbOracleComp.query q)) = fun q : Unit × List Bool =>
-          StateT.lift (OracleComp.interpret ProbOracleComp.query (bitQuery r q)) := by
-      funext q
-      rw [ProbOracleComp.interpret_query]
-      funext u
-      simp [StateT.lift]
-    rw [hH, OracleComp.run_interpret_lift, Functor.map_map]
-    simp only [id_map', id]
+        simp
+    convert h using 2 with a
+    simp only [id, OracleComp.interpret_interpret, ProbOracleComp.interpret_query]
   · -- the bits answered by the handler
     let A' : Set (List Bool) :=
       {w | OracleComp.interpret (m := Id) (languageOracle A) (bitQuery r ((), w)) = [true]}

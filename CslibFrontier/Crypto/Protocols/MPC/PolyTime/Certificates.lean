@@ -10,7 +10,8 @@ module
 public import CslibFrontier.Crypto.Protocols.MPC.PolyTime.InputProgEquiv
 -- `import all`: the end-to-end equivalence and the certificates unfold the private runners
 -- of `Runner` (`realRunWord`, `simRunWord`, `isOraclePPTOn_realRunWord`,
--- `computableInPolyTime_code_comp_xorPreludeCircuit`), the private encoders of `Encoding`, and
+-- `computableInPolyTime_code_comp_xorPreludeCircuit`), the private view word and encoders of
+-- `Encoding`, and
 -- the Step 1/2 equivalences of `InputProgEquiv`.
 import all CslibFrontier.Crypto.Protocols.MPC.PolyTime.Encoding
 import all CslibFrontier.Crypto.Protocols.MPC.PolyTime.Runner
@@ -1160,26 +1161,23 @@ private theorem encGMWPartyView_of_join {m coins n k : ℕ}
          (joinOTMulCompose
            (GMWCircuit.progSchedule m (C.comp (xorPreludeCircuit m n coins)).program)
            (GMWCircuit.outputSchedule m k) i r_prog r_out)⟩ =
-    encPair
-      (encPair (encPair encBits encBits) (encPair encBits encBits))
-      (encPair encBits (encPair encBits encBits))
-      (((List.ofFn x_i, List.ofFn r_i),
-        (List.ofFn
-           ((Cslib.BitString.blocksEquiv (α := Bool) (m := n + coins) (k := m - 1)).symm c1_i),
-         encOTSubCoins
-           (Schedule.compose (fun _ => multiPartyMulSchedule m)
-             (GMWCircuit.progSchedule m (C.comp (xorPreludeCircuit m n coins)).program)) i c_prog ++
-           encOTSubCoins
-             (Schedule.compose (fun _ => multiPartyMulSchedule m)
-               (GMWCircuit.outputSchedule m k)) i c_out)),
-       (List.ofFn (Cslib.BitString.blocksEquiv.symm inbox_i),
-        (encOTOracleAnswers
-           (Schedule.compose (fun _ => multiPartyMulSchedule m)
-             (GMWCircuit.progSchedule m (C.comp (xorPreludeCircuit m n coins)).program)) i r_prog ++
-           encOTOracleAnswers
-             (Schedule.compose (fun _ => multiPartyMulSchedule m)
-               (GMWCircuit.outputSchedule m k)) i r_out,
-         encOutCoordsMsgReceived i (GMWCircuit.outCoords m k) r_out))) := by
+    gmwViewWord (List.ofFn x_i) (List.ofFn r_i)
+      (List.ofFn
+        ((Cslib.BitString.blocksEquiv (α := Bool) (m := n + coins) (k := m - 1)).symm c1_i))
+      (encOTSubCoins
+          (Schedule.compose (fun _ => multiPartyMulSchedule m)
+            (GMWCircuit.progSchedule m (C.comp (xorPreludeCircuit m n coins)).program)) i c_prog ++
+        encOTSubCoins
+          (Schedule.compose (fun _ => multiPartyMulSchedule m)
+            (GMWCircuit.outputSchedule m k)) i c_out)
+      (List.ofFn (Cslib.BitString.blocksEquiv.symm inbox_i))
+      (encOTOracleAnswers
+          (Schedule.compose (fun _ => multiPartyMulSchedule m)
+            (GMWCircuit.progSchedule m (C.comp (xorPreludeCircuit m n coins)).program)) i r_prog ++
+        encOTOracleAnswers
+          (Schedule.compose (fun _ => multiPartyMulSchedule m)
+            (GMWCircuit.outputSchedule m k)) i r_out)
+      (encOutCoordsMsgReceived i (GMWCircuit.outCoords m k) r_out) := by
   simp only [encGMWPartyView, gmwCircuitSchedule, splitOTMulCompose_joinOTMulCompose,
     encOTSubCoins_joinOTSubCoins, encOTSubCoins_msgSchedule,
     encOTOracleAnswers_joinOTMulCompose, encOTOracleAnswers_msgSchedule,
@@ -1277,9 +1275,10 @@ private theorem runWith_realRunWord_eq_runEncoded {α : Type} (m : ℕ) [NeZero 
       (realRunWord m coins n k
         (fun a => ((C a).comp (xorPreludeCircuit m (n a) (coins a))).code) inp) s =
     ProbOracleComp.runWith oracle
-      ((gmwOT14RandomizedProtocol m (coins inp.1) (n inp.1) (k inp.1) (C inp.1)).runEncoded
-        (encGMWPartyView m (coins inp.1) (n inp.1) (k inp.1) (C inp.1))
-        (fun _ y => List.ofFn y) inp.2) s := by
+      ((gmwOT14RandomizedProtocol m (coins inp.index) (n inp.index) (k inp.index)
+          (C inp.index)).runEncoded
+        (encGMWPartyView m (coins inp.index) (n inp.index) (k inp.index) (C inp.index))
+        (fun _ y => List.ofFn y) inp.inputs) s := by
   rcases inp with ⟨a, x⟩
   let D := (C a).comp (xorPreludeCircuit m (n a) (coins a))
   dsimp only [Protocol.runEncoded]
@@ -1371,11 +1370,8 @@ private def packSimOutputFromCoalition {m : ℕ} (I : Finset (Fin m))
   encList encBits
     ((List.finRange m).map fun i =>
       if hi : i ∈ I then
-        encPair
-          (encPair (encPair encBits encBits) (encPair encBits encBits))
-          (encPair encBits (encPair encBits encBits))
-          (((x_bits i, r_bits i), (c1_bits i, (q ⟨i, hi⟩).1)),
-           (in_shares i, ((q ⟨i, hi⟩).2.1, (q ⟨i, hi⟩).2.2)))
+        gmwViewWord (x_bits i) (r_bits i) (c1_bits i) (q ⟨i, hi⟩).1 (in_shares i)
+          (q ⟨i, hi⟩).2.1 (q ⟨i, hi⟩).2.2
       else [])
 
 private theorem packSimOutputFromCoalition_eq_packSimOutput {m : ℕ} (I : Finset (Fin m))
@@ -1497,8 +1493,10 @@ private theorem eval_simRunWord_eq_gmwOT14RandomizedSim {α : Type} (m : ℕ) [N
       (simRunWord m coins n k
         (fun a => ((C a).comp (xorPreludeCircuit m (n a) (coins a))).code) I inp) =
     ProbComp.eval
-      (encodeCoalitionView (encGMWPartyView m (coins inp.1) (n inp.1) (k inp.1) (C inp.1)) I <$>
-        gmwOT14RandomizedSim m (coins inp.1) (n inp.1) (k inp.1) (C inp.1) I inp.2.1 inp.2.2) := by
+      (encodeCoalitionView
+          (encGMWPartyView m (coins inp.index) (n inp.index) (k inp.index) (C inp.index)) I <$>
+        gmwOT14RandomizedSim m (coins inp.index) (n inp.index) (k inp.index) (C inp.index) I
+          inp.inputs inp.outputs) := by
   rcases inp with ⟨a, xI, yI⟩
   rw [simRunWord, gmwOT14RandomizedSim, randomizedWrapperSim]
   simp only [pmf_norm, bind_pure_comp, eval_sampleTwoPiBits_sim m (coins a) (n a + coins a) I]
