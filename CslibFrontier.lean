@@ -1761,6 +1761,7 @@ public import CslibFrontier.Computability.Communication.Information
 public import CslibFrontier.Computability.Communication.InnerProductRank
 public import CslibFrontier.Computability.Communication.KarchmerWigderson
 public import CslibFrontier.Computability.Communication.Lifting.BitStringLifting
+public import CslibFrontier.Computability.Communication.Lifting.Complexity
 public import CslibFrontier.Computability.Communication.Lifting.Dangerous
 public import CslibFrontier.Computability.Communication.Lifting.DangerousParameters
 public import CslibFrontier.Computability.Communication.Lifting.DangerousProbability

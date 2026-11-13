@@ -237,6 +237,13 @@ exposes this theorem directly for gadgets and protocols on literal `BitString b`
 the bit-length threshold above. It reuses `BitString.equivFin` and `Protocol.comap`, which
 preserves protocol depth. [Discrepancy/Transport](../../CslibFrontier/Computability/Communication/Discrepancy/Transport.lean)
 proves that separate input-alphabet equivalences preserve uniform discrepancy.
+[Lifting/Complexity](../../CslibFrontier/Computability/Communication/Lifting/Complexity.lean)
+packages the bound using the existing `DecisionTree.complexity` and `Protocol.ecomplexityFun`:
+`b * Dquery(f) ≤ 768*k*Dcomm(f ∘ gⁿ)`, with the natural query measure cast into `ℕ∞`.
+`exists_complexity_lifting_parameter` chooses `k` uniformly for every positive `η`.
+Callers can transfer a query lower bound directly, without exhibiting a protocol or tree;
+the proof handles infinite communication complexity. Arbitrary output relations retain the
+more general protocol-to-tree simulation above.
 [Lifting/GeneralParameters](../../CslibFrontier/Computability/Communication/Lifting/GeneralParameters.lean)
 uses density levels `m^(1−1/(32k))` and `m^(1−1/(64k))` in its real-base representation.
 [Lifting/ExponentParameters](../../CslibFrontier/Computability/Communication/Lifting/ExponentParameters.lean)

@@ -6,7 +6,7 @@ Authors: Sam
 
 module
 
-import CslibFrontier.Computability.Communication.Lifting.BitStringLifting
+import CslibFrontier.Computability.Communication.Lifting.Complexity
 
 /-! Regression clients for arbitrary positive discrepancy exponents and alphabet sizes. -/
 
@@ -68,3 +68,20 @@ example {n b k : ℕ} {η : ℝ}
 
 #print axioms Cslib.Communication.discrepancy_uniform_comap_equiv
 #print axioms Cslib.Communication.Lifting.exists_decisionTree_bitString_of_log_bound
+
+/-- A query lower bound transfers directly to minimum communication complexity,
+without supplying any protocol or decision-tree witness. -/
+example {n b k q : ℕ} {η : ℝ}
+    (hk : 1 ≤ k) (hη : 1 ≤ 2 * (k : ℝ) * η) (hn : 2 ≤ n)
+    (hb : (2048 * k ^ 2 : ℕ) * Real.log n ≤ (b : ℝ) * Real.log 2)
+    (g : BitString b → BitString b → Bool) (f : (Fin n → Bool) → Bool)
+    (hd : discrepancy (PMF.uniformOfFintype (BitString b × BitString b)) g ≤
+      (2 : ℝ) ^ (-(η * b))) (hq : q ≤ DecisionTree.complexity f) :
+    ((q * b : ℕ) : ℕ∞) ≤ (768 * k : ℕ∞) * Protocol.ecomplexityFun
+      (fun x y : Fin n → BitString b => f (fun i => g (x i) (y i))) := by
+  have h := complexity_mul_bits_le_ecomplexityFun hk hη hn hb g hd f
+  apply le_trans ?_ h
+  exact_mod_cast Nat.mul_le_mul_right b hq
+
+#print axioms Cslib.Communication.Lifting.complexity_mul_bits_le_ecomplexityFun
+#print axioms Cslib.Communication.Lifting.exists_complexity_lifting_parameter
