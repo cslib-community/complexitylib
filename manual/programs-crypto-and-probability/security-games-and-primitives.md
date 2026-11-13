@@ -31,7 +31,7 @@ Pinned cslib also has the finite [Generator](https://github.com/leanprover/cslib
 | Target collision resistance | [CslibFrontier/Crypto/Computational/TargetCollisionResistant.lean](../../CslibFrontier/Crypto/Computational/TargetCollisionResistant.lean), [CslibFrontier/Crypto/Computational/NaorYung.lean](../../CslibFrontier/Crypto/Computational/NaorYung.lean), [CslibFrontier/Crypto/Computational/InaccessibleEntropy/TargetCollision.lean](../../CslibFrontier/Crypto/Computational/InaccessibleEntropy/TargetCollision.lean) | Two-stage pre-key target choice and post-key second-preimage search; polynomial key/block schedules, fixed-depth `2^n`-capacity tree extension, Naor–Yung UOWHFs from `OneWayPermutation`, and Rompel–HHRVW UOWHFs from `OneWay` |
 | Inaccessible entropy and shrinking collision grids | [CslibFrontier/Crypto/Computational/InaccessibleEntropy/Basic.lean](../../CslibFrontier/Crypto/Computational/InaccessibleEntropy/Basic.lean), [CslibFrontier/Crypto/Computational/InaccessibleEntropy/Amplify.lean](../../CslibFrontier/Crypto/Computational/InaccessibleEntropy/Amplify.lean), [CslibFrontier/Crypto/Computational/InaccessibleEntropy/TargetCollision.lean](../../CslibFrontier/Crypto/Computational/InaccessibleEntropy/TargetCollision.lean) | Fixed-width native polynomial evaluation, accessible preimage subsets with eventual `1 / denom n` entropy gap, polynomial-size grids of `1`-bit shrinking candidates with an existential random-collision-resistant sequence (`exists_good_candidate`), and uniform `gridCount n`-way cascade concatenation |
 | Discrete logarithm and DDH | [CslibFrontier/Crypto/Computational/DiscreteLog.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/DiscreteLog.lean), [CslibFrontier/Crypto/Computational/DiffieHellman.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/DiffieHellman.lean) | Encoded prime-order group families, exact ideal group laws; public operations and samplers require separate certificates |
-| Decisional composite residuosity and Paillier encryption | [CslibFrontier/Crypto/Computational/CompositeResiduosity.lean](../../CslibFrontier/Crypto/Computational/CompositeResiduosity.lean), [CslibFrontier/Crypto/Computational/Paillier.lean](../../CslibFrontier/Crypto/Computational/Paillier.lean), [CslibFrontier/Crypto/Computational/Paillier/Security.lean](../../CslibFrontier/Crypto/Computational/Paillier/Security.lean) | Factor pairs `(p, q)` of balanced moduli with validity in the type; arbitrary setup law; Paillier encryption with perfect correctness and plaintext-addition preservation under decryption over an abstract strict-PPT modulus generator, which is not constructed; IND-CPA security under DCR with an explicit prime-growth hypothesis |
+| Decisional composite residuosity and Paillier encryption | [CslibFrontier/Crypto/Computational/CompositeResiduosity.lean](../../CslibFrontier/Crypto/Computational/CompositeResiduosity.lean), [CslibFrontier/Crypto/Computational/Paillier.lean](../../CslibFrontier/Crypto/Computational/Paillier.lean), [CslibFrontier/Crypto/Computational/Paillier/Security.lean](../../CslibFrontier/Crypto/Computational/Paillier/Security.lean), [CslibFrontier/Crypto/Computational/Paillier/Finite.lean](../../CslibFrontier/Crypto/Computational/Paillier/Finite.lean) | Factor pairs `(p, q)` of balanced moduli with validity in the type; arbitrary setup law; Paillier encryption with perfect correctness and plaintext-addition preservation under decryption over an abstract strict-PPT modulus generator, which is not constructed; IND-CPA security under DCR with an explicit prime-growth hypothesis; at a fixed modulus, typed Paillier with exactly uniform randomness, full Definition 15.14 and an exact CPA-to-DCR bound |
 | Quadratic residuosity, Goldwasser–Micali, RSA, and Rabin factoring | [CslibFrontier/Crypto/Computational/QuadraticResiduosity.lean](../../CslibFrontier/Crypto/Computational/QuadraticResiduosity.lean), [CslibFrontier/Crypto/Computational/GoldwasserMicali.lean](../../CslibFrontier/Crypto/Computational/GoldwasserMicali.lean), [CslibFrontier/Crypto/Computational/RSATrapdoor.lean](../../CslibFrontier/Crypto/Computational/RSATrapdoor.lean), [CslibFrontier/Crypto/Computational/RSALeastSignificantBit.lean](../../CslibFrontier/Crypto/Computational/RSALeastSignificantBit.lean), [CslibFrontier/Crypto/Computational/RSAAttacks.lean](../../CslibFrontier/Crypto/Computational/RSAAttacks.lean), [CslibFrontier/Crypto/Computational/RabinFactoring.lean](../../CslibFrontier/Crypto/Computational/RabinFactoring.lean) | Composite Jacobi symbol `jacobiSymbol`, `QR_N` / `QNR_N^{+1}` split and `QuadraticResiduosityHard`; Goldwasser–Micali bit and bounded-word public-key encryption (`KeyDesc`, `encrypt`, `decrypt`, `mulCiphertexts`, ideal distributional XOR homomorphism, `INDCPA` / `INDCPAOn` under `QuadraticResiduosityHard` and explicit prime growth, and Jacobi `-1` attack); all-residue and unit-group RSA trapdoor bijection (`rsaEval`, `rsaInvert`, `RSAOneWay`); Blum-integer square roots (`blumSqrt`, `crtSqrt`), `FactoringHard`, `RabinOneWay`, and explicit PPT equivalence `rabinOneWay_iff_factoringHard` |
 | LWE, SIS, and module lattices | [CslibFrontier/Crypto/Computational/LWE/Basic.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/LWE/Basic.lean), [CslibFrontier/Crypto/Computational/LWE/Decoding.lean](../../CslibFrontier/Crypto/Computational/LWE/Decoding.lean), [CslibFrontier/Crypto/Computational/LWE/KeyGen.lean](../../CslibFrontier/Crypto/Computational/LWE/KeyGen.lean), [CslibFrontier/Crypto/Computational/SIS/Basic.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/SIS/Basic.lean), [CslibFrontier/Crypto/Computational/SIS/Ajtai.lean](../../CslibFrontier/Crypto/Computational/SIS/Ajtai.lean), [CslibFrontier/Crypto/Computational/SIS/Module.lean](../../CslibFrontier/Crypto/Computational/SIS/Module.lean), [CslibFrontier/Crypto/Computational/LWE/Module.lean](../../CslibFrontier/Crypto/Computational/LWE/Module.lean), [CslibFrontier/Crypto/Computational/SIS/ModuleEncryption.lean](../../CslibFrontier/Crypto/Computational/SIS/ModuleEncryption.lean), [CslibFrontier/Crypto/Computational/LWE/Regev.lean](../../CslibFrontier/Crypto/Computational/LWE/Regev.lean), [CslibFrontier/Crypto/Computational/LWE/Regev/Security.lean](../../CslibFrontier/Crypto/Computational/LWE/Regev/Security.lean), [CslibFrontier/Crypto/Computational/LWE/DualRegev.lean](../../CslibFrontier/Crypto/Computational/LWE/DualRegev.lean), [CslibFrontier/Crypto/Computational/LWE/DualRegev/Security.lean](../../CslibFrontier/Crypto/Computational/LWE/DualRegev/Security.lean) | Explicit dimensions, modulus and noise/norm parameters (typed decision-LWE experiments over a finite commutative ring and `2^w` binary matrix words in `LWE/Basic.lean`, shared LWE decoding/key-generation helpers in `LWE/Decoding.lean` and `LWE/KeyGen.lean`, the typed fixed-instance experiment `sisExperiment` over arbitrary nonzero moduli and the family hypothesis `SIS` in `SIS/Basic.lean`, the Ajtai collision-to-SIS bound `ajtaiAdvantage_le_sisAdvantage` in `SIS/Ajtai.lean`, negacyclic `R_q = ℤ_q[X]/(X^n+1)` block-anticirculant expansion `expandModuleMatrix`, `moduleSISExperiment`, `ModuleSIS` and `RingSIS` in `SIS/Module.lean`, typed decision Module-LWE games for any secret and error laws and `DecisionModuleLWE` in `LWE/Module.lean`, Module-LWE public-key encryption in `SIS/ModuleEncryption.lean`, and plain-LWE Regev and GPV dual-Regev bit encryption and IND-CPA security at modulus `2^w` in `LWE/Regev*` and `LWE/DualRegev*`); classical uniform-PPT hardness hypotheses |
 
@@ -515,15 +515,17 @@ returns an invalid output with probability at most `(6 n² + 2) · 2⁻ⁿ`
 
 For composite residuosity and Paillier encryption, import
 [`CompositeResiduosity.lean`](../../CslibFrontier/Crypto/Computational/CompositeResiduosity.lean) and
-[`Paillier.lean`](../../CslibFrontier/Crypto/Computational/Paillier.lean), and for IND-CPA security
-[`Paillier/Security.lean`](../../CslibFrontier/Crypto/Computational/Paillier/Security.lean)
+[`Paillier.lean`](../../CslibFrontier/Crypto/Computational/Paillier.lean), for IND-CPA security
+[`Paillier/Security.lean`](../../CslibFrontier/Crypto/Computational/Paillier/Security.lean), and for
+the scheme at a fixed modulus
+[`Paillier/Finite.lean`](../../CslibFrontier/Crypto/Computational/Paillier/Finite.lean)
 ([katzlindell20][katzlindell20], Chapter 15, Proposition 15.6, Claims 15.7–15.9, Definition 15.10,
 Construction 15.11, Example 15.12, Theorem 15.13, and Definition 15.14; checked instances are in
 [`CslibFrontierTests/Crypto/Paillier.lean`](../../CslibFrontierTests/Crypto/Paillier.lean)).
 A balanced modulus is a product `N = p * q` of distinct odd primes of the same bit length
 (`BalancedModulus.Valid (p, q)`). The Decisional Composite Residuosity assumption
 `DCR setup` ([katzlindell20][katzlindell20], Definition 15.10) compares `dcrRealGame` (drawing an
-`N`-th residue `r ^ N mod N ^ 2` for a uniform unit `r`) against `dcrIdealGame` (drawing a uniform
+`N`-th residue `r ^ N mod N ^ 2` for a uniform unit `r`) against `dcrRandomGame` (drawing a uniform
 unit modulo `N ^ 2`) under `Game.Indistinguishable` against uniform strict-PPT distinguishers
 `IsPPTOn (encPair encUnary (encPair encNat encNat)) encBool`. The parameter `setup : ℕ → PMF Desc`
 is arbitrary: prime factor generation is not constructed, and equal factor bit lengths are not
@@ -548,11 +550,30 @@ and `encPair encNat encNat (N, φ(N))`:
   proves preservation of plaintext addition under decryption: combining supported encryptions of `m₁`
   and `m₂` yields a ciphertext that decrypts to `(m₁ + m₂) mod N`.
 
-Only this decryption-side addition identity is established; the second condition of Katz–Lindell
-Definition 15.14—distributional equality between combined ciphertexts and fresh encryptions of the
-sum—does not hold for the dyadic sampler with `unitOrOne` (e.g. at `N = 143`, `n = 0`, and
-`m₁ = m₂ = 0`, fresh `encNat 1` has mass `44 / 256`, whereas multiplying two independent encryptions
-yields mass `2316 / 65536 = 579 / 16384`), and full Definition 15.14 remains a separate objective.
+For the word scheme only this decryption-side addition identity is established; the second condition
+of Katz–Lindell Definition 15.14—distributional equality between combined ciphertexts and fresh
+encryptions of the sum—does not hold for the dyadic sampler with `unitOrOne` (e.g. at `N = 143`,
+`n = 0`, and `m₁ = m₂ = 0`, fresh `encNat 1` has mass `44 / 256`, whereas multiplying two independent
+encryptions yields mass `2316 / 65536 = 579 / 16384`).
+
+[`Paillier/Finite.lean`](../../CslibFrontier/Crypto/Computational/Paillier/Finite.lean) states the
+scheme at one modulus `N` with typed values, as the Diffie–Hellman experiments are stated at one
+group. `paillierEncrypt N m` draws `r` uniformly from the units `(ZMod N)ˣ` and returns the unit
+`oneAddPowHom N (ofAdd m) * powSelfHom N r` of `ZMod (N ^ 2)`; `paillierDecrypt N t c` is
+`logOneAdd N (c ^ t) * t⁻¹`, where `Paillier.logOneAdd` is the function `L` of Construction 15.11.
+With `t = φ(N)` and `gcd(N, φ(N)) = 1`, decryption is perfectly correct
+(`paillierDecrypt_of_mem_support`) and additive on products (`paillierDecrypt_mul`), and the
+second condition of Definition 15.14 holds: multiplying any encryption of `m₁` by a fresh
+encryption of `m₂` gives exactly a fresh encryption of `m₁ + m₂` (`eval_mul_paillierEncrypt`,
+`eval_paillierEncrypt_mul_paillierEncrypt`). The fixed-modulus DCR worlds `dcrRealExperiment N D`
+and `dcrRandomExperiment N D` are in
+[`CompositeResiduosity/Finite.lean`](../../CslibFrontier/Crypto/Computational/CompositeResiduosity/Finite.lean),
+and the asymptotic games `dcrRealGame` and `dcrRandomGame` are `Game.withSetup` over them.
+`paillierCPAExperiment N A b` is the left-or-right experiment `lrExperiment` against a two-stage
+adversary `A : TwoStage ℕ (MessagePair (ZMod N)) (ZMod (N ^ 2))ˣ Bool σ` that receives the public
+key `N`. `paillierCPAAdvantage_le_dcrAdvantage` bounds its
+advantage by `dcrAdvantage N (paillierToDCR N A false) + dcrAdvantage N (paillierToDCR N A true)`,
+with no sampling loss. Connecting this bound to `DCR` and to the word scheme is a separate step.
 
 IND-CPA security (Katz–Lindell Theorem 15.13) is in
 [`Paillier/Security.lean`](../../CslibFrontier/Crypto/Computational/Paillier/Security.lean).
@@ -574,7 +595,9 @@ concrete parameters of Example 15.12 (`N = 187`, `m = 175`, `r = 83`, `c = 23911
 decryption to `12` and `7` modulo `143`, validity of `(11, 13)`, uniform strict PPT for a constant
 generator `constGen`, and end-to-end correctness and homomorphic addition on its supported key pair;
 for IND-CPA it evaluates `validMessages` on admissible and inadmissible pairs and applies
-`isPPTOn_dcrDistinguisher` and `DCR.indcpaOn_paillier` to a concrete strict-PPT adversary.
+`isPPTOn_dcrDistinguisher` and `DCR.indcpaOn_paillier` to a concrete strict-PPT adversary. At
+`N = 143` it applies fixed-modulus correctness, additive decryption, the distributional
+homomorphism and `paillierCPAAdvantage_le_dcrAdvantage` to a concrete two-stage adversary.
 
 For Goldwasser–Micali public-key encryption under `QuadraticResiduosityHard`, import
 [`GoldwasserMicali.lean`](../../CslibFrontier/Crypto/Computational/GoldwasserMicali.lean)

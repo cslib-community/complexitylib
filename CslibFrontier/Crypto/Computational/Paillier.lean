@@ -73,8 +73,9 @@ part of this file.
   encryptions of the sum), which is generally false for the implemented dyadic sampler plus
   `unitOrOne`: at `N = 143`, `n = 0`, and `m₁ = m₂ = 0`, a fresh ciphertext `encNat 1` has mass
   `44 / 256 = 11 / 64`, while multiplying two independent encryptions gives mass
-  `2316 / 65536 = 579 / 16384`. The full definition of an additively homomorphic scheme remains a
-  separate objective; the IND-CPA reduction ([KatzLindell2020], Theorem 15.13) is in
+  `2316 / 65536 = 579 / 16384`. The scheme at a fixed modulus with exactly uniform randomness,
+  in `CslibFrontier.Crypto.Computational.Paillier.Finite`, satisfies both conditions. The IND-CPA
+  reduction ([KatzLindell2020], Theorem 15.13) is in
   `CslibFrontier.Crypto.Computational.Paillier.Security`.
 
 ## References
@@ -117,13 +118,8 @@ theorem decryptNat_eq {N c m r : ℕ} (hN : 1 < N) (hcop : N.Coprime N.totient)
   have hN2 : N ^ 2 ≠ 0 := pow_ne_zero 2 hN0
   -- Raising `c` to the power `φ(N)` leaves `1 + (m * φ(N) mod N) * N`.
   have hpow : c ^ N.totient % N ^ 2 = 1 + m * N.totient % N * N := by
-    have hmod : m * N.totient % N < N := Nat.mod_lt _ (by lia)
-    have hlt : 1 + m * N.totient % N * N < N ^ 2 := by nlinarith
-    rw [← Nat.mod_eq_of_lt hlt, ← ZMod.natCast_eq_natCast_iff', Nat.cast_pow, hc,
-      one_add_pow_mul_pow_pow_totient m hr]
-    conv_lhs => rw [← Nat.mod_add_div (m * N.totient) N]
-    push_cast
-    linear_combination ((m * N.totient / N : ℕ) : ZMod (N ^ 2)) * ZMod.natCast_mul_self_eq_zero N
+    rw [← ZMod.val_one_add_natCast_mul hN, ← one_add_pow_mul_pow_pow_totient m hr, ← hc,
+      ← Nat.cast_pow, ZMod.val_natCast]
   -- `φ(N) ^ (φ(N) - 1)` inverts `φ(N)` modulo `N`, by Euler's theorem.
   have heuler : (N.totient : ZMod N) ^ N.totient = 1 := by
     have := congrArg Units.val (ZMod.pow_totient (ZMod.unitOfCoprime N.totient hcop.symm))
@@ -308,8 +304,9 @@ Note: [KatzLindell2020], Definition 15.14 additionally requires equality of the
 multiplied-ciphertext distribution with fresh encryptions of the sum. That distribution clause is
 not established here (and fails for the dyadic sampler plus `unitOrOne`: at `N = 143`, `n = 0`, and
 `m₁ = m₂ = 0`, fresh `encNat 1` has probability mass `44 / 256 = 11 / 64`, whereas multiplying two
-independent encryptions yields mass `2316 / 65536 = 579 / 16384`). The full source definition
-remains a separate objective. -/
+independent encryptions yields mass `2316 / 65536 = 579 / 16384`). The fixed-modulus scheme in
+`CslibFrontier.Crypto.Computational.Paillier.Finite` satisfies it
+(`Cslib.Crypto.eval_mul_paillierEncrypt`). -/
 theorem decrypt_addCiphertexts {gen : ℕ → ProbComp Desc} {n : ℕ} {keys : List Bool × List Bool}
     (hkeys : keys ∈ (ProbComp.eval (keyGen gen n)).support) {m₁ m₂ : ℕ} {ct₁ ct₂ : List Bool}
     (hct₁ : ct₁ ∈ (ProbComp.eval (encrypt n keys.1 m₁)).support)
