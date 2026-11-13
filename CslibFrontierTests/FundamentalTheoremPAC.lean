@@ -8,13 +8,13 @@ import CslibFrontier.MachineLearning.PACLearning.FundamentalTheorem
 import CslibFrontier.MachineLearning.PACLearning.VCLowerBound
 import CslibFrontierTests.RealizablePAC
 
-/-! Checks for the EHKV lower bound on general domains and the realizable characterization of PAC
-learnability by finite VC dimension: thresholds on `ℕ` are learnable through the characterization;
-the class of all Boolean functions is neither realizably nor agnostically learnable on `ℕ`, nor on
-the uncountable, non-discrete domain `ℝ`; ten examples do not suffice to learn all Boolean
-functions on `ℕ` to accuracy `1/8` and confidence `14/15`, matching the explicit constant of the
-lower bound; and, as a nonvacuity check, zero examples do not learn all Boolean functions on
-`Fin 3`. -/
+/-! Checks for the EHKV lower bound on general domains and the fundamental theorem of PAC learning
+on countable domains: thresholds on `ℕ` have the uniform convergence property, are learned by every
+ERM and are realizably and agnostically learnable, through the characterization; the class of all
+Boolean functions has none of these properties on `ℕ` and is not learnable on the uncountable,
+non-discrete domain `ℝ`; ten examples do not suffice to learn all Boolean functions on `ℕ` to
+accuracy `1/8` and confidence `14/15`, matching the explicit constant of the lower bound; and, as a
+nonvacuity check, zero examples do not learn all Boolean functions on `Fin 3`. -/
 
 namespace CslibFrontierTests.FundamentalTheoremPAC
 
@@ -42,6 +42,26 @@ example : IsPACLearnable thresholds (realizableDistributions thresholds) :=
 example : IsRPACLearnable thresholds (realizableDistributions thresholds) :=
   isRPACLearnable_realizableDistributions_iff_hasFiniteVCDim.2 hasFiniteVCDim_thresholds
 
+/-- Thresholds on `ℕ` have the uniform convergence property over all distributions. -/
+example : HasUniformConvergence thresholds Set.univ :=
+  ((tfae_hasFiniteVCDim (C := thresholds)).out 6 1).1 hasFiniteVCDim_thresholds
+
+/-- Every ERM learns thresholds on `ℕ` agnostically. -/
+example : IsERMLearnable thresholds Set.univ :=
+  ((tfae_hasFiniteVCDim (C := thresholds)).out 6 2).1 hasFiniteVCDim_thresholds
+
+/-- Every ERM learns thresholds on `ℕ` in the realizable setting. -/
+example : IsERMLearnable thresholds (realizableDistributions thresholds) :=
+  ((tfae_hasFiniteVCDim (C := thresholds)).out 6 5).1 hasFiniteVCDim_thresholds
+
+/-- Thresholds on `ℕ` are agnostically PAC learnable. -/
+example : IsPACLearnable thresholds Set.univ :=
+  isPACLearnable_univ_iff_hasFiniteVCDim.2 hasFiniteVCDim_thresholds
+
+/-- The same for randomized learners. -/
+example : IsRPACLearnable thresholds Set.univ :=
+  isRPACLearnable_univ_iff_hasFiniteVCDim.2 hasFiniteVCDim_thresholds
+
 /-! ### All Boolean functions are not learnable -/
 
 /-- On an infinite domain the class of all Boolean functions has infinite VC dimension. -/
@@ -60,6 +80,15 @@ example : ¬ IsPACLearnable (Set.univ : ConceptClass ℕ Bool) (realizableDistri
 /-- All Boolean functions on `ℕ` are not agnostically PAC learnable. -/
 example : ¬ IsPACLearnable (Set.univ : ConceptClass ℕ Bool) Set.univ :=
   fun h => not_hasFiniteVCDim_univ h.hasFiniteVCDim_of_univ
+
+/-- All Boolean functions on `ℕ` lack the uniform convergence property. -/
+example : ¬ HasUniformConvergence (Set.univ : ConceptClass ℕ Bool) Set.univ :=
+  fun h => not_hasFiniteVCDim_univ ((tfae_hasFiniteVCDim.out 1 6).1 h)
+
+/-- No sample size makes every ERM learn all Boolean functions on `ℕ`, even in the realizable
+setting. -/
+example : ¬ IsERMLearnable (Set.univ : ConceptClass ℕ Bool) (realizableDistributions Set.univ) :=
+  fun h => not_hasFiniteVCDim_univ ((tfae_hasFiniteVCDim.out 5 6).1 h)
 
 /-- All Boolean functions on `ℕ` are not randomized PAC learnable in the realizable setting. -/
 example : ¬ IsRPACLearnable (Set.univ : ConceptClass ℕ Bool) (realizableDistributions Set.univ) :=

@@ -6629,6 +6629,7 @@ public import CslibFrontier.MachineLearning.PACLearning.SampleComplexityLower.EH
 public import CslibFrontier.MachineLearning.PACLearning.SampleComplexityLower.Helpers
 public import CslibFrontier.MachineLearning.PACLearning.SampleComplexityLower.InvolutionPairing
 public import CslibFrontier.MachineLearning.PACLearning.UniformConvergence
+public import CslibFrontier.MachineLearning.PACLearning.UniformConvergenceProperty
 public import CslibFrontier.MachineLearning.PACLearning.VCDimension
 public import CslibFrontier.MachineLearning.PACLearning.VCLowerBound
 public import CslibFrontier.MachineLearning.PACLearning.VCUniformConvergence

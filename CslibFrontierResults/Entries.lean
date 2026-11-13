@@ -205,6 +205,7 @@ import CslibFrontier.Logics.SecondOrder.WordMSO.OfRegular
 import CslibFrontier.Logics.SecondOrder.WordMSO.Separation
 import CslibFrontier.Logics.SecondOrder.WordMSO.StarFree
 import CslibFrontier.MachineLearning.OnlineLearning.SwapRegret
+import CslibFrontier.MachineLearning.PACLearning.FundamentalTheorem
 import CslibFrontier.MachineLearning.PACLearning.MDL
 import CslibFrontier.MachineLearning.PACLearning.Nonuniform
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.AC0Mod
@@ -1556,6 +1557,25 @@ register_result "blum-mansour-swap-regret" where
     With Hedge copies and losses in [-1, 1], swap regret is at most η T + n ln n / η, and \
     2 √(T n ln n) with the tuned rate when n ≥ 2 and T ≥ n ln n. Stationary vectors are \
     chosen classically; no running time is charged."
+
+register_result "fundamental-theorem-statistical-learning" where
+  title := "The fundamental theorem of statistical learning on countable domains"
+  topic := "statistical learning"
+  sources := [
+    { paper := ShalevShwartzBenDavid2014, theorem := "Theorem 6.7",
+      locator := "Section 6.4, p. 72" }
+  ]
+  theorems := [
+    Cslib.MachineLearning.PACLearning.tfae_hasFiniteVCDim,
+    Cslib.MachineLearning.PACLearning.isPACLearnable_univ_iff_hasFiniteVCDim,
+    Cslib.MachineLearning.PACLearning.isPACLearnable_realizableDistributions_iff_hasFiniteVCDim
+  ]
+  scope := "Binary classes with the 0-1 loss on a countable domain with measurable singletons. \
+    Uniform convergence and learnability by every ERM use one sample-size threshold for all \
+    ERMs, where the source lets it depend on the ERM rule; the equivalence is unaffected. \
+    Agnostic learnability implies finite VC dimension on every domain with measurable \
+    singletons (IsPACLearnable.hasFiniteVCDim_of_univ). The quantitative bounds of Theorem 6.8 \
+    and the upper bounds on uncountable domains are not proved."
 
 register_result "srm-nonuniform-learnability" where
   title := "Countable unions of uniformly convergent classes are nonuniformly learnable by SRM"
