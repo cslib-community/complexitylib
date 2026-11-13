@@ -611,23 +611,9 @@ theorem fastCutTrials_pos (n : ℕ) :
 theorem fastCutHighProb_failure_le (n : ℕ) :
     ((1 : ℝ≥0∞) - (1 : ℝ≥0∞) / ((Nat.log 2 n + 15 : ℕ) : ℝ≥0∞)) ^ fastCutTrials n ≤
       (1 : ℝ≥0∞) / ((2 * n : ℕ) : ℝ≥0∞) := by
-  unfold fastCutTrials
-  rw [pow_mul]
-  calc
-    (((1 : ℝ≥0∞) - (1 : ℝ≥0∞) / ((Nat.log 2 n + 15 : ℕ) : ℝ≥0∞)) ^ (Nat.log 2 n + 15)) ^
-        (Nat.log 2 n + 2)
-      ≤ ((1 : ℝ≥0∞) / 2) ^ (Nat.log 2 n + 2) :=
-        pow_le_pow_left' (by simpa only [one_div] using
-          ENNReal.one_sub_inv_pow_le_inv_two (k := Nat.log 2 n + 15) (by omega)) _
-    _ = (1 : ℝ≥0∞) / ((2 ^ (Nat.log 2 n + 2) : ℕ) : ℝ≥0∞) := by
-        rw [ENNReal.div_pow, one_pow, Nat.cast_pow, Nat.cast_ofNat]
-    _ ≤ (1 : ℝ≥0∞) / ((2 * n : ℕ) : ℝ≥0∞) := by
-        apply ENNReal.div_le_div_left
-        have hlt : n < 2 ^ (Nat.log 2 n + 1) := Nat.lt_pow_succ_log_self (by decide) n
-        have hle : 2 * n ≤ 2 ^ (Nat.log 2 n + 2) := by
-          rw [pow_succ']
-          omega
-        exact_mod_cast hle
+  have hround := ENNReal.one_sub_inv_pow_le_inv_two (k := Nat.log 2 n + 15) (by omega)
+  rw [fastCutTrials, pow_mul]
+  exact pow_log_two_add_two_le_inv_two_mul (by simpa only [one_div] using hround) n
 
 /-- Weakened failure probability bound `(1 - 1 / (Nat.log 2 n + 15)) ^ fastCutTrials n ≤ 1 / n`. -/
 theorem fastCutHighProb_failure_le_inv_n (n : ℕ) :

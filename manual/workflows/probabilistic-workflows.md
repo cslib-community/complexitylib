@@ -905,7 +905,9 @@ that `p_m = Pr[W_{C_m}]` satisfies the recursion of `ParallelRepetition.le_rpow_
 recursion accepts any constant up to `21`. The final bound has Holenstein's constant `6000`.
 
 To use the bound for concrete answer types, compute the exponent: rewrite the product of the
-cardinalities as a power of two and apply `Real.logb_rpow`. For CHSH, `|A| |B| = 4` and the
+cardinalities as a power of two and apply `Real.logb_rpow`, or `Real.logb_two_pow` from
+[Logb.lean](../../CslibFrontier/Foundations/Analysis/SpecialFunctions/Logb.lean) when the
+exponent is a natural number. For CHSH, `|A| |B| = 4` and the
 exponent is `n / 2`. [CHSH.lean](../../CslibFrontier/Computability/PCP/TwoProverGame/CHSH.lean)
 proves that CHSH has value `3/4` (`TwoProverGame.value_chsh`), and the [parallel repetition clients](../../CslibFrontierTests/ParallelRepetition.lean)
 derive `(3/4)^n ≤ v(CHSHⁿ) ≤ (1 - (1/4)³ / 6000)^{n / 2}`. They also show that the value of the
@@ -1478,6 +1480,37 @@ If an existing proof needs the underlying interpreter, unfold `ProbOracleComp.si
 reuse its laws and native efficiency certificates. Substitution preserves the free program;
 it does not by itself certify its runtime. This separation follows VCVio's treatment of
 [untouched oracle effects](https://github.com/Verified-zkEVM/VCVio/blob/87bc1892fff1982e97cfd8c7303c9d1f2bfdc2f9/VCVio/OracleComp/SimSemantics/Append/Core.lean).
+
+## Compare two runs one step at a time
+
+To relate the laws of two loops, prove the relation for one step and lift it. Import
+[Iteration/Chain.lean](../../CslibFrontier/Languages/Probabilistic/Iteration/Chain.lean) to write a
+loop as a chain of distributions: `ProbComp.eval_iterate` for a closed loop and
+`OracleComp.run_interpret_iterate_pmf` for a loop run with a probabilistic stateful handler. When
+only the step laws agree, `ProbComp.eval_iterate_congr` gives equal loop laws directly.
+
+Then import [PMF/Coupling.lean](../../CslibFrontier/Probability/PMF/Coupling.lean).
+`PMF.map_iterate_bind_of_invariant` lifts a state representation that commutes with every step.
+`PMF.iterate_bind_comm_of_invariant` handles the case where the ideal chain first draws a hidden
+sample `k` and then runs on a smaller state. The link between the two chains is the law
+`(exp a).map (·, rep a)`, where `exp a` samples what the real state `a` has not yet fixed, as in
+lazy and eager sampling. The local step equation is needed only on states satisfying an invariant
+indexed by the round. Each lemma returns the lifted equation together with that invariant on the
+reachable states, so you can chain hops. `bind_bind_comm_of_invariant` and `map_bind_of_invariant`
+are the one-step forms for straight-line code, and `iterate_bind_invariant` gives only the
+invariant.
+
+For an adaptive program with a query budget, import
+[Oracle/QueryBoundedSimulation.lean](../../CslibFrontier/Languages/Probabilistic/Oracle/QueryBoundedSimulation.lean).
+`ProbOracleComp.IsQueryBounded.run_interpret_bind_comm_of_invariant` lifts the same link through
+every external query. Its invariant is indexed by the remaining budget, for example room in a
+bounded cache. Without a budget, use `run_interpret_simulation_of_invariant` or
+`run_interpret_map_state_of_invariant` from
+[Simulation.lean](../../CslibFrontier/Languages/Probabilistic/Simulation.lean). The open-round loops
+of [CCA/Interleaved.lean](../../CslibFrontier/Crypto/Computational/Encryption/CCA/Interleaved.lean)
+and the certification and key-expansion hops of
+[TreeSignature/Security.lean](../../CslibFrontier/Crypto/Computational/TreeSignature/Security.lean)
+are worked clients.
 
 ## Pass a query adapter through an eager/lazy game hop
 
