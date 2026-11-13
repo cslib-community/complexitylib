@@ -21,7 +21,7 @@ open Cslib.Complexity.CSP.EdgeAugmenting (labeling)
 
 private def equality : Table := ⟨2, [[false, false], [true, true]]⟩
 private def inequality : Table := ⟨2, [[false, true], [true, false]]⟩
-private def doubled : Input := ⟨[(equality, [0, 1]), (equality, [0, 1])],
+private def doubled : Input := ⟨[⟨equality, [0, 1]⟩, ⟨equality, [0, 1]⟩],
   [false, false, true, true]⟩
 
 -- The public certificate composes through ordinary native automation.
@@ -59,7 +59,7 @@ example : ValidLabeling Table.sem
   rw [hr] at hs
   exact ⟨hs.2.1, by have := hs.2.2; omega⟩
 
-private def triangle : Input := ⟨[(inequality, [0, 1]), (equality, [1, 2]), (equality, [2, 0])],
+private def triangle : Input := ⟨[⟨inequality, [0, 1]⟩, ⟨equality, [1, 2]⟩, ⟨equality, [2, 0]⟩],
   [true, false, false, false, false, false]⟩
 
 -- A genuine three-edge blossom with its older log, current copy and meeting output.
@@ -71,16 +71,16 @@ example : (run triangle).bind (decode triangle.body) =
 
 -- The meeting retains a child already inserted at the current copied constraint.
 private def partialMeeting : Input :=
-  ⟨[(⟨3, [[false, false, false], [true, true, false], [true, false, true]]⟩, [0, 1, 2]),
-    (⟨1, [[true]]⟩, [0]), (⟨1, [[false]]⟩, [1]), (⟨1, [[true]]⟩, [2])],
+  ⟨[⟨⟨3, [[false, false, false], [true, true, false], [true, false, true]]⟩, [0, 1, 2]⟩,
+    ⟨⟨1, [[true]]⟩, [0]⟩, ⟨⟨1, [[false]]⟩, [1]⟩, ⟨⟨1, [[true]]⟩, [2]⟩],
     [false, false, false, true, false, true]⟩
 example : run partialMeeting = some (.inr (.inl ⟨[0, 2], [], ⟨0, [1]⟩, 2⟩)) := by
   decide +kernel
 
 private def repeated : Input :=
-  ⟨[(⟨4, [[false, false, false, false], [true, true, false, false],
-      [false, false, true, true], [true, true, true, true]]⟩, [0, 1, 2, 3]),
-    (equality, [1, 2]), (⟨1, [[true]]⟩, [0]), (⟨1, [[false]]⟩, [3])],
+  ⟨[⟨⟨4, [[false, false, false, false], [true, true, false, false],
+      [false, false, true, true], [true, true, true, true]]⟩, [0, 1, 2, 3]⟩,
+    ⟨equality, [1, 2]⟩, ⟨⟨1, [[true]]⟩, [0]⟩, ⟨⟨1, [[false]]⟩, [3]⟩],
     [false, false, false, false, false, false, true, false]⟩
 
 -- Constraint zero is expanded at two distinct times. The second copy skips the old parent.
@@ -91,20 +91,20 @@ example : (run repeated).bind (decode repeated.body) =
   decode_run repeated (by decide)
 
 private def sparse : Input :=
-  ⟨[(equality, [2 ^ 100, 2 ^ 250]), (equality, [2 ^ 100, 2 ^ 250])],
+  ⟨[⟨equality, [2 ^ 100, 2 ^ 250]⟩, ⟨equality, [2 ^ 100, 2 ^ 250]⟩],
     [false, false, true, true]⟩
 example : run sparse = some (.inr (.inl ⟨[2 ^ 100, 2 ^ 250], [], ⟨0, []⟩, 1⟩)) := by
   decide +kernel
 
 -- Empty and nullary inputs exhaust; malformed declared arities do not fund a loop.
 example : run ⟨[], []⟩ = some (.inl []) := by decide
-example : run ⟨[(⟨0, [[]]⟩, [])], []⟩ = some (.inl []) := by decide
-example : run ⟨[(⟨0, []⟩, [])], []⟩ = some (.inl []) := by decide
-example : run ⟨[(⟨2 ^ 250, [[false]]⟩, [])], []⟩ = some (.inl []) := by decide
+example : run ⟨[⟨⟨0, [[]]⟩, []⟩], []⟩ = some (.inl []) := by decide
+example : run ⟨[⟨⟨0, []⟩, []⟩], []⟩ = some (.inl []) := by decide
+example : run ⟨[⟨⟨2 ^ 250, [[false]]⟩, []⟩], []⟩ = some (.inl []) := by decide
 
 -- An unrelated invalid constraint suppresses every partner: global validity is retained.
 private def globallyInvalid : Input :=
-  ⟨doubled.body ++ [(⟨0, []⟩, [])], doubled.labels⟩
+  ⟨doubled.body ++ [Constraint.mk ⟨0, []⟩ []], doubled.labels⟩
 example : partners globallyInvalid (0, 0, 0) = [] := by decide
 example : run globallyInvalid = some (.inl [⟨3, []⟩, ⟨2, []⟩, ⟨1, []⟩, ⟨0, []⟩]) := by
   decide +kernel
@@ -113,8 +113,8 @@ example : (run globallyInvalid).bind (decode globallyInvalid.body) =
   decode_run globallyInvalid (by decide)
 
 -- Malformed row widths remain exact source behavior rather than a precondition.
-example : run ⟨[(⟨2 ^ 100, [[false]]⟩, [0, 1]),
-    (⟨2 ^ 100, [[false]]⟩, [0, 1])], [false, false, true, true]⟩ =
+example : run ⟨[⟨⟨2 ^ 100, [[false]]⟩, [0, 1]⟩,
+    ⟨⟨2 ^ 100, [[false]]⟩, [0, 1]⟩], [false, false, true, true]⟩ =
       some (.inl [⟨3, []⟩, ⟨2, []⟩, ⟨1, []⟩, ⟨0, []⟩]) := by decide +kernel
 example : run { doubled with labels := [false] } = none := by decide
 example : run { doubled with labels := doubled.labels ++ [false] } = none := by decide

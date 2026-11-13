@@ -50,16 +50,6 @@ private theorem succ_of_lt_min {d m M x : ℕ} {t : Tree d} (ht : t.Valid)
   have he := ht.extrema_of_bounds hb
   ⟨he.2.2.1, hm, fun z hz _ => (he.2.2.2.2 z hz).1⟩
 
-private theorem cluster_lt_split {d : ℕ} {i j : Fin (universeSize d)} {a b : ℕ}
-    (hb : b < universeSize d) (h : i.val * universeSize d + a < j.val * universeSize d + b) :
-    i.val < j.val ∨ i = j ∧ a < b := by
-  rcases lt_trichotomy i.val j.val with hlt | heq | hgt
-  · exact Or.inl hlt
-  · rw [heq] at h
-    exact Or.inr ⟨Fin.ext heq, by omega⟩
-  · have := index_lt_index (b := a) hb hgt
-    omega
-
 private theorem succ_cluster_ans {d m M x : ℕ} {s : Tree d}
     {c : Fin (universeSize d) → Tree d} (ht : (node (some (m, M)) s c).Valid) (hm : ¬x < m)
     {k : Fin (universeSize d)} {b : ℕ} (hb : (c k).Contains b)

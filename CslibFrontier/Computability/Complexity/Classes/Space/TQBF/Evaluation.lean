@@ -44,7 +44,7 @@ Along every run, the input is a suffix of the tokens of the formula, every frame
 the formula and a suffix of its tokens, and the suffixes stored in the stack are strictly nested,
 so the stack is no deeper than the number of tokens (`Cslib.Complexity.TQBF.Good`,
 `Cslib.Complexity.TQBF.good_iterate_step`). The time and space of the evaluator on multi-tape
-machines are in `Cslib.Computability.Complexity.Classes.Space.TQBF.Membership`.
+machines are in `CslibFrontier.Computability.Complexity.Classes.Space.TQBF.Membership`.
 
 ## Main definitions
 

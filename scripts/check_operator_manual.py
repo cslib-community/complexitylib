@@ -61,9 +61,6 @@ STALE_SOURCE_ANCHORS: set[tuple[str, int]] = {
     # Stale on main. #4205 rewrites the manual sentence that links them.
     ("CslibFrontier/Computability/StreamArithmetic/Interface.lean", 243),
     ("CslibFrontier/Computability/StreamArithmetic/Interface.lean", 528),
-    # Stale on main. #3538 edits the adjacent manual line; repoint them after it lands.
-    *(("CslibFrontier/Crypto/Protocols/SigmaProtocol/Computational.lean", line)
-      for line in (107, 217, 228, 243)),
 }
 
 

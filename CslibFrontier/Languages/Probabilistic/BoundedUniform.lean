@@ -13,8 +13,8 @@ public import CslibFrontier.Languages.Probabilistic.Retry
 import CslibFrontier.Probability.Option
 import CslibFrontier.Probability.PMF.Option.Bind
 import CslibFrontier.Probability.PMF.ToReal
+import CslibFrontier.Foundations.Data.Nat.BinarySize
 import Mathlib.Data.Fintype.Fin
-import Mathlib.Data.Nat.Size
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Positivity
 import CslibFrontier.Probability.PMF.Bool
@@ -319,10 +319,8 @@ private theorem bind_sampleBinaryNat_size (bound : ℕ) (next : PMF (Option ℕ)
         if value < bound then PMF.pure (some value) else next := by
   rcases Nat.eq_zero_or_pos bound with rfl | hbound
   · simp [PMF.bind_const]
-  have hsize : bound.size = Nat.log 2 bound + 1 :=
-    le_antisymm (Nat.size_le.mpr (Nat.lt_pow_succ_log_self (by decide) bound))
-      (Nat.lt_size.mpr (Nat.pow_log_le_self 2 hbound.ne'))
-  rw [sampleBoundedIndex_eq_binary, ProbComp.eval_map, PMF.bind_map, hsize]
+  rw [sampleBoundedIndex_eq_binary, ProbComp.eval_map, PMF.bind_map,
+    Nat.size_eq_log_two_add_one hbound.ne']
   refine congrArg (PMF.bind _) (funext fun value => ?_)
   by_cases hv : value < bound
   · simp [hv, Nat.min_eq_right hv.le]

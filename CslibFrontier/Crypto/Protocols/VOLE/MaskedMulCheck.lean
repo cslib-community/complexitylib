@@ -35,6 +35,7 @@ malicious-verifier ZK, VOLE-in-the-head security, or a certified efficient imple
 * `maskedMulCheckSpec`, `maskedMulCheck`: the correction/challenge/reply interaction.
 * `maskedMulCheckView`: the complete view in the cached ideal VOLE world.
 * `maskedMulCheckSimulate`: a witness-free simulator for that view.
+* `MaskedMulCheckAccepts`: the receiver's masked verification equation on a share and transcript.
 
 ## Main results
 
@@ -82,6 +83,14 @@ def maskedMulCheckValue (left right output : ι → Fin n) (delta : F)
   let adjusted := voleAdjustReceiver (Fin.init q) d delta
   (∑ i, r i * (adjusted (left i) * adjusted (right i) - adjusted (output i) * delta)) +
     q (Fin.last n)
+
+/-- The receiver's masked verification equation on its private share `(delta, q)` and a
+transcript `(d, r, (a, b), ())` of corrections, weights and reply:
+`maskedMulCheckValue left right output delta q d r = a * delta + b`. -/
+abbrev MaskedMulCheckAccepts (left right output : ι → Fin n) (share : F × (Fin (n + 1) → F))
+    (t : Transcript (maskedMulCheckSpec F ι n)) : Prop :=
+  maskedMulCheckValue left right output share.1 share.2 t.1 t.2.1 =
+    t.2.2.1.1 * share.1 + t.2.2.1.2
 
 /-- Adding the fresh VOLE mask preserves honest completeness at every receiver key. -/
 theorem maskedMulCheckReply_correct (left right output : ι → Fin n) (w : Fin n → F)
@@ -173,8 +182,7 @@ theorem maskedMulCheck_output (left right output : ι → Fin n)
       (oP := voleSenderSpec F (n + 1)) () t = (do
       let (delta, q) ← ProbOracleComp.query
         (spec := voleSenderSpec F (n + 1) ⊕ₒ voleReceiverSpec F (n + 1)) (.inr ())
-      return if maskedMulCheckValue left right output delta q t.1 t.2.1 =
-          t.2.2.1.1 * delta + t.2.2.1.2 then some () else none) := by
+      return if MaskedMulCheckAccepts left right output (delta, q) t then some () else none) := by
   unfold Verifier.output maskedMulCheck
   rw [OracleComp.interpret_bind, OracleComp.interpret_query]
   simp only [OracleComp.sumHandler]
@@ -207,8 +215,7 @@ omit [DecidableEq F] in
 theorem maskedMulCheckSimulate_accepts (left right output : ι → Fin n)
     {view : (F × (Fin (n + 1) → F)) × Transcript (maskedMulCheckSpec F ι n)}
     (hv : view ∈ (ProbComp.eval (maskedMulCheckSimulate left right output)).support) :
-    maskedMulCheckValue left right output view.1.1 view.1.2 view.2.1 view.2.2.1 =
-      view.2.2.2.1.1 * view.1.1 + view.2.2.2.1.2 := by
+    MaskedMulCheckAccepts left right output view.1 view.2 := by
   simp only [maskedMulCheckSimulate, ProbComp.eval_bind, ProbComp.eval_uniform,
     ProbComp.eval_pure, PMF.mem_support_bind_iff, PMF.mem_support_uniformOfFintype,
     true_and, PMF.mem_support_pure_iff] at hv
@@ -242,7 +249,7 @@ theorem maskedMulCheck_complete (left right output : ι → Fin n) :
     rw [← ProbOracleComp.sample]
     simp only [pmf_norm, ProbOracleComp.runWith_sample, ProbComp.eval_uniform]
     congr 1 with r : 1
-    simp only [VOLECorrelation.receiverView,
+    simp only [VOLECorrelation.receiverView, MaskedMulCheckAccepts,
       maskedMulCheckReply_correct left right output w c
         (valid_of_mem_support_voleIdealDist hc) r h, ite_true]
   rw [hrun]

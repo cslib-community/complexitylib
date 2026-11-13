@@ -36,9 +36,9 @@ example : NTIME encBits (fun _ => 1) ⊂ NTIME encBits fun n => (n + 1) ^ 14 := 
 /-- The empty input carries no short description, so the verifier rejects it with every
 certificate, and the empty input is not in the lazy diagonal. -/
 example (d : ℕ) (v : List Bool) : LazyDiagonal.verifier d ([], v) = false := by
-  simp [LazyDiagonal.verifier, Diagonal.shortDesc, unframe]
+  simp [LazyDiagonal.verifier, Diagonal.lazyVerifier, Diagonal.shortDesc, unframe]
 
 example (d : ℕ) : [] ∉ lazyDiagonal d := by
-  simp [lazyDiagonal, LazyDiagonal.verifier, Diagonal.shortDesc, unframe]
+  simp [lazyDiagonal, Diagonal.lazyLanguage, Diagonal.lazyVerifier, Diagonal.shortDesc, unframe]
 
 end CslibFrontierTests.NondeterministicTimeHierarchy

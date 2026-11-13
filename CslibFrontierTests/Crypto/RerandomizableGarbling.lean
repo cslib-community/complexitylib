@@ -32,8 +32,8 @@ abbrev toy : RerandomizableGarbling Bool 1 where
   RerandCoins := ZMod 3
   Out := Bool
   evalFn f x := xor f (x 0)
-  garble f r := ((if f then 1 else 0) - r, fun _ => (r, r + 1))
-  rerand gc r' := (gc - r', fun _ => r')
+  garble f r := { circuit := (if f then 1 else 0) - r, labels := fun _ => (r, r + 1) }
+  rerand gc r' := { circuit := gc - r', perm := fun _ => r' }
   act p L := L + p
   comp p q := p + q
   evaluate gc X := decide (gc + X 0 = 1)
@@ -49,11 +49,11 @@ def toyRC : toy.RandomnessComposition where
   explainGb r r' := r + r'
   explainRerand r₁ r₂ := r₁ + r₂
   garble_explainGb f r r' := by
-    refine Prod.ext ?_ (funext fun _ => Prod.ext ?_ ?_) <;>
-      simp only [permEncoding] <;> ring
+    refine Garbled.ext ?_ (funext fun _ => Prod.ext ?_ ?_) <;>
+      simp only [rerandGarbled, permEncoding] <;> ring
   rerand_explainRerand f r r₁ r₂ := by
-    refine Prod.ext ?_ rfl
-    simp only
+    refine Rerandomized.ext ?_ rfl
+    simp only [rerandTwice]
     ring
 
 -- Rerandomized garblings are correct, from randomness composition.
@@ -81,12 +81,12 @@ example (p q L : ZMod 3) : toy.act (toy.comp p q) L = toy.act q (toy.act p L) :=
 
 -- Both reductions apply to the toy scheme.
 example (f : Bool) (x : Fin 1 → Bool)
-    (D : (Fin 1 → ZMod 3) × ZMod 3 × ZMod 3 × ZMod 3 → ProbComp Bool) :
+    (D : toy.ExplainGbView → ProbComp Bool) :
     toy.explainGbAdvantage toyRC f x D = toy.rerandAdvantage f x (toy.explainGbReduction f D) :=
   explainGbAdvantage_eq toyRC toyInvertible f x D
 
 example (f : Bool) (x : Fin 1 → Bool)
-    (D : ZMod 3 × (Fin 1 → ZMod 3) × ZMod 3 × ZMod 3 × ZMod 3 → ProbComp Bool) :
+    (D : toy.ExplainRerandView → ProbComp Bool) :
     toy.explainRerandAdvantage toyRC f x D ≤
       toy.rerandAdvantage f x (toy.explainRerandReductionLeft toyInvertible f D) +
         toy.rerandAdvantage f x (toy.explainRerandReductionRight f D) :=
@@ -95,16 +95,16 @@ example (f : Bool) (x : Fin 1 → Bool)
 
 -- Rerandomization privacy holds with zero error.
 example (f : Bool) (x : Fin 1 → Bool) :
-    ProbComp.eval (toy.rerandReal f x) = ProbComp.eval (toy.rerandIdeal f x) :=
-  eval_rerandReal toyRC (fun r => (Equiv.addLeft r).bijective) f x
+    ProbComp.eval (toy.rerandRealView f x) = ProbComp.eval (toy.rerandIdealView f x) :=
+  eval_rerandRealView toyRC (fun r => (Equiv.addLeft r).bijective) f x
 
 -- Fixed-coin explainability holds with zero error.
 example (f : Bool) (x : Fin 1 → Bool) (r r₁ : ZMod 3) :
-    ProbComp.eval (toy.explainGbFixedReal toyRC f x r) =
-        ProbComp.eval (toy.explainGbFixedIdeal f x r) ∧
-      ProbComp.eval (toy.explainRerandFixedReal toyRC f x r r₁) =
-        ProbComp.eval (toy.explainRerandFixedIdeal f x r r₁) :=
-  ⟨eval_explainGbFixedReal toyRC f x r (Equiv.addLeft r).bijective,
-    eval_explainRerandFixedReal toyRC f x r r₁ (Equiv.addLeft r₁).bijective⟩
+    ProbComp.eval (toy.explainGbFixedRealView toyRC f x r) =
+        ProbComp.eval (toy.explainGbFixedIdealView f x r) ∧
+      ProbComp.eval (toy.explainRerandFixedRealView toyRC f x r r₁) =
+        ProbComp.eval (toy.explainRerandFixedIdealView f x r r₁) :=
+  ⟨eval_explainGbFixedRealView toyRC f x r (Equiv.addLeft r).bijective,
+    eval_explainRerandFixedRealView toyRC f x r r₁ (Equiv.addLeft r₁).bijective⟩
 
 end CslibFrontierTests.RerandomizableGarbling

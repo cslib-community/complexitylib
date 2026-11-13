@@ -8,6 +8,8 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Protocols.PIR.Cube
+import CslibFrontier.Languages.Probabilistic.Semantics
+import CslibFrontier.Probability.Uniform
 
 /-!
 # Lower bound for two-server linear-summation schemes
@@ -294,9 +296,8 @@ theorem isLinearSummation_evenTwoServer : (evenTwoServer h₀).IsLinearSummation
 theorem isCorrect_evenTwoServer : (evenTwoServer h₀).IsCorrect := by
   rw [(isLinearSummation_evenTwoServer h₀).isCorrect_iff]
   intro i r q hrq
-  simp only [evenTwoServer, ProbComp.eval_bind, ProbComp.eval_pure, ProbComp.eval_uniform,
-    PMF.mem_support_bind_iff, PMF.mem_support_pure_iff, Prod.mk.injEq] at hrq
-  obtain ⟨u, -, -, rfl⟩ := hrq
+  simp only [evenTwoServer, ProbComp.mem_support_eval_uniform_bind_pure, Prod.mk.injEq] at hrq
+  obtain ⟨u, -, rfl⟩ := hrq
   funext j
   change (makeEven h₀ u + (Pi.single i false : ι → Bool)) j +
       (makeEven h₀ u + (Pi.single i true : ι → Bool)) j = (Pi.single i true : ι → Bool) j
@@ -311,8 +312,7 @@ theorem isPrivate_evenTwoServer : (evenTwoServer h₀).IsPrivate := by
   have key (σ : Bool) (i : ι) : ProbComp.eval ((evenTwoServer h₀).serverQuery σ i) =
       (PMF.uniformOfFintype (ι → Bool)).map fun u => makeEven h₀ u + Pi.single h₀ σ := by
     rw [eval_serverQuery_evenTwoServer]
-    conv_lhs => rw [← Cslib.Probability.PMF.uniformOfFintype_map_equiv
-      (Equiv.addRight (Pi.single i σ : ι → Bool)), PMF.map_comp]
+    conv_lhs => rw [← PMF.uniformOfFintype_map_add_right (Pi.single i σ : ι → Bool), PMF.map_comp]
     congr 1 with u : 1
     change makeEven h₀ (u + Pi.single i σ) + Pi.single i σ = makeEven h₀ u + Pi.single h₀ σ
     rw [makeEven_add_single]

@@ -30,7 +30,7 @@ example {Rel V : Type} [DecidableEq V] (F : CSP Rel V) (o : F.Occurrence) (side 
     (incidenceDartEquiv F).symm (incidenceDart o side) = (o, side) := by
   simpa only [incidenceDartEquiv_apply] using (incidenceDartEquiv F).symm_apply_apply (o, side)
 
-private abbrev F : CSP Unit ℕ := [((), [7, 7]), ((), []), ((), [7])]
+private abbrev F : CSP Unit ℕ := [⟨(), [7, 7]⟩, ⟨(), []⟩, ⟨(), [7]⟩]
 private def first : F.Occurrence := ⟨(0 : Fin 3), (0 : Fin 2)⟩
 private def second : F.Occurrence := ⟨(0 : Fin 3), (1 : Fin 2)⟩
 private def third : F.Occurrence := ⟨(2 : Fin 3), (0 : Fin 1)⟩

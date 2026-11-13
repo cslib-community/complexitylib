@@ -178,9 +178,17 @@ class CacheBootstrapTests(unittest.TestCase):
             self.assertEqual(self.fetch_count(), count)
 
     def test_working_proof_edits_do_not_trigger_another_download(self):
-        self.assert_success(self.run_script("cache/ensure.sh"))
+        initial = self.run_script("cache/ensure.sh")
+        self.assert_success(initial)
+        self.assertIn("attempting optional downloads", initial.stdout)
+        self.assertIn("attempt finished in", initial.stdout)
+        self.assertIn("does not certify a cache hit", initial.stdout)
         self.write("Demo/Base.lean", "def value := 2\n")
-        self.assert_success(self.run_script("cache/ensure.sh"))
+        repeated = self.run_script("cache/ensure.sh")
+        self.assert_success(repeated)
+        self.assertIn("skipping repeated attempt", repeated.stdout)
+        self.assertIn("previous fetch exit 0", repeated.stdout)
+        self.assertIn("does not certify a cache hit", repeated.stdout)
         self.assertEqual(self.fetch_count(), 1)
 
     def test_force_and_ten_minute_expiry_retry_same_checkout(self):
@@ -195,7 +203,10 @@ class CacheBootstrapTests(unittest.TestCase):
 
     def test_failed_fetch_falls_back_and_can_be_retried_explicitly(self):
         self.assert_success(self.run_script("build.sh", BOOTSTRAP_FETCH_EXIT="17"))
-        self.assert_success(self.run_script("build.sh", BOOTSTRAP_FETCH_EXIT="17"))
+        repeated = self.run_script("build.sh", BOOTSTRAP_FETCH_EXIT="17")
+        self.assert_success(repeated)
+        self.assertIn("previous fetch exit 17", repeated.stdout)
+        self.assertIn("does not certify a cache hit", repeated.stdout)
         self.assertEqual(self.fetch_count(), 1)
         self.assertEqual(json.loads(self.stamp.read_text())["fetch_exit_code"], 17)
         self.assert_success(self.run_script("cache/ensure.sh", "--refresh"))

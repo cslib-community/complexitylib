@@ -23,18 +23,18 @@ import Mathlib.Data.List.Nodup
 
 This module defines unweighted and weighted maximum constraint satisfaction problems (`Max-CSP`)
 over arbitrary relation alphabets `Rel`, variable types `V`, and finite inhabited domains `D`,
-using documented structures (`MaxConstraint`, `MaxCSPInstance`, `WeightedConstraint`,
+using documented structures (`MaxCSPInstance`, `WeightedConstraint`,
 `WeightedMaxCSP`), together with three exact semantic bridges:
 
-1. **CNF / `MaxSAT` embedding (`clauseSem`, `MaxConstraint.ofClause`, `MaxCSPInstance.ofCNF`):**
+1. **CNF / `MaxSAT` embedding (`clauseSem`, `Constraint.ofClause`, `MaxCSPInstance.ofCNF`):**
    views any CNF formula on `numVars` declared variables as a Boolean `MaxCSPInstance (List Bool) V`
    preserving variable occurrences, per-assignment scores, threshold counts, and optima.
 2. **Forbidden-pattern Boolean `CSP → CNF` compilation (`countP_eval_toCNF_add_length`,
    `optimum_ofCNF_toCNF_add_length`):** proves that for every assignment `σ : V → Bool`, a
    constraint falsified by `σ` falsifies *exactly one* clause of `Constraint.toCNF sem c` while a
    satisfied constraint falsifies *zero* clauses, yielding the exact affine identity
-   `(F.toCSP.toCNF sem).countP (Clause.eval σ) + F.constraints.length =
-     (F.toCSP.toCNF sem).length + F.evalCount sem σ`
+   `(F.constraints.toCNF sem).countP (Clause.eval σ) + F.constraints.length =
+     (F.constraints.toCNF sem).length + F.evalCount sem σ`
    with zero auxiliary variables and preserved width bound `≤ k`.
 3. **Clamped binary finite-domain compilation (`clampedSem`, `MaxCSPInstance.toClampedBoolean`,
    `WeightedMaxCSP.toClampedBoolean`):** compiles any finite-domain `Max-CSP` over `Fin q` (`0 < q`)
@@ -44,8 +44,8 @@ using documented structures (`MaxConstraint`, `MaxCSPInstance`, `WeightedConstra
 
 ## Main definitions
 
-* `Cslib.Logic.PL.MaxConstraint`, `Cslib.Logic.PL.MaxCSPInstance`: unweighted constraints and
-  `Max-CSP` instances with declared variable counts.
+* `Cslib.Logic.PL.MaxCSPInstance`: unweighted `Max-CSP` instances, a `CSP` with a declared
+  variable count.
 * `Cslib.Logic.PL.WeightedConstraint`, `Cslib.Logic.PL.WeightedMaxCSP`: weighted constraints and
   `Max-CSP` instances over an additive weight type `W`.
 * `Cslib.Logic.PL.MaxCSP.assignment`: canonical extension of `Fin n → D` to `ℕ → D` via `default`.
@@ -77,63 +77,6 @@ open Cslib.BitString
 
 /-! ### Unweighted `Max-CSP` structures and semantics -/
 
-/-- A single constraint of a maximum constraint satisfaction instance, pairing a relation symbol
-`rel : Rel` with its ordered variable `scope : List V`. -/
-@[ext]
-structure MaxConstraint (Rel V : Type*) where
-  /-- The relation symbol applied to the constraint scope. -/
-  rel : Rel
-  /-- The ordered list of variables read by the constraint. -/
-  scope : List V
-  deriving DecidableEq, Repr
-
-namespace MaxConstraint
-
-variable {Rel V W D : Type*}
-
-/-- Convert a `MaxConstraint` to the library's pair representation `Constraint Rel V`. -/
-@[expose] def toConstraint (c : MaxConstraint Rel V) : Constraint Rel V :=
-  (c.rel, c.scope)
-
-/-- Build a `MaxConstraint` from a pair `Constraint Rel V`. -/
-@[expose] def ofConstraint (c : Constraint Rel V) : MaxConstraint Rel V :=
-  ⟨c.1, c.2⟩
-
-/-- Evaluate a `MaxConstraint` under assignment `σ : V → D` and semantics
-`sem : Rel → List D → Bool`. -/
-@[expose] def eval (sem : Rel → List D → Bool) (σ : V → D) (c : MaxConstraint Rel V) : Bool :=
-  sem c.rel (c.scope.map σ)
-
-/-- Rename variables across the scope of a `MaxConstraint`. -/
-@[expose] def relabel (f : V → W) (c : MaxConstraint Rel V) : MaxConstraint Rel W :=
-  ⟨c.rel, c.scope.map f⟩
-
-@[simp]
-theorem eval_toConstraint (sem : Rel → List D → Bool) (σ : V → D) (c : MaxConstraint Rel V) :
-    Constraint.eval sem σ c.toConstraint = c.eval sem σ :=
-  rfl
-
-@[simp]
-theorem eval_ofConstraint (sem : Rel → List D → Bool) (σ : V → D) (c : Constraint Rel V) :
-    (ofConstraint c).eval sem σ = Constraint.eval sem σ c :=
-  rfl
-
-@[simp]
-theorem eval_relabel (sem : Rel → List D → Bool) (f : V → W) (σ : W → D)
-    (c : MaxConstraint Rel V) :
-    (c.relabel f).eval sem σ = c.eval sem (σ ∘ f) := by
-  rw [← eval_toConstraint, ← eval_toConstraint]
-  exact Constraint.eval_relabel sem f σ c.toConstraint
-
-/-- Constraint evaluation depends only on the values assigned to `c.scope`. -/
-theorem eval_congr {sem : Rel → List D → Bool} {c : MaxConstraint Rel V} {σ τ : V → D}
-    (h : ∀ v ∈ c.scope, σ v = τ v) :
-    c.eval sem σ = c.eval sem τ := by
-  rw [← eval_toConstraint, ← eval_toConstraint]
-  exact Constraint.eval_congr (c := c.toConstraint) h
-
-end MaxConstraint
-
 /-- An unweighted maximum constraint satisfaction instance declaring `numVars` variables and a list
 of `constraints` counted with multiplicity. -/
 @[ext]
@@ -141,7 +84,7 @@ structure MaxCSPInstance (Rel V : Type*) where
   /-- Number of declared variables (`0, …, numVars - 1` when `V = ℕ`). -/
   numVars : ℕ
   /-- Constraints of the instance, counted with multiplicity. -/
-  constraints : List (MaxConstraint Rel V)
+  constraints : CSP Rel V
   deriving DecidableEq, Repr
 
 namespace MaxCSP
@@ -166,35 +109,17 @@ namespace MaxCSPInstance
 
 variable {Rel V D : Type*}
 
-/-- Underlying `CSP Rel V` constraint list of `F`. -/
-@[expose] def toCSP (F : MaxCSPInstance Rel V) : CSP Rel V :=
-  F.constraints.map MaxConstraint.toConstraint
-
-/-- Package `numVars` and `F : CSP Rel V` as a `MaxCSPInstance`. -/
-@[expose] def ofCSP (numVars : ℕ) (F : CSP Rel V) : MaxCSPInstance Rel V :=
-  ⟨numVars, F.map MaxConstraint.ofConstraint⟩
-
 /-- Variable occurrences across all constraint scopes in order. -/
 @[expose] def vars (F : MaxCSPInstance Rel V) : List V :=
-  F.constraints.flatMap MaxConstraint.scope
+  F.constraints.vars
 
 /-- Structural size: total variable occurrences plus number of constraints. -/
 @[expose] def workSize (F : MaxCSPInstance Rel V) : ℕ :=
   F.vars.length + F.constraints.length
 
-@[simp]
-theorem length_toCSP (F : MaxCSPInstance Rel V) :
-    F.toCSP.length = F.constraints.length := by
-  simp only [toCSP, List.length_map]
-
-@[simp]
-theorem vars_toCSP (F : MaxCSPInstance Rel V) :
-    F.toCSP.vars = F.vars := by
-  simp only [CSP.vars, toCSP, List.flatMap_map, MaxConstraint.toConstraint, vars]
-
 /-- Number of constraints in `F` satisfied by an arbitrary assignment `σ : V → D`. -/
 @[expose] def evalCount (sem : Rel → List D → Bool) (F : MaxCSPInstance Rel V) (σ : V → D) : ℕ :=
-  F.constraints.countP (MaxConstraint.eval sem σ)
+  F.constraints.countP (Constraint.eval sem σ)
 
 theorem evalCount_le (sem : Rel → List D → Bool) (F : MaxCSPInstance Rel V) (σ : V → D) :
     F.evalCount sem σ ≤ F.constraints.length :=
@@ -381,7 +306,7 @@ theorem evalScore_toWeighted (sem : Rel → List D → Bool) (F : MaxCSPInstance
   | nil => rfl
   | cons c cs ih =>
     simp only [toWeighted, WeightedMaxCSP.evalScore, List.map_cons, List.sum_cons,
-      WeightedConstraint.evalWeight, evalCount, List.countP_cons, MaxConstraint.eval] at ih ⊢
+      WeightedConstraint.evalWeight, evalCount, List.countP_cons, Constraint.eval] at ih ⊢
     rw [ih]
     by_cases h : sem c.rel (c.scope.map σ) = true <;> simp only [h, ↓reduceIte] <;> omega
 
@@ -408,7 +333,7 @@ theorem evalScore_toRealWeighted (sem : Rel → List D → Bool) (F : MaxCSPInst
       evalCount, List.countP_nil, Nat.cast_zero]
   | cons c cs ih =>
     simp only [toRealWeighted, WeightedMaxCSP.evalScore, List.map_cons, List.sum_cons,
-      WeightedConstraint.evalWeight, evalCount, List.countP_cons, MaxConstraint.eval] at ih ⊢
+      WeightedConstraint.evalWeight, evalCount, List.countP_cons, Constraint.eval] at ih ⊢
     rw [ih]
     by_cases h : sem c.rel (c.scope.map σ) = true <;>
       simp only [h, Bool.false_eq_true, ↓reduceIte, Nat.cast_add, Nat.cast_one, Nat.cast_zero] <;>
@@ -445,13 +370,13 @@ namespace MaxCSP
 
 end MaxCSP
 
-/-- View a CNF clause `c : Clause V` as a `MaxConstraint (List Bool) V` whose relation symbol lists
+/-- View a CNF clause `c : Clause V` as a `Constraint (List Bool) V` whose relation symbol lists
 its literal polarities and whose scope lists its variable references. -/
-@[expose] def MaxConstraint.ofClause {V : Type*} (c : Clause V) : MaxConstraint (List Bool) V :=
+@[expose] def Constraint.ofClause {V : Type*} (c : Clause V) : Constraint (List Bool) V :=
   ⟨c.map Prod.snd, c.map Prod.fst⟩
 
 @[simp]
-theorem MaxConstraint.eval_ofClause {V : Type*} (σ : V → Bool) (c : Clause V) :
+theorem Constraint.eval_ofClause {V : Type*} (σ : V → Bool) (c : Clause V) :
     (ofClause c).eval MaxCSP.clauseSem σ = Clause.eval σ c := by
   induction c with
   | nil => rfl
@@ -464,7 +389,7 @@ theorem MaxConstraint.eval_ofClause {V : Type*} (σ : V → Bool) (c : Clause V)
 /-- View a CNF formula `φ : CNF V` with `numVars` declared variables as a `MaxCSPInstance`. -/
 @[expose] def MaxCSPInstance.ofCNF {V : Type*} (numVars : ℕ) (φ : CNF V) :
     MaxCSPInstance (List Bool) V :=
-  ⟨numVars, φ.map MaxConstraint.ofClause⟩
+  ⟨numVars, φ.map Constraint.ofClause⟩
 
 namespace MaxCSPInstance
 
@@ -481,8 +406,8 @@ theorem vars_ofCNF (numVars : ℕ) (φ : CNF V) :
   induction φ with
   | nil => rfl
   | cons c cs ih =>
-    simp only [ofCNF, vars, List.map_cons, List.flatMap_cons, MaxConstraint.ofClause, CNF.vars,
-      List.flatten_cons, List.map_append] at ih ⊢
+    simp only [ofCNF, vars, CSP.vars, List.map_cons, List.flatMap_cons, Constraint.ofClause,
+      CNF.vars, List.flatten_cons, List.map_append] at ih ⊢
     rw [ih]
 
 @[simp]
@@ -493,7 +418,7 @@ theorem workSize_ofCNF (numVars : ℕ) (φ : CNF V) :
 @[simp]
 theorem evalCount_ofCNF (numVars : ℕ) (φ : CNF V) (σ : V → Bool) :
     (ofCNF numVars φ).evalCount MaxCSP.clauseSem σ = φ.countP (Clause.eval σ) := by
-  simp only [ofCNF, evalCount, List.countP_map, Function.comp_def, MaxConstraint.eval_ofClause]
+  simp only [ofCNF, evalCount, List.countP_map, Function.comp_def, Constraint.eval_ofClause]
 
 @[simp]
 theorem score_ofCNF (numVars : ℕ) (φ : CNF ℕ) (x : BitString numVars) :
@@ -533,30 +458,30 @@ theorem countP_eval_constraintToCNF_add_one {Rel V : Type*} (sem : Rel → List 
     (c : Constraint Rel V) (σ : V → Bool) :
     (c.toCNF sem).countP (Clause.eval σ) + 1 =
       (c.toCNF sem).length + cond (Constraint.eval sem σ c) 1 0 := by
-  set forb := (enumList c.2.length).filter fun w => !sem c.1 w
-  have hnodup : forb.Nodup := (nodup_enumList c.2.length).filter _
+  set forb := (enumList c.scope.length).filter fun w => !sem c.rel w
+  have hnodup : forb.Nodup := (nodup_enumList c.scope.length).filter _
   have hcount : (c.toCNF sem).countP (Clause.eval σ) =
-      forb.countP (fun w => !(c.2.map σ == w)) := by
+      forb.countP (fun w => !(c.scope.map σ == w)) := by
     simp only [Constraint.toCNF, List.countP_map, Function.comp_def, forb]
     refine List.countP_congr fun w hw => ?_
-    have hw_len : w.length = c.2.length := length_of_mem_enumList (List.mem_of_mem_filter hw)
-    rw [Constraint.eval_forbidClause c.2 hw_len σ]
+    have hw_len : w.length = c.scope.length := length_of_mem_enumList (List.mem_of_mem_filter hw)
+    rw [Constraint.eval_forbidClause c.scope hw_len σ]
   have hlen : (c.toCNF sem).length = forb.length := by
     simp only [Constraint.toCNF, List.length_map, forb]
-  have hbeq : forb.countP (fun w => c.2.map σ == w) = forb.count (c.2.map σ) := by
+  have hbeq : forb.countP (fun w => c.scope.map σ == w) = forb.count (c.scope.map σ) := by
     rw [List.count_eq_countP]
     exact List.countP_congr fun _ _ => by rw [beq_iff_eq, beq_iff_eq, eq_comm]
-  have hneg : forb.countP (fun w => !(c.2.map σ == w)) =
-      forb.countP (fun w => ¬(c.2.map σ == w)) :=
+  have hneg : forb.countP (fun w => !(c.scope.map σ == w)) =
+      forb.countP (fun w => ¬(c.scope.map σ == w)) :=
     List.countP_congr fun _ _ => by simp
-  have hsplit := List.length_eq_countP_add_countP (fun w => c.2.map σ == w) (l := forb)
+  have hsplit := List.length_eq_countP_add_countP (fun w => c.scope.map σ == w) (l := forb)
   rw [hbeq, ← hneg] at hsplit
-  have hmem : c.2.map σ ∈ forb ↔ Constraint.eval sem σ c = false := by
+  have hmem : c.scope.map σ ∈ forb ↔ Constraint.eval sem σ c = false := by
     simp only [forb, List.mem_filter, mem_enumList, List.length_map, true_and, Constraint.eval,
       Bool.not_eq_true']
   rw [hcount, hlen]
   by_cases hev : Constraint.eval sem σ c = true
-  · have hnot : c.2.map σ ∉ forb := by
+  · have hnot : c.scope.map σ ∉ forb := by
       rw [hmem]
       simp only [hev, Bool.true_eq_false, not_false_eq_true]
     rw [List.count_eq_zero_of_not_mem hnot] at hsplit
@@ -591,29 +516,28 @@ namespace MaxCSPInstance
 /-- Score shift under forbidden-pattern `CSP.toCNF` compilation on declared assignments. -/
 theorem score_ofCNF_toCNF_add_length {Rel : Type*} (sem : Rel → List Bool → Bool)
     (F : MaxCSPInstance Rel ℕ) (x : BitString F.numVars) :
-    (ofCNF F.numVars (F.toCSP.toCNF sem)).score MaxCSP.clauseSem x + F.constraints.length =
-      (F.toCSP.toCNF sem).length + F.score sem x := by
+    (ofCNF F.numVars (F.constraints.toCNF sem)).score MaxCSP.clauseSem x + F.constraints.length =
+      (F.constraints.toCNF sem).length + F.score sem x := by
   rw [score_ofCNF]
-  have h := MaxCSP.countP_eval_toCNF_add_length sem F.toCSP (MaxCSP.assignment F.numVars x)
-  have hcnt : F.toCSP.countP (Constraint.eval sem (MaxCSP.assignment F.numVars x)) =
-      F.score sem x := by
-    simp only [toCSP, List.countP_map, Function.comp_def, MaxConstraint.eval_toConstraint, score,
-      evalCount]
-  rwa [length_toCSP, hcnt] at h
+  have h := MaxCSP.countP_eval_toCNF_add_length sem F.constraints (MaxCSP.assignment F.numVars x)
+  have hcnt : F.constraints.countP (Constraint.eval sem (MaxCSP.assignment F.numVars x)) =
+      F.score sem x := rfl
+  rwa [hcnt] at h
 
 /-- **Exact optimum shift under forbidden-pattern `CSP.toCNF` compilation.** -/
 theorem optimum_ofCNF_toCNF_add_length {Rel : Type*} (sem : Rel → List Bool → Bool)
     (F : MaxCSPInstance Rel ℕ) :
-    (ofCNF F.numVars (F.toCSP.toCNF sem)).optimum MaxCSP.clauseSem + F.constraints.length =
-      (F.toCSP.toCNF sem).length + F.optimum sem := by
+    (ofCNF F.numVars (F.constraints.toCNF sem)).optimum MaxCSP.clauseSem + F.constraints.length =
+      (F.constraints.toCNF sem).length + F.optimum sem := by
   apply le_antisymm
-  · obtain ⟨x, hx⟩ := (ofCNF F.numVars (F.toCSP.toCNF sem)).exists_score_eq_optimum MaxCSP.clauseSem
+  · obtain ⟨x, hx⟩ :=
+      (ofCNF F.numVars (F.constraints.toCNF sem)).exists_score_eq_optimum MaxCSP.clauseSem
     have hs := F.score_ofCNF_toCNF_add_length sem x
     have hle := F.score_le_optimum sem x
     omega
   · obtain ⟨x, hx⟩ := F.exists_score_eq_optimum sem
     have hs := F.score_ofCNF_toCNF_add_length sem x
-    have hle := (ofCNF F.numVars (F.toCSP.toCNF sem)).score_le_optimum MaxCSP.clauseSem x
+    have hle := (ofCNF F.numVars (F.constraints.toCNF sem)).score_le_optimum MaxCSP.clauseSem x
     omega
 
 end MaxCSPInstance
@@ -699,15 +623,15 @@ theorem map_clampedScope_eq {q N : ℕ} (hq : 0 < q) [Inhabited (Fin q)]
 end MaxCSP
 
 /-- Expand a finite-domain constraint's scope into `CSP.bitWidth q`-bit blocks. -/
-@[expose] def MaxConstraint.toClampedBoolean {Rel : Type*} (q : ℕ) (c : MaxConstraint Rel ℕ) :
-    MaxConstraint Rel ℕ :=
+@[expose] def Constraint.toClampedBoolean {Rel : Type*} (q : ℕ) (c : Constraint Rel ℕ) :
+    Constraint Rel ℕ :=
   ⟨c.rel, c.scope.flatMap (CSP.bitScope (CSP.bitWidth q))⟩
 
 /-- Expand a finite-domain `MaxCSPInstance` over `Fin q` into a Boolean `MaxCSPInstance` on
 `F.numVars * CSP.bitWidth q` variables with the same number of constraints. -/
 @[expose] def MaxCSPInstance.toClampedBoolean {Rel : Type*} (q : ℕ) (F : MaxCSPInstance Rel ℕ) :
     MaxCSPInstance Rel ℕ :=
-  ⟨F.numVars * CSP.bitWidth q, F.constraints.map (MaxConstraint.toClampedBoolean q)⟩
+  ⟨F.numVars * CSP.bitWidth q, F.constraints.map (Constraint.toClampedBoolean q)⟩
 
 /-- Expand a weighted finite-domain constraint's scope into `CSP.bitWidth q`-bit blocks. -/
 @[expose] def WeightedConstraint.toClampedBoolean {Rel W : Type*} (q : ℕ)
@@ -730,11 +654,11 @@ theorem length_constraints_toClampedBoolean (q : ℕ) (F : MaxCSPInstance Rel �
   simp only [toClampedBoolean, List.length_map]
 
 theorem length_scope_mem_toClampedBoolean {q k : ℕ} {F : MaxCSPInstance Rel ℕ}
-    (hk : ∀ c ∈ F.constraints, c.scope.length ≤ k) {c : MaxConstraint Rel ℕ}
+    (hk : ∀ c ∈ F.constraints, c.scope.length ≤ k) {c : Constraint Rel ℕ}
     (hc : c ∈ (F.toClampedBoolean q).constraints) :
     c.scope.length ≤ k * CSP.bitWidth q := by
   obtain ⟨c₀, hc₀, rfl⟩ := List.mem_map.mp hc
-  dsimp only [MaxConstraint.toClampedBoolean]
+  dsimp only [Constraint.toClampedBoolean]
   rw [List.length_flatMap_of_forall_length_eq fun v _ => CSP.bitScope_length _ v]
   exact Nat.mul_le_mul_right _ (hk c₀ hc₀)
 
@@ -747,7 +671,7 @@ theorem score_toClampedBoolean {q : ℕ} (hq : 0 < q) [Inhabited (Fin q)]
   refine List.countP_congr fun c hc => ?_
   have hscope : ∀ v ∈ c.scope, v < F.numVars := fun v hv =>
     hvars v (List.mem_flatMap.mpr ⟨c, hc, hv⟩)
-  dsimp only [MaxConstraint.eval, MaxConstraint.toClampedBoolean, MaxCSP.clampedSem]
+  dsimp only [Constraint.eval, Constraint.toClampedBoolean, MaxCSP.clampedSem]
   rw [MaxCSP.map_clampedScope_eq hq x hscope]
 
 end MaxCSPInstance
@@ -803,7 +727,7 @@ theorem optimum_toClampedBoolean {Rel : Type*} {q : ℕ} (hq : 0 < q) [Inhabited
     simp only [toWeighted, toClampedBoolean, WeightedMaxCSP.toClampedBoolean, List.map_map]
     rfl
   have hvars' : ∀ v ∈ F.toWeighted.vars, v < F.toWeighted.numVars := by
-    simpa only [WeightedMaxCSP.vars, toWeighted, List.flatMap_map, vars] using hvars
+    simpa only [WeightedMaxCSP.vars, toWeighted, List.flatMap_map, vars, CSP.vars] using hvars
   rw [← optimum_toWeighted, hwt, F.toWeighted.optimum_toClampedBoolean hq sem hvars',
     optimum_toWeighted]
 

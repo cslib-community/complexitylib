@@ -19,11 +19,13 @@ import CslibFrontier.Algorithms.Lean.TrimmedYates
 import CslibFrontier.Algorithms.LinearAlgebra.BareissElimination
 import CslibFrontier.Algorithms.Lean.TreeDecomposition.CSP
 import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
+import CslibFrontier.Computability.Circuit.Arithmetic.BitBlast
 import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.LowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.UpperBound
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.AnyOrder
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Basic
+import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConstantDepth
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.ConcentratingShiftSet
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.LowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.NoncommABP
@@ -32,6 +34,8 @@ import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.SetMultilinear
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.Sparse
 import CslibFrontier.Computability.Circuit.Arithmetic.HittingSet.SparseOrbit
 import CslibFrontier.Computability.Circuit.Arithmetic.MatrixMultiplication.NineQuarters
+import CslibFrontier.Computability.Circuit.Boolean.Arithmetic
+import CslibFrontier.Computability.Circuit.Boolean.BitBlastCompiler
 import CslibFrontier.Computability.Circuit.Boolean.BarringtonClass
 import CslibFrontier.Computability.Circuit.Boolean.Braverman.Fooling
 import CslibFrontier.Computability.Circuit.Boolean.Formula.Andreev
@@ -39,6 +43,7 @@ import CslibFrontier.Computability.Circuit.Boolean.Hastad.Sharp
 import CslibFrontier.Computability.Circuit.Boolean.FormalComplexityMeasure
 import CslibFrontier.Computability.Circuit.Boolean.Khrapchenko
 import CslibFrontier.Computability.Circuit.Boolean.NaturalProof.Generator
+import CslibFrontier.Computability.Circuit.Boolean.NonuniformSeparation
 import CslibFrontier.Computability.Circuit.Boolean.Razborov.MiddleSlice.P
 import CslibFrontier.Computability.Circuit.Boolean.Razborov.Useful
 import CslibFrontier.Computability.Circuit.Boolean.Smolensky
@@ -75,6 +80,7 @@ import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PotentialL
 import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PotentialLineNormalization
 import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.SOPLCollapse
 import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.SpernerHardness
+import CslibFrontier.Computability.Complexity.Classes.Time.Sublinear
 import CslibFrontier.Computability.Complexity.Classes.TimeSpace.Williams
 import CslibFrontier.Computability.Complexity.Classes.Toda
 import CslibFrontier.Computability.Complexity.CookLevin.Completeness
@@ -123,11 +129,14 @@ import CslibFrontier.Computability.QueryComplexity.Quantum.NayakWuConsequences
 import CslibFrontier.Computability.QueryComplexity.Quantum.PermutationInversion
 import CslibFrontier.Computability.QueryComplexity.Quantum.SpectralAdversary
 import CslibFrontier.Computability.QueryComplexity.Quantum.WeightedAdversary
+import CslibFrontier.Crypto.Computational.MLDSA.KeyOnly
 import CslibFrontier.Crypto.Computational.Nonuniform.ZeroKnowledge
 import CslibFrontier.Crypto.Computational.OneWay.LiuPass
 import CslibFrontier.Crypto.Computational.OneWay.MCSP
 import CslibFrontier.Crypto.Computational.OneWayToPRF
 import CslibFrontier.Crypto.Computational.OneWayToPRG
+import CslibFrontier.Crypto.Computational.SIS.Ajtai
+import CslibFrontier.Crypto.Primitives.PRP.Finite
 import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Bot
 import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot
 import CslibFrontier.Crypto.Protocols.PIR.Block
@@ -197,10 +206,13 @@ import CslibFrontier.Logics.SecondOrder.WordMSO.OfRegular
 import CslibFrontier.Logics.SecondOrder.WordMSO.Separation
 import CslibFrontier.Logics.SecondOrder.WordMSO.StarFree
 import CslibFrontier.MachineLearning.OnlineLearning.SwapRegret
+import CslibFrontier.MachineLearning.PACLearning.MDL
+import CslibFrontier.MachineLearning.PACLearning.Nonuniform
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.AC0Mod
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.Amplification
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.Complexity
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.Learner
+import CslibFrontier.MachineLearning.UniformLearning.CryptoHardness.GGM
 import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson
 import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson.BestOf
 import CslibFrontier.Probability.Extractor.TwoSource
@@ -637,6 +649,23 @@ register_result "braverman" where
     than Braverman's; size and depth count NOT gates and constants; nonuniform and \
     information-theoretic."
 
+register_result "boolean-two-element-arithmetic-simulation" where
+  title := "Boolean and two-element arithmetic circuits have linearly related sizes"
+  topic := "circuit complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 14, Exercise 1 (two-element case)",
+      locator := "Web draft 2007-01-08, printed p. 265; PDF p. 281" }
+  ]
+  theorems := [
+    Cslib.Circuits.Boolean.exists_arithmetic_simulation,
+    Cslib.Circuits.Boolean.exists_boolean_simulation
+  ]
+  scope := "Bool's Boolean ring, with XOR addition and AND multiplication. All outputs and \
+    all inputs are preserved; arithmetic simulates De Morgan circuits with size factor 3, \
+    and De Morgan circuits simulate arithmetic with factor 4. Constants count as gates; \
+    input/output wires are free. Nonuniform existence, not compiler runtime or formal \
+    polynomial equality. This does not complete the arbitrary fixed finite-field exercise."
+
 register_result "formal-complexity-measure-leaf-bound" where
   title := "Formal complexity measures lower-bound constant-free formula leaf size"
   topic := "circuit complexity"
@@ -662,6 +691,24 @@ register_result "formal-complexity-measure-quarter-density" where
     Natural-number cardinalities with denominators cleared; no computational claim. \
     Theorem 22.3's stronger near-total-density endpoint is not included."
 
+register_result "bpp-proper-subset-ppoly" where
+  title := "BPP is strictly contained in P/poly on ordinary bit languages"
+  topic := "circuit complexity"
+  sources := [
+    { paper := Goldreich2007Draft, theorem := "Theorem 6.3",
+      locator := "February 2007 draft r3.pdf, PDF p. 9; printed p. 211" }
+  ]
+  theorems := [
+    Cslib.Circuits.Boolean.not_countable_PPoly,
+    Cslib.Circuits.Boolean.exists_mem_PPoly_not_isDecidable,
+    Cslib.Circuits.Boolean.BPP_ssubset_PPoly
+  ]
+  scope := "Ordinary bit languages with identity encoding encBits: nonuniform polynomial-size \
+    De Morgan circuits strictly contain native seeded-verifier BPP. The witness has no native \
+    machine decider and is obtained nonconstructively using P-selective sets/countability. \
+    No efficient separator or uniform circuit-family construction. Strictness is not asserted \
+    for arbitrary encoded finite instance domains, where the two classes coincide."
+
 register_result "one-bit-advice-undecidable" where
   title := "One bit of advice decides a length-dependent undecidable bit language"
   topic := "complexity theory"
@@ -678,6 +725,34 @@ register_result "one-bit-advice-undecidable" where
     decider and has the same membership for all words of equal length. Advice need not be \
     computable; no efficient construction of the undecidable advice family is claimed. \
     Arbitrary advice hierarchies and strict P/1 versus P/poly remain separate."
+
+register_result "arithmetic-bit-synthesis-injective-encoding" where
+  title := "Arithmetic bit-synthesis with injective fixed-width encodings"
+  topic := "circuit complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 14, Exercise 1 (synthesis-direction milestone)",
+      locator := "Web draft 2007-01-08, printed p. 265; PDF p. 281" }
+  ]
+  theorems := [Cslib.Circuits.Synthesis.bitBlast_arithmetic]
+  scope := "Arithmetic circuits on a semiring with supplied w-bit encoding and total decoder \
+    satisfying a left-inverse law. Given already-available encoded input functions, all output \
+    bits cost at most size * bitBlastCost w additional De Morgan gates. The encoding need not \
+    be surjective, admitting odd fields. No free-input compiler, reverse simulation, encoding \
+    construction or runtime claim; the full finite-field exercise remains open."
+
+register_result "encoded-circuit-boolean-simulation" where
+  title := "Boolean circuits for left-invertibly encoded bounded-arity computations"
+  topic := "circuit complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 14, Exercise 1 (forward circuit milestone)",
+      locator := "Web draft 2007-01-08, printed p. 265; PDF p. 281" }
+  ]
+  theorems := [Cslib.Circuits.Circuit.exists_encoded_boolean]
+  scope := "Any interpreted circuit of arity at most two, with a supplied w-bit encoding and \
+    decoder left inverse, has a Boolean circuit on N*w free inputs with M*w outputs, costing \
+    at most size * bitBlastCost w gates. Correctness holds on valid encoded inputs, packed \
+    wire-major by blocksEquiv.symm. Constants count as gates and wiring is free. No encoding \
+    construction, reverse general-field simulation or compiler-runtime claim."
 
 register_result "exact-advice-strict-hierarchy" where
   title := "Strict exact-advice hierarchy"
@@ -1200,6 +1275,33 @@ register_result "hitting-set-set-multilinear-depth-three" where
     the source's. Existence and size of an explicit set only: no bit complexity and no \
     black-box algorithm model."
 
+register_result "hitting-set-constant-depth" where
+  title := "Subexponential hitting sets for constant-depth formulas from the LST lower bound"
+  topic := "algebraic complexity"
+  sources := [
+    { paper := LimayeSrinivasanTavenas2021, theorem := "Corollary 6, via Lemma 18",
+      locator := "printed p. 5 and §6 p. 13, ECCC TR21-081 rev. 1" },
+    { paper := ChouKumarSolomon2019, theorem := "Theorem 2.3",
+      locator := "printed p. 3 (arXiv:1803.05933v1)" },
+    { paper := BhattacharjeeEtAl2025, theorem := "Theorems 4.1 and 6.1",
+      locator := "printed pp. 19–20 and 28 (arXiv:2506.23214v1)" }
+  ]
+  theorems := [
+    Cslib.Circuits.Arithmetic.eventually_isHittingSet_constantDepthHittingSet_rpow,
+    Cslib.Circuits.Arithmetic.eventually_isHittingSet_constantDepthHittingSet_circuit_rpow,
+    Cslib.Circuits.Arithmetic.eventually_isHittingSet_constantDepthHittingSet,
+    Cslib.Circuits.Arithmetic.eventually_card_constantDepthHittingSet_le,
+    Cslib.Circuits.Arithmetic.eventually_isHittingSet_constantDepthHittingSet_circuit
+  ]
+  scope := "Over a field of characteristic zero, for every product-depth Δ, exponent c and \
+    real ε > 0, for all large n: an explicit set of at most 2^(n^ε) points of Kⁿ containing a \
+    non-root of every nonzero polynomial computed by an unbounded fan-in formula of \
+    product-depth at most Δ with at most n^c nodes, and, at a larger exponent, by a simple \
+    circuit of product-depth at most Δ with at most n^c gates. A finite form of LST \
+    Corollary 6, which is an identity test with running time (s^(Δ+1) n)^O(n^μ) for depth \
+    o(log log log n): here constant product-depth, existence and size of an explicit set with \
+    non-explicit large-n thresholds, no running time or uniformity, characteristic zero only."
+
 register_result "hitting-set-noncommutative-abp" where
   title := "Quasipolynomial hitting sets of matrices for non-commutative ABPs"
   topic := "algebraic complexity"
@@ -1490,6 +1592,40 @@ register_result "blum-mansour-swap-regret" where
     With Hedge copies and losses in [-1, 1], swap regret is at most η T + n ln n / η, and \
     2 √(T n ln n) with the tuned rate when n ≥ 2 and T ≥ n ln n. Stationary vectors are \
     chosen classically; no running time is charged."
+
+register_result "srm-nonuniform-learnability" where
+  title := "Countable unions of uniformly convergent classes are nonuniformly learnable by SRM"
+  topic := "statistical learning"
+  sources := [
+    { paper := ShalevShwartzBenDavid2014, theorem := "Theorems 7.3 and 7.5",
+      locator := "Theorem 7.3 in Section 7.1.1, p. 85; Theorem 7.5 in Section 7.2, pp. 87–88" }
+  ]
+  theorems := [
+    Cslib.MachineLearning.PACLearning.isNonuniformLearnable_iUnion,
+    Cslib.MachineLearning.PACLearning.isNonuniformLearnable_of_countable
+  ]
+  scope := "Domain and labels are arbitrary measurable spaces. Uniform convergence is an \
+    explicit rate ε i m δ for m > 0 and δ > 0 with ε i m δ → 0; the learner for accuracy ε and \
+    confidence δ is an SRM rule over pairs (i, h) and may depend on (ε, δ), following the \
+    upstream IsPACLearnable conventions. Countable classes need measurable misclassification \
+    sets. Theorem 7.5's explicit sample complexity is not stated, only learnability. The \
+    converse characterization (Theorem 7.2) is not proved."
+
+register_result "mdl-bound" where
+  title := "Minimum description length bound for prefix-free descriptions"
+  topic := "statistical learning"
+  sources := [
+    { paper := ShalevShwartzBenDavid2014, theorem := "Theorem 7.7",
+      locator := "Section 7.3, p. 90" }
+  ]
+  theorems := [
+    Cslib.MachineLearning.PACLearning.IsPrefixFreeDescription.mdl_bound,
+    Cslib.MachineLearning.PACLearning.IsPrefixFreeDescription.measure_pi_exists_le_abs_sub_le
+  ]
+  scope := "Binary descriptions d : (α → β) → List Bool, prefix-free on the class, and \
+    hypotheses with measurable misclassification sets, for m > 0 and δ > 0. With probability \
+    at least 1 - δ every h satisfies L_D(h) ≤ L_S(h) + √((|d h| log 2 + log (2/δ)) / (2m)), \
+    which is sharper than the source's |h| + ln (2/δ). Kraft's inequality is Mathlib's."
 
 register_result "gmw-zero-knowledge" where
   title := "Goldreich–Micali–Wigderson auxiliary-input zero-knowledge proofs for NP"
@@ -2868,6 +3004,35 @@ register_result "cai-furer-immerman-isomorphism" where
     in C^(k+1) and k-WL is in cai-furer-immerman-graphs; expander base graphs of size O(k) are \
     not formalized."
 
+register_result "native-sublinear-time-collapse" where
+  title := "Sublinear native algorithms have constant runtime"
+  topic := "time complexity"
+  sources := [
+    { paper := Goldreich2007DraftR2, theorem := "Exercise 4.3",
+      locator := "January 2007 draft r2.pdf, PDF p. 35; printed p. 151" }
+  ]
+  theorems := [
+    Turing.MultiTapeTM.exists_uniform_time_of_fast_length,
+    Turing.MultiTapeTM.exists_uniform_time_of_isLittleO,
+    Turing.MultiTapeTM.ComputableInTimeAndSpace.exists_const_time_of_isLittleO
+  ]
+  scope := "A fixed native sequential-input machine with a uniform sublinear clock on every \
+    input word has a global constant clock. One fast width suffices under a uniform total \
+    clock on all words. Raw-bit computability preserves outputs and independent workspace. \
+    No separate input length, random access or arbitrary encoding extension is asserted."
+
+register_result "sublinear-dtime-equals-constant" where
+  title := "Sublinear deterministic time classes equal constant time"
+  topic := "time complexity"
+  sources := [
+    { paper := Goldreich2007DraftR2, theorem := "Exercise 4.3 (decision-class consequence)",
+      locator := "January 2007 draft r2.pdf, PDF p. 35; printed p. 151" }
+  ]
+  theorems := [Cslib.Complexity.DTIME_eq_const_of_isLittleO]
+  scope := "DTIME encBits p equals DTIME encBits 1 for p=o(n), including affine clock constants. \
+    The input is every raw bit word; prefixes of arbitrary encoded instances need not be \
+    valid, so no such encoding-general class identity is claimed."
+
 register_result "translational-time-hierarchy" where
   title := "Deterministic time hierarchy below every power of the logarithm, by translation"
   topic := "time complexity"
@@ -3168,6 +3333,26 @@ register_result "natural-proofs" where
     P/poly-natural property is useful against P/poly. The generator tests are nonuniform \
     circuits reading the 2k-bit outputs; the barrier's derived tests read whole truth tables \
     of the GGM keyed family. The generator family is a hypothesis, not a constructed object."
+
+register_result "learning-hardness-from-generators" where
+  title := "Subexponentially secure generators rule out learners with small circuits for \
+    polynomial-size circuits"
+  topic := "meta-complexity"
+  sources := [
+    { paper := Valiant1984, theorem := unverified, locator := unverified },
+    { paper := GGM1986, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.MachineLearning.UniformLearning.eventually_le_of_isSubexponentiallySecure,
+    Cslib.MachineLearning.UniformLearning.exists_eventually_not_learns_of_isSubexponentiallySecure
+  ]
+  scope := "Conditional on a subexponentially secure family of length-doubling generators of \
+    polynomial circuit complexity, as in natural-proofs. Learners are membership-query learners \
+    with a De Morgan circuit and q non-adaptive queries on each seed (HasCircuit); running time \
+    is not modelled. For a polynomial s, every c and large n, a learner with S + 7 <= 2^(cn) \
+    gates for the functions of circuit size s n has (1 - delta)(1 - eps) <= 1/2 + q/2^(n+1) + \
+    2^(-cn), so none with q <= 2^(n-1) reaches (1 - delta)(1 - eps) > 3/4. The distinguisher \
+    fixes the learner's seed and comparison point by averaging; it is a nonuniform circuit test."
 
 register_result "nw-reconstruction-learner" where
   title := "Carmosino–Impagliazzo–Kabanets–Kolokolova: the Nisan–Wigderson reconstruction as a \
@@ -4421,6 +4606,67 @@ register_result "cgks-pir-block-retrieval" where
     2 * m ≤ ℓ, in particular n ≤ (ℓ / 2)^2 (Corollary 8, replacing the paper's unrounded \
     n ≤ ℓ² / 4 with the integer subcube condition 2 * m ≤ ℓ, matching n ≤ ℓ² / 4 when ℓ is \
     even)."
+
+register_result "prp-prf-switching" where
+  title := "PRP/PRF switching lemma: a pseudorandom permutation is a pseudorandom function"
+  topic := "cryptography"
+  sources := [
+    { paper := BonehShoup2023, theorem := "Theorem 4.4 and Corollary 4.5",
+      locator := "Section 4.4.3" }
+  ]
+  theorems := [
+    Cslib.Crypto.PRP.advantage_idealExperiment_prfIdealExperiment_le,
+    Cslib.Crypto.PRP.prfAdvantage_le_advantage_add
+  ]
+  scope := "Finite block set D and key set Key, block ciphers E : Key → Equiv.Perm D, and \
+    adaptive oracle adversaries with private coins (PRF.Adversary D D) making at most Q queries \
+    (IsQueryBounded Q). A uniform permutation and a uniform function of D are distinguished \
+    with advantage at most Q.choose 2 / |D|, so the PRF advantage of E is at most its PRP \
+    advantage plus Q.choose 2 / |D|. Concrete information-theoretic bounds; no running time is \
+    charged and no asymptotic form is stated."
+
+register_result "ajtai-collision-sis" where
+  title := "Finding collisions in Ajtai's hash function is no easier than SIS"
+  topic := "cryptography"
+  sources := [
+    { paper := Ajtai1996, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Crypto.IsAjtaiCollision.isSolution_sub,
+    Cslib.Crypto.isSolution_sub_of_abs_le,
+    Cslib.Crypto.ajtaiAdvantage_le_sisAdvantage
+  ]
+  scope := "Ajtai's hash x ↦ A x mod q on integer vectors, for every nonzero modulus q (the two \
+    collision lemmas need no assumption on q), dimensions n × m and bound β, with no primality \
+    or compression assumption. Distinct inputs in [0, β]^m (or [-β, β]^m) with equal hashes \
+    differ by a nonzero solution with ∞-norm at most β (or 2β), and the collision-finding \
+    success probability of any finder against a uniform A ∈ ℤ_q^{n×m} is at most the SIS \
+    success probability of collisionToSIS, which subtracts the two inputs. Ajtai's \
+    worst-case-to-average-case reduction for lattice problems is not formalized; no running \
+    time is charged."
+
+register_result "mldsa-key-only-forgery" where
+  title := "ML-DSA key-only unforgeability from Module-LWE and self-target MSIS"
+  topic := "cryptography"
+  sources := [
+    { paper := DucasEtAl2018, theorem := unverified, locator := unverified },
+    { paper := NISTFIPS204, theorem := unverified, locator := unverified }
+  ]
+  theorems := [
+    Cslib.Crypto.MLDSA.isSelfTargetSolution_of_verify,
+    Cslib.Crypto.MLDSA.succProbability_koaGame_le_selfTargetGame,
+    Cslib.Crypto.MLDSA.succProbability_koaGame_le
+  ]
+  scope := "Key-only attacks (no signing queries) on ML-DSA verification with valid parameters \
+    and a fixed hash H. A verifying forgery yields a self-target MSIS solution for \
+    [I_k | A | -t] with hash H(HighBits(·), ·) and bound max γ₁ γ₂. For honest keys with \
+    secret coefficients drawn independently from an arbitrary law, the forger's success \
+    probability is at most the advantage of forgeryDistinguisher between honest and uniform \
+    keys plus the success probability of selfTargetReduction against a uniform [A | t]. \
+    Hardness of self-target MSIS is the assumption, not reduced to Module-SIS; the honest-key \
+    term is not routed through the uniform-secret DecisionModuleLWE. Chosen-message security \
+    (signing-oracle simulation in the random-oracle model) and asymptotic packaging are not \
+    formalized; no running time is charged."
 
 register_result "clique-eth-lower-bound" where
   title := "No f(k) n^o(k) or FPT algorithm for Clique under ETH"

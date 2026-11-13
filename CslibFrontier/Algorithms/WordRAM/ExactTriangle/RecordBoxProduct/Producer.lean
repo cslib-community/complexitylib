@@ -58,7 +58,7 @@ theorem exec_of_output {W m n g p : ℕ} (values : ℕ → ℤ)
     producer_readback values initial x h hD hg hp hN hheaderD hheaderN idx hidx
   obtain ⟨y, hy, yr, yv, yf, yg⟩ := exec (b := x.regs 42)
     (i := recordOrdinal n (D m) g p values idx) (out := x.regs 39)
-    (rho := idx.1.val) (piece := idx.2.2)
+    (rho := idx.residue.val) (piece := idx.piece)
     (leftMatrix m n g p values idx) (rightMatrix m n g p values idx) _ x
     hDmem hnmem hi rfl rfl hrec hdr hs ht hq hl hr hqs
     (matrices_zero_one m n g p values idx).1
