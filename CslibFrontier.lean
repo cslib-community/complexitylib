@@ -6594,6 +6594,7 @@ public import CslibFrontier.Privacy.DifferentialPrivacy.PrivacyLoss
 public import CslibFrontier.Privacy.DifferentialPrivacy.RandomReconstruction
 public import CslibFrontier.Privacy.DifferentialPrivacy.RandomizedResponse
 public import CslibFrontier.Privacy.DifferentialPrivacy.Reconstruction
+public import CslibFrontier.Privacy.DifferentialPrivacy.Sensitivity
 public import CslibFrontier.Privacy.DifferentialPrivacy.SmallUniverse
 public import CslibFrontier.Probability.AdaptiveWeights
 public import CslibFrontier.Probability.ApproximateCounting
