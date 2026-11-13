@@ -27,7 +27,9 @@ instance : Fact (Nat.Prime 7) := ⟨by norm_num⟩
 /-! ### Interface and theorem signature checks -/
 
 example := @PolyCommitScheme
+example := @PolyCommitScheme.Opening
 example := @PolyCommitScheme.EvalComplete
+example := @PolyCommitScheme.OpenValueCorrect
 example := @PolyCommitScheme.CommitmentBinding
 example := @PolyCommitScheme.EvaluationBinding
 example := @PolyCommitScheme.EvaluationBinding.eq_eval_of_verifyEval
@@ -64,7 +66,7 @@ example : (PolyCommitScheme.direct (ZMod 7) 3).EvaluationBinding :=
 example :
     let S := PolyCommitScheme.direct (ZMod 5) 2
     let p : Polynomial (ZMod 5) := Polynomial.C 2 * Polynomial.X + Polynomial.C 1
-    S.verifyEval (S.commit p ()) 3 (S.eval p 3) (S.openEval p () 3).2 = true ∧
+    S.verifyEval (S.commit p ()) 3 (S.eval p 3) (S.openEval p () 3).proof = true ∧
       S.verifyEval (S.commit p ()) 3 4 () = false := by
   refine ⟨?_, ?_⟩
   · apply PolyCommitScheme.direct_evalComplete (ZMod 5) 2

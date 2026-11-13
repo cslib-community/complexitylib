@@ -50,6 +50,7 @@ wire is out of range and the code does not decode.
 
 ## Main definitions
 
+* `Cslib.Logic.PL.Interpolant.Step`: a candidate resolution step, with its premises' positions.
 * `Cslib.Logic.PL.Interpolant.findStep`, `Cslib.Logic.PL.Interpolant.lineGatesOf`,
   `Cslib.Logic.PL.Interpolant.gatesOf`, `Cslib.Logic.PL.Interpolant.outputWireOf`: signature- and
   stride-polymorphic resolution interpolant extraction.
@@ -84,16 +85,32 @@ namespace Interpolant
 
 variable {V Y Z : Type*}
 
+/-- A candidate resolution step: two lines with their positions, and the variable resolved on.
+It justifies `left.resolvent right pivot` when `(pivot, true) ∈ left` and
+`(pivot, false) ∈ right`. -/
+structure Step (V : Type*) where
+  /-- The premise containing the positive literal of `pivot`. -/
+  left : Clause V
+  /-- The position of `left` among the lines. -/
+  leftIndex : ℕ
+  /-- The premise containing the negative literal of `pivot`. -/
+  right : Clause V
+  /-- The position of `right` among the lines. -/
+  rightIndex : ℕ
+  /-- The variable resolved on. -/
+  pivot : V
+
 /-- Candidate resolution steps among `lines`: two lines, each with its position, and the variable
 of a literal of the first. -/
-def candidates (lines : List (Clause V)) : List ((Clause V × ℕ) × (Clause V × ℕ) × V) :=
-  lines.zipIdx.flatMap fun e₁ => lines.zipIdx.flatMap fun e₂ => e₁.1.map fun l => (e₁, e₂, l.1)
+def candidates (lines : List (Clause V)) : List (Step V) :=
+  lines.zipIdx.flatMap fun e₁ => lines.zipIdx.flatMap fun e₂ =>
+    e₁.1.map fun l => ⟨e₁.1, e₁.2, e₂.1, e₂.2, l.1⟩
 
 /-- The first candidate resolution step among `lines` deriving `c`, if any. -/
-def findStep [DecidableEq V] (lines : List (Clause V)) (c : Clause V) :
-    Option ((Clause V × ℕ) × (Clause V × ℕ) × V) :=
+def findStep [DecidableEq V] (lines : List (Clause V)) (c : Clause V) : Option (Step V) :=
   (candidates lines).find? fun t =>
-    decide ((t.2.2, true) ∈ t.1.1 ∧ (t.2.2, false) ∈ t.2.1.1 ∧ t.1.1.resolvent t.2.1.1 t.2.2 = c)
+    decide ((t.pivot, true) ∈ t.left ∧ (t.pivot, false) ∈ t.right ∧
+      t.left.resolvent t.right t.pivot = c)
 
 /-- Fixed-stride gates for one line `c` read after `earlier`, allocating `s` gates per line
 starting at wire `n + s * earlier.length`, with each line's value on its last wire
@@ -105,7 +122,8 @@ def lineGatesOf {Op : Type*} [DecidableEq Y] [DecidableEq Z] (s : ℕ) (constOp 
   if c ∈ A.relabel (Sum.map id Sum.inl) then List.replicate s (constOp false, [])
   else if c ∈ B.relabel (Sum.map id Sum.inr) then List.replicate s (constOp true, [])
   else (findStep earlier c).elim (List.replicate s (constOp false, [])) fun t =>
-    step (n + s * earlier.length) (n + s * t.1.2 + (s - 1)) (n + s * t.2.1.2 + (s - 1)) t.2.2
+    step (n + s * earlier.length) (n + s * t.leftIndex + (s - 1)) (n + s * t.rightIndex + (s - 1))
+      t.pivot
 
 /-- Fixed-stride gates of all lines `lines`, listed from first to last, in program order. -/
 def gatesOf {Op : Type*} [DecidableEq Y] [DecidableEq Z] (s : ℕ) (constOp : Bool → Op)
@@ -211,10 +229,9 @@ variable {V Y Z : Type*}
 
 /-- A candidate step names two of the lines, by their positions, and the variable of a literal of
 the first. -/
-theorem mem_candidates {lines : List (Clause V)}
-    {t : (Clause V × ℕ) × (Clause V × ℕ) × V} (ht : t ∈ candidates lines) :
-    ∃ (h₁ : t.1.2 < lines.length) (h₂ : t.2.1.2 < lines.length),
-      lines[t.1.2] = t.1.1 ∧ lines[t.2.1.2] = t.2.1.1 := by
+theorem mem_candidates {lines : List (Clause V)} {t : Step V} (ht : t ∈ candidates lines) :
+    ∃ (h₁ : t.leftIndex < lines.length) (h₂ : t.rightIndex < lines.length),
+      lines[t.leftIndex] = t.left ∧ lines[t.rightIndex] = t.right := by
   obtain ⟨e₁, he₁, ht⟩ := List.mem_flatMap.1 ht
   obtain ⟨e₂, he₂, ht⟩ := List.mem_flatMap.1 ht
   obtain ⟨l, -, rfl⟩ := List.mem_map.1 ht
@@ -226,7 +243,7 @@ theorem mem_candidates {lines : List (Clause V)}
 /-- A resolution step among the lines is a candidate. -/
 theorem mem_candidates_of_getElem {lines : List (Clause V)} {k₁ k₂ : ℕ}
     (h₁ : k₁ < lines.length) (h₂ : k₂ < lines.length) {v : V} (hv : (v, true) ∈ lines[k₁]) :
-    ((lines[k₁], k₁), (lines[k₂], k₂), v) ∈ candidates lines := by
+    (⟨lines[k₁], k₁, lines[k₂], k₂, v⟩ : Step V) ∈ candidates lines := by
   refine List.mem_flatMap.2 ⟨(lines[k₁], k₁), List.mem_zipIdx_iff_getElem?.2 (by simp),
     List.mem_flatMap.2 ⟨(lines[k₂], k₂), List.mem_zipIdx_iff_getElem?.2 (by simp),
       List.mem_map.2 ⟨(v, true), hv, rfl⟩⟩⟩
@@ -302,7 +319,7 @@ theorem isCodeFrom_lineGatesOf {s n : ℕ} {constOp : Bool → σ.Op}
   obtain ⟨h₁, h₂, hc₁, -⟩ := mem_candidates (List.mem_of_find?_eq_some hfind)
   have htest := List.find?_some hfind
   simp only [decide_eq_true_eq] at htest
-  exact hstep_code h₁ h₂ fun i hi => hvars t.1.1 (hc₁ ▸ List.getElem_mem _) i true (hi ▸ htest.1)
+  exact hstep_code h₁ h₂ fun i hi => hvars t.left (hc₁ ▸ List.getElem_mem _) i true (hi ▸ htest.1)
 
 /-- All extracted gates are well formed when the shared variables of `lines` are below `n`. -/
 theorem isCodeFrom_gatesOf {s n : ℕ} {constOp : Bool → σ.Op}
@@ -479,16 +496,16 @@ theorem ofCode_gatesOf {I : Interpretation σ Bool} {s n : ℕ} {constOp : Bool 
       have htest := List.find?_some hfind
       simp only [decide_eq_true_eq] at htest
       have hline : lineGatesOf s constOp step n A B lines c =
-          step (n + s * lines.length) (n + s * t.1.2 + (s - 1))
-            (n + s * t.2.1.2 + (s - 1)) t.2.2 := by
+          step (n + s * lines.length) (n + s * t.leftIndex + (s - 1))
+            (n + s * t.rightIndex + (s - 1)) t.pivot := by
         simp only [lineGatesOf, hcA, hcB, ↓reduceIte, hfind, Option.elim_some]
       have hm₁ := Nat.mul_le_mul_left s (Nat.succ_le_of_lt h₁)
       have hm₂ := Nat.mul_le_mul_left s (Nat.succ_le_of_lt h₂)
       rw [Nat.mul_succ] at hm₁ hm₂
-      have hw₁ := hold (w := n + s * t.1.2 + (s - 1)) (by omega)
-      have hw₂ := hold (w := n + s * t.2.1.2 + (s - 1)) (by omega)
+      have hw₁ := hold (w := n + s * t.leftIndex + (s - 1)) (by omega)
+      have hw₂ := hold (w := n + s * t.rightIndex + (s - 1)) (by omega)
       rw [hline] at hcode hw₁ hw₂ ⊢
-      obtain ⟨⟨c₁, k₁⟩, ⟨c₂, k₂⟩, v⟩ := t
+      obtain ⟨c₁, k₁, c₂, k₂, v⟩ := t
       dsimp only at h₁ h₂ hc₁ hc₂ htest hw₁ hw₂ ⊢
       obtain ⟨hv₁, -, rfl⟩ := htest
       exact hInv_step hG h₁ h₂

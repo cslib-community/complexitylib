@@ -235,7 +235,7 @@ namespace PhaseGateCode
 
 /-- The placed gate denoted by a gate code with phase gates on `m` qubits, or `none` when the code
 is not well formed. -/
-noncomputable def toPlacedGate? (m : ℕ) : PhaseGateCode → Option (PlacedGate m)
+@[expose] noncomputable def toPlacedGate? (m : ℕ) : PhaseGateCode → Option (PlacedGate m)
   | (false, g) => GateCode.toPlacedGate? m g
   | (true, inv, t, []) =>
     if h : t < m then
@@ -329,7 +329,7 @@ end PhaseGateCode
 
 /-- The circuit on `m` qubits denoted by a list of gate codes with phase gates, applied first to
 last. Codes that are not well formed are skipped. -/
-noncomputable def Circuit.ofPhaseCodes (m : ℕ) (gs : List PhaseGateCode) : Circuit m :=
+@[expose] noncomputable def Circuit.ofPhaseCodes (m : ℕ) (gs : List PhaseGateCode) : Circuit m :=
   gs.filterMap (PhaseGateCode.toPlacedGate? m)
 
 theorem Circuit.ofPhaseCodes_cons (c : PhaseGateCode) (gs : List PhaseGateCode) :

@@ -199,15 +199,19 @@ theorem circuitReceiverSimulate_linear (C : Circuit (arithSignature F) (p + k) m
     (V : Aux → ProbOracleComp (voleReceiverSpec F (((p + k) + C.size) + 1))
       (VerifierStrategy (ProbOracleComp (voleReceiverSpec F (((p + k) + C.size) + 1)))
         (circuitCheckSpec C) View)) (z : Aux)
-    {view : (F × (Fin (((p + k) + C.size) + 1) → F)) × Transcript (circuitCheckSpec C) × View}
-    (hview : view ∈ (ProbComp.eval (circuitReceiverSimulate C statement V z)).support)
+    {delta : F} {q : Fin (((p + k) + C.size) + 1) → F} {d : Fin ((p + k) + C.size) → F}
+    {openings : (Fin p ⊕ Fin C.size ⊕ Fin m) → F} {r : CircuitMulGate C → F} {reply : F × F}
+    {view : View}
+    (hview : ((delta, q), ((d, openings), r, reply, ()), view) ∈
+      (ProbComp.eval (circuitReceiverSimulate C statement V z)).support)
     (row : Fin p ⊕ Fin C.size ⊕ Fin m) :
-    (circuitLinearCoeffs C *ᵥ
-      voleAdjustReceiver (Fin.init view.1.2) view.2.1.1.1 view.1.1) row =
-        circuitLinearTargets C statement.1 statement.2 row * view.1.1 + view.2.1.1.2 row := by
+    (circuitLinearCoeffs C *ᵥ voleAdjustReceiver (Fin.init q) d delta) row =
+      circuitLinearTargets C statement.1 statement.2 row * delta + openings row := by
   rw [circuitReceiverSimulate, ProbComp.eval_map, PMF.mem_support_map_iff] at hview
-  obtain ⟨source, _, rfl⟩ := hview
-  simp only [circuitExpandView, circuitPublicFirst]
+  obtain ⟨⟨share, ⟨d', _, _, ⟨⟩⟩, _⟩, _, hexpand⟩ := hview
+  simp only [circuitExpandView, circuitPublicFirst, Prod.mk.injEq] at hexpand
+  obtain ⟨rfl, ⟨⟨rfl, rfl⟩, -⟩, -⟩ := hexpand
+  dsimp only
   ring
 
 end Cslib.Crypto.Protocols.VOLE

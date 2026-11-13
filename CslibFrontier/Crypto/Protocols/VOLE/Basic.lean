@@ -14,6 +14,7 @@ import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Probability.PMF.UniformBound
+import CslibFrontier.Probability.Uniform.Translate
 
 /-!
 # Vector Oblivious Linear Evaluation (VOLE), IT-MACs, and a Linear Sigma Protocol
@@ -315,7 +316,7 @@ sender's VOLE vector `u` is drawn uniformly from `Fin n → R`, the correction m
 theorem voleCommitWitness_uniform [Fintype R] [Nonempty R] (x : Fin n → R) :
     (PMF.uniformOfFintype (Fin n → R)).map (voleCommitWitness x) =
       PMF.uniformOfFintype (Fin n → R) :=
-  PMF.uniformOfFintype_map_equiv (Equiv.subLeft x)
+  PMF.uniformOfFintype_map_sub_left x
 
 /-- **Statistical independence of VOLE witness commitment**: any two witnesses `x₁, x₂ : Fin n → R`
 induce identical correction-message distributions under a uniform VOLE mask `u`. -/

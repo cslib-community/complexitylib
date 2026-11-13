@@ -182,7 +182,7 @@ example :
 
 /-- Unconditional `EfficientNonAbortSpecialHVZK` certificate instantiated at `η = fun _ => 1`, and
 its concrete statistical distance bound `2 * (5 / 16)` on `params` between the strict-PPT simulator
-and the honest prover's encoded `acceptedTranscript`. -/
+`lyubashevskySimulator` and the honest prover's `acceptedTranscript`. -/
 example :
     EfficientNonAbortSpecialHVZK lyubashevskyFamily
       (lyubashevskyFamilyRelation (fun _ => 1))
@@ -192,17 +192,10 @@ example :
   efficientNonAbortSpecialHVZK_lyubashevsky (fun _ => 1)
 
 example (c : BitString params.k) :
-    CloseTo
-      (((lyubashevskyFamily params).acceptedTranscript S (A, T) c).map
-        (Option.map fun tz =>
-          (lyubashevskyEncoding.commitment params tz.1,
-            lyubashevskyEncoding.response params (some tz.2))))
-      (ProbComp.eval (lyubashevskySimulateWord
-        (params,
-          lyubashevskyEncoding.statement params (A, T),
-          lyubashevskyEncoding.challenge params c)))
+    CloseTo ((lyubashevskyFamily params).acceptedTranscript S (A, T) c)
+      (ProbComp.eval (lyubashevskySimulator params (A, T) c))
       ((params.m : ℝ≥0∞) * ((2 * params.γ + 1 : ℝ≥0∞) / 2 ^ params.width)) :=
-  nonAbortSimulatorRealizedBy_lyubashevskySimulateWord.closeTo_acceptedTranscript
+  simulatorRealizedBy_lyubashevskySimulator.closeTo_acceptedTranscript
     (lyubashevskyFamily_nonAbortSpecialHVZK (fun _ => 1))
     (by decide : lyubashevskyFamilyRelation (fun _ => 1) params S (A, T)) c
 
