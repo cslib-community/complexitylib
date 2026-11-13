@@ -286,9 +286,20 @@ memorizes `g` on the `K` heaviest points. Conditioning on the rest gives `ν` wi
 shows that its hypothesis is satisfiable: if `(4n + 4)^{2^t} < 2 · 2^{2^n}`, some function has
 formula depth above `t`. The [hard-distribution client](../../CslibFrontierTests/CircuitHardDistribution.lean)
 applies both steps to such a function on 60 bits; run
-`scripts/build.sh CslibFrontierTests.CircuitHardDistribution`. Lemma 6.3 still needs its last
-step: rounding `ν` to a random set, Bernstein's inequality, and the union bound over
-`depthFunctions`. Lemmas 6.4–6.5 and Theorem 6.6 are not formalized yet either.
+`scripts/build.sh CslibFrontierTests.CircuitHardDistribution`.
+[HardSet](../../CslibFrontier/Computability/Circuit/Boolean/HardSet.lean) completes Lemma 6.3.
+`exists_hardSet_of_spread` rounds a spread hard distribution. Each point joins a random set with
+probability `K ν(x)`, built from `Probability.PMF.coin` under `Probability.PMF.pi`. The number
+of agreements and the size of the set are bounded by the multiplicative Chernoff bounds of
+`Probability.Chernoff`, and a union bound over `depthFunctions` leaves a set on which every
+formula of depth at most `t` agrees with `g` on fewer than two thirds of the points.
+`formulaDepth_le_of_forall_exists_agree` is Lemma 6.3 with `K = hardSetSize n t`, and
+`formulaDepth_le_add_of_forall_exists_agree` is its `D(g) ≤ t + 4 ⌈log₂ n⌉ + ⌈log₂(4n + 4)⌉ + 32`
+form. The [hard-set client](../../CslibFrontierTests/CircuitHardSet.lean) applies it to the
+first bit. It also finds a function on 80 bits and a nonempty set on which no depth-0 formula
+agrees with that function on two thirds of the points. Run
+`scripts/build.sh CslibFrontierTests.CircuitHardSet`. Theorem 1.7, which combines Lemmas 6.2 and
+6.3, and Lemmas 6.4–6.5 and Theorem 6.6 are not formalized yet.
 
 
 This covers submission 865 through Theorem 1.5: the upper bound, Lemma 5.2, Theorems 1.1, 1.2
