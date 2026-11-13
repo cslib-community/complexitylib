@@ -133,10 +133,7 @@ theorem tableVerifier_complete (a : α) (proof padding : List Bool)
   apply List.map_congr_left
   intro address haddress
   have hmem := mem_queryTable (BitString.mem_enumList.mp hword) haddress
-  have hindex := List.idxOf_lt_length_of_mem hmem
-  simp only [List.getD_eq_getElem?_getD, List.getElem?_append,
-    List.getElem?_map, List.length_map, hindex, ↓reduceIte, List.getElem?_idxOf hmem,
-    Option.map_some, Option.getD_some]
+  simp [List.getD_eq_getElem?_getD, List.getElem?_append_left, List.idxOf_lt_length_iff.2 hmem]
 
 /-- Every table, including malformed or short certificates, is the restriction of a finite proof.
 The expanded proof is only a mathematical witness; its length need not be polynomial. -/

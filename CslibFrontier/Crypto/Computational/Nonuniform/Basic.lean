@@ -64,6 +64,7 @@ These are definitions, not assertions that such primitives exist.
   indistinguishability is indistinguishability with empty advice.
 * `Cslib.Crypto.IndistinguishableWithAdvice.map`: efficient postprocessing.
 * `Cslib.Crypto.IndistinguishableWithAdvice.negligible_encoded`,
+  `Cslib.Crypto.IndistinguishableWithAdvice.of_negligible_encoded`,
   `Cslib.Crypto.InversionHardWithAdvice.inversion_negligible_encoded`: advice of any encoded type.
 * `Cslib.Crypto.oneWay_iff_inversionHardWithAdvice_nil`: uniform one-wayness is hardness of
   inversion with empty advice.
@@ -124,10 +125,9 @@ theorem IndistinguishableWithAdvice.map {advice : ℕ → List Bool} {X Y : ℕ 
   intro test htest
   have hprepare : ComputableInPolyTime
       (fun input : (ℕ × List Bool) × List Bool => (input.1, f input.1.1 input.2))
-      (encPair (encPair encUnary encBits) encBits)
-      (encPair (encPair encUnary encBits) encBits) := by
+      encAdvisedInput encAdvisedInput := by
     have hpair : ComputableInPolyTime (fun input : (ℕ × List Bool) × List Bool =>
-        (input.1.1, input.2)) (encPair (encPair encUnary encBits) encBits)
+        (input.1.1, input.2)) encAdvisedInput
         (encPair encUnary encBits) := by fun_prop
     exact (ComputableInPolyTime.fst _ _).prod (hf.comp hpair)
   have hneg := h (fun input => test (input.1, f input.1.1 input.2)) (htest.preprocess hprepare)
@@ -166,20 +166,35 @@ theorem IndistinguishableWithAdvice.negligible_encoded {X Y : ℕ → PMF (List 
     {γ : Type} {encAdvice : γ ↪ List Bool} {advice : ℕ → γ}
     (h : IndistinguishableWithAdvice (fun n => encAdvice (advice n)) X Y)
     {test : (ℕ × γ) × List Bool → ProbComp Bool}
-    (htest : IsPPTOn (encPair (encPair encUnary encAdvice) encBits) encBool test) :
+    (htest : IsPPTOn (encAdvisedInputWith encAdvice) encBool test) :
     Negligible (fun n => Game.advantage
       (distinguishingGame (X n) (fun word => test ((n, advice n), word)))
       (distinguishingGame (Y n) (fun word => test ((n, advice n), word)))) := by
   obtain ⟨extension, hextension, heq⟩ :=
     htest.exists_extension (ComputableInPolyTime.headD false) (fun _ => rfl)
-  have hword : IsPPTOn (encPair (encPair encUnary encBits) encBits) encBool
-      (fun input => extension (encPair (encPair encUnary encBits) encBits input)) :=
+  have hword : IsPPTOn encAdvisedInput encBool
+      (fun input => extension (encAdvisedInput input)) :=
     hextension.preprocess (ComputableInPolyTime.of_eq fun _ => rfl)
   have hkey (n : ℕ) (word : List Bool) :
-      ProbComp.eval (extension (encPair (encPair encUnary encBits) encBits
-        ((n, encAdvice (advice n)), word))) = ProbComp.eval (test ((n, advice n), word)) :=
+      ProbComp.eval (extension (encAdvisedInput ((n, encAdvice (advice n)), word))) =
+        ProbComp.eval (test ((n, advice n), word)) :=
     heq ((n, advice n), word)
   simpa only [distinguishingGame, hkey] using h _ hword
+
+/-- **Typed advice tests suffice.** The converse of `negligible_encoded`: if every uniform strict
+PPT test that reads the advice value `advice n` itself has negligible advantage, the ensembles are
+indistinguishable with the advice words `encAdvice (advice n)`. A word test is a typed test that
+first exposes the encoded advice. -/
+theorem IndistinguishableWithAdvice.of_negligible_encoded {X Y : ℕ → PMF (List Bool)}
+    {γ : Type} {encAdvice : γ ↪ List Bool} {advice : ℕ → γ}
+    (h : ∀ test : (ℕ × γ) × List Bool → ProbComp Bool,
+      IsPPTOn (encAdvisedInputWith encAdvice) encBool test →
+      Negligible (fun n => Game.advantage
+        (distinguishingGame (X n) (fun word => test ((n, advice n), word)))
+        (distinguishingGame (Y n) (fun word => test ((n, advice n), word))))) :
+    IndistinguishableWithAdvice (fun n => encAdvice (advice n)) X Y := fun test htest =>
+  h (fun input => test ((input.1.1, encAdvice input.1.2), input.2))
+    (htest.preprocess (ComputableInPolyTime.of_eq fun _ => rfl))
 
 /-- **Fixed words are distinguishable from uniform words**, already by a uniform test: the first
 bit of `PMF.pure (target n)` is constant, while that of a uniform word of positive length is a fair
@@ -252,21 +267,21 @@ theorem InversionHardWithAdvice.inversion_negligible_encoded {f : List Bool → 
     {γ : Type} {encAdvice : γ ↪ List Bool} {advice : ℕ → γ}
     (h : InversionHardWithAdvice f (fun n => encAdvice (advice n)))
     {adversary : (ℕ × γ) × List Bool → ProbComp (List Bool)}
-    (hPPT : IsPPTOn (encPair (encPair encUnary encAdvice) encBits) encBits adversary) :
+    (hPPT : IsPPTOn (encAdvisedInputWith encAdvice) encBits adversary) :
     Negligible (fun n => Game.succProbability (ProbComp.eval
       (inversionGame f (fun n image => adversary ((n, advice n), image)) n))) := by
   obtain ⟨extension, hextension, heq⟩ :=
     hPPT.exists_extension (decode := id) (ComputableInPolyTime.of_eq fun _ => rfl) (fun _ => rfl)
-  have hword : IsPPTOn (encPair (encPair encUnary encBits) encBits) encBits
-      (fun input => extension (encPair (encPair encUnary encBits) encBits input)) :=
+  have hword : IsPPTOn encAdvisedInput encBits
+      (fun input => extension (encAdvisedInput input)) :=
     hextension.preprocess (ComputableInPolyTime.of_eq fun _ => rfl)
   have hkey (n : ℕ) (image : List Bool) :
-      ProbComp.eval (extension (encPair (encPair encUnary encBits) encBits
+      ProbComp.eval (extension (encAdvisedInput
         ((n, encAdvice (advice n)), image))) = ProbComp.eval (adversary ((n, advice n), image)) :=
     heq ((n, advice n), image)
   have hgame (n : ℕ) :
       ProbComp.eval (inversionGame f (fun n image => extension
-        (encPair (encPair encUnary encBits) encBits ((n, encAdvice (advice n)), image))) n) =
+        (encAdvisedInput ((n, encAdvice (advice n)), image))) n) =
       ProbComp.eval (inversionGame f (fun n image => adversary ((n, advice n), image)) n) := by
     simp only [inversionGame, ProbComp.eval_bind, hkey]
   simpa only [hgame] using h.inversion_negligible _ hword
