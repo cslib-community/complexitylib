@@ -669,6 +669,33 @@ The endpoint [DDH.indcca2On_cramerShoup](https://github.com/cslib-community/csli
 
 The canonical [`KEMINDCPA keyLen keyGen encaps`](../../CslibFrontier/Crypto/Computational/Encryption/Hybrid.lean) compares the real encapsulated key with an independent uniform `keyLen n`-bit word. Use `fun n => n` for normalized keys, or another schedule such as `fun n => 2 * n`. The composition methods `KEMINDCPA.hybrid_indcpa` and `KEMINDCPA.hybrid_indcpaOn` consume `DEMOneTimeKeyINDCPAOf` and `DEMOneTimeKeyINDCPAOn` at the same schedule; the latter requires a polynomial-time admissibility predicate independent of the public key. The exact bound is twice the hidden-bit KEM distinguisher's advantage plus the DEM adversary's advantage (Boneh–Shoup v0.6, Exercise 11.9(b), pp. 460–461 [bs23][bs23]). The native ideal-game certificate `isPPTOn_kemIdealGame` additionally takes `ComputableInPolyTime keyLen encUnary encUnary`. The reductions do not sample ideal keys, so the security implication itself does not need that certificate.
 
+For a fixed KEM and symmetric cipher, without words or a security parameter, import
+[`Encryption/KEMDEM.lean`](../../CslibFrontier/Crypto/Computational/Encryption/KEMDEM.lean).
+`KEM PK SK CT K` of [`Encryption/KEM.lean`](../../CslibFrontier/Crypto/Computational/Encryption/KEM.lean)
+has typed `keyGen`, `encaps` and `decaps` returning `Option K`. `KEM.Correct` is perfect
+correctness, and `E.cpaExperiment sampleKey D b` gives the distinguisher a `KEM.Challenge` whose key
+is either the encapsulated key (`b = false`) or a fresh key from `sampleKey` (`b = true`).
+`Cipher K M C` of [`Encryption/Cipher.lean`](../../CslibFrontier/Crypto/Computational/Encryption/Cipher.lean)
+is a symmetric cipher. `D.oneTimeExperiment sampleKey valid A b` is its one-time left-or-right
+experiment under a key drawn from `sampleKey`.
+
+The hybrid scheme is `E.hybrid D : PKE PK SK M (CT × C)`, and `KEM.hybrid_correct` derives its
+correctness from that of its components. `KEM.advantage_hybrid_le_two_mul` bounds the advantage of
+its `cpaExperiment` by twice the KEM advantage of `KEM.hybridHiddenBitDistinguisher D valid A`,
+plus the one-time advantage of `KEM.hybridCipherAdversary E A`. `KEM.advantage_hybrid_le` is the
+variant with two distinguishers.
+
+The word-level `advantage_hybridGame_le_two_mul` and `advantage_hybridGame_le` are these bounds for
+`wordKEM keyGen encaps decaps n`, `wordCipher encryptSym decryptSym n` and
+`adversary.toHybridTwoStage n`. They follow through the bridges `eval_game_hybridEncrypt`,
+`eval_kemRealGame_eq_cpaExperiment`, `eval_kemIdealGame_eq_cpaExperiment` and
+`eval_demKeyGame_eq_oneTimeExperiment`.
+
+The [checked examples](../../CslibFrontierTests/Crypto/KEMDEM.lean) combine a KEM that sends its
+key in the clear with the one-bit one-time pad, and show that the pad has one-time advantage zero.
+They also rewrite the word-level hybrid game into the typed experiment. Run
+`scripts/build.sh CslibFrontierTests.Crypto.KEMDEM`.
+
 Starting with the imports and local context in [`CslibFrontierTests/Crypto/HybridEncryption.lean`](../../CslibFrontierTests/Crypto/HybridEncryption.lean), `indcpaOf_hybridEncrypt_doubleKey_otp` shows the doubled-key composition; adjacent examples check native sampling, supported key lengths, correct decryption and the zero-width boundary. The unconditional security fixture discards its key and is explicitly not decryptable; decryption correctness is checked separately on a leaking KEM. Security does not bundle correctness, and the zero-width pad recovers only the empty message. For an actual cryptographic client, [`DDH.wordINDCPA_hybrid_hashedElGamal`](../../CslibFrontier/Crypto/Computational/ElGamal/ProbComp.lean) now accepts a `SecureKDF` and a standalone DEM at arbitrary `keyLen`; [`CslibFrontierTests/Crypto/DiffieHellman.lean`](../../CslibFrontierTests/Crypto/DiffieHellman.lean) instantiates the bridge with doubled key length. The security parameter controlling its modular-sampling error remains `n`, independently of the key length.
 
 [`encryptKeyEncaps keyLen encrypt`](../../CslibFrontier/Crypto/Computational/Encryption/KEMFromPKE.lean) constructs a KEM from word public-key encryption by sampling a key and encrypting it (Boneh–Shoup v0.6, Exercise 11.9(e), p. 461 [bs23][bs23]). Apply `WordINDCPA.kemINDCPA_encryptKeyEncaps` with a native unary polynomial-time certificate for `keyLen`; the reduction chooses two equal-length keys, saves the public key and the first key, and preserves advantage exactly. The separate `isPPTOn_encryptKeyEncaps` certificate also needs native encryption, while `decrypt_encryptKeyEncaps` reuses the original total decryptor and its supported-ciphertext correctness. [`CslibFrontierTests/Crypto/KEMFromPKE.lean`](../../CslibFrontierTests/Crypto/KEMFromPKE.lean) provides complete checked clients, including composition of this constructor with the existing doubled-width one-time pad DEM, exact zero-width sampling, and a correctly decryptable but insecure key-revealing encryptor. No new failure/rejection behavior is added.
