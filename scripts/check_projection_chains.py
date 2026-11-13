@@ -35,16 +35,18 @@ base of `--base`, default `origin/main`, and the working tree, as
 `scripts/check_changed_files.py` computes it), a count above the module's *limit* fails. The limit
 is the module's entry (0 for a new module), capped at the module's count at the merge base unless
 the change raises the entry itself. A change therefore cannot add chains back under an entry that
-is higher than the count it started from, and removing chains needs no baseline edit: a count
-below its entry is only reported. Edits to the baseline are kept to raises, moves and missing
-entries, because concurrent edits to neighbouring lines of the file conflict in the merge queue;
-entries above their counts are pruned from time to time with `--update-baseline --all`. Only the
-changed modules are read, so the check takes seconds. Pull requests run this mode.
+is higher than the count it started from (to add them back on purpose, raise the entry by hand
+above its value at the merge base), and removing chains needs no baseline edit: a count below its
+entry is only reported. Edits to the baseline are kept to raises, moves and missing entries,
+because concurrent edits to neighbouring lines of the file conflict in the merge queue; entries
+above their counts are pruned from time to time with `--update-baseline --all`. Only the changed
+modules are read, so the check takes seconds. Pull requests run this mode.
 
 `--all` enforces every module. `--report` prints every difference from the baseline and always
 succeeds; merge groups and pushes to `main` run it. `--update-baseline` sets the entries of the
 changed modules (with `--all`, of every module) to their counts; it refuses a count above its
-limit unless `--allow-increase` is given, for instance when a module moves.
+limit unless `--allow-increase` is given, for instance when a module moves, and always refuses
+one that the recorded entry would still leave above its limit.
 `--update-baseline --all --allow-increase` regenerates the whole baseline. `--list [PREFIX]`
 ignores the baseline and prints every counted chain in the modules under the path PREFIX (such as
 `CslibFrontier/DataStructure`), or in every module, with the most affected modules first; it
@@ -214,9 +216,9 @@ def compare(counts: dict[str, int], baseline: dict[str, int], paths: list[str],
     limits = baseline if limits is None else limits
     over, under = [], []
     for path in sorted(paths):
-        count, entry, limit = counts.get(path, 0), baseline.get(path, 0), limits.get(path, 0)
-        if count > limit:
-            over.append((path, count, limit))
+        count, entry, cap = counts.get(path, 0), baseline.get(path, 0), limits.get(path, 0)
+        if count > cap:
+            over.append((path, count, cap))
         elif count < entry:
             under.append((path, count, entry))
     return over, under
@@ -228,39 +230,58 @@ def read_at(root: Path, revision: str, rel: str) -> str | None:
     return shown.stdout.decode("utf-8") if shown.returncode == 0 else None
 
 
-def merge_base_limits(root: Path, base: str, baseline_rel: str | None, paths: list[str],
-                      baseline: dict[str, int]) -> dict[str, int]:
-    """The limit of each of `paths`: its entry, capped at its count at `base` when it is there and
-    the change does not raise the entry (relative to the baseline at `base`)."""
+MergeBase = tuple[int, int | None]  # (entry at the merge base, count there or None if absent)
+
+
+def merge_base_state(root: Path, base: str, baseline_rel: str | None, paths: list[str],
+                     baseline: dict[str, int]) -> dict[str, MergeBase]:
+    """The entry and the count of each of `paths` at `base`. Without a baseline at `base`, the
+    current entries stand in, which keeps every entry capped."""
     old_text = read_at(root, base, baseline_rel) if baseline_rel else None
     old = json.loads(old_text) if old_text else baseline
-    limits = {}
+    state = {}
     for path in paths:
-        entry = baseline.get(path, 0)
         text = read_at(root, base, path)
-        if entry > old.get(path, 0) or text is None:
-            limits[path] = entry
-            continue
         try:
-            count = len(module_chains(text)) if CHAIN.search(text) else 0
+            count = None if text is None else len(module_chains(text)) if CHAIN.search(text) else 0
         except ValueError as error:
             raise ValueError(f"{path} at {base}: {error}") from error
-        limits[path] = min(entry, count)
-    return limits
+        state[path] = (old.get(path, 0), count)
+    return state
+
+
+def limit(entry: int, old_entry: int, base_count: int | None) -> int:
+    """A module's limit given its entry: the entry, capped at the count at the merge base unless
+    the module is new there or the entry is above its value there."""
+    return entry if base_count is None or entry > old_entry else min(entry, base_count)
+
+
+def unrecordable(over: list[Change], state: dict[str, MergeBase] | None) -> list[Change]:
+    """Those of `over` that recording their count as the entry would leave over the limit."""
+    return [change for change in over
+            if state is not None and limit(change[1], *state[change[0]]) < change[1]]
 
 
 def over_report(over: list[Change], found: dict[str, list[Chain]],
-                baseline: dict[str, int] | None = None) -> str:
+                baseline: dict[str, int] | None = None,
+                state: dict[str, MergeBase] | None = None) -> str:
     out = ["Public statements and the bodies of public definitions bind tuple components by name "
            f"instead of chaining positional projections such as `c.1.2` (#1764; {RULE}). These "
            "modules have more chains than their limit; the counted chains are:", ""]
-    for path, count, limit in over:
-        entry = limit if baseline is None else baseline.get(path, 0)
-        bound = (f"baseline {entry}" if limit == entry
-                 else f"limit {limit} (the count at the merge base; baseline {entry})")
+    for path, count, cap in over:
+        entry = cap if baseline is None else baseline.get(path, 0)
+        bound = (f"baseline {entry}" if cap == entry
+                 else f"limit {cap} (the count at the merge base; baseline {entry})")
         out.append(f"{path}: {count} chain(s), {bound}:")
         out += [f"  {path}:{row.line}: {row.declaration}: `{row.chain}`"
                 for row in found.get(path, [])]
+    stuck = unrecordable(over, state)
+    if stuck:
+        out += ["", "Recording these counts with `--update-baseline` would not raise the entry above "
+                "its value at the merge base, so the limit would stay the count there. Remove the "
+                "chains or, to add them back on purpose, raise the entry by hand above its value at "
+                "the merge base, so that the raise is visible in review:"]
+        out += [f"  {path}: above {state[path][0]}" for path, _, _ in stuck]
     return "\n".join(out)
 
 
@@ -316,14 +337,15 @@ def main(argv: list[str] | None = None) -> int:
              else sorted(cer.touched_modules(args.root, args.base)))
     found = scan(args.root, paths)
     counts = {path: len(rows) for path, rows in found.items()}
-    limits = None
+    state = limits = None
     if not whole:
         try:
             baseline_rel = baseline_path.resolve().relative_to(args.root.resolve()).as_posix()
         except ValueError:
             baseline_rel = None
-        limits = merge_base_limits(args.root, ccf.comparison_base(args.root, args.base),
-                                   baseline_rel, paths, baseline)
+        state = merge_base_state(args.root, ccf.comparison_base(args.root, args.base),
+                                 baseline_rel, paths, baseline)
+        limits = {path: limit(baseline.get(path, 0), *state[path]) for path in paths}
     over, under = compare(counts, baseline, paths, limits)
     scope_text = "every module" if whole else f"{len(paths)} changed module(s)"
     status = (f"{sum(counts.values())} counted projection chain(s) in {len(counts)} module(s), "
@@ -337,6 +359,10 @@ def main(argv: list[str] | None = None) -> int:
         print(("\n" if over or under else "") + f"{status}; report only, nothing is enforced.")
         return 0
     if args.update_baseline:
+        stuck = unrecordable(over, state)
+        if stuck:
+            print(over_report(stuck, found, baseline, state), file=sys.stderr)
+            return 1
         if over and not args.allow_increase:
             print(over_report(over, found, baseline), file=sys.stderr)
             print("\nThe baseline only goes down; pass --allow-increase to raise it on purpose, "
@@ -353,7 +379,8 @@ def main(argv: list[str] | None = None) -> int:
               "changed module at its count at the merge base, and stale entries are pruned "
               f"periodically with `{UPDATE} --all`:\n" + under_report(under))
     if over:
-        print(("\n" if under else "") + over_report(over, found, baseline), file=sys.stderr)
+        print(("\n" if under else "") + over_report(over, found, baseline, state),
+              file=sys.stderr)
         return 1
     print(f"{status}; none exceeds its limit.")
     return 0

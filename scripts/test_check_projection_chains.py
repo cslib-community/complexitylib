@@ -177,11 +177,23 @@ class RatchetTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("CslibFrontier/A.lean: 2 chain(s), limit 1 (the count at the merge base; "
                       "baseline 2):", err)
+        self.assertIn("  CslibFrontier/A.lean: above 2", err)
         self.assertEqual(self.run_main("--all")[0], 0)  # the entry alone still allows 2
-        code, _, err = self.run_main("--update-baseline")
-        self.assertEqual(code, 1)
-        self.assertIn("--allow-increase", err)
-        self.assertEqual(self.baseline()["CslibFrontier/A.lean"], 2)
+
+    def test_a_re_add_under_a_stale_entry_needs_a_raise_by_hand(self) -> None:
+        self.make_stale()
+        self.write("CslibFrontier/A.lean", self.module(2))
+        # Recording the count would leave the entry at 2, still capped at 1: refuse, write nothing.
+        for args in (("--update-baseline",), ("--update-baseline", "--allow-increase")):
+            with self.subTest(args=args):
+                code, _, err = self.run_main(*args)
+                self.assertEqual(code, 1)
+                self.assertIn("raise the entry by hand above its value at the merge base", err)
+                self.assertIn("  CslibFrontier/A.lean: above 2", err)
+                self.assertEqual(self.baseline()["CslibFrontier/A.lean"], 2)
+        self.write("scripts/projection_chains_baseline.json",
+                   json.dumps({"CslibFrontier/A.lean": 3, "CslibFrontier/B.lean": 1}))
+        self.assertEqual(self.run_main()[0], 0)
 
     def test_an_entry_the_change_raises_is_its_limit(self) -> None:
         self.make_stale()
