@@ -130,8 +130,8 @@ enc_structure encFrame : Frame where
 
 /-- Literal sparse row for two indexed segment records. No label deduplication is performed. -/
 @[expose] def row (F : Frame) (e f : Segment × ℕ) : AffineEquation ℕ :=
-  (moveLabels F.vertexCount e.2 e.1 f.1.endpoints ++
-    moveLabels F.vertexCount f.2 f.1 e.1.endpoints, crossing F.order e.1.endpoints f.1.endpoints)
+  ⟨moveLabels F.vertexCount e.2 e.1 f.1.endpoints ++
+    moveLabels F.vertexCount f.2 f.1 e.1.endpoints, crossing F.order e.1.endpoints f.1.endpoints⟩
 
 /-- Every unordered independent pair appears once, in increasing first segment index and then
 increasing second index. All scans traverse actual segment lists, never move-label intervals. -/
@@ -196,7 +196,7 @@ theorem query_eq_true_iff (I : FixedRotationInput) :
   simp [subdivisionGraph, subdivisionSize]
 
 /-- Each independent-edge row contains at most four binary move labels. -/
-theorem length_row_le (F : Frame) (e f : Segment × ℕ) : (row F e f).1.length ≤ 4 := by
+theorem length_row_le (F : Frame) (e f : Segment × ℕ) : (row F e f).vars.length ≤ 4 := by
   simp only [row, List.length_append, moveLabels]
   split_ifs <;> simp
 

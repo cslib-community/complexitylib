@@ -185,12 +185,10 @@ example (μ : PMF ℕ) (ν : PMF Bool) (f : ℕ → Bool → PMF ℕ) (g : ℕ �
 example (o₁ o₂ : List Bool → List Bool)
     (prog₁ : WordOracleComp Unit ℕ) (prog₂ : WordOracleComp Unit Bool)
     (f g : ℕ → Bool → Game) (ε : ℝ≥0)
-    (h : ∀ out₁ ∈ (ProbComp.eval ((OracleComp.interpret
-      (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
-        (fun req (s : Unit) => pure (o₁ req.2, s))) prog₁).run ())).support,
-      ∀ out₂ ∈ (ProbComp.eval ((OracleComp.interpret
-        (OracleComp.sumHandler (fun m => StateT.lift (ProbComp.unifFin m))
-          (fun req (s : Unit) => pure (o₂ req.2, s))) prog₂).run ())).support,
+    (h : ∀ out₁ ∈ (ProbComp.eval
+      ((prog₁.runState fun req (s : Unit) => pure (o₁ req.2, s)).run ())).support,
+      ∀ out₂ ∈ (ProbComp.eval
+        ((prog₂.runState fun req (s : Unit) => pure (o₂ req.2, s)).run ())).support,
       Game.advantage (f out₁.1 out₂.1) (g out₁.1 out₂.1) ≤ ε) :
     Game.advantage
       (Game.runStatelessOracle o₁ prog₁ fun a => Game.runStatelessOracle o₂ prog₂ fun b => f a b)

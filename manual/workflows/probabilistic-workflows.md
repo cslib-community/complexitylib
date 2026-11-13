@@ -109,9 +109,12 @@ indexed by `ι × κ` into independent blocks, and `toOuterMeasure_pi_forall` in
 box `{u | ∀ i, u i ∈ E i}`. To move a finite statistic of i.i.d. samples from a measure into this
 setting, import [Product/MapMeasure.lean](../../CslibFrontier/Probability/Product/MapMeasure.lean):
 `map_measurePi_eq_toMeasure_pi` identifies the image of `Measure.pi μ` under coordinatewise
-measurable maps into finite types with `(pi fun i => ((μ i).map (g i)).toPMF).toMeasure`, after
-which the PMF concentration bounds apply.
-For a uniform draw on a finite group, import
+almost everywhere measurable maps into finite types with
+`(pi fun i => ((μ i).map (g i)).toPMF).toMeasure`. The finite-product bounds then apply:
+Hoeffding's `pi_sum_abs_sub_mean_ge` in
+[Concentration.lean](../../CslibFrontier/Probability/Concentration.lean) and the Chernoff lower
+tail `pi_sum_le_one_sub_mul` in [Chernoff.lean](../../CslibFrontier/Probability/Chernoff.lean). For
+a uniform draw on a finite group, import
 [Uniform.lean](../../CslibFrontier/Probability/Uniform.lean): `uniformOfFintype_map_add_left` and
 `uniformOfFintype_bind_add_left`, with their `_right` forms, remove a fixed mask as in the one-time
 pad, and the `_sub_left` and `_sub_right` forms in
@@ -1700,6 +1703,8 @@ When replacing the external handler with an implementation, open [Oracle/Substit
 
 When the allowance is polynomially bounded but not conveniently computed, apply `IsOraclePPTOn.run_interpret_preprocess_open_of_polyBounded` instead (the uniform-clock form is `IsOraclePPT.run_interpret_preprocess_open_of_polyBounded` in [Oracle/Parameter.lean](../../CslibFrontier/Computability/Probabilistic/Oracle/Parameter.lean)). Its `hresources` premise is only `PolyBounded` growth of `resources caller request` in the length of the encoded caller–request pair, so no unary computation of the allowance is needed; both certificate variants are derived from it. The other premises are unchanged: the invariant must still hold for every handler result in the support under every external oracle, and the allowance must still bound each reply and the added encoded state. [`isPPTOn_runWithEncryption`](../../CslibFrontier/Crypto/Computational/Encryption/PublicKeyCPA.lean) is a checked client: it proves the allowance's growth with `growth_poly` from the security parameter and the lengths of the public key and the request.
 
+When the run is written with [`runState`](../../CslibFrontier/Languages/Probabilistic/Oracle/RunState.lean) as `((program (prepare a)).runState (oracle a)).run (initial a)`, certify it with `IsOraclePPTOn.isPPTOn_runState`, or `IsOraclePPT.isPPTOn_runState` for a parameterized program, from [Oracle/RunState.lean](../../CslibFrontier/Computability/Probabilistic/Oracle/RunState.lean). They are `run_interpret_preprocess` and `run_interpret_preprocess'` restated on `runState`, with plain polynomial-time preparation, initial state and allowance in both: the oracle certificate applies the stateful oracle to caller, request and state, which `fun_prop` can certify, and the invariant and allowance are unchanged. The [checked client](../../CslibFrontierTests/OracleRunStatePPT.lean) certifies a run against a stateful oracle.
+
 ## Bound stateful identical-until-bad hops and random-oracle collisions
 
 When two stateful oracle handlers agree until an internal collision or guessing event occurs, import [UntilBad/Flag.lean](../../CslibFrontier/Languages/Probabilistic/UntilBad/Flag.lean) (and [Crypto/Game/UntilBad.lean](../../CslibFrontier/Crypto/Game/UntilBad.lean) for `Game.advantage`) instead of defining an ad hoc `State × Bool` wrapper and proving `absorb_first`, `absorb_second` and `Sum.inl` private-sampling cases by hand:
@@ -1763,8 +1768,9 @@ and apply `hybrid_indcca2On`. Supply the existing KEM CCA indistinguishability a
 `F` satisfying `(uniformList (keyLen n)).map (F n) = eval (E.keyGen n)` for every `n`.
 Postprocess every successful decapsulation with `Option.map (F n)` too. The conclusion uses
 `INDCCA2On` with both challenge lengths equal to `n`, not unrestricted `WordINDCCA2`.
-`exists_hybridCCA_reductions` returns native KEM and symmetric adversaries and the exact
-`2 * KEM advantage + symmetric advantage` bound. Reply caps are derived from supported
+`exists_hybridCCA_reductions` returns a `HybridCCAReductions` record: native KEM and symmetric
+adversaries `kem` and `dem` with the exact `2 * KEM advantage + symmetric advantage` bound
+`advantage_le`. Reply caps are derived from supported
 secret-key lengths and the native decryptor; external replies need no assumed length bound.
 
 The [complete composition clients](../../CslibFrontierTests/Crypto/HybridCompositionCCA.lean)
