@@ -136,12 +136,11 @@ theorem computableInPolyTime_verify_comp (S : WordSignatureScheme)
 /-! ### Adaptive chosen-message security on unrestricted bit words (`EUFCMA`) -/
 
 /-- Stateful signing oracle that signs any requested `List Bool` message under `sk` and prepends
-the message to the list of queried messages. -/
+the message to the list of queried messages: `SignatureScheme.signingOracleOf` instantiated at
+`S.sign`. -/
 def signingOracle (S : WordSignatureScheme) (sk : List Bool)
     (request : Unit × List Bool) : StateT (List (List Bool)) ProbComp (List Bool) :=
-  fun queried => do
-    let sig ← S.sign sk request.2
-    return (sig, request.2 :: queried)
+  SignatureScheme.signingOracleOf S.sign sk request
 
 /-- The unrestricted-message EUF-CMA experiment: sample `(pk, sk) ← S.keyGen n`, run the adaptive
 forger on `(n, pk)` with oracle access to `S.signingOracle sk`, and accept when the forger outputs
