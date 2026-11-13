@@ -8,7 +8,8 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Init
-public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Reduction
+public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Probability
+public import Mathlib.Basic.Real.Basic
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Positivity
 import Mathlib.Tactic.GCongr
@@ -35,11 +36,21 @@ Theorem 2.3 and the base-`r` trial of Theorem 3.4 share one reduction and one er
 * `average_le_of_good`: averaged over a window of moduli, the miss probability is at most the
   fraction of bad moduli plus the bound for good ones.
 
-`CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Reduction`'s `threeSumM` is
-`reduceM (fun σ => trialM d t s σ)` written out; it is not migrated here.
+`threeSumM` (`CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Reduction`) is
+`reduceM (fun σ => trialM d t s σ)` and `vthreeSumM`
+(`CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.VectorReduction`) is
+`reduceM (fun σ => vtrialM r d s σ)`. Both instantiate `TrialSpec` with the `ret_trialM` /
+`ret_vtrialM` theorems of their trial modules, and get their success counts from the proved trial
+analyses (`four_mul_card_accepts_ge`, `four_mul_card_vaccepts_ge`); `TrialSpec` itself only states
+what a trial program returns.
+
+* `average_miss_le_of_window`: the same over a binary window of primes `[2 ^ e, 2 ^ (e + 1))`,
+  where the bad primes are `badPrimesOf e K c A B` (`good_of_not_mem_badPrimesOf`).
 
 ## Main definitions
 
+* `Cslib.Algorithms.Lean.SubsetConvThreeSum.isolatedM`, `BadHit`, `badSums`: the split into
+  isolated elements and the bad sums `A_bad + B ∪ A + B_bad`.
 * `Cslib.Algorithms.Lean.SubsetConvThreeSum.TrialSpec`, `reduceM`, `missProbOf`.
 
 ## Main results
@@ -47,7 +58,7 @@ Theorem 2.3 and the base-`r` trial of Theorem 3.4 share one reduction and one er
 * `Cslib.Algorithms.Lean.SubsetConvThreeSum.ret_reduceM`, `exists_add_eq_of_mem_ret_reduceM`,
   `mem_ret_reduceM_or_isolated`, `time_reduceM`: what the reduction returns and costs.
 * `Cslib.Algorithms.Lean.SubsetConvThreeSum.card_forall_not_le`,
-  `reduceM_miss_le`, `average_le_of_good`: its error.
+  `reduceM_miss_le`, `average_le_of_good`, `average_miss_le_of_window`: its error.
 
 ## References
 
@@ -62,6 +73,71 @@ namespace Cslib.Algorithms.Lean.SubsetConvThreeSum
 open Finset Cslib.Algorithms.Lean.TimeM
 
 variable {p : ℕ}
+
+/-! ### Isolated elements -/
+
+/-- Count the residue of `a` in the dictionary `F` of residue counts, at one tick. -/
+@[expose] def countStepM (F : ZMod p → ℕ) (a : ℕ) : TimeM ℕ (ZMod p → ℕ) := do
+  ✓ pure (fun r : ZMod p => if r = (a : ZMod p) then F r + 1 else F r)
+
+/-- The elements of `A` isolated modulo `p`, and the others (`A_bad`): residues are counted in a
+dictionary at one tick per element, then each element is tested at one tick. -/
+@[expose] def isolatedM (p : ℕ) (A : List ℕ) : TimeM ℕ (List ℕ × List ℕ) := do
+  let cnt ← A.foldlM countStepM (0 : ZMod p → ℕ)
+  let good ← filterTickM (fun a : ℕ => cnt (a : ZMod p) = 1) A
+  let bad ← filterTickM (fun a : ℕ => cnt (a : ZMod p) ≠ 1) A
+  pure (good, bad)
+
+private theorem ret_count_foldl (A : List ℕ) (F₀ : ZMod p → ℕ) (r : ZMod p) :
+    (A.foldl (fun F a => (countStepM F a).ret) F₀) r =
+      F₀ r + A.countP fun a' : ℕ => (a' : ZMod p) = r := by
+  induction A generalizing F₀ with
+  | nil => simp
+  | cons a A ih =>
+    rw [List.foldl_cons, ih, List.countP_cons]
+    simp only [countStepM, ret_bind, ret_pure]
+    by_cases h : r = a
+    · subst h; simp; ring
+    · simp [h, Ne.symm h]
+
+theorem ret_isolatedM (p : ℕ) (A : List ℕ) :
+    (isolatedM p A).ret = (A.filter fun a => decide (Isolated p A a),
+      A.filter fun a => decide (¬ Isolated p A a)) := by
+  have hcnt : ∀ r : ZMod p, (A.foldlM countStepM (0 : ZMod p → ℕ)).ret r =
+      A.countP fun a' : ℕ => (a' : ZMod p) = r := fun r => by
+    rw [ret_foldlM, ret_count_foldl]; simp
+  simp only [isolatedM, ret_bind, ret_pure, ret_filterTickM, hcnt, Isolated, ne_eq]
+  rfl
+
+@[simp] theorem time_isolatedM (p : ℕ) (A : List ℕ) : (isolatedM p A).time = 3 * A.length := by
+  simp only [isolatedM, time_bind, time_pure, time_filterTickM, add_zero]
+  rw [time_foldlM_of_time_eq _ _ _ (c := 1) fun _ _ => by simp [countStepM]]
+  ring
+
+/-! ### The algorithm -/
+
+/-- `c` is the sum of `a ∈ A` and `b ∈ B` where `a` or `b` shares its residue class modulo `p`:
+`c ∈ A_bad + B ∪ A + B_bad`. -/
+@[expose] def BadHit (p : ℕ) (A B : List ℕ) (c : ℕ) : Prop :=
+  ∃ a ∈ A, ∃ b ∈ B, a + b = c ∧ (¬ Isolated p A a ∨ ¬ Isolated p B b)
+
+instance (p : ℕ) (A B : List ℕ) (c : ℕ) : Decidable (BadHit p A B c) :=
+  inferInstanceAs (Decidable (∃ a ∈ A, ∃ b ∈ B, _))
+
+/-- The bad sums `A_bad + B` and `A + B_bad`, listed. -/
+@[expose] def badSums (Abad Bbad A B : List ℕ) : List ℕ :=
+  (Abad.flatMap fun a => B.map (a + ·)) ++ A.flatMap fun a => Bbad.map (a + ·)
+
+theorem mem_badSums {Abad Bbad A B : List ℕ} {c : ℕ} :
+    c ∈ badSums Abad Bbad A B ↔
+      (∃ a ∈ Abad, ∃ b ∈ B, a + b = c) ∨ ∃ a ∈ A, ∃ b ∈ Bbad, a + b = c := by
+  simp [badSums, List.mem_flatMap]
+
+theorem length_badSums (Abad Bbad A B : List ℕ) :
+    (badSums Abad Bbad A B).length = Abad.length * B.length + A.length * Bbad.length := by
+  simp [badSums, List.length_flatMap]
+
+/-! ### The reduction for a trial -/
 
 /-- A trial program `trial σ Ag Bg C` returns the queries of `C` accepted under the seed `σ` by the
 acceptance test `Acc σ Ag Bg`. -/
@@ -301,5 +377,86 @@ theorem average_le_of_good
     linarith
   rw [div_le_iff₀ hWpos, add_mul, div_mul_cancel₀ _ hWpos.ne']
   linarith
+
+theorem card_falsePairs_mono {q c : ℕ} {Ag Bg A B : List ℕ} (hA : ∀ x ∈ Ag, x ∈ A)
+    (hB : ∀ x ∈ Bg, x ∈ B) : #(falsePairs q c Ag Bg) ≤ #(falsePairs q c A B) := by
+  refine card_le_card fun ab hab => ?_
+  obtain ⟨hmem, h⟩ := mem_filter.mp hab
+  obtain ⟨ha, hb⟩ := mem_product.mp hmem
+  exact mem_filter.mpr ⟨mem_product.mpr ⟨List.mem_toFinset.mpr (hA _ (List.mem_toFinset.mp ha)),
+    List.mem_toFinset.mpr (hB _ (List.mem_toFinset.mp hb))⟩, h⟩
+
+/-- A prime of the window outside `badPrimesOf e K c A B` is good for the isolated elements:
+`4 #L K ≤ q - 1`, with `L` the false pairs of the isolated sublists. -/
+theorem good_of_not_mem_badPrimesOf {e K c q : ℕ} {A B : List ℕ} (hq : q ∈ primeWindow e)
+    (hnb : q ∉ badPrimesOf e K c A B) :
+    4 * (#(falsePairs q c (A.filter fun a => decide (Isolated q A a))
+      (B.filter fun b => decide (Isolated q B b))) * K) ≤ q - 1 := by
+  have h1 : ¬ q - 1 < 4 * (#(falsePairs q c A B) * K) := fun h =>
+    hnb (mem_filter.mpr ⟨hq, h⟩)
+  have h2 := card_falsePairs_mono (q := q) (c := c)
+    (fun x hx => List.mem_of_mem_filter hx) (fun x hx => List.mem_of_mem_filter hx)
+    (A := A) (B := B) (Ag := A.filter fun a => decide (Isolated q A a))
+    (Bg := B.filter fun b => decide (Isolated q B b))
+  have h3 := Nat.mul_le_mul_right K h2
+  omega
+
+/-- The miss probability at a prime modulus is the count of missing seed tuples, so a bound on
+that count bounds it. -/
+theorem missProbOf_le_of_prime
+    {trial : (q : ℕ) → Seed q → List ℕ → List ℕ → List ℕ → TimeM ℕ (List ℕ)}
+    {μ : ℕ} {A B C : List ℕ} {c q : ℕ} (hq : q.Prime) {x : ℝ}
+    (h : ∀ _ : Fact q.Prime, (#((Fintype.piFinset fun _ : Fin μ => seeds q).filter fun ss =>
+      c ∉ (reduceM (trial q) (List.ofFn ss) A B C).ret) : ℝ) / (#(seeds q) : ℝ) ^ μ ≤ x) :
+    missProbOf trial μ A B C c q ≤ x := by
+  unfold missProbOf
+  rw [dite_eq_left_of_eq_true (eq_true hq)]
+  exact h ⟨hq⟩
+
+/-- **Averaging over a binary window of primes**: if every prime `q` of `[2 ^ e, 2 ^ (e + 1))`
+outside `bad ⊆ window` has miss probability at most `(1 - 3 P / (4 q ^ 2)) ^ μ`, with
+`P ≤ 2 ^ e 2 ^ e`, the average miss probability over the window is at most
+`#bad / #window + (1 - 3 P / 4 ^ (e + 2)) ^ μ`. -/
+theorem average_miss_le_of_window
+    {trial : (q : ℕ) → Seed q → List ℕ → List ℕ → List ℕ → TimeM ℕ (List ℕ)}
+    {μ e P : ℕ} {A B C : List ℕ} {c : ℕ} (hW : (primeWindow e).Nonempty) {bad : Finset ℕ}
+    (hbad : bad ⊆ primeWindow e) (hP : P ≤ 2 ^ e * 2 ^ e)
+    (hgood : ∀ q ∈ primeWindow e, q ∉ bad →
+      missProbOf trial μ A B C c q ≤ (1 - 3 * P / (4 * (q : ℝ) ^ 2)) ^ μ) :
+    (∑ q ∈ primeWindow e, missProbOf trial μ A B C c q) / #(primeWindow e) ≤
+      (#bad : ℝ) / #(primeWindow e) + (1 - 3 * P / (4 : ℝ) ^ (e + 2)) ^ μ := by
+  have hP' : (P : ℝ) ≤ (2 : ℝ) ^ e * 2 ^ e := by exact_mod_cast hP
+  have h4 : (4 : ℝ) ^ (e + 2) = 16 * ((2 : ℝ) ^ e * 2 ^ e) := by
+    rw [pow_add, ← mul_pow]; norm_num; ring
+  have hρ : 0 ≤ 1 - 3 * (P : ℝ) / (4 : ℝ) ^ (e + 2) := by
+    have hpos : (0 : ℝ) < (2 : ℝ) ^ e * 2 ^ e := by positivity
+    rw [sub_nonneg, div_le_one (by positivity), h4]
+    linarith
+  have hfilter : (primeWindow e).filter (· ∈ bad) = bad := by
+    ext q
+    simp only [mem_filter]
+    exact ⟨fun h => h.2, fun h => ⟨hbad h, h⟩⟩
+  rw [← hfilter]
+  refine average_le_of_good hW (pow_nonneg hρ μ) fun q hq hnb => (hgood q hq hnb).trans ?_
+  obtain ⟨hprime, hlo, hhi⟩ := mem_primeWindow.mp hq
+  have hqpos : (0 : ℝ) < 4 * (q : ℝ) ^ 2 := by
+    have : (0 : ℝ) < q := by exact_mod_cast hprime.pos
+    positivity
+  refine pow_le_pow_left₀ ?_ ?_ μ
+  · have hPq : (P : ℝ) ≤ (q : ℝ) ^ 2 := by
+      have : (2 : ℝ) ^ e ≤ q := by exact_mod_cast hlo
+      nlinarith [pow_pos (two_pos (α := ℝ)) e]
+    rw [sub_nonneg, div_le_one hqpos]
+    linarith
+  · have hq2 : (4 : ℝ) * (q : ℝ) ^ 2 ≤ (4 : ℝ) ^ (e + 2) := by
+      have : q * q ≤ 2 ^ (e + 1) * 2 ^ (e + 1) := Nat.mul_le_mul hhi.le hhi.le
+      have h' : ((q : ℝ)) ^ 2 ≤ (2 : ℝ) ^ (e + 1) * 2 ^ (e + 1) := by
+        rw [sq]; exact_mod_cast this
+      have h4' : (4 : ℝ) ^ (e + 2) = 4 * ((2 : ℝ) ^ (e + 1) * 2 ^ (e + 1)) := by
+        rw [← mul_pow, show (2 : ℝ) * 2 = 4 by norm_num, pow_succ]; ring
+      rw [h4']; linarith
+    have : 3 * (P : ℝ) / (4 : ℝ) ^ (e + 2) ≤ 3 * (P : ℝ) / (4 * (q : ℝ) ^ 2) :=
+      div_le_div_of_nonneg_left (by positivity) hqpos hq2
+    linarith
 
 end Cslib.Algorithms.Lean.SubsetConvThreeSum

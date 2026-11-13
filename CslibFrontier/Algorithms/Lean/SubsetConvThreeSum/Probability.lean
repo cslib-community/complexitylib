@@ -43,10 +43,14 @@ the uniform seeds `seeds p`: the triples `(ξ, α, β) ∈ ZMod p ^ 3` with `ξ 
 
 * `Cslib.Algorithms.Lean.SubsetConvThreeSum.seeds`: the uniform seeds.
 * `Cslib.Algorithms.Lean.SubsetConvThreeSum.rankedPairs`, `falsePairs`.
+* `Cslib.Algorithms.Lean.SubsetConvThreeSum.primeWindow`, `badPrimesOf`, `badPrimes`: the prime
+  window and its bad primes for a candidate bound `K` (`(2 t choose t)` for Theorem 2.3).
 
 ## Main results
 
 * `Cslib.Algorithms.Lean.SubsetConvThreeSum.card_mul_le_card_filter_add`: the counting argument.
+* `Cslib.Algorithms.Lean.SubsetConvThreeSum.card_badPrimesOf_le`, `card_badPrimes_le`: few bad
+  primes.
 * `Cslib.Algorithms.Lean.SubsetConvThreeSum.card_accepts_add_ge`,
   `four_mul_card_accepts_ge`: the success probability of one trial.
 * `Cslib.Algorithms.Lean.SubsetConvThreeSum.card_rankedPairs`.
@@ -450,36 +454,45 @@ theorem mul_sum_card_falsePairs_le {d c M : ℕ} {A B : List ℕ}
         rw [sum_const, smul_eq_mul]
         exact Nat.mul_le_mul_right _ (card_filter_le _ _)
 
-/-- The primes of the window that are not good for `c`: `p - 1 < 4 #L (2 t choose t)`. -/
-@[expose] def badPrimes (d t c : ℕ) (A B : List ℕ) : Finset ℕ :=
-  (primeWindow d).filter fun q => q - 1 < 4 * (#(falsePairs q c A B) * (2 * t).choose t)
+/-- The primes `q` of the window `[2 ^ e, 2 ^ (e + 1))` that are not good for `c` with the
+candidate bound `K`: `q - 1 < 4 #L K`, where `L` is the false pairs modulo `q`. -/
+@[expose] def badPrimesOf (e K c : ℕ) (A B : List ℕ) : Finset ℕ :=
+  (primeWindow e).filter fun q => q - 1 < 4 * (#(falsePairs q c A B) * K)
 
-/-- **Few bad primes** (Markov's inequality, as in [ChanItakuraMaYu2026], Theorem 2.3):
+/-- The bad primes of Theorem 2.3, with the candidate bound `(2 t choose t)`. -/
+@[expose] def badPrimes (d t c : ℕ) (A B : List ℕ) : Finset ℕ :=
+  badPrimesOf d ((2 * t).choose t) c A B
+
+/-- **Few bad primes** (Markov's inequality, as in [ChanItakuraMaYu2026], Theorems 2.3 and 3.4):
+`e #bad (2 ^ e - 1) ≤ 4 K |A| |B| log₂ M`. -/
+theorem card_badPrimesOf_le {e K c M : ℕ} {A B : List ℕ}
+    (hM : ∀ ab ∈ A.toFinset ×ˢ B.toFinset, (((ab.1 + ab.2 : ℕ) : ℤ) - c).natAbs ≤ M) :
+    e * (#(badPrimesOf e K c A B) * (2 ^ e - 1)) ≤
+      4 * K * (#(A.toFinset ×ˢ B.toFinset) * Nat.log 2 M) := by
+  have h1 : #(badPrimesOf e K c A B) * (2 ^ e - 1) ≤
+      4 * K * ∑ q ∈ primeWindow e, #(falsePairs q c A B) := by
+    calc #(badPrimesOf e K c A B) * (2 ^ e - 1) = ∑ _q ∈ badPrimesOf e K c A B, (2 ^ e - 1) := by
+          rw [sum_const, smul_eq_mul]
+      _ ≤ ∑ q ∈ badPrimesOf e K c A B, 4 * K * #(falsePairs q c A B) :=
+          sum_le_sum fun q hq => by
+            obtain ⟨hw, hlt⟩ := mem_filter.mp hq
+            have := (mem_primeWindow.mp hw).2.1
+            have : 4 * (#(falsePairs q c A B) * K) = 4 * K * #(falsePairs q c A B) := by ring
+            omega
+      _ ≤ ∑ q ∈ primeWindow e, 4 * K * #(falsePairs q c A B) :=
+          sum_le_sum_of_subset (filter_subset _ _)
+      _ = _ := by rw [mul_sum]
+  calc e * (#(badPrimesOf e K c A B) * (2 ^ e - 1))
+      ≤ e * (4 * K * ∑ q ∈ primeWindow e, #(falsePairs q c A B)) := Nat.mul_le_mul_left _ h1
+    _ = 4 * K * (e * ∑ q ∈ primeWindow e, #(falsePairs q c A B)) := by ring
+    _ ≤ _ := Nat.mul_le_mul_left _ (mul_sum_card_falsePairs_le hM)
+
+/-- **Few bad primes** for Theorem 2.3:
 `d #bad (2 ^ d - 1) ≤ 4 (2 t choose t) |A| |B| log₂ M`. -/
 theorem card_badPrimes_le {d t c M : ℕ} {A B : List ℕ}
     (hM : ∀ ab ∈ A.toFinset ×ˢ B.toFinset, (((ab.1 + ab.2 : ℕ) : ℤ) - c).natAbs ≤ M) :
     d * (#(badPrimes d t c A B) * (2 ^ d - 1)) ≤
-      4 * (2 * t).choose t * (#(A.toFinset ×ˢ B.toFinset) * Nat.log 2 M) := by
-  have h1 : #(badPrimes d t c A B) * (2 ^ d - 1) ≤
-      4 * (2 * t).choose t * ∑ q ∈ primeWindow d, #(falsePairs q c A B) := by
-    calc #(badPrimes d t c A B) * (2 ^ d - 1) = ∑ _q ∈ badPrimes d t c A B, (2 ^ d - 1) := by
-          rw [sum_const, smul_eq_mul]
-      _ ≤ ∑ q ∈ badPrimes d t c A B, 4 * (2 * t).choose t * #(falsePairs q c A B) :=
-          sum_le_sum fun q hq => by
-            obtain ⟨hw, hlt⟩ := mem_filter.mp hq
-            have := (mem_primeWindow.mp hw).2.1
-            calc 2 ^ d - 1 ≤ q - 1 := by omega
-              _ ≤ _ := by
-                have := hlt.le
-                calc q - 1 ≤ 4 * (#(falsePairs q c A B) * (2 * t).choose t) := this
-                  _ = _ := by ring
-      _ ≤ ∑ q ∈ primeWindow d, 4 * (2 * t).choose t * #(falsePairs q c A B) :=
-          sum_le_sum_of_subset (filter_subset _ _)
-      _ = _ := by rw [mul_sum]
-  calc d * (#(badPrimes d t c A B) * (2 ^ d - 1))
-      ≤ d * (4 * (2 * t).choose t * ∑ q ∈ primeWindow d, #(falsePairs q c A B)) :=
-        Nat.mul_le_mul_left _ h1
-    _ = 4 * (2 * t).choose t * (d * ∑ q ∈ primeWindow d, #(falsePairs q c A B)) := by ring
-    _ ≤ _ := Nat.mul_le_mul_left _ (mul_sum_card_falsePairs_le hM)
+      4 * (2 * t).choose t * (#(A.toFinset ×ˢ B.toFinset) * Nat.log 2 M) :=
+  card_badPrimesOf_le hM
 
 end Cslib.Algorithms.Lean.SubsetConvThreeSum

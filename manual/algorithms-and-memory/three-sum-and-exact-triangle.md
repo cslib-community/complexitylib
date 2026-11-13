@@ -290,7 +290,10 @@ for every `c ∈ C` (lists of natural numbers) for given random choices: a modul
 a residue class modulo `p` and lists their sums exactly, then runs `trialM` per seed. A trial
 hashes `a ↦ a ξ + α`, `b ↦ b ξ + β` and `c ↦ c ξ + α + β` modulo `p`, keeps the hashes with `t`
 (for queries `2 t`) binary digits `1` below `2 ^ d`, and computes six moments per query with one
-`solveM` run over `ℤ ^ 6`.
+`solveM` run over `ℤ ^ 6`. The algorithm is `reduceM (fun σ => trialM d t s σ)`: the split, the
+bad sums and the error analysis are stated once, for any trial program, in
+`CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.TrialReduction`, and shared with the base-`r`
+reduction of Theorem 3.4.
 
 - `exists_add_eq_of_mem_ret_threeSumM`: every reported `c` is a sum, for every `p` and all seeds.
 - `ret_threeSumM`, `time_threeSumM`: the output and the exact tick count, which depends on the
@@ -396,7 +399,7 @@ for every modulus and all seeds; `time_vthreeSumM` is the exact cost for given r
 `vmiss_le` bounds the miss probability of `μ` uniform seeds for a good prime `p ≥ r ^ d` by
 `(1 - 3 #balancedPairs / (4 p ^ 2)) ^ μ`; and `vaverage_miss_le` averages over a uniform prime of
 `[2 ^ e, 2 ^ (e + 1))` with `r ^ d ≤ 2 ^ e` (the paper uses `(r ^ d, 2 r ^ d]`), with
-`card_vBadPrimes_le` bounding the bad primes. The
+`card_badPrimesOf_le` bounding the bad primes. The
 [reduction tests](../../CslibFrontierTests/Algorithms/Lean/VectorReduction.lean) run it with
 `p = 29` and apply `vmiss_le`.
 
