@@ -130,19 +130,6 @@ noncomputable def circuitReceiverSimulate (C : Circuit (arithSignature F) (p + k
       (circuitReceiverAdapter C statement V) z
 
 
-omit [CommRing F] [Fintype F] [DecidableEq F] in
-private theorem interpret_liftVerifier {n : ℕ} {α : Type} (c : VOLECorrelation F n)
-    (program : ProbOracleComp (voleReceiverSpec F n) α) :
-    OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle
-      (OracleComp.sumHandler (fun _ => PMF.pure (c.u, c.v))
-        (fun _ => PMF.pure c.receiverView)))
-      (liftVerifier (oP := voleSenderSpec F n) program) =
-    OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle
-      (fun _ => PMF.pure c.receiverView)) program := by
-  rw [liftVerifier, OracleComp.interpret_interpret]
-  congr 1 with q : 1
-  cases q <;> simp [OracleComp.sumHandler, ProbOracleComp.query]
-
 /-- The circuit interaction is the existing masked-batch interaction with reconstructed linear
 openings, including the entire receiver state and transcript. The prover remains role-local. -/
 theorem circuitReceiverView_eq_expand (C : Circuit (arithSignature F) (p + k) m)
