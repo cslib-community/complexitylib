@@ -239,7 +239,7 @@ def W (t : ℕ) {α : Type} (enc : α ↪ List Bool) (κ : α → ℕ) : Set (Se
   {A | ∃ d, FPTReducible enc (encWCS t d) κ WCSInstance.weight A (WCS t d)}
 
 /-- **`W[t]`-hardness**: every problem of `W[t]` fpt-reduces to `B`. The general lemmas, such as
-`FPTHard.fptReducible` and `FPTHard.subset_FPT`, apply through dot notation. -/
+`FPTHard.trans` and `FPTHard.subset_FPT`, apply through dot notation. -/
 abbrev WHard (t : ℕ) {β : Type} (enc : β ↪ List Bool) (κ : β → ℕ) (B : Set β) : Prop :=
   FPTHard (@W t) enc κ B
 

@@ -632,27 +632,12 @@ theorem sinkOfPotentialLineRel_normalized_iff :
       (normalizedPotentialPred n P S V) (normalizedPotentialSucc n P S V)
       (normalizedPotential V) a w ↔
     ∃ u, w = true :: u ∧ sinkOfPotentialLineRel n P S V a u := by
-  cases w with
-  | nil =>
-    simp [sinkOfPotentialLineRel, normalizedPotentialWidth]
-  | cons b u =>
-    cases b
-    · by_cases huz : u = zeroVertex (n a)
-      · subst huz
-        have hout := hasPotentialOut_normalized_zeroVertex n P S V a
-        rw [zeroVertex_normalizedPotentialWidth] at hout
-        simp [sinkOfPotentialLineRel, hout]
-      · simp [sinkOfPotentialLineRel, hasPotentialIn_normalized_false,
-          hasPotentialOut_normalized_false_of_ne huz, huz]
-    · simp only [List.cons.injEq, true_and, exists_eq_left']
-      by_cases huz : u = zeroVertex (n a)
-      · subst huz
-        cases hout : hasPotentialOut n P S V a (zeroVertex (n a)) <;>
-          simp [sinkOfPotentialLineRel, hasPotentialIn_normalized_true_zeroVertex,
-            hasPotentialOut_normalized_true, hout]
-      · cases hin : hasPotentialIn n P S V a u <;> cases hout : hasPotentialOut n P S V a u <;>
-          simp [sinkOfPotentialLineRel, hasPotentialIn_normalized_true_of_ne huz,
-            hasPotentialOut_normalized_true, huz, hin, hout]
+  simp only [sinkOfPotentialLineRel_iff, endOfPotentialLineRel_normalized_iff]
+  constructor
+  · rintro ⟨⟨u, rfl, hu⟩, hout⟩
+    exact ⟨u, rfl, hu, (hasPotentialOut_normalized_true n P S V a u).symm.trans hout⟩
+  · rintro ⟨u, rfl, hu, hout⟩
+    exact ⟨⟨u, rfl, hu⟩, (hasPotentialOut_normalized_true n P S V a u).trans hout⟩
 
 private theorem nonEmpty_normalizedPred (b : Bool) (u : List Bool) :
     ∃ b' u', normalizedPotentialPred n P S V (a, b :: u) = b' :: u' := by

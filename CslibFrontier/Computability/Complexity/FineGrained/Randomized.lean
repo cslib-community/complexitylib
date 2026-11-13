@@ -15,6 +15,7 @@ public import CslibFrontier.Computability.Complexity.FineGrained.FunctionRates
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Closed
 public import CslibFrontier.Probability.BitString
 import CslibFrontier.Computability.Complexity.Classes.Promise.Probabilistic
+import CslibFrontier.Computability.Complexity.Classes.Time.SampleVerify
 import CslibFrontier.Computability.Complexity.FineGrained.Bounds
 import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Degree.BitString.Cut
@@ -24,11 +25,6 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OCombinators
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Composition
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Deterministic
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.PairSampler
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Run
 import CslibFrontier.Foundations.Analysis.SublinearEnvelope
 import CslibFrontier.Foundations.Data.BitString.Block
 import CslibFrontier.Foundations.Data.BitString.List
@@ -36,7 +32,6 @@ import CslibFrontier.Foundations.Data.BitString.WordCount
 import CslibFrontier.Foundations.Data.List.OfFn
 import CslibFrontier.Foundations.Data.Nat.Power
 import CslibFrontier.Probability.MajorityVote
-import CslibFrontier.Probability.PMF.Bind
 
 /-!
 # Parameterized randomized runtime rates, error models, `rETH`, and `rSETH`
@@ -697,9 +692,6 @@ theorem exists_ptm_of_solvesWithErrorInTimeO {Q : PromiseProblem α} {E : ErrorM
       ∀ a ∈ Q.no,
         ((ProbComp.eval (machine.runClosed (clock a) (enc a))) [true]).toReal ≤ E.noErr := by
   obtain ⟨ℓ, V, Tℓ, Sℓ, Tv, Sv, c₀, hℓ, hV, ht, hyes, hno⟩ := h
-  obtain ⟨c₁, ⟨k₁, Q₁, _, tm₁, h₁⟩, -⟩ :=
-    (ComputableInO.of_eq (f := fun a : α => a) (encIn := enc) (encMid := enc) fun _ => rfl).prod hℓ
-  obtain ⟨c₃, ⟨k₃, Q₃, _, tm₃, h₃⟩, -⟩ := hV
   let boundNat (a : α) : ℕ := c₀ * ⌈T a⌉₊ + c₀
   have hboundNat (a : α) (w : List Bool) (hw : w.length = ℓ a) :
       (enc a).length + Tℓ a + Tv (a, w) ≤ boundNat a := by
@@ -709,108 +701,24 @@ theorem exists_ptm_of_solvesWithErrorInTimeO {Q : PromiseProblem α} {E : ErrorM
       push_cast
       linarith [mul_le_mul_of_nonneg_left (Nat.le_ceil (T a)) (Nat.cast_nonneg c₀)]
     exact_mod_cast hta.trans hceil
-  let u (a : α) : List Bool := frame (enc a) ++ List.replicate (ℓ a) true
-  let t₁ (a : α) : ℕ := c₁ * ((enc a).length + Tℓ a + 1)
-  let t₂ (a : α) : ℕ := (u a).length + 1
-  let t₃ (a : α) : ℕ := c₃ * (boundNat a + 1)
-  have hrun₁ (a : α) := (h₁ a).runFrom_of_le (le_refl (t₁ a))
-  have hlen₁ (a : α) : (u a).length ≤ t₁ a := (h₁ a).length_output_le
-  let M₁ : MultiTapePTM k₁ Bool Q₁ := MultiTapePTM.ofDeterministic tm₁
-  have hfirst₁ (a : α) : ∀ final ∈ (ProbComp.eval
-      (M₁.runClosedConfigFrom (t₁ a) (M₁.initialConfig (enc a)))).support,
-      final.tapes.state = none := by
-    intro final hfinal
-    rw [MultiTapePTM.eval_runClosedConfigFrom_ofDeterministic, PMF.mem_support_pure_iff] at hfinal
-    subst hfinal
-    exact (hrun₁ a).1
-  have hout₁ (a : α) : ProbComp.eval (M₁.runClosed (t₁ a) (enc a)) = PMF.pure (u a) := by
-    rw [MultiTapePTM.eval_runClosed_ofDeterministic, (hrun₁ a).2]
-    rfl
-  have hsecond₁ (a : α) : ∀ word ∈ (ProbComp.eval (M₁.runClosed (t₁ a) (enc a))).support,
-      ∀ final ∈ (ProbComp.eval (MultiTapePTM.pairSampler.runClosedConfigFrom (t₂ a)
-        (MultiTapePTM.pairSampler.initialConfig word))).support, final.tapes.state = none := by
-    intro word hword
-    rw [hout₁ a, PMF.mem_support_pure_iff] at hword
-    subst hword
-    exact MultiTapePTM.pairSampler_halted (enc a) (List.replicate (ℓ a) true)
-  let P₁₂ := MultiTapePTM.pairSampler.comp M₁ false
-  let t₁₂ (a : α) : ℕ := t₁ a + (t₁ a + 4 + t₂ a)
-  have heval₁₂ (a : α) : ProbComp.eval (P₁₂.runClosed (t₁₂ a) (enc a)) =
-      (BitString.uniformList (ℓ a)).map (frame (enc a) ++ ·) := by
-    rw [MultiTapePTM.eval_comp M₁ MultiTapePTM.pairSampler false (enc a) (t₁ a) (t₂ a)
-      (hfirst₁ a) (hsecond₁ a), hout₁ a, Probability.PMF.monad_bind_eq_bind, PMF.pure_bind]
-    simpa only [List.length_replicate, u] using
-      MultiTapePTM.eval_pairSampler (enc a) (List.replicate (ℓ a) true)
-  have hhalt₁₂ (a : α) := MultiTapePTM.comp_halted M₁ MultiTapePTM.pairSampler false (enc a)
-    (t₁ a) (t₂ a) (hfirst₁ a) (hsecond₁ a)
-  let M₃ : MultiTapePTM k₃ Bool Q₃ := MultiTapePTM.ofDeterministic tm₃
-  have hrun₃ (a : α) (w : List Bool) (hw : w.length = ℓ a) :=
-    (h₃ (a, w)).runFrom_of_le (J := t₃ a) (Nat.mul_le_mul_left c₃ (by
-      have := hboundNat a w hw
-      omega))
-  have hword (a : α) {word : List Bool}
-      (hword : word ∈ (ProbComp.eval (P₁₂.runClosed (t₁₂ a) (enc a))).support) :
-      ∃ w : List Bool, w.length = ℓ a ∧ word = encPair enc encBits (a, w) := by
-    rw [heval₁₂ a] at hword
-    obtain ⟨w, hw, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hword
-    exact ⟨w, BitString.mem_support_uniformList_iff.mp hw, rfl⟩
-  have hsecond₂ (a : α) : ∀ word ∈ (ProbComp.eval (P₁₂.runClosed (t₁₂ a) (enc a))).support,
-      ∀ final ∈ (ProbComp.eval (M₃.runClosedConfigFrom (t₃ a) (M₃.initialConfig word))).support,
-      final.tapes.state = none := by
-    intro word hw final hfinal
-    obtain ⟨w, hwlen, rfl⟩ := hword a hw
-    rw [MultiTapePTM.eval_runClosedConfigFrom_ofDeterministic, PMF.mem_support_pure_iff] at hfinal
-    subst hfinal
-    exact (hrun₃ a w hwlen).1
-  let P := M₃.comp P₁₂ false
-  let clock (a : α) : ℕ := t₁₂ a + (t₁₂ a + 4 + t₃ a)
-  have hhalt (a : α) := MultiTapePTM.comp_halted P₁₂ M₃ false (enc a) (t₁₂ a) (t₃ a)
-    (hhalt₁₂ a) (hsecond₂ a)
-  have heval (a : α) : ProbComp.eval (P.runClosed (clock a) (enc a)) =
-      (BitString.uniformList (ℓ a)).map fun w => [V (a, w)] := by
-    rw [MultiTapePTM.eval_comp P₁₂ M₃ false (enc a) (t₁₂ a) (t₃ a) (hhalt₁₂ a) (hsecond₂ a),
-      Probability.PMF.monad_bind_eq_bind, heval₁₂ a, PMF.bind_map, ← PMF.bind_pure_comp]
-    refine Probability.PMF.bind_congr_on_support _ _ _ fun w hw => ?_
-    have hwlen : w.length = ℓ a := BitString.mem_support_uniformList_iff.mp hw
-    simp only [Function.comp_apply]
-    rw [MultiTapePTM.eval_runClosed_ofDeterministic]
-    exact congrArg PMF.pure (hrun₃ a w hwlen).2
+  obtain ⟨c, k, State, _, P, hP⟩ := exists_machine_sampleVerify_of_bound hℓ hV hboundNat
+  let clock (a : α) : ℕ := c * boundNat a + c
   have hprob (a : α) (b : Bool) :
       ((ProbComp.eval (P.runClosed (clock a) (enc a))) [b]).toReal =
         (acceptCount (fun p => V p == b) a (ℓ a) : ℝ) / (2 : ℝ) ^ ℓ a := by
-    rw [heval a, BitString.uniformList_map_apply]
+    rw [(hP a).2, BitString.uniformList_map_apply]
     have heq : (Finset.univ.filter fun w : Fin (ℓ a) → Bool => [V (a, List.ofFn w)] = [b]).card =
         acceptCount (fun p => V p == b) a (ℓ a) := by
       simp only [acceptCount, List.cons.injEq, and_true, beq_iff_eq]
     rw [heq, ENNReal.toReal_div, ENNReal.toReal_natCast, ENNReal.toReal_pow, ENNReal.toReal_ofNat]
-  let C_out : ℕ := (6 * c₁ + c₃) * (2 * c₀ + 2) + 14
-  refine ⟨C_out, clock, _, _, inferInstance, P, fun a => ?_, fun a => hhalt a,
+  refine ⟨c * (2 * c₀ + 1), clock, k, State, inferInstance, P, fun a => ?_, fun a => (hP a).1,
     fun a ha => ?_, fun a ha => ?_⟩
-  · have ht₁_le : t₁ a ≤ c₁ * (boundNat a + 1) := Nat.mul_le_mul_left c₁ (by
-      have := hboundNat a (List.replicate (ℓ a) false) (List.length_replicate ..)
-      omega)
-    have hclock_nat : clock a ≤ (6 * c₁ + c₃) * (boundNat a + 1) + 14 := by
-      have := hlen₁ a
-      have h1 := Nat.mul_le_mul_left 6 ht₁_le
-      simp only [clock, t₁₂, t₂, t₃, Nat.add_mul, Nat.mul_assoc]
-      omega
-    have hclockR : (clock a : ℝ) ≤ (6 * c₁ + c₃ : ℕ) * ((boundNat a : ℝ) + 1) + 14 := by
-      exact_mod_cast hclock_nat
-    have hceil : (⌈T a⌉₊ : ℝ) ≤ T a + 1 := (Nat.ceil_lt_add_one (hT a)).le
-    have hbn : (boundNat a : ℝ) + 1 ≤ (2 * c₀ + 2 : ℕ) * T a + (2 * c₀ + 2 : ℕ) := by
-      dsimp only [boundNat]
-      push_cast
-      have hc0 : (0 : ℝ) ≤ c₀ := Nat.cast_nonneg c₀
-      have hTa : 0 ≤ T a := hT a
-      nlinarith
-    have hmul := mul_le_mul_of_nonneg_left hbn (Nat.cast_nonneg (6 * c₁ + c₃))
-    have hexpand : ((6 * c₁ + c₃ : ℕ) : ℝ) *
-        ((2 * c₀ + 2 : ℕ) * T a + (2 * c₀ + 2 : ℕ)) + 14 ≤ C_out * T a + C_out := by
-      dsimp only [C_out]
-      have hTa : 0 ≤ T a := hT a
-      push_cast
-      linarith
-    linarith
+  · have hceil : (⌈T a⌉₊ : ℝ) ≤ T a + 1 := (Nat.ceil_lt_add_one (hT a)).le
+    have hcc₀ : (0 : ℝ) ≤ c * c₀ := by positivity
+    dsimp only [clock, boundNat]
+    push_cast
+    nlinarith [mul_le_mul_of_nonneg_left hceil hcc₀, mul_nonneg hcc₀ (hT a),
+      mul_nonneg (Nat.cast_nonneg c) (hT a)]
   · have hfalse : ((ProbComp.eval (P.runClosed (clock a) (enc a))) [false]).toReal ≤ E.yesErr := by
       rw [hprob a false, div_le_iff₀ (by positivity)]
       simpa only [beq_false] using hyes a ha
@@ -917,51 +825,45 @@ theorem exists_solvesWithErrorInTimeO_poly_iff {Q : PromiseProblem α} {E : Erro
       dsimp only [polyClock]
       rw [Nat.mul_assoc 3]
       exact Nat.mul_le_mul_left cV' (by dsimp only [N] at *; omega)
-    have hscale_gen (W₀ W₁ : α × List Bool → Bool) (a : α)
+    have hscale (W₀ W₁ : α × List Bool → Bool) (a : α)
         (hprefix : ∀ u : List Bool, u.length = ℓ a → ∀ rest : List Bool,
-          W₁ (a, u ++ rest) = W₀ (a, u)) :
-        acceptCount W₁ a (p.eval (enc a).length) =
+          W₁ (a, u ++ rest) = W₀ (a, u)) {B : ℝ}
+        (hB : (acceptCount W₀ a (ℓ a) : ℝ) ≤ B * 2 ^ ℓ a) :
+        (acceptCount W₁ a (p.eval (enc a).length) : ℝ) ≤ B * 2 ^ p.eval (enc a).length := by
+      have hcount : acceptCount W₁ a (p.eval (enc a).length) =
           acceptCount W₀ a (ℓ a) * 2 ^ (p.eval (enc a).length - ℓ a) := by
-      have hsplit : p.eval (enc a).length = ℓ a + (p.eval (enc a).length - ℓ a) :=
-        (Nat.add_sub_of_le (hℓ_le_p a)).symm
-      conv_lhs => rw [hsplit]
-      rw [acceptCount_add]
-      have hterm : ∀ u : Fin (ℓ a) → Bool,
-          acceptCount (fun x => W₁ (x.1, List.ofFn u ++ x.2)) a
-            (p.eval (enc a).length - ℓ a) =
-          if W₀ (a, List.ofFn u) = true then 2 ^ (p.eval (enc a).length - ℓ a) else 0 := by
-        intro u
-        have hcongr : acceptCount (fun x => W₁ (x.1, List.ofFn u ++ x.2)) a
-            (p.eval (enc a).length - ℓ a) =
-            acceptCount (fun _ => W₀ (a, List.ofFn u)) a (p.eval (enc a).length - ℓ a) :=
-          acceptCount_congr (fun rest => hprefix (List.ofFn u) List.length_ofFn rest) _
-        rw [hcongr]
-        cases W₀ (a, List.ofFn u) <;> simp
-      exact (Finset.sum_congr rfl fun u _ => hterm u).trans
-        (by rw [← Finset.sum_filter, Finset.sum_const, smul_eq_mul]; rfl)
-    refine ⟨p, V', hV'_poly, fun a ha => ?_, fun a ha => ?_⟩
-    · have hsc := hscale_gen (fun q => !V q) (fun q => !V' q) a fun u hu rest => by
-        have hlen : ℓ a ≤ (u ++ rest).length := by simp [hu]
-        simp [V', padTake_of_le ℓ a hlen, List.take_left' hu]
+        have hsplit : p.eval (enc a).length = ℓ a + (p.eval (enc a).length - ℓ a) :=
+          (Nat.add_sub_of_le (hℓ_le_p a)).symm
+        conv_lhs => rw [hsplit]
+        rw [acceptCount_add]
+        have hterm : ∀ u : Fin (ℓ a) → Bool,
+            acceptCount (fun x => W₁ (x.1, List.ofFn u ++ x.2)) a
+              (p.eval (enc a).length - ℓ a) =
+            if W₀ (a, List.ofFn u) = true then 2 ^ (p.eval (enc a).length - ℓ a) else 0 := by
+          intro u
+          have hcongr : acceptCount (fun x => W₁ (x.1, List.ofFn u ++ x.2)) a
+              (p.eval (enc a).length - ℓ a) =
+              acceptCount (fun _ => W₀ (a, List.ofFn u)) a (p.eval (enc a).length - ℓ a) :=
+            acceptCount_congr (fun rest => hprefix (List.ofFn u) List.length_ofFn rest) _
+          rw [hcongr]
+          cases W₀ (a, List.ofFn u) <;> simp
+        exact (Finset.sum_congr rfl fun u _ => hterm u).trans
+          (by rw [← Finset.sum_filter, Finset.sum_const, smul_eq_mul]; rfl)
       have hpow_eq : (2 : ℝ) ^ p.eval (enc a).length =
           (2 : ℝ) ^ ℓ a * (2 : ℝ) ^ (p.eval (enc a).length - ℓ a) := by
         rw [← pow_add, Nat.add_sub_of_le (hℓ_le_p a)]
-      rw [hsc, hpow_eq]
+      rw [hcount, hpow_eq]
       push_cast
-      have hy := mul_le_mul_of_nonneg_right (hyes a ha)
+      have h := mul_le_mul_of_nonneg_right hB
         (by positivity : (0 : ℝ) ≤ (2 : ℝ) ^ (p.eval (enc a).length - ℓ a))
       linarith
-    · have hsc := hscale_gen V V' a fun u hu rest => by
-        have hlen : ℓ a ≤ (u ++ rest).length := by simp [hu]
-        simp [V', padTake_of_le ℓ a hlen, List.take_left' hu]
-      have hpow_eq : (2 : ℝ) ^ p.eval (enc a).length =
-          (2 : ℝ) ^ ℓ a * (2 : ℝ) ^ (p.eval (enc a).length - ℓ a) := by
-        rw [← pow_add, Nat.add_sub_of_le (hℓ_le_p a)]
-      rw [hsc, hpow_eq]
-      push_cast
-      have hn := mul_le_mul_of_nonneg_right (hno a ha)
-        (by positivity : (0 : ℝ) ≤ (2 : ℝ) ^ (p.eval (enc a).length - ℓ a))
-      linarith
+    have hV'_prefix (a : α) (u : List Bool) (hu : u.length = ℓ a) (rest : List Bool) :
+        V' (a, u ++ rest) = V (a, u) := by
+      have hlen : ℓ a ≤ (u ++ rest).length := by simp [hu]
+      simp [V', padTake_of_le ℓ a hlen, List.take_left' hu]
+    refine ⟨p, V', hV'_poly, fun a ha => ?_, fun a ha => hscale V V' a (hV'_prefix a) (hno a ha)⟩
+    exact hscale (fun q => !V q) (fun q => !V' q) a
+      (fun u hu rest => congrArg (!·) (hV'_prefix a u hu rest)) (hyes a ha)
   · rintro ⟨p, V, hV, hyes, hno⟩
     have hℓ_poly : ComputableInPolyTime (fun a : α => p.eval (enc a).length) enc encUnary := by
       fun_prop
@@ -1310,6 +1212,15 @@ theorem SolvesWithErrorInTimeO.amplify_twoSided {Q : PromiseProblem α} {T : α 
   have hVmajO : ComputableInO V_maj (encPair enc encBits) encBool _ _ :=
     hmaj_deg.inO.comp hvotesO
   let C_total : ℕ := (2 + 2 * r + Mvotes) * (c + 1) + (2 * r + 1) ^ dmaj
+  -- Majority voting errs only on samples with at most `r` blocks in a good seed set `G`.
+  have hmaj (a : α) (G : Finset (Fin (ℓ a) → Bool)) (hG : (1 - ε₁) * (2 : ℝ) ^ ℓ a ≤ G.card) :
+      ((Finset.univ.filter fun ω : Fin (2 * r) → (Fin (ℓ a) → Bool) =>
+        (Finset.univ.filter fun i => ω i ∈ G).card ≤ r).card : ℝ) ≤
+        ε₂ * (2 : ℝ) ^ ((2 * r) * ℓ a) := by
+    have hcard : (Fintype.card (Fin (ℓ a) → Bool) : ℝ) = (2 : ℝ) ^ ℓ a := by simp
+    have hmom := card_filter_card_filter_le_of_err_lt_half G h0₁ h1₁ (hcard ▸ hG) r
+    rw [hcard, ← pow_mul, mul_comm (ℓ a)] at hmom
+    exact hmom.trans (mul_le_mul_of_nonneg_right hr.le (by positivity))
   refine ⟨fun a => (2 * r) * ℓ a, V_maj, _, _, _, _, C_total, hℓ'O, hVmajO,
     fun a w hw => ?_, fun a ha => ?_, fun a ha => ?_⟩
   · have hbase_a : ((enc a).length + Tℓ a : ℝ) ≤ c * T a + c := by
@@ -1341,22 +1252,15 @@ theorem SolvesWithErrorInTimeO.amplify_twoSided {Q : PromiseProblem α} {T : α 
     have h3 : (0 : ℝ) ≤ ((2 * (r : ℝ) + 1) ^ dmaj) * T a := by positivity
     push_cast at htv ⊢
     linarith
-  · -- Yes-instance error bound via `card_filter_card_filter_le_of_err_lt_half`
+  · -- Yes-instance error bound via `hmaj` on the accepting seeds
     let G : Finset (Fin (ℓ a) → Bool) :=
       Finset.univ.filter fun u => V (a, List.ofFn u) = true
-    have hG : (1 - ε₁) * (Fintype.card (Fin (ℓ a) → Bool) : ℝ) ≤ G.card := by
+    have hG : (1 - ε₁) * (2 : ℝ) ^ ℓ a ≤ G.card := by
       have hy := hyes a ha
       simp only [ErrorModel.twoSided] at hy
       have hsum : (G.card : ℝ) + acceptCount (fun q => !V q) a (ℓ a) = (2 : ℝ) ^ ℓ a := by
         exact_mod_cast acceptCount_add_acceptCount_not V a (ℓ a)
-      have hcard : (Fintype.card (Fin (ℓ a) → Bool) : ℝ) = (2 : ℝ) ^ ℓ a := by simp
-      rw [hcard]
       linarith
-    have hmom := card_filter_card_filter_le_of_err_lt_half G h0₁ h1₁ hG r
-    have hcard_Omega : (Fintype.card (Fin (ℓ a) → Bool) : ℝ) ^ (2 * r) =
-        (2 : ℝ) ^ ((2 * r) * ℓ a) := by
-      simp [pow_mul, mul_comm]
-    rw [hcard_Omega] at hmom
     have hbad_eq : acceptCount (fun q => !V_maj q) a ((2 * r) * ℓ a) =
         (Finset.univ.filter fun ω : Fin (2 * r) → (Fin (ℓ a) → Bool) =>
           (Finset.univ.filter fun i => ω i ∈ G).card ≤ r).card := by
@@ -1366,24 +1270,16 @@ theorem SolvesWithErrorInTimeO.amplify_twoSided {Q : PromiseProblem α} {T : α 
         collectVotesConst_ofFn, List.countP_ofFn, Finset.card_filter, id_eq,
         Bool.not_eq_true', decide_eq_false_iff_not, not_lt, BitString.blocksEquiv_apply, G]
     rw [hbad_eq]
-    simp only [ErrorModel.twoSided]
-    exact hmom.trans (mul_le_mul_of_nonneg_right hr.le (by positivity))
-  · -- No-instance error bound via `card_filter_card_filter_le_of_err_lt_half` on `V = false`
+    exact hmaj a G hG
+  · -- No-instance error bound via `hmaj` on the rejecting seeds
     let G : Finset (Fin (ℓ a) → Bool) :=
       Finset.univ.filter fun u => V (a, List.ofFn u) = false
-    have hG : (1 - ε₁) * (Fintype.card (Fin (ℓ a) → Bool) : ℝ) ≤ G.card := by
+    have hG : (1 - ε₁) * (2 : ℝ) ^ ℓ a ≤ G.card := by
       have hn := hno a ha
       simp only [ErrorModel.twoSided] at hn
       have hsum : (acceptCount V a (ℓ a) : ℝ) + G.card = (2 : ℝ) ^ ℓ a := by
         exact_mod_cast acceptCount_add_card_filter_eq_false (V := V) (a := a) (n := ℓ a)
-      have hcard : (Fintype.card (Fin (ℓ a) → Bool) : ℝ) = (2 : ℝ) ^ ℓ a := by simp
-      rw [hcard]
       linarith
-    have hmom := card_filter_card_filter_le_of_err_lt_half G h0₁ h1₁ hG r
-    have hcard_Omega : (Fintype.card (Fin (ℓ a) → Bool) : ℝ) ^ (2 * r) =
-        (2 : ℝ) ^ ((2 * r) * ℓ a) := by
-      simp [pow_mul, mul_comm]
-    rw [hcard_Omega] at hmom
     have hbad_le : acceptCount V_maj a ((2 * r) * ℓ a) ≤
         (Finset.univ.filter fun ω : Fin (2 * r) → (Fin (ℓ a) → Bool) =>
           (Finset.univ.filter fun i => ω i ∈ G).card ≤ r).card := by
@@ -1408,8 +1304,7 @@ theorem SolvesWithErrorInTimeO.amplify_twoSided {Q : PromiseProblem α} {T : α 
     have hbad_leR : (acceptCount V_maj a ((2 * r) * ℓ a) : ℝ) ≤
         (Finset.univ.filter fun ω : Fin (2 * r) → (Fin (ℓ a) → Bool) =>
           (Finset.univ.filter fun i => ω i ∈ G).card ≤ r).card := by exact_mod_cast hbad_le
-    simp only [ErrorModel.twoSided]
-    exact (hbad_leR.trans hmom).trans (mul_le_mul_of_nonneg_right hr.le (by positivity))
+    exact hbad_leR.trans (hmaj a G hG)
 
 /-- **Two-sided threshold invariance.** Any two error bounds `ε₁, ε₂ ∈ (0, 1 / 2)` yield the exact
 same `SolvesWithErrorInTimeO` predicate (for `0 ≤ T a`). -/

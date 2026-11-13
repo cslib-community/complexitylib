@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Vincent Liew. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Vincent Liew
 -/
 
 module
@@ -25,6 +25,10 @@ moments used by the Invariance Principle [O'Donnell, Section 11.6][ODonnell2014]
   Gaussian is the `n`th derivative of `exp (t ^ 2 / 2)` at `0`.
 * `ProbabilityTheory.integral_sq_gaussianReal`, `ProbabilityTheory.integral_pow_three_gaussianReal`,
   `ProbabilityTheory.integral_pow_four_gaussianReal`: `E[z²] = 1`, `E[z³] = 0`, `E[z⁴] = 3`.
+* `ProbabilityTheory.HasLaw.integral_eq_zero_of_gaussianReal`,
+  `ProbabilityTheory.HasLaw.integral_sq_eq_one_of_gaussianReal`,
+  `ProbabilityTheory.HasLaw.integral_pow_three_eq_zero_of_gaussianReal`: the moments of a random
+  variable with standard Gaussian law.
 
 ## References
 
@@ -93,5 +97,24 @@ theorem integral_pow_three_gaussianReal : ∫ x, x ^ 3 ∂gaussianReal 0 1 = 0 :
 /-- The fourth moment of the standard Gaussian is `3`. -/
 theorem integral_pow_four_gaussianReal : ∫ x, x ^ 4 ∂gaussianReal 0 1 = 3 := by
   rw [integral_pow_gaussianReal_eq_iteratedDeriv, iteratedDeriv_four_exp_half_sq]; simp
+
+variable {Ω : Type*} {mΩ : MeasurableSpace Ω} {P : Measure Ω} {g : Ω → ℝ}
+
+/-- A random variable with standard Gaussian law has mean `0`. -/
+theorem HasLaw.integral_eq_zero_of_gaussianReal (hg : HasLaw g (gaussianReal 0 1) P) :
+    ∫ ω, g ω ∂P = 0 := by
+  rw [hg.integral_eq, integral_id_gaussianReal]
+
+/-- A random variable with standard Gaussian law has second moment `1`. -/
+theorem HasLaw.integral_sq_eq_one_of_gaussianReal (hg : HasLaw g (gaussianReal 0 1) P) :
+    ∫ ω, g ω ^ 2 ∂P = 1 := by
+  rw [← integral_sq_gaussianReal]
+  exact hg.integral_comp (f := fun x : ℝ => x ^ 2) (by fun_prop)
+
+/-- A random variable with standard Gaussian law has third moment `0`. -/
+theorem HasLaw.integral_pow_three_eq_zero_of_gaussianReal (hg : HasLaw g (gaussianReal 0 1) P) :
+    ∫ ω, g ω ^ 3 ∂P = 0 := by
+  rw [← integral_pow_three_gaussianReal]
+  exact hg.integral_comp (f := fun x : ℝ => x ^ 3) (by fun_prop)
 
 end ProbabilityTheory

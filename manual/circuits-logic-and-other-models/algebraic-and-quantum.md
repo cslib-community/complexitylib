@@ -416,7 +416,36 @@ lake build CslibFrontierTests.Computability.Circuit.Arithmetic.RootFormula \
   CslibFrontierTests.Computability.Circuit.Arithmetic.FormulaInterpolation
 ```
 
+**Hardness gives hitting sets.** Import [HittingSet/HardnessToHittingSet.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/HardnessToHittingSet.lean). For `[Field K] [CharZero K]`, a multilinear `f : MvPolynomial (Fin m) K` (`f.degreeOf i ≤ 1`) with `f.totalDegree ≤ d`, blocks `S : Fin n → (Fin m ↪ L)` into a finite type `L` that pairwise meet in at most `a` points, and the hardness hypothesis that every `G : SPFormula K m` with `G.polynomial = f` and `G.productDepth ≤ Δ + 2` has more than `SPFormula.rootCost (s * (2 ^ a * (a + 1) + 2)) d` nodes, `isHittingSet_generatorHittingSet_of_hard` says that `generatorHittingSet f S (s * d)` hits every polynomial in `n` variables computed by a formula of product-depth at most `Δ` with at most `s` nodes. The set is the image of the grid `{0, …, s * d} ^ L` under the Nisan–Wigderson generator `nwGenerator f S i = rename (S i) f` ([HittingSet/NWGenerator.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/NWGenerator.lean)), so `card_generatorHittingSet_le` bounds it by `(s * d + 1) ^ Fintype.card L`. The pieces: the hybrid argument `exists_root_formula_of_generator_vanishing` and the grid lemma `exists_mem_generatorHittingSet_eval_ne_zero`; `MvPolynomial.exists_aeval_sumElim_ne_zero` ([PartialEval.lean](../../CslibFrontier/Foundations/Data/MvPolynomial/PartialEval.lean)), a nonzero polynomial over an infinite domain stays nonzero after assigning constants to some variables; `Cslib.IsDesign`, `Cslib.rsDesign` and `Cslib.isDesign_rsDesign` ([Design/ReedSolomon.lean](../../CslibFrontier/Foundations/Combinatorics/Design/ReedSolomon.lean)), with `Cslib.card_polynomialBlock_inter_le`.
+
+Complete clients: [NWGenerator.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/NWGenerator.lean) (a vanishing hybrid on `x₀ - x₁`, a nonvanishing grid point, and a partial specialization) and [ReedSolomon.lean](../../CslibFrontierTests/Foundations/Combinatorics/Design/ReedSolomon.lean). Build them from the repository root with
+
+```bash
+lake build CslibFrontierTests.Computability.Circuit.Arithmetic.NWGenerator \
+  CslibFrontierTests.Foundations.Combinatorics.Design.ReedSolomon
+```
+
+The theorem is finite: it takes the hardness of one polynomial as a hypothesis. No hard family is instantiated here and nothing is said about running time.
+
 **Not certified here.** Positive characteristic (the formula divides by `m`, interpolation by node differences). Power-series roots and the general Lagrange inversion theorem for compositional inverses. Factors other than roots. Circuits (only formulas), depth as opposed to product-depth, and any algorithm or bit-cost bound; `rootCost` is not optimized.
+
+## Subexponential hitting sets for constant-depth formulas
+
+Import [HittingSet/ConstantDepth.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ConstantDepth.lean). This is a finite form of Corollary 6 of Limaye, Srinivasan and Tavenas: the library's lower bound for iterated matrix multiplication, in its formula form `SPFormula.eventually_pow_lt_nodeCount_of_imm` ([CircuitLowerBound.lean](../../CslibFrontier/Computability/Circuit/Arithmetic/CircuitLowerBound.lean)), turned into a hitting set by `isHittingSet_generatorHittingSet_of_hard` of [Roots of polynomial equations and hardness versus randomness](#roots-of-polynomial-equations-and-hardness-versus-randomness). For `[Field K] [CharZero K]`, a product-depth `Δ` and an exponent `c`:
+
+- [eventually_isHittingSet_constantDepthHittingSet_rpow](../../CslibFrontier/Computability/Circuit/Arithmetic/HittingSet/ConstantDepth.lean): for every real `ε > 0`, for all large `n`, `constantDepthHittingSet K c ⌈ε⁻¹⌉₊ n` hits `{p | ∃ C : SPFormula K n, C.polynomial = p ∧ C.productDepth ≤ Δ ∧ C.nodeCount ≤ n ^ c}` and has at most `2 ^ (n ^ ε)` points (a real inequality).
+- `eventually_isHittingSet_constantDepthHittingSet_circuit_rpow`: the same for simple circuits (`SPCircuit.IsSimple`) of product-depth at most `Δ` with at most `n ^ c` gates, with the set at exponent `(c + 2) * (2 * Δ + 1)`.
+- `eventually_isHittingSet_constantDepthHittingSet`, `eventually_card_constantDepthHittingSet_le`, `eventually_isHittingSet_constantDepthHittingSet_circuit`: the separate statements at `ε = 1 / t` for a natural number `t ≥ 1`.
+
+The set does not depend on `Δ`. It is the set of values of the Nisan–Wigderson generator of `IMM_{ν,δ}`, with `ν = 2 ^ ⌊log₂ n / 8t⌋` and `δ = ⌊log₂ ⌊log₂ ν⌋⌋`, over a Reed–Solomon design indexed by coefficient vectors, on a grid; the parameters are the definitions in the namespace `ConstantDepthHittingSet`.
+
+Complete client: [ConstantDepthHittingSet.lean](../../CslibFrontierTests/Computability/Circuit/Arithmetic/ConstantDepthHittingSet.lean) takes the formula `x₀ + x₁` in `n ≥ 2` variables (product-depth zero, three nodes) and obtains, for all large `n`, a point of the set at `c = 2` and `ε = 1 / 2` where it does not vanish, together with the bound `2 ^ √n` on the size of the set; it also instantiates the circuit form. Build it from the repository root with
+
+```bash
+lake build CslibFrontierTests.Computability.Circuit.Arithmetic.ConstantDepthHittingSet
+```
+
+**Not certified here.** Corollary 6 of the source is a deterministic identity test with running time `(s ^ (Δ + 1) n) ^ O(n ^ μ)` for circuits of depth `Δ = o(log log log n)` in characteristic zero; here there is no algorithm, running time, uniformity or bit complexity, only the existence and size of an explicit set, with thresholds "for all large `n`" that are not explicit. Constant product-depth only. Circuits that are not simple. Positive characteristic.
 
 ## Rational formulas and hitting lists
 

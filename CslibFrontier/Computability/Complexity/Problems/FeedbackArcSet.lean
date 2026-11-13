@@ -87,7 +87,7 @@ structure FeedbackArcSetInstance where
   graph : Graph
   /-- The maximum number of arcs to remove. -/
   bound : ℕ
-  deriving DecidableEq, Repr
+  deriving DecidableEq, Repr, Inhabited
 
 /-- Encoding of `FeedbackArcSetInstance` as a pair `(graph, bound)`. -/
 enc_structure encFeedbackArcSet : FeedbackArcSetInstance where

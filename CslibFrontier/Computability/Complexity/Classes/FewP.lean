@@ -8,8 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.Classes.UP
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.OutputLength
 
 /-!
 # Polynomially bounded ambiguity
@@ -100,10 +99,7 @@ theorem PolyTimeReducible.mem_FewP {β : Type} {encB : β ↪ List Bool} {B : Se
     (h : PolyTimeReducible enc encB A B) (hB : B ∈ FewP encB) : A ∈ FewP enc := by
   obtain ⟨g, hg, hAB⟩ := h
   obtain ⟨f, hf, p, hp, hB⟩ := hB
-  have hlen : ComputableInPolyTime (fun a => p.eval (encB (g a)).length) enc encUnary :=
-    (ComputableInPolyTime.unary_eval p).comp
-      ((ComputableInPolyTime.encoding_length encB).comp hg)
-  obtain ⟨q, hle⟩ := hlen.polyBounded.exists_polynomial
+  obtain ⟨q, hle⟩ := hg.exists_polynomial_eval_length_le p
   exact ⟨f ∘ g, SharpP.comp_mem hf hg, q,
     fun a => (hp (g a)).trans (hle a), fun a => (hAB a).trans (hB (g a))⟩
 

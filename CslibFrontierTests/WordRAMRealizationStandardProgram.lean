@@ -109,7 +109,7 @@ private theorem readHeader_realizes :
 reads its first header word for every adjacency-list instance, preserving all input memory. -/
 theorem graphHeader_native : ∃ r C pc : ℕ, ∃ prog : Program .exact r,
     ∃ frontier result : Fin r,
-    ∀ w (G : Cslib.Algorithms.WordRAM.Dijkstra.ListInstance),
+    ∀ w (G : Cslib.Algorithms.Dijkstra.ListInstance),
       Fits w (G.encode.length + 1) → InputFits w G.encode →
       ∃ y n, Runs w prog (State.init G.encode) ⟨pc, y⟩ n ∧
         step w prog ⟨pc, y⟩ = .halt G.n ∧
@@ -130,10 +130,10 @@ theorem graphHeader_native : ∃ r C pc : ℕ, ∃ prog : Program .exact r,
   exact ⟨y, n, hr, hh, congrArg Memory.State.mem hm,
     congrArg Memory.State.frontier hm, hout 0, hn⟩
 
-private def isolatedVertex : Cslib.Algorithms.WordRAM.Dijkstra.ListInstance :=
+private def isolatedVertex : Cslib.Algorithms.Dijkstra.ListInstance :=
   ⟨1, fun _ => [], 0⟩
 
-private def maximumEdge : Cslib.Algorithms.WordRAM.Dijkstra.ListInstance :=
+private def maximumEdge : Cslib.Algorithms.Dijkstra.ListInstance :=
   ⟨2, fun u => if u.val = 0 then [(1, 15)] else [], 0⟩
 
 -- Two different graph memories share one program; the maximum fitting edge weight survives.

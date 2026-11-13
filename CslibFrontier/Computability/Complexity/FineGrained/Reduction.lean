@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Complexity.FineGrained.Sparsification
 import CslibFrontier.Computability.Complexity.FineGrained.Bounds
+import CslibFrontier.Computability.Complexity.Problems.SAT.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bounds
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OCombinators
