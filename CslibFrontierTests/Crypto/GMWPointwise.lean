@@ -48,11 +48,11 @@ theorem adaptiveVerifier_isOraclePPTOn :
 /-- A deterministic two-round handler exposes the verifier's complete output jointly with the
 recorded challenge. Private randomness is still sampled and appears unchanged in the output. -/
 theorem runTwoRound_adaptiveVerifier (n : ℕ) (φ : CNF ℕ) (z : List Bool) (b : Bool) :
-    GMW.runTwoRound (fun _ => [b]) id (adaptiveVerifier n φ z) (0, [false, false, false]) =
+    GMW.runTwoRound (fun _ => [b]) id (adaptiveVerifier n φ z) .init =
       (fun coins =>
         let ch := List.take 3 ([b] ++ coins ++ [false, false, false])
         let row := BitString.listRow 3 0 ch
-        (coins ++ [b] ++ ch ++ List.take 2 row ++ z, (2, row))) <$>
+        (coins ++ [b] ++ ch ++ List.take 2 row ++ z, ⟨2, row⟩)) <$>
           BitString.sampleList 1 := by
   simp [adaptiveVerifier, GMW.runTwoRound_bind, GMW.runTwoRound_map, GMW.twoRoundStep]
 
