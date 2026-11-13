@@ -66,14 +66,20 @@ def bitOffset [Zero L] (Δ : L) (b : Bool) : L := if b then Δ else 0
 
 @[simp] theorem bitOffset_false [Zero L] (Δ : L) : bitOffset Δ false = 0 := rfl
 
-/-- In characteristic two, the offset selected by a sum of bits is the sum of the offsets. -/
-theorem bitOffset_add [AddCommGroup L] [Module (ZMod 2) L] (Δ : L) (a b : Bool) :
+/-- For an element `Δ` of order at most two, the offset selected by a sum of bits is the sum of
+the offsets. -/
+theorem bitOffset_add_of_add_self [AddCommMonoid L] {Δ : L} (hΔ : Δ + Δ = 0) (a b : Bool) :
     bitOffset Δ (a + b) = bitOffset Δ a + bitOffset Δ b := by
   cases a <;> cases b
   · exact (add_zero _).symm
   · exact (zero_add _).symm
   · exact (add_zero _).symm
-  · exact (ZModModule.add_self Δ).symm
+  · exact hΔ.symm
+
+/-- In characteristic two, the offset selected by a sum of bits is the sum of the offsets. -/
+theorem bitOffset_add [AddCommGroup L] [Module (ZMod 2) L] (Δ : L) (a b : Bool) :
+    bitOffset Δ (a + b) = bitOffset Δ a + bitOffset Δ b :=
+  bitOffset_add_of_add_self (ZModModule.add_self Δ) a b
 
 /-- In characteristic two, `bitOffset Δ` is an additive map from `Bool` with `+ = xor`. -/
 def bitOffsetHom [AddCommGroup L] [Module (ZMod 2) L] (Δ : L) : Bool →+ L where

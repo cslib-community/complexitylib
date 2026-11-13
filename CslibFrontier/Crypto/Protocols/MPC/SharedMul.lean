@@ -1027,8 +1027,8 @@ private theorem uniform_bind_tildeR {m : ℕ} [NeZero m] {α : Type} (ℓ : Fin 
         F (r₁ + deltaErase ℓ u)) := by
     intro r₁
     conv_rhs =>
-      rw [← PMF.uniformOfFintype_map_equiv
-        (Equiv.addRight ((Finset.univ.erase ℓ).restrict (realOut x r₁))), PMF.map_comp]
+      rw [← PMF.uniformOfFintype_map_add_right ((Finset.univ.erase ℓ).restrict (realOut x r₁)),
+        PMF.map_comp]
     rfl
   simp_rw [hshift1]
   have hswap2 :
@@ -1047,7 +1047,7 @@ private theorem uniform_bind_tildeR {m : ℕ} [NeZero m] {α : Type} (ℓ : Fin 
       (PMF.uniformOfFintype (OrderedPair m → Bool)).map F := by
     intro u
     conv_rhs =>
-      rw [← PMF.uniformOfFintype_map_equiv (Equiv.addRight (deltaErase ℓ u)), PMF.map_comp]
+      rw [← PMF.uniformOfFintype_map_add_right (deltaErase ℓ u), PMF.map_comp]
     rfl
   simp_rw [hshift2, PMF.bind_const]
 
@@ -1087,7 +1087,7 @@ theorem perfectSemiHonestPrivate_multiPartyMul (m : ℕ) [NeZero m] :
   have hsum : ∑ i : Fin m, y i = (∑ i : Fin m, (x i).1) * (∑ i : Fin m, (x i).2) :=
     ProbComp.sum_sampleAdditiveShares _ hy
   conv_rhs =>
-    rw [← PMF.uniformOfFintype_map_equiv (Equiv.addRight (sigmaShift I x)), PMF.map_comp]
+    rw [← PMF.uniformOfFintype_map_add_right (sigmaShift I x), PMF.map_comp]
   refine congrArg (PMF.map · (PMF.uniformOfFintype (OrderedPair m → Bool))) (funext fun r => ?_)
   dsimp [F, Function.comp]
   refine Prod.ext (funext fun i => ?_) ?_

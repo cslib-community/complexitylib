@@ -419,9 +419,8 @@ universe u v z
 /-- Load operation arguments `encode o` into input registers (`input i = true`), preserving
 persistent registers (`input i = false`) and all of `x.mem`. -/
 @[expose] def prepareFlatRegs {Op : Type*} {r : ℕ} (input : Fin r → Bool)
-    (encode : Op → Fin r → ℕ) (o : Op) (x : Data r) : Data r where
-  regs i := if input i then encode o i else x.regs i
-  mem := x.mem
+    (encode : Op → Fin r → ℕ) (o : Op) (x : Data r) : Data r :=
+  Data.prepare input (encode o) x
 
 theorem unpack_pack_eq_prepareFlatRegs {Op : Type*} {r S regCells w wCell base : ℕ}
     {input : Fin r → Bool} (L : RegLayout r input base S w regCells wCell)
@@ -433,6 +432,7 @@ theorem unpack_pack_eq_prepareFlatRegs {Op : Type*} {r S regCells w wCell base :
   · exact L.unpack_pack_regs (encode o) hx_bdd i
   · rw [L.unpack_pack_mem (encode o) hx_bdd i]
     dsimp only [prepareFlatRegs, zeroOutside]
+    rw [Data.prepare_mem]
     split_ifs with ha
     · rfl
     · symm
@@ -1052,7 +1052,7 @@ theorem ExecStepsOfFn.toExecFlatProgramOps
       exact PMF.map_id (μ_step p)
     refine .cons (μ_step := μ_flat) (T_step := T_step) (fun p hp => ?_) (hbind_eq.symm ▸ ih hv_rem)
     obtain ⟨hcdist, hq_all⟩ := hstep p hp
-    have hprep_eq : C.toDynamicProgram.prepare o p.2 = prepareFlatRegs P.input C.encode o p.2 :=
+    have hprep_eq : C.prepare o p.2 = prepareFlatRegs P.input C.encode o p.2 :=
       rfl
     have hpdist := execProgramDist_of_execCodeDist (hprep_eq ▸ hcdist) P.output
     have hmap_snd :
@@ -1438,7 +1438,7 @@ inductive ExecStepsRand {B : Basis} {r_ds k_init : ℕ}
       (∀ t ∈ ν.support,
         t.data.Bounded w ∧
         (∀ i, P.input i = true → Fits w (encode o i)) ∧
-        ExecRand w P.code ((P.toDynamicProgram encode decode).prepare o t.data) (mc t) ∧
+        ExecRand w P.code (P.prepare encode o t.data) (mc t) ∧
         (mc t).eval.map Prod.fst = (μ_step t).map StepOutcome.data ∧
         ∀ q ∈ (μ_step t).support,
           q.data.Bounded w ∧
@@ -1465,13 +1465,9 @@ theorem ExecStepsRand.toExecSteps {B : Basis} {r_ds k_init : ℕ}
   | @cons o ops ν ν_final mc μ_step T_rest hstep _ ih =>
     refine .cons (fun t ht => ?_) ih
     obtain ⟨hbdd, harg, hexr, hmap, hq⟩ := hstep t ht
-    have hprep_bdd : ((P.toDynamicProgram encode decode).prepare o t.data).Bounded w :=
-      ⟨fun i => by
-        dsimp only [SubroutineCode.toDynamicProgram, DynamicProgram.prepare]
-        split_ifs with hi
-        · exact harg i hi
-        · exact hbdd.1 i, hbdd.2⟩
-    have hdist : ExecCodeDist w P.code ((P.toDynamicProgram encode decode).prepare o t.data)
+    have hprep_bdd : (P.prepare encode o t.data).Bounded w :=
+      P.prepare_bounded encode hbdd harg
+    have hdist : ExecCodeDist w P.code (P.prepare encode o t.data)
         ((μ_step t).map StepOutcome.data) (ProbComp.expect (mc t) fun z => (z.2 : ℝ≥0∞)) := by
       have hc := ExecCodeDist.of_execRand hexr
       rwa [ProbComp.eval_map, hmap] at hc
@@ -1536,7 +1532,7 @@ private theorem simExecStepsRand_induction {B : Basis} {r_ds k_init regCells wCe
       obtain ⟨ht_bdd, ht_out⟩ := hsupp t ht
       obtain ⟨_, harg, hexec_t, hmc_eq, hq_all⟩ := hstep t ht
       have hunp : L.unpack (encode o) (L.pack t.data) =
-          (P.toDynamicProgram encode decode).prepare o t.data :=
+          P.prepare encode o t.data :=
         unpack_pack_eq_prepareFlatRegs L encode o ht_bdd ht_out
       rw [← hunp] at hexec_t
       obtain ⟨hlaw_sim, hexp_sim⟩ :=
@@ -1765,7 +1761,7 @@ private theorem simExecStepsLasVegas_induction
       obtain ⟨ht_bdd, ht_out⟩ := hsupp t ht
       obtain ⟨_, harg, _, hcdist, hq_all⟩ := hstep t ht
       have hunp : L.unpack (encode o) (L.pack t.data) =
-          (P.toDynamicProgram encode decode).prepare o t.data :=
+          P.prepare encode o t.data :=
         unpack_pack_eq_prepareFlatRegs L encode o ht_bdd ht_out
       rw [← hunp] at hcdist
       have hpdist := execProgramDist_of_execCodeDist hcdist P.output
@@ -1797,7 +1793,7 @@ private theorem simExecStepsLasVegas_induction
       obtain ⟨_, harg, _, hcdist, _⟩ := hstep t ht
       have hTt_fin : T_step t ≠ ⊤ := ne_top_of_mem_support_of_tsum_ne_top hsum_fin ht
       have hunp : L.unpack (encode o) (L.pack t.data) =
-          (P.toDynamicProgram encode decode).prepare o t.data :=
+          P.prepare encode o t.data :=
         unpack_pack_eq_prepareFlatRegs L encode o ht_bdd ht_out
       rw [← hunp] at hcdist
       have hpdist := execProgramDist_of_execCodeDist hcdist P.output

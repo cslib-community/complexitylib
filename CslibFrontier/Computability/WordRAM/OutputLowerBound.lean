@@ -70,7 +70,7 @@ reuse the input-length header. The output-length header may require an additiona
 theorem ExecutesList.replicate_lowerBound {w m k n v : ℕ} {p : Program B r}
     (h : ExecutesList w p (.init (List.replicate m 0)) (List.replicate k v) n)
     (hv : v ≠ 0) : k + 1 ≤ n := by
-  obtain ⟨t, steps, base, hr, _, hout, rfl⟩ := h
+  obtain ⟨t, steps, base, hr, _, hout, _, rfl⟩ := h
   have hl := (outputList_eq_iff.mp hout).2
   have hb : k ≤ steps := hr.block_lowerBound ⟨base + 1, k⟩ (by
     intro i

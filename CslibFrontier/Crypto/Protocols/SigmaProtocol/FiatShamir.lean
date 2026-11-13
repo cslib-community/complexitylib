@@ -7,17 +7,16 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import CslibFrontier.Crypto.Protocols.SigmaProtocol.ForkingReduction
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Identification
 public import CslibFrontier.Crypto.Protocols.Signature.RandomOracle
 public import CslibFrontier.Languages.Probabilistic.Forking
-import CslibFrontier.Foundations.Data.List.Lookup
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.BindFailure
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Union
 import CslibFrontier.Languages.Probabilistic.Presample
-import CslibFrontier.Languages.Probabilistic.Simulation
 import CslibFrontier.Languages.Probabilistic.UntilBad
 import CslibFrontier.Languages.Probabilistic.RandomOracle
 import CslibFrontier.Languages.Probabilistic.RandomOracle.Programming
@@ -61,8 +60,10 @@ The proof follows [BonehShoup2023], Theorems 19.7 and 19.16, with the general fo
    (`OracleComp.IsQueryBounded.run_interpret_presample`).
 4. The result is a program over the hash oracle alone, with explicit coins
    (`FiatShamir.forkingProgram`), that names the hash query of the forgery whenever the forger
-   wins. The forking lemma (`OracleComp.le_add_sqrt_fork`) and special soundness turn it into
-   the one-way adversary `FiatShamir.reduction`.
+   wins. It is the shared forking reduction `ForkingReduction.program` for the signer
+   `FiatShamir.signer` and the final check `FiatShamir.check`. The forking lemma
+   (`ForkingReduction.toReal_le_add_sqrt_fork_of_le`) and special soundness turn it into the
+   one-way adversary `FiatShamir.reduction`.
 
 These are exact probability laws for one Sigma protocol, key generator and forger; there is no
 efficiency claim. The forger has explicit coins, so the reduction can rerun it.
@@ -70,6 +71,9 @@ efficiency claim. The forger has explicit coins, so the reduction can rerun it.
 ## Main definitions
 
 * `Cslib.Crypto.Protocols.SigmaProtocol.fiatShamir`: the Fiat–Shamir signature scheme.
+* `Cslib.Crypto.Protocols.SigmaProtocol.FiatShamir.signer`,
+  `Cslib.Crypto.Protocols.SigmaProtocol.FiatShamir.check`: signing from simulated transcripts and
+  the final verification, as inputs to the shared forking reduction.
 * `Cslib.Crypto.Protocols.SigmaProtocol.FiatShamir.forkingProgram`: the forger with simulated
   signing, as a program over the hash oracle.
 * `Cslib.Crypto.Protocols.SigmaProtocol.FiatShamir.reduction`: the one-way adversary.
@@ -138,73 +142,30 @@ theorem fiatShamir_correct {P : SigmaProtocol X Y T C Z} {keyGen : PMF (X × Y)}
 
 namespace FiatShamir
 
-/-- The state of the reduction while it runs the forger: the oracle table, each point with its
-challenge and, when the reduction asked its own oracle for the point, the position of that query;
-the messages signed so far; the number of queries asked so far; and the simulated transcripts not
-used yet. -/
-structure ReductionState (M T C Z Query : Type) where
-  /-- The oracle table. -/
-  table : List (Query × C × Option ℕ)
-  /-- The messages signed so far. -/
-  signed : List M
-  /-- The number of queries asked so far. -/
-  count : ℕ
-  /-- The simulated transcripts not used yet. -/
-  transcripts : List (T × C × Z)
+/-- The final check on a forgery `(m, (t, z))` against the statement `y`: its point is
+`hashPoint (m, t)`, and it wins when `(t, c, z)` is accepting and `m` was never signed. -/
+def check (P : SigmaProtocol X Y T C Z) (y : Y) : ForkingReduction.Check M T C Z Query M where
+  point m t := hashPoint (m, t)
+  accepts _ t c z := P.verify y t c z
+  fresh m _ signed := !signed.contains m
 
 variable [Nonempty T] [Nonempty Z]
 
-/-- Answer the forger's calls without the witness, consuming one simulated transcript `(t, c, z)`
-per call. A signing call on `m` returns `(t, z)` and programs the table at `hashPoint (m, t)`
-with `c`. A
-hash call returns the table's challenge, or asks the reduction's own oracle and records the
-answer with the position of the query. Out-of-image queries follow this same hash branch. -/
-noncomputable def reductionHandler :
-    (q : M ⊕ Query) → StateT (ReductionState M T C Z Query) (OracleComp (fun _ : Query => C))
-      (ForgerSpec M Query (T × Z) C q)
-  | .inl m => fun st =>
-    let (t, c, z) := st.transcripts.headD (Classical.arbitrary _)
-    pure ((t, z),
-      ⟨(hashPoint (m, t), c, none) :: st.table, m :: st.signed, st.count, st.transcripts.tail⟩)
-  | .inr x => fun st =>
-    match st.table.lookup x with
-    | some entry => pure (entry.1, ⟨st.table, st.signed, st.count, st.transcripts.tail⟩)
-    | none => (fun c => (c, ⟨(x, c, some st.count) :: st.table, st.signed, st.count + 1,
-        st.transcripts.tail⟩)) <$> OracleComp.query x
-
-/-- The verdict on a forgery `(m, (t, z))` whose point `hashPoint (m, t)` has challenge `c`:
-the forgery wins
-when `(t, c, z)` is accepting and `m` was never signed, and then the reduction names `position`,
-the position of the query for `hashPoint (m, t)`. The verdict records the original pair,
-challenge and
-response. -/
-def verdict (P : SigmaProtocol X Y T C Z) (y : Y)
-    (forged : (M × (T × Z)) × ReductionState M T C Z Query)
-    (c : C) (position : Option ℕ) : Option ℕ × Bool × (M × T) × C × Z :=
-  let ((m, t, z), state) := forged
-  (if P.verify y t c z && !state.signed.contains m then position
-    else none, P.verify y t c z && !state.signed.contains m,
-    (m, t), c, z)
-
-/-- Check a forgery, querying its point when the table lacks it. -/
-noncomputable def finish (P : SigmaProtocol X Y T C Z) (y : Y)
-    (forged : (M × (T × Z)) × ReductionState M T C Z Query) :
-    OracleComp (fun _ : Query => C) (Option ℕ × Bool × (M × T) × C × Z) :=
-  let ((m, t, _), state) := forged
-  match state.table.lookup (hashPoint (m, t)) with
-  | some entry => pure (verdict P y forged entry.1 entry.2)
-  | none => (fun c => verdict P y forged c (some state.count)) <$>
-      OracleComp.query (hashPoint (m, t))
+/-- Signing without the witness, from one simulated transcript `(t, c, z)` per call: a signing
+call on `m` returns `(t, z)`, programs the oracle at `hashPoint (m, t)` with `c` and logs `m`. -/
+noncomputable def signer :
+    ForkingReduction.Signer M (T × Z) Query C M (T × C × Z) where
+  fallback := Classical.arbitrary _
+  step := fun (t, c, z) m => ((t, z), some (hashPoint (m, t), c, m))
 
 /-- The forger, with simulated signing, as a program over the hash oracle with explicit coins: the
 statement, the forger's coins and the simulated transcripts. It names the query of the forgery's
 point when the forger wins. -/
 noncomputable def forkingProgram (P : SigmaProtocol X Y T C Z)
     (A : Forger Y M (T × Z) Query C) (s : Y × A.Coins × List (T × C × Z)) :
-    OracleComp (fun _ : Query => C) (Option ℕ × Bool × (M × T) × C × Z) :=
+    OracleComp (fun _ : Query => C) (Option ℕ × ForkingReduction.Outcome M T C Z) :=
   let (y, coins, transcripts) := s
-  (interpret (reductionHandler hashPoint) (A.forge y coins)).run ⟨[], [], 0, transcripts⟩ >>=
-    finish hashPoint P y
+  ForkingReduction.program (signer hashPoint) (check hashPoint P y) (A.forge y coins) transcripts
 
 /-- The coins of the forking program for the statement `y`: the forger's coins and `Q` simulated
 transcripts. -/
@@ -228,10 +189,9 @@ noncomputable def reduction (P : SigmaProtocol X Y T C Z)
       result =>
       match result with
       | none => fallback
-      | some (_, out, out') =>
-        let (_, _, (_, t), c, z) := out.1
-        let (_, _, _, c', z') := out'.1
-        extract y t c z c' z'
+      | some (_, ((_, outcome), _), ((_, outcome'), _)) =>
+        extract y outcome.commitment outcome.challenge outcome.response outcome'.challenge
+          outcome'.response
 
 end FiatShamir
 
@@ -240,26 +200,20 @@ end FiatShamir
 /-- The oracle table and the signed messages. -/
 private abbrev GameState (M Query C : Type) := List (Query × C) × List M
 
-/-- The experiment's final step: check the forgery against the oracle. -/
-private noncomputable def finishGame (P : SigmaProtocol X Y T C Z) (y : Y)
-    (forged : (M × (T × Z)) × GameState M Query C) : PMF Bool :=
-  (oracle C (hashPoint (forged.1.1, forged.1.2.1)) forged.2.1).map fun r =>
-    P.verify y forged.1.2.1 r.1 forged.1.2.2 && !forged.2.2.contains forged.1.1
-
 /-- The EUF-CMA experiment for Fiat–Shamir signatures, with the final verification unfolded. -/
 private theorem eufCmaGame_fiatShamir (P : SigmaProtocol X Y T C Z) (keyGen : PMF (X × Y))
     (A : Forger Y M (T × Z) Query C) :
     eufCmaGame (fiatShamir hashPoint P keyGen) A = keyGen.bind fun key => A.coins.bind fun s =>
       ((interpret (handler (fiatShamir hashPoint P keyGen) key) (A.forge key.2 s)).run ([],
         [])).bind
-        (finishGame hashPoint P key.2) := by
+        (ForkingReduction.finishGame (FiatShamir.check hashPoint P key.2)) := by
   simp only [eufCmaGame, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure]
   rw [show (fiatShamir hashPoint P keyGen).keyGen = keyGen.map fun key => (key.2, key) from rfl,
     PMF.bind_map]
   refine congrArg keyGen.bind (funext fun key => congrArg A.coins.bind (funext fun s => ?_))
   refine congrArg (PMF.bind _) (funext fun forged => ?_)
-  simp only [fiatShamir, finishGame, interpret_map, interpret_query, StateT.run_map,
-    PMF.monad_map_eq_map, PMF.bind_map]
+  simp only [fiatShamir, ForkingReduction.finishGame, FiatShamir.check, interpret_map,
+    interpret_query, StateT.run_map, PMF.monad_map_eq_map, PMF.bind_map]
   rfl
 
 /-- The real signer, with a flag raised when its commitment hits a point of the table. -/
@@ -278,13 +232,6 @@ private noncomputable def programHandler (P : SigmaProtocol X Y T C Z) (key : X 
     (PMF.uniformOfFintype C) (fun _ : M => true) (fun _ h _ => Bool.noConfusion h)
     (fun _ => P.commit key.1 key.2) (fun m ts => hashPoint (m, ts.1))
     (fun m ts c signed => ((ts.1, P.respond key.1 key.2 ts.2 c), m :: signed))
-
-/-- The signer from a simulated transcript `(t, c, z)`: it returns `(t, z)` and sets the oracle at
-`hashPoint (m, t)` to `c`. -/
-private noncomputable def simulatedHandler (v : T × C × Z) :
-    (q : M ⊕ Query) → StateT (GameState M Query C) PMF (ForgerSpec M Query (T × Z) C q)
-  | .inl m => fun st => PMF.pure ((v.1, v.2.2), (((hashPoint (m, v.1), v.2.1) :: st.1), m :: st.2))
-  | .inr x => fun st => (oracle C x st.1).map fun r => (r.1, (r.2, st.2))
 
 omit [DecidableEq M] in
 private theorem realHandler_eq_flaggedLazyProgramHandler (P : SigmaProtocol X Y T C Z)
@@ -401,358 +348,86 @@ private theorem toOuterMeasure_flag_le (P : SigmaProtocol X Y T C Z) (key : X ×
           rw [Nat.cast_add, Nat.cast_one, add_mul, one_mul]
 
 omit [DecidableEq M] in
-/-- Under special HVZK, the unflagged overwrite signer equals the simulator's signer. -/
-private theorem overwriteProgramHandler_eq_simulatedHandler {P : SigmaProtocol X Y T C Z}
-    {R : X → Y → Prop} {simulate : Y → C → PMF (T × Z)} (hzk : P.SpecialHVZK R simulate)
-    {key : X × Y} (hkey : R key.1 key.2) :
+/-- Under special HVZK, the unflagged overwrite signer equals the game signer of
+`FiatShamir.signer` on a simulated transcript. -/
+private theorem overwriteProgramHandler_eq_gameHandler [Nonempty T] [Nonempty Z]
+    {P : SigmaProtocol X Y T C Z} {R : X → Y → Prop} {simulate : Y → C → PMF (T × Z)}
+    (hzk : P.SpecialHVZK R simulate) {key : X × Y} (hkey : R key.1 key.2) :
     RandomOracle.overwriteProgramHandler (Reply := fun _ : M => T × Z)
         (PMF.uniformOfFintype C) (fun _ : M => true) (fun _ h _ => Bool.noConfusion h)
         (fun _ => P.commit key.1 key.2) (fun m ts => hashPoint (m, ts.1))
         (fun m ts c signed => ((ts.1, P.respond key.1 key.2 ts.2 c), m :: signed)) =
       fun q st => (simulateConversation simulate key.2).bind fun v =>
-        simulatedHandler hashPoint v q st := by
+        ForkingReduction.gameHandler (FiatShamir.signer hashPoint) v q st := by
   funext q ⟨cache, signed⟩
   cases q with
   | inl m =>
-    simp only [pmf_norm, RandomOracle.overwriteProgramHandler, ↓reduceDIte, simulatedHandler,
+    simp only [pmf_norm, RandomOracle.overwriteProgramHandler, ↓reduceDIte,
+      ForkingReduction.gameHandler, FiatShamir.signer, ForkingReduction.recordGame,
       simulateConversation, hzk.transcript_eq key.1 key.2 hkey, SigmaProtocol.transcript]
     rw [PMF.bind_comm]
   | inr x =>
-    simp only [RandomOracle.overwriteProgramHandler, simulatedHandler, PMF.bind_const, oracle]
+    simp only [RandomOracle.overwriteProgramHandler, ForkingReduction.gameHandler, PMF.bind_const,
+      oracle]
 
 /-! ### The reduction simulates the game -/
 
 namespace FiatShamir
 
-/-- The game's view of the reduction's state: the table without positions, the signed messages,
-and the unused transcripts. -/
-private def represent (st : ReductionState M T C Z Query) : GameState M Query C × List (T × C × Z)
-  :=
-  ((st.table.map fun e => (e.1, e.2.1), st.signed), st.transcripts)
+omit [DecidableEq Query] [Fintype C] in
+/-- A forgery at a point programmed by a signing call on `m` is a forgery on `m`, which is then
+signed, so it does not win. -/
+theorem rejectsProgrammed [Nonempty T] [Nonempty Z] (P : SigmaProtocol X Y T C Z) (y : Y) :
+    ForkingReduction.RejectsProgrammed (signer (Z := Z) hashPoint) (check hashPoint P y) := by
+  intro s q x c l hr m t log hpt hl
+  simp only [signer, Option.some.injEq, Prod.mk.injEq] at hr
+  obtain ⟨rfl, -, rfl⟩ := hr
+  simp only [check, EmbeddingLike.apply_eq_iff_eq, Prod.mk.injEq] at hpt ⊢
+  obtain ⟨rfl, -⟩ := hpt
+  simp [hl]
 
 variable [Nonempty T] [Nonempty Z]
 
-omit [Fintype C] in
-omit [DecidableEq M] in
-/-- A signing call of the reduction's handler. -/
-private theorem run_reductionHandler_inl (m : M) (st : ReductionState M T C Z Query) :
-    ((reductionHandler hashPoint) (.inl m)).run st =
-      pure (((st.transcripts.headD (Classical.arbitrary _)).1,
-          (st.transcripts.headD (Classical.arbitrary _)).2.2),
-        ⟨(hashPoint (m, (st.transcripts.headD (Classical.arbitrary _)).1),
-          (st.transcripts.headD (Classical.arbitrary _)).2.1, none) :: st.table, m :: st.signed,
-          st.count, st.transcripts.tail⟩) := rfl
-
-omit [Fintype C] in
-omit [DecidableEq M] in
-/-- A hash call of the reduction's handler on a point of the table. -/
-private theorem run_reductionHandler_inr_some {x : Query} {st : ReductionState M T C Z Query}
-    {e : C × Option ℕ} (h : st.table.lookup x = some e) :
-    ((reductionHandler hashPoint) (.inr x)).run st =
-      pure (e.1, ⟨st.table, st.signed, st.count, st.transcripts.tail⟩) := by
-  simp only [reductionHandler, StateT.run, h]
-
-omit [Fintype C] in
-omit [DecidableEq M] in
-/-- A hash call of the reduction's handler on a new point. -/
-private theorem run_reductionHandler_inr_none {x : Query} {st : ReductionState M T C Z Query}
-    (h : st.table.lookup x = none) :
-    ((reductionHandler hashPoint) (.inr x)).run st =
-      (fun c => (c, ⟨(x, c, some st.count) :: st.table, st.signed, st.count + 1,
-        st.transcripts.tail⟩)) <$> OracleComp.query x := by
-  simp only [reductionHandler, StateT.run, h]
-
-omit [DecidableEq M] [Nonempty T] in
-omit [DecidableEq Query] in
-/-- A returned value, with the oracle answered uniformly and counted, makes no call. -/
-private theorem run_interpret_countingUniform_pure {β : Type} (b : β) (n : ℕ) :
-    (interpret countingUniform (pure b : OracleComp (fun _ : Query => C) β)).run n =
-      PMF.pure (b, n) := rfl
-
-omit [DecidableEq M] [Nonempty T] in
-omit [DecidableEq Query] in
-/-- A counted uniform answer. -/
-private theorem run_countingUniform (x : Query) (n : ℕ) :
-    (countingUniform (H := C) x).run n = (PMF.uniformOfFintype C).map (·, n + 1) := rfl
-
-omit [DecidableEq M] in
-/-- One call of the reduction's handler, with its oracle answered uniformly and counted, is a call
-of the simulator's signer in the game's view. -/
-private theorem combined_step (q : M ⊕ Query) (s : ReductionState M T C Z Query × ℕ) :
-    ((fun result => (result.1.1, result.1.2, result.2)) <$>
-      (interpret countingUniform (((reductionHandler hashPoint) q).run s.1)).run s.2).map
-        (fun x => (x.1, represent x.2.1)) =
-      withSampleList (Classical.arbitrary _) (simulatedHandler hashPoint) q (represent s.1) := by
-  cases q with
-  | inl m =>
-    rw [(run_reductionHandler_inl hashPoint), run_interpret_countingUniform_pure]
-    simp only [PMF.monad_map_eq_map, PMF.pure_map, withSampleList, simulatedHandler, represent]
-    rfl
-  | inr x =>
-    cases h : s.1.table.lookup x with
-    | some e =>
-      have hcache : (represent s.1).1.1.lookup x = some e.1 := by
-        rw [represent, List.lookup_map_snd, h]
-        rfl
-      rw [(run_reductionHandler_inr_some hashPoint) h]
-      simp only [run_interpret_countingUniform_pure, PMF.monad_map_eq_map, PMF.pure_map,
-        withSampleList, simulatedHandler]
-      rw [oracle, memoize_of_some _ _ _ _ hcache]
-      simp only [PMF.monad_pure_eq_pure, PMF.pure_map]
-      rfl
-    | none =>
-      have hcache : (represent s.1).1.1.lookup x = none := by
-        rw [represent, List.lookup_map_snd, h]
-        rfl
-      rw [(run_reductionHandler_inr_none hashPoint) h]
-      simp only [interpret_map, interpret_query, StateT.run_map, PMF.monad_map_eq_map,
-        withSampleList, simulatedHandler]
-      rw [oracle, memoize_of_none _ _ _ hcache]
-      simp only [run_countingUniform, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-        ← PMF.bind_pure_comp, PMF.bind_bind, PMF.pure_bind, Function.comp_apply]
-      rfl
-
-omit [Nonempty T] [Nonempty Z] in
-/-- The reduction's final check, with its oracle answered uniformly, wins exactly when the game's
-final check does. -/
-private theorem map_run_finish (P : SigmaProtocol X Y T C Z) (y : Y) (a : M × (T × Z))
-    (st : ReductionState M T C Z Query) (n : ℕ) :
-    ((interpret countingUniform (finish hashPoint P y (a, st))).run n).map (fun run => run.1.2.1) =
-      finishGame hashPoint P y (a, (represent st).1) := by
-  cases h : st.table.lookup (hashPoint (a.1, a.2.1)) with
-  | some e =>
-    have hcache : (represent st).1.1.lookup (hashPoint (a.1, a.2.1)) = some e.1 := by
-      rw [represent, List.lookup_map_snd, h]
-      rfl
-    simp only [finish, h, run_interpret_countingUniform_pure, PMF.pure_map, finishGame]
-    rw [oracle, memoize_of_some _ _ _ _ hcache]
-    simp only [PMF.monad_pure_eq_pure, PMF.pure_map]
-    rfl
-  | none =>
-    have hcache : (represent st).1.1.lookup (hashPoint (a.1, a.2.1)) = none := by
-      rw [represent, List.lookup_map_snd, h]
-      rfl
-    simp only [finish, h, interpret_map, interpret_query, StateT.run_map, PMF.monad_map_eq_map,
-      finishGame]
-    rw [oracle, memoize_of_none _ _ _ hcache]
-    simp only [run_countingUniform, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-      ← PMF.bind_pure_comp, PMF.bind_bind, PMF.pure_bind, Function.comp_apply]
-    rfl
-
-/-- **The reduction simulates the game.** With its oracle answered uniformly, the forking program
-wins exactly when the forger wins against the simulator's signer with the same transcripts. -/
-private theorem map_run_forkingProgram (P : SigmaProtocol X Y T C Z)
-    (A : Forger Y M (T × Z) Query C) (s : Y × A.Coins × List (T × C × Z)) :
-    ((interpret countingUniform (forkingProgram hashPoint P A s)).run 0).map (fun run =>
-      run.1.2.1) =
-      ((interpret (withSampleList (Classical.arbitrary _) (simulatedHandler hashPoint))
-        (A.forge s.1 s.2.1)).run (([], []), s.2.2)).bind fun x =>
-          finishGame hashPoint P s.1 (x.1, x.2.1) := by
-  have hsim := run_interpret_map_state _
-    (withSampleList (Classical.arbitrary _) (simulatedHandler hashPoint)) (fun s => represent s.1)
-    (combined_step hashPoint) (A.forge s.1 s.2.1) (⟨[], [], 0, s.2.2⟩, 0)
-  rw [show represent (⟨[], [], 0, s.2.2⟩ : ReductionState M T C Z Query) = (([], []), s.2.2) from
-    rfl]
-    at hsim
-  rw [forkingProgram, interpret_bind, StateT.run_bind, run_interpret_run_interpret, ← hsim]
-  simp only [pmf_norm]
-  exact congrArg (PMF.bind _) (funext fun r => map_run_finish hashPoint P s.1 r.1 r.2.1 r.2.2)
-
-/-! ### The reduction's runs on fixed answers -/
-
-omit [Fintype C] [Nonempty C] [Nonempty T] [Nonempty Z] in
-/-- The final check on a forgery whose point is in the table. -/
-private theorem finish_of_some {P : SigmaProtocol X Y T C Z} {y : Y}
-    {forged : (M × (T × Z)) × ReductionState M T C Z Query} {e : C × Option ℕ}
-    (h : forged.2.table.lookup (hashPoint (forged.1.1, forged.1.2.1)) = some e) :
-    finish hashPoint P y forged = pure (verdict P y forged e.1 e.2) := by
-  simp only [finish, h]
-
-omit [Fintype C] [Nonempty C] [Nonempty T] [Nonempty Z] in
-/-- The final check on a forgery whose point is not in the table. -/
-private theorem finish_of_none {P : SigmaProtocol X Y T C Z} {y : Y}
-    {forged : (M × (T × Z)) × ReductionState M T C Z Query}
-    (h : forged.2.table.lookup (hashPoint (forged.1.1, forged.1.2.1)) = none) :
-    finish hashPoint P y forged = (fun c => verdict P y forged c (some forged.2.count)) <$>
-      OracleComp.query (hashPoint (forged.1.1, forged.1.2.1)) := by
-  simp only [finish, h]
-
-/-- The invariant of the reduction's run on a list of answers, given the queries asked so far: the
-count is their number; an entry with a position records the query at that position and its
-answer; an entry without one is for a signed message. -/
-private def Consistent (answers : List C) (st : ReductionState M T C Z Query)
-    (queries : List Query) : Prop :=
-  st.count = queries.length ∧
-    (∀ x c i, (x, c, some i) ∈ st.table →
-      queries[i]? = some x ∧ answers.getD i (Classical.arbitrary C) = c) ∧
-    ∀ x c, (x, c, none) ∈ st.table →
-      ∃ m t, x = hashPoint (m, t) ∧ m ∈ st.signed
-
-omit [Fintype C] in
-omit [DecidableEq M] in
-/-- Every call of the reduction's handler preserves the invariant. -/
-private theorem consistent_step (answers : List C) (q : M ⊕ Query)
-    (st : ReductionState M T C Z Query) (queries : List Query)
-    (h : Consistent hashPoint answers st queries) :
-    Consistent hashPoint answers (runWithAnswers (Classical.arbitrary C) (((reductionHandler
-      hashPoint) q).run st)
-        (answers.drop queries.length)).1.2
-      (queries ++ (runWithAnswers (Classical.arbitrary C) (((reductionHandler hashPoint) q).run st)
-        (answers.drop queries.length)).2) := by
-  obtain ⟨hcount, hpos, hsigned⟩ := h
-  cases q with
-  | inl m =>
-    rw [(run_reductionHandler_inl hashPoint), runWithAnswers_pure, List.append_nil]
-    refine ⟨hcount, fun x c i hx => ?_, fun x c hx => ?_⟩
-    · simp only [List.mem_cons, Prod.mk.injEq, reduceCtorEq, and_false, false_or] at hx
-      exact hpos x c i hx
-    · simp only [List.mem_cons, Prod.mk.injEq] at hx
-      rcases hx with ⟨rfl, -, -⟩ | hx
-      · exact ⟨m, _, rfl, List.mem_cons_self⟩
-      · obtain ⟨m', t', hpoint, hm⟩ := hsigned x c hx
-        exact ⟨m', t', hpoint, List.mem_cons_of_mem _ hm⟩
-  | inr x =>
-    cases hl : st.table.lookup x with
-    | some e =>
-      rw [(run_reductionHandler_inr_some hashPoint) hl, runWithAnswers_pure, List.append_nil]
-      exact ⟨hcount, hpos, hsigned⟩
-    | none =>
-      rw [(run_reductionHandler_inr_none hashPoint) hl, runWithAnswers_map_query]
-      refine ⟨by simp [hcount], fun x' c i hx => ?_, fun x' c hx => ?_⟩
-      · simp only [List.mem_cons, Prod.mk.injEq, Option.some.injEq] at hx
-        rcases hx with ⟨rfl, rfl, rfl⟩ | hx
-        · rw [hcount, List.getElem?_concat_length, List.getD_eq_getElem?_getD,
-            List.headD_eq_head?_getD, List.head?_drop]
-          exact ⟨rfl, rfl⟩
-        · obtain ⟨hq, hc⟩ := hpos x' c i hx
-          have hi : i < queries.length := (List.getElem?_eq_some_iff.mp hq).1
-          exact ⟨by rw [List.getElem?_append_left hi, hq], hc⟩
-      · simp only [List.mem_cons, Prod.mk.injEq, reduceCtorEq, and_false, false_or] at hx
-        exact hsigned x' c hx
-
-omit [Fintype C] in
-/-- **The reduction's run on fixed answers.** On any list of answers, a winning forgery names a
-position, and a named position is that of the query for the forgery's point, answered there with
-the forgery's challenge, and the forgery is accepting. -/
-private theorem runWithAnswers_forkingProgram (P : SigmaProtocol X Y T C Z)
-    (A : Forger Y M (T × Z) Query C) (s : Y × A.Coins × List (T × C × Z)) (answers : List C)
-    {out : (Option ℕ × Bool × (M × T) × C × Z) × List Query}
-    (hout : runWithAnswers (Classical.arbitrary C) (forkingProgram hashPoint P A s) answers = out) :
-    (out.1.2.1 = true → out.1.1.isSome) ∧
-      ∀ j, out.1.1 = some j → out.2[j]? = some (hashPoint out.1.2.2.1) ∧
-        answers.getD j (Classical.arbitrary C) = out.1.2.2.2.1 ∧
-        P.verify s.1 out.1.2.2.1.2 out.1.2.2.2.1 out.1.2.2.2.2 = true := by
-  have hinv := runWithAnswers_run_interpret_invariant (Classical.arbitrary C) (reductionHandler
-    hashPoint)
-    answers (Consistent hashPoint answers) (consistent_step hashPoint answers) (A.forge s.1 s.2.1)
-    ⟨[], [], 0, s.2.2⟩ [] ⟨rfl, by simp, by simp⟩
-  simp only [List.length_nil, List.drop_zero, List.nil_append] at hinv
-  rw [forkingProgram, runWithAnswers_bind] at hout
-  subst hout
-  generalize runWithAnswers (Classical.arbitrary C)
-    ((interpret (reductionHandler hashPoint) (A.forge s.1 s.2.1)).run ⟨[], [], 0, s.2.2⟩) answers
-      = r at hinv ⊢
-  obtain ⟨⟨forged, st⟩, queries⟩ := r
-  obtain ⟨hcount, hpos, hsigned⟩ := hinv
-  cases hl : st.table.lookup (hashPoint (forged.1, forged.2.1)) with
-  | some e =>
-    rw [(finish_of_some hashPoint) hl, runWithAnswers_pure, List.append_nil]
-    obtain ⟨l₁, l₂, htable, -⟩ := List.lookup_eq_some_iff.mp hl
-    have hmem : (hashPoint (forged.1, forged.2.1), e.1, e.2) ∈ st.table := by
-      rw [htable]
-      exact List.mem_append_right _ List.mem_cons_self
-    obtain ⟨c, position⟩ := e
-    cases position with
-    | none =>
-      obtain ⟨m, t, hpoint, hm⟩ := hsigned _ _ hmem
-      have hmsg : forged.1 = m := congrArg Prod.fst (hashPoint.injective hpoint)
-      rw [← hmsg] at hm
-      simp [verdict, hm]
-    | some i =>
-      obtain ⟨hq, hc⟩ := hpos _ _ _ hmem
-      refine ⟨fun hwin => ?_, fun j hj => ?_⟩
-      · simp only [verdict] at hwin ⊢
-        simpa using hwin
-      · simp only [verdict] at hj ⊢
-        split_ifs at hj with hwin
-        · cases hj
-          exact ⟨hq, hc, (Bool.and_eq_true _ _).mp hwin |>.1⟩
-  | none =>
-    rw [(finish_of_none hashPoint) hl, runWithAnswers_map_query]
-    refine ⟨fun hwin => ?_, fun j hj => ?_⟩
-    · simp only [verdict] at hwin ⊢
-      simpa using hwin
-    · simp only [verdict] at hj ⊢
-      split_ifs at hj with hwin
-      · cases hj
-        refine ⟨by rw [hcount, List.getElem?_concat_length], ?_,
-          (Bool.and_eq_true _ _).mp hwin |>.1⟩
-        rw [hcount, List.getD_eq_getElem?_getD, List.headD_eq_head?_getD, List.head?_drop]
-
-omit [Fintype C] in
-/-- The forking program asks at most one query per hash call of the forger, and one more to check
-the forgery. -/
-private theorem isQueryBounded_forkingProgram (P : SigmaProtocol X Y T C Z)
-    (A : Forger Y M (T × Z) Query C) {Qro : ℕ}
-    (hQro : ∀ y s, IsCostBounded hashCost (A.forge y s) Qro)
-    (s : Y × A.Coins × List (T × C × Z)) : IsQueryBounded (forkingProgram hashPoint P A s) (Qro +
-      1) := by
-  have hhandler (q : M ⊕ Query) (st : ReductionState M T C Z Query) :
-      IsQueryBounded (((reductionHandler hashPoint) q).run st) (hashCost q) := by
-    cases q with
-    | inl m =>
-      rw [(run_reductionHandler_inl hashPoint)]
-      exact .pure _ _
-    | inr x =>
-      cases hl : st.table.lookup x with
-      | some e =>
-        rw [(run_reductionHandler_inr_some hashPoint) hl]
-        exact .pure _ _
-      | none =>
-        rw [(run_reductionHandler_inr_none hashPoint) hl]
-        exact .liftBind _ _ 0 fun _ => .pure _ 0
-  refine ((hQro s.1 s.2.1).run_interpret hhandler ⟨[], [], 0, s.2.2⟩).bind fun forged => ?_
-  cases hl : forged.2.table.lookup (hashPoint (forged.1.1, forged.1.2.1)) with
-  | some e =>
-    rw [(finish_of_some hashPoint) hl]
-    exact .pure _ _
-  | none =>
-    rw [(finish_of_none hashPoint) hl]
-    exact .liftBind _ _ 0 fun _ => .pure _ 0
-
-/-- With its oracle answered uniformly, the forking program wins at most as often as it validly
-names a query. -/
-private theorem map_run_le_accept (P : SigmaProtocol X Y T C Z)
-    (A : Forger Y M (T × Z) Query C) {Qro : ℕ}
-    (hQro : ∀ y s, IsCostBounded hashCost (A.forge y s) Qro)
-    (s : Y × A.Coins × List (T × C × Z)) :
-    ((interpret countingUniform (forkingProgram hashPoint P A s)).run 0).map (fun run =>
-      run.1.2.1) true ≤
-      ((interpret countingUniform (forkingProgram hashPoint P A s)).run 0).bind
-        (fun run => PMF.pure (validIndex (Qro + 1) run.2 run.1.1).isSome) true := by
-  have hbound := isQueryBounded_forkingProgram hashPoint P A hQro s
-  rw [run_interpret_countingUniform_eq (Classical.arbitrary C) _ hbound]
-  simp only [pmf_norm, ← PMF.bind_pure_comp]
-  refine Probability.PMF.bind_apply_mono_on_support _ _ fun h _ => ?_
-  obtain ⟨hwin, hnamed⟩ := runWithAnswers_forkingProgram hashPoint P A s (List.ofFn h) rfl
-  by_cases hw : (runWithAnswers (Classical.arbitrary C) (forkingProgram hashPoint P A s)
-      (List.ofFn h)).1.2.1 = true
-  · obtain ⟨j, hj⟩ := Option.isSome_iff_exists.mp (hwin hw)
-    have hlt : j < (runWithAnswers (Classical.arbitrary C) (forkingProgram hashPoint P A s)
-        (List.ofFn h)).2.length := (List.getElem?_eq_some_iff.mp (hnamed j hj).1).1
-    have hle := hbound.length_runWithAnswers_le (Classical.arbitrary C) (List.ofFn h)
-    have hvalid : (validIndex (Qro + 1) (0 + (runWithAnswers (Classical.arbitrary C)
-        (forkingProgram hashPoint P A s) (List.ofFn h)).2.length) (runWithAnswers
-          (Classical.arbitrary C)
-          (forkingProgram hashPoint P A s) (List.ofFn h)).1.1).isSome = true := by
-      rw [hj, zero_add]
-      simp only [validIndex, Option.bind_some]
-      split_ifs with hc
-      · rfl
-      · exact absurd ⟨by omega, hlt⟩ hc
-    rw [hw, hvalid]
-  · rw [Bool.eq_false_iff.mpr hw]
-    simp
+/-- **The game hops** for one key and one choice of the forger's coins: the experiment wins at
+most as often as the forking program, with presampled transcripts, plus `Qs · (Qs + Qro) · δ`. -/
+private theorem run_bind_finishGame_le {P : SigmaProtocol X Y T C Z} {keyGen : PMF (X × Y)}
+    {R : X → Y → Prop} {simulate : Y → C → PMF (T × Z)} (hzk : P.SpecialHVZK R simulate)
+    {key : X × Y} (hkey : R key.1 key.2) {δ : ENNReal}
+    (hcommit : ∀ t, (P.commit key.1 key.2).map Prod.fst t ≤ δ)
+    (A : Forger Y M (T × Z) Query C) {Qs Qro : ℕ} (hA : A.CallBounded Qs Qro)
+    (c : A.Coins) :
+    ((interpret (handler (fiatShamir hashPoint P keyGen) key) (A.forge key.2 c)).run ([], [])).bind
+        (ForkingReduction.finishGame (check hashPoint P key.2)) true ≤
+      ((PMF.iid (simulateConversation simulate key.2) (Qs + Qro)).map List.ofFn).bind (fun trs =>
+        ((interpret countingUniform (forkingProgram hashPoint P A (key.2, c, trs))).run 0).map
+          fun ((_, outcome), _) => outcome.won) true + (Qs * (Qs + Qro) : ℕ) * δ := by
+  have h0 : ((interpret (realHandler hashPoint P key) (A.forge key.2 c)).run (([], []), false)).map
+      (Prod.map id Prod.fst) =
+      (interpret (handler (fiatShamir hashPoint P keyGen) key) (A.forge key.2 c)).run ([], []) := by
+    rw [realHandler_eq_flaggedLazyProgramHandler, handler_fiatShamir_eq_lazyProgramHandler]
+    exact RandomOracle.run_flaggedLazyProgramHandler_map_fst _ _ _ _ _ _ _ _ false
+  have h1 : ((interpret (programHandler hashPoint P key) (A.forge key.2 c)).run
+      (([], []), false)).map (Prod.map id Prod.fst) =
+      (interpret (m := StateT (GameState M Query C) PMF)
+        (fun q st => (simulateConversation simulate key.2).bind fun v =>
+          ForkingReduction.gameHandler (signer hashPoint) v q st) (A.forge key.2 c)).run
+        ([], []) := by
+    rw [programHandler, ← overwriteProgramHandler_eq_gameHandler hashPoint hzk hkey]
+    exact RandomOracle.run_flaggedOverwriteProgramHandler_map_fst _ _ _ _ _ _ _ _ false
+  have h2 := (hA.isQueryBounded key.2 c).run_interpret_presample
+    (simulateConversation simulate key.2) (signer hashPoint).fallback
+      (ForkingReduction.gameHandler (signer hashPoint)) ([], [])
+  have hflag := toOuterMeasure_flag_le hashPoint P key hcommit (hA key.2 c).1 (hA.isQueryBounded
+    key.2 c)
+  rw [show (Qs : ENNReal) * ((Qs + Qro : ℕ) * δ) = (Qs * (Qs + Qro) : ℕ) * δ by
+    push_cast; ring] at hflag
+  rw [← h0, PMF.bind_map]
+  refine ((identicalUntilBad hashPoint P key).bind_apply_le _ _ _ _).trans
+    (add_le_add (le_of_eq ?_) hflag)
+  rw [← PMF.bind_map, h1, ← h2, PMF.bind_bind]
+  refine congrArg (fun p : PMF Bool => p true) (congrArg (PMF.bind _) (funext fun trs => ?_))
+  rw [PMF.bind_map, forkingProgram, ForkingReduction.map_run_program]
+  rfl
 
 variable [DecidableEq C]
 
@@ -778,64 +453,20 @@ private theorem fork_le_oneWayGame {P : SigmaProtocol X Y T C Z}
   refine Probability.PMF.bind_apply_mono_on_support _ _ fun key hkey => ?_
   rw [← PMF.bind_pure_comp]
   refine Probability.PMF.bind_apply_mono_on_support _ _ fun result hresult => ?_
-  rcases result with _ | ⟨j, out, out'⟩
+  rcases result with _ | ⟨j, ⟨⟨_, outcome⟩, _⟩, ⟨⟨_, outcome'⟩, _⟩⟩
   · simp
-  · obtain ⟨s, hs, h, h', -, hne, hout, hout', hj, hj', -, query, hq, hq'⟩ :=
-      mem_support_fork hresult
+  · obtain ⟨s, hs, hpt, hne, hv, hv'⟩ := ForkingReduction.exists_of_mem_support_fork
+      (first := coins simulate A (Qs + Qro) key.2) (signer hashPoint)
+      (fun s => check hashPoint P s.1) (fun _ => rejectsProgrammed hashPoint P _)
+      (fun s => A.forge s.1 s.2.1) (fun s => s.2.2) hresult
     simp only [coins, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.mem_support_bind_iff,
       PMF.mem_support_pure_iff] at hs
     obtain ⟨c, -, trs, -, rfl⟩ := hs
-    obtain ⟨-, hnamed⟩ := runWithAnswers_forkingProgram hashPoint P A _ (List.ofFn h) hout.symm
-    obtain ⟨-, hnamed'⟩ := runWithAnswers_forkingProgram hashPoint P A _ (List.ofFn h') hout'.symm
-    obtain ⟨hp, hc, hv⟩ := hnamed j hj
-    obtain ⟨hp', hc', hv'⟩ := hnamed' j hj'
-    rw [List.getD_ofFn] at hc hc'
-    have hpoint : out.1.2.2.1 = out'.1.2.2.1 :=
-      hashPoint.injective (Option.some.inj (hp.symm.trans (hq.trans (hq'.symm.trans hp'))))
-    have hR := hsound key hkey out.1.2.2.1.2 out.1.2.2.2.1 out.1.2.2.2.2 out'.1.2.2.2.1
-      out'.1.2.2.2.2 (by rw [← hc, ← hc']; exact hne) hv (by rw [hpoint]; exact hv')
+    have ht : outcome.commitment = outcome'.commitment :=
+      congrArg Prod.snd (hashPoint.injective hpt)
+    have hR := hsound key hkey outcome.commitment outcome.challenge outcome.response
+      outcome'.challenge outcome'.response hne hv (by rw [ht]; exact hv')
     simp [hR]
-
-omit [DecidableEq C] in
-/-- **The game hops** for one key and one choice of the forger's coins: the experiment wins at
-most as often as the forking program, with presampled transcripts, plus `Qs · (Qs + Qro) · δ`. -/
-private theorem run_bind_finishGame_le {P : SigmaProtocol X Y T C Z} {keyGen : PMF (X × Y)}
-    {R : X → Y → Prop} {simulate : Y → C → PMF (T × Z)} (hzk : P.SpecialHVZK R simulate)
-    {key : X × Y} (hkey : R key.1 key.2) {δ : ENNReal}
-    (hcommit : ∀ t, (P.commit key.1 key.2).map Prod.fst t ≤ δ)
-    (A : Forger Y M (T × Z) Query C) {Qs Qro : ℕ} (hA : A.CallBounded Qs Qro)
-    (c : A.Coins) :
-    ((interpret (handler (fiatShamir hashPoint P keyGen) key) (A.forge key.2 c)).run ([], [])).bind
-        (finishGame hashPoint P key.2) true ≤
-      ((PMF.iid (simulateConversation simulate key.2) (Qs + Qro)).map List.ofFn).bind (fun trs =>
-        ((interpret countingUniform (forkingProgram hashPoint P A (key.2, c, trs))).run 0).map
-          fun run => run.1.2.1) true + (Qs * (Qs + Qro) : ℕ) * δ := by
-  have h0 : ((interpret (realHandler hashPoint P key) (A.forge key.2 c)).run (([], []), false)).map
-      (Prod.map id Prod.fst) =
-      (interpret (handler (fiatShamir hashPoint P keyGen) key) (A.forge key.2 c)).run ([], []) := by
-    rw [realHandler_eq_flaggedLazyProgramHandler, handler_fiatShamir_eq_lazyProgramHandler]
-    exact RandomOracle.run_flaggedLazyProgramHandler_map_fst _ _ _ _ _ _ _ _ false
-  have h1 : ((interpret (programHandler hashPoint P key) (A.forge key.2 c)).run
-      (([], []), false)).map (Prod.map id Prod.fst) =
-      (interpret (m := StateT (GameState M Query C) PMF)
-        (fun q st => (simulateConversation simulate key.2).bind fun v =>
-          simulatedHandler hashPoint v q st) (A.forge key.2 c)).run ([], []) := by
-    rw [programHandler, ← overwriteProgramHandler_eq_simulatedHandler hashPoint hzk hkey]
-    exact RandomOracle.run_flaggedOverwriteProgramHandler_map_fst _ _ _ _ _ _ _ _ false
-  have h2 := (hA.isQueryBounded key.2 c).run_interpret_presample
-    (simulateConversation simulate key.2) (Classical.arbitrary _) (simulatedHandler hashPoint)
-      ([], [])
-  have hflag := toOuterMeasure_flag_le hashPoint P key hcommit (hA key.2 c).1 (hA.isQueryBounded
-    key.2 c)
-  rw [show (Qs : ENNReal) * ((Qs + Qro : ℕ) * δ) = (Qs * (Qs + Qro) : ℕ) * δ by
-    push_cast; ring] at hflag
-  rw [← h0, PMF.bind_map]
-  refine ((identicalUntilBad hashPoint P key).bind_apply_le _ _ _ _).trans
-    (add_le_add (le_of_eq ?_) hflag)
-  rw [← PMF.bind_map, h1, ← h2, PMF.bind_bind]
-  refine congrArg (fun p : PMF Bool => p true) (congrArg (PMF.bind _) (funext fun trs => ?_))
-  rw [PMF.bind_map, (map_run_forkingProgram hashPoint)]
-  rfl
 
 end FiatShamir
 
@@ -868,24 +499,17 @@ theorem succProbability_eufCmaGame_le [Nonempty T] [Nonempty Z] [DecidableEq C]
   set first := keyGen.bind fun key => coins simulate A (Qs + Qro) key.2 with hfirst
   have hA' : eufCmaGame (fiatShamir hashPoint P keyGen) A true ≤
       first.bind (fun s => ((interpret countingUniform (forkingProgram hashPoint P A s)).run 0).map
-        fun run => run.1.2.1) true + (Qs * (Qs + Qro) : ℕ) * (δ : ENNReal) := by
+        fun ((_, outcome), _) => outcome.won) true + (Qs * (Qs + Qro) : ℕ) * (δ : ENNReal) := by
     rw [(eufCmaGame_fiatShamir hashPoint), hfirst]
     simp only [coins, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_bind,
       PMF.pure_bind]
     refine Probability.PMF.bind_apply_le_add_const_on_support _ _ fun key hkey' =>
       Probability.PMF.bind_apply_le_add_const_on_support _ _ fun c _ => ?_
     exact (run_bind_finishGame_le hashPoint) hzk (hkey key hkey') (hcommit key hkey') A hA c
-  have hQro (y : Y) (s : A.Coins) : IsCostBounded hashCost (A.forge y s) Qro := (hA y s).2
-  have hB : first.bind (fun s => ((interpret countingUniform (forkingProgram hashPoint P A s)).run
-    0).map
-        fun run => run.1.2.1) true ≤
-      first.bind (fun s => ((interpret countingUniform (forkingProgram hashPoint P A s)).run 0).bind
-        fun run => PMF.pure (validIndex (Qro + 1) run.2 run.1.1).isSome) true :=
-    Probability.PMF.bind_apply_mono_on_support _ _ fun s _ => map_run_le_accept hashPoint P A hQro s
-  have h := toReal_le_add_sqrt_fork_of_le first (forkingProgram hashPoint P A)
-    (Classical.arbitrary C) (fun s => isQueryBounded_forkingProgram hashPoint P A hQro s)
-    (ENNReal.mul_ne_top (ENNReal.natCast_ne_top _) ENNReal.coe_ne_top)
-    (hA'.trans (add_le_add hB le_rfl))
+  have h := ForkingReduction.toReal_le_add_sqrt_fork_of_le first (signer hashPoint)
+    (fun s => check hashPoint P s.1) (fun _ => rejectsProgrammed hashPoint P _)
+    (fun s => A.forge s.1 s.2.1) (fun s => s.2.2) (fun s => (hA s.1 s.2.1).2)
+    (ENNReal.mul_ne_top (ENNReal.natCast_ne_top _) ENNReal.coe_ne_top) hA'
     ((fork_le_oneWayGame (P := P) hashPoint) hsound simulate fallback A Qs Qro)
     (PMF.apply_ne_top _ _)
   simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal]

@@ -211,7 +211,7 @@ Different slots may describe the same graph. -/
 def signedBitInstances (X : Matrix (Fin n) (Fin D) ℤ) (Y : Matrix (Fin D) (Fin n) ℤ)
     (W : Finset (Fin n × Fin n)) (β : ℕ) :
     (Bool × Bool × Fin β × Fin β) → LopsidedGraph n :=
-  fun q => signedBitInstance X Y W q.1 q.2.1 q.2.2.1.val q.2.2.2.val
+  fun (negativeX, negativeY, i, j) => signedBitInstance X Y W negativeX negativeY i.val j.val
 
 /-- The indexed family has `4 * β²` slots, allowing repeated or zero instances. -/
 theorem card_signedBit_indices (β : ℕ) :

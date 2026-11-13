@@ -6,6 +6,8 @@ Authors: Christian Reitwiessner
 
 -- upstream: candidate
 import CslibFrontier.Computability.Circuit.Arithmetic.BitBlast
+import CslibFrontier.Computability.Circuit.Boolean.BitBlastCompiler
+import CslibFrontier.Computability.Circuit.Boolean.FiniteSimulation
 import CslibFrontier.Computability.Circuit.Pi
 import Mathlib.Data.ZMod.Basic
 
@@ -61,3 +63,52 @@ example : Synthesis Boolean.interpretation (∅ : Set (BooleanFunction 0))
     (fun _ : Unit => (Fin.elim0 : BitString 0)) (fun _ => ()) hdecode c
     (fun i => Fin.elim0 i) (fun i => Fin.elim0 i)
   simpa [c, bitBlastCost] using h
+
+-- Free Boolean input wires: correctness covers every pair of field inputs and both output bits.
+example : ∃ b : Circuit Boolean.signature 4 2,
+    b.size ≤ bitBlastCost 2 ∧ ∀ x : Fin 2 → ZMod 3,
+      b.eval Boolean.interpretation (BitString.blocksEquiv.symm (enc3 ∘ x)) =
+        BitString.blocksEquiv.symm (fun _ : Fin 1 => enc3 (x 0 + x 1)) := by
+  have h := ternaryAdd.exists_encoded_boolean (arithInterpretation (ZMod 3))
+    (fun op => by cases op <;> simp [ArithOp.arity]) enc3 dec3 dec3_enc3
+  simpa [ternaryAdd, arithInterpretation, arithInterpretationWith, Function.comp_def] using h
+
+-- Wiring with several outputs remains free, including a repeated source wire.
+example : ∃ b : Circuit Boolean.signature 4 6, b.size = 0 ∧
+    ∀ x : Fin 2 → ZMod 3,
+      b.eval Boolean.interpretation (BitString.blocksEquiv.symm (enc3 ∘ x)) =
+        BitString.blocksEquiv.symm (enc3 ∘ (x ∘ ![0, 1, 0])) := by
+  let c : Circuit (arithSignature (ZMod 3)) 2 3 := Circuit.wiring _ ![0, 1, 0]
+  obtain ⟨b, hb, heval⟩ := c.exists_encoded_boolean (arithInterpretation (ZMod 3))
+    (fun op => by cases op <;> simp [ArithOp.arity]) enc3 dec3 dec3_enc3
+  refine ⟨b, ?_, ?_⟩
+  · simpa [c] using hb
+  · simpa [c] using heval
+
+-- No encoding is supplied: the fixed enumeration uses two bits for the three field elements.
+example : Nat.clog 2 (Fintype.card (ZMod 3)) = 2 := by decide
+
+example : ∃ b : Circuit Boolean.signature (2 * Nat.clog 2 (Fintype.card (ZMod 3)))
+      (1 * Nat.clog 2 (Fintype.card (ZMod 3))),
+    b.size ≤ bitBlastCost 2 ∧ ∀ x : Fin 2 → ZMod 3,
+      b.eval Boolean.interpretation
+        (BitString.blocksEquiv.symm (BitString.fintypeEncoding (ZMod 3) ∘ x)) =
+        BitString.blocksEquiv.symm
+          (fun _ : Fin 1 => BitString.fintypeEncoding (ZMod 3) (x 0 + x 1)) := by
+  obtain ⟨b, hb, he⟩ := ternaryAdd.exists_finite_boolean (arithInterpretation (ZMod 3))
+    (fun op => by cases op <;> simp [ArithOp.arity])
+  refine ⟨b, ?_, ?_⟩
+  · have hw : Nat.clog 2 3 = 2 := by decide
+    simpa [hw, ternaryAdd] using hb
+  · intro x
+    rw [he]
+    rfl
+
+-- A singleton requires zero bits: a constant source circuit has a zero-gate Boolean simulation.
+example : ∃ b : Circuit Boolean.signature 0 0, b.size = 0 := by
+  let c : Circuit (fullSignature 2 Unit) 0 1 :=
+    Circuit.oneGate (FullOp.con ()) Fin.elim0
+  obtain ⟨b, hb, _⟩ := c.exists_finite_boolean fullInterpretation
+    (fun op => by cases op <;> simp [fullSignature])
+  refine ⟨b, ?_⟩
+  simpa [c, bitBlastCost] using hb

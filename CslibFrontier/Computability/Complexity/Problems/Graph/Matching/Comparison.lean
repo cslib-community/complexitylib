@@ -87,12 +87,12 @@ noncomputable def comparisonLabeling (G : Graph) (S : Finset ℕ) :
 theorem comparisonLabeling_valid (G : Graph) (S : Finset ℕ) :
     ValidLabeling Table.sem (G.comparisonLabeling S) := by
   intro i
-  change G.matchingInstance[i.val].1.sem (localTuple (G.comparisonLabeling S) i) = true
+  change G.matchingInstance[i.val].rel.sem (localTuple (G.comparisonLabeling S) i) = true
   by_cases hi : i.val < G.distinctVertices.length
-  · have ht : G.matchingInstance[i.val].1 =
+  · have ht : G.matchingInstance[i.val].rel =
         Table.exactlyOne (G.matchingScope G.distinctVertices[i.val]) := by
       simp [matchingInstance, hi]
-    have hs : G.matchingInstance[i.val].2 = G.matchingScope G.distinctVertices[i.val] := by
+    have hs : G.matchingInstance[i.val].scope = G.matchingScope G.distinctVertices[i.val] := by
       simp [matchingInstance, hi]
     have hr : localTuple (G.comparisonLabeling S) i =
         listSingle (G.matchingScope G.distinctVertices[i.val]).length
@@ -104,9 +104,9 @@ theorem comparisonLabeling_valid (G : Graph) (S : Finset ℕ) :
     rw [ht, hr, Table.sem_eq_true]
     exact ⟨Table.wellFormed_exactlyOne _, List.mem_map.mpr
       ⟨_, List.mem_range.mpr (comparisonPort_lt G S _), rfl⟩⟩
-  · have ht : G.matchingInstance[i.val].1 = Table.pinTable false := by
+  · have ht : G.matchingInstance[i.val].rel = Table.pinTable false := by
       simp [matchingInstance, Nat.le_of_not_gt hi]
-    have hs : G.matchingInstance[i.val].2.length = 1 := by
+    have hs : G.matchingInstance[i.val].scope.length = 1 := by
       simp [matchingInstance, Nat.le_of_not_gt hi]
     have hr : localTuple (G.comparisonLabeling S) i = [false] := by
       apply List.ext_getElem
@@ -128,14 +128,14 @@ theorem positions_subset_comparison {M : G.induced.Subgraph} (hM : M.IsMatching)
   refine mem_selectedVariables.mpr ⟨(mem_vars_matchingInstance G).mpr
     (Or.inl ⟨i, (mem_positions.mp hi).1, rfl⟩), ?_⟩
   intro o ho
-  have hv : o.var ∈ G.matchingInstance[o.1.val].2 := List.getElem_mem o.2.isLt
+  have hv : o.var ∈ G.matchingInstance[o.1.val].scope := List.getElem_mem o.2.isLt
   by_cases hc : o.1.val < G.distinctVertices.length
   · let v := G.distinctVertices.getD o.1.val 0
     have hvm : v ∈ G.vertices := mem_distinctVertices.mp (by
       change G.distinctVertices.getD o.1.val 0 ∈ G.distinctVertices
       rw [List.getD_eq_getElem _ _ hc]
       exact List.getElem_mem hc)
-    have hs : G.matchingInstance[o.1.val].2 = G.matchingScope v := by
+    have hs : G.matchingInstance[o.1.val].scope = G.matchingScope v := by
       simp [matchingInstance, hc, v]
     have hx : 2 * i ∈ G.matchingScope v := hs ▸ ho ▸ hv
     have hinc := (mem_matchingScope_even G v i).mp hx |>.2
@@ -147,7 +147,7 @@ theorem positions_subset_comparison {M : G.induced.Subgraph} (hM : M.IsMatching)
     change (if o.1.val < G.distinctVertices.length then
       decide (o.2.val = G.comparisonPort (positions M) v) else false) = true
     simp only [hc, ↓reduceIte, he, hidx, decide_true]
-  · have hs : G.matchingInstance[o.1.val].2 =
+  · have hs : G.matchingInstance[o.1.val].scope =
         [2 * G.distinctVertices[o.1.val - G.distinctVertices.length]'(by
           have := o.1.isLt
           simp only [matchingInstance, List.length_append, List.length_map] at this

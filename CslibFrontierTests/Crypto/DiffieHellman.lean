@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pair.Projections
 import CslibFrontier.Crypto.Computational.DiscreteLog.SchnorrGroup
 import CslibFrontier.Crypto.Computational.DiffieHellman
 import CslibFrontier.Crypto.Computational.DiffieHellman.EncodingBounds
@@ -146,9 +147,9 @@ theorem schnorrGroups_encode_zero (d : schnorrGroups.Desc) :
 theorem dropFrame_dropFrame_unframe_encPair_encDesc (d : schnorrGroups.Desc) (u : List Bool) :
     dropFrame (dropFrame (unframe (encPair schnorrGroups.encDesc encBits (d, u)))) =
       schnorrGroups.encode d (schnorrGroups.generator d) := by
-  have h1 : encPair schnorrGroups.encDesc encBits (d, u) =
-      frame (frame d.1.1.bits ++ (frame d.1.2.1.bits ++ d.1.2.2.bits)) ++ u := rfl
-  rw [h1, unframe_frame_append, dropFrame_frame_append, dropFrame_frame_append]
+  change dropFrame (dropFrame (unframe
+    (encPair (encPair encNat (encPair encNat encNat)) encBits (d.1, u)))) = _
+  rw [unframe_encPair, dropFrame_encPair, dropFrame_encPair]
   exact (SchnorrGroup.encode_generator d).symm
 
 /-- An admissibility predicate for group-element ElGamal over Schnorr groups: both challenge words
@@ -351,15 +352,22 @@ noncomputable def constFalseDDHDistinguisher : schnorrGroups.DDHDistinguisher :=
 theorem isPPT_constFalseDDHDistinguisher : constFalseDDHDistinguisher.IsPPT :=
   (ComputableInPolyTime.const false).isPPTOn
 
+/-- The real DDH game draws group parameters from the setup law and runs the fixed-group
+experiment. -/
+example (F : PrimeOrderGroupFamily) (setup : ℕ → PMF F.Desc) (D : F.DDHDistinguisher) (n : ℕ) :
+    F.ddhRealGame setup D n = Game.withSetup (setup n) fun d =>
+      ddhRealExperiment (F.order d) (F.generator d) (D n d) :=
+  rfl
+
 /-- `constFalseDDHDistinguisher` has DDH advantage `0` at every security parameter. -/
 example (setup : ℕ → PMF schnorrGroups.Desc) (n : ℕ) :
     Game.advantage (schnorrGroups.ddhRealGame setup constFalseDDHDistinguisher n)
       (schnorrGroups.ddhRandomGame setup constFalseDDHDistinguisher n) = 0 := by
   have hreal : schnorrGroups.ddhRealGame setup constFalseDDHDistinguisher n = PMF.pure false := by
-    simp [ddhRealGame, eval_ddhRealExperiment, constFalseDDHDistinguisher]
+    simp [ddhRealGame, Game.withSetup, eval_ddhRealExperiment, constFalseDDHDistinguisher]
   have hrandom :
       schnorrGroups.ddhRandomGame setup constFalseDDHDistinguisher n = PMF.pure false := by
-    simp [ddhRandomGame, eval_ddhRandomExperiment, constFalseDDHDistinguisher]
+    simp [ddhRandomGame, Game.withSetup, eval_ddhRandomExperiment, constFalseDDHDistinguisher]
   simp [hreal, hrandom]
 
 /-- Concrete instantiations of `isPPT_ddhSelfReduceDistinguisher` and `isPPT_ddhAmplifiedDecider`
@@ -444,8 +452,8 @@ takes with `invEps = fun _ => 2`. -/
 theorem one_half_le_ddhAdvantage_exactDDHDistinguisher (n : ℕ) :
     1 / ((2 : ℕ) : ℝ) ≤ ddhAdvantage (schnorrGroups.order d23) (schnorrGroups.generator d23)
       (exactDDHDistinguisher n d23) := by
-  simpa only [ddhRealGame, ddhRandomGame, ddhAdvantage, PMF.monad_bind_eq_bind, PMF.pure_bind,
-    Nat.cast_ofNat] using one_half_le_advantage_exactDDHDistinguisher n
+  simpa only [ddhRealGame, ddhRandomGame, ddhAdvantage, Game.withSetup_pure, Nat.cast_ofNat] using
+    one_half_le_advantage_exactDDHDistinguisher n
 
 /-- Non-vacuous positive-side instantiation of `ddhAmplifiedDecider_correct_ge_one_sub_pow` on a
 real DH triple `(3 • g, 5 • g, 4 • g)` (`4 = 3 * 5` in `ZMod 11`) over `d23` at `n = 7`:
@@ -749,10 +757,10 @@ example (setupProb : ℕ → ProbComp schnorrGroups.Desc)
           (schnorrGroups.linearHashKDF keyLen (fun d => (schnorrGroups.encDesc d).length))
           Encryption.otpWordEncrypt hashedWordAdversary true n) := by
   refine hDDH.negligible_hashedElGamalCipherCPAGameOn_linearHashKDF
-    Encryption.demOneTimeWordINDCPA_otpWordEncrypt hsetup hkey_poly
-    (ComputableInPolyTime.encoding_length schnorrGroups.encDesc)
-    (fun _ => Nat.two_pow_pos _) hkey (fun _ d _ x => schnorrGroups_encode_length_le d x)
-    hsize ?_ computableInPolyTime_equalLengthWords (fun _ _ _ _ _ h => h)
+    Encryption.demOneTimeWordINDCPA_otpWordEncrypt hsetup
+    ⟨fun _ => Nat.two_pow_pos _, hkey, fun _ d _ x => schnorrGroups_encode_length_le d x, hsize, ?_⟩
+    hkey_poly (ComputableInPolyTime.encoding_length schnorrGroups.encDesc)
+    computableInPolyTime_equalLengthWords (fun _ _ _ _ _ h => h)
     Encryption.isPPTOn_otpWordEncrypt hashedWordAdversary_isPPT
   have h : (fun n => (2 : ℝ≥0) ^ n / ((2 ^ (2 * n) : ℕ) : ℝ≥0)) =
       fun n => (1 / (2 ^ n : ℕ) : ℝ≥0) := by
@@ -844,10 +852,10 @@ example (setupProb : ℕ → ProbComp schnorrGroups.Desc)
   have hout_poly : ComputableInPolyTime (fun _ : ℕ => 4) encUnary encUnary :=
     ComputableInPolyTime.const 4
   refine hDDH.negligible_hashedElGamalCipherCPAGameOn_linearHashKDF_of_demOneTimeKeyINDCPAOn
-    (Encryption.demOneTimeKeyWordINDCPA_otpKeyWordEncrypt (fun _ => 4)) hsetup hout_poly hkey_poly
-    (ComputableInPolyTime.encoding_length schnorrGroups.encDesc)
-    (fun _ => Nat.two_pow_pos _) hkey (fun _ d _ x => schnorrGroups_encode_length_le d x)
-    hsize ?_ computableInPolyTime_equalLengthWords (fun _ _ _ _ _ h => h)
+    (Encryption.demOneTimeKeyWordINDCPA_otpKeyWordEncrypt (fun _ => 4)) hsetup
+    ⟨fun _ => Nat.two_pow_pos _, hkey, fun _ d _ x => schnorrGroups_encode_length_le d x, hsize, ?_⟩
+    hout_poly hkey_poly (ComputableInPolyTime.encoding_length schnorrGroups.encDesc)
+    computableInPolyTime_equalLengthWords (fun _ _ _ _ _ h => h)
     (Encryption.isPPTOn_otpKeyWordEncrypt hout_poly) hashedWordAdversary_isPPT
   have h : (fun n => (2 : ℝ≥0) ^ 4 / ((2 ^ n : ℕ) : ℝ≥0)) =
       fun n => (16 : ℝ≥0) * (1 / (2 ^ n : ℕ) : ℝ≥0) := by

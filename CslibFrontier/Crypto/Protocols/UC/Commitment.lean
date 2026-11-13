@@ -539,18 +539,20 @@ namespace PlainCommitmentScheme
 variable {CommitMsg OpenMsg : Type} [DecidableEq CommitMsg] [DecidableEq OpenMsg]
 
 /-- Polynomial call budgets `pC` and `pV` for `scheme.commit` and `scheme.verify`. -/
-@[expose] def IsPolyBounded (scheme : PlainCommitmentScheme CommitMsg OpenMsg)
-    (pC pV : Polynomial ℕ) : Prop :=
-  (∀ κ b, (scheme.commit κ b).IsQueryBounded (pC.eval κ)) ∧
-    ∀ κ c o, (scheme.verify κ c o).IsQueryBounded (pV.eval κ)
+structure IsPolyBounded (scheme : PlainCommitmentScheme CommitMsg OpenMsg)
+    (pC pV : Polynomial ℕ) : Prop where
+  /-- Every commitment to `b` at security parameter `κ` makes at most `pC.eval κ` calls. -/
+  commit : ∀ κ b, (scheme.commit κ b).IsQueryBounded (pC.eval κ)
+  /-- Every verification at security parameter `κ` makes at most `pV.eval κ` calls. -/
+  verify : ∀ κ c o, (scheme.verify κ c o).IsQueryBounded (pV.eval κ)
 
 /-- The standalone completeness experiment for bit `b` at security parameter `κ`: sample
-`(c, o) ← scheme.commit κ b`, run `res ← scheme.verify κ co.1 co.2`, and check `res = some b`. -/
+`(c, o) ← scheme.commit κ b`, run `res ← scheme.verify κ c o`, and check `res = some b`. -/
 @[expose] noncomputable def acceptGame (scheme : PlainCommitmentScheme CommitMsg OpenMsg) (κ : ℕ)
     (b : Bool) : Game :=
   ProbComp.eval do
-    let co ← scheme.commit κ b
-    let res ← scheme.verify κ co.1 co.2
+    let (c, o) ← scheme.commit κ b
+    let res ← scheme.verify κ c o
     return decide (res = some b)
 
 /-- Probability that an honest commitment to `b` followed by an honest opening is accepted by the
@@ -658,7 +660,7 @@ theorem toProtocol_polyBounded {scheme : PlainCommitmentScheme CommitMsg OpenMsg
           (CommitterState.committed co.1 co.2, s₂)) :
           ProbOracleComp OracleSpec.empty _).IsQueryBounded 0 :=
       OracleComp.IsCostBounded.pure _ 0
-    exact ((Machine.isQueryBounded_sample (I := OracleSpec.empty) (h.1 κ b)).bind hstep).mono
+    exact ((Machine.isQueryBounded_sample (I := OracleSpec.empty) (h.commit κ b)).bind hstep).mono
       (by omega)
   have hverify (c : CommitMsg) (o : OpenMsg) :
       (ProbOracleComp.sample (spec := OracleSpec.empty) (scheme.verify κ c o) >>= fun res =>
@@ -670,7 +672,7 @@ theorem toProtocol_polyBounded {scheme : PlainCommitmentScheme CommitMsg OpenMsg
           (s₁, ReceiverState.finished (CommitMsg := CommitMsg) res)) :
           ProbOracleComp OracleSpec.empty _).IsQueryBounded 0 :=
       OracleComp.IsCostBounded.pure _ 0
-    exact ((Machine.isQueryBounded_sample (I := OracleSpec.empty) (h.2 κ c o)).bind hstep).mono
+    exact ((Machine.isQueryBounded_sample (I := OracleSpec.empty) (h.verify κ c o)).bind hstep).mono
       (by omega)
   rcases q with ⟨i, x⟩ | netQ
   · fin_cases i
@@ -1441,11 +1443,6 @@ private theorem handle_execMachine_fcom_query_one_idle {AdvQ AdvR : Type}
       pure ((none : execSpec 2 CommitmentInput CommitmentOutput AdvQ AdvR (Sum.inl (1, .query))),
         fcomExecState S₀ κ {0} st .idle) := rfl
 
-private theorem pmf_bind_eq_pure {α β : Type} (p : PMF α) (f : α → PMF β) (b : β)
-    (h : ∀ a, f a = PMF.pure b) : (p >>= f) = PMF.pure b := by
-  change p.bind f = PMF.pure b
-  simp only [funext h, PMF.bind_const]
-
 /-- When `fcom` is locked to `bStar` (state `CommitmentState.active bStar phase`), running
 `corruptCommitterSuffix S₁ (!bStar) κ (some (st₁, recDel₁))` against
 `execMachine fcom.toProtocol S₀ κ {0}` always outputs `false`. -/
@@ -1466,7 +1463,8 @@ private theorem eval_corruptCommitterSuffix_locked_not
   · simp only [Machine.runFrom_bind, Machine.runFrom_sample,
       Machine.closeProgram_bind, Machine.closeProgram_sample,
       bind_map_left, map_bind, ProbComp.eval_bind]
-    refine pmf_bind_eq_pure _ _ false fun r₂ => ?_
+    refine (bind_congr (g := fun _ => PMF.pure false) fun r₂ => ?_).trans
+      (PMF.bind_const _ _)
     rcases r₂ with _ | ⟨_ | o | _⟩
     · rfl
     · rfl
@@ -1477,7 +1475,8 @@ private theorem eval_corruptCommitterSuffix_locked_not
           map_bind, Functor.map_map]
         rw [handle_fcomLocked_inr]
         simp only [Machine.closeProgram_map, bind_map_left, ProbComp.eval_bind]
-        refine pmf_bind_eq_pure _ _ false fun x => ?_
+        refine (bind_congr (g := fun _ => PMF.pure false) fun x => ?_).trans
+          (PMF.bind_const _ _)
         rw [handle_fcomLocked_query_one]
         rcases fcomLockedRouterPhase bStar x.2 with ⟨_ | _, _ | _, _ | _⟩ <;> cases bStar <;> rfl
     · rfl

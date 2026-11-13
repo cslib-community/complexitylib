@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Computational.SIS.MLKEM.KPKE
+public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto
 
 /-!
 # ML-KEM: the FIPS 203 implicit-rejection wrapper

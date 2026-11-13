@@ -55,7 +55,7 @@ example (truth : Bool) :
 private theorem hidden_head (adversary : Distinguisher) (n : ℕ) :
     ProbComp.eval (predictionGame (fun _ => []) (fun word => word.headD false) adversary (n + 1)) =
       PMF.uniformOfFintype Bool := by
-  simp only [predictionGame, ProbComp.eval_bind, BitString.eval_sampleList,
+  simp only [predictionGame, predictionExperiment, ProbComp.eval_bind, BitString.eval_sampleList,
     BitString.uniformList_succ, PMF.bind_bind, PMF.bind_map, Function.comp_def, List.headD_cons,
     ProbComp.eval_pure, PMF.bind_const]
   rw [PMF.bind_comm]

@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Computational.Pseudoentropy.RepeatedExtraction
 public import CslibFrontier.Crypto.Computational.Pseudoentropy.Seed
+public import CslibFrontier.Crypto.Computational.Pseudoentropy.SeedSchedule
 public import CslibFrontier.Probability.UniformNat
 import CslibFrontier.Crypto.Computational.Pseudoentropy.DenseMask
 import CslibFrontier.Crypto.Computational.Pseudoentropy.MaskedExtraction
@@ -89,14 +90,13 @@ theorem HasGapWithAdvice.indexed_extracted_advantage_negligible {pair : Samplabl
           (-(count n * ((numerator n (choose n) : ℝ) / dyadicSize (densityBound n)) -
             slack n)))) / 2))) :
     Negligible (fun n => Game.advantage
-      (ProbComp.eval (do
-        let samples ← OracleComp.replicate (count n) (pair.sample n)
-        let result ← extractLabels (seed n (choose n)) (hash n (choose n)) samples
-        test (n, advice n) (choose n) result))
+      (ProbComp.eval (extractLabelsReal (pair.sample n) (count n) (seed n (choose n))
+        (hash n (choose n)) >>= test (n, advice n) (choose n)))
       ((extractLabelsIdeal ((fun value => pair.encode n value.1) <$>
         pair.latentSample n) (count n) (seed n (choose n))).bind
           (fun output => ProbComp.eval (test (n, advice n) (choose n) output)))) := by
   classical
+  simp only [extractLabelsReal, bind_assoc]
   let error := fun n =>
     2 * Real.exp (-2 * slack n ^ 2 / (count n * (realization.length n + n + 2 : ℕ) ^ 2)) +
       Real.sqrt (Fintype.card (Output n (choose n)) * (2 * (2 : ℝ) ^
@@ -198,29 +198,26 @@ theorem HasGapWithAdvice.extract_indexed_labels {pair : SamplablePair} {gap : �
         PMF.conditionalEntropy (pair.joint n) + gap n)
     (hhash : ∀ n i, IsTwoUniversal (ProbComp.eval (seed n i))
       (fun s (bits : BitString
-        (ExtractionSchedule.count n (realization.length n) (inverseSlack n))) =>
+        (realization.sampleCount inverseSlack n)) =>
           hash n i s (List.ofFn bits)))
     (hbudget : ∀ᶠ n in atTop,
       outputBits n (choose n) +
-        2 * (ExtractionSchedule.slack n (realization.length n) (inverseSlack n) : ℝ) ≤
-        ExtractionSchedule.count n (realization.length n) (inverseSlack n) *
+        2 * (realization.sampleSlack inverseSlack n : ℝ) ≤
+        realization.sampleCount inverseSlack n *
           ((numerator n (choose n) : ℝ) / dyadicSize (densityBound n))) :
     Negligible (fun n => Game.advantage
-      (ProbComp.eval (do
-        let samples ← OracleComp.replicate
-          (ExtractionSchedule.count n (realization.length n) (inverseSlack n)) (pair.sample n)
-        let result ← extractLabels (seed n (choose n)) (hash n (choose n)) samples
-        test (n, advice n) (choose n) result))
+      (ProbComp.eval (extractLabelsReal (pair.sample n) (realization.sampleCount inverseSlack n)
+        (seed n (choose n)) (hash n (choose n)) >>= test (n, advice n) (choose n)))
       ((extractLabelsIdeal ((fun value => pair.encode n value.1) <$>
         pair.latentSample n)
-          (ExtractionSchedule.count n (realization.length n) (inverseSlack n))
+          (realization.sampleCount inverseSlack n)
           (seed n (choose n))).bind
             (fun output => ProbComp.eval (test (n, advice n) (choose n) output)))) := by
   apply hpair.indexed_extracted_advantage_negligible realization choose seed hash test htest
     hcandidates
-    (ExtractionSchedule.isPolyTime_count .id' realization.length_isPolyTime hslack)
+    (realization.isPolyTime_sampleCount hslack)
     hnumerator hdensity hchoose hvalid hhash
-    (slack := fun n => ExtractionSchedule.slack n (realization.length n) (inverseSlack n))
+    (slack := fun n => realization.sampleSlack inverseSlack n)
     (fun _ => Nat.cast_nonneg _)
   apply negligible_of_eventually_le ExtractionSchedule.error_negligible
   filter_upwards [hbudget] with n hn

@@ -52,11 +52,11 @@ def semNeq (q : ℕ) : Unit → List (Fin q) → Bool
 
 /-- Triangle graph K₃ 3-coloring CSP instance. -/
 def triangleCSP : CSP Unit ℕ :=
-  [((), [0, 1]), ((), [1, 2]), ((), [0, 2])]
+  [⟨(), [0, 1]⟩, ⟨(), [1, 2]⟩, ⟨(), [0, 2]⟩]
 
 /-- Path graph P₃ 3-coloring CSP instance. -/
 def pathCSP : CSP Unit ℕ :=
-  [((), [0, 1]), ((), [1, 2])]
+  [⟨(), [0, 1]⟩, ⟨(), [1, 2]⟩]
 
 -- Model counts directly on finite-domain CSP
 example : triangleCSP.modelCountOn (semNeq 3) (Finset.range 3) = 6 := by decide
@@ -85,7 +85,7 @@ example :
   CSP.modelCountOn_toBoolean 3 3 (semNeq 3) triangleCSP (by decide)
 
 -- Width and variable bounds
-example : (triangleCSP.toBoolean 3 3).all (fun c => c.2.length ≤ 4) = true := by decide
+example : (triangleCSP.toBoolean 3 3).all (fun c => c.scope.length ≤ 4) = true := by decide
 example : (triangleCSP.toBoolean 3 3).vars.all (fun v => decide (v < 6)) = true := by decide
 example : CSP.validDeclaredCSP 4 6 (triangleCSP.toBoolean 3 3) = true := by decide
 
@@ -139,7 +139,7 @@ example :
 example :
     ∃ (count : CSP Unit ℕ → ℕ) (T S : CSP Unit ℕ → ℕ) (A c e a b_space : ℕ),
       ComputableInO count (encCSP encUnit encNat) encNat T S ∧
-      (∀ F : CSP Unit ℕ, (∀ c ∈ F, c.2.length ≤ 2) → count F = F.modelCount (semNeq 3)) ∧
+      (∀ F : CSP Unit ℕ, (∀ c ∈ F, c.scope.length ≤ 2) → count F = F.modelCount (semNeq 3)) ∧
       (∀ F : CSP Unit ℕ, (T F : ℝ) ≤ c * ((2 : ℝ) ^ ((A : ℝ) * interpolationScale F.numVars) *
         (((encCSP encUnit encNat F).length : ℝ) + 1) ^ e) + c) ∧
       (∀ F : CSP Unit ℕ, S F ≤ a * ((encCSP encUnit encNat F).length + 1) ^ b_space) :=

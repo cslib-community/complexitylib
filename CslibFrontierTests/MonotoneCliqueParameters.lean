@@ -12,6 +12,7 @@ The second supplies a finite minimum complexity at a vertex count below `k ^ 4`.
 
 namespace CslibFrontierTests.MonotoneCliqueParameters
 
+open Cslib.BitString.Graph
 open Cslib Cslib.Circuits Cslib.Circuits.Clique Cslib.Circuits.Monotone
 
 /-- A real monotone implementation exists, and the stronger bound applies to it. -/

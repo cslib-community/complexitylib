@@ -22,7 +22,7 @@ constant:
 * `tidy`: the constants named `ComputableTidily…`, `ComputesTidily…` or `IsTidy…` in its type;
   `tb`: for an exported definition, those in its exposed body outside proofs. Proofs are the
   subterms whose type is a proposition, together with the statements of proof-local `have`s (a
-  `let` whose type is a proposition): tidy computability is allowed there (#456). Telling them
+  `let` whose type is a proposition): tidy computability is allowed there (#862). Telling them
   apart needs types, so the modules of the definitions whose body mentions a tidy constant are
   imported (at the exported level) for this, and their rows are printed last;
 * `r`: its declaration range `[line, column, endLine, endColumn, selLine, selColumn, selEndLine,

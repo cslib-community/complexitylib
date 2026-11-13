@@ -279,14 +279,14 @@ capacity `n_max = 3`, followed by a hit lookup (`query k3 = some 25`) and an abs
 deterministic instructions on every seed. -/
 theorem opCode_update_hit_miss_from_rep (θ : Seed 16 3) (x : Data rLP)
     (hrep : Rep 16 100 3 64 32 θ s3 x) :
-    let x_upd := sampleDS.toDynamicProgram.prepare (.insert k3 25) x
+    let x_upd := sampleDS.prepare (.insert k3 25) x
     let B := KWise.evalSteps 3 16 (tableLog 3) 5 + 12 * 3 + 27
     ∃ y_upd y_hit y_miss : Data rLP,
       ExecWithin 64 (opCode 3) x_upd y_upd B ∧
       Rep 16 100 3 64 32 θ s4 y_upd ∧
-      ExecWithin 64 (opCode 3) (sampleDS.toDynamicProgram.prepare (.query k3) y_upd) y_hit B ∧
+      ExecWithin 64 (opCode 3) (sampleDS.prepare (.query k3) y_upd) y_hit B ∧
       decodeOp (V := 100) (n_max := 3) (.query k3) y_hit.regs = some (some 25) ∧
-      ExecWithin 64 (opCode 3) (sampleDS.toDynamicProgram.prepare (.query k2) y_hit) y_miss B ∧
+      ExecWithin 64 (opCode 3) (sampleDS.prepare (.query k2) y_hit) y_miss B ∧
       decodeOp (V := 100) (n_max := 3) (.query k2) y_miss.regs = some none := by
   intro x_upd B
   have hrep_upd_in : Rep 16 100 3 64 32 θ s3 x_upd :=
@@ -300,7 +300,7 @@ theorem opCode_update_hit_miss_from_rep (θ : Seed 16 3) (x : Data rLP)
   have hle1 : hrep_upd_in.table_inv.probeLen (opKey (.insert k3 25))
       (hashFn 16 3 θ (opKey (.insert k3 25))) ≤ 3 :=
     hrep_upd_in.table_inv.probeLen_le_n_max _ _
-  let x_hit := sampleDS.toDynamicProgram.prepare (.query k3) y_upd
+  let x_hit := sampleDS.prepare (.query k3) y_upd
   have hrep_hit_in : Rep 16 100 3 64 32 θ s4 x_hit :=
     sampleDS.prepare_rep hrep_upd trivial
   have harg_hit : argMatchOp (.query k3) x_hit.regs :=
@@ -312,7 +312,7 @@ theorem opCode_update_hit_miss_from_rep (θ : Seed 16 3) (x : Data rLP)
   have hle2 : hrep_hit_in.table_inv.probeLen (opKey (.query k3))
       (hashFn 16 3 θ (opKey (.query k3))) ≤ 3 :=
     hrep_hit_in.table_inv.probeLen_le_n_max _ _
-  let x_miss := sampleDS.toDynamicProgram.prepare (.query k2) y_hit
+  let x_miss := sampleDS.prepare (.query k2) y_hit
   have hrep_miss_in : Rep 16 100 3 64 32 θ s4 x_miss :=
     sampleDS.prepare_rep hrep_hit trivial
   have harg_miss : argMatchOp (.query k2) x_miss.regs :=

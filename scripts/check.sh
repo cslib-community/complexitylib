@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Check the manuals, then run the required steps of CI's `ci-checks` job (scripts/full_check.py)
-# or, with --quick, the affected-client checks (scripts/quick_check.py); report each gate.
+# Check the manuals, then run the locally reproducible steps behind CI's required `ci-checks`
+# aggregator (scripts/full_check.py) or, with --quick, the affected-client checks
+# (scripts/quick_check.py); report each gate.
 # REF (default origin/main) is the comparison base for checks of changed files and modules.
 # --no-full-fallback (with --quick) reports a change quick mode cannot plan instead of running the
 # full check.
@@ -54,6 +55,9 @@ finish() {
 # and these stdlib checks can report drift before a cold checkout restores any build cache.
 run "operator manual links and excerpts" python3 -B scripts/check_operator_manual.py
 run "operator manual tooling tests" python3 -B scripts/test_operator_manual.py
+if ((!quick)); then
+  run "Linux vm.max_map_count preflight" python3 -B scripts/check_vm_map_count.py
+fi
 if ((status)); then
   finish
   exit "$status"

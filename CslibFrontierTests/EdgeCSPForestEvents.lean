@@ -19,7 +19,7 @@ private def binarySem (odd : Bool) : List Bool → Bool
   | _ => false
 
 private abbrev wide : CSP Bool ℕ :=
-  [(false, [2 ^ 100, 2 ^ 200]), (false, [2 ^ 100, 2 ^ 200])]
+  [⟨false, [2 ^ 100, 2 ^ 200]⟩, ⟨false, [2 ^ 100, 2 ^ 200]⟩]
 private def wideLabels : wide.OccurrenceLabeling Bool := fun o => o.1.val == 1
 private abbrev widePort (j : Fin 2) : wide.Occurrence := ⟨0, j⟩
 private def wideMeeting : Meeting wide :=
@@ -43,7 +43,7 @@ example : ValidLabeling binarySem (wideMeeting.walk.flip wideLabels) ∧
   omega
 
 private abbrev triangle : CSP Bool ℕ :=
-  [(true, [0, 1]), (false, [1, 2]), (false, [2, 0])]
+  [⟨true, [0, 1]⟩, ⟨false, [1, 2]⟩, ⟨false, [2, 0]⟩]
 private def triangleLabels : triangle.OccurrenceLabeling Bool :=
   fun o => o.1.val == 0 && o.2.val == 0
 private abbrev tp (i : Fin 3) (j : Fin 2) : triangle.Occurrence :=
@@ -89,7 +89,7 @@ private def starSem (r : Fin 3) : List Bool → Bool
   | [a, b] => r == 1 && a == b
   | [a] => r == 2 && a
   | _ => false
-private abbrev star : CSP (Fin 3) ℕ := [(0, [0, 1, 2]), (1, [1, 2]), (2, [0])]
+private abbrev star : CSP (Fin 3) ℕ := [⟨0, [0, 1, 2]⟩, ⟨1, [1, 2]⟩, ⟨2, [0]⟩]
 private def starLabels : star.OccurrenceLabeling Bool := fun o => o.1.val == 2
 private abbrev sp (j : Fin 3) : star.Occurrence := ⟨0, j⟩
 private abbrev sb (j : Fin 2) : star.Occurrence := ⟨1, j⟩
@@ -123,7 +123,7 @@ example : starData.cycle.IsBlossom starSem (starData.prepare.flip starLabels) �
   exact ⟨hc, hc.2.2.2.1⟩
 
 private abbrev extended : CSP (Fin 3) ℕ :=
-  [(1, [3, 0]), (0, [0, 1, 2]), (1, [1, 2]), (2, [3])]
+  [⟨1, [3, 0]⟩, ⟨0, [0, 1, 2]⟩, ⟨1, [1, 2]⟩, ⟨2, [3]⟩]
 private def extendedLabels : extended.OccurrenceLabeling Bool := fun o => o.1.val == 3
 private abbrev ep0 (j : Fin 2) : extended.Occurrence := ⟨0, j⟩
 private abbrev ep1 (j : Fin 3) : extended.Occurrence := ⟨1, j⟩
@@ -162,7 +162,7 @@ private def repeatedSem (r : Fin 4) : List Bool → Bool
   | [a] => (r == 2 || r == 3) && a
   | _ => false
 private abbrev repeated : CSP (Fin 4) ℕ :=
-  [(0, [0, 1, 2, 3]), (1, [1, 2]), (2, [0]), (3, [3])]
+  [⟨0, [0, 1, 2, 3]⟩, ⟨1, [1, 2]⟩, ⟨2, [0]⟩, ⟨3, [3]⟩]
 private def repeatedLabels : repeated.OccurrenceLabeling Bool :=
   fun o => o.1.val == 2 || o.1.val == 3
 private abbrev rp0 (j : Fin 4) : repeated.Occurrence := ⟨0, j⟩

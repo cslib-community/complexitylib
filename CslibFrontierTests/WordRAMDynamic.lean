@@ -31,7 +31,9 @@ def exchangeProgram (w : ℕ) : DynamicProgram (exchangeSpec w) 3 where
   output := 2
   input i := i == 1
   encode o _ := o
-  decode _ regs := some (regs 2)
+  resultBank _ := 2
+  resultType _ := .nat
+  resultType_eq _ := rfl
 
 /-- The exchange cell has a genuine execution proof at every bounded word size. -/
 def exchangeCertificate (w : ℕ) : DynamicCertificate (exchangeProgram w) w :=
@@ -77,7 +79,9 @@ def lookupProgram (n : ℕ) : DynamicProgram (lookupSpec n) 2 where
   output := 1
   input i := i == 0
   encode i _ := i
-  decode _ regs := some (regs 1)
+  resultBank _ := 1
+  resultType _ := .nat
+  resultType_eq _ := rfl
 
 /-- Every represented bounded array has a uniform two-instruction query implementation. -/
 def lookupCertificate (w n : ℕ) (hn : Fits w n) :
@@ -90,7 +94,8 @@ def lookupCertificate (w n : ℕ) (hn : Fits w n) :
       let y := x₀.set 1 (x₀.mem (x₀.regs 0))
       have he : Exec w (lookupProgram n).code x₀ y 1 := Exec.load
       refine ⟨y, 1, he, ?_, ⟨?_, ?_⟩⟩
-      · simp [lookupProgram, y, x₀, Data.set, DynamicProgram.prepare, hr.2]
+      · rw [(lookupProgram n).decode_nat i y.regs rfl]
+        simp [lookupProgram, y, x₀, Data.set, DynamicProgram.prepare, hr.2]
       · exact he.bounded ((lookupProgram n).prepare_bounded hr.1
           (fun _ _ => lt_trans i.isLt hn))
       · exact hr.2)
@@ -109,12 +114,12 @@ example (w : ℕ) (x : Data 2) (h0 : x.regs 0 = 0) (h1 : x.mem 1 = 7) :
       (TraceExec.op (o := .store 0 1) (w := w) (x := x) rfl)
   exact he.frame h1 (by simp [HeapAssertion.pointsto, Probe.writes])
 
-/-- A typed exchange that writes and returns the old cell, plus decoder rejection and loop-fuel
+/-- A typed exchange that writes and returns the old cell, plus overflow rejection and loop-fuel
 exhaustion on `exchangeProgram 4`. -/
 example :
     ((exchangeProgram 4).eval 4 0 7 ⟨fun _ => 0, fun _ => 5⟩).map
       (fun (y, answer, cost) => (y.mem 0, answer, cost)) = some (7, 5, 4) ∧
-    ({ exchangeProgram 4 with decode := fun _ _ => none } :
+    ({ exchangeProgram 4 with code := .op (.const 2 16) } :
       DynamicProgram (exchangeSpec 4) 3 .standard).eval 4 0 7
       ⟨fun _ => 0, fun _ => 0⟩ = none ∧
     ({ exchangeProgram 4 with code := .loop (.eq 0 0) (.op (.copy 0 0)) } :
@@ -259,6 +264,47 @@ abbrev twoSlotSubroutine (w base : ℕ) (h2 : Fits w 2) :
       | inl h => cases h
       | inr h => cases h
 
+/-- Conversion of the generic modulo-two observation actually executes the remainder
+instruction. The two conversion instructions preserve both persistent registers and all memory. -/
+def twoSlotRecoding (w base : ℕ) (h2 : Fits w 2) :
+    NativeResultRecoding TwoSlotAlloc.Result .exact 6 w
+      (twoSlotSubroutine w base h2).decode (twoSlotSubroutine w base h2).rep
+      (twoSlotSubroutine w base h2).potential where
+  code := .seq (.op (.const 3 2)) (.op (.exactBin .mod 4 4 3))
+  resultBank _ := 4
+  resultType _ := .fin 2
+  resultType_eq _ := rfl
+  ready _ _ := True
+  time := 2
+  execute {s x} _ a hr hx _ hd := by
+    let x₁ := x.set 3 2
+    let y := x₁.set 4 (x.regs 4 % 2)
+    have hmod : x.regs 4 % 2 < 2 := Nat.mod_lt _ (by decide)
+    have hfit : Fits w (x.regs 4 % 2) := h2.of_le (Nat.le_of_lt hmod)
+    have heval : (Op.exactBin .mod (4 : Fin 6) 4 3).eval w x₁ = some y := by
+      simpa [Op.eval_exactBin, BinOp.evalExact, x₁, Data.set, y] using
+        (Data.put_of_fits (x := x₁) (i := (4 : Fin 6)) hfit)
+    have he : Exec (B := .exact) w
+        (.seq (.op (.const 3 2)) (.op (.exactBin .mod 4 4 3))) x y 2 :=
+      (Exec.const h2).seq (Exec.op heval)
+    have hy : y.regs 4 = x.regs 4 % 2 := by simp [y, Data.set]
+    have ha : (⟨x.regs 4 % 2, hmod⟩ : Fin 2) = a := Option.some.inj hd
+    refine ⟨y, he.within, ?_, ?_, rfl, rfl⟩
+    · change (if h : y.regs 4 < 2 then some (⟨y.regs 4, h⟩ : Fin 2) else none) = some a
+      simp only [hy, hmod, ↓reduceDIte]
+      exact congrArg some ha
+    · refine ⟨he.bounded hx, ?_, ?_⟩
+      · simpa [y, x₁, Data.set] using hr.2.1
+      · simpa [y, x₁, Data.set] using hr.2.2
+
+/-- The generic modulo observation is converted by two real instructions: raw `5` becomes
+canonical `1`, while the persistent counter and memory retain their old contents. -/
+example :
+    ((twoSlotRecoding 3 0 (by decide)).code.eval 3 0
+      ⟨fun i => if i = 4 then 5 else 0, fun _ => 6⟩).map
+        (fun (y, n) => (y.regs 4, y.regs 5, y.mem 0, n)) = some (1, 0, 6, 2) := by
+  decide
+
 /-- Adaptive client allocating two slots sequentially and returning both indices. -/
 abbrev allocPair : TwoSlotAlloc.Client (Fin 2 × Fin 2) :=
   .liftBind () fun i =>
@@ -283,15 +329,17 @@ theorem twoSlot_run_client_amortized (w base : ℕ) (h2 : Fits w 2)
     {x : Data 6} (hr : (twoSlotSubroutine w base h2).rep (false, false) x) :
     ∃ a y traces s' tr,
       DataStructure.Executes
-        ((twoSlotSubroutine w base h2).toStandard.toDynamicProgram.ExecOp w)
+        (((twoSlotSubroutine w base h2).toStandard.toDynamicProgram
+          ((twoSlotRecoding w base h2).mapSimulates .exactStandard)).ExecOp w)
         allocPair x a y traces ∧
       TwoSlotAlloc.ClientRun (false, false) allocPair a s' tr ∧
       (twoSlotSubroutine w base h2).rep s' y ∧
       traces.length = tr.length ∧
       DataStructure.total DynamicProgram.OperationTrace.instructions traces ≤
-        TwoSlotAlloc.totalCostTranscript (fun _ _ => 4) (false, false) tr :=
-  (twoSlotSubroutine w base h2).toStandard.run_client_demonic_bound (fun _ => rfl)
-    allocPair hr allocPair_demonicValid
+        TwoSlotAlloc.totalCostTranscript (fun _ _ => 6) (false, false) tr :=
+  (twoSlotSubroutine w base h2).toStandard.run_client_demonic_bound
+    ((twoSlotRecoding w base h2).mapSimulates .exactStandard)
+    (fun _ _ _ _ => trivial) (fun _ => rfl) allocPair hr allocPair_demonicValid
 
 /-- Canonical injective register embedding `Fin 6 → Fin 8`. -/
 def embed6to8 : Fin 6 → Fin 8 := Fin.castLE (by decide)

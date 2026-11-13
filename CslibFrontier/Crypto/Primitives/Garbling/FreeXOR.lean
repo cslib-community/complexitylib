@@ -144,36 +144,6 @@ private theorem bool_false_add (b : Bool) : false + b = b := by cases b <;> rfl
 private theorem bool_add_eq_true_of_ne {a b : Bool} (h : a ≠ b) : a + b = true := by
   revert a b; decide
 
-/-- A round is local when its value at a wire depends only on the labels of lower wires. -/
-private def IsLocal {L : Type} (step : (Wire n s → L) → Wire n s → L) : Prop :=
-  ∀ labels labels' w, (∀ w', w'.toNat < w.toNat → labels w' = labels' w') →
-    step labels w = step labels' w
-
-/-- After `n + s` local rounds, the starting labels no longer matter. -/
-private theorem iterate_congr {L : Type} {step : (Wire n s → L) → Wire n s → L}
-    (hstep : IsLocal step) (init init' : Wire n s → L) :
-    step^[n + s] init = step^[n + s] init' := by
-  have key : ∀ t w, w.toNat < t → step^[t] init w = step^[t] init' w := by
-    intro t
-    induction t with
-    | zero => intro w hw; exact absurd hw (Nat.not_lt_zero _)
-    | succ t ih =>
-      intro w hw
-      rw [Function.iterate_succ_apply', Function.iterate_succ_apply']
-      exact hstep _ _ w fun w' hw' => ih w' (by omega)
-  exact funext fun w => key (n + s) w (Wire.toNat_lt w)
-
-private theorem iterate_eq_of_isLocal {L : Type} {step : (Wire n s → L) → Wire n s → L}
-    (hstep : IsLocal step) (init : Wire n s → L) {A : Wire n s → L}
-    (hA : ∀ w, step A w = A w) : step^[n + s] init = A :=
-  (iterate_congr hstep init A).trans (Function.iterate_fixed (funext hA) _)
-
-private theorem step_iterate {L : Type} {step : (Wire n s → L) → Wire n s → L}
-    (hstep : IsLocal step) (init : Wire n s → L) :
-    step (step^[n + s] init) = step^[n + s] init :=
-  (Function.iterate_succ_apply' step (n + s) init).symm.trans
-    (iterate_congr hstep (step init) init)
-
 /-- The colour flips of a row against a labelling: slot `k` flips when the row's colour differs
 from the colour of the label of its argument. -/
 private def flipped {τ : Circuit.Topology n m s} {free : Fin s → Bool} (A : Wire n s → K × Bool)
@@ -275,9 +245,9 @@ variable [AddCommGroup K]
 
 /-! ### Labels -/
 
-/-- The label for the bit `b` of a wire with zero label `W`: `W`, or `W + (δ, true)`. -/
+/-- The label for the bit `b` of a wire with zero label `W`: `W + bitOffset (δ, true) b`. -/
 @[expose] def label (δ : K) (W : K × Bool) (b : Bool) : K × Bool :=
-  if b then W + (δ, true) else W
+  W + bitOffset (δ, true) b
 
 /-- The colour of the label for `b` is the colour of the zero label plus `b`. -/
 theorem label_snd (δ : K) (W : K × Bool) (b : Bool) : (label δ W b).2 = W.2 + b := by
@@ -291,43 +261,34 @@ private theorem offset_add_offset (hK : ∀ k : K, k + k = 0) (δ : K) :
 /-- Labels add like their bits: this is what makes XOR gates free. -/
 theorem label_add_label (hK : ∀ k : K, k + k = 0) (δ : K) (W W' : K × Bool) (b b' : Bool) :
     label δ W b + label δ W' b' = label δ (W + W') (b + b') := by
-  cases b <;> cases b'
-  · rfl
-  · exact (add_assoc W W' _).symm
-  · exact add_right_comm W _ W'
-  · change W + (δ, true) + (W' + (δ, true)) = W + W'
-    rw [add_add_add_comm, offset_add_offset hK, add_zero]
+  simp only [label, bitOffset_add_of_add_self (offset_add_offset hK δ), add_add_add_comm]
 
 theorem sum_label {ι : Type*} (hK : ∀ k : K, k + k = 0) (δ : K) (S : Finset ι)
     (W : ι → K × Bool) (b : ι → Bool) :
     ∑ i ∈ S, label δ (W i) (b i) = label δ (∑ i ∈ S, W i) (∑ i ∈ S, b i) := by
   classical
   induction S using Finset.induction_on with
-  | empty => simp only [Finset.sum_empty]; rfl
+  | empty => exact (add_zero 0).symm
   | insert a S ha ih =>
     rw [Finset.sum_insert ha, Finset.sum_insert ha, Finset.sum_insert ha, ih,
       label_add_label hK]
 
 theorem label_label (hK : ∀ k : K, k + k = 0) (δ : K) (W : K × Bool) (b b' : Bool) :
     label δ (label δ W b) b' = label δ W (b + b') := by
-  cases b <;> cases b' <;> try rfl
-  change W + (δ, true) + (δ, true) = W
-  rw [add_assoc, offset_add_offset hK, add_zero]
+  simp only [label, add_assoc, ← bitOffset_add_of_add_self (offset_add_offset hK δ)]
 
 theorem label_label_self (hK : ∀ k : K, k + k = 0) (δ : K) (W : K × Bool) (b : Bool) :
     label δ (label δ W b) b = W := by
   rw [label_label hK, BooleanRing.add_self]
-  rfl
+  exact add_zero W
 
 private theorem label_add (δ : K) (W Y : K × Bool) (b : Bool) :
-    label δ W b + Y = label δ (W + Y) b := by
-  cases b
-  exacts [rfl, add_right_comm W _ Y]
+    label δ W b + Y = label δ (W + Y) b :=
+  add_right_comm W (bitOffset (δ, true) b) Y
 
 private theorem add_label (δ : K) (Y W : K × Bool) (b : Bool) :
-    Y + label δ W b = label δ (Y + W) b := by
-  cases b
-  exacts [rfl, (add_assoc Y W _).symm]
+    Y + label δ W b = label δ (Y + W) b :=
+  (add_assoc Y W (bitOffset (δ, true) b)).symm
 
 /-! ### Zero labels -/
 
@@ -346,7 +307,7 @@ topology. -/
 
 private theorem isLocal_propagateStep {τ : Circuit.Topology n m s} (hτ : τ.IsOrdered)
     (free : Fin s → Bool) (base : Wire n s → K × Bool) : IsLocal (propagateStep τ free base) := by
-  intro labels labels' w h
+  intro A B w h
   cases w with
   | input i => rfl
   | gate g =>
@@ -356,7 +317,7 @@ private theorem isLocal_propagateStep {τ : Circuit.Topology n m s} (hτ : τ.Is
 private theorem propagateStep_propagate {τ : Circuit.Topology n m s} (hτ : τ.IsOrdered)
     (free : Fin s → Bool) (base : Wire n s → K × Bool) (w : Wire n s) :
     propagateStep τ free base (propagate τ free base) w = propagate τ free base w :=
-  congrFun (step_iterate (isLocal_propagateStep hτ free base) 0) w
+  congrFun ((isLocal_propagateStep hτ free base).isFixed_iterate 0) w
 
 theorem propagate_input {τ : Circuit.Topology n m s} (hτ : τ.IsOrdered) (free : Fin s → Bool)
     (base : Wire n s → K × Bool) (i : Fin n) :
@@ -405,7 +366,7 @@ private theorem isLocal_evalStep {τ : Circuit.Topology n m s} (hτ : τ.IsOrder
     (free : Fin s → Bool) (H : K → T → K × Bool) (tw : GarbledSlot τ free → T)
     (table : GarbledRow τ free → K × Bool) (X : Fin n → K × Bool) :
     IsLocal (evalStep τ free H tw table X) := by
-  intro labels labels' w h
+  intro A B w h
   cases w with
   | input i => rfl
   | gate g =>
@@ -422,7 +383,8 @@ theorem evaluate_eq_of_evalStep {τ : Circuit.Topology n m s} (hτ : τ.IsOrdere
     (hA : ∀ w, evalStep τ free H tw table X A w = A w) :
     evaluate τ free H tw table X = A ∘ τ.outputs :=
   funext fun o =>
-    congrFun (iterate_eq_of_isLocal (isLocal_evalStep hτ free H tw table X) 0 hA) (τ.outputs o)
+    congrFun ((isLocal_evalStep hτ free H tw table X).iterate_eq_of_isFixed 0 (funext hA))
+      (τ.outputs o)
 
 /-- The row of a gate that is not free for the colours `r.2` of its arguments: the label of the
 gate for the bit that the colours encode, masked by the hash of the matching argument labels. -/
@@ -544,12 +506,6 @@ private def reductionView (τ : Circuit.Topology n m s) {free : Fin s → Bool}
   input i := A (.input i)
   decoding o := (A (τ.outputs o)).2 + y o
 
-private theorem oracle_eq_label (H : K → T → K × Bool) (δ y : K) (t : T) (b : Bool) :
-    CCR.oracle H δ (δ, true) ⟨y, t, b⟩ = label δ (H (y + δ) t) b := by
-  rw [CCR.oracle_apply]
-  cases b
-  exacts [add_zero _, rfl]
-
 /-- Shift labels by the offset on the wires where `t` is set. -/
 private def shiftEquiv (hK : ∀ k : K, k + k = 0) (δ : K) {W : Type} (t : W → Bool) :
     (W → K × Bool) ≃ (W → K × Bool) where
@@ -563,7 +519,7 @@ private theorem propagate_shift {τ : Circuit.Topology n m s} (hτ : τ.IsOrdere
     (ht : ∀ g, free g = true → t (.gate g) = ∑ k, t (τ.wires g k)) (base : Wire n s → K × Bool) :
     propagate τ free (shiftEquiv hK δ t base) =
       fun w => label δ (propagate τ free base w) (t w) := by
-  refine iterate_eq_of_isLocal (isLocal_propagateStep hτ free _) 0 fun w => ?_
+  refine (isLocal_propagateStep hτ free _).iterate_eq_of_isFixed 0 (funext fun w => ?_)
   cases w with
   | input i => exact congrArg (label δ · (t (.input i))) (propagate_input hτ free base i).symm
   | gate g =>
@@ -592,10 +548,8 @@ private theorem reductionTable_circular (hK : ∀ k : K, k + k = 0) (δ : K)
         (isFirst (flipped A r) k && rowBit C I x A r) := fun k => by
     cases hf : flipped A r k
     · have h0 : isFirst (flipped A r) k = false := by simp [isFirst, hf]
-      rw [ite_eq_right Bool.false_ne_true, h0]
-      rfl
-    · rw [ite_eq_left rfl, reductionQuery, oracle_eq_label]
-      rfl
+      simp [h0, label]
+    · rfl
   simp only [reductionTable, hterm]
   rw [sum_label hK, sum_isFirst_and _ _ (exists_flipped_of_rowBit C I x A r), add_label]
   simp only [garbleTable, hb, label_label hK, bool_add_add_cancel, label_add, rowBit]
@@ -741,11 +695,10 @@ private theorem eval_run_reduction (f : CCR.Query K T → K × Bool) :
         ProbComp.eval (D (reductionView C.topology H tw (C.eval I x)
           (propagate C.topology free base)
           fun p => f (reductionQuery C I tw x (propagate C.topology free base) p))) := by
-  have hself : ∀ {α : Type} (p : ProbComp α), OracleComp.interpret ProbComp.unifFin p = p :=
-    fun p => OracleComp.interpret_query_eq_self p
   simp only [ProbOracleComp.run, reduction, OracleComp.interpret_bind,
-    ProbOracleComp.interpret_sample, hself, ProbOracleComp.interpret_tabulate, pure_bind,
-    ProbComp.eval_bind, ProbComp.eval_uniform, Finset.mem_toList, Finset.mem_univ, ite_true]
+    ProbOracleComp.interpret_sample, ProbComp.interpret_unifFin, ProbOracleComp.interpret_tabulate,
+    pure_bind, ProbComp.eval_bind, ProbComp.eval_uniform, Finset.mem_toList, Finset.mem_univ,
+    ite_true]
 
 /-- With the circular oracle, the reduction plays the real experiment. -/
 private theorem realGame_reduction

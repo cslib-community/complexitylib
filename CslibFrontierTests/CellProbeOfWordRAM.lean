@@ -642,18 +642,15 @@ private theorem coinFlip_execStepsRand (ops : List Unit)
   | cons o ops_rem ih =>
     let mc : WordRAM.Randomized.SeqOutcome Unit coinFlipSpec.Result 5 → ProbComp (Data 5 × ℕ) :=
       fun t => do
-        let k ← ProbComp.unifFin
-          (((coinFlipCode.toDynamicProgram coinFlipEncode coinFlipDecode).prepare o t.data).regs 1)
-        pure (((coinFlipCode.toDynamicProgram coinFlipEncode coinFlipDecode).prepare o t.data).set
-          3 k.val, 1)
+        let k ← ProbComp.unifFin ((coinFlipCode.prepare coinFlipEncode o t.data).regs 1)
+        pure ((coinFlipCode.prepare coinFlipEncode o t.data).set 3 k.val, 1)
     let μ_step : WordRAM.Randomized.SeqOutcome Unit coinFlipSpec.Result 5 →
         PMF (WordRAM.Randomized.StepOutcome Unit Bool 5) :=
       fun t => (mc t).eval.map fun z => ⟨(), z.1, z.1.regs 3 == 1⟩
     have hstep : ∀ t ∈ ν.support,
         t.data.Bounded 2 ∧
         (∀ i, coinFlipCode.input i = true → Fits 2 (coinFlipEncode o i)) ∧
-        ExecRand 2 coinFlipCode.code
-          ((coinFlipCode.toDynamicProgram coinFlipEncode coinFlipDecode).prepare o t.data) (mc t) ∧
+        ExecRand 2 coinFlipCode.code (coinFlipCode.prepare coinFlipEncode o t.data) (mc t) ∧
         (mc t).eval.map Prod.fst = (μ_step t).map WordRAM.Randomized.StepOutcome.data ∧
         ∀ q ∈ (μ_step t).support,
           q.data.Bounded 2 ∧
@@ -663,18 +660,12 @@ private theorem coinFlip_execStepsRand (ops : List Unit)
       have harg : ∀ i, coinFlipCode.input i = true → Fits 2 (coinFlipEncode o i) := by
         intro i _
         decide +revert
-      have hfit1 : Fits 2
-          (((coinFlipCode.toDynamicProgram coinFlipEncode coinFlipDecode).prepare o t.data).regs
-            1) := by
-        simp [SubroutineCode.toDynamicProgram, DynamicProgram.prepare, coinFlipCode,
-          coinFlipEncode, Fits]
+      have hfit1 : Fits 2 ((coinFlipCode.prepare coinFlipEncode o t.data).regs 1) := by
+        simp [SubroutineCode.prepare, coinFlipCode, coinFlipEncode, Fits]
       have hexr : ExecRand 2 coinFlipCode.code
-          ((coinFlipCode.toDynamicProgram coinFlipEncode coinFlipDecode).prepare o t.data)
-          (mc t) := ExecRand.rand hfit1
-      have hprep_bdd :
-          ((coinFlipCode.toDynamicProgram coinFlipEncode coinFlipDecode).prepare o t.data).Bounded
-            2 :=
-        ⟨fun i => harg i rfl, (hbdd t ht).2⟩
+          (coinFlipCode.prepare coinFlipEncode o t.data) (mc t) := ExecRand.rand hfit1
+      have hprep_bdd : (coinFlipCode.prepare coinFlipEncode o t.data).Bounded 2 :=
+        coinFlipCode.prepare_bounded coinFlipEncode (hbdd t ht) harg
       refine ⟨hbdd t ht, harg, hexr, ?_, ?_⟩
       · dsimp only [μ_step]
         rw [PMF.map_comp]

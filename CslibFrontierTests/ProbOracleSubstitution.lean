@@ -56,10 +56,8 @@ example (initial : ℕ) :
   rw [ProbOracleComp.interpret_simulate]
   simp only [adaptive, twice, OracleComp.interpret_bind, ProbOracleComp.interpret_query,
     StateT.run_bind, OracleComp.interpret_pure, StateT.run_pure,
-    ProbOracleComp.interpret_sample, OracleComp.run_interpret_lift]
-  have hsample : OracleComp.interpret ProbComp.unifFin (ProbComp.uniform Bool) =
-      ProbComp.uniform Bool := OracleComp.interpret_query_eq_self _
-  simp [countQuery, StateT.run, Nat.add_assoc, hsample]
+    ProbOracleComp.interpret_sample, OracleComp.run_interpret_lift, ProbComp.interpret_unifFin]
+  simp [countQuery, StateT.run, Nat.add_assoc]
 
 -- External replies may depend on their query. Substitution preserves those dependent types.
 private abbrev Reply : Bool → Type
