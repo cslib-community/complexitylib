@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import CslibFrontier.Foundations.Data.BitString.Single
 public import CslibFrontier.Foundations.Data.Code.ParityCheck
 
 /-!
@@ -23,9 +24,8 @@ introduce a second parity-check or code API.
 
 ## Main definitions
 
-* `Cslib.Crypto.SyndromeDecoding.elementaryWord`: the binary elementary vector at a position.
 * `Cslib.Crypto.SyndromeDecoding.regularWord`: concatenate one elementary word per chunk.
-* `Cslib.Crypto.SyndromeDecoding.IsRegularWord`: every chunk has Hamming weight one.
+* `Cslib.Crypto.SyndromeDecoding.IsRegularWord`: every chunk is a Boolean unit vector.
 * `Cslib.Crypto.SyndromeDecoding.IsRegularSyndromeSolution`: a regular word with a prescribed
   syndrome.
 
@@ -51,19 +51,15 @@ namespace Cslib.Crypto.SyndromeDecoding
 
 open Matrix
 
-/-- The elementary binary word with its unique `true` entry at `position`. -/
-def elementaryWord {chunkSize : ℕ} (position : Fin chunkSize) : Fin chunkSize → Bool :=
-  fun j => decide (j = position)
-
 /-- Concatenate one elementary word per chunk. This is the binary regular word determined by
 `positions`. -/
 def regularWord {chunks chunkSize : ℕ} (positions : Fin chunks → Fin chunkSize) :
     Fin chunks × Fin chunkSize → Bool :=
-  fun p => elementaryWord (positions p.1) p.2
+  fun p => (Pi.single (positions p.1) true : Fin chunkSize → Bool) p.2
 
-/-- A binary word is regular when each chunk has Hamming weight one. -/
+/-- A binary word is regular when each chunk is a Boolean unit vector. -/
 def IsRegularWord {chunks chunkSize : ℕ} (x : Fin chunks × Fin chunkSize → Bool) : Prop :=
-  ∀ i, hammingNorm (fun j => x (i, j)) = 1
+  ∀ i, Cslib.BitString.IsSingle fun j => x (i, j)
 
 /-- A regular syndrome-decoding witness for public parity-check matrix `H` and syndrome `y`. -/
 def IsRegularSyndromeSolution {checks chunks chunkSize : ℕ}
@@ -72,54 +68,10 @@ def IsRegularSyndromeSolution {checks chunks chunkSize : ℕ}
   IsRegularWord x ∧ Cslib.Code.syndrome H x = y
 
 @[simp]
-theorem elementaryWord_apply {chunkSize : ℕ} (position j : Fin chunkSize) :
-    elementaryWord position j = decide (j = position) := by
-  rfl
-
-theorem elementaryWord_eq_true_iff {chunkSize : ℕ} {position j : Fin chunkSize} :
-    elementaryWord position j = true ↔ j = position := by
-  simp [elementaryWord]
-
-@[simp]
 theorem regularWord_eq_true_iff {chunks chunkSize : ℕ}
     {positions : Fin chunks → Fin chunkSize} {i : Fin chunks} {j : Fin chunkSize} :
     regularWord positions (i, j) = true ↔ j = positions i := by
-  exact elementaryWord_eq_true_iff
-
-@[simp]
-theorem hammingNorm_elementaryWord {chunkSize : ℕ} (position : Fin chunkSize) :
-    hammingNorm (elementaryWord position) = 1 := by
-  rw [hammingNorm, Finset.card_eq_one]
-  refine ⟨position, ?_⟩
-  ext j
-  simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_singleton]
-  change (decide (j = position) ≠ false ↔ j = position)
-  simp only [Bool.eq_true_eq_not_eq_false, decide_eq_true_eq]
-
-/-- A binary word has Hamming weight one exactly when it is an elementary word. -/
-theorem hammingNorm_eq_one_iff_exists_elementaryWord {chunkSize : ℕ}
-    (x : Fin chunkSize → Bool) :
-    hammingNorm x = 1 ↔ ∃ position, x = elementaryWord position := by
-  classical
-  constructor
-  · rw [hammingNorm, Finset.card_eq_one]
-    rintro ⟨position, hposition⟩
-    refine ⟨position, funext fun j => ?_⟩
-    by_cases hj : j = position
-    · subst j
-      have hposition_mem :=
-        (Finset.ext_iff.mp hposition position).mpr
-          (by simp : position ∈ ({position} : Finset (Fin chunkSize)))
-      have hxne : x position ≠ 0 := by simpa using hposition_mem
-      have hxtrue : x position = true := by cases h : x position <;> simp_all
-      simpa [elementaryWord] using hxtrue
-    · have hxzero : x j = 0 := not_ne_iff.mp fun hxne => hj <| by
-        have hright := (Finset.ext_iff.mp hposition j).mp (by simpa using hxne)
-        simpa using hright
-      change x j = false at hxzero
-      simpa [elementaryWord, hj] using hxzero
-  · rintro ⟨position, rfl⟩
-    exact hammingNorm_elementaryWord position
+  by_cases h : j = positions i <;> simp [regularWord, h]
 
 /-- Total Hamming weight is the sum of the Hamming weights of the chunks. -/
 theorem hammingNorm_eq_sum_chunks {chunks chunkSize : ℕ}
@@ -141,9 +93,9 @@ theorem hammingNorm_eq_sum_chunks {chunks chunkSize : ℕ}
 theorem isRegular_regularWord {chunks chunkSize : ℕ}
     (positions : Fin chunks → Fin chunkSize) : IsRegularWord (regularWord positions) := by
   intro i
-  simpa only [regularWord] using hammingNorm_elementaryWord (positions i)
+  exact ⟨positions i, rfl⟩
 
-/-- The per-chunk weight-one predicate is equivalent to the source's description as a
+/-- The per-chunk unit-vector predicate is equivalent to the source's description as a
 concatenation of elementary words. -/
 theorem isRegularWord_iff_exists_positions {chunks chunkSize : ℕ}
     (x : Fin chunks × Fin chunkSize → Bool) :
@@ -151,10 +103,7 @@ theorem isRegularWord_iff_exists_positions {chunks chunkSize : ℕ}
   classical
   constructor
   · intro hx
-    rw [IsRegularWord] at hx
-    have hex : ∀ i, ∃ position, (fun j => x (i, j)) = elementaryWord position :=
-      fun i => (hammingNorm_eq_one_iff_exists_elementaryWord _).mp (hx i)
-    choose positions hpositions using hex
+    choose positions hpositions using hx
     refine ⟨positions, funext fun p => ?_⟩
     exact congrFun (hpositions p.1) p.2
   · rintro ⟨positions, rfl⟩
@@ -165,8 +114,9 @@ theorem IsRegularWord.hammingNorm_eq {chunks chunkSize : ℕ}
     {x : Fin chunks × Fin chunkSize → Bool} (hx : IsRegularWord x) :
     hammingNorm x = chunks := by
   rw [hammingNorm_eq_sum_chunks]
-  rw [IsRegularWord] at hx
-  simp_rw [hx]
+  have hweight : ∀ i, hammingNorm (fun j => x (i, j)) = 1 :=
+    fun i => (Cslib.BitString.hammingNorm_eq_one_iff_isSingle _).mpr (hx i)
+  simp_rw [hweight]
   simp
 
 @[simp]

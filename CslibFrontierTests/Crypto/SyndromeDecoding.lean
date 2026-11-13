@@ -39,10 +39,11 @@ private def invalid : Fin 2 × Fin 3 → Bool := fun _ => false
 -- The zero word has the wrong per-chunk weight and the wrong syndrome.
 private theorem invalid_not_regular : ¬IsRegularWord invalid := by
   intro h
-  rw [IsRegularWord] at h
-  have h0 := h (0 : Fin 2)
-  change hammingNorm (0 : Fin 3 → Bool) = 1 at h0
-  simp at h0
+  have h0 : Cslib.BitString.IsSingle (fun _ : Fin 3 => false) := by
+    simpa only [invalid] using h (0 : Fin 2)
+  obtain ⟨i, hi⟩ := h0
+  have := congrFun hi i
+  simp at this
 
 example : ¬IsRegularWord invalid :=
   invalid_not_regular
