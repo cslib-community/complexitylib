@@ -847,16 +847,9 @@ theorem FilterInv.clusterLen_sub_one_le_sum_scaleOverload
       have hk₀_lt : k₀ < 2 ^ (Nat.log 2 k₀ + 1) := Nat.lt_pow_succ_log_self (by decide) k₀
       refine scale k₀ hk₀ (by omega) (by omega) (by omega)
         ((Nat.pow_log_le_self 2 (by omega)).trans ?_) hk₀_lt.le
-      have h1 : (S.erase u).filter (fun x => h i x ∈ cyclicInterval b₀ q a ℓ) =
-          (S.filter fun x => h i x ∈ cyclicInterval b₀ q a ℓ).erase u := by
-        ext x
-        simp only [Finset.mem_filter, Finset.mem_erase]
-        tauto
-      rw [h1]
-      have hpred :
-          #(S.filter fun x => h i x ∈ cyclicInterval b₀ q a ℓ) - 1 ≤
-            #((S.filter fun x => h i x ∈ cyclicInterval b₀ q a ℓ).erase u) :=
-        Finset.pred_card_le_card_erase
+      rw [Finset.filter_erase]
+      have := Finset.pred_card_le_card_erase
+        (s := S.filter fun x => h i x ∈ cyclicInterval b₀ q a ℓ) (a := u)
       omega
     · -- With an empty home slot `u ∉ S`, so the scale of `ℓ` sees the whole cluster.
       obtain ⟨-, hrun_nil⟩ := hinv.isOcc_eq_false_of_fwdLen_eq_zero hS_lt q (by omega)
