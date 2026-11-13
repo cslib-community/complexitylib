@@ -13,12 +13,14 @@ public import CslibFrontier.Computability.Complexity.Classes.CountingSimulation.
 /-!
 # Counting, nondeterministic and probabilistic time in time `2 ^ O(T / √log T)` and polynomial space
 
-The class containments of `Cslib.Complexity.CountingSimulation.BlockNetworks`, with the contraction
-algorithm of Theorem D.1 of [OpenAI2026ETH] (`CountingSimulation.fastContractionAlgorithm`) in place
-of their hypothesis. These are the containments of #1833: for time-constructible `T` with
-`max n 2 ≤ T n`, every counting function in `SharpTIME[T]` is computed, with its exact value in
-binary, and every problem in `NTIME[T]`, `BPTIME[T]` or `PPTIME[T]` is decided, by one
-deterministic machine in time `2 ^ (C T n / √⌊log₂ (T n)⌋)` and workspace `T n ^ d`.
+The class containments of
+`CslibFrontier.Computability.Complexity.Classes.CountingSimulation.BlockNetworks`, with the
+contraction algorithm of Theorem D.1 of [OpenAI2026ETH]
+(`CountingSimulation.fastContractionAlgorithm`) in place of their hypothesis. These are the
+containments of #1833: for time-constructible `T` with `max n 2 ≤ T n`, every counting function
+in `SharpTIME[T]` is computed, with its exact value in binary, and every problem in `NTIME[T]`,
+`BPTIME[T]` or `PPTIME[T]` is decided, by one deterministic machine in time
+`2 ^ (C T n / √⌊log₂ (T n)⌋)` and workspace `T n ^ d`.
 
 ## Main results
 

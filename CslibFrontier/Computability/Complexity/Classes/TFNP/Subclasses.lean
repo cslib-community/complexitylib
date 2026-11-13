@@ -215,8 +215,7 @@ theorem localOptRel_mem_TFNP {enc : α ↪ List Bool} {n : α → ℕ}
     (hn : ComputableInPolyTime n enc encUnary)
     (hN : ComputableInPolyTime N (encPair enc encBits) encBits)
     (hC : ComputableInPolyTime C (encPair enc encBits) encNat)
-    (hlen : ∀ a u, u.length = n a → (N (a, u)).length = n a) :
-    localOptRel n N C ∈ TFNP enc :=
+    (hlen : PreservesWidth n N) : localOptRel n N C ∈ TFNP enc :=
   ⟨localOptRel_mem_FNP hn hN hC, isTotalSearch_localOptRel hlen⟩
 
 /-- A polynomial-time pigeonhole family defines an `FNP` relation. -/
@@ -244,8 +243,7 @@ theorem pigeonRel_mem_FNP {enc : α ↪ List Bool} {n : α → ℕ} {F : α × L
 theorem pigeonRel_mem_TFNP {enc : α ↪ List Bool} {n : α → ℕ} {F : α × List Bool → List Bool}
     (hn : ComputableInPolyTime n enc encUnary)
     (hF : ComputableInPolyTime F (encPair enc encBits) encBits)
-    (hlen : ∀ a u, u.length = n a → (F (a, u)).length = n a) :
-    pigeonRel n F ∈ TFNP enc :=
+    (hlen : PreservesWidth n F) : pigeonRel n F ∈ TFNP enc :=
   ⟨pigeonRel_mem_FNP hn hF, isTotalSearch_pigeonRel hlen⟩
 
 /-- A polynomial-time directed end-of-line family defines an `FNP` relation. -/
@@ -269,8 +267,7 @@ theorem endOfLineRel_mem_TFNP {enc : α ↪ List Bool} {n : α → ℕ}
     (hn : ComputableInPolyTime n enc encUnary)
     (hP : ComputableInPolyTime P (encPair enc encBits) encBits)
     (hS : ComputableInPolyTime S (encPair enc encBits) encBits)
-    (hS_len : ∀ a u, u.length = n a → (S (a, u)).length = n a) :
-    endOfLineRel n P S ∈ TFNP enc :=
+    (hS_len : PreservesWidth n S) : endOfLineRel n P S ∈ TFNP enc :=
   ⟨endOfLineRel_mem_FNP hn hP hS, isTotalSearch_endOfLineRel hS_len⟩
 
 /-- A polynomial-time undirected parity family defines an `FNP` relation. -/
@@ -294,9 +291,7 @@ theorem leafRel_mem_TFNP {enc : α ↪ List Bool} {n : α → ℕ}
     (hn : ComputableInPolyTime n enc encUnary)
     (hN₁ : ComputableInPolyTime N₁ (encPair enc encBits) encBits)
     (hN₂ : ComputableInPolyTime N₂ (encPair enc encBits) encBits)
-    (hN₁_len : ∀ a u, u.length = n a → (N₁ (a, u)).length = n a)
-    (hN₂_len : ∀ a u, u.length = n a → (N₂ (a, u)).length = n a) :
-    leafRel n N₁ N₂ ∈ TFNP enc :=
+    (hN₁_len : PreservesWidth n N₁) (hN₂_len : PreservesWidth n N₂) : leafRel n N₁ N₂ ∈ TFNP enc :=
   ⟨leafRel_mem_FNP hn hN₁ hN₂, isTotalSearch_leafRel hN₁_len hN₂_len⟩
 
 /-! ### The subclasses `PLS`, `PPP`, `PPAD` and `PPA` -/
@@ -309,7 +304,7 @@ def PLS (enc : α ↪ List Bool) : Set (α → List Bool → Prop) :=
     ComputableInPolyTime n enc encUnary ∧
     ComputableInPolyTime N (encPair enc encBits) encBits ∧
     ComputableInPolyTime C (encPair enc encBits) encNat ∧
-    (∀ a u, u.length = n a → (N (a, u)).length = n a) ∧
+    PreservesWidth n N ∧
     SearchReducible enc enc R (localOptRel n N C)}
 
 /-- **Polynomial Pigeonhole Principle (`PPP`)** [Papadimitriou][Papadimitriou1994PPAD]: `FNP`
@@ -319,7 +314,7 @@ def PPP (enc : α ↪ List Bool) : Set (α → List Bool → Prop) :=
   {R | R ∈ FNP enc ∧ ∃ (n : α → ℕ) (F : α × List Bool → List Bool),
     ComputableInPolyTime n enc encUnary ∧
     ComputableInPolyTime F (encPair enc encBits) encBits ∧
-    (∀ a u, u.length = n a → (F (a, u)).length = n a) ∧
+    PreservesWidth n F ∧
     SearchReducible enc enc R (pigeonRel n F)}
 
 /-- **Polynomial Parity Argument on Directed graphs (`PPAD`)**
@@ -330,8 +325,7 @@ def PPAD (enc : α ↪ List Bool) : Set (α → List Bool → Prop) :=
     ComputableInPolyTime n enc encUnary ∧
     ComputableInPolyTime P (encPair enc encBits) encBits ∧
     ComputableInPolyTime S (encPair enc encBits) encBits ∧
-    (∀ a u, u.length = n a → (P (a, u)).length = n a) ∧
-    (∀ a u, u.length = n a → (S (a, u)).length = n a) ∧
+    PreservesWidth n P ∧ PreservesWidth n S ∧
     SearchReducible enc enc R (endOfLineRel n P S)}
 
 /-- **Polynomial Parity Argument (`PPA`)** [Papadimitriou][Papadimitriou1994PPAD]: `FNP` search
@@ -342,8 +336,7 @@ def PPA (enc : α ↪ List Bool) : Set (α → List Bool → Prop) :=
     ComputableInPolyTime n enc encUnary ∧
     ComputableInPolyTime N₁ (encPair enc encBits) encBits ∧
     ComputableInPolyTime N₂ (encPair enc encBits) encBits ∧
-    (∀ a u, u.length = n a → (N₁ (a, u)).length = n a) ∧
-    (∀ a u, u.length = n a → (N₂ (a, u)).length = n a) ∧
+    PreservesWidth n N₁ ∧ PreservesWidth n N₂ ∧
     SearchReducible enc enc R (leafRel n N₁ N₂)}
 
 variable {enc : α ↪ List Bool} {encB : β ↪ List Bool} {R : α → List Bool → Prop}
@@ -354,7 +347,7 @@ theorem mem_PLS : R ∈ PLS enc ↔ R ∈ FNP enc ∧
       ComputableInPolyTime n enc encUnary ∧
       ComputableInPolyTime N (encPair enc encBits) encBits ∧
       ComputableInPolyTime C (encPair enc encBits) encNat ∧
-      (∀ a u, u.length = n a → (N (a, u)).length = n a) ∧
+      PreservesWidth n N ∧
       SearchReducible enc enc R (localOptRel n N C) :=
   Iff.rfl
 
@@ -362,7 +355,7 @@ theorem mem_PPP : R ∈ PPP enc ↔ R ∈ FNP enc ∧
     ∃ (n : α → ℕ) (F : α × List Bool → List Bool),
       ComputableInPolyTime n enc encUnary ∧
       ComputableInPolyTime F (encPair enc encBits) encBits ∧
-      (∀ a u, u.length = n a → (F (a, u)).length = n a) ∧
+      PreservesWidth n F ∧
       SearchReducible enc enc R (pigeonRel n F) :=
   Iff.rfl
 
@@ -371,8 +364,7 @@ theorem mem_PPAD : R ∈ PPAD enc ↔ R ∈ FNP enc ∧
       ComputableInPolyTime n enc encUnary ∧
       ComputableInPolyTime P (encPair enc encBits) encBits ∧
       ComputableInPolyTime S (encPair enc encBits) encBits ∧
-      (∀ a u, u.length = n a → (P (a, u)).length = n a) ∧
-      (∀ a u, u.length = n a → (S (a, u)).length = n a) ∧
+      PreservesWidth n P ∧ PreservesWidth n S ∧
       SearchReducible enc enc R (endOfLineRel n P S) :=
   Iff.rfl
 
@@ -381,8 +373,7 @@ theorem mem_PPA : R ∈ PPA enc ↔ R ∈ FNP enc ∧
       ComputableInPolyTime n enc encUnary ∧
       ComputableInPolyTime N₁ (encPair enc encBits) encBits ∧
       ComputableInPolyTime N₂ (encPair enc encBits) encBits ∧
-      (∀ a u, u.length = n a → (N₁ (a, u)).length = n a) ∧
-      (∀ a u, u.length = n a → (N₂ (a, u)).length = n a) ∧
+      PreservesWidth n N₁ ∧ PreservesWidth n N₂ ∧
       SearchReducible enc enc R (leafRel n N₁ N₂) :=
   Iff.rfl
 
@@ -391,16 +382,14 @@ theorem localOptRel_mem_PLS {n : α → ℕ} {N : α × List Bool → List Bool}
     (hn : ComputableInPolyTime n enc encUnary)
     (hN : ComputableInPolyTime N (encPair enc encBits) encBits)
     (hC : ComputableInPolyTime C (encPair enc encBits) encNat)
-    (hlen : ∀ a u, u.length = n a → (N (a, u)).length = n a) :
-    localOptRel n N C ∈ PLS enc := by
+    (hlen : PreservesWidth n N) : localOptRel n N C ∈ PLS enc := by
   exact mem_PLS.mpr ⟨localOptRel_mem_FNP hn hN hC, n, N, C, hn, hN, hC, hlen, .refl _ _⟩
 
 /-- Every uniform polynomial-time pigeonhole family is in `PPP`. -/
 theorem pigeonRel_mem_PPP {n : α → ℕ} {F : α × List Bool → List Bool}
     (hn : ComputableInPolyTime n enc encUnary)
     (hF : ComputableInPolyTime F (encPair enc encBits) encBits)
-    (hlen : ∀ a u, u.length = n a → (F (a, u)).length = n a) :
-    pigeonRel n F ∈ PPP enc := by
+    (hlen : PreservesWidth n F) : pigeonRel n F ∈ PPP enc := by
   exact mem_PPP.mpr ⟨pigeonRel_mem_FNP hn hF, n, F, hn, hF, hlen, .refl _ _⟩
 
 /-- Every uniform polynomial-time directed end-of-line family is in `PPAD`. -/
@@ -408,8 +397,7 @@ theorem endOfLineRel_mem_PPAD {n : α → ℕ} {P S : α × List Bool → List B
     (hn : ComputableInPolyTime n enc encUnary)
     (hP : ComputableInPolyTime P (encPair enc encBits) encBits)
     (hS : ComputableInPolyTime S (encPair enc encBits) encBits)
-    (hP_len : ∀ a u, u.length = n a → (P (a, u)).length = n a)
-    (hS_len : ∀ a u, u.length = n a → (S (a, u)).length = n a) :
+    (hP_len : PreservesWidth n P) (hS_len : PreservesWidth n S) :
     endOfLineRel n P S ∈ PPAD enc := by
   exact mem_PPAD.mpr
     ⟨endOfLineRel_mem_FNP hn hP hS, n, P, S, hn, hP, hS, hP_len, hS_len, .refl _ _⟩
@@ -419,8 +407,7 @@ theorem leafRel_mem_PPA {n : α → ℕ} {N₁ N₂ : α × List Bool → List B
     (hn : ComputableInPolyTime n enc encUnary)
     (hN₁ : ComputableInPolyTime N₁ (encPair enc encBits) encBits)
     (hN₂ : ComputableInPolyTime N₂ (encPair enc encBits) encBits)
-    (hN₁_len : ∀ a u, u.length = n a → (N₁ (a, u)).length = n a)
-    (hN₂_len : ∀ a u, u.length = n a → (N₂ (a, u)).length = n a) :
+    (hN₁_len : PreservesWidth n N₁) (hN₂_len : PreservesWidth n N₂) :
     leafRel n N₁ N₂ ∈ PPA enc := by
   exact mem_PPA.mpr
     ⟨leafRel_mem_FNP hn hN₁ hN₂, n, N₁, N₂, hn, hN₁, hN₂, hN₁_len, hN₂_len, .refl _ _⟩
@@ -484,8 +471,7 @@ theorem PPA_subset_TFNP : PPA enc ⊆ TFNP enc := by
 /-- Every directed end-of-line family search-reduces to its associated bipartite undirected parity
 family. -/
 theorem endOfLineRel_searchReducible_leafRel {n : α → ℕ} {P S : α × List Bool → List Bool}
-    (hP_len : ∀ a u, u.length = n a → (P (a, u)).length = n a)
-    (hS_len : ∀ a u, u.length = n a → (S (a, u)).length = n a) :
+    (hP_len : PreservesWidth n P) (hS_len : PreservesWidth n S) :
     SearchReducible enc enc (endOfLineRel n P S)
       (leafRel (fun a => n a + 1) (ppadToPpaN₁ n P S) (ppadToPpaN₂ n P S)) :=
   .of_isTotalSearch

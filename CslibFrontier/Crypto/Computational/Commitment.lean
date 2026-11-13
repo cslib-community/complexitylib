@@ -347,8 +347,8 @@ theorem CommitmentReceiver.isPPT_ofDeterministic {r : ℕ → List Bool} {b₀ b
         (commitmentHidingGame commit (CommitmentReceiver.ofDeterministic r b₀ b₁ D) aux bit n) =
       distinguishingGame
         ((BitString.uniformList n).map (commit (r n) (if bit then b₁ n else b₀ n))) (D n) := by
-  simp only [pmf_norm, commitmentHidingGame, CommitmentReceiver.ofDeterministic, distinguishingGame,
-    BitString.eval_sampleList]
+  simp only [pmf_norm, commitmentHidingGame, CommitmentReceiver.ofDeterministic,
+    distinguishingGame_eq_bind, BitString.eval_sampleList]
 
 /-- Stateful-receiver hiding implies the deterministic-family hiding interface: any commitment
 function satisfying `StatefulHiding` hides commitments for all deterministic polynomial-time
@@ -406,7 +406,8 @@ theorem eval_commitmentHidingGame_naorCommit (generator : List Bool → List Boo
     ProbComp.eval (commitmentHidingGame (naorCommit generator) receiver (aux n) bit n) =
       distinguishingGame (generatorEnsemble generator n)
         (naorReceiverDistinguisher receiver aux bit n) := by
-  unfold commitmentHidingGame distinguishingGame generatorEnsemble naorReceiverDistinguisher
+  rw [distinguishingGame_eq_bind]
+  unfold commitmentHidingGame generatorEnsemble naorReceiverDistinguisher
   simp only [pmf_norm, BitString.eval_sampleList]
   exact PMF.bind_comm _ _ _
 
@@ -420,7 +421,8 @@ theorem distinguishingGame_uniformList_naorReceiverDistinguisher (m : ℕ)
       (ProbComp.eval (receiver.choose n (aux n))).bind fun choice =>
         (BitString.uniformList m).bind fun c =>
           ProbComp.eval (receiver.guess n choice.2 c) := by
-  unfold distinguishingGame naorReceiverDistinguisher
+  rw [distinguishingGame_eq_bind]
+  unfold naorReceiverDistinguisher
   simp only [ProbComp.eval_bind, PMF.monad_bind_eq_bind]
   pmf_swap with choice
   have h := congrArg

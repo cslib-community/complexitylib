@@ -23,6 +23,7 @@ import CslibFrontier.Computability.Probabilistic.Oracle.Substitution
 import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Crypto.Game.Order
 import CslibFrontier.Crypto.Negligible.Basic
+import CslibFrontier.Crypto.Negligible.Dyadic
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Languages.Probabilistic.Oracle.Support
@@ -516,7 +517,6 @@ theorem succProbability_treeGame_le_prf (adversary : Forger) (n : ℕ) :
   rw [← eval_coinRealGame, ← eval_coinIdealGame]
   exact succProbability_treeGame_le family hinv adversary n
 
-open Filter in
 omit hinv in
 /-- The coin-game advantage of the coin adversary, read at `N n`, is negligible in `n` for a
 pseudorandom function, an oracle-PPT coin adversary and `n ≤ N n`. -/
@@ -525,13 +525,8 @@ theorem negligible_advantage_treeCoinAdversary (hF : PseudorandomFunction family
     (hB : IsOraclePPT encBool (treeCoinAdversary S T depth N inv adversary)) :
     Negligible (fun n => Game.advantage
       (ProbComp.eval (coinRealGame family (treeCoinAdversary S T depth N inv adversary) (N n)))
-      (ProbComp.eval (coinIdealGame (treeCoinAdversary S T depth N inv adversary) (N n)))) := by
-  refine negligible_of_le
-    ((hF.coinIndistinguishable _ hB).comp_of_polynomial_bound
-      (tendsto_atTop_mono hN tendsto_id) (bound := id)
-      PolynomiallyBounded.id (Eventually.of_forall hN)) fun _ => ?_
-  dsimp only [Function.comp_apply]
-  exact le_rfl
+      (ProbComp.eval (coinIdealGame (treeCoinAdversary S T depth N inv adversary) (N n)))) :=
+  (hF.coinIndistinguishable _ hB).comp_polynomiallyLowerBounded (.mono_of_le .id hN)
 
 end Bound
 
@@ -619,25 +614,14 @@ at most `1`, on a message of length at most `L`. -/
 
 theorem computableInPolyTime_keyBound (ck dk cb db : ℕ) :
     ComputableInPolyTime (keyBound ck dk cb db) encUnary encUnary := by
-  have hn := ComputableInPolyTime.id' (encIn := encUnary)
-  exact ((ComputableInPolyTime.const ck).unary_mul'
-    ((ComputableInPolyTime.unary_pow dk).comp'
-      ((((ComputableInPolyTime.const 2).unary_mul' hn).unary_add' (.const 2)).unary_add'
-        ((ComputableInPolyTime.const cb).unary_mul'
-          ((ComputableInPolyTime.unary_pow db).comp' (hn.unary_add' (.const 1))))))).of_enc_eq
-    fun _ => rfl
+  unfold keyBound
+  fun_prop
 
 theorem computableInPolyTime_sigBound (cs ds cB dB : ℕ) :
     ComputableInPolyTime (fun p : ℕ × ℕ => sigBound cs ds cB dB p.1 p.2)
       (encPair encUnary encUnary) encUnary := by
-  have hp := ComputableInPolyTime.id' (encIn := encPair encUnary encUnary)
-  have h2KL := ((ComputableInPolyTime.const 2).unary_mul' hp.fst').unary_add' hp.snd'
-  exact ((ComputableInPolyTime.const cs).unary_mul'
-    ((ComputableInPolyTime.unary_pow ds).comp'
-      ((((ComputableInPolyTime.const 2).unary_mul' (h2KL.unary_add' (.const 4))).unary_add'
-        ((ComputableInPolyTime.const cB).unary_mul'
-          ((ComputableInPolyTime.unary_pow dB).comp' (h2KL.unary_add' (.const 5))))).unary_add'
-        (.const 2)))).of_enc_eq fun _ => rfl
+  unfold sigBound
+  fun_prop
 
 private theorem sigBound_funProp {α : Type} {enc : α ↪ List Bool} {K L : α → ℕ}
     (cs ds cB dB : ℕ) (hK : ComputableInPolyTime K enc encUnary)
