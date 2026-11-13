@@ -196,7 +196,7 @@ noncomputable def eagerNoCheckGame [Fintype M] [Finite R] [Fintype CT] [Finite K
   let (cStar, kReal) ← ProbComp.eval (S.encapsNotBot G H pk)
   let kRand ← ProbComp.eval S.sampleKey
   OracleComp.interpret (S.eagerNoCheckOracle G H dk cStar)
-    (A (pk, cStar, if b then kRand else kReal))
+    (A ⟨pk, cStar, if b then kRand else kReal⟩)
 
 end Scheme
 
@@ -221,10 +221,10 @@ def leakBits [DecidableEq K] (c : CT) :
 /-- The bit-recovery adversary: it reads off a candidate message `m̂` bit by bit with
 `leakBits`, then outputs whether `H(false, m̂, c*)` equals the challenge key. -/
 def leakAdv [DecidableEq K] : ROAdversary PK (Fin n → Bool) R (CT × Option (Fin n)) K :=
-  fun (_, cStar, kStar) => do
-    let bits ← leakBits (R := R) (K := K) cStar.1 (List.finRange n)
-    let k ← OracleComp.query (ROQuery.H (false, fun i => (bits.lookup i).getD false, cStar))
-    return decide (k = kStar)
+  fun ch => do
+    let bits ← leakBits (R := R) (K := K) ch.ct.1 (List.finRange n)
+    let k ← OracleComp.query (ROQuery.H (false, fun i => (bits.lookup i).getD false, ch.ct))
+    return decide (k = ch.key)
 
 variable [DecidableEq K]
 
@@ -247,17 +247,16 @@ theorem roQueryBounds_leakAdv :
     ROQueryBounds (leakAdv (PK := PK) (R := R) (CT := CT) (K := K) (n := n)) 0 (n + 1) := by
   have h (cost : ROQuery (Fin n → Bool) (CT × Option (Fin n)) → ℕ) (k : ℕ)
       (hd : ∀ x, cost (.decaps x) = 0) (hH : ∀ x, cost (.H x) = k)
-      (inp : PK × (CT × Option (Fin n)) × K) :
-      OracleComp.IsCostBounded cost (leakAdv (R := R) inp) (n * k + k) := by
-    obtain ⟨_, cStar, kStar⟩ := inp
+      (ch : KEM.Challenge PK (CT × Option (Fin n)) K) :
+      OracleComp.IsCostBounded cost (leakAdv (R := R) ch) (n * k + k) := by
     dsimp only [leakAdv]
     refine OracleComp.IsCostBounded.bind ?_ fun bits => ?_
     · simpa using
-        isCostBounded_leakBits (R := R) (K := K) cost k hd hH cStar.1 (List.finRange n)
+        isCostBounded_leakBits (R := R) (K := K) cost k hd hH ch.ct.1 (List.finRange n)
     · exact ((OracleComp.IsCostBounded.query _).bind fun _ => .pure _ 0).mono (by simp [hH])
-  intro inp
-  exact ⟨by simpa using h ROQuery.gCost 0 (fun _ => rfl) (fun _ => rfl) inp,
-    by simpa using h ROQuery.hCost 1 (fun _ => rfl) (fun _ => rfl) inp⟩
+  intro ch
+  exact ⟨by simpa using h ROQuery.gCost 0 (fun _ => rfl) (fun _ => rfl) ch,
+    by simpa using h ROQuery.hCost 1 (fun _ => rfl) (fun _ => rfl) ch⟩
 
 /-- The candidate message that `leakAdv` reads off for the challenge `(c, none)` when `c`
 decrypts to `m`: bit `i` is read as `true` iff `H(false, m i, (c, some i))` agrees with
@@ -286,7 +285,7 @@ theorem interpret_leakAdv (S : Scheme PK SK (Fin n → Bool) R (CT × Option (Fi
     (G : (Fin n → Bool) → R) (H : Bool × (Fin n → Bool) × (CT × Option (Fin n)) → K)
     (dk : ImplicitSK PK SK (Fin n → Bool)) (c : CT) (m : Fin n → Bool)
     (hdec : ∀ i, S.pke.dec dk.sk (c, some i) = some fun _ => m i) (pk : PK) (k : K) :
-    OracleComp.interpret (S.eagerNoCheckOracle G H dk (c, none)) (leakAdv (pk, (c, none), k)) =
+    OracleComp.interpret (S.eagerNoCheckOracle G H dk (c, none)) (leakAdv ⟨pk, (c, none), k⟩) =
       PMF.pure (decide (H (false, leakGuess H m c, (c, none)) = k)) := by
   have hguess : (fun i => ((List.finRange n).map fun i => (i, leakGuess H m c i)).lookup i
       |>.getD false) = leakGuess H m c :=

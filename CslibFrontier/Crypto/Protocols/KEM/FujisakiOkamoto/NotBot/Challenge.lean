@@ -158,12 +158,12 @@ namespace Scheme
 variable [DecidableEq M] [DecidableEq CT]
 
 /-- The keyless simulator `simFilterHandler d pk cStar`, evaluated to `PMF`, run on
-`A (pk, cStar, k)` from the state `st`. -/
+`A ⟨pk, cStar, k⟩` from the state `st`. -/
 private noncomputable def simRun (S : Scheme PK SK M R CT K) (d : List (M × R) → CT → Bool)
     (A : ROAdversary PK M R CT K)
     (pk : PK) (cStar : CT) (k : K) (st : SimState M R CT K) : PMF (Bool × SimState M R CT K) :=
   (OracleComp.interpret (m := StateT (SimState M R CT K) PMF)
-    (fun q s => ProbComp.eval (S.simFilterHandler d pk cStar q s)) (A (pk, cStar, k))).run st
+    (fun q s => ProbComp.eval (S.simFilterHandler d pk cStar q s)) (A ⟨pk, cStar, k⟩)).run st
 
 omit [DecidableEq CT] in
 /-- A supported transition of `simHashG` records its answer, keeps the old `gCache` entries and
@@ -396,7 +396,7 @@ private theorem simRun_bad_le (S : Scheme PK SK M R CT K) (d : List (M × R) →
       (bad := fun st : SimState M R CT K => ∃ p ∈ st.gCache, S.pke.encDet pk p.1 p.2 = cStar)
       ROQuery.gCost ROQuery.hCost (fun _ => ε) 0 0 ε
       (fun q s hs => S.simHandler_reEnc_le d hγ hpk cStar q s hs) (fun _ _ _ _ _ _ => by simp)
-      (hq (pk, cStar, k)).1 (hq (pk, cStar, k)).2 (s := {}) (by simp)).trans_eq ?_
+      (hq ⟨pk, cStar, k⟩).1 (hq ⟨pk, cStar, k⟩).2 (s := {}) (by simp)).trans_eq ?_
     push_cast
     ring
   calc P.toOuterMeasure
@@ -901,7 +901,7 @@ private theorem simRun_preset_eq (S : Scheme PK SK M R CT K) (d : List (M × R) 
       ((OracleComp.interpret (m := StateT (SimState M R CT K) PMF)
         (fun q s => ProbComp.eval
           (S.genHandler d (S.progG mStar rStar) (S.progHq cStar kq) pk cStar q s))
-        (A (pk, cStar, k))).run {}).map Prod.fst := by
+        (A ⟨pk, cStar, k⟩)).run {}).map Prod.fst := by
   have h := OracleComp.run_interpret_map_state_of_invariant
     (fun q s => ProbComp.eval
       (S.genHandler d (S.progG mStar rStar) (S.progHq cStar kq) pk cStar q s))
@@ -909,7 +909,7 @@ private theorem simRun_preset_eq (S : Scheme PK SK M R CT K) (d : List (M × R) 
     (presetState mStar rStar cStar kq) (PresetInv mStar rStar cStar kq)
     (S.presetInv_genHandler d pk mStar rStar cStar kq)
     (fun q s hs => S.genHandler_presetState d pk mStar rStar cStar kq hd q s hs)
-    (A (pk, cStar, k)) {} ⟨Or.inl rfl, Or.inl rfl⟩
+    (A ⟨pk, cStar, k⟩) {} ⟨Or.inl rfl, Or.inl rfl⟩
   have hfst := congrArg (PMF.map Prod.fst) h
   rw [PMF.map_comp] at hfst
   exact hfst.symm
@@ -986,7 +986,7 @@ private theorem simRun_eq_genHandler (S : Scheme PK SK M R CT K)
       (OracleComp.interpret (m := StateT (SimState M R CT K) PMF)
         (fun q s => ProbComp.eval
           (S.genHandler d (fun _ => S.pke.sampleCoins) (fun _ => S.sampleKey) pk cStar q s))
-        (A (pk, cStar, k))).run st := by
+        (A ⟨pk, cStar, k⟩)).run st := by
   simp only [simRun, simFilterHandler_eq_genHandler]
 
 /-- For one draw of the outer randomness, the simulator run from the preset `simFilterGame` caches
@@ -1009,7 +1009,7 @@ private theorem closeTo_simRun_preset (S : Scheme PK SK M R CT K)
     (gs₂ := fun _ => S.pke.sampleCoins) (hs₁ := S.progHq cStar kq)
     (hs₂ := fun _ => S.sampleKey) (mStar := mStar) pk cStar (fun m hm => by simp [progG, hm])
     (fun c hc => by simp [progHq, hc])
-  have h := (hiub.closeTo_run (A (pk, cStar, k)) {}).map Prod.fst
+  have h := (hiub.closeTo_run (A ⟨pk, cStar, k⟩) {}).map Prod.fst
   rw [hiub.bad_eq, ← simRun_eq_genHandler] at h
   refine h.mono ((S.simRun_bad_le d A hq hγ hpk mStar cStar k).trans (le_of_eq ?_))
   rw [← PMF.toOuterMeasure_apply_singleton, PMF.toOuterMeasure_map_apply]
