@@ -22,7 +22,13 @@ distribution. Scheme algorithms, adversaries and experiments are written as prog
 Names follow one convention. A `…Experiment` is one instance, at fixed parameters (a group, a key
 space, a security parameter already chosen). A `…Game` is a family: `Game.withSetup` draws public
 parameters from a setup law, which need not be efficiently sampleable, and then runs the fixed
-experiment.
+experiment. When the setup is itself a program, such as key generation, the experiment binds it:
+`Experiment.advantage_bind_le_of_support` and `Experiment.succProbability_bind_le_of_support`
+lift a bound that holds at every possible output of the setup program.
+
+`Experiment.succProbability` and `Experiment.advantage` are reducible abbreviations, so `simp` and
+term-mode applications of the `Game` lemmas see through them. `rw` matches syntactically: unfold
+with `simp only [Experiment.advantage]` before rewriting with a `Game` lemma.
 
 `distAdvantage real sim D` is the advantage of a distinguisher `D` between two view distributions,
 as in simulation-based definitions.
@@ -43,6 +49,9 @@ as in simulation-based definitions.
 * `Cslib.Crypto.Game.withSetup_pure`: a point setup law runs one experiment.
 * `Cslib.Crypto.Game.advantage_withSetup_le`, `Cslib.Crypto.Game.succProbability_withSetup_le`: a
   bound for every supported parameter bounds the game.
+* `Cslib.Crypto.Experiment.advantage_bind_le_of_support`,
+  `Cslib.Crypto.Experiment.succProbability_bind_le_of_support`: a bound for every output of a setup
+  program bounds the experiment that runs it first.
 
 ## References
 
@@ -124,5 +133,29 @@ theorem succProbability_withSetup_le {P : Type} (setup : PMF P) (exp : P → Exp
   simpa only [withSetup, ProbComp.eval_pure, PMF.bind_const, advantage_pure_false] using hle
 
 end Game
+
+/-- The experiment that runs a setup program and then an experiment on its output is the game
+over the setup's output distribution. -/
+theorem Experiment.eval_bind_eq_withSetup {P : Type} (setup : ProbComp P) (exp : P → Experiment) :
+    ProbComp.eval (setup >>= exp) = Game.withSetup (ProbComp.eval setup) exp :=
+  ProbComp.eval_bind _ _
+
+/-- A bound on the advantage at every possible output of a setup program, such as key generation,
+bounds the advantage between the experiments that run it first. -/
+theorem Experiment.advantage_bind_le_of_support {P : Type} (setup : ProbComp P)
+    (exp₀ exp₁ : P → Experiment) {ε : ℝ≥0}
+    (h : ∀ p ∈ (ProbComp.eval setup).support, Experiment.advantage (exp₀ p) (exp₁ p) ≤ ε) :
+    Experiment.advantage (setup >>= exp₀) (setup >>= exp₁) ≤ ε := by
+  simp only [Experiment.advantage, Experiment.eval_bind_eq_withSetup]
+  exact Game.advantage_withSetup_le _ _ _ h
+
+/-- A bound on the success probability at every possible output of a setup program bounds the
+success probability of the experiment that runs it first. -/
+theorem Experiment.succProbability_bind_le_of_support {P : Type} (setup : ProbComp P)
+    (exp : P → Experiment) {ε : ℝ≥0}
+    (h : ∀ p ∈ (ProbComp.eval setup).support, Experiment.succProbability (exp p) ≤ ε) :
+    Experiment.succProbability (setup >>= exp) ≤ ε := by
+  simp only [Experiment.succProbability, Experiment.eval_bind_eq_withSetup]
+  exact Game.succProbability_withSetup_le _ _ h
 
 end Cslib.Crypto
