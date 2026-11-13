@@ -44,7 +44,7 @@ variable {Rel V W : Type*}
 
 /-- Rename the variables of an affine equation, retaining all occurrences. -/
 @[expose] def AffineEquation.relabel (f : V → W) (e : AffineEquation V) : AffineEquation W :=
-  (e.1.map f, e.2)
+  ⟨e.vars.map f, e.rhs⟩
 
 /-- Substitution composes assignments; the variable map need not be injective. -/
 @[simp] theorem AffineEquation.holds_relabel (f : V → W) (e : AffineEquation V)

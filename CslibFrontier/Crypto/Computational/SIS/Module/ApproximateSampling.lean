@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Computational.SIS.Module.MatrixSampling
 public import CslibFrontier.Crypto.Game.CloseTo.UniformNat
+public import CslibFrontier.Probability.Product
 import CslibFrontier.Computability.Interactive.Security.Repeat
 import CslibFrontier.Computability.Probabilistic.Repeat
 import CslibFrontier.Computability.Probabilistic.PPT.Capture

@@ -115,9 +115,9 @@ jobs:
         run: python3 -B scripts/check_encoding_readability.py --report
       # Positional projection chains such as `c.1.2` in public statements and definition bodies
       # (#1764) are counted per module in scripts/projection_chains_baseline.json. Pull requests
-      # fail when a module they change has more chains than its entry; fewer chains only print
-      # the command that lowers the entry, so migrations need not edit the baseline. Merge groups
-      # and pushes only report. The base is the first parent of the merge commit, as above.
+      # fail when a module they change has more chains than its entry or, unless they raise the
+      # entry, than at the merge base; fewer chains need no baseline edit. Merge groups and
+      # pushes only report. The base is the first parent of the merge commit, as above.
       # Sources only: no Lean.
       - name: "Projection chain ratchet (changed modules)"
         if: github.event_name == 'pull_request'

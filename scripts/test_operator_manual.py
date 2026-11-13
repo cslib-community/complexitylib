@@ -12,9 +12,9 @@ from pathlib import Path
 from unittest import mock
 
 from build_operator_manual import main as build_main
-from check_operator_manual import (MISNAMED_SOURCE_ANCHOR, STALE_SOURCE_ANCHOR, book_input_errors,
-                                   check, comment_depths, fix_anchors, main as check_main,
-                                   source_anchor_error)
+from check_operator_manual import (LIST_AFTER_PARAGRAPH, MISNAMED_SOURCE_ANCHOR, STALE_SOURCE_ANCHOR,
+                                   book_input_errors, check, comment_depths, fix_anchors,
+                                   lists_after_paragraphs, main as check_main, source_anchor_error)
 
 DATA = Path(__file__).resolve().parents[1] / "manual/data"
 with mock.patch.object(sys, "path", [str(DATA), *sys.path]):
@@ -143,6 +143,15 @@ class ManualChecks(unittest.TestCase):
     def test_undefined_reference_is_reported(self):
         self.doc.write_text(self.doc.read_text() + "\n[Read it][undefined]\n")
         self.assertTrue(any("undefined reference" in e for e in self.errors()))
+
+    def test_list_directly_after_a_paragraph_line_is_reported(self):
+        original = self.doc.read_text()
+        self.doc.write_text(original + "\nThe examples check:\n- one case;\n- another.\n")
+        line = len(original.splitlines()) + 3
+        self.assertEqual(self.errors(),
+                         [f"workflows/first.md: Line {line}: {LIST_AFTER_PARAGRAPH}"])
+        self.doc.write_text(original + "\nThe examples check:\n\n- one case;\n- another.\n")
+        self.assertEqual(self.errors(), [])
 
     def test_unregistered_lean_block_is_reported(self):
         self.doc.write_text(self.doc.read_text() + "\n```lean\nexample : True := .intro\n```\n")
@@ -637,6 +646,25 @@ class BookInputs(unittest.TestCase):
             book.validate_manifest(self.root, self.output, ["README.md"])
 
 
+class MissingGlyphs(unittest.TestCase):
+    def test_log_lines_name_each_missing_character_once(self):
+        log = ("Missing character: There is no 𝔼 (U+1D53C) in font [DejaVuSansMono.ttf]:mode=node;\n"
+               "Missing character: There is no ι in font cmmi10!\n"
+               "Missing character: There is no 𝔼 (U+1D53C) in font [DejaVuSansMono.ttf]:mode=node;\n"
+               "Missing character: There is no ⬝ (U+2B1D) in font [texgyrepagella-regular.o\n")
+        self.assertEqual(book.missing_glyphs(log), [
+            "𝔼 (U+1D53C) in [DejaVuSansMono.ttf]", "ι (U+03B9) in cmmi10",
+            "⬝ (U+2B1D) in [texgyrepagella-regular.o"])
+        self.assertEqual(book.missing_glyphs("Output written on book.pdf (2 pages).\n"), [])
+
+    def test_unicode_absent_from_the_fonts_is_set_in_math(self):
+        self.assertEqual(book.base.inline_tex("𝔼"), r"\ensuremath{\mathbb{E}}")
+        self.assertEqual(book.base.inline_tex("A ⬝ v"), r"A \ensuremath{\cdot} v")
+        self.assertTrue(all(book.base.MATH.values()))
+        math = {'t': 'Math', 'c': [{'t': 'InlineMath'}, r'ι \times κ₁']}
+        self.assertEqual(book.base.transform(math, 'topic.md')['c'][1], r'{\iota} \times {\kappa}_1')
+
+
 class PortableLinks(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="cslib-frontier-manual-links-")
@@ -700,6 +728,48 @@ class PortableLinks(unittest.TestCase):
     def test_paths_outside_repository_are_rejected(self):
         with self.assertRaisesRegex(ValueError, 'outside the repository'):
             self.target('../../outside.txt')
+
+
+class ListsAfterParagraphs(unittest.TestCase):
+    """Cases follow pandoc's `markdown+autolink_bare_uris` reader, which builds the PDFs."""
+
+    def test_list_starting_below_a_paragraph_line_is_found(self):
+        for text, lines in (
+                ("Intro:\n- a\n- b\n", [2]),
+                ("Intro:\n1. a\n2. b\n", [2]),
+                ("Intro:\n  - an indented item is still lazy paragraph text\n", [2]),
+                ("A wrapped sum `a\n+ b` starts a list on GitHub.\n", [2]),
+                ("- a\n\nA paragraph after the list.\n- b\n", [4]),
+                ("> Quote.\n- a\n", [2]),
+                ('<a id="anchor"></a>\n- a\n', [2]),
+                ("Intro:\n[ref]: https://example.org\n- a\n", [3]),
+                ("Para\n# Not a heading after a paragraph line\n- a\n", [3]),
+                ("A wrapped reference to\n#4903 landed.\n- a\n", [3]),
+                ("```text\nx\n```\nPara\n- a\n", [5]),
+                ("- a\n\n  ```text\n  x\n  ```\n\nA paragraph after the list.\n- b\n", [8])):
+            with self.subTest(text=text):
+                self.assertEqual(lists_after_paragraphs(text), lines)
+
+    def test_separated_open_and_non_paragraph_lists_are_accepted(self):
+        for text in ("Intro:\n\n- a\n- b\n",
+                     "# Heading\n- a\n",
+                     "- a\n  - nested\n- b\n",
+                     "- a lazy\ncontinuation line\n- b\n",
+                     "- a\n\n  A second paragraph of the item.\n  - nested\n",
+                     "1. a\n2. b\n   - nested\n",
+                     "1. Run:\n\n   ```bash\n   python3 x\n   ```\n\n   Then inspect.\n2. Build.\n",
+                     "- a\n\n  ```text\n  x\n\n  y\n  ```\n  after fence\n- b\n",
+                     "- a\n\n  ```text\n  x\n  ```\nlazy text continues the item\n- b\n",
+                     "| a | b |\n- a\n",
+                     "<!-- comment -->\n- a\n",
+                     "</div>\n- a\n",
+                     "[ref]: https://example.org\n- a\n",
+                     "Setext heading\n---\n- a\n",
+                     "```text\nIntro:\n- a literal, not a list\n```\n",
+                     "```text\nliteral\n```\n- a\n",
+                     "*Emphasis* and\n*more emphasis* are not items.\n"):
+            with self.subTest(text=text):
+                self.assertEqual(lists_after_paragraphs(text), [])
 
 
 class VisualSources(unittest.TestCase):

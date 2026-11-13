@@ -811,7 +811,8 @@ private theorem distinguishingGame_realEnsemble (n m w η : ℕ → ℕ)
           (fun k => encryptSerialized (n k) (m k) (w k) (η k))
           adversary bit security).map fun guess => guess ^^ bit) := by
   simp only [distinguishingGame_eq_bind, lweDistinguisher, LWE.realEnsemble, LWE.publicMatrixLaw,
-    LWE.publicMatrix, Encryption.publicKeyGame, uniformPublicKeyWord, pmf_norm,
+    LWE.publicMatrix, Encryption.publicKeyGame, Encryption.publicKeyGameOn, ↓reduceIte,
+    uniformPublicKeyWord, pmf_norm,
     lweExtractPublicKey_toBinary, lweExtractChallenge_toBinary,
     eval_encryptSerialized_serializePublicKey, encrypt, ProbComp.eval_bind, ProbComp.eval_pure,
     LWE.eval_sampleVector, ProbComp.eval_uniform]

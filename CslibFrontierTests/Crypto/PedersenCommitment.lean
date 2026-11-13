@@ -49,9 +49,9 @@ example :
       ⟨d23, (3 : ZMod (schnorrGroups.order d23)) • schnorrGroups.generator d23⟩
       (Nat.bits 3, (Nat.bits 4, Nat.bits 5), (Nat.bits 2, Nat.bits 2)) = true := by decide
 
-/-- `pedersenExtractNat` recovers the secret discrete logarithm `α = 3` from the concrete collision
-`((4, 5), (2, 2))` modulo `11`. -/
-example : pedersenExtractNat 11 4 5 2 2 = 3 := by decide
+/-- `extractNat` recovers the secret discrete logarithm `α = 3` from the concrete collision
+`((4, 5), (2, 2))` modulo `11`: `α = (r₁ - r₀)⁻¹ (m₀ - m₁) = extractNat 11 r₁ m₀ r₀ m₁`. -/
+example : extractNat 11 2 4 5 2 = 3 := by decide
 
 /-- Additive homomorphism of Pedersen commitments on `d23`. -/
 example (h : schnorrGroups.Carrier d23) :

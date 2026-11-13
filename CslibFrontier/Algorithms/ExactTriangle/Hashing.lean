@@ -12,6 +12,7 @@ public import CslibFrontier.Foundations.Data.Int.Residue
 public import CslibFrontier.Foundations.NumberTheory.SqrtPrimeWindow
 public import CslibFrontier.Foundations.RingTheory.CyclicIntRing
 public import Mathlib.Data.Matrix.Mul
+public import Mathlib.Tactic.DeriveFintype
 
 /-!
 # Modular counts and prime selection for integer Exact Triangle
@@ -22,12 +23,15 @@ by `C * κ * n^3 * log n / sqrt D`. The prime count used here is proved for ever
 
 ## Main definitions
 
-* `countZeroMod`, `falsePositiveCount`, `zeroCount`: counts of finite triples.
+* `Triangle`: a vertex triple, one vertex from each part.
+* `countZeroMod`, `falsePositiveCount`, `zeroCount`: counts of vertex triples.
 * `IsSelectedPrime`: a minimum-count prime in the specified window.
 * `matP`, `matQ`: cyclic polynomial matrices encoding edge residues.
 
 ## Main results
 
+* `Triangle.card`, `Triangle.sum_eq`: there are `n ^ 3` triples, and a sum over them is an iterated
+  sum over the three parts.
 * `countZeroMod_eq`: modular count is the sum of false positives and true zeros.
 * `coeff_matP_mul_matQ`, `falsePositiveCount_add_zeroCount_eq_sum_coeff`: coefficient
   identities.
@@ -52,11 +56,47 @@ The source pin is
 
 namespace Cslib.Algorithms.ExactTriangle
 
+/-- A vertex triple of the complete tripartite graph with `n` vertices per part: one vertex from
+each of the parts A, B and C. -/
+@[ext]
+structure Triangle (n : ℕ) where
+  /-- The vertex in part A. -/
+  a : Fin n
+  /-- The vertex in part B. -/
+  b : Fin n
+  /-- The vertex in part C. -/
+  c : Fin n
+  deriving DecidableEq, Fintype
+
+namespace Triangle
+
+variable {n : ℕ}
+
+/-- A triangle is its three vertices. -/
+def equivProd : Triangle n ≃ Fin n × Fin n × Fin n where
+  toFun t := (t.a, t.b, t.c)
+  invFun := fun (a, b, c) => ⟨a, b, c⟩
+
+/-- There are `n ^ 3` vertex triples. -/
+@[simp]
+theorem card : Fintype.card (Triangle n) = n ^ 3 := by
+  rw [Fintype.card_congr equivProd]
+  simp [pow_succ, Nat.mul_assoc]
+
+/-- A sum over all vertex triples is an iterated sum over the three parts. -/
+theorem sum_eq {M : Type*} [AddCommMonoid M] (f : Triangle n → M) :
+    ∑ t, f t = ∑ a, ∑ b, ∑ c, f ⟨a, b, c⟩ := by
+  rw [← equivProd.symm.sum_comp]
+  simp only [Fintype.sum_prod_type]
+  rfl
+
+end Triangle
+
 /-- Count vertex triples whose three edge weights have sum congruent to zero modulo `p`.
 -/
 def countZeroMod {n : ℕ} (wAB wBC wAC : Fin n → Fin n → ℤ) (p : ℕ) : ℕ :=
-  (Finset.univ.filter fun t : Fin n × Fin n × Fin n =>
-    weightSum wAB wBC wAC t.1 t.2.1 t.2.2 ≡ 0 [ZMOD (p : ℤ)]).card
+  (Finset.univ.filter fun t : Triangle n =>
+    weightSum wAB wBC wAC t.a t.b t.c ≡ 0 [ZMOD (p : ℤ)]).card
 
 /-- A prime in `Nat.sqrtPrimeWindow D` whose modular-zero count is minimal among all primes in that
 window. Tied minima all satisfy this predicate.
@@ -86,20 +126,19 @@ variable {n : ℕ} (wAB wBC wAC : Fin n → Fin n → ℤ)
 
 /-- A vertex triple has a nonzero integer weight sum that is congruent to zero modulo `p`.
 -/
-abbrev IsFalsePositive (p : ℕ) (t : Fin n × Fin n × Fin n) : Prop :=
-  weightSum wAB wBC wAC t.1 t.2.1 t.2.2 ≠ 0 ∧ (p : ℤ) ∣ weightSum wAB wBC wAC t.1 t.2.1 t.2.2
+abbrev IsFalsePositive (p : ℕ) (t : Triangle n) : Prop :=
+  weightSum wAB wBC wAC t.a t.b t.c ≠ 0 ∧ (p : ℤ) ∣ weightSum wAB wBC wAC t.a t.b t.c
 
 /-- Count vertex triples satisfying `IsFalsePositive` for the supplied three weight matrices and
 modulus.
 -/
 def falsePositiveCount (p : ℕ) : ℕ :=
-  (Finset.univ.filter fun t : Fin n × Fin n × Fin n => IsFalsePositive wAB wBC wAC p t).card
+  (Finset.univ.filter fun t : Triangle n => IsFalsePositive wAB wBC wAC p t).card
 
 /-- Count vertex triples whose three supplied edge weights sum to zero as an integer.
 -/
 def zeroCount : ℕ :=
-  (Finset.univ.filter fun t : Fin n × Fin n × Fin n => weightSum wAB wBC wAC t.1 t.2.1 t.2.2 =
-      0).card
+  (Finset.univ.filter fun t : Triangle n => weightSum wAB wBC wAC t.a t.b t.c = 0).card
 
 /-- The zero-triple count is positive exactly when the supplied matrices satisfy
 `HasZeroTriangle`.
@@ -111,7 +150,7 @@ theorem zeroCount_pos_iff : 0 < zeroCount wAB wBC wAC ↔ HasZeroTriangle wAB wB
   · rintro ⟨⟨a, b, c⟩, h⟩
     exact ⟨a, b, c, (Finset.mem_filter.mp h).2⟩
   · rintro ⟨a, b, c, h⟩
-    exact ⟨(a, b, c), Finset.mem_filter.mpr ⟨Finset.mem_univ _, h⟩⟩
+    exact ⟨⟨a, b, c⟩, Finset.mem_filter.mpr ⟨Finset.mem_univ _, h⟩⟩
 
 /-- Partition the modular-zero triples into false positives and exact zero-sum triples. The
 exact-zero count is independent of the modulus.
@@ -124,7 +163,7 @@ theorem countZeroMod_eq (p : ℕ) : (countZeroMod wAB wBC wAC) p = (falsePositiv
   -- A triple whose `weightSum` is divisible by `p` is a zero triangle or a false positive,
   -- and not both.
   refine Finset.sum_congr rfl fun t _ => ?_
-  by_cases h0 : weightSum wAB wBC wAC t.1 t.2.1 t.2.2 = 0 <;>
+  by_cases h0 : weightSum wAB wBC wAC t.a t.b t.c = 0 <;>
     simp [IsFalsePositive, Int.modEq_zero_iff_dvd, h0]
 
 /-- Encode the A–C weight at `(a,c)` as a power of the cyclic polynomial generator, with exponent
@@ -168,11 +207,9 @@ theorem falsePositiveCount_add_zeroCount_eq_sum_coeff {p : ℕ} (hp : p ≠ 0) :
   classical
   rw [← countZeroMod_eq]
   unfold countZeroMod
-  rw [Finset.card_filter, Fintype.sum_prod_type]
+  rw [Finset.card_filter, Triangle.sum_eq]
   push_cast
-  refine Finset.sum_congr rfl fun a _ => ?_
-  rw [Fintype.sum_prod_type]
-  refine Finset.sum_congr rfl fun b _ => ?_
+  refine Finset.sum_congr rfl fun a _ => Finset.sum_congr rfl fun b _ => ?_
   have hcast := Int.natCast_toNat_emod (Nat.pos_of_ne_zero hp) (-wAB a b)
   have hr : ((-wAB a b) % (p : ℤ)).toNat < p := Int.natMod_lt (m := -wAB a b) hp
   rw [(coeff_matP_mul_matQ wBC wAC) hp a b _ hr,
@@ -231,26 +268,26 @@ open Classical in
 primes accepting that triple by the base-`sqrt D / 2` logarithm of `3*n^κ`.
 -/
 theorem card_falsePositive_primes_le (hD : 16 ≤ D) (hT : WeightsBoundedBy wAB wBC wAC ((n : ℝ) ^ κ))
-    (t : Fin n × Fin n × Fin n) (ht : weightSum wAB wBC wAC t.1 t.2.1 t.2.2 ≠ 0) :
+    (t : Triangle n) (ht : weightSum wAB wBC wAC t.a t.b t.c ≠ 0) :
     (((Nat.sqrtPrimeWindow D).filter fun p => IsFalsePositive wAB wBC wAC p t).card : ℝ)
       ≤ Real.logb (Real.sqrt D / 2) (3 * (n : ℝ) ^ κ) := by
   have hsqrt := Real.four_le_sqrt_natCast hD
   set divisors := (Nat.sqrtPrimeWindow D).filter fun p => IsFalsePositive wAB wBC wAC p t
   have hmem : ∀ p ∈ divisors,
-      p.Prime ∧ Real.sqrt D / 2 ≤ (p : ℝ) ∧ (p : ℤ) ∣ weightSum wAB wBC wAC t.1 t.2.1 t.2.2 := by
+      p.Prime ∧ Real.sqrt D / 2 ≤ (p : ℝ) ∧ (p : ℤ) ∣ weightSum wAB wBC wAC t.a t.b t.c := by
     intro p hp
     obtain ⟨hrange, -, hdvd⟩ := Finset.mem_filter.1 hp
     obtain ⟨hprime, hge, -⟩ := Nat.mem_sqrtPrimeWindow.1 hrange
     exact ⟨hprime, hge, hdvd⟩
   -- Their product divides the nonzero `weightSum`, whose absolute value is at most `3n^κ`.
-  have hdvd : ∏ p ∈ divisors, p ∣ (weightSum wAB wBC wAC t.1 t.2.1 t.2.2).natAbs :=
+  have hdvd : ∏ p ∈ divisors, p ∣ (weightSum wAB wBC wAC t.a t.b t.c).natAbs :=
     Finset.prod_primes_dvd _ (fun p hp => (hmem p hp).1.prime)
       fun p hp => Int.natCast_dvd.1 (hmem p hp).2.2
   have hprod : ∏ p ∈ divisors, (p : ℝ) ≤ 3 * (n : ℝ) ^ κ :=
     calc ∏ p ∈ divisors, (p : ℝ) = ((∏ p ∈ divisors, p : ℕ) : ℝ) := (Nat.cast_prod _ _).symm
-      _ ≤ ((weightSum wAB wBC wAC t.1 t.2.1 t.2.2).natAbs : ℝ) := by
+      _ ≤ ((weightSum wAB wBC wAC t.a t.b t.c).natAbs : ℝ) := by
           exact_mod_cast Nat.le_of_dvd (Int.natAbs_pos.2 ht) hdvd
-      _ = ((|weightSum wAB wBC wAC t.1 t.2.1 t.2.2| : ℤ) : ℝ) := Nat.cast_natAbs _
+      _ = ((|weightSum wAB wBC wAC t.a t.b t.c| : ℤ) : ℝ) := Nat.cast_natAbs _
       _ ≤ 3 * (n : ℝ) ^ κ := (abs_weightSum_le wAB wBC wAC) hT _ _ _
   -- Each of these primes is at least `√D/2`.
   have hpow : (Real.sqrt D / 2) ^ divisors.card ≤ ∏ p ∈ divisors, (p : ℝ) := by
@@ -272,30 +309,29 @@ theorem sum_falsePositiveCount_le (hD : 16 ≤ D) (hκ : 1 ≤ κ) (hT : Weights
   have hsqrt := Real.four_le_sqrt_natCast hD
   -- Count the pairs (prime, false positive of that prime) triple by triple.
   have hswap : ∑ p ∈ Nat.sqrtPrimeWindow D, (falsePositiveCount wAB wBC wAC) p =
-      ∑ t : Fin n × Fin n × Fin n,
+      ∑ t : Triangle n,
         ((Nat.sqrtPrimeWindow D).filter fun p => IsFalsePositive wAB wBC wAC p t).card := by
     simp only [falsePositiveCount, Finset.card_filter]
     exact Finset.sum_comm
-  have hterm : ∀ t : Fin n × Fin n × Fin n,
+  have hterm : ∀ t : Triangle n,
       (((Nat.sqrtPrimeWindow D).filter fun p => IsFalsePositive wAB wBC wAC p t).card : ℝ)
         ≤ Real.logb (Real.sqrt D / 2) (3 * (n : ℝ) ^ κ) := by
     intro t
-    by_cases ht : weightSum wAB wBC wAC t.1 t.2.1 t.2.2 = 0
+    by_cases ht : weightSum wAB wBC wAC t.a t.b t.c = 0
     · -- A zero triangle is a false positive of no prime.
       rw [Finset.filter_eq_empty_iff.2 fun p _ h => h.1 ht, Finset.card_empty, Nat.cast_zero]
-      have hn : (1 : ℝ) ≤ n := by exact_mod_cast Fin.pos t.1
+      have hn : (1 : ℝ) ≤ n := by exact_mod_cast Fin.pos t.a
       have hpow : (1 : ℝ) ≤ (n : ℝ) ^ κ := Real.one_le_rpow hn (by linarith)
       exact Real.logb_nonneg (by linarith) (by linarith)
     · -- Otherwise this is the bound of `card_falsePositive_primes_le` for this triple.
       convert (card_falsePositive_primes_le wAB wBC wAC) hD hT t ht
   rw [hswap, Nat.cast_sum]
-  calc ∑ t : Fin n × Fin n × Fin n,
+  calc ∑ t : Triangle n,
         (((Nat.sqrtPrimeWindow D).filter fun p => IsFalsePositive wAB wBC wAC p t).card : ℝ)
-      ≤ ∑ _t : Fin n × Fin n × Fin n, Real.logb (Real.sqrt D / 2) (3 * (n : ℝ) ^ κ) :=
+      ≤ ∑ _t : Triangle n, Real.logb (Real.sqrt D / 2) (3 * (n : ℝ) ^ κ) :=
         Finset.sum_le_sum fun t _ => hterm t
     _ = (n : ℝ) ^ 3 * Real.logb (Real.sqrt D / 2) (3 * (n : ℝ) ^ κ) := by
-        rw [Finset.sum_const, Finset.card_univ, Fintype.card_prod, Fintype.card_prod,
-          Fintype.card_fin, nsmul_eq_mul]
+        rw [Finset.sum_const, Finset.card_univ, Triangle.card, nsmul_eq_mul]
         push_cast
         ring
 
