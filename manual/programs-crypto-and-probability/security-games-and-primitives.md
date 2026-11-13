@@ -248,20 +248,38 @@ Micciancio–Peikert gadget-based lattice trapdoors over `ZMod (2 ^ w)` (IACR eP
 
 ML-DSA (CRYSTALS-Dilithium) is in [`MLDSA/Decompose.lean`](../../CslibFrontier/Crypto/Computational/MLDSA/Decompose.lean),
 [`MLDSA/Basic.lean`](../../CslibFrontier/Crypto/Computational/MLDSA/Basic.lean) and
-[`MLDSA/KeyOnly.lean`](../../CslibFrontier/Crypto/Computational/MLDSA/KeyOnly.lean). `decompose`,
-`highBits` and `lowBits` follow the FIPS 204 rounding with its `q - 1` wrap-around rule; the
-reusable facts are uniqueness of the decomposition (`decompose_intCast_mul_add`) and stability of
-the high bits under `β`-short perturbations (`highBits_add_of_abs_lowBits_lt`). `signAttempt`,
+[`MLDSA/KeyOnly.lean`](../../CslibFrontier/Crypto/Computational/MLDSA/KeyOnly.lean).
+`power2Round` follows FIPS 204 Algorithm 35; `power2RoundVec_reconstruct` and
+`abs_power2RoundVec_low_le` give the coefficientwise public-key identity and low-part bound used by
+the Dilithium self-target calculation. `decompose`, `highBits` and `lowBits` follow the commitment
+rounding with its `q - 1` wrap-around rule; the reusable facts are uniqueness of the decomposition
+(`decompose_intCast_mul_add`) and stability of the high bits under `β`-short perturbations
+(`highBits_add_of_abs_lowBits_lt`). `signAttempt`,
 `sign` and `verify` model the uncompressed-public-key scheme with an arbitrary hash-to-ball
-function and mask sampler (no Power2Round, hints, byte encodings or seed expansion), and
+function and mask sampler (it does not yet use the available Power2Round layer, hints, byte
+encodings or seed expansion), and
 `verify_sign` proves correctness under `Params.Valid`, which the three standard parameter sets
 satisfy. `succProbability_koaGame_le` bounds key-only forgery by the Module-LWE advantage
 `ModuleLWE.advantage` of `forgeryDistinguisher` for the short secret and error laws plus the
 self-target MSIS success of `selfTargetReduction`;
 chosen-message security, which needs signing-oracle simulation in the random-oracle model, is not
-formalized. The [checked examples](../../CslibFrontierTests/Crypto/MLDSA.lean) cover the wrap-around
-case and a toy instance that signs, verifies, rejects a modified response and yields a self-target
-solution.
+formalized. The [checked examples](../../CslibFrontierTests/Crypto/MLDSA.lean) cover the
+Power2Round tie and high-end boundaries, the Decompose wrap-around case, and a toy instance that
+signs, verifies, rejects a modified response and yields a self-target solution.
+
+The SLH-DSA address-domain layer from FIPS 205 ([fips205][fips205]) is in
+[`SLHDSA/Address.lean`](../../CslibFrontier/Crypto/Primitives/SLHDSA/Address.lean), with checked
+layouts in [`SLHDSAAddress.lean`](../../CslibFrontierTests/Crypto/SLHDSAAddress.lean).
+`Address.toBits` serializes the common layer and tree fields, the seven-valued address type and the
+three type-dependent words as the standard's canonical 32-byte big-endian address.
+`Address.setTypeAndClear` preserves the common fields while clearing all final 12 bytes, and the
+seven typed constructors satisfy the padding, fixed-layer and fixed-height requirements in
+Figures 3–9. `Address.toCompressedBits` is literally the byte-slice projection of Figure 18 used
+by the SHA2 parameter sets; it is injective under `Address.FitsCompressed`, which records that the
+one-byte layer and eight-byte tree fields do not overflow. The unrestricted compressed format is
+not injective, and the checked client exhibits the discarded high tree word. This module does not
+define the FIPS 205 hash instantiations, WOTS+, XMSS, FORS, the hypertree, signing or verification,
+nor does it prove classical or quantum security.
 
 Falcon's current checked layer is deliberately narrower. Import
 [`Falcon/Verification.lean`](../../CslibFrontier/Crypto/Computational/Falcon/Verification.lean) for
@@ -1342,6 +1360,7 @@ The finite query-only PRG/cipher results, semantic commitment interfaces and uni
 [complexitylib]: ../sources.md#complexitylib
 [cslib]: ../sources.md#cslib
 [fips203]: ../sources.md#fips203
+[fips205]: ../sources.md#fips205
 [fly22]: ../sources.md#fly22
 [fmr20]: ../sources.md#fmr20
 [ggm86]: ../sources.md#ggm86

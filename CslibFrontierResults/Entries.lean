@@ -262,6 +262,7 @@ import CslibFrontier.MachineLearning.UniformLearning.CryptoHardness.NaturalPrope
 import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson
 import CslibFrontier.MachineLearning.UniformLearning.NisanWigderson.BestOf
 import CslibFrontier.Computability.Probabilistic.CoinOfDigits
+import CslibFrontier.Probability.BilinearFingerprint
 import CslibFrontier.Probability.Extractor.TwoSource
 import CslibFrontier.Probability.LocalitySensitiveHash.PStable
 import CslibFrontier.Probability.LocalitySensitiveHash.SimHash
@@ -1443,6 +1444,22 @@ register_result "sipser-lautemann" where
     polynomial-time test on fair random strings, correct with probability at least 2/3 on every \
     input; Σ₂ and Π₂ use total native polynomial-time tests with explicit polynomial \
     quantifier blocks. No derandomization assumption."
+
+register_result "seedless-extraction-impossibility" where
+  title := "Deterministic seedless extraction fails even with only one bit of entropy loss"
+  topic := "randomized complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 16, exercise 7",
+      locator := "January 8, 2007 draft, printed page 319 (PDF page 335)" }
+  ]
+  theorems := [
+    Cslib.Probability.exists_minEntropy_map_first_eq_pure,
+    Cslib.Probability.not_isExtractor_bitString
+  ]
+  scope := "For positive n and m, every deterministic map from n bits to m bits has a finite \
+    source of real min-entropy at least n - 1 whose first output bit is constant and whose \
+    output distance from uniform is at least 1/2. No efficiency hypothesis. Exercise 12 and \
+    the broader extractor objectives are not covered."
 
 register_result "chor-goldreich" where
   title := "Chor–Goldreich: the inner product extracts from two weak sources"
@@ -5720,6 +5737,22 @@ register_result "valiant-zero-one-permanent-sharp-p-complete" where
     and Barak Definition 9.5, FP with a bit oracle) is derived as a native polynomial-time \
     oracle program reading the permanent's bits. Arora and Barak's XOR-gadget proof and its \
     constant 4^(3m) are not formalized; the proof uses Goldreich's gadget."
+
+
+register_result "bilinear-finite-field-fingerprint" where
+  title := "Two-vector matrix identity fingerprint"
+  topic := "randomized verification"
+  sources := [
+    { paper := Goldreich2007DraftR5, theorem := "Exercise 9.22",
+      locator := "r5.pdf; PDF page 70 / printed page 452; rendered guideline exponent checked" }
+  ]
+  theorems := [Cslib.Probability.toOuterMeasure_bilinear_ne_zero_ge,
+    Cslib.Probability.toOuterMeasure_bilinear_zmod_ne_zero_ge,
+    Cslib.Probability.toOuterMeasure_bilinear_vecMulVec]
+  scope := "Arbitrary finite field and finite rectangular matrix with M ≠ 0. Independent \
+    uniform product sampling detects a nonzero bilinear fingerprint with probability at \
+    least (1 - 1/|F|)^2. Nonzero outer products attain equality, including characteristic \
+    two. No runtime bound or general rank formula."
 
 register_result "linear-space-ne-np" where
   title := "Book: linear space is not NP"
