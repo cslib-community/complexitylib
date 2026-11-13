@@ -9,6 +9,9 @@ module
 
 public import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin
 
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+
 /-!
 # Public-coin Arthur–Merlin games with a fixed pattern of moves
 
@@ -45,8 +48,16 @@ The two choices of `b` are dual (`Cslib.Complexity.AMGame.value_one_sub`).
 ## Main results
 
 * `Cslib.Complexity.AMGame.count_eq`: the count is `2 ^ B` times the value.
-* `Cslib.Complexity.AMGameClass_arthur_merlin`: the pattern `A M` gives `AM`.
-* `Cslib.Complexity.AMGameClass_merlin_arthur`: the pattern `M A` gives `MA`.
+* `Cslib.Complexity.AMGameClass_nil`, `Cslib.Complexity.AMGameClass_arthur`,
+  `Cslib.Complexity.AMGameClass_merlin`: the patterns `[]`, `A`, `M` give `P`, `BPP`, `NP`
+  (`Cslib.Complexity.AMk_zero`, `Cslib.Complexity.MAk_zero`, `Cslib.Complexity.AMk_one`,
+  `Cslib.Complexity.MAk_one`).
+* `Cslib.Complexity.AMGameClass_arthur_merlin`: the pattern `A M` gives `AM`
+  (`Cslib.Complexity.AMk_two`).
+* `Cslib.Complexity.AMGameClass_merlin_arthur`: the pattern `M A` gives `MA`
+  (`Cslib.Complexity.MAk_two`).
+* `Cslib.Complexity.mem_AMGameClass_cons_merlin`: existential quantification over polynomially long
+  words prepends a Merlin move.
 * `Cslib.Complexity.AMGameClass_insert`, `Cslib.Complexity.AMGameClass_merge`,
   `Cslib.Complexity.AMGameClass_mono`: inserting a move, or merging two consecutive moves of the
   same player, does not shrink the class. So game classes are monotone along sublists of patterns.
@@ -507,11 +518,58 @@ private theorem sup_toNat_eq {ι : Type} [Fintype ι] (f : ι → Bool) :
     refine le_antisymm (Finset.sup_le fun j _ => ?_) (Nat.zero_le _)
     simp [h j]
 
+/-- The one-move shape `[(x, p)]` of a polynomial game. -/
+private theorem map_fst_eq_singleton {G : List (AMMove × Polynomial ℕ)} {x : AMMove}
+    (h : G.map Prod.fst = [x]) : ∃ p : Polynomial ℕ, G = [(x, p)] := by
+  match G, h with
+  | [(_, p)], rfl => exact ⟨p, rfl⟩
+
 /-- The two-move shape `[(x, p), (y, q)]` of a polynomial game. -/
 private theorem map_fst_eq_pair {G : List (AMMove × Polynomial ℕ)} {x y : AMMove}
     (h : G.map Prod.fst = [x, y]) : ∃ p q : Polynomial ℕ, G = [(x, p), (y, q)] := by
   match G, h with
   | [(_, p), (_, q)], rfl => exact ⟨p, q, rfl⟩
+
+/-- A zero-move game verifier is a deterministic decider on the empty transcript. -/
+theorem isAMGameVerifier_nil_iff {enc : α ↪ List Bool} {V : α × List Bool → Bool} {A : Set α} :
+    IsAMGameVerifier enc [] V A ↔ ∀ a, a ∈ A ↔ V (a, []) = true := by
+  refine forall_congr' fun a => ?_
+  simp only [evalShape, List.map_nil, arthurBits, pow_zero, mul_one, count_nil]
+  by_cases ha : a ∈ A <;> cases V (a, []) <;> simp [ha]
+
+/-- A single-move Arthur game verifier is a bounded-error decider. -/
+theorem isAMGameVerifier_arthur_iff {enc : α ↪ List Bool} {p : Polynomial ℕ}
+    {V : α × List Bool → Bool} {A : Set α} :
+    IsAMGameVerifier enc [(.arthur, p)] V A ↔ DecidesWithBoundedError enc p V A := by
+  refine forall_congr' fun a => ?_
+  have hc : count (evalShape [(.arthur, p)] (enc a).length) (fun t => V (a, t)) =
+      acceptCount V a (p.eval (enc a).length) := by
+    simp only [evalShape, List.map_cons, List.map_nil, count_arthur, count_nil,
+      List.append_nil, sum_toNat_eq_card, acceptCount]
+  have hb : arthurBits (evalShape [(.arthur, p)] (enc a).length) = p.eval (enc a).length := by
+    simp [evalShape, arthurBits]
+  rw [hc, hb]
+  exact and_congr (imp_congr_right fun _ => boundedErrorAt_true_iff.symm)
+    (imp_congr_right fun _ => boundedErrorAt_false_iff.symm)
+
+/-- A single-move Merlin game verifier is an `NP` verifier. -/
+theorem isAMGameVerifier_merlin_iff {enc : α ↪ List Bool} {q : Polynomial ℕ}
+    {V : α × List Bool → Bool} {A : Set α} :
+    IsAMGameVerifier enc [(.merlin, q)] V A ↔ IsVerifier enc q V A := by
+  refine forall_congr' fun a => ?_
+  have hc : count (evalShape [(.merlin, q)] (enc a).length) (fun t => V (a, t)) =
+      (decide (∃ y : Fin (q.eval (enc a).length) → Bool, V (a, List.ofFn y) = true)).toNat := by
+    simp only [evalShape, List.map_cons, List.map_nil, count_merlin, count_nil,
+      List.append_nil, sup_toNat_eq]
+  have hb : arthurBits (evalShape [(.merlin, q)] (enc a).length) = 0 := rfl
+  rw [hc, hb, pow_zero, mul_one]
+  have hex : (∃ y : Fin (q.eval (enc a).length) → Bool, V (a, List.ofFn y) = true) ↔
+      ∃ w : List Bool, w.length = q.eval (enc a).length ∧ V (a, w) = true :=
+    ⟨fun ⟨y, hy⟩ => ⟨List.ofFn y, List.length_ofFn, hy⟩,
+      fun ⟨w, hw, hVw⟩ => ⟨BitString.ofList _ w, by rwa [BitString.ofFn_ofList hw]⟩⟩
+  by_cases ha : a ∈ A <;>
+    by_cases hy : ∃ y : Fin (q.eval (enc a).length) → Bool, V (a, List.ofFn y) = true <;>
+    simp [ha, hy, ← hex]
 
 theorem isAMGameVerifier_arthur_merlin_iff {enc : α ↪ List Bool} {p q : Polynomial ℕ}
     {V : α × List Bool → Bool} {A : Set α} :
@@ -576,6 +634,37 @@ theorem isAMGameVerifier_merlin_arthur_iff {enc : α ↪ List Bool} {q p : Polyn
     have := hsum y
     omega
 
+/-- **The empty game `[]` is `P`.** -/
+theorem AMGameClass_nil {enc : α ↪ List Bool} : AMGameClass enc [] = P enc := by
+  ext A
+  constructor
+  · rintro ⟨G, V, hG, hV, hA⟩
+    rw [List.map_eq_nil_iff.1 hG] at hA
+    exact ⟨fun a => V (a, []), by fun_prop,
+      isAMGameVerifier_nil_iff.1 hA⟩
+  · rintro ⟨f, hf, hA⟩
+    exact ⟨[], fun x => f x.1, rfl, hf.comp (.fst enc encBits), isAMGameVerifier_nil_iff.2 hA⟩
+
+/-- **The game `A` is `BPP`.** -/
+theorem AMGameClass_arthur {enc : α ↪ List Bool} : AMGameClass enc [.arthur] = BPP enc := by
+  ext A
+  constructor
+  · rintro ⟨G, V, hG, hV, hA⟩
+    obtain ⟨p, rfl⟩ := map_fst_eq_singleton hG
+    exact ⟨p, V, hV, isAMGameVerifier_arthur_iff.1 hA⟩
+  · rintro ⟨p, V, hV, hA⟩
+    exact ⟨[(.arthur, p)], V, rfl, hV, isAMGameVerifier_arthur_iff.2 hA⟩
+
+/-- **The game `M` is `NP`.** -/
+theorem AMGameClass_merlin {enc : α ↪ List Bool} : AMGameClass enc [.merlin] = NP enc := by
+  ext A
+  constructor
+  · rintro ⟨G, V, hG, hV, hA⟩
+    obtain ⟨q, rfl⟩ := map_fst_eq_singleton hG
+    exact ⟨q, V, hV, isAMGameVerifier_merlin_iff.1 hA⟩
+  · rintro ⟨q, V, hV, hA⟩
+    exact ⟨[(.merlin, q)], V, rfl, hV, isAMGameVerifier_merlin_iff.2 hA⟩
+
 /-- **The game `A M` is `AM`.** -/
 theorem AMGameClass_arthur_merlin {enc : α ↪ List Bool} :
     AMGameClass enc [.arthur, .merlin] = AM enc := by
@@ -598,8 +687,63 @@ theorem AMGameClass_merlin_arthur {enc : α ↪ List Bool} :
   · rintro ⟨q, p, V, hV, hA⟩
     exact ⟨[(.merlin, q), (.arthur, p)], V, rfl, hV, isAMGameVerifier_merlin_arthur_iff.2 hA⟩
 
+theorem AMk_zero {enc : α ↪ List Bool} : AMk enc 0 = P enc := AMGameClass_nil
+
+theorem MAk_zero {enc : α ↪ List Bool} : MAk enc 0 = P enc := AMGameClass_nil
+
+theorem AMk_one {enc : α ↪ List Bool} : AMk enc 1 = BPP enc := AMGameClass_arthur
+
+theorem MAk_one {enc : α ↪ List Bool} : MAk enc 1 = NP enc := AMGameClass_merlin
+
 theorem AMk_two {enc : α ↪ List Bool} : AMk enc 2 = AM enc := AMGameClass_arthur_merlin
 
 theorem MAk_two {enc : α ↪ List Bool} : MAk enc 2 = MA enc := AMGameClass_merlin_arthur
+
+/-- Prepending a polynomially bounded existential quantifier over words prepends a Merlin move
+to a public-coin game. -/
+theorem mem_AMGameClass_cons_merlin {enc : α ↪ List Bool} {B : Set (α × List Bool)}
+    {π : List AMMove} (hB : B ∈ AMGameClass (encPair enc encBits) π) (p : Polynomial ℕ) :
+    {a | ∃ w : List Bool, w.length = p.eval (enc a).length ∧ (a, w) ∈ B} ∈
+      AMGameClass enc (.merlin :: π) := by
+  obtain ⟨G, VB, hG, hVB, hB'⟩ := hB
+  set L : Polynomial ℕ := 2 * Polynomial.X + 1 + p with hLdef
+  have hL (a : α) (y : Fin (p.eval (enc a).length) → Bool) :
+      (encPair enc encBits (a, List.ofFn y)).length = L.eval (enc a).length := by
+    simp only [length_encPair, encBits_apply, List.length_ofFn, hLdef, Polynomial.eval_add,
+      Polynomial.eval_mul, Polynomial.eval_X, Polynomial.eval_one, Polynomial.eval_ofNat]
+  have hp : ComputableInPolyTime (fun x : α × List Bool => p.eval (enc x.1).length)
+      (encPair enc encBits) encUnary :=
+    ((ComputableInPolyTime.unary_eval p).comp (.encoding_length enc)).comp (.fst _ _)
+  refine ⟨(.merlin, p) :: G.map (fun x => (x.1, x.2.comp L)),
+    fun x => VB ((x.1, x.2.take (p.eval (enc x.1).length)),
+      x.2.drop (p.eval (enc x.1).length)), ?_, ?_, fun a => ?_⟩
+  · simp [Function.comp_def, hG]
+  · exact hVB.comp (((ComputableInPolyTime.fst _ _).prod
+      (.bitsTakeWithInput (.snd _ _) hp)).prod (.bitsDropWithInput (.snd _ _) hp))
+  · have heval : evalShape (G.map fun x => (x.1, x.2.comp L)) (enc a).length =
+        evalShape G (L.eval (enc a).length) := by
+      simp [evalShape, List.map_map, Function.comp_def, Polynomial.eval_comp]
+    have htake (y : Fin (p.eval (enc a).length) → Bool) (t : List Bool) :
+        (List.ofFn y ++ t).take (p.eval (enc a).length) = List.ofFn y :=
+      List.take_left' List.length_ofFn
+    have hdrop (y : Fin (p.eval (enc a).length) → Bool) (t : List Bool) :
+        (List.ofFn y ++ t).drop (p.eval (enc a).length) = t :=
+      List.drop_left' List.length_ofFn
+    simp only [evalShape_cons, heval, arthurBits, count_merlin, htake, hdrop]
+    refine ⟨fun ⟨w, hw, hwB⟩ => ?_, fun ha => ?_⟩
+    · let y := BitString.ofList (p.eval (enc a).length) w
+      have hyB : (a, List.ofFn y) ∈ B := by rwa [BitString.ofFn_ofList hw]
+      have h1 := (hB' (a, List.ofFn y)).1 hyB
+      rw [hL a y] at h1
+      exact h1.trans (Nat.mul_le_mul_left 3 (Finset.le_sup (f := fun y :
+        Fin (p.eval (enc a).length) → Bool => count (evalShape G (L.eval (enc a).length))
+          fun t => VB ((a, List.ofFn y), t)) (mem_univ y)))
+    · obtain ⟨y, -, hy⟩ := exists_mem_eq_sup univ univ_nonempty fun y :
+        Fin (p.eval (enc a).length) → Bool => count (evalShape G (L.eval (enc a).length))
+          fun t => VB ((a, List.ofFn y), t)
+      rw [hy]
+      have hyB : (a, List.ofFn y) ∉ B := fun h => ha ⟨List.ofFn y, List.length_ofFn, h⟩
+      have h2 := (hB' (a, List.ofFn y)).2 hyB
+      rwa [hL a y] at h2
 
 end Cslib.Complexity
