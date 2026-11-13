@@ -17,13 +17,18 @@ any encoding and parameter, fpt-reduces to `B` (`FPTReducible`). This is the par
 counterpart of `PolyTimeHard`. `W[t]`-hardness (`WHard t`) and `W[P]`-hardness (`WPHard`) are its
 instances, so the lemmas below apply to them through dot notation.
 
+`FPTHard` is stated directly rather than as an instance of `HardUnder`, whose class and
+reducibility are indexed by the encoding alone. Expressing it through `HardUnder` would mean pairing
+each problem with its parameter (problem type `(α → ℕ) × Set α`), and every statement would then
+carry the pair instead of separate parameter and problem arguments.
+
 ## Main definitions
 
 * `Cslib.Complexity.FPTHard`: hardness for a parameterized class under fpt-reductions.
 
 ## Main results
 
-* `Cslib.Complexity.FPTHard.fptReducible`: hardness transfers along fpt-reductions.
+* `Cslib.Complexity.FPTHard.trans`: hardness transfers along fpt-reductions.
 * `Cslib.Complexity.FPTHard.mono`: hardness for a class gives hardness for each subclass.
 * `Cslib.Complexity.FPTHard.subset_FPT`: a `𝒞`-hard problem in `FPT` puts `𝒞` in `FPT`.
 
@@ -49,7 +54,7 @@ variable {𝒞 𝒟 : ∀ {α : Type}, (α ↪ List Bool) → (α → ℕ) → S
   {encA : α ↪ List Bool} {encB : β ↪ List Bool} {κA : α → ℕ} {κB : β → ℕ} {A : Set α} {B : Set β}
 
 /-- Hardness transfers along fpt-reductions. -/
-theorem fptReducible (hB : FPTHard 𝒞 encB κB B) (h : FPTReducible encB encA κB κA B A) :
+theorem trans (hB : FPTHard 𝒞 encB κB B) (h : FPTReducible encB encA κB κA B A) :
     FPTHard 𝒞 encA κA A :=
   fun _ _ _ _ hC => (hB _ _ _ hC).trans h
 

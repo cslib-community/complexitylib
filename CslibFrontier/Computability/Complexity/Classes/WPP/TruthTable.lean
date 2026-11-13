@@ -171,7 +171,7 @@ theorem truthTable_mem_LWPP (hA : A ∈ LWPP (encPair enc encUnary))
 theorem PolyTimeTruthTableReducible.mem_WPP {β : Type} {encB : β ↪ List Bool}
     {L : Set α} {B : Set β} (h : PolyTimeTruthTableReducible enc encB L B)
     (hB : B ∈ WPP encB) : L ∈ WPP enc := by
-  obtain ⟨r, q, d, hr, hq, hd, hL⟩ := h
+  obtain ⟨r, q, d, ⟨hr, hq, hd⟩, hL⟩ := h
   have hqB : q ⁻¹' B ∈ WPP (encPair enc encUnary) :=
     PolyTimeReducible.mem_WPP ⟨q, hq, fun _ => Iff.rfl⟩ hB
   convert truthTable_mem_WPP hqB hr hd using 1
@@ -184,7 +184,7 @@ consequence of the LWPP counting algebra; no adaptive-oracle theorem is asserted
 theorem PolyTimeTruthTableReducible.mem_LWPP {β : Type} {encB : β ↪ List Bool}
     {L : Set α} {B : Set β} (h : PolyTimeTruthTableReducible enc encB L B)
     (hB : B ∈ LWPP encB) : L ∈ LWPP enc := by
-  obtain ⟨r, q, d, hr, hq, hd, hL⟩ := h
+  obtain ⟨r, q, d, ⟨hr, hq, hd⟩, hL⟩ := h
   have hqB : q ⁻¹' B ∈ LWPP (encPair enc encUnary) :=
     PolyTimeReducible.mem_LWPP ⟨q, hq, fun _ => Iff.rfl⟩ hB
   convert truthTable_mem_LWPP hqB hr hd using 1
