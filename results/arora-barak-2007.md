@@ -442,6 +442,26 @@ Snapshot: `b91d5151fd7dc665a5e3efcb466077caf44e690d` (2026-11-12), CSLib pin
 - Exact finite query-measure inequalities are available without a machine-encoding translation.
 - Bounded-error depth minimax and zero-error expected cost are distinct contracts; their separate APIs do not by themselves prove 11.17.
 
+### Connectivity evasiveness after the audited snapshot
+
+This later formalization fills the historical snapshot’s connectivity gap.
+Theorem 11.4 (printed 212 / PDF 228 in the source-pinned public draft) is formalized by
+`Cslib.BitString.Graph.complexity_connectivity` in
+[QueryComplexity/Connectivity](../CslibFrontier/Computability/QueryComplexity/Connectivity.lean):
+for every vertex count $m$, the total labelled undirected simple-graph connectivity function has
+exact deterministic edge-query complexity $\binom m2$. Repeated queries are allowed. The proof
+uses the draft's bridge adversary with existing partial assignments and Mathlib graph paths;
+its graph/edge-word representation is the shared encoding extracted from the clique library.
+
+The result includes the conventions that the empty graph is disconnected and the one-vertex
+graph is connected; both functions have complexity zero. The
+[checked clients](../CslibFrontierTests/ConnectivityEvasiveness.lean) include a connected path and
+a triangle with an isolated vertex, each with three edges, so the claim is not a surrogate based
+only on edge count. It does not assert a randomized or machine-runtime lower bound. This is one
+formalized mathematical endpoint with validation, review and integration tracked in #4984.
+The remaining Chapter 11 theory objectives and the broader #4711 objective remain open; the
+chapter audit is recorded above, and the later expected-cost Yao endpoint below.
+
 ### Expected-cost Yao after the audited snapshot
 
 The later [YaoExpected](../CslibFrontier/Computability/QueryComplexity/YaoExpected.lean)

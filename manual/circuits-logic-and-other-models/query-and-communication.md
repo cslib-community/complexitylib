@@ -69,6 +69,37 @@ structural induction handles the unrestricted finite decision trees.
 
 Quantum queries use arbitrary input-independent isometries and a controlled phase oracle, charging only oracle uses. Their definitions and BBBV/polynomial/adversary/Grover endpoints are described in [algebraic and quantum models](algebraic-and-quantum.md). That chapter also covers the exponential separation between quantum and randomized queries for Simon's problem, whose classical side is the randomized decision-tree lower bound [simon_randomized_lower_bound](../../CslibFrontier/Computability/QueryComplexity/Simon.lean). It also covers Deutsch–Jozsa. The deterministic bound `N/2 + 1` is in [DeutschJozsa](../../CslibFrontier/Computability/QueryComplexity/DeutschJozsa.lean). Three random queries with error `1/4` on the promise ([Randomized/DeutschJozsa](../../CslibFrontier/Computability/QueryComplexity/Randomized/DeutschJozsa.lean), through `RandomizedDecisionTree.errorProb_uniformMixture`) show that its quantum advantage holds only for exact algorithms.
 
+## Connectivity edge queries
+
+Import [QueryComplexity/Connectivity](../../CslibFrontier/Computability/QueryComplexity/Connectivity.lean)
+and open `Cslib.BitString.Graph`. The function `connectivity m` reads a labelled undirected simple
+graph on all vertices of `Fin m`, including isolated vertices. Its input has one coordinate for
+each unordered pair of distinct vertices. `complexity_connectivity m` proves
+$D(\mathrm{connectivity}_m)=\binom m2$ for every `m`. Queries may repeat, and local computation is
+free; this is a deterministic worst-case query bound, with no graph promise or runtime claim.
+The empty graph is disconnected and the single-vertex graph is connected, so both corresponding
+functions have complexity zero.
+
+The shared [edge encoding](../../CslibFrontier/Foundations/Data/BitString/Graph.lean) supplies `Edge`,
+`edgeCount`, `edgeEquiv`, `graph` and `graph_adj`, formerly in `Cslib.Circuits.Clique`. Import this
+module and open `Cslib.BitString.Graph` when migrating a clique client. The definitions preserve
+the old coordinate numbering; `ofGraph G` turns a labelled graph into its edge word, and
+`graph_ofGraph` and `ofGraph_graph` discharge the conversions. The numbering and graph-property
+functions are noncomputable Lean definitions; the theorem concerns decision-tree query counts.
+
+The [complete checked client](../../CslibFrontierTests/ConnectivityEvasiveness.lean) covers zero
+through four vertices, graph/word conversion and a redundant repeated query. It also contrasts
+a connected four-vertex path and a triangle with an isolated vertex: both have three edges, so
+connectivity cannot be replaced by a function of edge count alone. From the repository root run:
+
+```bash
+lake build CslibFrontierTests.ConnectivityEvasiveness --wfail --iofail
+```
+
+The bridge adversary behind the lower bound answers false whenever deleting an unqueried edge
+preserves possible connectivity; otherwise it answers true. All confirmed edges remain bridges
+of the possible graph, so a correct tree cannot stop while any edge remains free.
+
 ## Adaptive cell-probe trees and schemes
 
 [`CslibFrontier.Computability.CellProbe.Defs`](../../CslibFrontier/Computability/CellProbe/Defs.lean), [`CslibFrontier.Computability.CellProbe.DecisionTree`](../../CslibFrontier/Computability/CellProbe/DecisionTree.lean), and [`CslibFrontier.Computability.CellProbe.Randomized`](../../CslibFrontier/Computability/CellProbe/Randomized.lean) formalize the adaptive cell-probe model (`Cslib.CellProbe`), originating in Minsky and Papert and developed in dynamic form by Fredman and static form by Yao. In a time-invariant deterministic `Scheme`, persistent state between operations consists solely of `S` cells of `w`-bit words (`Mem S w := Fin S → Fin (2 ^ w)`), with no persistent registers across operation boundaries; `IndexedScheme` is a **time-aware relaxation** whose `step` additionally receives the global operation index `t : ℕ` (a free clock outside cell memory). Each deterministic operation is an adaptive read/write decision tree `ProbeTree S w α` (`OracleComp (@ProbeOp.Result S w) α`): reading cell `i` branches `2 ^ w`-ways on `m i`, writing `v` updates cell `i` and returns `PUnit`, reads and writes are charged separately at one probe each (at most twice the cost of combined read-and-write nodes), and local computation and initial memory (`Scheme.init`, equivalent for deterministic schemes to `zeroMem` via uncharged XOR relabeling) charge zero probes.

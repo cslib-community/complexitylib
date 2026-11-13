@@ -134,6 +134,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.StepCou
 import CslibFrontier.Computability.PCP.Approximation.UniqueGames.Complexity
 import CslibFrontier.Computability.PCP.Completeness
 import CslibFrontier.Computability.PolyTime.LinearAlgebra.RationalElimination
+import CslibFrontier.Computability.QueryComplexity.Connectivity
 import CslibFrontier.Computability.QueryComplexity.Quantum.NayakWuConsequences
 import CslibFrontier.Computability.QueryComplexity.Quantum.PermutationInversion
 import CslibFrontier.Computability.QueryComplexity.Quantum.SpectralAdversary
@@ -255,6 +256,21 @@ the citations of the defining modules. The depth-two threshold bounds for Andree
 left out: they are original results, which `results/README.md` admits only once original results
 have an explicit representation.
 -/
+
+register_result "connectivity-evasiveness" where
+  title := "Graph connectivity requires every possible edge query"
+  topic := "query complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Theorem 11.4 (2007 public draft)",
+      locator := "2007 public draft, PDF 228 / printed p. 212" }
+  ]
+  theorems := [Cslib.BitString.Graph.complexity_connectivity]
+  scope := "For every m, the total connectivity function on labelled undirected simple graphs \
+    on Fin m has deterministic decision-tree complexity m.choose 2. Each input coordinate \
+    represents one unordered pair of distinct vertices; repeated queries are allowed. Mathlib \
+    regards the empty graph as disconnected and the one-vertex graph as connected, and both \
+    functions have complexity zero. No graph promise, arbitrary edge-permutation symmetry, \
+    randomized bound or machine-runtime bound is asserted."
 
 register_result "cook-levin" where
   title := "Cook–Levin: SAT is NP-complete"
