@@ -57,6 +57,8 @@ CslibFrontierTests/WordRAMPrefixSums.lean for repeated calls retaining persisten
 
 ## Main definitions
 
+* `Data.prepare`: shared register-masked argument delivery preserving non-input registers and
+  memory.
 * `ResultType`: explicit canonical codes for native natural, Boolean, bounded-index, unit,
   optional and paired observations.
 * `NativeResultRecoding`: paid conversion from a generic observation convention, preserving
@@ -87,6 +89,43 @@ namespace Cslib.WordRAM
 universe u v
 
 variable {r : ℕ} {D : DataStructure.StateTransitionSpec.{u, v, 0}}
+
+namespace Data
+
+/-- Deliver externally supplied values on registers selected by `input`, preserving all other
+registers and the entire memory. -/
+def prepare (input : Fin r → Bool) (vals : Fin r → ℕ) (x : Data r) : Data r where
+  regs i := if input i then vals i else x.regs i
+  mem := x.mem
+
+/-- Register-masked argument delivery preserves every memory cell. -/
+@[simp]
+theorem prepare_mem (input : Fin r → Bool) (vals : Fin r → ℕ) (x : Data r) :
+    (x.prepare input vals).mem = x.mem := rfl
+
+/-- Register-masked argument delivery reads delivered values on `input` and existing values
+elsewhere. -/
+@[simp]
+theorem prepare_regs (input : Fin r → Bool) (vals : Fin r → ℕ) (x : Data r) (i : Fin r) :
+    (x.prepare input vals).regs i = if input i then vals i else x.regs i := rfl
+
+/-- Register-masked argument delivery preserves each register outside `input`. -/
+theorem prepare_regs_of_not_input {input : Fin r → Bool} {i : Fin r} (hi : input i = false)
+    (vals : Fin r → ℕ) (x : Data r) :
+    (x.prepare input vals).regs i = x.regs i := by
+  simp [hi]
+
+/-- Register-masked argument delivery preserves word bounds when all delivered values fit. -/
+theorem prepare_bounded {w : ℕ} {input : Fin r → Bool} {vals : Fin r → ℕ} {x : Data r}
+    (hx : x.Bounded w) (ho : ∀ i, input i = true → Fits w (vals i)) :
+    (x.prepare input vals).Bounded w := by
+  refine ⟨fun i => ?_, hx.2⟩
+  change Fits w (if input i then vals i else x.regs i)
+  split
+  · exact ho i (by assumption)
+  · exact hx.1 i
+
+end Data
 
 /-- Closed structural codes for native observations. There is no value transformation or
 arbitrary isomorphism constructor. The code is part of the explicit result convention. -/
@@ -260,9 +299,8 @@ theorem decode_nat {O : Type v} (P : DynamicProgram ⟨O, fun _ => ℕ⟩ r B)
   exact ResultType.decode_cast_nat (P.resultType_eq o) h (regs ∘ P.resultBank) 0
 
 /-- Deliver operation arguments without changing maintained memory or non-input registers. -/
-def prepare (o : S.A) (x : Data r) : Data r where
-  regs i := if P.input i then P.encode o i else x.regs i
-  mem := x.mem
+def prepare (o : S.A) (x : Data r) : Data r :=
+  x.prepare P.input (P.encode o)
 
 /-- Delivering operation arguments preserves the machine memory unchanged. -/
 @[simp]
@@ -270,17 +308,13 @@ theorem prepare_mem (o : S.A) (x : Data r) : (P.prepare o x).mem = x.mem := rfl
 
 /-- Registers outside the calling convention retain their contents. -/
 theorem prepare_regs_of_not_input {i : Fin r} (hi : P.input i = false) (o : S.A) (x : Data r) :
-    (P.prepare o x).regs i = x.regs i := by
-  simp [prepare, hi]
+    (P.prepare o x).regs i = x.regs i :=
+  Data.prepare_regs_of_not_input hi (P.encode o) x
 
 /-- Argument delivery preserves bounded words when the arguments fit. -/
 theorem prepare_bounded {w : ℕ} {o : S.A} {x : Data r} (hx : x.Bounded w)
-    (ho : ∀ i, P.input i = true → Fits w (P.encode o i)) : (P.prepare o x).Bounded w := by
-  refine ⟨fun i => ?_, hx.2⟩
-  change Fits w (if P.input i then P.encode o i else x.regs i)
-  split
-  · exact ho i (by assumption)
-  · exact hx.1 i
+    (ho : ∀ i, P.input i = true → Fits w (P.encode o i)) : (P.prepare o x).Bounded w :=
+  Data.prepare_bounded hx ho
 
 /-- Evaluate one typed call, delivering its arguments and decoding its observation. The returned
 cost includes the final halt. `fuel` bounds iterations of each structured loop per entry, not

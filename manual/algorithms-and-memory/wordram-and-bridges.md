@@ -194,10 +194,13 @@ halt and output. These rules permit width-reading instructions and arbitrary det
 operation bases.
 
 [`ThreeSum.not_uniformDecidableInO_sublinear`](../../CslibFrontier/Algorithms/WordRAM/ThreeSum/LowerBound.lean)
-uses this replay rule on canonical signed, length-prefixed input under the same `Admissible`
-domain as the fast algorithm. Changing any tail entry of `[1,-1,1,…,1]` to zero changes the
-answer, so every tail cell must be read. The result excludes exponents below one in the existing
-uniform time API, including magnitude exponent zero and all admitted wider words.
+uses this replay rule on canonical signed, length-prefixed input over the same
+`Decision.MagnitudeBoundedInput κ` promise domain and size-only `Decision.width κ 123357`
+threshold as `uniformDecidableInO_one9992` (while `decidesInTime_lowerBound` keeps the
+conditional `Decision.Admissible κ` form for arbitrary integer lists). Both `[1,-1,1,…,1]` and
+each perturbed positive instance live in `MagnitudeBoundedInput κ`, so every tail cell must be
+read. The result excludes exponents below one in the existing uniform time API, including
+magnitude exponent zero and all admitted wider words.
 
 For output, use
 [`Runs.card_changed_le` or `Runs.block_lowerBound`](../../CslibFrontier/Computability/WordRAM/OutputLowerBound.lean):

@@ -214,9 +214,8 @@ abbrev toStandard (P : SubroutineCode .exact r_ds k_init) : SubroutineCode .stan
 /-- Deliver generic subroutine arguments directly, preserving maintained memory. Argument
 preparation does not require constructing a native typed output interface. -/
 def prepare (P : SubroutineCode B r_ds k_init) {O : Type*}
-    (encode : O → Fin r_ds → ℕ) (o : O) (x : Data r_ds) : Data r_ds where
-  regs i := if P.input i then encode o i else x.regs i
-  mem := x.mem
+    (encode : O → Fin r_ds → ℕ) (o : O) (x : Data r_ds) : Data r_ds :=
+  x.prepare P.input (encode o)
 
 /-- Register-only argument delivery preserves every memory cell. -/
 @[simp] theorem prepare_mem (P : SubroutineCode B r_ds k_init) {O : Type*}
@@ -227,18 +226,14 @@ def prepare (P : SubroutineCode B r_ds k_init) {O : Type*}
 theorem prepare_regs_of_not_input (P : SubroutineCode B r_ds k_init) {O : Type*}
     (encode : O → Fin r_ds → ℕ) {i : Fin r_ds} (hi : P.input i = false)
     (o : O) (x : Data r_ds) :
-    (P.prepare encode o x).regs i = x.regs i := by
-  simp only [prepare, hi, Bool.false_eq_true, ↓reduceIte]
+    (P.prepare encode o x).regs i = x.regs i :=
+  Data.prepare_regs_of_not_input hi (encode o) x
 
 /-- Direct argument delivery preserves word bounds when all delivered arguments fit. -/
 theorem prepare_bounded (P : SubroutineCode B r_ds k_init) {O : Type*}
     (encode : O → Fin r_ds → ℕ) {w : ℕ} {o : O} {x : Data r_ds} (hx : x.Bounded w)
-    (ho : ∀ i, P.input i = true → Fits w (encode o i)) : (P.prepare encode o x).Bounded w := by
-  refine ⟨fun i => ?_, hx.2⟩
-  change Fits w (if P.input i then encode o i else x.regs i)
-  split
-  · exact ho i (by assumption)
-  · exact hx.1 i
+    (ho : ∀ i, P.input i = true → Fits w (encode o i)) : (P.prepare encode o x).Bounded w :=
+  Data.prepare_bounded hx ho
 
 /-- Project generic subroutine code to canonical native observations by appending a checked,
 paid conversion body. All conversion instructions are part of the returned program. -/
