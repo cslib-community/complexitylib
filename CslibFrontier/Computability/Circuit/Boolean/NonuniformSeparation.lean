@@ -30,7 +30,7 @@ countability theorems. BPP decidability follows through its existing containment
 PSPACE and EXP. The source uses undecidability too; no particular separating language or
 circuit family is computed here. The strictness statement is for `encBits`, not for arbitrary
 encoded finite instance domains. Circuit size counts gates, including constants; this
-preserves the polynomial class despite the source's vertex-size convention.
+preserves the polynomial class despite the source's edge-count convention.
 
 ## Main results
 
