@@ -860,10 +860,7 @@ theorem isPPT_naorYungCascadeAdversary
     (hf : ComputableInPolyTime f encBits encBits) (ha : adversary.IsPPT) :
     (naorYungCascadeAdversary f adversary).IsPPT := by
   have hft := hf.tidy
-  have hdec_t : ComputableTidilyInPolyTime (fun w => ((cascadeStateDecoder.decode w).active,
-      (cascadeStateDecoder.decode w).slot, (cascadeStateDecoder.decode w).front,
-      (cascadeStateDecoder.decode w).state)) encBits encCascadeStateFields :=
-    cascadeStateDecoder.computableInPolyTime.tidy.of_enc_eq fun _ => rfl
+  have hdec := cascadeStateDecoder.computableInPolyTime
   constructor
   · let E1 := encPair encUnary encUnary
     let E2 := encPair E1 (encPair encBits encBits)
@@ -886,21 +883,24 @@ theorem isPPT_naorYungCascadeAdversary
   · let EF0 := encPair encUnary (encPair encBits encBits)
     let EF1 := encPair EF0 encBits
     have hp := ComputableTidilyInPolyTime.id' (encIn := EF0)
-    have hs0 := hdec_t.comp hp.snd'.fst'
-    have hi0 := ComputableTidilyInPolyTime.unary_min.comp (hp.fst'.prod hs0.snd'.fst')
+    have hs0 := hdec.comp (ComputableInPolyTime.of_tidy hp.snd'.fst')
+    have hslot := (encCascadeState_slot_polyTime hs0).tidy
+    have hfront := (encCascadeState_front_polyTime hs0).tidy
+    have hi0 := ComputableTidilyInPolyTime.unary_min.comp (hp.fst'.prod hslot)
     have hback_len := ComputableTidilyInPolyTime.unary_mul.comp
       ((ComputableTidilyInPolyTime.unary_sub.comp (hp.fst'.prod hi0)).prod
         (ComputableTidilyInPolyTime.unary_add.comp (hp.fst'.prod (.const 2))))
     have hq := ComputableTidilyInPolyTime.id' (encIn := EF1)
     have hK1 := ComputableTidilyInPolyTime.bitsAppend
-      (ComputableTidilyInPolyTime.bitsAppend (hs0.snd'.snd'.fst'.comp hq.fst')
-        hq.fst'.snd'.snd') hq.snd'
-    have hfind_in := hq.fst'.fst'.prod ((hs0.snd'.snd'.snd'.comp hq.fst').prod hK1)
+      (ComputableTidilyInPolyTime.bitsAppend (hfront.comp hq.fst') hq.fst'.snd'.snd') hq.snd'
+    have hfind_in :=
+      hq.fst'.fst'.prod (((encCascadeState_state_polyTime hs0).tidy.comp hq.fst').prod hK1)
     have hr := ComputableTidilyInPolyTime.id' (encIn := encPair EF1 encBits)
     have hr0 := hr.fst'.fst'
-    have hret := ComputableTidilyInPolyTime.ite' (hs0.fst'.comp hr0)
+    have hret := ComputableTidilyInPolyTime.ite'
+      ((encCascadeState_active_polyTime hs0).tidy.comp hr0)
       (computableTidilyInPolyTime_naorYungCascadeInput hft
-        hr0.fst' (hi0.comp hr0) (hs0.snd'.snd'.fst'.comp hr0) hr.snd')
+        hr0.fst' (hi0.comp hr0) (hfront.comp hr0) hr.snd')
       (.const [])
     exact (isPPTOn_sampleList.preprocess (.of_tidy hback_len)).bind_with
       ((ha.find.preprocess (.of_tidy hfind_in)).bind_with hret.isPPTOn)
