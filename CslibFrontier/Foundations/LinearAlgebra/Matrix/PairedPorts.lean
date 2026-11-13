@@ -328,21 +328,17 @@ lists satisfying `v ∈ outTargets u ↔ u ∈ inSources v` and covering all non
     · rintro ⟨hout, hq⟩
       have hv_mem : v ∈ outTargets u := List.mem_of_getElem? hout
       have hu_mem : u ∈ inSources v := (hmem_iff u v).mp hv_mem
-      have hq_lt : (inSources v).idxOf u < (inSources v).length :=
-        List.idxOf_lt_length_of_mem hu_mem
       obtain ⟨hp_lt, hp_eq⟩ := List.getElem?_eq_some_iff.mp hout
       refine ⟨?_, ?_⟩
-      · rw [hq, List.getElem?_eq_getElem hq_lt, List.getElem_idxOf hq_lt]
+      · rw [hq, List.getElem?_idxOf hu_mem]
       · rw [← hp_eq]
         exact ((hout_nodup u).idxOf_getElem p.val hp_lt).symm
     · rintro ⟨hin, hp⟩
       have hu_mem : u ∈ inSources v := List.mem_of_getElem? hin
       have hv_mem : v ∈ outTargets u := (hmem_iff u v).mpr hu_mem
-      have hp_lt : (outTargets u).idxOf v < (outTargets u).length :=
-        List.idxOf_lt_length_of_mem hv_mem
       obtain ⟨hq_lt, hq_eq⟩ := List.getElem?_eq_some_iff.mp hin
       refine ⟨?_, ?_⟩
-      · rw [hp, List.getElem?_eq_getElem hp_lt, List.getElem_idxOf hp_lt]
+      · rw [hp, List.getElem?_idxOf hv_mem]
       · rw [← hq_eq]
         exact ((hin_nodup v).idxOf_getElem q.val hq_lt).symm
   outPort_target_injective u {p₁ p₂ v q₁ q₂} h₁ h₂ := by
@@ -371,7 +367,7 @@ lists satisfying `v ∈ outTargets u ↔ u ∈ inSources v` and covering all non
     refine ⟨p, q,
       (listPortLookup_eq_some_iff hin_len (fun a b h => (hmem_iff a b).mp h) u p.val v q).mpr
         ⟨?_, rfl⟩⟩
-    rw [List.getElem?_eq_getElem hp_lt, List.getElem_idxOf hp_lt]
+    exact List.getElem?_idxOf hv
 
 /-- Characterization of `(ofLists ...).outPort u p = some (v, q)`. -/
 theorem ofLists_outPort_eq_some_iff (M : Matrix V V R) (dOut dIn : ℕ)

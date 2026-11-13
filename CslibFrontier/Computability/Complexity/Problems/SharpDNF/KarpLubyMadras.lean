@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Complexity.Classes.FPRAS
 public import CslibFrontier.Logics.Propositional.DNF.ModelCount
 public import CslibFrontier.Languages.Probabilistic.UniformNat
 public import CslibFrontier.Languages.Probabilistic.Repeat
+import CslibFrontier.Foundations.Data.BitString.WordCount
 import CslibFrontier.Probability.Chernoff
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Event
@@ -204,42 +205,17 @@ theorem sum_firstCount (φ : DNF V) :
   rfl
 
 /-- Requiring `a` leading `false` bits leaves the count of the remaining bits unchanged. -/
-private theorem card_filter_take_drop (a n : ℕ) (f : List Bool → Bool) :
+private theorem card_filter_not_any_take_and_drop (a n : ℕ) (f : List Bool → Bool) :
     (Finset.univ.filter fun r : Fin (a + n) → Bool =>
       (!((List.ofFn r).take a).any id && f ((List.ofFn r).drop a)) = true).card =
       (Finset.univ.filter fun x : Fin n → Bool => f (List.ofFn x) = true).card := by
-  have htake (r : Fin (a + n) → Bool) :
-      (List.ofFn r).take a = List.ofFn fun i : Fin a => r (Fin.castAdd n i) := by
-    rw [List.ofFn_add, List.take_left' (by simp)]
-    rfl
-  have hdrop (r : Fin (a + n) → Bool) :
-      (List.ofFn r).drop a = List.ofFn fun i : Fin n => r (Fin.natAdd a i) := by
-    rw [List.ofFn_add, List.drop_left' (by simp)]
-  refine Finset.card_nbij' (fun r i => r (Fin.natAdd a i)) (fun x => Fin.append (fun _ => false) x)
-    ?_ ?_ ?_ ?_
-  · intro r hr
-    simp only [Finset.coe_filter, Finset.mem_univ, true_and, Set.mem_ofPred_eq, Bool.and_eq_true,
-      htake, hdrop] at hr ⊢
-    exact hr.2
-  · intro x hx
-    simp only [Finset.coe_filter, Finset.mem_univ, true_and, Set.mem_ofPred_eq, Bool.and_eq_true,
-      htake, hdrop, Fin.append_left, Fin.append_right] at hx ⊢
-    exact ⟨by simp, hx⟩
-  · intro r hr
-    simp only [Finset.coe_filter, Finset.mem_univ, true_and, Set.mem_ofPred_eq, Bool.and_eq_true,
-      htake, Bool.not_eq_eq_eq_not, Bool.not_true, List.any_eq_false, List.mem_ofFn, id_eq] at hr
-    funext i
-    refine Fin.addCases (fun j => ?_) (fun j => ?_) i
-    · dsimp only
-      rw [Fin.append_left]
-      by_contra hj
-      exact hr.1 _ ⟨j, rfl⟩ (by simpa using hj)
-    · dsimp only
-      rw [Fin.append_right]
-  · intro x _
-    funext i
-    dsimp only
-    rw [Fin.append_right]
+  have hone : (Finset.univ.filter fun u : Fin a → Bool => (!(List.ofFn u).any id) = true).card =
+      1 :=
+    BitString.card_filter_not_any a
+  have h := BitString.card_filter_take_drop (Nat.le_add_right a n)
+    (fun u => (!u.any id) = true) (fun v => f v = true)
+  rw [Nat.add_sub_cancel_left, hone, one_mul] at h
+  simpa only [Bool.and_eq_true] using h
 
 /-- Forcing term `i` multiplies the count of words whose first satisfied term is `i` by
 `2 ^ width`. -/
@@ -269,7 +245,7 @@ theorem eval_trial_true_toReal (φ : DNF V) :
     simp only [ENNReal.toReal_natCast, ENNReal.toReal_pow, ENNReal.toReal_ofNat]
     have hcard : (Finset.univ.filter fun r : Fin (padding φ i + CNF.numVars φ) → Bool =>
         accepts φ i (List.ofFn r) = true).card = 2 ^ (φ.getD i []).width * firstCount φ i :=
-      (card_filter_take_drop _ _ (firstHit φ i)).trans (card_filter_firstHit φ hi)
+      (card_filter_not_any_take_and_drop _ _ (firstHit φ i)).trans (card_filter_firstHit φ hi)
     rw [hcard]
     by_cases hF : firstCount φ i = 0
     · simp [hF]
