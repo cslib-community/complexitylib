@@ -4450,6 +4450,7 @@ public import CslibFrontier.Crypto.Computational.Pseudoentropy.Reduction
 public import CslibFrontier.Crypto.Computational.Pseudoentropy.RepeatedExtraction
 public import CslibFrontier.Crypto.Computational.Pseudoentropy.Seed
 public import CslibFrontier.Crypto.Computational.Pseudoentropy.SeedExtraction
+public import CslibFrontier.Crypto.Computational.Pseudoentropy.SeedSchedule
 public import CslibFrontier.Crypto.Computational.Pseudoentropy.Selection
 public import CslibFrontier.Crypto.Computational.Pseudoentropy.SequenceLearner
 public import CslibFrontier.Crypto.Computational.Pseudoentropy.ThreeSource

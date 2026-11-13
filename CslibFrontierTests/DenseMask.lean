@@ -200,10 +200,9 @@ private theorem oneBitHash : IsTwoUniversal (uniformOfFintype Bool)
   simp [List.ofFn_succ, hxy]
 
 example (test : List ℕ × Bool × Bool → PMF (Fin 3)) :
-    dist ((ProbComp.eval (OracleComp.replicate 1
+    dist ((ProbComp.eval (extractLabelsReal
         (maskedSample (ProbComp.uniform Bool) (fun bit => if bit then 7 else 11) id
-          (fun _ => pure true)) >>=
-          extractLabels (ProbComp.uniform Bool)
+          (fun _ => pure true)) 1 (ProbComp.uniform Bool)
             (fun key bits => key ^^ bits.headD false))).bind test)
       ((extractLabelsIdeal (Output := Bool)
         ((fun bit => if bit then 7 else 11) <$> ProbComp.uniform Bool) 1
@@ -225,8 +224,8 @@ example (test : List ℕ × Bool × Bool → PMF (Fin 3)) :
 example :
     let source := maskedSample (pure ()) (fun _ => 7) (fun _ => false) (fun _ => pure false)
     let test := fun result : List ℕ × Bool × Bool => PMF.pure (result.2.1 == result.2.2)
-    dist ((ProbComp.eval (OracleComp.replicate 0 source >>=
-        extractLabels (ProbComp.uniform Bool) (fun key _ => key))).bind test)
+    dist ((ProbComp.eval (extractLabelsReal source 0 (ProbComp.uniform Bool)
+        (fun key _ => key))).bind test)
       ((extractLabelsIdeal (Output := Bool) (pure 7) 0 (ProbComp.uniform Bool)).bind test) ≤ 3 := by
   dsimp only
   have h := maskedSample_extract_dist_bind_le (pure ()) (fun _ => 7) (fun _ => false)
