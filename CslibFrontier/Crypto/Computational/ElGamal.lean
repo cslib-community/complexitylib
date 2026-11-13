@@ -402,7 +402,7 @@ theorem ddhRealGame_elGamalMsgToDDHDistinguisher {Msg : Type}
     (setup : ℕ → PMF F.Desc) (adversary : Encryption.AdversaryOf Msg) (bit : Bool) (n : ℕ) :
     F.ddhRealGame setup (F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary bit) n =
       F.elGamalMsgCPAGameOn valid encodeMsg setup adversary bit n := by
-  simp only [ddhRealGame, eval_ddhRealExperiment, elGamalMsgToDDHDistinguisher,
+  simp only [ddhRealGame, Game.withSetup, eval_ddhRealExperiment, elGamalMsgToDDHDistinguisher,
     elGamalMsgCPAGameOn, ProbComp.eval_bind, PMF.monad_bind_eq_bind, apply_ite ProbComp.eval,
     ProbComp.eval_pure, PMF.monad_pure_eq_pure]
   pmf_swap with d α choice
@@ -426,9 +426,9 @@ theorem ddhRandomGame_elGamalMsgToDDHDistinguisher_false_eq_true {Msg : Type}
     (hsound : F.AdmitsGroupElements encodeMsg valid) :
     F.ddhRandomGame setup (F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary false) n =
       F.ddhRandomGame setup (F.elGamalMsgToDDHDistinguisher valid encodeMsg adversary true) n := by
-  simp only [ddhRandomGame, eval_ddhRandomExperiment, elGamalMsgToDDHDistinguisher,
-    Encryption.ChoiceOut.msg₀, Encryption.ChoiceOut.msg₁, Encryption.ChoiceOut.msgs,
-    ProbComp.eval_bind, PMF.monad_bind_eq_bind, Bool.false_eq_true, ↓reduceIte,
+  simp only [ddhRandomGame, Game.withSetup, eval_ddhRandomExperiment,
+    elGamalMsgToDDHDistinguisher, Encryption.ChoiceOut.msg₀, Encryption.ChoiceOut.msg₁,
+    Encryption.ChoiceOut.msgs, ProbComp.eval_bind, Bool.false_eq_true, ↓reduceIte,
     apply_ite ProbComp.eval, ProbComp.eval_pure]
   pmf_swap with d α β choice
   by_cases hv : valid n (encPair F.encDesc encBits (d, F.encode d (α • F.generator d)))
@@ -1005,8 +1005,8 @@ def kdfToDDHDistinguisher (H : F.Desc × List Bool → List Bool)
     (H : F.Desc × List Bool → List Bool) (distinguisher : F.KDFDistinguisher) (n : ℕ) :
     F.ddhRandomGame setup (F.kdfToDDHDistinguisher H distinguisher) n =
       F.kdfRealGame setup H distinguisher n := by
-  simp only [ddhRandomGame, eval_ddhRandomExperiment, kdfToDDHDistinguisher, kdfRealGame,
-    PMF.monad_bind_eq_bind]
+  simp only [ddhRandomGame, Game.withSetup, eval_ddhRandomExperiment, kdfToDDHDistinguisher,
+    kdfRealGame, PMF.monad_bind_eq_bind]
 
 /-- `kdfToDDHDistinguisher H` is uniform strict PPT whenever `H` is polynomial time and the
 key-derivation distinguisher is uniform strict PPT. -/
@@ -1045,7 +1045,7 @@ exactly. -/
     (n : ℕ) :
     F.ddhRealGame setup (F.hashedElGamalToDDHDistinguisher H adversary bit) n =
       F.hashedElGamalCPAGame setup H adversary bit n := by
-  simp only [ddhRealGame, eval_ddhRealExperiment, kdfToDDHDistinguisher,
+  simp only [ddhRealGame, Game.withSetup, eval_ddhRealExperiment, kdfToDDHDistinguisher,
     hashedElGamalToKDFDistinguisher, hashedElGamalCPAGame, ProbComp.eval_bind,
     PMF.monad_bind_eq_bind]
   pmf_swap

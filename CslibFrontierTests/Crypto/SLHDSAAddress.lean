@@ -4,9 +4,14 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import CslibFrontier.Crypto.Primitives.SLHDSA.Address
+module
+-- upstream: local-only (test)
+
+public import CslibFrontier.Crypto.Primitives.SLHDSA.Address
 
 /-! Checked layouts and serialization clients for the FIPS 205 SLH-DSA address system. -/
+
+public section
 
 namespace SLHDSAAddressTests
 

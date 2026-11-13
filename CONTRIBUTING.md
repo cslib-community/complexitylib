@@ -56,6 +56,9 @@ certified efficiency, and security in declaration docstrings.
 For documentation-only changes, check links, claims against source, and Lean examples with the
 imports shown. Record the scope of validation and review accurately.
 
+Prepare the PR using the [writing guidance](AGENTS.md#writing-in-issues-and-prs) and
+[template](.github/pull_request_template.md), adapting the explanation to the reader and change.
+
 ## Library quality standard
 
 The bar is Mathlib's [style guidelines](https://leanprover-community.github.io/contribute/style.html)

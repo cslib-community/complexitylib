@@ -38,6 +38,7 @@ Pinned cslib also has the finite [Generator](https://github.com/leanprover/cslib
 | Decisional composite residuosity and Paillier encryption | [CslibFrontier/Crypto/Computational/CompositeResiduosity.lean](../../CslibFrontier/Crypto/Computational/CompositeResiduosity.lean), [CslibFrontier/Crypto/Computational/Paillier.lean](../../CslibFrontier/Crypto/Computational/Paillier.lean), [CslibFrontier/Crypto/Computational/Paillier/Security.lean](../../CslibFrontier/Crypto/Computational/Paillier/Security.lean), [CslibFrontier/Crypto/Computational/Paillier/Finite.lean](../../CslibFrontier/Crypto/Computational/Paillier/Finite.lean) | Factor pairs `(p, q)` of balanced moduli with validity in the type; arbitrary setup law; Paillier encryption with perfect correctness and plaintext-addition preservation under decryption over an abstract strict-PPT modulus generator, which is not constructed; IND-CPA security under DCR with an explicit prime-growth hypothesis; at a fixed modulus, typed Paillier with exactly uniform randomness, full Definition 15.14 and an exact CPA-to-DCR bound |
 | Quadratic residuosity, Goldwasser–Micali, RSA, and Rabin factoring | [CslibFrontier/Crypto/Computational/QuadraticResiduosity.lean](../../CslibFrontier/Crypto/Computational/QuadraticResiduosity.lean), [CslibFrontier/Crypto/Computational/GoldwasserMicali.lean](../../CslibFrontier/Crypto/Computational/GoldwasserMicali.lean), [CslibFrontier/Crypto/Computational/RSATrapdoor.lean](../../CslibFrontier/Crypto/Computational/RSATrapdoor.lean), [CslibFrontier/Crypto/Computational/RSALeastSignificantBit.lean](../../CslibFrontier/Crypto/Computational/RSALeastSignificantBit.lean), [CslibFrontier/Crypto/Computational/RSAAttacks.lean](../../CslibFrontier/Crypto/Computational/RSAAttacks.lean), [CslibFrontier/Crypto/Computational/RabinFactoring.lean](../../CslibFrontier/Crypto/Computational/RabinFactoring.lean) | Composite Jacobi symbol `jacobiSymbol`, `QR_N` / `QNR_N^{+1}` split and `QuadraticResiduosityHard`; Goldwasser–Micali bit and bounded-word public-key encryption (`KeyDesc`, `encrypt`, `decrypt`, `mulCiphertexts`, ideal distributional XOR homomorphism, `INDCPA` / `INDCPAOn` under `QuadraticResiduosityHard` and explicit prime growth, and Jacobi `-1` attack); all-residue and unit-group RSA trapdoor bijection (`rsaEval`, `rsaInvert`, `RSAOneWay`); Blum-integer square roots (`blumSqrt`, `crtSqrt`), `FactoringHard`, `RabinOneWay`, and explicit PPT equivalence `rabinOneWay_iff_factoringHard` |
 | LWE, SIS, and module lattices | [CslibFrontier/Crypto/Computational/LWE/Basic.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/LWE/Basic.lean), [CslibFrontier/Crypto/Computational/LWE/Decoding.lean](../../CslibFrontier/Crypto/Computational/LWE/Decoding.lean), [CslibFrontier/Crypto/Computational/LWE/KeyGen.lean](../../CslibFrontier/Crypto/Computational/LWE/KeyGen.lean), [CslibFrontier/Crypto/Computational/LWE/Trapdoor/Gadget.lean](../../CslibFrontier/Crypto/Computational/LWE/Trapdoor/Gadget.lean), [CslibFrontier/Crypto/Computational/LWE/Trapdoor/Basic.lean](../../CslibFrontier/Crypto/Computational/LWE/Trapdoor/Basic.lean), [CslibFrontier/Crypto/Computational/SIS/Basic.lean](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/SIS/Basic.lean), [CslibFrontier/Crypto/Computational/SIS/Ajtai.lean](../../CslibFrontier/Crypto/Computational/SIS/Ajtai.lean), [CslibFrontier/Crypto/Computational/SIS/Module.lean](../../CslibFrontier/Crypto/Computational/SIS/Module.lean), [CslibFrontier/Crypto/Computational/LWE/Module.lean](../../CslibFrontier/Crypto/Computational/LWE/Module.lean), [CslibFrontier/Crypto/Computational/SIS/ModuleEncryption.lean](../../CslibFrontier/Crypto/Computational/SIS/ModuleEncryption.lean), [CslibFrontier/Crypto/Computational/LWE/Regev.lean](../../CslibFrontier/Crypto/Computational/LWE/Regev.lean), [CslibFrontier/Crypto/Computational/LWE/Regev/Security.lean](../../CslibFrontier/Crypto/Computational/LWE/Regev/Security.lean), [CslibFrontier/Crypto/Computational/LWE/DualRegev.lean](../../CslibFrontier/Crypto/Computational/LWE/DualRegev.lean), [CslibFrontier/Crypto/Computational/LWE/DualRegev/Security.lean](../../CslibFrontier/Crypto/Computational/LWE/DualRegev/Security.lean) | Explicit dimensions, modulus and noise/norm parameters (typed decision-LWE experiments over a finite commutative ring and `2^w` binary matrix words in `LWE/Basic.lean`, shared LWE decoding/key-generation helpers in `LWE/Decoding.lean` and `LWE/KeyGen.lean`, Micciancio–Peikert power-of-two gadget matrices, short kernel matrices (kernel membership, `det S_w = 2^w`, and column norm bounds, without the lattice-basis generation proof), tagged `GenTrap` trapdoors, and deterministic trapdoor LWE inversion in `LWE/Trapdoor/*`, the typed fixed-instance experiment `sisExperiment` over arbitrary nonzero moduli and the family hypothesis `SIS` in `SIS/Basic.lean`, the Ajtai collision-to-SIS bound `ajtaiAdvantage_le_sisAdvantage` in `SIS/Ajtai.lean`, negacyclic `R_q = ℤ_q[X]/(X^n+1)` block-anticirculant expansion `expandModuleMatrix`, `moduleSISExperiment`, `ModuleSIS` and `RingSIS` in `SIS/Module.lean`, typed decision Module-LWE games for any secret and error laws and `DecisionModuleLWE` in `LWE/Module.lean`, Module-LWE public-key encryption in `SIS/ModuleEncryption.lean`, and plain-LWE Regev and GPV dual-Regev bit encryption and IND-CPA security at modulus `2^w` in `LWE/Regev*` and `LWE/DualRegev*`); classical uniform-PPT hardness hypotheses |
+| Computational fuzzy extractors | [CslibFrontier/Crypto/Computational/FuzzyExtractor/Basic.lean](../../CslibFrontier/Crypto/Computational/FuzzyExtractor/Basic.lean), [CslibFrontier/Crypto/Computational/FuzzyExtractor/DecodeThenExtract.lean](../../CslibFrontier/Crypto/Computational/FuzzyExtractor/DecodeThenExtract.lean) | Fuller, Meng and Reyzin's definitions [fmr20][fmr20] (Definitions 2.1-2.4 of the full version): `FuzzyExtractor` with `Correct`, `CorrectWithError` and `ComputationallySecureFor` over an explicit source family and distinguisher predicate, and the sketch-and-extract construction of Lemma 2.5. Distinguishers are `Experiment` programs `Key → Helper → Experiment`, and `FuzzyExtractor.realGame` and `FuzzyExtractor.idealGame` average the fixed-reading experiments over the source with `Game.withSetup`. Construction 4.1 is `FuzzyExtractor.lweFuzzyExtractor` (key = first `k` coordinates of the secret, no seed); `FuzzyExtractor.securityAdvantage_lweFuzzyExtractor_le` bounds its advantage by two `LWE.advantage` terms (uniform secret in dimension `l`, error law `W`) of the explicit `Experiment` reductions `FuzzyExtractor.hardcoreKeyReduction` and `FuzzyExtractor.hardcoreUniformReduction` (Lemma 4.7 and the security part of Theorem 4.11), and `FuzzyExtractor.DecoderCorrectWithError.correctHammingWithError_decodeThenExtract` transfers average-case decoder correctness. Not established: hardness of LWE with error `W` (Theorems 4.6 and 4.8), reduction running time, the Construction 4.9 decoder (Lemma 4.10), and Section 5; the generic `FuzzyExtractor.decodeThenExtract` carries no security claim. Build with `lake build CslibFrontier.Crypto.Computational.FuzzyExtractor.DecodeThenExtract` |
 
 The pseudoentropy gap of
 [`Pseudoentropy/Basic.lean`](../../CslibFrontier/Crypto/Computational/Pseudoentropy/Basic.lean)
@@ -82,11 +83,11 @@ is additive notation for the textbook `g^a`.
 
 | Step | Textbook (Boneh–Shoup) | Lean experiment |
 |---|---|---|
-| CDH challenge | `α, β ←R Z_q`; send `u := g^α`, `v := g^β` | `cdhExperiment q g A`: `a ← uniform (ZMod q)`, `b ← uniform (ZMod q)`, `z ← A (a • g) (b • g)` |
-| CDH outcome | adversary outputs `ŵ`; it wins if `ŵ = g^{αβ}` | `return z = (a * b) • g`; `cdhAdvantage` is the success probability |
+| CDH challenge | `α, β ←R Z_q`; send `u := g^α`, `v := g^β` | `cdhExperiment q g A`: `a ← $ᵗ ZMod q`, `b ← $ᵗ ZMod q`, `z ← A (a • g) (b • g)` |
+| CDH outcome | adversary outputs `ŵ`; it wins if `ŵ = g^{αβ}` | `return z = (a * b) • g`; `cdhAdvantage` is its `Experiment.succProbability` |
 | DDH Experiment 0 | `α, β, γ ←R Z_q`; send `(g^α, g^β, g^{αβ})` | `ddhRealExperiment q g D`: `D (a • g) (b • g) ((a * b) • g)` |
 | DDH Experiment 1 | `α, β, γ ←R Z_q`; send `(g^α, g^β, g^γ)` | `ddhRandomExperiment q g D`: `D (a • g) (b • g) (c • g)` with an independent `c` |
-| DDH outcome | adversary outputs a bit; advantage `\|Pr[W₀] − Pr[W₁]\|` | `ddhAdvantage q g D := Game.advantage` of the two evaluated experiments |
+| DDH outcome | adversary outputs a bit; advantage `\|Pr[W₀] − Pr[W₁]\|` | `ddhAdvantage q g D := Experiment.advantage` of the two experiments |
 
 The book's Experiment 0 challenger also draws an unused `γ`; omitting it does not change the
 distribution. The experiments draw exact uniform exponents from `ZMod q` and carry no efficiency
@@ -94,7 +95,7 @@ certificate.
 
 The family games in `DiffieHellman.lean` draw public group parameters `d` from
 `setup n : PMF F.Desc` and run these experiments in `F.Carrier d` with `q = F.order d` and
-`g = F.generator d`:
+`g = F.generator d`; each is `Game.withSetup (setup n) fun d => …`:
 
 - `F.cdhGame setup adversary n` runs `cdhExperiment` on `adversary n d`, where
   `adversary : F.CDHAdversary` maps the security parameter, `d` and two elements of `F.Carrier d`
@@ -128,12 +129,16 @@ certificate. Reductions that need exponents use `F.sampleExp n d`, with its `1 /
 error and separate PPT theorem `isPPTOn_sampleExp`.
 
 `dlToCDHAdversary` and `cdhToDDHDistinguisher` are the elementary reductions behind
-`CDH.discreteLog` and `DDH.cdh`. Random self-reducibility ([bs23][bs23], Exercises 10.8–10.10)
-works on the same types: `ddhRerandomize` maps a triple `(u, v, w)` to a uniform real triple when
-`w` is the Diffie–Hellman element and to a uniform triple otherwise (`ddhRerandomizeLaw_real`,
-`ddhRerandomizeLaw_random`); `ddhSelfReduceDistinguisher` is its efficient form, so
-`ddh_of_worstCase` derives `F.DDH setup` from worst-case indistinguishability of fixed triple
-families with loss `6 / 2 ^ n`; and `ddhAmplifiedDecider` turns a distinguisher with
+`CDH.discreteLog` and `DDH.cdh`. In one group they are `dlToCDH` and `cdhToDDH`, with the bounds
+`dlAdvantage_le_cdhAdvantage_dlToCDH` and `cdhAdvantage_le_ddhAdvantage_cdhToDDH_add`. The
+random-world half of the latter,
+`probability_ddhRandomExperiment_cdhToDDH_le : Pr[ddhRandomExperiment q g (cdhToDDH A)] ≤ 1 / q`,
+is the step that the family bound averages over setup. Random self-reducibility ([bs23][bs23],
+Exercises 10.8–10.10) works on the same types: `ddhRerandomize` maps a triple `(u, v, w)` to a
+uniform real triple when `w` is the Diffie–Hellman element and to a uniform triple otherwise
+(`ddhRerandomizeLaw_real`, `ddhRerandomizeLaw_random`); `ddhSelfReduceDistinguisher` is its
+efficient form, so `ddh_of_worstCase` derives `F.DDH setup` from worst-case indistinguishability of
+fixed triple families with loss `6 / 2 ^ n`; and `ddhAmplifiedDecider` turns a distinguisher with
 inverse-polynomial fixed-group advantage into one that decides every triple except with
 negligible error (`negligible_ddhAmplifiedDecider_error`). The
 [DH client](../../CslibFrontierTests/Crypto/DiffieHellman.lean) checks the DDH input layout,
@@ -271,6 +276,19 @@ one-byte layer and eight-byte tree fields do not overflow. The unrestricted comp
 not injective, and the checked client exhibits the discarded high tree word. This module does not
 define the FIPS 205 hash instantiations, WOTS+, XMSS, FORS, the hypertree, signing or verification,
 nor does it prove classical or quantum security.
+
+Falcon's current checked layer is deliberately narrower. Import
+[`Falcon/Verification.lean`](../../CslibFrontier/Crypto/Computational/Falcon/Verification.lean) for
+the NIST-selected Falcon Round 3 submission version 1.2's post-decoding verification algebra.
+`Falcon.reconstructFirst` computes the centered representative of `c - s₂h` in the existing
+negacyclic coefficient ring, `Falcon.pairSquaredNorm` computes `‖(s₁,s₂)‖²`, and
+`Falcon.verify_of_signingRelation` proves that a centered pair satisfying `s₁ + s₂h = c mod q`
+and the configured bound is accepted. The [checked client](../../CslibFrontierTests/Crypto/Falcon.lean)
+includes one pair accepted exactly at the bound and one rejected above it. This is not an FN-DSA
+security theorem: decompression, salt and hash-to-point processing, NTRU key generation,
+FFT/NTT correctness, the adaptive Gaussian trapdoor sampler and rejection law, average-case
+NTRU-SIS, ROM/QROM reductions, efficiency, and reconciliation with the still-developing FIPS 206
+remain separate obligations.
 
 These are implications from hardness assumptions. They do not prove that a concrete OWF, DDH group, LWE family or SIS parameter choice is hard. `DecisionLWE` runs the fixed-instance experiments `LWE.realExperiment` and `LWE.randomExperiment` over `ZMod (2 ^ w)`: a typed distinguisher receives a uniform matrix `A` and either `A t + e`, with independent errors and one shared uniform secret, or an independent uniform vector. For other secret and error laws over any finite commutative ring, `LWE.advantage` is the distance between `LWE.realGame` and `LWE.randomGame`. The distinguisher's machine reads only the row-major binary word of `[b | A]`, and `decisionLWE_iff_encoded` shows that this is the word-level assumption on the serialized public matrix `[B*t+e | B]` (checked in [`CslibFrontierTests/Crypto/DecisionLWE.lean`](../../CslibFrontierTests/Crypto/DecisionLWE.lean)); in [`SIS/Module.lean`](../../CslibFrontier/Crypto/Computational/SIS/Module.lean), `expandModuleMatrix` and `flattenPolyVec` embed negacyclic `ModuleSIS` and `ModuleLWE` instances over `ℤ_q[X]/(X^n+1)` into unstructured `(d * n) × (k * n)` matrices over `ℤ_q` (checked with concrete evaluations and nonvacuity proofs in [`CslibFrontierTests/Crypto/ModuleSIS.lean`](../../CslibFrontierTests/Crypto/ModuleSIS.lean)); [`LWE/Module.lean`](../../CslibFrontier/Crypto/Computational/LWE/Module.lean) states decision Module-LWE as the typed games `ModuleLWE.realGame` and `ModuleLWE.randomGame` for any secret and error laws, whose advantage `ModuleLWE.advantage` is the LWE advantage over the ring `Negacyclic (ZMod q) n` (`ModuleLWE.advantage_eq_lweAdvantage`), and `DecisionModuleLWE` fixes a uniform secret and is the word-level assumption by `decisionModuleLWE_iff_encoded` (checked in [`CslibFrontierTests/Crypto/DecisionModuleLWE.lean`](../../CslibFrontierTests/Crypto/DecisionModuleLWE.lean)); and [`SIS/ModuleEncryption.lean`](../../CslibFrontier/Crypto/Computational/SIS/ModuleEncryption.lean) builds Module-LWE public-key encryption (`moduleLWEKeyGen`, `moduleLWEEncrypt`, `moduleLWEDecrypt`), bounded-noise decryption correctness (`moduleLWEDecrypt_moduleLWEEncrypt_eq`), and two-hop public-key/ciphertext reductions to `ModuleLWE.sampleLaw` (`advantage_realEncryptionView_uniform_le`, `advantage_realEncryptionView_msg_le`, checked in [`CslibFrontierTests/Crypto/ModuleEncryption.lean`](../../CslibFrontierTests/Crypto/ModuleEncryption.lean)); no worst-case lattice reduction is asserted there.
 
@@ -1312,6 +1330,7 @@ The finite query-only PRG/cipher results, semantic commitment interfaces and uni
 [fips203]: ../sources.md#fips203
 [fips205]: ../sources.md#fips205
 [fly22]: ../sources.md#fly22
+[fmr20]: ../sources.md#fmr20
 [ggm86]: ../sources.md#ggm86
 [goldreich04]: ../sources.md#goldreich04
 [hhk17]: ../sources.md#hhk17
