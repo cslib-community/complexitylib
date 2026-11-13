@@ -19,6 +19,41 @@ Theorem 14.7 should not be used as an unrestricted circuit-to-determinant specif
 linear dimension bound fails the existing repeated-squaring degree check. See the audit's
 [checked client](../../CslibFrontierTests/AroraBarakAlgebraic.lean) and exact model conventions.
 
+## Arithmetic synthesis without polynomial families
+
+Import [Arithmetic.Synthesis](../../CslibFrontier/Computability/Circuit/Arithmetic/Synthesis.lean)
+for `Synthesis.arith_const`, `arith_add`, `arith_mul` and `arith_sum`. The constant symbols
+have arbitrary type `K`, interpreted by a supplied map into the value carrier `R`; no semiring
+structure on `K` is required. The primitive rules need addition and multiplication on `R`,
+and the finite-sum rule needs an additive commutative monoid. VP publicly re-exports the same
+rules and names for existing clients; `Synthesis.exists_circuit_polynomial` stays in VP.
+
+The Boolean simulation below and the
+[matrix-multiplication exponent module](../../CslibFrontier/Computability/Circuit/Arithmetic/MatrixMultiplication/Exponent.lean)
+use the shared topic module directly. Run `scripts/build.sh CslibFrontierTests.ArithmeticSynthesis`
+for a [client](../../CslibFrontierTests/ArithmeticSynthesis.lean) that interprets string-labelled
+constants as natural-number lengths, without importing VP or giving the labels a semiring.
+
+## Boolean and two-element arithmetic circuits
+
+Import [Boolean.Arithmetic](../../CslibFrontier/Computability/Circuit/Boolean/Arithmetic.lean)
+for the two-element case of Arora–Barak's Chapter 14, Exercise 1. Mathlib's Boolean ring
+on `Bool` uses XOR for addition and AND for multiplication. `Boolean.exists_arithmetic_simulation c`
+replaces a De Morgan circuit by an arithmetic circuit on this same carrier, preserving every
+output with at most `3 * c.size` gates. `Boolean.exists_boolean_simulation c` goes the other way
+with at most `4 * c.size` gates. Constants count as gates; input/output wires are free, and
+zero-input and pure-wiring circuits are included.
+
+The `arithmetic_simulates_boolean` and `boolean_simulates_arithmetic` gate-budget certificates
+also work with the generic `Circuit.exists_simulationWithCost` API. These are circuit-value
+and nonuniform size results, not formal polynomial identities or certified translation runtimes.
+They establish the GF(2) milestone, not the exercise for every fixed finite field; the latter
+still needs bit encodings and the general-field directions. Existing `Synthesis.bitBlast`
+handles an equivalence to a fixed-width bit cube and should be reused where applicable.
+Run `scripts/build.sh CslibFrontierTests.BooleanArithmetic` for the
+[checked clients](../../CslibFrontierTests/BooleanArithmetic.lean): multiple XOR/AND and OR/NOT
+outputs, zero-input constants and zero-gate wiring.
+
 ## Valiant classes and term models
 
 [PolynomialFamily](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Arithmetic/VP.lean#L188) stores a variable-count function and a polynomial at each family index, with no bounds. `PolynomialFamily.IsPFamily` requires the variable count and actual total degree to be polynomially bounded in the family index. `VP` additionally requires circuits of polynomially bounded size computing the family's formal polynomials. The class is nonuniform and includes degree as an independent restriction. The library's repeated-squaring example has small circuits but exponential degree and is therefore excluded from VP. A p-projection substitutes variables/constants and permits a polynomially bounded family reindexing.

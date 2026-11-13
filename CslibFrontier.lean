@@ -1081,6 +1081,7 @@ public import CslibFrontier.Computability.Circuit.Arithmetic.SetMultilinearLower
 public import CslibFrontier.Computability.Circuit.Arithmetic.SetMultilinearize
 public import CslibFrontier.Computability.Circuit.Arithmetic.SigmaPi
 public import CslibFrontier.Computability.Circuit.Arithmetic.SumFlatten
+public import CslibFrontier.Computability.Circuit.Arithmetic.Synthesis
 public import CslibFrontier.Computability.Circuit.Arithmetic.VNP
 public import CslibFrontier.Computability.Circuit.Arithmetic.VP
 public import CslibFrontier.Computability.Circuit.Arithmetic.Waring
@@ -1125,6 +1126,7 @@ public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperserCore.Re
 public import CslibFrontier.Computability.Circuit.Boolean.AffineDisperserCore.State
 public import CslibFrontier.Computability.Circuit.Boolean.AltFormula
 public import CslibFrontier.Computability.Circuit.Boolean.AltFormula.TopDown
+public import CslibFrontier.Computability.Circuit.Boolean.Arithmetic
 public import CslibFrontier.Computability.Circuit.Boolean.AtLeast
 public import CslibFrontier.Computability.Circuit.Boolean.BalancedCode
 public import CslibFrontier.Computability.Circuit.Boolean.Barrington
