@@ -70,6 +70,9 @@ their exact relationship to the family notions:
 
 ## Main results
 
+* `Cslib.Complexity.decidableInSingleSubexpTime_iff_exists_computableInSingleSubexpTime`: decision
+  as single-machine computation of a Boolean indicator. The `Decidable…` transfers are derived from
+  their `Computable…` counterparts through it.
 * `Cslib.Complexity.decidableInSingleSubexpTime_iff_exists_machine`,
   `Cslib.Complexity.computableInSingleSubexpTime_iff_exists_machine`: equivalence with exchanging
   `∃ (M, e)` and `∀ δ > 0`.
@@ -156,6 +159,20 @@ scale `s =o[atTop] id`. -/
     (encOut : β ↪ List Bool) (μ : α → ℕ) : Prop :=
   ∃ (s : ℕ → ℝ) (e : ℕ), (∀ n, 0 ≤ s n) ∧ (s =o[atTop] fun n : ℕ => (n : ℝ)) ∧
     ComputableInTimeO f encIn encOut fun a => 2 ^ s (μ a) * ((encIn a).length + 1) ^ e
+
+/-- `DecidableInSingleSubexpTime` is `ComputableInSingleSubexpTime` of a Boolean indicator
+function. -/
+theorem decidableInSingleSubexpTime_iff_exists_computableInSingleSubexpTime {A : Set α}
+    {enc : α ↪ List Bool} {μ : α → ℕ} :
+    DecidableInSingleSubexpTime A enc μ ↔
+      ∃ g : α → Bool, (∀ a, a ∈ A ↔ g a = true) ∧
+        ComputableInSingleSubexpTime g enc encBool μ := by
+  constructor
+  · rintro ⟨s, e, hnn, hs_o, h⟩
+    obtain ⟨g, hA, hg⟩ := decidableInTimeO_iff_exists_computableInTimeO.mp h
+    exact ⟨g, hA, s, e, hnn, hs_o, hg⟩
+  · rintro ⟨g, hA, s, e, hnn, hs_o, hg⟩
+    exact ⟨s, e, hnn, hs_o, decidableInTimeO_iff_exists_computableInTimeO.mpr ⟨g, hA, hg⟩⟩
 
 /-- **Single-machine implies family subexponential decision.** -/
 theorem DecidableInSingleSubexpTime.decidableInSubexpTime {A : Set α} {enc : α ↪ List Bool}
@@ -252,33 +269,6 @@ private theorem exists_isLittleO_of_forall_exp_bound {t : α → ℕ} {enc : α 
   rw [Real.norm_of_nonneg (hnn n), Real.norm_of_nonneg (Nat.cast_nonneg n)]
   linarith [hs_le n]
 
-/-- **Machine-quantifier characterization of `DecidableInSingleSubexpTime`.** Single-machine
-`2 ^ o(μ)` decision is equivalent to having *one* machine (`DecidableInTimeAndSpace A enc t sp`)
-and *one* polynomial degree `e` that satisfy the `2 ^ (δ * μ a) * (L + 1) ^ e` runtime bound for
-every `δ > 0` (with only the constant `c` depending on `δ`). -/
-theorem decidableInSingleSubexpTime_iff_exists_machine {A : Set α} {enc : α ↪ List Bool}
-    {μ : α → ℕ} :
-    DecidableInSingleSubexpTime A enc μ ↔
-      ∃ (t sp : α → ℕ) (e : ℕ), DecidableInTimeAndSpace A enc t sp ∧
-        ∀ δ : ℝ, 0 < δ → ∃ c : ℕ,
-          ∀ a, (t a : ℝ) ≤ c * (2 ^ (δ * μ a) * ((enc a).length + 1) ^ e) + c := by
-  constructor
-  · rintro ⟨s, e, _, hs_o, c₀, t, sp, ht, hdec⟩
-    refine ⟨t, sp, e, hdec, fun δ hδ => ?_⟩
-    obtain ⟨K, _, hK⟩ := exists_two_pow_le_of_isLittleO hs_o hδ
-    refine ⟨c₀ * ⌈K⌉₊ + c₀, fun a => (ht a).trans ?_⟩
-    have h := mul_le_mul_of_nonneg_left (two_rpow_mul_pow_le_natCeil_mul_add_of_le
-      (L := (enc a).length) (e := e) (hK (μ a))) (Nat.cast_nonneg c₀ : (0 : ℝ) ≤ c₀)
-    have hpos := mul_nonneg (Nat.cast_nonneg c₀ : (0 : ℝ) ≤ c₀)
-      (by positivity : (0 : ℝ) ≤ 2 ^ (δ * μ a) * (((enc a).length : ℝ) + 1) ^ e)
-    push_cast
-    linarith
-  · rintro ⟨t, sp, e, hdec, h⟩
-    obtain ⟨s, hnn, hs_o, hbound⟩ := exists_isLittleO_of_forall_exp_bound h
-    refine ⟨s, e, hnn, hs_o, 1, t, sp, fun a => ?_, hdec⟩
-    push_cast
-    linarith [hbound a]
-
 /-- **Machine-quantifier characterization of `ComputableInSingleSubexpTime`.** Single-machine
 `2 ^ o(μ)` function computation is equivalent to having *one* machine
 (`ComputableInTimeAndSpace f encIn encOut t sp`) and *one* polynomial degree `e` that satisfy the
@@ -306,22 +296,26 @@ theorem computableInSingleSubexpTime_iff_exists_machine {f : α → β} {encIn :
     push_cast
     linarith [hbound a]
 
-/-! ### Measure rescaling and reduction transfers -/
+/-- **Machine-quantifier characterization of `DecidableInSingleSubexpTime`.** Single-machine
+`2 ^ o(μ)` decision is equivalent to having *one* machine (`DecidableInTimeAndSpace A enc t sp`)
+and *one* polynomial degree `e` that satisfy the `2 ^ (δ * μ a) * (L + 1) ^ e` runtime bound for
+every `δ > 0` (with only the constant `c` depending on `δ`). -/
+theorem decidableInSingleSubexpTime_iff_exists_machine {A : Set α} {enc : α ↪ List Bool}
+    {μ : α → ℕ} :
+    DecidableInSingleSubexpTime A enc μ ↔
+      ∃ (t sp : α → ℕ) (e : ℕ), DecidableInTimeAndSpace A enc t sp ∧
+        ∀ δ : ℝ, 0 < δ → ∃ c : ℕ,
+          ∀ a, (t a : ℝ) ≤ c * (2 ^ (δ * μ a) * ((enc a).length + 1) ^ e) + c := by
+  rw [decidableInSingleSubexpTime_iff_exists_computableInSingleSubexpTime]
+  constructor
+  · rintro ⟨g, hA, hg⟩
+    obtain ⟨t, sp, e, hcomp, h⟩ := computableInSingleSubexpTime_iff_exists_machine.mp hg
+    exact ⟨t, sp, e, decidableInTimeAndSpace_iff.mpr ⟨g, hcomp, hA⟩, h⟩
+  · rintro ⟨t, sp, e, hdec, h⟩
+    obtain ⟨g, hcomp, hA⟩ := decidableInTimeAndSpace_iff.mp hdec
+    exact ⟨g, hA, computableInSingleSubexpTime_iff_exists_machine.mpr ⟨t, sp, e, hcomp, h⟩⟩
 
-/-- Single-machine subexponential decision transfers to any parameter at least linear in `μ`. -/
-theorem DecidableInSingleSubexpTime.mono_measure {A : Set α} {enc : α ↪ List Bool}
-    {μ μ' : α → ℕ} {c : ℕ} (hμ : ∀ a, μ a ≤ c * μ' a + c)
-    (h : DecidableInSingleSubexpTime A enc μ) :
-    DecidableInSingleSubexpTime A enc μ' := by
-  obtain ⟨s, e, hnn, hs_o, hO⟩ := h
-  obtain ⟨sBar, hmono, hnnBar, hle, hsBar_o⟩ := exists_monotone_isLittleO_ge hnn hs_o
-  refine ⟨fun n => sBar (c * n + c), e, fun n => hnnBar _,
-    isLittleO_comp_linear_of_nonneg hnnBar hsBar_o c c,
-    hO.mono 1 (fun a => ?_) fun _ => by positivity⟩
-  have h := two_rpow_mul_pow_le_two_rpow_mul_pow (L := (enc a).length) (d := e) (e := e)
-    ((hle (μ a)).trans (hmono (hμ a))) le_rfl
-  push_cast
-  linarith
+/-! ### Measure rescaling and reduction transfers -/
 
 /-- Single-machine subexponential function computation transfers to any parameter at least linear
 in `μ`. -/
@@ -338,6 +332,14 @@ theorem ComputableInSingleSubexpTime.mono_measure {f : α → β} {encIn : α �
     ((hle (μ a)).trans (hmono (hμ a))) le_rfl
   push_cast
   linarith
+
+/-- Single-machine subexponential decision transfers to any parameter at least linear in `μ`. -/
+theorem DecidableInSingleSubexpTime.mono_measure {A : Set α} {enc : α ↪ List Bool}
+    {μ μ' : α → ℕ} {c : ℕ} (hμ : ∀ a, μ a ≤ c * μ' a + c)
+    (h : DecidableInSingleSubexpTime A enc μ) :
+    DecidableInSingleSubexpTime A enc μ' := by
+  rw [decidableInSingleSubexpTime_iff_exists_computableInSingleSubexpTime] at h ⊢
+  exact h.imp fun g ⟨hA, hg⟩ => ⟨hA, hg.mono_measure hμ⟩
 
 end SingleBounds
 
@@ -431,14 +433,9 @@ theorem DecidableInSingleSubexpTime.of_reduction {A : Set α} {B : Set β}
     {c : ℕ} (hμ : ∀ a, μB (r a) ≤ c * μA a + c)
     (hB : DecidableInSingleSubexpTime B encMid μB) :
     DecidableInSingleSubexpTime A encIn μA := by
-  obtain ⟨s, e, hnn, hs_o, hB_time⟩ := hB
-  obtain ⟨g, hgB, hg_time⟩ := decidableInTimeO_iff_exists_computableInTimeO.mp hB_time
-  have hg_single : ComputableInSingleSubexpTime g encMid encBool μB :=
-    ⟨s, e, hnn, hs_o, hg_time⟩
-  obtain ⟨s', e', hnn', hs'_o, hgr_time⟩ := hg_single.of_reduction hr hμ
-  exact ⟨s', e', hnn', hs'_o,
-    decidableInTimeO_iff_exists_computableInTimeO.mpr ⟨g ∘ r, fun a => (hAB a).trans (hgB (r a)),
-      hgr_time⟩⟩
+  rw [decidableInSingleSubexpTime_iff_exists_computableInSingleSubexpTime] at hB ⊢
+  obtain ⟨g, hgB, hg⟩ := hB
+  exact ⟨g ∘ r, fun a => (hAB a).trans (hgB (r a)), hg.of_reduction hr hμ⟩
 
 end SingleMachines
 
@@ -589,13 +586,10 @@ theorem DecidableInSingleSubexpTime.of_uniformFamily {A : Set α} {μ : α → �
     (htend : ∀ M : ℕ, ∃ N : ℕ, ∀ a, N ≤ μ a → M ≤ sched a) :
     DecidableInSingleSubexpTime A encIn μ := by
   let g (a : α) : Bool := decideAt { precision := 0, input := a }
-  have hg_single : ComputableInSingleSubexpTime g encIn encBool μ :=
-    .of_uniformFamily hdec
+  exact decidableInSingleSubexpTime_iff_exists_computableInSingleSubexpTime.mpr ⟨g,
+    fun a => hcorrect 0 a, .of_uniformFamily hdec
       (fun m a => Bool.eq_iff_iff.mpr ((hcorrect m a).symm.trans (hcorrect 0 a)))
-      htime hsched htend
-  obtain ⟨s, e', hnn, hs_o, hg_time⟩ := hg_single
-  exact ⟨s, e', hnn, hs_o,
-    decidableInTimeO_iff_exists_computableInTimeO.mpr ⟨g, fun a => hcorrect 0 a, hg_time⟩⟩
+      htime hsched htend⟩
 
 end UniformFamily
 

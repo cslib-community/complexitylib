@@ -41,8 +41,8 @@ theorem exec_construct {w n D g p : ℕ} (values : ℕ → ℤ)
       (values k % (p : ℤ)).toNat)
     (hdescriptor :
       let C := fun rho => Nat.count (fun k => (values k % (p : ℤ)).toNat = rho) (n * n)
-      let chunk := ChunkCatalogue.before C (queryCap n D) idx.1.val + idx.2.1
-      x.mem (chunk * 3 + x.regs Instances.descriptors) = idx.1.val ∧
+      let chunk := ChunkCatalogue.before C (queryCap n D) idx.residue.val + idx.chunk
+      x.mem (chunk * 3 + x.regs Instances.descriptors) = idx.residue.val ∧
       x.mem (chunk * 3 + x.regs Instances.descriptors + 1) =
         RecordProduct.recordQueries n D p idx ∧
       x.mem (chunk * 3 + x.regs Instances.descriptors + 2) =
@@ -59,12 +59,12 @@ theorem exec_construct {w n D g p : ℕ} (values : ℕ → ℤ)
       Cursor n D g p values y ∧ y.regs Instances.produced = x.regs Instances.produced + 1 ∧
       y.regs Instances.heap = out + (6 + 2 * (n * D)) ∧
       (Block.mk out 6).Realizes y.mem
-        ![idx.1.val, idx.2.2, q, Q, out + 6, out + 6 + n * D] ∧
+        ![idx.residue.val, idx.piece, q, Q, out + 6, out + 6 + n * D] ∧
       (Block.mk (out + 6) (n * D)).Realizes y.mem (fun j =>
-        WriteMatrices.entry false (RecordProduct.matrixArgs n D g p idx.1.val idx.2.2)
+        WriteMatrices.entry false (RecordProduct.matrixArgs n D g p idx.residue.val idx.piece)
           (fun k => (values (2 * (n * n) + k) % (p : ℤ)).toNat) j.val) ∧
       (Block.mk (out + 6 + n * D) (n * D)).Realizes y.mem (fun j =>
-        WriteMatrices.entry true (RecordProduct.matrixArgs n D g p idx.1.val idx.2.2)
+        WriteMatrices.entry true (RecordProduct.matrixArgs n D g p idx.residue.val idx.piece)
           (fun k => (values (n * n + k) % (p : ℤ)).toNat) j.val) ∧
       (∀ u, u < out ∨ out + (6 + 2 * (n * D)) ≤ u → y.mem u = x.mem u) := by
   let N := n * n
@@ -72,30 +72,30 @@ theorem exec_construct {w n D g p : ℕ} (values : ℕ → ℤ)
   let C := fun rho => Nat.count (fun k => R k = rho) N
   let H := numPieces n D g
   let K := ChunkCatalogue.before C (queryCap n D) p
-  let chunk := ChunkCatalogue.before C (queryCap n D) idx.1.val + idx.2.1
+  let chunk := ChunkCatalogue.before C (queryCap n D) idx.residue.val + idx.chunk
   let desc := 5 + 6 * N + p + 2 * N * p
   let out := x.regs Instances.output
   obtain ⟨hk, hj⟩ := (mem_instanceIndices _ idx).mp hidx
   have hH : 0 < H := lt_of_le_of_lt (Nat.zero_le _) hj
-  have hcard : (residueClass (fun u v : Fin n => values (pairIndex (u, v))) p idx.1).card =
-      C idx.1.val := QuerySpec.card_residueClass _ hp R (by intro pair; rfl) idx.1
-  have hk' : idx.2.1 < C idx.1.val ⌈/⌉ queryCap n D := by
+  have hcard : (residueClass (fun u v : Fin n => values (pairIndex (u, v))) p idx.residue).card =
+      C idx.residue.val := QuerySpec.card_residueClass _ hp R (by intro pair; rfl) idx.residue
+  have hk' : idx.chunk < C idx.residue.val ⌈/⌉ queryCap n D := by
     simpa only [numChunks, hcard] using hk
   have hchunk : chunk < K :=
-    ChunkCatalogue.before_add_lt C (queryCap n D) idx.1.isLt hk'
+    ChunkCatalogue.before_add_lt C (queryCap n D) idx.residue.isLt hk'
   have hdiv : x.regs Instances.produced / x.regs Instances.pieces = chunk := by
     rw [hi, cursor.pieces]
     exact Nat.mul_add_div_of_lt chunk hj
-  have hmod : x.regs Instances.produced % x.regs Instances.pieces = idx.2.2 := by
+  have hmod : x.regs Instances.produced % x.regs Instances.pieces = idx.piece := by
     rw [hi, cursor.pieces]
     exact Nat.mul_add_mod_of_lt hj
   have hdesc :
-      x.mem (chunk * 3 + x.regs Instances.descriptors) = idx.1.val ∧
+      x.mem (chunk * 3 + x.regs Instances.descriptors) = idx.residue.val ∧
       x.mem (chunk * 3 + x.regs Instances.descriptors + 1) =
         RecordProduct.recordQueries n D p idx ∧
       x.mem (chunk * 3 + x.regs Instances.descriptors + 2) =
         RecordProduct.recordQueryCount n D p values idx := hdescriptor
-  have hfirst : idx.2.2 * pieceSize D g ≤ n := (piece_start_lt hD hg hj).le
+  have hfirst : idx.piece * pieceSize D g ≤ n := (piece_start_lt hD hg hj).le
   have hres (k : ℕ) : R k < p := Int.natMod_lt hp
   have hleft (j : ℕ) (hj : j < N) : x.mem (x.regs Instances.srcLeft + j) = R (2 * N + j) := by
     rw [cursor.srcLeft]
@@ -111,13 +111,13 @@ theorem exec_construct {w n D g p : ℕ} (values : ℕ → ℤ)
     (fun k => R (2 * N + k)) (fun k => R (N + k)) cursor.one cursor.three
     (by rw [cursor.pieces]; exact hH)
     (by rw [hi, cursor.chunks, cursor.pieces]
-        change chunk * H + idx.2.2 < K * H
+        change chunk * H + idx.piece < K * H
         have hm := Nat.mul_le_mul_right H (Nat.succ_le_of_lt hchunk)
         rw [Nat.succ_mul] at hm
         omega)
     (by rw [cursor.stride, cursor.size, cursor.dimension])
     (by rw [hmod, cursor.pieceLength, cursor.size]; exact hfirst)
-    (by rw [hdiv, hdesc.1, cursor.modulus]; exact idx.1.isLt)
+    (by rw [hdiv, hdesc.1, cursor.modulus]; exact idx.residue.isLt)
     (by rw [cursor.modulus]; exact fun k _ => hres _)
     (by rw [cursor.modulus]; exact fun k _ => hres _)
     (by simpa only [cursor.size] using hleft)
@@ -127,7 +127,7 @@ theorem exec_construct {w n D g p : ℕ} (values : ℕ → ℤ)
     (by simpa only [cursor.size, cursor.dimension, cursor.modulus] using hfit)
   rw [cursor.size, cursor.dimension] at he hl hr
   have argsL : InstancePair.leftArgs (Instances.pairInput x) =
-      { RecordProduct.matrixArgs n D g p idx.1.val idx.2.2 with
+      { RecordProduct.matrixArgs n D g p idx.residue.val idx.piece with
         src := x.regs Instances.srcLeft, dst := out + 6 } := by
     simp +decide [InstancePair.leftArgs, Instances.pairInput, RecordProduct.matrixArgs,
       cursor.size, cursor.dimension, cursor.modulus, cursor.pieceLength,
@@ -135,7 +135,7 @@ theorem exec_construct {w n D g p : ℕ} (values : ℕ → ℤ)
       InstancePair.srcLeft, InstancePair.base, InstancePair.size, InstancePair.dimension,
       InstancePair.modulus, InstancePair.first, InstancePair.length, InstancePair.rho]
   have argsR : InstancePair.rightArgs (Instances.pairInput x) =
-      { RecordProduct.matrixArgs n D g p idx.1.val idx.2.2 with
+      { RecordProduct.matrixArgs n D g p idx.residue.val idx.piece with
         src := x.regs Instances.srcRight, dst := out + 6 + n * D } := by
     unfold InstancePair.rightArgs
     rw [argsL]

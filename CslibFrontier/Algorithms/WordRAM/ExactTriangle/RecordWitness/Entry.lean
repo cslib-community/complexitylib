@@ -53,7 +53,7 @@ theorem exec_input {w m n g p A : ℕ} (values : List ℤ)
         ((Nat.le_self_pow (by decide : 18 ≠ 0) (D m)).trans hN)
       let Q := RecordProduct.recordQueryCount n (D m) p V idx
       let qs := RecordProduct.decodedQueries hn a.mem (RecordProduct.recordQueries n (D m) p idx) Q
-      let length := min (pieceSize (D m) g) (n - idx.2.2 * pieceSize (D m) g)
+      let length := min (pieceSize (D m) g) (n - idx.piece * pieceSize (D m) g)
       ∃ y S, ExecWithin (w + 2) entryProgram
           (.init (PreparationInput.input n (D m) g p values)) y
           (RecordProduct.preparationTime n (D m) g p values +
@@ -63,12 +63,12 @@ theorem exec_input {w m n g p A : ℕ} (values : List ℤ)
         (y.regs Reg.found = 0 ∨ y.regs Reg.found = 1) ∧
         S ≤ falsePositiveCount wAB wBC wAC p + y.regs Reg.found ∧
         (y.regs Reg.found = 1 ↔
-          ∃ q ∈ chunkOf wAB (D m) p idx.1 idx.2.1,
-            ∃ c ∈ piece n (D m) g idx.2.2, weightSum wAB wBC wAC q.1 q.2 c = 0) ∧
+          ∃ q ∈ chunkOf wAB (D m) p idx.residue idx.chunk,
+            ∃ c ∈ piece n (D m) g idx.piece, weightSum wAB wBC wAC q.1 q.2 c = 0) ∧
         (y.regs Reg.found = 1 → ∃ u v c : Fin n,
           y.regs Reg.witnessA = u.val ∧ y.regs Reg.witnessB = v.val ∧
-          y.regs Reg.witnessC = c.val ∧ (u, v) ∈ chunkOf wAB (D m) p idx.1 idx.2.1 ∧
-          c ∈ piece n (D m) g idx.2.2 ∧ weightSum wAB wBC wAC u v c = 0) ∧
+          y.regs Reg.witnessC = c.val ∧ (u, v) ∈ chunkOf wAB (D m) p idx.residue idx.chunk ∧
+          c ∈ piece n (D m) g idx.piece ∧ weightSum wAB wBC wAC u v c = 0) ∧
         (∀ u, u < a.regs Instances.heap ∨
           a.regs Instances.heap + CallableProduct.windowSize n Q ≤ u → y.mem u = a.mem u) ∧
         ∀ j : Fin 64, y.regs (productBank (RecordProduct.producerBank j)) = a.regs j := by
@@ -131,14 +131,14 @@ theorem exec_input {w m n g p A : ℕ} (values : List ℤ)
         (qs.get j).1 (qs.get j).2) at answers
   change ExecWithin (w + 2) program z y (RecordProduct.timeBound (m := m) qs +
     5 * Nat.sqrt (D m) + 8 * Q +
-    (42 * min (pieceSize (D m) g) (n - idx.2.2 * pieceSize (D m) g) + 28) * S + 52) at he
+    (42 * min (pieceSize (D m) g) (n - idx.piece * pieceSize (D m) g) + 28) * S + 52) at he
   have hheap : z.regs (productBank 42) = a.regs Instances.heap :=
     congrArg (fun d : Data 64 => d.regs Instances.heap) zmap
   have hex : ExecWithin (w + 2) entryProgram
       (.init (PreparationInput.input n (D m) g p values)) y
       (RecordProduct.preparationTime n (D m) g p values +
         RecordProduct.timeBound (m := m) qs + 5 * Nat.sqrt (D m) + 8 * Q +
-        (42 * min (pieceSize (D m) g) (n - idx.2.2 * pieceSize (D m) g) + 28) * S + 52) := by
+        (42 * min (pieceSize (D m) g) (n - idx.piece * pieceSize (D m) g) + 28) * S + 52) := by
     obtain ⟨t, ht, hpref⟩ := hz
     cases hpref with
     | seq hp hs => exact ((hp.within.seq (hs.within.seq he))).mono (by omega)
@@ -146,12 +146,13 @@ theorem exec_input {w m n g p A : ℕ} (values : List ℤ)
     (.init (PreparationInput.input n (D m) g p values)) a hout hD hDn hg (by omega) idx hidx
   change ∀ i < Q, a.mem (q + 2 * i) < n ∧ a.mem (q + 2 * i + 1) < n at hcoords
   have card := QuerySpec.card_residueClass wAB (by omega : p ≠ 0)
-    (fun q => (V q % (p : ℤ)).toNat) (by intro pair; rfl) idx.1
+    (fun q => (V q % (p : ℤ)).toNat) (by intro pair; rfl) idx.residue
   obtain ⟨-, hnodup, hset⟩ := RecordProduct.decodedQueries_chunkOf V wAB hn (by omega)
-    (by intro u v; rfl) (by omega) hDn hout idx.1 idx.2.1 ((mem_instanceIndices wAB idx).mp hidx).1
+    (by intro u v; rfl) (by omega) hDn hout idx.residue idx.chunk
+    ((mem_instanceIndices wAB idx).mp hidx).1
   rw [card] at hnodup hset
   change qs.Nodup at hnodup
-  change qs.toFinset = chunkOf wAB (D m) p idx.1 idx.2.1 at hset
+  change qs.toFinset = chunkOf wAB (D m) p idx.residue idx.chunk at hset
   let argA := fun j => a.mem (q + 2 * j)
   let argB := fun j => a.mem (q + 2 * j + 1)
   have hcoordinate (i : Fin qs.length) :
@@ -160,7 +161,7 @@ theorem exec_input {w m n g p A : ℕ} (values : List ℤ)
     have hh := RecordProduct.decodedQueries_get_val hn a.mem q Q i
       (hcoords i.val hi).1 (hcoords i.val hi).2
     exact ⟨hh.1.symm, hh.2.symm⟩
-  have hquery : ∀ pair ∈ qs, pair ∈ chunkOf wAB (D m) p idx.1 idx.2.1 := by
+  have hquery : ∀ pair ∈ qs, pair ∈ chunkOf wAB (D m) p idx.residue idx.chunk := by
     intro pair hm
     rw [← hset, List.mem_toFinset]
     exact hm
@@ -180,7 +181,7 @@ theorem exec_input {w m n g p A : ℕ} (values : List ℤ)
   · intro hy
     obtain ⟨ha, hb, hlo, hhi, hz, j, hj, hwa, hwb⟩ := yw hy
     have hc : y.regs Reg.witnessC < n := by
-      have := min_le_right (pieceSize (D m) g) (n - idx.2.2 * pieceSize (D m) g)
+      have := min_le_right (pieceSize (D m) g) (n - idx.piece * pieceSize (D m) g)
       omega
     let u : Fin n := ⟨y.regs Reg.witnessA, ha⟩
     let v : Fin n := ⟨y.regs Reg.witnessB, hb⟩

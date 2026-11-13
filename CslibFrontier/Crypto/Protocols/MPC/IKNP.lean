@@ -138,7 +138,8 @@ chooses with `s`. -/
     (st : ((batchOTSpec m L).Query () 0 × IKNPCoins κ m 0) ×
       (Round.oracle (spec := batchOTSpec κ (BitString m)) () iknpRoleReversal).Received 0) :
     Fin m → Bool → L :=
-  iknpMasked H st.1.1 st.1.2 (st.2 1 rfl)
+  let ((X, s), Q) := st
+  iknpMasked H X s (Q 1 rfl)
 
 /-- The local state of each party at the end of the protocol. -/
 @[expose, reducible] def IKNPFinal (κ m : ℕ) (L : Type) (i : Fin 2) : Type :=
@@ -152,7 +153,7 @@ with `H j tⱼ`. -/
     (st : IKNPFinal κ m L i) : (batchOTSpec m L).Answer () i :=
   Fin.cases (motive := fun i => IKNPFinal κ m L i → (batchOTSpec m L).Answer () i)
     (fun _ => ())
-    (fun j st k => st.2 (Fin.fin_one_eq_zero j ▸ rfl) k (st.1.1.1 k) - H k (st.1.1.2 k))
+    (fun j (((r, T), _), msg) k => msg (Fin.fin_one_eq_zero j ▸ rfl) k (r k) - H k (T k))
     i st
 
 variable [AddCommGroup L]
