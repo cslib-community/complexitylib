@@ -4839,6 +4839,7 @@ public import CslibFrontier.DataStructure.HashFamily.WordRAM.KWise
 public import CslibFrontier.DataStructure.HashFamily.WordRAM.MultiplyShift
 public import CslibFrontier.DataStructure.HashFamily.WordRAM.ReducedKWise
 public import CslibFrontier.DataStructure.HashFamily.WordRAM.Tabulation
+public import CslibFrontier.DataStructure.HashFamily.WordRAM.TwoFill
 public import CslibFrontier.DataStructure.KServer.Basic
 public import CslibFrontier.DataStructure.KServer.DoubleCoverage
 public import CslibFrontier.DataStructure.KServer.LowerBound
