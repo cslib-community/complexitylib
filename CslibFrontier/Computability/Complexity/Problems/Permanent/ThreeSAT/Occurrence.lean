@@ -34,13 +34,9 @@ theorem litAt_mem (hφ : WellFormed φ) {o : ℕ} (ho : o < numOcc φ) :
   have hj : o / 3 < φ.length := by unfold numOcc at ho; omega
   have hc := hφ _ (List.getElem_mem hj)
   rw [litAt, List.getD_eq_getElem _ _ hj]
-  by_cases hp : o % 3 < (φ[o / 3]).length
-  · rw [List.getD_eq_getElem _ _ hp]
-    exact List.getElem_mem hp
-  · rw [List.getD_eq_default _ _ (by omega)]
-    have hne : φ[o / 3] ≠ [] := List.ne_nil_of_length_pos (by omega)
-    rw [List.getLastD_eq_getLast?, List.getLast?_eq_some_getLast hne, Option.getD_some]
-    exact List.getLast_mem hne
+  have hp : min (o % 3) ((φ[o / 3]).length - 1) < (φ[o / 3]).length := by omega
+  rw [List.getD_eq_getElem _ _ hp]
+  exact List.getElem_mem hp
 
 /-- Every literal of a clause is a padded literal of it. -/
 theorem exists_litAt_eq (hφ : WellFormed φ) {j : ℕ} (hj : j < φ.length) {l : Literal ℕ}
@@ -50,24 +46,25 @@ theorem exists_litAt_eq (hφ : WellFormed φ) {j : ℕ} (hj : j < φ.length) {l 
   refine ⟨p, by omega, ?_⟩
   have h1 : (3 * j + p) / 3 = j := by omega
   have h2 : (3 * j + p) % 3 = p := by omega
-  rw [litAt, h1, h2, List.getD_eq_getElem _ _ hj, List.getD_eq_getElem _ _ hp]
+  have h3 : min p ((φ[j]).length - 1) = p := by omega
+  rw [litAt, h1, h2, List.getD_eq_getElem _ _ hj, h3, List.getD_eq_getElem _ _ hp]
 
 /-- The variable of an occurrence is listed. -/
 theorem fst_litAt_mem_varList (hφ : WellFormed φ) {o : ℕ} (ho : o < numOcc φ) :
     (litAt φ o).1 ∈ varList φ := by
-  rw [varList, List.mem_dedup, CNF.mem_vars]
+  rw [varList, CNF.mem_distinctVars, CNF.mem_vars]
   exact ⟨_, List.getElem_mem _, (litAt φ o).2, litAt_mem hφ ho⟩
 
 /-- Every listed variable occurs. -/
 theorem exists_occ_of_mem_varList (hφ : WellFormed φ) {x : ℕ} (hx : x ∈ varList φ) :
     ∃ o < numOcc φ, (litAt φ o).1 = x := by
-  rw [varList, List.mem_dedup, CNF.mem_vars] at hx
+  rw [varList, CNF.mem_distinctVars, CNF.mem_vars] at hx
   obtain ⟨c, hc, b, hb⟩ := hx
   obtain ⟨j, hj, rfl⟩ := List.getElem_of_mem hc
   obtain ⟨p, hp, hl⟩ := exists_litAt_eq hφ hj hb
   exact ⟨3 * j + p, by unfold numOcc; omega, by rw [hl]⟩
 
-theorem varList_nodup (φ : CNF ℕ) : (varList φ).Nodup := List.nodup_dedup _
+theorem varList_nodup (φ : CNF ℕ) : (varList φ).Nodup := CNF.nodup_distinctVars _
 
 /-- The listed variable at its index. -/
 theorem getD_varList_idxOf {x : ℕ} (hx : x ∈ varList φ) :

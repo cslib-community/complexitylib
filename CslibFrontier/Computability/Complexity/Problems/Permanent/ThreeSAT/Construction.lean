@@ -8,14 +8,14 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.Problems.Permanent.ThreeSAT.Gadget
-public import CslibFrontier.Logics.Propositional.CNF
+public import CslibFrontier.Logics.Propositional.CNF.ModelCount
 
 /-!
 # The matrix of a 3CNF formula
 
 The construction of Goldreich's proof of Proposition 6.21 [Goldreich, Section 6.2.1]
 [Goldreich2007Draft], on natural-number vertex indices. For a formula `φ` with `m` clauses and
-`n` distinct variables (`varList φ`, the variables without duplicates in order of occurrence), the
+`n` distinct variables (`varList φ`, the distinct variables in order of first occurrence), the
 vertices are `0, …, n - 1`, one auxiliary vertex per variable, followed by eight vertices
 `n + 8 j, …, n + 8 j + 7` for clause `j`, carrying the clause gadget. Clause `j` is padded to
 three literals by repeating its last literal, and its literal occurrences are numbered
@@ -51,7 +51,7 @@ open Cslib.Logic.PL PermanentGadget
 variable (φ : CNF ℕ)
 
 /-- The distinct variables of `φ`, in order of first occurrence. -/
-def varList : List ℕ := φ.vars.dedup
+def varList : List ℕ := φ.distinctVars
 
 /-- The number of distinct variables: the auxiliary vertices. -/
 def numAux : ℕ := (varList φ).length
@@ -65,7 +65,7 @@ def size : ℕ := numAux φ + 8 * φ.length
 /-- The literal at occurrence `o`: position `o % 3` of clause `o / 3`, where a clause is padded
 to three literals by repeating its last literal. -/
 def litAt (o : ℕ) : Literal ℕ :=
-  (φ.getD (o / 3) []).getD (o % 3) ((φ.getD (o / 3) []).getLastD (0, false))
+  (φ.getD (o / 3) []).getD (min (o % 3) ((φ.getD (o / 3) []).length - 1)) (0, false)
 
 /-- The first occurrence of a literal, if any. -/
 def firstOcc (ℓ : Literal ℕ) : Option ℕ :=

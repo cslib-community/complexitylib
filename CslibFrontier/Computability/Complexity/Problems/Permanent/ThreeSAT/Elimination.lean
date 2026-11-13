@@ -501,13 +501,13 @@ theorem card_satOcc (hφ : WellFormed φ) :
     (fun σ τ _ _ => ?_) (fun a => ?_)
   · constructor
     · intro h v hv
-      have hv' : v ∈ varList φ := List.mem_dedup.2 hv
+      have hv' : v ∈ varList φ := CNF.mem_distinctVars.2 hv
       have hi := List.idxOf_lt_length_iff.2 hv'
       have := congrFun h ⟨_, hi⟩
       simpa only [getD_varList_idxOf hv'] using this
     · intro h
       funext i
-      exact h _ (List.mem_dedup.1 (getD_varList_mem i.2))
+      exact h _ (CNF.mem_distinctVars.1 (getD_varList_mem i.2))
   · constructor
     · intro ha
       refine ⟨assignVal φ a, ?_, funext fun i => assignVal_getD a i.2⟩
@@ -528,7 +528,7 @@ theorem card_satOcc (hφ : WellFormed φ) :
       refine ⟨p, hp, ?_⟩
       rw [hlp, Literal.eval_eq_true_iff]
       have hv : l.1 ∈ varList φ :=
-        List.mem_dedup.2 (CNF.mem_vars.2 ⟨_, List.getElem_mem hj, l.2, hl⟩)
+        CNF.mem_distinctVars.2 (CNF.mem_vars.2 ⟨_, List.getElem_mem hj, l.2, hl⟩)
       have hi := List.idxOf_lt_length_iff.2 hv
       unfold assignVal
       rw [dite_eq_left (show _ < numAux φ from hi)]
