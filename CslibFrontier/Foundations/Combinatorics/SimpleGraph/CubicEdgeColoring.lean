@@ -203,6 +203,15 @@ theorem card_interedges [Fintype V] [DecidableEq V] (A : Finset V) :
     subst hc
     exact ⟨⟨c, a⟩, by simpa using ⟨ha, mem_compl.mp hb⟩, rfl⟩
 
+/-! ### Relabelling vertices -/
+
+/-- Transport a cubic edge colouring along a bijection of the vertices. -/
+def map {W : Type*} (e : V ≃ W) : CubicEdgeColoring W where
+  mate c w := e (M.mate c (e.symm w))
+  mate_mate c w := by simp [M.mate_mate]
+  mate_ne c w h := M.mate_ne c (e.symm w) (by simpa using congrArg e.symm h)
+  mate_injective w c c' h := M.mate_injective (e.symm w) (by simpa using h)
+
 end CubicEdgeColoring
 
 /-- A graph is a **balanced-cut `γ`-edge expander** when every cut `(A, Aᶜ)` with both sides of
@@ -211,5 +220,25 @@ def IsBalancedCutExpander {V : Type*} [Fintype V] [DecidableEq V] (G : SimpleGra
     [DecidableRel G.Adj] (γ : ℝ) : Prop :=
   ∀ A : Finset V, Fintype.card V ≤ 3 * A.card → Fintype.card V ≤ 3 * Aᶜ.card →
     γ * Fintype.card V ≤ (G.interedges A Aᶜ).card
+
+/-- Balanced-cut expansion does not depend on the names of the vertices. -/
+theorem IsBalancedCutExpander.map {V W : Type*} [Fintype V] [DecidableEq V] [Fintype W]
+    [DecidableEq W] {M : CubicEdgeColoring V} {γ : ℝ}
+    (hM : IsBalancedCutExpander M.toSimpleGraph γ) (e : V ≃ W) :
+    IsBalancedCutExpander (M.map e).toSimpleGraph γ := by
+  intro A hA hAc
+  have hcard : Fintype.card W = Fintype.card V := (Fintype.card_congr e).symm
+  set B := A.map e.symm.toEmbedding
+  have hB : B.card = A.card := card_map _
+  have hBc : Bᶜ.card = Aᶜ.card := by rw [card_compl, card_compl, hB, hcard]
+  have := hM B (by rw [hB, ← hcard]; exact hA) (by rw [hBc, ← hcard]; exact hAc)
+  rw [CubicEdgeColoring.card_interedges] at this
+  rw [CubicEdgeColoring.card_interedges, hcard]
+  convert this using 3 with c
+  rw [filter_map, card_map]
+  congr 1
+  ext w
+  rw [mem_filter, mem_filter]
+  simp [B, CubicEdgeColoring.map]
 
 end Cslib

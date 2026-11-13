@@ -5,6 +5,7 @@ Authors: Christian Reitwiessner
 -/
 
 import CslibFrontier.Computability.Circuit.NNF.Negation.Separation
+import CslibFrontier.Foundations.Combinatorics.Expander.Cubic
 
 /-!
 # d-DNNF negation clients
@@ -17,7 +18,11 @@ Small explicit instances for the d-DNNF negation development:
 * a parity read-once program and its d-DNNF in a non-standard variable order;
 * `K₄` with the proper `3`-edge-colouring by its three perfect matchings: values of `f_G`, its
   balanced-cut expansion with `γ = 1`, and the separation theorem instantiated on it, so that the
-  expander hypothesis of `CubicEdgeColoring.ddnnf_negation_separation` is satisfiable.
+  expander hypothesis of `CubicEdgeColoring.ddnnf_negation_separation` is satisfiable;
+* the cubic replacement of a multigraph with two parallel edges: a simple cubic graph on `16`
+  vertices, with a positive expansion constant from
+  `RotationMap.isBalancedCutExpander_cubicReplacement`;
+* the unconditional Theorem 1.1, `NNF.exponential_separation`.
 -/
 
 namespace CslibFrontierTests.DDNNFNegation
@@ -135,5 +140,34 @@ example := k4.ddnnf_negation_separation k4_isBalancedCutExpander (by decide)
 /-- The d-DNNF of Proposition 5.1 for `K₄`. -/
 example (x : Fin 4 → Bool) : k4.dDNNF.toFun x = k4.someButNotAllColors x := k4.toFun_dDNNF x
 example : k4.dDNNF.size ≤ 650 := k4.size_dDNNF
+
+/-! ### Cubic replacement -/
+
+/-- Two vertices joined by two parallel edges: a `2`-regular multigraph. -/
+def parallelPair : RotationMap (Fin 2) (Fin 2) where
+  rot p := (1 - p.1, p.2)
+  rot_involutive p := Prod.ext (sub_sub_cancel 1 p.1) rfl
+
+/-- `parallelPair` has edge expansion at least `2`: the only nonempty set of at most half of the
+vertices is a single vertex, which both edges leave. -/
+theorem two_le_edgeExpansion_parallelPair : 2 ≤ parallelPair.edgeExpansion := by
+  rw [RotationMap.le_edgeExpansion_iff]
+  intro S hS
+  have : 2 * S.card ≤ (parallelPair.interedges S Sᶜ).card := by
+    revert S
+    decide
+  exact_mod_cast this
+
+/-- Its cubic replacement is a simple cubic graph on `16` vertices with a proper
+`3`-edge-colouring, despite the parallel edges, … -/
+example : (parallelPair.cubicReplacement (by norm_num)).toSimpleGraph.IsRegularOfDegree 3 :=
+  CubicEdgeColoring.isRegularOfDegree _
+
+/-- … and a balanced-cut `2 / (12 ⋅ 2 ⋅ (2 + 2 + 1))`-edge expander. -/
+example := parallelPair.isBalancedCutExpander_cubicReplacement (by norm_num) (by norm_num)
+  two_le_edgeExpansion_parallelPair
+
+/-- Theorem 1.1, with no hypotheses. -/
+example := NNF.exponential_separation
 
 end CslibFrontierTests.DDNNFNegation

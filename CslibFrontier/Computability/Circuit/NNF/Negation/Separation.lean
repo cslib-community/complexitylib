@@ -9,10 +9,11 @@ module
 
 public import CslibFrontier.Computability.Circuit.NNF.Negation.LowerBound
 public import CslibFrontier.Computability.Circuit.NNF.Negation.UpperBound
+import CslibFrontier.Foundations.Combinatorics.Expander.Cubic
 import Mathlib.Analysis.SpecialFunctions.Log.Base
 
 /-!
-# d-DNNF is not polynomially closed under negation, given expanders
+# d-DNNF is not polynomially closed under negation
 
 **[ArenasBroadrickLiewVanDenBroeck2026, Theorem 1.1]** states that for infinitely many `n` there
 is `f : {0,1}ⁿ → {0,1}` computed by a d-DNNF of size `O(n)` such that every DNNF computing `¬f`
@@ -24,19 +25,20 @@ This module proves both bounds for every such graph, with explicit constants
 most `150 n + 50` nodes (Proposition 5.1), and every DNNF for `¬f_G`, deterministic or not, has at
 least `(48/47)^(γ n / 126)` nodes (Theorem 5.3, through Theorem 3.1). Theorem 1.1 then follows
 for every family of such expanders on unboundedly many vertices
-(`Cslib.Circuits.NNF.exponential_separation_of_expanders`).
+(`Cslib.Circuits.NNF.exponential_separation_of_expanders`), and unconditionally
+(`Cslib.Circuits.NNF.exponential_separation`) from the explicit cubic expanders
+`Cslib.RotationMap.cubicArithmeticExpander`, on `8 ⋅ 257 ^ 12 ⋅ m` vertices for every `m ≥ 2`
+(`Cslib.RotationMap.exists_cubicEdgeColoring_isBalancedCutExpander`).
 
-**Remaining gap.** The existence of such a family is
-[ArenasBroadrickLiewVanDenBroeck2026, Proposition 5.2] (explicit simple `3`-regular bipartite
-edge expanders, cited there as \[KMPS24, Alo21\], with König's edge colouring). It is a
-hypothesis here, not proved.
-Nothing about the function `f_G`, its d-DNNF or the lower bound is assumed.
+The paper's Proposition 5.2 also gives such expanders on every even number `n ≥ 6` of vertices,
+by a polynomial-time algorithm; Theorem 1.1 needs neither, and neither is proved here.
 
 ## Main results
 
 * `Cslib.CubicEdgeColoring.ddnnf_negation_separation`: both bounds for one expander.
 * `Cslib.Circuits.NNF.exponential_separation_of_expanders`: Theorem 1.1, a `2^(c n)` lower bound
   with `c > 0`, from a family of `γ`-expanders with `γ > 0`.
+* `Cslib.Circuits.NNF.exponential_separation`: Theorem 1.1.
 
 ## References
 
@@ -72,7 +74,7 @@ namespace Circuits.NNF
 
 /-- **[ArenasBroadrickLiewVanDenBroeck2026, Theorem 1.1], from an expander family.** Suppose that
 for some `γ > 0` there are cubic graphs with proper `3`-edge-colourings on unboundedly many vertex
-counts that are balanced-cut `γ`-edge expanders (Proposition 5.2 of the paper, not proved here).
+counts that are balanced-cut `γ`-edge expanders (as `exponential_separation` provides).
 Then there is `c > 0` such that for infinitely many `n` there is `f : (Fin n → Bool) → Bool` with a
 d-DNNF of at most `150 n + 50` nodes while every DNNF computing `¬f` has at least `2^(c n)` nodes.
 Here `c = log₂(48/47) γ / 126`. -/
@@ -96,6 +98,20 @@ theorem exponential_separation_of_expanders {γ : ℝ} (hγ : 0 < γ)
     rw [show Real.logb 2 (48 / 47) * γ / 126 * n = Real.logb 2 (48 / 47) * (γ * n / 126) by ring,
       Real.rpow_mul (by norm_num), Real.rpow_logb (by norm_num) (by norm_num) (by norm_num)]
   exact key ▸ hlow D hD hf
+
+/-- **[ArenasBroadrickLiewVanDenBroeck2026, Theorem 1.1]: d-DNNF is not polynomially closed under
+negation.** There is `c > 0` such that for infinitely many `n` there is
+`f : (Fin n → Bool) → Bool` with a d-DNNF of at most `150 n + 50` nodes while every DNNF computing
+`¬f` has at least `2^(c n)` nodes. The functions are `f_G` for the cubic expanders
+`RotationMap.cubicArithmeticExpander`. -/
+theorem exponential_separation :
+    ∃ c : ℝ, 0 < c ∧ ∀ m : ℕ, ∃ n ≥ m, ∃ f : (Fin n → Bool) → Bool,
+      (∃ (N : Type) (_ : Fintype N) (D : NNF (Fin n) N), D.IsDecomposable ∧ D.IsDeterministic ∧
+        (∀ x, D.toFun x = f x) ∧ D.size ≤ 150 * n + 50) ∧
+      ∀ {N : Type*} [Fintype N] (D : NNF (Fin n) N), D.IsDecomposable → (∀ x, D.toFun x = !f x) →
+        (2 : ℝ) ^ (c * n) ≤ D.size :=
+  let ⟨_, hγ, hfam⟩ := RotationMap.exists_cubicEdgeColoring_isBalancedCutExpander
+  exponential_separation_of_expanders hγ hfam
 
 end Circuits.NNF
 

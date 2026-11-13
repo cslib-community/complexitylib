@@ -5206,6 +5206,7 @@ public import CslibFrontier.Foundations.Combinatorics.Expander.Cayley
 public import CslibFrontier.Foundations.Combinatorics.Expander.Cheeger
 public import CslibFrontier.Foundations.Combinatorics.Expander.Connected
 public import CslibFrontier.Foundations.Combinatorics.Expander.Contraction
+public import CslibFrontier.Foundations.Combinatorics.Expander.Cubic
 public import CslibFrontier.Foundations.Combinatorics.Expander.CutRank
 public import CslibFrontier.Foundations.Combinatorics.Expander.ElementaryMove
 public import CslibFrontier.Foundations.Combinatorics.Expander.Existence

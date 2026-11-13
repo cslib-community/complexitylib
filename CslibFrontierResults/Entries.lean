@@ -148,6 +148,7 @@ import CslibFrontier.DataStructure.Paging.Marking
 import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.RootBound
 import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.Sturm
 import CslibFrontier.Foundations.Algebra.Polynomial.RealRoot.TotalIsolation
+import CslibFrontier.Foundations.Combinatorics.Expander.Cubic
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.CFI
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.ColorRefinement
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.WeisfeilerLeman
@@ -4669,19 +4670,41 @@ register_result "dnnf-size-multipartition-cover" where
     least n/3 variables."
 
 register_result "ddnnf-negation-separation" where
-  title := "d-DNNF is not polynomially closed under negation, given cubic edge expanders"
+  title := "d-DNNF is not polynomially closed under negation"
   topic := "circuit complexity"
   sources := [
     { paper := ArenasBroadrickLiewVanDenBroeck2026, theorem := "Theorem 1.1",
-      locator := "§1, p. 3; proof in §5 (Proposition 5.1, Theorem 5.3)" }
+      locator := "§1, p. 3; proof in §5 (Propositions 5.1 and 5.2, Theorem 5.3)" }
   ]
   theorems := [
     Cslib.CubicEdgeColoring.ddnnf_negation_separation,
-    Cslib.Circuits.NNF.exponential_separation_of_expanders
+    Cslib.Circuits.NNF.exponential_separation_of_expanders,
+    Cslib.Circuits.NNF.exponential_separation
   ]
-  scope := "For every cubic graph with a proper 3-edge-colouring on n ≥ 2 vertices that is a \
-    balanced-cut γ-edge expander, f_G has a d-DNNF with at most 150n + 50 nodes and every DNNF \
-    for ¬f_G has at least (48/47)^(γn/126) nodes. Theorem 1.1 itself (a 2^(cn) lower bound \
-    with c > 0) is derived from a family of such expanders with γ > 0 on unboundedly many \
-    vertex counts, which is Proposition 5.2 of the paper \
-    and is a hypothesis, not proved (#4668)."
+  scope := "There is c > 0 such that for infinitely many n some f on n variables has a d-DNNF \
+    with at most 150n + 50 nodes while every DNNF for ¬f has at least 2^(cn) nodes. For every \
+    cubic graph with a proper 3-edge-colouring on n ≥ 2 vertices that is a balanced-cut \
+    γ-edge expander, f_G has a d-DNNF with at most 150n + 50 nodes and every DNNF for ¬f_G has \
+    at least (48/47)^(γn/126) nodes. The expanders are those of result \
+    cubic-edge-coloured-expanders (#4668)."
+
+register_result "cubic-edge-coloured-expanders" where
+  title := "Explicit cubic 3-edge-coloured balanced-cut expanders"
+  topic := "circuit complexity"
+  sources := [
+    { paper := ArenasBroadrickLiewVanDenBroeck2026, theorem := "Proposition 5.2",
+      locator := "§5.2, p. 10; proof in Appendix B" }
+  ]
+  theorems := [
+    Cslib.RotationMap.isBalancedCutExpander_cubicReplacement,
+    Cslib.RotationMap.isBalancedCutExpander_cubicArithmeticExpander,
+    Cslib.RotationMap.exists_cubicEdgeColoring_isBalancedCutExpander
+  ]
+  scope := "Weaker than the source: the vertex counts are 8·257^12·m for every m ≥ 2, not every \
+    even n ≥ 6, the constant γ > 0 is explicit but tiny, and no polynomial-time algorithm is \
+    proved; `cubicReplacement` and `arithmeticExpander` are computable, but the renamed family \
+    `cubicArithmeticExpander` is noncomputable (it relabels via Fintype.equivFinOfCardEq). The \
+    source cites [KMPS24, Alo21] and König's \
+    theorem; here a K-regular multigraph with edge expansion h ≥ 0 is reduced to a simple cubic \
+    graph with a proper 3-edge-colouring on 4K|V| vertices that is a balanced-cut \
+    h/(12K(h+K+1))-edge expander, applied to the library's arithmetic expanders (#4668)."
