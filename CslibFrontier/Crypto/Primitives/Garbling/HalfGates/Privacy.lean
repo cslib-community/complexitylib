@@ -333,10 +333,10 @@ def detRun (f : (K × Bool) × T × Bool → K × Bool) (X : Fin n → K × Bool
   | k + 1 => fun s => if (s.gate : ℕ) = k then entry C H tw x f (evalLabels C H tw
       (detRun f X k) X) s else detRun f X k s
 
-theorem interpret_tableRun (f : (K × Bool) × T × Bool → K × Bool) (X : Fin n → K × Bool)
-    (k : ℕ) :
-    OracleComp.interpret (OracleComp.sumHandler ProbComp.unifFin fun q => pure (f q))
-      (tableRun C H tw x X k) = pure (detRun C H tw x f X k) := by
+/-- Against a fixed function, building the table computes `detRun`. -/
+theorem run_tableRun (f : (K × Bool) × T × Bool → K × Bool) (X : Fin n → K × Bool) (k : ℕ) :
+    (tableRun C H tw x X k).run (fun q => pure (f q)) = pure (detRun C H tw x f X k) := by
+  rw [ProbOracleComp.run]
   induction k with
   | zero => rfl
   | succ k ih =>
@@ -409,25 +409,21 @@ noncomputable def reduction (D : View C K → ProbComp Bool) :
   let ct ← tableRun C H tw x X C.size
   ProbOracleComp.sample (D (simulateWith C H tw (C.eval interpretation x) X ct))
 
-theorem eval_interpret_reduction (D : View C K → ProbComp Bool)
+theorem eval_run_reduction (D : View C K → ProbComp Bool)
     (f : (K × Bool) × T × Bool → K × Bool) :
-    ProbComp.eval (OracleComp.interpret (OracleComp.sumHandler ProbComp.unifFin
-        fun q => pure (f q)) (reduction C H tw x D)) =
+    ProbComp.eval ((reduction C H tw x D).run fun q => pure (f q)) =
       (PMF.uniformOfFintype (Fin n → K × Bool)).bind fun X =>
         ProbComp.eval (D (simulateWith C H tw (C.eval interpretation x) X
           (oracleTable C H tw x f X))) := by
-  have hself : ∀ {α : Type} (p : ProbComp α), OracleComp.interpret ProbComp.unifFin p = p :=
-    fun p => OracleComp.interpret_query_eq_self p
-  simp only [reduction, OracleComp.interpret_bind, ProbOracleComp.interpret_sample, hself,
-    interpret_tableRun, detRun_eq, pure_bind, ProbComp.eval_bind, ProbComp.eval_uniform]
+  simp only [reduction, ProbOracleComp.run_bind, ProbOracleComp.run_sample, run_tableRun,
+    detRun_eq, pure_bind, ProbComp.eval_bind, ProbComp.eval_uniform]
 
 /-- The real experiment is the CCR game with the reduction and the keyed oracle. -/
 theorem realGame_reduction (hK : ∀ k : K, k + k = 0) (D : View C K → ProbComp Bool) :
     ProbComp.eval (PRF.realExperiment (circularLabel H) (reduction C H tw x D)) =
       realGame C H tw x D := by
-  simp only [PRF.realExperiment, ProbOracleComp.run, realGame, garble, ProbComp.eval_bind,
-    ProbComp.eval_uniform, eval_interpret_reduction, ProbComp.eval_pure, PMF.bind_bind,
-    PMF.pure_bind]
+  simp only [PRF.realExperiment, realGame, garble, ProbComp.eval_bind, ProbComp.eval_uniform,
+    eval_run_reduction, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind]
   have hshift : ∀ (c : Fin n → K × Bool) (g : (Fin n → K × Bool) → PMF Bool),
       (PMF.uniformOfFintype _).bind (fun Z => g (Z + c)) = (PMF.uniformOfFintype _).bind g := by
     intro c g
@@ -463,9 +459,8 @@ theorem map_oracleTable (htw : Function.Injective tw) (X : Fin n → K × Bool) 
 /-- The simulated experiment is the CCR game with the reduction and a random function. -/
 theorem simGame_reduction (htw : Function.Injective tw) (D : View C K → ProbComp Bool) :
     ProbComp.eval (PRF.idealExperiment (reduction C H tw x D)) = simGame C H tw x D := by
-  simp only [PRF.idealExperiment, ProbOracleComp.run, simGame, simulate, ProbComp.eval_bind,
-    ProbComp.eval_uniform, eval_interpret_reduction, ProbComp.eval_pure, PMF.bind_bind,
-    PMF.pure_bind]
+  simp only [PRF.idealExperiment, simGame, simulate, ProbComp.eval_bind, ProbComp.eval_uniform,
+    eval_run_reduction, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind]
   rw [PMF.bind_comm]
   congr 1
   funext X

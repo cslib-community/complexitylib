@@ -11,6 +11,7 @@ public import CslibFrontier.Crypto.Primitives.PRF.Finite
 public import CslibFrontier.Languages.Probabilistic.Oracle.QueryCount
 public import CslibFrontier.Languages.Probabilistic.RandomPermutation
 import CslibFrontier.Languages.Probabilistic.Oracle.CoinFixing
+import CslibFrontier.Languages.Probabilistic.Oracle.Substitution.QueryCount
 
 /-!
 # Finite pseudorandom permutations
@@ -155,10 +156,8 @@ def StrongAdversary.ofForward (A : PRF.Adversary D D) : StrongAdversary D :=
 /-- `ofForward A` makes as many queries as `A`. -/
 theorem StrongAdversary.isQueryBounded_ofForward {A : PRF.Adversary D D} {Q : ℕ}
     (hQ : A.IsQueryBounded Q) : (StrongAdversary.ofForward A).IsQueryBounded Q :=
-  hQ.interpret fun
-    | .inl k => ProbOracleComp.IsQueryBounded.sample (ProbComp.unifFin k)
-    | .inr x =>
-      ProbOracleComp.IsQueryBounded.query (spec := PermOracleSpec D) (PermQuery.forward x)
+  hQ.simulate fun x =>
+    ProbOracleComp.IsQueryBounded.query (spec := PermOracleSpec D) (PermQuery.forward x)
 
 /-- The real chosen-ciphertext experiment: sample one uniform key and answer `.forward x` with
 `E key x` and `.inverse y` with `(E key).symm y`. -/

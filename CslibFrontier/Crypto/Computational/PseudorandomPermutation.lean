@@ -17,6 +17,7 @@ import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Crypto.Game.Concrete
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Crypto.Primitives.PRP.Finite
+import CslibFrontier.Languages.Probabilistic.Oracle.Substitution.QueryCount
 import CslibFrontier.Probability.PMF.Bind
 
 /-!
@@ -572,9 +573,7 @@ private theorem run_toFinite (blockLen : ℕ → ℕ) (adversary : OracleDisting
 private theorem isQueryBounded_toFinite (blockLen : ℕ → ℕ) {adversary : OracleDistinguisher}
     {n Q : ℕ} (hQ : (adversary n []).IsQueryBounded Q) :
     (toFinite blockLen adversary n).IsQueryBounded Q :=
-  hQ.interpret fun
-    | .inl k => ProbOracleComp.IsQueryBounded.sample (ProbComp.unifFin k)
-    | .inr request => isQueryBounded_randomFunctionQuery (blockLen n) request.2
+  hQ.simulate fun request => isQueryBounded_randomFunctionQuery (blockLen n) request.2
 
 /-- **PRP/PRF switching lemma** ([BonehShoup2023], Theorem 4.4): a randomized word-oracle
 adversary making at most `Q` queries distinguishes a uniform permutation of `blockLen n`-bit blocks
