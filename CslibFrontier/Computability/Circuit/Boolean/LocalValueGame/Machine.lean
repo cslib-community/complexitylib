@@ -14,8 +14,8 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.
 # Native multitape machines for local Boolean value queries
 
 This connects local Boolean semantics to the existing finite multitape alternating machine.
-Preparation and each local update have native tidy machine certificates. The bound charges the
-update clock, encoding lengths, and the tape copying and clearing required between rounds.
+Preparation and each local update have native machine certificates. The bound charges their
+normalization, encoding lengths, and the tape copying and clearing required between rounds.
 Neither the decoder nor random access is provided for free. A potential is used only in the proof.
 
 The result is conditional on these implementation certificates and their branch charges. It does
@@ -66,22 +66,25 @@ layout is required by `wordGame`; the fields are not encoded as a framed tuple. 
 @[expose] def step (m : Move α) : List Bool := position D encC (next D m.claim m.bit)
 
 /-- Native implementation of local value queries. Every nonterminal move pays its own machine
-clock, tape plumbing and successor potential. Constants are handled by the charged preparation
-or preceding update. The same finite machine handles all encoded claims. -/
+normalization clock, tape plumbing and successor potential. The normalization constants are
+provided before the budget is chosen. The same finite machine handles all encoded claims. -/
 theorem exists_machine {rank : α → ℕ} (hd : D.Descends rank) (value : α → Bool)
     (hv : ∀ a, value a = D.eval value a)
     {tI sI : Claim α → ℕ} {tF sF : Move α → ℕ}
-    (hI : ComputableTidilyInTimeAndSpace (position D encC) encC encBits tI sI)
-    (hF : ComputableTidilyInTimeAndSpace (step D encC) (encMove encC) encBits tF sF)
-    (budget : α → ℕ)
-    (hcost : ∀ (c : Claim α) (u b : Bool), (∀ v, D.op c.wire ≠ .const v) →
-      tF ⟨u, b, c⟩ + 3 * (encMove encC ⟨u, b, c⟩).length +
-        7 * (step D encC ⟨u, b, c⟩).length + 26 + budget (next D c b).wire ≤ budget c.wire) :
-    ∃ (k : ℕ) (State : Type) (_ : Finite State) (atm : MultiTapeATM k Bool State),
-      ∀ c, (atm.Accepts (encC c) ↔ value c.wire = c.value) ∧
-        atm.toPTM.toNTM.RunsInTime (encC c)
-          (tI c + (position D encC c).length + budget c.wire + 4) := by
-  obtain ⟨k, State, hfin, atm, h⟩ := exists_wordGame_of_tidy hI hF
+    (hI : ComputableInTimeAndSpace (position D encC) encC encBits tI sI)
+    (hF : ComputableInTimeAndSpace (step D encC) (encMove encC) encBits tF sF) :
+    ∃ cI cF : ℕ, ∀ (budget : α → ℕ),
+      (∀ (c : Claim α) (u b : Bool), (∀ v, D.op c.wire ≠ .const v) →
+        2 * tF ⟨u, b, c⟩ + 3 * sF ⟨u, b, c⟩ + cF +
+          3 * (encMove encC ⟨u, b, c⟩).length + 7 * (step D encC ⟨u, b, c⟩).length + 26 +
+            budget (next D c b).wire ≤ budget c.wire) →
+      ∃ (k : ℕ) (State : Type) (_ : Finite State) (atm : MultiTapeATM k Bool State),
+        ∀ c, (atm.Accepts (encC c) ↔ value c.wire = c.value) ∧
+          atm.toPTM.toNTM.RunsInTime (encC c)
+            (2 * tI c + 3 * sI c + cI + (position D encC c).length + budget c.wire + 4) := by
+  obtain ⟨cI, cF, hgame⟩ := exists_wordGame (U := update D encC) hI hF
+  refine ⟨cI, cF, fun budget hcost => ?_⟩
+  obtain ⟨k, State, hfin, atm, h⟩ := hgame
     (fun _ => potential encC budget) (by
       intro c₀ u x r b hr
       obtain ⟨c, he, _⟩ := reach_position hd hr

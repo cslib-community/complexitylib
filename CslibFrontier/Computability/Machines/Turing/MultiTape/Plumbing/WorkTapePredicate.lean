@@ -15,10 +15,11 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.P
 /-!
 # Native Boolean predicates on serialized work-tape queries
 
-The query is already serialized at cell zero of a designated work tape. A native tidy predicate
-runs through `inputFromWord`, with blank private scratch and marker tapes. Two real transitions
-position and restore the host input head. The six added transitions include both marker writes,
-marker cleanup, and both host-head movements. Serialization is a separate charged prerequisite.
+The query is already serialized at cell zero of a designated work tape. A native predicate whose
+run restores blank scratch and all heads runs through `inputFromWord`, with a private marker tape.
+Two real transitions position and restore the host input head. The six added transitions include
+both marker writes, marker cleanup, and both host-head movements. Serialization is a separate
+charged prerequisite.
 -/
 
 public section
@@ -41,21 +42,27 @@ and the host input head at its left blank. The output argument is an existing pr
 /-- The runner preserves the serialized query, clears its private scratch and marker, restores
 all heads, and appends precisely the predicate's output. Its overhead is six native transitions. -/
 theorem runsBetween {tm : MultiTapeTM k Bool S} {word result : List Bool} {t s : ℕ}
-    (h : tm.ComputesTidilyInTimeAndSpace word result t s) (outer out : List Bool) :
+    (h : RunsBetween tm (tapesCfg word (fun _ => []) 0 0 [])
+      (tapesCfg word (fun _ => []) 0 0 result) t s) (outer out : List Bool) :
     RunsBetween (machine tm) (config outer word out) (config outer word (out ++ result))
       (t + 6) (s + 2 * (word.length + 2) + 6 * k + 16) := by
   let ws : Fin (k + 2) → List Bool := Function.update (fun _ => []) (Fin.natAdd k 0) word
-  have hc := h.inputFromWord true
+  have hc := transformsTapes_inputFromWord_of_runFrom (M := tm) (w := word) (e := result)
+    (ws₀ := fun _ => []) (ws₁ := fun _ => []) (t := t) (s := s) true
+    (by simpa only [tapesCfg_zero_withState] using h.1)
+    (by simpa only [tapesCfg_zero_withState] using h.2)
   obtain ⟨ws', emitted, ⟨hw, he⟩, hr⟩ :=
-    RunsBetween.of_transformsTapes (input := outer) hc (ws := ws) ⟨trivial, rfl⟩ 0 out
-  have hw' : ws' = ws := by rw [hw]; simp [ws]
+    RunsBetween.of_transformsTapes (input := outer) hc (ws := ws)
+      (by rw [append_nil_eq_update]) 0 out
+  have hw' : ws' = ws := by simpa only [append_nil_eq_update] using hw
   rw [hw', he] at hr
   convert hr.fromLeftBlank rfl rfl using 1 <;> (first | rfl | omega)
 
 /-- Duplicating the runner's transitions produces a native alternating leaf with no additional
 clock overhead. A singleton Boolean output accepts exactly when that Boolean is true. -/
 theorem acceptsWithin {tm : MultiTapeTM k Bool S} {word : List Bool} {answer : Bool} {t s : ℕ}
-    (h : tm.ComputesTidilyInTimeAndSpace word [answer] t s) (outer : List Bool) :
+    (h : RunsBetween tm (tapesCfg word (fun _ => []) 0 0 [])
+      (tapesCfg word (fun _ => []) 0 0 [answer]) t s) (outer : List Bool) :
     (MultiTapeATM.ofTMs (fun _ => machine tm) (fun _ => false)).AcceptsWithin (t + 6)
       ((config outer word).withState (some (machine tm).q₀)) ↔ answer = true := by
   rw [MultiTapeATM.acceptsWithin_ofTMs_const_iff, (runsBetween h outer []).1]
@@ -63,7 +70,8 @@ theorem acceptsWithin {tm : MultiTapeTM k Bool S} {word : List Bool} {answer : B
 
 /-- The same native budget bounds all alternating branches, regardless of the returned bit. -/
 theorem haltsWithin {tm : MultiTapeTM k Bool S} {word : List Bool} {answer : Bool} {t s : ℕ}
-    (h : tm.ComputesTidilyInTimeAndSpace word [answer] t s) (outer : List Bool) :
+    (h : RunsBetween tm (tapesCfg word (fun _ => []) 0 0 [])
+      (tapesCfg word (fun _ => []) 0 0 [answer]) t s) (outer : List Bool) :
     (MultiTapeATM.ofTMs (fun _ => machine tm) (fun _ => false)).HaltsWithin (t + 6)
       ((config outer word).withState (some (machine tm).q₀)) := by
   rw [MultiTapeATM.haltsWithin_ofTMs_const_iff, (runsBetween h outer []).1]
@@ -83,7 +91,10 @@ theorem exists_of_polyTime {α : Type} {enc : α ↪ List Bool} {f : α → Bool
   obtain ⟨c, d, hbound⟩ := (ht.add (PolyBounded.const 6)).exists_le
   refine ⟨k, _, inferInstance, machine tm, c, d, ?_⟩
   intro a outer
-  have hr := (runsBetween (htm a) outer []).1
+  have hrun : RunsBetween tm (tapesCfg (enc a) (fun _ => []) 0 0 [])
+      (tapesCfg (enc a) (fun _ => []) 0 0 (encBool (f a))) (t a) (s a) := by
+    simpa only [RunsBetween, tapesCfg_zero_withState] using computesTidily_iff_runFrom.mp (htm a)
+  have hr := (runsBetween hrun outer []).1
   rw [runFrom_eq_of_halt _ _ (hbound a) (by rw [hr]; rfl), hr]
   simp only [encBool_apply, List.nil_append]
 

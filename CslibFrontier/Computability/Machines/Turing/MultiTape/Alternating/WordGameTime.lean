@@ -15,14 +15,14 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.KernelOnWo
 /-!
 # Compiling locally computed word games to alternating time
 
-A tidy preparation and a tidy update give one finite multitape alternating machine. The update
-may be specified only on typed reachable positions. Its time is charged at each actual position,
-including copying the current word, writing the successor and clearing temporary tapes.
+A native preparation and update give one finite multitape alternating machine. Their normalization
+costs are charged explicitly. The update may be specified only on typed reachable positions. Each
+round also pays for copying the current word, writing the successor and clearing temporary tapes.
 
-The exact round charge is `t + 3 * input.length + 7 * output.length + 26`: the update's own
-clock, tape plumbing, and the three alternating dispatch steps. A natural-valued potential
-paying this charge bounds the total time along every branch. The potential is a proof device;
-the machine does not compute it. There is no random-access or free-decoder assumption.
+The round charge is `2 * t + 3 * s + c + 3 * input.length + 7 * output.length + 26`: the
+normalized update clock, tape plumbing, and the three alternating dispatch steps. A natural-valued
+potential paying this charge bounds the total time along every branch. The potential is a proof
+device; the machine does not compute it. There is no random-access or free-decoder assumption.
 
 This is a compiler for a local bit-evaluation game, not a contraction construction. In particular,
 a polynomial-time certificate for generating an entire arithmetic circuit cannot be substituted
@@ -30,7 +30,7 @@ for a small local-decoding cost.
 
 ## Main results
 
-* `Turing.MultiTapeATM.exists_wordGame_of_tidy`: one native machine accepts the winning positions
+* `Turing.MultiTapeATM.exists_wordGame`: one native machine accepts the winning positions
   and obeys the potential bound, with explicit preparation and round costs.
 -/
 
@@ -43,7 +43,7 @@ open MultiTapeTM WordGame
 /-- Compile a typed update into one finite native alternating machine. All time spent on the
 encoded positions is charged. `hpos` also requires the update for both possible move bits,
 including the move not chosen by an existential winning strategy. -/
-theorem exists_wordGame_of_tidy {α π : Type} {enc : α ↪ List Bool}
+private theorem exists_wordGame_of_tidy {α π : Type} {enc : α ↪ List Bool}
     {encPos : π ↪ List Bool} {I : α → List Bool} {U : List Bool → List Bool}
     {F : π → List Bool} {tI sI : α → ℕ} {tF sF : π → ℕ}
     (hI : ComputableTidilyInTimeAndSpace I enc encBits tI sI)
@@ -113,5 +113,26 @@ theorem exists_wordGame_of_tidy {α π : Type} {enc : α ↪ List Bool}
       · rw [← hF]
         omega)
     convert h using 1; omega
+
+/-- Compile native preparation and update certificates into one finite alternating machine.
+The constants pay for normalizing both machines before the potential is chosen. Every reachable
+move, including an unchosen existential move, must pay its normalized update and tape costs. -/
+theorem exists_wordGame {α π : Type} {enc : α ↪ List Bool}
+    {encPos : π ↪ List Bool} {I : α → List Bool} {U : List Bool → List Bool}
+    {F : π → List Bool} {tI sI : α → ℕ} {tF sF : π → ℕ}
+    (hI : ComputableInTimeAndSpace I enc encBits tI sI)
+    (hF : ComputableInTimeAndSpace F encPos encBits tF sF) :
+    ∃ cI cF : ℕ, ∀ (potential : α → List Bool → ℕ),
+      (∀ a u x r b, Reach U (I a) (u :: x :: r) →
+        ∃ p, encPos p = u :: b :: r ∧ F p = U (u :: b :: r) ∧
+          2 * tF p + 3 * sF p + cF + 3 * (encPos p).length + 7 * (F p).length + 26 +
+            potential a (F p) ≤ potential a (u :: x :: r)) →
+      ∃ (k : ℕ) (State : Type) (_ : Finite State) (atm : MultiTapeATM k Bool State),
+        ∀ a, (atm.Accepts (enc a) ↔ Wins U (I a)) ∧
+          atm.toPTM.toNTM.RunsInTime (enc a)
+            (2 * tI a + 3 * sI a + cI + (I a).length + potential a (I a) + 4) := by
+  obtain ⟨cI, hI⟩ := hI.exists_computableTidilyInTimeAndSpace
+  obtain ⟨cF, hF⟩ := hF.exists_computableTidilyInTimeAndSpace
+  exact ⟨cI, cF, fun potential hpos => exists_wordGame_of_tidy hI hF potential hpos⟩
 
 end Turing.MultiTapeATM

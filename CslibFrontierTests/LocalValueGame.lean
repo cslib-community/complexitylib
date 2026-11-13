@@ -6,7 +6,7 @@ Authors: Sam
 
 import CslibFrontier.Computability.Circuit.Boolean.LocalValueGame.Machine
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Finite
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
+import Cslib.Computability.Machines.Turing.MultiTape.Combinators.AlmostConstant
 
 /-!
 A three-address decoder has an AND root with true and false leaves. The tests instantiate the
@@ -56,19 +56,18 @@ example : ∃ (k : ℕ) (State : Type) (_ : Finite State) (atm : MultiTapeATM k 
       (atm.Accepts (enc c) ↔ value c.wire = c.value) ∧
         atm.toPTM.toNTM.RunsInTime (enc c) clock := by
   classical
-  obtain ⟨tI, sI, _, _, hI⟩ :=
-    (ComputableTidilyInPolyTime.of_finite (encA := enc) (encB := encBits)
-      (position decoder enc))
-  obtain ⟨tF, sF, _, _, hF⟩ :=
-    (ComputableTidilyInPolyTime.of_finite (encA := encMove enc) (encB := encBits)
-      (step decoder enc))
-  let charge (m : Move (Fin 3)) := tF m + 3 * (encMove enc m).length +
+  obtain ⟨tI, hI⟩ := computableInTimeAndSpace_of_finite (encIn := enc) (encOut := encBits)
+    (position decoder enc)
+  obtain ⟨tF, hF⟩ := computableInTimeAndSpace_of_finite (encIn := encMove enc) (encOut := encBits)
+    (step decoder enc)
+  obtain ⟨cI, cF, hmachine⟩ := exists_machine decoder enc descends value values hI hF
+  let charge (m : Move (Fin 3)) := 2 * tF + cF + 3 * (encMove enc m).length +
     7 * (step decoder enc m).length + 26
   let bound := Finset.univ.sup charge
   let budget (a : Fin 3) := if a = 0 then bound else 0
   have hcost (c : Claim (Fin 3)) (u b : Bool)
       (hc : ∀ v, decoder.op c.wire ≠ .const v) :
-      tF ⟨u, b, c⟩ + 3 * (encMove enc ⟨u, b, c⟩).length +
+      2 * tF + cF + 3 * (encMove enc ⟨u, b, c⟩).length +
         7 * (step decoder enc ⟨u, b, c⟩).length + 26 +
           budget (next decoder c b).wire ≤ budget c.wire := by
     have hc0 : c.wire = 0 := by
@@ -79,8 +78,9 @@ example : ∃ (k : ℕ) (State : Type) (_ : Finite State) (atm : MultiTapeATM k 
     have hbound := Finset.le_sup (f := charge) (Finset.mem_univ ⟨u, b, c⟩)
     simpa only [budget, hn, hc0, ↓reduceIte, add_zero] using hbound
   obtain ⟨k, State, hfin, atm, h⟩ :=
-    exists_machine decoder enc descends value values hI hF budget hcost
-  let clock (c : Claim (Fin 3)) := tI c + (position decoder enc c).length + budget c.wire + 4
+    hmachine budget hcost
+  let clock (c : Claim (Fin 3)) :=
+    2 * tI + cI + (position decoder enc c).length + budget c.wire + 4
   refine ⟨k, State, hfin, atm, Finset.univ.sup clock, fun c => ⟨(h c).1, ?_⟩⟩
   exact (h c).2.mono (Finset.le_sup (f := clock) (Finset.mem_univ c))
 

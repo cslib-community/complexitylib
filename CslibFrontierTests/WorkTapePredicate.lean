@@ -12,12 +12,18 @@ namespace CslibFrontierTests.WorkTapePredicate
 
 open Turing Turing.MultiTapeTM Turing.MultiTapeTM.WorkTapePredicate
 
+private theorem copy_run (word : List Bool) :
+    RunsBetween (tidyCopy Bool) (tapesCfg word (fun _ => []) 0 0 [])
+      (tapesCfg word (fun _ => []) 0 0 word) (2 * word.length + 4) 0 := by
+  simpa only [RunsBetween, tapesCfg_zero_withState] using
+    computesTidily_iff_runFrom.mp (computesTidily_tidyCopy word)
+
 -- Both singleton results execute the virtual-input adapter and restore the host input head.
 example (outer : List Bool) (answer : Bool) :
     (machine (tidyCopy Bool)).runFrom
       ((config outer [answer]).withState (some (machine (tidyCopy Bool)).q₀)) 12 =
       (config outer [answer] [answer]).withState none := by
-  simpa using (runsBetween (computesTidily_tidyCopy [answer]) outer []).1
+  simpa using (runsBetween (copy_run [answer]) outer []).1
 
 -- The marker tape is actually cleared and reset, while the serialized query survives.
 example (outer out : List Bool) :
@@ -27,7 +33,7 @@ example (outer out : List Bool) :
       result.workTapes 1 = tapeOfList [] ∧ result.workTapePos = 0 ∧
       result.output = out ++ [true] := by
   dsimp only
-  have hr := (runsBetween (computesTidily_tidyCopy [true]) outer out).1
+  have hr := (runsBetween (copy_run [true]) outer out).1
   norm_num only [List.length_cons, List.length_nil] at hr
   rw [hr]
   simp [config, tapesCfg, Cfg.withState]
@@ -37,13 +43,13 @@ example (outer : List Bool) :
     (machine (tidyCopy Bool)).runFrom
       ((config outer []).withState (some (machine (tidyCopy Bool)).q₀)) 10 =
       (config outer []).withState none := by
-  simpa using (runsBetween (computesTidily_tidyCopy ([] : List Bool)) outer []).1
+  simpa using (runsBetween (copy_run []) outer []).1
 
 -- Alternation duplicates actual deterministic transitions; a false returned bit is rejected.
 example (outer : List Bool) (answer : Bool) :
     (MultiTapeATM.ofTMs (fun _ => machine (tidyCopy Bool)) (fun _ => false)).AcceptsWithin 12
       ((config outer [answer]).withState (some (machine (tidyCopy Bool)).q₀)) ↔ answer = true := by
-  simpa using acceptsWithin (computesTidily_tidyCopy [answer]) outer
+  simpa using acceptsWithin (copy_run [answer]) outer
 
 private def present : Cslib.CountingLeaf.RawInput :=
   ⟨[true], [false, true, true, false], [false, false, true, false],
