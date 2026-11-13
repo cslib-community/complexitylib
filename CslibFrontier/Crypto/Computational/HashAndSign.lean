@@ -231,7 +231,8 @@ theorem computableInPolyTime_collisionOf
       (encPair encBits (encPair (encPair encBits encBits) (encList encBits)))
       (encPair encBits encBits) := by
   change ComputableInPolyTime (fun p : List Bool × ((List Bool × List Bool) × List (List Bool)) =>
-      (p.2.1.1, (p.2.2.find? fun m => H p.1 m == H p.1 p.2.1.1).getD [])) _ _
+      collisionOf H p.1 ((p.2.1.1, p.2.1.2), p.2.2)) _ _
+  simp only [collisionOf]
   polytime
 
 /-- Whenever `m* ∉ queried` and `queried.find? (fun m => H s m == H s m*)` succeeds, `collisionOf`

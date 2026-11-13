@@ -144,13 +144,10 @@ including the security parameter, public key, and arbitrary saved tape. -/
     (machine : MultiTapePTM k Bool Control Bool) (c d keyC keyD : ℕ) :
     IsOraclePPTOn encReplayInput (encPair encBits encBits)
       (savedWordReplay machine (fun op word => ProbOracleComp.query (op, word)) c d keyC keyD) := by
-  change IsOraclePPTOn encReplayInput (encPair encBits encBits) fun p =>
-    if p.2.1.length ≤ keyC * (p.1 + 1) ^ keyD then
-      (Decoder.bits.pair Decoder.bits).decode <$>
-        machine.runCoins (fun op word => ProbOracleComp.query (op, word))
-          (p.2.2.take (c * ((encPair encUnary encBits (p.1, p.2.1)).length + 1) ^ d))
-          (encPair encUnary encBits (p.1, p.2.1))
-    else pure ([], [])
+  change IsOraclePPTOn encReplayInput (encPair encBits encBits) fun p : ℕ × List Bool × List Bool =>
+    savedWordReplay machine (fun op word => ProbOracleComp.query (op, word)) c d keyC keyD
+      (p.1, p.2.1, p.2.2)
+  simp only [savedWordReplay]
   apply IsOraclePPTOn.ite'
   · fun_prop
   · apply IsOraclePPTOn.map' _ (Decoder.bits.pair Decoder.bits).computableInPolyTime
