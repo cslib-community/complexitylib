@@ -14,7 +14,6 @@ public import CslibFrontier.Foundations.Data.BitString.List.Dot
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString.Dot
 
 /-!
 # Polynomial-time word algorithms for Goldreich–Levin decoding
@@ -163,7 +162,7 @@ theorem polyTime_wordCandidate {α : Type} {input : α ↪ List Bool}
   have hselectors := hselectors.tidy
   have hguess := hguess.tidy
   refine .of_tidy ?_
-  unfold wordCandidate
+  unfold wordCandidate listDot
   fun_prop
 
 /-- The word program computes exactly the finite decoder's candidate for the same guess. -/

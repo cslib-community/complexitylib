@@ -730,6 +730,12 @@ theorem computableInPolyTime_polyComposePow :
 
 /-! ### Gaussian elimination and Berlekamp factoring -/
 
+private theorem tidy_listDot :
+    ComputableTidilyInPolyTime (fun p : List Bool × List Bool => listDot p.1 p.2)
+      (encPair encBits encBits) encBool :=
+  (by fun_prop : ComputableInPolyTime (fun p : List Bool × List Bool => listDot p.1 p.2)
+    (encPair encBits encBits) encBool).tidy
+
 private def kernelDot (p : List (List Bool) × List Bool) (v : List Bool) : Bool :=
   listDot p.2 v
 
@@ -747,8 +753,8 @@ private theorem tidy_kernelStepBits :
   have hdotEl : ComputableTidilyInPolyTime
       (fun x : (List (List Bool) × List Bool) × List Bool => kernelDot x.1 x.2)
       (encPair (encPair (encList encBits) encBits) encBits) encBool :=
-    .bitsListDot (ha.comp (ComputableTidilyInPolyTime.fst (encPair (encList encBits) encBits)
-      encBits)) (ComputableTidilyInPolyTime.snd (encPair (encList encBits) encBits) encBits)
+    tidy_listDot.comp ((ha.comp (ComputableTidilyInPolyTime.fst (encPair (encList encBits) encBits)
+      encBits)).prod (ComputableTidilyInPolyTime.snd (encPair (encList encBits) encBits) encBits))
   have hvals : ComputableTidilyInPolyTime
       (fun p : List (List Bool) × List Bool => p.1.map (listDot p.2))
       (encPair (encList encBits) encBits) (encList encBool) :=
@@ -776,7 +782,7 @@ private theorem tidy_kernelStepBits :
     have hxpar := ComputableTidilyInPolyTime.fst (encPair (encList encBits) encBits) encBits
     have hxv := ComputableTidilyInPolyTime.snd (encPair (encList encBits) encBits) encBits
     have hxa := ha.comp hxpar
-    have hdot := ComputableTidilyInPolyTime.bitsListDot hxa hxv
+    have hdot := tidy_listDot.comp (hxa.prod hxv)
     have hxpiv := hpiv.comp hxpar
     have hxor := (ComputableTidilyInPolyTime.bitsZipWith xor).comp (hxv.prod hxpiv)
     exact (ComputableInPolyTime.ite' hdot.computableInPolyTime

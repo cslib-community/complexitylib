@@ -13,7 +13,6 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Primitives
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString.Dot
 import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Tactic.PPT
 
@@ -50,7 +49,7 @@ private theorem computableTidilyInPolyTime_wordHash {α : Type} {encode : α ↪
     (hinput : ComputableTidilyInPolyTime input encode encBits) :
     ComputableTidilyInPolyTime (fun a => wordHash (count a) (seed a) (input a))
       encode encBits := by
-  unfold wordHash
+  unfold wordHash listDot
   fun_prop
 
 /-- Hash plain polynomial-time words, retaining unary output dimensions and the full input. -/
