@@ -27,7 +27,8 @@ finite-support algorithms and hard distributions for arbitrary output types. Cha
 corrected density-amplification objective.
 Chapters 16–17 distinguish finite pseudorandomness/coding
 results from uniform machine bounds and general-hardness endpoints; this is not a claim of
-book-wide coverage.
+book-wide coverage. Its companion [exercise inventory](arora-barak-2007-exercises.md) classifies
+every end-of-chapter exercise as establishing new theory, covered, a source issue or routine.
 
 The [Goldreich draft audit](goldreich-2007.md) records a source-pinned chapter-level coverage comparison
 for *Computational Complexity: A Conceptual Perspective*; it is not a claim of book-wide coverage.

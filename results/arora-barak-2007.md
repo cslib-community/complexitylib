@@ -638,7 +638,9 @@ The scope includes exercises whose endpoints develop theory, as clarified by Chr
 Reitwiessner; routine practice is not a formalization target. An exercise already implied by
 an existing theorem should be mapped to that theorem rather than reproved. Exercise numbers
 must be pinned to the source chapter, including subparts; placeholders do not supply a precise
-mathematical specification.
+mathematical specification. The exercises of all other chapters are classified in the companion
+[exercise inventory](arora-barak-2007-exercises.md), which supersedes the first-inventory
+remark below the Chapter 14 table.
 
 The six exercise prompts at the end of Chapter 14 all appear on printed p. 265/PDF p. 281.
 Their current dispositions are:
@@ -949,9 +951,10 @@ Snapshot: `b91d5151fd7dc665a5e3efcb466077caf44e690d` (2026-11-12), CSLib pin
 
 ## Remaining audit work
 
-Chapters 1–22 now have chapter-specific records above. These are snapshot-qualified audit
-records, not proofs of the remaining theory endpoints or a complete classification of the
-exercises. The first implementation milestones for
+Chapters 1–22 now have chapter-specific records above, and every chapter's exercises are
+classified here or in the [exercise inventory](arora-barak-2007-exercises.md). These are
+snapshot-qualified audit records, not proofs of the remaining theory endpoints. The first
+implementation milestones for
 §22.1 are [#4712](https://github.com/cslib-community/cslib-frontier/pull/4712) and
 [#4713](https://github.com/cslib-community/cslib-frontier/pull/4713); the latter distinguishes
 the literal unrestricted draft 22.3 from the published theorem with an additive loss.
