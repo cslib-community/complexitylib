@@ -986,13 +986,11 @@ theorem secureKDF_iff_encoded (setup : ℕ → PMF F.Desc) (H : F.Desc × List B
   set E := encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits)))
   constructor
   · intro h W hW
-    refine h _ ?_
-    obtain ⟨k, State, hfin, M, c, e, hM⟩ := hW
-    exact ⟨k, State, hfin, M, c, e, fun x => hM (x.secParam, x.groupParameters,
-      F.encode _ x.leftPublic, F.encode _ x.rightPublic, x.key)⟩
+    exact h _ (hW.preprocess (prepare := fun x : F.KDFInput => (x.secParam, x.groupParameters,
+      F.encode _ x.leftPublic, F.encode _ x.rightPublic, x.key)) (by fun_prop))
   · intro h D hD
-    obtain ⟨W, ⟨k, State, hfin, M, c, e, hM⟩, hW⟩ := hD.exists_bool_extension
-    have := h (fun n t => W (E (n, t))) ⟨k, State, hfin, M, c, e, fun x => hM (E x)⟩
+    obtain ⟨W, hWppt, hW⟩ := hD.exists_bool_extension
+    have := h (fun n t => W (E (n, t))) (hWppt.preprocess ComputableInPolyTime.id'.encoding_comp)
     have hgame (n : ℕ) (d : F.Desc) (u v : F.Carrier d) (key : List Bool) :
         ProbComp.eval (W (E (n, d, F.encode d u, F.encode d v, key))) =
           ProbComp.eval (D n d u v key) :=
