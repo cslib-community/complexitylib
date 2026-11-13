@@ -687,16 +687,28 @@ register_result "adjacent-pair-sensitivity-separation" where
     { paper := AroraBarak07, theorem := "Chapter 11, Exercise 2",
       locator := "Web draft 2007-01-08, printed p. 218; PDF p. 234" }
   ]
-  theorems := [
-    Cslib.BitString.adjacentPairSqrt_measures,
-    Cslib.BitString.sensitivity_adjacentPairBlocks_le,
-    Cslib.BitString.sum_half_le_blockSensitivity_adjacentPairBlocks
-  ]
+  theorems := [Cslib.BitString.adjacentPairSqrt_measures]
   scope := "Every length n ≥ 4, with Nat.sqrt n balanced contiguous blocks of sizes \
     n / k + [i < n % k]; a block accepts exactly two adjacent true bits, overlapping choices \
     included. Native CSLib sensitivity, block sensitivity, certificate complexity and \
     decision-tree complexity: √n ≤ s ≤ 3√n (floor square root), n ≤ 3 bs and \
     bs ≤ C ≤ D ≤ n. No exact values (such as D = n) are claimed."
+
+register_result "adjacent-pair-block-bounds" where
+  title := "Adjacent-pair block functions with arbitrary block sizes: sensitivity and block \
+    sensitivity bounds"
+  topic := "query complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 11, Exercise 2 (general block layout)",
+      locator := "Web draft 2007-01-08, printed p. 218; PDF p. 234" }
+  ]
+  theorems := [
+    Cslib.BitString.sensitivity_adjacentPairBlocks_le,
+    Cslib.BitString.sum_half_le_blockSensitivity_adjacentPairBlocks
+  ]
+  scope := "Unequal consecutive blocks covering n coordinates, each accepting exactly two \
+    adjacent true bits: sensitivity is at most max(3k, M) for k blocks of at most M bits, and \
+    the sum over blocks of half their sizes (rounded down) is at most the block sensitivity."
 
 register_result "boolean-two-element-arithmetic-simulation" where
   title := "Boolean and two-element arithmetic circuits have linearly related sizes"
