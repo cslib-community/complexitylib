@@ -70,6 +70,7 @@ constructed as a placed gate.
 
 ## Main results
 
+* `Cslib.Quantum.PlacedGate.ctrlPhase_matrix`: the matrix of the opaque placed constructor.
 * `Cslib.Quantum.PlacedGate.eval_ctrlPhase_ket`: a controlled phase gate on a basis state.
 * `Cslib.Quantum.GateCode.im_toPlacedGate?_gate`: the gates of gate codes are real.
 * `Cslib.Quantum.PhaseGateCode.realSimulates_phaseCodes`: four Hadamard and classical gates
@@ -132,6 +133,13 @@ end Gate
 noncomputable def PlacedGate.ctrlPhase (inv : Bool) {k : ℕ} (e : Fin k ↪ Fin m) : PlacedGate m :=
   ⟨k, bif inv then (Gate.ctrlPhase k)⁻¹ else Gate.ctrlPhase k, e⟩
 
+/-- The matrix of a placed controlled phase gate is the placement of its gate matrix. -/
+theorem PlacedGate.ctrlPhase_matrix (inv : Bool) {k : ℕ} (e : Fin k ↪ Fin m) :
+    (PlacedGate.ctrlPhase inv e).matrix =
+      place e (bif inv then (Gate.ctrlPhase k)⁻¹ else Gate.ctrlPhase k) := by
+  unfold PlacedGate.ctrlPhase
+  rfl
+
 /-- Moving a controlled phase gate to a larger register composes its wire placement. -/
 @[simp] theorem PlacedGate.mapWires_ctrlPhase {N k : ℕ} (e : Fin m ↪ Fin N) (inv : Bool)
     (A : Fin k ↪ Fin m) :
@@ -146,9 +154,7 @@ theorem PlacedGate.ctrlPhase_matrix_apply (inv : Bool) {k : ℕ} (e : Fin k ↪ 
     ((PlacedGate.ctrlPhase inv e).matrix : Matrix _ _ ℂ) y x =
       if y = x then (if ∀ i, x (e i) = true then (bif inv then -Complex.I else Complex.I) else 1)
       else 0 := by
-  rw [show PlacedGate.ctrlPhase inv e =
-      ⟨k, bif inv then (Gate.ctrlPhase k)⁻¹ else Gate.ctrlPhase k, e⟩ from rfl, matrix_apply]
-  dsimp only
+  rw [PlacedGate.ctrlPhase_matrix, place_apply]
   rw [Gate.ctrlPhase_cond_apply]
   simp only [Function.comp_apply]
   by_cases hyx : y = x
