@@ -60,25 +60,23 @@ def powRotWithInput (T : ℕ) (p : P × (W × (Fin T → D))) : W × (Fin T → 
 
 /-- Follow the labels, retaining the original graph input at every rotation call. After all labels
 have been used, the walk stays at its endpoint. -/
-def walkAtWithInput {T : ℕ} (p : P × (W × (Fin T → D))) (m : ℕ) : W :=
-  (powRotWithInput rotate (min m T)
-    (p.1, p.2.1, Fin.take (min m T) (Nat.min_le_right m T) p.2.2)).1
+def walkAtWithInput {T : ℕ} : P × (W × (Fin T → D)) → ℕ → W
+  | (x, w, k), m => (powRotWithInput rotate (min m T)
+      (x, w, Fin.take (min m T) (Nat.min_le_right m T) k)).1
 
 /-- A killed power reverses only the used prefix, preserving unused labels and kill signals. -/
-def killedPowRotWithInput (T q : ℕ) [NeZero q]
-    (p : P × (W × ((Fin T → D) × (Fin T → Fin q)))) : W × ((Fin T → D) × (Fin T → Fin q)) :=
-  let stopped := powRotWithInput rotate (killTime p.2.2.2)
-    (p.1, p.2.1, Fin.take _ (killTime_le p.2.2.2) p.2.2.1)
-  (stopped.1, fun i => if h : i.val < killTime p.2.2.2 then stopped.2 ⟨i.val, h⟩ else p.2.2.1 i,
-    p.2.2.2)
+def killedPowRotWithInput (T q : ℕ) [NeZero q] :
+    P × (W × ((Fin T → D) × (Fin T → Fin q))) → W × ((Fin T → D) × (Fin T → Fin q))
+  | (x, w, k, c) =>
+    let stopped := powRotWithInput rotate (killTime c) (x, w, Fin.take _ (killTime_le c) k)
+    (stopped.1, fun i => if h : i.val < killTime c then stopped.2 ⟨i.val, h⟩ else k i, c)
 
 /-- Once the stopping time is known, the dependent prefix has that concrete length. -/
-theorem killedPowRotWithInput_of_killTime {T q : ℕ} [NeZero q]
-    (p : P × (W × ((Fin T → D) × (Fin T → Fin q)))) {n : ℕ} (hn : n ≤ T)
-    (hc : killTime p.2.2.2 = n) :
-    killedPowRotWithInput rotate T q p =
-      let stopped := powRotWithInput rotate n (p.1, p.2.1, Fin.take n hn p.2.2.1)
-      (stopped.1, fun i => if h : i.val < n then stopped.2 ⟨i.val, h⟩ else p.2.2.1 i, p.2.2.2) := by
+theorem killedPowRotWithInput_of_killTime {T q : ℕ} [NeZero q] {x : P} {w : W}
+    {k : Fin T → D} {c : Fin T → Fin q} {n : ℕ} (hn : n ≤ T) (hc : killTime c = n) :
+    killedPowRotWithInput rotate T q (x, w, k, c) =
+      let stopped := powRotWithInput rotate n (x, w, Fin.take n hn k)
+      (stopped.1, fun i => if h : i.val < n then stopped.2 ⟨i.val, h⟩ else k i, c) := by
   subst n
   rfl
 
