@@ -78,7 +78,9 @@ Assign review to an agent that did not design or implement the change. For examp
 
 > Independently review PR `<number>` at its current revision. Read the actual definitions and
 > statements. Check the mathematical claim, API and representative client, including the model,
-> encodings, hypotheses and resource bounds. Read new and changed proofs against the rest of
+> encodings, hypotheses and resource bounds.
+> Check public API usability in a representative `module` client with ordinary imports of the API.
+> Read new and changed proofs against the rest of
 > their files, and report any substantial argument the change repeats that another proof or an
 > existing lemma already makes. Follow a representative caller: check whether named accessors,
 > matcher/range facts and generated certificates remove representation work, and compare any
