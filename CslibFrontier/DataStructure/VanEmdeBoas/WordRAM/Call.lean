@@ -16,6 +16,8 @@ public import CslibFrontier.Computability.WordRAM.Dynamic
 public import CslibFrontier.DataStructure.OrderedSet.Basic
 public import Mathlib.Data.Nat.Log
 
+import CslibFrontier.Computability.WordRAM.SymbolicExec
+
 /-!
 # Complete native van Emde Boas calls and adaptive dynamic realization
 
@@ -27,6 +29,10 @@ In addition, this module connects `program` to the shared
 `DataStructure.StateTransitionSpec` / `DynamicProgram` /
 `DynamicCertificate` interface on finite sets (`Finset ℕ`) and combines the uniform native
 initializer `initProgram` with arbitrary adaptive client histories (`run_initialized`).
+Native dynamic calls append a checked eight-instruction result conversion. Membership copies its
+answer into the shared flag register, and flags are normalized before canonical structural
+parsing. Their
+uniform halt-inclusive bound is `65 * (d + 1) + 30`.
 
 ## Main definitions
 
@@ -395,20 +401,78 @@ abbrev spec (d w : ℕ) : DataStructure.StateTransitionSpec :=
       | .member q => Fits w q
       | .successor q => Fits w q)
 
-/-- The single fixed dispatcher `program` packaged as a `DynamicProgram` with a register-only
-calling convention (`tag` and `arg`). -/
+/-- Representation-relative observations of the original dispatcher, before native conversion. -/
+def rawDecode : (o : Operation) → (Fin 32 → ℕ) → Option (Operation.Result o)
+  | .insert _, _ => some PUnit.unit
+  | .member _, regs => some (regs out != 0)
+  | .successor _, regs => some (if regs found = 0 then none else some (regs out))
+
+/-- Canonical native result formats: unit, exact Boolean, or tag followed by a natural word. -/
+def nativeResultType : Operation → ResultType
+  | .insert _ => .unit
+  | .member _ => .bool
+  | .successor _ => .option .nat
+
+/-- The result format presents each operation's existing observation type by equality. -/
+theorem nativeResultType_eq (o : Operation) : Operation.Result o = (nativeResultType o).Value := by
+  cases o <;> rfl
+
+/-- A fixed bank shared by every operation: presence/Boolean flag, then successor payload. -/
+def nativeResultBank (i : ℕ) : Fin 32 := if i = 0 then found else out
+
+/-- Native result conversion stages real constants, copies membership's answer to the shared
+flag register, and normalizes that register to exactly zero or one. -/
+def nativeResultCode : Code .standard 32 :=
+  .seq (.op (.const zero 0)) <|
+    .seq (.op (.const one 1)) <|
+      .seq (.branch (.eq tag one) (.op (.copy found out)) (.op (.copy found found)))
+        (.branch (.eq found zero) (.op (.const found 0)) (.op (.const found 1)))
+
+/-- Machine opcode expected by a native conversion call. -/
+def operationTag : Operation → ℕ
+  | .insert _ => 0
+  | .member _ => 1
+  | .successor _ => 2
+
+/-- Conversion executes within eight instructions, preserves persistent registers and memory,
+and produces the canonical observation from the actual source words. -/
+theorem nativeResultCode_spec {w : ℕ} {x : Data 32} (h1 : Fits w 1)
+    (o : Operation) (a : Operation.Result o) (htag : x.regs tag = operationTag o)
+    (hd : rawDecode o x.regs = some a) :
+    ∃ y, ExecWithin w nativeResultCode x y 8 ∧
+      (nativeResultType o).decode (y.regs ∘ nativeResultBank) 0 =
+        some (cast (nativeResultType_eq o) a) ∧
+      y.mem = x.mem ∧ y.regs root = x.regs root ∧ y.regs stackBase = x.regs stackBase := by
+  cases o <;> simp only [operationTag] at htag
+  all_goals
+    unfold nativeResultCode
+    wram_exec [htag] <;>
+    simp_all only [Operation.Result, rawDecode, found, out, Fin.isValue, nativeResultType,
+      ResultType.Value, Data.set, zero, one, Function.update_idem, ResultType.decode, root,
+      ne_eq, ne_comm, Fin.reduceEq, not_false_eq_true, Function.update_of_ne, stackBase,
+      bne_self_eq_false, Option.some.injEq, Bool.false_eq, Bool.true_eq, Function.comp_apply,
+      nativeResultBank, ↓reduceIte, ↓dreduceIte, Function.update_self, one_ne_zero, zero_add,
+      Option.map_eq_some_iff, and_self, and_true] <;> try rfl
+  case member.neg =>
+    rw [← hd]
+    change (x.regs out != 0) = true
+    exact bne_iff_ne.mpr (Ne.symm hc)
+  case successor.neg =>
+    exact ⟨x.regs out, hd.symm, by rw [← hd]; rfl⟩
+
+/-- The fixed dispatcher followed by its paid canonical result suffix, with a register-only
+calling convention (`tag` and `arg`) and one fixed output bank. -/
 def dynamicProgram (d w : ℕ) : DynamicProgram (spec d w) 32 where
-  code := program
+  code := .seq program nativeResultCode
   output := out
   input j := j == tag || j == arg
   encode o j := match o with
     | .insert k => if j = tag then 0 else k
     | .member q => if j = tag then 1 else q
     | .successor q => if j = tag then 2 else q
-  decode o regs := match o with
-    | .insert _ => some PUnit.unit
-    | .member _ => some (regs out != 0)
-    | .successor _ => some (if regs found = 0 then none else some (regs out))
+  resultBank := nativeResultBank
+  resultType := nativeResultType
+  resultType_eq := nativeResultType_eq
 
 /-- Persistent machine representation of an abstract finite set `s : Finset ℕ` by a valid tree
 at `base` and scratch stack pointer at `stackBase₀`. -/
@@ -446,15 +510,15 @@ theorem arguments_fit {d w base stackBase₀ : ℕ}
     · exact h2
     · exact ho
 
-/-- Unified per-operation dispatch theorem for `(dynamicProgram d w)`: every admissible operation
+/-- Original dispatcher correctness before native result conversion: every admissible operation
 executes in at most `65 * (d + 1) + 21` structured instructions, produces the decoded abstract
 observation, preserves `SetRep`, and modifies no memory outside
 `[base, base + span d) ∪ [stackBase₀, stackBase₀ + 4 * d)`. -/
-theorem dispatch_spec {d w base stackBase₀ : ℕ} {s : Finset ℕ} {x : Data 32}
+theorem dispatch_raw_spec {d w base stackBase₀ : ℕ} {s : Finset ℕ} {x : Data 32}
     (hstk_lo : base + span d ≤ stackBase₀) (hstk_fit : Fits w (stackBase₀ + 4 * d))
     (o : Operation) (hx : SetRep d base stackBase₀ w s x) (ho : (spec d w).valid s o) :
     ∃ y, ExecWithin w program ((dynamicProgram d w).prepare o x) y (65 * (d + 1) + 21) ∧
-      (dynamicProgram d w).decode o y.regs = some ((spec d w).stepFn s o).2 ∧
+      rawDecode o y.regs = some ((spec d w).stepFn s o).2 ∧
       SetRep d base stackBase₀ w ((spec d w).stepFn s o).1 y ∧
       (∀ a, (a < base ∨ base + span d ≤ a) →
         (a < stackBase₀ ∨ stackBase₀ + 4 * d ≤ a) → y.mem a = x.mem a) := by
@@ -501,7 +565,7 @@ theorem dispatch_spec {d w base stackBase₀ : ℕ} {s : Finset ℕ} {x : Data 3
       (hrun.regs_eq (by decide : program.Preserves stackBase)).trans hprep_stk
     refine ⟨y, hrun, ?_,
       ⟨hrun.bounded hprep_bounded, hy_root, hy_stk, t, hvalid, helem, ?_⟩, ?_⟩
-    · simp only [dynamicProgram, spec, hy_out, ← helem]
+    · simp only [rawDecode, spec, hy_out, ← helem]
       congr 1
       have hiff := (Tree.mem_elements_iff hvalid q).trans (Tree.member_iff_contains hvalid q).symm
       cases hmem : t.member q <;> simp_all
@@ -528,6 +592,34 @@ theorem dispatch_spec {d w base stackBase₀ : ℕ} {s : Finset ℕ} {x : Data 3
     · intro a _ ha_stk
       exact hy_frame a ha_stk
 
+/-- Every admitted native call executes the original dispatcher and the paid canonical result
+suffix, retaining the represented set and all original memory framing guarantees. -/
+theorem dispatch_spec {d w base stackBase₀ : ℕ} {s : Finset ℕ} {x : Data 32}
+    (hstk_lo : base + span d ≤ stackBase₀) (hstk_fit : Fits w (stackBase₀ + 4 * d))
+    (o : Operation) (hx : SetRep d base stackBase₀ w s x) (ho : (spec d w).valid s o) :
+    ∃ y, ExecWithin w (dynamicProgram d w).code ((dynamicProgram d w).prepare o x) y
+        (65 * (d + 1) + 29) ∧
+      (dynamicProgram d w).decode o y.regs = some ((spec d w).stepFn s o).2 ∧
+      SetRep d base stackBase₀ w ((spec d w).stepFn s o).1 y ∧
+      (∀ a, (a < base ∨ base + span d ≤ a) →
+        (a < stackBase₀ ∨ stackBase₀ + 4 * d ≤ a) → y.mem a = x.mem a) := by
+  obtain ⟨z, he, hd, hz, hf⟩ := dispatch_raw_spec hstk_lo hstk_fit o hx ho
+  have h1 : Fits w 1 := hstk_fit.of_le (by have := five_le_span d; lia)
+  have htag : z.regs tag = operationTag o := by
+    rw [he.regs_eq (by decide : program.Preserves tag)]
+    cases o <;> simp +decide [dynamicProgram, DynamicProgram.prepare, operationTag]
+  obtain ⟨y, hy, ha, hm, hr, hs⟩ := nativeResultCode_spec h1 o _ htag hd
+  refine ⟨y, (he.seq hy).mono (by lia), ?_, ?_, ?_⟩
+  · change ((nativeResultType o).decode (y.regs ∘ nativeResultBank) 0).map
+        (cast (nativeResultType_eq o).symm) = some _
+    rw [ha]
+    simp only [Option.map_some, cast_cast, cast_eq]
+  · refine ⟨hy.bounded hz.bounded, hr.trans hz.root_eq, hs.trans hz.stackBase_eq, ?_⟩
+    simpa only [hm] using hz.tree
+  · intro a htree hstk
+    rw [congrFun hm a]
+    exact hf a htree hstk
+
 /-- Semantic correctness and totality certificate for the fixed bounded-word van Emde Boas
 implementation. -/
 def certificate {d w base stackBase₀ : ℕ}
@@ -542,12 +634,12 @@ def certificate {d w base stackBase₀ : ℕ}
       exact ⟨y, n, he, hans, hy⟩)
 
 /-- Separate worst-case per-operation instruction certificate, counting the final halt:
-every admissible `insert`, `member`, or `successor` call executes in at most `65 * (d + 1) + 22`
+every admissible `insert`, `member`, or `successor` call executes in at most `65 * (d + 1) + 30`
 instructions. -/
 theorem instruction_bound {d w base stackBase₀ : ℕ}
     (hstk_lo : base + span d ≤ stackBase₀) (hstk_fit : Fits w (stackBase₀ + 4 * d)) :
     DataStructure.Bound (certificate hstk_lo hstk_fit).impl
-      DynamicProgram.OperationTrace.instructions (fun _ _ => 65 * (d + 1) + 22) := by
+      DynamicProgram.OperationTrace.instructions (fun _ _ => 65 * (d + 1) + 30) := by
   apply (certificate hstk_lo hstk_fit).instruction_bound_const
   intro s x o hx ho
   obtain ⟨z, ⟨k, hk, he'⟩, _, _⟩ := dispatch_spec hstk_lo hstk_fit o hx ho
@@ -558,7 +650,7 @@ theorem instruction_bound_log {d w base stackBase₀ : ℕ}
     (hstk_lo : base + span d ≤ stackBase₀) (hstk_fit : Fits w (stackBase₀ + 4 * d)) :
     DataStructure.Bound (certificate hstk_lo hstk_fit).impl
       DynamicProgram.OperationTrace.instructions
-      (fun _ _ => 65 * (Nat.log 2 (Nat.log 2 (universeSize d)) + 1) + 22) := by
+      (fun _ _ => 65 * (Nat.log 2 (Nat.log 2 (universeSize d)) + 1) + 30) := by
   rw [log_log_universeSize]
   exact instruction_bound hstk_lo hstk_fit
 
@@ -590,7 +682,7 @@ theorem executes_client_frame {d w base stackBase₀ : ℕ}
     (fun hx' ho' he' => execOp_frame hstk_lo hstk_fit hx' ho' he' hj_tree hj_stk) hx hv he
 
 /-- Every admissible adaptive client has a concrete execution with the specified answers and
-final finite set, at most `65 * (d + 1) + 22` instructions per operation, and unchanged memory
+final finite set, at most `65 * (d + 1) + 30` instructions per operation, and unchanged memory
 outside the tree and stack regions. -/
 theorem client_spec {d w base stackBase₀ : ℕ}
     (hstk_lo : base + span d ≤ stackBase₀) (hstk_fit : Fits w (stackBase₀ + 4 * d))
@@ -601,7 +693,7 @@ theorem client_spec {d w base stackBase₀ : ℕ}
         ((spec d w).runClient s p).1 y traces ∧
       SetRep d base stackBase₀ w ((spec d w).runClient s p).2.1 y ∧
       DataStructure.total DynamicProgram.OperationTrace.instructions traces ≤
-        ((spec d w).runClient s p).2.2.length * (65 * (d + 1) + 22) ∧
+        ((spec d w).runClient s p).2.2.length * (65 * (d + 1) + 30) ∧
       (∀ j, (j < base ∨ base + span d ≤ j) →
         (j < stackBase₀ ∨ stackBase₀ + 4 * d ≤ j) → y.mem j = x.mem j) := by
   obtain ⟨y, traces, he, hr, hcost⟩ :=
@@ -613,7 +705,7 @@ theorem client_spec {d w base stackBase₀ : ℕ}
 machine state `s₀` with `s₀.regs root = base`, `s₀.regs depth = d`, and
 `Fits w (base + span d + 4 * (d + 1))` (with arbitrary initial memory), `initProgram` executes
 in at most `8 * span d + 20 * d + 25` instructions to produce an empty represented set `x₀`,
-from which any admissible adaptive client `p` executes to `y` with at most `65 * (d + 1) + 22`
+from which any admissible adaptive client `p` executes to `y` with at most `65 * (d + 1) + 30`
 instructions per operation and no memory modified outside `[base, base + span d + 4 * (d + 1))`.
 -/
 theorem run_initialized {d w base : ℕ} {s₀ : Data 32}
@@ -629,7 +721,7 @@ theorem run_initialized {d w base : ℕ} {s₀ : Data 32}
         ((spec d w).runClient (∅ : Finset ℕ) p).1 y traces ∧
       SetRep d base (base + span d) w ((spec d w).runClient (∅ : Finset ℕ) p).2.1 y ∧
       DataStructure.total DynamicProgram.OperationTrace.instructions traces ≤
-        ((spec d w).runClient (∅ : Finset ℕ) p).2.2.length * (65 * (d + 1) + 22) ∧
+        ((spec d w).runClient (∅ : Finset ℕ) p).2.2.length * (65 * (d + 1) + 30) ∧
       (∀ j, j < base ∨ base + span d + 4 * (d + 1) ≤ j → y.mem j = s₀.mem j) := by
   obtain ⟨x₀, n_init, hn_init, he_init, hbounded₀, hrep₀, hroot₀, hstk₀, _, hframe₀⟩ :=
     init_call hs₀ ha hroot hdepth
