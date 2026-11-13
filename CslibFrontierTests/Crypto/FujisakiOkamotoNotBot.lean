@@ -126,7 +126,7 @@ theorem eval_romCpaReduction_probeZeroKeyAdv (m₀ m₁ : Fin 16) (pk : Unit)
     Scheme.simFilterHandler, Scheme.simFilterDispatch,
     Scheme.simHashH, OracleComp.interpret_bind, OracleComp.interpret_query,
     OracleComp.interpret_pure, StateT.run_bind, StateT.run_pure, ProbComp.eval_bind,
-    ProbComp.eval_pure]
+    ProbComp.eval_pure, ROQuery.dispatch]
   refine (PMF.bind_congr_on_support _ _ (fun _ => PMF.pure (decide (m₁ = 0)))
     fun kStar _ => ?_).trans (PMF.bind_const _ _)
   simp only [PMF.bind_bind]

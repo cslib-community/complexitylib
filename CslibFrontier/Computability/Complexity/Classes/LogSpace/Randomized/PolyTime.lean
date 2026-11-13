@@ -282,7 +282,7 @@ theorem computableInPolyTime_acceptCoins [Finite State] {α : Type} {enc : α �
     ComputableInPolyTime.mapWithInput hsearch
       ((ComputableInPolyTime.snd _ _).prod (hcount0.comp (ComputableInPolyTime.snd _ _)))
   -- every table has polynomially many entries of polynomial length
-  set D := 2 * (8 + 2 * Nat.card (Option State) + 200 * k) * (c + 1)
+  set D := MultiTapeNTM.logSpaceClockExponent k State c
   set viewBound : α → ℕ := fun a =>
     MultiTapeNTM.viewLengthBound k State (enc a).length (c * (Nat.log2 (enc a).length + 1))
   set bound : α → ℕ := fun a =>

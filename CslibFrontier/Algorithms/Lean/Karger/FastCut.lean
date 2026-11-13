@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Algorithms.Lean.Karger.Contraction
-public import CslibFrontier.Algorithms.WordRAM.Karger.FastCut
+public import CslibFrontier.Algorithms.Karger.FastCut
 import CslibFrontier.Probability.PMF.TwoBranch
 import CslibFrontier.Probability.PMF.EventBind
 
@@ -25,9 +25,10 @@ At a leaf the client returns half the doubled weight after contracting to two ve
 node it returns the minimum of two recursive trials. No native execution model is introduced.
 
 The threshold and cutoff are the existing integer choices of this formalization, documented in
-`WordRAM.Karger.FastCut`: recurse at size at least seven, and choose the least integer threshold
-whose cut-survival ratio is at least one half. The source is [KargerStein1996], Section 4,
-Figure 6 and Lemma 4.3; this is a paraphrase, with the same documented integer deviations.
+`CslibFrontier.Algorithms.Karger.FastCut`: recurse at size at least seven, and choose the least
+integer threshold whose cut-survival ratio is at least one half. The source is [KargerStein1996],
+Section 4, Figure 6 and Lemma 4.3; this is a paraphrase, with the same documented integer
+deviations.
 
 ## Main definitions
 
@@ -53,7 +54,7 @@ Figure 6 and Lemma 4.3; this is a paraphrase, with the same documented integer d
 namespace Cslib.Algorithms.Lean.Karger
 
 open scoped ENNReal
-open Cslib.WeightedCut Cslib.Algorithms.WordRAM.Karger
+open Cslib.WeightedCut Cslib.Algorithms.Karger
 
 /-- One oracle reply observes the graph left by the existing contraction client. -/
 noncomputable def contractLaw : Graph × ℕ → PMF Graph := fun (G, target) =>

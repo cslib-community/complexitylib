@@ -45,6 +45,8 @@ The protocol does not depend on the security parameter; only the simulator's sam
 ## Main definitions
 
 * `Cslib.Crypto.PrimeOrderGroupFamily.schnorrFamily`: Schnorr's Sigma protocol at each index.
+* `Cslib.Crypto.PrimeOrderGroupFamily.schnorrBitSigma`: Schnorr's Sigma protocol in one group with
+  `m`-bit challenges.
 * `Cslib.Crypto.PrimeOrderGroupFamily.schnorrEncoding`: its word encodings.
 * `Cslib.Crypto.PrimeOrderGroupFamily.schnorrExtract`: the extractor, computed with `extractNat`.
 * `Cslib.Crypto.PrimeOrderGroupFamily.schnorrSimulateWord`: the simulator as a strict PPT program
@@ -94,6 +96,13 @@ noncomputable def schnorrFamily (i : ℕ × F.Desc) :
     SigmaProtocol (ZMod (F.order i.2)) (F.Carrier i.2) (F.Carrier i.2) (ZMod (F.order i.2))
       (ZMod (F.order i.2)) :=
   schnorr (Function.Embedding.refl _) (F.generator i.2)
+
+/-- Schnorr's Sigma protocol in `F.Carrier d` with `m`-bit challenges `BitString m`, embedded as
+scalars by `challengeEmbedding` when `2 ^ m ≤ F.order d`. -/
+noncomputable def schnorrBitSigma (d : F.Desc) {m : ℕ} (hm : 2 ^ m ≤ F.order d) :
+    SigmaProtocol (ZMod (F.order d)) (F.Carrier d) (F.Carrier d) (BitString m)
+      (ZMod (F.order d)) :=
+  schnorr (F.challengeEmbedding d hm) (F.generator d)
 
 /-- The word encodings of `schnorrFamily`: the unary security parameter with the description,
 group elements by the family's encoding, and challenges and responses in binary. -/

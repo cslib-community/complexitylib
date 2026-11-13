@@ -224,8 +224,9 @@ theorem advantage_eq (count seedBits outputBits : ℕ) (generator : ℕ → List
   simp only [pmf_norm, test, BitString.eval_sampleList]
 
 /-- One secure choice in a uniformly efficient family makes the XOR computationally uniform
-relative to fixed advice. The combiner evaluates the whole family; only the reduction receives the
-proof's chosen index. -/
+relative to fixed advice. The chosen candidate must be secure for tests that read both the advice
+and its index. The combiner evaluates the whole family; only the reduction receives the proof's
+chosen index. -/
 theorem indistinguishableWithAdvice {generator : ℕ → ℕ → List Bool → List Bool}
     {count seedBits outputBits choose : ℕ → ℕ} {advice : ℕ → List Bool}
     (hcount : ComputableInPolyTime count encUnary encUnary)
@@ -234,44 +235,40 @@ theorem indistinguishableWithAdvice {generator : ℕ → ℕ → List Bool → L
     (hgenerator : ComputableInPolyTime (fun input => generator input.1.1 input.1.2 input.2)
       (encPair (encPair encUnary encUnary) encBits) encBits)
     (hchoose : ∀ᶠ n in Filter.atTop, choose n < count n)
-    (hsecure : ∀ adversary : ℕ × List Bool → ℕ → List Bool → ProbComp Bool,
-      IsPPTOn (encPair (encPair (encPair encUnary encBits) encUnary) encBits)
-        encBool (fun ((a, i), word) => adversary a i word) →
-      Negligible (fun n => Game.advantage
-        (((uniformList (seedBits n)).map (generator n (choose n))).bind
-          (fun word => ProbComp.eval (adversary (n, advice n) (choose n) word)))
-        ((uniformList (outputBits n)).bind
-          (fun word => ProbComp.eval (adversary (n, advice n) (choose n) word))))) :
+    (hsecure : IndistinguishableWithAdvice (fun n => encPair encBits encUnary (advice n, choose n))
+      (fun n => (uniformList (seedBits n)).map (generator n (choose n)))
+      (fun n => uniformList (outputBits n))) :
     IndistinguishableWithAdvice advice
       (fun n => (uniformList (count n * seedBits n)).map
         (generate (count n) (seedBits n) (outputBits n) (generator n)))
       (fun n => uniformList (outputBits n)) := by
   intro adversary hadversary
-  let reduction := fun (a : ℕ × List Bool) index =>
-    test (count a.1) (seedBits a.1) (outputBits a.1) (generator a.1) index
-      (fun word => adversary (a, word))
-  have h1 := ComputableInPolyTime.fst (encPair (encPair encUnary encBits) encUnary) encBits
-  have hn := h1.fst'.fst'
-  have hreduce : IsPPTOn (encPair (encPair (encPair encUnary encBits) encUnary) encBits)
-      encBool (fun input => reduction input.1.1 input.1.2 input.2) := by
+  let reduction := fun (input : (ℕ × (List Bool × ℕ)) × List Bool) =>
+    test (count input.1.1) (seedBits input.1.1) (outputBits input.1.1) (generator input.1.1)
+      input.1.2.2 (fun word => adversary ((input.1.1, input.1.2.1), word)) input.2
+  have h1 := ComputableInPolyTime.fst (encPair encUnary (encPair encBits encUnary)) encBits
+  have hn := h1.fst'
+  have hreduce : IsPPTOn (encPair (encPair encUnary (encPair encBits encUnary)) encBits)
+      encBool reduction := by
     have hp1 := ComputableInPolyTime.fst
-      (encPair (encPair (encPair (encPair encUnary encBits) encUnary) encBits) encUnary) encBits
+      (encPair (encPair (encPair encUnary (encPair encBits encUnary)) encBits) encUnary) encBits
     apply isPPTOn_test
     · exact hcount.comp hn
     · exact hseedBits.comp hn
     · exact houtputBits.comp hn
-    · exact h1.snd'
+    · exact h1.snd'.snd'
     · exact hgenerator.comp (((hn.comp hp1.fst').prod hp1.snd').prod (.snd _ _))
-    · exact hadversary.preprocess ((h1.fst'.comp (.fst _ _)).prod (.snd _ _))
+    · exact hadversary.preprocess (((hn.prod h1.snd'.fst').comp (.fst _ _)).prod (.snd _ _))
     · exact .snd _ _
-  apply (hsecure reduction hreduce).congr'
+  apply (hsecure.negligible_encoded (encAdvice := encPair encBits encUnary) hreduce).congr'
   filter_upwards [hchoose] with n hn
   simpa only [distinguishingGame, PMF.monad_bind_eq_bind] using
     (advantage_eq (count n) (seedBits n) (outputBits n) (generator n) ⟨choose n, hn⟩
       (fun word => adversary ((n, advice n), word))).symm
 
 /-- One secure choice in a uniformly efficient family makes the XOR computationally uniform.
-The combiner evaluates the whole family; only the reduction receives the proof's chosen index. -/
+The chosen candidate must be secure for tests that read its index. The combiner evaluates the
+whole family; only the reduction receives the proof's chosen index. -/
 theorem indistinguishable {generator : ℕ → ℕ → List Bool → List Bool}
     {count seedBits outputBits choose : ℕ → ℕ}
     (hcount : ComputableInPolyTime count encUnary encUnary)
@@ -280,28 +277,21 @@ theorem indistinguishable {generator : ℕ → ℕ → List Bool → List Bool}
     (hgenerator : ComputableInPolyTime (fun input => generator input.1.1 input.1.2 input.2)
       (encPair (encPair encUnary encUnary) encBits) encBits)
     (hchoose : ∀ᶠ n in Filter.atTop, choose n < count n)
-    (hsecure : ∀ adversary : ℕ → ℕ → List Bool → ProbComp Bool,
-      IsPPTOn (encPair (encPair encUnary encUnary) encBits)
-        encBool (fun ((n, i), word) => adversary n i word) →
-      Negligible (fun n => Game.advantage
-        (((uniformList (seedBits n)).map (generator n (choose n))).bind
-          (fun word => ProbComp.eval (adversary n (choose n) word)))
-        ((uniformList (outputBits n)).bind
-          (fun word => ProbComp.eval (adversary n (choose n) word))))) :
+    (hsecure : IndistinguishableWithAdvice (fun n => encUnary (choose n))
+      (fun n => (uniformList (seedBits n)).map (generator n (choose n)))
+      (fun n => uniformList (outputBits n))) :
     ComputationallyIndistinguishable
       (fun n => (uniformList (count n * seedBits n)).map
         (generate (count n) (seedBits n) (outputBits n) (generator n)))
       (fun n => uniformList (outputBits n)) := by
   apply computationallyIndistinguishable_iff_indistinguishableWithAdvice_nil.mpr
   apply indistinguishableWithAdvice hcount hseedBits houtputBits hgenerator hchoose
-  intro adversary hadversary
+  apply IndistinguishableWithAdvice.of_negligible_encoded
+  intro test htest
   have h1 := ComputableInPolyTime.fst (encPair encUnary encUnary) encBits
-  have hprepare : ComputableInPolyTime
-      (fun ((n, i), word) => (((n, ([] : List Bool)), i), word) :
-        (ℕ × ℕ) × List Bool → ((ℕ × List Bool) × ℕ) × List Bool)
-      (encPair (encPair encUnary encUnary) encBits)
-      (encPair (encPair (encPair encUnary encBits) encUnary) encBits) :=
-    ((h1.fst'.prod (.const [])).prod h1.snd').prod (.snd _ _)
-  exact hsecure (fun n i word => adversary (n, []) i word) (hadversary.preprocess hprepare)
+  exact hsecure.negligible_encoded (encAdvice := encUnary)
+    (test := fun input => test ((input.1.1, ([], input.1.2)), input.2))
+    (htest.preprocess ((h1.fst'.prod ((ComputableInPolyTime.const []).prod h1.snd')).prod
+      (.snd _ _)))
 
 end Cslib.Crypto.GeneratorXor

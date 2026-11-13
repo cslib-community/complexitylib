@@ -163,8 +163,7 @@ theorem positiveClauseBlock_incidence (φ : CNF ℕ) (d : Graph.OrthogonalDrawin
     exact CNF.mem_vars.mpr ⟨cl, List.fst_mem_of_mem_zipIdx hj, lit.2, hparts.1⟩
   refine ⟨e, he.1, hr, ?_, ?_⟩
   · simp only [hei]
-  · rw [hidx, List.getD_eq_getElem _ _ (List.idxOf_lt_length_of_mem hlvar),
-      List.getElem_idxOf (List.idxOf_lt_length_of_mem hlvar), hl]
+  · rw [hidx, List.getD_eq_getElem?_getD, List.getElem?_idxOf hlvar, Option.getD_some, hl]
 
 /-- Every actual output occurrence has a source-clause owner and a certified local route. -/
 theorem positiveFormulaDrawing_incidence (φ : CNF ℕ) (d : Graph.OrthogonalDrawing)

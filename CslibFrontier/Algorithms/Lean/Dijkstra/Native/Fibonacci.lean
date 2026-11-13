@@ -43,7 +43,8 @@ namespace Cslib.Algorithms.Lean.Dijkstra.Native.Fibonacci
 
 open Cslib.WordRAM Cslib.WordRAM.Realization Cslib.DataStructure
 open Cslib.DataStructure.Memory Cslib.DataStructure.PriorityQueue
-open Cslib.Algorithms.WordRAM.Dijkstra (ListInstance encodeDist)
+open Cslib.Algorithms.Dijkstra (ListInstance)
+open Cslib.Algorithms.WordRAM.Dijkstra (encodeDist)
 
 private def insertWord (e : ℕ × ℕ) (v k : ℕ) : Memory.Prog Unit :=
   link ((FibonacciHeap.layout e.1 e.2).methods 0) (FibonacciHeap.insert v k)

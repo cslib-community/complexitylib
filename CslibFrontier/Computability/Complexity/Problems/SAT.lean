@@ -84,10 +84,8 @@ def assignment (φ : CNF ℕ) (w : List Bool) (v : ℕ) : Bool := w.getD (φ.var
 certificate describing `σ` on the variables of `φ`. -/
 theorem assignment_vars_map_append (φ : CNF ℕ) (σ : ℕ → Bool) (w : List Bool) {v : ℕ}
     (hv : v ∈ φ.vars) : assignment φ (φ.vars.map σ ++ w) v = σ v := by
-  have hlt : φ.vars.idxOf v < φ.vars.length := List.idxOf_lt_length_iff.2 hv
-  rw [assignment, List.getD_eq_getElem?_getD, List.getElem?_append_left (by simpa using hlt),
-    List.getElem?_map, List.getElem?_eq_getElem hlt, List.getElem_idxOf hlt]
-  rfl
+  simp [assignment, List.getD_eq_getElem?_getD, List.getElem?_append_left,
+    List.idxOf_lt_length_iff.2 hv]
 
 /-- The values of `σ` listed along the occurrences of `φ` form a certificate describing `σ` on
 the variables of `φ`. -/

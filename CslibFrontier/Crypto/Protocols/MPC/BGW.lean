@@ -341,13 +341,6 @@ private theorem bgwSumCoinsHom_surjective {m : ℕ} (params : Params F (Fin m))
 
 variable [Fintype F]
 
-private theorem eval_pi_uniform_randomness {m : ℕ} (params : Params F (Fin m)) :
-    ProbComp.eval (OracleComp.pi (fun _ : Fin m => ProbComp.uniform (Randomness params))) =
-      PMF.uniformOfFintype (Fin m → Randomness params) := by
-  rw [ProbComp.eval_pi]
-  simp only [ProbComp.eval_uniform]
-  exact PMF.pi_uniformOfFintype
-
 /-- 1-round synchronous $m$-party BGW degree-reduction multiplication gate protocol over
 `noOracleSpec` ([GennaroRabinRabin1998]; [AsharovLindell2017], Section 6.1):
 1. Each party `s : Fin m` holds input share pair `uv_s = (u_s, v_s) : F × F` and samples fresh
@@ -387,7 +380,7 @@ theorem evalWith_bgwDegreeReductionProtocol {m : ℕ} (params : Params F (Fin m)
           (fun s k => share params (r s) ((uv s).1 * (uv s).2) k) i) := by
   rw [Protocol.evalWith_eq]
   dsimp only [bgwDegreeReductionProtocol]
-  rw [eval_pi_uniform_randomness]
+  rw [ProbComp.eval_pi_uniform]
   simp only [evalWith_allToAllStepsWith, PMF.pure_map]
   rw [PMF.map]
   refine congrArg (PMF.bind (PMF.uniformOfFintype (Fin m → Randomness params)))
@@ -547,7 +540,7 @@ theorem evalWith_bgwSumProtocol {m : ℕ} (params : Params F (Fin m)) (x : Fin m
          fun _ => Polynomial.reconstruct params.point Y) := by
   rw [Protocol.evalWith_eq]
   dsimp only [bgwSumProtocol]
-  rw [eval_pi_uniform_randomness]
+  rw [ProbComp.eval_pi_uniform]
   simp only [Steps.evalWith_append, evalWith_allToAllStepsWith,
     outputAt_allToAllStepsWith, evalWith_broadcastSteps, PMF.pure_bind, PMF.pure_map]
   rw [PMF.map]
