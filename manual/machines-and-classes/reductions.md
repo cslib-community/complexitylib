@@ -92,7 +92,9 @@ and apply `LogSpaceKDTTReducible.autoreducible_of_compl` or
 `LogSpaceKTruthTableAutoreducible k encA A`, with the same at-most-`k` bound. An active self-query
 forces rejection for OR and acceptance for AND; the construction then asks zero queries.
 Otherwise it negates the aggregate oracle answer. The test for self-queries uses certified
-logspace equality of encoded instances and ignores unused indices.
+logspace equality of encoded instances and ignores unused indices. The logspace autoreducible
+notions add query avoidance to the kernel's `Good`, so `LogSpaceKTruthTableAutoreducible.compl`
+is a kernel corollary, and the conjunctive case follows from the disjunctive one by duality.
 
 The [complete checked client](../../CslibFrontierTests/LogSpaceBoundedAutoreducibility.lean), including
 imports, exercises both membership branches, active and inactive self-queries, and the zero-query

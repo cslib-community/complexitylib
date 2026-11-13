@@ -64,7 +64,7 @@ example : (reduction xorAndC interpretation toyH id x D).IsQueryBounded 8 := by
 -- Privacy applies with injective tweaks; with the toy hash the right side is not small.
 example : Game.advantage (realGame xorAndC interpretation toyH id x D)
       (simGame xorAndC interpretation toyH id x D) =
-    Garbling.CorrelationRobust.advantage toyH (reduction xorAndC interpretation toyH id x D) :=
+    Garbling.CCR.advantage toyH id (·, true) (reduction xorAndC interpretation toyH id x D) :=
   advantage_realGame_simGame xorAndC interpretation toyH id x D hfree (by decide)
     Function.injective_id
 

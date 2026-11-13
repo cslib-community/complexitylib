@@ -39,18 +39,18 @@ The forward construction [`hasKernel_of_mem_FPT`](https://github.com/cslib-commu
 
 The target problem has a material convention: [`VertexCover`](../../CslibFrontier/Computability/Complexity/Problems/VertexCover.lean#L105) asks for a cover of **exactly** `k` vertices from the declared vertex set. It is equivalent to an at-most-`k` cover only when `k` does not exceed the number of distinct declared vertices, as stated in [`mem_VertexCover_iff_exists_card_le`](../../CslibFrontier/Computability/Complexity/Problems/VertexCover.lean#L138). A triangle with `k=4` is therefore rejected. The search procedure caps its internal unary search depth by the vertex count and checks that the cap equals the binary target. A huge binary target does not force a correspondingly huge polynomial-time preprocessing loop.
 
-The explicit [`bussKernel`](../../CslibFrontier/Computability/Complexity/Parameterized/VertexCover/BussKernel.lean#L465) uses high-degree vertices forced into every small cover, then densely relabels the remaining active vertices. It retains enough isolated vertices to pad a cover to the exact target size. This differs from the at-most-`k` presentation in Cygan et al., Section 2.2.1, where isolated vertices can be discarded. [cygan2015][cygan2015]
+The explicit [`bussKernel`](../../CslibFrontier/Computability/Complexity/Parameterized/VertexCover/BussKernel.lean#L462) uses high-degree vertices forced into every small cover, then densely relabels the remaining active vertices. It retains enough isolated vertices to pad a cover to the exact target size. This differs from the at-most-`k` presentation in Cygan et al., Section 2.2.1, where isolated vertices can be discarded. [cygan2015][cygan2015]
 
 The source proves these bounds for every input, including rejected inputs:
 
 | Output quantity | Bound in the original target `k` | Declaration |
 |---|---|---|
-| Listed vertices | `k(k+2)` | [`length_bussKernel_vertices_le`](../../CslibFrontier/Computability/Complexity/Parameterized/VertexCover/BussKernel.lean#L624) |
-| Listed edges | `(k(k+1))^2` | [`length_bussKernel_edges_le`](../../CslibFrontier/Computability/Complexity/Parameterized/VertexCover/BussKernel.lean#L632) |
-| Encoded instance length | `40(k+1)^6` | [`length_encode_bussKernel_le`](../../CslibFrontier/Computability/Complexity/Parameterized/VertexCover/BussKernel.lean#L640) |
-| Output target | `max(k,1)` | [`bussKernel_snd_le`](../../CslibFrontier/Computability/Complexity/Parameterized/VertexCover/BussKernel.lean#L660) |
+| Listed vertices | `k(k+2)` | [`length_bussKernel_vertices_le`](../../CslibFrontier/Computability/Complexity/Parameterized/VertexCover/BussKernel.lean#L621) |
+| Listed edges | `(k(k+1))^2` | [`length_bussKernel_edges_le`](../../CslibFrontier/Computability/Complexity/Parameterized/VertexCover/BussKernel.lean#L629) |
+| Encoded instance length | `40(k+1)^6` | [`length_encode_bussKernel_le`](../../CslibFrontier/Computability/Complexity/Parameterized/VertexCover/BussKernel.lean#L637) |
+| Output target | `max(k,1)` | [`bussKernel_snd_le`](../../CslibFrontier/Computability/Complexity/Parameterized/VertexCover/BussKernel.lean#L657) |
 
-The fixed rejection instance is an empty graph with target one, explaining the `max(k,1)` allowance. [`computableInPolyTime_bussKernel`](../../CslibFrontier/Computability/Complexity/Parameterized/VertexCover/BussKernel.lean#L652) proves native polynomial-time preprocessing under `encVertexCoverInstance`; [`isKernelization_bussKernel`](../../CslibFrontier/Computability/Complexity/Parameterized/VertexCover/BussKernel.lean#L668) packages its contract, and [`VertexCover_hasPolyKernel`](../../CslibFrontier/Computability/Complexity/Parameterized/VertexCover/BussKernel.lean#L685) concludes a polynomial kernel. These are the actual encoded-size bounds; a smaller literature kernel is not substituted for them.
+The fixed rejection instance is an empty graph with target one, explaining the `max(k,1)` allowance. [`computableInPolyTime_bussKernel`](../../CslibFrontier/Computability/Complexity/Parameterized/VertexCover/BussKernel.lean#L648) proves native polynomial-time preprocessing under `encVertexCoverInstance`; [`isKernelization_bussKernel`](../../CslibFrontier/Computability/Complexity/Parameterized/VertexCover/BussKernel.lean#L664) packages its contract, and [`VertexCover_hasPolyKernel`](../../CslibFrontier/Computability/Complexity/Parameterized/VertexCover/BussKernel.lean#L680) concludes a polynomial kernel. These are the actual encoded-size bounds; a smaller literature kernel is not substituted for them.
 
 ## Crown decompositions and the linear vertex-cover kernel
 

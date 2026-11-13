@@ -41,7 +41,7 @@ theorem native_failed_count_le {m n g p : ℕ} (values : ℕ → ℤ)
     (hanswer : ∀ i : Fin qs.length, mem (out + i.val) = Signed.encode
       ((RecordProduct.leftMatrix m n g p values idx *
         RecordProduct.rightMatrix m n g p values idx) (qs.get i).1 (qs.get i).2)) :
-    let first := idx.2.2 * pieceSize (D m) g
+    let first := idx.piece * pieceSize (D m) g
     let length := min (pieceSize (D m) g) (n - first)
     Nat.count (fun i => mem (out + i) ≠ 0 ∧
       ∀ c : Fin length, AB (a i) (b i) + BC (b i) (first + c.val) +
@@ -50,7 +50,7 @@ theorem native_failed_count_le {m n g p : ℕ} (values : ℕ → ℤ)
         (RecordProduct.leftMatrix m n g p values idx *
           RecordProduct.rightMatrix m n g p values idx)
             (qs.getD i default).1 (qs.getD i default).2 ≠ 0 ∧
-        scanPiece wAB wBC wAC (D m) g idx.2.2
+        scanPiece wAB wBC wAC (D m) g idx.piece
           (qs.getD i default).1 (qs.getD i default).2 = none) qs.length := by
   apply Nat.count_mono_left
   intro i hi hn

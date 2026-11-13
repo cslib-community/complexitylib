@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Game
+import CslibFrontier.Crypto.Game.Hop
 
 /-!
 # Symmetric four-game hops
@@ -26,16 +27,17 @@ public section
 
 namespace Cslib.Crypto.Game
 
+open Probability
 open scoped NNReal
 
 /-- **Symmetric four-game hop**: if `G0` is within `c` of `M0` and `G1` is within `c` of `M1`,
 then `G0` and `G1` differ by at most `c + advantage M0 M1 + c`. -/
 theorem advantage_four_hop_le {G0 M0 M1 G1 : Game} {c : ℝ≥0}
     (h0 : G0.advantage M0 ≤ c) (h1 : G1.advantage M1 ≤ c) :
-    G0.advantage G1 ≤ c + M0.advantage M1 + c := by
-  rw [advantage_comm] at h1
-  rw [add_assoc]
-  exact (G0.advantage_triangle M0 G1).trans
-    (add_le_add h0 ((M0.advantage_triangle M1 G1).trans (add_le_add le_rfl h1)))
+    G0.advantage G1 ≤ c + M0.advantage M1 + c :=
+  advantage_le_of_approxEq
+    (calc Pr[G0] ≈[c] Pr[M0] := approxEq_of_advantage_le h0
+      _ ≈[M0.advantage M1] Pr[M1] := approxEq_advantage M0 M1
+      _ ≈[c] Pr[G1] := (approxEq_of_advantage_le h1).symm)
 
 end Cslib.Crypto.Game

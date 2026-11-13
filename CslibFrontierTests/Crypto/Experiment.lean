@@ -66,6 +66,27 @@ example (setup : PMF ℕ) (exp : ℕ → Experiment)
     Game.succProbability (Game.withSetup setup exp) ≤ 1 / 4 :=
   Game.succProbability_withSetup_le setup exp fun n _ => h n
 
+/-! ### Experiments with a setup program -/
+
+-- A bound at every key that key generation can output bounds the experiment that generates the
+-- key first, as in `do let (pk, _) ← keyGen; lrExperiment … pk`.
+example {K M C σ : Type} (keyGen : ProbComp (K × K)) (valid : K → M → M → Bool)
+    (enc : K → M → ProbComp C) (A : TwoStage K (MessagePair M) C Bool σ) {ε : ℝ≥0}
+    (h : ∀ pk, Experiment.advantage (lrExperiment valid enc A true pk)
+      (lrExperiment valid enc A false pk) ≤ ε) :
+    Experiment.advantage (keyGen >>= fun key => lrExperiment valid enc A true key.1)
+      (keyGen >>= fun key => lrExperiment valid enc A false key.1) ≤ ε :=
+  Experiment.advantage_bind_le_of_support keyGen _ _ fun key _ => h key.1
+
+-- Only keys that key generation can output matter: a forgery experiment that never wins on a
+-- supported key has success probability zero.
+example {K : Type} (keyGen : ProbComp K) (forge : K → Experiment)
+    (h : ∀ k ∈ (ProbComp.eval keyGen).support, forge k = pure false) :
+    Experiment.succProbability (keyGen >>= forge) ≤ 0 :=
+  Experiment.succProbability_bind_le_of_support keyGen forge fun k hk => by
+    rw [h k hk]
+    simp [Experiment.succProbability, Game.succProbability, PMF.pure_apply]
+
 /-! ### Two-stage adversaries and the left-or-right experiment -/
 
 /-- The adversary that chooses `(false, true)` and guesses the challenge it receives. -/
@@ -91,14 +112,19 @@ example (b : Bool) :
     lrExperiment (fun _ _ _ => false) (fun _ m => pure m) echo b () = pure false := by
   simp [lrExperiment, echo]
 
--- A family with deterministic polynomial-time stages is PPT, with a typed saved state.
-example : TwoStage.IsPPT encBits (encMessagePair encBits) encBits encBool encBits
-    (fun _ => ⟨fun pk => pure (⟨pk, pk⟩, pk), fun _ _ => pure true⟩) where
+-- A family with deterministic polynomial-time stages is PPT. The saved state is a typed pair, a
+-- flag and the public key; the guess reads the flag back.
+example : TwoStage.IsPPT encBits (encMessagePair encBits) encBits encBool
+    (encPair encBool encBits)
+    (fun _ => ⟨fun pk => pure (⟨pk, pk⟩, (true, pk)), fun state _ => pure state.1⟩) where
   choose := by
     refine ComputableInPolyTime.isPPTOn ?_
     have hpk := ComputableInPolyTime.snd encUnary encBits
-    exact (encMessagePair_mk_polyTime hpk hpk).prod hpk
-  guess := ComputableInPolyTime.isPPTOn (ComputableInPolyTime.const true)
+    exact (encMessagePair_mk_polyTime hpk hpk).prod
+      ((ComputableInPolyTime.const true).prod hpk)
+  guess := ComputableInPolyTime.isPPTOn
+    (ComputableInPolyTime.fst' (ComputableInPolyTime.fst'
+      (ComputableInPolyTime.snd encUnary (encPair (encPair encBool encBits) encBits))))
 
 -- Swapping the challenge messages is polynomial time on the message-pair encoding.
 example : ComputableInPolyTime
