@@ -109,6 +109,7 @@ structure CPAOracleAdversary (PK M C σ : Type) where
 selection against the encryption oracle `E.encrypt pk`; if `valid pk m₀ m₁` holds, encrypt the
 message selected by `b` and run the guessing stage against the same oracle, and otherwise return
 `false`. -/
+@[expose]
 def cpaOracleExperiment (E : PKE PK SK M C) (valid : PK → M → M → Bool)
     (A : CPAOracleAdversary PK M C σ) (b : Bool) : Experiment := do
   let (pk, _) ← E.keyGen
@@ -121,6 +122,7 @@ def cpaOracleExperiment (E : PKE PK SK M C) (valid : PK → M → M → Bool)
 
 /-- The eavesdropper that runs `A` and answers its oracle queries by encrypting under the public
 key, which it saves next to `A`'s state. -/
+@[expose]
 def CPAOracleAdversary.toTwoStage (E : PKE PK SK M C) (A : CPAOracleAdversary PK M C σ) :
     TwoStage PK (MessagePair M) C Bool (PK × σ) where
   choose pk := (fun out => (out.1, (pk, out.2))) <$> (A.choose pk).run (E.encrypt pk)
@@ -216,6 +218,7 @@ abbrev WordINDCPAOracle (keyGen : ℕ → ProbComp (List Bool × List Bool))
 /-- The typed adversary that `adversary` plays at parameter `n`: each word query `(_, m)` becomes
 the typed query `m`, message selection returns the chosen pair as a `MessagePair`, and the saved
 state word is the typed state. -/
+@[expose]
 def WordCPAAdversary.toCPAOracleAdversary (adversary : WordCPAAdversary) (n : ℕ) :
     PKE.CPAOracleAdversary (List Bool) (List Bool) (List Bool) (List Bool) where
   choose pk := (fun choice : ChoiceOut (List Bool) =>
