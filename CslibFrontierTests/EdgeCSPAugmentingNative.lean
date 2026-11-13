@@ -25,7 +25,7 @@ open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Complexity.CSP.EdgeAugmenting
 namespace CslibFrontierTests.EdgeCSPAugmentingNative
 
 private def equality : Table := ⟨2, [[false, false], [true, true]]⟩
-private def doubled : CSP Table ℕ := [(equality, [0, 1]), (equality, [0, 1])]
+private def doubled : CSP Table ℕ := [⟨equality, [0, 1]⟩, ⟨equality, [0, 1]⟩]
 private def exampleInput : Input :=
   ⟨doubled, [false, false, true, true], [false, false, false, false], 0⟩
 
@@ -59,7 +59,7 @@ example : ∃ w : Walk doubled,
 -- Four-argument tables retain the two fixed positions in the occurrence numbering.
 private def wider : Input :=
   let table : Table := ⟨4, [[false, false, false, false], [true, true, false, false]]⟩
-  ⟨[(table, [0, 1, 2, 3]), (table, [0, 1, 2, 3])],
+  ⟨[⟨table, [0, 1, 2, 3]⟩, ⟨table, [0, 1, 2, 3]⟩],
     [false, false, false, false, true, true, false, false],
     [false, false, false, false, false, false, false, false], 0⟩
 example : run wider = some ⟨1, [(5, 4)]⟩ := by decide +kernel
@@ -71,9 +71,9 @@ example : repair ⟨doubled, [false, false, false, false], [false, false, true, 
 
 -- Three disjoint doubled components force comparison-only repair before augmentation.
 private def bothPhases : Input :=
-  ⟨[(equality, [0, 1]), (equality, [0, 1]),
-    (equality, [2, 3]), (equality, [2, 3]),
-    (equality, [4, 5]), (equality, [4, 5])],
+  ⟨[⟨equality, [0, 1]⟩, ⟨equality, [0, 1]⟩,
+    ⟨equality, [2, 3]⟩, ⟨equality, [2, 3]⟩,
+    ⟨equality, [4, 5]⟩, ⟨equality, [4, 5]⟩],
     [false, false, true, true, false, false, false, false, false, false, true, true],
     [false, false, false, false, false, false, true, true, false, false, false, false], 0⟩
 -- Direct kernel checking avoids deep elaborator reduction of the twelve-occurrence scans.
@@ -87,26 +87,26 @@ example : run { exampleInput with comparison := [false, false, false, false, fal
   decide
 
 example : run ⟨[], [], [], 0⟩ = none := by decide
-example : run ⟨[(⟨0, [[]]⟩, [])], [], [], 0⟩ = none := by decide
-example : run ⟨[(⟨0, []⟩, [])], [], [], 0⟩ = none := by decide
+example : run ⟨[⟨⟨0, [[]]⟩, []⟩], [], [], 0⟩ = none := by decide
+example : run ⟨[⟨⟨0, []⟩, []⟩], [], [], 0⟩ = none := by decide
 
 -- Scope lengths, rather than malformed binary arities, fund every scan.
-example : run ⟨[(⟨2 ^ 100, [[false]]⟩, [0, 1]),
-    (⟨2 ^ 100, [[false]]⟩, [0, 1])],
+example : run ⟨[⟨⟨2 ^ 100, [[false]]⟩, [0, 1]⟩,
+    ⟨⟨2 ^ 100, [[false]]⟩, [0, 1]⟩],
     [false, false, true, true], [false, false, false, false], 0⟩ = none := by decide
-example : run ⟨[(⟨2, [[false]]⟩, [0, 1]), (⟨2, [[false]]⟩, [0, 1])],
+example : run ⟨[⟨⟨2, [[false]]⟩, [0, 1]⟩, ⟨⟨2, [[false]]⟩, [0, 1]⟩],
     [false, false, true, true], [false, false, false, false], 0⟩ = none := by decide
 
 private def sparse : CSP Table ℕ :=
-  [(equality, [2 ^ 100, 2 ^ 100 + 1]), (equality, [2 ^ 100, 2 ^ 100 + 1])]
+  [⟨equality, [2 ^ 100, 2 ^ 100 + 1]⟩, ⟨equality, [2 ^ 100, 2 ^ 100 + 1]⟩]
 example : run ⟨sparse, [false, false, true, true],
     [false, false, false, false], 2 ^ 100⟩ = some ⟨2 ^ 100 + 1, [(3, 2)]⟩ := by decide
 
 -- Repeated positions are retained, but the edge-instance contract excludes repeated variables
 -- within one constraint, so no correctness theorem can assume such an instance is an edge CSP.
-example : ¬ EdgeInstance ([(equality, [0, 0])] : CSP Table ℕ) := by
+example : ¬ EdgeInstance ([⟨equality, [0, 0]⟩] : CSP Table ℕ) := by
   unfold EdgeInstance
   decide
-example : run ⟨[(equality, [0, 0])], [false, false], [true, true], 7⟩ = none := by decide
+example : run ⟨[⟨equality, [0, 0]⟩], [false, false], [true, true], 7⟩ = none := by decide
 
 end CslibFrontierTests.EdgeCSPAugmentingNative

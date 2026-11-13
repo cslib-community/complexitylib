@@ -94,7 +94,7 @@ theorem edgeInstance_compile (arity : Rel → ℕ) (sem : Rel → List Bool → 
   split_ifs with hg
   · have hp : (validArity arity input.1 = true ∧
         verifyRotationCertificate input.1 input.2 = true) ∧
-        input.1.all (fun c => nonemptySymbol arity sem c.1) = true := by
+        input.1.all (fun c => nonemptySymbol arity sem c.rel) = true := by
       simpa only [Bool.and_eq_true] using hg
     obtain ⟨h, _, _⟩ := (verifyRotationCertificate_eq_true_iff input.1 input.2).mp hp.1.2
     exact edgeInstance_body arity sem input.2 h
@@ -106,14 +106,14 @@ theorem body_tables (arity : Rel → ℕ) (sem : Rel → List Bool → Bool)
     (hdelta : ∀ r, (booleanRelation arity sem r).Nonempty →
       IsEvenDeltaMatroid (cyclicDifferenceRelation (booleanRelation arity sem r)))
     (cert : Graph.RotationCertificate) (hwell : WellFormed arity F)
-    (hne : ∀ c ∈ F, nonemptySymbol arity sem c.1 = true)
+    (hne : ∀ c ∈ F, nonemptySymbol arity sem c.rel = true)
     (constraint : Constraint Table ℕ) (hc : constraint ∈ body arity sem F cert) :
-    constraint.1.arity = constraint.2.length ∧
-      IsEvenDeltaMatroid (booleanRelation Table.arity Table.sem constraint.1) := by
+    constraint.rel.arity = constraint.scope.length ∧
+      IsEvenDeltaMatroid (booleanRelation Table.arity Table.sem constraint.rel) := by
   rcases List.mem_append.mp hc with hb | hw
   · obtain ⟨entry, he, rfl⟩ := List.mem_map.mp hb
     have hsrc : entry.1 ∈ F := List.fst_mem_of_mem_zipIdx (List.mem_filter.mp he).1
-    refine ⟨?_, isEvenDeltaMatroid_differenceTable arity sem entry.1.1
+    refine ⟨?_, isEvenDeltaMatroid_differenceTable arity sem entry.1.rel
       (hdelta _ ((nonemptySymbol_eq_true_iff arity sem _).mp (hne entry.1 hsrc)))⟩
     simp only [arity_differenceTable, blackScope, List.length_map, List.length_range]
     exact (hwell entry.1 hsrc).symm
@@ -127,12 +127,12 @@ theorem compile_tables (arity : Rel → ℕ) (sem : Rel → List Bool → Bool)
       IsEvenDeltaMatroid (cyclicDifferenceRelation (booleanRelation arity sem r)))
     (input : CSP Rel ℕ × Graph.RotationCertificate) :
     ∀ constraint ∈ compile arity sem input,
-      constraint.1.arity = constraint.2.length ∧
-        IsEvenDeltaMatroid (booleanRelation Table.arity Table.sem constraint.1) := by
+      constraint.rel.arity = constraint.scope.length ∧
+        IsEvenDeltaMatroid (booleanRelation Table.arity Table.sem constraint.rel) := by
   unfold compile
   split_ifs with hg
   · have hp : (WellFormed arity input.1 ∧ verifyRotationCertificate input.1 input.2 = true) ∧
-        (∀ c ∈ input.1, nonemptySymbol arity sem c.1 = true) := by
+        (∀ c ∈ input.1, nonemptySymbol arity sem c.rel = true) := by
       simpa only [Bool.and_eq_true, validArity_eq_true_iff, List.all_eq_true] using hg
     exact body_tables arity sem hdelta input.2 hp.1.1 hp.2
   · intro constraint hc
@@ -145,7 +145,7 @@ theorem tableWellFormed_compile (arity : Rel → ℕ) (sem : Rel → List Bool �
       IsEvenDeltaMatroid (cyclicDifferenceRelation (booleanRelation arity sem r)))
     (input : CSP Rel ℕ × Graph.RotationCertificate)
     (constraint : Constraint Table ℕ) (hc : constraint ∈ compile arity sem input) :
-    constraint.1.wellFormed = true := by
+    constraint.rel.wellFormed = true := by
   obtain ⟨x, hx⟩ := (compile_tables arity sem hdelta input constraint hc).2.isDeltaMatroid.nonempty
   exact (Table.sem_eq_true.mp hx).1
 
@@ -166,11 +166,11 @@ theorem compile_correct (arity : Rel → ℕ) (sem : Rel → List Bool → Bool)
   intro i
   have hw := (ht _ (List.getElem_mem i.isLt)).1
   have hm := (ht _ (List.getElem_mem i.isLt)).2
-  change IsEvenDeltaMatroid {t : Fin (compile arity sem input)[i.val].1.arity → Bool |
-    Table.sem (compile arity sem input)[i.val].1 (List.ofFn t) = true} at hm
-  have htransport (n : ℕ) (hn : (compile arity sem input)[i.val].1.arity = n) :
+  change IsEvenDeltaMatroid {t : Fin (compile arity sem input)[i.val].rel.arity → Bool |
+    Table.sem (compile arity sem input)[i.val].rel (List.ofFn t) = true} at hm
+  have htransport (n : ℕ) (hn : (compile arity sem input)[i.val].rel.arity = n) :
       IsEvenDeltaMatroid {t : Fin n → Bool |
-        Table.sem (compile arity sem input)[i.val].1 (List.ofFn t) = true} := by
+        Table.sem (compile arity sem input)[i.val].rel (List.ofFn t) = true} := by
     subst n
     exact hm
   exact htransport _ hw

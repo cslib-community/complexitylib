@@ -1509,6 +1509,16 @@ private def bijSumSetoid (L : Language.{u, v}) {M : Type w₁} {N : Type w₂}
       | .inr _, .inr _, .inr _ => h₁.trans h₂
   }
 
+/-- Agreement on quantifier-free `C^k_{∞ω}` formulas gives a partial isomorphism, through the
+embedding of `L^k_{∞ω}` formulas. -/
+private theorem partialIsoOn_of_forall_infinitaryCountingFormula {S : Set (Fin k)}
+    {a : Fin k → M} {b : Fin k → N}
+    (h : ∀ φ : InfinitaryCountingFormula.{w, u, v} L k, φ.QuantifierRankLE 0 →
+      φ.freeVars ⊆ S → (φ.Realize a ↔ φ.Realize b)) : PartialIsoOn L S a b :=
+  partialIsoOn_of_forall_infinitaryFormula fun φ hr hS => by
+    simpa only [InfinitaryFormula.realize_toCounting] using
+      h φ.toCounting ((φ.quantifierRankLE_toCounting 0).2 hr) (φ.freeVars_toCounting ▸ hS)
+
 private theorem bijPebbleWins_of_forall_same_univ (L : Language.{u, v}) {k : ℕ} {n : ℕ}
     {M' N' : Type w₁} [L.Structure M'] [L.Structure N'] [Finite M'] [Finite N']
     {S : Set (Fin k)} {a : Fin k → M'} {b : Fin k → N'}
@@ -1517,20 +1527,10 @@ private theorem bijPebbleWins_of_forall_same_univ (L : Language.{u, v}) {k : ℕ
   classical
   induction n generalizing M' N' S a b with
   | zero =>
-    refine bijPebbleWins_zero.2 ⟨fun i hi j hj => ?_, fun R f hf => ?_⟩
-    · exact h (.equal i j) trivial
-        (by simp only [InfinitaryCountingFormula.freeVars_equal, Set.insert_subset_iff,
-          Set.singleton_subset_iff]; exact ⟨hi, hj⟩)
-    · exact h (.rel R f) trivial
-        (by simp only [InfinitaryCountingFormula.freeVars_rel, Set.range_subset_iff]; exact hf)
+    exact bijPebbleWins_zero.2 (partialIsoOn_of_forall_infinitaryCountingFormula h)
   | succ n ih =>
-    have h0 : PartialIsoOn L S a b := by
-      refine ⟨fun i hi j hj => ?_, fun R f hf => ?_⟩
-      · exact h (.equal i j) trivial
-          (by simp only [InfinitaryCountingFormula.freeVars_equal, Set.insert_subset_iff,
-            Set.singleton_subset_iff]; exact ⟨hi, hj⟩)
-      · exact h (.rel R f) trivial
-          (by simp only [InfinitaryCountingFormula.freeVars_rel, Set.range_subset_iff]; exact hf)
+    have h0 : PartialIsoOn L S a b := partialIsoOn_of_forall_infinitaryCountingFormula
+      fun φ hr hS => h φ (hr.mono (Nat.zero_le _)) hS
     refine bijPebbleWins_succ.2 ⟨h0, fun i => ?_⟩
     let sX := bijSumSetoid L n S a b i
     let qM : M' → Quotient sX := fun c => Quotient.mk sX (.inl c)
