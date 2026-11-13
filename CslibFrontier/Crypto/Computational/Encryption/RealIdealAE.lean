@@ -303,9 +303,7 @@ private theorem map_runWith_cpaEncryptionOracle_eq (E : SymmetricCipher) (ctBoun
 running `adversary` in `cpaGame` with challenge bit `bit`. -/
 theorem eval_aeRealGame_cpaToAEAdversary (E : SymmetricCipher) (ctBound : ℕ → ℕ)
     (adversary : OracleDistinguisher) (bit : Bool) (n : ℕ)
-    (hctBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
+    (hctBound : E.CiphertextLengthLE n (ctBound n)) :
     ProbComp.eval (E.aeRealGame (cpaToAEAdversary ctBound bit adversary) n) =
       ProbComp.eval (E.cpaGame adversary bit n) := by
   simp only [aeRealGame, cpaGame, cpaToAEAdversary, runWith_norm, pmf_norm]
@@ -341,9 +339,7 @@ private theorem eval_aeIdealGame_cpaToAEAdversary (E : SymmetricCipher) (ctBound
 `ctBound n` bounds the ciphertext lengths of `n`-bit messages. -/
 theorem advantage_cpaGame_le_aeRealGame_aeIdealGame (E : SymmetricCipher) (ctBound : ℕ → ℕ)
     (adversary : OracleDistinguisher) (n : ℕ)
-    (hctBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
+    (hctBound : E.CiphertextLengthLE n (ctBound n)) :
     Game.advantage (ProbComp.eval (E.cpaGame adversary false n))
         (ProbComp.eval (E.cpaGame adversary true n)) ≤
       Game.advantage (ProbComp.eval (E.aeRealGame (cpaToAEAdversary ctBound false adversary) n))
@@ -469,9 +465,7 @@ private theorem map_runWith_ciEncryptionOracle_eq (E : SymmetricCipher) (ctBound
 wins `ciGame`. -/
 theorem eval_aeRealGame_ciToAEAdversary (E : SymmetricCipher) (ctBound : ℕ → ℕ)
     (adversary : CIAdversary) (n : ℕ)
-    (hctBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
+    (hctBound : E.CiphertextLengthLE n (ctBound n)) :
     ProbComp.eval (E.aeRealGame (ciToAEAdversary ctBound adversary) n) =
       ProbComp.eval (E.ciGame adversary n) := by
   simp only [aeRealGame, ciGame, ciToAEAdversary, runWith_norm, pmf_norm]
@@ -500,9 +494,7 @@ theorem eval_aeIdealGame_ciToAEAdversary (E : SymmetricCipher) (ctBound : ℕ �
 messages. -/
 theorem succProbability_ciGame_eq_advantage_aeRealGame_aeIdealGame (E : SymmetricCipher)
     (ctBound : ℕ → ℕ) (adversary : CIAdversary) (n : ℕ)
-    (hctBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
+    (hctBound : E.CiphertextLengthLE n (ctBound n)) :
     Game.succProbability (ProbComp.eval (E.ciGame adversary n)) =
       Game.advantage (ProbComp.eval (E.aeRealGame (ciToAEAdversary ctBound adversary) n))
         (ProbComp.eval (E.aeIdealGame (ciToAEAdversary ctBound adversary) n)) := by
@@ -661,9 +653,7 @@ private theorem map_aeRealOracle_eq_runWith_aeToCCAHandler (E : SymmetricCipher)
 output distribution as running `adversary` in the real world. -/
 theorem eval_ccaGame_aeToCCAAdversary (E : SymmetricCipher) (ctBound : ℕ → ℕ)
     (decBound : ℕ → List Bool → ℕ) (adversary : CCAAdversary) (n : ℕ)
-    (hctBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n)
+    (hctBound : E.CiphertextLengthLE n (ctBound n))
     (hdecBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
       ∀ ct, (encOption encBits (E.decrypt n k ct)).length ≤ decBound n ct) :
     ProbComp.eval (E.ccaGame (aeToCCAAdversary ctBound decBound adversary) false n) =
@@ -717,9 +707,7 @@ private theorem map_runWith_aeToCCAHandler_eq_aeIdealOracle (E : SymmetricCipher
 same output distribution as running `adversary` in the ideal world. -/
 theorem eval_ccaRejectGame_aeToCCAAdversary (E : SymmetricCipher) (ctBound : ℕ → ℕ)
     (decBound : ℕ → List Bool → ℕ) (adversary : CCAAdversary) (n : ℕ)
-    (hctBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
+    (hctBound : E.CiphertextLengthLE n (ctBound n)) :
     ProbComp.eval (E.ccaRejectGame (aeToCCAAdversary ctBound decBound adversary) true n) =
       ProbComp.eval (E.aeIdealGame adversary n) := by
   simp only [ccaRejectGame, aeIdealGame, aeToCCAAdversary, runWith_norm, pmf_norm]
@@ -745,9 +733,7 @@ then the real/ideal advantage of `adversary` is at most the CCA advantage of tha
 theorem advantage_aeRealGame_aeIdealGame_le (E : SymmetricCipher) (ctBound Q : ℕ → ℕ)
     (decBound : ℕ → List Bool → ℕ) (adversary : CCAAdversary) (n : ℕ)
     (hq : (aeToCCAAdversary ctBound decBound adversary n []).IsQueryBounded (Q n))
-    (hctBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n)
+    (hctBound : E.CiphertextLengthLE n (ctBound n))
     (hdecBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
       ∀ ct, (encOption encBits (E.decrypt n k ct)).length ≤ decBound n ct) :
     (Game.advantage (ProbComp.eval (E.aeRealGame adversary n))

@@ -153,9 +153,6 @@ structure View (T : Type) (K : T → Type) where
 enc_structure encView (encT : T ↪ List Bool) (encK : (t : T) → K t ↪ List Bool) : View T K where
   transcript : encT, key : (encK transcript) using ((encK transcript).injective)
 
--- The tuple encoding holds the key as a word in the slot `encBits`; only `encView` reads `encK`.
-attribute [nolint unusedArguments] encViewFields
-
 /-- The real view: run the protocol honestly and pair the transcript with Alice's key. This is
 what the adversary sees in `KE^eav` with hidden bit `0` ([KatzLindell2020], p. 391). -/
 @[expose]

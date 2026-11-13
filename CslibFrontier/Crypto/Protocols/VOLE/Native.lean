@@ -170,7 +170,7 @@ def Receiver.strategy {Message Index : Type} (receiver : Receiver F I First Stat
     (n : ℕ) (encodeFirst : Message → First) (index : Index → ℕ) (input : I) :
     ProbOracleComp (voleReceiverSpec F (n + 1))
       (VerifierStrategy (ProbOracleComp (voleReceiverSpec F (n + 1)))
-        (Cslib.Crypto.Protocols.SigmaProtocol.sigmaSpec Message (Index → F) (F × F)) Result) := do
+        (threeMoveSpec Message (Index → F) (F × F)) Result) := do
   let share ← ProbOracleComp.query ()
   let state ← ProbOracleComp.sample (receiver.init input ⟨share.1, List.ofFn share.2⟩)
   return fun message => do

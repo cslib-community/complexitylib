@@ -211,6 +211,13 @@ file even when `f` is private (Lean v4.36; `unfold f`, `dsimp only [f]` and `rfl
 tests, [#4243](https://github.com/cslib-community/cslib-frontier/issues/4243)). `import all` also
 loads private information, so such edits do reach its clients.
 
+Evidence that a public API is usable must include a representative `module` client with ordinary
+imports of that API, exercising intended operations through exposed bodies or public equations.
+[QuantumOracleModule.lean](CslibFrontierTests/QuantumOracleModule.lean) is an example.
+A test without `module`, or using `import all` for that API, has broader access and cannot
+establish usability for ordinary clients. Intentional internal, metaprogramming and axiom tests
+keep their documented access and supplement this representative evidence.
+
 - **What is a helper.** A helper is proof plumbing: a step meaningful only inside one proof, or a
   fact about a module-local construction, encoding or intermediate quantity. Helpers are `private`
   by default. Keep `@[expose]` for bodies that downstream proofs unfold.
@@ -254,8 +261,8 @@ Tidy computability (`ComputableTidily…`, `ComputesTidily…`, `IsTidy…`) may
 proofs, through `.tidy`, `.of_tidy`, a proof-local `attribute [local fun_prop] … in` or a tidy
 `have`. It never appears in a public statement: a theorem's type, or a definition's type, exposed
 body or fields. Only the raw machine constructions in `scripts/tidy_allowlist.txt` are exempt.
-CI enforces this with `scripts/check_tidy_surface.py`. The existing tidy statements, which #456 is
-restating, are counted per module in `scripts/tidy_surface_baseline.json`, and CI fails when a
+CI enforces this with `scripts/check_tidy_surface.py`. The existing tidy statements, which #862 is
+removing, are counted per module in `scripts/tidy_surface_baseline.json`, and CI fails when a
 module's count differs from its entry. When you remove some, lower the baseline in the same PR
 with `python3 scripts/check_tidy_surface.py --update`, so that they cannot come back. Until your
 PR lands, any other merge that removes tidy statements makes your baseline stale: rebase and

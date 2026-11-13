@@ -395,16 +395,16 @@ theorem DecidableInTime.mapOp {encode : ℕ → α → List ℕ} {A : Set α}
     {time : α → ℕ → ℕ} {allowed : α → ℕ → Prop}
     (φ : B.Hom B') (h : DecidableInTime B A encode time allowed) :
     DecidableInTime B' A encode time allowed :=
-  let ⟨r, P, hP, hp⟩ := h
-  ⟨r, P.mapOp φ, hP.mapOp φ, hp.mapOp φ⟩
+  let ⟨r, P, hP, hp, hi⟩ := h
+  ⟨r, P.mapOp φ, hP.mapOp φ, hp.mapOp φ, hi⟩
 
 /-- Uniform decision grows with the operation basis. -/
 theorem UniformDecidableInTime.mapOp {encode : ℕ → α → List ℕ} {A : Set α}
     {time : α → ℕ → ℕ} {allowed : α → ℕ → Prop}
     (φ : B.Hom B') (h : UniformDecidableInTime B A encode time allowed) :
     UniformDecidableInTime B' A encode time allowed :=
-  let ⟨r, p, hp⟩ := h
-  ⟨r, p.mapOp φ, hp.mapOp φ⟩
+  let ⟨r, p, hp, hi⟩ := h
+  ⟨r, p.mapOp φ, hp.mapOp φ, hi⟩
 
 /-- Linear time over a basis is linear time over every larger basis. -/
 theorem LinearTime.mapOp {encode : ℕ → α → List ℕ} {A : Set α} {size : α → ℕ} (φ : B.Hom B')

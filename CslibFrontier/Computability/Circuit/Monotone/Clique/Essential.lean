@@ -43,6 +43,8 @@ for it are not vacuous.
 -/
 public section
 
+open Cslib.BitString.Graph
+
 namespace Cslib.Circuits
 
 open Finset

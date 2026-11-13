@@ -246,8 +246,8 @@ abbrev DDHOTFinal (G : Type) (q : ℕ) (i : Fin 2) : Type :=
     OTOut G i :=
   Fin.cases (motive := fun i => DDHOTFinal G q i → OTOut G i)
     (fun _ => ())
-    (fun j st => ddhOTReceiverOutput (G := G) st.1.1.1.1 st.1.1.1.2
-      (st.2 (Fin.fin_one_eq_zero j ▸ rfl)))
+    (fun j ((((σ, b), _), _), reply) => ddhOTReceiverOutput (G := G) σ b
+      (reply (Fin.fin_one_eq_zero j ▸ rfl)))
     i st
 
 /-- **Unchecked three-message DDH OT protocol**: `ddhOTProtocol` without the sender's
@@ -260,9 +260,9 @@ attack against this protocol. -/
   sampleCoins i := Fin.cases (motive := fun i => ProbComp (DDHOTCoins q i))
     (sampleDDHOTSenderCoins q) (fun _ => ProbComp.uniform (ZMod q)) i
   steps :=
-    .message (fun st => st.2.1 • g)
-      (.message (fun st => ddhOTReceiverMsg g st.1.1 st.1.2 (st.2 rfl))
-        (.message (fun st => ddhOTSenderReplyUnchecked g st.1.1.1 st.1.1.2 (st.2 rfl))
+    .message (fun (_, (a, _)) => a • g)
+      (.message (fun ((σ, b), u) => ddhOTReceiverMsg g σ b (u rfl))
+        (.message (fun (((m, c), _), w) => ddhOTSenderReplyUnchecked g m c (w rfl))
           (.done ddhOTOutput)))
 
 omit [AddCommGroup G] in
@@ -289,7 +289,8 @@ theorem ddhOTSenderReplyOf_ddhOTUncheckedProtocol (g : G) (q : ℕ) [NeZero q] [
 /-- Simultaneous decryption of both branches from the unchecked sender reply using `(b₀, b₁)`. -/
 @[expose] def ddhOTAttackBothMessages {q : ℕ} [Module (ZMod q) G] (b₀ b₁ : ZMod q)
     (reply : (G × G) × (G × G)) : G × G :=
-  (reply.1.2 - b₀ • reply.1.1, reply.2.2 - b₁ • reply.2.1)
+  let ((e₀, c₀), (e₁, c₁)) := reply
+  (c₀ - b₀ • e₀, c₁ - b₁ • e₁)
 
 /-- **Simultaneous recovery on the unchecked variant**: when the sender omits `w₀ + w₁ = u`,
 a malicious receiver sending `ddhOTAttackMsg g b₀ b₁` recovers both `(m.1, m.2)` from
@@ -343,9 +344,9 @@ differences. -/
   sampleCoins i := Fin.cases (motive := fun i => ProbComp (DDHOTCoins q i))
     (sampleDDHOTSenderCoins q) (fun _ => ProbComp.uniform (ZMod q)) i
   steps :=
-    .message (fun st => st.2.1 • g)
-      (.message (fun st => ddhOTReceiverMsg g st.1.1 st.1.2 (st.2 rfl))
-        (.message (fun st => ddhOTSenderReply g st.1.1.1 st.1.1.2 (st.2 rfl))
+    .message (fun (_, (a, _)) => a • g)
+      (.message (fun ((σ, b), u) => ddhOTReceiverMsg g σ b (u rfl))
+        (.message (fun (((m, c), _), w) => ddhOTSenderReply g m c (w rfl))
           (.done ddhOTOutput)))
 
 /-! ### Party views and execution characterization -/

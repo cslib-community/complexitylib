@@ -932,7 +932,8 @@ structure KDFInput extends F.CDHInput where
 /-- The encoding of a key-derivation input: the fields of its CDH input followed by the key word,
 each framed except the last. This is the layout of `encDDHInput` with the key word in place of the
 encoded candidate shared element. -/
-enc_structure encKDFInput (F : PrimeOrderGroupFamily) : KDFInput F where
+enc_structure encKDFInput (F : PrimeOrderGroupFamily) : KDFInput F
+    flattened toCDHInput : (F.encCDHInput) where
   secParam : encUnary, groupParameters : F.encDesc,
   leftPublic : (F.encode groupParameters) using (F.encode_injective groupParameters),
   rightPublic : (F.encode groupParameters) using (F.encode_injective groupParameters),
@@ -983,19 +984,15 @@ theorem secureKDF_iff_encoded (setup : ℕ → PMF F.Desc) (H : F.Desc × List B
           (F.kdfRealGame setup H (fun n d u v key => W n (d, F.encode d u, F.encode d v, key)) n)
           (F.kdfIdealGame setup msgLen
             (fun n d u v key => W n (d, F.encode d u, F.encode d v, key)) n) := by
-  set E := encPair encUnary (encPair F.encDesc (encPair encBits (encPair encBits encBits)))
   constructor
   · intro h W hW
     exact h _ (hW.preprocess (prepare := fun x : F.KDFInput => (x.secParam, x.groupParameters,
       F.encode _ x.leftPublic, F.encode _ x.rightPublic, x.key)) (by fun_prop))
   · intro h D hD
-    obtain ⟨W, hWppt, hW⟩ := hD.exists_bool_extension
-    have := h (fun n t => W (E (n, t))) (hWppt.preprocess ComputableInPolyTime.id'.encoding_comp)
-    have hgame (n : ℕ) (d : F.Desc) (u v : F.Carrier d) (key : List Bool) :
-        ProbComp.eval (W (E (n, d, F.encode d u, F.encode d v, key))) =
-          ProbComp.eval (D n d u v key) :=
-      hW ⟨⟨n, d, u, v⟩, key⟩
-    simpa only [kdfRealGame, kdfIdealGame, hgame] using this
+    obtain ⟨W, hW, hWD⟩ := hD.exists_bool_factor F.encKDFInput_apply
+    obtain rfl : D = fun n d u v key => W (n, d, F.encode d u, F.encode d v, key) :=
+      funext₂ fun n d => funext₃ fun u v key => hWD ⟨⟨n, d, u, v⟩, key⟩
+    exact h (fun n t => W (n, t)) hW
 
 /-- Run a key-derivation distinguisher as a DDH distinguisher: derive the candidate key
 `H (d, encode w)` from the candidate shared element `w`. -/

@@ -71,6 +71,6 @@ For the exact snapshot's successful merge-group job, explicit start/completion t
 | Reclaim hosted-runner SDK space | 91 |
 | Stage merge-group outputs | 57 |
 
-Other setup, hygiene, validation and bookkeeping steps fill the remainder. This is one observed cached CI job on a particular revision, not a cold-build benchmark or a measured cache speedup. The optional controlled handoff measurement was skipped in this job. Its measurement plan remains distinct from completed evidence. [Recorded CI run](https://github.com/cslib-community/cslib-frontier/actions/runs/41384852164), [measurement source](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/scripts/cache/MEASUREMENT.md)
+Other setup, hygiene, validation and bookkeeping steps fill the remainder. This is one observed cached CI job on a particular revision, not a cold-build benchmark or a measured cache speedup. The optional controlled handoff measurement was skipped in this job and later dropped without activation, so its plan is not completed evidence. [Recorded CI run](https://github.com/cslib-community/cslib-frontier/actions/runs/41384852164), [archived measurement plan](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/scripts/cache/MEASUREMENT.md)
 
 No token-price, billing-cost or energy estimate is made. The available records do not supply a verified, uniformly defined all-provider/all-machine resource denominator.

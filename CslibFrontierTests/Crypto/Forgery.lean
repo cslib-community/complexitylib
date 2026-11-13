@@ -7,11 +7,12 @@ Authors: Samuel Schlesinger
 import CslibFrontier.Crypto.Computational.Signature.Bridge
 
 /-! Clients of the forgery experiment (`forgeExperiment`, `Signer`), typed signature schemes
-(`Signature.Scheme`) and the word-level bridge (`SignatureScheme.toScheme`, `Forger.toTyped`). -/
+(`Signature.Scheme`, `Signature.IndexedScheme`) and the word-level bridges
+(`SignatureScheme.toScheme`, `Forger.toTyped`, `IndexedForger.toTyped`, `Forger.toCounter`). -/
 
 namespace CslibFrontierTests.Forgery
 
-open Cslib Cslib.Crypto Cslib.Probability
+open Cslib Cslib.Crypto Cslib.Probability Turing.MultiTapeTM
 
 /-! ### Signing policies -/
 
@@ -85,5 +86,29 @@ example (pk msg : List Bool) :
         let sig ← ProbOracleComp.query msg
         return (msg, sig)) := by
   simp [Forger.toTyped, ProbOracleComp.query]
+
+-- The typed indexed forger queries the pair that the word oracle decodes from its request.
+example (pk w : List Bool) :
+    IndexedForger.toTyped (fun _ _ => do
+      let sig ← ProbOracleComp.query ((), w)
+      return (0, w, sig)) 0 pk =
+      (do
+        let sig ← ProbOracleComp.query (IndexedSignatureScheme.requestDecoder.decode w)
+        return ((0, w), sig)) := by
+  simp [IndexedForger.toTyped, ProbOracleComp.query]
+
+-- The counter relay forwards a request while the capacity lasts, and answers the empty word
+-- without querying afterwards.
+example (m : List Bool) :
+    (Forger.counterRelay 1 ((), m)).run 1 = pure ([], 1) := by
+  rw [Forger.counterRelay_run, ite_eq_right (lt_irrefl 1)]
+
+example (m : List Bool) :
+    (Forger.counterRelay 1 ((), m)).run 0 =
+      (fun r => (encPair encUnary encBits r, 1)) <$> ProbOracleComp.query m := by
+  rw [Forger.counterRelay_run, ite_eq_left Nat.zero_lt_one]
+
+-- The typed indexed scheme keeps the capacity at the parameter.
+example (S : IndexedSignatureScheme) (n : ℕ) : (S.toScheme n).capacity = S.capacity n := by simp
 
 end CslibFrontierTests.Forgery

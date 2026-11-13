@@ -183,19 +183,6 @@ private noncomputable def receiverLaw (share : F × (Fin (n + 1) → F)) {α : T
   OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle
     (fun _ => PMF.pure share)) program
 
-omit [CommRing F] [Fintype F] [DecidableEq F] in
-private theorem interpret_liftVerifier {α : Type} (c : VOLECorrelation F (n + 1))
-    (program : ProbOracleComp (voleReceiverSpec F (n + 1)) α) :
-    OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle
-      (OracleComp.sumHandler (fun _ => PMF.pure (c.u, c.v))
-        (fun _ => PMF.pure c.receiverView)))
-      (liftVerifier (oP := voleSenderSpec F (n + 1)) program) =
-        receiverLaw c.receiverView program := by
-  rw [liftVerifier, OracleComp.interpret_interpret]
-  unfold receiverLaw
-  congr 1 with query : 1
-  cases query <;> simp [OracleComp.sumHandler, ProbOracleComp.query]
-
 private theorem maskedMulCheckReceiverView_eq (left right output : ι → Fin n)
     (V : Aux → ProbOracleComp (voleReceiverSpec F (n + 1))
       (VerifierStrategy (ProbOracleComp (voleReceiverSpec F (n + 1)))
@@ -226,10 +213,10 @@ private theorem maskedMulCheckReceiverView_eq (left right output : ι → Fin n)
   dsimp only [voleWorld]
   simp only [pmf_norm]
   congr 1 with c : 1
-  simp [OracleComp.interpret_bind, OracleComp.interpret_pure, interpret_liftVerifier,
+  simp [OracleComp.interpret_bind, OracleComp.interpret_pure, interpret_liftVerifier, receiverLaw,
     maskedMulCheck, liftProver, ProbOracleComp.query, OracleComp.sumHandler,
     runAgainst, ProverStrategy.hoist, VerifierStrategy.hoist, maskedMulCheckSpec,
-    SigmaProtocol.sigmaSpec, VOLECorrelation.senderView, PMF.map, Function.comp_def]
+    threeMoveSpec, VOLECorrelation.senderView, PMF.map, Function.comp_def]
 
 omit [DecidableEq F] [DecidableEq ι] in
 private theorem maskedMulCheckReceiverSimulate_eq (left right output : ι → Fin n)

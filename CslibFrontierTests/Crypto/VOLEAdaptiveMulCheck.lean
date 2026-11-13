@@ -118,7 +118,7 @@ private theorem falseView_real : falseView ∈
           maskedMulCheckReply wire wire wire (fun _ => 2) c.u c.v (fun _ => 1), ()), ())) := by
     simp [maskedMulCheckReceiverView, constantReceiver, World.eval, voleWorld,
       maskedMulCheck, liftProver, liftVerifier, runAgainst, ProverStrategy.hoist,
-      VerifierStrategy.hoist, maskedMulCheckSpec, Cslib.Crypto.Protocols.SigmaProtocol.sigmaSpec,
+      VerifierStrategy.hoist, maskedMulCheckSpec, threeMoveSpec,
       ProbOracleComp.query, ProbOracleComp.runWith, OracleComp.sumHandler,
       VOLECorrelation.senderView,
       PMF.map, Function.comp_def, PMF.bind_bind]

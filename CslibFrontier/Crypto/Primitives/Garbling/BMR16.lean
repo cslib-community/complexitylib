@@ -745,11 +745,9 @@ theorem realGame_eq_ccrRealGame (H : MixedModulusHash T μ ℓ) (tw : ℕ → T)
     (C : MixedModulusCircuit μ (Projection μ) Γ Θ) (x : Env (Residue μ) Γ)
     (D : View ℓ C → ProbComp Bool) :
     realGame H tw C x D = ccrRealGame H (reduction H tw C x D) := by
-  have hself : ∀ {α : Type} (p : ProbComp α), OracleComp.interpret ProbComp.unifFin p = p :=
-    fun p => OracleComp.interpret_query_eq_self p
   simp only [realGame, ccrRealGame, reduction, garble, OracleComp.interpret_bind,
-    ProbOracleComp.interpret_sample, hself, interpret_reduceM, pure_bind, bind_assoc,
-    ProbComp.eval_bind, ProbComp.eval_uniform]
+    ProbOracleComp.interpret_sample, ProbComp.interpret_unifFin, interpret_reduceM, pure_bind,
+    bind_assoc, ProbComp.eval_bind, ProbComp.eval_uniform]
   refine congrArg (PMF.bind _) (funext fun δ => ?_)
   conv_rhs => rw [← map_encode_uniformOfFintype δ x]
   rw [PMF.bind_map]
@@ -763,11 +761,9 @@ theorem simGame_eq_ccrIdealGame [Fintype T] [DecidableEq T] (H : MixedModulusHas
     (tw : ℕ → T) (C : MixedModulusCircuit μ (Projection μ) Γ Θ) (x : Env (Residue μ) Γ)
     (D : View ℓ C → ProbComp Bool) (htw : Set.InjOn tw (Set.Iio C.size)) :
     simGame H tw C x D = ccrIdealGame (reduction H tw C x D) := by
-  have hself : ∀ {α : Type} (p : ProbComp α), OracleComp.interpret ProbComp.unifFin p = p :=
-    fun p => OracleComp.interpret_query_eq_self p
   simp only [simGame, ccrIdealGame, simulate, reduction, OracleComp.interpret_bind,
-    ProbOracleComp.interpret_sample, hself, interpret_reduceM, pure_bind, bind_assoc,
-    ProbComp.eval_bind, ProbComp.eval_uniform]
+    ProbOracleComp.interpret_sample, ProbComp.interpret_unifFin, interpret_reduceM, pure_bind,
+    bind_assoc, ProbComp.eval_bind, ProbComp.eval_uniform]
   conv_rhs => rw [PMF.bind_comm]
   refine congrArg (PMF.bind _) (funext fun A => ?_)
   rw [bind_reduceWith_uniformOfFintype H tw 0 C A x (htw.mono fun n hn => by

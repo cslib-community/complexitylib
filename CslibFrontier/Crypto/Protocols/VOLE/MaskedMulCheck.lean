@@ -10,7 +10,7 @@ module
 public import CslibFrontier.Crypto.Protocols.VOLE.World
 public import CslibFrontier.Crypto.Protocols.VOLE.BatchMulCheck
 public import CslibFrontier.Computability.Interactive.Security
-public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Interactive
+public import CslibFrontier.Computability.Interactive.ThreeMove
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Interaction
 import CslibFrontier.Probability.PMF.Bind
@@ -64,7 +64,7 @@ variable {F ι : Type} {n : ℕ}
 /-- Wire corrections, public weights, then the blinded affine coefficients. This specializes
 the existing three-round message shape; it does not assert Sigma-protocol security properties. -/
 abbrev maskedMulCheckSpec (F ι : Type) (n : ℕ) : Spec :=
-  SigmaProtocol.sigmaSpec (Fin n → F) (ι → F) (F × F)
+  threeMoveSpec (Fin n → F) (ι → F) (F × F)
 
 variable [CommRing F] [Fintype ι]
 
@@ -240,7 +240,7 @@ theorem maskedMulCheck_complete (left right output : ι → Fin n) :
             some (), ((), ()))) := by
     simp only [World.eval, Reduction.run, Verifier.execute, maskedMulCheck_output]
     simp only [pmf_norm, maskedMulCheck, liftProver, runStrategy, maskedMulCheckSpec,
-      SigmaProtocol.sigmaSpec, ProbOracleComp.interpret_sample, ProbOracleComp.interpret_query,
+      threeMoveSpec, ProbOracleComp.interpret_sample, ProbOracleComp.interpret_query,
       OracleComp.interpret_bind, OracleComp.interpret_pure, voleWorld, ProbOracleComp.runWith_bind,
       ProbOracleComp.runWith_query, ProbOracleComp.runWith_pure, pure_bind,
       VOLECorrelation.senderView]
@@ -267,7 +267,7 @@ theorem maskedMulCheckView_eq (left right output : ι → Fin n) (w : Fin n → 
       return (c.receiverView, (voleCommitWitness w (Fin.init c.u),
         (r, (maskedMulCheckReply left right output w c.u c.v r, ()))))) := by
   simp only [pmf_norm, maskedMulCheckView, maskedMulCheck, maskedMulCheckSpec,
-    SigmaProtocol.sigmaSpec, World.eval, Reduction.run, Verifier.execute, Verifier.output,
+    threeMoveSpec, World.eval, Reduction.run, Verifier.execute, Verifier.output,
     liftProver, runStrategy, Transcript.challenges, OracleInterface.full, voleWorld,
     ProbOracleComp.interpret_sample, ProbOracleComp.interpret_query, OracleComp.interpret_bind,
     OracleComp.interpret_pure, VOLECorrelation.senderView, ProbOracleComp.runWith_bind,
