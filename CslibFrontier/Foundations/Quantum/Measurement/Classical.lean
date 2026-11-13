@@ -34,6 +34,10 @@ Conditional reference states can change; only the sum of all branches preserves 
 * `Cslib.Quantum.classicalDensityBranch_posSemidef`: each branch is positive.
 * `Cslib.Quantum.sum_trace_classicalDensityBranch`: total trace is preserved.
 * `Cslib.Quantum.classicalDensityBranch_pureState`: agreement with vector projection.
+* `Cslib.Quantum.map_measureDensity_basis_apply`: the mapped basis PMF gives each branch mass.
+* `Cslib.Quantum.isDensityMatrix_normalize_classicalDensityBranch`: supported branches normalize.
+* `Cslib.Quantum.bindOnSupport_classicalDensityBranch_apply`: supported continuation is the
+  readout of the linearly evolved subnormalized branches.
 * `Cslib.Quantum.partialTraceLeft_sum_classicalDensityBranch`: the summed reference is preserved.
 
 ## References
@@ -159,6 +163,41 @@ theorem measureDensity_smul_normalize_classicalDensityBranch (f : ι → A) (ρ 
   rw [map_measureDensity_basis_apply, ENNReal.toReal_ofReal
     (Complex.nonneg_iff.mp (classicalDensityBranch_posSemidef f y hρ.posSemidef).trace_nonneg).1]
   exact trace_smul_normalizeDensity (classicalDensityBranch_posSemidef f y hρ.posSemidef)
+
+/-- An impossible classical outcome has the zero matrix as its subnormalized branch. -/
+theorem classicalDensityBranch_eq_zero_of_not_mem_support (f : ι → A) (ρ : Matrix ι ι ℂ)
+    (hρ : IsDensityMatrix ρ) (y : A)
+    (hy : y ∉ ((POVM.basis.measureDensity ρ hρ).map f).support) :
+    classicalDensityBranch f y ρ = 0 := by
+  have h := measureDensity_smul_normalize_classicalDensityBranch f ρ hρ y
+  rw [PMF.mem_support_iff, not_not] at hy
+  simpa only [hy, ENNReal.toReal_zero, zero_smul] using h.symm
+
+/-- Supported normalized continuation agrees with the sum of subnormalized branches after
+linear state evolution and POVM readout. No continuation is evaluated at a null branch. -/
+theorem bindOnSupport_classicalDensityBranch_apply [Fintype A] [Fintype κ] [DecidableEq κ]
+    {B : Type*} [Fintype B] (f : ι → A) (ρ : Matrix ι ι ℂ) (hρ : IsDensityMatrix ρ)
+    (L : A → Matrix ι ι ℂ →ₗ[ℂ] Matrix κ κ ℂ)
+    (hL : ∀ y σ, IsDensityMatrix σ → IsDensityMatrix (L y σ)) (M : A → POVM B κ) (b : B) :
+    (((POVM.basis.measureDensity ρ hρ).map f).bindOnSupport fun y hy =>
+      (M y).measureDensity (L y (normalizeDensity (classicalDensityBranch f y ρ)))
+        (hL y _ (isDensityMatrix_normalize_classicalDensityBranch f ρ hρ y hy))) b =
+      ∑ y, ENNReal.ofReal ((M y).densityProb (L y (classicalDensityBranch f y ρ)) b) := by
+  rw [PMF.bindOnSupport_apply, tsum_fintype]
+  apply sum_congr rfl
+  intro y _
+  by_cases hy : ((POVM.basis.measureDensity ρ hρ).map f) y = 0
+  · have hz := classicalDensityBranch_eq_zero_of_not_mem_support f ρ hρ y
+      (by simpa only [PMF.mem_support_iff, not_not] using hy)
+    simp [hy, hz, POVM.densityProb]
+  · rw [dite_eq_right hy, POVM.measureDensity_apply]
+    have hw : (((POVM.basis.measureDensity ρ hρ).map f) y).toReal •
+        L y (normalizeDensity (classicalDensityBranch f y ρ)) =
+          L y (classicalDensityBranch f y ρ) := by
+      rw [← LinearMap.map_smul_of_tower,
+        measureDensity_smul_normalize_classicalDensityBranch f ρ hρ y]
+    rw [← hw, POVM.densityProb_smul, ENNReal.ofReal_mul ENNReal.toReal_nonneg,
+      ENNReal.ofReal_toReal (PMF.apply_ne_top _ _)]
 
 /-- On pure states, each density branch is exactly the projected vector's rank-one matrix. -/
 theorem classicalDensityBranch_pureState (f : ι → A) (y : A) (ψ : EuclideanSpace ℂ ι) :
