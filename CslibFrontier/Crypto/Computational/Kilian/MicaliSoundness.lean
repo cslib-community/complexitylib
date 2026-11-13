@@ -12,10 +12,12 @@ public import CslibFrontier.Crypto.Computational.Kilian.Soundness
 public import CslibFrontier.Crypto.Computational.Kilian.Succinct
 public import CslibFrontier.Crypto.Computational.MerkleTree.ROMExtract
 public import CslibFrontier.Computability.Complexity.Classes.NP
+public import CslibFrontier.Languages.Probabilistic.RandomOracle.Sum
 public import CslibFrontier.Languages.Probabilistic.UntilBad.TwoCost
 import CslibFrontier.Computability.Complexity.Classes.SharpP.Probability
 import CslibFrontier.Computability.PCP.Completeness
 import CslibFrontier.Foundations.Data.List.Lookup
+import CslibFrontier.Languages.Probabilistic.QueryCount.Sum
 import CslibFrontier.Languages.Probabilistic.QueryCount.Support
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.EventBind
@@ -438,33 +440,6 @@ def micaliFSCost : List Bool ⊕ (α × List Bool) → ℕ
   | .inl _ => 0
   | .inr _ => 1
 
-/-- Any `MerkleHashSpec` program lifted to `MicaliSpec α` via `liftLeft` makes `0` Fiat–Shamir
-calls. -/
-theorem isCostBounded_micaliFSCost_liftLeft {β : Type} (prog : OracleComp MerkleHashSpec β) :
-    IsCostBounded (micaliFSCost (α := α))
-      (OracleComp.liftLeft (spec₂ := MicaliFSSpec α) prog) 0 := by
-  induction prog with
-  | pure a => exact .pure a 0
-  | liftBind q cont ih =>
-    change IsCostBounded micaliFSCost
-      (OracleComp.query (spec := MicaliSpec α) (.inl q) >>=
-        fun a => OracleComp.liftLeft (spec₂ := MicaliFSSpec α) (cont a)) 0
-    exact IsCostBounded.liftBind (cost := micaliFSCost) (Sum.inl q) _ 0 ih
-
-/-- Any `IsQueryBounded prog k` over `MerkleHashSpec` lifts via `liftLeft` to
-`IsCostBounded micaliMTCost (liftLeft prog) k`. -/
-theorem isCostBounded_micaliMTCost_liftLeft {β : Type} {prog : OracleComp MerkleHashSpec β}
-    {k : ℕ} (h : IsQueryBounded prog k) :
-    IsCostBounded (micaliMTCost (α := α))
-      (OracleComp.liftLeft (spec₂ := MicaliFSSpec α) prog) k := by
-  induction h with
-  | pure a n => exact .pure a n
-  | liftBind q cont n _ ih =>
-    change IsCostBounded micaliMTCost
-      (OracleComp.query (spec := MicaliSpec α) (.inl q) >>=
-        fun a => OracleComp.liftLeft (spec₂ := MicaliFSSpec α) (cont a)) (n + 1)
-    exact IsCostBounded.liftBind (cost := micaliMTCost) (Sum.inl q) _ n ih
-
 /-- `micaliVerify V x proof` always makes at most `1` Fiat–Shamir query (`(x, proof.root)`). -/
 theorem isCostBounded_micaliFSCost_micaliVerify (V : PCPVerifier α) (x : α) (proof : MicaliProof) :
     IsCostBounded micaliFSCost (micaliVerify V x proof) 1 := by
@@ -474,7 +449,8 @@ theorem isCostBounded_micaliFSCost_micaliVerify (V : PCPVerifier α) (x : α) (p
         (OracleComp.query (spec := MicaliFSSpec α) (x, proof.root))) 1 :=
     IsCostBounded.query (spec := MicaliSpec α) (cost := micaliFSCost) (Sum.inr (x, proof.root))
   exact hq.bind fun ρs =>
-    isCostBounded_micaliFSCost_liftLeft (kilianVerifyProg V x proof.root ρs proof.response)
+    IsCostBounded.liftLeft_of_cost_inl_eq_zero (fun _ => rfl)
+      (kilianVerifyProg V x proof.root ρs proof.response)
 
 open Classical in
 /-- The Micali soundness execution as an `OracleComp (MicaliSpec α)` program: run the cheating
@@ -527,80 +503,12 @@ abbrev MicaliTraceState (α : Type) :=
   List (List Bool × List Bool) × List ((α × List Bool) × List (List Bool))
 
 /-- Two-channel association-list handler implementing
-`RandomOracle.answer (micaliOracleDist V σ m)`. -/
-noncomputable def micaliMemoize [BEq α] (V : PCPVerifier α) (σ m : ℕ) :
-    (q : List Bool ⊕ (α × List Bool)) → StateT (MicaliTraceState α) PMF (MicaliSpec α q)
-  | .inl msg => fun (tr_MT, tr_FS) =>
-    (memoize (fun _ : List Bool => BitString.uniformList σ) msg tr_MT).map fun (ans, tr_MT') =>
-      (ans, (tr_MT', tr_FS))
-  | .inr xrt => fun (tr_MT, tr_FS) =>
-    (memoize (fun q : α × List Bool => ProbComp.eval (kilianChallenges V m q.1)) xrt tr_FS).map
-      fun (ρs, tr_FS') => (ρs, (tr_MT, tr_FS'))
-
-/-- Represent a `MicaliTraceState α` as a `RandomOracle.Cache (MicaliSpec α)`. -/
-def micaliOfTraces [BEq α] (st : MicaliTraceState α) : RandomOracle.Cache (MicaliSpec α)
-  | .inl msg => RandomOracle.ofList st.1 msg
-  | .inr xrt => RandomOracle.ofList st.2 xrt
-
-@[simp]
-theorem micaliOfTraces_nil [BEq α] :
-    micaliOfTraces (α := α) ([], []) = fun _ => none := by
-  funext q
-  cases q <;> rfl
-
-/-- `micaliMemoize` implements `RandomOracle.answer (micaliOracleDist V σ m)` via
-`micaliOfTraces`. -/
-theorem run_interpret_micaliMemoize [DecidableEq α] (V : PCPVerifier α) (σ m : ℕ) {β : Type}
-    (prog : OracleComp (MicaliSpec α) β) (st : MicaliTraceState α) :
-    ((OracleComp.interpret (micaliMemoize V σ m) prog).run st).map
-        (fun (res, st') => (res, micaliOfTraces st')) =
-      OracleComp.runWith (RandomOracle.answer (micaliOracleDist V σ m)) prog
-        (micaliOfTraces st) := by
-  apply OracleComp.run_interpret_map_state
-  rintro (msg | ⟨x, rt⟩) ⟨tr_MT, tr_FS⟩
-  · dsimp only [micaliMemoize]
-    cases h : tr_MT.lookup msg with
-    | none =>
-      rw [memoize_of_none _ _ _ h,
-        RandomOracle.answer_of_none (micaliOracleDist V σ m) (micaliOfTraces (tr_MT, tr_FS))
-          (.inl msg) h]
-      change (((BitString.uniformList σ).map (fun v => (v, (msg, v) :: tr_MT))).map _).map _ = _
-      simp only [PMF.map_comp, Function.comp_def, micaliOracleDist]
-      congr 2 with v : 1
-      simp only [Prod.mk.injEq, true_and]
-      funext q
-      cases q with
-      | inl msg' =>
-        simpa [micaliOfTraces] using congrFun (RandomOracle.ofList_cons tr_MT msg v) msg'
-      | inr xrt' =>
-        simp [micaliOfTraces]
-    | some val =>
-      rw [memoize_of_some _ _ _ _ h,
-        RandomOracle.answer_of_some (micaliOracleDist V σ m) (micaliOfTraces (tr_MT, tr_FS))
-          (.inl msg) val h]
-      simp [PMF.monad_pure_eq_pure]
-  · dsimp only [micaliMemoize]
-    cases h : tr_FS.lookup (x, rt) with
-    | none =>
-      rw [memoize_of_none _ _ _ h,
-        RandomOracle.answer_of_none (micaliOracleDist V σ m) (micaliOfTraces (tr_MT, tr_FS))
-          (.inr (x, rt)) h]
-      change (((ProbComp.eval (kilianChallenges V m x)).map
-        (fun v => (v, ((x, rt), v) :: tr_FS))).map _).map _ = _
-      simp only [PMF.map_comp, Function.comp_def, micaliOracleDist]
-      congr 2 with v : 1
-      simp only [Prod.mk.injEq, true_and]
-      funext q
-      cases q with
-      | inl msg' =>
-        simp [micaliOfTraces]
-      | inr xrt' =>
-        simpa [micaliOfTraces] using congrFun (RandomOracle.ofList_cons tr_FS (x, rt) v) xrt'
-    | some val =>
-      rw [memoize_of_some _ _ _ _ h,
-        RandomOracle.answer_of_some (micaliOracleDist V σ m) (micaliOfTraces (tr_MT, tr_FS))
-          (.inr (x, rt)) val h]
-      simp [PMF.monad_pure_eq_pure]
+`RandomOracle.answer (micaliOracleDist V σ m)`: Merkle queries are memoized in the first trace and
+Fiat–Shamir queries in the second. -/
+noncomputable abbrev micaliMemoize [BEq α] (V : PCPVerifier α) (σ m : ℕ) :
+    (q : List Bool ⊕ (α × List Bool)) → StateT (MicaliTraceState α) PMF (MicaliSpec α q) :=
+  RandomOracle.memoizeSum (fun _ : List Bool => BitString.uniformList σ)
+    (fun q : α × List Bool => ProbComp.eval (kilianChallenges V m q.1))
 
 /-- `micaliSoundnessGame` has the same output distribution as running `micaliSoundnessProg` under
 `micaliMemoize` from the empty trace pair `([], [])`. -/
@@ -609,9 +517,13 @@ theorem micaliSoundnessGame_eq_run_micaliMemoize [DecidableEq α] (V : PCPVerifi
     micaliSoundnessGame V L P σ m =
       ((OracleComp.interpret (micaliMemoize V σ m) (micaliSoundnessProg V L P)).run ([], [])).map
         Prod.fst := by
-  have h := congrArg (PMF.map Prod.fst)
-    (run_interpret_micaliMemoize V σ m (micaliSoundnessProg V L P) ([], []))
-  simpa only [micaliSoundnessGame, PMF.map_comp, Function.comp_def, micaliOfTraces_nil] using h.symm
+  have hdist : micaliOracleDist V σ m =
+      sumHandler (spec₁ := MerkleHashSpec) (spec₂ := MicaliFSSpec α)
+        (fun _ => BitString.uniformList σ) (fun q => ProbComp.eval (kilianChallenges V m q.1)) := by
+    funext q
+    rcases q with _ | ⟨x, rt⟩ <;> rfl
+  rw [micaliSoundnessGame, hdist]
+  exact (RandomOracle.map_fst_run_interpret_memoizeSum_nil _ _ _).symm
 
 /-- Good-state invariant of the two-channel Micali ROM state `(tr_MT, tr_FS)`: the Merkle trace
 `tr_MT` is collision-free and the Fiat–Shamir trace `tr_FS` has no accepting false-statement entry
@@ -680,7 +592,7 @@ theorem toOuterMeasure_micaliMemoize_not_goodState_step [BEq α]
   cases q with
   | inl msg =>
     simp only [micaliMTCost, micaliFSCost, Nat.cast_one, Nat.cast_zero, one_mul, zero_mul,
-      add_zero, micaliMemoize, PMF.toOuterMeasure_map_apply]
+      add_zero, RandomOracle.memoizeSum_inl, PMF.toOuterMeasure_map_apply]
     cases hlookup : tr_MT.lookup msg with
     | some ans =>
       rw [memoize_of_some _ _ _ _ hlookup, PMF.monad_pure_eq_pure, PMF.toOuterMeasure_pure_apply]
@@ -702,7 +614,7 @@ theorem toOuterMeasure_micaliMemoize_not_goodState_step [BEq α]
             rw [length_micaliForbiddenDigests]
   | inr xrt =>
     simp only [micaliMTCost, micaliFSCost, Nat.cast_zero, Nat.cast_one, zero_mul, one_mul,
-      zero_add, micaliMemoize, PMF.toOuterMeasure_map_apply]
+      zero_add, RandomOracle.memoizeSum_inr, PMF.toOuterMeasure_map_apply]
     calc (memoize (fun q : α × List Bool => ProbComp.eval (kilianChallenges V m q.1))
             xrt tr_FS).toOuterMeasure {x | ¬ MicaliGoodState V L (tr_MT, x.2)}
         ≤ (memoize (fun q : α × List Bool => ProbComp.eval (kilianChallenges V m q.1))
@@ -742,7 +654,7 @@ theorem toOuterMeasure_run_micaliMemoize_not_goodState_le [BEq α] {β : Type}
       rcases st with ⟨tr_MT, tr_FS⟩
       cases q with
       | inl msg =>
-        supp_cases hx [micaliMemoize] with ⟨⟨ans, tr_MT'⟩, hmem, rfl⟩
+        supp_cases hx [RandomOracle.memoizeSum_inl] with ⟨⟨ans, tr_MT'⟩, hmem, rfl⟩
         have hlen := length_le_of_mem_support_memoize _ msg tr_MT hmem
         simp only [micaliMTCost, micaliFSCost, Nat.cast_one, Nat.cast_zero, one_mul, zero_mul,
           add_zero]
@@ -754,7 +666,7 @@ theorem toOuterMeasure_run_micaliMemoize_not_goodState_le [BEq α] {β : Type}
               push_cast
               ring
       | inr xrt =>
-        supp_cases hx [micaliMemoize] with ⟨⟨ρs, tr_FS'⟩, hmem, rfl⟩
+        supp_cases hx [RandomOracle.memoizeSum_inr] with ⟨⟨ρs, tr_FS'⟩, hmem, rfl⟩
         have hlen := length_le_of_mem_support_memoize _ xrt tr_FS hmem
         simp only [micaliMTCost, micaliFSCost, Nat.cast_zero, Nat.cast_one, zero_mul, one_mul,
           add_zero]
@@ -829,59 +741,6 @@ theorem allOpeningsQueriedInTrace_of_mem_support_kilianVerifyProg
   obtain ⟨p, hp, ho⟩ := ho
   exact hall p hp o ho
 
-/-- Running a `liftLeft` program under `micaliMemoize` runs it on the Merkle trace and leaves the
-Fiat–Shamir trace unchanged. -/
-private theorem run_micaliMemoize_liftLeft [BEq α] (V : PCPVerifier α) (σ m : ℕ) {β : Type}
-    (prog : OracleComp MerkleHashSpec β) (tr_MT : List (List Bool × List Bool))
-    (tr_FS : List ((α × List Bool) × List (List Bool))) :
-    (OracleComp.interpret (micaliMemoize V σ m)
-      (OracleComp.liftLeft (spec₂ := MicaliFSSpec α) prog)).run (tr_MT, tr_FS) =
-      ((OracleComp.interpret (memoize (fun _ : List Bool => BitString.uniformList σ)) prog).run
-        tr_MT).map fun (res, tr_MT') => (res, (tr_MT', tr_FS)) := by
-  induction prog using OracleComp.induction generalizing tr_MT with
-  | pure a =>
-    simp [PMF.monad_pure_eq_pure]
-  | query_bind q cont ih =>
-    simp only [liftLeft_bind, liftLeft_query, run_interpret_bind, run_interpret_query,
-      micaliMemoize, PMF.monad_bind_eq_bind, PMF.bind_map, PMF.map_bind, Function.comp_def]
-    refine congrArg (PMF.bind _) (funext fun ⟨ans, tr_MT₁⟩ => ih ans tr_MT₁)
-
-/-- Multi-step structural invariant of `micaliMemoize`: starting from traces with `Nodup` keys and
-supported values, any run preserves `Nodup` keys and supported values on both channels. -/
-private theorem mem_support_run_micaliMemoize_invariant [DecidableEq α]
-    (V : PCPVerifier α) (σ m : ℕ) {β : Type} (prog : OracleComp (MicaliSpec α) β)
-    {st st' : MicaliTraceState α} {res : β}
-    (hnodup_MT : (st.1.map Prod.fst).Nodup)
-    (hsupp_MT : ∀ e ∈ st.1, e.2 ∈ (BitString.uniformList σ).support)
-    (hnodup_FS : (st.2.map Prod.fst).Nodup)
-    (hsupp_FS : ∀ e ∈ st.2, e.2 ∈ (ProbComp.eval (kilianChallenges V m e.1.1)).support)
-    (hmem : (res, st') ∈ ((OracleComp.interpret (micaliMemoize V σ m) prog).run st).support) :
-    (st'.1.map Prod.fst).Nodup ∧
-      (∀ e ∈ st'.1, e.2 ∈ (BitString.uniformList σ).support) ∧
-      (st'.2.map Prod.fst).Nodup ∧
-      (∀ e ∈ st'.2, e.2 ∈ (ProbComp.eval (kilianChallenges V m e.1.1)).support) := by
-  induction prog using OracleComp.induction generalizing st with
-  | pure a =>
-    supp_cases hmem [run_interpret_pure] with ⟨rfl, rfl⟩
-    exact ⟨hnodup_MT, hsupp_MT, hnodup_FS, hsupp_FS⟩
-  | query_bind q cont ih =>
-    supp_cases hmem [run_interpret_bind, run_interpret_query] with ⟨⟨ans, st₁⟩, hans, hcont⟩
-    rcases st with ⟨tr_MT, tr_FS⟩
-    cases q with
-    | inl msg =>
-      supp_cases hans [micaliMemoize] with ⟨⟨ans', tr_MT₁⟩, hmt, rfl, rfl⟩
-      obtain ⟨-, -, hnodup_MT₁, hsupp_MT₁⟩ :=
-        mem_support_memoize_nodup (fun _ : List Bool => BitString.uniformList σ) msg
-          hnodup_MT hsupp_MT hmt
-      exact @ih ans' (tr_MT₁, tr_FS) hnodup_MT₁ hsupp_MT₁ hnodup_FS hsupp_FS hcont
-    | inr xrt =>
-      supp_cases hans [micaliMemoize] with ⟨⟨ρs', tr_FS₁⟩, hfs, rfl, rfl⟩
-      obtain ⟨-, -, hnodup_FS₁, hsupp_FS₁⟩ :=
-        mem_support_memoize_nodup
-          (fun q : α × List Bool => ProbComp.eval (kilianChallenges V m q.1)) xrt
-          hnodup_FS hsupp_FS hfs
-      exact @ih ρs' (tr_MT, tr_FS₁) hnodup_MT hsupp_MT hnodup_FS₁ hsupp_FS₁ hcont
-
 /-- Any outcome `(true, st')` in the support of `micaliSoundnessProg V L P` under `micaliMemoize`
 must violate `MicaliGoodState V L st'`. -/
 theorem not_micaliGoodState_of_mem_support_micaliSoundnessProg [DecidableEq α]
@@ -902,17 +761,24 @@ theorem not_micaliGoodState_of_mem_support_micaliSoundnessProg [DecidableEq α]
   simp only [Bool.and_eq_true, decide_eq_true_eq] at hwin
   obtain ⟨hx_not_L, rfl⟩ := hwin
   supp_cases hMV [micaliVerify, run_interpret_bind] with ⟨⟨ρs, st₂⟩, hFS_call, hKV⟩
-  obtain ⟨hnodup_MT₁, hsupp_MT₁, hnodup_FS₁, hsupp_FS₁⟩ :=
-    mem_support_run_micaliMemoize_invariant V σ m P (st := ([], [])) List.nodup_nil (by simp)
-      List.nodup_nil (by simp) hP
+  obtain ⟨⟨hnodup_MT₁, hsupp_MT₁⟩, hnodup_FS₁, hsupp_FS₁⟩ :=
+    RandomOracle.mem_support_run_interpret_memoizeSum (fun _ : List Bool => BitString.uniformList σ)
+      (fun q : α × List Bool => ProbComp.eval (kilianChallenges V m q.1))
+      (fun tr => (tr.map Prod.fst).Nodup ∧ ∀ e ∈ tr, e.2 ∈ (BitString.uniformList σ).support)
+      (fun tr => (tr.map Prod.fst).Nodup ∧
+        ∀ e ∈ tr, e.2 ∈ (ProbComp.eval (kilianChallenges V m e.1.1)).support)
+      (fun q _ _ _ h hmem => (mem_support_memoize_nodup _ q h.1 h.2 hmem).2.2)
+      (fun q _ _ _ h hmem => (mem_support_memoize_nodup _ q h.1 h.2 hmem).2.2) P
+      (st := ([], [])) (by simp) hP
   rcases st₁ with ⟨tr_MT₁, tr_FS₁⟩
-  supp_cases hFS_call [liftRight_query, run_interpret_query, micaliMemoize]
+  supp_cases hFS_call [liftRight_query, run_interpret_query, RandomOracle.memoizeSum_inr]
     with ⟨⟨ρs', tr_FS₂⟩, hfs_mem, rfl, rfl⟩
   obtain ⟨hρs_in_FS₂, -, hnodup_FS₂, hsupp_FS₂⟩ :=
     mem_support_memoize_nodup
       (fun q : α × List Bool => ProbComp.eval (kilianChallenges V m q.1)) (x, proof.root)
       hnodup_FS₁ hsupp_FS₁ hfs_mem
-  supp_cases hKV [run_micaliMemoize_liftLeft] with ⟨⟨ok', tr_MT₃⟩, hkv_mem, rfl, rfl⟩
+  supp_cases hKV [RandomOracle.run_interpret_memoizeSum_liftLeft]
+    with ⟨⟨ok', tr_MT₃⟩, hkv_mem, rfl, rfl⟩
   obtain ⟨-, hnodup_MT₃, -, heval⟩ :=
     mem_support_run_memoize_invariant (fun _ : List Bool => BitString.uniformList σ)
       (kilianVerifyProg V x proof.root ρs' proof.response) hnodup_MT₁ hsupp_MT₁ hkv_mem
@@ -1114,23 +980,12 @@ theorem exists_micaliCSProof_of_mem_NP [DecidableEq α] {enc : α ↪ List Bool}
   obtain ⟨V, c, d, hV, hpcp⟩ := NP_subset_PCP_log enc hL
   have hq : ∀ x ρ, ρ.length = V.coins x → (V.queries (x, ρ)).length ≤ d := by
     intro x ρ hρ
-    simpa using hpcp.2.1 x ρ hρ
-  refine ⟨V, c, d, hV, hpcp.1, hq,
-    fun x => ⟨fun hx => ?_, fun ⟨table, htable⟩ => ?_⟩,
+    simpa using hpcp.length_queries_le x ρ hρ
+  exact ⟨V, c, d, hV, hpcp.coins_le, hq, hpcp.mem_iff_exists_tableVerifier,
     fun x table htable σ m => micaliHonestGame_eq_pure_true V htable σ m,
-    fun P t_FS Q_MT σ m hFS hMT => micaliSoundness_bound V L σ m hpcp.2.2.2 hFS hMT,
+    fun P t_FS Q_MT σ m hFS hMT => micaliSoundness_bound V L σ m hpcp.sound hFS hMT,
     _, fun σ m hTree hFS x table hlen hm hρs =>
       micaliProofBits_micaliProvePure_le_log hlen hm hρs (fun ρ hρ => hq x ρ hρ)
-        (hpcp.1 x)⟩
-  · obtain ⟨proof, hproof⟩ := hpcp.2.2.1 x hx
-    exact ⟨_, by simpa using PCPVerifier.tableVerifier_complete x proof [] hproof⟩
-  · by_contra hx
-    obtain ⟨proof, hproof⟩ := PCPVerifier.tableVerifier_sound x table htable
-    have hs := hpcp.2.2.2 x hx proof
-    have hc : acceptCount (fun y => V.accepts y.1 proof y.2) x (V.coins x) = 2 ^ V.coins x := by
-      simp [acceptCount, hproof]
-    rw [hc] at hs
-    have hp : 0 < 2 ^ V.coins x := Nat.two_pow_pos _
-    lia
+        (hpcp.coins_le x)⟩
 
 end Cslib.Crypto

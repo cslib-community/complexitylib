@@ -237,10 +237,9 @@ theorem partialSum_self (r : Fin n → F) : partialSum P r = MvPolynomial.eval r
   · exact fun h => absurd (Finset.mem_univ _) h
 
 /-- The verifier of round `i` outputs the claim at the challenge if it accepts the message. -/
-private theorem round_outputOn (i : ℕ) (x : Claim F i) (τ : Transcript (roundSpec F)) :
-    (round d P i).verifier.outputOn x τ =
-      if accepts d x.value τ.1 then some ⟨Fin.snoc x.challenges τ.2.1, τ.1.eval τ.2.1⟩
-      else none :=
+private theorem round_outputOn (i : ℕ) (x : Claim F i) (g : Polynomial F) (z : F) :
+    (round d P i).verifier.outputOn x (g, z, ()) =
+      if accepts d x.value g then some ⟨Fin.snoc x.challenges z, g.eval z⟩ else none :=
   rfl
 
 /-! ### Component theorems (milestone 2) -/
@@ -258,7 +257,7 @@ theorem round_complete (hP : ∀ j, P.degreeOf j ≤ d) {i : ℕ} (hi : i < n) :
   rw [PMF.toOuterMeasure_bind_apply]
   refine Probability.PMF.tsum_mul_le_of_forall_le _ fun z => le_of_eq ?_
   refine (PMF.toOuterMeasure_pure_apply _ _).trans (ite_eq_right fun h => h ⟨?_, ?_⟩)
-  · exact (round_outputOn d P i x _).trans (ite_eq_left hacc)
+  · exact (round_outputOn d P i x _ _).trans (ite_eq_left hacc)
   · exact (eval_roundPoly_eq P x.challenges z).symm
 
 /-- Each round is round-by-round sound with error `d / |F|` (Schwartz–Zippel for one variable). -/

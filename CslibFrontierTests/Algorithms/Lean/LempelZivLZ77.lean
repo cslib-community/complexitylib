@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 
 public import CslibFrontier.Algorithms.Lean.LempelZiv.LZ77Count
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import Mathlib.Analysis.SpecialFunctions.Log.Base
 import Mathlib.Tactic.NormNum
 
@@ -121,13 +122,11 @@ bounds the Lempel–Ziv complexity of every input of length `256` by
 example (x : List Bool) (hx : x.length = 256) :
     (complexity x : ℝ) ≤ 256 / ((1 - DistinctParsing.epsilon 2 256) * Real.logb 2 256) := by
   have h8 : Real.logb 2 (256 : ℕ) = 8 := by
-    rw [show ((256 : ℕ) : ℝ) = 2 ^ (8 : ℕ) by norm_num, Real.logb_pow, Real.logb_self_eq_one]
-    · norm_num
-    · norm_num
+    rw [show ((256 : ℕ) : ℝ) = 2 ^ (8 : ℕ) by norm_num, Real.logb_two_pow]
+    norm_num
   have h3 : Real.logb 2 8 = 3 := by
-    rw [show (8 : ℝ) = 2 ^ (3 : ℕ) by norm_num, Real.logb_pow, Real.logb_self_eq_one]
-    · norm_num
-    · norm_num
+    rw [show (8 : ℝ) = 2 ^ (3 : ℕ) by norm_num, Real.logb_two_pow]
+    norm_num
   have hε : DistinctParsing.epsilon 2 256 < 1 := by
     rw [DistinctParsing.epsilon_def, Nat.cast_ofNat, h8, h3]
     norm_num
