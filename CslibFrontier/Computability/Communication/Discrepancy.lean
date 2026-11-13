@@ -48,6 +48,7 @@ error `1 / 2 - γ` send `c` bits with `(2 γ)² 2 ^ n ≤ 4 ^ c`
 
 ## Main results
 
+* `Cslib.Communication.one_div_discrepancy_le_tilingNumber`: the arbitrary tiling bound.
 * `Cslib.Communication.Protocol.two_mul_le_two_pow_mul_discrepancy`,
   `Cslib.Communication.PublicCoin.two_mul_le_two_pow_mul_discrepancy`: the discrepancy bound.
 * `Cslib.Communication.discrepancy_dotProduct_sq_mul_two_pow_le`: the discrepancy of the inner
@@ -109,6 +110,72 @@ end Finite
 
 /-! ### The discrepancy bound -/
 
+namespace RectanglePartition
+
+/-- **Correlation with a rectangle partition is bounded by discrepancy**: the correlation of `f`
+with the partition labels is at most its number of pieces times the discrepancy of `f`
+under `ν`. -/
+theorem abs_sum_mul_signVal_le [Fintype X] [Fintype Y]
+    (p : RectanglePartition X Y Bool) (ν : PMF (X × Y))
+    (f : X → Y → Bool) :
+    |∑ x, ∑ y, (ν (x, y)).toReal * signVal (f x y) * signVal (p.run x y)| ≤
+      p.size * discrepancy ν f := by
+  classical
+  rw [p.sum_eq_sum_rectangles]
+  calc |∑ i, ∑ x with x ∈ p.alice i, ∑ y with y ∈ p.bob i,
+          (ν (x, y)).toReal * signVal (f x y) * signVal (p.run x y)|
+      = |∑ i, signVal (p.output i) * ∑ x with x ∈ p.alice i,
+          ∑ y with y ∈ p.bob i, (ν (x, y)).toReal * signVal (f x y)| := by
+        congr 1
+        refine sum_congr rfl fun i _ => ?_
+        rw [mul_sum]
+        refine sum_congr rfl fun x hx => ?_
+        rw [mul_sum]
+        refine sum_congr rfl fun y hy => ?_
+        rw [run_eq_output (mem_filter.mp hx).2 (mem_filter.mp hy).2]
+        ring
+    _ ≤ ∑ i, |signVal (p.output i) * ∑ x with x ∈ p.alice i,
+          ∑ y with y ∈ p.bob i, (ν (x, y)).toReal * signVal (f x y)| :=
+        abs_sum_le_sum_abs _ _
+    _ ≤ ∑ _i : Fin p.size, discrepancy ν f := by
+        refine sum_le_sum fun i _ => ?_
+        rw [abs_mul, abs_signVal, one_mul]
+        exact abs_sum_le_discrepancy ν f _ _
+    _ = p.size * discrepancy ν f := by simp
+
+/-- Every monochromatic tiling has size times discrepancy at least one, for any input PMF. -/
+theorem one_le_size_mul_discrepancy [Finite X] [Finite Y]
+    (p : RectanglePartition X Y Bool) {f : X → Y → Bool} (hp : p.run = f)
+    (ν : PMF (X × Y)) : 1 ≤ p.size * discrepancy ν f := by
+  let := Fintype.ofFinite X
+  let := Fintype.ofFinite Y
+  have h := p.abs_sum_mul_signVal_le ν f
+  rw [hp] at h
+  simp only [mul_assoc, signVal_mul_self, mul_one] at h
+  rw [← Fintype.sum_prod_type', PMF.sum_toReal, abs_one] at h
+  exact h
+
+end RectanglePartition
+
+/-- The minimum arbitrary monochromatic tiling satisfies the discrepancy bound, for any PMF. -/
+theorem one_le_tilingNumber_mul_discrepancy [Finite X] [Finite Y]
+    (ν : PMF (X × Y)) (f : X → Y → Bool) :
+    1 ≤ (tilingNumber f).toNat * discrepancy ν f := by
+  obtain ⟨p, hp, hmin⟩ := exists_minimal_tiling f
+  rw [← hmin, ENat.toNat_natCast]
+  exact p.one_le_size_mul_discrepancy hp ν
+
+/-- **The arbitrary-tiling discrepancy bound** [AroraBarak07, Lemma 12.11]. The PMF may be
+nonuniform; on equal bit cubes the uniform PMF gives the draft's normalization. -/
+theorem one_div_discrepancy_le_tilingNumber [Finite X] [Finite Y]
+    (ν : PMF (X × Y)) (f : X → Y → Bool) :
+    1 / discrepancy ν f ≤ (tilingNumber f).toNat := by
+  have h := one_le_tilingNumber_mul_discrepancy ν f
+  have hd : 0 < discrepancy ν f := by
+    have hn : (0 : ℝ) ≤ (tilingNumber f).toNat := Nat.cast_nonneg _
+    nlinarith [discrepancy_nonneg (ν := ν) (f := f)]
+  exact (div_le_iff₀ hd).mpr h
+
 namespace Protocol
 
 /-- **Correlation with a protocol is bounded by discrepancy**: the correlation under `ν` of `f`
@@ -118,28 +185,9 @@ theorem abs_sum_mul_signVal_le [Fintype X] [Fintype Y] (p : Protocol X Y Bool) (
     (f : X → Y → Bool) :
     |∑ x, ∑ y, (ν (x, y)).toReal * signVal (f x y) * signVal (p.run x y)| ≤
       p.leafCount * discrepancy ν f := by
-  classical
-  rw [p.sum_eq_sum_leaves]
-  calc |∑ i, ∑ x with x ∈ p.leafAlice i, ∑ y with y ∈ p.leafBob i,
-          (ν (x, y)).toReal * signVal (f x y) * signVal (p.run x y)|
-      = |∑ i, signVal (p.leafOutput i) * ∑ x with x ∈ p.leafAlice i,
-          ∑ y with y ∈ p.leafBob i, (ν (x, y)).toReal * signVal (f x y)| := by
-        congr 1
-        refine sum_congr rfl fun i _ => ?_
-        rw [mul_sum]
-        refine sum_congr rfl fun x hx => ?_
-        rw [mul_sum]
-        refine sum_congr rfl fun y hy => ?_
-        rw [run_eq_leafOutput (mem_filter.mp hx).2 (mem_filter.mp hy).2]
-        ring
-    _ ≤ ∑ i, |signVal (p.leafOutput i) * ∑ x with x ∈ p.leafAlice i,
-          ∑ y with y ∈ p.leafBob i, (ν (x, y)).toReal * signVal (f x y)| :=
-        abs_sum_le_sum_abs _ _
-    _ ≤ ∑ _i : Fin p.leafCount, discrepancy ν f := by
-        refine sum_le_sum fun i _ => ?_
-        rw [abs_mul, abs_signVal, one_mul]
-        exact abs_sum_le_discrepancy ν f _ _
-    _ = p.leafCount * discrepancy ν f := by simp
+  have h := p.toRectanglePartition.abs_sum_mul_signVal_le ν f
+  rw [run_toRectanglePartition] at h
+  simpa only [toRectanglePartition] using h
 
 /-- The correlation under `ν` of `f` with the output of a protocol is `1 - 2 ε`, where `ε` is the
 probability that the protocol errs on inputs drawn from `ν`. -/

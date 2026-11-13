@@ -191,7 +191,7 @@ example : ![false, true, true, true] ∉ capRelation (twoDifferences 6) := by de
 -- The all-false twist uses two disequalities per spoke; all-true uses one.
 example : (twistBody (fun _ : Fin 6 => false)).length = 13 := by decide
 example : (twistBody (fun _ : Fin 6 => true)).length = 7 := by decide
-example : ((twistBody ![false, true, false, true]).map (fun c => c.2.length)) =
+example : ((twistBody ![false, true, false, true]).map (fun c => c.scope.length)) =
     [4, 2, 2, 2, 2, 2, 2] := by decide
 
 -- Actual satisfying and rejecting auxiliary assignments, rather than only a correctness type.
@@ -216,11 +216,12 @@ example : (twistBody (fun _ : Fin 6 => false)).eval (sem (twoDifferences 6))
 example : (twelveToFour.gadget (twistGadget (twoDifferences 12) (fun _ => false))).numAux = 28 := by
   rw [Program.gadget_numAux]
   rfl
-example : (sixToFour.gadget (twistGadget (twoDifferences 6) (fun _ => false))).body.map Prod.fst =
-    (twistBody (fun _ : Fin 6 => false)).map Prod.fst := Program.gadget_symbols _ _
+example :
+    (sixToFour.gadget (twistGadget (twoDifferences 6) (fun _ => false))).body.map Constraint.rel =
+      (twistBody (fun _ : Fin 6 => false)).map Constraint.rel := Program.gadget_symbols _ _
 
 example : ((twelveToFour.gadget
-    (twistGadget (twoDifferences 12) (fun _ => false))).body.map (fun c => c.2.length)) =
+    (twistGadget (twoDifferences 12) (fun _ => false))).body.map (fun c => c.scope.length)) =
       12 :: List.replicate 24 2 := by decide
 
 -- Nullary nonempty relations cannot trigger the exchange obstruction; empty input is excluded.

@@ -81,7 +81,7 @@ theorem ordinary_value_source {φ : CNF ℕ}
     {σ : Variable → Bool} (h : (rawFormula φ).eval σ = true)
     {p : Point} (hp : p ∈ ordinaryCells φ) {o : Occurrence ℕ}
     (hpo : p ∈ (occurrencePath φ o).dropLast) :
-    σ (p, Sum.inl (0, 0)) = sourceValue φ σ o.2.2.1 := by
+    σ (p, Sum.inl (0, 0)) = sourceValue φ σ o.lit.1 := by
   have ho : o ∈ Cslib.Logic.PL.occurrences φ := by
     by_contra hn
     have hlen := congrArg List.length (PlanarCompile.occurrencePaths_eq_paths φ)
@@ -108,7 +108,7 @@ theorem crossing_axis_value {φ : CNF ℕ}
     (axis : Bool)
     (hs : StraightThrough (occurrencePath φ o) p (if axis then (0, 1) else (1, 0))) :
     σ (p, Sum.inr (PairedCrossover.terminal (if axis then 2 else 0) 0)) =
-      sourceValue φ σ o.2.2.1 := by
+      sourceValue φ σ o.lit.1 := by
   obtain ⟨k, hk, heq⟩ := List.mem_iff_getElem.mp hpo
   obtain ⟨_, hnext, hnb⟩ := hs.getD_neighbors (PlanarCompile.occurrencePath_nodup ho) hk heq
   have hk' : k < (occurrencePath φ o).length - 1 := by omega

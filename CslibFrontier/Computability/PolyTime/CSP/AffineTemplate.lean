@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Logics.Propositional.CSP.AffineTemplate
 public import CslibFrontier.Computability.PolyTime.CSP.ToCNF
+public import CslibFrontier.Computability.PolyTime.CSP.AffineEquation
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 
 /-!
@@ -35,35 +36,35 @@ variable {Rel : Type}
 private theorem computable_equation (encRel : Rel ↪ List Bool) :
     ComputableInPolyTime
       (fun p : Constraint Rel ℕ × AffineEquation ℕ =>
-        p.2.relabel (fun i => p.1.2.getD i 0))
-      (encPair (encConstraint encRel encNat) (encPair (encList encUnary) encBool))
-      (encPair (encList encNat) encBool) := by
+        p.2.relabel (fun i => p.1.scope.getD i 0))
+      (encPair (encConstraint encRel encNat) (encAffineEquation encUnary))
+      (encAffineEquation encNat) := by
   have hvars : ComputableInPolyTime
       (fun p : Constraint Rel ℕ × AffineEquation ℕ =>
-        p.2.1.map (fun i => p.1.2.getD i 0))
-      (encPair (encConstraint encRel encNat) (encPair (encList encUnary) encBool))
+        p.2.vars.map (fun i => p.1.scope.getD i 0))
+      (encPair (encConstraint encRel encNat) (encAffineEquation encUnary))
       (encList encNat) := by
     refine mapWithInput (encA := encUnary) ?_ ?_
     · fun_prop
     · fun_prop
   unfold AffineEquation.relabel
-  exact hvars.prod (by fun_prop)
+  exact encAffineEquation_mk_polyTime encNat hvars (by fun_prop)
 
 private theorem computable_constraint [Finite Rel] (encRel : Rel ↪ List Bool)
     (template : Rel → AffineSystem ℕ) :
     ComputableInPolyTime (Constraint.instantiateAffine 0 template)
-      (encConstraint encRel encNat) (encList (encPair (encList encNat) encBool)) := by
+      (encConstraint encRel encNat) (encList (encAffineEquation encNat)) := by
   have ht : ComputableInPolyTime template encRel
-      (encList (encPair (encList encUnary) encBool)) := of_finite _
+      (encList (encAffineEquation encUnary)) := of_finite _
   unfold Constraint.instantiateAffine AffineSystem.relabel
-  exact mapWithInput (ht.comp (fst _ _)) (computable_equation encRel)
+  exact mapWithInput (ht.comp (encConstraint_rel_polyTime id')) (computable_equation encRel)
 
 /-- Fixed affine systems can be instantiated in native polynomial time, with unary local
 positions and binary original variable labels. The bound may depend on the fixed language. -/
 theorem computableInPolyTime_instantiateAffine [Finite Rel] (encRel : Rel ↪ List Bool)
     (template : Rel → AffineSystem ℕ) :
     ComputableInPolyTime (Cslib.Logic.PL.CSP.instantiateAffine 0 template)
-      (encCSP encRel encNat) (encList (encPair (encList encNat) encBool)) := by
+      (encCSP encRel encNat) (encList (encAffineEquation encNat)) := by
   exact flatMapWithInput id' ((computable_constraint encRel template).comp (snd _ _))
 
 end Cslib.Complexity.CSP

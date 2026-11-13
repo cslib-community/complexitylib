@@ -77,24 +77,24 @@ structure Valid {φ : CNF V} (a : FormulaDrawing φ) : Prop where
   positionsNodup : a.positions.Nodup
   /-- Every route has the actual clause and variable endpoints. -/
   endpoints : ∀ o ∈ Cslib.Logic.PL.occurrences φ,
-    (a.incidenceRoute o).head? = some (a.clausePoints.getD o.1 (0, 0)) ∧
-      (a.incidenceRoute o).getLast? = some (a.variablePoint o.2.2.1)
+    (a.incidenceRoute o).head? = some (a.clausePoints.getD o.clause (0, 0)) ∧
+      (a.incidenceRoute o).getLast? = some (a.variablePoint o.lit.1)
   /-- Routes are proper and orthogonal. -/
   orthogonal : ∀ o ∈ Cslib.Logic.PL.occurrences φ, IsOrthogonal (a.incidenceRoute o)
   /-- Routes have no self-crossings or retracing. -/
   simple : ∀ o ∈ Cslib.Logic.PL.occurrences φ, IsSimple (a.incidenceRoute o)
   /-- Only the incident variable vertex can lie on a route. -/
   avoidsVariables : ∀ o ∈ Cslib.Logic.PL.occurrences φ, ∀ v ∈ φ.vars,
-    realPoint (a.variablePoint v) ∈ support (a.incidenceRoute o) → v = o.2.2.1
+    realPoint (a.variablePoint v) ∈ support (a.incidenceRoute o) → v = o.lit.1
   /-- Only the incident clause vertex can lie on a route. -/
   avoidsClauses : ∀ o ∈ Cslib.Logic.PL.occurrences φ, ∀ i < φ.length,
-    realPoint (a.clausePoints.getD i (0, 0)) ∈ support (a.incidenceRoute o) → i = o.1
+    realPoint (a.clausePoints.getD i (0, 0)) ∈ support (a.incidenceRoute o) → i = o.clause
   /-- Different occurrence routes meet only at their shared actual variable or clause vertex. -/
   contacts : ∀ o ∈ Cslib.Logic.PL.occurrences φ,
     ∀ t ∈ Cslib.Logic.PL.occurrences φ, o ≠ t →
       ∀ p ∈ support (a.incidenceRoute o), p ∈ support (a.incidenceRoute t) →
-        (o.2.2.1 = t.2.2.1 ∧ p = realPoint (a.variablePoint o.2.2.1)) ∨
-          (o.1 = t.1 ∧ p = realPoint (a.clausePoints.getD o.1 (0, 0)))
+        (o.lit.1 = t.lit.1 ∧ p = realPoint (a.variablePoint o.lit.1)) ∨
+          (o.clause = t.clause ∧ p = realPoint (a.clausePoints.getD o.clause (0, 0)))
 
 /-- An occurring variable resolves to its supplied position in the actual graph. -/
 theorem drawingPosition_variable {φ : CNF V} (a : FormulaDrawing φ) {v : V}
@@ -131,15 +131,12 @@ theorem indexed_route {φ : CNF V} (a : FormulaDrawing φ) {i : ℕ}
 /-- Local occurrence-indexed certificates give a drawing of the actual formula incidence graph. -/
 theorem isPlanarOrthogonalDrawing {φ : CNF V} (a : FormulaDrawing φ) (ha : a.Valid) :
     Graph.IsPlanarOrthogonalDrawing (SAT.incidenceGraph φ) a.drawing := by
-  have hov (o : Occurrence V) (ho : o ∈ Cslib.Logic.PL.occurrences φ) : o.2.2.1 ∈ φ.vars := by
-    rw [← Cslib.Logic.PL.map_occurrences]
-    exact List.mem_map_of_mem ho
   have hei (i : ℕ) (hi : i < (SAT.incidenceGraph φ).2.length) :
       (SAT.incidenceGraph φ).2[i] =
         (φ.distinctVars.idxOf ((Cslib.Logic.PL.occurrences φ)[i]'(by
-          simpa [SAT.incidenceGraph] using hi)).2.2.1,
+          simpa [SAT.incidenceGraph] using hi)).lit.1,
         φ.distinctVars.length + ((Cslib.Logic.PL.occurrences φ)[i]'(by
-          simpa [SAT.incidenceGraph] using hi)).1) := by
+          simpa [SAT.incidenceGraph] using hi)).clause) := by
     simp only [SAT.incidenceGraph, List.getElem_map]
   refine ⟨?_, ?_, List.nodup_range, ha.positionsNodup,
     (fun _ => SAT.incidenceGraph_endpoints), (fun _ => SAT.incidenceGraph_loopless),
@@ -151,10 +148,11 @@ theorem isPlanarOrthogonalDrawing {φ : CNF V} (a : FormulaDrawing φ) (ha : a.V
       simpa [SAT.incidenceGraph] using hi
     let o := (Cslib.Logic.PL.occurrences φ)[i]
     have ho : o ∈ Cslib.Logic.PL.occurrences φ := List.getElem_mem hi'
-    have hci : o.1 < φ.length := (Cslib.Logic.PL.mem_occurrences.mp ho).choose
+    have hci : o.clause < φ.length := (Cslib.Logic.PL.mem_occurrences.mp ho).choose
     rw [hei i hi]
     change (_ = _ ∧ _ = _) ∨ (_ = _ ∧ _ = _)
-    rw [drawingPosition_variable a (hov o ho), drawingPosition_clause a ha hci]
+    rw [drawingPosition_variable a (variable_mem_of_mem_occurrences ho),
+      drawingPosition_clause a ha hci]
     exact Or.inr (by simpa only [drawing, indexed_route a hi] using ha.endpoints o ho)
   · intro i hi
     rw [show a.drawing.2 = a.routes from rfl, indexed_route a hi]
@@ -181,7 +179,7 @@ theorem isPlanarOrthogonalDrawing {φ : CNF V} (a : FormulaDrawing φ) (ha : a.V
       have hvci : v = φ.distinctVars.length + (v - φ.distinctVars.length) := by omega
       rw [hvci, drawingPosition_clause a ha hci] at hp
       have he := ha.avoidsClauses o ho _ hci hp
-      exact Or.inr (by change v = φ.distinctVars.length + o.1; omega)
+      exact Or.inr (by change v = φ.distinctVars.length + o.clause; omega)
   · intro i hi j hj hij p hp hq
     have hi' : i < (Cslib.Logic.PL.occurrences φ).length := by
       simpa [SAT.incidenceGraph] using hi
@@ -196,14 +194,15 @@ theorem isPlanarOrthogonalDrawing {φ : CNF V} (a : FormulaDrawing φ) (ha : a.V
     rw [show a.drawing.2 = a.routes from rfl, indexed_route a hj] at hq
     rw [hei i hi, hei j hj]
     rcases ha.contacts o ho t ht hot p hp hq with ⟨he, hp⟩ | ⟨he, hp⟩
-    · refine ⟨φ.distinctVars.idxOf o.2.2.1, ?_, Or.inl rfl, Or.inl ?_, ?_⟩
-      · have hidx := List.idxOf_lt_length_of_mem (CNF.mem_distinctVars.mpr (hov o ho))
+    · refine ⟨φ.distinctVars.idxOf o.lit.1, ?_, Or.inl rfl, Or.inl ?_, ?_⟩
+      · have hidx := List.idxOf_lt_length_of_mem
+          (CNF.mem_distinctVars.mpr (variable_mem_of_mem_occurrences ho))
         simp only [SAT.incidenceGraph, List.mem_range]
         omega
       · exact congrArg φ.distinctVars.idxOf he
-      · rw [drawingPosition_variable a (hov o ho)]
+      · rw [drawingPosition_variable a (variable_mem_of_mem_occurrences ho)]
         exact hp
-    · refine ⟨φ.distinctVars.length + o.1, ?_, Or.inr rfl, Or.inr ?_, ?_⟩
+    · refine ⟨φ.distinctVars.length + o.clause, ?_, Or.inr rfl, Or.inr ?_, ?_⟩
       · have hci := (Cslib.Logic.PL.mem_occurrences.mp ho).choose
         simp only [SAT.incidenceGraph, List.mem_range]
         omega

@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Languages.Probabilistic.Oracle
 public import CslibFrontier.Languages.Probabilistic.Semantics
+import CslibFrontier.Languages.Probabilistic.Sum.Lift
 
 /-!
 # Running a program against a stateful oracle
@@ -105,12 +106,7 @@ theorem runWith_lift (h : (q : Query) → PMF (spec q)) (program : ProbOracleCom
     (s : State) :
     runWith (fun q => StateT.lift (h q)) program s =
       (OracleComp.evalWith (OracleComp.sumHandler ProbComp.unifOracle h) program).map (·, s) := by
-  have hlift : OracleComp.sumHandler (fun n => StateT.lift (σ := State) (ProbComp.unifOracle n))
-      (fun q => StateT.lift (h q)) =
-      fun q => StateT.lift (OracleComp.sumHandler ProbComp.unifOracle h q) := by
-    funext q
-    cases q <;> rfl
-  rw [runWith, hlift, OracleComp.runWith_lift]
+  rw [runWith, OracleComp.sumHandler_lift, OracleComp.runWith_lift]
 
 /-- Against a memoryless oracle, the acceptance probability is the probability of `true` under
 `OracleComp.evalWith` of the uniform handler and the oracle. -/

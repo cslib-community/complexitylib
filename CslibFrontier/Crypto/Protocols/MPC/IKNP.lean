@@ -475,8 +475,7 @@ theorem semiHonestAdvantage_iknp_receiver [Fintype L] (H : Fin m → BitString �
       Functionality.ofDeterministic, iknpReceiverSim, iknpReduction, ProbComp.eval_bind,
       ProbComp.eval_pure, ProbComp.eval_uniform, PMF.pure_bind, PMF.bind_bind]
     refine congrArg _ (funext fun T => ?_)
-    conv_lhs => rw [← PMF.uniformOfFintype_map_equiv
-      (Equiv.addLeft (fun j => x 0 j (!x 1 j) : Fin m → L))]
+    conv_lhs => rw [← PMF.uniformOfFintype_map_add_left (fun j => x 0 j (!x 1 j) : Fin m → L)]
     rw [PMF.bind_map]
     refine congrArg _ (funext fun w => ?_)
     exact congrArg (fun Y => ProbComp.eval (D (singletonView (iknpReceiverView (x 1) T Y),

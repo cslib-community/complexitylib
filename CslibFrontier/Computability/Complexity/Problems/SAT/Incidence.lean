@@ -58,7 +58,7 @@ variable {V : Type} [DecidableEq V]
 def incidenceGraph (φ : CNF V) : Graph :=
   ⟨List.range (φ.distinctVars.length + φ.length),
     (Cslib.Logic.PL.occurrences φ).map fun o =>
-      (φ.distinctVars.idxOf o.2.2.1, φ.distinctVars.length + o.1)⟩
+      (φ.distinctVars.idxOf o.lit.1, φ.distinctVars.length + o.clause)⟩
 
 /-- There is one vertex per distinct variable and per clause position. -/
 theorem length_vertices_incidenceGraph (φ : CNF V) :
@@ -76,10 +76,8 @@ theorem incidenceGraph_bipartite {φ : CNF V} {e : ℕ × ℕ}
     e.1 < φ.distinctVars.length ∧ φ.distinctVars.length ≤ e.2 ∧
       e.2 < φ.distinctVars.length + φ.length := by
   obtain ⟨o, ho, rfl⟩ := List.mem_map.mp he
-  have hvar : o.2.2.1 ∈ φ.vars := by
-    rw [← Cslib.Logic.PL.map_occurrences]
-    exact List.mem_map_of_mem ho
-  have hindex := List.idxOf_lt_length_of_mem (CNF.mem_distinctVars.mpr hvar)
+  have hindex := List.idxOf_lt_length_of_mem
+    (CNF.mem_distinctVars.mpr (variable_mem_of_mem_occurrences ho))
   obtain ⟨hclause, _, _⟩ := Cslib.Logic.PL.mem_occurrences.mp ho
   exact ⟨hindex, Nat.le_add_right _ _, Nat.add_lt_add_left hclause _⟩
 
@@ -106,11 +104,10 @@ theorem computableInPolyTime_incidenceGraph (enc : V ↪ List Bool) :
   let unaryGraph := encPair (encList encUnary) (encList (encPair encUnary encUnary))
   have hd := CNF.computableInPolyTime_distinctVars enc
   have ho := Cslib.Logic.PL.computableInPolyTime_occurrences enc
-  unfold Cslib.Logic.PL.encOccurrence at ho
   have hu : ComputableInPolyTime (fun φ : CNF V =>
       (List.range (φ.distinctVars.length + φ.length),
         (Cslib.Logic.PL.occurrences φ).map fun o =>
-          (φ.distinctVars.idxOf o.2.2.1, φ.distinctVars.length + o.1)))
+          (φ.distinctVars.idxOf o.lit.1, φ.distinctVars.length + o.clause)))
       (encList (encList (encPair enc encBool))) unaryGraph := by
     dsimp only [unaryGraph]
     fun_prop

@@ -15,6 +15,182 @@ The results registry remains [Entries.lean](../CslibFrontierResults/Entries.lean
 records absent endpoints, model differences and source problems that a positive-result registry
 cannot express by pointing at a theorem. A nearby theorem is not counted as full coverage.
 
+## Chapter 1: the computational model
+
+Snapshot for chapters 1–5: `b91d5151fd7dc665a5e3efcb466077caf44e690d` on 2026-11-12,
+with CSLib pin `ee99dd30bd1a9f466c25a51b39a5cb0bfe4d2342`.
+The six result headings in Chapter 1 were checked in the PDF, including its appendix;
+references to earlier results in exercises are not additional results.
+The same PDF heading scan for chapters 2–5 found respectively 13, 6, 8 and 8 results
+(41 total across these five chapters). The scan checked the small-cap heading style and
+surrounding text; Figure 2.4's theorem labels are cross-references, not extra headings.
+Printed pages are PDF pages minus 16 throughout this range.
+
+The correspondence used below is the native finite-state multitape model, with explicit
+encodings `α ↪ List Bool`, a read-only input, write-only output, and work-tape space counted
+separately from input length. Space counts **visited** work-tape positions, including blank
+cells; the draft counts positions that are ever nonblank (Definition 4.1, printed 76 / PDF 92).
+No constant/additive-overhead conversion between these measures is established by this audit;
+space endpoints below are qualified accordingly. The library's bidirectional work tapes and its output convention are not the
+draft's one-way tapes with a separate output tape. Class-level results are reported in this
+native model; the precise constant-cost model conversions in 1.8, 1.9 and 1.11 are not assumed.
+Resource classes absorb multiplicative and additive constants. Source inspection, not a fresh
+Lean build or a whole-library proof/dependency audit, supplies this record. Searches checked the
+named modules and neighboring APIs on this snapshot, pinned CSLib, and open and closed GitHub
+issues/PRs. An endpoint not located is a qualified search result, not a proof of absence under
+all possible equivalent formulations. Declaration names below are in `Cslib.Complexity` unless
+qualified otherwise.
+
+| Draft result | Printed / PDF page | Disposition and remaining endpoint |
+|---|---|---|
+| 1.8, alphabet reduction | 19 / 35 | **Endpoint not located.** The machine and encoding APIs permit finite alphabets, but no inspected compiler establishes the draft's same-tape-count simulation over $\{0,1,\square,\triangleright\}$ within $4\lceil\log |\Gamma|\rceil T$ steps. Starting complexity classes with binary machines does not prove alphabet invariance. |
+| 1.9, single work tape | 20 / 36 | **Endpoint not located.** No inspected multitape/single-tape bridge certifies one work tape plus separate input/output and the bound $5kT^2$. Single-tape crossing-sequence results concern a different input/output model. [#800](https://github.com/cslib-community/cslib-frontier/issues/800) owns universal-simulation improvements; [#798](https://github.com/cslib-community/cslib-frontier/issues/798) is a Kolmogorov consumer, not this endpoint. |
+| 1.11, folding bidirectional tapes | 21 / 37 | **Endpoint not located.** Native tapes are already bidirectional. No conversion to the draft's one-way model with time $4T$ was located in the machine, tape or encoding modules. |
+| 1.13, efficient universal TM | 24 / 40 | **Partial.** `Turing.MultiTapeTM.Universal.computableInO_universal_nlogn` in [WindowedComplexity.lean](../CslibFrontier/Computability/Machines/Turing/MultiTape/Universal/WindowedComplexity.lean) certifies a clocked interpreter, with time and space $O(N+(D+M+2)^6(t+1)(\log_2(t+1)+1))$: $N$ is the encoded triple length, $D$ the description length and $M$ the largest input symbol. For fixed binary machines this gives the intended clocked near-linear simulation. It does not itself supply the unclocked partial universal machine or the draft's exact tape conventions; [#800](https://github.com/cslib-community/cslib-frontier/issues/800) retains that work. The additional library space upper bound counts visited cells; it is not a conversion to the draft's ever-nonblank measure. |
+| 1.16, an uncomputable Boolean function | 25 / 41 | **Covered in the native model.** `Turing.MultiTapeTM.not_isDecidable_selfAcceptanceProblem` in [Halting.lean](../CslibFrontier/Computability/Machines/Turing/MultiTape/Halting.lean) proves undecidability of self-acceptance of encoded native descriptions. Complementing its indicator gives the draft's diagonal Boolean function; no claim is made that the description encodings coincide. |
+| 1.17, HALT undecidable | 25 / 41 | **Covered in the native model.** `Turing.MultiTapeTM.not_isDecidable_haltingProblem` in [Halting.lean](../CslibFrontier/Computability/Machines/Turing/MultiTape/Halting.lean), with input encoding `encPair encBits encBits`, is the two-input native halting endpoint. |
+
+### What the existing API establishes
+
+- The clocked near-linear interpreter is a certified computation, not merely a recursive
+  simulation function. Fixing the description and alphabet makes their overhead constant;
+  letting descriptions grow with input length does not, which matters for Chapter 3.
+- The native undecidability results quantify over all finite-state machines and arbitrary
+  time/space bounds. They do not supply the quantitative model conversions in the first three rows.
+
+## Chapter 2: NP and NP-completeness
+
+Snapshot and model conventions are those recorded in Chapter 1. All 13 numbered result
+headings were checked in the PDF. The library's `NP` uses fixed polynomial certificate lengths
+and a native polynomial-time verifier on `encPair enc encBits`; its reductions carry both
+encodings explicitly. CNFs use natural-number variable names and the named `encCNF` encoding.
+The original source's formula-size measure is not automatically encoded bit length.
+
+| Draft result | Printed / PDF page | Disposition and remaining endpoint |
+|---|---|---|
+| 2.3, $P\subseteq NP\subseteq EXP$ | 41 / 57 | **Covered.** `P_subset_NP` in [Reduction.lean](../CslibFrontier/Computability/Complexity/Reduction.lean) and `NP_subset_EXP` in [Inclusions.lean](../CslibFrontier/Computability/Complexity/Classes/Inclusions.lean). `EXP` is the union of native $DTIME(2^{n^k})$; enlarging an exponent absorbs the draft's union over $c>1$ and constants. |
+| 2.6, verifier/NTM characterization | 42 / 58 | **Covered.** `mem_NP_iff_exists_mem_NTIME` in [Time.lean](../CslibFrontier/Computability/Complexity/Classes/Time.lean) gives $A\in NP\;enc\iff\exists k, A\in NTIME\;enc\;(n\mapsto n^k)$. The nondeterministic machines are native binary multitape machines, with all-branch time bounds. |
+| 2.8, reductions and completeness | 44 / 60 | **Covered.** `PolyTimeReducible.trans`, `NPComplete.P_eq_NP_of_mem_P` and `NPComplete.mem_P_iff` in [Reduction.lean](../CslibFrontier/Computability/Complexity/Reduction.lean). The NP-hard case follows from the same reduction-closure proof, without using membership in NP; the library expresses collapse uniformly over instance encodings. |
+| 2.9, TMSAT NP-complete | 44 / 60 | **Endpoint not located.** Searches for TMSAT and bounded acceptance did not locate NP-completeness for the four-part instance $(\alpha,x,1^n,1^t)$ with an existential $n$-bit witness. [BoundedHalting.lean](../CslibFrontier/Computability/Complexity/Problems/BoundedHalting.lean) instead uses a binary clock and deterministic acceptance and proves EXP-completeness. These are different endpoints. |
+| 2.10, Cook–Levin | 45 / 61 | **Covered.** `CookLevin.SAT_npComplete` in [Completeness.lean](../CslibFrontier/Computability/Complexity/CookLevin/Completeness.lean) and `ThreeSAT_npComplete` in [ThreeSAT.lean](../CslibFrontier/Computability/Complexity/Problems/ThreeSAT.lean). The reductions are native polynomial-time, with `encCNF`; the three-CNF representation allows clauses of length at most three. No quasi-linear size/time bound follows. |
+| 2.12, SAT NP-hard | 46 / 62 | **Covered.** `CookLevin.SAT_npHard` in [Completeness.lean](../CslibFrontier/Computability/Complexity/CookLevin/Completeness.lean), through a constructed native verifier tableau reduction. This auxiliary lemma is separately formalized. |
+| 2.14, CNF for every Boolean function | 46 / 62 | **Endpoint not located.** Inspected propositional CNF and Cook–Levin clause APIs did not locate the general $\ell$-variable truth-table CNF with at most $\ell2^\ell$ AND/OR symbols. The proof says “at most”; the heading's wording “size $\ell2^\ell$” should be read as a bound. A tableau encoding of computations is not this size theorem. |
+| 2.15, SAT reduces to 3SAT | 49 / 65 | **Covered.** `polyTimeReducible_SAT_ThreeSAT` in [ThreeSAT.lean](../CslibFrontier/Computability/Complexity/Problems/ThreeSAT.lean), with correctness `mem_ThreeSAT_toThreeSAT_iff` and polynomial-time construction. Fresh variables encode the long-clause splitting; satisfiability, rather than pointwise equality of assignments, is preserved. |
+| 2.16, independent set NP-complete | 50 / 66 | **Covered.** `IndependentSet_npComplete` in [IndependentSet.lean](../CslibFrontier/Computability/Complexity/Problems/IndependentSet.lean). Finite listed graphs and binary threshold use `encPair encGraph encNat`; the predicate asks for an independent subset of cardinality at least the threshold, equivalent to existence of one of exactly that size by taking a subset. The reduction uses literal occurrences rather than the draft's seven assignments per clause. |
+| 2.17, integer programming NP-complete | 52 / 68 | **Partial.** `ZeroOneIP_npComplete` in [IntegerProgramming.lean](../CslibFrontier/Computability/Complexity/Problems/IntegerProgramming.lean) covers natural-coefficient equalities with Boolean unknowns, encoded by `encZeroOneIP`. The draft permits rational inequalities and arbitrary nonnegative integer unknowns. General membership needs a polynomial-bit witness bound, not just a Boolean verifier. [#2904](https://github.com/cslib-community/cslib-frontier/issues/2904) catalogs Karp's 0–1 problem; [#2976](https://github.com/cslib-community/cslib-frontier/issues/2976) concerns rational LP, not integer feasibility. |
+| 2.18, directed Hamiltonian path NP-complete | 52 / 68 | **Partial.** `DirHamPath_npComplete` in [Directed.lean](../CslibFrontier/Computability/Complexity/Problems/Hamiltonian/Directed.lean) proves completeness with designated start/end vertices (`encPathInstance`); the draft asks whether the graph has any Hamiltonian path. `DirHamCycle_npComplete` covers cycles. An explicit polynomial-time bridge to the unrestricted-endpoint path language, including empty-graph conventions, was not located. |
+| 2.19, search from $P=NP$ | 55 / 71 | **Covered.** `FNP_subset_FPSearch_of_NP_subset_P` and `FNP_subset_FPSearch_iff_SAT_mem_P` in [SearchToDecision.lean](../CslibFrontier/Computability/Complexity/Classes/TFNP/SearchToDecision.lean) produce an optional polynomial-time solution of any polynomially balanced, polynomial-time decidable witness relation. Apply to the original verifier and its exact-length certificate condition to retain that verifier's witnesses, rather than just some SAT assignment. The hypothesis is on the paired encoding (or uniformly all encodings). |
+| 2.25, $EXP\ne NEXP\Rightarrow P\ne NP$ | 57 / 73 | **Covered.** `EXP_eq_NEXP_of_P_eq_NP` in [Padding.lean](../CslibFrontier/Computability/Complexity/Classes/Padding.lean) is the contrapositive, with `P encBits = NP encBits` implying equality for every target encoding. Native costs of writing exponential unary padding are included. |
+
+### What the existing API establishes
+
+- Cook–Levin, three-SAT, independent set, and designated-endpoint Hamiltonian path have
+  unconditional polynomial-time completeness results. They are not merely abstract reductions
+  with an assumed efficient implementation.
+- The zero-one integer-programming theorem does not prove the draft's general integer-programming
+  NP membership. The draft's “clearly in NP” suppresses the small-solution theorem needed there.
+- [#4225](https://github.com/cslib-community/cslib-frontier/issues/4225) owns the small-formula
+  Cook–Levin strengthening and records later local-computability/generation milestones needed
+  by fine-grained consumers; current polynomial completeness
+  does not settle the SAT time–space claim in Chapter 5.
+
+## Chapter 3: diagonalization and hierarchies
+
+Snapshot and native-model conventions are those recorded in Chapter 1. All six numbered
+results were checked in the PDF. Constructibility in the library is an explicit computational
+predicate, not an assumed textbook clock: time constructibility computes a binary value within
+$O(f(n))$, while space constructibility supplies the space-bounded clock construction.
+The draft's admissibility lower bounds must remain visible when comparing these predicates.
+
+| Draft result | Printed / PDF page | Disposition and remaining endpoint |
+|---|---|---|
+| 3.1, deterministic time hierarchy | 66 / 82 | **Partial.** `exists_DTIME_ssubset_DTIME_polylog` in [TimePolylog.lean](../CslibFrontier/Computability/Complexity/Classes/Hierarchy/TimePolylog.lean) proves separation for a sufficiently large fixed polylogarithmic gap, assuming $n\le f(n)$. It does not give every $f\log f=o(g)$ gap. [#4211](https://github.com/cslib-community/cslib-frontier/issues/4211) owns that precise strengthening under [#1572](https://github.com/cslib-community/cslib-frontier/issues/1572) and [#800](https://github.com/cslib-community/cslib-frontier/issues/800). Near-linear simulation of each fixed machine alone does not remove the description-size overhead in the diagonal. |
+| 3.2, deterministic space hierarchy | 66 / 82 | **Partial (space measure).** `DSPACE_ssubset_DSPACE` in [Space.lean](../CslibFrontier/Computability/Complexity/Classes/Hierarchy/Space.lean) assumes space-constructible $g$, pointwise $\log_2 n\le g(n)$, and $\forall c,\forall^\infty n,\;cf(n)+c\le g(n)$. The latter is the natural-valued domination form of the admissible $f=o(g)$ gap. Constructibility of $f$ is not needed. The logarithmic-space extension sought in [#4090](https://github.com/cslib-community/cslib-frontier/issues/4090) is present at this snapshot; that issue also tracks nondeterministic space. Both `DSPACE` and space constructibility here use visited cells. No bound-preserving bridge to the draft's ever-nonblank measure was identified, so this is partial source coverage despite the native hierarchy endpoint. |
+| 3.3, nondeterministic time hierarchy | 67 / 83 | **Partial.** `NTIME_pow_ssubset_NTIME_pow` in [NondeterministicPolynomial.lean](../CslibFrontier/Computability/Complexity/Classes/Hierarchy/NondeterministicPolynomial.lean) separates integer polynomial degrees $1\le a<b$. It is not the general $f(n+1)=o(g(n))$ endpoint or the draft's fractional-power example. [#4213](https://github.com/cslib-community/cslib-frontier/issues/4213) owns the sharp hierarchy and its transcript-checker prerequisites. |
+| 3.4, Ladner | 68 / 84 | **Covered.** `Ladner.exists_NP_not_P_not_npComplete` in [Ladner.lean](../CslibFrontier/Computability/Complexity/Classes/Ladner.lean) produces a bit-string language in NP, outside P and not NP-complete, assuming $P\;enc\ne NP\;enc$ for an instance encoding. Native costs of the delayed-diagonal padding construction are proved. |
+| 3.8, oracle query and polynomial oracle lowness | 70 / 86 | **Covered.** `mem_PWithOracle_compl_self` in [Lowness.lean](../CslibFrontier/Computability/Complexity/Classes/Oracle/Lowness.lean) specializes to encoded UNSAT with encoded SAT oracle. `PWithOracle_eq_P` in [PolyTime.lean](../CslibFrontier/Computability/Complexity/Classes/Oracle/PolyTime.lean) handles every bit-language oracle in P. The oracle model charges for native query construction and treats the reply as one oracle operation. |
+| 3.9, Baker–Gill–Solovay | 71 / 87 | **Covered.** `baker_gill_solovay` in [Collapse.lean](../CslibFrontier/Computability/Complexity/Classes/Oracle/Collapse.lean) supplies both oracles. The equality oracle is encoded TQBF (PSPACE-complete), rather than the proof sketch's EXPCOM. The separation uses a native oracle diagonal and the unary length language, as in the draft. The auxiliary TQBF oracle is complete for native visited-cell PSPACE; this does not identify it with the draft's ever-nonblank PSPACE. The stated P/NP oracle-existence endpoint itself has no space parameter and remains covered. |
+
+### What the existing API establishes
+
+- The native visited-cell space hierarchy reaches logarithmic space; the general sharp time hierarchies remain
+  distinct objectives. Integer polynomial time separation does not establish fractional or
+  arbitrary constructible gaps.
+- The relativization endpoints use actual oracle-computation predicates. No identification of
+  arbitrary oracle access with an ordinary computable function is assumed.
+
+## Chapter 4: space complexity
+
+Snapshot and model conventions are those recorded in Chapter 1. All eight numbered results
+were checked in the PDF. In 4.18 the PDF's bar means the **complement** of PATH; text extraction
+loses it. Configurations include the read-only input-head position, so a general configuration
+count contains a factor depending on input length; the usual $s\ge\log n$ lower bound absorbs it.
+
+There is a separate space-measure mismatch: draft Definition 4.1 (printed 76 / PDF 92)
+counts work-tape locations that contain a nonblank symbol at some point. Pinned CSLib's
+[`Space.lean`](https://github.com/leanprover/cslib/blob/ee99dd30bd1a9f466c25a51b39a5cb0bfe4d2342/Cslib/Computability/Machines/Turing/MultiTape/Space.lean)
+defines `Turing.MultiTapeNTM.RunPath.visitedByTapeHead` as the finite set of head positions
+on a path, `spaceUsedByTape` as its cardinality, and `space` as the sum over work tapes.
+Initial and final configurations count; repeated visits count once per tape; input and output
+tapes are excluded. The local deterministic bridge `Turing.MultiTapeTM.runsInSpace_iff` in
+[Run.lean](../CslibFrontier/Computability/Machines/Turing/MultiTape/Run.lean) bounds every
+run prefix with this same measure. Nondeterministic space bounds every computation path.
+Traversing arbitrarily many blank cells without writing separates these machine-level
+measures, so they do not coincide up to a fixed multiplicative or additive constant in general.
+No checked class-level simulation preserving the relevant bounds was identified in this audit,
+even in the logarithmic-or-larger regimes below. Rows requiring that simulation remain partial
+comparisons with the literal draft. Membership upper bounds transfer in the other direction:
+on blank-initialized work tapes every ever-nonblank cell was visited, so the draft's measure
+is at most the native measure, with no overhead (as used in 4.18).
+
+
+| Draft result | Printed / PDF page | Disposition and remaining endpoint |
+|---|---|---|
+| 4.3, time/space inclusions | 76 / 92 | **Partial (space measure).** `DTIME_subset_DSPACE` in [Space/Time.lean](../CslibFrontier/Computability/Complexity/Classes/Space/Time.lean), `Turing.MultiTapeTM.ComputableInTimeAndSpace.exists_decidesInSpace` in [Nondeterministic.lean](../CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/Nondeterministic.lean) (the deterministic-to-nondeterministic inclusion, not a separately named class lemma), and `exists_mem_DTIME_of_mem_NSPACE_of_log2_le` in [DeterministicTime.lean](../CslibFrontier/Computability/Complexity/Classes/Space/Nondeterministic/DeterministicTime.lean) give the full chain for pointwise $\log_2 n\le s(n)$. The exponential-time constant depends on the machine. Constructibility is not needed for this upper bound. All space classes in this chain use visited cells. The exponential-time conclusion has not been transferred from arbitrary draft ever-nonblank-space machines. |
+| 4.4, configuration count and local CNF | 77 / 93 | **Partial.** The native configuration graph and `vertexID_lt_pow_of_runsInSpace` / `length_vertexID_le_of_runsInSpace` in [Bounds.lean](../CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/LogSpace/ConfigurationGraph/Bounds.lean) explicitly bound logspace configuration codes. General space-to-time counting also underlies 4.3. The draft additionally requires a CNF of size $O(S(n))$ expressing a **single edge** for arbitrary admissible $S$. TQBF's polynomial-time edge-test tableau does not certify that linear-size CNF; this auxiliary endpoint was not located separately. These code/count bounds assume visited-cell space, which also controls head displacement; an ever-nonblank-cell bound alone does not provide that control. No conversion preserving the draft's bound was checked. |
+| 4.11, TQBF PSPACE-complete | 81 / 97 | **Partial (syntax and space measures).** `TQBF_pspaceComplete` in [Space/TQBF.lean](../CslibFrontier/Computability/Complexity/Classes/Space/TQBF.lean). The language is true **closed** QBFs under token encoding `encQBF`, with general QBF syntax. The draft explicitly restricts to prenex formulas (p. 80 / PDF 96, footnote 1), without requiring a CNF matrix. The reduction produces closed formulas and the evaluator is a native polynomial-space computation; a checked polynomial-time prenex normalization/encoding bridge was not located in this pass. PSPACE membership and hardness here use visited-cell space. No polynomial-space class-equivalence bridge to the draft's ever-nonblank measure was checked, in addition to the syntax gap. |
+| 4.12, Savitch | 82 / 98 | **Partial (space measure).** `NSPACE_subset_DSPACE_sq` in [Savitch.lean](../CslibFrontier/Computability/Complexity/Classes/Space/Nondeterministic/Savitch.lean) assumes $\forall n,\log_2 n\le s(n)$ and proves $NSPACE(s)\subseteq DSPACE(s^2)$. It drops constructibility, and `mem_DSPACE_sq_of_recognizesInSpace` even admits nonhalting recognition branches. It establishes workspace, not a simultaneous fast running-time bound. Both the nondeterministic input class and deterministic squared-space output use visited cells. No simulation from the draft's ever-nonblank-space input class preserving this bound was identified. |
+| 4.15, logspace reduction composition | 84 / 100 | **Partial (space measure).** `LogSpaceReducible.trans` and `LogSpaceReducible.mem_L` in [LogSpace.lean](../CslibFrontier/Computability/Complexity/Classes/LogSpace.lean). The library uses native logspace functions with explicit input/output encodings and recomputation for composition; it does not store a polynomial-size intermediate output in logarithmic work space. The reduction functions and `L` use visited-cell workspace; no logarithmic-space equivalence with the draft's ever-nonblank measure was checked for composition or downward closure. |
+| 4.16, PATH NL-complete | 85 / 101 | **Partial (space measure).** `STCON.logSpaceComplete` in [Completeness.lean](../CslibFrontier/Computability/Complexity/Problems/STCON/Completeness.lean). Instances have a positive vertex count, designated vertices and a Boolean adjacency matrix, encoded with unary size/endpoints and matrix bits by `encSTCON`. Reachability allows a zero-step path, so $s=t$ accepts. These conventions exclude malformed/zero-vertex encodings. Membership and completeness are for visited-cell `NL` and visited-cell logspace reductions. Completeness for the draft's ever-nonblank-space class needs an unlocated measure bridge. |
+| 4.18, complement of PATH in NL | 87 / 103 | **Covered in the native model.** `STCON.compl_mem_NL` in [Completeness.lean](../CslibFrontier/Computability/Complexity/Problems/STCON/Completeness.lean). The complement is within the well-formed `STCONInstance` domain and uses the same encoding as 4.16. Native inductive counting supplies complementation, not an unbounded external certificate checker. On blank-initialized work tapes every ever-nonblank cell was visited, so this membership upper bound also bounds the draft's ever-nonblank space with no overhead; no reverse measure conversion is needed. The shared native tape-model qualification still applies. |
+| 4.19, NSPACE closed under complement | 88 / 104 | **Partial (space measure).** `NSPACE_eq_coNSPACE` in [Nondeterministic.lean](../CslibFrontier/Computability/Complexity/Classes/Space/Nondeterministic.lean), for pointwise $\log_2 n\le s(n)$, without constructibility. The numerical hypothesis admits the draft's constructible $S>\log n$ bounds after finite-length/rounding adjustments, but the space measure still differs. Both sides use visited-cell space. The numerical lower-bound comparison does not establish complementation for the draft's ever-nonblank-space class; a measure bridge remains unverified. |
+
+### What the existing API establishes
+
+- General Savitch and nondeterministic-space complementation are stronger than just the
+  polynomial-space or NL corollaries. Their hypotheses use visited-cell workspace; no equivalence to the draft's ever-nonblank-space classes is claimed.
+- General-syntax TQBF completeness and PATH completeness have certified native reductions. Neither theorem
+  by itself proves every formula-size assertion about configurations used in the draft's proofs.
+
+## Chapter 5: the polynomial hierarchy and alternations
+
+Snapshot and model conventions are those recorded in Chapter 1. All eight numbered headings
+were checked in the PDF, including Claims 5.14.1 and 5.14.2. `SigmaP`/`PiP` use bounded
+alternating verifier blocks; `AP` is machine-based. The separate `SigmaTwoTIME` API is a
+linear-time verifier with existential/universal certificates above a time-dependent length
+threshold. Its quantitative results must not be silently identified with an arbitrary
+bounded-alternation ATM characterization. Fractional powers in this chapter require explicit
+natural-valued rounding when turned into Lean resource functions.
+
+| Draft result | Printed / PDF page | Disposition and remaining endpoint |
+|---|---|---|
+| 5.6, PH collapse | 93 / 109 | **Partial (encoding quantifier).** `PH_eq_SigmaP_of_PiP_subset_SigmaP` and `PH_eq_P_of_NP_subset_P` in [Collapse.lean](../CslibFrontier/Computability/Complexity/Classes/PH/Collapse.lean) prove the collapse uniformly assuming the relevant inclusion for **every instance encoding**. The draft assumes equality of bit-language classes. A checked transfer of that single bit-language hypothesis to the library's universal encoding hypothesis was not located here; the underlying collapse argument is present. |
+| 5.7, PH-completeness forces collapse | 94 / 110 | **Partial; not separately formalized.** `mem_PH` in [PH.lean](../CslibFrontier/Computability/Complexity/Classes/PH.lean) locates the complete language at a finite level; `PolyTimeReducible.mem_SigmaP` in [Reduction.lean](../CslibFrontier/Computability/Complexity/Classes/PH/Reduction.lean) pulls all PH languages back to that level. These supply the short proof under compatible encodings, but no named PH-completeness/collapse endpoint was located. |
+| 5.11, bounded alternation characterization | 96 / 112 | **Partial.** [PH.lean](../CslibFrontier/Computability/Complexity/Classes/PH.lean) defines the bounded-quantifier levels, and [Alternation.lean](../CslibFrontier/Computability/Complexity/Classes/Alternation.lean) defines native `ATIME`. No general bridge equating each fixed level with polynomial-time ATMs having that bounded number of alternations was located. [#4086](https://github.com/cslib-community/cslib-frontier/issues/4086) owns parametric alternating-resource simulations, not explicitly this level-by-level characterization. |
+| 5.12, AP = PSPACE | 96 / 112 | **Partial (space measure).** `AP_eq_PSPACE` in [Savitch.lean](../CslibFrontier/Computability/Complexity/Classes/Alternation/Savitch.lean), together with `mem_AP_iff_exists_mem_ATIME` in [Alternation.lean](../CslibFrontier/Computability/Complexity/Classes/Alternation.lean). This is native polynomial-time alternation with least-fixed-point acceptance and finite-state binary machines. The class equality asserts no resource-exact simulation for each time bound; [#4086](https://github.com/cslib-community/cslib-frontier/issues/4086) retains the quantitative simulations. The PSPACE side uses visited-cell space. No polynomial-space equivalence with the draft's ever-nonblank measure was identified, so the native equality is only partial coverage of the literal source. |
+| 5.13, $SAT\notin TISP(n^{1.1},n^{0.1})$ | 96 / 112 | **Partial.** [TimeSpace/Basic.lean](../CslibFrontier/Computability/Complexity/Classes/TimeSpace/Basic.lean) defines simultaneous bounds on one machine; the speedup and slowdown below are implemented. No inspected theorem proves this SAT endpoint. [#2896](https://github.com/cslib-community/cslib-frontier/issues/2896) owns the nondeterministic-linear-time lower-bound program but explicitly excludes transfer to SAT; [#4225](https://github.com/cslib-community/cslib-frontier/issues/4225) owns the small-formula Cook–Levin milestone and records the later local-computability/generation work needed for that transfer. Polynomial-time SAT completeness cannot preserve these exponents. The library `TISP` space component counts visited cells, whereas the draft counts ever-nonblank cells. No simulation preserving the simultaneous time and space bounds was identified; even a visited-cell lower bound would require this further comparison. |
+| 5.14.1, $TISP(n^{12},n^2)\subseteq\Sigma_2TIME(n^8)$ | 97 / 113 | **Partial (space measure).** `TISP_pow_twelve_subset_SigmaTwoTIME` in [Speedup.lean](../CslibFrontier/Computability/Complexity/Classes/TimeSpace/Speedup.lean) proves exactly these integer exponents using $(n+1)$ powers to handle length zero. The target is `SigmaTwoTIME`'s explicit verifier semantics, not a proved identification with all two-alternation ATMs (5.11). The source `TISP` class in the library uses visited-cell space. No bridge preserving both time and space from draft ever-nonblank-space machines was identified, so the literal source inclusion is only partially covered. |
+| 5.14.2, slowdown from $NTIME(n)\subseteq DTIME(n^{1.2})$ | 97 / 113 | **Partial (fractional resource endpoint).** `SigmaTwoTIME_subset_NTIME` in [Slowdown.lean](../CslibFrontier/Computability/Complexity/Classes/TimeSpace/Slowdown.lean) proves the general clock/majorization version; `SigmaTwoTIME_succ_pow_subset_NTIME_succ_pow` gives integer-power instances. The displayed $n^{9.6}$ conclusion needs a natural-valued fractional-power clock and its constructibility/bounds; no checked specialization to this literal exponent was located. The same quantitative program is tracked by [#2896](https://github.com/cslib-community/cslib-frontier/issues/2896). |
+| 5.15, $\Sigma_i^p=NP^{\Sigma_{i-1}SAT}$ | 98 / 114 | **Partial.** Native `NPWithOracle` exists, but [OracleNP.lean](../CslibFrontier/Computability/Complexity/Classes/PH/OracleNP.lean) proves $P^{NP}\subseteq\Sigma_2\cap\Pi_2$, not this equality. Searches through PH, oracle and quantified-SAT APIs did not locate a general encoded $\Sigma_iSAT$ completeness family and the oracle equality for all $i\ge2$. [#4086](https://github.com/cslib-community/cslib-frontier/issues/4086) is related alternation work, not ownership of this full oracle endpoint. |
+
+### What the existing API establishes
+
+- Machine-based `AP = PSPACE` is present for visited-cell PSPACE. It does not substitute for either the fixed-alternation
+  equivalences or the oracle characterization of every PH level.
+- The visited-cell TISP speedup has the advertised integer exponents. The general slowdown states the costs needed
+  to instantiate fractional bounds, but existence of a general theorem is not a checked instance.
+- The SAT time–space endpoint remains open even after the intermediate alternation-trading
+  lemmas: both the quantitative lower bound and the sufficiently efficient SAT reduction matter.
 ## Chapter 6: circuits
 
 Snapshot: `b91d5151fd7dc665a5e3efcb466077caf44e690d` on 2026-11-12, with CSLib pin
@@ -266,6 +442,22 @@ Snapshot: `b91d5151fd7dc665a5e3efcb466077caf44e690d` (2026-11-12), CSLib pin
 - Exact finite query-measure inequalities are available without a machine-encoding translation.
 - Bounded-error depth minimax and zero-error expected cost are distinct contracts; their separate APIs do not by themselves prove 11.17.
 
+### Expected-cost Yao after the audited snapshot
+
+The later [YaoExpected](../CslibFrontier/Computability/QueryComplexity/YaoExpected.lean)
+formalization fills the historical gap for Theorem 11.17.
+`Cslib.QueryComplexity.zeroErrorComplexity_eq_iSup_distributionalExpectedComplexity` proves the
+numerical equality, and `exists_optimal_expectedCost` supplies an optimal finite-support
+randomized algorithm and a hardest finite-support input distribution. Each distribution also
+has a deterministic minimizer (`exists_computes_distributionalCost_eq`). Coordinate types need
+only be finite; output types may be infinite. Correctness is everywhere, even outside the input
+law's support. Cost counts executed queries, including repeats, with free local computation.
+The source is the same pinned draft, Definitions 11.13 and 11.15–11.16 and Theorem 11.17,
+printed pages 215–216 / PDF pages 231–232. The [checked clients](../CslibFrontierTests/YaoExpected.lean)
+include empty coordinates and natural-number outputs. This does not supply the separate exact
+majority-three example (11.14/11.18), expected machine time, or book-wide coverage under
+[#4711](https://github.com/cslib-community/cslib-frontier/issues/4711).
+
 ## Chapter 12: communication complexity
 
 Snapshot: `b91d5151fd7dc665a5e3efcb466077caf44e690d` (2026-11-12), CSLib pin
@@ -284,6 +476,55 @@ Snapshot: `b91d5151fd7dc665a5e3efcb466077caf44e690d` (2026-11-12), CSLib pin
 | 12.21 (cube bound) | 229 / 245 | **Covered.** `Cslib.Communication.NOF.discrepancy_uniformOfFintype_pow_le` in [Cube](../CslibFrontier/Computability/Communication/NOF/Cube.lean) gives $\mathrm{Disc}(f)^{2^k}\le E(f)$ for $k\ge1$, equivalent to the draft’s root inequality. This is NOF, not number-in-hand communication. |
 | 12.22 (generalized inner product) | 229 / 245 | **Covered.** `Cslib.Communication.NOF.Protocol.two_mul_le_four_pow_mul_of_ecomplexityFun_gip_le` in [GeneralizedInnerProduct](../CslibFrontier/Computability/Communication/NOF/GeneralizedInnerProduct.lean) proves $2n\le4^k C$ for $k\ge1$, stronger than the stated $\Omega(n/8^k)$. The public-coin theorem in the same module also handles error $1/3$ with additive cost two. |
 
+
+### Arbitrary tiling milestones after the audited snapshot
+
+These three later formalizations fill the arbitrary-tiling gaps in the historical snapshot above.
+The complete chapter comparison was integrated in
+[#4764](https://github.com/cslib-community/cslib-frontier/pull/4764); its snapshot rows are retained.
+Source pages: printed 224–225 / PDF 240–241 of the pinned draft. Definition 12.6 minimizes over
+arbitrary disjoint monochromatic rectangles, independently of protocol trees.
+
+`RectanglePartition` in [Partition](../CslibFrontier/Computability/Communication/Partition.lean)
+models labelled finite tilings; `tilingNumber` is their minimum in $\mathbb N\cup\{\infty\}$.
+The minimum is attained for finite inputs, including zero for an empty product. Empty pieces
+are allowed and charged, so they cannot improve the minimum.
+
+| Draft result | Disposition and scope |
+|---|---|
+| Lemma 12.8 | **Covered.** `IsFoolingSet.card_le_tilingNumber` in [FoolingSet](../CslibFrontier/Computability/Communication/FoolingSet.lean) bounds every arbitrary tiling and hence its minimum. The stronger labelled-piece bound is also available. |
+| Theorem 12.10 | **Covered.** `rank_communicationMatrix_le_tilingNumber` in [Rank](../CslibFrontier/Computability/Communication/Rank.lean) bounds the zero/one matrix rank over any commutative semiring with the strong rank condition, in particular every field. |
+| Lemma 12.11 | **Covered.** `one_div_discrepancy_le_tilingNumber` in [Discrepancy](../CslibFrontier/Computability/Communication/Discrepancy.lean) proves the reciprocal bound for any PMF on finite input sets. Uniform equal bit cubes specialize to the draft's normalization. |
+
+The existing protocol proofs now specialize these general arguments through the leaf partition.
+The [checked clients](../CslibFrontierTests/CommunicationTilings.lean) include explicit tilings,
+Boolean equality, empty and constant cases, and uniform and nonuniform distributions.
+This establishes no protocol-realization theorem for arbitrary tilings and no communication
+runtime bound. The book-wide theory/exercise objective remains open under
+[#4711](https://github.com/cslib-community/cslib-frontier/issues/4711).
+
+### Corrected spectral discrepancy
+
+This is a bounded formalization update for draft Lemma12.13 (printed225 / PDF241), not a full
+chapter audit. Its literal eigenvalue statement remains a source issue under
+[#4771](https://github.com/cslib-community/cslib-frontier/issues/4771); the broader chapter
+comparison is in [#4764](https://github.com/cslib-community/cslib-frontier/pull/4764).
+
+[Discrepancy/Spectral](../CslibFrontier/Computability/Communication/Discrepancy/Spectral.lean)
+proves the corrected $\ell^2$ operator-norm version. For a finite real rectangular matrix,
+`Matrix.abs_sum_sum_le_l2_opNorm` bounds an absolute rectangle sum by the norm times the square
+roots of the two side sizes. Empty sides and empty index types are permitted. For a Boolean
+function on finite nonempty input sets, `discrepancy_uniformOfFintype_le_l2_opNorm` bounds uniform
+discrepancy by $\|\operatorname{signMatrix}(f)\|_2/\sqrt{|X||Y|}$; the bit-cube specialization has
+denominator $2^n$. The sign convention differs by an overall minus sign from the draft's
+`2 M(f) - 1`, which preserves these quantities. This proves no general eigenvalue-magnitude bound.
+
+The [checked clients](../CslibFrontierTests/SpectralDiscrepancy.lean) include a nilpotent sign
+matrix with characteristic polynomial `X^2` and a positive normalized rectangle sum `1/4`, a
+nonsquare matrix, empty cases and the zero-bit cube. Forster's existing consumers now reuse the
+shared matrix estimate; source credit and public theorem statements are retained.
+The full book/theory/exercise objective remains open under
+[#4711](https://github.com/cslib-community/cslib-frontier/issues/4711).
 
 ## Chapter 13: circuit lower bounds
 
@@ -561,6 +802,144 @@ apply; a missing packaged corollary is not a claim that its finite mathematics i
   17.24/17.25 endpoints remain separate. These results do not establish infinitely-often
   hardness variants or all resource tradeoffs in the book.
 
+## Chapter 18: PCP and hardness of approximation
+
+Snapshot: `b91d5151fd7dc665a5e3efcb466077caf44e690d` on 2026-11-12, CSLib pin
+`ee99dd30bd1a9f466c25a51b39a5cb0bfe4d2342`. All 24 numbered result headings were
+checked against PDF pp. 367–400, including the technical notes after the exercises.
+Searches inspected `Computability/PCP`, `Classes/PCP`, Boolean analysis, constraint graphs
+and the approximation modules on that snapshot. “Endpoint not located” means not located in
+those sources or by repository-wide searches for the named constructions, not semantic absence
+from all possible general lemmas. This is source inspection, without new Lean elaboration or
+an axiom audit. The library's polynomial-time certificates use native multitape TMs and explicit
+embeddings into `List Bool`; their validity does not depend on identifying an uncosted finite
+construction with a polynomial-time reduction. In the table, library `unsatVal` is $1-\mathrm{val}$.
+
+| Draft result | Printed / PDF page | Disposition and remaining endpoint |
+|---|---|---|
+| 18.2 (PCP theorem) | 353 / 369 | **Covered.** `Cslib.Complexity.NP_eq_PCP_log` in [Completeness.lean](../CslibFrontier/Computability/PCP/Completeness.lean) gives equality for every input encoding, with randomness bounded by a constant times `Nat.log 2 n + 1`, constantly many nonadaptive Boolean queries, perfect completeness and soundness $1/2$. The additive one handles short inputs. NP is the deterministic-verifier class; efficiency is certified in the native TM model. |
+| 18.4 (scaled-up PCP) | 354 / 370 | **Endpoint not located.** No equality of polynomial-randomness constant-query PCP with NEXP was found in the PCP classes or completeness modules. [#892](https://github.com/cslib-community/cslib-frontier/issues/892) owns the related BFL/MIP = NEXP objective, not an already proved PCP bridge. The scaled PCP characterization needs its own explicit transfer. Open [#3609](https://github.com/cslib-community/cslib-frontier/pull/3609) supplies an oracularization direction in a proposed `PCPPoly` model, not this equality; its description explicitly leaves NEXP inclusion open. |
+| 18.7 (MAX-3SAT approximation consequence) | 355 / 371 | **Partial.** `Cslib.Complexity.GapThreeSAT_notMem_PromiseP` in [MaxThreeSAT.lean](../CslibFrontier/Computability/PCP/Approximation/MaxThreeSAT.lean) excludes a polynomial-time separator at $s=1-1/(3\cdot2^{77})$ assuming $P\ne NP$. No general optimization-algorithm interface and extraction of that separator from an assignment-producing $\rho$-approximation is supplied there. Use a slightly larger $\rho<1$ to separate the non-strict no-instance threshold. |
+| 18.8 (gap-producing 3SAT reduction) | 356 / 372 | **Covered.** `Cslib.Complexity.GapThreeSAT_npHard`, using `polyTimeReducible_GapTwoCSP_GapThreeSAT` in [MaxThreeSAT.lean](../CslibFrontier/Computability/PCP/Approximation/MaxThreeSAT.lean), provides an encoded polynomial-time gap reduction with perfect completeness. The formal no-bound is $\mathrm{val}\le s$; choosing $s<\rho<1$ gives the draft's strict $<\rho$ convention. |
+| 18.13 (gap-CSP formulation) | 358 / 374 | **Partial.** `Cslib.Complexity.GapTwoCSP_npHard` in [MaxCSP.lean](../CslibFrontier/Computability/PCP/Approximation/MaxCSP.lean) proves a constant gap over a 128-symbol alphabet, with full binary constraint tables and explicit encodings. This is not literally the draft's binary-alphabet bounded-arity CSP. [Completeness.lean](../CslibFrontier/Computability/PCP/Completeness.lean) and [Encoded/Verifier/Reduction.lean](../CslibFrontier/Computability/PCP/Encoded/Verifier/Reduction.lean) implement the reduction-to-verifier direction; no packaged equivalence for arbitrary draft-style binary qCSP instances was identified. |
+| 18.15 (18.8 restated) | 359 / 375 | **Covered.** `Cslib.Complexity.GapThreeSAT_npHard` in [MaxThreeSAT.lean](../CslibFrontier/Computability/PCP/Approximation/MaxThreeSAT.lean), with clauses of at most three literals and the explicit constant above. This counts the source's separately numbered restatement once. |
+| 18.16 (3CNF to independent-set value) | 359 / 375 | **Partial.** `Cslib.Complexity.SAT.indepNum_toIndependentSet_le` and `card_toFinset_vertices_toIndependentSet` in [IndependentSet.lean](../CslibFrontier/Computability/PCP/Approximation/IndependentSet.lean) support a polynomial-time Karp literal-occurrence graph, with $3m$ vertices for exactly-three-literal clauses. The draft instead uses seven satisfying local assignments per clause and claims $\alpha(G)=\mathrm{val}(\varphi)n/7$; that exact construction/cardinality is not supplied. Seven assignments presupposes three distinct variables. |
+| 18.19 (walk stays in a set) | 361 / 377 | **Source issue.** The displayed bounds have exponent $k$ although the walk is parameterized by $\ell$, and $k$ is unbound. Moreover $(\beta-2\lambda)^k$ is not a valid universal lower bound for negative base and even exponent without further restrictions. A corrected exponent and lower-bound range must be fixed before comparing to expander-walk APIs. |
+| 18.20 (independent-set amplification) | 362 / 378 | **Endpoint not located.** The graph transformation with fractional independence number between $(\widetilde\alpha(G)\pm2\lambda)^{\log n}$ and polynomial output size was not found. [IndependentSet.lean](../CslibFrontier/Computability/PCP/Approximation/IndependentSet.lean) explicitly stops at one fixed constant gap. The ROADMAP's FGLSS direction records the broader goal; no dedicated owning issue was located. |
+| 18.21 (Walsh–Hadamard PCP) | 363 / 379 | **Covered.** Endpoint, different proof route: `Cslib.Complexity.NP_subset_PCP_log` in [Completeness.lean](../CslibFrontier/Computability/PCP/Completeness.lean) gives the stronger logarithmic-randomness result, hence a polynomial randomness allowance. The proof uses encoded Dinur amplification and a Hadamard assignment tester, rather than a separately packaged exponential Walsh–Hadamard verifier for QUADEQ. |
+| 18.23 (linearity testing) | 364 / 380 | **Covered.** `Cslib.BitString.exists_hammingDist_parityOn_le_of_le_blrAcceptance` in [Linearity.lean](../CslibFrontier/Foundations/BooleanAnalysis/Linearity.lean), with $\epsilon=1-\rho$, gives agreement at least $\rho$ with a parity. Uniform finite cube `ι → Bool`, coordinatewise XOR addition and normalized Hamming distance match the draft's GF(2) model; there is no machine-time claim. |
+| 18.25 (exponential PCP of proximity) | 368 / 384 | **Partial.** [AssignmentTester.lean](../CslibFrontier/Computability/PCP/AssignmentTester.lean), notably `Cslib.PCP.HadamardTester.exists_inputDist_le_of_le_acceptProb`, tests long-code encodings of two labels against a binary constraint. It does not state the draft's arbitrary-circuit, Walsh–Hadamard-input proximity theorem with $0.99$ agreement and polynomial randomness. The related PCPP objective is already listed under [#2131](https://github.com/cslib-community/cslib-frontier/issues/2131). |
+| 18.26 (two-piece PCP of proximity) | 368–369 / 384–385 | **Partial.** The same [Hadamard assignment tester](../CslibFrontier/Computability/PCP/AssignmentTester.lean) supplies two-endpoint proximity machinery, but not the arbitrary split $n_1+n_2=n$, circuit input and quantitative guarantees of this corollary. This number is a proximity result, not an independent-set hardness theorem. |
+| 18.28 (PCP main lemma) | 369 / 385 | **Partial.** `Cslib.PCP.Encoded.Graph.min_le_unsatVal_amplify` in [Encoded/Amplification.lean](../CslibFrontier/Computability/PCP/Encoded/Amplification.lean) doubles the gap up to a threshold; its executable iteration and final native polynomial-time certificate are in [Encoded/Amplification/Iteration.lean](../CslibFrontier/Computability/PCP/Encoded/Amplification/Iteration.lean). The formal round uses fixed 128-symbol binary constraints, not binary-alphabet qCSP; the exact source constant-linear size contract is not the stated native runtime contract. The PCP endpoint itself is covered by 18.2. |
+| 18.29 (gap amplification) | 370 / 386 | **Partial.** `Cslib.PCP.ConstraintGraph.min_le_div_unsatVal_power_preprocessWith` in [Amplification/Family.lean](../CslibFrontier/Computability/PCP/Amplification/Family.lean), with the fixed parameters in [Amplification/Arithmetic.lean](../CslibFrontier/Computability/PCP/Amplification/Arithmetic.lean), implements amplification via preprocessing and killed walks. It is not the exact all-$\ell$ binary-qCSP CL-reduction statement. |
+| 18.30 (alphabet reduction) | 370 / 386 | **Partial.** `Cslib.PCP.ConstraintGraph.le_unsatVal_composeSelected` and `satisfiable_composeSelected_iff` in [SelectedComposition.lean](../CslibFrontier/Computability/PCP/SelectedComposition.lean) reduce to 128 symbols, with loss 840. The draft reduces to a binary alphabet, constant arity, with loss three. Its exact quantitative statement is not established by this different composition. |
+| 18.31 (powering) | 371 / 387 | **Partial.** `Cslib.PCP.RegularConstraintGraph.power`, `card_alphabet_power`, `satisfiable_power` in [Power.lean](../CslibFrontier/Computability/PCP/Power.lean) and `le_unsatVal_power` in [PoweringBound.lean](../CslibFrontier/Computability/PCP/PoweringBound.lean) prove killed-walk powering. The draft uses fixed-length lazy walks, a $\sqrt t$ gain, and different alphabet/constraint counts; those precise bounds are not the formal statement. |
+| 18.32 (plurality event lower bound) | 374 / 390 | **Partial; not separately formalized in this model.** `Cslib.PCP.RegularConstraintGraph.le_expect_numHits` in [PoweringBound.lean](../CslibFrontier/Computability/PCP/PoweringBound.lean) serves the corresponding first-moment role for killed walks. It does not prove the draft's per-edge/per-position $B_{j,f}$ bound for fixed-length lazy walks. |
+| 18.33 (intersection bound) | 375 / 391 | **Partial; not separately formalized in this model.** `Cslib.PCP.RegularConstraintGraph.expect_numHits_sq_le` in [PoweringBound.lean](../CslibFrontier/Computability/PCP/PoweringBound.lean) provides the second-moment estimate used by the formal proof. The draft's event indexing and $30kd\epsilon$ constant are not its statement; the displayed source intersection also repeats $j$ where the subsequent argument uses $j'$. |
+| 18.34 (union from pairwise intersections) | 376 / 392 | **Partial.** Boundary convention: the denominator $4C$ requires $C>0$, the statement says only $C\in\mathbb N$ and its proof makes $2C$ copies, so fix the positive-natural convention explicitly. For positive $C$ this is a useful finite-set second-moment consequence. No separately named exact finite-set statement was located; [PoweringBound.lean](../CslibFrontier/Computability/PCP/PoweringBound.lean) instead proves the probability bound needed by its own proof. |
+| 18.35 (CSP view of proximity) | 377–378 / 393–394 | **Partial.** [AssignmentTester.lean](../CslibFrontier/Computability/PCP/AssignmentTester.lean) constructs local constraint tests and proves `satisfies_toConstraintGraph_honestProof` and `exists_inputDist_div_le_unsatFrac`. These are not the source's arbitrary-circuit exponential transformation with two separately Walsh–Hadamard-encoded input blocks. |
+| 18.36 (arity reduction) | 383 / 399 | **Partial.** [ThreeSAT.lean](../CslibFrontier/Computability/PCP/ThreeSAT.lean) and [Encoded/ThreeSAT.lean](../CslibFrontier/Computability/PCP/Encoded/ThreeSAT.lean) implement the clause/assignment consistency construction for 3SAT used by completeness. The generic all-qCSP transformation to alphabet $2^q$ with loss $q$ and the source's CL size bound was not located as a public endpoint. |
+| 18.37 (degree reduction) | 383–384 / 399–400 | **Partial.** `Cslib.PCP.ConstraintGraph.degreeReduce`, `le_unsatVal_degreeReduce` and `satisfiable_degreeReduce_iff` in [DegreeReduction.lean](../CslibFrontier/Computability/PCP/DegreeReduction.lean) provide the cloud construction and gap preservation given expander clouds. This is parameterized by the cloud degree/spectral bound, not the draft's precise $100Wd$ loss. Executable preprocessing is separately certified. |
+| 18.38 (expanderization and loops) | 384 / 400 | **Partial.** `Cslib.PCP.ConstraintGraph.preprocess`, `spectralExpansion_preprocess_le`, `le_unsatVal_preprocess` in [Preprocess.lean](../CslibFrontier/Computability/PCP/Preprocess.lean) give regular expansion and satisfiability preservation. The added loop degree is not one half of the final degree; killed-walk powering does not need that draft convention. No exact $4d$-regular, half-loop, $10d$-loss endpoint is claimed. |
+
+### What the existing PCP API establishes
+
+- The class-level PCP theorem and native polynomial-time gap reductions are implemented, not
+  merely postulated finite constructions. The gap-CSP alphabet and encodings remain visible.
+- [IndependentSet.lean](../CslibFrontier/Computability/PCP/Approximation/IndependentSet.lean)
+  proves `Cslib.Complexity.GapIndependentSet_npHard` at one fixed constant and
+  `GapIndependentSet_notMem_PromiseP` under $P\ne NP$. Neither supplies the $n^{-\delta}$
+  hardness claimed in the unnumbered §18.3 conclusion, or amplification to every constant.
+- The many partial Dinur rows reflect a different, successful proof of 18.2, not a missing PCP
+  theorem. Reimplementing every fixed-walk auxiliary lemma is not necessary to use that endpoint.
+
+## Chapter 19: more PCP theorems and the Fourier transform technique
+
+Snapshot and pin are as in Chapter 18. All 12 numbered results were checked against PDF
+pp. 401–416. Inspection covers parallel repetition, Label Cover, the Håstad test, Fourier/noise
+analysis, bucket weights and Kushilevitz–Mansour learning. The conversion between signs and bits
+is $(-1)^b$ (`Cslib.BitString.signVal`); set frequencies correspond to parity characters.
+Finite probability identities do not by themselves certify a randomized oracle machine's runtime.
+Existing issue/PR searches included open and closed Håstad, Label Cover, repetition and Fourier
+learning work. [#886](https://github.com/cslib-community/cslib-frontier/issues/886) is still open,
+but its original missing-repetition description is older than the merged results below.
+
+| Draft result | Printed / PDF page | Disposition and remaining endpoint |
+|---|---|---|
+| 19.3 (parallel repetition) | 387 / 403 | **Partial.** Strong finite-game theorem present: `Cslib.PCP.TwoProverGame.value_pow_le_of_value_le` in [ParallelRepetition.lean](../CslibFrontier/Computability/PCP/ParallelRepetition.lean) proves Holenstein's bound $(1-\epsilon^3/6000)^{k/\log_2(\lvert A\rvert\lvert B\rvert)}$ over arbitrary tuple strategies, not just product strategies. This gives exponential decay in the finite two-prover model. It is not a theorem stated for every PCP verifier in the draft's representation. Encoded small-soundness Label Cover is also present in [SmallSoundness.lean](../CslibFrontier/Computability/PCP/Approximation/LabelCover/SmallSoundness.lean), `Cslib.Complexity.exists_GapLabelCover_npHard`; see merged [#2875](https://github.com/cslib-community/cslib-frontier/pull/2875) and [#3225](https://github.com/cslib-community/cslib-frontier/pull/3225). |
+| 19.5 (Håstad's three-bit PCP) | 387 / 403 | **Partial.** `Cslib.PCP.Hastad.gapLabelCover_dichotomy_lt_one` in [Hastad.lean](../CslibFrontier/Computability/PCP/Approximation/Hastad.lean) proves completeness $1-\delta$ and soundness $1/2+4\epsilon$ for the analytic three-query test. Small-soundness Label Cover hardness now exists, but the module explicitly does not construct a MAX-E3LIN instance or a uniform PCP verifier. That final encoded reduction remains in the [#886](https://github.com/cslib-community/cslib-frontier/issues/886) roadmap direction; repetition alone does not finish it. |
+| 19.6 (MAX-3SAT $7/8+\epsilon$ hardness) | 388 / 404 | **Partial.** `Cslib.Logic.PL.CSP.proportion_countUnsat_toCNFBounded_parity` and `Cslib.Complexity.CSP.computableInPolyTime_toCNFBounded_parity` in [ThreeXOR.lean](../CslibFrontier/Computability/PCP/Approximation/ThreeXOR.lean) certify the exact four-clause reduction and quarter loss. MAX-E3LIN hardness and composition to this approximation endpoint are still missing. This corollary uses imperfect completeness; it is distinct from the stronger satisfiable-formula hardness target in [#886](https://github.com/cslib-community/cslib-frontier/issues/886). |
+| 19.7 (Plancherel and Parseval) | 389 / 405 | **Covered.** `Cslib.BitString.expect_mul_eq_sum_fourierCoeff_mul` in [Fourier.lean](../CslibFrontier/Foundations/BooleanAnalysis/Fourier.lean) is the real-function inner-product identity, specialized to $g=f$ for Parseval. Cube coordinates are bits read as signs and expectations are uniformly normalized, matching the source. |
+| 19.9 (large linearity-test coefficient) | 390–391 / 406–407 | **Covered.** Covered by the proof: [Linearity.lean](../CslibFrontier/Foundations/BooleanAnalysis/Linearity.lean), `Cslib.BitString.blrAcceptance_eq_sum_fourierCoeff_pow_three` and the maximum-coefficient argument inside `exists_hammingDist_parityOn_le_of_le_blrAcceptance`, prove a coefficient at least $2\epsilon$ when acceptance is at least $1/2+\epsilon$. The public conclusion is the equivalent normalized Hamming-distance bound, via `fourierCoeff_signVal`. |
+| 19.12 (noisy cubic Fourier identity) | 392 / 408 | **Covered.** By specialization: `Cslib.PCP.Hastad.linearCorr_eq_sum` and `linearProb_eq_add_linearCorr` in [LinearTest.lean](../CslibFrontier/Computability/PCP/Approximation/Hastad/LinearTest.lean), taking the projection to be identity and the two tables equal, give $\sum_S\widehat f(S)^3(1-2\rho)^{\lvert S\rvert}=2\Pr[\mathrm{accept}]-1$. This matches the source test for a noise probability in $[0,1]$; source signs are `signVal` of Boolean tables. |
+| 19.13 (low-degree truncation) | 393 / 409 | **Unverified.** The draft states an unweighted signed cubic sum at degrees at most $k=(2\rho)^{-1}\log(1/\epsilon)$. [LinearTest.lean](../CslibFrontier/Computability/PCP/Approximation/Hastad/LinearTest.lean) has a different squared-correlation cutoff bound. A bound on the noisy weighted sum does not immediately imply the displayed signed unweighted truncation: negative coefficients must be handled. No exact endpoint or verified correction was located; rounding $k$ and parameter ranges also need specification. |
+| 19.15 (odd Fourier support of folded functions) | 393–394 / 409–410 | **Covered.** `Cslib.BitString.IsOdd.fourierCoeff_of_even` in [LongCode.lean](../CslibFrontier/Foundations/BooleanAnalysis/LongCode.lean) kills all even-cardinality coefficients, including the empty set. Its `IsOdd` is exactly $F(-x)=-F(x)$ after converting bits to signs, the draft's folding condition. |
+| 19.16 (projected two-table test identity) | 394 / 410 | **Covered.** `Cslib.PCP.Hastad.linearCorr_eq_sum` and `linearProb_eq_add_linearCorr` in [LinearTest.lean](../CslibFrontier/Computability/PCP/Approximation/Hastad/LinearTest.lean) give the projected Fourier sum and acceptance relation. `Cslib.BitString.projectSet` retains target coordinates with odd preimage multiplicity, the source's $h_2(\alpha)$; [LongCode.lean](../CslibFrontier/Foundations/BooleanAnalysis/LongCode.lean) supplies its character pullback identity. The identity holds without folding; folding removes the empty term. |
+| 19.17 (soundness transfer to Håstad verifier) | 395–396 / 411–412 | **Partial.** `Cslib.PCP.Hastad.graphLinearCorr_sq_le` and `gapLabelCover_dichotomy_lt_one` in [Hastad.lean](../CslibFrontier/Computability/PCP/Approximation/Hastad.lean) prove finite Label Cover soundness via spectral decoding. Their cutoff-dependent bound differs from the explicit source condition $\rho\delta^2>\epsilon$; an encoded verifier and that exact quantitative implication are not supplied. |
+| 19.18 (finding large Fourier coefficients in polynomial time) | 397–398 / 413–414 | **Partial.** [KushilevitzMansour.lean](../CslibFrontier/MachineLearning/UniformLearning/KushilevitzMansour.lean), in namespace `Cslib.MachineLearning.UniformLearning`, has `inter_mem_bucketSearch`, `mul_card_bucketSearch_le_one`, `uniform_not_accurate_le` and `kmLearner_queriesAtMost`. They supply heavy-frequency retention, $4/\theta^2$ candidate size on accurate samples and a failure/query analysis. The module explicitly certifies only oracle-query cost, not native polynomial runtime or a packaged $0.9$-success frequency-list algorithm for every Boolean function. |
+| 19.19 (bucket-weight estimator) | 398 / 414 | **Covered.** `Cslib.BitString.bucketWeight_eq_expect_sample` in [BucketWeight.lean](../CslibFrontier/Foundations/BooleanAnalysis/BucketWeight.lean) is the identity for any coordinate subset $J$. Taking the first $k$ coordinates and $S$ for the prefix frequency gives the source's three-sample expectation. Sampling full cube points leaves unused coordinates, which does not change the uniform expectation. |
+
+### What the existing Fourier and approximation API establishes
+
+- Parallel repetition and small-soundness Label Cover no longer need to be proposed as absent
+  prerequisites. The missing endpoint for 19.5/19.6 is the encoded test-to-instance/verifier
+  construction and final hardness composition, not another proof of Raz's theorem.
+- A certified four-clause compiler does not prove MAX-E3LIN hardness. The constant gap near one
+  of Chapter 18 does not prove the optimal $7/8+\epsilon$ threshold.
+- Heavy-frequency search has finite mathematical and query guarantees. Its polynomial-time
+  machine realization is a separate remaining objective from the learning theorem.
+
+## Chapter 20: quantum computation
+
+Snapshot and pin are as in Chapter 18. All 12 numbered results, including appendix 20.A, were
+checked against PDF pp. 417–448. Searches covered quantum foundations/circuits/query algorithms,
+BQP/counting/space classes, period finding, and pinned Mathlib's unitary and continued-fraction
+areas. Negative results retain the qualified meaning above. The class `Cslib.Complexity.BQP`
+uses polynomial-time uniform circuits over Hadamard, NOT, CNOT and Toffoli, with explicit input
+encoding and measurement of qubit zero. The draft permits arbitrary described elementary
+unitaries; the formal equivalence is still [#3350](https://github.com/cslib-community/cslib-frontier/issues/3350).
+Finite unitary or oracle-query semantics do not certify gate synthesis, uniformity or machine time.
+
+Disposition counts for Chapters 18–20: 13 Covered, 27 Partial, 3 Endpoint not located,
+4 Source issue and 1 Unverified (48 results). Chapter 20 contributes 2 Covered, 6 Partial,
+1 Endpoint not located and 3 Source issue (12 results).
+
+| Draft result | Printed / PDF page | Disposition and remaining endpoint |
+|---|---|---|
+| 20.2 (classical Bell/CHSH bound) | 404 / 420 | **Covered.** `Cslib.PCP.TwoProverGame.winProb_chsh_le`, `value_chsh` in [CHSH.lean](../CslibFrontier/Computability/PCP/TwoProverGame/CHSH.lean) give the exact $3/4$ value for uniformly random Boolean questions and XOR/AND winning predicate. `winProb_shared_le_value` in [TwoProverGame.lean](../CslibFrontier/Computability/PCP/TwoProverGame.lean) extends the deterministic bound to shared randomness, as in the draft's averaging argument. |
+| 20.7 (BPP equals polynomial probabilistic register time) | 407 / 423 | **Endpoint not located.** The BPP verifier definition and uniform Boolean/reversible circuit simulation do not state equivalence with the draft's sequential probabilistic register operations (local functions and fresh random replacement). No explicit simulation of this whole operational model in both directions was located. |
+| 20.11 (unitarity characterizations) | 409 / 425 | **Partial.** `Cslib.Quantum.unitaryEquiv` and `unitaryEquiv_apply` in [Basic.lean](../CslibFrontier/Computability/Circuit/Quantum/Basic.lean) turn a unitary matrix into a norm-preserving linear isometry equivalence. Pinned Mathlib has `Matrix.mem_unitaryGroup_iff`, `mem_unitaryGroup_iff'` ([UnitaryGroup.lean](https://github.com/leanprover-community/mathlib4/blob/69552756cd8a2d2d48763cf7279fd814d6a1224d/Mathlib/LinearAlgebra/UnitaryGroup.lean)) and `LinearIsometryEquiv.toMatrix_mem_unitaryGroup` ([PiL2.lean](https://github.com/leanprover-community/mathlib4/blob/69552756cd8a2d2d48763cf7279fd814d6a1224d/Mathlib/Analysis/InnerProductSpace/PiL2.lean)). A single theorem packaging all four arbitrary-matrix conditions, including the converse from norm preservation, was not identified. |
+| 20.16 (the specified entangled strategy wins at least $0.8$) | 414–415 / 430–431 | **Partial.** Stronger existential value, different strategy: `Cslib.PCP.TwoProverGame.quantumWinProb_chsh_chshEPR` and `quantumValue_chsh` in [Tsirelson.lean](../CslibFrontier/Computability/PCP/TwoProverGame/Tsirelson.lean) give $\cos^2(\pi/8)$ for an explicit optimal EPR strategy. The draft's strategy uses the same basis on question zero and rotated bases on question one, with average $(1+2\cos^2(\pi/8)+1/2)/4$. The inspected theorem does not identify its measurements with those source measurements. |
+| 20.17 ($BPP\subseteq BQP$) | 416 / 432 | **Covered, with gate-model boundary.** `Cslib.Complexity.BPP_subset_BQP` in [QMA/MA.lean](../CslibFrontier/Computability/Complexity/Classes/QMA/MA.lean) proves the inclusion for every input encoding, using uniformly generated reversible classical circuits and Hadamard-prepared random bits. These are allowed elementary operations in the draft. The converse equivalence between the two full BQP definitions is not needed for this simulation and remains #3350. |
+| 20.20 (efficient QFT) | 424 / 440 | **Partial.** `Cslib.Quantum.qft`, `qft_apply`, `qft_mulVec` in [Fourier.lean](../CslibFrontier/Foundations/Quantum/Fourier.lean) provide the normalized positive-exponent transform as a unitary on `ZMod N`. The module explicitly does not construct its $O(m^2)$ circuit for $N=2^m$. [#3252](https://github.com/cslib-community/cslib-frontier/issues/3252) and merged [#3267](https://github.com/cslib-community/cslib-frontier/pull/3267) completed only the matrix/exact-period milestone; the ROADMAP retains circuit generation and approximation costs. |
+| 20.21 (many good approximate-order samples) | 427 / 443 | **Partial.** `Cslib.Quantum.HasExactPeriod.periodFindingOutcome_recover` and `inv_log_add_one_le_periodFindingOutcome_recover` in [PeriodFinding.lean](../CslibFrontier/Algorithms/Quantum/PeriodFinding.lean) give exact recovery probability $\varphi(r)/r\ge1/(\lfloor\log_2r\rfloor+1)$ when $r\mid N$. They do not prove this count of approximate good samples when the Fourier modulus is not divisible by $r$, nor the continued-fraction recovery theorem. Remaining Shor scope is recorded under [#3252](https://github.com/cslib-community/cslib-frontier/issues/3252), not #896. |
+| 20.22 (amplitude near a Fourier peak) | 427 / 443 | **Source issue.** Literal statement; partial nearby result: “The coefficient” is complex, so “at least $\Omega(1/\sqrt r)$” must refer to its modulus or a specified phase convention. [PeriodFinding.lean](../CslibFrontier/Algorithms/Quantum/PeriodFinding.lean), `Cslib.Quantum.HasExactPeriod.norm_periodState_apply_sq`, gives exact squared moduli for $r\mid N$, not the approximate non-dividing case. Specify the postmeasurement coset state and modulus before formalizing this lemma. |
+| 20.23 (factoring succeeds with constant probability) | 428–429 / 444–445 | **Source issue.** As printed, the assertion for every nonprime $N$ is false for $N=4$: the unit group is $\{1,3\}$, and its only even-order element is $-1$, which the statement excludes. The factoring algorithm must first handle prime powers/even numbers and use the right condition on $X^{r/2}$, rather than only $X\ne-1$. No corrected native randomized factoring reduction is claimed by the exact-period milestone. |
+| 20.24 (nontrivial square root gives a factor) | 428 / 444 | **Partial.** `Cslib.Crypto.RSADesc.gcd_sub_one_proper` in [RSAAttacks.lean](../CslibFrontier/Crypto/Computational/RSAAttacks.lean#L228) proves $1<\gcd(y-1,N)<N$ for an RSA descriptor with modulus $N=pq$, where $p,q$ are distinct primes, assuming $y\in\mathbb N$, $y^2\equiv1\pmod N$, $y\not\equiv1\pmod N$ and $y+1\not\equiv0\pmod N$. This is the draft factor lemma for RSA moduli, with a stronger proper-factor conclusion. The draft allows general moduli; removing the RSA-descriptor/semiprime restriction with explicit positivity and representative conventions remains. Composition with a native order-finding reduction is also open, but is separate from this elementary lemma. |
+| 20.25 ($BQP\subseteq PSPACE$) | 429–430 / 445–446 | **Partial.** Relative to the draft's gate model; covered for library BQP by composition: `Cslib.Complexity.BQP_subset_PP` in [BQP/Counting.lean](../CslibFrontier/Computability/Complexity/Classes/BQP/Counting.lean), followed by `PP_subset_PSPACE` in [Counting/Space.lean](../CslibFrontier/Computability/Complexity/Classes/Counting/Space.lean), proves the stronger route for the library's uniform finite-gate circuits and native TM space class. Transferring from all draft elementary gates requires the representation/precision equivalence tracked by [#3350](https://github.com/cslib-community/cslib-frontier/issues/3350). |
+| 20.26 (continued-fraction best approximation) | 432 / 448 | **Source issue.** The PDF prints $\lvert\alpha-a/b\rvert>\lvert\alpha-c/d\rvert$ for every denominator $d\le b$, the reverse of a best-approximation inequality; it even includes $c/d=a/b$. This cannot be a formalization target verbatim. A corrected appropriate convergent/approximation theorem, with exclusions and strictness fixed, is needed for approximate order finding. |
+
+### What the existing quantum API establishes
+
+- The unnumbered Deutsch–Jozsa discussion has an exact one-query endpoint,
+  `Cslib.Quantum.deutschJozsa_regProb_eq_bitVal` and `deutschJozsa_separation` in
+  [DeutschJozsa.lean](../CslibFrontier/Computability/QueryComplexity/Quantum/DeutschJozsa.lean).
+  These use a phase oracle and the constant/balanced promise, not a native time bound.
+- The unnumbered Grover discussion has `Cslib.Quantum.run_grover_of_weight` and
+  `grover_success` in [Grover.lean](../CslibFrontier/Computability/QueryComplexity/Quantum/Grover.lean),
+  including the single-mark success bound $1-1/N$ with at most $\pi\sqrt N/4$ queries.
+  This counts oracle queries; it does not by itself prove the displayed native SAT runtime.
+- The unnumbered Simon discussion has decision guarantees `Cslib.Quantum.simonAlg_spec` in
+  [Simon.lean](../CslibFrontier/Computability/QueryComplexity/Quantum/Simon.lean), and recovery in
+  [SimonSearch.lean](../CslibFrontier/Computability/QueryComplexity/Quantum/SimonSearch.lean).
+  They use bit queries to an encoded truth table, rather than one unit-cost whole-value query.
+  Native polynomial-time Gaussian-elimination postprocessing remains a separate resource obligation
+  in [#2991](https://github.com/cslib-community/cslib-frontier/issues/2991).
+- [#896](https://github.com/cslib-community/cslib-frontier/issues/896) is the closed quantum
+  foundations/Grover/counting track, not the Shor issue. The open full Shor objective is recorded
+  in `ROADMAP.md`, with the closed exact-period milestone [#3252](https://github.com/cslib-community/cslib-frontier/issues/3252).
+  Full gate-set universality remains [#3350](https://github.com/cslib-community/cslib-frontier/issues/3350).
+
 ## Chapter 21: logical characterizations and proof complexity
 
 Snapshot: `b91d5151fd7dc665a5e3efcb466077caf44e690d` (2026-11-12), CSLib pin
@@ -593,9 +972,9 @@ Snapshot: `b91d5151fd7dc665a5e3efcb466077caf44e690d` (2026-11-12), CSLib pin
 
 ## Remaining audit work
 
-Chapters 6–17, 21 and 22 have chapter-specific records above; chapters 1–5 and 18–20
-have not yet been catalogued here. These are snapshot-qualified audit records, not proofs of
-the remaining theory endpoints or exercises. The first implementation milestones for
+Chapters 1–22 now have chapter-specific records above. These are snapshot-qualified audit
+records, not proofs of the remaining theory endpoints or a complete classification of the
+exercises. The first implementation milestones for
 §22.1 are [#4712](https://github.com/cslib-community/cslib-frontier/pull/4712) and
 [#4713](https://github.com/cslib-community/cslib-frontier/pull/4713); the latter distinguishes
 the literal unrestricted draft 22.3 from the published theorem with an additive loss.

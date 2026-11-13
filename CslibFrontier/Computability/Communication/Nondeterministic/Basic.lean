@@ -269,21 +269,10 @@ theorem IsCover.card_le {κ : Type*} [Fintype κ] {C : κ → Set X × Set Y} {S
     #S ≤ Fintype.card κ := by
   classical
   obtain ⟨hmem, hcov⟩ := isCover_fun_iff.mp hC
-  have hw : ∀ q ∈ S, ∃ w, q.1 ∈ (C w).1 ∧ q.2 ∈ (C w).2 := fun q hq =>
-    hcov _ (hSAB q hq).1 _ (hSAB q hq).2 (hS.1 q hq)
-  rcases isEmpty_or_nonempty κ with hκ | hκ
-  · rw [card_eq_zero.2 (eq_empty_of_forall_notMem fun q hq => (hw q hq).elim fun w _ =>
-      hκ.elim w)]
-    exact Nat.zero_le _
-  choose! g hg using hw
-  rw [← card_univ]
-  refine card_le_card_of_injOn g (by intro _ _; exact mem_univ _) ?_
-  intro q hq q' hq' hqq
-  refine hS.2 q hq q' hq' ?_ ?_
-  · exact hmem (g q) _ (hSAB q hq).1 (hg q hq).1 _ (hSAB q' hq').2
-      (by rw [hqq]; exact (hg q' hq').2)
-  · exact hmem (g q) _ (hSAB q' hq').1 (by rw [hqq]; exact (hg q' hq').1) _
-      (hSAB q hq).2 (hg q hq).2
+  exact hS.card_le_cover (fun w => A ∩ (C w).1) (fun w => B ∩ (C w).2)
+    (fun w x hx y hy => hmem w x hx.1 hx.2 y hy.1 hy.2) fun q hq => by
+      obtain ⟨w, hw⟩ := hcov _ (hSAB q hq).1 _ (hSAB q hq).2 (hS.1 q hq)
+      exact ⟨w, ⟨(hSAB q hq).1, hw.1⟩, (hSAB q hq).2, hw.2⟩
 
 /-- **The fooling-set bound, for covers.** A fooling set for `f` with value `z` inside `A × B`
 has at most `2 ^ k` pairs if `f` has a `z`-cover on `A × B` by `2 ^ k` rectangles: no rectangle

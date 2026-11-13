@@ -27,8 +27,10 @@ dimension [Littlestone1988, §3, Example 3]:
 So the chain `vcDim C ≤ littlestoneDim C ≤ ⌊log₂ |C|⌋` can be strict in its first inequality by an
 arbitrary amount. For `N = 2 ^ n - 1` this is Littlestone's example: `2 ^ n` thresholds, VC
 dimension `1` and optimal mistake bound `n`. The class of all thresholds (`thresholdClass`) has VC
-dimension `1` and infinite Littlestone dimension. It is learnable in the PAC model but not with
-finitely many mistakes.
+dimension `1` and infinite Littlestone dimension. It is learnable in the PAC model
+(`isPACLearnable_thresholdClass` in
+`CslibFrontier/MachineLearning/PACLearning/Compression/Thresholds.lean`) but not with finitely many
+mistakes.
 
 Littlestone's Example 3 uses the instance space `{1, …, 2 ^ n - 1}` and the thresholds
 `f_j(x) = 1` iff `x < j` for `j ∈ {1, …, 2 ^ n}`. Here the instance space is all of `ℕ` and

@@ -13,7 +13,8 @@ threshold concepts `x ↦ decide (t ≤ x)` on `ℕ`, a countable class of VC di
 geometric weighting, an SRM learner and a learner that fails the SRM rule, a nonvacuous SRM bound
 for `m = 10000` and `δ = 1/20` with an explicit gap, the unary prefix-free description of the
 thresholds and its MDL bound, a description that is injective but not prefix-free, and
-nonuniform learnability of the thresholds and of the indicators of finite sets of naturals. -/
+nonuniform learnability of the thresholds and of the indicators of finite sets of naturals, a
+class of infinite VC dimension. -/
 
 namespace CslibFrontierTests.NonuniformPAC
 
@@ -37,7 +38,7 @@ theorem thresholds_eq_range : thresholds = Set.range threshold := by
   ext c
   exact ⟨fun ⟨t, ht⟩ => ⟨t, ht.symm⟩, fun ⟨t, ht⟩ => ⟨t, ht.symm⟩⟩
 
-theorem measurableSet_misclassified_threshold (h : ℕ → Bool) :
+theorem measurableSet_misclassified_nat (h : ℕ → Bool) :
     MeasurableSet {p : ℕ × Bool | h p.1 ≠ p.2} :=
   measurableSet_misclassified (measurable_of_countable _)
 
@@ -109,10 +110,10 @@ example (D : Measure (ℕ × Bool)) [IsProbabilityMeasure D] :
     Measure.pi (fun _ : Fin 10000 => D)
         {S | (empiricalMiscount (threshold 0) S : ℝ) / (10000 : ℕ) + 1 / 50 <
           (error D (threshold 0)).toReal} ≤ ENNReal.ofReal (1 / 20) := by
-  refine (measure_mono fun S hS => ?_).trans (measure_pi_exists_lt_error_le
+  refine (measure_mono fun S hS => ?_).trans (Weighting.geometric.measure_pi_exists_lt_error_le
     (H := fun t => {threshold t})
-    (fun t => hasUniformConvergenceRate_singleton (measurableSet_misclassified_threshold _))
-    Weighting.geometric D (Set.mem_univ D) (by norm_num) (by norm_num : (0 : ℝ) < 1 / 20))
+    (fun t => hasUniformConvergenceRate_singleton (measurableSet_misclassified_nat _))
+    D (Set.mem_univ D) (by norm_num) (by norm_num : (0 : ℝ) < 1 / 20))
   exact ⟨0, threshold 0, rfl, lt_of_le_of_lt (by linarith [srm_gap_le]) hS⟩
 
 /-! ### Prefix-free descriptions and the MDL bound -/
@@ -165,7 +166,7 @@ example (D : Measure (ℕ × Bool)) [IsProbabilityMeasure D] {m : ℕ} (hm : 0 <
             (error D (threshold t)).toReal} ≤ ENNReal.ofReal δ := by
   refine (measure_mono fun S => ?_).trans
     (isPrefixFreeDescription_thresholdCode.mdl_bound
-      (fun h _ => measurableSet_misclassified_threshold h) D hm hδ)
+      (fun h _ => measurableSet_misclassified_nat h) D hm hδ)
   rintro ⟨t, ht⟩
   refine ⟨threshold t, thresholds_eq_range ▸ ⟨t, rfl⟩, ?_⟩
   rwa [thresholdCode_threshold, unary, List.length_append, List.length_replicate,
@@ -185,13 +186,31 @@ example : ¬ IsPrefixFreeDescription ({fun _ => false, fun _ => true} : ConceptC
 /-- **The thresholds are nonuniformly learnable** over all distributions. -/
 example : IsNonuniformLearnable thresholds Set.univ :=
   isNonuniformLearnable_of_countable (thresholds_eq_range ▸ Set.countable_range _)
-    fun h _ => measurableSet_misclassified_threshold h
+    fun h _ => measurableSet_misclassified_nat h
+
+/-- The indicators of finite sets of naturals. -/
+def finsetIndicators : ConceptClass ℕ Bool := Set.range fun s : Finset ℕ => fun x => decide (x ∈ s)
+
+/-- The finite-set indicators shatter every finite set, so they have infinite VC dimension and are
+not covered by the finite-VC theory. -/
+theorem not_hasFiniteVCDim_finsetIndicators : ¬ HasFiniteVCDim finsetIndicators := by
+  rw [hasFiniteVCDim_iff]
+  rintro ⟨N, hN⟩
+  have hsh : SetShatters finsetIndicators ↑(Finset.range (N + 1)) := by
+    intro W' hW'
+    have hfin : W'.Finite := (Finset.range (N + 1)).finite_toSet.subset hW'
+    refine ⟨fun x => decide (x ∈ hfin.toFinset), ⟨hfin.toFinset, rfl⟩, ?_⟩
+    ext x
+    simp only [Set.mem_inter_iff, Set.mem_preimage, Set.mem_singleton_iff, decide_eq_true_eq,
+      Set.Finite.mem_toFinset]
+    exact ⟨fun h => h.1, fun h => ⟨h, hW' h⟩⟩
+  have := hN _ hsh
+  simp at this
 
 /-- **The indicators of finite sets of naturals are nonuniformly learnable** over all
-distributions. This class shatters every finite set, so it has infinite VC dimension. -/
-example : IsNonuniformLearnable (Set.range fun s : Finset ℕ => fun x => decide (x ∈ s))
-    Set.univ :=
+distributions, although their VC dimension is infinite. -/
+example : IsNonuniformLearnable finsetIndicators Set.univ :=
   isNonuniformLearnable_of_countable (Set.countable_range _)
-    fun h _ => measurableSet_misclassified_threshold h
+    fun h _ => measurableSet_misclassified_nat h
 
 end CslibFrontierTests.NonuniformPAC

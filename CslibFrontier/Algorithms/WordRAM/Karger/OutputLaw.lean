@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Algorithms.Karger.Graph
+public import CslibFrontier.Algorithms.Lean.Karger.Contraction
 public import CslibFrontier.Computability.WordRAM.Heap
 public import CslibFrontier.Computability.WordRAM.Randomized.Law
 public import CslibFrontier.Computability.WordRAM.Time
@@ -29,6 +30,8 @@ of the best cut weight after each trial.
   probability bound for compiled amplified minimum-cut programs.
 * `Cslib.Algorithms.WordRAM.Karger.minUpdate_exec`: the running-minimum update on any registers,
   with its register frame.
+* `Cslib.Algorithms.WordRAM.Karger.minRunsLoop_law`: an amplification loop whose trials fold
+  fresh answers of one law into the best value observes `Lean.Karger.minRuns`.
 
 ## References
 
@@ -159,5 +162,47 @@ theorem minUpdate_exec {r w : ℕ} {trial zero val best : Fin r} (hbz : best ≠
     · by_cases hiz : i = zero
       · subst hiz; simp [hz]
       · simp only [Data.set_regs, Function.update_of_ne hiz]
+
+/-- The amplification loop shared by the Karger programs. Suppose each of `R ≥ 1` trials `i` of
+`body` keeps the invariant, runs within `T` instructions and `Q` `rand` calls, and observes in
+`best` a fresh answer of law `μ`, taken as is on the first trial and as the minimum with `best`
+after. Then `rem` remaining trials from trial `i` observe `Lean.Karger.minRuns rem` (from the first
+trial) or `rem` more `Lean.Karger.minStep`s from `best`, within `S ≥ T + 2` instructions per
+trial. -/
+theorem minRunsLoop_law {r w R T S Q : ℕ} {body : Code .standard r} {trial trials best : Fin r}
+    {Inv : ℕ → Data r → Prop} {μ : PMF ℕ} (hR : 1 ≤ R) (hT : T + 2 ≤ S)
+    (htrial : ∀ i x, Inv i x → x.regs trial = i) (htrials : ∀ i x, Inv i x → x.regs trials = R)
+    (hbody : ∀ i x, i < R → Inv i x → ExecRandLaw w body x (Inv (i + 1)) T Q
+      (fun y => y.regs best) (μ.map fun v => if i = 0 then v else min v (x.regs best))) :
+    ∀ (rem i : ℕ) (x : Data r), i + rem = R → Inv i x →
+      ExecRandLaw w ram[while trial < trials do [ ⟪body⟫ ]] x (Inv R) (rem * S + 2) (rem * Q)
+        (fun y => y.regs best)
+        (OracleComp.evalWith (fun _ => μ)
+          (if i = 0 then Lean.Karger.minRuns rem
+            else OracleComp.iterate rem Lean.Karger.minStep (x.regs best))) := by
+  intro rem
+  induction rem with
+  | zero =>
+    intro i x hiR hinv
+    obtain rfl : i = R := by omega
+    have hc : ¬(Cond.lt trial trials).Holds x := by
+      simp [Cond.holds_lt, htrial _ _ hinv, htrials _ _ hinv]
+    rw [ite_eq_right (by omega)]
+    exact (ExecRandLaw.loop_exit hc hinv).mono (fun _ h => h) (by omega) (Nat.zero_le _)
+  | succ rem ih =>
+    intro i x hiR hinv
+    have hc : (Cond.lt trial trials).Holds x := by
+      simp [Cond.holds_lt, htrial _ _ hinv, htrials _ _ hinv]
+      omega
+    refine ((ExecRandLaw.loop_iter hc (hbody i x (by omega) hinv)
+      (κ := fun b => OracleComp.evalWith (fun _ => μ)
+        (OracleComp.iterate rem Lean.Karger.minStep b)) fun y hy => by
+          have h := ih (i + 1) y (by omega) hy
+          rw [ite_eq_right (Nat.succ_ne_zero i)] at h
+          exact h).congr_law ?_).mono (fun _ h => h) (by rw [add_one_mul]; omega)
+      (by rw [add_one_mul]; omega)
+    by_cases hi : i = 0
+    · simp [hi, Lean.Karger.minRuns, Function.comp_def]
+    · simp [hi, OracleComp.iterate_succ_bind, Lean.Karger.minStep, Function.comp_def]
 
 end Cslib.Algorithms.WordRAM.Karger

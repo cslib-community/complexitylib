@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 
 public import CslibFrontier.Algorithms.Lean.LempelZiv.LZ78Bits
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import Mathlib.Analysis.SpecialFunctions.Log.Base
 import Mathlib.Tactic.NormNum
 
@@ -129,13 +130,11 @@ example : (parse (List.replicate 100 (1 : Fin 2))).length *
 `length_parse_le_div` hold for every input of length `256`. -/
 example : epsilon 2 256 < 1 := by
   have h8 : Real.logb 2 (256 : ℕ) = 8 := by
-    rw [show ((256 : ℕ) : ℝ) = 2 ^ (8 : ℕ) by norm_num, Real.logb_pow, Real.logb_self_eq_one]
-    · norm_num
-    · norm_num
+    rw [show ((256 : ℕ) : ℝ) = 2 ^ (8 : ℕ) by norm_num, Real.logb_two_pow]
+    norm_num
   have h3 : Real.logb 2 8 = 3 := by
-    rw [show (8 : ℝ) = 2 ^ (3 : ℕ) by norm_num, Real.logb_pow, Real.logb_self_eq_one]
-    · norm_num
-    · norm_num
+    rw [show (8 : ℝ) = 2 ^ (3 : ℕ) by norm_num, Real.logb_two_pow]
+    norm_num
   rw [epsilon_def, Nat.cast_ofNat, h8, h3]
   norm_num
 
