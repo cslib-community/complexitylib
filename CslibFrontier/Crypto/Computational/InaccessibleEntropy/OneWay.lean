@@ -92,7 +92,8 @@ adversary-dependent quantifier):
 * `Cslib.Crypto.rompelBase_heavy_sibling_prob_ge`: Claim 4.8 (`[HHRVW2020]`, p. 23).
 * `Cslib.Crypto.rompelBase_accessible_le_conditionalEntropy_sub`: Claim 4.7
   (`[HHRVW2020]`, pp. 21, 23–25).
-* `Cslib.Crypto.OneWay.exists_rompelBase_logGap`: Theorem 4.5 (`[HHRVW2020]`, p. 21), one fixed
+* `Cslib.Crypto.OneWay.rompelBase_logGap`, `Cslib.Crypto.OneWay.exists_rompelBase_logGap`: Theorem
+  4.5 (`[HHRVW2020]`, p. 21), one fixed
   base family achieving eventual gap `d * Real.logb 2 n / n` for every `d > 0`.
 * `Cslib.Crypto.OneWay.exists_inaccessibleEntropyFamily_logGap`,
   `Cslib.Crypto.OneWay.exists_inaccessibleEntropyFamily`: `InaccessibleEntropyFamily` witnesses with
