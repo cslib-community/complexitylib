@@ -12,6 +12,8 @@ public import CslibFrontier.Probability.BitString
 public import Cslib.Foundations.Data.Nat.PolynomialBound
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Log
+import CslibFrontier.Probability.PMF.Bool
+import CslibFrontier.Probability.PMF.Map
 import Mathlib.Logic.Equiv.Fin.Basic
 
 /-!
@@ -110,18 +112,15 @@ theorem uniformFin_decide_lt (size threshold : ℕ) [NeZero size] :
 theorem sum_uniformFin_mul_ite_le (size threshold : ℕ) [NeZero size] (h : threshold ≤ size) :
     ∑ i : Fin size, (PMF.uniformOfFintype (Fin size) i).toReal *
       (if threshold ≤ i.val then (1 : ℝ) else 0) = 1 - threshold / (size : ℝ) := by
-  have hfilter : (Finset.range size).filter (fun i => threshold ≤ i) =
-      Finset.Ico threshold size := by
-    ext i
-    simp only [Finset.mem_filter, Finset.mem_range, Finset.mem_Ico]
-    lia
-  have hsize : (size : ℝ) ≠ 0 := by exact_mod_cast NeZero.ne size
-  simp only [PMF.uniformOfFintype_apply, ENNReal.toReal_inv, ENNReal.toReal_natCast,
-    Fintype.card_fin, ← Finset.mul_sum]
-  rw [Fin.sum_univ_eq_sum_range (fun i => if threshold ≤ i then (1 : ℝ) else 0),
-    ← Finset.sum_filter, hfilter]
-  simp only [Finset.sum_const, Nat.card_Ico, nsmul_eq_mul, mul_one, Nat.cast_sub h]
-  field_simp
+  have hfalse := PMF.map_apply_toReal (PMF.uniformOfFintype (Fin size))
+    (fun i => decide (i.val < threshold)) false
+  rw [PMF.toReal_false_eq_one_sub, uniformFin_decide_lt, min_eq_right h, ENNReal.toReal_div,
+    ENNReal.toReal_natCast, ENNReal.toReal_natCast] at hfalse
+  rw [hfalse]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  by_cases hi : threshold ≤ i.val
+  · simp [hi, Nat.not_lt.mpr hi]
+  · simp [hi, Nat.lt_of_not_le hi]
 
 end Cslib.Probability
 
