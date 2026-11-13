@@ -326,7 +326,7 @@ elements related to it by the templates of that polarity. -/
 theorem relMap_lit_of_templates
     (hI : ∀ b ts, I.rel (lit b) ts = binaryRel (fun t w => Template.listFormula (temps t b) w) ts)
     (b : Bool) (c y : I.Model M) :
-    RelMap (lit b) ![c, y] ↔ ∃ τ ∈ temps c.1 b, τ.Holds c.2.1 y.toSigma := by
+    RelMap (lit b) ![c, y] ↔ ∃ τ ∈ temps c.1 b, τ.Holds c.coords y.toSigma := by
   rw [relMap_binaryRel (hI b), Template.realize_listFormula]
   rfl
 
@@ -336,10 +336,10 @@ theorem clauseSatisfied_iff_of_templates
     (hI : ∀ b ts, I.rel (lit b) ts = binaryRel (fun t w => Template.listFormula (temps t b) w) ts)
     (A : I.Model M → Prop) (c : I.Model M) :
     ClauseSatisfied A c ↔
-      (∃ τ ∈ temps c.1 true, τ.guard.Realize c.2.1 ∧
-        ∃ y hy, τ.Compat c.2.1 y ∧ A ⟨τ.target, y, hy⟩) ∨
-      (∃ τ ∈ temps c.1 false, τ.guard.Realize c.2.1 ∧
-        ∃ y hy, τ.Compat c.2.1 y ∧ ¬A ⟨τ.target, y, hy⟩) := by
+      (∃ τ ∈ temps c.1 true, τ.guard.Realize c.coords ∧
+        ∃ y hy, τ.Compat c.coords y ∧ A ⟨τ.target, y, hy⟩) ∨
+      (∃ τ ∈ temps c.1 false, τ.guard.Realize c.coords ∧
+        ∃ y hy, τ.Compat c.coords y ∧ ¬A ⟨τ.target, y, hy⟩) := by
   have hp := relMap_lit_of_templates hI true c
   have hn := relMap_lit_of_templates hI false c
   simp only [lit_true, lit_false] at hp hn

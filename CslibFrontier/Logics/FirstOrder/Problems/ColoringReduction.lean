@@ -84,8 +84,9 @@ def orGate (u v : Fin 3) : Fin 3 × Fin 3 × Fin 3 :=
 
 /-- The coloring of the six vertices of the clause gadget for inputs colored `u`, `v`, `w`. -/
 def gadgetColor (u v w : Fin 3) : Fin 6 → Fin 3 :=
-  ![(orGate u v).1, (orGate u v).2.1, (orGate u v).2.2, (orGate (orGate u v).2.2 w).1,
-    (orGate (orGate u v).2.2 w).2.1, (orGate (orGate u v).2.2 w).2.2]
+  let (a, b, c) := orGate u v
+  let (d, e, f) := orGate c w
+  ![a, b, c, d, e, f]
 
 /-- The edges of the clause gadget with inputs `u`, `v`, `w` and palette `t`, `f`, `b` are
 properly colored by `g`: vertices `0, 1, 2` and `3, 4, 5` are triangles, `0` is joined to `u`,
@@ -246,7 +247,7 @@ noncomputable def coloringInterpretation :
 
 /-- An edge from `a` to `c` given by a template of the kind of `a`. -/
 private def Edge (a c : coloringInterpretation.Model M) : Prop :=
-  ∃ τ ∈ coloringEdges a.1, τ.Holds a.2.1 c.toSigma
+  ∃ τ ∈ coloringEdges a.1, τ.Holds a.coords c.toSigma
 
 private theorem relMap_adj_iff (a c : coloringInterpretation.Model M) :
     RelMap adj ![a, c] ↔ Edge a c ∨ Edge c a := by

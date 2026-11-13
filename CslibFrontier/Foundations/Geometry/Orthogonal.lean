@@ -226,16 +226,16 @@ theorem realPoint_mem_segment_iff {a b p : Point} (h : a.1 = b.1 ∨ a.2 = b.2) 
 /-- Integer-point membership in an orthogonal route is an entirely integer-arithmetic test,
 while its meaning remains membership in the continuous real support. -/
 theorem realPoint_mem_support_iff {r : Route} (hr : IsOrthogonal r) (p : Point) :
-    realPoint p ∈ support r ↔ p ∈ r ∨ ∃ e ∈ r.consecutivePairs,
-      min e.1.1 e.2.1 ≤ p.1 ∧ p.1 ≤ max e.1.1 e.2.1 ∧
-      min e.1.2 e.2.2 ≤ p.2 ∧ p.2 ≤ max e.1.2 e.2.2 := by
+    realPoint p ∈ support r ↔ p ∈ r ∨ ∃ a b, (a, b) ∈ r.consecutivePairs ∧
+      min a.1 b.1 ≤ p.1 ∧ p.1 ≤ max a.1 b.1 ∧
+      min a.2 b.2 ≤ p.2 ∧ p.2 ≤ max a.2 b.2 := by
   simp only [support, Set.mem_ofPred_eq]
   constructor
-  · rintro (⟨a, ha, heq⟩ | ⟨e, he, hp⟩)
+  · rintro (⟨a, ha, heq⟩ | ⟨⟨a, b⟩, he, hp⟩)
     · exact Or.inl (realPoint_injective heq ▸ ha)
-    · exact Or.inr ⟨e, he, (realPoint_mem_segment_iff (hr e he).1).1 hp⟩
-  · rintro (hp | ⟨e, he, hp⟩)
+    · exact Or.inr ⟨a, b, he, (realPoint_mem_segment_iff (hr _ he).1).1 hp⟩
+  · rintro (hp | ⟨a, b, he, hp⟩)
     · exact Or.inl ⟨p, hp, rfl⟩
-    · exact Or.inr ⟨e, he, (realPoint_mem_segment_iff (hr e he).1).2 hp⟩
+    · exact Or.inr ⟨(a, b), he, (realPoint_mem_segment_iff (hr _ he).1).2 hp⟩
 
 end Cslib.Orthogonal

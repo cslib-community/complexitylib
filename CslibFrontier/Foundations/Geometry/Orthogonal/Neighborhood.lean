@@ -73,11 +73,11 @@ theorem point_bounds_of_mem_support {r : Route} (hr : IsOrthogonal r) {w h : ℤ
     {p : Point} (hp : realPoint p ∈ support r) :
     0 ≤ p.1 ∧ p.1 ≤ w ∧ 0 ≤ p.2 ∧ p.2 ≤ h := by
   rw [realPoint_mem_support_iff hr] at hp
-  rcases hp with hp | ⟨e, he, hp⟩
+  rcases hp with hp | ⟨a, b, he, hp⟩
   · exact hb p hp
   · have hm := List.of_mem_zip he
-    have ha := hb e.1 hm.1
-    have hb' := hb e.2 (List.mem_of_mem_tail hm.2)
+    have ha := hb a hm.1
+    have hb' := hb b (List.mem_of_mem_tail hm.2)
     omega
 
 /-- Changing the sign only interchanges the two orientations of a straight neighborhood. -/
@@ -203,43 +203,44 @@ theorem segmentWalk_vertical {a b p : Point} (hab : a.1 = b.1) (hp : p.1 = a.1)
   · simpa only [hd, neg_neg] using ht.neg
 
 /-- Every original segment's complete unit walk occurs consecutively in the subdivided route. -/
-theorem segmentWalk_infix_subdivide {r : Route} (hr : IsOrthogonal r) {e : Point × Point}
-    (he : e ∈ r.consecutivePairs) : segmentWalk e.1 e.2 <:+: subdivide r := by
+theorem segmentWalk_infix_subdivide {r : Route} (hr : IsOrthogonal r) {a b : Point}
+    (he : (a, b) ∈ r.consecutivePairs) : segmentWalk a b <:+: subdivide r := by
   induction r with
   | nil => simp [List.consecutivePairs] at he
-  | cons a r ih =>
+  | cons c r ih =>
     cases r with
     | nil => simp [List.consecutivePairs] at he
-    | cons b r =>
-      have hab := (hr (a, b) (by simp [List.consecutivePairs])).1
-      have htail : IsOrthogonal (b :: r) := by
+    | cons d r =>
+      have hcd := (hr (c, d) (by simp [List.consecutivePairs])).1
+      have htail : IsOrthogonal (d :: r) := by
         intro f hf
         exact hr f (by simpa only [List.consecutivePairs, List.tail_cons,
           List.zip_cons_cons, List.mem_cons] using Or.inr hf)
-      have hpairs : (a :: b :: r).consecutivePairs = (a, b) :: (b :: r).consecutivePairs := rfl
+      have hpairs : (c :: d :: r).consecutivePairs = (c, d) :: (d :: r).consecutivePairs := rfl
       rw [hpairs, List.mem_cons] at he
-      rcases he with rfl | he
-      · rw [subdivide]
+      rcases he with he | he
+      · obtain ⟨rfl, rfl⟩ := Prod.mk.inj he
+        rw [subdivide]
         exact List.infix_append_left
       · have ht := ih htail he
-        have hj : subdivide (b :: r) <:+: subdivide (a :: b :: r) := by
-          obtain ⟨initial, hwalk⟩ := List.getLast?_eq_some_iff.1 (segmentWalk_last hab)
-          obtain ⟨rest, hrest⟩ := List.head?_eq_some_iff.1 (subdivide_head (b :: r))
+        have hj : subdivide (d :: r) <:+: subdivide (c :: d :: r) := by
+          obtain ⟨initial, hwalk⟩ := List.getLast?_eq_some_iff.1 (segmentWalk_last hcd)
+          obtain ⟨rest, hrest⟩ := List.head?_eq_some_iff.1 (subdivide_head (d :: r))
           rw [subdivide, hwalk, hrest]
           exact ⟨initial, [], by simp⟩
         exact ht.trans hj
 
 /-- Horizontal strict interior neighborhoods survive subdivision of an entire route. -/
-theorem subdivide_horizontal {r : Route} (hr : IsOrthogonal r) {e : Point × Point}
-    (he : e ∈ r.consecutivePairs) {p : Point} (hab : e.1.2 = e.2.2) (hp : p.2 = e.1.2)
-    (hx : min e.1.1 e.2.1 < p.1 ∧ p.1 < max e.1.1 e.2.1) :
+theorem subdivide_horizontal {r : Route} (hr : IsOrthogonal r) {a b : Point}
+    (he : (a, b) ∈ r.consecutivePairs) {p : Point} (hab : a.2 = b.2) (hp : p.2 = a.2)
+    (hx : min a.1 b.1 < p.1 ∧ p.1 < max a.1 b.1) :
     StraightThrough (subdivide r) p (1, 0) :=
   (segmentWalk_horizontal hab hp hx).infix (segmentWalk_infix_subdivide hr he)
 
 /-- Vertical strict interior neighborhoods survive subdivision of an entire route. -/
-theorem subdivide_vertical {r : Route} (hr : IsOrthogonal r) {e : Point × Point}
-    (he : e ∈ r.consecutivePairs) {p : Point} (hab : e.1.1 = e.2.1) (hp : p.1 = e.1.1)
-    (hy : min e.1.2 e.2.2 < p.2 ∧ p.2 < max e.1.2 e.2.2) :
+theorem subdivide_vertical {r : Route} (hr : IsOrthogonal r) {a b : Point}
+    (he : (a, b) ∈ r.consecutivePairs) {p : Point} (hab : a.1 = b.1) (hp : p.1 = a.1)
+    (hy : min a.2 b.2 < p.2 ∧ p.2 < max a.2 b.2) :
     StraightThrough (subdivide r) p (0, 1) :=
   (segmentWalk_vertical hab hp hy).infix (segmentWalk_infix_subdivide hr he)
 

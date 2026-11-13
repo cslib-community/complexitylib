@@ -218,7 +218,7 @@ variable {M : Type w} [cnf.Structure M]
 
 /-- An edge from `a` to `c` given by a template of the kind of `a`. -/
 private def OccEdge (a c : independentSetInterpretation.Model M) : Prop :=
-  ∃ τ ∈ occurrenceEdges a.1, τ.Holds a.2.1 c.toSigma
+  ∃ τ ∈ occurrenceEdges a.1, τ.Holds a.coords c.toSigma
 
 private theorem relMap_adj_iff (a c : independentSetInterpretation.Model M) :
     RelMap sizedGraph.adj ![a, c] ↔ OccEdge a c := by

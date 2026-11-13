@@ -113,8 +113,9 @@ theorem unitPath_first_neighbor (G : Graph)
         (portAt G.canonicalPorts i false)) <:+: G.unitPath i := by
     rw [unitPath_eq_subdivide G hG hloop hi]
     apply segmentWalk_infix_subdivide (canonical_orthogonal G hG hloop hi)
-      (e := (Layout.center (G.vertices.idxOf (G.edgeEndpoint i false)),
-        Layout.elbow (G.vertices.idxOf (G.edgeEndpoint i false)) (portAt G.canonicalPorts i false)))
+      (a := Layout.center (G.vertices.idxOf (G.edgeEndpoint i false)))
+      (b := Layout.elbow (G.vertices.idxOf (G.edgeEndpoint i false))
+        (portAt G.canonicalPorts i false))
     rw [getElem_orthogonalRoutes_endpoint G G.canonicalPorts hi]
     simp [Layout.route, List.consecutivePairs]
   rw [Layout.fanWalk] at hf
@@ -139,9 +140,9 @@ theorem unitPath_last_neighbor (G : Graph)
       (Layout.center (G.vertices.idxOf (G.edgeEndpoint i true))) <:+: G.unitPath i := by
     rw [unitPath_eq_subdivide G hG hloop hi]
     apply segmentWalk_infix_subdivide (canonical_orthogonal G hG hloop hi)
-      (e := (Layout.elbow (G.vertices.idxOf (G.edgeEndpoint i true))
-        (portAt G.canonicalPorts i true),
-        Layout.center (G.vertices.idxOf (G.edgeEndpoint i true))))
+      (a := Layout.elbow (G.vertices.idxOf (G.edgeEndpoint i true))
+        (portAt G.canonicalPorts i true))
+      (b := Layout.center (G.vertices.idxOf (G.edgeEndpoint i true)))
     rw [getElem_orthogonalRoutes_endpoint G G.canonicalPorts hi]
     simp [Layout.route, List.consecutivePairs]
   rw [Layout.returnFanWalk] at hf
@@ -571,8 +572,8 @@ theorem BridgeStemCrossing.neighbors {G : Graph}
   · rw [unitPath_eq_subdivide G hG hloop hi,
       getElem_orthogonalRoutes_endpoint G G.canonicalPorts hi]
     apply subdivide_horizontal hri
-      (e := ((G.pathColumn i false, Layout.track G.vertices.length i),
-        (G.pathColumn i true, Layout.track G.vertices.length i)))
+      (a := (G.pathColumn i false, Layout.track G.vertices.length i))
+      (b := (G.pathColumn i true, Layout.track G.vertices.length i))
     · simp [Layout.route, List.consecutivePairs, pathColumn]
     · rfl
     · exact hpy
@@ -581,9 +582,9 @@ theorem BridgeStemCrossing.neighbors {G : Graph}
       getElem_orthogonalRoutes_endpoint G G.canonicalPorts hj]
     cases side
     · apply subdivide_vertical hrj
-        (e := (Layout.elbow (G.vertices.idxOf (G.edgeEndpoint j false))
-          (portAt G.canonicalPorts j false),
-          (G.pathColumn j false, Layout.track G.vertices.length j)))
+        (a := Layout.elbow (G.vertices.idxOf (G.edgeEndpoint j false))
+          (portAt G.canonicalPorts j false))
+        (b := (G.pathColumn j false, Layout.track G.vertices.length j))
       · simp [Layout.route, List.consecutivePairs, pathColumn]
       · rfl
       · exact hpx
@@ -593,8 +594,9 @@ theorem BridgeStemCrossing.neighbors {G : Graph}
             (portAt G.canonicalPorts j false)).2 (Layout.track G.vertices.length j)
         omega
     · apply subdivide_vertical hrj
-        (e := ((G.pathColumn j true, Layout.track G.vertices.length j),
-          Layout.elbow (G.vertices.idxOf (G.edgeEndpoint j true)) (portAt G.canonicalPorts j true)))
+        (a := (G.pathColumn j true, Layout.track G.vertices.length j))
+        (b := Layout.elbow (G.vertices.idxOf (G.edgeEndpoint j true))
+          (portAt G.canonicalPorts j true))
       · simp [Layout.route, List.consecutivePairs, pathColumn]
       · rfl
       · exact hpx

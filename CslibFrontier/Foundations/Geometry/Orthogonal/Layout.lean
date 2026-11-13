@@ -237,7 +237,8 @@ theorem center_mem_support_iff {n e u v w : ℕ} (hu : u < n) (hv : v < n)
   fin_cases s <;> fin_cases t <;>
     simp only [route, center, elbow, column, track, List.consecutivePairs, List.tail_cons,
       List.zip_cons_cons, List.zip_nil_right, List.mem_cons, List.not_mem_nil,
-      or_false, or_and_right, exists_or, exists_eq_left, Fin.reduceFinMk, Fin.isValue,
+      or_false, or_and_right, exists_or, and_assoc, exists_and_left, exists_eq_left,
+      Fin.reduceFinMk, Fin.isValue,
       Nat.cast_zero, Nat.cast_one, Nat.cast_ofNat, mul_zero, mul_one, add_zero,
       ↓reduceIte, Prod.mk.injEq] <;> omega
 

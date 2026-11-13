@@ -127,10 +127,10 @@ private def varElt (c : Fin 3) (v : M) : cnfInterpretation.Model M :=
 private theorem clauseSatisfied_iff' (A : cnfInterpretation.Model M → Prop)
     (e : cnfInterpretation.Model M) :
     ClauseSatisfied A e ↔
-      (∃ τ ∈ coloringClauseTemplates e.1 true, τ.guard.Realize e.2.1 ∧
-        ∃ y hy, τ.Compat e.2.1 y ∧ A ⟨τ.target, y, hy⟩) ∨
-      (∃ τ ∈ coloringClauseTemplates e.1 false, τ.guard.Realize e.2.1 ∧
-        ∃ y hy, τ.Compat e.2.1 y ∧ ¬A ⟨τ.target, y, hy⟩) :=
+      (∃ τ ∈ coloringClauseTemplates e.1 true, τ.guard.Realize e.coords ∧
+        ∃ y hy, τ.Compat e.coords y ∧ A ⟨τ.target, y, hy⟩) ∨
+      (∃ τ ∈ coloringClauseTemplates e.1 false, τ.guard.Realize e.coords ∧
+        ∃ y hy, τ.Compat e.coords y ∧ ¬A ⟨τ.target, y, hy⟩) :=
   clauseSatisfied_iff_of_templates cnfInterpretation_rel_lit A e
 
 /-- Every vertex has a color under a satisfying assignment. -/

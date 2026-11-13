@@ -54,8 +54,10 @@ from it, or are arbitrary.
 ## Main definitions
 
 * `Cslib.Logic.FO.TaggedInterpretation`, `Cslib.Logic.FO.TaggedInterpretation.Model`,
+  `Cslib.Logic.FO.TaggedInterpretation.Model.coords`,
   `Cslib.Logic.FO.TaggedInterpretation.Model.toSigma`, `Cslib.Logic.FO.subsingletonFormula`:
-  tagged interpretations, the structures they interpret, and the subsingleton guard formula.
+  tagged interpretations, the structures they interpret with the coordinates of their elements,
+  and the subsingleton guard formula.
 * `Cslib.Logic.FO.TaggedInterpretation.reindex`,
   `Cslib.Logic.FO.TaggedInterpretation.reindexEquiv`: renaming the tags and the induced
   isomorphism.
@@ -143,9 +145,14 @@ variable {I M}
 instance [Finite T] [∀ t, Finite (ι t)] [Finite M] : Finite (I.Model M) :=
   inferInstanceAs (Finite (Σ t, {x : ι t → M // (I.domain t).Realize x}))
 
+/-- The coordinates of an element of the interpreted structure, a tuple indexed by `ι` of its tag
+`e.1`. -/
+abbrev Model.coords (e : I.Model M) : ι e.1 → M :=
+  e.2.1
+
 /-- The tag and coordinates of an element of the interpreted structure. -/
 def Model.toSigma (e : I.Model M) : Σ t, ι t → M :=
-  ⟨e.1, e.2.1⟩
+  ⟨e.1, e.coords⟩
 
 /-- Two elements of `I.Model M` with equal `toSigma` projections are equal. -/
 theorem Model.ext_toSigma {e e' : I.Model M} (h : e.toSigma = e'.toSigma) : e = e' := by
@@ -160,12 +167,12 @@ variable [L'.IsRelational]
 /-- The structure interpreted by `I`: a relation holds of some elements when its defining formula
 for their tags holds of their coordinates. -/
 instance : L'.Structure (I.Model M) where
-  RelMap R xs := (I.rel R fun j => (xs j).1).Realize fun p => (xs p.1).2.1 p.2
+  RelMap R xs := (I.rel R fun j => (xs j).1).Realize fun p => (xs p.1).coords p.2
 
 /-- A relation `R` holds on `xs` in `I.Model M` iff `I.rel R` for their tags holds of their
 coordinates. -/
 theorem relMap_model {n : ℕ} (R : L'.Relations n) (xs : Fin n → I.Model M) :
-    RelMap R xs ↔ (I.rel R fun j => (xs j).1).Realize fun p => (xs p.1).2.1 p.2 :=
+    RelMap R xs ↔ (I.rel R fun j => (xs j).1).Realize fun p => (xs p.1).coords p.2 :=
   Iff.rfl
 
 end Model
@@ -430,13 +437,13 @@ noncomputable def coords (a b : M) (e : I.Model M) : Coord T ι → M
   | .inl false => a
   | .inl true => b
   | .inr (.inl t) => if t = e.1 then b else a
-  | .inr (.inr ⟨t, i⟩) => if h : t = e.1 then e.2.1 (h ▸ i) else a
+  | .inr (.inr ⟨t, i⟩) => if h : t = e.1 then e.coords (h ▸ i) else a
 
 omit [Finite T] [∀ t, Finite (ι t)] in
-/-- At the tag `e.1` of `e`, `coords a b e` evaluates `data ⟨e.1, i⟩` to `e.2.1 i`. -/
+/-- At the tag `e.1` of `e`, `coords a b e` evaluates `data ⟨e.1, i⟩` to `e.coords i`. -/
 @[simp]
 theorem coords_data_self (a b : M) (e : I.Model M) (i : ι e.1) :
-    coords a b e (data ⟨e.1, i⟩) = e.2.1 i := by
+    coords a b e (data ⟨e.1, i⟩) = e.coords i := by
   simp [coords]
 
 omit [Finite T] [∀ t, Finite (ι t)] in
@@ -477,10 +484,10 @@ theorem realize_domainAt_coords (a b : M) (h : a ≠ b) (e : I.Model M) :
   · simpa only [coords_data_self] using e.2.2
 
 /-- The map from the copies of the tagged structure to the compiled structure. -/
-noncomputable def ofCopies [Nontrivial M] (x : Copies (Pairs M) (I.Model M)) :
-    (I.toInterpretation S).Model M :=
-  ⟨coords x.idx.1.1 x.idx.1.2 x.val, (realize_toInterpretation_domain_of_nontrivial S _).2
-    ⟨x.val.1, realize_domainAt_coords _ _ x.idx.2 x.val⟩⟩
+noncomputable def ofCopies [Nontrivial M] : Copies (Pairs M) (I.Model M) →
+    (I.toInterpretation S).Model M
+  | ⟨⟨(a, b), h⟩, e⟩ => ⟨coords a b e, (realize_toInterpretation_domain_of_nontrivial S _).2
+    ⟨e.1, realize_domainAt_coords a b h e⟩⟩
 
 /-- On a nontrivial structure `M`, `ofCopies S` is a bijection from `Copies (Pairs M) (I.Model M)`
 to `(I.toInterpretation S).Model M`. -/
@@ -645,11 +652,11 @@ def binaryRel (F : ∀ t w : T, L.Formula (ι t ⊕ ι w)) (ts : Fin 2 → T) :
   (F (ts 0) (ts 1)).relabel (Sum.elim (fun i => ⟨0, i⟩) fun i => ⟨1, i⟩)
 
 /-- When `I.rel R` is defined by `binaryRel F`, `RelMap R ![a, b]` holds in `I.Model M` iff
-`F a.1 b.1` holds of `Sum.elim a.2.1 b.2.1`. -/
+`F a.1 b.1` holds of `Sum.elim a.coords b.coords`. -/
 theorem relMap_binaryRel {L' : Language.{u', v'}} [L'.IsRelational]
     {I : TaggedInterpretation L L' T ι} {M : Type w} [L.Structure M] {R : L'.Relations 2}
     {F : ∀ t w : T, L.Formula (ι t ⊕ ι w)} (hR : ∀ ts, I.rel R ts = binaryRel F ts)
-    (a b : I.Model M) : RelMap R ![a, b] ↔ (F a.1 b.1).Realize (Sum.elim a.2.1 b.2.1) := by
+    (a b : I.Model M) : RelMap R ![a, b] ↔ (F a.1 b.1).Realize (Sum.elim a.coords b.coords) := by
   rw [relMap_model, hR, binaryRel, Formula.realize_relabel]
   refine iff_of_eq (congrArg _ (funext fun i => ?_))
   rcases i with i | i <;> rfl
