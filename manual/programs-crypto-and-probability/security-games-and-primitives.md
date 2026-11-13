@@ -692,6 +692,24 @@ is essential: the source's Lemma 6.5 omits it, and a constant payoff of `-1` ref
 collision replacement, and `n=5`, `count=2`, `width=3`, where `{2,4}` has actual probability
 `1/16` and ideal probability `1/10`. They also distinguish multiply-high from modulo reduction.
 
+Import [`HQC/Syndrome.lean`](../../CslibFrontier/Crypto/Primitives/HQC/Syndrome.lean) for the
+finite 2-QCSD-P/2-DQCSD-P and 3-QCSD-PT/3-DQCSD-PT distributions from Definitions 2.3.6–2.3.9,
+pp. 12–13. `realSyndromeLaw` draws the public circulant generator uniformly at its prescribed
+parity and draws both secret blocks uniformly at fixed weight. Its comparison law keeps both the
+public parity and the syndrome parity; a full-cube uniform comparison has a one-bit parity test.
+`realTruncatedSyndromeLaw` uses one shared third secret block in both syndromes and retains the
+requested prefix of the second. `mem_support_realTruncatedSyndromeLaw_iff` exposes that shared
+witness explicitly. The comparison law keeps the first syndrome parity and samples the retained
+second component from the full cube, exactly as the source does.
+
+`eval_idealSupport_map_indicatorVector` connects the sampler above to these distributions: the
+indicator of an ideal uniform fixed-cardinality support is exactly a uniform fixed-weight bit
+string. The [checked syndrome examples](../../CslibFrontierTests/Crypto/HQCSyndrome.lean) cover
+zero and full weight, detect a comparison distribution with the wrong parity baseline, and give a
+four-bit sample that an incorrect independent redraw of the third secret accepts but the shared
+law rejects. These are distribution definitions and exact finite laws, not assumptions that
+2-QCSD-P or 3-QCSD-PT are hard.
+
 The word-source model assumes independence and uniformity; it does not establish them for an
 XOF. Positions use natural numbers, with checked 16-bit representability conditions for the
 published parameter sets; byte serialization, native runtime, decryption-failure bounds and
