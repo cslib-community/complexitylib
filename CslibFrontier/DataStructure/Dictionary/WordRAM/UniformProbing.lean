@@ -454,19 +454,28 @@ theorem mem_footprint_of_lt_space {base c_exp n_max a : ℕ}
   rw [Block.mem_footprint]
   exact ⟨hlo, hhi⟩
 
+/-- Memory agreeing on the record's footprint agrees on the three slot words of bucket `j`. -/
+private theorem slotWords_congr_mem {base c_exp n_max : ℕ} {mem mem' : ℕ → ℕ}
+    (hmem : ∀ a ∈ (Block.mk base (space c_exp n_max)).footprint, mem' a = mem a)
+    (j : Fin (numBuckets n_max)) :
+    mem' (base + slotOffset c_exp n_max + j.val) =
+        mem (base + slotOffset c_exp n_max + j.val) ∧
+      mem' (base + slotOffset c_exp n_max + numBuckets n_max + j.val) =
+        mem (base + slotOffset c_exp n_max + numBuckets n_max + j.val) ∧
+      mem' (base + slotOffset c_exp n_max + 2 * numBuckets n_max + j.val) =
+        mem (base + slotOffset c_exp n_max + 2 * numBuckets n_max + j.val) := by
+  have hj := j.isLt
+  have hsp : space c_exp n_max = slotOffset c_exp n_max + 3 * numBuckets n_max := rfl
+  exact ⟨hmem _ (mem_footprint_of_lt_space (by omega) (by omega)),
+    hmem _ (mem_footprint_of_lt_space (by omega) (by omega)),
+    hmem _ (mem_footprint_of_lt_space (by omega) (by omega))⟩
+
 theorem SlotArrayWF.congr_mem {base c_exp U n_max : ℕ} {mem mem' : ℕ → ℕ}
     (hmem : ∀ a ∈ (Block.mk base (space c_exp n_max)).footprint, mem' a = mem a)
     (hwf : SlotArrayWF base c_exp U n_max mem) :
     SlotArrayWF base c_exp U n_max mem' := by
   intro j
-  have hj := j.isLt
-  have hsp : space c_exp n_max = slotOffset c_exp n_max + 3 * numBuckets n_max := rfl
-  have h0 : mem' (base + slotOffset c_exp n_max + j.val) =
-      mem (base + slotOffset c_exp n_max + j.val) :=
-    hmem _ (mem_footprint_of_lt_space (by omega) (by omega))
-  have h1 : mem' (base + slotOffset c_exp n_max + numBuckets n_max + j.val) =
-      mem (base + slotOffset c_exp n_max + numBuckets n_max + j.val) :=
-    hmem _ (mem_footprint_of_lt_space (by omega) (by omega))
+  obtain ⟨h0, h1, -⟩ := slotWords_congr_mem hmem j
   dsimp only [SlotArrayWF] at hwf ⊢
   rw [h0, h1]
   exact hwf j
@@ -475,17 +484,7 @@ theorem extractSlots_congr_mem {base c_exp U n_max : ℕ} {mem mem' : ℕ → �
     (hmem : ∀ a ∈ (Block.mk base (space c_exp n_max)).footprint, mem' a = mem a) :
     extractSlots base c_exp U n_max mem' = extractSlots base c_exp U n_max mem := by
   funext j
-  have hj := j.isLt
-  have hsp : space c_exp n_max = slotOffset c_exp n_max + 3 * numBuckets n_max := rfl
-  have h0 : mem' (base + slotOffset c_exp n_max + j.val) =
-      mem (base + slotOffset c_exp n_max + j.val) :=
-    hmem _ (mem_footprint_of_lt_space (by omega) (by omega))
-  have h1 : mem' (base + slotOffset c_exp n_max + numBuckets n_max + j.val) =
-      mem (base + slotOffset c_exp n_max + numBuckets n_max + j.val) :=
-    hmem _ (mem_footprint_of_lt_space (by omega) (by omega))
-  have h2 : mem' (base + slotOffset c_exp n_max + 2 * numBuckets n_max + j.val) =
-      mem (base + slotOffset c_exp n_max + 2 * numBuckets n_max + j.val) :=
-    hmem _ (mem_footprint_of_lt_space (by omega) (by omega))
+  obtain ⟨h0, h1, h2⟩ := slotWords_congr_mem hmem j
   dsimp only [extractSlots]
   rw [h0, h1, h2]
 
@@ -1646,20 +1645,22 @@ theorem opCode_execWithin {w base c_exp U V n_max : ℕ} {θ : Seed c_exp n_max}
   have hd3_v : d3.regs regV = x.regs regV := by
     rw [hd3_regs regV (by decide) (by decide) (by decide),
       hd2_regs regV (by decide) (by decide), hd1_v]
+  -- Either finishing branch takes 10 steps, closing the operation within its path bound.
+  have eTot_of : ∀ y,
+      ExecWithin w (.branch (.eq regOp regZero) finishQueryCode finishInsertCode) d3 y 10 →
+      ExecWithin w (opCode c_exp n_max) x y
+        (opPathSteps c_exp U n_max θ (extractSlots base c_exp U n_max x.mem) (opKey op)) := by
+    intro y eBr
+    refine (e1.seq (e2.seq (e3.seq eBr))).mono ?_
+    dsimp only [opPathSteps, probeCount, unsuccessfulProbes] at *
+    omega
   cases op with
   | query u₀ =>
     have hc : (Cond.eq regOp regZero).Holds d3 := by
       simp [Cond.Holds, hd3_op, hd3_zero, opTag]
     obtain ⟨y, eFin, hy_mem, hy_base, hy_op⟩ :=
       finishQueryCode_execWithin hS hV hrep u₀ hO hd3_mem hd3_base hd3_sbase hd3_slot hd3_m hd3_zero
-    have eBr :
-        ExecWithin w (.branch (.eq regOp regZero) finishQueryCode finishInsertCode) d3 y 10 :=
-      ExecWithin.branch_pos hc eFin
-    have eTot : ExecWithin w (opCode c_exp n_max) x y
-        (opPathSteps c_exp U n_max θ (extractSlots base c_exp U n_max x.mem) u₀) := by
-      refine (e1.seq (e2.seq (e3.seq eBr))).mono ?_
-      dsimp only [opPathSteps, probeCount, unsuccessfulProbes, opKey] at *
-      omega
+    have eTot := eTot_of y (ExecWithin.branch_pos hc eFin)
     have hbdd_y : y.Bounded w := eTot.bounded hrep.bounded
     have hrep_y : Rep w base c_exp U V n_max θ s y :=
       hrep.congr hbdd_y (hy_base.trans hrep.regs_base.symm) (fun a _ => by rw [hy_mem])
@@ -1674,14 +1675,7 @@ theorem opCode_execWithin {w base c_exp U V n_max : ℕ} {θ : Seed c_exp n_max}
     obtain ⟨y, eFin, hy_base, hy_op, hy_prim, hy_str, hy_wf, hy_trep, hy_dom, hy_vals, hy_mod⟩ :=
       finishInsertCode_execWithin hS hrep u₀ v₀ hvalid hO
         hd3_mem hd3_base hd3_sbase hd3_slot hd3_m hd3_u hd3_v₀
-    have eBr :
-        ExecWithin w (.branch (.eq regOp regZero) finishQueryCode finishInsertCode) d3 y 10 :=
-      ExecWithin.branch_neg hc eFin
-    have eTot : ExecWithin w (opCode c_exp n_max) x y
-        (opPathSteps c_exp U n_max θ (extractSlots base c_exp U n_max x.mem) u₀) := by
-      refine (e1.seq (e2.seq (e3.seq eBr))).mono ?_
-      dsimp only [opPathSteps, probeCount, unsuccessfulProbes, opKey] at *
-      omega
+    have eTot := eTot_of y (ExecWithin.branch_neg hc eFin)
     have hbdd_y : y.Bounded w := eTot.bounded hrep.bounded
     exact ⟨y, eTot,
       ⟨hbdd_y, hy_base, hy_prim, hy_str, hy_wf, hy_trep, hy_dom, hy_vals⟩,
