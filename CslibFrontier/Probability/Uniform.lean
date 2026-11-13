@@ -42,6 +42,10 @@ branch at `5ff69ca`.
   `Cslib.Probability.PMF.uniformOfFintype_bind_add_right`,
   `Cslib.Probability.PMF.uniformOfFintype_bind_add_left`: a fixed mask leaves a uniform group
   element uniform (the one-time pad).
+* `Cslib.Probability.PMF.uniformOfFintype_map_sub_right`,
+  `Cslib.Probability.PMF.uniformOfFintype_map_sub_left`,
+  `Cslib.Probability.PMF.uniformOfFintype_bind_sub_right`,
+  `Cslib.Probability.PMF.uniformOfFintype_bind_sub_left`: the same for `x - c` and `c - x`.
 * `Cslib.Probability.PMF.uniformOfFintype_map_comp`: a uniform function read through an injection
   is uniform.
 * `Cslib.Probability.PMF.uniformOfFintype_map_sum`,
@@ -134,6 +138,29 @@ theorem uniformOfFintype_bind_add_right {β : Type*} (c : G) (f : G → PMF β) 
 theorem uniformOfFintype_bind_add_left {β : Type*} (c : G) (f : G → PMF β) :
     (PMF.uniformOfFintype G).bind (fun x => f (c + x)) = (PMF.uniformOfFintype G).bind f := by
   conv_rhs => rw [← uniformOfFintype_map_add_left c, PMF.bind_map]
+  rfl
+
+/-- Subtracting a fixed mask from a uniform element of a finite group leaves it uniform. -/
+theorem uniformOfFintype_map_sub_right (c : G) :
+    (PMF.uniformOfFintype G).map (· - c) = PMF.uniformOfFintype G :=
+  uniformOfFintype_map_equiv (Equiv.subRight c)
+
+/-- Subtracting a uniform element of a finite group from a fixed value, `x ↦ c - x`, leaves it
+uniform. -/
+theorem uniformOfFintype_map_sub_left (c : G) :
+    (PMF.uniformOfFintype G).map (c - ·) = PMF.uniformOfFintype G :=
+  uniformOfFintype_map_equiv (Equiv.subLeft c)
+
+/-- Unmasking a uniform draw on the right does not change an experiment that consumes it. -/
+theorem uniformOfFintype_bind_sub_right {β : Type*} (c : G) (f : G → PMF β) :
+    (PMF.uniformOfFintype G).bind (fun x => f (x - c)) = (PMF.uniformOfFintype G).bind f := by
+  conv_rhs => rw [← uniformOfFintype_map_sub_right c, PMF.bind_map]
+  rfl
+
+/-- Reading a uniform draw as `c - x` does not change an experiment that consumes it. -/
+theorem uniformOfFintype_bind_sub_left {β : Type*} (c : G) (f : G → PMF β) :
+    (PMF.uniformOfFintype G).bind (fun x => f (c - x)) = (PMF.uniformOfFintype G).bind f := by
+  conv_rhs => rw [← uniformOfFintype_map_sub_left c, PMF.bind_map]
   rfl
 
 end Mask

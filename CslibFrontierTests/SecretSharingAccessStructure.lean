@@ -459,8 +459,7 @@ noncomputable def taggedPadScheme :
             have hi : i.1 = 1 := Finset.mem_singleton.mp i.2
             simp [hi, taggedPadShare]
           rw [hcomp, ← PMF.map_comp]
-          have heq : Equiv.subLeft m = (fun k => m - k) := rfl
-          rw [← heq, uniformOfFintype_map_equiv (Equiv.subLeft m)]
+          rw [uniformOfFintype_map_sub_left m]
         simp_rw [Function.comp_def] at hinner ⊢
         have hbind :
             (q.bind fun b => (uniformOfFintype (ZMod 3)).map
