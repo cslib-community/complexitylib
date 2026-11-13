@@ -31,6 +31,10 @@ splits the completed table back into one table per oracle.
 * `Cslib.RandomOracle.run_interpret_eq_complete_bind`,
   `Cslib.RandomOracle.eval_run_interpret_eq_complete_bind`: a handler that is a lazy random oracle
   on a represented cache has the law of the completed table.
+* `Cslib.RandomOracle.run_interpret_bind_complete`,
+  `Cslib.RandomOracle.eval_run_interpret_bind_complete`: the joint law of its result and the
+  completion of its final represented cache, the relation an approximate simulation
+  (`OracleComp.closeTo_run_interpret_simulation`) is stated against.
 * `Cslib.RandomOracle.bind_complete_sum`: completing a joined cache completes each side
   independently.
 -/
