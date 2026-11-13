@@ -29,6 +29,12 @@ open Cslib.DataStructure.ApproximateMembership.QuotientFilter
 private abbrev word : ℕ ↪ (Fin 1 → ℕ) := WordEncoding.encode
 private abbrev pairWords : ℕ × ℕ ↪ (Fin 2 → ℕ) := WordEncoding.encode
 
+-- Importing `Cluster` keeps the canonical bind-cost theorem available to bare `simp`.
+example {α β : Type} (p : Memory.Prog α) (q : α → Memory.Prog β) (s : Memory.State) :
+    memoryCost (p >>= q) s = memoryCost p s +
+      memoryCost (q ((Memory.spec 0).clientResult s p)) ((Memory.spec 0).clientState s p) := by
+  simp
+
 private def selectedWords (P : ℕ → Prop) [DecidablePred P] : ℕ ↪ (Fin 2 → ℕ) where
   toFun n := ![if ¬P n then 0 else 1, n]
   inj' := fun _ _ h => congrFun h 1
