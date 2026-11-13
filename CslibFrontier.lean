@@ -5148,6 +5148,7 @@ public import CslibFrontier.Foundations.Analysis.Brouwer
 public import CslibFrontier.Foundations.Analysis.Brouwer.Simplex
 public import CslibFrontier.Foundations.Analysis.Calculus.LipschitzDeriv
 public import CslibFrontier.Foundations.Analysis.Calculus.LipschitzSmoothing
+public import CslibFrontier.Foundations.Analysis.Calculus.ParametricIntegralExp
 public import CslibFrontier.Foundations.Analysis.Calculus.Taylor
 public import CslibFrontier.Foundations.Analysis.Convex.Ellipsoid
 public import CslibFrontier.Foundations.Analysis.Convex.ExtendedFormulation
@@ -6047,6 +6048,7 @@ public import CslibFrontier.Foundations.LinearAlgebra.VariableCopyPlacement
 public import CslibFrontier.Foundations.Logic.Function.Iterate
 public import CslibFrontier.Foundations.Logic.Function.UpdateKernel
 public import CslibFrontier.Foundations.MeasureTheory.Constructions.BorelSpace.Order
+public import CslibFrontier.Foundations.MeasureTheory.Constructions.PiWithDensity
 public import CslibFrontier.Foundations.MeasureTheory.Constructions.SimpleGraph
 public import CslibFrontier.Foundations.MeasureTheory.Function.L2Space
 public import CslibFrontier.Foundations.MeasureTheory.Group.ConvolutionDensity
@@ -6118,6 +6120,7 @@ public import CslibFrontier.Foundations.Probability.Gaussian.Moments
 public import CslibFrontier.Foundations.Probability.Gaussian.Multivariate
 public import CslibFrontier.Foundations.Probability.Gaussian.NoiseOperator
 public import CslibFrontier.Foundations.Probability.Gaussian.NoiseSemigroup
+public import CslibFrontier.Foundations.Probability.Gaussian.NoiseSmooth
 public import CslibFrontier.Foundations.Probability.Gaussian.OrnsteinUhlenbeck
 public import CslibFrontier.Foundations.Probability.Gaussian.Periodization
 public import CslibFrontier.Foundations.Probability.Gaussian.Poisson

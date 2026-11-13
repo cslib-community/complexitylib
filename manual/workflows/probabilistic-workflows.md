@@ -2661,9 +2661,68 @@ discontinuous halfspace indicator. Run `scripts/build.sh CslibFrontierTests.Gaus
 from the repository root to check them; the monomial clients are in
 `CslibFrontierTests.GaussianNoiseOperator`.
 
-Smoothness of `U_ρ f` for `|ρ| < 1` (Proposition 11.16) is not formalized. For the derivative of
-`ρ ↦ U_ρ f` in `L²`, see
+Smoothness of `U_ρ f` for `|ρ| < 1` (Proposition 11.16) is in
+[Show that Gaussian noise smooths](#show-that-gaussian-noise-smooths).
+For the derivative of `ρ ↦ U_ρ f` in `L²`, see
 [Differentiate Gaussian noise with the Ornstein–Uhlenbeck operator](#differentiate-gaussian-noise-with-the-ornsteinuhlenbeck-operator).
+
+## Show that Gaussian noise smooths
+
+Import
+[`CslibFrontier.Foundations.Probability.Gaussian.NoiseSmooth`](../../CslibFrontier/Foundations/Probability/Gaussian/NoiseSmooth.lean)
+and open the `ProbabilityTheory` namespace, together with `open scoped ContDiff` for the `∞`
+order of smoothness. Write `γ` for `Measure.pi fun _ : ι => gaussianReal 0 1` as before.
+
+- `contDiff_gaussianNoiseOp hρ hf : ContDiff ℝ ∞ (gaussianNoiseOp ρ f)` for `hρ : |ρ| < 1` and
+  `hf : Integrable f γ` (Proposition 11.16). It concerns the pointwise integral
+  `gaussianNoiseOp ρ f` of Definition 11.12, so it holds at every point: for
+  `h := contDiff_gaussianNoiseOp hρ hf`, `h.continuous` gives continuity and
+  `(h.differentiable (by simp)).differentiableAt` differentiability at any `z`
+  (`ContDiff.differentiable` takes the side condition `∞ ≠ 0`). At `ρ = ±1` there is no noise and
+  the conclusion fails for discontinuous `f`.
+- `gaussianNoiseOp_congr_ae_of_abs_lt_one hρ h : gaussianNoiseOp ρ f = gaussianNoiseOp ρ f'` for
+  `hρ : |ρ| < 1` and `h : f =ᵐ[γ] f'`, with no measurability hypothesis. It is an equality of
+  functions, not only `γ`-almost everywhere as `gaussianNoiseOp_congr_ae` gives for `|ρ| ≤ 1`, so
+  `U_ρ f` is a canonical smooth function of the `L¹` class of `f`: changing `f` on a `γ`-null set
+  changes `U_ρ f` nowhere.
+- `gaussianNoiseOp_eq_integral_prod_div_mul hρ hf z` writes `U_ρ f z` as an integral against the
+  Mehler kernel (kernel or density form): for `hρ : |ρ| < 1` and
+  `hf : AEStronglyMeasurable f γ`, `gaussianNoiseOp ρ f z` is the integral against `γ` of
+  `(∏ i, gaussianPDFReal (ρ * z i) (1 - ρ ^ 2).toNNReal (y i) / gaussianPDFReal 0 1 (y i)) * f y`.
+  The one-dimensional density, `gaussianReal_eq_withDensity_div m hv` for `hv : v ≠ 0`, is in
+  [`CslibFrontier.Foundations.Probability.Gaussian.Real`](../../CslibFrontier/Foundations/Probability/Gaussian/Real.lean).
+
+The proof writes `U_ρ f` as a Gaussian in `z` times a Laplace transform
+`z ↦ ∫ y, exp (φ y z) • h y` with all exponential moments. Its smoothness is the general
+`contDiff_integral_exp_smul hφ hg hint : ContDiff ℝ ∞ fun w => ∫ a, rexp (φ a w) • g a ∂μ`, for
+`φ : α → V →L[ℝ] ℝ` with `hφ : AEStronglyMeasurable φ μ`, `g : α → E` with
+`hg : AEStronglyMeasurable g μ` and values in a complete space, and
+`hint : ∀ c, Integrable (fun a => rexp (c * ‖φ a‖) * ‖g a‖) μ`. It and the derivative formula
+`hasFDerivAt_integral_exp_smul`, both in the root namespace, are in
+[`CslibFrontier.Foundations.Analysis.Calculus.ParametricIntegralExp`](../../CslibFrontier/Foundations/Analysis/Calculus/ParametricIntegralExp.lean).
+Products of densities are in
+[`CslibFrontier.Foundations.MeasureTheory.Constructions.PiWithDensity`](../../CslibFrontier/Foundations/MeasureTheory/Constructions/PiWithDensity.lean):
+`MeasureTheory.Measure.pi_withDensity hf` identifies `Measure.pi fun i => (μ i).withDensity (f i)`
+with `(Measure.pi μ).withDensity fun x => ∏ i, f i (x i)` for `[∀ i, SigmaFinite (μ i)]`,
+measurable densities `hf : ∀ i, Measurable (f i)` and
+`[∀ i, SigmaFinite ((μ i).withDensity (f i))]` (the last is needed to form the left-hand side).
+Its proof uses the Tonelli theorem `MeasureTheory.lintegral_fintype_prod_eq_prod hf`,
+`∫⁻ x, ∏ i, f i (x i) ∂Measure.pi μ = ∏ i, ∫⁻ x, f i x ∂μ i` for σ-finite `μ i` and measurable
+`f i`, with its `Fin n` form `MeasureTheory.lintegral_fin_nat_prod_eq_prod`, both in
+[`CslibFrontier.Foundations.MeasureTheory.Integral.Pi`](../../CslibFrontier/Foundations/MeasureTheory/Integral/Pi.lean).
+Its direct Bochner counterpart is Mathlib's `MeasureTheory.integral_fintype_prod_eq_prod`; for a
+product over a subset of the coordinates under product probability measures, use
+`MeasureTheory.integral_finset_prod_pi_eq_prod` from the previous section.
+
+The checked [`GaussianNoiseSmooth.lean` clients](../../CslibFrontierTests/GaussianNoiseSmooth.lean)
+show that `U_{1/2}` of a discontinuous halfspace indicator is smooth and continuous, that
+`U_{-1/2}` of it is differentiable at the jump, that `U_1` of it is not smooth, that the Mehler
+kernel integrates to `1`, and that `U_{1/2}` of the indicator of a point vanishes everywhere. They
+also apply `contDiff_integral_exp_smul` to the moment generating function of a standard Gaussian,
+`lintegral_fintype_prod_eq_prod` to a product of two Gaussian densities, and `pi_withDensity` to
+the standard Gaussian measure on `ℝ²`. Run `scripts/build.sh CslibFrontierTests.GaussianNoiseSmooth`
+from the repository root to check them. Analyticity of `U_ρ f` and bounds on its derivatives are
+not formalized.
 
 ## Integrate Hermite polynomials against a Gaussian
 
