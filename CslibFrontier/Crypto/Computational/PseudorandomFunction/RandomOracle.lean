@@ -11,9 +11,11 @@ public import CslibFrontier.Crypto.Computational.PseudorandomFunction
 public import CslibFrontier.Computability.Probabilistic.Parameter
 import CslibFrontier.Computability.Probabilistic.Memoize
 import CslibFrontier.Languages.Probabilistic.RandomOracle.Probabilistic
+import CslibFrontier.Languages.Probabilistic.Oracle.Substitution
 import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.BitString
 
 /-!
 # An executable finite-list oracle for the PRF ideal game
@@ -81,11 +83,10 @@ theorem prfIdealGame_eq_cached (adversary : OracleDistinguisher) (n : ℕ) :
       ProbOracleComp (fun _ : BitString n => List Bool) (List Bool))
     else pure []
   have h := RandomOracle.interpret_prob_eq_memoize_map
-    (⟨List.ofFn, List.ofFn_injective⟩ : BitString n ↪ List Bool) List.ofFn
+    (Turing.MultiTapeTM.encBitString n) List.ofFn
     (fun _ => PMF.uniformOfFintype (BitString n)) (fun _ => BitString.uniformList n)
-    (fun _ => rfl) (OracleComp.interpret
-      (OracleComp.sumHandler (fun k => ProbOracleComp.sample (ProbComp.unifFin k))
-        (fun request : Unit × List Bool => adapter request.2)) (adversary n []))
+    (fun _ => rfl)
+    (ProbOracleComp.simulate (fun request : Unit × List Bool => adapter request.2) (adversary n []))
   have hstep (query : List Bool) : OracleComp.interpret
       (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifOracle k))
         (fun key => memoize (fun _ => BitString.uniformList n) (List.ofFn key)))
@@ -105,9 +106,8 @@ theorem prfIdealGame_eq_cached (adversary : OracleDistinguisher) (n : ℕ) :
   rw [ProbComp.eval_map, ProbOracleComp.eval_run_interpret]
   simpa only [prfIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
     ProbOracleComp.eval_interpret, ProbComp.eval_pure, PMF.pi_uniformOfFintype,
-    OracleComp.interpret_interpret, OracleComp.interpret_sumHandler,
-    ProbOracleComp.interpret_sample, ProbComp.unifFin, OracleComp.interpret_query,
-    Function.Embedding.coeFn_mk, hstep, heager, PMF.monad_bind_eq_bind] using h
+    ProbOracleComp.interpret_simulate,
+    Turing.MultiTapeTM.encBitString_apply, hstep, heager, PMF.monad_bind_eq_bind] using h
 
 open Turing.MultiTapeTM in
 /-- The ideal experiment has a strict PPT realization through its lazy cache. This does not

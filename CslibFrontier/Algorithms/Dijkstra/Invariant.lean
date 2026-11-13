@@ -7,7 +7,7 @@ Authors: Renfei Zhou
 module
 -- upstream: candidate
 
-public import CslibFrontier.Algorithms.WordRAM.Dijkstra.Statement
+public import CslibFrontier.Algorithms.Dijkstra.Defs
 
 /-!
 # Dijkstra's algorithm: the invariant
@@ -15,10 +15,10 @@ public import CslibFrontier.Algorithms.WordRAM.Dijkstra.Statement
 This file proves the graph theory behind Dijkstra's algorithm [Dijkstra][Dijkstra1959]
 [Cormen et al., Section 24.3][CLRS2009], independently of the machine. The algorithm keeps a set
 `S` of visited vertices and a tentative distance `D v` for every vertex, and
-`Cslib.Algorithms.WordRAM.Dijkstra.Instance.Inv` states what it maintains: `D` bounds the
+`Cslib.Algorithms.Dijkstra.Instance.Inv` states what it maintains: `D` bounds the
 distance from above, is exact on `S`, and is already relaxed along every edge out of `S`.
 
-The key step (`Cslib.Algorithms.WordRAM.Dijkstra.Instance.Inv.step`) is the classical cut
+The key step (`Cslib.Algorithms.Dijkstra.Instance.Inv.step`) is the classical cut
 argument: on every path from the source to an unvisited vertex, either the source is unvisited,
 with tentative distance `0`, or the path has an edge from `S` to an unvisited vertex. Either way
 its weight is at least the least tentative distance outside `S`. Hence an unvisited
@@ -27,24 +27,19 @@ the invariant with that vertex visited.
 
 ## Main definitions
 
-* `Cslib.Algorithms.WordRAM.Dijkstra.decodeDist`: the distance a word encodes.
-* `Cslib.Algorithms.WordRAM.Dijkstra.Instance.relax`: relaxation of the edges out of a vertex.
-* `Cslib.Algorithms.WordRAM.Dijkstra.Instance.Inv`: the invariant of Dijkstra's algorithm.
+* `Cslib.Algorithms.Dijkstra.Instance.relax`: relaxation of the edges out of a vertex.
+* `Cslib.Algorithms.Dijkstra.Instance.Inv`: the invariant of Dijkstra's algorithm.
 
 ## Main results
 
-* `Cslib.Algorithms.WordRAM.Dijkstra.decodeDist_encodeDist`: decoding inverts the encoding of
-  distances.
-* `Cslib.Algorithms.WordRAM.Dijkstra.decodeDist_le`: decoding preserves order between nonzero
-  words.
-* `Cslib.Algorithms.WordRAM.Dijkstra.Instance.le_maxWeight`: every edge weight is at most the
+* `Cslib.Algorithms.Dijkstra.Instance.le_maxWeight`: every edge weight is at most the
   largest one.
-* `Cslib.Algorithms.WordRAM.Dijkstra.Instance.dist_le_edge`: the distance to the head of an edge
+* `Cslib.Algorithms.Dijkstra.Instance.dist_le_edge`: the distance to the head of an edge
   is at most the distance to its tail plus its weight.
-* `Cslib.Algorithms.WordRAM.Dijkstra.Instance.Inv.init`: the invariant holds initially.
-* `Cslib.Algorithms.WordRAM.Dijkstra.Instance.Inv.step`: visiting an unvisited vertex of least
+* `Cslib.Algorithms.Dijkstra.Instance.Inv.init`: the invariant holds initially.
+* `Cslib.Algorithms.Dijkstra.Instance.Inv.step`: visiting an unvisited vertex of least
   finite tentative distance and relaxing its edges keeps the invariant.
-* `Cslib.Algorithms.WordRAM.Dijkstra.Instance.Inv.eq_dist`: once every unvisited vertex has
+* `Cslib.Algorithms.Dijkstra.Instance.Inv.eq_dist`: once every unvisited vertex has
   infinite tentative distance, the tentative distances are the distances.
 
 ## References
@@ -56,33 +51,7 @@ the invariant with that vertex visited.
 
 @[expose] public section
 
-namespace Cslib.Algorithms.WordRAM.Dijkstra
-
-/-- The distance a word encodes: `⊤` for `0` and `d` for `d + 1`. -/
-def decodeDist (x : ℕ) : ℕ∞ := if x = 0 then ⊤ else ((x - 1 : ℕ) : ℕ∞)
-
-@[simp]
-theorem encodeDist_decodeDist (x : ℕ) : encodeDist (decodeDist x) = x := by
-  cases x with
-  | zero => simp [decodeDist, encodeDist]
-  | succ x => simp [decodeDist, encodeDist]
-
-/-- Decoding inverts the encoding of distances: a distance word decodes to its distance. -/
-@[simp]
-theorem decodeDist_encodeDist (d : ℕ∞) : decodeDist (encodeDist d) = d := by
-  induction d using ENat.recTopCoe with
-  | top => simp [decodeDist, encodeDist]
-  | coe d => simp [decodeDist, encodeDist]
-
-/-- A nonzero distance word decodes to a finite distance. -/
-theorem decodeDist_ne_top {b : ℕ} (hb : b ≠ 0) : decodeDist b ≠ ⊤ := by
-  simp [decodeDist, hb]
-
-/-- Decoding preserves order between nonzero distance words. -/
-theorem decodeDist_le {a b : ℕ} (ha : a ≠ 0) (hb : b ≠ 0) (h : a ≤ b) :
-    decodeDist a ≤ decodeDist b := by
-  simp only [decodeDist, ha, hb, ite_false]
-  exact_mod_cast Nat.sub_le_sub_right h 1
+namespace Cslib.Algorithms.Dijkstra
 
 namespace Instance
 
@@ -252,6 +221,6 @@ theorem Inv.eq_dist {S : Finset (Fin I.n)} {D : Fin I.n → ℕ∞} (h : I.Inv S
 
 end Instance
 
-end Cslib.Algorithms.WordRAM.Dijkstra
+end Cslib.Algorithms.Dijkstra
 
 end

@@ -8,8 +8,7 @@ module
 -- upstream: candidate (after crei/tidy-universal lands)
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolySpace
-public import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds
-public import CslibFrontier.Computability.Machines.Turing.MultiTape.PolyTime
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Basic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.Transducer
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.Plain
@@ -19,16 +18,18 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 # Polynomial space on plain machines
 
 `Turing.MultiTapeTM.ComputableInPolySpace`, computability within polynomial space by any machine,
-has direct plain closure rules — inclusion of polynomial time, identity, composition, pairing,
-conditionals and binary-counted iteration — proved directly via
-`Turing.MultiTapeTM.ComputableInSpace` without routing through tidy computability.
+has direct plain closure rules — identity, composition, pairing, conditionals and binary-counted
+iteration — proved directly via `Turing.MultiTapeTM.ComputableInSpace` without routing through
+tidy computability. The certificates and the inclusion of polynomial time
+(`Turing.MultiTapeTM.ComputableInPolySpace.of_polyTime`) are in
+`CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolySpace.Basic`.
 
-The plain predicate and its closure rules are registered with `fun_prop`.
+The closure rules are registered with `fun_prop`.
 
 ## Main results
 
-* `Turing.MultiTapeTM.ComputableInPolySpace.of_polyTime`: plain polynomial time is within
-  polynomial space.
+* `Turing.MultiTapeTM.ComputableInPolySpace.polyBounded_length`: encoded outputs have polynomially
+  bounded length.
 * `Turing.MultiTapeTM.ComputableInPolySpace.comp`, `.prod`, `.ite`, `.congr`: closure properties.
 * `Turing.MultiTapeTM.ComputableInPolySpace.iterate`: iteration within polynomial space.
 * `Turing.MultiTapeTM.ComputableInPolyTime.increment`: the binary counter in polynomial time.
@@ -38,34 +39,11 @@ The plain predicate and its closure rules are registered with `fun_prop`.
 
 namespace Turing.MultiTapeTM
 
-attribute [fun_prop] ComputableInPolySpace
-
 variable {α β : Type} {f : α → β} {encIn : α ↪ List Bool} {encOut : β ↪ List Bool}
 
 namespace ComputableInPolySpace
 
 variable {γ δ : Type} {encMid : β ↪ List Bool} {encD : δ ↪ List Bool}
-
-/-- Build `ComputableInPolySpace` from a polynomially bounded `ComputableInSpace` certificate,
-retaining the same realizing machine. -/
-theorem of_inSpace {S : α → ℕ} (hS : PolyBounded (fun a => (encIn a).length) S)
-    (h : ComputableInSpace f encIn encOut S) :
-    ComputableInPolySpace f encIn encOut := by
-  obtain ⟨b, hb, hSb⟩ := hS
-  obtain ⟨t, c, hc, hl⟩ := h
-  have hcS (a : α) : c * (S a + 1) ≤ c * (b (encIn a).length + 1) :=
-    Nat.mul_le_mul_left c (Nat.add_le_add_right (hSb a) 1)
-  exact ⟨t, fun n => c * (b n + 1), by fun_prop,
-    hc.mono (fun _ => le_rfl) hcS, fun a => (hl a).trans (hcS a)⟩
-
-/-- Unpack `ComputableInPolySpace` into a polynomially bounded `ComputableInSpace` certificate,
-retaining the same realizing machine. -/
-theorem exists_inSpace (h : ComputableInPolySpace f encIn encOut) :
-    ∃ S, PolyBounded (fun a => (encIn a).length) S ∧ ComputableInSpace f encIn encOut S := by
-  obtain ⟨t, s, hs, hc, hl⟩ := h
-  refine ⟨fun a => s (encIn a).length, .of_polynomiallyBounded _ hs, t, 1,
-    hc.mono (fun _ => le_rfl) (fun a => by dsimp only; omega),
-    fun a => (hl a).trans (by dsimp only; omega)⟩
 
 /-- Encoded outputs of a polynomial-space function have polynomially bounded length. -/
 theorem polyBounded_length (h : ComputableInPolySpace f encIn encOut) :
@@ -74,15 +52,6 @@ theorem polyBounded_length (h : ComputableInPolySpace f encIn encOut) :
   exact (PolyBounded.of_polynomiallyBounded _ hs).mono hl
 
 /-! ### Closure and automation -/
-
-/-- Polynomial time is within polynomial space. -/
-@[fun_prop]
-theorem of_polyTime (h : ComputableInPolyTime f encIn encOut) :
-    ComputableInPolySpace f encIn encOut := by
-  obtain ⟨t, s, ht, hs, hc⟩ := h
-  exact ⟨fun a => t (encIn a).length, fun n => t n + s n, by fun_prop,
-    hc.mono (fun _ => le_rfl) (fun _ => Nat.le_add_left _ _),
-    fun a => (hc.length_le a).trans (Nat.le_add_right _ _)⟩
 
 /-- The identity. -/
 @[fun_prop]

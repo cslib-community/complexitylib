@@ -486,7 +486,7 @@ theorem uniform_projHash2_fiber_apply (d : F.Desc) {α β' γ' ρ ρ' : ZMod (F.
 `(β', γ', ρ', z')` all satisfying `γ' ≠ α * β'` and `ρ' ≠ ρ`, and any fixed `δ₁, δ₂, ξ : ZMod q`,
 the probability over uniform `τ₂ : ZMod (F.order d)` that at least one tuple in `queries` has tag
 `z'` is at most `(queries.length : ℝ≥0∞) / (F.order d : ℝ≥0∞)`. -/
-theorem uniform_projHash2_fiber_any_le (d : F.Desc) [DecidableEq (F.Carrier d)]
+theorem uniform_projHash2_fiber_any_le (d : F.Desc)
     (α ρ δ₁ δ₂ ξ : ZMod (F.order d))
     (queries : List (ZMod (F.order d) × ZMod (F.order d) × ZMod (F.order d) × F.Carrier d))
     (hq : ∀ q ∈ queries,

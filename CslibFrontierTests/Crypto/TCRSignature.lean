@@ -228,20 +228,9 @@ family allows `constHashForger` to win `indexedEufCmaGame` with probability `1` 
 theorem not_indexedEUFCMA_tcrSignature_constHash (S : SignatureScheme) :
     ¬ (TCRSignature.scheme S constHash).IndexedEUFCMA := by
   intro hsec
-  obtain ⟨ckg, dkg, hkgLen⟩ := S.keyGen_ppt.length_le
-  obtain ⟨csg, dsg, hsgLen⟩ := S.sign_ppt.length_le
-  let sigBound (n : ℕ) : ℕ :=
-    let M := TCRSignature.otsParam constHash n
-    csg * (2 * (ckg * (M + 1) ^ dkg) + M + 2) ^ dsg
+  obtain ⟨_, _, sigBound, hsigBoundPoly, _, hsigBoundLe⟩ :=
+    TCRSignature.exists_ots_bounds S constHash
   let replyBound (n : ℕ) : ℕ := 2 * n + 1 + sigBound n
-  have hsigBoundPoly : ComputableInPolyTime sigBound encUnary encUnary := by
-    have hM := TCRSignature.computableInPolyTime_otsParam constHash
-    have hkgPow := (ComputableInPolyTime.unary_pow dkg).comp (hM.unary_add' (.const 1))
-    have hkgTerm := (ComputableInPolyTime.const 2).unary_mul'
-      ((ComputableInPolyTime.const ckg).unary_mul' hkgPow)
-    have hinner := (hkgTerm.unary_add' hM).unary_add' (.const 2)
-    exact (ComputableInPolyTime.const csg).unary_mul'
-      ((ComputableInPolyTime.unary_pow dsg).comp hinner)
   have hreplyBoundPoly : ComputableInPolyTime replyBound encUnary encUnary :=
     (((ComputableInPolyTime.const 2).unary_mul' .id').unary_add' (.const 1)).unary_add'
       hsigBoundPoly
@@ -297,32 +286,13 @@ theorem not_indexedEUFCMA_tcrSignature_constHash (S : SignatureScheme) :
                                   (List.replicate (n + 1) false)))).bind
                               (fun _ => PMF.pure true) := by
                               refine PMF.bind_congr_on_support _ _ _ fun ots hots => ?_
-                              have hkPair := hkgLen (TCRSignature.otsParam constHash n) keys hkeys
-                              simp only [length_encPair, encBits_apply, encUnary_apply,
-                                List.length_replicate] at hkPair
-                              have hskLen :
-                                  keys.2.length ≤
-                                    ckg * (TCRSignature.otsParam constHash n + 1) ^ dkg := by
-                                omega
                               have hmsgLen :
                                   (TCRSignature.otsMsg constHash n k
                                     (List.replicate (n + 1) false)).length =
                                     TCRSignature.otsParam constHash n :=
                                 TCRSignature.length_otsMsg constHash n k _
-                              have hsPair :=
-                                hsgLen
-                                  (keys.2,
-                                    TCRSignature.otsMsg constHash n k
-                                      (List.replicate (n + 1) false)) ots hots
-                              simp only [length_encPair, encBits_apply, hmsgLen] at hsPair
-                              have hbaseLe :
-                                  2 * keys.2.length + 1 + TCRSignature.otsParam constHash n + 1 ≤
-                                    2 * (ckg * (TCRSignature.otsParam constHash n + 1) ^ dkg) +
-                                      TCRSignature.otsParam constHash n + 2 := by
-                                omega
                               have hotsLen : ots.length ≤ sigBound n :=
-                                hsPair.trans
-                                  (Nat.mul_le_mul_left csg (Nat.pow_le_pow_left hbaseLe dsg))
+                                hsigBoundLe n keys hkeys _ hmsgLen ots hots
                               have hsigLen :
                                   (encPair encBits encBits (k, ots)).length ≤ replyBound n := by
                                 simp only [length_encPair, encBits_apply, hkLen, replyBound]

@@ -359,12 +359,8 @@ theorem advantage_bind_sampleModNat_fin_le (width M : ℕ) [NeZero M] (k : ℕ �
     congr 1 with x : 1
     simp only [Function.comp_def, ZMod.val_natCast,
       Nat.mod_eq_of_lt (Nat.mod_lt x.val (NeZero.pos M))]
-  have hunif :
-      ((PMF.uniformOfFintype (Fin M)).bind fun i => k i.val) =
-        (PMF.uniformOfFintype (ZMod M)).bind (fun r : ZMod M => k r.val) := by
-    rcases Nat.exists_eq_succ_of_ne_zero (NeZero.ne M) with ⟨m, rfl⟩
-    rfl
-  rw [← NNReal.coe_le_coe, hmod, hunif, Game.advantage_eq_nndist, coe_nndist]
+  rw [← NNReal.coe_le_coe, hmod, Probability.PMF.uniformOfFintype_fin_bind,
+    Game.advantage_eq_nndist, coe_nndist]
   exact (PMF.dist_bind_le
     ((ProbComp.eval (sampleModNat width M)).map (Nat.cast : ℕ → ZMod M))
     (PMF.uniformOfFintype (ZMod M)) (fun r : ZMod M => k r.val)).trans

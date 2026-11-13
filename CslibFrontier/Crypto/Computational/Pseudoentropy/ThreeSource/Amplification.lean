@@ -27,8 +27,8 @@ choice, with polynomial loss. This prepares XOR combination without computing th
 
 * `isPolyTime_amplifiedGenerate`: a uniform certificate for the indexed family.
 * `length_amplifiedGenerate`: exact output length, one bit beyond the total seed cost.
-* `exists_secure_amplified_choice_withAdvice`, `exists_secure_amplified_choice`: amplification
-  preserves the proof-only secure choice, relative to fixed advice and in the uniform case.
+* `exists_secure_amplified_choice_withAdvice`: amplification preserves the proof-only secure
+  choice.
 
 ## References
 
@@ -112,8 +112,8 @@ private theorem isPolyTime_prepareGen :
   let h1 := ComputableInPolyTime.fst (encPair encUnary (encPair encBits encUnary)) encBits
   (h1.fst'.prod h1.snd'.snd').prod (ComputableInPolyTime.snd _ encBits)
 
-/-- Amplification preserves one choice secure relative to fixed advice against every uniform
-indexed test. -/
+/-- Amplification preserves one secure choice relative to fixed advice: the amplified candidate
+is indistinguishable from uniform for tests that read both the advice and the candidate index. -/
 theorem exists_secure_amplified_choice_withAdvice {pair : SamplablePair} {gap : ℕ → ℝ}
     {advice : ℕ → List Bool} (hpair : pair.HasGapWithAdvice gap advice)
     (saved : pair.SeedRealization)
@@ -122,15 +122,10 @@ theorem exists_secure_amplified_choice_withAdvice {pair : SamplablePair} {gap : 
     (hgap : ∀ᶠ n in atTop, 4 / (dyadicSize (densityBound n) : ℝ) ≤ gap n) :
     ∃ choose : ℕ → ℕ,
       (∀ᶠ n in atTop, choose n < size (saved.length n) (densityBound n)) ∧
-      ∀ test : ℕ × List Bool → ℕ → List Bool → ProbComp Bool,
-        IsPPTOn (encPair (encPair (encPair encUnary encBits) encUnary) encBits)
-          encBool (fun ((a, i), word) => test a i word) →
-        Negligible (fun n => Game.advantage
-          (((uniformList (common n)).map (amplifiedGenerate n (saved.length n)
-            (observationBound n) (densityBound n) (common n) (choose n) (saved.evaluate n))).bind
-              (fun word => ProbComp.eval (test (n, advice n) (choose n) word)))
-          ((uniformList (size (saved.length n) (densityBound n) * common n + 1)).bind
-            (fun word => ProbComp.eval (test (n, advice n) (choose n) word)))) := by
+      IndistinguishableWithAdvice (fun n => encPair encBits encUnary (advice n, choose n))
+        (fun n => (uniformList (common n)).map (amplifiedGenerate n (saved.length n)
+          (observationBound n) (densityBound n) (common n) (choose n) (saved.evaluate n)))
+        (fun n => uniformList (size (saved.length n) (densityBound n) * common n + 1)) := by
   obtain ⟨choose, hchoose, hsecure⟩ :=
     exists_secure_padded_choice_withAdvice hpair saved bounds hgap
   obtain ⟨hobservationPlain, hdensityPlain, hcommonPlain, _, _⟩ := bounds
@@ -150,44 +145,15 @@ theorem exists_secure_amplified_choice_withAdvice {pair : SamplablePair} {gap : 
     (count := fun n => size (saved.length n) (densityBound n) * common n + 1 - common n)
     (choose := fun n => (advice n, choose n))
     hgen hcommonPlain (isPolyTime_count saved hdensityPlain hcommonPlain)
-    (fun adversary hadversary =>
-      let h1 := ComputableInPolyTime.fst (encPair (encPair encUnary encBits) encUnary) encBits
-      hsecure (fun a i word => adversary a.1 (a.2, i) word)
-        ((hadversary.preprocess ((h1.fst'.fst'.prod (h1.fst'.snd'.prod h1.snd')).prod
-          (ComputableInPolyTime.snd _ encBits))).congr (fun ⟨⟨_, _⟩, _⟩ => rfl)))
-  refine ⟨choose, hchoose, fun test htest => ?_⟩
+    (fun adversary hadversary => by
+      simpa only [distinguishingGame_eq_bind, PMF.monad_bind_eq_bind] using
+        hsecure.negligible_encoded (test := fun ((n, context), word) => adversary n context word)
+          hadversary)
+  refine ⟨choose, hchoose, IndistinguishableWithAdvice.of_negligible_encoded fun test htest => ?_⟩
   unfold amplifiedGenerate
-  let h1 := ComputableInPolyTime.fst (encPair encUnary (encPair encBits encUnary)) encBits
-  refine (h (fun n context word => test (n, context.1) context.2 word)
-    ((htest.preprocess (((h1.fst'.prod h1.snd'.fst').prod h1.snd'.snd').prod
-      (ComputableInPolyTime.snd _ encBits))).congr (fun ⟨⟨_, _⟩, _⟩ => rfl))).congr'
-    (Eventually.of_forall fun n => ?_)
-  dsimp only
+  refine (h (fun n context word => test ((n, context), word))
+    (htest.congr fun ⟨⟨_, _⟩, _⟩ => rfl)).congr' (Eventually.of_forall fun n => ?_)
+  simp only [distinguishingGame_eq_bind, PMF.monad_bind_eq_bind]
   rw [length_add_count]
-
-/-- Amplification preserves one choice secure against every uniform indexed test. -/
-theorem exists_secure_amplified_choice {pair : SamplablePair} {gap : ℕ → ℝ}
-    (hpair : pair.HasGap gap) (saved : pair.SeedRealization)
-    {observationBound densityBound common : ℕ → ℕ}
-    (bounds : PaddingBounds saved observationBound densityBound common)
-    (hgap : ∀ᶠ n in atTop, 4 / (dyadicSize (densityBound n) : ℝ) ≤ gap n) :
-    ∃ choose : ℕ → ℕ,
-      (∀ᶠ n in atTop, choose n < size (saved.length n) (densityBound n)) ∧
-      ∀ test : ℕ → ℕ → List Bool → ProbComp Bool,
-        IsPPTOn (encPair (encPair encUnary encUnary) encBits)
-          encBool (fun ((n, i), word) => test n i word) →
-        Negligible (fun n => Game.advantage
-          (((uniformList (common n)).map (amplifiedGenerate n (saved.length n)
-            (observationBound n) (densityBound n) (common n) (choose n) (saved.evaluate n))).bind
-              (fun word => ProbComp.eval (test n (choose n) word)))
-          ((uniformList (size (saved.length n) (densityBound n) * common n + 1)).bind
-            (fun word => ProbComp.eval (test n (choose n) word)))) := by
-  obtain ⟨choose, hchoose, hsecure⟩ := exists_secure_amplified_choice_withAdvice
-    (SamplablePair.hasGap_iff_hasGapWithAdvice_nil.mp hpair) saved bounds hgap
-  refine ⟨choose, hchoose, fun test htest => ?_⟩
-  let h1 := ComputableInPolyTime.fst (encPair (encPair encUnary encBits) encUnary) encBits
-  exact hsecure (fun a i word => test a.1 i word)
-    ((htest.preprocess ((h1.fst'.fst'.prod h1.snd').prod
-      (ComputableInPolyTime.snd _ encBits))).congr (fun ⟨⟨_, _⟩, _⟩ => rfl))
 
 end Cslib.Crypto.Pseudoentropy.EntropyGrid

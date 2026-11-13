@@ -14,6 +14,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.P
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString.Dot
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Captured
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fold
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
@@ -49,6 +50,7 @@ public section
 namespace Cslib.AffineDisperser.Li
 
 open Turing.MultiTapeTM
+open Cslib.BitString (listDot)
 
 attribute [local irreducible] ComputableInPolyTime ComputableTidilyInPolyTime
 
@@ -728,17 +730,18 @@ theorem computableInPolyTime_polyComposePow :
 
 /-! ### Gaussian elimination and Berlekamp factoring -/
 
-private theorem tidy_dotBool :
-    ComputableTidilyInPolyTime (fun p : List Bool × List Bool => dotBool p.1 p.2)
+private theorem tidy_listDot :
+    ComputableTidilyInPolyTime (fun p : List Bool × List Bool => listDot p.1 p.2)
       (encPair encBits encBits) encBool :=
-  (tidy_bitsFoldBool xor false).comp (ComputableTidilyInPolyTime.bitsZipWith and)
+  (by fun_prop : ComputableInPolyTime (fun p : List Bool × List Bool => listDot p.1 p.2)
+    (encPair encBits encBits) encBool).tidy
 
 private def kernelDot (p : List (List Bool) × List Bool) (v : List Bool) : Bool :=
-  dotBool p.2 v
+  listDot p.2 v
 
 private def kernelRowStep (par : List (List Bool) × List Bool) (v : List Bool) : List Bool :=
-  if dotBool par.2 v then
-    List.zipWith xor v (par.1.getD ((par.1.map (dotBool par.2)).idxOf true) [])
+  if listDot par.2 v then
+    List.zipWith xor v (par.1.getD ((par.1.map (listDot par.2)).idxOf true) [])
   else v
 
 private theorem tidy_kernelStepBits :
@@ -750,14 +753,14 @@ private theorem tidy_kernelStepBits :
   have hdotEl : ComputableTidilyInPolyTime
       (fun x : (List (List Bool) × List Bool) × List Bool => kernelDot x.1 x.2)
       (encPair (encPair (encList encBits) encBits) encBits) encBool :=
-    tidy_dotBool.comp ((ha.comp (ComputableTidilyInPolyTime.fst (encPair (encList encBits) encBits)
+    tidy_listDot.comp ((ha.comp (ComputableTidilyInPolyTime.fst (encPair (encList encBits) encBits)
       encBits)).prod (ComputableTidilyInPolyTime.snd (encPair (encList encBits) encBits) encBits))
   have hvals : ComputableTidilyInPolyTime
-      (fun p : List (List Bool) × List Bool => p.1.map (dotBool p.2))
+      (fun p : List (List Bool) × List Bool => p.1.map (listDot p.2))
       (encPair (encList encBits) encBits) (encList encBool) :=
     ComputableTidilyInPolyTime.mapWithInput (f := kernelDot) hN hdotEl
   have hpIdx : ComputableTidilyInPolyTime
-      (fun p : List (List Bool) × List Bool => (p.1.map (dotBool p.2)).idxOf true)
+      (fun p : List (List Bool) × List Bool => (p.1.map (listDot p.2)).idxOf true)
       (encPair (encList encBits) encBits) encUnary :=
     ComputableTidilyInPolyTime.idxOfWithInput (encA := encBool) hvals (.const true)
   have hlenNPlain : ComputableInPolyTime (fun l : List (List Bool) => l.length)
@@ -768,7 +771,7 @@ private theorem tidy_kernelStepBits :
     hlenNPlain.tidy.comp hN
   have hcond := ComputableTidilyInPolyTime.unary_lt' hpIdx hlenN
   have hpiv : ComputableTidilyInPolyTime
-      (fun p : List (List Bool) × List Bool => p.1.getD ((p.1.map (dotBool p.2)).idxOf true) [])
+      (fun p : List (List Bool) × List Bool => p.1.getD ((p.1.map (listDot p.2)).idxOf true) [])
       (encPair (encList encBits) encBits) encBits := by
     have hget : ComputableInPolyTime (fun p : List (List Bool) × ℕ => p.1.getD p.2 [])
         (encPair (encList encBits) encUnary) encBits := by fun_prop
@@ -779,7 +782,7 @@ private theorem tidy_kernelStepBits :
     have hxpar := ComputableTidilyInPolyTime.fst (encPair (encList encBits) encBits) encBits
     have hxv := ComputableTidilyInPolyTime.snd (encPair (encList encBits) encBits) encBits
     have hxa := ha.comp hxpar
-    have hdot := tidy_dotBool.comp (hxa.prod hxv)
+    have hdot := tidy_listDot.comp (hxa.prod hxv)
     have hxpiv := hpiv.comp hxpar
     have hxor := (ComputableTidilyInPolyTime.bitsZipWith xor).comp (hxv.prod hxpiv)
     exact (ComputableInPolyTime.ite' hdot.computableInPolyTime
