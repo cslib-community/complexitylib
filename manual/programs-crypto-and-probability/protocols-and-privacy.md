@@ -291,7 +291,7 @@ response and challenge words; no group-membership decoder is assumed. This rejec
 normalized. The encoded verification equation, honest completeness and native runtime certificates
 are preserved. Malformed public keys have no encoding-range guarantee. The typed-game transport of
 arbitrary hash words and the approximate key-generation law remain part of the full ROM bridge
-[#2568](https://github.com/cslib-community/cslib-frontier/issues/2568).
+[#581](https://github.com/cslib-community/cslib-frontier/issues/581).
 
 The existing `fiatShamir` and its finite security theorem accept an injective
 `hashPoint : (M × T) ↪ Query`. Signing and final verification query `hashPoint (m, t)`, while
@@ -384,7 +384,7 @@ the identity public key in the checked order-11 example. The regressions in
 [`Crypto/SchnorrEncodedROM.lean`](../../CslibFrontierTests/Crypto/SchnorrEncodedROM.lean) also retain
 distinct junk-cache entries and distinguish fresh from signed final messages. This completes the
 representation milestone #2742; adaptive actual-sampling error composition, the key-generation
-transport and the native efficient forking reduction remain #2568.
+transport and the native efficient forking reduction remain #581.
 
 For strict-PPT **identification** under discrete log, use `SchnorrImpersonator`,
 `schnorrDirectGame` and `negligible_schnorrDirectGame`; for an adversary given independent honest
