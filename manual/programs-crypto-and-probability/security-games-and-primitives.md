@@ -711,10 +711,11 @@ used by both CTR and OFB mode, import
 [`Encryption/RandomFunctionHybrid.lean`](../../CslibFrontier/Crypto/Computational/Encryption/RandomFunctionHybrid.lean):
 it packages `FlagState`, the caching/fresh step handlers `lazyStep` and `freshStep`, the game
 equivalence `idealGame_eq_runWith_lazyStep`, the bad-flag reduction bounds
-`advantage_lazy_fresh_le` and `advantage_idealGame_freshStep_le`, lifted-coin support helpers
-(`snd_eq_of_mem_support_lift`, `toOuterMeasure_lift_eq_zero`), the two- and four-hop advantage
-triangle helpers `advantage_le_two` and `advantage_le_four`, and the shared block-mode query, cost,
-oracle, reduction, and ideal-game interface (`BlockModeQuery`, `BlockModeSpec`,
+`advantage_lazy_fresh_le` and `advantage_idealGame_freshStep_le` (whose lifted-coin support facts
+`PMF.snd_eq_of_mem_support_lift` and `PMF.toOuterMeasure_lift_eq_zero` live in
+[`Probability/PMF/Support.lean`](../../CslibFrontier/Probability/PMF/Support.lean)), the two- and
+four-hop advantage triangle helpers `advantage_le_two` and `advantage_le_four`, and the shared
+block-mode query, cost, oracle, reduction, and ideal-game interface (`BlockModeQuery`, `BlockModeSpec`,
 `BlockModeAdversary`, `blockModeSelect`, `blockModeBlocks`, `blockModeCost`, `blockModeOracle`,
 `blockModeIdealOracle`, `blockModeCpaGame`, `blockModeIdealGame`, `blockModeQueryProgram`,
 `blockModeReduction`, `blockModeCpaGame_eq_realGame`, `isQueryBounded_blockModeReduction`, and

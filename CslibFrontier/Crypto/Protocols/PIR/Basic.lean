@@ -10,7 +10,7 @@ module
 public import CslibFrontier.Init
 public import CslibFrontier.Languages.Probabilistic.Basic
 public import Mathlib.Data.Nat.Log
-import CslibFrontier.Probability.PMF.Map
+import CslibFrontier.Probability.PMF.Support
 
 /-!
 # Private information retrieval
@@ -172,17 +172,8 @@ reconstruct the right entry. -/
 theorem isCorrect_iff : P.IsCorrect ↔ ∀ x i r q, (r, q) ∈ (ProbComp.eval (P.query i)).support →
     P.reconstruct i r (fun s => P.answer s x (q s)) = x i := by
   refine forall_congr' fun x => forall_congr' fun i => ?_
-  rw [eval_run]
-  constructor
-  · intro h r q hrq
-    have hmem : P.reconstruct i r (fun s => P.answer s x (q s)) ∈
-        ((ProbComp.eval (P.query i)).map
-          fun rq => P.reconstruct i rq.1 fun s => P.answer s x (rq.2 s)).support :=
-      (PMF.mem_support_map_iff _ _ _).2 ⟨(r, q), hrq, rfl⟩
-    rwa [h, PMF.support_pure, Set.mem_singleton_iff] at hmem
-  · intro h
-    rw [Cslib.Probability.PMF.map_congr_on_support _ _ (Function.const _ (x i))
-      fun rq hrq => h rq.1 rq.2 hrq, PMF.map_const]
+  rw [eval_run, Probability.PMF.map_eq_pure_iff]
+  exact ⟨fun h r q hrq => h (r, q) hrq, fun h rq hrq => h rq.1 rq.2 hrq⟩
 
 theorem isPrivate_iff : P.IsPrivate ↔
     ∀ s i i', ProbComp.eval (P.serverQuery s i) = ProbComp.eval (P.serverQuery s i') := by
