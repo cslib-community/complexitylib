@@ -313,8 +313,21 @@ then bounds `formulaDepth g` by the least `t` without a hard set. The
 also applies the theorem to a function on 80 bits of formula depth above 76: every dense `X`,
 including a half-density subset of `S²` rounded up to an integer cardinality, needs at least
 7 bits. This subset has exactly half density when `|S|²` is even. Run
-`scripts/build.sh CslibFrontierTests.CircuitDenseCore`. Lemmas 6.4–6.5 and Theorem 6.6 are not
-formalized yet, nor are Theorems 1.6 and 1.8.
+`scripts/build.sh CslibFrontierTests.CircuitDenseCore`.
+[RandomPredictor](../../CslibFrontier/Computability/Circuit/Boolean/RandomPredictor.lean) proves
+Lemma 6.4 over the finite uniform model: a uniformly random `g` among all `2^{2ⁿ}` functions, and
+a fraction over all `2^{mn}` matrices. For any map `τ` from matrices to `Option (BitString m)`,
+such as `predictor φ`, `agreeFraction τ g` is the fraction of matrices on which `τ` predicts the
+row values of `g`. `sum_agreeFraction_pow_le_exp` bounds its `k`-th moment by
+`2^{-mk} exp(m²k²/(2 · 2ⁿ))`. `card_le_agreeFraction_le_two_thirds_pow` bounds the fraction of
+`g` with `agreeFraction τ g ≥ 2^{1-m}` by `(2/3)^{⌊2ⁿ/(2m²)⌋}`. The counting core is in
+[Combinatorics/DistinctValues](../../CslibFrontier/Foundations/Combinatorics/DistinctValues.lean):
+the average of `2^{-|distinct values|}` over all tuples, and the count of functions fixed on a
+set. The [random-predictor client](../../CslibFrontierTests/CircuitRandomPredictor.lean) applies
+the tail to the predictor of an arbitrary auxiliary-variable formula and to a constant
+predictor. Run `scripts/build.sh CslibFrontierTests.CircuitRandomPredictor`. Lemma 6.5, the union
+bound over the formulas of Lemma 6.1, and Theorem 6.6 are not formalized yet, nor are Theorems 1.6
+and 1.8.
 
 
 This covers the upper bound, Lemma 5.2, Theorems 1.1, 1.2, 1.5 and 1.7, and Corollaries 1.3
