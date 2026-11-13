@@ -170,10 +170,6 @@ def firstBitDistinguisher (adversary : OracleDistinguisher) : OracleDistinguishe
       (OracleComp.sumHandler (fun k => ProbOracleComp.sample (ProbComp.unifFin k)) firstBitQuery)
       (adversary n aux)
 
-private def firstBitHandler (request : Unit × List Bool) :
-    StateT Unit (WordOracleComp Unit) (List Bool) :=
-  fun u => (fun reply => (reply, u)) <$> firstBitQuery request
-
 private theorem interpret_firstBitDistinguisher (oracle : Unit × List Bool → ProbComp (List Bool))
     (adversary : OracleDistinguisher) (n : ℕ) (aux : List Bool) :
     OracleComp.interpret (OracleComp.sumHandler ProbComp.unifFin oracle)
@@ -188,44 +184,13 @@ private theorem interpret_firstBitDistinguisher (oracle : Unit × List Bool → 
 /-- Truncating every oracle reply to `1` bit preserves uniform strict oracle-PPT admissibility. -/
 theorem isOraclePPT_firstBitDistinguisher {adversary : OracleDistinguisher}
     (hadversary : IsOraclePPT encBool adversary) :
-    IsOraclePPT encBool (firstBitDistinguisher adversary) := by
-  let EIn := encPair (encPair encUnary encBits)
-    (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit))
-  have hhandler : IsOraclePPTOn EIn (encPair encBits (encFinEnum Unit))
-      (fun pair : (ℕ × List Bool) × ((Unit × List Bool) × Unit) =>
-        firstBitHandler pair.2.1 pair.2.2) := by
-    ppt [firstBitHandler, firstBitQuery]
-  have hrun := hadversary.run_interpret_preprocess_open' (External := Unit)
-    (handler := fun _ => firstBitHandler)
-    (prepare := fun c : ℕ × List Bool => c) (initial := fun _ => ())
-    (resources := fun _ _ => 1)
-    ComputableInPolyTime.id' hhandler (ComputableInPolyTime.const ()) (fun _ _ => True)
-    (fun _ => trivial) (ComputableInPolyTime.const 1) ?_
-  · refine (hrun.map' (ComputableInPolyTime.fst encBool (encFinEnum Unit))).congr
-      fun c External oracle e => ?_
-    have hlift : OracleComp.sumHandler
-        (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n)))
-        (fun q => firstBitHandler q) =
-      fun q => StateT.lift (σ := Unit) (OracleComp.sumHandler
-        (fun n => ProbOracleComp.sample (ProbComp.unifFin n)) firstBitQuery q) := by
-      funext q
-      cases q with
-      | inl k => rfl
-      | inr q =>
-        funext u
-        exact map_eq_pure_bind _ _
-    have h : Prod.fst <$> (OracleComp.interpret
-        (OracleComp.sumHandler
-          (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n)))
-          (fun q => firstBitHandler q)) (adversary c.1 c.2)).run () =
-        firstBitDistinguisher adversary c.1 c.2 := by
-      rw [hlift, OracleComp.run_interpret_lift, Functor.map_map]
-      exact id_map _
-    rw [h]
-  · intro _ _ _ _ result hresult
-    obtain ⟨reply, hreply, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hresult
-    obtain ⟨raw, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hreply
-    exact ⟨trivial, List.length_take_le _ _, le_add_right le_rfl⟩
+    IsOraclePPT encBool (firstBitDistinguisher adversary) :=
+  (hadversary.on.interpret_preprocess_open' (operationEncoding := encFinEnum Unit)
+    (handler := fun _ => firstBitQuery) (prepare := id) (resources := fun _ _ => 1)
+    ComputableInPolyTime.id' (by ppt [firstBitQuery]) (ComputableInPolyTime.const 1)
+    fun _ _ _ hreply => by
+      obtain ⟨raw, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hreply
+      exact List.length_take_le _ _).isOraclePPT
 
 /-- For `0 < n`, the real `BooleanPRF` game on `prfFirstBitEnsemble family` agrees with the real
 `PseudorandomFunction` game of `firstBitDistinguisher adversary`. -/

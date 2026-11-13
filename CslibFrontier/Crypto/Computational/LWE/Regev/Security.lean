@@ -233,8 +233,9 @@ theorem publicKeyGame_uniformEnsemble (n m w : ℕ → ℕ) (adversary : Encrypt
           (fun A => ProbComp.eval (adversary.choose security (Cslib.Matrix.toBinary A)))
           (fun state c => ProbComp.eval (adversary.guess security state (serializeCiphertext c)))
           bit := by
-  simp only [Encryption.publicKeyGame, LWE.uniformEnsemble, challengeGame,
-    PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def, eval_encryptSerialized_toBinary]
+  simp only [Encryption.publicKeyGame, Encryption.publicKeyGameOn, ↓reduceIte,
+    LWE.uniformEnsemble, challengeGame, PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def,
+    eval_encryptSerialized_toBinary]
 
 /-- Under the uniform ensemble, the advantage is at most the leftover-hash term. -/
 theorem advantage_uniformEnsemble_le (n m w : ℕ → ℕ) (adversary : Encryption.Adversary)

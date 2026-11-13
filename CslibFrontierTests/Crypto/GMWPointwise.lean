@@ -120,9 +120,8 @@ theorem reduction_isPPTOn :
 noncomputable def viewAdvantage (n : ℕ) (φ : CNF ℕ) (w z : List Bool) : ℝ≥0 :=
   Game.advantage
     (distinguishingGame
-      (((GMW.gmwProver tripleGen (n + 7) (3 * (n + 7) + 1) φ w).run
-        (adaptiveVerifier n φ z)
-        (GMW.gmwProver tripleGen (n + 7) (3 * (n + 7) + 1) φ w).init).map Prod.fst)
+      (zkRealView (GMW.gmwProver tripleGen (n + 7) (3 * (n + 7) + 1) φ w)
+        (adaptiveVerifier n φ z))
       (retainedTest n φ z))
     (distinguishingGame
       (ProbComp.eval (GMW.gmwSimulator tripleGen (fun k => 3 * k + 1) id adaptiveVerifier n φ z))

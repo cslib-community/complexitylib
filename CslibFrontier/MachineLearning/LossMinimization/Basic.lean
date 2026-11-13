@@ -55,8 +55,11 @@ minimization and of stochastic gradient descent.
 * `Cslib.MachineLearning.convexOn_empiricalRisk`, `Cslib.MachineLearning.convexOn_trueRisk`:
   convex losses have convex risks.
 * `Cslib.MachineLearning.continuousOn_empiricalRisk`,
-  `Cslib.MachineLearning.integrable_empiricalRisk_comp`: continuity and integrability of the
-  empirical risk follow from those of the losses.
+  `Cslib.MachineLearning.integrable_empiricalRisk_comp`,
+  `Cslib.MachineLearning.measurable_empiricalRisk`: continuity, integrability and measurability of
+  the empirical risk follow from those of the losses.
+* `Cslib.MachineLearning.trueRisk_mem_Icc`, `Cslib.MachineLearning.empiricalRisk_mem_Icc`: losses
+  in `[0, 1]` have risks in `[0, 1]`.
 
 ## References
 
@@ -134,6 +137,18 @@ theorem continuousOn_empiricalRisk [TopologicalSpace W] {K : Set W} {ℓ : W →
   simp only [funext (empiricalRisk_eq_sum_div ℓ S)]
   exact (continuousOn_finsetSum _ fun i _ => hℓ i).div_const _
 
+/-- A loss with values in `[0, 1]` has empirical risk in `[0, 1]` on every sample. -/
+theorem empiricalRisk_mem_Icc (ℓ : W → Z → ℝ) {m : ℕ} (S : Fin m → Z) {w : W}
+    (hℓ : ∀ z, ℓ w z ∈ Set.Icc (0 : ℝ) 1) : empiricalRisk ℓ S w ∈ Set.Icc (0 : ℝ) 1 := by
+  rcases Nat.eq_zero_or_pos m with rfl | hm
+  · simp [empiricalRisk_eq_sum_div]
+  have hmR : (0 : ℝ) < m := Nat.cast_pos.2 hm
+  rw [empiricalRisk_eq_sum_div]
+  refine ⟨div_nonneg (Finset.sum_nonneg fun k _ => (hℓ (S k)).1) hmR.le, ?_⟩
+  rw [div_le_one hmR]
+  calc ∑ k, ℓ w (S k) ≤ ∑ _k : Fin m, (1 : ℝ) := Finset.sum_le_sum fun k _ => (hℓ (S k)).2
+    _ = m := by simp
+
 /-! ### Expected risks -/
 
 variable [MeasurableSpace Z]
@@ -178,5 +193,21 @@ theorem convexOn_trueRisk [AddCommGroup W] [Module ℝ W] {K : Set W} {ℓ : W �
   rw [show trueRisk ℓ D = fun w => ∫ z, ℓ w z ∂D from funext (trueRisk_def ℓ D)]
   exact integral_convexOn_of_integrand_ae (f := fun z w => ℓ w z) hK
     (Filter.Eventually.of_forall hℓ) hint
+
+/-- The empirical risk of `w` is measurable in the sample when the loss `ℓ w` is measurable. -/
+theorem measurable_empiricalRisk {ℓ : W → Z → ℝ} (m : ℕ) {w : W} (hℓ : Measurable (ℓ w)) :
+    Measurable fun S : Fin m → Z => empiricalRisk ℓ S w := by
+  simp only [empiricalRisk_eq_sum_div]
+  exact (Finset.measurable_sum _ fun k _ => hℓ.comp (measurable_pi_apply k)).div_const _
+
+/-- A loss with values in `[0, 1]` has true risk in `[0, 1]` under a probability distribution. -/
+theorem trueRisk_mem_Icc (ℓ : W → Z → ℝ) (D : Measure Z) [IsProbabilityMeasure D] {w : W}
+    (hℓ : ∀ z, ℓ w z ∈ Set.Icc (0 : ℝ) 1) : trueRisk ℓ D w ∈ Set.Icc (0 : ℝ) 1 := by
+  rw [trueRisk_def]
+  refine ⟨integral_nonneg fun z => (hℓ z).1, ?_⟩
+  calc ∫ z, ℓ w z ∂D ≤ ∫ _, (1 : ℝ) ∂D :=
+        integral_mono_of_nonneg (ae_of_all _ fun z => (hℓ z).1) (integrable_const 1)
+          (ae_of_all _ fun z => (hℓ z).2)
+    _ = 1 := by simp
 
 end Cslib.MachineLearning

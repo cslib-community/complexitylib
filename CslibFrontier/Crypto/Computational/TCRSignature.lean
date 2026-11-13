@@ -1071,15 +1071,15 @@ noncomputable def oneTimeForger {k : ℕ} {Control : Type}
       let r0 := simRun machine word [] coins
       match r0.2 with
       | none =>
-        let out := outDecoder.decode r0.1
-        return otsForgeryOf H n out.2.1 out.2.2
+        let (_, msg, sig) := outDecoder.decode r0.1
+        return otsForgeryOf H n msg sig
       | some m₀ =>
         let ots ← List.take (sigBound n) <$>
           ProbOracleComp.query ((), otsMsg H n hashKey (H.eval n hashKey m₀))
         let reply := (encPair encBits encBits (hashKey, ots)).take fuel
         let r1 := simRun machine word reply coins
-        let out := outDecoder.decode r1.1
-        return otsForgeryOf H n out.2.1 out.2.2
+        let (_, msg, sig) := outDecoder.decode r1.1
+        return otsForgeryOf H n msg sig
     else
       pure ([], [])
 
@@ -1107,12 +1107,14 @@ noncomputable def tcrAdversary {k : ℕ} {Control : Type}
     let r0 := simRun machine word [] coins
     match r0.2 with
     | none =>
-      return (outDecoder.decode r0.1).2.1
+      let (_, m₁, _) := outDecoder.decode r0.1
+      return m₁
     | some m₀ =>
       let ots ← S.sign keys.2 (otsMsg H n hashKey (H.eval n hashKey m₀))
       let reply := (encPair encBits encBits (hashKey, ots)).take fuel
       let r1 := simRun machine word reply coins
-      return (outDecoder.decode r1.1).2.1
+      let (_, m₁, _) := outDecoder.decode r1.1
+      return m₁
 
 theorem computableInPolyTime_wordOf {α : Type} {input : α ↪ List Bool}
     {n : α → ℕ} {pk : α → List Bool}

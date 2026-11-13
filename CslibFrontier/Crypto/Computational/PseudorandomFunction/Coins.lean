@@ -202,69 +202,19 @@ theorem eval_coinIdealGame (adversary : OracleDistinguisher) (N : ℕ) :
     (OracleComp.sumHandler ProbComp.unifFin h) (adversary N []))) (funext fun request => ?_)
   simp only [map_pure, randomCoinOracle]
 
-/-- `coinQuery` as a handler with trivial state, for the open substitution rule. -/
-private def coinHandler (N : ℕ) (request : Unit × List Bool) :
-    StateT Unit (WordOracleComp Unit) (List Bool) := fun u =>
-  (fun reply => (reply, u)) <$> coinQuery N request
-
 /-- The forwarded adversary is uniformly strict oracle PPT whenever the coin adversary is. -/
 theorem isOraclePPT_coinDistinguisher {adversary : OracleDistinguisher}
     (hadversary : IsOraclePPT encBool adversary) :
     IsOraclePPT encBool (coinDistinguisher adversary) := by
   have hdecode := coinRequestDecoder.computableInPolyTime
-  have hhandler : IsOraclePPTOn
-      (encPair (encPair encUnary encBits)
-        (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit)))
-      (encPair encBits (encFinEnum Unit))
-      (fun pair : (ℕ × List Bool) × ((Unit × List Bool) × Unit) =>
-        coinHandler pair.1.1 pair.2.1 pair.2.2) := by
-    have heq : (fun pair : (ℕ × List Bool) × ((Unit × List Bool) × Unit) =>
-        coinHandler pair.1.1 pair.2.1 pair.2.2) = fun pair =>
-          (fun reply => (reply, ())) <$>
-            (List.take (coinRequestDecoder.decode pair.2.1.2).2 <$>
-              ProbOracleComp.query (spec := fun _ : Unit × List Bool => List Bool)
-                ((), padRequest pair.1.1 (coinRequestDecoder.decode pair.2.1.2).1)) := by
-      funext pair
-      obtain ⟨_, _, ⟨⟩⟩ := pair
-      rfl
-    rw [heq]
-    refine (IsOraclePPTOn.query_take' () ?_ ?_).map' ?_
-    · unfold padRequest
-      polytime
-    · polytime
-    · polytime
-  have hrun := hadversary.run_interpret_preprocess_open' (External := Unit)
-    (handler := fun c => coinHandler c.1)
-    (prepare := fun c : ℕ × List Bool => c) (initial := fun _ => ())
-    (resources := fun _ w => w.length)
-    ComputableInPolyTime.id' hhandler (ComputableInPolyTime.const ()) (fun _ _ => True)
-    (fun _ => trivial) (by polytime) ?_
-  · refine (hrun.map' (ComputableInPolyTime.fst encBool (encFinEnum Unit))).congr
-      fun c External oracle e => ?_
-    have hlift : OracleComp.sumHandler
-        (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n)))
-        (fun q => coinHandler c.1 q) =
-      fun q => StateT.lift (σ := Unit) (OracleComp.sumHandler
-        (fun n => ProbOracleComp.sample (ProbComp.unifFin n)) (coinQuery c.1) q) := by
-      funext q
-      cases q with
-      | inl n => rfl
-      | inr q =>
-        funext u
-        exact map_eq_pure_bind _ _
-    have h : Prod.fst <$> (OracleComp.interpret
-        (OracleComp.sumHandler
-          (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n)))
-          (fun q => coinHandler c.1 q)) (adversary c.1 c.2)).run () =
-        coinDistinguisher adversary c.1 c.2 := by
-      rw [hlift, OracleComp.run_interpret_lift, Functor.map_map]
-      exact id_map _
-    rw [h]
-  · intro c request u _ result hresult
-    obtain ⟨reply, hreply, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hresult
-    obtain ⟨raw, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hreply
-    refine ⟨trivial, (List.length_take_le _ _).trans ?_, le_add_right le_rfl⟩
-    exact length_dropFrame_le request.2
+  refine (hadversary.on.interpret_preprocess_open' (operationEncoding := encFinEnum Unit)
+    (handler := fun c => coinQuery c.1) (prepare := id) (resources := fun _ w => w.length)
+    ComputableInPolyTime.id' ?_ (by polytime) fun _ request reply hreply => ?_).isOraclePPT
+  · refine IsOraclePPTOn.query_take' () ?_ (by polytime)
+    unfold padRequest
+    polytime
+  · obtain ⟨raw, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hreply
+    exact (List.length_take_le _ _).trans (length_dropFrame_le request.2)
 
 /-- **A pseudorandom function gives pseudorandom coins**: the real and ideal coin games are
 indistinguishable for every oracle-PPT adversary, with the same advantage as the forwarded

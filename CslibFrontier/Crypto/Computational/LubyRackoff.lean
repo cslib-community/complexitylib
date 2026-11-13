@@ -516,39 +516,10 @@ private theorem isOraclePPT_interpret_handler {Operation External : Type} [Decid
       reply.length ≤ resources n request.2) :
     IsOraclePPT encBool (fun n aux => OracleComp.interpret
       (OracleComp.sumHandler (fun k => ProbOracleComp.sample (ProbComp.unifFin k)) (handler n))
-      (adversary n aux)) := by
-  have hfst := ComputableInPolyTime.fst (encPair encUnary encBits)
-    (encPair (encPair (encFinEnum Operation) encBits) (encFinEnum Unit))
-  have hsnd := ComputableInPolyTime.snd (encPair encUnary encBits)
-    (encPair (encPair (encFinEnum Operation) encBits) (encFinEnum Unit))
-  have hstate := (hhandler.preprocess' (hfst.prod hsnd.fst')).map'
-    (ComputableInPolyTime.id'.prod (ComputableInPolyTime.const (encOut := encFinEnum Unit) ()))
-  have hrun := hadversary.run_interpret_preprocess_open' (External := External) (State := Unit)
-    (input := encPair encUnary encBits) (operationEncoding := encFinEnum Operation)
-    (stateEncoding := encFinEnum Unit)
-    (handler := fun caller request (_ : Unit) =>
-      (fun reply => (reply, ())) <$> handler caller.1 request)
-    (prepare := id) (initial := fun _ => ())
-    (resources := fun caller query => resources caller.1 query)
-    ComputableInPolyTime.id' hstate (ComputableInPolyTime.const ()) (fun _ _ => True)
-    (fun _ => trivial) hresources
-    (fun caller request _ _ result hresult => by
-      simp only [OracleComp.mem_supportWith_map_iff] at hresult
-      obtain ⟨reply, hreply', rfl⟩ := hresult
-      exact ⟨trivial, hreply caller.1 request reply hreply', by simp [encFinEnum]⟩)
-  have h := hrun.map' (ComputableInPolyTime.fst encBool (encFinEnum Unit))
-  refine IsOraclePPTOn.isOraclePPT ?_
-  convert h using 1; funext ⟨n, aux⟩
-  rw [show (OracleComp.sumHandler
-      (fun k => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin k)))
-      (fun request (_ : Unit) => (fun reply => (reply, ())) <$> handler n request)) =
-      fun q => StateT.lift (OracleComp.sumHandler
-        (fun k => ProbOracleComp.sample (ProbComp.unifFin k)) (handler n) q) by
-    funext q; rcases q with k | request
-    · rfl
-    · funext u; simp only [OracleComp.sumHandler, StateT.lift, bind_pure_comp],
-    OracleComp.run_interpret_lift, Functor.map_map]
-  exact (id_map _).symm
+      (adversary n aux)) :=
+  (hadversary.on.interpret_preprocess_open' (handler := fun caller => handler caller.1)
+    (prepare := id) (resources := fun caller => resources caller.1) ComputableInPolyTime.id'
+    hhandler hresources fun caller => hreply caller.1).isOraclePPT
 
 /-! ### The reduction to three PRF keys -/
 

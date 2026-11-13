@@ -60,6 +60,24 @@ private theorem isProof : (A.appendShared B).IsProof lines := by
   exact h₆.resolvent (c₁ := [(x, true)]) (c₂ := [(x, false)]) x (by decide) (by decide)
     (by decide) (by decide)
 
+/-- The step search justifies `x` after the lines `y` and `¬y ∨ x` by resolving them on `y`, and
+names the premises by their positions. -/
+example : (Interpolant.findStep [[(y, true)], [(y, false), (x, true)]] [(x, true)]).map
+    Interpolant.Step.pivot = some y := by
+  decide
+
+example : (Interpolant.findStep [[(y, true)], [(y, false), (x, true)]] [(x, true)]).map
+    (fun t => (t.leftIndex, t.rightIndex)) = some (0, 1) := by
+  decide
+
+example : (Interpolant.findStep [[(y, true)], [(y, false), (x, true)]] [(x, true)]).map
+    Interpolant.Step.left = some [(y, true)] := by
+  decide
+
+example : (Interpolant.findStep [[(y, true)], [(y, false), (x, true)]] [(x, true)]).map
+    Interpolant.Step.right = some [(y, false), (x, true)] := by
+  decide
+
 /-- The extracted code: four gates per line. The clauses of `A` get `false`, those of `B` get
 `true`, the resolutions on `y` and `z` a disjunction and a conjunction, and the last line the
 selector on `x`. The output is the wire of the last line. -/
