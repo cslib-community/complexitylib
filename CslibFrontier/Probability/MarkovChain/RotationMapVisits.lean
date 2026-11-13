@@ -64,10 +64,12 @@ variable {V D : Type*} [Fintype V] [DecidableEq V] [Fintype D] [Nonempty D] {G :
 
 /-! ### The mean ergodic step -/
 
+omit [DecidableEq V] in
 /-- **Maximum principle.** On a connected regular multigraph, a function fixed by the walk
 operator is constant. -/
 theorem eq_of_walk_eq_self (hG : G.toSimpleGraph.Preconnected) {f : V → ℝ} (hf : G.walk f = f)
     (x y : V) : f x = f y := by
+  classical
   refine eq_of_forall_sum_edgeCount_mul_eq hG (fun y => ?_) x y
   have h := congrFun hf y
   rw [walk_apply, Fintype.expect_eq_sum_div_card, G.sum_comp_neighbor y f] at h
@@ -98,6 +100,7 @@ theorem abs_walk_pow_le {f : V → ℝ} {c : ℝ} (hf : ∀ x, |f x| ≤ c) (j :
   | zero => exact hf x
   | succ j ih => rw [pow_succ', Module.End.mul_apply]; exact abs_walk_le ih x
 
+omit [DecidableEq V] in
 /-- **Uniform Cesàro convergence.** On a connected regular multigraph, for a function `f` of total
 `0` the sums `∑_{j < N} Pʲ f` are eventually at most `ε N` in absolute value at every vertex. -/
 theorem exists_abs_sum_walk_pow_le (hG : G.toSimpleGraph.Preconnected) {f : V → ℝ}
