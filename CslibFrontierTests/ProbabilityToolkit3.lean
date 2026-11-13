@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.BitString.LinearHash
 import CslibFrontier.Probability.BoundedDifferences
@@ -91,9 +92,7 @@ example :
 
 /-- Uniform bit strings are sources of their full length. -/
 private theorem isSource_uniform (n : ℕ) : IsSource (uniformOfFintype (BitString n)) n 0 := by
-  rw [isSource_zero_iff, minEntropy_uniformOfFintype, Fintype.card_fun, Fintype.card_bool,
-    Fintype.card_fin, Nat.cast_pow, Nat.cast_ofNat, Real.logb_pow,
-    Real.logb_self_eq_one one_lt_two, mul_one]
+  rw [isSource_zero_iff, minEntropy_uniformOfFintype, BitString.logb_card]
 
 /-- `2⁻²` is a quarter. -/
 private theorem two_rpow_neg_two : (2 : ℝ) ^ (-2 : ℝ) = 1 / 4 := by
@@ -145,8 +144,7 @@ example :
   rw [minEntropy_uniformOfFintype]
   simp only [BitString, Fintype.card_fun, Fintype.card_bool, Fintype.card_fin, Nat.cast_pow,
     Nat.cast_ofNat, inv_div, div_one]
-  rw [Real.logb_pow, Real.logb_pow, show (4 : ℝ) = 2 ^ 2 by norm_num, Real.logb_pow,
-    Real.logb_self_eq_one (by norm_num)]
+  rw [Real.logb_pow, Real.logb_pow, show (4 : ℝ) = 2 ^ 2 by norm_num, Real.logb_two_pow]
   norm_num
 
 /-! ### McDiarmid's inequality -/

@@ -244,7 +244,6 @@
  "CslibFrontier/Crypto/Computational/DiscreteLog/SchnorrGroup.lean": 4,
  "CslibFrontier/Crypto/Computational/Encryption/CCA.lean": 12,
  "CslibFrontier/Crypto/Computational/GMW/Sequential.lean": 3,
- "CslibFrontier/Crypto/Computational/GMW/Simulator.lean": 1,
  "CslibFrontier/Crypto/Computational/GoldwasserMicali.lean": 8,
  "CslibFrontier/Crypto/Computational/HashAndSign.lean": 6,
  "CslibFrontier/Crypto/Computational/Homomorphic/KeyChain/CoinTape.lean": 3,

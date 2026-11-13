@@ -71,7 +71,7 @@ theorem length_vertices_incidenceGraph (F : CSP Rel V) :
 
 /-- Edge count includes each argument occurrence, even repeated variables. -/
 theorem length_edges_incidenceGraph (F : CSP Rel V) :
-    (incidenceGraph F).2.length = (F.map fun c => c.2.length).sum := by
+    (incidenceGraph F).2.length = (F.map fun c => c.scope.length).sum := by
   rw [incidenceGraph_edges, List.length_map, CSP.length_occurrences]
 
 /-- Every listed edge joins the variable part to the constraint-position part. -/

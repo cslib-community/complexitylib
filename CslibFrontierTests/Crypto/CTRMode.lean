@@ -76,7 +76,7 @@ example :
     (Game.advantage
         (ProbComp.eval
           (PRF.idealExperiment (ctrReduction ctrModCounter 2 false ctrOneQueryAdversary)))
-        (blockModeIdealGame 2 ctrOneQueryAdversary) : ℝ) ≤ 1 / 64 :=
+        (ProbComp.eval (blockModeIdealExperiment 2 ctrOneQueryAdversary)) : ℝ) ≤ 1 / 64 :=
   (advantage_idealExperiment_ctrReduction_le ctrModCounter 2 false
     isCostBounded_ctrOneQueryAdversary
     (fun iv _ _ hi hj hij => ctrModCounter_injOn (by decide) iv hi hj hij)

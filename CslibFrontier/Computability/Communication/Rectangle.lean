@@ -53,6 +53,8 @@ when `f` is constantly `z` only on rectangles with at most `K` entries
 ## Main results
 
 * `Cslib.Communication.Protocol.leaf_eq_iff`: the inputs reaching a leaf form a rectangle.
+* `Cslib.Communication.Protocol.leaf_aliceSend_output`: when only Alice sends, the leaf does not
+  depend on Bob's input.
 * `Cslib.Communication.Protocol.run_eq_leafOutput`: the output is constant on each rectangle.
 * `Cslib.Communication.Protocol.exists_rectangle_partition`: a protocol sending `d` bits
   partitions the inputs into at most `2 ^ d` monochromatic rectangles.
@@ -187,6 +189,18 @@ variable (z : Z) (send : X → Bool) (send' : Y → Bool) (p₀ p₁ : Protocol 
   Fin.append_right _ _ i
 
 end Simp
+
+/-- In a protocol in which only Alice sends, the leaf does not depend on Bob's input. -/
+theorem leaf_aliceSend_output (n : ℕ) (msg : X → BitString n) (out : BitString n → Z) (x : X)
+    (y y' : Y) :
+    (aliceSend n msg fun m => output (out m)).leaf x y =
+      (aliceSend n msg fun m => output (out m)).leaf x y' := by
+  induction n generalizing Z with
+  | zero => rfl
+  | succ n ih =>
+    simp only [aliceSend, leaf_alice]
+    rw [ih (fun x => Fin.tail (msg x)) fun m => out (Fin.cons false m),
+      ih (fun x => Fin.tail (msg x)) fun m => out (Fin.cons true m)]
 
 /-- **The inputs reaching a leaf form a rectangle**: the protocol reaches leaf `i` on `x` and `y`
 exactly when `x` is on Alice's side and `y` on Bob's side of its rectangle. -/
