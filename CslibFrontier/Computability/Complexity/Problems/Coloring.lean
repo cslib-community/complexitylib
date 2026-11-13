@@ -823,13 +823,10 @@ theorem polyTimeReducible_SAT_ThreeColoring :
 three literals is mapped to the gadget graph of the empty clause, which is not 3-colorable. -/
 theorem polyTimeReducible_ThreeSAT_ThreeColoring :
     PolyTimeReducible encCNF encGraph ThreeSAT ThreeColoring := by
-  have hcheck : ComputableInPolyTime (fun φ : CNF ℕ => φ.all fun c => decide (c.length ≤ 3))
-      encCNF encBool :=
-    allWithInput (by unfold encCNF; exact id')
-      (unary_le' ((length_list (encPair encNat encBool)).comp (snd _ _)) (const 3))
   refine ⟨fun φ => if φ.all (fun c => decide (c.length ≤ 3)) then SAT.toThreeColoring φ
     else SAT.toThreeColoring [[]],
-    hcheck.ite SAT.computableInPolyTime_toThreeColoring (const _), fun φ => ?_⟩
+    (computableInPolyTime_all_length_le 3).ite SAT.computableInPolyTime_toThreeColoring
+      (const _), fun φ => ?_⟩
   simp only [ThreeSAT, Set.mem_ofPred_eq]
   split_ifs with h
   · rw [SAT.toThreeColoring_mem_iff, mem_SAT]
