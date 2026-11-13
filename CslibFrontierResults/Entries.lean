@@ -684,7 +684,7 @@ register_result "exact-advice-strict-hierarchy" where
   topic := "complexity theory"
   sources := [
     { paper := Goldreich2007DraftR2,
-      theorem := "Theorem 3.7; Exercise 3.3 / Theorem 4.1 with positive gap",
+      theorem := "Theorem 3.7; Exercise 3.3 / Theorem 4.1 with positive gap and capacity",
       locator := "January 2007 r2.pdf, PDF pp. 6, 16, 22; printed pp. 122, 132, 138" },
     { paper := GoldreichAdviceHierarchyAddendum,
       theorem := "Revised Theorem 4.1, positive one-bit difference",

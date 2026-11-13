@@ -49,8 +49,9 @@ to one fewer bit, with positivity explicit so natural subtraction actually remov
 restriction. The
 [checked clients](../CslibFrontierTests/AdviceLengthComparison.lean) state the failed universal
 containment contract and verify zero-baseline, fixed-bit and variable positive-gap inclusions.
-The positive-gap versions of Exercise 3.3 and Theorem 4.1 are therefore covered under the
-exact full-pair model. Their unqualified displayed nonnegative-gap formulations remain
+The positive-gap, upper-capacity versions of Exercise 3.3 and Theorem 4.1 are therefore
+covered under the exact full-pair model. Exercise 3.3 places upper capacity in its guideline,
+rather than its displayed hypotheses; that restriction is material to this coverage claim. Their unqualified displayed nonnegative-gap formulations remain
 subject to the counterexample above; they are not silently reported as proved. The
 book-wide objective remains open.
 

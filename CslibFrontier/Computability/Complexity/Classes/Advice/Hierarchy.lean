@@ -28,7 +28,8 @@ machine enumeration. Each predicate fails at one assigned length, sufficient for
 (no exceptional inputs) convention explicitly discussed in the addendum. The capacity condition
 is only eventual; no restriction on the empty-input slice is needed. Strict positivity of the
 length increase is explicit, as required by the exact-length model qualification in
-[Goldreich2007DraftR2], Exercise 3.3 / Theorem 4.1.
+[Goldreich2007DraftR2], Exercise 3.3 / Theorem 4.1. Exercise 3.3 places the upper-capacity
+restriction in its guideline; this theorem does not drop that restriction.
 
 ## Main results
 
