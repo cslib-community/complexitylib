@@ -23,6 +23,7 @@ import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Languages.Probabilistic.Oracle.Support
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Probability.Uniform
 import CslibFrontier.Probability.PMF.Finiteness
 import CslibFrontier.Tactic.PPT
@@ -516,27 +517,12 @@ private theorem uniformOfFintype_exists_le {α ι : Type*} [Fintype α] [Nonempt
     (P : ι → α → Bool) [DecidablePred fun a => ∃ i, P i a = true] :
     ((PMF.uniformOfFintype α).map (fun a => decide (∃ i, P i a = true)) true).toNNReal ≤
       ∑ i : ι, ((PMF.uniformOfFintype α).map (fun a => P i a) true).toNNReal := by
-  have hcard_pos : (0 : ℝ≥0) < Fintype.card α := by exact_mod_cast Fintype.card_pos
-  classical
-  have hsub : (Finset.univ.filter fun a : α => decide (∃ i, P i a = true) = true) ⊆
-      Finset.univ.biUnion fun i : ι => Finset.univ.filter fun a : α => P i a = true := by
-    intro a ha
-    simp only [Finset.mem_filter, Finset.mem_univ, true_and, decide_eq_true_eq] at ha
-    obtain ⟨i, hi⟩ := ha
-    exact Finset.mem_biUnion.mpr
-      ⟨i, Finset.mem_univ i, Finset.mem_filter.mpr ⟨Finset.mem_univ a, hi⟩⟩
-  have hcard_le : (Finset.univ.filter fun a : α => decide (∃ i, P i a = true) = true).card ≤
-      ∑ i : ι, (Finset.univ.filter fun a : α => P i a = true).card :=
-    (Finset.card_le_card hsub).trans Finset.card_biUnion_le
-  have hprob : ∀ q : α → Bool,
-      ((PMF.uniformOfFintype α).map q true).toNNReal =
-        ((Finset.univ.filter fun a : α => q a = true).card : ℝ≥0) / Fintype.card α := by
-    intro q
-    rw [PMF.uniformOfFintype_map_apply, ENNReal.toNNReal_div, ENNReal.toNNReal_natCast,
-      ENNReal.toNNReal_natCast, Nat.card_eq_fintype_card, Fintype.card_subtype]
-  rw [hprob]
-  simp_rw [hprob, ← Finset.sum_div]
-  exact div_le_div_of_nonneg_right (by exact_mod_cast hcard_le) hcard_pos.le
+  have h := ENNReal.toNNReal_mono (by finiteness)
+    (PMF.map_true_le_sum (PMF.uniformOfFintype α) Finset.univ
+      (E := fun a => decide (∃ i, P i a = true)) (F := P) fun a _ ha => by
+        obtain ⟨i, hi⟩ := of_decide_eq_true ha
+        exact ⟨i, Finset.mem_univ i, hi⟩)
+  rwa [ENNReal.toNNReal_sum fun i _ => PMF.apply_ne_top _ _] at h
 
 private theorem uniformOfFintype_forall_fin_eq {β : Type*} [Fintype β] [Nonempty β]
     (q : β → Bool) (n : ℕ) :

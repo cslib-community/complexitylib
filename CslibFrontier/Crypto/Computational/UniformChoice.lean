@@ -160,7 +160,7 @@ theorem ComputationallyIndistinguishable.uniform_bound
   have hnegligible : Negligible (fun n =>
       Game.advantage (ProbComp.eval (real n >>= reduction n))
         (ProbComp.eval (ideal n >>= reduction n))) := by
-    simpa only [distinguishingGame, PMF.monad_bind_eq_bind,
+    simpa only [distinguishingGame_eq_bind, PMF.monad_bind_eq_bind,
       ProbComp.eval_bind] using hsecure reduction hreduce
   have hscaled := hnegligible.polynomiallyBounded_mul
     (dyadicSize_polynomiallyBounded.comp hbound.polynomiallyBounded)

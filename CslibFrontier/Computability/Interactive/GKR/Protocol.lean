@@ -106,13 +106,50 @@ theorem natDegree_restrictLine_le {k : ℕ} (y w : Fin k → F) (W : (Fin k → 
 /-! ### The line step -/
 
 /-- A claim about layer `j`: a point `z` and the claimed value of the multilinear extension of the
-layer at `z`, stored as a sumcheck claim of round `0`. -/
+layer at `z`, stored as a sumcheck claim of round `0` (`LayerClaim.claim`) so that the sumcheck
+stage can bundle sumcheck over `z` (`Reduction.bundle`). -/
 abbrev LayerClaim (C : LayeredCircuit) (F : Type) (j : ℕ) : Type :=
   Σ _ : Fin (C.width j) → F, Sumcheck.Claim F 0
 
 /-- A sumcheck claim of the last round of layer `i`, at the point `z` of layer `i + 1`. -/
 abbrev SumcheckEnd (C : LayeredCircuit) (F : Type) (i : ℕ) : Type :=
   Σ _ : Fin (C.width (i + 1)) → F, Sumcheck.Claim F (C.width i + C.width i)
+
+namespace LayerClaim
+
+variable {C : LayeredCircuit} {j : ℕ}
+
+/-- The claim that the multilinear extension of layer `j` takes the value `v` at `z`. -/
+abbrev ofPoint (z : Fin (C.width j) → F) (v : F) : LayerClaim C F j := ⟨z, ⟨Fin.elim0, v⟩⟩
+
+/-- The point of layer `j` that the claim is about. -/
+abbrev point (x : LayerClaim C F j) : Fin (C.width j) → F := x.1
+
+/-- The claim as a sumcheck claim of round `0`, which has no challenges. -/
+abbrev claim (x : LayerClaim C F j) : Sumcheck.Claim F 0 := x.2
+
+/-- The claimed value of the multilinear extension of the layer at `point`. -/
+abbrev value (x : LayerClaim C F j) : F := x.claim.value
+
+end LayerClaim
+
+namespace SumcheckEnd
+
+variable {C : LayeredCircuit} {i : ℕ}
+
+/-- The point `z` of layer `i + 1` that the sumcheck of layer `i` started from. -/
+abbrev point (x : SumcheckEnd C F i) : Fin (C.width (i + 1)) → F := x.1
+
+/-- The last sumcheck claim. -/
+abbrev claim (x : SumcheckEnd C F i) : Sumcheck.Claim F (C.width i + C.width i) := x.2
+
+/-- The first half `y` of the last sumcheck point, a point of layer `i`. -/
+abbrev left (x : SumcheckEnd C F i) : Fin (C.width i) → F := x.claim.challenges ∘ Fin.castAdd _
+
+/-- The second half `w` of the last sumcheck point, a point of layer `i`. -/
+abbrev right (x : SumcheckEnd C F i) : Fin (C.width i) → F := x.claim.challenges ∘ Fin.natAdd _
+
+end SumcheckEnd
 
 namespace LayeredCircuit
 
@@ -125,14 +162,14 @@ noncomputable def combine (z : Fin (C.width (i + 1)) → F) (y w : Fin (C.width 
   eval (Sum.elim z (Sum.elim y w)) (multilinearExtension (C.addPred (R := F) i)) * (u + v) +
     eval (Sum.elim z (Sum.elim y w)) (multilinearExtension (C.multPred (R := F) i)) * (u * v)
 
-/-- The verifier's test of the line polynomial `q` against the last sumcheck claim `(z, r, c)`. -/
+/-- The verifier's test of the line polynomial `q` against the last sumcheck claim `x`. -/
 abbrev lineAccepts (x : SumcheckEnd C F i) (q : Polynomial F) : Prop :=
   q.natDegree ≤ C.width i ∧
-    x.2.2 = C.combine i x.1 (x.2.1 ∘ Fin.castAdd _) (x.2.1 ∘ Fin.natAdd _) (q.eval 0) (q.eval 1)
+    x.claim.value = C.combine i x.point x.left x.right (q.eval 0) (q.eval 1)
 
 /-- The claim about layer `i` at the point `t` of the line. -/
 def lineClaim (x : SumcheckEnd C F i) (q : Polynomial F) (t : F) : LayerClaim C F i :=
-  ⟨line (x.2.1 ∘ Fin.castAdd _) (x.2.1 ∘ Fin.natAdd _) t, (Fin.elim0, q.eval t)⟩
+  .ofPoint (line x.left x.right t) (q.eval t)
 
 /-- **The line step** of layer `i`, for the values `W` of layer `i`. The prover sends the
 restriction `q` of `W̃` to the line through the two halves `y`, `w` of the last sumcheck point; the
@@ -142,7 +179,7 @@ noncomputable def lineStep (W : (Fin (C.width i) → Bool) → F) :
     Reduction OracleSpec.empty OracleSpec.empty (Sumcheck.roundSpec F) (SumcheckEnd C F i) Unit
       (LayerClaim C F i) Unit where
   prover x _ :=
-    let q := restrictLine (x.2.1 ∘ Fin.castAdd _) (x.2.1 ∘ Fin.natAdd _) W
+    let q := restrictLine x.left x.right W
     pure (show ProbOracleComp OracleSpec.empty
         (Polynomial F × (F → ProbOracleComp OracleSpec.empty _)) from
       pure (q, fun t => pure (C.lineClaim i x q t, ())))
@@ -161,27 +198,26 @@ theorem lineStep_outputOn (W : (Fin (C.width i) → Bool) → F) (x : SumcheckEn
 
 /-- The claims about layer `i` that are true. -/
 def layerLang (W : (Fin (C.width i) → Bool) → F) : Set (LayerClaim C F i) :=
-  {y | eval y.1 (multilinearExtension W) = y.2.2}
+  {y | eval y.point (multilinearExtension W) = y.value}
 
 /-- The true last sumcheck claims of layer `i`. -/
 def endLang (W : (Fin (C.width i) → Bool) → F) : Set (SumcheckEnd C F i) :=
-  {x | x.2 ∈ language (Sumcheck.rel (C.summand i W x.1) (C.width i + C.width i))}
+  {x | x.claim ∈ language (Sumcheck.rel (C.summand i W x.point) (C.width i + C.width i))}
 
 omit [Fintype F] [DecidableEq F] in
 theorem mem_endLang (W : (Fin (C.width i) → Bool) → F) (x : SumcheckEnd C F i) :
-    x ∈ C.endLang i W ↔ eval x.2.1 (C.summand i W x.1) = x.2.2 := by
+    x ∈ C.endLang i W ↔ eval x.claim.challenges (C.summand i W x.point) = x.claim.value := by
   simp [endLang, language, Sumcheck.rel, Sumcheck.partialSum_self]
 
 omit [Fintype F] [DecidableEq F] in
 /-- The honest line polynomial passes the check exactly when the last sumcheck claim is true. -/
 theorem combine_restrictLine (W : (Fin (C.width i) → Bool) → F) (x : SumcheckEnd C F i) :
-    C.combine i x.1 (x.2.1 ∘ Fin.castAdd _) (x.2.1 ∘ Fin.natAdd _)
-        ((restrictLine (x.2.1 ∘ Fin.castAdd _) (x.2.1 ∘ Fin.natAdd _) W).eval 0)
-        ((restrictLine (x.2.1 ∘ Fin.castAdd _) (x.2.1 ∘ Fin.natAdd _) W).eval 1) =
-      eval x.2.1 (C.summand i W x.1) := by
+    C.combine i x.point x.left x.right ((restrictLine x.left x.right W).eval 0)
+        ((restrictLine x.left x.right W).eval 1) =
+      eval x.claim.challenges (C.summand i W x.point) := by
   rw [eval_restrictLine, eval_restrictLine, line_zero, line_one, combine]
-  conv_rhs => rw [← Fin.append_castAdd_natAdd (f := x.2.1)]
-  exact (C.eval_summand i W x.1 _ _).symm
+  conv_rhs => rw [← Fin.append_castAdd_natAdd (f := x.claim.challenges)]
+  exact (C.eval_summand i W x.point _ _).symm
 
 /-- **The line step is perfectly complete.** -/
 theorem lineStep_complete (W : (Fin (C.width i) → Bool) → F) :
@@ -191,8 +227,7 @@ theorem lineStep_complete (W : (Fin (C.width i) → Bool) → F) :
   rw [Reduction.run, World.plain_eval_execute, PMF.toOuterMeasure_map_apply]
   simp only [lineStep, runStrategy, plainLaw_bind, plainLaw_pure, plainLaw_sample, PMF.pure_bind,
     PMF.bind_bind]
-  have hacc : C.lineAccepts i x
-      (restrictLine (x.2.1 ∘ Fin.castAdd _) (x.2.1 ∘ Fin.natAdd _) W) :=
+  have hacc : C.lineAccepts i x (restrictLine x.left x.right W) :=
     ⟨natDegree_restrictLine_le _ _ W,
       ((C.mem_endLang i W x).mp hxw).symm.trans (C.combine_restrictLine i W x).symm⟩
   rw [PMF.toOuterMeasure_bind_apply]
@@ -211,16 +246,15 @@ theorem lineStep_rbrSound (W : (Fin (C.width i) → Bool) → F) :
     | none => x ∈ C.endLang i W
     | some (_, none) => x ∈ C.endLang i W
     | some (q, some (t, _)) => x ∈ C.endLang i W ∨ (C.lineAccepts i x q ∧
-        q.eval t = (restrictLine (x.2.1 ∘ Fin.castAdd _) (x.2.1 ∘ Fin.natAdd _) W).eval t),
+        q.eval t = (restrictLine x.left x.right W).eval t),
     fun x hx h => hx h, fun x => ⟨fun hS _ h => hS h, fun q => ⟨?_, fun t => ?_⟩⟩⟩
   · intro hS
     change x ∉ C.endLang i W at hS
     change (ProbComp.eval (ProbComp.uniform F)).toOuterMeasure {t | x ∈ C.endLang i W ∨
-      (C.lineAccepts i x q ∧ q.eval t =
-        (restrictLine (x.2.1 ∘ Fin.castAdd _) (x.2.1 ∘ Fin.natAdd _) W).eval t)} ≤
+      (C.lineAccepts i x q ∧ q.eval t = (restrictLine x.left x.right W).eval t)} ≤
           (C.width i : ℝ≥0∞) / Fintype.card F
     by_cases hacc : C.lineAccepts i x q
-    · set q' := restrictLine (x.2.1 ∘ Fin.castAdd _) (x.2.1 ∘ Fin.natAdd _) W
+    · set q' := restrictLine x.left x.right W
       have hne : q ≠ q' := fun h => hS <| by
         rw [C.mem_endLang, ← C.combine_restrictLine i W x]
         exact (h ▸ hacc.2).symm
@@ -283,17 +317,17 @@ omit [Fintype F] [DecidableEq F] in
 /-- A round-`0` sumcheck claim on the summand is a claim about the multilinear extension of the
 layer above. -/
 theorem mem_language_rel_zero (W : (Fin (C.width i) → Bool) → F) (x : LayerClaim C F (i + 1)) :
-    x.2 ∈ language (Sumcheck.rel (C.summand i W x.1) 0) ↔
+    x.claim ∈ language (Sumcheck.rel (C.summand i W x.point) 0) ↔
       x ∈ C.layerLang (i + 1) (C.step i W) := by
   have hpoint : ∀ b : Fin (C.sumcheckVars i - 0) → Bool,
-      Sumcheck.point x.2.1 b = bitPoint (R := F) b := by
+      Sumcheck.point x.claim.challenges b = bitPoint (R := F) b := by
     intro b
     funext j
     simp only [Sumcheck.point, Nat.not_lt_zero, dite_false, bitPoint, bitVal]
     rfl
   simp only [language, Sumcheck.rel, Sumcheck.partialSum, hpoint, layerLang, Set.mem_ofPred_eq,
     exists_const]
-  rw [← C.sum_eval_summand i W x.1]
+  rw [← C.sum_eval_summand i W x.point]
   rfl
 
 /-- The sumcheck stage is perfectly complete. -/
@@ -333,7 +367,8 @@ theorem sumcheckStage_rbrSound (W : (Fin (C.width i) → Bool) → F) :
     fun z => Verifier.RbrSound.iterate (L := fun j => language (Sumcheck.rel (C.summand i W z) j))
       (C.sumcheckVars i) fun j hj =>
         Sumcheck.round_rbrSound 2 _ (C.degreeOf_summand_le i W z) hj
-  have hL : {x : LayerClaim C F (i + 1) | x.2 ∈ language (Sumcheck.rel (C.summand i W x.1) 0)} =
+  have hL : {x : LayerClaim C F (i + 1) |
+      x.claim ∈ language (Sumcheck.rel (C.summand i W x.point) 0)} =
       C.layerLang (i + 1) (C.step i W) := Set.ext fun x => C.mem_language_rel_zero i W x
   rw [hL] at h
   exact h
@@ -351,16 +386,16 @@ noncomputable def outputStep :
   prover D _ :=
     pure (show (Fin (C.width C.depth) → F) →
         ProbOracleComp OracleSpec.empty (LayerClaim C F C.depth × Unit) from
-      fun r => pure (⟨r, (Fin.elim0, eval r (multilinearExtension D))⟩, ()))
+      fun r => pure (.ofPoint r (eval r (multilinearExtension D)), ()))
   verifier :=
     { samplers := (ProbComp.uniform _, ())
-      decide := fun D c => pure (some ⟨c.1, (Fin.elim0, eval c.1 (multilinearExtension D))⟩) }
+      decide := fun D c => pure (some (.ofPoint c.1 (eval c.1 (multilinearExtension D)))) }
 
 omit [DecidableEq F] in
 theorem outputStep_outputOn (D : (Fin (C.width C.depth) → Bool) → F)
     (τ : Transcript (C.outputSpec (F := F))) :
     (C.outputStep (F := F)).verifier.outputOn D τ =
-      some ⟨τ.1, (Fin.elim0, eval τ.1 (multilinearExtension D))⟩ :=
+      some (.ofPoint τ.1 (eval τ.1 (multilinearExtension D))) :=
   rfl
 
 /-- **The input step**: the verifier checks the claim about the input layer by evaluating the
@@ -371,7 +406,7 @@ noncomputable def inputStep (x : (Fin (C.width 0) → Bool) → F) :
   verifier :=
     { samplers := ()
       decide := fun y _ =>
-        pure (if eval y.1 (multilinearExtension x) = y.2.2 then some () else none) }
+        pure (if eval y.point (multilinearExtension x) = y.value then some () else none) }
 
 omit [DecidableEq F] in
 /-- **Schwartz–Zippel** at a uniform point: a nonzero polynomial of total degree at most `d`

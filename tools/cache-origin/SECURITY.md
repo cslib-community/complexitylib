@@ -101,7 +101,7 @@ deleting suspect objects; do not copy the suspect outputs into a replacement cac
    belong to the clean run and that Actions cache keys and handoff metadata carry the new
    generation.
 
-Exercise recovery with isolated fixture caches before reader cutover: a pre-incident handoff
+Exercise recovery with isolated fixture caches before making MIT the preferred reader: a pre-incident handoff
 must be rejected after a generation change, all restoration paths must be disabled by the
 recovery switch, and source builds must still run. An actual incident additionally requires
 the coordinated quarantine/purge and trusted rebuild above; unit tests do not prove those
@@ -114,5 +114,6 @@ publication, bounded ordered restoration, retention and recovery. The MIT host w
 and commissioned manually; the repository does not yet reproduce that installation or perform
 automated upgrades. Repository-managed, repeatable provisioning and upgrade/rollback validation
 remain open under [#2503](https://github.com/cslib-community/cslib-frontier/issues/2503). Neither
-source approval nor the host checks close that broader issue. Reader activation, a real-build
-cold restore, a recovery exercise and exact-head human maintainer approval remain separate gates.
+source approval nor the host checks close that broader issue. MIT is enabled as the fallback
+reader. Making it the preferred reader, a real-build cold restore and a recovery exercise
+remain separate work; fallback activation does not certify those operator checks.

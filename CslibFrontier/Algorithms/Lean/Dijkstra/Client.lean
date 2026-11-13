@@ -7,11 +7,13 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Algorithms.WordRAM.Dijkstra.HeapStatement
+public import CslibFrontier.Algorithms.Dijkstra.ListInstance
 public import CslibFrontier.DataStructure.AdjacencyList.Spec
 public import CslibFrontier.DataStructure.Dictionary.Spec
 public import CslibFrontier.DataStructure.PriorityQueue.Spec
-import CslibFrontier.Algorithms.WordRAM.Dijkstra.ListEncode
+import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+import Mathlib.Tactic.Linarith
+import Mathlib.Tactic.Ring
 
 /-!
 # Dijkstra's algorithm as a client of abstract interfaces
@@ -36,9 +38,9 @@ visited vertex never improves. The main loop runs at most `n` rounds, one per vi
 Running the client against the transition functions of the specifications
 (`Cslib.DataStructure.StateTransitionSpec.runClient`) is a pure Lean computation. Its correctness
 (`Cslib.Algorithms.Lean.Dijkstra.dijkstra_correct`) rests on the machine-free invariant
-`Cslib.Algorithms.WordRAM.Dijkstra.Instance.Inv` and on the relaxation of parallel edges
-`Cslib.Algorithms.WordRAM.Dijkstra.decode_edgesWord`, both used unchanged. The same induction
-counts the operations by kind (`Cslib.Algorithms.Lean.Dijkstra.countP_kind_dijkstra_le`):
+`Cslib.Algorithms.Dijkstra.Instance.Inv` and on the relaxation of parallel edges
+`Cslib.Algorithms.Dijkstra.ListInstance.relaxEdges_eq_relax`, both used unchanged. The same
+induction counts the operations by kind (`Cslib.Algorithms.Lean.Dijkstra.countP_kind_dijkstra_le`):
 at most `min n (m + 1)` insertions, `min n (m + 2)` extractions, `m` key decreases, `2 m + 1`
 distance-map queries and `min (n + m) (2 m + 1)` graph queries. Only reached vertices are
 inserted, and each insertion after the source's is caused by an edge, so the counts need not grow
@@ -79,7 +81,7 @@ computation is not charged.
 namespace Cslib.Algorithms.Lean.Dijkstra
 
 open Cslib.DataStructure Cslib.DataStructure.PriorityQueue
-open Cslib.Algorithms.WordRAM.Dijkstra (ListInstance)
+open Cslib.Algorithms.Dijkstra (ListInstance)
 
 /-- The interfaces of Dijkstra's algorithm on `Fin n`: an indexed min-priority queue with keys
 at most `K`, a map of tentative distances with values below `V`, and the adjacency lists of the
@@ -533,56 +535,56 @@ private theorem scan_runs (T : Finset (Fin n)) (dm : Dictionary.State n)
 
 /-! ### Tentative distances -/
 
-/-- A tentative distance as a word: `0` while unreached and `d + 1` at distance `d`. -/
-private def word : Option ℕ → ℕ
-  | none => 0
-  | some d => d + 1
-
 /-- The tentative distances of a distance map: `⊤` while unreached. -/
 private def tentative (dm : Dictionary.State n) (v : Fin n) : ℕ∞ :=
-  WordRAM.Dijkstra.decodeDist (word (dm v))
+  (dm v).elim ⊤ (↑)
 
 private theorem tentative_of_none {dm : Dictionary.State n} {v : Fin n} (h : dm v = none) :
     tentative dm v = ⊤ := by
-  simp [tentative, h, word, WordRAM.Dijkstra.decodeDist]
+  simp only [tentative, h, Option.elim_none]
 
 private theorem tentative_of_some {dm : Dictionary.State n} {v : Fin n} {d : ℕ}
     (h : dm v = some d) : tentative dm v = d := by
-  simp [tentative, h, word, WordRAM.Dijkstra.decodeDist]
+  simp only [tentative, h, Option.elim_some]
 
-private theorem word_relaxOpt (du c : ℕ) (o : Option ℕ) :
-    word (relaxOpt (du + c) o) = WordRAM.Dijkstra.edgeWord (du + 1) c (word o) := by
+/-- Relaxing one edge lowers the tentative distance to the distance through the edge. -/
+private theorem elim_relaxOpt (du c : ℕ) (o : Option ℕ) :
+    (relaxOpt (du + c) o).elim (⊤ : ℕ∞) (↑) = min (o.elim ⊤ (↑)) ((du : ℕ∞) + c) := by
   cases o with
-  | none => simp only [relaxOpt, word, WordRAM.Dijkstra.edgeWord, ite_true]; omega
+  | none => simp only [relaxOpt, Option.elim_some, Option.elim_none, Nat.cast_add,
+      min_eq_right le_top]
   | some d =>
-    change min (du + c) d + 1 = WordRAM.Dijkstra.edgeWord (du + 1) c (d + 1)
-    unfold WordRAM.Dijkstra.edgeWord
-    split_ifs <;> (try contradiction) <;> omega
+    simp only [relaxOpt, Option.elim_some]
+    rw [Nat.mono_cast.map_min, Nat.cast_add, min_comm]
 
-private theorem word_scanMap (du : ℕ) (es : List (Fin n × ℕ)) (dm : Dictionary.State n)
-    (v : Fin n) :
-    word (scanMap du es dm v) = WordRAM.Dijkstra.edgesWord (du + 1) es v (word (dm v)) := by
+/-- The tentative distance of `v` after scanning `es` is the machine-free scan of `es`. -/
+private theorem tentative_scanMap_apply (du : ℕ) (es : List (Fin n × ℕ))
+    (dm : Dictionary.State n) (v : Fin n) :
+    tentative (scanMap du es dm) v = ListInstance.relaxEdges du es v (tentative dm v) := by
   induction es generalizing dm with
   | nil => rfl
   | cons e es ih =>
     obtain ⟨w, c⟩ := e
-    rw [WordRAM.Dijkstra.edgesWord, List.foldl_cons, ← WordRAM.Dijkstra.edgesWord]
-    refine (ih _).trans ?_
+    rw [scanMap, List.foldl_cons, ← scanMap, ih]
+    change ListInstance.relaxEdges du es v
+        (tentative (Function.update dm w (relaxOpt (du + c) (dm w))) v) =
+      ListInstance.relaxEdges du es v
+        (if w = v then min (tentative dm v) (du + c) else tentative dm v)
     congr 1
     by_cases hw : w = v
     · subst hw
-      simp [word_relaxOpt]
-    · simp [Function.update_of_ne (Ne.symm hw), hw]
+      rw [ite_eq_left rfl]
+      simp only [tentative, Function.update_self, elim_relaxOpt]
+    · rw [ite_eq_right hw]
+      simp only [tentative, Function.update_of_ne (Ne.symm hw)]
 
 /-- Scanning the edges out of `u` relaxes the tentative distances. -/
 private theorem tentative_scanMap (G : ListInstance) {dm : Dictionary.State G.n} {u : Fin G.n}
     {du : ℕ} (hu : dm u = some du) :
     tentative (scanMap du (G.adj u) dm) = G.toInstance.relax (tentative dm) u := by
   funext v
-  change WordRAM.Dijkstra.decodeDist (word (scanMap du (G.adj u) dm v)) = _
-  rw [word_scanMap]
-  exact WordRAM.Dijkstra.decode_edgesWord G (Nat.add_one_ne_zero du)
-    (by simp only [tentative, hu, word]) rfl
+  rw [tentative_scanMap_apply, ← tentative_of_some hu]
+  exact ListInstance.relaxEdges_eq_relax G (tentative dm) u v
 
 /-! ### The main loop -/
 
@@ -672,7 +674,7 @@ private theorem Good.visit {G : ListInstance} {T : Finset (Fin G.n)} {dm : Dicti
         rw [hdv, Option.some_inj] at hdv'
         exact hdv' ▸ hle]
       simp
-    · have h := WordRAM.Dijkstra.Instance.Inv.step _ hgood.inv huT hmin hfin
+    · have h := Dijkstra.Instance.Inv.step _ hgood.inv huT hmin hfin
       rwa [← tentative_scanMap G hdu] at h
   exact ⟨huT, hset, hbound, hgood'⟩
 
@@ -695,7 +697,7 @@ private theorem loop_runs (G : ListInstance) (hK : G.n * G.maxWeight ≤ K)
     rw [Fintype.card_fin] at hcard
     have hT : T = Finset.univ := Finset.eq_univ_of_card T (by rw [Fintype.card_fin]; omega)
     subst hT
-    refine ⟨dm, fun v => WordRAM.Dijkstra.Instance.Inv.eq_dist _ hgood.inv
+    refine ⟨dm, fun v => Dijkstra.Instance.Inv.eq_dist _ hgood.inv
       (fun v hv => absurd (Finset.mem_univ v) hv) v, ?_⟩
     have hq : syncQ Finset.univ dm = IndexedMinPQ.empty G.n := by
       funext v
@@ -713,7 +715,7 @@ private theorem loop_runs (G : ListInstance) (hK : G.n * G.maxWeight ≤ K)
       have hempty : syncQ T dm = IndexedMinPQ.empty G.n := funext hq
       have hdone : ∀ v ∉ T, tentative dm v = ⊤ := fun v hv =>
         tentative_of_none (by simpa [syncQ, hv] using hq v)
-      refine ⟨dm, WordRAM.Dijkstra.Instance.Inv.eq_dist _ hgood.inv hdone, ?_⟩
+      refine ⟨dm, Dijkstra.Instance.Inv.eq_dist _ hgood.inv hdone, ?_⟩
       refine Runs.lift_bind rate (b := 0) (.inl .extractMin) trivial ?_ ?_
       · simp only [IndexedMinPQ.step, hf]
         rw [hempty]
@@ -777,7 +779,7 @@ private theorem dijkstra_runs (G : ListInstance) (hK : G.n * G.maxWeight ≤ K)
     · rw [Function.update_of_ne hv, tentative_of_none (by simp [dm₀, hv, Dictionary.empty])]
   have hgood : Good G ∅ dm₀ :=
     ⟨fun v hv => absurd hv (Finset.notMem_empty v),
-      htent ▸ WordRAM.Dijkstra.Instance.Inv.init G.toInstance⟩
+      htent ▸ Dijkstra.Instance.Inv.init G.toInstance⟩
   obtain ⟨dist, hdist, hv, hs, hw⟩ :=
     loop_runs rate G hK hV G.n ∅ dm₀ hgood (by simp)
   refine ⟨dist, hdist, ?_⟩

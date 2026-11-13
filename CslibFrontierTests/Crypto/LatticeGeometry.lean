@@ -108,7 +108,7 @@ example : SIVP.IsSolution 1 stdLattice
       _ ≤ _ := minimum_le_successiveMinimum stdLattice stdLattice_ne_bot (by norm_num) (by simp)
   rw [he]
   refine ⟨(Pi.basisFun ℝ (Fin 2)).linearIndependent.comp _ (Fin.cast_injective _),
-    fun i => ⟨Submodule.subset_span ⟨_, rfl⟩, ?_⟩⟩
+    fun _ => Submodule.subset_span ⟨_, rfl⟩, fun i => ?_⟩
   rw [one_mul]
   refine le_trans ?_ hmin
   simp [Pi.norm_single]

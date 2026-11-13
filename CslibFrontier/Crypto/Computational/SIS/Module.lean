@@ -11,53 +11,32 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.De
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.IntBinary.Decode
 public import CslibFrontier.Crypto.Computational.LWE.Basic
 public import CslibFrontier.Crypto.Computational.SIS.Basic
-import CslibFrontier.Crypto.Negligible.Basic
-import CslibFrontier.Languages.Probabilistic.Norm
-import CslibFrontier.Probability.PMF
-import CslibFrontier.Tactic.PPT
-import Mathlib.Tactic.Abel
-import Mathlib.Tactic.Ring
+public import CslibFrontier.Foundations.Algebra.Negacyclic
 
 /-!
-# General-Modulus SIS, Negacyclic Polynomial Rings, Module-SIS and Module-LWE
+# Module-SIS and Module-LWE
 
-This module extends the power-of-two short integer solution formulation in
-`CslibFrontier.Crypto.Computational.SIS.Basic` to arbitrary nonzero moduli `q` and to structured
-lattice problems over the negacyclic polynomial ring `R_q = ℤ_q[X] / (X^n + 1)`
-([Ajtai1996], [Lyubashevsky2009], [Lyubashevsky2012], [DucasEtAl2018]):
+This module states structured lattice problems over the negacyclic polynomial ring
+`R_q = ℤ_q[X] / (X^n + 1)` ([Lyubashevsky2012], [DucasEtAl2018]). The unstructured short integer
+solution problem is in `CslibFrontier.Crypto.Computational.SIS.Basic`. Elements of `R_q` are
+represented by their coefficient vectors `Fin n → ZMod q`, multiplied by
+`negacyclicMul a b = rotMatrix a *ᵥ b`; these operations and the ring `Negacyclic R n` are in
+`CslibFrontier.Foundations.Algebra.Negacyclic`.
 
-1. **General-modulus SIS (`GeneralSISParams`, `SISParams`, `GeneralSIS`)**:
-   Whereas power-of-two SIS uses fixed-width bit slicing (`Matrix.toBinary`), general-modulus SIS
-   parameterizes over any nonzero modulus schedule `q : ℕ → ℕ` (`[NeZero (q security)]`),
-   including prime moduli (`SISParams`), composite moduli and powers of two
-   (`GeneralSISParams.ofPowerOfTwo`). Matrices over `ZMod q` are serialized row by row with
-   framed binary natural residues (`GeneralSIS.encodeMatrix`), and candidate integer vectors are
-   decoded from framed binary sign-magnitude words (`GeneralSIS.decodeVec`). Ajtai's linear hash
-   function `GeneralSIS.ajtaiHashEval` and collision extraction `GeneralSIS.extractSISVector`
-   require no primality assumption on `q`.
-   The experiments `GeneralSIS.sisGame` and `ModuleSIS.moduleSISGame` test the decoded integer
-   answer itself, not its centered residues as `SIS.game` does, and assume no relation between
-   `β` and `q`. When `q ≤ β` and the answer has at least one coordinate, the integer vector with
-   one coordinate `q` and all others `0` is a short solution for every matrix, so for such
-   parameters a winning answer does not depend on the matrix.
-2. **Negacyclic polynomial rings (`rotMatrix`, `negacyclicMul`)**:
-   Elements of `R[X] / (X^n + 1)` are represented by their coefficient vectors `Fin n → R`.
-   Multiplication by `a : Fin n → R` is the linear action of its `n × n` negacyclic
-   (anticirculant) matrix `rotMatrix a`, so `negacyclicMul a b = rotMatrix a *ᵥ b`.
-3. **Module-SIS, Ring-SIS and the structured-to-unstructured embedding (`ModuleSIS`, `RingSIS`)**:
+1. **Module-SIS, Ring-SIS and the structured-to-unstructured embedding (`ModuleSIS`, `RingSIS`)**:
    A `d × k` module matrix `A : Matrix (Fin d) (Fin k) (Fin n → ZMod q)` defines the linear map
    `moduleSISMap A z i = ∑ j, negacyclicMul (A i j) (z j)` (`RingSIS` is the rank-`1` case).
    Replacing each polynomial entry `A i j` by its `n × n` block `rotMatrix (A i j)` gives an
    unstructured `(d * n) × (k * n)` matrix `expandModuleMatrix A` over `ZMod q` that preserves
    the linear relation (`expandModuleMatrix_mulVec`), non-zeroness and the `ℓ_∞` norm bound under
    coefficient flattening `flattenPolyVec`. Consequently, `ModuleSIS.IsSolution` is equivalent to
-   `SIS.IsSolution` on `expandModuleMatrix A` (`isSolution_expandModuleMatrix_iff`), and
-   `ModuleSIS.structuredSISGame`, which draws a uniform module matrix `A` and runs the
-   unstructured solution check on `expandModuleMatrix A`, equals `ModuleSIS.moduleSISGame` for
-   every adversary (`structuredSISGame_eq_moduleSISGame`, `succProbability_structuredSISGame`).
-   This module proves no relation between `ModuleSIS.Hard` and `GeneralSIS.Hard`, whose
-   experiment draws a uniform unstructured matrix.
-4. **Module-LWE (`ModuleLWE`, `DecisionModuleLWE`)**:
+   `SIS.IsSolution` on `expandModuleMatrix A` (`isSolution_expandModuleMatrix_iff`).
+   `moduleSISExperiment` draws a uniform module matrix and tests the solver's answer as
+   `sisExperiment` does, and `ModuleSIS M` asserts that every PPT solver has negligible
+   advantage for the parameter family `M`. Solver machines read a module matrix through its
+   expansion (`ModuleSIS.encodeMatrix`). This module proves no relation between `ModuleSIS` and
+   `SIS`, whose experiment draws a uniform unstructured matrix.
+2. **Module-LWE (`ModuleLWE`, `DecisionModuleLWE`)**:
    Samples `(A, A · s + e)` over `R_q` expand via `expandModuleMatrix` and `flattenPolyVec` into
    standard LWE relations `(expandModuleMatrix A) *ᵥ flattenPolyVec s + flattenPolyVec e`
    (`ModuleLWE.flattenPolyVec_sample`), and `DecisionModuleLWE` states computational
@@ -65,37 +44,23 @@ lattice problems over the negacyclic polynomial ring `R_q = ℤ_q[X] / (X^n + 1)
 
 ## Main definitions
 
-* `Cslib.Crypto.GeneralSISParams`: SIS parameters for arbitrary nonzero moduli `q`.
-* `Cslib.Crypto.SISParams`, `Cslib.Crypto.SISParams.toGeneralSISParams`: prime-modulus SIS
-  parameters and their projection to `GeneralSISParams`.
-* `Cslib.Crypto.GeneralSISParams.ofPowerOfTwo`: power-of-two moduli `q = 2 ^ w` as
-  `GeneralSISParams`.
-* `Cslib.Crypto.GeneralSIS.inInfNormBound`, `Cslib.Crypto.GeneralSIS.isSISChallenge`,
-  `Cslib.Crypto.GeneralSIS.liftCentered`: residue-level `ℓ_∞` norm bound, SIS predicate and
-  centered integer lift.
-* `Cslib.Crypto.GeneralSIS.encodeMatrix`, `Cslib.Crypto.GeneralSIS.encodeVec`,
-  `Cslib.Crypto.GeneralSIS.decodeVec`: general-modulus matrix and integer-vector encodings.
-* `Cslib.Crypto.GeneralSIS.sisGame`, `Cslib.Crypto.GeneralSIS.Hard`: the general-modulus SIS
-  experiment and hardness hypothesis.
-* `Cslib.Crypto.GeneralSIS.ajtaiHashEval`, `Cslib.Crypto.GeneralSIS.extractSISVector`,
-  `Cslib.Crypto.GeneralSIS.isAjtaiCollision`, `Cslib.Crypto.GeneralSIS.ajtaiCollisionGame`,
-  `Cslib.Crypto.GeneralSIS.extractSISWord`: Ajtai's hash function, collision extraction and
-  collision experiment for arbitrary moduli.
-* `Cslib.Crypto.rotMatrix`, `Cslib.Crypto.negacyclicMul`: the `n × n` negacyclic multiplication
-  matrix and convolution in `R[X] / (X^n + 1)`.
 * `Cslib.Crypto.moduleSISMap`, `Cslib.Crypto.ringSISMap`: the Module-SIS and Ring-SIS linear maps.
 * `Cslib.Crypto.ModuleSISParams`, `Cslib.Crypto.RingSISParams`,
-  `Cslib.Crypto.RingSISParams.toModuleSISParams`,
-  `Cslib.Crypto.ModuleSISParams.toGeneralSISParams`: Module-SIS and Ring-SIS parameter bundles.
+  `Cslib.Crypto.RingSISParams.toModuleSISParams`: Module-SIS and Ring-SIS parameter families.
 * `Cslib.Crypto.ModuleSIS.IsSolution`, `Cslib.Crypto.ModuleSIS.inInfNormBound`,
-  `Cslib.Crypto.ModuleSIS.isModuleSISChallenge`: short solutions for Module-SIS.
+  `Cslib.Crypto.ModuleSIS.IsResidueSolution`: short solutions for Module-SIS.
 * `Cslib.Crypto.expandModuleMatrix`, `Cslib.Crypto.flattenPolyVec`,
   `Cslib.Crypto.unflattenPolyVec`: block-anticirculant matrix expansion and coefficient
   flattening.
-* `Cslib.Crypto.ModuleSIS.encodeMatrix`, `Cslib.Crypto.ModuleSIS.encodeVec`,
-  `Cslib.Crypto.ModuleSIS.decodeVec`, `Cslib.Crypto.ModuleSIS.moduleSISGame`,
-  `Cslib.Crypto.ModuleSIS.structuredSISGame`, `Cslib.Crypto.ModuleSIS.Hard`,
-  `Cslib.Crypto.RingSIS.Hard`: Module-SIS and Ring-SIS games and hardness hypotheses.
+* `Cslib.Crypto.ModuleSIS.encodeMatrix`, `Cslib.Crypto.ModuleSIS.encodeVec`: module matrix and
+  integer polynomial vector encodings.
+* `Cslib.Crypto.moduleSISExperiment`, `Cslib.Crypto.moduleSISAdvantage`: the fixed-instance
+  Module-SIS experiment and its success probability.
+* `Cslib.Crypto.ModuleSISParams.Input`, `Cslib.Crypto.ModuleSISParams.encInput`,
+  `Cslib.Crypto.ModuleSISParams.Solver`, `Cslib.Crypto.ModuleSISParams.Solver.IsPPT`: solver
+  inputs and their encoding, and efficient solvers.
+* `Cslib.Crypto.ModuleSIS`, `Cslib.Crypto.RingSIS`: the Module-SIS and Ring-SIS hardness
+  hypotheses.
 * `Cslib.Crypto.ModuleLWE.sample`, `Cslib.Crypto.ModuleLWE.encodeSample`,
   `Cslib.Crypto.ModuleLWE.sampleLaw`, `Cslib.Crypto.ModuleLWE.realEnsemble`,
   `Cslib.Crypto.ModuleLWE.uniformEnsemble`, `Cslib.Crypto.DecisionModuleLWE`: Module-LWE sample
@@ -103,39 +68,20 @@ lattice problems over the negacyclic polynomial ring `R_q = ℤ_q[X] / (X^n + 1)
 
 ## Main results
 
-* `Cslib.Crypto.GeneralSIS.isSISChallenge_iff_isSolution`: residue-level `isSISChallenge` is
-  equivalent to `SIS.IsSolution` on centered integer lifts for any `[NeZero q]`.
-* `Cslib.Crypto.GeneralSIS.decodeVec_encodeVec`, `Cslib.Crypto.GeneralSIS.decodeVec_nil`: exact
-  roundtrip and empty-word fallback for integer-vector encoding.
-* `Cslib.Crypto.GeneralSIS.sisGame_toGeneralSISParams`,
-  `Cslib.Crypto.GeneralSIS.hard_toGeneralSISParams_iff`: `SISParams.toGeneralSISParams` preserves
-  the SIS experiment and hardness predicate identically.
-* `Cslib.Crypto.GeneralSIS.isSolution_extractSISVector_of_Icc`,
-  `Cslib.Crypto.GeneralSIS.isSolution_extractSISVector_of_abs_le`,
-  `Cslib.Crypto.GeneralSIS.isSolution_of_isAjtaiCollision`,
-  `Cslib.Crypto.GeneralSIS.succProbability_ajtaiCollisionGame_le`: collision extraction and game
-  reduction for Ajtai's hash function over arbitrary moduli.
-* `Cslib.Crypto.negacyclicMul_add`, `Cslib.Crypto.add_negacyclicMul`,
-  `Cslib.Crypto.map_negacyclicMul`, `Cslib.Crypto.abs_negacyclicMul_le`: bilinearity, ring-map
-  compatibility and `ℓ_∞` norm bound for negacyclic polynomial multiplication.
+* `Cslib.Crypto.ofCoeffs_comp_moduleSISMap`, `Cslib.Crypto.moduleSISMap_eq_zero_iff`: the
+  Module-SIS map and its zero equation as `A *ᵥ z` over the ring `Negacyclic (ZMod q) n`.
 * `Cslib.Crypto.expandModuleMatrix_mulVec`,
   `Cslib.Crypto.expandModuleMatrix_mulVec_eq_zero_iff`: block-anticirculant matrix-vector
   product agrees with `moduleSISMap` after coefficient flattening.
+* `Cslib.Crypto.expandModuleMatrix_injective`: a module matrix is determined by its expansion.
 * `Cslib.Crypto.ModuleSIS.isSolution_expandModuleMatrix_iff`,
-  `Cslib.Crypto.ModuleSIS.isModuleSISChallenge_iff_isSISChallenge`: `ModuleSIS` solutions are
+  `Cslib.Crypto.ModuleSIS.isResidueSolution_expandModuleMatrix_iff`: `ModuleSIS` solutions are
   characterized by `SIS` solutions of `expandModuleMatrix A`.
-* `Cslib.Crypto.ModuleSIS.succProbability_structuredSISGame`,
-  `Cslib.Crypto.ModuleSIS.hard_of_structuredGeneralSIS`: `structuredSISGame`, the unstructured
-  solution check on the expanded module matrix, has the success probability of `moduleSISGame`,
-  so negligible success in it for every uniform strict PPT adversary gives `ModuleSIS.Hard`.
 * `Cslib.Crypto.ModuleLWE.flattenPolyVec_sample`: Module-LWE samples flatten to standard LWE
   matrix-vector relations under `expandModuleMatrix`.
 
 ## References
 
-* [M. Ajtai, *Generating Hard Instances of Lattice Problems*][Ajtai1996]
-* [V. Lyubashevsky, *Fiat-Shamir with Aborts: Applications to Lattice and Factoring-Based
-  Signatures*][Lyubashevsky2009]
 * [V. Lyubashevsky, *Lattice Signatures without Trapdoors*][Lyubashevsky2012]
 * [L. Ducas et al., *CRYSTALS-Dilithium: A Lattice-Based Digital Signature
   Scheme*][DucasEtAl2018]
@@ -148,400 +94,7 @@ namespace Cslib.Crypto
 open Probability Turing.MultiTapeTM
 open scoped _root_.Matrix NNReal ENNReal
 
-/-! ### Part 1: General-Modulus SIS and Ajtai Collision Extraction -/
-
-/-- Parameter family for the short integer solution problem over an arbitrary nonzero modulus
-schedule `q`, without restricting `q` to primes or powers of two. -/
-structure GeneralSISParams where
-  /-- Number of rows of the public matrix. -/
-  n : ℕ → ℕ
-  /-- Number of columns of the public matrix. -/
-  m : ℕ → ℕ
-  /-- Modulus at each security parameter. -/
-  q : ℕ → ℕ
-  /-- Infinity-norm bound on solution coordinates. -/
-  β : ℕ → ℕ
-  /-- Every modulus is nonzero. -/
-  hq : ∀ security, NeZero (q security)
-
-attribute [instance] GeneralSISParams.hq
-
-/-- Parameter family for prime-modulus SIS. Every prime-modulus parameter family projects to
-`GeneralSISParams` via `SISParams.toGeneralSISParams`. -/
-structure SISParams where
-  /-- Number of rows of the public matrix. -/
-  n : ℕ → ℕ
-  /-- Number of columns of the public matrix. -/
-  m : ℕ → ℕ
-  /-- Prime modulus at each security parameter. -/
-  q : ℕ → ℕ
-  /-- Infinity-norm bound on solution coordinates. -/
-  β : ℕ → ℕ
-  /-- Every modulus is prime. -/
-  hq_prime : ∀ security, Fact (Nat.Prime (q security))
-
-attribute [instance] SISParams.hq_prime
-
-/-- Project prime-modulus SIS parameters to general-modulus SIS parameters, forgetting primality
-while retaining `[NeZero (q security)]`. -/
-def SISParams.toGeneralSISParams (P : SISParams) : GeneralSISParams where
-  n := P.n
-  m := P.m
-  q := P.q
-  β := P.β
-  hq security := ⟨(P.hq_prime security).out.ne_zero⟩
-
-/-- Power-of-two moduli `q = 2 ^ w` form a `GeneralSISParams` family for every width function
-`w : ℕ → ℕ`. -/
-def GeneralSISParams.ofPowerOfTwo (n m w β : ℕ → ℕ) : GeneralSISParams where
-  n := n
-  m := m
-  q security := 2 ^ w security
-  β := β
-  hq _ := inferInstance
-
-namespace GeneralSIS
-
-/-- A residue vector `z : ι → ZMod q` has centered representatives bounded by `β` in `ℓ_∞` norm
-when `|(z i).valMinAbs| ≤ β` for every coordinate `i`. -/
-def inInfNormBound {q : ℕ} {ι : Type*} (β : ℕ) (z : ι → ZMod q) : Prop :=
-  ∀ i, |(z i).valMinAbs| ≤ β
-
-instance {q : ℕ} {ι : Type*} [Fintype ι] (β : ℕ) (z : ι → ZMod q) :
-    Decidable (inInfNormBound β z) :=
-  inferInstanceAs (Decidable (∀ _, _))
-
-/-- A residue vector `z : ι → ZMod q` is a short solution for `A` when it is nonzero, its
-centered representatives lie in `[-β, β]`, and `A *ᵥ z = 0`. -/
-def isSISChallenge {q : ℕ} {ρ ι : Type*} [Fintype ι] (A : Matrix ρ ι (ZMod q)) (β : ℕ)
-    (z : ι → ZMod q) : Prop :=
-  z ≠ 0 ∧ inInfNormBound β z ∧ A *ᵥ z = 0
-
-instance {q : ℕ} {ρ ι : Type*} [Fintype ρ] [Fintype ι] (A : Matrix ρ ι (ZMod q)) (β : ℕ)
-    (z : ι → ZMod q) : Decidable (isSISChallenge A β z) :=
-  inferInstanceAs (Decidable (_ ∧ _ ∧ _))
-
-/-- Lift a residue vector `z : ι → ZMod q` to its centered integer representatives in
-`(-q/2, q/2]`. -/
-def liftCentered {q : ℕ} {ι : Type*} (z : ι → ZMod q) : ι → ℤ :=
-  fun i => (z i).valMinAbs
-
-/-- Reducing the centered integer lift modulo `q` recovers the original residue vector. -/
-@[simp] theorem intCast_comp_liftCentered {q : ℕ} {ι : Type*} (z : ι → ZMod q) :
-    (Int.cast ∘ liftCentered z : ι → ZMod q) = z := by
-  funext i
-  exact ZMod.coe_valMinAbs (z i)
-
-/-- The centered integer lift is nonzero if and only if the residue vector is nonzero. -/
-@[simp] theorem liftCentered_ne_zero_iff {q : ℕ} {ι : Type*} (z : ι → ZMod q) :
-    liftCentered z ≠ 0 ↔ z ≠ 0 := by
-  refine not_iff_not.mpr ⟨fun h => ?_, fun h => ?_⟩
-  · rw [← intCast_comp_liftCentered z, h]
-    exact funext fun _ => Int.cast_zero
-  · subst h
-    funext i
-    exact ZMod.valMinAbs_zero q
-
-/-- A residue vector satisfies `isSISChallenge` if and only if its centered integer lift satisfies
-`SIS.IsSolution`. -/
-theorem isSISChallenge_iff_isSolution {q : ℕ} {ρ ι : Type*} [Fintype ι]
-    (A : Matrix ρ ι (ZMod q)) (β : ℕ) (z : ι → ZMod q) :
-    isSISChallenge A β z ↔ SIS.IsSolution A β (liftCentered z) := by
-  simp only [isSISChallenge, SIS.IsSolution, inInfNormBound, liftCentered_ne_zero_iff,
-    intCast_comp_liftCentered]
-  rfl
-
-/-- Row-major framed binary encoding of a matrix over `ZMod q`, encoding each entry's canonical
-representative in `[0, q)` with `encNat`. -/
-def encodeMatrix {rows cols q : ℕ} (A : Matrix (Fin rows) (Fin cols) (ZMod q)) : List Bool :=
-  encList (encList encNat) (List.ofFn fun i => List.ofFn fun j => (A i j).val)
-
-/-- Encode an integer vector `Fin m → ℤ` as a framed list of binary sign-magnitude words. -/
-def encodeVec {m : ℕ} (z : Fin m → ℤ) : List Bool :=
-  encList encIntBin (List.ofFn z)
-
-/-- Decode a word as an integer vector `Fin m → ℤ` by reading framed binary sign-magnitude
-integers, padding missing coordinates with `0` and ignoring excess entries. -/
-def decodeVec (m : ℕ) (word : List Bool) : Fin m → ℤ :=
-  let coords := (frames word).map decodeIntBin
-  fun i => coords.getD i.val 0
-
-/-- Decoding the empty word returns the zero integer vector. -/
-@[simp] theorem decodeVec_nil (m : ℕ) : decodeVec m [] = 0 := by
-  funext i
-  simp [decodeVec]
-
-/-- Every canonical encoded integer vector decodes to itself. -/
-@[simp] theorem decodeVec_encodeVec {m : ℕ} (z : Fin m → ℤ) :
-    decodeVec m (encodeVec z) = z := by
-  funext i
-  simp only [decodeVec, encodeVec, frames_encList, List.map_map, Function.comp_def,
-    decodeIntBin_encIntBin, List.getD_eq_getElem?_getD]
-  simp
-
-/-- The general-modulus SIS experiment: draw a uniform `A ∈ ℤ_q^{n×m}`, give the adversary the
-unary security parameter and the framed binary encoding of `A`, and accept when its answer
-decodes to a short integer solution with bound `β`. -/
-noncomputable def sisGame (P : GeneralSISParams)
-    (adversary : ℕ → List Bool → ProbComp (List Bool)) (security : ℕ) : Game := do
-  let A ← PMF.uniformOfFintype
-    (Matrix (Fin (P.n security)) (Fin (P.m security)) (ZMod (P.q security)))
-  let word ← ProbComp.eval (adversary security (encodeMatrix A))
-  return decide (SIS.IsSolution A (P.β security) (decodeVec (P.m security) word))
-
-/-- The general-modulus SIS hardness hypothesis for parameter family `P`: every uniform strict
-PPT adversary finds a short integer solution with negligible probability. -/
-def Hard (P : GeneralSISParams) : Prop :=
-  ∀ adversary : ℕ → List Bool → ProbComp (List Bool), IsPPT encBits adversary →
-    Negligible fun security => Game.succProbability (sisGame P adversary security)
-
-/-- The prime-modulus SIS game is the general-modulus SIS game on `P.toGeneralSISParams`. -/
-noncomputable abbrev _root_.Cslib.Crypto.SISParams.sisGame (P : SISParams)
-    (adversary : ℕ → List Bool → ProbComp (List Bool)) (security : ℕ) : Game :=
-  GeneralSIS.sisGame P.toGeneralSISParams adversary security
-
-/-- Prime-modulus SIS hardness is general-modulus SIS hardness on `P.toGeneralSISParams`. -/
-abbrev _root_.Cslib.Crypto.SISParams.Hard (P : SISParams) : Prop :=
-  GeneralSIS.Hard P.toGeneralSISParams
-
-/-- Projecting `SISParams` to `GeneralSISParams` preserves `sisGame` identically. -/
-@[simp] theorem sisGame_toGeneralSISParams (P : SISParams)
-    (adversary : ℕ → List Bool → ProbComp (List Bool)) (security : ℕ) :
-    GeneralSIS.sisGame P.toGeneralSISParams adversary security = P.sisGame adversary security :=
-  rfl
-
-/-- Projecting `SISParams` to `GeneralSISParams` preserves the hardness predicate identically. -/
-@[simp] theorem hard_toGeneralSISParams_iff (P : SISParams) :
-    GeneralSIS.Hard P.toGeneralSISParams ↔ P.Hard :=
-  Iff.rfl
-
-/-- Ajtai's linear hash function `f_A(x) = A *ᵥ (Int.cast ∘ x) mod q` on integer vectors
-([Ajtai1996]). Requires no primality assumption on `q`. -/
-def ajtaiHashEval {n m q : ℕ} (A : Matrix (Fin n) (Fin m) (ZMod q)) (x : Fin m → ℤ) :
-    Fin n → ZMod q :=
-  A *ᵥ (Int.cast ∘ x)
-
-/-- Extract a short integer kernel vector from a colliding pair `(x, y)` by taking their
-difference `x - y`. -/
-def extractSISVector {m : ℕ} (x y : Fin m → ℤ) : Fin m → ℤ :=
-  x - y
-
-/-- Subtraction of distinct inputs gives a nonzero vector. -/
-theorem extractSISVector_ne_zero {m : ℕ} {x y : Fin m → ℤ} (hxy : x ≠ y) :
-    extractSISVector x y ≠ 0 :=
-  sub_ne_zero.mpr hxy
-
-/-- If `x` and `y` collide under `ajtaiHashEval A`, their difference lies in the kernel of `A`
-modulo `q` for any modulus `q`. -/
-theorem ajtaiHashEval_extractSISVector {n m q : ℕ} (A : Matrix (Fin n) (Fin m) (ZMod q))
-    {x y : Fin m → ℤ} (hcoll : ajtaiHashEval A x = ajtaiHashEval A y) :
-    A *ᵥ (Int.cast ∘ extractSISVector x y) = 0 := by
-  have hcast : (Int.cast ∘ extractSISVector x y : Fin m → ZMod q) =
-      (Int.cast ∘ x) - (Int.cast ∘ y) :=
-    funext fun i => Int.cast_sub (x i) (y i)
-  rw [hcast, Matrix.mulVec_sub, sub_eq_zero]
-  exact hcoll
-
-/-- **Collision extraction from `[0, β]^m`**: any distinct `x, y ∈ [0, β]^m` with
-`ajtaiHashEval A x = ajtaiHashEval A y` yield a short integer solution `x - y` with bound `β`,
-for any modulus `q`. -/
-theorem isSolution_extractSISVector_of_Icc {n m q β : ℕ} (A : Matrix (Fin n) (Fin m) (ZMod q))
-    {x y : Fin m → ℤ} (hxy : x ≠ y)
-    (hx : ∀ i, 0 ≤ x i ∧ x i ≤ β) (hy : ∀ i, 0 ≤ y i ∧ y i ≤ β)
-    (hcoll : ajtaiHashEval A x = ajtaiHashEval A y) :
-    SIS.IsSolution A β (extractSISVector x y) := by
-  refine ⟨extractSISVector_ne_zero hxy, fun i => ?_, ajtaiHashEval_extractSISVector A hcoll⟩
-  have hxi := hx i
-  have hyi := hy i
-  simp only [extractSISVector, Pi.sub_apply, abs_le]
-  omega
-
-/-- **Collision extraction from `[-β, β]^m`**: any distinct `x, y ∈ [-β, β]^m` with
-`ajtaiHashEval A x = ajtaiHashEval A y` yield a short integer solution `x - y` with bound
-`2 * β`, for any modulus `q`. -/
-theorem isSolution_extractSISVector_of_abs_le {n m q β : ℕ}
-    (A : Matrix (Fin n) (Fin m) (ZMod q)) {x y : Fin m → ℤ} (hxy : x ≠ y)
-    (hx : ∀ i, |x i| ≤ β) (hy : ∀ i, |y i| ≤ β)
-    (hcoll : ajtaiHashEval A x = ajtaiHashEval A y) :
-    SIS.IsSolution A (2 * β) (extractSISVector x y) := by
-  refine ⟨extractSISVector_ne_zero hxy, fun i => ?_, ajtaiHashEval_extractSISVector A hcoll⟩
-  have hxi := abs_le.mp (hx i)
-  have hyi := abs_le.mp (hy i)
-  simp only [extractSISVector, Pi.sub_apply, Nat.cast_mul, Nat.cast_ofNat, abs_le]
-  omega
-
-/-- A pair `(x, y)` of integer vectors in `[0, β]^m` is an Ajtai hash collision for `A` when
-`x ≠ y`, both lie in `[0, β]^m`, and `ajtaiHashEval A x = ajtaiHashEval A y`. -/
-def isAjtaiCollision {n m q : ℕ} (A : Matrix (Fin n) (Fin m) (ZMod q)) (β : ℕ)
-    (x y : Fin m → ℤ) : Prop :=
-  x ≠ y ∧ (∀ i, 0 ≤ x i ∧ x i ≤ β) ∧ (∀ i, 0 ≤ y i ∧ y i ≤ β) ∧
-    ajtaiHashEval A x = ajtaiHashEval A y
-
-instance {n m q : ℕ} (A : Matrix (Fin n) (Fin m) (ZMod q)) (β : ℕ) (x y : Fin m → ℤ) :
-    Decidable (isAjtaiCollision A β x y) :=
-  inferInstanceAs (Decidable (_ ∧ _ ∧ _ ∧ _))
-
-/-- Every valid Ajtai collision in `[0, β]^m` extracts to a short integer solution with bound
-`β`. -/
-theorem isSolution_of_isAjtaiCollision {n m q β : ℕ} {A : Matrix (Fin n) (Fin m) (ZMod q)}
-    {x y : Fin m → ℤ} (h : isAjtaiCollision A β x y) :
-    SIS.IsSolution A β (extractSISVector x y) :=
-  isSolution_extractSISVector_of_Icc A h.1 h.2.1 h.2.2.1 h.2.2.2
-
-/-- The Ajtai collision experiment: draw a uniform `A ∈ ℤ_q^{n×m}`, run `finder` on the encoded
-matrix, decode the output pair `(x, y)` of `m`-vectors, and accept when `(x, y)` is a valid
-Ajtai collision in `[0, β]^m`. -/
-noncomputable def ajtaiCollisionGame (P : GeneralSISParams)
-    (finder : ℕ → List Bool → ProbComp (List Bool)) (security : ℕ) : Game := do
-  let A ← PMF.uniformOfFintype
-    (Matrix (Fin (P.n security)) (Fin (P.m security)) (ZMod (P.q security)))
-  let word ← ProbComp.eval (finder security (encodeMatrix A))
-  let x := decodeVec (P.m security) (unframe word)
-  let y := decodeVec (P.m security) (dropFrame word)
-  return decide (isAjtaiCollision A (P.β security) x y)
-
-/-- Postprocess a candidate collision word into a candidate SIS solution word by decoding both
-halves and encoding their difference. -/
-def extractSISWord (m : ℕ) (word : List Bool) : List Bool :=
-  encodeVec (extractSISVector (decodeVec m (unframe word)) (decodeVec m (dropFrame word)))
-
-/-- Monotonicity of `true`-probability across a common `PMF.bind` prefix. -/
-private theorem bind_true_le {α : Type*} (d : PMF α) (f g : α → Game)
-    (h : ∀ a, f a true ≤ g a true) :
-    (d.bind f) true ≤ (d.bind g) true := by
-  rw [PMF.bind_apply, PMF.bind_apply]
-  exact tsum_le_tsum fun a => mul_le_mul_of_nonneg_left (h a) zero_le
-
-/-- Postprocessing any collision finder's output with `extractSISWord` yields a `GeneralSIS`
-adversary whose success probability is at least the collision-finding probability, for any
-nonzero modulus `q`. -/
-theorem succProbability_ajtaiCollisionGame_le (P : GeneralSISParams)
-    (finder : ℕ → List Bool → ProbComp (List Bool)) (security : ℕ) :
-    Game.succProbability (ajtaiCollisionGame P finder security) ≤
-      Game.succProbability
-        (sisGame P (fun s w => extractSISWord (P.m s) <$> finder s w) security) := by
-  unfold ajtaiCollisionGame sisGame
-  simp only [pmf_norm, extractSISWord, decodeVec_encodeVec]
-  refine ENNReal.toNNReal_mono (PMF.apply_ne_top _ _)
-    (bind_true_le _ _ _ fun A => bind_true_le _ _ _ fun word => ?_)
-  by_cases h : isAjtaiCollision A (P.β security)
-      (decodeVec (P.m security) (unframe word))
-      (decodeVec (P.m security) (dropFrame word))
-  · simp [h, isSolution_of_isAjtaiCollision h]
-  · simp [h]
-
-end GeneralSIS
-
-/-! ### Part 2: Negacyclic Polynomial Ring `R[X] / (X^n + 1)` -/
-
-/-- The `n × n` negacyclic (anticirculant) multiplication matrix of a degree-`< n` polynomial
-`a : Fin n → R` in `R[X] / (X^n + 1)`. Column `j` represents `X^j · a(X) mod (X^n + 1)`. -/
-def rotMatrix {n : ℕ} {R : Type*} [Ring R] (a : Fin n → R) : Matrix (Fin n) (Fin n) R :=
-  Matrix.of fun i j =>
-    if h : j.val ≤ i.val then
-      a ⟨i.val - j.val, by omega⟩
-    else
-      -a ⟨n + i.val - j.val, by omega⟩
-
-/-- Negacyclic polynomial multiplication `a * b mod (X^n + 1)` on coefficient vectors
-`Fin n → R`, defined as the matrix-vector product `rotMatrix a *ᵥ b`. -/
-def negacyclicMul {n : ℕ} {R : Type*} [Ring R] (a b : Fin n → R) : Fin n → R :=
-  rotMatrix a *ᵥ b
-
-/-- Negacyclic multiplication is the matrix-vector product with `rotMatrix a`. -/
-@[simp] theorem rotMatrix_mulVec {n : ℕ} {R : Type*} [Ring R] (a b : Fin n → R) :
-    rotMatrix a *ᵥ b = negacyclicMul a b :=
-  rfl
-
-/-- The negacyclic matrix of the zero polynomial is the zero matrix. -/
-@[simp] theorem rotMatrix_zero {n : ℕ} {R : Type*} [Ring R] :
-    rotMatrix (0 : Fin n → R) = 0 := by
-  ext i j
-  simp only [rotMatrix, Matrix.of_apply, Pi.zero_apply, Matrix.zero_apply]
-  split_ifs <;> simp
-
-/-- `rotMatrix` preserves addition of coefficient vectors. -/
-theorem rotMatrix_add {n : ℕ} {R : Type*} [Ring R] (a b : Fin n → R) :
-    rotMatrix (a + b) = rotMatrix a + rotMatrix b := by
-  ext i j
-  simp only [rotMatrix, Matrix.of_apply, Pi.add_apply, Matrix.add_apply]
-  split_ifs <;> abel
-
-/-- `rotMatrix` commutes with negation of coefficient vectors. -/
-theorem rotMatrix_neg {n : ℕ} {R : Type*} [Ring R] (a : Fin n → R) :
-    rotMatrix (-a) = -rotMatrix a := by
-  ext i j
-  simp only [rotMatrix, Matrix.of_apply, Pi.neg_apply, Matrix.neg_apply]
-  split_ifs <;> abel
-
-/-- `rotMatrix` commutes with subtraction of coefficient vectors. -/
-theorem rotMatrix_sub {n : ℕ} {R : Type*} [Ring R] (a b : Fin n → R) :
-    rotMatrix (a - b) = rotMatrix a - rotMatrix b := by
-  ext i j
-  simp only [rotMatrix, Matrix.of_apply, Pi.sub_apply, Matrix.sub_apply]
-  split_ifs <;> abel
-
-/-- `rotMatrix` commutes with ring homomorphisms. -/
-theorem map_rotMatrix {n : ℕ} {R S : Type*} [Ring R] [Ring S] (f : R →+* S) (a : Fin n → R) :
-    (rotMatrix a).map f = rotMatrix (f ∘ a) := by
-  ext i j
-  simp only [Matrix.map_apply, rotMatrix, Matrix.of_apply, Function.comp_apply]
-  split_ifs <;> simp
-
-/-- Negacyclic multiplication distributes over addition on the right. -/
-theorem negacyclicMul_add {n : ℕ} {R : Type*} [Ring R] (a b c : Fin n → R) :
-    negacyclicMul a (b + c) = negacyclicMul a b + negacyclicMul a c :=
-  Matrix.mulVec_add (rotMatrix a) b c
-
-/-- Negacyclic multiplication distributes over addition on the left. -/
-theorem add_negacyclicMul {n : ℕ} {R : Type*} [Ring R] (a b c : Fin n → R) :
-    negacyclicMul (a + b) c = negacyclicMul a c + negacyclicMul b c := by
-  simp only [negacyclicMul, rotMatrix_add, Matrix.add_mulVec]
-
-/-- Negacyclic multiplication with zero on the right is zero. -/
-@[simp] theorem negacyclicMul_zero {n : ℕ} {R : Type*} [Ring R] (a : Fin n → R) :
-    negacyclicMul a 0 = 0 :=
-  Matrix.mulVec_zero (rotMatrix a)
-
-/-- Negacyclic multiplication with zero on the left is zero. -/
-@[simp] theorem zero_negacyclicMul {n : ℕ} {R : Type*} [Ring R] (a : Fin n → R) :
-    negacyclicMul 0 a = 0 := by
-  simp only [negacyclicMul, rotMatrix_zero, Matrix.zero_mulVec]
-
-/-- Negacyclic multiplication commutes with ring homomorphisms applied to coefficients. -/
-theorem map_negacyclicMul {n : ℕ} {R S : Type*} [Ring R] [Ring S] (f : R →+* S)
-    (a b : Fin n → R) :
-    f ∘ negacyclicMul a b = negacyclicMul (f ∘ a) (f ∘ b) := by
-  funext i
-  have h := RingHom.map_mulVec f (rotMatrix a) b i
-  rw [map_rotMatrix] at h
-  exact h
-
-/-- Entrywise absolute-value bound for `rotMatrix` over `ℤ`. -/
-theorem abs_rotMatrix_le {n α : ℕ} {a : Fin n → ℤ} (ha : ∀ i, |a i| ≤ α) (i j : Fin n) :
-    |rotMatrix a i j| ≤ α := by
-  simp only [rotMatrix, Matrix.of_apply]
-  split_ifs with h
-  · exact ha ⟨i.val - j.val, by omega⟩
-  · rw [abs_neg]
-    exact ha ⟨n + i.val - j.val, by omega⟩
-
-/-- **Infinity-norm bound for negacyclic multiplication**: if `‖a‖_∞ ≤ α` and `‖b‖_∞ ≤ β`, then
-every coefficient of `negacyclicMul a b` has absolute value at most `n * α * β`. -/
-theorem abs_negacyclicMul_le {n α β : ℕ} {a b : Fin n → ℤ}
-    (ha : ∀ i, |a i| ≤ α) (hb : ∀ j, |b j| ≤ β) (i : Fin n) :
-    |negacyclicMul a b i| ≤ n * α * β := by
-  calc |negacyclicMul a b i|
-      = |∑ j : Fin n, rotMatrix a i j * b j| := rfl
-    _ ≤ ∑ j : Fin n, |rotMatrix a i j * b j| := Finset.abs_sum_le_sum_abs _ _
-    _ ≤ ∑ _j : Fin n, ((α : ℤ) * β) := Finset.sum_le_sum fun j _ => by
-      rw [abs_mul]
-      exact mul_le_mul (abs_rotMatrix_le ha i j) (hb j) (abs_nonneg _) (by positivity)
-    _ = n * α * β := by
-      simp only [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul]
-      ring
-
-/-! ### Part 3: Module-SIS, Ring-SIS and Structured-to-Unstructured Expansion -/
+/-! ### Part 1: Module-SIS, Ring-SIS and Structured-to-Unstructured Expansion -/
 
 /-- The Module-SIS linear map `A · z` over `ℤ_q[X] / (X^n + 1)`: the `i`-th output polynomial
 is `∑ j : Fin k, negacyclicMul (A i j) (z j)`. -/
@@ -577,6 +130,23 @@ theorem moduleSISMap_add {d k n q : ℕ}
     moduleSISMap A (y + z) = moduleSISMap A y + moduleSISMap A z := by
   funext i
   simp only [moduleSISMap, Pi.add_apply, negacyclicMul_add, Finset.sum_add_distrib]
+
+/-- The coefficient-level Module-SIS map is the matrix-vector product `A *ᵥ z` over
+`Negacyclic (ZMod q) n`. -/
+theorem ofCoeffs_comp_moduleSISMap {d k n q : ℕ}
+    (A : Matrix (Fin d) (Fin k) (Fin n → ZMod q)) (z : Fin k → Fin n → ZMod q) :
+    Negacyclic.ofCoeffs ∘ moduleSISMap A z =
+      A.map Negacyclic.ofCoeffs *ᵥ (Negacyclic.ofCoeffs ∘ z) :=
+  funext fun i => Negacyclic.ofCoeffs_innerPoly (A i) z
+
+/-- A coefficient-level Module-SIS zero equation is the zero equation of `A *ᵥ z` over
+`Negacyclic (ZMod q) n`. -/
+theorem moduleSISMap_eq_zero_iff {d k n q : ℕ}
+    (A : Matrix (Fin d) (Fin k) (Fin n → ZMod q)) (z : Fin k → Fin n → ZMod q) :
+    moduleSISMap A z = 0 ↔ A.map Negacyclic.ofCoeffs *ᵥ (Negacyclic.ofCoeffs ∘ z) = 0 := by
+  rw [← ofCoeffs_comp_moduleSISMap]
+  simp only [funext_iff, Function.comp_apply, Pi.zero_apply, Negacyclic.ext_iff,
+    Negacyclic.coeffs_zero]
 
 /-- Parameter family for Module-SIS over `ℤ_q[X] / (X^n + 1)` ([Lyubashevsky2012],
 [DucasEtAl2018]). -/
@@ -619,15 +189,6 @@ def RingSISParams.toModuleSISParams (R : RingSISParams) : ModuleSISParams where
   q := R.q
   β := R.β
   hq := R.hq
-
-/-- The unstructured `GeneralSISParams` with `d * n` rows and `k * n` columns associated to
-`M : ModuleSISParams` under `expandModuleMatrix`. -/
-def ModuleSISParams.toGeneralSISParams (M : ModuleSISParams) : GeneralSISParams where
-  n security := M.d security * M.n security
-  m security := M.k security * M.n security
-  q := M.q
-  β := M.β
-  hq := M.hq
 
 /-- Flatten a module vector `z : Fin k → Fin n → α` of `k` degree-`< n` polynomials into a flat
 vector `Fin (k * n) → α` via `finProdFinEquiv`. -/
@@ -705,6 +266,18 @@ def expandModuleMatrix {d k n q : ℕ}
       rotMatrix (A i j) r s := by
   simp only [expandModuleMatrix, Matrix.of_apply, Equiv.symm_apply_apply]
 
+/-- A module matrix is determined by its expansion: column `0` of the block `rotMatrix (A i j)`
+is the coefficient vector of `A i j`. -/
+theorem expandModuleMatrix_injective {d k n q : ℕ} :
+    Function.Injective (expandModuleMatrix (d := d) (k := k) (n := n) (q := q)) := by
+  intro A B h
+  ext i j r
+  have col0 (a : Fin n → ZMod q) : rotMatrix a r ⟨0, r.pos⟩ = a r := by
+    simp only [rotMatrix, Matrix.of_apply, Nat.zero_le, ↓reduceDIte, Nat.sub_zero, Fin.eta]
+  have hr := congrFun (congrFun h (finProdFinEquiv (i, r)))
+    (finProdFinEquiv (j, ⟨0, r.pos⟩))
+  rwa [expandModuleMatrix_apply, expandModuleMatrix_apply, col0, col0] at hr
+
 /-- **Structured-to-unstructured multiplication identity**: multiplying `expandModuleMatrix A` by
 `flattenPolyVec z` equals flattening `moduleSISMap A z`. -/
 theorem expandModuleMatrix_mulVec {d k n q : ℕ}
@@ -749,12 +322,12 @@ instance {k n q : ℕ} (β : ℕ) (z : Fin k → Fin n → ZMod q) :
 
 /-- Residue-level Module-SIS solution predicate: `z ≠ 0`, `inInfNormBound β z`, and
 `moduleSISMap A z = 0`. -/
-def isModuleSISChallenge {d k n q : ℕ} (A : Matrix (Fin d) (Fin k) (Fin n → ZMod q)) (β : ℕ)
+def IsResidueSolution {d k n q : ℕ} (A : Matrix (Fin d) (Fin k) (Fin n → ZMod q)) (β : ℕ)
     (z : Fin k → Fin n → ZMod q) : Prop :=
   z ≠ 0 ∧ inInfNormBound β z ∧ moduleSISMap A z = 0
 
 instance {d k n q : ℕ} (A : Matrix (Fin d) (Fin k) (Fin n → ZMod q)) (β : ℕ)
-    (z : Fin k → Fin n → ZMod q) : Decidable (isModuleSISChallenge A β z) :=
+    (z : Fin k → Fin n → ZMod q) : Decidable (IsResidueSolution A β z) :=
   inferInstanceAs (Decidable (_ ∧ _ ∧ _))
 
 /-- Flattening preserves the `ℓ_∞` bound on integer polynomial vectors. -/
@@ -767,11 +340,11 @@ instance {d k n q : ℕ} (A : Matrix (Fin d) (Fin k) (Fin n → ZMod q)) (β : �
 
 /-- Flattening preserves `inInfNormBound` on residue polynomial vectors. -/
 @[simp] theorem inInfNormBound_flattenPolyVec_iff {k n q β : ℕ} (z : Fin k → Fin n → ZMod q) :
-    GeneralSIS.inInfNormBound β (flattenPolyVec z) ↔ inInfNormBound β z :=
-  ⟨fun h j s => by simpa [GeneralSIS.inInfNormBound] using h (finProdFinEquiv (j, s)),
+    SIS.inInfNormBound β (flattenPolyVec z) ↔ inInfNormBound β z :=
+  ⟨fun h j s => by simpa [SIS.inInfNormBound] using h (finProdFinEquiv (j, s)),
    fun h c => by
      obtain ⟨⟨j, s⟩, rfl⟩ := finProdFinEquiv.surjective c
-     simpa [GeneralSIS.inInfNormBound] using h j s⟩
+     simpa [SIS.inInfNormBound] using h j s⟩
 
 /-- **Equivalence of Module-SIS and unstructured SIS on `expandModuleMatrix`**: an integer
 polynomial vector `z` is a `ModuleSIS.IsSolution` for `A` if and only if `flattenPolyVec z` is
@@ -784,110 +357,125 @@ theorem isSolution_expandModuleMatrix_iff {d k n q β : ℕ}
     expandModuleMatrix_mulVec_eq_zero_iff]
 
 /-- **Equivalence of residue-level Module-SIS and unstructured SIS on `expandModuleMatrix`**:
-`z` satisfies `isModuleSISChallenge A β z` if and only if `flattenPolyVec z` satisfies
-`GeneralSIS.isSISChallenge (expandModuleMatrix A) β (flattenPolyVec z)`. -/
-theorem isModuleSISChallenge_iff_isSISChallenge {d k n q β : ℕ}
+`flattenPolyVec z` is a `SIS.IsResidueSolution` for `expandModuleMatrix A` if and only if `z` is a
+`ModuleSIS.IsResidueSolution` for `A`. -/
+theorem isResidueSolution_expandModuleMatrix_iff {d k n q β : ℕ}
     (A : Matrix (Fin d) (Fin k) (Fin n → ZMod q)) (z : Fin k → Fin n → ZMod q) :
-    isModuleSISChallenge A β z ↔
-      GeneralSIS.isSISChallenge (expandModuleMatrix A) β (flattenPolyVec z) := by
-  simp only [isModuleSISChallenge, GeneralSIS.isSISChallenge, flattenPolyVec_ne_zero_iff,
+    SIS.IsResidueSolution (expandModuleMatrix A) β (flattenPolyVec z) ↔
+      IsResidueSolution A β z := by
+  simp only [IsResidueSolution, SIS.IsResidueSolution, flattenPolyVec_ne_zero_iff,
     inInfNormBound_flattenPolyVec_iff, expandModuleMatrix_mulVec_eq_zero_iff]
 
 /-- Encode a module matrix `A` over `ℤ_q[X] / (X^n + 1)` by encoding its expanded block matrix
 `expandModuleMatrix A`. -/
 def encodeMatrix {d k n q : ℕ} (A : Matrix (Fin d) (Fin k) (Fin n → ZMod q)) : List Bool :=
-  GeneralSIS.encodeMatrix (expandModuleMatrix A)
+  SIS.encodeMatrix (expandModuleMatrix A)
+
+/-- Module matrices of fixed shape are determined by their encodings when `q ≠ 0`. -/
+theorem encodeMatrix_injective {d k n q : ℕ} [NeZero q] :
+    Function.Injective (encodeMatrix (d := d) (k := k) (n := n) (q := q)) :=
+  SIS.encodeMatrix_injective.comp expandModuleMatrix_injective
 
 /-- Encode an integer polynomial vector `z : Fin k → Fin n → ℤ` by encoding `flattenPolyVec z`. -/
 def encodeVec {k n : ℕ} (z : Fin k → Fin n → ℤ) : List Bool :=
-  GeneralSIS.encodeVec (flattenPolyVec z)
+  SIS.encodeVec (flattenPolyVec z)
 
-/-- Decode a word as an integer polynomial vector `Fin k → Fin n → ℤ` by decoding `k * n`
-signed integers and unflattening. -/
-def decodeVec (k n : ℕ) (word : List Bool) : Fin k → Fin n → ℤ :=
-  unflattenPolyVec (GeneralSIS.decodeVec (k * n) word)
-
-/-- Every canonical encoded integer polynomial vector decodes to itself. -/
-@[simp] theorem decodeVec_encodeVec {k n : ℕ} (z : Fin k → Fin n → ℤ) :
-    decodeVec k n (encodeVec z) = z := by
-  simp [decodeVec, encodeVec]
-
-/-- The Module-SIS experiment: draw a uniform `d × k` module matrix `A` over `ℤ_q[X] / (X^n + 1)`,
-give the adversary the unary security parameter and the encoded matrix, and accept when its
-answer decodes to a `ModuleSIS.IsSolution` with bound `β`. -/
-noncomputable def moduleSISGame (M : ModuleSISParams)
-    (adversary : ℕ → List Bool → ProbComp (List Bool)) (security : ℕ) : Game := do
-  let A ← PMF.uniformOfFintype
-    (Matrix (Fin (M.d security)) (Fin (M.k security)) (Fin (M.n security) → ZMod (M.q security)))
-  let word ← ProbComp.eval (adversary security (encodeMatrix A))
-  return decide (IsSolution A (M.β security) (decodeVec (M.k security) (M.n security) word))
-
-/-- The structured `GeneralSIS` experiment induced by `M : ModuleSISParams`: draw a uniform
-module matrix `A`, expand it to `expandModuleMatrix A`, and check the unstructured
-`SIS.IsSolution` predicate on `expandModuleMatrix A`. -/
-noncomputable def structuredSISGame (M : ModuleSISParams)
-    (adversary : ℕ → List Bool → ProbComp (List Bool)) (security : ℕ) : Game := do
-  let A ← PMF.uniformOfFintype
-    (Matrix (Fin (M.d security)) (Fin (M.k security)) (Fin (M.n security) → ZMod (M.q security)))
-  let word ← ProbComp.eval (adversary security (GeneralSIS.encodeMatrix (expandModuleMatrix A)))
-  return decide
-    (SIS.IsSolution (expandModuleMatrix A) (M.β security)
-      (GeneralSIS.decodeVec (M.k security * M.n security) word))
-
-/-- The structured `GeneralSIS` experiment and `moduleSISGame` are identical as `PMF Bool`
-distributions for every adversary and security parameter. -/
-@[simp] theorem structuredSISGame_eq_moduleSISGame (M : ModuleSISParams)
-    (adversary : ℕ → List Bool → ProbComp (List Bool)) (security : ℕ) :
-    structuredSISGame M adversary security = moduleSISGame M adversary security := by
-  unfold structuredSISGame moduleSISGame encodeMatrix decodeVec
-  congr 1 with A : 1
-  congr 1 with word : 1
-  have h := isSolution_expandModuleMatrix_iff (β := M.β security) A
-    (unflattenPolyVec (GeneralSIS.decodeVec (M.k security * M.n security) word))
-  rw [flattenPolyVec_unflattenPolyVec] at h
-  simp only [h]
-
-/-- Every adversary achieves the same success probability in `structuredSISGame` and
-`moduleSISGame`. -/
-theorem succProbability_structuredSISGame (M : ModuleSISParams)
-    (adversary : ℕ → List Bool → ProbComp (List Bool)) (security : ℕ) :
-    Game.succProbability (structuredSISGame M adversary security) =
-      Game.succProbability (moduleSISGame M adversary security) := by
-  rw [structuredSISGame_eq_moduleSISGame]
-
-/-- The Module-SIS hardness hypothesis for parameter family `M`: every uniform strict PPT
-adversary wins `moduleSISGame` with negligible probability. -/
-def Hard (M : ModuleSISParams) : Prop :=
-  ∀ adversary : ℕ → List Bool → ProbComp (List Bool), IsPPT encBits adversary →
-    Negligible fun security => Game.succProbability (moduleSISGame M adversary security)
-
-/-- If every uniform strict PPT adversary has negligible success probability in
-`structuredSISGame M`, then `ModuleSIS.Hard M` holds. Since `structuredSISGame M` equals
-`moduleSISGame M` (`structuredSISGame_eq_moduleSISGame`), the hypothesis is `ModuleSIS.Hard M`
-with the game rewritten, and makes no assumption about `GeneralSIS.sisGame`. -/
-theorem hard_of_structuredGeneralSIS (M : ModuleSISParams)
-    (h : ∀ adversary : ℕ → List Bool → ProbComp (List Bool), IsPPT encBits adversary →
-      Negligible fun security => Game.succProbability (structuredSISGame M adversary security)) :
-    Hard M := by
-  intro adversary hadv
-  simpa using h adversary hadv
+/-- Integer polynomial vectors of fixed shape are determined by their encodings. -/
+theorem encodeVec_injective {k n : ℕ} : Function.Injective (encodeVec (k := k) (n := n)) :=
+  SIS.encodeVec_injective.comp flattenPolyVec_injective
 
 end ModuleSIS
 
-namespace RingSIS
+/-! #### The fixed-instance experiment -/
 
-/-- The Ring-SIS experiment is the rank-`1` specialization of `ModuleSIS.moduleSISGame`. -/
-noncomputable abbrev ringSISGame (R : RingSISParams)
-    (adversary : ℕ → List Bool → ProbComp (List Bool)) (security : ℕ) : Game :=
-  ModuleSIS.moduleSISGame R.toModuleSISParams adversary security
+section Experiment
 
-/-- The Ring-SIS hardness hypothesis is `ModuleSIS.Hard` on `R.toModuleSISParams`. -/
-abbrev Hard (R : RingSISParams) : Prop :=
-  ModuleSIS.Hard R.toModuleSISParams
+variable (q : ℕ) [NeZero q] {d k n : ℕ}
 
-end RingSIS
+/-- The Module-SIS experiment over `ℤ_q[X] / (X^n + 1)` with a `d × k` module matrix and bound `β`
+([Lyubashevsky2012], [DucasEtAl2018]): the challenger draws a uniform module matrix `A`; the
+solver wins when it returns a short solution for `A`. -/
+noncomputable def moduleSISExperiment (β : ℕ)
+    (S : Matrix (Fin d) (Fin k) (Fin n → ZMod q) → ProbComp (Fin k → Fin n → ℤ)) :
+    ProbComp Bool := do
+  let A ← ProbComp.uniform (Matrix (Fin d) (Fin k) (Fin n → ZMod q))
+  let z ← S A
+  return decide (ModuleSIS.IsSolution A β z)
 
-/-! ### Part 4: Module-LWE and Structured Expansion -/
+/-- The Module-SIS advantage of `S`: its success probability in `moduleSISExperiment`. -/
+noncomputable def moduleSISAdvantage (β : ℕ)
+    (S : Matrix (Fin d) (Fin k) (Fin n → ZMod q) → ProbComp (Fin k → Fin n → ℤ)) : ℝ≥0 :=
+  Game.succProbability (ProbComp.eval (moduleSISExperiment q β S))
+
+end Experiment
+
+/-! #### Parameter families -/
+
+namespace ModuleSISParams
+
+variable (M : ModuleSISParams)
+
+/-- The input of a Module-SIS solver for the family `M`: the security parameter and a module
+matrix of the shape, degree and modulus that `M` assigns to it. -/
+structure Input where
+  /-- The security parameter, given to machines in unary. -/
+  secParam : ℕ
+  /-- The public module matrix. -/
+  matrix :
+    Matrix (Fin (M.d secParam)) (Fin (M.k secParam)) (Fin (M.n secParam) → ZMod (M.q secParam))
+
+variable {M}
+
+/-- The words a machine reads for a Module-SIS input: the security parameter and the encoded
+module matrix. -/
+def Input.words (x : M.Input) : ℕ × List Bool :=
+  (x.secParam, ModuleSIS.encodeMatrix x.matrix)
+
+/-- A Module-SIS input is determined by its words. -/
+theorem Input.words_injective : Function.Injective (Input.words (M := M)) := by
+  rintro ⟨κ, A⟩ ⟨κ', B⟩ h
+  simp only [Input.words, Prod.mk.injEq] at h
+  obtain ⟨rfl, h⟩ := h
+  rw [ModuleSIS.encodeMatrix_injective h]
+
+variable (M)
+
+/-- The encoding of a Module-SIS input: the framed unary security parameter followed by the
+encoded module matrix (`encInput_apply`). -/
+def encInput : M.Input ↪ List Bool :=
+  (⟨Input.words, Input.words_injective⟩ : M.Input ↪ _).trans (encPair encUnary encBits)
+
+/-- The Module-SIS input layout. -/
+theorem encInput_apply (x : M.Input) :
+    M.encInput x = frame (encUnary x.secParam) ++ ModuleSIS.encodeMatrix x.matrix := by
+  simp [encInput, Input.words, encPair, encBits]
+
+/-- A Module-SIS solver for the family `M`: given the security parameter `κ` and a module matrix
+of the shape, degree and modulus of `M` at `κ`, it returns an integer polynomial vector.
+`Solver.IsPPT` states its efficiency on encodings. -/
+abbrev Solver : Type :=
+  (κ : ℕ) → Matrix (Fin (M.d κ)) (Fin (M.k κ)) (Fin (M.n κ) → ZMod (M.q κ)) →
+    ProbComp (Fin (M.k κ) → Fin (M.n κ) → ℤ)
+
+variable {M} in
+/-- A Module-SIS solver is PPT when one uniform strict PPT machine reads `encInput` and writes
+the encoding of the solver's answer. -/
+def Solver.IsPPT (S : M.Solver) : Prop :=
+  IsPPTOn M.encInput encBits fun x => ModuleSIS.encodeVec <$> S x.secParam x.matrix
+
+end ModuleSISParams
+
+/-- The Module-SIS hardness hypothesis for a parameter family `M`: every PPT solver has
+negligible advantage in `moduleSISExperiment` at the parameters `M` assigns to each security
+parameter. This is a hypothesis against classical adversaries, not a theorem of hardness. -/
+def ModuleSIS (M : ModuleSISParams) : Prop :=
+  ∀ S : M.Solver, S.IsPPT → Negligible fun κ => moduleSISAdvantage (M.q κ) (M.β κ) (S κ)
+
+/-- The Ring-SIS hardness hypothesis is `ModuleSIS` at module rank `1`. -/
+abbrev RingSIS (R : RingSISParams) : Prop :=
+  ModuleSIS R.toModuleSISParams
+
+/-! ### Part 2: Module-LWE and Structured Expansion -/
 
 namespace ModuleLWE
 

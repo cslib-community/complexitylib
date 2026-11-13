@@ -11,6 +11,7 @@ public import CslibFrontier.Crypto.Computational.GeneratorReindex
 public import CslibFrontier.Crypto.Computational.PseudorandomFunction
 public import CslibFrontier.Crypto.Computational.Signature
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.EraseDupsBy
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
@@ -636,19 +637,6 @@ theorem eval_eufCmaGame_eq_signingPairOracle (M : MACScheme)
   rw [M.eval_run_signingOracle_eq_map_fst_signingPairOracle sk (adversary n []), PMF.bind_map]
   rfl
 
-private theorem pmf_bind_pure_bool_le {α : Type} (p : PMF α) (f g : α → Bool)
-    (hfg : ∀ a ∈ p.support, f a = true → g a = true) :
-    (p.bind (fun a => PMF.pure (f a))) true ≤
-      (p.bind (fun a => PMF.pure (g a))) true := by
-  rw [PMF.bind_apply, PMF.bind_apply]
-  refine tsum_le_tsum fun a => ?_
-  by_cases ha : a ∈ p.support
-  · refine mul_le_mul_of_nonneg_left ?_ zero_le
-    cases hf : f a
-    · simp
-    · rw [hfg a ha hf]
-  · simp [(p.apply_eq_zero_iff a).mpr ha]
-
 /-- A fresh message makes a fresh pair, so on any key law and pair-logging run the fresh-message
 check succeeds with probability at most the fresh-pair check. -/
 private theorem bind_eufCheck_le_bind_sufCheck (M : MACScheme) (n : ℕ) (keys : PMF (List Bool))
@@ -661,7 +649,7 @@ private theorem bind_eufCheck_le_bind_sufCheck (M : MACScheme) (n : ℕ) (keys :
         M.verify sk out.1.1 out.1.2)) true := by
   rw [PMF.bind_apply, PMF.bind_apply]
   refine tsum_le_tsum fun sk => ?_
-  refine mul_le_mul_of_nonneg_left (pmf_bind_pure_bool_le _ _ _ fun out _ hout => ?_) zero_le
+  refine mul_le_mul_of_nonneg_left (Probability.PMF.map_true_mono _ fun out _ hout => ?_) zero_le
   simp only [Bool.and_eq_true, Bool.not_eq_true'] at hout ⊢
   refine ⟨⟨hout.1.1, ?_⟩, hout.2⟩
   rw [Bool.eq_false_iff]
@@ -2061,8 +2049,7 @@ theorem succProbability_eufCmaGame_le_sufCmaGame (M : NonceMACScheme)
   refine ENNReal.toNNReal_mono (PMF.apply_ne_top _ true) ?_
   rw [PMF.bind_apply, PMF.bind_apply]
   refine tsum_le_tsum fun sk => ?_
-  refine mul_le_mul_of_nonneg_left
-    (MACScheme.pmf_bind_pure_bool_le _ _ _ fun out _ hout => ?_) zero_le
+  refine mul_le_mul_of_nonneg_left (Probability.PMF.map_true_mono _ fun out _ hout => ?_) zero_le
   simp only [Bool.and_eq_true, Bool.not_eq_true'] at hout ⊢
   refine ⟨⟨ hout.1.1, ?_ ⟩, hout.2⟩
   rw [Bool.eq_false_iff]

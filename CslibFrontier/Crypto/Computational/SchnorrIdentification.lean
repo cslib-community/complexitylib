@@ -58,6 +58,8 @@ exactly, which matters for the honest prover and for simulation but not for this
 * `Cslib.Crypto.PrimeOrderGroupFamily.schnorrDirectGame`: the direct impersonation attack.
 * `Cslib.Crypto.PrimeOrderGroupFamily.SchnorrImpersonator.rewind`: the rewinding
   discrete-logarithm adversary.
+* `Cslib.Crypto.PrimeOrderGroupFamily.challengeEmbedding`: `m`-bit challenges as scalars modulo
+  the group order, injective when `2 ^ m ≤ q`.
 
 ## Main results
 
@@ -134,17 +136,22 @@ noncomputable def SchnorrImpersonator.rewind (k : ℕ → ℕ) (A : F.SchnorrImp
   let z' ← A.respond n (ts.2, c')
   return (extractNat (F.order input.1) (ofBits c) (ofBits z) (ofBits c') (ofBits z')).bits
 
-/-! ### The exact bound -/
+/-! ### Bit challenges as scalars -/
 
-/-- Distinct `k`-bit challenges are distinct modulo `q` when `2 ^ k ≤ q`. -/
-private theorem challenge_ne {q k : ℕ} (hkq : 2 ^ k ≤ q) {c c' : BitString k} (hc : c ≠ c') :
-    (ofBits (List.ofFn c) : ZMod q) ≠ ofBits (List.ofFn c') := by
-  intro h
-  rw [ZMod.natCast_eq_natCast_iff', ofBits, ofBits, ← BitString.lsbValue_eq_foldr_bit,
-    ← BitString.lsbValue_eq_foldr_bit,
-    Nat.mod_eq_of_lt ((BitString.lsbValue_lt _).trans_le (by simpa using hkq)),
-    Nat.mod_eq_of_lt ((BitString.lsbValue_lt _).trans_le (by simpa using hkq))] at h
-  exact hc (List.ofFn_injective (BitString.lsbValue_injective (by simp) h))
+variable (F) in
+/-- When `2 ^ m ≤ F.order d`, `m`-bit challenges `BitString m` embed injectively into
+`ZMod (F.order d)` via their binary values. -/
+def challengeEmbedding (d : F.Desc) {m : ℕ} (hm : 2 ^ m ≤ F.order d) :
+    BitString m ↪ ZMod (F.order d) where
+  toFun c := (ofBits (List.ofFn c) : ZMod (F.order d))
+  inj' c c' h := by
+    rw [ZMod.natCast_eq_natCast_iff', ofBits, ofBits, ← BitString.lsbValue_eq_foldr_bit,
+      ← BitString.lsbValue_eq_foldr_bit,
+      Nat.mod_eq_of_lt ((BitString.lsbValue_lt _).trans_le (by simpa using hm)),
+      Nat.mod_eq_of_lt ((BitString.lsbValue_lt _).trans_le (by simpa using hm))] at h
+    exact List.ofFn_injective (BitString.lsbValue_injective (by simp) h)
+
+/-! ### The exact bound -/
 
 /-- Fermat's little theorem gives the inverse in `extractNat`: modulo a prime `q`, it is
 `(c - c')⁻¹ (z - z')` whenever `c` and `c'` are distinct modulo `q`. -/
@@ -220,7 +227,8 @@ private theorem specialSoundOn (setup : ℕ → PMF F.Desc) {k : ℕ → ℕ} {n
     exact hdd ▸ hd'
   simp only [SigmaProtocol.Accepts, wordProtocol, decide_eq_true_eq] at hz hz'
   have heq := F.encode_injective d (hz.symm.trans hz')
-  have hcne := challenge_ne (hkq d hd) hc
+  have hcne : (ofBits (List.ofFn c) : ZMod (F.order d)) ≠ ofBits (List.ofFn c') :=
+    (F.challengeEmbedding d (hkq d hd)).injective.ne hc
   simp only [wordRelation, wordExtract, extractNat_cast hcne, mul_smul]
   rw [sub_smul, sub_eq_sub_iff_sub_eq_sub.mp heq, ← sub_smul,
     inv_smul_smul₀ (sub_ne_zero.mpr hcne)]

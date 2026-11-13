@@ -22,9 +22,9 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 /-!
 # `TQBF` is in polynomial space
 
-The evaluator of `Cslib.Computability.Complexity.Classes.Space.TQBF.Evaluation` runs its stack
-machine for `2 ^ L` steps on a formula whose encoding has length `L`. This file bounds its time
-and space in the quantitative calculus of plain computability
+The evaluator of `CslibFrontier.Computability.Complexity.Classes.Space.TQBF.Evaluation` runs its
+stack machine for `2 ^ L` steps on a formula whose encoding has length `L`. This file bounds its
+time and space in the quantitative calculus of plain computability
 (`Turing.MultiTapeTM.ComputableInO`), charging every stored frame, the input, the counter of
 the rounds and every copy.
 
