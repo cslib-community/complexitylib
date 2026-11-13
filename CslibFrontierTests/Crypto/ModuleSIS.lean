@@ -4,8 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import CslibFrontier.Crypto.Computational.LWE.Module
 import CslibFrontier.Crypto.Computational.SIS.Ajtai
-import CslibFrontier.Crypto.Computational.SIS.Module
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Tactic.PPT
@@ -176,8 +176,7 @@ theorem distinguishingGame_moduleLWEReal (security : ℕ) :
       (ModuleLWE.realEnsemble (fun _ => 1) (fun _ => 0) (fun _ => 1) (fun _ => 2)
         moduleZeroNoise security)
       (fourthBitFalse security) = PMF.pure true := by
-  unfold distinguishingGame
-  rw [PMF.monad_bind_eq_bind]
+  rw [distinguishingGame_eq_bind, PMF.monad_bind_eq_bind]
   trans (ModuleLWE.realEnsemble (fun _ => 1) (fun _ => 0) (fun _ => 1) (fun _ => 2)
     moduleZeroNoise security).bind fun _ => PMF.pure true
   · refine PMF.bind_congr_on_support _ _ _ fun word hword => ?_
@@ -191,7 +190,7 @@ theorem distinguishingGame_moduleLWEUniform_apply (security : ℕ) :
     distinguishingGame
       (ModuleLWE.uniformEnsemble (fun _ => 1) (fun _ => 0) (fun _ => 1) (fun _ => 2) security)
       (fourthBitFalse security) true = 2⁻¹ := by
-  simp only [distinguishingGame, ModuleLWE.uniformEnsemble, fourthBitFalse,
+  simp only [distinguishingGame_eq_bind, ModuleLWE.uniformEnsemble, fourthBitFalse,
     PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def, ProbComp.eval_pure, PMF.bind_apply,
     tsum_fintype, PMF.uniformOfFintype_apply, PMF.pure_apply]
   rw [← Finset.mul_sum]
@@ -214,7 +213,7 @@ distinguishes the real and uniform ensembles with constant advantage `1 / 2`. -/
 theorem not_decisionModuleLWE_zeroNoise :
     ¬DecisionModuleLWE (fun _ => 1) (fun _ => 0) (fun _ => 1) (fun _ => 2) moduleZeroNoise := by
   intro h
-  have hneg := h fourthBitFalse fourthBitFalse_ppt
+  have hneg := h.encoded fourthBitFalse fourthBitFalse_ppt
   have hadv (security : ℕ) : Game.advantage
       (distinguishingGame
         (ModuleLWE.realEnsemble (fun _ => 1) (fun _ => 0) (fun _ => 1) (fun _ => 2)

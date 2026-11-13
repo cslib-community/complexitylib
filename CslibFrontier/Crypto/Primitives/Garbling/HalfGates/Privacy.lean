@@ -125,14 +125,6 @@ theorem View.run_simulateWith (H : K × Bool → T → K × Bool) (tw : Slot C �
   simp only [View.run, simulateWith]
   rw [← add_assoc, BooleanRing.add_self, zero_add]
 
-/-- The circular correlation robustness oracle with offset key `R` in this file's notation: on
-`(a, t, b)` it returns `H(a + Δ, t) + bΔ` for `Δ = offset R`. -/
-private theorem keyed_eq (H : K × Bool → T → K × Bool) (R : K) (q : CCR.Query (K × Bool) T) :
-    CCR.keyed H offset offset R q = H (q.label + offset R) q.tweak + sel q.bit (offset R) := by
-  obtain ⟨a, t, b⟩ := q
-  cases b <;> simp only [CCR.keyed, CCR.oracle_apply, bitOffset_true, bitOffset_false, sel_true,
-    sel_false]
-
 /-! ### The reduction's table -/
 
 section Oracle
@@ -261,23 +253,23 @@ theorem entry_keyed_activeLabel (H : K × Bool → T → K × Bool) (tw : Slot C
   generalize C.program.trace interpretation x (left C g) = vl
   generalize C.program.trace interpretation x (right C g) = vr
   cases b <;>
-    simp only [Bool.false_eq_true, ↓reduceIte, keyed_eq, genCt, evCt, snd_add_sel_offset,
-      hb] <;>
-    cases vl <;> cases vr <;> simp only [sel_false, sel_true, add_zero] <;>
+    simp only [Bool.false_eq_true, ↓reduceIte, CCR.keyed, CCR.oracle_apply, genCt, evCt,
+      snd_add_bitOffset_offset, hb] <;>
+    cases vl <;> cases vr <;> simp only [bitOffset_false, bitOffset_true, add_zero] <;>
     simp only [add_assoc, add_comm, add_left_comm, hc, hz, zero_add]
 
 /-- With the CCR oracle for offset key `R`, the reduction's table on the labels `Z + x Δ` the
 evaluator holds is the real garbled table for input zero labels `Z`. -/
 theorem oracleTable_keyed (H : K × Bool → T → K × Bool) (tw : Slot C → T) (x : Fin n → Bool)
     (R : K) (Z : Fin n → K × Bool) :
-    oracleTable C H tw x (CCR.keyed H offset offset R) (fun i => Z i + sel (x i) (offset R)) =
+    oracleTable C H tw x (CCR.keyed H offset offset R) (fun i => Z i + bitOffset (offset R) (x i)) =
       garbleTable C H tw (offset R) (zeroLabels C H tw (offset R) Z) := by
   have hent : entry C H tw x (CCR.keyed H offset offset R)
       (activeLabel C (zeroLabels C H tw (offset R) Z) (offset R) x) =
       garbleTable C H tw (offset R) (zeroLabels C H tw (offset R) Z) :=
     funext (entry_keyed_activeLabel C hK H tw x R _)
   have hL : oracleLabels C H tw x (CCR.keyed H offset offset R)
-      (fun i => Z i + sel (x i) (offset R)) =
+      (fun i => Z i + bitOffset (offset R) (x i)) =
       activeLabel C (zeroLabels C H tw (offset R) Z) (offset R) x :=
     (isLocal_entry C H tw x _ _).iterate_eq_of_isFixed 0 (by
       rw [hent]
@@ -289,15 +281,15 @@ reduction's table with the CCR oracle. -/
 theorem view_garbleWith (H : K × Bool → T → K × Bool) (tw : Slot C → T) (x : Fin n → Bool)
     (R : K) (Z : Fin n → K × Bool) :
     (garbleWith C H tw R Z).view x = simulateWith C H tw (C.eval interpretation x)
-      (fun i => Z i + sel (x i) (offset R))
+      (fun i => Z i + bitOffset (offset R) (x i))
       (oracleTable C H tw x (CCR.keyed H offset offset R)
-        (fun i => Z i + sel (x i) (offset R))) := by
+        (fun i => Z i + bitOffset (offset R) (x i))) := by
   have hA := (isLocal_evalStep_const C H tw _ _).iterate_eq_of_isFixed 0
     (evalStep_activeLabel C hK H tw R Z x _ (zeroLabels_isFixed C H tw (offset R) Z))
   rw [oracleTable_keyed C hK]
   refine View.ext rfl rfl (funext fun o => ?_)
   simp only [Garbled.view, garbleWith, simulateWith, evaluate, evalLabels, hA, activeLabel,
-    snd_add_sel_offset, Circuit.eval, Function.comp_apply]
+    snd_add_bitOffset_offset, Circuit.eval, Function.comp_apply]
   rw [add_assoc, BooleanRing.add_self, add_zero]
 
 end Real
@@ -431,7 +423,7 @@ theorem realGame_reduction (hK : ∀ k : K, k + k = 0) (D : View C K → ProbCom
     rfl
   congr 1
   funext R
-  refine (hshift (fun i => sel (x i) (offset R)) _).symm.trans ?_
+  refine (hshift (fun i => bitOffset (offset R) (x i)) _).symm.trans ?_
   congr 1
   funext Z
   exact congrArg (fun V => ProbComp.eval (D V)) (view_garbleWith C hK H tw x R Z).symm

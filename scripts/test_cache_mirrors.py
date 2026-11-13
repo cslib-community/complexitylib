@@ -12,6 +12,7 @@ import tempfile
 import threading
 import time
 import unittest
+from unittest.mock import patch
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 REPO = Path(__file__).resolve().parents[1]
@@ -100,6 +101,9 @@ class MirrorTests(unittest.TestCase):
                 if "/miss/" in self.path:
                     self.send_error(404)
                     return
+                if "/forbidden/" in self.path:
+                    self.send_error(403)
+                    return
                 if self.path.endswith(".jsonl"):
                     data = b'"2026-03-17"\n["0000000000000001","0000000000000001.ltar"]\n["0000000000000002","0000000000000002.ltar"]\n'
                     if "/html/" in self.path:
@@ -153,10 +157,24 @@ class MirrorTests(unittest.TestCase):
         return result
 
     def test_primary_success_does_not_contact_secondary(self):
-        self.fetch("/primary", "/fallback")
+        result = self.fetch("/primary", "/fallback")
+        self.assertRegex(result.stdout, r"cache origin 1/2: completed in \d+\.\ds:")
+        self.assertNotIn("cache origin 2/2:", result.stdout)
         self.assertEqual(len(self.events()), 1)
         self.assertFalse(any("/fallback/" in request for request in self.requests))
         self.assertEqual(len(list(self.artifacts.iterdir())), 2)
+
+    def test_default_origins_fall_back_after_public_access_is_revoked(self):
+        for missing in (False, True):
+            with self.subTest(missing=missing), patch.object(
+                    restore, "DEFAULT_URLS", (self.base + "/forbidden", self.base + "/fallback")):
+                self.requests.clear()
+                self.log.unlink(missing_ok=True)
+                shutil.rmtree(self.artifacts, ignore_errors=True)
+                self.assertTrue(restore.restore(self.root, self.env, missing=missing))
+                self.assertTrue(any("/forbidden/r0/" in request for request in self.requests))
+                self.assertEqual(self.events()[-1]["endpoint"], self.base + "/fallback/a0")
+                self.assertEqual(len(list(self.artifacts.iterdir())), 2)
 
     def test_partial_primary_preserves_completed_archive_for_secondary(self):
         self.fetch("/partial", "/fallback")
@@ -169,7 +187,9 @@ class MirrorTests(unittest.TestCase):
 
     def test_hanging_primary_has_deadline_then_secondary_succeeds(self):
         start = time.monotonic()
-        self.fetch("/hang", "/fallback", COMPLEXITYLIB_CACHE_ORIGIN_TIMEOUT="2")
+        result = self.fetch("/hang", "/fallback", COMPLEXITYLIB_CACHE_ORIGIN_TIMEOUT="2")
+        self.assertRegex(result.stdout, r"cache origin 1/2: timed out in \d+\.\ds:")
+        self.assertRegex(result.stdout, r"cache origin 2/2: completed in \d+\.\ds:")
         self.assertLess(time.monotonic() - start, 10)
         self.assertEqual(len(self.events()), 2)
         self.assertEqual(len(list(self.artifacts.iterdir())), 2)
@@ -185,7 +205,15 @@ class MirrorTests(unittest.TestCase):
     def test_all_misses_report_source_fallback(self):
         result = self.fetch("/miss", "/other/miss")
         self.assertIn("lake build will compile missing outputs", result.stderr)
+        self.assertRegex(result.stdout, r"cache origin 1/2: failed \(exit 1\) in \d+\.\ds:")
+        self.assertNotIn("completed in", result.stdout)
         self.assertFalse(self.artifacts.exists() and any(self.artifacts.iterdir()))
+
+    def test_mapping_lookup_failure_reports_http_status_without_claiming_no_artifacts(self):
+        result = self.fetch("/miss", missing=True)
+        self.assertIn("No usable cached mapping among 1 revisions", result.stdout)
+        self.assertIn("last lookup HTTP 404, curl exit 22", result.stdout)
+        self.assertNotIn("No uploaded outputs", result.stdout)
 
     def test_exhausted_mirrors_preserve_the_subsequent_strict_build(self):
         for name in ("scripts/build.sh", "scripts/cache/ensure.sh", "scripts/cache/get.sh",
@@ -344,6 +372,20 @@ child.wait()
                 restore.origins({"COMPLEXITYLIB_CACHE_URL": value})
 
 
+class OriginConfigurationTests(unittest.TestCase):
+    def test_default_origin_order_and_explicit_overrides(self):
+        defaults = ["https://storage.googleapis.com/complexitylib-lake-cache",
+                    "https://complexitycache.csail.mit.edu"]
+        self.assertEqual(restore.origins({}), defaults)
+        self.assertEqual(restore.origins({"COMPLEXITYLIB_CACHE_URLS": ""}), defaults)
+        self.assertEqual(restore.origins({"COMPLEXITYLIB_CACHE_URLS": "https://other.invalid"}),
+                         ["https://other.invalid"])
+        self.assertEqual(restore.origins({"COMPLEXITYLIB_CACHE_URL": "https://single.invalid",
+                                        "COMPLEXITYLIB_CACHE_URLS": "https://other.invalid"}),
+                         ["https://single.invalid"])
+        self.assertEqual(restore.origins({"COMPLEXITYLIB_CACHE_URL": ""}), [])
+
+
 class PublicationPermissionTests(unittest.TestCase):
     def test_oidc_is_exclusive_to_main_push_gcs_publisher(self):
         workflow = (REPO / ".github/workflows/lean_action_ci.yml").read_text()
@@ -357,8 +399,20 @@ class PublicationPermissionTests(unittest.TestCase):
         self.assertIn("artifact-ids: ${{ needs.ci-checks.outputs.publication }}", gcs)
         self.assertLess(gcs.index('verify "$RUNNER_TEMP/lake-publication" --revision "$GITHUB_SHA"'),
                         gcs.index("uses: google-github-actions/auth@"))
-        self.assertNotIn("google-github-actions/auth@", jobs["ci-checks"])
-        self.assertIn("env.CACHE_RECOVERY_GENERATION", jobs["ci-checks"])
+        for name in ("source-checks", "lean-checks", "ci-checks"):
+            self.assertNotIn("google-github-actions/auth@", jobs[name])
+        lean = jobs["lean-checks"]
+        aggregator = jobs["ci-checks"]
+        self.assertIn("env.CACHE_RECOVERY_GENERATION", lean)
+        self.assertIn("needs: [source-checks, lean-checks]", aggregator)
+        self.assertIn("if: always()", aggregator)
+        self.assertIn("publication: ${{ needs.lean-checks.outputs.publication }}", aggregator)
+        for name in ("publish-gcs-cache", "publish-mit-cache"):
+            with self.subTest(publisher=name):
+                publisher = jobs[name]
+                self.assertIn("ci-checks", publisher.split("\n", 1)[0])
+                self.assertIn("needs.ci-checks.result == 'success'", publisher)
+                self.assertIn("artifact-ids: ${{ needs.ci-checks.outputs.publication }}", publisher)
         self.assertIn("CACHE_RECOVERY_GENERATION:", workflow)
         self.assertIn("COMPLEXITYLIB_CACHE_URLS:", workflow)
 

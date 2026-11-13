@@ -12,25 +12,25 @@ open Cslib Cslib.Logic Cslib.Logic.PL Cslib.Complexity
 
 -- Equality is a nonconstant affine relation; inequality is its other affine coset.
 example (a : Fin 2 → Bool) :
-    AffineEquation.Holds ([0, 1], false) a ↔ a 0 = a 1 := by
+    AffineEquation.Holds ⟨[0, 1], false⟩ a ↔ a 0 = a 1 := by
   cases h0 : a 0 <;> cases h1 : a 1 <;>
     simp [AffineEquation.Holds, h0, h1, Bool.add_eq_xor, Bool.zero_eq_false]
 
 example (a : Fin 2 → Bool) :
-    AffineEquation.Holds ([0, 1], true) a ↔ a 0 ≠ a 1 := by
+    AffineEquation.Holds ⟨[0, 1], true⟩ a ↔ a 0 ≠ a 1 := by
   cases h0 : a 0 <;> cases h1 : a 1 <;>
     simp [AffineEquation.Holds, h0, h1, Bool.add_eq_xor, Bool.zero_eq_false]
 
 -- Repeated occurrences cancel on every assignment, beyond the solver's concrete examples.
 example (a : ℕ → Bool) :
-    AffineEquation.Holds ([5, 5, 8], true) a ↔ a 8 = true := by
+    AffineEquation.Holds ⟨[5, 5, 8], true⟩ a ↔ a 8 = true := by
   rw [AffineEquation.holds_cons_cons]
   simp [AffineEquation.Holds]
 
 -- Both nullary relations have explicit affine definitions.
 example (a : Empty → Bool) :
     AffineSystem.Holds ([] : AffineSystem Empty) a ∧
-      ¬AffineSystem.Holds [([], true)] a := by
+      ¬AffineSystem.Holds [⟨[], true⟩] a := by
   simp [AffineSystem.Holds, AffineEquation.Holds, Bool.zero_eq_false]
 
 example : IsPolymorphism (parity 3) (∅ : Set (Empty → Bool)) := by
@@ -53,26 +53,26 @@ example : ¬∃ F : AffineSystem (Fin 2), ∀ a, (a 0 || a 1 = true) ↔ F.Holds
 
 -- Empty systems and both constant equations work at width zero.
 example : XORSAT.solve [] = true := by decide
-example : XORSAT.solve [([], false)] = true := by decide
-example : XORSAT.solve [([], true)] = false := by decide
+example : XORSAT.solve [⟨[], false⟩] = true := by decide
+example : XORSAT.solve [⟨[], true⟩] = false := by decide
 
 -- An inconsistent pair and a repeated-variable contradiction are both rejected.
-example : XORSAT.solve [([7], true), ([7], false)] = false := by decide
-example : XORSAT.solve [([5, 5], false)] = true := by decide
-example : XORSAT.solve [([5, 5], true)] = false := by decide
+example : XORSAT.solve [⟨[7], true⟩, ⟨[7], false⟩] = false := by decide
+example : XORSAT.solve [⟨[5, 5], false⟩] = true := by decide
+example : XORSAT.solve [⟨[5, 5], true⟩] = false := by decide
 
 -- A dependent third equation becomes 0=0 or 0=1 during elimination.
 example : XORSAT.solve
-    [([0, 1], true), ([1, 2], true), ([0, 2], false)] = true := by decide
+    [⟨[0, 1], true⟩, ⟨[1, 2], true⟩, ⟨[0, 2], false⟩] = true := by decide
 example : XORSAT.solve
-    [([0, 1], true), ([1, 2], true), ([0, 2], true)] = false := by decide
+    [⟨[0, 1], true⟩, ⟨[1, 2], true⟩, ⟨[0, 2], true⟩] = false := by decide
 
 -- Compression compares binary labels and allocates two columns, regardless of their values.
-example : (XORSAT.compile [([1048576, 17, 1048576], true)]).width = 2 := by decide
+example : (XORSAT.compile [⟨[1048576, 17, 1048576], true⟩]).width = 2 := by decide
 example : XORSAT.solve
-    [([1048576, 17, 1048576], true), ([17], false)] = false := by decide
+    [⟨[1048576, 17, 1048576], true⟩, ⟨[17], false⟩] = false := by decide
 example : XORSAT.solve
-    [([1048576, 17, 1048576], true), ([17], true)] = true := by decide
+    [⟨[1048576, 17, 1048576], true⟩, ⟨[17], true⟩] = true := by decide
 
 -- A zero leading column is skipped; malformed dense widths are rejected.
 example : XORSAT.Dense.decide ⟨2, [⟨[false, true], true⟩]⟩ = true := by decide
@@ -101,13 +101,30 @@ example : ComputableInPolyTime
 
 end DenseTests
 
+section EquationEncoding
+
+open Turing.MultiTapeTM
+
+-- A sparse equation is still the framed pair of its framed label list and its right-hand side.
+example (e : AffineEquation ℕ) :
+    encAffineEquation encNat e = encPair (encList encNat) encBool (e.vars, e.rhs) := rfl
+
+example : XORSAT.encoding = encList (encAffineEquation encNat) := rfl
+
+-- Field reads and construction have `fun_prop` rules.
+example : ComputableInPolyTime (fun e : AffineEquation ℕ => (⟨e.vars, !e.rhs⟩ : AffineEquation ℕ))
+    (encAffineEquation encNat) (encAffineEquation encNat) := by
+  fun_prop
+
+end EquationEncoding
+
 -- The semantic endpoint produces actual models of ordinary sparse systems.
 example : ∃ a : ℕ → Bool,
-    AffineSystem.Holds [([0, 1], true), ([1, 2], true), ([0, 2], false)] a :=
+    AffineSystem.Holds [⟨[0, 1], true⟩, ⟨[1, 2], true⟩, ⟨[0, 2], false⟩] a :=
   (XORSAT.solve_eq_true_iff _).mp (by decide)
 
-example : ¬∃ a : ℕ → Bool, AffineSystem.Holds [([5, 5], true)] a := by
+example : ¬∃ a : ℕ → Bool, AffineSystem.Holds [⟨[5, 5], true⟩] a := by
   intro h
   have ht := (XORSAT.solve_eq_true_iff _).mpr h
-  have hf : XORSAT.solve [([5, 5], true)] = false := by decide
+  have hf : XORSAT.solve [⟨[5, 5], true⟩] = false := by decide
   exact Bool.false_ne_true (hf.symm.trans ht)

@@ -24,7 +24,7 @@ private def sem : Fin 5 → List Bool → Bool :=
   | _ => false
 
 private def template : Fin 5 → AffineSystem ℕ :=
-  ![[([0, 1], false)], [([0, 1], true)], [], [([], true)], [([], true)]]
+  ![[⟨[0, 1], false⟩], [⟨[0, 1], true⟩], [], [⟨[], true⟩], [⟨[], true⟩]]
 
 private theorem templates : CSP.AffineTemplates arity sem template := by
   intro R a
@@ -38,7 +38,7 @@ private theorem preserved : CSP.HasPolymorphism arity sem (parity 3) := by
   · change Cslib.Logic.IsPolymorphism (parity 3)
       {a : Fin 2 → Bool | sem 0 (List.ofFn a) = true}
     have heq : {a : Fin 2 → Bool | sem 0 (List.ofFn a) = true} =
-        {a | AffineEquation.Holds ([0, 1], false) a} := by
+        {a | AffineEquation.Holds ⟨[0, 1], false⟩ a} := by
       ext a
       simp [sem, List.ofFn_succ, AffineEquation.Holds, Bool.zero_eq_false]
     rw [heq]
@@ -46,7 +46,7 @@ private theorem preserved : CSP.HasPolymorphism arity sem (parity 3) := by
   · change Cslib.Logic.IsPolymorphism (parity 3)
       {a : Fin 2 → Bool | sem 1 (List.ofFn a) = true}
     have heq : {a : Fin 2 → Bool | sem 1 (List.ofFn a) = true} =
-        {a | AffineEquation.Holds ([0, 1], true) a} := by
+        {a | AffineEquation.Holds ⟨[0, 1], true⟩ a} := by
       ext a
       simp [sem, List.ofFn_succ, AffineEquation.Holds, Bool.zero_eq_false]
     rw [heq]
@@ -68,43 +68,43 @@ example : CSPSAT arity sem ∈ P (encCSP (encFinite (Fin 5)) encNat) :=
 
 -- Different local positions may map to the same variable and cancel.
 example (σ : ℕ → Bool) :
-    (Constraint.instantiateAffine 0 template (0, [17, 17])).Holds σ := by
+    (Constraint.instantiateAffine 0 template ⟨0, [17, 17]⟩).Holds σ := by
   simp [Constraint.instantiateAffine, template, AffineSystem.relabel, AffineEquation.relabel,
     AffineSystem.Holds, AffineEquation.Holds, Bool.add_eq_xor, Bool.zero_eq_false]
 
-example : [(0, [2 ^ 100, 2 ^ 100]), (1, [2 ^ 100, 2 ^ 120]), (2, [])] ∈
+example : [⟨0, [2 ^ 100, 2 ^ 100]⟩, ⟨1, [2 ^ 100, 2 ^ 120]⟩, ⟨2, []⟩] ∈
     CSPSAT arity sem := by
   refine ⟨by decide, fun n => n == 2 ^ 120, ?_⟩
   decide
 
-example : [(1, [2 ^ 100, 2 ^ 100])] ∉ CSPSAT arity sem := by
+example : [⟨1, [2 ^ 100, 2 ^ 100]⟩] ∉ CSPSAT arity sem := by
   rintro ⟨_, σ, hσ⟩
   simp [CSP.eval, Constraint.eval, sem, Bool.add_eq_xor, Bool.zero_eq_false] at hσ
 
 -- Compilation retains sparse binary labels rather than expanding their numerical range.
-example : CSPSAT.toXORSAT arity template [(1, [2 ^ 100, 2 ^ 120])] =
-    [([2 ^ 100, 2 ^ 120], true)] := by decide
+example : CSPSAT.toXORSAT arity template [⟨1, [2 ^ 100, 2 ^ 120]⟩] =
+    [⟨[2 ^ 100, 2 ^ 120], true⟩] := by decide
 
 example : XORSAT.solve (CSPSAT.toXORSAT arity template
-    [(0, [2 ^ 100, 2 ^ 100]), (1, [2 ^ 100, 2 ^ 120]), (2, [])]) = true := by decide
+    [⟨0, [2 ^ 100, 2 ^ 100]⟩, ⟨1, [2 ^ 100, 2 ^ 120]⟩, ⟨2, []⟩]) = true := by decide
 example : XORSAT.solve (CSPSAT.toXORSAT arity template
-    [(1, [2 ^ 100, 2 ^ 100])]) = false := by decide
+    [⟨1, [2 ^ 100, 2 ^ 100]⟩]) = false := by decide
 
 -- Malformed scopes are rejected, even though sem 2 returns true on every list.
-example : [(2, [7])] ∉ CSPSAT arity sem := by
+example : [⟨2, [7]⟩] ∉ CSPSAT arity sem := by
   rintro ⟨h, _⟩
-  have := h (2, [7]) (by simp)
+  have := h ⟨2, [7]⟩ (by simp)
   simp [arity] at this
 
-example : CSPSAT.toXORSAT arity template [(0, [7])] = [([], true)] := by decide
-example : CSPSAT.toXORSAT arity template [(0, [7, 8, 9])] = [([], true)] := by decide
-example : XORSAT.solve (CSPSAT.toXORSAT arity template [(0, [7])]) = false := by decide
-example : [(2, [])] ∈ CSPSAT arity sem := by
+example : CSPSAT.toXORSAT arity template [⟨0, [7]⟩] = [⟨[], true⟩] := by decide
+example : CSPSAT.toXORSAT arity template [⟨0, [7, 8, 9]⟩] = [⟨[], true⟩] := by decide
+example : XORSAT.solve (CSPSAT.toXORSAT arity template [⟨0, [7]⟩]) = false := by decide
+example : [⟨2, []⟩] ∈ CSPSAT arity sem := by
   exact ⟨by decide, fun _ => false, by decide⟩
-example : [(3, [])] ∉ CSPSAT arity sem := by
+example : [⟨3, []⟩] ∉ CSPSAT arity sem := by
   rintro ⟨_, σ, hσ⟩
   exact Bool.false_ne_true hσ
-example : [(4, [9, 10])] ∉ CSPSAT arity sem := by
+example : [⟨4, [9, 10]⟩] ∉ CSPSAT arity sem := by
   rintro ⟨_, σ, hσ⟩
   exact Bool.false_ne_true hσ
 example : ([] : CSP (Fin 5) ℕ) ∈ CSPSAT arity sem := by

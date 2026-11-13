@@ -24,6 +24,7 @@ tuple of its fields, with everything a certificate needs to work with it:
 * `eS_fields_deg`, the linear map from a structure to the tuple of its fields;
 * for each field `f`, the linear rules `eS_f_deg` and `eS_f_inO`, `eS_f_budget` retaining a
   caller's workspace budget, and `eS_f_polyTime` reading the field of a polynomial-time structure;
+* for each `flattened toParent : eParent` annotation, the same four rules for the parent projection;
 * the constructor rules `eS_mk_deg` on tuples, `eS_mk_inO` adding up the bounds of its arguments,
   `eS_mk_budget` constructing a record whose fields share a workspace budget, and `eS_mk_polyTime`.
 
@@ -45,8 +46,11 @@ and instance parameters come from `variable`, as above. The generated binders ke
 The fields `f₁, …, fₙ` must be the fields of `S`, each once and in declaration order, since that
 order fixes the encoded words. A parent structure is listed either as its single field `toParent`,
 encoded as one word, or as its own fields in place of `toParent`, which flattens them into the
-tuple. `S` must be a structure, not a class. The command checks this before declaring anything,
-and names the first unknown, repeated or misplaced field, or all missing ones.
+tuple. In the latter case, `flattened toParent : eParent` additionally declares the parent encoding
+and generates projection rules. Their proofs elaborate only when `eParent` has exactly the selected
+word layout, so the annotation cannot silently change the encoding. `S` must be a structure, not a
+class. The command checks this before declaring anything, and names the first unknown, repeated or
+misplaced field, or all missing ones.
 
 ## Fields whose type depends on an earlier field
 
@@ -59,7 +63,12 @@ binder in these terms must not reuse the name of an earlier field, and an explic
 they mention must not share its name with an earlier field: the command reports the latter. The
 field rules read the word `encode x.desc x.element`, and the constructor rules take each such
 argument as a dependent function with a certificate for its word. There is no `eS_mk_deg` for such
-a structure, since its tuple holds words rather than fields.
+a structure, since its tuple holds words rather than fields. An explicit parameter that only these
+terms use does not occur in `eSFields`, which still takes it, like every generated declaration.
+The command then marks `eSFields` `nolint unusedArguments`, provided these terms use every
+parameter that `eSFields` does not. Both sides are decided on the elaborated terms, as by the
+linter: a parameter is used when it occurs free, so a local binder that shares its name is not a
+use. Otherwise `eSFields` stays linted, so a parameter that nothing uses is reported.
 -/
 
 public meta section
@@ -71,14 +80,16 @@ open Lean Elab Command Lean.Parser.Command
 /-- `enc_structure eS : S where f₁ : e₁, f₂ : e₂` declares the encoding `eS` of the structure `S`
 as the tuple of its fields encoded by `e₁`, `e₂`, with its rules. List every field of `S` once, in
 declaration order, listing a parent either as `toParent` or as its fields; the command reports an
-unknown, repeated or misplaced field, or all missing ones. A field whose type depends on earlier
-fields is written `f : w using hw`, encoding it as the word `w f` for an injective `w`. Explicit
-parameters `(p : T)` before the colon become explicit arguments of every generated declaration.
-An optional `public` or `private` prefix applies to every generated declaration; the default is
-public, independently of the surrounding section. Public `fun_prop` rules are scoped; private ones
-are registered locally and do not export. -/
+unknown, repeated or misplaced field, or all missing ones. Before `where`,
+`flattened toParent : eParent` declares the encoding of a flattened parent and generates its
+projection rules, provided its encoded word is definitionally the selected field tuple. A field
+whose type depends on earlier fields is written `f : w using hw`, encoding it as the word `w f` for
+an injective `w`. Explicit parameters `(p : T)` before the colon become explicit arguments of every
+generated declaration. An optional `public` or `private` prefix applies to every generated
+declaration; the default is public, independently of the surrounding section. Public `fun_prop`
+rules are scoped; private ones are registered locally and do not export. -/
 syntax (name := encStructure) (docComment)? (visibility)? "enc_structure " ident
-  (" (" ident " : " term ")")* " : " term " where "
+  (" (" ident " : " term ")")* " : " term (" flattened " ident " : " term:max)* " where "
   (ident " : " term:max (" using " term:max)?),+ : command
 
 private def app (base : Name) (suffix : String) : Ident :=
@@ -89,6 +100,13 @@ private def tuple (ts : Array Term) : MacroM Term := do
   let mut r := ts.back!
   for t in ts.pop.reverse do
     r ← `(($t, $r))
+  return r
+
+/-- The encoding `encPair e₁ (encPair e₂ …)`, or just `e₁` for one slot. -/
+private def tupleEncoding (es : Array Term) : MacroM Term := do
+  let mut r := es.back!
+  for e in es.pop.reverse do
+    r ← `(encPair $e $r)
   return r
 
 /-- `h.snd'…snd'.fst'`: component `i` of the `n`-tuple `h`, for `ns` the calculus namespace. -/
@@ -214,14 +232,99 @@ private def checkFields (S : Term) (fs : Array Ident) : CommandElabM (Name × Ar
       {names} of `{sName}`; {order}"
   return (s, seen)
 
+/-- Whether `e` is the local `x` or reads a field of it through projections. -/
+private partial def readsLocal (env : Environment) (x : Expr) (e : Expr) : Bool :=
+  match e.consumeMData with
+  | .fvar _ => e.consumeMData == x
+  | .proj _ _ s => readsLocal env x s
+  | e => match e.getAppFn with
+    | .const c _ => match env.getProjectionFnInfo? c with
+      | some info => e.getAppNumArgs == info.numParams + 1 && readsLocal env x e.appArg!
+      | none => false
+    | _ => false
+
+/-- Whether the free variable `p` occurs in `e` outside the reads of the local `x`. -/
+private def occursOutsideReads (env : Environment) (x p : Expr) (e : Expr) : Bool :=
+  (e.replace fun s => if readsLocal env x s then some x else none).containsFVar p.fvarId!
+
+/-- Whether `fieldsDecl` has an explicit parameter among `ps` that it does not use, and the word
+or injectivity proof of a dependent field uses every such parameter. The unused parameters are
+those that occur free in neither the value nor the type of `fieldsDecl` nor the type of another
+parameter, as for the `unusedArguments` linter. `depTerms x` gives each dependent field's word and
+proof, reading the earlier fields from `x : S`. These terms are elaborated against a local
+`x : S`, and a parameter counts as used only when it occurs free in them outside the reads of `x`,
+so a local binder that shares its name is not a use. Any failure leaves the declaration linted. -/
+private def usingOnlyParams (fieldsDecl : Name) (ps : Array Ident) (S : Term)
+    (depTerms : Term → MacroM (Array (Term × Term))) : CommandElabM Bool := liftTermElabM do
+  let env ← getEnv
+  let some ci ← withoutExporting do return (← getEnv).find? fieldsDecl | return false
+  let some val := ci.value? | return false
+  Meta.forallTelescope ci.type fun xs body => do
+    if xs.size < ps.size then return false
+    let params := xs.extract (xs.size - ps.size) xs.size
+    for p in ps, v in params do
+      unless (← v.fvarId!.getUserName) == p.getId do return false
+    let value := val.beta xs
+    let others (v : Expr) : MetaM Bool := xs.anyM fun w => do
+      return w != v && (← w.fvarId!.getType).containsFVar v.fvarId!
+    let unused ← params.filterM fun v => do
+      return !value.containsFVar v.fvarId! && !body.containsFVar v.fvarId! && !(← others v)
+    if unused.isEmpty then return false
+    let s ← Term.saveState
+    try
+      Term.withoutErrToSorry do
+        let sType ← Term.elabType S
+        let xId := mkIdent (← withFreshMacroScope <| MonadQuotation.addMacroScope `x)
+        Meta.withLocalDeclD xId.getId sType fun x => do
+          let mut found : Array Expr := #[]
+          for (w, hw) in ← liftMacroM (depTerms xId) do
+            let wE ← Term.elabTerm w none
+            let hwE ← Term.elabTerm hw (← Term.elabType (← `(Function.Injective $w)))
+            Term.synthesizeSyntheticMVarsNoPostponing
+            found := found.push (← instantiateMVars wE) |>.push (← instantiateMVars hwE)
+          return unused.all fun v => found.any (occursOutsideReads env x v ·)
+    catch _ => pure false
+    finally s.restore (restoreInfo := true)
+
+/-- Check that each annotated projection is a distinct parent field whose fields are flattened by
+`paths`, and return its path and the indices of its encoded descendants. -/
+private def checkFlattenedParents (env : Environment) (s : Name)
+    (paths : Array (Array Name)) (parents : Array Ident) : CommandElabM
+    (Array (Array Name × Array Nat)) := do
+  let sName := MessageData.ofConstName s
+  let mut seen : Array (Array Name) := #[]
+  let mut checked := #[]
+  for parent in parents do
+    let n := parent.getId
+    let some path := fieldPath? env s n |
+      throwErrorAt parent "enc_structure: `{n}` is not a field of `{sName}`"
+    let mut cur := s
+    for f in path do
+      let some next := isSubobjectField? env cur f |
+        throwErrorAt parent "enc_structure: `{n}` is a field of `{sName}`, but not a parent field"
+      cur := next
+    if seen.contains path then
+      throwErrorAt parent "enc_structure: flattened parent `{n}` is listed twice"
+    let indices := (Array.range paths.size).filter fun i =>
+      let p := paths[i]!
+      p.size > path.size && p.extract 0 path.size == path
+    if indices.isEmpty then
+      throwErrorAt parent "enc_structure: parent field `{n}` is not flattened by the listed fields"
+    seen := seen.push path
+    checked := checked.push (path, indices)
+  return checked
+
 /-- Elaborate `enc_structure`: the encoding, its unfolding lemma and its rules. -/
 @[command_elab encStructure] def elabEncStructure : CommandElab := fun stx => do
   let `($[$doc:docComment]? $[$vis:visibility]? enc_structure $eS:ident
-      $[($ps:ident : $pts:term)]* : $S:term where $[$fs:ident : $es:term $[using $hws:term]?],*) :=
+      $[($ps:ident : $pts:term)]* : $S:term
+      $[flattened $parents:ident : $parentEncs:term]* where
+      $[$fs:ident : $es:term $[using $hws:term]?],*) :=
     stx | throwUnsupportedSyntax
   -- The syntax declaration parses both as terms; the repeated antiquotations are untyped.
   let pts : Array Term := pts.map (⟨·⟩)
   let es : Array Term := es.map (⟨·⟩)
+  let parentEncs : Array Term := parentEncs.map (⟨·⟩)
   let vis : TSyntax ``Lean.Parser.Command.visibility ← match vis with
     | some v => pure v
     | none => `(visibility| public)
@@ -235,6 +338,7 @@ private def checkFields (S : Term) (fs : Array Ident) : CommandElabM (Name × Ar
       elabCommand (← `(attribute [scoped fun_prop] $decl:ident))
   let (s, paths) ← checkFields S fs
   let env ← getEnv
+  let checkedParents ← checkFlattenedParents env s paths parents
   let name := eS.getId
   let n := fs.size
   let names := fs.map (·.getId)
@@ -258,7 +362,8 @@ private def checkFields (S : Term) (fs : Array Ident) : CommandElabM (Name × Ar
   let encRef : Term ← `(($eSTerm : $S ↪ List Bool))
   -- Binders that callers may name keep plain names, unless the command's own terms use the name.
   let userNames := ps.map (·.getId) ++ identRoots S ++ pts.flatMap (identRoots ·) ++
-    es.flatMap (identRoots ·) ++ hws.flatMap fun | some hw => identRoots hw | none => #[]
+    es.flatMap (identRoots ·) ++ parentEncs.flatMap (identRoots ·) ++
+      hws.flatMap fun | some hw => identRoots hw | none => #[]
   let freshIdent (base : Name) : CommandElabM Ident := do
     return mkIdent (← withFreshMacroScope <| MonadQuotation.addMacroScope base)
   let plainIdent (base : Name) : CommandElabM Ident :=
@@ -279,16 +384,24 @@ private def checkFields (S : Term) (fs : Array Ident) : CommandElabM (Name × Ar
     word i reads reads[i]!
   let fields := app name "Fields"
   let fieldsOf ← liftMacroM do tuple (← (Array.range n).mapM fun i => wordOf i a)
-  let encoding ← liftMacroM do
-    let mut enc : Term := slots.back!
-    for e in slots.pop.reverse do
-      enc ← `(encPair $e $enc)
-    return enc
+  let encoding ← liftMacroM <| tupleEncoding slots
   let fieldsTerm := applied fields
   let linE : Term ← `(fun a => List.length ($encRef a))
   elabCommand (← `($vis:visibility abbrev $fields:ident $params* := $encoding))
   let fieldsDecl ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo fields
   addDocStringCore fieldsDecl s!"The tuple of the fields of `{name}`."
+  -- `eSFields` takes every parameter, so that all generated declarations share one argument list.
+  -- A parameter that only a dependent field's word or proof uses reaches no slot. Mark
+  -- `eSFields` only when those terms use every parameter that it does not, so that the linter
+  -- still reports a parameter that nothing uses.
+  if dependent then
+    let depTerms (x : Term) : MacroM (Array (Term × Term)) := do
+      let reads ← projs.mapM (readPath · x)
+      (Array.range n).filterMapM fun i => do
+        let some hw := hws[i]! | return none
+        return some (← wordFn i reads, ← substIdents (names.extract 0 i) (reads.extract 0 i) hw)
+    if ← usingOnlyParams fieldsDecl ps S depTerms then
+      elabCommand (← `(attribute [nolint unusedArguments] $fields:ident))
   let inj : Term ← if simple then `(fun x y h => by cases x; cases y; simp_all) else do
     -- Match both structures, then recover each field from its word in field order, replacing the
     -- right field by the left one.
@@ -334,38 +447,59 @@ private def checkFields (S : Term) (fs : Array Ident) : CommandElabM (Name × Ar
     ComputableInPolyTime (fun $a : $S => $fieldsOf) $encRef $fieldsTerm))
   let g ← freshIdent `g
   let c ← freshIdent `c
+  let declareProjectionRules (projection : Name) (fn compFn e degBody poly : Term) :
+      CommandElabM Unit := do
+    let deg := app name s!"_{projection}_deg"
+    let degTerm := applied deg
+    elabCommand (← `($vis:visibility theorem $deg:ident $params* :
+      ComputableInDegree $fn $encRef $e 1 1 := $degBody))
+    registerRule deg
+    let inO := app name s!"_{projection}_inO"
+    elabCommand (← `($vis:visibility theorem $inO:ident $params* :
+      ComputableInO $fn $encRef $e $linE $linE := ComputableInDegree.inO_one $degTerm))
+    registerRule inO
+    let budgetRule := app name s!"_{projection}_budget"
+    elabCommand (← `($vis:visibility theorem $budgetRule:ident $params*
+      {γ : Type} {encIn : γ ↪ List Bool} {S : γ → ℕ} {$g : γ → $S}
+      (h : ComputableInSpace $g encIn $encRef S) :
+      ComputableInSpace $compFn encIn $e S :=
+        ComputableInSpace.budget_comp_linear (f := $g) (g := $fn)
+          (ComputableInSpace.of_inO (ComputableInDegree.inO_one $degTerm)) h))
+    registerRule budgetRule
+    let polyRule := app name s!"_{projection}_polyTime"
+    elabCommand (← `($vis:visibility theorem $polyRule:ident $params*
+      {γ : Type} {encIn : γ ↪ List Bool} {$g : γ → $S}
+      (h : ComputableInPolyTime $g encIn $encRef) :
+      ComputableInPolyTime $compFn encIn $e :=
+        ComputableInPolyTime.comp (f := $fn) (g := $g) $poly h))
+    registerRule polyRule
   for f in fs, e in slots, i in Array.range n do
     -- The field read, as a function of the structure and applied to `g c`.
     let fn : Term ← if simple then pure (mkCIdent (s ++ f.getId)) else
       `(fun $a : $S => $(← liftMacroM <| wordOf i a))
     let ofG : Term ← if simple then `($(mkCIdent (s ++ f.getId)) ($g $c)) else
       liftMacroM <| wordOf i (← `(($g $c)))
-    let deg := app name s!"_{f.getId}_deg"
-    let degTerm := applied deg
-    let body ← liftMacroM <| component `Turing.MultiTapeTM.ComputableInDegree fieldsDegTerm i n
-    elabCommand (← `($vis:visibility theorem $deg:ident $params* :
-      ComputableInDegree $fn $encRef $e 1 1 := $body))
-    registerRule deg
-    let inO := app name s!"_{f.getId}_inO"
-    elabCommand (← `($vis:visibility theorem $inO:ident $params* :
-      ComputableInO $fn $encRef $e $linE $linE := ComputableInDegree.inO_one $degTerm))
-    registerRule inO
-    let budgetRule := app name s!"_{f.getId}_budget"
-    elabCommand (← `($vis:visibility theorem $budgetRule:ident $params*
-      {γ : Type} {encIn : γ ↪ List Bool} {S : γ → ℕ} {$g : γ → $S}
-      (h : ComputableInSpace $g encIn $encRef S) :
-      ComputableInSpace (fun $c => $ofG) encIn $e S :=
-        ComputableInSpace.budget_comp_linear (f := $g) (g := $fn)
-          (ComputableInSpace.of_inO (ComputableInDegree.inO_one $degTerm)) h))
-    registerRule budgetRule
+    let compFn : Term ← `(fun $c => $ofG)
+    let degBody ←
+      liftMacroM <| component `Turing.MultiTapeTM.ComputableInDegree fieldsDegTerm i n
     let poly ← liftMacroM <| component `Turing.MultiTapeTM.ComputableInPolyTime fieldsPoly i n
-    let polyRule := app name s!"_{f.getId}_polyTime"
-    elabCommand (← `($vis:visibility theorem $polyRule:ident $params*
-      {γ : Type} {encIn : γ ↪ List Bool} {$g : γ → $S}
-      (h : ComputableInPolyTime $g encIn $encRef) :
-      ComputableInPolyTime (fun $c => $ofG) encIn $e :=
-        ComputableInPolyTime.comp (f := $fn) (g := $g) $poly h))
-    registerRule polyRule
+    declareProjectionRules f.getId fn compFn e degBody poly
+  for parent in parents, parentEnc in parentEncs, checked in checkedParents do
+    let (path, indices) := checked
+    let parentProjs := pathProjs env s path
+    let parentFn : Term ← `(fun $a : $S => $(← liftMacroM <| readPath parentProjs a))
+    let parentOfG : Term ←
+      `(fun $c => $(← liftMacroM <| readPath parentProjs (← `(($g $c)))))
+    let mut parentDeg ← liftMacroM <|
+      component `Turing.MultiTapeTM.ComputableInDegree fieldsDegTerm indices.back! n
+    for i in indices.pop.reverse do
+      let fieldDeg ← liftMacroM <|
+        component `Turing.MultiTapeTM.ComputableInDegree fieldsDegTerm i n
+      parentDeg ← `(ComputableInDegree.prod $fieldDeg $parentDeg)
+    let degTerm := applied (app name s!"_{parent.getId}_deg")
+    let degBody : Term ← `(ComputableInDegree.of_enc_eq $parentDeg fun _ => rfl)
+    let poly : Term ← `(ComputableInDegree.computableInPolyTime $degTerm)
+    declareProjectionRules parent.getId parentFn parentOfG parentEnc degBody poly
   let p ← plainIdent `p
   let comps ← (List.range n).toArray.mapM fun i => do
     let mut t : Term ← `($p)

@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Foundations.Data.BitString.Enumeration
 public import CslibFrontier.Foundations.Data.BitString.List.Binary
+public import CslibFrontier.Foundations.Data.BitString.List.Dot
 public import CslibFrontier.Logics.Propositional.CNF.KWiseIndependent
 public import CslibFrontier.Logics.Propositional.CNF.ModelCount
 public import CslibFrontier.Logics.Propositional.CNF.UnsatVal
@@ -86,7 +87,7 @@ variable {V : Type*} [DecidableEq V]
 /-- The value that the seed `t ∈ {0,1}^(d+1)` gives the variable at position `j` of `vs`: the
 parity of the bits of `t` selected by `1` followed by the `d` low binary digits of `j`. -/
 @[expose] def paritySample (vs : List V) (seed : List Bool) (v : V) : Bool :=
-  ((true :: lowBits (seed.length - 1) (vs.idxOf v)).zipWith Bool.and seed).foldl Bool.xor false
+  listDot (true :: lowBits (seed.length - 1) (vs.idxOf v)) seed
 
 /-- The points of the sample space for the variables `vs`: for each seed of `⌈log₂ |vs|⌉ + 1`
 bits, the variables of `vs` that it sets to `true`. -/
@@ -131,7 +132,7 @@ theorem paritySample_ofFn {d : ℕ} (vs : List V) (t : BitString (d + 1)) (v : V
     paritySample vs (List.ofFn t) v =
       t ⬝ᵥ Fin.cons true fun i : Fin d => (vs.idxOf v).testBit i := by
   rw [paritySample, List.length_ofFn, Nat.add_sub_cancel, lowBits_eq_ofFn, ← List.ofFn_cons,
-    ← dotProduct_eq_foldl, dotProduct_comm]
+    listDot_ofFn, dotProduct_comm]
 
 /-- Distinct variables of `vs` have distinct `d`-digit binary positions when `|vs| ≤ 2 ^ d`. -/
 private theorem testBit_idxOf_injOn {d : ℕ} {vs : List V} (hd : vs.length ≤ 2 ^ d)

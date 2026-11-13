@@ -66,15 +66,58 @@ example (e : Polynomial ℕ) : ∃ (G : List (AMMove × Polynomial ℕ))
         IsAMGameVerifierWithErrorExponent encBits e G V {w : List Bool | w.headD false = true} :=
   mem_AMGameClass_iff_forall_errorExponent.1 head_mem_MAMA e
 
-/-- `MA ⊆ AM`, recovered from the round collapse. -/
-example {α : Type} (enc : α ↪ List Bool) : MA enc ⊆ AM enc :=
-  AMGameClass_merlin_arthur ▸ AMGameClass_subset_AM _
+/-- Zero-move and single-move game verifiers match deterministic, bounded-error and `NP`
+verifiers. -/
+example : IsAMGameVerifier encBits [] (fun x => x.1.headD false)
+    {w : List Bool | w.headD false = true} :=
+  isAMGameVerifier_nil_iff.2 fun _ => Iff.rfl
 
-/-- The collapse for alternating patterns, and the patterns with two moves. -/
+example : IsAMGameVerifier encBits [(.arthur, 2)]
+    (fun x => if x.1.headD false then !(x.2.getD 0 false && x.2.getD 1 false)
+      else (x.2.getD 0 false && x.2.getD 1 false))
+    {w : List Bool | w.headD false = true} := by
+  rw [isAMGameVerifier_arthur_iff]
+  intro w
+  have hev : (2 : Polynomial ℕ).eval (encBits w).length = 2 := by simp
+  refine ⟨fun hw => ?_, fun hw => ?_⟩
+  · have hw' : w.headD false = true := hw
+    rw [boundedErrorAt_true_iff, hev, acceptCount_congr (W := fun x =>
+      !(x.2.getD 0 false && x.2.getD 1 false)) fun u => ite_eq_left hw']
+    exact (by decide : 2 * 2 ^ 2 ≤
+      3 * acceptCount (fun x : Unit × List Bool => !(x.2.getD 0 false && x.2.getD 1 false)) () 2)
+  · rw [boundedErrorAt_false_iff, hev, acceptCount_congr (W := fun x =>
+      x.2.getD 0 false && x.2.getD 1 false) fun u => ite_eq_right hw]
+    exact (by decide : 3 * acceptCount
+      (fun x : Unit × List Bool => x.2.getD 0 false && x.2.getD 1 false) () 2 ≤ 2 ^ 2)
+
+example : IsAMGameVerifier encBits [(.merlin, 1)]
+    (fun x => x.1.headD false == x.2.headD false) Set.univ :=
+  isAMGameVerifier_merlin_iff.2 fun w =>
+    ⟨fun _ => ⟨[w.headD false], by simp, by simp⟩, fun _ => Set.mem_univ w⟩
+
+/-- Prepending an existential quantifier over one-bit words turns a zero-move game into an `NP`
+game (`[.merlin]`). -/
+example : {w : List Bool | ∃ u : List Bool, u.length = (1 : Polynomial ℕ).eval (encBits w).length ∧
+    (w, u) ∈ {p : List Bool × List Bool | p.1.headD false = p.2.headD false}} ∈ NP encBits := by
+  rw [← AMGameClass_merlin]
+  refine mem_AMGameClass_cons_merlin ?_ 1
+  rw [AMGameClass_nil]
+  exact ⟨fun p => p.1.headD false == p.2.headD false, by fun_prop, fun _ => by simp⟩
+
+/-- `MA ⊆ AM`, recovered from the round collapse. -/
+example {α : Type} (enc : α ↪ List Bool) : MA enc ⊆ AM enc := MA_subset_AM
+
+/-- Short move patterns (`[]`, `A`, `M`, `A M`, `M A`) and the collapse for alternating patterns. -/
 example {α : Type} (enc : α ↪ List Bool) :
-    AMk enc 2 = AM enc ∧ AMk enc 7 = AM enc ∧ MAk enc 2 = MA enc ∧ MAk enc 5 = AM enc ∧
-      AMGameClass enc [.merlin, .arthur, .merlin] = AM enc ∧ AMGameClass enc [] ⊆ AM enc :=
-  ⟨AMk_two, AMk_eq_AM (by norm_num), MAk_two, MAk_eq_AM (by norm_num),
-    AMGameClass_merlin_arthur_merlin, AMGameClass_subset_AM _⟩
+    AMGameClass enc [] = P enc ∧ AMGameClass enc [.arthur] = BPP enc ∧
+      AMGameClass enc [.merlin] = NP enc ∧
+      AMk enc 0 = P enc ∧ MAk enc 0 = P enc ∧
+      AMk enc 1 = BPP enc ∧ MAk enc 1 = NP enc ∧
+      AMk enc 2 = AM enc ∧ AMk enc 7 = AM enc ∧ MAk enc 2 = MA enc ∧ MAk enc 5 = AM enc ∧
+      AMGameClass enc [.merlin, .arthur, .merlin] = AM enc :=
+  ⟨AMGameClass_nil, AMGameClass_arthur, AMGameClass_merlin,
+    AMk_zero, MAk_zero, AMk_one, MAk_one,
+    AMk_two, AMk_eq_AM (by norm_num), MAk_two, MAk_eq_AM (by norm_num),
+    AMGameClass_merlin_arthur_merlin⟩
 
 end CslibFrontierTests.ArthurMerlinGames

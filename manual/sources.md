@@ -259,6 +259,11 @@ Robert G. Bland. "New Finite Pivoting Rules for the Simplex Method." *Mathematic
 
 Manuel Blum. *A Machine-Independent Theory of the Complexity of Recursive Functions*. Journal of the ACM 14(2), 322–336, 1967. https://doi.org/10.1145/321386.321395 . Bibliographic metadata checked on 2026-11-07; the manual attributes only the two axioms, recursive relatedness and the speed-up theorem to this paper. The manual also mentions the customary attribution of the measure-independent theorem on arbitrarily complex functions to this paper (and to Rabin, 1960); that attribution and any theorem locator are unverified.
 
+<a id="blumfurstkearnslipton93"></a>
+## blumfurstkearnslipton93
+
+Avrim Blum, Merrick Furst, Michael Kearns and Richard J. Lipton. "Cryptographic Primitives Based on Hard Learning Problems." *Advances in Cryptology — CRYPTO '93*, LNCS 773, 278–291, 1993. https://doi.org/10.1007/3-540-48329-2_24 . Bibliographic metadata only (`references.bib`); the paper was not inspected and no numbered result is claimed. [CryptoHardness/Inversion.lean](../CslibFrontier/MachineLearning/UniformLearning/CryptoHardness/Inversion.lean) cites it, with [Impagliazzo and Levin](#impagliazzolevin90), for the easy direction of the correspondence between average-case learning and one-way functions: an inverter for the map from a key and examples to the labelled sample is a consistent learner.
+
 <a id="blummansour07"></a>
 ## blummansour07
 
@@ -357,7 +362,7 @@ Ran Canetti and Marc Fischlin. *Universally Composable Commitments*. CRYPTO 2001
 <a id="cgks98"></a>
 ## cgks98
 
-Benny Chor, Oded Goldreich, Eyal Kushilevitz and Madhu Sudan. *Private Information Retrieval*. Journal of the ACM 45(6), 965–981, 1998; preliminary version FOCS 1995. https://doi.org/10.1145/293347.293350 . Definition 1 (§2.1, p. 4), the coalition `t`-privacy extension of §2.2 (pp. 4–5, and the polynomial family noted without construction in §1.1, pp. 1–2), the polynomial-time requirement of §2.4 (p. 6), the schemes of §§3.1, 3.2 and 3.4 (Proposition 4, Corollary 3; pp. 6–8, 11), the covering-code schemes of §3.3 (Theorem 1, its footnote on exact covers, Corollary 2; pp. 8–10), the block-retrieval transformations and constant-overhead schemes of §4 (Propositions 4 and 5, the group-homomorphism note on p. 12, Corollaries 6, 7 and 8; pp. 11–13), the single-server bound of §5.1 in its one-round and interactive forms, and §5.2 (the Claim, its two observations and the closing note on the even-set scheme) were checked on 2026-11-08 and 2026-11-11 against the authors' journal version of April 21, 1998, at http://people.csail.mit.edu/madhu/papers/1995/pir-journ.pdf (§5 is on pp. 13–15). Because §1.1 omits the polynomial-interpolation construction while stating `O(t(n) · n ^ (1 / c))` for `c · t(n)` servers, [PIR/Shamir.lean](../CslibFrontier/Crypto/Protocols/PIR/Shamir.lean) formalizes an explicit finite-field adaptation over `Shamir.Params F S` that matches `k = c · t` servers and fixed-`t` exponent `n ^ (1 / c)` while retaining the field bit-width factor `⌈log₂ |F|⌉` (`|F| > c · t`, a weaker finite-field communication variant). Neither polynomial-time computation (§2.4, p. 6) nor fair-coin simulation of finite-uniform `ProbComp` primitives is modeled. In the interactive form, the user's output may depend on its coins, so the source's step that the same communication forces the same output is replaced by the rectangle property of protocols. The typeset JACM PDF was not consulted; locators follow the authors' version.
+Benny Chor, Oded Goldreich, Eyal Kushilevitz and Madhu Sudan. *Private Information Retrieval*. Journal of the ACM 45(6), 965–981, 1998; preliminary version FOCS 1995. https://doi.org/10.1145/293347.293350 . Definition 1 (§2.1, p. 4), the coalition `t`-privacy extension of §2.2 (pp. 4–5, and the polynomial family noted without construction in §1.1, pp. 1–2), the polynomial-time requirement of §2.4 (p. 6), the schemes of §§3.1, 3.2 and 3.4 (Proposition 4, Corollary 3; pp. 6–8, 11), the covering-code schemes of §3.3 (Theorem 1, Footnote 1 on exact covers, the `d = 5, k = 7` row of Figure 1, the radius-`2` covering remark `k · d · n ^ (1 / d) + k · C(d, 2) · n ^ (2 / d)`, and Corollary 2; pp. 8–10), the block-retrieval transformations and constant-overhead schemes of §4 (Propositions 4 and 5, the group-homomorphism note on p. 12, Corollaries 6, 7 and 8; pp. 11–13), the single-server bound of §5.1 in its one-round and interactive forms, and §5.2 (the Claim, its two observations and the closing note on the even-set scheme) were checked on 2026-11-08, 2026-11-11 and 2026-11-12 against the authors' journal version of April 21, 1998, at http://people.csail.mit.edu/madhu/papers/1995/pir-journ.pdf (§5 is on pp. 13–15). In [PIR/GeneralCover.lean](../CslibFrontier/Crypto/Protocols/PIR/GeneralCover.lean), Theorem 1 (`hasIndexedScheme_of_hammingDist`) states explicit `0 < |D|` and `Function.Injective code` hypotheses (`d - 1` truncates at `d = 0` in `ℕ`, and duplicate codewords would violate `k ≤ 2 ^ d`), while for radius-`2` covers `hasScheme_of_hammingDist_two` proves the full-ball count `k · (2 · d · ℓ + C(d, 2) · ℓ² + 1) = k · d · ℓ + k · C(d, 2) · ℓ² + k · (d · ℓ + 1)` (CGKS p. 10's displayed leading expression `k · d · ℓ + k · C(d, 2) · ℓ²` plus the `k · (d · ℓ + 1)` distance-`0`/`1` answer bits; the literal `k · d · ℓ + k · C(d, 2) · ℓ²` bound without lower-order answer terms is not proved) alongside the exact radius-`r` count `k · (d · ℓ + ∑_{j ≤ r} C(d, j) · ℓ ^ j)` and the coarser `d²` upper bound `k · d · ℓ + k · d² · ℓ²` (`hasScheme_of_hammingDist_two_sq`, for `2 ≤ |D|` and `1 ≤ ℓ`). Because §1.1 omits the polynomial-interpolation construction while stating `O(t(n) · n ^ (1 / c))` for `c · t(n)` servers, [PIR/Shamir.lean](../CslibFrontier/Crypto/Protocols/PIR/Shamir.lean) formalizes an explicit finite-field adaptation over `Shamir.Params F S` that matches `k = c · t` servers and fixed-`t` exponent `n ^ (1 / c)` while retaining the field bit-width factor `⌈log₂ |F|⌉` (`|F| > c · t`, a weaker finite-field communication variant). Neither polynomial-time computation (§2.4, p. 6; §3.3 Remark, p. 10) nor fair-coin simulation of finite-uniform `ProbComp` primitives is modeled. In the interactive form, the user's output may depend on its coins, so the source's step that the same communication forces the same output is replaced by the rectangle property of protocols. The typeset JACM PDF was not consulted; locators follow the authors' version.
 
 <a id="chaitin74"></a>
 ## chaitin74
@@ -597,6 +602,11 @@ Amos Fiat, Richard M. Karp, Michael Luby, Lyle A. McGeoch, Daniel D. Sleator and
 
 National Institute of Standards and Technology. *Module-Lattice-Based Key-Encapsulation Mechanism Standard*, Federal Information Processing Standards Publication 203, 2024. https://doi.org/10.6028/NIST.FIPS.203 . Cited for the rounding maps `Compress_d` and `Decompress_d` (Section 4.2.1), `SamplePolyCBD` (Section 4.2.2, Algorithm 8), K-PKE (Section 5, Algorithms 13–15), the internal ML-KEM algorithms (Section 6, Algorithms 16–18), the ML-KEM interface (Section 7, Algorithms 19–21) and the parameter sets (Section 8, Table 2); the Lean modules record the model differences (uniform matrix, sampled coins, coefficient form). The locators follow the structure of the published standard; the PDF was not re-read in this pass.
 
+<a id="fips205"></a>
+## fips205
+
+National Institute of Standards and Technology. *Stateless Hash-Based Digital Signature Standard*, Federal Information Processing Standards Publication 205, 2024. https://doi.org/10.6028/NIST.FIPS.205 . Checked on 2026-11-13 against the official PDF (SHA-256 `8ef34228276f3386d23cb0da8c14592b8cfb0db3358016bba64df7a004f8d13d`): Section 4.2 and Figures 2–9 define the canonical 32-byte address and its seven type-specific layouts; Section 4.3 and Table 1 define the address setters, including clearing the final 12 bytes on every type change; Section 4.4 defines the unsigned big-endian integer encoding; and Section 11.2, Figure 18 and Table 3 define the 22-byte compressed address used by the SHA2 parameter sets. `CslibFrontier.Crypto.Primitives.SLHDSA.Address` formalizes exactly this address-domain layer, not the hash-function instantiations, WOTS+, XMSS, FORS, the hypertree, signing, verification or security analysis.
+
 <a id="fks84"></a>
 ## fks84
 
@@ -621,6 +631,11 @@ Zhiyuan Fan, Jiatu Li, and Tianqi Yang. *The Exact Complexity of Pseudorandom Fu
 ## fmptw15
 
 Samuel Fiorini, Serge Massar, Sebastian Pokutta, Hans Raj Tiwary and Ronald de Wolf. *Exponential Lower Bounds for Polytopes in Combinatorial Optimization*. Journal of the ACM 62(2), 1–23, 2015. https://doi.org/10.1145/2716307 . Bibliographic metadata checked against the Crossref record on 2026-11-08 UTC. Locators checked against arXiv:1111.0837v4 (23 Dec 2013), https://arxiv.org/abs/1111.0837 , on 2026-11-08 UTC: definition (1) of an extended formulation (EF) and its size (Section 1), the slack matrix and extension complexity (Section 3), Lemma 2, Theorem 3 (the factorization theorem, `dim P ≥ 1`) and Theorem 4 (the rectangle covering bound, attributed to [yannakakis91](#yannakakis91)) in Section 3.1. Checked against the same arXiv v4 text on 2026-11-11 UTC: Section 3.2 (Theorems 5 and 7, Lemma 6 on `COR(n)` and `CUT(n + 1)`), Section 3.3 (Lemmas 8 and 9, Theorem 10 on `STAB(G_n)`), and Section 3.4 (Lemma 11, Theorem 12 on `TSP(n)`). The journal version's numbering was not checked.
+
+<a id="fmr20"></a>
+## fmr20
+
+Benjamin Fuller, Xianrui Meng and Leonid Reyzin. "Computational Fuzzy Extractors." *Information and Computation* 275, article 104602, 2020. https://doi.org/10.1016/j.ic.2020.104602 ; full version IACR Cryptology ePrint Archive Report 2013/416 (revision of June 23, 2020), https://eprint.iacr.org/2013/416 ; conference version ASIACRYPT 2013, LNCS 8269, 174-193. Locators in the library follow the ePrint revision: Definitions 2.1-2.4 and Lemma 2.5 (Section 2), Construction 4.1, Definition 4.5, Lemma 4.7 and Theorem 4.11 (Section 4).
 
 <a id="fnw78"></a>
 ## fnw78
@@ -771,6 +786,7 @@ Anupam Gupta. “Dimension Reduction and the JL Lemma.” Chapter 11 of the lect
 ## guruswamirudrasudan25
 
 Venkatesan Guruswami, Atri Rudra and Madhu Sudan. *Essential Coding Theory*. Draft book, version of 26 August 2025. https://cse.buffalo.edu/faculty/atri/courses/coding-theory/book/ ; open PDF https://cse.buffalo.edu/faculty/atri/courses/coding-theory/book/web-coding-book.pdf . The library's key is `GuruswamiRudraSudan2019`. Read in the open PDF on 2026-11-08 for Chapter 6:
+
 - §6.2 (the binary symmetric channel) and §6.2.2 (capacity: reliable communication is possible below it and impossible above it);
 - Theorem 6.3.1 (p. 119): part (1), achievability with error `2^(−δn)`, and part (2), for `0 ≤ p < 1/2` and `k ≥ ⌈(1 − H(p) + ε) n⌉` with `0 ≤ ε ≤ 1/2 − p`, some message misdecoded with probability more than `1/2`;
 - §6.3.1, the packing proof of part (2) (pp. 120–122), and Remark 6.3.2, the error bound `1 − 2^(−βn)`;
@@ -826,12 +842,12 @@ Christopher Henson and Fabrizio Montesi. *Computer Science as Infrastructure: th
 <a id="hhk17"></a>
 ## hhk17
 
-Dennis Hofheinz, Kathrin Hövelmanns, Eike Kiltz. “A Modular Analysis of the Fujisaki–Okamoto Transformation.” *Theory of Cryptography (TCC 2017)*, LNCS 10677, 341–371, 2017. https://doi.org/10.1007/978-3-319-70500-2_12 ; full version https://eprint.iacr.org/2017/604 (dated 2 November 2021). Checked against the 2 November 2021 ePrint PDF (§2.1 correctness/spreadness and Def. 2.2 / Fig. 4 IND-CPA; §3.1 Fig. 5 transform `T`; §3.2.1 Fig. 9 `FO^⊥`; §3.2.2 Fig. 12 `FO-notbot`), with model adaptations (`ExplicitCoinPKE`/`Scheme` fixed types and arbitrary `sampleCoins`/`sampleMsg`/`sampleKey` samplers, single-stage fixed-message probability-difference `indCpaGame`/`indCpaAdvantage`, and domain-separated `H : Bool × M × CT → K`) documented in the Lean module and chapter text.
+Dennis Hofheinz, Kathrin Hövelmanns, Eike Kiltz. “A Modular Analysis of the Fujisaki–Okamoto Transformation.” *Theory of Cryptography (TCC 2017)*, LNCS 10677, 341–371, 2017. https://doi.org/10.1007/978-3-319-70500-2_12 ; full version https://eprint.iacr.org/2017/604 (dated 2 November 2021). Checked against the 2 November 2021 ePrint PDF (§2.1 correctness/spreadness and Def. 2.2 / Fig. 4 IND-CPA; §3.1 Fig. 5 transform `T`; §3.2.1 Fig. 9 `FO^⊥`; §3.2.2 Fig. 12 `FO-notbot`), with model adaptations (`ExplicitCoinPKE`/`Scheme` fixed types and arbitrary `sampleCoins`/`sampleMsg`/`sampleKey` samplers, single-stage fixed-message probability-difference `indCpaGame`/`indCpaAdvantage`, and domain-separated `H : Bool × M × CT → K`) documented in the Lean modules and chapter text.
 
 <a id="hhrvw20"></a>
 ## hhrvw20
 
-Iftach Haitner, Thomas Holenstein, Omer Reingold, Salil Vadhan, Hoeteck Wee. “Inaccessible Entropy II: IE Functions and Universal One-Way Hashing.” *Theory of Computing* 16(8), 1–55, 2020. https://doi.org/10.4086/toc.2020.v016a008 . Open-access article PDF inspected (Section 3, Definitions 3.1, 3.3, 3.9, pp. 11–15; Section 4.2, Theorem 4.5 and Claims 4.6–4.8, pp. 21–25, adapted to a constant light-image threshold with inverse-linear gap `1 / (64 * (n + 1))`; and Section 5.1, Theorem 5.1, Lemmas 5.3–5.7, and Section 5.1.5 STEPS 1–5, pp. 25–32).
+Iftach Haitner, Thomas Holenstein, Omer Reingold, Salil Vadhan, Hoeteck Wee. “Inaccessible Entropy II: IE Functions and Universal One-Way Hashing.” *Theory of Computing* 16(8), 1–55, 2020. https://doi.org/10.4086/toc.2020.v016a008 . Open-access article PDF inspected (Section 3, Definitions 3.1, 3.3, 3.9, pp. 11–15, including canonical collision-finder sanitization and adversary-dependent accessible preimage sets; Section 4.2, Theorem 4.5 and Claims 4.6–4.8, pp. 21–25, with polynomial light-image threshold and `d * Real.logb 2 n / n` entropy gap against uniform strict-PPT adversaries; and Section 5.1, Theorem 5.1, Lemmas 5.3–5.7, and Section 5.1.5 STEPS 1–5, pp. 25–32, proved from Definition 3.9's adversary-dependent hypothesis).
 
 <a id="hierholzer73"></a>
 ## hierholzer73
@@ -937,6 +953,11 @@ Russell Impagliazzo. “Hard-Core Distributions for Somewhat Hard Problems.” *
 ## impagliazzojaiswalkabanetswigderson10
 
 Russell Impagliazzo, Ragesh Jaiswal, Valentine Kabanets and Avi Wigderson. *Uniform Direct Product Theorems: Simplified, Optimized, and Derandomized*. SIAM Journal on Computing 39(4), 1637–1665, 2010. DOI: [10.1137/080734030](https://doi.org/10.1137/080734030) (as reported by search; not resolved). The authors' preprint dated 2009-10-19 (https://www.math.ias.edu/~avi/PUBLICATIONS/ImpagliazzoJaKaWi2010.pdf) was inspected on 2026-11-11: Theorem 1.2 (the decoder that CIKK cite as their Theorem 4.1), Algorithms 1–2, Theorem 3.2 and Lemmas 2.11–2.14 and 3.8–3.12. Locators follow the preprint; the journal numbering is unchecked.
+
+<a id="impagliazzolevin90"></a>
+## impagliazzolevin90
+
+Russell Impagliazzo and Leonid A. Levin. "No Better Ways to Generate Hard NP Instances than Picking Uniformly at Random." *Proceedings of the 31st Annual Symposium on Foundations of Computer Science (FOCS 1990)*, 812–821. https://doi.org/10.1109/FSCS.1990.89604 . Bibliographic metadata only (`references.bib`); the paper was not inspected and no numbered result is claimed. Cited with [Blum, Furst, Kearns and Lipton](#blumfurstkearnslipton93) by [CryptoHardness/Inversion.lean](../CslibFrontier/MachineLearning/UniformLearning/CryptoHardness/Inversion.lean).
 
 <a id="impagliazzopudlaksgall99"></a>
 ## impagliazzopudlaksgall99
@@ -1291,7 +1312,7 @@ Michael Mitzenmacher and Eli Upfal. *Probability and Computing: Randomization an
 <a id="mohrirostamizadehtalwalkar18"></a>
 ## mohrirostamizadehtalwalkar18
 
-Mehryar Mohri, Afshin Rostamizadeh and Ameet Talwalkar. *Foundations of Machine Learning*, 2nd edition. MIT Press, 2018. ISBN 978-0-262-03940-6; https://cs.nyu.edu/~mohri/mlbook/ . Bibliographic metadata from `references.bib`; Chapter 3 locators (Definitions 3.1–3.2, Theorem 3.3, Lemma 3.4, Theorem 3.5, Theorem 3.7, Corollaries 3.8, 3.9, 3.18 and 3.19) and Section 5.4 locators (Definitions 5.5–5.6 for the `ρ`-margin loss and empirical margin loss, Lemma 5.7 for uncentered Talagrand contraction, and Theorem 5.8, (5.39)–(5.40) for fixed-`ρ` Rademacher margin generalization bounds) were checked against secondary search summaries on 2026-11-11 UTC; the printed book PDF was not directly inspected in this pass. The library formalizes these results on finite `PMF` sample spaces and assumes uniform boundedness on real-valued hypothesis classes so that real conditional suprema `⨆` are bounded above.
+Mehryar Mohri, Afshin Rostamizadeh and Ameet Talwalkar. *Foundations of Machine Learning*, 2nd edition. MIT Press, 2018. ISBN 978-0-262-03940-6; https://cs.nyu.edu/~mohri/mlbook/ . Bibliographic metadata from `references.bib`; Chapter 3 locators (Definitions 3.1–3.2, Theorem 3.3, Lemma 3.4, Theorem 3.5, Theorem 3.7, Corollaries 3.8, 3.9, 3.18 and 3.19) and Section 5.4 locators (Definitions 5.5–5.6 for the `ρ`-margin loss and empirical margin loss, Lemma 5.7 for uncentered Talagrand contraction, and Theorem 5.8, (5.39)–(5.40) for fixed-`ρ` Rademacher margin generalization bounds) were checked against secondary search summaries on 2026-11-11 UTC; the printed book PDF was not directly inspected in this pass. Theorem 7.2 (AdaBoost's empirical error, p. 149) and Corollary 7.5 were read in a PDF of the book on 2026-11-13. The library formalizes these results on finite `PMF` sample spaces and assumes uniform boundedness on real-valued hypothesis classes so that real conditional suprema `⨆` are bounded above.
 
 <a id="monderershapley96"></a>
 ## monderershapley96
@@ -1397,6 +1418,11 @@ Ryan O'Donnell. *Analysis of Boolean Functions*. Cambridge University Press, 201
 ## oliveirapichsanthanam2019
 
 Igor Carboni Oliveira, Ján Pich and Rahul Santhanam. *Hardness Magnification near State-Of-The-Art Lower Bounds*. CCC 2019, LIPIcs 137, 27:1–27:29. https://doi.org/10.4230/LIPIcs.CCC.2019.27 . Lemma numbers follow the journal version, Theory of Computing 17(11), 2021. Bibliographic data comes from the repository bibliography. The Lean modules cite its Lemmas 4.1 and 4.7 and Theorem 1.4. For Theorem 1.4, worker meta-proj read the authors' copy of ECCC TR18-158 revision 1 (https://www.dcs.warwick.ac.uk/~igorcarb/documents/papers/OPS19.pdf) on 2026-11-11 UTC: Theorem 4 there is the same statement with an unspecified universal constant `c ≥ 1`, its proof in Section 4.1 uses `c = 10`, Definition 9 has no-instances of size `> s₂`, and Section 2 says gate types do not matter. The journal numbering `1.4` was not checked against the journal text.
+
+<a id="oliveirasanthanam2017"></a>
+## oliveirasanthanam2017
+
+Igor Carboni Oliveira and Rahul Santhanam. *Conspiracies Between Learning Algorithms, Circuit Lower Bounds, and Pseudorandomness*. CCC 2017, LIPIcs 79, 18:1–18:49. https://doi.org/10.4230/LIPIcs.CCC.2017.18 . Full version arXiv:1611.01190. Bibliographic data comes from the repository bibliography and the LIPIcs record. The Lean module [CryptoHardness/NaturalProperty.lean](../CslibFrontier/MachineLearning/UniformLearning/CryptoHardness/NaturalProperty.lean) cites Theorem 8, (1) ⇒ (5) (a learner yields a distinguisher, hence a natural property) and Lemma 4 from the arXiv full version; the page locators are not recorded in the results registry.
 
 <a id="oliveirasanthanam2018"></a>
 ## oliveirasanthanam2018
@@ -1588,6 +1614,11 @@ James Schummer and Rakesh V. Vohra. "Strategy-proof Location on a Network." *Jou
 
 James Schummer and Rakesh V. Vohra. "Mechanism Design without Money." Chapter 10 of Noam Nisan, Tim Roughgarden, Éva Tardos and Vijay V. Vazirani (eds.), *Algorithmic Game Theory*, Cambridge University Press, 2007, 243–265. A university-hosted PDF of the book was consulted on 2026-11-08 for §10.3 (the definition of blocking coalitions and the core, Definition 10.5, Theorems 10.6 and 10.7, pp. 253–255). Its core uses weak blocking, the strict core of the housing-market modules. Its claim on p. 255 that the core and the strict core coincide under strict preferences is refuted by a checked three-agent market in `CslibFrontierTests/HousingMarket.lean`.
 
+<a id="shalevshwartzbendavid14"></a>
+## shalevshwartzbendavid14
+
+Shai Shalev-Shwartz and Shai Ben-David. *Understanding Machine Learning: From Theory to Algorithms*. Cambridge University Press, 2014. ISBN 978-1-107-05713-5. A PDF of the book was read on 2026-11-13 for Section 10.2 (AdaBoost, Theorem 10.2 and its proof, pp. 135–137, including the product form `Z_{t+1}/Z_t = 2 √(ε_{t+1} (1 - ε_{t+1}))`) and Lemma 10.3 (Section 10.3). [Boosting/AdaBoost](../CslibFrontier/MachineLearning/Boosting/AdaBoost.lean) records its differences from Theorem 10.2: early stopping at `ε_t = 0` and ties predicting `false`.
+
 <a id="shamir1979"></a>
 ## shamir1979
 
@@ -1712,6 +1743,11 @@ Alexandre B. Tsybakov. *Introduction to Nonparametric Estimation*. Springer Seri
 
 W. T. Tutte. "The dissection of equilateral triangles into equilateral triangles." *Mathematical Proceedings of the Cambridge Philosophical Society* 44(4), 463–482, 1948. https://doi.org/10.1017/S030500410002449X . Not inspected. [Stanley's notes](#stanley13) (Chapter 10 notes, p. 199, and reference [118]) attribute the directed matrix-tree theorem to Theorem 3.6 of this paper.
 
+<a id="valiant84"></a>
+## valiant84
+
+L. G. Valiant. "A Theory of the Learnable." *Proceedings of the Sixteenth Annual ACM Symposium on Theory of Computing* (STOC '84), 436–445, 1984. https://doi.org/10.1145/800057.808710 . Bibliographic data from the library's `references.bib` entry `Valiant1984`; the paper was not inspected for this citation. The manual attributes to it, following the standard account, the observation that pseudorandom functions make polynomial-size circuits unlearnable; no section or theorem locator is claimed.
+
 <a id="vanaardenneehrenfestdebruijn51"></a>
 ## vanaardenneehrenfestdebruijn51
 
@@ -1816,6 +1852,11 @@ Jacob Ziv and Abraham Lempel. "A Universal Algorithm for Sequential Data Compres
 ## zivlempel78
 
 Jacob Ziv and Abraham Lempel. "Compression of Individual Sequences via Variable-Rate Coding." *IEEE Transactions on Information Theory* 24(5), 530–536, 1978. https://doi.org/10.1109/TIT.1978.1055934 . Bibliographic data from the DOI record and secondary summaries. The incremental parsing rule (each phrase is the shortest new prefix) is attributed through [Cover and Thomas](#coverthomas06); the paper's text was not inspected in this pass.
+
+<a id="zpzs24"></a>
+## zpzs24
+
+Mingxun Zhou, Andrew Park, Wenting Zheng and Elaine Shi. "Piano: Extremely Simple, Single-Server PIR with Sublinear Server Computation." *2024 IEEE Symposium on Security and Privacy (SP)*, 4296–4314, 2024. https://doi.org/10.1109/SP54263.2024.00055 ; full version (author order Mingxun Zhou, Andrew Park, Elaine Shi and Wenting Zheng): Cryptology ePrint Archive, Paper 2023/452, https://eprint.iacr.org/2023/452.pdf . Checked against the full ePrint version on 2026-11-12: Section 2 and Section 3.1–3.2 (Figure 1 on p. 6, Definition 3.1 on pp. 7–8, Theorems 3.2–3.4 on pp. 8–9), Appendix A (pp. 20–21, Figure 3 compacted query offsets and `√n`-parity server replies), and Appendix C.1–C.2 (pp. 24–26, Theorem C.1 and Lemma C.2). The library formalizes deterministic conditional correctness for the Figure 1 `HintTable` client (`CanAnswerSeq`, with replacement and backup entries sharing one per-chunk counter `used`), exact perfect privacy in the ideal-random-set model for the separate unbounded-backup server-view hybrid `pianoHybridScheme` (which sets replacement and backup parity bits to `false` and is not a correct PIR scheme), and the exact bit-alphabet online communication counts; the PRF reduction, full-client privacy, the Theorem 3.3 failure-probability bound, pipelining, the Appendix A server algorithm, and storage/runtime bounds are not formalized.
 
 <a id="zre15"></a>
 ## zre15

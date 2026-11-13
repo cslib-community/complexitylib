@@ -146,7 +146,8 @@ example :
     (∀ b : Bool, InputFits (if b then 2 else 1) []) ∧
     UniformDecidableInTime .standard {b : Bool | b = true} (fun _ _ => [])
       (fun _ _ => 4) (fun b w => w = if b then 2 else 1) := by
-  refine ⟨fun b => ⟨fits_zero _, by simp⟩, 2, widthAdvice, ?_⟩
+  refine ⟨fun b => ⟨fits_zero _, by simp⟩, 2, widthAdvice, ?_,
+    fun b => ⟨if b then 2 else 1, rfl, fits_zero _, by simp⟩⟩
   intro b w hw _
   subst w
   cases b
@@ -158,7 +159,7 @@ width: selecting code by width gives both instances the same initial state and p
 example (time : Bool → ℕ → ℕ) (bits : Bool → ℕ) :
     ¬DecidableInTime .standard {b : Bool | b = true} (fun _ _ => []) time
       (fun b w => bits b ≤ w) := by
-  rintro ⟨r, p, _, hp⟩
+  rintro ⟨r, p, _, hp, _⟩
   let w := max (bits false) (bits true)
   have hi : InputFits w [] := ⟨fits_zero w, by simp⟩
   obtain ⟨v₀, n₀, he₀, _, _, hb₀⟩ := hp false w (le_max_left _ _) hi
@@ -168,23 +169,20 @@ example (time : Bool → ℕ → ℕ) (bits : Bool → ℕ) :
   have : false = true := hb₀.mp (hv.trans h1)
   cases this
 
-/-- If the prescribed width never fits the input, the conditional contract accepts any set
-without a successful run. -/
+/-- A prescribed width that never fits is rejected by the existential decision contract. -/
 example (A : Set Bool) :
-    UniformDecidableInTime .standard A (fun _ _ => [1]) (fun _ _ => 0)
+    ¬UniformDecidableInTime .standard A (fun _ _ => [1]) (fun _ _ => 0)
       (fun _ w => w = 0) := by
-  refine ⟨0, [], ?_⟩
-  intro b w hw hi
+  intro h
+  obtain ⟨w, hw, hi⟩ := h.inputAdmissible false
   subst w
-  have h := hi.1
-  change 1 < 1 at h
-  exact False.elim (Nat.lt_irrefl 1 h)
+  exact Nat.lt_irrefl 1 hi.1
 
 /-- A constant-answer program works at every fitting width for arbitrary singleton words. -/
 private def accept : Program .standard 1 := [.op (.const 0 1), .halt 0]
 
 example : UniformLinearTime .standard (Set.univ : Set ℕ) (fun _ n => [n]) (fun _ => 1) := by
-  refine ⟨1, 1, by decide, 1, accept, ?_⟩
+  refine ⟨1, 1, by decide, 1, accept, ?_, inputAdmissible_of_widthIndependent _ _⟩
   intro n w _ hi
   have h1 : Fits w 1 := hi.1
   refine ⟨1, 2, .of_run (fuel := 2) ?_, le_rfl, le_rfl, by simp⟩

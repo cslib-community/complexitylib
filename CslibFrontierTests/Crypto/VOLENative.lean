@@ -150,7 +150,7 @@ private theorem falseView_real : falseView ∈
             ()), ())) := by
     simp [maskedMulCheckReceiverView, Receiver.strategy, constantReceiver, World.eval, voleWorld,
       maskedMulCheck, liftProver, liftVerifier, runAgainst, ProverStrategy.hoist,
-      VerifierStrategy.hoist, maskedMulCheckSpec, Cslib.Crypto.Protocols.SigmaProtocol.sigmaSpec,
+      VerifierStrategy.hoist, maskedMulCheckSpec, threeMoveSpec,
       ProbOracleComp.query, ProbOracleComp.sample, ProbOracleComp.runWith,
       OracleComp.sumHandler, VOLECorrelation.senderView, PMF.map, Function.comp_def, PMF.bind_bind]
   rw [hrun]
@@ -287,5 +287,19 @@ example : ComputableInPolyTime
         View Bool Bool))
     (encView encBool encBool) (encView encBool encBool) := by
   fun_prop
+
+/-! The record encodings keep the former tuple words. -/
+
+example {F : Type} (eF : F ↪ List Bool) (s : Share F) :
+    encShare eF s = encPair eF (encList eF) (s.key, s.tags) :=
+  rfl
+
+example {F Result : Type} (eF : F ↪ List Bool) (eResult : Result ↪ List Bool)
+    (v : View F Result) :
+    encView eF eResult v =
+      encPair (encShare eF) (encPair (encList eF) (encPair (encList eF)
+        (encPair (encPair eF eF) eResult)))
+        (v.share, v.corrections, v.weights, v.reply, v.result) :=
+  rfl
 
 end CslibFrontierTests.Crypto.VOLENative

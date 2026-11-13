@@ -253,14 +253,14 @@ def cspSem (rel : List (List Bool) × Bool) (w : List Bool) : Bool :=
   rel.1.contains w == rel.2
 
 /-- Express the local map preimage equation `G(x) = target` as a Boolean CSP over relation
-alphabet `List (List Bool) × Bool`, emitting one constraint `((c.accepts, target_i), c.scope)` per
+alphabet `List (List Bool) × Bool`, emitting one constraint `⟨(c.accepts, target_i), c.scope⟩` per
 output coordinate. -/
 def toCSP (G : LocalMap) (target : List Bool) : CSP (List (List Bool) × Bool) ℕ :=
-  (G.2.zip target).map fun p => ((p.1.2, p.2), p.1.1)
+  (G.2.zip target).map fun p => ⟨(p.1.2, p.2), p.1.1⟩
 
 private theorem eval_map_zip_toCSP (cs : List LocalOutput) (bs : List Bool)
     (hlen : bs.length = cs.length) (σ : ℕ → Bool) :
-    CSP.eval cspSem σ ((cs.zip bs).map fun p => ((p.1.2, p.2), p.1.1)) =
+    CSP.eval cspSem σ ((cs.zip bs).map fun p => ⟨(p.1.2, p.2), p.1.1⟩) =
       decide (cs.map (fun c => c.eval σ) = bs) := by
   induction cs generalizing bs with
   | nil =>
@@ -271,8 +271,8 @@ private theorem eval_map_zip_toCSP (cs : List LocalOutput) (bs : List Bool)
     rcases bs with _ | ⟨b, bs⟩
     · simp at hlen
     · simp only [List.length_cons, Nat.add_right_cancel_iff] at hlen
-      change (Constraint.eval cspSem σ ((c.2, b), c.1) &&
-          CSP.eval cspSem σ ((cs.zip bs).map fun p => ((p.1.2, p.2), p.1.1))) =
+      change (Constraint.eval cspSem σ ⟨(c.2, b), c.1⟩ &&
+          CSP.eval cspSem σ ((cs.zip bs).map fun p => ⟨(p.1.2, p.2), p.1.1⟩)) =
         decide (c.eval σ :: cs.map (fun c => c.eval σ) = b :: bs)
       rw [ih bs hlen]
       change ((c.eval σ == b) && decide (cs.map (fun c => c.eval σ) = bs)) =
@@ -427,10 +427,11 @@ theorem computableInPolyTime_localMap_toCSP :
   have hbits := (bits_encList_polyTime encBool).1.comp (snd encLocalMap encBits)
   have hp1 := fst encLocalOutput encBool
   have hentry : ComputableInPolyTime
-      (fun p : LocalOutput × Bool => ((p.1.2, p.2), p.1.1))
+      (fun p : LocalOutput × Bool => (⟨(p.1.2, p.2), p.1.1⟩ : Constraint _ ℕ))
       (encPair encLocalOutput encBool) (encConstraint LocalMap.encCSPRel encNat) :=
-    (((snd (encList encNat) (encList (encList encBool))).comp hp1).prod
-      (snd encLocalOutput encBool)).prod
+    encConstraint_mk_polyTime
+      (((snd (encList encNat) (encList (encList encBool))).comp hp1).prod
+        (snd encLocalOutput encBool))
       ((fst (encList encNat) (encList (encList encBool))).comp hp1)
   (map hentry).comp ((zip encLocalOutput encBool).comp (hout.prod hbits))
 
@@ -527,7 +528,7 @@ theorem eval_toDeclaredCNF (k : ℕ) (q : LocalMap × List Bool) (σ : ℕ → B
   dsimp only
   by_cases hG : q.1.Valid k = true
   · by_cases hlen : q.2.length = q.1.numOutputs
-    · have hwidth : ∀ c ∈ q.1.toCSP q.2, c.2.length ≤ k :=
+    · have hwidth : ∀ c ∈ q.1.toCSP q.2, c.scope.length ≤ k :=
         (CSP.validDeclaredCSP_eq_true_iff.mp (q.1.validDeclaredCSP_toCSP hG q.2)).1
       simp only [hG, hlen, decide_true, Bool.and_self, ↓reduceIte,
         CSP.toCNFBounded_eq_toCNF hwidth, CSP.eval_toCNF, q.1.eval_toCSP hlen, Bool.true_and]

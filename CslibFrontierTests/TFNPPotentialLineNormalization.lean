@@ -356,8 +356,7 @@ example :
       ComputableInPolyTime P (encPair encOffsetLineConfig encBits) encBits ∧
       ComputableInPolyTime S (encPair encOffsetLineConfig encBits) encBits ∧
       ComputableInPolyTime V (encPair encOffsetLineConfig encBits) encNat ∧
-      (∀ c u, u.length = n c → (P (c, u)).length = n c) ∧
-      (∀ c u, u.length = n c → (S (c, u)).length = n c) ∧
+      PreservesWidth n P ∧ PreservesWidth n S ∧
       (∀ c u, u.length = n c → V (c, u) < 2 ^ m c) ∧
       (∀ c, PromisedPotentialLine n P S V c) ∧
       SearchReducible encOffsetLineConfig encOffsetLineConfig
@@ -371,8 +370,7 @@ example :
       ComputableInPolyTime P (encPair encOffsetLineConfig encBits) encBits ∧
       ComputableInPolyTime S (encPair encOffsetLineConfig encBits) encBits ∧
       ComputableInPolyTime V (encPair encOffsetLineConfig encBits) encNat ∧
-      (∀ c u, u.length = n c → (P (c, u)).length = n c) ∧
-      (∀ c u, u.length = n c → (S (c, u)).length = n c) ∧
+      PreservesWidth n P ∧ PreservesWidth n S ∧
       (∀ c u, u.length = n c → V (c, u) < 2 ^ m c) ∧
       (∀ c, PromisedPotentialLine n P S V c) ∧
       SearchReducible encOffsetLineConfig encOffsetLineConfig

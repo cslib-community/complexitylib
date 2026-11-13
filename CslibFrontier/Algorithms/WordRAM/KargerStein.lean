@@ -3413,32 +3413,10 @@ theorem fastCutAmpLoop_law {w sb n R : ℕ} {W : Fin n → Fin n → ℕ} {mem�
         (OracleComp.evalWith (fun _ => Lean.Karger.fastCutLaw n ⟨n, W⟩)
           (if i = 0 then Lean.Karger.minRuns remaining
             else OracleComp.iterate remaining Lean.Karger.minStep (x.regs bestVal))) := by
-  intro remaining
-  induction remaining with
-  | zero =>
-    intro i x hiR hinv
-    obtain rfl : i = R := by omega
-    have hc : ¬(Cond.lt trialIdx numTrials).Holds x := by
-      simp [Cond.holds_lt, hinv.regs_trialIdx, hinv.regs_numTrials]
-    rw [ite_eq_right (by omega)]
-    exact (ExecRandLaw.loop_exit hc hinv).mono (fun _ h => h) (by omega) (Nat.zero_le _)
-  | succ remaining ih =>
-    intro i x hiR hinv
-    have hc : (Cond.lt trialIdx numTrials).Holds x := by
-      simp [Cond.holds_lt, hinv.regs_trialIdx, hinv.regs_numTrials]
-      omega
-    have hstep := ksAmpTrial_step_bound hn le_rfl le_rfl
-    refine ((ExecRandLaw.loop_iter hc
-      (fastCutAmpBody_law hn hW (by omega) h1 hws_fit hsp_fit hR_fit htot hinv)
-      (κ := fun b => OracleComp.evalWith (fun _ => Lean.Karger.fastCutLaw n ⟨n, W⟩)
-        (OracleComp.iterate remaining Lean.Karger.minStep b)) fun y hy => by
-          have h := ih (i + 1) y (by omega) hy
-          rw [ite_eq_right (Nat.succ_ne_zero i)] at h
-          exact h).congr_law ?_).mono (fun _ h => h) (by rw [add_one_mul]; omega)
-      (by rw [add_one_mul]; omega)
-    by_cases hi : i = 0
-    · simp [hi, Lean.Karger.minRuns, Function.comp_def]
-    · simp [hi, OracleComp.iterate_succ_bind, Lean.Karger.minStep, Function.comp_def]
+  unfold fastCutAmpLoop
+  exact minRunsLoop_law hR (ksAmpTrial_step_bound hn le_rfl le_rfl) (fun _ _ h => h.regs_trialIdx)
+    (fun _ _ h => h.regs_numTrials)
+    fun _ _ hi h => fastCutAmpBody_law hn hW hi h1 hws_fit hsp_fit hR_fit htot h
 
 
 private theorem fastCutHighProbTime_bound {n : ℕ} (hn : 2 ≤ n) :

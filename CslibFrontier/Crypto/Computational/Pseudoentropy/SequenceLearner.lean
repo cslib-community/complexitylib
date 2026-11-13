@@ -456,15 +456,13 @@ theorem predict_extracted_error {Seed Output : Type}
         (fun x => state.margin (fun code x => signedPredict evaluate code (observe x)) truth x -
           state.threshold) →
       (Game.advantage
-        ((ProbComp.eval (OracleComp.replicate count (maskedSample source observe truth
-          (fun x => mask (signedPredict evaluate) params state (observe x, truth x))) >>=
-            extractLabels seed hash)).bind (fun output => ProbComp.eval (test output)))
+        ((ProbComp.eval (extractLabelsReal (maskedSample source observe truth
+          (fun x => mask (signedPredict evaluate) params state (observe x, truth x))) count seed
+            hash)).bind (fun output => ProbComp.eval (test output)))
         (ideal.bind (fun output => ProbComp.eval (test output))) : ℝ) ≤ ε)
     (hdistinguish : (dyadicSize count : ℝ) / inverseGap + ε ≤
-      (Game.advantage (ProbComp.eval (do
-        let samples ← OracleComp.replicate count ((fun x => (observe x, truth x)) <$> source)
-        let result ← extractLabels seed hash samples
-        test result))
+      (Game.advantage (ProbComp.eval (extractLabelsReal
+        ((fun x => (observe x, truth x)) <$> source) count seed hash >>= test))
         (ideal.bind (fun output => ProbComp.eval (test output))) : ℝ)) :
     (ProbComp.eval (do
       let x ← source
@@ -481,6 +479,7 @@ theorem predict_extracted_error {Seed Output : Type}
     (maskedSample source observe truth
       (fun x => mask (signedPredict evaluate) params state (observe x, truth x)))
     count seed hash test ideal (hclose state hdense)
+  rw [extractLabelsReal, bind_assoc] at hdistinguish
   have hgap' := (le_sub_iff_add_le.mpr hdistinguish).trans h
   simpa only [Game.coe_advantage, Game.coe_succProbability] using hgap'
 

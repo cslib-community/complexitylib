@@ -115,6 +115,8 @@ Section 5.4.1, Example 5.2 and Theorem 5.2, printed pp. 183–187) are formalize
 * `Cslib.Crypto.CIAdversary`, `Cslib.Crypto.CCAAdversary`: adaptive ciphertext-integrity and
   chosen-ciphertext adversaries.
 * `Cslib.Crypto.SymmetricCipher`: uniform symmetric cipher on `n`-bit messages.
+* `Cslib.Crypto.SymmetricCipher.CiphertextLength`, `CiphertextLengthLE`: exact and bounded
+  ciphertext length on `n`-bit messages under keys supported by `keyGen n`.
 * `Cslib.Crypto.SymmetricCipher.cpaGame`, `INDCPA`, `cpaOneTimeGame`, `OneTimeINDCPA`,
   `detCPAAdversary`: adaptive and one-time symmetric CPA games, security predicates, and 2-query
   distinguisher comparing the `n`-bit prefixes of its two replies ([BonehShoup2023],
@@ -273,6 +275,18 @@ noncomputable def cpaGame (E : SymmetricCipher) (adversary : OracleDistinguisher
       (E.cpaEncryptionOracle n k bit)) (adversary n [])).run ()
   return out.1
 
+/-- Every encryption of an `n`-bit message under a key supported by `E.keyGen n` has exactly `len`
+bits. Encrypt-then-MAC needs this to frame `(ciphertext, tag)` pairs canonically. -/
+def CiphertextLength (E : SymmetricCipher) (n len : ℕ) : Prop :=
+  ∀ k ∈ (ProbComp.eval (E.keyGen n)).support, ∀ msg, msg.length = n →
+    ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length = len
+
+/-- Every encryption of an `n`-bit message under a key supported by `E.keyGen n` has at most
+`bound` bits; `exists_ciphertext_length_bound_of_length_eq` supplies a polynomial `bound`. -/
+def CiphertextLengthLE (E : SymmetricCipher) (n bound : ℕ) : Prop :=
+  ∀ k ∈ (ProbComp.eval (E.keyGen n)).support, ∀ msg, msg.length = n →
+    ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ bound
+
 /-- A unary polynomial-time ciphertext bound indexed separately by security parameter and message
 length. The key is sampled at parameter `n`; the bound covers every message of length `ℓ`, even
 outside the cipher's correctness and security domain of `n`-bit messages. -/
@@ -299,10 +313,7 @@ theorem exists_ciphertext_length_bound (E : SymmetricCipher) :
 derived as the diagonal of `exists_ciphertext_length_bound`. -/
 theorem exists_ciphertext_length_bound_of_length_eq (E : SymmetricCipher) :
     ∃ ctBound : ℕ → ℕ,
-      ComputableInPolyTime ctBound encUnary encUnary ∧
-      ∀ (n : ℕ) (k : List Bool), k ∈ (ProbComp.eval (E.keyGen n)).support →
-        ∀ (msg : List Bool), msg.length = n →
-        ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n := by
+      ComputableInPolyTime ctBound encUnary encUnary ∧ ∀ n, E.CiphertextLengthLE n (ctBound n) := by
   obtain ⟨bound, hbound, hctBound⟩ := E.exists_ciphertext_length_bound
   exact ⟨fun n => bound n n,
     hbound.comp (ComputableInPolyTime.id'.prod ComputableInPolyTime.id'),
@@ -692,9 +703,7 @@ running `cpaLimitToOneQuery ctBound adversary` in `cpaGame` has the exact same o
 as `cpaOneTimeGame adversary`. -/
 theorem eval_cpaGame_cpaLimitToOneQuery (E : SymmetricCipher) (ctBound : ℕ → ℕ)
     (adversary : OracleDistinguisher) (bit : Bool) (n : ℕ)
-    (hctBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
+    (hctBound : E.CiphertextLengthLE n (ctBound n)) :
     ProbComp.eval (E.cpaGame (cpaLimitToOneQuery ctBound adversary) bit n) =
       ProbComp.eval (E.cpaOneTimeGame adversary bit n) := by
   simp only [cpaGame, cpaOneTimeGame, cpaLimitToOneQuery, runWith_norm, pmf_norm]
@@ -828,9 +837,7 @@ theorem isOraclePPT_detCPAAdversary : IsOraclePPT encBool detCPAAdversary := by
 ciphertexts of `n`-bit plaintexts have length `n`, both encryptions return the same ciphertext and
 `detCPAAdversary` outputs `true` with probability `1`. -/
 theorem eval_cpaGame_detCPAAdversary_false (E : SymmetricCipher) (n : ℕ)
-    (hctLen : ∀ ke ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg : List Bool, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = n) :
+    (hctLen : E.CiphertextLength n n) :
     ProbComp.eval (E.cpaGame detCPAAdversary false n) = PMF.pure true := by
   simp only [cpaGame, detCPAAdversary, OracleComp.interpret_bind, OracleComp.interpret_map,
     OracleComp.interpret_pure, ProbOracleComp.interpret_query, StateT.run_bind, StateT.run_map,
@@ -859,9 +866,7 @@ an encryption of `0^n`; when all supported ciphertexts of `n`-bit plaintexts hav
 two ciphertexts are distinct by decryption completeness, so `detCPAAdversary` outputs `false` with
 probability `1`. -/
 theorem eval_cpaGame_detCPAAdversary_true (E : SymmetricCipher) {n : ℕ} (hn : 1 ≤ n)
-    (hctLen : ∀ ke ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg : List Bool, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = n) :
+    (hctLen : E.CiphertextLength n n) :
     ProbComp.eval (E.cpaGame detCPAAdversary true n) = PMF.pure false := by
   simp only [cpaGame, detCPAAdversary, OracleComp.interpret_bind, OracleComp.interpret_map,
     OracleComp.interpret_pure, ProbOracleComp.interpret_query, StateT.run_bind, StateT.run_map,
@@ -901,9 +906,7 @@ theorem eval_cpaGame_detCPAAdversary_true (E : SymmetricCipher) {n : ℕ} (hn : 
 /-- At every security parameter `n ≥ 1` where supported ciphertexts of `n`-bit plaintexts have
 length `n`, `detCPAAdversary` achieves CPA advantage `1` ([BonehShoup2023], Example 5.1). -/
 theorem advantage_cpaGame_detCPAAdversary (E : SymmetricCipher) {n : ℕ} (hn : 1 ≤ n)
-    (hctLen : ∀ ke ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg : List Bool, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = n) :
+    (hctLen : E.CiphertextLength n n) :
     Game.advantage (ProbComp.eval (E.cpaGame detCPAAdversary false n))
       (ProbComp.eval (E.cpaGame detCPAAdversary true n)) = 1 := by
   rw [eval_cpaGame_detCPAAdversary_false E n hctLen,
@@ -915,17 +918,14 @@ Exercise 5.10(a), printed pp. 182, 211): if for every security parameter `n`, ev
 `ke`, and every `n`-bit message `msg`, every supported ciphertext of `msg` has length `n`, then `E`
 cannot satisfy `INDCPA`. -/
 theorem not_indcpa_of_ciphertext_length_eq (E : SymmetricCipher)
-    (hctLen : ∀ n, ∀ ke ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg : List Bool, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = n) :
+    (hctLen : ∀ n, E.CiphertextLength n n) :
     ¬ E.INDCPA := by
   intro hcpa
   have hneg := hcpa detCPAAdversary isOraclePPT_detCPAAdversary
   have hcomp : Negligible (fun n =>
       Game.advantage (ProbComp.eval (E.cpaGame detCPAAdversary false (n + 1)))
         (ProbComp.eval (E.cpaGame detCPAAdversary true (n + 1)))) :=
-    hneg.comp_of_polynomial_bound (bound := fun m => m) (Filter.tendsto_add_atTop_nat 1)
-      (by fun_prop) (Filter.Eventually.of_forall fun n => by lia)
+    hneg.shift 1
   have hcongr : Negligible (fun _ : ℕ => (1 : ℝ≥0)) :=
     hcomp.congr fun n => advantage_cpaGame_detCPAAdversary E (by lia) (hctLen (n + 1))
   exact not_negligible_const one_ne_zero hcongr
@@ -1318,9 +1318,7 @@ running `ciLimitToOneQuery ctBound adversary` in `ciGame` has the exact same out
 `ciOneTimeGame adversary`. -/
 theorem eval_ciGame_ciLimitToOneQuery (E : SymmetricCipher) (ctBound : ℕ → ℕ)
     (adversary : CIAdversary) (n : ℕ)
-    (hctBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
+    (hctBound : E.CiphertextLengthLE n (ctBound n)) :
     ProbComp.eval (E.ciGame (ciLimitToOneQuery ctBound adversary) n) =
       ProbComp.eval (E.ciOneTimeGame adversary n) := by
   simp only [ciGame, ciOneTimeGame, ciLimitToOneQuery, runWith_norm, pmf_norm]
@@ -1933,9 +1931,7 @@ running `ccaLimitToOneEncryptionQuery ctBound decBound adversary` in `ccaGame` h
 output distribution as `ccaOneTimeGame adversary`. -/
 theorem eval_ccaGame_ccaLimitToOneEncryptionQuery (E : SymmetricCipher) (ctBound : ℕ → ℕ)
     (decBound : ℕ → List Bool → ℕ) (adversary : CCAAdversary) (bit : Bool) (n : ℕ)
-    (hctBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n)
+    (hctBound : E.CiphertextLengthLE n (ctBound n))
     (hdecBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
       ∀ ct, (encOption encBits (E.decrypt n k ct)).length ≤ decBound n ct) :
     ProbComp.eval (E.ccaGame (ccaLimitToOneEncryptionQuery ctBound decBound adversary) bit n) =
@@ -2110,9 +2106,7 @@ running `ccaToCPAAdversary ctBound adversary` in `cpaGame` has the exact same ou
 Theorem 9.1, printed p. 365). -/
 theorem eval_cpaGame_ccaToCPAAdversary (E : SymmetricCipher) (ctBound : ℕ → ℕ)
     (adversary : CCAAdversary) (bit : Bool) (n : ℕ)
-    (hctBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
+    (hctBound : E.CiphertextLengthLE n (ctBound n)) :
     ProbComp.eval (E.cpaGame (ccaToCPAAdversary ctBound adversary) bit n) =
       ProbComp.eval (E.ccaRejectGame adversary bit n) := by
   simp only [cpaGame, ccaRejectGame, ccaToCPAAdversary, runWith_norm, pmf_norm]
@@ -2877,9 +2871,7 @@ winning distribution as `ccaToCICombinedOracle` from `((j, (false, [])), [])`. -
 private theorem eval_ciGame_ccaToCIAtIndexAdversary_key (E : SymmetricCipher) (ctBound : ℕ → ℕ)
     (j : ℕ) (bit : Bool) (adversary : CCAAdversary) (n : ℕ) (k : List Bool)
     (hk : k ∈ (ProbComp.eval (E.keyGen n)).support)
-    (hctBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
+    (hctBound : E.CiphertextLengthLE n (ctBound n)) :
     (ProbOracleComp.runWith (fun q s => ProbComp.eval (E.ciEncryptionOracle n k q s))
         (ccaToCIAtIndexAdversary ctBound j bit adversary n []) []).bind
       (fun out => PMF.pure (!out.2.contains out.1 && (E.decrypt n k out.1).isSome)) =
@@ -2938,9 +2930,7 @@ from a reduction to `CiphertextIntegrity`. -/
 theorem advantage_ccaGame_ccaRejectGame_le_sum (E : SymmetricCipher) (ctBound Q : ℕ → ℕ)
     (adversary : CCAAdversary) (bit : Bool) (n : ℕ)
     (hq : (adversary n []).IsQueryBounded (Q n))
-    (hctBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
+    (hctBound : E.CiphertextLengthLE n (ctBound n)) :
     (Game.advantage (ProbComp.eval (E.ccaGame adversary bit n))
         (ProbComp.eval (E.ccaRejectGame adversary bit n)) : ℝ) ≤
       ∑ j ∈ Finset.range (Q n + 1),
@@ -3090,9 +3080,7 @@ coefficient `dyadicSize (Q n) ≤ 2 * Q n + 2` per bit. -/
 theorem advantage_ccaGame_le (E : SymmetricCipher) (ctBound Q : ℕ → ℕ)
     (adversary : CCAAdversary) (n : ℕ)
     (hq : (adversary n []).IsQueryBounded (Q n))
-    (hctBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
+    (hctBound : E.CiphertextLengthLE n (ctBound n)) :
     (Game.advantage (ProbComp.eval (E.ccaGame adversary false n))
         (ProbComp.eval (E.ccaGame adversary true n)) : ℝ) ≤
       (dyadicSize (Q n) : ℝ) *
@@ -3153,9 +3141,7 @@ adversary. -/
 theorem advantage_ccaGame_le_two_mul (E : SymmetricCipher) (ctBound Q : ℕ → ℕ)
     (adversary : CCAAdversary) (n : ℕ)
     (hq : (adversary n []).IsQueryBounded (Q n))
-    (hctBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
+    (hctBound : E.CiphertextLengthLE n (ctBound n)) :
     (Game.advantage (ProbComp.eval (E.ccaGame adversary false n))
         (ProbComp.eval (E.ccaGame adversary true n)) : ℝ) ≤
       2 * (dyadicSize (Q n) : ℝ) *
@@ -3428,9 +3414,7 @@ running `ccaToCPAAdversary ctBound adversary` in `cpaOneTimeGame` has the exact 
 distribution as `ccaOneTimeRejectGame adversary` ([BonehShoup2023], Section 9.2.3, Theorem 9.1). -/
 theorem eval_cpaOneTimeGame_ccaToCPAAdversary (E : SymmetricCipher) (ctBound : ℕ → ℕ)
     (adversary : CCAAdversary) (bit : Bool) (n : ℕ)
-    (hctBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
+    (hctBound : E.CiphertextLengthLE n (ctBound n)) :
     ProbComp.eval (E.cpaOneTimeGame (ccaToCPAAdversary ctBound adversary) bit n) =
       ProbComp.eval (E.ccaOneTimeRejectGame adversary bit n) := by
   simp only [cpaOneTimeGame, ccaOneTimeRejectGame, ccaToCPAAdversary, runWith_norm, pmf_norm]
@@ -3876,9 +3860,7 @@ private theorem bad_oneTimeCCARejectWithBad_le_sum_oneTimeCICombined {α : Type}
 private theorem eval_ciOneTimeGame_ccaToCIAtIndexAdversary_key (E : SymmetricCipher)
     (ctBound : ℕ → ℕ) (j : ℕ) (bit : Bool) (adversary : CCAAdversary) (n : ℕ) (k : List Bool)
     (hk : k ∈ (ProbComp.eval (E.keyGen n)).support)
-    (hctBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
+    (hctBound : E.CiphertextLengthLE n (ctBound n)) :
     (ProbOracleComp.runWith (fun q s => ProbComp.eval (E.oneTimeCIEncryptionOracle n k q s))
         (ccaToCIAtIndexAdversary ctBound j bit adversary n []) []).bind
       (fun out => PMF.pure (!out.2.contains out.1 && (E.decrypt n k out.1).isSome)) =
@@ -3951,9 +3933,7 @@ private theorem eval_ciOneTimeGame_ccaToCIAtIndexAdversary_key (E : SymmetricCip
 private theorem advantage_ccaOneTimeGame_ccaOneTimeRejectGame_le_sum (E : SymmetricCipher)
     (ctBound Q : ℕ → ℕ) (adversary : CCAAdversary) (bit : Bool) (n : ℕ)
     (hq : (adversary n []).IsQueryBounded (Q n))
-    (hctBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
+    (hctBound : E.CiphertextLengthLE n (ctBound n)) :
     (Game.advantage (ProbComp.eval (E.ccaOneTimeGame adversary bit n))
         (ProbComp.eval (E.ccaOneTimeRejectGame adversary bit n)) : ℝ) ≤
       ∑ j ∈ Finset.range (Q n + 1),
@@ -4103,9 +4083,7 @@ one-time ciphertext-integrity winning probabilities of `ccaToCIAdversary` in `ci
 theorem advantage_ccaOneTimeGame_le (E : SymmetricCipher) (ctBound Q : ℕ → ℕ)
     (adversary : CCAAdversary) (n : ℕ)
     (hq : (adversary n []).IsQueryBounded (Q n))
-    (hctBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
+    (hctBound : E.CiphertextLengthLE n (ctBound n)) :
     (Game.advantage (ProbComp.eval (E.ccaOneTimeGame adversary false n))
         (ProbComp.eval (E.ccaOneTimeGame adversary true n)) : ℝ) ≤
       (dyadicSize (Q n) : ℝ) *
@@ -4168,9 +4146,7 @@ one-time CI adversary in `ciOneTimeGame`. -/
 theorem advantage_ccaOneTimeGame_le_two_mul (E : SymmetricCipher) (ctBound Q : ℕ → ℕ)
     (adversary : CCAAdversary) (n : ℕ)
     (hq : (adversary n []).IsQueryBounded (Q n))
-    (hctBound : ∀ k ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg, msg.length = n →
-      ∀ ct ∈ (ProbComp.eval (E.encrypt n k msg)).support, ct.length ≤ ctBound n) :
+    (hctBound : E.CiphertextLengthLE n (ctBound n)) :
     (Game.advantage (ProbComp.eval (E.ccaOneTimeGame adversary false n))
         (ProbComp.eval (E.ccaOneTimeGame adversary true n)) : ℝ) ≤
       2 * (dyadicSize (Q n) : ℝ) *

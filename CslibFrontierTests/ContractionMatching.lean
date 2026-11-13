@@ -31,26 +31,26 @@ example : (CSP.permanentInstance 3 (rowEntry ones₃)).partitionFunction CSP.exa
     6 := by
   decide +kernel
 
-example : (rowsMatrix ones₃).permanent = 6 := by
-  rw [rowsMatrix_eq, ← CSP.partitionFunction_permanentInstance]
+example : (boolTableMatrix ones₃).permanent = 6 := by
+  rw [boolTableMatrix_eq_rowEntry, ← CSP.partitionFunction_permanentInstance]
   decide +kernel
 
 -- The identity has permanent one.
-example : (rowsMatrix id₃).permanent = 1 := by
-  rw [rowsMatrix_eq, ← CSP.partitionFunction_permanentInstance]
+example : (boolTableMatrix id₃).permanent = 1 := by
+  rw [boolTableMatrix_eq_rowEntry, ← CSP.partitionFunction_permanentInstance]
   decide +kernel
 
 -- Rows of unequal length are cut or padded with zeros: `[[1, 0], [1, 1]]` has permanent one.
-example : rowsMatrix [[true], [true, true, true]] = !![1, 0; 1, 1] := by
+example : boolTableMatrix [[true], [true, true, true]] = !![1, 0; 1, 1] := by
   decide
 
-example : (rowsMatrix [[true], [true, true, true]]).permanent = 1 := by
-  rw [rowsMatrix_eq, ← CSP.partitionFunction_permanentInstance]
+example : (boolTableMatrix [[true], [true, true, true]]).permanent = 1 := by
+  rw [boolTableMatrix_eq_rowEntry, ← CSP.partitionFunction_permanentInstance]
   decide +kernel
 
 -- Each nonzero entry `(i, j)` is the variable `3 i + j`, in its row and its column.
 example : (CSP.permanentInstance 3 (rowEntry id₃)) =
-    [((), [0]), ((), [4]), ((), [8]), ((), [0]), ((), [4]), ((), [8])] := by
+    [⟨(), [0]⟩, ⟨(), [4]⟩, ⟨(), [8]⟩, ⟨(), [0]⟩, ⟨(), [4]⟩, ⟨(), [8]⟩] := by
   decide
 
 example : (CSP.permanentInstance 3 (rowEntry ones₃)).vars.count 5 = 2 := by
@@ -62,8 +62,8 @@ example : guarded 2 (CSP.permanentInstance 2 (rowEntry [[true, true], [false, fa
     zeroInstance := by
   decide
 
-example : (rowsMatrix [[true, true], [false, false]]).permanent = 0 := by
-  rw [rowsMatrix_eq, ← CSP.partitionFunction_permanentInstance]
+example : (boolTableMatrix [[true, true], [false, false]]).permanent = 0 := by
+  rw [boolTableMatrix_eq_rowEntry, ← CSP.partitionFunction_permanentInstance]
   decide +kernel
 
 -- Wide constraints are guarded out too.
@@ -75,7 +75,7 @@ matrix, which meets the degree promise. -/
 example : ∃ count : List (List Bool) → ℕ, count ones₃ = 6 := by
   obtain ⟨count, A, e, b, hcount, -⟩ := exists_permanentCounter 3
   refine ⟨count, ?_⟩
-  rw [hcount ones₃ (by decide) (by decide), rowsMatrix_eq,
+  rw [hcount ones₃ (by decide) (by decide), boolTableMatrix_eq_rowEntry,
     ← CSP.partitionFunction_permanentInstance]
   decide +kernel
 

@@ -113,7 +113,7 @@ theorem structProb_bernoulliStructure_forall_not_isExtensionWitness
     (p : (Σ l, L.Relations l) → I) {n k : ℕ} (x : Fin k → Fin n) (hx : Function.Injective x)
     (s : NewAtom L k → Bool) :
     structProb (bernoulliStructure p n) (fun S => ∀ z, ¬@IsExtensionWitness L (Fin n) S k x s z) =
-      (1 - ∏ᶠ a : NewAtom L k, (PMF.coin (p a.1.1) (s a)).toReal) ^ (n - k) := by
+      (1 - ∏ᶠ a : NewAtom L k, (PMF.coin (p a.symbol) (s a)).toReal) ^ (n - k) := by
   classical
   have := Fintype.ofFinite (Σ l, L.Relations l)
   have := Fintype.ofFinite (NewAtom L k)
@@ -130,7 +130,7 @@ theorem structProb_bernoulliStructure_forall_not_isExtensionWitness
     exact ⟨fun h z hz => h z z.2 fun a => congrFun hz a, fun h z hz ha => h ⟨z, hz⟩ (funext ha)⟩
   -- These families are independent, one for each fresh element.
   have hg : (PMF.pi fun a : Atom L n => PMF.coin (p a.1)).map g =
-      PMF.pi fun _ : O => PMF.pi fun a : NewAtom L k => PMF.coin (p a.1.1) := by
+      PMF.pi fun _ : O => PMF.pi fun a : NewAtom L k => PMF.coin (p a.symbol) := by
     have h1 := PMF.pi_map_comp_injective (fun a : Atom L n => PMF.coin (p a.1))
       (atomEmbed_injective (L := L) hx)
     have h2 := PMF.pi_map_curry (fun q : O × NewAtom L k => PMF.coin (p (e q).1))
@@ -139,9 +139,9 @@ theorem structProb_bernoulliStructure_forall_not_isExtensionWitness
   have hO : Fintype.card O = n - k := by
     rw [Fintype.card_subtype_compl, Fintype.card_fin, Set.card_range_of_injective hx,
       Fintype.card_fin]
-  have hfactor : ((PMF.pi fun a : NewAtom L k => PMF.coin (p a.1.1)).toOuterMeasure
+  have hfactor : ((PMF.pi fun a : NewAtom L k => PMF.coin (p a.symbol)).toOuterMeasure
       ({s}ᶜ : Set (NewAtom L k → Bool))).toReal =
-      1 - ∏ᶠ a : NewAtom L k, (PMF.coin (p a.1.1) (s a)).toReal := by
+      1 - ∏ᶠ a : NewAtom L k, (PMF.coin (p a.symbol) (s a)).toReal := by
     rw [eq_sub_of_add_eq' (PMF.toOuterMeasure_toReal_add_compl _ {s}),
       PMF.toOuterMeasure_apply_singleton, PMF.pi_apply, ENNReal.toReal_prod,
       finprod_eq_prod_of_fintype]
@@ -156,7 +156,7 @@ theorem structProb_bernoulliStructure_not_hasExtension_le (p : (Σ l, L.Relation
     (n k : ℕ) (s : NewAtom L k → Bool) :
     structProb (bernoulliStructure p n) (fun S => ¬@HasExtension L (Fin n) S k s) ≤
       n.descFactorial k *
-        (1 - ∏ᶠ a : NewAtom L k, (PMF.coin (p a.1.1) (s a)).toReal) ^ (n - k) := by
+        (1 - ∏ᶠ a : NewAtom L k, (PMF.coin (p a.symbol) (s a)).toReal) ^ (n - k) := by
   classical
   calc _ ≤ structProb (bernoulliStructure p n) (fun S =>
           ∃ x ∈ (Finset.univ : Finset (Fin k ↪ Fin n)),
@@ -182,15 +182,15 @@ theorem tendsto_sentenceProb_bernoulliStructure_extensionAxiom {p : (Σ l, L.Rel
       (nhds 1) := by
   have := Fintype.ofFinite (NewAtom L k)
   have hw (a : NewAtom L k) :
-      0 < (PMF.coin (p a.1.1) (s a)).toReal ∧ (PMF.coin (p a.1.1) (s a)).toReal ≤ 1 := by
+      0 < (PMF.coin (p a.symbol) (s a)).toReal ∧ (PMF.coin (p a.symbol) (s a)).toReal ≤ 1 := by
     rw [PMF.coin_apply_toReal]
     split_ifs
     · exact ⟨(hp _).1, (hp _).2.le⟩
-    · exact ⟨sub_pos.2 (hp _).2, by linarith [(hp a.1.1).1]⟩
-  have hc : 0 < ∏ᶠ a : NewAtom L k, (PMF.coin (p a.1.1) (s a)).toReal := by
+    · exact ⟨sub_pos.2 (hp _).2, by linarith [(hp a.symbol).1]⟩
+  have hc : 0 < ∏ᶠ a : NewAtom L k, (PMF.coin (p a.symbol) (s a)).toReal := by
     rw [finprod_eq_prod_of_fintype]
     exact Finset.prod_pos fun a _ => (hw a).1
-  have hc1 : ∏ᶠ a : NewAtom L k, (PMF.coin (p a.1.1) (s a)).toReal ≤ 1 := by
+  have hc1 : ∏ᶠ a : NewAtom L k, (PMF.coin (p a.symbol) (s a)).toReal ≤ 1 := by
     rw [finprod_eq_prod_of_fintype]
     exact Finset.prod_le_one₀ (fun a _ => (hw a).1.le) fun a _ => (hw a).2
   have h0 : Tendsto

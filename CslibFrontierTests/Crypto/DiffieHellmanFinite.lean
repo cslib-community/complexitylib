@@ -35,16 +35,16 @@ variable {G : Type} [AddCommGroup G] (q : ℕ) [NeZero q] [Module (ZMod q) G] (g
 /-- Guessing the exponent `0` wins the discrete-logarithm experiment with probability `1 / q`,
 whatever the group. -/
 theorem dlAdvantage_const_zero : dlAdvantage q g (fun _ => pure 0) = (q : ℝ≥0)⁻¹ := by
-  simp only [dlAdvantage, dlExperiment, ProbComp.eval_bind, ProbComp.eval_pure,
-    ProbComp.eval_uniform, PMF.pure_bind]
+  simp only [dlAdvantage, Experiment.succProbability, dlExperiment, ProbComp.eval_bind,
+    ProbComp.eval_pure, ProbComp.eval_uniform, PMF.pure_bind]
   rw [Game.succProbability, PMF.uniformOfFintype_bind_decide_eq_apply_true, ZMod.card,
     ENNReal.toNNReal_inv, ENNReal.toNNReal_natCast]
 
 /-- A distinguisher that ignores its input has DDH advantage `0`. -/
 theorem ddhAdvantage_const (p : ProbComp Bool) :
     ddhAdvantage q g (fun _ _ _ => p) = 0 := by
-  simp only [ddhAdvantage, ddhRealExperiment, ddhRandomExperiment, ProbComp.eval_bind,
-    PMF.bind_const, Game.advantage_self]
+  simp only [ddhAdvantage, Experiment.advantage, ddhRealExperiment, ddhRandomExperiment,
+    ProbComp.eval_bind, PMF.bind_const, Game.advantage_self]
 
 variable {q g}
 
@@ -100,8 +100,8 @@ example : dlAdvantage 5 (1 : ZMod 5) (fun _ => pure 0) = 1 / 5 := by
 
 /-- In `ZMod 5` with `g = 1`, the challenge `a • 1` is `a`, so returning it always wins. -/
 theorem dlAdvantage_zmod5_id : dlAdvantage 5 (1 : ZMod 5) pure = 1 := by
-  simp only [dlAdvantage, dlExperiment, ProbComp.eval_bind, ProbComp.eval_pure, PMF.pure_bind,
-    smul_eq_mul, mul_one, decide_true, PMF.bind_const]
+  simp only [dlAdvantage, Experiment.succProbability, dlExperiment, ProbComp.eval_bind,
+    ProbComp.eval_pure, PMF.pure_bind, smul_eq_mul, mul_one, decide_true, PMF.bind_const]
   simp [Game.succProbability]
 
 example : 1 ≤ cdhAdvantage 5 (1 : ZMod 5) (dlToCDH pure) :=

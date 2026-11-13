@@ -80,4 +80,16 @@ example (F : Family) :
       (encPrivateElement F) (encPrivateElement F) := by
   fun_prop
 
+/-- A private flattened encoding whose parent rule must remain local to this module. -/
+private enc_structure encPrivateElementPair (F : Family) : ElementPair F
+    flattened toElement : (eElement F) where
+  size : encUnary, desc : F.encDesc, elt : (F.encode desc) using (F.encode_injective desc),
+  other : (F.encode desc) using (F.encode_injective desc)
+
+-- Private flattened-parent rules are active in their defining scope.
+example (F : Family) {α : Type} {enc : α ↪ List Bool} {f : α → ElementPair F}
+    (hf : ComputableInPolyTime f enc (encPrivateElementPair F)) :
+    ComputableInPolyTime (fun a => (f a).toElement) enc (eElement F) := by
+  fun_prop
+
 end CslibFrontierTests.StructureEncodingVisibility

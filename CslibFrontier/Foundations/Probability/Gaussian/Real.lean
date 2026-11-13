@@ -14,7 +14,7 @@ import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 /-!
 # Intervals and tails of real Gaussian distributions
 
-Three estimates for the real Gaussian distribution `gaussianReal μ v`:
+Three estimates and a density formula for the real Gaussian distribution `gaussianReal μ v`:
 
 * **Peak density.** The density is largest at the mean, where it is `1 / √(2πv)`
   (`gaussianPDFReal_le`), so a nondegenerate Gaussian gives each set at most `1 / √(2πv)` times
@@ -26,6 +26,9 @@ Three estimates for the real Gaussian distribution `gaussianReal μ v`:
   without increasing the density there.
 * **Chebyshev's inequality.** The deviation from the mean is at least `c` with probability at
   most `v / c ^ 2` (`gaussianReal_meas_ge_le`).
+* **Density with respect to the standard Gaussian.** For `v ≠ 0`, `gaussianReal μ v` has density
+  `t ↦ φ_{μ,v} t / φ_{0,1} t` with respect to `gaussianReal 0 1`
+  (`gaussianReal_eq_withDensity_div`).
 
 ## Main results
 
@@ -34,6 +37,8 @@ Three estimates for the real Gaussian distribution `gaussianReal μ v`:
   `1 / √(2πv)` times its Lebesgue measure.
 * `ProbabilityTheory.gaussianReal_Icc_le`: Anderson's inequality on the line.
 * `ProbabilityTheory.gaussianReal_meas_ge_le`: Chebyshev's inequality for a Gaussian.
+* `ProbabilityTheory.gaussianReal_eq_withDensity_div`: the density of a nondegenerate Gaussian
+  with respect to the standard Gaussian.
 -/
 
 public section
@@ -136,5 +141,20 @@ theorem gaussianReal_meas_ge_le (μ : ℝ) (v : ℝ≥0) {c : ℝ} (hc : 0 < c) 
     gaussianReal μ v {x | c ≤ |x - μ|} ≤ ENNReal.ofReal (v / c ^ 2) := by
   simpa [integral_id_gaussianReal, variance_id_gaussianReal] using
     meas_ge_le_variance_div_sq (μ := gaussianReal μ v) (memLp_id_gaussianReal 2) hc
+
+/-- **The density of a Gaussian with respect to the standard Gaussian**: for `v ≠ 0`,
+`gaussianReal m v` has density `t ↦ φ_{m,v} t / φ_{0,1} t` with respect to `gaussianReal 0 1`. -/
+theorem gaussianReal_eq_withDensity_div (m : ℝ) {v : ℝ≥0} (hv : v ≠ 0) :
+    gaussianReal m v = (gaussianReal 0 1).withDensity
+      fun t => ENNReal.ofReal (gaussianPDFReal m v t / gaussianPDFReal 0 1 t) := by
+  rw [gaussianReal_of_var_ne_zero m hv, gaussianReal_of_var_ne_zero 0 one_ne_zero,
+    ← withDensity_mul _ (f := gaussianPDF 0 1)
+      (g := fun t => ENNReal.ofReal (gaussianPDFReal m v t / gaussianPDFReal 0 1 t))
+      (measurable_gaussianPDF 0 1)
+      ((measurable_gaussianPDFReal _ _).div (measurable_gaussianPDFReal _ _)).ennreal_ofReal]
+  congr 1
+  funext t
+  simp only [Pi.mul_apply, gaussianPDF, ← ENNReal.ofReal_mul (gaussianPDFReal_nonneg _ _ _)]
+  rw [mul_div_cancel₀ _ (gaussianPDFReal_pos _ _ _ one_ne_zero).ne']
 
 end ProbabilityTheory

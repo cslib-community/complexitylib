@@ -810,8 +810,9 @@ private theorem distinguishingGame_realEnsemble (n m w η : ℕ → ℕ)
           (uniformPublicKeyWord (n security) (m security) (w security))
           (fun k => encryptSerialized (n k) (m k) (w k) (η k))
           adversary bit security).map fun guess => guess ^^ bit) := by
-  simp only [distinguishingGame, lweDistinguisher, LWE.realEnsemble, LWE.publicMatrixLaw,
-    LWE.publicMatrix, Encryption.publicKeyGame, uniformPublicKeyWord, pmf_norm,
+  simp only [distinguishingGame_eq_bind, lweDistinguisher, LWE.realEnsemble, LWE.publicMatrixLaw,
+    LWE.publicMatrix, Encryption.publicKeyGame, Encryption.publicKeyGameOn, ↓reduceIte,
+    uniformPublicKeyWord, pmf_norm,
     lweExtractPublicKey_toBinary, lweExtractChallenge_toBinary,
     eval_encryptSerialized_serializePublicKey, encrypt, ProbComp.eval_bind, ProbComp.eval_pure,
     LWE.eval_sampleVector, ProbComp.eval_uniform]
@@ -830,8 +831,8 @@ private theorem distinguishingGame_uniformEnsemble (n m w : ℕ → ℕ)
       ((PMF.uniformOfFintype Bool).bind fun bit =>
         (idealCipherGame (n security) (m security) (w security) adversary security).map
           fun guess => guess ^^ bit) := by
-  simp only [distinguishingGame, lweDistinguisher, LWE.uniformEnsemble, idealCipherGame, pmf_norm,
-    lweExtractPublicKey_toBinary, lweExtractChallenge_toBinary, ProbComp.eval_uniform]
+  simp only [distinguishingGame_eq_bind, lweDistinguisher, LWE.uniformEnsemble, idealCipherGame,
+    pmf_norm, lweExtractPublicKey_toBinary, lweExtractChallenge_toBinary, ProbComp.eval_uniform]
   have hsplit := congrArg
     (fun law : PMF (PublicKey (n security) (m security) (w security) ×
         Ciphertext (m security) (w security)) =>
@@ -931,7 +932,7 @@ theorem advantage_game_le (n m w η : ℕ → ℕ) (adversary : Encryption.Adver
           ((ProbComp.eval (keyGen (n security) (m security) (w security))).map Prod.fst).bind
             fun pk => ProbComp.eval
               (Encryption.keyDistinguisher enc adversary security (serializePublicKey pk)) := by
-        simp only [distinguishingGame, realPK, pmf_norm]
+        simp only [distinguishingGame_eq_bind, realPK, pmf_norm]
       have hRHS : distinguishingGame unifPK
           (Encryption.keyDistinguisher enc adversary security) =
           (do
@@ -941,7 +942,7 @@ theorem advantage_game_le (n m w η : ℕ → ℕ) (adversary : Encryption.Adver
             return (A, u)).bind fun pk => ProbComp.eval
               (Encryption.keyDistinguisher enc adversary security (serializePublicKey pk)) := by
         unfold unifPK uniformPublicKeyWord
-        simp only [distinguishingGame]
+        simp only [distinguishingGame_eq_bind]
         rw [← PMF.uniformOfFintype_prod]
         simp only [pmf_norm]
       rw [hLHS, hRHS]
@@ -996,7 +997,7 @@ theorem indCPA_of_decisionLWE {n m w η : ℕ → ℕ}
     Encryption.INDCPA (fun k => keyGenSerialized (n k) (m k) (w k))
       (fun k => encryptSerialized (n k) (m k) (w k) (η k)) := by
   intro adversary hadversary
-  have hsource := hLWE (lweDistinguisher n m w adversary)
+  have hsource := hLWE.encoded (lweDistinguisher n m w adversary)
     (isPPT_lweDistinguisher hn hm hw hadversary)
   have herror := negligible_mul_sqrt_pow_two_div_pow_two
     (count := fun _ => 1) (outputBits := fun k => w k * n k) (by fun_prop) hmargin

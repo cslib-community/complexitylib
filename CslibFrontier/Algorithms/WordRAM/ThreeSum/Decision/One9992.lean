@@ -121,20 +121,25 @@ theorem boxFlatProgram_decidesInTime (κ : ℕ) :
 
 /-- Uniform standard Word-RAM decision in O(n^1.9992) instructions for polynomially bounded
 signed integers. The natural ceiling only expresses the real power in the existing natural-valued
-time API; its coefficient and threshold are shared by all admitted physical widths. -/
+time API; its coefficient and threshold are shared by all admitted physical widths. The
+input type explicitly carries the magnitude promise, so every instance admits a fitting width. -/
 theorem uniformDecidableInO_one9992 (κ : ℕ) :
     UniformDecidableInO .standard
-      {input : List ℤ | HasSolution (fun i : Fin input.length => input[i])}
-      (fun _ input => input.map Signed.encode) List.length
-      (fun n _ => ⌈(n : ℝ) ^ (2499 / 1250 : ℝ)⌉₊) (Admissible κ) := by
+      {input : MagnitudeBoundedInput κ | HasSolution (fun i : Fin input.val.length => input.val[i])}
+      (fun _ input => input.val.map Signed.encode) (fun input => input.val.length)
+      (fun n _ => ⌈(n : ℝ) ^ (2499 / 1250 : ℝ)⌉₊)
+      (fun input W => width κ 123357 input.val.length ≤ W) := by
   obtain ⟨C, hC, N, hcost⟩ := exists_one9992_cost_bound κ
-  refine ⟨fun input _ => cost κ ParameterSelecting.callee input.length,
-    ⟨848, boxFlatProgram κ, boxFlatProgram_decidesInTime κ⟩,
+  refine ⟨fun input _ => cost κ ParameterSelecting.callee input.val.length,
+    ⟨848, boxFlatProgram κ,
+      (fun input W hw hi => boxFlatProgram_decidesInTime κ input.val W ⟨hw, input.property⟩ hi),
+      fun input => ⟨width κ 123357 input.val.length, le_rfl,
+        (show Admissible κ input.val _ from ⟨le_rfl, input.property⟩).inputFits⟩⟩,
     ⌈C⌉₊, N, Nat.ceil_pos.mpr hC, ?_⟩
   intro input W hn _
   apply (Nat.cast_le (α := ℝ)).mp
   push_cast
-  exact (hcost input.length hn).trans
+  exact (hcost input.val.length hn).trans
     (mul_le_mul (Nat.le_ceil C) (Nat.le_ceil _) (Real.rpow_nonneg (by positivity) _)
       (by positivity))
 
