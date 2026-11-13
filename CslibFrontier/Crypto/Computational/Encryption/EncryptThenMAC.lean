@@ -1612,11 +1612,8 @@ theorem prfCipher_ciphertext_length (family : List Bool → List Bool → List B
     (hpoly : ComputableInPolyTime (fun pair => family pair.1 pair.2)
       (encPair encBits encBits) encBits)
     (hlen : ∀ key query, query.length = key.length → (family key query).length = key.length)
-    (n : ℕ) (k : List Bool)
-    (hk : k ∈ (ProbComp.eval ((prfCipher family hpoly hlen).keyGen n)).support)
-    (msg : List Bool) (hmsg : msg.length = n) (ct : List Bool)
-    (hct : ct ∈ (ProbComp.eval ((prfCipher family hpoly hlen).encrypt n k msg)).support) :
-    ct.length = 2 * n := by
+    (n : ℕ) : (prfCipher family hpoly hlen).CiphertextLength n (2 * n) := by
+  intro k hk msg hmsg ct hct
   dsimp only [prfCipher] at hk hct
   rw [BitString.eval_sampleList] at hk
   have hkLen : k.length = n := BitString.length_of_mem_support_uniformList hk
