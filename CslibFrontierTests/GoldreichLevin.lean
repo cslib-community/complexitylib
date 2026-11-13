@@ -12,7 +12,7 @@ import CslibFrontier.Tactic.PPT
 
 namespace CslibFrontierTests.GoldreichLevin
 
-open Cslib Cslib.Crypto.GoldreichLevin Cslib.Probability
+open Cslib Cslib.Crypto Cslib.Crypto.GoldreichLevin Cslib.Probability
 open Finset
 open scoped ENNReal
 
@@ -72,15 +72,15 @@ private noncomputable def seedLaw {n : ℕ} (image : BitString n) :
   PMF.uniformOfFintype _
 
 private theorem negative_prediction (n : ℕ) :
-    predictionExperiment (id : BitString n → BitString n)
+    parityPredictionExperiment (id : BitString n → BitString n)
       (fun image _ query => !(image ⬝ᵥ query)) seedLaw = PMF.pure false := by
-  simp only [predictionExperiment, id_eq, Bool.not_beq_self, PMF.monad_bind_eq_bind,
+  simp only [parityPredictionExperiment, id_eq, Bool.not_beq_self, PMF.monad_bind_eq_bind,
     PMF.bind_const]
   exact PMF.map_const _ _
 
 -- Perfectly negative bias is handled by the same random-sign inverter, with dependent seeds.
 example (n : ℕ) :
-    1 / 16 ≤ (inversionExperiment (id : BitString n → BitString n)
+    1 / 16 ≤ (inversionExperiment (PMF.uniformOfFintype _) (id : BitString n → BitString n)
       (invertSigned id (fun image _ query => !(image ⬝ᵥ query)) seedLaw (maskCount n 2))
       true).toReal := by
   have h := invertSigned_success_ge (id : BitString n → BitString n)

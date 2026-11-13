@@ -286,7 +286,7 @@ theorem InversionHardWithAdvice.inversion_negligible_encoded {f : List Bool → 
       ProbComp.eval (inversionGame f (fun n image => extension
         (encPair (encPair encUnary encBits) encBits ((n, encAdvice (advice n)), image))) n) =
       ProbComp.eval (inversionGame f (fun n image => adversary ((n, advice n), image)) n) := by
-    simp only [inversionGame, ProbComp.eval_bind, hkey]
+    simp only [inversionGame, inversionExperiment, ProbComp.eval_bind, hkey]
   simpa only [hgame] using h.inversion_negligible _ hword
 
 /-- **Uniform one-wayness is the empty-advice case.** A uniform inverter is an advice inverter
