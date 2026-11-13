@@ -58,6 +58,9 @@ abbrev IndexArgument := HeapLayout × ℕ
 
 namespace IndexArgument
 
+/-- The runtime heap layout with its capacity. -/
+abbrev heap (d : IndexArgument) : HeapLayout := d.1
+
 /-- The number of handles. -/
 abbrev capacity (d : IndexArgument) : ℕ := d.1.1
 

@@ -219,7 +219,7 @@ theorem realizes_loop :
 /-- Actual reached loop controls, plus two binds. Constant preparation and the Unit return are
 certified native glue, absorbed into the same fixed exchange factor. -/
 def localWork (d : IndexArgument) (s : Memory.State) : ℕ :=
-  whileWork guard step (fun _ _ => 0) (d.1, ()) (Nat.log 2 d.index) d.index s + 2
+  whileWork guard step (fun _ _ => 0) (d.heap, ()) (Nat.log 2 d.index) d.index s + 2
 
 /-- The queryful source pays every executed loop control. Bounded preparation/finish work is
 absorbed into one fixed factor, so call sites may use the standard zero-work certificate.
@@ -229,7 +229,7 @@ theorem realizes_siftUp :
     Realizes .exact
       (fun d : IndexArgument => PriorityQueue.BinaryHeap.Memory.siftUp d.layout d.index)
       indexWords (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEmbedding
-      (fun w d s => Shape w (d.1, ()) d.index s) (fun _ _ => 0) := by
+      (fun w d s => Shape w (d.heap, ()) d.index s) (fun _ _ => 0) := by
   have hquery : ∀ x t, 1 ≤ memoryCost (step x) t := by
     intro x t
     change 1 ≤ 1 + _
@@ -239,10 +239,10 @@ theorem realizes_siftUp :
     dsimp only
     omega)
   let p (d : IndexArgument) : Memory.Prog Unit := do
-    let _ ← boundedWhile guard step (d.1, ()) (Nat.log 2 d.index) d.index
+    let _ ← boundedWhile guard step (d.heap, ()) (Nat.log 2 d.index) d.index
     pure ()
   have hp : Realizes .exact p indexWords (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEmbedding
-      (fun w d s => Shape w (d.1, ()) d.index s) (fun _ _ => 0) := by
+      (fun w d s => Shape w (d.heap, ()) d.index s) (fun _ _ => 0) := by
     realize
     all_goals
       first
@@ -251,26 +251,26 @@ theorem realizes_siftUp :
         exact hn.of_le (hk.trans (hkS.trans hshape.size_le))
   refine hp.congr ?_
   intro d
-  exact finish_loop_eq (d.1, ()) (Nat.log 2 d.index) d.index le_rfl
+  exact finish_loop_eq (d.heap, ()) (Nat.log 2 d.index) d.index le_rfl
 
 /-- The actual combined currency is logarithmic. The premise is admissibility of the original
 program's complete history, not an assumed cost of a different implementation. -/
 theorem combined_le {w : ℕ} {d : IndexArgument} {s : Memory.State}
-    (hi : Shape w (d.1, ()) d.index s)
+    (hi : Shape w (d.heap, ()) d.index s)
     (hv : (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s
       (PriorityQueue.BinaryHeap.Memory.siftUp d.layout d.index))) :
     memoryCost (PriorityQueue.BinaryHeap.Memory.siftUp d.layout d.index) s + localWork d s ≤
       9 * Nat.log 2 d.index + 2 := by
-  have he := finish_loop_eq (d.1, ()) (Nat.log 2 d.index) d.index le_rfl
+  have he := finish_loop_eq (d.heap, ()) (Nat.log 2 d.index) d.index le_rfl
   have hvalid : (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s
-      ((boundedWhile guard step (d.1, ()) (Nat.log 2 d.index) d.index).bind fun _ => pure ())) :=
+      ((boundedWhile guard step (d.heap, ()) (Nat.log 2 d.index) d.index).bind fun _ => pure ())) :=
     by
       rw [← he] at hv
       simpa only [← PFunctor.FreeM.bind_eq_bind] using hv
   have hvloop := ((validHistory_bind w _ (fun _ => pure ()) s).mp hvalid).1
   have hp := loop_currency_le hi hvloop
   have hm : memoryCost (PriorityQueue.BinaryHeap.Memory.siftUp d.layout d.index) s =
-      memoryCost (boundedWhile guard step (d.1, ()) (Nat.log 2 d.index) d.index) s := by
+      memoryCost (boundedWhile guard step (d.heap, ()) (Nat.log 2 d.index) d.index) s := by
     rw [← he]
     simp only [← PFunctor.FreeM.bind_eq_bind, memoryCost_bind, memoryCost_pure, Nat.add_zero]
   rw [hm]
