@@ -150,19 +150,12 @@ example {Msg : Type} (encMsg : Msg ↪ List Bool) (pair : MessagePair Msg) (stat
       Encryption.encChoiceOut encMsg ((pair.msg₀, pair.msg₁), state) :=
   rfl
 
-/-- The two-stage family of a word-level chosen-message adversary: the same stages, with the
-challenge pair as a `MessagePair`. -/
-def ofWord {Msg : Type} (adversary : Encryption.AdversaryOf Msg) :
-    ℕ → TwoStage (List Bool) (MessagePair Msg) (List Bool) Bool (List Bool) := fun n =>
-  { choose := fun pk => (fun r => (⟨r.1.1, r.1.2⟩, r.2)) <$> adversary.choose n pk
-    guess := adversary.guess n }
-
 -- A PPT word-level adversary is a PPT two-stage family over the same encodings, so typed
 -- security quantifying over all state types implies word-level security.
 example {Msg : Type} (encMsg : Msg ↪ List Bool) (adversary : Encryption.AdversaryOf Msg)
     (h : adversary.IsPPT encMsg) :
-    TwoStage.IsPPT encBits (encMessagePair encMsg) encBits encBool encBits (ofWord adversary) where
-  choose := IsPPTOn.map h.choose.on (ComputableInPolyTime.of_eq fun _ => rfl)
-  guess := h.guess
+    TwoStage.IsPPT encBits (encMessagePair encMsg) encBits encBool encBits
+      adversary.toTwoStage :=
+  Encryption.AdversaryOf.isPPT_toTwoStage h
 
 end CslibFrontierTests.Experiment
