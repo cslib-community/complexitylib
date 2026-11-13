@@ -151,12 +151,26 @@ For a Boolean distribution `p : PMF Bool`, import
 `PMF.apply_true_add_apply_false p : p true + p false = 1` rather than rewriting with `tsum_bool`
 and `PMF.tsum_coe` by hand. Its real forms are `PMF.toReal_true_add_toReal_false` and
 `PMF.toReal_false_eq_one_sub`. The same module bounds Boolean events written as `(p.map E) true`:
-`PMF.map_true_mono`, `PMF.map_true_le_add` and `PMF.map_any_range_true_le_sum` (a union bound),
-and `PMF.map_not_true` for complements. To compose an event bound through `PMF.bind`, use the
-`PMF.toOuterMeasure_bind_*` lemmas in
+`PMF.map_true_mono`, `PMF.map_true_le_add`, the union bounds `PMF.map_true_le_sum` (over any
+`s : Finset ι`) and `PMF.map_any_range_true_le_sum`, `PMF.map_apply_true` (the expectation of the
+indicator of `E`), and `PMF.map_not_true` for complements. A two-stage experiment
+`p.bind fun a => PMF.pure (E a)` is `p.map E` by definition, so these lemmas apply to it directly.
+To compose an event bound through `PMF.bind`, use the `PMF.toOuterMeasure_bind_*` lemmas in
 [PMF/EventBind.lean](../../CslibFrontier/Probability/PMF/EventBind.lean). The
 [checked examples](../../CslibFrontierTests/PMFBool.lean) recover the mass of `false` from the mass of
-`true`; run `scripts/build.sh CslibFrontierTests.PMFBool`.
+`true` and apply the finite union bound; run `scripts/build.sh CslibFrontierTests.PMFBool`.
+
+To show that a pushforward or a two-stage experiment is deterministic, import
+[PMF/Support.lean](../../CslibFrontier/Probability/PMF/Support.lean): `PMF.map_eq_pure_iff` says
+`p.map f = PMF.pure b` exactly when `f a = b` for every `a ∈ p.support`, and
+`PMF.bind_eq_pure_of_forall_mem_support` gives `p.bind f = PMF.pure b` from `f a = PMF.pure b` on the
+support. Perfect-correctness statements of the form `Pr[correct] = 1` written as
+`(...).map isCorrect = PMF.pure true` reduce to a pointwise check this way, and
+`PMF.ne_of_map_eq_pure` separates two distributions whose pushforwards are different point masses.
+The same module records that pairing with a constant (`snd_eq_of_mem_support_map_pair`) or lifting
+into `StateT` (`snd_eq_of_mem_support_lift`, `toOuterMeasure_lift_eq_zero`) keeps the state fixed on
+the support. The [checked examples](../../CslibFrontierTests/PMFSupport.lean) cover each direction;
+run `scripts/build.sh CslibFrontierTests.PMFSupport`.
 
 Moving a bound between `ℝ≥0∞` and `ℝ` or `ℝ≥0` (`ENNReal.toReal_mono`, `ENNReal.toReal_add`,
 `ENNReal.toNNReal_mono`, `ENNReal.toReal_sum`) needs every term to be finite. Import
@@ -1268,6 +1282,23 @@ normal form; it does not unfold support membership or probability masses. The ch
 To prove that two normal forms differ only in the order of independent samples, use `pmf_swap`
 ([Reorder independent samples](../design-and-assurance/automation.md#reorder-independent-samples)).
 
+## Bind a program inside a distribution
+
+A game that has to stay a `PMF`, for example because its setup law is not sampleable, can bind
+programs directly once it imports
+[Lift.lean](../../CslibFrontier/Languages/Probabilistic/Lift.lean). Write
+`let ((x, y), s) ← A.choose ()` instead of `let ((x, y), s) ← ProbComp.eval (A.choose ())`, and end
+the block with `A.guess s c` instead of `ProbComp.eval (A.guess s c)`. The lift is `ProbComp.eval`,
+so the lifted definition equals the explicit one by `rfl`. `simp only [pmf_norm]` rewrites each lift
+back to `ProbComp.eval`, after which the existing law lemmas apply. Use `ProbComp.liftM_eq_eval`
+for a bare `rw` after `unfold`. With the import, any program passed where a distribution is
+expected is lifted silently: `Game.advantage program μ` elaborates. So public statements keep
+naming `ProbComp.eval`, `Pr[e]` or `Experiment` explicitly, and the lift is for definition bodies.
+`Pr[e]` on a program still elaborates to `(ProbComp.eval e true).toReal`. A computational
+experiment that is a program throughout stays a `ProbComp Bool`. The
+[checked examples](../../CslibFrontierTests/ProbabilisticLift.lean) prove a chooser/guesser game
+equal to its explicit form both ways. Run `scripts/build.sh CslibFrontierTests.ProbabilisticLift`.
+
 ## Invert a support membership
 
 A proof that starts from `h : x ∈ m.support` usually needs the intermediate results that produced
@@ -1412,6 +1443,58 @@ If an existing proof needs the underlying interpreter, unfold `ProbOracleComp.si
 reuse its laws and native efficiency certificates. Substitution preserves the free program;
 it does not by itself certify its runtime. This separation follows VCVio's treatment of
 [untouched oracle effects](https://github.com/Verified-zkEVM/VCVio/blob/87bc1892fff1982e97cfd8c7303c9d1f2bfdc2f9/VCVio/OracleComp/SimSemantics/Append/Core.lean).
+
+## Pass a query adapter through an eager/lazy game hop
+
+Import [Oracle/Substitution.lean](../../CslibFrontier/Languages/Probabilistic/Oracle/Substitution.lean)
+and [RandomOracle/Probabilistic.lean](../../CslibFrontier/Languages/Probabilistic/RandomOracle/Probabilistic.lean).
+Write the query conversion as a `ProbOracleComp` handler, then apply the eager/lazy theorem to
+`ProbOracleComp.simulate handler program`. The same adapted program is used on both sides:
+one interpreter samples the random function eagerly, and the other fills its cache on demand.
+
+The [checked adapter](../../CslibFrontierTests/RandomOracleAdapter.lean) accepts one-bit words and
+rejects other words. Its client repeats a query across a private draw and an invalid query.
+The following excerpt uses the test file's `open Cslib Cslib.Probability`:
+
+<!-- excerpt: random-oracle-adapter -->
+```lean
+private def oneBitQuery (word : List Bool) : ProbOracleComp (fun _ : Bool => Bool) (List Bool) :=
+  match word with
+  | [bit] => List.singleton <$> ProbOracleComp.query bit
+  | _ => pure []
+
+private noncomputable def repeated : ProbOracleComp (fun _ : List Bool => List Bool) Bool := do
+  let first ← ProbOracleComp.query [false]
+  let coin ← ProbOracleComp.sample (ProbComp.uniform Bool)
+  let rejected ← ProbOracleComp.query []
+  let second ← ProbOracleComp.query [false]
+  return (first == second) && rejected.isEmpty && coin
+
+private noncomputable def adapted : ProbOracleComp (fun _ : Bool => Bool) Bool :=
+  ProbOracleComp.simulate oneBitQuery repeated
+```
+
+Apply `RandomOracle.interpret_prob_eq_memoize` to `adapted`. When cache keys and sampled values
+have different representations, use `interpret_prob_eq_memoize_map` instead. Then
+`ProbOracleComp.interpret_simulate` composes the surrounding interpreter with the adapter;
+prove the adapter's response equation for each valid or rejected query. Import
+[Oracle/Norm.lean](../../CslibFrontier/Languages/Probabilistic/Oracle/Norm.lean) and use
+`simp only [runWith_norm, pmf_norm]` to normalize closed runs and their state threading.
+
+The test also computes the complete cached run: its result is the fresh private coin, and its
+cache contains exactly the first sampled answer at `false`. Rejection adds no cache entry and
+the repeated query reuses that answer. Check it with
+`scripts/build.sh --wfail --iofail CslibFrontierTests.RandomOracleAdapter`.
+
+In [the PRF game](../../CslibFrontier/Crypto/Computational/PseudorandomFunction/RandomOracle.lean),
+`prfIdealGame_eq_cached` uses this route after converting a valid word to a bit string. In
+[GGM](../../CslibFrontier/Crypto/Computational/GGM/Expansion.lean), `prefix_eager` also converts the
+query to its prefix. The proof of `expansionGame_uniform` then follows three named game hops:
+cached parent expansions become an eager prefix table, `childTableEquiv` reindexes that table
+into child labels, and those labels become the next level's cache. The prefix-length and
+child-table equations remain local mathematical obligations. These eager tables are used to
+prove distributional equalities; the executable reductions retain their existing separate
+runtime and query-bound certificates.
 
 ## Certify an adaptive oracle client
 
@@ -2301,8 +2384,9 @@ root to check them.
 Additivity, `gaussianNoiseOp_add`, holds only `γ`-almost everywhere, because the Bochner integral
 is `0` off the integrable functions; scaling by a constant holds everywhere. For multilinear
 polynomials, the semigroup law `U_ρ U_σ = U_ρσ` and continuity at `ρ = 1`, see
-[Compose Gaussian noise operators](#compose-gaussian-noise-operators). Hermite expansions are not
-part of this module.
+[Compose Gaussian noise operators](#compose-gaussian-noise-operators). For `U_ρ` on Hermite
+expansions (Proposition 11.37), see
+[Expand Gaussian functions in the Hermite basis](#expand-gaussian-functions-in-the-hermite-basis).
 
 ## Compose Gaussian noise operators
 
@@ -2377,8 +2461,83 @@ Propositions 11.31 and 11.33 in one and two dimensions, and recover Fact 11.13 f
 `multiHermite_indicator`. Run `scripts/build.sh CslibFrontierTests.GaussianHermite` from the
 repository root to check them.
 
-Completeness of the Hermite basis (Theorem 11.22), Hermite expansions and Plancherel
-(Definition 11.34, Propositions 11.36 and 11.37) are not formalized here.
+For completeness of the Hermite basis, Hermite coefficients and Plancherel, see
+[Expand Gaussian functions in the Hermite basis](#expand-gaussian-functions-in-the-hermite-basis).
+
+## Expand Gaussian functions in the Hermite basis
+
+Import
+[`CslibFrontier.Foundations.Probability.Gaussian.HermiteExpansion`](../../CslibFrontier/Foundations/Probability/Gaussian/HermiteExpansion.lean)
+for the Hermite basis and expansions, and
+[`CslibFrontier.Foundations.Probability.Gaussian.PolynomialDense`](../../CslibFrontier/Foundations/Probability/Gaussian/PolynomialDense.lean)
+for the density of polynomials. Open `MeasureTheory` and `ProbabilityTheory`, and write `γ` for
+`Measure.pi fun _ : ι => gaussianReal 0 1` on `ι → ℝ` with `[Fintype ι]`. Membership in `L²(γ)` is
+`hf : MemLp f 2 γ`, and `hf.toLp f : Lp ℝ 2 γ` is the class of `f`; `memLp_multiHermite α` supplies
+it for `h_α`.
+
+- `topologicalClosure_span_prod_pow_pi_gaussianReal` says the monomials `∏ i, z i ^ k i` span a
+  dense subspace of `Lp ℝ 2 γ` (Theorem 11.22 for `p = 2`). For a single function,
+  `exists_eLpNorm_sub_eval_lt_pi_gaussianReal hf hε` gives a polynomial
+  `p : MvPolynomial ι ℝ` with `eLpNorm (f - fun z => MvPolynomial.eval z p) 2 γ < ε` for
+  `0 < ε`. `ae_eq_zero_of_forall_integral_mul_prod_pow_eq_zero_pi_gaussianReal hf h` is the
+  underlying fact: an `L²` function orthogonal to every monomial is `0` almost everywhere.
+- `hermiteBasis ι : HilbertBasis (ι → ℕ) ℝ (Lp ℝ 2 γ)` is the Hermite basis (Proposition 11.33),
+  with `hermiteBasis_apply α` identifying its vectors with the classes of `h_α`.
+  `orthonormal_multiHermite` and `topologicalClosure_span_multiHermite` are its two halves. In one
+  dimension, `normalizedHermiteBasis : HilbertBasis ℕ ℝ (Lp ℝ 2 (gaussianReal 0 1))` is
+  Proposition 11.30, with `normalizedHermiteBasis_apply j` giving the class of `h_j` (membership
+  `memLp_normalizedHermite j`, in the `Hermite` module).
+- `hermiteCoeff f α = ∫ z, f z * multiHermite α z ∂γ` is `f̂(α)`, unfolded by `hermiteCoeff_def`;
+  `hermiteBasis_repr hf α` says it is the `α`-th coordinate of `hf.toLp f`, and
+  `hermiteCoeff_coeFn v α` says the same for an element `v` of `L²(γ)`. Conversely,
+  `hermiteBasis_repr_tsum_smul hc α` reads off the coordinates of `∑' β, c β • hermiteBasis ι β`
+  for `c ∈ ℓ²`. `hermiteCoeff_zero f`
+  is the mean `∫ z, f z ∂γ`; `hermiteCoeff_add hf hg α` (both in `L²`), `hermiteCoeff_const_mul`
+  and `hermiteCoeff_congr_ae` give linearity and invariance under `=ᵐ[γ]`.
+- `hermiteCoeff_multiHermite α β` is `if α = β then 1 else 0`. For a finite combination,
+  `hermiteCoeff_sum_mul_multiHermite s c β α` gives `∑ j ∈ s, if β j = α then c j else 0`, and
+  `hermiteCoeff_sum_mul_prod s c T` (with `[DecidableEq ι]`) reads off the coefficient
+  `if T ∈ s then c T else 0` of a multilinear polynomial `∑ S ∈ s, c S * ∏ i ∈ S, z i` at the
+  indicator multi-index of `T` (Remark 11.35).
+- `hasSum_hermiteCoeff_smul hf` is the Hermite expansion `f = ∑ α, f̂(α) h_α` in `Lp ℝ 2 γ`
+  (Definition 11.34), and `tendsto_sum_degree_le_hermiteCoeff_smul hf` (with `[DecidableEq ι]`)
+  its partial sums over `∑ i, α i ≤ k`. Uniqueness holds in both forms: any `c` whose
+  degree-ordered partial sums converge to `hf.toLp f`
+  (`hermiteCoeff_eq_of_tendsto_sum_degree_le hf h`, the book's definition), or with
+  `HasSum (fun α => c α • (memLp_multiHermite α).toLp (multiHermite α)) (hf.toLp f)`
+  (`hermiteCoeff_eq_of_hasSum hf h`), equals `hermiteCoeff f`.
+- Plancherel and Parseval (Proposition 11.36) are `hasSum_hermiteCoeff_mul_hermiteCoeff hf hg` and
+  `hasSum_hermiteCoeff_sq hf`, with `tsum` forms
+  `integral_mul_eq_tsum_hermiteCoeff_mul_hermiteCoeff` and `integral_sq_eq_tsum_hermiteCoeff_sq`.
+- For `|ρ| ≤ 1`, `hermiteCoeff_gaussianNoiseOp hρ hf α` is `(U_ρ f)^(α) = ρ ^ |α| f̂(α)`, and
+  `hasSum_hermiteCoeff_gaussianNoiseOp_smul hρ hf` the expansion of `U_ρ f` (Proposition 11.37).
+  `hasSum_gaussianNoiseStability hρ hf` and `gaussianNoiseStability_eq_tsum hρ hf` give
+  `Stab_ρ[f] = ∑ α, ρ ^ |α| f̂(α)²`.
+
+Like `gaussianNoiseStability`, `hermiteCoeff f` is defined for every `f`, and is `0` at `α` when
+`f * h_α` is not integrable; every expansion theorem takes `MemLp f 2 γ`. The inner product of two
+`L²` classes, `⟪hf.toLp f, hg.toLp g⟫ = ∫ conj (f a) * g a ∂μ`, is
+`MeasureTheory.L2.inner_toLp_toLp` in
+[`CslibFrontier.Foundations.MeasureTheory.Function.L2Space`](../../CslibFrontier/Foundations/MeasureTheory/Function/L2Space.lean).
+To prove that another family `v k` of real `L²(μ)` functions spans a dense subspace, use
+`MeasureTheory.L2.topologicalClosure_span_toLp_eq_top hv h` from the same module, where `h` says
+that every `f ∈ L²(μ)` with `∫ a, f a * v k a ∂μ = 0` for all `k` is `0` almost everywhere.
+
+The checked [`GaussianHermiteExpansion.lean` clients](../../CslibFrontierTests/GaussianHermiteExpansion.lean)
+approximate a halfspace indicator by a polynomial, read basis coordinates in both bases, compute
+`E[(z₀ z₁)²] = 1` and `E[x⁴] = 3` by Parseval and `E[x² h₂] = √2` by Plancherel, read off a
+multilinear polynomial's coefficient, compute the mean `f̂(0) = 1 / 2` of a halfspace indicator,
+truncate expansions by degree, recover Proposition 11.37 from uniqueness and compute
+`Stab_ρ[h_α] = ρ ^ |α|` from the series. Run
+`scripts/build.sh CslibFrontierTests.GaussianHermiteExpansion` from the repository root to check
+them.
+
+Theorem 11.22 is formalized only for `p = 2`, where the orthogonal complement of the
+polynomials in the Hilbert space `L²(γ)` is `0`. The duality argument used here would need, for
+`p > 2`, every continuous linear functional on `L^p` to be integration against an `L^q` function,
+which Mathlib does not provide.
+The case `1 ≤ p < 2` follows from `p = 2`, since `‖·‖_p ≤ ‖·‖_2` for a probability measure and
+`L²` is dense in `L^p`, but it is not stated.
 
 ## Compare bits with Gaussians by the invariance principle
 
@@ -2419,8 +2578,9 @@ The proof is the replacement method. `MeasureTheory.abs_integral_pi_sub_le_sum` 
 [`PiUpdate`](../../CslibFrontier/Foundations/MeasureTheory/Integral/PiUpdate.lean) telescopes over the
 hybrids `Measure.pi (s.piecewise ν μ)` and applies to any integrand. The Bonami Lemma for these
 variables, `integral_multilinearEval_pow_four_le`, is in
-[`Multilinear/Bonami`](../../CslibFrontier/Foundations/Probability/Multilinear/Bonami.lean). It covers
-only the case `B ≤ 9` with variance `1` of Corollary 9.6. Cauchy–Schwarz for real integrals,
+[`Multilinear/Bonami`](../../CslibFrontier/Foundations/Probability/Multilinear/Bonami.lean). It is
+the case `B = 9`, variance `1`, of `isReasonable_multilinearEval` in the same file (Corollary 9.6),
+and is derived from it. Cauchy–Schwarz for real integrals,
 `MeasureTheory.sq_integral_mul_le`, needs no sign condition. It is in
 [`Integral/CauchySchwarz`](../../CslibFrontier/Foundations/MeasureTheory/Integral/CauchySchwarz.lean)
 with `MeasureTheory.integrable_pow_of_memLp` and `MeasureTheory.integrable_abs_pow_of_memLp`, which
@@ -2432,11 +2592,122 @@ Gaussians for any function of two bits with `ψ = cos` (`C⁴`) and `ψ = sin` (
 that a degree-`0` polynomial has exactly equal expectations. Run
 `scripts/build.sh CslibFrontierTests.MultilinearInvariance` from the repository root to check them.
 
-The test function must be smooth. The following are not formalized: the Lipschitz form
-(Corollary 11.68) and the Lévy-distance form (Corollary 11.70); the forms for functions with small
-high-degree tails, including noise-stable functions (Corollary 11.69), and cdf-closeness through
-the Carbery–Wright theorem (Theorem 11.71); the general Invariance Principle with
-hypercontractive ensembles; and Majority Is Stablest.
+### Lipschitz tests and noise-smoothed functions
+
+For a test function that is only Lipschitz (Corollary 11.68), import
+[`CslibFrontier.Foundations.Probability.Multilinear.InvarianceLipschitz`](../../CslibFrontier/Foundations/Probability/Multilinear/InvarianceLipschitz.lean).
+`abs_integral_comp_multilinearEval_sub_le_of_lipschitzWith μ ν hμ hν hc hvar hε0 hε hψ` takes the
+hypotheses of `abs_integral_comp_multilinearEval_sub_le_of_influence_le` with
+`hψ : LipschitzWith K ψ` (`K : ℝ≥0`) in place of the `C⁴` bound, and bounds the difference by
+`9 * K * 2 ^ k * ε ^ (1 / 4 : ℝ)`. Integrability of `ψ (multilinearEval c ·)` is proved inside.
+The general transfer behind it, `abs_integral_comp_sub_le_of_lipschitzWith hτ h hψ` with
+`hτ : 0 ≤ τ`, applies to any two real random variables `X` and `Y`, on different probability
+spaces if needed. Here `h` must prove, for every `C⁴` `φ` with `|φ''''| ≤ C`, that `φ ∘ X` and
+`φ ∘ Y` are integrable and that their expectations differ by at most `C * τ ^ 4`; measurability of
+`X` and `Y` follows from `h`. The result bounds the difference for `ψ` by `16 * K * τ`.
+`LipschitzWith.abs_integral_comp_sub_le_sqrt hψ hX hY`, next to Cauchy–Schwarz in
+[`Integral/CauchySchwarz`](../../CslibFrontier/Foundations/MeasureTheory/Integral/CauchySchwarz.lean),
+gives `|∫ ψ (X ω) - ∫ ψ (Y ω)| ≤ K * √(∫ (X ω - Y ω) ^ 2)` for `MemLp X 2 P` and `MemLp Y 2 P` on a
+probability space, and `abs_integral_comp_multilinearEval_sub_le_sqrt μ hμ hψ c d` bounds the
+difference for two polynomials `c` and `d` by `K * √(∑ S, (c S - d S) ^ 2)`.
+
+The smoothing is in
+[`LipschitzSmoothing.lean`](../../CslibFrontier/Foundations/Analysis/Calculus/LipschitzSmoothing.lean)
+(namespace `Real`). `Real.movingAverage h φ s = h⁻¹ * ∫ t in 0..h, φ (s + t)`
+(`Real.movingAverage_def`). For continuous `φ`, `Real.hasDerivAt_movingAverage` and
+`Real.contDiff_iterate_movingAverage` show that `(Real.movingAverage h)^[m] φ` is `ContDiff ℝ m`.
+For `hψ : LipschitzWith K ψ` and `0 < h`, `hψ.abs_iterate_movingAverage_sub_le` gives
+`|(movingAverage h)^[m] ψ s - ψ s| ≤ m * K * h`, and
+`hψ.abs_iteratedDeriv_iterate_movingAverage_le` gives `|iteratedDeriv (k + 1) _ s| ≤
+2 ^ k * K / h ^ k` for `k < m`. `hψ.exists_contDiff_smoothing m hη` is a finite-order form of
+Proposition 11.58: a `Cᵐ` function within `K * η` of `ψ` whose `(k + 1)`-th derivative is at most
+`(2 * m) ^ k * K / η ^ k`. O'Donnell smooths with a Gaussian, which gives one `C^∞` function for
+every order. Here the function and the constant `(2 * m) ^ k` depend on the chosen order `m`, but
+the constants are explicit.
+
+On the cube, import
+[`CslibFrontier.Foundations.BooleanAnalysis.InvarianceNoise`](../../CslibFrontier/Foundations/BooleanAnalysis/InvarianceNoise.lean)
+(namespace `Cslib.BitString`). Its theorems compare `𝔼 x, ψ (f x)` at uniform bits with
+`∫ y, ψ (multilinearEval (fourierCoeff f) y) ∂Measure.pi μ` for laws with
+`hμ : ∀ i, HasInvarianceMoments (μ i)`, as the cube theorems above do, and take `μ` explicitly.
+
+- `abs_expect_comp_sub_integral_comp_multilinearEval_le_of_lipschitzWith μ hμ hf hvar hε0 hε hψ`
+  is inequality (11.31), Corollary 11.68 on the cube, with the bound
+  `9 * K * 2 ^ k * ε ^ (1 / 4 : ℝ)`.
+- No degree hypothesis is needed in Corollary 11.69. For any `f`, `k : ℕ`, `hvar`, `hε0 : 0 ≤ ε` and
+  `hε : ∀ t, ∑ S with t ∈ S ∧ #S ≤ k, fourierCoeff f S ^ 2 ≤ ε` (the influences of `f^{≤k}`),
+  `abs_expect_comp_sub_integral_comp_multilinearEval_le_add_sqrt μ hμ k hvar hε0 hε hψ` is
+  inequality (11.32): the difference is at most
+  `9 * K * 2 ^ k * ε ^ (1 / 4 : ℝ) + 2 * K * √(∑ S with k < #S, fourierCoeff f S ^ 2)`.
+- A function `h` has no `(ε, δ)`-notable coordinates when
+  `hε : ∀ i, stableInfluence (1 - δ) i h ≤ ε` (O'Donnell's Definition 6.9; `stableInfluence_eq_sum`
+  gives `∑ S with i ∈ S, (1 - δ) ^ (#S - 1) * fourierCoeff h S ^ 2`). With `hvar` for `h` and
+  `0 ≤ δ ≤ 1`,
+  `abs_expect_comp_noiseOp_sub_integral_comp_multilinearEval_le_add_pow μ hμ k hvar hε0 hδ0 hδ1 hε hψ`
+  is inequality (11.33) in its sharper form: for `f = noiseOp (1 - δ) h` the difference is at most
+  `9 * K * 2 ^ k * ε ^ (1 / 4 : ℝ) + 2 * K * (1 - δ) ^ k` for every `k`. The book then bounds
+  `(1 - δ) ^ k ≤ exp (-k δ)`.
+- `abs_expect_comp_noiseOp_sub_integral_comp_multilinearEval_le_of_lipschitzWith μ hμ hvar hε0 hε1
+  hδ0 hδ hε hψ`, for `0 ≤ ε ≤ 1` and `0 ≤ δ ≤ 1 / 20`, is the second statement of Corollary 11.69
+  with the explicit constant `15`: the difference is at most `15 * K * ε ^ (δ / 3)`. The proof
+  takes `k = ⌊-log ε / 3⌋₊` and treats `ε = 0` by letting `k → ∞`.
+- `abs_expect_comp_sub_le_sqrt hψ f g` bounds `|𝔼 x, ψ (f x) - 𝔼 x, ψ (g x)|` by
+  `K * √(∑ S, (fourierCoeff f S - fourierCoeff g S) ^ 2)`.
+
+The noise lemmas these use are `sq_fourierCoeff_noiseOp_le` (`(T_ρ f)^(S) ^ 2 ≤ f̂(S) ^ 2` for
+`|ρ| ≤ 1`) and `expect_sub_expect_sq_noiseOp_le` (`Var[T_ρ f] ≤ Var[f]`) in `Noise.lean`, and `influence_noiseOp_le_stableInfluence`
+(`Inf_i[T_ρ f] ≤ Inf_i^{(ρ)}[f]` for `0 ≤ ρ ≤ 1`), `stableInfluence_noiseOp_le`
+(`Inf_i^{(ρ)}[T_σ f] ≤ Inf_i^{(ρ)}[f]` for `0 ≤ ρ` and `|σ| ≤ 1`) and `stableInfluence_mono`
+(increasing in `ρ ≥ 0`) in `StableInfluence.lean`.
+
+The checked [`InvarianceLipschitz.lean` clients](../../CslibFrontierTests/InvarianceLipschitz.lean)
+smooth `|·|` with explicit bounds, check that its moving average stays `1`-Lipschitz, and apply
+Proposition 11.58 to it. For Corollary 11.68 they use the normalized sum and the clamp `u ↦ min 1 (max 0 u)`: the bound
+is `18 * m⁻¹ ^ (1/4)`, which for `m = 100⁴` is `18 / 100`, below the trivial bound `1`. They also
+instantiate the general and cube (11.31) Lipschitz forms. For Corollary 11.69 they apply (11.32)
+with `k = 1` to `∑ aᵢ xᵢ + θ χ_{[n+2]}` with `∑ aᵢ² + θ² ≤ 1` and `aᵢ² ≤ ε`, giving the bound
+`9 * 2 * ε ^ (1 / 4) + 2 |θ|` with both terms nonzero. They show that a linear form has
+`(1 - δ)`-stable influences `aᵢ²`, compare them across rates and under noise, and conclude that it
+has no `(ε, δ)`-notable coordinates when every `aᵢ² ≤ ε`; for the normalized sum of `m = 100⁶⁰` signs and `δ = 1 / 20` the clamp gives the bound
+`15 * (1 / m) ^ (1 / 60) = 0.15`, below the trivial bound `1`. Run
+`scripts/build.sh CslibFrontierTests.InvarianceLipschitz` from the repository root to check them.
+
+### Reasonable random variables
+
+`IsReasonable B X P`, in
+[`Reasonable.lean`](../../CslibFrontier/Foundations/Probability/Reasonable.lean) (namespace
+`ProbabilityTheory`), bundles `MemLp X 4 P` with `∫ X ^ 4 ≤ B * (∫ X ^ 2) ^ 2` (O'Donnell,
+Definition 9.1). On a finite type, the tail and anticoncentration bounds of
+[`PaleyZygmund.lean`](../../CslibFrontier/Foundations/Data/Finset/PaleyZygmund.lean) take the
+inequality `𝔼 X ^ 4 ≤ B * (𝔼 X ^ 2) ^ 2` directly, and `isReasonable_uniformOn_univ_iff` converts
+between the two. `hasInvarianceMoments_iff`, in
+[`Multilinear/Bonami.lean`](../../CslibFrontier/Foundations/Probability/Multilinear/Bonami.lean),
+states that `HasInvarianceMoments μ` is `IsReasonable 9 id μ` together with the moments `0`, `1`
+and `0`. **The Bonami Lemma** (O'Donnell, Corollary 9.6), `isReasonable_multilinearEval` in
+[`Multilinear/Bonami`](../../CslibFrontier/Foundations/Probability/Multilinear/Bonami.lean), takes
+laws `μ i` with `IsReasonable B id (μ i)`, `∫ z, z ∂μ i = 0` and `∫ z, z ^ 3 ∂μ i = 0`, and a
+polynomial `c` with `c S = 0` whenever `k < #S`, and concludes
+`IsReasonable (max B 9 ^ k) (multilinearEval c) (Measure.pi μ)`. The laws may differ and their
+second moments are not normalized. `IsReasonable.mono`,
+`IsReasonable.const_mul` and `HasLaw.isReasonable_iff` change `B`, rescale and transfer along a
+law. A `±1`-valued variable is
+`1`-reasonable by `isReasonable_one_of_sq_eq_one`, with its moments from
+`integral_sq_eq_one_of_sq_eq_one` and `integral_pow_three_eq_integral_of_sq_eq_one`. For
+`hg : HasLaw g (gaussianReal 0 1) P`, `hg.isReasonable_three_of_gaussianReal` gives
+`3`-reasonableness, and `hg.integral_eq_zero_of_gaussianReal`,
+`hg.integral_sq_eq_one_of_gaussianReal` and `hg.integral_pow_three_eq_zero_of_gaussianReal`
+(in [`Gaussian/Moments.lean`](../../CslibFrontier/Foundations/Probability/Gaussian/Moments.lean))
+give its moments. The checked [`Reasonable.lean` clients](../../CslibFrontierTests/Reasonable.lean)
+cover standard and rescaled Gaussians, uniformly random signs, Hypothesis 11.65 from
+reasonableness, a uniform `0`/`1` bit, which is `2`-reasonable but not `1`-reasonable, and the
+Bonami Lemma for a sparse sign (`±1` with probability `1 / 20` each), which is `10`-reasonable
+but not `9`-reasonable: polynomials in two of them are `100`-reasonable, sharply so for their
+product, and sums of `n` of them are `10`-reasonable. Run
+`scripts/build.sh CslibFrontierTests.Reasonable` from the repository root to check them.
+
+The following are not formalized: the Lévy-distance form
+(Corollary 11.70), cdf-closeness through the Carbery–Wright theorem (Theorem 11.71), the general
+Invariance Principle with hypercontractive ensembles, and Majority Is Stablest.
 
 ## Evaluate a multi-component conditional walk via validated words
 

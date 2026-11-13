@@ -13,8 +13,8 @@ public import CslibFrontier.Algorithms.WordRAM.KargerStein
 /-!
 # Karger–Stein recursive `FastCut` tests on the randomized word RAM
 
-Concrete non-vacuity and behavioral tests for `Cslib.Algorithms.WordRAM.Karger` (`FastCut.lean` and
-`KargerStein.lean`):
+Concrete non-vacuity and behavioral tests for `Cslib.Algorithms.Karger` (`Karger/FastCut.lean`)
+and `Cslib.Algorithms.WordRAM.Karger` (`KargerStein.lean`):
 
 1. Pure-integer threshold and recursion-depth checks (`fastCutThreshold` on `7, 8, 9, 16` and
    `fastCutDepth` on `6, 8, 16`).
@@ -31,7 +31,8 @@ Concrete non-vacuity and behavioral tests for `Cslib.Algorithms.WordRAM.Karger` 
 
 namespace CslibFrontierTests.WordRAMKargerStein
 
-open Cslib Cslib.WordRAM Cslib.WeightedCut Cslib.Algorithms.WordRAM.Karger
+open Cslib Cslib.WordRAM Cslib.WeightedCut
+open Cslib.Algorithms.Karger Cslib.Algorithms.WordRAM.Karger
 open scoped ENNReal
 
 /-! ## 1. Pure-integer threshold and recursion depth -/

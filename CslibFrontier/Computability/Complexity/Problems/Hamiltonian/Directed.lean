@@ -158,11 +158,9 @@ theorem satisfiable_diamondDetours_iff (φ : CNF ℕ) :
     refine ⟨fun i => σ (φ.vars.getD i 0), fun j hj => ?_⟩
     obtain ⟨l, hl, hσl⟩ := (Clause.eval_eq_true_iff _ _).1
       ((CNF.eval_eq_true_iff _ _).1 hσ φ[j] (List.getElem_mem hj))
-    have hlt := List.idxOf_lt_length_iff.2 (fst_mem_vars hj hl)
     refine ⟨_, mem_diamondDetours.2 ⟨j, hj, l, hl, rfl⟩, rfl, ?_⟩
     simp only
-    rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hlt, Option.getD_some,
-      List.getElem_idxOf hlt]
+    rw [List.getD_eq_getElem?_getD, List.getElem?_idxOf (fst_mem_vars hj hl), Option.getD_some]
     exact hσl
 
 /-- **Correctness of the diamond construction.** A formula is satisfiable exactly when its

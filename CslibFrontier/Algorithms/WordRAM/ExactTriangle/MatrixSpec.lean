@@ -111,7 +111,7 @@ theorem left_lopInstance (A : Args) (R : ℕ → ℕ)
     (hpad : A.length * A.p ≤ A.D)
     (hR : ∀ a c, R (a.val * A.n + c.val) = (wAC a c).natMod A.p) :
     entry false A R (a.val * A.D + (v.val * A.p + label.val)) = 1 ↔
-      (lopInstance wAB wBC wAC A.D g A.p (rho, chunk, k)).adjA
+      (lopInstance wAB wBC wAC A.D g A.p ⟨rho, chunk, k⟩).adjA
         a (⟨c, hpiece⟩, label) := by
   have hload : R (a.val * A.n + A.first + v.val) = (wAC a c).natMod A.p := by
     rw [Nat.add_assoc, hvertex]
@@ -128,7 +128,7 @@ theorem right_lopInstance (A : Args) (R : ℕ → ℕ)
     (hpiece : c ∈ piece A.n A.D g k) (hvertex : A.first + v.val = c.val)
     (hR : ∀ b c, R (b.val * A.n + c.val) = (wBC b c).natMod A.p) :
     entry true A R ((v.val * A.p + label.val) * A.n + b.val) = 1 ↔
-      (lopInstance wAB wBC wAC A.D g A.p (rho, chunk, k)).adjB
+      (lopInstance wAB wBC wAC A.D g A.p ⟨rho, chunk, k⟩).adjB
         (⟨c, hpiece⟩, label) b := by
   have hload : R (b.val * A.n + A.first + v.val) = (wBC b c).natMod A.p := by
     rw [Nat.add_assoc, hvertex]

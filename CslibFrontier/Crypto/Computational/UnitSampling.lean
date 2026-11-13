@@ -8,9 +8,14 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.Words
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.PolyTime
 public import CslibFrontier.Crypto.Game
 public import CslibFrontier.Languages.Probabilistic.UniformNat
 public import Mathlib.Data.Nat.Totient
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Gcd
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import CslibFrontier.Crypto.Computational.Homomorphic.Leveled.ExactSecurity
 import CslibFrontier.Crypto.Game.CloseTo.UniformNat
 import CslibFrontier.Crypto.Game.Statistical
 import CslibFrontier.Probability.PMF.Uniform
@@ -27,7 +32,17 @@ reason about a uniform unit. The draw is within `N / 2 ^ (n + |N|) ≤ 1 / 2 ^ n
 residue modulo `N`, and a uniform residue is within the fraction `(N - φ(N)) / N` of non-units of a
 uniform unit. When `p` and `q` have at least `n` bits, this fraction is at most `4 / 2 ^ n`.
 
+A draw `r` that is not a unit is replaced by `1` (`unitOrOne N r`), so the randomness that is used
+is always a unit, and the replacement is computable in polynomial time.
+
+## Main definitions
+
+* `Cslib.Crypto.unitOrOne`: keep `r` when it is a unit modulo `N`, and use `1` otherwise.
+
 ## Main results
+
+* `Cslib.Crypto.coprime_unitOrOne`, `Cslib.Crypto.computableInPolyTime_unitOrOne`: the result is
+  a unit modulo `N`, computed in polynomial time.
 
 * `Cslib.Crypto.Game.advantage_bind_units_le`: restricting a uniform residue modulo `N` to the
   units changes the advantage of any continuation by at most `(N - φ(N)) / N`.
@@ -145,5 +160,25 @@ theorem Game.advantage_sampleModNat_units_le {p q n : ℕ} [NeZero (p * q)] (hp 
       ((Game.advantage_bind_units_le (p * q) fun x => k x.val).trans
         (sub_totient_div_le hp hq hpq hpn hqn))
     _ = 5 / 2 ^ n := by ring
+
+/-! ### Replacing a non-unit draw -/
+
+/-- The randomness that is used: `r` itself when it is a unit modulo `N`, and `1` otherwise. -/
+@[expose] def unitOrOne (N r : ℕ) : ℕ := if Nat.gcd r N = 1 then r else 1
+
+theorem coprime_unitOrOne (N r : ℕ) : (unitOrOne N r).Coprime N := by
+  unfold unitOrOne
+  split_ifs with h
+  · exact h
+  · exact Nat.coprime_one_left N
+
+/-- `unitOrOne` is computable in polynomial time. -/
+theorem computableInPolyTime_unitOrOne {α : Type} {input : α ↪ List Bool} {N r : α → ℕ}
+    (hN : ComputableInPolyTime N input encNat) (hr : ComputableInPolyTime r input encNat) :
+    ComputableInPolyTime (fun a => unitOrOne (N a) (r a)) input encNat := by
+  unfold unitOrOne
+  exact ComputableInPolyTime.ite_decide
+    (ComputableInPolyTime.decide_eq' (ComputableInPolyTime.binary_gcd' hr hN)
+      (ComputableInPolyTime.const 1)) hr (ComputableInPolyTime.const 1)
 
 end Cslib.Crypto
