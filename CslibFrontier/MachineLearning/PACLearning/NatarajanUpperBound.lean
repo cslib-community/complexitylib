@@ -23,8 +23,9 @@ every distribution realizable by `C` from
 
 examples. Hence every class of finite Natarajan dimension with finitely many labels is PAC
 learnable in the realizable setting, with realizable sample complexity
-`O((d log (k / ε) + log (1 / δ)) / ε)`. This is the realizable upper bound of the multiclass
-fundamental theorem [ShalevShwartzBenDavid2014, Theorem 29.3], with explicit constants.
+`O((d log (k / ε) + log (1 / δ)) / ε)`. This gives the realizable upper bound of the multiclass
+fundamental theorem [ShalevShwartzBenDavid2014, Theorem 29.3(3)], which is
+`C (d log (k d / ε) + log (1 / δ)) / ε` for an absolute constant `C`, with explicit constants.
 
 The proof is that of the binary VC upper bound (`VCUpperBound.lean`): the ε-net theorem applied to
 the Boolean loss class `{(x, y) ↦ [h x ≠ y] | h ∈ C}`. Only the growth function bound changes. The

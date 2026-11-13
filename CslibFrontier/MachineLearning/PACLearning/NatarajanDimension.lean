@@ -32,12 +32,12 @@ N-shattered sets have at most `d` points has at most
 `∑_{i ≤ d} (n choose i) (k choose 2) ^ i`
 
 elements (`ncard_le_natarajanSum`). The proof is the induction suggested in
-[ShalevShwartzBenDavid2014, Exercise 29.3], splitting off one point: a labeling of the remaining
-points that extends with `s` labels at the new point is counted once among the tails and once for
-each of the `s choose 2 ≥ s - 1` pairs of those labels, and the tails extending with both labels
-of a fixed pair N-shatter only sets of at most `d - 1` points. The hint sums over ordered pairs of
-labels; unordered pairs give the factor `k choose 2`. With at least one label the sum is at most
-`(n + 1) ^ d k ^ (2 d)` (`natarajanSum_le`). For a class on a finite domain `α` this gives
+[ShalevShwartzBenDavid2014, Chapter 29, Exercise 3], splitting off one point: a labeling of the
+remaining points that extends with `s` labels at the new point is counted once among the tails and
+once for each of the `s choose 2 ≥ s - 1` pairs of those labels, and the tails extending with both
+labels of a fixed pair N-shatter only sets of at most `d - 1` points. The hint sums over ordered
+pairs of labels; unordered pairs give the factor `k choose 2`. With at least one label the sum is
+at most `(n + 1) ^ d k ^ (2 d)` (`natarajanSum_le`). For a class on a finite domain `α` this gives
 `|C| ≤ |α| ^ Ndim(C) k ^ (2 Ndim(C))`, the form of Lemma 29.4 (`ncard_le_card_pow_natarajanDim`).
 The source states Lemma 29.4 for classes of functions from `X` to `[k]`; here the labels are any
 finite type.
@@ -59,6 +59,8 @@ finite type.
 - `ncard_le_natarajanSum`, `ncard_restriction_le_natarajanSum`: **Natarajan's lemma** for sets of
   labelings and for the labelings a class realizes on sample points.
 - `natarajanSum_le`, `ncard_le_card_pow_natarajanDim`: the polynomial form of Lemma 29.4.
+- `natarajanSum_le_sum_choose_mul`: `natarajanSum n k d ≤ (∑_{i ≤ d} (n choose i)) k ^ (2 d)`, which
+  transfers bounds on partial binomial sums to Natarajan's lemma.
 
 ## References
 
@@ -425,9 +427,9 @@ private theorem card_le_natarajanSum [Fintype β] :
         _ = natarajanSum (n + 1) (Fintype.card β) (d + 1) := by
           rw [sum_const, card_powersetCard, card_univ, smul_eq_mul, natarajanSum_succ]
 
-/-- **Natarajan's lemma** [ShalevShwartzBenDavid2014, Lemma 29.4 and Exercise 29.3]: a set of
-labelings of `n` points with `k` labels whose N-shattered finite sets have at most `d` points has
-at most `∑_{i ≤ d} (n choose i) (k choose 2) ^ i` elements. -/
+/-- **Natarajan's lemma** [ShalevShwartzBenDavid2014, Lemma 29.4 and Chapter 29, Exercise 3]: a
+set of labelings of `n` points with `k` labels whose N-shattered finite sets have at most `d` points
+has at most `∑_{i ≤ d} (n choose i) (k choose 2) ^ i` elements. -/
 theorem ncard_le_natarajanSum [Fintype β] {n d : ℕ} {R : Set (Fin n → β)}
     (hR : ∀ W : Finset (Fin n), NatarajanShatters R ↑W → W.card ≤ d) :
     R.ncard ≤ natarajanSum n (Fintype.card β) d := by
