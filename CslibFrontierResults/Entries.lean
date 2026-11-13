@@ -1545,7 +1545,8 @@ register_result "srm-nonuniform-learnability" where
     explicit rate ε i m δ for m > 0 and δ > 0 with ε i m δ → 0; the learner for accuracy ε and \
     confidence δ is an SRM rule over pairs (i, h) and may depend on (ε, δ), following the \
     upstream IsPACLearnable conventions. Countable classes need measurable misclassification \
-    sets. The converse characterization (Theorem 7.2) is not proved."
+    sets. Theorem 7.5's explicit sample complexity is not stated, only learnability. The \
+    converse characterization (Theorem 7.2) is not proved."
 
 register_result "mdl-bound" where
   title := "Minimum description length bound for prefix-free descriptions"
