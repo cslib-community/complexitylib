@@ -117,9 +117,13 @@ zero-input and pure-wiring circuits are included.
 The `arithmetic_simulates_boolean` and `boolean_simulates_arithmetic` gate-budget certificates
 also work with the generic `Circuit.exists_simulationWithCost` API. These are circuit-value
 and nonuniform size results, not formal polynomial identities or certified translation runtimes.
-They establish the GF(2) milestone, not the exercise for every fixed finite field; the latter
-still needs finite-field encodings and the arithmetic-to-Boolean direction. Existing `Synthesis.bitBlast`
-handles an equivalence to a fixed-width bit cube and should be reused where applicable.
+For an arbitrary fixed finite field, use `c.exists_finite_boolean I hArity`
+with the encoding of the finite carrier above for the arithmetic-to-Boolean direction,
+and `Boolean.exists_ring_simulation` for the Boolean-to-arithmetic direction. Together
+they give both value simulations with constant factors for that field. The forward
+guarantee covers every output on valid encoded inputs. Uniform compiler/runtime
+certificates, formal-polynomial identities and behavior on unused code words are
+outside these statements.
 Run `scripts/build.sh CslibFrontierTests.BooleanArithmetic` for the
 [checked clients](../../CslibFrontierTests/BooleanArithmetic.lean): multiple XOR/AND and OR/NOT
 outputs, zero-input constants and zero-gate wiring.
