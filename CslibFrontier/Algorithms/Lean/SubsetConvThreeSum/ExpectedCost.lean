@@ -174,48 +174,6 @@ private theorem exists_bad_le : ∃ C : ℝ, ∀ m : ℕ, 1 ≤ m →
   gcongr
   exact d_succ_le hm
 
-/-- Dividing `q S ≤ X (q R + Y)` by `q ≥ 2 ^ D`. -/
-private theorem le_mul_of_mul_le {q S X R Y P : ℝ} (hP : 0 < P) (hq : P ≤ q) (hY : 0 ≤ Y)
-    (hX : 0 ≤ X) (h : q * S ≤ X * (q * R + Y)) : S ≤ (R + Y / P) * X := by
-  have hq0 : 0 < q := hP.trans_le hq
-  have hYq : Y / q ≤ Y / P := div_le_div_of_nonneg_left hY hP hq
-  calc S = q * S / q := by field_simp
-    _ ≤ X * (q * R + Y) / q := by gcongr
-    _ = (R + Y / q) * X := by field_simp
-    _ ≤ (R + Y / P) * X := by gcongr
-
-/-- The expected cost for one prime `q ≥ 2 ^ d` of the window: at most
-`3 |A| + 3 |B| + |C| + μ G₀ + (|A_bad| |B| + |A| |B_bad|) + μ G₁ |C| (d choose 2 t) / 2 ^ d`. -/
-private theorem avg_le_of_prime {m q : ℕ} [Fact q.Prime] (hq : 2 ^ d m ≤ q) (A B C : List ℕ) :
-    (∑ ss ∈ Fintype.piFinset (fun _ : Fin (μ m) => seeds q),
-        ((threeSumM (d m) (t m) (s m) q (List.ofFn ss) A B C).time : ℝ)) /
-        (#(seeds q) : ℝ) ^ μ m ≤
-      ((3 * A.length + 3 * B.length + C.length +
-        μ m * (2 * A.length + 2 * B.length + C.length + 3 * (d m + 1) * pre m) : ℕ) : ℝ) +
-      (((A.filter fun a => decide (¬ Isolated q A a)).length * B.length +
-        A.length * (B.filter fun b => decide (¬ Isolated q B b)).length : ℕ) : ℝ) +
-      ((μ m * ((2 + 3 * (d m + 1) * query m) * (C.length * (d m).choose (2 * t m))) : ℕ) : ℝ) /
-        2 ^ d m := by
-  have hs : s m ≤ 2 * t m := by unfold s t; omega
-  have h : q * ∑ ss ∈ Fintype.piFinset (fun _ : Fin (μ m) => seeds q),
-        (threeSumM (d m) (t m) (s m) q (List.ofFn ss) A B C).time ≤
-      #(seeds q) ^ μ m * (q * (3 * A.length + 3 * B.length + C.length +
-        (A.filter fun a => decide (¬ Isolated q A a)).length * B.length +
-        A.length * (B.filter fun b => decide (¬ Isolated q B b)).length +
-        μ m * (2 * A.length + 2 * B.length + C.length + 3 * (d m + 1) * pre m)) +
-        μ m * ((2 + 3 * (d m + 1) * query m) * (C.length * (d m).choose (2 * t m)))) :=
-    mul_sum_time_threeSumM_le hq hs A B C
-  have hseeds : (0 : ℝ) < #(seeds q) := by
-    have := (Fact.out : q.Prime).two_le
-    rw [card_seeds]
-    exact_mod_cast Nat.mul_pos (by omega) (by positivity)
-  rw [← Nat.cast_sum, div_le_iff₀ (by positivity)]
-  refine le_mul_of_mul_le (P := (2 : ℝ) ^ d m) (q := q) (by positivity) (by exact_mod_cast hq)
-    (by positivity) (by positivity) ?_
-  have h' := (Nat.cast_le (α := ℝ)).2 h
-  push_cast at h' ⊢
-  linarith
-
 /-- There is at least one extra trial: `#P ≤ 4 ^ (d + 2)`, so `1 ≤ U`. -/
 private theorem one_le_trials (m : ℕ) : 1 ≤ 4 ^ (d m + 2) / numPairs m := by
   have h2t : 2 * t m ≤ d m := by unfold d t; omega
@@ -238,12 +196,7 @@ private theorem one_le_query (m : ℕ) : 1 ≤ query m := by
 /-- The expected cost of `threeSumM` with the parameters for unit `m`, over a uniform prime `q` of
 the window and `μ m` uniform seeds (a non-prime contributes `0`; the window has only primes). -/
 @[expose] noncomputable def avgTime (m : ℕ) (A B C : List ℕ) : ℝ :=
-  (∑ q ∈ primeWindow (d m), if h : q.Prime then
-      haveI : Fact q.Prime := ⟨h⟩
-      (∑ ss ∈ Fintype.piFinset (fun _ : Fin (μ m) => seeds q),
-        ((threeSumM (d m) (t m) (s m) q (List.ofFn ss) A B C).time : ℝ)) /
-        (#(seeds q) : ℝ) ^ μ m
-    else 0) / #(primeWindow (d m))
+  avgTimeOf (fun _ σ => trialM (d m) (t m) (s m) σ) (μ m) (d m) A B C
 
 /-- **The expected cost is truly subquadratic**: there is `K` such that for every unit `m ≥ 1` and
 duplicate-free `A`, `B` and any `C` with at most `n = 2 ^ (100 m)` elements, all below
@@ -274,18 +227,12 @@ theorem exists_avgTime_le (κ : ℕ) : ∃ K : ℝ, ∀ m : ℕ, 1 ≤ m → ∀
   set bad : ℕ → ℕ := fun q => (A.filter fun a => decide (¬ Isolated q A a)).length * B.length +
     A.length * (B.filter fun b => decide (¬ Isolated q B b)).length with hbad
   have hsum : avgTime m A B C ≤ R₀ + Y / 2 ^ d m + ((∑ q ∈ W, bad q : ℕ) : ℝ) / #W := by
-    have hw0' : (0 : ℝ) < #W := by exact_mod_cast hw0
-    unfold avgTime
-    rw [← hW, div_le_iff₀ hw0', add_mul, div_mul_cancel₀ _ hw0'.ne']
-    calc _ ≤ ∑ q ∈ W, (((R₀ : ℝ) + Y / 2 ^ d m) + (bad q : ℝ)) := by
-          refine sum_le_sum fun q hq => ?_
-          obtain ⟨hp, hq2, -⟩ := mem_primeWindow.1 hq
-          simp only [hp, ↓reduceDIte]
-          have : Fact q.Prime := ⟨hp⟩
-          have := avg_le_of_prime (m := m) hq2 A B C
-          simp only [hbad]
-          linarith
-      _ = _ := by rw [sum_add_distrib, sum_const, nsmul_eq_mul, Nat.cast_sum]; ring
+    have hs : s m ≤ 2 * t m := by unfold s t; omega
+    refine avgTimeOf_le (card_pos.mp hw0) fun q hq _ => ?_
+    have h := mul_sum_time_threeSumM_le (μ := μ m) (mem_primeWindow.1 hq).2.1 hs A B C
+    refine h.trans_eq ?_
+    simp only [hR₀, hYdef, hbad, pre, query]
+    ring
   -- the bad elements: `∑_q bad q ≤ 2 κ n ^ 3 ≤ 6 κ (d + 1) 2 ^ (181 m) #W`
   have hlog : Nat.log 2 (2 ^ (100 * κ * m)) = 100 * κ * m := Nat.log_pow (by norm_num) _
   have hbadA := mul_sum_length_bad_le (d := d m) hA hAM
