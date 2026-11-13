@@ -1443,11 +1443,6 @@ private theorem handle_execMachine_fcom_query_one_idle {AdvQ AdvR : Type}
       pure ((none : execSpec 2 CommitmentInput CommitmentOutput AdvQ AdvR (Sum.inl (1, .query))),
         fcomExecState S₀ κ {0} st .idle) := rfl
 
-private theorem pmf_bind_eq_pure {α β : Type} (p : PMF α) (f : α → PMF β) (b : β)
-    (h : ∀ a, f a = PMF.pure b) : (p >>= f) = PMF.pure b := by
-  change p.bind f = PMF.pure b
-  simp only [funext h, PMF.bind_const]
-
 /-- When `fcom` is locked to `bStar` (state `CommitmentState.active bStar phase`), running
 `corruptCommitterSuffix S₁ (!bStar) κ (some (st₁, recDel₁))` against
 `execMachine fcom.toProtocol S₀ κ {0}` always outputs `false`. -/
@@ -1468,7 +1463,8 @@ private theorem eval_corruptCommitterSuffix_locked_not
   · simp only [Machine.runFrom_bind, Machine.runFrom_sample,
       Machine.closeProgram_bind, Machine.closeProgram_sample,
       bind_map_left, map_bind, ProbComp.eval_bind]
-    refine pmf_bind_eq_pure _ _ false fun r₂ => ?_
+    refine (bind_congr (g := fun _ => PMF.pure false) fun r₂ => ?_).trans
+      (PMF.bind_const _ _)
     rcases r₂ with _ | ⟨_ | o | _⟩
     · rfl
     · rfl
@@ -1479,7 +1475,8 @@ private theorem eval_corruptCommitterSuffix_locked_not
           map_bind, Functor.map_map]
         rw [handle_fcomLocked_inr]
         simp only [Machine.closeProgram_map, bind_map_left, ProbComp.eval_bind]
-        refine pmf_bind_eq_pure _ _ false fun x => ?_
+        refine (bind_congr (g := fun _ => PMF.pure false) fun x => ?_).trans
+          (PMF.bind_const _ _)
         rw [handle_fcomLocked_query_one]
         rcases fcomLockedRouterPhase bStar x.2 with ⟨_ | _, _ | _, _ | _⟩ <;> cases bStar <;> rfl
     · rfl

@@ -128,14 +128,15 @@ abbrev encReplayInput : ℕ × List Bool × List Bool ↪ List Bool :=
 external channels supplied explicitly. Malformed output uses the existing total pair decoder. -/
 def savedWordReplay {k : ℕ} {Control Query : Type} {spec : OracleSpec Query}
     (machine : MultiTapePTM k Bool Control Bool)
-    (query : Bool → List Bool → OracleComp spec (List Bool)) (c d keyC keyD : ℕ)
-    (p : ℕ × List Bool × List Bool) : OracleComp spec (List Bool × List Bool) :=
-  if p.2.1.length ≤ keyC * (p.1 + 1) ^ keyD then
-    (Decoder.bits.pair Decoder.bits).decode <$>
-      machine.runCoins query
-        (p.2.2.take (c * ((encPair encUnary encBits (p.1, p.2.1)).length + 1) ^ d))
-        (encPair encUnary encBits (p.1, p.2.1))
-  else pure ([], [])
+    (query : Bool → List Bool → OracleComp spec (List Bool)) (c d keyC keyD : ℕ) :
+    ℕ × List Bool × List Bool → OracleComp spec (List Bool × List Bool)
+  | (n, pk, tape) =>
+    if pk.length ≤ keyC * (n + 1) ^ keyD then
+      (Decoder.bits.pair Decoder.bits).decode <$>
+        machine.runCoins query
+          (tape.take (c * ((encPair encUnary encBits (n, pk)).length + 1) ^ d))
+          (encPair encUnary encBits (n, pk))
+    else pure ([], [])
 
 /-- The complete guarded, truncated, decoded replay is strict oracle-PPT in its full input,
 including the security parameter, public key, and arbitrary saved tape. -/
@@ -143,7 +144,10 @@ including the security parameter, public key, and arbitrary saved tape. -/
     (machine : MultiTapePTM k Bool Control Bool) (c d keyC keyD : ℕ) :
     IsOraclePPTOn encReplayInput (encPair encBits encBits)
       (savedWordReplay machine (fun op word => ProbOracleComp.query (op, word)) c d keyC keyD) := by
-  unfold savedWordReplay
+  change IsOraclePPTOn encReplayInput (encPair encBits encBits) fun p : ℕ × List Bool × List Bool =>
+    savedWordReplay machine (fun op word => ProbOracleComp.query (op, word)) c d keyC keyD
+      (p.1, p.2.1, p.2.2)
+  simp only [savedWordReplay]
   apply IsOraclePPTOn.ite'
   · fun_prop
   · apply IsOraclePPTOn.map' _ (Decoder.bits.pair Decoder.bits).computableInPolyTime
@@ -182,17 +186,16 @@ theorem routeWordProgram_savedWordReplay {k : ℕ} {Control : Type}
       (savedWordReplay machine (fun op word => ProbOracleComp.query (op, word))
         c d keyC keyD (n, pk, coins)) =
     liftOracleForger ((savedCoinForger machine digestEncoding c d keyC keyD n).forge pk coins) := by
-  unfold savedCoinForger savedWordReplay
+  unfold savedCoinForger
+  simp only [savedWordReplay]
   split
-  · rename_i hpk
-    change interpret _ ((Decoder.bits.pair Decoder.bits).decode <$> _) = _
+  · change interpret _ ((Decoder.bits.pair Decoder.bits).decode <$> _) = _
     rw [interpret_map]
     change (Decoder.bits.pair Decoder.bits).decode <$>
       routeWordProgram digestEncoding (machine.runCoins _ _ _) = _
     rw [routeWordProgram_runCoins]
-    simp only [liftOracleForger, ite_eq_left hpk, interpret_map]
-  · rename_i hpk
-    simp only [routeWordProgram, liftOracleForger, ite_eq_right hpk, interpret_pure]
+    simp only [liftOracleForger, interpret_map]
+  · simp only [routeWordProgram, liftOracleForger, interpret_pure]
 
 /-- Signing and hashing each cost at most one external call in the word routing. -/
 theorem isQueryBounded_wordQuery (digestEncoding : Digest ↪ List Bool) (op : Bool)

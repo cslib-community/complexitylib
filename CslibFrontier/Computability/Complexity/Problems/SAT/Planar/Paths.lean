@@ -64,7 +64,7 @@ theorem occurrence_index_lt {φ : CNF ℕ} {o : Occurrence ℕ}
 theorem incidenceGraph_edge_idxOf {φ : CNF ℕ} {o : Occurrence ℕ}
     (ho : o ∈ Cslib.Logic.PL.occurrences φ) :
     (SAT.incidenceGraph φ).2[(Cslib.Logic.PL.occurrences φ).idxOf o]'(occurrence_index_lt ho) =
-      (φ.distinctVars.idxOf o.2.2.1, φ.distinctVars.length + o.1) := by
+      (φ.distinctVars.idxOf o.lit.1, φ.distinctVars.length + o.clause) := by
   simp only [SAT.incidenceGraph, List.getElem_map]
   rw [List.getElem_idxOf (List.idxOf_lt_length_of_mem ho)]
 
@@ -93,8 +93,8 @@ theorem occurrencePath_ne_nil {φ : CNF ℕ} {o : Occurrence ℕ}
 /-- Actual occurrence paths start at the variable's source-grid center and end at their clause. -/
 theorem occurrencePath_endpoints {φ : CNF ℕ} {o : Occurrence ℕ}
     (ho : o ∈ Cslib.Logic.PL.occurrences φ) :
-    (occurrencePath φ o).head? = some (Layout.center (φ.distinctVars.idxOf o.2.2.1)) ∧
-      (occurrencePath φ o).getLast? = some (Layout.center (φ.distinctVars.length + o.1)) := by
+    (occurrencePath φ o).head? = some (Layout.center (φ.distinctVars.idxOf o.lit.1)) ∧
+      (occurrencePath φ o).getLast? = some (Layout.center (φ.distinctVars.length + o.clause)) := by
   have hi := occurrence_index_lt ho
   have h := Graph.unitPath_endpoints (SAT.incidenceGraph φ)
     (fun _ => SAT.incidenceGraph_endpoints) (fun _ => SAT.incidenceGraph_loopless) hi
@@ -104,9 +104,9 @@ theorem occurrencePath_endpoints {φ : CNF ℕ} {o : Occurrence ℕ}
   simp only [Graph.edgeEndpoint, Bool.false_eq_true, ↓reduceIte] at h
   simp only [List.getD_eq_getElem _ _ hi, he] at h
   change (occurrencePath φ o).head? =
-      some (Layout.center ((List.range _).idxOf (φ.distinctVars.idxOf o.2.2.1))) ∧
+      some (Layout.center ((List.range _).idxOf (φ.distinctVars.idxOf o.lit.1))) ∧
     (occurrencePath φ o).getLast? =
-      some (Layout.center ((List.range _).idxOf (φ.distinctVars.length + o.1))) at h
+      some (Layout.center ((List.range _).idxOf (φ.distinctVars.length + o.clause))) at h
   rw [List.idxOf_range_of_lt (by omega), List.idxOf_range_of_lt hb.2.2] at h
   exact h
 
@@ -115,13 +115,11 @@ theorem occurrencePath_length_ge_two {φ : CNF ℕ} {o : Occurrence ℕ}
     (ho : o ∈ Cslib.Logic.PL.occurrences φ) : 2 ≤ (occurrencePath φ o).length := by
   have hne := occurrencePath_ne_nil ho
   have hend := occurrencePath_endpoints ho
-  have hi : φ.distinctVars.idxOf o.2.2.1 < φ.distinctVars.length := by
+  have hi : φ.distinctVars.idxOf o.lit.1 < φ.distinctVars.length := by
     apply List.idxOf_lt_length_of_mem
-    apply CNF.mem_distinctVars.mpr
-    rw [← Cslib.Logic.PL.map_occurrences]
-    exact List.mem_map_of_mem ho
-  have hcenters : Layout.center (φ.distinctVars.idxOf o.2.2.1) ≠
-      Layout.center (φ.distinctVars.length + o.1) := by
+    exact CNF.mem_distinctVars.mpr (Cslib.Logic.PL.variable_mem_of_mem_occurrences ho)
+  have hcenters : Layout.center (φ.distinctVars.idxOf o.lit.1) ≠
+      Layout.center (φ.distinctVars.length + o.clause) := by
     intro heq
     have hx := congrArg Prod.fst heq
     simp only [Layout.center] at hx

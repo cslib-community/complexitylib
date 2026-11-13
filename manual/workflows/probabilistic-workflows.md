@@ -78,6 +78,12 @@ condition, a relabeling and an almost sure event. For a two-stage law
 `a` and keeps the kernel. When the second draw is independent of the first,
 `filter_bind_pair_prod` conditions both factors on a rectangle `s ×ˢ t`, and
 `map_snd_filter_bind_pair_prod` shows that the condition on `a` does not affect the law of `b`.
+To state that two observables of a PMF are independent, import
+[PMF/Independence.lean](../../CslibFrontier/Probability/PMF/Independence.lean):
+`indepFun_iff_map_pair_eq_bind` identifies Mathlib's `IndepFun f g p.toMeasure` with this
+two-stage form `p.map (f, g) = (p.map f).bind fun a => (p.map g).map (a, ·)`. When `Y` is
+moreover uniform on a finite type, state `IndepUniform ν X Y`, consume it with `.map_pair_eq`,
+and use `indepUniform_iff` to split it into `IndepFun` and `ν.map Y = uniformOfFintype _`.
 
 Import [StatisticalDistance/Event.lean](../../CslibFrontier/Probability/StatisticalDistance/Event.lean)
 to turn a distance bound into event bounds. Here `dist` is cslib's statistical distance on PMFs
@@ -95,19 +101,26 @@ distinguisher `T` outputs `b`. `dist_map_of_injective` keeps the distance unchan
 injective relabeling. For a second-moment tail bound on a finite PMF without measure-theoretic side
 conditions, import [PMF/Chebyshev.lean](../../CslibFrontier/Probability/PMF/Chebyshev.lean): by
 `sum_mul_ite_le_sum_mul_sq_div`, the mass where `|f a − m| ≥ c` is at most
-`∑ a, p(a) (f a − m)² / c²`. Import
+`∑ a, p(a) (f a − m)² / c²`. The first-moment form for a function `f` with values in `[0, 1]`
+is `toOuterMeasure_toReal_le_tsum_div` in
+[PMF/Markov.lean](../../CslibFrontier/Probability/PMF/Markov.lean). Import
 [Product/Split.lean](../../CslibFrontier/Probability/Product/Split.lean) to split an independent
 product `pi p` along a predicate `P`: by `pi_map_piEquivPiSubtypeProd`, the coordinates
 satisfying `P` and the remaining coordinates form two independent products. Its corollaries
 `pi_map_restrict` and `pi_map_comp_injective` give the marginal law: restricting `pi p` to the
 coordinates satisfying `P`, or reading it along an injection `e` of index types as
-`fun a k => a (e k)`, gives the independent product of the selected factors. Use these instead of
-counting tuples when the factors are not uniform. `pi_map_curry` in
+`fun a k => a (e k)`, gives the independent product of the selected factors. For a product indexed
+by a sum type `ι ⊕ κ`, `bind_pi_sum` samples the two summands as independent products inside a
+`bind`. Use these instead of counting tuples when the factors are not uniform. `pi_map_curry` in
 [Product/Reindex.lean](../../CslibFrontier/Probability/Product/Reindex.lean) splits a product
 indexed by `ι × κ` into independent blocks, and `toOuterMeasure_pi_forall` in
 [Product/Event.lean](../../CslibFrontier/Probability/Product/Event.lean) is the probability of a
-box `{u | ∀ i, u i ∈ E i}`. To move a finite statistic of i.i.d. samples from a measure into this
-setting, import [Product/MapMeasure.lean](../../CslibFrontier/Probability/Product/MapMeasure.lean):
+box `{u | ∀ i, u i ∈ E i}`. For `Fin k`-indexed tuples with different factors, `PMF.piFin` in
+[IID.lean](../../CslibFrontier/Probability/IID.lean) generalizes `iid`, and
+[IID/Event.lean](../../CslibFrontier/Probability/IID/Event.lean) gives its box and union bounds
+`toOuterMeasure_piFin_forall` and `toOuterMeasure_toReal_piFin_exists_le`. To move a finite
+statistic of i.i.d. samples from a measure into this setting, import
+[Product/MapMeasure.lean](../../CslibFrontier/Probability/Product/MapMeasure.lean):
 `map_measurePi_eq_toMeasure_pi` identifies the image of `Measure.pi μ` under coordinatewise
 almost everywhere measurable maps into finite types with
 `(pi fun i => ((μ i).map (g i)).toPMF).toMeasure`. The finite-product bounds then apply:
@@ -1533,6 +1546,32 @@ reuse its laws and native efficiency certificates. Substitution preserves the fr
 it does not by itself certify its runtime. This separation follows VCVio's treatment of
 [untouched oracle effects](https://github.com/Verified-zkEVM/VCVio/blob/87bc1892fff1982e97cfd8c7303c9d1f2bfdc2f9/VCVio/OracleComp/SimSemantics/Append/Core.lean).
 
+## Run a word adversary against a typed oracle
+
+When a game's adversary sends word requests but the oracle is naturally typed, import
+[Oracle/Codec.lean](../../CslibFrontier/Languages/Probabilistic/Oracle/Codec.lean) and describe
+the channel once as an `OracleCodec Op Q spec`: `encodeQuery` writes each query as a request,
+`decodeQuery` recognizes exactly those requests, and `encodeReply` writes each reply. Then
+`c.adapt P` runs the word program `P` against the typed oracle, answering requests that carry no
+query with `[]` and no call. Do not write the decoding handler by hand.
+
+`OracleCodec.run_adapt` and `OracleCodec.runWith_adapt` say that the typed run of `c.adapt P` is
+the word run of `P` against `c.wordOracle O`. So a word game equals the typed game of the adapted
+adversary exactly when its oracle is `c.wordOracle` of the typed one: it answers requests carrying
+no query with `[]`, leaving its state unchanged, and answers the others through the typed oracle.
+Prove that once for the game's oracle, as a pointwise equation, and keep the word channel when it
+fails. `isQueryBounded_adapt` keeps the adversary's budget; `isCostBounded_adapt` keeps a general
+cost budget when each query costs at most its request.
+
+`OracleCodec.bitString n` carries `n`-bit strings on a single channel. `comap` transports a codec
+along an equivalence of queries, and `withOp` puts one copy of a single-channel codec on each
+channel. In [the Luby–Rackoff reduction](../../CslibFrontier/Crypto/Computational/LubyRackoff.lean),
+`pairCodec` and `strongPairCodec` are built this way, and `pairCodec_wordOracle` and
+`strongPairCodec_wordOracle` are the pointwise equations for its random-permutation games. The
+[checked client](../../CslibFrontierTests/OracleCodec.lean) runs a word adversary with one
+malformed and one well-formed request against a stateful typed oracle. Check it with
+`scripts/build.sh --wfail --iofail CslibFrontierTests.OracleCodec`.
+
 ## Compare two runs one step at a time
 
 To relate the laws of two loops, prove the relation for one step and lift it. Import
@@ -1693,7 +1732,7 @@ First specify the operation set and request representation. Then bound the amoun
 
 Next inspect behavior under a concrete handler. The same client defines `counting`, which increments a counter on every call. Its semantic examples establish final count one on the unselected branch and two on the selected branch. This catches interaction differences that equality of output marginals could hide. For the simpler `runWith` interface, open [CslibFrontierTests/OracleSemantics.lean](../../CslibFrontierTests/OracleSemantics.lean).
 
-Use `adaptive_isOraclePPTOn.query_bounds` to obtain polynomial bounds on external call count and request length. A separately proved `IsCostBounded` charges chosen requests along every path; `ProbOracleComp.IsQueryBounded` counts external calls rather than private samples. Neither bound by itself pays for arbitrary Lean callbacks. For an average rather than a worst-case charge, [QueryCount/Expected.lean](../../CslibFrontier/Languages/Probabilistic/QueryCount/Expected.lean) defines `OracleComp.expectedCost handler cost program`, the expected total cost when the calls are answered by PMF-valued `handler`. `expectedCost_bind` is Wald's identity for sequencing, `expectedCost_interpret` follows a handler substitution, and `expectedCost_le_of_isCostBounded` bounds the expectation by a pathwise `IsCostBounded` budget. The [local-decoding model](../circuits-logic-and-other-models/query-and-communication.md#locally-decodable-codes) measures smoothness this way.
+Use `adaptive_isOraclePPTOn.query_bounds` to obtain polynomial bounds on external call count and request length. A separately proved `IsCostBounded` charges chosen requests along every path; `ProbOracleComp.IsQueryBounded` counts external calls rather than private samples. Neither bound by itself pays for arbitrary Lean callbacks. A call budget `n` becomes a cost budget `n * c` when every call, or every call satisfying a `QueriesSatisfy` predicate, costs at most `c` ([QueryCount/Scale.lean](../../CslibFrontier/Languages/Probabilistic/QueryCount/Scale.lean)). For an average rather than a worst-case charge, [QueryCount/Expected.lean](../../CslibFrontier/Languages/Probabilistic/QueryCount/Expected.lean) defines `OracleComp.expectedCost handler cost program`, the expected total cost when the calls are answered by PMF-valued `handler`. `expectedCost_bind` is Wald's identity for sequencing, `expectedCost_interpret` follows a handler substitution, and `expectedCost_le_of_isCostBounded` bounds the expectation by a pathwise `IsCostBounded` budget. The [local-decoding model](../circuits-logic-and-other-models/query-and-communication.md#locally-decodable-codes) measures smoothness this way.
 
 **When it fails:** if `fun_prop` fails on returning an entire oracle reply, check whether the requested conclusion permits unbounded output. The linked client contains explicit failure examples and the bounded-prefix repair.
 

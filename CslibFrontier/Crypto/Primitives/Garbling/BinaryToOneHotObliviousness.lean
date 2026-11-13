@@ -262,11 +262,9 @@ private theorem eval_run_reduction (H : L → T → L)
     ProbComp.eval ((reduction H tw n x D).run fun q => pure (f q)) =
       (PMF.uniformOfFintype (Fin (n + 1) → L)).bind fun A =>
         ProbComp.eval (D (A, (runSteps H tw f n x A).1)) := by
-  have hself : ∀ {α : Type} (p : ProbComp α), OracleComp.interpret ProbComp.unifFin p = p :=
-    fun p => OracleComp.interpret_query_eq_self p
   simp only [ProbOracleComp.run, reduction, OracleComp.interpret_bind,
-    ProbOracleComp.interpret_sample, hself, interpret_oracleSteps, pure_bind, ProbComp.eval_bind,
-    ProbComp.eval_uniform]
+    ProbOracleComp.interpret_sample, ProbComp.interpret_unifFin, interpret_oracleSteps, pure_bind,
+    ProbComp.eval_bind, ProbComp.eval_uniform]
 
 /-- **Real side**: against the keyed oracle, the reduction plays the real experiment. -/
 theorem realGame_reduction [Module (ZMod 2) L] [Fintype Key] [Nonempty Key] (H : L → T → L)

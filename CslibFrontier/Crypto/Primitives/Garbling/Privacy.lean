@@ -388,11 +388,10 @@ private theorem eval_run_reduction (C : Circuit σ n m) (I : Interpretation σ B
         (PMF.uniformOfFintype (Wire n C.size → Bool)).bind fun perm =>
           (PMF.uniformOfFintype (Row C.topology → K × Bool)).bind fun R =>
             ProbComp.eval (D (hybridView C I F tw x j key perm R fun p => f (tw p))) := by
-  have hself : ∀ {α : Type} (p : ProbComp α), OracleComp.interpret ProbComp.unifFin p = p :=
-    fun p => OracleComp.interpret_query_eq_self p
   simp only [ProbOracleComp.run, reduction, OracleComp.interpret_bind,
-    ProbOracleComp.interpret_sample, hself, ProbOracleComp.interpret_tabulate, pure_bind,
-    ProbComp.eval_bind, ProbComp.eval_uniform, Finset.mem_toList, Finset.mem_univ, ite_true]
+    ProbOracleComp.interpret_sample, ProbComp.interpret_unifFin, ProbOracleComp.interpret_tabulate,
+    pure_bind, ProbComp.eval_bind, ProbComp.eval_uniform, Finset.mem_toList, Finset.mem_univ,
+    ite_true]
 
 /-- Hybrid `0` is the real experiment. -/
 private theorem hybridGame_zero (C : Circuit σ n m) (I : Interpretation σ Bool)

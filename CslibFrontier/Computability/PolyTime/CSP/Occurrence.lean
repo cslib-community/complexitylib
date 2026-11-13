@@ -44,7 +44,6 @@ theorem computableInPolyTime_occurrences (encRel : Rel ↪ List Bool) (encV : V 
       (encCSP encRel encV) (encList (encOccurrenceRecord encV)) := by
   have ho := Cslib.Logic.PL.computableInPolyTime_occurrences encV
   have hv := computableInPolyTime_varCNF encRel encV
-  unfold Cslib.Logic.PL.encOccurrence at ho
   unfold CSP.occurrences encOccurrenceRecord
   fun_prop
 

@@ -28,8 +28,22 @@ on valid encoded inputs, with no source semantics promised for unused code words
 count as gates and wiring is free, with no additive input-size cost. The linked
 [clients](../../CslibFrontierTests/BitBlastEncoding.lean) check addition over `ZMod 3` on all
 field inputs and a zero-cost wiring circuit with repeated outputs. This supplies the forward
-circuit simulation with an explicit encoding; constructing encodings and the reverse general-field
-simulation remain separate obligations of the finite-field exercise.
+circuit simulation with an explicit encoding. For finite carriers the encoding is supplied
+below. The reverse direction is supplied by the ring simulation described below.
+
+For a finite nonempty carrier, import
+[Boolean.FiniteSimulation](../../CslibFrontier/Computability/Circuit/Boolean/FiniteSimulation.lean)
+and use `c.exists_finite_boolean I hArity`. No encoding argument is needed: the theorem uses
+`BitString.fintypeEncoding F`, which enumerates `F` by `Fintype.equivFin` and applies the
+existing least-significant-bit-first `indexBits` embedding. Each value occupies
+`w = Nat.clog 2 (Fintype.card F)` bits. Pack inputs as
+`BitString.blocksEquiv.symm (BitString.fintypeEncoding F ∘ x)`; every output has the same
+layout. The size bound is `c.size * bitBlastCost w`, a constant factor for a fixed carrier.
+The encoding is fixed independently of the circuit. This proves the arithmetic-to-Boolean
+direction for any fixed finite field, under these explicit value and gate-count conventions.
+The enumeration and total decoder are noncomputable: there is no uniform encoding or compiler
+runtime certificate. The [clients](../../CslibFrontierTests/BitBlastEncoding.lean) include
+`ZMod 3` with no supplied encoding and a singleton carrier requiring zero bits and zero gates.
 
 The generic `bitBlast_program`, `bitBlast` and `bitBlast_synthesis` APIs in
 [Boolean.BitBlast](../../CslibFrontier/Computability/Circuit/Boolean/BitBlast.lean) now take
@@ -37,10 +51,13 @@ The generic `bitBlast_program`, `bitBlast` and `bitBlast_synthesis` APIs in
 `enc`, `enc.symm`, `enc.symm_apply_apply`; `bitsOf` accepts the encoding function directly.
 Run `scripts/build.sh CslibFrontierTests.BitBlastEncoding` for
 [clients](../../CslibFrontierTests/BitBlastEncoding.lean) using the odd field `ZMod 3`, an unused
-code word, modulo-three addition and zero-width synthesis over a singleton. This advances one
-synthesis direction of Arora–Barak Chapter 14 Exercise 1, including compilation on free input
-wires. Encoding construction and the reverse general-field direction remain open under
-[#4711](https://github.com/cslib-community/cslib-frontier/issues/4711).
+code word, modulo-three addition and zero-width synthesis over a singleton. Together with
+`Boolean.exists_ring_simulation` below, this supplies both constant-factor value-simulation
+directions of Arora–Barak Chapter 14 Exercise 1 for each fixed finite field, with free input
+wires and an explicit finite-carrier encoding. This does not assert formal polynomial identity,
+uniform compiler runtime or correctness of the forward encoding on unused bit words.
+The broader [textbook objective](https://github.com/cslib-community/cslib-frontier/issues/4711)
+remains open.
 
 [SigmaPiOp](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Arithmetic/SigmaPi.lean#L109) permits unbounded sums with edge coefficients and unbounded products. Product depth counts multiplication layers only; weighted sums contribute zero to that depth. Set-multilinearity records that products combine disjoint variable groups. [SPCircuit](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Circuit/Arithmetic/SPCircuit.lean#L89) provides shared DAGs in this basis. Its `IsSimple` condition requires distinct input wires at product gates; the unfolding bound used by the constant-product-depth lower-bound development assumes this condition.
 
@@ -80,7 +97,8 @@ gates; subtraction is implemented using the constant `-1`, which is counted in t
 Wiring is free. The zero/one representation is faithful when `R` is nontrivial.
 
 This supplies the Boolean-to-arithmetic direction of the finite-field exercise independently
-of characteristic. The arithmetic-to-Boolean direction needs an encoding of field elements.
+of characteristic. The finite-carrier construction above supplies the field-element encoding
+for the arithmetic-to-Boolean direction.
 These are value simulations, without compiler-runtime or formal-polynomial identity claims.
 Run `scripts/build.sh CslibFrontierTests.BooleanArithmetic` for the
 [complete clients](../../CslibFrontierTests/BooleanArithmetic.lean), including all Boolean
@@ -99,9 +117,13 @@ zero-input and pure-wiring circuits are included.
 The `arithmetic_simulates_boolean` and `boolean_simulates_arithmetic` gate-budget certificates
 also work with the generic `Circuit.exists_simulationWithCost` API. These are circuit-value
 and nonuniform size results, not formal polynomial identities or certified translation runtimes.
-They establish the GF(2) milestone, not the exercise for every fixed finite field; the latter
-still needs finite-field encodings and the arithmetic-to-Boolean direction. Existing `Synthesis.bitBlast`
-handles an equivalence to a fixed-width bit cube and should be reused where applicable.
+For an arbitrary fixed finite field, use `c.exists_finite_boolean I hArity`
+with the encoding of the finite carrier above for the arithmetic-to-Boolean direction,
+and `Boolean.exists_ring_simulation` for the Boolean-to-arithmetic direction. Together
+they give both value simulations with constant factors for that field. The forward
+guarantee covers every output on valid encoded inputs. Uniform compiler/runtime
+certificates, formal-polynomial identities and behavior on unused code words are
+outside these statements.
 Run `scripts/build.sh CslibFrontierTests.BooleanArithmetic` for the
 [checked clients](../../CslibFrontierTests/BooleanArithmetic.lean): multiple XOR/AND and OR/NOT
 outputs, zero-input constants and zero-gate wiring.

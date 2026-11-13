@@ -46,9 +46,9 @@ The proof composes four game hops for each challenge bit `b : Bool`:
 
 1. `eval_roIndCcaBotGame_eq_eagerIndCcaBotGame` and
    `eagerCoupledBotGame_eq_eagerIndCcaBotGame`: lazy/eager equivalence for `roIndCcaBotGame` and
-   oracle re-indexing via `coupledH` (`bind_pi_coupledH`), so that valid decapsulations read the
-   ciphertext key table `Hq c` while invalid ciphertexts return `none`. Both games are the `FO^⊥`
-   instance of the shared ROM IND-CCA experiment (`romIndCcaExperiment_bot`,
+   oracle re-indexing via `coupledH` (`bind_keyTable_coupledH`), so that valid decapsulations read
+   the ciphertext key table `Hq c` while invalid ciphertexts return `none`. Both games are the
+   `FO^⊥` instance of the shared ROM IND-CCA experiment (`romIndCcaExperiment_bot`,
    `eagerRomIndCcaExperiment_bot`), so the lazy/eager step is
    `Scheme.eval_romIndCcaExperiment_eq_eager`.
 2. `closeTo_cachedCoupledBotGame_eagerCoupledBotGame`: lazy-sampling simulation with `CloseTo`
@@ -171,13 +171,13 @@ noncomputable def eagerBotHandler (S : Scheme PK SK M R CT K) (G : M → R)
     cStar q
 
 /-- The eager random-oracle IND-CCA game for `FO^⊥`, defined directly from `S.pke.keyGen`,
-`S.encapsBot`, and `S.decapsBot` over eagerly sampled random functions `G : M → R` and
-`H : Bool × M × CT → K`. -/
+`S.encapsBot`, and `S.decapsBot` over eager random oracles `G ← S.coinTable` and
+`H ← S.keyTable (Bool × M × CT)`. -/
 noncomputable def eagerIndCcaBotGame [Fintype M] [Finite R] [Fintype CT] [Finite K]
     (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K) (b : Bool) : Game := do
   let (pk, sk) ← ProbComp.eval S.pke.keyGen
-  let G ← pi (α := fun _ : M => R) (fun _ => ProbComp.eval S.pke.sampleCoins)
-  let H ← pi (α := fun _ : Bool × M × CT => K) (fun _ => ProbComp.eval S.sampleKey)
+  let G ← S.coinTable
+  let H ← S.keyTable (Bool × M × CT)
   let (cStar, kReal) ← ProbComp.eval (S.encapsBot G H pk)
   let kRand ← ProbComp.eval S.sampleKey
   let kStar := if b then kRand else kReal
@@ -266,9 +266,9 @@ noncomputable def eagerCoupledBotHandler (S : Scheme PK SK M R CT K) (G : M → 
 noncomputable def eagerCoupledBotGame [Fintype M] [Finite R] [Fintype CT] [Finite K]
     (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K) (b : Bool) : Game := do
   let (pk, sk) ← ProbComp.eval S.pke.keyGen
-  let G ← pi (α := fun _ : M => R) (fun _ => ProbComp.eval S.pke.sampleCoins)
-  let Hq ← pi (α := fun _ : CT => K) (fun _ => ProbComp.eval S.sampleKey)
-  let Hraw ← pi (α := fun _ : Bool × M × CT => K) (fun _ => ProbComp.eval S.sampleKey)
+  let G ← S.coinTable
+  let Hq ← S.keyTable CT
+  let Hraw ← S.keyTable (Bool × M × CT)
   let mStar ← ProbComp.eval S.sampleMsg
   let cStar := encT S.pke G pk mStar
   let kRand ← ProbComp.eval S.sampleKey
@@ -307,7 +307,7 @@ theorem eagerCoupledBotGame_eq_eagerIndCcaBotGame [Fintype M] [Finite R] [Fintyp
   congr 1 with ⟨pk, sk⟩ : 1
   congr 1 with G : 1
   symm
-  rw [S.bind_pi_coupledH G pk sk]
+  rw [S.bind_keyTable_coupledH G pk sk]
   congr 1 with Hq : 1
   congr 1 with Hraw : 1
   congr 1 with mStar : 1
@@ -508,8 +508,8 @@ theorem closeTo_cachedCoupledBotGame_eagerCoupledBotGame
     refine Eq.symm (Eq.trans ?_
       (bind_pi_update (fun _ : M => ProbComp.eval S.pke.sampleCoins) mStar
         (fun rStar G =>
-          (pi (α := fun _ : CT => K) (fun _ => ProbComp.eval S.sampleKey)).bind fun Hq =>
-          (pi (α := fun _ : Bool × M × CT => K) (fun _ => ProbComp.eval S.sampleKey)).bind
+          (S.keyTable CT).bind fun Hq =>
+          (S.keyTable (Bool × M × CT)).bind
             fun Hraw =>
           (ProbComp.eval S.sampleKey).bind fun kRand =>
             OracleComp.interpret
@@ -517,6 +517,7 @@ theorem closeTo_cachedCoupledBotGame_eagerCoupledBotGame
               (A ⟨pk, S.pke.encDet pk mStar rStar, if b then kRand else
                 S.coupledH G Hq Hraw pk sk (false, mStar, S.pke.encDet pk mStar rStar)⟩))))
     congr 1 with rStar : 1
+    unfold keyTable
     pmf_swap
   rw [hL, hR]
   refine (CloseTo.bind_right_tsum _ (err := fun _ => ε) fun keys hkeys => ?_).mono

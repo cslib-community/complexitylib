@@ -60,6 +60,8 @@ least twice the number `w ^ 2` of pairs inside a set (`half_le_card_acceptedColo
 
 @[expose] public section
 
+open Cslib.BitString.Graph
+
 namespace Cslib.Circuits.Monotone.Negative
 
 open Cslib.Circuits.Clique Finset Relation Approximator

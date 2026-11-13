@@ -29,6 +29,44 @@ def module(name, path):
 publish = module("cache_publish", REPO / "scripts/cache/publish.py")
 
 
+class WorkflowContractTests(unittest.TestCase):
+    def test_publication_archive_retention_is_default_off_and_reversible(self):
+        text = (REPO / ".github/workflows/lean_action_ci.yml").read_text()
+        guide = (REPO / "scripts/cache/README.md").read_text()
+        build = text.split('      - name: "lake build"', 1)[1].split("      - name:", 1)[0]
+        test = text.split('      - name: "lake test"', 1)[1].split("      - name:", 1)[0]
+        lint = text.split('      - name: "lake lint"', 1)[1].split("      - name:", 1)[0]
+        ordinary = text.split("      - name: Save .lake to the Actions cache", 1)[1].split(
+            "      - name:", 1)[0]
+        experiment = text.split(
+            "      - name: Save .lake after cache publication (experiment)", 1)[1].split(
+            "      - name:", 1)[0]
+        self.assertIn("id: build", build)
+        self.assertIn("id: test", test)
+        self.assertIn("id: lint", lint)
+        ordinary_at = text.index("      - name: Save .lake to the Actions cache")
+        stage_at = text.index("      - name: Stage cache publication")
+        handoff_at = text.index("      - name: Hand off staged files to the enabled publishers")
+        experiment_at = text.index(
+            "      - name: Save .lake after cache publication (experiment)")
+        self.assertLess(ordinary_at, stage_at)
+        self.assertLess(stage_at, handoff_at)
+        self.assertLess(handoff_at, experiment_at)
+        self.assertIn("vars.RETAIN_PUBLICATION_ARCHIVES != 'true'", ordinary)
+        self.assertIn("steps.test.outcome == 'failure'", ordinary)
+        self.assertIn("steps.lint.outcome == 'failure'", ordinary)
+        self.assertIn("vars.RETAIN_PUBLICATION_ARCHIVES == 'true'", experiment)
+        self.assertIn("Actions string comparisons are case-insensitive", text)
+        self.assertIn("case-insensitive, so any capitalization", guide)
+        self.assertIn("!cancelled()", experiment)
+        self.assertIn("steps.build.outcome == 'success'", experiment)
+        action = "uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25"
+        for save in (ordinary, experiment):
+            self.assertIn(action, save)
+            self.assertIn("path: ./.lake", save)
+            self.assertIn("key: ${{ steps.lake-cache.outputs.cache-primary-key }}", save)
+
+
 class PublicationTests(unittest.TestCase):
     def setUp(self):
         temporary = tempfile.TemporaryDirectory(prefix="cache-publication-")

@@ -526,6 +526,42 @@ noncomputable abbrev ofFn {stepFn : (s : D.State) → (o : D.Op) → D.State × 
       exact hamort_det.trans_eq
         (Cslib.Probability.PMF.tsum_mul_add_of_support ν fun t ht => by rw [hs t ht]).symm
 
+/-- Lifting a seed–data distribution to coupled states at the fixed abstract state `s` gives
+every lifted state the abstract state `s` and keeps the seed-marginal bound. -/
+private theorem lift_state_seed (C : StateTransitionImpl P D w base params s₀) {r : ℕ}
+    (s : D.State) (ν : PMF (C.Seed × Data r))
+    (hseed : ∀ θ, (ν.map Prod.fst) θ ≤ C.seedSlack * C.seedLaw θ) :
+    (∀ t ∈ (ν.map fun p => (⟨p.1, s, p.2⟩ : CoupledState C.Seed D.State r)).support,
+      t.state = s) ∧
+    ∀ θ, ((ν.map fun p => (⟨p.1, s, p.2⟩ : CoupledState C.Seed D.State r)).map
+      CoupledState.seed) θ ≤ C.seedSlack * C.seedLaw θ := by
+  refine ⟨fun t ht => ?_, fun θ => ?_⟩
+  · rw [PMF.mem_support_map_iff] at ht
+    obtain ⟨_, _, rfl⟩ := ht
+    rfl
+  · rw [PMF.map_comp]
+    exact hseed θ
+
+/-- Mapping coupled states through `g`, which keeps each seed and abstract state, keeps the
+single-state and seed-marginal hypotheses. -/
+private theorem map_state_seed (C : StateTransitionImpl P D w base params s₀) {r r' : ℕ}
+    {ν : PMF (CoupledState C.Seed D.State r)}
+    (g : CoupledState C.Seed D.State r → CoupledState C.Seed D.State r')
+    (hg_seed : ∀ t, (g t).seed = t.seed) (hg_state : ∀ t, (g t).state = t.state)
+    (hsingle : C.singleState → ∃ s, ∀ t ∈ ν.support, t.state = s)
+    (hseed : ∀ θ, (ν.map CoupledState.seed) θ ≤ C.seedSlack * C.seedLaw θ) :
+    (C.singleState → ∃ s, ∀ t ∈ (ν.map g).support, t.state = s) ∧
+    ∀ θ, ((ν.map g).map CoupledState.seed) θ ≤ C.seedSlack * C.seedLaw θ := by
+  refine ⟨fun hd => ?_, fun θ => ?_⟩
+  · obtain ⟨s, hs⟩ := hsingle hd
+    refine ⟨s, fun t ht => ?_⟩
+    rw [PMF.mem_support_map_iff] at ht
+    obtain ⟨t, ht, rfl⟩ := ht
+    rw [hg_state]
+    exact hs t ht
+  · rw [PMF.map_comp, show CoupledState.seed ∘ g = CoupledState.seed from funext hg_seed]
+    exact hseed θ
+
 /-- Push a relational one-operation certificate over the lift `ν.map fun p => ⟨p.1, s, p.2⟩` of a
 `Seed × Data` distribution down to `Seed × Data` when `[D.HasStepFn stepFn]`. On the lift every
 abstract state is `s`, so each relational step `D.step s o q.state a` pins
@@ -605,16 +641,8 @@ theorem step_exec_ofFn (C : StateTransitionImpl P D w base params s₀)
         (C.charge s o : ℝ≥0∞) + ∑' p, ν p * (C.potential p.1 p.2 : ℝ≥0∞) := by
   let lift : C.Seed × Data r_ds → CoupledState C.Seed D.State r_ds := fun p => ⟨p.1, s, p.2⟩
   let ν_rel : PMF (CoupledState C.Seed D.State r_ds) := ν.map lift
-  have hsingle : C.singleState → ∃ s', ∀ t ∈ ν_rel.support, t.state = s' := by
-    intro _
-    refine ⟨s, fun t ht => ?_⟩
-    rw [PMF.mem_support_map_iff] at ht
-    obtain ⟨p, _, rfl⟩ := ht
-    rfl
-  have hseed_rel : ∀ θ, (ν_rel.map CoupledState.seed) θ ≤ C.seedSlack * C.seedLaw θ := by
-    intro θ
-    rw [PMF.map_comp]
-    exact hseed θ
+  obtain ⟨hs_rel, hseed_rel⟩ := C.lift_state_seed s ν hseed
+  have hsingle : C.singleState → ∃ s', ∀ t ∈ ν_rel.support, t.state = s' := fun _ => ⟨s, hs_rel⟩
   have hsupp_rel : ∀ t ∈ ν_rel.support,
       D.valid t.state o ∧ C.rep t.seed t.state t.data ∧ C.argMatch o t.data.regs := by
     intro t ht
@@ -943,10 +971,7 @@ theorem frame_caller_dist_ofFn (C : StateTransitionImpl P D w base params s₀)
       (C.frameStateDist (ν.map lift) μ_rel).map fun q => (q.seed, q.data) := by
     simp only [frameDist, frameStateDist, lift, μ_rel, PMF.bind_map, PMF.map_bind, PMF.map_comp,
       Function.comp_def]
-  have hseed_rel : ∀ θ, ((ν.map lift).map CoupledState.seed) θ ≤ C.seedSlack * C.seedLaw θ := by
-    intro θ
-    rw [PMF.map_comp]
-    exact hseed θ
+  have hseed_rel := (C.lift_state_seed s ν hseed).2
   have hrep_rel : ∀ t ∈ (ν.map lift).support, C.rep t.seed t.state (t.data.comap f) := by
     intro t ht
     rw [PMF.mem_support_map_iff] at ht
@@ -1008,17 +1033,8 @@ theorem code_rename (C : StateTransitionImpl P D w base params s₀)
   let proj : CoupledState C.Seed D.State r_caller → CoupledState C.Seed D.State r_ds :=
     fun t => ⟨t.seed, t.state, t.data.comap f⟩
   let ν_ds : PMF (CoupledState C.Seed D.State r_ds) := ν.map proj
-  have hsingle_ds : C.singleState → ∃ s, ∀ t_ds ∈ ν_ds.support, t_ds.state = s := by
-    intro hd
-    obtain ⟨s, hs⟩ := hsingle hd
-    refine ⟨s, fun t_ds ht_ds => ?_⟩
-    rw [PMF.mem_support_map_iff] at ht_ds
-    obtain ⟨t, ht, rfl⟩ := ht_ds
-    exact hs t ht
-  have hseed_ds : ∀ θ, (ν_ds.map CoupledState.seed) θ ≤ C.seedSlack * C.seedLaw θ := by
-    intro θ
-    rw [PMF.map_comp]
-    exact hseed θ
+  obtain ⟨hsingle_ds, hseed_ds⟩ :=
+    C.map_state_seed proj (fun _ => rfl) (fun _ => rfl) hsingle hseed
   have hsupp_ds : ∀ t_ds ∈ ν_ds.support,
       D.valid t_ds.state o ∧ C.rep t_ds.seed t_ds.state t_ds.data ∧
         C.argMatch o t_ds.data.regs := by
@@ -1112,16 +1128,8 @@ theorem code_rename_ofFn (C : StateTransitionImpl P D w base params s₀)
         (C.charge s o : ℝ≥0∞) + ∑' p, ν p * (C.potential p.1 (p.2.comap f) : ℝ≥0∞) := by
   let lift : C.Seed × Data r_caller → CoupledState C.Seed D.State r_caller := fun p => ⟨p.1, s, p.2⟩
   let ν_rel : PMF (CoupledState C.Seed D.State r_caller) := ν.map lift
-  have hsingle : C.singleState → ∃ s', ∀ t ∈ ν_rel.support, t.state = s' := by
-    intro _
-    refine ⟨s, fun t ht => ?_⟩
-    rw [PMF.mem_support_map_iff] at ht
-    obtain ⟨_, _, rfl⟩ := ht
-    rfl
-  have hseed_rel : ∀ θ, (ν_rel.map CoupledState.seed) θ ≤ C.seedSlack * C.seedLaw θ := by
-    intro θ
-    rw [PMF.map_comp]
-    exact hseed θ
+  obtain ⟨hs_rel, hseed_rel⟩ := C.lift_state_seed s ν hseed
+  have hsingle : C.singleState → ∃ s', ∀ t ∈ ν_rel.support, t.state = s' := fun _ => ⟨s, hs_rel⟩
   have hsupp_rel : ∀ t ∈ ν_rel.support,
       D.valid t.state o ∧ C.rep t.seed t.state (t.data.comap f) ∧
         C.argMatch o (t.data.comap f).regs := by
@@ -1339,16 +1347,8 @@ theorem call_rename_ofFn (C : StateTransitionImpl P D w base params s₀)
     fun t => μ_prep (t.seed, t.data)
   let T_prep_rel : CoupledState C.Seed D.State r_caller → ℝ≥0∞ :=
     fun t => T_prep (t.seed, t.data)
-  have hsingle : C.singleState → ∃ s', ∀ t ∈ ν_rel.support, t.state = s' := by
-    intro _
-    refine ⟨s, fun t ht => ?_⟩
-    rw [PMF.mem_support_map_iff] at ht
-    obtain ⟨_, _, rfl⟩ := ht
-    rfl
-  have hseed_rel : ∀ θ, (ν_rel.map CoupledState.seed) θ ≤ C.seedSlack * C.seedLaw θ := by
-    intro θ
-    rw [PMF.map_comp]
-    exact hseed θ
+  obtain ⟨hs_rel, hseed_rel⟩ := C.lift_state_seed s ν hseed
+  have hsingle : C.singleState → ∃ s', ∀ t ∈ ν_rel.support, t.state = s' := fun _ => ⟨s, hs_rel⟩
   have hrep_rel : ∀ t ∈ ν_rel.support,
       D.valid t.state o ∧ C.rep t.seed t.state (t.data.comap f) := by
     intro t ht
@@ -1467,17 +1467,8 @@ theorem steps_expected_amortized (C : StateTransitionImpl P D w base params s₀
     let prepMap : CoupledState C.Seed D.State r_ds → CoupledState C.Seed D.State r_ds :=
       fun t => ⟨t.seed, t.state, C.toDynamicProgram.prepare o t.data⟩
     let ν_prep : PMF (CoupledState C.Seed D.State r_ds) := ν.map prepMap
-    have hsingle_prep : C.singleState → ∃ s, ∀ t' ∈ ν_prep.support, t'.state = s := by
-      intro hd
-      obtain ⟨s, hs⟩ := hsingle hd
-      refine ⟨s, fun t' ht' => ?_⟩
-      rw [PMF.mem_support_map_iff] at ht'
-      obtain ⟨t, ht, rfl⟩ := ht'
-      exact hs t ht
-    have hseed_prep : ∀ θ, (ν_prep.map CoupledState.seed) θ ≤ C.seedSlack * C.seedLaw θ := by
-      intro θ
-      rw [PMF.map_comp]
-      exact hseed θ
+    obtain ⟨hsingle_prep, hseed_prep⟩ :=
+      C.map_state_seed prepMap (fun _ => rfl) (fun _ => rfl) hsingle hseed
     have hsupp_prep : ∀ t' ∈ ν_prep.support,
         D.valid t'.state o ∧ C.rep t'.seed t'.state t'.data ∧ C.argMatch o t'.data.regs := by
       intro t' ht'
@@ -1582,16 +1573,9 @@ theorem seq_expected_amortized (C : StateTransitionImpl P D w base params s₀)
     rw [PMF.mem_support_map_iff] at ht
     obtain ⟨_, _, rfl⟩ := ht
     exact hv
-  have hsingle₀ : C.singleState → ∃ s, ∀ t ∈ ν₀_rel.support, t.state = s := by
-    intro _
-    refine ⟨s₀, fun t ht => ?_⟩
-    rw [PMF.mem_support_map_iff] at ht
-    obtain ⟨_, _, rfl⟩ := ht
-    rfl
-  have hseed₀_rel : ∀ θ, (ν₀_rel.map CoupledState.seed) θ ≤ C.seedSlack * C.seedLaw θ := by
-    intro θ
-    rw [PMF.map_comp]
-    exact hseed₀ θ
+  obtain ⟨hs₀_rel, hseed₀_rel⟩ := C.lift_state_seed s₀ ν₀ hseed₀
+  have hsingle₀ : C.singleState → ∃ s, ∀ t ∈ ν₀_rel.support, t.state = s :=
+    fun _ => ⟨s₀, hs₀_rel⟩
   have hrep₀ : ∀ t ∈ ν₀_rel.support, C.rep t.seed t.state t.data := by
     intro t ht
     rw [PMF.mem_support_map_iff] at ht
@@ -1732,19 +1716,11 @@ theorem steps_expected_amortized_ofFn (C : StateTransitionImpl P D w base params
   let lift : C.Seed × Data r_ds → CoupledState C.Seed D.State r_ds := fun p => ⟨p.1, s, p.2⟩
   let proj : CoupledState C.Seed D.State r_ds → C.Seed × Data r_ds := fun t => (t.seed, t.data)
   let ν_rel : PMF (CoupledState C.Seed D.State r_ds) := ν.map lift
-  have hs₀ : ∀ t ∈ ν_rel.support, t.state = s := by
-    intro t ht
-    rw [PMF.mem_support_map_iff] at ht
-    obtain ⟨_, _, rfl⟩ := ht
-    rfl
+  obtain ⟨hs₀, hseed_rel⟩ := C.lift_state_seed s ν hseed
   have hv_rel : ∀ t ∈ ν_rel.support, D.ValidOpSeq t.state ops := by
     intro t ht
     rw [hs₀ t ht, D.validOpSeq_iff_validHistory]
     exact hv
-  have hseed_rel : ∀ θ, (ν_rel.map CoupledState.seed) θ ≤ C.seedSlack * C.seedLaw θ := by
-    intro θ
-    rw [PMF.map_comp]
-    exact hseed θ
   have hrep_rel : ∀ t ∈ ν_rel.support, C.rep t.seed t.state t.data := by
     intro t ht
     rw [PMF.mem_support_map_iff] at ht
