@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Karn Seth. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Karn Seth
+Authors: Karn Seth, Mayank Rathee
 -/
 
 module
@@ -42,8 +42,9 @@ in wire order. For an AND gate whose arguments carry labels `A_a`, `A_b` it quer
 label of `b`, and `(A_b, t', v_a)` for the evaluator half, and adds the parts of the two
 ciphertexts the evaluator can compute itself (`slotKnown`). With the CCR oracle this is the real
 table, by the half-gates identity; with a random function every query has a distinct tweak, so
-the table is uniform. Each slot is queried exactly once, at its own tweak, so the reduction never
-queries both `(a, t, 0)` and `(a, t, 1)`; that legality condition is not formalized.
+the table is uniform. Each slot is queried once (`isQueryBounded_reduction`), at its own tweak, so
+when distinct slots have distinct tweaks the reduction never queries both `(a, t, 0)` and
+`(a, t, 1)` (`isTweakUnique_reduction`).
 
 This is the single-instance form of simulation privacy: the circuit, the input and the
 distinguisher are fixed, and the simulator receives the whole circuit `C`, the side information
@@ -61,6 +62,9 @@ distinguisher are fixed, and the simulator receives the whole circuit `C`, the s
 ## Main results
 
 * `Cslib.Crypto.Garbling.HalfGates.View.run_simulateWith`: simulated views decode to the output.
+* `Cslib.Crypto.Garbling.HalfGates.isQueryBounded_reduction`,
+  `Cslib.Crypto.Garbling.HalfGates.isTweakUnique_reduction`: query budget and tweak uniqueness of
+  the reduction.
 * `Cslib.Crypto.Garbling.HalfGates.map_oracleTable`: against a random function the reduction's
   table is uniform.
 * `Cslib.Crypto.Garbling.HalfGates.advantage_realGame_simGame`: privacy, as an equality with the
@@ -356,6 +360,84 @@ theorem detRun_eq (f : CCR.Query (K × Bool) T → K × Bool) (X : Fin n → K �
       · exact ih s (by omega)
   exact funext fun s => key _ s s.gate.isLt
 
+private theorem card_filter_gate_lt_succ (k : ℕ) :
+    (Finset.univ.filter fun s : Slot C => (s.gate : ℕ) < k + 1).card =
+      (Finset.univ.filter fun s : Slot C => (s.gate : ℕ) < k).card +
+        (Finset.univ.filter fun s : Slot C => (s.gate : ℕ) = k).card := by
+  rw [← Finset.card_union_of_disjoint (Finset.disjoint_filter.mpr fun _ _ hlt heq => by omega)]
+  congr 1
+  ext s
+  simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_union]
+  omega
+
+/-- Building the ciphertexts of gate `k` makes at most one query per slot of gate `k`. -/
+theorem isQueryBounded_gateStep (X : Fin n → K × Bool) (k : ℕ) (ct : Slot C → K × Bool) :
+    (gateStep C H tw x X k ct).IsQueryBounded
+      (Finset.univ.filter fun s : Slot C => (s.gate : ℕ) = k).card := by
+  refine ((ProbOracleComp.isQueryBounded_tabulate (R := K × Bool)
+    (slotQuery C tw x (evalLabels C H tw ct X))
+    (Finset.univ.filter fun s : Slot C => (s.gate : ℕ) = k).toList).bind fun O =>
+    OracleComp.IsCostBounded.pure
+      (fun s => if (s.gate : ℕ) = k then slotKnown C H tw (evalLabels C H tw ct X) s + O s
+        else ct s) 0).mono ?_
+  simp [Finset.length_toList]
+
+/-- Building the table up to gate `k` makes at most one query per slot below `k`. -/
+theorem isQueryBounded_tableRun (X : Fin n → K × Bool) (k : ℕ) :
+    (tableRun C H tw x X k).IsQueryBounded
+      (Finset.univ.filter fun s : Slot C => (s.gate : ℕ) < k).card := by
+  induction k with
+  | zero => exact OracleComp.IsCostBounded.pure _ _
+  | succ k ih =>
+    rw [card_filter_gate_lt_succ]
+    exact ih.bind fun ct => isQueryBounded_gateStep C H tw x X k ct
+
+private theorem isCostBounded_gateStep_tweak [DecidableEq T] (htw : Function.Injective tw)
+    (X : Fin n → K × Bool) (k : ℕ) (ct : Slot C → K × Bool) (t : T) :
+    OracleComp.IsCostBounded
+      (Sum.elim (fun _ => 0) fun q : CCR.Query (K × Bool) T => if q.tweak = t then 1 else 0)
+      (gateStep C H tw x X k ct)
+      (if ∃ s : Slot C, (s.gate : ℕ) = k ∧ tw s = t then 1 else 0) := by
+  classical
+  refine ((ProbOracleComp.isCostBounded_tabulate_eq (R := K × Bool) CCR.Query.tweak
+    (slotQuery C tw x (evalLabels C H tw ct X))
+    (Finset.univ.filter fun s : Slot C => (s.gate : ℕ) = k).nodup_toList
+    (by simpa [Function.comp_def, slotQuery_tweak] using htw) t).bind fun O =>
+    OracleComp.IsCostBounded.pure
+      (fun s => if (s.gate : ℕ) = k then slotKnown C H tw (evalLabels C H tw ct X) s + O s
+        else ct s) 0).mono ?_
+  simp only [Finset.mem_toList, Finset.mem_filter, Finset.mem_univ, true_and, slotQuery_tweak,
+    Nat.add_zero, le_refl]
+
+private theorem isCostBounded_tableRun_tweak [DecidableEq T] (htw : Function.Injective tw)
+    (X : Fin n → K × Bool) (k : ℕ) (t : T) :
+    OracleComp.IsCostBounded
+      (Sum.elim (fun _ => 0) fun q : CCR.Query (K × Bool) T => if q.tweak = t then 1 else 0)
+      (tableRun C H tw x X k)
+      (if ∃ s : Slot C, (s.gate : ℕ) < k ∧ tw s = t then 1 else 0) := by
+  classical
+  induction k with
+  | zero => exact OracleComp.IsCostBounded.pure _ _
+  | succ k ih =>
+    refine OracleComp.IsCostBounded.mono
+      (ih.bind fun ct => isCostBounded_gateStep_tweak C H tw x htw X k ct t) ?_
+    by_cases h1 : ∃ s : Slot C, (s.gate : ℕ) < k ∧ tw s = t
+    · obtain ⟨s, hs, hst⟩ := h1
+      have h1' : ∃ s : Slot C, (s.gate : ℕ) < k ∧ tw s = t := ⟨s, hs, hst⟩
+      have h2 : ¬ ∃ s' : Slot C, (s'.gate : ℕ) = k ∧ tw s' = t := by
+        rintro ⟨s', hs', hs't⟩
+        have hss' : s = s' := htw (hst.trans hs't.symm)
+        subst hss'
+        omega
+      have h3 : ∃ s' : Slot C, (s'.gate : ℕ) < k + 1 ∧ tw s' = t := ⟨s, by omega, hst⟩
+      simp only [h1', h2, h3, ↓reduceIte, Nat.add_zero, le_refl]
+    · by_cases h2 : ∃ s : Slot C, (s.gate : ℕ) = k ∧ tw s = t
+      · obtain ⟨s, hs, hst⟩ := h2
+        have h2' : ∃ s : Slot C, (s.gate : ℕ) = k ∧ tw s = t := ⟨s, hs, hst⟩
+        have h3 : ∃ s' : Slot C, (s'.gate : ℕ) < k + 1 ∧ tw s' = t := ⟨s, by omega, hst⟩
+        simp only [h1, h2', h3, ↓reduceIte, zero_add, le_refl]
+      · simp only [h1, h2, ↓reduceIte, Nat.add_zero, Nat.zero_le]
+
 end Table
 
 /-! ### Experiments -/
@@ -399,6 +481,34 @@ noncomputable def reduction (D : View C K → ProbComp Bool) :
   let X ← ProbOracleComp.sample (ProbComp.uniform (Fin n → K × Bool))
   let ct ← tableRun C H tw x X C.size
   ProbOracleComp.sample (D (simulateWith C H tw (C.eval interpretation x) X ct))
+
+/-- The reduction asks at most one query per slot of the garbled table. -/
+theorem isQueryBounded_reduction (D : View C K → ProbComp Bool) :
+    (reduction C H tw x D).IsQueryBounded (Fintype.card (Slot C)) := by
+  have h := (ProbOracleComp.IsQueryBounded.sample
+    (spec := fun _ : CCR.Query (K × Bool) T => K × Bool)
+    (ProbComp.uniform (Fin n → K × Bool))).bind fun X =>
+    (isQueryBounded_tableRun C H tw x X C.size).bind fun ct =>
+    ProbOracleComp.IsQueryBounded.sample
+      (D (simulateWith C H tw (C.eval interpretation x) X ct))
+  have hcard : (Finset.univ.filter fun s : Slot C => (s.gate : ℕ) < C.size).card =
+      Fintype.card (Slot C) := by
+    rw [Finset.filter_true_of_mem fun s _ => s.gate.isLt, Finset.card_univ]
+  simpa only [reduction, hcard, Nat.zero_add, Nat.add_zero] using h
+
+/-- When distinct slots have distinct tweaks, the reduction makes at most one query with each
+tweak. -/
+theorem isTweakUnique_reduction [DecidableEq T] (htw : Function.Injective tw)
+    (D : View C K → ProbComp Bool) :
+    CCR.IsTweakUnique (reduction C H tw x D) := by
+  classical
+  intro t
+  refine ((ProbOracleComp.isCostBounded_sample _
+    (ProbComp.uniform (Fin n → K × Bool))).bind fun X =>
+    (isCostBounded_tableRun_tweak C H tw x htw X C.size t).bind fun ct =>
+    ProbOracleComp.isCostBounded_sample _
+      (D (simulateWith C H tw (C.eval interpretation x) X ct))).mono ?_
+  split_ifs <;> omega
 
 theorem eval_run_reduction (D : View C K → ProbComp Bool)
     (f : CCR.Query (K × Bool) T → K × Bool) :
