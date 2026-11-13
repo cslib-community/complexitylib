@@ -112,4 +112,9 @@ example : ComputableInPolyTime
 example : ComputableInPolyTime (fun o : MerkleOpening Bool => o.leaf) encKilianOpening encBool := by
   fun_prop
 
+-- Encoded words unchanged: an opening keeps the former `KilianOpening` layout, the framed bit
+-- followed by the framed path.
+example (o : MerkleOpening Bool) :
+    encKilianOpening o = encPair encBool (encList encBits) (o.leaf, o.path) := rfl
+
 end CslibFrontierTests.Crypto.Kilian

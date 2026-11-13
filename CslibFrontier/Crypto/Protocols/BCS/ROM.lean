@@ -282,9 +282,8 @@ theorem iopVerify_bcsExtractOracles_of_bcsVerify {H : List Bool → List Bool �
     iopVerify iop x (bcsChallenge hFS x prf.roots)
       (bcsExtractOracles decSym defaultSym tr_MT d prf.roots) = true := by
   refine iopVerify_eq_true_of_bcsVerify_of_openings_eq hver fun j idx val path hmem => ?_
-  have hmv : merkleVerify H k d (prf.roots j) idx.val (encSym val) path = true := by
-    simp only [bcsVerify, Bool.and_eq_true, beq_iff_eq, List.all_eq_true] at hver
-    exact hver.1.2 ((j, idx), ⟨val, path⟩) hmem
+  have hmv : merkleVerify H k d (prf.roots j) idx.val (encSym val) path = true :=
+    verify_of_bcsVerify hver hmem
   exact (bcsExtractTable_eq_of_merkleVerify hdec defaultSym hfree
     (hpaths j idx val path hmem) hmv).symm
 
@@ -317,9 +316,8 @@ theorem exists_collision_of_bcsVerify_of_iopVerify_eq_false
     cases hrej
   push Not at hnot_all
   obtain ⟨⟨⟨j, idx⟩, ⟨val, path⟩⟩, hmem, hne⟩ := hnot_all
-  have hmv : merkleVerify H k d (prf.roots j) idx.val (encSym val) path = true := by
-    simp only [bcsVerify, Bool.and_eq_true, beq_iff_eq, List.all_eq_true] at hver
-    exact hver.1.2 ((j, idx), ⟨val, path⟩) hmem
+  have hmv : merkleVerify H k d (prf.roots j) idx.val (encSym val) path = true :=
+    verify_of_bcsVerify hver hmem
   exact exists_collision_of_extractLeafFromTrace_ne hcons (hpaths j idx val path hmem) hmv hne
 
 /-- Prepending `(q, ans)` to `tr_MT` leaves `bcsExtractTable` at `rt` unchanged whenever `ans ≠ rt`
@@ -662,15 +660,15 @@ theorem evalPure_bcsVerifyOpeningsProg (hTree : List Bool → List Bool)
     (x : Stmt) (prf : BCSProof r Sym) (chals : Fin r → Chal) :
     OracleComp.evalPure hTree (bcsVerifyOpeningsProg iop encSym x prf chals) =
       (prf.openings.length == (iop.queries x chals).length &&
-        ((iop.queries x chals).zip prf.openings).all (fun ((j, idx), ⟨val, path⟩) =>
-          merkleVerify (fun _ => hTree) [] d (prf.roots j) idx.val (encSym val) path) &&
+        ((iop.queries x chals).zip prf.openings).all (fun ((j, idx), o) =>
+          o.verify (fun _ => hTree) [] encSym d (prf.roots j) idx.val) &&
         iop.decide x chals (prf.openings.map MerkleOpening.leaf)) := by
   simp only [bcsVerifyOpeningsProg, OracleComp.evalPure_bind, OracleComp.evalPure_mapM,
     OracleComp.evalPure_pure, List.all_map]
   congr 2
   refine List.all_congr rfl ?_
   rintro ⟨⟨j, idx⟩, ⟨val, path⟩⟩
-  simp
+  simp [MerkleOpening.verify]
 
 @[simp]
 theorem evalPure_bcsVerifyROM (hTree : List Bool → List Bool)

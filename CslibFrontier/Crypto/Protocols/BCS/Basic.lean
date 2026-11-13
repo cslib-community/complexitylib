@@ -421,9 +421,19 @@ def bcsVerify (iop : PublicCoinIOP r d Stmt Wit Sym Chal)
   let chals := bcsChallenge hFS x prf.roots
   let qs := iop.queries x chals
   prf.openings.length == qs.length &&
-    (qs.zip prf.openings).all (fun ((j, idx), ⟨val, path⟩) =>
-      merkleVerify H k d (prf.roots j) idx.val (encSym val) path) &&
+    (qs.zip prf.openings).all (fun ((j, idx), o) => o.verify H k encSym d (prf.roots j) idx.val) &&
     iop.decide x chals (prf.openings.map MerkleOpening.leaf)
+
+/-- Every queried opening of a proof accepted by `bcsVerify` is accepted against its root. -/
+theorem verify_of_bcsVerify {iop : PublicCoinIOP r d Stmt Wit Sym Chal}
+    {H : List Bool → List Bool → List Bool} {k : List Bool} {encSym : Sym → List Bool}
+    {hFS : Stmt → List (List Bool) → Chal} {x : Stmt} {prf : BCSProof r Sym}
+    (hver : bcsVerify iop H k encSym hFS x prf = true) {j : Fin r} {idx : Fin (2 ^ d)}
+    {o : MerkleOpening Sym}
+    (hmem : ((j, idx), o) ∈ (iop.queries x (bcsChallenge hFS x prf.roots)).zip prf.openings) :
+    o.verify H k encSym d (prf.roots j) idx.val = true := by
+  simp only [bcsVerify, Bool.and_eq_true, List.all_eq_true] at hver
+  exact hver.1.2 _ hmem
 
 /-! ### Perfect completeness -/
 
@@ -460,11 +470,11 @@ theorem bcsVerify_bcsProve_of_iopVerify (iop : PublicCoinIOP r d Stmt Wit Sym Ch
       qs.zip (qs.map g) = qs.map fun q => (q, g q) := by
     simpa only [List.map_id, id] using List.zip_map' (f := id) (g := g) (l := qs)
   change ((qs.map _).length == qs.length &&
-    (qs.zip (qs.map _)).all (fun (((j, idx), ⟨val, path⟩) : _ × MerkleOpening Sym) =>
-      merkleVerify H k d (bcsHonestRoots iop H k encSym hFS x w j) idx.val (encSym val) path) &&
+    (qs.zip (qs.map _)).all (fun (((j, idx), o) : _ × MerkleOpening Sym) =>
+      o.verify H k encSym d (bcsHonestRoots iop H k encSym hFS x w j) idx.val) &&
     iop.decide x chals ((qs.map _).map MerkleOpening.leaf)) = true
-  simp only [hzip, Bool.and_eq_true, beq_iff_eq, List.length_map, List.all_map, List.all_eq_true,
-    Function.comp_def, List.map_map, true_and]
+  simp only [hzip, MerkleOpening.verify, Bool.and_eq_true, beq_iff_eq, List.length_map,
+    List.all_map, List.all_eq_true, Function.comp_def, List.map_map, true_and]
   refine ⟨fun ⟨j, idx⟩ _ => ?_, ?_⟩
   · exact merkleVerify_oracleLeaves H k encSym d (tables j) idx
   · rw [bcsHonestTables_eq_iopProverOracles]
@@ -555,9 +565,8 @@ theorem bcs_sound_or_merkleCollision
     have hmem := List.mem_of_find?_eq_some hsome
     have hne_bool := List.find?_some hsome
     simp only [bne_iff_ne, ne_eq] at hne_bool
-    simp only [bcsVerify, Bool.and_eq_true, beq_iff_eq, List.all_eq_true] at hver
     have hmv₁ : merkleVerify H k d (prf.roots j) idx.val (encSym val) path = true :=
-      hver.1.2 ((j, idx), ⟨val, path⟩) hmem
+      verify_of_bcsVerify hver hmem
     have hmv₂ : merkleVerify H k d (prf.roots j) idx.val (encSym (oracles j idx))
         (merklePath H k (oracleLeaves encSym d (oracles j)) idx.val) = true := by
       rw [hroots j]
@@ -608,12 +617,11 @@ theorem isCollision_of_bcsVerify_conflict
     (hne : encSym val₁ ≠ encSym val₂) (n : ℕ) :
     let col := extractMerkleCollision H k (encSym val₁) (encSym val₂) idx.val path₁ path₂
     isCollision H (fun _ _ => true) n k col.1 col.2 = true := by
-  simp only [bcsVerify, Bool.and_eq_true, beq_iff_eq, List.all_eq_true] at hver₁ hver₂
   have hmv₁ : merkleVerify H k d (prf₁.roots j) idx.val (encSym val₁) path₁ = true :=
-    hver₁.1.2 ((j, idx), ⟨val₁, path₁⟩) ho₁
+    verify_of_bcsVerify hver₁ ho₁
   have hmv₂ : merkleVerify H k d (prf₁.roots j) idx.val (encSym val₂) path₂ = true := by
     rw [hroot]
-    exact hver₂.1.2 ((j, idx), ⟨val₂, path₂⟩) ho₂
+    exact verify_of_bcsVerify hver₂ ho₂
   exact isCollision_of_merkleVerify hmv₁ hmv₂ hne n
 
 /-- **Knowledge extraction when openings match the committed tables**: if `bcsVerify` accepts `prf`

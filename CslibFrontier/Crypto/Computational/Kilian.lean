@@ -119,13 +119,13 @@ def kilianDepth (x : α) : ℕ := Nat.clog 2 (V.queryTable x).length
 def kilianPosition (x : α) (a : ℕ) : ℕ := (V.queryTable x).idxOf a
 
 /-- The verifier's decision on one repetition with random string `ρ`: one opening per query of `V`
-on `(x, ρ)`, each accepted by `merkleVerify` at the position of its address, and `V` accepts the
-opened bits. -/
+on `(x, ρ)`, each accepted (`MerkleOpening.verify`, one-bit leaves) at the position of its address,
+and `V` accepts the opened bits. -/
 def kilianCheck (k : List Bool) (x : α) (root ρ : List Bool)
     (answers : List (MerkleOpening Bool)) : Bool :=
   answers.length == (V.queries (x, ρ)).length &&
     ((V.queries (x, ρ)).zip answers).all (fun (a, o) =>
-      merkleVerify H k (kilianDepth V x) root (kilianPosition V x a) [o.leaf] o.path) &&
+      o.verify H k (fun b => [b]) (kilianDepth V x) root (kilianPosition V x a)) &&
     V.verdict ((x, ρ), answers.map MerkleOpening.leaf)
 
 /-- The verifier's decision: one answer list per random string, each accepted by `kilianCheck`. -/
@@ -205,8 +205,8 @@ theorem kilianCheck_kilianOpen {x : α} {table : List Bool}
   have hzip (g : ℕ → MerkleOpening Bool) : (V.queries (x, ρ)).zip ((V.queries (x, ρ)).map g) =
       (V.queries (x, ρ)).map fun a => (a, g a) := by
     simpa only [List.map_id, id] using List.zip_map' (f := id) (g := g) (l := V.queries (x, ρ))
-  simp only [kilianCheck, kilianOpen, hzip, Bool.and_eq_true, beq_iff_eq, List.length_map,
-    List.all_map, List.all_eq_true, Function.comp_def, List.map_map, true_and]
+  simp only [kilianCheck, MerkleOpening.verify, kilianOpen, hzip, Bool.and_eq_true, beq_iff_eq,
+    List.length_map, List.all_map, List.all_eq_true, Function.comp_def, List.map_map, true_and]
   refine ⟨fun a ha => ?_, ?_⟩
   · have hpos := kilianPosition_lt hρ ha
     have hleaf : (kilianLeaves (kilianTable V x table)).getD (kilianPosition V x a) [] =
@@ -310,8 +310,8 @@ private theorem computableInPolyTime_kilianCheck
       (hleaf.prod hpath)))
   have hall : ComputableInPolyTime
       (fun g => ((V.queries (x g, ρ g)).zip (answers g)).all (fun (a, o) =>
-        merkleVerify H (k g) (kilianDepth V (x g)) (root g)
-          (kilianPosition V (x g) a) [o.leaf] o.path))
+        o.verify H (k g) (fun b => [b]) (kilianDepth V (x g)) (root g)
+          (kilianPosition V (x g) a)))
       encIn encBool :=
     ComputableInPolyTime.allWithInput
       ((ComputableInPolyTime.zip encNat encKilianOpening).comp (hqueries.prod hanswers))

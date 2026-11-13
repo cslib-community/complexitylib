@@ -728,7 +728,7 @@ theorem evalPure_kilianCheckProg (h : List Bool → List Bool) (V : PCPVerifier 
   congr 2
   refine List.all_congr rfl ?_
   rintro ⟨a, o⟩
-  simp
+  simp [MerkleOpening.verify]
 
 @[simp]
 theorem evalPure_kilianVerifyProg (h : List Bool → List Bool) (V : PCPVerifier α) (x : α)

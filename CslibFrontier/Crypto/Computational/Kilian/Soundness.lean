@@ -193,7 +193,8 @@ theorem merkleVerify_of_mem_kilianOpenings {k : List Bool} {x : α} {root : List
   simp only [kilianOpenings, List.mem_flatMap] at ho
   obtain ⟨⟨ρ, answers⟩, hmem, ho⟩ := ho
   have hc := h.2 _ hmem
-  simp only [kilianCheck, Bool.and_eq_true, beq_iff_eq, List.all_eq_true] at hc
+  simp only [kilianCheck, MerkleOpening.verify, Bool.and_eq_true, beq_iff_eq, List.all_eq_true]
+    at hc
   exact hc.1.2 _ ho
 
 /-- **Two accepted runs that disagree break position binding**: if two responses against one root
