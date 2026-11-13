@@ -223,7 +223,7 @@ theorem interpret_mcspDistinguisher (d : ℕ) (oracle : List Bool → List Bool)
         (restriction oracle n (tableArity d n)), 2 ^ tableArity d n / (5 * tableArity d n)⟩ := by
   rw [mcspDistinguisher, OracleComp.interpret_bind, interpret_queryTable, pure_bind,
     ProbOracleComp.interpret_sample, tableInstance_map_tableQueries]
-  exact OracleComp.interpret_query_eq_self _
+  exact ProbComp.interpret_unifFin _
 
 /-! ### The distinguisher is uniform strict oracle PPT -/
 

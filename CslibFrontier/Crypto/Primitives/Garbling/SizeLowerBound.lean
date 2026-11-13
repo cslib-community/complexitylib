@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Probability.Entropy.Continuity
 public import Cslib.Foundations.Data.BitString
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import CslibFrontier.Probability.Entropy.Fano
 
 /-!
@@ -53,11 +54,6 @@ open Cslib.Probability.PMF
 
 variable {C α : Type*}
 
-/-- `m` bits are `2^m` values. -/
-private theorem logb_card_bitString (m : ℕ) : Real.logb 2 (Fintype.card (BitString m)) = m := by
-  rw [Fintype.card_fun, Fintype.card_bool, Fintype.card_fin, Nat.cast_pow, Nat.cast_ofNat,
-    Real.logb_pow, Real.logb_self_eq_one one_lt_two, mul_one]
-
 /-- `H(X | C) ≤ H(G | C) + H(X | C, G)` for random variables on a common space. -/
 private theorem conditionalEntropy_le_add {Ω G : Type*} [Finite C] [Finite α] [Finite G]
     (ν : PMF Ω) (c : Ω → C) (x : Ω → α) (g : Ω → G) :
@@ -95,7 +91,7 @@ theorem sub_le_bitLength_of_recover [Fintype C] [Fintype α] {m : ℕ}
   have hfano := conditionalEntropy_map_le_binEntropy_add_mul_logb real (fun w => w.2.1)
     (fun w => (w.1, w.2.2)) decode
   have hsize := conditionalEntropy_le_log_card (real.map fun w => (w.1, w.2.2))
-  rw [logb_card_bitString] at hsize
+  rw [BitString.logb_card] at hsize
   linarith
 
 end Cslib.Crypto.Garbling

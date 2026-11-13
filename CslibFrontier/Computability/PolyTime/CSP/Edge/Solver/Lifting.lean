@@ -30,7 +30,7 @@ open EdgeAugmenting (WalkCode Record)
 
 /-- Scope of one original positional record, with a bounded list default. -/
 @[expose] def scope (F : CSP Table ℕ) (o : Record) : List ℕ :=
-  (F.getD o.1 (⟨0, []⟩, [])).2
+  (F.getD o.1 ⟨⟨0, []⟩, []⟩).scope
 
 /-- Record of a surviving original port in the actual contracted body. Its constraint position
 and original binary name are retained; its argument position is its outside-list rank. -/

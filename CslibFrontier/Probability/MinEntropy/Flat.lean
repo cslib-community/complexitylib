@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Probability.MinEntropy
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Linarith
 
@@ -247,7 +248,6 @@ theorem le_minEntropy_iff_exists_eq_bind_uniformOfFinset [Finite α] (p : PMF α
   refine ⟨exists_eq_bind_uniformOfFinset_of_le_minEntropy p, ?_⟩
   rintro ⟨mix, rfl⟩
   refine le_minEntropy_bind _ _ fun S _ => ?_
-  rw [minEntropy_uniformOfFinset, S.2, Nat.cast_pow, Nat.cast_ofNat,
-    Real.logb_pow, Real.logb_self_eq_one (by norm_num), mul_one]
+  rw [minEntropy_uniformOfFinset, S.2, Nat.cast_pow, Nat.cast_ofNat, Real.logb_two_pow]
 
 end Cslib.Probability.PMF

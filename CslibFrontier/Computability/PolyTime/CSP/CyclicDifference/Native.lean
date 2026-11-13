@@ -42,7 +42,7 @@ theorem computableInPolyTime_parityChain :
     ComputableInPolyTime (fun p : ℕ × List ℕ => parityChain p.1 p.2)
       encParityChain (encCSP encTable encNat) := by
   have heq (p : ℕ × List ℕ) : parityChain p.1 p.2 =
-      if p.2.isEmpty then [(evenTable 0, [])]
+      if p.2.isEmpty then [Constraint.mk (evenTable 0) []]
       else parityChainTail p.1 (p.2.headD 0) p.2.tail := by
     cases p.2 <;> rfl
   simp only [heq]
@@ -165,10 +165,10 @@ private theorem blackConstraints_polyTime [Finite Rel] (encRel : Rel ↪ List Bo
   unfold blackConstraints encCSP
   apply ComputableInPolyTime.mapWithInput
     (ComputableInPolyTime.filterWithInput hz (by fun_prop))
-  exact (ht.comp (g := fun p : CSP Rel ℕ × (Constraint Rel ℕ × ℕ) => p.2.1.1)
+  exact (ht.comp (g := fun p : CSP Rel ℕ × (Constraint Rel ℕ × ℕ) => p.2.1.rel)
     (by fun_prop)).prod
     (hscope.comp (g := fun p : CSP Rel ℕ × (Constraint Rel ℕ × ℕ) =>
-      ((p.1, p.2.2), p.2.1.2)) (by fun_prop))
+      ((p.1, p.2.2), p.2.1.scope)) (by fun_prop))
 
 private theorem auxiliaryPrefix_polyTime :
     ComputableInPolyTime (fun p : List (List ℕ) × ℕ => auxiliaryPrefix p.1 p.2)
@@ -235,7 +235,7 @@ theorem computableInPolyTime_compile [Finite Rel] (encRel : Rel ↪ List Bool)
   have hr := computableInPolyTime_verifyRotationCertificate encRel encNat
   have hn : ComputableInPolyTime (nonemptySymbol arity sem) encRel encBool := .of_finite _
   have hall : ComputableInPolyTime (fun p : CSP Rel ℕ × Graph.RotationCertificate =>
-      p.1.all (fun c => nonemptySymbol arity sem c.1))
+      p.1.all (fun c => nonemptySymbol arity sem c.rel))
       (encCSPRotationCertificate encRel encNat) encBool := by
     unfold encCSPRotationCertificate encCSP
     apply ComputableInPolyTime.allWithInput (by fun_prop)

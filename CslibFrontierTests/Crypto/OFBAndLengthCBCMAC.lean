@@ -82,7 +82,7 @@ example : ofbCpaGame xorKeyed 2 true ofbOneQueryAdversary =
 example :
     (Game.advantage
         (ProbComp.eval (PRF.idealExperiment (ofbReduction 2 false ofbOneQueryAdversary)))
-        (blockModeIdealGame 2 ofbOneQueryAdversary) : ℝ) ≤ 1 / 32 :=
+        (ProbComp.eval (blockModeIdealExperiment 2 ofbOneQueryAdversary)) : ℝ) ≤ 1 / 32 :=
   (advantage_idealExperiment_ofbReduction_le 2 false isCostBounded_ofbOneQueryAdversary).trans_eq
     (by norm_num)
 

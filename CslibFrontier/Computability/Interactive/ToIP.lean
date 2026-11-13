@@ -494,9 +494,10 @@ theorem Reduction.Complete.acceptProb_wordVerifier
   rw [acceptProb_wordVerifier_honestWordProver R.verifier codecs hLawful x (R.prover x w)]
   have hfail := hComp x w hrel
   let μ := World.plain.eval (R.run x w)
-  let S : Set (Transcript s × Option OutStmt × (OutStmt × OutWit)) := {r | r.2.1.isSome}
-  have hcompl : Sᶜ ⊆ {r | ¬ (r.2.1 = some r.2.2.1 ∧ relOut r.2.2.1 r.2.2.2)} := by
-    rintro r (hr : ¬ r.2.1.isSome) ⟨h1, _⟩
+  let S : Set (Execution s OutStmt (OutStmt × OutWit)) := {r | r.output.isSome}
+  have hcompl :
+      Sᶜ ⊆ {r | ¬ (r.output = some r.result.1 ∧ relOut r.result.1 r.result.2)} := by
+    rintro r (hr : ¬ r.output.isSome) ⟨h1, _⟩
     exact hr (by simp [h1])
   have hSc : μ.toOuterMeasure Sᶜ ≤ ε_c :=
     (MeasureTheory.OuterMeasure.mono _ hcompl).trans hfail

@@ -98,24 +98,24 @@ are the inner ports; the next `n` are the middle ports for the two-edge chains. 
 uses one disequality; an unchanged port uses two. Free and inner labels remain distinct. -/
 @[expose] def twistBody {n : ℕ} (a : Fin n → Bool) :
     CSP Symbol (Fin n ⊕ Fin (n + n)) :=
-  (.relation, List.ofFn (fun i : Fin n => Sum.inr (i.castAdd n))) ::
+  ⟨.relation, List.ofFn (fun i : Fin n => Sum.inr (i.castAdd n))⟩ ::
     (List.finRange n).flatMap (fun i =>
-      if a i then [(.disequality, [.inr (i.castAdd n), .inl i])]
-      else [(.disequality, [.inr (i.castAdd n), .inr (i.natAdd n)]),
-        (.disequality, [.inr (i.natAdd n), .inl i])])
+      if a i then [⟨.disequality, [.inr (i.castAdd n), .inl i]⟩]
+      else [⟨.disequality, [.inr (i.castAdd n), .inr (i.natAdd n)]⟩,
+        ⟨.disequality, [.inr (i.natAdd n), .inl i]⟩])
 
 /-- The initial conjunction uses at most `1+2n` constraints and total scope width `5n`. -/
 theorem twistBody_size {n : ℕ} (a : Fin n → Bool) :
     (twistBody a).length ≤ 1 + 2 * n ∧ (twistBody a).vars.length ≤ 5 * n := by
   let f : Fin n → CSP Symbol (Fin n ⊕ Fin (n + n)) := fun i =>
-    if a i then [(.disequality, [.inr (i.castAdd n), .inl i])]
-    else [(.disequality, [.inr (i.castAdd n), .inr (i.natAdd n)]),
-      (.disequality, [.inr (i.natAdd n), .inl i])]
+    if a i then [⟨.disequality, [.inr (i.castAdd n), .inl i]⟩]
+    else [⟨.disequality, [.inr (i.castAdd n), .inr (i.natAdd n)]⟩,
+      ⟨.disequality, [.inr (i.natAdd n), .inl i]⟩]
   have hl (L : List (Fin n)) : (L.flatMap f).length ≤ 2 * L.length := by
     induction L with
     | nil => simp
     | cons i L ih => cases ha : a i <;> simp [f, ha] at * <;> omega
-  have hw (L : List (Fin n)) : ((L.flatMap f).flatMap Prod.snd).length ≤ 4 * L.length := by
+  have hw (L : List (Fin n)) : ((L.flatMap f).flatMap Constraint.scope).length ≤ 4 * L.length := by
     induction L with
     | nil => simp
     | cons i L ih => cases ha : a i <;> simp [f, ha] at * <;> omega
@@ -126,7 +126,7 @@ theorem twistBody_size {n : ℕ} (a : Fin n → Bool) :
   · change ((List.finRange n).flatMap f).length + 1 ≤ 1 + 2 * n
     omega
   · change (List.ofFn (fun i : Fin n => Sum.inr (i.castAdd n)) ++
-      (((List.finRange n).flatMap f).flatMap Prod.snd)).length ≤ 5 * n
+      (((List.finRange n).flatMap f).flatMap Constraint.scope)).length ≤ 5 * n
     rw [List.length_append, List.length_ofFn]
     omega
 
@@ -623,19 +623,19 @@ theorem Program.reductions_bound {n m : ℕ} (p : Program n m) : p.reductions + 
 Only variable labels in their scopes change. -/
 theorem Program.gadget_symbols {Rel : Type} {ar : Rel → ℕ} {s : Rel → List Bool → Bool}
     {n m : ℕ} (p : Program n m) {P : Set (Fin n → Bool)} (g : PPGadget ar s P) :
-    (p.gadget g).body.map Prod.fst = g.body.map Prod.fst := by
+    (p.gadget g).body.map Constraint.rel = g.body.map Constraint.rel := by
   induction p with
   | done => rfl
   | rotate e rest ih =>
-    change (rest.gadget (g.relabelFree (finCycle e).symm)).body.map Prod.fst = _
+    change (rest.gadget (g.relabelFree (finCycle e).symm)).body.map Constraint.rel = _
     exact (ih _).trans (by
       simp [PPGadget.relabelFree, relabel, Constraint.relabel, List.map_map])
   | zero i rest ih =>
-    change (rest.gadget (g.relabelFree (zeroPort i))).body.map Prod.fst = _
+    change (rest.gadget (g.relabelFree (zeroPort i))).body.map Constraint.rel = _
     exact (ih _).trans (by
       simp [PPGadget.relabelFree, relabel, Constraint.relabel, List.map_map])
   | cap large rest ih =>
-    change (rest.gadget (g.substitute capPort)).body.map Prod.fst = _
+    change (rest.gadget (g.substitute capPort)).body.map Constraint.rel = _
     exact (ih _).trans (by
       simp [PPGadget.substitute, relabel, Constraint.relabel, List.map_map])
 

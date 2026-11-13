@@ -14,10 +14,12 @@ public import CslibFrontier.Languages.Probabilistic.Oracle.QueryCount
 public import CslibFrontier.Languages.Probabilistic.QueryCount
 import CslibFrontier.Languages.Probabilistic.Oracle.Interaction
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
+import CslibFrontier.Languages.Probabilistic.Oracle.Substitution.RunWith
 import CslibFrontier.Languages.Probabilistic.UntilBad.TwoCost
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Support
+import CslibFrontier.Probability.PMF.UniformPoint
 
 /-!
 # CPA Security of Counter (CTR) Mode
@@ -29,9 +31,9 @@ the plaintext blocks. [KatzLindell2020] (Section 3.6.3, Theorem 3.33, p. 93) pro
 is CPA-secure whenever `f` is a pseudorandom function.
 
 The security notion is the left-or-right multiple-encryption experiment of [KatzLindell2020],
-Definition 3.22, using the shared block-mode query/cost/ideal-game interface (`BlockModeQuery`,
-`BlockModeAdversary`, `blockModeSelect`, `blockModeBlocks`, `blockModeCost`, `blockModeIdealGame`)
-from `RandomFunctionHybrid.lean`.
+Definition 3.22, using the shared block-mode query/cost/ideal-experiment interface
+(`BlockModeQuery`, `BlockModeAdversary`, `blockModeSelect`, `blockModeBlocks`, `blockModeCost`,
+`blockModeIdealExperiment`) from `RandomFunctionHybrid.lean`.
 
 The proof works for any counter schedule `counter : BitString n → ℕ → BitString n` satisfying
 within-query distinctness (`∀ iv i j, i < ℓ → j < ℓ → i ≠ j → counter iv i ≠ counter iv j`) and
@@ -63,7 +65,7 @@ reduction is concrete (`ProbOracleComp`); no native multitape PPT statement is m
 * `Cslib.Crypto.ctrCpaGame_eq_realExperiment`, `Cslib.Crypto.isQueryBounded_ctrReduction`: exact
   real-PRF equivalence and oracle-call bound.
 * `Cslib.Crypto.advantage_idealExperiment_ctrReduction_le`: random-function idealization bound
-  `K ^ 2 / 2 ^ n` against `blockModeIdealGame`.
+  `K ^ 2 / 2 ^ n` against `blockModeIdealExperiment`.
 * `Cslib.Crypto.advantage_ctrCpaGame_randomFunction_le`, `Cslib.Crypto.advantage_ctrCpaGame_le`:
   concrete CTR left-or-right CPA security bounds.
 * `Cslib.Crypto.ctrModCounter_injective_left`, `Cslib.Crypto.ctrModCounter_injOn`,
@@ -105,7 +107,7 @@ noncomputable def ctrOracle (counter : BitString n → ℕ → BitString n) (ℓ
 noncomputable def ctrCpaGame {Key : Type} (counter : BitString n → ℕ → BitString n)
     [Fintype Key] [Nonempty Key] (F : Key → BitString n → BitString n) (ℓ : ℕ) (b : Bool)
     (adversary : BlockModeAdversary n) : Game :=
-  blockModeCpaGame (fun key => ctrEncryptBlocks (F key) counter) ℓ b adversary
+  ProbComp.eval (blockModeCpaExperiment (fun key => ctrEncryptBlocks (F key) counter) ℓ b adversary)
 
 /-! ### Section 2: The Reduction to a Pseudorandom Function -/
 
@@ -172,7 +174,8 @@ theorem ctrCpaGame_eq_realExperiment {Key : Type} (counter : BitString n → ℕ
     (adversary : BlockModeAdversary n) :
     ctrCpaGame counter F ℓ b adversary =
       ProbComp.eval (PRF.realExperiment F (ctrReduction counter ℓ b adversary)) :=
-  blockModeCpaGame_eq_realExperiment (fun key => ctrEncryptBlocks (F key) counter)
+  congrArg ProbComp.eval <| blockModeCpaExperiment_eq_realExperiment
+    (fun key => ctrEncryptBlocks (F key) counter)
     (fun iv k => ctrMaskQueriesFrom counter iv 0 k) F ℓ b adversary fun key iv ms =>
       ⟨ctrMaskBlocks (F key) counter iv ms.length,
         run_ctrMaskQueriesFrom_zero (F key) counter iv ms.length, rfl⟩
@@ -332,31 +335,6 @@ private theorem length_of_mem_support_freshQuery
   have hlen : us.length = blockModeBlocks ℓ q := length_snd_of_mem_support_uniformDraws hp
   simp only [length_ctrCache, hlen]
 
-private theorem toOuterMeasure_eq_val_of_inj {y : BitString n}
-    (f : BitString n → BitString n) (hf : Function.Injective f) :
-    (PMF.uniformOfFintype (BitString n)).toOuterMeasure {iv | f iv = y} ≤
-      ((2 : ℝ≥0∞) ^ n)⁻¹ := by
-  classical
-  by_cases hne : ∃ iv₀, f iv₀ = y
-  · obtain ⟨iv₀, hiv₀⟩ := hne
-    have hset : {iv : BitString n | f iv = y} = {iv₀} := by
-      ext iv
-      simp only [Set.mem_ofPred_eq, Set.mem_singleton_iff]
-      constructor
-      · intro h
-        exact hf (h.trans hiv₀.symm)
-      · rintro rfl
-        exact hiv₀
-    rw [hset, PMF.toOuterMeasure_apply_singleton, PMF.uniformOfFintype_apply]
-    simp
-  · have hset : {iv : BitString n | f iv = y} = ∅ := by
-      ext iv
-      simp only [Set.mem_ofPred_eq, Set.mem_empty_iff_false, iff_false]
-      intro h
-      exact hne ⟨iv, h⟩
-    rw [hset]
-    simp
-
 private theorem toOuterMeasure_exists_ctr_mem_le
     (counter : BitString n → ℕ → BitString n) (ks : List (BitString n)) (k : ℕ)
     (hiv : ∀ i < k, Function.Injective (fun iv => counter iv i)) :
@@ -382,8 +360,9 @@ private theorem toOuterMeasure_exists_ctr_mem_le
         Finset.sum_le_sum fun _ _ => MeasureTheory.measure_biUnion_finset_le _ _
     _ ≤ ∑ _j ∈ Finset.range k, ∑ _y ∈ ks.toFinset, ((2 : ℝ≥0∞) ^ n)⁻¹ := by
         refine Finset.sum_le_sum fun j hj => Finset.sum_le_sum fun y _ => ?_
-        exact toOuterMeasure_eq_val_of_inj (fun iv => counter iv j)
-          (hiv j (Finset.mem_range.1 hj))
+        refine (PMF.toOuterMeasure_uniformOfFintype_le_of_subsingleton
+          (Set.subsingleton_singleton.preimage (hiv j (Finset.mem_range.1 hj)))).trans_eq ?_
+        simp
     _ = (k : ℝ≥0∞) * ((ks.toFinset.card : ℝ≥0∞) * ((2 : ℝ≥0∞) ^ n)⁻¹) := by
         simp [Finset.sum_const, nsmul_eq_mul]
     _ ≤ (k : ℝ≥0∞) * ((ks.length : ℝ≥0∞) * ((2 : ℝ≥0∞) ^ n)⁻¹) := by
@@ -454,7 +433,7 @@ private theorem toOuterMeasure_bad_fresh_le
         (ProbOracleComp.runWith freshStep (ctrReduction counter ℓ b adversary) ([], false))
         {x | x.2.2 = true} ≤
       ((K * K : ℕ) : ℝ≥0∞) * ((2 : ℝ≥0∞) ^ n)⁻¹ := by
-  rw [ctrReduction, blockModeReduction, ProbOracleComp.runWith_interpret_sumHandler]
+  rw [ctrReduction, blockModeReduction, ProbOracleComp.runWith_simulate]
   refine (OracleComp.toOuterMeasure_bad_le_two_budgets
     (handler := sumHandler (fun i => StateT.lift (ProbComp.unifOracle i))
       fun q => ProbOracleComp.runWith freshStep (ctrQueryProgram counter ℓ b q))
@@ -498,7 +477,7 @@ private theorem toOuterMeasure_bad_fresh_le
 /-- **The CTR reduction against a uniform random function.** If the queries of `adversary` ask at
 most `K` blocks in total, and `counter` has no intra-query collisions below `ℓ` and is injective in
 `iv` at every offset below `ℓ`, then the reduction's output is within `K ^ 2 / 2 ^ n` of
-`blockModeIdealGame` for each challenge bit `b`. -/
+`blockModeIdealExperiment` for each challenge bit `b`. -/
 theorem advantage_idealExperiment_ctrReduction_le
     (counter : BitString n → ℕ → BitString n) (ℓ : ℕ) (b : Bool)
     {adversary : BlockModeAdversary n} {K : ℕ}
@@ -506,9 +485,9 @@ theorem advantage_idealExperiment_ctrReduction_le
     (hintra : ∀ iv i j, i < ℓ → j < ℓ → i ≠ j → counter iv i ≠ counter iv j)
     (hiv : ∀ i < ℓ, Function.Injective (fun iv => counter iv i)) :
     (Game.advantage (ProbComp.eval (PRF.idealExperiment (ctrReduction counter ℓ b adversary)))
-        (blockModeIdealGame ℓ adversary) : ℝ) ≤
+        (ProbComp.eval (blockModeIdealExperiment ℓ adversary)) : ℝ) ≤
       (K : ℝ) ^ 2 / 2 ^ n := by
-  have hfresh := freshGame_eq_blockModeIdealGame
+  have hfresh := freshGame_eq_blockModeIdealExperiment
     (fun iv k => ctrMaskQueriesFrom counter iv 0 k) ℓ b adversary fun q iv s => by
       have hinj : ∀ a b', 0 ≤ a → a < 0 + blockModeBlocks ℓ q → 0 ≤ b' →
           b' < 0 + blockModeBlocks ℓ q → a ≠ b' → counter iv a ≠ counter iv b' :=
@@ -549,7 +528,7 @@ theorem advantage_ctrCpaGame_randomFunction_le
   rw [e, e]
   have h₀ := advantage_idealExperiment_ctrReduction_le counter ℓ false h hintra hiv
   have h₁ := advantage_idealExperiment_ctrReduction_le counter ℓ true h hintra hiv
-  refine (advantage_le_two _ (blockModeIdealGame ℓ adversary) _).trans ?_
+  refine (advantage_le_two _ (ProbComp.eval (blockModeIdealExperiment ℓ adversary)) _).trans ?_
   linarith
 
 /-- **CTR mode is CPA-secure for a pseudorandom function** ([KatzLindell2020], Section 3.6.3,
@@ -573,7 +552,7 @@ theorem advantage_ctrCpaGame_le {Key : Type} (counter : BitString n → ℕ → 
   have h₁ := advantage_idealExperiment_ctrReduction_le counter ℓ true h hintra hiv
   refine (advantage_le_four _
     (ProbComp.eval (PRF.idealExperiment (ctrReduction counter ℓ false adversary)))
-    (blockModeIdealGame ℓ adversary)
+    (ProbComp.eval (blockModeIdealExperiment ℓ adversary))
     (ProbComp.eval (PRF.idealExperiment (ctrReduction counter ℓ true adversary))) _).trans ?_
   linarith
 
