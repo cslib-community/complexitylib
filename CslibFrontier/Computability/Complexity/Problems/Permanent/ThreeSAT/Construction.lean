@@ -95,12 +95,15 @@ def exitSucc (o : ℕ) : ℕ :=
   | some o' => entryIdx φ o'
   | none => (varList φ).idxOf (litAt φ o).1
 
+/-- The occurrence whose exit is the vertex `k`. -/
+def exitOcc (k : ℕ) : ℕ := 3 * ((k - numAux φ) / 8) + ((k - numAux φ) % 8 - 3)
+
 /-- The number of track edges from `k` to `l`. -/
 def trackEntry (k l : ℕ) : ℤ :=
   if k < numAux φ then
     (if auxSucc φ k true = l then 1 else 0) + (if auxSucc φ k false = l then 1 else 0)
   else if 3 ≤ (k - numAux φ) % 8 ∧ (k - numAux φ) % 8 < 6 then
-    if exitSucc φ (3 * ((k - numAux φ) / 8) + ((k - numAux φ) % 8 - 3)) = l then 1 else 0
+    if exitSucc φ (exitOcc φ k) = l then 1 else 0
   else 0
 
 /-- The gadget entry between `k` and `l`, if both lie in the same clause gadget. -/

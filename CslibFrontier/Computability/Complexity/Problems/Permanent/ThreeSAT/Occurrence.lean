@@ -20,7 +20,7 @@ occurs, first and next occurrences are characterized by minimality, the entry an
 are distinct vertices, and the track edges stay among the vertices.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity.PermanentThreeSAT
 
@@ -148,9 +148,6 @@ theorem entryIdx_lt_size {o : ℕ} (ho : o < numOcc φ) : entryIdx φ o < size �
 
 theorem exitIdx_lt_size {o : ℕ} (ho : o < numOcc φ) : exitIdx φ o < size φ := by
   unfold exitIdx size; unfold numOcc at ho; omega
-
-/-- The occurrence whose exit is the vertex `k`. -/
-def exitOcc (φ : CNF ℕ) (k : ℕ) : ℕ := 3 * ((k - numAux φ) / 8) + ((k - numAux φ) % 8 - 3)
 
 theorem exitOcc_exitIdx (φ : CNF ℕ) (o : ℕ) : exitOcc φ (exitIdx φ o) = o := by
   unfold exitOcc exitIdx; omega

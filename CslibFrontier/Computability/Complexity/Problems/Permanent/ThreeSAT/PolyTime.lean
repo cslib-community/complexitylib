@@ -31,6 +31,11 @@ auxiliary vertex of a variable, and unary arithmetic for the vertex numbering.
 ## Main results
 
 * `Cslib.Complexity.PermanentThreeSAT.computableInPolyTime_matrixEntry`.
+
+## Main definitions
+
+* `Cslib.Complexity.PermanentThreeSAT.encCNFVertexPair`: a formula with two unary vertex
+  indices.
 -/
 
 @[expose] public section
@@ -38,6 +43,11 @@ auxiliary vertex of a variable, and unary arithmetic for the vertex numbering.
 namespace Cslib.Complexity.PermanentThreeSAT
 
 open Cslib.Logic.PL Turing.MultiTapeTM PermanentGadget
+
+/-- A formula with two vertex indices: the formula under `encCNF`, then the two indices in unary;
+the formula and the first index are framed. -/
+abbrev encCNFVertexPair : CNF ℕ × ℕ × ℕ ↪ List Bool :=
+  encPair encCNF (encPair encUnary encUnary)
 
 /-- `auxSucc` through option combinators. -/
 theorem auxSucc_eq_getD (φ : CNF ℕ) (i : ℕ) (b : Bool) :
@@ -120,15 +130,15 @@ theorem computableInPolyTime_gadgetEntry :
 
 theorem computableInPolyTime_trackEntry :
     ComputableInPolyTime (fun p : CNF ℕ × ℕ × ℕ => trackEntry p.1 p.2.1 p.2.2)
-      (encPair encCNF (encPair encUnary encUnary)) encIntBin := by
+      encCNFVertexPair encIntBin := by
   have := computableInPolyTime_auxSucc
   have := computableInPolyTime_exitSucc
-  unfold trackEntry
+  unfold trackEntry exitOcc
   fun_prop
 
 theorem computableInPolyTime_gadgetPart :
     ComputableInPolyTime (fun p : CNF ℕ × ℕ × ℕ => gadgetPart p.1 p.2.1 p.2.2)
-      (encPair encCNF (encPair encUnary encUnary)) encIntBin := by
+      encCNFVertexPair encIntBin := by
   have := computableInPolyTime_gadgetEntry
   unfold gadgetPart
   fun_prop
@@ -136,7 +146,7 @@ theorem computableInPolyTime_gadgetPart :
 /-- **The entries of the 3CNF matrix are computable in polynomial time.** -/
 theorem computableInPolyTime_matrixEntry :
     ComputableInPolyTime (fun p : CNF ℕ × ℕ × ℕ => matrixEntry p.1 p.2.1 p.2.2)
-      (encPair encCNF (encPair encUnary encUnary)) encIntBin := by
+      encCNFVertexPair encIntBin := by
   have := computableInPolyTime_trackEntry
   have := computableInPolyTime_gadgetPart
   unfold matrixEntry

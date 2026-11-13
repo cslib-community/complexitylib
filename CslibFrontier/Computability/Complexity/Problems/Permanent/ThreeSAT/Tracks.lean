@@ -107,9 +107,7 @@ theorem trackEntry_exit (o l : ℕ) :
   have h1 : ¬ exitIdx φ o < numAux φ := by have := numAux_le_exitIdx φ o; omega
   have h2 : 3 ≤ (exitIdx φ o - numAux φ) % 8 ∧ (exitIdx φ o - numAux φ) % 8 < 6 := by
     unfold exitIdx; omega
-  have h3 := exitOcc_exitIdx φ o
-  unfold exitOcc at h3
-  rw [trackEntry, ite_eq_right h1, ite_eq_left h2, h3]
+  rw [trackEntry, ite_eq_right h1, ite_eq_left h2, exitOcc_exitIdx]
 
 theorem trackEntry_zero_or_one (hφ : WellFormed φ) (k l : ℕ) :
     trackEntry φ k l = 0 ∨ trackEntry φ k l = 1 := by
@@ -465,8 +463,8 @@ theorem permOn_trackMatrix (hφ : WellFormed φ) {P : Finset ℕ}
         (card_rowSet hP).ge
       obtain ⟨u, hu, rfl⟩ := hsurj t ht
       exact ⟨u, hu, rfl⟩
-    · simp [bijOfAssign, rowSet] at hu ⊢
-      simp [hu]
+    · have hu' : ¬ InRows φ P u := by simpa [rowSet] using hu
+      simp [bijOfAssign, hu']
     · simp only [rowSet, mem_filter, mem_univ, true_and] at hu
       unfold trackMatrix
       rw [hF u hu]
