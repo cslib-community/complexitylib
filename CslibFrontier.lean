@@ -1681,8 +1681,11 @@ public import CslibFrontier.Computability.Circuit.Quantum.Controlled
 public import CslibFrontier.Computability.Circuit.Quantum.Counter
 public import CslibFrontier.Computability.Circuit.Quantum.GateMatrix
 public import CslibFrontier.Computability.Circuit.Quantum.HadamardLayer
+public import CslibFrontier.Computability.Circuit.Quantum.Input
 public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Basic
 public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Code
+public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Resources
+public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Uniform
 public import CslibFrontier.Computability.Circuit.Quantum.Oracle.ValueQuery
 public import CslibFrontier.Computability.Circuit.Quantum.Output
 public import CslibFrontier.Computability.Circuit.Quantum.OutputSupport
@@ -4519,6 +4522,7 @@ public import CslibFrontier.Crypto.Game.FourHop
 public import CslibFrontier.Crypto.Game.Hop
 public import CslibFrontier.Crypto.Game.Hybrid
 public import CslibFrontier.Crypto.Game.Order
+public import CslibFrontier.Crypto.Game.Quantum
 public import CslibFrontier.Crypto.Game.Retry
 public import CslibFrontier.Crypto.Game.Statistical
 public import CslibFrontier.Crypto.Game.UntilBad
@@ -5982,6 +5986,7 @@ public import CslibFrontier.Foundations.Quantum.DensityMatrix
 public import CslibFrontier.Foundations.Quantum.Fourier
 public import CslibFrontier.Foundations.Quantum.HadamardTransform
 public import CslibFrontier.Foundations.Quantum.Measurement
+public import CslibFrontier.Foundations.Quantum.Measurement.Basis
 public import CslibFrontier.Foundations.Quantum.Measurement.Overlap
 public import CslibFrontier.Foundations.Quantum.Measurement.Readout
 public import CslibFrontier.Foundations.Quantum.Measurement.ReadoutOverlap
