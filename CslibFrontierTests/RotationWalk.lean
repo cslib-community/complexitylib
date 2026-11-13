@@ -56,7 +56,7 @@ example : RotationMap.killedPowRotWithInput rotate 4 2
     ((4, true), ![false, true, true, false], ![1, 1, 1, 0]) := by
   have hkill : killTime (![1, 1, 1, 0] : Fin 4 → Fin 2) = 3 :=
     (killTime_eq_iff _ (by decide)).mpr (by decide)
-  rw [RotationMap.killedPowRotWithInput_of_killTime rotate _ (by decide) hkill]
+  rw [RotationMap.killedPowRotWithInput_of_killTime rotate (by decide) hkill]
   decide
 
 example : RotationMap.killedPowRotWithInput rotate 3 2
@@ -64,7 +64,7 @@ example : RotationMap.killedPowRotWithInput rotate 3 2
     ((4, false), ![false, false, true], ![0, 1, 1]) := by
   have hkill : killTime (![0, 1, 1] : Fin 3 → Fin 2) = 0 :=
     (killTime_eq_iff _ (by decide)).mpr (by decide)
-  rw [RotationMap.killedPowRotWithInput_of_killTime rotate _ (by decide) hkill]
+  rw [RotationMap.killedPowRotWithInput_of_killTime rotate (by decide) hkill]
   decide
 
 example : RotationMap.killedPowRotWithInput rotate 2 1
@@ -72,7 +72,7 @@ example : RotationMap.killedPowRotWithInput rotate 2 1
     ((4, false), ![true, false], ![0, 0]) := by
   have hkill : killTime (![0, 0] : Fin 2 → Fin 1) = 0 :=
     (killTime_eq_iff _ (by decide)).mpr (by decide)
-  rw [RotationMap.killedPowRotWithInput_of_killTime rotate _ (by decide) hkill]
+  rw [RotationMap.killedPowRotWithInput_of_killTime rotate (by decide) hkill]
   decide
 
 example : RotationMap.walkAtWithInput rotate (4, (4, false), ![true, false, true]) 10 =
