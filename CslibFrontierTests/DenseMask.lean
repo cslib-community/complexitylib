@@ -84,6 +84,10 @@ private theorem fairPair_gap : fairPair.HasGap (fun _ => 0) := by
   rw [hgame, fairPair_entropy]
   norm_num [PMF.uniformOfFintype_apply]
 
+-- Uniform clients use the advice theorems at empty advice.
+private theorem fairPair_gapNil : fairPair.HasGapWithAdvice (fun _ => 0) (fun _ => []) :=
+  SamplablePair.hasGap_iff_hasGapWithAdvice_nil.mp fairPair_gap
+
 private noncomputable def saved : fairPair.SeedRealization :=
   Classical.choice fairPair.exists_seedRealization
 
@@ -98,7 +102,8 @@ example :
       (fun n => uniformList
         (ThreeSource.outputLength (count n) (saved.length n) 2 0 (bits n) 0)) := by
   have hlength := saved.length_isPolyTime
-  apply fairPair_gap.extract_three saved
+  apply computationallyIndistinguishable_iff_indistinguishableWithAdvice_nil.mpr
+  apply fairPair_gapNil.extract_three saved
     (bound := fun _ => 2) (inverseSlack := fun _ => 0)
     (observationBits := fun _ => 0) (remainingBits := fun _ => 0)
     (labelBits := fun n => ExtractionSchedule.slack n (saved.length n) 0)
@@ -131,7 +136,7 @@ example (choose : ℕ → ℕ) (hchoose : ∀ n, choose n < n + 1)
       (ProbComp.eval (extractWordLabelsIdeal (Prod.fst <$> fairPair.sample n) (count n) (bits n)
         >>= test n (choose n)))) := by
   have hlength := saved.length_isPolyTime
-  apply fairPair_gap.extract_indexed_word_labels saved choose
+  apply fairPair_gapNil.extract_indexed_word_labels saved choose
     (candidates := fun n => n + 1) (inverseSlack := fun _ => 0)
     (outputBits := fun n _ => ExtractionSchedule.slack n (saved.length n) 0)
     (numerator := fun _ _ => 2) (densityBound := fun _ => 0)
@@ -141,7 +146,10 @@ example (choose : ℕ → ℕ) (hchoose : ∀ n, choose n < n + 1)
     (by fun_prop) (by fun_prop) (by fun_prop)
       (Eventually.of_forall hchoose)
     (Eventually.of_forall (by intro n; rw [fairPair_entropy]; norm_num [dyadicSize]))
-    ?_ test htest
+    ?_ (fun a i result => test a.1 i result)
+    (htest.preprocess (prepare := fun input :
+      ((ℕ × List Bool) × ℕ) × (List (List Bool) × List Bool × List Bool) =>
+        ((input.1.1.1, input.1.2), input.2)) (by fun_prop))
   apply Eventually.of_forall
   intro n
   have h := ExtractionSchedule.two_slack_eq n (saved.length n) 0
@@ -161,8 +169,8 @@ example : ∀ᶠ n in atTop, ∀ i < n + 1,
             (fun value => fairPair.encode n value.1) Prod.snd mask) >>=
             fun values => pure ((values.headD ([], false)).2 ^^ decide (i < n)))) : ℝ) <
           (dyadicSize (n + 1) : ℝ) / (4 * (n + 1)) := by
-  have h := fairPair_gap.eventually_exists_indexed_mask
-    (fun n i values => pure ((values.headD ([], false)).2 ^^ decide (i < n))) (by fun_prop)
+  have h := fairPair_gapNil.eventually_exists_indexed_mask
+    (fun a i values => pure ((values.headD ([], false)).2 ^^ decide (i < a.1))) (by fun_prop)
     (candidates := fun n => n + 1) (count := fun n => n + 1)
     (numerator := fun _ _ => 1) (densityBound := fun _ => 1)
     (inverseGap := fun n => 4 * (n + 1))

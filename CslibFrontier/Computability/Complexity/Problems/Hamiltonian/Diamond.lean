@@ -462,7 +462,8 @@ end DirectionsToPath
 from the top of the first diamond to the bottom of the last exactly when its rows can be given
 directions so that every clause has a detour in the direction of its row. -/
 theorem mem_DirHamPath_iff (hD : WellFormed N slots M D) :
-    (graph N slots M D, topNode 0, topNode N) ∈ DirHamPath ↔ Satisfiable M D := by
+    (⟨graph N slots M D, topNode 0, topNode N⟩ : PathInstance) ∈ DirHamPath ↔
+      Satisfiable M D := by
   refine ⟨satisfiable_of_mem_DirHamPath hD, fun ⟨dir, hdir⟩ => ?_⟩
   choose! pick hpick using hdir
   exact ⟨_, isDirHamPath_hamPath (dir := dir) hD fun j hj =>
@@ -540,7 +541,7 @@ theorem computableInPolyTime_graph {α : Type} {encIn : α ↪ List Bool} {N M :
       (encList (encPair encNat encNat)) := by
     unfold arcs
     fun_prop
-  exact hvert.prod harcs
+  exact encGraph_mk_polyTime hvert harcs
 
 /-- A closed diamond graph is computable in polynomial time from a layout computable in polynomial
 time, with the numbers of diamonds, slots and clauses in unary. -/
@@ -553,9 +554,9 @@ theorem computableInPolyTime_cycleGraph {α : Type} {encIn : α ↪ List Bool} {
     ComputableInPolyTime (fun a => cycleGraph (N a) (slots a) (M a) (D a)) encIn
       encGraph := by
   have hg := computableInPolyTime_graph hN hslots hM hD
-  unfold encGraph at hg ⊢
-  exact hg.fst'.prod (cons' ((computableInPolyTime_topNode.comp hN).prod (const (topNode 0)))
-    hg.snd')
+  exact encGraph_mk_polyTime (encGraph_vertices_polyTime hg)
+    (cons' ((computableInPolyTime_topNode.comp hN).prod (const (topNode 0)))
+      (encGraph_edges_polyTime hg))
 
 end PolyTime
 

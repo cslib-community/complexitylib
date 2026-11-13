@@ -45,11 +45,15 @@ example : (fun w : List Bool => 2 ^ w.tail.length) ∈ SharpP encBits := by
     (show ComputableInPolyTime List.tail encBits encBits by fun_prop)
 
 /-- Requiring padding to be false gives exactly one extension, including zero padding. -/
-example (n : ℕ) : acceptCount
-    (andVerifier (fun _ : Unit => 1) (fun x => x.2.headD false) allFalseVerifier)
-      () (1 + n) = 1 := by
-  rw [acceptCount_andVerifier_allFalseVerifier]
+example (n : ℕ) : acceptCount (padVerifier (fun _ : Unit => 1) fun x => x.2.headD false)
+    () (1 + n) = 1 := by
+  rw [acceptCount_padVerifier_of_le _ _ (a := ()) (Nat.le_add_right 1 n)]
   decide
+
+/-- The sum of two counts taken at different lengths. -/
+example : acceptCount (sumVerifier (fun _ : Unit => 1) (fun _ => 2) (fun x => x.2.headD false)
+    fun _ => true) () (1 + 2 + 1) = 1 + 4 :=
+  (acceptCount_sumVerifier _ _ _ _ ()).trans (by decide)
 
 example : (fun w : List Bool => (2 ^ w.tail.length : ℕ) - (1 : ℤ)) ∈ GapP encBits := by
   simpa [Function.comp_def] using GapP.comp_mem

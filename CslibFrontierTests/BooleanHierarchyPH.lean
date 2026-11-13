@@ -33,8 +33,7 @@ example :
     {w : List Bool | w.headD false = true} ∈ BooleanHierarchy encBits ∧
     {w : List Bool | w.headD false = true} \ {w | w.tail.headD false = true} ∈ PH encBits :=
   ⟨DP_subset_SigmaP_two_inter_PiP_two head_not_tail_mem_DP,
-    coDP_subset_SigmaP_two_inter_PiP_two (by simpa only [coDP, Set.mem_ofPred_eq, compl_compl]
-      using head_not_tail_mem_DP),
+    coDP_subset_SigmaP_two_inter_PiP_two (compl_mem_coDP_iff.mpr head_not_tail_mem_DP),
     NP_subset_BooleanHierarchy head_mem_NP,
     BooleanHierarchy_subset NP_subset_PH (fun _ hA _ hB => diff_mem_PH hA hB)
       (Set.mem_iUnion.mpr ⟨2, BH_two ▸ head_not_tail_mem_DP⟩)⟩

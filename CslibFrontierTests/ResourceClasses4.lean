@@ -105,7 +105,7 @@ theorem decidesWithOneSidedError_andHead :
   · refine ⟨fun h => absurd (ha.symm.trans h) Bool.false_ne_true, fun _ r => ?_⟩
     simp only [andHead, ha, Bool.false_and]
   · refine ⟨fun _ => ?_, fun h => absurd ha h⟩
-    simp only [andHead, ha, Bool.true_and]
+    simp only [acceptCount, andHead, ha, Bool.true_and]
     exact key _ Polynomial.eval_one
 
 /-- `q(n)` runs of `andHead` decide `startsTrue` with one-sided error at most `2 ^ (-q(n))`, and

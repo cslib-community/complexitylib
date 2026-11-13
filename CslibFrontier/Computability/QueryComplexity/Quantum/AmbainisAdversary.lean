@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.QueryComplexity.Quantum.Progress
 public import CslibFrontier.Computability.QueryComplexity.Quantum.Search
 public import Cslib.Foundations.Data.BitString
+import CslibFrontier.Computability.QueryComplexity.Quantum.WeightedAdversary
 import CslibFrontier.Foundations.Data.BitString.Flip
 import CslibFrontier.Foundations.Data.Hamming
 import CslibFrontier.Foundations.Quantum.Measurement.Overlap
@@ -109,89 +110,58 @@ theorem one_sub_mul_sqrt_le_two_mul_mul_sqrt {ψ₀ : State N W} (hψ₀ : ‖ψ
       #{q ∈ R | q.1 i ≠ q.2 i ∧ q.1 = p.1} * #{q ∈ R | q.1 i ≠ q.2 i ∧ q.2 = p.2} ≤ L) :
     (1 - δ) * √(m * m') ≤ 2 * T * √L := by
   classical
-  set X := R.image Prod.fst
-  set Y := R.image Prod.snd
-  have hX : (0 : ℝ) < #X := by exact_mod_cast card_pos.2 (hR.image _)
-  have hY : (0 : ℝ) < #Y := by exact_mod_cast card_pos.2 (hR.image _)
-  -- `|R| ≥ m |X|` and `|R| ≥ m' |Y|`
-  have hRX : (m : ℝ) * #X ≤ #R := by
-    have : m * #X ≤ #R := by
-      rw [card_eq_sum_card_image Prod.fst R, mul_comm, ← smul_eq_mul, ← sum_const]
-      refine sum_le_sum fun x hx => ?_
+  rcases Nat.eq_zero_or_pos L with rfl | hL_pos
+  · simp only [Nat.cast_zero, Real.sqrt_zero, mul_zero]
+    obtain ⟨p, hp⟩ := hR
+    have hsame : p.1 = p.2 := by
+      ext i
+      by_contra hne
+      have h1 : 1 ≤ #{q ∈ R | q.1 i ≠ q.2 i ∧ q.1 = p.1} :=
+        card_pos.2 ⟨p, mem_filter.2 ⟨hp, hne, rfl⟩⟩
+      have h2 : 1 ≤ #{q ∈ R | q.1 i ≠ q.2 i ∧ q.2 = p.2} :=
+        card_pos.2 ⟨p, mem_filter.2 ⟨hp, hne, rfl⟩⟩
+      have := hL p hp i hne
+      nlinarith
+    have h1δ : 1 ≤ δ := by
+      have hle := hδ p hp
+      rw [hsame, inner_self_eq_norm_sq_to_K, norm_run, hψ₀] at hle
+      simpa using hle
+    exact mul_nonpos_of_nonpos_of_nonneg (by linarith) (Real.sqrt_nonneg _)
+  · let S := WeightScheme.ofUnweighted R L hL
+    have hW : 0 < S.weightSum := by
+      have hcard : (0 : ℝ) < #R := by exact_mod_cast hR.card_pos
+      simpa [S, WeightScheme.weightSum, WeightScheme.ofUnweighted] using hcard
+    have hsqrtL : 0 < √(L : ℝ) := Real.sqrt_pos.2 (Nat.cast_pos.2 hL_pos)
+    have hA : ∀ x ∈ S.R.image Prod.fst, ∀ i,
+        ((m : ℝ) / √L) * S.loadFst x i ≤ S.wtFst x := by
+      intro x hx i
       obtain ⟨p, hp, rfl⟩ := mem_image.1 hx
-      exact hm p hp
-    exact_mod_cast this
-  have hRY : (m' : ℝ) * #Y ≤ #R := by
-    have : m' * #Y ≤ #R := by
-      rw [card_eq_sum_card_image Prod.snd R, mul_comm, ← smul_eq_mul, ← sum_const]
-      refine sum_le_sum fun y hy => ?_
+      calc ((m : ℝ) / √L) * S.loadFst p.1 i
+          ≤ ((m : ℝ) / √L) * √L :=
+            mul_le_mul_of_nonneg_left
+              (WeightScheme.ofUnweighted_loadFst_le hL p.1 i) (by positivity)
+        _ = m := div_mul_cancel₀ _ hsqrtL.ne'
+        _ ≤ S.wtFst p.1 := by
+            rw [WeightScheme.ofUnweighted_wtFst]
+            exact_mod_cast hm p hp
+    have hB : ∀ y ∈ S.R.image Prod.snd, ∀ i,
+        ((m' : ℝ) / √L) * S.loadSnd y i ≤ S.wtSnd y := by
+      intro y hy i
       obtain ⟨p, hp, rfl⟩ := mem_image.1 hy
-      exact hm' p hp
-    exact_mod_cast this
-  -- the weighted progress bound with `c = √|Y| / √|X|`
-  set x : ℝ := (#X : ℝ) with hx
-  set y : ℝ := (#Y : ℝ) with hy
-  set c : ℝ := √y / √x
-  have hc : 0 < c := div_pos (Real.sqrt_pos.2 hY) (Real.sqrt_pos.2 hX)
-  have hfib (k : BitString N × BitString N → BitString N) (s : ℝ) (hs : 0 ≤ s)
-      (z : BitString N) (i : Fin N) :
-      ∑ p ∈ R with p.1 i ≠ p.2 i ∧ k p = z,
-        s / #{q ∈ R | q.1 i ≠ q.2 i ∧ k q = k p} ≤ s := by
-    let S := R.filter fun p => p.1 i ≠ p.2 i ∧ k p = z
-    rw [sum_congr rfl (g := fun _ => s / (#S : ℝ)) fun p hp => by
-      simp only [S, (mem_filter.1 hp).2.2], sum_const, nsmul_eq_mul]
-    by_cases h0 : #S = 0
-    · simpa [h0] using hs
-    · exact (mul_div_cancel₀ _ (by exact_mod_cast h0)).le
-  have htel := one_sub_mul_sum_le_of_sq_le U hψ₀ T R (fun _ => (1 : ℝ)) hδ
-    (fun p i => c * √L / #{q ∈ R | q.1 i ≠ q.2 i ∧ q.1 = p.1})
-    (fun p i => (√L / c) / #{q ∈ R | q.1 i ≠ q.2 i ∧ q.2 = p.2})
-    (fun _ => c * √L) (fun _ => √L / c) (fun _ _ => zero_le_one)
-    (fun _ _ _ _ => by positivity) (fun _ _ _ _ => by positivity)
-    (fun p hp i hi => by
-      have hl₁ : (0 : ℝ) < #{q ∈ R | q.1 i ≠ q.2 i ∧ q.1 = p.1} :=
-        Nat.cast_pos.2 (card_pos.2 ⟨p, mem_filter.2 ⟨hp, hi, rfl⟩⟩)
-      have hl₂ : (0 : ℝ) < #{q ∈ R | q.1 i ≠ q.2 i ∧ q.2 = p.2} :=
-        Nat.cast_pos.2 (card_pos.2 ⟨p, mem_filter.2 ⟨hp, hi, rfl⟩⟩)
-      have hll : (#{q ∈ R | q.1 i ≠ q.2 i ∧ q.1 = p.1} : ℝ) *
-          #{q ∈ R | q.1 i ≠ q.2 i ∧ q.2 = p.2} ≤ √L * √L := by
-        rw [Real.mul_self_sqrt (Nat.cast_nonneg L)]
-        exact_mod_cast hL p hp i hi
-      rw [one_pow]
-      field_simp [hl₁.ne', hl₂.ne', hc.ne']
-      nlinarith [hc])
-    (fun _ _ => by positivity) (fun _ _ => by positivity)
-    (fun z _ i => hfib Prod.fst (c * √L) (by positivity) z i)
-    (fun z _ i => hfib Prod.snd (√L / c) (by positivity) z i)
-  simp only [sum_const, nsmul_eq_mul, mul_one] at htel
-  have hbal : c * √L * x + (√L / c) * y = √L * (2 * (√x * √y)) := by
-    have h1 : 0 < √x := Real.sqrt_pos.2 hX
-    have h2 : 0 < √y := Real.sqrt_pos.2 hY
-    have ex : x = √x * √x := (Real.mul_self_sqrt hX.le).symm
-    have ey : y = √y * √y := (Real.mul_self_sqrt hY.le).symm
-    calc
-      c * √L * x + (√L / c) * y
-          = (√y / √x) * √L * (√x * √x) + (√L / (√y / √x)) * (√y * √y) := by
-            rw [← ex, ← ey]
-      _ = √L * (2 * (√x * √y)) := by field_simp; ring
-  rw [show (↑(#X) : ℝ) * (c * √L) + ↑(#Y) * (√L / c) = c * √L * x + (√L / c) * y by ring] at htel
-  rw [hbal] at htel
-  rcases le_or_gt 1 δ with h1 | h1
-  · have : (1 - δ) * √(m * m') ≤ 0 :=
-      mul_nonpos_of_nonpos_of_nonneg (by linarith) (Real.sqrt_nonneg _)
-    exact this.trans (by positivity)
-  -- `√(m m') √(|X| |Y|) ≤ |R|`
-  have hR' : √(m * m') * (√x * √y) ≤ #R := by
-    rw [← Real.sqrt_mul hX.le, ← Real.sqrt_mul (by positivity)]
-    refine Real.sqrt_le_iff.2 ⟨by positivity, ?_⟩
-    nlinarith [mul_le_mul hRX hRY (by positivity) (by positivity)]
-  have hxy : 0 < √x * √y := mul_pos (Real.sqrt_pos.2 hX) (Real.sqrt_pos.2 hY)
-  have key : (1 - δ) * √(m * m') * (√x * √y) ≤ 2 * T * √L * (√x * √y) := by
-    calc (1 - δ) * √(m * m') * (√x * √y) = (1 - δ) * (√(m * m') * (√x * √y)) := by ring
-      _ ≤ (1 - δ) * #R := mul_le_mul_of_nonneg_left hR' (by linarith)
-      _ ≤ T * (√L * (2 * (√x * √y))) := htel
-      _ = 2 * T * √L * (√x * √y) := by ring
-  exact le_of_mul_le_mul_right key hxy
+      calc ((m' : ℝ) / √L) * S.loadSnd p.2 i
+          ≤ ((m' : ℝ) / √L) * √L :=
+            mul_le_mul_of_nonneg_left
+              (WeightScheme.ofUnweighted_loadSnd_le hL p.2 i) (by positivity)
+        _ = m' := div_mul_cancel₀ _ hsqrtL.ne'
+        _ ≤ S.wtSnd p.2 := by
+            rw [WeightScheme.ofUnweighted_wtSnd]
+            exact_mod_cast hm' p hp
+    have hbd := S.one_sub_mul_sqrt_le_of_load_le U hψ₀ T hW hδ
+      (mA := (m : ℝ) / √L) (mB := (m' : ℝ) / √L) (by positivity) (by positivity) hA hB
+    have hmul : √(((m : ℝ) / √L) * ((m' : ℝ) / √L)) = √(m * m') / √L := by
+      rw [div_mul_div_comm, ← sq, Real.sqrt_div (by positivity), Real.sqrt_sq hsqrtL.le]
+    rw [hmul, mul_div_assoc', div_le_iff₀ hsqrtL] at hbd
+    exact hbd
 
 /-- **Ambainis's adversary bound** [Ambainis2002], Theorem 2, for Boolean outputs: let a
 `T`-query algorithm with a unit initial state accept, by an outcome in `S`, the first input of

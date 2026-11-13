@@ -26,6 +26,11 @@ weighted threshold circuits ([KaneWilliams2016], `arXiv:1511.07860v1`, Theorem 2
    `IsDepthTwoWithGates`, `card_isDepthTwoWithGates_le`):**
    On `κ → Bool`, there are at most `(2 ^ |κ| + 1) ^ (|κ| + 1)` LTFs and at most
    `(2 ^ |κ| + 1) ^ ((|κ| + 2) * q + |κ| + 1)` functions in `IsDepthTwoWithGates q`.
+   A fixed real function `φ : X → ℝ` has at most `|X| + 1` upper level sets, at most `|X| - 1` of
+   them nonconstant (`IsUpperLevelSet`, `card_isUpperLevelSet_le`,
+   `card_isUpperLevelSet_nonconst_le`); threshold shifts `IsThresholdShift` of a fixed weight vector
+   are the case of a linear form (`card_isThresholdShift_le`,
+   `card_isThresholdShift_nonconst_le`).
    The original fixed-weight refinement `IsDepthTwoOverWeights` counts threshold shifts from a
    fixed finite family `W`: `card_isThresholdShift_le`, `card_isWeightShift_le`, and
    `card_isDepthTwoOverWeights_le`; it is monotone in `q` and `W`
@@ -252,7 +257,80 @@ theorem card_isDepthTwoWithGates_le {κ : Type*} [Fintype κ] [DecidableEq κ] (
     (IsDepthTwoWithGates q) fun _ hf => hf).trans_eq ?_
   rw [← pow_mul, ← pow_add]; congr 1; ring
 
-/-! ### Threshold shifts of fixed weight vectors -/
+/-! ### Upper level sets of a fixed real function and threshold shifts -/
+
+/-- `g : X → Bool` is an **upper level set** of the real function `φ : X → ℝ` if
+`g x = decide (τ ≤ φ x)` for some threshold `τ : ℝ`. -/
+def IsUpperLevelSet {X : Type*} (φ : X → ℝ) (g : X → Bool) : Prop :=
+  ∃ τ : ℝ, ∀ x : X, g x = decide (τ ≤ φ x)
+
+noncomputable instance {X : Type*} (φ : X → ℝ) (g : X → Bool) :
+    Decidable (IsUpperLevelSet φ g) := Classical.propDecidable _
+
+/-- Upper level sets of a fixed function are nested, so an upper level set is determined by the
+number of points where it is `true`. -/
+theorem eq_of_isUpperLevelSet_of_card_eq {X : Type*} [Fintype X] {φ : X → ℝ} {g₁ g₂ : X → Bool}
+    (h₁ : IsUpperLevelSet φ g₁) (h₂ : IsUpperLevelSet φ g₂)
+    (hcard : #{x : X | g₁ x = true} = #{x : X | g₂ x = true}) : g₁ = g₂ := by
+  classical
+  have key : ∀ {g g' : X → Bool} {τ τ' : ℝ}, (∀ x, g x = decide (τ ≤ φ x)) →
+      (∀ x, g' x = decide (τ' ≤ φ x)) → τ ≤ τ' →
+      #{x : X | g x = true} = #{x : X | g' x = true} → g = g' := by
+    intro g g' τ τ' h h' hle hc
+    have hsub : (univ.filter fun x => g' x = true) ⊆ univ.filter fun x => g x = true := by
+      intro x hx
+      simp only [mem_filter, mem_univ, true_and, h' x, h x, decide_eq_true_eq] at hx ⊢
+      linarith
+    have heq := eq_of_subset_of_card_le hsub hc.le
+    funext x
+    have hx : x ∈ univ.filter (fun x => g' x = true) ↔ x ∈ univ.filter (fun x => g x = true) := by
+      rw [heq]
+    simp only [mem_filter, mem_univ, true_and] at hx
+    exact Bool.eq_iff_iff.mpr hx.symm
+  obtain ⟨τ₁, h₁⟩ := h₁
+  obtain ⟨τ₂, h₂⟩ := h₂
+  rcases le_total τ₁ τ₂ with hle | hle
+  · exact key h₁ h₂ hle hcard
+  · exact (key h₂ h₁ hle hcard.symm).symm
+
+/-- A fixed real function `φ : X → ℝ` has at most `|X| + 1` upper level sets. -/
+theorem card_isUpperLevelSet_le {X : Type*} [Fintype X] [DecidableEq X] (φ : X → ℝ) :
+    #{g : X → Bool | IsUpperLevelSet φ g} ≤ Fintype.card X + 1 := by
+  classical
+  let F : (X → Bool) → Fin (Fintype.card X + 1) := fun g =>
+    ⟨#{x : X | g x = true}, Nat.lt_succ_of_le (card_filter_le _ _)⟩
+  have hinj : Set.InjOn F ↑(univ.filter (IsUpperLevelSet φ)) := fun _ hg₁ _ hg₂ hF =>
+    eq_of_isUpperLevelSet_of_card_eq (mem_filter.mp (mem_coe.mp hg₁)).2
+      (mem_filter.mp (mem_coe.mp hg₂)).2 (congrArg Fin.val hF)
+  exact (card_le_card_of_injOn F (fun _ _ => mem_univ _) hinj).trans_eq (by simp)
+
+/-- A fixed real function `φ : X → ℝ` has at most `|X| - 1` nonconstant upper level sets. -/
+theorem card_isUpperLevelSet_nonconst_le {X : Type*} [Fintype X] [DecidableEq X] (φ : X → ℝ) :
+    #{g : X → Bool | IsUpperLevelSet φ g ∧ ∃ x y, g x ≠ g y} ≤ Fintype.card X - 1 := by
+  classical
+  let F : (X → Bool) → ℕ := fun g => #{x : X | g x = true} - 1
+  have hbounds {g : X → Bool} (hg : ∃ x y, g x ≠ g y) :
+      1 ≤ #{x : X | g x = true} ∧ #{x : X | g x = true} < Fintype.card X := by
+    obtain ⟨x, y, hxy⟩ := hg
+    obtain ⟨t, f, ht, hf⟩ : ∃ t f, g t = true ∧ g f = false := by
+      cases hx : g x <;> cases hy : g y <;> rw [hx, hy] at hxy
+      exacts [absurd rfl hxy, ⟨y, x, hy, hx⟩, ⟨x, y, hx, hy⟩, absurd rfl hxy]
+    refine ⟨card_pos.mpr ⟨t, by simp [ht]⟩, ?_⟩
+    exact (card_lt_card (Finset.ssubset_iff_subset_ne.mpr ⟨subset_univ _, fun h => by
+      simpa [hf] using (Finset.ext_iff.mp h f).mpr (mem_univ f)⟩)).trans_eq card_univ
+  have hmaps : ∀ g ∈ univ.filter (fun g : X → Bool => IsUpperLevelSet φ g ∧ ∃ x y, g x ≠ g y),
+      F g ∈ range (Fintype.card X - 1) := fun g hg => by
+    have := hbounds (mem_filter.mp hg).2.2
+    simp only [mem_range, F]; omega
+  have hinj : Set.InjOn F
+      ↑(univ.filter fun g : X → Bool => IsUpperLevelSet φ g ∧ ∃ x y, g x ≠ g y) :=
+    fun g₁ hg₁ g₂ hg₂ hF => by
+      have h₁ := mem_filter.mp (mem_coe.mp hg₁)
+      have h₂ := mem_filter.mp (mem_coe.mp hg₂)
+      have := hbounds h₁.2.2
+      have := hbounds h₂.2.2
+      exact eq_of_isUpperLevelSet_of_card_eq h₁.2.1 h₂.2.1 (by simp only [F] at hF; omega)
+  exact (card_le_card_of_injOn F hmaps hinj).trans_eq (card_range _)
 
 /-- `g : (κ → Bool) → Bool` is a **threshold shift** of the weight vector `β : κ → ℝ` if
 `g = ltfEval β τ` for some threshold `τ : ℝ`. -/
@@ -262,41 +340,29 @@ def IsThresholdShift {κ : Type*} [Fintype κ] (β : κ → ℝ) (g : (κ → Bo
 noncomputable instance {κ : Type*} [Fintype κ] (β : κ → ℝ) (g : (κ → Bool) → Bool) :
     Decidable (IsThresholdShift β g) := Classical.propDecidable _
 
+/-- Threshold shifts of `β` are the upper level sets of the linear form `u ↦ ∑ i, β i * u i`. -/
+theorem isThresholdShift_iff_isUpperLevelSet {κ : Type*} [Fintype κ] (β : κ → ℝ)
+    (g : (κ → Bool) → Bool) :
+    IsThresholdShift β g ↔ IsUpperLevelSet (fun u : κ → Bool => ∑ i, β i * (u i).toNat) g :=
+  Iff.rfl
+
 /-- Threshold shifts of a fixed weight vector are nested, so a threshold shift is determined by the
 number of its satisfying assignments. -/
 theorem eq_of_isThresholdShift_of_card_eq {κ : Type*} [Fintype κ] [DecidableEq κ] {β : κ → ℝ}
     {g₁ g₂ : (κ → Bool) → Bool} (h₁ : IsThresholdShift β g₁) (h₂ : IsThresholdShift β g₂)
-    (hcard : #{u : κ → Bool | g₁ u = true} = #{u : κ → Bool | g₂ u = true}) : g₁ = g₂ := by
-  classical
-  have key : ∀ {g g' : (κ → Bool) → Bool} {τ τ' : ℝ}, (∀ u, g u = ltfEval β τ u) →
-      (∀ u, g' u = ltfEval β τ' u) → τ ≤ τ' →
-      #{u : κ → Bool | g u = true} = #{u : κ → Bool | g' u = true} → g = g' := by
-    intro g g' τ τ' h h' hle hc
-    have hsub : (univ.filter fun u => g' u = true) ⊆ univ.filter fun u => g u = true := by
-      intro u hu
-      simp only [mem_filter, mem_univ, true_and, h' u, h u, ltfEval, decide_eq_true_eq] at hu ⊢
-      linarith
-    have heq := eq_of_subset_of_card_le hsub hc.le
-    funext u
-    have hu := congrArg (u ∈ ·) heq
-    simp only [mem_filter, mem_univ, true_and, eq_iff_iff] at hu
-    cases hgu : g u <;> cases hg'u : g' u <;> simp_all
-  obtain ⟨τ₁, h₁⟩ := h₁
-  obtain ⟨τ₂, h₂⟩ := h₂
-  rcases le_total τ₁ τ₂ with hle | hle
-  · exact key h₁ h₂ hle hcard
-  · exact (key h₂ h₁ hle hcard.symm).symm
+    (hcard : #{u : κ → Bool | g₁ u = true} = #{u : κ → Bool | g₂ u = true}) : g₁ = g₂ :=
+  eq_of_isUpperLevelSet_of_card_eq h₁ h₂ hcard
 
 /-- A fixed weight vector `β : κ → ℝ` has at most `2 ^ |κ| + 1` threshold shifts. -/
 theorem card_isThresholdShift_le {κ : Type*} [Fintype κ] [DecidableEq κ] (β : κ → ℝ) :
-    #{g : (κ → Bool) → Bool | IsThresholdShift β g} ≤ 2 ^ Fintype.card κ + 1 := by
-  classical
-  let F : ((κ → Bool) → Bool) → Fin (2 ^ Fintype.card κ + 1) := fun g =>
-    ⟨#{u : κ → Bool | g u = true}, Nat.lt_succ_of_le ((card_filter_le _ _).trans_eq (by simp))⟩
-  have hinj : Set.InjOn F ↑(univ.filter (IsThresholdShift β)) := fun _ hg₁ _ hg₂ hF =>
-    eq_of_isThresholdShift_of_card_eq (mem_filter.mp (mem_coe.mp hg₁)).2
-      (mem_filter.mp (mem_coe.mp hg₂)).2 (congrArg Fin.val hF)
-  exact (card_le_card_of_injOn F (fun _ _ => mem_univ _) hinj).trans_eq (by simp)
+    #{g : (κ → Bool) → Bool | IsThresholdShift β g} ≤ 2 ^ Fintype.card κ + 1 :=
+  (card_isUpperLevelSet_le _).trans_eq (by simp)
+
+/-- A fixed weight vector `β : κ → ℝ` has at most `2 ^ |κ| - 1` nonconstant threshold shifts. -/
+theorem card_isThresholdShift_nonconst_le {κ : Type*} [Fintype κ] [DecidableEq κ] (β : κ → ℝ) :
+    #{g : (κ → Bool) → Bool | IsThresholdShift β g ∧ ∃ u v, g u ≠ g v} ≤
+      2 ^ Fintype.card κ - 1 :=
+  (card_isUpperLevelSet_nonconst_le _).trans_eq (by simp)
 
 /-- `g : (κ → Bool) → Bool` is a **weight shift** over a finite set `W : Finset (κ → ℝ)` of weight
 vectors if it is the constant `false` function or a threshold shift of some `β ∈ W`. -/

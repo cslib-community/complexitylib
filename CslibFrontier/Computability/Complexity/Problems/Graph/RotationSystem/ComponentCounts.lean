@@ -32,17 +32,17 @@ namespace Cslib.Complexity.Graph
 open Classical in
 /-- Distinct declared vertex names in the existing component of `root`. -/
 @[expose] noncomputable def componentVertexSet (G : Graph) (root : ℕ) : Finset ℕ :=
-  G.1.toFinset.filter fun v => RotationCertificate.SameComponent G root v
+  G.vertices.toFinset.filter fun v => RotationCertificate.SameComponent G root v
 
 open Classical in
 /-- Listed edge positions whose first endpoint belongs to `root`'s existing component. -/
-@[expose] noncomputable def componentEdgeSet (G : Graph) (root : ℕ) : Finset (Fin G.2.length) :=
+@[expose] noncomputable def componentEdgeSet (G : Graph) (root : ℕ) : Finset (Fin G.edges.length) :=
   Finset.univ.filter fun i =>
     RotationCertificate.SameComponent G root (Dart.vertex (G := G) (i, false))
 
 /-- Membership for an actual dart reduces to the existing component relation. -/
 theorem mem_componentVertexSet_dart {G : Graph} (root : ℕ)
-    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) (d : Dart G) :
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.vertices) (d : Dart G) :
     d.vertex ∈ G.componentVertexSet root ↔
       RotationCertificate.SameComponent G root d.vertex := by
   simp only [componentVertexSet, Finset.mem_filter, List.mem_toFinset,
@@ -50,7 +50,7 @@ theorem mem_componentVertexSet_dart {G : Graph} (root : ℕ)
 
 /-- Either indexed endpoint identifies the same set of listed component edges. -/
 theorem mem_componentEdgeSet_iff {G : Graph} (root : ℕ)
-    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) (i : Fin G.2.length) (b : Bool) :
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.vertices) (i : Fin G.edges.length) (b : Bool) :
     i ∈ G.componentEdgeSet root ↔ (Dart.vertex (G := G) (i, b)) ∈ G.componentVertexSet root := by
   rw [mem_componentVertexSet_dart root hG]
   simp only [componentEdgeSet, Finset.mem_filter, Finset.mem_univ, true_and]
@@ -65,7 +65,7 @@ theorem card_componentVertexSet (G : Graph) (root : ℕ) :
     (G.componentVertexSet root).card = G.distinctVertices.countP
       (fun v => decide (RotationCertificate.SameComponent G root v)) := by
   classical
-  have he : G.distinctVertices.toFinset = G.1.toFinset := by
+  have he : G.distinctVertices.toFinset = G.vertices.toFinset := by
     ext v
     simp only [List.mem_toFinset, mem_distinctVertices]
   rw [componentVertexSet, ← he]
@@ -74,15 +74,15 @@ theorem card_componentVertexSet (G : Graph) (root : ℕ) :
 open Classical in
 /-- Counting indexed component edges agrees with the existing edge-list occurrence count. -/
 theorem card_componentEdgeSet (G : Graph) (root : ℕ) :
-    (G.componentEdgeSet root).card = G.2.countP
+    (G.componentEdgeSet root).card = G.edges.countP
       (fun edge => decide (RotationCertificate.SameComponent G root edge.1)) := by
   classical
-  have h := (List.nodup_finRange G.2.length).card_eq_countP
+  have h := (List.nodup_finRange G.edges.length).card_eq_countP
     (P := fun i => RotationCertificate.SameComponent G root
       (Dart.vertex (G := G) (i, false)))
   rw [List.toFinset_finRange] at h
   rw [componentEdgeSet, h]
-  conv_rhs => rw [← List.map_get_finRange G.2]
+  conv_rhs => rw [← List.map_get_finRange G.edges]
   simp only [List.countP_map, Function.comp_def, Dart.vertex, edgeEndpoint,
     Bool.false_eq_true, ite_false]
   apply List.countP_congr
@@ -95,7 +95,7 @@ namespace RotationSystem
 open Classical in
 /-- Exactly one indexed dart per actual face in the chosen edge component. -/
 @[expose] noncomputable def componentFaceIndices {G : Graph} (r : RotationSystem G)
-    (root : ℕ) : Finset (Fin (2 * G.2.length)) :=
+    (root : ℕ) : Finset (Fin (2 * G.edges.length)) :=
   Finset.univ.filter fun i =>
     RotationCertificate.SameComponent G root ((Dart.indexEquiv G).symm i).vertex ∧
       r.IsFaceRepresentative ((Dart.indexEquiv G).symm i)
@@ -104,12 +104,12 @@ open Classical in
 /-- The finite face set is precisely the face count in `NumericalGenusZero`. -/
 theorem card_componentFaceIndices {G : Graph} (r : RotationSystem G) (root : ℕ) :
     (r.componentFaceIndices root).card =
-      ((List.finRange (2 * G.2.length)).countP fun i =>
+      ((List.finRange (2 * G.edges.length)).countP fun i =>
         decide (RotationCertificate.SameComponent G root ((Dart.indexEquiv G).symm i).vertex ∧
           r.IsFaceRepresentative ((Dart.indexEquiv G).symm i))) := by
   classical
   simpa only [componentFaceIndices, List.toFinset_finRange] using
-    (List.nodup_finRange (2 * G.2.length)).card_eq_countP
+    (List.nodup_finRange (2 * G.edges.length)).card_eq_countP
       (P := fun i => RotationCertificate.SameComponent G root
         ((Dart.indexEquiv G).symm i).vertex ∧
           r.IsFaceRepresentative ((Dart.indexEquiv G).symm i))
@@ -117,15 +117,15 @@ theorem card_componentFaceIndices {G : Graph} (r : RotationSystem G) (root : ℕ
 open Classical in
 /-- Source face representatives and canonical dual vertex names agree in each edge component. -/
 noncomputable def componentFaceDualVertexEquiv {G : Graph} (r : RotationSystem G)
-    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) (d : Dart G) :
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.vertices) (d : Dart G) :
     ↥(r.componentFaceIndices d.vertex) ≃
       ↥(r.dualGraph.componentVertexSet (r.dualDartEquiv d).vertex) :=
-  Equiv.ofBijective (fun i => ⟨(i : Fin (2 * G.2.length)).val, by
+  Equiv.ofBijective (fun i => ⟨(i : Fin (2 * G.edges.length)).val, by
     let a := (Dart.indexEquiv G).symm i.val
     obtain ⟨hc, hr⟩ := (Finset.mem_filter.mp i.property).2
     have h := (mem_componentVertexSet_dart _ r.dualGraph_endpoints_declared
       (r.dualDartEquiv a)).mpr ((r.sameComponent_dual_iff hG d a).mpr hc)
-    have ha : a.index = (i : Fin (2 * G.2.length)).val :=
+    have ha : a.index = (i : Fin (2 * G.edges.length)).val :=
       congrArg Fin.val ((Dart.indexEquiv G).apply_symm_apply i.val)
     rwa [r.vertex_dualDartEquiv a, (r.faceId_eq_index_iff a).mpr hr, ha] at h⟩) ⟨by
     intro i j h
@@ -150,7 +150,7 @@ noncomputable def componentFaceDualVertexEquiv {G : Graph} (r : RotationSystem G
 
 /-- Componentwise face counts equal componentwise declared dual vertex counts. -/
 theorem card_component_faces_eq_dual_vertices {G : Graph} (r : RotationSystem G)
-    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) (d : Dart G) :
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.vertices) (d : Dart G) :
     (r.componentFaceIndices d.vertex).card =
       (r.dualGraph.componentVertexSet (r.dualDartEquiv d).vertex).card := by
   simpa only [Fintype.card_coe] using
@@ -158,7 +158,7 @@ theorem card_component_faces_eq_dual_vertices {G : Graph} (r : RotationSystem G)
 
 /-- Edge positions in corresponding source and dual components are identified explicitly. -/
 @[expose] noncomputable def componentEdgeDualEquiv {G : Graph} (r : RotationSystem G)
-    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) (d : Dart G) :
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.vertices) (d : Dart G) :
     ↥(G.componentEdgeSet d.vertex) ≃
       ↥(r.dualGraph.componentEdgeSet (r.dualDartEquiv d).vertex) :=
   (finCongr r.dualGraph_length.symm).subtypeEquiv (by
@@ -168,7 +168,7 @@ theorem card_component_faces_eq_dual_vertices {G : Graph} (r : RotationSystem G)
 
 /-- Corresponding components retain every listed edge occurrence. -/
 theorem card_component_edges_eq_dual {G : Graph} (r : RotationSystem G)
-    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) (d : Dart G) :
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.vertices) (d : Dart G) :
     (G.componentEdgeSet d.vertex).card =
       (r.dualGraph.componentEdgeSet (r.dualDartEquiv d).vertex).card := by
   simpa only [Fintype.card_coe] using Fintype.card_congr (r.componentEdgeDualEquiv hG d)
@@ -177,7 +177,7 @@ open Classical in
 /-- In each edge component, every dual face is exactly one nonempty source vertex fiber.
 Declared isolated source points are absent from this dart-indexed correspondence. -/
 noncomputable def componentDualFaceVertexEquiv {G : Graph} (r : RotationSystem G)
-    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) (d : Dart G) :
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.vertices) (d : Dart G) :
     ↥(r.dualRotation.componentFaceIndices (r.dualDartEquiv d).vertex) ≃
       ↥(G.componentVertexSet d.vertex) :=
   Equiv.ofBijective (fun i =>
@@ -227,7 +227,7 @@ noncomputable def componentDualFaceVertexEquiv {G : Graph} (r : RotationSystem G
 
 /-- The dual face count in an edge component is its number of distinct source vertices. -/
 theorem card_component_dual_faces_eq_vertices {G : Graph} (r : RotationSystem G)
-    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) (d : Dart G) :
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.vertices) (d : Dart G) :
     (r.dualRotation.componentFaceIndices (r.dualDartEquiv d).vertex).card =
       (G.componentVertexSet d.vertex).card := by
   simpa only [Fintype.card_coe] using
@@ -236,7 +236,7 @@ theorem card_component_dual_faces_eq_vertices {G : Graph} (r : RotationSystem G)
 /-- The existing componentwise numerical predicate is exactly Euler on these finite sets.
 Point components retain their original conventional face and impose no dart-index condition. -/
 theorem numericalGenusZero_iff_component_cards {G : Graph} (r : RotationSystem G)
-    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) :
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.vertices) :
     r.NumericalGenusZero ↔ ∀ d : Dart G,
       (G.componentVertexSet d.vertex).card + (r.componentFaceIndices d.vertex).card =
         (G.componentEdgeSet d.vertex).card + 2 := by
@@ -258,7 +258,7 @@ theorem numericalGenusZero_iff_component_cards {G : Graph} (r : RotationSystem G
 predicate. Source point components are dropped, and their conventional Euler equations are
 tautologies on the source side. The empty graph is included. No geometric premise is used. -/
 theorem numericalGenusZero_dual_iff {G : Graph} (r : RotationSystem G)
-    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) :
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.vertices) :
     r.dualRotation.NumericalGenusZero ↔ r.NumericalGenusZero := by
   rw [r.dualRotation.numericalGenusZero_iff_component_cards r.dualGraph_endpoints_declared,
     r.numericalGenusZero_iff_component_cards hG]

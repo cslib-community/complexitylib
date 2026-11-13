@@ -135,10 +135,8 @@ theorem live_transition {r κ n w : ℕ} {target : List Node} {a : Arena}
   have ym (i : Fin 16) : y.regs (controllerRegisters r i) = v.regs (controllerRegisters r i) :=
     (hyouter _ (fun j => (controller_ne_preprocessing i j).symm)).trans
       (releaseState_regs v _ (controller_ne_preprocessing i heap))
-  have yframe (q : ℕ) (hq : q < a.stack ∨ a.stack + a.capacity ≤ q) : y.mem q = v.mem q := by
-    apply hyframe
-    simp only [WordStack.footprint, Block.mem_footprint, Block.Owns]
-    simp only [Data.comap_regs] at *; omega
+  have yframe (q : ℕ) (hq : q < a.stack ∨ a.stack + a.capacity ≤ q) : y.mem q = v.mem q :=
+    a.stack_frame hyframe q hq
   have hvisit : ExecWithin (w + 2) (visit c.code) p y (visitTime a.n a.m a.N + T + 207) := by
     exact (hq.seq (hv.seq (hrelease.within.seq hy.within))).mono (by
       simp only [T, Data.comap_regs] at *
@@ -202,10 +200,7 @@ theorem live_transition {r κ n w : ℕ} {target : List Node} {a : Arena}
     hremaining, hdec, bodyFrontier⟩
   refine {
     bounded := hbody.bounded h.bounded
-    controls := uc.congr (by
-      intro i hi
-      simp only [List.mem_cons, List.not_mem_nil, or_false] at hi
-      exact yreg i (by omega) (by omega))
+    controls := uc.of_regs_71_96 yreg
     bitmap := ?_
     stack := ?_
     depth := depth
@@ -223,7 +218,7 @@ theorem live_transition {r κ n w : ℕ} {target : List Node} {a : Arena}
     exactOutput := ?_
     protectedMemory := ?_ }
   · intro a ha'
-    rw [yframe _ (Or.inl (by have := ha.1; simp only [T, Data.comap_regs] at *; omega))]
+    rw [yframe _ (Or.inl (by have := ha.1; omega))]
     exact (oldPrefix _ (by
       have hs := ha.1
       have ht := ha.2.1
@@ -239,8 +234,8 @@ theorem live_transition {r κ n w : ℕ} {target : List Node} {a : Arena}
     · exact h.valid d (List.mem_cons_of_mem e hd)
   · intro d hd
     exact ((newStored d hd).of_prefix (fun j =>
-      (newEnds d hd j).trans ((release_heap_le em hvr).trans_eq (hvr heap))) hvf).of_stack_frame
-        ((newAround d hd).mono_capacity gap) hyframe
+      (newEnds d hd j).trans ((release_heap_le em hvr).trans_eq (hvr heap))) hvf).of_arena_frame
+        ha (newAround d hd) hyframe
   · intro d hd j
     rw [yh]
     exact newEnds d hd j

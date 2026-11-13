@@ -255,8 +255,8 @@ theorem hasScheme [Fintype S] [Fintype M] {n ℓ : ℕ} (h : n ≤ ℓ ^ Fintype
     rw [Fintype.card_fun, Fintype.card_fin]
   let e : Fin n ↪ (D → Fin ℓ) :=
     (Fin.castLEEmb (h.trans_eq hcard.symm)).trans (Fintype.equivFin (D → Fin ℓ)).symm.toEmbedding
-  have hP := (K.isCorrect_scheme (ι := Fin ℓ)).comap e |>.hasScheme
-    ((K.isPrivate_scheme (ι := Fin ℓ)).comap e)
+  have hP := ((K.isCorrect_scheme (ι := Fin ℓ)).comap e false).hasScheme
+    ((K.isPrivate_scheme (ι := Fin ℓ)).comap e false)
   rwa [communication_scheme, Fintype.card_fin] at hP
 
 end Scheme

@@ -10,6 +10,7 @@ module
 public import Cslib.Probability.StatisticalDistance
 public import CslibFrontier.Probability.PMF
 public import CslibFrontier.Probability.StatisticalDistance
+public import CslibFrontier.Probability.StatisticalDistance.TotalVariation
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Map

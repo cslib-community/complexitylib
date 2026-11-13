@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: local-only (tests of the game_trans and peel_binds tactics)
 
-public import CslibFrontier.Crypto.Game.CloseTo.Statistical
+public import CslibFrontier.Probability.StatisticalDistance.TotalVariation
 public import CslibFrontier.Tactic.GameHop
 
 /-!

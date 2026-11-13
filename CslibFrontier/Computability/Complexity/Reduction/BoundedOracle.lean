@@ -1430,8 +1430,7 @@ theorem mem_PSPACE {A : Set α} {B : Set β} (D : Decoder encB)
     rw [horacle_eq]
     exact hsingleton.comp hdecB_ps
   have hf_ps := R.toProgram.computableInPolySpace horacle
-  obtain ⟨S_A, hSA_poly, T_A, c_A, htm_A, _⟩ := hf_ps.exists_inSpace
-  exact ⟨_, ⟨T_A, fun a => c_A * (S_A a + 1), by growth_poly, htm_A⟩, fun _ => by simp⟩
+  exact ⟨_, hf_ps, fun _ => by simp⟩
 
 /-! ### Parameterized exponential and subexponential oracle transfer -/
 

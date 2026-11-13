@@ -397,17 +397,41 @@ def adaptiveTwoQueryMachine : MultiTapePTM 0 Bool AdaptiveQueryState Unit where
 --    `queryOf` extracts `some [true]`.
 example :
     TCRSignature.queryOf adaptiveTwoQueryMachine
-      (TCRSignature.replayCfg adaptiveTwoQueryMachine 10 [] [(false, [], [])]) false =
+      (TCRSignature.replayCfg adaptiveTwoQueryMachine 10 [] [⟨false, [], []⟩]) false =
         some [true] ∧
     TCRSignature.queryOf adaptiveTwoQueryMachine
       (TCRSignature.replayCfg adaptiveTwoQueryMachine 10 []
-        [(false, [], []), (false, [], []), (false, [], [])]) false =
+        [⟨false, [], []⟩, ⟨false, [], []⟩, ⟨false, [], []⟩]) false =
         some [false] ∧
     TCRSignature.queryOf adaptiveTwoQueryMachine
       (TCRSignature.replayCfg adaptiveTwoQueryMachine 10 []
-        [(false, [], []), (false, [true], []), (false, [], [])]) false =
+        [⟨false, [], []⟩, ⟨false, [true], []⟩, ⟨false, [], []⟩]) false =
         some [true] := by
   decide +kernel
+
+example (s₁ s₂ : TCRSignature.TraceStep)
+    (h1 : s₁.coin = s₂.coin) (h2 : s₁.hashKey = s₂.hashKey) (h3 : s₁.ots = s₂.ots) :
+    s₁ = s₂ := by
+  ext1 <;> assumption
+
+example :
+    ComputableInPolyTime
+      (fun s : TCRSignature.TraceStep =>
+        (⟨s.coin, s.ots, s.hashKey⟩ : TCRSignature.TraceStep))
+      TCRSignature.encTraceStep TCRSignature.encTraceStep := by
+  fun_prop
+
+example (a b : TCRSignature.TcrSavedState)
+    (h1 : a.active = b.active) (h2 : a.keys = b.keys) (h3 : a.coinAtSlot = b.coinAtSlot)
+    (h4 : a.remSteps = b.remSteps) (h5 : a.preTrace = b.preTrace) : a = b := by
+  ext1 <;> assumption
+
+example :
+    ComputableInPolyTime
+      (fun a : TCRSignature.TcrSavedState =>
+        (⟨!a.active, a.keys, a.coinAtSlot, a.remSteps, a.preTrace⟩ : TCRSignature.TcrSavedState))
+      TCRSignature.encTcrSavedState TCRSignature.encTcrSavedState := by
+  fun_prop
 
 /-! ### 7. Unrestricted-message (`WordSignatureScheme`) Rompel and Naor–Yung endpoints -/
 

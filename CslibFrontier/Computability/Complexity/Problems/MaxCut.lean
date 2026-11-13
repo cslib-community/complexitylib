@@ -199,7 +199,7 @@ theorem isVerifier : IsVerifier encMaxCut (2 * Polynomial.X) verifier MaxCut := 
   refine isVerifier_subsetVerifier (fun x => ?_) fun x l _ _ => ?_
   · rw [encMaxCut_apply]
     have : x.edges.length ≤ (encMaxCutFields (x.edges, x.bound)).length :=
-      length_le_length_encPair encWeightedEdge encNat (x.edges, x.bound)
+      (length_le_length_encList _ _).trans (length_le_encPair_left _ _ (x.edges, x.bound))
     simp only [length_endpoints, Polynomial.eval_mul, Polynomial.eval_ofNat, Polynomial.eval_X]
     omega
   · simp only [Function.uncurry_apply_pair, check, decide_eq_true_eq, List.mem_toFinset]
@@ -214,17 +214,11 @@ end MaxCut
 theorem mem_Partition_iff_exists_side {a : List ℕ} :
     a ∈ Partition ↔ ∃ side : ℕ → Bool,
       2 * (((List.range a.length).filter side).map (a.getD · 0)).sum = a.sum := by
-  have hmask (w : List Bool) : maskSelect a w =
-      ((List.range a.length).filter fun i => w.getD i false).map (a.getD · 0) := by
-    have hz : a.zipIdx = (List.range a.length).map fun i => (a.getD i 0, i) := by
-      refine List.ext_getElem (by simp) fun i h₁ h₂ => ?_
-      simp [List.getElem?_eq_getElem (List.length_zipIdx ▸ h₁ : i < a.length)]
-    simp only [maskSelect, hz, List.filter_map, List.map_map, Function.comp_def]
   rw [mem_Partition_iff_sublist]
   constructor
   · rintro ⟨s, hs, hsum⟩
     obtain ⟨w, -, rfl⟩ := exists_maskSelect_eq hs
-    exact ⟨fun i => w.getD i false, by rwa [← hmask]⟩
+    exact ⟨fun i => w.getD i false, by rwa [← maskSelect_eq_map_filter_range a w 0]⟩
   · rintro ⟨side, hside⟩
     refine ⟨_, ?_, hside⟩
     conv_rhs => rw [← List.map_getD_range a 0]

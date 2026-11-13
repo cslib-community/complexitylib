@@ -35,7 +35,7 @@ public section
 
 namespace Cslib.Crypto
 
-open Turing.MultiTapeTM Probability ProbComp Interactive
+open Turing.MultiTapeTM Probability ProbComp
 open scoped ENNReal
 
 private abbrev Params := ((ℕ × ℕ) × ℕ × ℕ) × ℕ × ℕ
@@ -63,7 +63,7 @@ private theorem encodeRows_polyTime :
 
 private theorem encodeRows_ofFn {k n : ℕ} (z : Fin k → Fin n → ℤ) :
     encodeRows (List.ofFn fun j => List.ofFn (z j)) = ModuleSIS.encodeVec z := by
-  unfold encodeRows ModuleSIS.encodeVec GeneralSIS.encodeVec flattenPolyVec
+  unfold encodeRows ModuleSIS.encodeVec SIS.encodeVec flattenPolyVec
   congr 1
   simpa only [List.ofFn_eq_map, List.flatMap_def, Function.comp_def, Function.uncurry] using
     List.flatMap_ofFn_prod z

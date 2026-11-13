@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Algorithms.Lean.Karger.Contraction
-public import CslibFrontier.Algorithms.WordRAM.Karger.FastCut
+public import CslibFrontier.Algorithms.Karger.FastCut
 import CslibFrontier.Probability.PMF.TwoBranch
 import CslibFrontier.Probability.PMF.EventBind
 
@@ -25,9 +25,10 @@ At a leaf the client returns half the doubled weight after contracting to two ve
 node it returns the minimum of two recursive trials. No native execution model is introduced.
 
 The threshold and cutoff are the existing integer choices of this formalization, documented in
-`WordRAM.Karger.FastCut`: recurse at size at least seven, and choose the least integer threshold
-whose cut-survival ratio is at least one half. The source is [KargerStein1996], Section 4,
-Figure 6 and Lemma 4.3; this is a paraphrase, with the same documented integer deviations.
+`CslibFrontier.Algorithms.Karger.FastCut`: recurse at size at least seven, and choose the least
+integer threshold whose cut-survival ratio is at least one half. The source is [KargerStein1996],
+Section 4, Figure 6 and Lemma 4.3; this is a paraphrase, with the same documented integer
+deviations.
 
 ## Main definitions
 
@@ -37,8 +38,11 @@ Figure 6 and Lemma 4.3; this is a paraphrase, with the same documented integer d
 ## Main results
 
 * `fastCutLaw_leaf`, `fastCutLaw_node`: exact leaf and independent-branch equations.
-* `survives_contractLaw`, `isContractionOf_of_mem_support_contractLaw`: existing contraction
-  semantics transferred to the oracle's observed graph law.
+* `survives_contractLaw`, `isContractionOf_of_mem_support_contractLaw`,
+  `minCut_eq_zero_of_mem_support_contractLaw`: existing contraction semantics transferred to the
+  oracle's observed graph law.
+* `eq_zero_of_mem_support_fastCutLaw`, `eq_zero_of_mem_support_fastCutHighProbLaw`: every recursive
+  and amplified answer on a `minCut = 0` multigraph is `0`.
 
 ## References
 
@@ -50,7 +54,7 @@ Figure 6 and Lemma 4.3; this is a paraphrase, with the same documented integer d
 namespace Cslib.Algorithms.Lean.Karger
 
 open scoped ENNReal
-open Cslib.WeightedCut Cslib.Algorithms.WordRAM.Karger
+open Cslib.WeightedCut Cslib.Algorithms.Karger
 
 /-- One oracle reply observes the graph left by the existing contraction client. -/
 noncomputable def contractLaw : Graph × ℕ → PMF Graph := fun (G, target) =>
@@ -150,6 +154,18 @@ theorem isContractionOf_of_mem_support_contractLaw {n k target : ℕ}
   obtain ⟨x, hx, rfl⟩ := hG
   exact isContractionOf_of_mem_support_contractTimes ht s hC hx
 
+/-- Contracting a disconnected (`minCut W = 0`) multigraph down to `target ≥ 2` preserves
+`minCut = 0` on every supported reply of `contractLaw`. -/
+theorem minCut_eq_zero_of_mem_support_contractLaw {k target : ℕ}
+    (ht : 2 ≤ target) (htk : target ≤ k)
+    {W : Fin k → Fin k → ℕ} (hW : IsMultigraph W) (hmin : minCut W = 0) {G : Graph}
+    (hG : G ∈ (contractLaw (⟨k, W⟩, target)).support) :
+    ∃ W' : Fin target → Fin target → ℕ, G = ⟨target, W'⟩ ∧ IsMultigraph W' ∧ minCut W' = 0 := by
+  obtain ⟨s, rfl⟩ : ∃ s, k = target + s := ⟨k - target, by omega⟩
+  rw [contractLaw, Nat.add_sub_cancel_left, PMF.mem_support_map_iff] at hG
+  obtain ⟨x, hx, rfl⟩ := hG
+  exact minCut_eq_zero_of_mem_support_contractTimes ht s hW hmin hx
+
 /-- Every recursive answer is the weight of a non-trivial cut of the original graph, including
 when recursion starts from a contraction of that graph. -/
 theorem exists_cut_of_mem_support_fastCutLaw {n k : ℕ} (hk : 2 ≤ k)
@@ -196,6 +212,26 @@ theorem minCut_le_of_mem_support_fastCutLaw {n k : ℕ} (hk : 2 ≤ k)
     (hv : v ∈ (fastCutLaw k ⟨k, W⟩).support) : minCut W₀ ≤ v := by
   obtain ⟨C, hC, rfl⟩ := exists_cut_of_mem_support_fastCutLaw hk hC hv
   exact minCut_le_cutWeight W₀ hC
+
+/-- On a disconnected (`minCut W = 0`) multigraph with `k ≥ 2` vertices, every recursive answer of
+`fastCutLaw` is `0`. -/
+theorem eq_zero_of_mem_support_fastCutLaw {k : ℕ} (hk : 2 ≤ k)
+    {W : Fin k → Fin k → ℕ} (hW : IsMultigraph W) (hmin : minCut W = 0) {v : ℕ}
+    (hv : v ∈ (fastCutLaw k ⟨k, W⟩).support) : v = 0 := by
+  induction k using Nat.strong_induction_on generalizing v with
+  | ind k ih =>
+    by_cases hk7 : 7 ≤ k
+    · rw [fastCutLaw_node hk7, PMF.mem_support_bind_iff] at hv
+      obtain ⟨a, ha, hv⟩ := hv
+      obtain ⟨b, -, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hv
+      obtain ⟨child, hchild, ha⟩ := (PMF.mem_support_bind_iff _ _ _).mp ha
+      obtain ⟨W', rfl, hW', hmin'⟩ := minCut_eq_zero_of_mem_support_contractLaw
+        (fastCutThreshold_ge_two (by omega)) (Nat.le_of_lt (fastCutThreshold_lt (by omega)))
+        hW hmin hchild
+      rw [ih _ (fastCutThreshold_lt (by omega)) (fastCutThreshold_ge_two (by omega)) hW' hmin' ha]
+      exact Nat.zero_min b
+    · rw [fastCutLaw_leaf (by omega)] at hv
+      exact eq_zero_of_mem_support_answerLaw hk hW hmin hv
 
 /-- A single contraction trial from a contraction of the original graph retains any represented
 minimum cut with the usual `2 / (k (k - 1))` lower bound. -/
@@ -312,6 +348,14 @@ theorem exists_cut_of_mem_support_fastCutHighProbLaw {n : ℕ} (hn : 2 ≤ n)
     (hv : v ∈ (fastCutHighProbLaw n ⟨n, W⟩).support) :
     ∃ C : Finset (Fin n), IsNonTrivialCut C ∧ v = cutWeight W C :=
   exists_cut_of_mem_support_fastCutLaw hn (isContractionOf_id hW)
+    (mem_support_minRuns (by have := fastCutTrials_pos n; omega) hv)
+
+/-- On a disconnected (`minCut W = 0`) multigraph with `n ≥ 2` vertices, every answer of
+`fastCutHighProbLaw` is `0`. -/
+theorem eq_zero_of_mem_support_fastCutHighProbLaw {n : ℕ} (hn : 2 ≤ n)
+    {W : Fin n → Fin n → ℕ} (hW : IsMultigraph W) (hmin : minCut W = 0) {v : ℕ}
+    (hv : v ∈ (fastCutHighProbLaw n ⟨n, W⟩).support) : v = 0 :=
+  eq_zero_of_mem_support_fastCutLaw hn hW hmin
     (mem_support_minRuns (by have := fastCutTrials_pos n; omega) hv)
 
 /-- The existing independent-trial schedule misses the minimum cut with probability at most

@@ -14,6 +14,7 @@ import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Probability.PMF.ToReal
+import CslibFrontier.Computability.Kolmogorov.TimeBounded.Counting
 import CslibFrontier.Computability.Kolmogorov.TimeBounded.PolyTime
 
 /-!
@@ -80,8 +81,8 @@ theorem mildlyHardOnAverageENat_timeBounded_iff {t : ℕ → ℕ} (ht : ∀ n, n
 `MildlyHardOnAverageIO (timeBoundedNat t)`. -/
 theorem mildlyHardOnAverageIOENat_timeBounded_iff {t : ℕ → ℕ} (ht : ∀ n, n + 1 ≤ t n) :
     MildlyHardOnAverageIOENat (timeBounded t) ↔ MildlyHardOnAverageIO (timeBoundedNat t) := by
-  have heq (H : List Bool → ℕ) (x : List Bool) :
-      ((H x : ℕ∞) = timeBounded t x) ↔ (H x = timeBoundedNat t x) := by
+  have heq (v : ℕ) (x : List Bool) :
+      ((v : ℕ∞) = timeBounded t x) ↔ (v = timeBoundedNat t x) := by
     rw [← natCast_timeBoundedNat (timeBounded_ne_top (ht x.length)), ENat.natCast_inj]
   simp only [MildlyHardOnAverageIOENat, MildlyHardOnAverageIO, heq]
 
@@ -124,21 +125,15 @@ whenever `n + 1 ≤ t n`. -/
 theorem card_filter_timeBoundedNat_lt {t : ℕ → ℕ} {n : ℕ} (ht : n + 1 ≤ t n) (r : ℕ) :
     ((Finset.univ : Finset (BitString n)).filter fun x =>
       timeBoundedNat t (List.ofFn x) < r).card < 2 ^ r := by
-  let S := (Finset.univ : Finset (BitString n)).filter fun x =>
-    timeBoundedNat t (List.ofFn x) < r
-  have hsub : (List.ofFn '' (S : Set (BitString n))) ⊆
-      {y : List Bool | y.length = n ∧ timeBounded t y < (r : ℕ)} := by
-    rintro y ⟨x, hx, rfl⟩
-    simp only [S, Finset.mem_coe, Finset.mem_filter, Finset.mem_univ, true_and] at hx
-    have hne : timeBounded t (List.ofFn x) ≠ ⊤ :=
-      timeBounded_ne_top (t := t) (x := List.ofFn x) (by simpa [List.length_ofFn] using ht)
-    refine ⟨List.length_ofFn, ?_⟩
-    rw [← natCast_timeBoundedNat hne]
-    exact_mod_cast hx
-  have hinj : Function.Injective (List.ofFn (α := Bool) (n := n)) := fun _ _ h => List.ofFn_inj.mp h
-  have henc := (Set.encard_le_encard hsub).trans_lt (encard_setOf_timeBounded_lt t n r)
-  rw [hinj.encard_image, Set.encard_coe_eq_coe_finsetCard] at henc
-  exact_mod_cast henc
+  obtain _ | s := r
+  · simp
+  refine (Finset.card_le_card fun x hx => ?_).trans_lt
+    (card_filter_timeBoundedAt_le_lt (fun _ _ h => List.ofFn_inj.mp h) (t n) s)
+  simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hx ⊢
+  have hne : timeBounded t (List.ofFn x) ≠ ⊤ :=
+    timeBounded_ne_top (by simpa [List.length_ofFn] using ht)
+  have h := (timeBoundedNat_le_iff hne).mp (Nat.lt_add_one_iff.mp hx)
+  rwa [timeBounded_eq_timeBoundedAt, List.length_ofFn] at h
 
 /-- **[Liu and Pass, Proof of Theorem 5.2, Equation (2), §5.2, p. 11 of
 arXiv:2009.11514v1][LiuPass2020]:
@@ -174,28 +169,10 @@ theorem sum_uniform_timeBoundedNat_lt_le {t : ℕ → ℕ} {n : ℕ} (ht : n + 1
 private theorem pmf_map_true_le_one_sub_of_imp_false {α : Type*} (q : PMF α) (P Q : α → Bool)
     (hdisj : ∀ v, P v = true → Q v = false) :
     ((q.map P) true).toReal ≤ 1 - ((q.map Q) true).toReal := by
-  have hle : (q.map P) true ≤ (q.map Q) false := by
-    rw [PMF.map_apply, PMF.map_apply]
-    refine tsum_le_tsum fun v => ?_
-    by_cases hp : P v = true
-    · have hq : Q v = false := hdisj v hp
-      simp [hp, hq]
-    · simp [hp]
-  have hle' : ((q.map P) true).toReal ≤ ((q.map Q) false).toReal :=
-    ENNReal.toReal_mono (PMF.apply_ne_top _ _) hle
-  have hsum := Cslib.Probability.PMF.toReal_true_add_toReal_false (q.map Q)
-  linarith
-
-private theorem pmf_map_true_le_of_imp_true {α : Type*} (q : PMF α) (P Q : α → Bool)
-    (himp : ∀ v, P v = true → Q v = true) :
-    ((q.map P) true).toReal ≤ ((q.map Q) true).toReal := by
-  apply ENNReal.toReal_mono (PMF.apply_ne_top _ _)
-  rw [PMF.map_apply, PMF.map_apply]
-  refine tsum_le_tsum fun v => ?_
-  by_cases hp : P v = true
-  · have hq : Q v = true := himp v hp
-    simp [hp, hq]
-  · simp [hp]
+  have h := map_true_mono q (E := P) (F := fun a => !Q a) fun v _ hv => by simp [hdisj v hv]
+  rw [map_not_true] at h
+  rw [← ENNReal.toReal_one, ← ENNReal.toReal_sub_of_le (PMF.coe_le_one _ _) ENNReal.one_ne_top]
+  exact ENNReal.toReal_mono (ENNReal.sub_ne_top ENNReal.one_ne_top) h
 
 /-- **[Liu and Pass, Proof of Theorem 5.2, Claim 1, §5.2, p. 12 of arXiv:2009.11514v1][LiuPass2020]:
 Acceptance probability of the threshold distinguisher on the uniform distribution $U_m$.** -/
@@ -221,7 +198,8 @@ theorem uniformList_threshold_accept_ge {t : ℕ → ℕ} {m : ℕ} (ht : m + 1 
       have h2 : 0 ≤ (accept (List.ofFn x) true).toReal := ENNReal.toReal_nonneg
       linarith
     · simp only [hlt, ↓reduceIte, add_zero]
-      refine pmf_map_true_le_of_imp_true (q (List.ofFn x)) _ _ fun v hv => ?_
+      refine ENNReal.toReal_mono (PMF.apply_ne_top _ _) <|
+        map_true_mono (q (List.ofFn x)) fun v _ hv => ?_
       simp only [decide_eq_true_eq] at hv ⊢
       omega
   have hsum := Finset.sum_le_sum (s := Finset.univ) fun x _ =>

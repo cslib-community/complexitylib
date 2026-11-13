@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Probability.Entropy
 public import CslibFrontier.Probability.StatisticalDistance
+public import CslibFrontier.Probability.StatisticalDistance.TotalVariation
 public import Mathlib.InformationTheory.KullbackLeibler.Basic
 import CslibFrontier.Probability.Pinsker
 import CslibFrontier.Probability.PMF.Expect

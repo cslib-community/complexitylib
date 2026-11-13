@@ -12,7 +12,8 @@ public import CslibFrontier.Computability.Complexity.AverageCase
 # Tests for `CslibFrontier.Computability.Complexity.AverageCase`
 
 Concrete nonvacuity, rounded-logarithm, monotonicity, and uniform-PPT shift bridge tests for
-`MildlyHardOnAverage`, `MildlyHardOnAverageToApprox`, and `MildlyHardOnAverageToOneSidedApprox`.
+`MildlyHardOnAverage`, `MildlyHardOnAverageToApprox`, and `MildlyHardOnAverageToOneSidedApprox`,
+and a use of the hardness cores at a correctness test outside the named variants.
 -/
 
 public section
@@ -66,5 +67,20 @@ example (c : ℕ) (f : List Bool → ℕ)
     h.mildlyHardOnAverageToApprox (ComputableInPolyTime.const c)
   have hexact := hsymm.mildlyHardOnAverage
   exact ⟨hsymm, hexact, hexact.mildlyHardOnAverageDet, hexact.mildlyHardOnAverageIO⟩
+
+/-- A correctness test that is not one of the named variants goes through the cores directly:
+hardness of $c$-approximation implies hardness of computing $f$ exactly with an even output,
+against deterministic heuristics on infinitely many lengths. -/
+example (c : ℕ) (f : List Bool → ℕ) (h : MildlyHardOnAverageToApprox (fun _ => c) f) :
+    MildlyHardOnAverageIOWith fun _ x v => decide (v = f x ∧ Even v) :=
+  MildlyHardOnAverageDetWith.mildlyHardOnAverageIOWith <|
+    MildlyHardOnAverageWith.mildlyHardOnAverageDetWith <|
+      MildlyHardOnAverageWith.mono (.of_forall fun _ _ _ _ hv => by
+        simp only [decide_eq_true_eq] at hv ⊢; simp [hv.1]) h
+
+/-- The named variants are their cores at a fixed correctness test. -/
+example (f : List Bool → ℕ) :
+    MildlyHardOnAverage f ↔ MildlyHardOnAverageWith fun _ x v => decide (v = f x) :=
+  Iff.rfl
 
 end Cslib.Complexity.AverageCaseTests

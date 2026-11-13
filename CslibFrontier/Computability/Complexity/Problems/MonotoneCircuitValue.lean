@@ -109,11 +109,7 @@ namespace MonotoneCircuitValue
 space, indeed by the identity on encodings. -/
 theorem logSpaceReducible_circuitValue :
     LogSpaceReducible encMonotoneCircuitValue encCircuitValue MonotoneCircuitValue CircuitValue :=
-  ⟨toDeMorgan, by
-    obtain ⟨t, c, k, State, hfin, tm, htm⟩ :=
-      ComputableInLogSpace.id (encIn := encMonotoneCircuitValue)
-    exact ⟨t, c, k, State, hfin, tm, fun x => htm x⟩,
-    fun _ => mem_iff_toDeMorgan_mem⟩
+  ⟨toDeMorgan, .of_eq fun _ => rfl, fun _ => mem_iff_toDeMorgan_mem⟩
 
 /-- **The monotone circuit value problem is in `P`.** -/
 theorem mem_P : MonotoneCircuitValue ∈ P encMonotoneCircuitValue :=

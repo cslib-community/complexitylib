@@ -195,7 +195,8 @@ theorem decidableInExpTime (r : SizeSensitiveReduction encA encB μA μB)
       exact_mod_cast r.measure_le a
     nlinarith
   have hsum : P + (t (r.toFun a) : ℝ) ≤ K * (X * P ^ (e + 1)) :=
-    reduce_add_decide_le hP hX (by dsimp only [P]; exact_mod_cast hl a) hexp (ht (r.toFun a))
+    reduction_add_time_le (C := (2 : ℝ) ^ (δ * r.offset)) hP hX (by positivity)
+      (by dsimp only [P]; exact_mod_cast hl a) hexp (ht (r.toFun a))
   push_cast
   rw [pow_mul]
   exact hsum.trans (mul_le_mul_of_nonneg_right (Nat.le_ceil K) (by positivity))

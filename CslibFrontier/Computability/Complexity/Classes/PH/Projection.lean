@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.P
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import Cslib.Foundations.Data.Polynomial.Monotone
+import CslibFrontier.Foundations.Data.List.TakeQuantifiers
 import CslibFrontier.Tactic.EncLen
 
 /-!
@@ -24,18 +25,20 @@ collapse of the hierarchy [Arora and Barak, Theorem 5.4][AroraBarak09]. `B` cont
 `encPair enc encBits` of pairs. Its blocks of certificates have lengths given by polynomials in the
 length of `enc a`, while `Πₖ` asks for polynomials in the length of the encoded pair. The verifier
 of `B` therefore reads longer blocks and cuts each to its first bits
-(`Cslib.Complexity.truncateBlocks`), which does not change the quantifiers
-(`Cslib.Complexity.alternation_truncateBlocks`).
+(`Cslib.Complexity.truncateBlocks`, an instance of `Cslib.Complexity.takeBlocks`), which does not
+change the quantifiers (`Cslib.Complexity.alternation_takeBlocks`).
 
 ## Main definitions
 
-* `Cslib.Complexity.truncateBlocks`: cut blocks of certificates to shorter blocks.
+* `Cslib.Complexity.takeBlocks`: cut consecutive blocks of a word to their prefixes.
+* `Cslib.Complexity.truncateBlocks`: cut blocks of polynomial lengths to shorter blocks.
 
 ## Main results
 
-* `Cslib.Complexity.alternation_truncateBlocks`: cutting longer blocks does not change
-  alternating quantifiers.
-* `Cslib.Complexity.computableInPolyTime_truncateBlocks`: cutting blocks is polynomial-time.
+* `Cslib.Complexity.alternation_takeBlocks`, `Cslib.Complexity.alternation_truncateBlocks`: cutting
+  longer blocks does not change alternating quantifiers.
+* `Cslib.Complexity.computableInPolyTime_takeBlocks`,
+  `Cslib.Complexity.computableInPolyTime_truncateBlocks`: cutting blocks is polynomial-time.
 * `Cslib.Complexity.exists_mem_PiP_of_mem_SigmaP_succ`: a problem in `Σₖ₊₁` is the projection of
   a problem in `Πₖ` on pairs.
 
@@ -52,11 +55,60 @@ open Turing.MultiTapeTM
 
 /-! ### Cutting blocks of certificates -/
 
+/-- The first `l.1` bits of each consecutive block of length `l.2` of `w`, for the pairs `l` of `ls`
+in order. -/
+def takeBlocks : List (ℕ × ℕ) → List Bool → List Bool
+  | [], _ => []
+  | l :: ls, w => w.take l.1 ++ takeBlocks ls (w.drop l.2)
+
+/-- **Cutting longer blocks does not change alternating quantifiers**: quantifying over blocks of
+lengths `l.2` and cutting each to `l.1 ≤ l.2` bits quantifies over all blocks of lengths `l.1`. -/
+theorem alternation_takeBlocks {ls : List (ℕ × ℕ)} (h : ∀ l ∈ ls, l.1 ≤ l.2) {q : Bool}
+    {P : List Bool → Prop} :
+    Alternation q (ls.map Prod.snd) (fun w => P (takeBlocks ls w)) ↔
+      Alternation q (ls.map Prod.fst) P := by
+  induction ls generalizing q P with
+  | nil => simp [takeBlocks]
+  | cons l ls ih =>
+    have hl := h l List.mem_cons_self
+    -- a long block, appended to anything, cuts to its prefix followed by the cut of the rest
+    have key (w : List Bool) (hw : w.length = l.2) {q : Bool} :
+        Alternation q (ls.map Prod.snd) (fun v => P (takeBlocks (l :: ls) (w ++ v))) ↔
+          Alternation q (ls.map Prod.fst) fun v => P (w.take l.1 ++ v) :=
+      (alternation_congr fun v => by
+        simp only [takeBlocks, List.take_append_of_le_length (hw ▸ hl), List.drop_left' hw]).trans
+        (ih (fun l' hl' => h l' (List.mem_cons_of_mem l hl')) (P := fun v => P (w.take l.1 ++ v)))
+    cases q
+    · simp only [List.map_cons, alternation_false_cons]
+      exact (forall_congr' fun w => imp_congr_right fun hw => key w hw).trans
+        (List.forall_length_eq_take_iff (P := fun u => Alternation true (ls.map Prod.fst)
+          fun v => P (u ++ v)) hl)
+    · simp only [List.map_cons, alternation_true_cons]
+      exact (exists_congr fun w => and_congr_right fun hw => key w hw).trans
+        (List.exists_length_eq_take_iff (P := fun u => Alternation false (ls.map Prod.fst)
+          fun v => P (u ++ v)) hl)
+
+/-- Cutting blocks is polynomial-time, for a fixed list of pairs of block lengths computed in
+unary. -/
+theorem computableInPolyTime_takeBlocks {γ : Type} {encIn : γ ↪ List Bool}
+    (ls : List ((γ → ℕ) × (γ → ℕ)))
+    (hL : ∀ l ∈ ls, ComputableInPolyTime l.1 encIn encUnary ∧
+      ComputableInPolyTime l.2 encIn encUnary)
+    {W : γ → List Bool} (hW : ComputableInPolyTime W encIn encBits) :
+    ComputableInPolyTime (fun x => takeBlocks (ls.map fun l => (l.1 x, l.2 x)) (W x))
+      encIn encBits := by
+  induction ls generalizing W with
+  | nil => exact .const []
+  | cons l ls ih =>
+    have ⟨h₁, h₂⟩ := hL l List.mem_cons_self
+    exact ComputableInPolyTime.bitsAppend (ComputableInPolyTime.bitsTakeWithInput hW h₁)
+      (ih (fun l' hl' => hL l' (List.mem_cons_of_mem l hl'))
+        (ComputableInPolyTime.bitsDropWithInput hW h₂))
+
 /-- The blocks of `w` of lengths `p.eval m`, for the polynomials `p` of `ps` in order, each cut to
 its first `p.eval n` bits. -/
-def truncateBlocks : List (Polynomial ℕ) → ℕ → ℕ → List Bool → List Bool
-  | [], _, _, _ => []
-  | p :: ps, n, m, w => w.take (p.eval n) ++ truncateBlocks ps n m (w.drop (p.eval m))
+def truncateBlocks (ps : List (Polynomial ℕ)) (n m : ℕ) : List Bool → List Bool :=
+  takeBlocks (ps.map fun p => (p.eval n, p.eval m))
 
 /-- **Cutting longer blocks does not change alternating quantifiers**: quantifying over blocks of
 lengths `p.eval m` and cutting each to `p.eval n ≤ p.eval m` bits quantifies over all blocks of
@@ -65,45 +117,9 @@ theorem alternation_truncateBlocks {ps : List (Polynomial ℕ)} {n m : ℕ} (h :
     {P : List Bool → Prop} :
     Alternation q (ps.map fun p => p.eval m) (fun w => P (truncateBlocks ps n m w)) ↔
       Alternation q (ps.map fun p => p.eval n) P := by
-  induction ps generalizing q P with
-  | nil => simp [truncateBlocks]
-  | cons p ps ih =>
-    have hle := p.eval_mono h
-    -- a long block, appended to anything, cuts to its first `p.eval n` bits
-    have hcut (w v : List Bool) (hw : w.length = p.eval m) :
-        truncateBlocks (p :: ps) n m (w ++ v) = w.take (p.eval n) ++ truncateBlocks ps n m v := by
-      simp only [truncateBlocks, List.take_append_of_le_length (hw ▸ hle),
-        List.drop_left' hw]
-    have key (w : List Bool) (hw : w.length = p.eval m) {q : Bool} :
-        Alternation q (ps.map fun p => p.eval m)
-          (fun v => P (truncateBlocks (p :: ps) n m (w ++ v))) ↔
-        Alternation q (ps.map fun p => p.eval n) fun v => P (w.take (p.eval n) ++ v) :=
-      (alternation_congr fun v => by rw [hcut w v hw]).trans
-        (ih (P := fun v => P (w.take (p.eval n) ++ v)))
-    -- a short block is the cut of its padding
-    have hpad (w : List Bool) (hw : w.length = p.eval n) :
-        (w ++ List.replicate (p.eval m - p.eval n) false).length = p.eval m := by
-      enc_len [hw]
-    have htake (w : List Bool) (hw : w.length = p.eval n) :
-        (w ++ List.replicate (p.eval m - p.eval n) false).take (p.eval n) = w := by
-      rw [← hw, List.take_left]
-    have hlen (w : List Bool) (hw : w.length = p.eval m) : (w.take (p.eval n)).length = p.eval n :=
-      by rw [List.length_take, hw, Nat.min_eq_left hle]
-    cases q
-    · simp only [List.map_cons, alternation_false_cons]
-      constructor
-      · intro hP w hw
-        have := (key _ (hpad w hw)).mp (hP _ (hpad w hw))
-        rwa [htake w hw] at this
-      · intro hP w hw
-        exact (key w hw).mpr (hP _ (hlen w hw))
-    · simp only [List.map_cons, alternation_true_cons]
-      constructor
-      · rintro ⟨w, hw, hP⟩
-        exact ⟨_, hlen w hw, (key w hw).mp hP⟩
-      · rintro ⟨w, hw, hP⟩
-        refine ⟨_, hpad w hw, (key _ (hpad w hw)).mpr ?_⟩
-        rwa [htake w hw]
+  simpa only [truncateBlocks, List.map_map, Function.comp_def] using
+    alternation_takeBlocks (ls := ps.map fun p => (p.eval n, p.eval m)) (q := q) (P := P)
+      (by simpa only [List.forall_mem_map] using fun p _ => p.eval_mono h)
 
 /-- Cutting blocks is polynomial-time, for a fixed list of polynomials and lengths `n`, `m` computed
 in unary. -/
@@ -113,14 +129,13 @@ theorem computableInPolyTime_truncateBlocks {γ : Type} {encIn : γ ↪ List Boo
     (hM : ComputableInPolyTime M encIn encUnary) {W : γ → List Bool}
     (hW : ComputableInPolyTime W encIn encBits) :
     ComputableInPolyTime (fun x => truncateBlocks ps (N x) (M x) (W x)) encIn encBits := by
-  induction ps generalizing W with
-  | nil => exact .const []
-  | cons p ps ih =>
-    exact ComputableInPolyTime.bitsAppend
-      (ComputableInPolyTime.bitsTakeWithInput hW
-        ((ComputableInPolyTime.unary_eval p).comp hN))
-      (ih (ComputableInPolyTime.bitsDropWithInput hW
-        ((ComputableInPolyTime.unary_eval p).comp hM)))
+  simpa only [truncateBlocks, List.map_map, Function.comp_def] using
+    computableInPolyTime_takeBlocks
+      (ps.map fun p => (fun x => p.eval (N x), fun x => p.eval (M x)))
+      (fun l hl => by
+        obtain ⟨p, -, rfl⟩ := List.mem_map.mp hl
+        exact ⟨(ComputableInPolyTime.unary_eval p).comp hN,
+          (ComputableInPolyTime.unary_eval p).comp hM⟩) hW
 
 /-! ### Peeling off the first quantifier -/
 

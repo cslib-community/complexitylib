@@ -232,25 +232,44 @@ def countdownStackSpec :
       (encK := encFinEnum Unit) (encD := encCappedNatAcc) (encG := encNat) .id'
     exact (CappedNatAcc.computableInPolyTime_add.comp (hacc.prod hlv)).of_enc_eq fun _ => rfl
 
+private theorem countdownBranching_leafWord_length_le (s : ℕ) (w : List Bool)
+    (hw : countdownBranching.IsLeafWord s w) : w.length ≤ s := by
+  induction w generalizing s with
+  | nil => exact Nat.zero_le s
+  | cons b ws ih =>
+    obtain ⟨hnot, htail⟩ := hw
+    change ¬(s = 0) at hnot
+    have hsub := ih (s - 1) htail
+    simp only [List.length_cons]
+    omega
+
+private theorem countdownStackSpec_rounds_sufficient (n : ℕ)
+    (L : List (List Bool)) (hnd : L.Nodup)
+    (hL : ∀ w, w ∈ L ↔ countdownBranching.IsLeafWord n w) :
+    2 * L.length ≤ countdownStackSpec.rounds n + 1 := by
+  have hcard : L.toFinset.card ≤ ∑ j ∈ Finset.range (n + 1), n.choose j :=
+    countdownBranching.card_le_sum_choose_of_isLeafWord
+      (fun w hw => (hL w).mp (List.mem_toFinset.mp hw))
+      (fun w hw => countdownBranching_leafWord_length_le n w
+        ((hL w).mp (List.mem_toFinset.mp hw)))
+      (fun w hw => (Finset.card_filter_le _ _).trans (by
+        rw [Finset.card_range]
+        exact countdownBranching_leafWord_length_le n w
+          ((hL w).mp (List.mem_toFinset.mp hw))))
+  rw [Nat.sum_range_choose, List.toFinset_card_of_nodup hnd] at hcard
+  change 2 * L.length ≤ 2 * 2 ^ n + 1
+  omega
+
 /-- Exact proof for ALL `n : ℕ` via `StackAccumulationSpec.run_cappedSum_eq_root`, instantiated at
 `n = 0, 1, 2, 3` (`1, 2, 4, 8` leaves). -/
 theorem countdownStackSpec_run_total (n : ℕ) :
     (StackAccumulationSpec.run (encG := encNat) countdownStackSpec (fun _ => 1) n).total =
       2 ^ n := by
-  have hwalk_len : ∀ s w, countdownBranching.IsLeafWord s w → w.length ≤ s := by
-    intro s w hw
-    induction w generalizing s with
-    | nil => exact Nat.zero_le s
-    | cons b ws ih =>
-      obtain ⟨hnot, htail⟩ := hw
-      change ¬(s = 0) at hnot
-      have hsub := ih (s - 1) htail
-      simp only [List.length_cons]
-      omega
   refine StackAccumulationSpec.run_cappedSum_eq_root countdownStackSpec (fun _ => 1) n
     countdownBranching countdownBranching_terminating rfl rfl (fun _ _ => rfl)
     (fun _ => decide_eq_true_eq.to_iff)
-    (fun _ _ => rfl) (hwalk_len n) ?_
+    (fun _ _ => rfl) (countdownBranching_leafWord_length_le n)
+    (countdownStackSpec_rounds_sufficient n)
     (val := fun s => 2 ^ s)
     (fun t ht => by
       change ¬(t = 0) at ht
@@ -262,17 +281,6 @@ theorem countdownStackSpec_run_total (n : ℕ) :
       subst ht
       rfl)
     le_rfl
-  intro L hnd hL
-  have hcard : L.toFinset.card ≤ ∑ j ∈ Finset.range (n + 1), n.choose j :=
-    countdownBranching.card_le_sum_choose_of_isLeafWord
-      (fun w hw => (hL w).mp (List.mem_toFinset.mp hw))
-      (fun w hw => hwalk_len n w ((hL w).mp (List.mem_toFinset.mp hw)))
-      (fun w hw => (Finset.card_filter_le _ _).trans (by
-        rw [Finset.card_range]
-        exact hwalk_len n w ((hL w).mp (List.mem_toFinset.mp hw))))
-  rw [Nat.sum_range_choose, List.toFinset_card_of_nodup hnd] at hcard
-  change 2 * L.length ≤ 2 * 2 ^ n + 1
-  omega
 
 example :
     (StackAccumulationSpec.run (encG := encNat) countdownStackSpec (fun _ => 1) 0).total = 1 ∧
@@ -383,9 +391,6 @@ example {δ : ℝ} (hδ : 0 ≤ δ)
     hExpA⟩
 
 
-
-
-
 lemma countdownStackSpec_foldl_acc (a : ℕ) (L' : List (List Bool)) :
     ((L'.map (countdownBranching.walk a)).foldl
       (fun (d : CappedNatAcc) (_s : ℕ) => countdownStackSpec.combine ⟨(), d, 1⟩)
@@ -393,60 +398,20 @@ lemma countdownStackSpec_foldl_acc (a : ℕ) (L' : List (List Bool)) :
     ((L'.map (countdownBranching.walk a)).foldl
       (fun (d : CappedNatAcc) (_s : ℕ) => countdownStackSpec.combine ⟨(), d, 1⟩)
       (countdownStackSpec.initAcc a)).total ≤ 2 ^ a := by
-  have H : ∀ l acc, acc.total ≤ acc.cap →
-      (List.foldl (fun (d : CappedNatAcc) (_s : ℕ) => countdownStackSpec.combine ⟨(), d, 1⟩)
-        acc l).cap = acc.cap ∧
-      (List.foldl (fun (d : CappedNatAcc) (_s : ℕ) => countdownStackSpec.combine ⟨(), d, 1⟩)
-        acc l).total ≤ acc.cap := by
-    intro l
-    induction l with
-    | nil =>
-      intro acc hacc
-      exact ⟨rfl, hacc⟩
-    | cons x xs ih =>
-      intro acc hacc
-      apply ih
-      simp only [countdownStackSpec, CappedNatAcc.add]
-      exact min_le_left _ _
-  have hinit : (countdownStackSpec.initAcc a).total ≤ (countdownStackSpec.initAcc a).cap := by
-    simp only [countdownStackSpec, CappedNatAcc.init]
-    have : 0 < 2 ^ a := Nat.two_pow_pos a
-    omega
-  have hres := H (L'.map (countdownBranching.walk a)) (countdownStackSpec.initAcc a) hinit
-  simp only [countdownStackSpec, CappedNatAcc.init] at hres
-  exact hres
+  simp only [countdownStackSpec]
+  simp only [CappedNatAcc.foldl_add_eq (fun _ : ℕ => 1)
+    (L'.map (countdownBranching.walk a)) (CappedNatAcc.init (2 ^ a)) (Nat.zero_le _)]
+  exact ⟨rfl, Nat.min_le_left _ _⟩
 
 lemma countdownStackSpec_stateBound (a i : ℕ) (hi : i ≤ countdownStackSpec.rounds a) :
     (encStackSearchState (encFinEnum Unit) encNat encCappedNatAcc
       ((countdownStackSpec.step (fun _ => 1))^[i] (countdownStackSpec.initState a))).length ≤
         1000 * (a + 1) ^ 2 := by
-  have hwalk_len : ∀ s w, countdownBranching.IsLeafWord s w → w.length ≤ s := by
-    intro s w hw
-    induction w generalizing s with
-    | nil => exact Nat.zero_le s
-    | cons b ws ih =>
-      obtain ⟨hnot, htail⟩ := hw
-      change ¬(s = 0) at hnot
-      have hsub := ih (s - 1) htail
-      simp only [List.length_cons]
-      omega
   have H := StackAccumulationSpec.run_eq_foldl_leafWords countdownStackSpec (fun _ => 1) a
     countdownBranching countdownBranching_terminating rfl
     (fun _ => decide_eq_true_eq.to_iff)
-    (fun _ _ => rfl) (hwalk_len a)
-    (by
-      intro L hnd hL
-      have hcard : L.toFinset.card ≤ ∑ j ∈ Finset.range (a + 1), a.choose j :=
-        countdownBranching.card_le_sum_choose_of_isLeafWord
-          (fun w hw => (hL w).mp (List.mem_toFinset.mp hw))
-          (fun w hw => hwalk_len a w ((hL w).mp (List.mem_toFinset.mp hw)))
-          (fun w hw => (Finset.card_filter_le _ _).trans (by
-            rw [Finset.card_range]
-            exact hwalk_len a w ((hL w).mp (List.mem_toFinset.mp hw))))
-      rw [Nat.sum_range_choose, List.toFinset_card_of_nodup hnd] at hcard
-      change 2 * L.length ≤ 2 * 2 ^ a + 1
-      have : 0 < 2 ^ a := Nat.two_pow_pos a
-      omega)
+    (fun _ _ => rfl) (countdownBranching_leafWord_length_le a)
+    (countdownStackSpec_rounds_sufficient a)
   obtain ⟨L, hnd, hL, hrun_eq, hstate⟩ := H
   obtain ⟨hlen, helem, ⟨L', hsub, hacc⟩⟩ := hstate i hi
   have hcap := countdownStackSpec_foldl_acc a L'

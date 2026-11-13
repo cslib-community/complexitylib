@@ -55,12 +55,13 @@ example : consistent [(0, 1)] [(1, 3)] = true ∧ consistent [(0, 1)] [(0, 2)] =
 /-! ### Graphs from a Boolean adjacency -/
 
 -- Three pairwise distinct vertices, adjacent when distinct: a triangle.
-example : ((Graph.ofAdj [0, 1, 2] fun a b => a != b), 3) ∈ Clique := by
+example : (⟨Graph.ofAdj [0, 1, 2] fun a b => a != b, 3⟩ : CliqueInstance) ∈ Clique := by
   rw [Graph.mem_Clique_ofAdj_iff_entries (fun v => by simp)]
   exact ⟨{0, 1, 2}, by decide, by decide, by decide⟩
 
 -- Adjacent only when both are even: the largest clique has two vertices.
-example : ((Graph.ofAdj [0, 1, 2] fun a b => a != b && a % 2 == 0 && b % 2 == 0), 3) ∉ Clique := by
+example : (⟨Graph.ofAdj [0, 1, 2] fun a b => a != b && a % 2 == 0 && b % 2 == 0, 3⟩ :
+    CliqueInstance) ∉ Clique := by
   rw [Graph.mem_Clique_ofAdj_iff_entries (fun v => by simp)]
   rintro ⟨T, hT, hTv, hTadj⟩
   have hsub : T ⊆ {0, 1, 2} := fun v hv => by simpa using hTv v hv
@@ -120,11 +121,13 @@ def fst2 : WeftCircuit 1 0 :=
 -- The graph itself, computed by `decide`. For weight `0` it has two vertices, the certificate and
 -- the empty bracket, and no edge: the empty bracket says that input `0` is not selected, which
 -- refutes the certificate. The clique size is `2`, so there is no clique of the size.
-example : (toClique ⟨fst2, 0⟩).1.1.length = 2 ∧ (toClique ⟨fst2, 0⟩).1.2 = [] ∧
-    (toClique ⟨fst2, 0⟩).2 = 2 := by decide
+example : (toClique ⟨fst2, 0⟩).graph.vertices.length = 2 ∧
+    (toClique ⟨fst2, 0⟩).graph.edges = [] ∧
+    (toClique ⟨fst2, 0⟩).m = 2 := by decide
 
 -- For weight `1` the graph has eight vertices and clique size `4`.
-example : (toClique ⟨fst2, 1⟩).1.1.length = 8 ∧ (toClique ⟨fst2, 1⟩).2 = 4 := by decide
+example : (toClique ⟨fst2, 1⟩).graph.vertices.length = 8 ∧
+    (toClique ⟨fst2, 1⟩).m = 4 := by decide
 
 example : toClique ⟨fst2, 0⟩ ∉ Clique := by
   rw [toClique_mem_Clique_iff]
@@ -145,21 +148,21 @@ example : size 0 3 5 = 22 ∧ 22 ≤ (5 + 1) ^ 2 ^ (0 + 1) + 1 := by decide
 example : size 0 3 5 ≤ (5 + 1) ^ 2 ^ (0 + 1) + 1 := size_le 0 3 5
 
 -- `Clique` and `IndependentSet` are `W[1]`-complete.
-example : Clique ∈ W 1 (encPair encGraph encNat) Prod.snd ∧
-    WHard 1 (encPair encGraph encNat) Prod.snd Clique :=
+example : Clique ∈ W 1 encCliqueInstance (·.m) ∧
+    WHard 1 encCliqueInstance (·.m) Clique :=
   ⟨Clique_mem_W, Clique_wHard⟩
 
-example : IndependentSet ∈ W 1 (encPair encGraph encNat) Prod.snd ∧
-    WHard 1 (encPair encGraph encNat) Prod.snd IndependentSet :=
+example : IndependentSet ∈ W 1 encIndependentSetInstance (·.m) ∧
+    WHard 1 encIndependentSetInstance (·.m) IndependentSet :=
   ⟨IndependentSet_mem_W, IndependentSet_wHard⟩
 
 -- A problem of `W[1]` fpt-reduces to `IndependentSet`.
-example : FPTReducible (encWCS 1 5) (encPair encGraph encNat) WCSInstance.weight Prod.snd (WCS 1 5)
+example : FPTReducible (encWCS 1 5) encIndependentSetInstance WCSInstance.weight (·.m) (WCS 1 5)
     IndependentSet :=
   IndependentSet_wHard _ _ _ (WCS_mem_W 1 5)
 
 -- If `Clique` is in `FPT`, so is weighted satisfiability of every class of weft-one circuits.
-example (h : Clique ∈ FPT (encPair encGraph encNat) Prod.snd) (d : ℕ) :
+example (h : Clique ∈ FPT encCliqueInstance (·.m)) (d : ℕ) :
     WCS 1 d ∈ FPT (encWCS 1 d) WCSInstance.weight := by
   rw [← W_one_eq_FPT_iff.2 h]
   exact WCS_mem_W 1 d

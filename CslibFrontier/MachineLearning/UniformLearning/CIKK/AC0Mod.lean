@@ -9,8 +9,8 @@ module
 
 public import CslibFrontier.Computability.Circuit.Boolean.Razborov.LearningParams
 public import CslibFrontier.MachineLearning.UniformLearning.CIKK.Learner
-import CslibFrontier.Crypto.Primitives.PRG.NisanWigderson.AmpGeneratorCircuit
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.Complexity
+import CslibFrontier.MachineLearning.UniformLearning.CIKK.DenseTest
 
 /-!
 # Learning AC⁰[2] with the rank property
@@ -32,7 +32,9 @@ test that accepts the truth tables of the rank property at the input length
 the truth tables, which covers the density hypothesis by the fixed point `ℓ + 2 ≤ g`. Each `g_z`
 is computed by a circuit with `MOD_2` gates of depth at most `d + 7` and size at most
 `S(g) = k s + 6 (k n + k)² + 3` (`Cslib.Crypto.PRG.NisanWigderson.exists_circuit_generator_glAmp`),
-so the rank test rejects it.
+so the rank test rejects it. The proof instantiates the per-length step for constant-depth bases,
+`Cslib.MachineLearning.UniformLearning.learns_cikkLearner_of_hom`, at `σ = Unbounded.extSignature`
+and `φ = Signature.Hom.id _`.
 
 The learner then makes at most `(h + 1) 2 ^ (12 g + 6 e + 59)` queries, and
 `g ≤ 2^{2D(5D+25)} B^{2D}` with `D = d + 7` and `B` the bit length of
@@ -95,7 +97,6 @@ public section
 namespace Cslib.MachineLearning.UniformLearning
 
 open Finset Cslib.Circuits Cslib.Circuits.Boolean Cslib.Circuits.Boolean.Razborov
-  Cslib.Crypto.PRG Cslib.Crypto.PRG.NisanWigderson
 
 /-- **Learning AC⁰[2] with the rank property** [Carmosino et al., Theorem 5.1, p. 10:19, and
 Corollary 5.4, p. 10:20][CarmosinoImpagliazzoKabanetsKolokolova2016], for `p = 2`: with
@@ -116,26 +117,18 @@ theorem learns_cikkLearner_rankTest (d e h n s : ℕ) :
       (1 / 2 ^ e) (1 / 2 ^ h) := by
   set g := cikkAC0Gap d e n s
   set ℓ := cikkAC0Len d e n s g
-  refine learns_cikkLearner e g h ?_ ?_
-  · -- the rank test accepts half of the truth tables, and `ℓ + 2 ≤ g`
-    have hfix : ℓ + 2 ≤ g := cikkAC0Len_add_two_le_cikkAC0Gap d e n s
-    have hhalf : 2 ^ 2 ^ ℓ ≤ 2 * #{T | truthTableTest (rankProperty sliceLevel ℓ) T = true} := by
-      rw [card_filter_truthTableTest, rankProperty_apply]
-      exact two_pow_two_pow_le_two_mul_ncard_rankTest ℓ (sliceLevel ℓ)
-    calc 2 ^ 2 ^ ℓ * 2 ^ (ℓ + 1)
-        ≤ 2 * #{T | truthTableTest (rankProperty sliceLevel ℓ) T = true} * 2 ^ (ℓ + 1) :=
-          Nat.mul_le_mul_right _ hhalf
-      _ = 2 ^ (ℓ + 2) * #{T | truthTableTest (rankProperty sliceLevel ℓ) T = true} := by ring
-      _ ≤ 2 ^ g * #{T | truthTableTest (rankProperty sliceLevel ℓ) T = true} :=
-          Nat.mul_le_mul_right _ (Nat.pow_le_pow_right (by norm_num) hfix)
-  · -- every generator output has a small circuit, which the rank test rejects
-    rintro f ⟨C, hC, hCd, hCs⟩ z
-    obtain ⟨G, hG, hGs, hGd⟩ :=
-      exists_circuit_generator_glAmp (Signature.Hom.id _) hC (cikkK e g) ℓ z
-    have hrej := notMem_rankProperty_cikkAC0Len_of_computes (hGd.trans (by omega))
-      (hGs.trans (by gcongr)) hG
-    rw [Bool.eq_false_iff, ne_eq, truthTableTest_eq_true_iff]
-    exact hrej
+  refine learns_cikkLearner_of_hom (Signature.Hom.id _) d s e g h ?_
+    fun G hGd hGs F hF hG => notMem_rankProperty_cikkAC0Len_of_computes hGd hGs hG hF
+  -- the rank property holds for half of the functions, and `ℓ + 2 ≤ g`
+  have hfix : ℓ + 2 ≤ g := cikkAC0Len_add_two_le_cikkAC0Gap d e n s
+  have hhalf : 2 ^ 2 ^ ℓ ≤ 2 * (rankProperty sliceLevel ℓ).ncard := by
+    rw [rankProperty_apply]
+    exact two_pow_two_pow_le_two_mul_ncard_rankTest ℓ (sliceLevel ℓ)
+  calc 2 ^ 2 ^ ℓ * 2 ^ (ℓ + 1)
+      ≤ 2 * (rankProperty sliceLevel ℓ).ncard * 2 ^ (ℓ + 1) := Nat.mul_le_mul_right _ hhalf
+    _ = 2 ^ (ℓ + 2) * (rankProperty sliceLevel ℓ).ncard := by ring
+    _ ≤ 2 ^ g * (rankProperty sliceLevel ℓ).ncard :=
+        Nat.mul_le_mul_right _ (Nat.pow_le_pow_right (by norm_num) hfix)
 
 /-- **Queries of the AC⁰[2] learner**: with `g = cikkAC0Gap d e n s`, the learner of
 `learns_cikkLearner_rankTest` makes at most `(h + 1) 2 ^ (12 g + 6 e + 59)` queries. -/

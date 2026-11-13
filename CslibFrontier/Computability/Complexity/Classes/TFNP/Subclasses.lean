@@ -74,8 +74,9 @@ local search, the numerical cost values through fixed-width binary words with le
 
 * `Cslib.Complexity.PLS_subset_TFNP`, `Cslib.Complexity.PPP_subset_TFNP`,
   `Cslib.Complexity.PPAD_subset_TFNP`, `Cslib.Complexity.PPA_subset_TFNP`.
-* `Cslib.Complexity.PPAD_subset_PPP`, `Cslib.Complexity.PPAD_subset_PPA`: `PPAD` is contained in
-  both `PPP` and `PPA` [Papadimitriou1994PPAD], [BeameEtAl1998].
+* `Cslib.Complexity.PPAD_subset_PPA`: `PPAD` is contained in `PPA` [Papadimitriou1994PPAD].
+  The inclusion `PPAD ⊆ PPP` is derived through `PPADS` in
+  `CslibFrontier/Computability/Complexity/Classes/TFNP/Subclasses/PPADS.lean`.
 * `Cslib.Complexity.LocalOpt_mem_PLS`, `Cslib.Complexity.Pigeon_mem_PPP`,
   `Cslib.Complexity.EndOfLine_mem_PPAD`, `Cslib.Complexity.Leaf_mem_PPA`.
 * `Cslib.Complexity.LocalOpt_mem_TFNP`, `Cslib.Complexity.Pigeon_mem_TFNP`,
@@ -429,50 +430,34 @@ theorem leafRel_mem_PPA {n : α → ℕ} {N₁ N₂ : α × List Bool → List B
 /-- `PLS` is closed under polynomial-time search reductions across arbitrary instance types. -/
 theorem SearchReducible.mem_PLS (h : SearchReducible enc encB R T) (hR : R ∈ FNP enc)
     (hT : T ∈ PLS encB) : R ∈ PLS enc := by
-  obtain ⟨-, n, N, C, hn, hN, hC, hlen, hT_red⟩ := Complexity.mem_PLS.mp hT
-  obtain ⟨f, g, hf, hg, -, hsol⟩ := (h.trans hT_red)
-  refine Complexity.mem_PLS.mpr ⟨hR, n ∘ f, fun p => N (f p.1, p.2), fun p => C (f p.1, p.2),
-    hn.comp hf, hN.comp ((hf.comp (.fst enc encBits)).prod (.snd enc encBits)),
-    hC.comp ((hf.comp (.fst enc encBits)).prod (.snd enc encBits)),
-    fun a u hu => hlen (f a) u hu,
-    .of_isTotalSearch (isTotalSearch_localOptRel fun a u hu => hlen (f a) u hu)
-      ComputableInPolyTime.id' hg fun a w hw => hsol a w hw⟩
+  obtain ⟨-, n, N, C, hn, hN, hC, hlen, hT⟩ := Complexity.mem_PLS.mp hT
+  obtain ⟨f, hf, h⟩ := (h.trans hT).exists_reindex
+  exact Complexity.mem_PLS.mpr ⟨hR, n ∘ f, fun p => N (f p.1, p.2), fun p => C (f p.1, p.2),
+    hn.comp hf, by fun_prop, by fun_prop, fun a => hlen (f a), h⟩
 
 /-- `PPP` is closed under polynomial-time search reductions across arbitrary instance types. -/
 theorem SearchReducible.mem_PPP (h : SearchReducible enc encB R T) (hR : R ∈ FNP enc)
     (hT : T ∈ PPP encB) : R ∈ PPP enc := by
-  obtain ⟨-, n, F, hn, hF, hlen, hT_red⟩ := Complexity.mem_PPP.mp hT
-  obtain ⟨f, g, hf, hg, -, hsol⟩ := (h.trans hT_red)
-  refine Complexity.mem_PPP.mpr ⟨hR, n ∘ f, fun p => F (f p.1, p.2),
-    hn.comp hf, hF.comp ((hf.comp (.fst enc encBits)).prod (.snd enc encBits)),
-    fun a u hu => hlen (f a) u hu,
-    .of_isTotalSearch (isTotalSearch_pigeonRel fun a u hu => hlen (f a) u hu)
-      ComputableInPolyTime.id' hg fun a w hw => hsol a w hw⟩
+  obtain ⟨-, n, F, hn, hF, hlen, hT⟩ := Complexity.mem_PPP.mp hT
+  obtain ⟨f, hf, h⟩ := (h.trans hT).exists_reindex
+  exact Complexity.mem_PPP.mpr ⟨hR, n ∘ f, fun p => F (f p.1, p.2), hn.comp hf, by fun_prop,
+    fun a => hlen (f a), h⟩
 
 /-- `PPAD` is closed under polynomial-time search reductions across arbitrary instance types. -/
 theorem SearchReducible.mem_PPAD (h : SearchReducible enc encB R T) (hR : R ∈ FNP enc)
     (hT : T ∈ PPAD encB) : R ∈ PPAD enc := by
-  obtain ⟨-, n, P, S, hn, hP, hS, hP_len, hS_len, hT_red⟩ := Complexity.mem_PPAD.mp hT
-  obtain ⟨f, g, hf, hg, -, hsol⟩ := (h.trans hT_red)
-  refine Complexity.mem_PPAD.mpr ⟨hR, n ∘ f, fun p => P (f p.1, p.2), fun p => S (f p.1, p.2),
-    hn.comp hf, hP.comp ((hf.comp (.fst enc encBits)).prod (.snd enc encBits)),
-    hS.comp ((hf.comp (.fst enc encBits)).prod (.snd enc encBits)),
-    fun a u hu => hP_len (f a) u hu, fun a u hu => hS_len (f a) u hu,
-    .of_isTotalSearch (isTotalSearch_endOfLineRel fun a u hu => hS_len (f a) u hu)
-      ComputableInPolyTime.id' hg fun a w hw => hsol a w hw⟩
+  obtain ⟨-, n, P, S, hn, hP, hS, hP_len, hS_len, hT⟩ := Complexity.mem_PPAD.mp hT
+  obtain ⟨f, hf, h⟩ := (h.trans hT).exists_reindex
+  exact Complexity.mem_PPAD.mpr ⟨hR, n ∘ f, fun p => P (f p.1, p.2), fun p => S (f p.1, p.2),
+    hn.comp hf, by fun_prop, by fun_prop, fun a => hP_len (f a), fun a => hS_len (f a), h⟩
 
 /-- `PPA` is closed under polynomial-time search reductions across arbitrary instance types. -/
 theorem SearchReducible.mem_PPA (h : SearchReducible enc encB R T) (hR : R ∈ FNP enc)
     (hT : T ∈ PPA encB) : R ∈ PPA enc := by
-  obtain ⟨-, n, N₁, N₂, hn, hN₁, hN₂, hN₁_len, hN₂_len, hT_red⟩ := Complexity.mem_PPA.mp hT
-  obtain ⟨f, g, hf, hg, -, hsol⟩ := (h.trans hT_red)
-  refine Complexity.mem_PPA.mpr ⟨hR, n ∘ f, fun p => N₁ (f p.1, p.2), fun p => N₂ (f p.1, p.2),
-    hn.comp hf, hN₁.comp ((hf.comp (.fst enc encBits)).prod (.snd enc encBits)),
-    hN₂.comp ((hf.comp (.fst enc encBits)).prod (.snd enc encBits)),
-    fun a u hu => hN₁_len (f a) u hu, fun a u hu => hN₂_len (f a) u hu,
-    .of_isTotalSearch
-      (isTotalSearch_leafRel (fun a u hu => hN₁_len (f a) u hu) (fun a u hu => hN₂_len (f a) u hu))
-      ComputableInPolyTime.id' hg fun a w hw => hsol a w hw⟩
+  obtain ⟨-, n, N₁, N₂, hn, hN₁, hN₂, hN₁_len, hN₂_len, hT⟩ := Complexity.mem_PPA.mp hT
+  obtain ⟨f, hf, h⟩ := (h.trans hT).exists_reindex
+  exact Complexity.mem_PPA.mpr ⟨hR, n ∘ f, fun p => N₁ (f p.1, p.2), fun p => N₂ (f p.1, p.2),
+    hn.comp hf, by fun_prop, by fun_prop, fun a => hN₁_len (f a), fun a => hN₂_len (f a), h⟩
 
 /-! ### Inclusions in `TFNP` and between subclasses -/
 
@@ -495,30 +480,6 @@ theorem PPAD_subset_TFNP : PPAD enc ⊆ TFNP enc := by
 theorem PPA_subset_TFNP : PPA enc ⊆ TFNP enc := by
   rintro R ⟨hR, n, N₁, N₂, -, -, -, hN₁_len, hN₂_len, hred⟩
   exact ⟨hR, hred.isTotalSearch (isTotalSearch_leafRel hN₁_len hN₂_len)⟩
-
-/-- Every directed end-of-line family search-reduces to its associated pigeonhole family. -/
-private theorem endOfLineRel_searchReducible_pigeonRel {n : α → ℕ} {P S : α × List Bool → List Bool}
-    (hn : ComputableInPolyTime n enc encUnary)
-    (hP : ComputableInPolyTime P (encPair enc encBits) encBits)
-    (hS : ComputableInPolyTime S (encPair enc encBits) encBits)
-    (hS_len : ∀ a u, u.length = n a → (S (a, u)).length = n a) :
-    SearchReducible enc enc (endOfLineRel n P S) (pigeonRel n (ppadToPppMap n P S)) := by
-  refine .of_isTotalSearch (isTotalSearch_pigeonRel fun a u hu => length_ppadToPppMap (hS_len a) hu)
-    ComputableInPolyTime.id' (g := fun p => if !hasOut n P S p.1 (p.2.take (n p.1))
-      then p.2.take (n p.1) else p.2.drop (n p.1)) ?_ fun a w hw => endOfLineRel_of_pigeonRel hw
-  fun_prop
-
-/-- **`PPAD ⊆ PPP`** [Papadimitriou][Papadimitriou1994PPAD], [Beame et al.][BeameEtAl1998]: every
-problem in `PPAD` is in `PPP`. -/
-theorem PPAD_subset_PPP : PPAD enc ⊆ PPP enc := by
-  intro R hR'
-  obtain ⟨hR, n, P, S, hn, hP, hS, -, hS_len, hred⟩ := mem_PPAD.mp hR'
-  have hF : ComputableInPolyTime (ppadToPppMap n P S) (encPair enc encBits) encBits := by
-    unfold ppadToPppMap
-    fun_prop
-  exact mem_PPP.mpr ⟨hR, n, ppadToPppMap n P S, hn, hF,
-    fun a u hu => length_ppadToPppMap (hS_len a) hu,
-    hred.trans (endOfLineRel_searchReducible_pigeonRel hn hP hS hS_len)⟩
 
 /-- Every directed end-of-line family search-reduces to its associated bipartite undirected parity
 family. -/
@@ -726,10 +687,6 @@ theorem EndOfLine_mem_TFNP : EndOfLine ∈ TFNP encEndOfLine :=
 /-- `Leaf` is in `TFNP`. -/
 theorem Leaf_mem_TFNP : Leaf ∈ TFNP encLeaf :=
   PPA_subset_TFNP Leaf_mem_PPA
-
-/-- `EndOfLine` is in `PPP`. -/
-theorem EndOfLine_mem_PPP : EndOfLine ∈ PPP encEndOfLine :=
-  PPAD_subset_PPP EndOfLine_mem_PPAD
 
 /-- `EndOfLine` is in `PPA`. -/
 theorem EndOfLine_mem_PPA : EndOfLine ∈ PPA encEndOfLine :=

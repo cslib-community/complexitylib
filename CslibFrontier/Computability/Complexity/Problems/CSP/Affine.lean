@@ -61,11 +61,11 @@ theorem exists_affine_templates (arity : Rel → ℕ) (sem : Rel → List Bool �
 theorem polyTimeReducible_XORSAT_of_templates [Finite Rel] (encRel : Rel ↪ List Bool)
     (arity : Rel → ℕ) (sem : Rel → List Bool → Bool) (template : Rel → AffineSystem ℕ)
     (ht : CSP.AffineTemplates arity sem template) :
-    PolyTimeReducible (encCSP encRel encNat) XORSAT.encoding (CSPSAT arity sem)
-      {F | XORSAT.Satisfiable F} := by
+    PolyTimeReducible (encCSP encRel encNat) XORSAT.encoding (CSPSAT arity sem) XORSAT := by
   refine polyTimeReducible_of_guard encRel arity sem [([], true)]
     (CSP.computableInPolyTime_instantiateAffine encRel template) (fun F hF => ?_)
-    (by simp [XORSAT.Satisfiable, AffineSystem.Holds, AffineEquation.Holds, Bool.zero_eq_false])
+    (by simp [mem_XORSAT, XORSAT.Satisfiable, AffineSystem.Holds, AffineEquation.Holds,
+      Bool.zero_eq_false])
   exact (CSP.satisfiable_instantiateAffine ht 0 hF).symm
 
 /-- **Native P membership for every fixed finite parity-preserved Boolean language.** The
@@ -77,6 +77,6 @@ theorem mem_P_of_parity [Finite Rel] (encRel : Rel ↪ List Bool) (arity : Rel �
     CSPSAT arity sem ∈ P (encCSP encRel encNat) := by
   obtain ⟨template, ht⟩ := exists_affine_templates arity sem h
   exact (polyTimeReducible_XORSAT_of_templates encRel arity sem template ht).mem_P
-    XORSAT.satisfiable_mem_P
+    XORSAT.mem_P
 
 end Cslib.Complexity.CSPSAT

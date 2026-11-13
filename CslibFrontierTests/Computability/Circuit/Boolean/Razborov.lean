@@ -93,6 +93,25 @@ example : NaturalProof.IsNatural PPoly (rankProperty sliceLevel) ∧
     NaturalProof.IsUseful (AC0Mod 2) (rankProperty sliceLevel) :=
   isNatural_PPoly_and_isUseful_AC0Mod_two_rankProperty
 
+-- Since AC⁰[2] is nonempty, usefulness against it is exactly eventual depth–size lower bounds.
+example {C : ∀ n, Set (BooleanFunction n)} :
+    NaturalProof.IsUseful (AC0Mod 2) C ↔ ∀ (d : ℕ) (s : ℕ → ℕ), PolynomiallyBounded s →
+      ∀ᶠ n in Filter.atTop, ∀ (Cn : Circuit Unbounded.extSignature n 1), Cn.depth ≤ d →
+        Cn.size ≤ s n → ∀ f ∈ C n,
+          ¬ Cn.Computes (Unbounded.extInterpretation (modGate 2)) (single f) :=
+  ⟨fun h => h.eventually_constDepth (I := Unbounded.extInterpretation (modGate 2))
+      ⟨_, modGate_mem_AC0Mod 2⟩,
+    NaturalProof.IsUseful.of_eventually_constDepth⟩
+
+-- So the qualitative usefulness of the rank property gives back its lower bounds: eventually no
+-- depth-`d` circuit with at most `n ^ k` gates computes a function passing the rank test.
+example (d k : ℕ) :
+    ∀ᶠ n in Filter.atTop, ∀ (Cn : Circuit Unbounded.extSignature n 1), Cn.depth ≤ d →
+      Cn.size ≤ n ^ k → ∀ f ∈ rankProperty sliceLevel n,
+        ¬ Cn.Computes (Unbounded.extInterpretation (modGate 2)) (single f) :=
+  isUseful_AC0Mod_two_rankProperty.eventually_constDepth
+    (I := Unbounded.extInterpretation (modGate 2)) ⟨_, modGate_mem_AC0Mod 2⟩ d _ (by fun_prop)
+
 -- Every language in AC⁰[2] eventually has slices failing the rank test; the middle slice passes
 -- it everywhere, which recovers `middleSlice_notMem_AC0Mod_two`.
 example : Language.ofSlices middleSlice ∉ AC0Mod 2 := fun h => by
