@@ -40,8 +40,12 @@ identity; the metric projection onto a nonempty complete convex set is Lipschitz
 When `K` has diameter at most `d`, the losses on `K` differ from `ℓ · u` by at most `ρ d`, and
 the Azuma–Hoeffding conversion (`OnlineLearning.measureReal_trueRisk_average_gt_le`) gives the
 bound with high probability: outside an event of probability at most `δ`,
-`L_D ((1 / T) ∑ t < T, x t) ≤ L_D u + B ρ / √T + ρ d √(2 ln (1 / δ) / T)`. The `log T / T` rates
-for strongly convex losses and running time are not treated here.
+`L_D ((1 / T) ∑ t < T, x t) ≤ L_D u + B ρ / √T + ρ d √(2 ln (1 / δ) / T)`.
+
+For `α`-strongly convex losses, the step sizes `1 / (α (t + 1))` and the logarithmic regret of
+online gradient descent give `𝔼_S L_D ((1 / T) ∑ t < T, x t) ≤ L_D u + ρ ^ 2 (1 + log T) / (2 α T)`.
+This rate is in expectation; a high-probability `log T / T` rate needs a variance-sensitive
+(Freedman-type) concentration bound and is not treated here, nor is running time.
 
 ## Main definitions
 
@@ -52,17 +56,23 @@ for strongly convex losses and running time are not treated here.
 * `Cslib.MachineLearning.sgd_def`: `sgd` is online gradient descent on the sample's losses.
 * `Cslib.MachineLearning.measurable_sgd`, `Cslib.MachineLearning.sgd_update_of_le`: each iterate
   is a measurable function of the sample, and iterate `t` does not depend on example `s ≥ t`.
-* `Cslib.MachineLearning.sgd_regret_le`: the regret of SGD on every sample is at most `ρ B √T`.
+* `Cslib.MachineLearning.sgd_regret_le`, `Cslib.MachineLearning.sgd_regret_le_log`: the regret of
+  SGD on every sample is at most `ρ B √T`, and `ρ ^ 2 (1 + log T) / (2 α)` for `α`-strongly convex
+  losses.
 * `Cslib.MachineLearning.integral_trueRisk_sgd_average_le`: the expected true risk of the average
   of the first `T` iterates is at most `L_D u + B ρ / √T`.
 * `Cslib.MachineLearning.measureReal_trueRisk_sgd_average_gt_le`: on a set of diameter `d`, the
   true risk of the average iterate exceeds `L_D u + B ρ / √T + ρ d √(2 ln (1 / δ) / T)` with
   probability at most `δ`.
+* `Cslib.MachineLearning.integral_trueRisk_sgd_average_le_of_strongConvex`: for `α`-strongly
+  convex losses, the expected true risk of the average iterate is at most
+  `L_D u + ρ ^ 2 (1 + log T) / (2 α T)`.
 
 ## References
 
 * [S. Shalev-Shwartz, S. Ben-David, *Understanding Machine Learning: From Theory to
-  Algorithms*][ShalevShwartzBenDavid2014], Sections 14.3 and 14.5 (locators unverified)
+  Algorithms*][ShalevShwartzBenDavid2014], Sections 14.3 to 14.5 (locators unverified)
+* [E. Hazan, *Introduction to Online Convex Optimization*][Hazan2022], Theorem 3.3
 -/
 
 public section
@@ -136,6 +146,39 @@ theorem sgd_regret_le {T : ℕ} (hT : 0 < T) {K : Set E} {proj : E → E}
     (fun t x hx y hy => by by_cases h : t < T <;> simp [h, hsub _ x hx y hy]) hu hx₀u hT
   rw [← Fin.sum_univ_eq_sum_range] at h
   simpa [sgd_def] using h
+
+/-- **Regret of stochastic gradient descent for strongly convex losses** on every sample: if
+each loss satisfies `ℓ x z + ⟪g x z, y - x⟫ + α / 2 * ‖y - x‖ ^ 2 ≤ ℓ y z` on `K` with `α > 0`
+and the subgradients have norm at most `ρ` on `K`, the step sizes `1 / (α (t + 1))` give regret
+at most `ρ ^ 2 / (2 α) * (1 + log T)` against every `u ∈ K`. This is
+`OCO.ogd_regret_le_log` for the sample's losses. -/
+theorem sgd_regret_le_log {T : ℕ} (hT : 0 < T) {K : Set E} {proj : E → E}
+    (hP : IsPythagoreanProjection K proj) {ℓ : E → Z → ℝ} {g : E → Z → E} {α : ℝ} (hα : 0 < α)
+    (hsc : ∀ z, ∀ x ∈ K, ∀ y ∈ K, ℓ x z + ⟪g x z, y - x⟫ + α / 2 * ‖y - x‖ ^ 2 ≤ ℓ y z)
+    {ρ : ℝ} (hgρ : ∀ z, ∀ x ∈ K, ‖g x z‖ ≤ ρ) {x₀ u : E} (hx₀ : x₀ ∈ K) (hu : u ∈ K)
+    (S : Fin T → Z) :
+    ∑ t : Fin T,
+        (ℓ (sgd proj (fun t => 1 / (α * ((t : ℝ) + 1))) g x₀ S t) (S t) - ℓ u (S t)) ≤
+      ρ ^ 2 / (2 * α) * (1 + log T) := by
+  -- Pad the sample with its last example, so that the loss of every round is strongly convex.
+  let i : ℕ → Fin T := fun t => ⟨min t (T - 1), by omega⟩
+  have hagree : ∀ t, t ≤ T → ogd proj (fun t => 1 / (α * ((t : ℝ) + 1)))
+      (fun t x => g x (S (i t))) x₀ t = sgd proj (fun t => 1 / (α * ((t : ℝ) + 1))) g x₀ S t := by
+    intro t ht
+    induction t with
+    | zero => simp [sgd_def]
+    | succ t ih =>
+      have htT : t < T := by omega
+      have hit : i t = ⟨t, htT⟩ := Fin.ext (show min t (T - 1) = t by omega)
+      rw [sgd_def, ogd_succ, ogd_succ, ← sgd_def, ih (by omega), hit]
+      simp only [htT, dite_true]
+  have h := ogd_regret_le_log (K := K) (proj := proj) (x₀ := x₀) (u := u)
+    (grad := fun t x => g x (S (i t))) (f := fun t x => ℓ x (S (i t))) hP hx₀ hα
+    (fun t x hx => hgρ _ x hx) (fun t x hx y hy => hsc _ x hx y hy) hu T
+  rw [← Fin.sum_univ_eq_sum_range] at h
+  refine le_trans (le_of_eq (Finset.sum_congr rfl fun t _ => ?_)) h
+  have hit : i t = t := Fin.ext (show min (t : ℕ) (T - 1) = t by omega)
+  simp only [hagree t t.2.le, hit]
 
 variable [MeasurableSpace Z] [MeasurableSpace E] [BorelSpace E] [SecondCountableTopology E]
 
@@ -265,5 +308,48 @@ theorem measureReal_trueRisk_sgd_average_gt_le {T : ℕ} (hT : 0 < T) {D : Measu
     (fun t s hts S z => sgd_update_of_le proj _ g x₀ S hts z)
     (sgd_regret_le hT hP hsub hρ hgρ hx₀ hu hB hx₀u) hδ hδ1
   rwa [hrate] at h
+
+/-- **Stochastic gradient descent for strongly convex losses**: let every loss `ℓ · z` satisfy
+`ℓ x z + ⟪g x z, y - x⟫ + α / 2 * ‖y - x‖ ^ 2 ≤ ℓ y z` on the convex set `K` with `α > 0`, let
+the subgradients have norm at most `ρ` on `K`, and let `ℓ x₀` be `D`-integrable. Projected SGD
+with step sizes `1 / (α (t + 1))` on `T` i.i.d. examples from `D` satisfies
+`𝔼_S L_D ((1 / T) ∑ t < T, x t) ≤ L_D u + ρ ^ 2 (1 + log T) / (2 α T)` for every `u ∈ K`.
+This is the logarithmic regret of online gradient descent (`OCO.ogd_regret_le_log`) through the
+online-to-batch conversion; compare [ShalevShwartzBenDavid2014, Theorem 14.11] (locator
+unverified), which assumes strong convexity of the risk instead of each loss. -/
+theorem integral_trueRisk_sgd_average_le_of_strongConvex {T : ℕ} (hT : 0 < T) {D : Measure Z}
+    [IsProbabilityMeasure D] {K : Set E} (hK : Convex ℝ K) {proj : E → E}
+    (hP : IsPythagoreanProjection K proj) (hproj : Measurable proj) {ℓ : E → Z → ℝ}
+    (hℓ : Measurable (Function.uncurry ℓ)) {g : E → Z → E} (hgm : Measurable (Function.uncurry g))
+    {α : ℝ} (hα : 0 < α)
+    (hsc : ∀ z, ∀ x ∈ K, ∀ y ∈ K, ℓ x z + ⟪g x z, y - x⟫ + α / 2 * ‖y - x‖ ^ 2 ≤ ℓ y z)
+    {ρ : ℝ} (hgρ : ∀ z, ∀ x ∈ K, ‖g x z‖ ≤ ρ) {x₀ u : E} (hx₀ : x₀ ∈ K)
+    (hint : Integrable (ℓ x₀) D) (hu : u ∈ K) :
+    ∫ S : Fin T → Z, trueRisk ℓ D ((T : ℝ)⁻¹ • ∑ t : Fin T,
+        sgd proj (fun t => 1 / (α * ((t : ℝ) + 1))) g x₀ S t) ∂Measure.pi (fun _ => D) ≤
+      trueRisk ℓ D u + ρ ^ 2 * (1 + log T) / (2 * α * T) := by
+  have hsub : ∀ z, ∀ x ∈ K, ∀ y ∈ K, ℓ x z + ⟪g x z, y - x⟫ ≤ ℓ y z := fun z x hx y hy =>
+    le_trans (le_add_of_nonneg_right (by positivity)) (hsc z x hx y hy)
+  -- Strong convexity bounds the diameter of `K` by `2 ρ / α`, so `ℓ` is dominated on `K`.
+  obtain ⟨z₀⟩ := nonempty_of_isProbabilityMeasure D
+  have hd : ∀ x ∈ K, ∀ y ∈ K, ‖x - y‖ ≤ 2 * ρ / α := fun x hx y hy =>
+    norm_sub_le_of_strongConvex hα (hgρ z₀) (hsc z₀) hx hy
+  have hρ : 0 ≤ ρ := (norm_nonneg _).trans (hgρ z₀ x₀ hx₀)
+  have hbound : ∀ w ∈ K, ∀ z, |ℓ w z| ≤ |ℓ x₀ z| + ρ * (2 * ρ / α) := fun w hw z => by
+    have hl := (abs_sub_le_of_forall_add_inner_le (f := fun x => ℓ x z) (g := fun x => g x z)
+      (hsub z) (hgρ z) hw hx₀).trans (mul_le_mul_of_nonneg_left (hd w hw x₀ hx₀) hρ)
+    calc |ℓ w z| = |(ℓ w z - ℓ x₀ z) + ℓ x₀ z| := by rw [sub_add_cancel]
+      _ ≤ |ℓ w z - ℓ x₀ z| + |ℓ x₀ z| := abs_add_le _ _
+      _ ≤ |ℓ x₀ z| + ρ * (2 * ρ / α) := by linarith
+  have hb : Integrable (fun z => |ℓ x₀ z| + ρ * (2 * ρ / α)) D :=
+    hint.abs.add (integrable_const _)
+  refine (OnlineLearning.integral_trueRisk_average_le_add hT hK hℓ
+    (fun z => convexOn_of_forall_add_inner_le hK fun x hx y hy => hsub z x hx y hy) hb hbound
+    (w := fun t S => sgd proj (fun t => 1 / (α * ((t : ℝ) + 1))) g x₀ S t)
+    (fun t S => sgd_mem hP _ g hx₀ S t) (fun t => measurable_sgd hproj _ hgm x₀ t)
+    (fun t S z => sgd_update proj _ g x₀ S t z) hu
+    (sgd_regret_le_log hT hP hα hsc hgρ hx₀ hu)).trans_eq ?_
+  congr 1
+  field_simp
 
 end Cslib.MachineLearning

@@ -112,4 +112,53 @@ example (D : Measure ℝ) [IsProbabilityMeasure D] (hD : Integrable id D) {u : �
   rw [hdev, hrate, hstep] at h
   simpa only [Nat.cast_ofNat] using h
 
+/-- The absolute loss regularized by `w ^ 2 / 2`, which is `1`-strongly convex. -/
+noncomputable def regAbsLoss (w z : ℝ) : ℝ := |w - z| + w ^ 2 / 2
+
+/-- A subgradient of `regAbsLoss · z` at `w`. -/
+noncomputable def regAbsGrad (w z : ℝ) : ℝ := absGrad w z + w
+
+theorem regAbsLoss_strongConvex (z x y : ℝ) :
+    regAbsLoss x z + ⟪regAbsGrad x z, y - x⟫ + 1 / 2 * ‖y - x‖ ^ 2 ≤ regAbsLoss y z := by
+  have h := absLoss_add_inner_le z x y
+  rw [Real.inner_apply] at h ⊢
+  simp only [regAbsLoss, regAbsGrad, absLoss, Real.norm_eq_abs, sq_abs] at h ⊢
+  linear_combination h
+
+/-- SGD for strongly convex losses on `[-1, 1]`: `T ≥ 1` steps from `0` with step sizes
+`1 / (t + 1)` on the regularized absolute loss, whose subgradients have norm at most `2` there.
+For every distribution `D` with a first moment and every `u ∈ [-1, 1]`, the average iterate has
+expected true risk at most `L_D(u) + 2 (1 + log T) / T`. -/
+example (D : Measure ℝ) [IsProbabilityMeasure D] (hD : Integrable id D) {u : ℝ}
+    (hu : u ∈ Set.Icc (-1 : ℝ) 1) {T : ℕ} (hT : 0 < T) :
+    ∫ S : Fin T → ℝ, trueRisk regAbsLoss D ((T : ℝ)⁻¹ • ∑ t : Fin T,
+        sgd (Cslib.metricProjection (Set.Icc (-1) 1)) (fun t => 1 / ((t : ℝ) + 1)) regAbsGrad 0
+          S t) ∂Measure.pi (fun _ => D) ≤
+      trueRisk regAbsLoss D u + 2 * (1 + Real.log T) / T := by
+  have hne : (Set.Icc (-1 : ℝ) 1).Nonempty := Set.nonempty_Icc.2 (by norm_num)
+  have hc : IsComplete (Set.Icc (-1 : ℝ) 1) := isClosed_Icc.isComplete
+  have hint : Integrable (regAbsLoss 0) D := by
+    have e : regAbsLoss 0 = fun z => |id z| := funext fun z => by simp [regAbsLoss]
+    rw [e]
+    exact hD.abs
+  have hℓ : Measurable (Function.uncurry regAbsLoss) :=
+    (by fun_prop : Continuous fun p : ℝ × ℝ => |p.1 - p.2| + p.1 ^ 2 / 2).measurable
+  have hg : Measurable (Function.uncurry regAbsGrad) :=
+    show Measurable fun p : ℝ × ℝ => absGrad p.1 p.2 + p.1 from
+      measurable_absGrad.add measurable_fst
+  have hgρ : ∀ z, ∀ x ∈ Set.Icc (-1 : ℝ) 1, ‖regAbsGrad x z‖ ≤ 2 := fun z x hx => by
+    have h1 := norm_absGrad_le x z
+    have h2 : ‖x‖ ≤ 1 := by rw [Real.norm_eq_abs, abs_le]; exact hx
+    exact (norm_add_le _ _).trans (by linarith)
+  have h := integral_trueRisk_sgd_average_le_of_strongConvex hT (convex_Icc _ _)
+    (isPythagoreanProjection_metricProjection hne hc (convex_Icc _ _))
+    (Cslib.lipschitzWith_metricProjection hne hc (convex_Icc _ _)).continuous.measurable hℓ hg
+    one_pos (fun z x _ y _ => regAbsLoss_strongConvex z x y) hgρ
+    (by norm_num : (0 : ℝ) ∈ Set.Icc (-1 : ℝ) 1) hint hu
+  have e : trueRisk regAbsLoss D u + 2 ^ 2 * (1 + Real.log T) / (2 * 1 * T) =
+      trueRisk regAbsLoss D u + 2 * (1 + Real.log T) / T := by
+    ring
+  rw [e] at h
+  simpa only [one_mul] using h
+
 end CslibFrontierTests.StochasticGradientDescent
