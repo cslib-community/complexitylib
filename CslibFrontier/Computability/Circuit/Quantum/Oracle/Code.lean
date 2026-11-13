@@ -119,6 +119,19 @@ theorem toCircuit_map_gate (codes : List PhaseGateCode) :
   rw [toCircuit, List.filterMap_map, Circuit.ofPhaseCodes]
   rfl
 
+/-- Any even number of coherent XOR queries cancels, on arbitrary states. The total interpreter
+also has this property when a malformed query is skipped. -/
+theorem eval_toCircuit_replicate_query_pairs (k : ℕ) (ψ : Qubits m) :
+    (toCircuit m H (List.replicate (2 * k) .query)).eval ψ = ψ := by
+  induction k with
+  | zero => simp [toCircuit, Circuit.eval_nil]
+  | succ k ih =>
+    rw [Nat.mul_succ, List.replicate_add, toCircuit_append, Circuit.eval_append, ih]
+    by_cases h : a + b ≤ m
+    · simp [toCircuit, OracleGateCode.toPlacedGate?, h, Circuit.eval_cons, Circuit.eval_nil,
+        xorQuery_eval_twice]
+    · simp [toCircuit, OracleGateCode.toPlacedGate?, h, Circuit.eval_nil]
+
 /-- Every well-formed instruction is executed, so semantic gate count equals description length. -/
 theorem length_toCircuit (codes : OracleCircuit)
     (h : ∀ g ∈ codes, g.WellFormed a b m) : (toCircuit m H codes).length = codes.length := by
