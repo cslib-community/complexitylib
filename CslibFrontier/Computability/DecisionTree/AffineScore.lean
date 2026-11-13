@@ -119,16 +119,6 @@ def leafScore (B : ℝ) : ℕ → (ι → ℝ) → DecisionTree ι β → List B
   | d, q, .node _ left _, false :: p => leafScore B (d - 1) q left p
   | d, q, .node i _ right, true :: p => B ^ (d - 1) * q i + leafScore B (d - 1) q right p
 
-@[simp]
-theorem leafScore_zero (B : ℝ) (d : ℕ) (t : DecisionTree ι β) (p : List Bool) :
-    leafScore B d 0 t p = 0 := by
-  induction t generalizing d p with
-  | leaf _ => rfl
-  | node _ left right ihl ihr =>
-    cases p with
-    | nil => rfl
-    | cons b p => cases b <;> simp [leafScore, ihl, ihr]
-
 /-- `leafScore` is linear in the query margins. -/
 private theorem leafScore_linear (B a b : ℝ) (d : ℕ) (q₁ q₂ : ι → ℝ) (t : DecisionTree ι β)
     (p : List Bool) :
@@ -144,6 +134,11 @@ private theorem leafScore_linear (B a b : ℝ) (d : ℕ) (q₁ q₂ : ι → ℝ
       | true =>
         simp only [leafScore, Pi.add_apply, Pi.smul_apply, smul_eq_mul, ihr (d - 1) p]
         ring
+
+@[simp]
+theorem leafScore_zero (B : ℝ) (d : ℕ) (t : DecisionTree ι β) (p : List Bool) :
+    leafScore B d 0 t p = 0 := by
+  simpa using leafScore_linear B 0 0 d 0 0 t p
 
 theorem leafScore_add (B : ℝ) (d : ℕ) (q₁ q₂ : ι → ℝ) (t : DecisionTree ι β) (p : List Bool) :
     leafScore B d (q₁ + q₂) t p = leafScore B d q₁ t p + leafScore B d q₂ t p := by
