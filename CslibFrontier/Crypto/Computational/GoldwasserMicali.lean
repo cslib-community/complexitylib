@@ -7,10 +7,11 @@ Authors: Karn Seth
 module
 -- upstream: candidate
 
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.PowMod
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.Words
 public import CslibFrontier.Crypto.Computational.Encryption.PublicKeyReplacement
-public import CslibFrontier.Crypto.Computational.Paillier
 public import CslibFrontier.Crypto.Computational.QuadraticResiduosity
+public import CslibFrontier.Crypto.Computational.UnitSampling
 public import CslibFrontier.Crypto.Encoding
 public import CslibFrontier.Languages.Probabilistic.UniformNat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
@@ -21,16 +22,17 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Jacobi
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.WordsRoundTrip
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pair.Projections
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.PPT.Composition
 import CslibFrontier.Computability.Probabilistic.Traverse
 import CslibFrontier.Computability.Probabilistic.UniformNat
-import CslibFrontier.Crypto.Computational.UnitSampling
 import CslibFrontier.Crypto.Game.FourHop
 import CslibFrontier.Crypto.Game.Statistical
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Crypto.Negligible.Dyadic
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
+import CslibFrontier.Foundations.Data.ZMod.CRTUnits
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Uniform
@@ -83,7 +85,6 @@ modulus `N = p * q` and public nonresidue `z ∈ QNR_N^{+1}`:
 namespace Cslib.Crypto.GoldwasserMicali
 
 open Probability Turing.MultiTapeTM Encryption
-open Paillier (unframe_encPair_encNat dropFrame_encPair_encNat)
 open scoped ENNReal NNReal Cslib.Probability.PMF
 
 local instance (p q : ℕ) [hp : Fact p.Prime] [hq : Fact q.Prime] : NeZero (p * q) :=
@@ -245,22 +246,21 @@ private theorem powMod_half_eq_one_iff_isSquare (P : ℕ) [Fact P.Prime] (hP : 2
 theorem isQuadResidueNat_unit_eq (d : ModulusDesc) (u : (ZMod (d.p * d.q))ˣ) :
     isQuadResidueNat d.p d.q u.val.val = decide (IsSquare u) := by
   have hcop : Nat.Coprime d.p d.q := (Nat.coprime_primes d.prime_p d.prime_q).mpr d.ne_pq
-  let crt : ZMod (d.p * d.q) ≃+* ZMod d.p × ZMod d.q := ZMod.chineseRemainder hcop
-  let e : (ZMod (d.p * d.q))ˣ ≃* (ZMod d.p)ˣ × (ZMod d.q)ˣ :=
-    (Units.mapEquiv crt.toMulEquiv).trans MulEquiv.prodUnits
-  have hcrt : IsSquare u ↔ IsSquare (e u).1 ∧ IsSquare (e u).2 :=
-    ⟨fun ⟨r, hr⟩ => ⟨⟨(e r).1, by rw [hr, map_mul]; rfl⟩, ⟨(e r).2, by rw [hr, map_mul]; rfl⟩⟩,
-      fun ⟨⟨a, ha⟩, ⟨b, hb⟩⟩ => ⟨e.symm (a, b), e.injective (by ext <;> simp [ha, hb])⟩⟩
   have hcast {R : Type} [CommRing R] (f : ZMod (d.p * d.q) →+* R) :
       (u.val.val : R) = f u.val := by
     rw [← map_natCast f, ZMod.natCast_zmod_val]
-  have hp := powMod_half_eq_one_iff_isSquare d.p d.two_lt_p u.val.val (e u).1
-    (hcast ((RingHom.fst _ _).comp crt.toRingHom))
-  have hq := powMod_half_eq_one_iff_isSquare d.q d.two_lt_q u.val.val (e u).2
-    (hcast ((RingHom.snd _ _).comp crt.toRingHom))
+  have hp := powMod_half_eq_one_iff_isSquare d.p d.two_lt_p u.val.val
+    (ZMod.unitsChineseRemainder hcop u).1
+    ((hcast ((RingHom.fst _ _).comp (ZMod.chineseRemainder hcop).toRingHom)).trans
+      (ZMod.coe_unitsChineseRemainder_fst hcop u).symm)
+  have hq := powMod_half_eq_one_iff_isSquare d.q d.two_lt_q u.val.val
+    (ZMod.unitsChineseRemainder hcop u).2
+    ((hcast ((RingHom.snd _ _).comp (ZMod.chineseRemainder hcop).toRingHom)).trans
+      (ZMod.coe_unitsChineseRemainder_snd hcop u).symm)
   unfold isQuadResidueNat
   exact Bool.eq_iff_iff.mpr (by
-    simp only [Bool.and_eq_true, beq_iff_eq, decide_eq_true_eq, hp, hq, hcrt])
+    simp only [Bool.and_eq_true, beq_iff_eq, decide_eq_true_eq, hp, hq,
+      ZMod.isSquare_iff_unitsChineseRemainder hcop u])
 
 /-- `decryptNat d.p d.q` decides non-squareness on `(ZMod (d.p * d.q))ˣ`. -/
 theorem decryptNat_unit_eq (d : ModulusDesc) (u : (ZMod (d.p * d.q))ˣ) :
@@ -413,7 +413,7 @@ theorem computableInPolyTime_mulCiphertexts :
 
 private theorem decrypt_encPair (p q c : ℕ) :
     decrypt (encPair encNat encNat (p, q)) (encNat c) = decryptNat p q c := by
-  rw [decrypt, unframe_encPair_encNat, dropFrame_encPair_encNat, ofBits_encNat, ofBits_encNat,
+  rw [decrypt, unframe_encPair, dropFrame_encPair, ofBits_encNat, ofBits_encNat,
     ofBits_encNat]
 
 /-- Key pairs in the support of `keyGen gen n` arise from a valid `KeyDesc`. -/
@@ -430,8 +430,8 @@ theorem exists_of_mem_support_encrypt {n N z : ℕ} {pk : List Bool}
     (hct : ct ∈ (ProbComp.eval (encrypt n pk m)).support) :
     ∃ r : ℕ, r.Coprime N ∧ ct = encNat (ciphertext N z m r) := by
   supp_cases hct [encrypt] with ⟨r, _, hct_eq⟩
-  have hN : ofBits (unframe pk) = N := by rw [hpk, unframe_encPair_encNat, ofBits_encNat]
-  have hz : ofBits (dropFrame pk) = z := by rw [hpk, dropFrame_encPair_encNat, ofBits_encNat]
+  have hN : ofBits (unframe pk) = N := by rw [hpk, unframe_encPair, ofBits_encNat]
+  have hz : ofBits (dropFrame pk) = z := by rw [hpk, dropFrame_encPair, ofBits_encNat]
   rw [hN, hz] at hct_eq
   exact ⟨unitOrOne N r, coprime_unitOrOne N r, hct_eq⟩
 
@@ -461,7 +461,7 @@ theorem decrypt_mulCiphertexts {gen : ℕ → ProbComp KeyDesc} {n : ℕ} {keys 
   have hr' : ((if b₁ && b₂ then k.z else 1) * r₁ * r₂).Coprime k.modulus :=
     (Nat.Coprime.mul_left (by cases b₁ && b₂; exacts [Nat.coprime_one_left _, k.coprime_z])
       hr₁).mul_left hr₂
-  rw [hpk, hsk, mulCiphertexts, unframe_encPair_encNat, ofBits_encNat, ofBits_encNat, ofBits_encNat,
+  rw [hpk, hsk, mulCiphertexts, unframe_encPair, ofBits_encNat, ofBits_encNat, ofBits_encNat,
     mulCiphertextsNat_ciphertext (NeZero.ne k.modulus), decrypt_encPair]
   exact k.decryptNat_ciphertext hr' (b₁ ^^ b₂)
 
@@ -509,7 +509,7 @@ theorem rerandomize_idealEncrypt_eq (N : ℕ) [NeZero N] (z r₀ : (ZMod N)ˣ) (
   conv_rhs => rw [idealEncrypt, ← rerandomize_idealEncryptUnit_eq N z r₀ m]
   simp only [idealEncrypt, idealEncryptUnit, PMF.map, PMF.monad_bind_eq_bind,
     PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind, Function.comp_def, Bool.false_eq_true,
-    ↓reduceIte, one_mul, mulCiphertexts, unframe_encPair_encNat, ofBits_encNat,
+    ↓reduceIte, one_mul, mulCiphertexts, unframe_encPair, ofBits_encNat,
     mulCiphertextsNat_unit_val]
 
 /-- **Distributional XOR homomorphism on `(ZMod N)ˣ`** ([KatzLindell2020], Exercise 15.11). -/
@@ -540,7 +540,7 @@ theorem idealEncrypt_mulCiphertexts_eq (N : ℕ) [NeZero N] (z : (ZMod N)ˣ) (b�
       idealEncrypt N z (b₁ ^^ b₂) := by
   conv_rhs => rw [idealEncrypt, ← idealEncryptUnit_mul_eq N z b₁ b₂]
   simp only [idealEncrypt, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_map,
-    PMF.map_bind, PMF.pure_map, Function.comp_def, mulCiphertexts, unframe_encPair_encNat,
+    PMF.map_bind, PMF.pure_map, Function.comp_def, mulCiphertexts, unframe_encPair,
     ofBits_encNat, mulCiphertextsNat_unit_val]
 
 /-- When `IsSquare y`, `idealEncryptUnit N y m` is independent of `m`. -/
@@ -591,7 +591,7 @@ theorem advantage_encrypt_idealEncrypt_le (d : ModulusDesc) (n : ℕ)
         ((if m then y else 1) * u ^ 2).val.val := by
     rw [ciphertext_eq_unit_val (ZMod.val_coe_unit_coprime y) (ZMod.val_coe_unit_coprime u) m,
       unitOfCoprime_val, unitOfCoprime_val]
-  rw [encrypt, unframe_encPair_encNat, dropFrame_encPair_encNat, ofBits_encNat, ofBits_encNat]
+  rw [encrypt, unframe_encPair, dropFrame_encPair, ofBits_encNat, ofBits_encNat]
   simp only [idealEncrypt, idealEncryptUnit, ProbComp.eval_bind, ProbComp.eval_pure,
     PMF.bind_bind, PMF.pure_bind, PMF.bind_map, Function.comp_def]
   simpa only [hct] using advantage_sampleModNat_unitOrOne_le d n hsize
@@ -617,14 +617,14 @@ private theorem distinguishingGame_publicKeyLaw (setup : ℕ → PMF ModulusDesc
     (n : ℕ) :
     distinguishingGame (publicKeyLaw setup n) (D n) =
       qrIdealGame setup (fun n input => D n (encPair encNat encNat input)) n := by
-  simp only [distinguishingGame, publicKeyLaw, qrIdealGame, PMF.monad_bind_eq_bind,
+  simp only [distinguishingGame_eq_bind, publicKeyLaw, qrIdealGame, PMF.monad_bind_eq_bind,
     PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
 
 private theorem distinguishingGame_qrPublicKeyLaw (setup : ℕ → PMF ModulusDesc)
     (D : Distinguisher) (n : ℕ) :
     distinguishingGame (qrPublicKeyLaw setup n) (D n) =
       qrRealGame setup (fun n input => D n (encPair encNat encNat input)) n := by
-  simp only [distinguishingGame, qrPublicKeyLaw, qrRealGame, PMF.monad_bind_eq_bind,
+  simp only [distinguishingGame_eq_bind, qrPublicKeyLaw, qrRealGame, PMF.monad_bind_eq_bind,
     PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
 
 /-- **Single-bit QR reduction distinguisher** ([KatzLindell2020], proof of Theorem 15.29). -/
@@ -907,8 +907,9 @@ private theorem distinguishingGame_wordKeyDistinguisher (maxLen : ℕ → ℕ) (
     distinguishingGame keys (wordKeyDistinguisher maxLen adversary n) =
       (PMF.uniformOfFintype Bool).bind fun bit =>
         (publicKeyWordGame maxLen keys adversary bit n).map (fun guess => guess ^^ bit) := by
-  simp only [distinguishingGame, wordKeyDistinguisher, publicKeyWordGame, ProbComp.eval_bind,
-    ProbComp.eval_uniform, ProbComp.eval_pure, PMF.monad_bind_eq_bind, PMF.map_bind,
+  simp only [distinguishingGame_eq_bind, wordKeyDistinguisher, publicKeyWordGame,
+    ProbComp.eval_bind, ProbComp.eval_uniform, ProbComp.eval_pure, PMF.monad_bind_eq_bind,
+    PMF.map_bind,
     apply_ite ProbComp.eval]
   pmf_swap with bit pk choice
   cases validBoundedWords maxLen n pk (ChoiceOut.msg₀ choice) (ChoiceOut.msg₁ choice) with
@@ -1083,7 +1084,7 @@ theorem advantage_jacobiAttackAdversary_eq_one (d : ModulusDesc)
     simp only [Encryption.publicKeyGame, jacobiAttackAdversary, pk, ProbComp.eval_pure,
       PMF.monad_bind_eq_bind, PMF.pure_bind, ChoiceOut.msg₀_mk, ChoiceOut.msg₁_mk,
       ChoiceOut.state_mk]
-    rw [encrypt, unframe_encPair_encNat, dropFrame_encPair_encNat, ofBits_encNat, ofBits_encNat]
+    rw [encrypt, unframe_encPair, dropFrame_encPair, ofBits_encNat, ofBits_encNat]
     simp only [ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind, ofBits_encNat]
     have hstep (r : ℕ) :
         decide (jacobiSym (ciphertext (d.p * d.q) z.val.val

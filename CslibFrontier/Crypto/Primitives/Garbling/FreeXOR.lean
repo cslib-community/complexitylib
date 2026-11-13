@@ -144,36 +144,6 @@ private theorem bool_false_add (b : Bool) : false + b = b := by cases b <;> rfl
 private theorem bool_add_eq_true_of_ne {a b : Bool} (h : a ≠ b) : a + b = true := by
   revert a b; decide
 
-/-- A round is local when its value at a wire depends only on the labels of lower wires. -/
-private def IsLocal {L : Type} (step : (Wire n s → L) → Wire n s → L) : Prop :=
-  ∀ labels labels' w, (∀ w', w'.toNat < w.toNat → labels w' = labels' w') →
-    step labels w = step labels' w
-
-/-- After `n + s` local rounds, the starting labels no longer matter. -/
-private theorem iterate_congr {L : Type} {step : (Wire n s → L) → Wire n s → L}
-    (hstep : IsLocal step) (init init' : Wire n s → L) :
-    step^[n + s] init = step^[n + s] init' := by
-  have key : ∀ t w, w.toNat < t → step^[t] init w = step^[t] init' w := by
-    intro t
-    induction t with
-    | zero => intro w hw; exact absurd hw (Nat.not_lt_zero _)
-    | succ t ih =>
-      intro w hw
-      rw [Function.iterate_succ_apply', Function.iterate_succ_apply']
-      exact hstep _ _ w fun w' hw' => ih w' (by omega)
-  exact funext fun w => key (n + s) w (Wire.toNat_lt w)
-
-private theorem iterate_eq_of_isLocal {L : Type} {step : (Wire n s → L) → Wire n s → L}
-    (hstep : IsLocal step) (init : Wire n s → L) {A : Wire n s → L}
-    (hA : ∀ w, step A w = A w) : step^[n + s] init = A :=
-  (iterate_congr hstep init A).trans (Function.iterate_fixed (funext hA) _)
-
-private theorem step_iterate {L : Type} {step : (Wire n s → L) → Wire n s → L}
-    (hstep : IsLocal step) (init : Wire n s → L) :
-    step (step^[n + s] init) = step^[n + s] init :=
-  (Function.iterate_succ_apply' step (n + s) init).symm.trans
-    (iterate_congr hstep (step init) init)
-
 /-- The colour flips of a row against a labelling: slot `k` flips when the row's colour differs
 from the colour of the label of its argument. -/
 private def flipped {τ : Circuit.Topology n m s} {free : Fin s → Bool} (A : Wire n s → K × Bool)
@@ -346,7 +316,7 @@ topology. -/
 
 private theorem isLocal_propagateStep {τ : Circuit.Topology n m s} (hτ : τ.IsOrdered)
     (free : Fin s → Bool) (base : Wire n s → K × Bool) : IsLocal (propagateStep τ free base) := by
-  intro labels labels' w h
+  intro A B w h
   cases w with
   | input i => rfl
   | gate g =>
@@ -356,7 +326,7 @@ private theorem isLocal_propagateStep {τ : Circuit.Topology n m s} (hτ : τ.Is
 private theorem propagateStep_propagate {τ : Circuit.Topology n m s} (hτ : τ.IsOrdered)
     (free : Fin s → Bool) (base : Wire n s → K × Bool) (w : Wire n s) :
     propagateStep τ free base (propagate τ free base) w = propagate τ free base w :=
-  congrFun (step_iterate (isLocal_propagateStep hτ free base) 0) w
+  congrFun ((isLocal_propagateStep hτ free base).isFixed_iterate 0) w
 
 theorem propagate_input {τ : Circuit.Topology n m s} (hτ : τ.IsOrdered) (free : Fin s → Bool)
     (base : Wire n s → K × Bool) (i : Fin n) :
@@ -405,7 +375,7 @@ private theorem isLocal_evalStep {τ : Circuit.Topology n m s} (hτ : τ.IsOrder
     (free : Fin s → Bool) (H : K → T → K × Bool) (tw : GarbledSlot τ free → T)
     (table : GarbledRow τ free → K × Bool) (X : Fin n → K × Bool) :
     IsLocal (evalStep τ free H tw table X) := by
-  intro labels labels' w h
+  intro A B w h
   cases w with
   | input i => rfl
   | gate g =>
@@ -422,7 +392,8 @@ theorem evaluate_eq_of_evalStep {τ : Circuit.Topology n m s} (hτ : τ.IsOrdere
     (hA : ∀ w, evalStep τ free H tw table X A w = A w) :
     evaluate τ free H tw table X = A ∘ τ.outputs :=
   funext fun o =>
-    congrFun (iterate_eq_of_isLocal (isLocal_evalStep hτ free H tw table X) 0 hA) (τ.outputs o)
+    congrFun ((isLocal_evalStep hτ free H tw table X).iterate_eq_of_isFixed 0 (funext hA))
+      (τ.outputs o)
 
 /-- The row of a gate that is not free for the colours `r.2` of its arguments: the label of the
 gate for the bit that the colours encode, masked by the hash of the matching argument labels. -/
@@ -563,7 +534,7 @@ private theorem propagate_shift {τ : Circuit.Topology n m s} (hτ : τ.IsOrdere
     (ht : ∀ g, free g = true → t (.gate g) = ∑ k, t (τ.wires g k)) (base : Wire n s → K × Bool) :
     propagate τ free (shiftEquiv hK δ t base) =
       fun w => label δ (propagate τ free base w) (t w) := by
-  refine iterate_eq_of_isLocal (isLocal_propagateStep hτ free _) 0 fun w => ?_
+  refine (isLocal_propagateStep hτ free _).iterate_eq_of_isFixed 0 (funext fun w => ?_)
   cases w with
   | input i => exact congrArg (label δ · (t (.input i))) (propagate_input hτ free base i).symm
   | gate g =>
@@ -735,27 +706,26 @@ theorem isQueryBounded_reduction :
   simp only [Nat.zero_add, Nat.add_zero] at h
   exact h
 
-private theorem eval_interpret_reduction (f : CCR.Query K T → K × Bool) :
-    ProbComp.eval (OracleComp.interpret (OracleComp.sumHandler ProbComp.unifFin
-        fun q => pure (f q)) (reduction C I H tw x D)) =
+private theorem eval_run_reduction (f : CCR.Query K T → K × Bool) :
+    ProbComp.eval ((reduction C I H tw x D).run fun q => pure (f q)) =
       (PMF.uniformOfFintype (Wire n C.size → K × Bool)).bind fun base =>
         ProbComp.eval (D (reductionView C.topology H tw (C.eval I x)
           (propagate C.topology free base)
           fun p => f (reductionQuery C I tw x (propagate C.topology free base) p))) := by
   have hself : ∀ {α : Type} (p : ProbComp α), OracleComp.interpret ProbComp.unifFin p = p :=
     fun p => OracleComp.interpret_query_eq_self p
-  simp only [reduction, OracleComp.interpret_bind, ProbOracleComp.interpret_sample, hself,
-    ProbOracleComp.interpret_tabulate, pure_bind, ProbComp.eval_bind, ProbComp.eval_uniform,
-    Finset.mem_toList, Finset.mem_univ, ite_true]
+  simp only [ProbOracleComp.run, reduction, OracleComp.interpret_bind,
+    ProbOracleComp.interpret_sample, hself, ProbOracleComp.interpret_tabulate, pure_bind,
+    ProbComp.eval_bind, ProbComp.eval_uniform, Finset.mem_toList, Finset.mem_univ, ite_true]
 
 /-- With the circular oracle, the reduction plays the real experiment. -/
 private theorem realGame_reduction
     (hfree : ∀ g, free g = true → ∀ v, I (C.program.lines g).op v = ∑ k, v k)
     (hK : ∀ k : K, k + k = 0) :
-    PRF.realGame (CCR.keyed H id (·, true)) (reduction C I H tw x D) =
+    ProbComp.eval (PRF.realExperiment (CCR.keyed H id (·, true)) (reduction C I H tw x D)) =
       realGame C I H tw x D := by
-  simp only [PRF.realGame, realGame, garble, ProbComp.eval_bind, ProbComp.eval_uniform,
-    eval_interpret_reduction, bind_assoc, pure_bind, CCR.keyed, id_eq]
+  simp only [PRF.realExperiment, realGame, garble, ProbComp.eval_bind, ProbComp.eval_uniform,
+    eval_run_reduction, bind_assoc, pure_bind, CCR.keyed, id_eq]
   congr 1 with δ : 1
   simp only [← view_shift C I H tw x hfree hK δ]
   conv_rhs => rw [← Cslib.Probability.PMF.uniformOfFintype_map_equiv
@@ -767,9 +737,9 @@ private theorem realGame_reduction
 slots have distinct tweaks. -/
 private theorem idealGame_reduction [DecidableEq K] [Fintype T] [DecidableEq T]
     (htw : Function.Injective tw) :
-    PRF.idealGame (reduction C I H tw x D) = simGame C I H tw x D := by
-  simp only [PRF.idealGame, simGame, simulate, ProbComp.eval_bind, ProbComp.eval_uniform,
-    eval_interpret_reduction, bind_assoc, pure_bind]
+    ProbComp.eval (PRF.idealExperiment (reduction C I H tw x D)) = simGame C I H tw x D := by
+  simp only [PRF.idealExperiment, simGame, simulate, ProbComp.eval_bind, ProbComp.eval_uniform,
+    eval_run_reduction, bind_assoc, pure_bind]
   simp only [PMF.bind_comm (PMF.uniformOfFintype (CCR.Query K T → K × Bool))
     (PMF.uniformOfFintype (Wire n C.size → K × Bool))]
   congr 1 with base : 1

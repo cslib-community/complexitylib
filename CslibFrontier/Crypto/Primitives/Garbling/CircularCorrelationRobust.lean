@@ -156,17 +156,15 @@ structure Query (L R : Type) where
 `(k, t, s)`. -/
 abbrev Adversary (R L : Type) := PRF.Adversary (Query L R) L
 
-/-- The keyed experiment: the PRF real game keyed by a uniform offset of colour `1`, answering
-with `oracle`. -/
+/-- The keyed experiment: the law of the PRF real experiment keyed by a uniform offset of colour
+`1`, answering with `oracle`. -/
 @[expose] noncomputable def realGame (H : L → ℕ → L) (col : L →+ ZMod 2) [Fintype L]
     [Nonempty {Δ : L // col Δ = 1}] (adversary : Adversary R L) : Game :=
-  PRF.realGame (fun Δ : {Δ : L // col Δ = 1} => oracle H Δ.1) adversary
+  ProbComp.eval (PRF.realExperiment (fun Δ : {Δ : L // col Δ = 1} => oracle H Δ.1) adversary)
 
 /-- The ideal experiment: answer every query with a fresh uniform label. -/
 @[expose] noncomputable def idealGame [Fintype L] (adversary : Adversary R L) : Game :=
-  ProbComp.eval
-    (OracleComp.interpret (OracleComp.sumHandler ProbComp.unifFin fun _ => ProbComp.uniform L)
-      adversary)
+  ProbComp.eval (adversary.run fun _ => ProbComp.uniform L)
 
 /-- The arithmetic CCR advantage of `adversary` against `H`. The assumption that it is small is
 meant only for adversaries that never repeat a tweak (`IsTweakUnique`): repeating a query

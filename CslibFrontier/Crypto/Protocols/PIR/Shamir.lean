@@ -12,8 +12,8 @@ public import CslibFrontier.Crypto.Protocols.PIR.Collusion
 public import Mathlib.Algebra.Field.ZMod
 import CslibFrontier.Crypto.Protocols.SecretSharing.Shamir.Linear
 import CslibFrontier.Crypto.Protocols.SecretSharing.Shamir.Product
-import CslibFrontier.Foundations.Data.Nat.Clog
 import CslibFrontier.Languages.Probabilistic.Norm
+import CslibFrontier.Languages.Probabilistic.Semantics
 import CslibFrontier.Probability.PMF.Support
 import CslibFrontier.Probability.PMF.Uniform
 
@@ -168,9 +168,8 @@ theorem isCorrect_shamir {ι : Type} [Fintype ι] [DecidableEq ι] (params : Sha
   classical
   rw [Scheme.isCorrect_iff]
   intro x i _ q hrq
-  simp only [shamir, ProbComp.eval_bind, ProbComp.eval_pure, ProbComp.eval_uniform,
-    PMF.mem_support_bind_iff, PMF.mem_support_pure_iff, Prod.mk.injEq] at hrq
-  obtain ⟨r, -, -, rfl⟩ := hrq
+  simp only [shamir, ProbComp.mem_support_eval_uniform_bind_pure, Prod.mk.injEq] at hrq
+  obtain ⟨r, -, rfl⟩ := hrq
   let sec : ι → F := fun j => if x j then (if j = i then 1 else 0) else 0
   let coeff : ι → Shamir.Randomness params := fun j => if x j then r j else 0
   have hans :
@@ -283,9 +282,8 @@ theorem isCorrect_shamirCube {D ι : Type} [Fintype D] [DecidableEq D] [Fintype 
   classical
   rw [Scheme.isCorrect_iff]
   intro x i _ q hrq
-  simp only [shamirCube, ProbComp.eval_bind, ProbComp.eval_pure, ProbComp.eval_uniform,
-    PMF.mem_support_bind_iff, PMF.mem_support_pure_iff, Prod.mk.injEq] at hrq
-  obtain ⟨r, -, -, rfl⟩ := hrq
+  simp only [shamirCube, ProbComp.mem_support_eval_uniform_bind_pure, Prod.mk.injEq] at hrq
+  obtain ⟨r, -, rfl⟩ := hrq
   let factor (l : D) (u : ι) : _root_.Polynomial F :=
     Shamir.Polynomial.sharingPolynomial (if u = i l then 1 else 0)
       (Shamir.Polynomial.tailPolynomial params.threshold (r l u))
@@ -352,17 +350,22 @@ end ShamirPIR
 
 section ShamirCommunication
 
+/-- A cube query `D → ι → F` is `|D| * |ι|` field elements. -/
+private theorem clog_card_cube_le (D ι F : Type) [Fintype D] [DecidableEq D] [Fintype ι]
+    [DecidableEq ι] [Fintype F] :
+    Nat.clog 2 (Fintype.card (D → ι → F)) ≤
+      Fintype.card D * Fintype.card ι * Nat.clog 2 (Fintype.card F) := by
+  rw [mul_assoc]
+  exact (clog_card_fun_le D (ι → F)).trans (Nat.mul_le_mul_left _ (clog_card_fun_le ι F))
+
 /-- Communication upper bound for `shamirCube`: each server receives `|D| * |ι|` field elements and
 sends `1` field element. -/
 theorem communication_shamirCube_le {F S D ι : Type} [Fintype F] [Fintype S]
     [Fintype D] [DecidableEq D] [Fintype ι] [DecidableEq ι] :
     communication S (D → ι → F) F ≤
       Fintype.card S * ((Fintype.card D * Fintype.card ι + 1) * Nat.clog 2 (Fintype.card F)) := by
-  rw [communication_eq]
-  simp only [Fintype.card_fun]
-  rw [← pow_mul, Nat.mul_comm (Fintype.card ι)]
-  have hclog := Nat.clog_pow_le_mul 2 (Fintype.card F) (Fintype.card D * Fintype.card ι)
-  nlinarith
+  rw [add_mul, one_mul]
+  exact communication_le_of_clog_le (clog_card_cube_le D ι F) le_rfl
 
 /-- Communication upper bound for `rows`-balanced `shamirCube`
 ([CGKS, Section 3.4, p. 11][ChorGoldreichKushilevitzSudan1998]): each server receives `|D| * |ι|`
@@ -372,23 +375,16 @@ theorem communication_shamirCube_rows_le {F S ρ D ι : Type} [Fintype F] [Finty
     communication S (D → ι → F) (ρ → F) ≤
       Fintype.card S *
         ((Fintype.card D * Fintype.card ι + Fintype.card ρ) * Nat.clog 2 (Fintype.card F)) := by
-  rw [communication_eq]
-  simp only [Fintype.card_fun]
-  rw [← pow_mul, Nat.mul_comm (Fintype.card ι)]
-  have hQ := Nat.clog_pow_le_mul 2 (Fintype.card F) (Fintype.card D * Fintype.card ι)
-  have hA := Nat.clog_pow_le_mul 2 (Fintype.card F) (Fintype.card ρ)
-  nlinarith
+  rw [add_mul]
+  exact communication_le_of_clog_le (clog_card_cube_le D ι F) (clog_card_fun_le ρ F)
 
 /-- Communication upper bound for matrix-balanced linear Shamir PIR (`(shamir ι params).rows ρ`). -/
 theorem communication_shamir_rows_le {F S ρ ι : Type} [Fintype F] [Fintype S]
     [Fintype ρ] [DecidableEq ρ] [Fintype ι] [DecidableEq ι] :
     communication S (ι → F) (ρ → F) ≤
       Fintype.card S * ((Fintype.card ι + Fintype.card ρ) * Nat.clog 2 (Fintype.card F)) := by
-  rw [communication_eq]
-  simp only [Fintype.card_fun]
-  have hQ := Nat.clog_pow_le_mul 2 (Fintype.card F) (Fintype.card ι)
-  have hA := Nat.clog_pow_le_mul 2 (Fintype.card F) (Fintype.card ρ)
-  nlinarith
+  rw [add_mul]
+  exact communication_le_of_clog_le (clog_card_fun_le ι F) (clog_card_fun_le ρ F)
 
 end ShamirCommunication
 
@@ -402,11 +398,9 @@ theorem hasTPrivateScheme_of_le_mul_self (params : Shamir.Params F S) {n m : ℕ
     (h : n ≤ m * m) :
     HasTPrivateScheme (Fin n) params.threshold (Fintype.card S)
       (Fintype.card S * (2 * m * Nat.clog 2 (Fintype.card F))) := by
-  classical
-  let e : Fin n ↪ Fin m × Fin m := (Fin.castLEEmb h).trans finProdFinEquiv.symm.toEmbedding
-  have hP := ((isCorrect_shamir (ι := Fin m) params).rows (Fin m)).comap e false
-    |>.hasTPrivateScheme (((isTPrivate_shamir (ι := Fin m) params).rows (Fin m)).comap e false)
-  refine hP.mono ?_
+  refine (((isCorrect_shamir (ι := Fin m) params).rows (Fin m)).hasTPrivateScheme
+    ((isTPrivate_shamir (ι := Fin m) params).rows (Fin m))).mono ?_ |>.fin_of_le_card
+    (by simpa using h)
   have hcomm := communication_shamir_rows_le (F := F) (S := S) (ρ := Fin m) (ι := Fin m)
   simp only [Fintype.card_fin] at hcomm
   linarith
@@ -418,14 +412,10 @@ theorem hasTPrivateScheme_of_le_pow (params : Shamir.Params F S) {n d ℓ : ℕ}
     (hdeg : d * params.threshold < Fintype.card S) (h : n ≤ ℓ ^ d) :
     HasTPrivateScheme (Fin n) params.threshold (Fintype.card S)
       (Fintype.card S * ((d * ℓ + 1) * Nat.clog 2 (Fintype.card F))) := by
-  classical
-  let e : Fin n ↪ (Fin d → Fin ℓ) :=
-    (Fin.castLEEmb h).trans finFunctionFinEquiv.symm.toEmbedding
   have hdeg' : Fintype.card (Fin d) * params.threshold < Fintype.card S := by
     simpa using hdeg
-  have hP := (isCorrect_shamirCube (D := Fin d) (ι := Fin ℓ) params hdeg').comap e false
-    |>.hasTPrivateScheme ((isTPrivate_shamirCube (D := Fin d) (ι := Fin ℓ) params).comap e false)
-  refine hP.mono ?_
+  refine ((isCorrect_shamirCube (D := Fin d) (ι := Fin ℓ) params hdeg').hasTPrivateScheme
+    (isTPrivate_shamirCube params)).mono ?_ |>.fin_of_le_card (by simpa using h)
   have hcomm := communication_shamirCube_le (F := F) (S := S) (D := Fin d) (ι := Fin ℓ)
   simpa only [Fintype.card_fin] using hcomm
 
@@ -439,19 +429,11 @@ theorem hasTPrivateScheme_rows_of_le_pow (params : Shamir.Params F S) {n d ℓ :
     (hdeg : d * params.threshold < Fintype.card S) (h : n ≤ ℓ ^ (d + 1)) :
     HasTPrivateScheme (Fin n) params.threshold (Fintype.card S)
       (Fintype.card S * ((d + 1) * ℓ * Nat.clog 2 (Fintype.card F))) := by
-  classical
-  have hsplit : n ≤ ℓ * ℓ ^ d := by simpa [pow_succ'] using h
-  let eProd : Fin n ↪ Fin ℓ × Fin (ℓ ^ d) :=
-    (Fin.castLEEmb hsplit).trans finProdFinEquiv.symm.toEmbedding
-  let e : Fin n ↪ Fin ℓ × (Fin d → Fin ℓ) :=
-    eProd.trans (Equiv.prodCongr (Equiv.refl (Fin ℓ)) finFunctionFinEquiv.symm).toEmbedding
   have hdeg' : Fintype.card (Fin d) * params.threshold < Fintype.card S := by
     simpa using hdeg
-  have hP := ((isCorrect_shamirCube (D := Fin d) (ι := Fin ℓ) params hdeg').rows (Fin ℓ)).comap
-      e false
-    |>.hasTPrivateScheme
-      (((isTPrivate_shamirCube (D := Fin d) (ι := Fin ℓ) params).rows (Fin ℓ)).comap e false)
-  refine hP.mono ?_
+  refine (((isCorrect_shamirCube (D := Fin d) (ι := Fin ℓ) params hdeg').rows
+    (Fin ℓ)).hasTPrivateScheme ((isTPrivate_shamirCube params).rows (Fin ℓ))).mono ?_
+    |>.fin_of_le_card (by simpa [pow_succ'] using h)
   have hcomm :=
     communication_shamirCube_rows_le (F := F) (S := S) (ρ := Fin ℓ) (D := Fin d) (ι := Fin ℓ)
   simp only [Fintype.card_fin] at hcomm

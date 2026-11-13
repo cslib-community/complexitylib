@@ -99,8 +99,8 @@ theorem pow_le_two_rpow_mul_pow (hx : 0 ≤ x) (hde : d ≤ e) :
     (le_mul_of_one_le_left (by positivity) (Real.one_le_rpow (by norm_num) hx))
 
 /-- An exponential factor bounded by `K` times another one passes to the envelopes, with `K`
-rounded up to a natural constant: the bound that `TimeO.mono` needs to replace one exponential
-rate by another. -/
+rounded up to a natural constant: the bound that `DecidableInTimeO.mono` and
+`ComputableInTimeO.mono` need to replace one exponential rate by another. -/
 theorem two_rpow_mul_pow_le_natCeil_mul_add_of_le {K : ℝ} (h : (2 : ℝ) ^ x ≤ K * 2 ^ y) :
     (2 : ℝ) ^ x * ((L : ℝ) + 1) ^ e ≤ ⌈K⌉₊ * (2 ^ y * ((L : ℝ) + 1) ^ e) + ⌈K⌉₊ := by
   rw [← mul_assoc]
@@ -110,7 +110,8 @@ theorem two_rpow_mul_pow_le_natCeil_mul_add_of_le {K : ℝ} (h : (2 : ℝ) ^ x �
 
 /-- An additive linear bound on a natural parameter rescales an exponential-times-polynomial
 envelope at rate `δ ≥ 0` to one at rate `c * δ`, up to a natural ceiling constant: the bound that
-`TimeO.mono` needs to transfer an exponential runtime along the parameter change. -/
+`DecidableInTimeO.mono` and `ComputableInTimeO.mono` need to transfer an exponential runtime along
+the parameter change. -/
 theorem two_rpow_mul_pow_le_natCeil_mul_add {δ : ℝ} {n m c : ℕ} (hδ : 0 ≤ δ)
     (hn : n ≤ c * m + c) :
     (2 : ℝ) ^ (δ * n) * ((L : ℝ) + 1) ^ e ≤

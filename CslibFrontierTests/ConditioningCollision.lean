@@ -70,7 +70,7 @@ example : collisionProbability (PMF.pure ([] : List Bool)) = 1 := by
 example (n : ℕ) :
     collisionProbability ((BitString.uniformList n).map (fun _ => ([] : List Bool))) = 1 := by
   rw [output_collision_eq_inversion]
-  simp [inversionGame, Game.succProbability]
+  simp [inversionGame, inversionExperiment, Game.succProbability]
 
 example {f : List Bool → List Bool} (hf : OneWay f) :
     Negligible (fun n =>

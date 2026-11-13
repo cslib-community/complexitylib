@@ -18,7 +18,7 @@ open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Complexity Cslib.Complexity.CSP
   Turing.MultiTapeTM
 
 -- Identical constraints and repeated arguments keep distinct records; nullaries add none.
-example : (incidenceList ([(true, [7, 7]), (true, []), (true, [7, 7])] : CSP Bool ℕ)).map
+example : (incidenceList ([⟨true, [7, 7]⟩, ⟨true, []⟩, ⟨true, [7, 7]⟩] : CSP Bool ℕ)).map
     Occurrence.record = [(0, 0, 7), (0, 1, 7), (2, 0, 7), (2, 1, 7)] := by decide
 
 example : (incidenceList ([] : CSP Bool ℕ)).isEmpty = true := by decide

@@ -28,7 +28,7 @@ private abbrev x₀ : ℕ := 2 ^ 100
 private abbrev x₁ : ℕ := 2 ^ 200
 private abbrev x₂ : ℕ := 2 ^ 250
 private abbrev star : CSP Table ℕ :=
-  [(starTable, [x₀, x₁, x₂]), (equalTable, [x₁, x₂]), (trueTable, [x₀])]
+  [⟨starTable, [x₀, x₁, x₂]⟩, ⟨equalTable, [x₁, x₂]⟩, ⟨trueTable, [x₀]⟩]
 private def initial : OccurrenceLabeling star Bool := fun o => o.1.val == 2
 private abbrev sp (j : Fin 3) : Occurrence star := ⟨0, j⟩
 private abbrev dp (j : Fin 2) : Occurrence star := ⟨1, j⟩
@@ -65,8 +65,8 @@ example : data.ancestor = .inr (0, 0) ∧ data.prepare.steps.length = 1 ∧
 -- Every touched constraint contributes exactly one connector, even though the raw cycle
 -- uses two ports at each. The untouched original unary constraint keeps its position and name.
 example : output =
-    [(oddTable, [x₀, x₂ + 1]), (falseTable, [x₂ + 2]), (trueTable, [x₀]),
-      (Table.exactlyOne [x₂ + 1, x₂ + 2], [x₂ + 1, x₂ + 2])] := by decide +kernel
+    [⟨oddTable, [x₀, x₂ + 1]⟩, ⟨falseTable, [x₂ + 2]⟩, ⟨trueTable, [x₀]⟩,
+      ⟨Table.exactlyOne [x₂ + 1, x₂ + 2], [x₂ + 1, x₂ + 2]⟩] := by decide +kernel
 
 example : EdgeInstance output ∧ EdgeInstance.EvenConstraints Table.sem output ∧
     ValidLabeling Table.sem outputLabels := by
@@ -87,9 +87,9 @@ example : output.numVars + inside.toFinset.card = star.numVars + (touched star i
 -- The one internal defect becomes exactly one fresh connector defect. The all-zero central
 -- row is rejected, and the actual finite reference buffer contains a valid central one-hot row.
 example : defects prepared = {x₁} ∧ defects outputLabels = {x₂ + 1} ∧
-    output[3].1.sem [false, false] = false ∧
-    output[3].1.sem [true, false] = true ∧
-    output[0].1.sem [false, true] = true ∧ output[0].1.sem [false, false] = false := by
+    output[3].rel.sem [false, false] = false ∧
+    output[3].rel.sem [true, false] = true ∧
+    output[0].rel.sem [false, true] = true ∧ output[0].rel.sem [false, false] = false := by
   decide +kernel
 
 example : (defects outputLabels).card = (defects initial).card := by
@@ -123,7 +123,7 @@ private def pairTable : Table :=
   ⟨4, [[false, false, false, false], [true, true, false, false],
     [false, false, true, true], [true, true, true, true]]⟩
 private abbrev repeated : CSP Table ℕ :=
-  [(pairTable, [0, 1, 2, 3]), (equalTable, [1, 2]), (oddTable, [3, 0])]
+  [⟨pairTable, [0, 1, 2, 3]⟩, ⟨equalTable, [1, 2]⟩, ⟨oddTable, [3, 0]⟩]
 private def repeatedLabels : OccurrenceLabeling repeated Bool :=
   fun o => o.1.val == 2 && o.2.val == 1
 
@@ -136,11 +136,11 @@ private def repeatedContraction : Option (CSP Table ℕ) :=
 -- The actual fresh-search cycle revisits original constraint zero. All four of its internal
 -- positions are gathered in a single simultaneous table contraction, with only one connector.
 example : repeatedContraction = some
-    [(falseTable, [4]), (falseTable, [5]), (falseTable, [6]),
-      (Table.exactlyOne [4, 5, 6], [4, 5, 6])] := by decide +kernel
+    [⟨falseTable, [4]⟩, ⟨falseTable, [5]⟩, ⟨falseTable, [6]⟩,
+      ⟨Table.exactlyOne [4, 5, 6], [4, 5, 6]⟩] := by decide +kernel
 
 -- Nullary constraints remain present and consume no units of the positive-count resource.
 example : CSP.positiveCount
-    ([(⟨0, [[]]⟩, []), (⟨0, [[]]⟩, [])] : CSP Table ℕ) = 0 := by decide
+    ([⟨⟨0, [[]]⟩, []⟩, ⟨⟨0, [[]]⟩, []⟩] : CSP Table ℕ) = 0 := by decide
 
 end CslibFrontierTests.EdgeCSPBlossomContraction

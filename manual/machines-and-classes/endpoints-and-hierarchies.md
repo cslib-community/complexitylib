@@ -140,6 +140,40 @@ The [worst-case endpoint](https://github.com/cslib-community/cslib-frontier/blob
 
 The circuit-hardness hypothesis is not proved by these declarations. It must hold at **all sufficiently large lengths**; an infinitely-often hypothesis and infinitely-often simulation are not formalized by this endpoint. The [circuit-methods account](../circuits-logic-and-other-models/metacomplexity-and-methods.md) owns the nonuniform models. Publisher metadata and abstracts were checked for the three cited sources; the source-to-proof route above is reported from the inspected Lean declarations and module documentation, not from a new full literature proof audit.
 
+## Apply the sublinear-time boundary
+
+Import [Time.Sublinear](../../CslibFrontier/Computability/Complexity/Classes/Time/Sublinear.lean)
+to use `DTIME_eq_const_of_isLittleO hp` on all raw bit words. Its hypothesis is
+`hp : (fun n : ℕ => (p n : ℝ)) =o[Filter.atTop] (fun n : ℕ => (n : ℝ))`.
+It proves `DTIME encBits p = DTIME encBits (fun _ => 1)`, including affine clock constants.
+This is Goldreich's draft Exercise 4.3 for the native sequential-input model.
+
+For functions, import
+[Complexity.Sublinear](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/Sublinear.lean).
+Apply `hf.exists_const_time_of_isLittleO hp` to a certificate
+`hf : ComputableInTimeAndSpace f encBits encOut (fun x => p x.length) s`.
+The result uses a constant time bound, the same output encoding and original independent
+workspace bound `s`. Specify `(p := fun _ => 1)` when a constant clock does not determine
+`p` by unification. The complete clients below show the call and required imports.
+
+The input model matters: length is not supplied separately, and symbols are read sequentially.
+An arbitrary encoding may have invalid prefixes on which a certificate imposes no bound.
+Use the raw `encBits` theorem here; it supplies no random-access or arbitrary-encoding result.
+
+For a fixed machine, `exists_uniform_time_of_fast_length h hN` only needs a uniform total
+clock `h : ∀ x, tm.RunsInTime x (p x.length)` and one width with `hN : p N ≤ N`.
+Longer words follow their `N`-symbol prefixes; a finite maximum over lengths at most `N`
+handles shorter inputs. A fast width alone does not establish totality on shorter inputs.
+The [input-prefix API](../../CslibFrontier/Computability/Machines/Turing/MultiTape/InputPrefix.lean)
+preserves every runtime field through the prefix's length. At the final step the head may
+have reached the extra symbol, but no transition has inspected it yet.
+
+Run `scripts/build.sh CslibFrontierTests.SublinearTime` for the
+[complete clients](../../CslibFrontierTests/SublinearTime.lean). A one-step, zero-workspace
+machine reads the first bit, demonstrating input-sensitive constant-time behavior. The
+clients check the inclusive prefix boundary, failure beyond the empty prefix, and the zero
+asymptotic bound with DTIME's additive constant.
+
 ## Constructibility and diagonalization
 
 [TimeConstructible](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/Constructible.lean#L68) computes the binary value `t(n)` from an arbitrary word of length `n` within `O(t(n))`; it does not build the lower bound `n≤t(n)` into the definition. [SpaceConstructible](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/Complexity/Classes/Constructible.lean#L259) analogously bounds binary computation in `O(s(n))` workspace. Hierarchy theorems state their lower-bound hypotheses explicitly. Unary clock construction is a separate implementation step. Constants, `n`, `(n + 1) ^ k` for every `k`, `2 ^ n` and `2 ^ (2 ^ n)` are time-constructible; the routines behind them write the length of a word in binary and convert between binary and unary in linear time ([BigO/Constructible.lean](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/BigO/Constructible.lean)).

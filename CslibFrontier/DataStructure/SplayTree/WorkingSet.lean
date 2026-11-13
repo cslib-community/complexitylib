@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Init
 public import CslibFrontier.DataStructure.SplayTree.AccessLemma
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import Mathlib.Analysis.PSeries
 
 /-!
@@ -168,7 +169,7 @@ private theorem sum_fingerWeight_le (s : Finset α) (f : α) :
 
 private theorem logb_two_three_le_two : Real.logb 2 3 ≤ 2 := by
   have h4 : Real.logb 2 4 = 2 := by
-    rw [show (4 : ℝ) = 2 ^ (2 : ℕ) by norm_num, Real.logb_pow, Real.logb_self_eq_one (by norm_num)]
+    rw [show (4 : ℝ) = 2 ^ (2 : ℕ) by norm_num, Real.logb_two_pow]
     norm_num
   calc Real.logb 2 3 ≤ Real.logb 2 4 :=
         Real.logb_le_logb_of_le (by norm_num) (by norm_num) (by norm_num)
