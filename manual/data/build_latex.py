@@ -80,6 +80,12 @@ def inline_tex(text):
     return ''.join(r'\ensuremath{' + MATH[c] + '}' if c in MATH else tex_escape(c) for c in text)
 
 
+def math_tex(text):
+    # Pandoc passes `$...$` through verbatim, and the math fonts lack Unicode letters such as `ι`.
+    return ''.join('{' + MATH[c] + '}' if MATH.get(c, '').startswith('\\') else MATH.get(c, c)
+                   for c in text)
+
+
 def ast_for(text):
     return json.loads(run(['pandoc', '-f', 'markdown+autolink_bare_uris', '-t', 'json'], input=text))
 
@@ -150,6 +156,8 @@ def transform(node, path, chapter_index=False, references=False):
         escaped = inline_tex(node['c']).replace('/', r'/\allowbreak{}').replace(r'\_', r'\_\allowbreak{}')
         escaped = re.sub(r'(?<=[a-z0-9])(?=[A-Z])', lambda _: r'\allowbreak{}', escaped)
         return raw('RawInline', escaped)
+    if typ == 'Math':
+        return {'t': typ, 'c': [node['c'][0], math_tex(node['c'][1])]}
     if typ in {'RawBlock', 'RawInline'} and node['c'][0] == 'html':
         match = re.search(r'<a id="([^"]+)"', node['c'][1])
         return raw(typ, r'\phantomsection\label{' + label(path, match[1]) + '}') if match else raw(typ, '')
