@@ -11,6 +11,8 @@ public import CslibFrontier.Computability.Circuit.Boolean.AuxiliaryFormula
 public import CslibFrontier.Probability.Product
 import CslibFrontier.Probability.Product.Resample
 import CslibFrontier.Probability.PMF
+import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.PMF.Uniform
 import Mathlib.Tactic
 
 /-!
@@ -44,6 +46,9 @@ to the input literals and constants" requires.
 
 ## Main results
 
+* `Cslib.Circuits.Boolean.density_uniformOfFinset`,
+  `Cslib.Circuits.Boolean.accuracy_uniformOfFinset`: density and accuracy under the uniform
+  distribution on a set.
 * `Cslib.Circuits.Boolean.density_le_of_forall_accuracy_le`: the iterated recursion.
 * `Cslib.Circuits.Boolean.exists_accuracy_ge`: Lemma 6.2.
 
@@ -76,6 +81,42 @@ private theorem ind_le_one (b : Bool) : ind b ≤ 1 := by cases b <;> simp [ind]
 /-- The density `Pr_{Z ∼ νᵐ}[Z ∈ X]` of a set of matrices under the product of `ν` over rows. -/
 @[expose] noncomputable def density (ν : PMF (BitString n)) (X : Set (Fin m → BitString n)) : ℝ :=
   open Classical in ∑ Z, ((pi fun _ : Fin m => ν) Z).toReal * if Z ∈ X then 1 else 0
+
+/-- Under the uniform distribution on `S`, a set `X ⊆ Sᵐ` of matrices has density
+`|X| / |S|ᵐ`, its relative density in the core `Sᵐ`. -/
+theorem density_uniformOfFinset {m : ℕ} {S : Finset (BitString n)} (hS : S.Nonempty)
+    {X : Finset (Fin m → BitString n)} (hXS : ∀ Z ∈ X, ∀ i, Z i ∈ S) :
+    density (uniformOfFinset S hS) (X : Set (Fin m → BitString n)) =
+      X.card / (S.card : ℝ) ^ m := by
+  classical
+  have hw (Z : Fin m → BitString n) (hZ : Z ∈ X) :
+      ((pi fun _ : Fin m => uniformOfFinset S hS) Z).toReal = ((S.card : ℝ)⁻¹) ^ m := by
+    rw [pi_apply, ENNReal.toReal_prod]
+    simp [hXS Z hZ]
+  rw [density]
+  calc _ = ∑ Z ∈ X, ((pi fun _ : Fin m => uniformOfFinset S hS) Z).toReal := by
+        rw [← Finset.sum_filter_add_sum_filter_not Finset.univ (· ∈ X)]
+        rw [Finset.sum_eq_zero (s := Finset.univ.filter fun Z => Z ∉ X) fun Z hZ => by
+          simp [(Finset.mem_filter.1 hZ).2]]
+        rw [add_zero, Finset.filter_mem_eq_inter, Finset.univ_inter]
+        exact Finset.sum_congr rfl fun Z hZ => by simp [hZ]
+    _ = ∑ _Z ∈ X, ((S.card : ℝ)⁻¹) ^ m := Finset.sum_congr rfl hw
+    _ = X.card / (S.card : ℝ) ^ m := by
+        rw [Finset.sum_const, nsmul_eq_mul, inv_pow, div_eq_mul_inv]
+
+/-- Under the uniform distribution on `S`, the accuracy of a formula is the fraction of `S` where
+it agrees with `g`. -/
+theorem accuracy_uniformOfFinset {S : Finset (BitString n)} (hS : S.Nonempty)
+    (g : BitString n → Bool) (F : Formula signature n) :
+    accuracy (uniformOfFinset S hS) g F =
+      (S.filter fun x => F.eval interpretation x = g x).card / (S.card : ℝ) := by
+  classical
+  have h : accuracy (uniformOfFinset S hS) g F =
+      ((uniformOfFinset S hS).toOuterMeasure {x | F.eval interpretation x = g x}).toReal := by
+    rw [toOuterMeasure_apply_toReal, accuracy]
+    exact Finset.sum_congr rfl fun x _ => by split_ifs <;> simp_all
+  rw [h, toOuterMeasure_uniformOfFinset_toReal]
+  rfl
 
 /-- `φ` with row `i` of the matrix read from the input, the other rows fixed to those of `Z`, and
 the auxiliary variables fixed to `q`. -/
