@@ -71,9 +71,11 @@ probe arguments internally supply cofacial corners; the first duplicate marker i
 before deriving the actual-body certificate with canonical distinct surviving free ports. -/
 noncomputable def GadgetWitness.equalDrop {n : ℕ} {R : Set (Fin (n + 2) → Bool)}
     {g : PPGadget arity sem R} (w : GadgetWitness g) : GadgetWitness g.equalDrop := by
-  let B : CSP (Option Rel) (Fin (n + 2) ⊕ Fin g.numAux) := g.body.map (fun c => (some c.1, c.2))
+  let B : CSP (Option Rel) (Fin (n + 2) ⊕ Fin g.numAux) :=
+    g.body.map (fun c => ⟨some c.rel, c.scope⟩)
   let scope : Fin (n + 2) → Fin (n + 2) ⊕ Fin g.numAux := fun i => Sum.inl i.rev
-  let S : CSP (Option Rel) (Fin (n + 2) ⊕ Fin g.numAux) := B ++ [(none, List.ofFn scope)]
+  let S : CSP (Option Rel) (Fin (n + 2) ⊕ Fin g.numAux) :=
+    B ++ [Constraint.mk none (List.ofFn scope)]
   let o : S.Occurrence := appendOfFnOccurrenceEquiv B none scope (Sum.inr (Fin.last (n + 1)))
   let p : S.Occurrence := appendOfFnOccurrenceEquiv B none scope (Sum.inr ⟨n, by omega⟩)
   have hv0 : o.var = Sum.inl (0 : Fin (n + 2)) := by

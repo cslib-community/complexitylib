@@ -32,6 +32,7 @@ import CslibFrontier.Crypto.Game.Statistical
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Crypto.Negligible.Dyadic
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
+import CslibFrontier.Foundations.Data.ZMod.CRTUnits
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Uniform
@@ -219,22 +220,21 @@ private theorem powMod_half_eq_one_iff_isSquare (P : ℕ) [Fact P.Prime] (hP : 2
 theorem isQuadResidueNat_unit_eq (d : ModulusDesc) (u : (ZMod (d.p * d.q))ˣ) :
     isQuadResidueNat d.p d.q u.val.val = decide (IsSquare u) := by
   have hcop : Nat.Coprime d.p d.q := (Nat.coprime_primes d.prime_p d.prime_q).mpr d.ne_pq
-  let crt : ZMod (d.p * d.q) ≃+* ZMod d.p × ZMod d.q := ZMod.chineseRemainder hcop
-  let e : (ZMod (d.p * d.q))ˣ ≃* (ZMod d.p)ˣ × (ZMod d.q)ˣ :=
-    (Units.mapEquiv crt.toMulEquiv).trans MulEquiv.prodUnits
-  have hcrt : IsSquare u ↔ IsSquare (e u).1 ∧ IsSquare (e u).2 :=
-    ⟨fun ⟨r, hr⟩ => ⟨⟨(e r).1, by rw [hr, map_mul]; rfl⟩, ⟨(e r).2, by rw [hr, map_mul]; rfl⟩⟩,
-      fun ⟨⟨a, ha⟩, ⟨b, hb⟩⟩ => ⟨e.symm (a, b), e.injective (by ext <;> simp [ha, hb])⟩⟩
   have hcast {R : Type} [CommRing R] (f : ZMod (d.p * d.q) →+* R) :
       (u.val.val : R) = f u.val := by
     rw [← map_natCast f, ZMod.natCast_zmod_val]
-  have hp := powMod_half_eq_one_iff_isSquare d.p d.two_lt_p u.val.val (e u).1
-    (hcast ((RingHom.fst _ _).comp crt.toRingHom))
-  have hq := powMod_half_eq_one_iff_isSquare d.q d.two_lt_q u.val.val (e u).2
-    (hcast ((RingHom.snd _ _).comp crt.toRingHom))
+  have hp := powMod_half_eq_one_iff_isSquare d.p d.two_lt_p u.val.val
+    (ZMod.unitsChineseRemainder hcop u).1
+    ((hcast ((RingHom.fst _ _).comp (ZMod.chineseRemainder hcop).toRingHom)).trans
+      (ZMod.coe_unitsChineseRemainder_fst hcop u).symm)
+  have hq := powMod_half_eq_one_iff_isSquare d.q d.two_lt_q u.val.val
+    (ZMod.unitsChineseRemainder hcop u).2
+    ((hcast ((RingHom.snd _ _).comp (ZMod.chineseRemainder hcop).toRingHom)).trans
+      (ZMod.coe_unitsChineseRemainder_snd hcop u).symm)
   unfold isQuadResidueNat
   exact Bool.eq_iff_iff.mpr (by
-    simp only [Bool.and_eq_true, beq_iff_eq, decide_eq_true_eq, hp, hq, hcrt])
+    simp only [Bool.and_eq_true, beq_iff_eq, decide_eq_true_eq, hp, hq,
+      ZMod.isSquare_iff_unitsChineseRemainder hcop u])
 
 /-- `decryptNat d.p d.q` decides non-squareness on `(ZMod (d.p * d.q))ˣ`. -/
 theorem decryptNat_unit_eq (d : ModulusDesc) (u : (ZMod (d.p * d.q))ˣ) :

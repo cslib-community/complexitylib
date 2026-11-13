@@ -17,7 +17,7 @@ open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Complexity
 open Cslib.Complexity.CSP Cslib.Complexity.CSP.OrderedBoundary
 
 -- A cutvertex meets two distinct indexed copies of the same unary constraint.
-private abbrev repeated : CSP Unit ℕ := [((), [7]), ((), [7])]
+private abbrev repeated : CSP Unit ℕ := [⟨(), [7]⟩, ⟨(), [7]⟩]
 private def repeatedWitness : Witness repeated [7] :=
   Witness.ofProbe (by decide) ⟨[2, 1, 4, 3, 0, 5]⟩ (by decide +kernel)
 
@@ -45,7 +45,7 @@ example : (repeatedBoundary.forgetHead (by decide)).certificate = ⟨[0, 1]⟩ �
 
 -- True/false nullaries remain in the original body; both are isolated incidence points.
 -- A sparse unused port supplies a further point/leaf case without any loop to its value.
-private abbrev withNullaries : CSP Bool ℕ := [(true, []), (false, []), (true, [7]), (true, [7])]
+private abbrev withNullaries : CSP Bool ℕ := [⟨true, []⟩, ⟨false, []⟩, ⟨true, [7]⟩, ⟨true, [7]⟩]
 private def nullaryWitness : Witness withNullaries [7, 2 ^ 250] :=
   Witness.ofProbe (by decide) ⟨[2, 1, 6, 3, 4, 7, 0, 5]⟩ (by decide +kernel)
 
@@ -76,7 +76,7 @@ example : projected.certificate = ⟨[0, 3, 8, 5, 6, 1, 4, 9, 2, 7]⟩ := by
   decide +kernel
 
 example : ((atom 3).project 0).body =
-    [((), [Sum.inr (0 : Fin 1), Sum.inl 0, Sum.inl 1])] := by rfl
+    [⟨(), [Sum.inr (0 : Fin 1), Sum.inl 0, Sum.inl 1]⟩] := by rfl
 
 example : verify ((atom 3).project 0).body (List.ofFn Sum.inl) projected.certificate = true :=
   projected.accepted

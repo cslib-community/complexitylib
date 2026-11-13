@@ -28,8 +28,8 @@ variable {Rel : Type} {F : CSP Rel ℕ}
 
 /-- Exact original ordered scope after replacing its ports by indexed edge positions. -/
 theorem blackScope_eq_ofFn (i : Fin F.length) :
-    blackScope F i F[i.val].2 =
-      List.ofFn (fun j : Fin F[i.val].2.length => incidenceEdgeIndex (F := F) ⟨i, j⟩) := by
+    blackScope F i F[i.val].scope =
+      List.ofFn (fun j : Fin F[i.val].scope.length => incidenceEdgeIndex (F := F) ⟨i, j⟩) := by
   apply List.ext_getElem
   · simp [blackScope]
   · intro j hj hk
@@ -39,8 +39,8 @@ theorem blackScope_eq_ofFn (i : Fin F.length) :
 
 /-- Names in a black scope are distinct actual edge positions. -/
 theorem blackScope_bounds (i : Fin F.length) :
-    (blackScope F i F[i.val].2).Nodup ∧
-      ∀ v ∈ blackScope F i F[i.val].2, v < F.occurrences.length := by
+    (blackScope F i F[i.val].scope).Nodup ∧
+      ∀ v ∈ blackScope F i F[i.val].scope, v < F.occurrences.length := by
   rw [blackScope_eq_ofFn]
   refine ⟨List.nodup_ofFn.mpr ?_, ?_⟩
   · intro a b hab
@@ -82,13 +82,13 @@ private theorem faceParity_side (r : Graph.RotationSystem (incidenceGraph F))
 theorem faceParity_black (r : Graph.RotationSystem (incidenceGraph F)) (σ : ℕ → Bool)
     (o : F.Occurrence) :
     (polygonRotation r).faceParity (fun i => σ i.val) (Quotient.mk _ (polygonDart o false)) =
-      wordParity ((blackScope F o.1 F[o.1.val].2).map σ) := by
+      wordParity ((blackScope F o.1 F[o.1.val].scope).map σ) := by
   classical
   rw [faceParity_side, blackScope_eq_ofFn, List.map_ofFn, wordParity_ofFn, parityOn_eq_sum]
   simp only [sameCycle_black_iff]
   rw [Fintype.sum_sigma]
   calc
-    _ = ∑ j : Fin F[o.1.val].2.length,
+    _ = ∑ j : Fin F[o.1.val].scope.length,
         if o.1 = o.1 then σ (incidenceEdgeIndex (F := F) ⟨o.1, j⟩) else 0 := by
       apply Finset.sum_eq_single o.1
       · intro i _ hne

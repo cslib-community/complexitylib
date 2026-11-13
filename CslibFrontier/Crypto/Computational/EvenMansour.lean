@@ -204,24 +204,15 @@ theorem length_evenMansourPostKeyWord_of_eq {n : ℕ} {k₂ y : List Bool}
     (evenMansourPostKeyWord k₂ y).length = n := by
   simp [hk₂, hy]
 
-private theorem zipWith_xor_self_right :
-    ∀ msg pad : List Bool, msg.length = pad.length →
-      List.zipWith Bool.xor (List.zipWith Bool.xor msg pad) pad = msg
-  | [], [], _ => rfl
-  | m :: msg, b :: pad, h => by
-    simp only [List.length_cons, Nat.add_right_cancel_iff] at h
-    simp only [List.zipWith_cons_cons, zipWith_xor_self_right msg pad h]
-    cases m <;> cases b <;> rfl
-
 /-- Applying `evenMansourPreKeyWord k₁` twice cancels on equal-length words. -/
 @[simp] theorem evenMansourPreKeyWord_self (k₁ x : List Bool) (h : x.length = k₁.length) :
     evenMansourPreKeyWord k₁ (evenMansourPreKeyWord k₁ x) = x :=
-  zipWith_xor_self_right x k₁ h
+  BitString.zipWith_xor_self_right x k₁ h
 
 /-- Applying `evenMansourPostKeyWord k₂` twice cancels on equal-length words. -/
 @[simp] theorem evenMansourPostKeyWord_self (k₂ y : List Bool) (h : y.length = k₂.length) :
     evenMansourPostKeyWord k₂ (evenMansourPostKeyWord k₂ y) = y :=
-  zipWith_xor_self_right y k₂ h
+  BitString.zipWith_xor_self_right y k₂ h
 
 /-- On `BitString n`, `evenMansourPreKeyWord` computes `x + k₁`. -/
 theorem evenMansourPreKeyWord_ofFn {n : ℕ} (k₁ x : BitString n) :

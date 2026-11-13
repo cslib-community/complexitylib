@@ -11,6 +11,7 @@ public import CslibFrontier.Probability.Extractor.Basic
 public import CslibFrontier.Foundations.Data.BitString.Sign
 public import Mathlib.Algebra.Ring.BooleanRing
 public import Mathlib.Data.Matrix.Mul
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import CslibFrontier.Foundations.BooleanAnalysis.HadamardRectangles
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Map
@@ -234,8 +235,8 @@ private theorem card_supportedOn (S : Finset ι) : (supportedOn S).card = 2 ^ S.
 
 private theorem minEntropy_uniformOfFinset_supportedOn (S : Finset ι) :
     minEntropy (uniformOfFinset (supportedOn S) (supportedOn_nonempty S)) = S.card := by
-  rw [minEntropy_uniformOfFinset, card_supportedOn, Nat.cast_pow, Nat.cast_ofNat, Real.logb_pow,
-    Real.logb_self_eq_one one_lt_two, mul_one]
+  rw [minEntropy_uniformOfFinset, card_supportedOn, Nat.cast_pow, Nat.cast_ofNat,
+    Real.logb_two_pow]
 
 /-- **Orthogonal sources.** For every set `S` of coordinates, the uniform distributions on the
 strings vanishing outside `S` and on those vanishing on `S` have min-entropy `|S|` and `|Sᶜ|`, whose

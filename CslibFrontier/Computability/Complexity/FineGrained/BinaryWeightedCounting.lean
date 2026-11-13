@@ -68,7 +68,7 @@ other rejected instances. -/
 
 theorem guard_eq_true_iff {k D d : ℕ} {wt : Rel → List Bool → ℕ} {F : CSP Rel ℕ} :
     guard k D d wt F = true ↔ F ≠ [] ∧
-      (∀ c ∈ F, 1 ≤ c.2.length ∧ c.2.length ≤ k) ∧
+      (∀ c ∈ F, 1 ≤ c.scope.length ∧ c.scope.length ≤ k) ∧
       (cspNetwork k wt F).2.binaryTableBound ≤
         D * ((cspNetwork k wt F).2.numEdges + 1) ^ d := by
   simp only [guard, Bool.and_eq_true, decide_eq_true_eq,
@@ -81,7 +81,7 @@ theorem guard_eq_true_iff {k D d : ℕ} {wt : Rel → List Bool → ℕ} {F : CS
 
 /-- The counter computes the partition function whenever its arity and bit-budget promises hold. -/
 theorem count_eq {k D d : ℕ} {wt : Rel → List Bool → ℕ} {F : CSP Rel ℕ}
-    (hk : ∀ c ∈ F, 1 ≤ c.2.length ∧ c.2.length ≤ k)
+    (hk : ∀ c ∈ F, 1 ≤ c.scope.length ∧ c.scope.length ≤ k)
     (hB : (cspNetwork k wt F).2.binaryTableBound ≤
       D * ((cspNetwork k wt F).2.numEdges + 1) ^ d) :
     count k D d wt F = F.partitionFunction wt := by
@@ -217,7 +217,7 @@ theorem certificate_bound :
 symbol, including its potentially large numeric weights, is part of the input encoding. -/
 theorem exists_partitionFunctionCounter :
     ∃ (counter : CSP Rel ℕ → ℕ) (A e b : ℕ),
-      (∀ F : CSP Rel ℕ, (∀ c ∈ F, 1 ≤ c.2.length ∧ c.2.length ≤ k) →
+      (∀ F : CSP Rel ℕ, (∀ c ∈ F, 1 ≤ c.scope.length ∧ c.scope.length ≤ k) →
         (cspNetwork k wt F).2.binaryTableBound ≤
           D * ((cspNetwork k wt F).2.numEdges + 1) ^ d →
         counter F = F.partitionFunction wt) ∧
@@ -239,7 +239,7 @@ theorem exists_partitionFunctionCounter :
 The machine and polynomial exponents are selected before the occurrence bound. -/
 theorem exists_partitionFunctionCounter_boundedDegree :
     ∃ (counter : CSP Rel ℕ → ℕ) (T S : CSP Rel ℕ → ℕ) (e b : ℕ),
-      (∀ F : CSP Rel ℕ, (∀ c ∈ F, 1 ≤ c.2.length ∧ c.2.length ≤ k) →
+      (∀ F : CSP Rel ℕ, (∀ c ∈ F, 1 ≤ c.scope.length ∧ c.scope.length ≤ k) →
         (cspNetwork k wt F).2.binaryTableBound ≤
           D * ((cspNetwork k wt F).2.numEdges + 1) ^ d →
         counter F = F.partitionFunction wt) ∧
@@ -266,9 +266,9 @@ the explicit coefficient `3 * 2 ^ (max k 4) + 1` and exponent `d + 1`. The natur
 magnitudes may be exponential in `(N + 1) ^ d`. -/
 theorem exists_partitionFunctionCounter_of_weightBits :
     ∃ (counter : CSP Rel ℕ → ℕ) (A e b : ℕ),
-      (∀ F : CSP Rel ℕ, (∀ c ∈ F, 1 ≤ c.2.length ∧ c.2.length ≤ k) →
-        (∀ c ∈ F, ∀ w : List Bool, w.length = c.2.length →
-          (wt c.1 w).size ≤ (F.vars.length + 1) ^ d) →
+      (∀ F : CSP Rel ℕ, (∀ c ∈ F, 1 ≤ c.scope.length ∧ c.scope.length ≤ k) →
+        (∀ c ∈ F, ∀ w : List Bool, w.length = c.scope.length →
+          (wt c.rel w).size ≤ (F.vars.length + 1) ^ d) →
         counter F = F.partitionFunction wt) ∧
       ComputableInO counter (encCSP encRel encNat) encNat
         (fun F => 2 ^ (A * (F.vars.length + 1) / Nat.sqrt (Nat.log 2 (F.vars.length + 2))) *
@@ -283,9 +283,9 @@ theorem exists_partitionFunctionCounter_of_weightBits :
 and polynomial exponents are independent of the occurrence bound `Δ`. -/
 theorem exists_partitionFunctionCounter_boundedDegree_of_weightBits :
     ∃ (counter : CSP Rel ℕ → ℕ) (T S : CSP Rel ℕ → ℕ) (e b : ℕ),
-      (∀ F : CSP Rel ℕ, (∀ c ∈ F, 1 ≤ c.2.length ∧ c.2.length ≤ k) →
-        (∀ c ∈ F, ∀ w : List Bool, w.length = c.2.length →
-          (wt c.1 w).size ≤ (F.vars.length + 1) ^ d) →
+      (∀ F : CSP Rel ℕ, (∀ c ∈ F, 1 ≤ c.scope.length ∧ c.scope.length ≤ k) →
+        (∀ c ∈ F, ∀ w : List Bool, w.length = c.scope.length →
+          (wt c.rel w).size ≤ (F.vars.length + 1) ^ d) →
         counter F = F.partitionFunction wt) ∧
       ComputableInO counter (encCSP encRel encNat) encNat T S ∧
       (∀ F, S F = ((encCSP encRel encNat F).length + 1) ^ b) ∧
