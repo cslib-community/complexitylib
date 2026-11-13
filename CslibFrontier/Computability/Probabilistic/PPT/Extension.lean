@@ -30,8 +30,6 @@ game it plays.
 
 * `Cslib.Probability.IsPPTOn.exists_extension`: a uniform PPT program on all words agreeing with
   the original program on its codewords.
-* `Cslib.Probability.IsPPTOn.exists_bool_extension`: the same for a Boolean program, which needs
-  no decoder.
 * `Cslib.Probability.IsPPTOn.exists_factor`, `Cslib.Probability.IsPPTOn.exists_bool_factor`: a
   program whose codewords are those of a word layout factors through that layout.
 -/
@@ -67,17 +65,6 @@ theorem IsPPTOn.exists_extension {program : α → ProbComp β} (h : IsPPTOn inp
   conv_rhs => rw [← PMF.map_id (ProbComp.eval (program a))]
   congr 1 with b : 1
   exact hleft b
-
-/-- **Extension of a Boolean program to all words.** A uniform strict PPT program with a Boolean
-answer extends to a uniform strict PPT program on all words that agrees with it on every codeword.
-The extension tests whether the original machine outputs `[true]`. This is how a typed
-distinguisher is compared with one quantified over words. -/
-theorem IsPPTOn.exists_bool_extension {program : α → ProbComp Bool}
-    (h : IsPPTOn input encBool program) :
-    ∃ extension : List Bool → ProbComp Bool, IsPPTOn encBits encBool extension ∧
-      ∀ a, ProbComp.eval (extension (input a)) = ProbComp.eval (program a) :=
-  h.exists_extension (ComputableInPolyTime.beq ComputableInPolyTime.id'
-    (ComputableInPolyTime.const [true])) fun b => by cases b <;> rfl
 
 /-- **Factoring through a word layout.** Suppose every input's codeword `input a` is the codeword
 `words (toWords a)` of a value of a coarser type `γ`, such as the tuple of words of a structure
