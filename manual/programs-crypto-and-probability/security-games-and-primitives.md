@@ -343,6 +343,7 @@ uniform defaults. [`ModuleEncryption/Sampling.lean`](../../CslibFrontier/Crypto/
 proves that conditioning public-key generation on the actual sampled secret preserves the public
 view, including when the same run retains `(secret, view)`. Sampling a fresh secret independently
 of a public key would not preserve that correlation.
+
 The concrete small-secret instance reuses the existing centered-binomial fair-bit program and
 modular `LWE.noiseLaw`. Under `2*η < 2^w`, every sampled integer is its residue's centered lift,
 so the resulting module secret satisfies the coefficient bound `η`. Nested list sampling has a
@@ -355,6 +356,27 @@ with all errors one, decrypt a true message correctly with probability only `7/1
 The existing deterministic correctness theorem requires bounded secrets as well as bounded noise;
 this example does not contradict it. Small-secret security requires its own assumption and reduction;
 the randomized correctness result below uses explicit support and noise-tail hypotheses.
+
+[`LWE/Module/Seeded.lean`](../../CslibFrontier/Crypto/Computational/LWE/Module/Seeded.lean)
+retains the public matrix seed explicitly and applies the existing `ModuleLWE.sample` to
+independent secret and error draws. The seed marginal is unchanged; uniform error gives an
+independent uniform target, and identity expansion of a uniform matrix recovers the existing
+typed real and random games. Consumers use ordinary `PMF.bind`, including quantum output laws.
+[The CBD clients](../../CslibFrontierTests/Crypto/SeededModuleLWE.lean) reconstruct the augmented
+Hashed Module-LWE experiment of Almeida et al., §4.1, Figure 2 (author version, May 29, 2024):
+the public seed includes an independent uniform row, both target components share one secret,
+and the matrix orientation and secret/error CBD widths remain explicit. The extra scalar target
+is stored before the module target; equal widths give the source's single short distribution.
+They check modulo-two ideality at CBD width one, zero-width noise, a transpose-sensitive matrix
+and the correlation lost by resampling the secret.
+[A native quantum client](../../CslibFrontierTests/Crypto/SeededModuleLWEQuantum.lean) receives an
+injective two-bit encoding of a rank-one, degree-one, modulus-two view. Its width grows as
+`2*n + inputLength + 2`; seven gates implement phase interference and a swap, with no queries or
+quantum advice. On the zero-expander, zero-noise instance its exact distinguishing advantage is
+`1/2` for every security parameter. These are distributional and execution results, with no
+hardness assertion. They do not implement the FIPS 203 SHAKE/PRF/NTT pipeline or its byte codecs,
+identify ideal independent CBD draws with seeded PRF outputs, or transfer the cited paper's
+classical security proof to quantum adversaries.
 
 For numerical modulus conversion, import
 [`SIS/ModulusSwitch.lean`](../../CslibFrontier/Crypto/Computational/SIS/ModulusSwitch.lean).

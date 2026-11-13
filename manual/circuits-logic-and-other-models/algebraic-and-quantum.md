@@ -489,6 +489,11 @@ For native uniform generation, import [Oracle/Uniform.lean](../../CslibFrontier/
 
 **Controlled phase gates.** [PhaseCode.lean](../../CslibFrontier/Computability/Circuit/Quantum/PhaseCode.lean) adds the phase gate `S = diag(1, i)`, the controlled phase gate `Λ(S)` and their inverses. A code `(true, (inv, t, cs))` names the gate on qubits `t :: cs`, with at most one control; `(false, g)` is an ordinary gate code. A `UniformPhaseCircuitFamily` over the extended set has the same uniformity, width, input and acceptance conventions as a `UniformCircuitFamily`. [`mem_BQP_iff_phase`](../../CslibFrontier/Computability/Complexity/Classes/BQP/PhaseGates.lean) shows that both kinds of families define the same `BQP`.
 
+`PlacedGate.ctrlPhase_matrix` identifies the opaque placed constructor's matrix with `place`
+of the controlled phase gate (or its inverse). It lets ordinary module clients transport gate
+product identities to selected wires, as in the native seeded Module-LWE
+[phase-interference client](../../CslibFrontierTests/Crypto/SeededModuleLWEQuantum.lean).
+
 The proof is an exact simulation, not an approximation. [The real encoding](../../CslibFrontier/Computability/Circuit/Quantum/RealEncoding.lean) adds one last qubit and stores the amplitude `a + ib` of `|x⟩` as `a` on `|x 0⟩` and `b` on `|x 1⟩`. Real gates act on such states unchanged. Each controlled phase gate becomes four gates on the extra qubit: `H`, then a CNOT or Toffoli gate controlled by the phase gate's qubits, then `H` and the same flip again. The inverse uses the reversed sequence.
 
 `UniformPhaseCircuitFamily.realify` performs this translation in polynomial time, with at most four gates per gate. `acceptProb_realify` gives equal acceptance probabilities on every input. More generally, `PhaseGateCode.onesProb_toRealCodes` preserves the probability of every event on the original qubits. The time classes and `QMA` have not yet been restated for the extended set.
