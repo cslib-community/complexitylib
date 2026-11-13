@@ -898,7 +898,9 @@ that `p_m = Pr[W_{C_m}]` satisfies the recursion of `ParallelRepetition.le_rpow_
 recursion accepts any constant up to `21`. The final bound has Holenstein's constant `6000`.
 
 To use the bound for concrete answer types, compute the exponent: rewrite the product of the
-cardinalities as a power of two and apply `Real.logb_rpow`. For CHSH, `|A| |B| = 4` and the
+cardinalities as a power of two and apply `Real.logb_rpow`, or `Real.logb_two_pow` from
+[Logb.lean](../../CslibFrontier/Foundations/Analysis/SpecialFunctions/Logb.lean) when the
+exponent is a natural number. For CHSH, `|A| |B| = 4` and the
 exponent is `n / 2`. [CHSH.lean](../../CslibFrontier/Computability/PCP/TwoProverGame/CHSH.lean)
 proves that CHSH has value `3/4` (`TwoProverGame.value_chsh`), and the [parallel repetition clients](../../CslibFrontierTests/ParallelRepetition.lean)
 derive `(3/4)^n ≤ v(CHSHⁿ) ≤ (1 - (1/4)³ / 6000)^{n / 2}`. They also show that the value of the

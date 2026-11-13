@@ -13,6 +13,7 @@ public import CslibFrontier.Foundations.LinearAlgebra.Matrix.KroneckerRank
 public import Mathlib.Analysis.Fourier.FiniteAbelian.PontryaginDuality
 public import Mathlib.LinearAlgebra.Matrix.Circulant
 import CslibFrontier.Foundations.Data.BitString.Basic
+import CslibFrontier.Foundations.Data.BitString.Neg
 import CslibFrontier.Foundations.LinearAlgebra.Matrix.Rank
 
 /-!
@@ -417,9 +418,6 @@ theorem rank_cubeCharMatrix {K ι : Type*} [Field K] [Fintype ι] [DecidableEq �
     (cubeCharMatrix K ι).rank = 2 ^ Fintype.card ι := by
   simpa using rank_of_isUnit (cubeCharMatrix K ι) (isUnit_cubeCharMatrix h2)
 
-private theorem bitString_neg_eq_self {ι : Type*} (x : ι → Bool) : -x = x :=
-  neg_eq_of_add_eq_zero_right (Cslib.BitString.add_self x)
-
 /-- Right-multiplying a Boolean-cube circulant `circulant w` by `cubeCharMatrix R ι` scales column
 `y` by the Walsh–Hadamard eigenvalue `∑ x, w x * cubeCharMatrix R ι x y`. -/
 theorem circulant_mul_cubeCharMatrix {R ι : Type*} [CommRing R] [Fintype ι] [DecidableEq ι]
@@ -431,7 +429,7 @@ theorem circulant_mul_cubeCharMatrix {R ι : Type*} [CommRing R] [Fintype ι] [D
   have hc := congrFun (circulant_mulVec_addChar w (Cslib.BitString.chiChar R S)) x
   have hsymm : circulantEigenvalue w (Cslib.BitString.chiChar R S) =
       ∑ g, w g * cubeCharMatrix R ι g y := by
-    rw [circulantEigenvalue_of_symm (fun g => by rw [bitString_neg_eq_self])]
+    rw [circulantEigenvalue_of_symm (fun g => by rw [Cslib.BitString.neg_eq_self])]
     rfl
   rw [mul_diagonal, Matrix.mul_apply]
   change (circulant w *ᵥ ⇑(Cslib.BitString.chiChar R S)) x =
@@ -507,7 +505,7 @@ theorem cubeCayley_walk_eq_circulant_mulVec {ι : Type*} [Fintype ι] [Decidable
   rw [hsum, sum_comm, sum_div]
   refine sum_congr rfl fun j _ => ?_
   have heq : ∀ y : ι → Bool, (s j = u - y) ↔ (y = u + s j) := fun y => by
-    rw [sub_eq_add_neg, bitString_neg_eq_self]
+    rw [Cslib.BitString.sub_eq_add]
     constructor
     · intro h
       rw [h, ← add_assoc, Cslib.BitString.add_self, zero_add]
