@@ -149,7 +149,10 @@ theorem eufOneTimeGame_eq_oneTimeEufCmaExperiment (S : SignatureScheme) (adversa
         simp [ProbOracleComp.logOracle, oneTimeSigningOracle, oneTimeSigningOracleOf,
           ProbComp.eval_map, PMF.map_comp, Function.comp_def]
       | cons p log =>
-        simp [ProbOracleComp.logOracle, oneTimeSigningOracle, oneTimeSigningOracleOf]
+        simp only [ProbOracleComp.logOracle, toScheme_sign, Signer.oneTime_cons, ProbComp.eval_pure,
+          PMF.pure_map, List.map_cons, List.reverse_cons, oneTimeSigningOracle,
+          oneTimeSigningOracleOf, List.isEmpty_iff, List.append_eq_nil_iff, List.reverse_eq_nil_iff,
+          List.map_eq_nil_iff, List.cons_ne_self, and_false, ↓reduceIte]
         rfl]
   rw [PMF.bind_map]
   congr 1
