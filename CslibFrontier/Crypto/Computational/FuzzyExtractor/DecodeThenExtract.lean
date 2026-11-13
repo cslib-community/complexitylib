@@ -632,7 +632,7 @@ noncomputable def hardcoreUniformReduction
 /-- Embedding a dimension-`l` sample `(A₂, A₂ x₂ + w)` into `([A₁ | A₂], A₁ x₁ + A₂ x₂ + w)`
 for fresh uniform `A₁, x₁` gives a dimension-`(k + l)` sample with uniform matrix and secret
 `x₁ ‖ x₂`. -/
-theorem lweRealContext_bind_embed (W : PMF (Fin m → ZMod q))
+private theorem lweRealContext_bind_embed (W : PMF (Fin m → ZMod q))
     (F : (Fin k → ZMod q) → DecodeContext m (k + l) q → PMF Bool) :
     ((lweRealContext m l q W).bind fun ctx =>
       (PMF.uniformOfFintype (Matrix (Fin m) (Fin k) (ZMod q))).bind fun A₁ =>
@@ -665,7 +665,7 @@ private theorem uniformOfFintype_unit : PMF.uniformOfFintype Unit = PMF.pure () 
 
 /-- On real dimension-`l` samples, `hardcoreKeyReduction D` is the real game of
 `lweFuzzyExtractor`. -/
-theorem lweRealContext_bind_hardcoreKeyReduction
+private theorem lweRealContext_bind_hardcoreKeyReduction
     (decode : Matrix (Fin m) (Fin (k + l)) (ZMod q) → (Fin m → ZMod q) →
       ProbComp (Option (Fin (k + l) → ZMod q)))
     (W : PMF (Fin m → ZMod q))
@@ -681,7 +681,7 @@ theorem lweRealContext_bind_hardcoreKeyReduction
 
 /-- On real dimension-`l` samples, `hardcoreUniformReduction D` is the ideal game of
 `lweFuzzyExtractor`. -/
-theorem lweRealContext_bind_hardcoreUniformReduction
+private theorem lweRealContext_bind_hardcoreUniformReduction
     (decode : Matrix (Fin m) (Fin (k + l)) (ZMod q) → (Fin m → ZMod q) →
       ProbComp (Option (Fin (k + l) → ZMod q)))
     (W : PMF (Fin m → ZMod q))
@@ -714,7 +714,7 @@ private theorem uniform_bind_offset
 
 /-- On uniform dimension-`l` samples the two branches agree: `A₁ x₁ + u` is uniform and
 independent of `x₁`, so the key `x₁` is distributed exactly like a fresh uniform key. -/
-theorem lweUniformContext_bind_hardcoreKeyReduction
+private theorem lweUniformContext_bind_hardcoreKeyReduction
     (D : (Fin k → ZMod q) × DecodeHelper m (k + l) q Unit → PMF Bool) :
     (lweUniformContext m l q).bind (hardcoreKeyReduction D) =
       (lweUniformContext m l q).bind (hardcoreUniformReduction D) := by
