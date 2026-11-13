@@ -48,70 +48,114 @@ theorem succProbability_uniform {α : Type*} [Fintype α] [Nonempty α] (games :
   simp only [succProbability, ENNReal.coe_toNNReal_eq_toReal, Probability.PMF.bind_apply_toReal]
   simp [ENNReal.coe_toNNReal_eq_toReal, inv_mul_eq_div, Finset.sum_div]
 
+private theorem sum_succProbability_sub {hops : ℕ}
+    (games : Fin (hops + 1) → Game) :
+    (∑ i : Fin hops,
+      ((succProbability (games i.castSucc) : ℝ) - succProbability (games i.succ))) =
+      (succProbability (games 0) : ℝ) - succProbability (games (Fin.last hops)) := by
+  have hleft := Fin.sum_univ_succ (fun i => (succProbability (games i) : ℝ))
+  have hright := Fin.sum_univ_castSucc (fun i => (succProbability (games i) : ℝ))
+  rw [Finset.sum_sub_distrib]
+  linarith
+
 /-- Randomly choosing an adjacent hybrid telescopes signed gaps.
-Unused indices run the same rejecting game on both sides. This gives one reduction for every
-security parameter, with loss `capacity`, without selecting a parameter-dependent best hop. -/
-theorem succProbability_hybrid_average (games : ℕ → Game) (hops capacity : ℕ) [NeZero capacity]
-    (hle : hops ≤ capacity) :
-    (succProbability (games 0) : ℝ) - succProbability (games hops) = (capacity : ℝ) *
-      (succProbability
-        ((PMF.uniformOfFintype (Fin capacity)).bind
-          (fun i => if i.val < hops then games i.val else PMF.pure false)) - succProbability
-        ((PMF.uniformOfFintype (Fin capacity)).bind
-          (fun i => if i.val < hops then games (i.val + 1) else PMF.pure false))) := by
-  have hsum : (∑ i : Fin capacity, if i.val < hops then
-      (succProbability (games i.val) : ℝ) - succProbability (games (i.val + 1)) else 0) =
-      (succProbability (games 0) : ℝ) - succProbability (games hops) := by
-    rw [Fin.sum_univ_eq_sum_range (fun i => if i < hops then
-      (succProbability (games i) : ℝ) - succProbability (games (i + 1)) else 0),
-      ← Finset.sum_range_sub' (fun i => (succProbability (games i) : ℝ)),
-      ← Finset.sum_range_add_sum_Ico _ hle]
-    simp +contextual [Finset.sum_ite_of_true, Finset.sum_ite_of_false]
-  have hdiff (i : Fin capacity) :
-      (succProbability (if i.val < hops then games i.val else PMF.pure false) : ℝ) -
-        succProbability (if i.val < hops then games (i.val + 1) else PMF.pure false) =
-      if i.val < hops then
-        (succProbability (games i.val) : ℝ) - succProbability (games (i.val + 1)) else 0 := by
+
+The finite chain contains `hops + 1` games, connecting `games 0` to `games (Fin.last hops)`.
+Choose an index `i` uniformly from `Fin samplingRange`. If `i < hops`, the left experiment
+runs the earlier game of this adjacent pair and the right experiment runs the later game.
+Otherwise, both reject.
+
+Allowing `samplingRange` to exceed `hops` lets applications choose a power-of-two range and
+sample its index exactly using a fixed number of fair-coin flips. For example, three hops
+can use two coin flips to choose among four indices: indices 0, 1 and 2 select the three
+adjacent pairs, while index 3 makes both experiments reject. The reduction has loss four.
+
+In general, the difference between the two mixtures' success probabilities is the endpoint
+difference divided by `samplingRange`: the adjacent differences telescope, and unused indices
+contribute zero. See `advantage_hybrid_average` for the corresponding advantage identity.
+This construction avoids choosing a best hop separately for each security parameter. -/
+theorem succProbability_hybrid_average {hops : ℕ}
+    (games : Fin (hops + 1) → Game) (samplingRange : ℕ)
+    [NeZero samplingRange] (hle : hops ≤ samplingRange) :
+    (succProbability (games 0) : ℝ) - succProbability (games (Fin.last hops)) =
+      (samplingRange : ℝ) *
+        (succProbability ((PMF.uniformOfFintype (Fin samplingRange)).bind
+          (fun i => if hi : i.val < hops then games (i.castLT hi).castSucc
+            else PMF.pure false)) -
+        succProbability ((PMF.uniformOfFintype (Fin samplingRange)).bind
+          (fun i => if hi : i.val < hops then games (i.castLT hi).succ
+            else PMF.pure false))) := by
+  have hsum : (∑ i : Fin samplingRange, if hi : i.val < hops then
+      (succProbability (games (i.castLT hi).castSucc) : ℝ) -
+        succProbability (games (i.castLT hi).succ) else 0) =
+      (succProbability (games 0) : ℝ) - succProbability (games (Fin.last hops)) := by
+    rw [← sum_succProbability_sub games]
+    refine (Fintype.sum_of_injective (Fin.castLE hle) (Fin.castLE_injective hle) _ _
+      (fun i hi => ?_) (fun i => ?_)).symm
+    · have hnot : ¬ i.val < hops := by
+        intro h
+        exact hi ⟨i.castLT h, Fin.ext rfl⟩
+      exact dite_eq_right hnot
+    · simp only [Fin.val_castLE, dite_eq_left i.isLt]
+      rfl
+  have hdiff (i : Fin samplingRange) :
+      (succProbability (if hi : i.val < hops then games (i.castLT hi).castSucc
+        else PMF.pure false) : ℝ) -
+      succProbability (if hi : i.val < hops then games (i.castLT hi).succ
+        else PMF.pure false) =
+      if hi : i.val < hops then
+        (succProbability (games (i.castLT hi).castSucc) : ℝ) -
+          succProbability (games (i.castLT hi).succ) else 0 := by
     split_ifs <;> simp [succProbability]
-  have hcapacity : (capacity : ℝ) ≠ 0 := by exact_mod_cast NeZero.ne capacity
+  have hsamplingRange : (samplingRange : ℝ) ≠ 0 := by exact_mod_cast NeZero.ne samplingRange
   rw [succProbability_uniform, succProbability_uniform]
   simp only [NNReal.coe_div, NNReal.coe_sum, NNReal.coe_natCast, Fintype.card_fin, ← sub_div,
-    ← Finset.sum_sub_distrib, hdiff, hsum, mul_div_cancel₀ _ hcapacity]
+    ← Finset.sum_sub_distrib, hdiff, hsum, mul_div_cancel₀ _ hsamplingRange]
 
 /-- Averaging adjacent hybrids also preserves distinguishing advantage, with the
 sampling-range loss and no parameter-dependent choice of the best hop. -/
-theorem advantage_hybrid_average (games : ℕ → Game) (hops capacity : ℕ) [NeZero capacity]
-    (hle : hops ≤ capacity) :
-    advantage (games 0) (games hops) = capacity *
+theorem advantage_hybrid_average {hops : ℕ}
+    (games : Fin (hops + 1) → Game) (samplingRange : ℕ)
+    [NeZero samplingRange] (hle : hops ≤ samplingRange) :
+    advantage (games 0) (games (Fin.last hops)) = samplingRange *
       advantage
-        ((PMF.uniformOfFintype (Fin capacity)).bind
-          (fun i => if i.val < hops then games i.val else PMF.pure false))
-        ((PMF.uniformOfFintype (Fin capacity)).bind
-          (fun i => if i.val < hops then games (i.val + 1) else PMF.pure false)) := by
+        ((PMF.uniformOfFintype (Fin samplingRange)).bind
+          (fun i => if hi : i.val < hops then games (i.castLT hi).castSucc
+            else PMF.pure false))
+        ((PMF.uniformOfFintype (Fin samplingRange)).bind
+          (fun i => if hi : i.val < hops then games (i.castLT hi).succ
+            else PMF.pure false)) := by
   apply NNReal.eq
   rw [NNReal.coe_mul, coe_advantage, coe_advantage, NNReal.coe_natCast,
-    succProbability_hybrid_average games hops capacity hle, abs_mul, Nat.abs_cast]
+    succProbability_hybrid_average games samplingRange hle, abs_mul, Nat.abs_cast]
 
 /-- Local reductions with a common signed loss combine into one uniformly selected reduction.
 The proof needs no choice of a best hop depending on the security parameter. -/
-theorem succProbability_hybrid_reduction (games game1 game2 : ℕ → Game)
-    (hops capacity : ℕ) [NeZero capacity] (hle : hops ≤ capacity) (loss : ℝ)
-    (hstep : ∀ i < hops, (succProbability (games i) : ℝ) - succProbability (games (i + 1)) =
+theorem succProbability_hybrid_reduction {hops : ℕ}
+    (games : Fin (hops + 1) → Game) (game1 game2 : Fin hops → Game)
+    (samplingRange : ℕ) [NeZero samplingRange] (hle : hops ≤ samplingRange) (loss : ℝ)
+    (hstep : ∀ i, (succProbability (games i.castSucc) : ℝ) - succProbability (games i.succ) =
       loss * (succProbability (game1 i) - succProbability (game2 i))) :
-    (succProbability (games 0) : ℝ) - succProbability (games hops) = (capacity : ℝ) * loss *
-      (succProbability ((PMF.uniformOfFintype (Fin capacity)).bind
-        (fun i => if i.val < hops then game1 i.val else PMF.pure false)) -
-      succProbability ((PMF.uniformOfFintype (Fin capacity)).bind
-        (fun i => if i.val < hops then game2 i.val else PMF.pure false))) := by
-  have hterm (i : Fin capacity) :
-      (succProbability (if i.val < hops then games i.val else PMF.pure false) : ℝ) -
-        succProbability (if i.val < hops then games (i.val + 1) else PMF.pure false) =
-      loss * (succProbability (if i.val < hops then game1 i.val else PMF.pure false) -
-        succProbability (if i.val < hops then game2 i.val else PMF.pure false)) := by
+    (succProbability (games 0) : ℝ) - succProbability (games (Fin.last hops)) =
+      (samplingRange : ℝ) * loss *
+        (succProbability ((PMF.uniformOfFintype (Fin samplingRange)).bind
+          (fun i => if hi : i.val < hops then game1 (i.castLT hi) else PMF.pure false)) -
+        succProbability ((PMF.uniformOfFintype (Fin samplingRange)).bind
+          (fun i => if hi : i.val < hops then game2 (i.castLT hi) else PMF.pure false))) := by
+  have hterm (i : Fin samplingRange) :
+      (succProbability (if hi : i.val < hops then games (i.castLT hi).castSucc
+        else PMF.pure false) : ℝ) -
+      succProbability (if hi : i.val < hops then games (i.castLT hi).succ
+        else PMF.pure false) =
+      loss *
+        (succProbability (if hi : i.val < hops then game1 (i.castLT hi)
+          else PMF.pure false) -
+        succProbability (if hi : i.val < hops then game2 (i.castLT hi)
+          else PMF.pure false)) := by
     split_ifs with hi
-    · exact hstep i.val hi
+    · exact hstep (i.castLT hi)
     · simp [succProbability]
-  rw [succProbability_hybrid_average games hops capacity hle]
+  rw [succProbability_hybrid_average games samplingRange hle]
   simp only [succProbability_uniform, NNReal.coe_div, NNReal.coe_sum, NNReal.coe_natCast,
     Fintype.card_fin, ← sub_div, ← Finset.sum_sub_distrib, hterm, ← Finset.mul_sum]
   ring

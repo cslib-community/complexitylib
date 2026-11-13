@@ -144,8 +144,11 @@ theorem sequenceTest_gap (replacement original : ProbComp α) (count : ℕ)
   simp only [eval_spliceTest_step_replacement] at hreplacement
   simp (config := { contextual := true }) only [eval_spliceTest_step_original] at horiginal
   have h := Game.succProbability_hybrid_average
-    (fun i => ProbComp.eval (sequenceHybrid replacement original count i >>= test))
-    count (dyadicSize count) (lt_dyadicSize count).le
+    (fun i : Fin (count + 1) =>
+      ProbComp.eval (sequenceHybrid replacement original count i.val >>= test))
+    (dyadicSize count) (lt_dyadicSize count).le
+  simp only [Fin.val_zero, Fin.val_last, Fin.val_castSucc, Fin.val_castLT, Fin.val_succ,
+    dite_eq_ite] at h
   simpa only [sequenceHybrid_zero, sequenceHybrid_self, PMF.monad_bind_eq_bind,
     horiginal, hreplacement] using h
 

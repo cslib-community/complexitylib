@@ -2568,23 +2568,24 @@ theorem interleavedCca2GameOn_gap {Msg Out : Type} [Inhabited Msg]
   have h0 := eval_interleavedHybridGameOn_zero valid encOut keyGen encrypt decrypt adversary n
   have htop := eval_interleavedHybridGameOn_of_le valid encOut keyGen encrypt decrypt adversary
     (dyadicSize (Q n)) n (hQ.trans (Nat.le_of_lt (lt_dyadicSize (Q n))))
-  have hred := Game.succProbability_hybrid_reduction
+  have hred := Game.succProbability_hybrid_reduction (hops := dyadicSize (Q n))
     (games := fun split =>
       ProbComp.eval
-        (interleavedHybridGameOn valid encOut keyGen encrypt decrypt adversary split n))
+        (interleavedHybridGameOn valid encOut keyGen encrypt decrypt adversary split.val n))
     (game1 := fun split =>
       ProbComp.eval
         (cca2GameOn valid encOut keyGen encrypt decrypt
-          (interleavedToSingleAt valid encrypt decBound adversary split) false n))
+          (interleavedToSingleAt valid encrypt decBound adversary split.val) false n))
     (game2 := fun split =>
       ProbComp.eval
         (cca2GameOn valid encOut keyGen encrypt decrypt
-          (interleavedToSingleAt valid encrypt decBound adversary split) true n))
-    (dyadicSize (Q n)) (dyadicSize (Q n)) le_rfl 1
-    (fun split _ => by
+          (interleavedToSingleAt valid encrypt decBound adversary split.val) true n))
+    (dyadicSize (Q n)) le_rfl 1
+    (fun split => by
       rw [one_mul]
       exact interleavedHybridGameOn_step_gap valid encOut keyGen encrypt decrypt decBound adversary
-        split n hdecBound)
+        split.val n hdecBound)
+  simp only [Fin.val_zero, Fin.val_last, Fin.val_castLT, dite_eq_ite] at hred
   rw [← h0, ← htop, hred, mul_one, eval_cca2GameOn_interleavedToSingle,
     eval_cca2GameOn_interleavedToSingle]
   simp only [Fin.is_lt, ↓reduceIte]
