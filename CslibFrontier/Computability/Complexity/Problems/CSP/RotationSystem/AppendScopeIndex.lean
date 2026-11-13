@@ -30,11 +30,12 @@ theorem incidenceEdgeIndex_appendOfFnOccurrenceEquiv_inr {Rel V : Type} [Decidab
     (F : CSP Rel V) (r : Rel) {n : ℕ} (scope : Fin n → V) (j : Fin n) :
     incidenceEdgeIndex (appendOfFnOccurrenceEquiv F r scope (Sum.inr j)) =
       F.occurrences.length + j.val := by
-  have hi : F.occurrences.length + j.val < (F ++ [(r, List.ofFn scope)]).occurrences.length := by
+  have hi : F.occurrences.length + j.val <
+      (F ++ [Constraint.mk r (List.ofFn scope)]).occurrences.length := by
     rw [occurrences_append_scope, List.length_append, List.length_map, List.length_zipIdx,
       List.length_ofFn]
     omega
-  have he : (F ++ [(r, List.ofFn scope)]).occurrences[F.occurrences.length + j.val] =
+  have he : (F ++ [Constraint.mk r (List.ofFn scope)]).occurrences[F.occurrences.length + j.val] =
       (F.length, j.val, scope j) := by
     simp only [occurrences_append_scope,
       List.getElem_append_right (show F.occurrences.length ≤ F.occurrences.length + j.val by omega),
@@ -42,6 +43,6 @@ theorem incidenceEdgeIndex_appendOfFnOccurrenceEquiv_inr {Rel V : Type} [Decidab
       Nat.zero_add, Fin.eta]
   unfold incidenceEdgeIndex
   rw [record_appendOfFnOccurrenceEquiv_inr, ← he]
-  exact (F ++ [(r, List.ofFn scope)]).occurrences_nodup.idxOf_getElem _ hi
+  exact (F ++ [Constraint.mk r (List.ofFn scope)]).occurrences_nodup.idxOf_getElem _ hi
 
 end Cslib.Complexity.CSP

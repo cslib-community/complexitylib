@@ -194,12 +194,13 @@ example : ¬ PseudorandomGenerator (fun w => false :: w) (· + 1) := by
   have hreal (n : ℕ) :
       distinguishingGame (generatorEnsemble (fun w => false :: w) n) (firstBitFalse n) =
         PMF.pure true := by
-    simp [distinguishingGame, generatorEnsemble, firstBitFalse, PMF.bind_map, Function.comp_def]
+    simp [distinguishingGame_eq_bind, generatorEnsemble, firstBitFalse, PMF.bind_map,
+      Function.comp_def]
   have hideal (n : ℕ) :
       distinguishingGame (BitString.uniformList (n + 1)) (firstBitFalse n) =
         PMF.uniformOfFintype Bool := by
     rw [BitString.uniformList_succ]
-    simp only [distinguishingGame, firstBitFalse, PMF.monad_bind_eq_bind, PMF.bind_bind,
+    simp only [distinguishingGame_eq_bind, firstBitFalse, PMF.monad_bind_eq_bind, PMF.bind_bind,
       PMF.bind_map, Function.comp_def, List.headD_cons, ProbComp.eval_pure, PMF.bind_const]
     ext b
     cases b <;> simp [PMF.bind_apply, PMF.uniformOfFintype_apply]
@@ -222,8 +223,8 @@ example : ¬ HardCore id (fun w => w.headD false) := by
   intro h
   have hgame (n : ℕ) :
       ProbComp.eval (predictionGame id (fun w => w.headD false) copyFirst n) = PMF.pure true := by
-    simp only [predictionGame, copyFirst, id, ProbComp.eval_bind, ProbComp.eval_pure,
-      BitString.eval_sampleList]
+    simp only [predictionGame, predictionExperiment, copyFirst, id, ProbComp.eval_bind,
+      ProbComp.eval_pure, BitString.eval_sampleList]
     simp
   have hneg := h.unpredictable copyFirst copyFirst_ppt
   have hfun : predictionAdvantage id (fun w => w.headD false) copyFirst =

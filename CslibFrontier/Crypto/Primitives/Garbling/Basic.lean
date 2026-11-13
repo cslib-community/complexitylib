@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import CslibFrontier.Computability.Circuit.Local
 public import CslibFrontier.Computability.Circuit.Topology
 public import CslibFrontier.Languages.Probabilistic.Basic
 public import Mathlib.Algebra.BigOperators.Group.Finset.Defs
@@ -35,7 +36,8 @@ keys; the decoding information is the permutation bit of each output wire.
 Correctness (`Garbled.run_garbleWith`) holds for every keyed function `F`, tweak assignment `tw`,
 choice of keys and permutation bits, and input. Evaluation follows every wire labelling that is a
 fixed point of one evaluation round (`evaluate_eq_of_evalStep`), for every topology whose gates
-read only earlier wires; this also gives correctness of the simulator. Garbling uses the circuit's
+read only earlier wires, since such a round is local (`isLocal_evalStep`); this also gives
+correctness of the simulator. Garbling uses the circuit's
 operations only through its truth tables; the table shape depends only on the topology.
 
 ## Main definitions
@@ -181,33 +183,27 @@ def Garbled.run {τ : Circuit.Topology n m s} (G : Garbled τ K) (F : K → T �
     (tw : Slot τ → T) (x : Fin n → Bool) : Fin m → Bool :=
   decode G.decoding (evaluate τ F tw G.table (encode G.encoding x))
 
+/-- On an ordered topology, an evaluation round is local: a gate reads only the labels of its
+arguments, which have lower wire numbers. -/
+theorem isLocal_evalStep {τ : Circuit.Topology n m s} (hτ : τ.IsOrdered) (F : K → T → K × Bool)
+    (tw : Slot τ → T) (table : Row τ → K × Bool) (X : Fin n → K × Bool) :
+    IsLocal (evalStep τ F tw table X) := by
+  intro A B w h
+  cases w with
+  | input i => rfl
+  | gate g =>
+    exact congrArg (fun a : Fin (τ.arity g) → K × Bool =>
+      table ⟨g, fun k => (a k).2⟩ - ∑ k, F (a k).1 (tw ⟨⟨g, fun k => (a k).2⟩, k⟩))
+      (funext fun k => h _ (hτ g k))
+
 /-- On an ordered topology, evaluation follows every wire labelling `A` that one evaluation
 round leaves unchanged: the evaluated output labels are those of `A`. -/
 theorem evaluate_eq_of_evalStep {τ : Circuit.Topology n m s} (hτ : τ.IsOrdered)
     (F : K → T → K × Bool) (tw : Slot τ → T) (table : Row τ → K × Bool) (X : Fin n → K × Bool)
     (A : Wire n s → K × Bool) (hA : ∀ w, evalStep τ F tw table X A w = A w) :
-    evaluate τ F tw table X = A ∘ τ.outputs := by
-  have key : ∀ t w, w.toNat < t → (evalStep τ F tw table X)^[t] 0 w = A w := by
-    intro t
-    induction t with
-    | zero => intro w hw; exact absurd hw (Nat.not_lt_zero _)
-    | succ t ih =>
-      intro w hw
-      rw [Function.iterate_succ_apply', ← hA w]
-      cases w with
-      | input i => rfl
-      | gate g =>
-        have harg : (fun k => (evalStep τ F tw table X)^[t] 0 (τ.wires g k)) =
-            fun k => A (τ.wires g k) :=
-          funext fun k => ih _ (by have := hτ g k; omega)
-        -- A gate's round depends on the labelling only through its argument labels.
-        have hgate : ∀ labels : Wire n s → K × Bool, evalStep τ F tw table X labels (.gate g) =
-            (fun a : Fin (τ.arity g) → K × Bool =>
-              table ⟨g, fun k => (a k).2⟩ - ∑ k, F (a k).1 (tw ⟨⟨g, fun k => (a k).2⟩, k⟩))
-              (fun k => labels (τ.wires g k)) := fun _ => rfl
-        rw [hgate, hgate, harg]
-  funext o
-  exact key (n + s) _ (Wire.toNat_lt _)
+    evaluate τ F tw table X = A ∘ τ.outputs :=
+  funext fun o =>
+    congrFun ((isLocal_evalStep hτ F tw table X).iterate_eq_of_isFixed 0 (funext hA)) (τ.outputs o)
 
 /-- Removing the mask with the active labels of the arguments gives the gate's active label. -/
 theorem evalStep_activeLabel (C : Circuit σ n m) (I : Interpretation σ Bool)

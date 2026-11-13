@@ -31,8 +31,8 @@ example (n : ℕ) : verify (atom n).body (List.ofFn Sum.inl) (atomBoundaryCertif
 example : bodyCertificate (atom 3).body (atomBoundaryCertificate 3) = ⟨[0, 3, 2, 5, 4, 1]⟩ := by
   decide +kernel
 
-private abbrev repeated : CSP Unit (Fin 3) := [((), [0, 1, 2]), ((), [0, 1, 2])]
-private abbrev reversed : CSP Unit (Fin 3) := [((), [0, 1, 2]), ((), [0, 2, 1])]
+private abbrev repeated : CSP Unit (Fin 3) := [⟨(), [0, 1, 2]⟩, ⟨(), [0, 1, 2]⟩]
+private abbrev reversed : CSP Unit (Fin 3) := [⟨(), [0, 1, 2]⟩, ⟨(), [0, 2, 1]⟩]
 
 -- Both literal constraint positions survive. Their fixed forward argument rotations
 -- produce a positive-genus rotation when the two ternary words have the same chirality.

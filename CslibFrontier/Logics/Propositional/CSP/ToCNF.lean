@@ -13,7 +13,7 @@ public import CslibFrontier.Logics.Propositional.CSP
 /-!
 # Forbidden-pattern compilation from Boolean CSPs to CNF
 
-Every Boolean constraint `(R, vs) : Constraint Rel V` of scope length `r = vs.length ≤ k` has at
+Every Boolean constraint `⟨R, vs⟩ : Constraint Rel V` of scope length `r = vs.length ≤ k` has at
 most `2 ^ r ≤ 2 ^ k` forbidden local assignments `w ∈ BitString.enumList r` with `sem R w = false`.
 Emitting one width-`r` clause `Constraint.forbidClause vs w` per forbidden assignment translates a
 Boolean CSP instance `F : CSP Rel V` into an equivalent `k`-CNF formula `F.toCNF sem` on a subset
@@ -113,28 +113,28 @@ theorem eval_forbidClause (vs : List V) {w : List Bool} (hw : w.length = vs.leng
       simp only [Literal.eval, List.map_cons]
       cases σ v <;> cases b <;> simp
 
-/-- Compile a Boolean constraint `c = (R, vs)` to a CNF formula by emitting `forbidClause vs w` for
+/-- Compile a Boolean constraint `c = ⟨R, vs⟩` to a CNF formula by emitting `forbidClause vs w` for
 every forbidden local assignment `w ∈ BitString.enumList vs.length` with `sem R w = false`. -/
 def toCNF (sem : Rel → List Bool → Bool) (c : Constraint Rel V) : CNF V :=
-  ((BitString.enumList c.2.length).filter fun w => !sem c.1 w).map (forbidClause c.2)
+  ((BitString.enumList c.scope.length).filter fun w => !sem c.rel w).map (forbidClause c.scope)
 
-/-- Width-guarded compilation: emits `toCNF sem c` when `c.2.length ≤ k` and `[]` otherwise. -/
+/-- Width-guarded compilation: emits `toCNF sem c` when `c.scope.length ≤ k` and `[]` otherwise. -/
 def toCNFBounded (k : ℕ) (sem : Rel → List Bool → Bool) (c : Constraint Rel V) : CNF V :=
-  if c.2.length ≤ k then toCNF sem c else []
+  if c.scope.length ≤ k then toCNF sem c else []
 
-/-- When `c.2.length ≤ k`, `toCNFBounded k sem c` agrees with `toCNF sem c`. -/
+/-- When `c.scope.length ≤ k`, `toCNFBounded k sem c` agrees with `toCNF sem c`. -/
 theorem toCNFBounded_eq_toCNF {k : ℕ} {sem : Rel → List Bool → Bool} {c : Constraint Rel V}
-    (hc : c.2.length ≤ k) :
+    (hc : c.scope.length ≤ k) :
     toCNFBounded k sem c = toCNF sem c := by
   simp [toCNFBounded, hc]
 
-/-- Every clause in `c.toCNF sem` has length at most `c.2.length`. -/
+/-- Every clause in `c.toCNF sem` has length at most `c.scope.length`. -/
 theorem length_clause_mem_toCNF {sem : Rel → List Bool → Bool} {c : Constraint Rel V}
     {cl : Clause V} (hcl : cl ∈ toCNF sem c) :
-    cl.length ≤ c.2.length := by
+    cl.length ≤ c.scope.length := by
   simp only [toCNF, List.mem_map] at hcl
   rcases hcl with ⟨w, _, rfl⟩
-  exact length_forbidClause_le c.2 w
+  exact length_forbidClause_le c.scope w
 
 /-- Every clause in `c.toCNFBounded k sem` has length at most `k`. -/
 theorem length_clause_mem_toCNFBounded {k : ℕ} {sem : Rel → List Bool → Bool}
@@ -145,24 +145,24 @@ theorem length_clause_mem_toCNFBounded {k : ℕ} {sem : Rel → List Bool → Bo
   · exact (length_clause_mem_toCNF hcl).trans hc
   · simp at hcl
 
-/-- `c.toCNF sem` contains at most `2 ^ c.2.length` clauses. -/
+/-- `c.toCNF sem` contains at most `2 ^ c.scope.length` clauses. -/
 theorem length_toCNF_le (sem : Rel → List Bool → Bool) (c : Constraint Rel V) :
-    (toCNF sem c).length ≤ 2 ^ c.2.length := by
+    (toCNF sem c).length ≤ 2 ^ c.scope.length := by
   simp only [toCNF, List.length_map]
   exact (List.length_filter_le _ _).trans (by rw [BitString.length_enumList])
 
-/-- Every variable occurring in `c.toCNF sem` belongs to the constraint scope `c.2`. -/
+/-- Every variable occurring in `c.toCNF sem` belongs to the constraint scope `c.scope`. -/
 theorem mem_vars_toCNF {sem : Rel → List Bool → Bool} {c : Constraint Rel V} {v : V}
-    (hv : v ∈ (toCNF sem c).vars) : v ∈ c.2 := by
+    (hv : v ∈ (toCNF sem c).vars) : v ∈ c.scope := by
   simp only [CNF.vars, List.mem_map, List.mem_flatten] at hv
   rcases hv with ⟨l, ⟨cl, hcl, hl⟩, rfl⟩
   simp only [toCNF, List.mem_map] at hcl
   rcases hcl with ⟨w, _, rfl⟩
   exact mem_vars_forbidClause hl
 
-/-- Every variable occurring in `c.toCNFBounded k sem` belongs to the constraint scope `c.2`. -/
+/-- Every variable occurring in `c.toCNFBounded k sem` belongs to the constraint scope `c.scope`. -/
 theorem mem_vars_toCNFBounded {k : ℕ} {sem : Rel → List Bool → Bool} {c : Constraint Rel V}
-    {v : V} (hv : v ∈ (toCNFBounded k sem c).vars) : v ∈ c.2 := by
+    {v : V} (hv : v ∈ (toCNFBounded k sem c).vars) : v ∈ c.scope := by
   unfold toCNFBounded at hv
   split_ifs at hv
   · exact mem_vars_toCNF hv
@@ -194,12 +194,12 @@ theorem eval_toCNF (sem : Rel → List Bool → Bool) (c : Constraint Rel V) (σ
   · intro h
     by_contra hfalse
     simp only [eval, Bool.not_eq_true] at hfalse
-    have hw : (c.2.map σ).length = c.2.length := List.length_map _
-    have hcl := h (forbidClause c.2 (c.2.map σ)) ⟨c.2.map σ, ⟨hw, hfalse⟩, rfl⟩
-    rw [eval_forbidClause c.2 hw σ] at hcl
+    have hw : (c.scope.map σ).length = c.scope.length := List.length_map _
+    have hcl := h (forbidClause c.scope (c.scope.map σ)) ⟨c.scope.map σ, ⟨hw, hfalse⟩, rfl⟩
+    rw [eval_forbidClause c.scope hw σ] at hcl
     simp at hcl
   · rintro h cl ⟨w, ⟨hw, hsem⟩, rfl⟩
-    rw [eval_forbidClause c.2 hw σ, Bool.not_eq_true', beq_eq_false_iff_ne]
+    rw [eval_forbidClause c.scope hw σ, Bool.not_eq_true', beq_eq_false_iff_ne]
     intro heq
     rw [eval, heq, hsem] at h
     exact Bool.false_ne_true h
@@ -221,7 +221,7 @@ def toCNFBounded (k : ℕ) (sem : Rel → List Bool → Bool) (F : CSP Rel V) : 
 
 /-- When all constraint scopes in `F` have length `≤ k`, `F.toCNFBounded k sem = F.toCNF sem`. -/
 theorem toCNFBounded_eq_toCNF {k : ℕ} {sem : Rel → List Bool → Bool} {F : CSP Rel V}
-    (hF : ∀ c ∈ F, c.2.length ≤ k) :
+    (hF : ∀ c ∈ F, c.scope.length ≤ k) :
     F.toCNFBounded k sem = F.toCNF sem :=
   List.flatMap_congr fun c hc => Constraint.toCNFBounded_eq_toCNF (hF c hc)
 
@@ -235,7 +235,7 @@ theorem length_clause_mem_toCNFBounded {k : ℕ} {sem : Rel → List Bool → Bo
 /-- When all constraint scopes in `F` have length `≤ k`, every clause in `F.toCNF sem` has length
 at most `k`. -/
 theorem length_clause_mem_toCNF {k : ℕ} {sem : Rel → List Bool → Bool} {F : CSP Rel V}
-    (hF : ∀ c ∈ F, c.2.length ≤ k) {cl : Clause V} (hcl : cl ∈ F.toCNF sem) :
+    (hF : ∀ c ∈ F, c.scope.length ≤ k) {cl : Clause V} (hcl : cl ∈ F.toCNF sem) :
     cl.length ≤ k := by
   rw [← toCNFBounded_eq_toCNF hF] at hcl
   exact length_clause_mem_toCNFBounded hcl
@@ -243,7 +243,7 @@ theorem length_clause_mem_toCNF {k : ℕ} {sem : Rel → List Bool → Bool} {F 
 /-- When all constraint scopes in `F` have length `≤ k`, `F.toCNF sem` has at most
 `2 ^ k * F.length` clauses. -/
 theorem length_toCNF_le {k : ℕ} (sem : Rel → List Bool → Bool) {F : CSP Rel V}
-    (hF : ∀ c ∈ F, c.2.length ≤ k) :
+    (hF : ∀ c ∈ F, c.scope.length ≤ k) :
     (F.toCNF sem).length ≤ 2 ^ k * F.length := by
   induction F with
   | nil => simp [toCNF]

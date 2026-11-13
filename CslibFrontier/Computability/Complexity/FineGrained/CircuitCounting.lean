@@ -234,12 +234,13 @@ private theorem computableInPolyTime_toCSPRaw (encOp : σ.Op ↪ List Bool) (m :
       (fun r : RawCode σ =>
         (r.2.1.zipIdx.filter fun gj =>
           (Compiler.reachWiresCode r.1 r.2).any (· == r.1 + gj.2)).map
-          fun gj => ((Sum.inl gj.1.1 : Compiler.CircuitRel σ m), (r.1 + gj.2) :: gj.1.2))
+          fun gj =>
+            (⟨Sum.inl gj.1.1, (r.1 + gj.2) :: gj.1.2⟩ : Constraint (Compiler.CircuitRel σ m) ℕ))
       (encRaw encOp) (encCSP (encCircuitRel encOp m) encNat) := by fun_prop
   have houtCons : ComputableInPolyTime
       (fun r : RawCode σ =>
         (List.finRange m).map fun o =>
-          ((Sum.inr o : Compiler.CircuitRel σ m), [r.2.2.getD o.val 0]))
+          (⟨Sum.inr o, [r.2.2.getD o.val 0]⟩ : Constraint (Compiler.CircuitRel σ m) ℕ))
       (encRaw encOp) (encCSP (encCircuitRel encOp m) encNat) := by fun_prop
   exact listAppend' hgCons houtCons
 

@@ -17,7 +17,7 @@ open Cslib.Logic.PL Cslib.Logic.PL.CSP Cslib.Complexity Cslib.Complexity.CSP
   Cslib.Complexity.CSP.OrderedBoundary
 
 private abbrev F : CSP Unit ℕ :=
-  [((), [0]), ((), [0]), ((), [0]), ((), [0]), ((), [0]), ((), [0]), ((), [])]
+  [⟨(), [0]⟩, ⟨(), [0]⟩, ⟨(), [0]⟩, ⟨(), [0]⟩, ⟨(), [0]⟩, ⟨(), [0]⟩, ⟨(), []⟩]
 
 private def w : Witness F (List.ofFn ![0, 1]) :=
   Witness.ofProbe (by decide) ⟨[2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 14, 11, 12, 15, 0, 13]⟩ (by decide)

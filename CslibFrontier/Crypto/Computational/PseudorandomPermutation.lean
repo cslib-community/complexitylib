@@ -157,30 +157,21 @@ Experiment 1). -/
 @[expose] noncomputable def prpIdealGame (blockLen : ℕ → ℕ) (adversary : OracleDistinguisher)
     (n : ℕ) : ProbComp Bool := do
   let π ← ProbComp.uniform (Equiv.Perm (BitString (blockLen n)))
-  OracleComp.interpret
-    (OracleComp.sumHandler ProbComp.unifFin
-      (fun request => pure (randomPermOracle (blockLen n) π request.2)))
-    (adversary n [])
+  (adversary n []).run fun request => pure (randomPermOracle (blockLen n) π request.2)
 
 /-- The ideal chosen-ciphertext experiment: one uniform permutation answers both forward and
 inverse queries ([BonehShoup2023], Section 4.1.3). -/
 @[expose] noncomputable def strongPRPIdealGame (blockLen : ℕ → ℕ)
     (adversary : StrongPRPDistinguisher) (n : ℕ) : ProbComp Bool := do
   let π ← ProbComp.uniform (Equiv.Perm (BitString (blockLen n)))
-  OracleComp.interpret
-    (OracleComp.sumHandler ProbComp.unifFin
-      (fun request => pure (strongRandomPermOracle (blockLen n) π request)))
-    (adversary n [])
+  (adversary n []).run fun request => pure (strongRandomPermOracle (blockLen n) π request)
 
 /-- A uniform random function on `blockLen n`-bit words; at `blockLen = id` this is `prfIdealGame`
 (`randomFunctionIdealGame_id`). -/
 @[expose] noncomputable def randomFunctionIdealGame (blockLen : ℕ → ℕ)
     (adversary : OracleDistinguisher) (n : ℕ) : ProbComp Bool := do
   let table ← ProbComp.uniform (BitString (blockLen n) → BitString (blockLen n))
-  OracleComp.interpret
-    (OracleComp.sumHandler ProbComp.unifFin
-      (fun request => pure (randomFunctionOracle (blockLen n) table request.2)))
-    (adversary n [])
+  (adversary n []).run fun request => pure (randomFunctionOracle (blockLen n) table request.2)
 
 @[simp] theorem randomFunctionIdealGame_id (adversary : OracleDistinguisher) (n : ℕ) :
     randomFunctionIdealGame id adversary n = prfIdealGame adversary n := rfl
@@ -282,18 +273,14 @@ query ([BonehShoup2023], Attack Game 4.1, Experiment 0). -/
 @[expose] noncomputable def prpRealGame (adversary : OracleDistinguisher) (n : ℕ) :
     ProbComp Bool := do
   let key ← BitString.sampleList (E.keyLen n)
-  OracleComp.interpret
-    (OracleComp.sumHandler ProbComp.unifFin (fun request => pure (E.prpOracle n key request.2)))
-    (adversary n [])
+  (adversary n []).run fun request => pure (E.prpOracle n key request.2)
 
 /-- The real chosen-ciphertext experiment: one uniform `keyLen n`-bit key answers forward queries
 with encryption and inverse queries with decryption ([BonehShoup2023], Section 4.1.3). -/
 @[expose] noncomputable def strongPRPRealGame (adversary : StrongPRPDistinguisher) (n : ℕ) :
     ProbComp Bool := do
   let key ← BitString.sampleList (E.keyLen n)
-  OracleComp.interpret
-    (OracleComp.sumHandler ProbComp.unifFin (fun request => pure (E.strongPRPOracle n key request)))
-    (adversary n [])
+  (adversary n []).run fun request => pure (E.strongPRPOracle n key request)
 
 /-- Pseudorandom-permutation security against uniform oracle-PPT distinguishers
 ([BonehShoup2023], Definition 4.1, interpreted asymptotically as in Section 4.1.5). -/
@@ -514,8 +501,9 @@ theorem BlockCipher.eval_strongPRPRealGame_liftForwardDistinguisher (E : BlockCi
     (adversary : OracleDistinguisher) (n : ℕ) :
     ProbComp.eval (E.strongPRPRealGame (liftForwardDistinguisher E.blockLen adversary) n) =
       ProbComp.eval (E.prpRealGame adversary n) := by
-  simp only [BlockCipher.strongPRPRealGame, BlockCipher.prpRealGame, ProbComp.eval_bind,
-    BitString.eval_sampleList, ProbOracleComp.eval_interpret, ProbComp.eval_pure]
+  simp only [BlockCipher.strongPRPRealGame, BlockCipher.prpRealGame, ProbOracleComp.run,
+    ProbComp.eval_bind, BitString.eval_sampleList, ProbOracleComp.eval_interpret,
+    ProbComp.eval_pure]
   refine PMF.bind_congr_on_support _ _ _ fun key hkey => ?_
   have hkeyLen : key.length = E.keyLen n := BitString.length_of_mem_support_uniformList hkey
   rw [eval_interpret_liftForwardDistinguisher]
@@ -531,8 +519,8 @@ theorem eval_strongPRPIdealGame_liftForwardDistinguisher (blockLen : ℕ → ℕ
     (adversary : OracleDistinguisher) (n : ℕ) :
     ProbComp.eval (strongPRPIdealGame blockLen (liftForwardDistinguisher blockLen adversary) n) =
       ProbComp.eval (prpIdealGame blockLen adversary n) := by
-  simp only [strongPRPIdealGame, prpIdealGame, ProbComp.eval_bind, ProbComp.eval_uniform,
-    ProbOracleComp.eval_interpret, ProbComp.eval_pure]
+  simp only [strongPRPIdealGame, prpIdealGame, ProbOracleComp.run, ProbComp.eval_bind,
+    ProbComp.eval_uniform, ProbOracleComp.eval_interpret, ProbComp.eval_pure]
   congr 1 with π : 1
   rw [eval_interpret_liftForwardDistinguisher]
   congr 2 with request : 1
