@@ -4769,8 +4769,11 @@ public import CslibFrontier.Crypto.Protocols.PIR.Block
 public import CslibFrontier.Crypto.Protocols.PIR.Collusion
 public import CslibFrontier.Crypto.Protocols.PIR.CoveringCode
 public import CslibFrontier.Crypto.Protocols.PIR.Cube
+public import CslibFrontier.Crypto.Protocols.PIR.GeneralCover
+public import CslibFrontier.Crypto.Protocols.PIR.Indexed
 public import CslibFrontier.Crypto.Protocols.PIR.Interactive
 public import CslibFrontier.Crypto.Protocols.PIR.LinearSummation
+public import CslibFrontier.Crypto.Protocols.PIR.MultiInteractive
 public import CslibFrontier.Crypto.Protocols.PIR.Preprocessing.Basic
 public import CslibFrontier.Crypto.Protocols.PIR.Preprocessing.Piano
 public import CslibFrontier.Crypto.Protocols.PIR.Shamir

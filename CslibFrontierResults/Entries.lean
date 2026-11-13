@@ -173,6 +173,10 @@ import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Bot
 import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot
 import CslibFrontier.Crypto.Protocols.PIR.Block
 import CslibFrontier.Crypto.Protocols.PIR.Collusion
+import CslibFrontier.Crypto.Protocols.PIR.GeneralCover
+import CslibFrontier.Crypto.Protocols.PIR.Indexed
+import CslibFrontier.Crypto.Protocols.PIR.Interactive
+import CslibFrontier.Crypto.Protocols.PIR.MultiInteractive
 import CslibFrontier.Crypto.Protocols.PIR.Shamir
 import CslibFrontier.Crypto.Protocols.PIR.SmoothConverse
 import CslibFrontier.Foundations.Analysis.Convex.ExtendedFormulation.Correlation
@@ -5289,6 +5293,116 @@ register_result "cgks-pir-block-retrieval" where
     2 * m ≤ ℓ, in particular n ≤ (ℓ / 2)^2 (Corollary 8, replacing the paper's unrounded \
     n ≤ ℓ² / 4 with the integer subcube condition 2 * m ≤ ℓ, matching n ≤ ℓ² / 4 when ℓ is \
     even)."
+
+register_result "cgks-pir-indexed-schemes" where
+  title := "Chor–Goldreich–Kushilevitz–Sudan: PIR with per-server query and answer widths"
+  topic := "cryptography"
+  sources := [
+    { paper := ChorGoldreichKushilevitzSudan1998,
+      theorem := "Definition 1",
+      locator := "Sections 2.1, 2.2, 3.3 (Footnote 1), and 5.1 (pp. 4–5, 9, 14 of the \
+        April 21, 1998 journal version)" }
+  ]
+  theorems := [
+    Cslib.Crypto.Protocols.PIR.indexedCommunication_const,
+    Cslib.Crypto.Protocols.PIR.IndexedScheme.isTPrivate_one_iff,
+    Cslib.Crypto.Protocols.PIR.IndexedScheme.isTPrivate_iff_tuple,
+    Cslib.Crypto.Protocols.PIR.IndexedScheme.exists_injective_answers_of_card_le,
+    Cslib.Crypto.Protocols.PIR.IndexedScheme.card_le_indexedCommunication_of_card_le,
+    Cslib.Crypto.Protocols.PIR.HasTPrivateIndexedScheme.card_le_of_le,
+    Cslib.Crypto.Protocols.PIR.hasIndexedScheme_one_iff
+  ]
+  scope := "One-round PIR schemes with server-indexed query and answer alphabets Q, A : S → Type \
+    and per-server fixed-length binary encoding cost ∑ s, (⌈log₂ |Q s|⌉ + ⌈log₂ |A s|⌉) \
+    (execution-dependent variable-length codes within a single server and §2.4 machine runtime \
+    are not modeled). Embedding into uniform PIR.Scheme over Σ s, Q s and Σ s, A s \
+    (IndexedScheme.toSigmaScheme) transfers coalition-privacy equivalences and the full-coalition \
+    (|S| ≤ t) and single-server n-bit lower bounds without re-proving them."
+
+register_result "cgks-pir-general-covering" where
+  title := "Chor–Goldreich–Kushilevitz–Sudan: unbalanced covering-code PIR (Theorem 1) and \
+    radius-r covering schemes"
+  topic := "cryptography"
+  sources := [
+    { paper := ChorGoldreichKushilevitzSudan1998,
+      theorem := "Theorem 1",
+      locator := "Section 3.3, Footnote 1, Figure 1 (d = 5, k = 7), and p. 10 remark \
+        (pp. 9–10 of the April 21, 1998 journal version)" }
+  ]
+  theorems := [
+    Cslib.Crypto.Protocols.PIR.ExactRadiusOneCover.isCorrect_indexedScheme,
+    Cslib.Crypto.Protocols.PIR.ExactRadiusOneCover.isPrivate_indexedScheme,
+    Cslib.Crypto.Protocols.PIR.ExactRadiusOneCover.indexedCommunication_indexedScheme_eq,
+    Cslib.Crypto.Protocols.PIR.ExactRadiusOneCover.hasIndexedScheme,
+    Cslib.Crypto.Protocols.PIR.hasIndexedScheme_of_hammingDist,
+    Cslib.Crypto.Protocols.PIR.hasIndexedScheme_seven_of_le_pow_five,
+    Cslib.Crypto.Protocols.PIR.isCorrect_radiusCoverScheme,
+    Cslib.Crypto.Protocols.PIR.isPrivate_radiusCoverScheme,
+    Cslib.Crypto.Protocols.PIR.hasScheme_of_hammingDist_le,
+    Cslib.Crypto.Protocols.PIR.hasScheme_of_hammingDist_two,
+    Cslib.Crypto.Protocols.PIR.hasScheme_of_hammingDist_two_sq,
+    Cslib.Crypto.Protocols.PIR.hasScheme_two_radius_two_of_le_pow_five
+  ]
+  scope := "Removes the balancedness hypothesis k * (m + 1) = 2^d from CGKS §3.3 Theorem 1 via \
+    PIR.IndexedScheme: any injective radius-1 covering code c : S → D → Bool on nonempty D \
+    (0 < |D|, made explicit because d - 1 truncates at d = 0 in ℕ and duplicate codewords would \
+    violate |S| ≤ 2^d) gives k + (2^d + (d - 1) * k) * ℓ bits for n ≤ ℓ^d, instantiated on the \
+    unbalanced optimal 7-word cover of {0, 1}^5 (60 * ℓ + 7 bits, matching Figure 1's 60 n^(1/5) \
+    asymptotic term plus k). For general radius-r covers, radiusCoverScheme achieves \
+    k * (d * ℓ + ∑_{j ≤ r} C(d, j) * ℓ^j) bits in uniform PIR.Scheme, specializing at r = 2 to \
+    k * (2 d ℓ + C(d, 2) ℓ² + 1) (CGKS p. 10's displayed leading expression k d ℓ + k C(d, 2) ℓ² \
+    plus the k * (d ℓ + 1) distance-0/1 answer bits; the literal k d ℓ + k C(d, 2) ℓ² bound \
+    without lower-order answer terms is not proved) and the coarser polynomial upper bound \
+    k * d * ℓ + k * d² * ℓ² (when 2 ≤ d and 1 ≤ ℓ). Server and user runtime (Remark on p. 10) is \
+    not modeled."
+
+register_result "cgks-pir-interactive-lower-bound" where
+  title := "Chor–Goldreich–Kushilevitz–Sudan: interactive single-server PIR and block lower bounds"
+  topic := "cryptography"
+  sources := [
+    { paper := ChorGoldreichKushilevitzSudan1998,
+      theorem := unverified,
+      locator := "Sections 4 and 5.1 (pp. 11–14 of the April 21, 1998 journal version)" }
+  ]
+  theorems := [
+    Cslib.Crypto.Protocols.PIR.InteractiveScheme.injective_leaf,
+    Cslib.Crypto.Protocols.PIR.InteractiveScheme.card_pow_card_le_ncard_transcripts,
+    Cslib.Crypto.Protocols.PIR.InteractiveScheme.card_pow_card_le_leafCount,
+    Cslib.Crypto.Protocols.PIR.InteractiveScheme.card_le_depth,
+    Cslib.Crypto.Protocols.PIR.InteractiveScheme.card_mul_le_depth,
+    Cslib.Crypto.Protocols.PIR.InteractiveScheme.exists_iff,
+    Cslib.Crypto.Protocols.PIR.InteractiveScheme.exists_block_iff
+  ]
+  scope := "Arbitrary-round deterministic protocol trees (Communication.Protocol) with \
+    independent ProbComp userCoins i and serverCoins over general payload β (defaulting to Bool). \
+    Replaces CGKS §5.1's deterministic-output step with Protocol.leaf_eq_iff (rectangle \
+    property), forcing |β|^|ι| leaves, |ι| bits on Boolean databases, and |ι| * |κ| bits on \
+    (κ → Bool) block databases (attained by download and blockDownload)."
+
+register_result "cgks-pir-multi-interactive-lower-bound" where
+  title := "Chor–Goldreich–Kushilevitz–Sudan: multi-server interactive PIR and full-coalition \
+    lower bounds"
+  topic := "cryptography"
+  sources := [
+    { paper := ChorGoldreichKushilevitzSudan1998,
+      theorem := unverified,
+      locator := "Sections 2.1, 2.2, 4, and 5.1 (pp. 4–5, 11–14 of the April 21, 1998 journal \
+        version)" }
+  ]
+  theorems := [
+    Cslib.Crypto.Protocols.PIR.MultiRoundTree.depth_compile,
+    Cslib.Crypto.Protocols.PIR.MultiInteractiveScheme.isTPrivate_one_iff,
+    Cslib.Crypto.Protocols.PIR.MultiInteractiveScheme.isPrivate_toInteractiveScheme_of_card_le,
+    Cslib.Crypto.Protocols.PIR.MultiInteractiveScheme.card_le_depth_of_card_le,
+    Cslib.Crypto.Protocols.PIR.MultiInteractiveScheme.card_mul_le_depth_of_card_le
+  ]
+  scope := "Channel-isolated adaptive multi-round k-server PIR (MultiInteractiveScheme), where \
+    each step exchanges 1 bit between the user and a chosen server s and serverBit s depends only \
+    on x, d s, and the directional ChannelMsg history previously exchanged on s's channel (and \
+    IsPrivate / IsTPrivate compare communication sub-traces rather than full server views). \
+    Compiling to two-party InteractiveScheme preserves worst-case tree depth and transfers the \
+    |ι|-bit and |ι| * |κ|-bit lower bounds whenever all servers may collude (|S| ≤ t). \
+    Multi-round lower bounds below full collusion (t < |S|) are not proved."
 
 register_result "prp-prf-switching" where
   title := "PRP/PRF switching lemma: a pseudorandom permutation is a pseudorandom function"
