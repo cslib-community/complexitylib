@@ -106,7 +106,16 @@ counting tuples when the factors are not uniform. `pi_map_curry` in
 [Product/Reindex.lean](../../CslibFrontier/Probability/Product/Reindex.lean) splits a product
 indexed by `ι × κ` into independent blocks, and `toOuterMeasure_pi_forall` in
 [Product/Event.lean](../../CslibFrontier/Probability/Product/Event.lean) is the probability of a
-box `{u | ∀ i, u i ∈ E i}`. For a biased bit, use `coin p` from
+box `{u | ∀ i, u i ∈ E i}`. For a uniform draw on a finite group, import
+[Uniform.lean](../../CslibFrontier/Probability/Uniform.lean): `uniformOfFintype_map_add_left` and
+`uniformOfFintype_bind_add_left`, with their `_right` forms, remove a fixed mask as in the one-time
+pad; `uniformOfFintype_map_addHom` and `uniformOfFintype_map_monoidHom` push the uniform law
+through a surjective homomorphism; and `uniformOfFintype_map_comp` reads a uniform function
+through an injection. For a dependent function, `uniformOfFintype_map_comp_dep` in
+[Product/Split.lean](../../CslibFrontier/Probability/Product/Split.lean) needs only nonempty
+fibres. On any finite type, `uniformOfFintype_bind_bijective` in
+[PMF/Uniform.lean](../../CslibFrontier/Probability/PMF/Uniform.lean) changes variables in a uniform
+draw along a bijection. For a biased bit, use `coin p` from
 [PMF/Coin.lean](../../CslibFrontier/Probability/PMF/Coin.lean), with `p : unitInterval`; Mathlib's
 `PMF.bernoulli` is deprecated. `toMeasure_coin` identifies `(coin p).toMeasure` with Mathlib's
 `ProbabilityTheory.bernoulliMeasure true false p`, and `entropy_coin` in

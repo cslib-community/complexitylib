@@ -57,13 +57,6 @@ namespace Cslib.Crypto
 open Probability Turing.MultiTapeTM
 open scoped ENNReal NNReal Cslib.Probability.PMF
 
-/-- A uniform draw from `Fin M` is a uniform draw from `ZMod M`. -/
-private theorem uniformOfFintype_fin_bind (M : ℕ) [NeZero M] (k : ℕ → Game) :
-    ((PMF.uniformOfFintype (Fin M)).bind fun i => k i.val) =
-      (PMF.uniformOfFintype (ZMod M)).bind fun r => k r.val := by
-  rcases Nat.exists_eq_succ_of_ne_zero (NeZero.ne M) with ⟨m, rfl⟩
-  rfl
-
 /-- Restricting a uniform residue modulo `N` to the units changes the advantage of any
 continuation by at most the fraction `(N - φ(N)) / N` of non-units. -/
 theorem Game.advantage_bind_units_le (N : ℕ) [NeZero N] (k : ZMod N → Game) :
@@ -147,7 +140,7 @@ theorem Game.advantage_sampleModNat_units_le {p q n : ℕ} [NeZero (p * q)] (hp 
       ((PMF.uniformOfFintype (ZMod (p * q))ˣ).bind fun u => k u.val.val) ≤ 5 / 2 ^ n := by
   have h1 := Game.advantage_bind_sampleModNat_fin_le
     (n + (encNat (p * q)).length) (p * q) k
-  rw [uniformOfFintype_fin_bind] at h1
+  rw [Probability.PMF.uniformOfFintype_fin_bind] at h1
   have hw : ((p * q : ℕ) : ℝ≥0) / 2 ^ (n + (encNat (p * q)).length) ≤ 1 / 2 ^ n := by
     rw [encNat_apply, Nat.size_eq_bits_len, div_le_div_iff₀ (by positivity) (by positivity),
       one_mul, pow_add, mul_comm ((2 : ℝ≥0) ^ n)]
