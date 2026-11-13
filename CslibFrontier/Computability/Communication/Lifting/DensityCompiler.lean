@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Communication.Lifting.SimulationTrace
 public import CslibFrontier.Computability.Communication.Lifting.DensityOracle
 public import CslibFrontier.Computability.Communication.Protocol.Alternating
 public import CslibFrontier.Computability.DecisionTree.Basic
+public import Mathlib.Data.Finset.Piecewise
 
 /-!
 # Recursive simulation of alternating protocols
@@ -39,29 +40,25 @@ def OutputFixed (g : Fin m → Fin m → Bool) (F : Finset (Fin n))
     (X Y : Finset (Fin n → Fin m)) (ρ : Fin n → Bool) : Prop :=
   ∀ x ∈ X, ∀ y ∈ Y, ∀ i ∉ F, g (x i) (y i) = ρ i
 
-/-- Overwrite the coordinates queried by a step with its answer. -/
-def updateAnswers (I : Finset (Fin n)) (a ρ : Fin n → Bool) : Fin n → Bool :=
-  fun i => if i ∈ I then a i else ρ i
-
 /-- The rectangle after an Alice step realizes the extended partial assignment. -/
 theorem DensityStep.Valid.outputFixed {g : Fin m → Fin m → Bool} {τ σ : ℝ}
     {F : Finset (Fin n)} {X Y : Finset (Fin n → Fin m)} {send} {st : DensityStep n m}
     (h : st.Valid g τ σ F X Y send) {ρ : Fin n → Bool} (hf : OutputFixed g F X Y ρ)
     (a : Fin n → Bool) :
     OutputFixed g (F \ st.queried) st.speaker (st.listener a)
-      (updateAnswers st.queried a ρ) := by
+      (st.queried.piecewise a ρ) := by
   intro x hx y hy i hi
   by_cases hI : i ∈ st.queried
-  · simpa [updateAnswers, hI] using h.output_eq a x hx y hy i hI
+  · simpa [hI] using h.output_eq a x hx y hy i hI
   · have hF : i ∉ F := fun hF => hi (mem_sdiff.mpr ⟨hF, hI⟩)
-    simpa [updateAnswers, hI] using hf x (h.speaker_subset hx) y (h.listener_subset a hy) i hF
+    simpa [hI] using hf x (h.speaker_subset hx) y (h.listener_subset a hy) i hF
 
 /-- Assemble continuations by querying the freshly restored coordinates. -/
 private theorem exists_graft_density {O : Type*} (R : (Fin n → Bool) → O → Prop)
     (F I : Finset (Fin n)) (ρ : Fin n → Bool) (q Q : ℕ)
     (hc : ∀ a : Fin n → Bool, ∃ t : DecisionTree (Fin n) O,
       t.depth + (q + #I) ≤ Q ∧
-      ∀ z, (∀ i ∉ F \ I, z i = updateAnswers I a ρ i) → R z (t.eval z)) :
+      ∀ z, (∀ i ∉ F \ I, z i = I.piecewise a ρ i) → R z (t.eval z)) :
     ∃ t : DecisionTree (Fin n) O, t.depth + q ≤ Q ∧
       ∀ z, (∀ i ∉ F, z i = ρ i) → R z (t.eval z) := by
   classical
@@ -77,9 +74,9 @@ private theorem exists_graft_density {O : Type*} (R : (Fin n → Bool) → O →
     apply (htrees (fun i => if i ∈ I.toList then z i else ρ i)).2
     intro i hi
     by_cases hI : i ∈ I
-    · simp [updateAnswers, hI]
+    · simp [hI]
     · have hF : i ∉ F := fun hF => hi (mem_sdiff.mpr ⟨hF, hI⟩)
-      simpa [updateAnswers, hI] using hz i hF
+      simpa [hI] using hz i hF
 
 /-- Recursive compilation from local density guarantees. Every input extending the current
 partial assignment obtains an output satisfying the outer relation. -/
@@ -129,7 +126,7 @@ theorem exists_density_decisionTree {O : Type*} (g : Fin m → Fin m → Bool) (
     obtain ⟨st, hv⟩ := oa.step F X Y hX hY hd.1 hd.2 send
     have hc (a : Fin n → Bool) : ∃ t : DecisionTree (Fin n) O,
         t.depth + (q + #st.queried) ≤ Q ∧
-        ∀ z, (∀ i ∉ F \ st.queried, z i = updateAnswers st.queried a ρ i) →
+        ∀ z, (∀ i ∉ F \ st.queried, z i = st.queried.piecewise a ρ i) →
           R z (t.eval z) := by
       have trace' := trace.append (DensityTrace.alice st send a hv
         (DensityTrace.stop (F \ st.queried) st.speaker (st.listener a)))
@@ -145,12 +142,12 @@ theorem exists_density_decisionTree {O : Type*} (g : Fin m → Fin m → Bool) (
       cases hm : st.message
       · simp only [hm, Bool.cond_false] at hp'
         exact ih₀ false halt₀ (F \ st.queried) st.speaker (st.listener a)
-          (updateAnswers st.queried a ρ) (c + 1) (q + #st.queried)
+          (st.queried.piecewise a ρ) (c + 1) (q + #st.queried)
           (by simpa using trace') (by simp only [Protocol.depth] at hbudget; omega)
           hv.speaker_nonempty (hv.listener_nonempty a) hd' hf' hp'
       · simp only [hm, Bool.cond_true] at hp'
         exact ih₁ false halt₁ (F \ st.queried) st.speaker (st.listener a)
-          (updateAnswers st.queried a ρ) (c + 1) (q + #st.queried)
+          (st.queried.piecewise a ρ) (c + 1) (q + #st.queried)
           (by simpa using trace') (by simp only [Protocol.depth] at hbudget; omega)
           hv.speaker_nonempty (hv.listener_nonempty a) hd' hf' hp'
     exact exists_graft_density R F st.queried ρ q Q hc
@@ -160,14 +157,14 @@ theorem exists_density_decisionTree {O : Type*} (g : Fin m → Fin m → Bool) (
     obtain ⟨st, hv⟩ := ob.step F Y X hY hX hd.2 hd.1 send
     have hc (a : Fin n → Bool) : ∃ t : DecisionTree (Fin n) O,
         t.depth + (q + #st.queried) ≤ Q ∧
-        ∀ z, (∀ i ∉ F \ st.queried, z i = updateAnswers st.queried a ρ i) →
+        ∀ z, (∀ i ∉ F \ st.queried, z i = st.queried.piecewise a ρ i) →
           R z (t.eval z) := by
       have trace' := trace.append (DensityTrace.bob st send a hv
         (DensityTrace.stop (F \ st.queried) (st.listener a) st.speaker))
       have hfSwap : OutputFixed (fun y x => g x y) F Y X ρ :=
         fun y hy x hx i hi => hf x hx y hy i hi
       have hf' : OutputFixed g (F \ st.queried) (st.listener a) st.speaker
-          (updateAnswers st.queried a ρ) := by
+          (st.queried.piecewise a ρ) := by
         intro x hx y hy i hi
         exact hv.outputFixed hfSwap a y hy x hx i hi
       have hd' : TurnDense τ σ true (F \ st.queried) (st.listener a) st.speaker :=
@@ -181,12 +178,12 @@ theorem exists_density_decisionTree {O : Type*} (g : Fin m → Fin m → Bool) (
       cases hm : st.message
       · simp only [hm, Bool.cond_false] at hp'
         exact ih₀ true halt₀ (F \ st.queried) (st.listener a) st.speaker
-          (updateAnswers st.queried a ρ) (c + 1) (q + #st.queried)
+          (st.queried.piecewise a ρ) (c + 1) (q + #st.queried)
           (by simpa using trace') (by simp only [Protocol.depth] at hbudget; omega)
           (hv.listener_nonempty a) hv.speaker_nonempty hd' hf' hp'
       · simp only [hm, Bool.cond_true] at hp'
         exact ih₁ true halt₁ (F \ st.queried) (st.listener a) st.speaker
-          (updateAnswers st.queried a ρ) (c + 1) (q + #st.queried)
+          (st.queried.piecewise a ρ) (c + 1) (q + #st.queried)
           (by simpa using trace') (by simp only [Protocol.depth] at hbudget; omega)
           (hv.listener_nonempty a) hv.speaker_nonempty hd' hf' hp'
     exact exists_graft_density R F st.queried ρ q Q hc

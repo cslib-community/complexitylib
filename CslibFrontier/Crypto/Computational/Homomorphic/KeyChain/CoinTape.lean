@@ -47,8 +47,10 @@ one `capacity * encCoins`-bit row, including repeated keys and repeated plaintex
     (n encCoins capacity : ℕ) (zero : Bool) (keys : List (List Bool × List Bool))
     (tape : List Bool) : List (List (List Bool)) :=
   List.zipWith (fun adjacent row =>
-    let bits := if zero then List.replicate adjacent.1.2.length false else adjacent.1.2
-    encryptBitsCoins evaluate n encCoins adjacent.2.1 bits (row.take (bits.length * encCoins)))
+    let prev := adjacent.1
+    let next := adjacent.2
+    let bits := if zero then List.replicate prev.2.length false else prev.2
+    encryptBitsCoins evaluate n encCoins next.1 bits (row.take (bits.length * encCoins)))
     (keys.zip keys.tail) (BitString.listRows (keys.zip keys.tail).length (capacity * encCoins) tape)
 
 /-- Every surrounding link uses an independent padded row. Component laws are required only

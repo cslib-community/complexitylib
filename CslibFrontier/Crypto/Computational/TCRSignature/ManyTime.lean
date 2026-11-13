@@ -181,12 +181,12 @@ noncomputable def manyTimeForger (H : KeyedHashFamily) (sigBound : ℕ → ℕ)
     let n := otsParamInv H M
     if otsParam H n = M then do
       let pk := simPkOf n otvk
-      let out ← (OracleComp.interpret
+      let ((msg, sig), _) ← (OracleComp.interpret
         (OracleComp.sumHandler
           (fun m => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin m)))
           (manyTimeHandler H sigBound n))
         (adversary n pk)).run ()
-      return otsForgeryOf H n out.1.1 out.1.2
+      return otsForgeryOf H n msg sig
     else
       pure ([], [])
 
@@ -370,7 +370,7 @@ def msgSigDecoder : Decoder (encPair encBits encBits) :=
 @[expose]
 def traceStepDecoder : Decoder encTraceStep :=
   (Decoder.bool.pair (Decoder.bits.pair Decoder.bits)).map
-    (fun p => ⟨p.1, p.2.1, p.2.2⟩)
+    (fun (coin, hashKey, ots) => ⟨coin, hashKey, ots⟩)
     (fun s => (s.coin, s.hashKey, s.ots))
     (fun _ => rfl)
     (fun _ => rfl)
@@ -734,12 +734,8 @@ def fuelUpper (H : KeyedHashFamily) (ckg dkg c d n : ℕ) : ℕ :=
 theorem computableInPolyTime_fuelUpper (H : KeyedHashFamily) (ckg dkg c d : ℕ) :
     ComputableInPolyTime (fuelUpper H ckg dkg c d) encUnary encUnary := by
   have hM := computableInPolyTime_otsParam H
-  have hkg := (ComputableInPolyTime.const ckg).unary_mul'
-    ((ComputableInPolyTime.unary_pow dkg).comp (hM.unary_add' (.const 1)))
-  have hfourN := (ComputableInPolyTime.const 4).unary_mul' .id'
-  have hinner := (hfourN.unary_add' hkg).unary_add' (.const 3)
-  exact (ComputableInPolyTime.const c).unary_mul'
-    ((ComputableInPolyTime.unary_pow d).comp hinner)
+  unfold fuelUpper
+  fun_prop
 
 /-- Saved state passed from `tcrMultiAdversary.choose` to `tcrMultiAdversary.find`. -/
 @[ext]
@@ -774,7 +770,8 @@ def tcrStateDecoder : Decoder encTcrSavedState :=
   (Decoder.bool.pair
     ((Decoder.bits.pair Decoder.bits).pair
       (Decoder.bool.pair (Decoder.unary.pair (Decoder.list traceStepDecoder))))).map
-    (fun p => ⟨p.1, p.2.1, p.2.2.1, p.2.2.2.1, p.2.2.2.2⟩)
+    (fun (active, keys, coinAtSlot, remSteps, preTrace) =>
+      ⟨active, keys, coinAtSlot, remSteps, preTrace⟩)
     (fun s => (s.active, s.keys, s.coinAtSlot, s.remSteps, s.preTrace))
     (fun _ => rfl)
     (fun _ => rfl)
@@ -1208,13 +1205,6 @@ private theorem exists_slot_of_mem_replayPairs {k : ℕ} {Control : Type}
           simp only [htake, hget, ← hcfg, queryOf, hs, htr, and_self]
         · exact hOld htail
 
-private theorem finset_sum_tsum {ι α : Type*} (s : Finset ι) (f : ι → α → ℝ≥0∞) :
-    (∑ i ∈ s, ∑' a, f i a) = ∑' a, ∑ i ∈ s, f i a := by
-  classical
-  refine Finset.induction_on s (by simp) fun i s hi ih => ?_
-  simp only [Finset.sum_insert hi, ih,
-    ← Summable.tsum_add CompleteLattice.summable CompleteLattice.summable]
-
 private theorem succProbability_map_le_add_sum {α ι : Type*} [Fintype ι] (μ : PMF α)
     (f g : α → Bool) (h : ι → α → Bool)
     (hfg : ∀ x ∈ μ.support, f x = true → g x = true ∨ ∃ i, h i x = true) :
@@ -1222,7 +1212,8 @@ private theorem succProbability_map_le_add_sum {α ι : Type*} [Fintype ι] (μ 
       Game.succProbability (μ.map g) + ∑ i, ((μ.map (h i)) true).toNNReal := by
   have hsum_ennreal : (μ.map f) true ≤ (μ.map g) true + ∑ i, (μ.map (h i)) true := by
     simp only [PMF.map_apply]
-    rw [finset_sum_tsum, ← Summable.tsum_add CompleteLattice.summable CompleteLattice.summable]
+    rw [← Summable.tsum_finsetSum fun _ _ => CompleteLattice.summable,
+      ← Summable.tsum_add CompleteLattice.summable CompleteLattice.summable]
     refine tsum_le_tsum fun sample => ?_
     by_cases hs : sample ∈ μ.support
     · by_cases hw : f sample = true

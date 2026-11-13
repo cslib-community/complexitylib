@@ -245,7 +245,7 @@ private theorem testHandler_decaps_gCache_eq (S : Scheme PK SK M R CT K)
     (x : Option K × SimState M R CT K)
     (hx : x ∈ (ProbComp.eval (S.testHandler d cStar t (.decaps c) st)).support) :
     x.2.gCache = st.gCache := by
-  dsimp only [testHandler, simFilterDispatch] at hx
+  dsimp only [testHandler, simFilterDispatch, ROQuery.dispatch] at hx
   exact gCache_eq_of_mem_support_filterDecaps _ _ _ _ _ _ hx
 
 private theorem testHandler_gCache_subset (S : Scheme PK SK M R CT K)
@@ -303,7 +303,7 @@ private theorem identicalUntilBad_testHandler (S : Scheme PK SK M R CT K) (pk : 
     · exact eval_testHashH_apply_congr S pk sk m c _ _ (ht m c) s (a, s') (of_not_not hs')
     · rfl
     · by_cases hc : c = cStar <;>
-        simp [testHandler, simFilterDispatch, hc, hd s c (of_not_not hs)]
+        simp [testHandler, simFilterDispatch, hc, hd s c (of_not_not hs), filterDecaps]
   absorb_first q s hs x hx := fun hg =>
     hs (hg.of_subset (testHandler_gCache_subset S d₁ cStar t₁ q s x hx))
   absorb_second q s hs x hx := fun hg =>
@@ -398,11 +398,6 @@ theorem advantage_coupledFilterGame_simFilterGame_le [Fintype M] [Nonempty M]
     (Game.advantage (ProbComp.eval (S.coupledFilterGame d₁ A b))
         (ProbComp.eval (S.simFilterGame d₂ A b)) : ℝ) ≤
       ((qG + qH + 1 : ℕ) : ℝ) * δ := by
-  have hcost (inp : PK × CT × K) :
-      OracleComp.IsCostBounded ROQuery.ghCost (A inp) (qG + qH) := by
-    have ⟨hG, hH⟩ := hq inp
-    convert OracleComp.IsCostBounded.add hG hH using 1
-    funext q; cases q <;> rfl
   set E : ℝ≥0∞ := S.pke.keyGen.expect fun x =>
     ENNReal.ofReal (S.pke.keyPairMaxFailProb x.1 x.2) with hE
   have hclose : CloseTo (ProbComp.eval (S.coupledFilterGame d₁ A b))
@@ -456,7 +451,7 @@ theorem advantage_coupledFilterGame_simFilterGame_le [Fintype M] [Nonempty M]
         exact hr
       refine (CloseTo.bind_right_tsum _ (err := fun _ => ((qG + qH : ℕ) : ℝ≥0∞) * p)
         fun kRand _ => ?_).mono (le_of_eq (hconst _ _))
-      exact closeTo_run_coupled_sim S pk sk _ (d₁ pk sk) (d₂ pk) (hd pk sk) _ (hcost _) hgood _
+      exact closeTo_run_coupled_sim S pk sk _ (d₁ pk sk) (d₂ pk) (hd pk sk) _ (hq.ghCost _) hgood _
     · rw [ite_eq_right_of_eq_false _ _ (eq_false hr)]
       exact fun e => (Probability.PMF.toOuterMeasure_le_one _ e).trans
         (le_self_add.trans le_add_self)

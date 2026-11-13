@@ -204,9 +204,9 @@ def forgedROMProof : BCSProof 2 Bool :=
   let r1Bit := xor false c₀
   { roots := roots
     openings :=
-      [(true, merklePath (fun _ => collideLeafHash) [] [[false], [false]] (if c₀ then 1 else 0)),
-       (xor true c₀, merklePath (fun _ => collideLeafHash) [] [[r1Bit], [r1Bit]]
-         (if c₁ then 1 else 0))] }
+      [⟨true, merklePath (fun _ => collideLeafHash) [] [[false], [false]] (if c₀ then 1 else 0)⟩,
+       ⟨xor true c₀, merklePath (fun _ => collideLeafHash) [] [[r1Bit], [r1Bit]]
+         (if c₁ then 1 else 0)⟩] }
 
 /-- Trace recording the committed `(false, false)` leaves before the colliding `[true]` openings. -/
 abbrev trCollide : List (List Bool × List Bool) :=
@@ -329,7 +329,7 @@ def adaptiveBCSCheater :
   let sib ← query (spec := BCSROMSpec (Bool × Bool) Bool) (.inl [xor c₀ c₁])
   return ((false, true),
     { roots := fun _ => d₀
-      openings := [(true, [sib]), (xor true c₀, [sib])] })
+      openings := [⟨true, [sib]⟩, ⟨xor true c₀, [sib]⟩] })
 
 theorem isCostBounded_FS_adaptiveBCSCheater :
     IsCostBounded bcsFSCost adaptiveBCSCheater 3 :=
@@ -399,10 +399,7 @@ example (σ : ℕ) :
 example (σ : ℕ) :
     ((OracleComp.interpret (bcsMemoize σ) (bcsExecROM romIOP encSym adaptiveBCSCheater)).run
         ([], [])).toOuterMeasure
-        {out | match out with
-          | (((s, prf), ok), (tr_MT, _)) =>
-            ok = true ∧
-              ¬ romRel s (romExtract s (bcsExtractOracles decSym false tr_MT 1 prf.roots))} ≤
+        {out | BCSExtractionFails romRel romExtract decSym false out} ≤
       ((3 + 2 : ℕ) : ℝ≥0∞) *
           (1 / 2 + ((3 + 2 : ℕ) : ℝ≥0∞) * ((1 : ℝ≥0∞) / Fintype.card Bool)) +
         ((2 + 4 : ℕ) : ℝ≥0∞) *
@@ -511,7 +508,7 @@ def largeChalCheater :
   let sib ← query (spec := BCSROMSpec Bool (Fin 64)) (.inl [decide (c₀ = c₁)])
   return (false,
     { roots := fun _ => d₀
-      openings := [(true, [sib]), (true, [sib])] })
+      openings := [⟨true, [sib]⟩, ⟨true, [sib]⟩] })
 
 theorem isCostBounded_FS_largeChalCheater :
     IsCostBounded bcsFSCost largeChalCheater 2 :=

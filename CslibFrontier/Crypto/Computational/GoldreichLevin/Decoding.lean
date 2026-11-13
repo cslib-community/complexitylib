@@ -13,6 +13,7 @@ public import CslibFrontier.Probability.Uniform
 public import Mathlib.Algebra.Ring.BooleanRing
 public import Mathlib.Data.Fintype.Powerset
 public import Mathlib.Data.Matrix.Mul
+import CslibFrontier.Probability.PMF.Independence
 import CslibFrontier.Probability.PMF.ToReal
 import Mathlib.Probability.ProbabilityMassFunction.Integrals
 
@@ -125,8 +126,8 @@ private theorem query_uniform {n k : ℕ} (i : Fin n) (s : Finset (Fin k)) (hs :
         (fun masks => Pi.single i 1 + ∑ j ∈ s, masks j) =
       PMF.uniformOfFintype (BitString n) := by
   change (PMF.uniformOfFintype (Fin k → BitString n)).map
-    ((Equiv.addLeft (Pi.single i 1)) ∘ (fun masks => ∑ j ∈ s, masks j)) = _
-  rw [← PMF.map_comp, PMF.uniformOfFintype_map_sum s hs, PMF.uniformOfFintype_map_equiv]
+    ((Pi.single i 1 + ·) ∘ (fun masks => ∑ j ∈ s, masks j)) = _
+  rw [← PMF.map_comp, PMF.uniformOfFintype_map_sum s hs, PMF.uniformOfFintype_map_add_left]
 
 private theorem query_pair_uniform {n k : ℕ} (i : Fin n)
     (s t : Finset (Fin k)) (hs : s.Nonempty) (ht : t.Nonempty) (hst : s ≠ t) :
@@ -135,10 +136,10 @@ private theorem query_pair_uniform {n k : ℕ} (i : Fin n)
           Pi.single i 1 + ∑ j ∈ t, masks j)) =
       PMF.uniformOfFintype (BitString n × BitString n) := by
   change (PMF.uniformOfFintype (Fin k → BitString n)).map
-    ((Equiv.addLeft (Pi.single i 1, Pi.single i 1)) ∘
+    (((Pi.single i 1, Pi.single i 1) + ·) ∘
       (fun masks => (∑ j ∈ s, masks j, ∑ j ∈ t, masks j))) = _
   rw [← PMF.map_comp, PMF.uniformOfFintype_map_sum_pair s t hs ht hst,
-    PMF.uniformOfFintype_map_equiv]
+    PMF.uniformOfFintype_map_add_left]
 
 private theorem coordinate_error_le {n k : ℕ} (predictor : BitString n → Bool)
     (x : BitString n) (i : Fin n) (ε : ℝ) (hε : 0 < ε) (hk : 0 < k)
@@ -168,7 +169,8 @@ private theorem coordinate_error_le {n k : ℕ} (predictor : BitString n → Boo
     have hquery : IndepFun
         (fun masks : Fin k → BitString n => Pi.single i 1 + ∑ j ∈ s, masks j)
         (fun masks : Fin k → BitString n => Pi.single i 1 + ∑ j ∈ t, masks j) μ := by
-      apply PMF.indepFun_of_map_pair _ _ _ (measurable_of_countable _) (measurable_of_countable _)
+      refine (PMF.indepFun_iff_map_pair_eq_bind _ (measurable_of_countable _)
+        (measurable_of_countable _)).2 ?_
       rw [query_pair_uniform i s t (mem_nonemptySubsets s |>.mp hs)
           (mem_nonemptySubsets t |>.mp ht) hst,
         query_uniform i s (mem_nonemptySubsets s |>.mp hs),

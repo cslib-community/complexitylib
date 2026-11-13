@@ -22,7 +22,7 @@ independent-source extractor estimate bounds the parity bias of a block gadget o
 sets. The fourth-power discrepancy XOR estimate then reduces this to the single-block gadget.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Communication.Lifting
 

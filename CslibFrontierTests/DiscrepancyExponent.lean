@@ -39,13 +39,6 @@ example {M : ℝ} (hM : (3 : ℝ) ^ 2048 ≤ M) :
     (by norm_num) (by norm_num) (by norm_num : (2 : ℝ) ≤ 3) (by simpa using hM) hD
   simpa using h.2.1
 
-#print axioms Cslib.Communication.Lifting.general_parameter_certificate
-#print axioms Cslib.Communication.Lifting.density_root_parameters
-#print axioms Cslib.Communication.Lifting.exists_decisionTree_of_discrepancy_exponent
-#print axioms Cslib.Communication.Lifting.exists_general_lifting_parameter
-
-#print axioms Cslib.Communication.Lifting.exists_decisionTree_logarithmic
-
 /-- Alphabet transport also handles an empty bit string and unequal player alphabet sizes. -/
 example (g : BitString 0 → BitString 1 → Bool) :
     discrepancy (PMF.uniformOfFintype (Fin (2 ^ 0) × Fin (2 ^ 1)))
@@ -66,9 +59,6 @@ example {n b k : ℕ} {η : ℝ}
       t.depth * b ≤ 768 * k * p.depth :=
   exists_decisionTree_bitString_of_log_bound hk hη hn hb g hd (fun z o => o = f z) p hp
 
-#print axioms Cslib.Communication.discrepancy_uniform_comap_equiv
-#print axioms Cslib.Communication.Lifting.exists_decisionTree_bitString_of_log_bound
-
 /-- A query lower bound transfers directly to minimum communication complexity,
 without supplying any protocol or decision-tree witness. -/
 example {n b k q : ℕ} {η : ℝ}
@@ -82,6 +72,3 @@ example {n b k q : ℕ} {η : ℝ}
   have h := complexity_mul_bits_le_ecomplexityFun hk hη hn hb g hd f
   apply le_trans ?_ h
   exact_mod_cast Nat.mul_le_mul_right b hq
-
-#print axioms Cslib.Communication.Lifting.complexity_mul_bits_le_ecomplexityFun
-#print axioms Cslib.Communication.Lifting.exists_complexity_lifting_parameter

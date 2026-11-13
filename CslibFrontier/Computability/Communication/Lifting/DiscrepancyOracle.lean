@@ -63,6 +63,26 @@ theorem densityOracles_of_discrepancy [NeZero m]
   apply densityOracle_of_discrepancy (fun y x => g x y) hτ hσ hn hr hgap hratio hu hsize hq hweight
   simpa only [discrepancy_uniform_flip] using hdisc
 
+/-- The adjustable scalar certificate supplies both orientations of the density simulator. -/
+theorem densityOracles_parameter {n m a k : ℕ} [NeZero m] {B : ℝ}
+    (g : Fin m → Fin m → Bool) (hk : 1 ≤ k)
+    (ha : a + 64 * k = 2048 * k ^ 2) (hB : 2 ≤ B) (hn : 2 ≤ n)
+    (hnB : (n : ℝ) ≤ B) (hm : (m : ℝ) = B ^ (2048 * k ^ 2))
+    (hdisc : discrepancy (PMF.uniformOfFintype (Fin m × Fin m)) g ≤
+      (B ^ (1024 * k))⁻¹) :
+    DensityOracle (n := n) g (B ^ (a + 32 * k)) (B ^ a) ∧
+      DensityOracle (n := n) (fun y x => g x y) (B ^ (a + 32 * k)) (B ^ a) := by
+  have hBp : 0 < B := by linarith
+  obtain ⟨hgap, hratio, hu, hsize, hq, hweight, hd⟩ :=
+    general_parameter_certificate (N := (n : ℝ)) hk ha hB
+      (by exact_mod_cast hn) hnB hdisc
+  apply densityOracles_of_discrepancy g (r := 16 * k) (u := B ^ (128 * k + 1))
+    (q := 1 / (4 * B ^ (128 * k + 3))) (by positivity) (by positivity) hn
+    (by omega) hgap hratio hu _ hq _ _
+  · simpa only [Nat.cast_mul, hm, ha] using hsize
+  · simpa only [Nat.cast_add, Nat.cast_one, mul_assoc] using hweight
+  · simpa only [hm, ha] using hd
+
 private instance polynomialAlphabet_neZero {B : ℕ} [NeZero B] : NeZero (B ^ 2048) :=
   ⟨pow_ne_zero _ (NeZero.ne B)⟩
 
@@ -78,16 +98,9 @@ theorem densityOracles_polynomial {B : ℕ} [NeZero B]
       ((B : ℝ) ^ 1024)⁻¹) :
     DensityOracle (n := n) g ((B : ℝ) ^ 2016) ((B : ℝ) ^ 1984) ∧
       DensityOracle (n := n) (fun y x => g x y) ((B : ℝ) ^ 2016) ((B : ℝ) ^ 1984) := by
-  have hBR : (2 : ℝ) ≤ B := by exact_mod_cast hB
-  have hBp : (0 : ℝ) < B := by linarith
-  obtain ⟨hgap, hratio, hu, hsize, hq, hweight, hd⟩ :=
-    polynomial_parameter_certificate (N := (n : ℝ)) hBR (by exact_mod_cast hn)
-      (by exact_mod_cast hnB) hdisc
-  apply densityOracles_of_discrepancy g (r := 16) (u := (B : ℝ) ^ 129)
-    (q := 1 / (4 * (B : ℝ) ^ 131)) (by positivity) (by positivity) hn (by norm_num)
-    hgap hratio hu _ hq _ _
-  · simpa only [Nat.cast_mul, Nat.cast_pow] using hsize
-  · simpa only [Nat.cast_add, Nat.cast_one, mul_assoc] using hweight
-  · simpa only [Nat.cast_pow] using hd
+  exact densityOracles_parameter g (k := 1) (a := 1984) (B := (B : ℝ))
+    (by decide) (by decide)
+    (by exact_mod_cast hB) hn (by exact_mod_cast hnB)
+    (by simp only [one_pow, Nat.mul_one, Nat.cast_pow]) hdisc
 
 end Cslib.Communication.Lifting

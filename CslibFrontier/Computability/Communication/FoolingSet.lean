@@ -27,6 +27,7 @@ is not constantly `z` forces `n + 1` bits (`IsFoolingSet.succ_le_ecomplexity`).
 
 ## Main results
 
+* `Cslib.Communication.IsFoolingSet.card_le_tilingNumber`: the arbitrary tiling bound.
 * `Cslib.Communication.IsFoolingSet.card_le`: a fooling set for value `z` is at most the number
   of leaves labelled `z`.
 * `Cslib.Communication.IsFoolingSet.card_lt_two_pow`: the fooling-set bound.
@@ -56,23 +57,51 @@ namespace IsFoolingSet
 
 variable {f : X → Y → Z} {z : Z} {S : Finset (X × Y)} {p : Protocol X Y Z}
 
+/-- A finite cover of a fooling set by monochromatic rectangles has at least as many
+pieces as the fooling set. The cover may overlap and need only cover the set itself.
+The shared injection is extracted from András Z. Salamon's nondeterministic-cover proof. -/
+theorem card_le_cover {κ : Type*} [Fintype κ] (hS : IsFoolingSet f z S)
+    (A : κ → Set X) (B : κ → Set Y)
+    (hmono : ∀ i, ∀ x ∈ A i, ∀ y ∈ B i, f x y = z)
+    (hcover : ∀ q ∈ S, ∃ i, q.1 ∈ A i ∧ q.2 ∈ B i) : #S ≤ Fintype.card κ := by
+  classical
+  rcases isEmpty_or_nonempty κ with hκ | hκ
+  · rw [card_eq_zero.2 (eq_empty_of_forall_notMem fun q hq =>
+      (hcover q hq).elim fun i _ => hκ.elim i)]
+    exact Nat.zero_le _
+  choose! g hg using hcover
+  rw [← card_univ]
+  refine card_le_card_of_injOn g (by intro _ _; exact mem_univ _) ?_
+  intro q hq q' hq' hqq
+  refine hS.2 q hq q' hq' ?_ ?_
+  · exact hmono (g q) _ (hg q hq).1 _ (by rw [hqq]; exact (hg q' hq').2)
+  · exact hmono (g q) _ (by rw [hqq]; exact (hg q' hq').1) _ (hg q hq).2
+
+/-- A fooling set injects into the pieces labelled `z` of every arbitrary monochromatic tiling. -/
+theorem card_le_partition [DecidableEq Z] (hS : IsFoolingSet f z S)
+    {p : RectanglePartition X Y Z} (hp : p.run = f) : #S ≤ #{i | p.output i = z} := by
+  classical
+  have h := hS.card_le_cover
+    (fun i : {i : Fin p.size // p.output i = z} => p.alice i.val)
+    (fun i => p.bob i.val)
+    (fun i x hx y hy => by rw [← hp, RectanglePartition.run_eq_output hx hy, i.property])
+    (fun q hq => ⟨⟨p.part q.1 q.2, by
+      rw [← RectanglePartition.run_eq_output_part, hp, hS.1 q hq]⟩, p.part_mem q.1 q.2⟩)
+  simpa only [Fintype.card_subtype] using h
+
+/-- A fooling set bounds the minimum over arbitrary monochromatic tilings
+[AroraBarak07, Lemma 12.8]. -/
+theorem card_le_tilingNumber (hS : IsFoolingSet f z S) : (#S : ℕ∞) ≤ tilingNumber f := by
+  classical
+  refine le_tilingNumber_iff.mpr fun p hp => ?_
+  exact_mod_cast (hS.card_le_partition hp).trans
+    ((card_le_univ _).trans_eq (card_fin p.size))
+
 /-- A protocol computing `f` reaches distinct leaves labelled `z` on the pairs of a fooling set
 for `f` with value `z`. -/
 theorem card_le [DecidableEq Z] (hS : IsFoolingSet f z S) (hp : p.run = f) :
-    #S ≤ #{i | p.leafOutput i = z} := by
-  refine card_le_card_of_injOn (fun q => p.leaf q.1 q.2) (fun q hq => ?_) fun q hq q' hq' h => ?_
-  · simp only [coe_filter, mem_univ, true_and, Set.mem_ofPred_eq]
-    rw [← Protocol.run_eq_leafOutput_leaf, hp, hS.1 q hq]
-  · have h : p.leaf q.1 q.2 = p.leaf q'.1 q'.2 := h
-    have h₁ : f q.1 q'.2 = z := by
-      have hy : q'.2 ∈ p.leafBob (p.leaf q.1 q.2) := h ▸ Protocol.mem_leafBob_leaf
-      rw [← hp, Protocol.run_eq_leafOutput Protocol.mem_leafAlice_leaf hy,
-        ← Protocol.run_eq_leafOutput_leaf, hp, hS.1 q hq]
-    have h₂ : f q'.1 q.2 = z := by
-      have hy : q.2 ∈ p.leafBob (p.leaf q'.1 q'.2) := h ▸ Protocol.mem_leafBob_leaf
-      rw [← hp, Protocol.run_eq_leafOutput Protocol.mem_leafAlice_leaf hy,
-        ← Protocol.run_eq_leafOutput_leaf, hp, hS.1 q' hq']
-    exact hS.2 q hq q' hq' h₁ h₂
+    #S ≤ #{i | p.leafOutput i = z} :=
+  hS.card_le_partition (p.run_toRectanglePartition.trans hp)
 
 /-- **The fooling-set bound.** If `f` takes a value other than `z`, a fooling set for `f` with
 value `z` has fewer than `2 ^ d` pairs, for every protocol computing `f` with `d` bits. -/

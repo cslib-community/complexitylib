@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Communication.Lifting.Volume
 public import CslibFrontier.Foundations.Data.Finset.BigHalf
 public import Mathlib.Analysis.Real.Sqrt
 public import Mathlib.Analysis.SpecialFunctions.Log.Base
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Mathlib.Data.Fintype.BigOperators
@@ -658,7 +659,7 @@ theorem depth_mul_logb_le {R : (Fin n → Bool) → O → Prop} (hm : 16 ≤ m)
     conv_lhs => rw [← hsq]
     rw [Real.logb_pow]; push_cast; ring
   have : Real.logb 2 4 = 2 := by
-    rw [show (4 : ℝ) = 2 ^ (2 : ℕ) by norm_num, Real.logb_pow, Real.logb_self_eq_one (by norm_num)]
+    rw [show (4 : ℝ) = 2 ^ (2 : ℕ) by norm_num, Real.logb_two_pow]
     norm_num
   rw [this] at hlog
   rw [hsqrt]

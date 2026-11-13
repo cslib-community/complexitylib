@@ -67,15 +67,4 @@ example (volume : ℕ → ℝ) (cost : ℕ → ℕ) (c : ℕ) (τ : ℝ) (hτ : 
     volume 0 ≤ 8 ^ c * (2 * τ) ^ (∑ i ∈ range c, cost i) * volume c := by
   exact volume_le_pow_mul_of_steps (by norm_num) (by positivity) volume cost c h
 
-#print axioms Cslib.Communication.Lifting.exists_bayes_frequency_certificate
-#print axioms Cslib.Communication.Lifting.exists_dense_agreeOn
-#print axioms Cslib.Communication.Lifting.exists_densityStep
-#print axioms Cslib.Communication.Lifting.projected_parity_bias_fourth_pow_le
-#print axioms Cslib.Communication.Lifting.isSafe_of_parity_bias_le
-#print axioms Cslib.Communication.Lifting.pow_div_le_of_volume_budget
-
-#print axioms Cslib.Communication.Lifting.ParityTest.probability_bias_lt
-#print axioms Cslib.Communication.Lifting.ParityTest.tailCost_fourth_pow_le
-#print axioms Cslib.Communication.Lifting.probability_exists_parityTest_le
-
 end DiscrepancyDensityTests

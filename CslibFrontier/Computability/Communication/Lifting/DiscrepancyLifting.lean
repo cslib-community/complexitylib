@@ -7,15 +7,15 @@ Authors: Sam
 module
 -- upstream: candidate
 
-public import CslibFrontier.Computability.Communication.Lifting.DiscrepancyOracle
-public import CslibFrontier.Computability.Communication.Lifting.DensityCompiler
+public import CslibFrontier.Computability.Communication.Lifting.GeneralDiscrepancyLifting
 
 /-!
 # A concrete discrepancy lifting theorem
 
 For an alphabet of size `B ^ 2048` and uniform gadget discrepancy at most `B ^ (-1024)`,
 every deterministic communication protocol yields a correct decision tree with an explicit
-query-depth bound. The local density guarantees are proved from discrepancy, not assumed.
+query-depth bound. This is the `k = 1` specialization of the general parameter theorem;
+the local density guarantees are proved from discrepancy, not assumed.
 -/
 
 public section
@@ -38,20 +38,9 @@ theorem exists_decisionTree_of_polynomial_discrepancy {n B : ℕ} [NeZero B] {O 
     (hp : ∀ x y, R (fun i => g (x i) (y i)) (p.run x y)) :
     ∃ t : DecisionTree (Fin n) O, (∀ z, R z (t.eval z)) ∧
       (B : ℝ) ^ (31 * t.depth) ≤ 8 ^ (2 * p.depth) := by
-  have hBR : (2 : ℝ) ≤ B := by exact_mod_cast hB
-  have hBpos : (0 : ℝ) < B := by linarith
-  obtain ⟨oa, ob⟩ := densityOracles_polynomial g hB hn hnB hdisc
-  obtain ⟨hσ, hστ, hτm, hbase⟩ := polynomial_density_ratios hBR
-  have hbase' : 1 ≤ (B : ℝ) ^ 31 := one_le_pow₀ (by linarith)
-  obtain ⟨t, ht, hdepth⟩ := exists_simulating_decisionTree g
-    ((B : ℝ) ^ 2016) ((B : ℝ) ^ 1984) oa ob
-    (by positivity) (by positivity) hσ.le
-    (by simpa only [Nat.cast_pow] using hτm.le)
-    (by simpa only [Nat.cast_pow] using (hστ.trans hτm).le)
-    (by simpa only [Nat.cast_pow] using hbase'.trans hbase) R p hp
-  refine ⟨t, ht, ?_⟩
-  rw [pow_mul]
-  exact (pow_le_pow_left₀ (by positivity) hbase t.depth).trans
-    (by simpa only [Nat.cast_pow] using hdepth)
+  let : NeZero (B ^ 2048) := ⟨pow_ne_zero _ (NeZero.ne B)⟩
+  exact exists_decisionTree_of_parameter_discrepancy g (k := 1) (B := (B : ℝ))
+    (by decide) (by exact_mod_cast hB) hn (by exact_mod_cast hnB)
+    (by simp only [one_pow, Nat.mul_one, Nat.cast_pow]) hdisc R p hp
 
 end Cslib.Communication.Lifting

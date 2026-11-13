@@ -139,27 +139,6 @@ private theorem glue_const (r : (j : Fin m) → β j) (t : β j₀) :
     rw [glue_self, Function.update_self]
   · rw [glue_of_ne _ _ h, Function.update_of_ne h]
 
-/-- Resampling one coordinate of a product of independent programs leaves its distribution
-unchanged. -/
-private theorem eval_bind_pi_update {m : ℕ} {β : Fin m → Type}
-    (p : (j : Fin m) → ProbComp (β j)) (j : Fin m) :
-    (p j).eval.bind (fun t => (ProbComp.eval (OracleComp.pi p)).map fun r =>
-      Function.update r j t) = ProbComp.eval (OracleComp.pi p) := by
-  induction m with
-  | zero => exact j.elim0
-  | succ m ih =>
-    cases j using Fin.cases with
-    | zero =>
-      simp only [OracleComp.pi_succ, ProbComp.eval_bind, ProbComp.eval_map, PMF.map_bind,
-        PMF.map_comp, Function.comp_def, Fin.update_cons_zero, PMF.bind_const]
-    | succ k =>
-      simp only [OracleComp.pi_succ, ProbComp.eval_bind, ProbComp.eval_map, PMF.map_bind,
-        PMF.map_comp, Function.comp_def, ← Fin.cons_update]
-      rw [PMF.bind_comm]
-      refine congrArg (p 0).eval.bind (funext fun x => ?_)
-      conv_rhs => rw [← ih (fun i => p i.succ) k]
-      simp only [PMF.map_bind, PMF.map_comp, Function.comp_def]
-
 /-- Sampling the coordinates other than `j₀` of a product of independent programs, then the
 coordinate `j₀`, samples the product. -/
 private theorem eval_bind_pi_except {m : ℕ} {β : Fin m → Type} {γ : Type}
@@ -179,7 +158,7 @@ private theorem eval_bind_pi_except {m : ℕ} {β : Fin m → Type} {γ : Type}
     · rw [dite_eq_right h]
   rw [hinit]
   simp only [PMF.bind_map, Function.comp_def, glue_const]
-  conv_rhs => rw [← eval_bind_pi_update p j₀]
+  conv_rhs => rw [← ProbComp.eval_bind_pi_update p j₀]
   simp only [PMF.bind_bind, PMF.bind_map, Function.comp_def]
 
 end Glue

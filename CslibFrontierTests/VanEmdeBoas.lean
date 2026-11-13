@@ -210,21 +210,21 @@ private def priorityRes := run (Tree.empty 2) priorityWorkflow
 -- Shared `OrderedSet` clients executed on `Tree 2` (`Fin (universeSize 2)`), checking answers,
 -- final `finElements`, and active recursive-call traces (`≤ d + 1 = 3`).
 example :
-    priorityRes.1 = ((some 0, some 4), some 0, some 4) ∧
-      priorityRes.2.1.finElements = {5, 12, 15} ∧
-      priorityRes.2.2 = [1, 2, 3, 3, 3, 3, 1, 2, 1, 3, 1, 3] ∧
-      priorityRes.2.2.all (· ≤ 3) = true := by
+    priorityRes.value = ((some 0, some 4), some 0, some 4) ∧
+      priorityRes.state.finElements = {5, 12, 15} ∧
+      priorityRes.traces = [1, 2, 3, 3, 3, 3, 1, 2, 1, 3, 1, 3] ∧
+      priorityRes.traces.all (· ≤ 3) = true := by
   decide
 
 /-- End-to-end instantiation of `run_correct` and `Bound.client_const (callDepthBound 2)` on an
 adaptive `OrderedSet` client over `Tree.empty 2`. -/
 theorem priorityWorkflow_correct_and_bounded :
-    (run (Tree.empty 2) priorityWorkflow).1 =
-      ((spec (Fin (universeSize 2))).runClient ∅ priorityWorkflow).1 ∧
-    Rep ((spec (Fin (universeSize 2))).runClient ∅ priorityWorkflow).2.1
-      (run (Tree.empty 2) priorityWorkflow).2.1 ∧
-    total id (run (Tree.empty 2) priorityWorkflow).2.2 ≤
-      ((spec (Fin (universeSize 2))).runClient ∅ priorityWorkflow).2.2.length * 3 :=
+    (run (Tree.empty 2) priorityWorkflow).value =
+      (spec (Fin (universeSize 2))).clientResult ∅ priorityWorkflow ∧
+    Rep ((spec (Fin (universeSize 2))).clientState ∅ priorityWorkflow)
+      (run (Tree.empty 2) priorityWorkflow).state ∧
+    total id (run (Tree.empty 2) priorityWorkflow).traces ≤
+      ((spec (Fin (universeSize 2))).clientHistory ∅ priorityWorkflow).length * 3 :=
   run_correct priorityWorkflow (rep_empty 2)
 
 /--

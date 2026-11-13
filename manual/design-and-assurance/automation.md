@@ -303,6 +303,18 @@ methods together:
 realize [BinaryHeap.Native.realizes_insert, BinaryHeap.Native.realizes_decreaseKey]
 ```
 
+A program argument, `pure` result or `iterate` loop state can be a documented `structure`
+instead of a nested tuple. Give it the former tuple's words with
+[`WordEncoding.ofEquiv`](../../CslibFrontier/Computability/WordRAM/Realization/WordEncoding/Equiv.lean)
+and an exposed equivalence that lists the fields in tuple order; `realize` then accepts field
+projections as operands and anonymous constructors as results, with unchanged glue and
+certificates. The [cluster scan](../../CslibFrontier/DataStructure/ApproximateMembership/WordRAM/QuotientFilter/Cluster.lean)
+of the quotient filter keeps its environment, loop state and step context this way, and its
+[tests](../../CslibFrontierTests/WordRAMQuotientFilter.lean) check that each record keeps its
+tuple's words. A record input suits a certificate whose callers pass a record; method calls
+match on products and sigma types only, so a certificate whose callers pass separate curried
+arguments keeps a tuple input and names its components with accessors.
+
 Zero local work is an absorbed grading: the callee still has its certified native allowance
 against memory charge. It does not mean zero machine instructions.
 Nonzero local work is retained at the call's actual argument and reached memory. Binds sum
@@ -639,6 +651,29 @@ before peeling the remaining prefix. If `game_trans` reports a `using` count mis
 `m` intermediate items are paired with `m + 1` hop proofs (using `_` for hops proved
 interactively); if it reports that a hop proof's type does not match the expected hop, verify the
 intermediate game list order and parameter arguments.
+
+When the hop sequence is the argument a reader should follow, as in a headline theorem, write it as
+a `calc` chain instead. Import [Game/Hop.lean](../../CslibFrontier/Crypto/Game/Hop.lean) and
+`open Probability`. A step `Pr[G₁] ≈[ε] Pr[G₂]` says `|Pr[G₁] - Pr[G₂]| ≤ ε`, and the errors of
+consecutive steps add. An `=` step records an exact hop, and a proof of `|x - y| ≤ ε` is accepted as
+a step:
+```lean
+Game.advantage_le_of_approxEq
+  (calc Pr[G₀] = Pr[G₁] := by rw [h₀₁]                     -- Game 0 = Game 1
+    _ ≈[ε₁] Pr[G₂] := Game.approxEq_of_advantage_le h₁₂   -- |Game 1 − Game 2| ≤ ε₁
+    _ ≈[ε₂] Pr[G₃] := Game.approxEq_of_advantage_le h₂₃)
+```
+`Game.approxEq_of_advantage_le` turns an `ℝ≥0` advantage bound into a step, and
+`Game.approxEq_advantage G₀ G₁` charges a step its advantage. `Game.advantage_le_of_approxEq` reads
+the chain back as an `ℝ≥0` advantage bound; pass its second argument, `δ ≤ ε`, only when the bound
+`ε` is looser than the chain's sum of errors. `ApproxEq.le_add` and `ApproxEq.sub_le` give the
+one-sided bounds `Pr[G₀] ≤ Pr[G₁] + ε` and `Pr[G₁] - ε ≤ Pr[G₀]`. The same lemmas apply to
+experiments `e : ProbComp Bool`, since `Pr[e]` and the experiment advantage are those of
+`ProbComp.eval e`. Keep `game_trans` for chains whose hops are proved in place with `peel_binds`,
+where each hop is a local computation rather than a textbook step. On `h : x ≈[ε] y`, `h.trans`
+is `ApproxEq.trans`; use `le_trans` for the order. The
+[checked examples](../../CslibFrontierTests/Crypto/Hop.lean) cover each form, and
+[FourHop.lean](../../CslibFrontier/Crypto/Game/FourHop.lean) is a library client.
 
 ## Step through counter programs
 

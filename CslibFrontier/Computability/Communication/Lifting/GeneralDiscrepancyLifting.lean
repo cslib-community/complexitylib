@@ -24,26 +24,6 @@ namespace Cslib.Communication.Lifting
 
 open Probability
 
-/-- The adjustable scalar certificate supplies both orientations of the density simulator. -/
-theorem densityOracles_parameter {n m a k : ℕ} [NeZero m] {B : ℝ}
-    (g : Fin m → Fin m → Bool) (hk : 1 ≤ k)
-    (ha : a + 64 * k = 2048 * k ^ 2) (hB : 2 ≤ B) (hn : 2 ≤ n)
-    (hnB : (n : ℝ) ≤ B) (hm : (m : ℝ) = B ^ (2048 * k ^ 2))
-    (hdisc : discrepancy (PMF.uniformOfFintype (Fin m × Fin m)) g ≤
-      (B ^ (1024 * k))⁻¹) :
-    DensityOracle (n := n) g (B ^ (a + 32 * k)) (B ^ a) ∧
-      DensityOracle (n := n) (fun y x => g x y) (B ^ (a + 32 * k)) (B ^ a) := by
-  have hBp : 0 < B := by linarith
-  obtain ⟨hgap, hratio, hu, hsize, hq, hweight, hd⟩ :=
-    general_parameter_certificate (N := (n : ℝ)) hk ha hB
-      (by exact_mod_cast hn) hnB hdisc
-  apply densityOracles_of_discrepancy g (r := 16 * k) (u := B ^ (128 * k + 1))
-    (q := 1 / (4 * B ^ (128 * k + 3))) (by positivity) (by positivity) hn
-    (by omega) hgap hratio hu _ hq _ _
-  · simpa only [Nat.cast_mul, hm, ha] using hsize
-  · simpa only [Nat.cast_add, Nat.cast_one, mul_assoc] using hweight
-  · simpa only [hm, ha] using hd
-
 /-- Lifting for arbitrary alphabet sizes represented by a real polynomial base. -/
 theorem exists_decisionTree_of_parameter_discrepancy {n m k : ℕ} [NeZero m] {B : ℝ}
     {O : Type*} (g : Fin m → Fin m → Bool) (hk : 1 ≤ k)

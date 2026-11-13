@@ -74,8 +74,10 @@ in `P/poly` (`truthTableLanguage_setOf_lt_complexity_notMem_PPoly`) [KabanetsCai
   circuit complexity of every function with the property.
 * `Cslib.Circuits.Boolean.NaturalProof.IsNatural.PPoly_of_P`: `P`-natural properties, decided
   in time polynomial in the length of the truth table, are `P/poly`-natural.
-* `Cslib.Circuits.Boolean.truthTableLanguage_mem_PPoly_of_synthesis`: a property whose tests are
-  synthesised within a budget polynomial in `2 ^ n` has its truth-table language in `P/poly`.
+* `Cslib.Circuits.Boolean.truthTableLanguage_mem_PPoly_of_complexity_le`,
+  `Cslib.Circuits.Boolean.truthTableLanguage_mem_PPoly_of_synthesis`: a property whose tests have
+  circuit complexity, or are synthesised within a budget, polynomial in `2 ^ n` has its truth-table
+  language in `P/poly`.
 * `Cslib.Circuits.Boolean.advantage_truthTableGenerator_truthTableTest`: the advantage of the
   Razborov–Rudich distinguisher is the density of the property.
 * `Cslib.Circuits.Boolean.not_secure_truthTableGenerator`: the barrier for one input length,
@@ -143,24 +145,32 @@ theorem card_filter_truthTableTest (C : Set (BooleanFunction n)) :
   rw [Bool.eq_iff_iff, Language.slice_eq_true_iff, ofFn_mem_truthTableLanguage,
     truthTableTest_eq_true_iff]
 
-/-- A property whose truth-table tests are synthesised within a polynomial budget in the length
-`2 ^ n` of the truth table has its truth-table language in `P/poly`. At lengths that are not powers
-of two the language has no words, so its slice is constant. -/
-theorem truthTableLanguage_mem_PPoly_of_synthesis (C : ∀ n, Set (BooleanFunction n))
+/-- A property whose truth-table tests have circuit complexity polynomially bounded in the length
+`2 ^ n` of the truth table has its truth-table language in `P/poly`. At lengths that are not
+powers of two the language has no words, so its slice is constant. -/
+theorem truthTableLanguage_mem_PPoly_of_complexity_le (C : ∀ n, Set (BooleanFunction n))
     {cost : ℕ → ℕ} (hcost : PolynomiallyBounded cost)
-    (h : ∀ n, Synthesis interpretation (inputs (2 ^ n)) {truthTableTest (C n)} (cost (2 ^ n))) :
+    (h : ∀ n, complexity interpretation (single (truthTableTest (C n))) ≤ cost (2 ^ n)) :
     truthTableLanguage C ∈ PPoly := by
   classical
-  refine PPoly.of_synthesis (hcost.add (PolynomiallyBounded.const 1)) fun N => ?_
+  refine (hcost.add (PolynomiallyBounded.const 1)).mono_of_le fun N => ?_
   by_cases hN : ∃ n, N = 2 ^ n
   · obtain ⟨n, rfl⟩ := hN
     rw [slice_truthTableLanguage]
-    exact (h n).mono Set.Subset.rfl Set.Subset.rfl (Nat.le_add_right _ _)
-  · refine (Synthesis.of_forall_eq_const false fun x => ?_).mono Set.Subset.rfl Set.Subset.rfl
+    exact (h n).trans (Nat.le_add_right _ _)
+  · refine ((Synthesis.of_forall_eq_const false fun x => ?_).complexity_le).trans
       (Nat.le_add_left _ _)
     rw [Bool.eq_false_iff, ne_eq, Language.slice_eq_true_iff]
     rintro ⟨m, hm, -⟩
     exact hN ⟨m, by simpa only [List.length_ofFn] using hm⟩
+
+/-- A property whose truth-table tests are synthesised within a polynomial budget in the length
+`2 ^ n` of the truth table has its truth-table language in `P/poly`. -/
+theorem truthTableLanguage_mem_PPoly_of_synthesis (C : ∀ n, Set (BooleanFunction n))
+    {cost : ℕ → ℕ} (hcost : PolynomiallyBounded cost)
+    (h : ∀ n, Synthesis interpretation (inputs (2 ^ n)) {truthTableTest (C n)} (cost (2 ^ n))) :
+    truthTableLanguage C ∈ PPoly :=
+  truthTableLanguage_mem_PPoly_of_complexity_le C hcost fun n => (h n).complexity_le
 
 variable {Γ Γ' Λ Λ' : Set (Language Bool)} {C C' : ∀ n, Set (BooleanFunction n)}
 

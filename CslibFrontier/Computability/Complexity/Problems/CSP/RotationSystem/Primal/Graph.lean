@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.Darts
-public import CslibFrontier.Foundations.GroupTheory.Perm.Fin
+public import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem.ArgumentPermutation
 import Mathlib.Data.List.GetD
 
 /-!
@@ -44,24 +44,11 @@ open Cslib.Logic.PL
 
 variable {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
 
-/-- Argument succession, with an explicit inverse at each constraint position. -/
-@[expose] def argumentPermutation (F : CSP Rel V) : Equiv.Perm F.Occurrence where
-  toFun := argumentSuccessor
-  invFun o := ⟨o.1, (finRotate _).symm o.2⟩
-  left_inv := by
-    rintro ⟨i, j⟩
-    exact congrArg (fun k : Fin F[i.val].2.length => (⟨i, k⟩ : F.Occurrence))
-      ((finRotate _).symm_apply_apply j)
-  right_inv := by
-    rintro ⟨i, j⟩
-    exact congrArg (fun k : Fin F[i.val].2.length => (⟨i, k⟩ : F.Occurrence))
-      ((finRotate _).apply_symm_apply j)
-
 /-- The next dense variable, computed from an occurrence record by bounded list lookups.
 Invalid records return the supplied variable's dense name; actual occurrences never use it. -/
 @[expose] def polygonNext (F : CSP Rel V) (i j : ℕ) (v : V) : ℕ :=
   if hi : i < F.length then
-    if hj : j < F[i].2.length then
+    if hj : j < F[i].scope.length then
       F.distinctVars.idxOf (argumentSuccessor (F := F) ⟨⟨i, hi⟩, ⟨j, hj⟩⟩).var
     else F.distinctVars.idxOf v
   else F.distinctVars.idxOf v
@@ -148,36 +135,6 @@ theorem length_edges_polygonGraph_eq_card (F : CSP Rel V) :
 @[simp] theorem polygonDartEquiv_apply (x : F.Occurrence × Bool) :
     polygonDartEquiv F x = polygonDart x.1 x.2 := rfl
 
-omit [DecidableEq V] in
-/-- The scope permutation has exactly one orbit per nonempty constraint position. -/
-theorem sameCycle_argumentPermutation (o p : F.Occurrence) :
-    (argumentPermutation F).SameCycle o p ↔ o.1 = p.1 := by
-  constructor
-  · intro h
-    obtain ⟨n, hn⟩ := h.exists_nat_pow_eq
-    have hi (k : ℕ) : ((argumentPermutation F)^[k] o).1 = o.1 := by
-      induction k with
-      | zero => rfl
-      | succ k ih =>
-        rw [Function.iterate_succ_apply']
-        exact ih
-    simpa only [Equiv.Perm.iterate_eq_pow, hn] using (hi n).symm
-  · rcases o with ⟨i, j⟩
-    rcases p with ⟨k, l⟩
-    intro h
-    change i = k at h
-    subst k
-    obtain ⟨n, hn⟩ := (Equiv.Perm.sameCycle_finRotate j l).exists_nat_pow_eq
-    have hi (k : ℕ) : (argumentPermutation F)^[k] ⟨i, j⟩ =
-        ⟨i, (finRotate _)^[k] j⟩ := by
-      induction k with
-      | zero => rfl
-      | succ k ih =>
-        rw [Function.iterate_succ_apply', ih, Function.iterate_succ_apply']
-        rfl
-    refine ⟨(n : ℤ), ?_⟩
-    rw [zpow_natCast, ← Equiv.Perm.iterate_eq_pow, hi, Equiv.Perm.iterate_eq_pow, hn]
-
 /-- Both ends of every polygon edge are declared dense occurring variables. -/
 theorem polygonGraph_endpoints {edge : ℕ × ℕ} (he : edge ∈ (polygonGraph F).edges) :
     edge.1 ∈ (polygonGraph F).vertices ∧ edge.2 ∈ (polygonGraph F).vertices := by
@@ -200,8 +157,8 @@ theorem length_vertices_polygonGraph_le (F : CSP Rel V) :
 
 /-- The forward-dart word at a constraint is its exact original scope after dense naming. -/
 theorem polygon_scope_word (i : Fin F.length) :
-    (List.ofFn fun j : Fin F[i.val].2.length => (polygonDart (⟨i, j⟩ : F.Occurrence)
-      false).vertex) = F[i.val].2.map (F.distinctVars.idxOf ·) := by
+    (List.ofFn fun j : Fin F[i.val].scope.length => (polygonDart (⟨i, j⟩ : F.Occurrence)
+      false).vertex) = F[i.val].scope.map (F.distinctVars.idxOf ·) := by
   apply List.ext_getElem
   · simp
   · intro j hj hk
@@ -209,7 +166,7 @@ theorem polygon_scope_word (i : Fin F.length) :
 
 /-- With positive actual scopes, constraint positions are also bounded by occurrences. -/
 theorem length_constraints_le_polygon_edges
-    (hPos : ∀ i : Fin F.length, 0 < F[i.val].2.length) :
+    (hPos : ∀ i : Fin F.length, 0 < F[i.val].scope.length) :
     F.length ≤ (polygonGraph F).edges.length := by
   have h := CSP.length_le_length_vars (F := F) (fun c hc => by
     obtain ⟨i, hi, rfl⟩ := List.mem_iff_getElem.mp hc

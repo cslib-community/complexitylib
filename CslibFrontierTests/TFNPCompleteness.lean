@@ -33,38 +33,41 @@ private theorem cost_polytime :
   unfold cost
   fun_prop
 
+private theorem neighbor_preservesWidth : PreservesWidth (fun _ : Bool => 1) neighbor := by
+  simp [PreservesWidth, neighbor]
+
 /-- A one-bit local-search family can have costs requiring five bits. -/
 theorem wideCostFamily_mem_PLS : localOptRel (fun _ : Bool => 1) neighbor cost ∈ PLS encBool :=
-  localOptRel_mem_PLS (.const 1) neighbor_polytime cost_polytime (by simp [neighbor])
+  localOptRel_mem_PLS (.const 1) neighbor_polytime cost_polytime neighbor_preservesWidth
 
 /-- The reduction preserves this family without restricting costs to the vertex width. -/
 theorem wideCostFamily_reduces :
     SearchReducible encBool encLocalOpt (localOptRel (fun _ : Bool => 1) neighbor cost) LocalOpt :=
   localOptRel_searchReducible_LocalOpt (.const 1) neighbor_polytime cost_polytime
-    (by simp [neighbor])
+    neighbor_preservesWidth
 
 -- Each canonical search problem reduces concrete 1-bit instances of its defining principle.
 example : SearchReducible encBool encLocalOpt
     (localOptRel (fun _ : Bool => 1) neighbor (fun _ => 0)) LocalOpt :=
   LocalOpt_searchComplete.2 encBool _
-    (localOptRel_mem_PLS (.const 1) neighbor_polytime (.const 0) (by simp [neighbor]))
+    (localOptRel_mem_PLS (.const 1) neighbor_polytime (.const 0) neighbor_preservesWidth)
 
 example : SearchReducible encBool encPigeon
     (pigeonRel (fun _ : Bool => 1) neighbor) Pigeon :=
   Pigeon_searchComplete.2 encBool _
-    (pigeonRel_mem_PPP (.const 1) neighbor_polytime (by simp [neighbor]))
+    (pigeonRel_mem_PPP (.const 1) neighbor_polytime neighbor_preservesWidth)
 
 example : SearchReducible encBool encEndOfLine
     (endOfLineRel (fun _ : Bool => 1) neighbor neighbor) EndOfLine :=
   EndOfLine_searchComplete.2 encBool _
     (endOfLineRel_mem_PPAD (.const 1) neighbor_polytime neighbor_polytime
-      (by simp [neighbor]) (by simp [neighbor]))
+      neighbor_preservesWidth neighbor_preservesWidth)
 
 example : SearchReducible encBool encLeaf
     (leafRel (fun _ : Bool => 1) neighbor neighbor) Leaf :=
   Leaf_searchComplete.2 encBool _
     (leafRel_mem_PPA (.const 1) neighbor_polytime neighbor_polytime
-      (by simp [neighbor]) (by simp [neighbor]))
+      neighbor_preservesWidth neighbor_preservesWidth)
 
 example : localOptRel (fun _ : Bool => 1) neighbor cost false [false] := by
   simp [localOptRel, neighbor, cost]

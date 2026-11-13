@@ -129,13 +129,11 @@ noncomputable def sequenceTest (replacement original : ProbComp α) (count : ℕ
 dyadic-range loss. The identity also covers zero repetitions. -/
 theorem sequenceTest_gap (replacement original : ProbComp α) (count : ℕ)
     (test : List α → ProbComp Bool) :
-    (Game.succProbability (ProbComp.eval (OracleComp.replicate count original >>= test)) : ℝ) -
-        Game.succProbability (ProbComp.eval (OracleComp.replicate count replacement >>= test)) =
+    Pr[OracleComp.replicate count original >>= test] -
+        Pr[OracleComp.replicate count replacement >>= test] =
       (dyadicSize count : ℝ) *
-        (Game.succProbability
-            (ProbComp.eval (original >>= sequenceTest replacement original count test)) -
-          Game.succProbability
-            (ProbComp.eval (replacement >>= sequenceTest replacement original count test))) := by
+        (Pr[original >>= sequenceTest replacement original count test] -
+          Pr[replacement >>= sequenceTest replacement original count test]) := by
   unfold sequenceTest
   have horiginal := eval_bind_sampleDyadicIndex_guard original count
     (fun split => spliceTest replacement original split (count - split - 1) test) false
@@ -147,18 +145,18 @@ theorem sequenceTest_gap (replacement original : ProbComp α) (count : ℕ)
     (fun i => ProbComp.eval (sequenceHybrid replacement original count i >>= test))
     count (dyadicSize count) (lt_dyadicSize count).le
   simpa only [sequenceHybrid_zero, sequenceHybrid_self, PMF.monad_bind_eq_bind,
-    horiginal, hreplacement] using h
+    horiginal, hreplacement, Game.coe_succProbability] using h
 
 /-- The exact unsigned sequence-hybrid loss, including the empty sequence. -/
 theorem sequenceTest_advantage (replacement original : ProbComp α) (count : ℕ)
     (test : List α → ProbComp Bool) :
-    Game.advantage (ProbComp.eval (OracleComp.replicate count original >>= test))
-        (ProbComp.eval (OracleComp.replicate count replacement >>= test)) =
+    Experiment.advantage (OracleComp.replicate count original >>= test)
+        (OracleComp.replicate count replacement >>= test) =
       (dyadicSize count : ℝ≥0) *
-        Game.advantage (ProbComp.eval (original >>= sequenceTest replacement original count test))
-          (ProbComp.eval (replacement >>= sequenceTest replacement original count test)) := by
+        Experiment.advantage (original >>= sequenceTest replacement original count test)
+          (replacement >>= sequenceTest replacement original count test) := by
   apply NNReal.eq
-  rw [NNReal.coe_mul, NNReal.coe_natCast, Game.coe_advantage, Game.coe_advantage,
+  rw [NNReal.coe_mul, NNReal.coe_natCast, Experiment.coe_advantage, Experiment.coe_advantage,
     sequenceTest_gap, abs_mul, Nat.abs_cast]
 
 /-- Efficient source programs and counts give an efficient independent hybrid sequence. -/
@@ -280,24 +278,22 @@ theorem ComputationallyIndistinguishable.replicate_bind {orig repl : ℕ → Pro
   have hneg := (h red hred).polynomiallyBounded_mul hpoly
   refine negligible_of_le hneg (fun n => ?_)
   apply le_of_eq
-  apply NNReal.eq
   dsimp only
-  have hgap := sequenceTest_gap (repl n) (orig n) (count n) (test n)
   have horig_eq : distinguishingGame
       (ProbComp.eval (OracleComp.replicate (count n) (orig n) >>= process n)) (adversary n) =
       ProbComp.eval (OracleComp.replicate (count n) (orig n) >>= test n) := by
-    simp only [pmf_norm, distinguishingGame, test]
+    simp only [pmf_norm, distinguishingGame_eq_bind, test]
   have hrepl_eq : distinguishingGame
       (ProbComp.eval (OracleComp.replicate (count n) (repl n) >>= process n)) (adversary n) =
       ProbComp.eval (OracleComp.replicate (count n) (repl n) >>= test n) := by
-    simp only [pmf_norm, distinguishingGame, test]
+    simp only [pmf_norm, distinguishingGame_eq_bind, test]
   have hred_orig : distinguishingGame (ProbComp.eval (orig n)) (red n) =
       ProbComp.eval (orig n >>= sequenceTest (repl n) (orig n) (count n) (test n)) := by
-    simp only [distinguishingGame, PMF.monad_bind_eq_bind, red, ProbComp.eval_bind]
+    simp only [distinguishingGame_eq_bind, PMF.monad_bind_eq_bind, red, ProbComp.eval_bind]
   have hred_repl : distinguishingGame (ProbComp.eval (repl n)) (red n) =
       ProbComp.eval (repl n >>= sequenceTest (repl n) (orig n) (count n) (test n)) := by
-    simp only [distinguishingGame, PMF.monad_bind_eq_bind, red, ProbComp.eval_bind]
-  rw [horig_eq, hrepl_eq, hred_orig, hred_repl, NNReal.coe_mul, NNReal.coe_natCast,
-    Game.coe_advantage, Game.coe_advantage, hgap, abs_mul, Nat.abs_cast]
+    simp only [distinguishingGame_eq_bind, PMF.monad_bind_eq_bind, red, ProbComp.eval_bind]
+  rw [horig_eq, hrepl_eq, hred_orig, hred_repl]
+  exact sequenceTest_advantage (repl n) (orig n) (count n) (test n)
 
 end Cslib.Crypto

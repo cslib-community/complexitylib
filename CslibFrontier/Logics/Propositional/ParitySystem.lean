@@ -34,6 +34,7 @@ which `0 = 1` is derivable is unsatisfiable. Tseitin parity systems are in
 
 ## Main definitions
 
+* `Cslib.Logic.PL.ParityEquation`: a parity equation, with fields `vars` and `rhs`.
 * `Cslib.Logic.PL.ParitySystem`: systems of parity equations.
 * `Cslib.Logic.PL.ParitySystem.Holds`: satisfaction by an assignment.
 * `Cslib.Logic.PL.ParitySystem.Derives`: width-`w` derivations.
@@ -56,9 +57,16 @@ namespace Cslib.Logic.PL
 open Finset
 open scoped symmDiff
 
-/-- A **parity system**: a list of equations `⊕_{i ∈ S} xᵢ = b` over `𝔽₂`, each given by the set
-`S` of its variables and its right-hand side `b`. -/
-abbrev ParitySystem (σ : Type*) := List (Finset σ × Bool)
+/-- A parity equation `⊕_{i ∈ S} xᵢ = b` over `𝔽₂`, given by the set `S` of its variables and its
+right-hand side `b`. -/
+structure ParityEquation (σ : Type*) where
+  /-- The variables whose parity is constrained. -/
+  vars : Finset σ
+  /-- The right-hand side of the equation. -/
+  rhs : Bool
+
+/-- A **parity system**: a list of parity equations. -/
+abbrev ParitySystem (σ : Type*) := List (ParityEquation σ)
 
 namespace ParitySystem
 
@@ -67,7 +75,7 @@ variable {σ : Type*}
 /-- The assignment `a` satisfies every equation of `P`: the parity of `a` on the variables of an
 equation is its right-hand side. -/
 @[expose] def Holds (P : ParitySystem σ) (a : σ → Bool) : Prop :=
-  ∀ e ∈ P, parityOn e.1 a = e.2
+  ∀ e ∈ P, parityOn e.vars a = e.rhs
 
 variable [DecidableEq σ]
 
@@ -79,7 +87,7 @@ inductive Derives (P : ParitySystem σ) (w : ℕ) : Finset σ → Bool → Prop
   /-- The trivial equation `0 = 0`. -/
   | empty : Derives P w ∅ false
   /-- An equation of `P` with at most `w` variables. -/
-  | mem {S : Finset σ} {b : Bool} : (S, b) ∈ P → #S ≤ w → Derives P w S b
+  | mem {S : Finset σ} {b : Bool} : ⟨S, b⟩ ∈ P → #S ≤ w → Derives P w S b
   /-- The sum of two derived equations, if it has at most `w` variables. -/
   | symmDiff {S T : Finset σ} {b c : Bool} : Derives P w S b → Derives P w T c →
       #(S ∆ T) ≤ w → Derives P w (S ∆ T) (b ^^ c)

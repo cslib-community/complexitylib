@@ -52,12 +52,6 @@ example {n m c q : ℕ} {g : Fin m → Fin m → Bool} {τ σ : ℝ}
     (h : DensityTrace g τ σ univ univ univ F' X' Y' c q) (hm : 0 < m) (hτ : 0 < τ) :
     ((m : ℝ) / (2 * τ)) ^ q ≤ 8 ^ c := h.query_bound hm hτ
 
-#print axioms Cslib.Communication.Lifting.exists_power_threshold_of_ratio
-#print axioms Cslib.Communication.Lifting.dangerous_density_margin
-#print axioms Cslib.Communication.Lifting.exists_ratio_parityTest_of_isDense_not_isSafe
-#print axioms Cslib.Communication.Lifting.card_conditioningAssignment
-#print axioms Cslib.Communication.Lifting.DensityTrace.query_bound
-
 /-- Repeated Alice messages really need a dummy Bob message. -/
 example : ¬ Cslib.Communication.Protocol.Alternates true
     (Cslib.Communication.Protocol.alice (fun x : Bool => x)
@@ -72,20 +66,9 @@ example (p : Cslib.Communication.Protocol Bool Bool Bool) :
       ∀ x y, (p.alternate true).run x y = p.run x y :=
   ⟨p.alternates_alternate true, p.depth_alternate_le true, p.run_alternate true⟩
 
-#print axioms Cslib.Communication.Lifting.card_le_two_mul_card_safe_of_discrepancy
-#print axioms Cslib.Communication.Lifting.exists_densityStep_of_discrepancy
-#print axioms Cslib.Communication.Protocol.depth_alternate_le
-
-#print axioms Cslib.Communication.Lifting.exists_pair_of_discrepancy
-
 /-- The explicit polynomial parameters pay a factor growing with the alphabet base per query. -/
 example {B : ℝ} (hB : 2 ≤ B) : B ^ 31 ≤ B ^ 2048 / (2 * B ^ 2016) :=
   (polynomial_density_ratios hB).2.2.2
-
-#print axioms Cslib.Communication.Lifting.polynomial_parameter_certificate
-#print axioms Cslib.Communication.Lifting.polynomial_density_ratios
-
-#print axioms Cslib.Communication.Lifting.exists_simulating_decisionTree
 
 -- The concrete alphabet exponent must be permitted during type elaboration.
 set_option exponentiation.threshold 2048 in
@@ -101,5 +84,3 @@ example {n B : ℕ} [NeZero B] (g : Fin (B ^ 2048) → Fin (B ^ 2048) → Bool)
       (B : ℝ) ^ (31 * t.depth) ≤ 8 ^ (2 * p.depth) :=
   exists_decisionTree_of_polynomial_discrepancy g hB hn hnB hd
     (fun z output => output = f z) p hp
-
-#print axioms Cslib.Communication.Lifting.exists_decisionTree_of_polynomial_discrepancy

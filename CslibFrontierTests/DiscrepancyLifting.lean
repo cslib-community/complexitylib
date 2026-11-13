@@ -73,12 +73,4 @@ example (p q : PMF Bool) (g : Bool → Bool → Bool) (η γ lam : ℝ)
       (by decide) (by simpa only [Nat.cast_one] using hd)
       (by simpa only [Nat.cast_one] using he)
 
-#print axioms Cslib.Communication.sum_mass_filter_rowBias_lt_rpow_of_minEntropy
-#print axioms Cslib.Communication.discrepancy_xor_fourth_pow_le
-#print axioms Cslib.Communication.Lifting.exists_pair_of_parity_bias_le
-#print axioms Cslib.Communication.abs_sum_mul_signVal_le_rpow_of_minEntropy
-#print axioms Cslib.BitString.abs_mul_mass_sub_one_le_of_bias_le
-#print axioms Cslib.BitString.mem_support_of_sum_abs_bias_lt_one
-#print axioms Cslib.BitString.le_minEntropy_of_high_order_bias_le
-
 end DiscrepancyLiftingTests

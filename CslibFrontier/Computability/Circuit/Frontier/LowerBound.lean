@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Circuit.Frontier.Demand
 public import CslibFrontier.Computability.Circuit.Frontier.Reduction
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 
 /-!
 # The frontier lower bound
@@ -79,7 +80,7 @@ theorem logb_ncard_le_self {n : ℕ} {S : Set (Fin n → U)} (hS : S.Nonempty) :
   have hpos : (0 : ℝ) < S.ncard := by exact_mod_cast (ncard_pos (toFinite S)).mpr hS
   calc Real.logb (Nat.card U) S.ncard ≤ Real.logb (Nat.card U) ((Nat.card U : ℝ) ^ n) :=
         Real.logb_le_logb_of_le hq hpos hle
-    _ = n := by rw [Real.logb_pow, Real.logb_self_eq_one hq, mul_one]
+    _ = n := Real.logb_self_pow (zero_lt_one.trans hq) hq.ne' n
 
 omit [Finite U] [Nontrivial U] in
 /-- **Dense rectangle-free families**, the hypotheses on the problem in every frontier lower

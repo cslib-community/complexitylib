@@ -126,6 +126,13 @@ The queue helper's `--wait` option queues automatically when CI passes; do not s
 newly produced reports or pages still need inspection. A green check alone does not release
 those holds. This needs a coverage decision, not another full review of unchanged code.
 
+If discussion changes after a helper starts waiting, its final reread stops that enqueue.
+Have the reviewer inspect the new or edited discussion and any holds before rerunning for the
+still-approved head; no extra approval count is required. The guard covers the PR body,
+comments, submitted reviews and inline threads, including edits and resolution changes. It does
+not inspect linked issues or prevent a change racing with the enqueue mutation. Existing queue
+entries are left in place, so coordinators still need to track review holds through landing.
+
 When the queue ejects a PR whose only conflict is in `references.bib`, the coordinator or author
 can run `python3 scripts/resolve_bib_conflict.py origin/<branch>` after `git fetch origin` to
 write the merge with `main` instead of sending the PR back. It refuses any other conflict and
@@ -141,6 +148,9 @@ When several coordinators share one host, give them a single limit on concurrent
 not only a thread count. Their builds can exhaust the kernel's file handles before its
 processors, and then everyone's builds fail
 ([diagnosis](workflows/troubleshooting.md#diagnose-too-many-open-files-in-system)).
+Have them run `scripts/check.sh --quick --no-full-fallback` during development: a change quick
+mode cannot plan is reported instead of starting a full local check that holds a build slot for
+hours, and CI on the pull request supplies the full run.
 Agents on one host also share Lake's artifact cache, which restores a module that another
 checkout built without its warnings. Full `scripts/check.sh` re-elaborates those built root-package
 sources; quick mode checks affected sources, including unchanged clients, built import aggregates

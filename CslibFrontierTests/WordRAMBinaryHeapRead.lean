@@ -58,7 +58,7 @@ example (present : Bool) :
     cases present <;> decide +kernel
   obtain ⟨y, hy, hm, ho⟩ := native realizes_getKey 4 ⟨1, layout, 0⟩ (state present)
     hw (wellFormed present) hs hv
-  simp only [Fin.val_zero] at hy hm ho
+  simp only [HandleArgument.layout, HandleArgument.handle, Fin.val_zero] at hy hm ho
   have hc : memoryCost (PriorityQueue.BinaryHeap.Memory.getKey layout 0) (state present) ≤ 2 :=
     by cases present <;> decide +kernel
   have hr : (Memory.spec 4).clientResult (state present)
