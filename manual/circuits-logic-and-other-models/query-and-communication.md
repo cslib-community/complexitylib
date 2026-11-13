@@ -14,6 +14,24 @@ Tree evaluation and the real-valued error predicates remain available on their o
 
 The deterministic complexity of a function is its least possible depth. On a finite coordinate type every function can be computed by querying all coordinates; the minimum is attained. Parity attains the full input dimension. Other modules connect decision-tree depth to sensitivity, block sensitivity, certificate complexity, Fourier/real polynomial degree and approximate degree. Representative endpoints include Huang's `degree <= sensitivity^2`, Midrijanis's `D <= degree * blockSensitivity`, and consequences such as `D <= 2 degree^3`. See [Huang](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/QueryComplexity/Huang.lean), [Midrijanis](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/QueryComplexity/Midrijanis.lean) and [Nisan–Szegedy](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/QueryComplexity/NisanSzegedy.lean).
 
+For a lower bound from the number of relevant inputs, import
+[`QueryComplexity.RelevantCoordinates`](../../CslibFrontier/Computability/QueryComplexity/RelevantCoordinates.lean).
+`BitString.card_relevant_le_sensitivity_mul_four_pow` bounds the number of coordinates sensitive
+at some input by $s(f)4^{s(f)}$. If every input coordinate is relevant,
+`clog_le_three_mul_sensitivity_of_depends_on_all` gives
+$\lceil\log_2 n\rceil\le3s(f)$, with `Nat.clog 2 0 = 0`. Supply, for each coordinate, an input
+where flipping that bit changes the output. This is maximum sensitivity over inputs, as in
+Arora–Barak Chapter 11 Exercise 1; unused coordinates do not create a sensitivity lower bound.
+The [complete checked client](../../CslibFrontierTests/SensitivityRelevant.lean) covers empty
+coordinates, constants, a one-bit function, a projection with ignored coordinates and parity.
+From the repository root, run
+`scripts/build.sh --wfail --iofail CslibFrontierTests.SensitivityRelevant`.
+The same client checks singleton and proper-subcube instances of the underlying
+[local-boundary cardinality lemma](../../CslibFrontier/Foundations/Data/BitString/LocalBoundary.lean):
+a nonempty cube set with at most $b$ outgoing flip directions per member satisfies
+$2^n\le2^b|A|$. The budget counts directions at each point, so a bound on the total number of
+external boundary vertices is a different hypothesis.
+
 The [superquadratic sensitivity separation](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/QueryComplexity/SensitivitySeparation.lean) is a further major endpoint, adapted from [OpenAI's formalization at its pinned revision](https://github.com/openai/math/tree/adc7f1241b42e322a6451854ab7e4b4c146bf78a/lean/OAI/Combinatorics/Sensitivity). For every real C it gives a nonconstant Boolean function with `bs(f) > C s(f)^2`; a stronger family statement has a fixed exponent alpha greater than two and unbounded block sensitivity. Bridges identify the internal construction's measures with the public maximum sensitivity and block-sensitivity definitions. Certificate and decision-tree separations follow. This is neither average sensitivity nor a finite search experiment. The public statements and direct measure bridge were inspected here; their large internal construction and original source require a separate expert audit before making an independent mathematical endorsement.
 
 [BiMonotoneComparison](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/DecisionTree/Separable.lean#L58) uses the same tree syntax with coordinates interpreted as monotone two-sided comparisons or comparisons of separable real scores. The cost is number of comparisons, regardless of the work needed to compute a score. Rectangle geometry gives leaf-count lower bounds.
