@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.MachineLearning.PACLearning.ERM
 public import Mathlib.Analysis.Complex.Exponential
+public import Mathlib.Analysis.SpecialFunctions.Log.Basic
 public import Mathlib.MeasureTheory.Constructions.Pi
 import CslibFrontier.Probability.Concentration
 import CslibFrontier.Probability.PMF.Event
@@ -159,6 +160,30 @@ theorem measure_pi_not_isRepresentative_le (D : Measure (α × β)) [IsProbabili
           measure_pi_le_abs_empiricalMiscount_div_sub_error D (hH h hh) m hε
     _ = H.card * ENNReal.ofReal (2 * Real.exp (-2 * m * ε ^ 2)) := by
         rw [Finset.sum_const, nsmul_eq_mul]
+
+/-- **Uniform convergence for a finite class**, sample-size form: `m` i.i.d. examples fail to be
+`ε`-representative for a finite class `H` with probability at most `δ` once
+`log (2 |H| / δ) ≤ 2 m ε²`. -/
+theorem measure_pi_not_isRepresentative_le_of_log_le (D : Measure (α × β))
+    [IsProbabilityMeasure D] {H : Finset (α → β)}
+    (hH : ∀ h ∈ H, MeasurableSet {p : α × β | h p.1 ≠ p.2}) {m : ℕ} {ε δ : ℝ} (hε : 0 ≤ ε)
+    (hδ : 0 < δ) (hm : Real.log (2 * H.card / δ) ≤ 2 * m * ε ^ 2) :
+    Measure.pi (fun _ : Fin m => D) {S | ¬ IsRepresentative D (H : Set (α → β)) ε S} ≤
+      ENNReal.ofReal δ := by
+  refine (measure_pi_not_isRepresentative_le D hH m hε).trans ?_
+  rw [← ENNReal.ofReal_natCast, ← ENNReal.ofReal_mul (Nat.cast_nonneg _)]
+  refine ENNReal.ofReal_le_ofReal ?_
+  rcases Nat.eq_zero_or_pos H.card with h0 | hn
+  · rw [h0, Nat.cast_zero, zero_mul]
+    exact hδ.le
+  have hn' : (0 : ℝ) < 2 * H.card := by positivity
+  rw [Real.log_div hn'.ne' hδ.ne'] at hm
+  calc (H.card : ℝ) * (2 * Real.exp (-2 * m * ε ^ 2)) =
+        Real.exp (Real.log (2 * H.card) + -(2 * m * ε ^ 2)) := by
+        rw [Real.exp_add, Real.exp_log hn', show -(2 * (m : ℝ) * ε ^ 2) = -2 * m * ε ^ 2 by ring]
+        ring
+    _ ≤ Real.exp (Real.log δ) := Real.exp_le_exp.2 (by linarith)
+    _ = δ := Real.exp_log hδ
 
 /-- **ERM on a representative sample** [ShalevShwartzBenDavid2014, Lemma 4.2]: on an
 `ε / 2`-representative sample for `C`, every empirical risk minimizer for `C` outputs a hypothesis

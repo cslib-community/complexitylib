@@ -91,7 +91,9 @@ role of the source's `ε_n(m, δ)` (Equation (7.1)), defined there from the unif
 sample complexity. The learner charges class `i` the penalty `max (ε i m (w i · δ)) 0 + e i / m`
 for an injection `e : ι → ℕ`; the second term makes the penalties tend to infinity along the
 indices, so that an SRM minimizer exists on every sample, and vanishes as `m → ∞`. The instance
-`Nonempty (α → β)` supplies a learner when every class is empty. -/
+`Nonempty (α → β)` supplies a learner when every class is empty. Theorem 7.5's explicit sample
+complexity `m^UC_{H n(h)}(ε / 2, w(n(h)) δ)` is not stated: the proof only produces some sample
+size, through the excess-risk guarantee `IsSRM.measure_pi_exists_lt_error_le`. -/
 theorem isNonuniformLearnable_iUnion [DecidableEq β] [Nonempty (α → β)] {ι : Type*}
     [Countable ι] {H : ι → ConceptClass α β} {𝒟 : Set (Measure (α × β))}
     {ε : ι → ℕ → ℝ → ℝ}
