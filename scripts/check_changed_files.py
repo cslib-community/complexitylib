@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Three narrow lints for the Lean files a change adds or modifies.
 
-Usage: python3 scripts/check_changed_files.py [--base REF] [--no-build-check]
+Usage: python3 scripts/check_changed_files.py [--base REF] [--no-build-check | --source-only]
 
 Only new or changed files are checked, so an existing file is brought in line when it is next
 touched. Changes are taken against the merge base of REF (default `origin/main`) and the working
@@ -28,6 +28,9 @@ REF itself.
    that may generate one (`DEFINING`), so the attribute changes no declaration and only suggests
    that bodies are exported. Write `public section` instead. Abbreviations, instances and
    structures count as definitions here, to stay conservative.
+
+`--source-only` runs lints 2 and 3, which read only the changed sources, and skips lint 1;
+`scripts/check.sh --quick` uses it.
 """
 
 from __future__ import annotations
@@ -293,8 +296,11 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--base", default="origin/main",
                         help="comparison ref; changes are taken from its merge base with HEAD")
-    parser.add_argument("--no-build-check", action="store_true",
-                        help="do not check that the build outputs are current")
+    outputs = parser.add_mutually_exclusive_group()
+    outputs.add_argument("--no-build-check", action="store_true",
+                         help="do not check that the build outputs are current")
+    outputs.add_argument("--source-only", action="store_true",
+                         help="skip the module-doc name lint, which reads build outputs")
     args = parser.parse_args(argv)
     added, modified = changed_files(root, args.base)
     modules = [rel for rel in added + modified
@@ -304,13 +310,17 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
         lo.check_outputs(lo.DEFAULT_BUILD_DIR, args.no_build_check)
         return lo.load_ileans(lo.DEFAULT_BUILD_DIR)
 
-    errors = (check_new_tests(root, added) + check_expose_sections(root, added + modified)
-              + check_doc_names(root, sorted(modules), load_ileans))
+    errors = check_new_tests(root, added) + check_expose_sections(root, added + modified)
+    if args.source_only:
+        print("Skipped the module-doc name lint (--source-only); the full check and CI run it.")
+    else:
+        errors += check_doc_names(root, sorted(modules), load_ileans)
     for error in errors:
         print(f"ERROR: {error}", file=sys.stderr)
     if errors:
         return 1
-    print(f"Changed-file lints passed ({len(modules)} changed library module(s), "
+    scope = "source " if args.source_only else ""
+    print(f"Changed-file {scope}lints passed ({len(modules)} changed library module(s), "
           f"{sum(rel.startswith('CslibFrontierTests/') for rel in added)} new test file(s)).")
     return 0
 

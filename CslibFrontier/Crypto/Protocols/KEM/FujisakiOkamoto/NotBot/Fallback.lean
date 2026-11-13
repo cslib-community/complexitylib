@@ -11,6 +11,7 @@ public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Hybrids
 import CslibFrontier.Languages.Probabilistic.RandomOracle.Programming
 import CslibFrontier.Languages.Probabilistic.UntilBad
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.Support
 import CslibFrontier.Probability.Product.Split
 
 /-!
@@ -129,11 +130,6 @@ private theorem length_logM (q : ROQuery M CT) (l : List M) :
     (logM q l).length ≤ l.length + q.hCost := by
   cases q <;> simp [logM]
 
-private theorem snd_eq_of_mem_support_map {α σ : Type} {μ : PMF α} {t : σ} {x : α × σ}
-    (hx : x ∈ (μ.map (·, t)).support) : x.2 = t := by
-  obtain ⟨a, -, rfl⟩ := (PMF.mem_support_map_iff _ _ _).mp hx
-  rfl
-
 variable [DecidableEq CT]
 
 section DecidableMessages
@@ -165,13 +161,13 @@ private theorem identicalUntilBad_log (S : Scheme PK SK M R CT K) (G : M → R)
     · obtain ⟨x, rfl, hx⟩ := hbad
       have hz (μ : PMF K) : (μ.map (·, logM (.H x) st)) (a, st') = 0 :=
         (PMF.apply_eq_zero_iff _ _).mpr fun hmem =>
-          hst' (by rw [show st' = _ from snd_eq_of_mem_support_map hmem]; simp [logM, hx])
+          hst' (by rw [show st' = _ from snd_eq_of_mem_support_map_pair hmem]; simp [logM, hx])
       exact (hz _).trans (hz _).symm
     · rw [eagerHandler_fbTable S G H Hfb pk sk s cStar q fun x hq hx => hbad ⟨x, hq, hx⟩]
   absorb_first q st hst x hx := by
-    rw [snd_eq_of_mem_support_map hx]; exact mem_logM q hst
+    rw [snd_eq_of_mem_support_map_pair hx]; exact mem_logM q hst
   absorb_second q st hst x hx := by
-    rw [snd_eq_of_mem_support_map hx]; exact mem_logM q hst
+    rw [snd_eq_of_mem_support_map_pair hx]; exact mem_logM q hst
 
 /-! ### One run of each game -/
 
@@ -300,7 +296,7 @@ private theorem expect_hitSeed_le [Fintype M] [Finite R] [Fintype CT] [Finite K]
       if b then kRand else H (false, m, encT S.pke G ks.1 m)⟩).2
     simpa using hcost.measure_le _ List.length
       (fun q st res st' hmem => by
-        rw [show st' = logM q st from snd_eq_of_mem_support_map hmem]
+        rw [show st' = logM q st from snd_eq_of_mem_support_map_pair hmem]
         exact length_logM q st)
       (show (x.1, x.2) ∈ _ from hx)
   have hμ : ∀ s, ((ProbComp.eval S.sampleMsg).map id) s ≤ p := fun s => by

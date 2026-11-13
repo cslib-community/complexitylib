@@ -35,6 +35,8 @@ constant, and the other coordinates stay uniform.
   independent product over `ι ⊕ κ` is a pair of independent products over `ι` and `κ`.
 * `Cslib.Probability.PMF.filter_uniformOfFintype_eval_eq`: conditioning a uniform tuple on one
   coordinate sets that coordinate.
+* `Cslib.Probability.PMF.uniformOfFintype_map_comp_dep`: a uniform dependent function read
+  through an injection is uniform.
 -/
 
 public section
@@ -149,5 +151,12 @@ theorem filter_uniformOfFintype_eval_eq [DecidableEq ι] {γ : Type*} [Fintype �
   have h2 := congrArg (PMF.map Prod.snd) hfilter
   simp only [PMF.map_comp, Function.comp_def] at h2
   exact (PMF.map_id _).symm.trans h2
+
+/-- A uniform dependent function read through an injection `g` of index types is uniform. -/
+theorem uniformOfFintype_map_comp_dep {S Q : Type*} [Fintype S] [DecidableEq S] [Fintype Q]
+    [DecidableEq Q] {R : Q → Type*} [∀ q, Fintype (R q)] [∀ q, Nonempty (R q)] {g : S → Q}
+    (hg : Function.Injective g) :
+    (uniformOfFintype (∀ q, R q)).map (fun f s => f (g s)) = uniformOfFintype (∀ s, R (g s)) := by
+  rw [← pi_uniformOfFintype, pi_map_comp_injective _ hg, pi_uniformOfFintype]
 
 end Cslib.Probability.PMF

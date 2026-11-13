@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.LocallyDecodable.Basic
 public import CslibFrontier.Foundations.Data.Code.Hadamard
 import CslibFrontier.Foundations.Data.Finset.Expect
 import CslibFrontier.Probability.PMF.Expect
+import CslibFrontier.Probability.Uniform
 import Mathlib.Tactic.Linarith
 
 /-!
@@ -71,7 +72,7 @@ theorem map_hadamardDecoder_query (i : ι) (k : Fin 2) :
   rw [ProbComp.eval_uniform]
   fin_cases k
   · exact PMF.map_id _
-  · exact PMF.uniformOfFintype_map_equiv (Equiv.addLeft (Pi.single i true : ι → Bool))
+  · exact PMF.uniformOfFintype_map_add_left (Pi.single i true : ι → Bool)
 
 /-- The reads of the Hadamard decoder do not depend on the received word. -/
 theorem hasObliviousReads_hadamardDecoder (i : ι) : HasObliviousReads (hadamardDecoder i) :=
