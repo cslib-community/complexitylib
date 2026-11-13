@@ -10,7 +10,7 @@ module
 public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Density
 public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Signature
 public import CslibFrontier.Foundations.Quantum.Measurement.Classical
-import CslibFrontier.Probability.PMF
+public import CslibFrontier.Foundations.Quantum.POVM.Mixture
 
 /-!
 # Resuming native oracle circuits after a classical query
@@ -193,6 +193,29 @@ theorem isDensityMatrix_resumeDensity (request : Fin r → Bool) (service : PMF 
   ⟨G.resumeDensity_posSemidef hG n x hlen hmem H κ request service hρ.posSemidef,
     (G.trace_resumeDensity hG n x hlen hmem H κ request service ρ).trans hρ.trace_eq_one⟩
 
+/-- Reply averaging is exactly one probabilistic service draw followed by the selected native
+execution and readout. Together with supported request continuation this is the operational law
+for the complete classical-query boundary. -/
+theorem measureDensity_resumeDensity_eq {B : Type*} [Fintype B]
+    (M : POVM B ((Fin (G.description n (x.length + r + s)).width → Bool) × κ))
+    (request : Fin r → Bool) (service : PMF (Fin s → Bool)) (ρ) (hρ : IsDensityMatrix ρ) :
+    M.measureDensity (G.resumeDensity hG n x hlen hmem H κ request service ρ)
+      (G.isDensityMatrix_resumeDensity hG n x hlen hmem H κ request service hρ) =
+      service.bind fun reply =>
+        M.measureDensity
+          (densityConj (Matrix.toEuclideanLin.symm
+            (G.resumeRun hG n x hlen hmem H request reply).toLinearMap ⊗ₖ
+            (1 : Matrix κ κ ℂ)) ρ)
+          (hρ.densityConj_kronecker (matrix_isometry _)) := by
+  have h := M.measureDensity_pmf_sum service
+    (fun reply => densityConj (Matrix.toEuclideanLin.symm
+      (G.resumeRun hG n x hlen hmem H request reply).toLinearMap ⊗ₖ
+      (1 : Matrix κ κ ℂ)) ρ)
+    (fun _ => hρ.densityConj_kronecker (matrix_isometry _))
+  ext b
+  simpa only [POVM.measureDensity_apply, resumeDensity_apply] using
+    congrArg (fun p : PMF B => p b) h
+
 section ClassicalQuery
 
 variable (F : UniformOracleCircuitFamily) {L₁ : ℕ → ℕ}
@@ -294,7 +317,7 @@ theorem measureDensity_runClassicalQuery_eq {B : Type*} [Fintype B]
             (hF.oracle n x.length hx H) κ hρ).posSemidef))
       outcome)]
   congr 1
-  simp only [runClassicalQuery, POVM.densityProb, Matrix.mul_sum, Matrix.trace_sum, Complex.re_sum]
+  simp only [runClassicalQuery, POVM.densityProb_sum]
 
 end ClassicalQuery
 
