@@ -847,7 +847,10 @@ equivalence once for every decapsulation program. The `@[simp]` bridges
 `Scheme.romIndCcaExperiment_bot`, `Scheme.eagerRomIndCcaExperiment_bot` for `FO^⊥` in `Bot.lean`)
 identify the instances with the named games. For another FO variant, instantiate the experiment
 with its decapsulation program and prove such bridges rather than writing new handlers and a new
-eager/lazy proof. The module also supplies the keyless simulator `Scheme.simHandler` and IND-CPA
+eager/lazy proof. Eager games draw their random oracles from the named tables `Scheme.coinTable`
+(for `G`) and `Scheme.keyTable X` (a key-valued table on `X`, such as `H` on `Bool × M × CT` or a
+ciphertext table on `CT`); new eager hybrids should use them rather than spelling out `PMF.pi`.
+The module also supplies the keyless simulator `Scheme.simHandler` and IND-CPA
 reduction `Scheme.romCpaReduction` (`Scheme.simHitProb`, `Scheme.indCpaAdvantage_romCpaReduction`,
 the query-count row bound `Scheme.sum_simHitProb_le`, and the OW-to-CPA averaging bound
 `Scheme.avg_simHitProb_le_indCpaAdvantage_romCpaReduction`). The IND-CCA theorem itself is
