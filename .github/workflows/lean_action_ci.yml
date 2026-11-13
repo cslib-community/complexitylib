@@ -65,27 +65,12 @@ jobs:
           NGINX_BIN: /usr/sbin/nginx
         run: python3 -B -m unittest discover -s scripts -p 'test_cache_origin_nginx.py'
 
-  ci-checks:
+  source-checks:
     runs-on: ubuntu-latest
-    outputs:
-      publication: ${{ steps.upload-publication.outputs.artifact-id }}
-    # Temporary #1728 hooks: absent plan is OFF. Activation needs a separately reviewed protocol.
-    env:
-      HANDOFF_MEASUREMENT_PLAN: ${{ vars.HANDOFF_MEASUREMENT_PLAN }}
     permissions:
       contents: read
-      # Main may download the exact landed revision's successful merge-group build artifact.
-      actions: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Prepare optional handoff measurement
-        id: handoff-measurement
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.HANDOFF_MEASUREMENT_PLAN != ''
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ github.token }}
-          DISABLE_BUILD_HANDOFF: ${{ vars.DISABLE_BUILD_HANDOFF }}
-        run: python3 -B scripts/cache_handoff_measurement.py prepare
       # Includes the manual checker/builder controls in test_operator_manual.py. These source
       # checks need only Python: no research exports, publishing tools or Lean installation.
       - name: Test Python tooling
@@ -155,6 +140,28 @@ jobs:
       # This reads only checked-in files: no Lean, network or `.lake`.
       - name: "Documentation pins"
         run: python3 -B scripts/check_docs.py --config-only
+
+  lean-checks:
+    runs-on: ubuntu-latest
+    outputs:
+      publication: ${{ steps.upload-publication.outputs.artifact-id }}
+    # Temporary #1728 hooks: absent plan is OFF. Activation needs a separately reviewed protocol.
+    env:
+      HANDOFF_MEASUREMENT_PLAN: ${{ vars.HANDOFF_MEASUREMENT_PLAN }}
+    permissions:
+      contents: read
+      # Main may download the exact landed revision's successful merge-group build artifact.
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Prepare optional handoff measurement
+        id: handoff-measurement
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.HANDOFF_MEASUREMENT_PLAN != ''
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DISABLE_BUILD_HANDOFF: ${{ vars.DISABLE_BUILD_HANDOFF }}
+        run: python3 -B scripts/cache_handoff_measurement.py prepare
       - name: Reclaim unused hosted-runner SDK space
         continue-on-error: true
         run: scripts/ci/prepare-runner.sh
@@ -177,7 +184,7 @@ jobs:
         continue-on-error: true
         timeout-minutes: 10
         run: python3 -B scripts/cache/get_mathlib.py --lean-action
-      # The earlier script tests run before Lean is installed and skip this real build test.
+      # The source-check runner has no Lean installation and skips this real build test.
       # Exercise both compiler setup-input omissions with an isolated, cache-disabled project.
       - name: Test Lake build handoff reuse
         working-directory: scripts
@@ -346,8 +353,8 @@ jobs:
         run: |
           set -e
           lake exe checkInitImports
-      # Stage after every required check. Consumers also require the producer's current attempt
-      # to have completed successfully; an artifact from a failed/cancelled run is never reused.
+      # Stage after every required Lean-side check. Source validation runs independently; the
+      # required `ci-checks` aggregator below keeps a source-failing merge group from landing.
       - name: Stage merge-group build outputs
         id: cache-handoff
         if: >-
@@ -406,6 +413,25 @@ jobs:
           # Metadata only: the directory also holds private trial state and must never be uploaded.
           path: ${{ steps.handoff-measurement.outputs.report }}
           retention-days: 14
+
+  # Keep the existing required-check context while source-only and Lean validation overlap. The
+  # Lean job may prepare an unused publication artifact when source validation fails, but no
+  # publisher consumes it unless this aggregator succeeds.
+  ci-checks:
+    needs: [source-checks, lean-checks]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions: {}
+    outputs:
+      publication: ${{ needs.lean-checks.outputs.publication }}
+    steps:
+      - name: Require source and Lean validation
+        env:
+          SOURCE_RESULT: ${{ needs.source-checks.result }}
+          LEAN_RESULT: ${{ needs.lean-checks.result }}
+        run: |
+          test "$SOURCE_RESULT" = success
+          test "$LEAN_RESULT" = success
 
   publish-gcs-cache:
     needs: ci-checks
