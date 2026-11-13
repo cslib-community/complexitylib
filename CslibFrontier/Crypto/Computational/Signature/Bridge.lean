@@ -154,11 +154,11 @@ theorem Forger.eval_eufCmaExperiment_toTyped
     (S : Signature.Scheme (List Bool) (List Bool) (List Bool) (List Bool)) (adversary : Forger)
     (n : ℕ) :
     ProbComp.eval (S.eufCmaExperiment (adversary.toTyped n)) = ProbComp.eval (do
-      let keys ← S.keyGen
-      let out ← (OracleComp.interpret
+      let (pk, sk) ← S.keyGen
+      let ((msg, sig), queried) ← (OracleComp.interpret
         (sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
-          (SignatureScheme.signingOracleOf S.sign keys.2)) (adversary n keys.1)).run []
-      return !out.2.contains out.1.1 && S.verify keys.1 out.1.1 out.1.2) := by
+          (SignatureScheme.signingOracleOf S.sign sk)) (adversary n pk)).run []
+      return !queried.contains msg && S.verify pk msg sig) := by
   simp only [forgeExperiment, ProbComp.eval_bind, ProbComp.eval_pure]
   congr 1
   funext keys
@@ -182,16 +182,16 @@ theorem Forger.eval_eufCmaExperiment_restrict_toTyped
     (S : Signature.Scheme (List Bool) (List Bool) (List Bool) (List Bool)) (adm : List Bool → Bool)
     (adversary : Forger) (n : ℕ) :
     ProbComp.eval ((S.restrict adm).eufCmaExperiment (adversary.toTyped n)) = ProbComp.eval (do
-      let keys ← S.keyGen
-      let out ← (OracleComp.interpret
+      let (pk, sk) ← S.keyGen
+      let ((msg, sig), queried) ← (OracleComp.interpret
         (sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
-          (SignatureScheme.signingOracleOf S.sign keys.2)) (adversary n keys.1)).run []
-      return adm out.1.1 && !out.2.contains out.1.1 && S.verify keys.1 out.1.1 out.1.2) := by
+          (SignatureScheme.signingOracleOf S.sign sk)) (adversary n pk)).run []
+      return adm msg && !queried.contains msg && S.verify pk msg sig) := by
   rw [Forger.eval_eufCmaExperiment_toTyped]
   simp only [Signature.Scheme.restrict_keyGen, Signature.Scheme.restrict_sign,
     Signature.Scheme.restrict_verify, ProbComp.eval_bind, ProbComp.eval_pure]
-  refine congrArg _ (funext fun keys => congrArg _ (funext fun out => ?_))
-  cases adm out.1.1 <;> simp
+  refine congrArg _ (funext fun ⟨pk, sk⟩ => congrArg _ (funext fun ⟨⟨msg, sig⟩, queried⟩ => ?_))
+  cases adm msg <;> simp
 
 namespace SignatureScheme
 
