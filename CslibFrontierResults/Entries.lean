@@ -6,6 +6,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
+import CslibFrontier.Computability.Complexity.Classes.Advice.OneBit
 import CslibFrontier.Algorithms.Lean.Arborescence.PolyTime
 import CslibFrontier.Algorithms.Lean.DFS.SCC
 import CslibFrontier.Algorithms.Lean.MaxDicut.GoemansWilliamson
@@ -16,6 +17,7 @@ import CslibFrontier.Algorithms.Lean.TrimmedYates
 import CslibFrontier.Algorithms.LinearAlgebra.BareissElimination
 import CslibFrontier.Algorithms.Lean.TreeDecomposition.CSP
 import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
+import CslibFrontier.Computability.Circuit.Arithmetic.BitBlast
 import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.LowerBound
 import CslibFrontier.Computability.Circuit.Arithmetic.DepthFive.UpperBound
@@ -75,6 +77,7 @@ import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PotentialL
 import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.PotentialLineNormalization
 import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.SOPLCollapse
 import CslibFrontier.Computability.Complexity.Classes.TFNP.Subclasses.SpernerHardness
+import CslibFrontier.Computability.Complexity.Classes.Time.Sublinear
 import CslibFrontier.Computability.Complexity.Classes.TimeSpace.Williams
 import CslibFrontier.Computability.Complexity.Classes.Toda
 import CslibFrontier.Computability.Complexity.CookLevin.Completeness
@@ -197,6 +200,8 @@ import CslibFrontier.Logics.SecondOrder.WordMSO.OfRegular
 import CslibFrontier.Logics.SecondOrder.WordMSO.Separation
 import CslibFrontier.Logics.SecondOrder.WordMSO.StarFree
 import CslibFrontier.MachineLearning.OnlineLearning.SwapRegret
+import CslibFrontier.MachineLearning.PACLearning.MDL
+import CslibFrontier.MachineLearning.PACLearning.Nonuniform
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.AC0Mod
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.Amplification
 import CslibFrontier.MachineLearning.UniformLearning.CIKK.Complexity
@@ -697,6 +702,37 @@ register_result "bpp-proper-subset-ppoly" where
     machine decider and is obtained nonconstructively using P-selective sets/countability. \
     No efficient separator or uniform circuit-family construction. Strictness is not asserted \
     for arbitrary encoded finite instance domains, where the two classes coincide."
+
+register_result "one-bit-advice-undecidable" where
+  title := "One bit of advice decides a length-dependent undecidable bit language"
+  topic := "complexity theory"
+  sources := [
+    { paper := Goldreich2007DraftR2, theorem := "Theorem 3.7 (one-bit undecidability endpoint)",
+      locator := "January 2007 draft r2.pdf, PDF p. 6; printed p. 122" }
+  ]
+  theorems := [
+    Cslib.Complexity.length_preimage_mem_PWithAdvice_one,
+    Cslib.Complexity.exists_mem_PWithAdvice_one_not_isDecidable
+  ]
+  scope := "Native polynomial-time decider on framed advice/input pairs, with exactly one \
+    arbitrary advice bit per input length. Some accepted bit language has no native machine \
+    decider and has the same membership for all words of equal length. Advice need not be \
+    computable; no efficient construction of the undecidable advice family is claimed. \
+    Arbitrary advice hierarchies and strict P/1 versus P/poly remain separate."
+
+register_result "arithmetic-bit-synthesis-injective-encoding" where
+  title := "Arithmetic bit-synthesis with injective fixed-width encodings"
+  topic := "circuit complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 14, Exercise 1 (synthesis-direction milestone)",
+      locator := "Web draft 2007-01-08, printed p. 265; PDF p. 281" }
+  ]
+  theorems := [Cslib.Circuits.Synthesis.bitBlast_arithmetic]
+  scope := "Arithmetic circuits on a semiring with supplied w-bit encoding and total decoder \
+    satisfying a left-inverse law. Given already-available encoded input functions, all output \
+    bits cost at most size * bitBlastCost w additional De Morgan gates. The encoding need not \
+    be surjective, admitting odd fields. No free-input compiler, reverse simulation, encoding \
+    construction or runtime claim; the full finite-field exercise remains open."
 
 register_result "formula-bounds" where
   title := "Formula lower bounds: Khrapchenko's quadratic bound for parity"
@@ -1478,6 +1514,39 @@ register_result "blum-mansour-swap-regret" where
     With Hedge copies and losses in [-1, 1], swap regret is at most η T + n ln n / η, and \
     2 √(T n ln n) with the tuned rate when n ≥ 2 and T ≥ n ln n. Stationary vectors are \
     chosen classically; no running time is charged."
+
+register_result "srm-nonuniform-learnability" where
+  title := "Countable unions of uniformly convergent classes are nonuniformly learnable by SRM"
+  topic := "statistical learning"
+  sources := [
+    { paper := ShalevShwartzBenDavid2014, theorem := "Theorems 7.3 and 7.5",
+      locator := "Theorem 7.3 in Section 7.1.1, p. 85; Theorem 7.5 in Section 7.2, pp. 87–88" }
+  ]
+  theorems := [
+    Cslib.MachineLearning.PACLearning.isNonuniformLearnable_iUnion,
+    Cslib.MachineLearning.PACLearning.isNonuniformLearnable_of_countable
+  ]
+  scope := "Domain and labels are arbitrary measurable spaces. Uniform convergence is an \
+    explicit rate ε i m δ for m > 0 and δ > 0 with ε i m δ → 0; the learner for accuracy ε and \
+    confidence δ is an SRM rule over pairs (i, h) and may depend on (ε, δ), following the \
+    upstream IsPACLearnable conventions. Countable classes need measurable misclassification \
+    sets. The converse characterization (Theorem 7.2) is not proved."
+
+register_result "mdl-bound" where
+  title := "Minimum description length bound for prefix-free descriptions"
+  topic := "statistical learning"
+  sources := [
+    { paper := ShalevShwartzBenDavid2014, theorem := "Theorem 7.7",
+      locator := "Section 7.3, p. 90" }
+  ]
+  theorems := [
+    Cslib.MachineLearning.PACLearning.IsPrefixFreeDescription.mdl_bound,
+    Cslib.MachineLearning.PACLearning.IsPrefixFreeDescription.measure_pi_exists_le_abs_sub_le
+  ]
+  scope := "Binary descriptions d : (α → β) → List Bool, prefix-free on the class, and \
+    hypotheses with measurable misclassification sets, for m > 0 and δ > 0. With probability \
+    at least 1 - δ every h satisfies L_D(h) ≤ L_S(h) + √((|d h| log 2 + log (2/δ)) / (2m)), \
+    which is sharper than the source's |h| + ln (2/δ). Kraft's inequality is Mathlib's."
 
 register_result "gmw-zero-knowledge" where
   title := "Goldreich–Micali–Wigderson auxiliary-input zero-knowledge proofs for NP"
@@ -2855,6 +2924,35 @@ register_result "cai-furer-immerman-isomorphism" where
     particular cfiEven k and cfiOdd k over K_(2k+4) are non-isomorphic. Indistinguishability \
     in C^(k+1) and k-WL is in cai-furer-immerman-graphs; expander base graphs of size O(k) are \
     not formalized."
+
+register_result "native-sublinear-time-collapse" where
+  title := "Sublinear native algorithms have constant runtime"
+  topic := "time complexity"
+  sources := [
+    { paper := Goldreich2007DraftR2, theorem := "Exercise 4.3",
+      locator := "January 2007 draft r2.pdf, PDF p. 35; printed p. 151" }
+  ]
+  theorems := [
+    Turing.MultiTapeTM.exists_uniform_time_of_fast_length,
+    Turing.MultiTapeTM.exists_uniform_time_of_isLittleO,
+    Turing.MultiTapeTM.ComputableInTimeAndSpace.exists_const_time_of_isLittleO
+  ]
+  scope := "A fixed native sequential-input machine with a uniform sublinear clock on every \
+    input word has a global constant clock. One fast width suffices under a uniform total \
+    clock on all words. Raw-bit computability preserves outputs and independent workspace. \
+    No separate input length, random access or arbitrary encoding extension is asserted."
+
+register_result "sublinear-dtime-equals-constant" where
+  title := "Sublinear deterministic time classes equal constant time"
+  topic := "time complexity"
+  sources := [
+    { paper := Goldreich2007DraftR2, theorem := "Exercise 4.3 (decision-class consequence)",
+      locator := "January 2007 draft r2.pdf, PDF p. 35; printed p. 151" }
+  ]
+  theorems := [Cslib.Complexity.DTIME_eq_const_of_isLittleO]
+  scope := "DTIME encBits p equals DTIME encBits 1 for p=o(n), including affine clock constants. \
+    The input is every raw bit word; prefixes of arbitrary encoded instances need not be \
+    valid, so no such encoding-general class identity is claimed."
 
 register_result "translational-time-hierarchy" where
   title := "Deterministic time hierarchy below every power of the logarithm, by translation"

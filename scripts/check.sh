@@ -2,24 +2,30 @@
 # Check the manuals, then run the required steps of CI's `ci-checks` job (scripts/full_check.py)
 # or, with --quick, the affected-client checks (scripts/quick_check.py); report each gate.
 # REF (default origin/main) is the comparison base for checks of changed files and modules.
-# Usage: scripts/check.sh [--quick] [--base REF] (from the repository root or any worktree)
+# --no-full-fallback (with --quick) reports a change quick mode cannot plan instead of running the
+# full check.
+# Usage: scripts/check.sh [--quick [--no-full-fallback]] [--base REF] (from the repository root
+# or any worktree)
 set -u
 cd "$(dirname "$0")/.." || exit 1
 usage() {
-  echo "Usage: scripts/check.sh [--quick] [--base REF]" >&2
+  echo "Usage: scripts/check.sh [--quick [--no-full-fallback]] [--base REF]" >&2
   exit 2
 }
 quick=0
+no_fallback=()
 base=origin/main
 while (($#)); do
   case $1 in
     --quick) quick=1 ;;
+    --no-full-fallback) no_fallback=(--no-full-fallback) ;;
     --base) (($# > 1)) || usage; shift; base=$1 ;;
     --base=*) base=${1#--base=} ;;
     *) usage ;;
   esac
   shift
 done
+((quick || ${#no_fallback[@]} == 0)) || usage
 log_dir=$(mktemp -d "${TMPDIR:-/tmp}/cslib-frontier-check.XXXXXX") || exit 1
 status=0
 gate=0
@@ -60,6 +66,6 @@ if [ "${COMPLEXITYLIB_CACHE_CHECK_STARTED-}" != "1" ]; then
 fi
 finish
 if ((quick)); then
-  exec python3 scripts/quick_check.py --base "$base"
+  exec python3 scripts/quick_check.py --base "$base" ${no_fallback[@]+"${no_fallback[@]}"}
 fi
 exec python3 -B scripts/full_check.py --base "$base"

@@ -19,6 +19,7 @@ import CslibFrontier.Crypto.Protocols.Cipher.LubyRackoff
 import CslibFrontier.Foundations.Data.BitString.List.Operations
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.CoinFixing
+import CslibFrontier.Probability.IID
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.Product
 import CslibFrontier.Tactic.GameHop
@@ -721,12 +722,10 @@ private theorem bind_uniformOfFintype_fin_three {X β : Type} [Fintype X] [Nonem
     (PMF.uniformOfFintype (Fin 3 → X)).bind (fun f => F (f 0) (f 1) (f 2)) =
       (PMF.uniformOfFintype X).bind fun a => (PMF.uniformOfFintype X).bind fun b =>
         (PMF.uniformOfFintype X).bind fun c => F a b c := by
-  let e : X × X × X ≃ (Fin 3 → X) :=
-    { toFun := fun t => ![t.1, t.2.1, t.2.2], invFun := fun f => (f 0, f 1, f 2)
-      left_inv := fun _ => rfl, right_inv := fun f => by funext i; fin_cases i <;> rfl }
-  rw [← PMF.uniformOfFintype_map_equiv e, PMF.bind_map, ← PMF.uniformOfFintype_prod,
-    ← PMF.uniformOfFintype_prod]
-  simp only [pmf_norm]; rfl
+  rw [← Probability.PMF.iid_uniformOfFintype]
+  simp only [Probability.PMF.iid, Probability.PMF.monad_bind_eq_bind, PMF.bind_bind,
+    PMF.bind_map, PMF.pure_bind, Function.comp_def]
+  rfl
 
 /-- **Three random Feistel rounds against a random permutation**, for randomized word-oracle
 adversaries ([BonehShoup2023], proof of Theorem 4.9): with independent uniform random round
@@ -1100,14 +1099,10 @@ private theorem bind_uniformOfFintype_fin_four {X β : Type} [Fintype X] [Nonemp
       (PMF.uniformOfFintype X).bind fun a => (PMF.uniformOfFintype X).bind fun b =>
         (PMF.uniformOfFintype X).bind fun c => (PMF.uniformOfFintype X).bind fun d =>
           F a b c d := by
-  let e : X × X × X × X ≃ (Fin 4 → X) :=
-    { toFun := fun t => ![t.1, t.2.1, t.2.2.1, t.2.2.2]
-      invFun := fun f => (f 0, f 1, f 2, f 3)
-      left_inv := fun _ => rfl
-      right_inv := fun f => by funext i; fin_cases i <;> rfl }
-  rw [← PMF.uniformOfFintype_map_equiv e, PMF.bind_map, ← PMF.uniformOfFintype_prod,
-    ← PMF.uniformOfFintype_prod, ← PMF.uniformOfFintype_prod]
-  simp only [pmf_norm]; rfl
+  rw [← Probability.PMF.iid_uniformOfFintype]
+  simp only [Probability.PMF.iid, Probability.PMF.monad_bind_eq_bind, PMF.bind_bind,
+    PMF.bind_map, PMF.pure_bind, Function.comp_def]
+  rfl
 
 /-- **Four random Feistel rounds against a random permutation, in both directions**
 ([LubyRackoff1988]), for randomized bidirectional word-oracle adversaries: with independent
