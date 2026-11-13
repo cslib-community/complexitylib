@@ -12,7 +12,23 @@ import CslibFrontierTests.PolyTimePlainDriver
 /-! Actual imported verification projections must be indexed by their programs. Unsupported
 predicates must not silently register an inert certificate under their last argument. -/
 
-open Turing.MultiTapeTM Cslib.Crypto
+open Turing.MultiTapeTM Cslib Cslib.Crypto Cslib.Probability
+
+private def parameterizedIdentity (_ : ℕ) (word : List Bool) : ProbComp (List Bool) := pure word
+
+private theorem parameterizedIdentity_ppt : IsPPT encBits parameterizedIdentity := by
+  change IsPPTOn (encPair encUnary encBits) encBits (fun input => pure input.2)
+  exact (ComputableInPolyTime.snd encUnary encBits).isPPTOn
+
+-- The raw parameterized predicate has a different argument layout, but shares the canonical
+-- `IsPPTOn` certificate table and retains the actual program head.
+run_meta do
+  let type := (← Lean.getConstInfo ``parameterizedIdentity_ppt).type
+  let key ← Lean.Meta.forallTelescope type fun _ conclusion =>
+    Cslib.Tactic.efficiencyKey conclusion
+  unless key.predicate == `Cslib.Probability.IsPPTOn &&
+      key.program == ``parameterizedIdentity && !key.encoded do
+    throwError "incorrect parameterized PPT key"
 
 run_meta do
   for (certificate, program) in
@@ -25,8 +41,9 @@ run_meta do
     let type := (← Lean.getConstInfo certificate).type
     let key ← Lean.Meta.forallTelescope type fun _ conclusion =>
       Cslib.Tactic.efficiencyKey conclusion
-    unless key == (`Turing.MultiTapeTM.ComputableInPolyTime, program, false) do
-      throwError "incorrect imported verification key: {key}"
+    unless key.predicate == `Turing.MultiTapeTM.ComputableInPolyTime &&
+        key.program == program && !key.encoded do
+      throwError "incorrect imported verification key for {certificate}"
     let entries := (Cslib.Tactic.certificateExt.getState (← Lean.getEnv)).getD key #[]
     unless entries.any (fun entry => entry.1 == certificate) do
       throwError "actual verification certificate absent from its program key: {certificate}"

@@ -259,8 +259,12 @@ example (h : RawAliasFull rawOnlyReverse encBits encBits →
 -- Forced production dispatch retains every compatible supplied callback encoding, and without
 -- local callback evidence the ordinary generic scan alternative remains available.
 private meta def scanTwoLocalCallbacks : Aesop.RuleTac := fun input => do
-  let result ← Cslib.Tactic.applyScanWithLocalCallback ``ComputableInPolyTime
-    ``ComputableInPolyTime.anyWithInput input
+  let result ← Cslib.Tactic.applyScanWithLocalCallback {
+    predicate := ``ComputableInPolyTime
+    compositionRule := ``ComputableInPolyTime.comp
+    argumentBinder := `g
+    certificateBinder := `hf
+  } ``ComputableInPolyTime.anyWithInput input
   unless result.applications.size ≥ 2 do
     throwError "both compatible callback applications must survive"
   return result

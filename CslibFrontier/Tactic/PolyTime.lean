@@ -177,7 +177,12 @@ private meta def plainConditionalRules? (target : Expr) : MetaM (Option (Array N
 @[aesop unsafe 100% tactic (rule_sets := [PolyTime])]
 private meta def polytimeKnownCall : Aesop.RuleTac := fun input => do
   let predicate ← input.goal.withContext do polytimePredicate (← input.goal.getType)
-  Cslib.Tactic.applyKnownCall predicate 2 (predicate ++ `comp) `g `hf input
+  Cslib.Tactic.applyKnownCall {
+    predicate
+    compositionRule := predicate ++ `comp
+    argumentBinder := `g
+    certificateBinder := `hf
+  } input
 
 open Lean Meta Elab Tactic in
 /-- Test whether any local routine certificate applies to the current goal. -/
@@ -219,9 +224,13 @@ private meta def polytimeScanKnownCallback : Aesop.RuleTac := fun input => input
   let target := (← instantiateMVars (← input.goal.getType)).consumeMData
   unless target.isAppOf ``ComputableInPolyTime do throwError "expected a plain scan goal"
   let key ← Cslib.Tactic.efficiencyKey target
-  unless key.2.1 == ``List.any do throwError "expected a Boolean list scan"
-  Cslib.Tactic.applyScanWithLocalCallback ``ComputableInPolyTime
-    ``ComputableInPolyTime.anyWithInput input
+  unless key.program == ``List.any do throwError "expected a Boolean list scan"
+  Cslib.Tactic.applyScanWithLocalCallback {
+    predicate := ``ComputableInPolyTime
+    compositionRule := ``ComputableInPolyTime.comp
+    argumentBinder := `g
+    certificateBinder := `hf
+  } ``ComputableInPolyTime.anyWithInput input
 
 open Lean Meta Elab Tactic in
 /-- Decompose constructors before generic composition can guess intermediate encodings. -/
@@ -615,7 +624,7 @@ meta def Internal.withPlainRuleCache (action : TacticM Unit) : TacticM Unit :=
     let env ← getEnv
     let certificates ← (Cslib.Tactic.certificateExt.getState env).foldM (init := {})
       fun certificates key entries => do
-        let entries ← if key.1 == ``ComputableTidilyInPolyTime then pure entries
+        let entries ← if key.predicate == ``ComputableTidilyInPolyTime then pure entries
           else entries.filterM fun (name, _) => return !(← hasRawPremise name)
         return certificates.insert key entries
     let env := searchRuleState Cslib.Tactic.certificateExt env fun _ => certificates
@@ -835,9 +844,13 @@ private meta def polytimeRawFromPlain : TacticM Unit :=
       throwError "expected an explicit raw polynomial-time goal"
     let indexed ← try
       let key ← Cslib.Tactic.efficiencyKey target
-      let plainKey := (``ComputableInPolyTime, key.2.1, key.2.2)
+      let plainKey : Cslib.Tactic.EfficiencyKey := {
+        predicate := ``ComputableInPolyTime
+        program := key.program
+        encoded := key.encoded }
       let named := (Cslib.Tactic.certificateExt.getState (← getEnv)).getD plainKey #[]
-      let functions ← Mathlib.Meta.FunProp.getTheoremsForFunction key.2.1 ``ComputableInPolyTime
+      let functions ← Mathlib.Meta.FunProp.getTheoremsForFunction key.program
+        ``ComputableInPolyTime
       pure (!named.isEmpty || !functions.isEmpty)
     catch _ => pure false
     unless indexed || (← hasPlainConstructionRecipe goal) do

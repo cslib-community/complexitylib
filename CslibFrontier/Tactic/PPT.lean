@@ -83,7 +83,12 @@ attribute [aesop norm unfold (rule_sets := [PPT])] IsPPT
 /-- Prepare local probabilistic routine calls through the same matcher as deterministic calls. -/
 @[aesop unsafe 99% tactic (rule_sets := [PPT])]
 private meta def pptKnownCall : Aesop.RuleTac :=
-  Cslib.Tactic.applyKnownCall ``IsPPTOn 4 ``IsPPTOn.preprocess `prepare `hprogram
+  Cslib.Tactic.applyKnownCall {
+    predicate := ``IsPPTOn
+    compositionRule := ``IsPPTOn.preprocess
+    argumentBinder := `prepare
+    certificateBinder := `hprogram
+  }
 
 /-- Expose named probabilistic certificates as search alternatives. -/
 @[aesop unsafe 99% tactic (rule_sets := [PPT])]

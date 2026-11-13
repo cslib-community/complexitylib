@@ -32,6 +32,8 @@ rule sets for closed probabilistic programs; machine witnesses remain behind the
 ## Main definitions
 
 * `program_certificate`: register a named efficiency theorem before its implementation unfolds.
+* `Cslib.Tactic.EfficiencyKey`: the named predicate/program/encoding lookup key.
+* `Cslib.Tactic.KnownCallSpec`: named composition metadata for supplied routine certificates.
 
 Aesop's index cannot see inside the program, which is a function, so the lookup is a single tactic
 rule for each efficiency predicate rather than one `apply` rule for each certificate.
@@ -77,29 +79,60 @@ def programHead? (body : Expr) : Option (Name × Bool) :=
   else
     body.getAppFn.constName?.map (·, false)
 
-/-- The efficiency predicate and program head of an efficiency statement, and whether the program
-returns its result under an encoding. `IsPPT` statements are indexed under `IsPPTOn`, which they
-unfold to. A certificate stated under an encoding only applies to goals stated the same way. -/
-def efficiencyKey (statement : Expr) : MetaM (Name × Name × Bool) := do
+/-- The lookup key for a named efficiency certificate. -/
+structure EfficiencyKey where
+  /-- The efficiency predicate, with `IsPPT` canonicalized to `IsPPTOn`. -/
+  predicate : Name
+  /-- The constant at the head of the certified program. -/
+  program : Name
+  /-- Whether the program result is immediately passed through its output encoding. -/
+  encoded : Bool
+  deriving Inhabited, BEq, Hashable
+
+/-- The supported parts of an elaborated efficiency statement. Argument positions are confined to
+this parser so certificate lookup and local-call matching share one checked view. -/
+private structure EfficiencyStatement where
+  predicate : Name
+  keyPredicate : Name
+  domain? : Option Expr
+  program : Expr
+
+private def parseEfficiencyStatement (statement : Expr) : MetaM EfficiencyStatement := do
   let statement := statement.consumeMData
   let some predicate := statement.getAppFn.constName?
     | throwError "expected an efficiency statement"
-  unless predicate == `Turing.MultiTapeTM.ComputableInPolyTime ||
+  let args := statement.getAppArgs
+  let parse (expectedArity programIndex : Nat) (domainIndex? : Option Nat)
+      (keyPredicate : Name) : MetaM EfficiencyStatement := do
+    unless args.size == expectedArity do
+      throwError "malformed `{predicate}` efficiency statement: expected {expectedArity} \
+        arguments, got {args.size}"
+    return {
+      predicate
+      keyPredicate
+      domain? := domainIndex?.map fun index => args[index]!
+      program := args[programIndex]! }
+  if predicate == `Turing.MultiTapeTM.ComputableInPolyTime ||
       predicate == `Turing.MultiTapeTM.ComputableTidilyInPolyTime ||
-      predicate == `Turing.MultiTapeTM.ComputableInLogSpace ||
-      predicate == `Cslib.Probability.IsPPTOn || predicate == `Cslib.Probability.IsPPT do
+      predicate == `Turing.MultiTapeTM.ComputableInLogSpace then
+    return ← parse 5 2 (some 0) predicate
+  if predicate == `Cslib.Probability.IsPPTOn then
+    return ← parse 5 4 (some 0) predicate
+  if predicate == `Cslib.Probability.IsPPT then
+    return ← parse 3 2 none `Cslib.Probability.IsPPTOn
+  else
     throwError "unsupported efficiency predicate `{predicate}` for `program_certificate`; \
       expected TM polynomial time or logarithmic space, or PPT"
-  let argument := if predicate == `Turing.MultiTapeTM.ComputableTidilyInPolyTime ||
-      predicate == `Turing.MultiTapeTM.ComputableInLogSpace ||
-      predicate == `Turing.MultiTapeTM.ComputableInPolyTime then
-    statement.getAppArgs[2]! else statement.getAppArgs.back!
-  let program ← Core.betaReduce (← etaExpand argument)
+
+/-- The efficiency predicate and program head of an efficiency statement, and whether the program
+returns its result under an encoding. `IsPPT` statements are indexed under `IsPPTOn`, which they
+unfold to. A certificate stated under an encoding only applies to goals stated the same way. -/
+def efficiencyKey (statement : Expr) : MetaM EfficiencyKey := do
+  let statement ← parseEfficiencyStatement statement
+  let program ← Core.betaReduce (← etaExpand statement.program)
   let some (head, encoded) ← lambdaTelescope program fun _ body => pure (programHead? body)
     | throwError "the program body is not an application of a constant"
-  let predicate := if predicate == `Cslib.Probability.IsPPT then
-    `Cslib.Probability.IsPPTOn else predicate
-  return (predicate, head, encoded)
+  return { predicate := statement.keyPredicate, program := head, encoded }
 
 /-- Expose parameterized PPT in a certificate's premises and conclusion for encoded-input
 automation. The generated theorem is definitionally the original proof. -/
@@ -117,8 +150,8 @@ private def encodedCertificate (declName : Name) : MetaM Name := do
 
 /-- Registered certificates, indexed by efficiency predicate and program head. Each certificate
 carries the hypotheses to solve as soon as it is applied. -/
-initialize certificateExt : SimpleScopedEnvExtension ((Name × Name × Bool) × Name × Array Name)
-    (Std.HashMap (Name × Name × Bool) (Array (Name × Array Name))) ←
+initialize certificateExt : SimpleScopedEnvExtension (EfficiencyKey × Name × Array Name)
+    (Std.HashMap EfficiencyKey (Array (Name × Array Name))) ←
   registerSimpleScopedEnvExtension {
     addEntry := fun certificates (key, entry) =>
       certificates.insert key ((certificates.getD key #[]).push entry)
@@ -170,10 +203,10 @@ initialize registerBuiltinAttribute {
       let key ← forallTelescope (← getConstInfo certificate).type fun _ conclusion =>
         efficiencyKey conclusion
       return (certificate, key)
-    if key.1 == `Turing.MultiTapeTM.ComputableTidilyInPolyTime ||
-        key.1 == `Turing.MultiTapeTM.ComputableInPolyTime ||
-        key.1 == `Turing.MultiTapeTM.ComputableInLogSpace ||
-        key.1 == `Cslib.Probability.IsPPTOn then
+    if key.predicate == `Turing.MultiTapeTM.ComputableTidilyInPolyTime ||
+        key.predicate == `Turing.MultiTapeTM.ComputableInPolyTime ||
+        key.predicate == `Turing.MultiTapeTM.ComputableInLogSpace ||
+        key.predicate == `Cslib.Probability.IsPPTOn then
       unless ← hasGlobalFunProp certificate do
         Attribute.add certificate `fun_prop .missing kind
     certificateExt.add (key, certificate, eager) kind
@@ -239,7 +272,7 @@ metavariable assignments until the surrounding proof search has also succeeded. 
 def applyCertificates (predicate : Name) : Aesop.RuleTac := fun input => input.goal.withContext do
   let target := (← instantiateMVars (← input.goal.getType)).consumeMData
   unless target.isAppOf predicate do throwError "expected an efficiency goal for {predicate}"
-  let key@(_, head, _) ← efficiencyKey target
+  let key ← efficiencyKey target
   let initial ← saveState
   let mut applications := #[]
   for (certificate, eager) in (certificateExt.getState (← getEnv)).getD key #[] do
@@ -258,7 +291,7 @@ def applyCertificates (predicate : Name) : Aesop.RuleTac := fun input => input.g
         successProbability? := none }
     catch _ => pure ()
     finally initial.restore
-  if applications.isEmpty then throwError "no certificate for `{head}` applies"
+  if applications.isEmpty then throwError "no certificate for `{key.program}` applies"
   return ⟨applications⟩
 
 /-- Apply a rule with known arguments, leaving all remaining hypotheses as goals. -/
@@ -292,32 +325,50 @@ private partial def prepareArgument (domain type : Expr) : MetaM Expr := do
   else
     mkFreshExprMVar (← mkArrow domain type)
 
+/-- Named metadata for applying a supplied routine certificate through a composition theorem. -/
+structure KnownCallSpec where
+  /-- Efficiency predicate shared by the goal and the supplied certificate. -/
+  predicate : Name
+  /-- The theorem that composes a prepared argument with the supplied routine. -/
+  compositionRule : Name
+  /-- Binder of the prepared argument in `compositionRule`. -/
+  argumentBinder : Name
+  /-- Binder of the supplied routine certificate in `compositionRule`. -/
+  certificateBinder : Name
+
 /-- Apply local routine certificates through a composition rule, exposing tuple arguments.
-Predicate parameters select the program; rule parameter names select the argument and certificate.
-Each candidate retains separate assignments and leaves argument preparation to the surrounding
-proof search, so other obligations can constrain its encoding. -/
-def applyKnownCall (predicate : Name) (programIndex : Nat) (rule : Name)
-    (argumentName certificateName : Name) : Aesop.RuleTac := fun input =>
+The shared statement parser selects the programs and domains; named rule binders select the
+prepared argument and certificate. Each candidate retains separate assignments and leaves
+argument preparation to the surrounding proof search, so other obligations can constrain its
+encoding. -/
+def applyKnownCall (spec : KnownCallSpec) : Aesop.RuleTac := fun input =>
   input.goal.withContext do
     let target := (← instantiateMVars (← input.goal.getType)).consumeMData
-    unless target.isAppOf predicate do throwError "expected an efficiency goal for {predicate}"
-    let program := target.getAppArgs[programIndex]!
+    let targetStatement ← parseEfficiencyStatement target
+    unless targetStatement.predicate == spec.predicate do
+      throwError "expected an efficiency goal for {spec.predicate}"
+    let some domain := targetStatement.domain?
+      | throwError "efficiency predicate `{spec.predicate}` has no encoded-input domain"
+    let program := targetStatement.program
     if program.hasExprMVar then throwError "the called program is not determined"
     let head ← lambdaTelescope (← Core.betaReduce (← etaExpand program)) fun _ body =>
       pure body.getAppFn
     let initial ← saveState
     let mut applications := #[]
     for decl in ← getLCtx do
-      if decl.isImplementationDetail || !decl.type.isAppOf predicate then continue
-      let certified := decl.type.getAppArgs[programIndex]!
+      let declType := decl.type.consumeMData
+      if decl.isImplementationDetail || !declType.isAppOf spec.predicate then continue
+      let certifiedStatement ← parseEfficiencyStatement declType
+      let some certifiedDomain := certifiedStatement.domain?
+        | throwError "efficiency predicate `{spec.predicate}` has no encoded-input domain"
+      let certified := certifiedStatement.program
       let called ← lambdaTelescope (← Core.betaReduce (← etaExpand certified)) fun _ body =>
         pure body.getAppFn
       unless called == head do continue
       try
         let goals ← (Lean.Elab.Tactic.run input.goal <|
             Term.withoutErrToSorry <| withoutRecover do
-          let domain := target.getAppArgs[0]!
-          let argument ← prepareArgument domain decl.type.getAppArgs[0]!
+          let argument ← prepareArgument domain certifiedDomain
           let composed ← withLocalDeclD `input domain fun input =>
             mkLambdaFVars #[input] (mkApp certified (mkApp argument input))
           unless ← isDefEq (← withReducible (reduce composed)) program do
@@ -330,7 +381,8 @@ def applyKnownCall (predicate : Name) (programIndex : Nat) (rule : Name)
             input.goal.assign decl.toExpr
             replaceMainGoal []
           else
-            applyWithArguments rule #[(argumentName, argument), (certificateName, decl.toExpr)]
+            applyWithArguments spec.compositionRule
+              #[(spec.argumentBinder, argument), (spec.certificateBinder, decl.toExpr)]
             if ← (← getGoals).anyM (fun goal => do isDefEq (← goal.getType) target) then
               throwError "composition made no progress").run'
         if ← Aesop.hasSorry (mkMVar input.goal) then
@@ -349,7 +401,8 @@ def applyKnownCall (predicate : Name) (programIndex : Nat) (rule : Name)
 /-- Apply a scan through each matching supplied callback before checking its list. Argument
 preparation must prove the callback's exact encoding contract. Each application is independent;
 ordinary certificate lookup remains a separate fallback if a later obligation rejects it. -/
-def applyScanWithLocalCallback (predicate certificate : Name) : Aesop.RuleTac := fun input =>
+def applyScanWithLocalCallback (call : KnownCallSpec)
+    (certificate : Name) : Aesop.RuleTac := fun input =>
   input.goal.withContext do
     let initial ← saveState
     let mut applications := #[]
@@ -357,8 +410,7 @@ def applyScanWithLocalCallback (predicate certificate : Name) : Aesop.RuleTac :=
       let goals ← applyNamedCertificate input.goal certificate
       let some callback ← goals.findM? fun goal => return (`htest).isSuffixOf (← goal.getTag)
         | throwError "scan has no callback premise"
-      let knownCalls ← applyKnownCall predicate 2 (predicate ++ `comp) `g `hf
-        { input with goal := callback }
+      let knownCalls ← applyKnownCall call { input with goal := callback }
       for matched in knownCalls.applications do
         try
           matched.postState.restore

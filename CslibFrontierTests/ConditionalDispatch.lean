@@ -226,7 +226,7 @@ run_meta do
   let key ← Lean.Meta.forallTelescope type fun _ conclusion =>
     Cslib.Tactic.efficiencyKey conclusion
   let entries := (Cslib.Tactic.certificateExt.getState (← Lean.getEnv)).getD key #[]
-  unless key.2.1 == ``ite && entries.any (fun entry => entry.1 == certificate) do
+  unless key.program == ``ite && entries.any (fun entry => entry.1 == certificate) do
     throwError "conditional certificate is not indexed by its actual conditional head"
   let info ← Lean.getConstInfo ``indexedConditionalDriver
   let some value := info.value? (allowOpaque := true) | throwError "missing indexed driver proof"

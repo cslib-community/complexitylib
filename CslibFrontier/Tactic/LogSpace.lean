@@ -90,7 +90,12 @@ attribute [aesop unsafe 85% apply (rule_sets := [LogSpace])] ComputableInLogSpac
 /-- Reuse local routines before unfolding their implementation. -/
 @[aesop unsafe 100% tactic (rule_sets := [LogSpace])]
 private meta def knownCall : Aesop.RuleTac :=
-  Cslib.Tactic.applyKnownCall ``ComputableInLogSpace 2 ``ComputableInLogSpace.comp `f `hg
+  Cslib.Tactic.applyKnownCall {
+    predicate := ``ComputableInLogSpace
+    compositionRule := ``ComputableInLogSpace.comp
+    argumentBinder := `f
+    certificateBinder := `hg
+  }
 
 /-- Try named logspace certificates without unfolding their implementations. -/
 @[aesop unsafe 99% tactic (rule_sets := [LogSpace])]
