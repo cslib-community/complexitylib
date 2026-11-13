@@ -77,7 +77,9 @@ class RuleTests(unittest.TestCase):
         # a nearby chain outside the predicate still counts.
         for head in ("ComputableInPolyTime", "Turing.MultiTapeTM.ComputableInPolyTime",
                      "_root_.Turing.MultiTapeTM.ComputableInPolyTime", "ComputableInSpace",
-                     "Turing.MultiTapeTM.ComputableInSpace", "IsPPT", "Cslib.Crypto.IsPPT"):
+                     "Turing.MultiTapeTM.ComputableInSpace", "IsPPT", "Cslib.Crypto.IsPPT",
+                     # Oracle PPT predicates also carry `@[fun_prop]` lemmas (Memoize, Parameter).
+                     "IsOraclePPT", "IsOraclePPTOn", "Cslib.Probability.IsOraclePPTOn"):
             with self.subTest(head=head):
                 self.assertEqual(chains(f"theorem t : {head} (fun c => c.1.2) e e := sorry\n"),
                                  [])

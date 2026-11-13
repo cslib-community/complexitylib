@@ -20,9 +20,9 @@ declaration reader this check shares; unlike that check, `Internal` namespaces a
 The standing exceptions of CONTRIBUTING do not count:
 
 * declarations marked `@[program_certificate]` or `@[fun_prop]`, and chains inside an application
-  of an efficiency predicate (`Computable…In…`, `IsPPT…`, `PolyTimeComputable…`, `Refines`,
-  bare or namespace-qualified, as in `Turing.MultiTapeTM.ComputableInPolyTime`): conclusions that
-  automation looks up by head keep the projection form;
+  of an efficiency predicate (`Computable…In…`, `IsPPT…`, `IsOraclePPT…`, `PolyTimeComputable…`,
+  `Refines`, bare or namespace-qualified, as in `Turing.MultiTapeTM.ComputableInPolyTime`):
+  conclusions that automation looks up by head keep the projection form;
 * section `variable`s, which are not declarations;
 * named accessors, a `def` or `abbrev` whose body is one chain on a binder, such as
   `abbrev Ctx.desc (c : Ctx) := c.1.2`: these are the recommended remedy.
@@ -81,7 +81,7 @@ TACTIC = re.compile(r"(?<![\w'.!?])(by|decreasing_by|termination_by)(?![\w'!?])"
 # `_root_.IsPPT`): automation looks it up by its last component, however it is spelled.
 EFFICIENCY = re.compile(
     r"(?<![\w'.])(?:[\w']+\.)*"
-    r"(?:Computable\w*In\w*|IsPPT\w*|PolyTimeComputable\w*|Refines)(?![\w'!?])")
+    r"(?:Computable\w*In\w*|IsPPT\w*|IsOraclePPT\w*|PolyTimeComputable\w*|Refines)(?![\w'!?])")
 # The body of a named accessor: `:= c.1.2` or `:= fun c => c.1.2`, optionally parenthesized.
 ACCESSOR = re.compile(r"\s*:=\s*(?:fun\s+\w+\s*=>\s*)?\(?\s*[\w'.]+?(?:\." + COMPONENT
                       + r"){2,}\s*\)?\s*")
