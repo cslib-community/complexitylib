@@ -35,6 +35,16 @@ namespace Cslib.BitString
 def listDot (left right : List Bool) : Bool :=
   (left.zipWith Bool.and right).foldl Bool.xor false
 
+/-- The inner product with an empty list is `false`. -/
+@[simp]
+theorem listDot_nil_left (right : List Bool) : listDot [] right = false :=
+  rfl
+
+/-- The inner product with an empty list is `false`. -/
+@[simp]
+theorem listDot_nil_right (left : List Bool) : listDot left [] = false := by
+  cases left <;> rfl
+
 /-- On `n`-bit strings, the list inner product is the dot product. -/
 @[simp]
 theorem listDot_ofFn {n : ℕ} (left right : BitString n) :

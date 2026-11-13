@@ -14,6 +14,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.P
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString.Dot
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Captured
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fold
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
@@ -732,7 +733,8 @@ theorem computableInPolyTime_polyComposePow :
 private theorem tidy_listDot :
     ComputableTidilyInPolyTime (fun p : List Bool × List Bool => listDot p.1 p.2)
       (encPair encBits encBits) encBool :=
-  (tidy_bitsFoldBool xor false).comp (ComputableTidilyInPolyTime.bitsZipWith and)
+  (by fun_prop : ComputableInPolyTime (fun p : List Bool × List Bool => listDot p.1 p.2)
+    (encPair encBits encBits) encBool).tidy
 
 private def kernelDot (p : List (List Bool) × List Bool) (v : List Bool) : Bool :=
   listDot p.2 v

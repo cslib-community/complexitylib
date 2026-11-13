@@ -12,10 +12,10 @@ public import CslibFrontier.Computability.GenericRAM.Native.IndexFold
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 public import CslibFrontier.Foundations.Combinatorics.Expander.TannerCode
 public import CslibFrontier.Foundations.Data.BitString.ParityTestBounds
+public import CslibFrontier.Foundations.Data.BitString.List.Dot
 import CslibFrontier.Computability.GenericRAM.Native.BooleanFold
 import CslibFrontier.Foundations.Data.BitString.Binary
 import CslibFrontier.Foundations.Data.BitString.InitialTests
-import CslibFrontier.Foundations.Data.BitString.List.Dot
 import CslibFrontier.Foundations.Data.BitString.Parity.DotProduct
 import CslibFrontier.Foundations.Data.List.OfFn
 import CslibFrontier.Foundations.Data.Nat.CeilDiv
@@ -25,6 +25,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString.Dot
 import Mathlib.Analysis.Complex.ExponentialBounds
 import CslibFrontier.Tactic.EncLen
 import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
@@ -522,7 +523,7 @@ def checkSmallBiasShifts (ell d maxBiasNum maxBiasDen : ℕ) (shifts : List (Lis
     (fun (idx, ((ell, d, maxBiasNum, maxBiasDen), shifts), ok) =>
       (((ell, d, maxBiasNum, maxBiasDen), shifts), ok && (decide (idx = 0) ||
         let odd := shifts.countP fun row =>
-          (row.zipWith Bool.and (lowBits ell idx)).foldl Bool.xor false
+          listDot row (lowBits ell idx)
         let diff := (d - 2 * odd) + (2 * odd - d)
         decide (diff * maxBiasDen ≤ maxBiasNum * d))))
     (2 ^ ell) (((ell, d, maxBiasNum, maxBiasDen), shifts),
@@ -600,8 +601,7 @@ private theorem checkSmallBiasShifts_cert_aux :
   have hr1 := fst (encPair encBiasQ encNat) encBits
   have hr2 := snd (encPair encBiasQ encNat) encBits
   have hodd := countPWithInput (test := fun p row => listDot row (lowBits p.1.1.1 p.2))
-    (hq2.comp' hp1) (bitsFoldlWithInput Bool.xor (bitsZipWithInput Bool.and hr2
-      (bitsLow (hellQ.comp' (hp1.comp' hr1)) (hp2.comp' hr1))) (.const false))
+    (hq2.comp' hp1) (bitsListDot hr2 (bitsLow (hellQ.comp' (hp1.comp' hr1)) (hp2.comp' hr1)))
   have h2odd := unary_mul' (.const 2) hodd
   have hdiff := unary_add' (.unary_sub' hdP h2odd) (.unary_sub' h2odd hdP)
   have htest := binary_le.comp ((binary_mul' (unary_to_binary.comp hdiff)
@@ -665,7 +665,7 @@ def checkLocalCodeDistance (c d minDist : ℕ) (H0 : List (List Bool)) : Bool :=
     (fun (idx, ((c, d, minDist), H0), ok) =>
       (((c, d, minDist), H0), ok && (decide (idx = 0) ||
         let w := lowBits d idx
-        !(H0.all fun row => !((row.zipWith Bool.and w).foldl Bool.xor false)) ||
+        !(H0.all fun row => !listDot row w) ||
           decide (minDist ≤ w.count true))))
     (2 ^ d) (((c, d, minDist), H0), (H0.length == c) && H0.all (fun row => row.length == d))
   ok
@@ -714,8 +714,7 @@ private theorem checkLocalCodeDistance_cert_aux :
   have hw := bitsLow (hdQ.comp' hp1) hp2; have hr1 := fst (encPair encLocalQ encNat) encBits
   have hr2 := snd (encPair encLocalQ encNat) encBits
   have hall := allWithInput (test := fun p row => !listDot row (lowBits p.1.1.2.1 p.2))
-    (hq2.comp' hp1) (bool_not.comp'
-      (bitsFoldlWithInput Bool.xor (bitsZipWithInput Bool.and hr2 (hw.comp' hr1)) (.const false)))
+    (hq2.comp' hp1) (bool_not.comp' (bitsListDot hr2 (hw.comp' hr1)))
   have htest := bool_or.comp ((bool_not.comp hall).prod
     (unary_le' (hq1.snd'.snd'.comp hp1) (bitsCountWithInput hw (.const true))))
   exact (allPositiveIndices_cert (fun q => q.1.2.1) id

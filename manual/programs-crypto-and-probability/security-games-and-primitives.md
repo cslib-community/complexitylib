@@ -40,8 +40,9 @@ and `predictionExperiment sample f h P` asks `P` for the bit `h x` given `f x`. 
 `PMF.uniformOfFintype (BitString n)`; `ProbComp.eval_inversionExperiment` moves a program
 experiment to its distribution. Instantiate these experiments for a new inversion-style notion
 instead of writing another sampling block. The inner product of bit lists is
-[`BitString.listDot`](../../CslibFrontier/Foundations/Data/BitString/List/Dot.lean), which is the
-dot product `⬝ᵥ` on `List.ofFn` inputs (`listDot_ofFn`).
+[`BitString.listDot`](../../CslibFrontier/Foundations/Data/BitString/List/Dot.lean), which is
+Mathlib's `dotProduct` on `List.ofFn` inputs (`listDot_ofFn`); use it, and its polynomial-time rule
+`ComputableInPolyTime.bitsListDot`, instead of spelling out the zip-and-fold parity.
 
 For Diffie–Hellman games, import
 [`DiffieHellman.lean`](../../CslibFrontier/Crypto/Computational/DiffieHellman.lean) and open

@@ -151,7 +151,8 @@ noncomputable def invert {n : ℕ} {Coins : Image → Type*} (f : BitString n �
   (coins image).bind fun seed => invertFixed f (predictor image seed) k image
 
 /-- Average parity-prediction success over a uniform preimage, the seed, and a uniform query.
-The seed is drawn once per image and reused for every query, as in the reduction. -/
+Each run asks one query; unlike `Cslib.Crypto.predictionExperiment`, the seed is drawn per image
+before the query, so the analysis can average over the query with the input and seed fixed. -/
 noncomputable def parityPredictionExperiment {n : ℕ} {Coins : Image → Type*}
     (f : BitString n → Image)
     (predictor : (image : Image) → Coins image → BitString n → Bool)

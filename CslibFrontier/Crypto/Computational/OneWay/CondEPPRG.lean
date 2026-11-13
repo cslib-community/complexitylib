@@ -1057,7 +1057,7 @@ private theorem wordHash_take {a count : ℕ} (h : a ≤ count) (seed input : Li
 private theorem wordHash_succ (a : ℕ) (seed input : List Bool) :
     LinearHash.wordHash (a + 1) seed input =
       LinearHash.wordHash a seed input ++
-        [((listRow input.length a seed).zipWith Bool.and input).foldl Bool.xor false] := by
+        [listDot (listRow input.length a seed) input] := by
   simp [LinearHash.wordHash, listRows, List.range_succ]
 
 /-- On `BitString` inputs, `LinearHash.wordHash m` with `m ≤ count` agrees with
