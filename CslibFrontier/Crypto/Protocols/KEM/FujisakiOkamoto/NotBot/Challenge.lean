@@ -13,6 +13,7 @@ import CslibFrontier.Languages.Probabilistic.Simulation
 import CslibFrontier.Languages.Probabilistic.UntilBad.Flag
 import CslibFrontier.Languages.Probabilistic.UntilBad.TwoCost
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.BindCompare
 import CslibFrontier.Probability.PMF.BindFailure
 import CslibFrontier.Probability.PMF.Event
 
@@ -611,21 +612,6 @@ private theorem genHandler_mono (S : Scheme PK SK M R CT K) (d : List (M × R) �
 /-- The simulator state has cached `G(mStar)` or `Hq(cStar)`. -/
 private def progBad (mStar : M) (cStar : CT) (s : SimState M R CT K) : Prop :=
   (s.gCache.lookup mStar).isSome ∨ (s.hqCache.lookup cStar).isSome
-
-/-- Binds whose first stages agree on good states, and whose continuations agree on good inputs
-and outputs and keep bad states bad, agree on good outputs. -/
-private theorem bind_apply_eq_of_good {α β σ : Type} {bad : σ → Prop} {p₁ p₂ : PMF (α × σ)}
-    {f₁ f₂ : α × σ → PMF (β × σ)} (hp : ∀ x, ¬bad x.2 → p₁ x = p₂ x)
-    (hf : ∀ x, ¬bad x.2 → ∀ y, ¬bad y.2 → f₁ x y = f₂ x y)
-    (h₁ : ∀ x, bad x.2 → ∀ y ∈ (f₁ x).support, bad y.2)
-    (h₂ : ∀ x, bad x.2 → ∀ y ∈ (f₂ x).support, bad y.2) (y : β × σ) (hy : ¬bad y.2) :
-    (p₁.bind f₁) y = (p₂.bind f₂) y := by
-  rw [PMF.bind_apply, PMF.bind_apply]
-  refine tsum_congr fun x => ?_
-  by_cases hx : bad x.2
-  · rw [(PMF.apply_eq_zero_iff _ _).mpr fun hm => hy (h₁ x hx y hm),
-      (PMF.apply_eq_zero_iff _ _).mpr fun hm => hy (h₂ x hx y hm), mul_zero, mul_zero]
-  · rw [hp x hx, hf x hx y hy]
 
 /-- A fresh memoized query for `x` caches `x`. -/
 private theorem lookup_isSome_of_mem_support_memoize {α β : Type} [BEq α] [LawfulBEq α]

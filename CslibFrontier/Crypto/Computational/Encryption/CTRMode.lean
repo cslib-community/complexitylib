@@ -18,6 +18,7 @@ import CslibFrontier.Languages.Probabilistic.UntilBad.TwoCost
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Support
+import CslibFrontier.Probability.PMF.UniformPoint
 
 /-!
 # CPA Security of Counter (CTR) Mode
@@ -334,31 +335,6 @@ private theorem length_of_mem_support_freshQuery
   have hlen : us.length = blockModeBlocks ℓ q := length_snd_of_mem_support_uniformDraws hp
   simp only [length_ctrCache, hlen]
 
-private theorem toOuterMeasure_eq_val_of_inj {y : BitString n}
-    (f : BitString n → BitString n) (hf : Function.Injective f) :
-    (PMF.uniformOfFintype (BitString n)).toOuterMeasure {iv | f iv = y} ≤
-      ((2 : ℝ≥0∞) ^ n)⁻¹ := by
-  classical
-  by_cases hne : ∃ iv₀, f iv₀ = y
-  · obtain ⟨iv₀, hiv₀⟩ := hne
-    have hset : {iv : BitString n | f iv = y} = {iv₀} := by
-      ext iv
-      simp only [Set.mem_ofPred_eq, Set.mem_singleton_iff]
-      constructor
-      · intro h
-        exact hf (h.trans hiv₀.symm)
-      · rintro rfl
-        exact hiv₀
-    rw [hset, PMF.toOuterMeasure_apply_singleton, PMF.uniformOfFintype_apply]
-    simp
-  · have hset : {iv : BitString n | f iv = y} = ∅ := by
-      ext iv
-      simp only [Set.mem_ofPred_eq, Set.mem_empty_iff_false, iff_false]
-      intro h
-      exact hne ⟨iv, h⟩
-    rw [hset]
-    simp
-
 private theorem toOuterMeasure_exists_ctr_mem_le
     (counter : BitString n → ℕ → BitString n) (ks : List (BitString n)) (k : ℕ)
     (hiv : ∀ i < k, Function.Injective (fun iv => counter iv i)) :
@@ -384,8 +360,9 @@ private theorem toOuterMeasure_exists_ctr_mem_le
         Finset.sum_le_sum fun _ _ => MeasureTheory.measure_biUnion_finset_le _ _
     _ ≤ ∑ _j ∈ Finset.range k, ∑ _y ∈ ks.toFinset, ((2 : ℝ≥0∞) ^ n)⁻¹ := by
         refine Finset.sum_le_sum fun j hj => Finset.sum_le_sum fun y _ => ?_
-        exact toOuterMeasure_eq_val_of_inj (fun iv => counter iv j)
-          (hiv j (Finset.mem_range.1 hj))
+        refine (PMF.toOuterMeasure_uniformOfFintype_le_of_subsingleton
+          (Set.subsingleton_singleton.preimage (hiv j (Finset.mem_range.1 hj)))).trans_eq ?_
+        simp
     _ = (k : ℝ≥0∞) * ((ks.toFinset.card : ℝ≥0∞) * ((2 : ℝ≥0∞) ^ n)⁻¹) := by
         simp [Finset.sum_const, nsmul_eq_mul]
     _ ≤ (k : ℝ≥0∞) * ((ks.length : ℝ≥0∞) * ((2 : ℝ≥0∞) ^ n)⁻¹) := by

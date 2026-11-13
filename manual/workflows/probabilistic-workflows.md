@@ -189,8 +189,20 @@ over the uniform law by hand. For any law `μ`, `PMF.bind_pure_decide_eq_apply_t
 it: a uniform draw equals `a` with probability `(Fintype.card α)⁻¹`, and
 `PMF.uniformOfFintype_bind_pure_apply_true_le` gives the upper bound `(Fintype.card α)⁻¹` for any
 test accepting at most one value, such as comparing a fixed point with an injective image of the
-draw. The [fixed-group Diffie–Hellman checks](../../CslibFrontierTests/Crypto/DiffieHellmanFinite.lean)
+draw. For an event written as a set, `PMF.toOuterMeasure_uniformOfFintype_le_of_subsingleton` gives
+the same bound when the set has at most one member; for the preimage of a point under an injective
+`f`, supply `Set.subsingleton_singleton.preimage hf`. The
+[fixed-group Diffie–Hellman checks](../../CslibFrontierTests/Crypto/DiffieHellmanFinite.lean)
 compute discrete-logarithm advantages `1 / q` with it.
+
+To compare two-stage experiments at one outcome, import
+[PMF/BindCompare.lean](../../CslibFrontier/Probability/PMF/BindCompare.lean) instead of expanding
+`PMF.bind_apply` into sums. `PMF.bind_apply_add_of_forall` and `PMF.bind_apply_add_eq_on_support`
+carry a pointwise sum identity between continuations over to the experiments,
+`PMF.bind_apply_le_add_of_ne` bounds continuations that are close away from one first-stage result,
+and `PMF.bind_apply_eq_of_good` equates stateful experiments that agree until a bad state. The
+one-sided comparisons on the support are in
+[PMF/Bind.lean](../../CslibFrontier/Probability/PMF/Bind.lean).
 
 Moving a bound between `ℝ≥0∞` and `ℝ` or `ℝ≥0` (`ENNReal.toReal_mono`, `ENNReal.toReal_add`,
 `ENNReal.toNNReal_mono`, `ENNReal.toReal_sum`) needs every term to be finite. Import

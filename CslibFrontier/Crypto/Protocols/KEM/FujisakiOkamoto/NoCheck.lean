@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Security
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Probability.PMF.Union
 import CslibFrontier.Probability.PMF.UniformPoint
 import CslibFrontier.Probability.Product
@@ -292,12 +293,6 @@ theorem interpret_leakAdv (S : Scheme PK SK (Fin n → Bool) R (CT × Option (Fi
     funext fun i => by rw [List.lookup_graph _ (List.mem_finRange i)]; rfl
   simp [leakAdv, interpret_leakBits S G H dk c m hdec, Scheme.eagerNoCheckOracle, hguess]
 
-/-- The probability of an outcome of a deterministic function of one sample. -/
-private theorem bind_pure_apply_eq_toOuterMeasure {α β : Type} (μ : PMF α) (f : α → β) (y : β) :
-    (μ.bind fun a => PMF.pure (f a)) y = μ.toOuterMeasure (f ⁻¹' {y}) := by
-  rw [← PMF.toOuterMeasure_map_apply, PMF.toOuterMeasure_apply_singleton]
-  rfl
-
 /-- Two distinct coordinates of a uniform random function collide with probability
 `1 / |γ|`. -/
 private theorem pi_toOuterMeasure_eq {ι γ : Type} [Fintype ι] [Fintype γ] [Nonempty γ]
@@ -342,9 +337,7 @@ private theorem le_advantage_of_apply_le {g₀ g₁ : Game} {n k : ℕ} (hk : k 
   rw [ENNReal.toReal_mul, ENNReal.toReal_inv, ENNReal.toReal_natCast, ENNReal.toReal_natCast]
     at hr₀
   rw [ENNReal.toReal_inv, ENNReal.toReal_natCast] at hr₁
-  have hsum : (g₀ true).toReal + (g₀ false).toReal = 1 := by
-    rw [← ENNReal.toReal_add (PMF.apply_ne_top _ _) (PMF.apply_ne_top _ _), add_comm, ← tsum_bool,
-      PMF.tsum_coe, ENNReal.toReal_one]
+  have hsum := toReal_true_add_toReal_false g₀
   rw [Game.coe_advantage, Game.coe_succProbability, Game.coe_succProbability]
   refine le_trans ?_ (le_abs_self _)
   rw [add_div, div_eq_mul_inv, div_eq_mul_inv, one_mul]
@@ -393,7 +386,9 @@ theorem advantage_eagerNoCheckGame_leakAdv [Finite R] [Fintype CT] [Fintype K] [
     have hdec := leakyPKE_dec_some (hcorr pk sk hk m (G m) ((mem_support_pi_iff _ _).1 hG m))
     simp only [encT_leakyPKE, Bool.false_eq_true, ite_false,
       interpret_leakAdv ⟨leakyPKE P, sampleMsg, sampleKey⟩ _ _ ⟨sk, pk, s⟩ _ m hdec, PMF.bind_const]
-    rw [hkey, bind_pure_apply_eq_toOuterMeasure]
+    rw [hkey]
+    change (PMF.map _ _) false ≤ _
+    rw [← PMF.toOuterMeasure_apply_singleton, PMF.toOuterMeasure_map_apply]
     set c := P.encDet pk m (G m)
     have hab (i : Fin n) : ((false, fun _ => false, (c, some i)) : Bool × (Fin n → Bool) × _) ≠
         (false, fun _ => true, (c, some i)) := by

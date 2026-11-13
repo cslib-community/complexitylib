@@ -17,6 +17,7 @@ import CslibFrontier.Crypto.Negligible
 import CslibFrontier.Crypto.Negligible.Basic
 import CslibFrontier.Probability.Guessing.Leakage
 import CslibFrontier.Probability.PMF.Bind
+import CslibFrontier.Probability.PMF.UniformPoint
 import CslibFrontier.Tactic.PolyTime
 import CslibFrontier.Tactic.PPT
 import CslibFrontier.Probability.PMF.Finiteness
@@ -143,11 +144,8 @@ theorem isCollision_or_eq_of_keyDigest_eq {H : List Bool → List Bool → List 
 distribution gives that word. -/
 private theorem bind_pure_beq_apply (P : PMF (List Bool)) (φ : List Bool → List Bool)
     (x : List Bool) : (P.bind fun c => PMF.pure (φ c == x)) true = (P.map φ) x := by
-  rw [PMF.bind_apply, PMF.map_apply]
-  refine tsum_congr fun c => ?_
-  by_cases h : φ c = x
-  · simp [h]
-  · simp [h, Ne.symm h]
+  simp only [Bool.beq_eq_decide_eq, ← PMF.bind_pure_decide_eq_apply_true' (P.map φ), PMF.bind_map,
+    Function.comp_def]
 
 /-- Every word of length `n` is the list of some function `Fin n → Bool`. -/
 private theorem mem_image_ofFn {n : ℕ} {word : List Bool} (h : word.length = n) :
