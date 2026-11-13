@@ -44,9 +44,9 @@ computed from the input, with the bounds that the error analysis needs.
 The constants differ from the paper's (`480` instead of `4`, `log₂ M` instead of `lg² N`, the prime
 window `[2 ^ e, 2 ^ (e + 1))` instead of `(r ^ d, 2 r ^ d]`), and the dimension is the least one
 meeting an explicit integer condition. The full multinomial `Θ` estimate, the source asymptotic
-dimension bound `2 log_ρ n̂ + O(log log N)` and the asymptotic trial-count bound remain open. The expected
-running time with these parameters, its conversion to a worst-case bound, amplification to error
-`O(1/N)`, and Corollaries 3.5 and 3.6 are not formalized.
+dimension bound `2 log_ρ n̂ + O(log log N)` and the asymptotic trial-count bound remain open.
+The expected running time with these parameters, its conversion to a worst-case bound,
+amplification to error `O(1/N)`, and Corollaries 3.5 and 3.6 are not formalized.
 
 ## Main definitions
 

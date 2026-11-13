@@ -430,8 +430,25 @@ paper's, and `d` is defined as a least solution rather than as `2 log_ρ n̂ + O
 [dimension tests](../../CslibFrontierTests/Algorithms/Lean/VectorDimension.lean) compute `d = 8`
 for a small input and instantiate the bound.
 
+For finite cost bounds import
+`CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.VectorExpectation`.
+`sum_length_balancedTargets` gives the exact expected query count from the uniform seed count.
+`avg_time_vthreeSumM_le` bounds the actual `TimeM` ticks over a uniform prime and uniform seeds,
+for given `r`, `d`, `s`, `μ`, `e`, duplicate-free `A`, `B` below `M`, and `r ^ d ≤ 2 ^ e`.
+Its bound is `3 |A| + 3 |B| + |C| + μ G₀ + μ G₁ |C| #balancedVecs / 2 ^ e`, plus the bad-element
+term `(|A|² |B| + |A| |B|²) log₂ M / (e #primeWindow)`. Here `G₀` contains the low-cube count and
+`G₁` the high-cell binomial sum; their exact expressions are local definitions in the theorem.
+The averaging definition `avgTimeOf` and its lemma `avgTimeOf_le` in `TrialExpectation` also serve the
+subset reduction, replacing its separate averaging argument. The cost model still leaves
+arithmetic, enumeration, dictionary construction and sampling uncharged.
+`VectorDimensionBound` gives finite upper bounds from the failed dimension condition at the
+preceding index (`pow_two_mul_vDim_le`, `three_mul_vTrials_vDim_le`), without asserting the source
+asymptotic formulas. The [expected-cost client](../../CslibFrontierTests/Algorithms/Lean/VectorExpectedCost.lean)
+checks a nonempty instance with expected cost at most 161 ticks and the zero-scale dimension case.
+Run `scripts/build.sh CslibFrontierTests.Algorithms.Lean.VectorExpectedCost`.
+
 Not formalized: the full multinomial `Θ` estimate, the source asymptotic dimension and trial-count
-bounds, the expected running time with these parameters, its worst-case conversion and
+bounds, the final asymptotic running-time bound with the chosen parameters, its worst-case conversion and
 amplification, the choice of `r`, `δ` and `d` for Corollary 3.5, Corollary 3.5 itself, odd k-SUM
 (Corollary 3.6), the unbalanced and per-query forms, and Word-RAM realizations. The [tests](../../CslibFrontierTests/Algorithms/Lean/VectorConvolution.lean) run
 `solveM` on `[3]^2` and a base-`3` trial with `p = 29` by kernel reduction. Check with

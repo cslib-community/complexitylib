@@ -117,7 +117,7 @@ theorem copyFailProb_le {m T : ℕ} (hT : 0 < T) (A B C : List ℕ) (c : ℕ) :
     copyFailProb m T A B C c ≤
       (∑ q ∈ primeWindow (d m), missProb (d m) (t m) (s m) (μ m) A B C c q) /
         #(primeWindow (d m)) + avgTime m A B C / T := by
-  unfold copyFailProb avgTime
+  unfold copyFailProb avgTime avgTimeOf
   calc (∑ q ∈ primeWindow (d m), copyMissFrac m T A B C c q) / #(primeWindow (d m))
       ≤ (∑ q ∈ primeWindow (d m), missProb (d m) (t m) (s m) (μ m) A B C c q +
           (∑ q ∈ primeWindow (d m), if h : q.Prime then
@@ -129,7 +129,7 @@ theorem copyFailProb_le {m T : ℕ} (hT : 0 < T) (A B C : List ℕ) (c : ℕ) :
         refine div_le_div_of_nonneg_right ?_ (by positivity)
         rw [sum_div, ← sum_add_distrib]
         exact sum_le_sum fun q hq => copyMissFrac_le (m := m) hT (mem_primeWindow.mp hq).1
-    _ = _ := by rw [add_div, div_div, div_div, mul_comm (T : ℝ)]
+    _ = _ := by rw [add_div, div_div, div_div, mul_comm (T : ℝ)]; rfl
 
 /-- `μ` trials suffice: `(1 - 3 #P / 4 ^ (d + 2)) ^ μ ≤ e ^ (-3) < 1/20`. -/
 theorem trials_miss_le {m : ℕ} :

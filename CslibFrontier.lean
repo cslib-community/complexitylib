@@ -234,8 +234,11 @@ public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Probability
 public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Reduction
 public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Repetition
 public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.Trial
+public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.TrialExpectation
 public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.TrialReduction
 public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.VectorDimension
+public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.VectorDimensionBound
+public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.VectorExpectation
 public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.VectorParameters
 public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.VectorProbability
 public import CslibFrontier.Algorithms.Lean.SubsetConvThreeSum.VectorReduction
