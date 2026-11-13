@@ -47,9 +47,9 @@ The proof is double-sample symmetrization with a different swap step.
   `32 √(m d) ≤ m ε / 4`. The same holds for `-a_g`.
 
 Through the loss class, whose shattered sets are no larger than those of `C`
-(`card_le_of_setShatters_lossClass`), this gives the classification results. The domain is
-countable with measurable singletons, as in `VCUniformConvergence.lean`; uncountable domains need a
-measurability hypothesis on the class. The constants are far from optimal: at
+(`card_le_of_setShatters_lossClass` in `VCUpperBound.lean`), this gives the classification results.
+The domain is countable with measurable singletons, as in `VCUniformConvergence.lean`; uncountable
+domains need a measurability hypothesis on the class. The constants are far from optimal: at
 `ε = δ = 1 / 10` and `d = 1` the explicit size is about `6.6 · 10⁶`, against `97600` from
 `uniformConvergenceSampleSize`. The improvement is in the rate, which wins only as `ε → 0`.
 
@@ -59,7 +59,6 @@ measurability hypothesis on the class. The constants are far from optimal: at
 
 ## Main results
 
-- `card_le_of_setShatters_lossClass`: the loss class shatters no larger finite sets than `C`.
 - `card_filter_swapSamples_exists_le_abs_le`: the fraction of bad swaps of a double sample is at
   most `2 exp (-m ε² / 32)` once `16384 d ≤ m ε²`.
 - `measure_pi_exists_le_abs_card_filter_div_sub_measure_le_exp`: **uniform convergence without a
@@ -87,63 +86,6 @@ open MeasureTheory Cslib.BitString
 open scoped ENNReal NNReal Finset BigOperators
 
 namespace Cslib.MachineLearning.PACLearning
-
-/-! ### The loss class -/
-
-section LossClass
-
-variable {α : Type*}
-
-/-- The loss class shatters no larger finite sets than `C`: two labeled points of a set shattered
-by `lossClass C` have distinct domain points, and their domain points are shattered by `C`. -/
-theorem card_le_of_setShatters_lossClass {C : ConceptClass α Bool} {d : ℕ}
-    (hC : ∀ W : Finset α, SetShatters C ↑W → W.card ≤ d) (W : Finset (α × Bool))
-    (hW : SetShatters (lossClass C) ↑W) : W.card ≤ d := by
-  classical
-  -- Two points of `W` with the same domain point would have to be misclassified together.
-  have hinj : Set.InjOn Prod.fst (W : Set (α × Bool)) := by
-    rintro ⟨x, y⟩ hp ⟨x', y'⟩ hq (rfl : x = x')
-    by_contra hne
-    have hyy : y ≠ y' := fun h => hne (by rw [h])
-    obtain ⟨f, hf, hfW⟩ := hW {(x, y), (x, y')}
-      (Set.insert_subset_iff.2 ⟨hp, Set.singleton_subset_iff.2 hq⟩)
-    obtain ⟨h, -, rfl⟩ := mem_lossClass.1 hf
-    have h1 : (x, y) ∈ ({(x, y), (x, y')} : Set (α × Bool)) := Set.mem_insert _ _
-    have h2 : (x, y') ∈ ({(x, y), (x, y')} : Set (α × Bool)) := Set.mem_insert_of_mem _ rfl
-    rw [← hfW] at h1 h2
-    simp only [Set.mem_inter_iff, Set.mem_preimage, Set.mem_singleton_iff,
-      decide_eq_true_eq] at h1 h2
-    have ha : h x ≠ y := h1.1
-    have hb : h x ≠ y' := h2.1
-    cases hx : h x <;> cases y <;> cases y' <;> simp_all
-  -- The domain points of `W` are shattered by `C`.
-  have hsh : SetShatters C ↑(W.image Prod.fst) := by
-    intro U hU
-    obtain ⟨f, hf, hfW⟩ := hW {p | p ∈ W ∧ decide (p.1 ∈ U) ≠ p.2} fun p hp => hp.1
-    obtain ⟨h, hh, rfl⟩ := mem_lossClass.1 hf
-    have hlab : ∀ p ∈ W, h p.1 = decide (p.1 ∈ U) := by
-      rintro ⟨a, y⟩ hp
-      have key : h a ≠ y ↔ decide (a ∈ U) ≠ y := by
-        have := congrArg ((a, y) ∈ ·) hfW
-        simp only [eq_iff_iff, Set.mem_inter_iff, Set.mem_preimage, Set.mem_singleton_iff,
-          decide_eq_true_eq, Finset.mem_coe, Set.mem_ofPred_eq] at this
-        simpa [hp] using this
-      revert key
-      cases h a <;> cases y <;> cases decide (a ∈ U) <;> simp
-    refine ⟨h, hh, ?_⟩
-    ext a
-    simp only [Set.mem_inter_iff, Set.mem_preimage, Set.mem_singleton_iff, Finset.coe_image,
-      Set.mem_image, Finset.mem_coe]
-    constructor
-    · rintro ⟨hha, p, hp, rfl⟩
-      rwa [hlab p hp, decide_eq_true_eq] at hha
-    · intro ha
-      obtain ⟨p, hp, rfl⟩ := Finset.mem_image.1 (Finset.mem_coe.1 (hU ha))
-      exact ⟨by rw [hlab p hp, decide_eq_true_eq]; exact ha, p, hp, rfl⟩
-  calc W.card = (W.image Prod.fst).card := (Finset.card_image_of_injOn hinj).symm
-    _ ≤ d := hC _ hsh
-
-end LossClass
 
 /-! ### Counting swaps by chaining -/
 
