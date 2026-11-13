@@ -12,6 +12,7 @@ public import CslibFrontier.Probability.Entropy.Fano
 public import CslibFrontier.Probability.MutualInformation
 public import Mathlib.Algebra.Order.BigOperators.Expect
 public import Mathlib.Order.Filter.AtTopBot.Defs
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import CslibFrontier.Foundations.Data.BitString.Basic
 import CslibFrontier.Probability.Entropy.Pi
 import CslibFrontier.Probability.PMF.Event
@@ -114,8 +115,7 @@ theorem mutualInfo_bind_bsc_le {Ω : Type*} [Finite Ω] (p : I) (ν : PMF Ω) (E
   have hcond := conditionalEntropy_bind_pair ν (fun m => bsc p (E m))
   simp only [entropy_bsc, ← Finset.sum_mul, sum_toReal, one_mul] at hcond
   have hY := entropy_le_log_card ((ν.bind fun m => (bsc p (E m)).map (m, ·)).map Prod.snd)
-  rw [Fintype.card_fun, Fintype.card_bool, Nat.cast_pow, Nat.cast_two, Real.logb_pow,
-    Real.logb_self_eq_one one_lt_two, mul_one] at hY
+  rw [Fintype.card_fun, Fintype.card_bool, Nat.cast_pow, Nat.cast_two, Real.logb_two_pow] at hY
   rw [mutualInfo_eq_entropy_map_snd_sub_conditionalEntropy, mul_sub, mul_one]
   linarith
 
@@ -154,7 +154,7 @@ theorem mutualInfo_uniformOfFintype_bind_bsc [DecidableEq ι] (p : I) :
   rw [mutualInfo_eq_entropy_map_snd_sub_conditionalEntropy, map_snd_uniformOfFintype_bind_bsc]
   have hU : entropy (Probability.PMF.uniformOfFintype (ι → Bool)) = Fintype.card ι := by
     rw [entropy_uniform, Fintype.card_fun, Fintype.card_bool, Nat.cast_pow, Nat.cast_two,
-      Real.logb_pow, Real.logb_self_eq_one one_lt_two, mul_one]
+      Real.logb_two_pow]
   rw [hU, hcond, mul_sub, mul_one]
 
 /-! ### The converse -/
@@ -261,8 +261,7 @@ theorem eventually_le_expect_decodingError (p : I) {R : ℝ}
   filter_upwards [eventually_ge_atTop N] with n hn E D
   have : Nonempty (Fin (2 ^ ⌈R * n⌉₊)) := ⟨⟨0, by positivity⟩⟩
   refine le_expect_decodingError_of_lt_rate p hR ?_ ?_ E D
-  · rw [Fintype.card_fin, Fintype.card_fin, Nat.cast_pow, Nat.cast_two, Real.logb_pow,
-      Real.logb_self_eq_one one_lt_two, mul_one]
+  · rw [Fintype.card_fin, Fintype.card_fin, Nat.cast_pow, Nat.cast_two, Real.logb_two_pow]
     exact Nat.le_ceil _
   · rw [Fintype.card_fin]
     have hRC := sub_pos.mpr hR

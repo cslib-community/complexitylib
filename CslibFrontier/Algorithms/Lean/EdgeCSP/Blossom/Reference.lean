@@ -39,8 +39,8 @@ theorem mem_outsidePositions (vs scope : List ℕ) (j : ℕ) :
 /-- Every surviving port has a valid index in the actual old-constraint output scope. -/
 theorem outside_length_le_scope (f : OccurrenceLabeling F Bool) (vs : List ℕ)
     (i : Fin F.length) :
-    (outsidePositions F[i.val].2.length (positions vs F[i.val].2)).length ≤
-      (constraint f vs i).2.length := by
+    (outsidePositions F[i.val].scope.length (positions vs F[i.val].scope)).length ≤
+      (constraint f vs i).scope.length := by
   rw [scope_constraint, ← outsideScope_eq_filter]
   simp
 
@@ -49,9 +49,9 @@ index is preserved, and its new argument index is found in the actual finite out
 @[expose] def oldPort (f : OccurrenceLabeling F Bool) (vs : List ℕ)
     (o : Occurrence F) (ho : o.var ∉ vs) : Occurrence (contract f vs) :=
   ⟨⟨o.1.val, by simpa only [length_contract] using Nat.lt_succ_of_lt o.1.isLt⟩,
-    ⟨(outsidePositions F[o.1.val].2.length (positions vs F[o.1.val].2)).idxOf o.2.val, by
-      have hm : o.2.val ∈ outsidePositions F[o.1.val].2.length
-          (positions vs F[o.1.val].2) := by
+    ⟨(outsidePositions F[o.1.val].scope.length (positions vs F[o.1.val].scope)).idxOf o.2.val, by
+      have hm : o.2.val ∈ outsidePositions F[o.1.val].scope.length
+          (positions vs F[o.1.val].scope) := by
         apply (mem_outsidePositions _ _ _).mpr
         exact ⟨o.2.isLt, by simpa only [List.getD_eq_getElem _ _ o.2.isLt, Occurrence.var] using ho⟩
       have hl := (List.idxOf_lt_length_iff.mpr hm).trans_le (outside_length_le_scope f vs o.1)
@@ -60,20 +60,20 @@ index is preserved, and its new argument index is found in the actual finite out
 /-- Surviving occurrence transport preserves the original binary variable name. -/
 theorem oldPort_var (f : OccurrenceLabeling F Bool) (vs : List ℕ)
     (o : Occurrence F) (ho : o.var ∉ vs) : (oldPort f vs o ho).var = o.var := by
-  let os := outsidePositions F[o.1.val].2.length (positions vs F[o.1.val].2)
+  let os := outsidePositions F[o.1.val].scope.length (positions vs F[o.1.val].scope)
   have hm : o.2.val ∈ os := (mem_outsidePositions _ _ _).mpr
     ⟨o.2.isLt, by simpa only [List.getD_eq_getElem _ _ o.2.isLt, Occurrence.var] using ho⟩
   have hl := List.idxOf_lt_length_iff.mpr hm
   have he := List.getElem_idxOf hl
-  have hn : os.idxOf o.2.val < (contract f vs)[o.1.val].2.length := by
+  have hn : os.idxOf o.2.val < (contract f vs)[o.1.val].scope.length := by
     simpa only [get_contract_old] using hl.trans_le (outside_length_le_scope f vs o.1)
-  change (contract f vs)[o.1.val].2[os.idxOf o.2.val] = o.var
+  change (contract f vs)[o.1.val].scope[os.idxOf o.2.val] = o.var
   simp only [get_contract_old, scope_constraint, ← outsideScope_eq_filter]
-  change (os.map (fun j => F[o.1.val].2.getD j 0) ++
-    if (positions vs F[o.1.val].2).isEmpty then [] else [connector F o.1])[os.idxOf o.2.val]'
+  change (os.map (fun j => F[o.1.val].scope.getD j 0) ++
+    if (positions vs F[o.1.val].scope).isEmpty then [] else [connector F o.1])[os.idxOf o.2.val]'
       (by simp only [List.length_append, List.length_map]; omega) = _
   rw [List.getElem_append_left (by simpa only [List.length_map] using hl), List.getElem_map]
-  change F[o.1.val].2.getD (os[os.idxOf o.2.val]) 0 = o.var
+  change F[o.1.val].scope.getD (os[os.idxOf o.2.val]) 0 = o.var
   rw [he, List.getD_eq_getElem _ _ o.2.isLt]
   rfl
 
@@ -82,13 +82,14 @@ at touched constraints. Untouched constraints need no extra connector bit. -/
 theorem referenceRows_project (f : OccurrenceLabeling F Bool) (vs : List ℕ)
     (i : Fin F.length) :
     (referenceRows f vs).getD i.val [] =
-      project (localTuple f i) (outsidePositions F[i.val].2.length (positions vs F[i.val].2)) ++
-        if (positions vs F[i.val].2).isEmpty then [] else [false] := by
+      project (localTuple f i)
+          (outsidePositions F[i.val].scope.length (positions vs F[i.val].scope)) ++
+        if (positions vs F[i.val].scope).isEmpty then [] else [false] := by
   rw [get_referenceRows_old]
   split
   next hp =>
     have he := List.isEmpty_iff.mp hp
-    have hl : (localTuple f i).length = F[i.val].2.length := by simp [localTuple]
+    have hl : (localTuple f i).length = F[i.val].scope.length := by simp [localTuple]
     simp only [he, outsidePositions, List.contains_nil, Bool.not_false, List.filter_true,
       project, List.append_nil]
     rw [← hl, List.map_getD_range]
@@ -97,7 +98,7 @@ theorem referenceRows_project (f : OccurrenceLabeling F Bool) (vs : List ℕ)
 /-- The explicit finite contracted reference retains every old outside occurrence value. -/
 theorem reference_oldPort (f : OccurrenceLabeling F Bool) (vs : List ℕ)
     (o : Occurrence F) (ho : o.var ∉ vs) : reference f vs (oldPort f vs o ho) = f o := by
-  let os := outsidePositions F[o.1.val].2.length (positions vs F[o.1.val].2)
+  let os := outsidePositions F[o.1.val].scope.length (positions vs F[o.1.val].scope)
   have hm : o.2.val ∈ os := (mem_outsidePositions _ _ _).mpr
     ⟨o.2.isLt, by simpa only [List.getD_eq_getElem _ _ o.2.isLt, Occurrence.var] using ho⟩
   have hl := List.idxOf_lt_length_iff.mpr hm
@@ -114,10 +115,10 @@ theorem reference_oldPort (f : OccurrenceLabeling F Bool) (vs : List ℕ)
 /-- The gathered outside list followed by the fresh port is the actual touched scope. -/
 theorem scope_constraint_touched (f : OccurrenceLabeling F Bool) (vs : List ℕ)
     {i : Fin F.length} (hi : i ∈ touched F vs) :
-    (constraint f vs i).2 =
-      (outsidePositions F[i.val].2.length (positions vs F[i.val].2)).map
-        (fun j => F[i.val].2.getD j 0) ++ [connector F i] := by
-  have hp : (positions vs F[i.val].2).isEmpty = false := by
+    (constraint f vs i).scope =
+      (outsidePositions F[i.val].scope.length (positions vs F[i.val].scope)).map
+        (fun j => F[i.val].scope.getD j 0) ++ [connector F i] := by
+  have hp : (positions vs F[i.val].scope).isEmpty = false := by
     simpa only [List.isEmpty_eq_false_iff] using (mem_touched vs i).mp hi
   rw [scope_constraint, ← outsideScope_eq_filter]
   simp only [hp, Bool.false_eq_true, ↓reduceIte]
@@ -126,7 +127,7 @@ theorem scope_constraint_touched (f : OccurrenceLabeling F Bool) (vs : List ℕ)
 @[expose] def connectorPort (f : OccurrenceLabeling F Bool) (vs : List ℕ)
     (i : Fin F.length) (hi : i ∈ touched F vs) : Occurrence (contract f vs) :=
   ⟨⟨i.val, by simpa only [length_contract] using Nat.lt_succ_of_lt i.isLt⟩,
-    ⟨(outsidePositions F[i.val].2.length (positions vs F[i.val].2)).length, by
+    ⟨(outsidePositions F[i.val].scope.length (positions vs F[i.val].scope)).length, by
       simp only [get_contract_old, scope_constraint_touched f vs hi,
         List.length_append, List.length_map, List.length_singleton]
       omega⟩⟩
@@ -148,10 +149,10 @@ theorem scope_constraint_touched (f : OccurrenceLabeling F Bool) (vs : List ℕ)
 @[simp] theorem reference_connectorPort (f : OccurrenceLabeling F Bool) (vs : List ℕ)
     (i : Fin F.length) (hi : i ∈ touched F vs) :
     reference f vs (connectorPort f vs i hi) = false := by
-  have hp : (positions vs F[i.val].2).isEmpty = false := by
+  have hp : (positions vs F[i.val].scope).isEmpty = false := by
     simpa only [List.isEmpty_eq_false_iff] using (mem_touched vs i).mp hi
   change ((referenceRows f vs).getD i.val []).getD
-    (outsidePositions F[i.val].2.length (positions vs F[i.val].2)).length false = false
+    (outsidePositions F[i.val].scope.length (positions vs F[i.val].scope)).length false = false
   rw [referenceRows_project]
   simp only [hp, Bool.false_eq_true, ↓reduceIte]
   rw [List.getD_append_right _ _ _ _ (by simp [project])]

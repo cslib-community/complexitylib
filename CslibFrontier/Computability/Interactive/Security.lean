@@ -82,14 +82,14 @@ def Reduction.Complete (W : World oP oV) (R : Reduction oP oV s StmtIn WitIn Stm
     (relIn : StmtIn → WitIn → Prop) (relOut : StmtOut → WitOut → Prop) (ε : ℝ≥0∞) : Prop :=
   ∀ x w, relIn x w →
     (W.eval (R.run x w)).toOuterMeasure
-      {r | ¬ (r.2.1 = some r.2.2.1 ∧ relOut r.2.2.1 r.2.2.2)} ≤ ε
+      {r | ¬ (r.output = some r.result.1 ∧ relOut r.result.1 r.result.2)} ≤ ε
 
 /-- Soundness with error `ε`, against every prover strategy. Provers are not bounded in time or
 in oracle queries, so this is information-theoretic soundness in every world. -/
 def Verifier.Sound (W : World oP oV) (V : Verifier oV s StmtIn StmtOut)
     (langIn : Set StmtIn) (langOut : Set StmtOut) (ε : ℝ≥0∞) : Prop :=
   ∀ x ∉ langIn, ∀ (α : Type) (P : ProbOracleComp oP (ProverStrategy (ProbOracleComp oP) s α)),
-    (W.eval (V.execute x P)).toOuterMeasure {r | ∃ x' ∈ langOut, r.2.1 = some x'} ≤ ε
+    (W.eval (V.execute x P)).toOuterMeasure {r | ∃ x' ∈ langOut, r.output = some x'} ≤ ε
 
 /-- Straight-line knowledge soundness with error `ε`, in the plain model: whenever a prover
 strategy, ending with an output witness, makes the verifier output a statement for which that
@@ -102,7 +102,8 @@ def Verifier.KnowledgeSound (V : Verifier OracleSpec.empty s StmtIn StmtOut)
   ∀ x (P : ProbOracleComp OracleSpec.empty
       (ProverStrategy (ProbOracleComp OracleSpec.empty) s WitOut)),
     (World.plain.eval (V.execute (oP := OracleSpec.empty) x P)).toOuterMeasure
-      {r | (∃ x', r.2.1 = some x' ∧ relOut x' r.2.2) ∧ ¬ relIn x (E x r.1 r.2.2)} ≤ ε
+      {r | (∃ x', r.output = some x' ∧ relOut x' r.result) ∧
+        ¬ relIn x (E x r.transcript r.result)} ≤ ε
 
 /-! ### Round-by-round soundness -/
 

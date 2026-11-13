@@ -218,10 +218,7 @@ private theorem exec_row {w : ℕ} (hw : 2 ≤ w) (I : Set (Fin (r + 4)))
         rw [hzI a haI, hvalbs, hvalds] at hyeq
         change z.regs d + radix w * z.regs carry = _ at hzeq
         nlinarith [congrArg (radix w * ·) hyeq]
-      · refine ⟨hyf.1.trans hzf.1, ?_⟩
-        intro i hi hit hic
-        exact (hyf.2 i (fun hm => hi (by simp [hm])) hit hic).trans
-          (hzf.2 i (by simpa using fun h => hi (by simp [h])) hit hic)
+      · exact frame_trans (frame_mono hzf (by simp)) (frame_mono hyf (by simp))
 
 /-- Unrolled schoolbook rows. `ds` is the current accumulator and `os` supplies one fresh
 high digit per remaining multiplicand digit. The multiplier gains a leading zero each row. -/
@@ -457,7 +454,9 @@ theorem size_clear (ds : List (Fin (r + 4))) : (clear ds).size = ds.length + 1 :
   | nil => rfl
   | cons d ds ih => simp only [clear, Code.size, ih, List.length_cons]; omega
 
-private theorem exec_clear {w : ℕ} (ds : List (Fin (r + 4)))
+/-- Clearing distinct digit registers zeroes them in `ds.length + 1` instructions, changing only
+them and the carry workspace. -/
+theorem exec_clear {w : ℕ} (ds : List (Fin (r + 4)))
     (hds : ∀ i ∈ ds, IsDigit i) (hnd : ds.Nodup) (x : Data (r + 4)) :
     ∃ y, Exec w (clear ds) x y (ds.length + 1) ∧
       (∀ i ∈ ds, y.regs i = 0) ∧ Frame x y ds := by

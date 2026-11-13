@@ -764,21 +764,6 @@ theorem isPPT_rompelCompressionInverter (G : ShrinkingCollisionGrid)
     IsPPT encBits (rompelCompressionInverter G adversary) :=
   isPPT_bind_stages (isPPTOn_rompelInverterStage1 G ha) (isPPTOn_rompelInverterStage2 G ha)
 
-private theorem listXor_ne_listXor_iff {W : ℕ} {w₀ w₁ y : List Bool}
-    (hw₀ : w₀.length = W) (hw₁ : w₁.length = W) :
-    BitString.listXor W [w₁, y] ≠ BitString.listXor W [w₀, y] ↔ w₀ ≠ w₁ := by
-  constructor
-  · intro hne heq
-    exact hne (by rw [heq])
-  · intro hne heq
-    apply hne
-    have hfin : BitString.ofList W w₁ + BitString.ofList W y =
-        BitString.ofList W w₀ + BitString.ofList W y := by
-      simpa only [BitString.ofList_listXor_pair] using congrArg (BitString.ofList W) heq
-    have hof : BitString.ofList W w₀ = BitString.ofList W w₁ :=
-      (add_left_inj (BitString.ofList W y)).mp hfin.symm
-    rw [← BitString.ofFn_ofList hw₀, ← BitString.ofFn_ofList hw₁, hof]
-
 private noncomputable def rompelTargetDist (G : ShrinkingCollisionGrid)
     (adversary : TargetCollisionFinder) (n : ℕ) :
     PMF ((List Bool × List Bool) × List Bool × List Bool) := do
@@ -857,9 +842,9 @@ private theorem rompelInverterTrial_eq_map_slotCollisionEvent
       let w₁ := rompelCascadeInput G n qStar slot front x₁
       have hne_iff : BitString.listXor W [w₁, yStar] ≠ zWord ↔ w₀ ≠ w₁ := by
         conv_lhs => rw [← hz_rec]
-        exact listXor_ne_listXor_iff
-          (length_rompelCascadeInput G n qStar slot front choice.1)
+        exact ((BitString.listXor_pair_left_inj
           (length_rompelCascadeInput G n qStar slot front x₁)
+          (length_rompelCascadeInput G n qStar slot front choice.1) yStar).not).trans ne_comm
       have heval_iff :
           G.evalGrid n qStar (BitString.listXor W [w₁, yStar]) = G.evalGrid n qStar zWord ↔
             rompelShiftedStep G n qStar yStar w₀ = rompelShiftedStep G n qStar yStar w₁ := by
