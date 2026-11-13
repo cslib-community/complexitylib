@@ -4,6 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
 
+module
+
 import CslibFrontier.Probability.BilinearFingerprint
 
 /-!
@@ -11,6 +13,8 @@ import CslibFrontier.Probability.BilinearFingerprint
 
 Rectangular matrices, sharpness in characteristic two, zero matrices and empty dimensions.
 -/
+
+set_option linter.privateModule false
 
 open Cslib.Probability
 open scoped Matrix ENNReal

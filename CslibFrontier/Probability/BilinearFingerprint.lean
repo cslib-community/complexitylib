@@ -25,6 +25,13 @@ row and column types. No running-time or matrix-rank formula is asserted.
 
 * `toOuterMeasure_bilinear_ne_zero_eq`: exact factorization through the event `M *ᵥ s ≠ 0`.
 * `toOuterMeasure_bilinear_ne_zero_ge`: the two-vector lower bound.
+* `toOuterMeasure_bilinear_zmod_ne_zero_ge`: the prime-field specialization.
+* `toOuterMeasure_bilinear_vecMulVec`: equality for nonzero outer products.
+
+## References
+
+* [O. Goldreich, *Computational Complexity: A Conceptual Perspective*][Goldreich2007DraftR5],
+  March 2007 draft, Exercise 9.22
 -/
 
 public section
