@@ -7,6 +7,7 @@ Authors: Karn Seth
 module
 -- upstream: candidate
 
+public import CslibFrontier.Crypto.Game.Experiment
 public import CslibFrontier.Crypto.Game.Hybrid
 public import CslibFrontier.Crypto.Protocols.UC.Linking
 public import CslibFrontier.Languages.Probabilistic.Vector
@@ -116,10 +117,10 @@ theorem par_handle_inr (M₁ : Machine I E₁) (M₂ : Machine I E₂) (q : ιE�
 section Advantage
 
 /-- The advantage of the adversary `A` in distinguishing the closed packages `M₀` and `M₁`: the
-advantage between the games of running `A` against each of them. -/
+advantage between the experiments of running `A` against each of them. -/
 @[expose] noncomputable def advantage (A : ProbOracleComp E Bool)
     (M₀ M₁ : Machine OracleSpec.empty E) : ℝ≥0 :=
-  Game.advantage (M₀.run A).eval (M₁.run A).eval
+  Experiment.advantage (M₀.run A) (M₁.run A)
 
 @[simp] theorem advantage_self (A : ProbOracleComp E Bool) (M : Machine OracleSpec.empty E) :
     advantage A M M = 0 :=
@@ -142,8 +143,7 @@ the adversary. -/
 theorem advantage_congr {A : ProbOracleComp E Bool} {M₀ M₀' M₁ M₁' : Machine OracleSpec.empty E}
     (h₀ : (M₀.run A).eval = (M₀'.run A).eval) (h₁ : (M₁.run A).eval = (M₁'.run A).eval) :
     advantage A M₀ M₁ = advantage A M₀' M₁' := by
-  unfold advantage
-  rw [h₀, h₁]
+  simp only [advantage, Experiment.advantage, h₀, h₁]
 
 /-- **Reduction.** Distinguishing `R.comp M₀` from `R.comp M₁` is distinguishing `M₀` from `M₁`
 by the adversary `R.link A`, which runs `A` against the reduction package `R`. -/

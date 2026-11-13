@@ -12,7 +12,6 @@ public import CslibFrontier.Computability.Complexity.Classes.PH.Collapse
 public import CslibFrontier.Computability.Complexity.Problems.GraphIsomorphism
 
 import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.GraphNonIsomorphism
-import CslibFrontier.Computability.Complexity.Classes.PH.Projection
 
 /-!
 # coNP ⊆ AM collapses the polynomial hierarchy
@@ -31,7 +30,7 @@ The proof:
   `MAM = AM` itself is `Cslib.Complexity.AMGameClass_merlin_arthur_merlin`, in
   `CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.RoundCollapse`).
 * A problem in `Σ₂` is the projection of a problem in `Π₁ = coNP` on pairs `(a, w₁)`
-  (`Cslib.Complexity.exists_mem_PiP_of_mem_SigmaP_succ`), so
+  (`Cslib.Complexity.mem_SigmaP_succ_iff`), so
   `coNP ⊆ AM` gives `Σ₂ ⊆ AM` (`Cslib.Complexity.SigmaP_two_subset_AM_of_coNP_subset_AM`), and with
   `AM ⊆ Π₂` (`Cslib.Complexity.AM_subset_PiP_two`), `Σ₂ ⊆ Π₂`, hence `Π₂ ⊆ Σ₂` by complements and
   `PH = Σ₂` (`Cslib.Complexity.PH_eq_SigmaP_of_PiP_subset_SigmaP`).
@@ -69,20 +68,17 @@ pairs `(a, w₁)` that the universal quantifier accepts, which is in `coNP`, hen
 theorem SigmaP_two_subset_AM_of_coNP_subset_AM
     (h : coNP (encPair enc encBits) ⊆ AM (encPair enc encBits)) : SigmaP 2 enc ⊆ AM enc := by
   intro A hA
-  obtain ⟨p, B, hB, hA⟩ := exists_mem_PiP_of_mem_SigmaP_succ hA
+  obtain ⟨p, B, hB, rfl⟩ := mem_SigmaP_succ_iff.mp hA
   rw [PiP_one_eq_coNP] at hB
-  rw [show A = {a | ∃ w : List Bool, w.length = p.eval (enc a).length ∧ (a, w) ∈ B} from
-    Set.ext hA]
   exact mem_AM_of_exists (h hB) p
 
 /-- If `coNP ⊆ AM` for every encoding, then `Π₂ ⊆ Σ₂`: the complement of a `Π₂` problem is in
 `Σ₂ ⊆ AM ⊆ Π₂`. -/
 theorem PiP_two_subset_SigmaP_two_of_coNP_subset_AM
     (h : ∀ {β : Type} (encB : β ↪ List Bool), coNP encB ⊆ AM encB) {β : Type}
-    (encB : β ↪ List Bool) : PiP 2 encB ⊆ SigmaP 2 encB := fun A hA => by
-  have hc := AM_subset_PiP_two
-    (SigmaP_two_subset_AM_of_coNP_subset_AM (h _) (compl_mem_SigmaP_of_mem_PiP hA))
-  simpa using compl_mem_SigmaP_of_mem_PiP hc
+    (encB : β ↪ List Bool) : PiP 2 encB ⊆ SigmaP 2 encB := fun _ hA =>
+  compl_mem_PiP_iff.mp (AM_subset_PiP_two
+    (SigmaP_two_subset_AM_of_coNP_subset_AM (h _) (compl_mem_SigmaP_iff.mpr hA)))
 
 /-- **The Boppana–Håstad–Zachos theorem** [BoppanaHastadZachos1987],
 [Arora and Barak, Section 8.2][AroraBarak09]: if `coNP ⊆ AM` for problems with any encoding of
@@ -101,8 +97,7 @@ theorem SigmaP_two_eq_AM_of_coNP_subset_AM
 /-- If `coNP ⊆ AM` for every encoding, then `Π₂ = Σ₂`. -/
 theorem PiP_two_eq_SigmaP_two_of_coNP_subset_AM
     (h : ∀ {β : Type} (encB : β ↪ List Bool), coNP encB ⊆ AM encB) : PiP 2 enc = SigmaP 2 enc :=
-  (PiP_two_subset_SigmaP_two_of_coNP_subset_AM h enc).antisymm
-    ((SigmaP_two_subset_AM_of_coNP_subset_AM (h _)).trans AM_subset_PiP_two)
+  PiP_eq_SigmaP_of_PiP_subset_SigmaP (PiP_two_subset_SigmaP_two_of_coNP_subset_AM h enc)
 
 /-- **If graph isomorphism is `NP`-complete, then `PH = Σ₂`** [BoppanaHastadZachos1987],
 [Arora and Barak, Section 8.2][AroraBarak09]: graph non-isomorphism is then `coNP`-hard, and it

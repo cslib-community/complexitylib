@@ -11,7 +11,7 @@ import CslibFrontier.Computability.Complexity.Problems.CSP.RotationSystem
 open Cslib.Complexity Cslib.Logic.PL
 open Cslib.Complexity.CSP
 
-private abbrev star : CSP Unit ℕ := [((), [10, 20, 30])]
+private abbrev star : CSP Unit ℕ := [⟨(), [10, 20, 30]⟩]
 
 private def starRotate : Equiv.Perm (Graph.Dart (incidenceGraph star)) where
   toFun d := (if d.2 then finRotate _ d.1 else d.1, d.2)
@@ -43,7 +43,7 @@ example : ¬ RespectsArgumentOrder starRotation.mirror := by
 example : argumentSuccessor (F := star) ⟨⟨0, by decide⟩, ⟨2, by decide⟩⟩ =
     ⟨⟨0, by decide⟩, ⟨0, by decide⟩⟩ := by decide
 
-private abbrev repeated : CSP Unit ℕ := [((), [7, 7, 9])]
+private abbrev repeated : CSP Unit ℕ := [⟨(), [7, 7, 9]⟩]
 
 example : CSP.Occurrence.var (F := repeated) ⟨⟨0, by decide⟩, ⟨0, by decide⟩⟩ =
     (argumentSuccessor (F := repeated) ⟨⟨0, by decide⟩, ⟨0, by decide⟩⟩).var := by decide
@@ -51,7 +51,7 @@ example : CSP.Occurrence.var (F := repeated) ⟨⟨0, by decide⟩, ⟨0, by dec
 example : incidenceDart (F := repeated) ⟨⟨0, by decide⟩, ⟨0, by decide⟩⟩ true ≠
     incidenceDart (F := repeated) ⟨⟨0, by decide⟩, ⟨1, by decide⟩⟩ true := by decide
 
-example (r : Graph.RotationSystem (incidenceGraph ([((), [])] : CSP Unit ℕ))) :
+example (r : Graph.RotationSystem (incidenceGraph ([⟨(), []⟩] : CSP Unit ℕ))) :
     RespectsArgumentOrder r := by
   rintro ⟨i, j⟩
   have hi : i.val = 0 := by

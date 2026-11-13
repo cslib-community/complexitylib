@@ -83,9 +83,7 @@ example : maskedMulCheckView wire wire wire (fun _ => (2 : ZMod 3)) ≠
   have hv := falseView_real
   rw [heq] at hv
   have hcheck := maskedMulCheckSimulate_accepts wire wire wire hv
-  have hfalse : ¬ (maskedMulCheckValue wire wire wire falseView.1.1 falseView.1.2
-      falseView.2.1 falseView.2.2.1 =
-        falseView.2.2.2.1.1 * falseView.1.1 + falseView.2.2.2.1.2) := by decide
+  have hfalse : ¬ MaskedMulCheckAccepts wire wire wire falseView.1 falseView.2 := by decide
   exact hfalse hcheck
 
 /-- An intentionally unblinded one-gate view, retaining the private share and public correction. -/

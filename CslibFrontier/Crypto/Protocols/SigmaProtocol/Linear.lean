@@ -14,6 +14,7 @@ public import Mathlib.LinearAlgebra.Pi
 public import Mathlib.LinearAlgebra.Prod
 public import Mathlib.LinearAlgebra.Span.Basic
 import CslibFrontier.Probability.PMF
+import CslibFrontier.Probability.Uniform
 
 /-!
 # Sigma protocols for linear relations
@@ -132,11 +133,9 @@ theorem linear_specialHVZK :
     simp only [linear_accepts_iff, sub_add_cancel]
   transcript_eq x y hxy c := by
     rw [linear_transcript, linearSimulate]
-    conv_lhs => rw [← PMF.uniformOfFintype_map_equiv (Equiv.addRight (ι c • x))]
-    rw [PMF.map_comp]
+    conv_lhs => rw [← PMF.uniformOfFintype_map_add_right (ι c • x), PMF.map_comp]
     congr 1 with r : 1
-    simp only [Function.comp_apply, Equiv.coe_addRight, map_add, map_smul, hxy,
-      add_sub_cancel_right]
+    simp only [Function.comp_apply, map_add, map_smul, hxy, add_sub_cancel_right]
 
 end Linear
 

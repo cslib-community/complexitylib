@@ -37,11 +37,11 @@ open Cslib.DataStructure
 example :
     (init 0).numComp = 0 ∧
       (Partition.discrete 0).numComponents = 0 ∧
-      (run (init 0) getNumComponents).1 = 0 ∧
-      (run (init 0) getNumComponents).2.2 = [1] ∧
-      (run (init 1) (union 0 0)).1 = false ∧
-      (run (init 1) (union 0 0)).2.1.numComp = 1 ∧
-      (run (init 1) (union 0 0)).2.2 = [3] :=
+      (run (init 0) getNumComponents).value = 0 ∧
+      (run (init 0) getNumComponents).traces = [1] ∧
+      (run (init 1) (union 0 0)).value = false ∧
+      (run (init 1) (union 0 0)).state.numComp = 1 ∧
+      (run (init 1) (union 0 0)).traces = [3] :=
   ⟨rfl, rfl, rfl, rfl, rfl, rfl, rfl⟩
 
 -- Build a balanced 4-element tree:
@@ -54,7 +54,7 @@ def buildFourChain : (spec 4).Client (Bool × Bool × Bool) := do
   pure (m₁, m₂, m₃)
 
 def stateFourChain : State 4 :=
-  (run (init 4) buildFourChain).2.1
+  (run (init 4) buildFourChain).state
 
 theorem validRank_stateFourChain : ValidRank stateFourChain.uf :=
   (run_correct buildFourChain (rep_init 4)).2.1.validRank
@@ -63,7 +63,7 @@ theorem validRank_stateFourChain : ValidRank stateFourChain.uf :=
 -- and `findSteps` from leaf 0 equal to 3 = log₂ 4 + 1 (tightness of `findSteps_le_log_add_one`).
 example :
     ValidRank stateFourChain.uf ∧
-      (run (init 4) buildFourChain).1 = (true, true, true) ∧
+      (run (init 4) buildFourChain).value = (true, true, true) ∧
       stateFourChain.numComp = 1 ∧
       stateFourChain.uf.rank 3 = 2 ∧
       Nat.log 2 stateFourChain.uf.size = 2 ∧
@@ -80,9 +80,9 @@ private def querySameTwice : (spec 4).Client (Bool × Bool × Bool) := do
   pure (q₁, q₂, redundant)
 
 example :
-    (run stateFourChain querySameTwice).1 = (true, true, false) ∧
-      (run stateFourChain querySameTwice).2.2 = [4, 3, 5] ∧
-      (run stateFourChain querySameTwice).2.1.numComp = 1 :=
+    (run stateFourChain querySameTwice).value = (true, true, false) ∧
+      (run stateFourChain querySameTwice).traces = [4, 3, 5] ∧
+      (run stateFourChain querySameTwice).state.numComp = 1 :=
   ⟨rfl, rfl, rfl⟩
 
 -- Adaptive spanning-forest client on a 6-vertex graph with two cycle-closing edges `(0, 2)` and
@@ -99,13 +99,13 @@ private def forestAndComponents :
   pure (forest, comps, c₀₂, c₀₃)
 
 example :
-    (run (init 6) forestAndComponents).1 = ([(0, 1), (1, 2), (3, 4)], 3, true, false) ∧
-      (run (init 6) forestAndComponents).1 =
-        ((spec 6).runClient (Partition.discrete 6) forestAndComponents).1 ∧
-      total id (run (init 6) forestAndComponents).2.2 ≤
+    (run (init 6) forestAndComponents).value = ([(0, 1), (1, 2), (3, 4)], 3, true, false) ∧
+      (run (init 6) forestAndComponents).value =
+        (spec 6).clientResult (Partition.discrete 6) forestAndComponents ∧
+      total id (run (init 6) forestAndComponents).traces ≤
         (spec 6).totalCost (charge 6) (Partition.discrete 6)
-          ((spec 6).runClient (Partition.discrete 6) forestAndComponents).2.2 ∧
-      total id (run (init 6) (spanningForestEdges id sampleGraph)).2.2 ≤
+          ((spec 6).clientHistory (Partition.discrete 6) forestAndComponents) ∧
+      total id (run (init 6) (spanningForestEdges id sampleGraph)).traces ≤
         sampleGraph.length * (2 * Nat.log 2 6 + 3) ∧
       (eval (spec 6) (spanningForestEdges id sampleGraph) (Partition.discrete 6)).2.numComponents +
         (eval (spec 6) (spanningForestEdges id sampleGraph)
@@ -113,8 +113,8 @@ example :
   refine ⟨rfl,
     (run_correct forestAndComponents (rep_init 6)).1,
     (run_correct forestAndComponents (rep_init 6)).2.2.1, ?_, ?_⟩
-  · have h := (run_correct (spanningForestEdges id sampleGraph) (rep_init 6)).2.2.2
-    rwa [runClient_spanningForestEdges_length] at h
+  · rw [← runClient_spanningForestEdges_length id sampleGraph (Partition.discrete 6)]
+    exact (run_correct (spanningForestEdges id sampleGraph) (rep_init 6)).2.2.2
   · simpa using spanningForestEdges_numComponents_add_length id sampleGraph (Partition.discrete 6)
 
 -- History-adaptive `connectIfNew`: after `spanningForestEdges id sampleGraph`, `(0, 2)` is already
@@ -122,22 +122,22 @@ example :
 -- (issuing 2 operations `[Op.same 0 3, Op.union 0 3]`).
 example :
     let p := (eval (spec 6) (spanningForestEdges id sampleGraph) (Partition.discrete 6)).2
-    ((spec 6).runClient p (connectIfNew 0 2)).1 = false ∧
-      ((spec 6).runClient p (connectIfNew 0 2)).2.2 = [.same 0 2] ∧
-      ((spec 6).runClient p (connectIfNew 0 3)).1 = true ∧
-      ((spec 6).runClient p (connectIfNew 0 3)).2.2 = [.same 0 3, .union 0 3] :=
+    (spec 6).clientResult p (connectIfNew 0 2) = false ∧
+      (spec 6).clientHistory p (connectIfNew 0 2) = [.same 0 2] ∧
+      (spec 6).clientResult p (connectIfNew 0 3) = true ∧
+      (spec 6).clientHistory p (connectIfNew 0 3) = [.same 0 3, .union 0 3] :=
   ⟨rfl, rfl, rfl, rfl⟩
 
 -- Existence form of `realized_client` instantiated at `rep_init`.
 example :
     ∃ s' traces,
       Executes (Exec 6) (spanningForestEdges id sampleGraph) (init 6)
-        ((spec 6).runClient (Partition.discrete 6) (spanningForestEdges id sampleGraph)).1
+        ((spec 6).clientResult (Partition.discrete 6) (spanningForestEdges id sampleGraph))
         s' traces ∧
-      Rep ((spec 6).runClient (Partition.discrete 6) (spanningForestEdges id sampleGraph)).2.1 s' ∧
+      Rep ((spec 6).clientState (Partition.discrete 6) (spanningForestEdges id sampleGraph)) s' ∧
       total id traces ≤
         (spec 6).totalCost (charge 6) (Partition.discrete 6)
-          ((spec 6).runClient (Partition.discrete 6) (spanningForestEdges id sampleGraph)).2.2 :=
+          ((spec 6).clientHistory (Partition.discrete 6) (spanningForestEdges id sampleGraph)) :=
   realized_client (spanningForestEdges id sampleGraph) (rep_init 6)
 
 -- Necessity of `ValidRank`: a 4-node chain `0 -> 1 -> 2 -> 3` with artificial ranks `0, 1, 2, 3`

@@ -36,23 +36,23 @@ example (A : Matrix (Fin 3) (Fin 2) ℤ) (B : Matrix (Fin 2) (Fin 3) ℤ) : (A *
 /-! ### Concrete spanning-tree counts -/
 
 /-- The triangle `K₃`. -/
-def triangle : Graph := ([0, 1, 2], [(0, 1), (1, 2), (2, 0)])
+def triangle : Graph := ⟨[0, 1, 2], [(0, 1), (1, 2), (2, 0)]⟩
 
 /-- The complete graph `K₄`. -/
-def k4 : Graph := ([0, 1, 2, 3], [(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)])
+def k4 : Graph := ⟨[0, 1, 2, 3], [(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]⟩
 
 /-- The `4`-cycle. -/
-def cycle4 : Graph := ([0, 1, 2, 3], [(0, 1), (1, 2), (2, 3), (3, 0)])
+def cycle4 : Graph := ⟨[0, 1, 2, 3], [(0, 1), (1, 2), (2, 3), (3, 0)]⟩
 
 /-- The path `0 - 1 - 2`. -/
-def path3 : Graph := ([0, 1, 2], [(0, 1), (1, 2)])
+def path3 : Graph := ⟨[0, 1, 2], [(0, 1), (1, 2)]⟩
 
 /-- An edge and an isolated vertex. -/
-def disconnected : Graph := ([0, 1, 2], [(0, 1)])
+def disconnected : Graph := ⟨[0, 1, 2], [(0, 1)]⟩
 
 /-- The path `0 - 1 - 2`, with a repeated vertex, a loop, both orientations of an edge and an edge
 to the undeclared vertex `5`. -/
-def noisyPath : Graph := ([0, 1, 1, 2], [(0, 1), (1, 0), (1, 1), (1, 2), (2, 5)])
+def noisyPath : Graph := ⟨[0, 1, 1, 2], [(0, 1), (1, 0), (1, 1), (1, 2), (2, 5)]⟩
 
 example : triangle.spanningTreeCount = 3 := by decide +kernel
 example : k4.spanningTreeCount = 16 := by decide +kernel
@@ -60,14 +60,14 @@ example : cycle4.spanningTreeCount = 4 := by decide +kernel
 example : path3.spanningTreeCount = 1 := by decide +kernel
 example : disconnected.spanningTreeCount = 0 := by decide +kernel
 -- A single vertex: the reduced Laplacian is empty, with determinant `1`.
-example : Graph.spanningTreeCount ([7], []) = 1 := by decide +kernel
+example : Graph.spanningTreeCount ⟨[7], []⟩ = 1 := by decide +kernel
 -- No vertex: no tree, since trees are nonempty.
-example : Graph.spanningTreeCount ([], [(0, 1)]) = 0 := by decide +kernel
+example : Graph.spanningTreeCount ⟨[], [(0, 1)]⟩ = 0 := by decide +kernel
 example : noisyPath.spanningTreeCount = 1 := by decide +kernel
 
 /-- info: [3, 16, 4, 1, 0, 1, 0, 1] -/
 #guard_msgs in
-#eval [triangle, k4, cycle4, path3, disconnected, ([7], []), ([], [(0, 1)]), noisyPath].map
+#eval [triangle, k4, cycle4, path3, disconnected, ⟨[7], []⟩, ⟨[], [(0, 1)]⟩, noisyPath].map
   Graph.spanningTreeCount
 
 -- The reduced Laplacian of the triangle, on the vertices `1` and `2`.
@@ -77,21 +77,21 @@ example : triangle.reducedLaplacianRows = [[2, -1], [-1, 2]] := by decide +kerne
 
 /-- `K₄` has `16` spanning trees (Cayley's formula `n ^ (n - 2)`). -/
 theorem natCard_isTree_k4 :
-    Nat.card {T : SimpleGraph {v // v ∈ k4.1} // T ≤ k4.induced ∧ T.IsTree} = 16 := by
+    Nat.card {T : SimpleGraph {v // v ∈ k4.vertices} // T ≤ k4.induced ∧ T.IsTree} = 16 := by
   have h := Graph.spanningTreeCount_eq_natCard k4
   rw [show k4.spanningTreeCount = 16 by decide +kernel] at h
   exact_mod_cast h.symm
 
 -- A disconnected graph has no spanning tree.
 example :
-    Nat.card {T : SimpleGraph {v // v ∈ disconnected.1} //
+    Nat.card {T : SimpleGraph {v // v ∈ disconnected.vertices} //
       T ≤ disconnected.induced ∧ T.IsTree} = 0 := by
   have h := Graph.spanningTreeCount_eq_natCard disconnected
   rw [show disconnected.spanningTreeCount = 0 by decide +kernel] at h
   exact_mod_cast h.symm
 
 -- The matrix-tree theorem over `ℚ`: every reduced Laplacian determinant of `K₄` is `16`.
-example (r : {v // v ∈ k4.1}) :
+example (r : {v // v ∈ k4.vertices}) :
     ((k4.induced.lapMatrix ℚ).submatrix (Subtype.val : {v // v ≠ r} → _) Subtype.val).det =
       16 := by
   rw [SimpleGraph.det_lapMatrix_submatrix_eq_natCard_isTree' ℚ, natCard_isTree_k4]
@@ -120,7 +120,7 @@ example : ComputableInPolyTime Graph.spanningTreeCount encGraph encIntBin :=
   Graph.computableInPolyTime_spanningTreeCount
 
 example : ComputableInPolyTime
-    (fun G : Graph => Nat.card {T : SimpleGraph {v // v ∈ G.1} // T ≤ G.induced ∧ T.IsTree})
+    (fun G : Graph => Nat.card {T : SimpleGraph {v // v ∈ G.vertices} // T ≤ G.induced ∧ T.IsTree})
     encGraph encNat :=
   Graph.computableInPolyTime_natCard_isTree
 

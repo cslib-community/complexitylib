@@ -46,6 +46,7 @@ follow (`growthFunction_le_sum_choose_vcDim`).
   shattered set.
 - `growthFunction_le_sum_choose`: **Sauer's lemma**.
 - `growthFunction_le_add_one_pow`, `growthFunction_le_exp_one_mul_div_pow`: polynomial forms.
+- `growthFunction_le_exp_mul_pow`: the form `exp (m / T) * T ^ d`, used for sample sizes.
 - `growthFunction_le_sum_choose_vcDim`: Sauer's lemma in terms of `vcDim`.
 
 ## References
@@ -236,6 +237,16 @@ theorem growthFunction_le_exp_one_mul_div_pow {C : ConceptClass α Bool} {d m : 
   calc (growthFunction C m : ℝ) ≤ ∑ i ∈ Finset.range (d + 1), (m.choose i : ℝ) := by
         exact_mod_cast growthFunction_le_sum_choose hC m
     _ ≤ (Real.exp 1 * m / d) ^ d := Cslib.sum_choose_le_exp_one_mul_div_pow hdm
+
+/-- Sauer's lemma in the form `growthFunction C m ≤ exp (m / T) * T ^ d` for every real `T ≥ 1`.
+Unlike `growthFunction_le_exp_one_mul_div_pow`, it needs no relation between `d` and `m`; sample
+size bounds choose `T` to trade the exponential factor against the polynomial one. -/
+theorem growthFunction_le_exp_mul_pow {C : ConceptClass α Bool} {d : ℕ}
+    (hC : ∀ W : Finset α, SetShatters C ↑W → W.card ≤ d) (m : ℕ) {T : ℝ} (hT : 1 ≤ T) :
+    (growthFunction C m : ℝ) ≤ Real.exp (m / T) * T ^ d := by
+  calc (growthFunction C m : ℝ) ≤ ∑ i ∈ Finset.range (d + 1), (m.choose i : ℝ) := by
+        exact_mod_cast growthFunction_le_sum_choose hC m
+    _ ≤ Real.exp (m / T) * T ^ d := Cslib.sum_choose_le_exp_mul_pow m d T hT
 
 /-- Sauer's lemma in terms of the VC dimension, for a class of finite VC dimension. -/
 theorem growthFunction_le_sum_choose_vcDim {C : ConceptClass α Bool} (hC : HasFiniteVCDim C)

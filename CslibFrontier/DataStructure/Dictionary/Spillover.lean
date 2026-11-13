@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Init
 public import Mathlib.Analysis.SpecialFunctions.Log.Base
 public import Mathlib.Data.Nat.Log
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import Mathlib.Analysis.Complex.ExponentialBounds
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.NormNum
@@ -297,7 +298,7 @@ theorem memBits_add_logb_spillUniv_le {X r_sp : ℕ} (hX : 1 ≤ X) (hr : 1 ≤ 
   have h2Mpos : (0 : ℝ) < (2 : ℝ) ^ memBits X r_sp := by positivity
   have hlhs : (memBits X r_sp : ℝ) + Real.logb 2 (spillUniv X r_sp) =
       Real.logb 2 ((spillUniv X r_sp : ℝ) * (2 : ℝ) ^ memBits X r_sp) := by
-    rw [Real.logb_mul hKpos.ne' h2Mpos.ne', Real.logb_pow, Real.logb_self_eq_one (by norm_num)]
+    rw [Real.logb_mul hKpos.ne' h2Mpos.ne', Real.logb_two_pow]
     ring
   have hprod_le : (spillUniv X r_sp : ℝ) * (2 : ℝ) ^ memBits X r_sp ≤
       X * (1 + 1 / (r_sp : ℝ)) := by

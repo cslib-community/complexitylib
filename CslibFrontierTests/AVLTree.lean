@@ -34,7 +34,7 @@ namespace CslibFrontierTests.AVLTree
 open Cslib.DataStructure Cslib.DataStructure.AVLTree Cslib.DataStructure.OrderedSet
 
 def build (xs : List ℕ) : AVLTree ℕ :=
-  (run .nil (insertAll xs)).2.1
+  (run .nil (insertAll xs)).state
 
 theorem valid_build (xs : List ℕ) : Valid (build xs) :=
   (run_correct (insertAll xs) rep_empty).2.1.valid
@@ -58,7 +58,7 @@ example :
       Valid zigzagRL ∧
       sortedSeven.cachedHeight = 3 ∧
       reverseSeven.cachedHeight = 3 ∧
-      ((Cslib.DataStructure.SearchTree.run .nil (insertAll [1, 2, 3, 4, 5, 6, 7])).2.1).height =
+      (Cslib.DataStructure.SearchTree.run .nil (insertAll [1, 2, 3, 4, 5, 6, 7])).state.height =
         7 ∧
       searchVisits 7 sortedSeven = 3 ∧
       searchVisits 8 sortedSeven = 3 ∧
@@ -139,40 +139,39 @@ private def extractAllFour :
   pure (a, b, c, d, e)
 
 example :
-    (run sparseHeight3 extractAllFour).1 = (some 1, some 2, some 3, some 4, none) ∧
-      (run sparseHeight3 extractAllFour).2.1 = .nil ∧
-      (run sortedSeven firstTwo).1 = (some 1, some 2) ∧
-      (run (.nil : AVLTree ℕ) extractMin).1 = none ∧
-      (run (.nil : AVLTree ℕ) extractMin).2.2 = [0] ∧
-      total id (run sortedSeven extractMin).2.2 ≤
+    (run sparseHeight3 extractAllFour).value = (some 1, some 2, some 3, some 4, none) ∧
+      (run sparseHeight3 extractAllFour).state = .nil ∧
+      (run sortedSeven firstTwo).value = (some 1, some 2) ∧
+      (run (.nil : AVLTree ℕ) extractMin).value = none ∧
+      (run (.nil : AVLTree ℕ) extractMin).traces = [0] ∧
+      total id (run sortedSeven extractMin).traces ≤
         (spec ℕ).totalCost charge (elements sortedSeven)
-          ((spec ℕ).runClient (elements sortedSeven) extractMin).2.2 :=
+          ((spec ℕ).clientHistory (elements sortedSeven) extractMin) :=
   ⟨rfl, rfl, rfl, rfl, rfl, (run_correct extractMin ⟨valid_build _, rfl⟩).2.2⟩
 
 example :
     ∃ t' ns,
       Executes Exec ((insertAll [1, 2, 3, 4, 5, 6, 7]).bind fun _ => extractMin) .nil
-        ((spec ℕ).runClient ∅ ((insertAll [1, 2, 3, 4, 5, 6, 7]).bind fun _ => extractMin)).1
+        ((spec ℕ).clientResult ∅ ((insertAll [1, 2, 3, 4, 5, 6, 7]).bind fun _ => extractMin))
         t' ns ∧
-      Rep ((spec ℕ).runClient ∅ ((insertAll [1, 2, 3, 4, 5, 6, 7]).bind fun _ => extractMin)).2.1
+      Rep ((spec ℕ).clientState ∅ ((insertAll [1, 2, 3, 4, 5, 6, 7]).bind fun _ => extractMin))
         t' ∧
       total id ns ≤
         (spec ℕ).totalCost charge ∅
-          ((spec ℕ).runClient ∅ ((insertAll [1, 2, 3, 4, 5, 6, 7]).bind fun _ => extractMin)).2.2 :=
+          ((spec ℕ).clientHistory ∅ ((insertAll [1, 2, 3, 4, 5, 6, 7]).bind fun _ => extractMin)) :=
   realized_client _ rep_empty
 
 -- Direct downstream use of `nodeVisitBound.client` and `realization.correct_client` with
 -- `rep_empty` (verifying that `realization.rep` unfolds cleanly across module boundaries).
 example :
     let p := (insertAll [4, 1, 3, 2]).bind fun _ => firstTwo
-    (run .nil p).1 = ((spec ℕ).runClient ∅ p).1 ∧
-      total id (run .nil p).2.2 ≤
-        (spec ℕ).totalCost charge ∅ ((spec ℕ).runClient ∅ p).2.2 := by
+    (run .nil p).value = (spec ℕ).clientResult ∅ p ∧
+      total id (run .nil p).traces ≤ (spec ℕ).totalCost charge ∅ ((spec ℕ).clientHistory ∅ p) := by
   intro p
   have hv := (spec ℕ).validHistory_of_forall_valid (fun _ _ => trivial) ∅
-    ((spec ℕ).runClient ∅ p).2.2
-  exact ⟨(impl.correct_client rep_empty hv (run_exec p .nil)).1,
-    nodeVisitBound.client rep_empty hv (run_exec p .nil)⟩
+    ((spec ℕ).clientHistory ∅ p)
+  have hexec := Execution.executes_run AVLTree.step p .nil
+  exact ⟨(impl.correct_client rep_empty hv hexec).1, nodeVisitBound.client rep_empty hv hexec⟩
 
 -- Independent necessity of all three conjuncts of `Valid`:
 -- 1. `Ordered ∧ HeightConsistent ∧ ¬ Balanced`: 5-node spine has `cachedHeight = 5 > 4`.

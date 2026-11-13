@@ -2,6 +2,8 @@
 
 import importlib.util
 import base64
+from contextlib import redirect_stdout
+import io
 import json
 import os
 from pathlib import Path
@@ -25,6 +27,44 @@ def module(name, path):
 
 
 publish = module("cache_publish", REPO / "scripts/cache/publish.py")
+
+
+class WorkflowContractTests(unittest.TestCase):
+    def test_publication_archive_retention_is_default_off_and_reversible(self):
+        text = (REPO / ".github/workflows/lean_action_ci.yml").read_text()
+        guide = (REPO / "scripts/cache/README.md").read_text()
+        build = text.split('      - name: "lake build"', 1)[1].split("      - name:", 1)[0]
+        test = text.split('      - name: "lake test"', 1)[1].split("      - name:", 1)[0]
+        lint = text.split('      - name: "lake lint"', 1)[1].split("      - name:", 1)[0]
+        ordinary = text.split("      - name: Save .lake to the Actions cache", 1)[1].split(
+            "      - name:", 1)[0]
+        experiment = text.split(
+            "      - name: Save .lake after cache publication (experiment)", 1)[1].split(
+            "      - name:", 1)[0]
+        self.assertIn("id: build", build)
+        self.assertIn("id: test", test)
+        self.assertIn("id: lint", lint)
+        ordinary_at = text.index("      - name: Save .lake to the Actions cache")
+        stage_at = text.index("      - name: Stage cache publication")
+        handoff_at = text.index("      - name: Hand off staged files to the enabled publishers")
+        experiment_at = text.index(
+            "      - name: Save .lake after cache publication (experiment)")
+        self.assertLess(ordinary_at, stage_at)
+        self.assertLess(stage_at, handoff_at)
+        self.assertLess(handoff_at, experiment_at)
+        self.assertIn("vars.RETAIN_PUBLICATION_ARCHIVES != 'true'", ordinary)
+        self.assertIn("steps.test.outcome == 'failure'", ordinary)
+        self.assertIn("steps.lint.outcome == 'failure'", ordinary)
+        self.assertIn("vars.RETAIN_PUBLICATION_ARCHIVES == 'true'", experiment)
+        self.assertIn("Actions string comparisons are case-insensitive", text)
+        self.assertIn("case-insensitive, so any capitalization", guide)
+        self.assertIn("!cancelled()", experiment)
+        self.assertIn("steps.build.outcome == 'success'", experiment)
+        action = "uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25"
+        for save in (ordinary, experiment):
+            self.assertIn(action, save)
+            self.assertIn("path: ./.lake", save)
+            self.assertIn("key: ${{ steps.lake-cache.outputs.cache-primary-key }}", save)
 
 
 class PublicationTests(unittest.TestCase):
@@ -186,6 +226,13 @@ class PublicationTests(unittest.TestCase):
 
 @unittest.skipUnless(shutil.which("git"), "Git is required")
 class SourceStateTests(unittest.TestCase):
+    def test_report_inside_publication_is_rejected_before_staging(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            destination = Path(temporary) / "publication"
+            with self.assertRaisesRegex(ValueError, "outside the publication"):
+                publish.stage(destination, destination / "metrics.json")
+            self.assertFalse(destination.exists())
+
     def make_repo(self, temporary):
         root = Path(temporary) / "repo"
         root.mkdir()
@@ -291,6 +338,59 @@ name = "CslibFrontierTests"
             self.assertGreater(len(data["files"]), 1)
             self.assertTrue(all(publish.digest(destination / name) == expected
                                 for name, expected in data["files"].items()))
+            # Simulate a restored Actions build tree without its module archives or shared cache.
+            # The mapping build must pack these warm outputs without recompiling them.
+            outputs = {path: (path.stat().st_mtime_ns, publish.digest(path))
+                       for path in (root / ".lake/build").rglob("*.olean")}
+            self.assertEqual(len(outputs), 2)
+            for path in (root / ".lake/build").rglob("*.ltar"):
+                path.unlink()
+            shutil.rmtree(env["LAKE_CACHE_DIR"])
+            reports = []
+            for name in ("missing-archives", "retained-archives"):
+                # Actions retains build outputs but excludes the toolchain's mutable cache.
+                shutil.rmtree(env["LAKE_CACHE_DIR"], ignore_errors=True)
+                retained = {path: (path.stat().st_mtime_ns, publish.digest(path))
+                            for path in (root / ".lake/build").rglob("*.ltar")}
+                target = Path(temporary) / name
+                report = Path(temporary) / (name + ".json")
+                with (patch.object(publish, "ROOT", root),
+                      patch.dict(os.environ, env, clear=True)):
+                    publish.stage(target, report)
+                measured = json.loads(report.read_text())
+                reports.append(measured)
+                self.assertEqual(measured["mapping_entries"], 2)
+                self.assertEqual(measured["staged_artifacts"], 2)
+                self.assertEqual(measured["archives_after"]["count"], 2)
+                self.assertTrue(all(phase["status"] == "success"
+                                    and phase["wall_seconds"] >= 0 for phase in measured["phases"]))
+                publish.validate(target)  # Diagnostic JSON must never enter the public inventory.
+                self.assertEqual(outputs, {path: (path.stat().st_mtime_ns, publish.digest(path))
+                                           for path in outputs})
+                self.assertEqual(retained, {path: (path.stat().st_mtime_ns, publish.digest(path))
+                                            for path in retained})
+            self.assertEqual(reports[0]["archives_before"]["count"], 0)
+            self.assertEqual(reports[1]["archives_before"]["count"], 2)
+
+
+class StagePhaseTests(unittest.TestCase):
+    def test_failed_command_keeps_its_exception_and_reports_the_phase(self):
+        phases, output = [], io.StringIO()
+        failure = subprocess.CalledProcessError(23, ["lake", "build"])
+        with redirect_stdout(output), self.assertRaises(subprocess.CalledProcessError) as raised:
+            with publish.stage_phase("mapping and archive build", phases):
+                raise failure
+        self.assertIs(raised.exception, failure)
+        self.assertEqual(phases[0]["status"], "failed")
+        self.assertIn("mapping and archive build failed", output.getvalue())
+
+    def test_resource_module_is_optional(self):
+        phases = []
+        with patch.object(publish, "resource", None), redirect_stdout(io.StringIO()):
+            with publish.stage_phase("fixture", phases):
+                pass
+        self.assertEqual(phases[0]["status"], "success")
+        self.assertNotIn("child_user_seconds", phases[0])
 
 
 if __name__ == "__main__":

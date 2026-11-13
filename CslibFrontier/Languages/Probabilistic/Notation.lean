@@ -11,7 +11,7 @@ public import CslibFrontier.Languages.Probabilistic.Basic
 public import CslibFrontier.Probability.PMF.ToReal
 
 /-!
-# Probability notation for Boolean experiments
+# Probability and sampling notation
 
 `Pr[e]` is the probability, as a real number, that the Boolean experiment `e` returns `true`.
 The experiment is either a program `e : ProbComp Bool`, for which `Pr[e]` is
@@ -31,12 +31,20 @@ Events are final returns. The probability that a sample of `μ : PMF α` lies in
 `Pr[(· == a) <$> μ]`; these are `(μ.toOuterMeasure s).toReal` and `(μ a).toReal`. A Boolean game,
 a set event and a single outcome therefore share one form.
 
-The notation is scoped: `open Cslib.Probability` enables it, as does `open Probability` inside the
-namespace `Cslib`. It then also prints both forms back as `Pr[e]`.
+Uniform sampling is written `$ᵗ α`, the textbook `a ←$ α` (the notation follows VCVio): a program
+reads `let a ← $ᵗ ZMod q`. It is notation for `ProbComp.uniform α` and adds no constant, so
+`ProbComp.eval_uniform`, `pmf_norm` and every other lemma about `ProbComp.uniform` apply unchanged.
+Its argument is an application at most, so `$ᵗ ZMod q` needs no parentheses and a product type does:
+`$ᵗ (ZMod q × Bool)`.
+
+The notations are scoped: `open Cslib.Probability` enables them, as does `open Probability` inside
+the namespace `Cslib`. They then also print back: both forms of probability as `Pr[e]`, and
+`ProbComp.uniform α` as `$ᵗ α`.
 
 ## Main definitions
 
 * `Pr[e]`: the probability that the Boolean experiment `e` returns `true`, as a real number.
+* `$ᵗ α`: uniform sampling from the nonempty finite type `α`, as a program.
 * `Cslib.Probability.elabProbabilityTrue`, `Cslib.Probability.delabProbabilityTrue`: elaborator
   and delaborator for `Pr[e]`.
 
@@ -97,6 +105,9 @@ meta def delabProbabilityTrue : Delab := whenPPOption getPPNotation do
   else
     let distribution ← withAppArg <| withNaryArg 4 delab
     `(Pr[$distribution])
+
+/-- `$ᵗ α` samples uniformly from the nonempty finite type `α`: it is `ProbComp.uniform α`. -/
+scoped notation:max "$ᵗ " α:lead => Cslib.ProbComp.uniform α
 
 namespace PMF
 

@@ -285,17 +285,8 @@ def Witness.bind (hP : Witness B p input answer safeP timeP callsP)
       have hzout : (fun i : Fin l => z.regs ((tmp ∘ right) (Fin.castAdd (n₁ + 1) i))) = answer a :=
         (congrArg Prod.fst hz).symm
       have hzs : memoryState frontier z = s' := (congrArg Prod.snd hz).symm
-      have hinQ : z.regs ∘ nextSrc = (appendWords input answer) (d, a) := by
-        funext i
-        refine Fin.addCases (fun j => ?_) (fun j => ?_) i
-        · change z.regs (nextSrc (Fin.castAdd l j)) =
-            Fin.append (input d) (answer a) (Fin.castAdd l j)
-          simp only [nextSrc, Fin.append_left]
-          exact (hframe (src j) (hs j) (fun t => (hd j (right t)).symm)).trans (congrFun hin j)
-        · change z.regs (nextSrc (Fin.natAdd k j)) =
-            Fin.append (input d) (answer a) (Fin.natAdd k j)
-          simp only [nextSrc, Fin.append_right]
-          exact congrFun hzout j
+      have hinQ : z.regs ∘ nextSrc = (appendWords input answer) (d, a) :=
+        bindShared_appendWords hin hframe hd hs (congrFun hzout)
       obtain ⟨hsafeQ, htime, hcalls⟩ := hsafe.2 a s' hmem
       obtain ⟨tr, hrun⟩ := D.exists_clientRun_of_mem_support hvP hmem
       have hQ := hrunQ w (d, a) z hzb hinQ (hzs ▸ hsafeQ) (hzs ▸ hvQ a s' tr hrun)
@@ -309,19 +300,13 @@ def Witness.bind (hP : Witness B p input answer safeP timeP callsP)
       exact hQ.mono (fun y hy i hif htmp => (hy i hif fun j => htmp (left j)).trans
         (hframe i hif fun j => htmp (right j)))
         (Nat.mul_le_mul_left C₂ (Nat.add_le_add_right htime 1)) hcalls
-    refine (h.mono (fun _ h => h) ?_ le_rfl).congr_law ?_
-    · change C₁ * (timeP d s + 1) + C₂ * (T d s + 1) ≤ max C₁ C₂ * (timeP d s + T d s + 1 + 1)
-      calc
-        _ ≤ max C₁ C₂ * (timeP d s + 1) + max C₁ C₂ * (T d s + 1) :=
-          Nat.add_le_add (Nat.mul_le_mul_right _ (Nat.le_max_left _ _))
-            (Nat.mul_le_mul_right _ (Nat.le_max_right _ _))
-        _ = _ := by ring
-    · change ((D.run (p d) s).map fun (a, s') => (answer a, s')).bind κ =
-        (D.run (p d >>= fun a => q (d, a)) s).map fun (b, s'') => (output b, s'')
-      rw [PMF.bind_map, RandomizedSpec.run_bind, PMF.map_bind]
-      congr 1
-      funext ⟨a, s'⟩
-      simp only [Function.comp_apply, κ, hdecode]⟩
+    refine (h.mono (fun _ h => h) (bind_cost_le le_rfl) le_rfl).congr_law ?_
+    change ((D.run (p d) s).map fun (a, s') => (answer a, s')).bind κ =
+      (D.run (p d >>= fun a => q (d, a)) s).map fun (b, s'') => (output b, s'')
+    rw [PMF.bind_map, RandomizedSpec.run_bind, PMF.map_bind]
+    congr 1
+    funext ⟨a, s'⟩
+    simp only [Function.comp_apply, κ, hdecode]⟩
 
 /-- The existential sequential realization supplied by the shared-bank constructor. -/
 theorem bind (hP : RealizesRand B p input answer safeP timeP callsP)
@@ -359,29 +344,19 @@ theorem branch (c : Cond k) (hp : RealizesRand B pos input output safePos timePo
   refine ⟨np + nn, max Cp Cn + 2, fun frontier src tmp =>
     .branch (c.rename src) (ep frontier src (tmp ∘ ip)) (en frontier src (tmp ∘ ineg)), ?_⟩
   intro r frontier src tmp hi hd hf hs
-  have hip : Function.Injective (tmp ∘ ip) := fun a b hab =>
-    Fin.ext (congrArg (fun z : Fin (l + (np + nn) + 1) => z.val) (hi hab))
-  have hin : Function.Injective (tmp ∘ ineg) := fun a b hab =>
-    Fin.ext (congrArg (fun z : Fin (l + (np + nn) + 1) => z.val) (hi hab))
-  obtain ⟨hnp, hrp⟩ := hep frontier src (tmp ∘ ip) hip
-    (fun i j => hd i (ip j)) (fun j => hf (ip j)) hs
-  obtain ⟨hnn, hrn⟩ := hen frontier src (tmp ∘ ineg) hin
-    (fun i j => hd i (ineg j)) (fun j => hf (ineg j)) hs
+  obtain ⟨hip, hdp, hfp, hframep⟩ := branchPrefix_layout (m := l + np + 1) (by omega) hi hd hf
+  obtain ⟨hin, hdn, hfn, hframen⟩ := branchPrefix_layout (m := l + nn + 1) (by omega) hi hd hf
+  obtain ⟨hnp, hrp⟩ := hep frontier src (tmp ∘ ip) hip hdp hfp hs
+  obtain ⟨hnn, hrn⟩ := hen frontier src (tmp ∘ ineg) hin hdn hfn hs
   refine ⟨fun h => h.elim hnp hnn, fun w d x hx hinput hsafe hv => ?_⟩
   have hc := test_rename c src x (input d) hinput
-  have hle (C t : ℕ) (hC : C ≤ max Cp Cn) (e : ℕ) (he : e ≤ 2) :
-      C * (t + 1) + e ≤ (max Cp Cn + 2) * (t + 1) := by
-    have := Nat.mul_le_mul_right (t + 1) hC
-    nlinarith
   by_cases ht : test c (input d)
   · simp only [ite_eq_left ht] at hsafe hv ⊢
-    exact ((hrp w d x hx hinput hsafe hv).branch_pos (hc.mpr ht)).mono
-      (fun y hy i hif htmp => hy i hif fun j => htmp (ip j))
-      (hle Cp _ (Nat.le_max_left _ _) 1 (by omega)) le_rfl
+    exact ((hrp w d x hx hinput hsafe hv).branch_pos (hc.mpr ht)).mono (fun _ => hframep)
+      (branch_cost_le (Nat.le_max_left _ _) le_rfl (by omega)) le_rfl
   · simp only [ite_eq_right ht] at hsafe hv ⊢
     exact ((hrn w d x hx hinput hsafe hv).branch_neg (fun h => ht (hc.mp h))).mono
-      (fun y hy i hif htmp => hy i hif fun j => htmp (ineg j))
-      (hle Cn _ (Nat.le_max_right _ _) 2 le_rfl) le_rfl
+      (fun _ => hframen) (branch_cost_le (Nat.le_max_right _ _) le_rfl le_rfl) le_rfl
 
 end Branch
 

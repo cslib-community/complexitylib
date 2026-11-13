@@ -173,7 +173,7 @@ example : Game.succProbability (ProbComp.eval
     (coinIdealGame (treeCoinAdversary seededToy seededToySeeded (fun _ => 1)
       (coinParam oscBudget) (coinParamInv oscBudget) cheatForger) 5)) = 0 := by
   have h5 : coinParam oscBudget (coinParamInv oscBudget 5) ≠ 5 := by decide
-  simp [coinIdealGame, treeCoinAdversary, h5, Game.succProbability]
+  simp [coinIdealGame, ProbOracleComp.run, treeCoinAdversary, h5, Game.succProbability]
 
 -- At every `N n = coinParam oscBudget n`, `cheatForger` wins `coinRealGame` with exact
 -- probability `1`.
@@ -186,7 +186,8 @@ example (n : ℕ) : Game.succProbability (ProbComp.eval
       (prfCoins maskFamily) cheatForger n) = PMF.pure true := by
     rw [eval_treeGame]
     refine (congrArg (PMF.bind _) (funext fun k => ?_)).trans (PMF.bind_const _ _)
-    simp only [treeGameWith, cheatForger, OracleComp.interpret_pure, StateT.run_pure,
+    rw [treeGameWith, treeScheme, Forger.eval_eufCmaExperiment_restrict_toTyped]
+    simp only [cheatForger, OracleComp.interpret_pure, StateT.run_pure,
       ProbComp.eval_bind, ProbComp.eval_pure, PMF.pure_bind, verify, encodeSignature,
       keyDecoder.decode_enc, signatureDecoder.decode_enc]
     simp [seededToy, sigDec.decode_enc]
@@ -220,7 +221,9 @@ example (n : ℕ) : Game.succProbability (ProbComp.eval
       (coinParam oscBudget) replayForger n)) true = 0 := by
     rw [PMF.apply_eq_zero_iff]
     intro hb
-    simp only [treeIdealGame, treeGameWith, replayForger, OracleComp.interpret_bind,
+    simp only [treeIdealGame, ProbComp.eval_bind, treeGameWith, treeScheme,
+      Forger.eval_eufCmaExperiment_restrict_toTyped] at hb
+    simp only [replayForger, OracleComp.interpret_bind,
       OracleComp.interpret_map, OracleComp.interpret_pure, ProbOracleComp.interpret_query,
       StateT.run_bind, StateT.run_map, StateT.run_pure] at hb
     simp only [StateT.run, ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure,

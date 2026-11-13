@@ -53,6 +53,7 @@ obligations they cannot prove as goals; their references say which.
 | `wram_call h canonical hf with pats` | `Computability.WordRAM.SymbolicExec.CanonicalCall` | the same, keeping the caller state as `small.extend bank caller` | [Routine calls](../algorithms-and-memory/wordram-and-bridges.md#proving-routine-calls-and-memory-frames) |
 | `ram_keep view`, `ram_keep view using frame` (scoped, `Cslib.WordRAM`) | `Computability.WordRAM.MemoryView` | a block, list or footprint view, kept through stores outside its support | [Routine calls](../algorithms-and-memory/wordram-and-bridges.md#proving-routine-calls-and-memory-frames) |
 | `realize` (scoped, `Cslib.WordRAM`) | `Tactic.Realize` | `Realizes B p input output safe work` for a memory client | [Certify and reuse memory methods](#certify-and-reuse-memory-methods) |
+| `realizeDict using [certificates]`, `realizeDictWith [h] using [certificates]`, `dictSide` (scoped, `Cslib.DataStructure.Dictionary.WordRAM.Succinct`) | `DataStructure.Dictionary.WordRAM.SuccinctProg` | `Realizes` for a parameter-free succinct-dictionary program over `DictParams × D`; `dictSide` closes its routine envelope, index and `Fits` side goals | [Certify and reuse memory methods](#certify-and-reuse-memory-methods) |
 | `simp only [client_simps]` (simp set) | `DataStructure.StateTransition`; `Computability.WordRAM.Realization.Basic` for `memoryCost` | splits `clientResult`, `clientState`, `clientHistory`, `totalCost`, `ValidHistory` and `memoryCost` at the binds of a client | [Relational operations and adaptive clients](../algorithms-and-memory/memory-specifications.md#relational-operations-and-adaptive-clients) |
 | `cp_step`, `cp_step [h]` | `Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Step` | one step of `P.Reaches w Q (l, regs) s'` for a counter program | [Step through counter programs](#step-through-counter-programs) |
 
@@ -278,8 +279,9 @@ the syntax inactive; a command-local open ends with that declaration. Open the c
 [scope clients](../../CslibFrontierTests/WordRAMRealizeScope.lean) for both activation forms and
 the check that local opens do not leak into later declarations.
 
-Place a callee's zero-local-work `Realizes` certificate in the local context to reuse an opaque
-method before unfolding it. The tactic checks its basis and output encoding and uses existing
+Supply a callee's `Realizes` certificate with `realize [certificate₁, …]`, or place it in the
+local context, to reuse an opaque method before unfolding it. The tactic checks its basis and
+output encoding and uses existing
 `Realizes.reindex` to wire encoded argument coordinates to live words. When some coordinates
 need computation, it first certifies a charged `pure` stage for the whole argument using the
 callee's input encoding, then wires the call to those new words. This supports custom and
@@ -289,9 +291,35 @@ projections, aliased inputs, curried and dependent arguments, and optional-pair 
 Word-vector type abbreviations in the callee's input and output encodings are accepted without
 restating their literal `Fin` widths; the [encoding-alias clients](../../CslibFrontierTests/WordRAMRealizeAliases.lean)
 include a nine-word input, six-word result and empty-vector methods.
-Certificates are tried in context order; this does not search for a runtime bound.
+Existing local certificates are tried first, followed by the supplied terms in list order;
+this does not search for a runtime bound. Terms can apply a theorem to its parameters directly,
+so there is no need to name a local alias solely for the tactic. The
+[certificate-list clients](../../CslibFrontierTests/WordRAMRealizeCertificates.lean) check opaque
+calls, computed arguments, ordering and frontier-bounded certificates. For example, native
+[Dijkstra](../../CslibFrontier/Algorithms/Lean/Dijkstra/Native/Binary.lean) supplies its heap
+methods together:
+
+```lean
+realize [BinaryHeap.Native.realizes_insert, BinaryHeap.Native.realizes_decreaseKey]
+```
+
+A program argument, `pure` result or `iterate` loop state can be a documented `structure`
+instead of a nested tuple. Give it the former tuple's words with
+[`WordEncoding.ofEquiv`](../../CslibFrontier/Computability/WordRAM/Realization/WordEncoding/Equiv.lean)
+and an exposed equivalence that lists the fields in tuple order; `realize` then accepts field
+projections as operands and anonymous constructors as results, with unchanged glue and
+certificates. The [cluster scan](../../CslibFrontier/DataStructure/ApproximateMembership/WordRAM/QuotientFilter/Cluster.lean)
+of the quotient filter keeps its environment, loop state and step context this way, and its
+[tests](../../CslibFrontierTests/WordRAMQuotientFilter.lean) check that each record keeps its
+tuple's words. A record input suits a certificate whose callers pass a record; method calls
+match on products and sigma types only, so a certificate whose callers pass separate curried
+arguments keeps a tuple input and names its components with accessors.
+
 Zero local work is an absorbed grading: the callee still has its certified native allowance
 against memory charge. It does not mean zero machine instructions.
+Nonzero local work is retained at the call's actual argument and reached memory. Binds sum
+the component grades; branches charge only the selected alternative. Fixed staging and finite
+control are absorbed by the exchange factor, while input-dependent work remains visible.
 
 The called method's domain must hold at the memory actually reached by earlier queries.
 The call client after a write demonstrates that obligation explicitly. Write computed arguments
@@ -302,20 +330,73 @@ truncated subtraction, and rejection when fit or exact-operation evidence is mis
 Automatic staging computes the whole encoded argument when any coordinate needs computation;
 an explicit `pure` stage remains useful to share a computed value between several calls.
 
-Ordinary `if` guards accept natural-word `=`, `≠`, `<`, `≤`, `>` and `≥`, and negations of
-these comparisons. Write `if a ≤ b then ... else ...` directly: the tactic reverses a strict
-test and swaps alternatives, charging the existing branch without computing `b + 1`. An
-operand actually written as `b + 1` still needs its usual fit proof. The complete
+Ordinary `if` guards accept natural-word `=`, `≠`, `<`, `≤`, `>` and `≥`, combined using
+`¬`, `∧` and `∨`. A depth limit bounds logical traversal and unfolding of named predicates.
+The heap's `IndexedMinPQ.RawPrioLT` can stay in the source program. The
+[compound-guard clients](../../CslibFrontierTests/WordRAMRealizeCompound.lean) check that priority
+predicate, aliases, tie-breaking and arbitrary decidability instances. Conjunctions and
+disjunctions retain left-to-right short-circuiting: the arithmetic and fit obligations of a
+later test arise only on paths that reach it. Complete encoded operands retain their live-word
+treatment, including operands containing an opaque host predicate.
+
+Write `if a ≤ b then ... else ...` directly: the tactic reverses a strict test and swaps
+alternatives, charging the existing branch without computing `b + 1`. An operand actually
+written as `b + 1` still needs its usual fit proof. The complete
 [guard clients](../../CslibFrontierTests/WordRAMRealizeGuards.lean) check equal and maximal
 fitting words, selected-path safety and native execution of the migrated QuotientFilter query
 scan step with a maximal cutoff. From the repository root, run:
 
 ```bash
-scripts/build.sh --wfail --iofail CslibFrontierTests.WordRAMRealizeGuards
+scripts/build.sh --wfail --iofail CslibFrontierTests.WordRAMRealizeGuards \
+  CslibFrontierTests.WordRAMRealizeCompound
 ```
 
-Use nested branches for compound tests. Loop guards keep their existing grammar: `=`, `<`,
-`>` and `≠ 0`; this branch support does not extend the loop guard rules.
+An unsupported predicate is reported at its guard. Expose its supported comparisons, or use a
+separately certified memory method to compute a word and compare that word.
+
+Loop guards accept `=`, `<`, `>` and `≠ 0`, as well as successor lower bounds
+`a + 1 ≤ b` or `Nat.succ a ≤ b` and their reversed `≥` forms, including positive literals.
+For example, sift-up keeps its original `2 ≤ k` guard, tested natively as `1 < k`.
+The successor is never computed, so `a` may be the largest fitting word without a fit
+premise for `a + 1`. The compared operands must be live words; a state-independent operand
+may instead be prepared before the loop with its usual fit and arithmetic obligations.
+The [successor-loop clients](../../CslibFrontierTests/WordRAMRealizeSuccessorWhile.lean)
+check these cases, arbitrary decidability and rejected missing premises. A queryful body pays
+for native loop control; the cutoff stays proof data, and the remaining `whileSafe` obligation
+must establish that it does not truncate the loop. General `a ≤ b`, compound tests and
+computed state operands remain unsupported loop guards.
+
+Query-free bodies are also supported. Counted loops retain `iterationWork`; guarded loops retain
+`whileWork`, charging the body and one control unit on every reached iteration. Guarded loops
+charge actual iterations, so a larger ghost cutoff does not charge unused iterations. A
+zero-work body beginning with a query retains the query-paid rule. Counted loops use the exact
+basis and compute their fuel as a fitting word; guarded loops support both existing bases and
+keep their cutoff as proof data. `iterationWork_zero` reduces a counted loop's zero-body work
+to its fuel.
+
+For a loop repackaged with another environment, use the checked
+[loop transport laws](../../CslibFrontier/Computability/WordRAM/Realization/LoopCongr.lean).
+`iterate_congr` takes equality of the body programs at the two fixed environments;
+`iterationSafe_congr` also takes equivalence of their domains, and `iterationWork_congr` takes
+equality of their charges. The hypotheses cover every loop state, and every memory for domains
+and charges, so the laws follow the actual reached states for any fuel. The
+[succinct search](../../CslibFrontier/DataStructure/Dictionary/WordRAM/SuccinctSearch.lean)
+proofs use these same laws for their parameter packaging.
+
+After the fit and safety goals, a remaining budget comparison has the same entry context:
+`w d s hwords hmem hv h`, including input fits, well-formed memory, valid source history and the
+requested domain. Use the invariant in `h` to prove the generated work is within the requested
+grade. Zero or definitionally matching work closes automatically; an unpaid zero budget does
+not close a query-free loop. The [graded clients](../../CslibFrontierTests/WordRAMRealizeGraded.lean)
+check calls, changed memories, selected branches, nested/captured loops and contextual budgets.
+The [halving client](../../CslibFrontierTests/WordRAMRealizationWhile.lean) uses the frontend for
+one uniform native emitter, including early exit, zero word width and dirty-memory/register
+framing. Run both from the repository root with
+
+```bash
+scripts/build.sh --wfail --iofail \
+  CslibFrontierTests.WordRAMRealizeGraded CslibFrontierTests.WordRAMRealizationWhile
+```
 
 Returned choices can also stay inside `pure`, including tuple and option components:
 `pure (min a b, max a b)` and `pure (decide (a = 0))` need no separate source program with
@@ -329,12 +410,41 @@ fitting successor. The complete
 [conditional-result clients](../../CslibFrontierTests/WordRAMRealizeValues.lean) check these cases,
 inactive exact division/subtraction, rejected missing premises, and frontier-bounded
 certificates. Check them from the repository root with
-`scripts/build.sh --wfail --iofail CslibFrontierTests.WordRAMRealizeValues`.
+
+```bash
+scripts/build.sh --wfail --iofail CslibFrontierTests.WordRAMRealizeValues
+```
+
+The succinct dictionary wraps `realize` for its parameter-free programs over `DictParams × D`.
+Import `CslibFrontier.DataStructure.Dictionary.WordRAM.SuccinctProg` and open
+`Cslib.DataStructure.Dictionary.WordRAM.Succinct`, where these tactics are scoped. `realizeDict`
+runs `realize`, splits the input into `(dp, d)`, substitutes `dp = mkDictParams U V w₀ n_max h_space`
+from the precondition's `DictEnvGen` and simplifies the parameter accessors;
+`realizeDictWith [h]` also simplifies with `h`, typically the `_mk` equations of the
+sub-programs and preconditions. Either helper accepts an optional `using [certificates]` list,
+passed to `realize` in the given order without changing the simplification list. The
+[tail-pool clients](../../CslibFrontier/DataStructure/Dictionary/WordRAM/SuccinctTailOps.lean)
+supply their read/write methods this way. Both helpers bind `hw : 0 < w₀`, `hnU : n_max ≤ U`
+and `hU : U < 2 ^ w₀` in every remaining goal. Destructure the precondition and the program's
+bounds lemma by name in an `all_goals` block, then run `all_goals dictSide`. From that context, `dictSide` closes the
+envelope `DictEnvGen …`, an index bound `i < globalMetaLen n_max`, also one stated under the
+current branch condition, and `Fits w x` for a constant `x ≤ 24`, a `GlobalMeta` index (given
+`0 < bucketBits n_max`) or a value `x ≤ n_max`. It fails on any other goal and never searches
+further. It matches hypotheses only up to reducible unfolding, so it never evaluates the programs
+inside `clientResult`; state each bound in the form the goal uses (`4 + 3 * b < globalMetaLen n_max`
+rather than `gmQIdx b < globalMetaLen n_max`). [realizes_gmPushSlabGen](../../CslibFrontier/DataStructure/Dictionary/WordRAM/SuccinctSlabPool.lean)
+is a complete client in which `dictSide` closes every side goal;
+[realizes_resolveIndexedSlotGen](../../CslibFrontier/DataStructure/Dictionary/WordRAM/SuccinctProg.lean) proves the goals that
+`dictSide` leaves directly. Check both from the repository root with
+
+```bash
+scripts/build.sh --wfail --iofail CslibFrontier.DataStructure.Dictionary.WordRAM.SuccinctSlabPool
+```
 
 If `realize` is unavailable, check scope activation. If a method call is unsupported, check the
-certificate's basis, output encoding, zero local work and whether its argument coordinates use
+certificate's basis, output encoding and whether its argument coordinates use
 supported word glue, then inspect the domain at the reached memory. Retain the fit and safety
-obligations left by the tactic;
+obligations and any work comparison left by the tactic;
 unfolding the method or dropping a resource premise does not supply those proofs. The
 [realization reference](../algorithms-and-memory/memory-specifications.md) explains the uniform
 code and charging contract; the complete clients above supply imports and local context.
@@ -510,8 +620,8 @@ bound when it holds by `rfl`, symmetric `Game.advantage_comm` summand alignment,
 associativity/commutativity of `+` (with zeros), or `ring`. With no intermediate list,
 `game_trans` unfolds `Encryption.advantage` or reduces a `Game.succProbability` bound to
 `Game.advantage`, and `game_trans using [h]` closes a single hop up to symmetry. For finite-support `dist μ ν ≤ ε` bounds with `ε : ℝ`, import
-`CslibFrontier.Crypto.Game.CloseTo.Statistical` and apply `Cslib.Interactive.closeTo_of_dist_le_ofReal`
-to obtain `CloseTo μ ν (ENNReal.ofReal ε)` directly without a separate nonnegativity proof; see the
+`CslibFrontier.Probability.StatisticalDistance.TotalVariation` and apply
+`Cslib.Probability.closeTo_of_dist_le_ofReal` to obtain `CloseTo μ ν (ENNReal.ofReal ε)` directly without a separate nonnegativity proof; see the
 [Lyubashevsky commitment binding proof](../../CslibFrontier/Crypto/Protocols/SigmaProtocol/Lyubashevsky/Commitment.lean).
 
 Use `peel_binds` (or `peel_binds x₁ x₂ ...`) on `Game.advantage`, `Encryption.advantage`,
@@ -541,6 +651,29 @@ before peeling the remaining prefix. If `game_trans` reports a `using` count mis
 `m` intermediate items are paired with `m + 1` hop proofs (using `_` for hops proved
 interactively); if it reports that a hop proof's type does not match the expected hop, verify the
 intermediate game list order and parameter arguments.
+
+When the hop sequence is the argument a reader should follow, as in a headline theorem, write it as
+a `calc` chain instead. Import [Game/Hop.lean](../../CslibFrontier/Crypto/Game/Hop.lean) and
+`open Probability`. A step `Pr[G₁] ≈[ε] Pr[G₂]` says `|Pr[G₁] - Pr[G₂]| ≤ ε`, and the errors of
+consecutive steps add. An `=` step records an exact hop, and a proof of `|x - y| ≤ ε` is accepted as
+a step:
+```lean
+Game.advantage_le_of_approxEq
+  (calc Pr[G₀] = Pr[G₁] := by rw [h₀₁]                     -- Game 0 = Game 1
+    _ ≈[ε₁] Pr[G₂] := Game.approxEq_of_advantage_le h₁₂   -- |Game 1 − Game 2| ≤ ε₁
+    _ ≈[ε₂] Pr[G₃] := Game.approxEq_of_advantage_le h₂₃)
+```
+`Game.approxEq_of_advantage_le` turns an `ℝ≥0` advantage bound into a step, and
+`Game.approxEq_advantage G₀ G₁` charges a step its advantage. `Game.advantage_le_of_approxEq` reads
+the chain back as an `ℝ≥0` advantage bound; pass its second argument, `δ ≤ ε`, only when the bound
+`ε` is looser than the chain's sum of errors. `ApproxEq.le_add` and `ApproxEq.sub_le` give the
+one-sided bounds `Pr[G₀] ≤ Pr[G₁] + ε` and `Pr[G₁] - ε ≤ Pr[G₀]`. The same lemmas apply to
+experiments `e : ProbComp Bool`, since `Pr[e]` and the experiment advantage are those of
+`ProbComp.eval e`. Keep `game_trans` for chains whose hops are proved in place with `peel_binds`,
+where each hop is a local computation rather than a textbook step. On `h : x ≈[ε] y`, `h.trans`
+is `ApproxEq.trans`; use `le_trans` for the order. The
+[checked examples](../../CslibFrontierTests/Crypto/Hop.lean) cover each form, and
+[FourHop.lean](../../CslibFrontier/Crypto/Game/FourHop.lean) is a library client.
 
 ## Step through counter programs
 

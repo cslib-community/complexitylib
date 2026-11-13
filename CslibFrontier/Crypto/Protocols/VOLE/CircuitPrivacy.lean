@@ -130,19 +130,6 @@ noncomputable def circuitReceiverSimulate (C : Circuit (arithSignature F) (p + k
       (circuitReceiverAdapter C statement V) z
 
 
-omit [CommRing F] [Fintype F] [DecidableEq F] in
-private theorem interpret_liftVerifier {n : ℕ} {α : Type} (c : VOLECorrelation F n)
-    (program : ProbOracleComp (voleReceiverSpec F n) α) :
-    OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle
-      (OracleComp.sumHandler (fun _ => PMF.pure (c.u, c.v))
-        (fun _ => PMF.pure c.receiverView)))
-      (liftVerifier (oP := voleSenderSpec F n) program) =
-    OracleComp.interpret (OracleComp.sumHandler ProbComp.unifOracle
-      (fun _ => PMF.pure c.receiverView)) program := by
-  rw [liftVerifier, OracleComp.interpret_interpret]
-  congr 1 with q : 1
-  cases q <;> simp [OracleComp.sumHandler, ProbOracleComp.query]
-
 /-- The circuit interaction is the existing masked-batch interaction with reconstructed linear
 openings, including the entire receiver state and transcript. The prover remains role-local. -/
 theorem circuitReceiverView_eq_expand (C : Circuit (arithSignature F) (p + k) m)
@@ -199,15 +186,19 @@ theorem circuitReceiverSimulate_linear (C : Circuit (arithSignature F) (p + k) m
     (V : Aux → ProbOracleComp (voleReceiverSpec F (((p + k) + C.size) + 1))
       (VerifierStrategy (ProbOracleComp (voleReceiverSpec F (((p + k) + C.size) + 1)))
         (circuitCheckSpec C) View)) (z : Aux)
-    {view : (F × (Fin (((p + k) + C.size) + 1) → F)) × Transcript (circuitCheckSpec C) × View}
-    (hview : view ∈ (ProbComp.eval (circuitReceiverSimulate C statement V z)).support)
+    {delta : F} {q : Fin (((p + k) + C.size) + 1) → F} {d : Fin ((p + k) + C.size) → F}
+    {openings : (Fin p ⊕ Fin C.size ⊕ Fin m) → F} {r : CircuitMulGate C → F} {reply : F × F}
+    {view : View}
+    (hview : ((delta, q), ((d, openings), r, reply, ()), view) ∈
+      (ProbComp.eval (circuitReceiverSimulate C statement V z)).support)
     (row : Fin p ⊕ Fin C.size ⊕ Fin m) :
-    (circuitLinearCoeffs C *ᵥ
-      voleAdjustReceiver (Fin.init view.1.2) view.2.1.1.1 view.1.1) row =
-        circuitLinearTargets C statement.1 statement.2 row * view.1.1 + view.2.1.1.2 row := by
+    (circuitLinearCoeffs C *ᵥ voleAdjustReceiver (Fin.init q) d delta) row =
+      circuitLinearTargets C statement.1 statement.2 row * delta + openings row := by
   rw [circuitReceiverSimulate, ProbComp.eval_map, PMF.mem_support_map_iff] at hview
-  obtain ⟨source, _, rfl⟩ := hview
-  simp only [circuitExpandView, circuitPublicFirst]
+  obtain ⟨⟨share, ⟨d', _, _, ⟨⟩⟩, _⟩, _, hexpand⟩ := hview
+  simp only [circuitExpandView, circuitPublicFirst, Prod.mk.injEq] at hexpand
+  obtain ⟨rfl, ⟨⟨rfl, rfl⟩, -⟩, -⟩ := hexpand
+  dsimp only
   ring
 
 end Cslib.Crypto.Protocols.VOLE

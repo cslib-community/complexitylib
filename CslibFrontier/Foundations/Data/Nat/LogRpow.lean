@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import Mathlib.Analysis.SpecialFunctions.Pow.Asymptotics
 public import Mathlib.Analysis.SpecialFunctions.Log.Base
 public import Mathlib.Data.Nat.Size
+import CslibFrontier.Foundations.Data.Nat.BinarySize
 import Mathlib.Analysis.Complex.ExponentialBounds
 import Mathlib.Tactic.GCongr
 import Mathlib.Tactic.Linarith
@@ -103,11 +104,7 @@ theorem exists_size_add_one_pow_le_mul_rpow (d : ℕ) {ε : ℝ} (hε : 0 < ε) 
   · have h := hM n (not_lt.mp hn)
     simp only [Nat.add_zero, one_mul, Nat.cast_ofNat] at h
     have hsize : ((Nat.size n + 1 : ℕ) : ℝ) ≤ (Nat.log 2 n : ℝ) + 2 := by
-      have : Nat.size n ≤ Nat.log 2 n + 1 :=
-        Nat.size_le.mpr (Nat.lt_pow_succ_log_self one_lt_two n)
-      have : (Nat.size n : ℝ) ≤ (Nat.log 2 n : ℝ) + 1 := by exact_mod_cast this
-      push_cast
-      linarith
+      exact_mod_cast Nat.add_le_add_right (Nat.size_le_log_two_add_one n) 1
     have hp : ((Nat.size n + 1 : ℕ) : ℝ) ^ d ≤ ((Nat.log 2 n : ℝ) + 2) ^ d := by gcongr
     have hn' : (n : ℝ) ^ ε ≤ ((n : ℝ) + 1) ^ ε :=
       Real.rpow_le_rpow (Nat.cast_nonneg n) (by linarith) hε.le

@@ -16,6 +16,8 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeLoops
 import CslibFrontier.Crypto.Negligible.Basic
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.ExpBounds
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
 import CslibFrontier.Probability.PMF.Uniform
 
@@ -220,47 +222,6 @@ private theorem le_ampRepInLen (F : InaccessibleEntropyFamily) (n : ℕ) :
       n + 2 = (n + 2) * 1 := (Nat.mul_one _).symm
       _ ≤ ampReps F n * F.inLen n := by gcongr
 
-/-! ### Entropy and exponential helper bounds -/
-
-private theorem conditionalEntropy_le_inLen {w m : ℕ} (f : BitString w → BitString m) :
-    PMF.conditionalEntropy ((PMF.uniformOfFintype (BitString w)).map fun z => (f z, z)) ≤
-      (w : ℝ) := by
-  rw [← expected_realSampleEntropy_eq_conditionalEntropy f]
-  have hpoint (z : BitString w) : realSampleEntropy f z ≤ (w : ℝ) := by
-    have hpos : (0 : ℝ) < #(fiberSet f (f z)) := by exact_mod_cast card_fiberSet_pos f z
-    have hle : (#(fiberSet f (f z)) : ℝ) ≤ (2 : ℝ) ^ w := by
-      have hc : #(fiberSet f (f z)) ≤ Fintype.card (BitString w) := card_le_univ _
-      have hw : Fintype.card (BitString w) = 2 ^ w := by simp [BitString]
-      exact_mod_cast hc.trans hw.le
-    exact (Real.logb_le_iff_le_rpow (by norm_num : (1 : ℝ) < 2) hpos).mpr
-      (by simpa only [Real.rpow_natCast] using hle)
-  calc
-    (∑ z : BitString w, ((PMF.uniformOfFintype (BitString w)) z).toReal * realSampleEntropy f z)
-      ≤ ∑ z : BitString w, ((PMF.uniformOfFintype (BitString w)) z).toReal * (w : ℝ) :=
-        sum_le_sum fun z _ => mul_le_mul_of_nonneg_left (hpoint z) ENNReal.toReal_nonneg
-    _ = (w : ℝ) := by rw [← sum_mul, PMF.sum_toReal, one_mul]
-
-private theorem exp_neg_le_half_pow (n : ℕ) {x : ℝ} (hx : x ≤ -(n : ℝ)) :
-    Real.exp x ≤ (1 / 2 : ℝ) ^ n := by
-  have h2 : (2 : ℝ) ≤ Real.exp 1 := by linarith [Real.add_one_le_exp (1 : ℝ)]
-  have hpow : (2 : ℝ) ^ n ≤ Real.exp (n : ℝ) := by
-    calc
-      (2 : ℝ) ^ n ≤ (Real.exp 1) ^ n := pow_le_pow_left₀ (by norm_num) h2 n
-      _ = Real.exp (n : ℝ) := by rw [← Real.exp_nat_mul, mul_one]
-  calc
-    Real.exp x ≤ Real.exp (-(n : ℝ)) := Real.exp_le_exp.mpr hx
-    _ = (Real.exp (n : ℝ))⁻¹ := Real.exp_neg (n : ℝ)
-    _ ≤ ((2 : ℝ) ^ n)⁻¹ := inv_anti₀ (by positivity) hpow
-    _ = (1 / 2 : ℝ) ^ n := by rw [one_div, inv_pow]
-
-private theorem two_rpow_neg_le_half_pow (n : ℕ) {x : ℝ} (hx : x ≤ -(n : ℝ)) :
-    (2 : ℝ) ^ x ≤ (1 / 2 : ℝ) ^ n := by
-  calc
-    (2 : ℝ) ^ x ≤ (2 : ℝ) ^ (-(n : ℝ)) :=
-      Real.rpow_le_rpow_of_exponent_le (by norm_num) hx
-    _ = ((2 : ℝ) ^ (n : ℝ))⁻¹ := Real.rpow_neg (by norm_num) (n : ℝ)
-    _ = (1 / 2 : ℝ) ^ n := by rw [Real.rpow_natCast, one_div, inv_pow]
-
 /-! ### Main grid theorem: STEPS 1–3 of Theorem 5.1 -/
 
 private theorem computableInPolyTime_shrunkHashInLen_amp (F : InaccessibleEntropyFamily) :
@@ -297,8 +258,11 @@ private theorem ampGoodIdx_lt_ampGridCount (F : InaccessibleEntropyFamily) {N₀
   · unfold ampGridCount; omega
   · have ha_le : accessibleSetExpectation (F.accSet n) ≤ (F.inLen n : ℝ) := by
       have hgap := hN₀ n (not_lt.mp hlt)
-      have hk_le := conditionalEntropy_le_inLen
-        (wordToFinMap (F.inLen n) (F.outLen n) (F.evalWord n))
+      have hlog : Real.logb 2 (Fintype.card (BitString (F.inLen n))) = F.inLen n := by
+        simp [Real.logb_pow]
+      have hk_le := (PMF.conditionalEntropy_le_log_card ((PMF.uniformOfFintype
+        (BitString (F.inLen n))).map fun z =>
+          (wordToFinMap (F.inLen n) (F.outLen n) (F.evalWord n) z, z))).trans_eq hlog
       have hd_pos : (0 : ℝ) ≤ 1 / (F.denom n : ℝ) := by positivity
       linarith
     have hΔ_pos : (0 : ℝ) < ampSlack F n := by
@@ -375,7 +339,8 @@ private theorem amp_randomCollisionGame_succProbability_le
   let k₀ := PMF.conditionalEntropy ((PMF.uniformOfFintype (BitString w₀)).map fun z => (f₀ z, z))
   have ha₀_nonneg : 0 ≤ a₀ := accessibleSetExpectation_nonneg _
   have hgap₀ : a₀ ≤ k₀ - 1 / (D : ℝ) := hN₀ n hn
-  have hk₀_le : k₀ ≤ (w₀ : ℝ) := conditionalEntropy_le_inLen f₀
+  have hk₀_le : k₀ ≤ (w₀ : ℝ) :=
+    (PMF.conditionalEntropy_le_log_card _).trans_eq (by simp [Real.logb_pow])
   have hD_pos : (0 : ℝ) < D := by exact_mod_cast F.denom_pos n
   have hw₀_ne_zero : w₀ ≠ 0 := by
     intro h0
@@ -449,14 +414,14 @@ private theorem amp_randomCollisionGame_succProbability_le
   have hhoeff_exp := amp_hoeffding_exponent_le F hw₀_pos
   have htail_acc :=
     (repBitAccessibleSet_logb_card_ge_prob t w₀ (F.accSet n) (F.self_mem_accSet n)
-      hΔ_pos.le).trans (exp_neg_le_half_pow n hhoeff_exp)
+      hΔ_pos.le).trans (Real.exp_le_half_pow n hhoeff_exp)
   have htail_ent :=
     (repEvalWord_realSampleEntropy_le_prob (F.length_evalWord n) hΔ_pos.le).trans
-      (exp_neg_le_half_pow n hhoeff_exp)
+      (Real.exp_le_half_pow n hhoeff_exp)
   have hpow_in : (2 : ℝ) ^ (A_max - (min j₀ (n₁True n) : ℝ)) ≤ (1 / 2 : ℝ) ^ n :=
-    two_rpow_neg_le_half_pow n (by rw [hmin_eq]; dsimp only [A_max]; linarith)
+    Real.two_rpow_le_half_pow n (by rw [hmin_eq]; dsimp only [A_max]; linarith)
   have hpow_out : (2 : ℝ) ^ ((min j₀ (n₁True n) : ℝ) - K_min) ≤ (1 / 2 : ℝ) ^ n :=
-    two_rpow_neg_le_half_pow n (by rw [hmin_eq]; dsimp only [K_min]; linarith)
+    Real.two_rpow_le_half_pow n (by rw [hmin_eq]; dsimp only [K_min]; linarith)
   rw [hgame_eq, ← NNReal.coe_le_coe]
   dsimp only [n₁True, m₁True, B₁, t, w₀, m₀, j₀, Δ]
     at hcoll hrep_esc htail_acc htail_ent hpow_in hpow_out ⊢

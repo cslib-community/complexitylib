@@ -97,7 +97,7 @@ example : CyclicIntRing.coeff (by decide : 2 ≠ 0) 3 (CyclicIntRing.x 2 ^ 5) = 
   norm_num
 
 example : zeroCount (fun _ _ : Fin 0 => 0) (fun _ _ => 0) (fun _ _ => 0) = 0 := by
-  simp [zeroCount]
+  decide
 
 example : ¬WeightsBoundedBy (fun _ _ : Fin 1 => (0 : ℤ)) (fun _ _ => 0) (fun _ _ => 0) (-1) := by
   norm_num [WeightsBoundedBy]

@@ -53,14 +53,15 @@ theorem knowledgeSound_of_sound {V : Verifier OracleSpec.empty s StmtIn StmtOut}
     V.KnowledgeSound relIn relOut E ε := by
   intro x P
   by_cases hx : x ∈ language relIn
-  · have hempty : {r : Transcript s × Option StmtOut × WitOut |
-        (∃ x', r.2.1 = some x' ∧ relOut x' r.2.2) ∧ ¬ relIn x (E x r.1 r.2.2)} = ∅ :=
-      Set.eq_empty_of_forall_notMem fun r hr => hr.2 (hE x hx r.1 r.2.2)
+  · have hempty : {r : Execution s StmtOut WitOut |
+        (∃ x', r.output = some x' ∧ relOut x' r.result) ∧
+          ¬ relIn x (E x r.transcript r.result)} = ∅ :=
+      Set.eq_empty_of_forall_notMem fun r hr => hr.2 (hE x hx r.transcript r.result)
     rw [hempty, MeasureTheory.measure_empty]
     exact zero_le
   · refine le_trans (MeasureTheory.measure_mono ?_) (h x hx WitOut P)
     rintro r ⟨⟨x', hout, hrel⟩, -⟩
-    exact ⟨x', ⟨r.2.2, hrel⟩, hout⟩
+    exact ⟨x', ⟨r.result, hrel⟩, hout⟩
 
 /-- The extractor that returns a witness of the input statement whenever one exists. -/
 noncomputable def choiceExtractor [Nonempty WitIn] (relIn : StmtIn → WitIn → Prop) :
@@ -211,7 +212,7 @@ example (hP : ∀ j, P.degreeOf j ≤ d) (hn : 2 ≤ n) :
     ((Sumcheck.round d P 0).verifier.append (Sumcheck.round d P 1).verifier).KnowledgeSound
       (Sumcheck.rel P 0) (Sumcheck.rel P 2)
       ((Sumcheck.round d P 0).verifier.extractAppend (fun _ _ _ => ()) (fun _ _ _ => ())
-        (fun _ => 0, 0))
+        ⟨fun _ => 0, 0⟩)
       ((d : ℝ≥0∞) / Fintype.card F + (d : ℝ≥0∞) / Fintype.card F) :=
   (sumcheck_round_knowledgeSound d P hP (by omega)).append
     (sumcheck_round_knowledgeSound d P hP (by omega)) _
@@ -228,7 +229,7 @@ example (hP : ∀ j, P.degreeOf j ≤ d) :
 noncomputable def roundSim (i : ℕ) (x : Sumcheck.Claim F i) :
     ProbComp (Transcript (Sumcheck.roundSpec F)) := do
   let z ← ProbComp.uniform F
-  return (Sumcheck.roundPoly P x.1, (z, ()))
+  return (Sumcheck.roundPoly P x.challenges, (z, ()))
 
 /-- A sumcheck round is perfectly honest-verifier zero knowledge. -/
 theorem sumcheck_round_hvzk (i : ℕ) :

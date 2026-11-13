@@ -60,14 +60,14 @@ example : ∃ σ : Variable → Bool, (rawFormula crossedSource).eval σ = true 
     σ ((10, 34), Sum.inr (CNF.PairedCrossover.terminal 2 0)) = false := by
   let τ : ℕ → Bool := fun v => v == 0
   obtain ⟨σ, hcompat, hord, hcross⟩ := exists_compatible_assignment crossed_width crossed_count τ
-  have hh := hcompat (0, 0, (0, true)) (by decide)
+  have hh := hcompat ⟨0, 0, (0, true)⟩ (by decide)
     (fun lane => (signal (crossingSites crossedSource) (10, 34) (9, 34) lane,
       signal (crossingSites crossedSource) (10, 34) (11, 34) lane)) (by
         apply List.mem_iff_getElem.mpr
         refine ⟨40, by decide +kernel, ?_⟩
         funext lane
         fin_cases lane <;> decide +kernel) 0
-  have hv := hcompat (0, 1, (1, true)) (by decide)
+  have hv := hcompat ⟨0, 1, (1, true)⟩ (by decide)
     (fun lane => (signal (crossingSites crossedSource) (10, 34) (10, 33) lane,
       signal (crossingSites crossedSource) (10, 34) (10, 35) lane)) (by
         apply List.mem_iff_getElem.mpr

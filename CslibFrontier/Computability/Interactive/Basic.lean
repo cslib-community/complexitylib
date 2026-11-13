@@ -50,6 +50,8 @@ by structural recursion on its list of rounds, so concatenated protocols compute
   `Interactive.Reduction`.
 * `Interactive.liftProver`, `Interactive.runStrategy`, `Interactive.Verifier.output`,
   `Interactive.Verifier.execute`, `Interactive.Reduction.run`.
+* `Interactive.Execution`, with `Interactive.Execution.transcript`, `Interactive.Execution.output`
+  and `Interactive.Execution.result`: the result of a run.
 * `Interactive.World`, `Interactive.World.eval`, `Interactive.World.plain`.
 
 ## References
@@ -212,6 +214,27 @@ def runStrategy {α : Type} :
     let (τ, a) ← runStrategy s smp.2 st'
     return ((c, τ), a)
 
+/-- The result of running a verifier against a prover strategy with result type `α`: the transcript,
+the verifier's output statement (`none` when it rejects) and the prover's result. Its components
+are named by `Execution.transcript`, `Execution.output` and `Execution.result`, which `simp` unfolds
+to the projections. -/
+abbrev Execution (s : Spec) (StmtOut α : Type) : Type := Transcript s × Option StmtOut × α
+
+/-- The transcript of an execution. -/
+@[simp] abbrev Execution.transcript {s : Spec} {StmtOut α : Type} (r : Execution s StmtOut α) :
+    Transcript s :=
+  r.1
+
+/-- The verifier's output statement in an execution, or `none` when it rejects. -/
+@[simp] abbrev Execution.output {s : Spec} {StmtOut α : Type} (r : Execution s StmtOut α) :
+    Option StmtOut :=
+  r.2.1
+
+/-- The prover's result in an execution: for an honest run of a reduction, its output statement and
+witness. -/
+@[simp] abbrev Execution.result {s : Spec} {StmtOut α : Type} (r : Execution s StmtOut α) : α :=
+  r.2.2
+
 /-- Run the verifier's decision on a transcript, answering its queries about the prover's messages
 from the transcript. -/
 def Verifier.output {s : Spec} {StmtIn StmtOut : Type} (V : Verifier oV s StmtIn StmtOut)
@@ -225,7 +248,7 @@ def Verifier.output {s : Spec} {StmtIn StmtOut : Type} (V : Verifier oV s StmtIn
 transcript, the verifier's output and the prover's result. -/
 def Verifier.execute {s : Spec} {StmtIn StmtOut α : Type} (V : Verifier oV s StmtIn StmtOut)
     (x : StmtIn) (P : ProbOracleComp oP (ProverStrategy (ProbOracleComp oP) s α)) :
-    ProbOracleComp (oP ⊕ₒ oV) (Transcript s × Option StmtOut × α) := do
+    ProbOracleComp (oP ⊕ₒ oV) (Execution s StmtOut α) := do
   let st ← liftProver P
   let (τ, a) ← liftProver (runStrategy s V.samplers st)
   let out ← V.output (oP := oP) x τ
@@ -234,7 +257,7 @@ def Verifier.execute {s : Spec} {StmtIn StmtOut α : Type} (V : Verifier oV s St
 /-- An honest run of a reduction on `x` with witness `w`. -/
 def Reduction.run {s : Spec} {StmtIn WitIn StmtOut WitOut : Type}
     (R : Reduction oP oV s StmtIn WitIn StmtOut WitOut) (x : StmtIn) (w : WitIn) :
-    ProbOracleComp (oP ⊕ₒ oV) (Transcript s × Option StmtOut × (StmtOut × WitOut)) :=
+    ProbOracleComp (oP ⊕ₒ oV) (Execution s StmtOut (StmtOut × WitOut)) :=
   R.verifier.execute x (R.prover x w)
 
 /-- A model of the oracles: one stateful implementation of the prover's and verifier's oracles

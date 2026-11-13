@@ -41,6 +41,7 @@ module.
 ## Main definitions
 
 * `Cslib.Crypto.Garbling.Scheme.Garbled`: the garbled triple `(F, e, d)` output by `Gb`.
+* `Cslib.Crypto.Garbling.Query`: a query `(f, x)` of a function description and an input.
 * `Cslib.Crypto.Garbling.Scheme`: the syntax `(Gb, En, De, Ev, ev)` with explicit coins.
 * `Cslib.Crypto.Garbling.Scheme.garble`: the probabilistic garbling algorithm `Gb(1^k, f)`.
 * `Cslib.Crypto.Garbling.Scheme.IsValid`: the length condition, non-degeneracy and correctness.
@@ -78,6 +79,14 @@ structure Garbled where
   deriving DecidableEq
 
 end Scheme
+
+/-- A query `(f, x)` to a garbling scheme: a function description and an input. -/
+structure Query (Fn : Type) where
+  /-- The function description `f`. -/
+  fn : Fn
+  /-- The input `x`. -/
+  input : List Bool
+  deriving DecidableEq
 
 /-- A garbling scheme over a type `Fn` of function descriptions, following
 [BellareHoangRogaway2012], Section 3.1. The probabilistic algorithm `Gb` is split into a
@@ -205,12 +214,12 @@ theorem Compatible.inLen_eq {G : Scheme Fn} (h : Φ.Compatible G) {f f' : Fn}
   (h f).1.symm.trans ((congrArg Φ.inLen hphi).trans (h f').1)
 
 /-- `M` is an `ev`-inverter for `Φ` ([BellareHoangRogaway2012], Section 4.1): from `Φ(f)` and
-`y = ev(f, x)` it produces `(f', x')` with `Φ(f') = Φ(f)`, `x'` of the right length and
+`y = ev(f, x)` it produces a query `(f', x')` with `Φ(f') = Φ(f)`, `x'` of the right length and
 `ev(f', x') = y`. -/
-def IsEvInverter (G : Scheme Fn) (M : Λ → List Bool → Fn × List Bool) : Prop :=
+def IsEvInverter (G : Scheme Fn) (M : Λ → List Bool → Query Fn) : Prop :=
   ∀ (f : Fn) (x : List Bool), x.length = G.inLen f →
-    ∀ (f' : Fn) (x' : List Bool), M (Φ.phi f) (G.ev f x) = (f', x') →
-      Φ.phi f' = Φ.phi f ∧ x'.length = G.inLen f' ∧ G.ev f' x' = G.ev f x
+    let q := M (Φ.phi f) (G.ev f x)
+    Φ.phi q.fn = Φ.phi f ∧ q.input.length = G.inLen q.fn ∧ G.ev q.fn q.input = G.ev f x
 
 /-- `M` inverts `Φ` ([BellareHoangRogaway2012], Section 4.1): from `Φ(f)` it produces some `f'`
 with `Φ(f') = Φ(f)`. -/

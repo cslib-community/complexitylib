@@ -943,9 +943,9 @@ theorem runClient_kruskalClient {n : ℕ} {W : Type} (p : Partition n)
       (kruskalScan p es, edgePartitionFrom p es, es.map fun e => DisjointSet.Op.union e.u e.v) := by
   have hev := eval_kruskalClient p es
   unfold eval at hev
-  have h₁ : ((DisjointSet.spec n).runClient p (kruskalClient es)).1 = kruskalScan p es :=
+  have h₁ : (DisjointSet.spec n).clientResult p (kruskalClient es) = kruskalScan p es :=
     congrArg Prod.fst hev
-  have h₂ : ((DisjointSet.spec n).runClient p (kruskalClient es)).2.1 = edgePartitionFrom p es :=
+  have h₂ : (DisjointSet.spec n).clientState p (kruskalClient es) = edgePartitionFrom p es :=
     congrArg Prod.snd hev
   have hhist := DisjointSet.runClient_spanningForestEdges_history WeightedEdge.endpoints es p
   exact Prod.ext h₁ (Prod.ext h₂ hhist)
@@ -1110,7 +1110,7 @@ union-find forest steps to `Cost.ufSteps`. -/
     (s : DisjointSet.UnionFind.State n) (sorted : List (WeightedEdge n W)) :
     TimeM Cost (Output n W) :=
   let res := DisjointSet.UnionFind.run s (kruskalClient sorted)
-  ⟨⟨res.1, res.2.1⟩, ⟨0, total id res.2.2⟩⟩
+  ⟨⟨res.value, res.state⟩, ⟨0, total id res.traces⟩⟩
 
 @[simp]
 theorem comparisons_kruskalScanM {n : ℕ} {W : Type}

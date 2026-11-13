@@ -229,7 +229,7 @@ example (κ : List Bool → ℕ) : single ∈ PSPACE encBits ∧ single ∈ FPT 
       fun _ => by simp⟩
   have hfpt : ComputableInFPTTime (fun w : List Bool => decide (w = [true])) encBits encBool κ :=
     ⟨fun _ => c, 0, h.mono (fun _ => by simp) fun _ => Nat.zero_le _⟩
-  exact ⟨mem_PSPACE_iff_computableInPolySpace.mpr ⟨_, hf, fun w => by simp [single]⟩,
+  exact ⟨⟨_, hf, fun w => by simp [single]⟩,
     mem_FPT_iff_computableInFPTTime.mpr ⟨_, hfpt, fun w => by simp [single]⟩⟩
 
 /-! ### From library certificates to plain ones -/
@@ -250,14 +250,14 @@ example {α : Type} {enc : α ↪ List Bool} {f : α → Logic.PL.QBF ℕ}
     {a | f a ∈ TQBF} ∈ PSPACE enc ∧
     (∃ g, ComputableInFPTTime g encCNF encBool Logic.PL.CNF.numVars ∧
       ∀ φ, φ ∈ SAT ↔ g φ = true) := by
-  obtain ⟨dec, hdec, hA⟩ := mem_PSPACE_iff_computableInPolySpace.mp TQBF_mem_PSPACE
+  obtain ⟨dec, hdec, hA⟩ := TQBF_mem_PSPACE
   have hcomp : ComputableInPolySpace (fun a => dec (f a)) enc encBool := by fun_prop
   obtain ⟨g, hg, hSAT⟩ := mem_FPT_iff_computableInFPTTime.mp SAT_mem_FPT
   exact ⟨.of_tidy (ComputableTidilyInO.fst encBits encBits),
     (ComputableTidilyInSpace.fst encBits encBits).computableInSpace,
     ComputableInPolySpace.of_polyTime (by polytime),
     ⟨dec, hdec, hA⟩,
-    mem_PSPACE_iff_computableInPolySpace.mpr ⟨_, hcomp, fun a => hA (f a)⟩,
+    ⟨_, hcomp, fun a => hA (f a)⟩,
     ⟨g, hg, hSAT⟩⟩
 
 end CslibFrontierTests.ResourceBoundsPlain

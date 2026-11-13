@@ -12,9 +12,9 @@ import Mathlib.Tactic.GCongr
 # Lookup tables, local maps and composition with retained inputs
 
 These clients bound a two-bit table with three output bits, the adjacent exclusive ors of a word
-(each output reads two inputs), and the unmasking `x ↦ x ⊕ (m(x), …, m(x))` of a word by a
-computed mask bit: computing `m` costs its own complexity, and the unmasking layer reads the
-retained input next to `m(x)`.
+(each output reads two inputs), an answer bit selected by an input bit, and the unmasking
+`x ↦ x ⊕ (m(x), …, m(x))` of a word by a computed mask bit: computing `m` costs its own
+complexity, and the unmasking layer reads the retained input next to `m(x)`.
 -/
 
 namespace CslibFrontierTests.CircuitLookup
@@ -37,6 +37,12 @@ example (n : ℕ) :
     ⟨{i.castSucc, i.succ}, card_le_two, fun x y h => by
       simp only [coe_insert, coe_singleton, Set.mem_insert_iff, Set.mem_singleton_iff] at h
       simp only [h _ (Or.inl rfl), h _ (Or.inr rfl)]⟩
+
+-- One selector bit chooses between two answer bits: a multiplexer of at most `11` gates.
+example : complexity interpretation (single fun zx : Fin (2 + 1) → Bool =>
+    zx (Fin.castAdd 1 (if zx (Fin.natAdd 2 0) then 1 else 0))) ≤ 11 :=
+  (complexity_select_le (q := 2) (univ : Finset (Fin 1))
+    fun y => if y ⟨0, mem_univ 0⟩ then 1 else 0).trans (by simp)
 
 /-- Exclusive or of each of the first `n` inputs with the last one. -/
 private def unmask {n : ℕ} (y : Fin (n + 1) → Bool) (i : Fin n) : Bool :=

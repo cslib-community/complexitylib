@@ -91,10 +91,10 @@ theorem mem_PromiseCoRP_iff : Q ∈ PromiseCoRP enc ↔
   constructor
   · rintro ⟨p, V, hV, h⟩
     refine ⟨p, fun x => !V x, ComputableInPolyTime.bool_not.comp hV,
-      fun a ha r => by simp [(h a).2 ha r], fun a ha => by simpa using (h a).1 ha⟩
+      fun a ha r => by simp [(h a).2 ha r], fun a ha => by simpa [acceptCount] using (h a).1 ha⟩
   · rintro ⟨p, V, hV, hyes, hno⟩
     refine ⟨p, fun x => !V x, ComputableInPolyTime.bool_not.comp hV,
-      fun a => ⟨fun ha => by simpa using hno a ha, fun ha r => by simp [hyes a ha r]⟩⟩
+      fun a => ⟨fun ha => by simpa [acceptCount] using hno a ha, fun ha r => by simp [hyes a ha r]⟩⟩
 
 /-- Every promise problem separated by a language in `BPP` is in `PromiseBPP`. -/
 theorem promiseClass_BPP_subset_PromiseBPP : promiseClass (BPP enc) ⊆ PromiseBPP enc := by

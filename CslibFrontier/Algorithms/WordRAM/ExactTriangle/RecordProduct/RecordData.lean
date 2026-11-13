@@ -35,13 +35,13 @@ open Cslib.Algorithms.WordRAM.MatrixMultiplication.Schonhage
 /-- Exact raw left adjacency matrix written by the actual producer. -/
 @[expose] def leftMatrix (m n g p : ℕ) (values : ℕ → ℤ) (idx : InstanceIndex p) :
     Matrix (Fin n) (Fin (D m)) ℤ := fun a k =>
-  (WriteMatrices.entry false (matrixArgs n (D m) g p idx.1.val idx.2.2)
+  (WriteMatrices.entry false (matrixArgs n (D m) g p idx.residue.val idx.piece)
     (fun q => (values (2 * (n * n) + q) % (p : ℤ)).toNat) (a.val * D m + k.val) : ℤ)
 
 /-- Exact raw right adjacency matrix, in its actual `D×n` storage order. -/
 @[expose] def rightMatrix (m n g p : ℕ) (values : ℕ → ℤ) (idx : InstanceIndex p) :
     Matrix (Fin (D m)) (Fin n) ℤ := fun k a =>
-  (WriteMatrices.entry true (matrixArgs n (D m) g p idx.1.val idx.2.2)
+  (WriteMatrices.entry true (matrixArgs n (D m) g p idx.residue.val idx.piece)
     (fun q => (values (n * n + q) % (p : ℤ)).toNat) (k.val * n + a.val) : ℤ)
 
 /-- The readback matrices satisfy the raw callee's original-entry hypotheses. -/
@@ -62,13 +62,13 @@ theorem matrices_zero_one (m n g p : ℕ) (values : ℕ → ℤ) (idx : Instance
 specification for the caller's selection register, not a table supplied to the adapter. -/
 @[expose] def recordOrdinal (n D g p : ℕ) (values : ℕ → ℤ) (idx : InstanceIndex p) : ℕ :=
   let C := fun rho => Nat.count (fun q => (values q % (p : ℤ)).toNat = rho) (n * n)
-  (ChunkCatalogue.before C (queryCap n D) idx.1.val + idx.2.1) * numPieces n D g + idx.2.2
+  (ChunkCatalogue.before C (queryCap n D) idx.residue.val + idx.chunk) * numPieces n D g + idx.piece
 
 /-- Actual descriptor occurrence count, rather than an assumed sparse set size. -/
 @[expose] def recordQueryCount (n D p : ℕ) (values : ℕ → ℤ) (idx : InstanceIndex p) : ℕ :=
   min (queryCap n D)
-    (Nat.count (fun q => (values q % (p : ℤ)).toNat = idx.1.val) (n * n) -
-      idx.2.1 * queryCap n D)
+    (Nat.count (fun q => (values q % (p : ℤ)).toNat = idx.residue.val) (n * n) -
+      idx.chunk * queryCap n D)
 
 /-- Every occupied finite instance has a nonempty actual descriptor query slice. -/
 theorem recordQueryCount_pos {n D g p : ℕ} (values : ℕ → ℤ) (hp : p ≠ 0)
@@ -78,23 +78,23 @@ theorem recordQueryCount_pos {n D g p : ℕ} (values : ℕ → ℤ) (hp : p ≠ 
   let wAB := fun a b : Fin n => values (pairIndex (a, b))
   let R := fun q => (values q % (p : ℤ)).toNat
   have hk := ((mem_instanceIndices wAB idx).mp hidx).1
-  have hcard := QuerySpec.card_residueClass wAB hp R (by intro q; rfl) idx.1
+  have hcard := QuerySpec.card_residueClass wAB hp R (by intro q; rfl) idx.residue
   have hcap : 0 < queryCap n D := one_le_queryCap hD hDn
-  have hkcard : idx.2.1 * queryCap n D < (residueClass wAB p idx.1).card := by
+  have hkcard : idx.chunk * queryCap n D < (residueClass wAB p idx.residue).card := by
     by_contra h
     have hc := (Nat.ceilDiv_le_iff hcap).mpr
-      (by omega : (residueClass wAB p idx.1).card ≤ idx.2.1 * queryCap n D)
-    change idx.2.1 < (residueClass wAB p idx.1).card ⌈/⌉ queryCap n D at hk
+      (by omega : (residueClass wAB p idx.residue).card ≤ idx.chunk * queryCap n D)
+    change idx.chunk < (residueClass wAB p idx.residue).card ⌈/⌉ queryCap n D at hk
     omega
   rw [hcard] at hkcard
   unfold recordQueryCount
-  change 0 < min (queryCap n D) (Nat.count (fun q => R q = idx.1.val) (n * n) -
-    idx.2.1 * queryCap n D)
+  change 0 < min (queryCap n D) (Nat.count (fun q => R q = idx.residue.val) (n * n) -
+    idx.chunk * queryCap n D)
   omega
 
 /-- Actual query pointer into the protected producer catalogue. -/
 @[expose] def recordQueries (n D p : ℕ) (idx : InstanceIndex p) : ℕ :=
-  5 + 6 * (n * n) + p + 2 * idx.1.val * (n * n) + 2 * (idx.2.1 * queryCap n D)
+  5 + 6 * (n * n) + p + 2 * idx.residue.val * (n * n) + 2 * (idx.chunk * queryCap n D)
 
 /-- The complete real producer, using its original low bank. -/
 @[expose] def produce : Code .standard 320 := Instances.program.rename producerBank

@@ -43,6 +43,8 @@ the polynomial clock a derived lemma, acceptance by counting coin strings, and s
 ## Main definitions
 
 * `Turing.MultiTapePTM.acceptCoins`: the accepting coin strings of a given length.
+* `Turing.MultiTapePTM.RunsInLogSpace`: on every encoded instance, every branch stays within
+  logarithmic space and halts within the polynomial clock `Turing.polyClock d n`.
 * `Cslib.Complexity.RL`, `Cslib.Complexity.BPL`: randomized logarithmic space with one-sided and
   bounded two-sided error.
 
@@ -57,8 +59,11 @@ the polynomial clock a derived lemma, acceptance by counting coin strings, and s
 * `Cslib.Complexity.L_subset_RL`, `Cslib.Complexity.L_subset_BPL`: deterministic logarithmic space
   is within both.
 * `Cslib.Complexity.RL_subset_NL`: randomized logspace with one-sided error is within `NL`.
+* `Turing.MultiTapePTM.exists_runsInLogSpace`: a logarithmic-space machine that halts on every
+  branch runs within the polynomial clock.
 * `Cslib.Complexity.exists_polyClock_of_mem_RL`, `Cslib.Complexity.exists_polyClock_of_mem_BPL`:
-  the derived polynomial clock; every branch halts within polynomially many steps.
+  the derived polynomial clock; an `RL` or `BPL` machine satisfies `RunsInLogSpace`, and its
+  acceptance bounds hold at the clock.
 
 ## References
 
@@ -252,6 +257,26 @@ theorem acceptCoins_ofDeterministic (tm : MultiTapeTM k Bool State) (input : Lis
   · rw [Finset.filter_false_of_mem fun _ _ => h]
     simp
 
+/-! ### The polynomial clock -/
+
+/-- **A logarithmic-space fair-coin machine with a polynomial clock**: on every encoded instance
+`enc a` of length `n`, every branch visits at most `c * (Nat.log2 n + 1)` work-tape cells and halts
+within `Turing.polyClock d n` steps. -/
+structure RunsInLogSpace {α : Type} (enc : α ↪ List Bool) (c d : ℕ) : Prop where
+  /-- Every branch stays within logarithmic space. -/
+  runsInSpace (a : α) : machine.toNTM.RunsInSpace (enc a) (c * (Nat.log2 (enc a).length + 1))
+  /-- Every branch halts within the polynomial clock. -/
+  runsInTime (a : α) : machine.toNTM.RunsInTime (enc a) (polyClock d (enc a).length)
+
+/-- **Halting on every branch gives the polynomial clock**: a machine that stays within
+logarithmic space and halts on every branch of every encoded instance halts within
+`Turing.polyClock d n` steps, for one exponent `d`. -/
+theorem exists_runsInLogSpace [Finite State] {α : Type} {enc : α ↪ List Bool} {c : ℕ}
+    (hs : ∀ a, machine.toNTM.RunsInSpace (enc a) (c * (Nat.log2 (enc a).length + 1)))
+    (ht : ∀ a, ∃ t, machine.toNTM.RunsInTime (enc a) t) : ∃ d, machine.RunsInLogSpace enc c d :=
+  have ⟨d, hd⟩ := MultiTapeNTM.exists_runsInTime_polynomial_of_runsInSpace_log machine.toNTM c
+  ⟨d, hs, fun a => have ⟨_, hta⟩ := ht a; hd (hs a) hta⟩
+
 end Turing.MultiTapePTM
 
 namespace Cslib.Complexity
@@ -302,41 +327,41 @@ theorem RL_subset_NL : RL enc ⊆ NL enc := by
     exact ⟨t, ht⟩
 
 /-- **`RL` has a polynomial clock**: an `RL` machine, which only promises to halt on every branch,
-halts within a polynomial number of steps `2 * (2 * (n + 1)) ^ d`, and the acceptance bounds hold
-at that clock. -/
+halts within `polyClock d n` steps (`Turing.MultiTapePTM.RunsInLogSpace`), and the acceptance
+bounds hold at that clock. -/
 theorem exists_polyClock_of_mem_RL (h : A ∈ RL enc) :
     ∃ (k : ℕ) (State : Type) (_ : Finite State) (M : MultiTapePTM k Bool State) (c d : ℕ),
-      ∀ a, M.toNTM.RunsInSpace (enc a) (c * (Nat.log2 (enc a).length + 1)) ∧
-        M.toNTM.RunsInTime (enc a) (2 * (2 * ((enc a).length + 1)) ^ d) ∧
-        (a ∈ A → 2 ^ (2 * (2 * ((enc a).length + 1)) ^ d) ≤
-          2 * M.acceptCoins (enc a) (2 * (2 * ((enc a).length + 1)) ^ d)) ∧
-        (a ∉ A → M.acceptCoins (enc a) (2 * (2 * ((enc a).length + 1)) ^ d) = 0) := by
+      M.RunsInLogSpace enc c d ∧ ∀ a,
+        (a ∈ A → 2 ^ polyClock d (enc a).length ≤
+          2 * M.acceptCoins (enc a) (polyClock d (enc a).length)) ∧
+        (a ∉ A → M.acceptCoins (enc a) (polyClock d (enc a).length) = 0) := by
   obtain ⟨k, State, hfin, M, c, hM⟩ := h
-  obtain ⟨d, hd⟩ := MultiTapeNTM.exists_runsInTime_polynomial_of_runsInSpace_log M.toNTM c
-  refine ⟨k, State, hfin, M, c, d, fun a => ?_⟩
-  obtain ⟨hs, t, ht, hmem, hnot⟩ := hM a
-  have hT := hd hs ht
-  refine ⟨hs, hT, fun ha => ?_, fun ha => ?_⟩
+  obtain ⟨d, hd⟩ := M.exists_runsInLogSpace (fun a => (hM a).1) fun a =>
+    (hM a).2.imp fun _ ht => ht.1
+  refine ⟨k, State, hfin, M, c, d, hd, fun a => ?_⟩
+  obtain ⟨-, t, ht, hmem, hnot⟩ := hM a
+  have hT := hd.runsInTime a
+  refine ⟨fun ha => ?_, fun ha => ?_⟩
   · simpa using (M.two_pow_mul_le_iff ht hT 1 2).mp (by simpa using hmem ha)
   · exact Nat.le_zero.mp (by simpa using (M.mul_le_two_pow_iff ht hT 0 1).mp (by simp [hnot ha]))
 
 /-- **`BPL` has a polynomial clock**: a `BPL` machine, which only promises to halt on every
-branch, halts within a polynomial number of steps `2 * (2 * (n + 1)) ^ d`, and the acceptance
-bounds hold at that clock. -/
+branch, halts within `polyClock d n` steps (`Turing.MultiTapePTM.RunsInLogSpace`), and the
+acceptance bounds hold at that clock. -/
 theorem exists_polyClock_of_mem_BPL (h : A ∈ BPL enc) :
     ∃ (k : ℕ) (State : Type) (_ : Finite State) (M : MultiTapePTM k Bool State) (c d : ℕ),
-      ∀ a, M.toNTM.RunsInSpace (enc a) (c * (Nat.log2 (enc a).length + 1)) ∧
-        M.toNTM.RunsInTime (enc a) (2 * (2 * ((enc a).length + 1)) ^ d) ∧
-        (a ∈ A → 2 * 2 ^ (2 * (2 * ((enc a).length + 1)) ^ d) ≤
-          3 * M.acceptCoins (enc a) (2 * (2 * ((enc a).length + 1)) ^ d)) ∧
-        (a ∉ A → 3 * M.acceptCoins (enc a) (2 * (2 * ((enc a).length + 1)) ^ d) ≤
-          2 ^ (2 * (2 * ((enc a).length + 1)) ^ d)) := by
+      M.RunsInLogSpace enc c d ∧ ∀ a,
+        (a ∈ A → 2 * 2 ^ polyClock d (enc a).length ≤
+          3 * M.acceptCoins (enc a) (polyClock d (enc a).length)) ∧
+        (a ∉ A → 3 * M.acceptCoins (enc a) (polyClock d (enc a).length) ≤
+          2 ^ polyClock d (enc a).length) := by
   obtain ⟨k, State, hfin, M, c, hM⟩ := h
-  obtain ⟨d, hd⟩ := MultiTapeNTM.exists_runsInTime_polynomial_of_runsInSpace_log M.toNTM c
-  refine ⟨k, State, hfin, M, c, d, fun a => ?_⟩
-  obtain ⟨hs, t, ht, hmem, hnot⟩ := hM a
-  have hT := hd hs ht
-  exact ⟨hs, hT, fun ha => (M.two_pow_mul_le_iff ht hT 2 3).mp (hmem ha),
+  obtain ⟨d, hd⟩ := M.exists_runsInLogSpace (fun a => (hM a).1) fun a =>
+    (hM a).2.imp fun _ ht => ht.1
+  refine ⟨k, State, hfin, M, c, d, hd, fun a => ?_⟩
+  obtain ⟨-, t, ht, hmem, hnot⟩ := hM a
+  have hT := hd.runsInTime a
+  exact ⟨fun ha => (M.two_pow_mul_le_iff ht hT 2 3).mp (hmem ha),
     fun ha => (M.mul_le_two_pow_iff ht hT 1 3).mp (by simpa using hnot ha) |>.trans_eq (by simp)⟩
 
 /-- A logspace decider, run as a fair-coin machine that ignores its coins, accepts members on all

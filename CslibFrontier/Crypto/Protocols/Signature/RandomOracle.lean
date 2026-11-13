@@ -41,17 +41,14 @@ random-oracle cache `List (Query × Digest)`, with local signing-pair logging `L
 Projecting the pair log recovers `handler` (`runWith_world_runLoggedForger_liftOracleForger`), and
 specializing the post-verification acceptance predicate yields:
 
-* `eufCmaGame` and its final-message admissibility generalization `eufCmaFinalMsgGame` (which gates
-  only the final forged message `msg` by `admissible msg` and `FreshOutputsOnFinalMessage`,
-  leaving signing queries unrestricted and allowing internal random-oracle collisions);
+* `eufCmaGame`, which gates only the final forged message `msg` by `FreshOutputsOnFinalMessage`,
+  leaving signing queries unrestricted and allowing internal random-oracle collisions;
 * key-only existential unforgeability `ufCma0Game`; and
 * strong (fresh-pair) unforgeability `sufCmaGame` and its key-only companion `sufCma0Game`.
 
-This interface also connects directly to `Cslib.Crypto.SignatureScheme` and
-`Cslib.Crypto.WordSignatureScheme` (in `CslibFrontier.Crypto.Computational.Signature.RandomOracle`)
-by
-specializing `Query := Empty` and `Digest := Unit` and gating final-message admissibility by
-`msg.length == n`.
+A standard-model scheme `Cslib.Crypto.Signature.Scheme` is a scheme here with `Query := Empty`
+(`Signature.Scheme.toROM` in `CslibFrontier.Crypto.Computational.Signature.RandomOracle`), and
+its forgery experiments are instances of `worldGame`.
 
 ## Main definitions
 
@@ -76,7 +73,6 @@ specializing `Query := Empty` and `Digest := Unit` and gating final-message admi
   `Cslib.Crypto.Protocols.ROMSignature.worldRealize`,
   `Cslib.Crypto.Protocols.ROMSignature.worldGame`: shared `Cslib.Interactive.World` execution core.
 * `Cslib.Crypto.Protocols.ROMSignature.eufCmaGame`,
-  `Cslib.Crypto.Protocols.ROMSignature.eufCmaFinalMsgGame`,
   `Cslib.Crypto.Protocols.ROMSignature.ufCma0Game`,
   `Cslib.Crypto.Protocols.ROMSignature.sufCmaGame`,
   `Cslib.Crypto.Protocols.ROMSignature.sufCma0Game`: adaptive and key-only signature security games.
@@ -100,10 +96,7 @@ specializing `Query := Empty` and `Digest := Unit` and gating final-message admi
   `Cslib.Crypto.Protocols.ROMSignature.eval_world_worldRealize`,
   `Cslib.Crypto.Protocols.ROMSignature.eval_world_worldRealize_liftOracleForger`: exact execution
   equivalences for the `Interactive.World` core.
-* `Cslib.Crypto.Protocols.ROMSignature.eufCmaFinalMsgGame_eq_worldGame`,
-  `Cslib.Crypto.Protocols.ROMSignature.eufCmaGame_eq_worldGame`,
-  `Cslib.Crypto.Protocols.ROMSignature.eufCmaFinalMsgGame_true`,
-  `Cslib.Crypto.Protocols.ROMSignature.eufCmaFinalMsgGame_apply_true_le`,
+* `Cslib.Crypto.Protocols.ROMSignature.eufCmaGame_eq_worldGame`,
   `Cslib.Crypto.Protocols.ROMSignature.sufCma0Game_eq_ufCma0Game`: shared-world characterizations of
   the signature games.
 * `Cslib.Crypto.Protocols.ROMSignature.Scheme.Correct.correctOn`,
@@ -382,11 +375,8 @@ theorem eval_world_worldRealize
     (forger : ProbOracleComp (ForgerSpec M Query Sig Digest) (M × Sig))
     (accept : Bool → M × Sig → List (M × Sig) → Bool) :
     (world scheme sk).eval (worldRealize scheme pk forger accept) = (do
-      let out ←
+      let ((msig, pairs), cache) ←
         ProbOracleComp.runWith (forgerWorldImpl scheme sk) (runLoggedForger forger) []
-      let msig := out.1.1
-      let pairs := out.1.2
-      let cache := out.2
       let verified ← (interpret (oracle Digest) (scheme.verify pk msig.1 msig.2)).run cache
       return accept verified.1 msig pairs) := by
   unfold Interactive.World.eval worldRealize
@@ -404,17 +394,14 @@ theorem eval_world_worldRealize_liftOracleForger
     (prog : OracleComp (ForgerSpec M Query Sig Digest) (M × Sig))
     (accept : Bool → M × Sig → List (M × Sig) → Bool) :
     (world scheme sk).eval (worldRealize scheme pk (liftOracleForger prog) accept) = (do
-      let out ←
+      let ((msig, pairs), cache) ←
         ProbOracleComp.runWith (forgerWorldImpl scheme sk)
           (runLoggedForger (liftOracleForger prog)) []
-      let msig := out.1.1
-      let pairs := out.1.2
-      let cache := out.2
       let verified ← (interpret (oracle Digest) (scheme.verify pk msig.1 msig.2)).run cache
       return accept verified.1 msig pairs) :=
   eval_world_worldRealize scheme pk sk (liftOracleForger prog) accept
 
-/-! ### Security games (`eufCmaGame`, `eufCmaFinalMsgGame`, `ufCma0Game`, `sufCmaGame`) -/
+/-! ### Security games (`eufCmaGame`, `ufCma0Game`, `sufCmaGame`) -/
 
 /-- The random-oracle EUF-CMA experiment ([BonehShoup2023], Attack Game 13.1): the forger wins with
 a valid signature, under the same oracle, on a message it never had signed. -/
@@ -429,52 +416,8 @@ noncomputable def eufCmaGame [DecidableEq M] (scheme : Scheme PK SK M Sig Query 
     state.1
   return (verified.1 && !(state.2.contains msig.1))
 
-/-- The random-oracle EUF-CMA experiment with final-message admissibility guard `admissible`:
-signing queries are answered on arbitrary messages `m : M`, and the forger wins when its final
-candidate `(msg, sig)` satisfies `admissible msg`, verifies under the shared random oracle, and
-satisfies `FreshOutputsOnFinalMessage` (`!queried.contains msg`). -/
-noncomputable def eufCmaFinalMsgGame [DecidableEq M] (admissible : M → Bool)
-    (scheme : Scheme PK SK M Sig Query Digest)
-    (forger : Forger PK M Sig Query Digest) : PMF Bool := do
-  let keys ← scheme.keyGen
-  let s ← forger.coins
-  let forged ← (interpret (handler scheme keys.2) (forger.forge keys.1 s)).run ([], [])
-  let msig := forged.1
-  let state := forged.2
-  let verified ← (interpret (oracle Digest) (scheme.verify keys.1 msig.1 msig.2)).run
-    state.1
-  return (admissible msig.1 && verified.1 && !(state.2.contains msig.1))
-
-/-- Unconditional (all-message admissible) `eufCmaFinalMsgGame` is identical to `eufCmaGame`. -/
-@[simp]
-theorem eufCmaFinalMsgGame_true [DecidableEq M]
-    (scheme : Scheme PK SK M Sig Query Digest)
-    (forger : Forger PK M Sig Query Digest) :
-    eufCmaFinalMsgGame (fun _ => true) scheme forger = eufCmaGame scheme forger := by
-  simp only [eufCmaFinalMsgGame, eufCmaGame, Bool.true_and]
-
-/-- `eufCmaFinalMsgGame` is equivalent to evaluating `worldRealize` in `world scheme sk` for each
-sampled key pair and forger coin tape. -/
-theorem eufCmaFinalMsgGame_eq_worldGame [DecidableEq M] (admissible : M → Bool)
-    (scheme : Scheme PK SK M Sig Query Digest)
-    (forger : Forger PK M Sig Query Digest) :
-    eufCmaFinalMsgGame admissible scheme forger = (do
-      let keys ← scheme.keyGen
-      let s ← forger.coins
-      Interactive.World.eval (world scheme keys.2)
-        (worldRealize scheme keys.1 (liftOracleForger (forger.forge keys.1 s))
-          (fun verified ⟨msg, _⟩ pairs =>
-            admissible msg && verified && !(pairs.map Prod.fst).contains msg))) := by
-  unfold eufCmaFinalMsgGame
-  refine PMF.bind_congr_on_support _ _ _ fun keys _ => ?_
-  refine PMF.bind_congr_on_support _ _ _ fun s _ => ?_
-  rw [eval_world_worldRealize_liftOracleForger,
-    ← runWith_world_runLoggedForger_liftOracleForger]
-  simp only [PMF.monad_bind_eq_bind, PMF.bind_map]
-  rfl
-
 /-- `eufCmaGame` is equivalent to evaluating `worldRealize` in `world scheme sk` with the
-unrestricted final-message freshness predicate `!(pairs.map Prod.fst).contains msg`. -/
+final-message freshness predicate `!(pairs.map Prod.fst).contains msg`. -/
 theorem eufCmaGame_eq_worldGame [DecidableEq M]
     (scheme : Scheme PK SK M Sig Query Digest)
     (forger : Forger PK M Sig Query Digest) :
@@ -484,23 +427,13 @@ theorem eufCmaGame_eq_worldGame [DecidableEq M]
       Interactive.World.eval (world scheme keys.2)
         (worldRealize scheme keys.1 (liftOracleForger (forger.forge keys.1 s))
           (fun verified ⟨msg, _⟩ pairs => verified && !(pairs.map Prod.fst).contains msg))) := by
-  rw [← eufCmaFinalMsgGame_true, eufCmaFinalMsgGame_eq_worldGame]
-  simp only [Bool.true_and]
-
-/-- Restricting final-message admissibility can only decrease the forger's winning probability. -/
-theorem eufCmaFinalMsgGame_apply_true_le [DecidableEq M] (admissible : M → Bool)
-    (scheme : Scheme PK SK M Sig Query Digest)
-    (forger : Forger PK M Sig Query Digest) :
-    (eufCmaFinalMsgGame admissible scheme forger) true ≤
-      (eufCmaGame scheme forger) true := by
-  unfold eufCmaFinalMsgGame eufCmaGame
-  simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_apply]
-  refine tsum_le_tsum fun keys => mul_le_mul_right ?_ _
-  refine tsum_le_tsum fun s => mul_le_mul_right ?_ _
-  refine tsum_le_tsum fun forged => mul_le_mul_right ?_ _
-  refine tsum_le_tsum fun verified => mul_le_mul_right ?_ _
-  rw [PMF.pure_apply, PMF.pure_apply]
-  split_ifs <;> simp_all
+  unfold eufCmaGame
+  refine PMF.bind_congr_on_support _ _ _ fun keys _ => ?_
+  refine PMF.bind_congr_on_support _ _ _ fun s _ => ?_
+  rw [eval_world_worldRealize_liftOracleForger,
+    ← runWith_world_runLoggedForger_liftOracleForger]
+  simp only [PMF.monad_bind_eq_bind, PMF.bind_map]
+  rfl
 
 /-- Key-only existential unforgeability (`ufCma0Game`): the forger wins when its candidate
 forgery verifies and it made zero signing queries (`pairs.isEmpty`). -/

@@ -14,7 +14,7 @@ public import CslibFrontier.Computability.Languages.Slice
 public import CslibFrontier.Computability.MCSP.Partial
 public import CslibFrontier.Computability.MCSP.SuccinctNP
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
-import CslibFrontier.Foundations.Combinatorics.FiniteCover.Basic
+import CslibFrontier.Foundations.Combinatorics.FiniteCover
 import CslibFrontier.Foundations.Combinatorics.MajorityVote
 import CslibFrontier.Foundations.Data.Fintype.AgreeOn
 import Cslib.Computability.Circuit.Boolean.Counting
@@ -23,7 +23,6 @@ import Mathlib.Algebra.Order.Floor.Semiring
 import Mathlib.Data.Finset.Card
 import Mathlib.Data.Fintype.BigOperators
 import Mathlib.Data.Fintype.Pi
-import Mathlib.Data.Nat.Choose.Sum
 
 /-!
 # Formula Magnification for Succinct, Partial, and Approximate MCSP
@@ -186,10 +185,9 @@ yes-instance fraction is at most `1/2`, modulo the formula encoding of three-val
   `Cslib.Circuits.Boolean.exists_mem_lt_formulaSize_succinctMCSP_of_queryList`: deterministic
   multi-query formula projection (building block for
   [OliveiraSanthanam2018, Section 3.1, Lemma 16, p. 14]).
-* `Cslib.Circuits.Boolean.two_pow_mul_pred_pow_lt`,
-  `Cslib.Circuits.Boolean.exists_seed_tuple_of_one_sided_error`,
+* `Cslib.Circuits.Boolean.exists_seed_tuple_of_one_sided_error`,
   `Cslib.Circuits.Boolean.exists_seed_tuple_of_one_sided_error_real`: finite-probability Adleman
-  derandomization lemma from `Cslib.exists_cover_of_scaled_card_lt`.
+  derandomization lemma from `Cslib.exists_cover_of_density`.
 * `Cslib.Circuits.Boolean.exists_formula_separating_gapMCSP_of_succinctMCSP`,
   `Cslib.Circuits.Boolean.exists_formula_separating_gapMCSP_of_succinctMCSP_real`,
   `Cslib.Circuits.Boolean.exists_lt_formulaSize_succinctMCSP_of_gapMCSP`,
@@ -595,71 +593,21 @@ theorem formulaSize_slice_yesSet_le (s : ℕ → ℕ) (n : ℕ) :
 
 /-! ### Stage 2: Finite-probability Adleman derandomization of a one-sided sample projection -/
 
-private theorem two_mul_pow_le_succ_pow (m : ℕ) :
-    2 * m ^ (m + 1) ≤ (m + 1) ^ (m + 1) := by
-  rw [add_pow, Finset.sum_range_succ, Finset.sum_range_succ]
-  simp only [Nat.cast_id]
-  have h1 : m ^ (m + 1) * 1 ^ (m + 1 - (m + 1)) * (m + 1).choose (m + 1) = m ^ (m + 1) := by
-    simp
-  have h2 : m ^ m * 1 ^ (m + 1 - m) * (m + 1).choose m = m ^ (m + 1) + m ^ m := by grind
-  rw [h1, h2]
-  omega
-
-/-- **Elementary exponential inequality for Adleman amplification:** for every `k ≥ 1` and `N : ℕ`,
-`2 ^ N * (k - 1) ^ (k * (N + 1)) < k ^ (k * (N + 1))`, corresponding to the real inequality
-`2 ^ N * (1 - 1 / k) ^ (k * (N + 1)) < 1`. -/
-theorem two_pow_mul_pred_pow_lt {N k : ℕ} (hk : 1 ≤ k) :
-    2 ^ N * (k - 1) ^ (k * (N + 1)) < k ^ (k * (N + 1)) := by
-  set m := k - 1
-  have hm : m + 1 = k := Nat.sub_add_cancel hk
-  have hbase : 2 * m ^ k ≤ k ^ k := by
-    simpa only [hm] using two_mul_pow_le_succ_pow m
-  have hpow : (2 * m ^ k) ^ (N + 1) ≤ (k ^ k) ^ (N + 1) :=
-    Nat.pow_le_pow_left hbase (N + 1)
-  rw [mul_pow, ← pow_mul, ← pow_mul] at hpow
-  rcases eq_or_ne m 0 with hm0 | hm0
-  · have hkt : k * (N + 1) ≠ 0 := Nat.mul_ne_zero (by omega) (Nat.succ_ne_zero N)
-    rw [hm0, zero_pow hkt, mul_zero]
-    exact Nat.pos_of_ne_zero (pow_ne_zero _ (by omega))
-  · have hmpos : 0 < m ^ (k * (N + 1)) := Nat.pos_of_ne_zero (pow_ne_zero _ hm0)
-    have h2pos : 0 < 2 ^ N := by positivity
-    have hlt : 2 ^ N * m ^ (k * (N + 1)) < 2 ^ (N + 1) * m ^ (k * (N + 1)) := by
-      rw [pow_succ]
-      nlinarith
-    exact hlt.trans_le hpow
-
 /-- **Finite-probability Adleman amplification lemma.** If `no ⊆ BitString N` is a set of negative
 inputs and, for every `T ∈ no`, at least a `1 / k`-fraction of the seeds `ω : Ω` satisfy
 `Good T ω` (`Fintype.card Ω ≤ k * (Finset.univ.filter (Good T)).card`), then there exists a tuple
 `ωs : Fin (k * (N + 1)) → Ω` of `k * (N + 1)` seeds such that every `T ∈ no` is witnessed by at
-least one `ωs j`. Derived from `Cslib.exists_cover_of_scaled_card_lt`. -/
+least one `ωs j`. This is `Cslib.exists_cover_of_density` for the obligations `no`. -/
 theorem exists_seed_tuple_of_one_sided_error {Ω : Type*} [Fintype Ω] [Nonempty Ω]
     {N k : ℕ} (hk : 1 ≤ k) (no : Finset (BitString N))
     (Good : BitString N → Ω → Prop) [∀ T ω, Decidable (Good T ω)]
     (hgood : ∀ T ∈ no, Fintype.card Ω ≤ k * (Finset.univ.filter (Good T)).card) :
     ∃ ωs : Fin (k * (N + 1)) → Ω, ∀ T ∈ no, ∃ j : Fin (k * (N + 1)), Good T (ωs j) := by
   classical
-  have hcover : ∃ ωs : Fin (k * (N + 1)) → Ω, ∀ T : no, ∃ j, Good T.1 (ωs j) := by
-    apply exists_cover_of_scaled_card_lt (fun ω (T : no) => Good T.1 ω) (k - 1) k (k * (N + 1))
-    · intro ⟨T, hT⟩
-      rw [Fintype.card_subtype_compl, Fintype.card_subtype]
-      dsimp only
-      have hg := hgood T hT
-      have hle : (Finset.univ.filter (Good T)).card ≤ Fintype.card Ω :=
-        Finset.card_le_univ _
-      have hk1 : k * Fintype.card Ω = (k - 1) * Fintype.card Ω + Fintype.card Ω := by
-        conv_lhs => rw [← Nat.sub_add_cancel hk, add_mul, one_mul]
-      have hsub : k * (Fintype.card Ω - (Finset.univ.filter (Good T)).card) +
-          k * (Finset.univ.filter (Good T)).card = k * Fintype.card Ω := by
-        rw [← mul_add, Nat.sub_add_cancel hle]
-      change k * (Fintype.card Ω - (Finset.univ.filter (Good T)).card) ≤ (k - 1) * Fintype.card Ω
-      omega
-    · have hno_card : Fintype.card no ≤ 2 ^ N := by
-        rw [Fintype.card_coe]
-        exact (Finset.card_le_univ no).trans (by simp [BitString])
-      exact (Nat.mul_le_mul_right _ hno_card).trans_lt (two_pow_mul_pred_pow_lt hk)
-  obtain ⟨ωs, hωs⟩ := hcover
-  exact ⟨ωs, fun T hT => hωs ⟨T, hT⟩⟩
+  obtain ⟨ωs, h⟩ := exists_cover_of_density (fun ω (T : no) => Good T.1 ω) k N hk
+    (by rw [Fintype.card_coe]; exact (Finset.card_le_univ no).trans (by simp [BitString]))
+    (fun T => by simpa [Fintype.card_subtype] using hgood T.1 T.2)
+  exact ⟨ωs, fun T hT => h ⟨T, hT⟩⟩
 
 /-- `⌈1 / δ⌉₊` is a positive integer when `0 < δ`. -/
 private theorem one_le_natCeil_one_div {δ : ℝ} (hδ : 0 < δ) : 1 ≤ ⌈1 / δ⌉₊ :=
@@ -977,7 +925,7 @@ theorem card_le_two_mul_filter_notMem_succinctMCSP {n s k M : ℕ} (hk : 1 ≤ k
           rw [pow_succ']
           ring
       _ < k ^ (k * ((M + 1) + 1)) * (2 ^ n) ^ q :=
-          Nat.mul_lt_mul_of_pos_right (two_pow_mul_pred_pow_lt (N := M + 1) hk) hΩpos
+          Nat.mul_lt_mul_of_pos_right (Nat.two_pow_mul_pred_pow_mul_succ_lt hk (M + 1)) hΩpos
       _ = k ^ q * (2 ^ n) ^ q := rfl
   have h2Bad : 2 * Bad.card < Fintype.card (Fin q → BitString n) := by
     have hlt' : 2 * Bad.card < (2 ^ n) ^ q := lt_of_mul_lt_mul_left hlt (Nat.zero_le _)

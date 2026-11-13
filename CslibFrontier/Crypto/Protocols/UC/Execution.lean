@@ -54,6 +54,9 @@ evaluated at `κ` plus the adversary's budget.
 * `Cslib.Crypto.Protocols.UC.Protocol`, `Cslib.Crypto.Protocols.UC.IdealFunctionality`,
   `Cslib.Crypto.Protocols.UC.IdealFunctionality.toProtocol`, `Cslib.Crypto.Protocols.UC.Adversary`,
   `Cslib.Crypto.Protocols.UC.Environment`: the participants of the execution.
+* `Cslib.Crypto.Protocols.UC.RoutedNetQ`, `Cslib.Crypto.Protocols.UC.RoutedNetR`,
+  `Cslib.Crypto.Protocols.UC.ExecAdversary`: the network port of a protocol behind
+  static-corruption routing, and the adversaries that talk to it.
 * `Cslib.Crypto.Protocols.UC.corruptRouter`, `Cslib.Crypto.Protocols.UC.liftNet`,
   `Cslib.Crypto.Protocols.UC.liftAdversary`: static-corruption routing and the adversary's place in
   front of the network port.
@@ -66,6 +69,8 @@ evaluated at `κ` plus the adversary's budget.
 
 ## Main results
 
+* `Cslib.Crypto.Protocols.UC.handle_corruptRouter_map_state`: state representations of protocol
+  machines lift through `corruptRouter`.
 * `Cslib.Crypto.Protocols.UC.advantage_self`, `Cslib.Crypto.Protocols.UC.advantage_comm`,
   `Cslib.Crypto.Protocols.UC.advantage_triangle`: the advantage is a pseudometric on executions.
 * `Cslib.Crypto.Protocols.UC.SimPolyBound.refl`, `Cslib.Crypto.Protocols.UC.SimPolyBound.trans`:
@@ -142,6 +147,22 @@ that activates parties and the adversary and outputs a bit. -/
 abbrev Environment (n : ℕ) (In Out AdvQ AdvR : Type) : Type :=
   ℕ → List Bool → ProbOracleComp (execSpec n In Out AdvQ AdvR) Bool
 
+/-- The network queries of an `n`-party protocol with party inputs `In` and network queries `NetQ`
+behind static-corruption routing (`corruptRouter`): `.inl (i, x)` is an input to corrupted party
+`i`, and `.inr q` is a network query of the protocol. -/
+abbrev RoutedNetQ (n : ℕ) (In NetQ : Type) : Type := (Fin n × In) ⊕ NetQ
+
+/-- The network replies of a protocol with party outputs `Out` and network replies `NetR` behind
+static-corruption routing: `.inl o` is the pending output of a corrupted party, if any, and `.inr r`
+is a network reply of the protocol. -/
+abbrev RoutedNetR (Out NetR : Type) : Type := Option Out ⊕ NetR
+
+/-- An adversary in the UC execution of an `n`-party protocol with party inputs `In`, outputs `Out`
+and network port `NetQ`/`NetR`: it answers the environment's queries `AdvQ` with replies `AdvR` by
+talking to the protocol's network port behind static-corruption routing. -/
+abbrev ExecAdversary (n : ℕ) (In Out NetQ NetR AdvQ AdvR : Type) : Type 1 :=
+  Adversary n AdvQ AdvR (RoutedNetQ n In NetQ) (RoutedNetR Out NetR)
+
 /-! ### Execution -/
 
 section Execution
@@ -154,7 +175,7 @@ network query of the adversary is forwarded to the protocol. -/
 @[expose] def corruptRouter (C : Finset (Fin n))
     (P : Machine OracleSpec.empty (protocolSpec n In Out NetQ NetR)) :
     Machine OracleSpec.empty
-      (protocolSpec n In Out ((Fin n × In) ⊕ NetQ) (Option Out ⊕ NetR)) where
+      (protocolSpec n In Out (RoutedNetQ n In NetQ) (RoutedNetR Out NetR)) where
   State := P.State
   init := P.init
   handle
@@ -162,6 +183,30 @@ network query of the adversary is forwarded to the protocol. -/
     | .inr (.inl (i, x)) =>
         if i ∈ C then Sum.inl <$> P.handle (.inl (i, x)) else pure (.inl none)
     | .inr (.inr q) => Sum.inr <$> P.handle (.inr q)
+
+/-- Intertwining two protocol machines intertwines their `corruptRouter` wrappers for any static
+corruption set `C`. -/
+theorem handle_corruptRouter_map_state (C : Finset (Fin n))
+    (P₁ P₂ : Machine OracleSpec.empty (protocolSpec n In Out NetQ NetR))
+    (f : P₂.State → P₁.State)
+    (h : ∀ q s, (P₁.handle q).run (f s) = Prod.map _root_.id f <$> (P₂.handle q).run s)
+    (q : (Fin n × In) ⊕ RoutedNetQ n In NetQ) (s : P₂.State) :
+    ((corruptRouter C P₁).handle q).run (f s) =
+      Prod.map _root_.id f <$> ((corruptRouter C P₂).handle q).run s := by
+  rcases q with ⟨i, x⟩ | ⟨⟨i, x⟩ | q⟩
+  · by_cases hi : i ∈ C
+    · simp only [corruptRouter, hi, ↓reduceIte, StateT.run_pure, map_pure, Prod.map_apply,
+        _root_.id_eq]
+    · simp only [corruptRouter, hi, ↓reduceIte, h (Sum.inl (i, x)) s]
+  · by_cases hi : i ∈ C
+    · simp only [corruptRouter, hi, ↓reduceIte, StateT.run_map]
+      rw [h (Sum.inl (i, x)) s, Functor.map_map, Functor.map_map]
+      rfl
+    · simp only [corruptRouter, hi, ↓reduceIte, StateT.run_pure, map_pure, Prod.map_apply,
+        _root_.id_eq]
+  · simp only [corruptRouter, StateT.run_map]
+    rw [h (Sum.inr q) s, Functor.map_map, Functor.map_map]
+    rfl
 
 /-- A program calling only the network port, as a program calling the ports of a protocol. -/
 @[expose] def liftNet {α : Type} (program : ProbOracleComp (netSpec NetQ NetR) α) :
@@ -187,14 +232,14 @@ adversary's activations call the network port. -/
 /-- The closed system the environment talks to: the adversary in front of the corruption-routed
 protocol. -/
 @[expose] def execMachine (π : Protocol n In Out NetQ NetR)
-    (A : Adversary n AdvQ AdvR ((Fin n × In) ⊕ NetQ) (Option Out ⊕ NetR)) (κ : ℕ)
+    (A : ExecAdversary n In Out NetQ NetR AdvQ AdvR) (κ : ℕ)
     (C : Finset (Fin n)) : Machine OracleSpec.empty (execSpec n In Out AdvQ AdvR) :=
   (liftAdversary (A κ C)).comp (corruptRouter C (π κ C))
 
 /-- The UC execution experiment: the environment's output bit when it interacts with protocol `π`
 and adversary `A`, with corrupted parties `C`, security parameter `κ` and auxiliary input `z`. -/
 @[expose] def exec (π : Protocol n In Out NetQ NetR)
-    (A : Adversary n AdvQ AdvR ((Fin n × In) ⊕ NetQ) (Option Out ⊕ NetR)) (C : Finset (Fin n))
+    (A : ExecAdversary n In Out NetQ NetR AdvQ AdvR) (C : Finset (Fin n))
     (Z : Environment n In Out AdvQ AdvR) (κ : ℕ) (z : List Bool) : ProbComp Bool :=
   (execMachine π A κ C).run (Z κ z)
 
@@ -204,22 +249,22 @@ variable {NetQ₁ NetR₁ NetQ₂ NetR₂ NetQ₃ NetR₃ : Type}
 protocol `φ` with adversary `S`. -/
 @[expose] noncomputable def advantage (π : Protocol n In Out NetQ₁ NetR₁)
     (φ : Protocol n In Out NetQ₂ NetR₂)
-    (A : Adversary n AdvQ AdvR ((Fin n × In) ⊕ NetQ₁) (Option Out ⊕ NetR₁))
-    (S : Adversary n AdvQ AdvR ((Fin n × In) ⊕ NetQ₂) (Option Out ⊕ NetR₂)) (C : Finset (Fin n))
+    (A : ExecAdversary n In Out NetQ₁ NetR₁ AdvQ AdvR)
+    (S : ExecAdversary n In Out NetQ₂ NetR₂ AdvQ AdvR) (C : Finset (Fin n))
     (Z : Environment n In Out AdvQ AdvR) (κ : ℕ) (z : List Bool) : NNReal :=
   Game.advantage (exec π A C Z κ z).eval (exec φ S C Z κ z).eval
 
 /-- An execution cannot be distinguished from itself. -/
 @[simp] theorem advantage_self (π : Protocol n In Out NetQ NetR)
-    (A : Adversary n AdvQ AdvR ((Fin n × In) ⊕ NetQ) (Option Out ⊕ NetR)) (C : Finset (Fin n))
+    (A : ExecAdversary n In Out NetQ NetR AdvQ AdvR) (C : Finset (Fin n))
     (Z : Environment n In Out AdvQ AdvR) (κ : ℕ) (z : List Bool) :
     advantage π π A A C Z κ z = 0 :=
   Game.advantage_self _
 
 /-- The advantage is symmetric. -/
 theorem advantage_comm (π : Protocol n In Out NetQ₁ NetR₁) (φ : Protocol n In Out NetQ₂ NetR₂)
-    (A : Adversary n AdvQ AdvR ((Fin n × In) ⊕ NetQ₁) (Option Out ⊕ NetR₁))
-    (S : Adversary n AdvQ AdvR ((Fin n × In) ⊕ NetQ₂) (Option Out ⊕ NetR₂)) (C : Finset (Fin n))
+    (A : ExecAdversary n In Out NetQ₁ NetR₁ AdvQ AdvR)
+    (S : ExecAdversary n In Out NetQ₂ NetR₂ AdvQ AdvR) (C : Finset (Fin n))
     (Z : Environment n In Out AdvQ AdvR) (κ : ℕ) (z : List Bool) :
     advantage π φ A S C Z κ z = advantage φ π S A C Z κ z :=
   Game.advantage_comm _ _
@@ -227,9 +272,9 @@ theorem advantage_comm (π : Protocol n In Out NetQ₁ NetR₁) (φ : Protocol n
 /-- The triangle inequality through an intermediate protocol and adversary. -/
 theorem advantage_triangle (π₁ : Protocol n In Out NetQ₁ NetR₁) (π₂ : Protocol n In Out NetQ₂ NetR₂)
     (π₃ : Protocol n In Out NetQ₃ NetR₃)
-    (A₁ : Adversary n AdvQ AdvR ((Fin n × In) ⊕ NetQ₁) (Option Out ⊕ NetR₁))
-    (A₂ : Adversary n AdvQ AdvR ((Fin n × In) ⊕ NetQ₂) (Option Out ⊕ NetR₂))
-    (A₃ : Adversary n AdvQ AdvR ((Fin n × In) ⊕ NetQ₃) (Option Out ⊕ NetR₃)) (C : Finset (Fin n))
+    (A₁ : ExecAdversary n In Out NetQ₁ NetR₁ AdvQ AdvR)
+    (A₂ : ExecAdversary n In Out NetQ₂ NetR₂ AdvQ AdvR)
+    (A₃ : ExecAdversary n In Out NetQ₃ NetR₃ AdvQ AdvR) (C : Finset (Fin n))
     (Z : Environment n In Out AdvQ AdvR) (κ : ℕ) (z : List Bool) :
     advantage π₁ π₃ A₁ A₃ C Z κ z ≤
       advantage π₁ π₂ A₁ A₂ C Z κ z + advantage π₂ π₃ A₂ A₃ C Z κ z :=

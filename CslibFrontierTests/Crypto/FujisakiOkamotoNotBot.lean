@@ -22,7 +22,7 @@ Exercises `Scheme.indCcaRomAdvantage_le` on two concrete schemes:
    bound `indCcaRomAdvantage ≤ 3 / 8`.
 -/
 
-public section
+@[expose] public section
 
 open Cslib Cslib.Crypto Cslib.Crypto.Protocols Cslib.Crypto.Protocols.FujisakiOkamoto
 open Cslib.Probability
@@ -102,9 +102,9 @@ theorem pairCoinScheme_sampleMsg_uniform :
 /-- ROM adversary that queries `H(false, 0, c*)` once (`qG = 0`, `qH = 1`) and tests whether the
 reply equals the challenge key `k*`. -/
 def probeZeroKeyAdv : ROAdversary Unit (Fin 16) (Fin 16) (Fin 16 × Fin 16) (Fin 2) :=
-  fun (_, cStar, kStar) => do
-    let k ← OracleComp.query (ROQuery.H (false, 0, cStar))
-    return decide (k = kStar)
+  fun ch => do
+    let k ← OracleComp.query (ROQuery.H (false, 0, ch.ct))
+    return decide (k = ch.key)
 
 /-- `probeZeroKeyAdv` makes `0` queries to `G` and `1` query to `H`. -/
 theorem probeZeroKeyAdv_bounds : ROQueryBounds probeZeroKeyAdv 0 1 := by
@@ -122,9 +122,11 @@ theorem eval_romCpaReduction_probeZeroKeyAdv (m₀ m₁ : Fin 16) (pk : Unit)
     (cStar : Fin 16 × Fin 16) :
     ProbComp.eval (pairCoinScheme.romCpaReduction probeZeroKeyAdv m₀ m₁ pk cStar) =
       PMF.pure (decide (m₁ = 0)) := by
-  simp only [Scheme.romCpaReduction, probeZeroKeyAdv, Scheme.simHandler, Scheme.simHashH,
-    OracleComp.interpret_bind, OracleComp.interpret_query, OracleComp.interpret_pure,
-    StateT.run_bind, StateT.run_pure, ProbComp.eval_bind, ProbComp.eval_pure]
+  simp only [Scheme.romCpaReduction, Scheme.romFilterCpaReduction, probeZeroKeyAdv,
+    Scheme.simFilterHandler, Scheme.simFilterDispatch,
+    Scheme.simHashH, OracleComp.interpret_bind, OracleComp.interpret_query,
+    OracleComp.interpret_pure, StateT.run_bind, StateT.run_pure, ProbComp.eval_bind,
+    ProbComp.eval_pure, ROQuery.dispatch]
   refine (PMF.bind_congr_on_support _ _ (fun _ => PMF.pure (decide (m₁ = 0)))
     fun kStar _ => ?_).trans (PMF.bind_const _ _)
   simp only [PMF.bind_bind]

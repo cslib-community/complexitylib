@@ -42,8 +42,9 @@ binary length bounds of `Int.size_natAbs_add_le` and `Int.size_natAbs_mul_le`.
 * `Turing.MultiTapeTM.ComputableInPolyTime.intBin_neg`, `.intBin_add`, `.intBin_sub`,
   `.intBin_mul`, `.intBin_pow`: ring operations, powers to a unary exponent.
 * `Turing.MultiTapeTM.ComputableInPolyTime.intBin_lt`, `.intBin_le`: comparisons.
-* `Turing.MultiTapeTM.ComputableInPolyTime.intBin_sum`, `.intBin_prod`, `.intBin_prod_range`: the
-  sum and product of a list, and the product of a computed family over a unary range.
+* `Turing.MultiTapeTM.ComputableInPolyTime.intBin_sum`, `.intBin_prod`, `.intBin_finset_prod`,
+  `.intBin_prod_range`: the sum and product of a list, the product of a fixed finite family, and
+  the product of a computed family over a unary range.
 * `Turing.MultiTapeTM.ComputableInPolyTime.intBin_add'`, `.intBin_sub'`, `.intBin_mul'`,
   `.intBin_pow'`, `.intBin_lt'`, `.intBin_le'`: composition rules for `fun_prop`.
 -/
@@ -362,6 +363,19 @@ theorem intBin_le' {α : Type} {input : α ↪ List Bool} {left right : α → �
     (hright : ComputableInPolyTime right input encIntBin) :
     ComputableInPolyTime (fun a => decide (left a ≤ right a)) input encBool :=
   intBin_le.comp (hleft.prod hright)
+
+/-- Multiply a fixed finite family of computed binary integers. -/
+theorem intBin_finset_prod {α : Type} {ι : Type*} {enc : α ↪ List Bool} (s : Finset ι)
+    {f : ι → α → ℤ} (hf : ∀ i ∈ s, ComputableInPolyTime (f i) enc encIntBin) :
+    ComputableInPolyTime (fun a => ∏ i ∈ s, f i a) enc encIntBin := by
+  classical
+  induction s using Finset.induction_on with
+  | empty =>
+    exact (ComputableInPolyTime.const 1).of_enc_eq fun _ => congrArg encIntBin (by simp)
+  | insert i s hi ih =>
+    have hmul := (hf i (Finset.mem_insert_self i s)).intBin_mul'
+      (ih fun j hj => hf j (Finset.mem_insert_of_mem hj))
+    exact hmul.of_enc_eq fun a => congrArg encIntBin (Finset.prod_insert hi)
 
 /-- Multiply a uniformly computed family of binary integers over a computed unary range. -/
 @[fun_prop]

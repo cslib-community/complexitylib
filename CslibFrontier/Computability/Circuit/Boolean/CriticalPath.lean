@@ -100,42 +100,41 @@ private theorem not_isXorType_comp_aux :
                 if (if b then w1 else w0) then g01 else g00) then u1 else u0 := by
   decide
 
+/-- A binary Boolean operation is given by its table of values. -/
+private theorem table_eq (G : Bool → Bool → Bool) :
+    (fun u v : Bool =>
+      if u then if v then G true true else G true false
+      else if v then G false true else G false false) = G := by
+  ext u v
+  cases u <;> cases v <;> rfl
+
+/-- Composing `G` with unary pre- and post-processing, written through the tables of values of
+all four functions, the form decided by `not_isAndType_comp_aux` and `not_isXorType_comp_aux`. -/
+private theorem comp_eq_table (G : Bool → Bool → Bool) (f₁ f₂ f₃ : Bool → Bool) :
+    (fun a b => f₁ (G (f₂ a) (f₃ b))) = fun a b =>
+      if (if (if a then f₂ true else f₂ false) then
+            if (if b then f₃ true else f₃ false) then G true true else G true false
+          else
+            if (if b then f₃ true else f₃ false) then G false true else G false false)
+      then f₁ true else f₁ false := by
+  ext a b
+  cases a <;> cases b <;> cases h₂ : f₂ _ <;> cases h₃ : f₃ _ <;> cases hG₂ : G _ _ <;> simp_all
+
 /-- Composing an affine binary gate `G` with unary pre- and post-processing never yields an
 AND-type binary function. -/
 theorem not_isAndType_comp_of_isAffineOp {G : Bool → Bool → Bool}
     (hG : SemiCircuit.IsAffineOp G) (f₁ f₂ f₃ : Bool → Bool) :
     ¬ IsAndType fun a b => f₁ (G (f₂ a) (f₃ b)) := by
-  have hG' : SemiCircuit.IsAffineOp
-      (fun u v : Bool =>
-        if u then if v then G true true else G true false
-        else if v then G false true else G false false) := by
-    convert hG using 1
-    ext u v
-    cases u <;> cases v <;> rfl
-  convert not_isAndType_comp_aux (f₁ false) (f₁ true) (f₂ false) (f₂ true) (f₃ false) (f₃ true)
-    (G false false) (G true false) (G false true) (G true true) hG' using 2
-  ext a b
-  cases a <;> cases b <;> cases h₂ : f₂ _ <;> cases h₃ : f₃ _ <;> cases hG₂ : G _ _ <;> simp_all
+  rw [comp_eq_table G f₁ f₂ f₃]
+  exact not_isAndType_comp_aux _ _ _ _ _ _ _ _ _ _ ((table_eq G).symm ▸ hG)
 
 /-- Composing a non-affine (AND-type) binary gate `G` with unary pre- and post-processing never
 yields an XOR-type binary function. -/
 theorem not_isXorType_comp_of_not_isAffineOp {G : Bool → Bool → Bool}
     (hG : ¬ SemiCircuit.IsAffineOp G) (f₁ f₂ f₃ : Bool → Bool) :
     ¬ IsXorType fun a b => f₁ (G (f₂ a) (f₃ b)) := by
-  have hGeq : (fun u v : Bool =>
-      if u then if v then G true true else G true false
-      else if v then G false true else G false false) = G := by
-    ext u v
-    cases u <;> cases v <;> rfl
-  have hG' : ¬ SemiCircuit.IsAffineOp
-      (fun u v : Bool =>
-        if u then if v then G true true else G true false
-        else if v then G false true else G false false) :=
-    hGeq.symm ▸ hG
-  convert not_isXorType_comp_aux (f₁ false) (f₁ true) (f₂ false) (f₂ true) (f₃ false) (f₃ true)
-    (G false false) (G true false) (G false true) (G true true) hG' using 2
-  ext a b
-  cases a <;> cases b <;> cases h₂ : f₂ _ <;> cases h₃ : f₃ _ <;> cases hG₂ : G _ _ <;> simp_all
+  rw [comp_eq_table G f₁ f₂ f₃]
+  exact not_isXorType_comp_aux _ _ _ _ _ _ _ _ _ _ ((table_eq G).symm ▸ hG)
 
 /-- In a single-output `B₂` circuit with `NoDeadGates` and intersecting critical paths at `x ≠ y`,
 either no `2`-bit restriction to `(x, y)` is AND-type or no `2`-bit restriction to `(x, y)` is
