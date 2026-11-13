@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import CslibFrontier.Probability.Extractor.TwoSource
 
 /-! Two-source extractors: the Chor–Goldreich bound on concrete sources, the necessity of the
@@ -26,8 +27,7 @@ theorem dotProduct_four :
 
 private theorem three_le_minEntropy_uniform :
     (3 : ℝ) ≤ minEntropy (PMF.uniformOfFintype (Fin 4 → Bool)) := by
-  rw [minEntropy_uniformOfFintype, show Fintype.card (Fin 4 → Bool) = 2 ^ 4 by simp,
-    Nat.cast_pow, Nat.cast_ofNat, Real.logb_pow, Real.logb_self_eq_one (by norm_num)]
+  rw [minEntropy_uniformOfFintype, BitString.logb_card]
   norm_num
 
 -- The entropy hypotheses are satisfiable: two independent uniform 4-bit sources.

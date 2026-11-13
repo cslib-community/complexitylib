@@ -80,6 +80,12 @@ After the Lean gates, full and quick `scripts/check.sh` both run `scripts/check_
 
 The audit fails on any message or elaboration failure. A reported message can also come from one of the file's imports, because `lake lean` replays their logs. Files are elaborated one at a time, so each restored file adds its elaboration time to the check; a full check after a large restore can take appreciably longer. To check one file yourself, run `lake -q lean <file>` and treat any output as a failure, because `lake lean` exits 0 after warnings. This closes the local audit's affected-client gap, but does not change Lake's cache format or cover dependency packages outside the root package. Bare Lake commands still need upstream Lake to store each entry's messages and replay them on restore ([#4523](https://github.com/cslib-community/cslib-frontier/issues/4523)).
 
+The restored-source audit reports its selected count, current source and elapsed audit time
+before each local elaboration, so a long-running file remains visible. The final summary also
+reports total elapsed time. When `CI` is set, per-file progress is quiet by default; use
+`python3 -B scripts/check_cache_restores.py --progress` to request it, or `--quiet` to suppress
+it locally. Both modes retain all selected checks, failure messages and the final summary.
+
 ## Diagnose "Too many open files in system"
 
 On a shared host, concurrent builds can exhaust the kernel's file-handle table before they exhaust processors or memory. Each `lean` process maps the `.olean` files of every module it imports (several files per module), and each mapping holds a file handle until the process exits. A module that imports much of Mathlib holds tens of thousands. These handles appear in `/proc/<pid>/maps`, not among the process's file descriptors, so `ulimit -n` and `/proc/<pid>/fd` do not show them. They count toward the system-wide limit `fs.file-max`, whose value depends on the host configuration. Where it is about one million, a few dozen deep `lean` processes across all checkouts can reach it. The symptoms are `Too many open files in system` (`ENFILE`) from Lake, Lean or Git, and crashes in unrelated tools on the same host. On Linux, compare the allocated handles with the limit:

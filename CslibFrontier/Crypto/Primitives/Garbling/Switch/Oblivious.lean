@@ -266,9 +266,9 @@ private theorem idealGame_reduction [DecidableEq R] [Fintype L] (S : SwitchSyste
     (H : L → ℕ → L) (col : L →+ ZMod 2) (σ : Fin n ⊕ Fin N → R)
     (D : SwitchView L n → ProbComp Bool) :
     CCR.Arithmetic.idealGame (reduction S H col σ D) = simGame S H col (S.controls σ) D := by
-  simp only [CCR.Arithmetic.idealGame, simGame, simulate, reduction, SwitchSystem.controls,
-    OracleComp.interpret_bind, ProbOracleComp.interpret_sample, ProbComp.interpret_unifFin,
-    interpret_reduceGates_ideal, bind_assoc, pure_bind]
+  simp only [CCR.Arithmetic.idealGame, ProbOracleComp.run, simGame, simulate, reduction,
+    SwitchSystem.controls, OracleComp.interpret_bind, ProbOracleComp.interpret_sample,
+    ProbComp.interpret_unifFin, interpret_reduceGates_ideal, bind_assoc, pure_bind]
 
 /-! ### The real side -/
 

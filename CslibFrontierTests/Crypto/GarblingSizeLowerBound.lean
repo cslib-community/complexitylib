@@ -5,6 +5,7 @@ Authors: Karn Seth
 -/
 
 import CslibFrontier.Crypto.Primitives.Garbling.SizeLowerBound
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import CslibFrontier.Probability.Entropy.Guessing
 import Mathlib.Algebra.Ring.BooleanRing
 
@@ -34,8 +35,7 @@ theorem padReal_map (m : ℕ) : (padReal m).map (fun w => (w.1, w.2.1)) = padIde
 
 theorem conditionalEntropy_padIdeal (m : ℕ) : conditionalEntropy (padIdeal m) = m := by
   rw [padIdeal, conditionalEntropy_bind_pair, entropy_uniform, ← Finset.sum_mul, sum_toReal,
-    one_mul, Fintype.card_fun, Fintype.card_bool, Fintype.card_fin, Nat.cast_pow, Nat.cast_ofNat,
-    Real.logb_pow, Real.logb_self_eq_one one_lt_two, mul_one]
+    one_mul, BitString.logb_card]
 
 /-- Removing the key recovers the hidden value. -/
 def unpad {m : ℕ} (kg : BitString m × BitString m) : BitString m := kg.2 + kg.1
