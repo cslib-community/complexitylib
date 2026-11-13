@@ -25,9 +25,9 @@ time spent at `v` still converges.
 The proof has two steps.
 
 * **Mean ergodic theorem.** The walk operator is a contraction of `EuclideanSpace ℝ V` whose
-  fixed vectors are the constants on a connected graph (`eq_of_walk_eq_self`, a maximum
-  principle). By von Neumann's mean ergodic theorem
-  (`ContinuousLinearMap.tendsto_birkhoffAverage_orthogonalProjection`), the Cesàro averages
+  fixed vectors are the constants on a connected graph (the maximum principle
+  `Cslib.RotationMap.eq_of_walk_eq_self` of `Expander.Harmonic`). By von Neumann's mean ergodic
+  theorem (`ContinuousLinearMap.tendsto_birkhoffAverage_orthogonalProjection`), the Cesàro averages
   `(1 / N) ∑_{j < N} Pʲ f` of a function `f` of total `0` tend to `0`, uniformly in the start
   vertex (`exists_abs_sum_walk_pow_le`).
 * **Second moment.** For `f = 1_v - 1 / n`, the sum `S_t = ∑_{i=1}^{t} f(X_i)` is the number of
@@ -42,8 +42,6 @@ The proof has two steps.
 
 ## Main results
 
-* `Cslib.RotationMap.eq_of_walk_eq_self`: fixed points of the walk operator are constant on a
-  connected graph.
 * `Cslib.RotationMap.exists_abs_sum_walk_pow_le`: uniform Cesàro convergence.
 * `Cslib.RotationMap.eventually_visits_mem_Icc`: Arora and Barak, Exercise 7.9(b)(ii), for all
   large `t`; `Cslib.RotationMap.exists_visits_mem_Icc` is the existential form of the source.
@@ -63,20 +61,6 @@ open scoped BigOperators
 variable {V D : Type*} [Fintype V] [DecidableEq V] [Fintype D] [Nonempty D] {G : RotationMap V D}
 
 /-! ### The mean ergodic step -/
-
-omit [DecidableEq V] in
-/-- **Maximum principle.** On a connected regular multigraph, a function fixed by the walk
-operator is constant. -/
-theorem eq_of_walk_eq_self (hG : G.toSimpleGraph.Preconnected) {f : V → ℝ} (hf : G.walk f = f)
-    (x y : V) : f x = f y := by
-  classical
-  refine eq_of_forall_sum_edgeCount_mul_eq hG (fun y => ?_) x y
-  have h := congrFun hf y
-  rw [walk_apply, Fintype.expect_eq_sum_div_card, G.sum_comp_neighbor y f] at h
-  have hd : (Fintype.card D : ℝ) ≠ 0 := by exact_mod_cast Fintype.card_ne_zero
-  simp only [nsmul_eq_mul] at h
-  rw [div_eq_iff hd] at h
-  rw [h, mul_comm]
 
 omit [DecidableEq V] [Nonempty D] in
 /-- The walk operator does not increase the Euclidean norm. -/
@@ -284,9 +268,10 @@ theorem eventually_visits_mem_Icc (hG : G.toSimpleGraph.Connected) (u v : V) {ε
   have hq := expect_visitSum_sq_le f hf1 _ hM
   have hgauss : ∀ m : ℕ, ∑ s ∈ range m, ((s : ℝ) + 1) = m * (m + 1) / 2 := by
     intro m
-    induction m with
-    | zero => simp
-    | succ m ih => rw [sum_range_succ, ih]; push_cast; ring
+    have h := congrArg (Nat.cast (R := ℝ)) (sum_range_id_mul_two (m + 1))
+    rw [sum_range_succ'] at h
+    push_cast at h
+    linarith
   -- the bound on the second moment is eventually small
   set T₀ := ⌈2 * n ^ 2 * (3 + 2 * N₀) / ε ^ 3⌉₊ + 1
   filter_upwards [eventually_ge_atTop T₀] with t ht
@@ -335,44 +320,33 @@ theorem eventually_visits_mem_Icc (hG : G.toSimpleGraph.Connected) (u v : V) {ε
       linarith
     · have : (1 + ε) * t / n = t / n + a := by rw [ha]; ring
       linarith
+  -- Chebyshev: Markov's inequality for `S²` at level `a²`
   have hcard : (Fintype.card (Fin t → D) : ℝ) = (Fintype.card D : ℝ) ^ t := by simp
-  have hbad : (#{k : Fin t → D | a < |visitSum G f u k|} : ℝ) * a ^ 2 ≤
-      ∑ k : Fin t → D, visitSum G f u k ^ 2 := by
-    calc (#{k : Fin t → D | a < |visitSum G f u k|} : ℝ) * a ^ 2
-        = ∑ k ∈ univ.filter (fun k : Fin t → D => a < |visitSum G f u k|), a ^ 2 := by
-          rw [sum_const, nsmul_eq_mul]
-      _ ≤ ∑ k ∈ univ.filter (fun k : Fin t → D => a < |visitSum G f u k|),
-            visitSum G f u k ^ 2 := by
-          refine sum_le_sum fun k hk => ?_
-          have := (mem_filter.1 hk).2
-          rw [← sq_abs (visitSum G f u k)]
-          exact pow_le_pow_left₀ ha0.le this.le 2
-      _ ≤ ∑ k : Fin t → D, visitSum G f u k ^ 2 :=
-          sum_le_sum_of_subset_of_nonneg (filter_subset _ _) fun _ _ _ => sq_nonneg _
-  have hE : ∑ k : Fin t → D, visitSum G f u k ^ 2 =
-      (Fintype.card D : ℝ) ^ t * 𝔼 k : Fin t → D, visitSum G f u k ^ 2 := by
-    rw [Fintype.expect_eq_sum_div_card, hcard]
-    have : (Fintype.card D : ℝ) ^ t ≠ 0 := pow_ne_zero _ (by exact_mod_cast Fintype.card_ne_zero)
-    field_simp
+  have hd : (0 : ℝ) < (Fintype.card D : ℝ) ^ t := by positivity
+  have hmk := Fintype.mul_dens_filter_le_expect
+    (fun k : Fin t → D => sq_nonneg (visitSum G f u k)) (a ^ 2)
+  have hbad : (#{k : Fin t → D | a ^ 2 ≤ visitSum G f u k ^ 2} : ℝ) ≤
+      ε * (Fintype.card D : ℝ) ^ t := by
+    rw [dens_eq_card_div_card, NNRat.cast_div, NNRat.cast_natCast, NNRat.cast_natCast,
+      hcard] at hmk
+    have ha2 : 0 < a ^ 2 := by positivity
+    have h := hmk.trans hq'
+    rw [mul_div_assoc', div_le_iff₀ hd,
+      show ε * a ^ 2 * (Fintype.card D : ℝ) ^ t = a ^ 2 * (ε * (Fintype.card D : ℝ) ^ t) by
+        ring] at h
+    exact le_of_mul_le_mul_left h ha2
   have hsplit := card_filter_add_card_filter_not (s := (univ : Finset (Fin t → D)))
-    (fun k => |visitSum G f u k| ≤ a)
-  have hsplit' : (#{k : Fin t → D | |visitSum G f u k| ≤ a} : ℝ) +
-      #{k : Fin t → D | a < |visitSum G f u k|} = (Fintype.card D : ℝ) ^ t := by
-    rw [← hcard, ← card_univ]
-    simp only [not_le] at hsplit
+    (fun k => a ^ 2 ≤ visitSum G f u k ^ 2)
+  have hsplit' : (#{k : Fin t → D | ¬ a ^ 2 ≤ visitSum G f u k ^ 2} : ℝ) +
+      #{k : Fin t → D | a ^ 2 ≤ visitSum G f u k ^ 2} = (Fintype.card D : ℝ) ^ t := by
+    rw [← hcard, ← card_univ, add_comm]
     exact_mod_cast hsplit
-  have hmono : (#{k : Fin t → D | |visitSum G f u k| ≤ a} : ℝ) ≤
+  have hmono : (#{k : Fin t → D | ¬ a ^ 2 ≤ visitSum G f u k ^ 2} : ℝ) ≤
       #{k : Fin t → D | (G.visits u v k : ℝ) ∈
         Set.Icc ((1 - ε) * t / n) ((1 + ε) * t / n)} := by
     exact_mod_cast card_le_card fun k hk => by
-      simp only [mem_filter, mem_univ, true_and] at hk ⊢
-      exact hgood k hk
-  have hbad' : (#{k : Fin t → D | a < |visitSum G f u k|} : ℝ) ≤ ε * (Fintype.card D : ℝ) ^ t := by
-    have ha2 : 0 < a ^ 2 := by positivity
-    have := hbad.trans (hE.le.trans (mul_le_mul_of_nonneg_left hq' (by positivity)))
-    rw [← le_div_iff₀ ha2] at this
-    calc _ ≤ (Fintype.card D : ℝ) ^ t * (ε * a ^ 2) / a ^ 2 := this
-      _ = ε * (Fintype.card D : ℝ) ^ t := by field_simp
+      simp only [mem_filter, mem_univ, true_and, not_le] at hk ⊢
+      exact hgood k (abs_le_of_sq_le_sq' hk.le ha0.le |>.elim (fun h1 h2 => abs_le.2 ⟨h1, h2⟩))
   linarith
 
 /-- **Arora–Barak, Exercise 7.9(b)(ii)**, in the source's form: for every `u`, `v` and `ε > 0`

@@ -743,7 +743,9 @@ For regular multigraphs, import
 sequences, as Arora and Barak's Chapter 7 does: `survival_randomWalk_mul_pow` identifies
 `survival` with the fraction of label sequences `k : Fin T → D` whose `walkAt` avoids the target.
 The uniform law is the unique stationary law on a connected graph
-(`isStationary_randomWalk_iff`), and `returnTime_randomWalk_eq_card` gives the expected return
+(`isStationary_randomWalk_iff`), from the maximum principle `eq_of_forall_sum_edgeCount_mul_eq`
+in [Expander/Harmonic.lean](../../CslibFrontier/Foundations/Combinatorics/Expander/Harmonic.lean),
+which needs no Markov-chain import. Also, `returnTime_randomWalk_eq_card` gives the expected return
 time as the size of the component. `hittingTime_randomWalk_le_length_mul` bounds `E_u[τ_v]` by
 `ℓ |D| n` along a path of length `ℓ` in `G.toSimpleGraph`. With `|D| ≤ n`,
 `hittingTime_randomWalk_le_hundred_mul` and `ten_mul_card_filter_walkAt_ne_le` give the

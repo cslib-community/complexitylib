@@ -4,15 +4,20 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
 
+module
+
 import CslibFrontier.Probability.MarkovChain.RotationMapVisits
 
 /-!
 # Random walks on regular multigraphs: checked clients for Arora–Barak Exercise 7.9
 
-The parts (b)(i), (b)(ii), (c) and (d) of [Arora and Barak, Exercise 7.9][AroraBarak07] in the source's
-form, for a `d`-regular multigraph `G : RotationMap V D` on `n = |V|` vertices, and the
+The parts (b)(i), (b)(ii), (c) and (d) of [Arora and Barak, Exercise 7.9][AroraBarak07] in the
+source's form, for a `d`-regular multigraph `G : RotationMap V D` on `n = |V|` vertices, and the
 single-edge instance `flip` on `Bool`, where the expected return time is exactly `2`.
 -/
+
+-- This regression module checks ordinary imports and exports no test fixtures.
+set_option linter.privateModule false
 
 namespace CslibFrontierTests.RegularRandomWalk
 
@@ -35,6 +40,22 @@ example (hG : G.toSimpleGraph.Connected) (u v : V) {ε : ℝ} (hε : 0 < ε) :
       #{w : Fin k → D | (G.visits u v w : ℝ) ∈
         Set.Icc ((1 - ε) * k / Fintype.card V) ((1 + ε) * k / Fintype.card V)} :=
   exists_visits_mem_Icc hG u v hε
+
+/-- (b)(ii), the stronger form: there is a threshold `T` beyond which every walk length `t`
+satisfies the bound. -/
+example (hG : G.toSimpleGraph.Connected) (u v : V) {ε : ℝ} (hε : 0 < ε) :
+    ∃ T, ∀ t ≥ T, (1 - ε) * (Fintype.card D : ℝ) ^ t ≤
+      #{w : Fin t → D | (G.visits u v w : ℝ) ∈
+        Set.Icc ((1 - ε) * t / Fintype.card V) ((1 + ε) * t / Fintype.card V)} :=
+  Filter.eventually_atTop.1 (eventually_visits_mem_Icc hG u v hε)
+
+/-- (b)(ii) beyond any supplied positive threshold `N`, so a walk of positive length (unlike the
+trivial `t = 0` case of the existential form). -/
+example (hG : G.toSimpleGraph.Connected) (u v : V) {ε : ℝ} (hε : 0 < ε) (N : ℕ) :
+    ∃ t, N < t ∧ (1 - ε) * (Fintype.card D : ℝ) ^ t ≤
+      #{w : Fin t → D | (G.visits u v w : ℝ) ∈
+        Set.Icc ((1 - ε) * t / Fintype.card V) ((1 + ε) * t / Fintype.card V)} :=
+  ((Filter.eventually_gt_atTop N).and (eventually_visits_mem_Icc hG u v hε)).exists
 
 /-- (c): `E_u ≤ 10 n²`, and in fact `E_u = n` on a connected graph. -/
 example (u : V) : returnTime G.randomWalk u ≤ 10 * (Fintype.card V : ℝ≥0∞) ^ 2 :=
@@ -60,14 +81,14 @@ example (hD : Fintype.card D ≤ Fintype.card V) {s t : V} (h : G.toSimpleGraph.
   have h10 := ten_mul_card_filter_walkAt_ne_le (G := G) hD h
   rw [ENNReal.div_le_iff (pow_ne_zero _ (by exact_mod_cast Fintype.card_ne_zero))
     (ENNReal.pow_ne_top (ENNReal.natCast_ne_top _))]
-  rw [one_div, ← ENNReal.div_eq_inv_mul, ENNReal.le_div_iff_mul_le (Or.inl (by norm_num)) (Or.inl (by norm_num)),
-    mul_comm]
+  rw [one_div, ← ENNReal.div_eq_inv_mul,
+    ENNReal.le_div_iff_mul_le (Or.inl (by norm_num)) (Or.inl (by norm_num)), mul_comm]
   exact_mod_cast h10
 
 /-- The single edge `{false, true}` as a `1`-regular graph. -/
-def flip : RotationMap Bool Unit := ofInvolutive (!·) fun b => Bool.not_not b
+private def flip : RotationMap Bool Unit := ofInvolutive (!·) fun b => Bool.not_not b
 
-theorem flip_connected : flip.toSimpleGraph.Connected := by
+private theorem flip_connected : flip.toSimpleGraph.Connected := by
   have hadj : flip.toSimpleGraph.Adj false true := ⟨by decide, (), rfl⟩
   refine ⟨fun x y => ?_⟩
   have hft : flip.toSimpleGraph.Reachable false true := hadj.reachable
