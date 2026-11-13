@@ -52,6 +52,19 @@ coordinates. The [pruning client](../../CslibFrontierTests/DecisionTreePrune.lea
 and initially fixed queries. The finite minimax proof uses these pruned cost profiles, so its
 public theorem needs no finite-output hypothesis.
 
+The [three-bit majority module](../../CslibFrontier/Computability/QueryComplexity/MajorityThree.lean)
+gives the exact value `zeroErrorComplexity (majority 3) = 8 / 3`, as in Arora–Barak
+Examples 11.14 and 11.18. `QueryComplexity.MajorityThree.algorithm` chooses one of the six query
+orders uniformly and stops after two equal answers. Its expected cost is $2$ on the two constant
+words and $8/3$ on every other input. `MajorityThree.hardDistribution` assigns probability $1/6$
+to each nonconstant word and zero to the two constant words. `hardDistribution_lower` proves
+the matching lower bound for every everywhere-correct tree, including adaptive and repeated
+queries. The [complete checked client](../../CslibFrontierTests/MajorityThree.lean) checks the
+costs and masses and applies the lower bound to a tree with a redundant initial query. Run
+`scripts/build.sh --wfail --iofail CslibFrontierTests.MajorityThree` from the repository root.
+The finite calculations concern only eight inputs and the residual partial assignments;
+structural induction handles the unrestricted finite decision trees.
+
 [distributionalComplexity](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/QueryComplexity/Yao.lean#L74) instead fixes a distribution on inputs and minimizes deterministic depth subject to average error. Yao's theorem equates randomized complexity to the supremum of these distributional complexities on the finite domain and supplies an attaining hard distribution. The [Nisan relation](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Computability/QueryComplexity/Randomized/Nisan.lean) gives `D <= 27 R_(1/3)^3`; approximate degree and block-sensitivity lower bounds are stated over the same cost convention.
 
 Quantum queries use arbitrary input-independent isometries and a controlled phase oracle, charging only oracle uses. Their definitions and BBBV/polynomial/adversary/Grover endpoints are described in [algebraic and quantum models](algebraic-and-quantum.md). That chapter also covers the exponential separation between quantum and randomized queries for Simon's problem, whose classical side is the randomized decision-tree lower bound [simon_randomized_lower_bound](../../CslibFrontier/Computability/QueryComplexity/Simon.lean). It also covers Deutsch–Jozsa. The deterministic bound `N/2 + 1` is in [DeutschJozsa](../../CslibFrontier/Computability/QueryComplexity/DeutschJozsa.lean). Three random queries with error `1/4` on the promise ([Randomized/DeutschJozsa](../../CslibFrontier/Computability/QueryComplexity/Randomized/DeutschJozsa.lean), through `RandomizedDecisionTree.errorProb_uniformMixture`) show that its quantum advantage holds only for exact algorithms.

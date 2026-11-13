@@ -3896,6 +3896,7 @@ public import CslibFrontier.Computability.QueryComplexity.CertificateComposition
 public import CslibFrontier.Computability.QueryComplexity.Degree
 public import CslibFrontier.Computability.QueryComplexity.DeutschJozsa
 public import CslibFrontier.Computability.QueryComplexity.Huang
+public import CslibFrontier.Computability.QueryComplexity.MajorityThree
 public import CslibFrontier.Computability.QueryComplexity.Midrijanis
 public import CslibFrontier.Computability.QueryComplexity.Monotone
 public import CslibFrontier.Computability.QueryComplexity.NisanSzegedy
@@ -5448,6 +5449,7 @@ public import CslibFrontier.Foundations.Data.BitString.ParityInterpolation
 public import CslibFrontier.Foundations.Data.BitString.ParityTestBounds
 public import CslibFrontier.Foundations.Data.BitString.ParityTests
 public import CslibFrontier.Foundations.Data.BitString.PartialAssignment
+public import CslibFrontier.Foundations.Data.BitString.PartialAssignment.Agreement
 public import CslibFrontier.Foundations.Data.BitString.PartialAssignment.Counting
 public import CslibFrontier.Foundations.Data.BitString.Positions
 public import CslibFrontier.Foundations.Data.BitString.Prefix

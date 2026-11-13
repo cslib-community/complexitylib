@@ -278,9 +278,21 @@ only be finite; output types may be infinite. Correctness is everywhere, even ou
 law's support. Cost counts executed queries, including repeats, with free local computation.
 The source is the same pinned draft, Definitions 11.13 and 11.15–11.16 and Theorem 11.17,
 printed pages 215–216 / PDF pages 231–232. The [checked clients](../CslibFrontierTests/YaoExpected.lean)
-include empty coordinates and natural-number outputs. This does not supply the separate exact
-majority-three example (11.14/11.18), expected machine time, or book-wide coverage under
+include empty coordinates and natural-number outputs. The separate exact majority-three example (11.14/11.18) is addressed below. Neither supplies
+expected machine time or book-wide coverage under
 [#4711](https://github.com/cslib-community/cslib-frontier/issues/4711).
+
+### Exact majority example after the audited snapshot
+
+[MajorityThree](../CslibFrontier/Computability/QueryComplexity/MajorityThree.lean) proves
+`Cslib.QueryComplexity.zeroErrorComplexity_majority_three`, the exact value $8/3$ in
+Examples 11.14 and 11.18 (printed pp. 215–216 / PDF pp. 231–232). The algorithm uniformly mixes
+the six short-circuit query orders; the hard input law is uniform on the six nonconstant words.
+The lower bound covers every correct deterministic tree, including adaptive and repeated
+queries, by a partial-assignment potential and structural induction. It does not identify
+arbitrary decision trees with fixed query orders. [Checked clients](../CslibFrontierTests/MajorityThree.lean)
+exercise exact costs, explicit input masses and a redundant-query tree. These are executed-query
+expectations with free local computation; the broader #4711 objective stays open.
 
 ## Chapter 12: communication complexity
 

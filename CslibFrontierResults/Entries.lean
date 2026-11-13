@@ -17,6 +17,7 @@ import CslibFrontier.Algorithms.Lean.TrimmedYates
 import CslibFrontier.Algorithms.LinearAlgebra.BareissElimination
 import CslibFrontier.Algorithms.Lean.TreeDecomposition.CSP
 import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
+import CslibFrontier.Computability.QueryComplexity.MajorityThree
 import CslibFrontier.Computability.QueryComplexity.YaoExpected
 import CslibFrontier.Computability.Circuit.Arithmetic.BitBlast
 import CslibFrontier.Computability.Circuit.Arithmetic.CircuitLowerBound
@@ -644,6 +645,25 @@ register_result "braverman" where
     coordinates) once k ≥ (64q)^((2d + 3)(d + 7) + 1). Our own constants and exponent, weaker \
     than Braverman's; size and depth count NOT gates and constants; nonuniform and \
     information-theoretic."
+
+register_result "majority-three-zero-error-expected-cost" where
+  title := "Three-bit majority has exact zero-error expected query complexity 8/3"
+  topic := "query complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Examples 11.14 and 11.18",
+      locator := "Web draft 2007-01-08, printed pp. 215–216; PDF pp. 231–232" }
+  ]
+  theorems := [
+    Cslib.QueryComplexity.zeroErrorComplexity_majority_three,
+    Cslib.QueryComplexity.MajorityThree.algorithm_expectedCost,
+    Cslib.QueryComplexity.MajorityThree.hardDistribution_lower,
+    Cslib.QueryComplexity.MajorityThree.weights_hardDistribution
+  ]
+  scope := "Total majority on three Boolean coordinates. Existing finite-support zero-error \
+    randomized-tree model; cost counts executed queries, including repeats. The uniform \
+    six-order short-circuit algorithm has expected cost 2 on constants and 8/3 otherwise. \
+    The uniform law on six nonconstant inputs forces cost at least 8/3 on all correct \
+    adaptive deterministic trees, including arbitrary repeats. Local computation is free."
 
 register_result "yao-zero-error-expected-cost" where
   title := "Expected-cost Yao minimax with optimal algorithm and hardest input law"
