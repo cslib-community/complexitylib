@@ -220,21 +220,6 @@ def parse_source(text: str, decls: Declarations) -> None:
         line = raw.rstrip()
         if not line.strip():
             continue
-        # Generated names need the command, including when only a companion name was searched.
-        # Mask literals here; the unmasked literals below are needed for syntax keywords.
-        encoding = ENC_STRUCTURE.match(masked)
-        if awaiting_encoder or encoding:
-            rest = masked if awaiting_encoder else encoding.group(1) or ""
-            name = first_ident(rest)
-            # A structure field named `enc_structure : ...` is not a command header.
-            if name is not None or not rest.strip():
-                awaiting_encoder = name is None
-                member_of, member_indent, awaiting_where = None, None, False
-                if name and NAME.match(name):
-                    for suffix in ("", "Fields", "_apply"):
-                        decls.add(full(name + suffix))
-                continue
-            awaiting_encoder = False
         indent = len(line) - len(line.lstrip())
         keyword = SYNTAX_KEYWORD.match(line)
         if keyword:
@@ -266,6 +251,19 @@ def parse_source(text: str, decls: Declarations) -> None:
                 if fields:
                     for name in fields.group(1).split():
                         decls.add(f"{member_of}.{name}")
+            continue
+        # Respect the member/body context above before recognizing a command. Generated names
+        # need its header, including when only a companion name was searched. Mask literals here;
+        # the unmasked literals above are needed for syntax keywords.
+        encoding = ENC_STRUCTURE.match(masked)
+        if awaiting_encoder or encoding:
+            rest = masked if awaiting_encoder else encoding.group(1) or ""
+            name = first_ident(rest)
+            awaiting_encoder = name is None
+            member_of, member_indent, awaiting_where = None, None, False
+            if name and NAME.match(name):
+                for suffix in ("", "Fields", "_apply"):
+                    decls.add(full(name + suffix))
             continue
         if m := NAMESPACE.match(line):
             stack.append(m.group(1))

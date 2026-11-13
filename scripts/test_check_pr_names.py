@@ -255,6 +255,25 @@ def ordinaryEncoder : Nat := 0
         self.assertEqual(list(self.check("`ToolState.enc_structure` `ToolState.next` "
                                          "`nextFields`")), ["nextFields"])
 
+    def test_enc_structure_multiple_fields_preserve_the_member_context(self) -> None:
+        self.write("CslibFrontier/Demo/State.lean", "structure ToolState where\n"
+                   "  enc_structure next : Nat\n  tail : Nat\n")
+        self.assertEqual(list(self.check("`ToolState.enc_structure` `ToolState.next` "
+                                         "`ToolState.tail` `nextFields`")), ["nextFields"])
+
+    def test_enc_structure_continued_field_preserves_following_fields(self) -> None:
+        self.write("CslibFrontier/Demo/State.lean", "structure ToolState where\n"
+                   "  enc_structure\n    : Nat\n  next : Nat\n")
+        self.assertEqual(list(self.check("`ToolState.next` `nextFields`")), ["nextFields"])
+
+    def test_enc_structure_in_a_quoted_body_is_not_a_declaration(self) -> None:
+        self.write("CslibFrontier/Demo/Quotation.lean", "def quotedCommand := by\n"
+                   "  exact `(command|\n"
+                   "    enc_structure phantomEncoder : Share where\n"
+                   "      key : encUnary)\n")
+        names = ["phantomEncoder", "phantomEncoderFields", "phantomEncoder_apply"]
+        self.assertEqual(list(self.check(" ".join(f"`{name}`" for name in names))), names)
+
     # --- Base revision and CLI ----------------------------------------------------------------
 
     def git(self, *args: str) -> str:
