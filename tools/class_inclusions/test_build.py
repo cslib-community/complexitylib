@@ -51,6 +51,15 @@ class LiteratureTests(unittest.TestCase):
             known, false = ci.close(list(grid), literature, complements=grid is ci.UNIFORM)
             self.assertEqual(known & false, set())
 
+    def test_expspace(self) -> None:
+        known, false = ci.close(list(ci.UNIFORM), [f for f in ci.LITERATURE if f[0] in ci.UNIFORM],
+                                complements=True)
+        self.assertIn(("NP", "EXPSPACE"), known)
+        self.assertIn(("EXPSPACE", "coNP"), false)
+        # EXP = EXPSPACE and NEXP = EXPSPACE are open.
+        for a in ("EXP", "NEXP"):
+            self.assertNotIn(("EXPSPACE", a), known | false)
+
     def test_complement_pairs_are_symmetric(self) -> None:
         for a, b in ci.COMPLEMENT.items():
             self.assertEqual(ci.COMPLEMENT[b], a)

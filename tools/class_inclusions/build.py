@@ -40,7 +40,7 @@ UNIFORM = {
     "L": "L", "NL": "NL", "P": "P", "ZPP": "ZPP", "RP": "RP", "coRP": "coRP", "BPP": "BPP",
     "NP": "NP", "coNP": "coNP", "MA": "MA", "AM": "AM", "PH": "PH", "BQP": "BQP", "QMA": "QMA",
     "PP": "PP", "P^#P": "PWithSharpPOracle", "PSPACE": "PSPACE", "IP": "IP", "EXP": "EXP",
-    "NEXP": "NEXP",
+    "NEXP": "NEXP", "EXPSPACE": "EXPSPACE",
 }
 CIRCUIT = {
     "AC⁰": "AC0", "ACC⁰": "ACC0", "TC⁰": "TC0", "NC¹": "NC_one", "AC¹": "AC_one",
@@ -60,6 +60,7 @@ CO_CLOSED = {
     "PSPACE": "deterministic; swap accepting and rejecting states",
     "IP": "IP = PSPACE (Shamir 1992), which is closed under complement",
     "EXP": "deterministic; swap accepting and rejecting states",
+    "EXPSPACE": "deterministic; swap accepting and rejecting states",
 }
 COMPLEMENT = {"NP": "coNP", "coNP": "NP", "RP": "coRP", "coRP": "RP"}
 
@@ -99,9 +100,13 @@ LITERATURE = [
     ("IP", "subset", "PSPACE", "evaluating the game tree in polynomial space, Arora–Barak Chapter 8"),
     ("PSPACE", "subset", "EXP", "counting configurations, Arora–Barak Chapter 4"),
     ("EXP", "subset", "NEXP", "by definition"),
+    ("NEXP", "subset", "EXPSPACE",
+     "trying every certificate in turn, reusing the space, Arora–Barak Chapter 4"),
     ("PSPACE", "not_subset", "NL",
      "NL ⊆ SPACE(log² n) (Savitch 1970) ⊊ PSPACE by the space hierarchy theorem "
      "(Stearns–Hartmanis–Lewis 1965)"),
+    ("EXPSPACE", "not_subset", "PSPACE",
+     "space hierarchy theorem (Stearns–Hartmanis–Lewis 1965)"),
     ("EXP", "not_subset", "P", "time hierarchy theorem, Arora–Barak Chapter 3"),
     ("NEXP", "not_subset", "NP",
      "nondeterministic time hierarchy theorem (Žák 1983)"),
@@ -268,26 +273,37 @@ def grid_table(title, grid, theorems, problems):
             f'<td><a href="{html.escape(href(declaration))}"><code>{html.escape(shown)}</code>'
             "</a></td></tr>")
     return f"""<h2>{html.escape(title)}</h2>
-<div class="table-scroll"><table class="grid"><caption>Row class ⊆ column class</caption>
+<p class="grid-caption">Row class ⊆ column class</p>
+<div class="table-scroll grid-scroll"><table class="grid">
 <thead>{head}</thead>
 <tbody>
 {chr(10).join(rows)}
 </tbody></table></div>
 <details><summary>Library theorems used ({len(used)})</summary>
-<table class="list"><thead><tr><th scope="col">Statement</th><th scope="col">Declaration</th></tr></thead>
+<div class="table-scroll"><table class="list"><thead><tr><th scope="col">Statement</th><th scope="col">Declaration</th></tr></thead>
 <tbody>
 {chr(10).join(theorem_rows)}
-</tbody></table></details>"""
+</tbody></table></div></details>"""
 
 
 # Additions to doc-gen4's style.css, in its colour variables so they follow its light/dark theme.
+# A grid scrolls inside its own box, which fits below the fixed header, so that the column and
+# row labels stay pinned. Sticky cells lose collapsed borders, hence the separate borders there.
 STYLE = """.table-scroll{overflow-x:auto;margin:1em 0}
+.grid-scroll{overflow:auto;max-height:calc(100vh - var(--header-height,3em) - 2em)}
 .class-inclusions table{border-collapse:collapse}
 .class-inclusions th,.class-inclusions td{padding:.25em .5em;border:1px solid var(--code-bg)}
-.class-inclusions caption{text-align:left;font-style:italic;margin-bottom:.5em}
+.class-inclusions p,.class-inclusions summary{overflow-wrap:break-word}
+.grid-caption{font-style:italic;margin-bottom:0}
+.class-inclusions .grid{border-collapse:separate;border-spacing:0}
+.class-inclusions .grid th,.class-inclusions .grid td{border-width:0 1px 1px 0}
+.class-inclusions .grid thead th{border-top-width:1px}
+.class-inclusions .grid th:first-child{border-left-width:1px}
 .grid td{text-align:center;min-width:2.4em;white-space:nowrap}
 .grid th{white-space:nowrap;background:var(--body-bg)}
+.grid thead th{position:sticky;top:0;z-index:1}
 .grid tbody th{position:sticky;left:0;text-align:left}
+.grid thead th:first-child{left:0;z-index:2}
 .grid a{display:block;color:inherit;text-decoration:none}
 .proved,.chained{background:var(--theorem-color)}
 .refuted{background:var(--axiom-and-constant-color)}
@@ -295,6 +311,8 @@ STYLE = """.table-scroll{overflow-x:auto;margin:1em 0}
 .false{background:color-mix(in srgb,var(--axiom-and-constant-color) 35%,var(--body-bg))}
 .open{background:color-mix(in srgb,var(--structure-and-inductive-color) 25%,var(--body-bg))}
 .list td,.list th{text-align:left;vertical-align:top}
+.list td:first-child{white-space:nowrap}
+.list code{overflow-wrap:anywhere}
 """
 
 LEGEND = [
@@ -315,6 +333,11 @@ def render(index: dict) -> str:
     body = [grid_table(title, grid, theorems, problems) for title, grid in GRIDS]
     if problems:
         raise ValueError("inconsistent layers:\n  " + "\n  ".join(problems))
+    strict = ", ".join(
+        f"<code>{html.escape(f'{a} ⊄ {b}' if relation == 'not_subset' else f'{a} ⊊ {b}')}</code>"
+        for a, relation, b, _ in sorted(library_facts(UNIFORM, theorems),
+                                        key=lambda f: [list(UNIFORM).index(x) for x in (f[0], f[2])])
+        if relation in ("ssubset", "not_subset")) or "none so far"
     legend = "".join(f'<tr><td class="{css}">{text}</td><td>{html.escape(meaning)}</td></tr>'
                      for css, text, meaning in LEGEND)
     sources = "".join(
@@ -345,8 +368,8 @@ what is known. Rebuilt from the library's declarations with every documentation 
 complements are used too: <code>NP ⊆ coNP</code> holds exactly when <code>coNP ⊆ NP</code>.</p>
 <p>The uniform grid compares classes of bit-string languages, that is, the classes at the encoding
 <code>encBits</code>. Most of the linked inclusion theorems are more general and hold for every
-injective encoding <code>enc</code>. The strict inclusions behind the ✗ and ✗* marks
-(<code>L ⊊ PSPACE</code>, <code>P ⊊ EXP</code>, <code>NP ⊊ NEXP</code>) are stated only for
+injective encoding <code>enc</code>. The separations behind the ✗ and ✗* marks
+({strict}) are stated only for
 <code>encBits</code>, and they can fail for other encodings: with a single instance, every class
 is the same. The circuit classes are nonuniform, so they are not compared with the uniform
 classes: nonuniform AC⁰ already contains undecidable unary languages.</p>
