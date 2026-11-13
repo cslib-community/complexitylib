@@ -192,8 +192,8 @@ The same hypotheses give every prescribed output a preimage in the rectangle
 [Lifting/ParameterSpecialization](../../CslibFrontier/Computability/Communication/Lifting/ParameterSpecialization.lean)
 checks a concrete polynomial-alphabet family: for `2 ≤ n ≤ B`, use `m = B^2048`, densities
 `σ = B^1984` and `τ = B^2016`, and gadget discrepancy at most `B^(-1024)`.
-These deliberately loose constants use the elementary fourth-power XOR bound; the paper's
-full range of discrepancy exponents and sharper parameters are not claimed.
+These deliberately loose constants use the elementary fourth-power XOR bound. This fixed
+family is now a specialization of the general density-parameter certificate below.
 
 [Density restoration](../../CslibFrontier/Computability/Communication/Lifting/Partition.lean)
 now exposes the single maximal fiber with no factor-two loss (the flat-source form of
@@ -220,8 +220,25 @@ traces and derives the bound on the full tree depth, rather than assuming a simu
 [Lifting/DiscrepancyLifting](../../CslibFrontier/Computability/Communication/Lifting/DiscrepancyLifting.lean)
 connects these results: for any outer relation and protocol `p`, the polynomial family above
 admits a correct decision tree `t` with `B ^ (31 * t.depth) ≤ 8 ^ (2 * p.depth)`.
-This endpoint has no assumed safety, full-range or simulation guarantees. The general
-discrepancy-exponent specialization from the paper remains open.
+This endpoint has no assumed safety, full-range or simulation guarantees.
+[Lifting/ExponentLifting](../../CslibFrontier/Computability/Communication/Lifting/ExponentLifting.lean)
+now covers every positive discrepancy exponent `η`. Its `exists_general_lifting_parameter`
+chooses an integer `1 ≤ k ≤ 1/(2η)+1`, uniformly over all input dimensions and relations.
+For `n ≥ 2`, any nonempty alphabet of size `m ≥ n^(2048k²)`, and any gadget with discrepancy
+at most `m^(-η)`, every correct protocol has a correct decision-tree simulation satisfying
+`m ^ t.depth ≤ 8 ^ (256*k*p.depth)`. Equivalently, taking logarithms gives
+`t.depth * log₂ m ≤ 768*k*p.depth`.
+[Lifting/LogarithmicLifting](../../CslibFrontier/Computability/Communication/Lifting/LogarithmicLifting.lean)
+checks the logarithmic bound, the equivalent bit-length threshold for `m = 2^b`, and the
+resulting `t.depth*b ≤ 768*k*p.depth`.
+[Lifting/GeneralParameters](../../CslibFrontier/Computability/Communication/Lifting/GeneralParameters.lean)
+uses density levels `m^(1−1/(32k))` and `m^(1−1/(64k))` in its real-base representation.
+[Lifting/ExponentParameters](../../CslibFrontier/Computability/Communication/Lifting/ExponentParameters.lean)
+takes a real root of `m`, so this result has no perfect-power restriction on the alphabet.
+This proves the deterministic lifting conclusion of CFKMP Theorem 1.2 with explicit constants;
+randomized lifting and round-sensitive refinements remain open.
+[General-exponent clients](../../CslibFrontierTests/DiscrepancyExponent.lean) include exponent
+`1/100` and the arbitrary-alphabet root argument.
 [Safety clients](../../CslibFrontierTests/DiscrepancyDensity.lean) include a constant-gadget
 failure and the empty-coordinate boundary; [witness and trace clients](../../CslibFrontierTests/DiscrepancyWitnesses.lean)
 check exact counts, threshold rounding, repeated-speaker normalization and the trace query bound.

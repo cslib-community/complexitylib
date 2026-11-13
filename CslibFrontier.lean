@@ -1769,8 +1769,13 @@ public import CslibFrontier.Computability.Communication.Lifting.DensityOracle
 public import CslibFrontier.Computability.Communication.Lifting.DensitySimulation
 public import CslibFrontier.Computability.Communication.Lifting.DiscrepancyLifting
 public import CslibFrontier.Computability.Communication.Lifting.DiscrepancyOracle
+public import CslibFrontier.Computability.Communication.Lifting.ExponentLifting
+public import CslibFrontier.Computability.Communication.Lifting.ExponentParameters
 public import CslibFrontier.Computability.Communication.Lifting.FullRange
 public import CslibFrontier.Computability.Communication.Lifting.Gadget
+public import CslibFrontier.Computability.Communication.Lifting.GeneralDiscrepancyLifting
+public import CslibFrontier.Computability.Communication.Lifting.GeneralParameters
+public import CslibFrontier.Computability.Communication.Lifting.LogarithmicLifting
 public import CslibFrontier.Computability.Communication.Lifting.ParameterSpecialization
 public import CslibFrontier.Computability.Communication.Lifting.Partition
 public import CslibFrontier.Computability.Communication.Lifting.RareDanger
