@@ -38,7 +38,8 @@ running time is counted.
 
 * `Cslib.MachineLearning.UniformLearning.labelInversion_lt_uniformError_le`: the error of the
   inverted key is at most the inversion failure plus `|κ| (1 - ε) ^ m`.
-* `labelInversion_lt_uniformError_le_of_log_card_add_log_inv_le`: the Occam sample-size form.
+* The Occam sample-size form,
+`Cslib.MachineLearning.UniformLearning.labelInversion_lt_uniformError_le_of_log_card_add_log_inv_le`
 * `Cslib.MachineLearning.UniformLearning.bind_labelInversion_lt_uniformError_le`: the same bound for
   a random key.
 
