@@ -503,6 +503,29 @@ This establishes no protocol-realization theorem for arbitrary tilings and no co
 runtime bound. The book-wide theory/exercise objective remains open under
 [#4711](https://github.com/cslib-community/cslib-frontier/issues/4711).
 
+### Corrected spectral discrepancy
+
+This is a bounded formalization update for draft Lemma12.13 (printed225 / PDF241), not a full
+chapter audit. Its literal eigenvalue statement remains a source issue under
+[#4771](https://github.com/cslib-community/cslib-frontier/issues/4771); the broader chapter
+comparison is in [#4764](https://github.com/cslib-community/cslib-frontier/pull/4764).
+
+[Discrepancy/Spectral](../CslibFrontier/Computability/Communication/Discrepancy/Spectral.lean)
+proves the corrected $\ell^2$ operator-norm version. For a finite real rectangular matrix,
+`Matrix.abs_sum_sum_le_l2_opNorm` bounds an absolute rectangle sum by the norm times the square
+roots of the two side sizes. Empty sides and empty index types are permitted. For a Boolean
+function on finite nonempty input sets, `discrepancy_uniformOfFintype_le_l2_opNorm` bounds uniform
+discrepancy by $\|\operatorname{signMatrix}(f)\|_2/\sqrt{|X||Y|}$; the bit-cube specialization has
+denominator $2^n$. The sign convention differs by an overall minus sign from the draft's
+`2 M(f) - 1`, which preserves these quantities. This proves no general eigenvalue-magnitude bound.
+
+The [checked clients](../CslibFrontierTests/SpectralDiscrepancy.lean) include a nilpotent sign
+matrix with characteristic polynomial `X^2` and a positive normalized rectangle sum `1/4`, a
+nonsquare matrix, empty cases and the zero-bit cube. Forster's existing consumers now reuse the
+shared matrix estimate; source credit and public theorem statements are retained.
+The full book/theory/exercise objective remains open under
+[#4711](https://github.com/cslib-community/cslib-frontier/issues/4711).
+
 ## Chapter 13: circuit lower bounds
 
 Snapshot: `b91d5151fd7dc665a5e3efcb466077caf44e690d` (2026-11-12), CSLib pin

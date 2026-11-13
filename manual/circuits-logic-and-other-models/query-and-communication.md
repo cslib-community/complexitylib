@@ -228,6 +228,36 @@ The deterministic lifting theorem composes a Boolean function with an index gadg
 
 [CoverNumber](../../CslibFrontier/Computability/Communication/Nondeterministic/CoverNumber.lean) counts rectangles instead of guessed bits. `coverNumber z R A B : ℕ∞` is the least size of a `z`-cover. On all of `X × Y` it is Kushilevitz and Nisan's `C^z(f)`, and for `z = true` the rectangle covering bound. `ecomplexity_le_iff_coverNumber_le` and `ecomplexity_eq_clog_coverNumber` show that `ecomplexity` is `⌈log₂ coverNumber⌉`. `card_le_coverNumberFun_of_isFoolingSet` is the fooling-set bound on the count itself. [ExtensionComplexity](../../CslibFrontier/Computability/Communication/Nondeterministic/ExtensionComplexity.lean) proves Yannakakis's rectangle covering bound [yannakakis91][yannakakis91], [fmptw15][fmptw15] (Theorem 4). The support of a matrix `M` over an ordered semiring has a `1`-cover by `rank₊ M` rectangles (`coverNumberFun_ne_zero_le_nonnegRank`), so `N¹` of the support is at most `⌈log₂ rank₊ M⌉`. Through the factorization theorem in [extended formulations](../algorithms-and-memory/optimization-and-duality.md#extended-formulations-and-yannakakiss-factorization-theorem), the same bounds hold for the slack matrix of a nontrivial polytope with `xc P` in place of `rank₊ M`. `card_le_extensionComplexity_of_isFoolingSet` turns a fooling set of the slack matrix's support into a lower bound on extension complexity. For an explicit exponential rectangle-cover separation, [UniqueDisjointness](../../CslibFrontier/Computability/Communication/Nondeterministic/UniqueDisjointness.lean) formalizes Kaibel and Weltge's `(3 / 2)^n` bound [kaibelweltge15][kaibelweltge15] (§§2–3, Theorem 1): every [valid disjoint-pair subset](../../CslibFrontier/Computability/Communication/Nondeterministic/UniqueDisjointness.lean#L98) of `D(U)` (`3 ^ |U|` pairs) has size at most `2 ^ |U|` (`card_le_two_pow_of_isValidDisjointSet`), giving `three_pow_le_two_pow_mul_coverNumber_uniqueDisjointnessRel` (`⌈(3 / 2)^|α|⌉ ≤ coverNumber true (uniqueDisjointnessRel α) Set.univ Set.univ`) and `clog_ceil_div_le_ecomplexity_uniqueDisjointnessRel` (`⌈log₂ ⌈(3 / 2)^|α|⌉⌉ ≤ N¹(UDISJ)`), which in turn drives the exponential polytope lower bounds for `CORR`, `CUT`, `STAB` and `TSP` in [extended formulations](../algorithms-and-memory/optimization-and-duality.md#extended-formulations-and-yannakakiss-factorization-theorem).
 
+### Spectral bounds for uniform discrepancy
+
+Import [Discrepancy/Spectral](../../CslibFrontier/Computability/Communication/Discrepancy/Spectral.lean)
+and write `open scoped Matrix.Norms.L2Operator` so matrix norms mean the Euclidean operator norm.
+For `f : X → Y → Bool` on finite nonempty input sets, with decidable equality on `Y`,
+`discrepancy_uniformOfFintype_le_l2_opNorm` gives
+
+$$
+\operatorname{disc}_{\rm unif}(f)
+\leq \frac{\|\operatorname{signMatrix}(f)\|_2}{\sqrt{|X|\,|Y|}}.
+$$
+
+`discrepancy_uniformOfFintype_mul_sqrt_card_le_l2_opNorm` gives the division-free form.
+For two `n`-bit cubes, `discrepancy_bitString_le_l2_opNorm` supplies the denominator `2^n`.
+The sign matrix is `-1` on true entries and `1` on false entries; negating the source's
+`2 M(f) - 1` changes neither norm nor absolute rectangle sums. The uniform PMF requires
+nonempty domains. The underlying `Matrix.abs_sum_sum_le_l2_opNorm` in
+[EuclideanOpNorm](../../CslibFrontier/Foundations/LinearAlgebra/Matrix/EuclideanOpNorm.lean)
+also handles empty rectangle sides and empty index types, and permits nonsquare real matrices.
+Its public bilinear estimates are shared with the existing Forster and Hadamard arguments.
+
+This is the corrected operator-norm version of Arora–Barak draft Lemma12.13
+([printed225 / PDF241](https://theory.cs.princeton.edu/complexity/book.pdf)). The draft's
+unrestricted eigenvalue-magnitude statement is false for nonsymmetric matrices. The
+[checked clients](../../CslibFrontierTests/SpectralDiscrepancy.lean) verify that a two-by-two
+sign matrix squares to zero and has characteristic polynomial `X^2`, yet a normalized rectangle
+sum is `1/4`. They also check a `1 × 2` matrix, empty cases and discrepancy one on the zero-bit
+cube. Run `scripts/build.sh CslibFrontierTests.SpectralDiscrepancy` to check them.
+No symmetry, eigenvalue interpretation or certified numerical norm computation is assumed.
+
 ## Number-on-forehead multiparty communication
 
 Import `CslibFrontier.Computability.Communication.NOF.TwoParty`, which brings in the model, discrepancy and the two-player bridge, or one of the modules below it. For the cube bound and the generalized inner product, import `CslibFrontier.Computability.Communication.NOF.GeneralizedInnerProduct` (below). [CslibFrontierTests/CommunicationNOF.lean](../../CslibFrontierTests/CommunicationNOF.lean) is a worked example: it has small protocols, cylinder intersections, and the inner-product bound through the two-player bridge. The model is due to Chandra, Furst and Lipton [ChandraFurstLipton1983]. In the number-on-forehead model, players indexed by a type `ι` share an input `x : ∀ i, X i`. Player `i` sees every part except its own, `NOF.view i x`. A [NOF.Protocol](../../CslibFrontier/Computability/Communication/NOF/Protocol.lean) is a tree whose nodes are owned by players, and each written bit is a function of the owner's view. Cost is tree depth, as in the two-party model. Each player still computes for free, and every leaf announces the output to all players. [NOF.PublicCoin](../../CslibFrontier/Computability/Communication/NOF/Randomized.lean) is a PMF over such trees, with the same error and worst-supported-depth conventions as the two-party `PublicCoin`.

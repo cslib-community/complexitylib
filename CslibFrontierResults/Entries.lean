@@ -51,6 +51,7 @@ import CslibFrontier.Computability.Circuit.Boolean.Razborov.Useful
 import CslibFrontier.Computability.Circuit.Boolean.Smolensky
 import CslibFrontier.Computability.Circuit.NNF.Negation.Separation
 import CslibFrontier.Computability.Communication.Discrepancy
+import CslibFrontier.Computability.Communication.Discrepancy.Spectral
 import CslibFrontier.Computability.Communication.Disjointness
 import CslibFrontier.Computability.Communication.FoolingSet
 import CslibFrontier.Computability.Communication.Rank
@@ -1073,6 +1074,22 @@ register_result "communication-inner-product" where
     inner product modulo two of n-bit strings (least worst-case tree depth over distributions \
     on protocol trees with per-input error at most 1/3), via the discrepancy method. Stated \
     for this infimum rather than per protocol."
+
+register_result "communication-spectral-discrepancy" where
+  title := "Uniform discrepancy bounded by the Euclidean operator norm"
+  topic := "communication complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Lemma 12.13 (corrected operator-norm version)",
+      locator := "Web draft 2007-01-08; printed p. 225 / PDF p. 241" }
+  ]
+  theorems := [Cslib.Communication.discrepancy_uniformOfFintype_le_l2_opNorm,
+    Cslib.Communication.discrepancy_uniformOfFintype_mul_sqrt_card_le_l2_opNorm,
+    Cslib.Communication.discrepancy_bitString_le_l2_opNorm]
+  scope := "Finite nonempty rectangular input sets and uniform PMF: discrepancy is at most \
+    the real sign matrix's Euclidean operator norm divided by sqrt(|X|*|Y|), or by 2^n \
+    on equal n-bit cubes. Decidable equality on columns. The sign convention differs by \
+    an overall minus sign from the draft. This corrects its false unrestricted eigenvalue \
+    bound; no general spectral-radius or numerical norm-computation claim is made."
 
 register_result "sipser-lautemann" where
   title := "Sipser–Gács–Lautemann: BPP lies in the second polynomial level"
