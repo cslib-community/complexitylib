@@ -285,10 +285,8 @@ theorem DCR.indcpaOn_paillier {gen : ℕ → ProbComp Desc}
       _).trans (add_le_add le_rfl ?_)
     rw [dcrIdealGame_dcrDistinguisher_false_eq_true]
     exact (Game.advantage_comm _ _).le
-  have h5 : Negligible fun n => (5 : ℝ≥0) / 2 ^ n := negligible_const_div_two_pow 5
-  refine negligible_of_le ((h5.add hmid).add h5) fun n => ?_
-  dsimp only [Pi.add_apply]
-  exact Game.advantage_four_hop_le (advantage_gameOn_dcrRealGame_le hsize adversary false n)
-    (advantage_gameOn_dcrRealGame_le hsize adversary true n)
+  exact Game.negligible_advantage_four_hop (negligible_const_div_two_pow 5) hmid
+    (advantage_gameOn_dcrRealGame_le hsize adversary false)
+    (advantage_gameOn_dcrRealGame_le hsize adversary true)
 
 end Cslib.Crypto.Paillier
