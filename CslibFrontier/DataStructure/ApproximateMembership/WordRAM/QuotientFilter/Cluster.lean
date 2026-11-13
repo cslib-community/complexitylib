@@ -2069,12 +2069,6 @@ theorem validHistory_clusterOp {w : ℕ} {d : ClusterInput} {s : Memory.State}
   · exact validHistory_deleteAfterScan hcs hms2
   · trivial
 
-@[simp] theorem memoryCost_bind' {α β : Type} (p : Memory.Prog α) (q : α → Memory.Prog β)
-    (s : Memory.State) :
-    memoryCost (p >>= q) s = memoryCost p s +
-      memoryCost (q ((Memory.spec 0).clientResult s p)) ((Memory.spec 0).clientState s p) :=
-  memoryCost_bind p q s
-
 @[simp] theorem memoryCost_cmpLt (x : ℕ × ℕ) (s : Memory.State) :
     memoryCost (cmpLtProg x) s = 0 := by
   dsimp only [cmpLtProg]; split_ifs <;> rfl
