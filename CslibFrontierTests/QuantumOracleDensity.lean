@@ -9,6 +9,7 @@ module
 public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Density
 public import CslibFrontierTests.QuantumOracleUniform
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import CslibFrontier.Probability.PMF.Map
 import Mathlib.LinearAlgebra.Matrix.Vec
 
 /-! Ordinary-module clients of mixed oracle execution: an unequal mixture of phase inputs,
@@ -57,6 +58,26 @@ theorem runDensity_mixedPhase_diagonal (b : Bool) :
     show encPair encUnary encBits (0, []) = [false] from rfl]
   cases b <;> norm_num [Matrix.add_apply, Matrix.smul_apply, pureState_apply, ket_apply,
     inputState, funext_iff, Fin.forall_fin_succ]
+
+-- Terminal output retains the unequal mixture weights in its observable word probabilities.
+example (b : Bool) :
+    phaseFamily.outputDensity 0 [] (fun _ _ => false) mixedPhase isDensityMatrix_mixedPhase
+      [false, b] = if b then 2 / 3 else 1 / 3 := by
+  rw [UniformOracleCircuitFamily.outputDensity_eq]
+  change (POVM.basis.measureDensity _ _).map List.ofFn [false, b] = _
+  have hout : List.ofFn (inputState 2 [false, b]) = [false, b] := by
+    simpa using ofFn_inputState (m := 2) (x := [false, b]) (by simp)
+  rw [← hout, Probability.PMF.map_apply_of_injective _ List.ofFn_injective,
+    POVM.measureDensity_apply, POVM.densityProb_basis, runDensity_mixedPhase_diagonal]
+  cases b <;> norm_num [ENNReal.ofReal_div_of_pos (by norm_num : (0 : ℝ) < 3)]
+
+-- The same interface recovers the established pure-state output for all classical inputs.
+example (n : ℕ) (x : List Bool) (H : (Fin 1 → Bool) → Fin 1 → Bool) (b : Bool) :
+    phaseFamily.outputDensity n x H (pureState (phaseInput b))
+      (isDensityMatrix_pureState (norm_phaseInput b)) =
+      PMF.pure (encPair encUnary encBits (n, x) ++ [b]) := by
+  exact (phaseFamily.outputDensity_pureState n x H (phaseInput b) (norm_phaseInput b)).trans
+    (output_phaseFamily n x H b)
 
 /-- This family only initializes the classical input before the supplied quantum register. -/
 abbrev idleDescription (p n ℓ : ℕ) : OracleCircuitDescription where

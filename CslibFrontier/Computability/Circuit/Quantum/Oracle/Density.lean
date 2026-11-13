@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Uniform
 public import CslibFrontier.Foundations.Quantum.DensityMatrix.Isometry
+public import CslibFrontier.Foundations.Quantum.POVM.Density
 
 /-!
 # Native oracle circuits on mixed states and entangled references
@@ -26,11 +27,13 @@ measurement instruments, or security theorems.
 ## Main definitions
 
 * `Cslib.Quantum.UniformOracleCircuitFamily.runDensity`: mixed-state execution.
+* `Cslib.Quantum.UniformOracleCircuitFamily.outputDensity`: terminal prefix readout.
 * `Cslib.Quantum.UniformOracleCircuitFamily.runDensityWithReference`: retain a joint reference.
 
 ## Main results
 
 * `Cslib.Quantum.UniformOracleCircuitFamily.runDensity_pureState`: agreement with pure execution.
+* `Cslib.Quantum.UniformOracleCircuitFamily.outputDensity_pureState`: agreement with pure readout.
 * `Cslib.Quantum.UniformOracleCircuitFamily.isDensityMatrix_runDensityWithReference`:
   joint density matrices remain density matrices.
 * `Cslib.Quantum.UniformOracleCircuitFamily.partialTraceLeft_runDensityWithReference`:
@@ -74,6 +77,42 @@ theorem isDensityMatrix_runDensity {ρ} (hρ : IsDensityMatrix ρ) :
     IsDensityMatrix (F.runDensity n x H ρ) := by
   rw [runDensity_apply]
   exact hρ.densityConj (matrix_isometry _)
+
+/-- Terminal basis measurement of the declared output prefix for an arbitrary density matrix. -/
+noncomputable def outputDensity
+    (ρ : Matrix (Fin (F.description n x.length).quantumInputWidth → Bool)
+      (Fin (F.description n x.length).quantumInputWidth → Bool) ℂ)
+    (hρ : IsDensityMatrix ρ) : PMF (List Bool) :=
+  (POVM.basis.measureDensity (F.runDensity n x H ρ)
+    (F.isDensityMatrix_runDensity n x H hρ)).map
+    (fun y => List.ofFn fun i => y (Fin.castLEEmb (F.wellFormed n x.length).output_le i))
+
+/-- The mixed output uses basis measurement followed by the same prefix map as pure output. -/
+theorem outputDensity_eq (ρ) (hρ : IsDensityMatrix ρ) :
+    F.outputDensity n x H ρ hρ =
+      (POVM.basis.measureDensity (F.runDensity n x H ρ)
+        (F.isDensityMatrix_runDensity n x H hρ)).map
+        (fun y => List.ofFn fun i => y (Fin.castLEEmb (F.wellFormed n x.length).output_le i)) := by
+  unfold outputDensity
+  rfl
+
+/-- Mixed readout agrees with the existing readout on each normalized pure input. -/
+@[simp] theorem outputDensity_pureState
+    (ψ : Qubits (F.description n x.length).quantumInputWidth) (hψ : ‖ψ‖ = 1) :
+    F.outputDensity n x H (pureState ψ) (isDensityMatrix_pureState hψ) =
+      F.output n x H ψ hψ := by
+  have hrun : ‖F.run n x H ψ‖ = 1 := by rw [LinearIsometry.norm_map, hψ]
+  simp only [outputDensity_eq, output_eq, runDensity_pureState,
+    POVM.measureDensity_pureState _ _ hrun, POVM.measure_basis]
+  rfl
+
+/-- Every supported mixed output has the declared output length. -/
+theorem length_of_mem_support_outputDensity (ρ) (hρ : IsDensityMatrix ρ)
+    {out : List Bool} (h : out ∈ (F.outputDensity n x H ρ hρ).support) :
+    out.length = (F.description n x.length).outputWidth := by
+  rw [outputDensity_eq, PMF.mem_support_map_iff] at h
+  obtain ⟨y, _, rfl⟩ := h
+  exact List.length_ofFn
 
 variable (κ : Type*) [Fintype κ] [DecidableEq κ]
 
