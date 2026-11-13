@@ -175,9 +175,6 @@ enc_structure encPredictorInput (pair : SamplablePair) : PredictorInput pair whe
   parameter : encUnary,
   observation : (pair.encode parameter) using (pair.encode parameter).injective
 
--- The field tuple holds the unary parameter and the observation word, whatever the pair.
-attribute [nolint unusedArguments] encPredictorInputFields
-
 /-- The input of an advised predictor: the security parameter, the advice word and an
 observation. -/
 structure AdvisedPredictorInput extends AdvisedParameter where
@@ -190,8 +187,6 @@ enc_structure encAdvisedPredictorInput (pair : SamplablePair) : AdvisedPredictor
   toAdvisedParameter : encAdvisedParameter,
   observation : (pair.encode toAdvisedParameter.parameter) using
     (pair.encode toAdvisedParameter.parameter).injective
-
-attribute [nolint unusedArguments] encAdvisedPredictorInputFields
 
 /-- A uniform predictor: given the security parameter and an observation, guess the hidden bit.
 `Predictor.IsPPT` states its efficiency on encodings. -/
@@ -263,8 +258,8 @@ theorem eval_predictionGame_sample (pair : SamplablePair) (adversary : Distingui
 read `((1ⁿ, advice), encode n x)` with one uniform strict PPT machine on `encAdvisedInput`, in the
 word game `predictionGame`, gives the same assumption as quantifying over typed advised predictors.
 A typed predictor's machine reads exactly that layout; conversely, a word predictor is typed by
-encoding its observation, and a typed one extends to all words by rerunning its machine
-(`IsPPTOn.exists_bool_extension`), since its output is a single bit. -/
+encoding its observation, and a typed one is a word predictor on that layout run on the encoded
+observation (`IsPPTOn.exists_bool_factor`), since its output is a single bit. -/
 theorem hasGapWithAdvice_iff_word {pair : SamplablePair} {gap : ℕ → ℝ}
     {advice : ℕ → List Bool} :
     pair.HasGapWithAdvice gap advice ↔
@@ -280,14 +275,12 @@ theorem hasGapWithAdvice_iff_word {pair : SamplablePair} {gap : ℕ → ℝ}
       (hadversary.preprocess (input := pair.encAdvisedPredictorInput) (by fun_prop))
     simpa only [eval_predictionGame_sample] using this
   · intro h predictor hpredictor
-    obtain ⟨W, hWppt, hW⟩ := hpredictor.exists_bool_extension
-    have := h (fun input => W (encAdvisedInput input))
-      (hWppt.preprocess ComputableInPolyTime.id'.encoding_comp)
-    have hgame (n : ℕ) (a : List Bool) (x : pair.Observation n) :
-        ProbComp.eval (W (encAdvisedInput ((n, a), pair.encode n x))) =
-          ProbComp.eval (predictor n a x) :=
-      hW ⟨⟨n, a⟩, x⟩
-    simpa only [eval_predictionGame_sample, ProbComp.eval_predictionExperiment, hgame] using this
+    obtain ⟨W, hW, hWpredictor⟩ := hpredictor.exists_bool_factor (words := encAdvisedInput)
+      (toWords := fun x : pair.AdvisedPredictorInput =>
+        ((x.parameter, x.advice), pair.encode x.parameter x.observation)) fun _ => rfl
+    obtain rfl : predictor = fun n a x => W ((n, a), pair.encode n x) :=
+      funext₃ fun n a x => hWpredictor ⟨⟨n, a⟩, x⟩
+    simpa only [eval_predictionGame_sample] using h W hW
 
 /-- **The uniform gap is the empty-advice case.** A uniform predictor is an advice predictor that
 ignores its advice, and an advice predictor run on empty advice is a uniform predictor. -/

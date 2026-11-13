@@ -344,8 +344,8 @@ def DecisionLWE (n m w : ℕ → ℕ) (noise : (κ : ℕ) → PMF (ZMod (2 ^ w �
 /-- **`DecisionLWE` is the word-level decision-LWE assumption.** Quantifying over distinguishers
 that read the encoded matrix `[b | A]` as a word gives the same assumption as quantifying over
 typed distinguishers. A typed distinguisher's machine reads exactly that word; conversely, a word
-distinguisher is typed by encoding its input, and a typed one extends to all words by rerunning
-its machine (`IsPPTOn.exists_bool_extension`), since its output is a single bit. -/
+distinguisher is typed by encoding its input, and a typed one is a word distinguisher run on that
+word (`IsPPTOn.exists_bool_factor`), since its output is a single bit. -/
 theorem decisionLWE_iff_encoded (n m w : ℕ → ℕ) (noise : (κ : ℕ) → PMF (ZMod (2 ^ w κ))) :
     DecisionLWE n m w noise ↔
       ComputationallyIndistinguishable (LWE.realEnsemble n m w noise)
@@ -357,17 +357,12 @@ theorem decisionLWE_iff_encoded (n m w : ℕ → ℕ) (noise : (κ : ℕ) → PM
     simpa only [LWE.distinguishingGame_realEnsemble, LWE.distinguishingGame_uniformEnsemble]
       using h _ hD
   · intro h D hD
-    obtain ⟨W, hWppt, hW⟩ := hD.exists_bool_extension
-    let W' : Distinguisher := fun κ word => W (encPair encUnary encBits (κ, word))
-    have hW' : IsPPT encBool W' := hWppt.preprocess ComputableInPolyTime.id'.encoding_comp
-    have hgame (κ : ℕ) (A : Matrix (Fin (m κ)) (Fin (n κ)) (ZMod (2 ^ w κ)))
-        (b : Fin (m κ) → ZMod (2 ^ w κ)) :
-        ProbComp.eval (LWE.Distinguisher.ofWords W' κ A b) = ProbComp.eval (D κ A b) :=
-      hW ⟨κ, A, b⟩
-    have hneg := h W' hW'
+    obtain ⟨W, hW, hWD⟩ := hD.exists_bool_factor (words := encPair encUnary encBits)
+      (toWords := LWE.Input.words) fun _ => rfl
+    let W' : Distinguisher := fun κ word => W (κ, word)
+    obtain rfl : D = LWE.Distinguisher.ofWords W' := funext₃ fun κ A b => hWD ⟨κ, A, b⟩
     simpa only [LWE.distinguishingGame_realEnsemble noise W',
-      LWE.distinguishingGame_uniformEnsemble W', LWE.realGame_congr (hgame _),
-      LWE.randomGame_congr (hgame _)] using hneg
+      LWE.distinguishingGame_uniformEnsemble W'] using h W' hW
 
 /-- Under `DecisionLWE`, the encoded real and uniform matrices are computationally
 indistinguishable to word-level distinguishers. -/

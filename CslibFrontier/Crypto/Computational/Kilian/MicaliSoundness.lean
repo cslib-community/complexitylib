@@ -292,13 +292,13 @@ Merkle trace `tr` if for every recorded `((x, rt), ρs) ∈ tr_FS` with `x ∉ L
 rejects `micaliExtractProof V tr x rt` on at least one challenge `ρ ∈ ρs`. -/
 def FSTraceSound (V : PCPVerifier α) (L : Set α) (tr : List (List Bool × List Bool))
     (tr_FS : List ((α × List Bool) × List (List Bool))) : Prop :=
-  ∀ e ∈ tr_FS, e.1.1 ∉ L →
-    ¬ ∀ ρ ∈ e.2, V.accepts e.1.1 (micaliExtractProof V tr e.1.1 e.1.2) ρ = true
+  ∀ x rt ρs, ((x, rt), ρs) ∈ tr_FS → x ∉ L →
+    ¬ ∀ ρ ∈ ρs, V.accepts x (micaliExtractProof V tr x rt) ρ = true
 
 @[simp]
 theorem fsTraceSound_nil (V : PCPVerifier α) (L : Set α) (tr : List (List Bool × List Bool)) :
     FSTraceSound V L tr [] := by
-  intro _ he
+  intro _ _ _ he
   cases he
 
 theorem fsTraceSound_cons_iff {V : PCPVerifier α} {L : Set α}
@@ -306,8 +306,13 @@ theorem fsTraceSound_cons_iff {V : PCPVerifier α} {L : Set α}
     {tr_FS : List ((α × List Bool) × List (List Bool))} :
     FSTraceSound V L tr (((x, rt), ρs) :: tr_FS) ↔
       (x ∉ L → ¬ ∀ ρ ∈ ρs, V.accepts x (micaliExtractProof V tr x rt) ρ = true) ∧
-        FSTraceSound V L tr tr_FS :=
-  List.forall_mem_cons
+        FSTraceSound V L tr tr_FS := by
+  refine ⟨fun h => ⟨h x rt ρs List.mem_cons_self, fun x' rt' ρs' he => h x' rt' ρs'
+    (List.mem_cons_of_mem _ he)⟩, fun ⟨hhead, htail⟩ x' rt' ρs' he => ?_⟩
+  rcases List.mem_cons.mp he with heq | he
+  · cases heq
+    exact hhead
+  · exact htail x' rt' ρs' he
 
 /-- **Single-step Fiat–Shamir bad-event bound**: from a Fiat–Shamir trace `tr_FS` satisfying
 `FSTraceSound V L tr tr_FS`, one call to the lazy Fiat–Shamir oracle violates `FSTraceSound` with
@@ -375,14 +380,30 @@ theorem toOuterMeasure_run_memoize_not_fsTraceSound_le [BEq α] {β : Type}
   refine hbound.trans (le_of_eq ?_)
   rw [mul_zero, add_zero]
 
+/-- List-cache state for the two-channel Micali random oracle: a Merkle hash trace and a
+Fiat–Shamir challenge trace. -/
+abbrev MicaliTraceState (α : Type) :=
+  List (List Bool × List Bool) × List ((α × List Bool) × List (List Bool))
+
+/-- Good-state invariant of the two-channel Micali ROM state `(tr_MT, tr_FS)`: the Merkle trace
+`tr_MT` is collision-free and the Fiat–Shamir trace `tr_FS` has no accepting false-statement entry
+relative to `tr_MT`. -/
+def MicaliGoodState (V : PCPVerifier α) (L : Set α) (st : MicaliTraceState α) : Prop :=
+  TraceCollisionFree st.1 ∧ FSTraceSound V L st.1 st.2
+
+@[simp]
+theorem micaliGoodState_nil (V : PCPVerifier α) (L : Set α) :
+    MicaliGoodState V L ([], []) :=
+  ⟨traceCollisionFree_nil, fsTraceSound_nil V L []⟩
+
 /-- **Two-stage ROM soundness bound** (combining
 `toOuterMeasure_run_memoize_not_traceCollisionFree_le` with
 `toOuterMeasure_run_memoize_not_fsTraceSound_le`): if a first stage `mtProg` makes at most `Q_MT`
 queries to a uniform `σ`-bit Merkle random oracle (producing a state `st` and Merkle trace `tr`) and
 a second stage `fsProg st` makes at most `t_FS + 1` queries to the Fiat–Shamir random oracle
-(producing a Fiat–Shamir trace `tr_FS`), then the probability that either `tr` has a collision or
-`tr_FS` violates `FSTraceSound V L tr` is at most
-`(t_FS + 1) * (1 / 2) ^ m + Q_MT * (Q_MT * (1 / 2 ^ σ))`. -/
+(producing a Fiat–Shamir trace `tr_FS`), then the probability that the final trace state
+`(tr, tr_FS)` is not a `MicaliGoodState` (`tr` has a collision or `tr_FS` violates
+`FSTraceSound V L tr`) is at most `(t_FS + 1) * (1 / 2) ^ m + Q_MT * (Q_MT * (1 / 2 ^ σ))`. -/
 theorem toOuterMeasure_twoStageMicali_le [BEq α] {γ β : Type}
     (V : PCPVerifier α) (L : Set α) (σ m : ℕ)
     (hsound : ∀ x ∉ L, ∀ π : List Bool,
@@ -396,7 +417,7 @@ theorem toOuterMeasure_twoStageMicali_le [BEq α] {γ β : Type}
           (memoize (fun q : α × List Bool => ProbComp.eval (kilianChallenges V m q.1)))
           (fsProg st)).run []).map fun (res, tr_FS) =>
             (res, tr, tr_FS)).toOuterMeasure
-      {out | ¬ TraceCollisionFree out.2.1 ∨ ¬ FSTraceSound V L out.2.1 out.2.2} ≤
+      {out | ¬ MicaliGoodState V L out.2} ≤
       ((t_FS + 1 : ℕ) : ℝ≥0∞) * (1 / 2) ^ m +
         (Q_MT : ℝ≥0∞) * ((Q_MT : ℝ≥0∞) * ((1 : ℝ≥0∞) / 2 ^ σ)) := by
   refine (Probability.PMF.toOuterMeasure_bind_failure_le _ _
@@ -410,8 +431,8 @@ theorem toOuterMeasure_twoStageMicali_le [BEq α] {γ β : Type}
       (toOuterMeasure_run_memoize_not_fsTraceSound_le V L m tr hsound (hFS st))
     refine ((OracleComp.interpret
       (memoize (fun q : α × List Bool => ProbComp.eval (kilianChallenges V m q.1)))
-      (fsProg st)).run []).toOuterMeasure.mono fun y hy => ?_
-    exact Or.resolve_left hy (not_not.mpr hcol)
+      (fsProg st)).run []).toOuterMeasure.mono fun y hy hfs => ?_
+    exact hy ⟨hcol, hfs⟩
   · exact (add_le_add (toOuterMeasure_run_memoize_not_traceCollisionFree_le σ hMT) le_rfl).trans
       (add_comm _ _).le
 
@@ -497,11 +518,6 @@ noncomputable def micaliSoundnessGame [DecidableEq α] (V : PCPVerifier α) (L :
   (OracleComp.runWith (RandomOracle.answer (micaliOracleDist V σ m))
     (micaliSoundnessProg V L P) (fun _ => none)).map Prod.fst
 
-/-- List-cache state for the two-channel Micali random oracle: a Merkle hash trace and a
-Fiat–Shamir challenge trace. -/
-abbrev MicaliTraceState (α : Type) :=
-  List (List Bool × List Bool) × List ((α × List Bool) × List (List Bool))
-
 /-- Two-channel association-list handler implementing
 `RandomOracle.answer (micaliOracleDist V σ m)`: Merkle queries are memoized in the first trace and
 Fiat–Shamir queries in the second. -/
@@ -525,23 +541,12 @@ theorem micaliSoundnessGame_eq_run_micaliMemoize [DecidableEq α] (V : PCPVerifi
   rw [micaliSoundnessGame, hdist]
   exact (RandomOracle.map_fst_run_interpret_memoizeSum_nil _ _ _).symm
 
-/-- Good-state invariant of the two-channel Micali ROM state `(tr_MT, tr_FS)`: the Merkle trace
-`tr_MT` is collision-free and the Fiat–Shamir trace `tr_FS` has no accepting false-statement entry
-relative to `tr_MT`. -/
-def MicaliGoodState (V : PCPVerifier α) (L : Set α) (st : MicaliTraceState α) : Prop :=
-  TraceCollisionFree st.1 ∧ FSTraceSound V L st.1 st.2
-
-@[simp]
-theorem micaliGoodState_nil (V : PCPVerifier α) (L : Set α) :
-    MicaliGoodState V L ([], []) :=
-  ⟨traceCollisionFree_nil, fsTraceSound_nil V L []⟩
-
 /-- The list of digests in `st = (tr_MT, tr_FS)` that a fresh Merkle hash answer must avoid in
 order to preserve `MicaliGoodState`: existing Merkle outputs, left/right child digests of existing
 Merkle queries, and roots of existing Fiat–Shamir queries. -/
 def micaliForbiddenDigests (st : MicaliTraceState α) : List (List Bool) :=
   st.1.map Prod.snd ++ st.1.map (fun p => unframe p.1) ++
-    st.1.map (fun p => dropFrame p.1) ++ st.2.map (fun e => e.1.2)
+    st.1.map (fun p => dropFrame p.1) ++ st.2.map (fun ((_, rt), _) => rt)
 
 @[simp]
 theorem length_micaliForbiddenDigests (st : MicaliTraceState α) :
@@ -567,12 +572,12 @@ theorem mem_micaliForbiddenDigests_of_not_micaliGoodState_cons
   · rw [traceCollisionFree_cons_iff]
     refine ⟨hfree, fun p hp heq => ?_⟩
     exact False.elim (hnot_snd p hp heq)
-  · intro e he hx
-    have hrt : ans ≠ e.1.2 := fun heq => hnot_rt e he heq.symm
+  · intro x rt ρs he hx
+    have hrt : ans ≠ rt := fun heq => hnot_rt ((x, rt), ρs) he heq.symm
     have hchildren : ∀ p ∈ tr_MT, ans ≠ unframe p.1 ∧ ans ≠ dropFrame p.1 :=
       fun p hp => ⟨fun heq => hnot_left p hp heq.symm, fun heq => hnot_right p hp heq.symm⟩
-    rw [micaliExtractProof_cons_of_ne V tr_MT msg e.1.1 hrt hchildren]
-    exact hfs e he hx
+    rw [micaliExtractProof_cons_of_ne V tr_MT msg x hrt hchildren]
+    exact hfs x rt ρs he hx
 
 /-- **Single-step bad-state bound for `micaliMemoize`**: from a good state `st`, a call `q`
 violates `MicaliGoodState V L` with probability at most
@@ -797,7 +802,7 @@ theorem not_micaliGoodState_of_mem_support_micaliSoundnessProg [DecidableEq α]
     intro ρ hρ
     exact BitString.length_of_mem_support_uniformList (by simpa using hsupp_ρs.2 ρ hρ)
   rintro ⟨hfree, hfs_sound⟩
-  exact hfs_sound ((x, proof.root), ρs') hρs_in_FS₂ hx_not_L fun ρ hρ =>
+  exact hfs_sound x proof.root ρs' hρs_in_FS₂ hx_not_L fun ρ hρ =>
     kilianVerify_sound_of_traceCollisionFree hfree hpaths hver hρ (hρs_len ρ hρ)
 
 /-- **Adaptive ROM soundness for the unsalted two-channel variant** (compare [Micali2000];

@@ -247,9 +247,9 @@ private noncomputable def expect (S : Scheme PK SK M R CT K) [Fintype M] [Finite
     PMF Bool :=
   (ProbComp.eval S.pke.keyGen).bind fun ks =>
   (ProbComp.eval S.sampleMsg).bind fun s =>
-  (pi fun _ : M => ProbComp.eval S.pke.sampleCoins).bind fun G =>
-  (pi fun _ : Bool × M × CT => ProbComp.eval S.sampleKey).bind fun H =>
-  (pi fun _ : CT => ProbComp.eval S.sampleKey).bind fun Hfb =>
+  S.coinTable.bind fun G =>
+  (S.keyTable (Bool × M × CT)).bind fun H =>
+  (S.keyTable CT).bind fun Hfb =>
   (ProbComp.eval S.sampleMsg).bind fun m =>
   (ProbComp.eval S.sampleKey).bind fun kRand => F ks.1 ks.2 s G H Hfb m kRand
 
@@ -316,15 +316,17 @@ omit [DecidableEq M] in
 private theorem eagerFbGame_eq_expect [Fintype M] [Finite R] [Fintype CT] [Finite K]
     (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K) (b : Bool) :
     S.eagerFbGame A b = S.expect (S.runFb A b) := by
-  simp only [eagerFbGame, expect, keyGenNotBot, encapsNotBot, encapsBot, ProbComp.eval_bind,
-    ProbComp.eval_pure, Probability.PMF.monad_bind_eq_bind, PMF.bind_bind, PMF.pure_bind]
+  simp only [eagerFbGame, expect, coinTable, keyTable, keyGenNotBot, encapsNotBot, encapsBot,
+    ProbComp.eval_bind, ProbComp.eval_pure, Probability.PMF.monad_bind_eq_bind, PMF.bind_bind,
+    PMF.pure_bind]
   congr 1 with ⟨pk, sk⟩ : 1
 
 private theorem eagerIndCcaGame_eq_expect [Fintype M] [Finite R] [Fintype CT] [Finite K]
     (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K) (b : Bool) :
     S.eagerIndCcaGame A b = S.expect (S.runReal A b) := by
-  simp only [eagerIndCcaGame, expect, keyGenNotBot, encapsNotBot, encapsBot, ProbComp.eval_bind,
-    ProbComp.eval_pure, Probability.PMF.monad_bind_eq_bind, PMF.bind_bind, PMF.pure_bind]
+  simp only [eagerIndCcaGame, expect, coinTable, keyTable, keyGenNotBot, encapsNotBot, encapsBot,
+    ProbComp.eval_bind, ProbComp.eval_pure, Probability.PMF.monad_bind_eq_bind, PMF.bind_bind,
+    PMF.pure_bind]
   congr 1 with ⟨pk, sk⟩ : 1
   congr 1 with s : 1
   congr 1 with G : 1

@@ -58,6 +58,8 @@ Expectations are `∑' i, seed i * f i` in `ℝ≥0∞` over an arbitrary seed l
 * `Cslib.Probability.IsTwoUniversal.tsum_sum_card_filter_sq_le`,
   `Cslib.Probability.IsTwoUniversal.toOuterMeasure_four_mul_lt_sum_card_filter_sq_le`: linear
   total squared bucket size into `n` cells.
+* `Cslib.Probability.IsTwoUniversal.sum_ite_toReal_le_card_div_of_imp`: an event forcing a
+  collision of a fixed key with another key of `S` has probability at most `|S| / |Y|`.
 
 ## References
 
@@ -265,5 +267,26 @@ theorem IsTwoUniversal.toOuterMeasure_four_mul_lt_sum_card_filter_sq_le [Fintype
     _ ≤ 2 * (2 * S.card - 1 : ℕ) := by gcongr
     _ ≤ ((4 * S.card + 1 : ℕ) : ℝ≥0∞) := by
         exact_mod_cast (show 2 * (2 * S.card - 1) ≤ 4 * S.card + 1 by omega)
+
+omit [DecidableEq Y] in
+open Classical in
+/-- If an event on hash seeds forces a collision of `x` with another key of `S`, a universal family
+into `Y` bounds its probability by `|S| / |Y|`. -/
+theorem IsTwoUniversal.sum_ite_toReal_le_card_div_of_imp [Fintype ι] [Fintype Y] {seed : PMF ι}
+    {hash : ι → X → Y} (hh : IsTwoUniversal seed hash) (S : Finset X) (x : X) {P : ι → Prop}
+    {_ : DecidablePred P} (hP : ∀ i, P i → ∃ y ∈ S, y ≠ x ∧ hash i y = hash i x) :
+    (∑ i, if P i then (seed i).toReal else 0) ≤ (#S : ℝ) / Fintype.card Y := by
+  calc (∑ i, if P i then (seed i).toReal else 0)
+      ≤ ∑ i, if ∃ y ∈ S, y ≠ x ∧ hash i y = hash i x then (seed i).toReal else 0 :=
+        sum_le_sum fun i _ => by
+          split_ifs with h₁ h₂
+          · exact le_rfl
+          · exact absurd (hP i h₁) h₂
+          · exact ENNReal.toReal_nonneg
+          · exact le_rfl
+    _ ≤ (#(S.erase x) : ℝ) / Fintype.card Y := hh.collision_with_set_le S x
+    _ ≤ (#S : ℝ) / Fintype.card Y := by
+      gcongr
+      exact erase_subset _ _
 
 end Cslib.Probability

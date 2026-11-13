@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Foundations.Quantum.Measurement
+public import CslibFrontier.Foundations.Quantum.Measurement.Basis
 
 /-!
 # Multi-outcome classical readouts of computational-basis measurements
@@ -24,6 +24,7 @@ over arbitrary outcome values `β` (such as `ℝ` or an ordered alphabet `α`).
 ## Main results
 
 * `Cslib.Quantum.measureOut_apply`: probability mass of an outcome value `b : β`.
+* `Cslib.Quantum.measureOut_ket`: reading a basis state returns its readout with certainty.
 * `Cslib.Quantum.measureOut_toOuterMeasure_apply`: event probabilities under `measureOut`.
 -/
 
@@ -38,6 +39,11 @@ open Finset
 @[expose] noncomputable def measureOut {ι β : Type*} [Fintype ι] (ψ : EuclideanSpace ℂ ι)
     (hψ : ‖ψ‖ = 1) (out : ι → β) : PMF β :=
   (measure ψ hψ).map out
+
+/-- Reading a computational basis state returns its classical readout with certainty. -/
+@[simp] theorem measureOut_ket {ι β : Type*} [Fintype ι] [DecidableEq ι]
+    (x : ι) (out : ι → β) : measureOut (ket x) (norm_ket x) out = PMF.pure (out x) := by
+  simp [measureOut, PMF.pure_map]
 
 /-- Probability mass of an outcome value `b` under `measureOut`. -/
 @[simp] theorem measureOut_apply {ι β : Type*} [Fintype ι] (ψ : EuclideanSpace ℂ ι)

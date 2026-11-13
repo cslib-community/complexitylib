@@ -91,6 +91,9 @@ Lemmas 4.2 and 4.4 in `[PaghPaghRuzic2009]`:
 * `Cslib.DataStructure.Dictionary.WordRAM.LinearProbing.expect_indicator_mul_sum_pow_four_le`:
   fourth-moment bound for centered bucket indicators conditioned on $h_i(u) = b$ under $5$-wise
   independence.
+* `Cslib.DataStructure.Dictionary.WordRAM.LinearProbing.le_sum_scaleOverload_of_cyclicInterval`:
+  a cyclic interval at dyadic scale $j$ holding $2^{j-1}$ keys overloads scale $j$, bounding every
+  $k \le 2^j$ by the dyadic scale-overload sum.
 * `Cslib.DataStructure.Dictionary.WordRAM.LinearProbing.expect_scaleOverload_le`: scale-$j$ overload
   probability bound $\le 288 / 4^j$.
 * `Cslib.DataStructure.Dictionary.WordRAM.LinearProbing.expect_probe_le_of_cluster_witness`,
@@ -681,6 +684,39 @@ into which at least `ℓ` keys of `S` hash. -/
     ∃ a ℓ, a < ℓ ∧ t ≤ ℓ ∧ ℓ ≤ #S ∧
       ℓ ≤ #(S.filter fun x => h i x ∈ cyclicInterval M (h i u) a ℓ)
 
+/-- **Dyadic scale bound.** Let `j = Nat.log 2 x + 1` be the dyadic scale of `1 ≤ x < 2 ^ M`. If
+a cyclic interval `cyclicInterval M (h i u) a len` with `a < 2 ^ j` and `len ≤ 2 ^ j` holds at
+least `2 ^ (j - 1)` keys of `S`, the scale-`j` window is overloaded, so every `k ≤ 2 ^ j` is
+bounded by the dyadic scale-overload sum. -/
+theorem le_sum_scaleOverload_of_cyclicInterval {ι X : Type*} {M : ℕ}
+    (h : ι → X → Fin (2 ^ M)) (S : Finset X) (u : X) (i : ι) {x a len k : ℕ}
+    (hx : 1 ≤ x) (hxM : x < 2 ^ M) (ha : a < 2 ^ (Nat.log 2 x + 1))
+    (hlen : len ≤ 2 ^ (Nat.log 2 x + 1))
+    (hcard : 2 ^ Nat.log 2 x ≤ #(S.filter fun y => h i y ∈ cyclicInterval M (h i u) a len))
+    (hk : k ≤ 2 ^ (Nat.log 2 x + 1)) :
+    (k : ℝ) ≤
+      ∑ j ∈ Finset.Icc 1 M,
+        (2 ^ j : ℝ) * (if scaleOverload M h S u j i then (1 : ℝ) else 0) := by
+  have hj_le_M : Nat.log 2 x + 1 ≤ M := by
+    have := (Nat.pow_lt_pow_iff_right (by decide)).mp
+      ((Nat.pow_log_le_self 2 (by omega)).trans_lt hxM)
+    omega
+  have hov : scaleOverload M h S u (Nat.log 2 x + 1) i := by
+    dsimp only [scaleOverload]
+    rw [Nat.add_sub_cancel]
+    refine hcard.trans (card_le_card fun y hy => ?_)
+    simp only [mem_filter] at hy ⊢
+    exact ⟨hy.1, cyclicInterval_subset_scaleWindow (h i u) ha hlen hy.2⟩
+  calc (k : ℝ) ≤ (2 ^ (Nat.log 2 x + 1) : ℝ) := by exact_mod_cast hk
+    _ = (2 ^ (Nat.log 2 x + 1) : ℝ) *
+        (if scaleOverload M h S u (Nat.log 2 x + 1) i then (1 : ℝ) else 0) := by
+        simp [hov]
+    _ ≤ _ := by
+        refine single_le_sum
+          (f := fun j => (2 ^ j : ℝ) * (if scaleOverload M h S u j i then (1 : ℝ) else 0))
+          (fun j _ => ?_) (Finset.mem_Icc.mpr ⟨Nat.le_add_left 1 _, hj_le_M⟩)
+        split_ifs <;> positivity
+
 private theorem probe_le_sum_scaleOverload {ι X : Type*}
     {M n_max : ℕ} (h : ι → X → Fin (2 ^ M)) (S : Finset X) (u : X)
     (hS : #S ≤ n_max) (hM : 8 * n_max ≤ 2 ^ M) (i : ι) (t : ℕ)
@@ -690,44 +726,10 @@ private theorem probe_le_sum_scaleOverload {ι X : Type*}
         (2 ^ j : ℝ) * (if scaleOverload M h S u j i then (1 : ℝ) else 0) := by
   by_cases ht : 1 ≤ t
   · obtain ⟨a, ℓ, ha_lt_ℓ, ht_le_ℓ, hℓ_le_S, hℓ_card⟩ := hwit ht
-    have hℓ_pos : 0 < ℓ := by omega
-    set j := Nat.log 2 ℓ + 1
-    have hj_ge_one : 1 ≤ j := Nat.le_add_left 1 _
-    have h2j1_le : 2 ^ (j - 1) ≤ ℓ := by
-      dsimp only [j]
-      exact Nat.pow_log_le_self 2 (by omega)
-    have hℓ_lt_2j : ℓ < 2 ^ j := by
-      dsimp only [j]
-      exact Nat.lt_pow_succ_log_self (by decide) ℓ
-    have hℓ_lt_2M : ℓ < 2 ^ M := by
-      have : 1 ≤ 2 ^ M := Nat.one_le_two_pow
-      omega
-    have hj_le_M : j ≤ M := by
-      have hpow_lt : 2 ^ (j - 1) < 2 ^ M := lt_of_le_of_lt h2j1_le hℓ_lt_2M
-      have hj1_lt : j - 1 < M := (Nat.pow_lt_pow_iff_right (by decide)).mp hpow_lt
-      omega
-    have hj_mem : j ∈ Finset.Icc 1 M := Finset.mem_Icc.mpr ⟨hj_ge_one, hj_le_M⟩
-    have hov : scaleOverload M h S u j i := by
-      dsimp only [scaleOverload]
-      have hsub : cyclicInterval M (h i u) a ℓ ⊆ scaleWindow M (h i u) j :=
-        cyclicInterval_subset_scaleWindow (h i u) (by omega) (by omega)
-      have hfilter :
-          #(S.filter fun x => h i x ∈ cyclicInterval M (h i u) a ℓ) ≤
-            #(S.filter fun x => h i x ∈ scaleWindow M (h i u) j) := by
-        refine card_le_card fun x hx => ?_
-        simp only [mem_filter] at hx ⊢
-        exact ⟨hx.1, hsub hx.2⟩
-      omega
-    calc (t : ℝ) ≤ (ℓ : ℝ) := by exact_mod_cast ht_le_ℓ
-      _ ≤ (2 ^ j : ℝ) := by exact_mod_cast hℓ_lt_2j.le
-      _ = (2 ^ j : ℝ) * (if scaleOverload M h S u j i then (1 : ℝ) else 0) := by
-          simp [hov]
-      _ ≤ ∑ k ∈ Finset.Icc 1 M,
-            (2 ^ k : ℝ) * (if scaleOverload M h S u k i then (1 : ℝ) else 0) := by
-          refine single_le_sum
-            (f := fun k => (2 ^ k : ℝ) * (if scaleOverload M h S u k i then (1 : ℝ) else 0))
-            (fun k _ => ?_) hj_mem
-          split_ifs <;> positivity
+    have hℓ_lt : ℓ < 2 ^ (Nat.log 2 ℓ + 1) := Nat.lt_pow_succ_log_self (by decide) ℓ
+    exact le_sum_scaleOverload_of_cyclicInterval h S u i (x := ℓ) (a := a) (len := ℓ) (by omega)
+      (by omega) (by omega) hℓ_lt.le ((Nat.pow_log_le_self 2 (by omega)).trans hℓ_card)
+      (by omega)
   · have ht0 : t = 0 := by omega
     rw [ht0, Nat.cast_zero]
     refine sum_nonneg fun k _ => ?_

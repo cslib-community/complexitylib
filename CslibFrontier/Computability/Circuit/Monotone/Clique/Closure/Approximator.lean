@@ -57,6 +57,8 @@ at most `(r - 1) ^ j` minimal sets of at most `j ≤ l` vertices
 
 @[expose] public section
 
+open Cslib.BitString.Graph
+
 namespace Cslib.Circuits.Monotone.Closure
 
 open Cslib.Circuits.Clique Finset Relation

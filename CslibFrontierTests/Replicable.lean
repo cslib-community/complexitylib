@@ -348,7 +348,7 @@ theorem composition_pad_seqBind_pi_check :
       PMF.pure (if r.val = 0 then a && S 0 else true)) {fairCoin} (1 / 4) ∧
     IsReplicableFor (Algorithm.pi F) {fairCoin} (1 / 4) ∧
     (Algorithm.pi F).marginal fairCoin =
-      pmfPiFin fun j : Fin 2 => (F j).marginal fairCoin := by
+      piFin fun j : Fin 2 => (F j).marginal fairCoin := by
   intro A B F
   refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · exact (isReplicableFor_constExceptZeroAlg 8 1 true (fun S => S 0) {fairCoin}).pad (by omega)

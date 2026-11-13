@@ -185,8 +185,12 @@ theorem greedyLoop_covers {k : ℕ} {R : Finset α} (hR : R.card ≤ k)
       · obtain ⟨j, hj, haj⟩ := ih' a (Finset.mem_sdiff.2 ⟨ha, hai⟩)
         exact ⟨j, List.mem_cons_of_mem _ hj, haj⟩
 
-/-- The greedy loop chooses only candidates. -/
-theorem greedyLoop_subset {k : ℕ} {R : Finset α} : ∀ i ∈ greedyLoop S w J k R, i ∈ J := by
+/-- A property of a chosen set relative to the uncovered elements holds of every set the greedy
+loop chooses when it holds of each round's choice and passes to larger uncovered sets. -/
+private theorem forall_mem_greedyLoop {P : ι → Finset α → Prop}
+    (hbest : ∀ {R i}, bestSet S w J R = some i → P i R)
+    (hmono : ∀ {R R' i}, R' ⊆ R → P i R' → P i R) {k : ℕ} {R : Finset α} :
+    ∀ i ∈ greedyLoop S w J k R, P i R := by
   induction k generalizing R with
   | zero => simp [greedyLoop]
   | succ k ih =>
@@ -195,24 +199,18 @@ theorem greedyLoop_subset {k : ℕ} {R : Finset α} : ∀ i ∈ greedyLoop S w J
     · simp
     · intro j hj
       rcases List.mem_cons.1 hj with rfl | hj
-      · exact (bestSet_spec h).1
-      · exact ih j hj
+      · exact hbest h
+      · exact hmono Finset.sdiff_subset (ih j hj)
+
+/-- The greedy loop chooses only candidates. -/
+theorem greedyLoop_subset {k : ℕ} {R : Finset α} : ∀ i ∈ greedyLoop S w J k R, i ∈ J :=
+  forall_mem_greedyLoop (P := fun i _ => i ∈ J) (fun h => (bestSet_spec h).1) fun _ h => h
 
 /-- Every set chosen by the greedy loop meets the elements uncovered at the start. -/
 theorem greedyLoop_inter_nonempty {k : ℕ} {R : Finset α} :
-    ∀ i ∈ greedyLoop S w J k R, (S i ∩ R).Nonempty := by
-  induction k generalizing R with
-  | zero => simp [greedyLoop]
-  | succ k ih =>
-    unfold greedyLoop
-    rcases h : bestSet S w J R with _ | i
-    · simp
-    · intro j hj
-      rcases List.mem_cons.1 hj with rfl | hj
-      · exact (bestSet_spec h).2.1
-      · obtain ⟨a, ha⟩ := ih j hj
-        exact ⟨a, Finset.mem_inter.2 ⟨(Finset.mem_inter.1 ha).1,
-          (Finset.mem_sdiff.1 (Finset.mem_inter.1 ha).2).1⟩⟩
+    ∀ i ∈ greedyLoop S w J k R, (S i ∩ R).Nonempty :=
+  forall_mem_greedyLoop (fun h => (bestSet_spec h).2.1)
+    fun hR h => h.mono (Finset.inter_subset_inter_left hR)
 
 /-- The greedy loop never chooses a candidate twice. -/
 theorem nodup_greedyLoop {k : ℕ} {R : Finset α} : (greedyLoop S w J k R).Nodup := by

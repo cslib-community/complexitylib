@@ -91,7 +91,7 @@ theorem exists_occurrence_iff (v : V) :
 /-- Occurrence records in constraint order, then scope order. The positive-CNF adapter preserves
 all positions and lets us reuse the existing executable occurrence enumeration. -/
 @[expose] def occurrences (F : CSP Rel V) : List (ℕ × ℕ × V) :=
-  (Cslib.Logic.PL.occurrences F.varCNF).map fun o => (o.1, o.2.1, o.2.2.1)
+  (Cslib.Logic.PL.occurrences F.varCNF).map fun o => (o.clause, o.pos, o.lit.1)
 
 /-- The enumeration contains exactly the valid position/variable records. -/
 theorem mem_occurrences {r : ℕ × ℕ × V} :
@@ -108,7 +108,7 @@ theorem mem_occurrences {r : ℕ × ℕ × V} :
       exact congrArg Prod.fst he.symm⟩
   · rintro ⟨⟨⟨i', hi⟩, ⟨j', hj⟩⟩, hr⟩
     cases hr
-    refine ⟨(i', j', F[i'].scope[j'], true), ?_, rfl⟩
+    refine ⟨⟨i', j', (F[i'].scope[j'], true)⟩, ?_, rfl⟩
     exact ⟨by simpa only [varCNF, List.length_map] using hi,
       by simpa only [varCNF, List.getElem_map, List.length_map] using hj, by
         simp only [varCNF, List.getElem_map]⟩
@@ -121,14 +121,14 @@ theorem map_occurrences (F : CSP Rel V) : F.occurrences.map (fun o => o.2.2) = F
 /-- Every position record occurs exactly once, even if its variable or constraint is repeated. -/
 theorem occurrences_nodup (F : CSP Rel V) : F.occurrences.Nodup := by
   have polarity (o : Cslib.Logic.PL.Occurrence V)
-      (ho : o ∈ Cslib.Logic.PL.occurrences F.varCNF) : o.2.2.2 = true := by
+      (ho : o ∈ Cslib.Logic.PL.occurrences F.varCNF) : o.lit.2 = true := by
     obtain ⟨hi, hj, he⟩ := Cslib.Logic.PL.mem_occurrences.mp ho
     simpa only [varCNF, List.getElem_map] using congrArg Prod.snd he
   apply (Cslib.Logic.PL.occurrences_nodup F.varCNF).map_on
   intro a ha b hb hab
-  refine Prod.ext (congrArg (fun r : ℕ × ℕ × V => r.1) hab)
-    (Prod.ext (congrArg (fun r => r.2.1) hab) ?_)
-  exact Prod.ext (congrArg (fun r => r.2.2) hab) ((polarity a ha).trans (polarity b hb).symm)
+  simp only [Prod.mk.injEq] at hab
+  exact Cslib.Logic.PL.Occurrence.ext hab.1 hab.2.1
+    (Prod.ext hab.2.2 ((polarity a ha).trans (polarity b hb).symm))
 
 /-- The number of argument occurrences is the sum of the scope lengths. -/
 theorem length_occurrences (F : CSP Rel V) :

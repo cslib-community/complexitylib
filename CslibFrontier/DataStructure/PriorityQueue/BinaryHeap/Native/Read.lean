@@ -46,8 +46,9 @@ theorem realizes_isEmpty :
 /-- The original optional lookup on a runtime handle word. The bound is part of the explicit
 entry domain; it is not an input-dependent choice of code or an extra native check. -/
 theorem realizes_getKeyWord :
-    Realizes .exact (fun d : HeapLayout × ℕ => Memory.getKey d.1.2 d.2) indexWords optionWords
-      (fun _ d s => d.2 < d.1.1 ∧ d.1.2.arrays.Allocated s) (fun _ _ => 0) := by
+    Realizes .exact (fun d : IndexArgument => Memory.getKey d.layout d.index) indexWords
+      optionWords (fun _ d s => d.index < d.capacity ∧ d.layout.arrays.Allocated s)
+      (fun _ _ => 0) := by
   realize
   all_goals
     first
@@ -56,17 +57,16 @@ theorem realizes_getKeyWord :
     | apply hmem.fits_of_lt_frontier
       have hv := h.1
       have hA := h.2
-      change d.1.2.base + (3 * d.1.1 + 1) ≤ s.frontier at hA
+      change d.layout.base + (3 * d.capacity + 1) ≤ s.frontier at hA
       omega
 
 /-- The typed indexed-PQ client reuses the word-body certificate by static wiring. Its key is
 returned unshifted, including the largest fitting word. -/
 theorem realizes_getKey :
-    Realizes .exact (fun d : HandleArgument => Memory.getKey d.2.1 d.2.2) handleWords optionWords
-      (fun _ d s => d.2.1.arrays.Allocated s) (fun _ _ => 0) := by
-  have h := realizes_getKeyWord.reindex
-    (fun d : HandleArgument => ((⟨d.1, d.2.1⟩ : HeapLayout), d.2.2.val)) handleWords
+    Realizes .exact (fun d : HandleArgument => Memory.getKey d.layout d.handle) handleWords
+      optionWords (fun _ d s => d.layout.arrays.Allocated s) (fun _ _ => 0) := by
+  have h := realizes_getKeyWord.reindex HandleArgument.toIndex handleWords
     (fun i => i) (by intro d i; rfl)
-  exact h.consequence (fun _ d _ _ _ h => ⟨d.2.2.isLt, h⟩) (fun _ _ => le_rfl)
+  exact h.consequence (fun _ d _ _ _ h => ⟨d.handle.isLt, h⟩) (fun _ _ => le_rfl)
 
 end Cslib.DataStructure.PriorityQueue.BinaryHeap.Native
