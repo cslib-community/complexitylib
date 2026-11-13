@@ -92,7 +92,7 @@ theorem negligible_publicKeyGame {E : Scheme}
         (publicKeyDecoder.computableInPolyTime.comp
           (ComputableInPolyTime.snd encUnary encBits)))
   have h := hcircular _ htest
-  simpa only [pmf_norm, distinguishingGame, publicKeyDecoder.decode_enc] using h
+  simpa only [pmf_norm, distinguishingGame_eq_bind, publicKeyDecoder.decode_enc] using h
 
 /-- Self-encrypted evaluation keys preserve adaptive IND-CPA under ordinary base IND-CPA and
 the separate joint circular premise. Fixed supported secret length is semantic; the reduction
