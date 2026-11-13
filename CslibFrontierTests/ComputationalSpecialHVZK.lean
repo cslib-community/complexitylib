@@ -28,18 +28,18 @@ Attack Game 20.4 and Definition 20.6, p. 840) on concrete instances and two-side
   `Fintype`.
 * **Schnorr in `schnorrGroups`.** Instantiate
   `PrimeOrderGroupFamily.computationalSpecialHVZK_schnorr` with exact zero acceptance error
-  (`δ = fun _ => 0`), exercising both `accepts_schnorrSimulateWord` and Attack Game 20.4
+  (`δ = fun _ => 0`), exercising both `accepts_schnorrSimulator` and Attack Game 20.4
   indistinguishability.
 * **`SpecialHVZK` does not imply `ComputationalSpecialHVZK` (under discrete log).** The protocol
   `sendWitnessFamily F` is perfectly `SpecialHVZK` at every index (`specialHVZK_sendWitness`), yet
-  under `F.DiscreteLog setup` it fails `ComputationalSpecialHVZK` for *every* simulator `sim` and
-  *every* acceptance-error parameter `δ` (even `δ = fun _ => ⊤`, without invoking `accepts`),
-  because Attack Game 20.4's `indistinguishable` obligation alone forces `sim` to invert discrete
-  logarithms (`not_computationalSpecialHVZK_sendWitness`).
+  under `F.DiscreteLog setup` it fails `ComputationalSpecialHVZK` for *every* typed simulator
+  `sim` and *every* acceptance-error parameter `δ` (even `δ = fun _ => ⊤`, without invoking
+  `accepts`), because Attack Game 20.4's `indistinguishable` obligation alone forces `sim` to invert
+  discrete logarithms (`not_computationalSpecialHVZK_sendWitness`).
 * **`ComputationalSpecialHVZK` does not imply `SpecialHVZK` or `EfficientSpecialHVZK` (from any PRG
   or OWF).** For any stretching `PseudorandomGenerator generator length`, the protocol family
   `prgWitnessSigma generator length` commits to `generator seed` when the witness bit is `false` and
-  to a uniform `length n`-bit string when the witness bit is `true`. Its word simulator samples a
+  to a uniform `length n`-bit string when the witness bit is `true`. Its simulator samples a
   uniform `length n`-bit commitment, achieving `ComputationalSpecialHVZK` with exact zero acceptance
   error (`computationalSpecialHVZK_prgWitnessSigma`), whereas the `2 ^ n`-element generator image
   covers at most half of `{0, 1} ^ (length n)`, ruling out `SpecialHVZK`, `EfficientSpecialHVZK` for
@@ -48,9 +48,10 @@ Attack Game 20.4 and Definition 20.6, p. 840) on concrete instances and two-side
   `not_statistical_hvzk_prgWitnessSigma`, `exists_computationalSpecialHVZK_and_not_specialHVZK`).
 * **Word-level adversaries.** The word-level Attack Game 20.4 of `main` before the typed games is
   `chvzkExperiment` at word types with the encoded relation `wordRelation`; the generic bound gives
-  its statistical producer statement (`advantage_wordChvzkExperiment_le`,
-  `negligible_wordChvzkGame`). A guessing stage written for the earlier word layout is PPT on
-  `encCHVZKGuessInput`, which adds only the index.
+  its statistical producer statement for every word program within `δ` of the encoded perfect
+  simulator, as `SimulatorRealizedBy.exists_word` extracts from a typed simulator
+  (`advantage_wordChvzkExperiment_le`, `negligible_wordChvzkGame`). A guessing stage written for
+  the earlier word layout is PPT on `encCHVZKGuessInput`, which adds only the index.
 -/
 
 namespace CslibFrontierTests.ComputationalSpecialHVZK
@@ -89,7 +90,7 @@ example (setup : ℕ → PMF schnorrGroups.Desc) :
     ComputationalSpecialHVZK schnorrGroups.schnorrFamily
       (fun i α u => α • schnorrGroups.generator i.2 = u)
       schnorrGroups.schnorrEncoding (fun i => schnorrGroups.encScalar i.2)
-      (fun n => (setup n).map (n, ·)) schnorrGroups.schnorrSimulateWord (fun _ => 0) :=
+      (fun n => (setup n).map (n, ·)) schnorrGroups.schnorrSimulator (fun _ => 0) :=
   schnorrGroups.computationalSpecialHVZK_schnorr setup
 
 /-! ### `SpecialHVZK` does not imply `ComputationalSpecialHVZK` -/
@@ -165,18 +166,21 @@ theorem isPPT_sendWitnessAdversary (F : PrimeOrderGroupFamily) :
     exact (hbeq.comp (ht.prod hst)).isPPTOn
 
 /-- **Sending the witness is not computationally special HVZK** under the discrete-logarithm
-assumption, for *any* simulator `sim` and *any* acceptance-error function `δ` (without using the
-`accepts` field): Attack Game 20.4 indistinguishability on `(α, α • g)` forces `sim` to invert
-discrete logarithms. -/
+assumption, for *any* typed simulator `sim` and *any* acceptance-error function `δ` (without using
+the `accepts` field): Attack Game 20.4 indistinguishability on `(α, α • g)` forces `sim` to invert
+discrete logarithms. The discrete-logarithm adversary runs the word program that
+`Simulator.IsPPT.exists_word` extracts from `sim`. -/
 theorem not_computationalSpecialHVZK_sendWitness (hDL : F.DiscreteLog setup)
-    (sim : (ℕ × F.Desc) × List Bool × List Bool → ProbComp (List Bool × List Bool))
+    (sim : Simulator (ℕ × F.Desc) (fun i => F.Carrier i.2) (fun i => ZMod (F.order i.2))
+      (fun _ => Bool) (fun i => ZMod (F.order i.2)))
     (δ : ℕ × F.Desc → ℝ≥0∞) :
     ¬ ComputationalSpecialHVZK (sendWitnessFamily F) (dlRel F) (sendWitnessEncoding F)
       (fun i => F.encScalar i.2) (fun n => (setup n).map (n, ·)) sim δ := by
   intro h
+  obtain ⟨program, hprog, hword⟩ := h.ppt.exists_word
   let dlAdv : ℕ → F.Desc × List Bool → ProbComp (List Bool) := fun n input => do
     let c ← ProbComp.uniform Bool
-    Prod.fst <$> sim ((n, input.1), input.2, encBool c)
+    Prod.fst <$> program ((n, input.1), input.2, encBool c)
   have hdlAdv : IsPPTOn (encPair encUnary (encPair F.encDesc encBits)) encBits
       (fun input => dlAdv input.1 input.2) := by
     let encIn := encPair encUnary (encPair F.encDesc encBits)
@@ -194,14 +198,13 @@ theorem not_computationalSpecialHVZK_sendWitness (hDL : F.DiscreteLog setup)
     have hc : ComputableInPolyTime (fun q : (ℕ × F.Desc × List Bool) × Bool => encBool q.2)
         encMid encBits := by fun_prop
     have hprep := ((hn.comp hp1).prod (hd.comp hp1)).prod ((hu.comp hp1).prod hc)
-    exact (h.ppt.preprocess hprep).map (ComputableInPolyTime.fst encBits encBits)
+    exact (hprog.preprocess hprep).map (ComputableInPolyTime.fst encBits encBits)
   let A := sendWitnessAdversary F
   let realGame := chvzkRealGame (sendWitnessFamily F) (dlRel F) (fun m => (setup m).map (m, ·)) A
-  let simGame := chvzkSimGame (dlRel F) (sendWitnessEncoding F) (fun m => (setup m).map (m, ·))
-    sim A
+  let simGame := chvzkSimGame (dlRel F) (fun m => (setup m).map (m, ·)) sim A
   have hreal (n : ℕ) : realGame n = PMF.pure true := by
     simp only [realGame, chvzkRealGame, PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def,
-      chvzkExperiment_map_some, ProbComp.liftM_eq_eval]
+      chvzkExperiment, ProbComp.liftM_eq_eval]
     refine (PMF.bind_congr_on_support _ _ _ fun d _ => ?_).trans (PMF.bind_const _ _)
     simp only [A, sendWitnessAdversary, ProbComp.eval_bind, ProbComp.eval_pure,
       PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
@@ -214,8 +217,7 @@ theorem not_computationalSpecialHVZK_sendWitness (hDL : F.DiscreteLog setup)
       Game.succProbability (simGame n) ≤
         Game.succProbability (F.discreteLogGame setup dlAdv n) + (1 / 2 : ℝ≥0) ^ n := by
     let simTest (d : F.Desc) (α : ZMod (F.order d)) : Game :=
-      chvzkExperiment (dlRel F (n, d)) (fun _ y => simulatedConversation (sendWitnessEncoding F)
-        sim (n, d) y)
+      chvzkExperiment (dlRel F (n, d)) (fun _ y => simulatedConversation sim (n, d) y)
         { choose := fun _ => pure ((α, α • F.generator d), F.encScalar d α)
           guess := (A n (n, d)).guess }
     have hsim_eq : simGame n = (setup n).bind fun d =>
@@ -231,35 +233,31 @@ theorem not_computationalSpecialHVZK_sendWitness (hDL : F.DiscreteLog setup)
       rw [hsim_eq, one_div_pow]
       exact Game.advantage_bind_le_nnreal (setup n) _ _ fun d =>
         F.advantage_bind_sampleExp_le n d (simTest d)
-    have hstatement (d : F.Desc) (u : F.Carrier d) :
-        (sendWitnessEncoding F).statement (n, d) u = F.encode d u := rfl
-    have hchallenge (d : F.Desc) (c : Bool) :
-        (sendWitnessEncoding F).challenge (n, d) c = encBool c := rfl
+    -- On encoded inputs the word program is the typed simulator followed by the scalar encoding.
+    have hword' (d : F.Desc) (u : F.Carrier d) (c : Bool) :
+        ProbComp.eval (program ((n, d), F.encode d u, encBool c)) =
+          (ProbComp.eval (sim (n, d) u c)).map (Prod.map (F.encScalar d) (F.encScalar d)) :=
+      (hword (n, d) u c).symm
     have hunif_le : unifGame true ≤ F.discreteLogGame setup dlAdv n true := by
       simp only [unifGame, PrimeOrderGroupFamily.discreteLogGame, PMF.monad_bind_eq_bind,
         PMF.monad_pure_eq_pure]
       refine PMF.bind_apply_mono_on_support _ _ fun d _ =>
         PMF.bind_apply_mono_on_support _ _ fun α _ => ?_
       simp only [simTest, chvzkExperiment, simulatedConversation, dlAdv, A, sendWitnessAdversary,
-        ProbComp.liftM_eq_eval, hstatement, hchallenge, ProbComp.eval_pure, ProbComp.eval_bind,
+        ProbComp.liftM_eq_eval, hword', ProbComp.eval_pure, ProbComp.eval_bind,
         ProbComp.eval_map, ProbComp.eval_uniform, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure,
-        PMF.pure_bind, PMF.bind_bind, PMF.bind_map, Function.comp_def, ↓reduceIte]
+        PMF.pure_bind, PMF.bind_bind, PMF.bind_map, PMF.map_comp, Function.comp_def, ↓reduceIte]
       refine PMF.bind_apply_mono_on_support _ _ fun c _ =>
-        PMF.bind_apply_mono_on_support _ _ fun words _ => ?_
-      rcases hdec : decodeConversation (sendWitnessEncoding F) (n, d) c words with
-        _ | ⟨t, c', z⟩
-      · simp
-      · obtain ⟨hwords, -⟩ := decodeConversation_eq_some_iff.mp hdec
-        subst hwords
-        by_cases ht : t = α
-        · subst ht
-          have hcast : (ofBits (F.encScalar d t) : ZMod (F.order d)) = t := by
-            change ((ofBits (encNat t.val) : ℕ) : ZMod (F.order d)) = t
-            rw [encNat_apply, ofBits, Nat.foldr_bit_bits, ZMod.natCast_zmod_val]
-          simp [sendWitnessEncoding, hcast]
-        · have hne : (F.encScalar d t == F.encScalar d α) = false :=
-            beq_false_of_ne fun h => ht ((F.encScalar d).injective h)
-          simp [hne]
+        PMF.bind_apply_mono_on_support _ _ fun ⟨t, z⟩ _ => ?_
+      by_cases ht : t = α
+      · subst ht
+        have hcast : (ofBits (F.encScalar d t) : ZMod (F.order d)) = t := by
+          change ((ofBits (encNat t.val) : ℕ) : ZMod (F.order d)) = t
+          rw [encNat_apply, ofBits, Nat.foldr_bit_bits, ZMod.natCast_zmod_val]
+        simp [hcast]
+      · have hne : (F.encScalar d t == F.encScalar d α) = false :=
+          beq_false_of_ne fun h => ht ((F.encScalar d).injective h)
+        simp [hne]
     calc Game.succProbability (simGame n)
         ≤ Game.succProbability unifGame + (1 / 2 : ℝ≥0) ^ n :=
           Game.succProbability_le_add_of_advantage_le hadv
@@ -311,12 +309,12 @@ def prgWitnessEncoding :
   response _ := encUnit
 
 /-- Simulator for `prgWitnessSigma`: ignore the statement and challenge, sample a uniform
-`length n`-bit commitment, and return `(t, encUnit ())`. -/
+`length n`-bit commitment, and return it with the trivial response. -/
 noncomputable def prgWitnessSim (length : ℕ → ℕ) :
-    ℕ × List Bool × List Bool → ProbComp (List Bool × List Bool)
-  | (n, _, _) => do
+    Simulator ℕ (fun _ => Unit) (fun _ => List Bool) (fun _ => Bool) (fun _ => Unit) :=
+  fun n _ _ => do
     let t ← BitString.sampleList (length n)
-    return (t, encUnit ())
+    return (t, ())
 
 theorem complete_prgWitnessSigma {generator : List Bool → List Bool} {length : ℕ → ℕ}
     (hlen : ∀ word, (generator word).length = length word.length) (n : ℕ) :
@@ -345,24 +343,21 @@ theorem computationalSpecialHVZK_prgWitnessSigma
     let encIn := encPair encUnary (encPair encBits encBits)
     have hn : ComputableInPolyTime (fun p : ℕ × List Bool × List Bool => length p.1)
         encIn encUnary := hlen.comp (by fun_prop)
-    change IsPPTOn encIn (encPair encBits encBits) fun p =>
-      BitString.sampleList (length p.1) >>= fun t => pure (t, encUnit ())
     have hsample : IsPPTOn encIn encBits (fun p => BitString.sampleList (length p.1)) := by ppt
-    refine hsample.bind_with ?_
-    exact ((ComputableInPolyTime.snd encIn encBits).prod
-      (ComputableInPolyTime.const (encUnit ()))).isPPTOn
+    refine Simulator.IsPPT.of_word (hsample.bind_with (second := fun _ t => pure (t, encUnit ()))
+      ((ComputableInPolyTime.snd encIn encBits).prod
+        (ComputableInPolyTime.const (encUnit ()))).isPPTOn) fun n _ _ => ?_
+    rw [← ProbComp.eval_map]
+    simp only [prgWitnessSim, map_bind, map_pure]
+    rfl
   accepts := by
     rintro n ⟨⟩ c
-    dsimp only [prgWitnessEncoding]
-    have heq : (ProbComp.eval (prgWitnessSim length (n, encUnit (), encBool c))).toOuterMeasure
-        {w | ∃ t z, w = (encBits t, encUnit z) ∧
-          (prgWitnessSigma generator length n).Accepts () t c z} = 1 := by
+    have heq : (ProbComp.eval (prgWitnessSim length n () c)).toOuterMeasure
+        {tz | (prgWitnessSigma generator length n).Accepts () tz.1 c tz.2} = 1 := by
       simp only [prgWitnessSim, ProbComp.eval_bind, BitString.eval_sampleList, ProbComp.eval_pure]
-      rw [show (fun a : List Bool => PMF.pure (a, encUnit ())) =
-          PMF.pure ∘ fun a => (a, encUnit ()) from rfl,
+      rw [show (fun a : List Bool => PMF.pure (a, ())) = PMF.pure ∘ fun a => (a, ()) from rfl,
         PMF.bind_pure_comp, PMF.toOuterMeasure_map_apply, PMF.toOuterMeasure_apply_eq_one_iff]
       intro t ht
-      refine ⟨t, (), rfl, ?_⟩
       simp [SigmaProtocol.Accepts, prgWitnessSigma, BitString.length_of_mem_support_uniformList ht]
     simpa only [tsub_zero] using heq.ge
   indistinguishable {σ} encσ adversary hadv := by
@@ -425,15 +420,14 @@ theorem computationalSpecialHVZK_prgWitnessSigma
         Game.advantage
           (chvzkRealGame (prgWitnessSigma generator length) (fun _ _ _ => True) PMF.pure
             adversary n)
-          (chvzkSimGame (fun _ _ _ => True) prgWitnessEncoding PMF.pure (prgWitnessSim length)
-            adversary n) =
+          (chvzkSimGame (fun _ _ _ => True) PMF.pure (prgWitnessSim length) adversary n) =
         Game.advantage
           (distinguishingGame (generatorEnsemble generator n) (D n))
           (distinguishingGame (BitString.uniformList (length n)) (D n)) := by
       have hreal_eq :
           chvzkRealGame (prgWitnessSigma generator length) (fun _ _ _ => True) PMF.pure
             adversary n = distinguishingGame (generatorEnsemble generator n) (D n) := by
-        simp only [chvzkRealGame, chvzkExperiment_map_some, ProbComp.liftM_eq_eval,
+        simp only [chvzkRealGame, chvzkExperiment, ProbComp.liftM_eq_eval,
           distinguishingGame_eq_bind, D, PMF.monad_bind_eq_bind, PMF.pure_bind, ProbComp.eval_bind]
         rw [PMF.bind_comm (generatorEnsemble generator n)]
         refine PMF.bind_congr_on_support _ _ _ fun ⟨⟨x, ⟨⟩⟩, state⟩ _ => ?_
@@ -445,29 +439,25 @@ theorem computationalSpecialHVZK_prgWitnessSigma
             ProbComp.eval_bind, BitString.eval_sampleList, ProbComp.eval_uniform,
             PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_map, PMF.bind_bind,
             PMF.pure_bind, PMF.bind_const, Function.comp_def]
-      have hconv : simulatedConversation prgWitnessEncoding (prgWitnessSim length) n () =
+      have hconv : simulatedConversation (prgWitnessSim length) n () =
           (PMF.uniformOfFintype Bool).bind fun c =>
-            (BitString.uniformList (length n)).bind fun t => PMF.pure (some (t, c, ())) := by
-        have hdec (c : Bool) (t : List Bool) :
-            decodeConversation prgWitnessEncoding n c (t, encUnit ()) = some (t, c, ()) :=
-          decodeConversation_encode prgWitnessEncoding n c t ()
+            (BitString.uniformList (length n)).bind fun t => PMF.pure (t, c, ()) := by
         simp only [simulatedConversation, prgWitnessSim, ProbComp.liftM_eq_eval, ProbComp.eval_bind,
           BitString.eval_sampleList, ProbComp.eval_pure, PMF.monad_bind_eq_bind,
-          PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind, hdec]
+          PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
       have hsim_eq :
-          chvzkSimGame (fun _ _ _ => True) prgWitnessEncoding PMF.pure (prgWitnessSim length)
-            adversary n = distinguishingGame (BitString.uniformList (length n)) (D n) := by
+          chvzkSimGame (fun _ _ _ => True) PMF.pure (prgWitnessSim length) adversary n =
+            distinguishingGame (BitString.uniformList (length n)) (D n) := by
         simp only [chvzkSimGame, chvzkExperiment, hconv, ProbComp.liftM_eq_eval,
           distinguishingGame_eq_bind, D, PMF.monad_bind_eq_bind, PMF.pure_bind, ProbComp.eval_bind]
         rw [PMF.bind_comm (BitString.uniformList (length n))]
         refine PMF.bind_congr_on_support _ _ _ fun ⟨⟨x, ⟨⟩⟩, state⟩ _ => ?_
         cases x
         · simp only [↓reduceIte, Bool.false_eq_true, ProbComp.eval_pure, ProbComp.eval_bind,
-            ProbComp.eval_uniform, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind]
+            ProbComp.eval_uniform, PMF.bind_bind, PMF.pure_bind]
           rw [PMF.bind_comm (PMF.uniformOfFintype Bool)]
         · simp only [↓reduceIte, ProbComp.eval_bind, BitString.eval_sampleList,
-            ProbComp.eval_uniform, PMF.monad_pure_eq_pure, PMF.bind_bind, PMF.pure_bind,
-            PMF.bind_const]
+            ProbComp.eval_uniform, PMF.bind_bind, PMF.pure_bind, PMF.bind_const]
           rw [PMF.bind_comm (PMF.uniformOfFintype Bool)]
       rw [hreal_eq, hsim_eq]
     exact (hPRG.indistinguishable D hD).congr fun n => (hgame n).symm
@@ -573,7 +563,7 @@ statistical HVZK with error `< 1 / 4`) at every security parameter.** -/
 theorem exists_computationalSpecialHVZK_and_not_specialHVZK
     {f : List Bool → List Bool} (hf : OneWay f) :
     ∃ (P : ∀ _ : ℕ, SigmaProtocol Bool Unit (List Bool) Bool Unit)
-      (sim : ℕ × List Bool × List Bool → ProbComp (List Bool × List Bool)),
+      (sim : Simulator ℕ (fun _ => Unit) (fun _ => List Bool) (fun _ => Bool) (fun _ => Unit)),
       (∀ n, (P n).Complete (fun _ _ => True)) ∧
       ComputationalSpecialHVZK P (fun _ _ _ => True) prgWitnessEncoding
         (fun _ => encBool) PMF.pure sim (fun _ => 0) ∧
@@ -594,7 +584,7 @@ variable {I : Type} {X Y T C Z : I → Type}
   {P : ∀ i, SigmaProtocol (X i) (Y i) (T i) (C i) (Z i)} [∀ i, Fintype (C i)] [∀ i, Nonempty (C i)]
   {R : ∀ i, X i → Y i → Prop} {enc : Encoding I Y T C Z} {encW : ∀ i, X i ↪ List Bool}
   {simulate : ∀ i, Y i → C i → PMF (T i × Z i)}
-  {sim : I × List Bool × List Bool → ProbComp (List Bool × List Bool)} {δ : I → ℝ≥0∞}
+  {program : I × List Bool × List Bool → ProbComp (List Bool × List Bool)} {δ : I → ℝ≥0∞}
 
 variable (R enc encW) in
 /-- The relation of the word-level Attack Game 20.4 on `main` before the typed games: a pair of
@@ -604,47 +594,63 @@ def wordRelation (i : I) (xw yw : List Bool) : Prop :=
 
 open Classical in
 variable (P R enc encW) in
-/-- The honest encoded conversation on a valid pair of words, decoded by choice. -/
+/-- The honest encoded conversation on a valid pair of words, decoded by choice. The experiment
+samples it only on valid pairs; elsewhere it is an arbitrary fixed point mass. -/
 noncomputable def wordRealConversation (i : I) (xw yw : List Bool) :
-    PMF (Option (List Bool × List Bool × List Bool)) :=
+    PMF (List Bool × List Bool × List Bool) :=
   if h : wordRelation R enc encW i xw yw then
     ((P i).conversation h.choose.1 h.choose.2).map fun tcz =>
-      some (enc.commitment i tcz.1, enc.challenge i tcz.2.1, enc.response i tcz.2.2)
+      (enc.commitment i tcz.1, enc.challenge i tcz.2.1, enc.response i tcz.2.2)
   else
-    PMF.pure none
+    PMF.pure ([], [], [])
 
-variable (enc sim) in
-/-- The simulated encoded conversation on a statement word: the simulator's words, with the encoded
-uniform challenge. -/
+variable (enc program) in
+/-- The simulated encoded conversation on a statement word: the word program's commitment and
+response words, with the encoded uniform challenge. -/
 noncomputable def wordSimConversation (i : I) (yw : List Bool) :
-    PMF (Option (List Bool × List Bool × List Bool)) :=
+    PMF (List Bool × List Bool × List Bool) :=
   (PMF.uniformOfFintype (C i)).bind fun c =>
-    (ProbComp.eval (sim (i, yw, enc.challenge i c))).map fun words =>
-      some (words.1, enc.challenge i c, words.2)
+    (ProbComp.eval (program (i, yw, enc.challenge i c))).map fun words =>
+      (words.1, enc.challenge i c, words.2)
 
 /-- **The word-level Attack Game 20.4 bound is a corollary.** At word types, with the encoded
 relation `wordRelation`, the word-level games of `main` before the typed games are
 `chvzkExperiment` with the conversation laws `wordRealConversation` and `wordSimConversation`. A
-program realizing a perfect special HVZK simulator up to `δ i ≤ ε` bounds their advantage by `ε`
-against every word-level adversary, by the generic `advantage_chvzkExperiment_le`. -/
+word program within `δ i ≤ ε` of a perfect special HVZK simulator on encodings (as
+`SimulatorRealizedBy.exists_word` extracts from an efficient typed simulator) bounds their advantage
+by `ε` against every word-level adversary, by the generic `advantage_chvzkExperiment_le`. -/
 theorem advantage_wordChvzkExperiment_le (hS : ∀ i, (P i).SpecialHVZK (R i) (simulate i))
-    (h : SimulatorRealizedBy enc simulate sim δ) (i : I) {ε : ℝ≥0} (hδ : δ i ≤ ε) {σ : Type}
+    (h : ∀ i y c, CloseTo ((simulate i y c).map (Prod.map (enc.commitment i) (enc.response i)))
+      (ProbComp.eval (program (i, enc.statement i y, enc.challenge i c))) (δ i))
+    (i : I) {ε : ℝ≥0} (hδ : δ i ≤ ε) {σ : Type}
     (A : TwoStage Unit (List Bool × List Bool) (List Bool × List Bool × List Bool) Bool σ) :
     Game.advantage
         (chvzkExperiment (wordRelation R enc encW i) (wordRealConversation P R enc encW i) A)
-        (chvzkExperiment (wordRelation R enc encW i) (fun _ yw => wordSimConversation enc sim i yw)
-          A) ≤ ε := by
+        (chvzkExperiment (wordRelation R enc encW i)
+          (fun _ yw => wordSimConversation enc program i yw) A) ≤ ε := by
   refine advantage_chvzkExperiment_le (fun xw yw hp => ?_) A
   simp only [wordRealConversation, hp, ↓reduceDIte]
-  have hclose := h.closeTo_bind_conversation hS hp.choose_spec.2.2
-    (fun c words => some (words.1, enc.challenge i c, words.2))
-  rw [hp.choose_spec.2.1] at hclose
+  let out (c : C i) (words : List Bool × List Bool) : List Bool × List Bool × List Bool :=
+    (words.1, enc.challenge i c, words.2)
+  have henc : ((P i).conversation hp.choose.1 hp.choose.2).map (fun tcz =>
+        (enc.commitment i tcz.1, enc.challenge i tcz.2.1, enc.response i tcz.2.2)) =
+      (PMF.uniformOfFintype (C i)).bind fun c =>
+        ((simulate i hp.choose.2 c).map (Prod.map (enc.commitment i) (enc.response i))).map
+          (out c) := by
+    rw [(hS i).conversation_eq hp.choose_spec.2.2]
+    simp only [pmf_norm]
+    rfl
+  have hclose := CloseTo.bind_right (PMF.uniformOfFintype (C i)) fun c _ =>
+    (h i hp.choose.2 c).map (out c)
+  rw [← henc, hp.choose_spec.2.1] at hclose
   exact hclose.mono hδ
 
 /-- The family form: when `δ` is bounded by a negligible function along `setup`, every word-level
 adversary family, PPT or not, has negligible advantage in the word-level games. -/
 theorem negligible_wordChvzkGame (hS : ∀ i, (P i).SpecialHVZK (R i) (simulate i))
-    (h : SimulatorRealizedBy enc simulate sim δ) {setup : ℕ → PMF I}
+    (h : ∀ i y c, CloseTo ((simulate i y c).map (Prod.map (enc.commitment i) (enc.response i)))
+      (ProbComp.eval (program (i, enc.statement i y, enc.challenge i c))) (δ i))
+    {setup : ℕ → PMF I}
     (hnegl : ∃ ε : ℕ → ℝ≥0, Negligible ε ∧ ∀ n, ∀ i ∈ (setup n).support, δ i ≤ ε n) {σ : Type}
     (A : ℕ → I →
       TwoStage Unit (List Bool × List Bool) (List Bool × List Bool × List Bool) Bool σ) :
@@ -652,8 +658,8 @@ theorem negligible_wordChvzkGame (hS : ∀ i, (P i).SpecialHVZK (R i) (simulate 
       ((setup n).bind fun i =>
         chvzkExperiment (wordRelation R enc encW i) (wordRealConversation P R enc encW i) (A n i))
       ((setup n).bind fun i =>
-        chvzkExperiment (wordRelation R enc encW i) (fun _ yw => wordSimConversation enc sim i yw)
-          (A n i)) := by
+        chvzkExperiment (wordRelation R enc encW i)
+          (fun _ yw => wordSimConversation enc program i yw) (A n i)) := by
   obtain ⟨ε, hε, hle⟩ := hnegl
   exact negligible_of_le hε fun n => Game.advantage_bind_le_of_support (setup n) _ _ fun i hi =>
     advantage_wordChvzkExperiment_le hS h i (hle n i hi) (A n i)

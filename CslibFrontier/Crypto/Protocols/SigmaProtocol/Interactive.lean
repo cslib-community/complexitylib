@@ -509,7 +509,7 @@ def interactiveSimWord
 theorem isPPTOn_interactiveSimWord {enc : Encoding I YF TF CF ZF}
     {program : I × List Bool × List Bool → ProbComp (List Bool × List Bool)}
     {sampleChallengeWord : I → ProbComp (List Bool)}
-    (hprog : IsPPTOn (encSimulatorInput enc.index) (encPair encBits encBits) program)
+    (hprog : IsPPTOn (encSimulatorWordInput enc.index) (encPair encBits encBits) program)
     (hchal : IsPPTOn enc.index encBits sampleChallengeWord) :
     IsPPTOn (encPair enc.index encBits) encBits
       (interactiveSimWord program sampleChallengeWord) := by
@@ -564,7 +564,8 @@ theorem SpecialSoundness.efficientKnowledgeSound
   polyTime := hpoly
 
 /-- `interactiveSimWord` realizes `(PF i).interactiveSim (simComp i)` on encodings up to
-`δC i + δ i`. -/
+`δC i + δ i`, when `program` is within `δ i` of the encoded `simulate i` on every encoded input
+(as `SimulatorRealizedBy.exists_word` provides). -/
 theorem simulatorRealizedBy_interactiveSimWord
     {enc : Encoding I YF TF CF ZF}
     {simulate : ∀ i, YF i → CF i → PMF (TF i × ZF i)}
@@ -574,7 +575,8 @@ theorem simulatorRealizedBy_interactiveSimWord
     {sampleChallengeWord : I → ProbComp (List Bool)}
     {δ δC : I → ℝ≥0∞}
     (hsim : ∀ i y c, ProbComp.eval (simComp i y c) = simulate i y c)
-    (hreal : SimulatorRealizedBy enc simulate program δ)
+    (hreal : ∀ i y c, CloseTo ((simulate i y c).map (Prod.map (enc.commitment i) (enc.response i)))
+      (ProbComp.eval (program (i, enc.statement i y, enc.challenge i c))) (δ i))
     (hchal : ∀ i, CloseTo (PMF.uniformOfFintype (CF i))
       (ProbComp.eval (sampleChallenge i)) (δC i))
     (hchalWord : ∀ i, ProbComp.eval (sampleChallengeWord i) =
@@ -637,7 +639,8 @@ theorem EfficientSpecialHVZK.efficientHVZK
       (fun _ => 0) (fun i => δC i + δ i) where
   hvzk i := (h.specialHVZK i).hvzk_zero (hcommit i) (hsim i)
   realized := by
-    obtain ⟨program, hprogPPT, hprogReal⟩ := h.realized
+    obtain ⟨sim, hsimPPT, hsimReal⟩ := h.realized
+    obtain ⟨program, hprogPPT, hprogReal⟩ := hsimReal.exists_word hsimPPT
     exact ⟨interactiveSimWord program sampleChallengeWord,
       isPPTOn_interactiveSimWord hprogPPT hchalPPT,
       simulatorRealizedBy_interactiveSimWord PF hsim hprogReal hchal hchalWord⟩
