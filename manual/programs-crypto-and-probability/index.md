@@ -8,6 +8,7 @@ The survey baseline is `13e6a31951bf1c89a1a6258c44f9444aecbbefd8`. This section 
 
 - [Programs, probability laws, and native realization](programs-and-realization.md): typed free programs, stateful oracles, sampling, cost bounds, and fair-coin machines.
 - [Security games and primitive families](security-games-and-primitives.md): computational indistinguishability, hardness assumptions, generators/functions, encryption, authentication, signatures, commitments, and garbling schemes.
+- [Readable security experiments](readable-experiments.md): fixed-instance experiments on typed values, family games, typed adversaries with encodings in their efficiency predicate, and the readability checks.
 - [Average-case heuristics and the Liu–Pass bridge](average-case-hardness.md): exact and approximate hardness, deterministic/PPT and eventual/infinitely-often variants, and polynomial-clock OWF equivalences.
 - [Distributional problems, AvgP, HeurP and Levin reductions](distributional-complexity.md): length-indexed ensembles, computable and samplable ensembles, errorless and heuristic schemes, dominating reductions and their closure properties.
 - [Public-coin interactive reductions](interactive-reductions.md): message access, semantic and efficient security interfaces, sumcheck and GKR.
@@ -43,7 +44,7 @@ Uniformity is load-bearing. The native witnesses are chosen before all inputs, a
 
 The formal contracts distinguish strict versus expected running time; exact uniform group laws versus approximate fair-coin samplers; fixed versus adaptive query selection; full versus proper MPC coalitions; and generable versus unrestricted auxiliary-input zero knowledge. These are properties of the formal statements, not incidental caveats.
 
-Security experiments are stated for a fixed instance on typed values, in the order of their textbook figure, and family games draw the setup and then run the fixed experiment. Adversaries are typed, and their encodings appear only in a named efficiency predicate such as `CDHAdversary.IsPPT`. **Inference:** a reader can check an experiment against its source without decoding words, and a reduction's efficiency is a separate obligation stated where it is proved. [Write an experiment like its textbook figure](security-games-and-primitives.md#write-an-experiment-like-its-textbook-figure) gives the procedure.
+Security experiments are stated for a fixed instance on typed values, in the order of their textbook figure, and family games draw the setup and then run the fixed experiment. Adversaries are typed, and their encodings appear only in a named efficiency predicate such as `CDHAdversary.IsPPT`. **Inference:** a reader can check an experiment against its source without decoding words, and a reduction's efficiency is a separate obligation stated where it is proved. [Readable security experiments](readable-experiments.md) gives the procedure.
 
 ## Coverage and evidence
 

@@ -16,59 +16,6 @@ For two continuations that agree outside a bad input event, import [Game/CloseTo
 
 Pinned cslib also has the finite [Generator](https://github.com/leanprover/cslib/blob/254e30e6d4299c51323aaeaf5f51a4763b375d4a/Cslib/Crypto/Primitives/PRG/Defs.lean#L38) interface, whose `Secure` accepts any chosen predicate on randomized tests, while expansion is a separate cardinality property. cslib-frontier adds circuit-bounded tests and uniform machine tests on top. These are intentionally different quantifiers; the circuit version can select a new bounded circuit at each input length [cslib][cslib].
 
-## Write an experiment like its textbook figure
-
-This section is for anyone adding or changing a security experiment, a reduction or an adversary
-type under `CslibFrontier/Crypto`. A reader should be able to compare an experiment with its figure
-in Boneh–Shoup, Katz–Lindell or Goldreich line by line, and word encodings should appear only where
-efficiency is stated. The rules are in [Security experiments](../../AGENTS.md#security-experiments);
-the Diffie–Hellman modules show them.
-
-1. **Write the experiment for a fixed instance.** [DiffieHellman/Finite.lean](../../CslibFrontier/Crypto/Computational/DiffieHellman/Finite.lean)
-   fixes a group `G` and a generator `g`. `cdhExperiment` is a `ProbComp Bool` program that
-   follows Attack Game 10.5 of [BonehShoup2023] step by step: the challenger draws `a` and `b`,
-   the adversary `A : G → G → ProbComp G` receives `a • g` and `b • g`, and the experiment returns
-   whether its answer is `(a * b) • g`. The body mentions no encoding, security parameter or setup,
-   and binds every value by name. Name such a program `…Experiment`.
-2. **State the advantage and reductions on that experiment.** `cdhAdvantage` evaluates the
-   experiment once, as a `Game`. A reduction such as `cdhToDDH` is a typed adversary built from
-   another typed adversary. Bounds between fixed-instance advantages need no efficiency hypothesis.
-3. **Derive the family game.** In [DiffieHellman.lean](../../CslibFrontier/Crypto/Computational/DiffieHellman.lean),
-   `cdhGame` draws group parameters `d` from the setup law, then evaluates `cdhExperiment` in the
-   group `F.Carrier d`. Name such a game `…Game`. It is the only place that evaluates the
-   experiment with `ProbComp.eval`.
-4. **Put the encodings in the efficiency predicate.** `CDHAdversary` is a typed function of the
-   security parameter, the group parameters and two group elements. Its input is the record
-   `CDHInput` with named fields (`secParam`, `groupParameters`, `leftPublic`, `rightPublic`), and
-   `CDHAdversary.IsPPT` says that one uniform strict PPT machine computes the adversary from the
-   record's encoding `encCDHInput`. The assumption `CDH` quantifies over typed adversaries
-   satisfying `IsPPT`. Reductions prove `IsPPT` for the adversaries they build.
-
-To check a module, run the experiment readability check on its area from the repository root:
-
-```bash
-python3 scripts/check_experiment_readability.py --list CslibFrontier/Crypto/Computational/DiffieHellman
-```
-
-It reads only the sources, needs no build and always succeeds. It prints the number of findings
-per category, then each one as `path:line: declaration: category` with the counted text:
-
-- `encoding`: a word codec in an experiment or reduction body;
-- `eval`: a `ProbComp.eval` in a body, except one that evaluates a fixed experiment;
-- `chain`: a positional projection chain;
-- `word_adversary`: `List Bool` or `WordOracleComp` in an adversary type.
-
-A module that follows the steps above has no findings. To remove one, move the encoding into the
-adversary's efficiency predicate, or split the body into a fixed experiment and a family game.
-Without `--list`, the check compares the modules your branch changes with
-`scripts/experiment_readability_baseline.json`, as CI does on pull requests. When a count falls, it
-prints the command that lowers the entry. When one rises, it fails and lists the findings. The
-script recognizes experiments by their type and name, so a renamed or newly named experiment can
-change its counts; its docstring gives the exact conventions, and
-[Diagnose a readability ratchet failure](../workflows/troubleshooting.md#diagnose-a-readability-ratchet-failure)
-explains failures. The check is syntactic. It does not find setup plumbing, duplicate experiments or
-weakened statements: reviewers check those against the rules.
-
 ## Hardness and pseudorandomness
 
 | Schema | Principal source | Formal parameters and main use |

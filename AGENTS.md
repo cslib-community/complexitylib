@@ -758,7 +758,7 @@ A security experiment under `CslibFrontier/Crypto` reads like its figure in the 
 Katz–Lindell, Goldreich), and word encodings stay at the efficiency boundary. New and changed
 experiments, games, reductions and adversary types follow these rules; existing ones are brought
 into line under [#4817](https://github.com/cslib-community/cslib-frontier/issues/4817). The
-[Operator's Manual](manual/programs-crypto-and-probability/security-games-and-primitives.md#write-an-experiment-like-its-textbook-figure)
+[Operator's Manual](manual/programs-crypto-and-probability/readable-experiments.md)
 works through the Diffie–Hellman example.
 
 1. **Experiment bodies follow the textbook figure.** Sampling, the adversary call and the test

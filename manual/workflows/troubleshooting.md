@@ -104,7 +104,7 @@ The report lists each counted finding with its line and declaration. Fix the fin
 added: name the encoding, bind the components by name, move the encoding out of the experiment
 into the adversary's efficiency predicate, or write `Pr[e]` and `$ᵗ α`, as the
 [contributing rules](../../CONTRIBUTING.md#library-quality-standard) and
-[experiment walkthrough](../programs-crypto-and-probability/security-games-and-primitives.md#write-an-experiment-like-its-textbook-figure)
+[experiment walkthrough](../programs-crypto-and-probability/readable-experiments.md)
 describe. Run the command again; it succeeds when no module exceeds its entry.
 
 A count can rise without a new occurrence: a declaration or module moved, an experiment was
