@@ -73,11 +73,6 @@ namespace Cslib.MachineLearning.PACBayes
 
 variable {ι Z : Type*} [MeasurableSpace Z]
 
-private theorem measurable_empiricalRisk {ℓ : ι → Z → ℝ} (hℓ : ∀ i, Measurable (ℓ i)) (m : ℕ)
-    (i : ι) : Measurable fun S : Fin m → Z => empiricalRisk ℓ S i := by
-  simp only [empiricalRisk_eq_sum_div]
-  exact (Finset.measurable_sum _ fun k _ => (hℓ i).comp (measurable_pi_apply k)).div_const _
-
 section ChangeOfMeasure
 
 variable [MeasurableSpace ι] [Countable ι] [MeasurableSingletonClass ι]
@@ -157,7 +152,7 @@ private theorem measure_le_lintegral_exp_sq_risk_sub (hℓ : ∀ i, Measurable (
     ENNReal.ofReal (Real.exp (2 * (m - 1) * (trueRisk ℓ D i - empiricalRisk ℓ S i) ^ 2))
   have hFm : Measurable (Function.uncurry F) :=
     measurable_from_prod_countable_left fun i => by
-      have := measurable_empiricalRisk hℓ m i
+      have := measurable_empiricalRisk (ℓ := ℓ) m (hℓ i)
       simp only [Function.uncurry_apply_pair, F]
       fun_prop
   have hswap : ∫⁻ S, ∫⁻ i, F S i ∂P ∂Measure.pi (fun _ : Fin m => D) ≤
@@ -184,28 +179,6 @@ section Bounds
 
 variable {D : Measure Z} [IsProbabilityMeasure D] {ℓ : ι → Z → ℝ}
 
-private theorem risk_mem_Icc (hℓ : ∀ i, Measurable (ℓ i))
-    (hℓ01 : ∀ i z, ℓ i z ∈ Set.Icc (0 : ℝ) 1) (i : ι) : trueRisk ℓ D i ∈ Set.Icc (0 : ℝ) 1 := by
-  have hint : Integrable (ℓ i) D :=
-    Integrable.of_mem_Icc 0 1 (hℓ i).aemeasurable (ae_of_all _ (hℓ01 i))
-  rw [trueRisk_def]
-  refine ⟨integral_nonneg fun z => (hℓ01 i z).1, ?_⟩
-  calc ∫ z, ℓ i z ∂D ≤ ∫ _, (1 : ℝ) ∂D :=
-        integral_mono hint (integrable_const 1) fun z => (hℓ01 i z).2
-    _ = 1 := by simp
-
-omit [MeasurableSpace Z] [IsProbabilityMeasure D] in
-private theorem empiricalRisk_mem_Icc (hℓ01 : ∀ i z, ℓ i z ∈ Set.Icc (0 : ℝ) 1) {m : ℕ}
-    (S : Fin m → Z) (i : ι) : empiricalRisk ℓ S i ∈ Set.Icc (0 : ℝ) 1 := by
-  rcases Nat.eq_zero_or_pos m with rfl | hm
-  · simp [empiricalRisk_eq_sum_div]
-  have hmR : (0 : ℝ) < m := Nat.cast_pos.2 hm
-  rw [empiricalRisk_eq_sum_div]
-  refine ⟨div_nonneg (Finset.sum_nonneg fun k _ => (hℓ01 i (S k)).1) hmR.le, ?_⟩
-  rw [div_le_one hmR]
-  calc ∑ k, ℓ i (S k) ≤ ∑ _k : Fin m, (1 : ℝ) := Finset.sum_le_sum fun k _ => (hℓ01 i (S k)).2
-    _ = m := by simp
-
 variable [MeasurableSpace ι] [Countable ι] [MeasurableSingletonClass ι]
 
 /-- **McAllester's PAC-Bayes bound** [McAllester1999], with `log (√m / δ)`: for a prior `P`
@@ -229,17 +202,17 @@ theorem measure_pi_exists_integral_risk_gt (hℓ : ∀ i, Measurable (ℓ i))
     have : (2 : ℝ) ≤ m := by exact_mod_cast hm
     linarith
   have hg (i : ι) : |trueRisk ℓ D i - empiricalRisk ℓ S i| ≤ 1 := by
-    have h1 := risk_mem_Icc (D := D) hℓ hℓ01 i
-    have h2 := empiricalRisk_mem_Icc hℓ01 S i
+    have h1 := trueRisk_mem_Icc ℓ D (hℓ01 i)
+    have h2 := empiricalRisk_mem_Icc ℓ S (hℓ01 i)
     rw [abs_le]
     constructor <;> linarith [h1.1, h1.2, h2.1, h2.2]
   have hbound := integral_le_sqrt_klDiv_add_log hQP hg hlam hB.le
   have hintR : Integrable (fun i => trueRisk ℓ D i) Q :=
     Integrable.of_mem_Icc 0 1 (measurable_of_countable _).aemeasurable
-      (ae_of_all _ fun i => risk_mem_Icc hℓ hℓ01 i)
+      (ae_of_all _ fun i => trueRisk_mem_Icc ℓ D (hℓ01 i))
   have hintE : Integrable (fun i => empiricalRisk ℓ S i) Q :=
     Integrable.of_mem_Icc 0 1 (measurable_of_countable _).aemeasurable
-      (ae_of_all _ fun i => empiricalRisk_mem_Icc hℓ01 S i)
+      (ae_of_all _ fun i => empiricalRisk_mem_Icc ℓ S (hℓ01 i))
   rw [integral_sub hintR hintE] at hbound
   linarith
 

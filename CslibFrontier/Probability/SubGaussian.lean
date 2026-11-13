@@ -153,20 +153,19 @@ theorem hasSubgaussianMGF_integral_sub_sum_div {Z : Type*} [MeasurableSpace Z] (
   have hsum := (HasSubgaussianMGF.sum_of_iIndepFun hind
     (s := Finset.univ) fun i _ => hcoord i).const_mul (1 / (m : ℝ))
   have hmR : (0 : ℝ) < m := Nat.cast_pos.2 hm
+  have hc : (4 * m : ℝ≥0)⁻¹ =
+      .mk ((1 / (m : ℝ)) ^ 2) (sq_nonneg _) * ∑ _i : Fin m, (‖(1 : ℝ) - 0‖₊ / 2) ^ 2 := by
+    simp only [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul, sub_zero,
+      nnnorm_one]
+    ext1
+    push_cast [NNReal.coe_mk]
+    field_simp
+    ring
   convert hsum using 1
   · funext S
     simp only [Finset.sum_sub_distrib, Finset.sum_const, Finset.card_univ, Fintype.card_fin,
       nsmul_eq_mul]
     field_simp
-  · refine NNReal.eq ?_
-    push_cast
-    simp only [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul, sub_zero]
-    field_simp
-    erw [NNReal.coe_mul]
-    simp only [NNReal.coe_div, NNReal.coe_ofNat, NNReal.coe_pow, coe_nnnorm, norm_one,
-      NNReal.coe_natCast, NNReal.coe_mul]
-    erw [NNReal.coe_mk]
-    field_simp
-    norm_num
+  · exact hc
 
 end Cslib.Probability

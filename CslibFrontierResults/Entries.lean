@@ -1481,7 +1481,7 @@ register_result "blum-mansour-swap-regret" where
 
 register_result "pac-bayes-mcallester" where
   title := "McAllester's PAC-Bayes bound and its Occam corollary"
-  topic := "learning theory"
+  topic := "statistical learning"
   sources := [
     { paper := ShalevShwartzBenDavid2014, theorem := "Theorem 31.1 and Exercise 31.2",
       locator := "Section 31.1 and 31.3, pp. 416–418" },
