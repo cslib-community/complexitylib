@@ -278,7 +278,6 @@
  "CslibFrontier/Crypto/Computational/Kilian/Soundness.lean": 1,
  "CslibFrontier/Crypto/Computational/LWE/DualRegev.lean": 1,
  "CslibFrontier/Crypto/Computational/LWE/Regev.lean": 4,
- "CslibFrontier/Crypto/Computational/MLDSA/KeyOnly.lean": 5,
  "CslibFrontier/Crypto/Computational/NaorYung.lean": 4,
  "CslibFrontier/Crypto/Computational/RSATrapdoor.lean": 4,
  "CslibFrontier/Crypto/Computational/SIS/ModulusSwitch/CenteredBinomial.lean": 2,
