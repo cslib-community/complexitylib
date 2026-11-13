@@ -28,9 +28,9 @@ example : (Table.mk 2 []).wellFormed = true := by decide
 
 -- A real CSP with explicit tables, repeated variables and ordinary Boolean assignments.
 example : CSP.eval Table.sem (fun _ : ℕ => false)
-    [(Table.mk 2 [[false, false]], [37, 37])] = true := by decide
+    [⟨Table.mk 2 [[false, false]], [37, 37]⟩] = true := by decide
 example : CSP.eval Table.sem (fun _ : ℕ => true)
-    [(Table.mk 2 [[false, false]], [37, 37])] = false := by decide
+    [⟨Table.mk 2 [[false, false]], [37, 37]⟩] = false := by decide
 
 -- Zero, one and more than one deviation; duplicates remain duplicated and order is stable.
 example : (sample.contract [false, false, false] [0, 1]).rows =
@@ -70,7 +70,7 @@ example : (exactlyOne [5, 8, 13]).sem [true] = false := by decide
 
 -- Binary arity and names, with every framing layer charged (not unary name lengths).
 example : (encTable (exactlyOne [5, 8, 13])).length = 62 := by decide
-example : (encConstraint encTable encNat (exactlyOne [5, 8, 13], [5, 8, 13])).length =
+example : (encConstraint encTable encNat ⟨exactlyOne [5, 8, 13], [5, 8, 13]⟩).length =
     150 := by
   rw [length_encConstraint_exactlyOne]
   decide
