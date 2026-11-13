@@ -8,9 +8,8 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Game.Experiment
-public import CslibFrontier.Languages.Probabilistic.Oracle
+public import CslibFrontier.Languages.Probabilistic.Oracle.RunState
 import CslibFrontier.Crypto.Game.Order
-import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Probability.PMF.Bind
 
 /-!
@@ -20,17 +19,15 @@ A forgery experiment draws a key pair, runs a forger with access to a signing or
 when the forger's candidate `(m, σ)` verifies and is fresh. Signatures and MACs differ only in
 the parameters: a MAC has no public key (`PK = Unit`) and verifies with the secret key.
 
-The signing oracle is a *policy* over the history of answered queries (`Signer`). Each policy
-either signs the next query or refuses it; a refused query is answered with `default` and is not
-recorded. Full, one-time, indexed and counter signing oracles are policies, so the experiment
-is written once (`forgeExperiment`). Freshness is a parameter too: `freshMessage` asks for a
-message that was never signed (existential unforgeability) and `freshPair` for a pair that was
-never answered (strong unforgeability).
+The signing oracle is a *policy* over the history of answered queries (`Signer`). Each policy either
+signs the next query or refuses it; a refused query is answered with `default` and is not recorded,
+as in `ProbOracleComp.runLogWith`. Full, one-time, indexed and counter signing oracles are policies,
+so the experiment is written once (`forgeExperiment`). Freshness is a parameter too: `freshMessage`
+asks for a message that was never signed (existential unforgeability) and `freshPair` for a pair
+that was never answered (strong unforgeability).
 
 ## Main definitions
 
-* `Cslib.ProbOracleComp.runLogWith`: run an oracle program against a refusal-aware oracle,
-  logging the answered queries.
 * `Cslib.Crypto.Signer`: a signing policy over the log of answered queries, with
   `Signer.ofSign`, `Signer.oneTime`, `Signer.indexed` and `Signer.counter`.
 * `Cslib.Crypto.forgeExperiment`: the forgery experiment for a key generator, signing policy,
@@ -40,8 +37,6 @@ never answered (strong unforgeability).
 
 ## Main results
 
-* `Cslib.ProbOracleComp.forall_mem_runLogWith`: every logged pair is a reply that the policy's
-  signing program can produce.
 * `Cslib.Crypto.succProbability_forgeExperiment_mono`: a weaker freshness test does not decrease
   the success probability. In particular a forger succeeds at least as often in the strong
   experiment as in the existential one (`succProbability_forgeExperiment_freshMessage_le`), so
@@ -59,62 +54,6 @@ never answered (strong unforgeability).
 @[expose] public section
 
 namespace Cslib
-
-namespace ProbOracleComp
-
-open OracleComp (sumHandler)
-
-variable {Q R α : Type}
-
-/-- The stateful handler behind `runLogWith`: ask the policy `O` about the query `q` given the
-log; run its program and append the answered pair, or answer `default` and log nothing. -/
-def logOracle [Inhabited R] (O : List (Q × R) → Q → Option (ProbComp R)) (q : Q) :
-    StateT (List (Q × R)) ProbComp R := fun log =>
-  match O log q with
-  | some program => (fun r => (r, log ++ [(q, r)])) <$> program
-  | none => pure (default, log)
-
-/-- One call of the logging oracle: run the policy's program and append the answered pair, or
-answer `default` and keep the log. -/
-@[simp] theorem logOracle_run [Inhabited R] (O : List (Q × R) → Q → Option (ProbComp R)) (q : Q)
-    (log : List (Q × R)) :
-    (logOracle O q).run log = match O log q with
-      | some program => (fun r => (r, log ++ [(q, r)])) <$> program
-      | none => pure (default, log) := rfl
-
-/-- Run `A` with fresh private coins against the refusal-aware oracle `O`, which reads the log of
-answered queries. A query that `O` refuses is answered with `default` and not logged. Returns the
-result and the log, in the order the queries were answered. -/
-def runLogWith [Inhabited R] (A : ProbOracleComp (fun _ : Q => R) α)
-    (O : List (Q × R) → Q → Option (ProbComp R)) : ProbComp (α × List (Q × R)) :=
-  (OracleComp.interpret (sumHandler (fun n => StateT.lift (ProbComp.unifFin n)) (logOracle O))
-    A).run []
-
-/-- **Every logged pair is a possible reply**: a property of query-reply pairs that holds for
-every reply of every program the policy runs holds for every pair in the log of `runLogWith`. -/
-theorem forall_mem_runLogWith [Inhabited R] {O : List (Q × R) → Q → Option (ProbComp R)}
-    {P : Q × R → Prop}
-    (hO : ∀ log q program, O log q = some program →
-      ∀ r ∈ (ProbComp.eval program).support, P (q, r))
-    (A : ProbOracleComp (fun _ : Q => R) α) {z : α × List (Q × R)}
-    (hz : z ∈ (ProbComp.eval (A.runLogWith O)).support) : ∀ p ∈ z.2, P p := by
-  rw [runLogWith, eval_run_interpret] at hz
-  refine run_interpret_invariant _ (fun log => ∀ p ∈ log, P p) ?_ A [] (by simp) z.1 z.2 hz
-  intro q log hlog r log' hstep
-  simp only [logOracle] at hstep
-  cases hprog : O log q with
-  | none =>
-    simp only [hprog, ProbComp.eval_pure, PMF.mem_support_pure_iff, Prod.mk.injEq] at hstep
-    exact hstep.2 ▸ hlog
-  | some program =>
-    simp only [hprog, ProbComp.eval_map, PMF.mem_support_map_iff, Prod.mk.injEq] at hstep
-    obtain ⟨r', hr', rfl, rfl⟩ := hstep
-    intro p hp
-    rcases List.mem_append.mp hp with hp | hp
-    · exact hlog p hp
-    · exact List.mem_singleton.mp hp ▸ hO log q program hprog r' hr'
-
-end ProbOracleComp
 
 namespace Crypto
 

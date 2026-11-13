@@ -93,7 +93,8 @@ private theorem eval_runLogWith_toTyped (adversary : Forger) (n : ℕ) (pk : Lis
         (fun request : Unit × List Bool => ProbOracleComp.logOracle signer request.2) := by
     funext q
     cases q <;> simp [ProbOracleComp.query]
-  rw [ProbOracleComp.runLogWith, Forger.toTyped, OracleComp.interpret_interpret, hhandler,
+  rw [ProbOracleComp.runLogWith, ProbOracleComp.runState, Forger.toTyped,
+    OracleComp.interpret_interpret, hhandler,
     ProbOracleComp.eval_run_interpret, ProbOracleComp.eval_run_interpret]
   exact ProbOracleComp.run_interpret_map_state
     (fun request log => ProbComp.eval (ProbOracleComp.logOracle signer request.2 log))

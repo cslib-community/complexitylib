@@ -50,13 +50,13 @@ def echo : Signature.Scheme Unit Unit Bool Bool where
 
 -- A forger that outputs a valid pair without querying wins the existential experiment.
 example : ProbComp.eval (echo.eufCmaExperiment fun _ => pure (true, true)) = PMF.pure true := by
-  simp [forgeExperiment, ProbOracleComp.runLogWith, echo, freshMessage]
+  simp [forgeExperiment, ProbOracleComp.runLogWith, ProbOracleComp.runState, echo, freshMessage]
 
 -- Replaying the answer to a query is not an existential forgery.
 example : ProbComp.eval (echo.eufCmaExperiment fun _ => do
     let σ ← ProbOracleComp.query true
     return (true, σ)) = PMF.pure false := by
-  simp [forgeExperiment, ProbOracleComp.runLogWith, echo, freshMessage]
+  simp [forgeExperiment, ProbOracleComp.runLogWith, ProbOracleComp.runState, echo, freshMessage]
 
 -- The echo scheme is correct and has unique signatures, so its strong and existential
 -- experiments coincide for every forger.
