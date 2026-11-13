@@ -18,14 +18,17 @@ basis `1, i, j, k` satisfying
 
 `i² = -1`, `j² = -p`, and `ij = k = -ji`.
 
-When `p` is a positive prime, this is the algebra denoted `B_{p,∞}` in the SQIsign specification.
-The name records the source's intended algebra; this module establishes the displayed presentation
-and positive-definite reduced norm, but does not prove the local ramification classification.
+For SQIsign's positive prime `p = c * 2^f - 1`, where `f > 1` and `c` is odd (hence
+`p ≡ 3 mod 4`), this is the algebra denoted `B_{p,∞}` in the specification. The name records the
+source's intended algebra; this module establishes the displayed presentation and positive-definite
+reduced norm, but does not encode that parameter restriction or prove the local ramification
+classification.
 
 ## Main definitions
 
 * `Cslib.BpInfinity`: the rational quaternion algebra with parameters `-1` and `-p`.
-* `Cslib.BpInfinity.i`, `Cslib.BpInfinity.j`, `Cslib.BpInfinity.k`: its standard generators.
+* `Cslib.BpInfinity.i`, `Cslib.BpInfinity.j`, `Cslib.BpInfinity.k`: its standard generators, with
+  `i_eq_mk`, `j_eq_mk`, and `k_eq_mk` connecting them to ordinary quaternion coordinates.
 * `Cslib.BpInfinity.reducedNorm`: the reduced norm `q * star q`, viewed in `ℚ`.
 * `Cslib.BpInfinity.reducedTrace`: the reduced trace `q + star q`, viewed in `ℚ`.
 
@@ -51,8 +54,9 @@ open scoped Quaternion
 
 /-- The rational quaternion algebra with `i² = -1` and `j² = -p`.
 
-For a positive prime `p`, this is the algebra denoted `B_{p,∞}` in the SQIsign specification.
-The ramification classification is not part of this definition. -/
+For SQIsign's positive prime `p = c * 2^f - 1`, with `f > 1` and odd `c` (so
+`p ≡ 3 mod 4`), this is the algebra denoted `B_{p,∞}` in the specification. Neither that parameter
+restriction nor the ramification classification is part of this definition. -/
 abbrev BpInfinity (p : ℚ) := ℍ[ℚ, -1, -p]
 
 namespace BpInfinity
@@ -69,6 +73,18 @@ def j (p : ℚ) : BpInfinity p := (sourceBasis p).j
 
 /-- The standard generator `k = i * j` of `B_{p,∞}`. -/
 def k (p : ℚ) : BpInfinity p := (sourceBasis p).k
+
+/-- The named generator `i` is the first imaginary coordinate vector. -/
+theorem i_eq_mk (p : ℚ) : i p = QuaternionAlgebra.mk 0 1 0 0 := by
+  rfl
+
+/-- The named generator `j` is the second imaginary coordinate vector. -/
+theorem j_eq_mk (p : ℚ) : j p = QuaternionAlgebra.mk 0 0 1 0 := by
+  rfl
+
+/-- The named generator `k` is the third imaginary coordinate vector. -/
+theorem k_eq_mk (p : ℚ) : k p = QuaternionAlgebra.mk 0 0 0 1 := by
+  rfl
 
 @[simp]
 theorem i_mul_i (p : ℚ) : i p * i p = (-1 : BpInfinity p) := by
@@ -124,8 +140,12 @@ def reducedTrace {p : ℚ} (q : BpInfinity p) : ℚ := (q + star q).re
 /-- Addition to the conjugate is the scalar reduced trace. -/
 theorem add_star_eq_reducedTrace {p : ℚ} (q : BpInfinity p) :
     q + star q = (reducedTrace q : BpInfinity p) := by
-  rcases q with ⟨x, y, z, t⟩
-  ext <;> simp [reducedTrace]
+  have htrace : reducedTrace q = 2 * q.re := by
+    have h := congrArg QuaternionAlgebra.re (QuaternionAlgebra.self_add_star' q)
+    change reducedTrace q = 2 * q.re + 0 * q.imI at h
+    simpa using h
+  rw [htrace]
+  simpa only [zero_mul, add_zero] using QuaternionAlgebra.self_add_star' q
 
 /-- The coordinate formula for the reduced trace. -/
 @[simp]

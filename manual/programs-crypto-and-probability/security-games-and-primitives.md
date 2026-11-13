@@ -709,10 +709,13 @@ that attain both ends of the bound, and applies each form of the theorem to them
 
 Import [`Quaternion/BpInfinity.lean`](../../CslibFrontier/Foundations/Algebra/Quaternion/BpInfinity.lean)
 (`CslibFrontier.Foundations.Algebra.Quaternion.BpInfinity`) for the rational quaternion algebra
-used by SQIsign v3.0. `Cslib.BpInfinity p` specializes Mathlib's `QuaternionAlgebra` to the
-presentation `i² = -1`, `j² = -p`, and `ij = k = -ji`; the declarations `BpInfinity.i`,
-`BpInfinity.j`, and `BpInfinity.k` name these generators. `BpInfinity.star_mk` gives coordinate
-conjugation, while `BpInfinity.reducedNorm_mk` and `BpInfinity.reducedTrace_mk` give
+used by SQIsign v3.0. Its source identification applies to the scheme prime
+`p = c · 2^f - 1`, where `f > 1` and `c` is odd, hence `p ≡ 3 (mod 4)`; the reusable Lean type
+itself accepts any rational parameter. `Cslib.BpInfinity p` specializes Mathlib's
+`QuaternionAlgebra` to the presentation `i² = -1`, `j² = -p`, and `ij = k = -ji`; the declarations
+`BpInfinity.i`, `BpInfinity.j`, and `BpInfinity.k` name these generators, and `i_eq_mk`, `j_eq_mk`,
+and `k_eq_mk` connect them to Mathlib's ordinary quaternion coordinates. `BpInfinity.star_mk`
+gives coordinate conjugation, while `BpInfinity.reducedNorm_mk` and `BpInfinity.reducedTrace_mk` give
 `x² + y² + p(z² + t²)` and `2x`. `BpInfinity.reducedNorm_pos` proves positive definiteness for
 `p > 0`.
 
@@ -722,7 +725,9 @@ ramification at `p` and infinity. It also does not supply the maximal order `O�
 lattices or ideals, norm-equation algorithms, the Deuring correspondence, isogenies, SQIsign
 algorithms, or any ROM/QROM security statement. The
 [checked client](../../CslibFrontierTests/Foundations/Algebra/QuaternionBpInfinity.lean) evaluates
-the relations and the nonzero norm `80` at `p = 3`.
+the combined generator expression `1 + 2i + 3j + 4k` at `p = 3` through the ordinary import and
+also checks the corresponding explicit-coordinate norm. Positivity and the defining generator
+relations are exercised there as well.
 
 ### HQC fixed-weight support sampling
 
