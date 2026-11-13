@@ -88,8 +88,8 @@ theorem identityTest_isPPT : (identityTest F).IsPPT := by
 theorem succProbability_ddhRealGame_identityTest (n : ℕ) :
     Game.succProbability (F.ddhRealGame (fun _ => PMF.pure d) (identityTest F) n) =
       (F.order d : ℝ≥0)⁻¹ := by
-  simp only [ddhRealGame, eval_ddhRealExperiment, identityTest, ProbComp.eval_pure,
-    PMF.monad_bind_eq_bind, PMF.pure_bind, smul_eq_zero, F.generator_ne_zero, or_false,
+  simp only [ddhRealGame, Game.withSetup_pure, eval_ddhRealExperiment, identityTest,
+    ProbComp.eval_pure, smul_eq_zero, F.generator_ne_zero, or_false,
     mul_eq_zero, ← Bool.decide_and, and_or_left, and_self, or_iff_left_of_imp And.left,
     PMF.bind_const]
   rw [Game.succProbability, PMF.bind_pure_decide_eq_apply_true', PMF.uniformOfFintype_apply,
@@ -99,8 +99,8 @@ theorem succProbability_ddhRealGame_identityTest (n : ℕ) :
 theorem succProbability_ddhRandomGame_identityTest (n : ℕ) :
     Game.succProbability (F.ddhRandomGame (fun _ => PMF.pure d) (identityTest F) n) =
       (F.order d : ℝ≥0)⁻¹ ^ 2 := by
-  simp only [ddhRandomGame, eval_ddhRandomExperiment, identityTest, ProbComp.eval_pure,
-    PMF.monad_bind_eq_bind, PMF.pure_bind, smul_eq_zero, F.generator_ne_zero, or_false,
+  simp only [ddhRandomGame, Game.withSetup_pure, eval_ddhRandomExperiment, identityTest,
+    ProbComp.eval_pure, smul_eq_zero, F.generator_ne_zero, or_false,
     PMF.bind_const]
   rw [Game.succProbability, ← ENNReal.toNNReal_natCast, ← ENNReal.toNNReal_inv,
     ← ENNReal.toNNReal_pow]
@@ -113,14 +113,13 @@ example (n : ℕ) :
     Game.succProbability (ProbComp.eval
       (ddhRealExperiment (F.order d) (F.generator d) (identityTest F n d))) =
       (F.order d : ℝ≥0)⁻¹ := by
-  simpa only [ddhRealGame, PMF.monad_bind_eq_bind, PMF.pure_bind] using
-    succProbability_ddhRealGame_identityTest F d n
+  simpa only [ddhRealGame, Game.withSetup_pure] using succProbability_ddhRealGame_identityTest F d n
 
 example (n : ℕ) :
     Game.succProbability (ProbComp.eval
       (ddhRandomExperiment (F.order d) (F.generator d) (identityTest F n d))) =
       (F.order d : ℝ≥0)⁻¹ ^ 2 := by
-  simpa only [ddhRandomGame, PMF.monad_bind_eq_bind, PMF.pure_bind] using
+  simpa only [ddhRandomGame, Game.withSetup_pure] using
     succProbability_ddhRandomGame_identityTest F d n
 
 /-- **DDH fails for a fixed group.** -/

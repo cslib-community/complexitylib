@@ -469,7 +469,7 @@ abbrev hashedElGamalCipherToDDHDistinguisher {Msg : Type} (H : F.Desc × List Bo
     (adversary : Encryption.AdversaryOf Msg) (bit : Bool) (n : ℕ) :
     F.ddhRealGame setup (F.hashedElGamalCipherToDDHDistinguisher H encryptSym adversary bit) n =
       F.hashedElGamalCipherCPAGame setup H encryptSym adversary bit n := by
-  simp only [ddhRealGame, eval_ddhRealExperiment, kdfToDDHDistinguisher,
+  simp only [ddhRealGame, Game.withSetup, eval_ddhRealExperiment, kdfToDDHDistinguisher,
     hashedElGamalCipherToKDFDistinguisher, hashedElGamalCipherCPAGame,
     hashedElGamalCipherCPAGameOn, ↓reduceIte, ProbComp.eval_bind, PMF.monad_bind_eq_bind]
   pmf_swap
@@ -646,7 +646,7 @@ private theorem ddhRealGame_hashedElGamalCipherToDDHHiddenBitDistinguisher {Msg 
         (F.hashedElGamalCipherCPAGame setup H encryptSym adversary bit n).map
           (fun guess => guess ^^ bit) := by
   simp only [pmf_norm, ← ddhRealGame_hashedElGamalCipherToDDHDistinguisher, ddhRealGame,
-    eval_ddhRealExperiment, kdfToDDHDistinguisher,
+    Game.withSetup, eval_ddhRealExperiment, kdfToDDHDistinguisher,
     hashedElGamalCipherToKDFHiddenBitDistinguisher, ProbComp.eval_uniform]
   pmf_swap
 
