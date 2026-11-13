@@ -48,7 +48,7 @@ theorem scopeLength_append_nullary (F : CSP Rel V) (r : Rel) (i : ℕ) :
   by_cases hi : i < F.length
   · rw [List.getD_append _ _ _ _ (by simpa using hi)]
   · rw [List.getD_append_right _ _ _ _ (by simpa using Nat.le_of_not_gt hi)]
-    rw [List.getD_eq_default (F.map fun c => c.2.length) 0
+    rw [List.getD_eq_default (F.map fun c => c.scope.length) 0
       (by simpa using Nat.le_of_not_gt hi)]
     cases i - F.length <;> simp
 

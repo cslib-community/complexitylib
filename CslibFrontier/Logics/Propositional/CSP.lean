@@ -19,8 +19,8 @@ over a domain `D` under a family of relations `sem : Rel → List D → Bool` by
 `sem R (vs.map σ) = true` for every `(R, vs) ∈ F`.
 
 Relations are not assigned fixed arities at the type level: `sem R` is evaluated at the length of
-each constraint's scope `c.2`. Under a uniform scope-length bound `c.2.length ≤ k`, each relation
-symbol induces a relation of arity at most `k`.
+each constraint's scope `c.scope`. Under a uniform scope-length bound `c.scope.length ≤ k`, each
+relation symbol induces a relation of arity at most `k`.
 
 For any finite inhabited domain `D`, `CSP.modelCountOn sem F declared` counts assignments on a
 declared finite set of variables `declared : Finset V` (extended by `default` outside `declared`)
@@ -76,14 +76,24 @@ namespace Constraint
 
 variable {Rel V W D : Type*}
 
+/-- The relation symbol of a constraint. -/
+@[reducible] def rel (c : Constraint Rel V) : Rel := c.1
+
+/-- The scope of a constraint: the variables its relation is applied to, in order. -/
+@[reducible] def scope (c : Constraint Rel V) : List V := c.2
+
+@[simp] theorem rel_mk (R : Rel) (vs : List V) : rel ((R, vs) : Constraint Rel V) = R := rfl
+
+@[simp] theorem scope_mk (R : Rel) (vs : List V) : scope ((R, vs) : Constraint Rel V) = vs := rfl
+
 /-- Evaluate a constraint `(R, vs)` under assignment `σ : V → D` and semantics
 `sem : Rel → List D → Bool`. -/
 def eval (sem : Rel → List D → Bool) (σ : V → D) (c : Constraint Rel V) : Bool :=
-  sem c.1 (c.2.map σ)
+  sem c.rel (c.scope.map σ)
 
 /-- Rename variables in a constraint's scope. -/
 def relabel (f : V → W) (c : Constraint Rel V) : Constraint Rel W :=
-  (c.1, c.2.map f)
+  (c.rel, c.scope.map f)
 
 /-- Evaluating a relabeled constraint composes the assignment with the relabeling. -/
 @[simp]
@@ -94,7 +104,7 @@ theorem eval_relabel (sem : Rel → List D → Bool) (f : V → W) (σ : W → D
 
 /-- Constraint evaluation depends only on the values assigned to the variables in its scope. -/
 theorem eval_congr {sem : Rel → List D → Bool} {c : Constraint Rel V} {σ τ : V → D}
-    (h : ∀ v ∈ c.2, σ v = τ v) :
+    (h : ∀ v ∈ c.scope, σ v = τ v) :
     eval sem σ c = eval sem τ c := by
   simp only [eval]
   congr 1
@@ -118,7 +128,7 @@ def Satisfiable (sem : Rel → List D → Bool) (F : CSP Rel V) : Prop :=
 
 /-- All variable occurrences across the constraint scopes of `F`, in order. -/
 def vars (F : CSP Rel V) : List V :=
-  F.flatMap Prod.snd
+  F.flatMap Constraint.scope
 
 /-- Rename variables across all constraints in `F`. -/
 def relabel (f : V → W) (F : CSP Rel V) : CSP Rel W :=
@@ -155,7 +165,7 @@ theorem eval_congr {sem : Rel → List D → Bool} {F : CSP Rel V} {σ τ : V �
 /-- Auxiliary positive-clause CNF formula with the same variable-occurrence list `F.vars`. Used as a
 proof device to transfer `CNF` variable-accounting and polynomial-time lemmas to `CSP`. -/
 def varCNF (F : CSP Rel V) : CNF V :=
-  F.map fun c => c.2.map fun v => (v, true)
+  F.map fun c => c.scope.map fun v => (v, true)
 
 /-- The variable occurrences of `F.varCNF` are identical to `F.vars`. -/
 @[simp]
@@ -166,7 +176,7 @@ theorem vars_varCNF (F : CSP Rel V) :
   | cons c F ih =>
     simp only [varCNF, List.map_cons, CNF.vars, List.flatten_cons, List.map_append,
       List.map_map, Function.comp_def, List.map_id', vars, List.flatMap_cons]
-    exact congrArg (c.2 ++ ·) ih
+    exact congrArg (c.scope ++ ·) ih
 
 variable [DecidableEq V]
 
@@ -220,7 +230,7 @@ theorem numVars_denseRelabel (F : CSP Rel V) :
 
 /-- Dense relabeling preserves any uniform upper bound on constraint scope lengths. -/
 theorem all_length_le_denseRelabel {k : ℕ} (F : CSP Rel V) :
-    (∀ c ∈ F.denseRelabel, c.2.length ≤ k) ↔ ∀ c ∈ F, c.2.length ≤ k := by
+    (∀ c ∈ F.denseRelabel, c.scope.length ≤ k) ↔ ∀ c ∈ F, c.scope.length ≤ k := by
   simp only [denseRelabel, relabel, List.mem_map]
   constructor
   · intro h c hc
@@ -320,20 +330,20 @@ theorem modelCount_pos_iff [Fintype D] [Inhabited D] {sem : Rel → List D → B
 /-- Guard checking that every constraint scope in `F` has length `≤ k` and every occurring variable
 lies in `< N`. -/
 def validDeclaredCSP (k N : ℕ) (F : CSP Rel ℕ) : Bool :=
-  (F.all fun c => decide (c.2.length ≤ k)) && (F.vars.all fun v => decide (v < N))
+  (F.all fun c => decide (c.scope.length ≤ k)) && (F.vars.all fun v => decide (v < N))
 
 /-- `validDeclaredCSP k N F` holds iff every constraint scope has length `≤ k` and all occurring
 variables lie in `Finset.range N`. -/
 theorem validDeclaredCSP_eq_true_iff {k N : ℕ} {F : CSP Rel ℕ} :
     validDeclaredCSP k N F = true ↔
-      (∀ c ∈ F, c.2.length ≤ k) ∧ F.vars.toFinset ⊆ Finset.range N := by
+      (∀ c ∈ F, c.scope.length ≤ k) ∧ F.vars.toFinset ⊆ Finset.range N := by
   simp only [validDeclaredCSP, Bool.and_eq_true, List.all_eq_true, decide_eq_true_eq]
   exact and_congr_right' ⟨fun h _ hv => Finset.mem_range.mpr (h _ (List.mem_toFinset.mp hv)),
     fun h _ hv => Finset.mem_range.mp (h (List.mem_toFinset.mpr hv))⟩
 
 /-- The bounded-arity CSP decision problem over relation semantics `sem`. -/
 def KCSP (k : ℕ) (sem : Rel → List D → Bool) : Set (CSP Rel V) :=
-  {F | (∀ c ∈ F, c.2.length ≤ k) ∧ F.Satisfiable sem}
+  {F | (∀ c ∈ F, c.scope.length ≤ k) ∧ F.Satisfiable sem}
 
 end CSP
 

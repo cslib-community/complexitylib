@@ -53,9 +53,9 @@ private abbrev longOutput := compile fullArity fullSem (longInput, longCert)
 
 example : verifyRotationCertificate longInput longCert = true := by decide
 example : (whiteScopes longInput longCert) = [[0, 1, 2, 3, 4]] := by decide
-example : longOutput.map (fun c => c.2) =
+example : longOutput.map (fun c => c.scope) =
     [[0, 1, 2, 3, 4], [0, 1, 5], [5, 2, 6], [6, 3, 4]] := by decide
-example : longOutput.map (fun c => (c.1.arity, c.1.rows.length)) =
+example : longOutput.map (fun c => (c.rel.arity, c.1.rows.length)) =
     [(5, 32), (3, 4), (3, 4), (3, 4)] := by decide
 example : longOutput.vars.toFinset = Finset.range 7 := by decide
 example : longOutput.vars.length = 14 := by decide

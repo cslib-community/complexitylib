@@ -91,7 +91,7 @@ example : cycle.IsWalk ∧ cycle.finish = cycle.start ∧ cycle.steps ≠ [] ∧
 example : ¬ ValidLabeling Table.sem ((cycle.take 3).flip labels) := by
   intro h
   have hh := h 0
-  have hn : badCSP[0].1.sem (localTuple ((cycle.take 3).flip labels) 0) = false := by decide
+  have hn : badCSP[0].rel.sem (localTuple ((cycle.take 3).flip labels) 0) = false := by decide
   exact Bool.false_ne_true (hn.symm.trans hh)
 
 example : ¬ [1, 2, 1, 0].Nodup := by decide

@@ -85,7 +85,7 @@ theorem weight_nil [Monoid R] (wt : Rel → List D → R) (σ : V → D) :
 /-- Weight of a single prepended constraint. -/
 @[simp]
 theorem weight_cons [Monoid R] (wt : Rel → List D → R) (c : Constraint Rel V) (F : CSP Rel V)
-    (σ : V → D) : weight wt (c :: F) σ = wt c.1 (c.2.map σ) * F.weight wt σ := by
+    (σ : V → D) : weight wt (c :: F) σ = wt c.rel (c.scope.map σ) * F.weight wt σ := by
   simp [weight]
 
 /-- Weight multiplies over list append. -/
@@ -378,8 +378,8 @@ private theorem fillTemplate_map_ite [DecidableEq V] (S : Finset V) (α σ : V �
 /-- Condition one constraint by pinning all variables in `S` to `α`. -/
 @[expose] def Constraint.restrictOn [DecidableEq V] (S : Finset V) (α : V → D)
     (c : Constraint Rel V) : Constraint (PinnedRel Rel D) V :=
-  (⟨c.1, c.2.map fun v => if v ∈ S then some (α v) else none⟩,
-    c.2.filter fun v => decide (v ∉ S))
+  (⟨c.rel, c.scope.map fun v => if v ∈ S then some (α v) else none⟩,
+    c.scope.filter fun v => decide (v ∉ S))
 
 /-- Condition every constraint in `F` by pinning variables in `S` to `α`. -/
 @[expose] def restrictOn [DecidableEq V] (S : Finset V) (α : V → D) (F : CSP Rel V) :

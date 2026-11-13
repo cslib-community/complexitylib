@@ -97,7 +97,7 @@ variable {Rel V W D : Type*}
 
 /-- Build a `MaxConstraint` from a pair `Constraint Rel V`. -/
 @[expose] def ofConstraint (c : Constraint Rel V) : MaxConstraint Rel V :=
-  ⟨c.1, c.2⟩
+  ⟨c.rel, c.scope⟩
 
 /-- Evaluate a `MaxConstraint` under assignment `σ : V → D` and semantics
 `sem : Rel → List D → Bool`. -/
@@ -533,30 +533,30 @@ theorem countP_eval_constraintToCNF_add_one {Rel V : Type*} (sem : Rel → List 
     (c : Constraint Rel V) (σ : V → Bool) :
     (c.toCNF sem).countP (Clause.eval σ) + 1 =
       (c.toCNF sem).length + cond (Constraint.eval sem σ c) 1 0 := by
-  set forb := (enumList c.2.length).filter fun w => !sem c.1 w
-  have hnodup : forb.Nodup := (nodup_enumList c.2.length).filter _
+  set forb := (enumList c.scope.length).filter fun w => !sem c.rel w
+  have hnodup : forb.Nodup := (nodup_enumList c.scope.length).filter _
   have hcount : (c.toCNF sem).countP (Clause.eval σ) =
-      forb.countP (fun w => !(c.2.map σ == w)) := by
+      forb.countP (fun w => !(c.scope.map σ == w)) := by
     simp only [Constraint.toCNF, List.countP_map, Function.comp_def, forb]
     refine List.countP_congr fun w hw => ?_
-    have hw_len : w.length = c.2.length := length_of_mem_enumList (List.mem_of_mem_filter hw)
-    rw [Constraint.eval_forbidClause c.2 hw_len σ]
+    have hw_len : w.length = c.scope.length := length_of_mem_enumList (List.mem_of_mem_filter hw)
+    rw [Constraint.eval_forbidClause c.scope hw_len σ]
   have hlen : (c.toCNF sem).length = forb.length := by
     simp only [Constraint.toCNF, List.length_map, forb]
-  have hbeq : forb.countP (fun w => c.2.map σ == w) = forb.count (c.2.map σ) := by
+  have hbeq : forb.countP (fun w => c.scope.map σ == w) = forb.count (c.scope.map σ) := by
     rw [List.count_eq_countP]
     exact List.countP_congr fun _ _ => by rw [beq_iff_eq, beq_iff_eq, eq_comm]
-  have hneg : forb.countP (fun w => !(c.2.map σ == w)) =
-      forb.countP (fun w => ¬(c.2.map σ == w)) :=
+  have hneg : forb.countP (fun w => !(c.scope.map σ == w)) =
+      forb.countP (fun w => ¬(c.scope.map σ == w)) :=
     List.countP_congr fun _ _ => by simp
-  have hsplit := List.length_eq_countP_add_countP (fun w => c.2.map σ == w) (l := forb)
+  have hsplit := List.length_eq_countP_add_countP (fun w => c.scope.map σ == w) (l := forb)
   rw [hbeq, ← hneg] at hsplit
-  have hmem : c.2.map σ ∈ forb ↔ Constraint.eval sem σ c = false := by
+  have hmem : c.scope.map σ ∈ forb ↔ Constraint.eval sem σ c = false := by
     simp only [forb, List.mem_filter, mem_enumList, List.length_map, true_and, Constraint.eval,
       Bool.not_eq_true']
   rw [hcount, hlen]
   by_cases hev : Constraint.eval sem σ c = true
-  · have hnot : c.2.map σ ∉ forb := by
+  · have hnot : c.scope.map σ ∉ forb := by
       rw [hmem]
       simp only [hev, Bool.true_eq_false, not_false_eq_true]
     rw [List.count_eq_zero_of_not_mem hnot] at hsplit

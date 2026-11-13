@@ -37,14 +37,14 @@ variable {Rel : Type}
 private theorem computable_clause (encRel : Rel ↪ List Bool) :
     ComputableInPolyTime
       (fun p : Constraint Rel ℕ × Clause ℕ =>
-        p.2.relabel (fun i => p.1.2.getD i 0))
+        p.2.relabel (fun i => p.1.scope.getD i 0))
       (encPair (encConstraint encRel encNat) (encList (encPair encUnary encBool)))
       (encList (encPair encNat encBool)) := by
   unfold Clause.relabel
   refine mapWithInput (snd _ _) ?_
   change ComputableInPolyTime
     (fun p : (Constraint Rel ℕ × Clause ℕ) × Literal ℕ =>
-      (p.1.1.2.getD p.2.1 0, p.2.2))
+      (p.1.1.scope.getD p.2.1 0, p.2.2))
     (encPair (encPair (encConstraint encRel encNat) (encList (encPair encUnary encBool)))
       (encPair encUnary encBool)) (encPair encNat encBool)
   fun_prop

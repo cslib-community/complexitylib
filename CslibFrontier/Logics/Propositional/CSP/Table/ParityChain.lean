@@ -120,8 +120,8 @@ theorem length_parityChain (fresh : ℕ) (scope : List ℕ) :
 /-- Every output table and scope has matching width at most three. -/
 theorem parityChainTail_width (fresh first : ℕ) (rest : List ℕ)
     (c : Constraint Table ℕ) (hc : c ∈ parityChainTail fresh first rest) :
-    c.1.arity = c.2.length ∧ c.2.length ≤ 3 ∧
-      ∃ n ≤ 3, c.1 = evenTable n := by
+    c.rel.arity = c.scope.length ∧ c.scope.length ≤ 3 ∧
+      ∃ n ≤ 3, c.rel = evenTable n := by
   induction rest using List.twoStepInduction generalizing fresh first with
   | nil =>
     have he : c = (evenTable 1, [first]) := by
@@ -149,8 +149,8 @@ theorem parityChainTail_width (fresh first : ℕ) (rest : List ℕ)
 /-- The actual expansion uses only nonempty even delta-matroid relations. -/
 theorem parityChain_tables (fresh : ℕ) (scope : List ℕ)
     (c : Constraint Table ℕ) (hc : c ∈ parityChain fresh scope) :
-    c.1.arity = c.2.length ∧ c.2.length ≤ 3 ∧
-      IsEvenDeltaMatroid (booleanRelation arity sem c.1) := by
+    c.rel.arity = c.scope.length ∧ c.scope.length ≤ 3 ∧
+      IsEvenDeltaMatroid (booleanRelation arity sem c.rel) := by
   cases scope with
   | nil =>
     have he : c = (evenTable 0, []) := by simpa [parityChain] using hc
@@ -334,7 +334,7 @@ theorem parityChain_names_lt (fresh : ℕ) (scope : List ℕ)
 theorem parityChainTail_scopes_nodup (fresh first : ℕ) (rest : List ℕ)
     (hnd : (first :: rest).Nodup) (hbound : ∀ v ∈ first :: rest, v < fresh)
     (constraint : Constraint Table ℕ) (hc : constraint ∈ parityChainTail fresh first rest) :
-    constraint.2.Nodup := by
+    constraint.scope.Nodup := by
   induction rest using List.twoStepInduction generalizing fresh first with
   | nil =>
     have he : constraint = (evenTable 1, [first]) := by simpa [parityChainTail] using hc
@@ -376,7 +376,7 @@ theorem parityChainTail_scopes_nodup (fresh first : ℕ) (rest : List ℕ)
 theorem parityChain_scopes_nodup (fresh : ℕ) (scope : List ℕ) (hnd : scope.Nodup)
     (hbound : ∀ v ∈ scope, v < fresh)
     (constraint : Constraint Table ℕ) (hc : constraint ∈ parityChain fresh scope) :
-    constraint.2.Nodup := by
+    constraint.scope.Nodup := by
   cases scope with
   | nil =>
     have he : constraint = (evenTable 0, []) := by simpa [parityChain] using hc

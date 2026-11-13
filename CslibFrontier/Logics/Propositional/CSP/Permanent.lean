@@ -103,7 +103,7 @@ theorem count_vars_permanentInstance (n : ℕ) (r : ℕ → ℕ → Bool) (x : �
 /-- The exactly-one conditions of the permanent instance on a set `S` of `true` variables: every
 row and every column has exactly one nonzero entry whose variable is in `S`. -/
 private theorem forall_mem_permanentInstance_iff {S : Finset ℕ} :
-    (∀ c ∈ permanentInstance n r, (c.2.filter fun v => v ∈ S).length = 1) ↔
+    (∀ c ∈ permanentInstance n r, (c.scope.filter fun v => v ∈ S).length = 1) ↔
       (∀ i < n, ∃! j, j < n ∧ r i j = true ∧ i * n + j ∈ S) ∧
         ∀ j < n, ∃! i, i < n ∧ r i j = true ∧ i * n + j ∈ S := by
   simp only [permanentInstance, List.forall_mem_append, List.forall_mem_map, List.mem_range,

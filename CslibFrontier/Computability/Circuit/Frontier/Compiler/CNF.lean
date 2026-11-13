@@ -319,7 +319,7 @@ variable {σ : Signature} {n m : ℕ}
 /-- Every constraint in `toCSP c` has scope length at most `k + 1` when `c.FanInAtMost k`. -/
 theorem length_scope_le_of_mem_toCSP {c : Circuit σ n m} {k : ℕ} (hfan : c.FanInAtMost k)
     {con : Cslib.Logic.PL.Constraint (CircuitRel σ m) ℕ} (hcon : con ∈ toCSP c) :
-    con.2.length ≤ k + 1 := by
+    con.scope.length ≤ k + 1 := by
   have hcode1 : c.code.1 = List.ofFn fun j : Fin c.size => (c.program.lines j).code :=
     Program.code_eq_ofFn_lines c.program
   simp only [toCSP, toCSPCode, List.mem_append] at hcon

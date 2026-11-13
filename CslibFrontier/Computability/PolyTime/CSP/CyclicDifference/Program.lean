@@ -110,7 +110,7 @@ honestly to an unsatisfiable edge instance whose two relations are even delta-ma
 @[expose] def compile (arity : Rel → ℕ) (sem : Rel → List Bool → Bool)
     (input : CSP Rel ℕ × Graph.RotationCertificate) : CSP Table ℕ :=
   if validArity arity input.1 && verifyRotationCertificate input.1 input.2 &&
-      input.1.all (fun c => nonemptySymbol arity sem c.1) then
+      input.1.all (fun c => nonemptySymbol arity sem c.rel) then
     body arity sem input.1 input.2
   else rejectEdge
 

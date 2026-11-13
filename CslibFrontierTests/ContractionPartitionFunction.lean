@@ -79,7 +79,7 @@ example : count 2 1 (CSP.hardCoreWeight 1) ([] : CSP Bool ℕ) = 1 := by decide
 
 -- The counter for the hard-core language on bounded-degree instances.
 example : ∃ (count : CSP Bool ℕ → ℕ) (T S : CSP Bool ℕ → ℕ) (e b : ℕ),
-    (∀ F : CSP Bool ℕ, (∀ c ∈ F, 1 ≤ c.2.length ∧ c.2.length ≤ 2) →
+    (∀ F : CSP Bool ℕ, (∀ c ∈ F, 1 ≤ c.scope.length ∧ c.scope.length ≤ 2) →
       count F = F.partitionFunction (CSP.hardCoreWeight 1)) ∧
     Turing.MultiTapeTM.ComputableInO count (encCSP Turing.MultiTapeTM.encBool
       Turing.MultiTapeTM.encNat) Turing.MultiTapeTM.encNat T S ∧

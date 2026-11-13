@@ -50,18 +50,18 @@ variable {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
   invFun o := ⟨o.1, (finRotate _).symm o.2⟩
   left_inv := by
     rintro ⟨i, j⟩
-    exact congrArg (fun k : Fin F[i.val].2.length => (⟨i, k⟩ : F.Occurrence))
+    exact congrArg (fun k : Fin F[i.val].scope.length => (⟨i, k⟩ : F.Occurrence))
       ((finRotate _).symm_apply_apply j)
   right_inv := by
     rintro ⟨i, j⟩
-    exact congrArg (fun k : Fin F[i.val].2.length => (⟨i, k⟩ : F.Occurrence))
+    exact congrArg (fun k : Fin F[i.val].scope.length => (⟨i, k⟩ : F.Occurrence))
       ((finRotate _).apply_symm_apply j)
 
 /-- The next dense variable, computed from an occurrence record by bounded list lookups.
 Invalid records return the supplied variable's dense name; actual occurrences never use it. -/
 @[expose] def polygonNext (F : CSP Rel V) (i j : ℕ) (v : V) : ℕ :=
   if hi : i < F.length then
-    if hj : j < F[i].2.length then
+    if hj : j < F[i].scope.length then
       F.distinctVars.idxOf (argumentSuccessor (F := F) ⟨⟨i, hi⟩, ⟨j, hj⟩⟩).var
     else F.distinctVars.idxOf v
   else F.distinctVars.idxOf v
@@ -200,8 +200,8 @@ theorem length_vertices_polygonGraph_le (F : CSP Rel V) :
 
 /-- The forward-dart word at a constraint is its exact original scope after dense naming. -/
 theorem polygon_scope_word (i : Fin F.length) :
-    (List.ofFn fun j : Fin F[i.val].2.length => (polygonDart (⟨i, j⟩ : F.Occurrence)
-      false).vertex) = F[i.val].2.map (F.distinctVars.idxOf ·) := by
+    (List.ofFn fun j : Fin F[i.val].scope.length => (polygonDart (⟨i, j⟩ : F.Occurrence)
+      false).vertex) = F[i.val].scope.map (F.distinctVars.idxOf ·) := by
   apply List.ext_getElem
   · simp
   · intro j hj hk
@@ -209,7 +209,7 @@ theorem polygon_scope_word (i : Fin F.length) :
 
 /-- With positive actual scopes, constraint positions are also bounded by occurrences. -/
 theorem length_constraints_le_polygon_edges
-    (hPos : ∀ i : Fin F.length, 0 < F[i.val].2.length) :
+    (hPos : ∀ i : Fin F.length, 0 < F[i.val].scope.length) :
     F.length ≤ (polygonGraph F).edges.length := by
   have h := CSP.length_le_length_vars (F := F) (fun c hc => by
     obtain ⟨i, hi, rfl⟩ := List.mem_iff_getElem.mp hc

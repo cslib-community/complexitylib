@@ -156,8 +156,8 @@ theorem edgeInstance_matchingInstance (G : Graph) : CSP.EdgeInstance G.matchingI
 theorem evenConstraints_matchingInstance (G : Graph) :
     CSP.EdgeInstance.EvenConstraints CSP.Table.sem G.matchingInstance := by
   have hgood (c : Constraint CSP.Table ℕ) (hc : c ∈ G.matchingInstance) :
-      BitString.IsEvenDeltaMatroid {t : Fin c.2.length → Bool |
-        c.1.sem (List.ofFn t) = true} := by
+      BitString.IsEvenDeltaMatroid {t : Fin c.scope.length → Bool |
+        c.rel.sem (List.ofFn t) = true} := by
     simp only [matchingInstance, List.mem_append, List.mem_map, mem_distinctVertices] at hc
     rcases hc with ⟨v, _, rfl⟩ | ⟨v, _, rfl⟩
     · exact CSP.Table.isEvenDeltaMatroid_exactlyOne _ (List.cons_ne_nil _ _)

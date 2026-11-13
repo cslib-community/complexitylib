@@ -90,7 +90,7 @@ theorem pinOccurrence_false {f : OccurrenceLabeling G.matchingInstance Bool}
       subst j
       simp [localTuple, pinOccurrence]
   rw [he] at hh
-  have ht : G.matchingInstance[(G.pinOccurrence v hv).1].1 = Table.pinTable false := by
+  have ht : G.matchingInstance[(G.pinOccurrence v hv).1].rel = Table.pinTable false := by
     simp [pinOccurrence, getElem_matchingInstance_pin hv]
   rw [ht, Table.sem_eq_true] at hh
   simpa only [Table.pinTable, List.mem_singleton, List.cons.injEq, and_true] using hh.2
@@ -111,12 +111,12 @@ theorem choice_unique {f : OccurrenceLabeling G.matchingInstance Bool}
     (hfx : f (G.choiceOccurrence v hv x hx) = true)
     (hfy : f (G.choiceOccurrence v hv y hy) = true) : x = y := by
   have hh := hf (G.choiceOccurrence v hv x hx).1
-  have ht : G.matchingInstance[(G.choiceOccurrence v hv x hx).1].1 =
+  have ht : G.matchingInstance[(G.choiceOccurrence v hv x hx).1].rel =
       Table.exactlyOne (G.matchingScope v) := by
     simp [choiceOccurrence, getElem_matchingInstance_vertex hv]
   rw [ht, Table.sem_exactlyOne_eq_true] at hh
   let i := (G.choiceOccurrence v hv x hx).1
-  have hcard : ((Finset.univ : Finset (Fin G.matchingInstance[i.val].2.length)).filter
+  have hcard : ((Finset.univ : Finset (Fin G.matchingInstance[i.val].scope.length)).filter
       fun j => f ⟨i, j⟩ = true).card = 1 := by
     simpa only [localTuple, List.count_eq_countP, List.countP_ofFn, beq_true,
       Finset.card_eq_sum_ones, Finset.sum_filter] using hh.2
@@ -182,14 +182,14 @@ theorem card_true_matchingInstance {f : OccurrenceLabeling G.matchingInstance Bo
   have hc (i : Fin G.matchingInstance.length) :
       (localTuple f i).count true = if i.val < G.distinctVertices.length then 1 else 0 := by
     have hh := hf i
-    change G.matchingInstance[i.val].1.sem (localTuple f i) = true at hh
+    change G.matchingInstance[i.val].rel.sem (localTuple f i) = true at hh
     by_cases hi : i.val < G.distinctVertices.length
-    · have ht : G.matchingInstance[i.val].1 =
+    · have ht : G.matchingInstance[i.val].rel =
           Table.exactlyOne (G.matchingScope G.distinctVertices[i.val]) := by
         simp [matchingInstance, hi]
       rw [ht] at hh
       exact (Table.sem_exactlyOne_eq_true _ _).mp hh |>.2 |>.trans (ite_eq_left hi).symm
-    · have ht : G.matchingInstance[i.val].1 = Table.pinTable false := by
+    · have ht : G.matchingInstance[i.val].rel = Table.pinTable false := by
         simp [matchingInstance, Nat.le_of_not_gt hi]
       rw [ht, Table.sem_eq_true] at hh
       have he : localTuple f i = [false] := by

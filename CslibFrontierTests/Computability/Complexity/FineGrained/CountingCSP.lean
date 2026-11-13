@@ -112,7 +112,7 @@ example :
     ∃ (count : CSP (Bool × List Bool) ℕ → ℕ) (T S : CSP (Bool × List Bool) ℕ → ℕ) (A c e a b : ℕ),
       ComputableInO count (encCSP (encPair encBool encBits) encNat) encNat T S ∧
       (∀ F : CSP (Bool × List Bool) ℕ,
-        (∀ c ∈ F, c.2.length ≤ 3) → count F = F.modelCount taggedSem) ∧
+        (∀ c ∈ F, c.scope.length ≤ 3) → count F = F.modelCount taggedSem) ∧
       (∀ F : CSP (Bool × List Bool) ℕ,
         (T F : ℝ) ≤ c * ((2 : ℝ) ^ ((A : ℝ) * interpolationScale F.numVars) *
           (((encCSP (encPair encBool encBits) encNat F).length : ℝ) + 1) ^ e) + c) ∧

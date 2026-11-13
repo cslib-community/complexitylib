@@ -15,7 +15,7 @@ open Cslib.Logic.PL Cslib.Complexity Turing.MultiTapeTM
 /-- Opposite parity requirements on the same three distinct variables. -/
 def inconsistent : CSP Bool ℕ := [(false, [0, 1, 2]), (true, [0, 1, 2])]
 
-private theorem scopes_inconsistent : ∀ c ∈ inconsistent, c.2.length = 3 := by decide
+private theorem scopes_inconsistent : ∀ c ∈ inconsistent, c.scope.length = 3 := by decide
 
 /-- The compiler introduces no auxiliary variables and emits eight clauses. -/
 example : (inconsistent.toCNFBounded 3 CSP.paritySem).length = 8 := by decide

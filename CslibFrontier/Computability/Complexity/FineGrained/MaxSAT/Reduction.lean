@@ -432,7 +432,7 @@ theorem optimum_maxCSPToStruct_add_length {Rel : Type} {w : ℕ} (sem : Rel → 
     {F : MaxCSPInstance Rel ℕ} (hw : ∀ c ∈ F.constraints, c.scope.length ≤ w) :
     (maxCSPToStruct w sem F).optimum + F.constraints.length =
       (maxCSPToStruct w sem F).clauses.length + F.optimum sem := by
-  have hw' : ∀ c ∈ F.toCSP, c.2.length ≤ w := by
+  have hw' : ∀ c ∈ F.toCSP, c.scope.length ≤ w := by
     intro c hc
     obtain ⟨c₀, hc₀, rfl⟩ := List.mem_map.mp hc
     exact hw c₀ hc₀

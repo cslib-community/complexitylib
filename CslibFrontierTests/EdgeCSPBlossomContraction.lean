@@ -87,9 +87,9 @@ example : output.numVars + inside.toFinset.card = star.numVars + (touched star i
 -- The one internal defect becomes exactly one fresh connector defect. The all-zero central
 -- row is rejected, and the actual finite reference buffer contains a valid central one-hot row.
 example : defects prepared = {x₁} ∧ defects outputLabels = {x₂ + 1} ∧
-    output[3].1.sem [false, false] = false ∧
-    output[3].1.sem [true, false] = true ∧
-    output[0].1.sem [false, true] = true ∧ output[0].1.sem [false, false] = false := by
+    output[3].rel.sem [false, false] = false ∧
+    output[3].rel.sem [true, false] = true ∧
+    output[0].rel.sem [false, true] = true ∧ output[0].rel.sem [false, false] = false := by
   decide +kernel
 
 example : (defects outputLabels).card = (defects initial).card := by

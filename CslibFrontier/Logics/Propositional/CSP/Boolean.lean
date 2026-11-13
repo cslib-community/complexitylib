@@ -42,7 +42,7 @@ variable {Rel V J : Type*}
 /-- Every constraint scope has the arity declared by its relation symbol. Repeated variables
 are allowed and count as distinct positions in the scope. -/
 @[expose] def WellFormed (arity : Rel → ℕ) (F : CSP Rel V) : Prop :=
-  ∀ c ∈ F, c.2.length = arity c.1
+  ∀ c ∈ F, c.scope.length = arity c.rel
 
 /-- Executable exact-arity guard for an instance of a fixed constraint language. -/
 @[expose] def validArity (arity : Rel → ℕ) (F : CSP Rel V) : Bool :=

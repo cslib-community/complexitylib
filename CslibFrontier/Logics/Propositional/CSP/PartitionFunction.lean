@@ -61,7 +61,7 @@ variable {Rel V D : Type*}
 `wt R (vs.map σ)`. -/
 @[expose] def weight {R : Type*} [Monoid R] (wt : Rel → List D → R) (F : CSP Rel V)
     (σ : V → D) : R :=
-  (F.map fun c => wt c.1 (c.2.map σ)).prod
+  (F.map fun c => wt c.rel (c.scope.map σ)).prod
 
 /-- Monoid homomorphisms commute with the weight of an assignment. -/
 theorem map_weight {R S : Type*} [Monoid R] [Monoid S] (f : R →* S)
@@ -97,10 +97,10 @@ theorem partitionFunction_boole (sem : Rel → List D → Bool) (F : CSP Rel V) 
 /-- The partition function is at most the number of assignments times the product of the
 local bounds, which may vary with the relation symbol. -/
 theorem partitionFunction_le_prod {wt : Rel → List D → ℕ} {F : CSP Rel V} {b : Rel → ℕ}
-    (hb : ∀ c ∈ F, ∀ w : List D, w.length = c.2.length → wt c.1 w ≤ b c.1) :
-    F.partitionFunction wt ≤ Fintype.card D ^ F.numVars * (F.map fun c => b c.1).prod := by
+    (hb : ∀ c ∈ F, ∀ w : List D, w.length = c.scope.length → wt c.rel w ≤ b c.rel) :
+    F.partitionFunction wt ≤ Fintype.card D ^ F.numVars * (F.map fun c => b c.rel).prod := by
   rw [partitionFunction]
-  refine (Finset.sum_le_card_nsmul _ _ (F.map fun c => b c.1).prod fun σ _ => ?_).trans_eq ?_
+  refine (Finset.sum_le_card_nsmul _ _ (F.map fun c => b c.rel).prod fun σ _ => ?_).trans_eq ?_
   · rw [weight]
     exact List.prod_le_prod fun c hc => hb c hc _ (List.length_map _)
   · rw [Finset.card_univ, Fintype.card_fun, Fintype.card_coe, numVars, nsmul_eq_mul, Nat.cast_id]
@@ -108,7 +108,7 @@ theorem partitionFunction_le_prod {wt : Rel → List D → ℕ} {F : CSP Rel V} 
 /-- **The partition function is at most `|D| ^ n * W ^ m`** when every weight at a local
 assignment of the right length is at most `W`. -/
 theorem partitionFunction_le {wt : Rel → List D → ℕ} {F : CSP Rel V} {W : ℕ}
-    (hW : ∀ c ∈ F, ∀ w : List D, w.length = c.2.length → wt c.1 w ≤ W) :
+    (hW : ∀ c ∈ F, ∀ w : List D, w.length = c.scope.length → wt c.rel w ≤ W) :
     F.partitionFunction wt ≤ Fintype.card D ^ F.numVars * W ^ F.length := by
   simpa only [List.map_const', List.prod_replicate] using
     partitionFunction_le_prod (b := fun _ => W) hW
@@ -116,7 +116,7 @@ theorem partitionFunction_le {wt : Rel → List D → ℕ} {F : CSP Rel V} {W : 
 /-- **A constraint of weight zero makes the partition function zero**: if some constraint of `F`
 weighs zero at every local assignment of the right length, every assignment weighs zero. -/
 theorem partitionFunction_eq_zero_of_mem {wt : Rel → List D → ℕ} {F : CSP Rel V}
-    {c : Constraint Rel V} (hc : c ∈ F) (h0 : ∀ w : List D, w.length = c.2.length → wt c.1 w = 0) :
+    {c : Constraint Rel V} (hc : c ∈ F) (h0 : ∀ w : List D, w.length = c.scope.length → wt c.rel w = 0) :
     F.partitionFunction wt = 0 := by
   exact Finset.sum_eq_zero fun σ _ =>
     List.prod_eq_zero (List.mem_map.mpr ⟨c, hc, h0 _ (List.length_map _)⟩)

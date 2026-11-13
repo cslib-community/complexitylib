@@ -166,7 +166,7 @@ theorem not_satisfiable_rejectEdge : ¬ rejectEdge.Satisfiable sem := by
 
 /-- Every rejecting constraint uses a nonempty even delta-matroid. -/
 theorem rejectEdge_tables (c : Constraint Table ℕ) (hc : c ∈ rejectEdge) :
-    IsEvenDeltaMatroid (booleanRelation arity sem c.1) := by
+    IsEvenDeltaMatroid (booleanRelation arity sem c.rel) := by
   simp only [rejectEdge, List.mem_cons, List.not_mem_nil, or_false] at hc
   rcases hc with rfl | rfl <;> exact isEvenDeltaMatroid_pinTable _
 

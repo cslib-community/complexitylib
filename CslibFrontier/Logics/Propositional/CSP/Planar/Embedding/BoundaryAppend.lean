@@ -38,8 +38,8 @@ theorem Witness.nonempty_appendOfFn {F H : CSP Rel V} {m n : ℕ}
     (hd : List.Disjoint (F.vars ++ List.ofFn p) (H.vars ++ List.ofFn q))
     (hn : (List.ofFn p ++ List.ofFn q).Nodup) :
     Nonempty (Witness (F ++ H) (List.ofFn p ++ List.ofFn q)) := by
-  let B : CSP (Option Rel) V := F.map (fun c => (some c.1, c.2))
-  let C : CSP (Option Rel) V := H.map (fun c => (some c.1, c.2))
+  let B : CSP (Option Rel) V := F.map (fun c => (some c.rel, c.scope))
+  let C : CSP (Option Rel) V := H.map (fun c => (some c.rel, c.scope))
   let x : Fin (m + 1) → V := fun i => p i.rev
   let y : Fin (n + 1) → V := fun i => q i.rev
   have hF : B ++ [(none, List.ofFn x)] = probeBody F (List.ofFn p) := by

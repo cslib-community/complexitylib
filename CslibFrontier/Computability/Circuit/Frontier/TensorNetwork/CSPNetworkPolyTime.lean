@@ -58,7 +58,7 @@ theorem computableInPolyTime_cspEntry (idx : ℕ) :
     ComputableInPolyTime (fun c : Constraint Rel ℕ => cspEntry k wt c idx)
       (encConstraint encRel encNat) encNat := by
   have hlist := mapFilterConst (List.range (k + 1)) (test := fun _ _ => true)
-    (f := fun (c : Constraint Rel ℕ) r => wt c.1 (BitString.lowBits r idx))
+    (f := fun (c : Constraint Rel ℕ) r => wt c.rel (BitString.lowBits r idx))
     (encIn := encConstraint encRel encNat) (fun _ _ => const true)
     (fun r hr => (hwt _ (by rw [BitString.length_lowBits]; simpa [Nat.lt_succ_iff] using hr)).comp
       (fst _ _))

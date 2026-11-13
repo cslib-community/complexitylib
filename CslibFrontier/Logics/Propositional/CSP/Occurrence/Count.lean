@@ -26,7 +26,7 @@ variable {Rel V : Type} [DecidableEq V] {F : CSP Rel V}
 
 omit [DecidableEq V] in
 /-- A duplicate-free scope identifies an occurrence from its constraint and variable. -/
-theorem Occurrence.eq_of_scope_nodup (hscope : ∀ c ∈ F, c.2.Nodup)
+theorem Occurrence.eq_of_scope_nodup (hscope : ∀ c ∈ F, c.scope.Nodup)
     {o p : F.Occurrence} (hi : o.1 = p.1) (hv : o.var = p.var) : o = p := by
   rcases o with ⟨i, j⟩
   rcases p with ⟨k, l⟩
@@ -39,7 +39,7 @@ theorem Occurrence.eq_of_scope_nodup (hscope : ∀ c ∈ F, c.2.Nodup)
 
 /-- Two total occurrences, with no repetition inside a scope, are exactly an edge's endpoints.
 Only the actual variable list is counted; no finite universe or maximum name is required. -/
-theorem edgeInstance_of_count_eq_two (hscope : ∀ c ∈ F, c.2.Nodup)
+theorem edgeInstance_of_count_eq_two (hscope : ∀ c ∈ F, c.scope.Nodup)
     (hcount : ∀ v ∈ F.vars, F.vars.count v = 2) : EdgeInstance F := by
   intro o
   let records := F.occurrences.filter fun r => r.2.2 == o.var

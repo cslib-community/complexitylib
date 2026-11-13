@@ -39,23 +39,23 @@ the full model guard rejects it, including a false nullary relation. -/
 
 /-- Every initial stored row is accepted and has exactly its actual scope width. -/
 theorem initialRows_spec (F : CSP Table ℕ) (h : checkModel F = true) (i : Fin F.length) :
-    F[i.val].1.sem ((initialRows F).getD i.val []) = true ∧
-      ((initialRows F).getD i.val []).length = F[i.val].2.length := by
+    F[i.val].rel.sem ((initialRows F).getD i.val []) = true ∧
+      ((initialRows F).getD i.val []).length = F[i.val].scope.length := by
   have hc : F.all checkConstraint = true := by
     have hh : checkEdge F = true ∧ F.all checkConstraint = true := by
       simpa only [checkModel, Bool.and_eq_true] using h
     exact hh.2
   have hrow (i : Fin F.length) :
-      F[i.val].1.sem ((initialRows F).getD i.val []) = true ∧
-      ((initialRows F).getD i.val []).length = F[i.val].2.length := by
+      F[i.val].rel.sem ((initialRows F).getD i.val []) = true ∧
+      ((initialRows F).getD i.val []).length = F[i.val].scope.length := by
     have hi := List.all_eq_true.mp hc _ (List.getElem_mem i.isLt)
     simp only [checkConstraint, Bool.and_eq_true, decide_eq_true_eq,
       Bool.not_eq_true', List.isEmpty_eq_false_iff] at hi
     have hw := hi.1.1.1
     have ha := hi.1.1.2
     have hn := hi.1.2
-    have hm : F[i.val].1.rows.headD [] ∈ F[i.val].1.rows := by
-      cases he : F[i.val].1.rows with
+    have hm : F[i.val].1.rows.headD [] ∈ F[i.val].rel.rows := by
+      cases he : F[i.val].rel.rows with
       | nil => exact (hn he).elim
       | cons r rs => simp
     have he : (initialRows F).getD i.val [] = F[i.val].1.rows.headD [] := by

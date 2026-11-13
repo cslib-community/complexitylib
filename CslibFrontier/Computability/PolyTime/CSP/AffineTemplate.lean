@@ -35,12 +35,12 @@ variable {Rel : Type}
 private theorem computable_equation (encRel : Rel ↪ List Bool) :
     ComputableInPolyTime
       (fun p : Constraint Rel ℕ × AffineEquation ℕ =>
-        p.2.relabel (fun i => p.1.2.getD i 0))
+        p.2.relabel (fun i => p.1.scope.getD i 0))
       (encPair (encConstraint encRel encNat) (encPair (encList encUnary) encBool))
       (encPair (encList encNat) encBool) := by
   have hvars : ComputableInPolyTime
       (fun p : Constraint Rel ℕ × AffineEquation ℕ =>
-        p.2.1.map (fun i => p.1.2.getD i 0))
+        p.2.1.map (fun i => p.1.scope.getD i 0))
       (encPair (encConstraint encRel encNat) (encPair (encList encUnary) encBool))
       (encList encNat) := by
     refine mapWithInput (encA := encUnary) ?_ ?_

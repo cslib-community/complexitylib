@@ -31,11 +31,11 @@ open Turing.MultiTapeTM Cslib.Logic.PL
 /-- Actual scope occurrences plus constraint positions are bounded by the full CSP bit length. -/
 theorem scopes_add_constraints_le {Rel V : Type} (encRel : Rel ↪ List Bool) (encV : V ↪ List Bool)
     (F : CSP Rel V) :
-    (F.map fun c => c.2.length).sum + F.length ≤ (encCSP encRel encV F).length := by
+    (F.map fun c => c.scope.length).sum + F.length ≤ (encCSP encRel encV F).length := by
   induction F with
   | nil => simp [encCSP]
   | cons c F ih =>
-    have hs := length_le_length_encList encV c.2
+    have hs := length_le_length_encList encV c.scope
     have he : (encCSP encRel encV (c :: F)).length =
         2 * (encConstraint encRel encV c).length + 1 + (encCSP encRel encV F).length := by
       simp only [encCSP, length_encList, List.map_cons, List.sum_cons]
@@ -50,7 +50,7 @@ theorem incidence_sizes_le {Rel V : Type} [DecidableEq V]
       (CSP.incidenceGraph F).2.length ≤ (encCSP encRel encV F).length := by
   have hb := scopes_add_constraints_le encRel encV F
   have hn : F.numVars ≤ F.vars.length := List.toFinset_card_le _
-  have hv : F.vars.length = (F.map fun c => c.2.length).sum := by
+  have hv : F.vars.length = (F.map fun c => c.scope.length).sum := by
     simp only [CSP.vars, List.length_flatMap]
   rw [hv] at hn
   rw [CSP.length_vertices_incidenceGraph, CSP.length_edges_incidenceGraph]
