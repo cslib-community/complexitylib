@@ -117,4 +117,20 @@ example : ComputableInPolyTime (fun o : MerkleOpening Bool => o.leaf) encKilianO
 example (o : MerkleOpening Bool) :
     encKilianOpening o = encPair encBool (encList encBits) (o.leaf, o.path) := rfl
 
+-- Encoded words unchanged: the verifier's view and the honest prover's input keep the former
+-- `encKilianInput` layouts, the framed key, the framed statement and the last word.
+example {α : Type} (enc : α ↪ List Bool) (v : KilianView α) :
+    encKilianView enc v = encPair (encPair encBits (encPair enc encBits))
+      (encPair (encList encBits) encKilianResponse)
+      ((v.key, v.stmt, v.root), v.challenges, v.response) := rfl
+example {α : Type} (enc : α ↪ List Bool) (p : KilianProverInput α) :
+    encKilianProverInput enc p = encPair encBits (encPair enc encBits) (p.key, p.stmt, p.table) :=
+  rfl
+
+-- The field rules of `encKilianView` read the claim through the parent projection.
+example {α : Type} (enc : α ↪ List Bool) : ComputableInPolyTime
+    (fun v : KilianView α => (v.key, v.response)) (encKilianView enc)
+    (encPair encBits encKilianResponse) := by
+  fun_prop
+
 end CslibFrontierTests.Crypto.Kilian

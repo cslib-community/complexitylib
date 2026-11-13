@@ -43,8 +43,9 @@ variable {Rel V : Type} [DecidableEq V]
 the one final argument being removed. This applies directly to raw supplied certificates. -/
 theorem length_accepted_lastArgument_certificate (F : CSP Rel V) (r : Rel)
     (scope : List V) (v : V) (c : RotationCertificate)
-    (h : RotationCertificate.verifyRotation (incidenceGraph (F ++ [(r, scope ++ [v])])) c = true) :
-    c.successor.length = 2 * ((F ++ [(r, scope)]).occurrences.length + 1) := by
+    (h : RotationCertificate.verifyRotation
+      (incidenceGraph (F ++ [Constraint.mk r (scope ++ [v])])) c = true) :
+    c.successor.length = 2 * ((F ++ [Constraint.mk r scope]).occurrences.length + 1) := by
   rw [RotationCertificate.length_of_verifyRotation h, incidenceGraph_edges,
     List.length_map, CSP.occurrences_append_last_argument, List.length_append,
     List.length_singleton]
@@ -52,18 +53,18 @@ theorem length_accepted_lastArgument_certificate (F : CSP Rel V) (r : Rel)
 /-- Actual CSP scope deletion produces exactly the boundary program's table. The equality
 accounts for changing dense vertex names through positional dart transport. -/
 theorem ofRotation_deleteLastArgumentRotation (F : CSP Rel V) (r : Rel) (scope : List V) (v : V)
-    (ρ : RotationSystem (incidenceGraph (F ++ [(r, scope ++ [v])]))) :
+    (ρ : RotationSystem (incidenceGraph (F ++ [Constraint.mk r (scope ++ [v])]))) :
     RotationCertificate.ofRotation (deleteLastArgumentRotation F r scope v ρ) =
-      restrictPrefix (2 * (F ++ [(r, scope)]).occurrences.length)
+      restrictPrefix (2 * (F ++ [Constraint.mk r scope]).occurrences.length)
         (RotationCertificate.ofRotation ρ) := by
   have he : (lastArgumentPrefixGraph F r scope v).2.length =
-      (F ++ [(r, scope)]).occurrences.length := by
+      (F ++ [Constraint.mk r scope]).occurrences.length := by
     simp [lastArgumentPrefixGraph]
   change RotationCertificate.ofRotation
     (((lastArgumentSourceRotation F r scope v ρ).deleteLastEdge
       (G := lastArgumentPrefixGraph F r scope v)
-      (u := (F ++ [(r, scope ++ [v])]).distinctVars.idxOf v)
-      (v := (F ++ [(r, scope ++ [v])]).numVars + F.length)).transport
+      (u := (F ++ [Constraint.mk r (scope ++ [v])]).distinctVars.idxOf v)
+      (v := (F ++ [Constraint.mk r (scope ++ [v])]).numVars + F.length)).transport
         (lastArgumentDartEquiv F r scope v) (lastArgumentDartEquiv_vertex_eq_iff F r scope v)) = _
   rw [ofRotation_transport _ _ _ (by intro a; rfl)]
   rw [← restrictPrefix_ofRotation_deleteLastEdge, he]
@@ -74,16 +75,18 @@ passes the actual target numerical checker. Dense renaming, repeated variables a
 nullary or disconnected constraints are handled internally by positional transport. -/
 theorem verifyGenusZero_restrictPrefix_lastArgument (F : CSP Rel V) (r : Rel)
     (scope : List V) (v : V) (c : RotationCertificate)
-    (h : RotationCertificate.verifyGenusZero (incidenceGraph (F ++ [(r, scope ++ [v])])) c = true) :
-    RotationCertificate.verifyGenusZero (incidenceGraph (F ++ [(r, scope)]))
-      (restrictPrefix (2 * (F ++ [(r, scope)]).occurrences.length) c) = true := by
+    (h : RotationCertificate.verifyGenusZero
+      (incidenceGraph (F ++ [Constraint.mk r (scope ++ [v])])) c = true) :
+    RotationCertificate.verifyGenusZero (incidenceGraph (F ++ [Constraint.mk r scope]))
+      (restrictPrefix (2 * (F ++ [Constraint.mk r scope]).occurrences.length) c) = true := by
   obtain ⟨hrot, hgenus⟩ := (RotationCertificate.verifyGenusZero_eq_true_iff _ _).mp h
-  let ρ := RotationCertificate.decode (incidenceGraph (F ++ [(r, scope ++ [v])])) c hrot
+  let ρ :=
+    RotationCertificate.decode (incidenceGraph (F ++ [Constraint.mk r (scope ++ [v])])) c hrot
   let τ := deleteLastArgumentRotation F r scope v ρ
   have hτ : τ.NumericalGenusZero :=
     numericalGenusZero_deleteLastArgumentRotation F r scope v ρ hgenus
   have hout : RotationCertificate.ofRotation τ =
-      restrictPrefix (2 * (F ++ [(r, scope)]).occurrences.length) c := by
+      restrictPrefix (2 * (F ++ [Constraint.mk r scope]).occurrences.length) c := by
     rw [ofRotation_deleteLastArgumentRotation, RotationCertificate.ofRotation_decode hrot]
   rw [← hout]
   apply (RotationCertificate.verifyGenusZero_eq_true_iff _ _).mpr
@@ -95,12 +98,12 @@ omit [DecidableEq V] in
 private theorem argumentOrder_restrictPrefix_lastArgument_of_clock (F : CSP Rel V)
     (r : Rel) (scope : List V) (v : V)
     (c : RotationCertificate) (hc : 2 ≤ c.successor.length)
-    (ho : verifyArgumentOrder (F ++ [(r, scope ++ [v])]) c = true) :
-    verifyArgumentOrder (F ++ [(r, scope)])
-      (restrictPrefix (2 * (F ++ [(r, scope)]).occurrences.length) c) = true := by
-  have hpre : (F ++ [(r, scope ++ [v])]).occurrences.zipIdx =
-      (F ++ [(r, scope)]).occurrences.zipIdx ++
-        [((F.length, scope.length, v), (F ++ [(r, scope)]).occurrences.length)] := by
+    (ho : verifyArgumentOrder (F ++ [Constraint.mk r (scope ++ [v])]) c = true) :
+    verifyArgumentOrder (F ++ [Constraint.mk r scope])
+      (restrictPrefix (2 * (F ++ [Constraint.mk r scope]).occurrences.length) c) = true := by
+  have hpre : (F ++ [Constraint.mk r (scope ++ [v])]).occurrences.zipIdx =
+      (F ++ [Constraint.mk r scope]).occurrences.zipIdx ++
+        [((F.length, scope.length, v), (F ++ [Constraint.mk r scope]).occurrences.length)] := by
     simp [CSP.occurrences_append_last_argument, List.zipIdx_append]
   rw [verifyArgumentOrder, List.all_eq_true] at ho ⊢
   intro entry he
@@ -110,9 +113,9 @@ private theorem argumentOrder_restrictPrefix_lastArgument_of_clock (F : CSP Rel 
     rw [hpre]
     exact List.mem_append_left _ he))
   change c.successor.getD (2 * k + 1) 0 =
-    2 * argumentNextIndex (F ++ [(r, scope ++ [v])]) i j + 1 at hsrc
+    2 * argumentNextIndex (F ++ [Constraint.mk r (scope ++ [v])]) i j + 1 at hsrc
   obtain ⟨hk, hrec⟩ := List.getElem?_eq_some_iff.mp (List.mem_zipIdx_iff_getElem?.mp he)
-  have hm : (i, j, w) ∈ (F ++ [(r, scope)]).occurrences :=
+  have hm : (i, j, w) ∈ (F ++ [Constraint.mk r scope]).occurrences :=
     List.mem_iff_getElem.mpr ⟨k, hk, hrec⟩
   obtain ⟨o, hrecord⟩ := CSP.mem_occurrences.mp hm
   have hcoords : o.1.val = i ∧ o.2.val = j ∧ o.var = w := by
@@ -125,13 +128,14 @@ private theorem argumentOrder_restrictPrefix_lastArgument_of_clock (F : CSP Rel 
   by_cases hlast : o.1.val = F.length ∧ o.2.val + 1 = scope.length
   · rw [argumentNextIndex_append_last_argument, ite_eq_left hlast] at hsrc
     have hwrap := of_decide_eq_true (ho
-      ((F.length, scope.length, v), (F ++ [(r, scope)]).occurrences.length) (by
+      ((F.length, scope.length, v), (F ++ [Constraint.mk r scope]).occurrences.length) (by
         rw [hpre]
         exact List.mem_append_right _ (by simp)))
-    change c.successor.getD (2 * (F ++ [(r, scope)]).occurrences.length + 1) 0 =
-      2 * argumentNextIndex (F ++ [(r, scope ++ [v])]) F.length scope.length + 1 at hwrap
+    change c.successor.getD (2 * (F ++ [Constraint.mk r scope]).occurrences.length + 1) 0 =
+      2 * argumentNextIndex (F ++ [Constraint.mk r (scope ++ [v])]) F.length scope.length + 1
+      at hwrap
     rw [argumentNextIndex_append_last_argument_wrap F r scope v o hlast.1 hlast.2] at hwrap
-    have hr := getD_restrictPrefix_two c (2 * (F ++ [(r, scope)]).occurrences.length)
+    have hr := getD_restrictPrefix_two c (2 * (F ++ [Constraint.mk r scope]).occurrences.length)
       (2 * k + 1) (by omega) hc (by rw [hsrc]; omega) (by rw [hsrc, hwrap]; omega)
     rw [hsrc, hwrap] at hr
     exact hr
@@ -142,10 +146,11 @@ private theorem argumentOrder_restrictPrefix_lastArgument_of_clock (F : CSP Rel 
 actual last-argument restriction program. The source checker supplies the scan clock. -/
 theorem verifyArgumentOrder_restrictPrefix_lastArgument (F : CSP Rel V) (r : Rel)
     (scope : List V) (v : V) (c : RotationCertificate)
-    (h : RotationCertificate.verifyRotation (incidenceGraph (F ++ [(r, scope ++ [v])])) c = true)
-    (ho : verifyArgumentOrder (F ++ [(r, scope ++ [v])]) c = true) :
-    verifyArgumentOrder (F ++ [(r, scope)])
-      (restrictPrefix (2 * (F ++ [(r, scope)]).occurrences.length) c) = true := by
+    (h : RotationCertificate.verifyRotation
+      (incidenceGraph (F ++ [Constraint.mk r (scope ++ [v])])) c = true)
+    (ho : verifyArgumentOrder (F ++ [Constraint.mk r (scope ++ [v])]) c = true) :
+    verifyArgumentOrder (F ++ [Constraint.mk r scope])
+      (restrictPrefix (2 * (F ++ [Constraint.mk r scope]).occurrences.length) c) = true := by
   apply argumentOrder_restrictPrefix_lastArgument_of_clock F r scope v c _ ho
   rw [length_accepted_lastArgument_certificate F r scope v c h]
   omega
@@ -155,9 +160,9 @@ CSP lists. Source acceptance is the only certificate premise: target rotation, a
 order and componentwise numerical genus are all proved internally. -/
 theorem verifyRotationCertificate_restrictPrefix_lastArgument (F : CSP Rel V) (r : Rel)
     (scope : List V) (v : V) (c : RotationCertificate)
-    (h : verifyRotationCertificate (F ++ [(r, scope ++ [v])]) c = true) :
-    verifyRotationCertificate (F ++ [(r, scope)])
-      (restrictPrefix (2 * (F ++ [(r, scope)]).occurrences.length) c) = true := by
+    (h : verifyRotationCertificate (F ++ [Constraint.mk r (scope ++ [v])]) c = true) :
+    verifyRotationCertificate (F ++ [Constraint.mk r scope])
+      (restrictPrefix (2 * (F ++ [Constraint.mk r scope]).occurrences.length) c) = true := by
   simp only [verifyRotationCertificate, Bool.and_eq_true] at h ⊢
   obtain ⟨hg, ho⟩ := h
   obtain ⟨hr, -⟩ := (RotationCertificate.verifyGenusZero_eq_true_iff _ _).mp hg

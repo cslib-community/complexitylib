@@ -31,7 +31,7 @@ open Cslib.Logic.PL Cslib.Logic.PL.CSP Graph.RotationSystem
 variable {Rel : Type}
 
 private abbrev finBoundary (r : Rel) (n : ℕ) : CSP (Option Rel) (Fin n) :=
-  probeBody [(r, List.finRange n)] (List.finRange n)
+  probeBody [⟨r, List.finRange n⟩] (List.finRange n)
 
 private theorem vars_finBoundary (r : Rel) (n : ℕ) :
     (finBoundary r n).vars = List.finRange n ++ (List.finRange n).reverse := by
@@ -193,7 +193,7 @@ private theorem argumentSuccessor_finBoundaryOccurrence (r : Rel) (n : ℕ)
     (b : Bool) (i : Fin n) :
     argumentSuccessor (finBoundaryOccurrence r n b i) =
       finBoundaryOccurrence r n b (finRotate n i) := by
-  have hlen : (finBoundary r n)[(finBoundaryOccurrence r n b i).1.val].2.length = n := by
+  have hlen : (finBoundary r n)[(finBoundaryOccurrence r n b i).1.val].scope.length = n := by
     cases b <;> simp [finBoundaryOccurrence, finBoundary, probeBody]
   refine Sigma.ext (x := argumentSuccessor (finBoundaryOccurrence r n b i))
     (y := finBoundaryOccurrence r n b (finRotate n i)) rfl ?_
@@ -201,7 +201,7 @@ private theorem argumentSuccessor_finBoundaryOccurrence (r : Rel) (n : ℕ)
   apply Fin.ext
   change (finRotate _ (finBoundaryOccurrence r n b i).2).val = (finRotate n i).val
   rw [val_finRotate, val_finRotate]
-  change (if i.val + 1 = (finBoundary r n)[(finBoundaryOccurrence r n b i).1.val].2.length
+  change (if i.val + 1 = (finBoundary r n)[(finBoundaryOccurrence r n b i).1.val].scope.length
     then 0 else i.val + 1) = _
   rw [hlen]
 
@@ -305,12 +305,12 @@ theorem restrictPrefix_atomBoundaryCertificate (n : ℕ) :
         hread.symm
 
 private def finAtomWitness (r : Rel) (n : ℕ) :
-    Witness [(r, List.finRange n)] (List.finRange n) where
+    Witness [⟨r, List.finRange n⟩] (List.finRange n) where
   certificate := atomBoundaryCertificate n
   accepted := by
     apply (verify_eq_true_iff _ _ _).mpr
     constructor
-    · have hlen : (CSP.occurrences ([(r, List.finRange n)] : CSP Rel (Fin n))).length = n := by
+    · have hlen : (CSP.occurrences ([⟨r, List.finRange n⟩] : CSP Rel (Fin n))).length = n := by
         rw [CSP.length_occurrences]
         simp
       rw [bodyCertificate, hlen, restrictPrefix_atomBoundaryCertificate]
@@ -336,7 +336,7 @@ are retained. At arity zero both nullary centers use the separate point conventi
     rw [finAtomWitness_certificate] at hc
     change w.certificate = atomBoundaryCertificate (arity r) at hc
     rw [hc] at h
-    change verify ([(r, List.ofFn Sum.inl)] : CSP Rel (Fin (arity r) ⊕ Fin 0))
+    change verify ([⟨r, List.ofFn Sum.inl⟩] : CSP Rel (Fin (arity r) ⊕ Fin 0))
       (List.ofFn Sum.inl) (atomBoundaryCertificate (arity r)) = true
     simpa only [CSP.relabel, Constraint.relabel, List.map_cons, List.map_nil,
       List.ofFn_eq_map] using h

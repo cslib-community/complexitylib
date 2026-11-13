@@ -164,9 +164,7 @@ abbrev Adversary (R L : Type) := PRF.Adversary (Query L R) L
 
 /-- The ideal experiment: answer every query with a fresh uniform label. -/
 @[expose] noncomputable def idealGame [Fintype L] (adversary : Adversary R L) : Game :=
-  ProbComp.eval
-    (OracleComp.interpret (OracleComp.sumHandler ProbComp.unifFin fun _ => ProbComp.uniform L)
-      adversary)
+  ProbComp.eval (adversary.run fun _ => ProbComp.uniform L)
 
 /-- The arithmetic CCR advantage of `adversary` against `H`. The assumption that it is small is
 meant only for adversaries that never repeat a tweak (`IsTweakUnique`): repeating a query

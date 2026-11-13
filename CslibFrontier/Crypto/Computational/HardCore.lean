@@ -62,12 +62,11 @@ namespace Cslib.Crypto
 open Probability Turing.MultiTapeTM
 open scoped NNReal
 
-/-- Predict a predicate of a uniform seed, given only its image and the security parameter. -/
+/-- The prediction game at length `n`: `Cslib.Crypto.predictionExperiment` for `predicate` on a
+uniform `n`-bit seed, with the predictor told `n` and the image `f seed`. -/
 noncomputable def predictionGame (f : List Bool → List Bool) (predicate : List Bool → Bool)
-    (adversary : Distinguisher) (n : ℕ) : ProbComp Bool := do
-  let seed ← BitString.sampleList n
-  let guess ← adversary n (f seed)
-  return guess == predicate seed
+    (adversary : Distinguisher) (n : ℕ) : ProbComp Bool :=
+  predictionExperiment (BitString.sampleList n) f predicate (adversary n)
 
 /-- Absolute bias above or below the correctness probability of a fair guess. -/
 noncomputable abbrev predictionAdvantage (f : List Bool → List Bool)
@@ -103,7 +102,7 @@ theorem isPPTOn_predictionGame {f : List Bool → List Bool} {predicate : List B
     {adversary : Distinguisher} (hf : ComputableInPolyTime f encBits encBits)
     (hp : ComputableInPolyTime predicate encBits encBool) (ha : IsPPT encBool adversary) :
     IsPPTOn encUnary encBool (predictionGame f predicate adversary) := by
-  unfold predictionGame
+  unfold predictionGame predictionExperiment
   ppt
 
 /-- Use acceptance of an appended trial bit to predict the hidden predicate. -/
@@ -128,7 +127,7 @@ private theorem real_probability (f : List Bool → List Bool) (predicate : List
     Pr[prgRealGame (fun seed => f seed ++ [predicate seed]) adversary n] =
       ∑ bits : BitString n, ((PMF.uniformOfFintype (BitString n)) bits).toReal *
         Pr[adversary n (f (List.ofFn bits) ++ [predicate (List.ofFn bits)])] := by
-  simp only [pmf_norm, eval_prgRealGame, distinguishingGame, generatorEnsemble,
+  simp only [pmf_norm, eval_prgRealGame, distinguishingGame_eq_bind, generatorEnsemble,
     BitString.uniformList, PMF.bind_apply_toReal]
 
 private theorem ideal_probability (f : List Bool → List Bool) (adversary : Distinguisher)
@@ -137,7 +136,7 @@ private theorem ideal_probability (f : List Bool → List Bool) (adversary : Dis
       ∑ bits : BitString n, ((PMF.uniformOfFintype (BitString n)) bits).toReal *
         ((Pr[adversary n (f (List.ofFn bits) ++ [false])] +
           Pr[adversary n (f (List.ofFn bits) ++ [true])]) / 2) := by
-  simp only [pmf_norm, Game.coe_succProbability, distinguishingGame, hardCoreIdeal,
+  simp only [pmf_norm, Game.coe_succProbability, distinguishingGame_eq_bind, hardCoreIdeal,
     BitString.uniformList, PMF.bind_apply_toReal]
   apply Finset.sum_congr rfl
   intro bits _
@@ -150,7 +149,8 @@ private theorem prediction_probability (f : List Bool → List Bool) (predicate 
       ∑ bits : BitString n, ((PMF.uniformOfFintype (BitString n)) bits).toReal *
         Pr[(fun guess => guess == predicate (List.ofFn bits)) <$> adversary n (f (List.ofFn bits))]
       := by
-  simp only [pmf_norm, predictionGame, BitString.eval_sampleList, BitString.uniformList]
+  simp only [pmf_norm, predictionGame, predictionExperiment, BitString.eval_sampleList,
+    BitString.uniformList]
   rw [PMF.bind_apply_toReal]
   rfl
 

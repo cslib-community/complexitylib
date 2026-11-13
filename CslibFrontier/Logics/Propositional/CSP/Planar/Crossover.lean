@@ -157,10 +157,10 @@ inductive Symbol where
 /-- Figure 1(a)'s four constraints. Auxiliary indices `0,1,2` are `m,m̄,v̄₂`.
 The order inside each scope is the numbered order in the figure. -/
 @[expose] def figureOneABody : CSP Symbol (Fin 4 ⊕ Fin 3) :=
-  [(.relation, [.inr 0, .inl 2, .inl 3, .inl 0]),
-   (.relation, [.inl 2, .inr 1, .inl 0, .inr 2]),
-   (.disequality, [.inr 0, .inr 1]),
-   (.disequality, [.inr 2, .inl 1])]
+  [⟨.relation, [.inr 0, .inl 2, .inl 3, .inl 0]⟩,
+   ⟨.relation, [.inl 2, .inr 1, .inl 0, .inr 2]⟩,
+   ⟨.disequality, [.inr 0, .inr 1]⟩,
+   ⟨.disequality, [.inr 2, .inl 1]⟩]
 
 /-- Figure 1(a)'s existential boundary relation, using the existing CSP evaluator. -/
 @[expose] def figureOneARelation (R : Set (Fin 4 → Bool)) [DecidablePred (· ∈ R)] :
@@ -239,8 +239,8 @@ The body still has exactly the four constraints displayed in the source. -/
 
 /-- Figure 1(b)'s two constraints; its one auxiliary is `m`. -/
 @[expose] def figureOneBBody : CSP Unit (Fin 4 ⊕ Fin 1) :=
-  [((), [.inl 0, .inl 1, .inr 0, .inl 3]),
-   ((), [.inl 2, .inl 3, .inr 0, .inl 1])]
+  [⟨(), [.inl 0, .inl 1, .inr 0, .inl 3]⟩,
+   ⟨(), [.inl 2, .inl 3, .inr 0, .inl 1]⟩]
 
 /-- Figure 1(b) defines precisely CROSS, with existential `m`. -/
 theorem figureOneB_correct (a : Fin 4 → Bool) :

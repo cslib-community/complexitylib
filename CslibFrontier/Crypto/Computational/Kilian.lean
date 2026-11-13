@@ -80,6 +80,9 @@ adversaries, as in `CollisionResistant`.
 * `Cslib.Crypto.kilianLeaves`, `Cslib.Crypto.kilianTable`, `Cslib.Crypto.kilianCommit`,
   `Cslib.Crypto.kilianOpen`, `Cslib.Crypto.kilianRespond`: the honest prover.
 * `Cslib.Crypto.kilianHonestGame`: the honest execution.
+* `Cslib.Crypto.KilianClaim`, `Cslib.Crypto.KilianView`, `Cslib.Crypto.KilianProverInput`: the
+  verifier's claim and view and the honest prover's input, with their encodings `encKilianClaim`,
+  `encKilianView` and `encKilianProverInput`.
 
 ## Main results
 
@@ -262,12 +265,47 @@ attribute [fun_prop] encKilianOpening_leaf_polyTime encKilianOpening_path_polyTi
 /-- The encoding of the prover's last message. -/
 abbrev encKilianResponse : KilianResponse ↪ List Bool := encList (encList encKilianOpening)
 
-/-- The encoding of the triple `(k, x, w)` that Kilian's verifier and honest prover start from:
-the hash key `k` as a bit word, the statement `x` encoded by `enc`, and a bit word `w`, which is
-the committed root for the verifier and the witness table for the honest prover. The key and the
-statement are framed; `w` is not. -/
-abbrev encKilianInput (enc : α ↪ List Bool) : List Bool × α × List Bool ↪ List Bool :=
-  encPair encBits (encPair enc encBits)
+/-- What the verifier holds after the commitment: its hash key, the statement and the root that the
+prover committed to. -/
+structure KilianClaim (α : Type) where
+  /-- The hash key. -/
+  key : List Bool
+  /-- The statement. -/
+  stmt : α
+  /-- The committed Merkle root. -/
+  root : List Bool
+
+/-- The verifier's view of a run, the input of `kilianVerify`: the claim, the random strings and
+the prover's response. -/
+structure KilianView (α : Type) extends KilianClaim α where
+  /-- The verifier's random strings, one per repetition. -/
+  challenges : List (List Bool)
+  /-- The prover's openings. -/
+  response : KilianResponse
+
+/-- The honest prover's input: the hash key, the statement and its witness table. -/
+structure KilianProverInput (α : Type) where
+  /-- The hash key. -/
+  key : List Bool
+  /-- The statement. -/
+  stmt : α
+  /-- The witness table. -/
+  table : List Bool
+
+/-- The encoding of a claim: the framed key, the framed statement, then the root. -/
+enc_structure encKilianClaim (enc : α ↪ List Bool) : KilianClaim α where
+  key : encBits, stmt : enc, root : encBits
+
+/-- The encoding of the verifier's view: the claim as one framed word, the framed random strings,
+then the response. -/
+enc_structure encKilianView (enc : α ↪ List Bool) : KilianView α where
+  toKilianClaim : (encKilianClaim enc), challenges : (encList encBits),
+  response : encKilianResponse
+
+/-- The encoding of the honest prover's input: the framed key, the framed statement, then the
+table. -/
+enc_structure encKilianProverInput (enc : α ↪ List Bool) : KilianProverInput α where
+  key : encBits, stmt : enc, table : encBits
 
 section Efficiency
 
@@ -288,7 +326,7 @@ private theorem computableInPolyTime_kilianCheck
     ComputableInPolyTime (fun g => kilianCheck H V (k g) (x g) (root g) (ρ g) (answers g))
       encIn encBool := by
   have htable := (PCPVerifier.isPolyTime_queryTable hV hcoins).comp hx
-  have hqueries := hV.2.1.comp (hx.prod hρ)
+  have hqueries := hV.queries.comp (hx.prod hρ)
   have hdepth : ComputableInPolyTime (fun g => kilianDepth V (x g)) encIn encUnary :=
     (ComputableInPolyTime.unary_clog_const 2).comp
       ((ComputableInPolyTime.length_list encNat).comp htable)
@@ -325,7 +363,7 @@ private theorem computableInPolyTime_kilianCheck
     ComputableInPolyTime.listToBits.comp
       (ComputableInPolyTime.mapWithInput hanswers
         (encKilianOpening_leaf_polyTime (ComputableInPolyTime.snd encIn encKilianOpening)))
-  have hverdict := hV.2.2.comp ((hx.prod hρ).prod hbits)
+  have hverdict := hV.verdict.comp ((hx.prod hρ).prod hbits)
   unfold kilianCheck
   exact ComputableInPolyTime.bool_and' (ComputableInPolyTime.bool_and' hlength hall)
     hverdict
@@ -341,35 +379,24 @@ theorem computableInPolyTime_kilianVerify
     (hlen : ∀ k x, (H k x).length = k.length) (hV : V.PolyTime enc)
     (hcoins : ∀ a, V.coins a ≤ c * (Nat.log 2 (enc a).length + 1)) :
     ComputableInPolyTime
-      (fun p : (List Bool × α × List Bool) × List (List Bool) × KilianResponse =>
-        kilianVerify H V p.1.1 p.1.2.1 p.1.2.2 p.2.1 p.2.2)
-      (encPair (encKilianInput enc) (encPair (encList encBits) encKilianResponse)) encBool := by
-  have hfst := ComputableInPolyTime.fst (encPair encBits (encPair enc encBits))
-    (encPair (encList encBits) encKilianResponse)
-  have hsnd := ComputableInPolyTime.snd (encPair encBits (encPair enc encBits))
-    (encPair (encList encBits) encKilianResponse)
-  have hρs := (ComputableInPolyTime.fst (encList encBits) encKilianResponse).comp hsnd
-  have hresponse := (ComputableInPolyTime.snd (encList encBits) encKilianResponse).comp hsnd
+      (fun v : KilianView α => kilianVerify H V v.key v.stmt v.root v.challenges v.response)
+      (encKilianView enc) encBool := by
+  have hρs : ComputableInPolyTime (fun v : KilianView α => v.challenges) (encKilianView enc)
+      (encList encBits) := by fun_prop
+  have hresponse : ComputableInPolyTime (fun v : KilianView α => v.response) (encKilianView enc)
+      encKilianResponse := by fun_prop
   have hlength := ComputableInPolyTime.beq
     ((ComputableInPolyTime.length_list (encList encKilianOpening)).comp hresponse)
     ((ComputableInPolyTime.length_list encBits).comp hρs)
-  have hpf := ComputableInPolyTime.fst
-    (encPair (encPair encBits (encPair enc encBits)) (encPair (encList encBits) encKilianResponse))
+  have hρa := ComputableInPolyTime.snd (encKilianView enc)
     (encPair encBits (encList encKilianOpening))
-  have hps := ComputableInPolyTime.snd
-    (encPair (encPair encBits (encPair enc encBits)) (encPair (encList encBits) encKilianResponse))
-    (encPair encBits (encList encKilianOpening))
-  have hcommon := (ComputableInPolyTime.fst (encPair encBits (encPair enc encBits))
-    (encPair (encList encBits) encKilianResponse)).comp hpf
-  have hk := (ComputableInPolyTime.fst encBits (encPair enc encBits)).comp hcommon
-  have hxroot := (ComputableInPolyTime.snd encBits (encPair enc encBits)).comp hcommon
-  have hx := (ComputableInPolyTime.fst enc encBits).comp hxroot
-  have hroot := (ComputableInPolyTime.snd enc encBits).comp hxroot
-  have hρ := (ComputableInPolyTime.fst encBits (encList encKilianOpening)).comp hps
-  have hanswers := (ComputableInPolyTime.snd encBits (encList encKilianOpening)).comp hps
-  have hcheck := computableInPolyTime_kilianCheck hH hlen hV hcoins hk hx hroot hρ hanswers
+  have hcheck := computableInPolyTime_kilianCheck hH hlen hV hcoins
+    (k := fun p => p.1.key) (x := fun p => p.1.stmt) (root := fun p => p.1.root)
+    (by fun_prop) (by fun_prop) (by fun_prop)
+    ((ComputableInPolyTime.fst encBits (encList encKilianOpening)).comp hρa)
+    ((ComputableInPolyTime.snd encBits (encList encKilianOpening)).comp hρa)
   have hall := ComputableInPolyTime.allWithInput
-    (test := fun g q => kilianCheck H V g.1.1 g.1.2.1 g.1.2.2 q.1 q.2)
+    (test := fun v q => kilianCheck H V v.key v.stmt v.root q.1 q.2)
     ((ComputableInPolyTime.zip encBits (encList encKilianOpening)).comp (hρs.prod hresponse))
     hcheck
   unfold kilianVerify
@@ -404,15 +431,13 @@ theorem computableInPolyTime_kilianCommit
       (encPair encBits encBits) encBits)
     (hlen : ∀ k x, (H k x).length = k.length) (hV : V.PolyTime enc)
     (hcoins : ∀ a, V.coins a ≤ c * (Nat.log 2 (enc a).length + 1)) :
-    ComputableInPolyTime (fun p : List Bool × α × List Bool => kilianCommit H V p.1 p.2.1 p.2.2)
-      (encKilianInput enc) encBits := by
-  have hk := ComputableInPolyTime.fst encBits (encPair enc encBits)
-  have hrest := ComputableInPolyTime.snd encBits (encPair enc encBits)
-  have hx := (ComputableInPolyTime.fst enc encBits).comp hrest
-  have htable := (ComputableInPolyTime.snd enc encBits).comp hrest
+    ComputableInPolyTime (fun p : KilianProverInput α => kilianCommit H V p.key p.stmt p.table)
+      (encKilianProverInput enc) encBits := by
+  have hk : ComputableInPolyTime (fun p : KilianProverInput α => p.key) (encKilianProverInput enc)
+      encBits := by fun_prop
   exact (computableInPolyTime_merkleRoot hH hlen).comp
     (hk.prod (computableInPolyTime_kilianLeaves
-      (computableInPolyTime_kilianTable hV hcoins hx htable)))
+      (computableInPolyTime_kilianTable hV hcoins (by fun_prop) (by fun_prop))))
 
 private theorem computableInPolyTime_kilianOpen
     (hH : ComputableInPolyTime (fun p : List Bool × List Bool => H p.1 p.2)
@@ -426,7 +451,7 @@ private theorem computableInPolyTime_kilianOpen
     (hρ : ComputableInPolyTime ρ encIn encBits) :
     ComputableInPolyTime (fun g => kilianOpen H V (k g) (x g) (table g) (ρ g)) encIn
       (encList encKilianOpening) := by
-  have hqueries := hV.2.1.comp (hx.prod hρ)
+  have hqueries := hV.queries.comp (hx.prod hρ)
   have hfst := ComputableInPolyTime.fst encIn encNat
   have ha := ComputableInPolyTime.snd encIn encNat
   have hnormal := computableInPolyTime_kilianTable hV hcoins (hx.comp hfst)
@@ -449,24 +474,19 @@ theorem computableInPolyTime_kilianRespond
     (hlen : ∀ k x, (H k x).length = k.length) (hV : V.PolyTime enc)
     (hcoins : ∀ a, V.coins a ≤ c * (Nat.log 2 (enc a).length + 1)) :
     ComputableInPolyTime
-      (fun p : (List Bool × α × List Bool) × List (List Bool) =>
-        kilianRespond H V p.1.1 p.1.2.1 p.1.2.2 p.2)
-      (encPair (encKilianInput enc) (encList encBits)) encKilianResponse := by
-  have hfst := ComputableInPolyTime.fst (encPair encBits (encPair enc encBits))
-    (encList encBits)
-  have hρs := ComputableInPolyTime.snd (encPair encBits (encPair enc encBits))
-    (encList encBits)
-  have hpf := ComputableInPolyTime.fst
-    (encPair (encPair encBits (encPair enc encBits)) (encList encBits)) encBits
-  have hρ := ComputableInPolyTime.snd
-    (encPair (encPair encBits (encPair enc encBits)) (encList encBits)) encBits
-  have hcommon := hfst.comp hpf
-  have hk := (ComputableInPolyTime.fst encBits (encPair enc encBits)).comp hcommon
-  have hrest := (ComputableInPolyTime.snd encBits (encPair enc encBits)).comp hcommon
-  have hx := (ComputableInPolyTime.fst enc encBits).comp hrest
-  have htable := (ComputableInPolyTime.snd enc encBits).comp hrest
+      (fun p : KilianProverInput α × List (List Bool) =>
+        kilianRespond H V p.1.key p.1.stmt p.1.table p.2)
+      (encPair (encKilianProverInput enc) (encList encBits)) encKilianResponse := by
+  have hp := ComputableInPolyTime.fst
+    (encPair (encKilianProverInput enc) (encList encBits)) encBits
+  have hρs := ComputableInPolyTime.snd (encKilianProverInput enc) (encList encBits)
+  have hinput := (ComputableInPolyTime.fst (encKilianProverInput enc) (encList encBits)).comp hp
   exact ComputableInPolyTime.mapWithInput hρs
-    (computableInPolyTime_kilianOpen hH hlen hV hcoins hk hx htable hρ)
+    (computableInPolyTime_kilianOpen hH hlen hV hcoins
+      (encKilianProverInput_key_polyTime enc hinput)
+      (encKilianProverInput_stmt_polyTime enc hinput)
+      (encKilianProverInput_table_polyTime enc hinput)
+      (ComputableInPolyTime.snd (encPair (encKilianProverInput enc) (encList encBits)) encBits))
 
 /-- **Sampling the challenges is efficient**: drawing `n` random strings of `V.coins x` bits is
 strict PPT in the unary security parameter and the statement, for a polynomial-time PCP verifier
@@ -476,7 +496,7 @@ theorem isPPTOn_kilianChallenges (hV : V.PolyTime enc)
     IsPPTOn (encPair encUnary enc) (encList encBits)
       (fun p : ℕ × α => kilianChallenges V p.1 p.2) :=
   IsPPTOn.replicate
-    (((ComputableInPolyTime.binary_to_unary_bounded hV.1 (by fun_prop) hcoins).comp
+    (((ComputableInPolyTime.binary_to_unary_bounded hV.coins (by fun_prop) hcoins).comp
       (ComputableInPolyTime.snd encUnary enc)).sampleList)
     (ComputableInPolyTime.fst encUnary enc)
 

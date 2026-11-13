@@ -428,7 +428,7 @@ theorem length_constraints_sample (F : MaxCSPInstance Rel V) {s : ℕ}
   simp only [sample, List.length_ofFn]
 
 theorem mem_constraints_sample {F : MaxCSPInstance Rel V} {s : ℕ}
-    {ω : Fin s → Fin F.constraints.length} {c : MaxConstraint Rel V}
+    {ω : Fin s → Fin F.constraints.length} {c : Constraint Rel V}
     (hc : c ∈ (F.sample ω).constraints) : c ∈ F.constraints := by
   simp only [sample, List.mem_ofFn] at hc
   obtain ⟨j, rfl⟩ := hc
@@ -441,7 +441,7 @@ theorem workSize_sample_le_of_width {k : ℕ} {F : MaxCSPInstance Rel V}
   have hvars : (F.sample ω).vars.length ≤ k * s := by
     calc (F.sample ω).vars.length
         = ((F.sample ω).constraints.map fun c => c.scope.length).sum := by
-          simp only [vars, List.length_flatMap]
+          simp only [vars, CSP.vars, List.length_flatMap]
       _ ≤ ((F.sample ω).constraints.map fun _ => k).sum :=
           List.sum_le_sum fun c hc => hk c (mem_constraints_sample hc)
       _ = k * s := by

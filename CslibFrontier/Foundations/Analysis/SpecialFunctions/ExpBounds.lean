@@ -35,6 +35,7 @@ inequalities behind multiplicative Chernoff bounds and the Johnson–Lindenstrau
   `0 ≤ x`.
 * `Real.exp_neg_two_le_one_third`: `exp (-2) ≤ 1 / 3`.
 * `Real.two_pow_le_exp`: `2 ^ n ≤ exp n`.
+* `Real.exp_le_half_pow`: `exp x ≤ (1 / 2) ^ n` for `x ≤ -n`.
 * `Real.one_sub_pow_le_exp`: `(1 - p) ^ R ≤ exp (-c)` for `p ≤ 1` and `c ≤ R p`.
 * `Real.pow_le_one_third`: `p ^ k ≤ 1 / 3` for `0 ≤ p ≤ 1 - δ` and `2 ≤ δ k`.
 -/
@@ -76,6 +77,13 @@ theorem exp_neg_two_le_one_third : exp (-2) ≤ 1 / 3 := by
 theorem two_pow_le_exp (n : ℕ) : (2 : ℝ) ^ n ≤ exp n :=
   (pow_le_pow_left₀ (by norm_num) (by linarith [add_one_le_exp 1]) n).trans_eq
     (by rw [← exp_nat_mul, mul_one])
+
+/-- `exp x ≤ (1 / 2) ^ n` whenever `x ≤ -n`, since `2 ^ n ≤ exp n`. -/
+theorem exp_le_half_pow (n : ℕ) {x : ℝ} (hx : x ≤ -(n : ℝ)) : exp x ≤ (1 / 2 : ℝ) ^ n :=
+  calc exp x ≤ exp (-(n : ℝ)) := exp_le_exp.mpr hx
+    _ = (exp (n : ℝ))⁻¹ := exp_neg (n : ℝ)
+    _ ≤ ((2 : ℝ) ^ n)⁻¹ := inv_anti₀ (by positivity) (two_pow_le_exp n)
+    _ = (1 / 2 : ℝ) ^ n := by rw [one_div, inv_pow]
 
 /-- `(1 - p) ^ R ≤ exp (-c)` once `c ≤ R p`. -/
 theorem one_sub_pow_le_exp {p c : ℝ} {R : ℕ} (hp1 : p ≤ 1) (hc : c ≤ R * p) :
