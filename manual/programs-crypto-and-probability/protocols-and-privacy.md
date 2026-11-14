@@ -426,7 +426,9 @@ banks, the second pass and the discrete-log theorem remain
 [`Crypto/SchnorrForkPass.lean`](../../CslibFrontierTests/Crypto/SchnorrForkPass.lean) cover
 signing points (including a repeated signing request), repeated and junk hash points, answer
 exhaustion, fresh, signed and programmed forgeries, and a malformed outer signature word that the
-total pair decoder accepts.
+total pair decoder accepts. As an ordinary `module` client, the same file applies
+`isPPTOn_schnorrForkPass` and `eval_schnorrForkPass` to an actual halting forger machine in the
+order-11 Schnorr group modulo 23.
 
 For strict-PPT **identification** under discrete log, use `SchnorrImpersonator`,
 `schnorrDirectGame` and `negligible_schnorrDirectGame`; for an adversary given independent honest
