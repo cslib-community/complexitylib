@@ -255,7 +255,8 @@ theorem mem_NP : MINKTStar ∈ NP enc := by
       have hpat := length_pattern_le_length_enc i
       have hsize := size_le_length_enc i
       have hp := hw.2.1
-      enc_len [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_ofNat, Polynomial.eval_X, Polynomial.eval_one]⟩
+      enc_len [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_ofNat, Polynomial.eval_X,
+        Polynomial.eval_one]⟩
   convert h using 1
   ext i
   simp only [mem_iff_exists_program, Set.mem_ofPred_eq, Prod.exists]

@@ -546,7 +546,8 @@ theorem isPPTOn_run_signingPairOracle (M : MACScheme) {adversary : Forger}
   have htagLen := hlen (caller.2, request.2) tag htag
   simp only [encBits_apply, length_encPair] at htagLen
   refine ⟨trivial, by lia, ?_⟩
-  enc_len
+  simp only [encList_cons, List.length_append, length_frame, length_encPair, encBits_apply]
+  lia
 
 private theorem computableInPolyTime_sufPost (M : MACScheme) :
     ComputableInPolyTime
@@ -850,7 +851,9 @@ theorem isPPTOn_run_oneTimeSigningPairOracle (M : MACScheme) {adversary : Forger
     simp only [encBits_apply, length_encPair] at htagLen
     refine ⟨trivial, by lia, ?_⟩
     rw [List.isEmpty_iff.mp hempty]
-    enc_len
+    simp only [encList_cons, encList_nil, List.length_append, List.length_nil, length_frame,
+      length_encPair, encBits_apply]
+    lia
   · simp only [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hresult
     subst result
     exact ⟨trivial, by simp, by lia⟩

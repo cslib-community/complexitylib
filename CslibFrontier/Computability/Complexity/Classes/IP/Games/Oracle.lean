@@ -393,7 +393,9 @@ private theorem computableInPolyTime_extractHistory {γ : Type} {encIn : γ ↪ 
       have hstLen : (encSt st).length =
           2 * st.rem.length + 1 + 2 * (Interaction.encHistory st.hist).length + 1 + 1 := by
         change (encExtractState st).length = _
-        enc_len [encExtractState_apply, encExtractStateFields, List.length_singleton, Nat.add_assoc])
+        simp only [encExtractState_apply, encExtractStateFields, length_encPair,
+          encBits_apply, encBool_apply, List.length_singleton, Nat.add_assoc]
+      omega)
   exact encExtractState_hist_polyTime hspec.1
 
 private theorem foldl_extractStep_false (t k : ℕ) (rem : List Bool) (hist : Interaction.History) :

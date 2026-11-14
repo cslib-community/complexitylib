@@ -1279,7 +1279,8 @@ private theorem length_interleavedOpenRoundStep_le_aux {Msg : Type} [Inhabited M
     obtain ⟨rawReply, _, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hreply
     obtain rfl := OracleComp.eq_of_mem_supportWith_pure hret
     have hcLen : c.length ≤ B := by
-      enc_len [encCCAQuery_apply, CCAQuery.toOptionPair, encOption, Function.Embedding.coeFn_mk, Option.elim] at hqLen
+      enc_len [encCCAQuery_apply, CCAQuery.toOptionPair, encOption, Function.Embedding.coeFn_mk,
+        Option.elim] at hqLen
     have hdecLen : (List.take (decBound n c) rawReply).length ≤ decMax :=
       (List.length_take_le _ _).trans (hlenDec c hcLen)
     enc_len [encInterleavedLoopState, InterleavedLoopState.forbidden]

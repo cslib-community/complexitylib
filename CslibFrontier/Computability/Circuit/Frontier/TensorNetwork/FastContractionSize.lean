@@ -65,7 +65,9 @@ theorem length_enc_packetCtx_le (c : PacketCtx) {B : ℕ} (hp : c.p ≤ B) (hfl 
   have h1 := length_encList_le_of_le_one hfl1
   have h2 := length_encList_le_of_le_one hζ1
   have h3 : c.t.natAbs.size ≤ B := (Nat.size_le.mpr (Nat.lt_two_pow_self)).trans ht
-  enc_len [PacketCtx.enc, encOfEquiv, Function.Embedding.trans_apply, Equiv.coe_toEmbedding, PacketCtx.equivProd, Equiv.coe_fn_mk, length_encIntBin, List.length_singleton, hcols, length_encList, List.map_nil, List.sum_nil] at h1 h2 ⊢
+  enc_len [PacketCtx.enc, encOfEquiv, Function.Embedding.trans_apply, Equiv.coe_toEmbedding,
+    PacketCtx.equivProd, Equiv.coe_fn_mk, length_encIntBin, List.length_singleton, hcols,
+    length_encList, List.map_nil, List.sum_nil] at h1 h2 ⊢
 
 /-- `2 ^ a ≤ m` for `a ≤ ⌊log₂ m⌋` and `m ≠ 0`. -/
 theorem two_pow_le_of_le_log {a m : ℕ} (ha : a ≤ Nat.log 2 m) (hm : m ≠ 0) : 2 ^ a ≤ m :=

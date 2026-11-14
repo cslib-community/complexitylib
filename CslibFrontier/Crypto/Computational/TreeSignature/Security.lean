@@ -780,7 +780,8 @@ private theorem isOraclePPTOn_certifyPlanted (S : IndexedSignatureScheme) {depth
       (encEdgeCache a.edges).length ≤ (encLoopIn a).length := by
     rcases a with ⟨⟨keys, targetCap, ⟨n, leaf⟩⟩, ⟨visited, edges⟩⟩
     have hk := length_le_length_encList (encPair encBits encBits) keys
-    enc_len [CertLoopIn.keys, CertLoopIn.sigCap, CertLoopIn.parameter, CertLoopIn.visited, CertLoopIn.edges, encLoopIn, encKeys]
+    enc_len [CertLoopIn.keys, CertLoopIn.sigCap, CertLoopIn.parameter, CertLoopIn.visited,
+      CertLoopIn.edges, encLoopIn, encKeys]
   have hd : PolyBounded (fun a : CertLoopIn => (encLoopIn a).length)
       (fun a => depth a.parameter) :=
     PolyBounded.of_forall_le cd dd fun a => (hdd a.parameter).trans

@@ -25,7 +25,6 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Foundations.Analysis.ENNRealNatDiv
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Closure
-import CslibFrontier.Tactic.EncLen
 
 /-!
 # The unconditional upper bound `MIP ⊆ NEXP`
@@ -225,7 +224,8 @@ theorem computableInPolyTime_consistentHist :
     (fun p _ s _ hs => by
       have hlen := length_encList_sublist (encPair encBits encBits) hs.sublist
       have hp := length_le_encPair_right encHistory encHistory p
-      enc_len [List.length_singleton])).1
+      simp only [length_encPair, encBool_apply, List.length_singleton]
+      lia)).1
   have hres : ComputableInPolyTime
       (fun p : History × History => (p.1.foldl consistentHistStep (p.2, true, true)).2.2)
       (encPair encHistory encHistory) encBool := by fun_prop

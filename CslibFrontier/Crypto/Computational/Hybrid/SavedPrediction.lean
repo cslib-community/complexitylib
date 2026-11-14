@@ -101,7 +101,8 @@ def decode (code : List Bool) : Description where
 @[simp] theorem length_encoding (desc : Description) :
     (encoding desc).length =
       2 * (desc.front.length + desc.back.length) + desc.coins.length + 8 := by
-  enc_len [encoding, Function.Embedding.coeFn_mk, List.length_singleton, encBits, Function.Embedding.refl_apply]
+  enc_len [encoding, Function.Embedding.coeFn_mk, List.length_singleton, encBits,
+    Function.Embedding.refl_apply]
 
 /-- Insert a labeled example directly into the saved encoded input. -/
 def input (desc : Description) (observation : List Bool) : List Bool :=

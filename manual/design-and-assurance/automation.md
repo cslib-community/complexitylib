@@ -478,7 +478,10 @@ proof, keep any additional unfolding or arithmetic lemmas as arguments to `enc_l
 the original location. For example, a local record equation still belongs in
 `enc_len [encInstance_apply]`; the tactic does not discover that equation. Keep nonlinear
 monotonicity steps outside this replacement, and validate the importing clients after adding
-the tactic import.
+the tactic import. Preserve outer proof steps when the simplification proves a nested
+`have`. A `lia` closure may normalize arithmetic expressions or identify reducible encoding
+names that `omega` treats as distinct atoms; retain the explicit proof when `enc_len` does
+not fit.
 
 By default only the current goal is expanded. Supply a local encoding lemma explicitly with
 `enc_len [eFoo_apply]`. Use `enc_len at h ⊢` to expand one hypothesis and the goal, or `enc_len at *`

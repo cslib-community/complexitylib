@@ -285,7 +285,7 @@ private theorem le_length_encRound (x : List Bool × ℕ × List (ℕ × ℕ)) :
   have h1 : (encPair encUnary (encList encEdge) x.2).length ≤ (encRound x).length :=
     length_le_encPair_right encBits (encPair encUnary (encList encEdge)) x
   have h2 := length_le_encPair_left encUnary (encList encEdge) x.2
-  enc_len at h2
+  enc_len at h1 h2
 
 private theorem labelling_size_le_cubic {n i N : ℕ} (hi : i ≤ n) (hn : n ≤ N) :
     n * (2 * (1 + i * (6 * n + 1)) + 1) ≤ 15 * (N + 1) ^ 3 := by

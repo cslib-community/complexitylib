@@ -687,7 +687,8 @@ theorem computableInO_selectBestTestRow {countSys : List (List Bool) → ℕ}
     fun ⟨_, m, P, rows⟩ j hj => by
       have := hR (m, P, rows) j hj
       dsimp only [unitCounter, NativeCertificate.comp_time, NativeCertificate.linear_time]
-      enc_len [encContextRows, encInput, encSelectBestIn, encUnit_apply, encList_append, List.append_nil, length_materializeTestRow]
+      enc_len [encContextRows, encInput, encSelectBestIn, encUnit_apply, encList_append,
+        List.append_nil, length_materializeTestRow]
   refine ⟨fun L => poly (L + 1) + 3 * L + 1, by fun_prop, ?_⟩
   refine (h.comp' (unitInput encSelectBestIn)).mono_le (fun ⟨m, P, rows⟩ => ?_)
     fun ⟨m, P, rows⟩ => ?_
@@ -735,7 +736,8 @@ theorem computableInO_greedyParityRows {countSys : List (List Bool) → ℕ}
         enc_len [L, encGreedyInput, encGreedyIn, encSelectBestIn]
       have hg : i * (2 * m + 1) ≤ 3 * L * (2 * L + 1) := Nat.mul_le_mul (by omega) (by omega)
       have hx : 3 * L * (2 * L + 1) = 6 * L * L + 3 * L := by ring
-      enc_len [encContextRows, encUnit_apply, encList_append, List.append_nil, length_materializeTestRow, length_encList_greedyParityRowsAt]
+      enc_len [encContextRows, encUnit_apply, encList_append, List.append_nil,
+        length_materializeTestRow, length_encList_greedyParityRowsAt]
   refine ⟨fun N => poly (N + 1) + E (N + 1) + 2 * N, by fun_prop, ?_⟩
   refine (h.comp' (unitInput encGreedyIn)).mono_le (fun ⟨n, m, P, rows⟩ => ?_)
     fun ⟨n, m, P, rows⟩ => ?_
