@@ -28,11 +28,8 @@ masks and proves its exact failure mass; no theorem identifies that model with F
 `ExpandMask` before its distribution and counter behavior are formalized.
 
 Appendix C, Table 3 of the published FIPS 204 gives `814` as the minimum permitted bounded
-signing limit under its stated hash/XOF distribution assumptions. NIST's potential-updates
-workbook, Sheet1 row 27 (2026-07-31), proposes `821` after accounting for line 28. The inspected
-workbook has SHA-256 `5bc93ce63bc647e6d1d456cb2d3a171426c15aca4a7a0e0edd40d08b7a34c793`.
-The two values have deliberately different declaration names: the latter is not part of the
-published standard.
+signing limit under its stated hash/XOF distribution assumptions. The numeral is recorded here
+without a theorem deriving the standard's failure estimate from the semantic mask model.
 
 ## Main definitions
 
@@ -43,9 +40,7 @@ published standard.
   `Cslib.Crypto.MLDSA.compressedSignBounded`: first successful attempt in a bounded mask
   schedule, with an explicit starting counter or counter zero.
 * `Cslib.Crypto.MLDSA.compressedSignIID`: bounded first-success signing with IID masks.
-* `Cslib.Crypto.MLDSA.fips204PublishedSigningLoopLimit`,
-  `Cslib.Crypto.MLDSA.fips204Proposed20260731SigningLoopLimit`: the published and proposed
-  limits, kept separate.
+* `Cslib.Crypto.MLDSA.fips204PublishedSigningLoopLimit`: the published Appendix C limit.
 
 ## Main results
 
@@ -60,8 +55,6 @@ published standard.
 
 * [National Institute of Standards and Technology, *Module-Lattice-Based Digital Signature
   Standard*, Section 6.2, Algorithm 7 and Appendix C][NISTFIPS204]
-* [National Institute of Standards and Technology, *FIPS 204 Errata (Potential Updates)*,
-  Sheet1 row 27 (2026-07-31)](https://csrc.nist.gov/pubs/fips/204/final)
 -/
 
 public section
@@ -190,11 +183,5 @@ The published analysis uses expected repetition values `4.25`, `5.1` and `3.85` 
 standard's stated hash/XOF distribution assumptions. This declaration alone proves no failure
 bound. -/
 @[expose] def fips204PublishedSigningLoopLimit : ℕ := 814
-
-/-- Limit proposed by NIST's FIPS 204 potential-updates workbook, Sheet1 row 27 (2026-07-31).
-
-This proposed `821` accounts for Algorithm 7 line 28 and is deliberately not named as a
-published FIPS limit. The workbook says a future revision will update Table 3. -/
-@[expose] def fips204Proposed20260731SigningLoopLimit : ℕ := 821
 
 end Cslib.Crypto.MLDSA

@@ -373,11 +373,9 @@ The bounded compressed signer follows Algorithm 7's two rejection stages, includ
 model of the standard's physical destruction of intermediate state or side-channel behavior. A
 separate IID-mask convenience model proves that `K`-attempt failure has mass equal to the
 one-attempt failure mass raised to `K`; it is not identified with seeded `ExpandMask`. Published
-FIPS 204 Appendix C, Table 3 still says `814`. [NIST's potential-updates
-workbook](https://csrc.nist.gov/files/pubs/fips/204/final/docs/fips-204-potential-updates.xlsx),
-Sheet1 row 27 (2026-07-31), proposes `821` after accounting for Algorithm 7 line 28, but that
-proposed value is not part of the published standard. Neither value alone proves a failure bound
-in the semantic model.
+FIPS 204 Appendix C, Table 3 gives `814` as the minimum bounded-signing limit under the standard's
+stated distribution assumptions. The numeral alone proves no failure bound in the semantic model,
+and this module formalizes no replacement limit.
 
 The [checked examples](../../CslibFrontierTests/Crypto/MLDSA.lean) cover the
 Power2Round tie and high-end boundaries, the Decompose wrap-around case, and a toy instance that

@@ -95,14 +95,12 @@ example : (compressedSignBounded toy 2 1 hash hintSk [] alwaysReject 2).isNone =
 
 example : signingAttemptCounter toy 5 (2 : Fin 3) = 7 := by decide
 
--- The published and proposed-update limits are intentionally distinct, and even the larger
--- counter budget fits the two-byte `κ` encoding for every standardized module rank.
+-- The published counter budget fits the two-byte `κ` encoding for every standardized module rank.
 example : fips204PublishedSigningLoopLimit = 814 := rfl
-example : fips204Proposed20260731SigningLoopLimit = 821 := rfl
 example :
-    fips204Proposed20260731SigningLoopLimit * Params.mldsa44.ℓ < 2 ^ 16 ∧
-      fips204Proposed20260731SigningLoopLimit * Params.mldsa65.ℓ < 2 ^ 16 ∧
-      fips204Proposed20260731SigningLoopLimit * Params.mldsa87.ℓ < 2 ^ 16 := by
+    fips204PublishedSigningLoopLimit * Params.mldsa44.ℓ < 2 ^ 16 ∧
+      fips204PublishedSigningLoopLimit * Params.mldsa65.ℓ < 2 ^ 16 ∧
+      fips204PublishedSigningLoopLimit * Params.mldsa87.ℓ < 2 ^ 16 := by
   decide
 
 -- The exact IID failure law is usable without identifying IID masks with `ExpandMask`.
