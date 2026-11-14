@@ -83,7 +83,7 @@ example (x : (i : Fin 2) → OTIn (ZMod 5) i)
     semiHonestAdvantage (ddhOTProtocol (1 : ZMod 5) 5) noOracleWorld
         (otFunctionality (ZMod 5)) {1} (ddhOTReceiverSim (1 : ZMod 5) 5) x D =
       ddhAdvantage 5 (1 : ZMod 5) (ddhOTReduction (1 : ZMod 5) 5 x D) :=
-  semiHonestAdvantage_ddhOT_receiver_eq (1 : ZMod 5) 5 zmod5_card zmod5_gen x D
+  semiHonestAdvantage_ddhOT_receiver_eq (1 : ZMod 5) 5 zmod5_gen x D
 
 -- Unchecked malicious-receiver separation against any simulator choosing one query bit τ.
 example (b₀ b₁ : ZMod 5) (S : ProbComp (Bool × (ZMod 5 → ProbComp (ZMod 5 × ZMod 5)))) :

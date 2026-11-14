@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Computational.SchnorrSignature.EncodedROM
 public import CslibFrontier.Crypto.Computational.Signature.WordRandomOracle
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.BitString
 import CslibFrontier.Computability.Probabilistic.OracleSimulation
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
@@ -624,7 +625,7 @@ private noncomputable def typedRawStep (request : Bool × List Bool) :
           (BitString m)) (Sum.inl msg))
       (fun word => OracleComp.query (spec := ForgerSpec (List Bool) (List Bool)
           (List Bool × List Bool) (BitString m)) (Sum.inr word)))
-      (wordQuery ⟨List.ofFn, List.ofFn_injective⟩ request.1 request.2))
+      (wordQuery (encBitString m) request.1 request.2))
 
 private theorem typedRawStep_false (word : List Bool) :
     typedRawStep (m := m) (false, word) =
@@ -796,7 +797,7 @@ private theorem run_interpret_handler_forge {k : ℕ} {Control : Type}
     (y : F.Carrier d) (coins : List Bool) (st : TypedState m) :
     (interpret (ForkingReduction.handler (FiatShamir.signer (Z := List Bool)
         (encPair encBits encBits)))
-      ((F.schnorrDecodedForger d (savedCoinForger machine ⟨List.ofFn, List.ofFn_injective⟩
+      ((F.schnorrDecodedForger d (savedCoinForger machine (encBitString m)
         c e keyC keyD n)).forge y coins)).run st =
       Prod.map (Prod.map id (Decoder.bits.pair Decoder.bits).decode) id <$>
         (interpret typedRawStep (rawReplay machine c e keyC keyD (n, F.encode d y, coins))).run
@@ -924,7 +925,7 @@ theorem eval_schnorrForkPass {m k : ℕ} {Control : Type}
       PMF.pure (forkRunWords (OracleComp.forkingAlgorithm default
         (savedCoinBudget c e keyC keyD n + 1)
         (FiatShamir.forkingProgram (encPair encBits encBits) (F.schnorrWordSigma d hm)
-          (F.schnorrDecodedForger d (savedCoinForger machine ⟨List.ofFn, List.ofFn_injective⟩
+          (F.schnorrDecodedForger d (savedCoinForger machine (encBitString m)
             c e keyC keyD n))) (y, coins, trs) answers)) := by
   have hR := isQueryBounded_savedWordReplay machine
     (fun op word => OracleComp.query (spec := RawWordSpec) (op, word))
