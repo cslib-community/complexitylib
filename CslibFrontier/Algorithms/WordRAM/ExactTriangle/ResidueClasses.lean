@@ -207,7 +207,8 @@ theorem exec_at {w : ℕ} (header n p : ℕ) (values : ℕ → ℤ) (initial : D
   have hsetup : ExecWithin (w + 2) (setupAt header) initial a 15 := by
     dsimp [N, base] at hN h2N h3N hres hcounts hqueries
     ram_eval [setupAt, a, N, base, h1, hhead, hhead1, hbase, hN, h2N, h3N, hres,
-      hcounts, hqueries, hmodfit, hsizeFit, one, size, modulus, weights, area, residues, counts, queries,
+      hcounts, hqueries, hmodfit, hsizeFit, one, size, modulus, weights, area, residues,
+      counts, queries,
       temp, weightLen, weightSrc, weightDst, encodedMod, hnHeader, hpHeader, Fin.mk.injEq]
   have ha9 : (a.comap (bank 16 (by decide))).regs Residues.src = base := by
     simp +decide [a, bank, Residues.src, one, size, modulus, weights, area, residues,
