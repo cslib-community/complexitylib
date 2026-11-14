@@ -26,6 +26,43 @@ For a simulator that retries until an independent coin succeeds, import [Game/Re
 
 Pinned cslib also has the finite [Generator](https://github.com/leanprover/cslib/blob/254e30e6d4299c51323aaeaf5f51a4763b375d4a/Cslib/Crypto/Primitives/PRG/Defs.lean#L38) interface, whose `Secure` accepts any chosen predicate on randomized tests, while expansion is a separate cardinality property. cslib-frontier adds circuit-bounded tests and uniform machine tests on top. These are intentionally different quantifiers; the circuit version can select a new bounded circuit at each input length [cslib][cslib].
 
+### Security theorems and efficiency witnesses
+
+A security theorem says that every admitted adversary has negligible advantage, given a named hardness assumption. [AGENTS.md](../../AGENTS.md#security-theorems) fixes what such a theorem may assume: named hardness assumptions, stated relative to the setup sampler or component they concern; that the adversary is in the admitted class; and properties of components that the cited result itself takes as given. It may assume nothing about an object that its proof derives from the adversary (a reduction, distinguisher, simulator, extractor or hybrid), and it may not take from the caller an object whose existence or efficiency is what it should prove.
+
+A named assumption may concern the scheme's own components when the cited source assumes it. GSW's one-key circular security `Encryption.CircularSecure E.keyGen E.encrypt`, collision resistance of the Cramer–Shoup hash family `cramerShoupHashMod H`, and quadratic residuosity relative to the scheme's modulus sampler (`QuadraticResiduosityHard fun n => ProbComp.eval (gen n)`) are all allowed. What is ruled out is a premise that the scheme's algorithms behave like idealized ones, such as keys indistinguishable from an ideal key law, unless the cited source names that as an assumption.
+
+ElGamal bit encryption under DDH in [ElGamal.lean](../../CslibFrontier/Crypto/Computational/ElGamal.lean) is the reference pattern. It has four parts:
+
+1. **The reduction is a program.** [elGamalMsgToDDHDistinguisher](../../CslibFrontier/Crypto/Computational/ElGamal.lean#L380) turns an IND-CPA adversary into a DDH distinguisher, and `elGamalToDDHDistinguisher` specializes it to bit messages.
+2. **A concrete bound.** [advantage_elGamalCPAGame_le](../../CslibFrontier/Crypto/Computational/ElGamal.lean#L663) bounds the IND-CPA advantage of `adversary` by the DDH advantages of `elGamalToDDHDistinguisher adversary false` and `… true`. It holds for every adversary, efficient or not.
+3. **An efficiency witness.** [isPPT_elGamalToDDHDistinguisher](../../CslibFrontier/Crypto/Computational/ElGamal.lean#L679) proves that the distinguisher is uniform strict PPT whenever the adversary is.
+4. **The asymptotic theorem.** [DDH.elGamalINDCPA](../../CslibFrontier/Crypto/Computational/ElGamal.lean#L686) assumes only `hDDH : F.DDH setup`. For a PPT adversary it applies `hDDH` to both distinguishers through the witness of step 3, and concludes with the bound of step 2.
+
+In the non-uniform circuit model the efficiency witness is a circuit-size bound instead. `secure_truthTableGenerator_booleanFamily` in [GGM/Circuit.lean](../../CslibFrontier/Crypto/Computational/GGM/Circuit.lean) assumes that the generator is secure against tests with `t + 2 ^ n (n C + 1)` gates, a size that the file proves for its reduction.
+
+The statement `F.DDH setup → F.elGamalINDCPA setup` mentions no reduction, so a reader checks it by reading the two definitions `DDH` and `elGamalINDCPA`. A concrete bound such as step 2 is a lemma; on its own it is not a security theorem.
+
+The audit in [#5293](https://github.com/cslib-community/cslib-frontier/issues/5293) (November 2026) found headline theorems on `main` with the premises in the left column. The right column says what the replacement must assume instead.
+
+| Premise found | Why it is ruled out | The replacement assumes |
+|---|---|---|
+| Schnorr signatures in the random-oracle model: `hDL : Negligible (… oneWayGame … (schnorrFamilyROMSchemeReduction …))` | It is the DL success of the proof's own forking reduction, the hard part of the proof | `F.DiscreteLog setup` and an oracle-PPT forger; the forking reduction gets an `isOraclePPT_…` lemma |
+| Goldwasser–Micali: `hkeys`, the public keys of the scheme's own `keyGen gen` are indistinguishable from the ideal key law | It assumes that the scheme's own key generator behaves like an idealized one, which the cited source does not assume | Quadratic residuosity relative to the scheme's modulus sampler, with conditions on that sampler's support; the law of the scheme's keys is proved, not assumed |
+| LWE fuzzy extractor: `hlwe`, a bound on the LWE advantage of `hardcoreKeyReduction D` and `hardcoreUniformReduction D` | It bounds constructed reductions instead of assuming LWE | The asymptotic LWE assumption, with certified reductions |
+| Fujisaki–Okamoto: `∃ m₀ m₁, m₀ ≠ m₁ ∧ Adv(A) ≤ 2 Adv(romCpaReduction A m₀ m₁) + …` | The messages are chosen after the adversary, so there is no single reduction to certify | A reduction that samples its own messages, against two-stage IND-CPA |
+| Σ-protocol knowledge soundness (`SpecialSoundness.efficientKnowledgeSound`): a caller-supplied extractor with its correctness `hE` and its polynomial-time realization `hpoly` as hypotheses | The extractor's existence and efficiency are what a proof of knowledge proves, so supplying it with assumed properties assumes the result | A rewinding extractor built from special soundness, with a PPT certificate |
+
+A lemma may still take a bound on a constructed reduction as a premise when that is the point. [negligible_prediction_of_negligible_inversion](../../CslibFrontier/Crypto/Computational/GoldreichLevin/Parameters.lean#L175) assumes that the inverters built from a predictor have negligible success. Such a lemma is an algebraic helper: its name and docstring say that it is conditional (for example `…_of_reduction_le`), and a theorem that discharges the premise with the reduction's efficiency witness and the named assumption provides the security claim. Here [negligible_parityPrediction](../../CslibFrontier/Crypto/Computational/GoldreichLevin/WordReduction.lean#L195) does so from `OneWay f` through `isPPT_wordInverter`.
+
+Before review, check a new security theorem against this list:
+
+- every premise is a named hardness assumption stated relative to the sampler or component it concerns, the adversary's class membership, or a property of a component that the cited result takes as given;
+- no premise concerns a reduction, distinguisher, simulator, extractor or hybrid derived from the adversary, and the caller does not supply an object whose existence or efficiency is what the theorem proves;
+- each reduction is a definition with an efficiency witness (`isPPT_…`, `isOraclePPT_…` or a circuit-size bound) that the asymptotic theorem uses;
+- the name and docstring state the model (standard, random-oracle, ideal, query-bounded or information-theoretic), the notion (single- or multi-challenge, one-time or many-time, honest-verifier or malicious zero knowledge, semi-honest, static) and any deviation from the cited source;
+- a theorem it replaces is deleted or demoted to an honestly named helper in the same change.
+
 ## Hardness and pseudorandomness
 
 | Schema | Principal source | Formal parameters and main use |
