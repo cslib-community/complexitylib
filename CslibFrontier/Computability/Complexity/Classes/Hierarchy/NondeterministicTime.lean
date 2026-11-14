@@ -348,7 +348,7 @@ private theorem exists_computableInO_verifier (d : ℕ) :
     (β := fun y _ => clock d y.length) (L := certLen d) (H := clock d) hacc hbrute hc₀ hc₁' hc₂'
     (fun p => (hfacts p).2.2.1)
   refine ⟨D, K, S, ?_⟩
-  simpa only [length_frame] using h
+  simpa only [verifier, length_frame] using h
 
 /-- **The lazy diagonal is decidable in nondeterministic time `O((n + 1) ^ (6 * d + 14))`.** Guess
 a certificate of length `(n + 2) ^ (d + 2)` and run the verifier

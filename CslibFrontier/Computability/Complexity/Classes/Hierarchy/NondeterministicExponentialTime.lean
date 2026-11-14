@@ -460,7 +460,7 @@ private theorem exists_computableInO_verifier (k : ℕ) :
     (L := certLen k) (H := horizon k) hacc hbrute hc₀ hc₁ hc₂
     (fun p => (hfacts p).2.2.1)
   refine ⟨D, K, S, ?_⟩
-  simpa only [length_frame] using h
+  simpa only [verifier, length_frame] using h
 
 /-- `2 ^ a ≤ 2 ^ b * 2 ^ c` whenever `a ≤ c + b`. -/
 private theorem two_pow_le_two_pow_mul {a b c : ℕ} (h : a ≤ c + b) : 2 ^ a ≤ 2 ^ b * 2 ^ c := by
