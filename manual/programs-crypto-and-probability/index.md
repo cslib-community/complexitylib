@@ -13,6 +13,7 @@ The survey baseline is `13e6a31951bf1c89a1a6258c44f9444aecbbefd8`. This section 
 - [Public-coin interactive reductions](interactive-reductions.md): message access, semantic and efficient security interfaces, sumcheck and GKR.
 - [Homomorphic encryption](homomorphic-encryption.md): exact GSW parameters, native operations, circuit evaluation, leveled bootstrapping, and circular-security assumptions.
 - [Protocols and privacy](protocols-and-privacy.md): Sigma protocols, random-oracle signatures, ideal permutations, zero knowledge, MPC, upstream information-theoretic security, and differential privacy.
+- [Finite-sample dependence measures](finite-sample-dependence.md): DPI rigidity, determinantal degree bounds, fixed-sample unbiased estimation and multi-task peer-prediction task bounds.
 - [Model map](../model-map.md): an index of semantic variants and their explanatory pages.
 
 ## Model families and ownership

@@ -1124,6 +1124,11 @@ Ker-I Ko. *On the Complexity of Learning Minimum Time-Bounded Turing Machines*. 
 
 Kojiro Kobayashi. "On proving time constructibility of functions." *Theoretical Computer Science* 35, 215–225, 1985. https://doi.org/10.1016/0304-3975(85)90015-5 . Bibliographic metadata checked through Crossref; the article body was not inspected in this pass. The manual cites it, as [Pighizzini 2009](#pighizzini2009) §4 does, as an independent proof of the `n log n` bound.
 
+<a id="kong27"></a>
+## kong27
+
+Yuqing Kong. *Limits of Finite-Sample Dependence Measures under Data Processing Inequality*. STOC 2027 submission 152. https://github.com/sigact-stoc/stoc2027/releases/download/papers-1/152.pdf (PDF SHA-256 `f5e620d74cb49d294e046590e96036aa28bf617d4b212a292b7bb68435363118`). The abstract, Section 1.1 and the numbered statements of Sections 2–7 and Appendices A–D were read on 2026-11-14; locators in the module docstrings are PDF pages, with the abstract on page 1. The analytic and determinantal proofs port the author's Apache-2.0 formalization https://github.com/yuqkong-1844/finite-sample-information-monotones at revision `4e27ef9d167be69902385307d40123ec665dc532` (the repository head when checked on 2026-11-14). [Finite-sample dependence measures](programs-crypto-and-probability/finite-sample-dependence.md) maps the statements to declarations. This is a submission, not a confirmed acceptance.
+
 <a id="kortevygen18"></a>
 ## kortevygen18
 
