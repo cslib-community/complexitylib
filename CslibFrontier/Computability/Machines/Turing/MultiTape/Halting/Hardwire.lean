@@ -21,6 +21,8 @@ of a machine that behaves on every input of bits `x` as the machine described by
 descriptions, the counterpart of the machines printing a fixed word in
 [Sipser, Lemma 6.1][Sipser2013]; that the new description is computed from `d` and `p` in
 polynomial time is proved in `CslibFrontier.Computability.Machines.Turing.MultiTape.Halting.SMN`.
+Its exact framed unary encoded length is analyzed in
+`CslibFrontier.Computability.Machines.Turing.MultiTape.Halting.SMNBounds`.
 
 The machine first writes a marker, then `p`, then a copy of its input on a new work tape, the
 *virtual input tape*, and rewinds that tape to the marker. It then runs the transitions of `d`

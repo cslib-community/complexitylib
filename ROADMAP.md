@@ -141,7 +141,8 @@ Information-theoretic private information retrieval, following Chorâ€“Goldreichâ
 
 ### Concurrent and quantum security
 
-- **NIST post-quantum portfolio** ([#4987](https://github.com/cslib-community/cslib-frontier/issues/4987)): Faithful protocols, exact asymptotic assumptions and checked quantum security reductions for ML-KEM, ML-DSA, SLH-DSA, FN-DSA, HQC and every active additional-signature candidate.
+- **NIST post-quantum portfolio** ([#4987](https://github.com/cslib-community/cslib-frontier/issues/4987); machine-witness accounting [#5285](https://github.com/cslib-community/cslib-frontier/issues/5285)): Faithful protocols, exact asymptotic assumptions and checked quantum security reductions for ML-KEM, ML-DSA, SLH-DSA, FN-DSA, HQC and every active additional-signature candidate.
+  Concrete endpoints separately charge constructed adversary/reduction description size and online time, space, randomness, query and circuit resources; asymptotic endpoints certify polynomial uniform composition.
   Use operational quantum-PPT/QROM models and concrete-to-asymptotic reductions; retain sampling, abort, transform and failure obligations, including evolving claims.
   Controllers need arbitrary-stage layout/relocation certificates; asymptotic QROM security remains open.
 - **FAEST security**: Parsing is [#5214](https://github.com/cslib-community/cslib-frontier/issues/5214); row-to-VOLE is [#5246](https://github.com/cslib-community/cslib-frontier/issues/5246). BAVC, QuickSilver, correctness and ROM/QROM security remain.
