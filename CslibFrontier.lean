@@ -2085,6 +2085,8 @@ public import CslibFrontier.Computability.Complexity.Classes.MIP
 public import CslibFrontier.Computability.Complexity.Classes.MIP.Defs
 public import CslibFrontier.Computability.Complexity.Classes.MIP.NEXP
 public import CslibFrontier.Computability.Complexity.Classes.MIP.OptimalProver
+public import CslibFrontier.Computability.Complexity.Classes.MIP.Oracularization
+public import CslibFrontier.Computability.Complexity.Classes.MIP.Repetition
 public import CslibFrontier.Computability.Complexity.Classes.Measure.Basic
 public import CslibFrontier.Computability.Complexity.Classes.Measure.Conservation
 public import CslibFrontier.Computability.Complexity.Classes.Measure.DTIME
@@ -2139,6 +2141,7 @@ public import CslibFrontier.Computability.Complexity.Classes.P.Slices
 public import CslibFrontier.Computability.Complexity.Classes.P.WordRAM
 public import CslibFrontier.Computability.Complexity.Classes.PCP
 public import CslibFrontier.Computability.Complexity.Classes.PCP.NP
+public import CslibFrontier.Computability.Complexity.Classes.PCP.Oracle
 public import CslibFrontier.Computability.Complexity.Classes.PCP.ZeroRandomness
 public import CslibFrontier.Computability.Complexity.Classes.PH
 public import CslibFrontier.Computability.Complexity.Classes.PH.Closure
