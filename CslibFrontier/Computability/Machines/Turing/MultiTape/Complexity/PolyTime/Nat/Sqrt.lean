@@ -43,8 +43,6 @@ namespace Turing.MultiTapeTM
 
 section Internal
 
-open ComputableTidilyInPolyTime
-
 private abbrev isqrtStep (m acc i : ℕ) : ℕ :=
   let cand := acc + 2 ^ i
   if decide (cand * cand ≤ m) then cand else acc
@@ -88,14 +86,25 @@ private theorem foldl_isqrtStep_eq_sqrt (m : ℕ) :
   exact le_antisymm (Nat.le_sqrt.mpr hle)
     (Nat.lt_succ_iff.mp (Nat.sqrt_lt'.mpr (by simpa only [sq] using hlt)))
 
-private theorem tidy_binary_sqrt : ComputableTidilyInPolyTime Nat.sqrt encNat encNat := by
-  have hlist : ComputableTidilyInPolyTime (fun m : ℕ => (List.range m.size).reverse)
+end Internal
+
+namespace ComputableInPolyTime
+
+/-- Integer floor square root `Nat.sqrt` is polynomial-time on binary naturals. -/
+@[fun_prop, program_certificate]
+theorem binary_sqrt : ComputableInPolyTime Nat.sqrt encNat encNat := by
+  have hlist : ComputableInPolyTime (fun m : ℕ => (List.range m.size).reverse)
       encNat (encList encUnary) :=
-    (listReverse encUnary).comp (range.comp ComputableInPolyTime.binary_size.tidy)
-  have hstep : ComputableTidilyInPolyTime
+    listReverseWithInput (range.comp binary_size)
+  have hstep : ComputableInPolyTime
       (fun p : (ℕ × ℕ) × ℕ => isqrtStep p.1.1 p.1.2 p.2)
       (encPair (encPair encNat encNat) encUnary) encNat := by
-    unfold isqrtStep; fun_prop
+    have hcand : ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.1.2 + 2 ^ p.2)
+        (encPair (encPair encNat encNat) encUnary) encNat :=
+      binary_add' ((snd _ _).comp (fst _ _))
+      (binary_pow' (const 2) (snd _ _))
+    exact (binary_le' (binary_mul' hcand hcand) ((fst _ _).comp (fst _ _))).ite'
+      hcand ((snd _ _).comp (fst _ _))
   have hfold := foldlWith (encP := encNat) (encA := encUnary) (encL := encList encUnary)
     (encB := encNat) (par := id) (list := fun m => (List.range m.size).reverse)
     (init := fun _ => 0) (step := isqrtStep) id' hlist (const 0) hstep
@@ -111,36 +120,22 @@ private theorem tidy_binary_sqrt : ComputableTidilyInPolyTime Nat.sqrt encNat en
       exact Nat.size_le_size hacc_le
   exact hfold.of_enc_eq fun m => congrArg encNat (foldl_isqrtStep_eq_sqrt m).symm
 
-private theorem tidy_binary_ceilSqrt :
-    ComputableTidilyInPolyTime (fun m : ℕ => if m = 0 then 0 else (m - 1).sqrt + 1)
+/-- Integer ceiling square root is polynomial-time on binary naturals. -/
+theorem binary_ceilSqrt :
+    ComputableInPolyTime (fun m : ℕ => if m = 0 then 0 else (m - 1).sqrt + 1)
       encNat encNat := by
-  have hcond : ComputableTidilyInPolyTime
+  have hcond : ComputableInPolyTime
       (fun m : ℕ => if decide (m ≤ 0) then 0 else (m - 1).sqrt + 1) encNat encNat :=
     (binary_le' id' (const 0)).ite' (const 0)
-      (binary_add' (tidy_binary_sqrt.comp (binary_sub' id' (const 1))) (const 1))
+      (binary_add' (binary_sqrt.comp (binary_sub' id' (const 1))) (const 1))
   refine hcond.of_enc_eq fun m => congrArg encNat ?_
   simp only [Nat.le_zero, decide_eq_true_eq]
-
-end Internal
-
-namespace ComputableInPolyTime
-
-/-- Integer floor square root `Nat.sqrt` is polynomial-time on binary naturals. -/
-@[fun_prop, program_certificate]
-theorem binary_sqrt : ComputableInPolyTime Nat.sqrt encNat encNat :=
-  .of_tidy tidy_binary_sqrt
 
 /-- Integer floor square root of a computed binary natural. -/
 theorem binary_sqrt' {α : Type} {input : α ↪ List Bool} {f : α → ℕ}
     (hf : ComputableInPolyTime f input encNat) :
     ComputableInPolyTime (fun a => (f a).sqrt) input encNat :=
   binary_sqrt.comp hf
-
-/-- Integer ceiling square root `if m = 0 then 0 else (m - 1).sqrt + 1` is polynomial-time on
-binary naturals. -/
-theorem binary_ceilSqrt :
-    ComputableInPolyTime (fun m : ℕ => if m = 0 then 0 else (m - 1).sqrt + 1) encNat encNat :=
-  .of_tidy tidy_binary_ceilSqrt
 
 /-- Integer ceiling square root of a computed binary natural. -/
 theorem binary_ceilSqrt' {α : Type} {input : α ↪ List Bool} {f : α → ℕ}

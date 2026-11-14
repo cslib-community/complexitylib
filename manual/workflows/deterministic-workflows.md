@@ -118,6 +118,15 @@ Supply three computation certificates: the iteration count in unary, the initial
 
 The result has two projections: polynomial-time computability of the iterated function, and the invariant at termination. [Ladner’s shrink-loop client](../../CslibFrontier/Computability/Complexity/Classes/Ladner.lean) obtains `hreduce` and `hinv` this way: its invariant preserves satisfiability and bounds the current formula's encoded length. That use is inside the theorem's stated reduction and growth hypotheses, not an unconditional SAT algorithm.
 
+The same separation applies to list folds: `ComputableInPolyTime.foldlWith_spec` accepts
+plain certificates for the input list, initial state and joint step, while a prefix invariant
+supplies the encoded accumulator bound. The denominator-product and Bareiss-column folds in
+[RationalElimination.lean](../../CslibFrontier/Computability/PolyTime/LinearAlgebra/RationalElimination.lean)
+are representative callers: their numerical invariants justify the size bound directly, without
+converting the surrounding proof to tidy certificates. For a fold with a direct bound on each
+reachable prefix state, the [binary square-root certificate](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/PolyTime/Nat/Sqrt.lean)
+uses `foldlWith` instead.
+
 For a step capturing a parameter, use `iterateWith_spec` and certify the joint `(parameter, state)` operation. `iterateWith_of_bounded_growth` handles additive encoded-state growth bounded polynomially in the original input. A separate efficient procedure for each fixed parameter does not provide the required uniform joint certificate. A polynomial number of efficient steps also does not bound a state that doubles each time. The [plain loop regression client](../../CslibFrontierTests/Machines/Turing/MultiTape/Internal/PolyTimeLoops.lean) exercises both positive contracts and a failed constant-state bound. When the size obligation fails, inspect the representation and growth argument before changing tactics.
 
 For a space bound on a loop whose number of rounds is not computable, or would cost too much to compute, import `CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.InSpace.IterateUntil` and apply [ComputableInSpace.iterateUntil](../../CslibFrontier/Computability/Machines/Turing/MultiTape/Complexity/InSpace/IterateUntil.lean). Supply space certificates for the initial state, the step and a Boolean `done` test, and give the number of rounds `n x` as a function with no certificate. Show that `done` holds after `n x` rounds and fails before. Then bound the space of the step and the test, and the encoded state, at every round up to `n x`. The loop stops when the test first holds, and its space is that of the start, the rounds and the states, with no counter. `ComputableInSpace.iterate` instead charges a binary counter, and it needs a certificate for the count. The [BitGame client](../../CslibFrontierTests/BitGame.lean) counts down from `n` in `n` rounds within `O(|encNat n|)` space.

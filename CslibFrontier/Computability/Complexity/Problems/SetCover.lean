@@ -180,8 +180,7 @@ private theorem isCoverList_toFinset_iff (S : SetSystem) {I : List ℕ}
       (fun p : SetSystem × List ℕ => p.2.all fun i => decide (i < p.1.sets.length))
       (encPair encSetSystem (encList encUnary)) encBool := by
     apply ComputableInPolyTime.allWithInput (by fun_prop)
-    exact .of_tidy (ComputableTidilyInPolyTime.unary_lt'
-      (ComputableInPolyTime.snd _ _).tidy hlen.tidy)
+    exact ComputableInPolyTime.unary_lt' (ComputableInPolyTime.snd _ _) hlen
   have hcov : ComputableInPolyTime
       (fun p : SetSystem × List ℕ =>
         p.1.ground.all fun u => p.2.any fun i => decide (u ∈ p.1.sets.getD i []))
@@ -328,14 +327,14 @@ theorem SetCover_mem_NP : SetCover ∈ NP encSetCover := by
   let check : (SetSystem × ℕ) × List ℕ → Bool := fun q =>
     decide (q.2.length ≤ q.1.2) && q.1.1.isCoverList q.2
   have hvs : ComputableInPolyTime vs encSetCover (encList encUnary) := by
-    refine (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.range).comp ?_
+    refine ComputableInPolyTime.range.comp ?_
     exact (ComputableInPolyTime.length_list (encList encNat)).comp
       (computableInPolyTime_setSystemSets.comp (fst encSetSystem encNat))
   have hcheck : ComputableInPolyTime check
       (encPair encSetCover (encList encUnary)) encBool := by
     have hlen : ComputableInPolyTime (fun q : (SetSystem × ℕ) × List ℕ => q.2.length)
         (encPair encSetCover (encList encUnary)) encNat :=
-      (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.unary_to_binary).comp
+      ComputableInPolyTime.unary_to_binary.comp
         ((ComputableInPolyTime.length_list encUnary).comp (snd encSetCover (encList encUnary)))
     have hk : ComputableInPolyTime (fun q : (SetSystem × ℕ) × List ℕ => q.1.2)
         (encPair encSetCover (encList encUnary)) encNat :=
@@ -343,13 +342,13 @@ theorem SetCover_mem_NP : SetCover ∈ NP encSetCover := by
     have hble : ComputableInPolyTime
         (fun q : (SetSystem × ℕ) × List ℕ => decide (q.2.length ≤ q.1.2))
         (encPair encSetCover (encList encUnary)) encBool :=
-      .of_tidy (ComputableTidilyInPolyTime.binary_le' hlen.tidy hk.tidy)
+      ComputableInPolyTime.binary_le' hlen hk
     have hcov : ComputableInPolyTime (fun q : (SetSystem × ℕ) × List ℕ => q.1.1.isCoverList q.2)
         (encPair encSetCover (encList encUnary)) encBool :=
       SetSystem.computableInPolyTime_isCoverList.comp
         (((fst encSetSystem encNat).comp (fst encSetCover (encList encUnary))).prod
           (snd encSetCover (encList encUnary)))
-    exact (ComputableTidilyInPolyTime.bool_and' hble.tidy hcov.tidy).computableInPolyTime
+    exact ComputableInPolyTime.bool_and' hble hcov
   let P : (SetSystem × ℕ) → Finset ℕ → Prop := fun p I =>
     p.1.IsCover (Finset.univ.filter fun i : Fin p.1.sets.length => (i : ℕ) ∈ I) ∧ I.card ≤ p.2
   have hP : ∀ (p : SetSystem × ℕ) (l : List ℕ), l.Nodup → (∀ i ∈ l, i ∈ vs p) →
@@ -654,7 +653,7 @@ theorem WeightedSetCover_mem_NP : WeightedSetCover ∈ NP encWeightedSetCover :=
     decide ((q.2.map fun i => (q.1.1.sets.getD i ⟨[], 0⟩).weight).sum ≤ q.1.2) &&
       q.1.1.toSetSystem.isCoverList q.2
   have hvs : ComputableInPolyTime vs encWeightedSetCover (encList encUnary) := by
-    refine (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.range).comp ?_
+    refine ComputableInPolyTime.range.comp ?_
     exact (ComputableInPolyTime.length_list encWeightedSet).comp
       (computableInPolyTime_weightedSetSystemSets.comp (fst encWeightedSetSystem encNat))
   have hcheck : ComputableInPolyTime check
@@ -691,7 +690,7 @@ theorem WeightedSetCover_mem_NP : WeightedSetCover ∈ NP encWeightedSetCover :=
         (fun q : (WeightedSetSystem × ℕ) × List ℕ =>
           decide ((q.2.map fun i => (q.1.1.sets.getD i ⟨[], 0⟩).weight).sum ≤ q.1.2))
         (encPair encWeightedSetCover (encList encUnary)) encBool :=
-      .of_tidy (ComputableTidilyInPolyTime.binary_le' hsum.tidy hk.tidy)
+      ComputableInPolyTime.binary_le' hsum hk
     have hcov : ComputableInPolyTime
         (fun q : (WeightedSetSystem × ℕ) × List ℕ => q.1.1.toSetSystem.isCoverList q.2)
         (encPair encWeightedSetCover (encList encUnary)) encBool :=
@@ -700,7 +699,7 @@ theorem WeightedSetCover_mem_NP : WeightedSetCover ∈ NP encWeightedSetCover :=
             ((fst encWeightedSetSystem encNat).comp
               (fst encWeightedSetCover (encList encUnary)))).prod
           (snd encWeightedSetCover (encList encUnary)))
-    exact (ComputableTidilyInPolyTime.bool_and' hble.tidy hcov.tidy).computableInPolyTime
+    exact ComputableInPolyTime.bool_and' hble hcov
   let P : (WeightedSetSystem × ℕ) → Finset ℕ → Prop := fun p I =>
     p.1.IsCover (Finset.univ.filter fun i : Fin p.1.sets.length => (i : ℕ) ∈ I) ∧
       p.1.coverWeight (Finset.univ.filter fun i : Fin p.1.sets.length => (i : ℕ) ∈ I) ≤ p.2
