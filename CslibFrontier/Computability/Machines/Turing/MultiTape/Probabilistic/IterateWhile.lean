@@ -7,7 +7,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.CopyWord
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Combinators.IterateWhileLayout
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Loop.Space
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Tidy
 public import Cslib.Computability.Machines.Turing.MultiTape.Plumbing.ClearWork
@@ -23,7 +23,8 @@ the result, and so on, until `tm` produces the empty word, and then outputs the 
 the empty one. The machine keeps the current word on one work tape and the next word on another.
 A round copies the next word to the current tape and computes the new next word from it with `tm`.
 Rounds are repeated by `Turing.MultiTapePTM.repeatUntilBlank` until the next word is empty.
-The tape layout helpers are module-private, as in the deterministic construction.
+The tape layout is shared with the deterministic construction through
+`Turing.MultiTapeTM.IterateWhile`.
 
 Each round makes exactly the oracle calls of `tm` on the current word, with the external oracle
 state left by the previous round. The final round's program returns the empty word, and the loop
@@ -57,100 +58,7 @@ variable {k : ℕ} {State Operation : Type} {x : List Bool} [DecidableEq Operati
 
 namespace IterateWhile
 
-/-! ### The tapes -/
-
-section Tapes
-
-variable (k)
-
-/-- The tape holding the current word: the input tape of `Turing.MultiTapePTM.onWords`. -/
-abbrev curTape : Fin (k + 1 + 2) := Fin.natAdd (k + 1) 0
-
-/-- The tape holding the next word: the output tape of `Turing.MultiTapePTM.onWords`. -/
-abbrev nextTape : Fin (k + 1 + 2) := (Fin.last k).castAdd 2
-
-/-- The flag tape of `Turing.MultiTapePTM.onWords`. -/
-abbrev flagTape : Fin (k + 1 + 2) := Fin.natAdd (k + 1) 1
-
-/-- The tapes of `Turing.MultiTapeTM.copyWord`: from the next tape to the current tape, flagged on
-the flag tape. -/
-def copyEmb : Fin (0 + 1 + 2) ↪ Fin (k + 1 + 2) :=
-  ⟨![curTape k, nextTape k, flagTape k], by
-    intro a b h
-    fin_cases a <;> fin_cases b <;> simp [Fin.ext_iff] at h ⊢ <;> omega⟩
-
-/-- The tapes of `Turing.MultiTapeTM.emitWord`: the current tape, flagged on the flag tape. -/
-def emitEmb : Fin (0 + 2) ↪ Fin (k + 1 + 2) :=
-  ⟨![curTape k, flagTape k], by
-    intro a b h
-    fin_cases a <;> fin_cases b <;> simp [Fin.ext_iff] at h ⊢⟩
-
-end Tapes
-
-/-- `copyEmb` writes to the current tape. -/
-@[simp] theorem copyEmb_zero : copyEmb k 0 = curTape k := rfl
-/-- `copyEmb` reads the next tape. -/
-@[simp] theorem copyEmb_one : copyEmb k 1 = nextTape k := rfl
-/-- `copyEmb` flags on the flag tape. -/
-@[simp] theorem copyEmb_two : copyEmb k 2 = flagTape k := rfl
-/-- `emitEmb` reads the current tape. -/
-@[simp] theorem emitEmb_zero : emitEmb k 0 = curTape k := rfl
-/-- `emitEmb` flags on the flag tape. -/
-@[simp] theorem emitEmb_one : emitEmb k 1 = flagTape k := rfl
-
-/-- The current and next tapes differ. -/
-theorem curTape_ne_nextTape : curTape k ≠ nextTape k := Fin.ne_of_val_ne (by simp)
-
-/-- The flag and next tapes differ. -/
-theorem flagTape_ne_nextTape : flagTape k ≠ nextTape k :=
-  Fin.ne_of_val_ne (by simp only [Fin.val_natAdd, Fin.val_castAdd, Fin.val_last]; omega)
-
-/-- The flag and current tapes differ. -/
-theorem flagTape_ne_curTape : flagTape k ≠ curTape k := Fin.ne_of_val_ne (by simp)
-
-/-- The words between two phases: `vc` on the current tape, `vn` on the next tape, all other
-tapes blank. -/
-def words (vc vn : List Bool) : Fin (k + 1 + 2) → List Bool :=
-  Function.update (Function.update (fun _ => []) (curTape k) vc) (nextTape k) vn
-
-/-- The current tape holds the current word. -/
-@[simp]
-theorem words_cur (vc vn : List Bool) : words (k := k) vc vn (curTape k) = vc := by
-  simp [words, curTape_ne_nextTape]
-
-/-- The next tape holds the next word. -/
-@[simp]
-theorem words_next (vc vn : List Bool) : words (k := k) vc vn (nextTape k) = vn := by
-  simp [words]
-
-/-- The flag tape is blank. -/
-@[simp]
-theorem words_flag (vc vn : List Bool) : words (k := k) vc vn (flagTape k) = [] := by
-  simp [words, flagTape_ne_nextTape, flagTape_ne_curTape]
-
-/-- Replacing the current word. -/
-theorem update_words_cur (vc vn v : List Bool) :
-    Function.update (words (k := k) vc vn) (curTape k) v = words v vn := by
-  rw [words, Function.update_comm curTape_ne_nextTape.symm, Function.update_idem, ← words]
-
-/-- Replacing the next word. -/
-theorem update_words_next (vc vn v : List Bool) :
-    Function.update (words (k := k) vc vn) (nextTape k) v = words vc v := by
-  rw [words, Function.update_idem, ← words]
-
-/-- Without a next word, only the current tape is non-blank. -/
-theorem words_nil_next (v : List Bool) :
-    words (k := k) v [] = Function.update (fun _ => []) (curTape k) v :=
-  Function.update_eq_self_iff.mpr (by simp [curTape_ne_nextTape.symm])
-
-/-- Without a current word, only the next tape is non-blank. -/
-theorem words_nil_cur (v : List Bool) :
-    words (k := k) [] v = Function.update (fun _ => []) (nextTape k) v := by
-  rw [words, Function.update_eq_self]
-
-/-- Without words, every tape is blank. -/
-theorem words_nil_nil : words (k := k) [] [] = fun _ => [] := by
-  rw [words_nil_next, Function.update_eq_self]
+open Turing.MultiTapeTM.IterateWhile
 
 /-- The words on the current and next tapes determine the tapes. -/
 theorem words_injective : Function.Injective (fun p : List Bool × List Bool =>
