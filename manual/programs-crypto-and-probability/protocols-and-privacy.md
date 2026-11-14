@@ -336,11 +336,17 @@ queries are checked in
 
 The same module instantiates `schnorrFamilyROMScheme` with `m`-bit challenges when
 `2 ^ m ≤ F.order d`, and `schnorrScalarROMScheme` with full scalar challenges. Their exact typed
-EUF-CMA bounds account for both signing queries and random-oracle queries. The asymptotic theorem
-`negligible_eufCmaGame_schnorrFamilyROMScheme` assumes negligible success of the specified forking
-reduction. Applying the strict-PPT discrete-logarithm assumption still requires an efficient
-realization of that reduction, with encoded adaptive signing/hash access and final-message
-freshness. The private-coin prerequisite is supplied by `IsOraclePPTOn.exists_savedCoins` in
+EUF-CMA bounds account for both signing queries and random-oracle queries. **Schnorr EUF-CMA
+security under `F.DiscreteLog` is not yet proved.** The asymptotic helper
+`negligible_eufCmaGame_schnorrFamilyROMScheme_of_negligible_reduction` is not a security theorem:
+it assumes that the forking reduction built from the forger has negligible discrete-logarithm
+success, which `F.DiscreteLog` does not give because that reduction has no efficiency certificate.
+Its forgers are only call-bounded and its scheme uses ideal scalar laws. Applying the strict-PPT
+discrete-logarithm assumption requires an efficient realization of the reduction, with encoded
+adaptive signing/hash access and final-message freshness
+([#2568](https://github.com/cslib-community/cslib-frontier/issues/2568),
+[#5293](https://github.com/cslib-community/cslib-frontier/issues/5293)). The private-coin
+prerequisite is supplied by `IsOraclePPTOn.exists_savedCoins` in
 [`Oracle/Replay.lean`](../../CslibFrontier/Computability/Probabilistic/Oracle/Replay.lean), which charges
 full-input replay and retains external state.
 [`Signature/WordRandomOracle.lean`](../../CslibFrontier/Crypto/Computational/Signature/WordRandomOracle.lean)
