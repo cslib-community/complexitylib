@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Init
+public import Mathlib.Algebra.Field.Defs
 public import Mathlib.Algebra.Module.LinearMap.Basic
 public import Mathlib.Data.List.Basic
 import Mathlib.Tactic.Abel
