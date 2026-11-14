@@ -16,122 +16,184 @@ Validity, pointer provenance, allocation freshness, determinism and the space bo
 The model itself is defined in `Abstract`.
 -/
 
-public section
+@[expose] public section
 
 namespace Cslib.PointerMachine
 
-variable {k : ℕ} {M : Model k} {L : Layout k}
+variable {M : Model} {L : Layout}
 
-/-- Empty states satisfy allocated-pointer validity. -/
+/-- Every nonnull pointer in a register or in a record specifies a record. -/
+def State.Valid (x : State M L) : Prop :=
+  (∀ r a, x.ptr r = some a → a < x.heap.length) ∧
+  ∀ n ∈ x.heap, ∀ f a, n.ptr f = some a → a < x.heap.length
+
+/-- The empty state is valid. -/
 theorem State.empty_valid : (State.empty : State M L).Valid := by
-  simp [State.Valid, State.empty, Node.empty]
+  simp [State.Valid, State.empty]
 
-/-- A resolved nonnull address comes from the base register and is allocated. -/
-theorem State.address_eq_some {x : State M L} {i : Fin L.ptrRegs} {a : NodeId} :
-    x.address i = some (some a) ↔ x.ptr i = some (.node a) ∧ x.Allocated a := by
-  simp only [State.address, State.Allocated]
-  split <;> simp_all [and_comm]
+/-- A register specifies a record exactly when it holds the position of that record. -/
+theorem State.deref_eq_some {x : State M L} {r : Fin L.ptrRegs} {n : Node M L} :
+    x.deref r = some n ↔ ∃ a, x.ptr r = some a ∧ x.heap[a]? = some n := by
+  simp [State.deref, Option.bind_eq_some_iff]
 
-/-- Instructions preserve validity for every data interpretation. -/
-theorem Instr.eval_valid {i : Instr M L} {x y : State M L}
-    (hx : x.Valid) (h : i.eval x = some y) : y.Valid := by
-  cases i <;> simp only [Instr.eval, State.access] at h
-  all_goals repeat' first
-    | simp only [bind, pure, Option.bind_eq_some_iff, Option.some.injEq] at h
-    | obtain ⟨v, hv, h⟩ := h
-    | split at h
-    | cases h
-  all_goals simp only [State.Valid, State.Allocated, State.setData, Node.setData] at hx ⊢
-  all_goals try exact hx
-  all_goals constructor
+/-- A record of a modified heap is an old record or the image of one. -/
+theorem State.mem_heap_modify {x : State M L} {r : Fin L.ptrRegs} {g : Node M L → Node M L}
+    {n : Node M L} (h : n ∈ (x.modify r g).heap) : n ∈ x.heap ∨ ∃ m ∈ x.heap, n = g m := by
+  unfold State.modify at h
+  split at h
+  · exact .inl h
+  · next a _ =>
+    simp only [List.modify_eq_set_getElem?] at h
+    cases hm : x.heap[a]? with
+    | none => simp_all
+    | some m =>
+      rw [hm] at h
+      rcases List.mem_or_eq_of_mem_set h with h | h
+      · exact .inl h
+      · exact .inr ⟨m, List.mem_of_getElem? hm, h⟩
+
+/-- Modifying a record keeps the number of records. -/
+@[simp] theorem State.length_heap_modify {x : State M L} {r : Fin L.ptrRegs}
+    {g : Node M L → Node M L} : (x.modify r g).heap.length = x.heap.length := by
+  unfold State.modify
+  split <;> simp
+
+/-- Modifying a record keeps the pointer registers. -/
+@[simp] theorem State.ptr_modify {x : State M L} {r : Fin L.ptrRegs}
+    {g : Node M L → Node M L} : (x.modify r g).ptr = x.ptr := by
+  unfold State.modify
+  split <;> rfl
+
+/-- Modifying a record keeps the data registers. -/
+@[simp] theorem State.data_modify {x : State M L} {r : Fin L.ptrRegs}
+    {g : Node M L → Node M L} : (x.modify r g).data = x.data := by
+  unfold State.modify
+  split <;> rfl
+
+/-- Instructions preserve validity. -/
+theorem Instr.effect_valid {i : Instr M L} {x : State M L} (hx : x.Valid) :
+    (i.effect x).Valid := by
+  obtain ⟨hr, hh⟩ := hx
+  cases i <;> simp only [Instr.effect]
+  case loadPtr r f base =>
+    cases hn : x.deref base with
+    | none => exact ⟨hr, hh⟩
+    | some n =>
+      obtain ⟨a, -, ha⟩ := State.deref_eq_some.mp hn
+      have := hh n (List.mem_of_getElem? ha) f
+      refine ⟨fun r' b hb => ?_, hh⟩
+      simp only [Option.elim, State.setPtr, Function.update_apply] at hb ⊢
+      grind
+  case loadData s f base =>
+    cases hn : x.deref base with
+    | none => exact ⟨hr, hh⟩
+    | some n => exact ⟨hr, hh⟩
+  case storePtr f base r =>
+    refine ⟨by simpa using hr, fun n hn f' b hb => ?_⟩
+    rw [State.length_heap_modify]
+    rcases State.mem_heap_modify hn with hn | ⟨m, hm, rfl⟩
+    · exact hh n hn f' b hb
+    · simp only [Function.update_apply] at hb
+      grind
+  case storeData f base s =>
+    refine ⟨by simpa using hr, fun n hn f' b hb => ?_⟩
+    rw [State.length_heap_modify]
+    rcases State.mem_heap_modify hn with hn | ⟨m, hm, rfl⟩
+    · exact hh n hn f' b hb
+    · exact hh m hm f' b hb
+  case create r =>
+    refine ⟨fun r' b hb => ?_, fun n hn f b hb => ?_⟩
+    · simp only [State.setPtr, Function.update_apply] at hb
+      simp only [List.length_append, List.length_singleton]
+      grind
+    · simp only [List.length_append, List.length_singleton]
+      rcases List.mem_append.mp hn with hn | hn
+      · exact Nat.lt_succ_of_lt (hh n hn f b hb)
+      · rw [List.mem_singleton.mp hn] at hb
+        cases hb
   all_goals first
-    | (intro dst a ha
-       try simp only [Function.update_apply] at ha
-       try split_ifs at ha
-       all_goals grind [State.address_eq_some, State.Allocated, State.fresh,
-         NodeId.below_ofIndex, NodeId.below_succ])
-    | (intro a ha f b hb
-       try simp only [Function.update_apply] at hb
-       try split_ifs at hb
-       all_goals try simp only [Function.update_apply, Node.empty] at hb
-       all_goals grind [State.address_eq_some, State.Allocated, State.fresh,
-         NodeId.below_ofIndex, NodeId.below_succ])
+    | exact ⟨hr, hh⟩
+    | (refine ⟨fun r' b hb => ?_, hh⟩
+       simp only [State.setPtr, Function.update_apply] at hb ⊢
+       grind)
 
-/-- A continuing instruction allocates at most one record and never deallocates. -/
-theorem Instr.eval_size {i : Instr M L} {x y : State M L}
-    (h : i.eval x = some y) : x.size ≤ y.size ∧ y.size ≤ x.size + 1 := by
-  cases i <;> simp only [Instr.eval, State.access] at h
-  all_goals repeat' first
-    | simp only [bind, pure, Option.bind_eq_some_iff, Option.some.injEq] at h
-    | obtain ⟨v, hv, h⟩ := h
-    | split at h
-    | cases h
-  all_goals dsimp only [State.setData]
-  all_goals exact ⟨by omega, by omega⟩
+/-- An instruction creates at most one record and removes none. -/
+theorem Instr.effect_length {i : Instr M L} {x : State M L} :
+    x.heap.length ≤ (i.effect x).heap.length ∧
+      (i.effect x).heap.length ≤ x.heap.length + 1 := by
+  cases i <;> simp only [Instr.effect, State.setPtr, State.setData]
+  all_goals first
+    | (cases x.deref ‹_› <;> simp)
+    | simp
 
-/-- Every resulting register pointer comes from a register, a single existing edge from a
-register, or fresh allocation, independently of the data basis. -/
-theorem Instr.eval_provenance {i : Instr M L} {x y : State M L}
-    (h : i.eval x = some y) {dst : Fin L.ptrRegs} {a : NodeId}
-    (ha : y.ptr dst = some (.node a)) :
-    (∃ src, x.ptr src = some (.node a)) ∨
-    (∃ base b f, x.ptr base = some (.node b) ∧ x.Allocated b ∧
-      (x.heap b).ptr f = some (.node a)) ∨
-    (a = x.fresh ∧ y.size = x.size + 1) := by
-  cases i <;> simp only [Instr.eval, State.access] at h
-  all_goals repeat' first
-    | simp only [bind, pure, Option.bind_eq_some_iff, Option.some.injEq] at h
-    | obtain ⟨v, hv, h⟩ := h
-    | split at h
-    | cases h
-  all_goals simp only [State.setData, Function.update_apply] at ha ⊢
-  all_goals grind [State.address_eq_some, State.Allocated]
+/-- A pointer in a register after an instruction was in a register before it, or in a field of
+a record specified by a register, or specifies the record just created. -/
+theorem Instr.effect_provenance {i : Instr M L} {x : State M L} {r : Fin L.ptrRegs} {a : ℕ}
+    (ha : (i.effect x).ptr r = some a) :
+    (∃ r', x.ptr r' = some a) ∨
+    (∃ base n f, x.deref base = some n ∧ n.ptr f = some a) ∨
+    (a = x.heap.length ∧ (i.effect x).heap.length = x.heap.length + 1) := by
+  cases i <;> simp only [Instr.effect, State.setPtr, State.setData] at ha ⊢
+  case loadPtr r' f base =>
+    cases hn : x.deref base with
+    | none => exact .inl ⟨r, by simpa [hn] using ha⟩
+    | some n =>
+      simp only [hn, Option.elim, Function.update_apply] at ha
+      split_ifs at ha
+      · exact .inr (.inl ⟨base, n, f, hn, ha⟩)
+      · exact .inl ⟨r, ha⟩
+  case loadData s f base =>
+    cases hn : x.deref base <;> exact .inl ⟨r, by simpa [hn] using ha⟩
+  case storePtr | storeData => exact .inl ⟨r, by simpa using ha⟩
+  all_goals
+    try simp only [Function.update_apply] at ha
+    grind
 
-/-- The allocator returns a pointer outside the previous allocated pool. -/
-theorem Instr.alloc_fresh {x y : State M L} {dst : Fin L.ptrRegs}
-    (h : (Instr.alloc dst).eval x = some y) :
-    y.ptr dst = some (.node x.fresh) ∧ ¬x.Allocated x.fresh := by
-  simp only [Instr.eval, Option.some.injEq] at h
-  subst y
-  simp [Function.update_self, State.Allocated, State.fresh]
+/-- `create` returns a pointer that specified no record before. -/
+theorem Instr.create_fresh {x : State M L} {r : Fin L.ptrRegs} :
+    ((Instr.create r).effect x).ptr r = some x.heap.length ∧ x.heap[x.heap.length]? = none := by
+  simp [Instr.effect, State.setPtr]
 
-/-- A continuing program step is exactly evaluation of its current instruction. -/
-theorem step_eq_next_iff {code : List (Instr M L)} {x y : State M L} :
-    step code x = .next y ↔ ∃ i, code[x.pc]? = some i ∧ i.eval x = some y := by
+/-- A step executes the current instruction, which is not a `halt`. -/
+theorem step_eq_some_iff {code : List (Instr M L)} {x y : State M L} :
+    step code x = some y ↔
+      ∃ i, code[x.pc]? = some i ∧ i ≠ .halt ∧ y = { i.effect x with pc := i.next x } := by
   unfold step
   split
   · simp_all
-  · simp_all [Instr.eval]
-  · split <;> simp_all
+  · simp_all
+  · next i hne hi => exact ⟨fun h => ⟨i, hi, by simpa using hne, (Option.some.inj h).symm⟩, by
+      rintro ⟨j, hj, -, rfl⟩
+      cases hi.symm.trans hj
+      rfl⟩
 
-/-- Program steps preserve allocated-pointer validity. -/
+/-- Program steps preserve validity. -/
 theorem step_valid {code : List (Instr M L)} {x y : State M L}
-    (hx : x.Valid) (h : step code x = .next y) : y.Valid := by
-  obtain ⟨i, _, hi⟩ := step_eq_next_iff.mp h
-  exact i.eval_valid hx hi
+    (hx : x.Valid) (h : step code x = some y) : y.Valid := by
+  obtain ⟨i, -, -, rfl⟩ := step_eq_some_iff.mp h
+  exact i.effect_valid hx
 
-/-- A program step allocates at most one record and never deallocates. -/
-theorem step_size {code : List (Instr M L)} {x y : State M L}
-    (h : step code x = .next y) : x.size ≤ y.size ∧ y.size ≤ x.size + 1 := by
-  obtain ⟨i, _, hi⟩ := step_eq_next_iff.mp h
-  exact i.eval_size hi
+/-- A program step creates at most one record and removes none. -/
+theorem step_length {code : List (Instr M L)} {x y : State M L} (h : step code x = some y) :
+    x.heap.length ≤ y.heap.length ∧ y.heap.length ≤ x.heap.length + 1 := by
+  obtain ⟨i, -, -, rfl⟩ := step_eq_some_iff.mp h
+  exact i.effect_length
 
-/-- All states of a run from a valid input have allocated pointers. -/
+/-- Every state of a run from a valid state is valid. -/
 theorem Runs.valid {code : List (Instr M L)} {x y : State M L} {n : ℕ}
     (h : Runs code x y n) (hx : x.Valid) : y.Valid := by
   induction h with
   | refl => exact hx
   | tail _ _ _ _ hxy ih => exact step_valid ih hxy
 
-/-- Space counts input records plus at most one new record per continuing instruction. -/
-theorem Runs.size_le {code : List (Instr M L)} {x y : State M L} {n : ℕ}
-    (h : Runs code x y n) : y.size ≤ x.size + n :=
-  h.apply_le_apply_add State.size (fun _ _ hxy => (step_size hxy).2)
+/-- Space is at most the initial number of records plus the number of instructions executed. -/
+theorem Runs.length_le {code : List (Instr M L)} {x y : State M L} {n : ℕ}
+    (h : Runs code x y n) : y.heap.length ≤ x.heap.length + n :=
+  h.apply_le_apply_add (fun x => x.heap.length) (fun _ _ hxy => (step_length hxy).2)
 
-/-- Continuing execution is deterministic. -/
+/-- Execution is deterministic. -/
 theorem step_deterministic {code : List (Instr M L)} {x y z : State M L}
-    (hy : step code x = .next y) (hz : step code x = .next z) : y = z :=
-  Outcome.next.inj (hy.symm.trans hz)
-
+    (hy : step code x = some y) (hz : step code x = some z) : y = z :=
+  Option.some.inj (hy.symm.trans hz)
 
 end Cslib.PointerMachine

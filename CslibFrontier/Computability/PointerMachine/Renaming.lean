@@ -8,108 +8,89 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.PointerMachine.Abstract
+public import Mathlib.Logic.Equiv.Defs
 
 /-!
 # Renaming pointer-machine data
 
-A sortwise permutation commuting with the chosen primitives preserves execution.
-Protected-symbol instances permit every permutation of symbols while fixing numerical data.
-References and allocation identities are unchanged by this data renaming.
+A permutation of the data which commutes with the primitives of the model commutes with
+execution. Pointers, control and cost are unchanged.
 -/
 
-public section
+@[expose] public section
 
 namespace Cslib.PointerMachine
 
-variable {k : ℕ} {M : Model k} {L : Layout k}
+variable {M : Model} {L : Layout}
 
-/-- Permutations of data which preserve the fixed operation and predicate interpretations. -/
-structure Model.Renaming (M : Model k) where
-  /-- Permute values within each sort. -/
-  value : (t : Fin k) → M.Value t ≃ M.Value t
-  /-- Primitive operations commute with the permutations, including failure. -/
-  operation : ∀ {a b c} (f : M.Op a b c) (va : M.Value a) (vb : M.Value b),
-    M.evalOp f (value a va) (value b vb) = (M.evalOp f va vb).map (value c)
-  /-- Primitive predicates cannot observe the permutation. -/
-  test : ∀ {a b} (f : M.Test a b) (va : M.Value a) (vb : M.Value b),
-    M.evalTest f (value a va) (value b vb) = M.evalTest f va vb
+/-- A permutation of the data which the primitives of the model cannot observe. -/
+structure Model.Renaming (M : Model) where
+  /-- The permutation. -/
+  value : M.Value ≃ M.Value
+  /-- The undefined value is fixed. -/
+  undefined : value M.undefined = M.undefined
+  /-- Operations commute with the permutation. -/
+  op : ∀ o a b, M.evalOp o (value a) (value b) = value (M.evalOp o a b)
+  /-- Predicates are invariant under the permutation. -/
+  test : ∀ p a b, M.evalTest p (value a) (value b) = M.evalTest p a b
 
-/-- Rename data fields, retaining all pointers. -/
-@[expose] def Node.rename (ρ : M.Renaming) (x : Node M L) : Node M L :=
-  { x with data := Pi.map (fun t bank => Option.map (ρ.value t) ∘ bank) x.data }
+/-- Rename the data fields of a record. -/
+def Node.rename (ρ : M.Renaming) (n : Node M L) : Node M L :=
+  { n with data := ρ.value ∘ n.data }
 
-/-- Rename all data without changing control, allocation, or pointers. -/
-@[expose] def State.rename (ρ : M.Renaming) (x : State M L) : State M L :=
-  { x with data := Pi.map (fun t bank => Option.map (ρ.value t) ∘ bank) x.data
-           heap := Node.rename ρ ∘ x.heap }
+/-- Rename all data of a state. -/
+def State.rename (ρ : M.Renaming) (x : State M L) : State M L :=
+  { x with data := ρ.value ∘ x.data, heap := x.heap.map (Node.rename ρ) }
 
-/-- Renaming commutes with writing a typed register. -/
-theorem State.rename_setData (ρ : M.Renaming) (x : State M L) {t : Fin k}
-    (dst : Fin (L.dataRegs t)) (v : M.Value t) :
-    (x.setData dst v).rename ρ = (x.rename ρ).setData dst (ρ.value t v) := by
-  simp [State.setData, State.rename, Pi.map_update, Function.comp_update]
-
-/-- Renaming commutes with writing a typed field. -/
-theorem Node.rename_setData (ρ : M.Renaming) (x : Node M L) {t : Fin k}
-    (f : Fin (L.dataFields t)) (v : M.Value t) :
-    (x.setData f v).rename ρ = (x.rename ρ).setData f (ρ.value t v) := by
-  simp [Node.setData, Node.rename, Pi.map_update, Function.comp_update]
-
-/-- Renaming does not change a record's reference fields. -/
-@[simp] theorem Node.rename_ptr (ρ : M.Renaming) (x : Node M L) :
-    (x.rename ρ).ptr = x.ptr := rfl
-
-/-- Data fields are renamed within their declared sorts. -/
-@[simp] theorem Node.rename_data (ρ : M.Renaming) (x : Node M L) (t : Fin k)
-    (f : Fin (L.dataFields t)) :
-    (x.rename ρ).data t f = (x.data t f).map (ρ.value t) := rfl
-
-/-- Undefined fields remain undefined under renaming. -/
-@[simp] theorem Node.rename_empty (ρ : M.Renaming) :
-    (Node.empty : Node M L).rename ρ = .empty := rfl
-
-/-- Instructions commute with data renaming, including undefined operands and failure. -/
-theorem Instr.eval_rename (ρ : M.Renaming) (i : Instr M L) (x : State M L) :
-    i.eval (x.rename ρ) = (i.eval x).map (State.rename ρ) := by
-  cases i <;>
-    simp only [bind, pure, Option.map_some, Option.map_none,
-      Equiv.apply_eq_iff_eq, Instr.eval, State.access, State.address, State.rename,
-      State.setData, State.fresh, Node.rename_ptr, Node.rename_data,
-      Node.rename_empty, Option.bind_map, Option.map_bind,
-      Pi.map_update, Function.comp_update, Function.comp_apply, Pi.map_apply,
-      ρ.operation, ρ.test]
-  all_goals congr 1
-  all_goals funext a
-  all_goals cases a <;>
-    simp only [State.rename, Option.map_bind, Option.map_some,
-      Pi.map_update, Function.comp_update, Function.comp_apply, Node.rename_setData]
+/-- Instructions commute with renaming. -/
+theorem Instr.effect_rename (ρ : M.Renaming) (i : Instr M L) (x : State M L) :
+    i.effect (x.rename ρ) = (i.effect x).rename ρ := by
+  have deref (r : Fin L.ptrRegs) : (x.rename ρ).deref r = (x.deref r).map (Node.rename ρ) := by
+    simp only [State.deref, State.rename]
+    cases x.ptr r <;> simp
+  have modify (r : Fin L.ptrRegs) (g g' : Node M L → Node M L)
+      (hg : ∀ n, g' (n.rename ρ) = (g n).rename ρ) :
+      (x.rename ρ).modify r g' = (x.modify r g).rename ρ := by
+    simp only [State.modify, State.rename]
+    cases x.ptr r with
+    | none => rfl
+    | some a =>
+      simp only [State.mk.injEq, true_and]
+      apply List.ext_getElem? fun k => ?_
+      simp only [List.getElem?_modify, List.getElem?_map]
+      by_cases hk : a = k <;> cases x.heap[k]? <;> simp [hk, hg]
+  cases i <;> simp only [Instr.effect]
+  case loadPtr r f base => rw [deref]; cases x.deref base <;> rfl
+  case loadData s f base =>
+    rw [deref]
+    cases x.deref base with
+    | none => rfl
+    | some n => simp [State.rename, State.setData, Node.rename, Function.comp_update]
+  case storePtr f base r => exact modify base _ _ fun n => rfl
+  case storeData f base s =>
+    exact modify base _ _ fun n => by
+      simp [State.rename, Node.rename, Function.comp_update]
+  case op o s s₁ s₂ =>
+    simp [State.rename, State.setData, Function.comp_update, ρ.op]
+  case moveData s s' => simp [State.rename, State.setData, Function.comp_update]
+  case create r =>
+    simp [State.rename, State.setPtr, Node.rename, Node.blank, Function.comp_def, ρ.undefined]
   all_goals rfl
 
-/-- Renaming preserves the control label. -/
-@[simp] theorem State.rename_pc (ρ : M.Renaming) (x : State M L) :
-    (x.rename ρ).pc = x.pc := rfl
+/-- Renaming does not change control flow. -/
+theorem Instr.next_rename (ρ : M.Renaming) (i : Instr M L) (x : State M L) :
+    i.next (x.rename ρ) = i.next x := by
+  cases i <;> first | rfl | simp [Instr.next, State.rename, ρ.test]
 
-/-- Renaming preserves allocated space. -/
-@[simp] theorem State.rename_size (ρ : M.Renaming) (x : State M L) :
-    (x.rename ρ).size = x.size := rfl
-
-/-- Rename a continuing state; halting and failure are unchanged. -/
-@[expose] def Outcome.rename (ρ : M.Renaming) : Outcome M L → Outcome M L
-  | .next x => .next (x.rename ρ)
-  | .halt => .halt
-  | .fault => .fault
-
-/-- Every program step commutes with data renaming. -/
+/-- Every program step commutes with renaming. -/
 theorem step_rename (ρ : M.Renaming) (code : List (Instr M L)) (x : State M L) :
-    step code (x.rename ρ) = (step code x).rename ρ := by
+    step code (x.rename ρ) = (step code x).map (State.rename ρ) := by
+  have hpc : (x.rename ρ).pc = x.pc := rfl
   unfold step
-  simp only [State.rename_pc]
-  split
-  · rfl
-  · rfl
-  · next i _ _ =>
-      rw [Instr.eval_rename]
-      cases i.eval x <;> rfl
+  rw [hpc]
+  cases code[x.pc]? with
+  | none => rfl
+  | some i => cases i <;> simp [Instr.effect_rename, Instr.next_rename] <;> rfl
 
 /-- Renaming changes neither a run's control flow nor its instruction count. -/
 theorem Runs.rename (ρ : M.Renaming) {code : List (Instr M L)}
@@ -122,13 +103,11 @@ theorem Runs.rename (ρ : M.Renaming) {code : List (Instr M L)}
     rw [step_rename, hxy]
     rfl
 
-/-- Successful executions are invariant under compatible data renamings, with the same cost. -/
+/-- Successful executions are invariant under renaming, with the same cost. -/
 theorem Executes.rename (ρ : M.Renaming) {code : List (Instr M L)}
     {x y : State M L} {n : ℕ} (h : Executes code x y n) :
     Executes code (x.rename ρ) (y.rename ρ) n := by
   obtain ⟨m, hr, hh, hn⟩ := h
-  refine ⟨m, hr.rename ρ, ?_, hn⟩
-  rw [step_rename, hh]
-  rfl
+  exact ⟨m, hr.rename ρ, hh, hn⟩
 
 end Cslib.PointerMachine

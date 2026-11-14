@@ -37,69 +37,63 @@ The local documentation maps the real instance to Erickson–van der Hoog–Milt
 ## Allocating pointer-machine foundation
 
 Import `CslibFrontier.Computability.PointerMachine.Abstract` for `Cslib.PointerMachine`.
-This is the compact definition file, with no correctness proofs.
-`PointerMachine.Basic` supplies invariants and resource bounds; `PointerMachine.Reference`
-contains the private allocation representation. Unlike the retired formal abstracts,
-`Abstract` defines the model itself, so no duplicate definitions or bridge are needed.
-`Model k` specifies finitely many data sorts, their carrier types, and named binary
-operations and predicates with typed arguments and results. `Layout k` fixes the
-number of pointer registers and fields and the number of data registers and fields
-of each sort. The model, layout, and finite instruction list are fixed independently
-of input size. A many-sorted signature is our way of making the source's type
-restrictions explicit; the paper does not present a formal dependent type system.
+That file is the whole model and contains no proofs. `PointerMachine.Basic` supplies
+invariants and resource bounds.
 
-`State M L` keeps references separate from data. References identify records through
-`NodeId`; neither arithmetic nor conversion to or from data is a machine instruction.
-Data instructions contain operation symbols from `M`, whose interpretations are fixed
-by the model. An operation receives only its typed data arguments, not references or
-the heap. This makes the scalar basis an explicit parameter rather than an implicit
-choice of natural arithmetic. General interpretations are mathematical functions;
-executable or bit-efficient interpretations require additional evidence.
+`Model` gives one type of data values, a distinguished `undefined` value, and named
+binary operations and predicates with total interpretations. `Layout` fixes the number
+of pointer registers, data registers, pointer fields and data fields. The model, the
+layout and the finite instruction list are fixed independently of input size. A basis
+with several kinds of data uses a sum type whose operations return `undefined` on
+operands of the wrong kind.
 
-Pointer registers and fields distinguish undefined contents, null, and a reference
-to an allocated node. Data registers and fields similarly distinguish undefined
-contents from a datum. Allocation creates one fresh record with all fields undefined.
-A load or store through null does nothing except advance control. Using undefined
-contents, dereferencing an unallocated node, or applying an undefined primitive
-faults. The fault convention makes unsuccessful behavior explicit; it is not an
-additional successful output. Defined values can overwrite undefined destinations.
-Control labels are zero-based; falling outside the finite code faults, and explicit
-`halt` succeeds with the final registers and heap as output.
+`State M L` holds a control label, the two register banks and `heap`, the list of all
+records in order of creation. A `Pointer` is null or the position of a record in that
+list. Positions are natural numbers, but no instruction takes or returns one: programs
+obtain pointers only by copying a register, loading a pointer field of a record that a
+register specifies, or creating a record. `Instr.effect_provenance` states this.
+There is no theorem yet that execution is invariant under reordering the heap.
 
-`State.Valid` requires each defined, nonnull register pointer and every defined link
-in allocated storage to name an allocated node. It allows cycles, sharing, and
-unreachable allocated records. Applications supply valid input states, with preparation cost separate;
-`Runs.valid` preserves that hypothesis.
-`State.empty` supplies an empty graph. The provenance and validity results are
-independent of the chosen data operations: a resulting pointer must be copied from
-an existing register, loaded along a field of a node addressed by a register, or
-returned by fresh allocation. No arithmetic operation can create a reference.
+`Instr.effect` gives each instruction's effect on registers and records, and
+`Instr.next` the label that follows. Both are total. A load or store through null does
+nothing. A new record has null pointer fields and `undefined` data fields. Control
+labels are zero-based. `step` is undefined at `halt` and outside the program;
+`Executes` requires the final label to hold `halt`.
+
+`State.Valid` requires every nonnull pointer in a register or record to specify a
+record. It allows cycles, sharing and unreachable records. Applications supply valid
+input states, with preparation cost separate; `Runs.valid` preserves the hypothesis.
+A pointer that specifies no record is otherwise treated like null.
 
 `Runs` reuses CSLib's `Relation.RelatesInSteps`; `Executes` also charges the final halt.
-Each instruction costs one unit, including a data primitive or an allocation.
-`size` counts initially allocated records plus allocations, including unreachable
-records. There is no deletion or implicit garbage collection. `Runs.size_le` bounds
-allocated records by initial records plus continuing steps. These are instruction
+Each instruction costs one unit, including a data primitive or a creation.
+Space is `heap.length`: initial records plus creations, including unreachable
+records. There is no deletion or garbage collection. `Runs.length_le` bounds
+space by initial records plus instructions executed. These are instruction
 and record measures, not bit-time, bit-space, or host allocation costs. Changing the
-primitive signature changes what one instruction can accomplish.
+primitives changes what one instruction can accomplish.
 
-For a symbol-only sort, its carrier type alone does not establish opacity: an
-operation `Symbol → Int` would reveal an encoding. The protected-symbol instance
+`PointerMachine.Data` shows that a predicate on data which holds of `undefined` and is
+closed under the operations is preserved by execution. `PointerMachine.Renaming` shows
+that a permutation of the data commuting with the primitives commutes with execution,
+with the same cost.
+
+For symbols, the carrier type alone does not establish opacity: an operation from
+symbols to integers would reveal an encoding. The protected-symbol instance
 is `Symbols.model` from `CslibFrontier.Computability.PointerMachine.Symbols`.
-It permits copying, loading, storing, and equality of symbols, with arithmetic
-restricted to separate integer slots. It supplies no symbol literal, packing
-operation, conversion, or symbol-producing primitive. Abstract symbols and integer
-counters can therefore coexist in one fixed-format record, as they do in Tarjan's
-weighted-union example. Symbol preservation and renaming properties express this
-restriction separately from pointer provenance.
+Its values are undefined, a symbol or an integer. It supplies equality of data,
+integer addition and subtraction, and integer order; arithmetic on a symbol returns
+`undefined`. Abstract symbols and integer counters can therefore coexist in one
+record, as they do in Tarjan's weighted-union example. `Symbols.hasSymbol_of_runs`
+and `Symbols.symbolRenaming` state that programs neither produce symbols nor tell
+them apart except by equality.
 
 After the [standard setup](../workflows/getting-started.md), check the
-[typed clients](../../CslibFrontierTests/PointerMachine.lean) with
+[clients](../../CslibFrontierTests/PointerMachine.lean) with
 `lake build CslibFrontierTests.PointerMachine --wfail --iofail`.
-They exercise abstract symbols, numerical metadata, and references in the same
-machine, with exact instruction accounting and boundary cases for allocation,
-undefined contents, and null access. The clients are model examples, not a verified
-union-find implementation or lower bound.
+They run one program on symbols, integers and pointers with exact instruction
+accounting, and cover null access, new records and invalid pointers. The clients
+are model examples, not a verified union-find implementation or lower bound.
 
 GenericRAM was assessed for reuse: its `evalOp` receives only register operands and
 fixed configuration, and `Data.mem` has no allocation state. Its `admissible` and
@@ -107,17 +101,19 @@ fixed configuration, and `Data.mem` has no allocation state. Its `admissible` an
 `address` would prevent scalar address conversion but would not establish provenance
 or fresh allocation. The pointer-machine module supplies its own small-step
 instruction semantics while reusing the common exact-step relation and its resource
-lemma. It introduces no second recursive run interpreter. A common control engine or
-certified GenericRAM lowering would need a separate semantic preservation argument.
+lemma. A common control engine or certified GenericRAM lowering would need a separate
+semantic preservation argument.
 
-The inspected source is [Tarjan 1979](https://doi.org/10.1016/0022-0000(79)90042-4),
-§2, pp. 111–112: separate data/pointer registers and fields, identical record layouts,
-explicit-reference access, binary data operations and predicates, fresh allocation
-with undefined fields, null-access no-ops, and one unit per instruction. The finite
-sort index and typed operation families make these conventions explicit. Zero-based
-labels normalize its one-based labels. The semantics also defines faults for code
-fall-through and invalid or undefined uses; §2 requires a final halt but does not
-fully specify undefined-value evaluation. No claim of a step-exact translation of
+The source is [Tarjan 1979](https://doi.org/10.1016/0022-0000(79)90042-4),
+§2, pp. 111–112: separate data and pointer registers and fields, identical records,
+access by explicit reference only, binary data operations and predicates, record
+creation, null access doing nothing, a final halt, and one unit per instruction.
+The formalization differs in four ways. Labels start at zero, and running past the
+last instruction is not a successful halt. The source fills every field of a new
+record with a special undefined value; here pointer fields are null and only data
+fields are undefined. The source has a built-in equality test on data; here equality
+is a predicate the model may supply. The source does not say what an operation does
+on undefined data; here the model decides. No claim of a step-exact translation of
 every source program, or of equivalence with pure atomistic SMM/KUM models, is made.
 
 Tarjan's union-find application adds assumptions (3.1)–(3.5), pp. 113–114. Element and

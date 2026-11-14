@@ -12,78 +12,70 @@ public import CslibFrontier.Computability.PointerMachine.Basic
 /-!
 # Data invariants for pointer machines
 
-Data predicates closed under the chosen primitive basis are preserved by execution.
-This separates a general data basis from restricted instances such as equality-only symbols.
+A predicate on data that holds of the undefined value and is closed under the operations of the
+model is preserved by execution. This separates a general data basis from restricted ones such
+as equality-only symbols.
 -/
 
-public section
+@[expose] public section
 
 namespace Cslib.PointerMachine
 
-variable {k : ℕ} {M : Model k} {L : Layout k}
+variable {M : Model} {L : Layout}
 
-/-- A family of predicates on data, closed under every successful primitive operation. -/
-@[expose] def Model.Closed (M : Model k) (P : (t : Fin k) → M.Value t → Prop) : Prop :=
-  ∀ {a b c} (f : M.Op a b c) {va vb v},
-    P a va → P b vb → M.evalOp f va vb = some v → P c v
+/-- A predicate on data which holds of `undefined` and is closed under every operation. -/
+def Model.Closed (M : Model) (P : M.Value → Prop) : Prop :=
+  P M.undefined ∧ ∀ o a b, P a → P b → P (M.evalOp o a b)
 
-/-- All defined data in registers and allocated records satisfy a sort-indexed predicate. -/
-@[expose] def State.DataValid (x : State M L) (P : (t : Fin k) → M.Value t → Prop) : Prop :=
-  (∀ t i v, x.data t i = some v → P t v) ∧
-  (∀ a, x.Allocated a → ∀ t f v, (x.heap a).data t f = some v → P t v)
+/-- All data in registers and records satisfy a predicate. -/
+def State.DataValid (x : State M L) (P : M.Value → Prop) : Prop :=
+  (∀ s, P (x.data s)) ∧ ∀ n ∈ x.heap, ∀ f, P (n.data f)
 
-private theorem data_valid_update {P : (t : Fin k) → M.Value t → Prop}
-    {count : Fin k → ℕ} {bank : (t : Fin k) → Fin (count t) → Option (M.Value t)}
-    (hbank : ∀ t i v, bank t i = some v → P t v) {t : Fin k} {i : Fin (count t)}
-    {v : M.Value t} (hv : P t v) :
-    ∀ a j w, Function.update bank t (Function.update (bank t) i (some v)) a j = some w →
-      P a w := by
-  intro a j w hw
-  by_cases h : a = t
-  · subst a
-    simp only [Function.update_self, Function.update_apply] at hw
-    split_ifs at hw <;> grind
-  · rw [Function.update_of_ne h] at hw
-    exact hbank a j w hw
-
-/-- Closed predicates on data survive every continuing instruction, even if the input's
-pointers are invalid: successful memory accesses separately check allocation. -/
-theorem Instr.eval_dataValid {P : (t : Fin k) → M.Value t → Prop}
-    (closed : M.Closed P) {i : Instr M L} {x y : State M L}
-    (hx : x.DataValid P) (h : i.eval x = some y) : y.DataValid P := by
-  cases i <;> simp only [Instr.eval, State.access] at h
-  all_goals repeat' first
-    | simp only [bind, pure, Option.bind_eq_some_iff, Option.some.injEq] at h
-    | obtain ⟨v, hv, h⟩ := h
-    | split at h
-    | cases h
-  all_goals simp only [State.DataValid, State.setData, Node.setData] at hx ⊢
-  all_goals try exact hx
-  all_goals constructor
-  all_goals first
-    | exact hx.1
-    | exact hx.2
-    | (apply data_valid_update hx.1
-       grind [Model.Closed, State.address_eq_some, State.Allocated])
-    | (intro a ha t f v hv
-       simp only [Function.update_apply] at hv
-       split_ifs at hv
-       all_goals subst_vars
-       all_goals try (simp only [Node.empty] at hv; contradiction)
-       all_goals try exact hx.2 a ha t f v hv
-       all_goals try
-         exact data_valid_update (hx.2 a ha) (by grind) t f v hv
-       all_goals apply hx.2 a _ t f v hv
-       all_goals grind [State.Allocated, State.fresh, NodeId.below_succ])
+/-- Closed predicates on data survive every instruction. -/
+theorem Instr.effect_dataValid {P : M.Value → Prop} (closed : M.Closed P) {i : Instr M L}
+    {x : State M L} (hx : x.DataValid P) : (i.effect x).DataValid P := by
+  obtain ⟨hr, hh⟩ := hx
+  have set (s : Fin L.dataRegs) {v : M.Value} (hv : P v) : (x.setData s v).DataValid P :=
+    ⟨fun s' => by simp only [State.setData, Function.update_apply]; split_ifs <;> simp_all, hh⟩
+  cases i <;> simp only [Instr.effect]
+  case moveData s s' => exact set s (hr s')
+  case op o s s₁ s₂ => exact set s (closed.2 o _ _ (hr s₁) (hr s₂))
+  case loadData s f base =>
+    cases hn : x.deref base with
+    | none => exact ⟨hr, hh⟩
+    | some n =>
+      obtain ⟨a, -, ha⟩ := State.deref_eq_some.mp hn
+      exact set s (hh n (List.mem_of_getElem? ha) f)
+  case loadPtr r f base => cases x.deref base <;> exact ⟨hr, hh⟩
+  case storePtr f base r =>
+    refine ⟨by simpa using hr, fun n hn f' => ?_⟩
+    rcases State.mem_heap_modify hn with hn | ⟨m, hm, rfl⟩
+    · exact hh n hn f'
+    · exact hh m hm f'
+  case storeData f base s =>
+    refine ⟨by simpa using hr, fun n hn f' => ?_⟩
+    rcases State.mem_heap_modify hn with hn | ⟨m, hm, rfl⟩
+    · exact hh n hn f'
+    · simp only [Function.update_apply]
+      split_ifs
+      · exact hr s
+      · exact hh m hm f'
+  case create r =>
+    refine ⟨hr, fun n hn f => ?_⟩
+    rcases List.mem_append.mp hn with hn | hn
+    · exact hh n hn f
+    · rw [List.mem_singleton.mp hn]
+      exact closed.1
+  all_goals exact ⟨hr, hh⟩
 
 /-- Data invariants are preserved through an entire run. -/
-theorem Runs.dataValid {P : (t : Fin k) → M.Value t → Prop} (closed : M.Closed P)
+theorem Runs.dataValid {P : M.Value → Prop} (closed : M.Closed P)
     {code : List (Instr M L)} {x y : State M L} {n : ℕ}
     (h : Runs code x y n) (hx : x.DataValid P) : y.DataValid P := by
   induction h with
   | refl => exact hx
   | tail _ _ _ _ hxy ih =>
-    obtain ⟨i, _, hi⟩ := step_eq_next_iff.mp hxy
-    exact i.eval_dataValid closed ih hi
+    obtain ⟨i, -, -, rfl⟩ := step_eq_some_iff.mp hxy
+    exact i.effect_dataValid closed ih
 
 end Cslib.PointerMachine

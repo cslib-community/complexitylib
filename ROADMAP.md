@@ -703,9 +703,10 @@ Social welfare and social choice functions on strict rankings, from Arrow's impo
 ## Machines, RAM and data structures
 
 - **General pointer machines:** develop a Tarjan-style foundation with opaque references,
-  typed fixed-format records/registers, explicit data-operation signatures, protected
+  fixed-format records/registers, explicit data-operation signatures, protected
   symbols, fresh allocation, provenance and instruction/record resource accounting.
-  Establish the source-program correspondence and any claimed RAM simulation, keeping
+  Establish invariance under reordering the heap, the source-program correspondence
+  and any claimed RAM simulation, keeping
   union-find separation and invocation assumptions distinct from the general model;
   see the [model discussion](manual/algorithms-and-memory/ram-variants.md#allocating-pointer-machine-foundation).
 

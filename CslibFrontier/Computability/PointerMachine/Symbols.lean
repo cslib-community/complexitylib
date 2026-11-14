@@ -11,116 +11,120 @@ public import CslibFrontier.Computability.PointerMachine.Data
 public import CslibFrontier.Computability.PointerMachine.Renaming
 
 /-!
-# Protected symbols and integer metadata
+# Symbols and integers
 
-This two-sort basis combines equality-only symbols with integer arithmetic. Sort `0` carries
-symbols and sort `1` carries integers. Arithmetic operations and predicates have integer operands
-only; the machine's built-in typed equality test can compare symbols. The signature contains no
-symbol constants, symbol-producing primitives, packing operations, or symbol-to-integer conversion.
-
-The distinction follows [Tarjan1979], section 2, p. 112. The weighted-union representation in
-section 3, pp. 114–115 combines symbol identities, integer sizes, and parent pointers. This module
-provides the data basis and opacity results, not the union-find algorithm or its lower bound.
+[Tarjan1979], §2, p. 112 calls *symbols* the data on which no operation is permitted except
+testing for equality. This data basis combines symbols with integers, as in the weighted-union
+representation of §3, pp. 114–115: arithmetic and order apply to integers only, and no
+primitive produces a symbol or converts between symbols and integers.
 
 ## Main definitions
 
-* `model`: protected symbols and integer addition, subtraction, and comparison.
-* `predicate`, `closed`: any predicate on symbols is preserved by the primitive basis.
-* `symbolRenaming`: every permutation of symbols preserves the basis and fixes integer data.
+* `model`: symbols with equality; integers with addition, subtraction and order.
+* `symbolRenaming`: every permutation of the symbols is a renaming of the model.
 
 ## Main results
 
 * `hasSymbol_of_runs`: execution cannot introduce a symbol absent from the initial state.
 -/
 
-public section
+@[expose] public section
 
 namespace Cslib.PointerMachine.Symbols
 
-/-- Sort `0` contains symbols; sort `1` contains integer metadata. -/
-abbrev Value (Symbol : Type) : Fin 2 → Type :=
-  fun t => match t with
-    | ⟨0, _⟩ => Symbol
-    | ⟨_ + 1, _⟩ => Int
+/-- A datum is undefined, a symbol or an integer. -/
+inductive Value (Symbol : Type) where
+  /-- The undefined value. -/
+  | undefined
+  /-- A symbol. -/
+  | symbol (a : Symbol)
+  /-- An integer. -/
+  | int (n : ℤ)
+  deriving DecidableEq
 
-/-- Arithmetic symbols operate only on integer data. -/
-inductive Op : Fin 2 → Fin 2 → Fin 2 → Type where
-  /-- Integer addition. -/
-  | add : Op 1 1 1
-  /-- Integer subtraction. -/
-  | sub : Op 1 1 1
+/-- Integer operations. -/
+inductive Op where
+  /-- Addition. -/
+  | add
+  /-- Subtraction. -/
+  | sub
 
-/-- The only extra predicate is integer comparison; typed equality is a machine instruction. -/
-inductive Test : Fin 2 → Fin 2 → Type where
-  /-- Strict integer order. -/
-  | less : Test 1 1
+/-- Predicates. -/
+inductive Test where
+  /-- Equality of any two data. -/
+  | eq
+  /-- Strict order of integers. -/
+  | less
 
-/-- A mixed basis with arbitrary equality-only symbols and unbounded integer metadata.
-The instruction semantics assigns one abstract unit to each primitive, not a bit-cost bound. -/
-abbrev model (Symbol : Type) [DecidableEq Symbol] : Model 2 where
+variable {Symbol : Type}
+
+/-- Arithmetic on integers; the result is undefined for any other operands. -/
+def evalOp : Op → Value Symbol → Value Symbol → Value Symbol
+  | .add, .int m, .int n => .int (m + n)
+  | .sub, .int m, .int n => .int (m - n)
+  | _, _, _ => .undefined
+
+/-- Equality of data and order of integers; order is false for any other operands. -/
+def evalTest [DecidableEq Symbol] : Test → Value Symbol → Value Symbol → Bool
+  | .eq, a, b => a = b
+  | .less, .int m, .int n => m < n
+  | .less, _, _ => false
+
+/-- Symbols with equality and integers with addition, subtraction and order. Each primitive
+costs one unit whatever the size of the integers. -/
+abbrev model (Symbol : Type) [DecidableEq Symbol] : Model where
   Value := Value Symbol
-  decValue := Fin.cases (inferInstanceAs (DecidableEq Symbol))
-    (fun _ => inferInstanceAs (DecidableEq Int))
+  undefined := .undefined
   Op := Op
   Test := Test
-  evalOp := fun f => match f with
-    | .add => fun (x y : Int) => some (Int.add x y)
-    | .sub => fun (x y : Int) => some (Int.sub x y)
-  evalTest := fun f => match f with
-    | .less => fun (x y : Int) => some (decide (x < y))
+  evalOp := evalOp
+  evalTest := evalTest
 
-variable {Symbol : Type} [DecidableEq Symbol]
+/-- Require a property of symbols, leaving other data unrestricted. -/
+def predicate (A : Symbol → Prop) : Value Symbol → Prop
+  | .symbol a => A a
+  | _ => True
 
-/-- Require a property of symbols, leaving integer data unrestricted. -/
-@[expose] def predicate (A : Symbol → Prop) : (t : Fin 2) → Value Symbol t → Prop :=
-  Fin.cases A (fun _ => fun _ => True)
+variable [DecidableEq Symbol]
 
-/-- The basis preserves every symbol predicate: it cannot manufacture or transform symbols. -/
+/-- The primitives preserve every property of symbols: they produce no symbol. -/
 theorem closed (A : Symbol → Prop) : (model Symbol).Closed (predicate A) := by
-  intro a b c f va vb v _ _ _
-  cases f <;> exact True.intro
+  refine ⟨trivial, fun o a b _ _ => ?_⟩
+  cases o <;> cases a <;> cases b <;> trivial
 
-/-- A symbol occurs in a register or in an allocated record. Inaccessible heap contents do
-not supply symbols to the machine. -/
-@[expose] def HasSymbol {L : Layout 2} (x : State (model Symbol) L) (v : Symbol) : Prop :=
-  (∃ i, x.data 0 i = some v) ∨
-  (∃ a, x.Allocated a ∧ ∃ f, (x.heap a).data 0 f = some v)
+/-- A symbol occurs in a data register or in a record. -/
+def HasSymbol {L : Layout} (x : State (model Symbol) L) (a : Symbol) : Prop :=
+  (∃ s, x.data s = .symbol a) ∨ ∃ n ∈ x.heap, ∃ f, n.data f = .symbol a
 
-private theorem dataValid_hasSymbol {L : Layout 2} (x : State (model Symbol) L) :
-    x.DataValid (predicate (HasSymbol x)) := by
-  constructor
-  · intro t
-    refine Fin.cases ?_ (fun _ => ?_) t
-    · intro i v hv
-      exact Or.inl ⟨i, hv⟩
-    · intro _ _ _
-      exact True.intro
-  · intro a ha t
-    refine Fin.cases ?_ (fun _ => ?_) t
-    · intro f v hv
-      exact Or.inr ⟨a, ha, f, hv⟩
-    · intro _ _ _
-      exact True.intro
+/-- Every symbol in a register or record after a run was already in one before it. -/
+theorem hasSymbol_of_runs {L : Layout} {code : List (Instr (model Symbol) L)}
+    {x y : State (model Symbol) L} {n : ℕ} (h : Runs code x y n) {a : Symbol}
+    (ha : HasSymbol y a) : HasSymbol x a := by
+  have hx : x.DataValid (predicate (HasSymbol x)) := by
+    refine ⟨fun s => ?_, fun n hn f => ?_⟩
+    · cases hv : x.data s <;> first | trivial | exact .inl ⟨s, hv⟩
+    · cases hv : n.data f <;> first | trivial | exact .inr ⟨n, hn, f, hv⟩
+  have hy := h.dataValid (closed (HasSymbol x)) hx
+  rcases ha with ⟨s, hs⟩ | ⟨n, hn, f, hf⟩
+  · simpa [hs, predicate] using hy.1 s
+  · simpa [hf, predicate] using hy.2 n hn f
 
-/-- Every symbol in a run's final registers or allocated heap was already present initially.
-This follows from the generic data-invariant theorem, independently of numeric computations. -/
-theorem hasSymbol_of_runs {L : Layout 2} {code : List (Instr (model Symbol) L)}
-    {x y : State (model Symbol) L} {n : ℕ} (h : Runs code x y n) {v : Symbol}
-    (hv : HasSymbol y v) : HasSymbol x v := by
-  have hy := h.dataValid (closed (HasSymbol x)) (dataValid_hasSymbol x)
-  rcases hv with ⟨i, hi⟩ | ⟨a, ha, f, hf⟩
-  · exact hy.1 0 i v hi
-  · exact hy.2 a ha 0 f v hf
+/-- Apply a permutation to the symbols. -/
+def Value.map (π : Symbol → Symbol) : Value Symbol → Value Symbol
+  | .symbol a => .symbol (π a)
+  | v => v
 
-/-- Every symbol permutation is a symmetry of this basis; integer values are fixed. -/
-@[expose] def symbolRenaming (π : Equiv.Perm Symbol) : (model Symbol).Renaming where
-  value := Fin.cases π (fun _ => Equiv.refl Int)
-  operation := by
-    intro a b c f va vb
-    cases f <;> rfl
+/-- Every permutation of the symbols is a renaming: no primitive can tell symbols apart
+except by equality. -/
+def symbolRenaming (π : Equiv.Perm Symbol) : (model Symbol).Renaming where
+  value := {
+    toFun := Value.map π
+    invFun := Value.map π.symm
+    left_inv := by rintro (_ | _ | _) <;> simp [Value.map]
+    right_inv := by rintro (_ | _ | _) <;> simp [Value.map] }
+  undefined := rfl
+  op := by rintro (_ | _) (_ | _ | _) (_ | _ | _) <;> rfl
   test := by
-    intro a b f va vb
-    cases f
-    rfl
+    rintro (_ | _) (_ | _ | _) (_ | _ | _) <;> simp [evalTest, Value.map]
 
 end Cslib.PointerMachine.Symbols
