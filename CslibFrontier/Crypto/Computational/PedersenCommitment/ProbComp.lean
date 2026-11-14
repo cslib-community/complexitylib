@@ -11,6 +11,8 @@ public import CslibFrontier.Crypto.Computational.PedersenCommitment.PublicOperat
 public import CslibFrontier.Crypto.Computational.DiffieHellman
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
+import CslibFrontier.Crypto.Game.FourHop
+import CslibFrontier.Crypto.Game.Order
 import CslibFrontier.Foundations.Data.Nat.Bits
 import CslibFrontier.Languages.Probabilistic.UniformNat.Support
 import CslibFrontier.Probability.PMF.Bind
@@ -35,13 +37,13 @@ ideal key generation (`pedersenKeyDist`) with `pedersenKeyDistProb`, changes any
 continuation by at most `1 / 2 ^ n`. Combining this with the exact hiding and binding reductions in
 `PedersenCommitment.lean` yields concrete and asymptotic hiding and binding bounds for:
 
-* `pedersenHidingProbForKey` and `pedersenHidingProbGame` (chosen-message hiding with
-  `pedersenCommitProb` under a fixed key or `pedersenKeyDist`, with advantage at most `2 / 2 ^ n` at
-  any `h ≠ 0` and at most `1 / m + 2 / 2 ^ n` under `pedersenKeyDist`),
-* `pedersenHidingProbFullGame` and its executable `ProbComp Bool` realization
-  `pedersenHidingProbExperiment` (where both key generation and challenge commitment sampling use
-  `sampleExp`, with advantage at most `1 / m + 4 / 2 ^ n` and uniform strict-PPT certificate
-  `isPPTOn_pedersenHidingProbExperiment`), and
+* `pedersenHidingProbForKey` (chosen-message hiding with `pedersenCommitProb` at a fixed key
+  `h ≠ 0`, with advantage at most `2 / 2 ^ n`),
+* `pedersenHidingProbGame` and its executable `ProbComp Bool` realization
+  `pedersenHidingProbExperiment` (where both key generation `pedersenKeyDistProb` and challenge
+  commitment sampling `pedersenCommitProb` use `sampleExp`, with advantage at most
+  `1 / m + 4 / 2 ^ n` and uniform strict-PPT certificate `isPPTOn_pedersenHidingProbExperiment`),
+  and
 * `pedersenScheme.hidingGame (F.pedersenKeyDistProb setup)` and
   `pedersenScheme.bindingGame (F.pedersenKeyDistProb setup)` (`StatisticalHiding`,
   `ComputationalHiding`, and `Binding` under `F.DiscreteLog setup`).
@@ -50,12 +52,10 @@ continuation by at most `1 / 2 ^ n`. Combining this with the exact hiding and bi
 
 * `Cslib.Crypto.PrimeOrderGroupFamily.pedersenCommitProb`: bounded fair-coin commitment and opening.
 * `Cslib.Crypto.PrimeOrderGroupFamily.pedersenKeyGenProb`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.pedersenEncodeKeyGenProb`,
   `Cslib.Crypto.PrimeOrderGroupFamily.pedersenKeyDistProb`: bounded fair-coin Pedersen key
   generation and setup distribution.
 * `Cslib.Crypto.PrimeOrderGroupFamily.pedersenHidingProbForKey`,
   `Cslib.Crypto.PrimeOrderGroupFamily.pedersenHidingProbGame`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.pedersenHidingProbFullGame`,
   `Cslib.Crypto.PrimeOrderGroupFamily.pedersenHidingProbExperiment`: chosen-message hiding games and
   executable experiment using `pedersenCommitProb` and `pedersenKeyGenProb`.
 
@@ -63,9 +63,8 @@ continuation by at most `1 / 2 ^ n`. Combining this with the exact hiding and bi
 
 * `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_pedersenCommitProb`,
   `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_pedersenKeyGenProb`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_pedersenEncodeKeyGenProb`,
   `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_pedersenHidingProbExperiment`: uniform strict-PPT
-  certificates for commitment sampling, key generation, and the full hiding experiment.
+  certificates for commitment sampling, key generation, and the native hiding experiment.
 * `Cslib.Crypto.PrimeOrderGroupFamily.eval_pedersenCommitProb`,
   `Cslib.Crypto.PrimeOrderGroupFamily.eval_pedersenKeyGenProb`: exact output laws.
 * `Cslib.Crypto.PrimeOrderGroupFamily.advantage_bind_pedersenCommitProb_le`,
@@ -77,11 +76,10 @@ continuation by at most `1 / 2 ^ n`. Combining this with the exact hiding and bi
   and opening-length bound.
 * `Cslib.Crypto.PrimeOrderGroupFamily.advantage_pedersenHidingProbForKey_le_of_ne_zero`,
   `Cslib.Crypto.PrimeOrderGroupFamily.advantage_pedersenHidingProbGame_le`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.negligible_advantage_pedersenHidingProbGame`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.advantage_pedersenHidingProbFullGame_le`,
-  `Cslib.Crypto.PrimeOrderGroupFamily.negligible_advantage_pedersenHidingProbFullGame`: concrete and
-  asymptotic hiding for `pedersenCommitProb` and `pedersenKeyDistProb`.
-* `Cslib.Crypto.PrimeOrderGroupFamily.pedersenScheme_statisticalHiding_pedersenKeyDistProb`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.negligible_advantage_pedersenHidingProbGame`: concrete and
+  asymptotic hiding for `pedersenHidingProbForKey` and `pedersenHidingProbGame`.
+* `Cslib.Crypto.PrimeOrderGroupFamily.advantage_pedersenHidingGame_pedersenKeyDistProb_le`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.pedersenScheme_statisticalHiding_pedersenKeyDistProb`,
   `Cslib.Crypto.PrimeOrderGroupFamily.DiscreteLog.pedersenScheme_binding_pedersenKeyDistProb`:
   `StatisticalHiding` and computational `Binding` of `pedersenScheme` under `pedersenKeyDistProb`.
 -/
@@ -190,40 +188,6 @@ Pedersen commitment key `⟨d, (α : ZMod (F.order d)) • F.generator d⟩`. -/
   let α ← F.sampleExp n d
   return ⟨d, (α : ZMod (F.order d)) • F.generator d⟩
 
-/-- Sample a bounded approximately uniform key exponent `α ← F.sampleExp n d` and return the
-encoded Pedersen public key
-`encPair F.encDesc encBits (d, F.smul (d, α, F.encode d (F.generator d)))`. -/
-@[expose] noncomputable def pedersenEncodeKeyGenProb (n : ℕ) (d : F.Desc) :
-    ProbComp (List Bool) := do
-  let α ← F.sampleExp n d
-  return encPair F.encDesc encBits (d, F.smul (d, α, F.encode d (F.generator d)))
-
-/-- Encoding the key sampled by `pedersenKeyGenProb` equals `pedersenEncodeKeyGenProb`. -/
-@[simp]
-theorem encodeKey_pedersenKeyGenProb (n : ℕ) (d : F.Desc) :
-    F.pedersenScheme.encodeKey <$> F.pedersenKeyGenProb n d = F.pedersenEncodeKeyGenProb n d := by
-  simp only [pedersenKeyGenProb, pedersenEncodeKeyGenProb, map_bind, map_pure,
-    pedersenScheme_encodeKey, F.smul_encode]
-
-/-- `pedersenEncodeKeyGenProb` is uniformly strict PPT in the unary accuracy parameter `n` and
-group description `d`. -/
-theorem isPPTOn_pedersenEncodeKeyGenProb :
-    IsPPTOn (encPair encUnary F.encDesc) encBits
-      (fun p : ℕ × F.Desc => F.pedersenEncodeKeyGenProb p.1 p.2) := by
-  have hn := ComputableInPolyTime.fst encUnary F.encDesc
-  have hd := ComputableInPolyTime.snd encUnary F.encDesc
-  have hs := F.isPPTOn_sampleExp hn hd
-  have hg := F.computableInPolyTime_generator.tidy
-  have hsmul := F.computableInPolyTime_smul.tidy
-  have henc : ComputableInPolyTime
-      (fun q : (ℕ × F.Desc) × ℕ =>
-        encPair F.encDesc encBits
-          (q.1.2, F.smul (q.1.2, q.2, F.encode q.1.2 (F.generator q.1.2))))
-      (encPair (encPair encUnary F.encDesc) encNat) encBits := by
-    fun_prop
-  unfold pedersenEncodeKeyGenProb
-  exact hs.bind_with henc.isPPTOn
-
 /-- `pedersenKeyGenProb` is uniformly strict PPT in `(n, d)` with output encoding
 `F.pedersenScheme.encodeKey`. -/
 theorem isPPTOn_pedersenKeyGenProb :
@@ -294,20 +258,33 @@ noncomputable def pedersenHidingProbForKey (key : F.PedersenKey)
     (adversary : Encryption.WordAdversary) (bit : Bool) (n : ℕ) : Game := do
   let choice ← ProbComp.eval (adversary.choose n (F.pedersenScheme.encodeKey key))
   let msgs := choice.1
-  let msg := open Classical in
-    if bit ∧ F.pedersenScheme.ValidMessage key msgs.1 ∧
-        F.pedersenScheme.ValidMessage key msgs.2 then msgs.2
+  let msg :=
+    if bit && F.validPedersenMessageBool key.1 msgs.1 &&
+        F.validPedersenMessageBool key.1 msgs.2 then msgs.2
     else msgs.1
   let co ← ProbComp.eval (F.pedersenCommitProb n key msg)
   ProbComp.eval (adversary.guess n choice.2 co.1)
 
-/-- At any fixed key `key`, replacing ideal commitment sampling in `pedersenScheme.hidingForKey`
-with `pedersenCommitProb n key` changes the game outcome by at most `1 / 2 ^ n`. -/
-theorem advantage_pedersenHidingProbForKey_hidingForKey_le (key : F.PedersenKey)
+private theorem advantage_pedersenHidingProbForKey_hidingForKey_le (key : F.PedersenKey)
     (adversary : Encryption.WordAdversary) (bit : Bool) (n : ℕ) :
     Game.advantage (F.pedersenHidingProbForKey key adversary bit n)
       (F.pedersenScheme.hidingForKey key adversary bit n) ≤ 1 / 2 ^ n := by
-  simp only [pedersenHidingProbForKey, CommitmentScheme.hidingForKey, PMF.monad_bind_eq_bind]
+  have hmsg (msgs : List Bool × List Bool) :
+      (if bit && F.validPedersenMessageBool key.1 msgs.1 &&
+          F.validPedersenMessageBool key.1 msgs.2 then msgs.2 else msgs.1) =
+        open Classical in
+        if bit ∧ F.pedersenScheme.ValidMessage key msgs.1 ∧
+            F.pedersenScheme.ValidMessage key msgs.2 then msgs.2 else msgs.1 := by
+    have hcond :
+        ((bit && F.validPedersenMessageBool key.1 msgs.1 &&
+            F.validPedersenMessageBool key.1 msgs.2) = true) ↔
+          (bit = true ∧ F.pedersenScheme.ValidMessage key msgs.1 ∧
+            F.pedersenScheme.ValidMessage key msgs.2) := by
+      simp only [Bool.and_eq_true, F.validPedersenMessageBool_eq_true_iff, pedersenScheme,
+        and_assoc]
+    classical
+    exact if_ctx_congr hcond (fun _ => rfl) (fun _ => rfl)
+  simp only [pedersenHidingProbForKey, CommitmentScheme.hidingForKey, PMF.monad_bind_eq_bind, hmsg]
   exact Game.advantage_bind_le_nnreal _ _ _ fun choice =>
     F.advantage_bind_pedersenCommitProb_le n key _
       (fun co => ProbComp.eval (adversary.guess n choice.2 co.1))
@@ -319,76 +296,72 @@ theorem advantage_pedersenHidingProbForKey_le_of_ne_zero (d : F.Desc) {h : F.Car
     (hh : h ≠ 0) (adversary : Encryption.WordAdversary) (n : ℕ) :
     Game.advantage (F.pedersenHidingProbForKey ⟨d, h⟩ adversary false n)
       (F.pedersenHidingProbForKey ⟨d, h⟩ adversary true n) ≤ 2 / 2 ^ n := by
-  have h0 := F.advantage_pedersenHidingProbForKey_hidingForKey_le ⟨d, h⟩ adversary false n
-  have h1 := F.advantage_pedersenHidingProbForKey_hidingForKey_le ⟨d, h⟩ adversary true n
-  have heq := F.pedersenHidingForKey_eq_of_ne_zero d hh adversary false true n
+  have hmid : Game.advantage (F.pedersenScheme.hidingForKey ⟨d, h⟩ adversary false n)
+      (F.pedersenScheme.hidingForKey ⟨d, h⟩ adversary true n) = 0 := by
+    rw [F.pedersenHidingForKey_eq_of_ne_zero d hh adversary false true n, Game.advantage_self]
   calc Game.advantage (F.pedersenHidingProbForKey ⟨d, h⟩ adversary false n)
         (F.pedersenHidingProbForKey ⟨d, h⟩ adversary true n)
-      ≤ Game.advantage (F.pedersenHidingProbForKey ⟨d, h⟩ adversary false n)
-          (F.pedersenScheme.hidingForKey ⟨d, h⟩ adversary false n) +
-        Game.advantage (F.pedersenScheme.hidingForKey ⟨d, h⟩ adversary false n)
-          (F.pedersenHidingProbForKey ⟨d, h⟩ adversary true n) :=
-        Game.advantage_triangle _ _ _
-    _ = Game.advantage (F.pedersenHidingProbForKey ⟨d, h⟩ adversary false n)
-          (F.pedersenScheme.hidingForKey ⟨d, h⟩ adversary false n) +
-        Game.advantage (F.pedersenHidingProbForKey ⟨d, h⟩ adversary true n)
-          (F.pedersenScheme.hidingForKey ⟨d, h⟩ adversary true n) := by
-        rw [heq, Game.advantage_comm (F.pedersenScheme.hidingForKey ⟨d, h⟩ adversary true n)]
-    _ ≤ 1 / 2 ^ n + 1 / 2 ^ n := add_le_add h0 h1
-    _ = 2 / 2 ^ n := by rw [← add_div, one_add_one_eq_two]
+      ≤ 1 / 2 ^ n +
+          Game.advantage (F.pedersenScheme.hidingForKey ⟨d, h⟩ adversary false n)
+            (F.pedersenScheme.hidingForKey ⟨d, h⟩ adversary true n) +
+          1 / 2 ^ n :=
+        Game.advantage_four_hop_le
+          (F.advantage_pedersenHidingProbForKey_hidingForKey_le ⟨d, h⟩ adversary false n)
+          (F.advantage_pedersenHidingProbForKey_hidingForKey_le ⟨d, h⟩ adversary true n)
+    _ = 2 / 2 ^ n := by rw [hmid]; ring
 
-/-- Chosen-message hiding game where the commitment key is drawn from `pedersenKeyDist setup n`
-and the challenge commitment is sampled with `pedersenCommitProb`. -/
+/-- Chosen-message hiding game where both key generation (`pedersenKeyDistProb setup n`) and
+challenge commitment sampling (`pedersenCommitProb`) use bounded fair-coin exponent sampling. -/
 noncomputable def pedersenHidingProbGame (setup : ℕ → PMF F.Desc)
     (adversary : Encryption.WordAdversary) (bit : Bool) (n : ℕ) : Game := do
-  let key ← F.pedersenKeyDist setup n
+  let key ← F.pedersenKeyDistProb setup n
   F.pedersenHidingProbForKey key adversary bit n
 
-/-- Replacing ideal commitment sampling in `pedersenScheme.hidingGame (F.pedersenKeyDist setup)`
-with `pedersenCommitProb` changes the game outcome by at most `1 / 2 ^ n`. -/
-theorem advantage_pedersenHidingProbGame_hidingGame_le (setup : ℕ → PMF F.Desc)
+private theorem advantage_pedersenHidingProbGame_hidingGame_le (setup : ℕ → PMF F.Desc)
     (adversary : Encryption.WordAdversary) (bit : Bool) (n : ℕ) :
     Game.advantage (F.pedersenHidingProbGame setup adversary bit n)
-      (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary bit n) ≤ 1 / 2 ^ n := by
-  simp only [pedersenHidingProbGame, CommitmentScheme.hidingGame, PMF.monad_bind_eq_bind]
-  exact Game.advantage_bind_le_nnreal _ _ _ fun key =>
-    F.advantage_pedersenHidingProbForKey_hidingForKey_le key adversary bit n
+      (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary bit n) ≤ 2 / 2 ^ n := by
+  let Gmid : Game :=
+    (F.pedersenKeyDist setup n).bind fun key => F.pedersenHidingProbForKey key adversary bit n
+  have hkey : Game.advantage (F.pedersenHidingProbGame setup adversary bit n) Gmid ≤ 1 / 2 ^ n :=
+    F.advantage_bind_pedersenKeyDistProb_le setup n
+      (fun key => F.pedersenHidingProbForKey key adversary bit n)
+  have hcom : Game.advantage Gmid
+      (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary bit n) ≤ 1 / 2 ^ n :=
+    Game.advantage_bind_le_nnreal _ _ _ fun key =>
+      F.advantage_pedersenHidingProbForKey_hidingForKey_le key adversary bit n
+  calc Game.advantage (F.pedersenHidingProbGame setup adversary bit n)
+        (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary bit n)
+      ≤ (1 : ℝ≥0) / 2 ^ n + 1 / 2 ^ n :=
+        (Game.advantage_triangle _ Gmid _).trans (add_le_add hkey hcom)
+    _ = 2 / 2 ^ n := by ring
 
-/-- **Unconditional hiding bound for `pedersenCommitProb` under `pedersenKeyDist`**: when every
-supported group at parameter `n` has order at least `m > 0`, any (even computationally unbounded)
-`Encryption.WordAdversary` has distinguishing advantage at most `1 / m + 2 / 2 ^ n` in
+/-- **Unconditional hiding bound for `pedersenHidingProbGame`**: when every supported group at
+parameter `n` has order at least `m > 0`, any (even computationally unbounded)
+`Encryption.WordAdversary` has distinguishing advantage at most `1 / m + 4 / 2 ^ n` in
 `pedersenHidingProbGame`. -/
 theorem advantage_pedersenHidingProbGame_le (setup : ℕ → PMF F.Desc)
     (adversary : Encryption.WordAdversary) (n m : ℕ)
     (hm0 : 0 < m) (hm : ∀ d ∈ (setup n).support, m ≤ F.order d) :
     Game.advantage (F.pedersenHidingProbGame setup adversary false n)
-      (F.pedersenHidingProbGame setup adversary true n) ≤ 1 / m + 2 / 2 ^ n := by
-  have h0 := F.advantage_pedersenHidingProbGame_hidingGame_le setup adversary false n
-  have h1 := F.advantage_pedersenHidingProbGame_hidingGame_le setup adversary true n
-  have hideal := F.advantage_pedersenHidingGame_le setup adversary n m hm0 hm
+      (F.pedersenHidingProbGame setup adversary true n) ≤ 1 / m + 4 / 2 ^ n := by
+  have hmid := F.advantage_pedersenHidingGame_le setup adversary n m hm0 hm
   calc Game.advantage (F.pedersenHidingProbGame setup adversary false n)
         (F.pedersenHidingProbGame setup adversary true n)
-      ≤ Game.advantage (F.pedersenHidingProbGame setup adversary false n)
-          (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary false n) +
-        (Game.advantage (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary false n)
-          (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary true n) +
-        Game.advantage (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary true n)
-          (F.pedersenHidingProbGame setup adversary true n)) :=
-        (Game.advantage_triangle _ _ _).trans (add_le_add le_rfl (Game.advantage_triangle _ _ _))
-    _ = Game.advantage (F.pedersenHidingProbGame setup adversary false n)
-          (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary false n) +
-        (Game.advantage (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary false n)
-          (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary true n) +
-        Game.advantage (F.pedersenHidingProbGame setup adversary true n)
-          (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary true n)) := by
-        rw [Game.advantage_comm
-          (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary true n)]
-    _ ≤ 1 / 2 ^ n + (1 / m + 1 / 2 ^ n) := add_le_add h0 (add_le_add hideal h1)
-    _ = 1 / m + 2 / 2 ^ n := by ring
+      ≤ 2 / 2 ^ n +
+          Game.advantage (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary false n)
+            (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary true n) +
+          2 / 2 ^ n :=
+        Game.advantage_four_hop_le
+          (F.advantage_pedersenHidingProbGame_hidingGame_le setup adversary false n)
+          (F.advantage_pedersenHidingProbGame_hidingGame_le setup adversary true n)
+    _ ≤ 2 / 2 ^ n + 1 / m + 2 / 2 ^ n :=
+        add_le_add_left (add_le_add_right hmid _) _
+    _ = 1 / m + 4 / 2 ^ n := by ring
 
-/-- **Asymptotic unconditional hiding for `pedersenCommitProb` under `pedersenKeyDist`**: when
-every supported group at parameter `n` has order at least `m n > 0` and `1 / m n` is negligible,
-every (even computationally unbounded) `Encryption.WordAdversary` has negligible advantage in
+/-- **Asymptotic unconditional hiding for `pedersenHidingProbGame`**: when every supported
+group at parameter `n` has order at least `m n > 0` and `1 / m n` is negligible, every (even
+computationally unbounded) `Encryption.WordAdversary` has negligible advantage in
 `pedersenHidingProbGame`. -/
 theorem negligible_advantage_pedersenHidingProbGame (setup : ℕ → PMF F.Desc)
     (adversary : Encryption.WordAdversary)
@@ -397,115 +370,11 @@ theorem negligible_advantage_pedersenHidingProbGame (setup : ℕ → PMF F.Desc)
     Negligible fun n =>
       Game.advantage (F.pedersenHidingProbGame setup adversary false n)
         (F.pedersenHidingProbGame setup adversary true n) := by
-  negligible using fun n =>
-    F.advantage_pedersenHidingProbGame_le setup adversary n (m n) (hm0 n) (hm n)
-
-/-- Chosen-message hiding game where both key generation (`pedersenKeyDistProb setup n`) and
-challenge commitment sampling (`pedersenCommitProb`) use bounded fair-coin exponent sampling. -/
-noncomputable def pedersenHidingProbFullGame (setup : ℕ → PMF F.Desc)
-    (adversary : Encryption.WordAdversary) (bit : Bool) (n : ℕ) : Game := do
-  let key ← F.pedersenKeyDistProb setup n
-  F.pedersenHidingProbForKey key adversary bit n
-
-/-- Replacing `pedersenKeyDistProb` with `pedersenKeyDist` in `pedersenHidingProbFullGame` changes
-the game outcome by at most `1 / 2 ^ n`. -/
-theorem advantage_pedersenHidingProbFullGame_pedersenHidingProbGame_le (setup : ℕ → PMF F.Desc)
-    (adversary : Encryption.WordAdversary) (bit : Bool) (n : ℕ) :
-    Game.advantage (F.pedersenHidingProbFullGame setup adversary bit n)
-      (F.pedersenHidingProbGame setup adversary bit n) ≤ 1 / 2 ^ n :=
-  F.advantage_bind_pedersenKeyDistProb_le setup n
-    (fun key => F.pedersenHidingProbForKey key adversary bit n)
-
-/-- Replacing both `pedersenKeyDistProb` and `pedersenCommitProb` in `pedersenHidingProbFullGame`
-with their ideal counterparts in `pedersenScheme.hidingGame (F.pedersenKeyDist setup)` changes the
-game outcome by at most `2 / 2 ^ n`. -/
-theorem advantage_pedersenHidingProbFullGame_hidingGame_le (setup : ℕ → PMF F.Desc)
-    (adversary : Encryption.WordAdversary) (bit : Bool) (n : ℕ) :
-    Game.advantage (F.pedersenHidingProbFullGame setup adversary bit n)
-      (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary bit n) ≤ 2 / 2 ^ n := by
-  refine (Game.advantage_triangle _ (F.pedersenHidingProbGame setup adversary bit n) _).trans ?_
-  calc _ ≤ (1 : ℝ≥0) / 2 ^ n + 1 / 2 ^ n :=
-      add_le_add
-        (F.advantage_pedersenHidingProbFullGame_pedersenHidingProbGame_le setup adversary bit n)
-        (F.advantage_pedersenHidingProbGame_hidingGame_le setup adversary bit n)
-    _ = 2 / 2 ^ n := by rw [← add_div, one_add_one_eq_two]
-
-/-- **Unconditional hiding bound for `pedersenHidingProbFullGame`**: when every supported group at
-parameter `n` has order at least `m > 0`, any (even computationally unbounded)
-`Encryption.WordAdversary` has distinguishing advantage at most `1 / m + 4 / 2 ^ n` in
-`pedersenHidingProbFullGame`. -/
-theorem advantage_pedersenHidingProbFullGame_le (setup : ℕ → PMF F.Desc)
-    (adversary : Encryption.WordAdversary) (n m : ℕ)
-    (hm0 : 0 < m) (hm : ∀ d ∈ (setup n).support, m ≤ F.order d) :
-    Game.advantage (F.pedersenHidingProbFullGame setup adversary false n)
-      (F.pedersenHidingProbFullGame setup adversary true n) ≤ 1 / m + 4 / 2 ^ n := by
-  have h0 := F.advantage_pedersenHidingProbFullGame_hidingGame_le setup adversary false n
-  have h1 := F.advantage_pedersenHidingProbFullGame_hidingGame_le setup adversary true n
-  have hideal := F.advantage_pedersenHidingGame_le setup adversary n m hm0 hm
-  calc Game.advantage (F.pedersenHidingProbFullGame setup adversary false n)
-        (F.pedersenHidingProbFullGame setup adversary true n)
-      ≤ Game.advantage (F.pedersenHidingProbFullGame setup adversary false n)
-          (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary false n) +
-        (Game.advantage (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary false n)
-          (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary true n) +
-        Game.advantage (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary true n)
-          (F.pedersenHidingProbFullGame setup adversary true n)) :=
-        (Game.advantage_triangle _ _ _).trans (add_le_add le_rfl (Game.advantage_triangle _ _ _))
-    _ = Game.advantage (F.pedersenHidingProbFullGame setup adversary false n)
-          (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary false n) +
-        (Game.advantage (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary false n)
-          (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary true n) +
-        Game.advantage (F.pedersenHidingProbFullGame setup adversary true n)
-          (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary true n)) := by
-        rw [Game.advantage_comm
-          (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary true n)]
-    _ ≤ 2 / 2 ^ n + (1 / m + 2 / 2 ^ n) := add_le_add h0 (add_le_add hideal h1)
-    _ = 1 / m + 4 / 2 ^ n := by ring
-
-/-- **Asymptotic unconditional hiding for `pedersenHidingProbFullGame`**: when every supported
-group at parameter `n` has order at least `m n > 0` and `1 / m n` is negligible, every (even
-computationally unbounded) `Encryption.WordAdversary` has negligible advantage in
-`pedersenHidingProbFullGame`. -/
-theorem negligible_advantage_pedersenHidingProbFullGame (setup : ℕ → PMF F.Desc)
-    (adversary : Encryption.WordAdversary)
-    {m : ℕ → ℕ} (hm0 : ∀ n, 0 < m n) (hm : ∀ n, ∀ d ∈ (setup n).support, m n ≤ F.order d)
-    (hinv : Negligible fun n => (1 / m n : ℝ≥0)) :
-    Negligible fun n =>
-      Game.advantage (F.pedersenHidingProbFullGame setup adversary false n)
-        (F.pedersenHidingProbFullGame setup adversary true n) := by
   have h4 : Negligible fun n => (4 : ℝ≥0) / 2 ^ n := by
     simpa only [mul_one_div] using
       (negligible_one_div_two_pow.const_mul (4 : ℝ≥0))
   refine negligible_of_le (hinv.add h4) fun n => ?_
-  exact F.advantage_pedersenHidingProbFullGame_le setup adversary n (m n) (hm0 n) (hm n)
-
-/-- Boolean decision procedure for `ValidPedersenMessage d m` (`ofBits m < F.order d` and
-`(ofBits m).bits = m`). -/
-def validPedersenMessageBool (d : F.Desc) (m : List Bool) : Bool :=
-  decide (ofBits m < F.order d) && decide ((ofBits m).bits = m)
-
-@[simp]
-theorem validPedersenMessageBool_eq_true_iff (d : F.Desc) (m : List Bool) :
-    F.validPedersenMessageBool d m = true ↔ F.ValidPedersenMessage d m := by
-  simp [validPedersenMessageBool, ValidPedersenMessage]
-
-/-- `validPedersenMessageBool` is computable in polynomial time from `(d, m)`. -/
-@[fun_prop]
-theorem computableInPolyTime_validPedersenMessageBool :
-    ComputableInPolyTime (fun p : F.Desc × List Bool => F.validPedersenMessageBool p.1 p.2)
-      (encPair F.encDesc encBits) encBool := by
-  have horder := F.computableInPolyTime_order
-  unfold validPedersenMessageBool
-  fun_prop
-
-/-- Composition rule for `validPedersenMessageBool`. -/
-@[fun_prop]
-theorem computableInPolyTime_validPedersenMessageBool_comp {γ : Type} {encIn : γ ↪ List Bool}
-    {d : γ → F.Desc} {m : γ → List Bool}
-    (hd : ComputableInPolyTime d encIn F.encDesc)
-    (hm : ComputableInPolyTime m encIn encBits) :
-    ComputableInPolyTime (fun a => F.validPedersenMessageBool (d a) (m a)) encIn encBool :=
-  F.computableInPolyTime_validPedersenMessageBool.comp (hd.prod hm)
+  exact F.advantage_pedersenHidingProbGame_le setup adversary n (m n) (hm0 n) (hm n)
 
 /-- Executable `ProbComp Bool` hiding experiment at group description `d`: sample a key with
 `pedersenKeyGenProb n d`, run `adversary.choose` on the encoded key, check message validity with
@@ -530,30 +399,16 @@ theorem eval_pedersenHidingProbExperiment (adversary : Encryption.WordAdversary)
     ProbComp.eval (F.pedersenHidingProbExperiment adversary bit n d) =
       (ProbComp.eval (F.pedersenKeyGenProb n d)).bind fun key =>
         F.pedersenHidingProbForKey key adversary bit n := by
-  classical
-  have hvalid (key : F.PedersenKey) (m : List Bool) :
-      F.pedersenScheme.ValidMessage key m ↔ F.ValidPedersenMessage key.1 m := Iff.rfl
   simp only [pedersenHidingProbExperiment, pedersenHidingProbForKey, ProbComp.eval_bind,
-    PMF.monad_bind_eq_bind, hvalid]
-  refine congrArg (PMF.bind _) (funext fun key => congrArg (PMF.bind _) (funext fun choice => ?_))
-  have hcond :
-      (bit && F.validPedersenMessageBool key.1 choice.1.1 &&
-          F.validPedersenMessageBool key.1 choice.1.2) =
-        decide (bit = true ∧ F.ValidPedersenMessage key.1 choice.1.1 ∧
-          F.ValidPedersenMessage key.1 choice.1.2) := by
-    rw [Bool.eq_iff_iff]
-    simp only [Bool.and_eq_true, decide_eq_true_eq, F.validPedersenMessageBool_eq_true_iff,
-      and_assoc]
-  rw [hcond]
-  split_ifs <;> simp_all
+    PMF.monad_bind_eq_bind]
 
 /-- Averaging `pedersenHidingProbExperiment` over `d ← setup n` yields
-`pedersenHidingProbFullGame`. -/
+`pedersenHidingProbGame`. -/
 theorem bind_eval_pedersenHidingProbExperiment (setup : ℕ → PMF F.Desc)
     (adversary : Encryption.WordAdversary) (bit : Bool) (n : ℕ) :
     ((setup n).bind fun d => ProbComp.eval (F.pedersenHidingProbExperiment adversary bit n d)) =
-      F.pedersenHidingProbFullGame setup adversary bit n := by
-  simp only [eval_pedersenHidingProbExperiment, pedersenHidingProbFullGame, pedersenKeyDistProb,
+      F.pedersenHidingProbGame setup adversary bit n := by
+  simp only [eval_pedersenHidingProbExperiment, pedersenHidingProbGame, pedersenKeyDistProb,
     PMF.monad_bind_eq_bind, PMF.bind_bind]
 
 /-- `pedersenHidingProbExperiment` is uniformly strict PPT in `(n, d)` whenever `adversary` is a
@@ -629,10 +484,8 @@ theorem isPPTOn_pedersenHidingProbExperiment {adversary : Encryption.WordAdversa
   exact F.isPPTOn_pedersenKeyGenProb.bind_with
     (hchoose.bind_with (hcommit.bind_with hguess))
 
-/-- Replacing `pedersenKeyDistProb` with `pedersenKeyDist` in `pedersenScheme.hidingGame` changes
-the game outcome by at most `1 / 2 ^ n`. -/
-theorem advantage_pedersenHidingGame_pedersenKeyDistProb_hidingGame_le (setup : ℕ → PMF F.Desc)
-    (adversary : Encryption.WordAdversary) (bit : Bool) (n : ℕ) :
+private theorem advantage_pedersenHidingGame_pedersenKeyDistProb_hidingGame_le
+    (setup : ℕ → PMF F.Desc) (adversary : Encryption.WordAdversary) (bit : Bool) (n : ℕ) :
     Game.advantage (F.pedersenScheme.hidingGame (F.pedersenKeyDistProb setup) adversary bit n)
       (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary bit n) ≤ 1 / 2 ^ n :=
   F.advantage_bind_pedersenKeyDistProb_le setup n
@@ -648,31 +501,18 @@ theorem advantage_pedersenHidingGame_pedersenKeyDistProb_le (setup : ℕ → PMF
     Game.advantage (F.pedersenScheme.hidingGame (F.pedersenKeyDistProb setup) adversary false n)
       (F.pedersenScheme.hidingGame (F.pedersenKeyDistProb setup) adversary true n) ≤
       1 / m + 2 / 2 ^ n := by
-  have h0 :=
-    F.advantage_pedersenHidingGame_pedersenKeyDistProb_hidingGame_le setup adversary false n
-  have h1 :=
-    F.advantage_pedersenHidingGame_pedersenKeyDistProb_hidingGame_le setup adversary true n
-  have hideal := F.advantage_pedersenHidingGame_le setup adversary n m hm0 hm
+  have hmid := F.advantage_pedersenHidingGame_le setup adversary n m hm0 hm
   calc Game.advantage (F.pedersenScheme.hidingGame (F.pedersenKeyDistProb setup) adversary false n)
         (F.pedersenScheme.hidingGame (F.pedersenKeyDistProb setup) adversary true n)
-      ≤ Game.advantage
-          (F.pedersenScheme.hidingGame (F.pedersenKeyDistProb setup) adversary false n)
-          (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary false n) +
-        (Game.advantage (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary false n)
-          (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary true n) +
-        Game.advantage (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary true n)
-          (F.pedersenScheme.hidingGame (F.pedersenKeyDistProb setup) adversary true n)) :=
-        (Game.advantage_triangle _ _ _).trans (add_le_add le_rfl (Game.advantage_triangle _ _ _))
-    _ = Game.advantage
-          (F.pedersenScheme.hidingGame (F.pedersenKeyDistProb setup) adversary false n)
-          (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary false n) +
-        (Game.advantage (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary false n)
-          (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary true n) +
-        Game.advantage (F.pedersenScheme.hidingGame (F.pedersenKeyDistProb setup) adversary true n)
-          (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary true n)) := by
-        rw [Game.advantage_comm
-          (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary true n)]
-    _ ≤ 1 / 2 ^ n + (1 / m + 1 / 2 ^ n) := add_le_add h0 (add_le_add hideal h1)
+      ≤ 1 / 2 ^ n +
+          Game.advantage (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary false n)
+            (F.pedersenScheme.hidingGame (F.pedersenKeyDist setup) adversary true n) +
+          1 / 2 ^ n :=
+        Game.advantage_four_hop_le
+          (F.advantage_pedersenHidingGame_pedersenKeyDistProb_hidingGame_le setup adversary false n)
+          (F.advantage_pedersenHidingGame_pedersenKeyDistProb_hidingGame_le setup adversary true n)
+    _ ≤ 1 / 2 ^ n + 1 / m + 1 / 2 ^ n :=
+        add_le_add_left (add_le_add_right hmid _) _
     _ = 1 / m + 2 / 2 ^ n := by ring
 
 /-- **Asymptotic unconditional hiding of `pedersenScheme` under `pedersenKeyDistProb`**. -/
@@ -703,9 +543,8 @@ theorem pedersenScheme_computationalHiding_pedersenKeyDistProb (setup : ℕ → 
     F.pedersenScheme.ComputationalHiding (F.pedersenKeyDistProb setup) :=
   (F.pedersenScheme_statisticalHiding_pedersenKeyDistProb setup hm0 hm hinv).computationalHiding
 
-/-- Replacing `pedersenKeyDistProb` with `pedersenKeyDist` in `pedersenScheme.bindingGame` changes
-the game outcome by at most `1 / 2 ^ n`. -/
-theorem advantage_pedersenBindingGame_pedersenKeyDistProb_bindingGame_le (setup : ℕ → PMF F.Desc)
+private theorem advantage_pedersenBindingGame_pedersenKeyDistProb_bindingGame_le
+    (setup : ℕ → PMF F.Desc)
     (adversary : ℕ → List Bool →
       ProbComp (List Bool × (List Bool × List Bool) × (List Bool × List Bool)))
     (n : ℕ) :
@@ -725,26 +564,10 @@ theorem succProbability_pedersenBindingGame_pedersenKeyDistProb_le (setup : ℕ 
     Game.succProbability
       (F.pedersenScheme.bindingGame (F.pedersenKeyDistProb setup) adversary n) ≤
       Game.succProbability (F.discreteLogGame setup (F.pedersenToDLAdversary adversary) n) +
-        1 / 2 ^ n := by
-  calc Game.succProbability
-        (F.pedersenScheme.bindingGame (F.pedersenKeyDistProb setup) adversary n)
-      ≤ Game.advantage
-          (F.pedersenScheme.bindingGame (F.pedersenKeyDistProb setup) adversary n)
-          (F.pedersenScheme.bindingGame (F.pedersenKeyDist setup) adversary n) +
-        Game.succProbability
-          (F.pedersenScheme.bindingGame (F.pedersenKeyDist setup) adversary n) := by
-        simpa only [Game.advantage_pure_false] using
-          Game.advantage_triangle
-            (F.pedersenScheme.bindingGame (F.pedersenKeyDistProb setup) adversary n)
-            (F.pedersenScheme.bindingGame (F.pedersenKeyDist setup) adversary n)
-            (PMF.pure false)
-    _ ≤ 1 / 2 ^ n +
-        Game.succProbability (F.discreteLogGame setup (F.pedersenToDLAdversary adversary) n) :=
-        add_le_add
-          (F.advantage_pedersenBindingGame_pedersenKeyDistProb_bindingGame_le setup adversary n)
-          (F.succProbability_pedersenBindingGame_le_discreteLogGame setup adversary n)
-    _ = Game.succProbability (F.discreteLogGame setup (F.pedersenToDLAdversary adversary) n) +
-        1 / 2 ^ n := add_comm _ _
+        1 / 2 ^ n :=
+  (Game.succProbability_le_add_of_advantage_le
+    (F.advantage_pedersenBindingGame_pedersenKeyDistProb_bindingGame_le setup adversary n)).trans
+    (add_le_add (F.succProbability_pedersenBindingGame_le_discreteLogGame setup adversary n) le_rfl)
 
 /-- **Computational binding of Pedersen commitments under `pedersenKeyDistProb` and the
 discrete-logarithm assumption**. -/

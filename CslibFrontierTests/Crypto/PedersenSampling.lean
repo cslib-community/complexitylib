@@ -153,6 +153,19 @@ example (A : Encryption.WordAdversary) :
   norm_num at h ⊢
   exact h
 
+/-- Concrete hiding bound for `pedersenHidingProbGame` on the constant-`d23` setup (`m = 11`):
+every stateful adversary has distinguishing advantage at most `1 / 11 + 4 / 2 ^ n`. -/
+example (A : Encryption.WordAdversary) (n : ℕ) :
+    Game.advantage
+      (schnorrGroups.pedersenHidingProbGame (fun _ => PMF.pure d23) A false n)
+      (schnorrGroups.pedersenHidingProbGame (fun _ => PMF.pure d23) A true n) ≤
+      1 / 11 + 4 / 2 ^ n := by
+  refine schnorrGroups.advantage_pedersenHidingProbGame_le (fun _ => PMF.pure d23) A n 11
+    (by decide) ?_
+  intro d hd
+  obtain rfl : d = d23 := (PMF.mem_support_pure_iff _ _).mp hd
+  decide
+
 /-- Native fair-coin Pedersen hiding after `pedersenKeyGenProb` is unconditionally negligible for
 every stateful adversary when `2 ^ n ≤ F.order d`, and the native hiding experiment is uniformly
 strict PPT when `A` is strict PPT. -/
@@ -161,9 +174,9 @@ example (setup : ℕ → PMF schnorrGroups.Desc)
     (A : Encryption.WordAdversary) :
     Negligible (fun n =>
       Game.advantage
-        (schnorrGroups.pedersenHidingProbFullGame setup A false n)
-        (schnorrGroups.pedersenHidingProbFullGame setup A true n)) :=
-  schnorrGroups.negligible_advantage_pedersenHidingProbFullGame setup A
+        (schnorrGroups.pedersenHidingProbGame setup A false n)
+        (schnorrGroups.pedersenHidingProbGame setup A true n)) :=
+  schnorrGroups.negligible_advantage_pedersenHidingProbGame setup A
     (fun n => Nat.two_pow_pos n) hm
     (by simpa only [Nat.cast_pow, Nat.cast_ofNat] using negligible_one_div_two_pow)
 
