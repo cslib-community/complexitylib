@@ -45,7 +45,10 @@ theorem eq_flatMap_range_of_emit {α β : Type*}
   | nil => simp [hshort j carry [] (by simp)]
   | cons b rest ih =>
     by_cases hs : (b :: rest).length ≤ reserve
-    · simp [hshort j carry (b :: rest) hs, Nat.sub_eq_zero_of_le hs]
+    · have hz : rest.length + 1 - reserve = 0 := by
+        simp only [length_cons] at hs
+        omega
+      simp [hshort j carry (b :: rest) hs, hz]
     · have hn : (b :: rest).length - reserve = (rest.length - reserve) + 1 := by
         simp only [length_cons] at hs ⊢
         omega
@@ -64,7 +67,7 @@ theorem eq_flatMap_range_of_emit {α β : Type*}
           simp only [mem_range] at hi
           omega
         rw [hcarry i, getD_cons_succ, getD_eq_getElem _ _ hi', getD_eq_getElem _ _ hi']
-        simp [Nat.add_assoc, Nat.add_right_comm, Nat.succ_eq_add_one]
+        rw [Nat.add_comm 1 i]
       · rw [hcarry]
 
 end List
