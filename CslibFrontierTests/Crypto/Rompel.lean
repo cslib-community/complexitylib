@@ -12,17 +12,21 @@ import CslibFrontier.Tactic.PPT
 /-!
 # Tests for Rompel target collision-resistant hashing and digital signatures
 
-Checks concrete schedule identities, unconditional pigeonhole step-collision extraction for
-`rompelCandidateEval` (`exists_rompelCascadeInput_collision`), plain `IsPPT` certification and
-concrete loss bounds for `rompelCompressionInverter` and `rompelCompression`, unrestricted digest
-widths for `rompelHash`, behavioral separation between `WordSignatureScheme.EUFCMA` and
-`SignatureScheme.EUFCMA` (`leakNonNScheme`), concrete multi-length verification for
-`TCRSignature.wordScheme` and adaptive multi-query replay for `TCRSignature.replayCfg` /
-`TCRSignature.queryOf`, and the full signature sufficiency and equivalence endpoints in
-`CslibFrontier.Crypto.Computational.Rompel` (`OneWay.exists_indexedEUFCMA_two`,
-`OneWay.exists_counterEUFCMA_two`, `OneWay.exists_eufCMA`, `OneWay.exists_wordEUFCMA`,
-`exists_oneWay_iff_exists_signature`, `exists_oneTimeSignature_iff_exists_signature`,
-`exists_oneWay_iff_exists_wordSignature`, `exists_oneTimeSignature_iff_exists_wordSignature`).
+Checks concrete schedule identities (`rompelKeyLen_le`, `shoupComposeKeyLen_le`, `1`-bit and
+`2`-bit shrinkage parameters), standalone Shoup composition identities
+(`shoupStepInput_shoupPackMasks`, `uniformList_map_shoupPackMasks`,
+`targetCollisionResistantOn_shoupCompose`), unconditional
+pigeonhole step-collision extraction for `rompelCandidateEval`
+(`exists_rompelCascadeInput_collision`), plain `IsPPT` certification and concrete loss bounds for
+`rompelCompressionInverter` and `rompelCompression`, unrestricted digest widths for `rompelHash`,
+behavioral separation between `WordSignatureScheme.EUFCMA` and `SignatureScheme.EUFCMA`
+(`leakNonNScheme`), concrete multi-length verification for `TCRSignature.wordScheme` and adaptive
+multi-query replay for `TCRSignature.replayCfg` / `TCRSignature.queryOf`, and the full signature
+sufficiency and equivalence endpoints in `CslibFrontier.Crypto.Computational.Rompel`
+(`OneWay.exists_indexedEUFCMA_two`, `OneWay.exists_counterEUFCMA_two`, `OneWay.exists_eufCMA`,
+`OneWay.exists_wordEUFCMA`, `exists_oneWay_iff_exists_signature`,
+`exists_oneTimeSignature_iff_exists_signature`, `exists_oneWay_iff_exists_wordSignature`,
+`exists_oneTimeSignature_iff_exists_wordSignature`).
 -/
 
 namespace CslibFrontierTests.Crypto.Rompel
@@ -32,24 +36,43 @@ open _root_.Turing _root_.Turing.MultiTapeMachine _root_.Turing.MultiTapePTM
   _root_.Turing.MultiTapeTM
 open scoped NNReal
 
-/-! ### 1. Schedule, block-width, and key-width checks -/
+/-! ### 1. Schedule, block-width, Shoup `O(|y| log t)` key-width, and standalone checks -/
 
 example (G : ShrinkingCollisionGrid) (n : ℕ) :
     1 ≤ rompelCascadeSteps G n ∧
-      G.outLen n + rompelCascadeSteps G n = 2 * rompelBlockLen G n ∧
-      n ≤ rompelBlockLen G n :=
-  ⟨rompelCascadeSteps_pos G n, outLen_add_rompelCascadeSteps G n, le_rompelBlockLen G n⟩
+      2 * rompelBlockLen G n ≤ G.outLen n + rompelCascadeSteps G n * G.shrinkLen n ∧
+      n ≤ rompelBlockLen G n ∧
+      rompelKeyLen G n ≤ (Nat.log 2 (rompelCascadeSteps G n) + 2) * G.inLen n ∧
+      (rompelCompression G).keyLen n ≤ (Nat.log 2 (rompelCascadeSteps G n) + 2) * G.inLen n :=
+  ⟨rompelCascadeSteps_pos G n, two_mul_rompelBlockLen_le G n, le_rompelBlockLen G n,
+    rompelKeyLen_le G n, G.rompelCompression_keyLen_le n⟩
 
-/-- Concrete parameter check when `G.gridCount n = 2` and `G.outLen n = 3` (`G.inLen n = 4`):
-each candidate folds `3 * 3 = 9` shifted `4 → 3` steps, compressing `12` bits to `3` bits, and
-concatenating both candidates yields a `12 → 6` `KeyedCompressionFamily` with `36`-bit key. -/
+/-- Concrete parameter check when `G.gridCount n = 2`, `G.outLen n = 3`, and `G.shrinkLen n = 1`
+(`G.inLen n = 4`): `9` Shoup steps need `Nat.log 2 9 + 1 = 4` `3`-bit masks, so `rompelKeyLen G n =
+4 + 12 = 16 ≤ 20`. -/
 theorem rompel_schedule_two_three (G : ShrinkingCollisionGrid) {n : ℕ}
-    (hk : G.gridCount n = 2) (hout : G.outLen n = 3) :
-    rompelCascadeSteps G n = 9 ∧ rompelBlockLen G n = 6 ∧ rompelKeyLen G n = 36 := by
+    (hk : G.gridCount n = 2) (hout : G.outLen n = 3) (hs : G.shrinkLen n = 1) :
+    rompelCascadeSteps G n = 9 ∧ rompelBlockLen G n = 6 ∧ rompelKeyLen G n = 16 ∧
+      rompelKeyLen G n ≤ (Nat.log 2 (rompelCascadeSteps G n) + 2) * G.inLen n := by
   have hin : G.inLen n = 4 := by
-    have h1 := G.outLen_add_one n
+    have h1 := G.outLen_add_shrink n
     omega
-  simp only [rompelCascadeSteps, rompelBlockLen, rompelKeyLen, hk, hout, hin]
+  simp only [rompelCascadeSteps, rompelBlockLen, rompelKeyLen, shoupComposeKeyLen, shoupMasksLen,
+    shoupMaskCount, hk, hout, hs, hin]
+  decide
+
+/-- Concrete multi-bit shrinkage check when `G.gridCount n = 2`, `G.outLen n = 3`, and
+`G.shrinkLen n = 2` (`G.inLen n = 5`): `5` Shoup steps need `Nat.log 2 5 + 1 = 3` `3`-bit masks,
+giving `rompelKeyLen G n = 5 + 9 = 14 ≤ 20`. -/
+theorem rompel_schedule_two_three_two (G : ShrinkingCollisionGrid) {n : ℕ}
+    (hk : G.gridCount n = 2) (hout : G.outLen n = 3) (hs : G.shrinkLen n = 2) :
+    rompelCascadeSteps G n = 5 ∧ rompelBlockLen G n = 6 ∧ rompelKeyLen G n = 14 ∧
+      rompelKeyLen G n ≤ (Nat.log 2 (rompelCascadeSteps G n) + 2) * G.inLen n := by
+  have hin : G.inLen n = 5 := by
+    have h1 := G.outLen_add_shrink n
+    omega
+  simp only [rompelCascadeSteps, rompelBlockLen, rompelKeyLen, shoupComposeKeyLen, shoupMasksLen,
+    shoupMaskCount, hk, hout, hs, hin]
   decide
 
 example (G : ShrinkingCollisionGrid) (n : ℕ) (K msg : List Bool)
@@ -57,30 +80,74 @@ example (G : ShrinkingCollisionGrid) (n : ℕ) (K msg : List Bool)
     ((rompelHash G).eval n K msg).length = rompelBlockLen G n :=
   (rompelHash G).length_eq n K msg hK
 
+example :
+    shoupComposeKeyLen (fun _ => 5) (fun _ => 3) (fun _ => 5) 0 = 14 ∧
+      shoupComposeKeyLen (fun _ => 5) (fun _ => 3) (fun _ => 5) 0 ≤ (Nat.log 2 5 + 2) * 5 :=
+  ⟨rfl, shoupComposeKeyLen_le (by decide : 3 ≤ 5)⟩
+
+/-- Concrete and general check of `shoupStepInput_shoupPackMasks` at `(b = 2, s = 1, t = 5,
+iStar = 4)` on non-trivial `x` and `T`: packing restores the template mask row
+`BitString.listRow 2 (padicValNat 2 4) T ++ shoupChunk 2 1 4 x` directly at step `4`. -/
+example :
+    let step : List Bool → List Bool := fun w => w.take 2
+    let x := [true, false, true, true, false, false, true]
+    let T := [true, false, false, true, true, true]
+    let masks := shoupPackMasks 2 1 5 4 step x T
+    shoupStepInput 2 1 masks x 4 (shoupState 2 1 step masks x 3) =
+      BitString.listRow 2 (padicValNat 2 4) T ++ shoupChunk 2 1 4 x := by
+  refine shoupStepInput_shoupPackMasks (fun w => w.take 2) (fun w hw => by simp [hw])
+    (by decide) (by decide) _ _
+
+example (b s t iStar : ℕ) (step : List Bool → List Bool)
+    (hstep : ∀ w, w.length = b + s → (step w).length = b)
+    (hi_pos : 1 ≤ iStar) (hit : iStar ≤ t) (x : List Bool) :
+    (BitString.uniformList (shoupMasksLen b t)).map (shoupPackMasks b s t iStar step x) =
+      BitString.uniformList (shoupMasksLen b t) :=
+  uniformList_map_shoupPackMasks b s t iStar step hstep hi_pos hit x
+
+example {baseKeyLen outLen s t L : ℕ → ℕ} {h : ℕ → List Bool → List Bool → List Bool}
+    (hbase : ComputableInPolyTime baseKeyLen encUnary encUnary)
+    (hout : ComputableInPolyTime outLen encUnary encUnary)
+    (hs : ComputableInPolyTime s encUnary encUnary)
+    (ht : ComputableInPolyTime t encUnary encUnary)
+    (hh : ComputableInPolyTime (fun p : ℕ × List Bool × List Bool => h p.1 p.2.1 p.2.2)
+      (encKeyedInput encBits) encBits)
+    (hs_pos : ∀ n, 1 ≤ s n)
+    (hb_le : ∀ n, outLen n ≤ L n) (hL_le : ∀ n, L n ≤ outLen n + t n * s n)
+    (h_len : ∀ n k w, k.length = baseKeyLen n → w.length = outLen n + s n →
+      (h n k w).length = outLen n)
+    (hTCR : TargetCollisionResistantOn baseKeyLen h (fun m w => w.length == outLen m + s m)) :
+    TargetCollisionResistantOn (shoupComposeKeyLen baseKeyLen outLen t)
+      (shoupComposeEval baseKeyLen outLen s t h) (fun m x => x.length == L m) :=
+  targetCollisionResistantOn_shoupCompose hbase hout hs ht hh hs_pos hb_le hL_le h_len hTCR
+
 /-! ### 2. Unconditional pigeonhole non-vacuity of `exists_rompelCascadeInput_collision` -/
 
 /-- For every `ShrinkingCollisionGrid` `G`, security parameter `n`, candidate `q`, and key `K`,
 strict compression `G.outLen n < 2 * rompelBlockLen G n` guarantees distinct
 `2 * rompelBlockLen G n`-bit inputs `x₀ ≠ x₁` colliding under `rompelCandidateEval G n q K`, from
 which `exists_rompelCascadeInput_collision` extracts an in-range step collision
-`i < rompelCascadeSteps G n` under `rompelShiftedStep`. -/
+`1 ≤ i ≤ rompelCascadeSteps G n` under `rompelShiftedStep`. -/
 theorem exists_rompelCandidateEval_step_collision (G : ShrinkingCollisionGrid)
     (n q : ℕ) (K : List Bool) :
     ∃ (x₀ x₁ : List Bool) (i : ℕ),
       x₀.length = 2 * rompelBlockLen G n ∧
       x₁.length = 2 * rompelBlockLen G n ∧
       x₀ ≠ x₁ ∧
-      i < rompelCascadeSteps G n ∧
+      1 ≤ i ∧ i ≤ rompelCascadeSteps G n ∧
       rompelCascadeInput G n q i K x₀ ≠ rompelCascadeInput G n q i K x₁ ∧
-      rompelShiftedStep G n q (BitString.listRow (G.inLen n) i K)
+      rompelShiftedStep G n q (BitString.listRow (G.inLen n) 0 K)
           (rompelCascadeInput G n q i K x₀) =
-        rompelShiftedStep G n q (BitString.listRow (G.inLen n) i K)
+        rompelShiftedStep G n q (BitString.listRow (G.inLen n) 0 K)
           (rompelCascadeInput G n q i K x₁) := by
   let M := 2 * rompelBlockLen G n
   let L := G.outLen n
   have hlt : L < M := by
-    have hpos := rompelCascadeSteps_pos G n
-    have hsum := outLen_add_rompelCascadeSteps G n
+    have hk := G.gridCount_pos n
+    have hout := G.le_outLen n
+    dsimp only [L, M, rompelBlockLen]
+    have hle : G.outLen n ≤ G.gridCount n * G.outLen n := by
+      simpa only [one_mul] using Nat.mul_le_mul_right (G.outLen n) hk
     omega
   let evalFin : BitString M → BitString L :=
     fun b => BitString.ofList L (rompelCandidateEval G n q K (List.ofFn b))
@@ -97,8 +164,9 @@ theorem exists_rompelCandidateEval_step_collision (G : ShrinkingCollisionGrid)
     rw [← BitString.ofFn_ofList (length_rompelCandidateEval G n q K x₀),
       ← BitString.ofFn_ofList (length_rompelCandidateEval G n q K x₁)]
     exact congrArg List.ofFn hmap
-  obtain ⟨i, hi, hw_ne, hw_col⟩ := exists_rompelCascadeInput_collision G hx₀ hx₁ hne hcol
-  exact ⟨x₀, x₁, i, hx₀, hx₁, hne, hi, hw_ne, hw_col⟩
+  obtain ⟨i, hi_pos, hi_le, hw_ne, hw_col⟩ :=
+    exists_rompelCascadeInput_collision G hx₀ hx₁ hne hcol
+  exact ⟨x₀, x₁, i, hx₀, hx₁, hne, hi_pos, hi_le, hw_ne, hw_col⟩
 
 /-! ### 3. Concrete strict-PPT adversary and `rompelCompressionInverter` checks -/
 

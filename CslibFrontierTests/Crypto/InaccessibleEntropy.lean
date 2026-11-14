@@ -25,10 +25,11 @@ Checks concrete unconditional instances of:
    separating truncation lengths), plus the explicit `bind_with` and `IsPPT.preprocess` composition
    that certifies such inverters.
 4. Parallel repetition (`repHashFin`, `repAccessibleSet`, `repEscapeInverter`), two-universal
-   input/output entropy reduction (`shrunkHashOutLen_add_one`, `card_image_inputHashFin_le`,
+   input/output entropy reduction (`shrunkHashOutLen_add_shrink`, `card_image_inputHashFin_le`,
    `shrunkHashFin_false_positive_le`, `shrunkHash_randomCollision_le`), and the Theorem 4.5 /
    candidate-grid endpoints (`OneWay.exists_rompelBase_logGap`,
    `OneWay.exists_inaccessibleEntropyFamily_logGap`, `OneWay.exists_inaccessibleEntropyFamily`,
+   `AdversaryInaccessibleEntropyFamily.exists_shrinkingCollisionGrid_log`,
    `InaccessibleEntropyFamily.exists_shrinkingCollisionGrid`,
    `OneWay.exists_shrinkingCollisionGrid`).
 -/
@@ -267,39 +268,48 @@ example (A : ℕ → List Bool → ProbComp (List Bool)) (n : ℕ) :
             (repEscapeInverter id id A) n)) : ℝ) :=
   repEscape_le_dyadicSize_mul_escape id id id (fun _ => id) (fun _ z => {z}) A n (fun _ hw => hw)
 
-/-- Concrete `1`-bit shrinkage check on `shrunkHashOutLen 4 2`: `4 + 16 = 20` inner input bits,
-`19` outer hash rows of width `2 + 16 + 4 = 22`, giving `19 * 22 + 19 = 437` output bits vs.
-`20 + 19 * 22 = 438` input bits. -/
-example : shrunkHashOutLen 4 2 + 1 = shrunkHashInLen 4 2 ∧ shrunkHashOutLen 4 2 = 437 :=
-  ⟨shrunkHashOutLen_add_one (by decide : 1 ≤ 4) 2, rfl⟩
+/-- Concrete `1`-bit and `3`-bit shrinkage checks on `shrunkHashOutLen 4 2 s`: `4 + 16 = 20` inner
+input bits and `19` or `17` outer hash rows of width `2 + 16 + 4 = 22` give `437 → 438` bits at
+`s = 1` and `391 → 394` bits at `s = 3`. -/
+example : shrunkHashOutLen 4 2 1 + 1 = shrunkHashInLen 4 2 1 ∧ shrunkHashOutLen 4 2 1 = 437 :=
+  ⟨shrunkHashOutLen_add_shrink (by decide : 1 ≤ inputHashInLen 4) 2, rfl⟩
+
+example : shrunkHashOutLen 4 2 3 + 3 = shrunkHashInLen 4 2 3 ∧ shrunkHashOutLen 4 2 3 = 391 :=
+  ⟨shrunkHashOutLen_add_shrink (by decide : 3 ≤ inputHashInLen 4) 2, rfl⟩
 
 example :
     IsPPT encBits
-      (shrunkHashEscapeInverter (fun n => n + 1) id (fun _ _ => pure [])) :=
-  isPPT_shrunkHashEscapeInverter (by fun_prop) .id' (by ppt)
+      (shrunkHashEscapeInverter (fun n => n + 1) id (fun _ => 1) (fun _ _ => pure [])) :=
+  isPPT_shrunkHashEscapeInverter (by fun_prop) .id' (.const 1) (by ppt)
 
 example (A : ℕ → List Bool → ProbComp (List Bool)) (n : ℕ) :
     let f₁ := wordToFinMap (n + 1) (n + 1) id
     (Game.succProbability (ProbComp.eval
       (randomCollisionGame
-        (fun k => shrunkHashEvalWord (k + 1) (k + 1) id 1)
-        (fun k => shrunkHashInLen (k + 1) (k + 1)) A n)) : ℝ) ≤
+        (fun k => shrunkHashEvalWord (k + 1) (k + 1) id 1 1)
+        (fun k => shrunkHashInLen (k + 1) (k + 1) 1) A n)) : ℝ) ≤
       (Game.succProbability (ProbComp.eval
         (accessibleEscapeGame (fun _ => id) (fun k => k + 1) (fun _ z => {z})
-          (shrunkHashEscapeInverter (fun k => k + 1) (fun k => k + 1) A) n)) : ℝ) +
+          (shrunkHashEscapeInverter (fun k => k + 1) (fun k => k + 1) (fun _ => 1) A) n)) : ℝ) +
       ((PMF.uniformOfFintype (BitString (n + 1))).toOuterMeasure
         {z | (0 : ℝ) ≤ Real.logb 2 #({z} : Finset (BitString (n + 1)))}).toReal +
       (2 : ℝ) ^ ((0 : ℝ) - min ((1 : ℕ) : ℝ) ((n + 1 : ℕ) : ℝ)) +
-      2 * (((PMF.uniformOfFintype (BitString (n + 1))).toOuterMeasure
+      (2 : ℝ) ^ (1 : ℕ) * (((PMF.uniformOfFintype (BitString (n + 1))).toOuterMeasure
           {z | realSampleEntropy f₁ z ≤ 0}).toReal +
         (2 : ℝ) ^ (min ((1 : ℕ) : ℝ) ((n + 1 : ℕ) : ℝ) - 0)) :=
-  shrunkHash_randomCollision_le (fun k => k + 1) (fun k => k + 1) (fun _ => 1)
-    (fun _ => id) (fun _ z => {z}) A n (by omega) (fun _ hw => hw) 0 0
+  shrunkHash_randomCollision_le (fun k => k + 1) (fun k => k + 1) (fun _ => 1) (fun _ => 1)
+    (fun _ => id) (fun _ z => {z}) A n (by dsimp only [inputHashInLen]; omega)
+    (fun _ hw => hw) 0 0
 
 example (G : ShrinkingCollisionGrid) (n q : ℕ) (raw : List Bool) :
-    G.outLen n + 1 = G.inLen n ∧ n + 1 ≤ G.outLen n ∧ 1 ≤ G.gridCount n ∧
-      (G.evalGrid n q raw).length = G.outLen n :=
-  ⟨G.outLen_add_one n, G.le_outLen n, G.gridCount_pos n, G.length_evalGrid n q raw⟩
+    G.outLen n + G.shrinkLen n = G.inLen n ∧ 1 ≤ G.shrinkLen n ∧ n + 1 ≤ G.outLen n ∧
+      1 ≤ G.gridCount n ∧ (G.evalGrid n q raw).length = G.outLen n :=
+  ⟨G.outLen_add_shrink n, G.shrinkLen_pos n, G.le_outLen n, G.gridCount_pos n,
+    G.length_evalGrid n q raw⟩
+
+example (F : AdversaryInaccessibleEntropyFamily) :
+    ∃ G : ShrinkingCollisionGrid, ∀ n, G.shrinkLen n = Nat.log 2 n + 1 :=
+  F.exists_shrinkingCollisionGrid_log
 
 example (F : InaccessibleEntropyFamily) : Nonempty ShrinkingCollisionGrid :=
   F.exists_shrinkingCollisionGrid

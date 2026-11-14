@@ -415,7 +415,9 @@ theorem repBitAccessibleSet_logb_card_ge_prob (t inLen₀ : ℕ)
 
 /-! ### Planted-coordinate escape reduction (Lemma 5.3(ii)) -/
 
-private theorem computableInPolyTime_replaceRow {α : Type} {encode : α ↪ List Bool}
+/-- Replacing one fixed-width row of a flat list word is computable in polynomial time. -/
+@[fun_prop]
+theorem computableInPolyTime_replaceRow {α : Type} {encode : α ↪ List Bool}
     {width count j : α → ℕ} {x word : α → List Bool}
     (hwidth : ComputableInPolyTime width encode encUnary)
     (hcount : ComputableInPolyTime count encode encUnary)
