@@ -65,6 +65,7 @@ silently dropped.
 
 * `Cslib.SQL.Expr.toOption_filterRows`, `Cslib.SQL.Expr.evalRow_eq_ok_iff`: what `WHERE` and a
   `SELECT` list compute when they succeed, and when they do.
+* `Cslib.SQL.Expr.mem_of_filterRows_eq_ok`: `WHERE` keeps some of its input rows.
 * `Cslib.SQL.Query.eval_ok_or_divisionByZero`: type soundness.
 * `Cslib.SQL.Query.eval_ne_typeMismatch`, `Cslib.SQL.Query.conforms_of_eval_eq_ok`: a well-typed
   query never raises a type error, and its rows have its types.
@@ -192,6 +193,16 @@ theorem toOption_filterRows (p : Expr n) (rs : List (Row n)) :
     · cases t <;> simp [h, Option.guard]
   · rfl
 
+/-- When `WHERE` succeeds, it keeps some of its input rows. -/
+theorem mem_of_filterRows_eq_ok {p : Expr n} {rs rs' : List (Row n)}
+    (h : p.filterRows rs = .ok rs') {r : Row n} (hr : r ∈ rs') : r ∈ rs := by
+  have h' := congrArg Except.toOption h
+  rw [toOption_filterRows] at h'
+  split_ifs at h'
+  · simp only [Except.toOption_ok, Option.some.injEq] at h'
+    exact (List.mem_filter.mp (h' ▸ hr)).1
+  · simp at h'
+
 /-- When `WHERE` fails, the predicate fails with that error on one of the rows. -/
 theorem exists_evalTruth_eq_error_of_filterRows_eq_error {p : Expr n} {rs : List (Row n)}
     {e : EvalError} (h : p.filterRows rs = .error e) : ∃ r ∈ rs, p.evalTruth r = .error e := by
@@ -224,13 +235,7 @@ private theorem filterRows_ok_or_divisionByZero {Γ : Fin n → SqlType} {rs : L
     · simp [ht] at he
     · rw [he, Except.error.injEq] at ht
       exact .inr ⟨by rw [ht], hs⟩
-  · refine .inl ⟨rs', rfl, fun r hr => ?_⟩
-    have h' := congrArg Except.toOption h
-    rw [toOption_filterRows] at h'
-    split_ifs at h' with hall
-    · simp only [Except.toOption_ok, Option.some.injEq] at h'
-      exact (List.mem_filter.mp (h' ▸ hr)).1
-    · simp at h'
+  · exact .inl ⟨rs', rfl, fun _ => mem_of_filterRows_eq_ok h⟩
 
 /-- Type soundness for `SELECT` lists: on a conforming row, well-typed expressions give a row of
 their types, or one of them divides by zero. -/
