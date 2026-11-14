@@ -291,17 +291,20 @@ not injective, and the checked client exhibits the discarded high tree word. Thi
 define the FIPS 205 hash instantiations, WOTS+, XMSS, FORS, the hypertree, signing or verification,
 nor does it prove classical or quantum security.
 
-FIPS 202 SHAKE256 ([fips202][fips202]) is implemented in
-[`Hash/Keccak.lean`](../../CslibFrontier/Crypto/Primitives/Hash/Keccak.lean) on top of the existing
-generic sponge mechanics. The executable state uses 25 lanes in `5 * y + x` order, applies the
-standard's θ/ρ/π/χ/ι maps and 24 rounds, and exposes byte-aligned `Keccak.shake256` with the
-1088-bit rate, 512-bit capacity, `1111` suffix and `pad10*1`. The byte and state views are proved
-inverse, and `take_shake256` proves prefix consistency for every pair of requested lengths. The
-[ordinary-import client](../../CslibFrontierTests/Crypto/Keccak.lean) checks the official NIST
-0-bit and 1600-bit-message examples, absorption and squeezing across the 136-byte rate boundary,
-the inverse and prefix APIs, and the first Falcon-512 KAT's `salt || message` prefix. This is an
-executable specification, not a collision/preimage result, constant-time implementation or FIPS
-validation.
+FIPS 202 SHAKE256 and SHAKE128 ([fips202][fips202]) are implemented in
+[`Hash/Keccak.lean`](../../CslibFrontier/Crypto/Primitives/Hash/Keccak.lean) and
+[`Hash/Keccak/SHAKE128.lean`](../../CslibFrontier/Crypto/Primitives/Hash/Keccak/SHAKE128.lean) on
+top of the existing generic sponge mechanics. The executable state uses 25 lanes in `5 * y + x`
+order and shares the standard's θ/ρ/π/χ/ι maps and 24-round permutation. `Keccak.shake256` uses the
+1088-bit rate and 512-bit capacity, while `Keccak.shake128` uses the 1344-bit rate and 256-bit
+capacity; both use the `1111` suffix, `pad10*1` and explicit least-significant-bit-first bytes. The
+byte/state views are proved inverse, and `take_shake256` and `take_shake128` prove prefix
+consistency. The [SHAKE256 client](../../CslibFrontierTests/Crypto/Keccak.lean) checks NIST's 0-bit
+and 1600-bit-message examples, both sides of its 136-byte rate boundary, and a Falcon-512 KAT
+prefix. The [SHAKE128 client](../../CslibFrontierTests/Crypto/SHAKE128.lean) checks NIST's 0-bit
+and 1600-bit-message examples, crosses its 168-byte rate boundary, and checks the prefix API.
+These are executable specifications, not collision/preimage results, constant-time implementations
+or FIPS validations.
 
 The shared byte and SHA-2 boundary used by the FIPS 205 SHA2 parameter sets is in
 [`ByteString.lean`](../../CslibFrontier/Crypto/Primitives/ByteString.lean) and
@@ -1193,6 +1196,22 @@ decapsulation algorithm (`decapsWith_eq`). [`CslibFrontierTests/Crypto/MLKEM.lea
 checks the three parameter sets, sharpness of the compression and decoding bounds at `q = 3329`,
 and a toy instance (`n = 2`, `q = 17`) on which the noise hypotheses hold, decryption and
 decapsulation succeed, and a tampered ciphertext is implicitly rejected.
+
+The independent source boundary in
+[`MLKEM/Encoding.lean`](../../CslibFrontier/Crypto/Computational/SIS/MLKEM/Encoding.lean) gives
+Algorithms 5–6 their exact 256-coefficient, `32 * d`-byte types. It packs fields and bytes least
+significant bit first through the shared `BitString.packWords`/`readPackedField` API, proves every
+coefficient vector round-trips, and exposes Section 7.2's decode/re-encode canonicality check; at
+width 12, raw values `3329 ... 4095` reduce modulo 3329 and are therefore noncanonical. The
+[`SeedExpansion.lean`](../../CslibFrontier/Crypto/Computational/SIS/MLKEM/SeedExpansion.lean)
+boundary fixes Algorithm 13's `rho || j || i` order, the 33-byte SHAKE256 PRF input and its
+128-/192-byte outputs, and Algorithm 7's three-byte nibble parser. Its finite-prefix parser does
+not claim that a bounded SHAKE128 prefix always supplies 256 accepted values. The
+[ordinary-import clients](../../CslibFrontierTests/Crypto/MLKEMEncoding.lean) include cross-byte
+round trips, the canonical coefficient 3328, the rejected raw word 3329, nibble-order cases and
+the column-before-row suffix. This layer does not serialize the complete K-PKE/KEM, identify the
+NTT representation with coefficient form, prove seed-derived uniformity or security, or claim
+constant-time execution or FIPS validation.
 
 For multi-block symmetric modes of operation over `BitString n`, import
 [`BlockCipher/Modes.lean`](../../CslibFrontier/Crypto/Primitives/BlockCipher/Modes.lean)

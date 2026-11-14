@@ -30,8 +30,10 @@ constrains its entire value, including all bits outside the specified width.
 ## Main results
 
 * `Cslib.BitString.packRadix_field`: exact radix-field decoding.
+* `Cslib.BitString.packWords_congr`: packed words depend only on their in-range input bits.
 * `Cslib.BitString.readPackedField_packWords`: exact field decoding.
 * `Cslib.BitString.readPackedField_fields`: decoding fixed-width consecutive fields.
+* `Cslib.BitString.packWords_readPackedField`: repacking consecutive fields recovers the words.
 -/
 
 @[expose] public section
@@ -48,9 +50,45 @@ def packWords (f : ℕ → Bool) (h B : ℕ) (r : Fin B) : ℕ :=
 theorem packWords_lt (f : ℕ → Bool) (h B : ℕ) (r : Fin B) :
     packWords f h B r < 2 ^ h := Nat.ofBits_lt_two_pow _
 
+/-- Packed words agree when their input streams agree throughout the represented capacity. -/
+theorem packWords_congr {f g : ℕ → Bool} {h B : ℕ}
+    (heq : ∀ a < B * h, f a = g a) : packWords f h B = packWords g h B := by
+  funext r
+  apply Nat.eq_of_testBit_eq
+  intro b
+  by_cases hb : b < h
+  · rw [packWords, packWords, Nat.testBit_ofBits_lt _ _ hb,
+      Nat.testBit_ofBits_lt _ _ hb]
+    apply heq
+    have hr : (r.val + 1) * h ≤ B * h :=
+      Nat.mul_le_mul_right h (Nat.succ_le_iff.mpr r.isLt)
+    omega
+  · rw [packWords, packWords, Nat.testBit_ofBits_ge _ _ hb,
+      Nat.testBit_ofBits_ge _ _ hb]
+
 /-- Read one bit of a fixed tuple; unused addresses are false. -/
 def readPackedBit {B : ℕ} (h : ℕ) (w : Fin B → ℕ) (a : ℕ) : Bool :=
   decide (∃ r : Fin B, ∃ b : Fin h, r.val * h + b.val = a ∧ (w r).testBit b.val = true)
+
+/-- An in-range packed bit is the corresponding bit of its containing word. -/
+theorem readPackedBit_eq_word {B h a : ℕ} (hh : 0 < h) (w : Fin B → ℕ) (ha : a < B * h) :
+    readPackedBit h w a =
+      (w ⟨a / h, (Nat.div_lt_iff_lt_mul hh).mpr ha⟩).testBit (a % h) := by
+  apply Bool.eq_iff_iff.mpr
+  simp only [readPackedBit, decide_eq_true_eq]
+  constructor
+  · rintro ⟨r, b, heq, hbit⟩
+    have hdiv : a / h = r.val := by
+      rw [← heq, Nat.mul_add_div hh, Nat.div_eq_of_lt b.isLt, Nat.add_zero]
+    have hmod : a % h = b.val := by
+      rw [← heq, Nat.mul_add_mod_self_left, Nat.mod_eq_of_lt b.isLt]
+    have hr : (⟨a / h, (Nat.div_lt_iff_lt_mul hh).mpr ha⟩ : Fin B) = r := Fin.ext hdiv
+    rw [hr, hmod]
+    exact hbit
+  · intro hbit
+    refine ⟨⟨a / h, (Nat.div_lt_iff_lt_mul hh).mpr ha⟩,
+      ⟨a % h, Nat.mod_lt _ hh⟩, ?_, hbit⟩
+    simpa only [Nat.mul_comm] using Nat.div_add_mod a h
 
 /-- Decode exactly `s` bits starting at address `a`, with every higher bit zero. -/
 def readPackedField {B : ℕ} (h : ℕ) (w : Fin B → ℕ) (a s : ℕ) : ℕ :=
@@ -106,6 +144,36 @@ theorem readPackedField_fields (v : ℕ → ℕ) {h B q s : ℕ} (hs : 0 < s)
   intro b hb
   rw [Nat.mul_comm q s, Nat.mul_add_div hs, Nat.div_eq_of_lt hb, Nat.add_zero,
     Nat.mul_add_mod_self_left, Nat.mod_eq_of_lt hb]
+
+/-- Splitting bounded words into consecutive fields and repacking those fields recovers every
+word, including when a field crosses a word boundary. -/
+theorem packWords_readPackedField {h B s : ℕ} (hh : 0 < h) (hs : 0 < s)
+    (w : Fin B → ℕ) (hw : ∀ r, w r < 2 ^ h) :
+    packWords
+        (fun a => (readPackedField h w (a / s * s) s).testBit (a % s)) h B = w := by
+  funext r
+  apply Nat.eq_of_testBit_eq
+  intro b
+  by_cases hb : b < h
+  · rw [packWords, Nat.testBit_ofBits_lt _ _ hb, readPackedField,
+      Nat.testBit_ofBits_lt _ _ (Nat.mod_lt _ hs)]
+    have haddress : (r.val * h + b) / s * s + (r.val * h + b) % s = r.val * h + b := by
+      simpa only [Nat.mul_comm] using Nat.div_add_mod (r.val * h + b) s
+    rw [haddress]
+    have ha : r.val * h + b < B * h := by
+      have hr : (r.val + 1) * h ≤ B * h :=
+        Nat.mul_le_mul_right h (Nat.succ_le_iff.mpr r.isLt)
+      omega
+    rw [readPackedBit_eq_word hh w ha]
+    have hdiv : (r.val * h + b) / h = r.val := by
+      rw [Nat.mul_add_div hh, Nat.div_eq_of_lt hb, Nat.add_zero]
+    have hmod : (r.val * h + b) % h = b := by
+      rw [Nat.mul_add_mod_self_left, Nat.mod_eq_of_lt hb]
+    rw [show (⟨(r.val * h + b) / h, (Nat.div_lt_iff_lt_mul hh).mpr ha⟩ : Fin B) = r by
+      exact Fin.ext hdiv, hmod]
+  · rw [packWords, Nat.testBit_ofBits_ge _ _ hb]
+    exact (Nat.testBit_lt_two_pow (lt_of_lt_of_le (hw r)
+      (Nat.pow_le_pow_right (by decide) (show h ≤ b by omega)))).symm
 
 /-- Pack `n` radix-`base` fields, least significant field first. -/
 def packRadix (base n : ℕ) (f : ℕ → ℕ) : ℕ :=
