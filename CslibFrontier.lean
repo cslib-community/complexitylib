@@ -6355,6 +6355,7 @@ public import CslibFrontier.Languages.Probabilistic.Vector
 public import CslibFrontier.Languages.SQL.Column
 public import CslibFrontier.Languages.SQL.Equiv
 public import CslibFrontier.Languages.SQL.Expr
+public import CslibFrontier.Languages.SQL.JoinSize
 public import CslibFrontier.Languages.SQL.Query
 public import CslibFrontier.Languages.SQL.QueryEquiv
 public import CslibFrontier.Languages.SQL.Row

@@ -55,6 +55,8 @@ SQL `NULL` keys are, a pair matches only on a common present key, and the pairs 
 * `Cslib.Streaming.one_le_maxFreq`, `Cslib.Streaming.two_le_maxFreq_of_not_nodup`,
   `Cslib.Streaming.maxFreq_le_one_iff`: `F∞` is at least `1` on nonempty streams, and at most `1`
   exactly on streams of distinct items.
+* `Cslib.Streaming.joinSize_eq_sum_of_subset`: the join size sums over any set of items containing
+  those of the first stream.
 * `Cslib.Streaming.joinSize_eq_sum_map_count`, `Cslib.Streaming.length_filter_product_eq_joinSize`,
   `Cslib.Streaming.length_filter_product_eq_joinSize_filterMap`: the join size sums, over the items
   of the first stream, their counts in the second, so it counts the pairs of an equijoin, with
@@ -164,6 +166,7 @@ theorem joinSize_eq_sum_of_subset {u v : List α} {T : Finset α} (hT : u.toFins
   rw [List.mem_toFinset, ← List.count_eq_zero] at ha
   rw [ha, zero_mul]
 
+/-- The join size is symmetric: `|F ⋈ G| = |G ⋈ F|`. -/
 theorem joinSize_comm (u v : List α) : joinSize u v = joinSize v u := by
   rw [joinSize_eq_sum_of_subset (T := u.toFinset ∪ v.toFinset) Finset.subset_union_left,
     joinSize_eq_sum_of_subset (T := u.toFinset ∪ v.toFinset) Finset.subset_union_right]
