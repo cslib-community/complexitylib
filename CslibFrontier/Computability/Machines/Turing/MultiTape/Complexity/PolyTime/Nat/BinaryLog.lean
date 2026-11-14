@@ -28,6 +28,8 @@ never expand the input natural into a unary word.
 * `Turing.MultiTapeTM.ComputableInPolyTime.binary_clog_two_nat`, `.binary_clog_two_nat'`:
   ceiling logarithm from binary input to binary output (`encNat` to `encNat`), and its
   compositional rule.
+* `Turing.MultiTapeTM.ComputableInPolyTime.unary_lt_two_pow'`: compare a computed unary natural
+  against `2 ^ L` for a computed unary exponent `L` via binary conversion and `binary_two_pow`.
 
 ## References
 
@@ -78,5 +80,14 @@ theorem binary_clog_two_nat' {α : Type} {input : α ↪ List Bool} {f : α → 
     (hf : ComputableInPolyTime f input encNat) :
     ComputableInPolyTime (fun a => Nat.clog 2 (f a)) input encNat :=
   binary_clog_two_nat.comp hf
+
+/-- Compare a computed unary natural `j a` with `2 ^ L a` for a computed unary exponent `L a` by
+converting `j a` to binary and computing `2 ^ L a` in binary. -/
+@[fun_prop]
+theorem unary_lt_two_pow' {γ : Type} {encIn : γ ↪ List Bool}
+    {L j : γ → ℕ} (hL : ComputableInPolyTime L encIn encUnary)
+    (hj : ComputableInPolyTime j encIn encUnary) :
+    ComputableInPolyTime (fun a => decide (j a < 2 ^ L a)) encIn encBool :=
+  binary_lt' (unary_to_binary.comp hj) (binary_two_pow.comp hL)
 
 end Turing.MultiTapeTM.ComputableInPolyTime
