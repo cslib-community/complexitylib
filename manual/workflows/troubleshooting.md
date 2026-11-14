@@ -93,6 +93,30 @@ When running the audit directly with `CI` set, per-file progress is quiet by def
 it locally. Both modes retain all selected checks, failure messages and the final summary;
 the full and quick wrappers explicitly request progress.
 
+## Diagnose a cache-audit signal-control failure
+
+The installed-toolchain Linux tests in `scripts/test_check_cache_restores.py` wait up to
+60 seconds for two distinct live Lean children before sending SIGINT or SIGTERM. The six-second
+cleanup bound starts at the signal, so cold startup does not consume that budget. A readiness
+timeout interrupts only the fixture's owned audit for cleanup and fails explicitly; it does not
+establish a production cleanup regression. The failure includes partial PID-file contents,
+process states, worker timings/results and captured audit output. Use those records to distinguish
+slow startup from a failed worker before changing cleanup code.
+These records describe the state before the fixture's rescue backstop: after assessing the audit,
+it terminates still-live retained launchers and their descendants, then reaps the launchers.
+Rescue does not turn a failing control into a pass, and arbitrary integers from PID files are
+never rescue targets.
+
+From an isolated checkout with the pinned Lean toolchain installed, run both real controls and
+their portable readiness regressions with:
+
+```bash
+python3 -B -m unittest discover -s scripts -p test_check_cache_restores.py
+```
+
+Both real signal controls require Linux process-state inspection; a skipped control is not
+evidence that cleanup passed.
+
 ## Diagnose "failed to read file" on whole-library imports
 
 On Linux hosts and containers with the stock kernel default `vm.max_map_count = 65530`, focused module builds and `lake build CslibFrontier` can succeed while whole-library importers (`CslibFrontierTests/Smoke.lean`, `CslibFrontierTests/Axioms.lean`, `lake lint`, and `lake exe checkInitImports`) fail with bare errors such as `uncaught exception: failed to read file … .olean` or `.olean.private`, even though the named file is intact, readable, has a matching toolchain header, and imports cleanly in isolation ([#5012](https://github.com/cslib-community/cslib-frontier/issues/5012)).
