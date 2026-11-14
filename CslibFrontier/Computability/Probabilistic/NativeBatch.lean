@@ -205,22 +205,12 @@ holding at its next accepted source batch before sampling that batch's response.
   StoppedProcess.beforeBoundary (phaseStep machine (environment limits sample))
     (sourceBoundary limits)
 
-/-- Silent execution, including rejected transactions, is independent of the
-joint oracle sampler. Accepted source batches are held before sampling. -/
-theorem sourceSilent_independent (other : Sampler n Private) :
-    sourceSilent (input := input) limits sample machine = sourceSilent limits other machine := by
-  funext phase
-  cases phase with
-  | ready world => rfl
-  | pending chosen =>
-    cases chosen with
-    | halted world => rfl
-    | «local» next => rfl
-    | query world op next =>
-      cases op
-      cases ha : admit limits world.memory.privateState (world.config.channels ()).queryBuffer <;>
-        simp [sourceSilent, StoppedProcess.beforeBoundary, sourceBoundary, phaseStep,
-          dispatch, environment, serve, ha]
+/-- A selected accepted batch or committed halt is held before source sampling. -/
+theorem sourceSilent_absorbs
+    (phase : Phase k Control Unit (ServerState n Private) input)
+    (h : sourceBoundary limits phase) :
+    sourceSilent limits sample machine phase = PMF.pure phase :=
+  StoppedProcess.beforeBoundary_absorbs _ _ phase h
 
 /-- Actual selected/dispatch interface ticks preserve source feasibility and joint meters. -/
 theorem phase_invariant
@@ -274,7 +264,7 @@ private theorem silent_invariant
 @[expose] def seekSource (world : World k Control Unit (ServerState n Private) input) :
     PMF (Option (Phase k Control Unit (ServerState n Private) input)) :=
   StoppedProcess.terminal (sourceSilent limits sample machine) (sourceBoundary limits)
-    (StoppedProcess.beforeBoundary_absorbs _ _) (.ready world)
+    (sourceSilent_absorbs limits sample machine) (.ready world)
 
 /-- Every actually reached source boundary is source feasible and retains
 exact native/source joint resources and provenance, even before its response. -/
@@ -334,7 +324,7 @@ theorem source_restart (world : World k Control Unit (ServerState n Private) inp
     PMF (Option (Phase k Control Unit (ServerState n Private) input))
   | none => PMF.pure none
   | some phase => StoppedProcess.terminal (sourceSilent limits sample machine)
-      (sourceBoundary limits) (StoppedProcess.beforeBoundary_absorbs _ _) phase
+      (sourceBoundary limits) (sourceSilent_absorbs limits sample machine) phase
 
 /-- Respond only after a source boundary has been selected. The complete hidden
 native configuration and oracle state are retained. Divergence stays divergent. -/

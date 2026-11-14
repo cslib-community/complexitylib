@@ -3587,6 +3587,7 @@ public import CslibFrontier.Computability.Probabilistic.NativeBatch.Coverage
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.Deadline
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.History
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.InitialEpoch
+public import CslibFrontier.Computability.Probabilistic.NativeBatch.Memory
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.PathCost
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.ProgressComparison
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.Quantitative
@@ -6497,6 +6498,7 @@ public import CslibFrontier.Probability.StochasticOracle.AdaptiveStopping
 public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.Codec
 public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.FiniteOracle
 public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.FlatEncoding
+public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.Memory
 public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.Mixture
 public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.Protocol
 public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.Resources
