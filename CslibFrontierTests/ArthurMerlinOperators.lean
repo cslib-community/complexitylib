@@ -10,6 +10,8 @@ import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.Operators
 
 /-! Clients of the native BP·NP equality, including nonconstant and empty message blocks. -/
 
+set_option linter.privateModule false
+
 open Cslib.Complexity Turing.MultiTapeTM
 
 private theorem univ_mem_AM {α : Type} (enc : α ↪ List Bool) (p q : Polynomial ℕ) :
