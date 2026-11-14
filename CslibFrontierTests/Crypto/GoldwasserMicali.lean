@@ -21,8 +21,11 @@ Concrete evaluation and non-vacuity checks for
   yet broken with exact IND-CPA advantage `1` (hence non-negligible) by the certified uniform
   strict-PPT `jacobiAttackAdversary`, whereas `z = 4 ∈ QR_{21}` breaks decryption correctness and
   collapses ciphertext distributions;
+* Blum-modulus key generation `blumKeyGen` on the constant modulus `21`: its public key, uniform
+  strict PPT, and correctness;
 * concrete client instantiations of `isPPTOn_qrDistinguisher`, `isPPTOn_qrWordDistinguisher`,
-  `indcpa_goldwasserMicali`, and `indcpaOn_goldwasserMicali_bits`.
+  `isPPTOn_blumQRDistinguisher`, the headline `indcpa_blumGoldwasserMicali`, and the ideal-key-law
+  statements `indistinguishable_publicKeyGame` and `indistinguishable_publicKeyWordGame`.
 -/
 
 namespace CslibFrontierTests.Crypto.GoldwasserMicali
@@ -122,6 +125,31 @@ example (m : Bool) :
   rw [hpk]
   exact rerandomize_idealEncrypt_eq k21.modulus k21.zUnit 1 m
 
+/-! ### Blum-modulus key generation on the constant modulus `21` -/
+
+/-- `ModulusDesc` is encoded as the binary pair `(p, q)`. -/
+example (d : ModulusDesc) : encModulusDesc d = encPair encNat encNat (d.p, d.q) := rfl
+
+/-- The Blum public key at `N = 21` is the `k21` public key `⟨21, 20⟩`. -/
+example : blumPublicKey 21 = encPair encNat encNat (k21.modulus, k21.z) := rfl
+
+noncomputable def constBlumGen : ℕ → ProbComp ModulusDesc := fun _ => pure d21
+
+theorem isBlum_constBlumGen (n : ℕ) :
+    ∀ d ∈ (ProbComp.eval (constBlumGen n)).support, IsBlumModulus d.p d.q := by
+  intro d hd
+  simp only [constBlumGen, ProbComp.eval_pure, PMF.support_pure, Set.mem_singleton_iff] at hd
+  exact hd ▸ isBlumModulus_3_7
+
+example : IsPPTOn encUnary (encPair encBits encBits) (blumKeyGen constBlumGen) :=
+  isPPTOn_blumKeyGen (ComputableInPolyTime.const d21).isPPTOn
+
+example (n : ℕ) {keys : List Bool × List Bool}
+    (hkeys : keys ∈ (ProbComp.eval (blumKeyGen constBlumGen n)).support) (m : Bool)
+    {ct : List Bool} (hct : ct ∈ (ProbComp.eval (encrypt n keys.1 m)).support) :
+    decrypt keys.2 ct = m :=
+  decrypt_encrypt_blumKeyGen (isBlum_constBlumGen n) hkeys m hct
+
 /-! ### Non-vacuity and bad-`z` insecurity witnesses at `N = 21` -/
 
 def badZ2 : (ZMod (d21.p * d21.q))ˣ := ZMod.unitOfCoprime 2 (by decide)
@@ -165,18 +193,32 @@ theorem constBitAdversary_isPPT : constBitAdversary.IsPPT where
   choose := (ComputableInPolyTime.const ((false, true), ([] : List Bool))).isPPTOn
   guess := (ComputableInPolyTime.const true).isPPTOn
 
-example : IsPPTOn (encPair encUnary (encPair encNat encNat)) encBool
+example : IsPPTOn encQRInput encBool
     (fun input => qrDistinguisher constBitAdversary input.1 input.2) :=
   isPPTOn_qrDistinguisher constBitAdversary_isPPT
 
-example {setup : ℕ → PMF ModulusDesc} {gen : ℕ → ProbComp KeyDesc}
+example : IsPPTOn encQRInput encBool
+    (fun input => blumQRDistinguisher constBitAdversary input.1 input.2) :=
+  isPPTOn_blumQRDistinguisher constBitAdversary_isPPT
+
+/-- The headline theorem: quadratic residuosity relative to a Blum-modulus generator with `n`-bit
+primes is the only assumption. -/
+example {gen : ℕ → ProbComp ModulusDesc}
+    (hblum : ∀ n, ∀ d ∈ (ProbComp.eval (gen n)).support, IsBlumModulus d.p d.q)
+    (hsize : ∀ n, ∀ d ∈ (ProbComp.eval (gen n)).support, n ≤ d.p.size ∧ n ≤ d.q.size)
+    (hQR : QuadraticResiduosityHard fun n => ProbComp.eval (gen n)) :
+    Negligible fun n =>
+      Encryption.advantage (Encryption.game (blumKeyGen gen) encrypt constBitAdversary) n :=
+  indcpa_blumGoldwasserMicali hblum hsize hQR constBitAdversary constBitAdversary_isPPT
+
+example {setup : ℕ → PMF ModulusDesc}
     (hsize : ∀ n, ∀ d ∈ (setup n).support, n ≤ d.p.size ∧ n ≤ d.q.size)
-    (hkeys : ComputationallyIndistinguishable
-      (fun n => (ProbComp.eval (keyGen gen n)).map Prod.fst) (publicKeyLaw setup))
     (hQR : QuadraticResiduosityHard setup) :
     Negligible fun n =>
-      Encryption.advantage (Encryption.game (keyGen gen) encrypt constBitAdversary) n :=
-  indcpa_goldwasserMicali hsize hkeys hQR constBitAdversary constBitAdversary_isPPT
+      Game.advantage
+        (Encryption.publicKeyGame (publicKeyLaw setup n) encrypt constBitAdversary false n)
+        (Encryption.publicKeyGame (publicKeyLaw setup n) encrypt constBitAdversary true n) :=
+  indistinguishable_publicKeyGame hsize hQR constBitAdversary constBitAdversary_isPPT
 
 noncomputable def constWordAdversary : Encryption.WordAdversary where
   choose _ _ := pure (([false, false], [true, false]), [])
@@ -187,19 +229,17 @@ theorem constWordAdversary_isPPT : constWordAdversary.IsPPT where
     (ComputableInPolyTime.const (([false, false], [true, false]), ([] : List Bool))).isPPTOn
   guess := (ComputableInPolyTime.const true).isPPTOn
 
-example : IsPPTOn (encPair encUnary (encPair encNat encNat)) encBool
+example : IsPPTOn encQRInput encBool
     (fun input => qrWordDistinguisher id constWordAdversary input.1 input.2) :=
   isPPTOn_qrWordDistinguisher .id' constWordAdversary_isPPT
 
-example {setup : ℕ → PMF ModulusDesc} {gen : ℕ → ProbComp KeyDesc}
+example {setup : ℕ → PMF ModulusDesc}
     (hsize : ∀ n, ∀ d ∈ (setup n).support, n ≤ d.p.size ∧ n ≤ d.q.size)
-    (hkeys : ComputationallyIndistinguishable
-      (fun n => (ProbComp.eval (keyGen gen n)).map Prod.fst) (publicKeyLaw setup))
     (hQR : QuadraticResiduosityHard setup) :
     Negligible fun n =>
-      Encryption.advantage
-        (Encryption.gameOn (validBoundedWords id) (keyGen gen) encryptWord constWordAdversary)
-        n :=
-  indcpaOn_goldwasserMicali_bits .id' hsize hkeys hQR constWordAdversary constWordAdversary_isPPT
+      Game.advantage
+        (publicKeyWordGame id (publicKeyLaw setup n) constWordAdversary false n)
+        (publicKeyWordGame id (publicKeyLaw setup n) constWordAdversary true n) :=
+  indistinguishable_publicKeyWordGame .id' hsize hQR constWordAdversary constWordAdversary_isPPT
 
 end CslibFrontierTests.Crypto.GoldwasserMicali

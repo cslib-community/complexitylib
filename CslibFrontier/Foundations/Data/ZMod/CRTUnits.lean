@@ -12,6 +12,7 @@ public import CslibFrontier.Init
 public import Mathlib.Data.ZMod.Units
 public import Mathlib.FieldTheory.Finite.Basic
 import Mathlib.GroupTheory.SpecificGroups.Cyclic
+import Mathlib.NumberTheory.LegendreSymbol.QuadraticChar.Basic
 
 /-!
 # The Chinese remainder theorem on units, and squares modulo a prime
@@ -34,6 +35,8 @@ Section 15.4).
   components are.
 * `ZMod.two_mul_card_squares_units`, `ZMod.card_nonsquares_units`: an odd prime `p` has as many
   square units as nonsquare units, `(p - 1) / 2` of each.
+* `ZMod.isSquare_mul_of_not_isSquare_units`: the product of two nonsquare units modulo a prime is
+  a square.
 
 ## References
 
@@ -103,5 +106,14 @@ theorem card_nonsquares_units (p : ℕ) [Fact p.Prime] (hp : 2 < p) :
   rw [Finset.card_univ] at h
   have := two_mul_card_squares_units p hp
   omega
+
+/-- The product of two nonsquare units modulo a prime is a square: the quadratic character takes
+the value `-1` on each factor. -/
+theorem isSquare_mul_of_not_isSquare_units {p : ℕ} [Fact p.Prime] {u v : (ZMod p)ˣ}
+    (hu : ¬ IsSquare u) (hv : ¬ IsSquare v) : IsSquare (u * v) := by
+  rw [← Units.isSquare_coe_iff] at hu hv ⊢
+  rw [← quadraticChar_one_iff_isSquare (u * v).ne_zero, Units.val_mul, map_mul,
+    quadraticChar_neg_one_iff_not_isSquare.mpr hu, quadraticChar_neg_one_iff_not_isSquare.mpr hv,
+    neg_one_mul, neg_neg]
 
 end ZMod
