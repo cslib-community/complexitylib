@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Karn Seth. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Karn Seth
+Authors: Karn Seth, Samuel Schlesinger
 -/
 
 module
@@ -31,7 +31,7 @@ for the exact arithmetic it exploits; none of them uses a hardness assumption.
 * **Factoring from `φ(N)`.** `N = p * q` and `φ(N) = (p - 1) * (q - 1)` determine `p + q` and
   `(p - q) ^ 2`, hence `p` and `q` (`factorOfTotient`).
 * **Factoring from `(N, e, d)` and nontrivial square roots of `1`.** Every unit `x` modulo `N`
-  satisfies `x ^ (e * d - 1) ≡ 1`, and for any modulus `N > 1`, a square root `y` of `1` modulo
+  satisfies `x ^ (e * d - 1) ≡ 1`, and for any `N` and `y`, a square root `y` of `1` modulo
   `N` other than `±1` gives the proper factors `gcd(y - 1, N)` and `gcd(y + 1, N)`
   (`gcd_sub_one_proper_of_sq_modEq_one`, `gcd_add_one_proper_of_sq_modEq_one`)
   [Arora–Barak, Lemma 20.24][AroraBarak07].
@@ -56,7 +56,7 @@ for the exact arithmetic it exploits; none of them uses a hardness assumption.
   `Cslib.Crypto.gcd_add_one_proper_of_sq_modEq_one`,
   `Cslib.Crypto.RSADesc.pow_mul_sub_one_modEq_one`, `Cslib.Crypto.RSADesc.gcd_sub_one_proper`,
   `Cslib.Crypto.RSADesc.gcd_add_one_proper`: factoring from a nontrivial square root of `1` modulo
-  `N > 1`, and the number-theoretic steps of factoring from `(N, e, d)`.
+  `N`, and the number-theoretic steps of factoring from `(N, e, d)`.
 
 ## Implementation notes
 
@@ -231,22 +231,33 @@ private theorem dvd_sub_one_mul_add_one_of_sq_modEq_one {N y : ℕ} (hN : 1 < N)
     rw [show 1 + z - 1 = z by omega, show (1 + z) ^ 2 = z * (1 + z + 1) + 1 by ring]
     omega] at h
 
-/-- **Nontrivial square root of `1` gives a proper factor (`gcd(y - 1, N)`)**: for any modulus
-`N > 1`, if `y ^ 2 ≡ 1 [MOD N]`, `y ≢ 1 [MOD N]`, and `y + 1 ≢ 0 [MOD N]`, then `gcd(y - 1, N)`
-is a proper factor of `N` [Arora–Barak, Lemma 20.24][AroraBarak07]. -/
-theorem gcd_sub_one_proper_of_sq_modEq_one {N y : ℕ} (hN : 1 < N) (hsq : y ^ 2 ≡ 1 [MOD N])
+/-- If `y ^ 2 ≡ 1 [MOD N]` and `y ≢ 1 [MOD N]`, then `1 < N`. -/
+private theorem one_lt_of_sq_modEq_one {N y : ℕ} (hsq : y ^ 2 ≡ 1 [MOD N])
+    (hone : ¬ y ≡ 1 [MOD N]) : 1 < N := by
+  rcases N with _ | _ | N
+  · simp only [Nat.ModEq, Nat.mod_zero] at hsq hone
+    exact False.elim (hone (by nlinarith))
+  · exact False.elim (hone (by simp [Nat.ModEq, Nat.mod_one]))
+  · omega
+
+/-- **Nontrivial square root of `1` gives a proper factor (`gcd(y - 1, N)`)**: for any `N` and `y`,
+if `y ^ 2 ≡ 1 [MOD N]`, `y ≢ 1 [MOD N]`, and `y + 1 ≢ 0 [MOD N]`, then `gcd(y - 1, N)` is a proper
+factor of `N` [Arora–Barak, Lemma 20.24][AroraBarak07]. -/
+theorem gcd_sub_one_proper_of_sq_modEq_one {N y : ℕ} (hsq : y ^ 2 ≡ 1 [MOD N])
     (hone : ¬ y ≡ 1 [MOD N]) (hneg : ¬ y + 1 ≡ 0 [MOD N]) :
     1 < Nat.gcd (y - 1) N ∧ Nat.gcd (y - 1) N < N := by
+  have hN : 1 < N := one_lt_of_sq_modEq_one hsq hone
   obtain ⟨hy, hdvd⟩ := dvd_sub_one_mul_add_one_of_sq_modEq_one hN hsq
   exact proper_gcd_of_dvd_mul hN hdvd (fun h => hone ((Nat.modEq_iff_dvd' hy).mpr h).symm)
     (fun h => hneg (Nat.modEq_zero_iff_dvd.mpr h))
 
-/-- **Nontrivial square root of `1` gives a proper factor (`gcd(y + 1, N)`)**: for any modulus
-`N > 1`, if `y ^ 2 ≡ 1 [MOD N]`, `y ≢ 1 [MOD N]`, and `y + 1 ≢ 0 [MOD N]`, then `gcd(y + 1, N)`
-is a proper factor of `N` [Arora–Barak, Lemma 20.24][AroraBarak07]. -/
-theorem gcd_add_one_proper_of_sq_modEq_one {N y : ℕ} (hN : 1 < N) (hsq : y ^ 2 ≡ 1 [MOD N])
+/-- **Nontrivial square root of `1` gives a proper factor (`gcd(y + 1, N)`)**: for any `N` and `y`,
+if `y ^ 2 ≡ 1 [MOD N]`, `y ≢ 1 [MOD N]`, and `y + 1 ≢ 0 [MOD N]`, then `gcd(y + 1, N)` is a proper
+factor of `N` [Arora–Barak, Lemma 20.24][AroraBarak07]. -/
+theorem gcd_add_one_proper_of_sq_modEq_one {N y : ℕ} (hsq : y ^ 2 ≡ 1 [MOD N])
     (hone : ¬ y ≡ 1 [MOD N]) (hneg : ¬ y + 1 ≡ 0 [MOD N]) :
     1 < Nat.gcd (y + 1) N ∧ Nat.gcd (y + 1) N < N := by
+  have hN : 1 < N := one_lt_of_sq_modEq_one hsq hone
   obtain ⟨hy, hdvd⟩ := dvd_sub_one_mul_add_one_of_sq_modEq_one hN hsq
   exact proper_gcd_of_dvd_mul hN (mul_comm (y - 1) (y + 1) ▸ hdvd)
     (fun h => hneg (Nat.modEq_zero_iff_dvd.mpr h))
@@ -284,14 +295,14 @@ factor `gcd(y - 1, N)` of `N`. -/
 theorem gcd_sub_one_proper (desc : RSADesc) {y : ℕ} (hsq : y ^ 2 ≡ 1 [MOD desc.modulus])
     (hone : ¬ y ≡ 1 [MOD desc.modulus]) (hneg : ¬ y + 1 ≡ 0 [MOD desc.modulus]) :
     1 < Nat.gcd (y - 1) desc.modulus ∧ Nat.gcd (y - 1) desc.modulus < desc.modulus :=
-  gcd_sub_one_proper_of_sq_modEq_one desc.modulus_gt_one hsq hone hneg
+  gcd_sub_one_proper_of_sq_modEq_one hsq hone hneg
 
 /-- A square root `y` of `1` modulo an RSA modulus `N = p * q`, other than `±1`, gives a proper
 factor `gcd(y + 1, N)` of `N`. -/
 theorem gcd_add_one_proper (desc : RSADesc) {y : ℕ} (hsq : y ^ 2 ≡ 1 [MOD desc.modulus])
     (hone : ¬ y ≡ 1 [MOD desc.modulus]) (hneg : ¬ y + 1 ≡ 0 [MOD desc.modulus]) :
     1 < Nat.gcd (y + 1) desc.modulus ∧ Nat.gcd (y + 1) desc.modulus < desc.modulus :=
-  gcd_add_one_proper_of_sq_modEq_one desc.modulus_gt_one hsq hone hneg
+  gcd_add_one_proper_of_sq_modEq_one hsq hone hneg
 
 end RSADesc
 

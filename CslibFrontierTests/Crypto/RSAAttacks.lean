@@ -86,14 +86,14 @@ example : 1 < Nat.gcd (10 + 1) rsa33.modulus ∧ Nat.gcd (10 + 1) rsa33.modulus 
 composite moduli such as `N = 8` (`3 ^ 2 ≡ 1 [MOD 8]` and `3 ≢ ±1 [MOD 8]`) and `N = 45`
 (`19 ^ 2 ≡ 1 [MOD 45]`). -/
 example : 1 < Nat.gcd (3 - 1) 8 ∧ Nat.gcd (3 - 1) 8 < 8 :=
-  gcd_sub_one_proper_of_sq_modEq_one (by decide) (by decide) (by decide) (by decide)
+  gcd_sub_one_proper_of_sq_modEq_one (by decide) (by decide) (by decide)
 
 example : 1 < Nat.gcd (19 - 1) 45 ∧ Nat.gcd (19 - 1) 45 < 45 ∧
     1 < Nat.gcd (19 + 1) 45 ∧ Nat.gcd (19 + 1) 45 < 45 :=
-  ⟨(gcd_sub_one_proper_of_sq_modEq_one (by decide) (by decide) (by decide) (by decide)).1,
-   (gcd_sub_one_proper_of_sq_modEq_one (by decide) (by decide) (by decide) (by decide)).2,
-   (gcd_add_one_proper_of_sq_modEq_one (by decide) (by decide) (by decide) (by decide)).1,
-   (gcd_add_one_proper_of_sq_modEq_one (by decide) (by decide) (by decide) (by decide)).2⟩
+  ⟨(gcd_sub_one_proper_of_sq_modEq_one (by decide) (by decide) (by decide)).1,
+   (gcd_sub_one_proper_of_sq_modEq_one (by decide) (by decide) (by decide)).2,
+   (gcd_add_one_proper_of_sq_modEq_one (by decide) (by decide) (by decide)).1,
+   (gcd_add_one_proper_of_sq_modEq_one (by decide) (by decide) (by decide)).2⟩
 
 example : Nat.gcd (10 - 1) 33 = 3 := by decide
 
