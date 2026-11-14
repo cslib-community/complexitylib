@@ -163,15 +163,14 @@ private theorem poly_max : ComputableInPolyTime
 
 private theorem poly_maxList : ComputableInPolyTime (fun xs : List ℕ => xs.foldl max 0)
     (encList encNat) encNat := by
-  apply ComputableInPolyTime.of_tidy
-  apply ComputableTidilyInPolyTime.foldlWithInput_of_bounded_growth
+  apply ComputableInPolyTime.foldlWithInput_of_bounded_growth
     (encA := encNat) (encL := encList encNat) (encB := encNat)
     (growth := fun xs => (encList encNat xs).length)
-    (ComputableInPolyTime.const 0).tidy
-  · refine ⟨(ComputableInPolyTime.id' (encIn := encList encNat)).tidy, ?_,
+    (ComputableInPolyTime.const 0)
+  · refine ⟨(ComputableInPolyTime.id' (encIn := encList encNat)), ?_,
       inferInstance, inferInstance⟩
     exact (poly_max.comp ((ComputableInPolyTime.fst _ _).snd'.prod
-      (ComputableInPolyTime.snd _ _))).tidy
+      (ComputableInPolyTime.snd _ _)))
   · refine ⟨PolyBounded.self, ?_⟩
     intro xs state value hv
     have hb := length_le_encList_of_mem encNat hv
@@ -208,17 +207,16 @@ private theorem poly_positions : ComputableInPolyTime
   have hrange : ComputableInPolyTime List.range encUnary (encList encNat) := by
     have h := ComputableInPolyTime.map ComputableInPolyTime.unary_to_binary
     simpa only [Function.comp_def, List.map_id'] using h.comp
-      (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.range)
+      (ComputableInPolyTime.range)
   unfold Blossom.positions
   simp only [List.contains_eq_mem]
   apply ComputableInPolyTime.filterWithInput (hrange.comp (by fun_prop))
-  have hl := ComputableTidilyInPolyTime.listGetD_binary (encA := encNat) 0
+  have hl := ComputableInPolyTime.listGetD_binary (encA := encNat) 0
     (show ComputableInPolyTime
       (fun p : (List ℕ × List ℕ) × ℕ => p.1.2)
       (encPair (encPair (encList encNat) (encList encNat)) encNat) (encList encNat)
-      from by fun_prop).tidy
-    (ComputableInPolyTime.snd _ _).tidy
-  have hlookup := ComputableInPolyTime.of_tidy hl
+      from by fun_prop)
+    (ComputableInPolyTime.snd _ _)
   fun_prop
 
 /-- Native composition on actual lists with binary names and positions. -/
@@ -242,7 +240,7 @@ theorem computableInPolyTime_nameReadWith {α : Type} {e : α ↪ List Bool}
     (hs : ComputableInPolyTime scope e (encList encNat))
     (hi : ComputableInPolyTime index e encNat) :
     ComputableInPolyTime (fun a => (scope a).getD (index a) 0) e encNat :=
-  .of_tidy (ComputableTidilyInPolyTime.listGetD_binary 0 hs.tidy hi.tidy)
+  (ComputableInPolyTime.listGetD_binary 0 hs hi)
 
 /-- Native composition on actual lists with binary names and positions. -/
 theorem computableInPolyTime_outsideWith {α : Type} {e : α ↪ List Bool}
@@ -286,11 +284,11 @@ theorem computableInPolyTime_connectors : ComputableInPolyTime
   have hs : ComputableInPolyTime
       (fun p : (CSP Table ℕ × List ℕ) × (Constraint Table ℕ × ℕ) => freshBase p.1.1 + p.2.2)
       (encPair encConnectorArgs (encPair (encConstraint encTable encNat) encUnary)) encNat :=
-    .of_tidy (ComputableTidilyInPolyTime.binary_add'
+    (ComputableInPolyTime.binary_add'
       (show ComputableInPolyTime
         (fun p : (CSP Table ℕ × List ℕ) × (Constraint Table ℕ × ℕ) => freshBase p.1.1)
         (encPair encConnectorArgs (encPair (encConstraint encTable encNat) encUnary))
-        encNat from by fun_prop).tidy hi.tidy)
+        encNat from by fun_prop) hi)
   apply ComputableInPolyTime.mapWithInput
     (show ComputableInPolyTime (fun p : CSP Table ℕ × List ℕ =>
       p.1.zipIdx.filter fun (c, _) => !(Blossom.positions p.2 c.scope).isEmpty)

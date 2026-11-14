@@ -44,6 +44,7 @@ theorem computableInPolyTime_initialBuffer : ComputableInPolyTime
       (encList (encList encBool)) := by
     unfold initialRows
     fun_prop
-  exact (ComputableInPolyTime.of_tidy (ComputableTidilyInPolyTime.flatten encBool)).comp hm
+  simpa only [List.flatten_eq_flatMap] using
+    ComputableInPolyTime.flatMapWithInput hm (ComputableInPolyTime.snd _ _)
 
 end Cslib.Complexity.CSP.EdgeSolver

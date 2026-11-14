@@ -77,9 +77,9 @@ theorem computableInPolyTime_port : ComputableInPolyTime
     (fun p : CSP Table ℕ × ℕ => EdgeAugmenting.recordAt p.1 p.2)
     (encPair (encCSP encTable encNat) encNat) encRecord := by
   unfold EdgeAugmenting.recordAt
-  exact .of_tidy (ComputableTidilyInPolyTime.listGetD_binary (0, 0, 0)
-    (EdgeAugmenting.poly_records.comp (ComputableInPolyTime.fst _ _)).tidy
-    (ComputableInPolyTime.snd _ _).tidy)
+  exact (ComputableInPolyTime.listGetD_binary (0, 0, 0)
+    (EdgeAugmenting.poly_records.comp (ComputableInPolyTime.fst _ _))
+    (ComputableInPolyTime.snd _ _))
 
 /-- Composition with captured binary-position walk inputs. -/
 theorem computableInPolyTime_portWith {α : Type} {e : α ↪ List Bool}
@@ -151,17 +151,16 @@ private theorem poly_dedup : ComputableInPolyTime (List.dedup (α := ℕ))
   let step : List ℕ → ℕ → List ℕ := fun acc a => if a ∈ acc then acc else a :: acc
   have hfold : ComputableInPolyTime (fun xs : List ℕ => xs.reverse.foldl step [])
       (encList encNat) (encList encNat) := by
-    apply ComputableInPolyTime.of_tidy
-    apply ComputableTidilyInPolyTime.foldlWithInput_of_bounded_growth
+    apply ComputableInPolyTime.foldlWithInput_of_bounded_growth
       (encA := encNat) (encL := encList encNat) (encB := encList encNat)
       (growth := fun xs => 2 * (encList encNat xs).length + 1)
-      (ComputableInPolyTime.const []).tidy
+      (ComputableInPolyTime.const [])
     · refine ⟨(show ComputableInPolyTime List.reverse (encList encNat) (encList encNat)
-        from by fun_prop).tidy, ?_, inferInstance, inferInstance⟩
+        from by fun_prop), ?_, inferInstance, inferInstance⟩
       exact (show ComputableInPolyTime
         (fun p : (List ℕ × List ℕ) × ℕ => step p.1.2 p.2)
         (encPair (encPair (encList encNat) (encList encNat)) encNat)
-        (encList encNat) from by unfold step; fun_prop).tidy
+        (encList encNat) from by unfold step; fun_prop)
     · refine ⟨((PolyBounded.const 2).mul PolyBounded.self).add (.const 1), ?_⟩
       intro xs acc a ha
       have hb := length_le_encList_of_mem encNat (List.mem_reverse.mp ha)

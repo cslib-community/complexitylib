@@ -116,10 +116,9 @@ theorem computableInPolyTime_safeImprove : ComputableInPolyTime safeImprove Edge
         hb.polyBounded_length
     exact hb'.add poly_start.polyBounded_length
   have hiter : ComputableInPolyTime (fun input => (loop input)^[clock input] (start input))
-      EdgeForest.encInput encState := .of_tidy
-    (ComputableTidilyInPolyTime.iterateWith
-      (ComputableInPolyTime.id' (encIn := EdgeForest.encInput)).tidy poly_clock.tidy
-      poly_start.tidy poly_loop.tidy hbudget (fun input n _ => loop_states input n))
+      EdgeForest.encInput encState := (ComputableInPolyTime.iterateWith
+      (ComputableInPolyTime.id' (encIn := EdgeForest.encInput)) poly_clock
+      poly_start poly_loop hbudget (fun input n _ => loop_states input n))
   have hresult := poly_guard.ite' (poly_output.comp hiter) (ComputableInPolyTime.const none)
   apply hresult.of_enc_eq
   intro input

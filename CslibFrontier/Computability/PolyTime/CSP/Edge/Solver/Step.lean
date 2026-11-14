@@ -48,8 +48,14 @@ private theorem poly_blossomCycle : ComputableInPolyTime NativeForest.BlossomCod
     NativeForest.encBlossomCode encWalkCode :=
   NativeForest.encBlossomCode_cycle_deg.computableInPolyTime
 private theorem poly_flatten : ComputableInPolyTime (List.flatten (α := Bool))
-    (encList (encList encBool)) (encList encBool) :=
-  .of_tidy (ComputableTidilyInPolyTime.flatten encBool)
+    (encList (encList encBool)) (encList encBool) := by
+  change ComputableInPolyTime (fun xs : List (List Bool) => xs.flatten)
+    (encList (encList encBool)) (encList encBool)
+  simpa only [List.flatten_eq_flatMap] using
+    ComputableInPolyTime.flatMapWithInput
+      (f := fun (_ : List (List Bool)) (xs : List Bool) => xs)
+      (ComputableInPolyTime.id' (encIn := encList (encList encBool)))
+      (ComputableInPolyTime.snd _ _)
 
 attribute [local fun_prop] EdgeForest.encInput_body_polyTime EdgeForest.encInput_labels_polyTime
   poly_parent poly_cycle poly_inputMk poly_frameMk
