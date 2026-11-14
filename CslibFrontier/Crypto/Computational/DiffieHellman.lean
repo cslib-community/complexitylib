@@ -54,8 +54,8 @@ A distinguisher outputs a bit, so `DDH` is the same assumption as its word-level
 distinguishers that read the encoded tuple (`ddh_iff_encoded`). A CDH adversary must output a group
 element, whereas a word-level adversary may output any word. `CDH`, and hence the conclusion of
 `DDH.cdh`, is therefore the textbook assumption, which is weaker than the word-level CDH assumption;
-[#4783](https://github.com/cslib-community/cslib-frontier/issues/4783) tracks restoring the
-word-level form for families with decodable encodings.
+`CslibFrontier.Crypto.Computational.DiffieHellman.Decodable` restores the word-level form and
+equivalence `CDH ↔ WordCDH` for `DecodablePrimeOrderGroupFamily` (`#4783`).
 
 We prove the implications `DDH ⇒ CDH ⇒ DiscreteLog` between the assumptions from the fixed-group
 bounds `Cslib.Crypto.dlAdvantage_le_cdhAdvantage_dlToCDH` and
@@ -419,9 +419,9 @@ theorem isPPT_cdhToDDHDistinguisher {adversary : F.CDHAdversary} (hA : adversary
 
 /-- **DDH implies CDH** when every supported group at parameter `n` has order at least `m n > 0`
 and `1 / m n` is negligible. The conclusion is the textbook CDH assumption against adversaries that
-output group elements, which is weaker than the word-level CDH assumption;
-[#4783](https://github.com/cslib-community/cslib-frontier/issues/4783) tracks the word-level
-form. -/
+output group elements, which is weaker than the word-level CDH assumption in general; see
+`DecodablePrimeOrderGroupFamily.DDH.wordCDH` in
+`CslibFrontier.Crypto.Computational.DiffieHellman.Decodable` for decodable families. -/
 theorem DDH.cdh {F : PrimeOrderGroupFamily} {setup : ℕ → PMF F.Desc} (hDDH : F.DDH setup)
     {m : ℕ → ℕ} (hm0 : ∀ n, 0 < m n) (hm : ∀ n, ∀ d ∈ (setup n).support, m n ≤ F.order d)
     (hinv : Negligible fun n => (1 / m n : ℝ≥0)) : F.CDH setup := by

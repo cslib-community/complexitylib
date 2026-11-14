@@ -4,8 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import CslibFrontier.Crypto.Computational.CramerShoup
-import CslibFrontier.Crypto.Computational.DiscreteLog.SchnorrGroup
+import CslibFrontier.Crypto.Computational.CramerShoup.Decodable
+import CslibFrontier.Crypto.Computational.DiscreteLog.SchnorrGroup.Decodable
 import Mathlib.Tactic.NormNum.Prime
 
 /-!
@@ -42,11 +42,16 @@ the payload word. -/
 def testKeyedHash : schnorrGroups.withKey.Desc × List Bool → List Bool :=
   fun ((_, hk), x) => (hk ++ x).take 3
 
-/-- Group-membership predicate for `schnorrGroups` on encoded bit strings: `x` is the canonical
-`Nat.bits` encoding of a residue `0 < a < p` with `a ^ q % p = 1`. -/
-def isSchnorrElem (p : schnorrGroups.Desc × List Bool) : Bool :=
-  let a := ofBits p.2
-  (encNat a == p.2) && decide (0 < a ∧ a < p.1.1.1 ∧ a ^ p.1.1.2.1 % p.1.1.1 = 1)
+/-- Group-membership predicate for `schnorrGroups` on encoded bit strings, backed by
+`SchnorrGroup.isElem`. -/
+abbrev isSchnorrElem : schnorrGroups.Desc × List Bool → Bool :=
+  SchnorrGroup.isElem
+
+private theorem hmem_isSchnorrElem (d : schnorrGroups.Desc) (x : List Bool) :
+    isSchnorrElem (d, x) = true ↔ x ∈ Set.range (schnorrGroups.encode d) := by
+  change SchnorrGroup.isElem (d, x) = true ↔ x ∈ Set.range (schnorrDecodableGroups.encode d)
+  rw [← SchnorrGroup.isSome_decode_eq_isElem]
+  exact schnorrDecodableGroups.isElem_eq_true_iff d x
 
 /-- Concrete algebraic encryption/decryption roundtrip on `d23` (with and without associated data):
 decrypting an honest encryption of `m = 3 • g` under `α = 2`, `sk = ((1, 2), ((3, 4), (5, 6)))`,
@@ -265,9 +270,7 @@ example {H : schnorrGroups.Desc × List Bool → List Bool}
 /-- Concrete instantiation of the adaptive Lemma 12.8 (`advantage_cramerShoupGame3_game4_le`) and
 Lemma 12.6 (`advantage_cramerShoupGame4_game5_le` and `cramerShoupGame5_false_eq_true`) consumers
 on `schnorrGroups` at `d23` (`q = 11`). -/
-example (hmem : ∀ (d : schnorrGroups.Desc) (x : List Bool),
-      isSchnorrElem (d, x) = true ↔ x ∈ Set.range (schnorrGroups.encode d))
-    (adversary : Encryption.WordADCCA2Adversary (List Bool)) (bit : Bool) (n Q₁ Q₂ : ℕ)
+example (adversary : Encryption.WordADCCA2Adversary (List Bool)) (bit : Bool) (n Q₁ Q₂ : ℕ)
     (hq1 : schnorrGroups.HonestPhase1QueryBound (fun _ => PMF.pure d23) adversary n Q₁)
     (hq2 : schnorrGroups.HonestPhase2QueryBound true (fun p => p.2) (fun _ => PMF.pure d23)
       testHash isSchnorrElem adversary n Q₂) :
@@ -290,10 +293,10 @@ example (hmem : ∀ (d : schnorrGroups.Desc) (x : List Bool),
     decide
   refine ⟨?_, ?_, schnorrGroups.cramerShoupGame5_false_eq_true _ _ _ _ _ _ _ _⟩
   · exact schnorrGroups.advantage_cramerShoupGame3_game4_le true (fun p => p.2) (fun p => p.2)
-      (fun _ => PMF.pure d23) testHash isSchnorrElem hmem adversary bit n Q₁ Q₂ 11
+      (fun _ => PMF.pure d23) testHash isSchnorrElem hmem_isSchnorrElem adversary bit n Q₁ Q₂ 11
       (by decide) hm hq1 hq2
   · exact schnorrGroups.advantage_cramerShoupGame4_game5_le true (fun p => p.2) (fun p => p.2)
-      (fun _ => PMF.pure d23) testHash isSchnorrElem hmem adversary bit n 11
+      (fun _ => PMF.pure d23) testHash isSchnorrElem hmem_isSchnorrElem adversary bit n 11
       (by decide) hm
 
 /-- Concrete `decodeCramerShoupSK` round-trip test. -/
@@ -379,9 +382,7 @@ example {H : schnorrGroups.Desc × List Bool → List Bool}
 
 /-- Concrete instantiation of Theorem 12.9 / Exercise 12.27 with associated data
 (`advantage_cramerShoupADGroupCCA2Game_le`) on `schnorrGroups` at `d23` (`q = 11`). -/
-example (hmem : ∀ (d : schnorrGroups.Desc) (x : List Bool),
-      isSchnorrElem (d, x) = true ↔ x ∈ Set.range (schnorrGroups.encode d))
-    (adversary : Encryption.WordADCCA2Adversary (List Bool)) (Q₁ Q₂ : ℕ → ℕ)
+example (adversary : Encryption.WordADCCA2Adversary (List Bool)) (Q₁ Q₂ : ℕ → ℕ)
     (hQ : adversary.IsQueryBounded Q₁ Q₂) (n : ℕ) :
     Game.advantage
       (schnorrGroups.cramerShoupADGroupCCA2Game encBits (fun _ => PMF.pure d23) testHash
@@ -420,13 +421,11 @@ example (hmem : ∀ (d : schnorrGroups.Desc) (x : List Bool),
     subst hd
     decide
   exact schnorrGroups.advantage_cramerShoupADGroupCCA2Game_le encBits (fun _ => PMF.pure d23)
-    testHash isSchnorrElem hmem adversary Q₁ Q₂ hQ n 11 (by decide) hm
+    testHash isSchnorrElem hmem_isSchnorrElem adversary Q₁ Q₂ hQ n 11 (by decide) hm
 
 /-- Concrete instantiation of Theorem 12.9 / Exercise 12.27
 (`advantage_cramerShoupGroupCCA2Game_le`) on `schnorrGroups` at `d23` (`q = 11`). -/
-example (hmem : ∀ (d : schnorrGroups.Desc) (x : List Bool),
-      isSchnorrElem (d, x) = true ↔ x ∈ Set.range (schnorrGroups.encode d))
-    (adversary : Encryption.WordCCA2Adversary) (Q₁ Q₂ : ℕ → ℕ)
+example (adversary : Encryption.WordCCA2Adversary) (Q₁ Q₂ : ℕ → ℕ)
     (hQ : adversary.IsQueryBounded Q₁ Q₂) (n : ℕ) :
     Game.advantage
       (schnorrGroups.cramerShoupGroupCCA2Game (fun _ => PMF.pure d23) testHash isSchnorrElem
@@ -459,7 +458,45 @@ example (hmem : ∀ (d : schnorrGroups.Desc) (x : List Bool),
     subst hd
     decide
   exact schnorrGroups.advantage_cramerShoupGroupCCA2Game_le (fun _ => PMF.pure d23)
-    testHash isSchnorrElem hmem adversary Q₁ Q₂ hQ n 11 (by decide) hm
+    testHash isSchnorrElem hmem_isSchnorrElem adversary Q₁ Q₂ hQ n 11 (by decide) hm
+
+/-- Conditional API client over `schnorrDecodableGroups` (`INDCCA2ADOn` with associated data,
+`INDCCA2On` without associated data, `INDCCA2MultiOn`, and `INDCCA2InterleavedOn`) without
+supplying an external `isElem`, `hisElem`, or `hmem` parameter. -/
+example {AD : Type} (encAD : AD ↪ List Bool)
+    {H : schnorrDecodableGroups.withKey.Desc × List Bool → List Bool}
+    {d : ℕ → schnorrDecodableGroups.Desc} {keyLen : ℕ → ℕ}
+    (hH : ComputableInPolyTime H (encPair schnorrDecodableGroups.withKey.encDesc encBits) encBits)
+    (hd : ComputableInPolyTime d encUnary schnorrDecodableGroups.encDesc)
+    (hkeyLen : ComputableInPolyTime keyLen encUnary encUnary)
+    (hDDH : schnorrDecodableGroups.toPrimeOrderGroupFamily.DDH (fun n => PMF.pure (d n)))
+    (hCR : CollisionResistantFor schnorrDecodableGroups.withKey.encDesc
+      (schnorrDecodableGroups.withKeySetup (fun n => PMF.pure (d n)) keyLen)
+      (schnorrDecodableGroups.withKey.cramerShoupHashMod H))
+    {m : ℕ → ℕ} (hm0 : ∀ n, 0 < m n) (hm : ∀ n, m n ≤ schnorrDecodableGroups.order (d n))
+    (hinv : Negligible fun n => (1 / m n : ℝ≥0)) :
+    INDCCA2ADOn (schnorrDecodableGroups.cramerShoupValid d) encBits encAD encBits
+      (schnorrDecodableGroups.cramerShoupKeyGenProb d keyLen)
+      (schnorrDecodableGroups.cramerShoupADEncryptProb encAD H d)
+      (schnorrDecodableGroups.cramerShoupADDecryptOpt H d) ∧
+    INDCCA2On (schnorrDecodableGroups.cramerShoupValid d) encBits encBits
+      (schnorrDecodableGroups.cramerShoupKeyGenProb d keyLen)
+      (schnorrDecodableGroups.cramerShoupEncryptProb H d)
+      (schnorrDecodableGroups.cramerShoupDecryptOpt H d) ∧
+    INDCCA2MultiOn (schnorrDecodableGroups.cramerShoupValid d) encBits encBits
+      (schnorrDecodableGroups.cramerShoupKeyGenProb d keyLen)
+      (schnorrDecodableGroups.cramerShoupEncryptProb H d)
+      (schnorrDecodableGroups.cramerShoupDecryptOpt H d) ∧
+    INDCCA2InterleavedOn (schnorrDecodableGroups.cramerShoupValid d) encBits encBits
+      (schnorrDecodableGroups.cramerShoupKeyGenProb d keyLen)
+      (schnorrDecodableGroups.cramerShoupEncryptProb H d)
+      (schnorrDecodableGroups.cramerShoupDecryptOpt H d) :=
+  ⟨DecodablePrimeOrderGroupFamily.DDH.indcca2ADOn_cramerShoup encAD hH hd hkeyLen hDDH hCR hm0 hm
+     hinv,
+   DecodablePrimeOrderGroupFamily.DDH.indcca2On_cramerShoup hH hd hkeyLen hDDH hCR hm0 hm hinv,
+   DecodablePrimeOrderGroupFamily.DDH.indcca2MultiOn_cramerShoup hH hd hkeyLen hDDH hCR hm0 hm hinv,
+   DecodablePrimeOrderGroupFamily.DDH.indcca2InterleavedOn_cramerShoup hH hd hkeyLen hDDH hCR hm0 hm
+     hinv⟩
 
 /-- Conditional API client over a parameterized group family (both `INDCCA2ADOn` with associated
 data and `INDCCA2On` without associated data). Key generation draws a uniform `keyLen n`-bit hash
