@@ -5509,24 +5509,40 @@ register_result "prp-prf-switching" where
     charged and no asymptotic form is stated."
 
 register_result "ajtai-collision-sis" where
-  title := "Finding collisions in Ajtai's hash function is no easier than SIS"
+  title := "Ajtai's hash function is collision-resistant on [0, β]^m under SIS"
   topic := "cryptography"
   sources := [
-    { paper := Ajtai1996, theorem := unverified, locator := unverified }
+    { paper := Ajtai1996, theorem := unverified, locator := unverified },
+    { paper := BonehShoup2023, theorem := unverified, locator := unverified }
   ]
   theorems := [
     Cslib.Crypto.IsAjtaiCollision.isSolution_sub,
     Cslib.Crypto.isSolution_sub_of_abs_le,
-    Cslib.Crypto.ajtaiAdvantage_le_sisAdvantage
+    Cslib.Crypto.ajtaiAdvantage_le_sisAdvantage,
+    Cslib.Crypto.isPPT_collisionToSIS,
+    Cslib.Crypto.ajtaiAdvantage_negligible_of_sis,
+    Cslib.Crypto.computableInPolyTime_ajtaiFamilyValid,
+    Cslib.Crypto.computableInPolyTime_ajtaiFamilyHash,
+    Cslib.Crypto.collisionGameFor_ajtai_le_sisAdvantage,
+    Cslib.Crypto.isPPT_ajtaiWordCollisionToSIS,
+    Cslib.Crypto.SIS.collisionResistantForOn_ajtai
   ]
-  scope := "Ajtai's hash x ↦ A x mod q on integer vectors, for every nonzero modulus q (the two \
-    collision lemmas need no assumption on q), dimensions n × m and bound β, with no primality \
-    or compression assumption. Distinct inputs in [0, β]^m (or [-β, β]^m) with equal hashes \
-    differ by a nonzero solution with ∞-norm at most β (or 2β), and the collision-finding \
-    success probability of any finder against a uniform A ∈ ℤ_q^{n×m} is at most the SIS \
-    success probability of collisionToSIS, which subtracts the two inputs. Ajtai's \
-    worst-case-to-average-case reduction for lattice problems is not formalized; no running \
-    time is charged."
+  scope := "Ajtai's hash x ↦ A x mod q on integer vectors, for every nonzero modulus q (the \
+    two collision lemmas need no assumption on q), dimensions n × m and bound β, with no \
+    primality or compression assumption. Distinct inputs in [0, β]^m (or [-β, β]^m) with \
+    equal hashes differ by a nonzero solution with ∞-norm at most β (or 2β), and the \
+    collision-finding success probability of any finder F against a uniform A ∈ ℤ_q^{n×m} is \
+    at most the SIS success probability of collisionToSIS F, which subtracts the two inputs. \
+    For any SISParams family P without extra hypotheses, isPPT_collisionToSIS certifies \
+    uniform strict PPT preservation and ajtaiAdvantage_negligible_of_sis yields negligible \
+    advantage under SIS P. Packaged as a setup-parameterized hash family over canonical \
+    SIS.encodeVec words in [0, P.β κ]^m with polynomial-time domain test \
+    computableInPolyTime_ajtaiFamilyValid (when P.m, P.β are efficient) and evaluation \
+    computableInPolyTime_ajtaiFamilyHash (when P.q is efficient), \
+    SIS.collisionResistantForOn_ajtai establishes CollisionResistantForOn under SIS P \
+    whenever P.m is unary polynomial-time. Unrestricted-domain CollisionResistantFor, setup \
+    matrix sampling time, compression parameters and Ajtai's worst-case-to-average-case \
+    lattice reduction are not formalized."
 
 register_result "mldsa-key-only-forgery" where
   title := "ML-DSA key-only unforgeability from Module-LWE and self-target MSIS"
