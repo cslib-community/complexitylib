@@ -138,4 +138,11 @@ request body sizes and whether it used incremental transfer or a full compatibil
 fallback. The [protocol contract](../../tools/cache-origin/README.md#publication-contract)
 explains those modes; a smaller upload does not mean staging became cheaper.
 
+The default-off archive-retention experiment also prepares archives before a merge-group handoff.
+Its strict `--no-build` preparation refuses source recompilation and replayed diagnostics; failure
+only skips the optional handoff. Retention can move expensive packaging onto the merge queue when
+archives are missing. Compare merge-group preparation and handoff transfer with `main`'s staging
+and Actions restore/save costs, and verify that the handoff actually succeeded before attributing
+an improvement to the complete cycle.
+
 [complexitylib]: ../sources.md#complexitylib

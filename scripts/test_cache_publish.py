@@ -53,6 +53,24 @@ class WorkflowContractTests(unittest.TestCase):
         self.assertLess(ordinary_at, stage_at)
         self.assertLess(stage_at, handoff_at)
         self.assertLess(handoff_at, experiment_at)
+        prepare = lean.split("      - name: Prepare publication archives for build handoff", 1)[1].split(
+            "      - name:", 1)[0]
+        pack = lean.split("      - name: Stage merge-group build outputs", 1)[1].split(
+            "      - name:", 1)[0]
+        self.assertLess(lean.index('      - name: "checkInitImports"'),
+                        lean.index("      - name: Prepare publication archives for build handoff"))
+        self.assertLess(lean.index("      - name: Prepare publication archives for build handoff"),
+                        lean.index("      - name: Stage merge-group build outputs"))
+        self.assertIn("github.event_name == 'merge_group'", prepare)
+        self.assertIn("vars.RETAIN_PUBLICATION_ARCHIVES == 'true'", prepare)
+        self.assertIn("vars.DISABLE_CACHE_RESTORE != 'true'", prepare)
+        self.assertIn("vars.DISABLE_CACHE_RESTORE != '1'", prepare)
+        self.assertIn("vars.DISABLE_BUILD_HANDOFF != 'true'", prepare)
+        self.assertIn("vars.DISABLE_BUILD_HANDOFF != '1'", prepare)
+        self.assertIn("continue-on-error: true", prepare)
+        self.assertIn("--no-build", prepare)
+        self.assertIn("vars.RETAIN_PUBLICATION_ARCHIVES != 'true' || "
+                      "steps.handoff-archives.outcome == 'success'", pack)
         self.assertIn("vars.RETAIN_PUBLICATION_ARCHIVES != 'true'", ordinary)
         self.assertIn("steps.test.outcome == 'failure'", ordinary)
         self.assertIn("steps.lint.outcome == 'failure'", ordinary)
@@ -418,9 +436,10 @@ name = "CslibFrontierTests"
                 report = Path(temporary) / (name + ".json")
                 with (patch.object(publish, "ROOT", root),
                       patch.dict(os.environ, env, clear=True)):
-                    publish.stage(target, report)
+                    publish.stage(target, report, no_build=True)
                 measured = json.loads(report.read_text())
                 reports.append(measured)
+                self.assertTrue(measured["no_build"])
                 self.assertEqual(measured["mapping_entries"], 2)
                 self.assertEqual(measured["staged_artifacts"], 2)
                 self.assertEqual(measured["archives_after"]["count"], 2)
@@ -433,6 +452,41 @@ name = "CslibFrontierTests"
                                             for path in retained})
             self.assertEqual(reports[0]["archives_before"]["count"], 0)
             self.assertEqual(reports[1]["archives_before"]["count"], 2)
+
+            # Changed source must not silently elaborate after the required producer checks.
+            # Commit it so the rejection comes from Lake's no-build check, not dirty sources.
+            (root / "CslibFrontier.lean").write_text("def answer : Nat := 43\n")
+            (root / "CslibFrontierTests.lean").write_text(
+                "import CslibFrontier\nexample : answer = 43 := rfl\n")
+            for command in (["git", "add", "."],
+                            ["git", "-c", "user.name=Fixture", "-c",
+                             "user.email=fixture@example.invalid", "commit", "-qm", "changed source"]):
+                subprocess.run(command, cwd=root, env=env, check=True, stdout=subprocess.DEVNULL)
+            with (patch.object(publish, "ROOT", root), patch.dict(os.environ, env, clear=True),
+                  self.assertRaises(subprocess.CalledProcessError)):
+                publish.stage(Path(temporary) / "refused-rebuild", no_build=True)
+            self.assertFalse((Path(temporary) / "refused-rebuild/publication.json").exists())
+            self.assertEqual(outputs, {path: (path.stat().st_mtime_ns, publish.digest(path))
+                                       for path in outputs})
+
+            # Warm diagnostic traces still fail strict preparation. An archive-only phase
+            # must not turn either warnings or informational I/O into accepted validation.
+            for label, diagnostic in (
+                ("warning", 'import Lean\nrun_cmd Lean.logWarning "fixture warning"\n'),
+                ("info", '#eval IO.eprintln "fixture output"\n'),
+            ):
+                (root / "CslibFrontier.lean").write_text(
+                    diagnostic + 'def answer : Nat := 43\n')
+                for command in (["lake", "build", "CslibFrontier", "CslibFrontierTests"],
+                                ["git", "add", "."],
+                                ["git", "-c", "user.name=Fixture", "-c",
+                                 "user.email=fixture@example.invalid", "commit", "-qm", label]):
+                    subprocess.run(command, cwd=root, env=env, check=True, stdout=subprocess.DEVNULL)
+                with (patch.object(publish, "ROOT", root), patch.dict(os.environ, env, clear=True),
+                      self.assertRaises(subprocess.CalledProcessError)):
+                    publish.stage(Path(temporary) / ("refused-" + label), no_build=True)
+                self.assertFalse((Path(temporary) / ("refused-" + label) / "publication.json").exists())
+
 
 
 class StagePhaseTests(unittest.TestCase):

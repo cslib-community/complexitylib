@@ -94,7 +94,7 @@ def stage_phase(name, phases):
               f"{phase['wall_seconds']:.2f}s", flush=True)
 
 
-def stage(destination, report=None):
+def stage(destination, report=None, *, no_build=False):
     if report is not None and report.resolve().is_relative_to(destination.resolve()):
         raise ValueError("The staging report must be outside the publication directory")
     started = time.monotonic()
@@ -104,7 +104,8 @@ def stage(destination, report=None):
         raise ValueError("Unsupported toolchain scope")
     metrics = {"version": 1, "revision": revision, "toolchain": toolchain,
                "platform": platform.system(), "architecture": platform.machine(),
-               "lean_num_threads": os.environ.get("LEAN_NUM_THREADS"), "phases": []}
+               "lean_num_threads": os.environ.get("LEAN_NUM_THREADS"),
+               "no_build": no_build, "phases": []}
     destination.mkdir(parents=True, exist_ok=False)
     with tempfile.TemporaryDirectory(prefix=".stage-", dir=destination.resolve()) as temporary:
         work = Path(temporary)
@@ -113,7 +114,10 @@ def stage(destination, report=None):
         print(f"Cache staging: {metrics['archives_before']['count']} root archives present "
               f"({metrics['archives_before']['bytes']} bytes)", flush=True)
         with stage_phase("mapping and archive build", metrics["phases"]):
-            run(["lake", "build", "CslibFrontier", "CslibFrontierTests", "-o", str(mapping)])
+            # Lake may pack missing archives in no-build mode, but must not elaborate a source
+            # after the producer's required checks. Replayed warnings and infos still fail.
+            strict = ["--no-build", "--wfail", "--iofail"] if no_build else []
+            run(["lake", "build", *strict, "CslibFrontier", "CslibFrontierTests", "-o", str(mapping)])
         metrics["archives_after"] = archive_snapshot()
         metrics["mapping_entries"] = sum(line.startswith("[") for line in mapping.read_text().splitlines())
         print(f"Cache staging: {metrics['archives_after']['count']} root archives now present; "
@@ -298,6 +302,8 @@ def main():
     staging.add_argument("directory", type=Path)
     staging.add_argument("--report", type=Path,
                          help="write timing/archive metrics outside the published directory")
+    staging.add_argument("--no-build", action="store_true",
+                         help="pack validated outputs without rebuilding; fail on warnings or infos")
     checking = commands.add_parser("verify")
     checking.add_argument("directory", type=Path)
     checking.add_argument("--revision", help="Require this exact producer revision")
@@ -310,7 +316,7 @@ def main():
     args = parser.parse_args()
     try:
         if args.command == "stage":
-            stage(args.directory, args.report)
+            stage(args.directory, args.report, no_build=args.no_build)
         elif args.command == "verify":
             data, _ = validate(args.directory)
             if args.revision is not None and data["revision"] != args.revision:

@@ -329,11 +329,27 @@ jobs:
           lake exe checkInitImports
       # Stage after every required Lean-side check. Source validation runs independently; the
       # required `ci-checks` aggregator below keeps a source-failing merge group from landing.
+      # In retention mode, let Lake prepare archives for these exact validated outputs before
+      # the handoff replaces main's root build. Never graft an old archive onto a new trace.
+      # Cold/missing archives add work to the merge-group path; measure the full cycle before
+      # enabling retention. Failure only disables this optional handoff, not required checks.
+      - name: Prepare publication archives for build handoff
+        id: handoff-archives
+        if: >-
+          github.event_name == 'merge_group' && vars.RETAIN_PUBLICATION_ARCHIVES == 'true' &&
+          vars.DISABLE_CACHE_RESTORE != 'true' && vars.DISABLE_CACHE_RESTORE != '1' &&
+          vars.DISABLE_BUILD_HANDOFF != '1' && vars.DISABLE_BUILD_HANDOFF != 'true'
+        continue-on-error: true
+        timeout-minutes: 20
+        run: >-
+          python3 -B scripts/cache/publish.py stage "$RUNNER_TEMP/lake-handoff-publication"
+          --no-build
       - name: Stage merge-group build outputs
         id: cache-handoff
         if: >-
           github.event_name == 'merge_group' &&
-          vars.DISABLE_BUILD_HANDOFF != '1' && vars.DISABLE_BUILD_HANDOFF != 'true'
+          vars.DISABLE_BUILD_HANDOFF != '1' && vars.DISABLE_BUILD_HANDOFF != 'true' &&
+          (vars.RETAIN_PUBLICATION_ARCHIVES != 'true' || steps.handoff-archives.outcome == 'success')
         continue-on-error: true
         timeout-minutes: 10
         env:

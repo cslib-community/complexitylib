@@ -149,6 +149,15 @@ following builds while preserving the public cache's authorization boundary.
   module as up to date, so `main` still shows the merge-group warnings and `lake build --wfail`
   still fails on them. The producer also stages the handoff only after its own `--wfail --iofail`
   build and tests have passed on the same commit and platform.
+- **Publication archives.** With `RETAIN_PUBLICATION_ARCHIVES=true`, the merge group prepares
+  its module archives after the required Lean checks and before packing the handoff. Preparation
+  uses `stage --no-build`, which asks Lake to pack missing archives from current outputs, refuses
+  source recompilation, and fails on replayed warnings or informational output. Lake owns archive
+  invalidation; the installer never attaches an archive from the previous build to a new trace.
+  A preparation failure skips this optional handoff, leaving `main` to its ordinary build and
+  checks. Cache recovery and the handoff kill switch disable preparation too. A cold build can
+  spend substantial time preparing archives before it merges; compare the whole merge-group and
+  `main` cycle, not only the shorter publication step on `main`.
 - **Interrupted swap fallback.** `install_build` moves any existing `.lake/build` aside to a
   staging backup before renaming the unpacked directory into place, rolling back if the rename
   fails. If the process is killed between moving the previous `.lake/build` aside and completing
@@ -407,6 +416,13 @@ comparisons are case-insensitive, so any capitalization of `true` enables the ex
 variable or every other value disables it. Retention is best-effort because the pinned cache-save
 action reports ordinary save failures as warnings.
 
+The same opt-in now prepares archives before a merge-group handoff, so a successful handoff can
+carry them into `main` instead of replacing a retained build tree with archive-poor outputs.
+This remains default-off: merging the implementation alone does not activate retention. The late
+save still runs after a successful library build when later checks or publication plumbing fail,
+unless the job is cancelled or cache recovery is enabled; it does not turn that run into successful
+validation or authorize publication.
+
 Use adjacent, representative `main` pushes with the same toolchain, thread settings, recovery
 generation and comparable source changes:
 
@@ -416,15 +432,18 @@ generation and comparable source changes:
 2. Set the variable to `true` in any capitalization for one `main` push. Record its late save
    duration and bytes as well as the staging metrics; this run creates the snapshot that can retain
    new archives.
-3. Keep it at `true` for the next representative `main` push. Compare restore duration and bytes,
-   `archives_before`, and mapping-build wall time with the baseline. Actions cache keys include the
-   commit SHA, so rerunning the first activated SHA cannot replace its already-created key.
+3. Keep it at `true` through the next representative merge group and `main` push. Record the merge
+   group's Actions restore, archive preparation, handoff pack/upload, and `main`'s restore,
+   handoff download/unpack, staging and save. Confirm `Build handoff restored` rather than a
+   platform/configuration miss. Compare total work and the queue path for both small source changes
+   and missing-archive cases; a shorter `main` stage alone is insufficient. Actions cache keys
+   include the commit SHA, so rerunning the first activated SHA cannot replace its existing key.
 4. Roll back by deleting the variable or setting it to a value other than `true`, ignoring case.
    The ordinary pre-publication save resumes immediately. A retained snapshot may still be restored
    until a newer matching snapshot displaces or evicts it; rollback does not delete Actions cache
    entries.
 
-This protocol tests the ordering change; it does not establish a speedup. Both remote publishers
+This protocol tests the retention cycle; it does not establish a speedup. Both remote publishers
 consume the same staged files, so the mapping/archive phase still delays fresh outputs on both
 origins.
 
