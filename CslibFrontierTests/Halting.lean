@@ -4,16 +4,22 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
-import CslibFrontier.Computability.Complexity.Reduction
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Halting
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Halting.Rice
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Halting.SMNBounds
+module
+-- upstream: candidate
+
+public import CslibFrontier.Init
+public import CslibFrontier.Computability.Complexity.Reduction
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Halting
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Halting.Rice
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Halting.SMNBounds
 
 /-! Concrete machines that halt and loop, their descriptions inside and outside the halting and
 acceptance problems, the machines diverging on a verdict, the diagonal machine against candidate
 deciders, a nontrivial property of self-applied behavior for Rice's theorem, decidable sets and
 reductions, input prefixes built into descriptions, the recursion theorem, and Rice's theorem for
 a nontrivial property of behavior. -/
+
+public section
 
 namespace CslibFrontierTests.Halting
 
