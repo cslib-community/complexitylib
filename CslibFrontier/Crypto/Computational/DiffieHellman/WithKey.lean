@@ -48,7 +48,7 @@ from DDH for `F` under `setup`. The reduction `ddhSampleKey` draws the key itsel
   against Adaptive Chosen Ciphertext Attack*][CramerShoup2003], Section 6.1, Figure 1.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Crypto.PrimeOrderGroupFamily
 
@@ -91,7 +91,7 @@ abbrev withKey : PrimeOrderGroupFamily where
 
 /-- Draw group parameters `d ← setup n`, then an independent uniform `keyLen n`-bit key `k`, and
 return `(d, k)`. -/
-noncomputable def withKeySetup (setup : ℕ → PMF F.Desc) (keyLen : ℕ → ℕ) (n : ℕ) :
+@[expose] noncomputable def withKeySetup (setup : ℕ → PMF F.Desc) (keyLen : ℕ → ℕ) (n : ℕ) :
     PMF F.withKey.Desc :=
   (setup n).bind fun d => (ProbComp.eval (BitString.sampleList (keyLen n))).map fun k => (d, k)
 
