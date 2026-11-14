@@ -208,6 +208,9 @@ The first build compiles Verso and links the guide's generator, which takes a fe
 [/guide/](https://www.cslib.io/cslib-frontier/guide/). The **Guide** workflow builds pull
 requests that change the guide and uploads the pages as a `guide` artifact.
 
+Hosted jobs may reuse the [Guide dependency cache](../scripts/cache/README.md#guide-dependency-cache).
+It contains only dependency builds; the Guide's normal example and rendering checks still run.
+
 ## Regenerating research outputs
 
 The historical study reports a fixed observation at `13e6a319`, dated November 2, 2026.
