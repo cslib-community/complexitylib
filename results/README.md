@@ -130,3 +130,8 @@ least half the truth tables have measure zero. This explains why the additive `-
 Razborov–Rudich Theorem 5.1(b) cannot simply be omitted as in the 2007 Arora–Barak draft's
 Theorem 22.3. It is not registered as a proof of either source theorem; the corrected density
 amplification endpoint remains open under [#4711](https://github.com/cslib-community/cslib-frontier/issues/4711).
+
+Goldreich Exercise 8.44 now has selected-time hitting, factorial-moment and integer-tail
+bounds, including strict half-visits for odd and even positive lengths. The
+[exercise inventory](goldreich-2007-exercises.md) records the strictness and integer
+conventions that qualify the printed statement.

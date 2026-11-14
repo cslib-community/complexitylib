@@ -734,3 +734,19 @@ background or of all its informal assertions is made.
 | Draft result | File / PDF page / printed page | Disposition and remaining endpoint |
 |---|---|---|
 | No numbered results | r6 / 137–144 / 645–652 | Scope note only; background problem definitions are outside this numbered-result audit. |
+
+## Exercise 8.44: visit counts
+
+March 2007 `r4.pdf`, PDF 117 / printed 381 (hash recorded in #4772).
+[VisitCount](../CslibFrontier/Foundations/Combinatorics/Expander/VisitCount.lean)
+proves selected-time hitting, factorial moments, integer tails and the half-visits example.
+Length `L=t+1` counts vertices, including the uniform initial vertex; independent uniform
+ports generate the edges of a finite nonempty rotation map, permitting loops and parallel edges.
+The strict displayed bound requires integer `m=αL`, `1≤m≤L` and `ρ+η²>0`.
+For empty W and zero expansion, universal strictness would assert `0<0`.
+The half-visits bound is strict for every positive L under `η<sqrt(ρ)`;
+integer division expresses strict majority for even and odd lengths.
+Unrestricted norm contraction replaces the guideline's unwanted `sqrt(1+η²)` factors.
+[Source qualification record](https://github.com/cslib-community/cslib-frontier/issues/4781#issuecomment-6868194625).
+[Ordinary-module clients](../CslibFrontierTests/ExpanderVisitCount.lean) exercise counts,
+selected times and boundaries. No sampler implementation or runtime follows. #4772 remains open.

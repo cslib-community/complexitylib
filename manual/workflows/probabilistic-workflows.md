@@ -3268,3 +3268,17 @@ distinct from `countHittingTime`. Run `scripts/build.sh CslibFrontierTests.Stoch
 the repository root to check them.
 Instantiating these theorems on oracle-program executions remains open until the stochastic-oracle
 semantics ([#2530](https://github.com/cslib-community/cslib-frontier/pull/2530)) lands on `main`.
+
+## Bound bad visits along an expander walk
+
+Import [VisitCount.lean](../../CslibFrontier/Foundations/Combinatorics/Expander/VisitCount.lean).
+For a bad-vertex set `W`, `G.visitCount W p` counts all `t+1` vertices, including the
+initial vertex. Apply `dens_filter_selected_walkAt_mem_le` to arbitrary selected times,
+`expect_choose_visitCount_le` for factorial moments, and `dens_filter_visitCount_gt_le`
+for strict integer tails. `dens_filter_visitCount_half_lt` bounds a strict majority of
+bad samples by `(32 * dens W)^((t+1)/4)` when expansion is below `sqrt(dens W)`.
+The [checked clients](../../CslibFrontierTests/ExpanderVisitCount.lean) cover nonconsecutive
+times excluding zero, computed counts, boundaries, and even/odd majority events.
+Goldreich Exercise 8.44's strict displayed integer bound needs positive `q` and
+`1≤m≤L`; the general non-strict tails include degenerate cases. These are uniform-start
+probabilities on vertices and port sequences, not a sampler or runtime certificate.
