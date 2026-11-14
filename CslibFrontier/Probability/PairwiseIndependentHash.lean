@@ -12,7 +12,7 @@ public import Mathlib.Algebra.BigOperators.Expect
 public import Mathlib.Algebra.Order.Field.Basic
 public import Mathlib.Data.Finset.Density
 import CslibFrontier.Foundations.Data.Finset.Density
-import CslibFrontier.Foundations.Data.Finset.Expect
+import CslibFrontier.Foundations.Data.Finset.Expect.Chebyshev
 import Mathlib.Algebra.BigOperators.Field
 import Mathlib.Algebra.Order.BigOperators.Expect
 import Mathlib.Data.Finset.Prod
@@ -239,12 +239,9 @@ theorem dens_filter_le_abs_sub_le [Field 𝕜] [LinearOrder 𝕜] [IsStrictOrder
     (hh : IsPairwiseIndependentHash h) (S : Finset X) (y : Y) {ε : 𝕜} (hε : 0 < ε) :
     (dens {i | ε ≤ |(#{x ∈ S | h i x = y} : 𝕜) - #S / Fintype.card Y|} : 𝕜) ≤
       #S / Fintype.card Y / ε ^ 2 := by
-  have hmarkov := Fintype.mul_dens_filter_le_expect
-    (f := fun i => ((#{x ∈ S | h i x = y} : 𝕜) - #S / Fintype.card Y) ^ 2)
-    (fun _ => sq_nonneg _) (ε ^ 2)
-  simp only [sq_le_sq, abs_of_pos hε] at hmarkov
-  rw [le_div_iff₀ (by positivity), mul_comm]
-  exact hmarkov.trans (hh.expect_card_filter_sub_sq_le S y)
+  exact (Fintype.dens_le_abs_le_expect_sq_div_sq
+    (fun i => (#{x ∈ S | h i x = y} : 𝕜) - #S / Fintype.card Y) hε).trans
+      (div_le_div_of_nonneg_right (hh.expect_card_filter_sub_sq_le S y) (sq_nonneg ε))
 
 /-- **First moment bound**: `S` hits `y` with probability at most the mean cell size
 `#S / |Y|`. -/

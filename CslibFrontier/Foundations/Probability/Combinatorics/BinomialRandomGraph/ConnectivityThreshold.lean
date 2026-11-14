@@ -8,6 +8,7 @@ module
 -- upstream: candidate (Mathlib, `Mathlib/Probability/Combinatorics/BinomialRandomGraph/`)
 
 public import CslibFrontier.Foundations.Probability.Combinatorics.BinomialRandomGraph.IsolatedVertices
+import CslibFrontier.Foundations.Data.Nat.Choose.Real
 import CslibFrontier.Foundations.Analysis.SpecialFunctions.ExpBounds
 import CslibFrontier.Foundations.Combinatorics.SimpleGraph.Connectivity.Connected
 import CslibFrontier.Foundations.Probability.Bonferroni
@@ -724,9 +725,10 @@ theorem tendsto_binomialRandom_real_forall_not_isIsolated_and_not_connected {p :
         have h2k : (2 * k : ℝ) ≤ n := by exact_mod_cast (by omega : 2 * k ≤ n)
         linarith
       have hch1 : (n.choose k : ℝ) ≤ ((n : ℝ) * Real.exp 1 / k) ^ k :=
-        choose_le_mul_exp_div_pow k n
+        by simpa only [mul_comm (n : ℝ)] using Nat.choose_le_exp_mul_div_pow n k
       have hch2 : ((k.choose 2).choose (k - 1) : ℝ) ≤ ((k : ℝ) * Real.exp 1 / 2) ^ (k - 1) := by
-        have h := choose_le_mul_exp_div_pow (k - 1) (k.choose 2)
+        have h := Nat.choose_le_exp_mul_div_pow (k.choose 2) (k - 1)
+        rw [mul_comm (Real.exp 1)] at h
         have hck : ((k.choose 2 : ℝ) * Real.exp 1 / ((k - 1 : ℕ) : ℝ)) =
             (k : ℝ) * Real.exp 1 / 2 := by
           have hk1 : 1 ≤ k := by omega

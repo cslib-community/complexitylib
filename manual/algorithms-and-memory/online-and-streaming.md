@@ -160,6 +160,14 @@ Chakrabarti's parameter `k` allows `k − 1` counters, so `misraGries k` is his 
 - the collision noise has second moment at most `∑_{b≠a} f_b²/w` (`CountSketch.expect_sq_sum_ite_mul_sign_le`);
 - by Chebyshev, a row misses by more than `t` with probability at most `1/3` once `3∑_{b≠a} f_b² ≤ wt²` (`CountSketch.dens_abs_sum_ite_mul_sign_gt_le`).
 
+The finite-average Chebyshev estimates live in
+[`Finset/Expect/Chebyshev.lean`](../../CslibFrontier/Foundations/Data/Finset/Expect/Chebyshev.lean).
+`Fintype.dens_le_abs_le_expect_sq_div_sq` and its strict-tail variant bound the density where
+`|f|` exceeds a positive threshold by the second moment divided by its square. Apply them to
+`fun i => f i - c` for deviations about a chosen center. The Count-Sketch, median-of-means and
+pairwise-hash retention analyses use these estimates directly.
+
+
 These are equations (5.1)–(5.6) of [chakrabarti25][chakrabarti25]. Only an upper bound on collision probabilities is assumed.
 
 The amplification step is the median trick `dens_abs_median_sub_gt_le`, in [MedianTrick.lean](../../CslibFrontier/Probability/MedianTrick.lean): if a single estimate misses with probability at most `1/3`, the median of `2r` independent estimates misses with probability at most `(8/9)^r`. [MedianOfMeans.lean](../../CslibFrontier/Probability/MedianOfMeans.lean) derives `dens_abs_medianOfMeans_sub_gt_le` from it.
