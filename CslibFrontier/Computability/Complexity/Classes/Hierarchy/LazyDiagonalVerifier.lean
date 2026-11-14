@@ -35,6 +35,7 @@ charges only the branch taken; the space witness is independent of that time bou
   acceptance and parameter selection, including a separately supplied unary length.
 * `Cslib.Complexity.Diagonal.exists_computableInO_sizeLength_le`: construct a horizon comparison
   from an independently bounded unary clock.
+* `Cslib.Complexity.Diagonal.exists_computableInO_lazyTests`: construct the three tests together.
 * `Cslib.Complexity.Diagonal.exists_computableInO_lazyVerifier`: assemble a verifier from
   certificates for its tests, acceptance simulation and exhaustive search.
 -/
@@ -170,6 +171,49 @@ theorem exists_computableInO_sizeLength_le
   have hscale : (8 + 4 * M + K) * (C p + 1) =
       8 * C p + 4 * (M * C p) + K * C p + (8 + 4 * M + K) := by ring
   omega
+
+/-- Construct all three lazy-verifier tests from a unary horizon certificate. The common
+time budget covers input access and the comparison square; each test keeps its own space
+witness, independently of the clock's space budget. -/
+theorem exists_computableInO_lazyTests
+    {H : ℕ → ℕ} {C SE : List Bool × List Bool → ℕ} {M : ℕ}
+    (hE : ComputableInO (fun p : List Bool × List Bool =>
+      H (2 * (unframe p.1).length + 1)) (encPair encBits encBits) encUnary C SE)
+    (hC : ∀ p, (encPair encBits encBits p).length + 1 ≤ C p)
+    (hQ : ∀ p, (2 * (encPair encBits encBits p).length + 4 +
+      H (2 * (unframe p.1).length + 1)) ^ 2 ≤ M * C p) :
+    ∃ S₀ S₁ S₂,
+      ComputableInO (fun p : List Bool × List Bool => shortDesc (unframe p.1))
+        (encPair encBits encBits) encBool C S₀ ∧
+      ComputableInO (fun p : List Bool × List Bool =>
+        decide (Nat.size (p.1.length + 1) ≤ H (2 * (unframe p.1).length + 1)))
+        (encPair encBits encBits) encBool C S₁ ∧
+      ComputableInO (fun p : List Bool × List Bool =>
+        decide (Nat.size p.1.length ≤ H (2 * (unframe p.1).length + 1)))
+        (encPair encBits encBits) encBool C S₂ := by
+  have hx := ComputableInO.fst encBits encBits
+  have hun : ComputableInO unframe encBits encBits (fun z => z.length) (fun z => z.length) :=
+    ComputableInO.of_linear (.of_unframe fun _ => rfl)
+  have hsnoc : ComputableInO (fun p : List Bool × List Bool => p.1 ++ [false])
+      (encPair encBits encBits) encBits
+      (fun p => (encPair encBits encBits p).length + (encPair encBits encBits p).length)
+      (fun p => (encPair encBits encBits p).length + (encPair encBits encBits p).length) :=
+    hx.append (ComputableInO.const (encMid := encBits) [false]) fun _ => rfl
+  have hc₀ := (computableInO_shortDesc.comp (hun.comp hx)).mono_time (T' := C) 3 fun p => by
+    have hu := length_unframe_le p.1
+    have hn : p.1.length ≤ (encPair encBits encBits p).length := by enc_len
+    have hc := hC p
+    simp only [Function.comp_apply]
+    omega
+  obtain ⟨S₁, hc₁⟩ := exists_computableInO_sizeLength_le
+    (hsnoc.mono_le (fun p => by omega) (fun p => le_rfl)) hE
+    (fun p => by simp) hC hQ (K := 1) (fun p => by omega)
+  obtain ⟨S₂, hc₂⟩ := exists_computableInO_sizeLength_le
+    (hx.mono_le (fun p => by omega) (fun p => le_rfl)) hE
+    (fun p => by omega) hC hQ (K := 1) (fun p => by omega)
+  refine ⟨_, S₁, S₂, hc₀, ?_, ?_⟩
+  · simpa only [List.length_append, List.length_singleton] using hc₁
+  · simpa only [Function.comp_apply] using hc₂
 
 /-- Compose the lazy verifier without replacing branch costs by their worst case.
 The caller supplies three tests at cost `C`, an acceptance simulation at cost `B`, and
