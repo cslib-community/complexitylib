@@ -328,10 +328,6 @@ private theorem natDegree_polyOfCode_eq_log (m : ℕ) : (polyOfCode m).natDegree
   · simp
   · exact natDegree_polyOfCode hm
 
-private theorem polyOfCode_one : polyOfCode 1 = 1 := by
-  rw [← polyOfBits_bits, Nat.one_bits]
-  simp [bitEquiv_symm_true]
-
 /-- The divisibility test on codes: for `d ≠ 0`, some coefficient of the remainder of `f` modulo
 the polynomial with code `d` is one exactly when that polynomial does not divide `f`. -/
 theorem any_modBits_bits_iff {d : ℕ} (hd : d ≠ 0) (f : List Bool) :

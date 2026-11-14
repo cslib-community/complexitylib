@@ -102,6 +102,29 @@ theorem polyOfCode_two_mul_add (m : ℕ) (b : ZMod 2) :
   · rw [polyOfCode, ite_eq_right h.ne', show (2 * m + b.val) / 2 = m by omega]
     rw [Nat.cast_add, Nat.cast_mul, ZMod.natCast_self, zero_mul, zero_add, ZMod.natCast_zmod_val]
 
+/-- Appending a zero bit below a code multiplies its polynomial by `X`. -/
+theorem polyOfCode_two_mul (m : ℕ) : polyOfCode (2 * m) = X * polyOfCode m := by
+  simpa only [ZMod.val_zero, Nat.add_zero, map_zero, zero_add] using
+    polyOfCode_two_mul_add m 0
+
+/-- Appending a one bit below a code multiplies its polynomial by `X` and adds one. -/
+theorem polyOfCode_two_mul_add_one (m : ℕ) :
+    polyOfCode (2 * m + 1) = 1 + X * polyOfCode m := by
+  simpa only [ZMod.val_one, map_one] using polyOfCode_two_mul_add m 1
+
+/-- The code `1` gives the constant polynomial one. -/
+theorem polyOfCode_one : polyOfCode 1 = 1 := by
+  simpa only [Nat.mul_zero, Nat.zero_add, polyOfCode_zero, mul_zero, add_zero] using
+    polyOfCode_two_mul_add_one 0
+
+/-- The code `2` gives `X`. -/
+theorem polyOfCode_two : polyOfCode 2 = X := by
+  simpa only [Nat.mul_one, polyOfCode_one, mul_one] using polyOfCode_two_mul 1
+
+/-- The code `3` gives `1 + X`. -/
+theorem polyOfCode_three : polyOfCode 3 = 1 + X := by
+  simpa only [Nat.mul_one, polyOfCode_one, mul_one] using polyOfCode_two_mul_add_one 1
+
 /-- Unfolding `polyOfCode m` into its constant term `m : ZMod 2` and `X * polyOfCode (m / 2)`. -/
 theorem polyOfCode_eq_C_add_X_mul (m : ℕ) :
     polyOfCode m = C (m : ZMod 2) + X * polyOfCode (m / 2) := by
@@ -109,8 +132,8 @@ theorem polyOfCode_eq_C_add_X_mul (m : ℕ) :
   · simp [polyOfCode_zero]
   · rw [polyOfCode, ite_eq_right hm]
 
-/-- Helper characterizing `(m : ZMod 2)` from `m % 2`. -/
-private theorem natCast_zmod_two_eq (m : ℕ) :
+/-- Casting a natural number to `ZMod 2` reads its least significant bit. -/
+theorem natCast_zmod_two_eq (m : ℕ) :
     (m : ZMod 2) = if m % 2 = 1 then 1 else 0 := by
   rw [← ZMod.natCast_mod]
   rcases Nat.mod_two_eq_zero_or_one m with h | h <;> simp [h]
