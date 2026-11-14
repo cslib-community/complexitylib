@@ -5562,6 +5562,7 @@ public import CslibFrontier.Foundations.Computability.KleenePost
 public import CslibFrontier.Foundations.Computability.KleenePostJump
 public import CslibFrontier.Foundations.Computability.RecursiveInCode
 public import CslibFrontier.Foundations.Computability.RecursiveInEvalnPrimrec
+public import CslibFrontier.Foundations.Control.Except
 public import CslibFrontier.Foundations.Control.Monad.FilterM
 public import CslibFrontier.Foundations.Control.Monad.IsMonadHom.StateT
 public import CslibFrontier.Foundations.Control.Monad.Memoize
@@ -6350,6 +6351,9 @@ public import CslibFrontier.Languages.Probabilistic.UntilBad.ChooseTwo
 public import CslibFrontier.Languages.Probabilistic.UntilBad.Flag
 public import CslibFrontier.Languages.Probabilistic.UntilBad.TwoCost
 public import CslibFrontier.Languages.Probabilistic.Vector
+public import CslibFrontier.Languages.SQL.Scalar
+public import CslibFrontier.Languages.SQL.Truth
+public import CslibFrontier.Languages.SQL.Value
 public import CslibFrontier.Logics.BooleanClone.Basic
 public import CslibFrontier.Logics.BooleanClone.Classification
 public import CslibFrontier.Logics.BooleanClone.Formula
