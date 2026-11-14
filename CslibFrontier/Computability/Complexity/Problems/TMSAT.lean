@@ -105,9 +105,20 @@ namespace TMSATInstance
 
 /-- The witness `u` makes the machine of `a` accept `⟨a.input, u⟩ = frame a.input ++ u`: run by the
 universal interpreter for `a.steps` steps, it has halted with the output `[true]`. -/
-def Accepts (a : TMSATInstance) (u : List Bool) : Prop :=
+@[expose] def Accepts (a : TMSATInstance) (u : List Bool) : Prop :=
   universal (a.machine, (encPair encBits encBits (a.input, u)).map eBit, a.steps) =
     ([eBit true], true)
+
+noncomputable instance (a : TMSATInstance) (u : List Bool) : Decidable (a.Accepts u) :=
+  inferInstanceAs (Decidable
+    (universal (a.machine, (encPair encBits encBits (a.input, u)).map eBit, a.steps) =
+      ([eBit true], true)))
+
+theorem accepts_iff (a : TMSATInstance) (u : List Bool) :
+    a.Accepts u ↔
+      universal (a.machine, (encPair encBits encBits (a.input, u)).map eBit, a.steps) =
+        ([eBit true], true) :=
+  Iff.rfl
 
 /-- **Acceptance on the description of a machine**: the machine, run on `⟨x, u⟩` for `t` steps,
 has halted with output `[true]`. -/
@@ -122,6 +133,28 @@ theorem accepts_desc_iff {k : ℕ} {State : Type} [Fintype State] (eS : State �
     exact ⟨hhalt, List.map_injective_iff.mpr eBit.injective (hout.trans List.map_singleton.symm)⟩
   · rintro ⟨hhalt, hout⟩
     exact ⟨by rw [hout, List.map_singleton], hhalt⟩
+
+/-- Deciding whether `inst x` accepts `w x` is computable in polynomial time whenever `inst` and
+`w` are. -/
+theorem computableInPolyTime_decide_accepts {γ : Type} {encIn : γ ↪ List Bool}
+    {inst : γ → TMSATInstance} {w : γ → List Bool}
+    (hinst : ComputableInPolyTime inst encIn encTMSATInstance)
+    (hw : ComputableInPolyTime w encIn encBits) :
+    ComputableInPolyTime (fun x => decide ((inst x).Accepts (w x))) encIn encBool := by
+  have hpair : ComputableInPolyTime (fun p : List Bool × List Bool => encPair encBits encBits p)
+      (encPair encBits encBits) encBits :=
+    .of_eq fun _ => rfl
+  have hin : ComputableInPolyTime
+      (fun x : γ =>
+        ((inst x).machine, (encPair encBits encBits ((inst x).input, w x)).map eBit,
+          (inst x).steps))
+      encIn eInUnary := by
+    have hx : ComputableInPolyTime
+        (fun x : γ => encPair encBits encBits ((inst x).input, w x)) encIn encBits :=
+      hpair.comp ((encTMSATInstance_input_polyTime hinst).prod hw)
+    have := computableInPolyTime_map_eBit.comp hx
+    fun_prop
+  exact (computableInPolyTime_universal.comp hin).decide_eq' (.const _)
 
 end TMSATInstance
 
@@ -141,13 +174,11 @@ theorem mem_iff {a : TMSATInstance} :
 /-- The verifier of `TMSAT`: run the machine on `⟨x, u⟩`, where `u` is the first `n` bits of the
 certificate. -/
 noncomputable def verifier (q : TMSATInstance × List Bool) : Bool :=
-  decide (universal (q.1.machine,
-      (encPair encBits encBits (q.1.input, q.2.take q.1.witnessLength)).map eBit, q.1.steps) =
-    ([eBit true], true))
+  decide (q.1.Accepts (q.2.take q.1.witnessLength))
 
 theorem verifier_eq_true_iff (q : TMSATInstance × List Bool) :
     verifier q = true ↔ q.1.Accepts (q.2.take q.1.witnessLength) := by
-  rw [verifier, decide_eq_true_iff, TMSATInstance.Accepts]
+  rw [verifier, decide_eq_true_iff]
 
 /-- The witness length is at most the length of the encoded instance, since it is written in
 unary. -/
@@ -169,22 +200,8 @@ theorem isVerifier : IsVerifier encTMSATInstance Polynomial.X verifier TMSAT :=
 
 /-- The verifier of `TMSAT` is polynomial-time. -/
 theorem computableInPolyTime_verifier :
-    ComputableInPolyTime verifier (encPair encTMSATInstance encBits) encBool := by
-  have hpair : ComputableInPolyTime (fun p : List Bool × List Bool => encPair encBits encBits p)
-      (encPair encBits encBits) encBits :=
-    .of_eq fun _ => rfl
-  have hin : ComputableInPolyTime
-      (fun q : TMSATInstance × List Bool =>
-        (q.1.machine, (encPair encBits encBits (q.1.input, q.2.take q.1.witnessLength)).map eBit,
-          q.1.steps))
-      (encPair encTMSATInstance encBits) eInUnary := by
-    have hx : ComputableInPolyTime (fun q : TMSATInstance × List Bool =>
-        encPair encBits encBits (q.1.input, q.2.take q.1.witnessLength))
-        (encPair encTMSATInstance encBits) encBits :=
-      hpair.comp (by fun_prop)
-    have := computableInPolyTime_map_eBit.comp hx
-    fun_prop
-  exact (computableInPolyTime_universal.comp hin).decide_eq' (.const _)
+    ComputableInPolyTime verifier (encPair encTMSATInstance encBits) encBool :=
+  TMSATInstance.computableInPolyTime_decide_accepts (.fst _ _) (by fun_prop)
 
 /-- **`TMSAT` is in `NP`.** -/
 theorem mem_NP : TMSAT ∈ NP encTMSATInstance :=
@@ -201,35 +218,50 @@ theorem eval_stepPoly (p : Polynomial ℕ) (c d m : ℕ) :
     (stepPoly p c d).eval m = c * (2 * m + p.eval m + 2) ^ d := by
   simp [stepPoly]
 
-/-- **`TMSAT` is `NP`-hard**: every problem in `NP`, with any encoding of its instances, reduces
-to it in polynomial time through a machine computing its verifier. -/
-theorem npHard : NPHard encTMSATInstance TMSAT := by
-  intro α enc A hA
-  obtain ⟨p, V, ⟨t, _, ht, -, k, State, hfin, tm, htm⟩, hV⟩ := Complexity.mem_NP.mp hA
+/-- For a polynomial-time pair verifier `V` on `encPair enc encBits`, a block-length polynomial `p`
+and block count `k`, construct a polynomial-time map `f : α → TMSATInstance` with
+`(f a).witnessLength = p.eval (enc a).length` whose step bound suffices to simulate `V (a, w)` on
+every word `w` of length `k * p.eval (enc a).length`. -/
+theorem _root_.Cslib.Complexity.TMSATInstance.exists_polyTime_accepts {α : Type}
+    {enc : α ↪ List Bool} {V : α × List Bool → Bool}
+    (hV : ComputableInPolyTime V (encPair enc encBits) encBool) (p : Polynomial ℕ) (k : ℕ) :
+    ∃ f : α → TMSATInstance,
+      ComputableInPolyTime f enc encTMSATInstance ∧
+        (∀ a, (f a).witnessLength = p.eval (enc a).length) ∧
+        ∀ a (w : List Bool), w.length = k * p.eval (enc a).length →
+          ((f a).Accepts w ↔ V (a, w) = true) := by
+  obtain ⟨t, _, ht, -, m, State, hfin, tm, htm⟩ := hV
   obtain ⟨c, d, ht⟩ := polynomiallyBounded_iff_le.mp ht
   have := Fintype.ofFinite State
   let eS : State ↪ ℕ := (Fintype.equivFin State).toEmbedding.trans Fin.valEmbedding
   refine ⟨fun a => ⟨desc eS eBit tm, enc a, p.eval (enc a).length,
-    (stepPoly p c d).eval (enc a).length⟩, ?_, fun a => ?_⟩
+    (stepPoly (Polynomial.C k * p) c d).eval (enc a).length⟩, ?_, fun _ => rfl, fun a w hw => ?_⟩
   · have henc : ComputableInPolyTime (fun a => enc a) enc encBits := .of_eq fun _ => rfl
     have hlen : ComputableInPolyTime (fun a => (enc a).length) enc encUnary := by fun_prop
     have hp := (ComputableInPolyTime.unary_eval p).comp hlen
-    have hq := (ComputableInPolyTime.unary_eval (stepPoly p c d)).comp hlen
+    have hq := (ComputableInPolyTime.unary_eval (stepPoly (Polynomial.C k * p) c d)).comp hlen
     fun_prop
-  · rw [hV a, mem_iff]
-    refine exists_congr fun w => and_congr_right fun hw => ?_
-    -- the step bound exceeds the verifier's running time on `⟨enc a, w⟩`
-    have hle : t (encPair enc encBits (a, w)).length ≤ (stepPoly p c d).eval (enc a).length := by
+  · have hle : t (encPair enc encBits (a, w)).length ≤
+        (stepPoly (Polynomial.C k * p) c d).eval (enc a).length := by
       refine (ht _).trans_eq ?_
       rw [eval_stepPoly, length_encPair]
-      simp only [encBits, Function.Embedding.refl_apply, hw]
+      simp only [encBits, Function.Embedding.refl_apply, hw, Polynomial.eval_mul, Polynomial.eval_C]
       ring_nf
     obtain ⟨hhalt, hout⟩ := (htm (a, w)).runFrom_of_le hle
-    rw [TMSATInstance.accepts_desc_iff]
     change (tm.runFrom (tm.initCfg (encPair enc encBits (a, w))) _).output = [V (a, w)] at hout
     have hx : encPair encBits encBits (enc a, w) = encPair enc encBits (a, w) := rfl
-    rw [hx, hout, List.cons.injEq]
-    exact ⟨fun h => ⟨hhalt, h, rfl⟩, fun h => h.2.1⟩
+    rw [TMSATInstance.accepts_desc_iff, hx, hout, List.singleton_inj]
+    exact and_iff_right hhalt
+
+/-- **`TMSAT` is `NP`-hard**: every problem in `NP`, with any encoding of its instances, reduces
+to it in polynomial time through a machine computing its verifier. -/
+theorem npHard : NPHard encTMSATInstance TMSAT := by
+  intro α enc A hA
+  obtain ⟨p, V, hV, hAV⟩ := Complexity.mem_NP.mp hA
+  obtain ⟨f, hf, hlen, hacc⟩ := TMSATInstance.exists_polyTime_accepts hV p 1
+  refine ⟨f, hf, fun a => ?_⟩
+  rw [hAV a, mem_iff, hlen a]
+  exact exists_congr fun w => and_congr_right fun hw => (hacc a w (by omega)).symm
 
 /-- **TMSAT is `NP`-complete** [Arora and Barak, draft, Theorem 2.9][AroraBarak07]. -/
 theorem npComplete : NPComplete encTMSATInstance TMSAT :=

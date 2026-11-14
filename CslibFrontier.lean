@@ -2742,6 +2742,7 @@ public import CslibFrontier.Computability.Complexity.Problems.StronglyConnected.
 public import CslibFrontier.Computability.Complexity.Problems.SubsetSum
 public import CslibFrontier.Computability.Complexity.Problems.SubsetSum.Digits
 public import CslibFrontier.Computability.Complexity.Problems.TMSAT
+public import CslibFrontier.Computability.Complexity.Problems.TMSigmaSAT
 public import CslibFrontier.Computability.Complexity.Problems.TQBF
 public import CslibFrontier.Computability.Complexity.Problems.TQBF.Closed
 public import CslibFrontier.Computability.Complexity.Problems.TSP
@@ -3368,6 +3369,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.P
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.CourseOfValues
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.DPi
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.EraseDupsBy
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Extension
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Families
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Finite
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fold

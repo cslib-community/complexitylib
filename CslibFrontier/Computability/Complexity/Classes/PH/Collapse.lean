@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.Classes.PH
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.Primitives
 import CslibFrontier.Computability.Complexity.Classes.PH.Projection
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Extension
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 
@@ -29,6 +30,18 @@ first certificate (`Cslib.Complexity.exists_mem_PiP_of_mem_SigmaP_succ`). Then `
 the existential quantifier over `w₁` merges with the first quantifier of `B`, whose block lengths
 are polynomials in the length of the encoded pair `(a, w₁)`, hence in the length of `enc a`.
 
+Every problem in `Σₖ` or `Πₖ` on an explicit encoding `enc` is the preimage `enc ⁻¹' B` of a
+raw-word language `B` in `Σₖ` or `Πₖ` on `encBits`, obtained by extending its polynomial-time
+verifier to all bit words (`Cslib.Complexity.exists_mem_SigmaP_encBits_preimage`,
+`Cslib.Complexity.exists_mem_PiP_encBits_preimage`). Consequently, the fixed-domain bit-language
+hypotheses `PiP k encBits = SigmaP k encBits`, `SigmaP (k + 1) encBits = SigmaP k encBits`,
+`NP encBits = coNP encBits` and `P encBits = NP encBits` transfer to every instance encoding and
+collapse `PH` (`Cslib.Complexity.PH_eq_SigmaP_of_PiP_encBits_eq_SigmaP`,
+`Cslib.Complexity.PH_eq_P_of_P_encBits_eq_NP`) [Arora and Barak, Theorem 5.6][AroraBarak07],
+[Goldreich, Proposition 3.10][Goldreich2007DraftR2]. Conversely, `PH = Σₖ` forces `Σₖ₊₁ = Σₖ` and
+`Πₖ = Σₖ` (`Cslib.Complexity.SigmaP_succ_eq_SigmaP_of_PH_eq_SigmaP`,
+`Cslib.Complexity.PiP_eq_SigmaP_of_PH_eq_SigmaP`).
+
 ## Main results
 
 * `Cslib.Complexity.mem_SigmaP_succ_iff`: `Σₖ₊₁` consists of the projections of `Πₖ`.
@@ -38,10 +51,24 @@ are polynomials in the length of the encoded pair `(a, w₁)`, hence in the leng
 * `Cslib.Complexity.PH_eq_P_of_NP_subset_P`: `P = NP` collapses `PH` to `P`.
 * `Cslib.Complexity.PH_eq_SigmaP_of_SigmaP_succ_subset_SigmaP`: `Σₖ₊₁ ⊆ Σₖ` collapses `PH` to
   `Σₖ`, for every `k`.
+* `Cslib.Complexity.exists_mem_SigmaP_encBits_preimage`,
+  `Cslib.Complexity.exists_mem_PiP_encBits_preimage`: every `Σₖ`/`Πₖ` problem is the preimage
+  along `enc` of a raw-word `Σₖ`/`Πₖ` language on `encBits`.
+* `Cslib.Complexity.PH_eq_SigmaP_of_PiP_encBits_eq_SigmaP`,
+  `Cslib.Complexity.PH_eq_SigmaP_of_SigmaP_succ_encBits_eq_SigmaP`,
+  `Cslib.Complexity.PH_eq_NP_of_NP_encBits_eq_coNP`,
+  `Cslib.Complexity.PH_eq_P_of_P_encBits_eq_NP`: fixed-domain `encBits` collapse corollaries.
+* `Cslib.Complexity.SigmaP_succ_eq_SigmaP_of_PH_eq_SigmaP`,
+  `Cslib.Complexity.PiP_eq_SigmaP_of_PH_eq_SigmaP`,
+  `Cslib.Complexity.forall_PH_eq_SigmaP_iff_PiP_encBits_eq_SigmaP`,
+  `Cslib.Complexity.forall_PH_eq_SigmaP_iff_SigmaP_succ_encBits_eq_SigmaP`: Goldreich's converse
+  and equivalences.
 
 ## References
 
+* [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, web draft 2007][AroraBarak07]
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
+* [O. Goldreich, *Computational Complexity: A Conceptual Perspective*][Goldreich2007DraftR2]
 * [L. Stockmeyer, *The polynomial-time hierarchy*][Stockmeyer1976]
 -/
 
@@ -182,5 +209,232 @@ theorem PH_eq_SigmaP_of_SigmaP_succ_subset_SigmaP {k : ℕ}
       simpa only [zero_add, SigmaP_one, SigmaP_zero] using h encB
   · exact PH_eq_SigmaP_of_PiP_subset_SigmaP hk fun encB =>
       (PiP_subset_SigmaP_succ k).trans (h encB)
+
+/-! ### Raw-word transfer and fixed-domain collapses -/
+
+/-- Pulling a raw-word `Σₖ` language on `encBits` back along `enc` gives a `Σₖ` problem on
+`enc`. -/
+theorem preimage_enc_mem_SigmaP {k : ℕ} {B : Set (List Bool)} (hB : B ∈ SigmaP k encBits) :
+    enc ⁻¹' B ∈ SigmaP k enc := by
+  obtain ⟨ps, V, hps, hV, hB⟩ := hB
+  exact ⟨ps, fun x => V (enc x.1, x.2), hps,
+    hV.comp (ComputableInPolyTime.of_eq fun _ => rfl), fun a => hB (enc a)⟩
+
+/-- Pulling a raw-word `Πₖ` language on `encBits` back along `enc` gives a `Πₖ` problem on
+`enc`. -/
+theorem preimage_enc_mem_PiP {k : ℕ} {B : Set (List Bool)} (hB : B ∈ PiP k encBits) :
+    enc ⁻¹' B ∈ PiP k enc := by
+  obtain ⟨ps, V, hps, hV, hB⟩ := hB
+  exact ⟨ps, fun x => V (enc x.1, x.2), hps,
+    hV.comp (ComputableInPolyTime.of_eq fun _ => rfl), fun a => hB (enc a)⟩
+
+/-- **Raw-word preimage representation for `Σₖ`:** every `A ∈ SigmaP k enc` is `enc ⁻¹' B` for a
+raw-word language `B ∈ SigmaP k encBits`. -/
+theorem exists_mem_SigmaP_encBits_preimage {k : ℕ} {A : Set α} (hA : A ∈ SigmaP k enc) :
+    ∃ B ∈ SigmaP k encBits, enc ⁻¹' B = A := by
+  obtain ⟨ps, V, hps, hV, hAV⟩ := hA
+  obtain ⟨W, hW, hWV⟩ := hV.exists_pair_bool_extension
+  refine ⟨{u | Alternation true (ps.map fun p => p.eval u.length) fun w => W (u, w) = true},
+    ⟨ps, W, hps, hW, fun _ => Iff.rfl⟩, Set.ext fun a => ?_⟩
+  rw [Set.mem_preimage, Set.mem_ofPred_eq, hAV a]
+  exact alternation_congr fun w => by rw [hWV a w]
+
+/-- **Raw-word preimage representation for `Πₖ`:** every `A ∈ PiP k enc` is `enc ⁻¹' B` for a
+raw-word language `B ∈ PiP k encBits`. -/
+theorem exists_mem_PiP_encBits_preimage {k : ℕ} {A : Set α} (hA : A ∈ PiP k enc) :
+    ∃ B ∈ PiP k encBits, enc ⁻¹' B = A := by
+  obtain ⟨B, hB, hBA⟩ := exists_mem_SigmaP_encBits_preimage (compl_mem_SigmaP_iff.mpr hA)
+  exact ⟨Bᶜ, compl_mem_PiP_of_mem_SigmaP hB, by rw [Set.preimage_compl, hBA, compl_compl]⟩
+
+/-- `A ∈ SigmaP k enc` iff `A` is the preimage along `enc` of a language in `SigmaP k encBits`. -/
+theorem mem_SigmaP_iff_exists_encBits {k : ℕ} {A : Set α} :
+    A ∈ SigmaP k enc ↔ ∃ B ∈ SigmaP k encBits, enc ⁻¹' B = A :=
+  ⟨exists_mem_SigmaP_encBits_preimage, fun ⟨_, hB, hBA⟩ => hBA ▸ preimage_enc_mem_SigmaP hB⟩
+
+/-- `A ∈ PiP k enc` iff `A` is the preimage along `enc` of a language in `PiP k encBits`. -/
+theorem mem_PiP_iff_exists_encBits {k : ℕ} {A : Set α} :
+    A ∈ PiP k enc ↔ ∃ B ∈ PiP k encBits, enc ⁻¹' B = A :=
+  ⟨exists_mem_PiP_encBits_preimage, fun ⟨_, hB, hBA⟩ => hBA ▸ preimage_enc_mem_PiP hB⟩
+
+/-- `A ∈ PH enc` iff `A` is the preimage along `enc` of a language in `PH encBits`. -/
+theorem mem_PH_iff_exists_encBits {A : Set α} :
+    A ∈ PH enc ↔ ∃ B ∈ PH encBits, enc ⁻¹' B = A := by
+  simp only [mem_PH]
+  constructor
+  · rintro ⟨k, hA⟩
+    obtain ⟨B, hB, hBA⟩ := exists_mem_SigmaP_encBits_preimage hA
+    exact ⟨B, ⟨k, hB⟩, hBA⟩
+  · rintro ⟨B, ⟨k, hB⟩, hBA⟩
+    exact hBA ▸ ⟨k, preimage_enc_mem_SigmaP hB⟩
+
+/-- **`Πₖ ⊆ Σₖ` on bit strings transfers to every instance encoding.** -/
+theorem PiP_encBits_subset_SigmaP_iff {k : ℕ} :
+    PiP k encBits ⊆ SigmaP k encBits ↔
+      ∀ {β : Type} (encB : β ↪ List Bool), PiP k encB ⊆ SigmaP k encB :=
+  ⟨fun h _ _ _ hA =>
+    let ⟨_, hB, hBA⟩ := exists_mem_PiP_encBits_preimage hA
+    hBA ▸ preimage_enc_mem_SigmaP (h hB),
+    fun h => h encBits⟩
+
+/-- **`Πₖ = Σₖ` on bit strings transfers to every instance encoding.** -/
+theorem PiP_encBits_eq_SigmaP_iff {k : ℕ} :
+    PiP k encBits = SigmaP k encBits ↔
+      ∀ {β : Type} (encB : β ↪ List Bool), PiP k encB = SigmaP k encB :=
+  ⟨fun h _ encB => PiP_eq_SigmaP_of_PiP_subset_SigmaP (PiP_encBits_subset_SigmaP_iff.mp h.le encB),
+    fun h => h encBits⟩
+
+/-- **`Σₖ₊₁ ⊆ Σₖ` on bit strings transfers to every instance encoding.** -/
+theorem SigmaP_succ_encBits_subset_SigmaP_iff {k : ℕ} :
+    SigmaP (k + 1) encBits ⊆ SigmaP k encBits ↔
+      ∀ {β : Type} (encB : β ↪ List Bool), SigmaP (k + 1) encB ⊆ SigmaP k encB :=
+  ⟨fun h _ _ _ hA =>
+    let ⟨_, hB, hBA⟩ := exists_mem_SigmaP_encBits_preimage hA
+    hBA ▸ preimage_enc_mem_SigmaP (h hB),
+    fun h => h encBits⟩
+
+/-- **`Σₖ₊₁ = Σₖ` on bit strings transfers to every instance encoding.** -/
+theorem SigmaP_succ_encBits_eq_SigmaP_iff {k : ℕ} :
+    SigmaP (k + 1) encBits = SigmaP k encBits ↔
+      ∀ {β : Type} (encB : β ↪ List Bool), SigmaP (k + 1) encB = SigmaP k encB :=
+  ⟨fun h _ encB =>
+    (SigmaP_succ_encBits_subset_SigmaP_iff.mp h.le encB).antisymm (SigmaP_subset_SigmaP_succ k),
+    fun h => h encBits⟩
+
+/-- **`coNP ⊆ NP` on bit strings transfers to every instance encoding.** -/
+theorem coNP_encBits_subset_NP_iff :
+    coNP encBits ⊆ NP encBits ↔
+      ∀ {β : Type} (encB : β ↪ List Bool), coNP encB ⊆ NP encB := by
+  simpa only [← PiP_one_eq_coNP, ← SigmaP_one] using PiP_encBits_subset_SigmaP_iff (k := 1)
+
+/-- **`NP = coNP` on bit strings transfers to every instance encoding.** -/
+theorem NP_encBits_eq_coNP_iff :
+    NP encBits = coNP encBits ↔
+      ∀ {β : Type} (encB : β ↪ List Bool), NP encB = coNP encB := by
+  rw [eq_comm, ← PiP_one_eq_coNP, ← SigmaP_one, PiP_encBits_eq_SigmaP_iff]
+  exact ⟨fun h _ encB => by rw [← SigmaP_one, ← PiP_one_eq_coNP, h encB],
+    fun h _ encB => by rw [PiP_one_eq_coNP, SigmaP_one, h encB]⟩
+
+/-- **`NP ⊆ P` on bit strings transfers to every instance encoding.** -/
+theorem NP_encBits_subset_P_iff :
+    NP encBits ⊆ P encBits ↔
+      ∀ {β : Type} (encB : β ↪ List Bool), NP encB ⊆ P encB := by
+  simpa only [zero_add, SigmaP_one, SigmaP_zero] using
+    SigmaP_succ_encBits_subset_SigmaP_iff (k := 0)
+
+/-- **`P = NP` on bit strings transfers to every instance encoding.** -/
+theorem P_encBits_eq_NP_iff :
+    P encBits = NP encBits ↔
+      ∀ {β : Type} (encB : β ↪ List Bool), P encB = NP encB := by
+  rw [eq_comm, ← SigmaP_one, ← SigmaP_zero, SigmaP_succ_encBits_eq_SigmaP_iff (k := 0)]
+  exact ⟨fun h _ encB => by rw [← SigmaP_zero, ← SigmaP_one, h encB],
+    fun h _ encB => by rw [zero_add, SigmaP_one, SigmaP_zero, h encB]⟩
+
+/-- **Arora–Barak Theorem 5.6 / Goldreich Proposition 3.10 (fixed-domain inclusion form):** if
+`Πₖ ⊆ Σₖ` for bit-string languages (`encBits`), with `1 ≤ k`, then `PH = Σₖ` for every instance
+encoding. -/
+theorem PH_eq_SigmaP_of_PiP_encBits_subset_SigmaP {k : ℕ} (hk : 1 ≤ k)
+    (h : PiP k encBits ⊆ SigmaP k encBits) : PH enc = SigmaP k enc :=
+  PH_eq_SigmaP_of_PiP_subset_SigmaP hk (PiP_encBits_subset_SigmaP_iff.mp h)
+
+/-- **Arora–Barak Theorem 5.6 / Goldreich Proposition 3.10 (fixed-domain equality form):** if
+`Πₖ = Σₖ` for bit-string languages (`encBits`), with `1 ≤ k`, then `PH = Σₖ` for every instance
+encoding. -/
+theorem PH_eq_SigmaP_of_PiP_encBits_eq_SigmaP {k : ℕ} (hk : 1 ≤ k)
+    (h : PiP k encBits = SigmaP k encBits) : PH enc = SigmaP k enc :=
+  PH_eq_SigmaP_of_PiP_encBits_subset_SigmaP hk h.le
+
+/-- **Goldreich Proposition 3.10 (fixed-domain consecutive-level inclusion form):** if
+`Σₖ₊₁ ⊆ Σₖ` for bit-string languages (`encBits`), then `PH = Σₖ` for every instance encoding. -/
+theorem PH_eq_SigmaP_of_SigmaP_succ_encBits_subset_SigmaP {k : ℕ}
+    (h : SigmaP (k + 1) encBits ⊆ SigmaP k encBits) : PH enc = SigmaP k enc :=
+  PH_eq_SigmaP_of_SigmaP_succ_subset_SigmaP (SigmaP_succ_encBits_subset_SigmaP_iff.mp h)
+
+/-- **Goldreich Proposition 3.10 (fixed-domain consecutive-level equality form):** if
+`Σₖ₊₁ = Σₖ` for bit-string languages (`encBits`), then `PH = Σₖ` for every instance encoding. -/
+theorem PH_eq_SigmaP_of_SigmaP_succ_encBits_eq_SigmaP {k : ℕ}
+    (h : SigmaP (k + 1) encBits = SigmaP k encBits) : PH enc = SigmaP k enc :=
+  PH_eq_SigmaP_of_SigmaP_succ_encBits_subset_SigmaP h.le
+
+/-- **`coNP ⊆ NP` on bit strings collapses `PH` to `NP` at every encoding.** -/
+theorem PH_eq_NP_of_coNP_encBits_subset_NP (h : coNP encBits ⊆ NP encBits) :
+    PH enc = NP enc :=
+  PH_eq_NP_of_coNP_subset_NP (coNP_encBits_subset_NP_iff.mp h)
+
+/-- **`NP = coNP` on bit strings collapses `PH` to `NP` at every encoding**
+[Arora and Barak, Theorem 5.6][AroraBarak07]. -/
+theorem PH_eq_NP_of_NP_encBits_eq_coNP (h : NP encBits = coNP encBits) :
+    PH enc = NP enc :=
+  PH_eq_NP_of_coNP_encBits_subset_NP h.ge
+
+/-- **`NP ⊆ P` on bit strings collapses `PH` to `P` at every encoding.** -/
+theorem PH_eq_P_of_NP_encBits_subset_P (h : NP encBits ⊆ P encBits) :
+    PH enc = P enc :=
+  PH_eq_P_of_NP_subset_P (NP_encBits_subset_P_iff.mp h)
+
+/-- **`P = NP` on bit strings collapses `PH` to `P` at every encoding**
+[Arora and Barak, Theorem 5.6][AroraBarak07]. -/
+theorem PH_eq_P_of_P_encBits_eq_NP (h : P encBits = NP encBits) :
+    PH enc = P enc :=
+  PH_eq_P_of_NP_encBits_subset_P h.ge
+
+/-! ### Converse and equivalences (Goldreich Proposition 3.10) -/
+
+/-- **Goldreich Proposition 3.10 (converse for `Σₖ₊₁`):** if `PH = Σₖ`, then `Σₖ₊₁ = Σₖ`. -/
+theorem SigmaP_succ_eq_SigmaP_of_PH_eq_SigmaP {k : ℕ} (h : PH enc = SigmaP k enc) :
+    SigmaP (k + 1) enc = SigmaP k enc :=
+  (h ▸ SigmaP_subset_PH (k + 1)).antisymm (SigmaP_subset_SigmaP_succ k)
+
+/-- **Goldreich Proposition 3.10 (converse for `Πₖ`):** if `PH = Σₖ`, then `Πₖ = Σₖ`. -/
+theorem PiP_eq_SigmaP_of_PH_eq_SigmaP {k : ℕ} (h : PH enc = SigmaP k enc) :
+    PiP k enc = SigmaP k enc :=
+  PiP_eq_SigmaP_of_PiP_subset_SigmaP (h ▸ PiP_subset_PH k)
+
+/-- **`PH = Σₖ` on bit strings transfers to every instance encoding.** -/
+theorem PH_encBits_eq_SigmaP_iff {k : ℕ} :
+    PH encBits = SigmaP k encBits ↔
+      ∀ {β : Type} (encB : β ↪ List Bool), PH encB = SigmaP k encB :=
+  ⟨fun h _ _ => PH_eq_SigmaP_of_SigmaP_succ_encBits_eq_SigmaP
+    (SigmaP_succ_eq_SigmaP_of_PH_eq_SigmaP h),
+    fun h => h encBits⟩
+
+/-- **Goldreich Proposition 3.10:** `PH = Σₖ` at every encoding iff `Σₖ₊₁ = Σₖ` on bit strings. -/
+theorem forall_PH_eq_SigmaP_iff_SigmaP_succ_encBits_eq_SigmaP {k : ℕ} :
+    (∀ {β : Type} (encB : β ↪ List Bool), PH encB = SigmaP k encB) ↔
+      SigmaP (k + 1) encBits = SigmaP k encBits :=
+  ⟨fun h => SigmaP_succ_eq_SigmaP_of_PH_eq_SigmaP (h encBits),
+    fun h _ _ => PH_eq_SigmaP_of_SigmaP_succ_encBits_eq_SigmaP h⟩
+
+/-- **Goldreich Proposition 3.10:** for `1 ≤ k`, `PH = Σₖ` at every encoding iff `Πₖ = Σₖ` on bit
+strings. -/
+theorem forall_PH_eq_SigmaP_iff_PiP_encBits_eq_SigmaP {k : ℕ} (hk : 1 ≤ k) :
+    (∀ {β : Type} (encB : β ↪ List Bool), PH encB = SigmaP k encB) ↔
+      PiP k encBits = SigmaP k encBits :=
+  ⟨fun h => PiP_eq_SigmaP_of_PH_eq_SigmaP (h encBits),
+    fun h _ _ => PH_eq_SigmaP_of_PiP_encBits_eq_SigmaP hk h⟩
+
+/-- **Goldreich Proposition 3.10 (fixed-domain `encBits` equivalence for `Σₖ₊₁`):**
+`PH encBits = SigmaP k encBits ↔ SigmaP (k + 1) encBits = SigmaP k encBits`. -/
+theorem PH_encBits_eq_SigmaP_iff_SigmaP_succ_encBits_eq_SigmaP {k : ℕ} :
+    PH encBits = SigmaP k encBits ↔ SigmaP (k + 1) encBits = SigmaP k encBits :=
+  PH_encBits_eq_SigmaP_iff.trans forall_PH_eq_SigmaP_iff_SigmaP_succ_encBits_eq_SigmaP
+
+/-- **Goldreich Proposition 3.10 (fixed-domain `encBits` equivalence for `Πₖ`):** for `1 ≤ k`,
+`PH encBits = SigmaP k encBits ↔ PiP k encBits = SigmaP k encBits`. -/
+theorem PH_encBits_eq_SigmaP_iff_PiP_encBits_eq_SigmaP {k : ℕ} (hk : 1 ≤ k) :
+    PH encBits = SigmaP k encBits ↔ PiP k encBits = SigmaP k encBits :=
+  PH_encBits_eq_SigmaP_iff.trans (forall_PH_eq_SigmaP_iff_PiP_encBits_eq_SigmaP hk)
+
+/-- **`PH = P` at every encoding iff `P = NP` on bit strings.** -/
+theorem forall_PH_eq_P_iff_P_encBits_eq_NP :
+    (∀ {β : Type} (encB : β ↪ List Bool), PH encB = P encB) ↔
+      P encBits = NP encBits := by
+  simpa only [zero_add, SigmaP_zero, SigmaP_one, eq_comm] using
+    forall_PH_eq_SigmaP_iff_SigmaP_succ_encBits_eq_SigmaP (k := 0)
+
+/-- **`PH encBits = P encBits ↔ P encBits = NP encBits`.** -/
+theorem PH_encBits_eq_P_iff_P_encBits_eq_NP :
+    PH encBits = P encBits ↔ P encBits = NP encBits := by
+  simpa only [zero_add, SigmaP_zero, SigmaP_one, eq_comm] using
+    PH_encBits_eq_SigmaP_iff_SigmaP_succ_encBits_eq_SigmaP (k := 0)
 
 end Cslib.Complexity

@@ -42,9 +42,14 @@ under universal quantification (`Cslib.Complexity.mem_PiP_of_forall_length`).
 * `Cslib.Complexity.mem_SigmaP_of_exists_append`, `Cslib.Complexity.mem_PiP_of_forall_append`: the
   same quantifiers on pairs `(a, s)`, extending the word `s` in place, so that nested quantifier
   blocks stay on one pair type.
+* `Cslib.Complexity.SigmaPHard`, `Cslib.Complexity.SigmaPComplete`,
+  `Cslib.Complexity.PiPHard`, `Cslib.Complexity.PiPComplete`,
+  `Cslib.Complexity.PHHard`, `Cslib.Complexity.PHComplete`: polynomial-time hardness and
+  completeness for `Σₖ`, `Πₖ` and `PH`.
 
 ## References
 
+* [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*, web draft 2007][AroraBarak07]
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09]
 * [L. Stockmeyer, *The polynomial-time hierarchy*][Stockmeyer1976]
 -/
@@ -131,5 +136,72 @@ theorem mem_PiP_of_forall_append (hk : 1 ≤ k) {N : α × List Bool → ℕ}
     {x : α × List Bool | ∀ u : List Bool, u.length = N x → (x.1, x.2 ++ u) ∈ C} ∈
       PiP k (encPair enc encBits) :=
   mem_PiP_of_forall_length hk hN ((polyTimeReducible_append C).mem_PiP hC)
+
+/-! ### Hardness and completeness for `Σₖ`, `Πₖ` and `PH` -/
+
+/-- Every problem in `Σₖ`, with any encoding of its instances, reduces to `B` in polynomial
+time. -/
+abbrev SigmaPHard {β : Type*} (k : ℕ) (encB : β ↪ List Bool) (B : Set β) : Prop :=
+  PolyTimeHard (fun {α} => SigmaP (α := α) k) encB B
+
+/-- `B` is in `Σₖ` and every problem in `Σₖ` reduces to it in polynomial time. -/
+abbrev SigmaPComplete {β : Type} (k : ℕ) (encB : β ↪ List Bool) (B : Set β) : Prop :=
+  PolyTimeComplete (fun {α} => SigmaP (α := α) k) encB B
+
+/-- Every problem in `Πₖ`, with any encoding of its instances, reduces to `B` in polynomial
+time. -/
+abbrev PiPHard {β : Type*} (k : ℕ) (encB : β ↪ List Bool) (B : Set β) : Prop :=
+  PolyTimeHard (fun {α} => PiP (α := α) k) encB B
+
+/-- `B` is in `Πₖ` and every problem in `Πₖ` reduces to it in polynomial time. -/
+abbrev PiPComplete {β : Type} (k : ℕ) (encB : β ↪ List Bool) (B : Set β) : Prop :=
+  PolyTimeComplete (fun {α} => PiP (α := α) k) encB B
+
+/-- Every problem in `PH`, with any encoding of its instances, reduces to `B` in polynomial time
+[Arora and Barak, Claim 5.7][AroraBarak07]. -/
+abbrev PHHard {β : Type*} (encB : β ↪ List Bool) (B : Set β) : Prop :=
+  PolyTimeHard @PH encB B
+
+/-- `B` is in `PH` and every problem in `PH` reduces to it in polynomial time
+[Arora and Barak, Claim 5.7][AroraBarak07]. -/
+abbrev PHComplete {β : Type} (encB : β ↪ List Bool) (B : Set β) : Prop :=
+  PolyTimeComplete @PH encB B
+
+theorem phComplete_iff {β : Type} {encB : β ↪ List Bool} {B : Set β} :
+    PHComplete encB B ↔
+      B ∈ PH encB ∧
+        ∀ {α : Type} (enc : α ↪ List Bool) (A : Set α),
+          A ∈ PH enc → PolyTimeReducible enc encB A B :=
+  Iff.rfl
+
+/-- The complement of a `Σₖ`-complete problem is `Πₖ`-complete. -/
+theorem SigmaPComplete.compl {k : ℕ} (h : SigmaPComplete k encB B) : PiPComplete k encB Bᶜ :=
+  PolyTimeComplete.compl (fun _ _ => compl_mem_SigmaP_iff.symm) h
+
+/-- The complement of a `Πₖ`-complete problem is `Σₖ`-complete. -/
+theorem PiPComplete.compl {k : ℕ} (h : PiPComplete k encB B) : SigmaPComplete k encB Bᶜ :=
+  PolyTimeComplete.compl (fun _ _ => compl_mem_PiP_iff.symm) h
+
+/-- `Σ₁`-hardness coincides with `NP`-hardness. -/
+@[simp]
+theorem sigmaPHard_one_iff {β : Type*} {encB : β ↪ List Bool} {B : Set β} :
+    SigmaPHard 1 encB B ↔ NPHard encB B := by
+  simp only [SigmaPHard, NPHard, PolyTimeHard, HardUnder, SigmaP_one]
+
+/-- `Σ₁`-completeness coincides with `NP`-completeness. -/
+@[simp]
+theorem sigmaPComplete_one_iff : SigmaPComplete 1 encB B ↔ NPComplete encB B := by
+  simp only [SigmaPComplete, NPComplete, PolyTimeComplete, PolyTimeHard, HardUnder, SigmaP_one]
+
+/-- `Π₁`-hardness coincides with `coNP`-hardness. -/
+@[simp]
+theorem piPHard_one_iff {β : Type*} {encB : β ↪ List Bool} {B : Set β} :
+    PiPHard 1 encB B ↔ coNPHard encB B := by
+  simp only [PiPHard, coNPHard, PolyTimeHard, HardUnder, PiP_one_eq_coNP]
+
+/-- `Π₁`-completeness coincides with `coNP`-completeness. -/
+@[simp]
+theorem piPComplete_one_iff : PiPComplete 1 encB B ↔ coNPComplete encB B := by
+  simp only [PiPComplete, coNPComplete, PolyTimeComplete, PolyTimeHard, HardUnder, PiP_one_eq_coNP]
 
 end Cslib.Complexity
