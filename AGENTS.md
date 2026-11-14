@@ -323,8 +323,9 @@ optional caches and runs every locally reproducible step from CI's parallel `sou
 `lean-checks` jobs, whose results feed the required `ci-checks` aggregator, with CI's commands
 (`scripts/full_check.py`): these six Lean gates, the Python tooling tests, source hygiene, the
 encoding readability and projection chain ratchets, documentation pins, and the post-build tidy
-statement ratchet, result registry and changed-file lints. Changed-file checks compare with the
-merge base of `origin/main`, or of `--base REF`. `scripts/full_check.py` records why each remaining
+statement and security premise ratchets, result registry and changed-file lints. Changed-file
+checks compare with the merge base of `origin/main`, or of `--base REF`.
+`scripts/full_check.py` records why each remaining
 step stays CI-only (advisory notices, cache plumbing, steps that need GitHub context), and its test
 fails when either execution job gains a step that is neither mirrored nor recorded there, when a
 mirrored step runs a line or sets an option that the local run does not repeat, or when the
@@ -815,6 +816,8 @@ honest-verifier or malicious zero knowledge, semi-honest, static), and any devia
 cited source. When a change replaces a misformalized theorem, it deletes the old one, or demotes it
 to an honestly named and documented helper, and updates its ROADMAP, manual and
 [results inventory](results/README.md) mentions (#5293).
+`scripts/check_security_premises.py` checks the premise rule after a build against a justified
+baseline ([details](CONTRIBUTING.md#library-quality-standard)).
 
 ## Design commitments (do not re-litigate casually)
 

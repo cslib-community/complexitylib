@@ -1,0 +1,442 @@
+/-
+Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Samuel Schlesinger
+-/
+-- upstream: local-only (project validation tooling)
+import Lean
+
+/-!
+# Security premises about constructed objects, for `scripts/check_security_premises.py`
+
+Run as `lake env lean --run scripts/SecurityPremises.lean <lib-dir> < modules.txt`, with one module
+name per line on standard input. It reads the built `.olean` files (all three parts of a split
+module) without importing them, so it sees elaborated statements: notation, `do` blocks, dot
+notation and coercions are already resolved.
+
+The scanned theorems are the public theorems of the listed modules, other than instances and
+those Lean generates, that lie under `CslibFrontier.Crypto` or in the namespace `Cslib.Crypto`.
+
+**Claims.** A hypothesis's *claim atoms* are what remains after its own `∀`s and premises, split
+at `∧` and `∃`. An atom is a *security claim* of one of these kinds:
+
+* `negligible`: `Negligible …`;
+* `advantage`: an inequality `a ≤ b`, `a < b`, `a ≥ b` or `a > b` one of whose sides mentions an
+  advantage, that is a constant whose last name component is `advantage` or `succProbability` or
+  ends in `Advantage`;
+* `member`: a membership `x ∈ S`, the shape of an adversary class `𝒟`, unless `S` is a support,
+  range or interval (`ignoredContainers`), or a bound predicate applied to arguments, the shape of
+  an abstract admissibility class `Admissible x`;
+* `efficiency`: a predicate whose last name component starts with `IsPPT` or `IsOraclePPT`;
+* `indistinguishable`: a predicate whose last name component contains `Indistinguishable`.
+
+Its *subjects* are the explicit arguments of the predicate (all arguments when the predicate is not
+a constant of the listed modules), both sides of the inequality, the element of the membership, or
+the arguments of the bound predicate.
+An atom of no kind headed by a Prop-valued definition of the listed modules is unfolded, at most
+three times; there, only the constructed constants of the definition's arguments count (`unfolded`
+kinds). So a notion applied to a constructed object, such as `Secure (reduction A)`, is seen, while
+a named assumption such as `F.DDH setup` is not flagged, nor is a notion whose own definition builds
+a fixed object of the framework (the dummy adversary of UC emulation).
+
+**Constructed constants.** A constant `c` occurring in a subject, applied to `k` arguments, is
+*constructed* when it is a definition (or opaque constant) of the scope above that is not a
+structure projection, an instance or generated, whose last name component does not contain `game`
+or `experiment` (any case) nor name an advantage, and whose type after `k` arguments, with type
+synonyms of the listed modules unfolded, is
+
+* a value whose type is not a distribution or game (`PMF`, `Game`), a number, `Bool`, a sort, `Set`
+  or an embedding: so a program, a scheme or adversary structure, or a key;
+* or a function whose final result is none of a number, `Bool`, `Prop` or an embedding (a
+  predicate, test, numeric function or family of encodings), and which is not an ensemble or game
+  family, a function of security parameters `ℕ → … → PMF _` or `→ Game`.
+
+Reductions, distinguishers (including `PMF`-valued and `Experiment`-valued ones), simulators,
+extractors, key generators, schemes and adapters are constructed; games, experiments, advantages,
+ideal laws, predicates and encodings are not. Bound variables (the input adversary, generic
+components supplied by the caller) are never constants, so they never count.
+
+A *flagged premise* is a hypothesis with a security claim whose subjects mention a constructed
+constant. The conclusion is flagged (as the binder `⊢`) when, under an `∃` reached through `∀` and
+`∧`, an advantage inequality applies a constructed constant to an `∃`-bound variable, as in
+`∃ m₀ m₁, Adv(A) ≤ Adv(B A m₀ m₁)`: the bound holds only for parameters chosen after the
+adversary, so it is not a uniform reduction.
+
+It prints one JSON line per theorem with a flagged premise or conclusion,
+`{"n": theorem, "m": module, "l": line, "h": [{"b": binder, "k": [kinds], "c": [constructed
+constants]}]}`, and finally `{"theorems": scanned, "modules": read, "missing": [modules without
+build outputs]}`.
+-/
+open Lean
+
+namespace CslibFrontierScripts.SecurityPremises
+
+/-- The last component of a name, or `""`. -/
+def last (n : Name) : String :=
+  match n with
+  | .str _ s => s
+  | _ => ""
+
+/-- Whether `s` is `pre` followed by digits, such as `eq_1`. -/
+def numbered (pre s : String) : Bool :=
+  s.startsWith pre && s.length > pre.length && (s.drop pre.length).all Char.isDigit
+
+/-- Whether a name, without its private prefix, is one Lean generates. -/
+def isGenerated (n : Name) : Bool :=
+  let n := privateToUserName n
+  let s := last n
+  n.isInternalDetail || n.hasMacroScopes || numbered "match_" s || numbered "proof_" s ||
+    numbered "eq_" s ||
+    ["eq_def", "eq_unfold", "injEq", "inj", "induct", "induct_unfolding", "mutual_induct",
+      "fun_cases", "fun_cases_unfolding", "congr_simp", "sizeOf_spec"].contains s
+
+/-- Whether a constant of a module is in scope: under `CslibFrontier.Crypto`, or named in the
+namespace `Cslib.Crypto`. -/
+def inScope (module : Name) (n : Name) : Bool :=
+  (`CslibFrontier.Crypto).isPrefixOf module || (`Cslib.Crypto).isPrefixOf (privateToUserName n)
+
+/-- Whether a last name component names an efficiency predicate. -/
+def efficiencyName (s : String) : Bool :=
+  s.startsWith "IsPPT" || s.startsWith "IsOraclePPT"
+
+/-- Whether a last name component names an advantage. -/
+def advantageName (s : String) : Bool :=
+  s == "advantage" || s == "succProbability" || s.endsWith "Advantage"
+
+/-- Type heads of infrastructure values: distributions and games, numbers, truth values, sets,
+encodings and sorts. -/
+def infrastructure : NameSet :=
+  [`PMF, `Cslib.Crypto.Game, `Real, `NNReal, `ENNReal, `Nat, `Int, `Rat, `Bool, `Prop, `Set,
+    `Function.Embedding].foldl (·.insert ·) {}
+
+/-- Result types of infrastructure functions: predicates, tests and numeric functions. -/
+def infrastructureCodomain : NameSet :=
+  [`Real, `NNReal, `ENNReal, `Nat, `Int, `Rat, `Bool, `Prop, `Function.Embedding].foldl
+    (·.insert ·) {}
+
+/-- Result types of ensembles and game families when indexed by the security parameter alone. -/
+def ensembleCodomain : NameSet :=
+  [`PMF, `Cslib.Crypto.Game].foldl (·.insert ·) {}
+
+/-- Containers of a membership that are not adversary classes. -/
+def ignoredContainers : NameSet :=
+  [`PMF.support, `Set.range, `Finset.range, `List.range, `Finset.univ, `Set.univ,
+    `Finset.Icc, `Finset.Ico, `Set.Icc, `Set.Ico, `Set.Iio, `Set.Ioi].foldl (·.insert ·) {}
+
+/-- The domains of the leading `∀`s of `e`. -/
+partial def forallDomains : Expr → Array Expr
+  | .forallE _ t b _ => #[t] ++ forallDomains b
+  | .mdata _ b => forallDomains b
+  | _ => #[]
+
+/-- The leading `∀`s of `e` stripped (with loose bound variables left in place). -/
+partial def stripForall : Expr → Expr
+  | .forallE _ _ b _ => stripForall b
+  | .mdata _ b => stripForall b
+  | e => e
+
+/-- `e` with its first `k` leading `∀`s stripped. -/
+def dropForall : Nat → Expr → Expr
+  | k + 1, .forallE _ _ b _ => dropForall k b
+  | k, .mdata _ b => dropForall k b
+  | _, e => e
+
+/-- The environment: every constant of the listed modules, with its module. -/
+structure Env where
+  consts : Std.HashMap Name ConstantInfo := {}
+  moduleOf : Std.HashMap Name Name := {}
+  skip : NameSet := {}
+
+/-- `type` with type synonyms of the environment at its head unfolded (`fuel` times at most). -/
+partial def unfoldSynonyms (env : Env) (fuel : Nat) (type : Expr) : Expr :=
+  match fuel, type.consumeMData.getAppFn with
+  | fuel + 1, .const c _ =>
+    if infrastructure.contains c then type else
+    match env.consts[c]? with
+    | some (.defnInfo v) =>
+      match stripForall v.type with
+      | .sort _ =>
+        unfoldSynonyms env fuel (v.value.beta type.consumeMData.getAppArgs).headBeta
+      | _ => type
+    | _ => type
+  | _, _ => type
+
+/-- The head of a type after unfolding type synonyms: a constant, or `Prop` for a sort. -/
+def typeHead (env : Env) (type : Expr) : Option Name :=
+  match (unfoldSynonyms env 8 type).consumeMData.getAppFn with
+  | .sort _ => some `Prop
+  | .const c _ => some c
+  | _ => none
+
+/-- Whether the constant `c`, applied to `k` arguments, is a constructed object (see the module
+docstring): a value of an algorithmic type (a program, a structure such as a scheme or adversary),
+or a function other than a predicate, test or numeric function. -/
+def constructedAt (env : Env) (c : Name) (k : Nat) : Bool := Id.run do
+  let some info := env.consts[c]? | return false
+  let some m := env.moduleOf[c]? | return false
+  unless inScope m c do return false
+  if env.skip.contains c || isGenerated c then return false
+  match info with
+  | .defnInfo _ | .opaqueInfo _ => pure ()
+  | _ => return false
+  let s := (last c).toLower
+  if s.contains "game" || s.contains "experiment" || advantageName (last c) then return false
+  let rest := unfoldSynonyms env 8 (dropForall k info.type)
+  match rest.consumeMData with
+  | .forallE .. =>
+    match typeHead env (stripForall rest) with
+    | some h =>
+      let ensemble := ensembleCodomain.contains h &&
+        (forallDomains rest).all (·.consumeMData.isConstOf `Nat)
+      !infrastructureCodomain.contains h && !ensemble
+    | none => true
+  | .sort _ => false
+  | r =>
+    match typeHead env r with
+    | some h => !infrastructure.contains h
+    | none => true
+
+/-- The constructed constants of `e`, each judged at the number of arguments it is applied to. -/
+partial def constructedIn (env : Env) (e : Expr) : StateM NameSet Unit := do
+  match e with
+  | .app .. =>
+    let f := e.getAppFn
+    let args := e.getAppArgs
+    match f with
+    | .const c _ => if constructedAt env c args.size then modify (·.insert c)
+    | _ => constructedIn env f
+    args.forM (constructedIn env)
+  | .const c _ => if constructedAt env c 0 then modify (·.insert c)
+  | .lam _ t b _ | .forallE _ t b _ => constructedIn env t; constructedIn env b
+  | .letE _ t v b _ => constructedIn env t; constructedIn env v; constructedIn env b
+  | .mdata _ b | .proj _ _ b => constructedIn env b
+  | _ => pure ()
+
+/-- The constructed constants of the expressions `es`. -/
+def constructedOf (env : Env) (es : Array Expr) : NameSet :=
+  ((es.forM (constructedIn env)).run {}).2
+
+/-- Whether `e` mentions an advantage. -/
+def mentionsAdvantage (e : Expr) : Bool :=
+  e.getUsedConstants.any fun c => advantageName (last c)
+
+/-- The claim atoms of a hypothesis type: through its own `∀`s and premises, `∧`, `∃` and
+metadata. -/
+partial def atoms (e : Expr) : Array Expr :=
+  match e with
+  | .forallE _ _ b _ => atoms b
+  | .mdata _ b => atoms b
+  | .lam _ _ b _ => atoms b
+  | e =>
+    if e.isAppOfArity ``And 2 then atoms e.appFn!.appArg! ++ atoms e.appArg!
+    else if e.isAppOfArity ``Exists 2 then atoms e.appArg!
+    else #[e]
+
+/-- The explicit arguments of an application of `f`, when the environment has `f`; otherwise all
+of them. -/
+def explicitArgs (env : Env) (f : Name) (args : Array Expr) : Array Expr := Id.run do
+  let some info := env.consts[f]? | return args
+  let mut type := info.type
+  let mut out := #[]
+  for a in args do
+    match type.consumeMData with
+    | .forallE _ _ b bi =>
+      if bi.isExplicit then out := out.push a
+      type := b
+    | _ => out := out.push a
+  return out
+
+/-- The kind and subjects of a security atom, or `none`. -/
+def classify (env : Env) (e : Expr) : Option (String × Array Expr) :=
+  match e.getAppFn with
+  | .const f _ =>
+    let s := last f
+    let all := e.getAppArgs
+    let args := explicitArgs env f all
+    if s == "Negligible" then some ("negligible", args)
+    else if (f == ``LE.le || f == ``LT.lt || f == ``GE.ge || f == ``GT.gt) && all.size == 4 then
+      if mentionsAdvantage all[2]! || mentionsAdvantage all[3]! then
+        some ("advantage", #[all[2]!, all[3]!])
+      else none
+    else if f == ``Membership.mem && all.size == 5 then
+      match all[3]!.getAppFn with
+      | .const g _ => if ignoredContainers.contains g then none else some ("member", #[all[4]!])
+      | _ => some ("member", #[all[4]!])
+    else if efficiencyName s then some ("efficiency", args)
+    else if s.contains "Indistinguishable" then some ("indistinguishable", args)
+    else none
+  -- A bound predicate, such as an abstract admissibility class `Admissible B`.
+  | .bvar _ | .fvar _ => if e.getAppNumArgs > 0 then some ("member", e.getAppArgs) else none
+  | _ => none
+
+/-- Unfold a Prop-valued definition of the environment heading `e`, once. -/
+def unfoldProp? (env : Env) (e : Expr) : Option Expr := do
+  let .const c _ := e.getAppFn | none
+  let .defnInfo v ← env.consts[c]? | none
+  let .sort .zero := stripForall v.type | none
+  some (v.value.beta e.getAppArgs).headBeta
+
+/-- The security atoms of a hypothesis type that mention a constructed object, as
+`(kind, constructed constants)`. Within an unfolded definition, only the constructed constants of
+its arguments (`allowed`) count: the objects that a notion's own definition builds, such as the
+dummy adversary of UC emulation, are part of the notion. -/
+partial def findings (env : Env) (fuel : Nat) (allowed : Option NameSet) (e : Expr) :
+    Array (String × Array Name) :=
+  (atoms e).foldl (init := #[]) fun acc a =>
+    match classify env a with
+    | some (k, subjects) =>
+      let cs := (constructedOf env subjects).toArray.filter fun c =>
+        allowed.all (·.contains c)
+      if cs.isEmpty then acc else acc.push (k, cs)
+    | none =>
+      match fuel, unfoldProp? env a with
+      | fuel + 1, some u =>
+        let args := constructedOf env a.getAppArgs
+        let allowed := some (allowed.elim args fun s => args.filter s.contains)
+        if args.isEmpty then acc else
+        acc ++ (findings env fuel allowed u).map fun (k, cs) => ("unfolded " ++ k, cs)
+      | _, _ => acc
+
+/-- The constructed constants of `e` applied to an argument that mentions one of `vars`. -/
+partial def constructedWith (env : Env) (vars : Array FVarId) (e : Expr) :
+    StateM NameSet Unit := do
+  match e with
+  | .app .. =>
+    let f := e.getAppFn
+    let args := e.getAppArgs
+    match f with
+    | .const c _ =>
+      if constructedAt env c args.size &&
+          args.any (·.hasAnyFVar (vars.contains ·)) then
+        modify (·.insert c)
+    | _ => constructedWith env vars f
+    args.forM (constructedWith env vars)
+  | .lam _ t b _ | .forallE _ t b _ => constructedWith env vars t; constructedWith env vars b
+  | .letE _ t v b _ =>
+    constructedWith env vars t; constructedWith env vars v; constructedWith env vars b
+  | .mdata _ b | .proj _ _ b => constructedWith env vars b
+  | _ => pure ()
+
+/-- Advantage bounds in a conclusion that hold only for some existentially chosen parameters of
+a constructed reduction, such as `∃ m₀ m₁, … ≤ Adv(B A m₀ m₁)`: the constructed constants applied
+to an `∃`-bound variable in an advantage inequality under the `∃`. The textbook reduction chooses
+such parameters itself (by sampling), so the bound does not give a uniform reduction. -/
+partial def existentialFindings (env : Env) (vars : Array FVarId) (fresh : Nat) (e : Expr) :
+    Array Name :=
+  match e with
+  | .forallE _ _ b _ | .mdata _ b => existentialFindings env vars fresh b
+  | e =>
+    if e.isAppOfArity ``And 2 then
+      existentialFindings env vars fresh e.appFn!.appArg! ++
+        existentialFindings env vars fresh e.appArg!
+    else if e.isAppOfArity ``Exists 2 then
+      match e.appArg!.consumeMData with
+      | .lam _ _ body _ =>
+        let x : FVarId := ⟨.num `_exists fresh⟩
+        existentialFindings env (vars.push x) (fresh + 1) (body.instantiate1 (.fvar x))
+      | _ => #[]
+    else if vars.isEmpty then #[]
+    else
+      match classify env e with
+      | some ("advantage", subjects) =>
+        (((subjects.forM (constructedWith env vars)).run {}).2).toArray
+      | _ => #[]
+
+unsafe def declRanges (entries : Array (Name × Array EnvExtensionEntry)) :
+    NameMap DeclarationRanges := Id.run do
+  let mut ranges : NameMap DeclarationRanges := {}
+  for (ext, es) in entries do
+    if ext == `Lean.declRangeExt then
+      for e in es do
+        let (n, r) := (unsafeCast e : Name × DeclarationRanges)
+        ranges := ranges.insert n r
+  return ranges
+
+/-- The instances and structure projections of a module. -/
+unsafe def skipped (entries : Array (Name × Array EnvExtensionEntry)) : NameSet := Id.run do
+  let mut out : NameSet := {}
+  for (ext, es) in entries do
+    if ext == `Lean.projectionFnInfoExt then
+      for e in es do
+        out := out.insert (unsafeCast e : Name × ProjectionFunctionInfo).1
+    if ext == `Lean.Meta.instanceExtension then
+      for e in es do
+        let entry := match (unsafeCast e : ScopedEnvExtension.Entry Meta.InstanceEntry) with
+          | .global a => a
+          | .scoped _ a => a
+        if let some n := entry.globalName? then out := out.insert n
+  return out
+
+unsafe def run (libDir : System.FilePath) : IO Unit := do
+  let stdin ← IO.getStdin
+  let stdout ← IO.getStdout
+  let mut regions : Array CompactedRegion := #[]
+  let mut missing : Array String := #[]
+  let mut env : Env := {}
+  let mut mods : Array (Name × ModuleData) := #[]
+  repeat
+    let line ← stdin.getLine
+    if line.isEmpty then break
+    let mod := line.trimAscii.toString
+    if mod.isEmpty then continue
+    let base := (libDir / System.FilePath.mk (mod.replace "." "/")).addExtension "olean"
+    unless ← base.pathExists do
+      missing := missing.push mod
+      continue
+    let split ← (base.addExtension "private").pathExists
+    let paths := if split then #[base, base.addExtension "server", base.addExtension "private"]
+      else #[base]
+    let parts ← readModuleDataParts paths
+    regions := regions ++ parts.map (·.2)
+    let some (data, _) := parts[if split then 2 else 0]? |
+      throw <| IO.userError s!"cannot read {base}"
+    let m := mod.toName
+    mods := mods.push (m, data)
+    for c in data.constants do
+      env := { env with consts := env.consts.insert c.name c,
+                        moduleOf := env.moduleOf.insert c.name m }
+    env := { env with skip := (skipped data.entries).foldl (·.insert ·) env.skip }
+  let mut scanned := 0
+  for (m, data) in mods do
+    let ranges := declRanges data.entries
+    for c in data.constants do
+      let .thmInfo v := c | continue
+      if isPrivateName c.name || isGenerated c.name || env.skip.contains c.name then continue
+      unless inScope m c.name do continue
+      scanned := scanned + 1
+      let mut hyps : Array Json := #[]
+      let mut t := v.type
+      repeat
+        match t with
+        | .mdata _ b => t := b
+        | .forallE n ty b bi =>
+          unless bi.isInstImplicit do
+            let fs := findings env 3 none ty
+            unless fs.isEmpty do
+              let kinds := (fs.map (·.1)).toList.eraseDups
+              let cs := (fs.foldl (fun acc (_, cs) => acc ++ cs) #[]).toList.eraseDups
+              hyps := hyps.push <| Json.mkObj [("b", toJson n.toString),
+                ("k", toJson kinds), ("c", toJson (cs.map (privateToUserName · |>.toString)))]
+          t := b
+        | _ => break
+      let cs := (existentialFindings env #[] 0 t).toList.eraseDups
+      unless cs.isEmpty do
+        hyps := hyps.push <| Json.mkObj [("b", toJson "⊢"),
+          ("k", toJson ["exists advantage"]),
+          ("c", toJson (cs.map (privateToUserName · |>.toString)))]
+      unless hyps.isEmpty do
+        let line := ((ranges.find? c.name).map (·.selectionRange.pos.line)).getD 0
+        stdout.putStrLn <| Json.compress <| Json.mkObj [("n", toJson c.name.toString),
+          ("m", toJson m.toString), ("l", toJson line), ("h", Json.arr hyps)]
+  stdout.putStrLn <| Json.compress <| Json.mkObj [("theorems", toJson scanned),
+    ("modules", toJson mods.size), ("missing", toJson missing)]
+  -- Keep the regions reachable until every expression has been used.
+  if regions.isEmpty then stdout.flush
+
+end CslibFrontierScripts.SecurityPremises
+
+unsafe def main (args : List String) : IO Unit :=
+  match args with
+  | [] => CslibFrontierScripts.SecurityPremises.run ".lake/build/lib/lean"
+  | [libDir] => CslibFrontierScripts.SecurityPremises.run libDir
+  | _ => throw <| IO.userError "usage: SecurityPremises [<lib-dir>] < modules.txt"

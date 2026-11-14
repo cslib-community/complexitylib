@@ -57,6 +57,8 @@ Before review, check a new security theorem against this list:
 - the name and docstring state the model (standard, random-oracle, ideal, query-bounded or information-theoretic), the notion (single- or multi-challenge, one-time or many-time, honest-verifier or malicious zero knowledge, semi-honest, static) and any deviation from the cited source;
 - a theorem it replaces is deleted or demoted to an honestly named helper in the same change.
 
+CI checks the premise rule on pull requests. After `lake build`, run `python3 scripts/check_security_premises.py` (or `--list CslibFrontier/Crypto/…` for every hit in an area). It reads the elaborated statements of the public Crypto theorems and reports, for each flagged theorem in a changed module, the premise, the kind of claim and the constructed definitions it is about, for example `premise hDL: negligible about Cslib.Crypto.PrimeOrderGroupFamily.schnorrFamilyROMSchemeReduction`. To fix a report, prove the premise: certify the reduction and apply the named assumption to it. If the lemma is meant to be conditional, name and document it as an algebraic helper, run `python3 scripts/check_security_premises.py --update-baseline`, and write the one-line `why` of its entry in [security_premises_baseline.json](../../scripts/security_premises_baseline.json). When you delete or fix a theorem that has an entry, remove the entry in the same change; the check fails on an entry that no longer matches. The check does not see a premise whose own definition builds the constructed object, or a caller-supplied component that the theorem ought to construct, such as the Σ-protocol extractor above; review covers those.
+
 ## Hardness and pseudorandomness
 
 | Schema | Principal source | Formal parameters and main use |
