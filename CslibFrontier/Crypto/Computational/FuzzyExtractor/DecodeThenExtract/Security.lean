@@ -13,10 +13,11 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
+import CslibFrontier.Computability.Probabilistic.UniformNat
 import CslibFrontier.Computability.Probabilistic.Repeat
-import CslibFrontier.Crypto.Computational.LWE.KeyGen
 import CslibFrontier.Foundations.Data.List.Lookup
 import CslibFrontier.Languages.Probabilistic.Norm
+import CslibFrontier.Languages.Probabilistic.UniformNat.Residue
 import Mathlib.Algebra.BigOperators.Fin
 
 /-!
@@ -390,8 +391,8 @@ private theorem eval_keyReductionWords (D : Distinguisher m k l w) (x : LWE.Inpu
     ProbComp.eval (keyReductionWords D x) =
       ProbComp.eval (keyReduction D x.secParam x.matrix x.target) := by
   simp only [keyReductionWords, keyReduction, hardcoreKeyReduction, sampleCoinRows, sampleCoins,
-    ProbComp.eval_bind, ProbComp.eval_uniform, LWE.eval_replicate_replicate_sampleBinaryNat,
-    LWE.eval_replicate_sampleBinaryNat, PMF.bind_map, Function.comp_def, reductionInput,
+    ProbComp.eval_bind, ProbComp.eval_uniform, ProbComp.eval_replicate_replicate_sampleBinaryNat,
+    ProbComp.eval_replicate_sampleBinaryNat, PMF.bind_map, Function.comp_def, reductionInput,
     coinMatrix_ofFn, coinVector_ofFn]
 
 private theorem eval_uniformReductionWords (D : Distinguisher m k l w) (x : LWE.Input l m w) :
@@ -399,7 +400,7 @@ private theorem eval_uniformReductionWords (D : Distinguisher m k l w) (x : LWE.
       ProbComp.eval (uniformReduction D x.secParam x.matrix x.target) := by
   simp only [uniformReductionWords, uniformReduction, hardcoreUniformReduction, sampleCoinRows,
     sampleCoins, ProbComp.eval_bind, ProbComp.eval_uniform,
-    LWE.eval_replicate_replicate_sampleBinaryNat, LWE.eval_replicate_sampleBinaryNat,
+    ProbComp.eval_replicate_replicate_sampleBinaryNat, ProbComp.eval_replicate_sampleBinaryNat,
     PMF.bind_map, Function.comp_def, reductionInput, coinMatrix_ofFn, coinVector_ofFn]
 
 /-- Sampling the coins is strict PPT on LWE inputs. -/

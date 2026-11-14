@@ -17,6 +17,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Crypto.Negligible.Dyadic
 import CslibFrontier.Foundations.Data.List.Lookup
 import CslibFrontier.Languages.Probabilistic.Norm
+import CslibFrontier.Languages.Probabilistic.UniformNat.Residue
 import CslibFrontier.Probability.StatisticalDistance
 import CslibFrontier.Tactic.PMFSwap
 import CslibFrontier.Tactic.PPT
@@ -208,7 +209,7 @@ theorem eval_keyGenSerialized_fst (n m w : ℕ) :
         (PMF.uniformOfFintype (Fin m → Bool)).bind fun bits =>
           PMF.pure (serializePublicKey (publicKeyOf A fun i => (bits i).toNat)) := by
     unfold keyGenSerialized sampleKeyInputsSerialized
-    simp only [pmf_norm, LWE.eval_replicate_replicate_sampleBinaryNat, hbits,
+    simp only [pmf_norm, ProbComp.eval_replicate_replicate_sampleBinaryNat, hbits,
       ProbComp.eval_replicateFin, ProbComp.eval_uniform, PMF.pi_uniformOfFintype, _root_.Matrix,
       publicKeySerialized_eq]
     congr 1 with A : 1
@@ -334,8 +335,8 @@ theorem eval_encryptSerialized (n m w η : ℕ) (publicWord : List Bool) (messag
   have hx := ProbComp.eval_replicateFin_map
     (PMF.map_id (ProbComp.eval (sampleCenteredBinomial η))).symm m
   simp only [pmf_norm, encryptSerialized, sampleEncCoinsSerialized,
-    LWE.eval_replicate_sampleBinaryNat, hx, encrypt, LWE.eval_sampleVector, Function.comp_def,
-    encryptWithCoinsSerialized_eq]
+    ProbComp.eval_replicate_sampleBinaryNat, hx, encrypt, LWE.eval_sampleVector,
+    Function.comp_def, encryptWithCoinsSerialized_eq]
   congr 1 with s : 1
   congr 1 with x : 1
   congr 1 with x₀ : 1

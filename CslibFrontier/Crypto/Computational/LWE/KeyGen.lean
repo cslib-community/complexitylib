@@ -19,6 +19,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Foundations.Data.List.Lookup
 import CslibFrontier.Languages.Probabilistic.Norm
+import CslibFrontier.Languages.Probabilistic.UniformNat.Residue
 import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Tactic.PPT
@@ -60,9 +61,6 @@ distributional bridges to `DecisionLWE`, and uniform strict polynomial-time cert
 * `Cslib.Crypto.LWE.mem_support_sampleKeyInputs_iff`: exact coordinatewise error bound on
   supported key inputs.
 * `Cslib.Crypto.LWE.exists_uniform_seed_sampleKeyInputs`: flat uniform bit-tape realization.
-* `Cslib.Crypto.LWE.eval_replicate_sampleBinaryNat`,
-  `Cslib.Crypto.LWE.eval_replicate_replicate_sampleBinaryNat`: lists of unsigned `w`-bit samples
-  are the canonical representatives of a uniform residue vector or matrix.
 * `Cslib.Crypto.LWE.eval_keyGen_publicMatrix`, `Cslib.Crypto.LWE.eval_keyGen_publicWord`,
   `Cslib.Crypto.LWE.eval_keyGenSerialized_publicWord`: exact match with `LWE.publicMatrixLaw`
   and `LWE.realEnsemble`.
@@ -125,13 +123,9 @@ noncomputable def sampleResidue (w : ℕ) : ProbComp (ZMod (2 ^ w)) :=
 /-- A uniform residue sample has the uniform finite-ring law modulo `2 ^ w`. -/
 @[simp] theorem eval_sampleResidue (w : ℕ) :
     ProbComp.eval (sampleResidue w) = PMF.uniformOfFintype (ZMod (2 ^ w)) := by
-  rw [sampleResidue, ProbComp.eval_map, eval_sampleBinaryNat, PMF.map_comp]
-  let e : Fin (2 ^ w) ≃ ZMod (2 ^ w) :=
-    { toFun := fun i => i.val
-      invFun := fun z => ⟨z.val, ZMod.val_lt z⟩
-      left_inv := fun i => Fin.ext (ZMod.val_cast_of_lt i.isLt)
-      right_inv := fun z => ZMod.natCast_zmod_val z }
-  exact PMF.uniformOfFintype_map_equiv e
+  rw [sampleResidue, ProbComp.eval_map, eval_sampleBinaryNat_eq_map_val, PMF.map_comp]
+  simp only [Function.comp_def, ZMod.natCast_zmod_val]
+  exact PMF.map_id _
 
 /-- Sample a uniformly random residue vector of length `count` modulo `2 ^ w`. -/
 noncomputable def sampleVector (count w : ℕ) : ProbComp (Fin count → ZMod (2 ^ w)) :=
@@ -293,39 +287,6 @@ def decodeKeyInputs (n m w : ℕ) (inputs : SerializedKeyInputs) : KeyInputs n m
     decodeKeyInputs n m w (serializeKeyInputs inputs) = inputs := by
   cases inputs
   simp only [decodeKeyInputs, serializeKeyInputs, List.getD_ofFn, ZMod.natCast_zmod_val]
-
-/-- Sampling an unsigned `w`-bit integer gives the canonical residue representative law. -/
-theorem eval_sampleBinaryNat_eq_map_val (w : ℕ) :
-    ProbComp.eval (sampleBinaryNat w) =
-      (ProbComp.eval (sampleResidue w)).map ZMod.val := by
-  rw [sampleResidue, ProbComp.eval_map, PMF.map_comp]
-  symm
-  calc
-    _ = (ProbComp.eval (sampleBinaryNat w)).map id :=
-      PMF.map_congr_on_support _ _ _ (fun value hvalue =>
-        ZMod.val_natCast_of_lt ((mem_support_sampleBinaryNat_iff w value).mp hvalue))
-    _ = _ := PMF.map_id _
-
-/-- `count` independent unsigned `w`-bit integers list the canonical representatives of a uniform
-residue vector modulo `2 ^ w`. -/
-theorem eval_replicate_sampleBinaryNat (count w : ℕ) :
-    ProbComp.eval (OracleComp.replicate count (sampleBinaryNat w)) =
-      (PMF.uniformOfFintype (Fin count → ZMod (2 ^ w))).map
-        fun x => List.ofFn fun j => (x j).val := by
-  have h := ProbComp.eval_replicateFin_map (eval_sampleBinaryNat_eq_map_val w) count
-  change _ = (ProbComp.eval (sampleVector count w)).map _ at h
-  rwa [eval_sampleVector] at h
-
-/-- `rows` independent lists of `cols` unsigned `w`-bit integers list, row by row, the canonical
-representatives of a uniform `rows × cols` matrix modulo `2 ^ w`. -/
-theorem eval_replicate_replicate_sampleBinaryNat (rows cols w : ℕ) :
-    ProbComp.eval (OracleComp.replicate rows (OracleComp.replicate cols (sampleBinaryNat w))) =
-      (PMF.uniformOfFintype (_root_.Matrix (Fin rows) (Fin cols) (ZMod (2 ^ w)))).map
-        fun A => List.ofFn fun i => List.ofFn fun j => (A i j).val := by
-  have hrow := ProbComp.eval_replicateFin_map (eval_sampleBinaryNat_eq_map_val w) cols
-  have h := ProbComp.eval_replicateFin_map hrow rows
-  change _ = (ProbComp.eval (sampleMatrix rows cols w)).map _ at h
-  rwa [eval_sampleMatrix] at h
 
 /-- The efficient key-input sampler has exactly the typed sampler's joint law, including the
 independence of the secret, public-matrix part, and signed errors. -/
