@@ -9,6 +9,8 @@ module
 
 public import CslibFrontier.Probability.StochasticOracle.SelectionLowerBound
 import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.RecordCount
+import CslibFrontier.Probability.StochasticOracle.AdaptiveSelection.FiniteTable
+import CslibFrontier.Probability.PMF.ToReal
 
 /-!
 # Necessary deadlines for arbitrary selection-only policies
@@ -31,42 +33,6 @@ open Cslib.Optimization.OneConstraint AdaptiveSelection PartialCover Finset Meas
 variable {B R J E : Type} [Fintype B] [Fintype R] [Fintype J]
   [DecidableEq J] [DecidableEq E]
 
-private theorem progressExpectation_le_supported {Ω : Type} [Fintype Ω]
-    (law : List Ω → Distribution Ω ℝ) (b : List Ω → Ω → Bool)
-    (p : ℝ) (hp : 0 ≤ p) (hp' : p ≤ 1)
-    (hprob : ∀ h, Reachable law h → (law h).mean (fun x => if b h x then 1 else 0) ≤ p)
-    (f : ℕ → ℝ) (hf : Monotone f) (n : ℕ) (h : List Ω) (hh : Reachable law h) (k : ℕ) :
-    progressExpectation law b f n h k ≤ bernoulliExpectation p f n k := by
-  induction n generalizing h k with
-  | zero => exact le_rfl
-  | succ n ih =>
-    have hm := bernoulliExpectation_mono p hp hp' f hf n
-    have he : (fun x => bernoulliExpectation p f n (k + if b h x then 1 else 0)) =
-        (fun x => bernoulliExpectation p f n k +
-          (bernoulliExpectation p f n (k + 1) - bernoulliExpectation p f n k) *
-            (if b h x then 1 else 0)) := by
-      funext x
-      split_ifs <;> simp
-    calc
-      _ ≤ (law h).mean (fun x => bernoulliExpectation p f n
-          (k + if b h x then 1 else 0)) := by
-        apply sum_le_sum
-        intro x _
-        by_cases hx : (law h).weight x = 0
-        · simp [hx]
-        · exact mul_le_mul_of_nonneg_left
-            (ih _ (.cons hh (lt_of_le_of_ne ((law h).nonneg x) (Ne.symm hx))) _)
-            ((law h).nonneg x)
-      _ = bernoulliExpectation p f n k +
-          (bernoulliExpectation p f n (k + 1) - bernoulliExpectation p f n k) *
-            (law h).mean (fun x => if b h x then 1 else 0) := by
-        rw [he, Distribution.mean_add, Distribution.mean_const, Distribution.mean_mul]
-      _ ≤ bernoulliExpectation p f n k +
-          (bernoulliExpectation p f n (k + 1) - bernoulliExpectation p f n k) * p :=
-        add_le_add_right (mul_le_mul_of_nonneg_left (hprob h hh)
-          (sub_nonneg.mpr (hm (Nat.le_succ k)))) _
-      _ = _ := by simp only [bernoulliExpectation]; ring
-
 /-- The actual revealed-progress tail for an arbitrary policy has the binomial
 upper bound under the supported selected-batch upper envelope. -/
 theorem revealed_tail_le (O : Oracle B R J) (π : Policy B R J) (I : Instance E J)
@@ -78,24 +44,18 @@ theorem revealed_tail_le (O : Oracle B R J) (π : Policy B R J) (I : Instance E 
       (law O π h).mean (fun x => if reveals I (proposals O) h x then 1 else 0) ≤ p := by
     apply (conditional_means O π I b p c ℓ H h hh).1.trans
     have hi : (law O π h).mean (fun x => if issued h x then (1 : ℝ) else 0) ≤ 1 := by
-      calc
-        _ ≤ (law O π h).mean (fun _ => 1) := by
-          apply sum_le_sum
-          intro x _
-          apply mul_le_mul_of_nonneg_left _ ((law O π h).nonneg x)
-          dsimp only
-          split_ifs <;> norm_num
-        _ = 1 := Distribution.mean_const (law O π h) 1
+      rw [Distribution.mean_bool_eq_toPMF (law O π h) (issued h)]
+      exact PMF.toOuterMeasure_toReal_le_one _ _
     simpa only [mul_one] using mul_le_mul_of_nonneg_left hi p.2.1
-  rw [historyExpectation_count (law O π) (reveals I (proposals O))
-    (fun k => if r ≤ k then 1 else 0) u []]
-  have ht := progressExpectation_le_supported (law O π) (reveals I (proposals O))
-    p p.2.1 p.2.2 hp (fun k => if r ≤ k then 1 else 0) (by
-      intro i j hij
-      dsimp only
-      split_ifs <;> norm_num; omega) u [] .nil 0
-  rw [bernoulliExpectation_eq_integral] at ht
-  simpa only [count, Nat.zero_add] using ht
+  have hb := count_tail_le_binomial (law O π) (reveals I (proposals O)) u r p hp
+  have he : (∫ i, (if r ≤ i then (1 : ℝ) else 0) ∂ProbabilityTheory.binomial u p) =
+      (ProbabilityTheory.binomial u p).real (Set.Ici r) := by
+    have hf : (fun i : ℕ => if r ≤ i then (1 : ℝ) else 0) =
+        (Set.Ici r).indicator 1 := by
+      funext i
+      by_cases hi : r ≤ i <;> simp [Set.indicator, hi]
+    rw [hf, integral_indicator_one measurableSet_Ici]
+  rwa [he]
 
 /-- Universal physical latency gives a pathwise lower bound on elapsed time by
 number of actual issued calls, even when proposals are buffered without retention. -/

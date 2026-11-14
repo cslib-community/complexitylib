@@ -956,6 +956,23 @@ binomial tail with `v = min(u,floor(D/ℓ))`. Output provenance and the size cap
 the success-to-revealed-count bridge. Supported latency lower bounds prove that a
 successful deadline path has no issued call after that prefix; a halt cannot restart.
 The progress comparison permits arbitrary full-history response correlations.
+For a finite response table, import
+[`AdaptiveSelection/FiniteTable.lean`](../../CslibFrontier/Probability/StochasticOracle/AdaptiveSelection/FiniteTable.lean)
+to move between the recursive finite expectation and the actual sequential PMF law.
+`historyExpectation_eq_sum_seqProcess` preserves arbitrary real transcript scores;
+`historyExpectation_indicator_eq_seqProcess` exposes event probabilities, and
+`reachable_seqHistory_iff_mem_support` identifies the positive paths. The existing finite
+`revealed_tail_le` now applies the shared `count_tail_le_binomial` comparison through this
+bridge. It no longer maintains its own stochastic-comparison induction.
+`Distribution.mean_bool_eq_toPMF` converts local Boolean means to event probabilities;
+`Distribution.mem_support_toPMF` in `Probability.FiniteTable.Support` characterizes positive
+response weights. The checked
+[finite-table client](../../CslibFrontierTests/StochasticOracleFiniteTable.lean)
+computes a stateful score expectation of `17/4` in both representations and excludes a
+poisoned impossible history whose probability envelope would otherwise fail.
+The finite expectation tower used here and by the infinite-path semantics is shared in
+`AdaptiveSelection.HistoryExpectation`. These bridges preserve the original semantic model
+and resource bounds; they add no native realization theorem.
 The shared `marginal_lower_cost` aggregates the actual derived marginals directly; no
 aggregate expected-cost lower bound is a hypothesis.
 

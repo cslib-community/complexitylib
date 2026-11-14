@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Foundations.Optimization.OneConstraint
 public import CslibFrontier.Probability.PMF
+import CslibFrontier.Probability.PMF.Event
 import Mathlib.Tactic
 
 /-!
@@ -22,6 +23,7 @@ Rational tables remain in the optimizer; real tables are interpreted as PMFs.
 
 * `Distribution.toPMF_bind`, `Distribution.toPMF_map`: preserve probabilistic semantics.
 * `Distribution.mean_realify`: exact rational-to-real expectations.
+* `Distribution.mean_bool_eq_toPMF`: Boolean indicator means are event probabilities.
 -/
 
 public section
@@ -39,6 +41,17 @@ variable {α β : Type*} [Fintype α] [Fintype β]
 /-- The real mass of an interpreted table is its original weight. -/
 @[simp] theorem toPMF_real (w : Distribution α ℝ) (i : α) :
     (w.toPMF i).toReal = w.weight i := ENNReal.toReal_ofReal (w.nonneg i)
+
+/-- A Boolean indicator mean is exactly its interpreted event probability. -/
+theorem mean_bool_eq_toPMF (w : Distribution α ℝ) (test : α → Bool) :
+    w.mean (fun a => if test a then 1 else 0) =
+      (w.toPMF.toOuterMeasure {a | test a = true}).toReal := by
+  classical
+  rw [Cslib.Probability.PMF.toOuterMeasure_apply_toReal]
+  unfold Distribution.mean
+  apply Finset.sum_congr rfl
+  intro a _
+  cases ht : test a <;> simp [ht]
 
 /-- Interpretation preserves deterministic laws. -/
 theorem toPMF_pure (i : α) : (Distribution.pure i : Distribution α ℝ).toPMF = PMF.pure i := by

@@ -6292,6 +6292,7 @@ public import CslibFrontier.Probability.FiniteSampleInformation.WideSquarePullba
 public import CslibFrontier.Probability.FiniteSampleInformation.WideTauHomConeContact
 public import CslibFrontier.Probability.FiniteTable
 public import CslibFrontier.Probability.FiniteTable.Expectation
+public import CslibFrontier.Probability.FiniteTable.Support
 public import CslibFrontier.Probability.FiniteTableOfPMF
 public import CslibFrontier.Probability.FixedMeanInvoice
 public import CslibFrontier.Probability.Fooling
@@ -6477,6 +6478,8 @@ public import CslibFrontier.Probability.StochasticOracle.AdaptiveReachable
 public import CslibFrontier.Probability.StochasticOracle.AdaptiveSelection
 public import CslibFrontier.Probability.StochasticOracle.AdaptiveSelection.Discrete
 public import CslibFrontier.Probability.StochasticOracle.AdaptiveSelection.DiscreteCost
+public import CslibFrontier.Probability.StochasticOracle.AdaptiveSelection.FiniteTable
+public import CslibFrontier.Probability.StochasticOracle.AdaptiveSelection.HistoryExpectation
 public import CslibFrontier.Probability.StochasticOracle.AdaptiveSelection.Prefix
 public import CslibFrontier.Probability.StochasticOracle.AdaptiveStopping
 public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.Codec
