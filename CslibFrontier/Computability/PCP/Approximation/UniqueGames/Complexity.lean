@@ -252,7 +252,8 @@ private theorem poly_start (L : ℕ) :
   have hs : ComputableInPolyTime (fun p : State (Fin L) × ℕ => p.2)
       (encPair (encUGState L) encUnary) encUnary := snd _ _
   exact poly_state_mk
-    (ComputableInPolyTime.listSetWithInput (encOption (encUGFn L)) ((poly_state_table L).comp hS) hs (const (some id)))
+    (ComputableInPolyTime.listSetWithInput (encOption (encUGFn L))
+      ((poly_state_table L).comp hS) hs (const (some id)))
     (const (fun _ => true))
     (cons' hs (const []))
     (const [])
@@ -1113,7 +1114,7 @@ theorem computableInPolyTime_isSome_solve (L : ℕ) [NeZero L] :
       (encUGGraph L) encBool :=
     (poly_checkTable L).comp
       (((poly_state_table L).comp (poly_run L)).prod ComputableInPolyTime.id')
-  simpa only [checkTable_run_eq_isSome_solve] using h
+  simpa only [checkTable_run_eq_isSome_solve, encUGGraph, encUGFn] using h
 
 end Cslib.Complexity.UniqueGames.Propagation
 
