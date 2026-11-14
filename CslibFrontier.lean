@@ -3470,8 +3470,10 @@ public import CslibFrontier.Computability.Pebbling.Reversible
 public import CslibFrontier.Computability.Pebbling.ReversiblePath
 public import CslibFrontier.Computability.Pebbling.ReversiblePathReachable
 public import CslibFrontier.Computability.Pebbling.Words
+public import CslibFrontier.Computability.PointerMachine.Abstract
+public import CslibFrontier.Computability.PointerMachine.Basic
 public import CslibFrontier.Computability.PointerMachine.Data
-public import CslibFrontier.Computability.PointerMachine.Defs
+public import CslibFrontier.Computability.PointerMachine.Reference
 public import CslibFrontier.Computability.PointerMachine.Renaming
 public import CslibFrontier.Computability.PointerMachine.Symbols
 public import CslibFrontier.Computability.PolyTime.BitString.InitialTestsSearch

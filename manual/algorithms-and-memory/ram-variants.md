@@ -36,7 +36,11 @@ The local documentation maps the real instance to Erickson–van der Hoog–Milt
 
 ## Allocating pointer-machine foundation
 
-Import `CslibFrontier.Computability.PointerMachine.Defs` for `Cslib.PointerMachine`.
+Import `CslibFrontier.Computability.PointerMachine.Abstract` for `Cslib.PointerMachine`.
+This is the compact definition file, with no correctness proofs.
+`PointerMachine.Basic` supplies invariants and resource bounds; `PointerMachine.Reference`
+contains the private allocation representation. Unlike the retired formal abstracts,
+`Abstract` defines the model itself, so no duplicate definitions or bridge are needed.
 `Model k` specifies finitely many data sorts, their carrier types, and named binary
 operations and predicates with typed arguments and results. `Layout k` fixes the
 number of pointer registers and fields and the number of data registers and fields

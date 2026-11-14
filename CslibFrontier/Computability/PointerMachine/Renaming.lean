@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Computability.PointerMachine.Defs
+public import CslibFrontier.Computability.PointerMachine.Abstract
 
 /-!
 # Renaming pointer-machine data
