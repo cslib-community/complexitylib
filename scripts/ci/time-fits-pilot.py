@@ -1,4 +1,4 @@
-"""Temporary hosted-only measurement for #5469; never merge this scratch PR."""
+"""Temporary hosted-only measurement for #5472; never merge this scratch PR."""
 import hashlib
 import json
 import os
@@ -8,11 +8,14 @@ import subprocess
 import time
 import tomllib
 
-BASE = '9af08c2a55f93b996fe744c2056a86133b07cdab'
-HEAD = '392091a58706cd3c47913d1eb18dc4edd9c82e42'
+BASE = '34a6ae4e3fce9257cb0782106a67a39eb0ca9c00'
+HEAD = '875e64180f4d78a2dc8aa3ce8fad7277e49b6873'
 FILES = [
-    'CslibFrontier/Algorithms/WordRAM/ExactTriangle/RecordProduct/Decode.lean',
-    'CslibFrontier/Algorithms/WordRAM/ThreeSum/ChanHe/TraversalLocalDelivery.lean',
+    'CslibFrontier/Algorithms/WordRAM/ExactTriangle/CallableFixedPrime/Input.lean',
+    'CslibFrontier/Algorithms/WordRAM/ExactTriangle/RecordWitness/Header.lean',
+    'CslibFrontier/Algorithms/WordRAM/MatrixMultiplication/Schonhage/BoxBatch/Prepare.lean',
+    'CslibFrontier/Algorithms/WordRAM/Schoening/Counter.lean',
+    'CslibFrontier/Algorithms/WordRAM/ThreeSum/Cell.lean',
 ]
 OUT = Path(os.environ['RUNNER_TEMP']) / 'fits-pilot-timings'
 OUT.mkdir(parents=True, exist_ok=True)
@@ -83,7 +86,7 @@ for f in FILES:
             if result.returncode:
                 print((dest / 'lean.log').read_text(), flush=True)
                 raise SystemExit(result.returncode)
-summary = ['Exact pilot timings (seconds; five repetitions after one warmup per variant).', '']
+summary = ['Representative batch timings (seconds; five repetitions after one warmup per variant).', '']
 for f in FILES:
     a = [r['seconds'] for r in rows if r['file'] == f and r['variant'] == 'before' and not r['warmup']]
     b = [r['seconds'] for r in rows if r['file'] == f and r['variant'] == 'after' and not r['warmup']]
