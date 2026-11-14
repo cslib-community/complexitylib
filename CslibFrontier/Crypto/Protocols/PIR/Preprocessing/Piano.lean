@@ -93,7 +93,8 @@ chunk.
 * `Cslib.Crypto.Protocols.PIR.Preprocessing.Piano.isPerfectlyPrivateWith_pianoHybridScheme`,
   `Cslib.Crypto.Protocols.PIR.Preprocessing.Piano.eval_queryTranscript_pianoHybridScheme`:
   multi-query adaptive perfect privacy (Definition 3.1) and non-adaptive transcript privacy of the
-  ideal-random-set hybrid (the `Real*` step of the proof of Theorem C.1).
+  ideal-random-set hybrid (the `Real*` step of the proof of Theorem C.1). The hybrid models only
+  the server's view and is not a correct PIR scheme.
 * `Cslib.Crypto.Protocols.PIR.Preprocessing.Piano.onlineCommunication_fullQuery`,
   `Cslib.Crypto.Protocols.PIR.Preprocessing.Piano.onlineCommunication_compacted`: per-query online
   communication of the main scheme and of the Appendix A variant (Theorem 3.4 online part).
@@ -845,7 +846,9 @@ private noncomputable def pianoAdaptiveStepSets {St : Type}
 ideal-random-set part of the proof of Theorem C.1 in
 [Zhou, Park, Zheng and Shi][ZhouParkZhengShi2024]): `pianoHybridScheme` is perfectly private with
 simulator `ProbComp.uniform (Chunk → Offset)` against any adaptive malicious server `adv` over any
-number of queries `k`. The PRF step and the full `HintTable` client are not covered. -/
+number of queries `k`. `pianoHybridScheme` is not a correct PIR scheme, so this is privacy of the
+server's view in the hybrid only. The PRF step and the correct `HintTable` client are not covered.
+-/
 theorem isPerfectlyPrivateWith_pianoHybridScheme :
     (pianoHybridScheme M₁ Chunk Offset).IsPerfectlyPrivateWith
       (ProbComp.uniform (Chunk → Offset)) := by
@@ -887,13 +890,15 @@ theorem isPerfectlyPrivateWith_pianoHybridScheme :
     rw [PMF.bind_comm (PMF.uniformOfFintype (Fin M₁ → Chunk → Offset))
       (ProbComp.eval (adv.onQuery p.1 Q))]
 
-/-- `pianoHybridScheme` satisfies `Scheme.IsPerfectlyPrivate`. -/
+/-- `pianoHybridScheme` satisfies `Scheme.IsPerfectlyPrivate`. The hybrid is not a correct PIR
+scheme (see `pianoHybridScheme`); privacy of the correct `HintTable` client is not proved. -/
 theorem isPerfectlyPrivate_pianoHybridScheme :
     (pianoHybridScheme M₁ Chunk Offset).IsPerfectlyPrivate :=
   isPerfectlyPrivateWith_pianoHybridScheme.isPerfectlyPrivate
 
 /-- Every adaptive malicious server with Boolean finalizer `finalize : St → Bool` has zero
-distinguishing advantage against `pianoHybridScheme` in the ideal-random-set model. -/
+distinguishing advantage against `pianoHybridScheme` in the ideal-random-set model. The hybrid is
+not a correct PIR scheme. -/
 theorem privacyAdvantage_pianoHybridScheme_eq_zero {St : Type}
     (adv : AdaptiveServer (Chunk × Offset) (Chunk → Offset) Bool St) (finalize : St → Bool)
     (db : Chunk × Offset → Bool) (k : ℕ) (st₀ : St) :

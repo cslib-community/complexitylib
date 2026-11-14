@@ -2403,7 +2403,7 @@ and seed width zero, but does not yet supply adaptive-message cipher security.
 
 Keep efficiency and security as separate goals. In [Crypto/Computational/Basic.lean](../../CslibFrontier/Crypto/Computational/Basic.lean), computational indistinguishability quantifies over certified strict-PPT distinguishers. It does not require the compared PMF ensembles to be efficiently sampleable or polynomially bounded in length. Check those properties separately when the intended construction needs them.
 
-Specify the experiment, admissible adversaries, success event and assumption; prove the reduction's efficiency using the routines above; then prove the probability or advantage inequality. Semantic rewrites and native certificates discharge different obligations. If a proposed reduction only has a query bound, return to the realization step before calling it a computational security reduction. Use the [security-game reference](../programs-crypto-and-probability/security-games-and-primitives.md) to choose the correct primitive and adversary model.
+Specify the experiment, admissible adversaries, success event and assumption; prove the reduction's efficiency using the routines above; then prove the probability or advantage inequality. Semantic rewrites and native certificates discharge different obligations. If a proposed reduction only has a query bound, return to the realization step before calling it a computational security reduction. Use the [security-game reference](../programs-crypto-and-probability/security-games-and-primitives.md) to choose the correct primitive and adversary model. The final theorem keeps only the premises that [Security theorems and efficiency witnesses](../programs-crypto-and-probability/security-games-and-primitives.md#security-theorems-and-efficiency-witnesses) allows: named hardness assumptions, the adversary's class and properties of components that the cited result takes as given, never a bound on the reduction it builds.
 
 [complexitylib]: ../sources.md#complexitylib
 [holenstein09]: ../sources.md#holenstein09
@@ -3343,6 +3343,28 @@ probabilities satisfy lower or upper bounds.
   `poissonBinomial_stochasticallyDominates_trajMeasure_adaptedCount`), and finite-horizon
   sequential `PMF` processes (`PMF.seqProcess`, `PMF.seqCount`,
   `PMF.seqCount_stochasticallyDominates_poissonBinomial`, `PMF.seqCount_active_toReal_Iio_le`).
+- **Sequential processes with unreachable histories**:
+  [`StochasticDomination/SequentialSupport.lean`](../../CslibFrontier/Probability/StochasticDomination/SequentialSupport.lean)
+  provides `PMF.seqCount_stochasticallyDominates_poissonBinomial_of_support` and
+  `PMF.seqCount_active_toReal_Iio_le_of_support`. Their probability envelopes are required only
+  when `h ∈ (PMF.seqProcess step t).support`; the latter also requires the original count to be
+  below the target. Use these when invariants of actual responses fail on impossible histories.
+  The response type can have unbounded discrete support. `PMF.seqCount_congr_on_support`
+  transfers counts between events agreeing at every reachable prefix. The checked
+  [`SequentialSupport.lean` client](../../CslibFrontierTests/SequentialSupport.lean) uses geometric
+  metadata and fair success bits: actual histories have authenticated tags, while an impossible
+  unauthenticated prefix has zero success probability and violates the older all-prefix premise.
+  For an upper envelope, use
+  [`StochasticDomination/SequentialUpper.lean`](../../CslibFrontier/Probability/StochasticDomination/SequentialUpper.lean):
+  `PMF.poissonBinomial_replicate_stochasticallyDominates_seqCount_of_support` bounds the count
+  by `poissonBinomial (List.replicate n p)` when each reached-prefix event probability is at
+  most `p`. `PMF.seqCount_toReal_Ici_le_of_support` exposes the binomial upper tail directly.
+  The same checked client complements its event: its probability is still one-half on actual
+  histories, but becomes one at the impossible prefix. The proof reuses the lower comparison
+  and [`PoissonBinomial/Reflection.lean`](../../CslibFrontier/Probability/PoissonBinomial/Reflection.lean),
+  which derives count reflection from `BitString.weight_not`; callers need no separate
+  comparison induction or assumptions on impossible histories. These are probability lemmas;
+  they do not by themselves instantiate a stochastic-oracle deadline lower bound.
 - **Infinite-horizon stopping-time means**:
   [`StochasticDomination/Stopping.lean`](../../CslibFrontier/Probability/StochasticDomination/Stopping.lean)
   proves the `WithTop ℕ` tail-sum identity (`lintegral_withTopToENNReal` for measurable `τ`, and

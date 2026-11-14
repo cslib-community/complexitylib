@@ -789,6 +789,43 @@ encoding-readability lint checks rule 1 against a per-module baseline that may o
 7. **No hidden defaults.** Do not let an elaborator or typeclass choose an encoding for a type;
    the `enc%` proposal (#1830) is parked.
 
+### Security theorems
+
+A security theorem may assume only (a) named hardness assumptions, that is, Prop-valued
+definitions documented as assumptions (`F.DDH setup`, `DecisionLWE …`, `OneWay f`,
+`QuadraticResiduosityHard setup`, or a named collision-resistance or circular-security assumption
+on a component the scheme uses), stated relative to the setup sampler or component they concern;
+(b) that the adversary is in the admitted class (`A.IsPPT`, `IsOraclePPT …`, or the model's
+circuit bound); and (c) properties of components that the cited result itself takes as given,
+supplied by the caller.
+
+It must not assume anything about an object that its proof derives from the adversary (a
+reduction, distinguisher, simulator, extractor or hybrid): not its advantage or success, its
+membership in an adversary class, or its efficiency. Nor may it take from the caller an object
+whose existence or efficiency is the content of the cited result, such as the knowledge extractor
+of a proof of knowledge or the simulator of a zero-knowledge proof. It must not assume that the
+scheme's own algorithms behave like idealized ones (for example, that the key generator's output
+is indistinguishable from an ideal key law) unless the cited result names that as an assumption.
+And it may not stop at a bound for parameters that an `∃` chooses after the adversary
+(`∃ m₀ m₁, Adv(A) ≤ Adv(B A m₀ m₁)`); a uniform reduction chooses them itself.
+
+Write each reduction as an explicit program with an efficiency witness proved from the
+adversary's certificate: an `isPPT_…` or `isOraclePPT_…` lemma, or the model's efficiency
+certificate (for example a circuit-size bound). Prove the asymptotic theorem by applying the
+assumption to the reduction through that witness, as `DDH.elGamalINDCPA` does
+([pattern](manual/programs-crypto-and-probability/security-games-and-primitives.md#security-theorems-and-efficiency-witnesses)).
+Asymptotic statements come first; concrete runtime maps are secondary (#4088). A concrete bound
+`Adv(A) ≤ f(Adv(B_A))` is a lemma, not a security theorem. A lemma that takes a bound on `B_A`'s
+advantage, or `B_A ∈ 𝒟`, as a premise is an algebraic helper: its name (`…_of_reduction_le`) and
+docstring say so, and no headline or asymptotic theorem stops at it.
+
+Names and docstrings state the model (standard, random-oracle, ideal, query-bounded or
+information-theoretic), the notion (single- or multi-challenge, one-time or many-time,
+honest-verifier or malicious zero knowledge, semi-honest, static), and any deviation from the
+cited source. When a change replaces a misformalized theorem, it deletes the old one, or demotes it
+to an honestly named and documented helper, and updates its ROADMAP, manual and
+[results inventory](results/README.md) mentions (#5293).
+
 ## Design commitments (do not re-litigate casually)
 
 - Base pin is upstream cslib `main` at a SHA; never a fork.

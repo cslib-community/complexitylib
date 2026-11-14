@@ -38,9 +38,7 @@ key as the inactive key of wire `j`: with the keyed oracle it produces hybrid `j
 (`PRF.realExperiment` side), and with a random function hybrid `j + 1` exactly
 (`PRF.idealExperiment` side).
 Each reduction reads the oracle up front at the tweaks of all argument slots, with at most one
-query per slot (`isQueryBounded_reduction`), and runs `D` once. When every reduction has PRF
-advantage at most `ε` the advantage is at most `(n + C.size) * ε`
-(`advantage_realGame_simGame_le_mul`).
+query per slot (`isQueryBounded_reduction`), and runs `D` once.
 
 Tweak injectivity is needed. Take a row that reads one wire twice with the same colour. If its
 two argument slots had equal tweaks, their mask terms would be equal and cancel in the `Bool`
@@ -72,7 +70,6 @@ simulator or the reductions.
 * `Cslib.Crypto.Garbling.View.run_simulateWith`: simulated views decode to the output.
 * `Cslib.Crypto.Garbling.isQueryBounded_reduction`: at most one query per slot.
 * `Cslib.Crypto.Garbling.advantage_realGame_simGame_le`: privacy, as a sum of PRF advantages.
-* `Cslib.Crypto.Garbling.advantage_realGame_simGame_le_mul`: privacy with a uniform PRF bound.
 
 ## References
 
@@ -612,19 +609,5 @@ theorem advantage_realGame_simGame_le (C : Circuit σ n m) (I : Interpretation �
   refine (Game.advantage_hybrid_le_sum _ _).trans (Finset.sum_le_sum fun j hj => ?_)
   rw [PRF.advantage, realGame_reduction C I F tw x D j (Finset.mem_range.mp hj),
     idealGame_reduction C I F tw htw x D j]
-
-/-- **Simulation privacy with a uniform PRF bound.** If each reduction has PRF advantage at most
-`ε`, the advantage between the real and the simulated view is at most `(n + C.size) * ε`. -/
-theorem advantage_realGame_simGame_le_mul (C : Circuit σ n m) (I : Interpretation σ Bool)
-    (F : K → T → K × Bool) (tw : Slot C.topology → T) (htw : Function.Injective tw)
-    (x : Fin n → Bool) (D : View C.topology K → ProbComp Bool) (ε : NNReal)
-    (hε : ∀ j < n + C.size, PRF.advantage F (reduction C I F tw x D j) ≤ ε) :
-    Game.advantage (realGame C I F tw x D) (simGame C I F tw x D) ≤ (n + C.size) * ε := by
-  refine (advantage_realGame_simGame_le C I F tw htw x D).trans ?_
-  calc ∑ j ∈ Finset.range (n + C.size), PRF.advantage F (reduction C I F tw x D j)
-      ≤ ∑ _j ∈ Finset.range (n + C.size), ε :=
-        Finset.sum_le_sum fun j hj => hε j (Finset.mem_range.mp hj)
-    _ = (n + C.size) * ε := by
-        rw [Finset.sum_const, Finset.card_range, nsmul_eq_mul, Nat.cast_add]
 
 end Cslib.Crypto.Garbling

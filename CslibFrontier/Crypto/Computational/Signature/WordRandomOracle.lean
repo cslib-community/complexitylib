@@ -40,13 +40,17 @@ certify their native realization or the complete forking reduction.
 * `Cslib.Crypto.Protocols.ROMSignature.savedCoinForger`: the existing explicit-coin forger model.
 * `Cslib.Crypto.Protocols.ROMSignature.encReplayInput`: the encoding of a saved-coin replay's
   input.
+* `Cslib.Crypto.Protocols.ROMSignature.RawWordSpec`: the raw channel calls of a native forger.
 
 ## Main results
 
 * `Cslib.Crypto.Protocols.ROMSignature.isOraclePPTOn_savedWordReplay`: native efficiency of the
   full guarded, truncated and decoded replay input.
-* `Cslib.Crypto.Protocols.ROMSignature.callBounded_savedCoinForger`: every key and tape obey the
-  parameter-only signing and hash budgets.
+* `Cslib.Crypto.Protocols.ROMSignature.savedWordReplay_eq_interpret`: every guarded replay is the
+  raw-call replay, interpreted by its channel calls.
+* `Cslib.Crypto.Protocols.ROMSignature.isQueryBounded_savedWordReplay`,
+  `Cslib.Crypto.Protocols.ROMSignature.callBounded_savedCoinForger`: every key and tape obey the
+  parameter-only call budget, and the signing and hash budgets.
 * `Cslib.Crypto.Protocols.ROMSignature.exists_savedCoinForger`: actual PPT key generation and
   an actual oracle-PPT forger give a joint-state-preserving adapter.
 * `Cslib.Crypto.Protocols.ROMSignature.exists_eufCmaGame_savedCoinForger`: equality of the existing
@@ -167,6 +171,51 @@ including the security parameter, public key, and arbitrary saved tape. -/
     exact (ComputableInPolyTime.bitsTakeWithInput (by fun_prop) hcut).prod hin
   · fun_prop
 
+/-- The raw calls of a native word forger: a channel bit and a request word, answered by a word. -/
+abbrev RawWordSpec : OracleSpec (Bool × List Bool) := fun _ => List Bool
+
+/-- Every guarded replay is the replay with raw calls, interpreted by its channel calls. -/
+theorem savedWordReplay_eq_interpret {k : ℕ} {Control Query : Type} {spec : OracleSpec Query}
+    (machine : MultiTapePTM k Bool Control Bool)
+    (query : Bool → List Bool → OracleComp spec (List Bool)) (c d keyC keyD : ℕ)
+    (input : ℕ × List Bool × List Bool) :
+    savedWordReplay machine query c d keyC keyD input =
+      interpret (fun request => query request.1 request.2)
+        (savedWordReplay machine (fun op word => OracleComp.query (spec := RawWordSpec) (op, word))
+          c d keyC keyD input) := by
+  obtain ⟨n, pk, tape⟩ := input
+  simp only [savedWordReplay]
+  split
+  · rw [interpret_map, interpret_runCoins]
+    simp only [interpret_query]
+  · rfl
+
+/-- A guarded replay whose channel calls each make at most one call makes at most
+`savedCoinBudget` calls, for every public key and every saved tape. -/
+theorem isQueryBounded_savedWordReplay {k : ℕ} {Control Query : Type} {spec : OracleSpec Query}
+    (machine : MultiTapePTM k Bool Control Bool)
+    (query : Bool → List Bool → OracleComp spec (List Bool))
+    (hquery : ∀ op word, IsQueryBounded (query op word) 1) (c d keyC keyD n : ℕ)
+    (pk coins : List Bool) :
+    IsQueryBounded (savedWordReplay machine query c d keyC keyD (n, pk, coins))
+      (savedCoinBudget c d keyC keyD n) := by
+  dsimp only [savedWordReplay]
+  split
+  · rename_i hpk
+    apply (isCostBounded_map_iff _ _ _).mpr
+    have h := machine.isCostBounded_runCoins query 1 hquery
+      (coins.take (c * ((encPair encUnary encBits (n, pk)).length + 1) ^ d))
+      (encPair encUnary encBits (n, pk))
+    apply h.mono
+    simp only [List.length_take, Nat.mul_one]
+    apply (Nat.min_le_left _ _).trans
+    apply Nat.mul_le_mul_left c
+    apply Nat.pow_le_pow_left
+    simp only [length_encPair, encUnary_apply,
+      List.length_replicate, encBits_apply] at *
+    omega
+  · exact .pure _ _
+
 /-- Use the existing total pair decoder after native replay. Oversized keys make no calls; all
 coin tapes, including overlong ones outside the sampling support, are truncated before replay. -/
 noncomputable def savedCoinForger {k : ℕ} {Control : Type}
@@ -212,26 +261,8 @@ theorem callBounded_savedCoinForger {k : ℕ} {Control : Type}
       (savedCoinBudget c d keyC keyD n) (savedCoinBudget c d keyC keyD n) := by
   intro pk coins
   change List Bool at coins
-  have htotal : IsQueryBounded
-      ((savedCoinForger machine digestEncoding c d keyC keyD n).forge pk coins)
-      (savedCoinBudget c d keyC keyD n) := by
-    dsimp only [savedCoinForger, savedWordReplay]
-    split
-    · rename_i hpk
-      apply (isCostBounded_map_iff _ _ _).mpr
-      have h := machine.isCostBounded_runCoins (wordQuery digestEncoding) 1
-        (isQueryBounded_wordQuery digestEncoding)
-        (coins.take (c * ((encPair encUnary encBits (n, pk)).length + 1) ^ d))
-        (encPair encUnary encBits (n, pk))
-      apply h.mono
-      simp only [List.length_take, Nat.mul_one]
-      apply (Nat.min_le_left _ _).trans
-      apply Nat.mul_le_mul_left c
-      apply Nat.pow_le_pow_left
-      simp only [length_encPair, encUnary_apply,
-        List.length_replicate, encBits_apply] at *
-      omega
-    · exact .pure _ _
+  have htotal := isQueryBounded_savedWordReplay machine (wordQuery digestEncoding)
+    (isQueryBounded_wordQuery digestEncoding) c d keyC keyD n pk coins
   exact ⟨htotal.of_le (fun q => by cases q <;> simp [signingCost]),
     htotal.of_le (fun q => by cases q <;> simp [hashCost])⟩
 
