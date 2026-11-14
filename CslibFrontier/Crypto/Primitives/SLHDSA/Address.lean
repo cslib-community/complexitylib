@@ -44,8 +44,11 @@ WOTS+, XMSS, FORS, the hypertree, signing or verification, or any security reduc
 ## Main results
 
 * `Cslib.Crypto.SLHDSA.Address.toBits_injective`: canonical serialization is injective.
+* `Cslib.Crypto.SLHDSA.Address.toBytes_injective`: canonical byte serialization is injective.
 * `Cslib.Crypto.SLHDSA.Address.toCompressedBits_injective_of_fits`: compressed serialization is
   injective when its retained layer and tree fields do not overflow.
+* `Cslib.Crypto.SLHDSA.Address.toCompressedBytes_injective_of_fits`: the same contract for typed
+  bytes.
 * `Cslib.Crypto.SLHDSA.Address.setTypeAndClear_payload`: changing type clears all 96 payload bits.
 * `Cslib.Crypto.SLHDSA.Address.wellFormed_*`: each typed constructor satisfies its FIPS layout.
 
@@ -229,6 +232,14 @@ theorem toBits_injective : Function.Injective toBits := by
     (typeBits_injective htype) (addressWordBits_injective h5)
     (addressWordBits_injective h6) (addressWordBits_injective h7)
 
+/-- The canonical 32-byte encoding is injective for arbitrary addresses. -/
+theorem toBytes_injective : Function.Injective toBytes := by
+  intro a b h
+  apply toBits_injective
+  rw [← bytesToBitsBE_bitsToFixedBytesBE 32 a.toBits (by simp),
+    ← bytesToBitsBE_bitsToFixedBytesBE 32 b.toBits (by simp)]
+  exact congrArg (fun bytes : FixedBytes 32 => bytesToBitsBE bytes.toList) h
+
 /-- The 22-byte compressed address used by the FIPS 205 SHA2 parameter sets.
 
 This is `ADRS[3] || ADRS[8:16] || ADRS[19] || ADRS[20:32]`: the low byte of the layer,
@@ -302,6 +313,15 @@ theorem toCompressedBits_injective_of_fits {a b : Address}
     exact hvalue
   exact ext (Fin.ext hlayer') (Fin.ext htree') htype' (addressWordBits_injective h5)
     (addressWordBits_injective h6) (addressWordBits_injective h7)
+
+/-- The compressed 22-byte encoding is injective when neither shortened field overflows. -/
+theorem toCompressedBytes_injective_of_fits {a b : Address}
+    (ha : a.FitsCompressed) (hb : b.FitsCompressed)
+    (h : a.toCompressedBytes = b.toCompressedBytes) : a = b := by
+  apply toCompressedBits_injective_of_fits ha hb
+  rw [← bytesToBitsBE_bitsToFixedBytesBE 22 a.toCompressedBits (by simp),
+    ← bytesToBitsBE_bitsToFixedBytesBE 22 b.toCompressedBits (by simp)]
+  exact congrArg (fun bytes : FixedBytes 22 => bytesToBitsBE bytes.toList) h
 
 /-- Set the layer address, preserving every other word. -/
 def setLayerAddress (a : Address) (layer : AddressWord) : Address :=

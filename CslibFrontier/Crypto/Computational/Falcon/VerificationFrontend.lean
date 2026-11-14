@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Computational.Falcon.Verification
+public import CslibFrontier.Crypto.Primitives.ByteString
 
 /-!
 # Falcon v1.2 encoded verification frontend
@@ -48,17 +49,7 @@ public section
 namespace Cslib.Crypto.Falcon
 
 /-- A byte string, with each byte intrinsically restricted to the range `0,...,255`. -/
-abbrev ByteString := List (Fin 256)
-
-/-- The eight bits of a byte, most significant bit first, as required by [Falcon2020],
-Section 3.11.1. -/
-@[expose] def byteBits (b : Fin 256) : List Bool :=
-  (List.range 8).map fun i => b.val.testBit (7 - i)
-
-/-- Expand bytes to bits, preserving byte order and using most-significant-bit-first order within
-each byte. -/
-@[expose] def bytesToBits (bytes : ByteString) : List Bool :=
-  bytes.flatMap byteBits
+abbrev ByteString := List Cslib.Crypto.Byte
 
 /-- Decode exactly `n` compressed Falcon coefficients from a byte string.
 
@@ -98,7 +89,7 @@ bits in the last byte must be zero, and a redundant whole zero byte is rejected.
         let (x, rest) ← decodeCoefficient bits
         let (xs, tail) ← decodeCoefficients count rest
         return (x :: xs, tail)
-  let (coefficients, unused) ← decodeCoefficients n (bytesToBits encoded)
+  let (coefficients, unused) ← decodeCoefficients n (bytesToBitsBE encoded)
   if unused.length < 8 && unused.all (fun b => !b) then
     some coefficients
   else

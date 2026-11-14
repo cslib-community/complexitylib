@@ -9,6 +9,8 @@ module
 
 public import CslibFrontier.Foundations.Data.BitString.List.Binary
 public import CslibFrontier.Init
+public import Mathlib.Data.Fin.Tuple.Basic
+import Mathlib.Data.List.OfFn
 
 /-!
 # Byte strings
@@ -28,7 +30,10 @@ with a different within-byte convention, such as FIPS 202's Keccak, keep that co
 ## Main results
 
 * `Cslib.Crypto.length_bytesToBitsBE`: byte serialization has eight bits per byte.
-* `Cslib.Crypto.byteOfBitsBE_byteBitsBE`: converting one byte to bits and back is exact.
+* `Cslib.Crypto.byteOfBitsBE_byteBitsBE`, `Cslib.Crypto.byteBitsBE_byteOfBitsBE`: converting one
+  byte to bits and back is exact in either direction.
+* `Cslib.Crypto.bytesToBitsBE_bitsToFixedBytesBE`: an exact-length bit string round-trips through
+  typed bytes.
 -/
 
 public section
@@ -58,7 +63,7 @@ def take {n : ℕ} (m : ℕ) (h : m ≤ n) (X : FixedBytes n) : FixedBytes m := 
 
 /-- Concatenate two fixed-length byte strings. -/
 def append {m n : ℕ} (X : FixedBytes m) (Y : FixedBytes n) : FixedBytes (m + n) :=
-  fun i => if h : i.val < m then X ⟨i.val, h⟩ else Y ⟨i.val - m, by omega⟩
+  Fin.append X Y
 
 end FixedBytes
 
@@ -97,10 +102,42 @@ def byteOfBitsBE (bits : List Bool) : Byte :=
   rw [List.take_of_length_le (Nat.le_of_eq hlength)]
   exact binaryValue_binaryWord 8 x
 
+/-- Reading an eight-bit word as a byte and serializing it recovers the word. -/
+@[simp] theorem byteBitsBE_byteOfBitsBE (bits : List Bool) (h : bits.length = 8) :
+    byteBitsBE (byteOfBitsBE bits) = bits := by
+  apply binaryValue_injective_of_length_eq
+  · simpa [byteBitsBE, h] using (length_binaryWord (byteOfBitsBE bits).isLt)
+  · simp only [byteBitsBE, binaryValue_binaryWord, byteOfBitsBE]
+    rw [List.take_of_length_le (by omega)]
+
 /-- Split a bit list into `n` consecutive big-endian bytes. An incomplete or absent final chunk is
 read using `byteOfBitsBE`; exact-length clients avoid that fallback by construction. -/
 def bitsToFixedBytesBE (n : ℕ) (bits : List Bool) : FixedBytes n := fun i =>
   byteOfBitsBE ((bits.drop (8 * i.val)).take 8)
+
+/-- An exact `8 * n`-bit word round-trips through its `n` typed big-endian bytes. -/
+@[simp] theorem bytesToBitsBE_bitsToFixedBytesBE (n : ℕ) (bits : List Bool)
+    (h : bits.length = 8 * n) :
+    bytesToBitsBE ((bitsToFixedBytesBE n bits).toList) = bits := by
+  induction n generalizing bits with
+  | zero =>
+      simp only [Nat.mul_zero] at h
+      rw [List.length_eq_zero_iff.mp h]
+      simp [FixedBytes.toList, bytesToBitsBE]
+  | succ n ih =>
+      have hlength : 8 ≤ bits.length := by omega
+      have htake : (bits.take 8).length = 8 := by simp [Nat.min_eq_left hlength]
+      have hdrop : (bits.drop 8).length = 8 * n := by simp; omega
+      rw [show (bitsToFixedBytesBE (n + 1) bits).toList =
+          byteOfBitsBE (bits.take 8) :: (bitsToFixedBytesBE n (bits.drop 8)).toList by
+        simp only [bitsToFixedBytesBE, FixedBytes.toList, List.ofFn_succ]
+        congr 1
+        apply List.ofFn_inj.mpr
+        funext i
+        simp [bitsToFixedBytesBE, List.drop_drop, Nat.mul_add, Nat.add_comm]]
+      simp only [bytesToBitsBE]
+      rw [byteBitsBE_byteOfBitsBE (bits.take 8) htake, ih (bits.drop 8) hdrop,
+        List.take_append_drop]
 
 /-- Encode a natural number as exactly `n` big-endian bytes, retaining its low `8n` bits. -/
 def natToFixedBytesBE (n value : ℕ) : FixedBytes n := fun i =>

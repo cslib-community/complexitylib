@@ -76,18 +76,30 @@ example {a b : Address} (ha : a.FitsCompressed) (hb : b.FitsCompressed)
     (h : a.toCompressedBits = b.toCompressedBits) : a = b :=
   Address.toCompressedBits_injective_of_fits ha hb h
 
+example {a b : Address} (ha : a.FitsCompressed) (hb : b.FitsCompressed)
+    (h : a.toCompressedBytes = b.toCompressedBytes) : a = b :=
+  Address.toCompressedBytes_injective_of_fits ha hb h
+
 -- Outside that range the compressed format deliberately drops the high tree word.
 def highTree : TreeAddress := ⟨2 ^ 64, by decide⟩
 
-example :
+private theorem compressedOverflowBits :
     (Address.wotsHash 0 highTree 0 0 0).toCompressedBits =
       (Address.wotsHash 0 0 0 0 0).toCompressedBits := by
   decide +kernel
+
+example :
+    (Address.wotsHash 0 highTree 0 0 0).toCompressedBytes =
+      (Address.wotsHash 0 0 0 0 0).toCompressedBytes := by
+  exact congrArg (bitsToFixedBytesBE 22) compressedOverflowBits
 
 example : ¬ (Address.wotsHash 0 highTree 0 0 0).FitsCompressed := by decide +kernel
 
 -- Canonical 32-byte serialization never aliases two addresses.
 example {a b : Address} (h : a.toBits = b.toBits) : a = b :=
   Address.toBits_injective h
+
+example {a b : Address} (h : a.toBytes = b.toBytes) : a = b :=
+  Address.toBytes_injective h
 
 end SLHDSAAddressTests
