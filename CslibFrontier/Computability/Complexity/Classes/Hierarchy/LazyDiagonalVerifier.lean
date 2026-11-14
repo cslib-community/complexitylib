@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.LazyDiago
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import Mathlib.Tactic.Ring
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Frame
 
 /-!
 # Resource certificates for lazy-diagonal verifiers
