@@ -57,6 +57,11 @@ open Cslib.DataStructure.Dictionary.WordRAM.Succinct
 open Cslib.DataStructure.HashFamily.WordRAM
 
 attribute [local simp] Realization.memoryCost_bind'
+attribute [local simp] prog_clientResult_bind prog_runClient_state_bind prog_clientResult_pure
+attribute [local simp] prog_runClient_state_pure prog_clientResult_map prog_runClient_state_map
+attribute [local simp] prog_memoryCost_map prog_clientResult_read prog_runClient_state_read
+attribute [local simp] prog_memoryCost_read prog_clientResult_write prog_runClient_state_write
+attribute [local simp] prog_memoryCost_write
 
 /-! ## Section 1: Cross-Region Congruence and Pure `Function.update` Frame Laws -/
 
@@ -327,6 +332,63 @@ private theorem lt_two_pow_globalPtrBits_of_lt_maxTail {N x : ℕ} (hx : x < max
   have hM : maxTailItems N ≤ N := maxTailItems_le_of_pos (by omega)
   exact lt_two_pow_globalPtrBits_of_le_n_max (by omega)
 
+private theorem winGrow_effect_core {metaBase itemBase U V w N m_items n_win c : ℕ}
+    (hw : 0 < w) (hitem : metaBase + offCompItems U w N ≤ itemBase)
+    (hn : n_win < maxTailItems N) (hc_lt : c < maxTailItems N) (s : Memory.State) :
+    let mem₁ := writePacked (metaBase + offTailToDense U w N) (globalPtrBits N) w s.mem n_win c
+    let mem₂ := writePacked (metaBase + offDenseToTail U w N) (globalPtrBits N) w mem₁ c n_win
+    compTDAt metaBase U w N mem₂ = Function.update (compTDAt metaBase U w N s.mem) n_win c ∧
+    compDTAt metaBase U w N mem₂ =
+      Function.update (compDTAt metaBase U w N s.mem) c n_win ∧
+    compLmAt metaBase U w N mem₂ = compLmAt metaBase U w N s.mem ∧
+    compGmAt metaBase U w N mem₂ = compGmAt metaBase U w N s.mem ∧
+    compQuotAt itemBase U V w N m_items mem₂ = compQuotAt itemBase U V w N m_items s.mem ∧
+    compValAt itemBase U V w N m_items mem₂ = compValAt itemBase U V w N m_items s.mem ∧
+    (∀ a, ¬(metaBase + offTailToDense U w N ≤ a ∧ a < metaBase + offCompItems U w N) →
+      mem₂ a = s.mem a) := by
+  intro mem₁ mem₂
+  have hc_pow := lt_two_pow_globalPtrBits_of_lt_maxTail hc_lt
+  have hn_pow := lt_two_pow_globalPtrBits_of_lt_maxTail hn
+  obtain ⟨htd1, hlm1, hgm1, hdt1, hq1, hv1, hout1⟩ :=
+    writeCompTD_effect (itemBase := itemBase) (U := U) (V := V) (m_items := m_items)
+      hw hitem hn hc_pow s.mem
+  obtain ⟨hdt2, hlm2, hgm2, htd2, hq2, hv2, hout2⟩ :=
+    writeCompDT_effect (itemBase := itemBase) (U := U) (V := V) (m_items := m_items)
+      hw hitem hc_lt hn_pow mem₁
+  have htd_le : offTailToDense U w N ≤ offDenseToTail U w N := Nat.le_add_right _ _
+  have hdt_le : offDenseToTail U w N ≤ offCompItems U w N := Nat.le_add_right _ _
+  exact ⟨htd2.trans htd1, hdt2.trans (congrArg (fun f => Function.update f c n_win) hdt1),
+    hlm2.trans hlm1, hgm2.trans hgm1, hq2.trans hq1, hv2.trans hv1,
+    fun a ha => (hout2 a (by omega)).trans (hout1 a (by omega))⟩
+
+private theorem winShrink_effect_core {metaBase itemBase U V w N m_items t_rem c_last : ℕ}
+    (hw : 0 < w) (hitem : metaBase + offCompItems U w N ≤ itemBase)
+    (ht : t_rem < maxTailItems N) (hc : c_last < maxTailItems N) (s : Memory.State) :
+    let mem₁ := writePacked (metaBase + offTailToDense U w N) (globalPtrBits N) w s.mem t_rem c_last
+    let mem₂ := writePacked (metaBase + offDenseToTail U w N) (globalPtrBits N) w mem₁ c_last t_rem
+    compTDAt metaBase U w N mem₂ = Function.update (compTDAt metaBase U w N s.mem) t_rem c_last ∧
+    compDTAt metaBase U w N mem₂ = Function.update (compDTAt metaBase U w N s.mem) c_last t_rem ∧
+    compLmAt metaBase U w N mem₂ = compLmAt metaBase U w N s.mem ∧
+    compGmAt metaBase U w N mem₂ = compGmAt metaBase U w N s.mem ∧
+    compQuotAt itemBase U V w N m_items mem₂ = compQuotAt itemBase U V w N m_items s.mem ∧
+    compValAt itemBase U V w N m_items mem₂ = compValAt itemBase U V w N m_items s.mem ∧
+    (∀ a, ¬(metaBase + offTailToDense U w N ≤ a ∧ a < metaBase + offCompItems U w N) →
+      mem₂ a = s.mem a) := by
+  intro mem₁ mem₂
+  have hc_pow := lt_two_pow_globalPtrBits_of_lt_maxTail hc
+  have ht_pow := lt_two_pow_globalPtrBits_of_lt_maxTail ht
+  obtain ⟨htd1, hlm1, hgm1, hdt1, hq1, hv1, hout1⟩ :=
+    writeCompTD_effect (itemBase := itemBase) (U := U) (V := V) (m_items := m_items)
+      hw hitem ht hc_pow s.mem
+  obtain ⟨hdt2, hlm2, hgm2, htd2, hq2, hv2, hout2⟩ :=
+    writeCompDT_effect (itemBase := itemBase) (U := U) (V := V) (m_items := m_items)
+      hw hitem hc ht_pow mem₁
+  have htd_le : offTailToDense U w N ≤ offDenseToTail U w N := Nat.le_add_right _ _
+  have hdt_le : offDenseToTail U w N ≤ offCompItems U w N := Nat.le_add_right _ _
+  exact ⟨htd2.trans htd1, hdt2.trans (congrArg (fun f => Function.update f c_last t_rem) hdt1),
+    hlm2.trans hlm1, hgm2.trans hgm1, hq2.trans hq1, hv2.trans hv1,
+    fun a ha => (hout2 a (by omega)).trans (hout1 a (by omega))⟩
+
 theorem winGrowRightGenProg_effect {metaBase itemBase U V w N m_items b_win n_win : ℕ}
     (hw : 0 < w) (hitem : metaBase + offCompItems U w N ≤ itemBase)
     (hn : n_win < maxTailItems N) (s : Memory.State) :
@@ -349,22 +411,12 @@ theorem winGrowRightGenProg_effect {metaBase itemBase U V w N m_items b_win n_wi
   have hM_pos : 0 < maxTailItems N := by omega
   set c := (b_win + n_win) % maxTailItems N
   have hc_lt : c < maxTailItems N := Nat.mod_lt _ hM_pos
-  have hc_pow := lt_two_pow_globalPtrBits_of_lt_maxTail hc_lt
-  have hn_pow := lt_two_pow_globalPtrBits_of_lt_maxTail hn
   have hs' := clientState_winGrowRightGenProg U V w N metaBase b_win n_win s
-  obtain ⟨htd1, hlm1, hgm1, hdt1, hq1, hv1, hout1⟩ :=
-    writeCompTD_effect (itemBase := itemBase) (U := U) (V := V) (m_items := m_items)
-      hw hitem hn hc_pow s.mem
-  set mem₁ := writePacked (metaBase + offTailToDense U w N) (globalPtrBits N) w s.mem n_win c
-  obtain ⟨hdt2, hlm2, hgm2, htd2, hq2, hv2, hout2⟩ :=
-    writeCompDT_effect (itemBase := itemBase) (U := U) (V := V) (m_items := m_items)
-      hw hitem hc_lt hn_pow mem₁
-  have htd_le : offTailToDense U w N ≤ offDenseToTail U w N := Nat.le_add_right _ _
-  have hdt_le : offDenseToTail U w N ≤ offCompItems U w N := Nat.le_add_right _ _
+  have hcore := winGrow_effect_core (itemBase := itemBase) (U := U) (V := V) (m_items := m_items)
+    hw hitem hn hc_lt s
   dsimp only [s']; rw [hs']; dsimp only [winGrowRight]
-  exact ⟨rfl, htd2.trans htd1, hdt2.trans (congrArg (fun f => Function.update f c n_win) hdt1),
-    hlm2.trans hlm1, hgm2.trans hgm1, hq2.trans hq1, hv2.trans hv1,
-    fun a ha => (hout2 a (by omega)).trans (hout1 a (by omega))⟩
+  exact ⟨rfl, hcore.1, hcore.2.1, hcore.2.2.1, hcore.2.2.2.1, hcore.2.2.2.2.1,
+    hcore.2.2.2.2.2.1, hcore.2.2.2.2.2.2⟩
 
 theorem winGrowLeftGenProg_effect {metaBase itemBase U V w N m_items b_win n_win : ℕ}
     (hw : 0 < w) (hitem : metaBase + offCompItems U w N ≤ itemBase)
@@ -388,22 +440,12 @@ theorem winGrowLeftGenProg_effect {metaBase itemBase U V w N m_items b_win n_win
   have hM_pos : 0 < maxTailItems N := by omega
   set c := b_win % maxTailItems N
   have hc_lt : c < maxTailItems N := Nat.mod_lt _ hM_pos
-  have hc_pow := lt_two_pow_globalPtrBits_of_lt_maxTail hc_lt
-  have hn_pow := lt_two_pow_globalPtrBits_of_lt_maxTail hn
   have hs' := clientState_winGrowLeftGenProg U V w N metaBase b_win n_win s
-  obtain ⟨htd1, hlm1, hgm1, hdt1, hq1, hv1, hout1⟩ :=
-    writeCompTD_effect (itemBase := itemBase) (U := U) (V := V) (m_items := m_items)
-      hw hitem hn hc_pow s.mem
-  set mem₁ := writePacked (metaBase + offTailToDense U w N) (globalPtrBits N) w s.mem n_win c
-  obtain ⟨hdt2, hlm2, hgm2, htd2, hq2, hv2, hout2⟩ :=
-    writeCompDT_effect (itemBase := itemBase) (U := U) (V := V) (m_items := m_items)
-      hw hitem hc_lt hn_pow mem₁
-  have htd_le : offTailToDense U w N ≤ offDenseToTail U w N := Nat.le_add_right _ _
-  have hdt_le : offDenseToTail U w N ≤ offCompItems U w N := Nat.le_add_right _ _
+  have hcore := winGrow_effect_core (itemBase := itemBase) (U := U) (V := V) (m_items := m_items)
+    hw hitem hn hc_lt s
   dsimp only [s']; rw [hs']; dsimp only [winGrowLeft]
-  exact ⟨rfl, htd2.trans htd1, hdt2.trans (congrArg (fun f => Function.update f c n_win) hdt1),
-    hlm2.trans hlm1, hgm2.trans hgm1, hq2.trans hq1, hv2.trans hv1,
-    fun a ha => (hout2 a (by omega)).trans (hout1 a (by omega))⟩
+  exact ⟨rfl, hcore.1, hcore.2.1, hcore.2.2.1, hcore.2.2.2.1, hcore.2.2.2.2.1,
+    hcore.2.2.2.2.2.1, hcore.2.2.2.2.2.2⟩
 
 theorem winShrinkRightGenProg_effect {metaBase itemBase U V w N m_items b_win n_win : ℕ}
     (hw : 0 < w) (hitem : metaBase + offCompItems U w N ≤ itemBase)
@@ -431,24 +473,13 @@ theorem winShrinkRightGenProg_effect {metaBase itemBase U V w N m_items b_win n_
   have hc_lt : (b_win + n_win) % maxTailItems N < maxTailItems N := Nat.mod_lt _ hM_pos
   set t_rem := compDTAt metaBase U w N s.mem ((b_win + n_win) % maxTailItems N)
   set c_last := compTDAt metaBase U w N s.mem n_win
-  have ht_pow := lt_two_pow_globalPtrBits_of_lt_maxTail hdt_lt
-  have hc_pow := lt_two_pow_globalPtrBits_of_lt_maxTail htd_lt
   have hs' := clientState_winShrinkRightGenProg (U := U) (V := V) (w := w) (metaBase := metaBase)
     (s := s) hc_lt hn
-  obtain ⟨htd1, hlm1, hgm1, hdt1, hq1, hv1, hout1⟩ :=
-    writeCompTD_effect (itemBase := itemBase) (U := U) (V := V) (m_items := m_items)
-      hw hitem hdt_lt hc_pow s.mem
-  set mem₁ := writePacked (metaBase + offTailToDense U w N) (globalPtrBits N) w s.mem t_rem c_last
-  obtain ⟨hdt2, hlm2, hgm2, htd2, hq2, hv2, hout2⟩ :=
-    writeCompDT_effect (itemBase := itemBase) (U := U) (V := V) (m_items := m_items)
-      hw hitem htd_lt ht_pow mem₁
-  have htd_le : offTailToDense U w N ≤ offDenseToTail U w N := Nat.le_add_right _ _
-  have hdt_le : offDenseToTail U w N ≤ offCompItems U w N := Nat.le_add_right _ _
+  have hcore := winShrink_effect_core (itemBase := itemBase) (U := U) (V := V) (m_items := m_items)
+    hw hitem hdt_lt htd_lt s
   dsimp only [s']; rw [hs']; dsimp only [winShrinkRight]
-  exact ⟨rfl, htd2.trans htd1,
-    hdt2.trans (congrArg (fun f => Function.update f c_last t_rem) hdt1),
-    hlm2.trans hlm1, hgm2.trans hgm1, hq2.trans hq1, hv2.trans hv1,
-    fun a ha => (hout2 a (by omega)).trans (hout1 a (by omega))⟩
+  exact ⟨rfl, hcore.1, hcore.2.1, hcore.2.2.1, hcore.2.2.2.1, hcore.2.2.2.2.1,
+    hcore.2.2.2.2.2.1, hcore.2.2.2.2.2.2⟩
 
 theorem winShrinkLeftGenProg_effect {metaBase itemBase U V w N m_items b_win n_win : ℕ}
     (hw : 0 < w) (hitem : metaBase + offCompItems U w N ≤ itemBase)
@@ -476,24 +507,13 @@ theorem winShrinkLeftGenProg_effect {metaBase itemBase U V w N m_items b_win n_w
   have hc_lt : b_win % maxTailItems N < maxTailItems N := Nat.mod_lt _ hM_pos
   set t_rem := compDTAt metaBase U w N s.mem (b_win % maxTailItems N)
   set c_last := compTDAt metaBase U w N s.mem n_win
-  have ht_pow := lt_two_pow_globalPtrBits_of_lt_maxTail hdt_lt
-  have hc_pow := lt_two_pow_globalPtrBits_of_lt_maxTail htd_lt
   have hs' := clientState_winShrinkLeftGenProg (U := U) (V := V) (w := w) (metaBase := metaBase)
     (s := s) hc_lt hn
-  obtain ⟨htd1, hlm1, hgm1, hdt1, hq1, hv1, hout1⟩ :=
-    writeCompTD_effect (itemBase := itemBase) (U := U) (V := V) (m_items := m_items)
-      hw hitem hdt_lt hc_pow s.mem
-  set mem₁ := writePacked (metaBase + offTailToDense U w N) (globalPtrBits N) w s.mem t_rem c_last
-  obtain ⟨hdt2, hlm2, hgm2, htd2, hq2, hv2, hout2⟩ :=
-    writeCompDT_effect (itemBase := itemBase) (U := U) (V := V) (m_items := m_items)
-      hw hitem htd_lt ht_pow mem₁
-  have htd_le : offTailToDense U w N ≤ offDenseToTail U w N := Nat.le_add_right _ _
-  have hdt_le : offDenseToTail U w N ≤ offCompItems U w N := Nat.le_add_right _ _
+  have hcore := winShrink_effect_core (itemBase := itemBase) (U := U) (V := V) (m_items := m_items)
+    hw hitem hdt_lt htd_lt s
   dsimp only [s']; rw [hs']; dsimp only [winShrinkLeft]
-  exact ⟨rfl, htd2.trans htd1,
-    hdt2.trans (congrArg (fun f => Function.update f c_last t_rem) hdt1),
-    hlm2.trans hlm1, hgm2.trans hgm1, hq2.trans hq1, hv2.trans hv1,
-    fun a ha => (hout2 a (by omega)).trans (hout1 a (by omega))⟩
+  exact ⟨rfl, hcore.1, hcore.2.1, hcore.2.2.1, hcore.2.2.2.1, hcore.2.2.2.2.1,
+    hcore.2.2.2.2.2.1, hcore.2.2.2.2.2.2⟩
 /-! ## Section 3: Register-Width Bounds (`fits_mkCompParams`) -/
 
 theorem fits_const_of_offCompItems {U w N metaBase c : ℕ}

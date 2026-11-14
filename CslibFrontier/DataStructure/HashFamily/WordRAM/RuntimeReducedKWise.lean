@@ -763,7 +763,7 @@ theorem resampleHashCode_execRCodeDist {r w L_peak w₀ b b' k hashBase : ℕ}
     · have hm_eq : y.mem hashBase = y1.mem hashBase := hframe2 hashBase (Or.inl (by omega))
       have hlt_v : y1.mem hashBase < 2 ^ (w₀ - 1) := by simpa using hlt1 0 Nat.one_pos
       change y.mem hashBase = (ReducedKWise.extractTop hashBase w₀ y.mem).val
-      rw [ReducedKWise.extractTop_val, hm_eq, Tabulation.extractWord_val_of_lt hlt_v]
+      rw [ReducedKWise.extractTop_val, hm_eq, wordOfNat_val_of_lt hlt_v]
     · have hidx_lt : m.val + rLimbs w₀ b b' * j.val < k * rLimbs w₀ b b' := by
         calc m.val + rLimbs w₀ b b' * j.val
             < rLimbs w₀ b b' + rLimbs w₀ b b' * j.val := Nat.add_lt_add_right m.isLt _
@@ -772,7 +772,7 @@ theorem resampleHashCode_execRCodeDist {r w L_peak w₀ b b' k hashBase : ℕ}
       change y.mem (hashBase + 1 + (m.val + rLimbs w₀ b b' * j.val)) =
         getLimb (rChunk w₀ b b') (ReducedKWise.extractBot hashBase w₀ b b' k y.mem j).val m.val
       rw [ReducedKWise.getLimb_extractBot_val,
-        Tabulation.extractWord_val_of_lt (hlt2 _ hidx_lt)]
+        wordOfNat_val_of_lt (hlt2 _ hidx_lt)]
     · simp only [List.mem_cons, List.not_mem_nil, or_false, not_or] at hj
       obtain ⟨hjp, hje, hjm, hjo, hjv⟩ := hj
       exact (hreg2 j hjp hjv).trans (by

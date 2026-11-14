@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.WordRAM.Resizable.Randomized
 public import CslibFrontier.Computability.WordRAM.Realization.BoundedTactic
 public import CslibFrontier.Computability.WordRAM.Realization.GlueVector
+public import CslibFrontier.Computability.WordRAM.Realization.LoopCongr
 public import CslibFrontier.DataStructure.HashFamily.WordRAM.ReducedKWise
 
 /-!
@@ -206,61 +207,6 @@ theorem fits_mkHashParams {w w₀ b b' k hashBase scratchBase : ℕ}
   · exact h162.of_le (u := rHalf w₀ b b') (by omega)
   · exact hspace.of_le (u := k) (by omega)
   · exact hw_lt.of_le (u := b') hb'
-
-theorem validHistory_bind' {α β : Type} (w : ℕ) (p : Memory.Prog α)
-    (q : α → Memory.Prog β) (s : Memory.State) :
-    (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s (p >>= q)) ↔
-      (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s p) ∧
-      (Memory.spec w).ValidHistory ((Memory.spec 0).clientState s p)
-        ((Memory.spec w).clientHistory ((Memory.spec 0).clientState s p)
-          (q ((Memory.spec 0).clientResult s p))) := by
-  change (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s (p.bind q)) ↔ _
-  rw [validHistory_bind, clientResult_width, clientState_width]
-
-theorem iterationSafe_imp {δ' σ : Type} {body' : δ' × σ → Memory.Prog σ}
-    {safe' : ℕ → δ' × σ → Memory.State → Prop} {δ : Type}
-    {body : δ × σ → Memory.Prog σ} {safe : ℕ → δ × σ → Memory.State → Prop}
-    {w : ℕ} {d' : δ'} {d : δ} {n : ℕ} {a : σ} {s : Memory.State}
-    (h : iterationSafe body safe w d n a s)
-    (hb : ∀ a, body' (d', a) = body (d, a))
-    (hs : ∀ a s, safe w (d, a) s → safe' w (d', a) s) :
-    iterationSafe body' safe' w d' n a s := by
-  induction n generalizing a s with
-  | zero => trivial
-  | succ n ih => refine ⟨hs a s h.1, ?_⟩; rw [hb]; exact ih h.2
-
-theorem iterate_spec {δ σ : Type} (body : δ × σ → Memory.Prog σ)
-    (safe : ℕ → δ × σ → Memory.State → Prop) (w : ℕ) (d : δ) (B n : ℕ)
-    (inv : ℕ → σ → Memory.State → Prop) (mod : ℕ → Prop)
-    (hstep : ∀ k < n, ∀ a s, inv k a s → safe w (d, a) s ∧
-      (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s (body (d, a))) ∧
-      memoryCost (body (d, a)) s ≤ B ∧
-      let s' := (Memory.spec 0).clientState s (body (d, a))
-      s'.frontier = s.frontier ∧ (∀ x, ¬mod x → s'.mem x = s.mem x) ∧
-      inv (k + 1) ((Memory.spec 0).clientResult s (body (d, a))) s')
-    (a₀ : σ) (s₀ : Memory.State) (h₀ : inv 0 a₀ s₀) :
-    let prog := iterate body d n a₀; let s' := (Memory.spec 0).clientState s₀ prog
-    iterationSafe body safe w d n a₀ s₀ ∧
-    (Memory.spec w).ValidHistory s₀ ((Memory.spec w).clientHistory s₀ prog) ∧
-    memoryCost prog s₀ ≤ B * n ∧ s'.frontier = s₀.frontier ∧
-    (∀ x, ¬mod x → s'.mem x = s₀.mem x) ∧ inv n ((Memory.spec 0).clientResult s₀ prog) s' := by
-  induction n generalizing inv a₀ s₀ with
-  | zero => exact ⟨trivial, trivial, Nat.zero_le _, rfl, fun _ _ => rfl, h₀⟩
-  | succ n ih =>
-    obtain ⟨hs₀, hv₀, hc₀, hfr₀, hmod₀, hinv₁⟩ := hstep 0 (Nat.succ_pos n) a₀ s₀ h₀
-    set a₁ := (Memory.spec 0).clientResult s₀ (body (d, a₀))
-    set s₁ := (Memory.spec 0).clientState s₀ (body (d, a₀))
-    obtain ⟨hsn, hvn, hcn, hfrn, hmodn, hinvn⟩ :=
-      ih (fun k => inv (k + 1)) (fun k hk => hstep (k + 1) (Nat.succ_lt_succ hk)) a₁ s₁ hinv₁
-    refine ⟨⟨hs₀, by rw [clientResult_width, clientState_width]; exact hsn⟩, ?_, ?_, ?_,
-      fun x hx => ?_, ?_⟩
-    · rw [iterate, validHistory_bind']; exact ⟨hv₀, hvn⟩
-    · rw [iterate, memoryCost_bind']
-      exact (Nat.add_le_add hc₀ hcn).trans_eq (by ring)
-    · rw [iterate, StateTransitionSpec.clientState_bind]; exact hfrn.trans hfr₀
-    · rw [iterate, StateTransitionSpec.clientState_bind]; exact (hmodn x hx).trans (hmod₀ x hx)
-    · rw [iterate, StateTransitionSpec.clientResult_bind, StateTransitionSpec.clientState_bind]
-      exact hinvn
 
 /-! ## Section 2: Runtime `Memory.Prog` table construction (`initTableGenProg`) -/
 
@@ -866,7 +812,7 @@ theorem realizesBounded_reduceKeyGen :
   | (baseAddr, i) => do Memory.write (baseAddr + i) 0; pure (i + 1)
 
 /-- Precondition for `zeroWordsStepProg`. -/
-def ZeroWordsStepPre (_w : ℕ) : ℕ × ℕ → Memory.State → Prop
+@[expose] def ZeroWordsStepPre (_w : ℕ) : ℕ × ℕ → Memory.State → Prop
   | (baseAddr, i), s => baseAddr + i < s.frontier
 
 theorem realizesBounded_zeroWordsStep :

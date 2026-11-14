@@ -51,6 +51,11 @@ open Cslib.DataStructure.Dictionary.WordRAM.Succinct
 open Cslib.DataStructure.HashFamily.WordRAM
 
 attribute [local simp] Realization.memoryCost_bind'
+attribute [local simp] prog_clientResult_bind prog_runClient_state_bind prog_clientResult_pure
+attribute [local simp] prog_runClient_state_pure prog_clientResult_map prog_runClient_state_map
+attribute [local simp] prog_memoryCost_map prog_clientResult_read prog_runClient_state_read
+attribute [local simp] prog_memoryCost_read prog_clientResult_write prog_runClient_state_write
+attribute [local simp] prog_memoryCost_write
 
 /-! ## Section 1: Item Copy/Clear and Metadata Array Accessors -/
 
@@ -84,7 +89,7 @@ theorem clientState_copyCompItemGenProg {U V w N m_items itemBase src dst : ℕ}
     memoryCost (copyCompItemGenProg d) s = 12 := by
   rcases d with ⟨⟨cp, itemBase⟩, ⟨src, dst⟩⟩; simp [copyCompItemGenProg]
 /-- Precondition for copying an item between two compacted item slots. -/
-def CopyCompItemPre (w : ℕ) : (CompParams × ℕ) × (ℕ × ℕ) → Memory.State → Prop
+@[expose] def CopyCompItemPre (w : ℕ) : (CompParams × ℕ) × (ℕ × ℕ) → Memory.State → Prop
   | ((cp, itemBase), (src, dst)), s =>
     ∃ m_items, CompItemEnv w cp itemBase m_items s ∧ src < m_items ∧ dst < m_items
 theorem realizesBounded_copyCompItemGen :
@@ -570,7 +575,7 @@ theorem clientState_denseOfCircGenProg (d : CompParams × (ℕ × ℕ)) (s : Mem
   dsimp only [denseOfCircGenProg]; simp only [pure_bind]; split_ifs <;> rfl
 
 /-- Precondition for circular tail offset mapping `denseOfCirc`. -/
-def DenseOfCircPre (w : ℕ) : CompParams × (ℕ × ℕ) → Memory.State → Prop
+@[expose] def DenseOfCircPre (w : ℕ) : CompParams × (ℕ × ℕ) → Memory.State → Prop
   | (cp, (b_win, c)), _s =>
     ∃ U V N,
       0 < w ∧ 0 < N ∧ N ≤ U ∧ U < 2 ^ w ∧ V ≤ 2 ^ w ∧
@@ -659,7 +664,7 @@ theorem clientState_denseOfPhysGenProg (d : (CompParams × ℕ) × ℕ) (s : Mem
   clientState_denseOfPhysGenProg d s
 
 /-- Precondition for mapping physical slot index to dense index `denseOfPhys`. -/
-def DenseOfPhysPre (w : ℕ) : (CompParams × ℕ) × ℕ → Memory.State → Prop
+@[expose] def DenseOfPhysPre (w : ℕ) : (CompParams × ℕ) × ℕ → Memory.State → Prop
   | ((cp, metaBase), g), s =>
     ∃ U V N,
       0 < w ∧ 0 < N ∧ N ≤ U ∧ U < 2 ^ w ∧ V ≤ 2 ^ w ∧
@@ -713,7 +718,7 @@ def winGrowRightGenProg : (CompParams × ℕ) × (ℕ × ℕ) → Memory.Prog Un
   rcases d with ⟨⟨cp, metaBase⟩, ⟨b_win, n_win⟩⟩; simp [winGrowRightGenProg]
 
 /-- Precondition for growing the circular window on the right. -/
-def WinGrowRightPre (w : ℕ) : (CompParams × ℕ) × (ℕ × ℕ) → Memory.State → Prop
+@[expose] def WinGrowRightPre (w : ℕ) : (CompParams × ℕ) × (ℕ × ℕ) → Memory.State → Prop
   | ((cp, metaBase), (b_win, n_win)), s =>
     CompMetaEnv w cp metaBase s ∧ n_win < cpMaxTail cp ∧ b_win + n_win ≤ cpN cp
 
@@ -758,7 +763,7 @@ def winGrowLeftGenProg : (CompParams × ℕ) × (ℕ × ℕ) → Memory.Prog Uni
   rcases d with ⟨⟨cp, metaBase⟩, ⟨b_win, n_win⟩⟩; simp [winGrowLeftGenProg]
 
 /-- Precondition for growing the circular window on the left. -/
-def WinGrowLeftPre (w : ℕ) : (CompParams × ℕ) × (ℕ × ℕ) → Memory.State → Prop
+@[expose] def WinGrowLeftPre (w : ℕ) : (CompParams × ℕ) × (ℕ × ℕ) → Memory.State → Prop
   | ((cp, metaBase), (b_win, n_win)), s =>
     CompMetaEnv w cp metaBase s ∧ n_win < cpMaxTail cp ∧ b_win ≤ cpN cp
 
@@ -804,7 +809,7 @@ def winShrinkRightGenProg : (CompParams × ℕ) × (ℕ × ℕ) → Memory.Prog 
   rcases d with ⟨⟨cp, metaBase⟩, ⟨b_win, n_win⟩⟩; simp [winShrinkRightGenProg]
 
 /-- Precondition for shrinking the circular window on the right. -/
-def WinShrinkRightPre (w : ℕ) : (CompParams × ℕ) × (ℕ × ℕ) → Memory.State → Prop
+@[expose] def WinShrinkRightPre (w : ℕ) : (CompParams × ℕ) × (ℕ × ℕ) → Memory.State → Prop
   | ((cp, metaBase), (b_win, n_win)), s =>
     ∃ U V N,
       0 < w ∧ 0 < N ∧ N ≤ U ∧ U < 2 ^ w ∧ V ≤ 2 ^ w ∧
@@ -851,7 +856,7 @@ def winShrinkLeftGenProg : (CompParams × ℕ) × (ℕ × ℕ) → Memory.Prog U
   rcases d with ⟨⟨cp, metaBase⟩, ⟨b_win, n_win⟩⟩; simp [winShrinkLeftGenProg]
 
 /-- Precondition for shrinking the circular window on the left. -/
-def WinShrinkLeftPre (w : ℕ) : (CompParams × ℕ) × (ℕ × ℕ) → Memory.State → Prop
+@[expose] def WinShrinkLeftPre (w : ℕ) : (CompParams × ℕ) × (ℕ × ℕ) → Memory.State → Prop
   | ((cp, metaBase), (b_win, n_win)), s =>
     ∃ U V N,
       0 < w ∧ 0 < N ∧ N ≤ U ∧ U < 2 ^ w ∧ V ≤ 2 ^ w ∧

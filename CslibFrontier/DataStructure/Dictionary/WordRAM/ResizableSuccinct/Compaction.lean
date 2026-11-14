@@ -309,6 +309,57 @@ theorem winGrowLeft_spec {M b n : ℕ} {td dt : ℕ → ℕ}
     let c_last := td n
     (Function.update td t_rem c_last, Function.update dt c_last t_rem)
 
+private theorem winShrink_core_spec {M b b' n : ℕ} {td dt : ℕ → ℕ} {c_rem : ℕ}
+    (hw : WindowInv M b (n + 1) td dt) (hM : n + 1 ≤ M)
+    (htd_b : ∀ i, td i < M) (hdt_b : ∀ i, dt i < M)
+    (hown_rem : dt c_rem < n + 1 ∧ td (dt c_rem) = c_rem)
+    (hlt_b' : ∀ t < n + 1, t ≠ dt c_rem → denseOfCirc M b' (td t) < b' + n)
+    (hne_crem : ∀ d, b' ≤ d → d < b' + n → d % M ≠ c_rem)
+    (howner : ∀ d, b' ≤ d → d < b' + n → dt (d % M) < n + 1 ∧ td (dt (d % M)) = d % M) :
+    let t_rem := dt c_rem
+    let c_last := td n
+    let td' := Function.update td t_rem c_last
+    let dt' := Function.update dt c_last t_rem
+    WindowInv M b' n td' dt' ∧ (∀ i, td' i < M) ∧ (∀ i, dt' i < M) := by
+  intro t_rem c_last td' dt'
+  have hM_pos : 0 < M := by omega
+  have ht_rem_lt : t_rem < n + 1 := hown_rem.1
+  have htd_trem : td t_rem = c_rem := hown_rem.2
+  have hc_last_lt : c_last < M := hw.td_lt n (Nat.lt_succ_self n)
+  have htd_inj : ∀ t₁ < n + 1, ∀ t₂ < n + 1, td t₁ = td t₂ → t₁ = t₂ := fun t₁ ht₁ t₂ ht₂ heq => by
+    rw [← hw.dt_td t₁ ht₁, ← hw.dt_td t₂ ht₂, heq]
+  refine ⟨⟨fun t ht => ?_, fun t ht => ?_, fun t ht => ?_, fun d hlo hhi => ?_⟩,
+    fun i => ?_, fun i => ?_⟩
+  · by_cases heq : t = t_rem
+    · subst heq; dsimp only [td']; rw [Function.update_self]; exact hc_last_lt
+    · dsimp only [td']; rw [Function.update_of_ne heq]; exact hw.td_lt t (by omega)
+  · by_cases heq : t = t_rem
+    · subst heq; dsimp only [td']; rw [Function.update_self]
+      exact hlt_b' n (Nat.lt_succ_self n) (by omega)
+    · dsimp only [td']; rw [Function.update_of_ne heq]; exact hlt_b' t (by omega) heq
+  · by_cases heq : t = t_rem
+    · subst heq; dsimp only [td', dt']; rw [Function.update_self, Function.update_self]
+    · dsimp only [td', dt']; rw [Function.update_of_ne heq]
+      have hne_c : td t ≠ c_last := fun hc =>
+        Nat.ne_of_lt ht (htd_inj t (by omega) n (Nat.lt_succ_self n) hc)
+      rw [Function.update_of_ne hne_c]; exact hw.dt_td t (by omega)
+  · have hown := howner d hlo hhi
+    have hne_c := hne_crem d hlo hhi
+    have hne_trem : dt (d % M) ≠ t_rem := fun heq => hne_c (by rw [← hown.2, heq, htd_trem])
+    by_cases hclast : d % M = c_last
+    · dsimp only [dt', td']; rw [hclast, Function.update_self, Function.update_self]
+      have : t_rem ≠ n := fun heq => hne_c (by rw [hclast, ← htd_trem, heq])
+      exact ⟨by omega, rfl⟩
+    · dsimp only [dt', td']; rw [Function.update_of_ne hclast, Function.update_of_ne hne_trem]
+      have : dt (d % M) ≠ n := fun heq => hclast (by rw [← hown.2, heq])
+      exact ⟨by omega, hown.2⟩
+  · by_cases hi : i = t_rem
+    · subst hi; dsimp only [td']; rw [Function.update_self]; exact hc_last_lt
+    · dsimp only [td']; rw [Function.update_of_ne hi]; exact htd_b i
+  · by_cases hi : i = c_last
+    · subst hi; dsimp only [dt']; rw [Function.update_self]; exact hdt_b c_rem
+    · dsimp only [dt']; rw [Function.update_of_ne hi]; exact hdt_b i
+
 theorem winShrinkRight_spec {M b n : ℕ} {td dt : ℕ → ℕ}
     (hw : WindowInv M b (n + 1) td dt) (hM : n + 1 ≤ M)
     (htd_b : ∀ i, td i < M) (hdt_b : ∀ i, dt i < M) :
@@ -316,55 +367,22 @@ theorem winShrinkRight_spec {M b n : ℕ} {td dt : ℕ → ℕ}
     | (td', dt') => WindowInv M b n td' dt' ∧ (∀ i, td' i < M) ∧ (∀ i, dt' i < M) := by
   dsimp only [winShrinkRight]
   have hM_pos : 0 < M := by omega
-  set c_rem := (b + n) % M
-  set t_rem := dt c_rem
-  set c_last := td n
   have hown_rem := hw.owner_valid (b + n) (by omega) (by omega)
-  have ht_rem_lt : t_rem < n + 1 := hown_rem.1
-  have htd_trem : td t_rem = c_rem := hown_rem.2
-  have hc_last_lt : c_last < M := hw.td_lt n (Nat.lt_succ_self n)
   have htd_inj : ∀ t₁ < n + 1, ∀ t₂ < n + 1, td t₁ = td t₂ → t₁ = t₂ := fun t₁ ht₁ t₂ ht₂ heq => by
     rw [← hw.dt_td t₁ ht₁, ← hw.dt_td t₂ ht₂, heq]
-  have hlt_bn : ∀ t < n + 1, t ≠ t_rem → denseOfCirc M b (td t) < b + n := fun t ht hne => by
+  have hlt_bn : ∀ t < n + 1, t ≠ dt ((b + n) % M) → denseOfCirc M b (td t) < b + n :=
+    fun t ht hne => by
     have hlt := hw.dense_lt t ht
     have hne_d : denseOfCirc M b (td t) ≠ b + n := fun hd => by
       have hmod := (denseOfCirc_eq_self_iff hM_pos (hw.td_lt t ht) (by omega) (by omega)).mp hd
-      exact hne (htd_inj t ht t_rem ht_rem_lt (hmod.trans htd_trem.symm))
+      exact hne (htd_inj t ht (dt ((b + n) % M)) hown_rem.1 (hmod.trans hown_rem.2.symm))
     omega
-  refine ⟨⟨fun t ht => ?_, fun t ht => ?_, fun t ht => ?_, fun d hlo hhi => ?_⟩,
-    fun i => ?_, fun i => ?_⟩
-  · by_cases heq : t = t_rem
-    · subst heq; rw [Function.update_self]; exact hc_last_lt
-    · rw [Function.update_of_ne heq]; exact hw.td_lt t (by omega)
-  · by_cases heq : t = t_rem
-    · subst heq; rw [Function.update_self]; exact hlt_bn n (Nat.lt_succ_self n) (by omega)
-    · rw [Function.update_of_ne heq]; exact hlt_bn t (by omega) heq
-  · by_cases heq : t = t_rem
-    · subst heq; rw [Function.update_self, Function.update_self]
-    · rw [Function.update_of_ne heq]
-      have hne_c : td t ≠ c_last := fun hc =>
-        Nat.ne_of_lt ht (htd_inj t (by omega) n (Nat.lt_succ_self n) hc)
-      rw [Function.update_of_ne hne_c]; exact hw.dt_td t (by omega)
-  · have hown := hw.owner_valid d hlo (by omega)
-    have hne_crem : d % M ≠ c_rem := fun heq => by
-      have hd_eq := denseOfCirc_mod_self hM_pos hlo (by omega : d < b + M)
-      have hrem_eq := denseOfCirc_mod_self (base_tail := b) (d := b + n) hM_pos
-        (by omega) (by omega)
-      rw [heq, hrem_eq] at hd_eq; omega
-    have hne_trem : dt (d % M) ≠ t_rem := fun heq => hne_crem (by rw [← hown.2, heq, htd_trem])
-    by_cases hclast : d % M = c_last
-    · rw [hclast, Function.update_self, Function.update_self]
-      have : t_rem ≠ n := fun heq => hne_crem (by rw [hclast, ← htd_trem, heq])
-      exact ⟨by omega, rfl⟩
-    · rw [Function.update_of_ne hclast, Function.update_of_ne hne_trem]
-      have : dt (d % M) ≠ n := fun heq => hclast (by rw [← hown.2, heq])
-      exact ⟨by omega, hown.2⟩
-  · by_cases hi : i = t_rem
-    · subst hi; rw [Function.update_self]; exact hc_last_lt
-    · rw [Function.update_of_ne hi]; exact htd_b i
-  · by_cases hi : i = c_last
-    · subst hi; rw [Function.update_self]; exact hdt_b c_rem
-    · rw [Function.update_of_ne hi]; exact hdt_b i
+  have hne_crem : ∀ d, b ≤ d → d < b + n → d % M ≠ (b + n) % M := fun d hlo hhi heq => by
+    have hd_eq := denseOfCirc_mod_self hM_pos hlo (by omega : d < b + M)
+    have hrem_eq := denseOfCirc_mod_self (base_tail := b) (d := b + n) hM_pos (by omega) (by omega)
+    rw [heq, hrem_eq] at hd_eq; omega
+  exact winShrink_core_spec hw hM htd_b hdt_b hown_rem hlt_bn hne_crem
+    (fun d hlo hhi => hw.owner_valid d hlo (by omega))
 
 /-- Shrink the circular window `[b, b + (n + 1))` on the left by 1 to `[b + 1, b + 1 + n)`. -/
 @[expose] def winShrinkLeft (M b n : ℕ) : (ℕ → ℕ) × (ℕ → ℕ) → (ℕ → ℕ) × (ℕ → ℕ)
@@ -381,54 +399,21 @@ theorem winShrinkLeft_spec {M b n : ℕ} {td dt : ℕ → ℕ}
     | (td', dt') => WindowInv M (b + 1) n td' dt' ∧ (∀ i, td' i < M) ∧ (∀ i, dt' i < M) := by
   dsimp only [winShrinkLeft]
   have hM_pos : 0 < M := by omega
-  set c_rem := b % M
-  set t_rem := dt c_rem
-  set c_last := td n
   have hown_rem := hw.owner_valid b le_rfl (by omega)
-  have ht_rem_lt : t_rem < n + 1 := hown_rem.1
-  have htd_trem : td t_rem = c_rem := hown_rem.2
-  have hc_last_lt : c_last < M := hw.td_lt n (Nat.lt_succ_self n)
   have htd_inj : ∀ t₁ < n + 1, ∀ t₂ < n + 1, td t₁ = td t₂ → t₁ = t₂ := fun t₁ ht₁ t₂ ht₂ heq => by
     rw [← hw.dt_td t₁ ht₁, ← hw.dt_td t₂ ht₂, heq]
-  have hsucc : ∀ t < n + 1, t ≠ t_rem → denseOfCirc M (b + 1) (td t) < b + 1 + n :=
+  have hsucc : ∀ t < n + 1, t ≠ dt (b % M) → denseOfCirc M (b + 1) (td t) < b + 1 + n :=
     fun t ht hne => by
       have hlt := hw.dense_lt t ht
-      have hne_c : td t ≠ c_rem := fun hc =>
-        hne (htd_inj t ht t_rem ht_rem_lt (hc.trans htd_trem.symm))
+      have hne_c : td t ≠ b % M := fun hc =>
+        hne (htd_inj t ht (dt (b % M)) hown_rem.1 (hc.trans hown_rem.2.symm))
       rw [denseOfCirc_succ_of_ne_mod hM_pos (hw.td_lt t ht) (by omega) hne_c]; omega
-  refine ⟨⟨fun t ht => ?_, fun t ht => ?_, fun t ht => ?_, fun d hlo hhi => ?_⟩,
-    fun i => ?_, fun i => ?_⟩
-  · by_cases heq : t = t_rem
-    · subst heq; rw [Function.update_self]; exact hc_last_lt
-    · rw [Function.update_of_ne heq]; exact hw.td_lt t (by omega)
-  · by_cases heq : t = t_rem
-    · subst heq; rw [Function.update_self]; exact hsucc n (Nat.lt_succ_self n) (by omega)
-    · rw [Function.update_of_ne heq]; exact hsucc t (by omega) heq
-  · by_cases heq : t = t_rem
-    · subst heq; rw [Function.update_self, Function.update_self]
-    · rw [Function.update_of_ne heq]
-      have hne_c : td t ≠ c_last := fun hc =>
-        Nat.ne_of_lt ht (htd_inj t (by omega) n (Nat.lt_succ_self n) hc)
-      rw [Function.update_of_ne hne_c]; exact hw.dt_td t (by omega)
-  · have hown := hw.owner_valid d (by omega) (by omega)
-    have hne_crem : d % M ≠ c_rem := fun heq => by
-      have hd_eq := denseOfCirc_mod_self hM_pos (by omega) (by omega : d < b + M)
-      have hrem_eq := denseOfCirc_mod_self (base_tail := b) (d := b) hM_pos le_rfl (by omega)
-      rw [heq, hrem_eq] at hd_eq; omega
-    have hne_trem : dt (d % M) ≠ t_rem := fun heq => hne_crem (by rw [← hown.2, heq, htd_trem])
-    by_cases hclast : d % M = c_last
-    · rw [hclast, Function.update_self, Function.update_self]
-      have : t_rem ≠ n := fun heq => hne_crem (by rw [hclast, ← htd_trem, heq])
-      exact ⟨by omega, rfl⟩
-    · rw [Function.update_of_ne hclast, Function.update_of_ne hne_trem]
-      have : dt (d % M) ≠ n := fun heq => hclast (by rw [← hown.2, heq])
-      exact ⟨by omega, hown.2⟩
-  · by_cases hi : i = t_rem
-    · subst hi; rw [Function.update_self]; exact hc_last_lt
-    · rw [Function.update_of_ne hi]; exact htd_b i
-  · by_cases hi : i = c_last
-    · subst hi; rw [Function.update_self]; exact hdt_b c_rem
-    · rw [Function.update_of_ne hi]; exact hdt_b i
+  have hne_crem : ∀ d, b + 1 ≤ d → d < b + 1 + n → d % M ≠ b % M := fun d hlo hhi heq => by
+    have hd_eq := denseOfCirc_mod_self hM_pos (by omega) (by omega : d < b + M)
+    have hrem_eq := denseOfCirc_mod_self (base_tail := b) (d := b) hM_pos le_rfl (by omega)
+    rw [heq, hrem_eq] at hd_eq; omega
+  exact winShrink_core_spec hw hM htd_b hdt_b hown_rem hsucc hne_crem
+    (fun d hlo hhi => hw.owner_valid d (by omega) (by omega))
 
 theorem physByBase_winGrowRight {N b n : ℕ} {td dt : ℕ → ℕ}
     (hb_pos : 0 < bucketBits N) (hM : n + 1 ≤ maxTailItems N) :

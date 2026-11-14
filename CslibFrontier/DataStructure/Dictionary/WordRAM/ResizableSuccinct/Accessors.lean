@@ -56,83 +56,89 @@ open Cslib.DataStructure.HashFamily.WordRAM
 
 /-! ## Section 1: `Memory.Prog` Simp Lemmas -/
 
-@[simp] theorem prog_clientResult_bind {α β : Type} (p : Memory.Prog α)
+theorem prog_clientResult_bind {α β : Type} (p : Memory.Prog α)
     (k : α → Memory.Prog β) (s : Memory.State) :
     (Memory.spec 0).clientResult s (p >>= k) =
       (Memory.spec 0).clientResult ((Memory.spec 0).clientState s p)
         (k ((Memory.spec 0).clientResult s p)) := (Memory.spec 0).clientResult_bind p k s
-@[simp] theorem prog_runClient_state_bind {α β : Type} (p : Memory.Prog α)
+theorem prog_runClient_state_bind {α β : Type} (p : Memory.Prog α)
     (k : α → Memory.Prog β) (s : Memory.State) :
     Prod.fst (Prod.snd ((Memory.spec 0).runClient s (p >>= k))) =
       (Memory.spec 0).clientState ((Memory.spec 0).clientState s p)
         (k ((Memory.spec 0).clientResult s p)) := (Memory.spec 0).fst_snd_runClient_bind p k s
 attribute [local simp] Realization.memoryCost_bind'
 
-@[simp] theorem prog_clientResult_pure {α : Type} (x : α) (s : Memory.State) :
+theorem prog_clientResult_pure {α : Type} (x : α) (s : Memory.State) :
     (Memory.spec 0).clientResult s (pure x : Memory.Prog α) = x := rfl
-@[simp] theorem prog_runClient_state_pure {α : Type} (x : α) (s : Memory.State) :
+theorem prog_runClient_state_pure {α : Type} (x : α) (s : Memory.State) :
     Prod.fst (Prod.snd ((Memory.spec 0).runClient s (pure x : Memory.Prog α))) = s := rfl
-@[simp] theorem prog_clientResult_map {α β : Type} (f : α → β) (p : Memory.Prog α)
+theorem prog_clientResult_map {α β : Type} (f : α → β) (p : Memory.Prog α)
     (s : Memory.State) :
     (Memory.spec 0).clientResult s (f <$> p) = f ((Memory.spec 0).clientResult s p) := by
   rw [← bind_pure_comp, prog_clientResult_bind, prog_clientResult_pure]
-@[simp] theorem prog_runClient_state_map {α β : Type} (f : α → β) (p : Memory.Prog α)
+theorem prog_runClient_state_map {α β : Type} (f : α → β) (p : Memory.Prog α)
     (s : Memory.State) :
     Prod.fst (Prod.snd ((Memory.spec 0).runClient s (f <$> p))) =
       (Memory.spec 0).clientState s p := by rw [← bind_pure_comp, prog_runClient_state_bind]; rfl
-@[simp] theorem prog_memoryCost_map {α β : Type} (f : α → β) (p : Memory.Prog α)
+theorem prog_memoryCost_map {α β : Type} (f : α → β) (p : Memory.Prog α)
     (s : Memory.State) : memoryCost (f <$> p) s = memoryCost p s := by
   rw [← bind_pure_comp, memoryCost_bind', memoryCost_pure, Nat.add_zero]
-@[simp] theorem prog_clientResult_read (a : ℕ) (s : Memory.State) :
+theorem prog_clientResult_read (a : ℕ) (s : Memory.State) :
     (Memory.spec 0).clientResult s (Memory.read a) = s.mem a := rfl
-@[simp] theorem prog_runClient_state_read (a : ℕ) (s : Memory.State) :
+theorem prog_runClient_state_read (a : ℕ) (s : Memory.State) :
     Prod.fst (Prod.snd ((Memory.spec 0).runClient s (Memory.read a))) = s := rfl
-@[simp] theorem prog_memoryCost_read (a : ℕ) (s : Memory.State) :
+theorem prog_memoryCost_read (a : ℕ) (s : Memory.State) :
     memoryCost (Memory.read a) s = 1 := rfl
-@[simp] theorem prog_clientResult_write (a v : ℕ) (s : Memory.State) :
+theorem prog_clientResult_write (a v : ℕ) (s : Memory.State) :
     (Memory.spec 0).clientResult s (Memory.write a v) = () := rfl
-@[simp] theorem prog_runClient_state_write (a v : ℕ) (s : Memory.State) :
+theorem prog_runClient_state_write (a v : ℕ) (s : Memory.State) :
     Prod.fst (Prod.snd ((Memory.spec 0).runClient s (Memory.write a v))) =
       { mem := Function.update s.mem a v, frontier := s.frontier } := rfl
-@[simp] theorem prog_memoryCost_write (a v : ℕ) (s : Memory.State) :
+theorem prog_memoryCost_write (a v : ℕ) (s : Memory.State) :
     memoryCost (Memory.write a v) s = 1 := rfl
+
+attribute [local simp] prog_clientResult_bind prog_runClient_state_bind prog_clientResult_pure
+attribute [local simp] prog_runClient_state_pure prog_clientResult_map prog_runClient_state_map
+attribute [local simp] prog_memoryCost_map prog_clientResult_read prog_runClient_state_read
+attribute [local simp] prog_memoryCost_read prog_clientResult_write prog_runClient_state_write
+attribute [local simp] prog_memoryCost_write
 
 /-! ## Section 2: Overflow-Free Bit-Slice and Packed-Array Primitives -/
 
 /-- Compute `min a b` in `Memory.Prog`. -/
-def minWidthProg : ℕ × ℕ → Memory.Prog ℕ
+private def minWidthProg : ℕ × ℕ → Memory.Prog ℕ
   | (a, b) => if a < b then pure a else pure b
 
-@[simp] theorem clientResult_minWidthProg (a b : ℕ) (s : Memory.State) :
+@[simp] private theorem clientResult_minWidthProg (a b : ℕ) (s : Memory.State) :
     (Memory.spec 0).clientResult s (minWidthProg (a, b)) = min a b := by
   dsimp only [minWidthProg]
   by_cases h : a < b
   · rw [ite_eq_left h, Nat.min_eq_left h.le]; rfl
   · rw [ite_eq_right h, Nat.min_eq_right (Nat.le_of_not_lt h)]; rfl
 
-theorem clientState_minWidthProg (p : ℕ × ℕ) (s : Memory.State) :
+@[simp] private theorem clientState_minWidthProg (p : ℕ × ℕ) (s : Memory.State) :
     (Memory.spec 0).clientState s (minWidthProg p) = s := by
   rcases p with ⟨a, b⟩; dsimp only [minWidthProg]; split_ifs <;> rfl
 
-@[simp] theorem runClient_state_minWidthProg (p : ℕ × ℕ) (s : Memory.State) :
+@[simp] private theorem runClient_state_minWidthProg (p : ℕ × ℕ) (s : Memory.State) :
     Prod.fst (Prod.snd ((Memory.spec 0).runClient s (minWidthProg p))) = s :=
   clientState_minWidthProg p s
 
-@[simp] theorem memoryCost_minWidthProg (p : ℕ × ℕ) (s : Memory.State) :
+@[simp] private theorem memoryCost_minWidthProg (p : ℕ × ℕ) (s : Memory.State) :
     memoryCost (minWidthProg p) s = 0 := by
   rcases p with ⟨a, b⟩; dsimp only [minWidthProg]; split_ifs <;> rfl
 
 /-- Precondition for `minWidthProg`. -/
-def MinWidthPre (_w : ℕ) (_p : ℕ × ℕ) (_s : Memory.State) : Prop := True
+private def MinWidthPre (_w : ℕ) (_p : ℕ × ℕ) (_s : Memory.State) : Prop := True
 
-theorem realizesBounded_minWidth :
+private theorem realizesBounded_minWidth :
     RealizesBounded .exact minWidthProg
       (WordEncoding.encode (α := ℕ × ℕ)) (WordEncoding.encode (α := ℕ))
       MinWidthPre (fun _ _ => 0) := by
   realize
 
 /-- Compute `2 ^ k₀ - 1` overflow-free for all `k₀ ≤ w` (`0 < w`). -/
-def maskOfWidthProg (k₀ : ℕ) : Memory.Prog ℕ :=
+private def maskOfWidthProg (k₀ : ℕ) : Memory.Prog ℕ :=
   if k₀ = 0 then pure 0
   else do
     let half := 1 <<< (k₀ - 1)
@@ -146,30 +152,30 @@ private theorem two_pow_pred_add_sub_one {k₀ : ℕ} (hk : k₀ ≠ 0) :
   have h1 : 1 ≤ 2 ^ (k₀ - 1) := Nat.one_le_two_pow
   omega
 
-@[simp] theorem clientResult_maskOfWidthProg (k₀ : ℕ) (s : Memory.State) :
+@[simp] private theorem clientResult_maskOfWidthProg (k₀ : ℕ) (s : Memory.State) :
     (Memory.spec 0).clientResult s (maskOfWidthProg k₀) = 2 ^ k₀ - 1 := by
   dsimp only [maskOfWidthProg]
   by_cases hk : k₀ = 0
   · subst hk; rfl
   · rw [ite_eq_right hk]; exact two_pow_pred_add_sub_one hk
 
-theorem clientState_maskOfWidthProg (k₀ : ℕ) (s : Memory.State) :
+@[simp] private theorem clientState_maskOfWidthProg (k₀ : ℕ) (s : Memory.State) :
     (Memory.spec 0).clientState s (maskOfWidthProg k₀) = s := by
   dsimp only [maskOfWidthProg]; split_ifs <;> rfl
 
-@[simp] theorem runClient_state_maskOfWidthProg (k₀ : ℕ) (s : Memory.State) :
+@[simp] private theorem runClient_state_maskOfWidthProg (k₀ : ℕ) (s : Memory.State) :
     Prod.fst (Prod.snd ((Memory.spec 0).runClient s (maskOfWidthProg k₀))) = s :=
   clientState_maskOfWidthProg k₀ s
 
-@[simp] theorem memoryCost_maskOfWidthProg (k₀ : ℕ) (s : Memory.State) :
+@[simp] private theorem memoryCost_maskOfWidthProg (k₀ : ℕ) (s : Memory.State) :
     memoryCost (maskOfWidthProg k₀) s = 0 := by
   dsimp only [maskOfWidthProg]; split_ifs <;> rfl
 
 /-- Precondition for `maskOfWidthProg`. -/
-def MaskOfWidthPre (w k₀ : ℕ) (_s : Memory.State) : Prop :=
+private def MaskOfWidthPre (w k₀ : ℕ) (_s : Memory.State) : Prop :=
   0 < w ∧ k₀ ≤ w
 
-theorem realizesBounded_maskOfWidth :
+private theorem realizesBounded_maskOfWidth :
     RealizesBounded .exact maskOfWidthProg
       (WordEncoding.encode (α := ℕ)) (WordEncoding.encode (α := ℕ))
       MaskOfWidthPre (fun _ _ => 0) := by
@@ -404,35 +410,35 @@ theorem realizesBounded_writeBitSliceGen :
   all_goals omega
 
 /-- Compute `(wordOffset k wVal idx, bitOffset k wVal idx)` overflow-free in `Memory.Prog`. -/
-def packedOffsetProg : (ℕ × ℕ) × ℕ → Memory.Prog (ℕ × ℕ)
+private def packedOffsetProg : (ℕ × ℕ) × ℕ → Memory.Prog (ℕ × ℕ)
   | ((k, wVal), idx) => do
     let prodMod := (idx % wVal) * k
     let wOff := (idx / wVal) * k + prodMod / wVal
     let bOff := prodMod % wVal
     pure (wOff, bOff)
 
-@[simp] theorem clientResult_packedOffsetProg (k w idx : ℕ) (s : Memory.State) :
+@[simp] private theorem clientResult_packedOffsetProg (k w idx : ℕ) (s : Memory.State) :
     (Memory.spec 0).clientResult s (packedOffsetProg ((k, w), idx)) =
       (wordOffset k w idx, bitOffset k w idx) := by rfl
 
-theorem clientState_packedOffsetProg (d : (ℕ × ℕ) × ℕ) (s : Memory.State) :
+@[simp] private theorem clientState_packedOffsetProg (d : (ℕ × ℕ) × ℕ) (s : Memory.State) :
     (Memory.spec 0).clientState s (packedOffsetProg d) = s := by
   rcases d with ⟨⟨k, wVal⟩, idx⟩; rfl
 
-@[simp] theorem runClient_state_packedOffsetProg (d : (ℕ × ℕ) × ℕ) (s : Memory.State) :
+@[simp] private theorem runClient_state_packedOffsetProg (d : (ℕ × ℕ) × ℕ) (s : Memory.State) :
     Prod.fst (Prod.snd ((Memory.spec 0).runClient s (packedOffsetProg d))) = s :=
   clientState_packedOffsetProg d s
 
-@[simp] theorem memoryCost_packedOffsetProg (d : (ℕ × ℕ) × ℕ) (s : Memory.State) :
+@[simp] private theorem memoryCost_packedOffsetProg (d : (ℕ × ℕ) × ℕ) (s : Memory.State) :
     memoryCost (packedOffsetProg d) s = 0 := by
   rcases d with ⟨⟨k, wVal⟩, idx⟩; rfl
 
 /-- Precondition for `packedOffsetProg`. -/
-def PackedOffsetPre (w : ℕ) : (ℕ × ℕ) × ℕ → Memory.State → Prop
+private def PackedOffsetPre (w : ℕ) : (ℕ × ℕ) × ℕ → Memory.State → Prop
   | ((k, wVal), idx), s =>
     0 < w ∧ w = wVal ∧ k ≤ w ∧ wordOffset k w idx < s.frontier
 
-theorem realizesBounded_packedOffset :
+private theorem realizesBounded_packedOffset :
     RealizesBounded .exact packedOffsetProg
       (WordEncoding.encode (α := (ℕ × ℕ) × ℕ)) (WordEncoding.encode (α := ℕ × ℕ))
       PackedOffsetPre (fun _ _ => 0) := by
@@ -575,40 +581,40 @@ private theorem sub_one_add_self_lt_two_pow {w : ℕ} (hw : 0 < w) :
       omega
 
 /-- Compute `(wOffQ q_bits v_bits wVal d, bOffQ q_bits v_bits wVal d)` overflow-free. -/
-def compQOffsetProg : ((ℕ × ℕ) × ℕ) × ℕ → Memory.Prog (ℕ × ℕ)
+private def compQOffsetProg : ((ℕ × ℕ) × ℕ) × ℕ → Memory.Prog (ℕ × ℕ)
   | (((q_bits, v_bits), wVal), d) => do
     let wbQ ← packedOffsetProg ((q_bits, wVal), d)
     let wbV ← packedOffsetProg ((v_bits, wVal), d)
     let bsum := wbQ.2 + wbV.2
     pure (wbQ.1 + wbV.1 + bsum / wVal, bsum % wVal)
 
-@[simp] theorem clientResult_compQOffsetProg (q_bits v_bits w d : ℕ) (s : Memory.State) :
+@[simp] private theorem clientResult_compQOffsetProg (q_bits v_bits w d : ℕ) (s : Memory.State) :
     (Memory.spec 0).clientResult s (compQOffsetProg (((q_bits, v_bits), w), d)) =
       (wOffQ q_bits v_bits w d, bOffQ q_bits v_bits w d) := by
   simp [compQOffsetProg, wOffQ, bOffQ]
 
-theorem clientState_compQOffsetProg (d : ((ℕ × ℕ) × ℕ) × ℕ) (s : Memory.State) :
+@[simp] private theorem clientState_compQOffsetProg (d : ((ℕ × ℕ) × ℕ) × ℕ) (s : Memory.State) :
     (Memory.spec 0).clientState s (compQOffsetProg d) = s := by
   rcases d with ⟨⟨⟨q_bits, v_bits⟩, wVal⟩, idx⟩
   unfold StateTransitionSpec.clientState
   simp [compQOffsetProg]
 
-@[simp] theorem runClient_state_compQOffsetProg
+@[simp] private theorem runClient_state_compQOffsetProg
     (d : ((ℕ × ℕ) × ℕ) × ℕ) (s : Memory.State) :
     Prod.fst (Prod.snd ((Memory.spec 0).runClient s (compQOffsetProg d))) = s :=
   clientState_compQOffsetProg d s
 
-@[simp] theorem memoryCost_compQOffsetProg (d : ((ℕ × ℕ) × ℕ) × ℕ) (s : Memory.State) :
+@[simp] private theorem memoryCost_compQOffsetProg (d : ((ℕ × ℕ) × ℕ) × ℕ) (s : Memory.State) :
     memoryCost (compQOffsetProg d) s = 0 := by
   rcases d with ⟨⟨⟨q_bits, v_bits⟩, wVal⟩, idx⟩
   simp [compQOffsetProg]
 
 /-- Precondition for `compQOffsetProg`. -/
-def CompQOffsetPre (w : ℕ) : ((ℕ × ℕ) × ℕ) × ℕ → Memory.State → Prop
+private def CompQOffsetPre (w : ℕ) : ((ℕ × ℕ) × ℕ) × ℕ → Memory.State → Prop
   | (((q_bits, v_bits), wVal), d), s =>
     0 < w ∧ w = wVal ∧ q_bits ≤ w ∧ v_bits ≤ w ∧ wOffQ q_bits v_bits w d < s.frontier
 
-theorem realizesBounded_compQOffset :
+private theorem realizesBounded_compQOffset :
     RealizesBounded .exact compQOffsetProg
       (WordEncoding.encode (α := ((ℕ × ℕ) × ℕ) × ℕ)) (WordEncoding.encode (α := ℕ × ℕ))
       CompQOffsetPre (fun _ _ => 0) := by
@@ -635,39 +641,39 @@ theorem realizesBounded_compQOffset :
   all_goals (refine lt_of_le_of_lt ?_ hmem.1; omega)
 
 /-- Compute `(wOffV q_bits v_bits wVal d, bOffV q_bits v_bits wVal d)` overflow-free. -/
-def compVOffsetProg : ((ℕ × ℕ) × ℕ) × ℕ → Memory.Prog (ℕ × ℕ)
+private def compVOffsetProg : ((ℕ × ℕ) × ℕ) × ℕ → Memory.Prog (ℕ × ℕ)
   | (((q_bits, v_bits), wVal), d) => do
     let wb ← compQOffsetProg (((q_bits, v_bits), wVal), d)
     let bsum := wb.2 + q_bits
     pure (wb.1 + bsum / wVal, bsum % wVal)
 
-@[simp] theorem clientResult_compVOffsetProg (q_bits v_bits w d : ℕ) (s : Memory.State) :
+@[simp] private theorem clientResult_compVOffsetProg (q_bits v_bits w d : ℕ) (s : Memory.State) :
     (Memory.spec 0).clientResult s (compVOffsetProg (((q_bits, v_bits), w), d)) =
       (wOffV q_bits v_bits w d, bOffV q_bits v_bits w d) := by
   simp [compVOffsetProg, wOffV, bOffV]
 
-theorem clientState_compVOffsetProg (d : ((ℕ × ℕ) × ℕ) × ℕ) (s : Memory.State) :
+@[simp] private theorem clientState_compVOffsetProg (d : ((ℕ × ℕ) × ℕ) × ℕ) (s : Memory.State) :
     (Memory.spec 0).clientState s (compVOffsetProg d) = s := by
   rcases d with ⟨⟨⟨q_bits, v_bits⟩, wVal⟩, idx⟩
   unfold StateTransitionSpec.clientState
   simp [compVOffsetProg]
 
-@[simp] theorem runClient_state_compVOffsetProg
+@[simp] private theorem runClient_state_compVOffsetProg
     (d : ((ℕ × ℕ) × ℕ) × ℕ) (s : Memory.State) :
     Prod.fst (Prod.snd ((Memory.spec 0).runClient s (compVOffsetProg d))) = s :=
   clientState_compVOffsetProg d s
 
-@[simp] theorem memoryCost_compVOffsetProg (d : ((ℕ × ℕ) × ℕ) × ℕ) (s : Memory.State) :
+@[simp] private theorem memoryCost_compVOffsetProg (d : ((ℕ × ℕ) × ℕ) × ℕ) (s : Memory.State) :
     memoryCost (compVOffsetProg d) s = 0 := by
   rcases d with ⟨⟨⟨q_bits, v_bits⟩, wVal⟩, idx⟩
   simp [compVOffsetProg]
 
 /-- Precondition for `compVOffsetProg`. -/
-def CompVOffsetPre (w : ℕ) : ((ℕ × ℕ) × ℕ) × ℕ → Memory.State → Prop
+private def CompVOffsetPre (w : ℕ) : ((ℕ × ℕ) × ℕ) × ℕ → Memory.State → Prop
   | (((q_bits, v_bits), wVal), d), s =>
     0 < w ∧ w = wVal ∧ q_bits ≤ w ∧ v_bits ≤ w ∧ wOffV q_bits v_bits w d < s.frontier
 
-theorem realizesBounded_compVOffset :
+private theorem realizesBounded_compVOffset :
     RealizesBounded .exact compVOffsetProg
       (WordEncoding.encode (α := ((ℕ × ℕ) × ℕ) × ℕ)) (WordEncoding.encode (α := ℕ × ℕ))
       CompVOffsetPre (fun _ _ => 0) := by
@@ -714,7 +720,7 @@ def readCompQuotGenProg : (CompParams × ℕ) × ℕ → Memory.Prog ℕ
     let wb ← compQOffsetProg (((q_bits, v_bits), wVal), d)
     readBitSliceGenProg ((itemBase, wb), (q_bits, wVal))
 
-@[simp, nolint simpNF] theorem clientResult_readCompQuotGenProg {U V w N m_items itemBase d : ℕ}
+theorem clientResult_readCompQuotGenProg {U V w N m_items itemBase d : ℕ}
     (hd : d < m_items) (s : Memory.State) :
     (Memory.spec 0).clientResult s
         (readCompQuotGenProg ((mkCompParams U V w N, itemBase), d)) =
@@ -812,7 +818,7 @@ def readCompValGenProg : (CompParams × ℕ) × ℕ → Memory.Prog ℕ
     let wb ← compVOffsetProg (((q_bits, v_bits), wVal), d)
     readBitSliceGenProg ((itemBase, wb), (v_bits, wVal))
 
-@[simp, nolint simpNF] theorem clientResult_readCompValGenProg {U V w N m_items itemBase d : ℕ}
+theorem clientResult_readCompValGenProg {U V w N m_items itemBase d : ℕ}
     (hd : d < m_items) (s : Memory.State) :
     (Memory.spec 0).clientResult s
         (readCompValGenProg ((mkCompParams U V w N, itemBase), d)) =

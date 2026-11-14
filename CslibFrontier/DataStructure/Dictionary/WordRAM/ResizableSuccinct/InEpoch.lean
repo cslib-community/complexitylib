@@ -26,7 +26,8 @@ It establishes:
    `11 = 5 + 6` bounds the quotient-bit slack (5 from Feistel quotient/val vs `optBits` and
    6 from `quotientBits U N ≤ quotientBits U n + 6` via `N ≤ 4 * n`), and `1344 = 16 * 84`
    bounds the `84 * N * logLogFactor N` metadata arrays via `N ≤ 4 * n` and
-   `logLogFactor N ≤ 4 * logLogFactor n` (sharpening e.g. to `≤ 680` remains open in #3167).
+   `logLogFactor N ≤ 4 * logLogFactor n` (sharpening from 1355 to the tighter
+   T59 §5.3 window-shift constant ≤ 680 remains open in #3167).
 2. **Dense key reconstruction and live representation invariants** (`reconstructKeyAt_spec`,
    `CompactedSplitRep`, `CompactedRep`, `compactedRep_empty`): every dense slot $d < n$
    reconstructs a live $(u, v)$ in $s_{\mathrm{abs}}$ injectively and surjectively.
@@ -377,5 +378,16 @@ theorem compactedRep_empty {r : ℕ} {U V w base : ℕ} {x : RData r}
   · unfold compactedEpochWords rootHdrWords; rw [hfr]; simp
   · simp only [Dictionary.dom_empty, Finset.card_empty]
   · intro u v hsome; cases hsome
+
+/-- An active compacted epoch split representation yields a resting `CompactedRep`. -/
+theorem compactedRep_of_split {r : ℕ} {U V w N n n_init base : ℕ} {θ : QuotHashSeed U N}
+    {s_abs : Dictionary.State U} {x : RData r}
+    (hx : x.Bounded w)
+    (hfr : x.frontier = base + compactedEpochWords U V w N n)
+    (hepoch : EpochValid U n N)
+    (hsplit : CompactedSplitRep base (base + offCompItems U w N) U V w N n n_init θ s_abs
+      ⟨x.mem, x.frontier⟩) :
+    CompactedRep U V w N n n_init base s_abs x :=
+  ⟨hx, hfr, hsplit.root_hdr, hsplit.card_eq, hsplit.vals_lt, hepoch, fun _ => ⟨θ, hsplit⟩⟩
 
 end Cslib.DataStructure.Dictionary.WordRAM.ResizableSuccinct

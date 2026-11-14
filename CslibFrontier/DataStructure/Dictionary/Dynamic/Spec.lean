@@ -296,6 +296,10 @@ theorem logLogFactor_mono {m n : ℕ} (h : m ≤ n) : logLogFactor m ≤ logLogF
   unfold logLogFactor
   exact Nat.clog_mono_right 2 (Nat.clog_mono_right 2 (max_le_max_right 4 h))
 
+private theorem clog_two_mul_le (x : ℕ) : Nat.clog 2 (2 * x) ≤ Nat.clog 2 x + 1 := by
+  rw [Nat.clog_le_iff_le_pow Nat.one_lt_two, pow_succ']
+  exact Nat.mul_le_mul_left 2 (Nat.le_pow_clog Nat.one_lt_two x)
+
 /-- Scaling bound for `Dynamic.logLogFactor` under 2x epoch size expansion. -/
 theorem logLogFactor_two_mul_le_add_one (n : ℕ) :
     logLogFactor (2 * n) ≤ logLogFactor n + 1 := by
@@ -303,13 +307,13 @@ theorem logLogFactor_two_mul_le_add_one (n : ℕ) :
   have hm : max (2 * n) 4 ≤ 2 * max n 4 := by omega
   have hc1 : Nat.clog 2 (max (2 * n) 4) ≤ 2 * Nat.clog 2 (max n 4) := by
     have hle1 := Nat.clog_mono_right 2 hm
-    have hle2 := Nat.clog_two_mul_le (max n 4)
+    have hle2 := clog_two_mul_le (max n 4)
     have hpos : 1 ≤ Nat.clog 2 (max n 4) := by
       have h4 := Nat.clog_mono_right 2 (le_max_right n 4)
       have : Nat.clog 2 4 = 2 := by decide
       omega
     omega
-  exact (Nat.clog_mono_right 2 hc1).trans (Nat.clog_two_mul_le _)
+  exact (Nat.clog_mono_right 2 hc1).trans (clog_two_mul_le _)
 
 /-- Quadrupling `n` increases `logLogFactor` by at most `2`. -/
 theorem logLogFactor_four_mul_le_add_two (n : ℕ) :

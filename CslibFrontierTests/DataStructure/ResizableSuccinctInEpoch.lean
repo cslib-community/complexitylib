@@ -36,12 +36,15 @@ local notation "rChunk" w₀:arg b:arg b':arg => reducedChunkBits (reducedTrinom
 
 This test suite covers both concrete evaluations and symbolic specifications:
 1. Concrete footprint bounds `compactedEpochWords` for $n = 8$ and empty $n = 0$.
-2. Initial empty dictionary `CompactedRep` representation.
-3. Symbolic key reconstruction on live slots from `CompactedRep`.
-4. `RuntimeReducedKWise` Horner evaluation (`evalHashGenProg`) on polynomial coefficients.
-5. Concrete circular window growth (`winGrowRight`) evaluation.
-6. Symbolic state transition and resulting window mapping of `winGrowRightGenProg`.
-7. Physical-to-dense slot mapping of `denseOfPhysGenProg`.
+2. Initial empty dictionary `CompactedRep` representation with concrete `V = 2 ^ w` witness.
+3. Non-empty `CompactedRep` construction from `CompactedSplitRep`.
+4. Symbolic key reconstruction on live slots from `CompactedRep`.
+5. `RuntimeReducedKWise` Horner evaluation (`evalHashGenProg`) on polynomial coefficients.
+6. Concrete circular window growth (`winGrowRight`) evaluation.
+7. Symbolic state transition and resulting window mapping of `winGrowRightGenProg`.
+8. Physical-to-dense slot mapping of `denseOfPhysGenProg`.
+9. `WinGrowRightPre` safety precondition construction across the `module` boundary.
+10. `realizesBounded_winGrowRightGen` verification across the `module` boundary.
 -/
 
 /-- Test 1 (Concrete evaluation): Space bound calculation for positive active epoch size
@@ -63,14 +66,55 @@ theorem test_compacted_words_empty_eval :
   have hev : EpochValid 64 0 0 := Or.inl ⟨rfl, rfl⟩
   exact compactedEpochWords_le_succinctWords hw hU hev
 
-/-- Test 3 (Symbolic specification): Verify `CompactedRep` empty initial state. -/
-theorem test_compactedRep_empty_state {r : ℕ} {x : RData r}
-    (hx : x.Bounded 64) (hfr : x.frontier = 8)
-    (hhdr : RootHeaderValid 64 16 64 0 0 0 0 x.mem) :
-    CompactedRep 64 16 64 0 0 0 0 (empty 64) x :=
-  compactedRep_empty hx hfr hhdr
+/-- Concrete memory layout for an empty initial resting dictionary state with `V = 2 ^ 64`. -/
+def testEmptyMem (a : ℕ) : ℕ :=
+  if a = 0 then 63
+  else if a = 1 then 2 ^ 64 - 1
+  else if a = 2 then 64
+  else if a = 3 then keyBits 64
+  else if a = 4 then valBits (2 ^ 64)
+  else 0
 
-/-- Test 4 (Symbolic specification): Key reconstruction on live slots in `CompactedRep`. -/
+/-- Concrete 0-register machine state with frontier 8 and `testEmptyMem`. -/
+def testXEmpty : RData 0 := ⟨fun _ => 0, testEmptyMem, 8⟩
+
+/-- Test 3 (Concrete witness): Verify `CompactedRep` empty initial state at `V = 2 ^ w`. -/
+theorem test_compactedRep_empty_witness :
+    CompactedRep 64 (2 ^ 64) 64 0 0 0 0 (empty 64) testXEmpty := by
+  have hx : testXEmpty.Bounded 64 := by
+    refine ⟨⟨fun i => Fin.elim0 i, ?_⟩, by decide, ?_⟩
+    · intro a
+      change testEmptyMem a < 2 ^ 64
+      unfold testEmptyMem
+      split_ifs <;> decide
+    · intro a ha
+      change testEmptyMem a = 0
+      unfold testEmptyMem
+      have h8 : 8 ≤ a := ha
+      have : a ≠ 0 := by omega
+      have : a ≠ 1 := by omega
+      have : a ≠ 2 := by omega
+      have : a ≠ 3 := by omega
+      have : a ≠ 4 := by omega
+      simp only [*, ↓reduceIte]
+  have hhdr : RootHeaderValid 64 (2 ^ 64) 64 0 0 0 0 testXEmpty.mem := by
+    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+    all_goals decide
+  exact compactedRep_empty hx rfl hhdr
+
+/-- Test 4 (Witness specification): Non-empty `CompactedRep` constructed via
+`compactedRep_of_split`. -/
+theorem test_compactedRep_of_split_witness {r : ℕ} {U V w N n n_init base : ℕ}
+    {θ : QuotHashSeed U N} {s_abs : Dictionary.State U} {x : RData r}
+    (hx : x.Bounded w)
+    (hfr : x.frontier = base + compactedEpochWords U V w N n)
+    (hepoch : EpochValid U n N)
+    (hsplit : CompactedSplitRep base (base + offCompItems U w N) U V w N n n_init θ s_abs
+      ⟨x.mem, x.frontier⟩) :
+    CompactedRep U V w N n n_init base s_abs x :=
+  compactedRep_of_split hx hfr hepoch hsplit
+
+/-- Test 5 (Symbolic specification): Key reconstruction on live slots in `CompactedRep`. -/
 theorem test_reconstructKeyAt_spec_eval {U V w N n n_init base : ℕ}
     {s_abs : Dictionary.State U} {r : ℕ} {x : RData r}
     (hrep : CompactedRep U V w N n n_init base s_abs x)
@@ -86,7 +130,7 @@ theorem test_reconstructKeyAt_spec_eval {U V w N n n_init base : ℕ}
   rw [Dictionary.mem_dom_iff]
   exact ⟨_, hsome⟩
 
-/-- Test 5 (Symbolic specification): Behavioral evaluation of `evalHashGenProg` on non-trivial
+/-- Test 6 (Symbolic specification): Behavioral evaluation of `evalHashGenProg` on non-trivial
 polynomial coefficients. -/
 theorem test_evalHashGenProg_result {w U w₀ b b' k hashBase scratchBase : ℕ}
     {θ : ReducedPolySeed w₀ b b' k} {u : Fin U} {s₀ : Memory.State}
@@ -108,14 +152,14 @@ theorem test_evalHashGenProg_result {w U w₀ b b' k hashBase scratchBase : ℕ}
     hfr_s hfit_s hdisj hrep
   exact ⟨haux.2.2.2.1, haux.2.2.1⟩
 
-/-- Test 6 (Concrete evaluation): Circular window growth maps new tail offset to
+/-- Test 7 (Concrete evaluation): Circular window growth maps new tail offset to
 circular position. -/
 theorem test_winGrowRight_concrete_eval :
     let r := winGrowRight 8 3 2 (fun _ => 0, fun _ => 0)
     r.1 2 = 5 ∧ r.2 5 = 2 := by
   decide
 
-/-- Test 7 (Symbolic specification): State transition and resulting window mapping of
+/-- Test 8 (Symbolic specification): State transition and resulting window mapping of
 `winGrowRightGenProg`. -/
 theorem test_winGrowRightGenProg_transition
     (U V w N metaBase itemBase m_items b_win n_win : ℕ) (s : Memory.State)
@@ -141,7 +185,7 @@ theorem test_winGrowRightGenProg_transition
     dsimp only
     exact Function.update_self _ _ _
 
-/-- Test 8 (Symbolic specification): Behavioral execution of `denseOfPhysGenProg`
+/-- Test 9 (Symbolic specification): Behavioral execution of `denseOfPhysGenProg`
 physical-to-dense slot mapping. -/
 theorem test_denseOfPhysGenProg_result {U V w N metaBase g : ℕ} {s : Memory.State}
     (ht_lt : 0 < bucketBits N → ¬(g < compGmAt metaBase U w N s.mem 0 * slabSize N) →
@@ -151,3 +195,31 @@ theorem test_denseOfPhysGenProg_result {U V w N metaBase g : ℕ} {s : Memory.St
         (denseOfPhysGenProg ((mkCompParams U V w N, metaBase), g)) =
       denseOfPhys N (compGmAt metaBase U w N s.mem) (compTDAt metaBase U w N s.mem) g :=
   clientResult_denseOfPhysGenProg ht_lt
+
+/-- Test 10 (Module client verification): Safety precondition `WinGrowRightPre` can be constructed
+and satisfied across the `module` boundary. -/
+theorem test_winGrowRightPre_constructible :
+    ∃ (w : ℕ) (d : (CompParams × ℕ) × (ℕ × ℕ)) (s : Memory.State),
+      WinGrowRightPre w d s := by
+  let w := 64
+  let U := 65536
+  let V := 2 ^ 64
+  let N := 65536
+  let metaBase := 0
+  let cp := mkCompParams U V w N
+  let s : Memory.State := ⟨fun _ => 0, offCompItems U w N⟩
+  refine ⟨w, ((cp, metaBase), (0, 0)), s, ?_⟩
+  unfold WinGrowRightPre
+  dsimp only
+  refine ⟨⟨U, V, N, by decide, by decide, by decide, by decide, le_refl _, rfl, ?_⟩, ?_, ?_⟩
+  · change 0 + offCompItems U w N ≤ offCompItems U w N; rw [Nat.zero_add]
+  · change 0 < maxTailItems 65536; decide
+  · change 0 + 0 ≤ 65536; decide
+
+/-- Test 11 (Module client verification): `realizesBounded_winGrowRightGen` is callable
+and verifies across the `module` boundary. -/
+theorem test_winGrowRight_realizesBounded_module_client :
+    RealizesBounded .exact winGrowRightGenProg
+      (WordEncoding.encode (α := (CompParams × ℕ) × (ℕ × ℕ))) (WordEncoding.encode (α := Unit))
+      WinGrowRightPre (fun _ _ => 0) :=
+  realizesBounded_winGrowRightGen
