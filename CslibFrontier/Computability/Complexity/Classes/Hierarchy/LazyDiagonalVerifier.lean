@@ -80,6 +80,9 @@ theorem exists_computableInO_lazyVerifier
       (T' := fun p => C p + B (unframe (unframe p.1), p.1 ++ [false], p.2)) 7
       fun p => by
     have h₁ := hC p
+    have hu := length_unframe_le p.1
+    have hp : p.1.length ≤ (encPair encBits encBits p).length := by
+      simpa only [encBits_apply] using length_le_encPair_left encBits encBits p
     simp only [Function.comp_apply] at ⊢
     have : 7 * (C p + B (unframe (unframe p.1), p.1 ++ [false], p.2) + 1) =
         7 * C p + 7 * B (unframe (unframe p.1), p.1 ++ [false], p.2) + 7 := by ring
@@ -89,6 +92,9 @@ theorem exists_computableInO_lazyVerifier
       (T' := fun p => C p + R (unframe (unframe p.1), frame (unframe p.1))) 7
       fun p => by
     have h₁ := hC p
+    have hu := length_unframe_le p.1
+    have hp : p.1.length ≤ (encPair encBits encBits p).length := by
+      simpa only [encBits_apply] using length_le_encPair_left encBits encBits p
     have hb : (encBool ((Cslib.BitString.enumList (L (frame (unframe p.1)).length)).any
         (Diagonal.lazyAccepts β (unframe (unframe p.1)) (frame (unframe p.1))))).length = 1 := rfl
     simp only [Function.comp_apply, hb] at ⊢
@@ -103,6 +109,6 @@ theorem exists_computableInO_lazyVerifier
   · congr 1
     simp only [Diagonal.lazyVerifier, Function.comp_apply, decide_eq_true_eq,
       length_frame]
-  · simp only [Function.comp_apply, decide_eq_true_eq]
+  · simp only [decide_eq_true_eq]
 
 end Cslib.Complexity.Diagonal
