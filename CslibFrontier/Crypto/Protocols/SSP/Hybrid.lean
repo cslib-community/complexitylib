@@ -59,7 +59,6 @@ namespace Cslib.Crypto.Protocols.SSP
 
 open UC
 open OracleComp (sumHandler)
-open scoped NNReal
 
 variable {ιE : Type} {E : ιE → Type} {α : Type}
 
@@ -301,17 +300,6 @@ theorem advantage_parFin_le_sum {m : ℕ} (real ideal : Fin m → Machine Oracle
   refine h.trans_eq ?_
   rw [← Fin.sum_univ_eq_sum_range]
   exact Finset.sum_congr rfl fun j _ => advantage_hybridFamily_succ real ideal A j
-
-/-- If every single-session distinguisher has advantage at most `ε`, the multi-session advantage
-is at most `m * ε`. -/
-theorem advantage_parFin_le_mul {m : ℕ} (real ideal : Fin m → Machine OracleSpec.empty E)
-    (A : ProbOracleComp (sessionSpec m E) Bool) (ε : ℝ≥0)
-    (hε : ∀ j, advantage (hybridDistinguisher real ideal A j) (real j) (ideal j) ≤ ε) :
-    advantage A (parFin real) (parFin ideal) ≤ m * ε := by
-  refine (advantage_parFin_le_sum real ideal A).trans ?_
-  calc ∑ j : Fin m, advantage (hybridDistinguisher real ideal A j) (real j) (ideal j)
-      ≤ ∑ _j : Fin m, ε := Finset.sum_le_sum fun j _ => hε j
-    _ = m * ε := by simp
 
 end Stateful
 

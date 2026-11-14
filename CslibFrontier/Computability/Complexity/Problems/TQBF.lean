@@ -40,6 +40,7 @@ closed, so `var v ∉ TQBF`, while `ex v (var v) ∈ TQBF` and `all v (var v) �
 ## Main definitions
 
 * `Cslib.Logic.PL.QBF.Kind`, `Cslib.Logic.PL.QBF.tokens`: the tokens of a formula.
+* `Cslib.Logic.PL.QBF.Kind.isQuantifier`: whether a kind of nodes is a quantifier.
 * `Cslib.Complexity.encQBF`: the encoding of formulas.
 * `Cslib.Complexity.TQBF`: the true closed formulas.
 
@@ -84,6 +85,12 @@ inductive Kind where
 
 instance : Fintype Kind :=
   ⟨{.var, .top, .bot, .not, .and, .or, .ex, .all}, fun k => by cases k <;> simp⟩
+
+/-- Whether a kind of nodes is a quantifier. -/
+def Kind.isQuantifier : Kind → Bool
+  | .ex => true
+  | .all => true
+  | _ => false
 
 /-- The tokens of a formula in prefix order: the kind of each node, with its variable for
 variables and quantifiers, and `0` for the other nodes. -/

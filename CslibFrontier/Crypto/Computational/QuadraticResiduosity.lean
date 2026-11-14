@@ -10,11 +10,11 @@ module
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 public import CslibFrontier.Computability.Probabilistic.Parameter
 public import CslibFrontier.Crypto.Game
+public import CslibFrontier.Foundations.Data.ZMod.CRTUnits
 public import Mathlib.Algebra.Group.Subgroup.Even
 public import Mathlib.Data.ZMod.Units
 public import Mathlib.NumberTheory.LegendreSymbol.JacobiSymbol
 import CslibFrontier.Crypto.Negligible.Basic
-import CslibFrontier.Foundations.Data.ZMod.CRTUnits
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Tactic.PPT
 import Mathlib.FieldTheory.Finite.Basic
@@ -36,9 +36,10 @@ computational quadratic residuosity assumption.
   quadratic nonresidues with Jacobi symbol `+1`.
 * `Cslib.Crypto.IsBlumPrime`, `Cslib.Crypto.IsBlumModulus`, `Cslib.Crypto.blumSqrt`: Blum primes,
   Blum moduli, and principal square-root extraction.
-* `Cslib.Crypto.ModulusDesc`, `Cslib.Crypto.qrRealGame`, `Cslib.Crypto.qrIdealGame`,
-  `Cslib.Crypto.QuadraticResiduosityHard`: the computational quadratic residuosity experiment and
-  assumption.
+* `Cslib.Crypto.ModulusDesc`, `Cslib.Crypto.encModulusDesc`, `Cslib.Crypto.encQRInput`,
+  `Cslib.Crypto.qrRealGame`, `Cslib.Crypto.qrIdealGame`, `Cslib.Crypto.QuadraticResiduosityHard`:
+  modulus descriptions, their binary encoding as `(p, q)`, the distinguisher input
+  `(1ⁿ, (N, y))`, and the computational quadratic residuosity experiment and assumption.
 
 ## Main results
 
@@ -47,6 +48,8 @@ computational quadratic residuosity assumption.
 * `Cslib.Crypto.jacobiPosSet_eq_disjoint_union`: `J_N^{+1} = QR_N ⊔ QNR_N^{+1}`.
 * `Cslib.Crypto.card_quadResidueSet_eq_card_positiveNonresidues`: `|QR_N| = |QNR_N^{+1}|` for
   distinct odd primes `p ≠ q`.
+* `Cslib.Crypto.isSquare_mul_of_mem_positiveNonresidues`: `QNR_N^{+1}` is one coset of `QR_N`,
+  so the product of two of its elements is a quadratic residue.
 * `Cslib.Crypto.neg_one_mem_positiveNonresidues`: `-1 ∈ QNR_N^{+1}` for any Blum modulus.
 * `Cslib.Crypto.blumSqrt_sq`, `Cslib.Crypto.sq_bijOn_quadResidueSet`: squaring is a bijection
   on `QR_N` for any Blum modulus, with inverse `blumSqrt p q`.
@@ -59,7 +62,7 @@ and assumption `QuadraticResiduosityHard` are parameterized by an arbitrary gene
 `setup : ℕ → PMF ModulusDesc` over pairs of distinct odd primes `(p, q)` (efficient sampling of
 `(p, q)` and bit-length bounds in `n` are not bundled in `ModulusDesc`), and quantify over
 uniform native strict-PPT distinguishers (`IsPPTOn`) taking `(1^n, (N, y))` with binary `encNat`
-encodings.
+encodings (`encQRInput`).
 
 ## References
 
@@ -202,6 +205,26 @@ private theorem isSquare_unit_iff_legendreSym (p : ℕ) [Fact p.Prime] (_hp : p 
       exact u.ne_zero hr
     exact ⟨Units.mk0 r hr0, Units.ext hr⟩
 
+/-- For coprime odd primes `p` and `q`, a unit modulo `p * q` lies in `QNR_N^{+1}` iff neither of
+its Chinese remainder components is a square. -/
+theorem mem_positiveNonresidues_iff_unitsChineseRemainder (p q : ℕ) [Fact p.Prime] [Fact q.Prime]
+    (hpq : p.Coprime q) (hp : 2 < p) (hq : 2 < q) (x : (ZMod (p * q))ˣ) :
+    x ∈ positiveNonresidues p q ↔
+      ¬ IsSquare (ZMod.unitsChineseRemainder hpq x).1 ∧
+        ¬ IsSquare (ZMod.unitsChineseRemainder hpq x).2 := by
+  -- Both sides speak about the Legendre symbols of the CRT components: a component is a
+  -- square iff its symbol is `1`, and the Jacobi symbol is their product.
+  simp only [positiveNonresidues, Finset.mem_filter, Finset.mem_univ, true_and]
+  rw [ZMod.isSquare_iff_unitsChineseRemainder hpq x, jacobiSymbol,
+    legendreSym_crt_fst p q hpq x, legendreSym_crt_snd p q hpq x]
+  simp only [isSquare_unit_iff_legendreSym p (by omega), isSquare_unit_iff_legendreSym q (by omega)]
+  -- Each symbol is `±1`.
+  rcases legendreSym.eq_one_or_neg_one p
+      (a := ((ZMod.unitsChineseRemainder hpq x).1 : ZMod p).val) (by simp) with h | h <;>
+    rcases legendreSym.eq_one_or_neg_one q
+      (a := ((ZMod.unitsChineseRemainder hpq x).2 : ZMod q).val) (by simp) with h' | h' <;>
+    simp only [h, h'] <;> norm_num
+
 /-- For distinct odd primes `p ≠ q`, `|QR_N| = |QNR_N^{+1}|`. -/
 theorem card_quadResidueSet_eq_card_positiveNonresidues (p q : ℕ) [Fact p.Prime] [Fact q.Prime]
     (hpq : p ≠ q) (hp : 2 < p) (hq : 2 < q) :
@@ -216,23 +239,24 @@ theorem card_quadResidueSet_eq_card_positiveNonresidues (p q : ℕ) [Fact p.Prim
       simp [quadResidueSet, ZMod.isSquare_iff_unitsChineseRemainder hcop x]
   have hQNR : (positiveNonresidues p q).card =
       ((Finset.univ.filter fun u : (ZMod p)ˣ => ¬ IsSquare u) ×ˢ
-        (Finset.univ.filter fun v : (ZMod q)ˣ => ¬ IsSquare v)).card := by
-    refine Finset.card_bijective _ (ZMod.unitsChineseRemainder hcop).bijective fun x => ?_
-    -- Both sides speak about the Legendre symbols of the CRT components: a component is a
-    -- square iff its symbol is `1`, and the Jacobi symbol is their product.
-    simp only [positiveNonresidues, Finset.mem_filter, Finset.mem_univ, true_and]
-    rw [ZMod.isSquare_iff_unitsChineseRemainder hcop x, jacobiSymbol,
-      legendreSym_crt_fst p q hcop x, legendreSym_crt_snd p q hcop x]
-    simp only [Finset.mem_product, Finset.mem_filter, Finset.mem_univ, true_and,
-      isSquare_unit_iff_legendreSym p (by omega), isSquare_unit_iff_legendreSym q (by omega)]
-    -- Each symbol is `±1`.
-    rcases legendreSym.eq_one_or_neg_one p
-        (a := ((ZMod.unitsChineseRemainder hcop x).1 : ZMod p).val) (by simp) with h | h <;>
-      rcases legendreSym.eq_one_or_neg_one q
-        (a := ((ZMod.unitsChineseRemainder hcop x).2 : ZMod q).val) (by simp) with h' | h' <;>
-      simp only [h, h'] <;> norm_num
+        (Finset.univ.filter fun v : (ZMod q)ˣ => ¬ IsSquare v)).card :=
+    Finset.card_bijective _ (ZMod.unitsChineseRemainder hcop).bijective fun x => by
+      simp only [Finset.mem_product, Finset.mem_filter, Finset.mem_univ, true_and]
+      exact mem_positiveNonresidues_iff_unitsChineseRemainder p q hcop hp hq x
   rw [hQR, hQNR, Finset.card_product, Finset.card_product, ZMod.card_nonsquares_units p hp,
     ZMod.card_nonsquares_units q hq]
+
+/-- For distinct odd primes `p ≠ q`, the product of two elements of `QNR_N^{+1}` is a quadratic
+residue: `QNR_N^{+1}` is a single coset of `QR_N`. -/
+theorem isSquare_mul_of_mem_positiveNonresidues (p q : ℕ) [Fact p.Prime] [Fact q.Prime]
+    (hpq : p ≠ q) (hp : 2 < p) (hq : 2 < q) {x y : (ZMod (p * q))ˣ}
+    (hx : x ∈ positiveNonresidues p q) (hy : y ∈ positiveNonresidues p q) :
+    IsSquare (x * y) := by
+  have hcop : Nat.Coprime p q := (Nat.coprime_primes Fact.out Fact.out).mpr hpq
+  rw [mem_positiveNonresidues_iff_unitsChineseRemainder p q hcop hp hq] at hx hy
+  rw [ZMod.isSquare_iff_unitsChineseRemainder hcop, map_mul]
+  exact ⟨ZMod.isSquare_mul_of_not_isSquare_units hx.1 hy.1,
+    ZMod.isSquare_mul_of_not_isSquare_units hx.2 hy.2⟩
 
 /-! ### Blum integers and principal square roots -/
 
@@ -380,6 +404,24 @@ structure ModulusDesc where
 instance (d : ModulusDesc) : Fact d.p.Prime := ⟨d.prime_p⟩
 instance (d : ModulusDesc) : Fact d.q.Prime := ⟨d.prime_q⟩
 
+/-- Every valid modulus `N = p * q` exceeds `1`. -/
+theorem ModulusDesc.one_lt_mul (d : ModulusDesc) : 1 < d.p * d.q := by
+  have := d.two_lt_p; have := d.two_lt_q; nlinarith
+
+/-- The unit `-1` modulo `N = p * q` has canonical residue `N - 1`. -/
+theorem ModulusDesc.val_neg_one (d : ModulusDesc) :
+    (-1 : (ZMod (d.p * d.q))ˣ).val.val = d.p * d.q - 1 := by
+  have : Fact (1 < d.p * d.q) := ⟨d.one_lt_mul⟩
+  rw [Units.val_neg, Units.val_one, ZMod.val_neg_of_ne_zero, ZMod.val_one]
+
+/-- The prime factors `(p, q)` of a modulus description; the proof fields are determined by them. -/
+def ModulusDesc.toPair : ModulusDesc ↪ ℕ × ℕ :=
+  ⟨fun d => (d.p, d.q), by rintro ⟨p, q⟩ ⟨p', q'⟩ h; cases h; rfl⟩
+
+/-- Encoding of a `ModulusDesc` as the binary pair `(p, q)`; `p` is framed. -/
+def encModulusDesc : ModulusDesc ↪ List Bool :=
+  ModulusDesc.toPair.trans (encPair encNat encNat)
+
 noncomputable instance (d : ModulusDesc) : Nonempty (quadResidueSet d.p d.q) :=
   ⟨⟨1, Finset.mem_filter.mpr ⟨Finset.mem_univ 1, ⟨1, (one_mul 1).symm⟩⟩⟩⟩
 
@@ -390,6 +432,12 @@ noncomputable instance (d : ModulusDesc) : Nonempty (positiveNonresidues d.p d.q
       ⟨1, Finset.mem_filter.mpr ⟨Finset.mem_univ 1, ⟨1, (one_mul 1).symm⟩⟩⟩
   obtain ⟨x, hx⟩ := Finset.card_pos.mp hcard
   exact ⟨⟨x, hx⟩⟩
+
+/-- Input `(1ⁿ, (N, y))` of a quadratic residuosity distinguisher: the security parameter `n` in
+unary, then the modulus `N` and the challenge residue `y` in binary. The parameter and `N` are
+framed. -/
+abbrev encQRInput : ℕ × ℕ × ℕ ↪ List Bool :=
+  encPair encUnary (encPair encNat encNat)
 
 /-- Real quadratic residuosity experiment: sample `N = p * q` and a uniform quadratic residue
 `y ∈ QR_N`, and give `(N, y)` to the distinguisher. -/
@@ -415,7 +463,6 @@ def QuadraticResiduosityHard (setup : ℕ → PMF ModulusDesc) : Prop :=
     (fun adversary n => qrRealGame setup adversary n)
     (fun adversary n => qrIdealGame setup adversary n)
     (fun adversary =>
-      IsPPTOn (encPair encUnary (encPair encNat encNat)) encBool
-        (fun input => adversary input.1 input.2))
+      IsPPTOn encQRInput encBool (fun input => adversary input.1 input.2))
 
 end Cslib.Crypto
