@@ -6166,6 +6166,7 @@ public import CslibFrontier.Foundations.Order.Mirsky
 public import CslibFrontier.Foundations.Order.UpperLower
 public import CslibFrontier.Foundations.Probability.AzumaPi
 public import CslibFrontier.Foundations.Probability.Bonferroni
+public import CslibFrontier.Foundations.Probability.CDF
 public import CslibFrontier.Foundations.Probability.Cauchy
 public import CslibFrontier.Foundations.Probability.Combinatorics.BinomialRandomGraph.Basic
 public import CslibFrontier.Foundations.Probability.Combinatorics.BinomialRandomGraph.Clique
@@ -6177,6 +6178,7 @@ public import CslibFrontier.Foundations.Probability.Combinatorics.BinomialRandom
 public import CslibFrontier.Foundations.Probability.CoordinateExpectation
 public import CslibFrontier.Foundations.Probability.CoordinateFactorization
 public import CslibFrontier.Foundations.Probability.EfronStein
+public import CslibFrontier.Foundations.Probability.Gaussian.CDF
 public import CslibFrontier.Foundations.Probability.Gaussian.CenteredTail
 public import CslibFrontier.Foundations.Probability.Gaussian.CoefficientFiber
 public import CslibFrontier.Foundations.Probability.Gaussian.Convolution
@@ -6199,6 +6201,7 @@ public import CslibFrontier.Foundations.Probability.Gaussian.Periodization
 public import CslibFrontier.Foundations.Probability.Gaussian.Poisson
 public import CslibFrontier.Foundations.Probability.Gaussian.PolynomialDense
 public import CslibFrontier.Foundations.Probability.Gaussian.Projection
+public import CslibFrontier.Foundations.Probability.Gaussian.Quadrant
 public import CslibFrontier.Foundations.Probability.Gaussian.Quotient
 public import CslibFrontier.Foundations.Probability.Gaussian.Real
 public import CslibFrontier.Foundations.Probability.Gaussian.Sheppard

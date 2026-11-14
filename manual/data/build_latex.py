@@ -61,7 +61,7 @@ def tex_escape(text):
 MATH = {'ℕ': r'\mathbb{N}', 'ℝ': r'\mathbb{R}', 'ℓ': r'\ell', '→': r'\to',
         '←': r'\leftarrow', '↔': r'\leftrightarrow', '↦': r'\mapsto', '↪': r'\hookrightarrow',
         '∀': r'\forall', '∃': r'\exists', '∈': r'\in', '∧': r'\wedge', '∩': r'\cap',
-        '≠': r'\ne', '≤': r'\le', '≥': r'\ge', '⊆': r'\subseteq', '⊊': r'\subsetneq',
+        '≠': r'\ne', '≤': r'\le', '≪': r'\ll', '≥': r'\ge', '⊆': r'\subseteq', '⊊': r'\subsetneq',
         '⊕': r'\oplus', '∞': r'\infty', '−': '-', '×': r'\times', 'Γ': r'\Gamma',
         'Σ': r'\Sigma', 'α': r'\alpha', 'β': r'\beta', 'δ': r'\delta', 'ε': r'\varepsilon',
         'η': r'\eta', 'ι': r'\iota', 'κ': r'\kappa', 'λ': r'\lambda', 'μ': r'\mu',
