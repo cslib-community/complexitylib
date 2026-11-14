@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger
 
 import CslibFrontier.Computability.Circuit.Quantum.SuperdenseCoding
 import CslibFrontier.Computability.Circuit.Quantum.Teleportation
+import CslibFrontierTests.QuantumState
 import CslibFrontier.Foundations.Quantum.NoCloning
 
 /-! Teleportation, superdense coding and no-cloning: concrete instances, and an operation that
@@ -39,17 +40,6 @@ example (a b : Bool) :
 example : (teleportState (ket true)).ofLp ((true, true), false) = -(1 / 2) := by
   rw [teleportState_apply]
   norm_num
-
-/-- The state `|+⟩ = H|0⟩ = (|0⟩ + |1⟩)/√2`. -/
-noncomputable def plus : EuclideanSpace ℂ Bool :=
-  unitaryEquiv ⟨hadamardMatrix, hadamardMatrix_mem_unitaryGroup⟩ (ket false)
-
-theorem plus_apply (b : Bool) : plus.ofLp b = (((Real.sqrt 2)⁻¹ : ℝ) : ℂ) := by
-  rw [plus, unitaryEquiv_apply, hadamardMatrix_mulVec]
-  cases b <;> simp
-
-theorem norm_plus : ‖plus‖ = 1 := by
-  rw [plus, LinearIsometryEquiv.norm_map, norm_ket]
 
 -- Teleporting `|+⟩`: for every outcome Bob's corrected qubit is `|+⟩`.
 example (a b : Bool) :
