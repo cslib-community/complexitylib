@@ -99,7 +99,7 @@ theorem choosePorts_matches (n : Fin 4) (a b c : Fin 4)
 
 /-- A literal position identifies its own incidence, including repeated literals. -/
 def sourceOccurrence (φ : CNF ℕ) (i j : ℕ) : Occurrence ℕ :=
-  (i, j, (φ.getD i []).getD j (0, true))
+  ⟨i, j, (φ.getD i []).getD j (0, true)⟩
 
 /-- The actual source edge position of a clause/literal occurrence. -/
 def sourceEdgeIndex (φ : CNF ℕ) (i j : ℕ) : ℕ :=
@@ -145,7 +145,7 @@ theorem sourceEdgeIndex_ne (φ : CNF ℕ) {i j k : ℕ} (hi : i < φ.length)
     sourceEdgeIndex φ i j ≠ sourceEdgeIndex φ i k := by
   intro he
   have he' := (List.idxOf_inj (sourceOccurrence_mem φ hi hj)).mp he
-  exact hjk (congrArg (fun o : Occurrence ℕ => o.2.1) he')
+  exact hjk (congrArg (fun o : Occurrence ℕ => o.pos) he')
 
 /-- Actual source literal exits at the same clause have distinct collar sides. -/
 theorem literalSide_ne {φ : CNF ℕ} {d : Graph.OrthogonalDrawing}

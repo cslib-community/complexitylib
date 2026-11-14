@@ -98,7 +98,7 @@ theorem hybridGame_zero (generator : List Bool → List Bool) (adversary : Oracl
     root (fun request => hstep request.2) (adversary n []) []
   simp only [funext (ProbOracleComp.runWith_readOnly _ _)] at h
   have houtput := congrArg (PMF.map Prod.fst) h
-  simpa [hybridGame, prfRealGame, ProbOracleComp.eval_run_interpret_eq_runWith,
+  simpa [hybridGame, prfRealGame, ProbOracleComp.run, ProbOracleComp.eval_run_interpret_eq_runWith,
     ProbOracleComp.eval_interpret, BitString.eval_sampleList, root, PMF.map,
     Function.comp_def, OracleComp.evalWith] using houtput
 

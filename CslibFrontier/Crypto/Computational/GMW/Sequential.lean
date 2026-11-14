@@ -124,7 +124,7 @@ theorem runSeq_map {α β : Type} (generator : List Bool → List Bool) (s m : �
     (prog : ProbComp α) (st : Bool × List ProverCoins) :
     runSeq generator s m φ (ProbOracleComp.sample prog) st = (·, st) <$> prog := by
   simp only [runSeq, ProbOracleComp.interpret_sample, OracleComp.run_interpret_lift,
-    ProbComp.unifFin, OracleComp.interpret_query_eq_self]
+    ProbComp.interpret_unifFin]
 
 @[simp] theorem runSeq_query (generator : List Bool → List Bool) (s m : ℕ) (φ : CNF ℕ)
     (q : Unit × List Bool) (st : Bool × List ProverCoins) :
@@ -549,11 +549,12 @@ noncomputable def oneSessionStep {k : ℕ} {Control : Type}
     (machine : _root_.Turing.MultiTapePTM k Bool Control Unit) (limit : ℕ)
     (st : ℕ × ℕ × FiniteConfig k Bool Control Unit) :
     WordOracleComp Unit (ℕ × ℕ × FiniteConfig k Bool Control Unit) :=
-  if st.1 = 0 || st.2.1 = 0 then
-    pure st
+  let (rem, q, cfg) := st
+  if rem = 0 || q = 0 then
+    pure (rem, q, cfg)
   else
-    (fun p => (st.1 - 1, p.2, p.1)) <$>
-      OpenOracleSimulation.step machine sessionQueryHandler limit (st.2.2, st.2.1)
+    (fun p => (rem - 1, p.2, p.1)) <$>
+      OpenOracleSimulation.step machine sessionQueryHandler limit (cfg, q)
 
 /-- Run `machine` for up to `rem` steps or until `q` oracle queries have been made,
 truncating each oracle reply to `limit` bits, and returning the remaining step count and
@@ -562,7 +563,7 @@ noncomputable def sessionStep {k : ℕ} {Control : Type}
     (machine : _root_.Turing.MultiTapePTM k Bool Control Unit) (limit rem q : ℕ)
     (cfg : FiniteConfig k Bool Control Unit) :
     WordOracleComp Unit (ℕ × FiniteConfig k Bool Control Unit) :=
-  (fun st => (st.1, st.2.2)) <$>
+  (fun (rem, _, cfg) => (rem, cfg)) <$>
     OracleComp.iterate rem (oneSessionStep machine limit) (rem, q, cfg)
 
 @[simp] theorem sessionStep_zero_rem {k : ℕ} {Control : Type}
@@ -681,19 +682,22 @@ theorem spaceBound_of_encFiniteConfig {k : ℕ} {Control : Type} [Finite Control
 /-- One step of `oneSessionStep` preserves the countdown and `FiniteConfig.SpaceBound`. -/
 theorem mem_support_oneSessionStep {k : ℕ} {Control : Type}
     (machine : _root_.Turing.MultiTapePTM k Bool Control Unit) (limit : ℕ)
-    {W T : ℕ} {st next : ℕ × ℕ × FiniteConfig k Bool Control Unit}
-    (hrem : st.1 ≤ T) (hcfg : FiniteConfig.SpaceBound W (T - st.1) limit st.2.2)
-    (hnext : next ∈ OracleComp.support (oneSessionStep machine limit st)) :
-    next.1 ≤ st.1 ∧ next.2.1 ≤ st.2.1 ∧
-      FiniteConfig.SpaceBound W (T - next.1) limit next.2.2 := by
-  unfold oneSessionStep at hnext
+    {W T rem q rem' q' : ℕ} {cfg cfg' : FiniteConfig k Bool Control Unit}
+    (hrem : rem ≤ T) (hcfg : FiniteConfig.SpaceBound W (T - rem) limit cfg)
+    (hnext : (rem', q', cfg') ∈ OracleComp.support (oneSessionStep machine limit (rem, q, cfg))) :
+    rem' ≤ rem ∧ q' ≤ q ∧ FiniteConfig.SpaceBound W (T - rem') limit cfg' := by
+  suffices h : ∀ next ∈ OracleComp.support (oneSessionStep machine limit (rem, q, cfg)),
+      next.1 ≤ rem ∧ next.2.1 ≤ q ∧ FiniteConfig.SpaceBound W (T - next.1) limit next.2.2 from
+    h _ hnext
+  intro next hnext
+  simp only [oneSessionStep] at hnext
   split_ifs at hnext with hzero
   · obtain rfl := OracleComp.eq_of_mem_supportWith_pure hnext
     exact ⟨le_rfl, le_rfl, hcfg⟩
   · simp only [Bool.or_eq_true, decide_eq_true_eq, not_or] at hzero
     obtain ⟨p, hp, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hnext
-    have hstep : T - (st.1 - 1) = (T - st.1) + 1 := by omega
-    cases hs : st.2.2.tapes.state with
+    have hstep : T - (rem - 1) = (T - rem) + 1 := by omega
+    cases hs : cfg.tapes.state with
     | none =>
       simp only [OpenOracleSimulation.step, hs] at hp
       obtain rfl := OracleComp.eq_of_mem_supportWith_pure hp
@@ -701,8 +705,8 @@ theorem mem_support_oneSessionStep {k : ℕ} {Control : Type}
     | some control =>
       simp only [OpenOracleSimulation.step, hs] at hp
       obtain ⟨coin, -, hp⟩ := OracleComp.mem_supportWith_bind_iff.mp hp
-      cases htr : machine.tr control st.2.2.tapes.inputSymbol st.2.2.tapes.workTapeSymbols
-          st.2.2.answerSymbols coin with
+      cases htr : machine.tr control cfg.tapes.inputSymbol cfg.tapes.workTapeSymbols
+          cfg.answerSymbols coin with
       | step action symbol move =>
         simp only [htr] at hp
         obtain rfl := OracleComp.eq_of_mem_supportWith_pure hp
@@ -790,6 +794,8 @@ theorem isOraclePPTOn_sessionStep {k : ℕ} {Control : Type} [Finite Control]
       (next : ℕ × ℕ × FiniteConfig k Bool Control Unit)
       (hnext : next ∈ OracleComp.support (oneSessionStep machine a.1 st)) :
       inv a (i + 1) next := by
+    obtain ⟨rem, q, cfg⟩ := st
+    obtain ⟨rem', q', cfg'⟩ := next
     obtain ⟨h1, h2, h3⟩ := mem_support_oneSessionStep machine a.1
       (T := T₀ a) (by dsimp [T₀]; have := hst.1; omega) hst.2.2 hnext
     exact ⟨h1.trans hst.1, h2.trans hst.2.1, h3⟩
@@ -833,7 +839,7 @@ theorem mem_support_sessionStep {k : ℕ} {Control : Type}
     (fun (_ : ℕ) (s : ℕ × ℕ × FiniteConfig k Bool Control Unit) =>
       s.1 ≤ T ∧ FiniteConfig.SpaceBound W (T - s.1) limit s.2.2)
     ⟨hrem, hcfg⟩
-    (fun _ s _ ⟨hs1, hs2⟩ next hnext => by
+    (fun _ ⟨_, _, _⟩ _ ⟨hs1, hs2⟩ ⟨_, _, _⟩ hnext => by
       obtain ⟨h1, -, h3⟩ := mem_support_oneSessionStep machine limit hs1 hs2 hnext
       exact ⟨h1.trans hs1, h3⟩)
     full hfull
@@ -944,9 +950,9 @@ theorem runSeq_sessionStep_two_add {k : ℕ} {Control : Type}
     Prod.fst <$> runSeq generator s m φ
         (sessionStep machine limit rem (Q + 2) cfg) (false, coins :: rest) =
       (runTwoRound (honestReply1 generator m φ coins) (honestReply2 s φ coins)
-        (sessionStep machine limit rem 2 cfg) .init >>= fun p =>
+        (sessionStep machine limit rem 2 cfg) .init >>= fun ((rem', cfg'), _) =>
         Prod.fst <$> runSeq generator s m φ
-          (sessionStep machine limit p.1.1 Q p.1.2) (false, rest)) := by
+          (sessionStep machine limit rem' Q cfg') (false, rest)) := by
   induction rem generalizing cfg with
   | zero => simp [runSeq, runTwoRound]
   | succ rem ih =>

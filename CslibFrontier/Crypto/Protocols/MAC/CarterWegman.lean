@@ -1074,7 +1074,7 @@ theorem eval_prfRealGame_prfPadDistinguisher (family : List Bool → List Bool �
   simp only [pmf_norm, prfRealGame, prfPadDistinguisher, prfPadDist, BitString.eval_sampleList]
   congr 1
   funext key
-  simp [prfOracle, show ProbComp.unifFin = OracleComp.query from rfl]
+  simp [prfOracle]
 
 /-- In `prfIdealGame`, `prfPadDistinguisher test` evaluates `test n` on a uniform pad
 `r ← PMF.uniformOfFintype (BitString n)`. -/
@@ -1090,7 +1090,7 @@ theorem eval_prfIdealGame_prfPadDistinguisher (test : (k : ℕ) → BitString k 
     Function.comp_def]
   congr 1
   funext table
-  simp [randomFunctionOracle, show ProbComp.unifFin = OracleComp.query from rfl]
+  simp [randomFunctionOracle]
 
 /-- **Exact single-query PRF-pad reduction for an explicit `OracleDistinguisher`** in the
 one-query, fixed-nonce case (after [BonehShoup2023], Section 7.4): if `D` simulates
@@ -1712,11 +1712,11 @@ theorem eval_prfRealGame_prfMultiPadDistinguisher {n : ℕ} (seed : PMF K)
     ProbComp.eval (prfRealGame family (prfMultiPadDistinguisher Q nonce test) n) =
       prfCounterSlotGame seed family n (nonce n) hash forger := by
   rw [prfCounterSlotGame, maskedCounterSlotGame_eq_bind_counterPadSeqDistinguisher]
-  simp only [pmf_norm, prfRealGame, prfMultiPadDistinguisher, prfPadSeqDist,
+  simp only [pmf_norm, prfRealGame, ProbOracleComp.run, prfMultiPadDistinguisher, prfPadSeqDist,
     OracleComp.interpret_bind, interpret_iterate_prfPadCollectStep, List.nil_append,
     List.length_nil, Nat.zero_add, pure_bind, ProbOracleComp.interpret_sample,
     BitString.eval_sampleList]
-  simp only [show ProbComp.unifFin = OracleComp.query from rfl, OracleComp.interpret_query_eq_self]
+  simp only [ProbComp.interpret_unifFin]
   congr 1 with key : 1
   rw [← htest]
   exact counterPadSeqDistinguisher_congr seed hash hforger fun i hi =>
@@ -1738,11 +1738,11 @@ theorem eval_prfIdealGame_prfMultiPadDistinguisher {n : ℕ} (seed : PMF K)
       ProbComp.eval (test n padSeq)) :
     ProbComp.eval (prfIdealGame (prfMultiPadDistinguisher Q nonce test) n) =
       counterSlotGame seed hash forger := by
-  simp only [prfIdealGame, prfMultiPadDistinguisher,
+  simp only [prfIdealGame, ProbOracleComp.run, prfMultiPadDistinguisher,
     OracleComp.interpret_bind, interpret_iterate_prfPadCollectStep, List.nil_append,
     List.length_nil, Nat.zero_add, pure_bind, ProbOracleComp.interpret_sample,
     ProbComp.eval_bind, ProbComp.eval_uniform]
-  simp only [show ProbComp.unifFin = OracleComp.query from rfl, OracleComp.interpret_query_eq_self]
+  simp only [ProbComp.interpret_unifFin]
   have htable (table : BitString n → BitString n) :
       ProbComp.eval
         (test n fun i =>
@@ -2753,11 +2753,6 @@ private theorem interpret_deterministic_run_interpret {State α : Type}
   | inl k => simp [OracleComp.sumHandler, StateT.lift, ProbComp.unifFin]
   | inr request => rfl
 
-@[simp]
-private theorem interpret_unifFin {α : Type} (p : ProbComp α) :
-    OracleComp.interpret ProbComp.unifFin p = p :=
-  OracleComp.interpret_query_eq_self p
-
 /-- **Computational nonce-based Carter–Wegman MAC (`NonceMACScheme`)**
 ([BonehShoup2023], Section 7.5.1, Attack Game 7.4 and Theorem 7.10, p. 274):
 given a polynomial-time message-length schedule `msgLen : ℕ → ℕ`, a strict-PPT hash-key sampler
@@ -3021,9 +3016,10 @@ theorem eval_prfRealGame_prfNonceToPrfDistinguisher
   change ProbComp.eval
       (prfRealGame family (prfNonceToPrfDistinguisher msgLen seed hash adversary) n) =
     ProbComp.eval (M.sufCmaGame adversary n)
-  simp only [prfRealGame, prfNonceToPrfDistinguisher, NonceMACScheme.sufCmaGame, M,
+  simp only [prfRealGame, ProbOracleComp.run, prfNonceToPrfDistinguisher,
+    NonceMACScheme.sufCmaGame, M,
     carterWegmanNonceMAC, Functor.map_map, OracleComp.interpret_bind, OracleComp.interpret_map,
-    ProbOracleComp.interpret_sample, ProbOracleComp.interpret_query, interpret_unifFin,
+    ProbOracleComp.interpret_sample, ProbOracleComp.interpret_query, ProbComp.interpret_unifFin,
     ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure,
     PMF.bind_bind, PMF.pure_bind]
   rw [PMF.bind_comm (ProbComp.eval (BitString.sampleList n)) (ProbComp.eval (seed n))]
@@ -3278,9 +3274,10 @@ theorem eval_prfIdealGame_prfNonceToPrfDistinguisher_le
                 PMF.pure
                   (checkNonceSUF hashBit k table res.2
                     (toBitTriple (msgLen n) n res.1.1))) true := by
-    simp only [pmf_norm, prfIdealGame, prfNonceToPrfDistinguisher, Functor.map_map,
+    simp only [pmf_norm, prfIdealGame, ProbOracleComp.run, prfNonceToPrfDistinguisher,
+      Functor.map_map,
       OracleComp.interpret_bind, OracleComp.interpret_map, ProbOracleComp.interpret_sample,
-      ProbOracleComp.interpret_query, interpret_unifFin, ProbComp.eval_uniform]
+      ProbOracleComp.interpret_query, ProbComp.interpret_unifFin, ProbComp.eval_uniform]
     rw [PMF.bind_comm (PMF.uniformOfFintype (BitString n → BitString n)) (ProbComp.eval (seed n))]
     refine bind_apply_mono_on_support (ProbComp.eval (seed n)) true fun k _ => ?_
     refine bind_apply_mono_on_support (PMF.uniformOfFintype (BitString n → BitString n)) true
@@ -4462,10 +4459,10 @@ theorem eval_prfRealGame_prfRandomNonceToPrfDistinguisher
   change ProbComp.eval
       (prfRealGame family (prfRandomNonceToPrfDistinguisher msgLen seed hash adversary) n) =
     ProbComp.eval (M.sufCmaGame adversary n)
-  dsimp only [prfRealGame, prfRandomNonceToPrfDistinguisher, MACScheme.sufCmaGame, M,
-    carterWegmanRandomMAC]
+  dsimp only [prfRealGame, ProbOracleComp.run, prfRandomNonceToPrfDistinguisher,
+    MACScheme.sufCmaGame, M, carterWegmanRandomMAC]
   simp only [pmf_norm, Functor.map_map, OracleComp.interpret_bind, OracleComp.interpret_map,
-    ProbOracleComp.interpret_sample, ProbOracleComp.interpret_query, interpret_unifFin]
+    ProbOracleComp.interpret_sample, ProbOracleComp.interpret_query, ProbComp.interpret_unifFin]
   rw [PMF.bind_comm (ProbComp.eval (BitString.sampleList n)) (ProbComp.eval (seed n))]
   refine PMF.bind_congr_on_support _ _ _ fun k _ => ?_
   refine PMF.bind_congr_on_support _ _ _ fun prfKey hprfKey => ?_
@@ -4683,8 +4680,8 @@ private theorem eval_cwRandomNonceLogHandler_randomFunctionOracle_le
           OracleComp.run_interpret_query _ (Sum.inr (BitString.ofList (msgLen n) msg)) tr
         rw [hq_rhs]
         simp only [pmf_norm, Functor.map_map, OracleComp.interpret_bind, OracleComp.interpret_map,
-          ProbOracleComp.interpret_sample, ProbOracleComp.interpret_query, interpret_unifFin,
-          BitString.eval_sampleList, randomNonceFnHandler]
+          ProbOracleComp.interpret_sample, ProbOracleComp.interpret_query,
+          ProbComp.interpret_unifFin, BitString.eval_sampleList, randomNonceFnHandler]
         rw [BitString.uniformList, PMF.bind_map]
         refine bind_apply_mono_on_support (PMF.uniformOfFintype (BitString n)) true fun x _ => ?_
         simp only [Function.comp_def]
@@ -4752,9 +4749,10 @@ theorem eval_prfIdealGame_prfRandomNonceToPrfDistinguisher_le
                 PMF.pure
                   (checkRandomNonceSUF hashBit k table res.2
                     (toRandomBitTriple msgLen n res.1.1))) true := by
-    simp only [pmf_norm, prfIdealGame, prfRandomNonceToPrfDistinguisher, Functor.map_map,
+    simp only [pmf_norm, prfIdealGame, ProbOracleComp.run, prfRandomNonceToPrfDistinguisher,
+      Functor.map_map,
       OracleComp.interpret_bind, OracleComp.interpret_map, ProbOracleComp.interpret_sample,
-      ProbOracleComp.interpret_query, interpret_unifFin, ProbComp.eval_uniform]
+      ProbOracleComp.interpret_query, ProbComp.interpret_unifFin, ProbComp.eval_uniform]
     rw [PMF.bind_comm (PMF.uniformOfFintype (BitString n → BitString n)) (ProbComp.eval (seed n))]
     refine bind_apply_mono_on_support (ProbComp.eval (seed n)) true fun k _ => ?_
     refine bind_apply_mono_on_support (PMF.uniformOfFintype (BitString n → BitString n)) true

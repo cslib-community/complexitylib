@@ -14,6 +14,7 @@ public import Mathlib.Algebra.Group.Subgroup.Even
 public import Mathlib.Data.ZMod.Units
 public import Mathlib.NumberTheory.LegendreSymbol.JacobiSymbol
 import CslibFrontier.Crypto.Negligible.Basic
+import CslibFrontier.Foundations.Data.ZMod.CRTUnits
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Tactic.PPT
 import Mathlib.FieldTheory.Finite.Basic
@@ -161,21 +162,6 @@ theorem jacobiPosSet_eq_disjoint_union (p q : ℕ) [Fact p.Prime] [Fact q.Prime]
     simp only [quadResidueSet, positiveNonresidues, Finset.mem_filter] at hx1 hx2
     exact hx2.2.1 hx1.2
 
-private def crtUnitsEquiv (p q : ℕ) (hpq : Nat.Coprime p q) :
-    (ZMod (p * q))ˣ ≃* (ZMod p)ˣ × (ZMod q)ˣ :=
-  (Units.mapEquiv (ZMod.chineseRemainder hpq).toMulEquiv).trans MulEquiv.prodUnits
-
-private theorem isSquare_crt_iff (p q : ℕ) (hpq : Nat.Coprime p q) (x : (ZMod (p * q))ˣ) :
-    IsSquare x ↔
-      IsSquare (crtUnitsEquiv p q hpq x).1 ∧ IsSquare (crtUnitsEquiv p q hpq x).2 := by
-  constructor
-  · rintro ⟨r, rfl⟩
-    exact ⟨⟨(crtUnitsEquiv p q hpq r).1, by simp⟩, ⟨(crtUnitsEquiv p q hpq r).2, by simp⟩⟩
-  · rintro ⟨⟨a, ha⟩, ⟨b, hb⟩⟩
-    refine ⟨(crtUnitsEquiv p q hpq).symm (a, b), ?_⟩
-    apply (crtUnitsEquiv p q hpq).injective
-    ext <;> simp [ha, hb]
-
 /-- The Legendre symbol at `p` of a residue modulo `m` is that of its image under any ring map
 `ZMod m →+* ZMod p`. -/
 private theorem legendreSym_val_map {m p : ℕ} [NeZero m] [Fact p.Prime] (f : ZMod m →+* ZMod p)
@@ -188,14 +174,14 @@ private theorem legendreSym_val_map {m p : ℕ} [NeZero m] [Fact p.Prime] (f : Z
 private theorem legendreSym_crt_fst (p q : ℕ) [Fact p.Prime] [Fact q.Prime]
     (hpq : Nat.Coprime p q) (x : (ZMod (p * q))ˣ) :
     legendreSym p (x.val.val : ℤ) =
-      legendreSym p (((crtUnitsEquiv p q hpq x).1 : ZMod p).val : ℤ) :=
+      legendreSym p (((ZMod.unitsChineseRemainder hpq x).1 : ZMod p).val : ℤ) :=
   legendreSym_val_map (p := p) ((RingHom.fst (ZMod p) (ZMod q)).comp
     (ZMod.chineseRemainder hpq : ZMod (p * q) →+* ZMod p × ZMod q)) x
 
 private theorem legendreSym_crt_snd (p q : ℕ) [Fact p.Prime] [Fact q.Prime]
     (hpq : Nat.Coprime p q) (x : (ZMod (p * q))ˣ) :
     legendreSym q (x.val.val : ℤ) =
-      legendreSym q (((crtUnitsEquiv p q hpq x).2 : ZMod q).val : ℤ) :=
+      legendreSym q (((ZMod.unitsChineseRemainder hpq x).2 : ZMod q).val : ℤ) :=
   legendreSym_val_map (p := q) ((RingHom.snd (ZMod p) (ZMod q)).comp
     (ZMod.chineseRemainder hpq : ZMod (p * q) →+* ZMod p × ZMod q)) x
 
@@ -216,35 +202,6 @@ private theorem isSquare_unit_iff_legendreSym (p : ℕ) [Fact p.Prime] (_hp : p 
       exact u.ne_zero hr
     exact ⟨Units.mk0 r hr0, Units.ext hr⟩
 
-private theorem card_squares_prime_units (p : ℕ) [Fact p.Prime] (hp : 2 < p) :
-    2 * (Finset.univ.filter fun u : (ZMod p)ˣ => IsSquare u).card = Fintype.card (ZMod p)ˣ := by
-  have hrange : (Finset.univ.filter fun u : (ZMod p)ˣ => IsSquare u).card =
-      Nat.card (powMonoidHom 2 : (ZMod p)ˣ →* (ZMod p)ˣ).range := by
-    rw [Nat.card_eq_fintype_card]
-    symm
-    apply Fintype.card_of_subtype
-    intro u
-    simp only [Finset.mem_filter, Finset.mem_univ, true_and, MonoidHom.mem_range,
-      powMonoidHom_apply, isSquare_iff_exists_sq, eq_comm]
-  have hcard : Fintype.card (ZMod p)ˣ = p - 1 := by
-    rw [ZMod.card_units_eq_totient, Nat.totient_prime Fact.out]
-  have hdvd : 2 ∣ p - 1 := by
-    have hodd : p % 2 = 1 := Nat.odd_iff.mp ((Fact.out : p.Prime).odd_of_ne_two (by omega))
-    omega
-  rw [hrange, IsCyclic.card_powMonoidHom_range, Nat.card_eq_fintype_card, hcard,
-    Nat.gcd_eq_right hdvd]
-  omega
-
-/-- Half of the units modulo an odd prime are nonsquares. -/
-private theorem card_nonsquares_prime_units (p : ℕ) [Fact p.Prime] (hp : 2 < p) :
-    (Finset.univ.filter fun u : (ZMod p)ˣ => ¬ IsSquare u).card =
-      (Finset.univ.filter fun u : (ZMod p)ˣ => IsSquare u).card := by
-  have h := Finset.card_filter_add_card_filter_not (s := Finset.univ)
-    (p := fun u : (ZMod p)ˣ => IsSquare u)
-  rw [Finset.card_univ] at h
-  have := card_squares_prime_units p hp
-  omega
-
 /-- For distinct odd primes `p ≠ q`, `|QR_N| = |QNR_N^{+1}|`. -/
 theorem card_quadResidueSet_eq_card_positiveNonresidues (p q : ℕ) [Fact p.Prime] [Fact q.Prime]
     (hpq : p ≠ q) (hp : 2 < p) (hq : 2 < q) :
@@ -255,27 +212,27 @@ theorem card_quadResidueSet_eq_card_positiveNonresidues (p q : ℕ) [Fact p.Prim
   -- squares and `N` the nonsquares among the units modulo each prime.
   have hQR : (quadResidueSet p q).card = ((Finset.univ.filter fun u : (ZMod p)ˣ => IsSquare u) ×ˢ
       (Finset.univ.filter fun v : (ZMod q)ˣ => IsSquare v)).card :=
-    Finset.card_bijective _ (crtUnitsEquiv p q hcop).bijective fun x => by
-      simp [quadResidueSet, isSquare_crt_iff p q hcop x]
+    Finset.card_bijective _ (ZMod.unitsChineseRemainder hcop).bijective fun x => by
+      simp [quadResidueSet, ZMod.isSquare_iff_unitsChineseRemainder hcop x]
   have hQNR : (positiveNonresidues p q).card =
       ((Finset.univ.filter fun u : (ZMod p)ˣ => ¬ IsSquare u) ×ˢ
         (Finset.univ.filter fun v : (ZMod q)ˣ => ¬ IsSquare v)).card := by
-    refine Finset.card_bijective _ (crtUnitsEquiv p q hcop).bijective fun x => ?_
+    refine Finset.card_bijective _ (ZMod.unitsChineseRemainder hcop).bijective fun x => ?_
     -- Both sides speak about the Legendre symbols of the CRT components: a component is a
     -- square iff its symbol is `1`, and the Jacobi symbol is their product.
     simp only [positiveNonresidues, Finset.mem_filter, Finset.mem_univ, true_and]
-    rw [isSquare_crt_iff p q hcop x, jacobiSymbol, legendreSym_crt_fst p q hcop x,
-      legendreSym_crt_snd p q hcop x]
+    rw [ZMod.isSquare_iff_unitsChineseRemainder hcop x, jacobiSymbol,
+      legendreSym_crt_fst p q hcop x, legendreSym_crt_snd p q hcop x]
     simp only [Finset.mem_product, Finset.mem_filter, Finset.mem_univ, true_and,
       isSquare_unit_iff_legendreSym p (by omega), isSquare_unit_iff_legendreSym q (by omega)]
     -- Each symbol is `±1`.
     rcases legendreSym.eq_one_or_neg_one p
-        (a := ((crtUnitsEquiv p q hcop x).1 : ZMod p).val) (by simp) with h | h <;>
+        (a := ((ZMod.unitsChineseRemainder hcop x).1 : ZMod p).val) (by simp) with h | h <;>
       rcases legendreSym.eq_one_or_neg_one q
-        (a := ((crtUnitsEquiv p q hcop x).2 : ZMod q).val) (by simp) with h' | h' <;>
+        (a := ((ZMod.unitsChineseRemainder hcop x).2 : ZMod q).val) (by simp) with h' | h' <;>
       simp only [h, h'] <;> norm_num
-  rw [hQR, hQNR, Finset.card_product, Finset.card_product, card_nonsquares_prime_units p hp,
-    card_nonsquares_prime_units q hq]
+  rw [hQR, hQNR, Finset.card_product, Finset.card_product, ZMod.card_nonsquares_units p hp,
+    ZMod.card_nonsquares_units q hq]
 
 /-! ### Blum integers and principal square roots -/
 
@@ -305,8 +262,9 @@ theorem neg_one_mem_positiveNonresidues (p q : ℕ) [Fact p.Prime] [Fact q.Prime
   refine ⟨?_, by unfold jacobiSymbol; rw [hp_neg, hq_neg]; norm_num⟩
   intro hsq
   have hcop : Nat.Coprime p q := (Nat.coprime_primes h.1.1 h.2.1.1).mpr h.2.2
-  have h1 := ((isSquare_crt_iff p q hcop (-1)).mp hsq).1
-  have hp_eq := (isSquare_unit_iff_legendreSym p hp2 (crtUnitsEquiv p q hcop (-1)).1).mp h1
+  have h1 := ((ZMod.isSquare_iff_unitsChineseRemainder hcop (-1)).mp hsq).1
+  have hp_eq :=
+    (isSquare_unit_iff_legendreSym p hp2 (ZMod.unitsChineseRemainder hcop (-1)).1).mp h1
   rw [← legendreSym_crt_fst p q hcop (-1)] at hp_eq
   omega
 
@@ -338,7 +296,7 @@ private theorem blum_sq_pow_eq_one (p q : ℕ) (h : IsBlumModulus p q) (u : (ZMo
       4 * ((2 * (r / 4) + 1) * (2 * (s / 4) + 1)) by ring, Nat.mul_div_cancel_left _ (by norm_num)]
     ring
   rw [← pow_mul]
-  apply (crtUnitsEquiv p q hcop).injective
+  apply (ZMod.unitsChineseRemainder hcop).injective
   rw [map_pow, map_one]
   refine Prod.ext ?_ ?_
   · rw [Prod.pow_fst, Prod.fst_one, hk p q hp1 hq1, pow_mul,

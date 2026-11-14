@@ -9,7 +9,6 @@ module
 
 public import CslibFrontier.Computability.Complexity.Classes.Oracle.Closure
 import CslibFrontier.Computability.Probabilistic.Oracle.Substitution
-import CslibFrontier.Languages.Probabilistic.Simulation
 
 /-!
 # Monotonicity of the oracle classes under reductions
@@ -17,10 +16,10 @@ import CslibFrontier.Languages.Probabilistic.Simulation
 If the oracle language `A` reduces to `B` by a polynomial-time map `g`, a computation relative to
 `A` becomes one relative to `B`: every request `w` is replaced by the request `g w`, of which one
 reply bit is kept (`Cslib.Complexity.ComputableInPolyTimeWithOracle.of_polyTimeReducible`). The
-certificate is open oracle substitution
-(`Cslib.Probability.IsOraclePPTOn.run_interpret_preprocess_open`): the handler answering requests
-to `A` is itself an oracle program querying `B`, charged for computing `g w` and for reading one
-bit of the reply. Hence `P^A ⊆ P^B` and `NP^A ⊆ NP^B`
+certificate is stateless open oracle substitution
+(`Cslib.Probability.IsOraclePPTOn.interpret_bitQueries`): the handler answering requests to `A` is
+itself an oracle program querying `B`, charged for computing `g w` and for reading one bit of the
+reply. Hence `P^A ⊆ P^B` and `NP^A ⊆ NP^B`
 (`Cslib.Complexity.PolyTimeReducible.PWithOracle_subset`,
 `Cslib.Complexity.PolyTimeReducible.NPWithOracle_subset`), and polynomial-time equivalent oracles
 give the same classes.
@@ -36,7 +35,7 @@ give the same classes.
 * [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak09], Section 3.4.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 
@@ -59,41 +58,7 @@ theorem ComputableInPolyTimeWithOracle.of_polyTimeReducible {A B : Set (List Boo
     List.take 1 <$> OracleComp.query ((), g q.2)
   refine ⟨fun a => OracleComp.interpret G (program a), ?_, fun a => ?_⟩
   · -- substitute the handler answering requests to `A` through `B`
-    have hhandler : IsOraclePPTOn
-        (encPair input (encPair (encPair (encFinEnum Unit) encBits) (encFinEnum Unit)))
-        (encPair encBits (encFinEnum Unit))
-        (fun pair : α × (Unit × List Bool) × Unit =>
-          (fun r => (r, ())) <$> (List.take 1 <$> ProbOracleComp.query
-            (spec := fun _ : Unit × List Bool => List Bool) ((), g pair.2.1.2))) :=
-      (IsOraclePPTOn.query_take' () (request := fun pair : α × (Unit × List Bool) × Unit =>
-        g pair.2.1.2) (limit := fun _ => 1) (hg.comp (by fun_prop)) (by fun_prop)).map'
-        (by fun_prop)
-    have hsub := hcert.run_interpret_preprocess_open' (State := Unit)
-      (handler := fun _ q _ => (fun r => (r, ())) <$> (List.take 1 <$> ProbOracleComp.query
-        (spec := fun _ : Unit × List Bool => List Bool) ((), g q.2)))
-      (prepare := id) (initial := fun _ => ()) (resources := fun _ _ => 1)
-      ComputableInPolyTime.id' hhandler (ComputableInPolyTime.const ())
-      (fun _ _ => True) (fun _ => trivial) (ComputableInPolyTime.const 1)
-      (fun a request state _ result hresult => by
-        obtain ⟨r, hr, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hresult
-        obtain ⟨r', -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hr
-        exact ⟨trivial, List.length_take_le _ _, Nat.le_add_right _ _⟩)
-    refine (hsub.map' (ComputableInPolyTime.fst output (encFinEnum Unit))).congr
-      fun a State oracle s => ?_
-    congr 2
-    rw [OracleComp.interpret_interpret, OracleComp.interpret_interpret]
-    have hH : (fun q : Unit × List Bool => OracleComp.interpret (OracleComp.sumHandler
-        (fun n => StateT.lift (ProbOracleComp.sample (ProbComp.unifFin n)))
-        (fun (q : Unit × List Bool) (_ : Unit) => (fun r => (r, ())) <$> (List.take 1 <$>
-          ProbOracleComp.query (spec := fun _ : Unit × List Bool => List Bool) ((), g q.2))))
-        (ProbOracleComp.query q)) = fun q : Unit × List Bool => StateT.lift (List.take 1 <$>
-          ProbOracleComp.query (spec := fun _ : Unit × List Bool => List Bool) ((), g q.2)) := by
-      funext q
-      rw [ProbOracleComp.interpret_query]
-      funext u
-      simp [StateT.lift]
-    rw [hH, OracleComp.run_interpret_lift, Functor.map_map]
-    simp only [G, OracleComp.interpret_map, OracleComp.interpret_query, id_map', id]
+    exact hcert.interpret_bitQueries hg.tidy
   · rw [OracleComp.interpret_interpret, ← hprogram a]
     congr 1 with q : 1
     simp only [G, OracleComp.interpret_map, OracleComp.interpret_query, languageOracle_apply]

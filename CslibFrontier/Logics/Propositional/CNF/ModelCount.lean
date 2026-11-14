@@ -54,8 +54,10 @@ with a given one on the variables of the formula (`CNF.modelCount_eq_one_iff`).
   `Cslib.Logic.PL.CNF.distinctVars_toFinset`, `Cslib.Logic.PL.CNF.length_distinctVars`:
   `φ.distinctVars` lists the `φ.numVars` variables of `φ` without repetition.
 * `Cslib.Logic.PL.mem_occurrences`, `Cslib.Logic.PL.mk_mem_occurrences_of_mem_zipIdx`,
-  `Cslib.Logic.PL.map_occurrences`,
-  `Cslib.Logic.PL.length_occurrences`: the literal occurrences of `φ` and their variables.
+  `Cslib.Logic.PL.map_occurrences`, `Cslib.Logic.PL.variable_mem_of_mem_occurrences`,
+  `Cslib.Logic.PL.exists_occurrence_of_mem_vars`,
+  `Cslib.Logic.PL.length_occurrences`, `Cslib.Logic.PL.count_map_clause_occurrences`: the literal
+  occurrences of `φ`, their variables and the number in each clause.
 * `Cslib.Logic.PL.exists_lt_two_pow_bitsAssignment_eq`,
   `Cslib.Logic.PL.CNF.satisfiable_iff_exists_bitsAssignment`: satisfiability is a search over
   `2 ^ |vs|` numbered assignments.
@@ -80,26 +82,34 @@ variable {V : Type*}
 
 /-- An occurrence of a literal in a formula: its clause, its position in the clause, and the
 literal. -/
-abbrev Occurrence (V : Type*) : Type _ := ℕ × ℕ × Literal V
+@[ext]
+structure Occurrence (V : Type*) where
+  /-- The index of the clause containing the occurrence. -/
+  clause : ℕ
+  /-- The position of the occurrence in its clause. -/
+  pos : ℕ
+  /-- The literal at this position. -/
+  lit : Literal V
+  deriving DecidableEq, Inhabited, Repr
 
 /-- The occurrences of literals in a formula. -/
 def occurrences (φ : CNF V) : List (Occurrence V) :=
-  φ.zipIdx.flatMap fun c => c.1.zipIdx.map fun l => (c.2, l.2, l.1)
+  φ.zipIdx.flatMap fun c => c.1.zipIdx.map fun l => ⟨c.2, l.2, l.1⟩
 
 /-- An indexed clause of `φ` and an indexed literal of that clause form an occurrence. -/
 theorem mk_mem_occurrences_of_mem_zipIdx {φ : CNF V} {c : Clause V} {i j : ℕ} {l : Literal V}
-    (hc : (c, i) ∈ φ.zipIdx) (hl : (l, j) ∈ c.zipIdx) : (i, j, l) ∈ occurrences φ :=
+    (hc : (c, i) ∈ φ.zipIdx) (hl : (l, j) ∈ c.zipIdx) : ⟨i, j, l⟩ ∈ occurrences φ :=
   List.mem_flatMap.mpr ⟨(c, i), hc, List.mem_map.mpr ⟨(l, j), hl, rfl⟩⟩
 
 /-- Membership in `occurrences φ` as valid clause and literal indices. -/
 theorem mem_occurrences {φ : CNF V} {o : Occurrence V} :
-    o ∈ occurrences φ ↔ ∃ (h₁ : o.1 < φ.length) (h₂ : o.2.1 < φ[o.1].length),
-      o.2.2 = φ[o.1][o.2.1] := by
+    o ∈ occurrences φ ↔ ∃ (h₁ : o.clause < φ.length) (h₂ : o.pos < φ[o.clause].length),
+      o.lit = φ[o.clause][o.pos] := by
   obtain ⟨i, j, l⟩ := o
   simp only [occurrences, List.mem_flatMap, List.mem_map, List.mem_zipIdx_iff_getElem?]
   constructor
   · rintro ⟨⟨c, i'⟩, hc, ⟨l', j'⟩, hl, he⟩
-    simp only [Prod.mk.injEq] at he hc hl
+    simp only [Occurrence.mk.injEq] at he hc hl
     obtain ⟨rfl, rfl, rfl⟩ := he
     obtain ⟨hi, hci⟩ := List.getElem?_eq_some_iff.1 hc
     subst hci
@@ -109,22 +119,59 @@ theorem mem_occurrences {φ : CNF V} {o : Occurrence V} :
     exact ⟨(φ[i], i), by simp [hi], (φ[i][j], j), by simp [hj], by rw [hl]⟩
 
 /-- The variables of the occurrences, in order, are the variables of the formula. -/
-theorem map_occurrences (φ : CNF V) : (occurrences φ).map (fun o => o.2.2.1) = φ.vars := by
-  have hc : ∀ c : Clause V × ℕ, (c.1.zipIdx.map fun l => (c.2, l.2, l.1).2.2.1) =
-      c.1.map Prod.fst := fun c => by
-    calc (c.1.zipIdx.map fun l => (c.2, l.2, l.1).2.2.1) =
-        (c.1.zipIdx.map Prod.fst).map Prod.fst := by rw [List.map_map]; rfl
-      _ = c.1.map Prod.fst := by rw [List.zipIdx_map_fst]
-  calc (occurrences φ).map (fun o => o.2.2.1)
+theorem map_occurrences (φ : CNF V) : (occurrences φ).map (fun o => o.lit.1) = φ.vars := by
+  have hc : ∀ c : Clause V × ℕ,
+      (c.1.zipIdx.map fun l => (⟨c.2, l.2, l.1⟩ : Occurrence V).lit.1) = c.1.map Prod.fst :=
+    fun c => by
+      calc (c.1.zipIdx.map fun l => (⟨c.2, l.2, l.1⟩ : Occurrence V).lit.1) =
+          (c.1.zipIdx.map Prod.fst).map Prod.fst := by rw [List.map_map]; rfl
+        _ = c.1.map Prod.fst := by rw [List.zipIdx_map_fst]
+  calc (occurrences φ).map (fun o => o.lit.1)
       = φ.zipIdx.flatMap fun c => c.1.map Prod.fst := by
         simp only [occurrences, List.map_flatMap, List.map_map, Function.comp_def, hc]
     _ = (φ.zipIdx.map Prod.fst).flatMap fun c => c.map Prod.fst := by rw [List.flatMap_map]
     _ = φ.vars := by
         rw [List.zipIdx_map_fst, CNF.vars, List.map_flatten, List.flatMap_def]
 
+/-- The variable named by an indexed literal occurrence occurs in the formula. -/
+theorem variable_mem_of_mem_occurrences {φ : CNF V} {o : Occurrence V}
+    (ho : o ∈ occurrences φ) : o.lit.1 ∈ φ.vars := by
+  rw [← map_occurrences]
+  exact List.mem_map_of_mem ho
+
+/-- Every variable occurrence of a formula is the variable of one of its literal occurrences. -/
+theorem exists_occurrence_of_mem_vars {φ : CNF V} {v : V} (hv : v ∈ φ.vars) :
+    ∃ o ∈ occurrences φ, o.lit.1 = v := by
+  rw [← map_occurrences] at hv
+  exact List.mem_map.mp hv
+
 /-- A formula has one occurrence for each occurrence of a variable. -/
 theorem length_occurrences (φ : CNF V) : (occurrences φ).length = φ.vars.length := by
   rw [← map_occurrences, List.length_map]
+
+private theorem count_map_clause_flatMap_zipIdx (φ : CNF V) (i : ℕ) : ∀ s,
+    (((φ.zipIdx s).flatMap fun c => c.1.zipIdx.map fun l => (⟨c.2, l.2, l.1⟩ : Occurrence V)).map
+      Occurrence.clause).count i = if s ≤ i then (φ.getD (i - s) []).length else 0 := by
+  induction φ with
+  | nil => simp
+  | cons c φ ih =>
+    intro s
+    simp only [List.zipIdx_cons, List.flatMap_cons, List.map_append, List.map_map,
+      List.count_append, ih, Function.comp_def, List.map_const', List.count_replicate,
+      List.length_zipIdx]
+    by_cases his : i = s
+    · subst his
+      simp
+    · by_cases hsi : s ≤ i
+      · have he : i - s = (i - (s + 1)) + 1 := by omega
+        simp [hsi, show s + 1 ≤ i by omega, he, Ne.symm his]
+      · simp [hsi, show ¬s + 1 ≤ i by omega, Ne.symm his]
+
+/-- Clause `i` has one occurrence for each of its literals; an out-of-range clause has none. -/
+theorem count_map_clause_occurrences (φ : CNF V) (i : ℕ) :
+    ((occurrences φ).map Occurrence.clause).count i = (φ.getD i []).length := by
+  unfold occurrences
+  simpa only [Nat.zero_le, ite_true, Nat.sub_zero] using count_map_clause_flatMap_zipIdx φ i 0
 
 variable [DecidableEq V]
 

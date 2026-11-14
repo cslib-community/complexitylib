@@ -229,7 +229,7 @@ theorem isCostBounded_MT_halfVerifier (rt sib : List Bool) :
   unfold micaliVerify
   refine IsCostBounded.liftBind (cost := micaliMTCost) (Sum.inr (x, rt)) _ 2 ?_
   intro challenges
-  apply isCostBounded_micaliMTCost_liftLeft
+  refine IsCostBounded.liftLeft (cost₁ := fun _ => 1) ?_ fun _ => le_rfl
   cases challenges with
   | nil => exact .pure _ 2
   | cons ρ ρs =>

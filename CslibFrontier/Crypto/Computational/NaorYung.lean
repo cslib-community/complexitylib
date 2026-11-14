@@ -17,6 +17,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Computability.Probabilistic.UniformNat
 import CslibFrontier.Crypto.Game.Hybrid
@@ -383,19 +384,6 @@ theorem isPPT_naorYungStepInverter
     ((ha.choose.preprocess (.of_tidy hn0)).bind_with
       ((ha.find.preprocess (.of_tidy (hn1.prod (hq.snd'.snd'.prod hδ1)))).bind_with hcb.isPPTOn))
 
-private theorem exists_true_listXor_of_ne {m : ℕ} {u v : List Bool}
-    (hu : u.length = m) (hv : v.length = m) (hne : u ≠ v) :
-    ∃ i < m, (BitString.listXor m [u, v]).getD i false = true := by
-  by_contra hall
-  simp only [not_exists, not_and] at hall
-  apply hne (List.ext_getElem (hu.trans hv.symm) fun i hi_u hi_v => ?_)
-  have hi_m : i < m := by omega
-  have hzero := Bool.eq_false_iff.mpr (hall i hi_m)
-  rw [BitString.getD_listXor_pair m u v i hi_m] at hzero
-  have heq_bit : u.getD i false = v.getD i false := by
-    cases h1 : u.getD i false <;> cases h2 : v.getD i false <;> simp_all
-  simpa only [List.getD_eq_getElem _ _ hi_u, List.getD_eq_getElem _ _ hi_v] using heq_bit
-
 private theorem naorYungStep_inversion_eval_eq
     {f : List Bool → List Bool} (hf_len : ∀ w, (f w).length = w.length)
     (hf_bij : Function.Bijective f) (adversary : TargetCollisionFinder) (n : ℕ) :
@@ -408,7 +396,7 @@ private theorem naorYungStep_inversion_eval_eq
             PMF.pure (f (if f w₁ == y then w₁ else w₀) == y)))) := by
   have hlt_false : ¬ (n + 2 < 2) := by omega
   have hsub : n + 2 - 2 = n := by omega
-  simp only [inversionGame, naorYungStepInverter, hlt_false, ↓reduceIte, hsub,
+  simp only [inversionGame, inversionExperiment, naorYungStepInverter, hlt_false, ↓reduceIte, hsub,
     ProbComp.eval_bind, ProbComp.eval_pure, BitString.eval_sampleList, PMF.bind_bind,
     PMF.pure_bind]
   trans ((BitString.uniformList (n + 2)).map f).bind (fun y =>
@@ -473,7 +461,7 @@ theorem succProbability_targetCollisionGame_naorYungStep_le
       · have hδ_eq : δ = BitString.listXor (n + 2) [f w₀, y] :=
           (BitString.listXor_pair_self_left_of_length (f w₀) hδ_len).symm
         have hδ_nz : ∃ i < n + 2, δ.getD i false = true :=
-          hδ_eq ▸ exists_true_listXor_of_ne hfw₀_len hy_len hfy
+          hδ_eq ▸ BitString.exists_getD_listXor_pair_of_ne hfw₀_len hy_len hfy
         have hstep_eq' : naorYungShrink (n + 2) δ (f w₀) = naorYungShrink (n + 2) δ (f w₁) := by
           have hraw : naorYungShrink (n + 2) δ (f (BitString.listRow (n + 2) 0 choice.1)) =
               naorYungShrink (n + 2) δ (f (BitString.listRow (n + 2) 0 w₁)) := hstep_eq
@@ -810,13 +798,26 @@ theorem exists_naorYungCascadeInput_collision
   apply hne
   rw [← eq_listRow_zero_append_one hx₀, ← eq_listRow_zero_append_one hx₁, hS0, hrow1_eq]
 
-private abbrev CascadeState := Bool × ℕ × List Bool × List Bool
+/-- The state `naorYungCascadeAdversary` saves between its two stages. -/
+private structure CascadeState where
+  /-- Whether the sampled dyadic slot is a step index `< n + 1`. -/
+  active : Bool
+  /-- The step index whose subkey is the challenge (`0` when inactive). -/
+  slot : ℕ
+  /-- The `slot` subkeys sampled before the challenge subkey. -/
+  front : List Bool
+  /-- The wrapped adversary's saved state. -/
+  state : List Bool
 
-private abbrev encCascadeState : CascadeState ↪ List Bool :=
-  encPair encBool (encPair encUnary (encPair encBits encBits))
+/-- The encoding of `CascadeState`: the flag and slot, then the subkeys and the saved state. -/
+private enc_structure encCascadeState : CascadeState where
+  active : encBool, slot : encUnary, front : encBits, state : encBits
 
+/-- The decoder of `encCascadeState`. -/
 private def cascadeStateDecoder : Decoder encCascadeState :=
-  Decoder.pair Decoder.bool (Decoder.pair Decoder.unary (Decoder.pair Decoder.bits Decoder.bits))
+  (Decoder.bool.pair (Decoder.unary.pair (Decoder.bits.pair Decoder.bits))).map
+    (fun p => ⟨p.1, p.2.1, p.2.2.1, p.2.2.2⟩) (fun s => (s.active, s.slot, s.front, s.state))
+    (fun _ => rfl) (fun _ => rfl)
 
 /-- Planted-subkey reduction from `naorYungCompressionEval f` to `naorYungStep f`: guess a dyadic
 slot `slot < n + 1`, sample `slot` prefix `(n + 2)`-bit subkeys `front` before seeing the challenge
@@ -831,13 +832,13 @@ noncomputable def naorYungCascadeAdversary
     let i := if active then slot else 0
     let front ← BitString.sampleList (i * (n + 2))
     let w₀ := naorYungCascadeInput f n i front choice.1
-    return (w₀, encCascadeState (active, i, front, choice.2))
+    return (w₀, encCascadeState ⟨active, i, front, choice.2⟩)
   find n savedState δStar := do
     let s := cascadeStateDecoder.decode savedState
-    let i := min n s.2.1
+    let i := min n s.slot
     let back ← BitString.sampleList ((n - i) * (n + 2))
-    let x₁ ← adversary.find n s.2.2.2 (s.2.2.1 ++ δStar ++ back)
-    return if s.1 then naorYungCascadeInput f n i s.2.2.1 x₁ else []
+    let x₁ ← adversary.find n s.state (s.front ++ δStar ++ back)
+    return if s.active then naorYungCascadeInput f n i s.front x₁ else []
 
 /-- `naorYungCascadeAdversary` is a uniform strict PPT `TargetCollisionFinder` whenever `f` is plain
 polynomial-time and `adversary` is strict PPT. -/
@@ -846,7 +847,7 @@ theorem isPPT_naorYungCascadeAdversary
     (hf : ComputableInPolyTime f encBits encBits) (ha : adversary.IsPPT) :
     (naorYungCascadeAdversary f adversary).IsPPT := by
   have hft := hf.tidy
-  have hdec_t := cascadeStateDecoder.computableInPolyTime.tidy
+  have hdec := cascadeStateDecoder.computableInPolyTime
   constructor
   · let E1 := encPair encUnary encUnary
     let E2 := encPair E1 (encPair encBits encBits)
@@ -869,21 +870,24 @@ theorem isPPT_naorYungCascadeAdversary
   · let EF0 := encPair encUnary (encPair encBits encBits)
     let EF1 := encPair EF0 encBits
     have hp := ComputableTidilyInPolyTime.id' (encIn := EF0)
-    have hs0 := hdec_t.comp hp.snd'.fst'
-    have hi0 := ComputableTidilyInPolyTime.unary_min.comp (hp.fst'.prod hs0.snd'.fst')
+    have hs0 := hdec.comp (ComputableInPolyTime.of_tidy hp.snd'.fst')
+    have hslot := (encCascadeState_slot_polyTime hs0).tidy
+    have hfront := (encCascadeState_front_polyTime hs0).tidy
+    have hi0 := ComputableTidilyInPolyTime.unary_min.comp (hp.fst'.prod hslot)
     have hback_len := ComputableTidilyInPolyTime.unary_mul.comp
       ((ComputableTidilyInPolyTime.unary_sub.comp (hp.fst'.prod hi0)).prod
         (ComputableTidilyInPolyTime.unary_add.comp (hp.fst'.prod (.const 2))))
     have hq := ComputableTidilyInPolyTime.id' (encIn := EF1)
     have hK1 := ComputableTidilyInPolyTime.bitsAppend
-      (ComputableTidilyInPolyTime.bitsAppend (hs0.snd'.snd'.fst'.comp hq.fst')
-        hq.fst'.snd'.snd') hq.snd'
-    have hfind_in := hq.fst'.fst'.prod ((hs0.snd'.snd'.snd'.comp hq.fst').prod hK1)
+      (ComputableTidilyInPolyTime.bitsAppend (hfront.comp hq.fst') hq.fst'.snd'.snd') hq.snd'
+    have hfind_in :=
+      hq.fst'.fst'.prod (((encCascadeState_state_polyTime hs0).tidy.comp hq.fst').prod hK1)
     have hr := ComputableTidilyInPolyTime.id' (encIn := encPair EF1 encBits)
     have hr0 := hr.fst'.fst'
-    have hret := ComputableTidilyInPolyTime.ite' (hs0.fst'.comp hr0)
+    have hret := ComputableTidilyInPolyTime.ite'
+      ((encCascadeState_active_polyTime hs0).tidy.comp hr0)
       (computableTidilyInPolyTime_naorYungCascadeInput hft
-        hr0.fst' (hi0.comp hr0) (hs0.snd'.snd'.fst'.comp hr0) hr.snd')
+        hr0.fst' (hi0.comp hr0) (hfront.comp hr0) hr.snd')
       (.const [])
     exact (isPPTOn_sampleList.preprocess (.of_tidy hback_len)).bind_with
       ((ha.find.preprocess (.of_tidy hfind_in)).bind_with hret.isPPTOn)
@@ -895,12 +899,12 @@ private noncomputable def naorYungCascadeSlotTrial
   let i := if active then slot else 0
   let front ← BitString.uniformList (i * (n + 2))
   let w₀ := naorYungCascadeInput f n i front choice.1
-  let s := cascadeStateDecoder.decode (encCascadeState (active, i, front, choice.2))
-  let i' := min n s.2.1
+  let s := cascadeStateDecoder.decode (encCascadeState ⟨active, i, front, choice.2⟩)
+  let i' := min n s.slot
   let δStar ← BitString.uniformList (n + 2)
   let back ← BitString.uniformList ((n - i') * (n + 2))
-  let x₁ ← ProbComp.eval (adversary.find n s.2.2.2 (s.2.2.1 ++ δStar ++ back))
-  let w₁ := if s.1 then naorYungCascadeInput f n i' s.2.2.1 x₁ else []
+  let x₁ ← ProbComp.eval (adversary.find n s.state (s.front ++ δStar ++ back))
+  let w₁ := if s.active then naorYungCascadeInput f n i' s.front x₁ else []
   return isCollision (naorYungStep f n) (fun m w => w.length == m + 2) n δStar w₀ w₁
 
 private theorem naorYungCascadeSlotTrial_eq

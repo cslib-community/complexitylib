@@ -84,7 +84,8 @@ example {w C : ℕ} {L₁ L₂ : Stack.Memory.Layout} (h₁ : L₁.Valid w C) (h
 -- Doubling at every width of at least `2 * (log₂ n + 1)` bits, as one flat program.
 example : UniformComputableInPolyTime .standard (fun n => n + n) (fun _ n => [n]) id :=
   (Realizes.addWords (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding 0 0).uniformComputableInPolyTime
-    .exactStandard 0 (.const 3) 2 (by decide) (fun _ _ j => by fin_cases j; rfl)
+    .exactStandard 0 (.const 3) 2 (by decide) (inputAdmissible_of_widthIndependent _ _)
+    (fun _ _ j => by fin_cases j; rfl)
     fun n w hw _ => by
       have h2 : Fits w 2 := (show Fits 2 2 by decide).mono (le_trans (by simp [logWidth]) hw)
       have hn : Fits w (n + n) := (fits_of_lt_pow (k := 2) (n := n) (by nlinarith)).mono hw

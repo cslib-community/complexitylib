@@ -78,7 +78,7 @@ theorem getElem_wire (sites : List Point) (r : Route) (i : ℕ) (hi : i < r.leng
 theorem occurrence_edgeEndpoint {φ : CNF ℕ} {o : Occurrence ℕ}
     (ho : o ∈ Cslib.Logic.PL.occurrences φ) (side : Bool) :
     (SAT.incidenceGraph φ).edgeEndpoint ((Cslib.Logic.PL.occurrences φ).idxOf o) side =
-      if side then φ.distinctVars.length + o.1 else φ.distinctVars.idxOf o.2.2.1 := by
+      if side then φ.distinctVars.length + o.clause else φ.distinctVars.idxOf o.lit.1 := by
   unfold Graph.edgeEndpoint
   rw [List.getD_eq_getElem _ _ (occurrence_index_lt ho)]
   simp only [SAT.incidenceGraph, List.getElem_map,
@@ -118,13 +118,13 @@ theorem occurrencePath_crossing_straight {φ : CNF ℕ}
 /-- The initial source center is excluded from the actual selected crossing list. -/
 theorem source_center_not_crossing {φ : CNF ℕ} {o : Occurrence ℕ}
     (ho : o ∈ Cslib.Logic.PL.occurrences φ) :
-    Layout.center (φ.distinctVars.idxOf o.2.2.1) ∉ crossingSites φ := by
+    Layout.center (φ.distinctVars.idxOf o.lit.1) ∉ crossingSites φ := by
   intro hp
   have hvar := List.idxOf_lt_length_of_mem
     (CNF.mem_distinctVars.mpr (variable_mem_of_mem_occurrences ho))
   apply ((mem_crossingSites φ _).1 hp).2.1
   apply List.mem_map.mpr
-  refine ⟨φ.distinctVars.idxOf o.2.2.1, ?_, rfl⟩
+  refine ⟨φ.distinctVars.idxOf o.lit.1, ?_, rfl⟩
   apply List.mem_range.mpr
   simp only [SAT.incidenceGraph, List.length_range]
   omega
@@ -133,7 +133,7 @@ theorem source_center_not_crossing {φ : CNF ℕ} {o : Occurrence ℕ}
 theorem wire_first_entry {φ : CNF ℕ} {o : Occurrence ℕ}
     (ho : o ∈ Cslib.Logic.PL.occurrences φ) (fallback : Variable) :
     ((wire (crossingSites φ) (occurrencePath φ o)).headD (fallback, fallback)).1 =
-      (Layout.center (φ.distinctVars.idxOf o.2.2.1), none) := by
+      (Layout.center (φ.distinctVars.idxOf o.lit.1), none) := by
   have hlen := occurrencePath_length_ge_two ho
   have hwpos : 0 < (wire (crossingSites φ) (occurrencePath φ o)).length := by grind [length_wire]
   have hhead : (wire (crossingSites φ) (occurrencePath φ o)).headD (fallback, fallback) =
@@ -186,7 +186,7 @@ theorem shared_ordinary_cell_center {φ : CNF ℕ}
 /-- No retained wire cell is the clause-center endpoint removed by `dropLast`. -/
 theorem clause_center_not_mem_dropLast {φ : CNF ℕ} {o : Occurrence ℕ}
     (ho : o ∈ Cslib.Logic.PL.occurrences φ) :
-    Layout.center (φ.distinctVars.length + o.1) ∉ (occurrencePath φ o).dropLast := by
+    Layout.center (φ.distinctVars.length + o.clause) ∉ (occurrencePath φ o).dropLast := by
   intro hp
   obtain ⟨k, hk, heq⟩ := List.mem_iff_getElem.mp hp
   have hlen := occurrencePath_length_ge_two ho
@@ -205,7 +205,7 @@ theorem dropLast_center_eq_source {φ : CNF ℕ} {o : Occurrence ℕ}
     (ho : o ∈ Cslib.Logic.PL.occurrences φ) {p : Point}
     (hp : p ∈ (occurrencePath φ o).dropLast)
     (hc : p ∈ (SAT.incidenceGraph φ).orthogonalPositions) :
-    p = Layout.center (φ.distinctVars.idxOf o.2.2.1) := by
+    p = Layout.center (φ.distinctVars.idxOf o.lit.1) := by
   obtain ⟨w, hw, rfl⟩ := List.mem_map.mp hc
   have hw' := List.mem_range.mp hw
   have hwmem : w ∈ (SAT.incidenceGraph φ).vertices := by
@@ -230,7 +230,7 @@ theorem ordinary_cell_source_eq {φ : CNF ℕ}
     {o t : Occurrence ℕ} (ho : o ∈ Cslib.Logic.PL.occurrences φ)
     (ht : t ∈ Cslib.Logic.PL.occurrences φ) {p : Point} (hp : p ∉ crossingSites φ)
     (hpo : p ∈ (occurrencePath φ o).dropLast)
-    (hpt : p ∈ (occurrencePath φ t).dropLast) : o.2.2.1 = t.2.2.1 := by
+    (hpt : p ∈ (occurrencePath φ t).dropLast) : o.lit.1 = t.lit.1 := by
   by_cases hot : o = t
   · rw [hot]
   have hc := shared_ordinary_cell_center hw hv ho ht hot hp
@@ -239,11 +239,9 @@ theorem ordinary_cell_source_eq {φ : CNF ℕ}
     (dropLast_center_eq_source ht hpt hc)
   have hx := congrArg Prod.fst he
   simp only [Layout.center] at hx
-  have hi : φ.distinctVars.idxOf o.2.2.1 = φ.distinctVars.idxOf t.2.2.1 := by omega
+  have hi : φ.distinctVars.idxOf o.lit.1 = φ.distinctVars.idxOf t.lit.1 := by omega
   apply (List.idxOf_inj ?_).1 hi
-  apply CNF.mem_distinctVars.mpr
-  rw [← Cslib.Logic.PL.map_occurrences]
-  exact List.mem_map_of_mem ho
+  exact CNF.mem_distinctVars.mpr (Cslib.Logic.PL.variable_mem_of_mem_occurrences ho)
 
 /-- Two straight passages of a duplicate-free route through the same point are parallel. -/
 private theorem straight_parallel {r : Route} (hn : r.Nodup) {p d e : Point} (hp : p ∈ r)
@@ -286,11 +284,11 @@ theorem crossing_axis_occurrence_eq {φ : CNF ℕ}
 
 open Classical in
 private noncomputable def chosenValue (τ : ℕ → Bool) (P : Occurrence ℕ → Prop) : Bool :=
-  if h : ∃ o, P o then τ (Classical.choose h).2.2.1 else false
+  if h : ∃ o, P o then τ (Classical.choose h).lit.1 else false
 
 private theorem chosenValue_eq (τ : ℕ → Bool) (P : Occurrence ℕ → Prop)
-    {o : Occurrence ℕ} (ho : P o) (heq : ∀ t, P t → t.2.2.1 = o.2.2.1) :
-    chosenValue τ P = τ o.2.2.1 := by
+    {o : Occurrence ℕ} (ho : P o) (heq : ∀ t, P t → t.lit.1 = o.lit.1) :
+    chosenValue τ P = τ o.lit.1 := by
   classical
   have h : ∃ t, P t := ⟨o, ho⟩
   simp only [chosenValue, dite_eq_left h]
@@ -303,7 +301,7 @@ theorem exists_compatible_assignment {φ : CNF ℕ}
     ∃ σ : Variable → Bool,
       (∀ o ∈ Cslib.Logic.PL.occurrences φ,
         ∀ c ∈ wire (crossingSites φ) (occurrencePath φ o),
-          σ c.1 = τ o.2.2.1 ∧ σ c.2 = τ o.2.2.1) ∧
+          σ c.1 = τ o.lit.1 ∧ σ c.2 = τ o.lit.1) ∧
       (∀ p ∈ crossingSites φ, Crossover.splitFormula.eval (fun v => σ (p, some v)) = true) := by
   classical
   let ordinary (p : Point) := chosenValue τ (fun o =>
@@ -313,14 +311,14 @@ theorem exists_compatible_assignment {φ : CNF ℕ}
       StraightThrough (occurrencePath φ o) p d)
   have hord {o : Occurrence ℕ} (ho : o ∈ Cslib.Logic.PL.occurrences φ) {p : Point}
       (hp : p ∉ crossingSites φ) (hpo : p ∈ (occurrencePath φ o).dropLast) :
-      ordinary p = τ o.2.2.1 := by
+      ordinary p = τ o.lit.1 := by
     apply chosenValue_eq τ _ ⟨ho, hpo⟩
     intro t ht
     exact ordinary_cell_source_eq hw hv ht.1 ho hp ht.2 hpo
   have haxis {o : Occurrence ℕ} (ho : o ∈ Cslib.Logic.PL.occurrences φ) {p d : Point}
       (hp : p ∈ crossingSites φ) (hpo : p ∈ occurrencePath φ o)
       (hs : StraightThrough (occurrencePath φ o) p d) :
-      axis p d = τ o.2.2.1 := by
+      axis p d = τ o.lit.1 := by
     apply chosenValue_eq τ _ ⟨ho, hpo, hs⟩
     intro t ht
     rw [crossing_axis_occurrence_eq hw hv ht.1 ho hp ht.2.1 hpo ht.2.2 hs]

@@ -88,8 +88,8 @@ theorem identityTest_isPPT : (identityTest F).IsPPT := by
 theorem succProbability_ddhRealGame_identityTest (n : ℕ) :
     Game.succProbability (F.ddhRealGame (fun _ => PMF.pure d) (identityTest F) n) =
       (F.order d : ℝ≥0)⁻¹ := by
-  simp only [ddhRealGame, eval_ddhRealExperiment, identityTest, ProbComp.eval_pure,
-    PMF.monad_bind_eq_bind, PMF.pure_bind, smul_eq_zero, F.generator_ne_zero, or_false,
+  simp only [ddhRealGame, Game.withSetup_pure, eval_ddhRealExperiment, identityTest,
+    ProbComp.eval_pure, smul_eq_zero, F.generator_ne_zero, or_false,
     mul_eq_zero, ← Bool.decide_and, and_or_left, and_self, or_iff_left_of_imp And.left,
     PMF.bind_const]
   rw [Game.succProbability, PMF.bind_pure_decide_eq_apply_true', PMF.uniformOfFintype_apply,
@@ -99,8 +99,8 @@ theorem succProbability_ddhRealGame_identityTest (n : ℕ) :
 theorem succProbability_ddhRandomGame_identityTest (n : ℕ) :
     Game.succProbability (F.ddhRandomGame (fun _ => PMF.pure d) (identityTest F) n) =
       (F.order d : ℝ≥0)⁻¹ ^ 2 := by
-  simp only [ddhRandomGame, eval_ddhRandomExperiment, identityTest, ProbComp.eval_pure,
-    PMF.monad_bind_eq_bind, PMF.pure_bind, smul_eq_zero, F.generator_ne_zero, or_false,
+  simp only [ddhRandomGame, Game.withSetup_pure, eval_ddhRandomExperiment, identityTest,
+    ProbComp.eval_pure, smul_eq_zero, F.generator_ne_zero, or_false,
     PMF.bind_const]
   rw [Game.succProbability, ← ENNReal.toNNReal_natCast, ← ENNReal.toNNReal_inv,
     ← ENNReal.toNNReal_pow]
@@ -113,14 +113,13 @@ example (n : ℕ) :
     Game.succProbability (ProbComp.eval
       (ddhRealExperiment (F.order d) (F.generator d) (identityTest F n d))) =
       (F.order d : ℝ≥0)⁻¹ := by
-  simpa only [ddhRealGame, PMF.monad_bind_eq_bind, PMF.pure_bind] using
-    succProbability_ddhRealGame_identityTest F d n
+  simpa only [ddhRealGame, Game.withSetup_pure] using succProbability_ddhRealGame_identityTest F d n
 
 example (n : ℕ) :
     Game.succProbability (ProbComp.eval
       (ddhRandomExperiment (F.order d) (F.generator d) (identityTest F n d))) =
       (F.order d : ℝ≥0)⁻¹ ^ 2 := by
-  simpa only [ddhRandomGame, PMF.monad_bind_eq_bind, PMF.pure_bind] using
+  simpa only [ddhRandomGame, Game.withSetup_pure] using
     succProbability_ddhRandomGame_identityTest F d n
 
 /-- **DDH fails for a fixed group.** -/
@@ -203,7 +202,8 @@ theorem firstBitZero_isOraclePPT : IsOraclePPT encBool firstBitZero := by
 
 theorem eval_prfRealGame_firstBitZero (n : ℕ) :
     ProbComp.eval (prfRealGame zeroFamily firstBitZero (n + 1)) = PMF.pure true := by
-  simp only [prfRealGame, firstBitZero, zeroFamily, prfOracle, List.replicate_succ,
+  simp only [prfRealGame, ProbOracleComp.run, firstBitZero, zeroFamily, prfOracle,
+    List.replicate_succ,
     List.headD_eq_head?_getD, bind_pure_comp, Functor.map_map, OracleComp.interpret_map,
     ProbOracleComp.interpret_query, List.length_cons, List.length_replicate, ↓reduceIte, map_pure,
     ProbComp.eval_map, BitString.eval_sampleList]
@@ -211,7 +211,7 @@ theorem eval_prfRealGame_firstBitZero (n : ℕ) :
 
 theorem eval_prfIdealGame_firstBitZero (n : ℕ) :
     ProbComp.eval (prfIdealGame firstBitZero (n + 1)) = PMF.uniformOfFintype Bool := by
-  simp only [prfIdealGame, firstBitZero, randomFunctionOracle, List.ofFn_succ,
+  simp only [prfIdealGame, ProbOracleComp.run, firstBitZero, randomFunctionOracle, List.ofFn_succ,
     List.headD_eq_head?_getD, bind_pure_comp, Functor.map_map, OracleComp.interpret_map,
     ProbOracleComp.interpret_query, List.length_replicate, ↓reduceIte, map_pure,
     List.take_succ_cons, List.head?_cons, Option.getD_some, ProbComp.eval_map,
@@ -237,8 +237,7 @@ theorem not_pseudorandomFunction_zeroFamily : ¬ PseudorandomFunction zeroFamily
   have hshift : Negligible fun n => Game.advantage
       (ProbComp.eval (prfRealGame zeroFamily firstBitZero (n + 1)))
       (ProbComp.eval (prfIdealGame firstBitZero (n + 1))) :=
-    hneg.comp_of_polynomial_bound (bound := fun m => m) (Filter.tendsto_add_atTop_nat 1)
-      (by fun_prop) (Filter.Eventually.of_forall fun n => by lia)
+    hneg.shift 1
   simp only [eval_prfRealGame_firstBitZero, eval_prfIdealGame_firstBitZero] at hshift
   refine not_negligible_const ?_ hshift
   norm_num [Game.advantage, Game.succProbability, PMF.uniformOfFintype_apply,

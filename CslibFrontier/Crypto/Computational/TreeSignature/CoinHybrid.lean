@@ -7,8 +7,9 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Crypto.Computational.TreeSignature
 public import CslibFrontier.Crypto.Computational.PseudorandomFunction.Coins
+public import CslibFrontier.Crypto.Computational.Signature.Bridge
+public import CslibFrontier.Crypto.Computational.TreeSignature
 public import CslibFrontier.Languages.Probabilistic.Iteration
 public import Mathlib.Data.Nat.Pairing
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
@@ -23,6 +24,7 @@ import CslibFrontier.Computability.Probabilistic.Oracle.Substitution
 import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Crypto.Game.Order
 import CslibFrontier.Crypto.Negligible.Basic
+import CslibFrontier.Crypto.Negligible.Dyadic
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Languages.Probabilistic.Oracle.Support
@@ -36,8 +38,9 @@ The first step of the security proof of stateless tree signatures ([BonehShoup20
 Section 14.6.3, proof of Theorem 14.6, "we first replace the PRF `F` with a random function").
 The tree scheme over an indexed scheme `S` at parameter `n` draws its node coins from a
 pseudorandom function `F` keyed at `N n` bits (`prfCoins F`). The EUF-CMA game against it
-(`treeGame`, which is `eufCmaGame` of `TreeSignature.scheme` by definition) is compared with the
-same game where the coins come from a uniform random function on `N n` bits (`treeIdealGame`).
+(`treeGame`, the typed `eufCmaExperiment` of the certificate-free `treeScheme`, which has the law of
+`eufCmaGame` of `TreeSignature.scheme`) is compared with the same game where the coins come from a
+uniform random function on `N n` bits (`treeIdealGame`).
 
 The coin adversary `treeCoinAdversary` runs the forger inside `coinRealGame` and `coinIdealGame`:
 it derives the root key and every node key and signature by
@@ -50,9 +53,11 @@ budget together with a polynomial-time bounded-search left inverse (`coinParamIn
 
 ## Main definitions
 
+* `Cslib.Crypto.TreeSignature.treeScheme`: the typed tree scheme at `n` with a coin function and
+  a key distribution, without certificates.
 * `Cslib.Crypto.TreeSignature.treeGame`, `Cslib.Crypto.TreeSignature.treeGameWith`,
   `Cslib.Crypto.TreeSignature.tableCoins`, `Cslib.Crypto.TreeSignature.treeIdealGame`: the forging
-  games with pseudorandom and random coins.
+  experiments with pseudorandom and random coins.
 * `Cslib.Crypto.TreeSignature.coinRequest`, `Cslib.Crypto.TreeSignature.nodeKeyO`,
   `Cslib.Crypto.TreeSignature.signAtO`, `Cslib.Crypto.TreeSignature.certifyO`,
   `Cslib.Crypto.TreeSignature.signO`, `Cslib.Crypto.TreeSignature.simulateTreeGame`,
@@ -64,7 +69,7 @@ budget together with a polynomial-time bounded-search left inverse (`coinParamIn
 
 ## Main results
 
-* `Cslib.Crypto.TreeSignature.eufCmaGame_scheme`: the scheme's game is `treeGame`.
+* `Cslib.Crypto.TreeSignature.eufCmaGame_scheme`: the scheme's game has the law of `treeGame`.
 * `Cslib.Crypto.TreeSignature.evalDet_simulateTreeGame`: with deterministic coins (`evalDet`),
   the simulated game is the tree game under any secret (`treeGameWith`), which depends on the
   coins at that secret only (`treeGameWith_congr`).
@@ -100,31 +105,25 @@ variable (S : IndexedSignatureScheme) (T : S.Seeded) (depth keyLen : ℕ → ℕ
 
 /-! ### The forging games -/
 
-/-- The EUF-CMA game of the tree algorithms with a coin function: `SignatureScheme.eufCmaGame`
-of `scheme`, stated without certificates so that random coins may be substituted. -/
+/-- The tree algorithms with the coin function `coins` at parameter `n`, keys drawn from `keys`
+and verification restricted to `n`-bit messages: the typed scheme of `TreeSignature.scheme` at
+`n`, stated without certificates so that random coins may be substituted. -/
+@[expose] noncomputable def treeScheme (coins : List Bool → List Bool → ℕ → List Bool) (n : ℕ)
+    (keys : ProbComp (List Bool × List Bool)) :
+    Signature.Scheme (List Bool) (List Bool) (List Bool) (List Bool) :=
+  Signature.Scheme.restrict ⟨keys, sign S T coins depth, verify S depth⟩ (·.length == n)
+
+/-- The EUF-CMA experiment of the tree scheme with a coin function, played by the word forger at
+`n`. -/
 @[expose] noncomputable def treeGame (coins : List Bool → List Bool → ℕ → List Bool)
-    (adversary : Forger) (n : ℕ) : ProbComp Bool := do
-  let keys ← keyGen S T coins keyLen n
-  let out ← (OracleComp.interpret
-    (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
-      (fun request queried => do
-        let sig ← sign S T coins depth keys.2 request.2
-        return (sig, request.2 :: queried))) (adversary n keys.1)).run []
-  let msig := out.1
-  return (msig.1.length == n) && !out.2.contains msig.1 &&
-    verify S depth keys.1 msig.1 msig.2
+    (adversary : Forger) (n : ℕ) : Experiment :=
+  (treeScheme S T depth coins n (keyGen S T coins keyLen n)).eufCmaExperiment (adversary.toTyped n)
 
 /-- The tree game with a fixed secret `k`. -/
 @[expose] noncomputable def treeGameWith (coins : List Bool → List Bool → ℕ → List Bool)
-    (k : List Bool) (adversary : Forger) (n : ℕ) : ProbComp Bool := do
-  let pk := encPair encUnary encBits (n, (nodeKey S T coins n k []).1)
-  let out ← (OracleComp.interpret
-    (OracleComp.sumHandler (fun k => StateT.lift (ProbComp.unifFin k))
-      (fun request queried => do
-        let sig ← sign S T coins depth (encPair encUnary encBits (n, k)) request.2
-        return (sig, request.2 :: queried))) (adversary n pk)).run []
-  let msig := out.1
-  return (msig.1.length == n) && !out.2.contains msig.1 && verify S depth pk msig.1 msig.2
+    (k : List Bool) (adversary : Forger) (n : ℕ) : Experiment :=
+  (treeScheme S T depth coins n (pure (encPair encUnary encBits (n, (nodeKey S T coins n k []).1),
+    encPair encUnary encBits (n, k)))).eufCmaExperiment (adversary.toTyped n)
 
 /-- The tree game samples the secret and plays `treeGameWith`. -/
 theorem eval_treeGame (coins : List Bool → List Bool → ℕ → List Bool) (adversary : Forger)
@@ -132,7 +131,8 @@ theorem eval_treeGame (coins : List Bool → List Bool → ℕ → List Bool) (a
     ProbComp.eval (treeGame S T depth keyLen coins adversary n) =
       (BitString.uniformList (keyLen n)).bind fun k =>
         ProbComp.eval (treeGameWith S T depth coins k adversary n) := by
-  simp only [pmf_norm, treeGame, treeGameWith, keyGen, BitString.eval_sampleList]
+  simp only [pmf_norm, treeGame, treeGameWith, treeScheme, Signature.Scheme.restrict, keyGen,
+    forgeExperiment, BitString.eval_sampleList]
 
 /-- The scheme's EUF-CMA game is `treeGame`. -/
 theorem eufCmaGame_scheme {coins : List Bool → List Bool → ℕ → List Bool}
@@ -142,8 +142,11 @@ theorem eufCmaGame_scheme {coins : List Bool → List Bool → ℕ → List Bool
     (hkeyLen : ComputableInPolyTime keyLen encUnary encUnary)
     (hdepth : ComputableInPolyTime depth encUnary encUnary)
     (hcap : ∀ n, 2 ≤ S.capacity n) (hdepth_pos : ∀ n, 1 ≤ depth n) (adversary : Forger) (n : ℕ) :
-    (scheme S T coins keyLen depth hcoins hkeyLen hdepth hcap hdepth_pos).eufCmaGame adversary n =
-      treeGame S T depth keyLen coins adversary n := rfl
+    ProbComp.eval
+        ((scheme S T coins keyLen depth hcoins hkeyLen hdepth hcap hdepth_pos).eufCmaGame
+          adversary n) =
+      ProbComp.eval (treeGame S T depth keyLen coins adversary n) :=
+  SignatureScheme.eufCmaGame_eq_eufCmaExperiment _ adversary n
 
 /-- Coins read from a random function on `N` bits at the padded request, ignoring the key. -/
 @[expose] def tableCoins (N : ℕ) (table : BitString N → BitString N) (_k x : List Bool) (L : ℕ) :
@@ -346,7 +349,8 @@ include hc in
 theorem evalDet_simulateTreeGame (adversary : Forger) (n : ℕ) (k : List Bool) :
     evalDet c (simulateTreeGame S T depth adversary n) =
       ProbComp.eval (treeGameWith S T depth (coinsOf c) k adversary n) := by
-  simp only [pmf_norm, simulateTreeGame, treeGameWith, evalDet_bind, evalDet_pure,
+  rw [treeGameWith, treeScheme, Forger.eval_eufCmaExperiment_restrict_toTyped]
+  simp only [pmf_norm, simulateTreeGame, evalDet_bind, evalDet_pure,
     evalDet_nodeKeyO hc n k, ProbOracleComp.eval_run_interpret]
   refine congrArg (fun p => PMF.bind p _) ?_
   rw [evalDet, OracleComp.map_run_interpret (OracleComp.isMonadHom_evalWith
@@ -403,8 +407,16 @@ theorem sign_congr (n : ℕ) (msg : List Bool) :
 include h in
 /-- The tree game under a secret depends on the coins at that secret only. -/
 theorem treeGameWith_congr (adversary : Forger) (n : ℕ) :
-    treeGameWith S T depth coins k adversary n = treeGameWith S T depth coins' k' adversary n := by
-  simp only [treeGameWith, nodeKey_congr h, sign_congr h]
+    ProbComp.eval (treeGameWith S T depth coins k adversary n) =
+      ProbComp.eval (treeGameWith S T depth coins' k' adversary n) := by
+  have horacle :
+      SignatureScheme.signingOracleOf (sign S T coins depth) (encPair encUnary encBits (n, k)) =
+        SignatureScheme.signingOracleOf (sign S T coins' depth)
+          (encPair encUnary encBits (n, k')) := by
+    funext request queried
+    simp only [SignatureScheme.signingOracleOf, sign_congr h]
+  simp only [treeGameWith, treeScheme, Forger.eval_eufCmaExperiment_restrict_toTyped, pure_bind,
+    nodeKey_congr h, horacle]
 
 omit h in
 /-- Since `tableCoins` ignores the secret key, `treeGame` with `tableCoins` has the same law as
@@ -414,9 +426,9 @@ theorem eval_treeGame_tableCoins (keyLen : ℕ → ℕ) (M : ℕ) (table : BitSt
     ProbComp.eval (treeGame S T depth keyLen (tableCoins M table) adversary n) =
       ProbComp.eval (treeGameWith S T depth (tableCoins M table) [] adversary n) := by
   rw [eval_treeGame]
-  refine (congrArg (PMF.bind _) (funext fun k => congrArg ProbComp.eval
-    (treeGameWith_congr (coins := tableCoins M table) (coins' := tableCoins M table)
-      (k := k) (k' := []) (fun _ _ => rfl) adversary n))).trans (PMF.bind_const _ _)
+  refine (congrArg (PMF.bind _) (funext fun k =>
+    treeGameWith_congr (coins := tableCoins M table) (coins' := tableCoins M table)
+      (k := k) (k' := []) (fun _ _ => rfl) adversary n)).trans (PMF.bind_const _ _)
 
 end Congr
 
@@ -449,7 +461,7 @@ coins `prfCoins family`. -/
 theorem eval_coinRealGame_treeCoinAdversary (adversary : Forger) (n : ℕ) :
     ProbComp.eval (coinRealGame family (treeCoinAdversary S T depth N inv adversary) (N n)) =
       ProbComp.eval (treeGame S T depth N (prfCoins family) adversary n) := by
-  simp only [coinRealGame, ProbComp.eval_bind, BitString.eval_sampleList,
+  simp only [coinRealGame, ProbOracleComp.run, ProbComp.eval_bind, BitString.eval_sampleList,
     treeCoinAdversary_apply hinv adversary, eval_interpret_eq_evalDet, eval_treeGame]
   refine PMF.bind_congr_on_support _ _ _ fun key _ => ?_
   have hc : ∀ x L, (coinOracle family key (encPair encBits encUnary (x, L))).length ≤ L := by
@@ -457,7 +469,7 @@ theorem eval_coinRealGame_treeCoinAdversary (adversary : Forger) (n : ℕ) :
     simp only [coinOracle, coinRequestDecoder.decode_enc, prfCoins]
     exact List.length_take_le _ _
   rw [evalDet_simulateTreeGame hc adversary n key]
-  refine congrArg ProbComp.eval (treeGameWith_congr (fun x L => ?_) adversary n)
+  refine treeGameWith_congr (fun x L => ?_) adversary n
   simp only [coinsOf, coinOracle, coinRequestDecoder.decode_enc]
 
 include hinv in
@@ -466,7 +478,7 @@ coins from a uniform random function on `N n` bits. -/
 theorem eval_coinIdealGame_treeCoinAdversary (adversary : Forger) (n : ℕ) :
     ProbComp.eval (coinIdealGame (treeCoinAdversary S T depth N inv adversary) (N n)) =
       ProbComp.eval (treeIdealGame S T depth N adversary n) := by
-  simp only [coinIdealGame, treeIdealGame, ProbComp.eval_bind,
+  simp only [coinIdealGame, ProbOracleComp.run, treeIdealGame, ProbComp.eval_bind,
     treeCoinAdversary_apply hinv adversary, eval_interpret_eq_evalDet]
   refine PMF.bind_congr_on_support _ _ _ fun table _ => ?_
   have hc : ∀ x L, (randomCoinOracle (N n) table (encPair encBits encUnary (x, L))).length ≤ L := by
@@ -516,7 +528,6 @@ theorem succProbability_treeGame_le_prf (adversary : Forger) (n : ℕ) :
   rw [← eval_coinRealGame, ← eval_coinIdealGame]
   exact succProbability_treeGame_le family hinv adversary n
 
-open Filter in
 omit hinv in
 /-- The coin-game advantage of the coin adversary, read at `N n`, is negligible in `n` for a
 pseudorandom function, an oracle-PPT coin adversary and `n ≤ N n`. -/
@@ -525,13 +536,8 @@ theorem negligible_advantage_treeCoinAdversary (hF : PseudorandomFunction family
     (hB : IsOraclePPT encBool (treeCoinAdversary S T depth N inv adversary)) :
     Negligible (fun n => Game.advantage
       (ProbComp.eval (coinRealGame family (treeCoinAdversary S T depth N inv adversary) (N n)))
-      (ProbComp.eval (coinIdealGame (treeCoinAdversary S T depth N inv adversary) (N n)))) := by
-  refine negligible_of_le
-    ((hF.coinIndistinguishable _ hB).comp_of_polynomial_bound
-      (tendsto_atTop_mono hN tendsto_id) (bound := id)
-      PolynomiallyBounded.id (Eventually.of_forall hN)) fun _ => ?_
-  dsimp only [Function.comp_apply]
-  exact le_rfl
+      (ProbComp.eval (coinIdealGame (treeCoinAdversary S T depth N inv adversary) (N n)))) :=
+  (hF.coinIndistinguishable _ hB).comp_polynomiallyLowerBounded (.mono_of_le .id hN)
 
 end Bound
 

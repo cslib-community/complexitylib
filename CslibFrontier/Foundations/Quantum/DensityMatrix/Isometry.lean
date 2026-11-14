@@ -122,7 +122,6 @@ theorem densityConj_kronecker_pureState [Fintype κ] [DecidableEq ι] [Decidable
   simpa only [Matrix.one_mulVec] using
     congrFun (kronecker_mulVec_mul V (1 : Matrix κ κ ℂ) ψ.ofLp φ.ofLp) p
 
-
 /-- Applying a rectangular isometry to the first system leaves the reference marginal unchanged.
 The input may be mixed or entangled, and need not even be normalized for this identity. -/
 theorem partialTraceLeft_densityConj_kronecker [Fintype ι'] [Fintype κ]

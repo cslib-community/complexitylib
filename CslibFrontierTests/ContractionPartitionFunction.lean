@@ -25,7 +25,7 @@ def edges₃ : List (ℕ × ℕ) := [(0, 1), (1, 2)]
 /-- The hard-core instance of the path `0 - 1 - 2`. -/
 def path₃ : CSP Bool ℕ := CSP.hardCore 3 edges₃
 
-example : path₃ = [(false, [0]), (false, [1]), (false, [2]), (true, [0, 1]), (true, [1, 2])] := by
+example : path₃ = [⟨false, [0]⟩, ⟨false, [1]⟩, ⟨false, [2]⟩, ⟨true, [0, 1]⟩, ⟨true, [1, 2]⟩] := by
   decide
 
 -- The path has five independent sets: `∅, {0}, {1}, {2}, {0, 2}`.
@@ -67,7 +67,7 @@ example : ExplicitAdmissible (2 + 4) 21 (cspNetwork 2 (CSP.hardCoreWeight 1) pat
   explicitAdmissible_cspNetwork (F := path₃) (by decide)
 
 -- The guard rejects the empty instance, an empty scope and a scope too wide.
-example : guard 2 ([] : CSP Bool ℕ) = false ∧ guard 2 [(false, [0]), (true, [])] = false ∧
+example : guard 2 ([] : CSP Bool ℕ) = false ∧ guard 2 [⟨false, [0]⟩, ⟨true, []⟩] = false ∧
     guard 1 path₃ = false := by decide
 
 -- The machine's value is the partition function on `path₃` and on the empty instance.
@@ -79,7 +79,7 @@ example : count 2 1 (CSP.hardCoreWeight 1) ([] : CSP Bool ℕ) = 1 := by decide
 
 -- The counter for the hard-core language on bounded-degree instances.
 example : ∃ (count : CSP Bool ℕ → ℕ) (T S : CSP Bool ℕ → ℕ) (e b : ℕ),
-    (∀ F : CSP Bool ℕ, (∀ c ∈ F, 1 ≤ c.2.length ∧ c.2.length ≤ 2) →
+    (∀ F : CSP Bool ℕ, (∀ c ∈ F, 1 ≤ c.scope.length ∧ c.scope.length ≤ 2) →
       count F = F.partitionFunction (CSP.hardCoreWeight 1)) ∧
     Turing.MultiTapeTM.ComputableInO count (encCSP Turing.MultiTapeTM.encBool
       Turing.MultiTapeTM.encNat) Turing.MultiTapeTM.encNat T S ∧
@@ -118,7 +118,7 @@ def exactlyOne (_ : Unit) (w : List Bool) : ℕ := if w.count true = 1 then 1 el
 
 /-- The 4-cycle `a - b - c - d - a` as a Holant instance: the variables are its edges `ab = 0`,
 `bc = 1`, `cd = 2`, `da = 3`, and every vertex has an exactly-one constraint on its two edges. -/
-def cycle₄ : CSP Unit ℕ := [((), [3, 0]), ((), [0, 1]), ((), [1, 2]), ((), [2, 3])]
+def cycle₄ : CSP Unit ℕ := [⟨(), [3, 0]⟩, ⟨(), [0, 1]⟩, ⟨(), [1, 2]⟩, ⟨(), [2, 3]⟩]
 
 -- The 4-cycle has two perfect matchings, `{ab, cd}` and `{bc, da}`.
 example : cycle₄.partitionFunction exactlyOne = 2 := by decide

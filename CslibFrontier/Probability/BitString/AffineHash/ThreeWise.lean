@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Foundations.Data.BitString.List.Operations
+public import CslibFrontier.Foundations.Data.BitString.List.Dot
 public import CslibFrontier.Probability.BitString.AffineHash
 public import CslibFrontier.Probability.BitString.AffineHash.Word
 public import CslibFrontier.Probability.KWiseIndependent
@@ -522,7 +523,7 @@ theorem toReal_map_adjustAffineSeed_eq {k n : ℕ} (r : ℕ)
   let matBits := seed.take (k * n)
   let adjRows := (List.range k).map fun i =>
     let row := listRow n i matBits
-    let dot := (row.zipWith Bool.and diff).foldl Bool.xor false
+    let dot := listDot row diff
     if decide (i < r) && dot then listXor n [row, mask] else row
   adjRows.flatten ++ listRow k 0 (seed.drop (k * n))
 
@@ -541,7 +542,7 @@ theorem wordAdjustAffineSeed_eq_packAffineSeed (k n r : ℕ) (y y₀ seed : List
       let diff := listXor n [y, y₀]
       let mask := listSingle n (diff.idxOf true)
       let row := listRow n i (seed.take (k * n))
-      let dot := (row.zipWith Bool.and diff).foldl Bool.xor false
+      let dot := listDot row diff
       if decide (i < r) && dot then listXor n [row, mask] else row) =
       List.ofFn (fun i : Fin k =>
         List.ofFn (if i.val < r then adjustRow δ (s.1 i) else s.1 i)) := by
@@ -555,11 +556,11 @@ theorem wordAdjustAffineSeed_eq_packAffineSeed (k n r : ℕ) (y y₀ seed : List
     change (let diff := listXor n [y, y₀]
       let mask := listSingle n (diff.idxOf true)
       let row := listRow n idx.val (seed.take (k * n))
-      let dot := (row.zipWith Bool.and diff).foldl Bool.xor false
+      let dot := listDot row diff
       if decide (idx.val < r) && dot then listXor n [row, mask] else row) =
       List.ofFn (if idx.val < r then adjustRow δ (s.1 idx) else s.1 idx)
     dsimp only
-    rw [hrow, hmask, hdiff, ← dotProduct_eq_foldl]
+    rw [hrow, hmask, hdiff, listDot_ofFn]
     by_cases hir : idx.val < r
     · simp only [hir, decide_true, Bool.true_and, ↓reduceIte, adjustRow,
         AddMonoidHom.coe_mk, ZeroHom.coe_mk]

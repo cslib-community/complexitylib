@@ -93,8 +93,8 @@ def sparseSlots (φ : CNF ℕ) (i : ℕ) : ℕ :=
 goes through the node of clause `j` across its slot in the row of `x`, in the direction `b`. -/
 def sparseDetours (φ : CNF ℕ) : List Detour :=
   (occurrences φ).zipIdx.map fun o =>
-    ⟨o.1.1, φ.distinctVars.idxOf o.1.2.2.1,
-      (occurrencePositions φ o.1.2.2.1).idxOf o.2, o.1.2.2.2⟩
+    ⟨o.1.clause, φ.distinctVars.idxOf o.1.lit.1,
+      (occurrencePositions φ o.1.lit.1).idxOf o.2, o.1.lit.2⟩
 
 /-- The diamond graph with one diamond for each distinct variable of `φ` and a slot for each
 occurrence. -/
@@ -121,11 +121,6 @@ section Correctness
 
 variable {φ : CNF ℕ}
 
-private theorem mem_vars_of_mem_occurrences {o : Occurrence ℕ} (ho : o ∈ occurrences φ) :
-    o.2.2.1 ∈ φ.vars := by
-  rw [← map_occurrences]
-  exact List.mem_map_of_mem ho
-
 private theorem mem_occurrencePositions {x q : ℕ} :
     q ∈ occurrencePositions φ x ↔ q < φ.vars.length ∧ φ.vars.getD q 0 = x := by
   simp [occurrencePositions]
@@ -133,8 +128,8 @@ private theorem mem_occurrencePositions {x q : ℕ} :
 /-- The detours come from occurrences, numbered by their positions. -/
 private theorem mem_sparseDetours {d : Detour} :
     d ∈ sparseDetours φ ↔ ∃ o p, (occurrences φ)[p]? = some o ∧
-      d = ⟨o.1, φ.distinctVars.idxOf o.2.2.1, (occurrencePositions φ o.2.2.1).idxOf p,
-        o.2.2.2⟩ := by
+      d = ⟨o.clause, φ.distinctVars.idxOf o.lit.1, (occurrencePositions φ o.lit.1).idxOf p,
+        o.lit.2⟩ := by
   simp only [sparseDetours, List.mem_map]
   constructor
   · rintro ⟨⟨o, p⟩, h, rfl⟩
@@ -144,7 +139,7 @@ private theorem mem_sparseDetours {d : Detour} :
 
 /-- The position of an occurrence is a position of its variable. -/
 private theorem mem_occurrencePositions_of_getElem? {o : Occurrence ℕ} {p : ℕ}
-    (h : (occurrences φ)[p]? = some o) : p ∈ occurrencePositions φ o.2.2.1 := by
+    (h : (occurrences φ)[p]? = some o) : p ∈ occurrencePositions φ o.lit.1 := by
   have hp := (List.getElem?_eq_some_iff.1 h).1
   have hlen := length_occurrences φ
   rw [mem_occurrencePositions]
@@ -161,19 +156,19 @@ theorem wellFormed_sparseDetours :
   row_lt d hd := by
     obtain ⟨o, p, h, rfl⟩ := mem_sparseDetours.1 hd
     exact List.idxOf_lt_length_iff.2
-      (CNF.mem_distinctVars.2 (mem_vars_of_mem_occurrences (List.mem_of_getElem? h)))
+      (CNF.mem_distinctVars.2 (variable_mem_of_mem_occurrences (List.mem_of_getElem? h)))
   slot_lt d hd := by
     obtain ⟨o, p, h, rfl⟩ := mem_sparseDetours.1 hd
     simp only [sparseSlots]
     rw [List.getD_idxOf (CNF.mem_distinctVars.2
-      (mem_vars_of_mem_occurrences (List.mem_of_getElem? h))) 0]
+      (variable_mem_of_mem_occurrences (List.mem_of_getElem? h))) 0]
     exact List.idxOf_lt_length_iff.2 (mem_occurrencePositions_of_getElem? h)
   clause_eq d hd d' hd' hrow hslot := by
     obtain ⟨o, p, h, rfl⟩ := mem_sparseDetours.1 hd
     obtain ⟨o', p', h', rfl⟩ := mem_sparseDetours.1 hd'
     simp only at hrow hslot ⊢
     rw [List.idxOf_inj (CNF.mem_distinctVars.2
-      (mem_vars_of_mem_occurrences (List.mem_of_getElem? h)))] at hrow
+      (variable_mem_of_mem_occurrences (List.mem_of_getElem? h)))] at hrow
     rw [hrow, List.idxOf_inj (hrow ▸ mem_occurrencePositions_of_getElem? h)] at hslot
     rw [hslot, h'] at h
     rw [Option.some_injective _ h]
@@ -192,17 +187,17 @@ theorem satisfiable_sparseDetours_iff :
     simp only at hdj hdd
     subst hdj
     rw [Clause.eval_eq_true_iff]
-    exact ⟨o.2.2, by rw [hl]; exact List.getElem_mem hk, hdd⟩
+    exact ⟨o.lit, by rw [hl]; exact List.getElem_mem hk, hdd⟩
   · rintro ⟨σ, hσ⟩
     refine ⟨fun i => σ (φ.distinctVars.getD i 0), fun j hj => ?_⟩
     obtain ⟨l, hl, hσl⟩ := (Clause.eval_eq_true_iff _ _).1
       ((CNF.eval_eq_true_iff _ _).1 hσ φ[j] (List.getElem_mem hj))
     obtain ⟨k, hk, rfl⟩ := List.getElem_of_mem hl
-    have ho : ((j, k, φ[j][k]) : Occurrence ℕ) ∈ occurrences φ := mem_occurrences.2 ⟨hj, hk, rfl⟩
+    have ho : (⟨j, k, φ[j][k]⟩ : Occurrence ℕ) ∈ occurrences φ := mem_occurrences.2 ⟨hj, hk, rfl⟩
     obtain ⟨p, hp⟩ := List.mem_iff_getElem?.1 ho
     refine ⟨_, mem_sparseDetours.2 ⟨_, p, hp, rfl⟩, rfl, ?_⟩
     simp only
-    rw [List.getD_idxOf (CNF.mem_distinctVars.2 (mem_vars_of_mem_occurrences ho)) 0]
+    rw [List.getD_idxOf (CNF.mem_distinctVars.2 (variable_mem_of_mem_occurrences ho)) 0]
     exact hσl
 
 end Correctness
@@ -324,7 +319,6 @@ theorem computableInPolyTime_sparseDetours :
   have hdv := computableInPolyTime_distinctVars
   have hpos := computableInPolyTime_occurrencePositions
   have hocc := computableInPolyTime_occurrences
-  unfold encOccurrence Cslib.Logic.PL.encOccurrence at hocc
   unfold sparseDetours
   fun_prop
 

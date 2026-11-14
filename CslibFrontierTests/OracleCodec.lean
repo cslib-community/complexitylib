@@ -28,7 +28,11 @@ example (calls : ℕ) :
   rw [OracleCodec.runWith_adapt]
   simp only [ProbOracleComp.runWith, OracleComp.runWith, wordAdversary, OracleComp.interpret_bind,
     ProbOracleComp.interpret_query, StateT.run_bind, OracleComp.interpret_pure, StateT.run_pure]
-  simp [OracleCodec.wordOracle, OracleCodec.bitString, StateT.run_pure, StateT.run_map]
+  simp only [OracleCodec.wordOracle, OracleCodec.bitString, List.ofFn_succ, Fin.isValue,
+    Fin.succ_zero_eq_one, List.ofFn_zero, List.length_cons, List.length_nil, zero_add,
+    OfNat.one_ne_ofNat, ↓reduceIte, StateT.run_pure, Probability.PMF.monad_pure_eq_pure,
+    Nat.reduceAdd, Function.Embedding.coeFn_mk, StateT.run_map, PMF.monad_map_eq_map,
+    Probability.PMF.monad_bind_eq_bind, PMF.bind_map, PMF.pure_bind]
   simp [echo, StateT.run, BitString.ofList]
 
 -- Adapting removes the malformed request from the program itself.

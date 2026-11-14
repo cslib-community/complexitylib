@@ -67,7 +67,8 @@ headline theorem. -/
 example : Turing.MultiTapeTM.ComputableInPolyTime List.length (encList encNat) encNat :=
   UniformComputableInPolyTime.turingComputableInPolyTime checkedOp_polyTime
     (UniformComputableInPolyTime.of_program lengthProgram (T := fun _ => 2) (.const 2) 1
-      one_pos (lengthProgram_computesInTime.mono (fun _ _ => le_rfl) fun _ _ _ => trivial))
+      one_pos (inputAdmissible_of_widthIndependent _ _)
+      (lengthProgram_computesInTime.mono (fun _ _ => le_rfl) fun _ _ _ => trivial))
     (PolyBounded.self.mono fun l => length_le_length_encList encNat l) (.id' (encIn := _))
 
 /-- The same function through an explicit width schedule: the encoded input length, computed by

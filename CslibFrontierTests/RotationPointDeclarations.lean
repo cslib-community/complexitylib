@@ -51,22 +51,23 @@ example : verifyGenusZero ⟨[0, 8, 8], [(0, 0), (0, 0)]⟩ ⟨[2, 3, 1, 0]⟩ =
 example : verifyGenusZero ⟨[5, 5, 2 ^ 250], []⟩ ⟨[]⟩ = true ∧
     verifyGenusZero ⟨[], []⟩ ⟨[]⟩ = true := by decide +kernel
 
-private abbrev body : CSP Bool ℕ := [(true, [7, 7]), (false, [])]
+private abbrev body : CSP Bool ℕ := [⟨true, [7, 7]⟩, ⟨false, []⟩]
 
-example : CSP.verifyRotationCertificate (body ++ [(false, [])]) ⟨[2, 3, 0, 1]⟩ = true := by
+example :
+    CSP.verifyRotationCertificate (body ++ [Constraint.mk false []]) ⟨[2, 3, 0, 1]⟩ = true := by
   rw [CSP.verifyRotationCertificate_append_nullary]
   decide +kernel
 
 -- The relation tags may collapse. Constraint occurrences, including duplicates, do not.
-private abbrev reversed : CSP Bool ℕ := [(true, [7, 9, 11]), (false, [7, 11, 9])]
-private abbrev sameOrder : CSP Bool ℕ := [(true, [7, 9, 11]), (false, [7, 9, 11])]
+private abbrev reversed : CSP Bool ℕ := [⟨true, [7, 9, 11]⟩, ⟨false, [7, 11, 9]⟩]
+private abbrev sameOrder : CSP Bool ℕ := [⟨true, [7, 9, 11]⟩, ⟨false, [7, 9, 11]⟩]
 
-example : CSP.verifyRotationCertificate (reversed.map fun (_r, scope) => ((), scope))
+example : CSP.verifyRotationCertificate (reversed.map fun c => ⟨(), c.scope⟩)
     ⟨[6, 3, 10, 5, 8, 1, 0, 9, 4, 11, 2, 7]⟩ = true := by
   rw [CSP.verifyRotationCertificate_mapRelation reversed (fun _ => ())]
   decide +kernel
 
-example : CSP.verifyRotationCertificate (sameOrder.map fun (_r, scope) => ((), scope))
+example : CSP.verifyRotationCertificate (sameOrder.map fun c => ⟨(), c.scope⟩)
     ⟨[6, 3, 8, 5, 10, 1, 0, 9, 2, 11, 4, 7]⟩ = false := by
   rw [CSP.verifyRotationCertificate_mapRelation sameOrder (fun _ => ())]
   decide +kernel

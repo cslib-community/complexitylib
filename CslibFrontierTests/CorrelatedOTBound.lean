@@ -961,15 +961,10 @@ example {τ : Type} (p : Communication.Protocol (Fin 4 × Fin 4) (Fin 4) τ)
     (outB : Fin 4 × Fin p.leafCount → Fin 2 → Bool × Bool)
     (hCorr : ∀ a b j, (a, b) ∈ deal211.support →
       (outB (b, p.leaf a b) j).2 = otSelect (outA (a, p.leaf a b) j) (outB (b, p.leaf a b) j).1)
-    (hPrivA : PMF.map (fun q => ((outA (q.1, q.2.2), q.2.2), rotChoices (outB (q.2.1, q.2.2))))
-        (p.transcriptLaw deal211) =
-      (PMF.map (fun q => (outA (q.1, q.2.2), q.2.2)) (p.transcriptLaw deal211)).bind fun st =>
-        PMF.map (fun x => (st, x)) (PMF.uniformOfFintype (Fin 2 → Bool)))
-    (hPrivB : PMF.map (fun q => ((q.2.2, outB (q.2.1, q.2.2)),
-          rotUnselected (outA (q.1, q.2.2)) (outB (q.2.1, q.2.2))))
-        (p.transcriptLaw deal211) =
-      (PMF.map (fun q => (q.2.2, outB (q.2.1, q.2.2))) (p.transcriptLaw deal211)).bind fun tr =>
-        PMF.map (fun x => (tr, x)) (PMF.uniformOfFintype (Fin 2 → Bool))) :
+    (hPrivA : IndepUniform (p.transcriptLaw deal211) (fun (x, _, t) => (outA (x, t), t))
+      (fun (_, y, t) => rotChoices (outB (y, t))))
+    (hPrivB : IndepUniform (p.transcriptLaw deal211) (fun (_, y, t) => (t, outB (y, t)))
+      (fun (x, y, t) => rotUnselected (outA (x, t)) (outB (y, t)))) :
     False := by
   have hle := commProtocol_rot_le_one_of_deal211 p outA outB hCorr hPrivA hPrivB
   omega
@@ -985,19 +980,13 @@ example {a b : ℕ} {τ : Type}
       (outB (v, Communication.Protocol.leaf p u v) j).2 =
         otSelect (outA (u, Communication.Protocol.leaf p u v) j)
           (outB (v, Communication.Protocol.leaf p u v) j).1)
-    (hPrivA : PMF.map (fun q => ((outA (q.1, q.2.2), q.2.2), rotChoices (outB (q.2.1, q.2.2))))
-        (Communication.Protocol.transcriptLaw p (Communication.PrivateCoin.inputLaw a b deal211)) =
-      (PMF.map (fun q => (outA (q.1, q.2.2), q.2.2))
-          (Communication.Protocol.transcriptLaw p
-            (Communication.PrivateCoin.inputLaw a b deal211))).bind
-        fun st => PMF.map (fun x => (st, x)) (PMF.uniformOfFintype (Fin 2 → Bool)))
-    (hPrivB : PMF.map (fun q => ((q.2.2, outB (q.2.1, q.2.2)),
-          rotUnselected (outA (q.1, q.2.2)) (outB (q.2.1, q.2.2))))
-        (Communication.Protocol.transcriptLaw p (Communication.PrivateCoin.inputLaw a b deal211)) =
-      (PMF.map (fun q => (q.2.2, outB (q.2.1, q.2.2)))
-          (Communication.Protocol.transcriptLaw p
-            (Communication.PrivateCoin.inputLaw a b deal211))).bind
-        fun tr => PMF.map (fun x => (tr, x)) (PMF.uniformOfFintype (Fin 2 → Bool))) :
+    (hPrivA : IndepUniform
+      (Communication.Protocol.transcriptLaw p (Communication.PrivateCoin.inputLaw a b deal211))
+      (fun (x, _, t) => (outA (x, t), t)) (fun (_, y, t) => rotChoices (outB (y, t))))
+    (hPrivB : IndepUniform
+      (Communication.Protocol.transcriptLaw p (Communication.PrivateCoin.inputLaw a b deal211))
+      (fun (_, y, t) => (t, outB (y, t)))
+      (fun (x, y, t) => rotUnselected (outA (x, t)) (outB (y, t)))) :
     False := by
   have hle := privateCoin_rot_le_one_of_deal211 p outA outB hCorr hPrivA hPrivB
   omega
@@ -1256,13 +1245,11 @@ private theorem mem_pair_flip (b x y : Fin 4) :
   simp_all
 
 private theorem pairTree_alice_private :
-    PMF.map (fun q => ((pairOutA (q.1, q.2.2), q.2.2), rotChoices (pairOutB (q.2.1, q.2.2))))
-        (Communication.Protocol.transcriptLaw pairTree
-          (Communication.PrivateCoin.inputLaw 1 0 deal211)) =
-      (PMF.map (fun q => (pairOutA (q.1, q.2.2), q.2.2))
-          (Communication.Protocol.transcriptLaw pairTree
-            (Communication.PrivateCoin.inputLaw 1 0 deal211))).bind fun st =>
-        PMF.map (fun x => (st, x)) (PMF.uniformOfFintype (Fin 1 → Bool)) := by
+    IndepUniform (Communication.Protocol.transcriptLaw pairTree
+        (Communication.PrivateCoin.inputLaw 1 0 deal211))
+      (fun (x, _, t) => (pairOutA (x, t), t))
+      (fun (_, y, t) => rotChoices (pairOutB (y, t))) := by
+  refine ⟨?_⟩
   let f : Equiv.Perm (Fin 4) × Bool → (Fin 1 → Bool × Bool) × Fin pairTree.leafCount :=
     fun (ρ, r) =>
       let l := leafOfPair (sortedPair (ρ 0) (w1Of (ρ 0, ρ 1) r))
@@ -1345,14 +1332,11 @@ private theorem xor_eq_true_left {a b : Bool} (h : xor a b = true) : a = !b := b
   cases a <;> cases b <;> trivial
 
 private theorem pairTree_bob_private :
-    PMF.map (fun q => ((q.2.2, pairOutB (q.2.1, q.2.2)),
-          rotUnselected (pairOutA (q.1, q.2.2)) (pairOutB (q.2.1, q.2.2))))
-        (Communication.Protocol.transcriptLaw pairTree
-          (Communication.PrivateCoin.inputLaw 1 0 deal211)) =
-      (PMF.map (fun q => (q.2.2, pairOutB (q.2.1, q.2.2)))
-          (Communication.Protocol.transcriptLaw pairTree
-            (Communication.PrivateCoin.inputLaw 1 0 deal211))).bind fun tr =>
-        PMF.map (fun x => (tr, x)) (PMF.uniformOfFintype (Fin 1 → Bool)) := by
+    IndepUniform (Communication.Protocol.transcriptLaw pairTree
+        (Communication.PrivateCoin.inputLaw 1 0 deal211))
+      (fun (_, y, t) => (t, pairOutB (y, t)))
+      (fun (x, y, t) => rotUnselected (pairOutA (x, t)) (pairOutB (y, t))) := by
+  refine ⟨?_⟩
   let f : Equiv.Perm (Fin 4) × Bool → Fin pairTree.leafCount × (Fin 1 → Bool × Bool) :=
     fun (ρ, r) =>
       let l := leafOfPair (sortedPair (ρ 0) (w1Of (ρ 0, ρ 1) r))

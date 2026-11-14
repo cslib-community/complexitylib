@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import copy
 import io
 import json
 import pathlib
@@ -124,6 +125,7 @@ class PaginationTests(unittest.TestCase):
     def run_main(self, *responses: dict | Exception, wait: str = "0"):
         out = io.StringIO()
         with patch.object(queue_pr, "gh_graphql", side_effect=responses) as graphql, \
+             patch.object(queue_pr, "fetch_discussion", return_value=("unchanged",)), \
              patch.object(queue_pr.time, "sleep"), contextlib.redirect_stdout(out), \
              contextlib.redirect_stderr(out):
             status = queue_pr.main(["12", SHA, "--wait", wait])
@@ -248,6 +250,225 @@ class GraphqlResponseTests(unittest.TestCase):
                               return_value=subprocess.CompletedProcess([], 0, output, "")), \
                  self.assertRaises(queue_pr.GhError):
                 queue_pr.gh_graphql(queue_pr.QUERY)
+
+
+def discussion_comment(identity: str = "C1", body: str = "approve", **fields) -> dict:
+    return {"id": identity, "body": body, "updatedAt": "2026-11-13T11:16:09Z", **fields}
+
+
+def discussion_page() -> dict:
+    return {"node": {"id": "PR_1", "body": "PR scope", "comments": connection(),
+                     "reviews": connection(), "reviewThreads": connection()}}
+
+
+def discussion_thread(identity: str = "T1", **fields) -> dict:
+    return {"id": identity, "isResolved": True, "comments": connection(
+        discussion_comment("RC1", state="SUBMITTED")), **fields}
+
+
+class DiscussionTests(unittest.TestCase):
+    def snapshot(self, *pages):
+        with patch.object(queue_pr, "gh_graphql", side_effect=pages) as api:
+            result = queue_pr.fetch_discussion("PR_1")
+        return result, api.call_args_list
+
+    def test_body_comments_reviews_and_inline_changes_are_observable(self) -> None:
+        initial = discussion_page()
+        node = initial["node"]
+        node["comments"] = connection(discussion_comment())
+        node["reviews"] = connection(discussion_comment(
+            "R1", state="APPROVED", submittedAt="2026-11-13T11:16:09Z"))
+        node["reviewThreads"] = connection(discussion_thread())
+        baseline, _ = self.snapshot(initial)
+        # The old comment is edited without advancing its second-resolution timestamp.
+        changes = [lambda p: p.update(body="human review required"),
+                   lambda p: p["comments"]["nodes"].append(discussion_comment("C2", "hold")),
+                   lambda p: p["comments"]["nodes"][0].update(body="hold"),
+                   lambda p: p["comments"]["nodes"].clear(),
+                   lambda p: p["reviews"]["nodes"][0].update(body="approval held"),
+                   lambda p: p["reviews"]["nodes"][0].update(state="DISMISSED"),
+                   lambda p: p["reviews"]["nodes"].append(discussion_comment(
+                       "R2", state="CHANGES_REQUESTED", submittedAt="2026-11-13T11:17:49Z")),
+                   lambda p: p["reviewThreads"]["nodes"][0].update(isResolved=False),
+                   lambda p: p["reviewThreads"]["nodes"][0]["comments"]["nodes"][0].update(
+                       body="still broken"),
+                   lambda p: p["reviewThreads"]["nodes"][0]["comments"]["nodes"].append(
+                       discussion_comment("RC2", "hold", state="SUBMITTED"))]
+        for index, change in enumerate(changes):
+            with self.subTest(change=index):
+                changed = copy.deepcopy(initial)
+                change(changed["node"])
+                self.assertNotEqual(self.snapshot(changed)[0], baseline)
+
+    def test_order_ci_events_reactions_and_unpublished_drafts_do_not_change_snapshot(self) -> None:
+        initial = discussion_page()
+        initial["node"]["comments"] = connection(discussion_comment(), discussion_comment("C2"))
+        baseline, _ = self.snapshot(initial)
+        changed = copy.deepcopy(initial)
+        node = changed["node"]
+        node.update(updatedAt="later", statusCheckRollup="new CI event")
+        node["comments"]["nodes"].reverse()
+        node["comments"]["nodes"][0]["reactions"] = ["THUMBS_UP"]
+        node["reviews"] = connection(discussion_comment("R1", state="PENDING", submittedAt=None))
+        node["reviewThreads"] = connection(discussion_thread(comments=connection(
+            discussion_comment("RC1", state="PENDING"))))
+        self.assertEqual(self.snapshot(changed)[0], baseline)
+
+    def test_all_three_connections_and_nested_comments_are_paginated_by_owner(self) -> None:
+        first = discussion_page()
+        first["node"].update(comments=connection(discussion_comment(), cursor="c1"),
+                             reviews=connection(cursor="r1"),
+                             reviewThreads=connection(cursor="t1"))
+        thread = discussion_thread(comments=connection(cursor="rc1"))
+        result, calls = self.snapshot(
+            first,
+            {"node": {"id": "PR_1", "comments": connection(discussion_comment("C2"), cursor="c2")}},
+            {"node": {"id": "PR_1", "comments": connection(discussion_comment("C3", "hold"))}},
+            {"node": {"id": "PR_1", "reviews": connection(discussion_comment(
+                "R1", state="DISMISSED", submittedAt="2026-11-13T11:16:09Z"))}},
+            {"node": {"id": "PR_1", "reviewThreads": connection(thread)}},
+            {"node": {"id": "T1", "comments": connection(
+                discussion_comment("RC1", state="SUBMITTED"))}})
+        self.assertEqual(len(result[1]), 3)
+        self.assertEqual(result[1][-1][1], "hold")
+        self.assertEqual(result[2][0][3], "DISMISSED")
+        self.assertEqual(len(result[3][0][2]), 1)
+        self.assertEqual([c.kwargs for c in calls], [
+            {"id": "PR_1"}, {"id": "PR_1", "after": "c1"},
+            {"id": "PR_1", "after": "c2"}, {"id": "PR_1", "after": "r1"},
+            {"id": "PR_1", "after": "t1"}, {"id": "T1", "after": "rc1"}])
+        self.assertIn("... on PullRequestReviewThread", calls[-1].args[0])
+
+    def test_missing_pr_identity_or_body_is_an_error(self) -> None:
+        for node in (None, {}, {"id": "another"}, {"id": "PR_1", "body": None}):
+            with self.subTest(node=node), self.assertRaises(queue_pr.GhError):
+                self.snapshot({"node": node})
+
+    def test_null_malformed_or_incomplete_connections_are_errors(self) -> None:
+        bad = (None, [], "bad", {}, {"nodes": [], "pageInfo": {}},
+               {"nodes": [None], "pageInfo": {"hasNextPage": False}})
+        for field in ("comments", "reviews", "reviewThreads", "inline"):
+            for connection_value in bad:
+                with self.subTest(field=field, value=connection_value), \
+                     self.assertRaises(queue_pr.GhError):
+                    page = discussion_page()
+                    if field == "inline":
+                        page["node"]["reviewThreads"] = connection(
+                            discussion_thread(comments=connection_value))
+                    else:
+                        page["node"][field] = connection_value
+                    self.snapshot(page)
+
+    def test_missing_text_review_time_and_thread_states_are_errors(self) -> None:
+        for field, item in (
+                ("comments", discussion_comment(body=None)),
+                ("comments", discussion_comment(updatedAt=None)),
+                ("reviews", discussion_comment("R1", state="APPROVED", submittedAt=None)),
+                ("reviews", discussion_comment("R1", state=[])),
+                ("reviewThreads", discussion_thread(isResolved=None)),
+                ("reviewThreads", discussion_thread(comments=connection(
+                    discussion_comment("RC1", state=None))))):
+            with self.subTest(field=field, item=item), self.assertRaises(queue_pr.GhError):
+                page = discussion_page()
+                page["node"][field] = connection(item)
+                self.snapshot(page)
+
+    def test_later_pages_require_matching_owner_valid_cursor_and_distinct_ids(self) -> None:
+        initial = discussion_page()
+        initial["node"]["comments"] = connection(discussion_comment(), cursor="c1")
+        for later in ({"node": None}, {"node": {"id": "another"}},
+                      {"node": {"id": "PR_1", "comments": connection(discussion_comment())}},
+                      {"node": {"id": "PR_1", "comments": connection({"body": "no ID"})}},
+                      {"node": {"id": "PR_1", "comments": connection(cursor="c1")}},
+                      queue_pr.GhError("API failed")):
+            with self.subTest(later=later), self.assertRaises(queue_pr.GhError):
+                self.snapshot(copy.deepcopy(initial), later)
+        for cursor in (None, ""):
+            with self.subTest(cursor=cursor), self.assertRaises(queue_pr.GhError):
+                malformed = copy.deepcopy(initial)
+                malformed["node"]["comments"]["pageInfo"]["endCursor"] = cursor
+                self.snapshot(malformed)
+
+
+class WaitingDiscussionTests(unittest.TestCase):
+    def run_main(self, prs, discussions=("same", "same"), wait="1"):
+        out, events = io.StringIO(), []
+        def snapshot(_):
+            events.append("discussion")
+            response = next(snapshots)
+            if isinstance(response, Exception):
+                raise response
+            return response
+        snapshots = iter(discussions)
+        with patch.object(queue_pr, "fetch_pr", side_effect=prs), \
+             patch.object(queue_pr, "fetch_discussion", side_effect=snapshot) as discussion, \
+             patch.object(queue_pr.time, "sleep", side_effect=lambda _: events.append("sleep")), \
+             patch.object(queue_pr, "gh_graphql", return_value={
+                 "enqueuePullRequest": {"mergeQueueEntry": {"position": 1}}}) as api, \
+             contextlib.redirect_stdout(out), contextlib.redirect_stderr(out):
+            result = queue_pr.main(["5134", SHA, "--wait", wait])
+        return result, out.getvalue(), events, discussion, api
+
+    def test_hold_posted_during_wait_refuses_without_enqueuing(self) -> None:
+        pending = pr(check_run(status="IN_PROGRESS", conclusion=None))
+        result, out, events, _, api = self.run_main(
+            [pending, pr(check_run())], ("source approval", "final material review held"))
+        self.assertEqual(result, 1, out)
+        self.assertIn("discussion changed", out)
+        self.assertIn("reread", out)
+        self.assertEqual(events, ["discussion", "sleep", "discussion"])
+        api.assert_not_called()
+
+    def test_unchanged_discussion_is_read_only_twice_and_queues_expected_head(self) -> None:
+        pending = pr(check_run(status="IN_PROGRESS", conclusion=None))
+        result, out, events, _, api = self.run_main([pending, pending, pr(check_run())])
+        self.assertEqual(result, 0, out)
+        self.assertEqual(events, ["discussion", "sleep", "sleep", "discussion"])
+        api.assert_called_once_with(queue_pr.ENQUEUE, id="PR_1", sha=SHA)
+
+    def test_automatic_mergeability_wait_is_guarded_even_without_wait_option(self) -> None:
+        result, out, events, _, api = self.run_main(
+            [pr(check_run(), mergeable="UNKNOWN"), pr(check_run())],
+            ("approved", "hold"), wait="0")
+        self.assertEqual(result, 1, out)
+        self.assertEqual(events, ["discussion", "sleep", "discussion"])
+        api.assert_not_called()
+
+    def test_instant_ready_or_no_sleep_pending_does_not_read_discussion(self) -> None:
+        for initial, expected in ((pr(check_run()), 0), (pr(), 1)):
+            with self.subTest(expected=expected):
+                result, out, events, discussion, _ = self.run_main([initial], wait="0")
+                self.assertEqual(result, expected, out)
+                self.assertEqual(events, [])
+                discussion.assert_not_called()
+
+    def test_already_queued_does_not_read_discussion_or_mutate_even_after_wait(self) -> None:
+        queued = pr(check_run(), mergeQueueEntry={"position": 2, "state": "QUEUED"})
+        for prs in ([queued], [pr(check_run(), mergeable="UNKNOWN"), queued]):
+            with self.subTest(prs=prs):
+                result, out, events, _, api = self.run_main(prs, ("baseline",))
+                self.assertEqual(result, 0, out)
+                self.assertEqual(events.count("discussion"), len(prs) - 1)
+                api.assert_not_called()
+
+    def test_incomplete_initial_or_final_snapshot_prevents_enqueue(self) -> None:
+        pending = pr(check_run(), mergeable="UNKNOWN")
+        for discussions in ((queue_pr.GhError("incomplete discussion"),),
+                            ("baseline", queue_pr.GhError("incomplete discussion"))):
+            with self.subTest(discussions=discussions):
+                result, out, _, _, api = self.run_main([pending, pr(check_run())], discussions)
+                self.assertEqual(result, 2, out)
+                self.assertIn("incomplete discussion", out)
+                api.assert_not_called()
+
+    def test_failed_check_or_changed_head_still_prevents_enqueue(self) -> None:
+        pending = pr(check_run(status="IN_PROGRESS", conclusion=None))
+        for final in (pr(check_run(conclusion="FAILURE")), pr(check_run(), headRefOid="b" * 40)):
+            with self.subTest(final=final):
+                result, out, events, _, api = self.run_main([pending, final], ("baseline",))
+                self.assertEqual(result, 1, out)
+                self.assertEqual(events.count("discussion"), 1)
+                api.assert_not_called()
 
 
 if __name__ == "__main__":
