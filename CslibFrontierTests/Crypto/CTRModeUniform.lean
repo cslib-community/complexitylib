@@ -3,6 +3,9 @@ Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
+
+module
+
 import CslibFrontier.Crypto.Computational.Encryption.CTRMode.Uniform
 import CslibFrontier.Crypto.Computational.Encryption.EncryptThenMAC
 
@@ -12,7 +15,8 @@ import CslibFrontier.Crypto.Computational.Encryption.EncryptThenMAC
 Checks for `CslibFrontier/Crypto/Computational/Encryption/CTRMode/Uniform.lean` and
 `CslibFrontier/Crypto/Computational/Encryption/SymmetricCPA.lean`: concrete counter blocks and
 keystreams, correctness for a toy family, the `n`-bit special case of the CPA notion, the concrete
-bound for a query-free adversary, and the asymptotic theorem's premises.
+bound for a query-free adversary, and the asymptotic theorem's premises. The file is a `module`
+client with ordinary imports.
 -/
 
 namespace CslibFrontierTests.Crypto.CTRModeUniform
