@@ -322,7 +322,7 @@ Andrei Z. Broder. “On the Resemblance and Containment of Documents.” *Procee
 <a id="bs23"></a>
 ## bs23
 
-Dan Boneh and Victor Shoup. *A Graduate Course in Applied Cryptography*, version 0.6, January 2023. https://crypto.stanford.edu/~dabo/cryptobook/BonehShoup_0_6.pdf . Title, authors and edition verified from the primary PDF during independent source review on 2026-11-02. Detailed textbook locator claims remain attributed to the Lean source docstrings; no complete textbook correspondence audit was performed.
+Dan Boneh and Victor Shoup. *A Graduate Course in Applied Cryptography*, version 0.6, January 2023. https://crypto.stanford.edu/~dabo/cryptobook/BonehShoup_0_6.pdf . Title, authors and edition verified from the primary PDF during independent source review on 2026-11-02; Section 8.1.1 (Definition 8.2 "Keyless hash functions" and Fig. 8.3 "Asymptotic version of Attack Game 8.1", pp. 290–291) checked against the primary PDF on 2026-11-14. Remaining textbook locator claims remain attributed to the Lean source docstrings; no complete textbook correspondence audit was performed.
 
 <a id="bt06"></a>
 ## bt06
