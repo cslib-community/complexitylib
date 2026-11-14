@@ -530,8 +530,10 @@ theorem succProbability_treeGame_le_prf (adversary : Forger) (n : ℕ) :
 
 omit hinv in
 /-- The coin-game advantage of the coin adversary, read at `N n`, is negligible in `n` for a
-pseudorandom function, an oracle-PPT coin adversary and `n ≤ N n`. -/
-theorem negligible_advantage_treeCoinAdversary (hF : PseudorandomFunction family)
+pseudorandom function and `n ≤ N n`, *provided* that the coin adversary is oracle-PPT (`hB`).
+This is an algebraic helper: `exists_negligible_treeGame_le` discharges `hB` with
+`isOraclePPT_treeCoinAdversary`. -/
+theorem negligible_advantage_treeCoinAdversary_of_isOraclePPT (hF : PseudorandomFunction family)
     (hN : ∀ n, n ≤ N n) {adversary : Forger}
     (hB : IsOraclePPT encBool (treeCoinAdversary S T depth N inv adversary)) :
     Negligible (fun n => Game.advantage
@@ -1069,7 +1071,7 @@ theorem exists_negligible_treeGame_le {family : List Bool → List Bool → List
     ∃ ε : ℕ → ℝ≥0, Negligible ε ∧ ∀ n,
       Game.succProbability (ProbComp.eval (treeGame S T depth N (prfCoins family) adversary n)) ≤
         Game.succProbability (ProbComp.eval (treeIdealGame S T depth N adversary n)) + ε n :=
-  ⟨_, negligible_advantage_treeCoinAdversary family hF hNge
+  ⟨_, negligible_advantage_treeCoinAdversary_of_isOraclePPT family hF hNge
     (isOraclePPT_treeCoinAdversary hdepth hN hinvPoly hA),
     fun n => succProbability_treeGame_le family hinv adversary n⟩
 

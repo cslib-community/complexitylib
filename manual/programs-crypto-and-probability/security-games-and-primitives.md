@@ -28,7 +28,7 @@ Pinned cslib also has the finite [Generator](https://github.com/leanprover/cslib
 
 ### Security theorems and efficiency witnesses
 
-A security theorem says that every admitted adversary has negligible advantage, given a named hardness assumption. [AGENTS.md](../../AGENTS.md#security-theorems) fixes what such a theorem may assume: named hardness assumptions, stated relative to the setup sampler or component they concern; that the adversary is in the admitted class; and properties of components that the cited result itself takes as given. It may assume nothing about an object that its proof derives from the adversary (a reduction, distinguisher, simulator, extractor or hybrid), and it may not take from the caller an object whose existence or efficiency is what it should prove.
+A security theorem says that every admitted adversary has negligible advantage, given a named hardness assumption. [AGENTS.md](../../AGENTS.md#security-theorems) fixes what such a theorem may assume: named hardness assumptions, stated relative to the setup sampler or component they concern; that the adversary is in the admitted class; and properties of components that the cited result itself takes as given. It may assume nothing about an object that its proof constructs, from the adversary or not (a reduction, distinguisher, simulator, extractor or hybrid), and it may not take from the caller an object whose existence or efficiency is what it should prove.
 
 A named assumption may concern the scheme's own components when the cited source assumes it. GSW's one-key circular security `Encryption.CircularSecure E.keyGen E.encrypt`, collision resistance of the Cramer–Shoup hash family `F.withKey.cramerShoupHashMod H` keyed by the hash key that key generation draws and publishes, and quadratic residuosity relative to the scheme's modulus sampler (`QuadraticResiduosityHard fun n => ProbComp.eval (gen n)`) are all allowed. What is ruled out is a premise that the scheme's algorithms behave like idealized ones, such as keys indistinguishable from an ideal key law, unless the cited source names that as an assumption.
 
@@ -58,10 +58,14 @@ A lemma may still take a bound on a constructed reduction as a premise when that
 Before review, check a new security theorem against this list:
 
 - every premise is a named hardness assumption stated relative to the sampler or component it concerns, the adversary's class membership, or a property of a component that the cited result takes as given;
-- no premise concerns a reduction, distinguisher, simulator, extractor or hybrid derived from the adversary, and the caller does not supply an object whose existence or efficiency is what the theorem proves;
+- no premise concerns a reduction, distinguisher, simulator, extractor or hybrid that the proof constructs (from the adversary or not), and the caller does not supply an object whose existence or efficiency is what the theorem proves;
 - each reduction is a definition with an efficiency witness (`isPPT_…`, `isOraclePPT_…` or a circuit-size bound) that the asymptotic theorem uses;
 - the name and docstring state the model (standard, random-oracle, ideal, query-bounded or information-theoretic), the notion (single- or multi-challenge, one-time or many-time, honest-verifier or malicious zero knowledge, semi-honest, static) and any deviation from the cited source;
 - a theorem it replaces is deleted or demoted to an honestly named helper in the same change.
+
+CI checks the premise rule on pull requests. After `lake build`, run `python3 scripts/check_security_premises.py` (or `--list CslibFrontier/Crypto/…` for every hit in an area). It reads the elaborated statements of the public Crypto theorems and reports, for each flagged theorem in a changed module, the premise, the kind of claim and the constructed definitions it is about, for example `premise hreduction: negligible about Cslib.Crypto.PrimeOrderGroupFamily.schnorrFamilyROMSchemeReduction`. It also reports a *realization*: a theorem that takes the reduction from the caller as a variable, certifies the variable (`hD : IsOraclePPT encBool D`), and assumes in an equation that it computes the program the proof should build (`hreal : eval (prfRealGame family D n) = … nonceFnDistinguisher … (forger n)`, as in the Carter–Wegman theorems that #5347 deleted). Differences in other modules are printed as a notice, and a change to the checker or its baseline is checked against every module. To fix a report, prove the premise: certify the reduction and apply the named assumption to it. If the lemma is meant to be conditional, name and document it as an algebraic helper (`…_of_reduction_le`, `…_of_isPPTOn`), run `python3 scripts/check_security_premises.py --update-baseline`, and write the one-line `why` of its entry in [security_premises_baseline.json](../../scripts/security_premises_baseline.json). A named assumption about a component the scheme uses, or instantiated at a group or sampler that the library defines, is also flagged; the rule allows it, so its entry says so. When you delete or fix a theorem that has an entry, remove the entry in the same change; the check fails on an entry that no longer matches.
+
+The check supplements review; a clean run is not evidence that a security theorem is right. It does not judge vacuous or misdefined notions, games and assumptions; a wrong or nonstandard assumption, such as an MLWE variant without the short secrets that ML-KEM's security needs; anything outside `Cslib.Crypto`; or names and docstrings that overclaim. Its rules are syntactic, so it also misses a premise whose own definition builds the constructed object, a distribution applied only to numbers or functions (such as a key law at fixed parameters), a bound without an advantage-named constant, a caller-supplied object that the theorem ought to construct, such as the Σ-protocol extractor above, and a realization stated other than as an equation (an inequality, a predicate of the library or a bundled program). Review covers all of these.
 
 ## Hardness and pseudorandomness
 
@@ -1273,8 +1277,17 @@ native algorithms query word oracles `G` and `H` (`RO`): `WordPKE.keyGenNotBot`,
 than the ciphertext bound and otherwise run `Scheme.decapsNotBotM` and `Scheme.decapsBotM`. Their
 native certificates (`WordPKE.IsEfficient.isPPTOn_keyGenNotBot`,
 `WordPKE.IsEfficient.isOraclePPTOn_encaps`, `WordPKE.IsEfficient.isOraclePPTOn_decapsNotBot`,
-`WordPKE.IsEfficient.isOraclePPTOn_decapsBot`) follow from `IsEfficient`. The certified reduction
-and the asymptotic theorem are #5293's next steps.
+`WordPKE.IsEfficient.isOraclePPTOn_decapsBot`) follow from `IsEfficient`.
+[`FujisakiOkamoto/WordReduction.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/WordReduction.lean)
+gives the IND-CPA reduction for this family as an `Encryption.AdversaryOf`
+(`WordPKE.romFilterCpaReductionWord`, and `WordPKE.romCpaReductionWord` for `FO-notbot`). It wraps a
+word adversary `A : ℕ → List Bool → WordOracleComp CCAOp Bool` with oracles `G`, `H` and
+decapsulation. Its native keyless simulator `WordPKE.simFilterWordHandler` answers requests in the
+domain with the typed `Scheme.simFilterHandler` of the bundle, and answers any other request with
+the empty word without changing its state. `WordPKE.IsEfficient.isPPT_romCpaReductionWord` proves
+the reduction uniform strict PPT from `IsOraclePPT encBool A`, covering the lazy `G`/`H`
+simulation. Relating its advantage to the typed `cpaAdvantage` and the asymptotic theorem remain
+for #5293.
 
 ML-KEM ([fips203][fips203]) lives in
 [`MLKEM/KPKE.lean`](../../CslibFrontier/Crypto/Computational/SIS/MLKEM/KPKE.lean),

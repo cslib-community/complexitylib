@@ -86,6 +86,9 @@ STEPS = (
           "test -d .lake/packages",
           "python3 -B -m unittest scripts/test_check_tidy_surface.py",
           "python3 -B scripts/check_tidy_surface.py")),
+    Step("Security premise ratchet (changed modules)",
+         ("python3 -B -m unittest scripts/test_check_security_premises.py",
+          'python3 -B scripts/check_security_premises.py --base "$BASE"')),
     Step("Result registry references", ("python3 -B scripts/results_registry.py --compiled",)),
     Step("Changed-file lints", ('python3 -B scripts/check_changed_files.py --base "$BASE"',)),
     Step("lake exe mk_all --check", ("lake exe mk_all --check",)),
@@ -115,6 +118,8 @@ CI_ONLY = {
     "Encoding readability report":
         "merge groups and main pushes only; reports and always succeeds",
     "Projection chain report":
+        "merge groups and main pushes only; reports and always succeeds",
+    "Security premise report":
         "merge groups and main pushes only; reports and always succeeds",
     "Repeated-proof-block notice (advisory)":
         "advisory; never fails the job. Run `scripts/proof_copies.py --base REF` to see it",
