@@ -5240,17 +5240,20 @@ register_result "fujisaki-okamoto-notbot-ind-cca" where
     Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.indCcaRomAdvantage_le
   ]
   scope := "Domain-separated FO-notbot = U-notbot ∘ T over one fixed explicit-coin PKE: for \
-    uniform messages, a δ-correct and γ-spread PKE, and a randomized adversary with explicit \
-    coins each of whose coin values makes at most qG queries to G and qH queries to H \
-    (decapsulation queries unbounded), the ROM IND-CCA advantage is at most \
-    2·Adv^{IND-CPA}(romCpaReduction A) + (2qH + 2(qG + qH))/|M| + 2(qG + qH + 1)δ + \
-    2(qG + qH)2^{-γ}, where IND-CPA is the two-stage game of HHK17 Def. 2.2 and \
-    romCpaReduction A is one two-stage adversary that draws its own challenge messages. Both \
-    advantages are two-world differences (twice HHK17's). The proof composes the T and U-notbot \
-    hops directly instead of through OW-PCA; roIndCcaGame draws both real (H) and ideal challenge \
-    keys from the arbitrary sampler S.sampleKey (uniform sampleKey recovers HHK17 §2.2 Def. 2.4 / \
-    Fig. 4). Concrete bound only: no security parameter and no running-time certificate for the \
-    reduction. FO^⊥ is registered separately as fujisaki-okamoto-bot-ind-cca."
+    uniform messages, a δ-correct PKE, and a randomized adversary with explicit coins each of \
+    whose coin values makes at most qG queries to G and qH queries to H (decapsulation queries \
+    unbounded), the ROM IND-CCA advantage is at most 2·Adv^{IND-CPA}(romCpaReduction A) + \
+    (2qH + 2(qG + qH))/|M| + 2(qG + qH + 1)δ, where IND-CPA is the two-stage game of HHK17 \
+    Def. 2.2 and romCpaReduction A is one two-stage adversary that draws its own challenge \
+    messages. As in the source, the PKE need not be γ-spread (§1.1.2 table, p. 6; remark after \
+    the proof of Theorem 3.2, p. 13; KEM-notbot row of the §3.3 table, p. 22). Both advantages \
+    are two-world differences (twice HHK17's). The proof composes the T and U-notbot hops \
+    directly instead of through OW-PCA, taking the challenge step under the decryption-checking \
+    key-derivation oracle as in game G3 of the proof of Theorem 3.4; roIndCcaGame draws both \
+    real (H) and ideal challenge keys from the arbitrary sampler S.sampleKey (uniform sampleKey \
+    recovers HHK17 §2.2 Def. 2.4 / Fig. 4). Concrete bound only: no security parameter and no \
+    running-time certificate for the reduction. FO^⊥ is registered separately as \
+    fujisaki-okamoto-bot-ind-cca."
 
 register_result "fujisaki-okamoto-bot-ind-cca" where
   title := "ROM IND-CCA security of the explicit-rejection Fujisaki–Okamoto transform FO^⊥"
