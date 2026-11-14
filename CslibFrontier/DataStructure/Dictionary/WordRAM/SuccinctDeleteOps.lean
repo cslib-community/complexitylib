@@ -80,24 +80,15 @@ bucket `b`, reads its quotient `q_last`, and returns `(res, q_last)`; otherwise 
 `(((0, 0), 0), 0)`. -/
 @[expose]
 def deletePrepProg (U V w n_max h_space : ℕ)
-    (d : ((ℕ × ℕ) × ℕ) × ℕ) : Memory.Prog (((ℕ × ℕ) × ℕ) × ℕ) := do
-  let res ← searchBucketProg U V w n_max h_space d
-  let z1 ← pure 1
-  if res.1.1 = z1 then do
-    let phys_last ← lastSlotOfProg U V w n_max h_space d.1.1
-    let q_last ← readQuotProg U w n_max h_space (d.1.1.1, phys_last)
-    pure (res, q_last)
-  else do
-    let z0 ← pure 0
-    pure (((z0, z0), z0), z0)
+    (d : ((ℕ × ℕ) × ℕ) × ℕ) : Memory.Prog (((ℕ × ℕ) × ℕ) × ℕ) :=
+  deletePrepGenProg (mkDictParams U V w n_max h_space, d)
 
 @[simp]
 theorem deletePrepGenProg_mk (U V w n_max h_space : ℕ)
     (d : ((ℕ × ℕ) × ℕ) × ℕ) :
     deletePrepGenProg (mkDictParams U V w n_max h_space, d) =
       deletePrepProg U V w n_max h_space d := by
-  simp only [deletePrepGenProg, deletePrepProg, searchBucketGenProg_mk, lastSlotOfGenProg_mk,
-    readQuotGenProg_mk]
+  rfl
 
 /-- When `searchBucketProg` reports `found = 1`, the returned logical index is `< bCount`, so
 `1 ≤ bCount`. -/
@@ -172,7 +163,8 @@ theorem deletePrepProg_bucket_spec {U V w₀ n_max h_space w base b q_target m :
   dsimp only [gm, d, prog, prep]
   have hsb := searchBucketProg_bucket_spec hinv henv hb hm_eq hm_lt (q_target := q_target)
   dsimp only at hsb
-  unfold deletePrepProg
+  simp only [deletePrepProg, deletePrepGenProg, searchBucketGenProg_mk, lastSlotOfGenProg_mk,
+    readQuotGenProg_mk]
   simp only [pure_bind]
   rw [StateTransitionSpec.clientState_bind, StateTransitionSpec.clientResult_bind,
     memoryCost_bind_of_clientState_eq hsb.1, hsb.1]
@@ -221,23 +213,21 @@ unlinks `j_last` from `(b, m_last)` (if indexed), copies `(q_last, v_last)` into
 prepends `j_del` to `(b, m_last)` (if indexed). -/
 @[expose]
 def deleteSwapProg (U V w n_max h_space : ℕ)
-    (d : (((ℕ × ℕ) × ℕ) × ℕ) × (ℕ × ℕ)) : Memory.Prog Unit := do
-  unlinkIfIndexedProg U V w n_max h_space ((d.1.1.1, d.2.1), d.2.2)
-  copyLastPayloadProg U V w n_max h_space (d.1.1.1, d.1.2)
-  prependIfIndexedProg U V w n_max h_space ((d.1.1.1, d.2.1), d.1.1.2)
+    (d : (((ℕ × ℕ) × ℕ) × ℕ) × (ℕ × ℕ)) : Memory.Prog Unit :=
+  deleteSwapGenProg (mkDictParams U V w n_max h_space, d)
 
 @[simp]
 theorem deleteSwapGenProg_mk (U V w n_max h_space : ℕ)
     (d : (((ℕ × ℕ) × ℕ) × ℕ) × (ℕ × ℕ)) :
     deleteSwapGenProg (mkDictParams U V w n_max h_space, d) =
       deleteSwapProg U V w n_max h_space d := by
-  simp only [deleteSwapGenProg, deleteSwapProg, unlinkIfIndexedGenProg_mk,
-    copyLastPayloadGenProg_mk, prependIfIndexedGenProg_mk]
+  rfl
 
 theorem memoryCost_deleteSwapProg_le (U V w n_max h_space : ℕ)
     (d : (((ℕ × ℕ) × ℕ) × ℕ) × (ℕ × ℕ)) (s : Memory.State) :
     memoryCost (deleteSwapProg U V w n_max h_space d) s ≤ 50 := by
-  unfold deleteSwapProg
+  simp only [deleteSwapProg, deleteSwapGenProg, unlinkIfIndexedGenProg_mk, copyLastPayloadGenProg_mk,
+    prependIfIndexedGenProg_mk]
   simp only [← PFunctor.FreeM.bind_eq_bind, memoryCost_bind]
   have h1 := memoryCost_unlinkIfIndexedProg_le U V w n_max h_space ((d.1.1.1, d.2.1), d.2.2) s
   let s₁ := (Memory.spec 0).clientState s
@@ -349,23 +339,15 @@ unlinks `j_del` from `(b, m)`, reads `c_b`, runs `deleteSwapProg` if `j_del < c_
 calls `popBackSlotProg`. -/
 @[expose]
 def deleteFoundProg (U V w n_max h_space : ℕ)
-    (d : (((ℕ × ℕ) × ℕ) × ℕ) × (ℕ × ℕ)) : Memory.Prog Unit := do
-  unlinkIfIndexedProg U V w n_max h_space ((d.1.1.1, d.2.1), d.1.1.2)
-  let c_b ← readBucketCountProg U V w n_max h_space d.1.1.1
-  let j_last ← pure (c_b - 1)
-  if d.1.1.2 < j_last then do
-    deleteSwapProg U V w n_max h_space (d.1, (d.2.2, j_last))
-    popBackSlotProg U V w n_max h_space d.1.1.1
-  else
-    popBackSlotProg U V w n_max h_space d.1.1.1
+    (d : (((ℕ × ℕ) × ℕ) × ℕ) × (ℕ × ℕ)) : Memory.Prog Unit :=
+  deleteFoundGenProg (mkDictParams U V w n_max h_space, d)
 
 @[simp]
 theorem deleteFoundGenProg_mk (U V w n_max h_space : ℕ)
     (d : (((ℕ × ℕ) × ℕ) × ℕ) × (ℕ × ℕ)) :
     deleteFoundGenProg (mkDictParams U V w n_max h_space, d) =
       deleteFoundProg U V w n_max h_space d := by
-  simp only [deleteFoundGenProg, deleteFoundProg, unlinkIfIndexedGenProg_mk,
-    readBucketCountGenProg_mk, deleteSwapGenProg_mk, popBackSlotGenProg_mk]
+  rfl
 
 /-- Precondition for `deleteFoundProg` in `Realizes`. -/
 @[expose]
@@ -525,7 +507,8 @@ theorem realizes_deleteFoundGen :
         (deleteSwapProg U V w₀ n_max h_space (d.1, (d.2.2, j_last))) =
         (Memory.spec 0).clientState s₃
           (prependIfIndexedProg U V w₀ n_max h_space ((d.1.1.1, d.2.2), d.1.1.2)) := by
-      unfold deleteSwapProg
+      simp only [deleteSwapProg, deleteSwapGenProg, unlinkIfIndexedGenProg_mk,
+        copyLastPayloadGenProg_mk, prependIfIndexedGenProg_mk]
       repeat rw [StateTransitionSpec.clientState_bind]
     have hgm_sw : gmAt d.1.1.1.1 U V w₀ n_max h_space
         ((Memory.spec 0).clientState s₁
@@ -564,20 +547,15 @@ def deleteFinishGenProg
 if `found = 1`, calls `deleteFoundProg`; otherwise returns `()`. -/
 @[expose]
 def deleteFinishProg (U V w n_max h_space : ℕ)
-    (d : ((((ℕ × ℕ) × (ℕ × ℕ)) × ℕ) × ℕ) × ℕ) : Memory.Prog Unit := do
-  let z1 ← pure 1
-  if d.1.1.1.2.1 = z1 then
-    deleteFoundProg U V w n_max h_space
-      (((d.1.1.1.1, d.1.1.1.2.2), d.1.1.2), (d.1.2, d.2))
-  else
-    pure ()
+    (d : ((((ℕ × ℕ) × (ℕ × ℕ)) × ℕ) × ℕ) × ℕ) : Memory.Prog Unit :=
+  deleteFinishGenProg (mkDictParams U V w n_max h_space, d)
 
 @[simp]
 theorem deleteFinishGenProg_mk (U V w n_max h_space : ℕ)
     (d : ((((ℕ × ℕ) × (ℕ × ℕ)) × ℕ) × ℕ) × ℕ) :
     deleteFinishGenProg (mkDictParams U V w n_max h_space, d) =
       deleteFinishProg U V w n_max h_space d := by
-  simp only [deleteFinishGenProg, deleteFinishProg, deleteFoundGenProg_mk]
+  rfl
 
 /-- Precondition for `deleteFinishProg` in `Realizes`. -/
 @[expose]
@@ -774,7 +752,10 @@ theorem deleteFinishProg_bucket_spec {U V w₀ n_max h_space w base b q_target m
         have hs'_eq : s' = (Memory.spec 0).clientState s₄
             (popBackSlotProg U V w₀ n_max h_space (base, b)) := by
           change (Memory.spec 0).clientState s (deleteFinishProg U V w₀ n_max h_space d_fin) = _
-          unfold deleteFinishProg deleteFoundProg deleteSwapProg
+          simp only [deleteFinishProg, deleteFoundProg, deleteSwapProg, deleteFinishGenProg,
+            deleteFoundGenProg_mk, deleteFoundGenProg, unlinkIfIndexedGenProg_mk,
+            readBucketCountGenProg_mk, deleteSwapGenProg_mk, popBackSlotGenProg_mk,
+            deleteSwapGenProg, copyLastPayloadGenProg_mk, prependIfIndexedGenProg_mk]
           simp only [pure_bind, d_fin]
           rw [ite_eq_left hf1, StateTransitionSpec.clientState_bind,
             StateTransitionSpec.clientState_bind, clientState_readBucketCountProg,
@@ -783,7 +764,9 @@ theorem deleteFinishProg_bucket_spec {U V w₀ n_max h_space w base b q_target m
           repeat rw [StateTransitionSpec.clientState_bind]
         have hcost_fin : memoryCost (deleteFinishProg U V w₀ n_max h_space d_fin) s ≤
             66 + memoryCost (popBackSlotProg U V w₀ n_max h_space (base, b)) s₄ := by
-          unfold deleteFinishProg deleteFoundProg
+          simp only [deleteFinishProg, deleteFoundProg, deleteFinishGenProg, deleteFoundGenProg_mk,
+            deleteFoundGenProg, unlinkIfIndexedGenProg_mk, readBucketCountGenProg_mk,
+            deleteSwapGenProg_mk, popBackSlotGenProg_mk]
           simp only [pure_bind, ← PFunctor.FreeM.bind_eq_bind, d_fin]
           rw [ite_eq_left hf1, memoryCost_bind, memoryCost_bind,
             clientState_readBucketCountProg, clientResult_readBucketCountProg (base, b) s₁ hb,
@@ -797,7 +780,8 @@ theorem deleteFinishProg_bucket_spec {U V w₀ n_max h_space w base b q_target m
           have hst_sw : (Memory.spec 0).clientState s₁
               (deleteSwapProg U V w₀ n_max h_space
                 ((((base, b), j_del), phys_del), (m_last, j_last))) = s₄ := by
-            unfold deleteSwapProg
+            simp only [deleteSwapProg, deleteSwapGenProg, unlinkIfIndexedGenProg_mk,
+              copyLastPayloadGenProg_mk, prependIfIndexedGenProg_mk]
             repeat rw [StateTransitionSpec.clientState_bind]
           rw [hst_sw]
           dsimp only [s₁, j_del, phys_del, j_last, gm₀] at hc_u1 hc_bc hc_sw ⊢
@@ -903,7 +887,9 @@ theorem deleteFinishProg_bucket_spec {U V w₀ n_max h_space w base b q_target m
         have hs'_eq : s' = (Memory.spec 0).clientState s₁
             (popBackSlotProg U V w₀ n_max h_space (base, b)) := by
           change (Memory.spec 0).clientState s (deleteFinishProg U V w₀ n_max h_space d_fin) = _
-          unfold deleteFinishProg deleteFoundProg
+          simp only [deleteFinishProg, deleteFoundProg, deleteFinishGenProg, deleteFoundGenProg_mk,
+            deleteFoundGenProg, unlinkIfIndexedGenProg_mk, readBucketCountGenProg_mk,
+            deleteSwapGenProg_mk, popBackSlotGenProg_mk]
           simp only [pure_bind, d_fin]
           rw [ite_eq_left hf1, StateTransitionSpec.clientState_bind,
             StateTransitionSpec.clientState_bind, clientState_readBucketCountProg,
@@ -911,7 +897,9 @@ theorem deleteFinishProg_bucket_spec {U V w₀ n_max h_space w base b q_target m
             ite_eq_right hlt]
         have hcost_fin : memoryCost (deleteFinishProg U V w₀ n_max h_space d_fin) s ≤
             16 + memoryCost (popBackSlotProg U V w₀ n_max h_space (base, b)) s₁ := by
-          unfold deleteFinishProg deleteFoundProg
+          simp only [deleteFinishProg, deleteFoundProg, deleteFinishGenProg, deleteFoundGenProg_mk,
+            deleteFoundGenProg, unlinkIfIndexedGenProg_mk, readBucketCountGenProg_mk,
+            deleteSwapGenProg_mk, popBackSlotGenProg_mk]
           simp only [pure_bind, ← PFunctor.FreeM.bind_eq_bind, d_fin]
           rw [ite_eq_left hf1, memoryCost_bind, memoryCost_bind,
             clientState_readBucketCountProg, clientResult_readBucketCountProg (base, b) s₁ hb,
@@ -1101,12 +1089,12 @@ theorem deleteFinishProg_bucket_spec {U V w₀ n_max h_space w base b q_target m
     have hne1 : prep.1.1.1 ≠ 1 := by omega
     have hs'_eq : s' = s := by
       change (Memory.spec 0).clientState s (deleteFinishProg U V w₀ n_max h_space d_fin) = s
-      unfold deleteFinishProg
+      simp only [deleteFinishProg, deleteFinishGenProg, deleteFoundGenProg_mk]
       simp only [pure_bind, d_fin]
       rw [ite_eq_right hne1]
       rfl
     have hcost0 : memoryCost (deleteFinishProg U V w₀ n_max h_space d_fin) s = 0 := by
-      unfold deleteFinishProg
+      simp only [deleteFinishProg, deleteFinishGenProg, deleteFoundGenProg_mk]
       simp only [pure_bind, d_fin]
       rw [ite_eq_right hne1]
       rfl

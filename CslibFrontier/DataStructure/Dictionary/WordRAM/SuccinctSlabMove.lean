@@ -57,6 +57,7 @@ open Finset
 
 /-- Parameter-free single step `k < slabSize n_max` of slab promotion for
 `x = ((dp, (base, b)), k)`. -/
+@[expose]
 def promoteStepGenProg (x : (DictParams × (ℕ × ℕ)) × ℕ) : Memory.Prog ℕ := do
   let dp := x.1.1
   let base := x.1.2.1
@@ -87,42 +88,22 @@ def promoteStepGenProg (x : (DictParams × (ℕ × ℕ)) × ℕ) : Memory.Prog �
 2. Copies `(q_top, v_top)` into tail item `u`.
 3. Calls `removeLastTailItemProg (base, b)` to compact and remove tail item `r_top`.
 4. Writes `(q_u, v_u)` into physical slab slot `gm 0 * slabSize n_max + k` and returns `k + 1`. -/
-def promoteStepProg (U V w n_max h_space : ℕ) (x : (ℕ × ℕ) × ℕ) : Memory.Prog ℕ := do
-  let base := x.1.1
-  let b := x.1.2
-  let k := x.2
-  let u := (slabSize n_max - 1) - k
-  let r_top := slabSize n_max + u
-  let t_u ← readGMProg U V w n_max h_space
-    (base, gmTailPtrBase n_max + (b * tailCapPerBucket n_max + u))
-  let t_top ← readGMProg U V w n_max h_space
-    (base, gmTailPtrBase n_max + (b * tailCapPerBucket n_max + r_top))
-  let p_new ← readGMProg U V w n_max h_space (base, 0)
-  let g_u := (n_max - 1) - t_u
-  let g_top := (n_max - 1) - t_top
-  let g_slab := p_new * slabSize n_max + k
-  let q_u ← readQuotProg U w n_max h_space (base, g_u)
-  let v_u ← readValProg U V w n_max h_space (base, g_u)
-  let q_top ← readQuotProg U w n_max h_space (base, g_top)
-  let v_top ← readValProg U V w n_max h_space (base, g_top)
-  writeQuotProg U w n_max h_space ((base, g_u), q_top)
-  writeValProg U V w n_max h_space ((base, g_u), v_top)
-  removeLastTailItemProg U V w n_max h_space (base, b)
-  writeQuotProg U w n_max h_space ((base, g_slab), q_u)
-  let _ ← writeValProg U V w n_max h_space ((base, g_slab), v_u)
-  pure (k + 1)
+@[expose]
+def promoteStepProg (U V w n_max h_space : ℕ) (x : (ℕ × ℕ) × ℕ) : Memory.Prog ℕ :=
+  promoteStepGenProg ((mkDictParams U V w n_max h_space, x.1), x.2)
 
 @[simp] theorem promoteStepGenProg_mk (U V w n_max h_space : ℕ) (d1 : ℕ × ℕ) (d2 : ℕ) :
     promoteStepGenProg ((mkDictParams U V w n_max h_space, d1), d2) =
       promoteStepProg U V w n_max h_space (d1, d2) := by
-  simp only [promoteStepGenProg, promoteStepProg, p_slabSizeSubOne_mk, p_slabSize_mk,
-    p_gmTailPtrBase_mk, p_tailCap_mk, p_nMaxSubOne_mk, readGMGenProg_mk, readQuotGenProg_mk,
-    readValGenProg_mk, writeQuotGenProg_mk, writeValGenProg_mk, removeLastTailItemGenProg_mk]
+  rfl
 
 @[simp]
 theorem memoryCost_promoteStepProg (U V w n_max h_space : ℕ) (x : (ℕ × ℕ) × ℕ) (s : Memory.State) :
     memoryCost (promoteStepProg U V w n_max h_space x) s = 66 := by
-  simp [promoteStepProg, -bind_pure_comp, ← PFunctor.FreeM.bind_eq_bind, memoryCost_bind]
+  simp [promoteStepProg, -bind_pure_comp, ← PFunctor.FreeM.bind_eq_bind, memoryCost_bind,
+    promoteStepGenProg, p_slabSizeSubOne_mk, p_slabSize_mk, p_gmTailPtrBase_mk, p_tailCap_mk,
+    p_nMaxSubOne_mk, readGMGenProg_mk, readQuotGenProg_mk, readValGenProg_mk, writeQuotGenProg_mk,
+    writeValGenProg_mk, removeLastTailItemGenProg_mk]
 
 theorem one_le_memoryCost_promoteStepGenProg (x : (DictParams × (ℕ × ℕ)) × ℕ) (s : Memory.State) :
     1 ≤ memoryCost (promoteStepGenProg x) s := by
@@ -161,6 +142,58 @@ def PromoteStepGenPre (w : ℕ) (x : (DictParams × (ℕ × ℕ)) × ℕ) (s : M
     (s : Memory.State) :
     PromoteStepGenPre w ((mkDictParams U V w₀ n_max h_space, d1), d2) s ↔
       PromoteStepPre U V w₀ n_max h_space w d1.1 d1.2 d2 s := Iff.rfl
+
+/-- Execute promotion using only readback and individual state equations. Keeping the five
+intermediate states abstract prevents equality checking from evaluating the packed writes or
+`removeLastTailItemProg`; the invariant proof supplies their semantic effects separately. -/
+private theorem promoteStepProg_clientState {U V w n_max h_space base b k : ℕ}
+    (s s₁ s₂ s₃ s₄ s₅ : Memory.State)
+    (t_u t_top p_new q_u v_u q_top v_top : ℕ)
+    (hres_tu : (Memory.spec 0).clientResult s
+      (readGMProg U V w n_max h_space
+        (base, gmTailPtrBase n_max +
+          (b * tailCapPerBucket n_max + (slabSize n_max - 1 - k)))) = t_u)
+    (hres_ttop : (Memory.spec 0).clientResult s
+      (readGMProg U V w n_max h_space
+        (base, gmTailPtrBase n_max +
+          (b * tailCapPerBucket n_max + (slabSize n_max + (slabSize n_max - 1 - k))))) = t_top)
+    (hres_p : (Memory.spec 0).clientResult s
+      (readGMProg U V w n_max h_space (base, 0)) = p_new)
+    (hres_qu : (Memory.spec 0).clientResult s
+      (readQuotProg U w n_max h_space (base, n_max - 1 - t_u)) = q_u)
+    (hres_vu : (Memory.spec 0).clientResult s
+      (readValProg U V w n_max h_space (base, n_max - 1 - t_u)) = v_u)
+    (hres_qtop : (Memory.spec 0).clientResult s
+      (readQuotProg U w n_max h_space (base, n_max - 1 - t_top)) = q_top)
+    (hres_vtop : (Memory.spec 0).clientResult s
+      (readValProg U V w n_max h_space (base, n_max - 1 - t_top)) = v_top)
+    (hs1 : (Memory.spec 0).clientState s
+      (writeQuotProg U w n_max h_space ((base, n_max - 1 - t_u), q_top)) = s₁)
+    (hs2 : (Memory.spec 0).clientState s₁
+      (writeValProg U V w n_max h_space ((base, n_max - 1 - t_u), v_top)) = s₂)
+    (hs3 : (Memory.spec 0).clientState s₂
+      (removeLastTailItemProg U V w n_max h_space (base, b)) = s₃)
+    (hs4 : (Memory.spec 0).clientState s₃
+      (writeQuotProg U w n_max h_space ((base, p_new * slabSize n_max + k), q_u)) = s₄)
+    (hs5 : (Memory.spec 0).clientState s₄
+      (writeValProg U V w n_max h_space ((base, p_new * slabSize n_max + k), v_u)) = s₅) :
+    (Memory.spec 0).clientState s
+        (promoteStepProg U V w n_max h_space ((base, b), k)) = s₅ := by
+  simp only [promoteStepProg, promoteStepGenProg, p_slabSizeSubOne_mk, p_slabSize_mk,
+    p_gmTailPtrBase_mk, p_tailCap_mk, p_nMaxSubOne_mk, readGMGenProg_mk, readQuotGenProg_mk,
+    readValGenProg_mk, writeQuotGenProg_mk, writeValGenProg_mk, removeLastTailItemGenProg_mk]
+  rw [StateTransitionSpec.clientState_bind, clientState_readGMProg, hres_tu,
+    StateTransitionSpec.clientState_bind, clientState_readGMProg, hres_ttop,
+    StateTransitionSpec.clientState_bind, clientState_readGMProg, hres_p,
+    StateTransitionSpec.clientState_bind, clientState_readQuotProg, hres_qu,
+    StateTransitionSpec.clientState_bind, clientState_readValProg, hres_vu,
+    StateTransitionSpec.clientState_bind, clientState_readQuotProg, hres_qtop,
+    StateTransitionSpec.clientState_bind, clientState_readValProg, hres_vtop]
+  rw [StateTransitionSpec.clientState_bind, hs1,
+    StateTransitionSpec.clientState_bind, hs2,
+    StateTransitionSpec.clientState_bind, hs3,
+    StateTransitionSpec.clientState_bind, hs4,
+    StateTransitionSpec.clientState_bind, hs5, StateTransitionSpec.clientState_pure]
 
 /-- Under `PromoteStepInv U V w n_max h_space base b k s` (`k < slabSize n_max`,
 `gm (gmRIdx b) = 2 * slabSize n_max - k`), `promoteStepProg` returns `k + 1` in `memoryCost = 66`
@@ -285,24 +318,14 @@ theorem promoteStepProg_effect {U V w n_max h_space base b k : ℕ}
   set s₅ := (Memory.spec 0).clientState s₄ (writeValProg U V w n_max h_space ((base, g_slab), v_u))
   have hres : (Memory.spec 0).clientResult s
       (promoteStepProg U V w n_max h_space ((base, b), k)) = k + 1 := by
-    unfold promoteStepProg
-    dsimp only
+    simp only [promoteStepProg, promoteStepGenProg, p_slabSizeSubOne_mk, p_slabSize_mk,
+      p_gmTailPtrBase_mk, p_tailCap_mk, p_nMaxSubOne_mk, readGMGenProg_mk, readQuotGenProg_mk,
+      readValGenProg_mk, writeQuotGenProg_mk, writeValGenProg_mk, removeLastTailItemGenProg_mk]
     repeat rw [StateTransitionSpec.clientResult_bind]
-    rfl
-  have hst : s' = s₅ := by
-    change (Memory.spec 0).clientState s
-      (promoteStepProg U V w n_max h_space ((base, b), k)) = s₅
-    unfold promoteStepProg
-    dsimp only
-    rw [StateTransitionSpec.clientState_bind, clientState_readGMProg, hres_tu,
-      StateTransitionSpec.clientState_bind, clientState_readGMProg, hres_ttop,
-      StateTransitionSpec.clientState_bind, clientState_readGMProg, hres_p,
-      StateTransitionSpec.clientState_bind, clientState_readQuotProg, hres_qu,
-      StateTransitionSpec.clientState_bind, clientState_readValProg, hres_vu,
-      StateTransitionSpec.clientState_bind, clientState_readQuotProg, hres_qtop,
-      StateTransitionSpec.clientState_bind, clientState_readValProg, hres_vtop]
-    repeat rw [StateTransitionSpec.clientState_bind]
-    rfl
+    exact StateTransitionSpec.clientResult_pure _ _
+  have hst : s' = s₅ :=
+    promoteStepProg_clientState s s₁ s₂ s₃ s₄ s₅ t_u t_top p_new q_u v_u q_top v_top
+      hres_tu hres_ttop hres_p hres_qu hres_vu hres_qtop hres_vtop rfl rfl rfl rfl rfl
   rw [hst]
   refine ⟨hres, by rw [hf5, hf4, hf3, hf2, hf1], ?_,
     by rw [hq5, hq4, hq3, hgm2, hq2, hq1],
@@ -862,6 +885,7 @@ theorem realizes_promoteLoopGen :
 
 /-- Parameter-free `Memory.Prog` operation promoting `K = slabSize n_max` tail items of bucket
 `b = d.2.2` at `base = d.2.1` into a new full slab. -/
+@[expose]
 def promoteSlabGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog Unit := do
   let _ ← promoteLoopGenProg ((d, 0), dpSlabSize d.1)
   gmPushSlabGenProg d
@@ -869,15 +893,14 @@ def promoteSlabGenProg (d : DictParams × (ℕ × ℕ)) : Memory.Prog Unit := do
 /-- `Memory.Prog` operation promoting `K = slabSize n_max` tail items of bucket `b = d.2` at
 `base = d.1` (`gm (gmRIdx b) = 2 * K`) into a new full slab via `promoteLoopProg` followed by
 `gmPushSlabProg`. -/
-def promoteSlabProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog Unit := do
-  let _ ← promoteLoopProg U V w n_max h_space ((d, 0), slabSize n_max)
-  gmPushSlabProg U V w n_max h_space d
+@[expose]
+def promoteSlabProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog Unit :=
+  promoteSlabGenProg (mkDictParams U V w n_max h_space, d)
 
 @[simp] theorem promoteSlabGenProg_mk (U V w n_max h_space : ℕ) (d : ℕ × ℕ) :
     promoteSlabGenProg (mkDictParams U V w n_max h_space, d) =
       promoteSlabProg U V w n_max h_space d := by
-  simp only [promoteSlabGenProg, promoteSlabProg, p_slabSize_mk,
-    promoteLoopGenProg_mk, gmPushSlabGenProg_mk]
+  rfl
 
 /-- Pure entry invariant for `promoteSlabProg`. -/
 @[expose]
@@ -1080,7 +1103,8 @@ theorem promoteSlabProg_effect {U V w n_max h_space base b : ℕ}
   have hst : s' =
       (Memory.spec 0).clientState s₁ (gmPushSlabProg U V w n_max h_space (base, b)) := by
     change (Memory.spec 0).clientState s (promoteSlabProg U V w n_max h_space (base, b)) = _
-    unfold promoteSlabProg
+    simp only [promoteSlabProg, promoteSlabGenProg, p_slabSize_mk, promoteLoopGenProg_mk,
+      gmPushSlabGenProg_mk]
     rw [StateTransitionSpec.clientState_bind]
   let gm₁ := gmAt base U V w n_max h_space s₁.mem
   have hgm'_eq : gm' = gmPushSlab n_max gm₁ b := by
@@ -1149,7 +1173,9 @@ theorem promoteSlabProg_effect {U V w n_max h_space base b : ℕ}
   · rw [hst, hq_push, hv_push, hgm'_eq]
     rw [hgm'_eq] at hj
     exact ⟨hq_slot b' hb' j hj, hv_slot b' hb' j hj⟩
-  · unfold promoteSlabProg
+  · simp only [promoteSlabProg, promoteSlabGenProg, p_slabSize_mk,
+      promoteLoopGenProg_mk, gmPushSlabGenProg_mk]
+    unfold promoteLoopProg
     rw [← PFunctor.FreeM.bind_eq_bind, memoryCost_bind]
     change memoryCost
         (iterate (promoteStepProg U V w n_max h_space) (base, b) (slabSize n_max) 0) s +

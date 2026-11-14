@@ -247,23 +247,15 @@ its logical index `j_new = bCount b` to micro-chain `(b, m)` when `totalSlots < 
 Input `d = ((((base, b), q_target), v_new), m)`. -/
 @[expose]
 def insertNewProg (U V w n_max h_space : ℕ)
-    (d : (((ℕ × ℕ) × ℕ) × ℕ) × ℕ) : Memory.Prog Unit := do
-  let tot ← readTotalSlotsProg U V w n_max h_space d.1.1.1.1
-  let cap ← pure n_max
-  if tot < cap then do
-    let j_new ← readBucketCountProg U V w n_max h_space d.1.1.1
-    pushBackSlotProg U V w n_max h_space d.1
-    prependIfIndexedProg U V w n_max h_space ((d.1.1.1, d.2), j_new)
-  else
-    pure ()
+    (d : (((ℕ × ℕ) × ℕ) × ℕ) × ℕ) : Memory.Prog Unit :=
+  insertNewGenProg (mkDictParams U V w n_max h_space, d)
 
 @[simp]
 theorem insertNewGenProg_mk (U V w n_max h_space : ℕ)
     (d : (((ℕ × ℕ) × ℕ) × ℕ) × ℕ) :
     insertNewGenProg (mkDictParams U V w n_max h_space, d) =
       insertNewProg U V w n_max h_space d := by
-  simp only [insertNewGenProg, insertNewProg, readTotalSlotsGenProg_mk, p_nMax_mk,
-    readBucketCountGenProg_mk, pushBackSlotGenProg_mk, prependIfIndexedGenProg_mk]
+  rfl
 
 /-- Precondition for `insertNewProg` in `Realizes`. -/
 @[expose]
@@ -346,21 +338,15 @@ searches bucket `b` for `q_target` via `searchBucketProg`; if found, overwrites 
 otherwise calls `insertNewProg`. -/
 @[expose]
 def insertBodyProg (U V w n_max h_space : ℕ)
-    (d : (((ℕ × ℕ) × ℕ) × ℕ) × ℕ) : Memory.Prog Unit := do
-  let res ← searchBucketProg U V w n_max h_space (d.1.1, d.2)
-  let z1 ← pure 1
-  if res.1.1 = z1 then
-    writeValProg U V w n_max h_space ((d.1.1.1.1, res.2), d.1.2)
-  else
-    insertNewProg U V w n_max h_space d
+    (d : (((ℕ × ℕ) × ℕ) × ℕ) × ℕ) : Memory.Prog Unit :=
+  insertBodyGenProg (mkDictParams U V w n_max h_space, d)
 
 @[simp]
 theorem insertBodyGenProg_mk (U V w n_max h_space : ℕ)
     (d : (((ℕ × ℕ) × ℕ) × ℕ) × ℕ) :
     insertBodyGenProg (mkDictParams U V w n_max h_space, d) =
       insertBodyProg U V w n_max h_space d := by
-  simp only [insertBodyGenProg, insertBodyProg, searchBucketGenProg_mk, writeValGenProg_mk,
-    insertNewGenProg_mk]
+  rfl
 
 /-- Precondition for `insertBodyProg` in `Realizes`. -/
 @[expose]
@@ -460,13 +446,15 @@ theorem insertBodyProg_bucket_spec {U V w₀ n_max h_space w base b q_target v_n
     have hs' : s' = (Memory.spec 0).clientState s
         (writeValProg U V w₀ n_max h_space ((base, res.2), v_new)) := by
       change (Memory.spec 0).clientState s (insertBodyProg U V w₀ n_max h_space d) = _
-      unfold insertBodyProg
+      simp only [insertBodyProg, insertBodyGenProg, searchBucketGenProg_mk, writeValGenProg_mk,
+        insertNewGenProg_mk]
       simp only [pure_bind, d]
       rw [StateTransitionSpec.clientState_bind, hsb.1, ite_eq_left hf1]
     have hcost : memoryCost (insertBodyProg U V w₀ n_max h_space d) s ≤
         16 + 8 * (L b m).length +
           6 * (bCount n_max (gmAt base U V w₀ n_max h_space s.mem) b - effBucketCap n_max) := by
-      unfold insertBodyProg
+      simp only [insertBodyProg, insertBodyGenProg, searchBucketGenProg_mk, writeValGenProg_mk,
+        insertNewGenProg_mk]
       simp only [pure_bind, d]
       rw [memoryCost_bind_of_clientState_eq hsb.1, ite_eq_left hf1, memoryCost_writeValProg]
       have := hsb.2.1
@@ -548,7 +536,9 @@ theorem insertBodyProg_bucket_spec {U V w₀ n_max h_space w base b q_target v_n
     have hs' : s' = (Memory.spec 0).clientState s₁
         (prependIfIndexedProg U V w₀ n_max h_space (((base, b), m), j_new)) := by
       change (Memory.spec 0).clientState s (insertBodyProg U V w₀ n_max h_space d) = _
-      unfold insertBodyProg insertNewProg
+      simp only [insertBodyProg, insertNewProg, insertBodyGenProg, searchBucketGenProg_mk,
+        writeValGenProg_mk, insertNewGenProg_mk, insertNewGenProg, readTotalSlotsGenProg_mk,
+        p_nMax_mk, readBucketCountGenProg_mk, pushBackSlotGenProg_mk, prependIfIndexedGenProg_mk]
       simp only [pure_bind, d]
       rw [StateTransitionSpec.clientState_bind, hsb.1, ite_eq_right hne1,
         StateTransitionSpec.clientState_bind,
@@ -578,7 +568,9 @@ theorem insertBodyProg_bucket_spec {U V w₀ n_max h_space w base b q_target v_n
         memoryCost (searchBucketProg U V w₀ n_max h_space (((base, b), q_target), m)) s +
         26 +
         memoryCost (pushBackSlotProg U V w₀ n_max h_space (((base, b), q_target), v_new)) s := by
-      unfold insertBodyProg insertNewProg
+      simp only [insertBodyProg, insertNewProg, insertBodyGenProg, searchBucketGenProg_mk,
+        writeValGenProg_mk, insertNewGenProg_mk, insertNewGenProg, readTotalSlotsGenProg_mk,
+        p_nMax_mk, readBucketCountGenProg_mk, pushBackSlotGenProg_mk, prependIfIndexedGenProg_mk]
       simp only [pure_bind, ← PFunctor.FreeM.bind_eq_bind, d]
       rw [memoryCost_bind, hsb.1, ite_eq_right hne1, memoryCost_bind,
         clientState_readTotalSlotsProg, clientResult_readTotalSlotsProg, ite_eq_left htot,
