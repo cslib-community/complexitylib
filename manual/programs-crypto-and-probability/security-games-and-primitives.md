@@ -1498,8 +1498,10 @@ The uniform statement is in
 OFB mode with `n`-bit blocks for a word-level family, with each chain value truncated to `n` bits
 so that encryption is polynomial-time on every key (`isPPTOn_ofbWordEncrypt`,
 `computableInPolyTime_ofbWordDecrypt`, `ofbWordDecrypt_ofbWordEncrypt`). The reduction
-`ofbToPrfDistinguisher` queries its oracle on each chain value and is uniform strict oracle PPT
-(`isOraclePPT_ofbToPrfDistinguisher`). Through `blockModeWordAdversary`
+`ofbToPrfDistinguisher` is the shared stream reduction `ivStreamToPrfDistinguisher` of the CTR
+paragraph, querying its oracle on each chain value. Its certificate
+`isOraclePPT_ofbToPrfDistinguisher` and its real- and ideal-game identities are instances of the
+shared ones. Through `blockModeWordAdversary`
 ([`Encryption/BlockModeWord.lean`](../../CslibFrontier/Crypto/Computational/Encryption/BlockModeWord.lean))
 it matches `ofbReduction`, so `advantage_ofbWordCPAGame_le` reuses the chain bound above, and
 `PseudorandomFunction.indcpa_ofbWordEncrypt` proves `SymmetricINDCPAOn blockPairValid` from

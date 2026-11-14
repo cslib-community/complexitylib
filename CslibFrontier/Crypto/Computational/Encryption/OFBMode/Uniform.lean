@@ -7,25 +7,15 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Crypto.Computational.Encryption.IVStream
-public import CslibFrontier.Crypto.Computational.Encryption.SymmetricCPA
+public import CslibFrontier.Crypto.Computational.Encryption.IVStream.Reduction
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Decoder
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Frame
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 import CslibFrontier.Computability.Probabilistic.Oracle.Composition
-import CslibFrontier.Computability.Probabilistic.Oracle.Substitution
 import CslibFrontier.Crypto.Computational.Encryption.BlockModeWord
 import CslibFrontier.Crypto.Computational.Encryption.OFBMode
 import CslibFrontier.Foundations.Data.BitString.List.Operations
-import CslibFrontier.Languages.Probabilistic.Oracle.Support
-import CslibFrontier.Languages.Probabilistic.QueryCount.Congr
-import CslibFrontier.Probability.BitString
-import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Tactic.Negligible
 import CslibFrontier.Tactic.PolyTime
 import CslibFrontier.Tactic.PPT
@@ -45,10 +35,11 @@ the chain, and so encryption, polynomial-time.
 
 Security is many-query left-or-right CPA security (`SymmetricINDCPAOn`, Attack Game 5.2) on
 equal-length pairs of whole blocks (`blockPairValid`), in the standard model, against uniform
-strict oracle-PPT adversaries. The PRF distinguisher `ofbToPrfDistinguisher adversary bit` runs the
-adversary and answers each admissible request itself: it draws the initial value and obtains each
-chain value with one query to its own function oracle on the previous one, keeping at most `n`
-bits of the reply.
+strict oracle-PPT adversaries. The PRF distinguisher `ofbToPrfDistinguisher adversary bit` is the
+shared stream reduction `ivStreamToPrfDistinguisher` with the chain keystream queries
+`ofbKeystreamQueries`: it runs the adversary and answers each admissible request itself, drawing
+the initial value and obtaining each chain value with one query to its own function oracle on the
+previous one, keeping at most `n` bits of the reply.
 
 1. It is uniform strict oracle PPT whenever the adversary is
    (`isOraclePPT_ofbToPrfDistinguisher`).
@@ -73,9 +64,9 @@ bits of the reply.
 
 * `Cslib.Crypto.ofbWordStep`, `Cslib.Crypto.ofbWordKeystream`: chain steps and keystream.
 * `Cslib.Crypto.ofbWordEncrypt`, `Cslib.Crypto.ofbWordDecrypt`: the cipher on whole-block words.
-* `Cslib.Crypto.ofbKeystreamStep`, `Cslib.Crypto.ofbKeystreamQueries`,
-  `Cslib.Crypto.ofbPrfHandler`, `Cslib.Crypto.ofbToPrfDistinguisher`: the reduction to the PRF
-  game.
+* `Cslib.Crypto.ofbKeystreamStep`, `Cslib.Crypto.ofbKeystreamQueries`: the keystream from the
+  function oracle.
+* `Cslib.Crypto.ofbToPrfDistinguisher`: the reduction to the PRF game.
 
 ## Main results
 
@@ -216,7 +207,7 @@ private theorem computableInPolyTime_ofbWordKeystream_tuple
 theorem isPPTOn_ofbWordEncrypt {family : List Bool → List Bool → List Bool}
     (hpoly : ComputableInPolyTime (fun pair => family pair.1 pair.2)
       (encPair encBits encBits) encBits) :
-    IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
+    IsPPTOn (encKeyedInput encBits) encBits
       (fun ((n, k, msg) : ℕ × List Bool × List Bool) => ofbWordEncrypt family n k msg) :=
   isPPTOn_ivStreamEncrypt (computableInPolyTime_ofbWordKeystream_tuple hpoly)
 
@@ -226,7 +217,7 @@ theorem computableInPolyTime_ofbWordDecrypt {family : List Bool → List Bool �
       (encPair encBits encBits) encBits) :
     ComputableInPolyTime
       (fun ((n, k, ct) : ℕ × List Bool × List Bool) => ofbWordDecrypt family n k ct)
-      (encPair encUnary (encPair encBits encBits)) (encOption encBits) :=
+      (encKeyedInput encBits) (encOption encBits) :=
   computableInPolyTime_ivStreamDecrypt (computableInPolyTime_ofbWordKeystream_tuple hpoly)
 
 /-! ### The reduction to the PRF game -/
@@ -242,25 +233,12 @@ def ofbKeystreamQueries (n : ℕ) (iv : List Bool) (blocks : ℕ) :
     WordOracleComp Unit (List Bool) :=
   Prod.snd <$> OracleComp.iterate blocks (ofbKeystreamStep n) (iv, [])
 
-/-- The reduction's answer to one left-or-right request: on an admissible pair, draw a uniform
-`n`-bit initial value, obtain the keystream from the function oracle and XOR it with the message
-selected by `bit`; answer inadmissible requests with `[]` and no query. -/
-noncomputable def ofbPrfHandler (n : ℕ) (bit : Bool) (request : Unit × List Bool) :
-    WordOracleComp Unit (List Bool) :=
-  let m0 := unframe request.2
-  let m1 := dropFrame request.2
-  if blockPairValid n m0 m1 then do
-    let iv ← ProbOracleComp.sample (BitString.sampleList n)
-    (fun ks => iv ++ List.zipWith xor ks (if bit then m1 else m0)) <$>
-      ofbKeystreamQueries n iv (m0.length / n)
-  else
-    pure []
-
-/-- The PRF distinguisher built from a left-or-right CPA adversary against OFB mode: run the
-adversary and answer every request with `ofbPrfHandler n bit`. -/
-noncomputable def ofbToPrfDistinguisher (adversary : OracleDistinguisher) (bit : Bool) :
+/-- The PRF distinguisher built from a left-or-right CPA adversary against OFB mode: the shared
+stream reduction `ivStreamToPrfDistinguisher` with the chain keystream queries
+`ofbKeystreamQueries`. -/
+noncomputable abbrev ofbToPrfDistinguisher (adversary : OracleDistinguisher) (bit : Bool) :
     OracleDistinguisher :=
-  fun n _ => ProbOracleComp.simulate (ofbPrfHandler n bit) (adversary n [])
+  ivStreamToPrfDistinguisher ofbKeystreamQueries adversary bit
 
 /-- Answered by a deterministic oracle `g`, the keystream queries iterate the chain step that
 replaces the chain value by `g` of it, truncated to `n` bits. -/
@@ -282,15 +260,14 @@ theorem run_ofbKeystreamQueries {n : ℕ} (g : List Bool → List Bool) (iv : Li
       simp
   rw [ofbKeystreamQueries, ProbOracleComp.run_map, hloop, map_pure]
 
-/-- Under a key of length `n`, the reduction answers each request with the law of the CPA
-oracle. -/
-theorem eval_run_ofbPrfHandler {family : List Bool → List Bool → List Bool}
+/-- Answered by the keyed oracle under a key of length `n`, the keystream queries from an `n`-bit
+initial value compute the keystream. -/
+theorem run_ofbKeystreamQueries_prfOracle {family : List Bool → List Bool → List Bool}
     (hlen : ∀ key query, query.length = key.length → (family key query).length = key.length)
-    {n : ℕ} {k : List Bool} (hk : k.length = n) (bit : Bool) (request : Unit × List Bool) :
-    ProbComp.eval ((ofbPrfHandler n bit request).run
-        fun request => pure (prfOracle family n k request.2)) =
-      ProbComp.eval
-        (symmetricCPAReplyOn blockPairValid (ofbWordEncrypt family) n k bit request) := by
+    {n : ℕ} {k : List Bool} (hk : k.length = n) {iv : List Bool} (hiv : iv.length = n)
+    (blocks : ℕ) :
+    (ofbKeystreamQueries n iv blocks).run (fun request => pure (prfOracle family n k request.2)) =
+      pure (ofbWordKeystream family n k iv blocks) := by
   have hchain : ∀ (b : ℕ) (state : List Bool × List Bool), state.1.length = n →
       (fun state : List Bool × List Bool =>
         ((prfOracle family n k state.1).take n,
@@ -305,20 +282,7 @@ theorem eval_run_ofbPrfHandler {family : List Bool → List Bool → List Bool}
       rw [Function.iterate_succ_apply, Function.iterate_succ_apply]
       simp only [prfOracle, hstate, ↓reduceIte]
       exact ih _ (by simp [hy])
-  unfold ofbPrfHandler symmetricCPAReplyOn
-  dsimp only
-  by_cases hvalid : blockPairValid n (unframe request.2) (dropFrame request.2) = true
-  · have hlenEq : (unframe request.2).length = (dropFrame request.2).length := by
-      simpa [blockPairValid] using (Bool.and_eq_true _ _).mp hvalid |>.1
-    have hmb : (if bit then dropFrame request.2 else unframe request.2).length =
-        (unframe request.2).length := by
-      cases bit <;> simp [hlenEq]
-    simp only [hvalid, ↓reduceIte, ProbOracleComp.run_bind, ProbOracleComp.run_sample,
-      ProbOracleComp.run_map, run_ofbKeystreamQueries, map_pure, ofbWordEncrypt, ivStreamEncrypt,
-      ProbComp.eval_bind, ProbComp.eval_pure, BitString.eval_sampleList, hmb]
-    refine PMF.bind_congr_on_support _ _ _ fun iv hiv => ?_
-    rw [hchain _ _ (BitString.length_of_mem_support_uniformList hiv), ofbWordKeystream]
-  · simp [hvalid]
+  rw [run_ofbKeystreamQueries, hchain _ _ hiv, ofbWordKeystream]
 
 /-- **Real game.** Against the keyed oracle, `ofbToPrfDistinguisher adversary bit` has the output
 law of `adversary` in the OFB CPA game with challenge bit `bit`. -/
@@ -327,14 +291,9 @@ theorem eval_prfRealGame_ofbToPrfDistinguisher {family : List Bool → List Bool
     (adversary : OracleDistinguisher) (bit : Bool) (n : ℕ) :
     ProbComp.eval (prfRealGame family (ofbToPrfDistinguisher adversary bit) n) =
       ProbComp.eval (symmetricCPAGameOn blockPairValid BitString.sampleList
-        (ofbWordEncrypt family) adversary bit n) := by
-  simp only [prfRealGame, symmetricCPAGameOn, ofbToPrfDistinguisher, ProbOracleComp.run_simulate,
-    ProbComp.eval_bind, BitString.eval_sampleList]
-  refine PMF.bind_congr_on_support _ _ _ fun k hk => ?_
-  have hkLen : k.length = n := BitString.length_of_mem_support_uniformList hk
-  exact (ProbOracleComp.QueriesSatisfy.of_forall (p := fun _ => True) (fun _ => trivial)
-    (adversary n [])).eval_run_congr fun request _ =>
-      eval_run_ofbPrfHandler hlen hkLen bit request
+        (ofbWordEncrypt family) adversary bit n) :=
+  eval_prfRealGame_ivStreamToPrfDistinguisher
+    (fun _ hk _ hiv blocks => run_ofbKeystreamQueries_prfOracle hlen hk hiv blocks) adversary bit
 
 /-- The keystream queries are strict oracle PPT: each step makes one charged query and grows the
 encoded state by at most `3 n` bits. -/
@@ -371,90 +330,13 @@ private theorem isOraclePPTOn_ofbKeystreamQueries {α : Type} {input : α ↪ Li
       omega)
   exact hloop.map' (ComputableInPolyTime.snd _ _)
 
-/-- The reduction's handler is uniformly strict oracle PPT in the parameter, the auxiliary word
-and the request. -/
-private theorem isOraclePPTOn_ofbPrfHandler (bit : Bool) :
-    IsOraclePPTOn (encPair (encPair encUnary encBits) (encPair (encFinEnum Unit) encBits)) encBits
-      (fun pair : (ℕ × List Bool) × (Unit × List Bool) => ofbPrfHandler pair.1.1 bit pair.2) := by
-  let E := encPair (encPair encUnary encBits) (encPair (encFinEnum Unit) encBits)
-  let EIv := encPair E encBits
-  have hn : ComputableInPolyTime (fun p : (ℕ × List Bool) × (Unit × List Bool) => p.1.1)
-      E encUnary := by dsimp only [E]; fun_prop
-  have hm0 : ComputableInPolyTime
-      (fun p : (ℕ × List Bool) × (Unit × List Bool) => unframe p.2.2) E encBits :=
-    ComputableInPolyTime.unframe.comp (by dsimp only [E]; fun_prop)
-  have hm1 : ComputableInPolyTime
-      (fun p : (ℕ × List Bool) × (Unit × List Bool) => dropFrame p.2.2) E encBits :=
-    ComputableInPolyTime.dropFrame.comp (by dsimp only [E]; fun_prop)
-  have hcond : ComputableInPolyTime
-      (fun p : (ℕ × List Bool) × (Unit × List Bool) =>
-        blockPairValid p.1.1 (unframe p.2.2) (dropFrame p.2.2)) E encBool := by
-    unfold blockPairValid; fun_prop
-  have hmsg : ComputableInPolyTime
-      (fun p : (ℕ × List Bool) × (Unit × List Bool) =>
-        if bit then dropFrame p.2.2 else unframe p.2.2) E encBits := by
-    cases bit
-    · exact hm0
-    · exact hm1
-  have hblocks : ComputableInPolyTime
-      (fun q : ((ℕ × List Bool) × (Unit × List Bool)) × List Bool =>
-        (unframe q.1.2.2).length / q.1.1.1) EIv encUnary :=
-    ComputableInPolyTime.unary_div'
-      (ComputableInPolyTime.length_bits_comp (hm0.comp (ComputableInPolyTime.fst _ _)))
-      (hn.comp (ComputableInPolyTime.fst _ _))
-  have hks : IsOraclePPTOn (Operation := Unit) EIv encBits
-      (fun q : ((ℕ × List Bool) × (Unit × List Bool)) × List Bool =>
-        ofbKeystreamQueries q.1.1.1 q.2 ((unframe q.1.2.2).length / q.1.1.1)) :=
-    isOraclePPTOn_ofbKeystreamQueries (hn.comp (ComputableInPolyTime.fst _ _))
-      (ComputableInPolyTime.snd _ _) hblocks
-  have hyes : IsOraclePPTOn (Operation := Unit) EIv encBits
-      (fun q : ((ℕ × List Bool) × (Unit × List Bool)) × List Bool =>
-        (fun ks => q.2 ++ List.zipWith xor ks (if bit then dropFrame q.1.2.2 else unframe q.1.2.2))
-          <$> ofbKeystreamQueries q.1.1.1 q.2 ((unframe q.1.2.2).length / q.1.1.1)) :=
-    hks.map_with' (ComputableInPolyTime.bitsAppend (by dsimp only [EIv]; fun_prop)
-      (ComputableInPolyTime.bitsZipWithInput xor (ComputableInPolyTime.snd _ _)
-        (hmsg.comp ((ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.fst _ _)))))
-  unfold ofbPrfHandler
-  exact IsOraclePPTOn.cond' hcond
-    (IsOraclePPTOn.bind_with
-      ((isPPTOn_sampleList.preprocess hn).isOraclePPTOn) hyes)
-    (ComputableInPolyTime.isOraclePPTOn (ComputableInPolyTime.const []))
-
-/-- Every answer of the handler has at most `n` bits more than the request. -/
-private theorem length_le_of_mem_support_ofbPrfHandler {n : ℕ} {bit : Bool}
-    {request : Unit × List Bool} {reply : List Bool}
-    (hreply : reply ∈ OracleComp.support (ofbPrfHandler n bit request)) :
-    reply.length ≤ n + request.2.length := by
-  unfold ofbPrfHandler at hreply
-  dsimp only at hreply
-  split at hreply
-  · obtain ⟨iv, hiv, hreply⟩ := OracleComp.mem_supportWith_bind_iff.mp hreply
-    change iv ∈ OracleComp.support (ProbOracleComp.sample (BitString.sampleList n)) at hiv
-    rw [ProbOracleComp.support_sample, BitString.eval_sampleList] at hiv
-    have hivLen : iv.length = n := BitString.length_of_mem_support_uniformList hiv
-    obtain ⟨ks, -, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hreply
-    have hmsg : (if bit then dropFrame request.2 else unframe request.2).length ≤
-        request.2.length := by
-      cases bit
-      · exact length_unframe_le _
-      · exact length_dropFrame_le _
-    simp only [List.length_append, List.length_zipWith, hivLen]
-    omega
-  · have hreplyEq := OracleComp.eq_of_mem_supportWith_pure hreply
-    subst hreplyEq
-    simp
-
 /-- **Efficiency of the reduction.** For every uniform strict oracle-PPT adversary,
 `ofbToPrfDistinguisher adversary bit` is uniform strict oracle PPT. -/
 theorem isOraclePPT_ofbToPrfDistinguisher {adversary : OracleDistinguisher}
     (hadversary : IsOraclePPT encBool adversary) (bit : Bool) :
     IsOraclePPT encBool (ofbToPrfDistinguisher adversary bit) :=
-  (IsOraclePPTOn.interpret_preprocess_open' (operationEncoding := encFinEnum Unit)
-    (handler := fun caller : ℕ × List Bool => ofbPrfHandler caller.1 bit)
-    (prepare := fun caller : ℕ × List Bool => (caller.1, ([] : List Bool)))
-    (resources := fun caller request => caller.1 + request.length)
-    hadversary (by fun_prop) (isOraclePPTOn_ofbPrfHandler bit) (by fun_prop)
-    fun _ _ _ hreply => length_le_of_mem_support_ofbPrfHandler hreply).isOraclePPT
+  isOraclePPT_ivStreamToPrfDistinguisher
+    (isOraclePPTOn_ofbKeystreamQueries (by fun_prop) (by fun_prop) (by fun_prop)) hadversary bit
 
 /-! ### The ideal game -/
 
@@ -475,40 +357,14 @@ private theorem iterate_randomFunction_ofFn {n : ℕ} (f : BitString n → BitSt
     simp only [hstep]
     rw [ih, ofbChain, List.flatMap_cons, List.append_assoc]
 
-/-- Against a fixed function `f`, the reduction answers a request of at most `ℓ` bits as the
-block-mode reduction answers its block query. -/
-private theorem eval_run_ofbPrfHandler_randomFunction {n : ℕ} (f : BitString n → BitString n)
-    (ℓ : ℕ) (bit : Bool) (request : Unit × List Bool) (hℓ : request.2.length ≤ ℓ) :
-    ProbComp.eval ((ofbPrfHandler n bit request).run
-        fun r => pure (randomFunctionOracle n f r.2)) =
-      ProbComp.eval ((blockModeWordQuery n request).run
-        fun q => (ofbQueryProgram ℓ bit q).run fun x => pure (f x)) := by
-  unfold ofbPrfHandler blockModeWordQuery
-  dsimp only
-  by_cases hvalid : blockPairValid n (unframe request.2) (dropFrame request.2) = true
-  · have hpair := hvalid
-    simp only [blockPairValid, Bool.and_eq_true, beq_iff_eq] at hpair
-    obtain ⟨hlenEq, hmod⟩ := hpair
-    have hm0 : (unframe request.2).length / n ≤ ℓ :=
-      (Nat.div_le_self _ _).trans ((length_unframe_le _).trans hℓ)
-    have hsel := blockModeSelect_padBlocks bit hvalid hm0
-    have hmb : (if bit then dropFrame request.2 else unframe request.2).length =
-        (unframe request.2).length := by
-      cases bit <;> simp [hlenEq]
-    have hmbMod : (if bit then dropFrame request.2 else unframe request.2).length % n = 0 := by
-      rw [hmb, hmod]
-    simp only [hvalid, ↓reduceIte, ProbOracleComp.run_bind, ProbOracleComp.run_sample,
-      ProbOracleComp.run_map, ProbOracleComp.run_query, ofbQueryProgram, blockModeQueryProgram,
-      hsel, run_ofbChainQueries, ProbOracleComp.run_pure, pure_bind, run_ofbKeystreamQueries,
-      map_pure, ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure, ProbComp.eval_uniform,
-      BitString.eval_sampleList, BitString.uniformList, PMF.bind_map, PMF.map_bind,
-      Function.comp_def, PMF.pure_map]
-    refine congrArg _ (funext fun iv => congrArg PMF.pure ?_)
-    rw [iterate_randomFunction_ofFn, List.nil_append, BitString.flatMap_ofFn_zipWith_add _ _ (by
-        rw [length_ofbChain, BitString.length_padBlocks, hmb]),
-      BitString.flatMap_ofFn_padBlocks (Nat.dvd_of_mod_eq_zero hmbMod), BitString.length_padBlocks,
-      hmb]
-  · simp [hvalid]
+/-- Answered by the oracle of a fixed function `f`, the keystream queries from the bits of `iv`
+compute the bits of the typed chain `ofbChain f iv blocks`. -/
+private theorem run_ofbKeystreamQueries_randomFunction {n : ℕ} (f : BitString n → BitString n)
+    (iv : BitString n) (blocks : ℕ) :
+    (ofbKeystreamQueries n (List.ofFn iv) blocks).run
+        (fun request => pure (randomFunctionOracle n f request.2)) =
+      pure ((ofbChain f iv blocks).flatMap List.ofFn) := by
+  rw [run_ofbKeystreamQueries, iterate_randomFunction_ofFn, List.nil_append]
 
 /-- Against a uniform random function, the reduction for an adversary whose requests have at most
 `ℓ` bits is the typed OFB reduction for the block-mode adversary. -/
@@ -517,17 +373,18 @@ private theorem eval_prfIdealGame_ofbToPrfDistinguisher (adversary : OracleDisti
     (hℓ : (adversary n []).QueriesSatisfy fun request => request.2.length ≤ ℓ) :
     ProbComp.eval (prfIdealGame (ofbToPrfDistinguisher adversary bit) n) =
       ProbComp.eval (PRF.idealExperiment
-        (ofbReduction ℓ bit (blockModeWordAdversary adversary n))) := by
-  simp only [prfIdealGame, PRF.idealExperiment, ofbToPrfDistinguisher, ofbReduction,
-    blockModeReduction, blockModeWordAdversary, ProbOracleComp.run_simulate, ProbComp.eval_bind]
-  exact congrArg _ (funext fun f =>
-    hℓ.eval_run_congr fun request hrequest =>
-      eval_run_ofbPrfHandler_randomFunction f ℓ bit request hrequest)
+        (ofbReduction ℓ bit (blockModeWordAdversary adversary n))) :=
+  eval_prfIdealGame_ivStreamToPrfDistinguisher
+    (keystreamBlocks := fun f iv blocks => ofbChain f iv blocks)
+    (fun f iv blocks => length_ofbChain f iv blocks)
+    (fun f iv blocks => run_ofbChainQueries f iv blocks)
+    run_ofbKeystreamQueries_randomFunction adversary bit hℓ
 
-/-- **Concrete CPA bound for OFB mode** ([BonehShoup2023], Exercise 5.15(b)). At parameter `n`, an
-adversary making at most `Q` requests of at most `L` bits has CPA advantage against
-`ofbWordEncrypt family` at most the PRF advantages of `ofbToPrfDistinguisher adversary false` and
-`ofbToPrfDistinguisher adversary true` plus `2 (Q L) (Q L + L) / 2 ^ n`. -/
+/-- **Concrete CPA bound for OFB mode**, after [BonehShoup2023], Exercise 5.15(b), which asks for
+CPA security and states no concrete bound. At parameter `n`, an adversary making at most `Q`
+requests of at most `L` bits has CPA advantage against `ofbWordEncrypt family` at most the PRF
+advantages of `ofbToPrfDistinguisher adversary false` and `ofbToPrfDistinguisher adversary true`
+plus `2 (Q L) (Q L + L) / 2 ^ n`, from the typed chain-collision bound. -/
 theorem advantage_ofbWordCPAGame_le {family : List Bool → List Bool → List Bool}
     (hlen : ∀ key query, query.length = key.length → (family key query).length = key.length)
     (adversary : OracleDistinguisher) {n Q L : ℕ} (hQ : (adversary n []).IsQueryBounded Q)
