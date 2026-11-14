@@ -50,7 +50,10 @@ The protocol does not depend on the security parameter; only the simulator's sam
 * `Cslib.Crypto.PrimeOrderGroupFamily.schnorrBitSigma`: Schnorr's Sigma protocol in one group with
   `m`-bit challenges.
 * `Cslib.Crypto.PrimeOrderGroupFamily.schnorrEncoding`: its word encodings.
-* `Cslib.Crypto.PrimeOrderGroupFamily.schnorrExtract`: the extractor, computed with `extractNat`.
+* `Cslib.Crypto.PrimeOrderGroupFamily.schnorrExtract`, `schnorrExtractWord`: the extractor,
+  computed with `extractNat`, and the word function computing it on encodings.
+* `Cslib.Crypto.PrimeOrderGroupFamily.schnorrSampleChallenge`: a fair-coin challenge sampler
+  within `1 / 2 ^ n` of uniform on `ZMod q`.
 * `Cslib.Crypto.PrimeOrderGroupFamily.schnorrSimulator`: the simulator with `sampleExp`.
 * `Cslib.Crypto.PrimeOrderGroupFamily.schnorrSimulateWord`: the simulator as a strict PPT program
   on words.
@@ -58,7 +61,10 @@ The protocol does not depend on the security parameter; only the simulator's sam
 ## Main results
 
 * `Cslib.Crypto.PrimeOrderGroupFamily.efficientSpecialSoundness_schnorr`: efficient special
-  soundness.
+  soundness, with `schnorrExtractWord` as its polynomial-time word function.
+* `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_schnorrSampleChallenge`,
+  `Cslib.Crypto.PrimeOrderGroupFamily.closeTo_schnorrSampleChallenge`: the challenge sampler is
+  strict PPT and `1 / 2 ^ n`-close to uniform.
 * `Cslib.Crypto.PrimeOrderGroupFamily.isPPTOn_schnorrSimulateWord`,
   `Cslib.Crypto.PrimeOrderGroupFamily.eval_schnorrSimulateWord`,
   `Cslib.Crypto.PrimeOrderGroupFamily.isPPT_schnorrSimulator`,
@@ -127,6 +133,15 @@ def schnorrExtract (i : ℕ × F.Desc) (_ _ : F.Carrier i.2) (c z c' z' : ZMod (
     ZMod (F.order i.2) :=
   extractNat (F.order i.2) c.val z.val c'.val z'.val
 
+/-- Schnorr's extractor on words: on the index `(n, d)` and the binary challenges and responses of
+two conversations, return `extractNat` of their values in binary. It computes `schnorrExtract` on
+encodings (`extractorRealizedBy_schnorrExtractWord`). -/
+def schnorrExtractWord :
+    (ℕ × F.Desc) × List Bool × List Bool × List Bool × List Bool × List Bool × List Bool →
+      List Bool
+  | ((_, d), _, _, c, z, c', z') =>
+    (extractNat (F.order d) (ofBits c) (ofBits z) (ofBits c') (ofBits z')).bits
+
 /-- Schnorr's simulator ([BonehShoup2023], Example 19.3) with fair coins: at index `(n, d)`, on a
 statement `u` and a challenge `c`, sample `s` with `sampleExp n d`, read it as the response
 `z = s mod q`, and return the commitment `z • g - c • u` with `z`. -/
@@ -151,6 +166,36 @@ noncomputable def schnorrSimulateWord :
 
 /-! ### Special soundness -/
 
+/-- `schnorrExtractWord` is computable in polynomial time. -/
+theorem computableInPolyTime_schnorrExtractWord :
+    ComputableInPolyTime F.schnorrExtractWord (encPair (encPair encUnary F.encDesc)
+      (encPair encBits (encPair encBits (encPair encBits (encPair encBits
+        (encPair encBits encBits)))))) encBits := by
+  let encIn := encPair (encPair encUnary F.encDesc) (encPair encBits (encPair encBits
+    (encPair encBits (encPair encBits (encPair encBits encBits)))))
+  have hd : ComputableInPolyTime
+      (fun p : (ℕ × F.Desc) × List Bool × List Bool × List Bool × List Bool × List Bool ×
+        List Bool => p.1.2) encIn F.encDesc := by fun_prop
+  have hword {k : (ℕ × F.Desc) × List Bool × List Bool × List Bool × List Bool × List Bool ×
+      List Bool → List Bool} (hk : ComputableInPolyTime k encIn encBits) :
+      ComputableInPolyTime (fun p => ofBits (k p)) encIn encNat :=
+    .of_tidy (ComputableTidilyInPolyTime.bitsToNat.comp hk.tidy)
+  have hext := computableInPolyTime_extractNat hd
+    (hword (k := fun p => p.2.2.2.1) (by fun_prop))
+    (hword (k := fun p => p.2.2.2.2.1) (by fun_prop))
+    (hword (k := fun p => p.2.2.2.2.2.1) (by fun_prop))
+    (hword (k := fun p => p.2.2.2.2.2.2) (by fun_prop))
+  exact .of_tidy (ComputableTidilyInPolyTime.natBits.comp hext.tidy)
+
+/-- `schnorrExtractWord` computes Schnorr's extractor `schnorrExtract` on encodings. -/
+theorem extractorRealizedBy_schnorrExtractWord :
+    ExtractorRealizedBy F.schnorrEncoding (fun i => F.encScalar i.2) F.schnorrExtract
+      F.schnorrExtractWord := by
+  intro i u t c z c' z'
+  simp only [schnorrExtractWord, schnorrEncoding, encScalar, encodeEmbedding,
+    Function.Embedding.coeFn_mk, encNat_apply, ofBits_bits, schnorrExtract, ZMod.val_natCast,
+    extractNat, Nat.mod_mod]
+
 /-- **Schnorr's protocol has efficient special soundness** ([BonehShoup2023], Example 19.2). -/
 theorem efficientSpecialSoundness_schnorr :
     EfficientSpecialSoundness F.schnorrFamily (fun i α u => α • F.generator i.2 = u)
@@ -162,28 +207,8 @@ theorem efficientSpecialSoundness_schnorr :
     simp only [linearExtract, Function.Embedding.refl_apply, smul_eq_mul] at h
     simp only [schnorrExtract, extractNat_cast hcast, ZMod.natCast_zmod_val]
     exact h
-  polyTime := by
-    let encIn := encPair (encPair encUnary F.encDesc) (encPair encBits (encPair encBits
-      (encPair encBits (encPair encBits (encPair encBits encBits)))))
-    refine ⟨fun p => (extractNat (F.order p.1.2) (ofBits p.2.2.2.1) (ofBits p.2.2.2.2.1)
-      (ofBits p.2.2.2.2.2.1) (ofBits p.2.2.2.2.2.2)).bits, ?_, ?_⟩
-    · have hd : ComputableInPolyTime
-          (fun p : (ℕ × F.Desc) × List Bool × List Bool × List Bool × List Bool × List Bool ×
-            List Bool => p.1.2) encIn F.encDesc := by fun_prop
-      have hword {k : (ℕ × F.Desc) × List Bool × List Bool × List Bool × List Bool × List Bool ×
-          List Bool → List Bool} (hk : ComputableInPolyTime k encIn encBits) :
-          ComputableInPolyTime (fun p => ofBits (k p)) encIn encNat :=
-        .of_tidy (ComputableTidilyInPolyTime.bitsToNat.comp hk.tidy)
-      have hext := computableInPolyTime_extractNat hd
-        (hword (k := fun p => p.2.2.2.1) (by fun_prop))
-        (hword (k := fun p => p.2.2.2.2.1) (by fun_prop))
-        (hword (k := fun p => p.2.2.2.2.2.1) (by fun_prop))
-        (hword (k := fun p => p.2.2.2.2.2.2) (by fun_prop))
-      exact .of_tidy (ComputableTidilyInPolyTime.natBits.comp hext.tidy)
-    · intro i u t c z c' z'
-      simp only [schnorrEncoding, encScalar, encodeEmbedding, Function.Embedding.coeFn_mk,
-        encNat_apply, ofBits_bits, schnorrExtract, ZMod.val_natCast, extractNat,
-        Nat.mod_mod]
+  polyTime := ⟨F.schnorrExtractWord, F.computableInPolyTime_schnorrExtractWord,
+    F.extractorRealizedBy_schnorrExtractWord⟩
 
 /-! ### Special HVZK -/
 
@@ -199,6 +224,50 @@ theorem closeTo_uniform_sampleExp (n : ℕ) (d : F.Desc) :
   have h := F.advantage_bind_sampleExp_le n d fun a => PMF.pure (decide (a ∈ E))
   rw [PMF.map_comp, ← PMF.bind_pure_comp, ← PMF.bind_pure_comp]
   exact h
+
+/-- A challenge sampler for `schnorrFamily` with fair coins: at index `(n, d)`, sample `s` with
+`sampleExp n d` and read it modulo the group order. It is within statistical distance `1 / 2 ^ n`
+of uniform (`closeTo_schnorrSampleChallenge`). -/
+noncomputable def schnorrSampleChallenge (i : ℕ × F.Desc) : ProbComp (ZMod (F.order i.2)) :=
+  (Nat.cast : ℕ → ZMod (F.order i.2)) <$> F.sampleExp i.1 i.2
+
+/-- One machine samples the encoded challenges of `schnorrSampleChallenge` from the encoded index:
+it samples `s` with `sampleExp n d` and writes the binary encoding of `s mod q`. -/
+theorem isPPTOn_schnorrSampleChallenge :
+    IsPPTOn (encPair encUnary F.encDesc) encBits
+      fun i => F.schnorrEncoding.challenge i <$> F.schnorrSampleChallenge i := by
+  let encIdx := encPair encUnary F.encDesc
+  have hn : ComputableInPolyTime (fun i : ℕ × F.Desc => i.1) encIdx encUnary := by fun_prop
+  have hd : ComputableInPolyTime (fun i : ℕ × F.Desc => i.2) encIdx F.encDesc := by fun_prop
+  have hword : IsPPTOn encIdx encBits fun i => F.sampleExp i.1 i.2 >>= fun s =>
+      pure (s % F.order i.2).bits := by
+    refine (F.isPPTOn_sampleExp hn hd).bind_with ?_
+    let encMid := encPair encIdx encNat
+    have hd' : ComputableInPolyTime (fun p : (ℕ × F.Desc) × ℕ => p.1.2) encMid F.encDesc := by
+      fun_prop
+    have hs : ComputableInPolyTime (fun p : (ℕ × F.Desc) × ℕ => p.2) encMid encNat := by
+      fun_prop
+    have hq := F.computableInPolyTime_order.comp hd'
+    have hz : ComputableInPolyTime (fun p : (ℕ × F.Desc) × ℕ => (p.2 % F.order p.1.2).bits)
+        encMid encBits :=
+      .of_tidy (ComputableTidilyInPolyTime.natBits.comp (.binary_mod' hs.tidy hq.tidy))
+    exact hz.isPPTOn
+  refine hword.congr fun i => ?_
+  rw [schnorrSampleChallenge, ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_map,
+    PMF.map_comp]
+  simp only [ProbComp.eval_pure]
+  rw [← PMF.bind_pure_comp]
+  congr 1 with s : 1
+  simp only [Function.comp_apply, schnorrEncoding, encScalar, Function.Embedding.coeFn_mk,
+    encNat_apply, ZMod.val_natCast]
+
+/-- `schnorrSampleChallenge` is within statistical distance `1 / 2 ^ n` of uniform on
+`ZMod q`. -/
+theorem closeTo_schnorrSampleChallenge (i : ℕ × F.Desc) :
+    CloseTo (PMF.uniformOfFintype (ZMod (F.order i.2)))
+      (ProbComp.eval (F.schnorrSampleChallenge i)) (1 / 2 ^ i.1 : ℝ≥0) := by
+  rw [schnorrSampleChallenge, ProbComp.eval_map]
+  exact F.closeTo_uniform_sampleExp i.1 i.2
 
 /-- On an encoded statement and challenge, `schnorrSimulateWord` computes the encoded output of
 `schnorrSimulator`. -/
