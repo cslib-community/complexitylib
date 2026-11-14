@@ -3590,6 +3590,7 @@ public import CslibFrontier.Computability.Probabilistic.NativeBatch.InitialEpoch
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.PathCost
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.ProgressComparison
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.Quantitative
+public import CslibFrontier.Computability.Probabilistic.NativeBatch.RecordedObservation
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.Retained
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.TerminalResources
 public import CslibFrontier.Computability.Probabilistic.NativeBatch.Trace
@@ -6391,6 +6392,7 @@ public import CslibFrontier.Probability.PMF.ObservedProcess.Trajectory
 public import CslibFrontier.Probability.PMF.Option
 public import CslibFrontier.Probability.PMF.Option.Bind
 public import CslibFrontier.Probability.PMF.PolynomialAgreement
+public import CslibFrontier.Probability.PMF.RecordedProcess
 public import CslibFrontier.Probability.PMF.SequentialHistory
 public import CslibFrontier.Probability.PMF.SequentialPrefix
 public import CslibFrontier.Probability.PMF.StoppedProcess

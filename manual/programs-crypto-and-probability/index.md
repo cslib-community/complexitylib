@@ -2182,6 +2182,37 @@ duration on every terminating path from an empty accepted history.
 admission through the concrete candidate codec. These are proved connections, not
 representation premises. `step_done` cannot issue another batch or erase receipts.
 
+For a sequential receipt/output representation, import
+`CslibFrontier.Computability.Probabilistic.NativeBatch.RecordedObservation`.
+`records_law` constructs its response kernel from the actual state posterior and
+proves equality with the complete native receipt law. `joint_law` also extracts an
+arbitrary final private-state observation, keeping its correlation with receipts;
+optional observations can distinguish divergence from an output. `expected_accrued`
+preserves extended invoice means even when a later silent computation diverges.
+Its recorder starts empty at the supplied world and accounts for receipts collected
+from there; pre-existing charges in that world are outside the new recorder.
+`terminal_law` recovers the original native terminal-world law at
+`limits.turns + 1` epochs. The extra finalization epoch does not add an issued call.
+
+The underlying `RecordedProcess` API applies to any hidden process which prepends
+one record per step. Its only structural premises are an empty initial record list
+and the supported append rule. The
+[recorded-process client](../../CslibFrontierTests/RecordedProcess.lean) checks a
+private fair output correlated with an invoice of six or eight, followed by loss of
+the optional hidden state:
+the output becomes absent while the expected earlier invoice remains seven.
+These posterior response kernels depend on the machine. Using one common kernel
+for different competitors still requires a source-state filtering argument; this
+representation alone does not identify a common-oracle optimum.
+The [native private-coin client](../../CslibFrontierTests/NativeRecordedRetention.lean)
+uses the existing full-response reader to issue an actual encoded batch and run a
+private-coin continuation after its reply. It derives the same invoice and physical
+duration for both retained and discarded outcomes. From a warm checkout, run:
+
+```bash
+scripts/build.sh CslibFrontierTests.RecordedProcess CslibFrontierTests.NativeRecordedRetention
+```
+
 `NativeBatch.Quantitative.select` executes silent native code and holds the entire
 selected source batch. `Observation` retains its full receipt history and source
 signal. `conditional` conditions the actual hidden checkpoint and then dispatches

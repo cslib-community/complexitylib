@@ -202,7 +202,8 @@ theorem terminal_law : NativeUnboundedExecution.terminal machine (environment li
   rw [law_two, PMF.pure_map]
   rfl
 
-private theorem receipt_proposals : proposals 1 receipt.report = [{0}] := by
+/-- The actual one-opportunity receipt proposes the unique original candidate. -/
+theorem receipt_proposals : proposals 1 receipt.report = [{0}] := by
   norm_num [proposals, receipt, ConcurrentBatch.observe, path, limits, batch,
     CallTrace.report, CallTrace.response, CallTrace.stop, encodeFamily, decodeFamily,
     List.ofFn_succ, Finset.mem_filter, List.filterMap_cons, List.filterMap_nil]
