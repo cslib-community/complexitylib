@@ -937,11 +937,15 @@ Import [`TweakSalt.lean`](../../CslibFrontier/Crypto/Primitives/SDitH/TweakSalt.
 SDitH v3.0 Algorithm 5 (pp. 16–17). `tweakSalt variant salt tweak tag` copies a
 `securityBits`-bit salt, writes `tweak : Fin (2 ^ 24)` into the low 24 coordinates using
 the existing little-endian `BitString.equivFin` convention, and writes the high tag bits
-selected by hash- or cipher-based grinding. The low-, middle-, and high-coordinate theorems expose
-that layout; `tweakSalt_injective` shows that a fixed salt and variant retain the tweak/tag
-pair. The [ordinary-module client](../../CslibFrontierTests/Crypto/SDitH/TweakSalt.lean) checks
-overwritten low bits, preserved middle bits, both high layouts, distinct tweaks and tags, and
-injectivity at the 128-bit NIST width.
+selected by hash- or cipher-based grinding. When `26 ≤ securityBits`, the 24 low tweak positions
+and the two possible high tag positions are disjoint. Under that hypothesis, the low-, middle-,
+and high-coordinate theorems expose the complete layout, and `tweakSalt_injective` shows that a
+fixed salt and variant retain the tweak/tag pair. The definition remains total below this bound
+with the source's assignment order: at width 25 the cipher tag overwrites tweak bit 23, so tweaks
+`5` and `5 + 2^23` collide for the same tag. The
+[ordinary-module client](../../CslibFrontierTests/Crypto/SDitH/TweakSalt.lean) checks overwritten
+low bits, preserved middle bits, both high layouts, distinct tweaks and tags, and injectivity at
+the 128-bit NIST width.
 
 Algorithm 6's counter-mode PRG and `ExpandSeed` are the first source consumers, but are not
 implemented here. This function-level layout also has no native machine or resource certificate:
