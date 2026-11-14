@@ -10,6 +10,8 @@ module
 public import CslibFrontier.Crypto.Game
 public import CslibFrontier.Crypto.Protocols.SigmaProtocol.Efficient
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
+import CslibFrontier.Crypto.Game.CloseTo
+import CslibFrontier.Crypto.Game.Order
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Probability.Rewinding
@@ -19,10 +21,12 @@ import CslibFrontier.Probability.Rewinding
 
 A special-sound Sigma protocol is a proof of knowledge: from any prover that convinces the
 verifier on a statement `y` with probability `ε`, a knowledge extractor that may rewind the prover
-computes a witness for `y` ([BellareGoldreich1992]). This module formalizes the standard
-extractor for an indexed family `P i` of Sigma protocols with a polynomial-time special-soundness
-extractor (`EfficientSpecialSoundness`), and proves that it is uniform strict PPT whenever the
-prover is.
+computes a witness for `y`. This module formalizes the standard extractor for an indexed family
+`P i` of Sigma protocols with a polynomial-time special-soundness extractor
+(`EfficientSpecialSoundness`), and proves that it is uniform strict PPT whenever the prover is.
+Proofs of knowledge are defined by Bellare and Goldreich ([BellareGoldreich1992], Definition 3.1).
+The per-statement, strict-time form proved here, and its proof from the rewinding lemma, are the
+library's own; the end of this overview compares it with their definition.
 
 A prover `A : MaliciousProver I` works on words, so it may cheat: at index `i` it commits from the
 encoded statement, keeping a state word, and answers the encoded challenge from that state. The
@@ -50,10 +54,11 @@ The hypotheses are only about generic components supplied by the caller: special
 the protocol and a polynomial-time word function realizing its extractor, and a strict PPT
 challenge sampler. Nothing is assumed about the knowledge extractor this module builds.
 
-Bellare and Goldreich define knowledge soundness with an extractor that runs in expected time
-inversely proportional to `ε - κ`, for knowledge error `κ`. The extractor here instead runs in
-strict polynomial time and succeeds with probability at least `ε ^ 2 - κ * ε`, in the style of
-reset or rewinding lemmas; repeating it amplifies its success probability.
+Bellare and Goldreich's validity condition asks for an extractor that, whenever `ε` exceeds the
+knowledge error `κ`, outputs a witness within an expected number of steps bounded by a polynomial
+divided by `ε - κ` ([BellareGoldreich1992], Definition 3.1). The extractor here instead runs in
+strict polynomial time and succeeds with probability at least `ε ^ 2 - κ * ε`; repeating it
+amplifies its success probability.
 
 ## Main definitions
 
@@ -334,21 +339,12 @@ theorem le_add_sqrt_extractionGame (hsound : ∀ i, (P i).SpecialSoundness (R i)
       (add_le_add le_rfl (Real.sqrt_le_sqrt (ENNReal.toReal_mono (PMF.apply_ne_top _ _)
         (twice_le_extractionGame hsound hreal sampleChallenge A i y))))
   -- Replacing uniform challenges by the sampler changes acceptance by at most `δ`.
-  have hswap : (Game.succProbability (acceptanceGame P enc A i y (PMF.uniformOfFintype (C i))) :
-      ℝ) ≤ Game.succProbability (acceptanceGame P enc A i y
-        (ProbComp.eval (sampleChallenge i))) + δ := by
-    have hgame : CloseTo (acceptanceGame P enc A i y (PMF.uniformOfFintype (C i)))
-        (acceptanceGame P enc A i y (ProbComp.eval (sampleChallenge i))) δ := by
-      simp only [acceptanceGame_eq_once, Rewinding.once]
-      exact CloseTo.bind_right _ fun ts _ => hclose.bind_left _
-    have h := hgame {true}
-    rw [PMF.toOuterMeasure_apply_singleton, PMF.toOuterMeasure_apply_singleton] at h
-    simp only [Game.succProbability, ENNReal.coe_toNNReal_eq_toReal]
-    calc _ ≤ ((acceptanceGame P enc A i y (ProbComp.eval (sampleChallenge i))) true +
-          δ).toReal := ENNReal.toReal_mono (ENNReal.add_ne_top.mpr ⟨PMF.apply_ne_top _ _,
-            ENNReal.coe_ne_top⟩) h
-      _ = _ := by rw [ENNReal.toReal_add (PMF.apply_ne_top _ _) ENNReal.coe_ne_top,
-          ENNReal.coe_toReal]
+  have hgame : CloseTo (acceptanceGame P enc A i y (PMF.uniformOfFintype (C i)))
+      (acceptanceGame P enc A i y (ProbComp.eval (sampleChallenge i))) δ := by
+    simp only [acceptanceGame_eq_once, Rewinding.once]
+    exact CloseTo.bind_right _ fun ts _ => hclose.bind_left _
+  have hswap := Game.coe_succProbability_le_add_of_advantage_le
+    (NNReal.coe_le_coe.mpr (Game.closeTo_iff_advantage_le.mp hgame))
   linarith
 
 end Cslib.Crypto.Protocols.SigmaProtocol
