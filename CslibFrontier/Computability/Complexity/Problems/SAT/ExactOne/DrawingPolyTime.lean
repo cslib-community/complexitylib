@@ -113,7 +113,7 @@ theorem sourceRoute :
   have hhead := (ComputableInPolyTime.head? encPoint).comp hr
   have hsome := (ComputableInPolyTime.optionSome encPoint).comp hs
   exact ((hhead.decide_eq' hsome).ite_decide hr
-    ((ComputableInPolyTime.listReverse encPoint).comp hr))
+    (ComputableInPolyTime.listReverseWithInput hr))
 
 private theorem routeSecond :
     ComputableInPolyTime (fun r : Route => r.getD 1 (0, 0)) encRoute encPoint := by
@@ -591,7 +591,8 @@ private theorem outputRoutes :
   have hm := (ComputableInPolyTime.map
     ((ComputableInPolyTime.snd (encList (encPair encRawVariable encBool))
       (encPair encPoint (encList encRoute))).snd')).comp positivePlacedClauses
-  have h := (ComputableInPolyTime.flatten encRoute).comp hm
+  have h := ComputableInPolyTime.flatMapWithInput
+    (f := fun _ (routes : List Route) => routes) hm (ComputableInPolyTime.snd _ _)
   simpa only [Function.comp_def, List.flatten_eq_flatMap, List.flatMap_map, id_eq] using h
 
 /-- The actual emitted drawing is natively polynomial-time on binary coordinates and labels.
