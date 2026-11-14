@@ -7,8 +7,8 @@
 # Building elaborates every chapter, which checks its Lean examples against the library; the
 # generator then writes the pages. In a fresh checkout, run scripts/cache/get.sh first so that the
 # library modules the guide imports are downloaded rather than compiled. The first build also
-# compiles Verso and links the generator against the modules the guide imports, which takes a few
-# minutes. Preview the result with
+# compiles Verso, which takes a few minutes. The generator then runs in Lean
+# without compiling the imported library to native code. Preview the result with
 #   python3 -m http.server --bind 127.0.0.1 --directory guide/.lake/build/site/html-multi
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -17,8 +17,11 @@ cd "$(dirname "$0")/.."
 # revisions there.
 python3 scripts/check_docs.py --config-only
 # Warnings in the chapters are errors (guide/lakefile.toml); this hides the Verso package's own.
-lake -q -d guide build --log-level=error
+lake -q -d guide build --log-level=error CslibFrontierGuide
 out=guide/.lake/build/site
 rm -rf "$out"
-lake -q --log-level=error -d guide exe guide --output "$out"
+# `lake lean` builds the generator's imports and applies its Lake options and plugin setup.
+# Lean's --run takes a filename as well as the one Lake uses to prepare that setup.
+main=guide/CslibFrontierGuideMain.lean
+lake -q --log-level=error -d guide lean "$main" -- --run "$main" --output "$out"
 echo "Guide written to $out/html-multi"
