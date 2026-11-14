@@ -4901,6 +4901,7 @@ public import CslibFrontier.Crypto.Protocols.UC.Emulation
 public import CslibFrontier.Crypto.Protocols.UC.Execution
 public import CslibFrontier.Crypto.Protocols.UC.Linking
 public import CslibFrontier.Crypto.Protocols.UC.Machine
+public import CslibFrontier.Crypto.Protocols.UOV.Field
 public import CslibFrontier.Crypto.Protocols.VOLE.AdaptiveMulCheck
 public import CslibFrontier.Crypto.Protocols.VOLE.Basic
 public import CslibFrontier.Crypto.Protocols.VOLE.BatchMulCheck
