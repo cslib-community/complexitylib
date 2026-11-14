@@ -28,7 +28,8 @@ asymptotic parameters remains a separate step in the final cryptographic reducti
 
 * `maskedSequence_validation_gap`: exact transfer from a sequence gap to weighted validation bias.
 * `maskedSequence_learn_error_pow`: sample a correlated predictor from that gap.
-* `extractedSequence_learn_error_pow`: pay the supplied test's extraction error before learning.
+* `extractedSequence_learn_error_pow_of_extraction_le`: pay the supplied test's extraction error
+  before learning.
 
 ## References
 
@@ -128,7 +129,7 @@ theorem maskedSequence_learn_error_pow [Fintype α]
 /-- A distinguisher of extracted labels supplies a weak learner once its advantage exceeds
 the masked-source extraction error for that test. The statistical premise concerns the
 complete public observations, hash seed, and output. -/
-theorem extractedSequence_learn_error_pow {Seed Output : Type} [Fintype α]
+theorem extractedSequence_learn_error_pow_of_extraction_le {Seed Output : Type} [Fintype α]
     (source : ProbComp α) (observe : α → β) (truth : α → Bool)
     (mask : α → ProbComp Bool) (count : ℕ) (seed : ProbComp Seed)
     (hash : Seed → List Bool → Output) (test : List β × Seed × Output → ProbComp Bool)
@@ -157,7 +158,8 @@ theorem extractedSequence_learn_error_pow {Seed Output : Type} [Fintype α]
   apply maskedSequence_learn_error_pow source observe truth mask count
     (fun samples => extractLabels seed hash samples >>= test) candidates predict hrealize
     confidence inverseGap hgap
-  have h := extractLabels_sequence_gap ((fun value => (observe value, truth value)) <$> source)
+  have h := extractLabels_sequence_gap_of_extraction_le
+    ((fun value => (observe value, truth value)) <$> source)
     (maskedSample source observe truth mask) count seed hash test ideal hclose
   rw [extractLabelsReal, bind_assoc] at hdistinguish
   have hgap' := (le_sub_iff_add_le.mpr hdistinguish).trans h
