@@ -2147,8 +2147,10 @@ public import CslibFrontier.Computability.Complexity.Classes.PP.Oracle
 public import CslibFrontier.Computability.Complexity.Classes.PP.Time
 public import CslibFrontier.Computability.Complexity.Classes.PP.TruthTable
 public import CslibFrontier.Computability.Complexity.Classes.Padding
+public import CslibFrontier.Computability.Complexity.Classes.Padding.Language
 public import CslibFrontier.Computability.Complexity.Classes.Padding.NondeterministicPolynomial
 public import CslibFrontier.Computability.Complexity.Classes.Padding.Polynomial
+public import CslibFrontier.Computability.Complexity.Classes.Padding.Space
 public import CslibFrontier.Computability.Complexity.Classes.Padding.Translation
 public import CslibFrontier.Computability.Complexity.Classes.ParityP
 public import CslibFrontier.Computability.Complexity.Classes.ParityP.Closure
@@ -2213,7 +2215,9 @@ public import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterminis
 public import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic.DeterministicTime
 public import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic.Polynomial
 public import CslibFrontier.Computability.Complexity.Classes.Space.Nondeterministic.Savitch
+public import CslibFrontier.Computability.Complexity.Classes.Space.Quantitative
 public import CslibFrontier.Computability.Complexity.Classes.Space.Savitch
+public import CslibFrontier.Computability.Complexity.Classes.Space.Separation
 public import CslibFrontier.Computability.Complexity.Classes.Space.TM2
 public import CslibFrontier.Computability.Complexity.Classes.Space.TQBF
 public import CslibFrontier.Computability.Complexity.Classes.Space.TQBF.Evaluation
