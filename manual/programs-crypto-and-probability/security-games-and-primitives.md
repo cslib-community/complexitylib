@@ -1461,8 +1461,13 @@ stream envelope `ivStreamEncrypt`
 ([`Encryption/IVStream.lean`](../../CslibFrontier/Crypto/Computational/Encryption/IVStream.lean)),
 with certified honest algorithms
 (`isPPTOn_ctrWordEncrypt`, `computableInPolyTime_ctrWordDecrypt`) and correctness
-(`ctrWordDecrypt_ctrWordEncrypt`). The reduction `ctrToPrfDistinguisher` makes one PRF query per
-block and is uniform strict oracle PPT (`isOraclePPT_ctrToPrfDistinguisher`).
+(`ctrWordDecrypt_ctrWordEncrypt`). The reduction `ctrToPrfDistinguisher` is the shared random-IV
+stream reduction `ivStreamToPrfDistinguisher`
+([`Encryption/IVStream/Reduction.lean`](../../CslibFrontier/Crypto/Computational/Encryption/IVStream/Reduction.lean))
+with one PRF query per counter block. Its certificate `isOraclePPT_ctrToPrfDistinguisher` and its
+real- and ideal-game identities are instances of the shared ones
+(`isOraclePPT_ivStreamToPrfDistinguisher`, `eval_prfRealGame_ivStreamToPrfDistinguisher`,
+`eval_prfIdealGame_ivStreamToPrfDistinguisher`).
 `advantage_ctrWordCPAGame_le` reuses the typed collision bound above, and
 `PseudorandomFunction.indcpa_ctrWordEncrypt` proves `SymmetricINDCPAOn blockPairValid` from
 `PseudorandomFunction family` alone. `SymmetricINDCPAOn`

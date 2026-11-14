@@ -6,17 +6,18 @@ Authors: Samuel Schlesinger
 
 module
 
-import CslibFrontier.Crypto.Computational.Encryption.CTRMode.Uniform
+public import CslibFrontier.Crypto.Computational.Encryption.CTRMode.Uniform
 import CslibFrontier.Crypto.Computational.Encryption.EncryptThenMAC
+import CslibFrontier.Tactic.PolyTime
 
 /-!
 # Tests for uniform counter mode
 
 Checks for `CslibFrontier/Crypto/Computational/Encryption/CTRMode/Uniform.lean` and
 `CslibFrontier/Crypto/Computational/Encryption/SymmetricCPA.lean`: concrete counter blocks and
-keystreams, correctness for a toy family, the `n`-bit special case of the CPA notion, the concrete
-bound for a query-free adversary, and the asymptotic theorem's premises. The file is a `module`
-client with ordinary imports.
+keystreams, correctness for a toy family, the `n`-bit special case of the CPA notion, a certified
+one-query adversary with its reduction certificate and a non-vacuous concrete bound, and the
+asymptotic theorem's premises. The file is a `module` client with ordinary imports.
 -/
 
 namespace CslibFrontierTests.Crypto.CTRModeUniform
@@ -69,33 +70,72 @@ example {family : List Bool → List Bool → List Bool} (hprf : PseudorandomFun
       (prfCipher family hprf.polyTime hprf.length_eq).encrypt :=
   (SymmetricCipher.indcpa_iff _).mp hprf.indcpa_prfCipher
 
-/-! ### Bounds and the asymptotic theorem -/
+/-! ### A querying adversary -/
 
-/-- A query-free adversary: the concrete bound holds with `Q = L = 0`. -/
+/-- A one-query adversary: it submits the pair of one-block messages `(0ⁿ, 1ⁿ)` and outputs whether
+the ciphertext block after the initial value is `0ⁿ`. -/
+public def oneBlockAdversary : OracleDistinguisher :=
+  fun n _ =>
+    (fun reply => reply.drop n == List.replicate n false) <$>
+      (List.take (2 * n) <$> ProbOracleComp.query
+        ((), encPair encBits encBits (List.replicate n false, List.replicate n true)))
+
+/-- The one-query adversary is uniform strict oracle PPT. -/
+public theorem isOraclePPT_oneBlockAdversary : IsOraclePPT encBool oneBlockAdversary := by
+  have hrequest : ComputableInPolyTime
+      (fun p : ℕ × List Bool =>
+        encPair encBits encBits (List.replicate p.1 false, List.replicate p.1 true))
+      (encPair encUnary encBits) encBits := by
+    polytime
+  have hlimit : ComputableInPolyTime (fun p : ℕ × List Bool => 2 * p.1)
+      (encPair encUnary encBits) encUnary := by
+    polytime
+  have hout : ComputableInPolyTime
+      (fun p : (ℕ × List Bool) × List Bool => p.2.drop p.1.1 == List.replicate p.1.1 false)
+      (encPair (encPair encUnary encBits) encBits) encBool := by
+    polytime
+  unfold oneBlockAdversary
+  exact ((IsOraclePPTOn.query_take' () hrequest hlimit).map_with' hout).isOraclePPT
+
+/-- The adversary makes one request. -/
+public theorem isQueryBounded_oneBlockAdversary (n : ℕ) :
+    (oneBlockAdversary n []).IsQueryBounded 1 := by
+  simp only [oneBlockAdversary, OracleComp.isCostBounded_map_iff]
+  exact ProbOracleComp.IsQueryBounded.query _
+
+/-- Its request has `3 n + 2` bits. -/
+public theorem queriesSatisfy_oneBlockAdversary (n : ℕ) :
+    (oneBlockAdversary n []).QueriesSatisfy fun request => request.2.length ≤ 3 * n + 2 := by
+  simp only [oneBlockAdversary, OracleComp.queriesSatisfy_map_iff]
+  exact ProbOracleComp.QueriesSatisfy.query (by simp; omega)
+
+/-- The reduction built from the one-query adversary is uniform strict oracle PPT. -/
+example : IsOraclePPT encBool (ctrToPrfDistinguisher oneBlockAdversary true) :=
+  isOraclePPT_ctrToPrfDistinguisher isOraclePPT_oneBlockAdversary true
+
+/-- At `n = 16`, the concrete bound for the one-query adversary (`Q = 1` request of `L = 50` bits)
+has collision term `2 · 50² / 2¹⁶`. -/
 example {family : List Bool → List Bool → List Bool}
-    (hlen : ∀ key query, query.length = key.length → (family key query).length = key.length)
-    (n : ℕ) :
+    (hlen : ∀ key query, query.length = key.length → (family key query).length = key.length) :
     (Game.advantage
       (ProbComp.eval (symmetricCPAGameOn blockPairValid BitString.sampleList
-        (ctrWordEncrypt family) (fun _ _ => pure true) false n))
+        (ctrWordEncrypt family) oneBlockAdversary false 16))
       (ProbComp.eval (symmetricCPAGameOn blockPairValid BitString.sampleList
-        (ctrWordEncrypt family) (fun _ _ => pure true) true n)) : ℝ) ≤
+        (ctrWordEncrypt family) oneBlockAdversary true 16)) : ℝ) ≤
       (Game.advantage
-        (ProbComp.eval (prfRealGame family (ctrToPrfDistinguisher (fun _ _ => pure true) false) n))
-        (ProbComp.eval (prfIdealGame (ctrToPrfDistinguisher (fun _ _ => pure true) false) n)) :
-          ℝ) +
+        (ProbComp.eval (prfRealGame family (ctrToPrfDistinguisher oneBlockAdversary false) 16))
+        (ProbComp.eval (prfIdealGame (ctrToPrfDistinguisher oneBlockAdversary false) 16)) : ℝ) +
       (Game.advantage
-        (ProbComp.eval (prfRealGame family (ctrToPrfDistinguisher (fun _ _ => pure true) true) n))
-        (ProbComp.eval (prfIdealGame (ctrToPrfDistinguisher (fun _ _ => pure true) true) n)) :
-          ℝ) +
-      2 * ((0 : ℕ) * ((0 : ℕ) : ℝ)) ^ 2 / 2 ^ n :=
-  advantage_ctrWordCPAGame_le hlen _ (OracleComp.IsCostBounded.pure _ 0)
-    (OracleComp.QueriesSatisfy.pure _) (Nat.zero_le _)
+        (ProbComp.eval (prfRealGame family (ctrToPrfDistinguisher oneBlockAdversary true) 16))
+        (ProbComp.eval (prfIdealGame (ctrToPrfDistinguisher oneBlockAdversary true) 16)) : ℝ) +
+      2 * (((1 : ℕ) : ℝ) * ((50 : ℕ) : ℝ)) ^ 2 / 2 ^ 16 :=
+  advantage_ctrWordCPAGame_le hlen oneBlockAdversary (isQueryBounded_oneBlockAdversary 16)
+    (queriesSatisfy_oneBlockAdversary 16) (by norm_num)
 
-/-- The reduction is certified for every certified adversary. -/
-example {adversary : OracleDistinguisher} (hadversary : IsOraclePPT encBool adversary) :
-    IsOraclePPT encBool (ctrToPrfDistinguisher adversary true) :=
-  isOraclePPT_ctrToPrfDistinguisher hadversary true
+/-- That collision term is below `1`, so the bound is not vacuous. -/
+example : 2 * (((1 : ℕ) : ℝ) * ((50 : ℕ) : ℝ)) ^ 2 / 2 ^ 16 < 1 := by norm_num
+
+/-! ### The asymptotic theorem -/
 
 /-- Counter mode is CPA-secure for every pseudorandom function; the only premise is the PRF
 assumption. -/

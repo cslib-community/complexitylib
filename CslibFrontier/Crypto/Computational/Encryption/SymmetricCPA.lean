@@ -7,8 +7,8 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Crypto.Computational.Encryption.Authenticated
-import CslibFrontier.Languages.Probabilistic.Sum.Lift
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Frame.Basic
+public import CslibFrontier.Crypto.Computational.PseudorandomFunction
 
 /-!
 # Symmetric chosen-plaintext security on a message space
@@ -27,8 +27,9 @@ does not invoke `encrypt`. `SymmetricINDCPAOn` asks that every uniform strict or
 distinguisher have negligible advantage between the two challenge bits. Correctness and efficiency
 of the honest algorithms are separate properties.
 
-`SymmetricCipher.cpaGame` and `SymmetricCipher.INDCPA` are the special case of `n`-bit pairs
-(`SymmetricCipher.cpaGame_eq_symmetricCPAGameOn`, `SymmetricCipher.indcpa_iff`).
+`SymmetricCipher.cpaGame` and `SymmetricCipher.INDCPA` in `Authenticated.lean` are the special
+case of `n`-bit pairs; that module proves it (`SymmetricCipher.cpaGame_eq_symmetricCPAGameOn`,
+`SymmetricCipher.indcpa_iff`).
 `blockPairValid` admits equal-length pairs made of whole `n`-bit blocks: the message space
 `Y^{≤ℓ}` of Section 5.4.2 without the cap `ℓ` on the number of blocks.
 
@@ -39,11 +40,6 @@ of the honest algorithms are separate properties.
 * `Cslib.Crypto.SymmetricINDCPAOn`: adaptive chosen-plaintext security against uniform strict
   oracle-PPT distinguishers.
 * `Cslib.Crypto.blockPairValid`: equal-length pairs of whole `n`-bit blocks.
-
-## Main results
-
-* `Cslib.Crypto.SymmetricCipher.cpaGame_eq_symmetricCPAGameOn`,
-  `Cslib.Crypto.SymmetricCipher.indcpa_iff`: `SymmetricCipher.INDCPA` is the `n`-bit case.
 
 ## References
 
@@ -100,29 +96,5 @@ messages is admitted. -/
 @[expose]
 def blockPairValid (n : ℕ) (m₀ m₁ : List Bool) : Bool :=
   (m₀.length == m₁.length) && (m₀.length % n == 0)
-
-/-- `SymmetricCipher.cpaGame` is the experiment on pairs of `n`-bit messages. -/
-theorem SymmetricCipher.cpaGame_eq_symmetricCPAGameOn (E : SymmetricCipher)
-    (adversary : OracleDistinguisher) (bit : Bool) (n : ℕ) :
-    E.cpaGame adversary bit n =
-      symmetricCPAGameOn (fun n m₀ m₁ => (m₀.length == n) && (m₁.length == n)) E.keyGen
-        E.encrypt adversary bit n := by
-  have horacle : E.cpaEncryptionOracle n = fun k bit request (s : Unit) =>
-      (fun ct => (ct, s)) <$> symmetricCPAReplyOn
-        (fun n m₀ m₁ => (m₀.length == n) && (m₁.length == n)) E.encrypt n k bit request := by
-    funext k bit request s
-    unfold SymmetricCipher.cpaEncryptionOracle symmetricCPAReplyOn
-    by_cases hvalid :
-        ((unframe request.2).length == n && (dropFrame request.2).length == n) = true <;>
-      simp [hvalid, map_eq_bind_pure_comp]
-  simp only [SymmetricCipher.cpaGame, symmetricCPAGameOn, horacle,
-    OracleComp.run_interpret_sumHandler_readOnly, ProbOracleComp.run, bind_map_left, bind_pure]
-
-/-- `SymmetricCipher.INDCPA` is chosen-plaintext security on pairs of `n`-bit messages. -/
-theorem SymmetricCipher.indcpa_iff (E : SymmetricCipher) :
-    E.INDCPA ↔
-      SymmetricINDCPAOn (fun n m₀ m₁ => (m₀.length == n) && (m₁.length == n)) E.keyGen
-        E.encrypt := by
-  simp only [SymmetricCipher.INDCPA, SymmetricINDCPAOn, E.cpaGame_eq_symmetricCPAGameOn]
 
 end Cslib.Crypto
