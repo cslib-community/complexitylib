@@ -11,6 +11,7 @@ public import CslibFrontier.Init
 public import CslibFrontier.DataStructure.Dictionary.CellProbe.HardDist
 public import CslibFrontier.DataStructure.Dictionary.CellProbe.MetaTree
 public import Mathlib.Analysis.SpecialFunctions.Log.Base
+import CslibFrontier.Foundations.Data.List.Counting
 import CslibFrontier.Foundations.Data.Nat.Choose
 import CslibFrontier.Foundations.Data.Nat.Choose.Real
 import CslibFrontier.Probability.PMF.Expect
@@ -98,6 +99,7 @@ with `|S_A| ≤ m * t` and `|S_B| ≤ m * t`). -/
   ((((S_A ∩ S_B).filter fun j => C_A j ≠ C_B j).card : ℕ) : ℝ) ≤ γ * (m : ℝ) ∧
     ((S_A.card : ℕ) : ℝ) ≤ (m : ℝ) * t ∧ ((S_B.card : ℕ) : ℝ) ≤ (m : ℝ) * t
 
+/-- Capped consistency is symmetric in the two operation sequences `ops_A` and `ops_B`. -/
 theorem IsCappedConsistent.symm {D : IndexedScheme Op Result cells w} {step₀ : ℕ}
     {C_bef : Mem cells w} {γ : ℝ} {m : ℕ} {t : ℝ} {ops_A ops_B : List Op}
     (h : IsCappedConsistent D step₀ C_bef γ m t ops_A ops_B) :
@@ -349,21 +351,19 @@ Section 4.2, p. 15 / PDF p. 16 and Section 5, p. 21 / PDF p. 22). -/
     (d b : Fin m → Fin U) (kv : Fin U → Fin V) : List (Dynamic.Op U) :=
   (List.finRange m).flatMap fun r => [.delete (d r), .insert (b r) (kv (b r)).val]
 
-private theorem length_flatMap_fixed {α β : Type*} (c : ℕ) (xs : List α) (f : α → List β)
-    (hf : ∀ x, (f x).length = c) : (xs.flatMap f).length = c * xs.length := by
-  induction xs with
-  | nil => simp
-  | cons _ _ ih => simp only [List.flatMap_cons, List.length_append, hf, ih, List.length_cons]; ring
-
 @[simp] theorem length_candidateQueryDeleteInsertOps {U V m : ℕ}
     (d b : Fin m → Fin U) (kv : Fin U → Fin V) :
     (candidateQueryDeleteInsertOps d b kv).length = 3 * m := by
-  rw [candidateQueryDeleteInsertOps, length_flatMap_fixed 3 _ _ fun _ => rfl, List.length_finRange]
+  rw [candidateQueryDeleteInsertOps,
+    List.length_flatMap_of_forall_length_eq (k := 3) (fun _ _ => rfl),
+    List.length_finRange, Nat.mul_comm]
 
 @[simp] theorem length_candidateDeleteInsertOps {U V m : ℕ}
     (d b : Fin m → Fin U) (kv : Fin U → Fin V) :
     (candidateDeleteInsertOps d b kv).length = 2 * m := by
-  rw [candidateDeleteInsertOps, length_flatMap_fixed 2 _ _ fun _ => rfl, List.length_finRange]
+  rw [candidateDeleteInsertOps,
+    List.length_flatMap_of_forall_length_eq (k := 2) (fun _ _ => rfl),
+    List.length_finRange, Nat.mul_comm]
 
 theorem candidateQueryDeleteInsertOps_congr {U V m : ℕ}
     (d : Fin m → Fin U) {B : Finset (Fin U)} (hB : B.card = m) (π : Equiv.Perm (Fin m))

@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Init
 public import CslibFrontier.DataStructure.Dictionary.CellProbe.Consistency
 import CslibFrontier.Foundations.Data.BitString.List.PrefixFree
+import CslibFrontier.Foundations.Data.List.Counting
 import CslibFrontier.Probability.Coding.PrefixFreeEntropy
 import CslibFrontier.Probability.Coding.SetSeparator
 import CslibFrontier.Probability.Conditioning
@@ -73,11 +74,10 @@ private theorem prefix_append_of_length_eq {α : Type*} {u₁ u₂ v₁ v₂ : L
 private theorem prefix_append_of_isPrefixFree {α : Type*} {S : Set (List α)}
     (hpf : IsPrefixFree S) {u₁ u₂ v₁ v₂ : List α}
     (hu₁ : u₁ ∈ S) (hu₂ : u₂ ∈ S) (hp : u₁ ++ v₁ <+: u₂ ++ v₂) : u₁ = u₂ ∧ v₁ <+: v₂ := by
-  have ⟨w, hw⟩ := hp; rw [List.append_assoc] at hw
-  rcases List.append_eq_append_iff.mp hw with ⟨q, hq, _⟩ | ⟨q, hq, _⟩
-  · exact prefix_append_of_length_eq (congrArg List.length (hpf _ hu₁ _ hu₂ ⟨q, hq.symm⟩)) hp
-  · exact prefix_append_of_length_eq
-      (congrArg List.length (hpf _ hu₂ _ hu₁ ⟨q, hq.symm⟩).symm) hp
+  obtain ⟨w, hw⟩ := hp
+  rw [List.append_assoc] at hw
+  obtain ⟨rfl, hw'⟩ := append_inj_of_isPrefixFree hpf hu₁ hu₂ hw
+  exact ⟨rfl, ⟨w, hw'⟩⟩
 
 private noncomputable def encodeFintype {α : Type*} [Fintype α] (x : α) : List Bool :=
   finIdxBits (Fintype.card α) (Fintype.equivFin α x)
@@ -133,11 +133,8 @@ private def candPrefix {U V m : ℕ} (d b : Fin m → Fin U) (kv : Fin U → Fin
 
 private theorem length_candPrefix {U V m r : ℕ} (d b : Fin m → Fin U) (kv : Fin U → Fin V)
     (hr : r ≤ m) : (candPrefix d b kv r).length = 3 * r := by
-  have h1 : ∀ l : List (Fin m),
-      (l.flatMap fun i => [Dynamic.Op.query (d i), Dynamic.Op.delete (d i),
-        Dynamic.Op.insert (b i) (kv (b i)).val]).length = 3 * l.length := fun l => by
-    induction l with | nil => rfl | cons _ _ ih => simp [List.flatMap_cons, ih]; omega
-  rw [candPrefix, h1, List.length_take, List.length_finRange, Nat.min_eq_left hr]
+  rw [candPrefix, List.length_flatMap_of_forall_length_eq (k := 3) (fun _ _ => rfl),
+    List.length_take, List.length_finRange, Nat.min_eq_left hr, Nat.mul_comm]
 
 private theorem candPrefix_succ {U V m r : ℕ} (d b : Fin m → Fin U) (kv : Fin U → Fin V)
     (hr : r < m) : candPrefix d b kv (r + 1) = candPrefix d b kv r ++
@@ -672,14 +669,6 @@ and Section 5.1, adapted with the deterministic `c = 1` probe cap `|S_A|, |S_B| 
   ∃ hB : B.card = m,
     IsCappedConsistent D_det (n + 3 * t₀) (D_det.runSeq (s.ops.take (n + 3 * t₀))).2 γ m t
       (elemSlice n 3 s.ops t₀ (t₀ + m)) (s.candidateOps t₀ m ht₀ B hB)
-
-@[simp] theorem isSeedConsistent_iff {U V n cells w : ℕ}
-    {D_det : IndexedScheme (Dynamic.Op U) Dynamic.Op.Result cells w}
-    {t₀ m : ℕ} {ht₀ : t₀ + m ≤ n} {γ t : ℝ} {s : HardKeyValSeed U V n} {B : Finset (Fin U)} :
-    IsSeedConsistent D_det t₀ m ht₀ γ t s B ↔
-      ∃ hB : B.card = m,
-        IsCappedConsistent D_det (n + 3 * t₀) (D_det.runSeq (s.ops.take (n + 3 * t₀))).2 γ m t
-          (elemSlice n 3 s.ops t₀ (t₀ + m)) (s.candidateOps t₀ m ht₀ B hB) := Iff.rfl
 
 private def pkeyActive {U n : ℕ} (pk : Fin (2 * n) ↪ Fin U) (t₀ : ℕ) (ht : t₀ ≤ n) :
     Finset (Fin U) := Finset.univ.map (windowEmb pk t₀ ht)
@@ -1374,7 +1363,7 @@ private theorem prob_innerPool_eq_le {U V n t₀ m g cells w : ℕ} {γ R t : �
     refine Finset.sum_congr rfl fun s _ => ?_
     have hw_iff (b : ↥(F_s s)) :
         (true = W ⟨s, b⟩) ↔ IsSeedConsistent D_det t₀ m ht₀ γ t s b.val := by
-      simp only [W, true_eq_decide_iff, isSeedConsistent_iff, hopsA_eq ⟨s, b⟩, hopsB_eq ⟨s, b⟩]
+      simp only [W, true_eq_decide_iff, IsSeedConsistent, hopsA_eq ⟨s, b⟩, hopsB_eq ⟨s, b⟩]
       exact ⟨fun h => ⟨(cfg ⟨s, b⟩).card_B, h⟩, fun ⟨_, h⟩ => h⟩
     simp only [μ, PMF.uniformOfFintype_apply, hcard_Ω, ENNReal.toReal_inv, ENNReal.toReal_natCast,
       hw_iff]
@@ -2029,6 +2018,7 @@ noncomputable def segmentRestLtHalfDist {U V n : ℕ} (t₀ m r_rest : ℕ)
         nonempty_pool_lt (by omega) hm hrest_ge _ hp.1 hp.2.1 s.permKeyEmb)
 
 open Classical in
+/-- Pointwise probability density of `section5Dist` on seed-candidate pair `(s, B)`. -/
 theorem toReal_section5Dist_apply {U V n : ℕ} (t₀ m g : ℕ)
     (hU : 4 * n ≤ U) (hV : 1 ≤ V) (hm_n : 2 * m ≤ n) (hg : g < m / 2) (ht₀ : t₀ + m ≤ n)
     (s : HardKeyValSeed U V n) (B : Finset (Fin U)) :
@@ -2042,6 +2032,7 @@ theorem toReal_section5Dist_apply {U V n : ℕ} (t₀ m g : ℕ)
   toReal_innerPoolDist_apply (by omega) hV _ _ s B
 
 open Classical in
+/-- Pointwise probability density of `section5LtHalfDist` on seed-candidate pair `(s, B)`. -/
 theorem toReal_section5LtHalfDist_apply {U V n : ℕ} (t₀ m : ℕ)
     (hU : 4 * n ≤ U) (hV : 1 ≤ V) (hm : 2 ≤ m) (hm_n : 2 * m ≤ n) (ht₀ : t₀ + m ≤ n)
     (s : HardKeyValSeed U V n) (B : Finset (Fin U)) :
@@ -2055,6 +2046,7 @@ theorem toReal_section5LtHalfDist_apply {U V n : ℕ} (t₀ m : ℕ)
   toReal_innerPoolDist_apply (by omega) hV _ _ s B
 
 open Classical in
+/-- Pointwise probability density of `segmentRestDist` on seed-candidate pair `(s, B)`. -/
 theorem toReal_segmentRestDist_apply {U V n : ℕ} (t₀ m r_rest g : ℕ)
     (hU : 4 * n ≤ U) (hV : 1 ≤ V) (hg : g < m / 2) (hrest_ge : 2 * m ≤ r_rest)
     (hrest : t₀ + r_rest ≤ n) (s : HardKeyValSeed U V n) (B : Finset (Fin U)) :
@@ -2068,6 +2060,7 @@ theorem toReal_segmentRestDist_apply {U V n : ℕ} (t₀ m r_rest g : ℕ)
   toReal_innerPoolDist_apply (by omega) hV _ _ s B
 
 open Classical in
+/-- Pointwise probability density of `segmentRestLtHalfDist` on seed-candidate pair `(s, B)`. -/
 theorem toReal_segmentRestLtHalfDist_apply {U V n : ℕ} (t₀ m r_rest : ℕ)
     (hU : 4 * n ≤ U) (hV : 1 ≤ V) (hm : 2 ≤ m) (hrest_ge : 2 * m ≤ r_rest)
     (hrest : t₀ + r_rest ≤ n) (s : HardKeyValSeed U V n) (B : Finset (Fin U)) :
@@ -2097,7 +2090,11 @@ include hU hV hm_n hγ hm_lo hspace hbudget hcorr
 open Classical in
 /-- Inner Lemma ([LiLiangYuZhou2023], Section 5, Lemma 5.1, p. 21 / PDF p. 22, adapted with the
 `c = 1` deterministic probe cap and Elias-gamma `β = 2` separator): conditioned on `|A ∩ B| = g`
-(`g < m / 2`) for uniform size-`m` `B ⊆ Finset.univ \ K`, `Pr[IsSeedConsistent] ≤ U ^ (-γ * m)`. -/
+(`g < m / 2`) for uniform size-`m` `B ⊆ Finset.univ \ K`, `Pr[IsSeedConsistent] ≤ U ^ (-γ * m)`.
+
+In the paper setting where `w = Θ(log U)` and `t ≤ c * log(U / n)`, hypothesis `hbudget` corresponds
+to Eq. (14) (p. 24 / PDF p. 25) with `6 * m * t + 11 * m` separator and prefix-free overhead, which
+holds for sufficiently small constant `γ > 0`. -/
 theorem prob_isCappedConsistent_section5_le {g : ℕ} (hg : g < m / 2) (ht₀ : t₀ + m ≤ n) :
     (((section5Dist t₀ m g hU hV hm_n hg ht₀).map fun sb =>
       decide (IsSeedConsistent D_det t₀ m ht₀ γ t sb.1 sb.2)) true).toReal ≤
@@ -2116,7 +2113,9 @@ theorem prob_isCappedConsistent_section5_le {g : ℕ} (hg : g < m / 2) (ht₀ : 
 open Classical in
 /-- Inner Lemma for `|A ∩ B| < m / 2` ([LiLiangYuZhou2023], Section 4.3, Lemma 4.4, p. 18 /
 PDF p. 19 and Section 5.2, p. 25 / PDF p. 26): over `B ⊆ Finset.univ \ K` conditioned on
-`|A ∩ B| < m / 2`, `Pr[IsSeedConsistent] ≤ U ^ (-γ * m)`. -/
+`|A ∩ B| < m / 2`, `Pr[IsSeedConsistent] ≤ U ^ (-γ * m)`.
+
+Under `w = Θ(log U)` and `t ≤ c * log(U / n)`, `hbudget` reflects Eq. (14) (p. 24 / PDF p. 25). -/
 theorem prob_isCappedConsistent_section5_lt_half_le (hm : 2 ≤ m) (ht₀ : t₀ + m ≤ n) :
     (((section5LtHalfDist t₀ m hU hV hm hm_n ht₀).map fun sb =>
       decide (IsSeedConsistent D_det t₀ m ht₀ γ t sb.1 sb.2)) true).toReal ≤
