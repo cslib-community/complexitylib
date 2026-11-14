@@ -266,18 +266,6 @@ theorem computableInPolyTime_mod_two_pow_indexWidth {I : α → CMMSAInstance} {
   ComputableInPolyTime.binary_mod.comp
     (hx.prod (ComputableInPolyTime.binary_two_pow.comp (computableInPolyTime_indexWidth hI)))
 
-/-- `all` over `0, …, n - 1` of a polynomial-time family is polynomial-time, for a fixed `n`. -/
-private theorem computableInPolyTime_all_range {g : α → ℕ → Bool} (n : ℕ)
-    (hg : ∀ i < n, ComputableInPolyTime (fun a => g a i) input encBool) :
-    ComputableInPolyTime (fun a => (List.range n).all (g a)) input encBool := by
-  induction n with
-  | zero => simpa using (ComputableInPolyTime.const true :
-      ComputableInPolyTime (fun _ : α => true) input encBool)
-  | succ n ih =>
-    simp only [List.range_succ, List.all_append, List.all_cons, List.all_nil, Bool.and_true]
-    exact ComputableInPolyTime.bool_and' (ih fun i hi => hg i (hi.trans n.lt_succ_self))
-      (hg n n.lt_succ_self)
-
 /-- A slot bit computed from explicit tables is polynomial-time, for fixed `Δ` and `k`: the
 instance `I` (in `CMMSAInstance.encoding`), `λ` and the slot `(t, q)` in unary, the tables `T` and
 the input `x` in binary. -/
@@ -344,9 +332,9 @@ theorem computableInPolyTime_entryN {I : α → CMMSAInstance} {lam x : α → �
     (ComputableInPolyTime.unary_lt' (ComputableInPolyTime.const t) hlen)
   have hpar (t : ℕ) :=
     computableInPolyTime_termParityN Δ k hI hlam hT hx (ComputableInPolyTime.const t)
-  have hyes := computableInPolyTime_all_range Δ fun t _ =>
+  have hyes := ComputableInPolyTime.allConst (List.range Δ) fun t _ =>
     ComputableInPolyTime.bool_or' (hnot t) (hpar t)
-  have hno := computableInPolyTime_all_range Δ fun t _ =>
+  have hno := ComputableInPolyTime.allConst (List.range Δ) fun t _ =>
     ComputableInPolyTime.bool_or' (hnot t) (ComputableInPolyTime.bool_not.comp (hpar t))
   have hsome (b : Bool) : ComputableInPolyTime (fun _ : α => some b) input (encOption encBool) :=
     ComputableInPolyTime.const _

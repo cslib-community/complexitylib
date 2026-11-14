@@ -17,6 +17,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Max
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List.Size
 import Mathlib.Data.List.GetD
@@ -164,21 +165,6 @@ private theorem bi_mapWithId {α β γ : Type} {encA : α ↪ List Bool} {encB :
     (hlist : ComputableInPolyTime list encIn (encList encA)) :
     ComputableInPolyTime (fun x => (list x).map fun a => f (x, a)) encIn (encList encB) :=
   mapWithInput (f := fun x a => f (x, a)) hlist hf
-
-private theorem bi_unary_min : ComputableInPolyTime (fun p : ℕ × ℕ => min p.1 p.2)
-    (encPair encUnary encUnary) encUnary := by fun_prop
-
-private theorem bi_unary_max : ComputableInPolyTime (fun p : ℕ × ℕ => max p.1 p.2)
-    (encPair encUnary encUnary) encUnary := by fun_prop
-
-private theorem bi_intBin_add : ComputableInPolyTime (fun p : ℤ × ℤ => p.1 + p.2)
-    (encPair encIntBin encIntBin) encIntBin := by fun_prop
-
-private theorem bi_intBin_add' {α : Type} {encIn : α ↪ List Bool} {a b : α → ℤ}
-    (ha : ComputableInPolyTime a encIn encIntBin)
-    (hb : ComputableInPolyTime b encIn encIntBin) :
-    ComputableInPolyTime (fun x => a x + b x) encIn encIntBin :=
-  bi_intBin_add.comp (ha.prod hb)
 
 private theorem bi_listGetD_nat_dyn {α : Type} {encIn : α ↪ List Bool}
     {xs : α → List ℕ} {idx fallback : α → ℕ}
@@ -810,8 +796,7 @@ theorem exists_computableInO_measPayload :
     have hctx := hp1.fst'.snd'
     have hVg := (listGetD (encA := encList encNat) []).comp
       (hctx.snd'.snd'.snd'.fst'.fst'.prod hg)
-    exact bi_unary_min.comp
-      ((unary_mul.comp ((const 2).prod hctx.fst'.fst')).prod ((length_list encNat).comp hVg))
+    exact unary_min' (unary_mul' (const 2) hctx.fst'.fst') ((length_list encNat).comp hVg)
   have hctx_g : ComputableInPolyTime (fun p : ((List ℤ × MeasStepCtx) × List Bool) × ℕ =>
       ((p.1.1.2.numVars, p.1.1.2.jetOrder, p.1.1.2.precision, p.1.1.2.2.1.2.2),
         (p.1.1.2.2.2.1.1, p.1.1.2.2.2.1.2),
