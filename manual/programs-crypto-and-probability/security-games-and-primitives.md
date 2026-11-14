@@ -866,6 +866,32 @@ not construct the symmetrizer `W`, the structured MQ map, the pull-back bijectio
 verification, rank-failure estimates, or the QROM reduction; those remain obligations of the
 [post-quantum program](https://github.com/cslib-community/cslib-frontier/issues/4987).
 
+### Canonical upper-triangular quadratic representatives
+
+Import [`Matrix/UpperTriangularQuadratic.lean`](../../CslibFrontier/Foundations/LinearAlgebra/Matrix/UpperTriangularQuadratic.lean)
+(`CslibFrontier.Foundations.LinearAlgebra.Matrix.UpperTriangularQuadratic`) for the canonical
+upper-triangular representative `Matrix.upperQuadratic M` of a square matrix `M` over a commutative
+ring with a linearly ordered index type (`M.upperQuadratic i i = M i i`,
+`M.upperQuadratic i j = M i j + M j i` for `i < j`, and `0` for `j < i`).
+`Matrix.isUpperTriangular_upperQuadratic` proves `Matrix.IsUpperTriangular`,
+`Matrix.isAlt_toLinearMap₂'_upperQuadratic_sub` proves that `M.upperQuadratic - M` induces an
+alternating bilinear form (`LinearMap.IsAlt`), and `Matrix.toQuadraticForm'_upperQuadratic` derives
+`M.upperQuadratic.toQuadraticForm' = M.toQuadraticForm'` in every characteristic through Mathlib's
+`LinearMap.BilinMap.toQuadraticMap_eq_zero` ↔ `LinearMap.IsAlt` equivalence.
+`Matrix.eq_upperQuadratic_of_isUpperTriangular_of_isAlt` and
+`Matrix.eq_upperQuadratic_of_isUpperTriangular_of_toQuadraticForm'_eq` prove uniqueness among
+upper-triangular matrices.
+
+For [UOV v3.0][uov26] (§3.1, pp. 11–13), `Matrix.upperQuadratic` formalizes the specification's
+generic `Upper(M)` representative. The
+[ordinary-module client](../../CslibFrontierTests/Foundations/LinearAlgebra/Matrix/UpperTriangularQuadratic.lean)
+checks `ZMod 2` (characteristic two) and `ℤ` nonsymmetric matrices and verifies that dropping either
+the transpose contribution or lower-triangular zeroing violates uniqueness or quadratic-form
+equality. This generic matrix layer does not construct UOV block keys, oil subspaces, signing or
+verification algorithms, restart bounds, or ROM/QROM security reductions; those remain obligations
+of [#5219](https://github.com/cslib-community/cslib-frontier/issues/5219) and the
+[post-quantum program](https://github.com/cslib-community/cslib-frontier/issues/4987).
+
 ### The `B_{p,∞}` quaternion presentation used by SQIsign
 
 Import [`Quaternion/BpInfinity.lean`](../../CslibFrontier/Foundations/Algebra/Quaternion/BpInfinity.lean)
@@ -1658,3 +1684,4 @@ The finite query-only PRG/cipher results, semantic commitment interfaces and uni
 [manin56]: ../sources.md#manin56
 [naoryung89]: ../sources.md#naoryung89
 [rompel90]: ../sources.md#rompel90
+[uov26]: ../sources.md#uov26
