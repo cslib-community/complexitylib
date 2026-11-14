@@ -34,6 +34,7 @@ import CslibFrontier.Foundations.Data.Nat.Power
 import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Languages.Probabilistic.Oracle.Substitution.RunWith
 import CslibFrontier.Languages.Probabilistic.Oracle.Support
+import CslibFrontier.Languages.Probabilistic.Traverse.SupportWith
 import CslibFrontier.Probability.BitString
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Tactic.Negligible
@@ -1435,21 +1436,16 @@ private theorem length_encList_of_mem_support_mapM_query_take (k : ℕ) (xs : Li
       (xs.mapM fun x =>
         List.take k <$> (ProbOracleComp.query ((), x) : WordOracleComp Unit (List Bool)))) :
     (encList encBits tags).length ≤ xs.length * (2 * k + 2) := by
-  induction xs generalizing tags with
-  | nil =>
-    have h := OracleComp.eq_of_mem_supportWith_pure htags
-    subst h
-    simp
-  | cons x xs ih =>
-    simp only [List.mapM_cons, OracleComp.mem_supportWith_bind_iff,
-      OracleComp.mem_supportWith_map_iff, OracleComp.supportWith_pure,
-      Set.mem_singleton_iff] at htags
-    obtain ⟨t, ⟨raw, -, rfl⟩, ts, hts, rfl⟩ := htags
-    have htake : (raw.take k).length ≤ k := List.length_take_le k raw
-    have hih := ih hts
-    simp only [encList_cons, List.length_append, length_frame, encBits_apply, List.length_cons,
-      Nat.add_mul, Nat.one_mul]
-    omega
+  have hrel := (OracleComp.mem_supportWith_mapM_iff _ _ xs tags).mp htags
+  have htagLen : ∀ tag ∈ tags, (encBits tag).length ≤ k := by
+    intro tag htag
+    obtain ⟨i, rfl⟩ := List.mem_iff_get.mp htag
+    obtain ⟨raw, -, hraw⟩ :=
+      OracleComp.mem_supportWith_map_iff.mp (hrel.get (hrel.length_eq.symm ▸ i.2) i.2)
+    simpa only [encBits_apply, ← hraw] using List.length_take_le k raw
+  refine (Turing.MultiTapeTM.length_encList_le encBits tags htagLen).trans ?_
+  rw [← hrel.length_eq]
+  exact Nat.mul_le_mul_left xs.length (by omega)
 
 variable (E) in
 /-- Answers a word-oracle blockwise signing query `((), m)` with fixed-length signing queries, one
@@ -1676,7 +1672,7 @@ variable (E) in
 /-- Existential unforgeability of the blockwise variable-length MAC with block encoder `E` under
 adaptive chosen-message attack ([KatzLindell2020], Construction 4.7 and Theorem 4.8) against
 uniform strict oracle-PPT word-oracle forgers (`BlockwiseMACForger`). -/
-def BlockwiseEUFCMA : Prop :=
+@[expose] def BlockwiseEUFCMA : Prop :=
   Game.Indistinguishable
     (fun (F : BlockwiseMACForger) n => ProbComp.eval (M.blockwiseGame E F.toAdversary n))
     (fun _ _ => PMF.pure false)
@@ -1693,16 +1689,6 @@ theorem BlockwiseEUFCMA.negligible (h : M.BlockwiseEUFCMA E) (F : BlockwiseMACFo
   unfold BlockwiseEUFCMA at h
   exact Game.Indistinguishable.negligible_succProbability h F hF
 
-/-- Establish blockwise EUF-CMA security by bounding every oracle-PPT blockwise forger's success
-probability. -/
-theorem BlockwiseEUFCMA.of_negligible
-    (h : ∀ F : BlockwiseMACForger, IsOraclePPT encForgerOutput F →
-      Negligible (fun n =>
-        Game.succProbability (ProbComp.eval (M.blockwiseGame E F.toAdversary n)))) :
-    M.BlockwiseEUFCMA E := by
-  unfold BlockwiseEUFCMA
-  exact Game.Indistinguishable.of_negligible_succProbability h
-
 /-- **Uniform security of the blockwise variable-length MAC** ([KatzLindell2020], Theorem 4.8):
 if `M` is an `EUFCMA`-secure fixed-length MAC whose message-length schedule `M.msgLen` is
 polynomially lower-bounded (which holds automatically when `M.msgLen = id`), then the blockwise
@@ -1711,7 +1697,7 @@ theorem EUFCMA.blockwiseEUFCMA (h : M.EUFCMA)
     (hmsgLen : PolynomiallyLowerBounded M.msgLen := by fun_prop) :
     M.BlockwiseEUFCMA fullEncoder := by
   obtain ⟨tagBound, htagBoundPoly, htagBound⟩ := M.exists_tag_length_bound_of_length_eq
-  apply BlockwiseEUFCMA.of_negligible
+  apply Game.Indistinguishable.of_negligible_succProbability
   intro F hF
   obtain ⟨c, d, hFbounds⟩ := hF.query_bounds
   let Q : ℕ → ℕ := fun n => c * (n + 2) ^ d
