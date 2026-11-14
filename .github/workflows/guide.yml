@@ -5,94 +5,51 @@ name: Guide
 # pages. Guide/tooling changes also upload rendered pages for review. The nightly documentation
 # workflow continues to publish the guide from `main`.
 on:
-  pull_request:
-    paths:
-      - "CslibFrontier/**"
-      - "CslibFrontier.lean"
-      - "guide/**"
-      - "lakefile.toml"
-      - "lake-manifest.json"
-      - "scripts/guide.sh"
-      - "scripts/check_docs.py"
-      - "lean-toolchain"
-      - ".github/actions/install-lean/**"
-      - ".github/workflows/guide.yml"
   workflow_dispatch:
-
 permissions:
   contents: read
-
-env:
-  CACHE_RECOVERY_GENERATION: ${{ vars.CACHE_RECOVERY_GENERATION || '0' }}
-  DISABLE_CACHE_RESTORE: ${{ vars.DISABLE_CACHE_RESTORE }}
-  COMPLEXITYLIB_CACHE_URLS: ${{ vars.COMPLEXITYLIB_CACHE_URLS }}
-  LAKE_NO_CACHE: ${{ vars.DISABLE_CACHE_RESTORE == 'true' || vars.DISABLE_CACHE_RESTORE == '1' }}
-  MATHLIB_NO_CACHE_ON_UPDATE: ${{ (vars.DISABLE_CACHE_RESTORE == 'true' || vars.DISABLE_CACHE_RESTORE == '1') && '1' || '0' }}
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  guide:
+  profile:
     runs-on: cslib-ubuntu-24.04-8core
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
         with:
-          # scripts/cache/get-missing.sh looks for the nearest ancestor whose outputs `main` CI
-          # uploaded.
           fetch-depth: 100
-      - name: Select rendered guide build
-        id: changes
-        env:
-          GUIDE_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: |
-          render=true
-          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-            # The recorded PR base can be older than this shallow checkout's history.
-            if ! git cat-file -e "$GUIDE_BASE_SHA^{commit}" 2>/dev/null; then
-              git fetch --no-tags --depth=1 origin "$GUIDE_BASE_SHA"
-            fi
-            guide_changes="$(git diff --name-only "$GUIDE_BASE_SHA" HEAD -- \
-              guide scripts/guide.sh scripts/check_docs.py lean-toolchain \
-              .github/actions/install-lean .github/workflows/guide.yml)"
-            if [[ -z "$guide_changes" ]]; then
-              render=false
-            fi
-          fi
-          echo "render=$render" >> "$GITHUB_OUTPUT"
-      # Restore the `.lake` entry that Lean CI saves on `main` (lean_action_ci.yml). Without it,
-      # every run downloaded a complete set of outputs (about 200 MB) from the public bucket.
-      # This workflow only reads the entry; Lean CI remains its only writer.
-      - name: Restore .lake from the Actions cache
-        if: vars.DISABLE_CACHE_RESTORE != 'true' && vars.DISABLE_CACHE_RESTORE != '1'
-        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
+      - name: Restore root outputs without saving
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25
         with:
           path: ./.lake
-          key: lake-${{ env.CACHE_RECOVERY_GENERATION }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('./lean-toolchain') }}-${{ hashFiles('./lake-manifest.json') }}-${{ github.sha }}
-          restore-keys: lake-${{ env.CACHE_RECOVERY_GENERATION }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('./lean-toolchain') }}-${{ hashFiles('./lake-manifest.json') }}
-      # Restores or installs the toolchain with retries (.github/actions/install-lean, #1426).
-      - uses: ./.github/actions/install-lean
-      # Without `--lean-action`, as scripts/cache/get.sh ran it before.
-      - name: Restore Mathlib cache with retries
-        continue-on-error: true
-        timeout-minutes: 10
-        run: python3 -B scripts/cache/get_mathlib.py
-      # Download only the outputs that the restored `.lake` lacks (scripts/cache/README.md).
-      - name: Restore missing cslib-frontier build outputs
-        continue-on-error: true
-        timeout-minutes: 10
-        run: scripts/cache/get-missing.sh
-      - name: Check documentation pins
-        run: python3 scripts/check_docs.py --config-only
-      - name: Compile guide examples
-        run: lake -q -d guide build --log-level=error CslibFrontierGuide
-      - name: Build the guide
-        if: steps.changes.outputs.render == 'true'
-        run: scripts/guide.sh
-      - uses: actions/upload-artifact@v4
-        if: steps.changes.outputs.render == 'true'
+          key: guide-native-profile-unused
+          restore-keys: lake-${{ vars.CACHE_RECOVERY_GENERATION || '0' }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('./lean-toolchain') }}-${{ hashFiles('./lake-manifest.json') }}
+      - name: Restore toolchain without saving
+        id: elan
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25
         with:
-          name: guide
-          path: guide/.lake/build/site/html-multi
-          if-no-files-found: error
+          path: ~/.elan
+          key: elan-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}
+      - name: Install toolchain if needed
+        if: steps.elan.outputs.cache-hit != 'true'
+        run: .github/actions/install-lean/install.sh lean-toolchain
+      - run: echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Restore Mathlib
+        continue-on-error: true
+        run: python3 -B scripts/cache/get_mathlib.py
+      - name: Restore frontier
+        continue-on-error: true
+        run: scripts/cache/get-missing.sh
+      - name: Compile checked chapters
+        run: python3 -u scripts/profile_guide_native.py examples
+      - name: Interpret generator before native compilation
+        run: python3 -u scripts/profile_guide_native.py interpreted
+      - name: Build and render unchanged native generator
+        run: python3 -u scripts/profile_guide_native.py native
+      - name: Compare complete sites and exercise failures
+        run: python3 -u scripts/profile_guide_native.py compare
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: guide-native-profile
+          path: ${{ runner.temp }}/guide-native-profile
+          retention-days: 30
