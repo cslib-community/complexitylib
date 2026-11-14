@@ -4918,6 +4918,8 @@ public import CslibFrontier.DataStructure.BTree.PredSucc
 public import CslibFrontier.DataStructure.BTree.Range
 public import CslibFrontier.DataStructure.BTree.Rank
 public import CslibFrontier.DataStructure.BTree.TreeMap
+public import CslibFrontier.DataStructure.BallsToSlots.KickTree
+public import CslibFrontier.DataStructure.BallsToSlots.Spec
 public import CslibFrontier.DataStructure.CellProbe.OfWordRAM
 public import CslibFrontier.DataStructure.CellProbe.Randomized.ObliviousSequence
 public import CslibFrontier.DataStructure.CellProbe.Randomized.StateTransition
