@@ -2624,6 +2624,7 @@ public import CslibFrontier.Computability.Complexity.Problems.LongPath
 public import CslibFrontier.Computability.Complexity.Problems.LongPath.Hardness
 public import CslibFrontier.Computability.Complexity.Problems.MaxCut
 public import CslibFrontier.Computability.Complexity.Problems.MaxCut.Derandomized
+public import CslibFrontier.Computability.Complexity.Problems.MaxCut.Simple
 public import CslibFrontier.Computability.Complexity.Problems.MaxTwoSAT
 public import CslibFrontier.Computability.Complexity.Problems.MonotoneCircuitValue
 public import CslibFrontier.Computability.Complexity.Problems.MonotoneCircuitValue.Completeness

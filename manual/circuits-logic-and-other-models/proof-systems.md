@@ -41,6 +41,24 @@ Garey–Johnson–Stockmeyer gadget table, an unsatisfiable 2-CNF formula that i
 smaller target, and the reduction on satisfiable and unsatisfiable inputs; check them with
 `scripts/build.sh CslibFrontierTests.MaxTwoSAT`.
 
+For unweighted maximum cut, import `CslibFrontier.Computability.Complexity.Problems.MaxCut.Simple`
+and use `SimpleMaxCut_npComplete`. An instance `⟨G, K⟩ : SimpleMaxCutInstance` is encoded by
+`encSimpleMaxCut`: the graph `G : Graph` uses `encGraph` and the bound `K` is binary. The graph is
+read as the simple graph `G.induced` on its declared vertices, so repeated edges, edges in both
+directions and loops in the input lists do not change it. `⟨G, K⟩ ∈ SimpleMaxCut` when some
+`S : Finset {v // v ∈ G.vertices}` has `K ≤ (G.induced.interedges S Sᶜ).card`, Mathlib's count of
+the edges between `S` and its complement. The weighted `MaxCut` has binary weights, and expanding
+them into unit edges is exponential, so this is a separate result. The hardness reduction
+`toSimpleMaxCut` starts from NAE EU3SAT. Each clause becomes a triangle on its literal vertices
+plus an edge `x`–`¬x` for each of its literals. At most `5` of these six edges cross a cut, so a
+cut of `5` edges per clause is a maximum one, and it encodes an NAE assignment. Every edge is then
+replaced by a path of three edges, which gives a simple graph and adds exactly `2` per edge to the
+maximum cut. To count a cut of your own graph whose edge list has no loops or repeated edges, use
+`SimpleMaxCut.card_interedges_eq_crossCount`. The
+[checked examples](../../CslibFrontierTests/SimpleMaxCut.lean) evaluate cuts on small graphs and
+run the reduction on an NAE-satisfiable formula and on a malformed one; check them with
+`scripts/build.sh CslibFrontierTests.SimpleMaxCut`.
+
 For sparse exact `k`-CNFs, import `CslibFrontier.Logics.Propositional.CNF.Moser.Probability`.
 Formulas are `φ : CNF (Fin n)` on the variables `Fin n`, with `m = φ.length` clauses.
 `CNF.IsExactDistinct k` requires exactly `k` literals over distinct variables in every clause, and

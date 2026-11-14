@@ -73,10 +73,6 @@ determinant of the reduced Laplacian; `0` when `G` declares no vertex. -/
 
 /-! ### Correctness -/
 
-/-- Adjacency in `G.induced` is decided by the executable test `Cslib.Complexity.Graph.adjBool`. -/
-instance instDecidableRelInducedAdj (G : Graph) : DecidableRel G.induced.Adj := fun u v =>
-  decidable_of_iff (G.adjBool u v = true) (by rw [adjBool_eq_true_iff, induced_adj])
-
 /-- The degree of a declared vertex in `G.induced` is its number of neighbours among the distinct
 declared vertices. -/
 private theorem degree_induced (G : Graph) (u : {v // v ∈ G.vertices}) :
