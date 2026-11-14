@@ -37,8 +37,7 @@ For the canonical Section 5 parameter instantiation (`canonicalSchedule`) and en
     (`ℓ = 1`) budget `SuccinctBucket` metadata + `(quot, localSlotIdx)` slots together with a
     slab-and-tail shared root value pool (`rootPoolDirBits` directory overhead + `rootValPoolCap`
     `⌈log₂ V⌉`-bit value slots), avoiding `V` overhead on unused root capacity
-    (`totalTreeBits_le_padded_infoBits_add`; the pure `TreeState` model in `TreeCore.lean` stores
-    root values inline and satisfies `rootKeyCount ≤ rootValPoolCap`).
+    (`totalTreeBits_le_padded_infoBits_add`).
   - Non-root waiting lists (`allWaitingListsBits`), regime-switched child-router and ID-compressor
     seeds (`allHashSeedsBits`), and all four shared global lookup tables (`sharedTablesBits`:
     leaf dynamic-matching permutations, shared minimap lookup table, Four-Russians `clmul` table,
@@ -230,15 +229,24 @@ def sharedTablesBits : ℕ :=
     else 0
   matchBits + minimapTabBits + clmulBits + dfsBits
 
+/-- Bit budget for tree-level operational metadata: `Nat.clog 2 (P.cap + 1)` bits to store
+`sentCount` (`0 ≤ sentCount ≤ P.cap`) plus `1` bit for the occupancy flag distinguishing
+`cap - 1` from `cap` active elements. -/
+@[expose]
+def treeMetaBits : ℕ :=
+  Nat.clog 2 (P.cap + 1) + 1
+
 /-- **Total pure tree representation bit budget** summing the intended Section 5 layout bit
 budgets of all leaf minimaps, inner/root `SuccinctBucket` storage tables, shared root value pool,
-waiting lists, Feistel / trinomial hash seeds, and shared global lookup tables. This defines the
-arithmetic bit budget of the intended Section 5 layout and is not tied to `TreeState` by an
+waiting lists, Feistel / trinomial hash seeds, shared global lookup tables, and tree-level
+operational metadata. This defines the arithmetic bit budget of the intended Section 5 layout
+(`SuccinctBucket` + shared-root-pool layout) and is not tied to an operational state by an
 explicit Word-RAM bit-packing encoding. -/
 @[expose]
 def totalTreeBits : ℕ :=
   P.allLeavesBits + P.allInnerTablesBits + P.allRootTablesBits +
-    P.allWaitingListsBits + P.allHashSeedsBits + P.sharedTablesBits
+    P.allWaitingListsBits + P.allHashSeedsBits + P.sharedTablesBits +
+    P.treeMetaBits
 
 /-- Leaf minimap bit conservation (`Section 5.2`): across all `N_depth` full-capacity leaves
 (`n_L = N_depth * nLow depth`), `allLeavesBits ≤ infoBits paddedUniv valBound n_L + 3 * N_depth`. -/
@@ -383,7 +391,7 @@ theorem nonLeaf_infoBits_conservation {U_pad V n n_L : ℕ}
 
 /-- `V`-independent redundancy slack combining inner/root `SuccinctBucket` metadata, per-level
 quotient-bit excess above `⌈log₂ ⌈U_pad / cap⌉⌉`, unused root slot slack, root slab/tail directory,
-waiting lists, hash seeds, and shared lookup tables. -/
+waiting lists, hash seeds, shared lookup tables, and tree-level operational metadata. -/
 @[expose]
 def redundancySlack : ℕ :=
   let n_L := P.numNodes P.depth * P.nLow P.depth
@@ -400,7 +408,8 @@ def redundancySlack : ℕ :=
         P.tableCap 1 *
           (Nat.clog 2 (2 * (P.nFloor 1 + 1)) + Nat.clog 2 (P.tableCap 1 + 1))) +
     rootExtra * q_base + P.rootPoolDirBits +
-    P.allWaitingListsBits + P.allHashSeedsBits + P.sharedTablesBits
+    P.allWaitingListsBits + P.allHashSeedsBits + P.sharedTablesBits +
+    P.treeMetaBits
 
 /-- **General `TreeSchedule` bit-budget bound** (for all `1 ≤ valBound`, with no upper bound on
 `valBound`): whenever `cap ≤ N_ℓ * (nFloor ℓ + 1)` across `1 ≤ ℓ < depth` and

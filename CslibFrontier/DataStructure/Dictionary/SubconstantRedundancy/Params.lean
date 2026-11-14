@@ -650,6 +650,39 @@ theorem sharedTables_slack_le {U V n R p_min q_min p_max q_max : ℕ}
     rwa [← Nat.add_mul] at hsum
   omega
 
+/-- Operational metadata bit budget `(canonicalSchedule h).treeMetaBits` is bounded by
+`n / redundancyRatio n R` across `ValidRegime`. -/
+theorem treeMeta_slack_le {U V n R p_min q_min p_max q_max : ℕ}
+    (h : ValidRegime U V n R p_min q_min p_max q_max) :
+    (canonicalSchedule h).treeMetaBits * redundancyRatio n R ≤ n := by
+  set P := canonicalSchedule h
+  set r := redundancyRatio n R
+  set L := Nat.log 2 n
+  have hP_cap : P.cap = n := canonicalSchedule_cap h
+  obtain ⟨_, _, hr10⟩ := h.redundancyRatio_bounds
+  have hr_le_L : r ≤ L := (Nat.le_self_pow (by decide : 10 ≠ 0) r).trans hr10
+  have h2M : 2560000 ≤ L :=
+    (Nat.le_mul_of_pos_right 2560000 (by positivity)).trans
+      ((poly_le_thresholdLogN q_min p_max).trans h.thresholdLogN_le_log)
+  have hn2 : 2 ≤ n := h.two_le_n
+  have hn_2L : 2 ^ L ≤ n := Nat.pow_log_le_self 2 (by omega)
+  have hcl_cap : Nat.clog 2 (P.cap + 1) ≤ L + 1 := by
+    rw [hP_cap]
+    refine Nat.clog_le_of_le_pow ?_
+    have hn_lt : n < 2 ^ (L + 1) := Nat.lt_pow_succ_log_self Nat.one_lt_two n
+    omega
+  dsimp only [TreeSchedule.treeMetaBits]
+  have hmeta_le : Nat.clog 2 (P.cap + 1) + 1 ≤ L + 2 := by omega
+  have hprod : (Nat.clog 2 (P.cap + 1) + 1) * r ≤ (L + 2) * L :=
+    Nat.mul_le_mul hmeta_le hr_le_L
+  have hprod_L3 : (L + 2) * L ≤ L ^ 3 := by
+    calc (L + 2) * L ≤ (2 * L) * L := Nat.mul_le_mul_right L (by omega)
+      _ = 2 * L ^ 2 := by ring
+      _ ≤ L * L ^ 2 := Nat.mul_le_mul_right (L ^ 2) (by omega)
+      _ = L ^ 3 := (pow_succ' L 2).symm
+  have hL3_pow : L ^ 3 ≤ 2 ^ L := Nat.pow_le_two_pow (by decide) (by omega)
+  exact hprod.trans (hprod_L3.trans (hL3_pow.trans hn_2L))
+
 private theorem redundancySlack_sub_one_of_schedule (P : TreeSchedule) {n r : ℕ}
     (hb1 : (3 * P.numNodes P.depth + 3 * (P.cap - P.numNodes P.depth * P.nLow P.depth)) * r ≤
       9 * n)
@@ -665,7 +698,8 @@ private theorem redundancySlack_sub_one_of_schedule (P : TreeSchedule) {n r : �
     (hb3 : ((P.numNodes 1 * P.tableCap 1 - P.rootValPoolCap) *
         Nat.clog 2 ((P.paddedUniv + P.cap - 1) / P.cap) + P.rootPoolDirBits) * r ≤ 8 * n)
     (hb4 : (P.allWaitingListsBits + P.allHashSeedsBits) * r ≤ 1700 * n)
-    (hb5 : P.sharedTablesBits * r ≤ 4 * n) :
+    (hb5 : P.sharedTablesBits * r ≤ 4 * n)
+    (hb6 : P.treeMetaBits * r ≤ n) :
     (P.redundancySlack - 1) * r ≤ 74000 * n := by
   have heq : P.redundancySlack - 1 =
       (3 * P.numNodes P.depth + 3 * (P.cap - P.numNodes P.depth * P.nLow P.depth)) +
@@ -680,7 +714,8 @@ private theorem redundancySlack_sub_one_of_schedule (P : TreeSchedule) {n r : �
       ((P.numNodes 1 * P.tableCap 1 - P.rootValPoolCap) *
           Nat.clog 2 ((P.paddedUniv + P.cap - 1) / P.cap) + P.rootPoolDirBits) +
       (P.allWaitingListsBits + P.allHashSeedsBits) +
-      P.sharedTablesBits := by
+      P.sharedTablesBits +
+      P.treeMetaBits := by
     dsimp only [TreeSchedule.redundancySlack]
     omega
   rw [heq]
@@ -697,13 +732,12 @@ theorem redundancySlack_le_mul_effRedundancy {U V n R p_min q_min p_max q_max : 
   have hsub_r := redundancySlack_sub_one_of_schedule (canonicalSchedule h)
     (leaf_and_deficit_slack_le h) (nonLeaf_tables_slack_le h)
     (rootExtra_and_poolDir_slack_le h) (waitingLists_and_hashSeeds_slack_le h)
-    (sharedTables_slack_le h)
+    (sharedTables_slack_le h) (treeMeta_slack_le h)
   have hsub_Re := le_two_mul_effRedundancy_of_mul_ratio_le h.redundancy_pos hr1 hsub_r
   omega
 
 /-- Explicit universal constant `O(1)` in the pure tree bit-budget bound
 `totalTreeBits ≤ infoBits U V n + spaceConst * R`. -/
-@[expose]
 def spaceConst : ℕ := 160000
 
 /-- **Headline Section 5 Pure Tree Bit-Budget Bound** (`[LiLiangYuZhou2024, Sections 5.2 & 5.6]`):

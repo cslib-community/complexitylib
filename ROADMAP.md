@@ -771,8 +771,8 @@ Social welfare and social choice functions on strict rankings, from Arrow's impo
 - **B-trees** ([#3674](https://github.com/cslib-community/cslib-frontier/issues/3674)): comparison bounds for B-tree operations in CSLib's query model, with linear and binary in-node search, and the `⌈log₂(n + 1)⌉` comparison lower bound for search.
   Read-only operations behind a node-access oracle, whose query counts equal the node-visit counts.
   B+-trees, with only separator keys in interior nodes and every entry in a leaf: structure, queries, updates, bulk loading and the same cost bounds.
-- **Subconstant-redundancy dynamic dictionary** ([#5349](https://github.com/cslib-community/cslib-frontier/issues/5349)): dynamic succinct dictionaries with subconstant redundancy $R$ for large parameter regimes ($n / \log_2^{0.1} n \le R \le n$, polynomial universes $n^{1+\alpha_{\min}} \le U \le n^{1+\alpha_{\max}}$) following Li, Liang, Yu, and Zhou (SODA 2024, arXiv:2310.20536).
-  Multi-level tree schedule, storage nodes, operations, bit budget $\mathrm{infoBits} + O(R)$, and $O((n+M)\log^* n)$ expected rehashing work under idealized oracle sampling across dynamic histories.
+- **Subconstant-redundancy dynamic dictionary** ([#5349](https://github.com/cslib-community/cslib-frontier/issues/5349)): dynamic succinct dictionaries with subconstant redundancy `R` following Li, Liang, Yu, and Zhou (SODA 2024, arXiv:2310.20536).
+  Word-RAM bit-packed realization with `O(1)` expected query time, `infoBits + O(R)` bits for `R ≤ n` (including Section 4 small-`R` adapter trees), Las Vegas sentinel/resizing wrappers, and localized subtree rehashing with `O((n + M) log* n)` expected work.
 
 ### Parallel, external-memory and distributed models
 
