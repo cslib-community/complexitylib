@@ -27,6 +27,7 @@ import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Probability.PMF.Bind
 import Mathlib.Tactic.Ring
 import Mathlib.Tactic.Linarith
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Binary-counter exponential iteration on fair-coin multitape machines
@@ -293,8 +294,7 @@ theorem IsPPTOn.exists_multiTapePTM_iterate_binary {initial : α → σ} {count 
       (encode (c, s)).length ≤ 2 * (encNat m).length + 1 + (stateEncoding s).length := by
     have hbits : (encNat c).length ≤ (encNat m).length := by
       simpa only [encNat_apply, Nat.size_eq_bits_len] using Nat.size_le_size hcm
-    simp only [encode, length_encPair]
-    omega
+    enc_len [encode]
   have hloop_eq (c r : ℕ) (s : σ) :
       OracleComp.iterate r wordStep (encode (c + r, s)) =
         (fun final => encode (c, final)) <$> OracleComp.iterate r ostep s :=
@@ -559,8 +559,7 @@ theorem IsPPTOn.exists_multiTapePTM_iterateWith_binary {initial : α → σ} {co
       (by
         rintro a i ⟨captured, state⟩ hi ⟨rfl, hstate⟩
         have := hbound captured i state hi hstate
-        simp only [length_encPair]
-        omega)
+        enc_len)
   obtain ⟨_, ke, Extract, hfinE, extM, ce, de, hextM⟩ :=
     IsTidyOraclePPTOn.of_computableInPolyTime (Operation := Empty)
       ((ComputableInPolyTime.of_eq (encIn := stateEncoding) (encOut := encBits)
@@ -587,8 +586,7 @@ theorem IsPPTOn.exists_multiTapePTM_iterateWith_binary {initial : α → σ} {co
     obtain ⟨final, hfinal, rfl⟩ := hw
     refine ⟨final, hfinal, rfl, ?_⟩
     have hs := hbound a (count a) final le_rfl (hinv_final a final hfinal)
-    simp only [packedEnc, length_encPair, outBound]
-    omega
+    enc_len [packedEnc, outBound]
   have hext_on (a : α) (final : σ) (hlen : (packedEnc (a, final)).length ≤ outBound a) :
       extM.ComputesTidily (packedEnc (a, final)) (te a)
         (ProbOracleComp.sample (pure (stateEncoding final))) := by

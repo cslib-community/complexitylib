@@ -14,6 +14,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 import CslibFrontier.Foundations.ModelTheory.Basic
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Materializing existential relation witnesses
@@ -162,8 +163,7 @@ theorem length_encStructure_witnessInput_le (a : EncodedStructure) (w : List Boo
     (encStructure (ℓ.witnessInput e (a, w))).length ≤ (encStructure a).length +
       m * (2 * (encStructure a).length ^ ℓ.degree + 1) := by
   have hN : 0 < (encStructure a).length := by
-    simp only [encStructure, length_encPair]
-    omega
+    enc_len [encStructure]
   have hp (j : Fin m) : a.1 ^ Φ.arity (e j) ≤ (encStructure a).length ^ ℓ.degree :=
     (Nat.pow_le_pow_left (card_le_length_encStructure a) _).trans
       (Nat.pow_le_pow_right hN (ℓ.arity_le (e j)))

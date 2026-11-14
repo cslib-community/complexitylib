@@ -22,6 +22,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Run
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Input
 import Mathlib.Data.Nat.Size
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # The time–space speedup: `TISP(t, s) ⊆ Σ₂TIME`
@@ -127,8 +128,7 @@ private lemma wTime_le (d : Desc) (c : SCfg) (o : Option ℕ) (ho : (eSym o).len
       (4 * descLen d + 2 * (eCfg c).length + 12) + ((encNat c.inputPos).length + 1) ^ 2 := by
   have ht := table_le d
   have hl : (eWCtx ((d, c), o)).length + 1 ≤ 4 * descLen d + 2 * (eCfg c).length + 12 := by
-    simp only [eWCtx, length_encPair, descLen]
-    omega
+    enc_len [eWCtx, descLen]
   unfold wTime
   simp only [WCtx.cfg, WCtx.desc]
   have h₁ : c.workTapes.length + d.table.length + 1 ≤ 2 * descLen d + 1 := by omega
@@ -325,8 +325,7 @@ theorem mem_SigmaTwoTIME_of_virtualRun {π : Type} [Inhabited π] {eP : π ↪ L
     · have h2 : (encList encUnary x.2.2).length ≤
           (encPair eP (encPair eCfg (encList encUnary)) x).length := by
         simp only [length_encPair]; omega
-      simp only [length_encPair] at h2 ⊢
-      omega
+      enc_len at h2 ⊢
   refine mem_SigmaTwoTIME_of_chain (eS := encPair eCfg (encList encUnary)) (t := τ)
     (s₀ := (init d, [])) (next := lookRun d look) hP hnext hgoal ?_ ?_
   · intro a bw m h
@@ -431,8 +430,7 @@ theorem mem_SigmaTwoTIME_of_virtualRun {π : Type} [Inhabited π] {eP : π ↪ L
       have hmul : (b + 1) * (R (P a, (c, b.bits)) + B (P a, (c, b.bits)) +
           (b.bits.length + 1) ^ 2) ≤ (b + 1) * (2 * (K * W) + (b.bits.length + 1) ^ 2) :=
         Nat.mul_le_mul_left _ (by omega)
-      simp only [length_encPair, encBits_apply] at hblk ⊢
-      omega
+      enc_len at hblk ⊢
     · -- the final test
       apply hfin
       refine le_trans ?_ hKW

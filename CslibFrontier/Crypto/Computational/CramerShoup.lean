@@ -20,6 +20,7 @@ import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.StatisticalDistance
 import CslibFrontier.Tactic.GameHop
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # The Cramer–Shoup public-key encryption scheme and 1CCA security under DDH
@@ -917,8 +918,7 @@ private theorem length_encBits4_encode_le {d : F.Desc} {B : ℕ}
     (encBits4 (F.encode d x₁, F.encode d x₂, F.encode d x₃, F.encode d x₄)).length ≤
       22 * B + 14 := by
   have h1 := hB x₁; have h2 := hB x₂; have h3 := hB x₃; have h4 := hB x₄
-  simp only [encBits4, length_encPair, encBits_apply]
-  lia
+  enc_len [encBits4]
 
 private theorem length_encodeCramerShoupPublicKey_le {d : F.Desc} {B : ℕ}
     (hB : ∀ x : F.Carrier d, (F.encode d x).length ≤ B)
@@ -931,8 +931,7 @@ private theorem length_encodeCramerShoupPublicKey_le {d : F.Desc} {B : ℕ}
   intro pk
   unfold encodeCramerShoupPublicKeyValues
   have h4 := F.length_encBits4_encode_le hB (csPkU pk) (csPkH pk) (csPkH₁ pk) (csPkH₂ pk)
-  simp only [length_encPair]
-  lia
+  enc_len
 
 /-- **Asymptotic ideal-game 1CCA security of Multiplicative Cramer–Shoup for general message and
 associated-data encodings** ([BonehShoup2023], Theorem 12.9, Section 12.7 & Exercise 12.27,

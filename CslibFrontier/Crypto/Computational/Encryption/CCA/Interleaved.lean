@@ -36,6 +36,7 @@ import CslibFrontier.Probability.PMF.Coupling
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Tactic.PolyTime
 import CslibFrontier.Tactic.PPT
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Fully adaptive interleaved-query multi-challenge CCA security (Attack Game 12.1)
@@ -745,8 +746,7 @@ theorem isPPT_toInterleaved {Msg : Type} {encMsg : Msg ↪ List Bool}
       (ProbOracleComp.mem_support_iff_exists (hne := fun _ => ⟨[]⟩)).mp hout
     have hbound := hlen (n, pk) State oracle s s' out hmem
     have hsize : (encPair encUnary encBits (n, pk)).length + 1 ≤ 2 * (n + pk.length + 2) := by
-      simp only [length_encPair, encUnary_apply, List.length_replicate, encBits_apply]
-      omega
+      enc_len
     have hpoly := Nat.mul_le_mul_left cs (Nat.pow_le_pow_left hsize ds)
     rw [Nat.mul_pow, ← Nat.mul_assoc] at hpoly
     exact hbound.trans hpoly
@@ -1195,12 +1195,10 @@ private theorem polyBounded_interleavedLoopGrowth (cs ds ce de cd dd : ℕ) :
       (interleavedLoopGrowth cs ds ce de cd dd) := by
   have hnPoly : PolyBounded (fun q => (EInterleavedLoop q).length) (fun q => q.2.1.1) :=
     PolyBounded.self.mono fun q => by
-      simp only [EInterleavedLoop, length_encPair, encUnary_apply, List.length_replicate]
-      omega
+      enc_len [EInterleavedLoop]
   have hpkPoly : PolyBounded (fun q => (EInterleavedLoop q).length) (fun q => q.2.1.2.length) :=
     PolyBounded.self.mono fun q => by
-      simp only [EInterleavedLoop, length_encPair, encBits_apply]
-      omega
+      enc_len [EInterleavedLoop]
   have hBPoly : PolyBounded (fun q => (EInterleavedLoop q).length)
       (fun q => cs * (q.2.1.1 + q.2.1.2.length + 2) ^ ds) :=
     (PolyBounded.const cs).mul (((hnPoly.add hpkPoly).add (.const 2)).pow ds)
@@ -1250,11 +1248,9 @@ private theorem length_interleavedOpenRoundStep_le_aux {Msg : Type} [Inhabited M
   have hstepLen : (encPair (encCCAQuery encMsg) encBits stepOut).length ≤ B :=
     hlenStep stepOut hstepOut
   have hs'Len : stepOut.2.length ≤ B := by
-    simp only [length_encPair, encBits_apply] at hstepLen
-    omega
+    enc_len at hstepLen
   have hqLen : (encCCAQuery encMsg stepOut.1).length ≤ B := by
-    simp only [length_encPair, encBits_apply] at hstepLen
-    omega
+    enc_len at hstepLen
   cases hqCase : stepOut.1 with
   | challenge m₀ m₁ =>
     rw [hqCase] at hbranch hqLen
@@ -1271,14 +1267,10 @@ private theorem length_interleavedOpenRoundStep_le_aux {Msg : Type} [Inhabited M
         (ProbOracleComp.support_sample _).subset hctSample
       obtain rfl := OracleComp.eq_of_mem_supportWith_pure hret
       have hctLen : ct.length ≤ ctMax := hlenEnc _ hmLen ct hctMem
-      simp only [encInterleavedLoopState, InterleavedLoopState.forbidden, length_encPair,
-        encBits_apply, List.length_cons, encList_cons, length_frame, List.length_append]
-      omega
+      enc_len [encInterleavedLoopState, InterleavedLoopState.forbidden]
     · simp only [hv, Bool.false_eq_true, ↓reduceIte] at hbranch
       obtain rfl := OracleComp.eq_of_mem_supportWith_pure hbranch
-      simp only [encInterleavedLoopState, InterleavedLoopState.forbidden, length_encPair,
-        encBits_apply, List.length_nil]
-      omega
+      enc_len [encInterleavedLoopState, InterleavedLoopState.forbidden]
   | decrypt c =>
     rw [hqCase] at hbranch hqLen
     simp only [CCAQuery.isChallenge, Bool.false_eq_true, ↓reduceIte,
@@ -1287,14 +1279,11 @@ private theorem length_interleavedOpenRoundStep_le_aux {Msg : Type} [Inhabited M
     obtain ⟨rawReply, _, rfl⟩ := OracleComp.mem_supportWith_map_iff.mp hreply
     obtain rfl := OracleComp.eq_of_mem_supportWith_pure hret
     have hcLen : c.length ≤ B := by
-      simp only [encCCAQuery_apply, CCAQuery.toOptionPair, length_encPair, encOption,
-        Function.Embedding.coeFn_mk, Option.elim, List.length_nil, encBits_apply] at hqLen
-      omega
+      enc_len [encCCAQuery_apply, CCAQuery.toOptionPair, encOption, Function.Embedding.coeFn_mk,
+        Option.elim] at hqLen
     have hdecLen : (List.take (decBound n c) rawReply).length ≤ decMax :=
       (List.length_take_le _ _).trans (hlenDec c hcLen)
-    simp only [encInterleavedLoopState, InterleavedLoopState.forbidden, length_encPair,
-      encBits_apply]
-    omega
+    enc_len [encInterleavedLoopState, InterleavedLoopState.forbidden]
 
 /-- Single-step encoded state growth bound for `interleavedOpenRoundStep` in terms of polynomial
 coefficients `(cs, ds, ce, de, cd, dd)`. -/

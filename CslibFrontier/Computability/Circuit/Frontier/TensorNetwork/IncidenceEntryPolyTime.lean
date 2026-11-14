@@ -103,9 +103,8 @@ theorem length_indexStep_le (st : List Bool × List ℕ) (b : Block) :
     refine (Nat.size_le.mpr ((lsbValue_lt _).trans_le
       (Nat.pow_le_pow_right (by norm_num) ?_))).trans le_rfl
     exact (List.length_take_le _ _).trans (blockWires_le b)
-  simp only [indexStep, length_encPair, encBits_apply, length_encList, List.map_append,
-    List.sum_append, List.length_drop, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]
-  omega
+  enc_len [indexStep, length_encList, List.map_append, List.sum_append, List.length_drop,
+    List.map_cons, List.map_nil, List.sum_cons, List.sum_nil]
 
 /-- **Reading the indices of the blocks is polynomial-time.** -/
 theorem blockIndices_polyTime :

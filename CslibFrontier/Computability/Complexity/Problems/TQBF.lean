@@ -14,6 +14,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.P
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pair
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # The problem of true quantified Boolean formulas
@@ -218,8 +219,7 @@ theorem three_mul_length_tokens_le (φ : QBF ℕ) : 3 * φ.tokens.length ≤ (en
   induction l with
   | nil => simp
   | cons t l ih =>
-    simp only [encList_cons, List.length_append, length_frame, List.length_cons, length_encPair]
-    omega
+    enc_len
 
 /-! ### True closed formulas -/
 

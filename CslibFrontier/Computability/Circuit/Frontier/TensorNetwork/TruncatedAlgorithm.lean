@@ -15,6 +15,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeNa
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Envelope
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Polynomial truncation order from a contraction over `A_P`
@@ -421,8 +422,7 @@ noncomputable def TruncatedContractionAlgorithm.ofCore {entry : T → List Bool 
         rw [this] at hg
         exact Bool.noConfusion hg
       have hL : (DescribedNetwork.encDescribed encT G).length ≤ n := by
-        simp only [hn, encTrunc, length_encPair]
-        omega
+        enc_len [hn, encTrunc]
       have hEf : Ke * ((DescribedNetwork.encDescribed encT G).length + 1) ^ Ke ≤ Ef n :=
         Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (by omega) _)
       have h2s : 2 ^ (Ke * s) ≤ 2 ^ (Ke * s₀) :=

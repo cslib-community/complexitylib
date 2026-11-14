@@ -22,6 +22,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 import Mathlib.Data.Nat.Size
 import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # The strong exponential time hypothesis implies the orthogonal vectors hypothesis
@@ -329,8 +330,7 @@ theorem exists_computableInO_stream {half : CNF ℕ → List ℕ}
     have : (encNat (x.1.2 + i)).length ≤ (encNat (x.1.2 + x.2)).length := by
       simpa only [encNat_apply, Nat.size_eq_bits_len] using
         Nat.size_le_size (show x.1.2 + i ≤ x.1.2 + x.2 by omega)
-    simp only [encStreamState, length_encPair, B] at this ⊢
-    omega
+    enc_len [encStreamState, B] at this ⊢
   have hpowN (x : StreamState × ℕ) (s : StreamState) (hs : (encStreamState s).length ≤ B x) :
       (encStreamState s).length + 1 ≤ (B x + 1) := by omega
   have hD (x : StreamState × ℕ) (d : ℕ) (hd : d ≤ D) : (B x + 1) ^ d ≤ (B x + 1) ^ D := by gcongr

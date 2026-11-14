@@ -14,6 +14,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Tactic.PPT
 import CslibFrontier.Tactic.SuppCases
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # A clocked hard-core boosting program
@@ -105,9 +106,7 @@ def add (state : State) (bound : ℕ) (code : List Bool) : State :=
 @[simp] theorem length_encoding (state : State) :
     (encoding state).length = 2 * state.threshold +
       (encList encBits state.predictors).length + 4 := by
-  simp only [encoding, Function.Embedding.coeFn_mk, length_encPair, encBool_apply,
-    List.length_singleton, encUnary_apply, List.length_replicate]
-  lia
+  enc_len [encoding, Function.Embedding.coeFn_mk, List.length_singleton]
 
 /-- After `rounds` rounds there are at most that many shifts and bounded descriptions. -/
 def Bounded (rounds codeBound : ℕ) (state : State) : Prop :=

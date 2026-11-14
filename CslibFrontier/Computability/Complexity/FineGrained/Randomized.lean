@@ -32,6 +32,7 @@ import CslibFrontier.Foundations.Data.BitString.WordCount
 import CslibFrontier.Foundations.Data.List.OfFn
 import CslibFrontier.Foundations.Data.Nat.Power
 import CslibFrontier.Probability.MajorityVote
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Parameterized randomized runtime rates, error models, `rETH`, and `rSETH`
@@ -807,8 +808,7 @@ theorem exists_solvesWithErrorInTimeO_poly_iff {Q : PromiseProblem α} {E : Erro
         (t := polyClock) (by dsimp only [polyClock]; fun_prop)
       set N : ℕ := (encPair enc encBits q).length
       have ha_le : (enc q.1).length ≤ N := by
-        simp only [N, length_encPair]
-        omega
+        enc_len [N]
       have hpow : ((enc q.1).length + 1) ^ d ≤ (N + 1) ^ d :=
         Nat.pow_le_pow_left (Nat.add_le_add_right ha_le 1) d
       have hta := ht q.1 (padTake ℓ q) (length_padTake ℓ q)

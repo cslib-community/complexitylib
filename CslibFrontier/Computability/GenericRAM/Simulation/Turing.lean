@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.Equ
 public import CslibFrontier.Computability.GenericRAM.Simulation.Finite
 public import CslibFrontier.Computability.GenericRAM.SparseMemory.Turing
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Pi
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Native implementation of fixed-program finite RAM steps
@@ -100,8 +101,7 @@ theorem length_encoding (enc : M.Encoding) (s : FiniteState M r) :
       2 * (encNat s.pc).length + 2 * (encPi enc.value s.regs).length +
         2 * (enc.value s.default).length +
         (SparseMemory.encoding enc.address enc.value s.memory).length + 3 := by
-  simp only [encoding_apply, length_encPair]
-  omega
+  enc_len [encoding_apply]
 
 /-- Bound the encoded finite state from the control label, register bound, default, and store. -/
 theorem length_encoding_le (enc : M.Encoding) (s : FiniteState M r)

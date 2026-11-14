@@ -16,6 +16,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Probabilistic.Adaptive
 import CslibFrontier.Computability.Probabilistic.Repeat
 import CslibFrontier.Tactic.PPT
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Strict PPT empirical selection
@@ -92,8 +93,7 @@ theorem IsPPTOn.selectBest {α : Type} {input : α ↪ List Bool}
     (ComputableInPolyTime.polyBounded (by fun_prop)) (by
       intro a i state hi hstate
       dsimp only [stateEncoding]
-      simp only [length_encPair, encUnary_apply, List.length_replicate]
-      lia)).1
+      enc_len)).1
   have hproj : ComputableInPolyTime (fun s : ℕ × ℕ × ℕ => s.2.1) stateEncoding encUnary := by
     dsimp only [stateEncoding]; fun_prop
   exact hloop.map (hproj.of_enc_eq fun ⟨_, _, _⟩ => rfl)

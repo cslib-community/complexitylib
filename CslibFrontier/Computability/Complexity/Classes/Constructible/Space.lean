@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.Complexity.Classes.Constructible
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LinearSpaceArith
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Unary
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Closure of space-constructible bounds
@@ -50,8 +51,7 @@ theorem SpaceConstructible.add {s₁ s₂ : ℕ → ℕ} (h₁ : SpaceConstructi
     fun x => ?_
   have e₁ := length_encNat_le_self (s₁ x.length)
   have e₂ := length_encNat_le_self (s₂ x.length)
-  simp only [length_encPair]
-  omega
+  enc_len
 
 /-- **Constant multiples of space-constructible bounds are space-constructible.** -/
 theorem SpaceConstructible.const_mul {s : ℕ → ℕ} (hs : SpaceConstructible s) (c : ℕ) :

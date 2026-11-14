@@ -16,6 +16,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Native polynomial-time explicit relation tables
@@ -278,9 +279,7 @@ theorem length_encConstraint_tableContract_le {table : Cslib.Logic.PL.CSP.Table}
         2 * (encNat connector).length + 1 := by
   have ht := length_encTable_contract_le h htwo
   have hs := length_encList_sublist encNat hscope
-  simp only [encConstraint_apply, length_encPair, encList_append, List.length_append,
-    encList_cons, encList_nil, List.append_nil, length_frame] at *
-  omega
+  enc_len [encConstraint_apply, encList_append, List.append_nil] at *
 
 /-- Exactly-one's full encoded size is quadratic in the connector count, with binary arity. -/
 theorem length_encTable_exactlyOne {V : Type*} (scope : List V) :

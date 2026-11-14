@@ -17,6 +17,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List.Size
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.PolyTimeLoops
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Johnson's algorithm runs in polynomial time
@@ -160,10 +161,8 @@ theorem computableInPolyTime_johnson :
         have h1 := CNF.length_encList_restrict_le enc v true s.1
         have h2 := CNF.length_encList_restrict_le enc v false s.1
         split
-        · simp only [length_encPair, encList_cons, List.length_append, length_frame]
-          omega
-        · simp only [length_encPair]
-          omega⟩
+        · enc_len
+        · enc_len⟩
   have h := (snd _ _).comp hfold
   exact h
 

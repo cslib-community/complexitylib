@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.TreeEval.Reader.Cert.Step
 public import CslibFrontier.Computability.Machines.ReadMachine.Tidy
 import CslibFrontier.Tactic.Space
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # The Tree Evaluation read machine within its space budget
@@ -49,8 +50,7 @@ theorem pairFalse_inSpace :
   (budget_prod (of_inO (ComputableInO.of_eq (f := id) fun _ => rfl))
     (budget_const (encB := encBool) false (.refl _))).weaken
     (.of_le fun x => by
-      simp only [stepBudget, encStepInT, length_encPair, encBool_apply, List.length_singleton]
-      omega)
+      enc_len [stepBudget, encStepInT, List.length_singleton])
 
 /-- A function of the tuple with the bit `false` within the budget of the step. -/
 private theorem onTuple {β : Type} {encB : β ↪ List Bool} {f : Tuple × Bool → β}

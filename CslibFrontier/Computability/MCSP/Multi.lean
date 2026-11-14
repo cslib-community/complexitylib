@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.MCSP.Basic
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.List
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pair
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Unary
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Multi-output MCSP
@@ -175,9 +176,7 @@ table bits. -/
 theorem length_encInstance (x : Instance) :
     (encInstance x).length =
       2 * x.arity + 2 * x.outputs + 2 * x.threshold + 3 + x.outputs * 2 ^ x.arity := by
-  simp only [encInstance_apply, length_encPair, encUnary_apply, List.length_replicate, encBits,
-    Function.Embedding.refl_apply, Instance.length_tableBits]
-  omega
+  enc_len [encInstance_apply, encBits, Function.Embedding.refl_apply, Instance.length_tableBits]
 
 end MultiMCSP
 

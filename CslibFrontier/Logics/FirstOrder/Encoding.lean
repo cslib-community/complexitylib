@@ -14,6 +14,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Li
 public import Mathlib.Algebra.BigOperators.Fin
 public import Mathlib.Data.List.GetD
 import CslibFrontier.Foundations.Data.List.Lookup
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Binary encodings of finite relational structures
@@ -102,8 +103,7 @@ abbrev encStructure : EncodedStructure ↪ List Bool :=
 
 /-- The cardinality is at most the length of the encoded input. -/
 theorem card_le_length_encStructure (a : EncodedStructure) : a.1 ≤ (encStructure a).length := by
-  simp only [encStructure, length_encPair, encUnary_apply, List.length_replicate]
-  omega
+  enc_len [encStructure]
 
 namespace Vocabulary
 

@@ -15,6 +15,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Probability.Product
 import CslibFrontier.Tactic.PolyTime
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # The Naor–Reingold pseudorandom function from Decisional Diffie–Hellman
@@ -311,8 +312,7 @@ theorem computableInPolyTime_naorReingoldProdNat :
   have hval : value.1.size ≤ (encList (encPair encNat encBool) input.2).length := by
     rw [← Nat.size_eq_bits_len, ← encNat_apply]
     have h1 : (encNat value.1).length ≤ (encPair encNat encBool value).length := by
-      simp only [length_encPair]
-      omega
+      enc_len
     exact h1.trans (length_le_encList_of_mem (encPair encNat encBool) hmem)
   rcases value with ⟨v, _ | _⟩
   · simp

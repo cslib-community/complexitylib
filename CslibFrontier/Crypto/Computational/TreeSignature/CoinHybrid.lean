@@ -30,6 +30,7 @@ import CslibFrontier.Languages.Probabilistic.Oracle.Simulation
 import CslibFrontier.Languages.Probabilistic.Oracle.Support
 import CslibFrontier.Probability.PMF.Bind
 import CslibFrontier.Tactic.SuppCases
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Tree signatures: from pseudorandom to random coins
@@ -766,8 +767,7 @@ private theorem isOraclePPTOn_chain :
     obtain ⟨h1, h2⟩ := hcerts e he; simp only [length_encPair, encBits_apply, K, B]; omega
   have hmul := Nat.mul_le_mul_right (2 * (2 * K a + 1 + B a) + 1) (hi.trans (Nat.sub_le _ _))
   dsimp only at hpath hlen
-  simp only [length_encPair, encBits_apply, hpath, hlen, K, B] at hpk hsk hlist hmul ⊢
-  omega
+  enc_len [hpath, hlen, K, B] at hpk hsk hlist hmul ⊢
 
 omit hkg hkb hsg hsb hdepth in
 /-- `sigBound` is monotone in both bounds. -/

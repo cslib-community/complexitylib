@@ -14,6 +14,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.P
 public import CslibFrontier.Computability.Complexity.Classes.P
 public import Mathlib.Algebra.Ring.BooleanRing
 import Mathlib.Tactic.FunProp
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Dense Gaussian elimination over the Boolean ring
@@ -253,9 +254,7 @@ private theorem length_encSystem_map_le (f : Row → Row)
   | nil => rfl
   | cons e F ih =>
     have he := hf e
-    simp only [encSystem, List.map_cons, encList_cons, List.length_append, length_frame,
-      encRow_apply, length_encPair, encBits_apply, encBool_apply, List.length_singleton] at *
-    omega
+    enc_len [encSystem, List.map_cons, encRow_apply, List.length_singleton] at *
 
 /-- The complete encoded state weakly decreases at every iteration; there is no growth hidden
 in repeated substitution or in the framing of rows. -/

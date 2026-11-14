@@ -14,6 +14,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Li
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pair
 import Mathlib.Data.List.GetD
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Circuits as lists of gates
@@ -423,8 +424,7 @@ theorem encCircuit_apply (encOp : σ.Op ↪ List Bool) (c : Σ n, Circuit σ n m
 theorem le_length_encCircuit (encOp : σ.Op ↪ List Bool) (c : Σ n, Circuit σ n m) :
     c.1 ≤ (encCircuit encOp m c).length := by
   rw [encCircuit_apply, length_encPair]
-  simp only [encUnary_apply, List.length_replicate]
-  omega
+  enc_len
 
 /-- The encoding of a circuit is at least as long as its gate count `c.2.size`. -/
 theorem size_le_length_encCircuit (encOp : σ.Op ↪ List Bool) (c : Σ n, Circuit σ n m) :

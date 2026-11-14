@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.TreeEval.Ary.Packed.Interpolation
 public import CslibFrontier.Computability.TreeEval.Reader.Cert.Residue
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Modular Lagrange basis evaluation within binary argument space
@@ -110,8 +111,7 @@ theorem basisWeight_inSpace :
     rw [hpar, hcounter]
     change (encBasisState ((q.1, q.2.2.1, q.2.2.2), j,
       basisWeight q.1 j q.2.2.1 q.2.2.2)).length ≤ _
-    simp only [encBasisState, encBasisArgs, encNat3, length_encPair] at hacc hs hsucc ⊢
-    omega
+    enc_len [encBasisState, encBasisArgs, encNat3] at hacc hs hsucc ⊢
   have hrun := budget_iterate hs hinit basisStep_inSpace hstates
     (.of_le_linear 16 16 fun _ => le_rfl)
   exact (snd' (snd' hrun)).of_enc_eq fun _ => rfl

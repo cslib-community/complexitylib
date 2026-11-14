@@ -1564,8 +1564,7 @@ private theorem isOraclePPTOn_oracleVerifier {enc : α ↪ List Bool}
       obtain ⟨hj, hp⟩ := hinv
       set n := (enc ac.1).length
       have hnAC : n ≤ (encAC ac).length := by
-        simp only [encAC, length_encPair, n]
-        omega
+        enc_len [encAC, n]
       have h1 : 1 ≤ ((encAC ac).length + 1) ^ D := Nat.one_le_pow _ _ (Nat.succ_pos _)
       have hpow1 : (n + 1) ^ d₁ ≤ ((encAC ac).length + 1) ^ D :=
         (Nat.pow_le_pow_left (by omega) _).trans

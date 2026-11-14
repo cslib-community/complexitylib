@@ -46,6 +46,7 @@ import CslibFrontier.Probability.PMF.Coupling
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Bool
 import CslibFrontier.Tactic.Negligible
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Security of stateless tree signatures
@@ -188,22 +189,18 @@ private theorem exists_signInput_length_bound (S : IndexedSignatureScheme) :
     · have hk' := (length_le_encPair_left encBits encBits keys').trans (hkgLen n keys' hkeys')
       simp only [encBits_apply] at hk'
       omega
-  simp only [length_encPair, encBits_apply, encUnary_apply, List.length_replicate]
-  omega
+  enc_len
 
 /-! ### Request lengths, injectivity, and coin budgets -/
 
 section Requests
 
 theorem length_keyInput (path : List Bool) : (keyInput path).length = path.length + 3 := by
-  simp only [keyInput, length_encPair, encBool_apply, List.length_singleton, encBits_apply]
-  omega
+  enc_len [keyInput, List.length_singleton]
 
 theorem length_signInput (path : List Bool) (u : ℕ) :
     (signInput path u).length = 2 * path.length + u + 4 := by
-  simp only [signInput, length_encPair, encBool_apply, List.length_singleton, encBits_apply,
-    encUnary_apply, List.length_replicate]
-  omega
+  enc_len [signInput, List.length_singleton]
 
 theorem keyInput_injective : Function.Injective keyInput := by
   intro p q h
@@ -752,8 +749,7 @@ private theorem plantedLoopInv_enc_bounds {Mv Me d i : ℕ} {a : CertLoopIn}
       certs.length * (2 * (2 * (encKeys keys).length + 1 + Me) + 1) :=
     length_encList_le (encPair encBits encBits) certs fun c hc => by
       obtain ⟨h1, h2⟩ := hcerts c hc
-      simp only [length_encPair, encBits_apply]
-      omega
+      enc_len
   rw [hcertsLen] at hcertsList
   have hcmul := Nat.mul_le_mul_right (2 * (2 * (encKeys keys).length + 1 + Me) + 1) hi
   have hvmul := Nat.mul_le_mul hi
@@ -784,10 +780,8 @@ private theorem isOraclePPTOn_certifyPlanted (S : IndexedSignatureScheme) {depth
       (encEdgeCache a.edges).length ≤ (encLoopIn a).length := by
     rcases a with ⟨⟨keys, targetCap, ⟨n, leaf⟩⟩, ⟨visited, edges⟩⟩
     have hk := length_le_length_encList (encPair encBits encBits) keys
-    simp only [CertLoopIn.keys, CertLoopIn.sigCap, CertLoopIn.parameter, CertLoopIn.visited,
-      CertLoopIn.edges, encLoopIn, encKeys, length_encPair, encUnary_apply, List.length_replicate,
-      encBits_apply]
-    omega
+    enc_len [CertLoopIn.keys, CertLoopIn.sigCap, CertLoopIn.parameter, CertLoopIn.visited,
+      CertLoopIn.edges, encLoopIn, encKeys]
   have hd : PolyBounded (fun a : CertLoopIn => (encLoopIn a).length)
       (fun a => depth a.parameter) :=
     PolyBounded.of_forall_le cd dd fun a => (hdd a.parameter).trans
@@ -880,8 +874,7 @@ private theorem isOraclePPTOn_certifyPlanted (S : IndexedSignatureScheme) {depth
     dsimp only at hle
     obtain ⟨hnode, hidx, -⟩ := hinv
     obtain ⟨hcB, hvB, heB⟩ := hle
-    simp only [length_encPair, encBits_apply, encUnary_apply, List.length_replicate, hnode]
-    omega
+    enc_len [hnode]
 
 /-- Caller tuple for `plantedTreeHandler`: `(((n, vk), target), keys)`. -/
 private abbrev ForgerCaller := ((ℕ × List Bool) × ℕ) × List (List Bool × List Bool)
@@ -996,8 +989,7 @@ private theorem plantedState_length_eq (state : PlantedState) :
       2 * (encList encBits state.2.1).length +
       2 * (encList encBits state.2.2.1).length + 6 := by
   rcases state with ⟨⟨v, e⟩, ⟨q, sl, b⟩⟩
-  simp only [length_encPair, encBool_apply, List.length_singleton]
-  omega
+  enc_len [List.length_singleton]
 
 private theorem plantedTreeHandler_preserve (S : IndexedSignatureScheme) (depth sigCap : ℕ → ℕ)
     (c : ForgerCaller) (request : Unit × List Bool) (state : PlantedState)

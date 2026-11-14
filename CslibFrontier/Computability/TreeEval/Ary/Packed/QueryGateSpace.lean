@@ -11,6 +11,7 @@ public import CslibFrontier.Computability.TreeEval.Ary.Packed.QueryGate
 public import CslibFrontier.Computability.TreeEval.Ary.Packed.GateInterpolationSpace
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine.CallSpace
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.QueryMachine.CallBounds
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Native components of the same-input packed interpolation loop
@@ -52,8 +53,7 @@ theorem sumState_encoding_le (encG : γ ↪ List Bool) (q : Params γ)
   have ha := length_encNat_mono (sumState_acc_lt q table j hp).le
   change (encNat (sumState q table j).2.2).length ≤ (encNat q.2.1.1).length at ha
   have hpar : (sumState q table j).1 = q := rfl
-  simp only [encState, encParams, encNat3, length_encPair, hpar, sumState_counter]
-  omega
+  enc_len [encState, encParams, encNat3, hpar, sumState_counter]
 
 /-- Every physical prefix of one returned table call pays for one caller and the actual
 callee state. The retained point and context are not multiplied by the number of assignments. -/

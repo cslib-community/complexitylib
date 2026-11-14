@@ -28,6 +28,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Unpair
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Halting.Partrec
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Recursive presentations and finite-variation closure of standard complexity classes
@@ -460,8 +461,7 @@ private theorem two_pow_capWidth_budget (s : CapInput) :
       ((encCapInput s).length + 1) * (2 * (encCapInput s).length + 1) := by
   have hle : capWidth s ≤ Nat.log 2 s.2 := capWidth_le_log s
   have hN : s.2 ≤ (encCapInput s).length := by
-    simp only [encCapInput, length_encPair, encUnary_apply, List.length_replicate]
-    omega
+    enc_len [encCapInput]
   rcases Nat.eq_zero_or_pos s.2 with hs | hs
   · have hlog0 : Nat.log 2 s.2 = 0 := by rw [hs]; simp
     have hcw : capWidth s = 0 := by

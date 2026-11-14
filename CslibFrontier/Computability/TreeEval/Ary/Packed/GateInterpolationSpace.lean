@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.TreeEval.Ary.Packed.GateInterpolation
 public import CslibFrontier.Computability.TreeEval.Ary.Packed.InterpolationSpace
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Packed grid weights in native work space
@@ -135,9 +136,8 @@ theorem gridWeight_inSpace :
     rw [hc.1, hc.2]
     change (encGridWeightState (((q.1.1, q.1.2.1), q.2), j,
       q.1.2.2.2 / q.1.2.1 ^ j, gridWeight q.1.1 q.1.2.1 j q.1.2.2.2 q.2)).length ≤ _
-    simp only [encGridWeightState, encGridWeightPar, encGridWeightArgs, encBasisArgs,
-      encNat3, length_encPair] at hquot hcounter hacc hsucc ⊢
-    omega
+    enc_len [encGridWeightState, encGridWeightPar, encGridWeightArgs, encBasisArgs,
+      encNat3] at hquot hcounter hacc hsucc ⊢
   have hrun := budget_iterate hn hinit gridWeightStateStep_inSpace hstates
     (.of_le_linear 32 32 fun _ => le_rfl)
   refine (snd' (snd' (snd' hrun))).of_enc_eq fun q => ?_

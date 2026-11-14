@@ -17,6 +17,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Sum
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Native chronological ancestry compiler certificates
@@ -115,9 +116,7 @@ private theorem traceStep_growth (F : CSP Table ℕ) (es : List ExpansionCode)
       List.mem_flatMap.mpr ⟨e, he, List.mem_map.mpr ⟨o, List.mem_of_find?_eq_some ho, rfl⟩⟩
     have hb := length_le_encList_of_mem encTraceCode hm
     simp only [Option.elim_some]
-    simp only [atom, encTraceCode_apply, encTraceCodeFields, length_encPair, encList_cons,
-      encList_nil, List.length_append, length_frame, List.length_nil] at hb ⊢
-    omega
+    enc_len [atom, encTraceCode_apply, encTraceCodeFields] at hb ⊢
 
 /-- A backwards chronological scan is native polynomial-time on all raw logs and suffixes.
 Every intermediate code is bounded by the full encoded parent-record envelope. -/

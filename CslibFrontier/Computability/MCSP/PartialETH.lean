@@ -17,6 +17,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import CslibFrontier.Foundations.Data.BitString.Binary
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # ETH Hardness of Partial-Function MCSP (`PartialMCSP`)

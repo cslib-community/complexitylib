@@ -29,6 +29,7 @@ import CslibFrontier.Foundations.Data.Nat.Asymptotics
 import CslibFrontier.Tactic.PMFSwap
 import CslibFrontier.Tactic.PPT
 import CslibFrontier.Tactic.PolyTime
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Conditional Entropy-Preserving Pseudorandom Generators from One-Way Functions
@@ -2731,8 +2732,7 @@ private theorem length_encPair_le_condCoinBudget (c_eval d_eval γ n : ℕ) {w :
   unfold condCoinBudget
   apply Nat.mul_le_mul_left
   apply Nat.pow_le_pow_left
-  simp only [length_encPair, encUnary_apply, encBits_apply, List.length_replicate, hw]
-  omega
+  enc_len [hw]
 
 /-- Combined conditional PRG distinguishing bound at seed length `n`:
 bounds the advantage of `adversary n` between `fullGen` on `condSeedSet` and `uniformList` by the

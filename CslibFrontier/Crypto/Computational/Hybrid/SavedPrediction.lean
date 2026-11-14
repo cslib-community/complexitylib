@@ -12,6 +12,7 @@ public import CslibFrontier.Crypto.Computational.Prediction
 import CslibFrontier.Computability.Probabilistic.CoinTape
 import CslibFrontier.Tactic.PPT
 import CslibFrontier.Tactic.SuppCases
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Saving the randomness of a coordinate predictor
@@ -100,9 +101,8 @@ def decode (code : List Bool) : Description where
 @[simp] theorem length_encoding (desc : Description) :
     (encoding desc).length =
       2 * (desc.front.length + desc.back.length) + desc.coins.length + 8 := by
-  simp only [encoding, Function.Embedding.coeFn_mk, length_encPair, encBool_apply,
-    List.length_singleton, encBits, Function.Embedding.refl_apply]
-  lia
+  enc_len [encoding, Function.Embedding.coeFn_mk, List.length_singleton, encBits,
+    Function.Embedding.refl_apply]
 
 /-- Insert a labeled example directly into the saved encoded input. -/
 def input (desc : Description) (observation : List Bool) : List Bool :=
@@ -112,9 +112,7 @@ def input (desc : Description) (observation : List Bool) : List Bool :=
 @[simp] theorem length_input (desc : Description) (observation : List Bool) :
     (desc.input observation).length =
       desc.front.length + desc.back.length + 4 * observation.length + 5 := by
-  simp only [input, List.length_append, length_encPair, encBool_apply, List.length_singleton,
-    encBits, Function.Embedding.refl_apply]
-  lia
+  enc_len [input, List.length_singleton, encBits, Function.Embedding.refl_apply]
 
 end Description
 
@@ -297,9 +295,7 @@ private theorem length_labeledList_le (encoding : α ↪ List Bool) {values : Li
     values (b := 2 * width + 2) (by
       intro value hmem
       have := hwidth value hmem
-      simp only [length_encPair, encBool_apply,
-        List.length_singleton]
-      lia)
+      enc_len [List.length_singleton])
   convert h using 1
   congr 1
   lia

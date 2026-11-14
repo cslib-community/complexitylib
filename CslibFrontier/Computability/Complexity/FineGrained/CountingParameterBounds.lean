@@ -13,6 +13,7 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Un
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial
 public import CslibFrontier.Logics.Propositional.ClauseSet.Sparsification.CountingParameters
 import Mathlib.Tactic.IntervalCases
+import CslibFrontier.Tactic.EncLen
 
 /-!
 # Numerical depth bounds for the counting parameter schedule
@@ -122,7 +123,6 @@ theorem polyBounded_countingDepthCoeff_numGroups_encPair {α β : Type}
   apply polyBounded_countingDepthCoeff_numGroups hk
   apply PolyBounded.self.mono
   intro x
-  simp only [length_encPair, encUnary_apply, List.length_replicate]
-  omega
+  enc_len
 
 end Cslib.Complexity.SubexponentialSAT.SparseCountingScale
