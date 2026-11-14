@@ -49,6 +49,13 @@ Section 23.5.7, Figure 23.17; DDH-based oblivious transfer of this kind goes bac
 * Figure 23.17 has no check. Here the sender checks `w₀ + w₁ = u`, the additive form of the check
   in [BonehShoup2023], Section 23.5.7.3, Remark 23.6, and sends zeros instead of aborting when the
   check fails. `ddhOTUncheckedProtocol` omits the check.
+* The honest parties draw exact uniform exponents in `ZMod q` (`sampleDDHOTSenderCoins` and the
+  receiver's `ProbComp.uniform (ZMod q)`), and their views hold these exponents. The source
+  requires the parties' only random objects to be random bit strings, from which they derive
+  values statistically indistinguishable from uniform ([BonehShoup2023], Section 23.5.7.2,
+  "Further assumptions about randomness", p. 1059). No bounded-time fair-coin machine draws an
+  exact uniform element of `ZMod q` when `q` is not a power of two, so this idealizes the
+  parties' algorithms.
 * Theorem 23.7 of [BonehShoup2023] is stated for Figure 23.17. The results below are proved
   directly for this variant.
 
@@ -61,7 +68,9 @@ Section 23.5.7, Figure 23.17; DDH-based oblivious transfer of this kind goes bac
 * `Cslib.Crypto.Protocols.MPC.ddhOTSenderReplyOf`: the honest sender's Round 3 reply in a protocol
   along `ddhOTSchedule G`, for an arbitrary Round 2 message.
 * `Cslib.Crypto.Protocols.MPC.ddhOTSenderSim`, `Cslib.Crypto.Protocols.MPC.ddhOTReceiverSim`: the
-  semi-honest simulators for a corrupted sender (`{0}`) and a corrupted receiver (`{1}`).
+  semi-honest simulators for a corrupted sender (`{0}`) and a corrupted receiver (`{1}`), which
+  draw uniform coins and return `Cslib.Crypto.Protocols.MPC.ddhOTSenderSimWithCoins` and
+  `Cslib.Crypto.Protocols.MPC.ddhOTReceiverSimWithCoins`.
 * `Cslib.Crypto.Protocols.MPC.ddhOTReductionWithCoins`, `Cslib.Crypto.Protocols.MPC.ddhOTReduction`:
   the DDH reduction induced by a receiver distinguisher, on given coins and on uniform coins.
 * `Cslib.Crypto.Protocols.MPC.ddhOTUncheckedRealGame`,
@@ -86,6 +95,9 @@ Section 23.5.7, Figure 23.17; DDH-based oblivious transfer of this kind goes bac
   assumption, with a certified reduction
   (`Cslib.Crypto.PrimeOrderGroupFamily.DDH.ddhOTRealIdealIndistinguishable_exactSim`), for the
   simulators `ddhOTSenderSim` and `ddhOTReceiverSim`, which are not shown to be PPT.
+  `CslibFrontier/Crypto/Protocols/MPC/DDHOT/Simulators.lean` runs `ddhOTSenderSimWithCoins` and
+  `ddhOTReceiverSimWithCoins` on approximately uniform exponents, which gives PPT simulators
+  (`Cslib.Crypto.PrimeOrderGroupFamily.DDH.ddhOTStandaloneSemiHonestSecure`).
 * `Cslib.Crypto.Protocols.MPC.ddhOTSenderReply_eq_unchecked_of_add`,
   `Cslib.Crypto.Protocols.MPC.ddhOTSenderReply_eq_zero_of_add_ne`,
   `Cslib.Crypto.Protocols.MPC.ddhOTAttackBothMessages_eq`,
@@ -101,7 +113,8 @@ Section 23.5.7, Figure 23.17; DDH-based oblivious transfer of this kind goes bac
 
 * [M. Naor and B. Pinkas, *Efficient Oblivious Transfer Protocols*][NaorPinkas2001]
 * [D. Boneh and V. Shoup, *A Graduate Course in Applied Cryptography*][BonehShoup2023],
-  Section 23.5.7 (Figure 23.17, Theorem 23.7, and Remark 23.6).
+  Section 23.5.7 (Figure 23.17, Theorem 23.7, the randomness assumptions on p. 1059, and
+  Remark 23.6).
 -/
 
 public section
@@ -494,16 +507,25 @@ theorem ddhOT_output_of_mem_support (g : G) (q : ℕ) [NeZero q] [Module (ZMod q
 
 /-! ### Perfect privacy against a corrupted sender -/
 
+/-- The simulated view of a corrupted sender (`{0}`) on sender coins `c₀ = (a, r₀, s₀, r₁, s₁)`
+and receiver coin `b`: the sender's input and coins, and the Round 2 message
+`(b • g, a • g - b • g)`. `ddhOTSenderSim` draws the coins uniformly. -/
+@[expose] def ddhOTSenderSimWithCoins {q : ℕ} [Module (ZMod q) G] (g : G)
+    (c₀ : DDHOTSenderCoins q) (b : ZMod q) (xI : (i : ({0} : Finset (Fin 2))) → OTIn G i) :
+    (i : ({0} : Finset (Fin 2))) → PartyView (OTIn G) (DDHOTCoins q) (ddhOTSchedule G) i :=
+  let u := c₀.1 • g
+  let v := b • g
+  singletonView (ddhOTSenderView (xI ⟨0, Finset.mem_singleton_self 0⟩) c₀ (v, u - v))
+
 /-- Simulator for a corrupted sender (`{0}`): samples fresh sender coins `c₀` and a uniform
-`b : ZMod q`, and sets the Round 2 message to `(b • g, c₀.1 • g - b • g)`. -/
+`b : ZMod q`, and returns `ddhOTSenderSimWithCoins`, whose Round 2 message is
+`(b • g, c₀.1 • g - b • g)`. -/
 @[expose] noncomputable def ddhOTSenderSim (g : G) (q : ℕ) [NeZero q] [Module (ZMod q) G] :
     CoalitionSimulator (ddhOTSchedule G) (OTIn G) (DDHOTCoins q) (OTOut G) {0} :=
   fun xI _ => do
     let c₀ ← sampleDDHOTSenderCoins q
     let b ← ProbComp.uniform (ZMod q)
-    let u := c₀.1 • g
-    let v := b • g
-    return singletonView (ddhOTSenderView (xI ⟨0, Finset.mem_singleton_self 0⟩) c₀ (v, u - v))
+    return ddhOTSenderSimWithCoins g c₀ b xI
 
 /-- Real joint distribution for a corrupted sender (`{0}`). -/
 theorem realJoint_ddhOT_sender (g : G) (q : ℕ) [NeZero q] [Module (ZMod q) G]
@@ -746,29 +768,38 @@ theorem real_receiver_eq_ddhRealExperiment (g : G) (q : ℕ) [NeZero q] [Module 
         ProbComp.eval (D (singletonView (ddhOTReceiverView true b u
           ((u', c_other), (e_σ, c_σ))), otOutputs x)))
 
-/-- Simulator for a corrupted receiver (`{1}`): given the receiver's choice bit `σ` and ideal
-output `m_σ`, samples `a, b, r, s, k, c : ZMod q`, and constructs `(e_σ, b • e_σ + m_σ)` with
+/-- The simulated view of a corrupted receiver (`{1}`) on exponents `a, b, r, s, k, c`: given the
+receiver's choice bit `σ` and ideal output `m_σ`, the first message is `u = a • g`, the chosen
+branch is `(e_σ, b • e_σ + m_σ)` with `e_σ = r • g + s • u`, and the unchosen branch is
+`(k • g, c • g)`. `ddhOTReceiverSim` draws the exponents uniformly. -/
+@[expose] def ddhOTReceiverSimWithCoins {q : ℕ} [Module (ZMod q) G] (g : G) (a b r s k c : ZMod q)
+    (xI : (i : ({1} : Finset (Fin 2))) → OTIn G i) (yI : (i : ({1} : Finset (Fin 2))) → OTOut G i) :
+    (i : ({1} : Finset (Fin 2))) → PartyView (OTIn G) (DDHOTCoins q) (ddhOTSchedule G) i :=
+  let σ : Bool := xI ⟨1, Finset.mem_singleton_self 1⟩
+  let m_σ : G := yI ⟨1, Finset.mem_singleton_self 1⟩
+  let u' := k • g
+  let w' := c • g
+  let u := a • g
+  let e_σ := r • g + s • u
+  let c_σ := b • e_σ + m_σ
+  let reply := if σ then ((u', w'), (e_σ, c_σ)) else ((e_σ, c_σ), (u', w'))
+  singletonView (ddhOTReceiverView σ b u reply)
+
+/-- Simulator for a corrupted receiver (`{1}`): samples `a, b, r, s, k, c : ZMod q` uniformly and
+returns `ddhOTReceiverSimWithCoins`, which constructs `(e_σ, b • e_σ + m_σ)` with
 `e_σ = r • g + s • (a • g)` on the chosen branch and `(k • g, c • g)` on the unchosen branch.
 When `g` generates `G`, `k • g` and `c • g` are uniform elements of `G`, as in the simulator of
 [BonehShoup2023], Section 23.5.7.2. -/
 @[expose] noncomputable def ddhOTReceiverSim (g : G) (q : ℕ) [NeZero q] [Module (ZMod q) G] :
     CoalitionSimulator (ddhOTSchedule G) (OTIn G) (DDHOTCoins q) (OTOut G) {1} :=
   fun xI yI => do
-    let σ : Bool := xI ⟨1, Finset.mem_singleton_self 1⟩
-    let m_σ : G := yI ⟨1, Finset.mem_singleton_self 1⟩
     let a ← ProbComp.uniform (ZMod q)
     let b ← ProbComp.uniform (ZMod q)
     let r ← ProbComp.uniform (ZMod q)
     let s ← ProbComp.uniform (ZMod q)
     let k ← ProbComp.uniform (ZMod q)
     let c ← ProbComp.uniform (ZMod q)
-    let u' := k • g
-    let w' := c • g
-    let u := a • g
-    let e_σ := r • g + s • u
-    let c_σ := b • e_σ + m_σ
-    let reply := if σ then ((u', w'), (e_σ, c_σ)) else ((e_σ, c_σ), (u', w'))
-    return singletonView (ddhOTReceiverView σ b u reply)
+    return ddhOTReceiverSimWithCoins g a b r s k c xI yI
 
 /-- Moving two outer binds over `p` inside three inner binds over `p`. -/
 private theorem bind_two_three_comm {α β : Type} (p : PMF α) (f : α → α → α → α → α → PMF β) :
@@ -796,8 +827,8 @@ theorem ideal_receiver_eq_ddhRandomExperiment (g : G) (q : ℕ) [NeZero q] [Modu
     ProbComp.eval (idealJoint (otFunctionality G) {1} (ddhOTReceiverSim g q) x >>= D) =
       ProbComp.eval (ddhRandomExperiment q g (ddhOTReduction g q x D)) := by
   simp only [idealJoint, otFunctionality, Functionality.ofDeterministic, ddhOTReceiverSim,
-    ddhRandomExperiment, ddhOTReduction, ddhOTReductionWithCoins, ProbComp.eval_bind,
-    ProbComp.eval_pure, ProbComp.eval_uniform, PMF.pure_bind, PMF.bind_bind]
+    ddhOTReceiverSimWithCoins, ddhRandomExperiment, ddhOTReduction, ddhOTReductionWithCoins,
+    ProbComp.eval_bind, ProbComp.eval_pure, ProbComp.eval_uniform, PMF.pure_bind, PMF.bind_bind]
   refine congrArg (PMF.bind _) (funext fun a => ?_)
   conv_rhs => rw [bind_two_three_comm]
   refine congrArg (PMF.bind _) (funext fun b =>
