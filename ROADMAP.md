@@ -102,10 +102,9 @@ For each scheme, prove chosen-plaintext security for the actual algorithms and p
 - **Lattice signatures from SIS**: Prove random-oracle EUF-CMA security of Lyubashevsky's signatures (2009, 2012) from SIS by a native reduction that receives only `A`, with an efficient secret-free simulator and a security parameter family.
   The route covers forking ([#2620](https://github.com/cslib-community/cslib-frontier/issues/2620)), witness invariance ([#2642](https://github.com/cslib-community/cslib-frontier/issues/2642)), the ROM bridge ([#2661](https://github.com/cslib-community/cslib-frontier/issues/2661)), cache-hit bounds ([#2712](https://github.com/cslib-community/cslib-frontier/issues/2712)), oracle programming ([#2750](https://github.com/cslib-community/cslib-frontier/issues/2750)) and visible signing simulation ([#2788](https://github.com/cslib-community/cslib-frontier/issues/2788), [#2798](https://github.com/cslib-community/cslib-frontier/issues/2798)).
 - **Lattice identification and Dilithium-style signatures**: Prove identification security under SIS, and the security of Dilithium-style signature schemes over module SIS and module LWE, as theory.
-- **Hybrid encryption** ([#2725](https://github.com/cslib-community/cslib-frontier/issues/2725)): Prove adaptive CCA security of KEM–DEM hybrid encryption, with the factor-two bound of Boneh–Shoup Exercise 12.5(a) for `n`-bit messages, by native reductions to the KEM and one-time symmetric CCA games ([#2692](https://github.com/cslib-community/cslib-frontier/issues/2692), [#2694](https://github.com/cslib-community/cslib-frontier/issues/2694)).
-  Then extend it to arbitrary message spaces, prechallenge KEM queries and multiple encapsulation challenges.
-- **Paillier encryption and composite residuosity**: Prove IND-CPA security of Paillier encryption under Decisional Composite Residuosity (Katz–Lindell Theorem 15.13) for the actual word algorithms, with approximate unit sampling and native balanced-modulus generation.
-  The homomorphic property of Definition 15.14 needs an exact or statistical-closeness formulation, since its exact distributional condition fails for the implemented sampler.
+- **Hybrid encryption** ([#2749](https://github.com/cslib-community/cslib-frontier/issues/2749)): Extend adaptive CCA security of KEM–DEM hybrid encryption beyond the `n`-bit-message bound of Boneh–Shoup Exercise 12.5(a) ([#2725](https://github.com/cslib-community/cslib-frontier/issues/2725)) to arbitrary message spaces (unrestricted `WordINDCCA2`), prechallenge KEM queries and multiple encapsulation challenges.
+- **Paillier encryption and composite residuosity**: Construct native balanced-modulus generation for Paillier encryption and instantiate its IND-CPA security under Decisional Composite Residuosity (Katz–Lindell Theorem 15.13) with that generator.
+  The homomorphic property of Definition 15.14 for the word algorithms needs an exact or statistical-closeness formulation, since its exact distributional condition fails for the implemented sampler.
 - **Goldwasser–Micali encryption** ([#5293](https://github.com/cslib-community/cslib-frontier/issues/5293)): Prove IND-CPA security of bitwise multi-bit Goldwasser–Micali encryption over Blum moduli from quadratic residuosity alone, for the actual word algorithms.
   Do the same for the textbook key generator, which samples the public nonresidue uniformly from `QNR_N^{+1}` using the factorization, without assuming its keys indistinguishable from an ideal law.
 - **Garbled circuits and Yao's protocol** ([#3236](https://github.com/cslib-community/cslib-frontier/issues/3236)): Prove exact correctness and concrete simulation privacy of point-and-permute garbling for arbitrary-basis circuits, with privacy bounded by the sum of `n + size` PRF advantages.
@@ -117,7 +116,6 @@ For each scheme, prove chosen-plaintext security for the actual algorithms and p
 ### Zero-knowledge proof systems toward libzk ([#643](https://github.com/cslib-community/cslib-frontier/issues/643))
 
 The libzk components are listed in build order, ending with libzk's compositional structure.
-General auxiliary-input zero knowledge, the last entry, is independent of that order.
 
 - **Public-coin to IP bridge**: Map public-coin protocols into IP with a uniform word verifier and adversarial message decoding.
 - **Composition and round-by-round knowledge soundness**: Parallel and AND/OR composition of protocols and relations, with round-by-round knowledge soundness preserved under sequential, parallel and OR composition.
@@ -128,7 +126,6 @@ General auxiliary-input zero knowledge, the last entry, is independent of that o
 - **VOLE constraint reductions and VOLE-in-the-head**: Prove full zero-knowledge security of VOLE-based proofs for the arithmetic-circuit relation `∃ w, C.eval (x ++ w) = y`, with fresh-session amplification, scalar-challenge batching, growing fields, adversarial setup and scheduling, then VOLE-in-the-head.
   This includes a native circuit prover/verifier certificate with honest-sender realization ([#2765](https://github.com/cslib-community/cslib-frontier/issues/2765)) and raw-bit adversarial transport ([#2744](https://github.com/cslib-community/cslib-frontier/issues/2744)).
 - **libzk composition**: Express libzk's compositional structure as a composition of these components, without ciphersuites.
-- **General auxiliary-input zero knowledge** ([#324](https://github.com/cslib-community/cslib-frontier/issues/324)): If one-way functions secure against non-uniform adversaries exist, every language in NP has an interactive computational zero-knowledge proof system secure against PPT verifiers with arbitrary auxiliary input, following Goldreich–Micali–Wigderson with Naor's bit commitments.
 
 ### Private information retrieval ([#3251](https://github.com/cslib-community/cslib-frontier/issues/3251))
 

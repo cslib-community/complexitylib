@@ -72,9 +72,11 @@ steps after replacing `prfCoins F` with a uniform random function (`treeIdealGam
 
 Combining this upgrade with `OneWay.exists_pseudorandomFunction` and `OneWay.exists_indexedEUFCMA`
 constructs a stateless EUF-CMA secure signature scheme from a one-way function and a
-collision-resistant hash family (`OneWay.exists_eufCMA_of_hashFamily`); removing the
-collision-resistant hash family assumption requires universal one-way hash functions
-([Rompel1990]).
+collision-resistant hash family (`OneWay.exists_eufCMA_of_hashFamily`). With target
+collision-resistant hashing from inaccessible entropy in place of the collision-resistant hash
+family, `CslibFrontier.Crypto.Computational.Rompel` removes that assumption: every uniform `OneWay`
+function yields a stateless many-time `SignatureScheme` satisfying `EUFCMA`
+(`OneWay.exists_eufCMA`, [Rompel1990]).
 
 ## Main definitions
 
