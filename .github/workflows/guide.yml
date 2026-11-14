@@ -1,107 +1,132 @@
-name: Guide
-
-# Checks the Verso guide's Lean examples when the guide, library or dependency pins change.
-# Library-only changes compile the chapter library without linking the generator or rendering
-# pages. Guide/tooling changes also upload rendered pages for review. The nightly documentation
-# workflow continues to publish the guide from `main`.
+name: Guide cache transfer diagnostic
 on:
-  pull_request:
-    paths:
-      - "CslibFrontier/**"
-      - "CslibFrontier.lean"
-      - "guide/**"
-      - "lakefile.toml"
-      - "lake-manifest.json"
-      - "scripts/guide.sh"
-      - "scripts/check_docs.py"
-      - "lean-toolchain"
-      - ".github/actions/install-lean/**"
-      - ".github/actions/cache-guide-deps/**"
-      - ".github/workflows/guide.yml"
   workflow_dispatch:
-
 permissions:
   contents: read
-
 env:
-  CACHE_RECOVERY_GENERATION: ${{ vars.CACHE_RECOVERY_GENERATION || '0' }}
-  DISABLE_CACHE_RESTORE: ${{ vars.DISABLE_CACHE_RESTORE }}
   COMPLEXITYLIB_CACHE_URLS: ${{ vars.COMPLEXITYLIB_CACHE_URLS }}
-  LAKE_NO_CACHE: ${{ vars.DISABLE_CACHE_RESTORE == 'true' || vars.DISABLE_CACHE_RESTORE == '1' }}
-  MATHLIB_NO_CACHE_ON_UPDATE: ${{ (vars.DISABLE_CACHE_RESTORE == 'true' || vars.DISABLE_CACHE_RESTORE == '1') && '1' || '0' }}
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
+  DISABLE_CACHE_RESTORE: ${{ vars.DISABLE_CACHE_RESTORE }}
 jobs:
-  guide:
+  writer:
+    outputs:
+      key: ${{ steps.deps.outputs.key }}
     runs-on: cslib-ubuntu-24.04-8core
+    timeout-minutes: 20
+    env:
+      LAKE_CACHE_DIR: ${{ runner.temp }}/guide-cache-probe
     steps:
+      - name: Honor repository cache kill switch
+        run: |
+          test "$DISABLE_CACHE_RESTORE" != true
+          test "$DISABLE_CACHE_RESTORE" != 1
       - uses: actions/checkout@v4
         with:
-          # scripts/cache/get-missing.sh looks for the nearest ancestor whose outputs `main` CI
-          # uploaded.
           fetch-depth: 100
-      - name: Select rendered guide build
-        id: changes
-        env:
-          GUIDE_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: |
-          render=true
-          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-            # The recorded PR base can be older than this shallow checkout's history.
-            if ! git cat-file -e "$GUIDE_BASE_SHA^{commit}" 2>/dev/null; then
-              git fetch --no-tags --depth=1 origin "$GUIDE_BASE_SHA"
-            fi
-            guide_changes="$(git diff --name-only "$GUIDE_BASE_SHA" HEAD -- \
-              guide scripts/guide.sh scripts/check_docs.py lean-toolchain \
-              .github/actions/install-lean .github/actions/cache-guide-deps .github/workflows/guide.yml)"
-            if [[ -z "$guide_changes" ]]; then
-              render=false
-            fi
-          fi
-          echo "render=$render" >> "$GITHUB_OUTPUT"
-      # Restore the `.lake` entry that Lean CI saves on `main` (lean_action_ci.yml). Without it,
-      # every run downloaded a complete set of outputs (about 200 MB) from the public bucket.
-      # This workflow only reads the entry; Lean CI remains its only writer.
-      - name: Restore .lake from the Actions cache
-        if: vars.DISABLE_CACHE_RESTORE != 'true' && vars.DISABLE_CACHE_RESTORE != '1'
-        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
+      - name: Restore fixed main root cache
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25
         with:
           path: ./.lake
-          key: lake-${{ env.CACHE_RECOVERY_GENERATION }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('./lean-toolchain') }}-${{ hashFiles('./lake-manifest.json') }}-${{ github.sha }}
-          restore-keys: lake-${{ env.CACHE_RECOVERY_GENERATION }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('./lean-toolchain') }}-${{ hashFiles('./lake-manifest.json') }}
-      # Restores or installs the toolchain with retries (.github/actions/install-lean, #1426).
-      - uses: ./.github/actions/install-lean
-      # Without `--lean-action`, as scripts/cache/get.sh ran it before.
-      - name: Restore Mathlib cache with retries
+          key: lake-0-Linux-X64-39707a83b53c737bd0252f90b111520c4f52892fb9aa2efa8f7d85a9861e7a74-52aaa34cb1dbb7fe55b090936195255e8e9597fad18b07be863ad1cb7aa313b2-12582c9cd57bb7ac8ffa8fd90b7e79dea45b143c
+          fail-on-cache-miss: true
+      - name: Restore elan without saving
+        id: elan
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25
+        with:
+          path: ~/.elan
+          key: elan-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}
+      - if: steps.elan.outputs.cache-hit != 'true'
+        run: .github/actions/install-lean/install.sh lean-toolchain
+      - run: echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Restore Mathlib cache
         continue-on-error: true
         timeout-minutes: 10
         run: python3 -B scripts/cache/get_mathlib.py
-      # Download only the outputs that the restored `.lake` lacks (scripts/cache/README.md).
-      - name: Restore missing cslib-frontier build outputs
+      - name: Restore missing root outputs
         continue-on-error: true
         timeout-minutes: 10
         run: scripts/cache/get-missing.sh
-      - name: Check documentation pins
-        run: python3 scripts/check_docs.py --config-only
-      # Only main's API docs workflow writes this small, immutable dependency entry.
-      - name: Restore Guide dependencies
-        if: vars.DISABLE_CACHE_RESTORE != 'true' && vars.DISABLE_CACHE_RESTORE != '1'
-        continue-on-error: true
-        timeout-minutes: 5
+      - run: python3 scripts/check_docs.py --config-only
+      - name: Restore Guide dependency cache using production action
+        id: deps
         uses: ./.github/actions/cache-guide-deps
         with:
-          generation: ${{ env.CACHE_RECOVERY_GENERATION }}
-      - name: Compile guide examples
-        run: lake -q -d guide build --log-level=error CslibFrontierGuide
-      - name: Build the guide
-        if: steps.changes.outputs.render == 'true'
-        run: scripts/guide.sh
-      - uses: actions/upload-artifact@v4
-        if: steps.changes.outputs.render == 'true'
+          generation: diagnostic-${{ github.run_id }}
+      - name: Require diagnostic miss
+        env:
+          CACHE_HIT: ${{ steps.deps.outputs.cache-hit }}
+        run: test "$CACHE_HIT" != true
+      - name: Measure cold example build
+        run: python3 -u scripts/guide_cache_probe.py writer
+      - name: Save small diagnostic entry on this branch only
+        if: github.ref == 'refs/heads/test/guide-dependency-cache-20261114'
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25
         with:
-          name: guide
-          path: guide/.lake/build/site/html-multi
-          if-no-files-found: error
+          path: ${{ steps.deps.outputs.paths }}
+          key: ${{ steps.deps.outputs.key }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: guide-cache-writer
+          path: ${{ runner.temp }}/guide-cache-probe-report
+          retention-days: 7
+  reader:
+    needs: writer
+    runs-on: cslib-ubuntu-24.04-8core
+    timeout-minutes: 20
+    env:
+      LAKE_CACHE_DIR: ${{ runner.temp }}/guide-cache-probe
+    steps:
+      - name: Honor repository cache kill switch
+        run: |
+          test "$DISABLE_CACHE_RESTORE" != true
+          test "$DISABLE_CACHE_RESTORE" != 1
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 100
+      - name: Restore fixed main root cache
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25
+        with:
+          path: ./.lake
+          key: lake-0-Linux-X64-39707a83b53c737bd0252f90b111520c4f52892fb9aa2efa8f7d85a9861e7a74-52aaa34cb1dbb7fe55b090936195255e8e9597fad18b07be863ad1cb7aa313b2-12582c9cd57bb7ac8ffa8fd90b7e79dea45b143c
+          fail-on-cache-miss: true
+      - name: Restore elan without saving
+        id: elan
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25
+        with:
+          path: ~/.elan
+          key: elan-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}
+      - if: steps.elan.outputs.cache-hit != 'true'
+        run: .github/actions/install-lean/install.sh lean-toolchain
+      - run: echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Restore Mathlib cache
+        continue-on-error: true
+        timeout-minutes: 10
+        run: python3 -B scripts/cache/get_mathlib.py
+      - name: Restore missing root outputs
+        continue-on-error: true
+        timeout-minutes: 10
+        run: scripts/cache/get-missing.sh
+      - run: python3 scripts/check_docs.py --config-only
+      - name: Restore Guide dependency cache using production action
+        id: deps
+        uses: ./.github/actions/cache-guide-deps
+        with:
+          generation: diagnostic-${{ github.run_id }}
+      - name: Require exact restored entry
+        env:
+          CACHE_HIT: ${{ steps.deps.outputs.cache-hit }}
+          READER_KEY: ${{ steps.deps.outputs.key }}
+          WRITER_KEY: ${{ needs.writer.outputs.key }}
+        run: |
+          test "$CACHE_HIT" = true
+          test "$READER_KEY" = "$WRITER_KEY"
+      - name: Measure cached example build
+        run: python3 -u scripts/guide_cache_probe.py reader
+      - name: Check changed chapter and warning enforcement
+        run: python3 -u scripts/guide_cache_probe.py changed-source
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: guide-cache-reader
+          path: ${{ runner.temp }}/guide-cache-probe-report
+          retention-days: 7
