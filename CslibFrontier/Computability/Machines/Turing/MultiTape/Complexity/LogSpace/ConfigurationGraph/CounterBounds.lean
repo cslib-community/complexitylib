@@ -50,10 +50,10 @@ theorem configurationCounter_bounds {k : ℕ} (D : ℕ) (w : List Bool) :
   rw [hB]
   exact ⟨by omega, by omega, by omega⟩
 
-/-- With the standard polynomial horizon, the full clocked compact box plus one is bounded by
-a fixed power of `2 * (n + 1)`, including at the empty input and zero exponents. -/
+/-- With the polynomial horizon `Turing.polyClock d n`, the full clocked compact box plus one is
+bounded by a fixed power of `2 * (n + 1)`, including at the empty input and zero exponents. -/
 theorem clockedVertexBound_add_one_le_pow {k : ℕ} (D d n : ℕ) :
-    (2 * (2 * (n + 1)) ^ d + 1) * vertexBound (k := k) (radix D n) + 1 ≤
+    (polyClock d n + 1) * vertexBound (k := k) (radix D n) + 1 ≤
       (2 * (n + 1)) ^ (D * Fintype.card (Register k) + d + 2) := by
   let F := 2 * (n + 1)
   let E := D * Fintype.card (Register k)

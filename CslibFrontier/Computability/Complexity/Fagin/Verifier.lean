@@ -13,6 +13,7 @@ public import CslibFrontier.Computability.Complexity.Classes.NP
 public import Mathlib.SetTheory.Cardinal.NatCard
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
+import CslibFrontier.Logics.FirstOrder.Encoding.PolyTime
 
 /-!
 # Existential second-order definable classes are in NP
@@ -379,31 +380,11 @@ open ComputableInPolyTime
 
 variable {v} {γ : Type} {encIn : γ ↪ List Bool}
 
-omit [L.IsRelational] in
-/-- Reading a table of the input is polynomial-time. -/
-@[fun_prop]
-theorem _root_.Cslib.Logic.Vocabulary.computableInPolyTime_table (r : Σ n, L.Relations n)
-    {a : γ → EncodedStructure} (ha : ComputableInPolyTime a encIn encStructure) :
-    ComputableInPolyTime (fun x => v.table (a x) r) encIn encBits :=
-  listGetDWithInput ((snd encUnary (encList encBits)).comp ha) (const (v.index r)) []
-
 /-- The cardinality of the input, in unary. -/
 private theorem computableInPolyTime_card {a : γ → EncodedStructure}
     (ha : ComputableInPolyTime a encIn encStructure) :
     ComputableInPolyTime (fun x => (a x).1) encIn encUnary :=
   (fst encUnary (encList encBits)).comp ha
-
-omit [L.IsRelational] in
-/-- Checking well-formedness is polynomial-time. -/
-@[fun_prop]
-theorem _root_.Cslib.Logic.Vocabulary.computableInPolyTime_checkShape :
-    ComputableInPolyTime v.checkShape encStructure encBool := by
-  unfold Vocabulary.checkShape
-  refine bool_and' (unary_beq' ((length_list encBits).comp (snd encUnary (encList encBits)))
-    (const v.count)) (allConst _ fun i _ => unary_beq' ?_ ?_)
-  · exact length_bits_comp (listGetDWithInput (snd encUnary (encList encBits))
-      (const (i : ℕ)) [])
-  · exact (unary_pow _).comp (computableInPolyTime_card id')
 
 @[fun_prop]
 theorem computableInPolyTime_termValue {k : ℕ} {σ : γ → List ℕ}

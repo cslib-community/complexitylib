@@ -8,6 +8,7 @@ module
 -- upstream: candidate (Mathlib, chain rule for formal partial derivatives and Hessians)
 
 public import CslibFrontier.Foundations.Data.MvPolynomial.Hessian
+public import CslibFrontier.Foundations.Data.MvPolynomial.Substitution
 public import Mathlib.Algebra.MvPolynomial.Degrees
 public import Mathlib.LinearAlgebra.Matrix.Rank
 import Mathlib.Algebra.MvPolynomial.Monad
@@ -17,15 +18,14 @@ import Mathlib.Data.Finsupp.Weight
 # The chain rule for formal Hessians
 
 Substituting polynomials `L k` for the variables of `p` transforms partial derivatives by the
-chain rule `∂ᵢ (p ∘ L) = ∑ₖ (∂ₖ p ∘ L) · ∂ᵢ Lₖ`. At a point `x`, the Hessian of `p ∘ L` is
-`Jᵀ · Hess p (L x) · J` plus the Hessians of the `L k` weighted by the gradient of `p`, where `J`
-is the Jacobian of `L` at `x`. An affine substitution (each `L k` of total degree at most one)
-has vanishing Hessians, so it can only lower the rank of the Hessian. No assumption on the
-characteristic is needed; the rank statement is over a field.
+chain rule `∂ᵢ (p ∘ L) = ∑ₖ (∂ₖ p ∘ L) · ∂ᵢ Lₖ` (`MvPolynomial.pderiv_aeval`). At a point `x`, the
+Hessian of `p ∘ L` is `Jᵀ · Hess p (L x) · J` plus the Hessians of the `L k` weighted by the
+gradient of `p`, where `J` is the Jacobian of `L` at `x`. An affine substitution (each `L k` of
+total degree at most one) has vanishing Hessians, so it can only lower the rank of the Hessian. No
+assumption on the characteristic is needed; the rank statement is over a field.
 
 ## Main results
 
-* `MvPolynomial.pderiv_aeval`: the chain rule for formal partial derivatives.
 * `MvPolynomial.hessian_aeval`: the chain rule for Hessians at a point.
 * `MvPolynomial.hessian_eq_zero_of_totalDegree_le_one`: affine polynomials have zero Hessian.
 * `MvPolynomial.rank_hessian_aeval_le`: an affine substitution does not increase Hessian rank.
@@ -43,25 +43,6 @@ public section
 namespace MvPolynomial
 
 variable {σ τ R : Type*} [CommSemiring R]
-
-/-- **Chain rule** for formal partial derivatives under polynomial substitution. -/
-theorem pderiv_aeval [Fintype τ] (L : τ → MvPolynomial σ R) (p : MvPolynomial τ R) (i : σ) :
-    pderiv i (aeval L p) = ∑ k, aeval L (pderiv k p) * pderiv i (L k) := by
-  classical
-  induction p using MvPolynomial.induction_on with
-  | C a => simp
-  | add p q hp hq =>
-    simp only [map_add, hp, hq, add_mul, Finset.sum_add_distrib]
-  | mul_X p k hp =>
-    have hk : ∑ l, aeval L (pderiv l (X k : MvPolynomial τ R)) * pderiv i (L l) =
-        pderiv i (L k) := by
-      simp [pderiv_X, Pi.single_apply]
-    rw [map_mul, aeval_X, pderiv_mul, hp]
-    simp only [pderiv_mul, map_add, map_mul, aeval_X, add_mul, Finset.sum_add_distrib,
-      Finset.sum_mul]
-    rw [← hk, Finset.mul_sum]
-    refine congrArg₂ (· + ·) (Finset.sum_congr rfl fun l _ => by ring)
-      (Finset.sum_congr rfl fun l _ => by ring)
 
 /-- Evaluating a substitution at `x` evaluates the substituted polynomial at the values of the
 substituted polynomials. -/

@@ -16,7 +16,7 @@ literal `200`/`230` clock coefficients are not carried over to the new implement
 
 @[expose] public section
 
-open Cslib Cslib.WordRAM Cslib.Algorithms.WordRAM.Dijkstra
+open Cslib Cslib.WordRAM Cslib.Algorithms.Dijkstra Cslib.Algorithms.WordRAM.Dijkstra
 
 namespace WordRAMDijkstraTests
 

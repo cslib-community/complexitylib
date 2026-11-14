@@ -8,11 +8,13 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.Classes.WPP.TruthTable
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Int.Binary
 
-/-! Nonvacuous truth-table clients with varying query lengths/counts and negative targets. -/
+/-! Nonvacuous truth-table clients with varying query lengths/counts and negative targets, and
+bounded quantifiers with varying bounds at a fixed length. -/
 
 @[expose] public section
 
@@ -71,8 +73,8 @@ def language : Set (List Bool) :=
   {w | combine (w, truthTableAnswers (query ⁻¹' oracle) count w) = true}
 
 theorem reduction : PolyTimeTruthTableReducible encBits encBits language oracle :=
-  ⟨count, query, combine, polyTime_count, polyTime_query,
-    polyTime_combine, fun _ => Iff.rfl⟩
+  ⟨count, query, combine, ⟨polyTime_count, polyTime_query, polyTime_combine⟩,
+    fun _ => Iff.rfl⟩
 
 example : language ∈ LWPP encBits ∧ language ∈ WPP encBits :=
   ⟨reduction.mem_LWPP oracle_mem_LWPP,
@@ -112,5 +114,68 @@ example : {w | (fun x : List Bool × List Bool => x.1.getD 0 false)
     (w, truthTableAnswers (query ⁻¹' oracle) (fun _ => 0) w) = true} ∈ LWPP encBits :=
   truthTable_mem_LWPP (d := fun x => x.1.getD 0 false)
     joint_mem_LWPP (.const 0) (by fun_prop)
+
+/-! ### Bounded quantifiers -/
+
+/-- The pairs `(w, i)` whose `i`-th bit is set. -/
+def bitLanguage : Set (List Bool × ℕ) := {x | x.1.getD x.2 false = true}
+
+theorem bitLanguage_mem_LWPP : bitLanguage ∈ LWPP (encPair encBits encUnary) := by
+  let g (x : List Bool × ℕ) : ℤ :=
+    if x.1.getD x.2 false then target ((encPair encBits encUnary) x).length else 0
+  have hg : ComputableInPolyTime g (encPair encBits encUnary) encIntBin := by
+    dsimp only [g]
+    fun_prop
+  refine ⟨g, mem_GapP_of_polyTime hg, target, polyTime_target, target_ne_zero, ?_, ?_⟩
+  · intro x
+    cases h : x.1.getD x.2 false <;> simp only [g, h] <;> simp
+  · intro x
+    change (x.1.getD x.2 false = true) ↔ _
+    cases h : x.1.getD x.2 false <;> simp only [g, h] <;>
+      simp [Ne.symm (target_ne_zero _)]
+
+example :
+    ({w | ∀ i < count w, (w, i) ∈ bitLanguage} ∈ LWPP encBits ∧
+      {w | ∃ i < count w, (w, i) ∈ bitLanguage} ∈ LWPP encBits) ∧
+    ({w | ∀ i < count w, (w, i) ∈ bitLanguage} ∈ WPP encBits ∧
+      {w | ∃ i < count w, (w, i) ∈ bitLanguage} ∈ WPP encBits) :=
+  ⟨⟨forall_lt_mem_LWPP bitLanguage_mem_LWPP polyTime_count,
+    exists_lt_mem_LWPP bitLanguage_mem_LWPP polyTime_count⟩,
+   ⟨forall_lt_mem_WPP (LWPP_subset_WPP bitLanguage_mem_LWPP) polyTime_count,
+    exists_lt_mem_WPP (LWPP_subset_WPP bitLanguage_mem_LWPP) polyTime_count⟩⟩
+
+-- Equal-length inputs have different bounds; prefix targets vary in sign and magnitude.
+example : ([true, false] : List Bool).length = [false, true].length := rfl
+example : target 0 = -1 ∧ target 1 = -2 := by decide
+example : (∏ i ∈ Finset.range 1, target (2 * 2 + 1 + i)) = -6 := by decide
+example : (∏ i ∈ Finset.range 2, target (2 * 2 + 1 + i)) = 42 := by decide
+
+-- Both quantified languages are nonconstant; the universal one inspects more than the head bit.
+example : ∀ i < count [true, true], ([true, true], i) ∈ bitLanguage := by
+  intro i hi
+  have : i = 0 ∨ i = 1 := by
+    have h : i < 2 := hi
+    lia
+  rcases this with rfl | rfl <;> rfl
+
+example : ¬ ∀ i < count [true, false], ([true, false], i) ∈ bitLanguage := by
+  intro h
+  have := h 1 (by decide)
+  contradiction
+
+example : ∃ i < count [true, false], ([true, false], i) ∈ bitLanguage :=
+  ⟨0, by decide, rfl⟩
+
+example : ¬ ∃ i < count [false, true], ([false, true], i) ∈ bitLanguage := by
+  simp [count]
+
+-- Zero-length and zero-bound cases need no satisfiability assumption on the family.
+example :
+    ((∀ i < count [], ([], i) ∈ bitLanguage) ∧ ¬ ∃ i < count [], ([], i) ∈ bitLanguage) ∧
+    ({w : List Bool | ∀ i < 0, (w, i) ∈ bitLanguage} ∈ LWPP encBits ∧
+      {w : List Bool | ∃ i < 0, (w, i) ∈ bitLanguage} ∈ LWPP encBits) :=
+  ⟨⟨by simp [count], by simp [count]⟩,
+   ⟨forall_lt_mem_LWPP bitLanguage_mem_LWPP (.const 0),
+    exists_lt_mem_LWPP bitLanguage_mem_LWPP (.const 0)⟩⟩
 
 end CslibFrontierTests.WPPTruthTable

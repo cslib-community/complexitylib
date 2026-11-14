@@ -51,13 +51,13 @@ variable {V E : Type*} [Fintype V] [DecidableEq V] [Fintype E]
 edge, and for each vertex `v` the equation saying that the parity of the edges at `v` other than
 self-loops is `χ v`. -/
 noncomputable def tseitin (ends : E → Sym2 V) (χ : V → Bool) : ParitySystem E :=
-  univ.toList.map fun v => (Multigraph.incidence ends v, χ v)
+  univ.toList.map fun v => ⟨Multigraph.incidence ends v, χ v⟩
 
 variable {ends : E → Sym2 V} {χ : V → Bool}
 
 /-- The equations of the Tseitin parity system are those of the vertices. -/
-theorem mem_tseitin {e : Finset E × Bool} :
-    e ∈ tseitin ends χ ↔ ∃ v, (Multigraph.incidence ends v, χ v) = e := by
+theorem mem_tseitin {e : ParityEquation E} :
+    e ∈ tseitin ends χ ↔ ∃ v, ⟨Multigraph.incidence ends v, χ v⟩ = e := by
   simp [tseitin]
 
 /-- The Tseitin parity system has an equation for each vertex. -/
@@ -65,7 +65,8 @@ theorem mem_tseitin {e : Finset E × Bool} :
   simp [tseitin]
 
 /-- The equation of the vertex `v` belongs to the Tseitin parity system. -/
-theorem incidence_mem_tseitin (v : V) : (Multigraph.incidence ends v, χ v) ∈ tseitin ends χ :=
+theorem incidence_mem_tseitin (v : V) :
+    (⟨Multigraph.incidence ends v, χ v⟩ : ParityEquation E) ∈ tseitin ends χ :=
   mem_tseitin.2 ⟨v, rfl⟩
 
 /-- An assignment satisfies the Tseitin parity system when its parity at every vertex is the

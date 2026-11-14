@@ -41,7 +41,7 @@ example :
   decide
 
 -- A nonempty instance of the actual continuous drawing predicate.
-example : Graph.IsPlanarOrthogonalDrawing ([0, 1], [(0, 1)])
+example : Graph.IsPlanarOrthogonalDrawing ⟨[0, 1], [(0, 1)]⟩
     ([(0, 0), (1, 0)], [[(0, 0), (1, 0)]]) := by
   refine ⟨rfl, rfl, by decide, by decide, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · intro e he

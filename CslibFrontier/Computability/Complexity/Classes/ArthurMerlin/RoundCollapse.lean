@@ -372,7 +372,8 @@ private theorem AMGameClass_arthur_merlin_append_subset {enc : α ↪ List Bool}
     · exact (AMGameClass_swap [.arthur] τ).trans (AMGameClass_merge [] (.merlin :: τ) .arthur)
     · exact AMGameClass_merge [.arthur] τ .merlin
 
-/-- **Every fixed-pattern public-coin game is in `AM`** [Babai and Moran][BabaiMoran1988]. -/
+/-- **Every fixed-pattern public-coin game is in `AM`** [Babai][Babai1985],
+[Babai and Moran][BabaiMoran1988]. -/
 theorem AMGameClass_subset_AM {enc : α ↪ List Bool} (π : List AMMove) :
     AMGameClass enc π ⊆ AM enc := by
   rw [← AMGameClass_arthur_merlin]
@@ -386,12 +387,14 @@ theorem AMGameClass_eq_AM {enc : α ↪ List Bool} {π : List AMMove}
   le_antisymm (AMGameClass_subset_AM π)
     (by rw [← AMGameClass_arthur_merlin]; exact AMGameClass_mono h)
 
-/-- **`AM[k] = AM`** for every constant `k ≥ 2` [Babai and Moran][BabaiMoran1988]. -/
+/-- **`AM[k] = AM`** for every constant `k ≥ 2` [Babai][Babai1985],
+[Babai and Moran][BabaiMoran1988]. -/
 theorem AMk_eq_AM {enc : α ↪ List Bool} {k : ℕ} (hk : 2 ≤ k) : AMk enc k = AM enc := by
   obtain ⟨j, rfl⟩ : ∃ j, k = j + 2 := ⟨k - 2, by omega⟩
   exact AMGameClass_eq_AM (((List.nil_sublist _).cons_cons _).cons_cons _)
 
-/-- **`MA[k] = AM`** for every constant `k ≥ 3` [Babai and Moran][BabaiMoran1988]. -/
+/-- **`MA[k] = AM`** for every constant `k ≥ 3` [Babai][Babai1985],
+[Babai and Moran][BabaiMoran1988]. -/
 theorem MAk_eq_AM {enc : α ↪ List Bool} {k : ℕ} (hk : 3 ≤ k) : MAk enc k = AM enc := by
   obtain ⟨j, rfl⟩ : ∃ j, k = j + 3 := ⟨k - 3, by omega⟩
   exact AMGameClass_eq_AM ((((List.nil_sublist _).cons_cons _).cons_cons _).cons _)

@@ -70,7 +70,7 @@ example (security : ℕ) (μ : Bool)
 private noncomputable def adaptiveAdversary :
     LoRAdversary 1 2 4 (List (Ciphertext 1 4)) where
   start _ := PMF.pure []
-  query transcript := PMF.pure ((false, (transcript.headD 0) 0 == 0), transcript)
+  query transcript := PMF.pure (⟨false, (transcript.headD 0) 0 == 0⟩, transcript)
   receive transcript c := c :: transcript
   guess transcript := PMF.pure ((transcript.headD 0) 0 == 0)
 
@@ -279,4 +279,52 @@ example (hLWE : DecisionLWE Homomorphic.GSW.Parameters.dimension
     (Filter.Eventually.of_forall dualRegev_entropy_margin) hLWE
     keyAdversary keyAdversary_isPPT
 
+example (a b : DualRegev.SerializedKeyInputs) (hp : a.publicPart = b.publicPart)
+    (hb : a.bits = b.bits) : a = b :=
+  DualRegev.SerializedKeyInputs.ext hp hb
+
+example (a b : DualRegev.SerializedEncCoins) (hs : a.secret = b.secret)
+    (he : a.error = b.error) (hs0 : a.scalarError = b.scalarError) : a = b :=
+  DualRegev.SerializedEncCoins.ext hs he hs0
+
+section DualRegevOpened
+
+open Cslib.Crypto.DualRegev (SerializedKeyInputs encSerializedKeyInputs SerializedEncCoins
+  encSerializedEncCoins)
+
+example : ComputableInPolyTime
+    (fun inputs : SerializedKeyInputs =>
+      ({ publicPart := inputs.publicPart, bits := inputs.bits } : SerializedKeyInputs))
+    encSerializedKeyInputs encSerializedKeyInputs := by
+  fun_prop
+
+example : ComputableInPolyTime
+    (fun coins : SerializedEncCoins =>
+      ({ secret := coins.secret, error := coins.error,
+         scalarError := coins.scalarError } : SerializedEncCoins))
+    encSerializedEncCoins encSerializedEncCoins := by
+  fun_prop
+
+end DualRegevOpened
+
 end CslibFrontierTests.Regev
+
+namespace CslibFrontierTests.RegevUnopened
+
+example : Turing.MultiTapeTM.ComputableInPolyTime
+    (fun inputs : Cslib.Crypto.DualRegev.SerializedKeyInputs =>
+      ({ publicPart := inputs.publicPart, bits := inputs.bits } :
+        Cslib.Crypto.DualRegev.SerializedKeyInputs))
+    Cslib.Crypto.DualRegev.encSerializedKeyInputs
+    Cslib.Crypto.DualRegev.encSerializedKeyInputs := by
+  fun_prop
+
+example : Turing.MultiTapeTM.ComputableInPolyTime
+    (fun coins : Cslib.Crypto.DualRegev.SerializedEncCoins =>
+      ({ secret := coins.secret, error := coins.error,
+         scalarError := coins.scalarError } : Cslib.Crypto.DualRegev.SerializedEncCoins))
+    Cslib.Crypto.DualRegev.encSerializedEncCoins
+    Cslib.Crypto.DualRegev.encSerializedEncCoins := by
+  fun_prop
+
+end CslibFrontierTests.RegevUnopened

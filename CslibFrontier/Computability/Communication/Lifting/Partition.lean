@@ -48,6 +48,8 @@ can be fixed on the blocks of `I` at the cost of a factor `2 ^ (m #I)`.
 ## Main results
 
 * `Cslib.Communication.Lifting.exists_pieces`: the density-restoring partition.
+* `Cslib.Communication.Lifting.exists_dense_agreeOn`: a single density-restored fiber with
+  its exact cardinality bound, without the partition's factor-two loss.
 * `Cslib.Communication.Lifting.exists_piece_forall_le_card_filter`: choosing a piece.
 * `Cslib.Communication.Lifting.exists_fix_blocks`: fixing Bob's blocks.
 
@@ -104,7 +106,7 @@ def Violates (τ : ℝ) (W : Finset (Fin n → Fin m)) (I : Finset (Fin n)) (α 
 
 /-- For disjoint `I` and `J`, agreeing with `if i ∈ I then α i else β i` on `I ∪ J` is agreeing
 with `α` on `I` and with `β` on `J`. -/
-private theorem agreeOn_union_ite {W : Finset (Fin n → Fin m)} {I J : Finset (Fin n)}
+theorem agreeOn_union_ite {W : Finset (Fin n → Fin m)} {I J : Finset (Fin n)}
     (hdisj : Disjoint I J) (α β : Fin n → Fin m) :
     agreeOn W (I ∪ J) (fun i => if i ∈ I then α i else β i) =
       (agreeOn W I α).filter fun x => ∀ i ∈ J, x i = β i := by
@@ -163,7 +165,7 @@ theorem isDense_agreeOn (hτ : 0 < τ) {W : Finset (Fin n → Fin m)} {I : Finse
 
 /-- Either some `I ⊆ F` and `α` maximize `#I` among the pairs violating `τ`-density on `W`, or
 `(∅, x₀)` satisfies the same maximality and lower-bound conditions. -/
-private theorem exists_max_violates_or_empty {W : Finset (Fin n → Fin m)}
+theorem exists_max_violates_or_empty {W : Finset (Fin n → Fin m)}
     (x₀ : Fin n → Fin m) (F : Finset (Fin n)) (τ : ℝ) :
     ∃ (I : Finset (Fin n)) (α : Fin n → Fin m), I ⊆ F ∧
       (#W : ℝ) ≤ #(agreeOn W I α) * τ ^ #I ∧
@@ -184,18 +186,47 @@ private theorem exists_max_violates_or_empty {W : Finset (Fin n → Fin m)}
       exact ⟨hI', hv⟩
     exact absurd ⟨_, hmem⟩ hC
 
-/-- When `W` is nonempty and `#W ≤ #(agreeOn W I α) * τ ^ #I`, `agreeOn W I α` is nonempty and
-removing it strictly reduces `#W`. -/
+/-- A fiber that satisfies the density-restoration cardinality bound is nonempty whenever
+the original set is nonempty. -/
+theorem agreeOn_nonempty_of_card_le {W : Finset (Fin n → Fin m)} {I : Finset (Fin n)}
+    {α : Fin n → Fin m} (hWne : W.Nonempty) (hW : (#W : ℝ) ≤ #(agreeOn W I α) * τ ^ #I) :
+    (agreeOn W I α).Nonempty := by
+  have hWpos : (0 : ℝ) < #W := by exact_mod_cast card_pos.mpr hWne
+  rw [nonempty_iff_ne_empty]
+  intro h
+  rw [h, card_empty, Nat.cast_zero, zero_mul] at hW
+  linarith
+
+/-- When `W` is nonempty and `#W ≤ #(agreeOn W I α) * τ ^ #I`, removing the fiber strictly
+reduces `#W`. -/
 private theorem card_sdiff_agreeOn_lt {W : Finset (Fin n → Fin m)} {I : Finset (Fin n)}
     {α : Fin n → Fin m} (hWne : W.Nonempty) (hW : (#W : ℝ) ≤ #(agreeOn W I α) * τ ^ #I) :
-    #(W \ agreeOn W I α) < #W := by
-  have hWpos : (0 : ℝ) < #W := by exact_mod_cast card_pos.mpr hWne
-  have hPne : (agreeOn W I α).Nonempty := by
-    rw [nonempty_iff_ne_empty]
-    intro h
-    rw [h, card_empty, Nat.cast_zero, zero_mul] at hW
-    linarith
-  exact card_lt_card (sdiff_ssubset (filter_subset _ _) hPne)
+    #(W \ agreeOn W I α) < #W :=
+  card_lt_card (sdiff_ssubset (filter_subset _ _) (agreeOn_nonempty_of_card_le hWne hW))
+
+/-- **Density restoration for a flat source.** A nonempty set has a nonempty fiber on a
+maximally concentrated coordinate set, dense on the remaining coordinates and retaining a
+`τ^(-#I)` fraction of the original set. This is the finite-uniform form of
+[Chattopadhyay, Filmus, Koroth, Meir and Pitassi, Proposition 3.6]
+[ChattopadhyayFilmusKorothMeirPitassi2021], with `τ = 2^(δ b)`.
+
+The alphabet is `Fin m` rather than bit strings; the result needs only `τ > 0` and covers an
+empty free-coordinate set. The subset and fixed-coordinate facts are included for simulation
+invariants. Unlike `exists_pieces`, this single-fiber statement has no factor-two loss. -/
+theorem exists_dense_agreeOn (hτ : 0 < τ) (F : Finset (Fin n))
+    {W : Finset (Fin n → Fin m)} (hWne : W.Nonempty) :
+    ∃ (I : Finset (Fin n)) (α : Fin n → Fin m),
+      I ⊆ F ∧ (agreeOn W I α).Nonempty ∧ agreeOn W I α ⊆ W ∧
+      (∀ x ∈ agreeOn W I α, ∀ i ∈ I, x i = α i) ∧
+      IsDense τ (F \ I) (agreeOn W I α) ∧
+      (#W : ℝ) ≤ #(agreeOn W I α) * τ ^ #I := by
+  obtain ⟨x₀, hx₀⟩ := hWne
+  obtain ⟨I, α, hIF, hcard, hmax, hstrict⟩ :=
+    exists_max_violates_or_empty (W := W) x₀ F τ
+  refine ⟨I, α, hIF, agreeOn_nonempty_of_card_le ⟨x₀, hx₀⟩ hcard,
+    filter_subset _ _, ?_, isDense_agreeOn hτ hcard hmax hIF hstrict, hcard⟩
+  intro x hx
+  exact (mem_filter.mp hx).2
 
 /-- **Phase I: the density-restoring partition** [Mertz and Pitassi, Algorithm 1, Claims 3.4 and
 3.5][MertzPitassi2020]. Every set of pointer vectors has a density-restoring partition. -/

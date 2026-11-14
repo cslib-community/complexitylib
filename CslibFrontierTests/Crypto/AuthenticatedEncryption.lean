@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pair.Projections
 import CslibFrontier.Crypto.Computational.Encryption.Authenticated
 
 /-!
@@ -74,10 +75,7 @@ example (n : ℕ) : ¬ ∃ cap : ℕ, ∀ msg : List Bool,
   simp only [List.length_replicate] at h
   omega
 
-theorem echoCipher_ctLen :
-    ∀ n ke, ke ∈ (ProbComp.eval (echoCipher.keyGen n)).support →
-      ∀ msg, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (echoCipher.encrypt n ke msg)).support, c.length = n := by
+theorem echoCipher_ctLen : ∀ n, echoCipher.CiphertextLength n n := by
   intro n _ _ msg hmsg c hc
   change c ∈ (ProbComp.eval (pure msg)).support at hc
   rw [ProbComp.eval_pure, PMF.mem_support_pure_iff] at hc
@@ -305,11 +303,6 @@ theorem not_oneTimeAuthenticatedEncryption_echoCipher :
     ¬ echoCipher.OneTimeAuthenticatedEncryption :=
   fun hae => not_oneTimeCiphertextIntegrity_echoCipher hae.2
 
-theorem unframe_dropFrame_pair (a b : List Bool) :
-    unframe (encPair encBits encBits (a, b)) = a ∧
-      dropFrame (encPair encBits encBits (a, b)) = b := by
-  simp [encPair_apply, unframe_frame_append, dropFrame_frame_append]
-
 /-- Ask for one encryption of the pair `(0ⁿ, 1ⁿ)` and output the first bit of the answer. -/
 def firstBitCPAAdversary : OracleDistinguisher :=
   fun n _ => do
@@ -337,14 +330,13 @@ theorem isOraclePPT_firstBitCPAAdversary : IsOraclePPT encBool firstBitCPAAdvers
 plaintext itself, so the adversary outputs the challenge bit. -/
 theorem eval_cpaOneTimeGame_firstBitCPAAdversary (bit : Bool) (n : ℕ) :
     ProbComp.eval (echoCipher.cpaOneTimeGame firstBitCPAAdversary bit (n + 1)) = PMF.pure bit := by
-  have hpair := unframe_dropFrame_pair (List.replicate (n + 1) false) (List.replicate (n + 1) true)
   simp only [SymmetricCipher.cpaOneTimeGame, firstBitCPAAdversary, OracleComp.interpret_bind,
     OracleComp.interpret_map, OracleComp.interpret_pure, ProbOracleComp.interpret_query,
     StateT.run_bind, StateT.run_map, StateT.run_pure, ProbComp.eval_bind, ProbComp.eval_map,
     ProbComp.eval_pure]
   unfold SymmetricCipher.oneTimeCPAEncryptionOracle
   dsimp only [StateT.run]
-  simp only [hpair.1, hpair.2]
+  simp only [unframe_encPair_encBits, dropFrame_encPair_encBits]
   cases bit <;> simp [echoCipher, List.replicate_succ]
 
 /-- **`echoCipher` is not one-time IND-CPA**: one query has advantage `1` at every positive
@@ -352,8 +344,7 @@ parameter. -/
 theorem not_oneTimeINDCPA_echoCipher : ¬ echoCipher.OneTimeINDCPA := by
   intro h
   have hneg := h firstBitCPAAdversary isOraclePPT_firstBitCPAAdversary
-  have hcomp := hneg.comp_of_polynomial_bound (index := fun n => n + 1) (bound := fun m => m)
-    (Filter.tendsto_add_atTop_nat 1) (by fun_prop) (Filter.Eventually.of_forall fun n => by omega)
+  have hcomp := hneg.shift 1
   have hconst : Negligible (fun _ : ℕ => (1 : ℝ≥0)) := hcomp.congr fun n => by
     simp [eval_cpaOneTimeGame_firstBitCPAAdversary, Game.advantage, Game.succProbability]
   exact not_negligible_const one_ne_zero hconst
@@ -364,17 +355,13 @@ breaks multi-query `INDCPA` has no advantage here. -/
 theorem eval_cpaOneTimeGame_detCPAAdversary (bit : Bool) (n : ℕ) :
     ProbComp.eval (echoCipher.cpaOneTimeGame SymmetricCipher.detCPAAdversary bit (n + 1)) =
       PMF.pure false := by
-  have hpair1 := unframe_dropFrame_pair (List.replicate (n + 1) false)
-    (List.replicate (n + 1) true)
-  have hpair2 := unframe_dropFrame_pair (List.replicate (n + 1) false)
-    (List.replicate (n + 1) false)
   simp only [SymmetricCipher.cpaOneTimeGame, SymmetricCipher.detCPAAdversary,
     OracleComp.interpret_bind, OracleComp.interpret_map, OracleComp.interpret_pure,
     ProbOracleComp.interpret_query, StateT.run_bind, StateT.run_map, StateT.run_pure,
     ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure]
   unfold SymmetricCipher.oneTimeCPAEncryptionOracle
   dsimp only [StateT.run]
-  simp only [hpair1.1, hpair1.2, hpair2.1, hpair2.2]
+  simp only [unframe_encPair_encBits, dropFrame_encPair_encBits]
   cases bit <;> simp [echoCipher, List.replicate_succ]
 
 /-- The one-query attack sent through the encryption channel `(false, ·)` of the one-time CCA
@@ -403,14 +390,13 @@ theorem isOraclePPT_firstBitCCAAdversary : IsOraclePPT encBool firstBitCCAAdvers
 
 theorem eval_ccaOneTimeGame_firstBitCCAAdversary (bit : Bool) (n : ℕ) :
     ProbComp.eval (echoCipher.ccaOneTimeGame firstBitCCAAdversary bit (n + 1)) = PMF.pure bit := by
-  have hpair := unframe_dropFrame_pair (List.replicate (n + 1) false) (List.replicate (n + 1) true)
   simp only [SymmetricCipher.ccaOneTimeGame, firstBitCCAAdversary, OracleComp.interpret_bind,
     OracleComp.interpret_map, OracleComp.interpret_pure, ProbOracleComp.interpret_query,
     StateT.run_bind, StateT.run_map, StateT.run_pure, ProbComp.eval_bind, ProbComp.eval_map,
     ProbComp.eval_pure]
   unfold SymmetricCipher.oneTimeCCAOracle
   dsimp only [StateT.run]
-  simp only [hpair.1, hpair.2]
+  simp only [unframe_encPair_encBits, dropFrame_encPair_encBits]
   cases bit <;> simp [echoCipher, List.replicate_succ]
 
 /-- **`echoCipher` is not one-time IND-CCA**: the same single encryption query has advantage `1`
@@ -418,8 +404,7 @@ at every positive parameter. -/
 theorem not_oneTimeINDCCA_echoCipher : ¬ echoCipher.OneTimeINDCCA := by
   intro h
   have hneg := h firstBitCCAAdversary isOraclePPT_firstBitCCAAdversary
-  have hcomp := hneg.comp_of_polynomial_bound (index := fun n => n + 1) (bound := fun m => m)
-    (Filter.tendsto_add_atTop_nat 1) (by fun_prop) (Filter.Eventually.of_forall fun n => by omega)
+  have hcomp := hneg.shift 1
   have hconst : Negligible (fun _ : ℕ => (1 : ℝ≥0)) := hcomp.congr fun n => by
     simp [eval_ccaOneTimeGame_firstBitCCAAdversary, Game.advantage, Game.succProbability]
   exact not_negligible_const one_ne_zero hconst

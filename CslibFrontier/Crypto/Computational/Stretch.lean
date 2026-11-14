@@ -279,7 +279,7 @@ theorem advantage_eq (generator : List Bool → List Bool) (count : ℕ → ℕ)
     (2 ^ (Nat.log 2 (count n) + 1))
     (Nat.le_of_lt (Nat.lt_pow_succ_log_self Nat.one_lt_two (count n)))
   rw [← hreal, ← hideal, hybrid_zero, hybrid_last] at havg
-  simpa only [eval_prgRealGame, eval_prgIdealGame, distinguishingGame,
+  simpa only [eval_prgRealGame, eval_prgIdealGame, distinguishingGame_eq_bind,
     PMF.monad_bind_eq_bind] using havg
 
 /-- The same exact loss applies with the seed length independent of the security parameter.
@@ -299,8 +299,8 @@ theorem test_advantage_eq (generator : List Bool → List Bool) (seedBits count 
   have h := advantage_eq generator (fun _ => count) (fun _ => adversary) seedBits
   simp only [eval_prgRealGame, eval_prgIdealGame] at h
   rw [← hybrid_zero generator (fun _ => count) seedBits] at h
-  simpa only [hybrid, Nat.add_zero, Nat.sub_zero, generatorEnsemble,
-    distinguishingGame, PMF.monad_bind_eq_bind, test] using h
+  simpa only [hybrid, Nat.add_zero, Nat.sub_zero, generatorEnsemble, distinguishingGame_eq_bind,
+    PMF.monad_bind_eq_bind, test] using h
 
 /-- Padding the sampled hop loses at most twice the number of expansions. -/
 theorem advantage_le (generator : List Bool → List Bool) (count : ℕ → ℕ)
@@ -391,13 +391,13 @@ theorem indistinguishableWithAdvice {generator : List Bool → List Bool} {count
     (seedBits := fun n => n) (choose := advice) hgen
     (ComputableInPolyTime.of_eq fun _ => rfl) hcount
     (fun adversary hadversary => by
-      simpa only [distinguishingGame, generatorEnsemble, PMF.monad_bind_eq_bind] using
+      simpa only [distinguishingGame_eq_bind, generatorEnsemble, PMF.monad_bind_eq_bind] using
         hsecure _ hadversary)
     (fun n context word => test ((n, context), word)) htest
   refine h.congr' (Filter.Eventually.of_forall fun n => ?_)
   beta_reduce
   rw [← hybrid_zero generator count n]
-  simp only [hybrid, distinguishingGame, PMF.monad_bind_eq_bind, Nat.add_zero, Nat.sub_zero]
+  simp only [hybrid, distinguishingGame_eq_bind, PMF.monad_bind_eq_bind, Nat.add_zero, Nat.sub_zero]
 
 /-- Polynomially many seed expansions preserve computational indistinguishability. -/
 theorem indistinguishable {generator : List Bool → List Bool} {count : ℕ → ℕ}

@@ -69,15 +69,17 @@ universe u
 
 namespace ComputableInDegree
 
-/-- The first component of a pair computed with given degrees. -/
-theorem fst' {α β₁ β₂ : Type u} {encIn : α ↪ List Bool}
+/-- The first component of a pair computed with given degrees.
+The input universe is independent of the pair's universe. -/
+theorem fst' {α : Type*} {β₁ β₂ : Type u} {encIn : α ↪ List Bool}
     {enc₁ : β₁ ↪ List Bool} {enc₂ : β₂ ↪ List Bool} {d e : ℕ}
     {f : α → β₁ × β₂} (h : ComputableInDegree f encIn (encPair enc₁ enc₂) d e) :
     ComputableInDegree (fun x => (f x).1) encIn enc₁ (max d e) e :=
   ((fst enc₁ enc₂).comp h).mono
 
-/-- The second component of a pair computed with given degrees. -/
-theorem snd' {α β₁ β₂ : Type u} {encIn : α ↪ List Bool}
+/-- The second component of a pair computed with given degrees.
+The input universe is independent of the pair's universe. -/
+theorem snd' {α : Type*} {β₁ β₂ : Type u} {encIn : α ↪ List Bool}
     {enc₁ : β₁ ↪ List Bool} {enc₂ : β₂ ↪ List Bool} {d e : ℕ}
     {f : α → β₁ × β₂} (h : ComputableInDegree f encIn (encPair enc₁ enc₂) d e) :
     ComputableInDegree (fun x => (f x).2) encIn enc₂ (max d e) e :=

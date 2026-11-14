@@ -2,6 +2,8 @@
 
 import importlib.util
 import base64
+from contextlib import redirect_stdout
+import io
 import json
 import os
 from pathlib import Path
@@ -25,6 +27,38 @@ def module(name, path):
 
 
 publish = module("cache_publish", REPO / "scripts/cache/publish.py")
+
+
+class WorkflowContractTests(unittest.TestCase):
+    def test_one_late_cache_save_retains_archives_and_preserves_failure_fallback(self):
+        text = (REPO / ".github/workflows/lean_action_ci.yml").read_text()
+        lean = text.split("  lean-checks:\n", 1)[1].split("\n  ci-checks:\n", 1)[0]
+        build = lean.split('      - name: "lake build"', 1)[1].split("      - name:", 1)[0]
+        save = lean.split("      - name: Save .lake to the Actions cache", 1)[1].split(
+            "      - name:", 1)[0]
+        stage_at = lean.index("      - name: Stage cache publication")
+        save_at = lean.index("      - name: Save .lake to the Actions cache")
+        upload_at = lean.index("      - name: Hand off staged files to the enabled publishers")
+        self.assertIn("id: build", build)
+        self.assertLess(stage_at, save_at)
+        self.assertLess(save_at, upload_at)
+        self.assertIn("!cancelled()", save)
+        self.assertIn("steps.build.outcome == 'success'", save)
+        self.assertIn("github.event_name == 'push'", save)
+        self.assertIn("github.ref == 'refs/heads/main'", save)
+        self.assertIn("vars.DISABLE_CACHE_RESTORE != 'true'", save)
+        self.assertIn("vars.DISABLE_CACHE_RESTORE != '1'", save)
+        self.assertIn("steps.lake-cache.outputs.cache-hit != 'true'", save)
+        # The explicit status function permits saving a successful library build even if a
+        # later test, lint, or staging step failed; publisher validation is still independent.
+        self.assertNotIn("success()", save)
+        self.assertNotIn("steps.test.", save)
+        self.assertNotIn("steps.lint.", save)
+        action = "uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25"
+        self.assertEqual(lean.count(action), 1)
+        self.assertIn("path: ./.lake", save)
+        self.assertIn("key: ${{ steps.lake-cache.outputs.cache-primary-key }}", save)
+        self.assertNotIn("RETAIN_PUBLICATION_ARCHIVES", text)
 
 
 class PublicationTests(unittest.TestCase):
@@ -65,17 +99,19 @@ class PublicationTests(unittest.TestCase):
             self.assertNotIn(TEST_PASSWORD, " ".join(args))
             self.assertEqual(kwargs["input"], f'user = "publisher:{TEST_PASSWORD}"\n')
             package = Path(args[args.index("--upload-file") + 1])
+            probe = "Content-Type: " + publish.HTTP_PROBE in args
+            names = [self.mapping] if probe else sorted(self.metadata["files"])
             with tarfile.open(package) as archive:
-                self.assertEqual(archive.getnames(), ["publication.json", *sorted(self.metadata["files"])])
+                self.assertEqual(archive.getnames(), ["publication.json", *names])
                 for name in archive.getnames():
                     self.assertEqual(archive.extractfile(name).read(), (self.stage / name).read_bytes())
-            return subprocess.CompletedProcess(args, 0, stdout="201")
+            return subprocess.CompletedProcess(args, 22 if probe else 0, stdout="415" if probe else "201")
         with (
             patch.dict(os.environ, CACHE_SERVER_USER="publisher", CACHE_SERVER_PASSWORD=TEST_PASSWORD),
             patch.object(publish, "run", side_effect=inspect_upload) as run,
         ):
             publish.http("https://cache.example.edu", self.stage)
-            self.assertEqual(run.call_count, 1)
+            self.assertEqual(run.call_count, 2)
 
     def test_failed_artifact_upload_never_publishes_a_mapping(self):
         for backend in (lambda: publish.gcs("example-cache", self.stage),
@@ -174,7 +210,8 @@ class PublicationTests(unittest.TestCase):
             with (
                 self.subTest(status=status),
                 patch.dict(os.environ, CACHE_SERVER_USER="publisher", CACHE_SERVER_PASSWORD=TEST_PASSWORD),
-                patch.object(publish, "run", return_value=subprocess.CompletedProcess([], 0, stdout=status)) as run,
+                patch.object(publish, "run", side_effect=[subprocess.CompletedProcess([], 22, stdout="415"),
+                                                        subprocess.CompletedProcess([], 0, stdout=status)]) as run,
             ):
                 if status == "201":
                     publish.http("https://cache.example.edu", self.stage)
@@ -183,9 +220,74 @@ class PublicationTests(unittest.TestCase):
                         publish.http("https://cache.example.edu", self.stage)
                 self.assertNotIn("--location", run.call_args.args[0])
 
+    def test_incremental_upload_omits_existing_payload_but_keeps_complete_inventory(self):
+        requests = []
+        def upload(args, **kwargs):
+            media_type = args[args.index("--header") + 1]
+            requests.append(media_type)
+            with tarfile.open(args[args.index("--upload-file") + 1]) as archive:
+                self.assertEqual(archive.getnames(), ["publication.json", self.mapping])
+                self.assertEqual(json.load(archive.extractfile("publication.json")), self.metadata)
+            if len(requests) == 1:
+                Path(args[args.index("--output") + 1]).write_text(json.dumps({
+                    "version": 1, "revision": self.metadata["revision"], "missing": []}))
+            return subprocess.CompletedProcess(args, 0, stdout="200" if len(requests) == 1 else "201")
+        with patch.dict(os.environ, CACHE_SERVER_USER="publisher", CACHE_SERVER_PASSWORD=TEST_PASSWORD), \
+                patch.object(publish, "run", side_effect=upload):
+            publish.http("https://cache.example.edu", self.stage)
+        self.assertEqual(requests, ["Content-Type: " + publish.HTTP_PROBE,
+                                    "Content-Type: " + publish.HTTP_DELTA])
+
+    def test_gc_race_retries_one_full_publication(self):
+        requests = []
+        def upload(args, **kwargs):
+            with tarfile.open(args[args.index("--upload-file") + 1]) as archive:
+                requests.append(archive.getnames())
+            Path(args[args.index("--output") + 1]).write_text(json.dumps({
+                "version": 1, "revision": self.metadata["revision"], "missing": []}))
+            status = ["200", "412", "201"][len(requests) - 1]
+            return subprocess.CompletedProcess(args, 22 if status == "412" else 0, stdout=status)
+        with patch.dict(os.environ, CACHE_SERVER_USER="publisher", CACHE_SERVER_PASSWORD=TEST_PASSWORD), \
+                patch.object(publish, "run", side_effect=upload):
+            publish.http("https://cache.example.edu", self.stage)
+        self.assertEqual(requests, [["publication.json", self.mapping]] * 2 +
+                         [["publication.json", *sorted(self.metadata["files"])]])
+
+    def test_probe_rejections_never_downgrade_except_unsupported_media_type(self):
+        for status in ("201", "301", "400", "401", "403", "404", "409", "412", "500"):
+            with self.subTest(status=status), \
+                    patch.dict(os.environ, CACHE_SERVER_USER="publisher", CACHE_SERVER_PASSWORD=TEST_PASSWORD), \
+                    patch.object(publish, "run", return_value=subprocess.CompletedProcess([], 22, stdout=status)) as run:
+                with self.assertRaisesRegex(ValueError, "probe failed"):
+                    publish.http("https://cache.example.edu", self.stage)
+                self.assertEqual(run.call_count, 1)
+
+    def test_probe_response_must_name_only_unique_inventory_archives(self):
+        for missing in ([self.mapping], ["../../secret"], [self.artifact, self.artifact], [None]):
+            with self.subTest(missing=missing):
+                response = self.root / "response"
+                response.write_text(json.dumps({"version": 1, "revision": self.metadata["revision"],
+                                                "missing": missing}))
+                with self.assertRaisesRegex(ValueError, "missing-archive"):
+                    publish.missing_archives(response, self.metadata, self.mapping)
+
+    def test_transport_failure_cannot_be_mistaken_for_unsupported_server(self):
+        with patch.dict(os.environ, CACHE_SERVER_USER="publisher", CACHE_SERVER_PASSWORD=TEST_PASSWORD), \
+                patch.object(publish, "run", return_value=subprocess.CompletedProcess([], 60, stdout="415")) as run:
+            with self.assertRaises(subprocess.CalledProcessError):
+                publish.http("https://cache.example.edu", self.stage)
+            self.assertEqual(run.call_count, 1)
+
 
 @unittest.skipUnless(shutil.which("git"), "Git is required")
 class SourceStateTests(unittest.TestCase):
+    def test_report_inside_publication_is_rejected_before_staging(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            destination = Path(temporary) / "publication"
+            with self.assertRaisesRegex(ValueError, "outside the publication"):
+                publish.stage(destination, destination / "metrics.json")
+            self.assertFalse(destination.exists())
+
     def make_repo(self, temporary):
         root = Path(temporary) / "repo"
         root.mkdir()
@@ -291,6 +393,59 @@ name = "CslibFrontierTests"
             self.assertGreater(len(data["files"]), 1)
             self.assertTrue(all(publish.digest(destination / name) == expected
                                 for name, expected in data["files"].items()))
+            # Simulate a restored Actions build tree without its module archives or shared cache.
+            # The mapping build must pack these warm outputs without recompiling them.
+            outputs = {path: (path.stat().st_mtime_ns, publish.digest(path))
+                       for path in (root / ".lake/build").rglob("*.olean")}
+            self.assertEqual(len(outputs), 2)
+            for path in (root / ".lake/build").rglob("*.ltar"):
+                path.unlink()
+            shutil.rmtree(env["LAKE_CACHE_DIR"])
+            reports = []
+            for name in ("missing-archives", "retained-archives"):
+                # Actions retains build outputs but excludes the toolchain's mutable cache.
+                shutil.rmtree(env["LAKE_CACHE_DIR"], ignore_errors=True)
+                retained = {path: (path.stat().st_mtime_ns, publish.digest(path))
+                            for path in (root / ".lake/build").rglob("*.ltar")}
+                target = Path(temporary) / name
+                report = Path(temporary) / (name + ".json")
+                with (patch.object(publish, "ROOT", root),
+                      patch.dict(os.environ, env, clear=True)):
+                    publish.stage(target, report)
+                measured = json.loads(report.read_text())
+                reports.append(measured)
+                self.assertEqual(measured["mapping_entries"], 2)
+                self.assertEqual(measured["staged_artifacts"], 2)
+                self.assertEqual(measured["archives_after"]["count"], 2)
+                self.assertTrue(all(phase["status"] == "success"
+                                    and phase["wall_seconds"] >= 0 for phase in measured["phases"]))
+                publish.validate(target)  # Diagnostic JSON must never enter the public inventory.
+                self.assertEqual(outputs, {path: (path.stat().st_mtime_ns, publish.digest(path))
+                                           for path in outputs})
+                self.assertEqual(retained, {path: (path.stat().st_mtime_ns, publish.digest(path))
+                                            for path in retained})
+            self.assertEqual(reports[0]["archives_before"]["count"], 0)
+            self.assertEqual(reports[1]["archives_before"]["count"], 2)
+
+
+class StagePhaseTests(unittest.TestCase):
+    def test_failed_command_keeps_its_exception_and_reports_the_phase(self):
+        phases, output = [], io.StringIO()
+        failure = subprocess.CalledProcessError(23, ["lake", "build"])
+        with redirect_stdout(output), self.assertRaises(subprocess.CalledProcessError) as raised:
+            with publish.stage_phase("mapping and archive build", phases):
+                raise failure
+        self.assertIs(raised.exception, failure)
+        self.assertEqual(phases[0]["status"], "failed")
+        self.assertIn("mapping and archive build failed", output.getvalue())
+
+    def test_resource_module_is_optional(self):
+        phases = []
+        with patch.object(publish, "resource", None), redirect_stdout(io.StringIO()):
+            with publish.stage_phase("fixture", phases):
+                pass
+        self.assertEqual(phases[0]["status"], "success")
+        self.assertNotIn("child_user_seconds", phases[0])
 
 
 if __name__ == "__main__":

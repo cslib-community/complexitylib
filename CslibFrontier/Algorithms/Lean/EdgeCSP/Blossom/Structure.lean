@@ -58,15 +58,15 @@ theorem var_mem_internal_iff (hF : EdgeInstance F) (hw : w.IsWalk)
     exact ⟨o, ho, rfl⟩
 
 /-- Membership in a selected position list is precisely occurrence-variable membership. -/
-theorem mem_positions (vs : List ℕ) (i : Fin F.length) (j : Fin F[i.val].2.length) :
-    j.val ∈ positions vs F[i.val].2 ↔ Occurrence.var (F := F) ⟨i, j⟩ ∈ vs := by
+theorem mem_positions (vs : List ℕ) (i : Fin F.length) (j : Fin F[i.val].scope.length) :
+    j.val ∈ positions vs F[i.val].scope ↔ Occurrence.var (F := F) ⟨i, j⟩ ∈ vs := by
   simp [positions, Occurrence.var, j.isLt]
 
 /-- Each touched constraint contains a whole cycle step, not a single dangling blossom port. -/
 theorem touched_has_step (hF : EdgeInstance F) (hw : w.IsWalk)
     (hc : w.finish = w.start) {i : Fin F.length} (hi : i ∈ touched F (internal w)) :
     ∃ s ∈ w.steps, let (input, _) := s; input.1 = i := by
-  have hp : positions (internal w) F[i.val].2 ≠ [] := by
+  have hp : positions (internal w) F[i.val].scope ≠ [] := by
     simpa using (List.mem_filter.mp hi).2
   obtain ⟨j, hj⟩ := List.exists_mem_of_ne_nil _ hp
   have hjb := List.mem_range.mp (List.mem_filter.mp hj).1
@@ -82,7 +82,7 @@ theorem touched_has_step (hF : EdgeInstance F) (hw : w.IsWalk)
 Repeated visits can increase this number; they never create duplicate connectors. -/
 theorem two_le_positions (hF : EdgeInstance F) (hw : w.IsWalk)
     (hc : w.finish = w.start) {i : Fin F.length} (hi : i ∈ touched F (internal w)) :
-    2 ≤ (positions (internal w) F[i.val].2).length := by
+    2 ≤ (positions (internal w) F[i.val].scope).length := by
   obtain ⟨⟨a, b⟩, hs, ha⟩ := touched_has_step hF hw hc hi
   have hb := (DAG.linked_constraint hw.1 hs).symm.trans ha
   have hae : a ∈ w.edges := List.mem_flatMap.mpr ⟨(a, b), hs, by simp⟩
@@ -105,7 +105,7 @@ theorem two_le_positions (hF : EdgeInstance F) (hw : w.IsWalk)
         intro he
         exact hab (congrArg (Sigma.mk i) (Fin.ext he))
       have hle := card_le_card (show ({aj.val, bj.val} : Finset ℕ) ⊆
-          (positions (internal w) F[i.val].2).toFinset from by
+          (positions (internal w) F[i.val].scope).toFinset from by
         intro j hj
         rcases mem_insert.mp hj with rfl | hj
         · exact List.mem_toFinset.mpr haj

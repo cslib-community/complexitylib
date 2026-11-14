@@ -7,12 +7,9 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Computability.Complexity.Problems.Graph
+public import CslibFrontier.Computability.Complexity.Problems.Graph.Matching.Positions
 public import CslibFrontier.Logics.Propositional.CSP.ExactlyOne
-public import Mathlib.Combinatorics.SimpleGraph.Matching
-import CslibFrontier.Foundations.Data.List.EraseDupsBy
 import CslibFrontier.Foundations.Data.List.Range
-import Mathlib.Combinatorics.SimpleGraph.Finite
 import Mathlib.Data.List.GetD
 
 /-!
@@ -53,90 +50,14 @@ namespace Cslib.Complexity.Graph
 
 open Cslib.Logic.PL
 
-/-- The edges of `G.induced`, each listed once: the edges of `G` between distinct declared
-vertices, with repetitions in either orientation erased. -/
-@[expose] def edgeList (G : Graph) : List (ℕ × ℕ) :=
-  (G.2.filter fun e => decide (e.1 ≠ e.2) && decide (e.1 ∈ G.1) && decide (e.2 ∈ G.1)).eraseDupsBy
-    fun a b => decide (a = b) || decide (a = (b.2, b.1))
-
-/-- Whether the vertex `v` is an end of the edge `e`. -/
-@[expose] def incident (e : ℕ × ℕ) (v : ℕ) : Bool := decide (e.1 = v) || decide (e.2 = v)
-
 /-- The perfect-matching instance of `G`: a variable for each position of `G.edgeList`, and an
 exactly-one constraint for each distinct declared vertex on the positions of its incident
 edges. -/
 @[expose] def perfectMatchingInstance (G : Graph) : CSP Unit ℕ :=
   G.distinctVertices.map fun v =>
-    ((), (List.range G.edgeList.length).filter fun i => incident (G.edgeList.getD i (0, 0)) v)
+    ⟨(), (List.range G.edgeList.length).filter fun i => incident (G.edgeList.getD i (0, 0)) v⟩
 
 variable {G : Graph}
-
-/-! ### The edge list -/
-
-/-- An entry of the edge list joins two distinct declared vertices by an edge of `G`. -/
-theorem of_mem_edgeList {e : ℕ × ℕ} (he : e ∈ G.edgeList) :
-    e ∈ G.2 ∧ e.1 ≠ e.2 ∧ e.1 ∈ G.1 ∧ e.2 ∈ G.1 := by
-  have := List.mem_filter.mp ((List.eraseDupsBy_sublist _).subset he)
-  simp only [Bool.and_eq_true, decide_eq_true_eq] at this
-  exact ⟨this.1, this.2.1.1, this.2.1.2, this.2.2⟩
-
-/-- Each edge of `G.induced` is in the edge list in one of its orientations. -/
-theorem exists_mem_edgeList {u v : {v // v ∈ G.1}} (h : G.induced.Adj u v) :
-    (u.1, v.1) ∈ G.edgeList ∨ (v.1, u.1) ∈ G.edgeList := by
-  rw [induced_adj, toSimpleGraph_adj] at h
-  obtain ⟨hne, huv⟩ := h
-  have key : ∀ e ∈ G.2, e.1 ≠ e.2 → e.1 ∈ G.1 → e.2 ∈ G.1 → e ∈ G.edgeList ∨ e.swap ∈ G.edgeList :=
-    fun e he h1 h2 h3 => by
-      have hmem : e ∈ G.2.filter fun e =>
-          decide (e.1 ≠ e.2) && decide (e.1 ∈ G.1) && decide (e.2 ∈ G.1) :=
-        List.mem_filter.mpr ⟨he, by simp [h1, h2, h3]⟩
-      obtain ⟨b, hb, rfl | hab⟩ := List.exists_mem_eraseDupsBy (r := fun a b =>
-        decide (a = b) || decide (a = (b.2, b.1))) hmem
-      · exact Or.inl hb
-      · have hab : e = b ∨ e = (b.2, b.1) := by simpa using hab
-        rcases hab with rfl | rfl
-        · exact Or.inl hb
-        · exact Or.inr hb
-  rcases huv with huv | hvu
-  · exact key _ huv hne u.2 v.2
-  · rcases key _ hvu (fun h => hne h.symm) v.2 u.2 with h | h
-    · exact Or.inr h
-    · exact Or.inl h
-
-/-- No entry of the edge list repeats an earlier entry, in either orientation. -/
-theorem pairwise_edgeList (G : Graph) : G.edgeList.Pairwise fun a b => b ≠ a ∧ b ≠ a.swap := by
-  refine (List.pairwise_eraseDupsBy (r := fun a b => decide (a = b) || decide (a = (b.2, b.1)))
-    _).imp fun h => ?_
-  simpa [Prod.swap] using h
-
-/-- Distinct positions of the edge list hold distinct edges, in either orientation. -/
-theorem eq_of_getD_edgeList {i j : ℕ} (hi : i < G.edgeList.length) (hj : j < G.edgeList.length)
-    (h : G.edgeList.getD i (0, 0) = G.edgeList.getD j (0, 0) ∨
-      G.edgeList.getD i (0, 0) = (G.edgeList.getD j (0, 0)).swap) : i = j := by
-  have hp := List.pairwise_iff_getElem.mp (pairwise_edgeList G)
-  rw [List.getD_eq_getElem _ _ hi, List.getD_eq_getElem _ _ hj] at h
-  by_contra hij
-  rcases Nat.lt_or_gt_of_ne hij with hlt | hlt
-  · obtain ⟨h1, h2⟩ := hp i j hi hj hlt
-    rcases h with h | h
-    · exact h1 h.symm
-    · exact h2 (by rw [h, Prod.swap_swap])
-  · obtain ⟨h1, h2⟩ := hp j i hj hi hlt
-    rcases h with h | h
-    · exact h1 h
-    · exact h2 h
-
-/-- An entry of the edge list, read at a position below its length. -/
-private theorem getD_edgeList_mem {i : ℕ} (hi : i < G.edgeList.length) :
-    G.edgeList.getD i (0, 0) ∈ G.edgeList := by
-  rw [List.getD_eq_getElem _ _ hi]
-  exact List.getElem_mem hi
-
-/-- The position of an entry of the edge list. -/
-private theorem exists_getD_edgeList {e : ℕ × ℕ} (he : e ∈ G.edgeList) :
-    ∃ i < G.edgeList.length, G.edgeList.getD i (0, 0) = e := by
-  obtain ⟨i, hi, rfl⟩ := List.mem_iff_getElem.mp he
-  exact ⟨i, hi, List.getD_eq_getElem _ _ hi⟩
 
 /-! ### The instance -/
 
@@ -151,102 +72,12 @@ theorem mem_vars_perfectMatchingInstance {x : ℕ} :
 /-- The exactly-one conditions of the perfect-matching instance on a set `S` of positions: every
 declared vertex is an end of exactly one edge at a position in `S`. -/
 private theorem forall_mem_perfectMatchingInstance_iff {S : Finset ℕ} :
-    (∀ c ∈ G.perfectMatchingInstance, (c.2.filter fun v => v ∈ S).length = 1) ↔
-      ∀ v ∈ G.1, ∃! i, i < G.edgeList.length ∧ incident (G.edgeList.getD i (0, 0)) v = true ∧
+    (∀ c ∈ G.perfectMatchingInstance, (c.scope.filter fun v => v ∈ S).length = 1) ↔
+      ∀ v ∈ G.vertices, ∃! i, i < G.edgeList.length ∧ incident (G.edgeList.getD i (0, 0)) v = true ∧
         i ∈ S := by
   simp only [perfectMatchingInstance, List.forall_mem_map, mem_distinctVertices,
     List.filter_filter, List.length_filter_range_eq_one_iff, Bool.and_eq_true, decide_eq_true_eq]
   exact forall₂_congr fun v _ => existsUnique_congr fun i => by tauto
-
-/-- The adjacency of a subgraph of `G.induced`, read on natural numbers. -/
-private def AdjNat (M : G.induced.Subgraph) (u w : ℕ) : Prop :=
-  ∃ (hu : u ∈ G.1) (hw : w ∈ G.1), M.Adj ⟨u, hu⟩ ⟨w, hw⟩
-
-/-- The positions of the edges of a subgraph. -/
-private noncomputable def positions (M : G.induced.Subgraph) : Finset ℕ := by
-  classical
-  exact (Finset.range G.edgeList.length).filter fun i =>
-    AdjNat M (G.edgeList.getD i (0, 0)).1 (G.edgeList.getD i (0, 0)).2
-
-private theorem mem_positions {M : G.induced.Subgraph} {i : ℕ} :
-    i ∈ positions M ↔ i < G.edgeList.length ∧
-      AdjNat M (G.edgeList.getD i (0, 0)).1 (G.edgeList.getD i (0, 0)).2 := by
-  classical
-  simp only [positions, Finset.mem_filter, Finset.mem_range]
-
-/-- The subgraph spanned by the edges at a set of positions. -/
-private def ofPositions (G : Graph) (S : Finset ℕ) : G.induced.Subgraph where
-  verts := Set.univ
-  Adj u w := G.induced.Adj u w ∧
-    ∃ i ∈ S, G.edgeList.getD i (0, 0) = (u.1, w.1) ∨ G.edgeList.getD i (0, 0) = (w.1, u.1)
-  adj_sub h := h.1
-  edge_vert _ := Set.mem_univ _
-  symm := ⟨fun _ _ ⟨h, i, hi, he⟩ => ⟨h.symm, i, hi, he.symm⟩⟩
-
-/-- The other end of an edge at a vertex `v`. -/
-private theorem exists_other_end {e : ℕ × ℕ} {v : ℕ} (hv : incident e v = true) :
-    ∃ w, e = (v, w) ∨ e = (w, v) := by
-  simp only [incident, Bool.or_eq_true, decide_eq_true_eq] at hv
-  rcases hv with rfl | rfl
-  · exact ⟨e.2, Or.inl rfl⟩
-  · exact ⟨e.1, Or.inr rfl⟩
-
-private theorem isPerfectMatching_ofPositions {S : Finset ℕ} (hS : ∀ i ∈ S, i < G.edgeList.length)
-    (hcov : ∀ v ∈ G.1, ∃! i, i < G.edgeList.length ∧
-      incident (G.edgeList.getD i (0, 0)) v = true ∧ i ∈ S) :
-    (ofPositions G S).IsPerfectMatching := by
-  refine SimpleGraph.Subgraph.isPerfectMatching_iff.mpr fun u => ?_
-  obtain ⟨i, ⟨hi, hinc, hiS⟩, huniq⟩ := hcov u.1 u.2
-  have hmem := getD_edgeList_mem hi
-  obtain ⟨hG, hne, h1, h2⟩ := of_mem_edgeList hmem
-  obtain ⟨w, hw⟩ := exists_other_end hinc
-  have hw' : w ∈ G.1 := by rcases hw with hw | hw <;> rw [hw] at h1 h2 <;> assumption
-  have hadj : G.induced.Adj u ⟨w, hw'⟩ := by
-    rw [induced_adj, toSimpleGraph_adj]
-    rcases hw with hw | hw <;> rw [hw] at hG hne
-    · exact ⟨hne, Or.inl hG⟩
-    · exact ⟨Ne.symm hne, Or.inr hG⟩
-  refine ⟨⟨w, hw'⟩, ⟨hadj, i, hiS, hw⟩, fun w' ⟨_, i', hi'S, hw'e⟩ => ?_⟩
-  have hi' := hS i' hi'S
-  have hinc' : incident (G.edgeList.getD i' (0, 0)) u = true := by
-    rcases hw'e with h | h <;> rw [h] <;> simp [incident]
-  have := huniq i' ⟨hi', hinc', hi'S⟩
-  subst this
-  refine Subtype.ext (?_ : (w' : ℕ) = w)
-  rcases hw with hw | hw <;> rcases hw'e with h | h <;> rw [hw] at h hne <;>
-    simp only [Prod.mk.injEq] at h hne <;> omega
-
-private theorem cover_positions {M : G.induced.Subgraph} (hM : M.IsPerfectMatching) :
-    ∀ v ∈ G.1, ∃! i, i < G.edgeList.length ∧
-      incident (G.edgeList.getD i (0, 0)) v = true ∧ i ∈ positions M := by
-  intro v hv
-  obtain ⟨w, hvw, hwuniq⟩ := SimpleGraph.Subgraph.isPerfectMatching_iff.mp hM ⟨v, hv⟩
-  -- the edge `vw` sits at a position of the edge list
-  have hpos : ∃ i < G.edgeList.length, G.edgeList.getD i (0, 0) = (v, w.1) ∨
-      G.edgeList.getD i (0, 0) = (w.1, v) := by
-    rcases exists_mem_edgeList (M.adj_sub hvw) with h | h
-    · obtain ⟨i, hi, he⟩ := exists_getD_edgeList h
-      exact ⟨i, hi, Or.inl he⟩
-    · obtain ⟨i, hi, he⟩ := exists_getD_edgeList h
-      exact ⟨i, hi, Or.inr he⟩
-  obtain ⟨i, hi, he⟩ := hpos
-  refine ⟨i, ⟨hi, by rcases he with h | h <;> rw [h] <;> simp [incident],
-    mem_positions.mpr ⟨hi, ?_⟩⟩,
-    fun j ⟨hj, hinc, hjS⟩ => ?_⟩
-  · rcases he with h | h <;> rw [h]
-    · exact ⟨hv, w.2, hvw⟩
-    · exact ⟨w.2, hv, hvw.symm⟩
-  · obtain ⟨-, hu, hw, hadj⟩ := mem_positions.mp hjS
-    have hmem := getD_edgeList_mem hj
-    obtain ⟨w', hw'⟩ := exists_other_end hinc
-    -- the edge at `j` joins `v` to the partner `w` of `v`
-    have hpartner : w' = w.1 := by
-      rcases hw' with h | h <;> simp only [h] at hu hw hadj
-      · exact congrArg Subtype.val (hwuniq ⟨w', hw⟩ hadj)
-      · exact congrArg Subtype.val (hwuniq ⟨w', hu⟩ hadj.symm)
-    subst hpartner
-    refine eq_of_getD_edgeList hj hi ?_
-    rcases hw' with h | h <;> rcases he with h' | h' <;> rw [h, h'] <;> simp
 
 /-- **The exactly-one partition function of the perfect-matching instance is the number of
 perfect matchings** of `G.induced`. -/
@@ -262,7 +93,8 @@ theorem partitionFunction_perfectMatchingInstance (G : Graph) :
   symm
   refine Nat.card_congr
     { toFun := fun M => ⟨positions M.1, Finset.mem_filter.mpr ⟨Finset.mem_powerset.mpr
-        (hsub.mpr fun i hi => (mem_positions.mp hi).1), cover_positions M.2⟩⟩
+        (hsub.mpr fun i hi => (mem_positions.mp hi).1),
+        (fun v hv => cover_positions M.2.1 v hv (M.2.2 _))⟩⟩
       invFun := fun S => ⟨ofPositions G S.1, isPerfectMatching_ofPositions
         (hsub.mp (Finset.mem_powerset.mp (Finset.mem_filter.mp S.2).1))
         (Finset.mem_filter.mp S.2).2⟩
@@ -278,10 +110,13 @@ theorem partitionFunction_perfectMatchingInstance (G : Graph) :
         rcases he with he | he <;> simp only [he] at hu hw hadj
         · exact hadj
         · exact hadj.symm
-      · rcases exists_mem_edgeList (M.adj_sub h) with he | he <;>
-          obtain ⟨i, hi, hie⟩ := exists_getD_edgeList he
-        · exact ⟨i, mem_positions.mpr ⟨hi, by rw [hie]; exact ⟨u.2, w.2, h⟩⟩, Or.inl hie⟩
-        · exact ⟨i, mem_positions.mpr ⟨hi, by rw [hie]; exact ⟨w.2, u.2, h.symm⟩⟩, Or.inr hie⟩
+      · obtain ⟨i, hi, hie⟩ := exists_getD_edgeList_of_adj (M.adj_sub h)
+        refine ⟨i, mem_positions.mpr ⟨hi, ?_⟩, hie⟩
+        rcases hie with hie | hie
+        · rw [hie]
+          exact ⟨u.2, w.2, h⟩
+        · rw [hie]
+          exact ⟨w.2, u.2, h.symm⟩
   · -- the positions of the subgraph spanned by a set of positions are that set
     obtain ⟨S, hS⟩ := S
     have hS' := hsub.mp (Finset.mem_powerset.mp (Finset.mem_filter.mp hS).1)
@@ -302,7 +137,7 @@ theorem partitionFunction_perfectMatchingInstance (G : Graph) :
 
 /-- The constraints of the perfect-matching instance: one for each distinct declared vertex. -/
 theorem length_perfectMatchingInstance (G : Graph) :
-    G.perfectMatchingInstance.length = G.1.toFinset.card := by
+    G.perfectMatchingInstance.length = G.vertices.toFinset.card := by
   rw [perfectMatchingInstance, List.length_map, length_distinctVertices]
 
 /-- **Every variable occurs at most twice**: in the constraints of the two ends of its edge. -/
@@ -336,7 +171,7 @@ theorem count_vars_perfectMatchingInstance (G : Graph) (x : ℕ) :
 /-- **A vertex constraint has at most as many variables as the vertex has neighbours.** -/
 theorem length_le_of_mem_perfectMatchingInstance {d : ℕ}
     (hdeg : ∀ v, Nat.card (G.induced.neighborSet v) ≤ d) {c : Constraint Unit ℕ}
-    (hc : c ∈ G.perfectMatchingInstance) : c.2.length ≤ d := by
+    (hc : c ∈ G.perfectMatchingInstance) : c.scope.length ≤ d := by
   classical
   simp only [perfectMatchingInstance, List.mem_map, mem_distinctVertices] at hc
   obtain ⟨v, hv, rfl⟩ := hc
@@ -357,7 +192,7 @@ theorem length_le_of_mem_perfectMatchingInstance {d : ℕ}
     rw [Finset.mem_range] at hi
     obtain ⟨hG, hne, h1, h2⟩ := of_mem_edgeList (getD_edgeList_mem hi)
     simp only [incident, Bool.or_eq_true, decide_eq_true_eq] at hinc
-    have hother : ∃ h : other i ∈ G.1, G.induced.Adj ⟨v, hv⟩ ⟨other i, h⟩ := by
+    have hother : ∃ h : other i ∈ G.vertices, G.induced.Adj ⟨v, hv⟩ ⟨other i, h⟩ := by
       simp only [other]
       split_ifs with h
       · refine ⟨h2, ?_⟩
@@ -387,7 +222,7 @@ theorem length_le_of_mem_perfectMatchingInstance {d : ℕ}
 
 /-- **A vertex has at most as many neighbours as edge-list entries at it**, so a degree bound can
 be checked on the edge list. -/
-theorem card_neighborSet_le (v : {v // v ∈ G.1}) :
+theorem card_neighborSet_le (v : {v // v ∈ G.vertices}) :
     Nat.card (G.induced.neighborSet v) ≤ (G.edgeList.filter fun e => incident e v).length := by
   classical
   have hnd : (G.edgeList.filter fun e => incident e v).Nodup :=

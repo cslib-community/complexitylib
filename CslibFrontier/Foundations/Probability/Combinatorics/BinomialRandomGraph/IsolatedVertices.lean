@@ -34,8 +34,8 @@ inequality (Mathlib's `ProbabilityTheory.meas_ge_le_variance_div_sq`) gives
 
 The source computes the second moment the same way and concludes through
 `P(X > 0) ≥ (E X) ^ 2 / E[X ^ 2]`; Chebyshev's inequality gives the same conclusion here. The
-Poisson limit `P(X = 0) → e ^ (-e ^ (-c))` at `n p - log n → c`, and with it the constant case of
-Theorem 4.1, is not formalized.
+Poisson limit `P(X = k) → e ^ (-λ) λ ^ k / k!` and `P(G(n, p) is connected) → e ^ (-e ^ (-c))`
+at `n p - log n → c` are proved in `BinomialRandomGraph.ConnectivityThreshold`.
 
 ## Main results
 
@@ -70,51 +70,47 @@ namespace SimpleGraph
 variable {V : Type*}
 
 /-- The `|V| - 1` possible edges at `v`. -/
-private noncomputable def incidentPairs [Fintype V] [DecidableEq V] (v : V) : Finset (Sym2 V) :=
-  (univ.erase v).image fun w => s(v, w)
-
-/-- There are `|V| - 1` possible edges at `v`. -/
-private theorem card_incidentPairs [Fintype V] [DecidableEq V] (v : V) :
-    #(incidentPairs v) = Fintype.card V - 1 := by
-  rw [incidentPairs, card_image_of_injective _ (fun _ _ h => Sym2.congr_right.1 h),
-    card_erase_of_mem (mem_univ _), card_univ]
-
-/-- No possible edge at `v` is a loop. -/
-private theorem not_isDiag_of_mem_incidentPairs [Fintype V] [DecidableEq V] {v : V} {e : Sym2 V}
-    (he : e ∈ incidentPairs v) : ¬e.IsDiag := by
-  simp only [incidentPairs, mem_image, mem_erase, mem_univ, and_true] at he
-  obtain ⟨w, hw, rfl⟩ := he
-  simpa using Ne.symm hw
-
-/-- `v` is isolated exactly when no possible edge at `v` is present. -/
-private theorem isIsolated_iff_disjoint_incidentPairs [Fintype V] [DecidableEq V]
-    (G : SimpleGraph V) (v : V) :
-    G.IsIsolated v ↔ Disjoint (incidentPairs v : Set (Sym2 V)) G.edgeSet := by
-  simp only [IsIsolated, Set.disjoint_left, incidentPairs, coe_image, coe_erase, coe_univ,
+theorem isIsolated_iff_disjoint_incident [Fintype V] [DecidableEq V] (G : SimpleGraph V) (v : V) :
+    G.IsIsolated v ↔ Disjoint (((Finset.univ.erase v).image (Sym2.mk v) : Finset (Sym2 V)) :
+      Set (Sym2 V)) G.edgeSet := by
+  simp only [SimpleGraph.IsIsolated, Set.disjoint_left, Finset.coe_image, Finset.coe_erase,
+    Finset.coe_univ,
     Set.mem_image, Set.mem_sdiff, Set.mem_univ, Set.mem_singleton_iff, true_and]
   constructor
-  · rintro h _ ⟨w, -, rfl⟩ hw
-    exact h w hw
-  · intro h w hw
-    exact h ⟨w, hw.ne', rfl⟩ hw
+  · rintro h _ ⟨w, hw, rfl⟩ hw_edge
+    exact h w hw_edge
+  · intro h w hw_edge
+    by_cases hw : w = v
+    · subst hw
+      exact G.irrefl hw_edge
+    · exact h ⟨w, hw, rfl⟩ hw_edge
 
 /-- A fixed vertex of `G(V, p)` is isolated with probability `(1 - p) ^ (|V| - 1)`. -/
 theorem binomialRandom_real_isIsolated [Fintype V] (p : I) (v : V) :
     G(V, p).real {G | G.IsIsolated v} = (1 - p : ℝ) ^ (Fintype.card V - 1) := by
   classical
-  have : {G : SimpleGraph V | G.IsIsolated v} =
-      {G | Disjoint (incidentPairs v : Set (Sym2 V)) G.edgeSet} := by
+  let t : Finset (Sym2 V) := (Finset.univ.erase v).image (Sym2.mk v)
+  have hset : {G : SimpleGraph V | G.IsIsolated v} =
+      {G | Disjoint (t : Set (Sym2 V)) G.edgeSet} := by
     ext G
-    exact isIsolated_iff_disjoint_incidentPairs G v
-  rw [this, binomialRandom_real_disjoint_edgeSet p _
-    (fun _ => not_isDiag_of_mem_incidentPairs), card_incidentPairs]
+    exact isIsolated_iff_disjoint_incident G v
+  have hdiag : ∀ e ∈ t, ¬e.IsDiag := by
+    intro e he
+    simp only [t, Finset.mem_image, Finset.mem_erase, Finset.mem_univ, and_true] at he
+    obtain ⟨w, hw, rfl⟩ := he
+    simpa using Ne.symm hw
+  have hcard : #t = Fintype.card V - 1 := by
+    rw [Finset.card_image_of_injective _ (fun _ _ h => Sym2.congr_right.1 h),
+      Finset.card_erase_of_mem (Finset.mem_univ _), Finset.card_univ]
+  rw [hset, binomialRandom_real_disjoint_edgeSet p _ hdiag, hcard]
 
 /-- The possible edges at two distinct vertices share only the edge between them. -/
 private theorem incidentPairs_inter [Fintype V] [DecidableEq V] {u v : V} (huv : u ≠ v) :
-    incidentPairs u ∩ incidentPairs v = {s(u, v)} := by
+    (Finset.univ.erase u).image (Sym2.mk u) ∩ (Finset.univ.erase v).image (Sym2.mk v) =
+      {s(u, v)} := by
   ext e
-  simp only [incidentPairs, mem_inter, mem_image, mem_erase, mem_univ, and_true,
-    mem_singleton]
+  simp only [Finset.mem_inter, Finset.mem_image, Finset.mem_erase, Finset.mem_univ, and_true,
+    Finset.mem_singleton]
   constructor
   · rintro ⟨⟨w, hw, rfl⟩, ⟨w', hw', h⟩⟩
     rcases Sym2.eq_iff.1 h with ⟨h1, -⟩ | ⟨h1, h2⟩
@@ -129,17 +125,31 @@ theorem binomialRandom_real_isIsolated_and [Fintype V] (p : I) {u v : V} (huv : 
     G(V, p).real {G | G.IsIsolated u ∧ G.IsIsolated v} =
       (1 - p : ℝ) ^ (2 * Fintype.card V - 3) := by
   classical
-  have : {G : SimpleGraph V | G.IsIsolated u ∧ G.IsIsolated v} =
-      {G | Disjoint ((incidentPairs u ∪ incidentPairs v : Finset (Sym2 V)) : Set (Sym2 V))
-        G.edgeSet} := by
+  let tu : Finset (Sym2 V) := (Finset.univ.erase u).image (Sym2.mk u)
+  let tv : Finset (Sym2 V) := (Finset.univ.erase v).image (Sym2.mk v)
+  have hset : {G : SimpleGraph V | G.IsIsolated u ∧ G.IsIsolated v} =
+      {G | Disjoint ((tu ∪ tv : Finset (Sym2 V)) : Set (Sym2 V)) G.edgeSet} := by
     ext G
-    simp only [Set.mem_ofPred_eq, isIsolated_iff_disjoint_incidentPairs, coe_union,
+    simp only [tu, tv, Set.mem_ofPred_eq, isIsolated_iff_disjoint_incident, Finset.coe_union,
       Set.disjoint_union_left]
   have h2 : 2 ≤ Fintype.card V := Fintype.one_lt_card_iff.2 ⟨u, v, huv⟩
-  rw [this, binomialRandom_real_disjoint_edgeSet p _ (fun e he => by
-    rcases mem_union.1 he with he | he <;> exact not_isDiag_of_mem_incidentPairs he)]
-  have hc := card_union_add_card_inter (incidentPairs u) (incidentPairs v)
-  rw [incidentPairs_inter huv, card_singleton, card_incidentPairs, card_incidentPairs] at hc
+  have hdiag : ∀ e ∈ tu ∪ tv, ¬e.IsDiag := by
+    intro e he
+    simp only [tu, tv, Finset.mem_union, Finset.mem_image, Finset.mem_erase, Finset.mem_univ,
+      and_true] at he
+    rcases he with ⟨w, hw, rfl⟩ | ⟨w, hw, rfl⟩
+    · simpa using Ne.symm hw
+    · simpa using Ne.symm hw
+  rw [hset, binomialRandom_real_disjoint_edgeSet p _ hdiag]
+  have hc := Finset.card_union_add_card_inter tu tv
+  rw [incidentPairs_inter huv, Finset.card_singleton] at hc
+  have hcard_tu : #tu = Fintype.card V - 1 := by
+    rw [Finset.card_image_of_injective _ (fun _ _ h => Sym2.congr_right.1 h),
+      Finset.card_erase_of_mem (Finset.mem_univ _), Finset.card_univ]
+  have hcard_tv : #tv = Fintype.card V - 1 := by
+    rw [Finset.card_image_of_injective _ (fun _ _ h => Sym2.congr_right.1 h),
+      Finset.card_erase_of_mem (Finset.mem_univ _), Finset.card_univ]
+  rw [hcard_tu, hcard_tv] at hc
   congr 1
   omega
 
@@ -271,7 +281,7 @@ theorem binomialRandom_real_forall_not_isIsolated_le [Fintype V] [Nonempty V] (p
   exact variance_div_sq_le hn1 (unitInterval.nonneg p) hp
 
 /-- A connected graph on at least two vertices has no isolated vertex. -/
-private theorem setOf_connected_subset [Nontrivial V] :
+theorem setOf_connected_subset [Nontrivial V] :
     {G : SimpleGraph V | G.Connected} ⊆ {G | ∀ v, ¬G.IsIsolated v} :=
   fun _ hG v => (Connected.preconnected hG).not_isIsolated v
 

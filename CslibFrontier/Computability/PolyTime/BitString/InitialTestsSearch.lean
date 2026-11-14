@@ -12,6 +12,7 @@ public import CslibFrontier.Computability.GenericRAM.Native.IndexFold
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 public import CslibFrontier.Foundations.Combinatorics.Expander.TannerCode
 public import CslibFrontier.Foundations.Data.BitString.ParityTestBounds
+public import CslibFrontier.Foundations.Data.BitString.List.Dot
 import CslibFrontier.Computability.GenericRAM.Native.BooleanFold
 import CslibFrontier.Foundations.Data.BitString.Binary
 import CslibFrontier.Foundations.Data.BitString.InitialTests
@@ -22,8 +23,10 @@ import CslibFrontier.Probability.SmallBias.Random
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Max
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString.Dot
 import Mathlib.Analysis.Complex.ExponentialBounds
 import CslibFrontier.Tactic.EncLen
 import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
@@ -187,8 +190,7 @@ include hB
   .unary_mul' (.unary_mul' (.const 320000) ((unary_pow 2).comp hB))
     ((unary_pow 3).comp (mu_polyTime hm))
 @[fun_prop] theorem dG_polyTime : ComputableInPolyTime (fun a => dG (m a) (B a)) e encUnary :=
-  (of_tidy ComputableTidilyInPolyTime.unary_min).comp
-    (hm.prod (initialRowWeightBound_polyTime hm hB))
+  unary_min' hm (initialRowWeightBound_polyTime hm hB)
 @[fun_prop] theorem ellG_polyTime : ComputableInPolyTime (fun a => ellG (m a) (B a)) e encUnary :=
   have hd := dG_polyTime hm hB
   (unary_clog_const 2).comp (unary_div.comp ((unary_sub' (.unary_add' hm hd) (.const 1)).prod hd))
@@ -354,6 +356,24 @@ private theorem allPositiveIndices_eq_true_iff {γ : Type} (width : ℕ) (ctx : 
     · rcases Nat.lt_succ_iff_lt_or_eq.mp hi with hlt | rfl; · exact hprev i hlt hne
       exact hlast.resolve_left hne
     · exact if h0 : n = 0 then Or.inl h0 else Or.inr (hall n (Nat.lt_succ_self n) h0)
+private theorem allPositiveIndices_lowBits_eq_true_iff {γ : Type} (widthOf : γ → ℕ) (ctx : γ)
+    (initOk : Bool) (test : γ → List Bool → Bool) :
+    allPositiveIndices (widthOf ctx) ctx initOk (fun c i => test c (lowBits (widthOf c) i)) =
+      true ↔
+      initOk = true ∧ ∀ w : BitString (widthOf ctx), w ≠ 0 → test ctx (List.ofFn w) = true := by
+  rw [allPositiveIndices_eq_true_iff]
+  refine and_congr_right' ⟨fun hall w hw0 => ?_, fun hall idx hidx hne => ?_⟩
+  · let k := equivFin (widthOf ctx) w
+    have hk0 : k.val ≠ 0 := fun hk => hw0 <| by
+      rw [← (equivFin (widthOf ctx)).symm_apply_apply w]
+      exact (equivFin_symm_eq_zero_iff k).2 hk
+    have htest := hall k.val k.isLt hk0
+    rwa [lowBits_eq_ofFn_equivFin_symm _ k, Equiv.symm_apply_apply] at htest
+  · let k : Fin (2 ^ widthOf ctx) := ⟨idx, hidx⟩
+    have hw0 : (equivFin (widthOf ctx)).symm k ≠ 0 :=
+      fun h0 => hne ((equivFin_symm_eq_zero_iff k).1 h0)
+    rw [lowBits_eq_ofFn_equivFin_symm _ k]
+    exact hall _ hw0
 private theorem allPositiveIndices_cert {α γ : Type} {encIn : α ↪ List Bool}
     {encCtx : γ ↪ List Bool} (width : α → ℕ) (ctx : α → γ) (initOk : α → Bool)
     (test : γ → ℕ → Bool) (hw : ComputableInPolyTime width encIn encUnary)
@@ -470,9 +490,6 @@ private theorem searchMatrix_cert {α Q : Type} {encIn : α ↪ List Bool} {encQ
       (run_searchMatrixStep_inv rowsOf colsOf check j (qOf a)).1)) hB).snd.snd
 
 /-! ### Polynomial-time and streaming checkers -/
-private abbrev bitDot (u v : List Bool) : Bool := (u.zipWith Bool.and v).foldl Bool.xor false
-private theorem bitDot_ofFn {n : ℕ} (u v : BitString n) :
-    bitDot (List.ofFn u) (List.ofFn v) = (u ⬝ᵥ v) := (dotProduct_eq_foldl u v).symm
 private theorem checkMatrixShape_polyTime {α : Type} {encIn : α ↪ List Bool} (r c : α → ℕ)
     (M : α → List (List Bool)) (hr : ComputableInPolyTime r encIn encUnary)
     (hc : ComputableInPolyTime c encIn encUnary)
@@ -506,7 +523,7 @@ def checkSmallBiasShifts (ell d maxBiasNum maxBiasDen : ℕ) (shifts : List (Lis
     (fun (idx, ((ell, d, maxBiasNum, maxBiasDen), shifts), ok) =>
       (((ell, d, maxBiasNum, maxBiasDen), shifts), ok && (decide (idx = 0) ||
         let odd := shifts.countP fun row =>
-          (row.zipWith Bool.and (lowBits ell idx)).foldl Bool.xor false
+          listDot row (lowBits ell idx)
         let diff := (d - 2 * odd) + (2 * odd - d)
         decide (diff * maxBiasDen ≤ maxBiasNum * d))))
     (2 ^ ell) (((ell, d, maxBiasNum, maxBiasDen), shifts),
@@ -521,20 +538,28 @@ theorem checkSmallBiasShifts_eq_true_iff {ell d maxBiasNum maxBiasDen : ℕ} [Ne
           ((uniformOfFintype (Fin d)).map fun j => ofList ell (shifts.getD j.val [])) := by
   have hd : 0 < d := NeZero.pos d; have hdR : (0 : ℝ) < d := by exact_mod_cast hd
   have hdenR : (0 : ℝ) < maxBiasDen := by exact_mod_cast hden
-  rw [show checkSmallBiasShifts ell d maxBiasNum maxBiasDen shifts = allPositiveIndices ell
-    ((ell, d, maxBiasNum, maxBiasDen), shifts)
-    ((shifts.length == d) && shifts.all (fun row => row.length == ell))
-    (fun q idx => let odd := q.2.countP (fun row => bitDot row (lowBits q.1.1 idx))
-      let diff := (q.1.2.1 - 2 * odd) + (2 * odd - q.1.2.1)
-      decide (diff * q.1.2.2.2 ≤ q.1.2.2.1 * q.1.2.1)) from rfl, allPositiveIndices_eq_true_iff]
+  rw [show checkSmallBiasShifts ell d maxBiasNum maxBiasDen shifts =
+    allPositiveIndices ((fun q : BiasQ => q.1.1) ((ell, d, maxBiasNum, maxBiasDen), shifts))
+      ((ell, d, maxBiasNum, maxBiasDen), shifts)
+      ((shifts.length == d) && shifts.all (fun row => row.length == ell))
+      (fun q idx =>
+        let bits := lowBits q.1.1 idx
+        let odd := q.2.countP (fun row => listDot row bits)
+        let diff := (q.1.2.1 - 2 * odd) + (2 * odd - q.1.2.1)
+        decide (diff * q.1.2.2.2 ≤ q.1.2.2.1 * q.1.2.1)) from rfl,
+    allPositiveIndices_lowBits_eq_true_iff (fun q : BiasQ => q.1.1) _ _
+      (fun q bits =>
+        let odd := q.2.countP (fun row => listDot row bits)
+        let diff := (q.1.2.1 - 2 * odd) + (2 * odd - q.1.2.1)
+        decide (diff * q.1.2.2.2 ≤ q.1.2.2.1 * q.1.2.1))]
   simp only [Bool.and_eq_true, beq_iff_eq, List.all_eq_true]
   set s : Fin d → Fin ell → Bool := fun j => ofList ell (shifts.getD j.val [])
   have hodd_eq (hlen : shifts.length = d) (hrows : ∀ row ∈ shifts, row.length = ell)
-      (k : Fin (2 ^ ell)) : shifts.countP (fun row => bitDot row (lowBits ell k.val)) =
-        #{j : Fin d | parityOn {i : Fin ell | (equivFin ell).symm k i = true} (s j) = true} := by
+      (b : BitString ell) : shifts.countP (fun row => listDot row (List.ofFn b)) =
+        #{j : Fin d | parityOn {i : Fin ell | b i = true} (s j) = true} := by
     nth_rw 1 [list_eq_ofFn_ofList hlen hrows]
-    rw [lowBits_eq_ofFn_equivFin_symm _ k, List.countP_ofFn, ← card_filter]; congr 1; ext j
-    simp only [mem_filter, mem_univ, true_and]; rw [bitDot_ofFn, dotProduct_eq_parityOn]
+    rw [List.countP_ofFn, ← card_filter]; congr 1; ext j
+    simp only [mem_filter, mem_univ, true_and]; rw [listDot_ofFn, dotProduct_eq_parityOn]
   have hbias_iff (S : Finset (Fin ell)) :
       ((d - 2 * #{j : Fin d | parityOn S (s j) = true}) +
         (2 * #{j : Fin d | parityOn S (s j) = true} - d)) * maxBiasDen ≤ maxBiasNum * d ↔
@@ -548,21 +573,16 @@ theorem checkSmallBiasShifts_eq_true_iff {ell d maxBiasNum maxBiasDen : ℕ} [Ne
       Nat.cast_ofNat, ← sum_chi_eq S s, bias_uniformOfFintype_map, Fintype.expect_eq_sum_div_card,
       Fintype.card_fin, abs_div, abs_of_pos hdR, div_le_div_iff₀ hdR hdenR]
   refine ⟨fun ⟨⟨hlen, hrows⟩, hall⟩ => ⟨hlen, hrows, fun S hS => ?_⟩,
-    fun ⟨hlen, hrows, hbias⟩ => ⟨⟨hlen, hrows⟩, fun idx hidx hne => ?_⟩⟩
-  · let b : BitString ell := fun i => decide (i ∈ S); let k := equivFin ell b
+    fun ⟨hlen, hrows, hbias⟩ => ⟨⟨hlen, hrows⟩, fun b hb0 => ?_⟩⟩
+  · let b : BitString ell := fun i => decide (i ∈ S)
     have hb0 : b ≠ 0 := by
       obtain ⟨i₀, hi₀⟩ := hS; intro h0; have := congrFun h0 i₀
       simp only [b, hi₀, decide_true] at this; exact Bool.false_ne_true this.symm
-    have hk0 : k.val ≠ 0 := fun hk => hb0 <| by
-      rw [← (equivFin ell).symm_apply_apply b]; exact (equivFin_symm_eq_zero_iff k).2 hk
-    have htest := hall k.val k.isLt hk0
-    have hS_eq : ({i : Fin ell | (equivFin ell).symm k i = true} : Finset (Fin ell)) = S := by
-      rw [Equiv.symm_apply_apply]; ext i; simp only [b, mem_filter, mem_univ, decide_eq_true_eq,
-        true_and]
-    rw [decide_eq_true_eq, hodd_eq hlen hrows k, hS_eq] at htest; exact (hbias_iff S).1 htest
-  · let k : Fin (2 ^ ell) := ⟨idx, hidx⟩; let b : BitString ell := (equivFin ell).symm k
-    have hb0 : b ≠ 0 := fun h0 => hne ((equivFin_symm_eq_zero_iff k).1 h0)
-    obtain ⟨i₀, hi₀⟩ := Function.ne_iff.mp hb0; rw [decide_eq_true_eq, hodd_eq hlen hrows k]
+    have htest := hall b hb0
+    have hS_eq : ({i : Fin ell | b i = true} : Finset (Fin ell)) = S := by
+      ext i; simp only [b, mem_filter, mem_univ, decide_eq_true_eq, true_and]
+    rw [decide_eq_true_eq, hodd_eq hlen hrows b, hS_eq] at htest; exact (hbias_iff S).1 htest
+  · obtain ⟨i₀, hi₀⟩ := Function.ne_iff.mp hb0; rw [decide_eq_true_eq, hodd_eq hlen hrows b]
     exact (hbias_iff _).2 (hbias _ ⟨i₀, mem_filter.mpr ⟨mem_univ i₀,
       Bool.eq_true_of_not_eq_false hi₀⟩⟩)
 private theorem checkSmallBiasShifts_cert_aux :
@@ -573,16 +593,15 @@ private theorem checkSmallBiasShifts_cert_aux :
   have hshape := checkMatrixShape_polyTime (encIn := encBiasQ) (fun q => q.1.2.1) (fun q => q.1.1)
     (fun q => q.2) hdQ hellQ hq2
   let testFn (q : BiasQ) (idx : ℕ) : Bool :=
-    let odd := q.2.countP (fun row => bitDot row (lowBits q.1.1 idx))
+    let odd := q.2.countP (fun row => listDot row (lowBits q.1.1 idx))
     let diff := (q.1.2.1 - 2 * odd) + (2 * odd - q.1.2.1)
     decide (diff * q.1.2.2.2 ≤ q.1.2.2.1 * q.1.2.1)
   have hp1 := fst encBiasQ encNat; have hp2 := snd encBiasQ encNat
   have hhdrP := hq1.comp' hp1; have hdP := hdQ.comp' hp1
   have hr1 := fst (encPair encBiasQ encNat) encBits
   have hr2 := snd (encPair encBiasQ encNat) encBits
-  have hodd := countPWithInput (test := fun p row => bitDot row (lowBits p.1.1.1 p.2))
-    (hq2.comp' hp1) (bitsFoldlWithInput Bool.xor (bitsZipWithInput Bool.and hr2
-      (bitsLow (hellQ.comp' (hp1.comp' hr1)) (hp2.comp' hr1))) (.const false))
+  have hodd := countPWithInput (test := fun p row => listDot row (lowBits p.1.1.1 p.2))
+    (hq2.comp' hp1) (bitsListDot hr2 (bitsLow (hellQ.comp' (hp1.comp' hr1)) (hp2.comp' hr1)))
   have h2odd := unary_mul' (.const 2) hodd
   have hdiff := unary_add' (.unary_sub' hdP h2odd) (.unary_sub' h2odd hdP)
   have htest := binary_le.comp ((binary_mul' (unary_to_binary.comp hdiff)
@@ -646,7 +665,7 @@ def checkLocalCodeDistance (c d minDist : ℕ) (H0 : List (List Bool)) : Bool :=
     (fun (idx, ((c, d, minDist), H0), ok) =>
       (((c, d, minDist), H0), ok && (decide (idx = 0) ||
         let w := lowBits d idx
-        !(H0.all fun row => !((row.zipWith Bool.and w).foldl Bool.xor false)) ||
+        !(H0.all fun row => !listDot row w) ||
           decide (minDist ≤ w.count true))))
     (2 ^ d) (((c, d, minDist), H0), (H0.length == c) && H0.all (fun row => row.length == d))
   ok
@@ -656,30 +675,27 @@ theorem checkLocalCodeDistance_eq_true_iff (c d minDist : ℕ) (H0 : List (List 
       H0.length = c ∧ (∀ row ∈ H0, row.length = d) ∧
         ∀ w : Fin d → Bool, w ≠ 0 →
           (∀ i : Fin c, ofList d (H0.getD i.val []) ⬝ᵥ w = false) → minDist ≤ weight w := by
-  rw [show checkLocalCodeDistance c d minDist H0 = allPositiveIndices d ((c, d, minDist), H0)
-    ((H0.length == c) && H0.all (fun row => row.length == d))
-    (fun q idx => let w := lowBits q.1.2.1 idx
-      !(q.2.all (fun row => !bitDot row w)) || decide (q.1.2.2 ≤ w.count true)) from rfl,
-    allPositiveIndices_eq_true_iff]
+  rw [show checkLocalCodeDistance c d minDist H0 =
+    allPositiveIndices ((fun q : LocalQ => q.1.2.1) ((c, d, minDist), H0)) ((c, d, minDist), H0)
+      ((H0.length == c) && H0.all (fun row => row.length == d))
+      (fun q idx =>
+        let w := lowBits q.1.2.1 idx
+        !(q.2.all (fun row => !listDot row w)) || decide (q.1.2.2 ≤ w.count true)) from rfl,
+    allPositiveIndices_lowBits_eq_true_iff (fun q : LocalQ => q.1.2.1) _ _
+      (fun q w => !(q.2.all (fun row => !listDot row w)) || decide (q.1.2.2 ≤ w.count true))]
   simp only [Bool.and_eq_true, beq_iff_eq, List.all_eq_true]
   have hker_iff (hlen : H0.length = c) (hrows : ∀ row ∈ H0, row.length = d) (w : BitString d) :
-      H0.all (fun row => !bitDot row (List.ofFn w)) = true ↔
+      H0.all (fun row => !listDot row (List.ofFn w)) = true ↔
         ∀ i : Fin c, ofList d (H0.getD i.val []) ⬝ᵥ w = false := by
     nth_rw 1 [list_eq_ofFn_ofList hlen hrows]
     simp only [List.all_eq_true, List.mem_ofFn, forall_exists_index, forall_apply_eq_imp_iff,
-      Bool.not_eq_true', bitDot_ofFn]
+      Bool.not_eq_true', listDot_ofFn]
   refine ⟨fun ⟨⟨hlen, hrows⟩, hall⟩ => ⟨hlen, hrows, fun w hw0 hker => ?_⟩,
-    fun ⟨hlen, hrows, hdist⟩ => ⟨⟨hlen, hrows⟩, fun idx hidx hne => ?_⟩⟩
-  · let k := equivFin d w
-    have hk0 : k.val ≠ 0 := fun hk => hw0 <| by
-      rw [← (equivFin d).symm_apply_apply w]; exact (equivFin_symm_eq_zero_iff k).2 hk
-    have htest := hall k.val k.isLt hk0; rw [lowBits_eq_ofFn_equivFin_symm _ k,
-      Equiv.symm_apply_apply, (hker_iff hlen hrows w).2 hker] at htest
+    fun ⟨hlen, hrows, hdist⟩ => ⟨⟨hlen, hrows⟩, fun w hw0 => ?_⟩⟩
+  · have htest := hall w hw0
+    rw [(hker_iff hlen hrows w).2 hker] at htest
     simpa only [Bool.not_true, Bool.false_or, decide_eq_true_eq, count_true_ofFn] using htest
-  · let k : Fin (2 ^ d) := ⟨idx, hidx⟩; let w : BitString d := (equivFin d).symm k
-    have hw0 : w ≠ 0 := fun h0 => hne ((equivFin_symm_eq_zero_iff k).1 h0)
-    rw [lowBits_eq_ofFn_equivFin_symm _ k]
-    by_cases hkerList : H0.all (fun row => !bitDot row (List.ofFn w)) = true
+  · by_cases hkerList : H0.all (fun row => !listDot row (List.ofFn w)) = true
     · rw [hkerList, Bool.not_true, Bool.false_or, decide_eq_true_eq, count_true_ofFn]
       exact hdist w hw0 ((hker_iff hlen hrows w).1 hkerList)
     · rw [Bool.eq_false_iff.mpr hkerList]; rfl
@@ -693,13 +709,12 @@ private theorem checkLocalCodeDistance_cert_aux :
     (fun q => q.1.2.1) (fun q => q.2) hq1.fst' hdQ hq2
   let testFn (q : LocalQ) (idx : ℕ) : Bool :=
     let w := lowBits q.1.2.1 idx
-    !(q.2.all (fun row => !bitDot row w)) || decide (q.1.2.2 ≤ w.count true)
+    !(q.2.all (fun row => !listDot row w)) || decide (q.1.2.2 ≤ w.count true)
   have hp1 := fst encLocalQ encNat; have hp2 := snd encLocalQ encNat
   have hw := bitsLow (hdQ.comp' hp1) hp2; have hr1 := fst (encPair encLocalQ encNat) encBits
   have hr2 := snd (encPair encLocalQ encNat) encBits
-  have hall := allWithInput (test := fun p row => !bitDot row (lowBits p.1.1.2.1 p.2))
-    (hq2.comp' hp1) (bool_not.comp'
-      (bitsFoldlWithInput Bool.xor (bitsZipWithInput Bool.and hr2 (hw.comp' hr1)) (.const false)))
+  have hall := allWithInput (test := fun p row => !listDot row (lowBits p.1.1.2.1 p.2))
+    (hq2.comp' hp1) (bool_not.comp' (bitsListDot hr2 (hw.comp' hr1)))
   have htest := bool_or.comp ((bool_not.comp hall).prod
     (unary_le' (hq1.snd'.snd'.comp hp1) (bitsCountWithInput hw (.const true))))
   exact (allPositiveIndices_cert (fun q => q.1.2.1) id

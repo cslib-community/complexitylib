@@ -14,6 +14,7 @@ import CslibFrontier.Computability.Complexity.Classes.EXP.Decidable
 import CslibFrontier.Computability.Complexity.Classes.Ladner.PolyTime
 import CslibFrontier.Computability.Complexity.Classes.Ladner.Stages
 import CslibFrontier.Computability.Complexity.Classes.P.Closure
+import CslibFrontier.Computability.Complexity.Classes.P.Finite
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.CourseOfValues
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List

@@ -5,7 +5,7 @@ Authors: Karn Seth
 -/
 
 import CslibFrontier.Crypto.Computational.SIS.MLKEM.Security
-import CslibFrontier.Crypto.Protocols.KEM.MLKEM
+import CslibFrontierTests.Crypto.MLKEMFixture
 
 /-!
 # Tests for ML-KEM and K-PKE
@@ -68,32 +68,10 @@ example : compress 3329 1 (decompress 3329 1 1 + 832) = 0 ∧
 
 /-! ### 3. A toy K-PKE instance -/
 
-/-- Toy parameters: `n = 2`, `q = 17`, `k = 1`, `d_u = 4`, `d_v = 3`. -/
-def toy : Params := { n := 2, q := 17, k := 1, η₁ := 1, η₂ := 1, du := 4, dv := 3 }
-
-instance : NeZero toy.q := ⟨by decide⟩
-
-def toyA : Matrix (Fin toy.k) (Fin toy.k) (Fin toy.n → ZMod toy.q) := fun _ _ => ![3, 2]
-def toyS : SecretKey toy := fun _ => ![1, 0]
-def toyE : Fin toy.k → Fin toy.n → ZMod toy.q := fun _ => ![0, 1]
-def toyR : Fin toy.k → Fin toy.n → ZMod toy.q := fun _ => ![1, 0]
-def toyE₁ : Fin toy.k → Fin toy.n → ZMod toy.q := fun _ => ![0, 1]
-def toyE₂ : Fin toy.n → ZMod toy.q := ![1, 0]
-def toyPK : PublicKey toy := moduleLWEKeyGen toyA toyS toyE
-
-/-- The noise hypothesis of `decrypt_encrypt_eq_of_noise_le` holds with `B = 3`
-(`4 * 3 + 2 < 17`) for both messages. -/
-theorem toy_noise_le (m : Fin toy.n → Bool) (i : Fin toy.n) :
-    (decryptionNoise toy toyA toyS toyE toyR toyE₁ toyE₂ m i).valMinAbs.natAbs ≤ 3 := by
-  revert m i
-  decide
-
 example (m : Fin toy.n → Bool) :
     decrypt toy toyS (encrypt toy toyPK m (toyR, toyE₁, toyE₂)) = m :=
   decrypt_encrypt_eq_of_noise_le toy (B := 3) (by decide) toyA toyS toyE toyR toyE₁ toyE₂ m
     (toy_noise_le m)
-
-def toyM : Fin toy.n → Bool := ![true, false]
 
 /-- The same round trip, checked by evaluation. -/
 example : ∀ i, decrypt toy toyS (encrypt toy toyPK toyM (toyR, toyE₁, toyE₂)) i = toyM i := by
@@ -106,18 +84,6 @@ example : ¬ ∀ i, decrypt toy (fun _ => ![0, 1]) (encrypt toy toyPK toyM (toyR
 
 /-! ### 4. The ML-KEM wrapper on the toy instance -/
 
-/-- A toy `G` that ignores its input apart from the message and returns fixed coins. -/
-def toyG : (Fin toy.n → Bool) × (Fin 256 → Bool) → (Fin 256 → Bool) × Coins toy :=
-  fun x => (fun i => decide (i.val < 2) && x.1 ⟨i.val % 2, Nat.mod_lt _ (by decide)⟩,
-    (toyR, toyE₁, toyE₂))
-
-def toyH : PublicKey toy → Fin 256 → Bool := fun _ _ => false
-
-def toyJ : (Fin 256 → Bool) × Ciphertext toy → Fin 256 → Bool := fun x => x.1
-
-def toyDK : MLKEM.DecapsKey toy :=
-  { sk := toyS, pk := toyPK, pkHash := toyH toyPK, seed := fun _ => true }
-
 /-- Honest decapsulation returns the encapsulated key. -/
 example (m : Fin toy.n → Bool) :
     kemDecaps toy toyG toyJ toyDK (encrypt toy toyPK m (toyG (m, toyH toyPK)).2) =
@@ -126,13 +92,9 @@ example (m : Fin toy.n → Bool) :
     (fun _ => true) m toyR toyE₁ toyE₂ rfl (toy_noise_le m)
 
 /-- A tampered ciphertext fails the re-encryption check and decapsulates to `J(z ‖ c)`. -/
-example :
-    let c : Ciphertext toy := (fun _ => ![0, 0], ![0, 0])
-    kemDecaps toy toyG toyJ toyDK c = toyJ (toyDK.seed, c) := by
-  intro c
+example : kemDecaps toy toyG toyJ toyDK toyTampered = toyJ (toyDK.seed, toyTampered) := by
   refine MLKEMTransform.decapsWith_of_reencrypt_ne _ _ _ _ _ ?_
   intro m' _
-  revert m'
-  decide
+  exact toy_encrypt_ne_tampered m'
 
 end CslibFrontierTests.Crypto.MLKEM

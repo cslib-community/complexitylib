@@ -93,7 +93,7 @@ theorem lyubashevskySignBounded_eq_attempts_view {M : Type}
     (iid (((lyubashevsky n m k q γ β).commit S y).map fun ts =>
       ((msg, ts.1), hash (msg, ts.1),
         (lyubashevsky n m k q γ β).respond S y ts.2 (hash (msg, ts.1)))) K).map fun views =>
-      (((List.ofFn views).map fun view => view.2.2.map fun z => (view.1.2, z)).find?
+      (((List.ofFn views).map fun ((_, w), _, response) => response.map fun z => (w, z)).find?
         Option.isSome).getD none := by
   simpa only [Option.map_id, PMF.map_id, fsAbortSignAttempt, fsAbortSignStep, iid_map,
     PMF.map_comp, Function.comp_def, List.map_ofFn, List.map_map, id_eq] using

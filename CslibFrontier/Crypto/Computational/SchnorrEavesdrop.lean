@@ -16,6 +16,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Probabilistic.Repeat
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Probability.PMF
+import CslibFrontier.Probability.Uniform.Translate
 import CslibFrontier.Tactic.Negligible
 import CslibFrontier.Tactic.PPT
 
@@ -227,7 +228,10 @@ private theorem eval_schnorrSimulateWord_bits (n : ℕ) (d : F.Desc) (u : F.Carr
   congr 1 with a : 1
   simp only [Function.comp_apply, ZMod.val_natCast]
 
-private theorem eval_schnorrSimulatedTranscript (n : ℕ) (d : F.Desc) (u : F.Carrier d) (m : ℕ) :
+/-- The law of one strict-PPT simulated conversation on a canonical public key `encode u`: a
+uniform `m`-bit challenge `c`, a sampled scalar response `z`, and the commitment
+`encode (z • g - c • u)`. -/
+theorem eval_schnorrSimulatedTranscript (n : ℕ) (d : F.Desc) (u : F.Carrier d) (m : ℕ) :
     ProbComp.eval (F.schnorrSimulatedTranscript n d (F.encode d u) m) =
       (BitString.uniformList m).bind fun c =>
         ((ProbComp.eval (F.sampleExp n d)).map (Nat.cast : ℕ → ZMod (F.order d))).map
@@ -249,10 +253,10 @@ private theorem schnorrHonestTranscript_eq_bind_uniform (d : F.Desc) (α : ZMod 
   rw [PMF.bind_comm]
   refine congrArg (PMF.bind _) (funext fun c => ?_)
   conv_lhs =>
-    rw [← PMF.uniformOfFintype_map_equiv (Equiv.subRight ((ofBits c : ZMod (F.order d)) * α))]
+    rw [← PMF.uniformOfFintype_map_sub_right ((ofBits c : ZMod (F.order d)) * α)]
   rw [PMF.bind_map, ← PMF.bind_pure_comp]
   congr 1 with z : 1
-  simp only [Function.comp_apply, Equiv.subRight_apply, sub_smul, mul_smul, sub_add_cancel]
+  simp only [Function.comp_apply, sub_smul, mul_smul, sub_add_cancel]
 
 variable (F) in
 /-- A strict-PPT honest Schnorr conversation is within statistical distance `1 / 2 ^ n` of an ideal

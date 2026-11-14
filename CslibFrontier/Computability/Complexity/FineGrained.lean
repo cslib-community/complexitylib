@@ -11,7 +11,9 @@ public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Time
 public import CslibFrontier.Computability.Complexity.Problems.ThreeSAT
 public import CslibFrontier.Logics.Propositional.CNF.ModelCount
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO
+public import CslibFrontier.Foundations.Analysis.RateExponent
 public import Mathlib.Analysis.SpecialFunctions.Pow.Real
+import CslibFrontier.Computability.Complexity.FineGrained.Bounds
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Basic
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Bounds
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Internal.OCombinators
@@ -216,13 +218,9 @@ def DecidableInSubexpTime (A : Set α) (enc : α ↪ List Bool) (μ : α → ℕ
 theorem DecidableInExpTime.mono {μ : α → ℕ} {δ δ' : ℝ} (h : DecidableInExpTime A enc μ δ)
     (hδ : δ ≤ δ') : DecidableInExpTime A enc μ δ' := by
   obtain ⟨e, h⟩ := h
-  refine ⟨e, h.mono 1 (fun a => ?_) fun a => by positivity⟩
-  have h₁ : (2 : ℝ) ^ (δ * μ a) ≤ 2 ^ (δ' * μ a) :=
-    Real.rpow_le_rpow_of_exponent_le (by norm_num)
-      (mul_le_mul_of_nonneg_right hδ (Nat.cast_nonneg _))
-  have h₂ := mul_le_mul_of_nonneg_right h₁ (by positivity : (0 : ℝ) ≤ ((enc a).length + 1) ^ e)
-  push_cast
-  linarith
+  exact ⟨e, h.mono 1 (fun a => (two_rpow_mul_pow_le_two_rpow_mul_pow
+    (mul_le_mul_of_nonneg_right hδ (Nat.cast_nonneg _)) le_rfl).trans (by simp))
+    fun a => by positivity⟩
 
 section Machines
 
@@ -244,24 +242,12 @@ theorem DecidableInExpTime.inter {μ : α → ℕ} {δ : ℝ} {p : α → Bool}
   obtain ⟨e, h⟩ := h
   obtain ⟨e', h⟩ := h.inter hp fun a => by positivity
   refine ⟨e + e', h.mono 2 (fun a => ?_) fun a => by positivity⟩
-  have hL : (1 : ℝ) ≤ (enc a).length + 1 := by
-    linarith [(Nat.cast_nonneg (enc a).length : (0 : ℝ) ≤ _)]
-  have h₁ : (1 : ℝ) ≤ 2 ^ (δ * μ a) := Real.one_le_rpow (by norm_num) (by positivity)
-  have h₂ : (((enc a).length : ℝ) + 1) ^ e ≤ ((enc a).length + 1) ^ (e + e') :=
-    pow_le_pow_right₀ hL (Nat.le_add_right e e')
-  have h₃ : (((enc a).length : ℝ) + 1) ^ e' ≤ ((enc a).length + 1) ^ (e + e') :=
-    pow_le_pow_right₀ hL (Nat.le_add_left e' e)
-  have h₄ := mul_le_mul_of_nonneg_left h₂ (by positivity : (0 : ℝ) ≤ 2 ^ (δ * μ a))
-  have h₅ : (((enc a).length : ℝ) + 1) ^ (e + e') ≤
-      2 ^ (δ * μ a) * ((enc a).length + 1) ^ (e + e') :=
-    le_mul_of_one_le_left (by positivity) h₁
-  have h₆ : (if p a = true then 2 ^ (δ * μ a) * (((enc a).length : ℝ) + 1) ^ e else 0) ≤
-      2 ^ (δ * μ a) * ((enc a).length + 1) ^ (e + e') := by
-    split_ifs
-    · exact h₄
-    · positivity
-  push_cast
-  nlinarith
+  have hx : 0 ≤ δ * μ a := by positivity
+  have h₁ := two_rpow_mul_pow_le_two_rpow_mul_pow (L := (enc a).length) (x := δ * μ a) le_rfl
+    (Nat.le_add_right e e')
+  have h₂ := pow_le_two_rpow_mul_pow (L := (enc a).length) hx (Nat.le_add_left e' e)
+  have h₃ : (0 : ℝ) ≤ 2 ^ (δ * μ a) * ((enc a).length + 1) ^ (e + e') := by positivity
+  split_ifs <;> push_cast <;> linarith
 
 end Machines
 
@@ -274,12 +260,12 @@ theorem KSAT_three : KSAT 3 = ThreeSAT := rfl
 
 theorem KSAT_subset_SAT (k : ℕ) : KSAT k ⊆ SAT := fun _ h => h.2
 
-/-- The exponent `s_k` of `k`-SAT [ImpagliazzoPaturi2001]: the infimum of the `δ ≥ 0` for which
-`k`-SAT is decidable within time `2 ^ (δ * n)` times a polynomial in the length of the encoded
-formula, on formulas with `n` variables. Exhaustive search puts `1` in this set, so `s_k ∈ [0, 1]`
-(`Cslib.Complexity.satExponent_le_one`). -/
+/-- The exponent `s_k` of `k`-SAT [ImpagliazzoPaturi2001]: the infimum (`Cslib.rateExponent`) of the
+`δ ≥ 0` for which `k`-SAT is decidable within time `2 ^ (δ * n)` times a polynomial in the length of
+the encoded formula, on formulas with `n` variables. Exhaustive search puts `1` in this set, so
+`s_k ∈ [0, 1]` (`Cslib.Complexity.satExponent_le_one`). -/
 noncomputable def satExponent (k : ℕ) : ℝ :=
-  sInf {δ | 0 ≤ δ ∧ DecidableInExpTime (KSAT k) encCNF CNF.numVars δ}
+  rateExponent (DecidableInExpTime (KSAT k) encCNF CNF.numVars)
 
 /-- **The exponential time hypothesis** [ImpagliazzoPaturi2001]: for some `δ > 0`, 3SAT is not
 decidable within time `2 ^ (δ * n)` times any polynomial in the length of the encoded formula, on

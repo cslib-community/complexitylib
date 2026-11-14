@@ -31,18 +31,23 @@ are the three facts that make up [KatzLindell2020], Proposition 15.6:
 
 This file proves Claims 15.7 and 15.9. It also proves the identity behind Paillier decryption:
 raising `(1 + N) ^ m * r ^ N` to the power `φ(N)` removes the randomness `r` and leaves
-`1 + m * φ(N) * N`.
+`1 + m * φ(N) * N`. The function `logOneAdd` reads the exponent back off: it is the function `L`
+of [KatzLindell2020], Construction 15.11.
 
 ## Main definitions
 
 * `Cslib.Crypto.Paillier.unitsEquiv`: the isomorphism
   `Multiplicative (ZMod N) × (ZMod N)ˣ ≃* (ZMod (N ^ 2))ˣ` of Claim 15.9.
+* `Cslib.Crypto.Paillier.logOneAdd`: the discrete logarithm `x ↦ (x - 1) / N` to the base `1 + N`.
 
 ## Main results
 
 * `Cslib.Crypto.Paillier.coprime_totient`: Claim 15.7.
 * `Cslib.Crypto.Paillier.coe_unitsEquiv_ofAdd`: Claim 15.9.
 * `Cslib.Crypto.Paillier.one_add_pow_mul_pow_pow_totient`: the decryption identity.
+* `Cslib.Crypto.Paillier.logOneAdd_oneAddPowHom`: `logOneAdd` inverts `a ↦ (1 + N) ^ a`.
+* `Cslib.Crypto.Paillier.powSelfHom_unitsMap`: an `N`-th power modulo `N ^ 2` depends only on its
+  base modulo `N`.
 
 ## References
 
@@ -154,6 +159,15 @@ def powSelfHom (N : ℕ) : (ZMod N)ˣ →* (ZMod (N ^ 2))ˣ where
 theorem powSelfHom_apply (N : ℕ) (b : (ZMod N)ˣ) :
     powSelfHom N b = liftUnit N b ^ N := rfl
 
+/-- The `N`-th power of a unit modulo `N ^ 2` is `powSelfHom` of its reduction modulo `N`: it
+depends only on the unit modulo `N`. -/
+theorem powSelfHom_unitsMap (N : ℕ) [NeZero N] (s : (ZMod (N ^ 2))ˣ) :
+    powSelfHom N (ZMod.unitsMap (dvd_pow_self N two_ne_zero) s) = s ^ N := by
+  ext
+  rw [powSelfHom_apply, Units.val_pow_eq_pow_val, Units.val_pow_eq_pow_val, coe_liftUnit,
+    ZMod.unitsMap_val, ZMod.cast_eq_val, ZMod.val_natCast, ← ZMod.natCast_pow_self_mod,
+    ZMod.natCast_zmod_val]
+
 /-- The image of `(a, b)` under `oneAddPowHom.coprod powSelfHom` is `(1 + N) ^ a * b ^ N`. -/
 private theorem coe_coprod_ofAdd (N : ℕ) [NeZero N] (a : ZMod N) (b : (ZMod N)ˣ) :
     (((oneAddPowHom N).coprod (powSelfHom N) (Multiplicative.ofAdd a, b) : (ZMod (N ^ 2))ˣ) :
@@ -225,5 +239,22 @@ theorem one_add_pow_mul_pow_pow_totient {N r : ℕ} (m : ℕ) (hr : r.Coprime N)
       1 + ((m * N.totient : ℕ) : ZMod (N ^ 2)) * N := by
   rw [mul_pow, ← pow_mul, ← pow_mul, ZMod.natCast_pow_mul_totient hr, mul_one,
     ZMod.one_add_natCast_pow]
+
+/-- The discrete logarithm to the base `1 + N` on the subgroup it generates
+([KatzLindell2020], the function `L` of Construction 15.11): `x ↦ (x - 1) / N`, computed on the
+least representative of `x` and read modulo `N`. -/
+def logOneAdd (N : ℕ) (x : ZMod (N ^ 2)) : ZMod N := ((x.val - 1) / N : ℕ)
+
+/-- `logOneAdd` reads `k` modulo `N` off `1 + k * N`. -/
+theorem logOneAdd_one_add_natCast_mul {N : ℕ} (hN : 1 < N) (k : ℕ) :
+    logOneAdd N (1 + (k : ZMod (N ^ 2)) * N) = k := by
+  rw [logOneAdd, ZMod.val_one_add_natCast_mul hN, Nat.add_sub_cancel_left,
+    Nat.mul_div_cancel _ (by lia), ZMod.natCast_mod]
+
+/-- `logOneAdd` inverts `a ↦ (1 + N) ^ a`. -/
+theorem logOneAdd_oneAddPowHom {N : ℕ} [NeZero N] (hN : 1 < N) (a : Multiplicative (ZMod N)) :
+    logOneAdd N (oneAddPowHom N a) = Multiplicative.toAdd a := by
+  rw [oneAddPowHom_apply, Units.val_pow_eq_pow_val, coe_oneAddUnit, ZMod.one_add_natCast_pow,
+    logOneAdd_one_add_natCast_mul hN, ZMod.natCast_zmod_val]
 
 end Cslib.Crypto.Paillier

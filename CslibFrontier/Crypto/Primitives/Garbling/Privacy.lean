@@ -35,11 +35,10 @@ against `F`, provided the tweaks of distinct argument slots are distinct. The pr
 argument over the wires in wire-number order: hybrid `j` replaces by uniform values the rows that
 read an inactive label on a wire numbered below `j`. The reduction for wire `j` embeds the PRF
 key as the inactive key of wire `j`: with the keyed oracle it produces hybrid `j` exactly
-(`PRF.realGame` side), and with a random function hybrid `j + 1` exactly (`PRF.idealGame` side).
+(`PRF.realExperiment` side), and with a random function hybrid `j + 1` exactly
+(`PRF.idealExperiment` side).
 Each reduction reads the oracle up front at the tweaks of all argument slots, with at most one
-query per slot (`isQueryBounded_reduction`), and runs `D` once. When every reduction has PRF
-advantage at most `ε` the advantage is at most `(n + C.size) * ε`
-(`advantage_realGame_simGame_le_mul`).
+query per slot (`isQueryBounded_reduction`), and runs `D` once.
 
 Tweak injectivity is needed. Take a row that reads one wire twice with the same colour. If its
 two argument slots had equal tweaks, their mask terms would be equal and cancel in the `Bool`
@@ -71,7 +70,6 @@ simulator or the reductions.
 * `Cslib.Crypto.Garbling.View.run_simulateWith`: simulated views decode to the output.
 * `Cslib.Crypto.Garbling.isQueryBounded_reduction`: at most one query per slot.
 * `Cslib.Crypto.Garbling.advantage_realGame_simGame_le`: privacy, as a sum of PRF advantages.
-* `Cslib.Crypto.Garbling.advantage_realGame_simGame_le_mul`: privacy with a uniform PRF bound.
 
 ## References
 
@@ -379,20 +377,18 @@ theorem isQueryBounded_reduction (C : Circuit σ n m) (I : Interpretation σ Boo
 
 /-- Against the keyed oracle the reduction samples hybrid view `j` with the oracle in place of
 the mask terms. -/
-private theorem eval_interpret_reduction (C : Circuit σ n m) (I : Interpretation σ Bool)
+private theorem eval_run_reduction (C : Circuit σ n m) (I : Interpretation σ Bool)
     (F : K → T → K × Bool) (tw : Slot C.topology → T) (x : Fin n → Bool)
     (D : View C.topology K → ProbComp Bool) (j : ℕ) (f : T → K × Bool) :
-    ProbComp.eval (OracleComp.interpret (OracleComp.sumHandler ProbComp.unifFin
-        fun t => pure (f t)) (reduction C I F tw x D j)) =
+    ProbComp.eval ((reduction C I F tw x D j).run fun t => pure (f t)) =
       (PMF.uniformOfFintype (Wire n C.size × Bool → K)).bind fun key =>
         (PMF.uniformOfFintype (Wire n C.size → Bool)).bind fun perm =>
           (PMF.uniformOfFintype (Row C.topology → K × Bool)).bind fun R =>
             ProbComp.eval (D (hybridView C I F tw x j key perm R fun p => f (tw p))) := by
-  have hself : ∀ {α : Type} (p : ProbComp α), OracleComp.interpret ProbComp.unifFin p = p :=
-    fun p => OracleComp.interpret_query_eq_self p
-  simp only [reduction, OracleComp.interpret_bind, ProbOracleComp.interpret_sample, hself,
-    ProbOracleComp.interpret_tabulate, pure_bind, ProbComp.eval_bind, ProbComp.eval_uniform,
-    Finset.mem_toList, Finset.mem_univ, ite_true]
+  simp only [ProbOracleComp.run, reduction, OracleComp.interpret_bind,
+    ProbOracleComp.interpret_sample, ProbComp.interpret_unifFin, ProbOracleComp.interpret_tabulate,
+    pure_bind, ProbComp.eval_bind, ProbComp.eval_uniform, Finset.mem_toList, Finset.mem_univ,
+    ite_true]
 
 /-- Hybrid `0` is the real experiment. -/
 private theorem hybridGame_zero (C : Circuit σ n m) (I : Interpretation σ Bool)
@@ -453,11 +449,12 @@ private theorem hybridGame_last (C : Circuit σ n m) (I : Interpretation σ Bool
 private theorem realGame_reduction (C : Circuit σ n m) (I : Interpretation σ Bool)
     (F : K → T → K × Bool) (tw : Slot C.topology → T) (x : Fin n → Bool)
     (D : View C.topology K → ProbComp Bool) (j : ℕ) (hj : j < n + C.size) :
-    PRF.realGame F (reduction C I F tw x D j) = hybridGame C I F tw x D j := by
+    ProbComp.eval (PRF.realExperiment F (reduction C I F tw x D j)) =
+      hybridGame C I F tw x D j := by
   let w : Wire n C.size := Wire.ofNat j hj
   have hw : w.toNat = j := Wire.toNat_ofNat j hj
-  simp only [PRF.realGame, hybridGame, ProbComp.eval_bind, ProbComp.eval_uniform,
-    eval_interpret_reduction, hybridView_update C I F tw x j w hw]
+  simp only [PRF.realExperiment, hybridGame, ProbComp.eval_bind, ProbComp.eval_uniform,
+    eval_run_reduction, hybridView_update C I F tw x j w hw]
   simp only [PMF.bind_comm (PMF.uniformOfFintype (Wire n C.size × Bool → K))
       (PMF.uniformOfFintype (Wire n C.size → Bool)),
     PMF.bind_comm (PMF.uniformOfFintype K) (PMF.uniformOfFintype (Wire n C.size → Bool))]
@@ -473,10 +470,11 @@ distinct tweaks. -/
 private theorem idealGame_reduction (C : Circuit σ n m) (I : Interpretation σ Bool)
     (F : K → T → K × Bool) (tw : Slot C.topology → T) (htw : Function.Injective tw)
     (x : Fin n → Bool) (D : View C.topology K → ProbComp Bool) (j : ℕ) :
-    PRF.idealGame (reduction C I F tw x D j) = hybridGame C I F tw x D (j + 1) := by
+    ProbComp.eval (PRF.idealExperiment (reduction C I F tw x D j)) =
+      hybridGame C I F tw x D (j + 1) := by
   classical
-  simp only [PRF.idealGame, hybridGame, ProbComp.eval_bind, ProbComp.eval_uniform,
-    eval_interpret_reduction]
+  simp only [PRF.idealExperiment, hybridGame, ProbComp.eval_bind, ProbComp.eval_uniform,
+    eval_run_reduction]
   simp only [PMF.bind_comm (PMF.uniformOfFintype (T → K × Bool))
       (PMF.uniformOfFintype (Wire n C.size × Bool → K)),
     PMF.bind_comm (PMF.uniformOfFintype (T → K × Bool))
@@ -611,19 +609,5 @@ theorem advantage_realGame_simGame_le (C : Circuit σ n m) (I : Interpretation �
   refine (Game.advantage_hybrid_le_sum _ _).trans (Finset.sum_le_sum fun j hj => ?_)
   rw [PRF.advantage, realGame_reduction C I F tw x D j (Finset.mem_range.mp hj),
     idealGame_reduction C I F tw htw x D j]
-
-/-- **Simulation privacy with a uniform PRF bound.** If each reduction has PRF advantage at most
-`ε`, the advantage between the real and the simulated view is at most `(n + C.size) * ε`. -/
-theorem advantage_realGame_simGame_le_mul (C : Circuit σ n m) (I : Interpretation σ Bool)
-    (F : K → T → K × Bool) (tw : Slot C.topology → T) (htw : Function.Injective tw)
-    (x : Fin n → Bool) (D : View C.topology K → ProbComp Bool) (ε : NNReal)
-    (hε : ∀ j < n + C.size, PRF.advantage F (reduction C I F tw x D j) ≤ ε) :
-    Game.advantage (realGame C I F tw x D) (simGame C I F tw x D) ≤ (n + C.size) * ε := by
-  refine (advantage_realGame_simGame_le C I F tw htw x D).trans ?_
-  calc ∑ j ∈ Finset.range (n + C.size), PRF.advantage F (reduction C I F tw x D j)
-      ≤ ∑ _j ∈ Finset.range (n + C.size), ε :=
-        Finset.sum_le_sum fun j hj => hε j (Finset.mem_range.mp hj)
-    _ = (n + C.size) * ε := by
-        rw [Finset.sum_const, Finset.card_range, nsmul_eq_mul, Nat.cast_add]
 
 end Cslib.Crypto.Garbling

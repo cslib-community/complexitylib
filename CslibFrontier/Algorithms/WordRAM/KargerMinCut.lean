@@ -10,7 +10,7 @@ module
 import CslibFrontier.Computability.WordRAM.Call
 import CslibFrontier.Algorithms.WordRAM.NatLog
 public import CslibFrontier.Init
-public import CslibFrontier.Algorithms.WordRAM.Karger.Graph
+public import CslibFrontier.Algorithms.Karger.Graph
 public import CslibFrontier.Algorithms.WordRAM.Karger.Contract
 public import CslibFrontier.Algorithms.WordRAM.Karger.OutputLaw
 public import CslibFrontier.Computability.WordRAM.Copy
@@ -39,8 +39,9 @@ three complete machine-level endpoints built on the workspace-relocatable subrou
    runs on `n :: flattenMatrix W`, computes `highProbTrials n = (n * (n - 1) / 2) * (⌊log₂ n⌋ + 2)`
    in registers using shifts and multiplication (without `.div` or `.mod`), halts within
    `33 * n ^ 4 * (Nat.log 2 n + 2)` steps with a genuine non-trivial cut weight `≥ minCut W`, and
-   misses `minCut W` with probability at most `1 / (2 * n)` (hence at most `1 / n`) whenever
-   `0 < minCut W`, via an elementary Bernoulli power bound without `Real.exp`.
+   misses `minCut W` with probability at most `1 / (2 * n)` whenever `0 < minCut W` (and
+   unconditionally at most `1 / n` in `highProbProgram_failure_le_inv_n`), via an elementary
+   Bernoulli power bound without `Real.exp`.
 
 No probability is proved on machine states. Each program simulates a client of
 `Cslib.Algorithms.Lean.Karger`: the word it outputs has the law of the answer of
@@ -84,9 +85,11 @@ specification's (`Cslib.Algorithms.Lean.Karger.two_div_le_toOuterMeasure_karger`
   - the concrete trial count `highProbTrials n = (n * (n - 1) / 2) * (Nat.log 2 n + 2)` and the
     `1 / (2 * n)` failure bound in `highProbProgram_spec` are our own parameter choice instantiating
     the `O(n ^ 2 log n)` amplification of `[Karger1993]`, Section 2, Corollary 2.1;
-  - the hypothesis `0 < minCut W` in the probability clauses is included only for proof convenience
-    (when `minCut W = 0`, deterministic `S = 0` contraction still halts without faulting and outputs
-    a valid non-trivial cut weight).
+  - the hypothesis `0 < minCut W` in the `spec` probability clauses (`singleProgram_spec`,
+    `amplifiedProgram_spec`, `highProbProgram_spec`) is retained there for the per-trial survival
+    ratio, whereas `highProbProgram_failure_le_inv_n` holds unconditionally without `2 ≤ n` or
+    `0 < minCut W` (when `minCut W = 0` and `2 ≤ n`, contraction preserves zero minimum cut so
+    every run outputs `0`).
 
 ## Main definitions
 
@@ -120,7 +123,8 @@ specification's (`Cslib.Algorithms.Lean.Karger.two_div_le_toOuterMeasure_karger`
 * `Cslib.Algorithms.WordRAM.Karger.highProbProgram_spec`,
   `Cslib.Algorithms.WordRAM.Karger.highProbProgram_failure_le_inv_n`: worst-case
   `33 * n ^ 4 * (Nat.log 2 n + 2)` step bound, pathwise non-trivial cut realization, `Modifies`
-  frame, and `1 / (2 * n)` (`1 / n`) failure probability upper bound for `highProbProgram`.
+  frame, and `1 / (2 * n)` (unconditional `1 / n`) failure probability upper bound for
+  `highProbProgram`.
 
 ## References
 
@@ -138,6 +142,7 @@ open scoped ENNReal
 open Cslib.WeightedCut
 open Cslib.Probability.PMF
 open Cslib.WordRAM
+open Cslib.Algorithms.Karger
 
 /-! ### Word-size sufficiency and `Data.init` matrix layout -/
 
@@ -769,30 +774,9 @@ theorem ampLoop_law {w sb n R : ℕ} {W : Fin n → Fin n → ℕ} {mem₀ : ℕ
         (OracleComp.evalWith (fun _ => Lean.Karger.answerLaw ⟨n, W⟩)
           (if i = 0 then Lean.Karger.minRuns rem
             else OracleComp.iterate rem Lean.Karger.minStep (x.regs bestVal))) := by
-  intro rem
-  induction rem with
-  | zero =>
-    intro i x hiR hinv
-    obtain rfl : i = R := by omega
-    have hc : ¬(Cond.lt trialIdx numTrials).Holds x := by
-      simp [Cond.holds_lt, hinv.regs_trialIdx, hinv.regs_numTrials]
-    rw [ite_eq_right (by omega)]
-    exact (ExecRandLaw.loop_exit hc hinv).mono (fun _ h => h) (by omega) (Nat.zero_le _)
-  | succ rem ih =>
-    intro i x hiR hinv
-    have hc : (Cond.lt trialIdx numTrials).Holds x := by
-      simp [Cond.holds_lt, hinv.regs_trialIdx, hinv.regs_numTrials]
-      omega
-    refine ((ExecRandLaw.loop_iter hc (ampTrialBody_law hn hW (by omega) h1 hdEnd hR_fit htot hinv)
-      (κ := fun b => OracleComp.evalWith (fun _ => Lean.Karger.answerLaw ⟨n, W⟩)
-        (OracleComp.iterate rem Lean.Karger.minStep b)) fun y hy => by
-          have h := ih (i + 1) y (by omega) hy
-          rw [ite_eq_right (Nat.succ_ne_zero i)] at h
-          exact h).congr_law ?_).mono (fun _ h => h) (by rw [add_one_mul]; omega)
-      (by rw [add_one_mul]; omega)
-    by_cases hi : i = 0
-    · simp [hi, Lean.Karger.minRuns, Function.comp_def]
-    · simp [hi, OracleComp.iterate_succ_bind, Lean.Karger.minStep, Function.comp_def]
+  unfold ampLoop
+  exact minRunsLoop_law hR (by omega) (fun _ _ h => h.regs_trialIdx) (fun _ _ h => h.regs_numTrials)
+    fun _ _ hi h => ampTrialBody_law hn hW hi h1 hdEnd hR_fit htot h
 
 /-- **The amplification core runs amplified Karger.** For `1 ≤ R` trials, from a state with
 `srcBase = sb`, `nOrig = n`, `numTrials = R` and `HoldsMatrix x.mem sb n W`, `ampCore` runs within
@@ -1233,18 +1217,20 @@ theorem highProbProgram_spec {n w : ℕ} {W : Fin n → Fin n → ℕ}
   exact ⟨hhalt, hcalls, hpost, fun hmin =>
     (hmiss.trans (Lean.Karger.minRuns_ne_minCut_le hn hW hmin _)).trans (highProb_failure_le hn)⟩
 
-/-- Corollary of `highProbProgram_spec`: when `0 < minCut W`, `highProbProgram` misses `minCut W`
-with probability at most `1 / n`. -/
+/-- `highProbProgram` misses `minCut W` with probability at most `1 / n`, unconditionally without
+`2 ≤ n` or `0 < minCut W`: for `n < 2` the bound `1 / n` is at least `1`, and for `2 ≤ n` with
+`minCut W = 0` every contraction trial outputs `0`. -/
 theorem highProbProgram_failure_le_inv_n {n w : ℕ} {W : Fin n → Fin n → ℕ}
-    (hn : 2 ≤ n) (hW : IsMultigraph W)
-    (hw : logWidth 3 n ≤ w) (htot : Fits w (totalDoubledWeight W))
-    (hpos : 0 < minCut W) :
+    (hW : IsMultigraph W)
+    (hw : logWidth 3 n ≤ w) (htot : Fits w (totalDoubledWeight W)) :
     (evalRand w highProbProgram (highProbTime n) (.init (n :: flattenMatrix W))).toOuterMeasure
         {cfg | ∀ y, cfg ≠ .halted (minCut W) y} ≤
-      (1 : ℝ≥0∞) / (n : ℝ≥0∞) := by
-  refine ((highProbProgram_spec hn hW hw htot).2.2.2 hpos).trans ?_
-  apply ENNReal.div_le_div_left
-  exact_mod_cast (by omega : n ≤ 2 * n)
+      (1 : ℝ≥0∞) / (n : ℝ≥0∞) :=
+  program_failure_le_inv_n fun hn =>
+    ⟨_, _, _, _, highProbCode_law hn hW hw htot, highProbTime_bound hn,
+      fun hpos => (Lean.Karger.minRuns_ne_minCut_le hn hW hpos _).trans (highProb_failure_le hn),
+      fun hzero _ hv => Lean.Karger.eq_zero_of_mem_support_answerLaw hn hW hzero
+        (Lean.Karger.mem_support_minRuns (Nat.one_le_iff_ne_zero.mp (highProbTrials_pos hn)) hv)⟩
 
 end HighProb
 

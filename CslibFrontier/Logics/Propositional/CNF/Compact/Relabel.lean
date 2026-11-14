@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Logics.Propositional.CNF.Compact
 public import CslibFrontier.Logics.Propositional.CNF.ModelCount
+import CslibFrontier.Foundations.Data.List.IdxOfInjective
 import Mathlib.Data.List.GetD
 import Mathlib.Data.List.Count
 
@@ -34,26 +35,11 @@ variables keeps its order under this renaming, even though compact names may hav
 These are elementary list identities for the existing CNF compaction operation.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Logic.PL.CNF
 
 variable {V W : Type*} [DecidableEq V] [DecidableEq W]
-
-private theorem idxOf_map_injOn (l : List V) (f : V → W)
-    (hf : Set.InjOn f {v | v ∈ l}) {v : V} (hv : v ∈ l) :
-    (l.map f).idxOf (f v) = l.idxOf v := by
-  induction l with
-  | nil => exact False.elim (List.not_mem_nil hv)
-  | cons a l ih =>
-    by_cases h : a = v
-    · subst a
-      simp
-    · have hv' : v ∈ l := List.mem_of_ne_of_mem (Ne.symm h) hv
-      have hfa : f a ≠ f v := fun heq => h (hf (by simp) hv heq)
-      rw [List.map_cons, List.idxOf_cons_ne _ hfa, List.idxOf_cons_ne _ h]
-      exact congrArg Nat.succ (ih
-        (fun _ hx _ hy => hf (List.mem_cons_of_mem a hx) (List.mem_cons_of_mem a hy)) hv')
 
 private theorem selectDistinct_map_injOn (l : List V) (w : List Bool) (f : V → W)
     (hf : Set.InjOn f {v | v ∈ l}) :
@@ -64,7 +50,7 @@ private theorem selectDistinct_map_injOn (l : List V) (w : List Bool) (f : V →
   congr 1
   apply List.filter_congr
   intro e he
-  simp only [idxOf_map_injOn l f hf (List.fst_mem_of_mem_zipIdx he)]
+  simp only [List.idxOf_map_injOn l f hf (List.fst_mem_of_mem_zipIdx he)]
 
 /-- Relabeling injectively on the used variables preserves their first-occurrence order. -/
 theorem distinctVars_relabel_of_injOn (φ : CNF V) (f : V → W)
@@ -129,7 +115,7 @@ theorem idxOf_distinctVars_compact (φ : CNF V) {v : V} (hv : v ∈ φ.vars) :
   have hf : Set.InjOn φ.vars.idxOf {v | v ∈ φ.distinctVars} :=
     fun _ ha _ _ h => (List.idxOf_inj (mem_distinctVars.mp ha)).1 h
   simpa only [List.idxOf, beq_eq_decide] using
-    idxOf_map_injOn φ.distinctVars φ.vars.idxOf hf (mem_distinctVars.mpr hv)
+    List.idxOf_map_injOn φ.distinctVars φ.vars.idxOf hf (mem_distinctVars.mpr hv)
 
 /-- Drawing data indexed by the distinct-variable list retain the same lookup after compaction. -/
 theorem getD_idxOf_distinctVars_compact {P : Type*} (φ : CNF V) (data : List P) (fallback : P)
@@ -161,7 +147,7 @@ namespace Cslib.Logic.PL
 /-- Relabeling preserves literal-occurrence order and both occurrence indices. -/
 theorem occurrences_relabel {V W : Type*} (φ : CNF V) (f : V → W) :
     occurrences (φ.relabel f) =
-      (occurrences φ).map (fun o => (o.1, o.2.1, (f o.2.2.1, o.2.2.2))) := by
+      (occurrences φ).map (fun o => ⟨o.clause, o.pos, (f o.lit.1, o.lit.2)⟩) := by
   simp only [occurrences, CNF.relabel, Clause.relabel, List.zipIdx_map,
     List.flatMap_map, List.map_flatMap, List.map_map, Function.comp_def,
     Prod.map_fst, Prod.map_snd, id_eq]

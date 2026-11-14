@@ -16,6 +16,7 @@ public import CslibFrontier.Languages.Probabilistic.Iteration
 public import CslibFrontier.Logics.Propositional.CNF.Encoding
 public import CslibFrontier.Probability.BitString.AffineHash
 public import CslibFrontier.Probability.UniformNat
+import CslibFrontier.Logics.Propositional.CNF.Vars
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Sum
@@ -439,9 +440,9 @@ theorem reduceWith_mem_USAT {φ : CNF ℕ} {k : ℕ} {w : List Bool}
   obtain ⟨u, hu, rfl⟩ := List.mem_map.1 ((CNF.vars_relabel _ _) ▸ hvψ)
   rw [splitVarToNat_injective.extend_apply]
   change (τ ∘ splitVarToNat) u = σ' u
-  rw [CNF.vars, List.flatten_append, List.map_append, List.mem_append] at hu
+  rw [CNF.vars_append, List.mem_append] at hu
   rcases hu with hu | hu
-  · rw [← CNF.vars, CNF.vars_relabel] at hu
+  · rw [CNF.vars_relabel] at hu
     obtain ⟨v, hv, rfl⟩ := List.mem_map.1 hu
     obtain ⟨j, hj, rfl⟩ := List.getElem_of_mem hv
     exact congrFun hpoint ⟨j, hj⟩

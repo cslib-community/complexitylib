@@ -9,7 +9,6 @@ module
 
 public import CslibFrontier.Probability.PMF
 public import Mathlib.Probability.Moments.Variance
-import CslibFrontier.Probability.Product
 
 /-!
 # Majority from pairwise independence
@@ -25,7 +24,6 @@ Goldreich–Levin subset-sum decoder. Adapted from the cslib `crypto` branch at 
 
 ## Main results
 
-* `PMF.indepFun_of_map_pair`: factorization of a joint PMF proves independence.
 * `majority_error_bound`: pairwise-independent bounded scores concentrate above half.
 
 ## References
@@ -38,24 +36,6 @@ public section
 namespace Cslib.Probability
 
 open MeasureTheory ProbabilityTheory
-
-namespace PMF
-
-/-- A factorization of the joint PMF establishes Mathlib's measure-theoretic independence. -/
-theorem indepFun_of_map_pair {Ω α β : Type*}
-    [MeasurableSpace Ω] [MeasurableSpace α] [MeasurableSpace β]
-    [MeasurableSingletonClass α] [MeasurableSingletonClass β]
-    [Countable α] [Countable β]
-    (p : PMF Ω) (f : Ω → α) (g : Ω → β)
-    (hf : Measurable f) (hg : Measurable g)
-    (h : p.map (fun ω => (f ω, g ω)) =
-      (p.map f).bind (fun a => (p.map g).map (fun b => (a, b)))) :
-    IndepFun f g p.toMeasure := by
-  rw [indepFun_iff_map_prod_eq_prod_map_map hf.aemeasurable hg.aemeasurable,
-    PMF.toMeasure_map _ _ (hf.prodMk hg), h, toMeasure_bind_pair,
-    PMF.toMeasure_map _ _ hf, PMF.toMeasure_map _ _ hg]
-
-end PMF
 
 /-- Pairwise independent scores in `[0, 1]` with mean at least `1 / 2 + ε` have a
 strict majority except with probability at most `1 / (4 * ε ^ 2 * m)`. -/

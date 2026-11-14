@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Pair.Projections
 import CslibFrontier.Crypto.Protocols.SigmaProtocol.Basic
 import CslibFrontier.Crypto.Computational.LWE.Basic
 import CslibFrontier.Crypto.Computational.Encryption.Authenticated
@@ -124,8 +125,7 @@ theorem eq_of_mem_support_realEnsemble {security : ℕ} {word : List Bool}
 theorem distinguishingGame_realEnsemble (security : ℕ) :
     distinguishingGame (LWE.realEnsemble (fun _ => 0) (fun _ => 1) (fun _ => 1) zeroNoise
       security) (firstBitFalse security) = PMF.pure true := by
-  unfold distinguishingGame
-  rw [PMF.monad_bind_eq_bind]
+  rw [distinguishingGame_eq_bind, PMF.monad_bind_eq_bind]
   trans (LWE.realEnsemble (fun _ => 0) (fun _ => 1) (fun _ => 1) zeroNoise security).bind
     fun _ => PMF.pure true
   · refine PMF.bind_congr_on_support _ _ _ fun word hword => ?_
@@ -137,7 +137,7 @@ theorem distinguishingGame_realEnsemble (security : ℕ) :
 theorem distinguishingGame_uniformEnsemble_apply (security : ℕ) :
     distinguishingGame (LWE.uniformEnsemble (fun _ => 0) (fun _ => 1) (fun _ => 1) security)
       (firstBitFalse security) true = 2⁻¹ := by
-  simp only [distinguishingGame, LWE.uniformEnsemble, firstBitFalse, PMF.monad_bind_eq_bind,
+  simp only [distinguishingGame_eq_bind, LWE.uniformEnsemble, firstBitFalse, PMF.monad_bind_eq_bind,
     PMF.bind_map, Function.comp_def, ProbComp.eval_pure, PMF.bind_apply, tsum_fintype,
     PMF.uniformOfFintype_apply, PMF.pure_apply]
   rw [← Finset.mul_sum]
@@ -157,7 +157,7 @@ advantage `1 / 2`. -/
 theorem not_decisionLWE_zeroNoise :
     ¬ DecisionLWE (fun _ => 0) (fun _ => 1) (fun _ => 1) zeroNoise := by
   intro h
-  have hneg := h firstBitFalse firstBitFalse_ppt
+  have hneg := h.encoded firstBitFalse firstBitFalse_ppt
   have hadv (security : ℕ) : Game.advantage
       (distinguishingGame (LWE.realEnsemble (fun _ => 0) (fun _ => 1) (fun _ => 1) zeroNoise
         security) (firstBitFalse security))
@@ -215,29 +215,21 @@ theorem isOraclePPT_detCCAAdversary : IsOraclePPT encBool detCCAAdversary := by
     ((IsOraclePPTOn.query_take' false hq2 hlim2).bind_with
       hout.isOraclePPTOn)).isOraclePPT
 
-theorem unframe_dropFrame_pair (a b : List Bool) :
-    unframe (encPair encBits encBits (a, b)) = a ∧
-      dropFrame (encPair encBits encBits (a, b)) = b := by
-  simp [encPair_apply, unframe_frame_append, dropFrame_frame_append]
-
 /-- In Experiment `false`, both queries encrypt `0ⁿ`; without ciphertext expansion the answers
 agree, so the adversary outputs `true`. -/
 theorem eval_ccaGame_detCCAAdversary_false (E : SymmetricCipher) (n : ℕ)
-    (hctLen : ∀ ke ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg : List Bool, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = n) :
+    (hctLen : E.CiphertextLength n n) :
     ProbComp.eval (E.ccaGame detCCAAdversary false n) = PMF.pure true := by
   simp only [ccaGame, detCCAAdversary, OracleComp.interpret_bind, OracleComp.interpret_map,
     OracleComp.interpret_pure, ProbOracleComp.interpret_query, StateT.run_bind, StateT.run_map,
     StateT.run_pure, ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure]
-  have hpair1 := unframe_dropFrame_pair (List.replicate n false) (List.replicate n true)
-  have hpair2 := unframe_dropFrame_pair (List.replicate n false) (List.replicate n false)
   trans (ProbComp.eval (E.keyGen n)).bind (fun _ => PMF.pure true)
   · refine PMF.bind_congr_on_support _ _ _ fun ke hke => ?_
     unfold ccaOracle
     dsimp only [StateT.run]
-    simp only [hpair1.1, hpair1.2, hpair2.1, hpair2.2, List.length_replicate, beq_self_eq_true,
-      Bool.and_self, ↓reduceIte, Bool.false_eq_true, ProbComp.eval_bind, ProbComp.eval_pure,
+    simp only [unframe_encPair_encBits, dropFrame_encPair_encBits, List.length_replicate,
+      beq_self_eq_true, Bool.and_self, ↓reduceIte, Bool.false_eq_true, ProbComp.eval_bind,
+      ProbComp.eval_pure,
       PMF.map_bind, PMF.pure_map, PMF.bind_bind, PMF.pure_bind]
     trans (ProbComp.eval (E.encrypt n ke (List.replicate n false))).bind (fun _ => PMF.pure true)
     · refine PMF.bind_congr_on_support _ _ _ fun c₁ hc₁ => ?_
@@ -253,15 +245,11 @@ theorem eval_ccaGame_detCCAAdversary_false (E : SymmetricCipher) (n : ℕ)
 /-- In Experiment `true` with `n ≥ 1`, the queries encrypt `1ⁿ` and then `0ⁿ`; by correctness the
 answers differ, so the adversary outputs `false`. -/
 theorem eval_ccaGame_detCCAAdversary_true (E : SymmetricCipher) {n : ℕ} (hn : 1 ≤ n)
-    (hctLen : ∀ ke ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg : List Bool, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = n) :
+    (hctLen : E.CiphertextLength n n) :
     ProbComp.eval (E.ccaGame detCCAAdversary true n) = PMF.pure false := by
   simp only [ccaGame, detCCAAdversary, OracleComp.interpret_bind, OracleComp.interpret_map,
     OracleComp.interpret_pure, ProbOracleComp.interpret_query, StateT.run_bind, StateT.run_map,
     StateT.run_pure, ProbComp.eval_bind, ProbComp.eval_map, ProbComp.eval_pure]
-  have hpair1 := unframe_dropFrame_pair (List.replicate n false) (List.replicate n true)
-  have hpair2 := unframe_dropFrame_pair (List.replicate n false) (List.replicate n false)
   have hneMsg : List.replicate n true ≠ List.replicate n false := by
     obtain ⟨m, rfl⟩ := Nat.exists_eq_succ_of_ne_zero (by lia : n ≠ 0)
     simp
@@ -269,8 +257,9 @@ theorem eval_ccaGame_detCCAAdversary_true (E : SymmetricCipher) {n : ℕ} (hn : 
   · refine PMF.bind_congr_on_support _ _ _ fun ke hke => ?_
     unfold ccaOracle
     dsimp only [StateT.run]
-    simp only [hpair1.1, hpair1.2, hpair2.1, hpair2.2, List.length_replicate, beq_self_eq_true,
-      Bool.and_self, ↓reduceIte, Bool.false_eq_true, ProbComp.eval_bind, ProbComp.eval_pure,
+    simp only [unframe_encPair_encBits, dropFrame_encPair_encBits, List.length_replicate,
+      beq_self_eq_true, Bool.and_self, ↓reduceIte, Bool.false_eq_true, ProbComp.eval_bind,
+      ProbComp.eval_pure,
       PMF.map_bind, PMF.pure_map, PMF.bind_bind, PMF.pure_bind]
     trans (ProbComp.eval (E.encrypt n ke (List.replicate n true))).bind (fun _ => PMF.pure false)
     · refine PMF.bind_congr_on_support _ _ _ fun c₁ hc₁ => ?_
@@ -298,17 +287,14 @@ theorem eval_ccaGame_detCCAAdversary_true (E : SymmetricCipher) {n : ℕ} (hn : 
 encryption channel has advantage `1` at every positive parameter. This is the CCA counterpart of
 `SymmetricCipher.not_indcpa_of_ciphertext_length_eq`. -/
 theorem not_indcca_of_ciphertext_length_eq (E : SymmetricCipher)
-    (hctLen : ∀ n, ∀ ke ∈ (ProbComp.eval (E.keyGen n)).support,
-      ∀ msg : List Bool, msg.length = n →
-      ∀ c ∈ (ProbComp.eval (E.encrypt n ke msg)).support, c.length = n) :
+    (hctLen : ∀ n, E.CiphertextLength n n) :
     ¬ E.INDCCA := by
   intro hcca
   have hneg := hcca detCCAAdversary isOraclePPT_detCCAAdversary
   have hcomp : Negligible (fun n =>
       Game.advantage (ProbComp.eval (E.ccaGame detCCAAdversary false (n + 1)))
         (ProbComp.eval (E.ccaGame detCCAAdversary true (n + 1)))) :=
-    hneg.comp_of_polynomial_bound (bound := fun m => m) (Filter.tendsto_add_atTop_nat 1)
-      (by fun_prop) (Filter.Eventually.of_forall fun n => by lia)
+    hneg.shift 1
   have hcongr : Negligible (fun _ : ℕ => (1 : ℝ≥0)) := hcomp.congr fun n => by
     rw [eval_ccaGame_detCCAAdversary_false E (n + 1) (hctLen (n + 1)),
       eval_ccaGame_detCCAAdversary_true E (by lia) (hctLen (n + 1)), Game.advantage]
@@ -361,7 +347,7 @@ def constFalse : PRG.Generator Unit (Fin 1 → Bool) := ⟨fun _ _ => false⟩
 /-- Guessing `false` predicts the bit of `constFalse` with probability `1`. -/
 theorem predictionExperiment_constFalse :
     constFalse.predictionExperiment 0 (fun _ => PMF.pure false) = PMF.pure true := by
-  simp [PRG.Generator.predictionExperiment, PRG.Generator.outputDist, constFalse,
+  simp [PRG.Generator.predictionExperiment_eq_bind, PRG.Generator.outputDist, constFalse,
     PMF.monad_bind_eq_bind, PMF.pure_map, Function.comp_def, PMF.bind_const]
 
 /-- **A constant generator is not next-bit unpredictable** at any error below `1 / 2`. -/

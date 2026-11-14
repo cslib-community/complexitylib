@@ -13,9 +13,10 @@ public import Mathlib.Data.List.OfFn
 public import Mathlib.Data.List.GetD
 public import Mathlib.Data.Nat.Size
 public import Mathlib.Data.List.Range
+public import Mathlib.Data.List.FinRange
 import CslibFrontier.Foundations.Data.List.Append
-import CslibFrontier.Foundations.Data.List.Lookup
-import CslibFrontier.Foundations.Data.Nat.Div
+import CslibFrontier.Foundations.Data.List.RowMajor
+import CslibFrontier.Foundations.Data.List.UnaryCode
 
 /-!
 # Directed s–t connectivity
@@ -36,6 +37,8 @@ encoding of undirected connectivity (`Cslib.Complexity.encUSTCON`), which is def
 
 ## Main definitions
 
+* `Cslib.Complexity.adjacencyMatrix`: the adjacency matrix of a relation on `Fin n`, row by row,
+  shared with the encoding of strongly connected digraphs (`Cslib.Complexity.encDigraph`).
 * `Cslib.Complexity.STCONInstance`: instances of directed `s`–`t` connectivity.
 * `Cslib.Complexity.STCONInstance.Adj`: the arcs of an instance.
 * `Cslib.Complexity.encSTCON`: the encoding of instances.
@@ -43,6 +46,9 @@ encoding of undirected connectivity (`Cslib.Complexity.encUSTCON`), which is def
 
 ## Main results
 
+* `Cslib.Complexity.getD_adjacencyMatrix`, `Cslib.Complexity.adjacencyMatrix_eq_flatMap`,
+  `Cslib.Complexity.adjacencyMatrix_injective`: the entries of an adjacency matrix, its rows, and
+  its injectivity.
 * `Cslib.Complexity.STCONInstance.getD_encode_n`, `.getD_encode_s`, `.getD_encode_t`,
   `.getD_encode_matrix`: the bits of the header and of the matrix in the encoding;
   `.getElem?_encode_n`, `.getElem?_encode_s`, `.getElem?_encode_t`, `.getElem?_encode_matrix`:
@@ -62,6 +68,48 @@ encoding of undirected connectivity (`Cslib.Complexity.encUSTCON`), which is def
 @[expose] public section
 
 namespace Cslib.Complexity
+
+/-! ### Adjacency matrices -/
+
+/-- **The adjacency matrix** of a relation on `Fin n`, row by row: the row `a` lists the entries
+`adj a b` for the columns `b`, so that its bit at `a * n + b` is the entry of the row `a` and the
+column `b`. It is the body of the encodings of directed connectivity
+(`Cslib.Complexity.encSTCON`) and of digraphs (`Cslib.Complexity.encDigraph`). -/
+def adjacencyMatrix {n : ℕ} (adj : Fin n → Fin n → Bool) : List Bool :=
+  (List.finRange n).flatMap fun a ↦ List.ofFn (adj a)
+
+section AdjacencyMatrix
+
+variable {n : ℕ} (adj : Fin n → Fin n → Bool)
+
+/-- The adjacency matrix has `n ^ 2` entries. -/
+@[simp]
+theorem length_adjacencyMatrix : (adjacencyMatrix adj).length = n * n := by
+  simp [adjacencyMatrix, List.flatMap_ofFn_prod]
+
+/-- The entry of the row `a` and the column `b` is the bit at `a * n + b` of the matrix. -/
+theorem getD_adjacencyMatrix (a b : Fin n) :
+    (adjacencyMatrix adj).getD (a * n + b) false = adj a b :=
+  List.getD_flatMap_ofFn adj false a b
+
+/-- **The matrix row by row**: the rows `0, …, n - 1`, each listing its entries in the columns
+`0, …, n - 1`, for any function `g` on natural numbers giving the entries. -/
+theorem adjacencyMatrix_eq_flatMap (g : ℕ → ℕ → Bool) (hg : ∀ a b : Fin n, adj a b = g a b) :
+    adjacencyMatrix adj = (List.range n).flatMap fun u => (List.range n).map (g u) := by
+  have hr : (List.finRange n).map Fin.val = List.range n :=
+    List.ext_getElem (by simp) fun i _ _ => by simp
+  rw [adjacencyMatrix, ← hr, List.flatMap_map]
+  refine List.flatMap_congr fun a _ => ?_
+  rw [List.map_map, List.ofFn_eq_map]
+  exact List.map_congr_left fun b _ => hg a b
+
+/-- **The adjacency matrix determines the relation.** -/
+theorem adjacencyMatrix_injective : Function.Injective (adjacencyMatrix (n := n)) := by
+  intro adj adj' h
+  funext a b
+  rw [← getD_adjacencyMatrix adj, ← getD_adjacencyMatrix adj', h]
+
+end AdjacencyMatrix
 
 /-- An instance of **directed `s`–`t` connectivity**: a directed graph on `Fin n`, given by its
 adjacency matrix, and two vertices `s` and `t`. -/
@@ -87,61 +135,28 @@ theorem n_pos : 0 < I.n :=
 column `b` of the adjacency matrix is set. -/
 def Adj (a b : Fin I.n) : Prop := I.adj a b = true
 
-/-- The column of an index below `n * n` is below `n`. -/
-theorem mod_lt_of_lt_mul {i n : ℕ} (h : i < n * n) : i % n < n :=
-  Nat.mod_lt _ (Nat.pos_of_ne_zero fun h0 ↦ by simp [h0] at h)
-
-/-- The adjacency matrix, row by row: its bit at `i` is the entry of the row `i / n` and the
-column `i % n`. -/
-def matrix : List Bool :=
-  List.ofFn fun i : Fin (I.n * I.n) ↦
-    I.adj ⟨i / I.n, Nat.div_lt_of_lt_mul i.isLt⟩ ⟨i % I.n, mod_lt_of_lt_mul i.isLt⟩
+/-- The adjacency matrix, row by row (`Cslib.Complexity.adjacencyMatrix`). -/
+def matrix : List Bool := adjacencyMatrix I.adj
 
 /-- The adjacency matrix has `n ^ 2` entries. -/
 @[simp]
-theorem length_matrix : I.matrix.length = I.n * I.n := by
-  simp [matrix]
+theorem length_matrix : I.matrix.length = I.n * I.n :=
+  length_adjacencyMatrix I.adj
 
 /-- The position `a * n + b` of an entry lies within the matrix. -/
 theorem mul_add_lt (a b : Fin I.n) : (a : ℕ) * I.n + b < I.n * I.n := by
-  have := Nat.mul_le_mul_right I.n (Nat.succ_le_of_lt a.isLt)
-  rw [Nat.succ_mul] at this
-  omega
+  rw [Nat.mul_comm (a : ℕ)]
+  exact Nat.mul_add_lt_mul_of_lt_of_lt a.isLt b.isLt
 
 /-- The entry of the row `a` and the column `b` is the bit at `a * n + b` of the matrix. -/
-theorem getD_matrix (a b : Fin I.n) : I.matrix.getD (a * I.n + b) false = I.adj a b := by
-  unfold matrix
-  rw [List.getD_ofFn_of_lt _ (I.mul_add_lt a b)]
-  congr 1
-  · ext
-    simp only
-    rw [Nat.mul_add_div_fin]
-  · ext
-    simp only
-    rw [Nat.add_comm, Nat.add_mul_mod_self_right, Nat.mod_eq_of_lt b.isLt]
-
-/-- A row-major list of `m` rows of `N` entries is the concatenation of its rows. -/
-private theorem ofFn_mul_eq_flatMap {N : ℕ} (g : ℕ → ℕ → Bool) : ∀ m : ℕ,
-    List.ofFn (fun i : Fin (m * N) => g (i / N) (i % N)) =
-      (List.range m).flatMap fun u => (List.range N).map (g u)
-  | 0 => by simp
-  | m + 1 => by
-    rw [List.range_succ, List.flatMap_append, ← ofFn_mul_eq_flatMap g m, List.flatMap_singleton,
-      List.ofFn_congr (Nat.succ_mul m N), List.ofFn_add]
-    congr 1
-    refine List.ext_getElem (by simp) fun i h₁ h₂ => ?_
-    have hi : i < N := by simpa using h₂
-    simp only [List.getElem_ofFn, Fin.val_cast, Fin.val_natAdd, List.getElem_map,
-      List.getElem_range]
-    rw [Nat.mul_add_div_of_lt m hi, Nat.add_comm, Nat.add_mul_mod_self_right,
-      Nat.mod_eq_of_lt hi]
+theorem getD_matrix (a b : Fin I.n) : I.matrix.getD (a * I.n + b) false = I.adj a b :=
+  getD_adjacencyMatrix I.adj a b
 
 /-- **The matrix row by row**: the rows `0, …, n - 1`, each listing its entries in the columns
 `0, …, n - 1`, for any function `g` on natural numbers giving the entries. -/
 theorem matrix_eq_flatMap (g : ℕ → ℕ → Bool) (hg : ∀ a b : Fin I.n, I.adj a b = g a b) :
-    I.matrix = (List.range I.n).flatMap fun u => (List.range I.n).map (g u) := by
-  rw [← ofFn_mul_eq_flatMap g I.n, matrix]
-  exact List.ofFn_inj.mpr (funext fun i => hg _ _)
+    I.matrix = (List.range I.n).flatMap fun u => (List.range I.n).map (g u) :=
+  adjacencyMatrix_eq_flatMap I.adj g hg
 
 /-- The encoding of an instance: the unary header `1^n 0 1^s 0 1^t 0`, then the adjacency matrix
 row by row. -/
@@ -163,38 +178,23 @@ theorem n_le_length_encode : I.n ≤ I.encode.length := by
 theorem size_n_le_log2 : Nat.size I.n ≤ Nat.log2 I.encode.length + 1 :=
   Nat.size_le.2 (I.n_le_length_encode.trans_lt Nat.lt_log2_self)
 
-/-- Within a unary block followed by `false`, the bits are set before the end of the block. -/
-private theorem getD_replicate_append_false_of_le {m i : ℕ} (l : List Bool) (h : i ≤ m) :
-    (List.replicate m true ++ false :: l).getD i false = decide (i < m) := by
-  rcases h.lt_or_eq with h | rfl
-  · rw [List.getD_append _ _ _ _ (by simpa using h)]
-    simp [h]
-  · rw [List.getD_append_right _ _ _ _ (by simp)]
-    simp
-
-/-- After a unary block of length `m` followed by `false`, the bits are those of the rest. -/
-private theorem getD_replicate_append_false_add (m i : ℕ) (l : List Bool) :
-    (List.replicate m true ++ false :: l).getD (m + 1 + i) false = l.getD i false := by
-  rw [List.getD_append_right _ _ _ _ (by simp only [List.length_replicate]; omega)]
-  simp only [List.length_replicate, show m + 1 + i - m = i + 1 by omega, List.getD_cons_succ]
-
 /-- The header of the number of vertices: the bit at `i ≤ n` is set exactly when `i < n`. -/
 theorem getD_encode_n {i : ℕ} (h : i ≤ I.n) : I.encode.getD i false = decide (i < I.n) :=
-  getD_replicate_append_false_of_le _ h
+  List.getD_replicate_true_append_false_of_le _ h
 
 /-- The header of the source: the bit at `n + 1 + i`, for `i ≤ s`, is set exactly when `i < s`. -/
 theorem getD_encode_s {i : ℕ} (h : i ≤ I.s) :
     I.encode.getD (I.n + 1 + i) false = decide (i < I.s) := by
-  rw [encode, getD_replicate_append_false_add]
-  exact getD_replicate_append_false_of_le _ h
+  rw [encode, List.getD_replicate_true_append_false_add]
+  exact List.getD_replicate_true_append_false_of_le _ h
 
 /-- The header of the target: the bit at `n + 1 + s + 1 + i`, for `i ≤ t`, is set exactly when
 `i < t`. -/
 theorem getD_encode_t {i : ℕ} (h : i ≤ I.t) :
     I.encode.getD (I.n + 1 + I.s + 1 + i) false = decide (i < I.t) := by
   rw [encode, show I.n + 1 + I.s + 1 + i = I.n + 1 + (I.s + 1 + i) by omega,
-    getD_replicate_append_false_add, getD_replicate_append_false_add]
-  exact getD_replicate_append_false_of_le _ h
+    List.getD_replicate_true_append_false_add, List.getD_replicate_true_append_false_add]
+  exact List.getD_replicate_true_append_false_of_le _ h
 
 /-- **The bits of the matrix**: the bit at `n + s + t + 3 + a * n + b` of the encoding is the entry
 of the row `a` and the column `b`. -/
@@ -202,8 +202,8 @@ theorem getD_encode_matrix (a b : Fin I.n) :
     I.encode.getD (I.n + I.s + I.t + 3 + (a * I.n + b)) false = I.adj a b := by
   rw [encode, show I.n + I.s + I.t + 3 + (a * I.n + b) =
       I.n + 1 + (I.s + 1 + (I.t + 1 + (a * I.n + b))) by omega,
-    getD_replicate_append_false_add, getD_replicate_append_false_add,
-    getD_replicate_append_false_add, getD_matrix]
+    List.getD_replicate_true_append_false_add, List.getD_replicate_true_append_false_add,
+    List.getD_replicate_true_append_false_add, getD_matrix]
 
 /-- A bit of the encoding, read by position. -/
 private theorem getElem?_encode {i : ℕ} (h : i < I.encode.length) :
@@ -238,11 +238,7 @@ theorem encode_injective : Function.Injective encode := by
   obtain ⟨rfl, h⟩ := List.replicate_true_append_false_inj h
   obtain ⟨hs, h⟩ := List.replicate_true_append_false_inj h
   obtain ⟨ht, h⟩ := List.replicate_true_append_false_inj h
-  have hadj : adj = adj' := by
-    funext a b
-    have := congrArg (fun l ↦ l.getD (a * n + b) false) h
-    exact (getD_matrix ⟨n, adj, s, t⟩ a b).symm.trans
-      (this.trans (getD_matrix ⟨n, adj', s', t'⟩ a b))
+  have hadj : adj = adj' := adjacencyMatrix_injective h
   subst hadj
   have hs' : s = s' := Fin.ext hs
   have ht' : t = t' := Fin.ext ht

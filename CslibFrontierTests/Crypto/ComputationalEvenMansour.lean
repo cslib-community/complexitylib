@@ -8,7 +8,7 @@ import CslibFrontier.Crypto.Computational.EvenMansour
 import Mathlib.Data.ZMod.Basic
 
 /-!
-# Tests for computational Even–Mansour and randomized ideal-permutation PRP security
+# Tests for word-level Even–Mansour and randomized ideal-permutation PRP security
 
 Exercises `CslibFrontier/Crypto/Computational/EvenMansour.lean`:
 * concrete evaluation and inversion of `evenMansourPreKeyWord`, `evenMansourPostKeyWord`,

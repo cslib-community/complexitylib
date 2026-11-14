@@ -44,8 +44,8 @@ pure state") from unitaries on pure states to Kraus families on mixed states.
 ## Main results
 
 * `Cslib.Quantum.isDensityMatrix_pureState`: `|ψ⟩⟨ψ|` is a density matrix for a unit vector `ψ`.
-* `Cslib.Quantum.IsDensityMatrix.conj_unitary`: unitary evolution `UρUᴴ` preserves density
-  matrices.
+* `Cslib.Quantum.IsDensityMatrix.conj_isometry`, `.conj_unitary`: rectangular isometries and
+  unitary evolution preserve density matrices.
 * `Cslib.Quantum.IsDensityMatrix.partialTraceLeft`,
   `Cslib.Quantum.IsDensityMatrix.partialTraceRight`: reduced states are density matrices.
 * `Cslib.Quantum.partialTraceLeft_kronecker`, `Cslib.Quantum.partialTraceRight_kronecker`: the
@@ -70,7 +70,7 @@ namespace Cslib.Quantum
 open Matrix Finset
 open scoped Kronecker ComplexOrder
 
-variable {ι κ : Type*}
+variable {ι ι' κ : Type*}
 
 /-! ### Density matrices -/
 
@@ -106,13 +106,19 @@ theorem isDensityMatrix_pureState [Fintype ι] {ψ : EuclideanSpace ℂ ι} (hψ
     IsDensityMatrix (pureState ψ) :=
   ⟨posSemidef_pureState ψ, by rw [trace_pureState, hψ]; norm_num⟩
 
+/-- Conjugation by a possibly rectangular isometry preserves density matrices. -/
+theorem IsDensityMatrix.conj_isometry [Fintype ι] [Fintype ι'] [DecidableEq ι]
+    {ρ : Matrix ι ι ℂ} (hρ : IsDensityMatrix ρ) {V : Matrix ι' ι ℂ}
+    (hV : Vᴴ * V = 1) : IsDensityMatrix (V * ρ * Vᴴ) := by
+  refine ⟨hρ.posSemidef.mul_mul_conjTranspose_same V, ?_⟩
+  rw [trace_mul_cycle, hV, one_mul, hρ.trace_eq_one]
+
 /-- **Unitary evolution** `ρ ↦ U ρ Uᴴ` preserves density matrices. -/
 theorem IsDensityMatrix.conj_unitary [Fintype ι] [DecidableEq ι] {ρ : Matrix ι ι ℂ}
     (hρ : IsDensityMatrix ρ) {U : Matrix ι ι ℂ} (hU : U ∈ unitaryGroup ι ℂ) :
     IsDensityMatrix (U * ρ * Uᴴ) := by
-  refine ⟨hρ.posSemidef.mul_mul_conjTranspose_same U, ?_⟩
-  rw [trace_mul_cycle, ← star_eq_conjTranspose, (mem_unitaryGroup_iff'.mp hU), one_mul,
-    hρ.trace_eq_one]
+  apply hρ.conj_isometry
+  simpa only [star_eq_conjTranspose] using mem_unitaryGroup_iff'.mp hU
 
 /-! ### The partial trace -/
 
@@ -256,10 +262,11 @@ theorem partialTraceRight_pureState_maxEntangled [Fintype ι] [DecidableEq ι] :
 
 /-! ### No-signalling -/
 
-/-- An operator `A` on the traced-out first system moves cyclically under `Tr_A`:
-`Tr_A ((A ⊗ₖ 1) ρ) = Tr_A (ρ (A ⊗ₖ 1))`. -/
-theorem partialTraceLeft_kronecker_one_mul [Fintype ι] [Fintype κ] [DecidableEq κ] [CommSemiring R]
-    (A : Matrix ι ι R) (ρ : Matrix (ι × κ) (ι × κ) R) :
+/-- A possibly rectangular operator on the traced-out first system moves cyclically under the
+partial trace. The two sides trace out the respective output and input systems. -/
+theorem partialTraceLeft_kronecker_one_mul [Fintype ι] [Fintype ι'] [Fintype κ]
+    [DecidableEq κ] [CommSemiring R]
+    (A : Matrix ι' ι R) (ρ : Matrix (ι × κ) (ι' × κ) R) :
     partialTraceLeft ((A ⊗ₖ (1 : Matrix κ κ R)) * ρ) =
       partialTraceLeft (ρ * (A ⊗ₖ (1 : Matrix κ κ R))) := by
   ext k k'
@@ -269,12 +276,13 @@ theorem partialTraceLeft_kronecker_one_mul [Fintype ι] [Fintype κ] [DecidableE
   rw [sum_comm]
   exact sum_congr rfl fun i _ => sum_congr rfl fun j _ => mul_comm _ _
 
-/-- **No-signalling** for a Kraus family on the first system: if Alice applies the operation
+/-- **No-signalling** for a Kraus family on the first system, with possibly different input and
+output dimensions: if Alice applies the operation
 `ρ ↦ ∑ⱼ (Kⱼ ⊗ 1) ρ (Kⱼ ⊗ 1)ᴴ` with `∑ⱼ Kⱼᴴ Kⱼ = 1`, Bob's reduced state `Tr_A ρ` is unchanged.
 This generalizes [de Wolf][deWolf2019], Chapter 18, Exercise 7, from a unitary on a pure state to
 a Kraus family on a mixed state. -/
-theorem partialTraceLeft_kraus [Fintype ι] [Fintype κ] [DecidableEq ι] [DecidableEq κ]
-    {α : Type*} (s : Finset α) (K : α → Matrix ι ι ℂ) (hK : ∑ j ∈ s, (K j)ᴴ * K j = 1)
+theorem partialTraceLeft_kraus [Fintype ι] [Fintype ι'] [Fintype κ] [DecidableEq ι] [DecidableEq κ]
+    {α : Type*} (s : Finset α) (K : α → Matrix ι' ι ℂ) (hK : ∑ j ∈ s, (K j)ᴴ * K j = 1)
     (ρ : Matrix (ι × κ) (ι × κ) ℂ) :
     partialTraceLeft (∑ j ∈ s, (K j ⊗ₖ (1 : Matrix κ κ ℂ)) * ρ * (K j ⊗ₖ (1 : Matrix κ κ ℂ))ᴴ) =
       partialTraceLeft ρ := by

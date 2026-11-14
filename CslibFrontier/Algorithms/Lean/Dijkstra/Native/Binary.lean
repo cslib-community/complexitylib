@@ -51,25 +51,39 @@ namespace Cslib.Algorithms.Lean.Dijkstra.Native.Binary
 
 open Cslib.WordRAM Cslib.WordRAM.Realization Cslib.DataStructure
 open Cslib.DataStructure.Memory Cslib.DataStructure.PriorityQueue
-open Cslib.Algorithms.WordRAM.Dijkstra (ListInstance encodeDist)
+open Cslib.Algorithms.Dijkstra (ListInstance)
+open Cslib.Algorithms.WordRAM.Dijkstra (encodeDist)
 
+/-- Arguments of one edge relaxation: heap, distance table, target, source distance, weight. -/
 private abbrev TargetArgs := ((BinaryHeap.Native.HeapLayout × Block) × ℕ) × (ℕ × ℕ)
+
+namespace TargetArgs
+
+private abbrev capacity (d : TargetArgs) : ℕ := d.1.1.1.1
+private abbrev queue (d : TargetArgs) : BinaryHeap.Memory.Layout d.capacity := d.1.1.1.2
+private abbrev table (d : TargetArgs) : Block := d.1.1.2
+private abbrev vertex (d : TargetArgs) : ℕ := d.1.2
+private abbrev dist (d : TargetArgs) : ℕ := d.2.1
+private abbrev weight (d : TargetArgs) : ℕ := d.2.2
+
+end TargetArgs
+
 private abbrev word := WordEncoding.encode (α := ℕ)
 private def targetInput := appendWords
   (appendWords (appendWords BinaryHeap.Native.layoutWords blockWords) word)
   (appendWords word word)
 
 private def targetSafe (w : ℕ) (d : TargetArgs) (s : Memory.State) : Prop :=
-  ∃ (hv : d.1.2 < d.1.1.1.1) (K : ℕ),
-    d.1.1.1.2.Valid w K ∧ BinaryHeap.Memory.Inv d.1.1.1.2 s ∧
-      d.1.1.2.Allocated s ∧ d.1.1.2.length = d.1.1.1.1 ∧
-      Disjoint d.1.1.1.2.footprint d.1.1.2.footprint ∧ Fits w (d.2.1 + d.2.2 + 1) ∧
-      match Dictionary.Memory.decode (s.mem (d.1.1.2.base + d.1.2)) with
-      | none => IndexedMinPQ.valid K (BinaryHeap.Memory.abs d.1.1.1.2 s)
-          (.insert ⟨d.1.2, hv⟩ (d.2.1 + d.2.2))
-      | some old => d.2.1 + d.2.2 < old →
-          IndexedMinPQ.valid K (BinaryHeap.Memory.abs d.1.1.1.2 s)
-            (.decreaseKey ⟨d.1.2, hv⟩ (d.2.1 + d.2.2))
+  ∃ (hv : d.vertex < d.capacity) (K : ℕ),
+    d.queue.Valid w K ∧ BinaryHeap.Memory.Inv d.queue s ∧
+      d.table.Allocated s ∧ d.table.length = d.capacity ∧
+      Disjoint d.queue.footprint d.table.footprint ∧ Fits w (d.dist + d.weight + 1) ∧
+      match Dictionary.Memory.decode (s.mem (d.table.base + d.vertex)) with
+      | none => IndexedMinPQ.valid K (BinaryHeap.Memory.abs d.queue s)
+          (.insert ⟨d.vertex, hv⟩ (d.dist + d.weight))
+      | some old => d.dist + d.weight < old →
+          IndexedMinPQ.valid K (BinaryHeap.Memory.abs d.queue s)
+            (.decreaseKey ⟨d.vertex, hv⟩ (d.dist + d.weight))
 
 private theorem table_write_heap {n w K v z : ℕ} {H : BinaryHeap.Memory.Layout n}
     {T : Block} {s : Memory.State} (hL : H.Valid w K) (hi : BinaryHeap.Memory.Inv H s)
@@ -87,35 +101,33 @@ private theorem table_write_heap {n w K v z : ℕ} {H : BinaryHeap.Memory.Layout
   exact ⟨hi.congr hL he le_rfl, BinaryHeap.Memory.abs_congr (s := s) he⟩
 
 private theorem target_realizes : Realizes .exact (fun d : TargetArgs =>
-    relaxTarget (fun v k => BinaryHeap.Memory.insert d.1.1.1.2 v k)
-      (fun v k => BinaryHeap.Memory.decreaseKey d.1.1.1.2 v k)
-      d.1.1.2 d.1.2 d.2.1 d.2.2)
+    relaxTarget (fun v k => BinaryHeap.Memory.insert d.queue v k)
+      (fun v k => BinaryHeap.Memory.decreaseKey d.queue v k)
+      d.table d.vertex d.dist d.weight)
     targetInput (WordEncoding.encode (α := Unit)) targetSafe (fun _ _ => 0) := by
-  have hInsert := BinaryHeap.Native.realizes_insert
-  have hDecrease := BinaryHeap.Native.realizes_decreaseKey
-  realize
+  realize [BinaryHeap.Native.realizes_insert, BinaryHeap.Native.realizes_decreaseKey]
   all_goals rcases h with ⟨hv, K, hL, hi, ht, hlen, hd, hsum, hop⟩
-  all_goals have hvT : d.1.2 < d.1.1.2.length := by omega
+  all_goals have hvT : d.vertex < d.table.length := by omega
   all_goals try first
     | exact hmem.fits_of_lt_frontier (ht.lt_frontier hvT)
     | exact hsum.of_le (by omega)
     | omega
   case hsafe.right.right.isTrue.right =>
     obtain ⟨hi', he⟩ := table_write_heap hL hi hvT hd
-      (T := d.1.1.2) (v := d.1.2) (z := d.2.1 + d.2.2 + 1)
+      (T := d.table) (v := d.vertex) (z := d.dist + d.weight + 1)
     refine ⟨hv, K, hL, hi', ?_⟩
     rw [he]
     simpa only [hc, Dictionary.Memory.decode_zero] using hop
   case hsafe.right.right.isFalse.right.isTrue.right =>
     obtain ⟨hi', he⟩ := table_write_heap hL hi hvT hd
-      (T := d.1.1.2) (v := d.1.2) (z := d.2.1 + d.2.2 + 1)
+      (T := d.table) (v := d.vertex) (z := d.dist + d.weight + 1)
     refine ⟨hv, K, hL, hi', ?_⟩
     rw [he]
-    have hx0 : s.mem (d.1.1.2.base + d.1.2) ≠ 0 := by assumption
+    have hx0 : s.mem (d.table.base + d.vertex) ≠ 0 := by assumption
     rw [Dictionary.Memory.decode_of_ne_zero hx0] at hop
     exact hop hc
 
-private theorem targetSafe_of_relax_valid (G : Algorithms.WordRAM.Dijkstra.ListInstance)
+private theorem targetSafe_of_relax_valid (G : Algorithms.Dijkstra.ListInstance)
     {w : ℕ} (H : BinaryHeap.Memory.Layout G.n) (T : Block)
     (hH : H.Valid w (G.n * G.maxWeight))
     (hT : Dictionary.Memory.Valid T w G.n (G.n * G.maxWeight + 1))
@@ -137,39 +149,67 @@ private theorem targetSafe_of_relax_valid (G : Algorithms.WordRAM.Dijkstra.ListI
     hd.mono_right Finset.subset_union_left, hfit.of_le (by nlinarith), ?_⟩
   exact relax_valid_queue _ u v du i c hg hv
 
-private abbrev RelaxArgs := ((BinaryHeap.Native.HeapLayout × Block) × (ℕ × ℕ)) × (ℕ × ℕ × ℕ)
+/-- The loop context shared by the scan, relax and step bodies: heap, distance table and the
+vertex and edge counts locating the input graph. -/
+private abbrev Context := (BinaryHeap.Native.HeapLayout × Block) × (ℕ × ℕ)
+
+namespace Context
+
+private abbrev heap (c : Context) : BinaryHeap.Native.HeapLayout := c.1.1
+private abbrev queue (c : Context) : BinaryHeap.Memory.Layout c.heap.1 := c.1.1.2
+private abbrev table (c : Context) : Block := c.1.2
+private abbrev n (c : Context) : ℕ := c.2.1
+private abbrev m (c : Context) : ℕ := c.2.2
+/-- The input graph layout `Memory.inputGraph c.n c.m`, spelled out because `realize` must
+compute its offsets from the live words and does not unfold `Memory.inputGraph`. -/
+private abbrev graph (c : Context) : AdjacencyList.Memory.Layout :=
+  ⟨⟨3, c.n + 1⟩, ⟨c.n + 4, 2 * c.m⟩⟩
+
+end Context
+
+/-- Relaxation of edge `edge` of `vertex` at distance `dist`. -/
+private abbrev RelaxArgs := Context × (ℕ × ℕ × ℕ)
+
+namespace RelaxArgs
+
+private abbrev vertex (d : RelaxArgs) : ℕ := d.2.1
+private abbrev dist (d : RelaxArgs) : ℕ := d.2.2.1
+private abbrev edge (d : RelaxArgs) : ℕ := d.2.2.2
+
+end RelaxArgs
+
 private def relaxInput := appendWords
   (appendWords (appendWords BinaryHeap.Native.layoutWords blockWords) (appendWords word word))
   (appendWords word (appendWords word word))
 
 private def relaxSafe (w : ℕ) (d : RelaxArgs) (s : Memory.State) : Prop :=
-  ∃ (G : Algorithms.WordRAM.Dijkstra.ListInstance) (H : BinaryHeap.Memory.Layout G.n)
+  ∃ (G : Algorithms.Dijkstra.ListInstance) (H : BinaryHeap.Memory.Layout G.n)
     (hH : H.Valid w (G.n * G.maxWeight))
-    (hT : Dictionary.Memory.Valid d.1.1.2 w G.n (G.n * G.maxWeight + 1)) (u : Fin G.n),
-    d.1.1.1 = ⟨G.n, H⟩ ∧ d.1.2.1 = G.n ∧ d.1.2.2 = G.m ∧ d.2.1 = u.val ∧
+    (hT : Dictionary.Memory.Valid d.1.table w G.n (G.n * G.maxWeight + 1)) (u : Fin G.n),
+    d.1.heap = ⟨G.n, H⟩ ∧ d.1.n = G.n ∧ d.1.m = G.m ∧ d.vertex = u.val ∧
       (Memory.framed hH hT (A := Memory.inputGraph G.n G.m) ⟨rfl⟩ G.adj).inv s ∧
-      d.2.2.1 ≤ G.n * G.maxWeight ∧
+      d.dist ≤ G.n * G.maxWeight ∧
       Fits w (8 * (G.n + G.m + 2) * (G.maxWeight + 2)) ∧
       (spec G.n (G.n * G.maxWeight) (G.n * G.maxWeight + 1)).ValidHistory
         ((Memory.framed hH hT (A := Memory.inputGraph G.n G.m) ⟨rfl⟩ G.adj).abs s)
         ((spec G.n (G.n * G.maxWeight) (G.n * G.maxWeight + 1)).clientHistory
           ((Memory.framed hH hT (A := Memory.inputGraph G.n G.m) ⟨rfl⟩ G.adj).abs s)
-          (relaxEdge u d.2.2.1 d.2.2.2))
+          (relaxEdge u d.dist d.edge))
 
 private theorem relax_realizes : Realizes .exact (fun d : RelaxArgs =>
-    relaxWord (fun v k => BinaryHeap.Memory.insert d.1.1.1.2 v k)
-      (fun v k => BinaryHeap.Memory.decreaseKey d.1.1.1.2 v k) d.1.1.2
-      ⟨⟨3, d.1.2.1 + 1⟩, ⟨d.1.2.1 + 4, 2 * d.1.2.2⟩⟩
-      d.1.2.1 d.2.1 d.2.2.1 d.2.2.2)
+    relaxWord (fun v k => BinaryHeap.Memory.insert d.1.queue v k)
+      (fun v k => BinaryHeap.Memory.decreaseKey d.1.queue v k) d.1.table
+      d.1.graph
+      d.1.n d.vertex d.dist d.edge)
     relaxInput (WordEncoding.encode (α := Unit)) relaxSafe (fun _ _ => 0) := by
-  have hInsert := BinaryHeap.Native.realizes_insert
-  have hDecrease := BinaryHeap.Native.realizes_decreaseKey
-  have hTarget := target_realizes
   realize
+    [BinaryHeap.Native.realizes_insert, BinaryHeap.Native.realizes_decreaseKey,
+      target_realizes]
   all_goals
     rcases d with ⟨⟨⟨e, T⟩, n, m⟩, vcur, du, i⟩
     rcases h with ⟨G, H, hH, hT, u, he, hn, hm, hu, hf, hdu, hfit, hv⟩
-    dsimp only at he hn hm hu hT hdu hv ⊢
+    dsimp only [Context.heap, Context.queue, Context.table, Context.n, Context.m, Context.graph,
+      RelaxArgs.vertex, RelaxArgs.dist, RelaxArgs.edge] at he hn hm hu hT hdu hv ⊢
     subst e
     subst n
     subst m
@@ -191,7 +231,7 @@ private theorem relax_realizes : Realizes .exact (fun d : RelaxArgs =>
         ((G.adj u)[i]).2 (AdjacencyList.step_edge G.adj u hi) hv hdu ?_ hfit
       exact G.le_maxWeight (List.getElem_mem hi)
 
-private theorem scan_while_safe (G : Algorithms.WordRAM.Dijkstra.ListInstance)
+private theorem scan_while_safe (G : Algorithms.Dijkstra.ListInstance)
     {w : ℕ} (H : BinaryHeap.Memory.Layout G.n) (T : Block)
     (hH : H.Valid w (G.n * G.maxWeight))
     (hT : Dictionary.Memory.Valid T w G.n (G.n * G.maxWeight + 1))
@@ -229,37 +269,46 @@ private theorem scan_while_safe (G : Algorithms.WordRAM.Dijkstra.ListInstance)
   intro i s hi hinv hvalid
   exact ⟨G, H, hH, hT, u, rfl, rfl, rfl, rfl, hinv, hdu, hfit, hvalid⟩
 
-private abbrev ScanArgs := ((BinaryHeap.Native.HeapLayout × Block) × (ℕ × ℕ)) × (ℕ × ℕ)
+/-- Scan of the out-edges of `vertex` at distance `dist`. -/
+private abbrev ScanArgs := Context × (ℕ × ℕ)
+
+namespace ScanArgs
+
+private abbrev vertex (d : ScanArgs) : ℕ := d.2.1
+private abbrev dist (d : ScanArgs) : ℕ := d.2.2
+
+end ScanArgs
+
 private def scanInput := appendWords
   (appendWords (appendWords BinaryHeap.Native.layoutWords blockWords) (appendWords word word))
   (appendWords word word)
 
 private def scanSafe (w : ℕ) (d : ScanArgs) (s : Memory.State) : Prop :=
-  ∃ (G : Algorithms.WordRAM.Dijkstra.ListInstance) (H : BinaryHeap.Memory.Layout G.n)
+  ∃ (G : Algorithms.Dijkstra.ListInstance) (H : BinaryHeap.Memory.Layout G.n)
     (hH : H.Valid w (G.n * G.maxWeight))
-    (hT : Dictionary.Memory.Valid d.1.1.2 w G.n (G.n * G.maxWeight + 1)) (u : Fin G.n),
-    d.1.1.1 = ⟨G.n, H⟩ ∧ d.1.2.1 = G.n ∧ d.1.2.2 = G.m ∧ d.2.1 = u.val ∧
+    (hT : Dictionary.Memory.Valid d.1.table w G.n (G.n * G.maxWeight + 1)) (u : Fin G.n),
+    d.1.heap = ⟨G.n, H⟩ ∧ d.1.n = G.n ∧ d.1.m = G.m ∧ d.vertex = u.val ∧
       (Memory.framed hH hT (A := Memory.inputGraph G.n G.m) ⟨rfl⟩ G.adj).inv s ∧
-      d.2.2 ≤ G.n * G.maxWeight ∧
+      d.dist ≤ G.n * G.maxWeight ∧
       Fits w (8 * (G.n + G.m + 2) * (G.maxWeight + 2)) ∧
       (spec G.n (G.n * G.maxWeight) (G.n * G.maxWeight + 1)).ValidHistory
         ((Memory.framed hH hT (A := Memory.inputGraph G.n G.m) ⟨rfl⟩ G.adj).abs s)
         ((spec G.n (G.n * G.maxWeight) (G.n * G.maxWeight + 1)).clientHistory
           ((Memory.framed hH hT (A := Memory.inputGraph G.n G.m) ⟨rfl⟩ G.adj).abs s)
-          (scan u d.2.2))
+          (scan u d.dist))
 
 private theorem scan_realizes : Realizes .exact (fun d : ScanArgs =>
-    scanWord (fun v k => BinaryHeap.Memory.insert d.1.1.1.2 v k)
-      (fun v k => BinaryHeap.Memory.decreaseKey d.1.1.1.2 v k) d.1.1.2
-      ⟨⟨3, d.1.2.1 + 1⟩, ⟨d.1.2.1 + 4, 2 * d.1.2.2⟩⟩
-      d.1.2.1 d.2.1 d.2.2)
+    scanWord (fun v k => BinaryHeap.Memory.insert d.1.queue v k)
+      (fun v k => BinaryHeap.Memory.decreaseKey d.1.queue v k) d.1.table
+      d.1.graph
+      d.1.n d.vertex d.dist)
     scanInput (WordEncoding.encode (α := Unit)) scanSafe (fun _ _ => 0) := by
-  have hRelax := relax_realizes
-  realize
+  realize [relax_realizes]
   all_goals
     rcases d with ⟨⟨⟨e, T⟩, n, m⟩, vcur, du⟩
     rcases h with ⟨G, H, hH, hT, u, he, hn, hm, hu, hf, hdu, hfit, hv⟩
-    dsimp only at he hn hm hu hT hdu hv ⊢
+    dsimp only [Context.heap, Context.queue, Context.table, Context.n, Context.m, Context.graph,
+      ScanArgs.vertex, ScanArgs.dist] at he hn hm hu hT hdu hv ⊢
     subst e
     subst n
     subst m
@@ -287,38 +336,42 @@ private theorem scan_realizes : Realizes .exact (fun d : ScanArgs =>
           ((List.range (G.adj u).length).forM (relaxEdge u du))) at hv
       simpa only [remainingEdges, Nat.sub_zero, List.range_eq_range'] using hv.2
 
-private abbrev StepArgs := ((BinaryHeap.Native.HeapLayout × Block) × (ℕ × ℕ)) × ℕ
+/-- One loop round with `rounds` rounds remaining. -/
+private abbrev StepArgs := Context × ℕ
+
+/-- The remaining round count. -/
+private abbrev StepArgs.rounds (d : StepArgs) : ℕ := d.2
+
 private def stepInput := appendWords
   (appendWords (appendWords BinaryHeap.Native.layoutWords blockWords) (appendWords word word)) word
 
 private def stepSafe (w : ℕ) (d : StepArgs) (s : Memory.State) : Prop :=
-  ∃ (G : Algorithms.WordRAM.Dijkstra.ListInstance) (H : BinaryHeap.Memory.Layout G.n)
+  ∃ (G : Algorithms.Dijkstra.ListInstance) (H : BinaryHeap.Memory.Layout G.n)
     (hH : H.Valid w (G.n * G.maxWeight))
-    (hT : Dictionary.Memory.Valid d.1.1.2 w G.n (G.n * G.maxWeight + 1)),
-    d.1.1.1 = ⟨G.n, H⟩ ∧ d.1.2.1 = G.n ∧ d.1.2.2 = G.m ∧
+    (hT : Dictionary.Memory.Valid d.1.table w G.n (G.n * G.maxWeight + 1)),
+    d.1.heap = ⟨G.n, H⟩ ∧ d.1.n = G.n ∧ d.1.m = G.m ∧
       (Memory.framed hH hT (A := Memory.inputGraph G.n G.m) ⟨rfl⟩ G.adj).inv s ∧
       (∀ v k, BinaryHeap.Memory.abs H s v = some k → k ≤ G.n * G.maxWeight) ∧
-      Fits w (8 * (G.n + G.m + 2) * (G.maxWeight + 2)) ∧ 0 < d.2 ∧
+      Fits w (8 * (G.n + G.m + 2) * (G.maxWeight + 2)) ∧ 0 < d.rounds ∧
       (spec G.n (G.n * G.maxWeight) (G.n * G.maxWeight + 1)).ValidHistory
         ((Memory.framed hH hT (A := Memory.inputGraph G.n G.m) ⟨rfl⟩ G.adj).abs s)
         ((spec G.n (G.n * G.maxWeight) (G.n * G.maxWeight + 1)).clientHistory
           ((Memory.framed hH hT (A := Memory.inputGraph G.n G.m) ⟨rfl⟩ G.adj).abs s)
-          (abstractLoopStep d.2))
+          (abstractLoopStep d.rounds))
 
 private theorem step_realizes : Realizes .exact (fun d : StepArgs =>
-    loopStepWord ((BinaryHeap.Memory.extractMin d.1.1.1.2).map
+    loopStepWord ((BinaryHeap.Memory.extractMin d.1.queue).map
       (Option.map fun a => (a.1.val, a.2)))
-      (fun v k => BinaryHeap.Memory.insert d.1.1.1.2 v k)
-      (fun v k => BinaryHeap.Memory.decreaseKey d.1.1.1.2 v k) d.1.1.2
-      ⟨⟨3, d.1.2.1 + 1⟩, ⟨d.1.2.1 + 4, 2 * d.1.2.2⟩⟩ d.1.2.1 ((), d.2))
+      (fun v k => BinaryHeap.Memory.insert d.1.queue v k)
+      (fun v k => BinaryHeap.Memory.decreaseKey d.1.queue v k) d.1.table
+      d.1.graph d.1.n ((), d.rounds))
     stepInput word stepSafe (fun _ _ => 0) := by
-  have hScan := scan_realizes
-  have hExtract := BinaryHeap.Native.realizes_extractMin
-  realize
+  realize [scan_realizes, BinaryHeap.Native.realizes_extractMin]
   all_goals
     rcases d with ⟨⟨⟨e, T⟩, n, m⟩, a⟩
     rcases h with ⟨G, H, hH, hT, he, hn, hm, hf, hb, hfit, ha, hv⟩
-    dsimp only at he hn hm hT hb ha hv ⊢
+    dsimp only [Context.heap, Context.queue, Context.table, Context.n, Context.m, Context.graph,
+      StepArgs.rounds] at he hn hm hT hb ha hv ⊢
     subst e
     subst n
     subst m
@@ -384,10 +437,10 @@ private theorem step_realizes : Realizes .exact (fun d : StepArgs =>
         exact htail.1
 
 private def loopSafe (w : ℕ) (d : StepArgs) (s : Memory.State) : Prop :=
-  ∃ (G : Algorithms.WordRAM.Dijkstra.ListInstance) (H : BinaryHeap.Memory.Layout G.n)
+  ∃ (G : Algorithms.Dijkstra.ListInstance) (H : BinaryHeap.Memory.Layout G.n)
     (hH : H.Valid w (G.n * G.maxWeight))
-    (hT : Dictionary.Memory.Valid d.1.1.2 w G.n (G.n * G.maxWeight + 1)),
-    d.1.1.1 = ⟨G.n, H⟩ ∧ d.1.2.1 = G.n ∧ d.1.2.2 = G.m ∧
+    (hT : Dictionary.Memory.Valid d.1.table w G.n (G.n * G.maxWeight + 1)),
+    d.1.heap = ⟨G.n, H⟩ ∧ d.1.n = G.n ∧ d.1.m = G.m ∧
       (Memory.framed hH hT (A := Memory.inputGraph G.n G.m) ⟨rfl⟩ G.adj).inv s ∧
       (∀ v k, BinaryHeap.Memory.abs H s v = some k → k ≤ G.n * G.maxWeight) ∧
       Fits w (8 * (G.n + G.m + 2) * (G.maxWeight + 2)) ∧
@@ -395,61 +448,68 @@ private def loopSafe (w : ℕ) (d : StepArgs) (s : Memory.State) : Prop :=
         ((Memory.framed hH hT (A := Memory.inputGraph G.n G.m) ⟨rfl⟩ G.adj).abs s)
         ((spec G.n (G.n * G.maxWeight) (G.n * G.maxWeight + 1)).clientHistory
           ((Memory.framed hH hT (A := Memory.inputGraph G.n G.m) ⟨rfl⟩ G.adj).abs s)
-          (loop d.2))
+          (loop d.rounds))
 
 private def stepProgram (d : StepArgs) : Memory.Prog ℕ :=
-  loopStepWord ((BinaryHeap.Memory.extractMin d.1.1.1.2).map
+  loopStepWord ((BinaryHeap.Memory.extractMin d.1.queue).map
     (Option.map fun a => (a.1.val, a.2)))
-    (fun v k => BinaryHeap.Memory.insert d.1.1.1.2 v k)
-    (fun v k => BinaryHeap.Memory.decreaseKey d.1.1.1.2 v k) d.1.1.2
-    ⟨⟨3, d.1.2.1 + 1⟩, ⟨d.1.2.1 + 4, 2 * d.1.2.2⟩⟩ d.1.2.1 ((), d.2)
+    (fun v k => BinaryHeap.Memory.insert d.1.queue v k)
+    (fun v k => BinaryHeap.Memory.decreaseKey d.1.queue v k) d.1.table
+    d.1.graph d.1.n ((), d.rounds)
 
-private def extendedBody (x : (StepArgs × ℕ) × ℕ) : Memory.Prog ℕ :=
-  stepProgram (x.1.1.1, x.2)
+/-- The `boundedWhile` view of the loop: its environment (the round arguments, padded with an
+unused word) and the current round count. -/
+private abbrev LoopArgs := (StepArgs × ℕ) × ℕ
+
+/-- The loop round at the current count. -/
+private abbrev LoopArgs.round (x : LoopArgs) : StepArgs := (x.1.1.1, x.2)
+
+private def extendedBody (x : LoopArgs) : Memory.Prog ℕ :=
+  stepProgram x.round
 
 private theorem extendedBody_realizes :
     Realizes .exact extendedBody (appendWords (appendWords stepInput word) word) word
-      (fun w x s => stepSafe w (x.1.1.1, x.2) s) (fun _ _ => 0) := by
-  apply step_realizes.reindex (fun x => (x.1.1.1, x.2))
+      (fun w x s => stepSafe w (LoopArgs.round x) s) (fun _ _ => 0) := by
+  apply step_realizes.reindex LoopArgs.round
     (appendWords (appendWords stepInput word) word)
     ![0, 1, 2, 3, 4, 5, 6, 7, 10]
   intro e i
   fin_cases i <;> rfl
 
 private theorem nativeWhile_realizes :
-    Realizes .exact (fun x : (StepArgs × ℕ) × ℕ =>
-      boundedWhile (fun e a => e.2 < a) extendedBody x.1 x.1.1.2 x.2)
+    Realizes .exact (fun x : LoopArgs =>
+      boundedWhile (fun e a => e.2 < a) extendedBody x.1 x.1.1.rounds x.2)
       (appendWords (appendWords stepInput word) word) word
       (fun w x s => whileSafe (fun e a => e.2 < a) extendedBody
-        (fun w x s => stepSafe w (x.1.1.1, x.2) s) w x.1 x.1.1.2 x.2 s)
+        (fun w x s => stepSafe w (LoopArgs.round x) s) w x.1 x.1.1.rounds x.2 s)
       (fun _ _ => 0) := by
   apply Realizes.while₀ (appendWords stepInput word) word (.lt 9 10)
-    (fun x => x.1.1.2) extendedBody_realizes
+    (fun x : LoopArgs => x.1.1.rounds) extendedBody_realizes
   intro x s
   exact one_le_memoryCost_liftBind _ _ _
 
 private theorem nativeWhile_valid_realizes :
-    Realizes .exact (fun x : (StepArgs × ℕ) × ℕ =>
-      boundedWhile (fun e a => e.2 < a) extendedBody x.1 x.1.1.2 x.2)
+    Realizes .exact (fun x : LoopArgs =>
+      boundedWhile (fun e a => e.2 < a) extendedBody x.1 x.1.1.rounds x.2)
       (appendWords (appendWords stepInput word) word) word
       (fun w x s => (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s
-        (boundedWhile (fun e a => e.2 < a) extendedBody x.1 x.1.1.2 x.2)) →
+        (boundedWhile (fun e a => e.2 < a) extendedBody x.1 x.1.1.rounds x.2)) →
         whileSafe (fun e a => e.2 < a) extendedBody
-          (fun w x s => stepSafe w (x.1.1.1, x.2) s) w x.1 x.1.1.2 x.2 s)
+          (fun w x s => stepSafe w (LoopArgs.round x) s) w x.1 x.1.1.rounds x.2 s)
       (fun _ _ => 0) :=
   nativeWhile_realizes.consequence_valid (fun _ _ _ _ _ hv h => h hv)
 
 private theorem staged_loop_realizes : Realizes .exact (fun d : StepArgs => do
     let z ← pure 0
-    let a ← pure d.2
-    let _ ← boundedWhile (fun e a => e.2 < a) extendedBody (d, z) d.2 a
+    let a ← pure d.rounds
+    let _ ← boundedWhile (fun e a => e.2 < a) extendedBody (d, z) d.rounds a
     pure ())
     stepInput (WordEncoding.encode (α := Unit)) loopSafe (fun _ _ => 0) := by
-  have hW := nativeWhile_valid_realizes
-  realize
+  realize [nativeWhile_valid_realizes]
   rcases d with ⟨⟨⟨e, T⟩, n, m⟩, a0⟩
   rcases h with ⟨G, H, hH, hT, he, hn, hm, hf, hb, hfit, hv⟩
-  dsimp only at he hn hm hT hb hv ⊢
+  dsimp only [Context.heap, Context.queue, Context.table, Context.n, Context.m, Context.graph,
+    StepArgs.rounds] at he hn hm hT hb hv ⊢
   subst e
   subst n
   subst m
@@ -461,7 +521,7 @@ private theorem staged_loop_realizes : Realizes .exact (fun d : StepArgs => do
       (Memory.inputGraph G.n G.m) ((), a)).trans (loopStep_eq_link M.methods a)
   intro hm
   apply loop_while_safe M.toRefinement (e0, 0) (fun e a => e.2 < a) extendedBody
-    (fun w x s => stepSafe w (x.1.1.1, x.2) s) (fun _ => Iff.rfl) heq ?_ ?_
+    (fun w x s => stepSafe w (LoopArgs.round x) s) (fun _ => Iff.rfl) heq ?_ ?_
     a0 s hf hb hv hm
   · intro a s
     exact loopStepWord_result_le
@@ -473,11 +533,11 @@ private theorem staged_loop_realizes : Realizes .exact (fun d : StepArgs => do
     exact ⟨G, H, hH, hT, rfl, rfl, rfl, hinv, hkeys, hfit, ha, hvalid⟩
 
 private theorem loop_realizes : Realizes .exact (fun d : StepArgs =>
-    loopWord ((BinaryHeap.Memory.extractMin d.1.1.1.2).map
+    loopWord ((BinaryHeap.Memory.extractMin d.1.queue).map
       (Option.map fun a => (a.1.val, a.2)))
-      (fun v k => BinaryHeap.Memory.insert d.1.1.1.2 v k)
-      (fun v k => BinaryHeap.Memory.decreaseKey d.1.1.1.2 v k) d.1.1.2
-      ⟨⟨3, d.1.2.1 + 1⟩, ⟨d.1.2.1 + 4, 2 * d.1.2.2⟩⟩ d.1.2.1 d.2)
+      (fun v k => BinaryHeap.Memory.insert d.1.queue v k)
+      (fun v k => BinaryHeap.Memory.decreaseKey d.1.queue v k) d.1.table
+      d.1.graph d.1.n d.rounds)
     stepInput (WordEncoding.encode (α := Unit)) loopSafe (fun _ _ => 0) := by
   apply staged_loop_realizes.congr
   intro d
@@ -486,15 +546,15 @@ private theorem loop_realizes : Realizes .exact (fun d : StepArgs =>
   refine congrArg (fun p : Memory.Prog ℕ => p >>= fun _ => (pure () : Memory.Prog Unit)) ?_
   exact boundedWhile_congr (fun e a => e.2 < a) (fun (_ : Unit) a => a ≠ 0)
     (body := extendedBody)
-    (body' := loopStepWord ((BinaryHeap.Memory.extractMin d.1.1.1.2).map
+    (body' := loopStepWord ((BinaryHeap.Memory.extractMin d.1.queue).map
       (Option.map fun a => (a.1.val, a.2)))
-      (fun v k => BinaryHeap.Memory.insert d.1.1.1.2 v k)
-      (fun v k => BinaryHeap.Memory.decreaseKey d.1.1.1.2 v k) d.1.1.2
-      ⟨⟨3, d.1.2.1 + 1⟩, ⟨d.1.2.1 + 4, 2 * d.1.2.2⟩⟩ d.1.2.1)
+      (fun v k => BinaryHeap.Memory.insert d.1.queue v k)
+      (fun v k => BinaryHeap.Memory.decreaseKey d.1.queue v k) d.1.table
+      d.1.graph d.1.n)
     (d := (d, 0)) (d' := ()) (fun a => by omega)
-    (fun a => rfl) d.2 d.2
+    (fun a => rfl) d.rounds d.rounds
 
-private theorem initial_loop_safe (G : Algorithms.WordRAM.Dijkstra.ListInstance) {w : ℕ}
+private theorem initial_loop_safe (G : Algorithms.Dijkstra.ListInstance) {w : ℕ}
     (hfit : Fits w (8 * (G.n + G.m + 2) * (G.maxWeight + 2))) :
     loopSafe w
       (((⟨G.n, BinaryHeap.Memory.allocated G.n ((Memory.State.init G.encode).frontier + G.n)⟩,
@@ -605,12 +665,10 @@ private theorem word_run_realizes : Realizes .exact
     (WordEncoding.encode (α := Unit)) (WordEncoding.encode (α := Unit))
     (fun w _ s => ∃ G : ListInstance, s = Memory.State.init G.encode ∧
       Fits w (8 * (G.n + G.m + 2) * (G.maxWeight + 2))) (fun _ _ => 0) := by
-  have hAlloc := BinaryHeap.Native.Initialize.realizes_allocLayout
-  have hInsert := BinaryHeap.Native.realizes_insert
-  have hDecrease := BinaryHeap.Native.realizes_decreaseKey
-  have hLoop := loop_realizes
   unfold runWord Memory.inputGraph
   realize
+    [BinaryHeap.Native.Initialize.realizes_allocLayout, BinaryHeap.Native.realizes_insert,
+      BinaryHeap.Native.realizes_decreaseKey, loop_realizes]
   case hsafe.left =>
     rcases h with ⟨G, rfl, hfit⟩
     exact hfit.of_le (by nlinarith)

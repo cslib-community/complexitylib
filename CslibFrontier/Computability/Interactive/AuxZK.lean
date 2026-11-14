@@ -30,9 +30,11 @@ directions from the zero-knowledge roadmap:
      reduction is automatically `AuxHVZK` / `PerfectAuxHVZK` by ignoring `z`
      (`Reduction.HVZK.auxHVZK`, `Reduction.PerfectHVZK.perfectAuxHVZK`), and conversely
      instantiating at any `z₀ : Aux` recovers `HVZK` / `PerfectHVZK`.
-   * `VerifierStrategy`, `runAgainst`, `Reduction.viewOf`, `Reduction.ZK`: malicious-verifier
-     auxiliary-input zero knowledge in the plain model, where a strategy tree of the verifier's
-     role adaptively chooses challenges and outputs an arbitrary view. Embedding the honest
+   * `VerifierStrategy`, `runAgainst`, `Reduction.viewOf`, `Reduction.ZK`: statistical
+     malicious-verifier auxiliary-input zero knowledge in the plain model, with unbounded
+     verifiers and an unbounded simulator, where a strategy tree of the verifier's role adaptively
+     chooses challenges and outputs an arbitrary view. It is not the computational definition of
+     [Goldreich2001], whose verifiers and simulators are efficient. Embedding the honest
      verifier's challenge samplers (`honestVerifierStrategy`) proves that `Reduction.ZK` implies
      `Reduction.AuxHVZK` (`Reduction.ZK.auxHVZK`).
    * `AuxSimulatorRealizedBy`, `Reduction.EfficientAuxHVZK`: uniform strict-PPT realization of an
@@ -282,10 +284,13 @@ noncomputable def Reduction.viewOf
     let (_, _, view) ← runAgainst s p v
     return view
 
-/-- **Malicious-verifier auxiliary-input zero knowledge** ([Goldreich2001], §4.3.3,
-Definition 4.3.10) with statistical error `ε`, in the plain model: for every malicious verifier
-`Vstar`, every valid `(x, w)` in `relIn`, and every auxiliary input `z : Aux`, the simulator
-`Sim Vstar x z` reproduces `Vstar`'s view within statistical distance `ε x z`. -/
+/-- **Statistical malicious-verifier auxiliary-input zero knowledge, with an unbounded simulator
+and verifier**, in the plain model: for every malicious verifier `Vstar`, every valid `(x, w)` in
+`relIn`, and every auxiliary input `z : Aux`, the simulator `Sim Vstar x z` reproduces `Vstar`'s
+view within statistical distance `ε x z`. Neither `Vstar` nor `Sim` is required to be efficient,
+and closeness is statistical, so this is not the computational auxiliary-input definition of
+[Goldreich2001], §4.3.3, Definition 4.3.10, whose verifiers and simulators are efficient. An
+efficient variant is not formalized. -/
 def Reduction.ZK
     (R : Reduction OracleSpec.empty OracleSpec.empty s StmtIn WitIn StmtOut WitOut)
     (relIn : StmtIn → WitIn → Prop)
@@ -390,8 +395,8 @@ theorem Reduction.viewOf_honestVerifierStrategy
   rw [plainLaw_runAgainst_honestVerifierStrategy, PMF.bind_map]
   rfl
 
-/-- **Malicious-verifier auxiliary-input zero knowledge (`Reduction.ZK`) implies honest-verifier
-auxiliary-input zero knowledge (`Reduction.AuxHVZK`).** -/
+/-- **Statistical malicious-verifier auxiliary-input zero knowledge (`Reduction.ZK`) implies
+honest-verifier auxiliary-input zero knowledge (`Reduction.AuxHVZK`).** -/
 theorem Reduction.ZK.auxHVZK
     {R : Reduction OracleSpec.empty OracleSpec.empty s StmtIn WitIn StmtOut WitOut}
     {relIn : StmtIn → WitIn → Prop}
@@ -940,8 +945,10 @@ theorem Verifier.KnowledgeSound.seqProd
       ¬ relIn₂ x₂ (E₂ x₂ (Transcript.split s₁ s₂ r.1).2 r.2.2)}
   have hsub : (fun r : Transcript (s₁ ++ s₂) × (W₁' × W₂') =>
         (r.1, (V₁.seqProd V₂).outputOn (x₁, x₂) r.1, r.2)) ⁻¹'
-      {r | (∃ y, r.2.1 = some y ∧ relProd relOut₁ relOut₂ y r.2.2) ∧
-        ¬ relProd relIn₁ relIn₂ (x₁, x₂) (Verifier.extractSeqProd E₁ E₂ (x₁, x₂) r.1 r.2.2)} ⊆
+      {r : Execution (s₁ ++ s₂) (S₁' × S₂') (W₁' × W₂') |
+        (∃ y, r.output = some y ∧ relProd relOut₁ relOut₂ y r.result) ∧
+        ¬ relProd relIn₁ relIn₂ (x₁, x₂)
+          (Verifier.extractSeqProd E₁ E₂ (x₁, x₂) r.transcript r.result)} ⊆
       T₁ ∪ T₂ := by
     rintro ⟨τ, w₁', w₂'⟩ ⟨⟨⟨y₁, y₂⟩, hout, hy₁, hy₂⟩, hnot⟩
     rw [Verifier.outputOn_seqProd_eq_some_iff] at hout

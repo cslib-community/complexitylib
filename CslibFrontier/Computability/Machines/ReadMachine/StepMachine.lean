@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Machines.ReadMachine.Basic
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.StepMachine.Basic
+import Mathlib.Data.List.GetD
 
 /-!
 # Step machines simulating read machines
@@ -75,6 +76,11 @@ theorem stepCfg_read {d : StepMachine.Cfg (σ × ℕ) Bool x} (hhalt : m.halt d.
 theorem readBit_eq {q : σ} {A : ℕ} (h : m.addr q = some A) : m.readBit x q = x.getD A false := by
   simp [readBit, h]
 
+private theorem inputSymbolAt_getD {pos : Fin (x.length + 2)} {A : ℕ} (hpos : pos.val = A + 1) :
+    (MultiTapeTM.inputSymbolAt x pos).getD false = x.getD A false := by
+  simp only [MultiTapeTM.inputSymbolAt, hpos, Nat.succ_ne_zero, ↓reduceIte, Nat.add_sub_cancel]
+  exact List.getD_eq_getElem?_getD.symm
+
 /-- The walk of the head to the cell of the address read next, and the step there. -/
 theorem exists_iterate_stepCfg_some {q : σ} {A : ℕ} (hA : m.addr q = some A)
     (hhalt : m.halt q = false) (out : List Bool) :
@@ -88,7 +94,7 @@ theorem exists_iterate_stepCfg_some {q : σ} {A : ℕ} (hA : m.addr q = some A)
     have hpos : d.pos.val = A + 1 := by omega
     have hb : (m.toStepMachine).step d.state (MultiTapeTM.inputSymbolAt x d.pos) =
         m.stepAt d.state.1 d.state.2 (x.getD A false) := by
-      simp [toStepMachine, hs, hA, hpos, MultiTapeTM.inputSymbolAt, List.getD_eq_getElem?_getD]
+      simp [toStepMachine, hs, hA, hpos, inputSymbolAt_getD hpos]
     refine ⟨1, ?_⟩
     rw [Function.iterate_one, stepCfg_read (by simp [hs, hhalt]) hb]
     simp [Represents, next, hhalt, readBit_eq hA, hs, ho]
@@ -109,8 +115,8 @@ theorem exists_iterate_stepCfg_some {q : σ} {A : ℕ} (hA : m.addr q = some A)
           simp [hpos, hlt, hend]
         refine ⟨1, ?_⟩
         rw [Function.iterate_one, stepCfg_read (by simp [hs, hhalt]) hb]
-        simp [Represents, next, hhalt, readBit_eq hA, hs, ho, List.getD_eq_getElem?_getD,
-          List.getElem?_eq_none hgt]
+        simp only [Represents, next, readBit_eq hA, List.getD_eq_default _ _ hgt]
+        simp [hhalt, hs, ho]
       · -- move right
         have hmove : (moveInputPos d.pos 1).val = d.pos.val + 1 := by
           rw [MultiTapeTM.val_moveInputPos_pos]
@@ -210,8 +216,8 @@ theorem Follows.stepCfg {d : StepMachine.Cfg (σ × ℕ) Bool x} (h : Follows (m
   · exact hread (b := false) (by simp [toStepMachine, hs, hA]) (by simp [readBit, hA])
   · by_cases h₁ : d.pos.val = A + 1
     · exact hread (b := x.getD A false)
-        (by simp [toStepMachine, hs, hA, h₁, MultiTapeTM.inputSymbolAt, List.getD_eq_getElem?_getD])
-        (by simp [readBit, hA, List.getD_eq_getElem?_getD])
+        (by simp [toStepMachine, hs, hA, h₁, inputSymbolAt_getD h₁])
+        (readBit_eq hA).symm
     by_cases h₂ : d.pos.val < A + 1
     · by_cases h₃ : MultiTapeTM.inputSymbolAt x d.pos = none ∧ d.pos.val ≠ 0
       · have hgt : x.length ≤ A := by
@@ -219,7 +225,7 @@ theorem Follows.stepCfg {d : StepMachine.Cfg (σ × ℕ) Bool x} (h : Follows (m
           simp only [MultiTapeTM.inputSymbolAt, h₅, ↓reduceIte, List.getElem?_eq_none_iff] at h₄
           omega
         exact hread (b := false) (by simp only [toStepMachine, hs, hA]; simp [h₁, h₂, h₃])
-          (by simp [readBit, hA, List.getD_eq_getElem?_getD, List.getElem?_eq_none hgt])
+          (by rw [readBit_eq hA, List.getD_eq_default _ _ hgt])
       · have h₃' : ¬(MultiTapeTM.inputSymbolAt x d.pos = none ∧ ¬d.pos = 0) :=
           fun h => h₃ ⟨h.1, fun h0 => h.2 (Fin.ext h0)⟩
         have hmove : (moveInputPos d.pos 1).val = d.pos.val + 1 := by

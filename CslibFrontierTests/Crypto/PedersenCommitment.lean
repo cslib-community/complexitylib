@@ -49,9 +49,9 @@ example :
       ⟨d23, (3 : ZMod (schnorrGroups.order d23)) • schnorrGroups.generator d23⟩
       (Nat.bits 3, (Nat.bits 4, Nat.bits 5), (Nat.bits 2, Nat.bits 2)) = true := by decide
 
-/-- `pedersenExtractNat` recovers the secret discrete logarithm `α = 3` from the concrete collision
-`((4, 5), (2, 2))` modulo `11`. -/
-example : pedersenExtractNat 11 4 5 2 2 = 3 := by decide
+/-- `extractNat` recovers the secret discrete logarithm `α = 3` from the concrete collision
+`((4, 5), (2, 2))` modulo `11`: `α = (r₁ - r₀)⁻¹ (m₀ - m₁) = extractNat 11 r₁ m₀ r₀ m₁`. -/
+example : extractNat 11 2 4 5 2 = 3 := by decide
 
 /-- Additive homomorphism of Pedersen commitments on `d23`. -/
 example (h : schnorrGroups.Carrier d23) :
@@ -59,6 +59,43 @@ example (h : schnorrGroups.Carrier d23) :
       schnorrGroups.pedersenCommit d23 h 6 8 := by
   rw [← schnorrGroups.pedersenCommit_add]
   rfl
+
+/-! ### Typed Pedersen commitments on `d23` -/
+
+/-- Typed verification: under `h = 3 • g`, the opening `(m, r) = (4, 5)` opens the commitment
+`4 • g + 5 • h`. -/
+example (c : schnorrGroups.Carrier d23)
+    (hc : c = schnorrGroups.pedersenCommit d23
+      ((3 : ZMod (schnorrGroups.order d23)) • schnorrGroups.generator d23) 4 5) :
+    (schnorrGroups.pedersen d23).verify
+      ((3 : ZMod (schnorrGroups.order d23)) • schnorrGroups.generator d23) 4 c 5 = true := by
+  simp [hc]
+
+/-- `(4, 5)` and `(2, 2)` collide under `h = 3 • g`, since `4 + 5 * 3 ≡ 2 + 2 * 3 (mod 11)`, and the
+typed extraction `(r₁ - r₀)⁻¹ * (m₀ - m₁)` recovers `α = 3`. -/
+example : ((2 : ZMod (schnorrGroups.order d23)) - 5)⁻¹ * (4 - 2) = 3 :=
+  schnorrGroups.inv_mul_eq_of_pedersenCommit_eq (by decide)
+    ((schnorrGroups.pedersenCommit_smul_generator_eq_iff d23 3 4 5 2 2).mpr (by decide))
+
+/-- Typed fixed-group hiding: every adversary has advantage at most `1 / q` on `d23`, where
+`q = 11`. -/
+example {σ : Type}
+    (A : TwoStage (schnorrGroups.Carrier d23) (MessagePair (ZMod (schnorrGroups.order d23)))
+      (schnorrGroups.Carrier d23) Bool σ) :
+    Experiment.advantage ((schnorrGroups.pedersen d23).hidingExperiment A false)
+      ((schnorrGroups.pedersen d23).hidingExperiment A true) ≤
+        (schnorrGroups.order d23 : ℝ≥0)⁻¹ :=
+  schnorrGroups.advantage_pedersen_hidingExperiment_le d23 A
+
+/-- Typed fixed-group binding: breaking binding on `d23` is no easier than computing discrete
+logarithms there. -/
+example (A : schnorrGroups.Carrier d23 →
+      ProbComp (Commitment.BindingCollision (ZMod (schnorrGroups.order d23))
+        (schnorrGroups.Carrier d23) (ZMod (schnorrGroups.order d23)))) :
+    Experiment.succProbability ((schnorrGroups.pedersen d23).bindingExperiment A) ≤
+      dlAdvantage (schnorrGroups.order d23) (schnorrGroups.generator d23)
+        (schnorrGroups.pedersenToDL A) :=
+  schnorrGroups.succProbability_pedersen_bindingExperiment_le A
 
 /-- Unconditional hiding: for any (even computationally unbounded) `Encryption.WordAdversary` and
 any setup law over Schnorr groups of order at least `2 ^ n`, the hiding advantage in

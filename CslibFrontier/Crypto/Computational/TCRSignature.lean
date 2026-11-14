@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Computational.IndexedSignature.Double
-public import CslibFrontier.Crypto.Computational.NaorYung
+public import CslibFrontier.Crypto.Computational.NaorYungUOWHF
 public import CslibFrontier.Crypto.Computational.OneWayToSignature
 public import CslibFrontier.Crypto.Computational.TreeSignature.Security
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Configuration
@@ -1071,15 +1071,15 @@ noncomputable def oneTimeForger {k : ℕ} {Control : Type}
       let r0 := simRun machine word [] coins
       match r0.2 with
       | none =>
-        let out := outDecoder.decode r0.1
-        return otsForgeryOf H n out.2.1 out.2.2
+        let (_, msg, sig) := outDecoder.decode r0.1
+        return otsForgeryOf H n msg sig
       | some m₀ =>
         let ots ← List.take (sigBound n) <$>
           ProbOracleComp.query ((), otsMsg H n hashKey (H.eval n hashKey m₀))
         let reply := (encPair encBits encBits (hashKey, ots)).take fuel
         let r1 := simRun machine word reply coins
-        let out := outDecoder.decode r1.1
-        return otsForgeryOf H n out.2.1 out.2.2
+        let (_, msg, sig) := outDecoder.decode r1.1
+        return otsForgeryOf H n msg sig
     else
       pure ([], [])
 
@@ -1107,12 +1107,14 @@ noncomputable def tcrAdversary {k : ℕ} {Control : Type}
     let r0 := simRun machine word [] coins
     match r0.2 with
     | none =>
-      return (outDecoder.decode r0.1).2.1
+      let (_, m₁, _) := outDecoder.decode r0.1
+      return m₁
     | some m₀ =>
       let ots ← S.sign keys.2 (otsMsg H n hashKey (H.eval n hashKey m₀))
       let reply := (encPair encBits encBits (hashKey, ots)).take fuel
       let r1 := simRun machine word reply coins
-      return (outDecoder.decode r1.1).2.1
+      let (_, m₁, _) := outDecoder.decode r1.1
+      return m₁
 
 theorem computableInPolyTime_wordOf {α : Type} {input : α ↪ List Bool}
     {n : α → ℕ} {pk : α → List Bool}
@@ -1128,10 +1130,9 @@ theorem computableInPolyTime_fuelOf {α : Type} {input : α ↪ List Bool}
     (hn : ComputableInPolyTime n input encUnary)
     (hpk : ComputableInPolyTime pk input encBits) :
     ComputableInPolyTime (fun a => simFuelOf c d (n a) (pk a)) input encUnary := by
-  have hlen := ComputableInPolyTime.length_bits.comp (computableInPolyTime_wordOf hn hpk)
-  have hbase := hlen.unary_add' (.const 1)
-  have hpow := (ComputableInPolyTime.unary_pow d).comp hbase
-  exact (ComputableInPolyTime.const c).unary_mul' hpow
+  have hword := computableInPolyTime_wordOf hn hpk
+  unfold simFuelOf
+  fun_prop
 
 private theorem computableInPolyTime_simReplay_comp {k : ℕ} {Control α : Type}
     [Finite Control] {input : α ↪ List Bool}
@@ -1485,8 +1486,8 @@ theorem succProbability_indexedEufCmaGame_le_of_machine {k : ℕ} {Control : Typ
     | none =>
       simp only [runWith_norm, pmf_norm]
     | some m₀ =>
-      simp only [SignatureScheme.oneTimeSigningOracle, List.isEmpty_nil, ↓reduceIte,
-        _root_.PMF.map, runWith_norm, pmf_norm]
+      simp only [SignatureScheme.oneTimeSigningOracle, SignatureScheme.oneTimeSigningOracleOf,
+        List.isEmpty_nil, ↓reduceIte, _root_.PMF.map, runWith_norm, pmf_norm]
       peel_binds ots
       have htake : ots.take (sigBound n) = ots :=
         List.take_of_length_le
@@ -1576,32 +1577,13 @@ theorem exists_ots_bounds (S : SignatureScheme) (H : KeyedHashFamily) :
         ∀ msg, msg.length = otsParam H n →
         ∀ ots ∈ (ProbComp.eval (S.sign keys.2 msg)).support, ots.length ≤ sigBound n) := by
   obtain ⟨ckg, dkg, hkgLen⟩ := S.keyGen_ppt.length_le
-  obtain ⟨csg, dsg, hsgLen⟩ := S.sign_ppt.length_le
-  let vkBound (n : ℕ) : ℕ := ckg * (otsParam H n + 1) ^ dkg
-  let sigBound (n : ℕ) : ℕ := csg * (2 * vkBound n + otsParam H n + 2) ^ dsg
-  have hM := computableInPolyTime_otsParam H
-  have hvkPoly : ComputableInPolyTime vkBound encUnary encUnary :=
-    (ComputableInPolyTime.const ckg).unary_mul'
-      ((ComputableInPolyTime.unary_pow dkg).comp (hM.unary_add' (.const 1)))
-  have hsigPoly : ComputableInPolyTime sigBound encUnary encUnary :=
-    (ComputableInPolyTime.const csg).unary_mul'
-      ((ComputableInPolyTime.unary_pow dsg).comp
-        ((((ComputableInPolyTime.const 2).unary_mul' hvkPoly).unary_add' hM).unary_add'
-          (.const 2)))
-  refine ⟨ckg, dkg, sigBound, hsigPoly, ?_, ?_⟩
-  · intro n keys hkeys
-    have hkPair := hkgLen (otsParam H n) keys hkeys
-    simp only [length_encPair, encBits_apply, encUnary_apply, List.length_replicate] at hkPair
-    omega
-  · intro n keys hkeys msg hmsg ots hots
-    have hkPair := hkgLen (otsParam H n) keys hkeys
-    simp only [length_encPair, encBits_apply, encUnary_apply, List.length_replicate] at hkPair
-    have hsPair := hsgLen (keys.2, msg) ots hots
-    simp only [length_encPair, encBits_apply, hmsg] at hsPair
-    have hbaseLe : 2 * keys.2.length + 1 + otsParam H n + 1 ≤
-        2 * vkBound n + otsParam H n + 2 := by
-      dsimp only [vkBound]; omega
-    exact hsPair.trans (Nat.mul_le_mul_left csg (Nat.pow_le_pow_left hbaseLe dsg))
+  obtain ⟨bound, hboundPoly, hbound⟩ := S.exists_sign_length_bound_of_length_eq
+  refine ⟨ckg, dkg, fun n => bound (otsParam H n),
+    hboundPoly.comp (computableInPolyTime_otsParam H), fun n keys hkeys => ?_,
+    fun n => hbound (otsParam H n)⟩
+  have hkPair := hkgLen (otsParam H n) keys hkeys
+  simp only [length_encPair, encBits_apply, encUnary_apply, List.length_replicate] at hkPair
+  omega
 
 /-- **Existential reduction for `TCRSignature.scheme`** ([BonehShoup2023], Section 13.2.1,
 Theorem 13.2): every strict oracle-PPT indexed forger `adversary` induces a strict oracle-PPT

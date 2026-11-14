@@ -159,6 +159,23 @@ theorem targetCandidates_biUnion_card_le {k r h : ℕ} {I : Type} [Fintype I]
     _ ≤ 15 * sideSensitivity F false :=
       Nat.mul_le_mul_right _ (Nat.le_of_lt_succ (targetCandidates_card T A F hF q x hr))
 
+open scoped Classical in
+/-- A flip that changes the final predicate on a rejected target child `(i, c)` of a target
+candidate `i` is among the coordinates counted by `targetCandidates_biUnion_card_le`. -/
+theorem mem_targetCandidates_biUnion_of_flip {k r h : ℕ} {I : Type} [Fintype I]
+    (T : Tournament k) (label : Fin k → Fin k → Fin r) (F : Fin (h + 1) → (I → Bool) → Bool)
+    (hr : 0 < r) (q : Fin h) (x : ((Fin k × Fin r) × I) → Bool) {i : Fin k} {c : Fin r} {a : I}
+    (hi : i ∈ targetCandidates T label F q x)
+    (hoff : F (Fin.last h) (recursiveChild x i c) = false)
+    (hon : F (Fin.last h) (BitString.flipOn {a} (recursiveChild x i c)) = true) :
+    ((i, c), a) ∈ (targetCandidates T label F q x).biUnion fun i =>
+      childChanges F (Fin.last h) x i (targetWitness F x hr i) := by
+  have hc := targetWitness_unique T label F q x hr i hi c hoff
+  refine Finset.mem_biUnion.mpr ⟨i, hi, ?_⟩
+  have hn : F (Fin.last h) (BitString.flipOn {a} (recursiveChild x i c)) ≠
+      F (Fin.last h) (recursiveChild x i c) := by simp [hon, hoff]
+  simpa [childChanges, hc] using hn
+
 end Internal
 
 end

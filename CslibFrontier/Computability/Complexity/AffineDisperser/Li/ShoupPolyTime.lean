@@ -14,10 +14,11 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.P
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString.Dot
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Captured
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fold
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Iteration
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.PowMod
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Prime
@@ -49,6 +50,7 @@ public section
 namespace Cslib.AffineDisperser.Li
 
 open Turing.MultiTapeTM
+open Cslib.BitString (listDot)
 
 attribute [local irreducible] ComputableInPolyTime ComputableTidilyInPolyTime
 
@@ -120,65 +122,61 @@ theorem computableInPolyTime_primeDeg :
 
 private def ordSomeAdd1 (_ x : ℕ) : ℕ := x + 1
 
-private theorem tidy_ordTwoMod :
-    ComputableTidilyInPolyTime ordTwoMod encUnary encUnary := by
-  have hu2b : ComputableTidilyInPolyTime (fun n : ℕ => n) encUnary encNat := by fun_prop
-  have htwoPow : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => 2 ^ (p.2 + 1))
+/-- `ordTwoMod` is computable in polynomial time on unary naturals. -/
+theorem computableInPolyTime_ordTwoMod :
+    ComputableInPolyTime ordTwoMod encUnary encUnary := by
+  have hu2b : ComputableInPolyTime (fun n : ℕ => n) encUnary encNat := by fun_prop
+  have htwoPow : ComputableInPolyTime (fun p : ℕ × ℕ => 2 ^ (p.2 + 1))
       (encPair encUnary encUnary) encNat :=
-    ComputableTidilyInPolyTime.binary_two_pow.comp
-      (by fun_prop : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => p.2 + 1)
+    ComputableInPolyTime.binary_two_pow.comp
+      (by fun_prop : ComputableInPolyTime (fun p : ℕ × ℕ => p.2 + 1)
         (encPair encUnary encUnary) encUnary)
-  have hmod : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => 2 ^ (p.2 + 1) % p.1)
+  have hmod : ComputableInPolyTime (fun p : ℕ × ℕ => 2 ^ (p.2 + 1) % p.1)
       (encPair encUnary encUnary) encNat :=
-    ComputableTidilyInPolyTime.binary_mod' htwoPow
-      (hu2b.comp (ComputableTidilyInPolyTime.fst encUnary encUnary))
+    ComputableInPolyTime.binary_mod' htwoPow
+      (hu2b.comp (ComputableInPolyTime.fst encUnary encUnary))
   have hpred := hmod.beq (.const 1)
-  have hf : ComputableTidilyInPolyTime
+  have hf : ComputableInPolyTime
       (fun q : ℕ => (List.range (q - 1)).find? fun i => 2 ^ (i + 1) % q == 1)
       encUnary (encOption encUnary) :=
-    ComputableTidilyInPolyTime.findWithInput (test := fun q i => 2 ^ (i + 1) % q == 1)
-      (ComputableTidilyInPolyTime.range.comp (by fun_prop :
-        ComputableTidilyInPolyTime (fun q : ℕ => q - 1) encUnary encUnary))
+    ComputableInPolyTime.findWithInput (test := fun q i => 2 ^ (i + 1) % q == 1)
+      (ComputableInPolyTime.range.comp (by fun_prop :
+        ComputableInPolyTime (fun q : ℕ => q - 1) encUnary encUnary))
       hpred
-  have hsome : ComputableTidilyInPolyTime (fun p : ℕ × ℕ => ordSomeAdd1 p.1 p.2)
+  have hsome : ComputableInPolyTime (fun p : ℕ × ℕ => ordSomeAdd1 p.1 p.2)
       (encPair encUnary encUnary) encUnary := by
     unfold ordSomeAdd1
     fun_prop
-  have helim := ComputableTidilyInPolyTime.optionElimWithInput hf
-    (ComputableTidilyInPolyTime.const 0) hsome
+  have helim := ComputableInPolyTime.optionElimWithInput hf
+    (ComputableInPolyTime.const 0) hsome
   convert helim using 1
   funext q
   unfold ordTwoMod ordSomeAdd1
   cases (List.find? (fun i => 2 ^ (i + 1) % q == 1) (List.range (q - 1))) <;> rfl
 
-/-- `ordTwoMod` is computable in polynomial time on unary naturals. -/
-theorem computableInPolyTime_ordTwoMod :
-    ComputableInPolyTime ordTwoMod encUnary encUnary :=
-  .of_tidy tidy_ordTwoMod
-
-private theorem tidy_qAdicValTwoPowSubOne :
-    ComputableTidilyInPolyTime (fun p : ℕ × ℕ => qAdicValTwoPowSubOne p.1 p.2)
+/-- `qAdicValTwoPowSubOne` is computable in polynomial time on unary naturals. -/
+theorem computableInPolyTime_qAdicValTwoPowSubOne :
+    ComputableInPolyTime (fun p : ℕ × ℕ => qAdicValTwoPowSubOne p.1 p.2)
       (encPair encUnary encUnary) encUnary := by
-  have hu2b : ComputableTidilyInPolyTime (fun n : ℕ => n) encUnary encNat := by fun_prop
-  have htwoPow : ComputableTidilyInPolyTime
+  have htwoPow : ComputableInPolyTime
       (fun p : (ℕ × ℕ) × ℕ => 2 ^ p.1.2)
       (encPair (encPair encUnary encUnary) encUnary) encNat :=
-    ComputableTidilyInPolyTime.binary_two_pow.comp
-      (by fun_prop : ComputableTidilyInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.1.2)
+    ComputableInPolyTime.binary_two_pow.comp
+      (by fun_prop : ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.1.2)
         (encPair (encPair encUnary encUnary) encUnary) encUnary)
-  have hpow : ComputableTidilyInPolyTime
+  have hpow : ComputableInPolyTime
       (fun p : (ℕ × ℕ) × ℕ => p.1.1 ^ (p.2 + 1))
       (encPair (encPair encUnary encUnary) encUnary) encNat := by
-    have hbase : ComputableTidilyInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.1.1)
+    have hbase : ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.1.1)
         (encPair (encPair encUnary encUnary) encUnary) encNat := by fun_prop
-    have hexp : ComputableTidilyInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.2 + 1)
+    have hexp : ComputableInPolyTime (fun p : (ℕ × ℕ) × ℕ => p.2 + 1)
         (encPair (encPair encUnary encUnary) encUnary) encUnary := by fun_prop
-    exact ComputableTidilyInPolyTime.binary_pow' hbase hexp
-  have hmod : ComputableTidilyInPolyTime
+    exact ComputableInPolyTime.binary_pow' hbase hexp
+  have hmod : ComputableInPolyTime
       (fun p : (ℕ × ℕ) × ℕ => 2 ^ p.1.2 % p.1.1 ^ (p.2 + 1))
       (encPair (encPair encUnary encUnary) encUnary) encNat :=
-    ComputableTidilyInPolyTime.binary_mod' htwoPow hpow
-  have hpred : ComputableTidilyInPolyTime
+    ComputableInPolyTime.binary_mod' htwoPow hpow
+  have hpred : ComputableInPolyTime
       (fun p : (ℕ × ℕ) × ℕ => decide ((2 ^ p.1.2 % p.1.1 ^ (p.2 + 1) == 1) = true))
       (encPair (encPair encUnary encUnary) encUnary) encBool := by
     have hbeq := hmod.beq (.const 1)
@@ -189,15 +187,9 @@ private theorem tidy_qAdicValTwoPowSubOne :
       cases h : (2 ^ p.1.2 % p.1.1 ^ (p.2 + 1) == 1) <;> simp_all
     rw [heq]
     exact hbeq
-  exact ComputableTidilyInPolyTime.countPWithInput (encA := encUnary)
-    (ComputableTidilyInPolyTime.range.comp (ComputableTidilyInPolyTime.fst encUnary encUnary))
+  exact ComputableInPolyTime.countPWithInput (encA := encUnary)
+    (ComputableInPolyTime.range.comp (ComputableInPolyTime.fst encUnary encUnary))
     hpred
-
-/-- `qAdicValTwoPowSubOne` is computable in polynomial time on unary naturals. -/
-theorem computableInPolyTime_qAdicValTwoPowSubOne :
-    ComputableInPolyTime (fun p : ℕ × ℕ => qAdicValTwoPowSubOne p.1 p.2)
-      (encPair encUnary encUnary) encUnary :=
-  .of_tidy tidy_qAdicValTwoPowSubOne
 
 /-! ### Binary polynomial arithmetic (`polyTrim`, `polyAdd`, `polyMul`, `polyDivMod`, `polyGcd`) -/
 
@@ -738,17 +730,18 @@ theorem computableInPolyTime_polyComposePow :
 
 /-! ### Gaussian elimination and Berlekamp factoring -/
 
-private theorem tidy_dotBool :
-    ComputableTidilyInPolyTime (fun p : List Bool × List Bool => dotBool p.1 p.2)
+private theorem tidy_listDot :
+    ComputableTidilyInPolyTime (fun p : List Bool × List Bool => listDot p.1 p.2)
       (encPair encBits encBits) encBool :=
-  (tidy_bitsFoldBool xor false).comp (ComputableTidilyInPolyTime.bitsZipWith and)
+  (by fun_prop : ComputableInPolyTime (fun p : List Bool × List Bool => listDot p.1 p.2)
+    (encPair encBits encBits) encBool).tidy
 
 private def kernelDot (p : List (List Bool) × List Bool) (v : List Bool) : Bool :=
-  dotBool p.2 v
+  listDot p.2 v
 
 private def kernelRowStep (par : List (List Bool) × List Bool) (v : List Bool) : List Bool :=
-  if dotBool par.2 v then
-    List.zipWith xor v (par.1.getD ((par.1.map (dotBool par.2)).idxOf true) [])
+  if listDot par.2 v then
+    List.zipWith xor v (par.1.getD ((par.1.map (listDot par.2)).idxOf true) [])
   else v
 
 private theorem tidy_kernelStepBits :
@@ -760,14 +753,14 @@ private theorem tidy_kernelStepBits :
   have hdotEl : ComputableTidilyInPolyTime
       (fun x : (List (List Bool) × List Bool) × List Bool => kernelDot x.1 x.2)
       (encPair (encPair (encList encBits) encBits) encBits) encBool :=
-    tidy_dotBool.comp ((ha.comp (ComputableTidilyInPolyTime.fst (encPair (encList encBits) encBits)
+    tidy_listDot.comp ((ha.comp (ComputableTidilyInPolyTime.fst (encPair (encList encBits) encBits)
       encBits)).prod (ComputableTidilyInPolyTime.snd (encPair (encList encBits) encBits) encBits))
   have hvals : ComputableTidilyInPolyTime
-      (fun p : List (List Bool) × List Bool => p.1.map (dotBool p.2))
+      (fun p : List (List Bool) × List Bool => p.1.map (listDot p.2))
       (encPair (encList encBits) encBits) (encList encBool) :=
     ComputableTidilyInPolyTime.mapWithInput (f := kernelDot) hN hdotEl
   have hpIdx : ComputableTidilyInPolyTime
-      (fun p : List (List Bool) × List Bool => (p.1.map (dotBool p.2)).idxOf true)
+      (fun p : List (List Bool) × List Bool => (p.1.map (listDot p.2)).idxOf true)
       (encPair (encList encBits) encBits) encUnary :=
     ComputableTidilyInPolyTime.idxOfWithInput (encA := encBool) hvals (.const true)
   have hlenNPlain : ComputableInPolyTime (fun l : List (List Bool) => l.length)
@@ -778,7 +771,7 @@ private theorem tidy_kernelStepBits :
     hlenNPlain.tidy.comp hN
   have hcond := ComputableTidilyInPolyTime.unary_lt' hpIdx hlenN
   have hpiv : ComputableTidilyInPolyTime
-      (fun p : List (List Bool) × List Bool => p.1.getD ((p.1.map (dotBool p.2)).idxOf true) [])
+      (fun p : List (List Bool) × List Bool => p.1.getD ((p.1.map (listDot p.2)).idxOf true) [])
       (encPair (encList encBits) encBits) encBits := by
     have hget : ComputableInPolyTime (fun p : List (List Bool) × ℕ => p.1.getD p.2 [])
         (encPair (encList encBits) encUnary) encBits := by fun_prop
@@ -789,7 +782,7 @@ private theorem tidy_kernelStepBits :
     have hxpar := ComputableTidilyInPolyTime.fst (encPair (encList encBits) encBits) encBits
     have hxv := ComputableTidilyInPolyTime.snd (encPair (encList encBits) encBits) encBits
     have hxa := ha.comp hxpar
-    have hdot := tidy_dotBool.comp (hxa.prod hxv)
+    have hdot := tidy_listDot.comp (hxa.prod hxv)
     have hxpiv := hpiv.comp hxpar
     have hxor := (ComputableTidilyInPolyTime.bitsZipWith xor).comp (hxv.prod hxpiv)
     exact (ComputableInPolyTime.ite' hdot.computableInPolyTime
@@ -1034,8 +1027,8 @@ private theorem tidy_shoupCyclicFactorBounded :
           (berlekampIrreducibleFactor (List.replicate q true)))
       encUnary encBits := by
   have hcond := tidy_primeGeThree
-  have hk := tidy_qAdicValTwoPowSubOne.comp
-    (ComputableTidilyInPolyTime.id'.prod tidy_ordTwoMod)
+  have hk := computableInPolyTime_qAdicValTwoPowSubOne.tidy.comp
+    (ComputableTidilyInPolyTime.id'.prod computableInPolyTime_ordTwoMod.tidy)
   have hcntTrue := ComputableTidilyInPolyTime.unary_sub.comp (hk.prod (.const 1))
   have hcnt : ComputableTidilyInPolyTime
       (fun q : ℕ => if q.Prime ∧ 3 ≤ q then qAdicValTwoPowSubOne q (ordTwoMod q) - 1 else 0)
@@ -1786,7 +1779,7 @@ attribute [local irreducible] shoupCyclicFactor shoupBetaBounded shoupPowersBoun
 private theorem tidy_shoupIrreducibleBits :
     ComputableTidilyInPolyTime shoupIrreducibleBits encUnary encBits := by
   have hcond := tidy_primeGeThree
-  have hm := tidy_ordTwoMod
+  have hm := computableInPolyTime_ordTwoMod.tidy
   have hf := tidy_shoupCyclicFactorBounded
   have hβ := tidy_shoupBetaBounded.comp (ComputableTidilyInPolyTime.id'.prod hf)
   have hpows := tidy_shoupPowersBounded.comp ((ComputableTidilyInPolyTime.id'.prod hf).prod hβ)

@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.Problems.IndependentSet
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
@@ -31,7 +32,7 @@ first-order interpretations.
 
 ## Main definitions
 
-* `Cslib.Complexity.Clique`, `Cslib.Complexity.Graph.compl`.
+* `Cslib.Complexity.CliqueInstance`, `Cslib.Complexity.Clique`, `Cslib.Complexity.Graph.compl`.
 * `Cslib.Complexity.Graph.cliqueNum`: the clique number (`G.induced.cliqueNum`).
 * `Cslib.Complexity.Clique.verifier`.
 
@@ -46,7 +47,7 @@ first-order interpretations.
   number is the largest target of `Clique`, and that of the complement is the independence number.
 * `Cslib.Complexity.Graph.computableInPolyTime_compl`: complementing a graph on its declared
   vertices is polynomial-time.
-* `Cslib.Complexity.Clique.mem_NP`: `Clique ∈ NP (encPair encGraph encNat)`.
+* `Cslib.Complexity.Clique.mem_NP`: `Clique ∈ NP encCliqueInstance`.
 * `Cslib.Complexity.polyTimeReducible_IndependentSet_Clique`,
   `Cslib.Complexity.polyTimeReducible_Clique_IndependentSet`: `IndependentSet` and `Clique` reduce
   to each other in polynomial time.
@@ -65,31 +66,56 @@ namespace Cslib.Complexity
 
 open Turing.MultiTapeTM
 
+/-- An instance `(graph, m)` of **Clique**. -/
+@[ext]
+structure CliqueInstance where
+  /-- The graph in which to find a clique. -/
+  graph : Graph
+  /-- The target number of declared vertices. -/
+  m : ℕ
+  deriving DecidableEq, Repr, Inhabited
+
+/-- Framed `encGraph` followed by binary target `encNat`, encoding `CliqueInstance`. -/
+enc_structure encCliqueInstance : CliqueInstance where
+  graph : encGraph,
+  m : encNat
+
+attribute [fun_prop] encCliqueInstance_graph_polyTime
+  encCliqueInstance_m_polyTime encCliqueInstance_mk_polyTime
+
 /-- The graphs with a clique of `m` of their vertices. -/
-def Clique : Set (Graph × ℕ) :=
-  {x | ∃ S : Finset {v // v ∈ x.1.1}, x.1.induced.IsNClique x.2 S}
+def Clique : Set CliqueInstance :=
+  {x | ∃ S : Finset {v // v ∈ x.graph.vertices}, x.graph.induced.IsNClique x.m S}
 
 /-- Membership in `Clique` as a finite set of `m` declared vertices that is a clique in
-`G.toSimpleGraph`. -/
-theorem mem_Clique_iff {G : Graph} {m : ℕ} :
-    (G, m) ∈ Clique ↔
-      ∃ S : Finset ℕ, (∀ v ∈ S, v ∈ G.1) ∧ G.toSimpleGraph.IsNClique m S := by
+`x.graph.toSimpleGraph`. -/
+theorem mem_Clique_iff {x : CliqueInstance} :
+    x ∈ Clique ↔
+      ∃ S : Finset ℕ, (∀ v ∈ S, v ∈ x.graph.vertices) ∧
+        x.graph.toSimpleGraph.IsNClique x.m S := by
   simp only [Clique, Set.mem_ofPred_eq, SimpleGraph.isNClique_iff, SimpleGraph.IsClique]
-  exact Graph.exists_subtype_pairwise_iff (P := G.toSimpleGraph.Adj)
+  exact Graph.exists_subtype_pairwise_iff (P := x.graph.toSimpleGraph.Adj)
+
+@[simp]
+theorem mem_Clique_iff_mk {G : Graph} {m : ℕ} :
+    (⟨G, m⟩ : CliqueInstance) ∈ Clique ↔
+      ∃ S : Finset ℕ, (∀ v ∈ S, v ∈ G.vertices) ∧ G.toSimpleGraph.IsNClique m S :=
+  mem_Clique_iff
 
 namespace Graph
 
 /-- The complement of a graph on its vertices: an edge between any two distinct vertices that are
 not adjacent. -/
 def compl (G : Graph) : Graph :=
-  (G.1, G.1.flatMap fun u =>
-    (G.1.filter fun v => decide (u ≠ v ∧ (u, v) ∉ G.2 ∧ (v, u) ∉ G.2)).map fun v => (u, v))
+  ⟨G.vertices, G.vertices.flatMap fun u =>
+    (G.vertices.filter fun v =>
+      decide (u ≠ v ∧ (u, v) ∉ G.edges ∧ (v, u) ∉ G.edges)).map fun v => (u, v)⟩
 
 /-- On the vertices of a graph, adjacency in the complement is non-adjacency in the graph. -/
-theorem compl_adj_iff {G : Graph} {u v : ℕ} (hu : u ∈ G.1) (hv : v ∈ G.1) :
+theorem compl_adj_iff {G : Graph} {u v : ℕ} (hu : u ∈ G.vertices) (hv : v ∈ G.vertices) :
     G.compl.toSimpleGraph.Adj u v ↔ u ≠ v ∧ ¬G.toSimpleGraph.Adj u v := by
-  have hedge : ∀ {a b}, (a, b) ∈ G.compl.2 ↔ a ∈ G.1 ∧ b ∈ G.1 ∧
-      (a ≠ b ∧ (a, b) ∉ G.2 ∧ (b, a) ∉ G.2) := by
+  have hedge : ∀ {a b}, (a, b) ∈ G.compl.edges ↔ a ∈ G.vertices ∧ b ∈ G.vertices ∧
+      (a ≠ b ∧ (a, b) ∉ G.edges ∧ (b, a) ∉ G.edges) := by
     intro a b
     simp only [compl, List.mem_flatMap, List.mem_map, List.mem_filter, decide_eq_true_eq,
       Prod.mk.injEq]
@@ -109,20 +135,22 @@ theorem compl_adj_iff {G : Graph} {u v : ℕ} (hu : u ∈ G.1) (hv : v ∈ G.1) 
 /-- The induced graph of the complement is the complement of the induced graph. -/
 @[simp]
 theorem induced_compl (G : Graph) :
-    (G.compl.induced : SimpleGraph {v // v ∈ G.1}) = G.inducedᶜ := by
+    (G.compl.induced : SimpleGraph {v // v ∈ G.vertices}) = G.inducedᶜ := by
   ext u v
   exact (compl_adj_iff (G := G) u.2 v.2).trans
     ((and_congr_left' Subtype.ext_iff.not.symm).trans (G.induced.compl_adj u v).symm)
 
 /-- **Independent sets are cliques of the complement.** -/
 theorem compl_mem_Clique_iff (G : Graph) (m : ℕ) :
-    (G.compl, m) ∈ Clique ↔ (G, m) ∈ IndependentSet := by
+    (⟨G.compl, m⟩ : CliqueInstance) ∈ Clique ↔
+      (⟨G, m⟩ : IndependentSetInstance) ∈ IndependentSet := by
   simp_rw [IndependentSet, Set.mem_ofPred_eq, ← SimpleGraph.isNClique_compl, ← induced_compl]
   rfl
 
 /-- **Cliques are independent sets of the complement.** -/
 theorem compl_mem_IndependentSet_iff (G : Graph) (m : ℕ) :
-    (G.compl, m) ∈ IndependentSet ↔ (G, m) ∈ Clique := by
+    (⟨G.compl, m⟩ : IndependentSetInstance) ∈ IndependentSet ↔
+      (⟨G, m⟩ : CliqueInstance) ∈ Clique := by
   simp_rw [Clique, Set.mem_ofPred_eq, ← SimpleGraph.isNIndepSet_compl, ← induced_compl]
   rfl
 
@@ -130,36 +158,42 @@ theorem compl_mem_IndependentSet_iff (G : Graph) (m : ℕ) :
 @[fun_prop]
 theorem computableInPolyTime_compl :
     ComputableInPolyTime compl encGraph encGraph := by
-  unfold compl encGraph
   have hne : ComputableInPolyTime
       (fun x : (Graph × ℕ) × ℕ => decide (x.1.2 ≠ x.2))
-      (encPair (encPair (encPair (encList encNat) (encList (encPair encNat encNat))) encNat) encNat)
+      (encPair (encPair encGraph encNat) encNat)
       encBool := by
     simpa only [ne_eq, decide_not, Function.comp_def] using
       ComputableInPolyTime.bool_not.comp
         (ComputableInPolyTime.decide_eq' (by fun_prop) (by fun_prop))
   have h1 : ComputableInPolyTime
-      (fun x : (Graph × ℕ) × ℕ => decide ((x.1.2, x.2) ∉ x.1.1.2))
-      (encPair (encPair (encPair (encList encNat) (encList (encPair encNat encNat))) encNat) encNat)
+      (fun x : (Graph × ℕ) × ℕ => decide ((x.1.2, x.2) ∉ x.1.1.edges))
+      (encPair (encPair encGraph encNat) encNat)
       encBool := by fun_prop
   have h2 : ComputableInPolyTime
-      (fun x : (Graph × ℕ) × ℕ => decide ((x.2, x.1.2) ∉ x.1.1.2))
-      (encPair (encPair (encPair (encList encNat) (encList (encPair encNat encNat))) encNat) encNat)
+      (fun x : (Graph × ℕ) × ℕ => decide ((x.2, x.1.2) ∉ x.1.1.edges))
+      (encPair (encPair encGraph encNat) encNat)
       encBool := by fun_prop
   have hpred : ComputableInPolyTime
       (fun x : (Graph × ℕ) × ℕ =>
-        decide (x.1.2 ≠ x.2 ∧ (x.1.2, x.2) ∉ x.1.1.2 ∧ (x.2, x.1.2) ∉ x.1.1.2))
-      (encPair (encPair (encPair (encList encNat) (encList (encPair encNat encNat))) encNat) encNat)
+        decide (x.1.2 ≠ x.2 ∧ (x.1.2, x.2) ∉ x.1.1.edges ∧ (x.2, x.1.2) ∉ x.1.1.edges))
+      (encPair (encPair encGraph encNat) encNat)
       encBool := by
     simpa only [Bool.decide_and, Function.comp_def] using
       ComputableInPolyTime.bool_and.comp
         (hne.prod (ComputableInPolyTime.bool_and.comp (h1.prod h2)))
-  exact (ComputableInPolyTime.fst _ _).prod
-    (ComputableInPolyTime.flatMapWithInput (ComputableInPolyTime.fst _ _)
+  have hV : ComputableInPolyTime (fun G : Graph => G.vertices) encGraph (encList encNat) := by
+    fun_prop
+  have hE : ComputableInPolyTime
+      (fun G : Graph => G.vertices.flatMap fun u =>
+        (G.vertices.filter fun v =>
+          decide (u ≠ v ∧ (u, v) ∉ G.edges ∧ (v, u) ∉ G.edges)).map fun v => (u, v))
+      encGraph (encList (encPair encNat encNat)) := by
+    exact ComputableInPolyTime.flatMapWithInput (by fun_prop)
       (ComputableInPolyTime.mapWithInput
-        (ComputableInPolyTime.filterWithInput
-          ((ComputableInPolyTime.fst _ _).comp (ComputableInPolyTime.fst _ _)) hpred)
-        (by fun_prop)))
+        (ComputableInPolyTime.filterWithInput (by fun_prop) hpred)
+        (by fun_prop))
+  unfold compl
+  fun_prop
 
 end Graph
 
@@ -167,51 +201,89 @@ namespace Clique
 
 /-- The verifier for `Clique`: select distinct declared vertices from the certificate mask, check
 that their count equals `m`, and check that every two distinct selected vertices are adjacent. -/
-def verifier : (Graph × ℕ) × List Bool → Bool :=
-  Graph.verifySubset Graph.adjBool
+def verifier : CliqueInstance × List Bool → Bool :=
+  fun (x, w) => Graph.verifySubset Graph.adjBool ((x.graph, x.m), w)
 
 /-- `Clique.verifier` verifies `Clique` with certificates as long as the encoded instance. -/
 theorem isVerifier :
-    IsVerifier (encPair encGraph encNat) Polynomial.X verifier Clique := by
+    IsVerifier encCliqueInstance Polynomial.X verifier Clique := by
   have h := Graph.isVerifier_verifySubset (rel := Graph.adjBool)
     (P := fun G u v => G.toSimpleGraph.Adj u v)
     (fun G u v _ => by rw [Graph.adjBool_eq_true_iff])
   intro x
+  have hx := h (x.graph, x.m)
   simp only [Clique, Set.mem_ofPred_eq, SimpleGraph.isNClique_iff, SimpleGraph.IsClique, verifier]
-  exact h x
+  rw [encCliqueInstance_apply]
+  exact hx
 
 /-- The `Clique` verifier is polynomial-time. -/
 @[fun_prop]
 theorem computableInPolyTime_verifier :
     ComputableInPolyTime verifier
-      (encPair (encPair encGraph encNat) encBits) encBool :=
-  Graph.computableInPolyTime_verifySubset Graph.computableInPolyTime_adjBool
+      (encPair encCliqueInstance encBits) encBool := by
+  have h1 : ComputableInPolyTime
+      (fun p : CliqueInstance × List Bool => ((p.1.graph, p.1.m), p.2))
+      (encPair encCliqueInstance encBits)
+      (encPair (encPair encGraph encNat) encBits) := by
+    fun_prop
+  exact (Graph.computableInPolyTime_verifySubset Graph.computableInPolyTime_adjBool).comp h1
 
 /-- `Clique` belongs to `NP`. -/
-theorem mem_NP : Clique ∈ NP (encPair encGraph encNat) :=
-  ⟨Polynomial.X, verifier, by fun_prop, isVerifier⟩
+theorem mem_NP : Clique ∈ NP encCliqueInstance :=
+  ⟨Polynomial.X, verifier, computableInPolyTime_verifier, isVerifier⟩
 
 end Clique
+
+/-- Complementing the graph reduces `IndependentSet` to `Clique`. -/
+def independentSetToClique (x : IndependentSetInstance) : CliqueInstance :=
+  ⟨x.graph.compl, x.m⟩
+
+@[fun_prop]
+theorem computableInPolyTime_independentSetToClique :
+    ComputableInPolyTime independentSetToClique encIndependentSetInstance encCliqueInstance := by
+  unfold independentSetToClique
+  fun_prop
+
+theorem independentSetToClique_mem_iff (x : IndependentSetInstance) :
+    independentSetToClique x ∈ Clique ↔ x ∈ IndependentSet := by
+  obtain ⟨G, m⟩ := x
+  exact Graph.compl_mem_Clique_iff G m
+
+/-- Complementing the graph reduces `Clique` to `IndependentSet`. -/
+def cliqueToIndependentSet (x : CliqueInstance) : IndependentSetInstance :=
+  ⟨x.graph.compl, x.m⟩
+
+@[fun_prop]
+theorem computableInPolyTime_cliqueToIndependentSet :
+    ComputableInPolyTime cliqueToIndependentSet encCliqueInstance encIndependentSetInstance := by
+  unfold cliqueToIndependentSet
+  fun_prop
+
+theorem cliqueToIndependentSet_mem_iff (x : CliqueInstance) :
+    cliqueToIndependentSet x ∈ IndependentSet ↔ x ∈ Clique := by
+  obtain ⟨G, m⟩ := x
+  exact Graph.compl_mem_IndependentSet_iff G m
 
 /-- `IndependentSet` reduces to `Clique` in polynomial time by complementing the graph on its
 declared vertices. -/
 theorem polyTimeReducible_IndependentSet_Clique :
-    PolyTimeReducible (encPair encGraph encNat) (encPair encGraph encNat) IndependentSet Clique :=
-  ⟨fun x => (x.1.compl, x.2), by fun_prop, fun ⟨G, m⟩ => (Graph.compl_mem_Clique_iff G m).symm⟩
+    PolyTimeReducible encIndependentSetInstance encCliqueInstance IndependentSet Clique :=
+  ⟨independentSetToClique, computableInPolyTime_independentSetToClique,
+    fun x => (independentSetToClique_mem_iff x).symm⟩
 
 /-- `Clique` reduces to `IndependentSet` in polynomial time by complementing the graph on its
 declared vertices. -/
 theorem polyTimeReducible_Clique_IndependentSet :
-    PolyTimeReducible (encPair encGraph encNat) (encPair encGraph encNat) Clique IndependentSet :=
-  ⟨fun x => (x.1.compl, x.2), by fun_prop,
-    fun ⟨G, m⟩ => (Graph.compl_mem_IndependentSet_iff G m).symm⟩
+    PolyTimeReducible encCliqueInstance encIndependentSetInstance Clique IndependentSet :=
+  ⟨cliqueToIndependentSet, computableInPolyTime_cliqueToIndependentSet,
+    fun x => (cliqueToIndependentSet_mem_iff x).symm⟩
 
 /-- `Clique` is `NP`-hard. -/
-theorem Clique_npHard : NPHard (encPair encGraph encNat) Clique :=
+theorem Clique_npHard : NPHard encCliqueInstance Clique :=
   IndependentSet_npHard.trans polyTimeReducible_IndependentSet_Clique
 
 /-- **`Clique` is NP-complete.** -/
-theorem Clique_npComplete : NPComplete (encPair encGraph encNat) Clique :=
+theorem Clique_npComplete : NPComplete encCliqueInstance Clique :=
   ⟨Clique.mem_NP, Clique_npHard⟩
 
 /-! ### The clique number -/
@@ -225,18 +297,20 @@ noncomputable def cliqueNum (G : Graph) : ℕ := G.induced.cliqueNum
 variable {G : Graph} {k k' : ℕ}
 
 /-- Fewer vertices of a clique form a clique. -/
-theorem mem_Clique_of_le (h : (G, k) ∈ Clique) (hk : k' ≤ k) : (G, k') ∈ Clique := by
+theorem mem_Clique_of_le (h : (⟨G, k⟩ : CliqueInstance) ∈ Clique) (hk : k' ≤ k) :
+    (⟨G, k'⟩ : CliqueInstance) ∈ Clique := by
   obtain ⟨S, hS, hcard : S.card = k⟩ := h
   obtain ⟨T, hTS, hT⟩ := Finset.exists_subset_card_eq (hcard ▸ hk)
   exact ⟨T, hS.subset (Finset.coe_subset.2 hTS), hT⟩
 
 /-- **The clique number is the largest target of `Clique`.** -/
-theorem le_cliqueNum_iff : k ≤ G.cliqueNum ↔ (G, k) ∈ Clique :=
+theorem le_cliqueNum_iff : k ≤ G.cliqueNum ↔ (⟨G, k⟩ : CliqueInstance) ∈ Clique :=
   ⟨mem_Clique_of_le G.induced.exists_isNClique_cliqueNum,
     fun ⟨_, hS, (hcard : _ = k)⟩ => hcard ▸ hS.card_le_cliqueNum⟩
 
 /-- A clique has at most as many vertices as the distinct declared vertices. -/
-theorem le_card_of_mem_Clique (h : (G, k) ∈ Clique) : k ≤ G.1.toFinset.card :=
+theorem le_card_of_mem_Clique (h : (⟨G, k⟩ : CliqueInstance) ∈ Clique) :
+    k ≤ G.vertices.toFinset.card :=
   (le_cliqueNum_iff.2 h).trans (G.natCard_vertexSubtype ▸ G.induced.cliqueNum_le_natCard)
 
 /-- **Cliques of the complement are independent sets**: the clique number of the complement on

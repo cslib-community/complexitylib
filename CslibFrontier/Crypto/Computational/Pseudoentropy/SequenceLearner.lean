@@ -36,7 +36,8 @@ interprets the learner's orientation bit, and is also the evaluator used by subs
 * `exists_evaluator`: discharge the replay law from one sequence-test certificate.
 * `learn_goodPredictor_error`: a noticeable sequence gap satisfies the boosting loop contract.
 * `failureBound_negligible`: the total failure bound is negligible for polynomial parameters.
-* `predict_extracted_error`: turn a gap against every dense masked source into prediction bias.
+* `predict_extracted_error_of_extraction_le`: turn a gap against every dense masked source into
+  prediction bias.
 
 ## References
 
@@ -434,7 +435,7 @@ theorem predict_error (source : ProbComp α) (observe : α → List Bool) (truth
 
 /-- Extraction error is the only additional loss when the complete reduction starts from a
 test of hashed labels. The statistical premise is needed only at dense boosting states. -/
-theorem predict_extracted_error {Seed Output : Type}
+theorem predict_extracted_error_of_extraction_le {Seed Output : Type}
     (source : ProbComp α) (observe : α → List Bool) (truth : α → Bool)
     (evaluate : List Bool → List Bool → Bool) (base : List Bool) (count c d width inverseGap : ℕ)
     (params : Parameters) (seed : ProbComp Seed) (hash : Seed → List Bool → Output)
@@ -456,15 +457,13 @@ theorem predict_extracted_error {Seed Output : Type}
         (fun x => state.margin (fun code x => signedPredict evaluate code (observe x)) truth x -
           state.threshold) →
       (Game.advantage
-        ((ProbComp.eval (OracleComp.replicate count (maskedSample source observe truth
-          (fun x => mask (signedPredict evaluate) params state (observe x, truth x))) >>=
-            extractLabels seed hash)).bind (fun output => ProbComp.eval (test output)))
+        ((ProbComp.eval (extractLabelsReal (maskedSample source observe truth
+          (fun x => mask (signedPredict evaluate) params state (observe x, truth x))) count seed
+            hash)).bind (fun output => ProbComp.eval (test output)))
         (ideal.bind (fun output => ProbComp.eval (test output))) : ℝ) ≤ ε)
     (hdistinguish : (dyadicSize count : ℝ) / inverseGap + ε ≤
-      (Game.advantage (ProbComp.eval (do
-        let samples ← OracleComp.replicate count ((fun x => (observe x, truth x)) <$> source)
-        let result ← extractLabels seed hash samples
-        test result))
+      (Game.advantage (ProbComp.eval (extractLabelsReal
+        ((fun x => (observe x, truth x)) <$> source) count seed hash >>= test))
         (ideal.bind (fun output => ProbComp.eval (test output))) : ℝ)) :
     (ProbComp.eval (do
       let x ← source
@@ -477,10 +476,11 @@ theorem predict_extracted_error {Seed Output : Type}
     (fun samples => extractLabels seed hash samples >>= test)
     hparams hgap hgamma hwidth hbound hrealize
   intro state hdense
-  have h := extractLabels_sequence_gap ((fun x => (observe x, truth x)) <$> source)
+  have h := extractLabels_sequence_gap_of_extraction_le ((fun x => (observe x, truth x)) <$> source)
     (maskedSample source observe truth
       (fun x => mask (signedPredict evaluate) params state (observe x, truth x)))
     count seed hash test ideal (hclose state hdense)
+  rw [extractLabelsReal, bind_assoc] at hdistinguish
   have hgap' := (le_sub_iff_add_le.mpr hdistinguish).trans h
   simpa only [Game.coe_advantage, Game.coe_succProbability] using hgap'
 

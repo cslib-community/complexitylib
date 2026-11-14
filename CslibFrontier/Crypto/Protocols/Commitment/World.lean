@@ -100,9 +100,7 @@ theorem interpret_sample {α : Type} (program : ProbComp α) :
   funext st
   rw [ProbOracleComp.interpret_sample]
   change (OracleComp.interpret (m := StateT Store ProbComp) _ program).run st = _
-  rw [OracleComp.run_interpret_lift]
-  change (fun a => (a, st)) <$> OracleComp.interpret OracleComp.query program = _
-  rw [OracleComp.interpret_query_eq_self]
+  rw [OracleComp.run_interpret_lift, ProbComp.interpret_unifFin]
   simp [StateT.lift, bind_pure_comp]
 
 /-- One phased session, with sender commands on the left and receiver polls on the right.

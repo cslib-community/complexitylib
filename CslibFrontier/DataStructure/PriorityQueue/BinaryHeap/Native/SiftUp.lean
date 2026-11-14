@@ -45,60 +45,43 @@ open Cslib.DataStructure.PriorityQueue.BinaryHeap
 
 open Cslib.DataStructure.PriorityQueue
 
-/-- Four original reads, followed by the original swap or a stop index. The nested comparisons
-are the existing key-first, handle-tie priority relation spelled as native scalar conditions. -/
-def step (d : (HeapLayout × Unit) × ℕ) : Memory.Prog ℕ := do
-  let L := d.1.1.2
+/-- The loop environment: the runtime layout and a prepared constant-one word. -/
+abbrev Env := HeapLayout × Unit
+
+namespace Env
+
+/-- The number of handles. -/
+abbrev capacity (d : Env) : ℕ := d.1.1
+
+/-- The heap layout. -/
+abbrev layout (d : Env) : BinaryHeap.Memory.Layout d.capacity := d.1.2
+
+end Env
+
+/-- Four original reads, followed by the original priority test, swap or stop index. -/
+def step (d : Env × ℕ) : Memory.Prog ℕ := do
+  let L := d.1.layout
   let k := d.2
   let vk ← L.heap.get k
   let kk ← L.key.get vk
   let vp ← L.heap.get (k / 2)
   let kp ← L.key.get vp
-  if kk < kp then do
+  if IndexedMinPQ.RawPrioLT (vk, kk) (vp, kp) then do
     PriorityQueue.BinaryHeap.Memory.swap L k (k / 2) vk vp
     pure (k / 2)
-  else if kk = kp then
-    if vk < vp then do
-      PriorityQueue.BinaryHeap.Memory.swap L k (k / 2) vk vp
-      pure (k / 2)
-    else pure 1
   else pure 1
 
-/-- The scalar branch spelling changes neither reads nor writes. -/
-theorem step_eq (d : (HeapLayout × Unit) × ℕ) :
-    step d = (do
-      let L := d.1.1.2
-      let k := d.2
-      let vk ← L.heap.get k
-      let kk ← L.key.get vk
-      let vp ← L.heap.get (k / 2)
-      let kp ← L.key.get vp
-      if PriorityQueue.IndexedMinPQ.RawPrioLT (vk, kk) (vp, kp) then do
-        PriorityQueue.BinaryHeap.Memory.swap L k (k / 2) vk vp
-        pure (k / 2)
-      else pure 1) := by
-  unfold step
-  dsimp only
-  congr 1 with vk : 1
-  congr 1 with kk : 1
-  congr 1 with vp : 1
-  congr 1 with kp : 1
-  by_cases hkey : kk < kp
-  · simp [PriorityQueue.IndexedMinPQ.RawPrioLT, hkey]
-  · by_cases heq : kk = kp <;> by_cases hv : vk < vp <;>
-      simp [PriorityQueue.IndexedMinPQ.RawPrioLT, hkey, heq, hv]
-
 /-- The loop state is a one-based position; returning 1 terminates without another read. -/
-def guard (_ : HeapLayout × Unit) (k : ℕ) : Prop := 2 ≤ k
+def guard (_ : Env) (k : ℕ) : Prop := 2 ≤ k
 
-instance (d : HeapLayout × Unit) (k : ℕ) : Decidable (guard d k) :=
+instance (d : Env) (k : ℕ) : Decidable (guard d k) :=
   inferInstanceAs (Decidable (2 ≤ k))
 
 /-- The while view preserves the entire existing `siftUp` free-monad program. -/
-theorem finish_loop_eq (d : HeapLayout × Unit) (fuel k : ℕ) (hf : Nat.log 2 k ≤ fuel) :
+theorem finish_loop_eq (d : Env) (fuel k : ℕ) (hf : Nat.log 2 k ≤ fuel) :
     (do
       let _ ← boundedWhile guard step d fuel k
-      pure ()) = PriorityQueue.BinaryHeap.Memory.siftUp d.1.2 k := by
+      pure ()) = PriorityQueue.BinaryHeap.Memory.siftUp d.layout k := by
   induction fuel generalizing k with
   | zero =>
     have hk : ¬2 ≤ k := by
@@ -111,7 +94,7 @@ theorem finish_loop_eq (d : HeapLayout × Unit) (fuel k : ℕ) (hf : Nat.log 2 k
     rw [PriorityQueue.BinaryHeap.Memory.siftUp]
     by_cases hk : 2 ≤ k
     · have hlog := Nat.log_of_one_lt_of_le one_lt_two hk
-      simp only [boundedWhile, guard, hk, ↓reduceIte, step_eq, bind_assoc]
+      simp only [boundedWhile, guard, hk, ↓reduceIte, step, bind_assoc]
       congr 1 with vk : 1
       congr 1 with kk : 1
       congr 1 with vp : 1
@@ -131,13 +114,13 @@ def oneWords : Unit ↪ (Fin 1 → ℕ) where
 
 /-- The existing heap-shape invariant is sufficient for each sift step. Order repair remains
 in the source's `siftUp_triple`, rather than being reproved for a native implementation. -/
-def Shape (w : ℕ) (d : HeapLayout × Unit) (k : ℕ) (s : Memory.State) : Prop :=
-  Fits w d.1.1 ∧ d.1.2.arrays.Allocated s ∧
-    ∃ S, 1 ≤ k ∧ k ≤ S ∧ HeapShape d.1.1 d.1.2.base S s.mem
+def Shape (w : ℕ) (d : Env) (k : ℕ) (s : Memory.State) : Prop :=
+  Fits w d.capacity ∧ d.layout.arrays.Allocated s ∧
+    ∃ S, 1 ≤ k ∧ k ≤ S ∧ HeapShape d.capacity d.layout.base S s.mem
 
 /-- One real step preserves heap shape and drops the logarithmic rank. Its eight-unit bound
 uses the original four-read/four-write source trace, including the no-swap early exit. -/
-theorem step_triple {w : ℕ} {d : HeapLayout × Unit} {k : ℕ} {s : Memory.State}
+theorem step_triple {w : ℕ} {d : Env} {k : ℕ} {s : Memory.State}
     (hi : Shape w d k s) (hk : 2 ≤ k) :
     Triple w s (step (d, k)) 8
       (fun a s' => Shape w d a s' ∧ Nat.log 2 a < Nat.log 2 k) := by
@@ -146,7 +129,7 @@ theorem step_triple {w : ℕ} {d : HeapLayout × Unit} {k : ℕ} {s : Memory.Sta
   have hvk := hshape.vertex_lt k hk1 hkS
   have hvp := hshape.vertex_lt (k / 2) (by omega) (by omega)
   have hlog := Nat.log_of_one_lt_of_le one_lt_two hk
-  rw [step_eq]
+  unfold step
   dsimp only
   refine Triple.read_bind (PriorityQueue.BinaryHeap.Memory.heap_lt hA (by omega)) <|
     Triple.read_bind (PriorityQueue.BinaryHeap.Memory.key_lt hA hvk) <|
@@ -162,7 +145,7 @@ theorem step_triple {w : ℕ} {d : HeapLayout × Unit} {k : ℕ} {s : Memory.Sta
 
 /-- Eight source-memory units and one continuing-control unit per logarithmic rank level.
 Unused cutoff steps are not charged as iterations; exit potential is retained. -/
-theorem loop_currency_le {w : ℕ} {d : HeapLayout × Unit} {k fuel : ℕ} {s : Memory.State}
+theorem loop_currency_le {w : ℕ} {d : Env} {k fuel : ℕ} {s : Memory.State}
     (hi : Shape w d k s)
     (hv : (Memory.spec w).ValidHistory s
       ((Memory.spec w).clientHistory s (boundedWhile guard step d fuel k))) :
@@ -175,7 +158,7 @@ theorem loop_currency_le {w : ℕ} {d : HeapLayout × Unit} {k fuel : ℕ} {s : 
   obtain ⟨_, _, hpost⟩ := triple_iff.mp (step_triple hi hg)
   rw [clientResult_width w, clientState_width w] at hpost
   have hc' : memoryCost (step (d, a)) s ≤ 8 := by
-    rw [step_eq]
+    unfold step
     simp only [memoryCost, StateTransitionSpec.clientHistory,
       StateTransitionSpec.runClient_lift_bind', StateTransitionSpec.totalCost_cons,
       StateTransitionSpec.stepFn, Memory.step, Memory.charge]
@@ -211,7 +194,8 @@ theorem realizes_step :
     | exact hmem.fits_of_lt_frontier (PriorityQueue.BinaryHeap.Memory.pos_lt hA hvp)
 
 /-- The actual index guard selects a native early exit; the logarithmic cutoff is proof data.
-No register contains a fuel counter or a computed logarithm. -/
+No register contains a fuel counter or a computed logarithm. The source guard `2 ≤ k` is tested
+as `1 < k`, using the prepared constant-one word. -/
 theorem realizes_loop :
     Realizes .exact
       (fun (d, k) => boundedWhile guard step d (Nat.log 2 k) k)
@@ -220,98 +204,73 @@ theorem realizes_loop :
       (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding
       (fun w (d, k) s => Shape w d k s)
       (fun (d, k) s => whileWork guard step (fun _ _ => 0) d (Nat.log 2 k) k s) := by
-  have h := Realizes.whileMeasure (appendWords layoutWords oneWords)
-    (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding (.lt 4 5)
-    (fun (_, k) => Nat.log 2 k) realizes_step (fun w d k s => Shape w d k s)
-    (fun _ k _ => Nat.log 2 k)
-    (fun _ _ k _ _ hz => by
-      change ¬(1 < k)
-      intro hk
+  have hStep := realizes_step
+  realize
+  intro hv
+  refine whileSafe_of_measure _ _ _ w _ (Shape w d.1) (fun k _ => Nat.log 2 k)
+    (fun k _ _ hz hk => by
       have := Nat.log_of_one_lt_of_le one_lt_two hk
       omega)
-    (fun w d k s hi hg _ => by
-      change 1 < k at hg
-      obtain ⟨_, _, hp⟩ := triple_iff.mp (step_triple hi hg)
-      rw [clientResult_width w, clientState_width w] at hp
-      exact ⟨⟨hg, hi⟩, hp⟩)
-  exact h.consequence (fun _ _ _ _ _ hi => ⟨hi, le_rfl⟩) (fun _ _ => le_rfl)
+    (fun k t hi hg _ => ?_) h le_rfl hv
+  obtain ⟨_, _, hp⟩ := triple_iff.mp (step_triple hi hg)
+  rw [clientResult_width w, clientState_width w] at hp
+  exact ⟨⟨hg, hi⟩, hp⟩
 
 /-- Actual reached loop controls, plus two binds. Constant preparation and the Unit return are
 certified native glue, absorbed into the same fixed exchange factor. -/
-def localWork (d : HeapLayout × ℕ) (s : Memory.State) : ℕ :=
-  whileWork guard step (fun _ _ => 0) (d.1, ()) (Nat.log 2 d.2) d.2 s + 2
-
-/-- Realize the original sift-up, with one emitter before all runtime layouts, indices, memory
-contents and widths. Constant-one preparation and loop/finish composition use shared rules. -/
-private theorem realizes_siftUp_graded :
-    Realizes .exact (fun d : HeapLayout × ℕ => PriorityQueue.BinaryHeap.Memory.siftUp d.1.2 d.2)
-      indexWords (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEmbedding
-      (fun w d s => Shape w (d.1, ()) d.2 s) localWork := by
-  have hprepare : Realizes .exact (fun _ : HeapLayout × ℕ => pure ())
-      indexWords oneWords (fun w d s => Shape w (d.1, ()) d.2 s) (fun _ _ => 0) := by
-    realize
-    obtain ⟨hn, _, S, hk, hkS, hshape⟩ := h
-    exact hn.of_le (hk.trans (hkS.trans hshape.size_le))
-  have hloop := realizes_loop.reindex
-    (fun e : (HeapLayout × ℕ) × Unit => ((e.1.1, e.2), e.1.2))
-    (appendWords indexWords oneWords) ![0, 1, 2, 3, 5, 4]
-    (by intro e i; fin_cases i <;> rfl)
-  have hfinish : Realizes .exact (fun _ : (HeapLayout × ℕ) × ℕ => pure ())
-      (appendWords indexWords (Equiv.funUnique (Fin 1) ℕ).symm.toEmbedding)
-      (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEmbedding (fun _ _ _ => True) (fun _ _ => 0) := by
-    realize
-  have h := (hprepare.bind hloop).bind hfinish
-  refine (h.congr (p' := fun d => PriorityQueue.BinaryHeap.Memory.siftUp d.1.2 d.2)
-    ?_).consequence ?_ ?_
-  · intro d
-    simpa only [← PFunctor.FreeM.bind_eq_bind, PFunctor.FreeM.pure_bind] using
-      finish_loop_eq (d.1, ()) (Nat.log 2 d.2) d.2 le_rfl
-  · intro w d s _ _ hi
-    exact ⟨⟨hi, hi⟩, trivial⟩
-  · intro d s
-    simp [localWork, StateTransitionSpec.clientResult, StateTransitionSpec.clientState,
-      StateTransitionSpec.runClient_pure', Nat.add_assoc]
+def localWork (d : IndexArgument) (s : Memory.State) : ℕ :=
+  whileWork guard step (fun _ _ => 0) (d.heap, ()) (Nat.log 2 d.index) d.index s + 2
 
 /-- The queryful source pays every executed loop control. Bounded preparation/finish work is
 absorbed into one fixed factor, so call sites may use the standard zero-work certificate.
-This does not discard a query-free or arbitrary grading. -/
+This does not discard a query-free or arbitrary grading. The local loop certificate lets
+`realize` prepare the constant-one word and wire the call. -/
 theorem realizes_siftUp :
-    Realizes .exact (fun d : HeapLayout × ℕ => PriorityQueue.BinaryHeap.Memory.siftUp d.1.2 d.2)
+    Realizes .exact
+      (fun d : IndexArgument => PriorityQueue.BinaryHeap.Memory.siftUp d.layout d.index)
       indexWords (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEmbedding
-      (fun w d s => Shape w (d.1, ()) d.2 s) (fun _ _ => 0) := by
-  refine realizes_siftUp_graded.mono_mul 2 (fun d s => ?_)
+      (fun w d s => Shape w (d.heap, ()) d.index s) (fun _ _ => 0) := by
   have hquery : ∀ x t, 1 ≤ memoryCost (step x) t := by
     intro x t
     change 1 ≤ 1 + _
     omega
-  have hc := whileWork_zero_le guard step hquery (d.1, ()) (Nat.log 2 d.2) d.2 s
-  have he := finish_loop_eq (d.1, ()) (Nat.log 2 d.2) d.2 le_rfl
-  have hm : memoryCost (PriorityQueue.BinaryHeap.Memory.siftUp d.1.2 d.2) s =
-      memoryCost (boundedWhile guard step (d.1, ()) (Nat.log 2 d.2) d.2) s := by
-    rw [← he]
-    simp only [← PFunctor.FreeM.bind_eq_bind, memoryCost_bind, memoryCost_pure, Nat.add_zero]
-  rw [← hm] at hc
-  dsimp only [localWork]
-  omega
+  have hLoop := realizes_loop.mono_mul (work' := fun _ _ => 0) 1 (fun (d, k) s => by
+    have hc := whileWork_zero_le guard step hquery d (Nat.log 2 k) k s
+    dsimp only
+    omega)
+  let p (d : IndexArgument) : Memory.Prog Unit := do
+    let _ ← boundedWhile guard step (d.heap, ()) (Nat.log 2 d.index) d.index
+    pure ()
+  have hp : Realizes .exact p indexWords (Equiv.ofUnique Unit (Fin 0 → ℕ)).toEmbedding
+      (fun w d s => Shape w (d.heap, ()) d.index s) (fun _ _ => 0) := by
+    realize
+    all_goals
+      first
+      | exact h
+      | obtain ⟨hn, _, S, hk, hkS, hshape⟩ := h
+        exact hn.of_le (hk.trans (hkS.trans hshape.size_le))
+  refine hp.congr ?_
+  intro d
+  exact finish_loop_eq (d.heap, ()) (Nat.log 2 d.index) d.index le_rfl
 
 /-- The actual combined currency is logarithmic. The premise is admissibility of the original
 program's complete history, not an assumed cost of a different implementation. -/
-theorem combined_le {w : ℕ} {d : HeapLayout × ℕ} {s : Memory.State}
-    (hi : Shape w (d.1, ()) d.2 s)
-    (hv : (Memory.spec w).ValidHistory s
-      ((Memory.spec w).clientHistory s (PriorityQueue.BinaryHeap.Memory.siftUp d.1.2 d.2))) :
-    memoryCost (PriorityQueue.BinaryHeap.Memory.siftUp d.1.2 d.2) s + localWork d s ≤
-      9 * Nat.log 2 d.2 + 2 := by
-  have he := finish_loop_eq (d.1, ()) (Nat.log 2 d.2) d.2 le_rfl
+theorem combined_le {w : ℕ} {d : IndexArgument} {s : Memory.State}
+    (hi : Shape w (d.heap, ()) d.index s)
+    (hv : (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s
+      (PriorityQueue.BinaryHeap.Memory.siftUp d.layout d.index))) :
+    memoryCost (PriorityQueue.BinaryHeap.Memory.siftUp d.layout d.index) s + localWork d s ≤
+      9 * Nat.log 2 d.index + 2 := by
+  have he := finish_loop_eq (d.heap, ()) (Nat.log 2 d.index) d.index le_rfl
   have hvalid : (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s
-      ((boundedWhile guard step (d.1, ()) (Nat.log 2 d.2) d.2).bind fun _ => pure ())) :=
+      ((boundedWhile guard step (d.heap, ()) (Nat.log 2 d.index) d.index).bind fun _ => pure ())) :=
     by
       rw [← he] at hv
       simpa only [← PFunctor.FreeM.bind_eq_bind] using hv
   have hvloop := ((validHistory_bind w _ (fun _ => pure ()) s).mp hvalid).1
   have hp := loop_currency_le hi hvloop
-  have hm : memoryCost (PriorityQueue.BinaryHeap.Memory.siftUp d.1.2 d.2) s =
-      memoryCost (boundedWhile guard step (d.1, ()) (Nat.log 2 d.2) d.2) s := by
+  have hm : memoryCost (PriorityQueue.BinaryHeap.Memory.siftUp d.layout d.index) s =
+      memoryCost (boundedWhile guard step (d.heap, ()) (Nat.log 2 d.index) d.index) s := by
     rw [← he]
     simp only [← PFunctor.FreeM.bind_eq_bind, memoryCost_bind, memoryCost_pure, Nat.add_zero]
   rw [hm]

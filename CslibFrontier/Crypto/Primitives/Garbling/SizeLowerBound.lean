@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Probability.Entropy.Continuity
 public import Cslib.Foundations.Data.BitString
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import CslibFrontier.Probability.Entropy.Fano
 
 /-!
@@ -17,7 +18,7 @@ import CslibFrontier.Probability.Entropy.Fano
 Garbled material must encode whatever the evaluator can recover from it but a simulator's view
 hides. This module proves that one-world entropy argument for an observation `C`, a hidden value
 `X : α` (for example the output-wire label selected by the input labels in `C`) and garbled
-material `G` of `m` bits.
+material `G` of `m` bits, random variables on a common probability space as in Fano's inequality.
 Suppose that, in a simulated law of `(C, X)` at statistical distance at most `ε` from the real
 law of `(C, X)`, `X` keeps `t` bits of entropy given `C`. Let `δ` be the error probability in
 the real law of a deterministic decoder recovering `X` from `(C, G)`. Then
@@ -53,11 +54,6 @@ open Cslib.Probability.PMF
 
 variable {C α : Type*}
 
-/-- `m` bits are `2^m` values. -/
-private theorem logb_card_bitString (m : ℕ) : Real.logb 2 (Fintype.card (BitString m)) = m := by
-  rw [Fintype.card_fun, Fintype.card_bool, Fintype.card_fin, Nat.cast_pow, Nat.cast_ofNat,
-    Real.logb_pow, Real.logb_self_eq_one one_lt_two, mul_one]
-
 /-- `H(X | C) ≤ H(G | C) + H(X | C, G)` for random variables on a common space. -/
 private theorem conditionalEntropy_le_add {Ω G : Type*} [Finite C] [Finite α] [Finite G]
     (ν : PMF Ω) (c : Ω → C) (x : Ω → α) (g : Ω → G) :
@@ -75,27 +71,27 @@ private theorem conditionalEntropy_le_add {Ω G : Type*} [Finite C] [Finite α] 
   rw [e2, e3, e4]
   linarith
 
-/-- **Size lower bound for garbled material.** Let `real` be the real joint law of an observation
-`C`, a hidden value `X : α` and garbled material `G` of `m` bits, and let `ideal` be a simulated
-law of `(C, X)` at statistical distance at most `ε` from the real law of `(C, X)`, in which `X`
-keeps at least `t` bits of entropy given `C`. With `δ` the probability under `real` that
-`decode (C, G) ≠ X`, we have
+/-- **Size lower bound for garbled material.** Let `c : Ω → C` be an observation, `x : Ω → α` a
+hidden value and `g : Ω → BitString m` garbled material of `m` bits, random variables on the real
+probability space `real`. Let `ideal` be a simulated law of `(c, x)` at statistical distance at
+most `ε` from the real law of `(c, x)`, in which the hidden value keeps at least `t` bits of entropy
+given the observation. With `δ` the probability under `real` that `decode (c, g) ≠ x`, we have
 `t - ε log₂ |α| - (1 + ε) h₂(ε / (1 + ε)) - h₂(δ) - δ log₂ (|α| - 1) ≤ m`. -/
-theorem sub_le_bitLength_of_recover [Fintype C] [Fintype α] {m : ℕ}
-    (real : PMF (C × α × BitString m)) (ideal : PMF (C × α)) (decode : C × BitString m → α)
-    {ε t : ℝ} (hdist : dist (real.map fun w => (w.1, w.2.1)) ideal ≤ ε)
-    (ht : t ≤ conditionalEntropy ideal) :
+theorem sub_le_bitLength_of_recover {Ω : Type*} [Fintype C] [Fintype α] {m : ℕ} (real : PMF Ω)
+    (c : Ω → C) (x : Ω → α) (g : Ω → BitString m) (ideal : PMF (C × α))
+    (decode : C × BitString m → α) {ε t : ℝ}
+    (hdist : dist (real.map fun ω => (c ω, x ω)) ideal ≤ ε) (ht : t ≤ conditionalEntropy ideal) :
     t - ε * Real.logb 2 (Fintype.card α) - condEntropyModulus ε -
-        (Real.binEntropy (real.toOuterMeasure {w | decode (w.1, w.2.2) ≠ w.2.1}).toReal /
+        (Real.binEntropy (real.toOuterMeasure {ω | decode (c ω, g ω) ≠ x ω}).toReal /
             Real.log 2 +
-          (real.toOuterMeasure {w | decode (w.1, w.2.2) ≠ w.2.1}).toReal *
+          (real.toOuterMeasure {ω | decode (c ω, g ω) ≠ x ω}).toReal *
             Real.logb 2 (Fintype.card α - 1)) ≤ m := by
   have htransfer := sub_le_conditionalEntropy_of_dist_le hdist ht
-  have hchain := conditionalEntropy_le_add real Prod.fst (fun w => w.2.1) (fun w => w.2.2)
-  have hfano := conditionalEntropy_map_le_binEntropy_add_mul_logb real (fun w => w.2.1)
-    (fun w => (w.1, w.2.2)) decode
-  have hsize := conditionalEntropy_le_log_card (real.map fun w => (w.1, w.2.2))
-  rw [logb_card_bitString] at hsize
+  have hchain := conditionalEntropy_le_add real c x g
+  have hfano := conditionalEntropy_map_le_binEntropy_add_mul_logb real x (fun ω => (c ω, g ω))
+    decode
+  have hsize := conditionalEntropy_le_log_card (real.map fun ω => (c ω, g ω))
+  rw [BitString.logb_card] at hsize
   linarith
 
 end Cslib.Crypto.Garbling

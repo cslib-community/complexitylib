@@ -21,14 +21,14 @@ namespace Cslib.Logic.PL.CSP.BinaryDigitsTests
 open Polynomial
 
 /-- One unary constraint, so the two local weights are simply added. -/
-@[expose] def oneVariable : CSP Unit ℕ := [((), [0])]
+@[expose] def oneVariable : CSP Unit ℕ := [⟨(), [0]⟩]
 
 /-- Unequal four-bit and three-bit weights on the two assignments. -/
 @[expose] def localWeight (_ : Unit) (w : List Bool) : ℕ := if w.headD false then 13 else 5
 
 private theorem weight_bits :
-    ∀ c ∈ oneVariable, ∀ w : List Bool, w.length = c.2.length →
-      (localWeight c.1 w).size ≤ 4 := by
+    ∀ c ∈ oneVariable, ∀ w : List Bool, w.length = c.scope.length →
+      (localWeight c.rel w).size ≤ 4 := by
   intro c hc w hw
   unfold localWeight
   split <;> decide

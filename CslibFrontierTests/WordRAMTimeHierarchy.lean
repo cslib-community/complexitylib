@@ -26,7 +26,9 @@ def acceptProgram : Program .additive 1 := [.op (.const 0 1), .halt 0]
 
 /-- **`Set.univ` is in constant word-RAM time**, by a two-instruction program. -/
 example : (Set.univ : Set (List Bool)) ∈ RAMTIME .additive encBits fun _ => 1 := by
-  refine ⟨2, 1, Nat.one_pos, 1, acceptProgram, fun l w hw _ => ?_⟩
+  refine ⟨2, 1, Nat.one_pos, 1, acceptProgram, ?_,
+    inputAdmissible_of_widthIndependent _ _⟩
+  intro l w hw _
   have hw1 : 1 ≤ w := le_trans (by simp [logWidth]) hw
   have h1 : Fits w 1 := fits_iff.mpr (Nat.one_lt_two_pow (by omega))
   refine ⟨1, 2, ?_, by norm_num, le_rfl, by simp⟩

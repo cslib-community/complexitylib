@@ -10,6 +10,7 @@ public import CslibFrontier.Algorithms.ThreeSum.ChanHe.Defs
 public import CslibFrontier.Foundations.Data.Finset.Average
 public import CslibFrontier.Foundations.NumberTheory.PrimeCounting
 public import Mathlib.Combinatorics.Enumerative.DoubleCounting
+import CslibFrontier.Foundations.NumberTheory.PrimeCollision
 
 /-!
 # Choosing the modulus in the Chan–He reduction
@@ -100,16 +101,9 @@ private theorem labelBits_pos (U : ℕ) : 1 ≤ labelBits U := Nat.succ_pos _
 because their product divides it. -/
 private theorem card_prime_divisors_le {Q : Finset ℕ} (hP : ∀ p ∈ Q, p.Prime) {U : ℕ} {d : ℤ}
     (hd : d ≠ 0) (hb : |d| ≤ 2 * (U : ℤ)) : #{p ∈ Q | ((p : ℕ) : ℤ) ∣ d} ≤ labelBits U := by
-  set T := {p ∈ Q | ((p : ℕ) : ℤ) ∣ d}
-  have hprime : ∀ p ∈ T, p.Prime := fun p hp => hP p (mem_filter.mp hp).1
-  have hsub : T ⊆ d.natAbs.primeFactors := fun p hp => Nat.mem_primeFactors.mpr
-    ⟨hprime p hp, Int.natCast_dvd.mp (mem_filter.mp hp).2, Int.natAbs_ne_zero.mpr hd⟩
-  have hpow : 2 ^ #T ≤ 2 * U :=
-    calc 2 ^ #T ≤ ∏ p ∈ T, p := pow_card_le_prod _ _ _ fun p hp => (hprime p hp).two_le
-      _ ≤ d.natAbs := Nat.le_of_dvd (Int.natAbs_pos.mpr hd)
-          ((prod_dvd_prod_of_subset _ _ _ hsub).trans (Nat.prod_primeFactors_dvd _))
-      _ ≤ 2 * U := by have := abs_le.mp hb; omega
-  exact (Nat.le_log_of_pow_le (by norm_num) hpow).trans (Nat.le_succ _)
+  have hab : d.natAbs ≤ 2 * U := by have := abs_le.mp hb; omega
+  exact (Nat.card_filter_prime_dvd_le_log hP hd).trans
+    ((Nat.log_mono_right hab).trans (Nat.le_succ _))
 
 /-- Double counting.  Summed over the candidates `q ∈ Q`, the pairs that collide modulo `M₀ q`
 number at most `labelBits U` times those that collide modulo `M₀`: such a pair collides modulo

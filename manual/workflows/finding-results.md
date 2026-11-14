@@ -14,6 +14,19 @@ Read the defining module's imports and namespace before importing it. A file und
 
 Before applying a result, identify its input/output types and encoding, quantified witnesses, size parameter, charged resource, uniformity and side conditions. In particular, check whether a machine is chosen once before all inputs, whether the bound is eventually or pointwise, and whether the theorem requires a valid representation. If these disagree with the [contract you chose](choosing-models.md), find a transport theorem or prove the missing conversion. Changing notation does not establish a model bridge.
 
+The [Arora–Barak 2007 draft audit](../../results/arora-barak-2007.md) compares numbered
+source statements with declarations at recorded snapshots, including model restrictions, source
+errors and endpoints not located. Use its chapter tables when a nearby theorem name alone does
+not establish textbook coverage; the corrected density-amplification objective remains open.
+
+For textbook-oriented searches, the [Goldreich draft audit](../../results/goldreich-2007.md)
+maps chapters 5–7 to declarations and remaining endpoints. Check its snapshot and model notes:
+visited-cell versus binary-space accounting and uniform versus nonuniform hardness can prevent
+a nearby theorem from establishing the source statement. Goldreich 6.10 uses bounded-time
+partial answers, matching the library’s ZPP; expected-time ZPP is a separate alternative interface.
+
+For source-specific comparisons, consult the [Goldreich draft audit, chapters 8–9](../../results/goldreich-2007.md#chapter-8-pseudorandom-generators). It distinguishes distribution security from certified generator runtime, and the class-level PCP theorem from stronger verification-time and witness-conversion claims. Its negative searches refer to a recorded snapshot.
+
 ## Build a shared Boolean circuit
 
 <!-- worked-example -->
@@ -225,8 +238,14 @@ explained in the [probabilistic workflow](probabilistic-workflows.md).
 The two reserve-output theorems choose their output constant after the fixed hierarchy,
 ζ, scale and positive floor, before the prime, environment width, horizon, prefix length
 and raw/preparation/maximum families. Select this constant before allocating recursive
-child accuracies. Uniformity of that coefficient does not remove any displayed finite
-allocation or walk-length losses and supplies no recursive accuracy theorem.
+child accuracies, then supply a `ReserveOutputContext HP P J` and independently supplied
+`ReserveOutputChildren HP P J`. The shared
+[OutputContext](../../CslibFrontier/Computability/LogSpaceDerandomization/NormalizedAtomRows/OutputContext.lean)
+module records the finite geometric, routing and cutoff hypotheses and names the existing
+allocation, walks, conditional cost and two-signal increment. Both public theorems retain
+an explicit error premise and row-moment conclusion. Uniformity of the coefficient does
+not remove any displayed finite allocation or walk-length losses and supplies no recursive
+accuracy theorem.
 
 For changes to the completed pilot maximum with raw and preparation children fixed,
 [HierarchyCorrectionStability](../../CslibFrontier/Computability/LogSpaceDerandomization/HierarchyCorrectionStability.lean)

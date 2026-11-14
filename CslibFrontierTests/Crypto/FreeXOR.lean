@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Karn Seth. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Karn Seth
+Authors: Karn Seth, Mayank Rathee
 -/
 
 module
@@ -56,15 +56,19 @@ example : ∀ x, (garbleWith xorAndC interpretation toyH id true
 
 variable (D : View xorAndC.topology free Bool → ProbComp Bool) (x : Fin 2 → Bool)
 
--- Eight slots (four AND rows of two; the XOR gate has none): at most eight queries.
+-- Eight slots (four AND rows of two; the XOR gate has none): at most eight queries, and at most
+-- one query per tweak when the tweak map is injective.
 example : (reduction xorAndC interpretation toyH id x D).IsQueryBounded 8 := by
   have h := isQueryBounded_reduction xorAndC interpretation toyH id x D
   rwa [show Fintype.card (GarbledSlot xorAndC.topology free) = 8 by decide] at h
 
+example : Garbling.CCR.IsTweakUnique (reduction xorAndC interpretation toyH id x D) :=
+  isTweakUnique_reduction xorAndC interpretation toyH id x D Function.injective_id
+
 -- Privacy applies with injective tweaks; with the toy hash the right side is not small.
 example : Game.advantage (realGame xorAndC interpretation toyH id x D)
       (simGame xorAndC interpretation toyH id x D) =
-    Garbling.CorrelationRobust.advantage toyH (reduction xorAndC interpretation toyH id x D) :=
+    Garbling.CCR.advantage toyH id (·, true) (reduction xorAndC interpretation toyH id x D) :=
   advantage_realGame_simGame xorAndC interpretation toyH id x D hfree (by decide)
     Function.injective_id
 

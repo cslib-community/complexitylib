@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Foundations.Data.Code.Basic
 public import Mathlib.Analysis.SpecialFunctions.Log.Base
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import CslibFrontier.Foundations.Data.Code.Plotkin
 
 /-!
@@ -130,7 +131,7 @@ theorem eventually_logb_card_le_of_le_hammingDist {σ : Type*} {ιs : σ → Typ
       exact_mod_cast this
     calc Real.logb q #(C s) ≤ Real.logb q ((q : ℝ) ^ Fintype.card (ιs s)) :=
           Real.logb_le_logb_of_le hqR (by exact_mod_cast h0) hle
-      _ = Fintype.card (ιs s) := by rw [Real.logb_pow, Real.logb_self_eq_one hqR, mul_one]
+      _ = Fintype.card (ιs s) := Real.logb_self_pow (zero_lt_one.trans hqR) hqR.ne' _
   rcases hδ0.eq_or_lt with rfl | hδpos
   · refine Filter.Eventually.of_forall fun s => (htriv s).trans ?_
     have : (0 : ℝ) ≤ Fintype.card (ιs s) := by positivity

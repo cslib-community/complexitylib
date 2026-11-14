@@ -29,6 +29,14 @@ private theorem copyBank_injective : Function.Injective copyBank := by
   have hv := congrArg Fin.val h
   exact Fin.ext (by simpa only [copyBank] using Nat.add_left_cancel hv)
 
+private theorem copyBank_ne_of_not_mem {j : Fin 640} (hj : j.val < 620 ∨ 628 ≤ j.val)
+    (i : Fin 8) : copyBank i ≠ j := by
+  intro h
+  have hv := congrArg Fin.val h
+  have hi := i.isLt
+  change 620 + i.val = j.val at hv
+  rcases hj with h | h <;> omega
+
 /-- Deliver the original AB arguments and zero accumulator after the real header. -/
 theorem exec_firstCopy {W : ℕ} (x : Data 640) (hc : x.regs Reg.constant = 5)
     (hfit : Fits W (x.regs Reg.base + 5)) :
@@ -49,11 +57,7 @@ theorem exec_firstCopy {W : ℕ} (x : Data 640) (hc : x.regs Reg.constant = 5)
   · simp [y, copyBank]
   · intro j hj
     apply he.regs_eq
-    have hn (i : Fin 8) : copyBank i ≠ j := by
-      intro h
-      have hv := congrArg Fin.val h
-      change 620 + i.val = j.val at hv
-      omega
+    have hn := copyBank_ne_of_not_mem (Or.inl hj)
     simp [firstCopy, Code.Preserves, Op.dest, Op.bin, hn]
 
 /-- Deliver a subsequent matrix pointer and advance only the destination span. -/
@@ -83,11 +87,7 @@ theorem exec_nextCopy {W : ℕ} (src : Fin 640) (x : Data 640)
   · simp [y, a, copyBank]
   · intro j hj
     apply he.regs_eq
-    have hn (i : Fin 8) : copyBank i ≠ j := by
-      intro h
-      have hv := congrArg Fin.val h
-      change 620 + i.val = j.val at hv
-      omega
+    have hn := copyBank_ne_of_not_mem (Or.inl hj)
     simp [nextCopy, Code.Preserves, Op.dest, Op.bin, hn]
 
 /-- Actual copied words and running sum, with all caller registers outside the eight scratch
@@ -109,11 +109,6 @@ theorem exec_copy {W : ℕ} (x : Data 640) (h1 : Fits W 1)
   obtain ⟨y, hy, post, hframe⟩ :=
     ExecWithin.rename_post copyBank_injective (ArrayCopySum.exec (x.comap copyBank)
       h1 hs hd ht hsep)
-  refine ⟨y, hy, post.of_comap, fun j hj => hframe j ?_⟩
-  intro i he
-  have hv := congrArg Fin.val he
-  have hi := i.isLt
-  change 620 + i.val = j.val at hv
-  rcases hj with h | h <;> omega
+  exact ⟨y, hy, post.of_comap, fun j hj => hframe j (copyBank_ne_of_not_mem hj)⟩
 
 end Cslib.Algorithms.WordRAM.ExactTriangle.CallableFixedPrime

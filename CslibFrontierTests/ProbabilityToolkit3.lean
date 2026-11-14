@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.BitString.LinearHash
 import CslibFrontier.Probability.BoundedDifferences
@@ -91,9 +92,7 @@ example :
 
 /-- Uniform bit strings are sources of their full length. -/
 private theorem isSource_uniform (n : ℕ) : IsSource (uniformOfFintype (BitString n)) n 0 := by
-  rw [isSource_zero_iff, minEntropy_uniformOfFintype, Fintype.card_fun, Fintype.card_bool,
-    Fintype.card_fin, Nat.cast_pow, Nat.cast_ofNat, Real.logb_pow,
-    Real.logb_self_eq_one one_lt_two, mul_one]
+  rw [isSource_zero_iff, minEntropy_uniformOfFintype, BitString.logb_card]
 
 /-- `2⁻²` is a quarter. -/
 private theorem two_rpow_neg_two : (2 : ℝ) ^ (-2 : ℝ) = 1 / 4 := by
@@ -145,8 +144,7 @@ example :
   rw [minEntropy_uniformOfFintype]
   simp only [BitString, Fintype.card_fun, Fintype.card_bool, Fintype.card_fin, Nat.cast_pow,
     Nat.cast_ofNat, inv_div, div_one]
-  rw [Real.logb_pow, Real.logb_pow, show (4 : ℝ) = 2 ^ 2 by norm_num, Real.logb_pow,
-    Real.logb_self_eq_one (by norm_num)]
+  rw [Real.logb_pow, Real.logb_pow, show (4 : ℝ) = 2 ^ 2 by norm_num, Real.logb_two_pow]
   norm_num
 
 /-! ### McDiarmid's inequality -/
@@ -210,5 +208,40 @@ example {γ : Type*} [Fintype γ] [DecidableEq γ] (n : ℕ) (p : PMF γ) {ε : 
         2 * Real.exp (-2 * ε ^ 2 / n) := by
   have h := (hasBoundedDifferences_distinct n).pi_abs_sub_mean_ge (fun _ => p) hε
   rwa [Finset.sum_const, one_pow, card_univ, Fintype.card_fin, nsmul_eq_mul, mul_one] at h
+
+/-! ### Hoeffding's inequality for `[0, 1]` scores -/
+
+-- `n` fair coins: the number of heads is `n γ` away from `n / 2` with probability at most
+-- `2 exp (-2 n γ²)`, with no renormalization of the exponent.
+example (n : ℕ) {γ : ℝ} (hγ : 0 ≤ γ) :
+    ((pi fun _ : Fin n => uniformOfFintype Bool).toOuterMeasure
+      {x | n * γ ≤ |(∑ i, if x i then (1 : ℝ) else 0) - n / 2|}).toReal ≤
+        2 * Real.exp (-2 * n * γ ^ 2) := by
+  have h := pi_sum_abs_sub_mean_ge_card_mul (fun _ : Fin n => uniformOfFintype Bool)
+    (fun _ b => if b then (1 : ℝ) else 0) (fun _ b _ => by cases b <;> simp) hγ
+  have hmean : ∑ _i : Fin n, ∑ b, ((uniformOfFintype Bool) b).toReal *
+      (if b then (1 : ℝ) else 0) = n / 2 := by
+    simp [div_eq_mul_inv]
+  rwa [hmean, Fintype.card_fin] at h
+
+-- The scores need only lie in `[0, 1]` on the support: a point mass at `false` may score `100`
+-- at `true`, and both one-sided tails at deviation `n γ` still get the bound `exp (-2 n γ²)`.
+example (n : ℕ) {γ : ℝ} (hγ : 0 ≤ γ) :
+    ((pi fun _ : Fin n => PMF.pure false).toOuterMeasure
+      {x | (∑ i, if x i then (100 : ℝ) else 0) ≤
+        (∑ _i : Fin n, ∑ b, ((PMF.pure false) b).toReal * (if b then (100 : ℝ) else 0)) -
+          Fintype.card (Fin n) * γ}).toReal ≤
+        Real.exp (-2 * Fintype.card (Fin n) * γ ^ 2) :=
+  pi_sum_le_mean_sub_card_mul (fun _ : Fin n => PMF.pure false)
+    (fun _ b => if b then (100 : ℝ) else 0) (fun _ b h => by simp_all) hγ
+
+example (n : ℕ) {γ : ℝ} (hγ : 0 ≤ γ) :
+    ((pi fun _ : Fin n => PMF.pure false).toOuterMeasure
+      {x | (∑ _i : Fin n, ∑ b, ((PMF.pure false) b).toReal * (if b then (100 : ℝ) else 0)) +
+          Fintype.card (Fin n) * γ ≤
+        ∑ i, if x i then (100 : ℝ) else 0}).toReal ≤
+        Real.exp (-2 * Fintype.card (Fin n) * γ ^ 2) :=
+  pi_sum_ge_mean_add_card_mul (fun _ : Fin n => PMF.pure false)
+    (fun _ b => if b then (100 : ℝ) else 0) (fun _ b h => by simp_all) hγ
 
 end CslibFrontierTests.ProbabilityToolkit3

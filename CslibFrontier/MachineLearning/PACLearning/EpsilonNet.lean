@@ -13,6 +13,7 @@ public import Mathlib.MeasureTheory.Constructions.Pi
 import CslibFrontier.MachineLearning.PACLearning.DoubleSample
 import CslibFrontier.Probability.Chernoff
 import CslibFrontier.Probability.PMF.Event
+import CslibFrontier.Probability.Product.MapMeasure
 import Mathlib.Analysis.Complex.ExponentialBounds
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Mathlib.Probability.ProbabilityMassFunction.Constructions
@@ -208,86 +209,40 @@ private theorem card_filter_swapSamples_mem_mul_two_pow_le (G : ConceptClass Z B
 @[expose] noncomputable def vcSampleSize (d : ℕ) (ε δ : ℝ) : ℝ :=
   8 / ε * (d * Real.log (48 / ε) + Real.log (4 / δ))
 
-/-- The arithmetic behind the explicit sample size: `8 ≤ εm`, `d ≤ 2m` and
-`2 (e (2m) / d) ^ d ≤ δ 2 ^ (εm / 2)`. -/
-private theorem vcSampleSize_aux {d m : ℕ} {ε δ : ℝ} (hε : 0 < ε) (hε1 : ε ≤ 1) (hδ : 0 < δ)
-    (hδ1 : δ ≤ 1) (hm : vcSampleSize d ε δ ≤ m) :
-    8 ≤ ε * m ∧ d ≤ m + m ∧
-      2 * (Real.exp 1 * ((m + m : ℕ) : ℝ) / d) ^ d ≤ δ * (2 : ℝ) ^ (ε * m / 2) := by
-  have hd0 : (0 : ℝ) ≤ d := Nat.cast_nonneg d
-  have hlog48 : 1 ≤ Real.log (48 / ε) := by
-    rw [Real.le_log_iff_exp_le (by positivity)]
-    calc Real.exp 1 ≤ 48 := by linarith [Real.exp_one_lt_d9]
-      _ ≤ 48 / ε := by rw [le_div_iff₀ hε]; nlinarith
-  have hlog4 : 1 ≤ Real.log (4 / δ) := by
-    rw [Real.le_log_iff_exp_le (by positivity)]
-    calc Real.exp 1 ≤ 4 := by linarith [Real.exp_one_lt_d9]
-      _ ≤ 4 / δ := by rw [le_div_iff₀ hδ]; nlinarith
-  have hεm : d * Real.log (48 / ε) + Real.log (4 / δ) ≤ ε * m / 8 := by
-    rw [vcSampleSize, div_mul_eq_mul_div, div_le_iff₀ hε] at hm
-    linarith
-  have hdlog : (d : ℝ) ≤ d * Real.log (48 / ε) := le_mul_of_one_le_right hd0 hlog48
-  have h8 : 8 ≤ ε * m := by linarith
-  have hdm : d ≤ m + m := by
-    have h2 : ε * m / 8 ≤ m := by nlinarith
-    have : (d : ℝ) ≤ m + m := by linarith
-    exact_mod_cast this
-  refine ⟨h8, hdm, ?_⟩
-  have hm0 : (0 : ℝ) < m := lt_of_mul_lt_mul_left (by linarith : ε * 0 < ε * m) hε.le
-  set A : ℝ := Real.exp 1 * ((m + m : ℕ) : ℝ) / d with hAdef
-  -- `d log (e (2m) / d) ≤ d log (48 / ε) + εm / 8`, from `log y ≤ y - 1` at `y = εm / (8d)`.
-  have hclaim : d * Real.log A ≤ d * Real.log (48 / ε) + ε * m / 8 := by
-    rcases Nat.eq_zero_or_pos d with hd | hdpos
-    · subst hd
-      simp only [Nat.cast_zero, zero_mul, zero_add]
-      positivity
-    have hdR : (0 : ℝ) < d := by exact_mod_cast hdpos
-    have hy : 0 < ε * m / (8 * d) := by positivity
-    have hA : A = 16 * Real.exp 1 / ε * (ε * m / (8 * d)) := by
-      rw [hAdef]
-      push_cast
-      field_simp
-      ring
-    have hlogA : Real.log A ≤ Real.log (48 / ε) + ε * m / (8 * d) := by
-      rw [hA, Real.log_mul (by positivity) hy.ne']
-      have h1 : Real.log (16 * Real.exp 1 / ε) ≤ Real.log (48 / ε) :=
-        Real.log_le_log (by positivity) (by gcongr; linarith [Real.exp_one_lt_d9])
-      have h2 := Real.log_le_sub_one_of_pos hy
-      linarith
-    calc d * Real.log A ≤ d * (Real.log (48 / ε) + ε * m / (8 * d)) := by gcongr
-      _ = d * Real.log (48 / ε) + ε * m / 8 := by
-          field_simp
-  have hApow : 0 < A ^ d := by
-    rcases Nat.eq_zero_or_pos d with hd | hdpos
-    · subst hd
-      simp
-    have hdR : (0 : ℝ) < d := by exact_mod_cast hdpos
-    refine pow_pos (div_pos (mul_pos (Real.exp_pos 1) ?_) hdR) d
-    push_cast
-    linarith
-  have hlog4δ : Real.log (4 / δ) = 2 * Real.log 2 - Real.log δ := by
-    rw [Real.log_div (by norm_num) hδ.ne', show (4 : ℝ) = 2 ^ 2 by norm_num, Real.log_pow]
-    push_cast
-    ring
-  have hlog2 : ε * m / 4 ≤ ε * m / 2 * Real.log 2 := by
-    nlinarith [Real.log_two_gt_d9]
-  rw [← Real.log_le_log_iff (by positivity) (by positivity), Real.log_mul two_ne_zero hApow.ne',
-    Real.log_pow, Real.log_mul hδ.ne' (by positivity), Real.log_rpow two_pos]
-  linarith [Real.log_two_gt_d9]
-
 /-- The explicit sample size makes `2 Π_G(2m) ≤ δ 2 ^ ⌈εm/2⌉` (and `8 ≤ εm`) whenever every
-finite set shattered by `G` has at most `d` points. -/
+finite set shattered by `G` has at most `d` points. The proof applies Sauer's lemma in the form
+`Π_G(2m) ≤ exp (2m / T) T ^ d` (`growthFunction_le_exp_mul_pow`) at `T = 48 / ε`. -/
 theorem growthFunction_le_of_vcSampleSize_le {G : ConceptClass Z Bool} {d : ℕ}
     (hG : ∀ W : Finset Z, SetShatters G ↑W → W.card ≤ d) {m : ℕ} {ε δ : ℝ} (hε : 0 < ε)
     (hε1 : ε ≤ 1) (hδ : 0 < δ) (hδ1 : δ ≤ 1) (hm : vcSampleSize d ε δ ≤ m) :
     8 ≤ ε * m ∧ 2 * (growthFunction G (m + m) : ℝ) ≤ δ * 2 ^ ⌈ε * m / 2⌉₊ := by
-  obtain ⟨h8, hdm, hineq⟩ := vcSampleSize_aux hε hε1 hδ hδ1 hm
+  have hT : 1 ≤ 48 / ε := by rw [le_div_iff₀ hε]; linarith
+  have hlogT : 0 ≤ Real.log (48 / ε) := Real.log_nonneg hT
+  have hlog4 : 1 ≤ Real.log (4 / δ) := by
+    rw [Real.le_log_iff_exp_le (by positivity)]
+    calc Real.exp 1 ≤ 4 := by linarith [Real.exp_one_lt_d9]
+      _ ≤ 4 / δ := by rw [le_div_iff₀ hδ]; nlinarith
+  rw [vcSampleSize, div_mul_eq_mul_div, div_le_iff₀ hε] at hm
+  have hdlog : 0 ≤ (d : ℝ) * Real.log (48 / ε) := mul_nonneg (Nat.cast_nonneg d) hlogT
+  have h8 : 8 ≤ ε * m := by linarith
   refine ⟨h8, ?_⟩
+  have hexp : ((m + m : ℕ) : ℝ) / (48 / ε) = ε * m / 24 := by
+    push_cast
+    field_simp
+    ring
+  have hlog2 : ε * m / 3 ≤ ε * m / 2 * Real.log 2 := by nlinarith [Real.log_two_gt_d9]
+  rw [Real.log_div (by norm_num) hδ.ne', show (4 : ℝ) = 2 ^ 2 by norm_num, Real.log_pow] at hm
   calc 2 * (growthFunction G (m + m) : ℝ)
-      ≤ 2 * (Real.exp 1 * ((m + m : ℕ) : ℝ) / d) ^ d := by
+      ≤ 2 * (Real.exp (((m + m : ℕ) : ℝ) / (48 / ε)) * (48 / ε) ^ d) := by
         gcongr
-        exact growthFunction_le_exp_one_mul_div_pow hG hdm
-    _ ≤ δ * (2 : ℝ) ^ (ε * m / 2) := hineq
+        exact growthFunction_le_exp_mul_pow hG _ hT
+    _ ≤ δ * (2 : ℝ) ^ (ε * m / 2) := by
+        rw [hexp, ← Real.log_le_log_iff (by positivity) (by positivity),
+          Real.log_mul two_ne_zero (by positivity),
+          Real.log_mul (Real.exp_pos _).ne' (by positivity), Real.log_exp, Real.log_pow,
+          Real.log_mul hδ.ne' (by positivity), Real.log_rpow two_pos]
+        push_cast at hm ⊢
+        linarith [Real.log_two_gt_d9]
     _ ≤ δ * 2 ^ ⌈ε * m / 2⌉₊ := by
         gcongr
         calc (2 : ℝ) ^ (ε * m / 2) ≤ (2 : ℝ) ^ (⌈ε * m / 2⌉₊ : ℝ) :=
@@ -329,11 +284,10 @@ private theorem measure_pi_card_lt_le_half (μ : Measure Z) [IsProbabilityMeasur
   classical
   -- Push the samples forward to their labels, an i.i.d. sample of a Bernoulli distribution.
   set q : PMF Bool := (μ.map g).toPMF
-  have hq : q.toMeasure = μ.map g := Measure.toPMF_toMeasure _
   have hmap : (Measure.pi fun _ : Fin m => μ).map (fun T i => g (T i)) =
-      (Cslib.Probability.PMF.pi fun _ : Fin m => q).toMeasure := by
-    rw [Cslib.Probability.PMF.toMeasure_pi, hq]
-    exact Measure.pi_map_pi (fun _ => (measurable_of_countable g).aemeasurable)
+      (Cslib.Probability.PMF.pi fun _ : Fin m => q).toMeasure :=
+    Cslib.Probability.PMF.map_measurePi_eq_toMeasure_pi _ fun _ =>
+      (measurable_of_countable g).aemeasurable
   have hgm : Measurable fun (T : Fin m → Z) i => g (T i) := measurable_of_countable _
   have hpre : {T : Fin m → Z | ((Finset.univ.filter fun i => g (T i) = true).card : ℝ) <
       ε * m / 2} = (fun T i => g (T i)) ⁻¹'

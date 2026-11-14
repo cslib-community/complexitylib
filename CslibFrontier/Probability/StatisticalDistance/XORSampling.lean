@@ -7,6 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
+public import CslibFrontier.Probability.BitString.Parity
 public import CslibFrontier.Probability.StatisticalDistance.XOR
 import CslibFrontier.Probability.PMF
 import CslibFrontier.Probability.PMF.Uniform
@@ -27,15 +28,14 @@ samplers [SahaiVadhan2003, Lemma 3.5]. The XOR construction also commutes with i
 
 ## Main definitions
 
-* `Cslib.BitString.parityComplete`: the completion of `j` bits to `j + 1` bits of parity `c`.
-* `Cslib.BitString.parityCompleteEquiv`: completion as an equivalence onto the selectors of
-  parity `c`.
+* `Cslib.BitString.parityComplete` and `Cslib.BitString.parityCompleteEquiv`, used below, are
+  defined in `CslibFrontier/Foundations/Data/BitString/Parity/Complete.lean`.
 
 ## Main results
 
 * `Cslib.Probability.PMF.xorMix_map`: naturality of the XOR construction.
-* `Cslib.Probability.PMF.uniformOfFintype_map_parityComplete`: completed uniform bits are uniform
-  among the selectors of parity `c`.
+* `Cslib.Probability.PMF.uniformOfFintype_map_parityComplete`, used below, is proved in
+  `CslibFrontier/Probability/BitString/Parity.lean`.
 * `Cslib.Probability.PMF.xorMix_map_uniform`: the XOR construction of two images of uniform seeds is
   an image of uniform selector bits and seeds.
 
@@ -44,40 +44,7 @@ samplers [SahaiVadhan2003, Lemma 3.5]. The XOR construction also commutes with i
 * [A. Sahai, S. Vadhan, *A complete problem for statistical zero knowledge*][SahaiVadhan2003]
 -/
 
-@[expose] public section
-
-namespace Cslib.BitString
-
-/-- The completion of `j` bits `r` to the `j + 1` bits of parity `c` extending them: the last bit
-is `c ⊕ parity r`. -/
-def parityComplete (c : Bool) {j : ℕ} (r : BitString j) : BitString (j + 1) :=
-  Fin.snoc r (c ^^ parity j r)
-
-/-- The completion of `r` to parity `c` has parity `c`. -/
-theorem parity_parityComplete (c : Bool) {j : ℕ} (r : BitString j) :
-    parity (j + 1) (parityComplete c r) = c := by
-  rw [parityComplete, parity_snoc]
-  cases c <;> cases parity j r <;> rfl
-
-/-- Completion to parity `c` is an equivalence onto the bit strings of parity `c`; the inverse
-drops the last bit. -/
-def parityCompleteEquiv (c : Bool) (j : ℕ) :
-    BitString j ≃ {b : BitString (j + 1) // b ∈ ({b | parity (j + 1) b = c} : Finset _)} where
-  toFun r := ⟨parityComplete c r, by simp [parity_parityComplete]⟩
-  invFun b := Fin.init b.1
-  left_inv r := by simp [parityComplete]
-  right_inv b := by
-    obtain ⟨b, hb⟩ := b
-    simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hb
-    apply Subtype.ext
-    simp only [parityComplete]
-    conv_rhs => rw [← Fin.snoc_init_self b]
-    congr 1
-    rw [← Fin.snoc_init_self b, parity_snoc] at hb
-    rw [← hb]
-    cases parity j (Fin.init b) <;> cases b (Fin.last j) <;> rfl
-
-end Cslib.BitString
+public section
 
 namespace Cslib.Probability.PMF
 
@@ -97,16 +64,6 @@ theorem xorMix_map {α β : Type*} [Fintype α] [Fintype β] (p₀ p₁ : PMF α
     cases b i <;> rfl
   · rw [← pi_map]
 
-/-- Completing uniform bits to parity `c` gives a uniform bit string of parity `c`. -/
-theorem uniformOfFintype_map_parityComplete (c : Bool) (j : ℕ)
-    (h : ({b : BitString (j + 1) | parity (j + 1) b = c} : Finset _).Nonempty) :
-    (uniformOfFintype (BitString j)).map (parityComplete c) = uniformOfFinset _ h := by
-  have : Nonempty {b : BitString (j + 1) // b ∈ ({b | parity (j + 1) b = c} : Finset _)} :=
-    h.coe_sort
-  rw [← uniformOfFintype_finset_map_val, ← uniformOfFintype_map_equiv (parityCompleteEquiv c j),
-    PMF.map_comp]
-  rfl
-
 /-- **The XOR construction from uniform bits**: on `j + 1` coordinates, the XOR construction of
 the images of a uniform seed under `f₀` and `f₁` is the image of `j` uniform selector bits `r` and
 `j + 1` uniform seeds `s` under `i ↦ f_{b i} (s i)`, where `b = parityComplete c r`. -/
@@ -116,7 +73,7 @@ theorem xorMix_map_uniform {γ α : Type*} [Fintype γ] [Nonempty γ] [Fintype �
       (uniformOfFintype (BitString j × (Fin (j + 1) → γ))).map
         (fun p i => bif parityComplete c p.1 i then f₁ (p.2 i) else f₀ (p.2 i)) := by
   have hne : ({b : BitString (j + 1) | parity (j + 1) b = c} : Finset _).Nonempty :=
-    ⟨parityComplete c (fun _ => false), by simp [parity_parityComplete]⟩
+    parity_fiber_nonempty (Nat.succ_pos j) c
   rw [xorMix, dite_eq_left hne, ← uniformOfFintype_map_parityComplete c j hne, PMF.bind_map,
     ← uniformOfFintype_prod, PMF.map_bind]
   congr 1 with r : 1

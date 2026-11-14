@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Init
 public import Mathlib.Data.Nat.Choose.Sum
 public import Mathlib.Analysis.SpecialFunctions.Log.Base
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import Mathlib.Analysis.Complex.ExponentialBounds
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Ring
@@ -234,8 +235,7 @@ theorem le_mul_logb_of_two_pow_le_sum_choose_sq {m q e : ℕ} (heq : e ≤ q)
     (sum_choose_le_exp_one_mul_div_pow heq) 2)
   have hlog := Real.logb_le_logb_of_le (b := 2) (by norm_num)
     (by positivity : (0 : ℝ) < 2 ^ m) hpow
-  simp only [Real.logb_pow, Real.logb_self_eq_one (by norm_num : (1 : ℝ) < 2),
-    Nat.cast_ofNat, mul_one] at hlog
+  rw [Real.logb_two_pow, Real.logb_pow, Real.logb_pow, Nat.cast_ofNat] at hlog
   linarith
 
 /-- The logarithmic partial-binomial-sum bound rearranged as a lower bound on `q`.

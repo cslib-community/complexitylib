@@ -55,7 +55,7 @@ example : activeSelfQuery encBool andCount andQuery true = true ∧
 
 private theorem orWitness : LogSpaceKDTTReducible 2 encBool encBool
     ({true} : Set Bool)ᶜ ({true} : Set Bool) := by
-  refine ⟨orCount, orQuery, ComputableInLogSpace.of_finite _, orQuery_logspace, ?_, ?_⟩
+  refine ⟨orCount, orQuery, ⟨ComputableInLogSpace.of_finite _, orQuery_logspace, ?_⟩, ?_⟩
   · decide
   · intro a
     cases a
@@ -68,7 +68,7 @@ private theorem orWitness : LogSpaceKDTTReducible 2 encBool encBool
 
 private theorem andWitness : LogSpaceKCTTReducible 2 encBool encBool
     ({true} : Set Bool)ᶜ ({true} : Set Bool) := by
-  refine ⟨andCount, andQuery, ComputableInLogSpace.of_finite _, andQuery_logspace, ?_, ?_⟩
+  refine ⟨andCount, andQuery, ⟨ComputableInLogSpace.of_finite _, andQuery_logspace, ?_⟩, ?_⟩
   · decide
   · intro a
     cases a
@@ -100,12 +100,12 @@ example : activeSelfQuery encBool (fun _ => 0) Prod.fst true = false ∧
 
 private theorem full_or_zero :
     LogSpaceKDTTReducible 0 encBool encBool (Set.univ : Set Bool)ᶜ Set.univ := by
-  refine ⟨fun _ => 0, Prod.fst, by fun_prop, by fun_prop, fun _ => le_rfl, ?_⟩
+  refine ⟨fun _ => 0, Prod.fst, ⟨by fun_prop, by fun_prop, fun _ => le_rfl⟩, ?_⟩
   simp
 
 private theorem empty_and_zero :
     LogSpaceKCTTReducible 0 encBool encBool (∅ : Set Bool)ᶜ ∅ := by
-  refine ⟨fun _ => 0, Prod.fst, by fun_prop, by fun_prop, fun _ => le_rfl, ?_⟩
+  refine ⟨fun _ => 0, Prod.fst, ⟨by fun_prop, by fun_prop, fun _ => le_rfl⟩, ?_⟩
   simp
 
 /-- The empty/full edge witnesses produce autoreductions at the exact zero bound. -/
@@ -117,9 +117,9 @@ example : LogSpaceKTruthTableAutoreducible 0 encBool (Set.univ : Set Bool) ∧
 example (k : ℕ) : (¬ LogSpaceKDTTReducible k encBool encBool (∅ : Set Bool)ᶜ ∅) ∧
     (¬ LogSpaceKCTTReducible k encBool encBool (Set.univ : Set Bool)ᶜ Set.univ) := by
   constructor
-  · rintro ⟨r, q, hr, hq, hk, h⟩
+  · rintro ⟨r, q, -, h⟩
     simpa using h false
-  · rintro ⟨r, q, hr, hq, hk, h⟩
+  · rintro ⟨r, q, -, h⟩
     simpa using h false
 
 /-- Self-query detection distinguishes empty words, differing bits, and unequal lengths. -/
@@ -145,7 +145,7 @@ theorem singleton_kdtt_complete :
   refine ⟨⟨id, ComputableInLogSpace.id, fun a => by simp⟩, ?_⟩
   intro α enc B hB
   obtain ⟨f, hf, hB⟩ := hB
-  refine ⟨fun _ => 1, fun p => f p.1, by fun_prop, by fun_prop, fun _ => le_rfl, ?_⟩
+  refine ⟨fun _ => 1, fun p => f p.1, ⟨by fun_prop, by fun_prop, fun _ => le_rfl⟩, ?_⟩
   intro a
   simpa using hB a
 
@@ -156,7 +156,7 @@ theorem singleton_kctt_complete :
   refine ⟨⟨id, ComputableInLogSpace.id, fun a => by simp⟩, ?_⟩
   intro α enc B hB
   obtain ⟨f, hf, hB⟩ := hB
-  refine ⟨fun _ => 1, fun p => f p.1, by fun_prop, by fun_prop, fun _ => le_rfl, ?_⟩
+  refine ⟨fun _ => 1, fun p => f p.1, ⟨by fun_prop, by fun_prop, fun _ => le_rfl⟩, ?_⟩
   intro a
   simpa using hB a
 

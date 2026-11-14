@@ -52,7 +52,7 @@ theorem validPositions_positions (vs scope : List ℕ) :
 
 /-- One index per distinct touched original constraint, in original constraint order. -/
 @[expose] def touched (F : CSP Table ℕ) (vs : List ℕ) : List (Fin F.length) :=
-  (List.finRange F.length).filter fun i => !(positions vs F[i.val].2).isEmpty
+  (List.finRange F.length).filter fun i => !(positions vs F[i.val].scope).isEmpty
 
 /-- A name strictly larger than every old variable. Its computation scans actual occurrences. -/
 @[expose] def freshBase (F : CSP Table ℕ) : ℕ := F.vars.foldr max 0 + 1
@@ -68,26 +68,26 @@ theorem validPositions_positions (vs scope : List ℕ) :
 constraints, including nullary constraints, retain their relation and scope. -/
 @[expose] def constraint (f : OccurrenceLabeling F Bool) (vs : List ℕ)
     (i : Fin F.length) : Constraint Table ℕ :=
-  if (positions vs F[i.val].2).isEmpty then F[i.val]
+  if (positions vs F[i.val].scope).isEmpty then F[i.val]
   else
-    let ps := positions vs F[i.val].2
-    let os := outsidePositions F[i.val].2.length ps
-    (F[i.val].1.contract (localTuple f i) ps,
-      os.map (fun j => F[i.val].2.getD j 0) ++ [connector F i])
+    let ps := positions vs F[i.val].scope
+    let os := outsidePositions F[i.val].scope.length ps
+    ⟨F[i.val].rel.contract (localTuple f i) ps,
+      os.map (fun j => F[i.val].scope.getD j 0) ++ [connector F i]⟩
 
 /-- Executable whole-instance contraction. This keeps every old constraint and appends the
 central exactly-one constraint, even when some old constraints have empty scopes. -/
 @[expose] def contract (f : OccurrenceLabeling F Bool) (vs : List ℕ) : CSP Table ℕ :=
-  List.ofFn (constraint f vs) ++ [(exactlyOne (connectors F vs), connectors F vs)]
+  List.ofFn (constraint f vs) ++ [Constraint.mk (exactlyOne (connectors F vs)) (connectors F vs)]
 
 /-- Ordered outside projections of actual original labels, with supplied connector bits and
 one supplied central row. The buffers retain exactly the old constraint ordering. -/
 @[expose] def transportRows (f : OccurrenceLabeling F Bool) (vs : List ℕ)
     (bits : Fin F.length → Bool) (central : List Bool) : List (List Bool) :=
   List.ofFn (fun i : Fin F.length =>
-    if (positions vs F[i.val].2).isEmpty then localTuple f i
+    if (positions vs F[i.val].scope).isEmpty then localTuple f i
     else project (localTuple f i)
-      (outsidePositions F[i.val].2.length (positions vs F[i.val].2)) ++
+      (outsidePositions F[i.val].scope.length (positions vs F[i.val].scope)) ++
       [bits i]) ++ [central]
 
 /-- The local reference rows of the contracted instance. The central row is honestly one-hot;
@@ -142,16 +142,16 @@ theorem connector_lt (i : Fin F.length) : connector F i < freshBase F + F.length
 /-- Every local contraction guard follows from the original valid occurrence labeling. -/
 theorem canContract_constraint {f : OccurrenceLabeling F Bool}
     (hf : ValidLabeling sem f) (vs : List ℕ) (i : Fin F.length) :
-    F[i.val].1.canContract (localTuple f i) (positions vs F[i.val].2) = true := by
+    F[i.val].rel.canContract (localTuple f i) (positions vs F[i.val].scope) = true := by
   simp only [canContract, Bool.and_eq_true]
   refine ⟨hf i, ?_⟩
-  simpa only [localTuple, List.length_ofFn] using validPositions_positions vs F[i.val].2
+  simpa only [localTuple, List.length_ofFn] using validPositions_positions vs F[i.val].scope
 
 /-- Output arity equals the actual output scope, including for untouched nullary constraints. -/
 theorem arity_constraint {f : OccurrenceLabeling F Bool}
     (hf : ValidLabeling sem f) (vs : List ℕ) (i : Fin F.length) :
-    (constraint f vs i).1.arity = (constraint f vs i).2.length := by
-  have hlen : F[i.val].1.arity = F[i.val].2.length := by
+    (constraint f vs i).rel.arity = (constraint f vs i).scope.length := by
+  have hlen : F[i.val].rel.arity = F[i.val].scope.length := by
     have hs := sem_eq_true.mp (hf i)
     simpa only [localTuple, List.length_ofFn, Fin.getElem_fin] using
       (wellFormed_eq_true.mp hs.1 _ hs.2).symm
@@ -165,7 +165,7 @@ theorem arity_constraint {f : OccurrenceLabeling F Bool}
 /-- The number of stored rows of each old constraint never increases. Duplicate rows retain
 multiplicity, as in `Table.contract`. -/
 theorem rows_constraint_le (f : OccurrenceLabeling F Bool) (vs : List ℕ)
-    (i : Fin F.length) : (constraint f vs i).1.rows.length ≤ F[i.val].1.rows.length := by
+    (i : Fin F.length) : (constraint f vs i).rel.rows.length ≤ F[i.val].rel.rows.length := by
   unfold constraint
   split
   · exact le_rfl
@@ -181,7 +181,7 @@ variable {F : CSP Table ℕ}
 
 /-- Reading a row buffer recovers each complete row when its width is the actual scope width. -/
 theorem localTuple_labels (G : CSP Table ℕ) (rows : List (List Bool)) (i : Fin G.length)
-    (hw : (rows.getD i.val []).length = G[i.val].2.length) :
+    (hw : (rows.getD i.val []).length = G[i.val].scope.length) :
     localTuple (labels G rows) i = rows.getD i.val [] := by
   apply List.ext_getElem
   · simp only [localTuple, List.length_ofFn, hw]
@@ -191,8 +191,8 @@ theorem localTuple_labels (G : CSP Table ℕ) (rows : List (List Bool)) (i : Fin
 
 /-- A finite row buffer is valid exactly when all its actual local rows are accepted. -/
 theorem valid_labels (G : CSP Table ℕ) (rows : List (List Bool))
-    (hw : ∀ i : Fin G.length, (rows.getD i.val []).length = G[i.val].2.length)
-    (hv : ∀ i : Fin G.length, G[i.val].1.sem (rows.getD i.val []) = true) :
+    (hw : ∀ i : Fin G.length, (rows.getD i.val []).length = G[i.val].scope.length)
+    (hv : ∀ i : Fin G.length, G[i.val].rel.sem (rows.getD i.val []) = true) :
     ValidLabeling sem (labels G rows) := by
   intro i
   rw [localTuple_labels G rows i (hw i)]
@@ -206,9 +206,9 @@ theorem get_contract_old (f : OccurrenceLabeling F Bool) (vs : List ℕ)
 /-- The finite reference buffer at a retained original constraint. -/
 theorem get_referenceRows_old (f : OccurrenceLabeling F Bool) (vs : List ℕ)
     (i : Fin F.length) : (referenceRows f vs).getD i.val [] =
-      if (positions vs F[i.val].2).isEmpty then localTuple f i
+      if (positions vs F[i.val].scope).isEmpty then localTuple f i
       else project (localTuple f i)
-      (outsidePositions F[i.val].2.length (positions vs F[i.val].2)) ++
+      (outsidePositions F[i.val].scope.length (positions vs F[i.val].scope)) ++
         [false] := by
   rw [List.getD_eq_getElem _ _ (by simp [referenceRows, transportRows])]
   simp [referenceRows, transportRows]
@@ -216,7 +216,7 @@ theorem get_referenceRows_old (f : OccurrenceLabeling F Bool) (vs : List ℕ)
 /-- The central relation occupies the single newly appended constraint position. -/
 theorem get_contract_central (f : OccurrenceLabeling F Bool) (vs : List ℕ) :
     (contract f vs)[F.length]'(by simp) =
-      (exactlyOne (connectors F vs), connectors F vs) := by
+      ⟨exactlyOne (connectors F vs), connectors F vs⟩ := by
   simp [contract, List.getElem_append_right]
 
 /-- The reference buffer at the central constraint is one-hot, with position zero selected. -/
@@ -227,7 +227,7 @@ theorem get_referenceRows_central (f : OccurrenceLabeling F Bool) (vs : List ℕ
 /-- Each original local reference row is accepted by its actual output constraint. -/
 theorem referenceRow_valid {f : OccurrenceLabeling F Bool} (hf : ValidLabeling sem f)
     (vs : List ℕ) (i : Fin F.length) :
-    (constraint f vs i).1.sem ((referenceRows f vs).getD i.val []) = true := by
+    (constraint f vs i).rel.sem ((referenceRows f vs).getD i.val []) = true := by
   rw [get_referenceRows_old]
   unfold constraint
   split
@@ -238,7 +238,7 @@ theorem referenceRow_valid {f : OccurrenceLabeling F Bool} (hf : ValidLabeling s
 /-- Reference rows have exactly the constructor's scope widths. -/
 theorem referenceRow_length (f : OccurrenceLabeling F Bool) (vs : List ℕ)
     (i : Fin F.length) :
-    ((referenceRows f vs).getD i.val []).length = (constraint f vs i).2.length := by
+    ((referenceRows f vs).getD i.val []).length = (constraint f vs i).scope.length := by
   rw [get_referenceRows_old]
   unfold constraint
   split <;> simp [localTuple, project]
@@ -272,7 +272,7 @@ theorem valid_reference {f : OccurrenceLabeling F Bool} (hf : ValidLabeling sem 
 model of the original instance. -/
 theorem rows_contract_nonempty {f : OccurrenceLabeling F Bool} (hf : ValidLabeling sem f)
     (vs : List ℕ) (hne : touched F vs ≠ []) (i : Fin (contract f vs).length) :
-    (contract f vs)[i.val].1.rows ≠ [] :=
+    (contract f vs)[i.val].rel.rows ≠ [] :=
   List.ne_nil_of_mem (sem_eq_true.mp (valid_reference hf vs hne i)).2
 
 end Cslib.Logic.PL.CSP.Blossom
@@ -293,26 +293,26 @@ private theorem even_arity {table : Table} {n : ℕ} (h : table.arity = n) :
 theorem even_constraint {f : OccurrenceLabeling F Bool} (hf : ValidLabeling sem f)
     (hM : EdgeInstance.EvenConstraints sem F) (vs : List ℕ) (i : Fin F.length) :
     BitString.IsEvenDeltaMatroid
-      {t : Fin (constraint f vs i).2.length → Bool |
-        (constraint f vs i).1.sem (List.ofFn t) = true} := by
+      {t : Fin (constraint f vs i).scope.length → Bool |
+        (constraint f vs i).rel.sem (List.ofFn t) = true} := by
   let P (c : Constraint Table ℕ) : Prop := BitString.IsEvenDeltaMatroid
-    {t : Fin c.2.length → Bool | c.1.sem (List.ofFn t) = true}
+    {t : Fin c.scope.length → Bool | c.rel.sem (List.ofFn t) = true}
   change P (constraint f vs i)
-  have hl : F[i.val].1.arity = F[i.val].2.length := by
+  have hl : F[i.val].rel.arity = F[i.val].scope.length := by
     have hs := sem_eq_true.mp (hf i)
     simpa only [localTuple, List.length_ofFn, Fin.getElem_fin] using
       (wellFormed_eq_true.mp hs.1 _ hs.2).symm
-  have hm : BitString.IsEvenDeltaMatroid (booleanRelation arity sem F[i.val].1) := by
+  have hm : BitString.IsEvenDeltaMatroid (booleanRelation arity sem F[i.val].rel) := by
     apply (even_arity hl).mpr
     simpa only [Fin.getElem_fin] using hM i
-  by_cases hp : (positions vs F[i.val].2).isEmpty = true
+  by_cases hp : (positions vs F[i.val].scope).isEmpty = true
   · have he : constraint f vs i = F[i.val] := by simp [constraint, hp]
     rw [he]
     simpa only [P, Fin.getElem_fin] using hM i
   · have he : constraint f vs i =
-        (F[i.val].1.contract (localTuple f i) (positions vs F[i.val].2),
-          (outsidePositions F[i.val].2.length (positions vs F[i.val].2)).map
-            (fun j => F[i.val].2.getD j 0) ++ [connector F i]) := by
+        ⟨F[i.val].rel.contract (localTuple f i) (positions vs F[i.val].scope),
+          (outsidePositions F[i.val].scope.length (positions vs F[i.val].scope)).map
+            (fun j => F[i.val].scope.getD j 0) ++ [connector F i]⟩ := by
       simp [constraint, hp]
     have hout := arity_constraint hf vs i
     rw [he] at hout
@@ -326,13 +326,13 @@ theorem even_contract {f : OccurrenceLabeling F Bool} (hf : ValidLabeling sem f)
     EdgeInstance.EvenConstraints sem (contract f vs) := by
   intro i
   let P (c : Constraint Table ℕ) : Prop := BitString.IsEvenDeltaMatroid
-    {t : Fin c.2.length → Bool | c.1.sem (List.ofFn t) = true}
+    {t : Fin c.scope.length → Bool | c.rel.sem (List.ofFn t) = true}
   change P ((contract f vs)[i.val])
   by_cases hi : i.val < F.length
   · rw [get_contract_old f vs ⟨i.val, hi⟩]
     exact even_constraint hf hM vs ⟨i.val, hi⟩
   · have he : i.val = F.length := by have := i.isLt; simp only [length_contract] at this; omega
-    have hget : (contract f vs)[i.val] = (exactlyOne (connectors F vs), connectors F vs) := by
+    have hget : (contract f vs)[i.val] = ⟨exactlyOne (connectors F vs), connectors F vs⟩ := by
       simp [contract, he, List.getElem_append_right]
     have hscope : connectors F vs ≠ [] := by
       intro hz

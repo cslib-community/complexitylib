@@ -23,15 +23,17 @@ Concrete non-vacuity and behavioral tests for `Cslib.Algorithms.WordRAM.Karger`:
    `11`): exercises relocatable `contractDownTo_spec` at non-trivial workspace offset and row stride
    (`wb = 20, db = 50, str = 5, k = 4, t = 3`), `amplifiedProgram_spec` (`R = 6`), and
    `highProbProgram_spec` / `highProbProgram_failure_le_inv_n`.
-3. Disconnected and zero-weight 3-vertex multigraphs (`minCut = 0`, `totalDoubledWeight = 0`):
-   verifies fault-free halting along the deterministic `totS = 0` contraction branch.
+3. Disconnected and zero-weight multigraphs (`minCut = 0`, `totalDoubledWeight = 0`, and `n = 1`):
+   verifies fault-free halting along the deterministic `totS = 0` contraction branch and the
+   unconditional `highProbProgram_failure_le_inv_n` bound without `2 ≤ n` or `0 < minCut W`.
 -/
 
 @[expose] public section
 
 namespace CslibFrontierTests.WordRAMKargerMinCut
 
-open Cslib Cslib.WordRAM Cslib.WeightedCut Cslib.Algorithms.WordRAM.Karger
+open Cslib Cslib.WordRAM Cslib.WeightedCut
+open Cslib.Algorithms.Karger Cslib.Algorithms.WordRAM.Karger
 open scoped ENNReal
 
 /-! ## 1. Weighted 3-vertex triangle (`minCut = 5`) -/
@@ -203,8 +205,7 @@ theorem highProbProgram_barbell :
   have htot : Fits 16 (totalDoubledWeight barbellW) := by decide
   obtain ⟨hHalts, -, -, hFail⟩ :=
     highProbProgram_spec (by decide : 2 ≤ 4) isMultigraph_barbellW hw htot
-  have hInv := highProbProgram_failure_le_inv_n (by decide : 2 ≤ 4) isMultigraph_barbellW hw htot
-    (by rw [minCut_barbellW]; decide)
+  have hInv := highProbProgram_failure_le_inv_n isMultigraph_barbellW hw htot
   rw [minCut_barbellW] at hFail hInv
   exact ⟨hHalts, by simpa using hFail (by decide), by simpa using hInv⟩
 
@@ -249,5 +250,20 @@ theorem singleProgram_disconnected_and_zero :
   obtain ⟨y, C, hcfg_eq, -, -, -, -⟩ := hPost0 cfg hcfg
   have hcw0 : cutWeight zero3W C = 0 := by simp [cutWeight, zero3W]
   exact ⟨y, hcw0 ▸ hcfg_eq⟩
+
+theorem highProbProgram_disconnected_and_singleton :
+    (evalRand 16 highProbProgram (highProbTime 3)
+        (.init (3 :: flattenMatrix disconnectedW))).toOuterMeasure
+        {cfg | ∀ y, cfg ≠ .halted 0 y} ≤
+      (1 : ℝ≥0∞) / 3 ∧
+    (evalRand 16 highProbProgram (highProbTime 1)
+        (.init (1 :: flattenMatrix (fun _ _ : Fin 1 => 0)))).toOuterMeasure
+        {cfg | ∀ y, cfg ≠ .halted (minCut (fun _ _ : Fin 1 => 0)) y} ≤
+      (1 : ℝ≥0∞) / 1 := by
+  have hdisc := highProbProgram_failure_le_inv_n (w := 16) isMultigraph_disconnectedW
+    (by decide) (by decide)
+  have h1 := highProbProgram_failure_le_inv_n (w := 16) (W := fun _ _ : Fin 1 => 0)
+    ⟨fun _ _ => rfl, fun _ => rfl⟩ (by decide) (by decide)
+  exact ⟨by simpa [minCut_disconnectedW] using hdisc, by simpa using h1⟩
 
 end CslibFrontierTests.WordRAMKargerMinCut

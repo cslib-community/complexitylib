@@ -74,8 +74,8 @@ variable {α : Type} {H : List Bool → List Bool → List Bool} {V : PCPVerifie
 /-! ### Counting bits -/
 
 /-- The payload bits of an opening: its bit and the bits of its path labels. -/
-def kilianOpeningBits : KilianOpening → ℕ
-  | (_, path) => 1 + (path.map List.length).sum
+def kilianOpeningBits : MerkleOpening Bool → ℕ
+  | o => 1 + (o.path.map List.length).sum
 
 /-- The payload bits of a response: the bits of all its openings. -/
 def kilianResponseBits (response : KilianResponse) : ℕ :=
@@ -213,8 +213,9 @@ theorem length_kilianVerifierInput_honest_le {enc : α ↪ List Bool}
     {n : ℕ} {k : List Bool} (hk : k.length = n) {x : α} {table : List Bool}
     {ρs : List (List Bool)} (hn : ρs.length = n) (hρs : ∀ ρ ∈ ρs, ρ.length = V.coins x) {q : ℕ}
     (hq : ∀ ρ : List Bool, ρ.length = V.coins x → (V.queries (x, ρ)).length ≤ q) :
-    (encPair (encKilianInput enc) (encPair (encList encBits) encKilianResponse)
-      ((k, x, kilianCommit H V k x table), ρs, kilianRespond H V k x table ρs)).length ≤
+    (encKilianView enc
+      { key := k, stmt := x, root := kilianCommit H V k x table, challenges := ρs,
+        response := kilianRespond H V k x table ρs }).length ≤
       4 * (enc x).length + 6 * n + 6 + 2 * (n * (2 * V.coins x + 1)) +
         n * (2 * (q * (2 * (3 + (V.coins x + Nat.clog 2 q) * (2 * n + 1)) + 1)) + 1) := by
   set d := V.coins x + Nat.clog 2 q
@@ -225,7 +226,7 @@ theorem length_kilianVerifierInput_honest_le {enc : α ↪ List Bool}
     | nil => simp
     | cons y ys =>
       rw [List.headD_cons, length_of_mem_merkleLevel hlen (h ▸ List.mem_cons_self), hk]
-  have hopening (ρ : List Bool) (o : KilianOpening) (ho : o ∈ kilianOpen H V k x table ρ) :
+  have hopening (ρ : List Bool) (o : MerkleOpening Bool) (ho : o ∈ kilianOpen H V k x table ρ) :
       (encKilianOpening o).length ≤ 3 + d * (2 * n + 1) := by
     obtain ⟨a, -, rfl⟩ := List.mem_map.mp ho
     have hpath := length_encList_le encBits
@@ -235,7 +236,7 @@ theorem length_kilianVerifierInput_honest_le {enc : α ↪ List Bool}
         (kilianPosition V x a)).length ≤ d := by
       rw [length_merklePath]
       simpa [kilianLeaves, kilianDepth] using kilianDepth_le hq
-    simp only [encKilianOpening, length_encPair, encBool_apply, List.length_singleton]
+    simp only [encKilianOpening_apply, length_encPair, encBool_apply, List.length_singleton]
     nlinarith
   have hanswers (ρ : List Bool) (hρ : ρ ∈ ρs) :
       (encList encKilianOpening (kilianOpen H V k x table ρ)).length ≤
@@ -252,7 +253,7 @@ theorem length_kilianVerifierInput_honest_le {enc : α ↪ List Bool}
     · simp [kilianRespond, hn]
   have hchallenges : (encList encBits ρs).length ≤ n * (2 * V.coins x + 1) :=
     (length_encList_le _ _ (b := V.coins x) fun ρ hρ => (hρs ρ hρ).le).trans (by rw [hn])
-  simp only [length_encPair, encBits_apply, hk]
+  simp only [encKilianView_apply, encKilianClaim_apply, length_encPair, encBits_apply, hk]
   omega
 
 end Cslib.Crypto
