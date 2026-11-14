@@ -14,6 +14,7 @@ open scoped ENNReal
 
 open Cslib Cslib.Probability Cslib.Probability.PMF
 
+set_option linter.privateModule false
 set_option autoImplicit false
 
 private def matrixHash (s : BitString 8) (x : BitString 8) : BitString 1 :=
