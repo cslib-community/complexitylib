@@ -4,10 +4,14 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
 
-import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Discrete.LowerCost
-import CslibFrontierTests.StochasticOracleDiscreteRetention
-import CslibFrontierTests.StochasticOracleSelectionPolicy
+module
+-- upstream: candidate
+
+public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Discrete.LowerCost
+public import CslibFrontierTests.StochasticOracleDiscreteRetention
+public import CslibFrontierTests.StochasticOracleSelectionPolicy
 import CslibFrontier.Probability.PMF.ToReal
+import CslibFrontier.Probability.PMF.Expect
 import Mathlib.Tactic
 
 /-!
@@ -20,6 +24,10 @@ expensive failed singleton without ever receiving it. Geometric responses carry
 unbounded invoices. Failed fabricated masks satisfy the successful-only contract.
 -/
 
+-- This module checks public APIs through private fixtures and anonymous examples.
+set_option linter.privateModule false
+
+public section
 noncomputable section
 namespace CslibFrontierTests.DiscreteLowerCost
 open Cslib.Probability Cslib.Probability.StochasticOracle

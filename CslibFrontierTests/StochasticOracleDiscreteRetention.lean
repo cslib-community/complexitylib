@@ -4,8 +4,11 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Christian Reitwiessner
 -/
 
-import CslibFrontier.Probability.StochasticOracle.AdaptiveSelection.DiscreteCost
-import CslibFrontierTests.StochasticOracleAdaptiveSelection
+module
+-- upstream: candidate
+
+public import CslibFrontier.Probability.StochasticOracle.AdaptiveSelection.DiscreteCost
+public import CslibFrontierTests.StochasticOracleAdaptiveSelection
 import Mathlib.Probability.Distributions.Geometric
 import Mathlib.Analysis.SpecificLimits.Normed
 import Mathlib.Tactic
@@ -19,6 +22,7 @@ so the response alphabet cannot be given a `Fintype` instance. The local dual te
 retention, productive-event probability and completion bound are checked together.
 -/
 
+public section
 noncomputable section
 namespace CslibFrontierTests.DiscreteRetention
 open Cslib.Probability Cslib.Probability.StochasticOracle
@@ -27,7 +31,7 @@ open StochasticOracleAdaptiveSelectionTests (toy)
 open scoped ENNReal
 
 /-- Fair productivity parameter shared with the adaptive batch client. -/
-def half : Set.Icc (0 : ℝ) 1 := ⟨1 / 2, by norm_num⟩
+@[expose] def half : Set.Icc (0 : ℝ) 1 := ⟨1 / 2, by norm_num⟩
 /-- Unbounded geometric response fixture shared with the batch client. -/
 def law (_ : List ℕ) : PMF ℕ := (ProbabilityTheory.geometricMeasure half).toPMF
 private def proposals (_ : List ℕ) (x : ℕ) : List (Finset Unit) :=
@@ -97,7 +101,7 @@ example (h : List ℕ) :
   simpa only [one_mul] using selected_bound toy 1 proposals h
 
 /-- Unbounded response-dependent invoice, shared with the batch client. -/
-def charge (_ : List ℕ) (x : ℕ) : ℝ := x + 1
+@[expose] def charge (_ : List ℕ) (x : ℕ) : ℝ := x + 1
 
 /-- Exact conditional invoice mean of the shared geometric fixture. -/
 theorem charge_mean (h : List ℕ) :
