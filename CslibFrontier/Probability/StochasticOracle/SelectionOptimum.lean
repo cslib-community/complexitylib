@@ -50,18 +50,12 @@ theorem retaining_admissible (O : Oracle B R J) (I : Instance E J) (ρ : ℝ)
     (select : List (Record B R) → Distribution B ℝ) :
     Admissible O (retainingPolicy O I ρ select) := by
   classical
-  have hs (h : List (Record B R)) : selected I ρ (proposals O) h ⊆ available O h := by
-    induction h with
-    | nil => simp [selected, available]
-    | cons x h ih =>
-      apply (I.retain_subset ρ _ _).trans
-      exact union_subset (ih.trans subset_union_right) subset_union_left
   intro h _ C hC
   have he : C = selected I ρ (proposals O) h := by
     by_contra he
     simp [retainingPolicy, Distribution.pure, he] at hC
   subst C
-  exact hs h
+  exact selected_subset_proposedSets I ρ (proposals O) h
 
 /-- Before retained completion, the constructed policy disintegrates exactly into
 its selected batch and actual response law. -/
@@ -232,11 +226,12 @@ theorem retaining_guarantee (O : Oracle B R J) (I : Instance E J) (ρ : ℝ)
       simp only [List.length_nil, Nat.add_zero] at hlen
       rw [hlen] at hl
       exact hl.trans hD
+    change accruedBill (recordResource O.duration) h ≤ D at hd
     by_cases hcov : I.covered (selected I ρ (proposals O) h) = I.ground
     · have hcert := selected_bound I ρ (proposals O) h
       rw [hcov] at hcert
-      simp [success, retainingPolicy, Distribution.mean_pure, hcov, hcert, hd]
-    · simp [success, retainingPolicy, Distribution.mean_pure, hcov]
+      simp [success, CertifiedOutput, retainingPolicy, Distribution.mean_pure, hcov, hcert, hd]
+    · simp [success, CertifiedOutput, retainingPolicy, Distribution.mean_pure, hcov]
   · have ht := accruedBill_le_binomial_sum_reachable I ρ (proposals O) (law O π)
       a r u hr p hp (bill O) c hc hb
     simpa only [expectedCost, π, binomialFailure_eq_complement] using ht

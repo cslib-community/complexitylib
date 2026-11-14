@@ -53,7 +53,7 @@ Only its achieved success level is an input; no count, expected-cost lower bound
 or optimality conclusion is assumed. Conditional bounds apply only on support. -/
 theorem lower_cost (O : Oracle B R J) (π : Policy B R J) (I : Instance E J)
     (hA : Admissible O π) (b r u : ℕ) (hr : ∀ k < r, b * k < I.ground.card)
-    (p c ℓ ρ D η : ℝ) (hp : 0 < p) (hc : 0 ≤ c) (hη0 : 0 ≤ η)
+    (p c ℓ ρ D η : ℝ) (hp : 0 < p) (hc : 0 ≤ c) (_hη0 : 0 ≤ η)
     (H : LowerBounds O π I b p c ℓ)
     (hη : η ≤ successProbability O π I ρ D u) :
     η * (r : ℝ) * c / p ≤ expectedCost O π u := by
@@ -89,28 +89,15 @@ theorem lower_cost (O : Oracle B R J) (π : Policy B R J) (I : Instance E J)
     have hη' := mul_le_mul_of_nonneg_left hη (Nat.cast_nonneg r)
     change r * successProbability O π I ρ D u ≤ _ at hm
     nlinarith
-  -- Integrating the supported conditional tables gives marginal progress, issue
-  -- and bill tables. Reuse the existing lower-accounting theorem to aggregate
-  -- those marginals; this deterministic table is not a replacement process law.
-  have hl := conditional_lower_cost (Distribution.pure () : Distribution Unit ℝ) u
-    (fun _ => Unit) (fun _ _ => ()) (fun t _ => A t.val) (fun t _ => P t.val)
-    (fun t _ => C t.val) (fun _ => True) (η * r) p c 1 hp hc
-    (by simp [Distribution.mean_pure]) (by
-      intro _
-      simp only [ite_true, mul_one]
-      simpa only [Fin.sum_univ_eq_sum_range] using hs)
-    (mul_nonneg hη0 (Nat.cast_nonneg r)) (by
-      intro t h
-      cases h
-      simpa [Distribution.pure] using hg t.val) (by
-      intro t h
-      cases h
-      simpa [Distribution.pure] using hb t.val)
   have he : expectedCost O π u = ∑ t ∈ range u, C t := by
     rw [expectedCost, historyExpectation_accruedBill, accruedBill, zero_add,
       executionCost_eq_sum]
   rw [he]
-  simpa only [one_mul, Distribution.mean_pure, Fin.sum_univ_eq_sum_range] using hl
+  simpa only [Fin.sum_univ_eq_sum_range] using
+    marginal_lower_cost (fun t : Fin u => A t.val) (fun t : Fin u => P t.val)
+      (fun t : Fin u => C t.val) (η * r) p c hp hc
+      (by simpa only [Fin.sum_univ_eq_sum_range] using hs)
+      (fun t => hg t.val) (fun t => hb t.val)
 
 /-- The lower bound quantifies over all admissible policies for this oracle, not
 only a constructed policy. Universal assumptions contain only local envelopes. -/

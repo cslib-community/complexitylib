@@ -142,7 +142,7 @@ example (N : ℕ) : ∃ z ∈ (Discrete.retainingLaw toy 1 propose select respon
       intro he
       have hn := congrArg Finset.card he
       norm_num [toy] at hn
-    simp only [Discrete.retainingLaw, List.not_mem_nil, false_or, ite_eq_right hc]
+    simp only [Discrete.retainingLaw_eq, List.not_mem_nil, false_or, ite_eq_right hc]
     simp only [select, chosen, selected, Finset.notMem_empty, PMF.pure_bind]
     apply (PMF.mem_support_map_iff _ _ _).mpr
     exact ⟨N + 1, ne_of_gt (DiscreteRetention.law_pos _), rfl⟩
@@ -158,7 +158,8 @@ example (u : ℕ) :
           toy.cost (selected toy 1 (recordProposals propose) (PMF.seqHistory h)) ≤
             ∑ e ∈ toy.ground, toy.dual e ∧
           accruedBill (recordResource duration) (PMF.seqHistory h) ≤ u}).toReal := by
-  simpa only [one_mul, mul_one] using Discrete.certified_success toy 1 propose select respond
+  simpa only [CertifiedOutput, one_mul, mul_one] using Discrete.certified_success toy 1
+    propose select respond
     charge duration u 1 2 (by norm_num [toy]) DiscreteRetention.half 2 1 u
     (by norm_num) (by norm_num) (envelopes u)
 

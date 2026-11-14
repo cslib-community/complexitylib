@@ -7,7 +7,8 @@ Authors: Christian Reitwiessner
 module
 -- upstream: candidate
 
-public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Record
+public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Execution
+public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Output
 public import CslibFrontier.Probability.StochasticOracle.AdaptiveSelection.DiscreteCost
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.EventBind
@@ -51,17 +52,39 @@ open AdaptiveSelection PartialCover MeasureTheory
 open scoped ENNReal
 variable {B R E J : Type} [DecidableEq E] [DecidableEq J]
 
-/-- The actual stopped batch-then-response law. Prior halt records are absorbing
-also at unreachable histories, matching the finite policy interface exactly. -/
+/-- Select a batch before completion and halt when the actual retained family covers. -/
+@[expose] def retainingChoose (I : Instance E J) (ρ : ℝ)
+    (propose : List (Record B R) → B → R → List (Finset J))
+    (select : List (Record B R) → PMF B) (h : List (Record B R)) : PMF (Option B) := by
+  classical
+  exact if I.covered (selected I ρ (recordProposals propose) h) = I.ground
+    then PMF.pure none else (select h).map some
+
+/-- The retaining policy calls the same execution kernel as arbitrary competitors. -/
 @[expose] def retainingLaw (I : Instance E J) (ρ : ℝ)
     (propose : List (Record B R) → B → R → List (Finset J))
     (select : List (Record B R) → PMF B)
     (respond : List (Record B R) → B → PMF R)
-    (h : List (Record B R)) : PMF (Record B R) := by
+    (h : List (Record B R)) : PMF (Record B R) :=
+  policyLaw (retainingChoose I ρ propose select) respond h
+
+open scoped Classical in
+/-- Prior halts and retained completion absorb; otherwise the selected batch is
+sampled before its response. This characterizes the shared execution specialization. -/
+theorem retainingLaw_eq (I : Instance E J) (ρ : ℝ)
+    (propose : List (Record B R) → B → R → List (Finset J))
+    (select : List (Record B R) → PMF B)
+    (respond : List (Record B R) → B → PMF R)
+    (h : List (Record B R)) :
+    retainingLaw I ρ propose select respond h =
+      if none ∈ h ∨ I.covered (selected I ρ (recordProposals propose) h) = I.ground
+      then PMF.pure none
+      else (select h).bind fun b => (respond h b).map fun x => some (b, x) := by
   classical
-  exact if none ∈ h ∨ I.covered (selected I ρ (recordProposals propose) h) = I.ground
-    then PMF.pure none
-    else (select h).bind fun b => (respond h b).map fun x => some (b, x)
+  by_cases hn : none ∈ h
+  · simp [retainingLaw, policyLaw, hn]
+  · by_cases hc : I.covered (selected I ρ (recordProposals propose) h) = I.ground <;>
+      simp [retainingLaw, policyLaw, retainingChoose, hn, hc, PMF.bind_map, Function.comp_def]
 
 /-- Every supported incomplete prefix is active: the actual policy has not halted. -/
 theorem retaining_active
@@ -87,14 +110,14 @@ theorem retaining_active
         simpa only [selected, recordProposals, Instance.retain] using hc
       have hs := ih g hg hc'
       have hz : retainingLaw I ρ propose select respond (PMF.seqHistory g) none = 0 := by
-        simp [retainingLaw, hs, hc', PMF.bind_apply, PMF.map_apply]
+        simp [retainingLaw_eq, hs, hc', PMF.bind_apply, PMF.map_apply]
       change retainingLaw I ρ propose select respond (PMF.seqHistory g) none ≠ 0 at hx
       exact (hx hz).elim
     | some z =>
       have hs : none ∉ PMF.seqHistory g := by
         intro hn
         have he : responseStep (retainingLaw I ρ propose select respond) n g =
-            PMF.pure none := by simp [responseStep, retainingLaw, hn]
+            PMF.pure none := by simp [responseStep, retainingLaw_eq, hn]
         rw [he] at hx
         simp at hx
       simpa using hs
@@ -113,7 +136,7 @@ theorem conditional_progress (I : Instance E J) (ρ : ℝ)
     (p : ℝ) ≤ ((retainingLaw I ρ propose select respond h).toOuterMeasure
       {x | productive I ρ (recordProposals propose) a h x = true}).toReal := by
   classical
-  rw [retainingLaw, ite_eq_right (by simp [hs, hc])]
+  rw [retainingLaw_eq, ite_eq_right (by simp [hs, hc])]
   have hu : (select h).toOuterMeasure Set.univ = 1 :=
     (PMF.toOuterMeasure_apply_eq_one_iff _ _).2 (Set.subset_univ _)
   have hm := PMF.toOuterMeasure_bind_ge_mul (select h)
@@ -138,7 +161,7 @@ theorem conditional_cost (I : Instance E J) (ρ : ℝ)
     (∑' x, retainingLaw I ρ propose select respond h x *
       ENNReal.ofReal (recordResource charge h x)) ≤ ENNReal.ofReal c := by
   classical
-  rw [retainingLaw, ite_eq_right (by simp [hs, hc]), PMF.tsum_bind_mul]
+  rw [retainingLaw_eq, ite_eq_right (by simp [hs, hc]), PMF.tsum_bind_mul]
   simp_rw [PMF.tsum_map_mul, recordResource_some]
   exact PMF.tsum_mul_le_of_support (select h) hb
 
@@ -160,7 +183,7 @@ theorem accruedBill_eq_stopped (I : Instance E J) (ρ : ℝ)
   by_cases hc : I.covered (selected I ρ (recordProposals propose) (PMF.seqHistory g)) =
       I.ground
   · have he : responseStep (retainingLaw I ρ propose select respond) t g = PMF.pure none := by
-      simp [responseStep, retainingLaw, hc]
+      simp [responseStep, retainingLaw_eq, hc]
     rw [he] at hx
     have hx' : x = none := by simpa using hx
     subst x
@@ -297,12 +320,12 @@ theorem duration_bound (u a : ℕ) (p c ell : ℝ) (hell : 0 ≤ ell)
       by_cases hs : none ∈ PMF.seqHistory g ∨
           I.covered (selected I ρ (recordProposals propose) (PMF.seqHistory g)) = I.ground
       · have he : responseStep (retainingLaw I ρ propose select respond) n g =
-            PMF.pure none := by simp [responseStep, retainingLaw, hs]
+            PMF.pure none := by simp [responseStep, retainingLaw_eq, hs]
         rw [he] at hx
         have hx' : x = none := by simpa using hx
         subst x
         exact ⟨le_rfl, hell⟩
-      · simp only [responseStep, retainingLaw, ite_eq_right hs,
+      · simp only [responseStep, retainingLaw_eq, ite_eq_right hs,
           PMF.mem_support_bind_iff, PMF.mem_support_map_iff] at hx
         obtain ⟨b, hb, y, hy, rfl⟩ := hx
         exact H.time n ht g hg (not_or.mp hs).2 b hb y hy
@@ -319,10 +342,8 @@ theorem certified_success (u a r : ℕ) (hr : I.ground.card ≤ a * r)
     (H : UpperBounds I ρ propose select respond charge duration u a p c ell) :
     1 - (ProbabilityTheory.binomial u p).real (Set.Iio r) ≤
       ((PMF.seqProcess (responseStep (retainingLaw I ρ propose select respond)) u).toOuterMeasure
-        {h | I.covered (selected I ρ (recordProposals propose) (PMF.seqHistory h)) = I.ground ∧
-          I.cost (selected I ρ (recordProposals propose) (PMF.seqHistory h)) ≤
-            ρ * ∑ e ∈ I.ground, I.dual e ∧
-          accruedBill (recordResource duration) (PMF.seqHistory h) ≤ D}).toReal := by
+        {h | CertifiedOutput I ρ D duration (PMF.seqHistory h)
+          (selected I ρ (recordProposals propose) (PMF.seqHistory h))}).toReal := by
   apply (completion_bound I ρ propose select respond charge duration u a r hr p c ell H).trans
   apply ENNReal.toReal_mono (PMF.toOuterMeasure_ne_top _ _)
   apply PMF.toOuterMeasure_mono
