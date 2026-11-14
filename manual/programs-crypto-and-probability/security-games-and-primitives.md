@@ -755,8 +755,8 @@ shared definition instead of owning a specialized copy.
 
 For [QR-UOV Round 3](https://csrc.nist.gov/csrc/media/Projects/pqc-dig-sig/documents/qruov_specifications.pdf),
 Mathlib's `Algebra.leftMulMatrix b` is the injective regular representation `g ↦ Φ_f^g` of
-Equation (4) and Lemma 1 (§3.2, p. 12), and `Matrix.blockEmbedding` is the entrywise lift `ϕ`
-from §4.1, p. 16. The
+Equation (4) and Lemma 1 (§3.2, p. 13), and `Matrix.blockEmbedding` is the entrywise lift `ϕ`
+from §4.1, p. 17. The
 [ordinary-module client](../../CslibFrontierTests/Foundations/LinearAlgebra/Matrix/BlockEmbedding.lean)
 checks their composition without defining a parallel quotient-ring representation. This API does
 not construct the symmetrizer `W`, the structured MQ map, the pull-back bijection, signing or

@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Init
-public import Mathlib.LinearAlgebra.Matrix.ToLin
+public import Mathlib.Data.Matrix.Composition
 
 /-!
 # Entrywise representations as block matrices
@@ -36,8 +36,8 @@ via the complexitylib port [Schlesinger2026RationalHitting] at revision
 add0aca8ee0d71e68969f2cb45cf91554a50f787.
 
 The same construction is the block lift `ϕ` in the *QR-UOV Round-3 Specification*
-[QRUOV2026], §4.1, p. 16, applied to the injective regular representation of quotient-ring
-multiplication from Equation (4) and Lemma 1 in §3.2, p. 12.
+[QRUOV2026], §4.1, p. 17, applied to the injective regular representation of quotient-ring
+multiplication from Equation (4) and Lemma 1 in §3.2, p. 13.
 -/
 
 public section
@@ -47,26 +47,11 @@ namespace Matrix
 variable {R S m κ : Type*} [Semiring R] [Semiring S]
   [Fintype m] [DecidableEq m] [Fintype κ] [DecidableEq κ]
 
-/-- Extend a matrix representation entrywise to flattened block matrices. Its body is exposed so
-ordinary importing modules can use the entrywise evaluation law. -/
+/-- Extend a matrix representation entrywise to flattened block matrices. Its body is exposed
+because the rational rank clients unfold the flattened entries. -/
 @[expose] def blockEmbedding (φ : R →+* Matrix κ κ S) :
-    Matrix m m R →+* Matrix (m × κ) (m × κ) S where
-  toFun A i j := φ (A i.1 j.1) i.2 j.2
-  map_zero' := by ext i j; simp
-  map_one' := by
-    ext ⟨i, α⟩ ⟨j, β⟩
-    simp only [Matrix.one_apply, Prod.mk.injEq]
-    by_cases hij : i = j <;> by_cases hab : α = β <;> simp [hij, hab]
-  map_add' A B := by
-    ext i j
-    change φ (A i.1 j.1 + B i.1 j.1) i.2 j.2 = _ + _
-    simp
-  map_mul' A B := by
-    ext ⟨i, α⟩ ⟨j, β⟩
-    change φ (∑ k, A i k * B k j) α β =
-      ∑ k : m × κ, φ (A i k.1) α k.2 * φ (B k.1 j) k.2 β
-    simp only [map_sum, map_mul, Matrix.sum_apply, Matrix.mul_apply,
-      Fintype.sum_prod_type]
+    Matrix m m R →+* Matrix (m × κ) (m × κ) S :=
+  (compRingEquiv m κ S).toRingHom.comp φ.mapMatrix
 
 /-- An entry of the flattened block matrix is the corresponding entry of the represented source
 entry. -/

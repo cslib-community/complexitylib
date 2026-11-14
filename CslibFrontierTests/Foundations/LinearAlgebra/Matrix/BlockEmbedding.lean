@@ -8,6 +8,7 @@ module
 -- upstream: local-only (test)
 
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.BlockEmbedding
+public import Mathlib.LinearAlgebra.Matrix.ToLin
 
 /-!
 # Tests for faithful block-matrix embeddings
