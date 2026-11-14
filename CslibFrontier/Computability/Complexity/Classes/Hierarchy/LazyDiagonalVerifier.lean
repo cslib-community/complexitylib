@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.LazyDiagonal
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.BitLength
@@ -28,7 +29,8 @@ charges only the branch taken; the space witness is independent of that time bou
 
 ## Main results
 
-* `Cslib.Complexity.Diagonal.exists_computableInO_lazyAccepts`: construct acceptance from a binary clock.
+* `Cslib.Complexity.Diagonal.exists_computableInO_lazyAccepts`: construct acceptance
+  from a binary clock.
 * `Cslib.Complexity.Diagonal.exists_computableInO_lazyBrute`: search with polynomial-time
   acceptance and parameter selection, including a separately supplied unary length.
 * `Cslib.Complexity.Diagonal.exists_computableInO_sizeLength_le`: construct a horizon comparison
@@ -59,10 +61,13 @@ theorem exists_computableInO_lazyAccepts
       (fun q => (encLazyAcceptsInput q).length + β q.2.1 q.2.2))
     (hlen : ∀ y v, (encNat (β y v)).length ≤ (a + 4) * (y.length + v.length + 1))
     (hpos : ∀ y v, 1 ≤ β y v) :
-    ∃ D, ComputableInO (fun q : List Bool × List Bool × List Bool => lazyAccepts β q.1 q.2.1 q.2.2)
+    ∃ D, ComputableInO (fun q : List Bool × List Bool × List Bool =>
+      lazyAccepts β q.1 q.2.1 q.2.2)
       (encLazyAcceptsInput) encBool
-      (fun q => ((q.1.length + 1) ^ D + q.2.1.length + q.2.2.length + 1) ^ 4 * (β q.2.1 q.2.2) ^ 2)
-      (fun q => ((q.1.length + 1) ^ D + q.2.1.length + q.2.2.length + 1) ^ 4 * (β q.2.1 q.2.2) ^ 2) := by
+      (fun q => ((q.1.length + 1) ^ D + q.2.1.length + q.2.2.length + 1) ^ 4 *
+        (β q.2.1 q.2.2) ^ 2)
+      (fun q => ((q.1.length + 1) ^ D + q.2.1.length + q.2.2.length + 1) ^ 4 *
+        (β q.2.1 q.2.2) ^ 2) := by
   obtain ⟨dd, ed, hdec⟩ := exists_computableInDegree_decodeDesc
   set enc := encLazyAcceptsInput
   have hdesc := hdec.inO.comp (ComputableInO.fst encBits (encPair encBits encBits))
