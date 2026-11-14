@@ -143,6 +143,7 @@ Information-theoretic private information retrieval, following Chor–Goldreich�
   Use operational quantum-PPT/QROM models and concrete-to-asymptotic reductions; retain source-required sampling, abort, transform and failure obligations, including evolving/unsupported claims.
   Controllers need arbitrary-stage layout/relocation certificates; asymptotic QROM security remains open.
   FAEST challenge decoding [#5214](https://github.com/cslib-community/cslib-frontier/issues/5214); BAVC, VOLE, correctness and QROM security remain.
+- **SQIsign foundations** ([#4987](https://github.com/cslib-community/cslib-frontier/issues/4987)): Extend its `B_{p,∞}` presentation with maximal orders and ideals, finite-field and elliptic-curve arithmetic, isogenies and Deuring, protocol algorithms, failure analysis, distribution switches, assumptions and security reductions.
 
 - **Concurrent composition**: Extend the protocol semantics with environments, scheduling, session identifiers and concurrent executions, and prove a composition theorem with efficient simulators and explicit setup, corruption and communication assumptions.
   Then develop selected adaptive-corruption and non-malleability applications, alongside the static-malicious OT target.
