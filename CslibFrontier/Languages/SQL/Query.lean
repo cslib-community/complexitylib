@@ -496,17 +496,9 @@ theorem eval_ok_or_divisionByZero {D : Database S} (hD : D.Conforms) {q : Query 
           refine .inr ⟨by simp [eval_project, hrs, h, hd], ?_⟩
           simp only [divSafe, Bool.and_eq_false_iff, decide_eq_false_iff_not, not_forall]
           exact .inl ⟨i, by simp [hi]⟩
-      · refine .inl ⟨ds, by simp [eval_project, hrs, h], fun d hd => ?_⟩
-        have h' := congrArg Except.toOption h
-        rw [Except.toOption_mapM] at h'
-        split_ifs at h' with hall
-        · simp only [Except.toOption_ok, Option.some.injEq] at h'
-          obtain ⟨r, hr, hrd⟩ := List.mem_filterMap.mp (h' ▸ hd)
-          rcases Expr.evalRow_ok_or_divisionByZero (hconf r hr) hes with ⟨d', hd', hd'Δ⟩ | ⟨hd', -⟩
-          · rw [hd', Except.toOption_ok, Option.some.injEq] at hrd
-            exact hrd ▸ hd'Δ
-          · simp [hd'] at hrd
-        · simp at h'
+      · refine .inl ⟨ds, by simp [eval_project, hrs, h], fun d hd i => ?_⟩
+        obtain ⟨r, hr, hrd⟩ := Except.exists_mem_eq_ok_of_mapM_eq_ok h hd
+        exact Expr.hasType_of_eval_eq_ok (hconf r hr) (hes i) (Expr.evalRow_eq_ok_iff.mp hrd i)
     · exact .inr ⟨by simp [eval_project, he], by simp [divSafe, hs]⟩
   | join θ q₁ q₂ ih₁ ih₂ =>
     obtain ⟨Γ₁, Γ₂, h₁, h₂, hθ, rfl⟩ := typeOf_join_eq_some.mp hq

@@ -11,8 +11,8 @@ the namespace `Cslib.SQL`.
 The layers present so far are values with `NULL`, three-valued logic, scalar operators including
 three-valued `IN`, resolved expressions over rows with typing, safety and equivalence,
 bag-semantics queries over database schemas with typing, safety and three levels of equivalence,
-and the theorem that an equijoin returns as many rows as the streaming library's join size of its
-keys. The proved query transformations and the simplifier are other milestone-1 PRs of #5282 and
+proved query transformations, and the theorem that an equijoin returns as many rows as the
+streaming library's join size of its keys. The simplifier is another milestone-1 PR of #5282 and
 will extend this page. The [supported fragment](#supported-fragment-and-limitations) section lists
 what is not covered, and [differences from SQLite](#differences-from-sqlite) records where a
 common engine disagrees with the semantics.
@@ -246,6 +246,52 @@ expression equivalence in the typing context of the input, which the input must 
 list-level facts behind these proofs, such as `EquivLevel.Rel.filterRows` for `WHERE` over related
 inputs, are public for proofs of further laws.
 
+## Query laws
+
+[QueryLaws.lean](../../CslibFrontier/Languages/SQL/QueryLaws.lean) proves the rewrite laws of the
+fragment, each at the strongest level that holds. Because evaluation is strict, a law that changes
+the rows on which a predicate or projection is evaluated holds only when that evaluation cannot
+fail. Its side condition is the safety of that expression (`Expr.IsSafePredicate Γ p` or
+`Expr.IsSafe Γ e`) in the typing context `Γ` of its input, which must be well-typed
+(`q.typeOf = some Γ`). Both are decidable, so `by decide` discharges them on a concrete query, and
+`rfl` proves `q.typeOf = some (S.ctx t)` for a table. Laws that evaluate every expression on the
+same rows on both sides need no condition.
+
+| Law | SQL | Level | Condition |
+|---|---|---|---|
+| `Query.select_select` | `WHERE p` over `WHERE c` is `WHERE c AND p` | ordered | `p` safe |
+| `Query.select_comm` | two `WHERE` clauses commute | ordered | both safe |
+| `Query.select_project` | `WHERE p` over `SELECT es` is `SELECT es` over `WHERE p.subst es` | ordered | `es` safe |
+| `Query.select_join_left` | `WHERE p.rename (Fin.castAdd m)` over a join is the join of `WHERE p` over its left input | ordered | `p` and `θ` safe |
+| `Query.select_join_right` | the same for the right input, with `Fin.natAdd n` | ordered | `p` and `θ` safe |
+| `Query.select_join_true` | `WHERE θ` over a cross join is the join `ON θ` | ordered | none |
+| `Query.project_project` | `SELECT f` over `SELECT g` is `SELECT f.subst g` | ordered | `g` safe |
+| `Query.project_col` | `SELECT *` is the identity | ordered | none |
+| `Query.select_unionAll`, `Query.project_unionAll` | `WHERE` and `SELECT` distribute over `UNION ALL` | ordered | none |
+| `Query.unionAll_assoc` | `UNION ALL` is associative | ordered | none |
+| `Query.unionAll_comm` | `UNION ALL` is commutative | bag | none |
+| `Query.join_comm` | a join is the exchanged join, with its columns put back through `finAddFlip` | bag | none |
+| `Query.distinct_distinct`, `Query.distinct_unionAll_self` | `DISTINCT` is idempotent and absorbs `q UNION ALL q` | ordered | none |
+| `Query.select_distinct` | `WHERE` commutes with `DISTINCT` | ordered | none |
+
+Each condition is needed, and the [law tests](../../CslibFrontierTests/Languages/SQL/QueryLaws.lean)
+show an instance for each. With `p` an unsafe predicate such as `dept / 0 = 1`: `WHERE p` over
+`WHERE FALSE` succeeds with no rows, while `WHERE FALSE AND p` and `WHERE FALSE` over `WHERE p`
+fail, which covers `Query.select_select` and both conditions of `Query.select_comm`. Pushing
+`WHERE p` into either input of a join whose other input is an empty table makes the pushed side
+fail, while the original evaluates nothing; with an unsafe join predicate, pushing `WHERE FALSE`
+into either input leaves no pair for it to fail on. An unsafe projection fails under `WHERE FALSE`
+but not after the `WHERE` moves below it, and an unsafe inner projection that the outer one
+ignores disappears in fusion. The two commutativity laws fail at the ordered level: the inputs'
+rows come in another order. `Query.select_distinct` needs no condition although `DISTINCT` changes
+how often `p` is evaluated: the rows it removes are copies of rows it keeps, on which `p` has the
+same result or fails alike.
+
+Laws compose: an ordered law weakens to any level with `Query.Equiv.of_ordered`, chains with others
+by `calc`, and applies inside a larger query through the congruences of the previous section.
+`Query.select_comm`, for instance, is `Query.select_select` twice joined by `Query.Equiv.select_expr`
+with `Expr.Equiv.binary_comm` for `AND`.
+
 ## Equijoin row counts
 
 [JoinSize.lean](../../CslibFrontier/Languages/SQL/JoinSize.lean) connects query evaluation to the
@@ -263,10 +309,13 @@ counting; on non-null values `=` is `TRUE` exactly for equal values. Comparing k
 with `NULL` equal to `NULL`, counts `joinSize (rs.map (· i)) (ss.map (· j))` instead, which is the
 same number when one input has no `NULL` key (`Query.eval_join_eqCols_length_eq_joinSize`).
 
-The join need not succeed: comparing an integer key with a text key is a type error, and the join
-fails as soon as both inputs have a row. `Query.eval_join_eqCols_length_eq_joinSize_filterMap`
-guarantees success, and so the count, when every key cell holds `NULL` or a value of one type
-`τ`; the key domain is then the non-null values of `τ`.
+The join need not succeed: comparing an integer with a text value is a type error, but a
+comparison with a `NULL` operand is `unknown` whatever the other operand (`CmpOp.eval`). So when
+the keys are integers on one side and text on the other, the join fails exactly when each input has
+a row whose key is not `NULL`; otherwise every comparison is `unknown`, and the join succeeds with
+no rows. `Query.eval_join_eqCols_length_eq_joinSize_filterMap` guarantees success, and so the
+count, when every key cell holds `NULL` or a value of one type `τ`; the key domain is then the
+non-null values of `τ`.
 
 On a conforming instance the typing hypothesis comes from the schema.
 `Query.eval_join_eqCols_length_eq_joinSize_filterMap_of_typeOf` takes well-typed inputs whose key
@@ -289,12 +338,13 @@ has no `NULL` key the structural count agrees.
 
 Import `CslibFrontier.Languages.SQL.Scalar` for the operators,
 `CslibFrontier.Languages.SQL.Equiv` for expressions with typing and equivalence,
-`CslibFrontier.Languages.SQL.QueryEquiv` for schemas, queries and query equivalence, or
+`CslibFrontier.Languages.SQL.QueryEquiv` for schemas, queries and query equivalence,
+`CslibFrontier.Languages.SQL.QueryLaws` for the query laws, or
 `CslibFrontier.Languages.SQL.JoinSize` for queries with the equijoin row counts, and open
 `Cslib.SQL`. Each re-exports the layers below it; name resolution
-(`CslibFrontier.Languages.SQL.Column`) comes with the schemas, and `JoinSize` does not include
-query equivalence. The definitions are exposed, so a concrete evaluation is checked by `rfl`, for
-example `evalBinOp (.arith .div) (some (.int 1)) (some (.int 0)) = .error .divisionByZero`.
+(`CslibFrontier.Languages.SQL.Column`) comes with the schemas, and `JoinSize` includes neither
+query equivalence nor the laws. The definitions are exposed, so a concrete evaluation is checked by
+`rfl`, as in `evalBinOp (.arith .div) (some (.int 1)) (some (.int 0)) = .error .divisionByZero`.
 Use `rfl` rather than `decide` for results of type `Except`: Batteries derives
 `DecidableEq (Except ε α)` without exposing its body, so `decide` cannot evaluate it from another
 module. `decide` does work on datums, truth values, rows and `Option`, for instance after
@@ -311,10 +361,12 @@ expressions with the congruence lemmas and into queries with `Query.Equiv.select
 siblings. For queries, `Query.Equiv.of_eval_eq` proves a law whose sides evaluate equally; in
 general, rewrite with the evaluation equations (`Query.eval_select`, …), `Except.toOption_bind`,
 and `Expr.toOption_filterRows` or `Except.toOption_mapM`, which reduce a query's observation to
-list operations. The checked examples are in [Truth.lean](../../CslibFrontierTests/Languages/SQL/Truth.lean),
+list operations. The checked examples are in
+[Truth.lean](../../CslibFrontierTests/Languages/SQL/Truth.lean),
 [Scalar.lean](../../CslibFrontierTests/Languages/SQL/Scalar.lean),
 [Expr.lean](../../CslibFrontierTests/Languages/SQL/Expr.lean),
-[Query.lean](../../CslibFrontierTests/Languages/SQL/Query.lean) and
+[Query.lean](../../CslibFrontierTests/Languages/SQL/Query.lean),
+[QueryLaws.lean](../../CslibFrontierTests/Languages/SQL/QueryLaws.lean) and
 [JoinSize.lean](../../CslibFrontierTests/Languages/SQL/JoinSize.lean) under
 `CslibFrontierTests/Languages/SQL/`, and the [guide](https://www.cslib.io/cslib-frontier/guide/)
 has a chapter that builds a database, evaluates queries over it and applies the join-size
@@ -368,12 +420,13 @@ example (D' : Database S) (hD' : D'.Conforms) :
   eval_join_table_eqCols_length_eq_joinSize_filterMap 0 0 hD' rfl
 ```
 
-The same file proves a rewrite of a concrete query: `SELECT * FROM (SELECT tag, k + 1 AS k1 FROM
-l) WHERE k1 = 2` is ordered-equivalent to `SELECT tag, k + 1 FROM l WHERE k + 1 = 2`, the predicate
-moved below the projection by `Expr.subst`. The guard, that every projected expression is safe, is
-checked by `decide`. With the projection `tag, 100 / k` the guard fails, and an instance with a row
-whose key is `0` separates the two queries: the original divides by zero, while the rewritten query
-never evaluates `100 / 0` because the `WHERE` clause drops that row first.
+The same file proves a rewrite of a concrete query: `SELECT * FROM (SELECT tag, k + 1 AS k1 FROM l)
+WHERE k1 = 2` is ordered-equivalent to `SELECT tag, k + 1 FROM l WHERE k + 1 = 2`, as an instance of
+`Query.select_project`. Its typing side condition holds by `rfl`, and its guard, that every
+projected expression is safe, is checked by `decide`. With the projection `tag, 100 / k` the guard
+fails, and an instance with a row whose key is `0` separates the two queries: the original divides
+by zero, while the rewritten query never evaluates `100 / 0` because the `WHERE` clause drops that
+row first.
 
 ## Supported fragment and limitations
 

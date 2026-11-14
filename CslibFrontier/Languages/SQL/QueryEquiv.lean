@@ -83,10 +83,16 @@ def rank : EquivLevel → ℕ
   | bag => 1
   | set => 2
 
-/-- `ℓ ≤ ℓ'` when `ℓ` observes at least as much as `ℓ'`: `ordered ≤ bag ≤ set`. -/
-instance : LE EquivLevel := ⟨fun ℓ ℓ' => ℓ.rank ≤ ℓ'.rank⟩
+/-- Distinct levels have distinct ranks. -/
+theorem rank_injective : Function.Injective rank := by
+  intro a b h
+  cases a <;> cases b <;> first | rfl | exact absurd h (by decide)
 
-instance : DecidableLE EquivLevel := fun ℓ ℓ' => inferInstanceAs (Decidable (ℓ.rank ≤ ℓ'.rank))
+/-- The order `ordered < bag < set`, transported along `rank`: `ℓ ≤ ℓ'` when `ℓ` observes at least
+as much as `ℓ'`. -/
+instance : LinearOrder EquivLevel := LinearOrder.lift' rank rank_injective
+
+theorem le_iff_rank_le {ℓ ℓ' : EquivLevel} : ℓ ≤ ℓ' ↔ ℓ.rank ≤ ℓ'.rank := Iff.rfl
 
 theorem ordered_le (ℓ : EquivLevel) : ordered ≤ ℓ := Nat.zero_le _
 
