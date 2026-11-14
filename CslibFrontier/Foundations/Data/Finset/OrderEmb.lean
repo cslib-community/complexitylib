@@ -37,7 +37,7 @@ Every embedding `f : Fin m ↪ Fin U` decomposes uniquely into its image `m`-sub
 * `Finset.embSetPermEquiv_fst`: the first component under `embSetPermEquiv` is the image finset.
 -/
 
-@[expose] public section
+public section
 
 namespace Finset
 
@@ -86,6 +86,3 @@ noncomputable def embSetPermEquiv (U m : ℕ) :
   rw [embSetPermEquiv_symm_apply, image_orderSubset]
 
 end Finset
-
-export Finset (orderSubset orderSubset_apply image_orderSubset card_image_orderSubset
-  embSetPermEquiv embSetPermEquiv_symm_apply embSetPermEquiv_fst)

@@ -65,6 +65,8 @@ namespace Cslib.DataStructure.Dictionary.CellProbe
 
 open Cslib.CellProbe Cslib.DataStructure Cslib.DataStructure.Dictionary
 open Cslib.BitString Cslib.Probability Cslib.Probability.Coding InformationTheory
+open Finset (orderSubset orderSubset_apply image_orderSubset embSetPermEquiv
+  embSetPermEquiv_symm_apply embSetPermEquiv_fst)
 open scoped BigOperators ENNReal
 
 private theorem orderSubset_congr {U m : ℕ} {S₁ S₂ : Finset (Fin U)} {h₁ : S₁.card = m}

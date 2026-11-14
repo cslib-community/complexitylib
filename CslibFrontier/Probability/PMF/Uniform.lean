@@ -277,9 +277,3 @@ theorem toMeasure_uniformOfFintype [Fintype α] [Nonempty α] [MeasurableSpace �
     toMeasure_uniformOfFinset Finset.univ Finset.univ_nonempty he
 
 end Cslib.Probability.PMF
-
-namespace Cslib.Probability
-
-export PMF (map_comp_keys_uniformOfFintype)
-
-end Cslib.Probability

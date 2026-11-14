@@ -443,12 +443,6 @@ private theorem hm2_19 : 2 ≤ 2 ^ 19 :=
 private theorem hm_n_19_20 : 2 * 2 ^ 19 ≤ 2 ^ 20 :=
   (pow_succ' 2 19).symm.le
 
-private theorem hm_le_19_20 : 0 + 2 ^ 19 ≤ 2 ^ 20 :=
-  Eq.trans_le (Nat.zero_add _) (Nat.pow_le_pow_right Nat.zero_lt_two (by decide : 19 ≤ 20))
-
-private theorem hm2_pos_19 : 0 < 2 ^ 19 / 2 := by
-  change 0 < (2 ^ 18 * 2) / 2; rw [Nat.mul_div_cancel _ (by decide)]; positivity
-
 open Classical in
 /-- Closed ground instance at `(e = 20, k = 400)` (`U = 2 ^ 400, n = 2 ^ 20, m = 2 ^ 19`) for both
 Lemma 5.1 (`|A ∩ B| = 0`) and Lemma 4.4 (`|A ∩ B| < m / 2`), plus a `0`-probe adversarial

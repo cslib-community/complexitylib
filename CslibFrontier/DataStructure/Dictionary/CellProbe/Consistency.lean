@@ -73,6 +73,8 @@ namespace Cslib.DataStructure.Dictionary.CellProbe
 
 open Cslib.CellProbe Cslib.DataStructure Cslib.DataStructure.Dictionary
 open Cslib.Probability
+open Finset (orderSubset orderSubset_apply image_orderSubset embSetPermEquiv
+  embSetPermEquiv_symm_apply embSetPermEquiv_fst)
 open scoped BigOperators ENNReal
 
 /-! ### Qualification, `c = 1` capped consistency, and Claim 4.1 -/
@@ -416,7 +418,7 @@ private theorem hardDist_eq_bind_keyVals {U V n : ℕ} (hU : 2 * n ≤ U) (hV : 
   let _ : Nonempty (Fin V) := ⟨⟨0, hV⟩⟩
   rw [hdist, ← PMF.uniformOfFintype_prod, _root_.PMF.map_bind, ← PMF.uniformOfFintype_prod,
     _root_.PMF.bind_bind]
-  congr 1 with keys; rw [← map_comp_keys_uniformOfFintype hV keys, _root_.PMF.bind_map]
+  congr 1 with keys; rw [← PMF.map_comp_keys_uniformOfFintype hV keys, _root_.PMF.bind_map]
   simp [_root_.PMF.map_comp, Function.comp_def]
 
 /-- Global-value representation of `insertQueryDeleteDist` ([LiLiangYuZhou2023], Section 8, p. 28 /
