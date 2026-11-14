@@ -292,9 +292,14 @@ separate decision; the real MIT cold restore and recovery exercise remain tracke
 After all required Lean checks, `publish.py stage` records the exact clean producer revision
 and SHA-256 inventory once. GCS and the separate MIT publisher job consume those same staged bytes.
 The MIT job verifies this run's artifact ID and producer revision before obtaining its upload
-password for the final step. It packs the inventory and files into an uncompressed USTAR package
-and sends `PUT /publish/<commit>` over HTTPS. curl retries transient failures; credentials travel
-through its stdin configuration rather than URLs or command-line arguments.
+password for the final step. It sends the complete SHA-256 inventory and mapping in a small
+USTAR probe to `PUT /publish/<commit>` over HTTPS, then uploads only missing archive payloads
+alongside that same complete metadata. The server rechecks every omitted retained object under
+its publication/GC lock before making the mapping visible. An old server's 415 triggers a full
+upload; a GC race's 412 triggers one full retry. See the
+[protocol and compatibility contract](../../tools/cache-origin/README.md#publication-contract).
+curl retries transient failures; credentials travel through its stdin configuration rather
+than URLs or command-line arguments.
 
 The handler validates the whole package before publishing anything, installs artifacts before
 the mapping and rejects conflicting existing keys even when the client omits conditional headers.
@@ -351,6 +356,13 @@ This PR does not complete repository-managed provisioning or automated upgrades.
 open under [#2503](https://github.com/cslib-community/cslib-frontier/issues/2503); the
 [milestone scope](../../tools/cache-origin/SECURITY.md#scope-of-2506-and-remaining-2503-work) separates
 the source/host checks from remaining cold-restore, recovery and preferred-reader decisions.
+
+The HTTP publisher reports `CACHE_HTTP_PUBLICATION`: `mode` is `incremental`, `legacy-full`
+(old server), or `race-full` (GC removed an omitted object). `archives_sent` counts payloads in
+the final package; `request_body_bytes` lists every protocol package, including the probe and
+any full fallback. It excludes curl's automatic retransmissions and HTTP/TLS overhead. This
+measures transfer reduction, not archive preparation: the complete local staging directory
+and its digest verification are still required. A 409 remains a hard conflict, not a cache miss.
 
 ## Profile cache publication
 
