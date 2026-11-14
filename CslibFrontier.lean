@@ -1977,6 +1977,7 @@ public import CslibFrontier.Computability.Complexity.Classes.FunctionTime.WordRA
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.LazyDiagonal
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.LazyDiagonalBounds
+public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.LazyDiagonalVerifier
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.LogClock
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.Nondeterministic
 public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.NondeterministicExponentialTime
