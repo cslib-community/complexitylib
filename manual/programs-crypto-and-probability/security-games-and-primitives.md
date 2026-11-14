@@ -859,7 +859,7 @@ security. These modules are therefore correctness prerequisites, not an HQC secu
 
 ### SDitH binary regular syndrome decoding
 
-Import [`SyndromeDecoding.lean`](../../CslibFrontier/Crypto/Computational/SyndromeDecoding.lean)
+Import [`RegularSyndrome.lean`](../../CslibFrontier/Foundations/Data/Code/RegularSyndrome.lean)
 for the binary regular-syndrome relation from the
 [SDitH v3.0 specification](https://csrc.nist.gov/csrc/media/Projects/pqc-dig-sig/documents/SDitH_specifications.pdf),
 §2.2 (pp. 8–9) and Algorithms 1–2 (pp. 12–13). Coordinates have type
@@ -867,7 +867,9 @@ for the binary regular-syndrome relation from the
 `regularWord positions` uses `Pi.single` to put one `true` at the selected position of every
 chunk; `IsRegularWord x` reuses `Cslib.BitString.IsSingle` for each chunk, and the shared
 `hammingNorm_eq_one_iff_isSingle` theorem connects that representation to Hamming weight one. Then
-`IsRegularSyndromeSolution H y x` adds the existing `Cslib.Code.syndrome H x = y` relation.
+`IsRegularSyndromeSolution H y x` adds the existing `Cslib.Code.syndrome H x = y`
+relation. These reusable definitions and theorems live in `Cslib.Code` beside the parity-check
+API; they are not computational-hardness assumptions.
 `IsRegularWord.hammingNorm_eq` proves that every such word has total weight `chunks`.
 
 The [checked client](../../CslibFrontierTests/Crypto/SyndromeDecoding.lean) uses two chunks of

@@ -142,7 +142,8 @@ Information-theoretic private information retrieval, following Chorâ€“Goldreichâ
 - **NIST post-quantum portfolio** ([#4987](https://github.com/cslib-community/cslib-frontier/issues/4987)): Faithful protocols, exact asymptotic assumptions and checked quantum security reductions for ML-KEM, ML-DSA, SLH-DSA, FN-DSA, HQC and every active additional-signature candidate.
   Reuse operational quantum-PPT/QROM models and concrete-to-asymptotic reductions; keep source-required sampling, abort, transform and failure obligations explicit, including evolving or unsupported claims.
   FAEST challenge decoding is tracked in [#5214](https://github.com/cslib-community/cslib-frontier/issues/5214); BAVC, VOLE reconstruction, protocol correctness and QROM security remain.
-  SDitH's binary-RSD foundation is tracked in [#5212](https://github.com/cslib-community/cslib-frontier/issues/5212); seed expansion, the PIOP, commitments, grinding, signing and verification, SD/RSD hardness, and EUF-CMA/QROM security remain under #4987.
+
+- **SDitH foundations**: [#5212](https://github.com/cslib-community/cslib-frontier/issues/5212) is the completed bounded binary-RSD milestone. Seed expansion, the PIOP, commitments, grinding, signing and verification, SD/RSD hardness, and EUF-CMA/QROM security remain under [#4987](https://github.com/cslib-community/cslib-frontier/issues/4987).
 
 - **Concurrent composition**: Extend the protocol semantics with environments, scheduling, session identifiers and concurrent executions, and prove a composition theorem with efficient simulators and explicit setup, corruption and communication assumptions.
   Then develop selected adaptive-corruption and non-malleability applications, alongside the static-malicious OT target.

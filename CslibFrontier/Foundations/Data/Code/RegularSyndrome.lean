@@ -19,26 +19,24 @@ nonzero coordinate. A witness additionally satisfies the ordinary parity-check r
 `y = H *ᵥ x` [SDitH2026, Sections 2.2 and 3.1.1].
 
 The chunked index type `Fin chunks × Fin chunkSize` makes the source requirement that the word
-length is `chunks * chunkSize` explicit. This module reuses `Cslib.Code.syndrome`; it does not
-introduce a second parity-check or code API.
+length is `chunks * chunkSize` explicit. This module reuses `Cslib.Code.syndrome`; it
+does not introduce a second parity-check or code API.
 
 ## Main definitions
 
-* `Cslib.Crypto.SyndromeDecoding.regularWord`: concatenate one elementary word per chunk.
-* `Cslib.Crypto.SyndromeDecoding.IsRegularWord`: every chunk is a Boolean unit vector.
-* `Cslib.Crypto.SyndromeDecoding.IsRegularSyndromeSolution`: a regular word with a prescribed
-  syndrome.
+* `Cslib.Code.regularWord`: concatenate one elementary word per chunk.
+* `Cslib.Code.IsRegularWord`: every chunk is a Boolean unit vector.
+* `Cslib.Code.IsRegularSyndromeSolution`: a regular word with a prescribed syndrome.
 
 ## Main results
 
-* `Cslib.Crypto.SyndromeDecoding.hammingNorm_eq_sum_chunks`: decompose total Hamming weight by
-  chunks.
-* `Cslib.Crypto.SyndromeDecoding.isRegularWord_iff_exists_positions`: the weight-one predicate is
-  exactly the source's concatenation of elementary words.
-* `Cslib.Crypto.SyndromeDecoding.IsRegularWord.hammingNorm_eq`: every regular word has total
-  Hamming weight equal to the number of chunks.
-* `Cslib.Crypto.SyndromeDecoding.isRegular_regularWord`: choosing one position per chunk constructs
-  a regular word.
+* `Cslib.Code.hammingNorm_eq_sum_chunks`: decompose total Hamming weight by chunks.
+* `Cslib.Code.isRegularWord_iff_exists_positions`: the weight-one predicate is exactly the
+  source's concatenation of elementary words.
+* `Cslib.Code.IsRegularWord.hammingNorm_eq`: every regular word has total Hamming weight equal
+  to the number of chunks.
+* `Cslib.Code.isRegular_regularWord`: choosing one position per chunk constructs a regular
+  word.
 
 ## References
 
@@ -47,25 +45,39 @@ introduce a second parity-check or code API.
 
 public section
 
-namespace Cslib.Crypto.SyndromeDecoding
+namespace Cslib.Code
 
 open Matrix
 
 /-- Concatenate one elementary word per chunk. This is the binary regular word determined by
 `positions`. -/
+@[expose]
 def regularWord {chunks chunkSize : ℕ} (positions : Fin chunks → Fin chunkSize) :
     Fin chunks × Fin chunkSize → Bool :=
   fun p => (Pi.single (positions p.1) true : Fin chunkSize → Bool) p.2
 
 /-- A binary word is regular when each chunk is a Boolean unit vector. -/
+@[expose]
 def IsRegularWord {chunks chunkSize : ℕ} (x : Fin chunks × Fin chunkSize → Bool) : Prop :=
   ∀ i, Cslib.BitString.IsSingle fun j => x (i, j)
 
-/-- A regular syndrome-decoding witness for public parity-check matrix `H` and syndrome `y`. -/
+instance {chunks chunkSize : ℕ} (x : Fin chunks × Fin chunkSize → Bool) :
+    Decidable (IsRegularWord x) :=
+  inferInstanceAs (Decidable (∀ i, Cslib.BitString.IsSingle fun j => x (i, j)))
+
+/-- A regular syndrome-decoding witness for public parity-check matrix `H` and syndrome
+`y`. -/
+@[expose]
 def IsRegularSyndromeSolution {checks chunks chunkSize : ℕ}
     (H : Matrix (Fin checks) (Fin chunks × Fin chunkSize) Bool)
     (y : Fin checks → Bool) (x : Fin chunks × Fin chunkSize → Bool) : Prop :=
-  IsRegularWord x ∧ Cslib.Code.syndrome H x = y
+  IsRegularWord x ∧ syndrome H x = y
+
+instance {checks chunks chunkSize : ℕ}
+    (H : Matrix (Fin checks) (Fin chunks × Fin chunkSize) Bool)
+    (y : Fin checks → Bool) (x : Fin chunks × Fin chunkSize → Bool) :
+    Decidable (IsRegularSyndromeSolution H y x) :=
+  inferInstanceAs (Decidable (IsRegularWord x ∧ syndrome H x = y))
 
 @[simp]
 theorem regularWord_eq_true_iff {chunks chunkSize : ℕ}
@@ -130,7 +142,7 @@ applying `H` to that word. -/
 theorem isRegularSyndromeSolution_regularWord {checks chunks chunkSize : ℕ}
     (H : Matrix (Fin checks) (Fin chunks × Fin chunkSize) Bool)
     (positions : Fin chunks → Fin chunkSize) :
-    IsRegularSyndromeSolution H (Cslib.Code.syndrome H (regularWord positions))
+    IsRegularSyndromeSolution H (syndrome H (regularWord positions))
       (regularWord positions) := by
   exact ⟨isRegular_regularWord positions, rfl⟩
 
@@ -141,4 +153,4 @@ theorem IsRegularSyndromeSolution.hammingNorm_eq {checks chunks chunkSize : ℕ}
     hammingNorm x = chunks :=
   hx.1.hammingNorm_eq
 
-end Cslib.Crypto.SyndromeDecoding
+end Cslib.Code
