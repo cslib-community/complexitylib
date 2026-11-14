@@ -7,11 +7,20 @@ everything it needs.
 module built in one checkout (a worktree, an agent sandbox, a second clone) is reused by every
 other checkout on the same machine with the same inputs. Outputs are hard-linked back into
 `.lake/build`. `lake cache clean` empties it; it lives in the Lean toolchain's directory under
-`~/.elan` unless `LAKE_CACHE_DIR` says otherwise. A restored module's warnings are not replayed,
-so `--wfail` can pass locally where CI fails. Full `scripts/check.sh` re-elaborates built
+`~/.elan` unless `LAKE_CACHE_DIR` says otherwise. Individual-artifact restores can lose diagnostic
+logs, so `--wfail` can pass locally where CI fails. Full `scripts/check.sh` re-elaborates built
 root-package sources restored this way; quick mode checks affected sources, including unchanged
 clients, built import aggregates and executable helpers
 ([troubleshooting](../../manual/workflows/troubleshooting.md#diagnose-warnings-that-only-ci-reports)).
+
+This audit recovers warning/info diagnostics; it is not an ordinary build or a proof-trust check.
+Both check modes show its source count, current file and elapsed time while retaining failure
+logs. A clean audit does not currently update the restored traces, so repeating it can repeat
+the work. During ordinary edits, use MCP diagnostics or
+`scripts/build.sh <affected modules and representative clients> --wfail --iofail`. At a local
+checkpoint, use `scripts/check.sh --quick --no-full-fallback`; status 3 calls for focused checks
+and hosted full validation. Run a full local check only when explicitly requested or hosted
+coverage is unavailable, and do not repeat successful CI covering the final revision.
 
 **Remote cache.** CI uploads the build outputs of every commit on `main`; `scripts/cache/get.sh`
 downloads them for the nearest cached ancestor of your `HEAD`:

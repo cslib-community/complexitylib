@@ -32,9 +32,10 @@ as a field of the family.
 
 Execution places a supplied quantum state after the encoded classical input, initializes the
 other wires to zero, and uses one fixed coherent oracle throughout. Terminal measurement returns
-the declared output prefix. Supplied states need not be efficiently preparable. This model does
-not yet supply mixed states or an inaccessible entangled reference, interactive classical
-oracles, consistent random-oracle sampling across widths, or a gate-approximation theorem.
+the declared output prefix. Supplied states need not be efficiently preparable. `Oracle.Density`
+extends this execution to mixed states and inaccessible entangled references. Interactive classical
+oracles, consistent random-oracle sampling across widths, and a gate-approximation theorem are
+separate obligations.
 The definitions and results are original infrastructure, not a QROM security claim.
 
 ## Main definitions

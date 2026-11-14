@@ -49,6 +49,8 @@ code, primitive-prime admissibility, the decryption-failure rate, or any PKE/KEM
 * `Cslib.Crypto.HQC.pkeDecrypt_encrypt_eq_of_weight_le`: deterministic bounded-error correctness.
 * `Cslib.Crypto.HQC.pkeKeyGen_support`, `Cslib.Crypto.HQC.pkeSampleCoins_support`: sampled keys and
   coins have exactly the source's fixed weights.
+* `Cslib.Crypto.HQC.pkeKeyGen_expect`: expectation under ideal expanded key generation in exact
+  source sampling order.
 
 ## References
 
@@ -191,12 +193,32 @@ theorem pkeKeyGen_support (P : PKEParams) {keys : PKEPublicKey P × PKESecretKey
     weight_of_mem_support_sampleFixedWeight P P.omega_le_n hx,
     weight_of_mem_support_sampleFixedWeight P P.omega_le_n hy, rfl⟩
 
+/-- Expectation under ideal expanded key generation, exposing the exact source order `y`, `x`,
+then `h` without exposing the sampler implementation itself. -/
+theorem pkeKeyGen_expect (P : PKEParams)
+    (score : PKEPublicKey P × PKESecretKey P → ENNReal) :
+    (pkeKeyGen P).expect score =
+      (sampleFixedWeight P P.omega).expect fun y =>
+        (sampleFixedWeight P P.omega).expect fun x =>
+          (ProbComp.uniform (RingWord P)).expect fun h =>
+            score (expandedPublicKey P h x y, y) := by
+  simp only [pkeKeyGen, ProbComp.expect_bind, ProbComp.expect_pure]
+
 /-- Ideal HQC-PKE encryption-coin sampling, in source order `r₂`, `e`, then `r₁`. -/
 noncomputable def pkeSampleCoins (P : PKEParams) : ProbComp (PKECoins P) := do
   let r2 ← sampleFixedWeight P P.omegaR
   let e ← sampleFixedWeight P P.omegaE
   let r1 ← sampleFixedWeight P P.omegaR
   return ⟨r2, e, r1⟩
+
+/-- Expectation under ideal encryption-coin sampling, exposing the exact independent source order
+`r₂`, `e`, then `r₁` without exposing the sampler implementation itself. -/
+theorem pkeSampleCoins_expect (P : PKEParams) (score : PKECoins P → ENNReal) :
+    (pkeSampleCoins P).expect score =
+      (sampleFixedWeight P P.omegaR).expect fun r2 =>
+        (sampleFixedWeight P P.omegaE).expect fun e =>
+          (sampleFixedWeight P P.omegaR).expect fun r1 => score ⟨r2, e, r1⟩ := by
+  simp only [pkeSampleCoins, ProbComp.expect_bind, ProbComp.expect_pure]
 
 /-- Every supported encryption coin triple has exactly the source's three fixed weights. -/
 theorem pkeSampleCoins_support (P : PKEParams) {coins : PKECoins P}
