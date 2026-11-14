@@ -62,7 +62,7 @@ example (F : PrimeOrderGroupFamily) : (constantDistinguisher F).IsPPT where
 example (F : PrimeOrderGroupFamily) (setup : ℕ → PMF F.Desc) (A : F.DDHOTDistinguisher {0})
     (n : ℕ) :
     Game.advantage (F.ddhOTRealGame setup {0} A n)
-      (F.ddhOTIdealGame setup {0} (fun d => ddhOTSenderSim (F.generator d) (F.order d)) A n) =
+      (F.ddhOTIdealGame setup {0} (fun _ d => ddhOTSenderSim (F.generator d) (F.order d)) A n) =
       0 := by
   rw [F.ddhOTRealGame_sender_eq, Game.advantage_self]
 
@@ -71,7 +71,7 @@ example (F : PrimeOrderGroupFamily) (setup : ℕ → PMF F.Desc) (A : F.DDHOTDis
 example (F : PrimeOrderGroupFamily) (setup : ℕ → PMF F.Desc) (A : F.DDHOTDistinguisher {1})
     (n : ℕ) :
     Game.advantage (F.ddhOTRealGame setup {1} A n)
-        (F.ddhOTIdealGame setup {1} (fun d => ddhOTReceiverSim (F.generator d) (F.order d)) A n) ≤
+        (F.ddhOTIdealGame setup {1} (fun _ d => ddhOTReceiverSim (F.generator d) (F.order d)) A n) ≤
       Game.advantage (F.ddhRealGame setup (F.ddhOTReceiverToDDHDistinguisher A) n)
         (F.ddhRandomGame setup (F.ddhOTReceiverToDDHDistinguisher A) n) + 6 / 2 ^ n :=
   F.advantage_ddhOTReceiverGame_le setup A n
@@ -80,14 +80,14 @@ example (F : PrimeOrderGroupFamily) (setup : ℕ → PMF F.Desc) (A : F.DDHOTDis
 example (F : PrimeOrderGroupFamily) (setup : ℕ → PMF F.Desc) (hDDH : F.DDH setup)
     (A : F.DDHOTDistinguisher {1}) (hA : A.IsPPT) :
     Negligible fun n => Game.advantage (F.ddhOTRealGame setup {1} A n)
-      (F.ddhOTIdealGame setup {1} (fun d => ddhOTReceiverSim (F.generator d) (F.order d)) A n) :=
+      (F.ddhOTIdealGame setup {1} (fun _ d => ddhOTReceiverSim (F.generator d) (F.order d)) A n) :=
   hDDH.ddhOTRealIdealIndistinguishable.2 A hA
 
 -- The same for the constant distinguisher.
 example (F : PrimeOrderGroupFamily) (setup : ℕ → PMF F.Desc) (hDDH : F.DDH setup)
     (hA : (constantDistinguisher F).IsPPT) :
     Negligible fun n => Game.advantage (F.ddhOTRealGame setup {1} (constantDistinguisher F) n)
-      (F.ddhOTIdealGame setup {1} (fun d => ddhOTReceiverSim (F.generator d) (F.order d))
+      (F.ddhOTIdealGame setup {1} (fun _ d => ddhOTReceiverSim (F.generator d) (F.order d))
         (constantDistinguisher F) n) :=
   hDDH.ddhOTRealIdealIndistinguishable.2 _ hA
 

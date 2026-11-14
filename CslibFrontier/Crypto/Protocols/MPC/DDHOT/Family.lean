@@ -194,15 +194,17 @@ corrupted parties `I` and both outputs. -/
   ProbComp.eval (A.guess n d c.state r)
 
 /-- The ideal game: draw group parameters `d` from the setup law, let `A` choose the inputs,
-compute the outputs of `otFunctionality`, let the simulator `S d` produce the views of the
-corrupted parties `I` from their inputs and outputs, and give `A` these views and both outputs. -/
+compute the outputs of `otFunctionality`, let the simulator `S n d` produce the views of the
+corrupted parties `I` from their inputs and outputs, and give `A` these views and both outputs.
+The simulator may depend on the security parameter, for instance to sample approximately uniform
+exponents with `sampleExp`. -/
 @[expose] noncomputable def ddhOTIdealGame (setup : ℕ → PMF F.Desc) (I : Finset (Fin 2))
-    (S : (d : F.Desc) → CoalitionSimulator (ddhOTSchedule (F.Carrier d)) (OTIn (F.Carrier d))
+    (S : ℕ → (d : F.Desc) → CoalitionSimulator (ddhOTSchedule (F.Carrier d)) (OTIn (F.Carrier d))
       (DDHOTCoins (F.order d)) (OTOut (F.Carrier d)) I)
     (A : F.DDHOTDistinguisher I) (n : ℕ) : Game := do
   let d ← setup n
   let c ← ProbComp.eval (A.choose n d)
-  let r ← ProbComp.eval (idealJoint (otFunctionality (F.Carrier d)) I (S d) c.inputs)
+  let r ← ProbComp.eval (idealJoint (otFunctionality (F.Carrier d)) I (S n d) c.inputs)
   ProbComp.eval (A.guess n d c.state r)
 
 /-! ### Efficiency of receiver-corrupting distinguishers -/
@@ -304,10 +306,10 @@ real game and the ideal game with `ddhOTReceiverSim` are indistinguishable for e
 distinguisher. -/
 @[expose] def ddhOTRealIdealIndistinguishable (setup : ℕ → PMF F.Desc) : Prop :=
   Game.Indistinguishable (F.ddhOTRealGame setup {0})
-      (F.ddhOTIdealGame setup {0} fun d => ddhOTSenderSim (F.generator d) (F.order d))
+      (F.ddhOTIdealGame setup {0} fun _ d => ddhOTSenderSim (F.generator d) (F.order d))
       (fun _ => True) ∧
     Game.Indistinguishable (F.ddhOTRealGame setup {1})
-      (F.ddhOTIdealGame setup {1} fun d => ddhOTReceiverSim (F.generator d) (F.order d))
+      (F.ddhOTIdealGame setup {1} fun _ d => ddhOTReceiverSim (F.generator d) (F.order d))
       DDHOTDistinguisher.IsPPT
 
 /-! ### Corrupted sender -/
@@ -317,7 +319,7 @@ ideal game with `ddhOTSenderSim` are equal. -/
 theorem ddhOTRealGame_sender_eq (setup : ℕ → PMF F.Desc) (A : F.DDHOTDistinguisher {0})
     (n : ℕ) :
     F.ddhOTRealGame setup {0} A n =
-      F.ddhOTIdealGame setup {0} (fun d => ddhOTSenderSim (F.generator d) (F.order d)) A n := by
+      F.ddhOTIdealGame setup {0} (fun _ d => ddhOTSenderSim (F.generator d) (F.order d)) A n := by
   simp only [ddhOTRealGame, ddhOTIdealGame, idealJoint_ddhOT_sender]
 
 /-! ### Corrupted receiver: the reduction to DDH -/
@@ -356,7 +358,7 @@ private theorem ddhOTRealGame_receiver_eq (setup : ℕ → PMF F.Desc)
 reduction. -/
 private theorem ddhOTIdealGame_receiver_eq (setup : ℕ → PMF F.Desc)
     (A : F.DDHOTDistinguisher {1}) (n : ℕ) :
-    F.ddhOTIdealGame setup {1} (fun d => ddhOTReceiverSim (F.generator d) (F.order d)) A n =
+    F.ddhOTIdealGame setup {1} (fun _ d => ddhOTReceiverSim (F.generator d) (F.order d)) A n =
       F.ddhRandomGame setup (F.ddhOTReceiverToDDHExact A) n := by
   simp only [ddhOTIdealGame, ddhRandomGame, Game.withSetup, PMF.monad_bind_eq_bind]
   refine congrArg (PMF.bind _) (funext fun d => ?_)
@@ -385,7 +387,7 @@ the ideal game with `ddhOTReceiverSim` is at most the DDH advantage of
 theorem advantage_ddhOTReceiverGame_le (setup : ℕ → PMF F.Desc) (A : F.DDHOTDistinguisher {1})
     (n : ℕ) :
     Game.advantage (F.ddhOTRealGame setup {1} A n)
-        (F.ddhOTIdealGame setup {1} (fun d => ddhOTReceiverSim (F.generator d) (F.order d)) A n) ≤
+        (F.ddhOTIdealGame setup {1} (fun _ d => ddhOTReceiverSim (F.generator d) (F.order d)) A n) ≤
       Game.advantage (F.ddhRealGame setup (F.ddhOTReceiverToDDHDistinguisher A) n)
         (F.ddhRandomGame setup (F.ddhOTReceiverToDDHDistinguisher A) n) + 6 / 2 ^ n := by
   rw [ddhOTRealGame_receiver_eq, ddhOTIdealGame_receiver_eq]
