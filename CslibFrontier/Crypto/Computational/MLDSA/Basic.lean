@@ -200,12 +200,8 @@ theorem abs_valMinAbs_negacyclicMul_le [NeZero q] {τ η : ℕ} {c s : Fin n →
       _ ≤ τ * η := mul_le_mul_of_nonneg_right (sum_abs_valMinAbs_le hc) (by positivity)
   calc
     |(negacyclicMul c s i).valMinAbs| ≤ |negacyclicMul ĉ ŝ i| := by
-      rw [Int.abs_eq_natAbs, Int.abs_eq_natAbs]
-      norm_cast
-      exact ZMod.natAbs_min_of_le_div_two q (negacyclicMul c s i).valMinAbs
-        (negacyclicMul ĉ ŝ i)
-        (by rw [ZMod.coe_valMinAbs, hlift])
-        (ZMod.natAbs_valMinAbs_le (negacyclicMul c s i))
+      rw [hlift]
+      exact abs_valMinAbs_intCast_le _
     _ ≤ τ * η := hbound
 
 end Challenge

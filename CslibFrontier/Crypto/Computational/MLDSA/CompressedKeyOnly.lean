@@ -157,13 +157,6 @@ private theorem abs_valMinAbs_add_le {q : ℕ} [NeZero q] (a b : ZMod q) :
   norm_cast
   exact (ZMod.natAbs_valMinAbs_add_le a b).trans (Int.natAbs_add_le _ _)
 
-private theorem abs_valMinAbs_le_of_eq_intCast {q : ℕ} [NeZero q] {x : ZMod q} {z : ℤ}
-    (h : x = (z : ZMod q)) : |x.valMinAbs| ≤ |z| := by
-  rw [Int.abs_eq_natAbs, Int.abs_eq_natAbs]
-  norm_cast
-  exact ZMod.natAbs_min_of_le_div_two q x.valMinAbs z
-    (by rw [ZMod.coe_valMinAbs, h]) (ZMod.natAbs_valMinAbs_le x)
-
 /-- **A compressed-verification forgery is a self-target solution.** This is the formal
 counterpart of Dilithium v3.1 Section 6.2.1, equations (9)--(12), with the source condition
 `q > 4γ₂` explicit. -/
@@ -182,9 +175,9 @@ theorem isSelfTargetSolution_of_compressedVerify (hP : P.Valid) (hγq : 4 * P.γ
       (σ.h i j) (compressedVerifierCommitment P d pk σ.z σ.c i j)
     have ht₀ : ∀ j', |(publicKeyLowPart P d pk i j').valMinAbs| ≤ 2 ^ (d - 1) :=
       fun j' => by
-        apply (abs_valMinAbs_le_of_eq_intCast
-          (z := (power2RoundVec P.q d pk.t).2 i j') rfl).trans
-        exact abs_power2RoundVec_low_le (q := P.q) hd pk.t i j'
+        unfold publicKeyLowPart
+        exact (abs_valMinAbs_intCast_le _).trans
+          (abs_power2RoundVec_low_le (q := P.q) hd pk.t i j')
     have hct₀ := abs_valMinAbs_negacyclicMul_le (s := publicKeyLowPart P d pk i) hc ht₀ j
     have hmax :
         ((2 * P.γ₂ + 1 + P.τ * 2 ^ (d - 1) : ℕ) : ℤ) ≤

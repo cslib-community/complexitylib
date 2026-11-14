@@ -115,13 +115,6 @@ private theorem two_le_bucketCount (hγ : 0 < γ₂) (hdvd : 2 * γ₂ ∣ q - 1
     simpa only [m] using eq_bucketCount_mul_add_one (by omega) hdvd
   nlinarith
 
-private theorem abs_valMinAbs_le_of_eq_intCast [NeZero q] {x : ZMod q} {z : ℤ}
-    (h : x = (z : ZMod q)) : |x.valMinAbs| ≤ |z| := by
-  rw [Int.abs_eq_natAbs, Int.abs_eq_natAbs]
-  norm_cast
-  exact ZMod.natAbs_min_of_le_div_two q x.valMinAbs z
-    (by rw [ZMod.coe_valMinAbs, h]) (ZMod.natAbs_valMinAbs_le x)
-
 /-- The exceptional negative representatives next to zero are precisely the wrap-around bucket. -/
 private theorem highBits_intCast_eq_zero_of_neg (hγ : 0 < γ₂) (hdvd : 2 * γ₂ ∣ q - 1)
     (hq : 4 * γ₂ < q) {c : ℤ} (hc₁ : -(γ₂ : ℤ) ≤ c) (hc₂ : c < 0) :
@@ -270,7 +263,8 @@ theorem abs_hintResidual_valMinAbs_le (hγ : 0 < γ₂) (hdvd : 2 * γ₂ ∣ q 
         _ = ((-lowBits q γ₂ r : ℤ) : ZMod q) := by
           push_cast
           ring
-    exact (abs_valMinAbs_le_of_eq_intCast heq).trans (by
+    rw [heq]
+    exact (abs_valMinAbs_intCast_le _).trans (by
       rw [abs_neg, abs_le]
       constructor <;> omega)
   · change
@@ -293,7 +287,8 @@ theorem abs_hintResidual_valMinAbs_le (hγ : 0 < γ₂) (hdvd : 2 * γ₂ ∣ q 
             _ = (((2 * γ₂ : ℕ) - lowBits q γ₂ r : ℤ) : ZMod q) := by
               push_cast
               ring
-        exact (abs_valMinAbs_le_of_eq_intCast heq).trans (by
+        rw [heq]
+        exact (abs_valMinAbs_intCast_le _).trans (by
           rw [abs_of_nonneg (by push_cast; omega)]
           push_cast
           omega)
@@ -323,7 +318,8 @@ theorem abs_hintResidual_valMinAbs_le (hγ : 0 < γ₂) (hdvd : 2 * γ₂ ∣ q 
                     -((m : ZMod q) * (2 * (γ₂ : ZMod q))) +
                       2 * (γ₂ : ZMod q) - lowBits q γ₂ r := by ring
                 _ = 2 * (γ₂ : ZMod q) + 1 - lowBits q γ₂ r := by rw [hmα]; ring
-        exact (abs_valMinAbs_le_of_eq_intCast heq).trans (by
+        rw [heq]
+        exact (abs_valMinAbs_intCast_le _).trans (by
           rw [abs_of_nonneg (by push_cast; omega)]
           push_cast
           omega)
@@ -342,7 +338,8 @@ theorem abs_hintResidual_valMinAbs_le (hγ : 0 < γ₂) (hdvd : 2 * γ₂ ∣ q 
             _ = ((-(2 * γ₂ : ℕ) - lowBits q γ₂ r : ℤ) : ZMod q) := by
               push_cast
               ring
-        exact (abs_valMinAbs_le_of_eq_intCast heq).trans (by
+        rw [heq]
+        exact (abs_valMinAbs_intCast_le _).trans (by
           rw [abs_of_nonpos (by push_cast; omega)]
           push_cast
           omega)
@@ -369,7 +366,8 @@ theorem abs_hintResidual_valMinAbs_le (hγ : 0 < γ₂) (hdvd : 2 * γ₂ ∣ q 
                     (m : ZMod q) * (2 * (γ₂ : ZMod q)) -
                       2 * (γ₂ : ZMod q) - lowBits q γ₂ r := by ring
                 _ = -(2 * (γ₂ : ZMod q)) - 1 - lowBits q γ₂ r := by rw [hmα]; ring
-        exact (abs_valMinAbs_le_of_eq_intCast heq).trans (by
+        rw [heq]
+        exact (abs_valMinAbs_intCast_le _).trans (by
           rw [abs_of_nonpos (by push_cast; omega)]
           push_cast
           omega)
