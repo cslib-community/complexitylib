@@ -60,7 +60,7 @@ instructions with probability at least `1 - n_max ^ (-c)` in fixed-capacity hash
    - `mapSimulates` and `toStandard` lift any `HighProbStateTransitionImpl` from `Basis.exact` to
      `Basis.standard` preserving exact instruction bounds and failure probabilities.
    - `Cslib.DataStructure.WordRAM.StateTransitionImpl.toHighProb` embeds any unamortized
-     (`initPotential = 0`, `potential = 0`) deterministic `StateTransitionImpl` with uniform step
+     (`potential = 0`) deterministic `StateTransitionImpl` with uniform step
      bound `worstCaseTime` at `failureProb = 0`.
 
 ## Main definitions
@@ -86,8 +86,8 @@ instructions with probability at least `1 - n_max ^ (-c)` in fixed-capacity hash
 * `Cslib.DataStructure.WordRAM.Randomized.HighProbStateTransitionImpl.step_whp`, `step_whp_ofFn`:
   per-operation worst-case halting bounds at horizon `worstCaseTime + 1`.
 * `Cslib.DataStructure.WordRAM.Randomized.HighProbStateTransitionImpl.steps_whp`, `seq_whp`,
-  `steps_whp_ofFn`, `seq_whp_ofFn`, `seq_whp_poly_ofFn`: whole-sequence worst-case execution bounds
-  across arbitrary and polynomial-length oblivious sequences.
+  `seq_whp_ofFn`, `reachable_step_whp_ofFn`, `poly_seq_failureProb_le`:
+  whole-sequence worst-case execution bounds across arbitrary and polynomial-length sequences.
 
 ## References
 
@@ -762,6 +762,14 @@ variable {B B' : Basis} {r_ds k_init w base : ℕ}
 @[expose] def initClearTime (C : HighProbStateTransitionImpl P D w base params s₀) : ℕ :=
   C.initTime + (4 * C.space + 6)
 
+/-- Extract next data structure state from a step outcome pair `((seed, data), steps)`. -/
+abbrev _root_.Prod.stepData {Seed : Type*} {r_ds : ℕ}
+    (q : (Seed × Data r_ds) × ℕ) : Data r_ds := q.1.2
+
+/-- Extract next seed from a step outcome pair `((seed, data), steps)`. -/
+abbrev _root_.Prod.stepSeed {Seed : Type*} {r_ds : ℕ}
+    (q : (Seed × Data r_ds) × ℕ) : Seed := q.1.1
+
 /-- Construct a `HighProbStateTransitionImpl` certificate with deterministic oblivious ghost state
 `Ghost` for a functional specification `[D.HasStepFn stepFn]`. -/
 noncomputable abbrev ofFnGhost {stepFn : (s : D.State) → (o : D.Op) → D.State × D.Result o}
@@ -814,11 +822,11 @@ noncomputable abbrev ofFnGhost {stepFn : (s : D.State) → (o : D.Op) → D.Stat
         (μ_step : Seed × Data r_ds → PMF ((Seed × Data r_ds) × ℕ)),
         (∀ p ∈ ν.support,
           ExecRand w P.code p.2 (m_step p) ∧
-          (μ_step p).map (fun q => (q.1.2, q.2)) = (m_step p).eval ∧
+          (μ_step p).map (fun q => (q.stepData, q.2)) = (m_step p).eval ∧
           ∀ q ∈ (μ_step p).support,
-            decode o q.1.2.regs = some (D.stepFn s o).2 ∧
-            ghostRep (ghostStep g o) q.1.1 (D.stepFn s o).1 q.1.2 ∧
-            Modifies (Block.mk base space).footprint p.2.mem q.1.2.mem) ∧
+            decode o q.stepData.regs = some (D.stepFn s o).2 ∧
+            ghostRep (ghostStep g o) q.stepSeed (D.stepFn s o).1 q.stepData ∧
+            Modifies (Block.mk base space).footprint p.2.mem q.stepData.mem) ∧
         (∀ θ', (((ν.bind μ_step).map Prod.fst).map Prod.fst) θ' ≤ seedSlack * seedLaw θ') ∧
         (ν.bind μ_step).toOuterMeasure {q | worstCaseTime < q.2} ≤ failureProb) :
     HighProbStateTransitionImpl P D w base params s₀ where
@@ -959,11 +967,11 @@ noncomputable abbrev ofFn {stepFn : (s : D.State) → (o : D.Op) → D.State × 
         (μ_step : Seed × Data r_ds → PMF ((Seed × Data r_ds) × ℕ)),
         (∀ p ∈ ν.support,
           ExecRand w P.code p.2 (m_step p) ∧
-          (μ_step p).map (fun q => (q.1.2, q.2)) = (m_step p).eval ∧
+          (μ_step p).map (fun q => (q.stepData, q.2)) = (m_step p).eval ∧
           ∀ q ∈ (μ_step p).support,
-            decode o q.1.2.regs = some (D.stepFn s o).2 ∧
-            rep q.1.1 (D.stepFn s o).1 q.1.2 ∧
-            Modifies (Block.mk base space).footprint p.2.mem q.1.2.mem) ∧
+            decode o q.stepData.regs = some (D.stepFn s o).2 ∧
+            rep q.stepSeed (D.stepFn s o).1 q.stepData ∧
+            Modifies (Block.mk base space).footprint p.2.mem q.stepData.mem) ∧
         (∀ θ', (((ν.bind μ_step).map Prod.fst).map Prod.fst) θ' ≤ seedSlack * seedLaw θ') ∧
         (ν.bind μ_step).toOuterMeasure {q | worstCaseTime < q.2} ≤ failureProb) :
     HighProbStateTransitionImpl P D w base params s₀ :=
@@ -984,11 +992,11 @@ theorem step_exec_ofFn (C : HighProbStateTransitionImpl P D w base params s₀)
       (μ_step : C.Seed × Data r_ds → PMF ((C.Seed × Data r_ds) × ℕ)),
       (∀ p ∈ ν.support,
         ExecRand w P.code p.2 (m_step p) ∧
-        (μ_step p).map (fun q => (q.1.2, q.2)) = (m_step p).eval ∧
+        (μ_step p).map (fun q => (q.stepData, q.2)) = (m_step p).eval ∧
         ∀ q ∈ (μ_step p).support,
-          C.decode o q.1.2.regs = some (D.stepFn s o).2 ∧
-          C.ghostRep (C.ghostStep g o) q.1.1 (D.stepFn s o).1 q.1.2 ∧
-          Modifies (Block.mk base C.space).footprint p.2.mem q.1.2.mem) ∧
+          C.decode o q.stepData.regs = some (D.stepFn s o).2 ∧
+          C.ghostRep (C.ghostStep g o) q.stepSeed (D.stepFn s o).1 q.stepData ∧
+          Modifies (Block.mk base C.space).footprint p.2.mem q.stepData.mem) ∧
       (∀ θ', (((ν.bind μ_step).map Prod.fst).map Prod.fst) θ' ≤ C.seedSlack * C.seedLaw θ') ∧
       (ν.bind μ_step).toOuterMeasure {q | C.worstCaseTime < q.2} ≤ C.failureProb := by
   let lift : C.Seed × Data r_ds → CoupledState C.Seed D.State r_ds := fun p => ⟨p.1, s, p.2⟩
@@ -1079,12 +1087,12 @@ def mapSimulates (φ : B.Simulates B') (C : HighProbStateTransitionImpl P D w ba
   setup_exec hx₁ hb hfr hpar hz :=
     let ⟨m₀, ν₀, hm₀, hq₀, hT₀, heval₀, hseed₀, hsupp₀⟩ := C.setup_exec hx₁ hb hfr hpar hz
     ⟨m₀, ν₀, hm₀.mapSimulates φ, hq₀, hT₀, heval₀, hseed₀, hsupp₀⟩
-  step_exec g o ν hsingle hseed hsupp :=
-    let ⟨m_step, μ_step, hstep, hseed', hsingle', hfail⟩ :=
+  step_exec g o ν hsingle hseed hsupp := by
+    obtain ⟨m_step, μ_step, hstep, hseed', hsingle', hfail⟩ :=
       C.step_exec g o ν hsingle hseed hsupp
-    ⟨m_step, μ_step,
-      fun t ht => ⟨(hstep t ht).1.mapSimulates φ, (hstep t ht).2.1, (hstep t ht).2.2⟩,
-      hseed', hsingle', hfail⟩
+    refine ⟨m_step, μ_step, fun t ht => ?_, hseed', hsingle', hfail⟩
+    obtain ⟨h1, h2, h3⟩ := hstep t ht
+    exact ⟨h1.mapSimulates φ, h2, h3⟩
 
 /-- Lift an exact-basis `HighProbStateTransitionImpl` certificate to `Basis.standard`. -/
 abbrev toStandard {P : SubroutineCode .exact r_ds k_init}
@@ -1516,7 +1524,17 @@ variable {B : Basis} {r_ds k_init w base : ℕ}
   {params : Fin k_init → ℕ} {s₀ : D.State}
 
 /-! ### Multi-operation whole-sequence worst-case execution (`ExecWhpSteps`, `steps_whp`, `seq_whp`,
-`steps_whp_ofFn`, `seq_whp_ofFn`, `seq_whp_poly_ofFn`) -/
+`seq_whp_ofFn`, `reachable_step_whp_ofFn`, `poly_seq_failureProb_le`) -/
+
+/-- Extract coupled state from an operational step outcome `((coupledState, res), steps)`. -/
+abbrev _root_.Prod.whpState {Seed : Type} {State : Type u} {r_ds : ℕ} {Res : Type v}
+    (p : (CoupledState Seed State r_ds × Res) × ℕ) : CoupledState Seed State r_ds :=
+  p.1.1
+
+/-- Extract operation result from an operational step outcome `((coupledState, res), steps)`. -/
+abbrev _root_.Prod.whpRes {Seed : Type} {State : Type u} {r_ds : ℕ} {Res : Type v}
+    (p : (CoupledState Seed State r_ds × Res) × ℕ) : Res :=
+  p.1.2
 
 /-- Operational multi-step trajectory execution relation for `C : HighProbStateTransitionImpl`.
 At each operation `o :: ops`, from every supported trajectory prefix `tr ∈ τ.support`, running
@@ -1539,34 +1557,25 @@ inductive ExecWhpSteps (C : HighProbStateTransitionImpl P D w base params s₀) 
         let x_in := C.prepare o t.data
         RandFaultFree w (P.code.program out) ⟨0, x_in⟩ ∧
         ExecRand w P.code x_in (m_op t) ∧
-        (μ_step t).map (fun p => (p.1.1.data, p.2)) = (m_op t).eval ∧
+        (μ_step t).map (fun p => (p.whpState.data, p.2)) = (m_op t).eval ∧
         (∀ y : Data r_ds,
           (m_op t).eval.toOuterMeasure {z | z.1 = y ∧ z.2 ≤ C.worstCaseTime} ≤
             evalRand w (P.code.program out) (C.worstCaseTime + 1) ⟨0, x_in⟩
               (.halted (y.regs out) y)) ∧
         ∀ p ∈ (μ_step t).support,
-          D.step t.state o p.1.1.state p.1.2 ∧
-          C.decode o p.1.1.data.regs = some p.1.2 ∧
-          C.rep p.1.1.seed p.1.1.state p.1.1.data ∧
-          p.1.1.data.Bounded w ∧
-          Modifies (Block.mk base C.space).footprint t.data.mem p.1.1.data.mem)
+          D.step t.state o p.whpState.state p.whpRes ∧
+          C.decode o p.whpState.data.regs = some p.whpRes ∧
+          C.rep p.whpState.seed p.whpState.state p.whpState.data ∧
+          p.whpState.data.Bounded w ∧
+          Modifies (Block.mk base C.space).footprint t.data.mem p.whpState.data.mem)
       (hrest : C.ExecWhpSteps out ops
-        (τ.bind fun tr => (μ_step tr.current).map fun p => tr.appendStep o p.1.1 p.1.2 p.2)
+        (τ.bind fun tr => (μ_step tr.current).map fun p => tr.appendStep o p.whpState p.whpRes p.2)
         τ_final) :
       C.ExecWhpSteps out (o :: ops) τ τ_final
 
 private theorem decode_unique_of_eq {α : Type v} {x y : α} {opt : Option α}
     (hx : opt = some x) (hy : opt = some y) : x = y := by
   rw [hx] at hy; injection hy
-
-private theorem pmf_map_congr {α β : Type*} {p : PMF α} {f g : α → β}
-    (h : ∀ x ∈ p.support, f x = g x) : p.map f = p.map g := by
-  ext b
-  rw [PMF.map_apply, PMF.map_apply]
-  refine tsum_congr fun a => ?_
-  by_cases ha : a ∈ p.support
-  · rw [h a ha]
-  · simp [(PMF.apply_eq_zero_iff _ _).mpr ha]
 
 /-- **Whole-sequence trajectory execution and union bound (`steps_whp`).**
 Across any admissible sequence `ops : List D.Op`, starting from trajectory distribution `τ` whose
@@ -1647,7 +1656,7 @@ theorem steps_whp (C : HighProbStateTransitionImpl P D w base params s₀)
       refine ⟨hff, hm, ?_, hreach, ?_⟩
       · dsimp only [μ_step]
         rw [PMF.map_comp, ← hev]
-        refine pmf_map_congr fun p _ => ?_
+        refine Cslib.Probability.PMF.map_congr_on_support _ _ _ fun p _ => ?_
         dsimp only [Function.comp_apply]
         split_ifs <;> rfl
       · intro p' hp'

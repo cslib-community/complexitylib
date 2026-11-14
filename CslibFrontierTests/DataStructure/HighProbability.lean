@@ -365,20 +365,20 @@ theorem no_noop_highProbImpl_dictionary {r_ds k_init w base : ℕ}
       (PMF.mem_support_map_iff _ _ _).mpr ⟨tr₀, htr₀, rfl⟩
     obtain ⟨p₁, hp₁⟩ := (μ₁ tr₀.current).support_nonempty
     obtain ⟨_, hm₁, hev₁, _, hq₁⟩ := hstep₁ tr₀.current ht₀
-    have hz₁ : (p₁.1.1.data, p₁.2) ∈ (m₁ tr₀.current).eval.support := by
+    have hz₁ : (p₁.whpState.data, p₁.2) ∈ (m₁ tr₀.current).eval.support := by
       rw [← hev₁]; exact (PMF.mem_support_map_iff _ _ _).mpr ⟨p₁, hp₁, rfl⟩
-    have hd₁ : p₁.1.1.data = C.prepare (.query k0) tr₀.current.data :=
+    have hd₁ : p₁.whpState.data = C.prepare (.query k0) tr₀.current.data :=
       hnoop hm₁ _ hz₁
     obtain ⟨hst₁, hdec₁, _, _, _⟩ := hq₁ p₁ hp₁
-    have ha₁ : p₁.1.2 = none :=
+    have ha₁ : p₁.whpRes = none :=
       congrArg Prod.snd (((Dynamic.spec 2 2 1).step_iff_stepFn _ _ _ _).mp hst₁)
     rw [ha₁, hd₁] at hdec₁
     cases hrest₁ with
     | @cons _ _ _ _ m₂ μ₂ hstep₂ hrest₂ =>
       let τ₁_pmf : PMF (WhpSeqOutcome C.Seed (Dynamic.spec 2 2 1) (r_ds + 1)) :=
         τ₀_pmf.bind fun tr => (μ₁ tr.current).map fun p =>
-          tr.appendStep (.query k0) p.1.1 p.1.2 p.2
-      let tr₁ := tr₀.appendStep (.query k0) p₁.1.1 p₁.1.2 p₁.2
+          tr.appendStep (.query k0) p.whpState p.whpRes p.2
+      let tr₁ := tr₀.appendStep (.query k0) p₁.whpState p₁.whpRes p₁.2
       have htr₁ : tr₁ ∈ τ₁_pmf.support := by
         rw [PMF.mem_support_bind_iff]
         exact ⟨tr₀, htr₀, (PMF.mem_support_map_iff _ _ _).mpr ⟨p₁, hp₁, rfl⟩⟩
@@ -386,12 +386,12 @@ theorem no_noop_highProbImpl_dictionary {r_ds k_init w base : ℕ}
         (PMF.mem_support_map_iff _ _ _).mpr ⟨tr₁, htr₁, rfl⟩
       obtain ⟨p₂, hp₂⟩ := (μ₂ tr₁.current).support_nonempty
       obtain ⟨_, hm₂, hev₂, _, hq₂⟩ := hstep₂ tr₁.current ht₁
-      have hz₂ : (p₂.1.1.data, p₂.2) ∈ (m₂ tr₁.current).eval.support := by
+      have hz₂ : (p₂.whpState.data, p₂.2) ∈ (m₂ tr₁.current).eval.support := by
         rw [← hev₂]; exact (PMF.mem_support_map_iff _ _ _).mpr ⟨p₂, hp₂, rfl⟩
-      have hd₂ : p₂.1.1.data = C.prepare (.insert k0 1) tr₁.current.data :=
+      have hd₂ : p₂.whpState.data = C.prepare (.insert k0 1) tr₁.current.data :=
         hnoop hm₂ _ hz₂
       obtain ⟨hst₂, _, _, _, _⟩ := hq₂ p₂ hp₂
-      have hs₂ : p₂.1.1.state = Function.update (Dictionary.empty 2) k0 (some 1) := by
+      have hs₂ : p₂.whpState.state = Function.update (Dictionary.empty 2) k0 (some 1) := by
         have h1 := congrArg Prod.fst (((Dynamic.spec 2 2 1).step_iff_stepFn _ _ _ _).mp hst₂)
         have hs₁ : tr₁.current.state = Dictionary.empty 2 :=
           congrArg Prod.fst (((Dynamic.spec 2 2 1).step_iff_stepFn _ _ _ _).mp hst₁)
@@ -401,8 +401,8 @@ theorem no_noop_highProbImpl_dictionary {r_ds k_init w base : ℕ}
       | @cons _ _ _ _ m₃ μ₃ hstep₃ _ =>
         let τ₂_pmf : PMF (WhpSeqOutcome C.Seed (Dynamic.spec 2 2 1) (r_ds + 1)) :=
           τ₁_pmf.bind fun tr => (μ₂ tr.current).map fun p =>
-            tr.appendStep (.insert k0 1) p.1.1 p.1.2 p.2
-        let tr₂ := tr₁.appendStep (.insert k0 1) p₂.1.1 p₂.1.2 p₂.2
+            tr.appendStep (.insert k0 1) p.whpState p.whpRes p.2
+        let tr₂ := tr₁.appendStep (.insert k0 1) p₂.whpState p₂.whpRes p₂.2
         have htr₂ : tr₂ ∈ τ₂_pmf.support := by
           rw [PMF.mem_support_bind_iff]
           exact ⟨tr₁, htr₁, (PMF.mem_support_map_iff _ _ _).mpr ⟨p₂, hp₂, rfl⟩⟩
@@ -410,14 +410,14 @@ theorem no_noop_highProbImpl_dictionary {r_ds k_init w base : ℕ}
           (PMF.mem_support_map_iff _ _ _).mpr ⟨tr₂, htr₂, rfl⟩
         obtain ⟨p₃, hp₃⟩ := (μ₃ tr₂.current).support_nonempty
         obtain ⟨_, hm₃, hev₃, _, hq₃⟩ := hstep₃ tr₂.current ht₂
-        have hz₃ : (p₃.1.1.data, p₃.2) ∈ (m₃ tr₂.current).eval.support := by
+        have hz₃ : (p₃.whpState.data, p₃.2) ∈ (m₃ tr₂.current).eval.support := by
           rw [← hev₃]; exact (PMF.mem_support_map_iff _ _ _).mpr ⟨p₃, hp₃, rfl⟩
-        have hd₃ : p₃.1.1.data = C.prepare (.query k0) tr₂.current.data :=
+        have hd₃ : p₃.whpState.data = C.prepare (.query k0) tr₂.current.data :=
           hnoop hm₃ _ hz₃
         obtain ⟨hst₃, hdec₃, _, _, _⟩ := hq₃ p₃ hp₃
-        have ha₃ : p₃.1.2 = some 1 := by
+        have ha₃ : p₃.whpRes = some 1 := by
           have h3 := congrArg Prod.snd (((Dynamic.spec 2 2 1).step_iff_stepFn _ _ _ _).mp hst₃)
-          change p₃.1.2 = p₂.1.1.state k0 at h3
+          change p₃.whpRes = p₂.whpState.state k0 at h3
           rw [hs₂, Function.update_self] at h3
           exact h3
         rw [ha₃, hd₃] at hdec₃

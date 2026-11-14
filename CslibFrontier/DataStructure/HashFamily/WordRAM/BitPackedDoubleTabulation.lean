@@ -131,6 +131,18 @@ theorem space_le (w c_tab d b_char M_out : ℕ) :
 abbrev Seed (w₀ c_tab d b_char M_out : ℕ) : Type :=
   Fin (2 ^ (w₀ - 1)) × DoubleTabTopSeed (c_tab + 1) d b_char × DoubleTabBotSeed d b_char M_out
 
+/-- Extract Stage 1 multiplier `α` from seed. -/
+abbrev Seed.alpha {w₀ c_tab d b_char M_out : ℕ}
+    (θ : Seed w₀ c_tab d b_char M_out) : Fin (2 ^ (w₀ - 1)) := θ.1
+
+/-- Extract Stage 2 top table `T₁` from seed. -/
+abbrev Seed.top {w₀ c_tab d b_char M_out : ℕ}
+    (θ : Seed w₀ c_tab d b_char M_out) : DoubleTabTopSeed (c_tab + 1) d b_char := θ.2.1
+
+/-- Extract Stage 3 bottom table `T₂` from seed. -/
+abbrev Seed.bot {w₀ c_tab d b_char M_out : ℕ}
+    (θ : Seed w₀ c_tab d b_char M_out) : DoubleTabBotSeed d b_char M_out := θ.2.2
+
 /-- Salted `(c_tab + 1)`-character tuple: the first `c_tab` characters extract base-`2 ^ b_char`
 digits of the reduced key `rKey`, and the final character at index `c_tab` encodes the salt `s`. -/
 @[expose] def saltedChars (c_tab b_char : ℕ) {R' s_max : ℕ} (s : Fin s_max) (rKey : Fin R') :
@@ -155,8 +167,8 @@ theorem saltedChars_injective {c_tab b_char R' s_max : ℕ}
 `Fin (2 ^ M_out)`. -/
 @[expose] def evalSalted (U w₀ R c_tab d b_char M_out s_max : ℕ)
     (θ : Seed w₀ c_tab d b_char M_out) (p : Fin s_max × Fin U) : Fin (2 ^ M_out) :=
-  simpleTabEval θ.2.2
-    (simpleTabTuple θ.2.1 (saltedChars c_tab b_char p.1 (multiplyShiftReduced U w₀ R θ.1 p.2)))
+  simpleTabEval θ.bot
+    (simpleTabTuple θ.top (saltedChars c_tab b_char p.1 (multiplyShiftReduced U w₀ R θ.alpha p.2)))
 
 /-- Good top-seed event on a key window `W_set : Finset (Fin U)`: Stage 1 `multiplyShiftReduced` is
 injective on `W_set` and Stage 2 `simpleTabTuple T₁` is `k`-unique. -/
@@ -175,10 +187,10 @@ theorem isKWiseIndependentHash_evalSalted_of_goodTop
     (hs : s_max ≤ 2 ^ b_char) (hcov : min w₀ R ≤ c_tab * b_char)
     (hgood : GoodTop U w₀ R c_tab d b_char k W_set α T₁) :
     IsKWiseIndependentHash k (fun (T₂ : DoubleTabBotSeed d b_char M_out) (p : Fin s_max × W_set) =>
-      evalSalted U w₀ R c_tab d b_char M_out s_max (α, T₁, T₂) (p.1, p.2.1)) := by
+      evalSalted U w₀ R c_tab d b_char M_out s_max (α, T₁, T₂) (p.1, p.2.val)) := by
   have hR' : 2 ^ min w₀ R ≤ 2 ^ (c_tab * b_char) := Nat.pow_le_pow_right two_pos hcov
   have hinj_enc : Function.Injective (fun p : Fin s_max × W_set =>
-      saltedChars c_tab b_char p.1 (multiplyShiftReduced U w₀ R α p.2.1)) := by
+      saltedChars c_tab b_char p.1 (multiplyShiftReduced U w₀ R α p.2.val)) := by
     rintro ⟨s₁, ⟨u₁, hu₁⟩⟩ ⟨s₂, ⟨u₂, hu₂⟩⟩ heq
     have hprod := @saltedChars_injective c_tab b_char (2 ^ min w₀ R) s_max hs hR'
       (s₁, multiplyShiftReduced U w₀ R α u₁) (s₂, multiplyShiftReduced U w₀ R α u₂) heq
@@ -242,7 +254,7 @@ theorem toOuterMeasure_not_goodTop_le
     (hbound : 2 * doubleTabCodeBound (c_tab + 1) d q k ≤ 2 ^ ((q - 1) * b_char))
     (W_set : Finset (Fin U)) :
     (PMF.uniformOfFintype (Seed w₀ c_tab d b_char M_out)).toOuterMeasure
-      {θ | ¬ GoodTop U w₀ R c_tab d b_char k W_set θ.1 θ.2.1} ≤
+      {θ | ¬ GoodTop U w₀ R c_tab d b_char k W_set θ.1 θ.top} ≤
       ((#W_set * (#W_set - 1) : ℕ) : ℝ≥0∞) / (2 : ℝ≥0∞) ^ R +
         (2 * (doubleTabCodeBound (c_tab + 1) d q k : ℝ≥0∞) ^ 2) /
           ((2 : ℝ≥0∞) ^ ((q - 1) * b_char)) ^ 2 := by
@@ -490,10 +502,10 @@ theorem uniformOfFintype_map_packedSliceOfWords (N k w : ℕ) (hw : 0 < w) :
   mem base = θ.1.val ∧
   (∀ (i : Fin (c_tab + 1)) (j : Fin d) (ch : Fin (2 ^ b_char)),
     readPacked (base + 1) b_char w mem ((j.val * (c_tab + 1) + i.val) * 2 ^ b_char + ch.val) =
-      (θ.2.1 i j ch).val) ∧
+      (θ.top i j ch).val) ∧
   (∀ (j : Fin d) (y : Fin (2 ^ b_char)),
     readPacked (base + offBot w c_tab d b_char) M_out w mem (j.val * 2 ^ b_char + y.val) =
-      (θ.2.2 j y).val)
+      (θ.bot j y).val)
 
 theorem seedRep_extractSeed {base w w₀ c_tab d b_char M_out : ℕ} {mem : ℕ → ℕ}
     (hα : mem base < 2 ^ (w₀ - 1)) :
@@ -1002,8 +1014,8 @@ theorem map_extractSeed_eval_resampleComp {base w w₀ c_tab d b_char M_out : �
 
 /-- Parameter-free `Memory.Prog` wrapper for `readPackedProg`
 (`d = (((base, offset), (k, w)), idx)`). -/
-@[expose] def readPackedGenProg (d : ((ℕ × ℕ) × (ℕ × ℕ)) × ℕ) : Memory.Prog ℕ :=
-  readPackedProg d.1.1.1 d.1.1.2 d.1.2.1 d.1.2.2 d.2
+@[expose] def readPackedGenProg : ((ℕ × ℕ) × (ℕ × ℕ)) × ℕ → Memory.Prog ℕ
+  | (((base, offset), (k, w)), idx) => readPackedProg base offset k w idx
 
 theorem validHistory_readPackedProg {w base offset N k idx : ℕ} {s : Memory.State}
     (hw : 0 < w) (hidx : idx < N)
@@ -1042,8 +1054,8 @@ private theorem readPackedCode_not_readsWidth : ¬readPackedCode.ReadsWidth := b
 theorem realizes_readPackedGen :
     Realizes .exact readPackedGenProg
       (WordEncoding.encode (α := ((ℕ × ℕ) × (ℕ × ℕ)) × ℕ)) (WordEncoding.encode (α := ℕ))
-      (fun w d _ => ∃ N, w = d.1.2.2 ∧ 0 < w ∧ d.1.2.1 ≤ w ∧ d.2 < N ∧
-        Fits w (d.1.1.1 + d.1.1.2 + packedWords N d.1.2.1 w))
+      (fun w (((base, offset), (k, w')), idx) _ => ∃ N, w = w' ∧ 0 < w ∧ k ≤ w ∧ idx < N ∧
+        Fits w (base + offset + packedWords N k w))
       (fun _ _ => 0) := by
   let perm : Fin 10 ≃ Fin 10 := Equiv.swap 0 2
   refine ⟨8, 38, fun _ src tmp =>
@@ -1057,13 +1069,13 @@ theorem realizes_readPackedGen :
   refine ⟨?_, ?_⟩
   · simp [Code.ReadsWidth, Op.ReadsWidth, Op.exactBin, Code.readsWidth_rename,
       readPackedCode_not_readsWidth]
-  · intro w d x hx hin ⟨N, heq, hw, hkw, hidx, hfit⟩ _
-    have hsrc0 : x.regs (src 0) = d.1.1.1 := congrFun hin 0
-    have hsrc1 : x.regs (src 1) = d.1.1.2 := congrFun hin 1
-    have hsrc2 : x.regs (src 2) = d.1.2.1 := congrFun hin 2
-    have hsrc3 : x.regs (src 3) = d.1.2.2 := congrFun hin 3
-    have hsrc4 : x.regs (src 4) = d.2 := congrFun hin 4
-    let x₁ := x.set (tmp 2) (d.1.1.1 + d.1.1.2)
+  · intro w ⟨⟨⟨base, offset⟩, ⟨k, w'⟩⟩, idx⟩ x hx hin ⟨N, heq, hw, hkw, hidx, hfit⟩ _
+    have hsrc0 : x.regs (src 0) = base := congrFun hin 0
+    have hsrc1 : x.regs (src 1) = offset := congrFun hin 1
+    have hsrc2 : x.regs (src 2) = k := congrFun hin 2
+    have hsrc3 : x.regs (src 3) = w' := congrFun hin 3
+    have hsrc4 : x.regs (src 4) = idx := congrFun hin 4
+    let x₁ := x.set (tmp 2) (base + offset)
     let x₂ := x₁.set (tmp 1) (x₁.regs (src 4))
     let x₃ := x₂.set (tmp 8) (x₂.regs (src 3))
     let x₄ := x₃.set (tmp 9) (x₃.regs (src 2))
@@ -1077,15 +1089,15 @@ theorem realizes_readPackedGen :
     have hc4 : ExecWithin (B := .exact) w (.op (.copy (tmp 9) (src 2))) x₃ x₄ 1 := ExecWithin.copy
     have hx₄_bdd : x₄.Bounded w := hc4.bounded (hc3.bounded (hc2.bounded (hc1.bounded hx)))
     have hne : ∀ (a b : Fin 10), a ≠ b → tmp a ≠ tmp b := fun a b hab h => hab (hi h)
-    have hbase0 : (x₄.comap (tmp ∘ perm)).regs 0 = d.1.1.1 + d.1.1.2 := by
-      change x₄.regs (tmp (perm 0)) = d.1.1.1 + d.1.1.2
+    have hbase0 : (x₄.comap (tmp ∘ perm)).regs 0 = base + offset := by
+      change x₄.regs (tmp (perm 0)) = base + offset
       have hp0 : perm 0 = 2 := by decide
       rw [hp0]; dsimp only [x₄, x₃, x₂, x₁, Data.set]
       rw [Function.update_of_ne (hne 2 9 (by decide)),
         Function.update_of_ne (hne 2 8 (by decide)),
         Function.update_of_ne (hne 2 1 (by decide)), Function.update_self]
-    have hidx1 : (x₄.comap (tmp ∘ perm)).regs 1 = d.2 := by
-      change x₄.regs (tmp (perm 1)) = d.2
+    have hidx1 : (x₄.comap (tmp ∘ perm)).regs 1 = idx := by
+      change x₄.regs (tmp (perm 1)) = idx
       have hp1 : perm 1 = 1 := by decide
       rw [hp1]; dsimp only [x₄, x₃, x₂, x₁, Data.set]
       rw [Function.update_of_ne (hne 1 9 (by decide)),
@@ -1097,8 +1109,8 @@ theorem realizes_readPackedGen :
       rw [hp8]; dsimp only [x₄, x₃, x₂, x₁, Data.set]
       rw [Function.update_of_ne (hne 8 9 (by decide)), Function.update_self,
         Function.update_of_ne (hd 3 1), Function.update_of_ne (hd 3 2), hsrc3, heq]
-    have hk9 : (x₄.comap (tmp ∘ perm)).regs 9 = d.1.2.1 := by
-      change x₄.regs (tmp (perm 9)) = d.1.2.1
+    have hk9 : (x₄.comap (tmp ∘ perm)).regs 9 = k := by
+      change x₄.regs (tmp (perm 9)) = k
       have hp9 : perm 9 = 9 := by decide
       rw [hp9]; dsimp only [x₄, x₃, x₂, x₁, Data.set]
       rw [Function.update_self, Function.update_of_ne (hd 2 8),
@@ -1123,7 +1135,7 @@ theorem realizes_readPackedGen :
       have hi0 : i = 0 := Fin.eq_zero i
       subst hi0
       rw [clientResult_width]
-      change y.regs (tmp 0) = readPacked (d.1.1.1 + d.1.1.2) d.1.2.1 d.1.2.2 x.mem d.2
+      change y.regs (tmp 0) = readPacked (base + offset) k w' x.mem idx
       have hp2 : tmp 0 = (tmp ∘ perm) 2 := by congr 1
       rw [hp2]
       change (y.comap (tmp ∘ perm)).regs 2 = _
@@ -1306,34 +1318,40 @@ theorem fits_mkHashParams {w base : ℕ} {hp : HashParams} (henv : HashEnv w hp 
 
 /-- Inner-loop body (`p = ((hp, (base, j)), ((i, y_acc), r_cur))`): extracts character `i` from
 `r_cur`, reads `T₁[i, j, ch]`, XORs into `y_acc`, and shifts `r_cur` right by `b_char`. -/
-@[expose] def innerStepGenProg
-    (p : (HashParams × (ℕ × ℕ)) × ((ℕ × ℕ) × ℕ)) : Memory.Prog ((ℕ × ℕ) × ℕ) := do
-  let ch ← pure (p.2.2 &&& hpMaskB p.1.1)
-  let row ← pure (p.1.2.2 * hpCPlusOne p.1.1 + p.2.1.1)
-  let idx₁ ← pure (row * hpPowB p.1.1 + ch)
-  let one_off ← pure 1
-  let t_val ← readPackedGenProg (((p.1.2.1, one_off), (hpBChar p.1.1, hpW p.1.1)), idx₁)
-  let i_next ← pure (p.2.1.1 + 1)
-  let y_next ← pure (p.2.1.2 ^^^ t_val)
-  let r_next ← pure (p.2.2 >>> hpBChar p.1.1)
-  pure ((i_next, y_next), r_next)
+@[expose] def innerStepGenProg :
+    (HashParams × (ℕ × ℕ)) × ((ℕ × ℕ) × ℕ) → Memory.Prog ((ℕ × ℕ) × ℕ)
+  | ((hp, (base, j)), ((i, y_acc), r_cur)) => do
+    let ch ← pure (r_cur &&& hpMaskB hp)
+    let row ← pure (j * hpCPlusOne hp + i)
+    let idx₁ ← pure (row * hpPowB hp + ch)
+    let one_off ← pure 1
+    let t_val ← readPackedGenProg (((base, one_off), (hpBChar hp, hpW hp)), idx₁)
+    let i_next ← pure (i + 1)
+    let y_next ← pure (y_acc ^^^ t_val)
+    let r_next ← pure (r_cur >>> hpBChar hp)
+    pure ((i_next, y_next), r_next)
 
 @[simp]
 theorem memoryCost_innerStepGenProg (p : (HashParams × (ℕ × ℕ)) × ((ℕ × ℕ) × ℕ))
     (s : Memory.State) :
-    memoryCost (innerStepGenProg p) s = 2 := rfl
+    memoryCost (innerStepGenProg p) s = 2 := by
+  rcases p with ⟨⟨hp, base, j⟩, ⟨i, y_acc⟩, r_cur⟩
+  rfl
 
 theorem memoryCost_innerStepGenProg_pos (p : (HashParams × (ℕ × ℕ)) × ((ℕ × ℕ) × ℕ))
     (s : Memory.State) :
-    1 ≤ memoryCost (innerStepGenProg p) s := by simp
+    1 ≤ memoryCost (innerStepGenProg p) s := by
+  rcases p with ⟨⟨hp, base, j⟩, ⟨i, y_acc⟩, r_cur⟩
+  simp
 
 /-- Precondition for `innerStepGenProg`. -/
-@[expose] def InnerStepGenPre (w : ℕ) (p : (HashParams × (ℕ × ℕ)) × ((ℕ × ℕ) × ℕ))
-    (_s : Memory.State) : Prop :=
-  HashEnv w p.1.1 p.1.2.1 ∧
-  p.1.2.2 < hpD p.1.1 ∧
-  p.2.1.1 < hpCTab p.1.1 ∧
-  p.2.1.2 < hpPowB p.1.1
+@[expose] def InnerStepGenPre (w : ℕ) :
+    (HashParams × (ℕ × ℕ)) × ((ℕ × ℕ) × ℕ) → Memory.State → Prop
+  | ((hp, (base, j)), ((i, y_acc), _r_cur)), _s =>
+    HashEnv w hp base ∧
+    j < hpD hp ∧
+    i < hpCTab hp ∧
+    y_acc < hpPowB hp
 
 theorem realizes_innerStepGen :
     Realizes .exact innerStepGenProg
@@ -1395,15 +1413,15 @@ theorem realizes_innerStepGen :
     exact (Nat.xor_lt_two_pow hy_lt ht_lt).trans (Nat.pow_lt_pow_right (by decide) hb)
 
 /-- Parameter-free wrapper for `iterate innerStepGenProg`. -/
-@[expose] def innerLoopGenProg
-    (p : ((HashParams × (ℕ × ℕ)) × ((ℕ × ℕ) × ℕ)) × ℕ) : Memory.Prog ((ℕ × ℕ) × ℕ) :=
-  iterate innerStepGenProg p.1.1 p.2 p.1.2
+@[expose] def innerLoopGenProg :
+    ((HashParams × (ℕ × ℕ)) × ((ℕ × ℕ) × ℕ)) × ℕ → Memory.Prog ((ℕ × ℕ) × ℕ)
+  | ((ctx, st), n) => iterate innerStepGenProg ctx n st
 
 theorem realizes_innerLoopGen :
     Realizes .exact innerLoopGenProg
       (WordEncoding.encode (α := ((HashParams × (ℕ × ℕ)) × ((ℕ × ℕ) × ℕ)) × ℕ))
       (WordEncoding.encode (α := (ℕ × ℕ) × ℕ))
-      (fun w p s => iterationSafe innerStepGenProg InnerStepGenPre w p.1.1 p.2 p.1.2 s)
+      (fun w ((ctx, st), n) s => iterationSafe innerStepGenProg InnerStepGenPre w ctx n st s)
       (fun _ _ => 0) :=
   Realizes.iterate₀
     (WordEncoding.encode (α := HashParams × (ℕ × ℕ)))
@@ -1413,33 +1431,36 @@ theorem realizes_innerLoopGen :
 
 /-- Outer-loop body (`p = ((hp, (base, (s_val, rKey))), (j, out_acc))`): computes `y_j` across all
 `c_tab + 1` characters, reads `T₂[j, y_j]`, and XORs into `out_acc`. -/
-@[expose] def outerStepGenProg
-    (p : (HashParams × (ℕ × (ℕ × ℕ))) × (ℕ × ℕ)) : Memory.Prog (ℕ × ℕ) := do
-  let zero_v ← pure 0
-  let inner_res ← innerLoopGenProg
-    (((p.1.1, (p.1.2.1, p.2.1)), ((zero_v, zero_v), p.1.2.2.2)), hpCTab p.1.1)
-  let row_s ← pure (p.2.1 * hpCPlusOne p.1.1 + hpCTab p.1.1)
-  let idx_s ← pure (row_s * hpPowB p.1.1 + p.1.2.2.1)
-  let one_off ← pure 1
-  let t_salt ← readPackedGenProg
-    (((p.1.2.1, one_off), (hpBChar p.1.1, hpW p.1.1)), idx_s)
-  let y_j ← pure (inner_res.1.2 ^^^ t_salt)
-  let idx₂ ← pure (p.2.1 * hpPowB p.1.1 + y_j)
-  let z_j ← readPackedGenProg
-    (((p.1.2.1, hpOffBot p.1.1), (hpMOut p.1.1, hpW p.1.1)), idx₂)
-  let j_next ← pure (p.2.1 + 1)
-  let out_next ← pure (p.2.2 ^^^ z_j)
-  pure (j_next, out_next)
+@[expose] def outerStepGenProg :
+    (HashParams × (ℕ × (ℕ × ℕ))) × (ℕ × ℕ) → Memory.Prog (ℕ × ℕ)
+  | ((hp, (base, (s_val, rKey))), (j, out_acc)) => do
+    let zero_v ← pure 0
+    let inner_res ← innerLoopGenProg
+      (((hp, (base, j)), ((zero_v, zero_v), rKey)), hpCTab hp)
+    let ((_i_fin, y_acc), _r_rem) := inner_res
+    let row_s ← pure (j * hpCPlusOne hp + hpCTab hp)
+    let idx_s ← pure (row_s * hpPowB hp + s_val)
+    let one_off ← pure 1
+    let t_salt ← readPackedGenProg
+      (((base, one_off), (hpBChar hp, hpW hp)), idx_s)
+    let y_j ← pure (y_acc ^^^ t_salt)
+    let idx₂ ← pure (j * hpPowB hp + y_j)
+    let z_j ← readPackedGenProg
+      (((base, hpOffBot hp), (hpMOut hp, hpW hp)), idx₂)
+    let j_next ← pure (j + 1)
+    let out_next ← pure (out_acc ^^^ z_j)
+    pure (j_next, out_next)
 
 theorem memoryCost_outerStepGenProg_pos
     (p : (HashParams × (ℕ × (ℕ × ℕ))) × (ℕ × ℕ)) (s : Memory.State) :
     1 ≤ memoryCost (outerStepGenProg p) s := by
+  rcases p with ⟨⟨hp, base, s_val, rKey⟩, j, out_acc⟩
   unfold outerStepGenProg readPackedGenProg
   simp only [pure_bind, ← PFunctor.FreeM.bind_eq_bind]
   rw [memoryCost_bind, memoryCost_bind, memoryCost_readPackedProg]
   omega
 
-theorem innerLoop_invariant {w : ℕ} {hp : HashParams} {base j : ℕ} {s : Memory.State}
+private theorem innerLoop_invariant {w : ℕ} {hp : HashParams} {base j : ℕ} {s : Memory.State}
     (henv : HashEnv w hp base) (hj : j < hpD hp) :
     ∀ m i y r, i + m ≤ hpCTab hp → y < hpPowB hp →
       iterationSafe innerStepGenProg InnerStepGenPre w (hp, (base, j)) m ((i, y), r) s ∧
@@ -1484,12 +1505,13 @@ theorem innerLoop_invariant {w : ℕ} {hp : HashParams} {base j : ℕ} {s : Memo
       exact hy_m
 
 /-- Precondition for `outerStepGenProg`. -/
-@[expose] def OuterStepGenPre (w : ℕ) (p : (HashParams × (ℕ × (ℕ × ℕ))) × (ℕ × ℕ))
-    (_s : Memory.State) : Prop :=
-  HashEnv w p.1.1 p.1.2.1 ∧
-  p.1.2.2.1 < hpPowB p.1.1 ∧
-  p.2.1 < hpD p.1.1 ∧
-  p.2.2 < 2 ^ hpMOut p.1.1
+@[expose] def OuterStepGenPre (w : ℕ) :
+    (HashParams × (ℕ × (ℕ × ℕ))) × (ℕ × ℕ) → Memory.State → Prop
+  | ((hp, (base, (s_val, _rKey))), (j, out_acc)), _s =>
+    HashEnv w hp base ∧
+    s_val < hpPowB hp ∧
+    j < hpD hp ∧
+    out_acc < 2 ^ hpMOut hp
 
 private theorem mul_add_xor_lt_botEntries {j d_par y t b_char : ℕ}
     (hj : j < d_par) (hy : y < 2 ^ b_char) (ht : t < 2 ^ b_char) :
@@ -1567,15 +1589,15 @@ theorem realizes_outerStepGen :
       (Nat.pow_le_pow_right two_pos hM)
 
 /-- Parameter-free wrapper for `iterate outerStepGenProg`. -/
-@[expose] def outerLoopGenProg
-    (p : ((HashParams × (ℕ × (ℕ × ℕ))) × (ℕ × ℕ)) × ℕ) : Memory.Prog (ℕ × ℕ) :=
-  iterate outerStepGenProg p.1.1 p.2 p.1.2
+@[expose] def outerLoopGenProg :
+    ((HashParams × (ℕ × (ℕ × ℕ))) × (ℕ × ℕ)) × ℕ → Memory.Prog (ℕ × ℕ)
+  | ((ctx, st), n) => iterate outerStepGenProg ctx n st
 
 theorem realizes_outerLoopGen :
     Realizes .exact outerLoopGenProg
       (WordEncoding.encode (α := ((HashParams × (ℕ × (ℕ × ℕ))) × (ℕ × ℕ)) × ℕ))
       (WordEncoding.encode (α := ℕ × ℕ))
-      (fun w p s => iterationSafe outerStepGenProg OuterStepGenPre w p.1.1 p.2 p.1.2 s)
+      (fun w ((ctx, st), n) s => iterationSafe outerStepGenProg OuterStepGenPre w ctx n st s)
       (fun _ _ => 0) :=
   Realizes.iterate₀
     (WordEncoding.encode (α := HashParams × (ℕ × (ℕ × ℕ))))
@@ -1658,39 +1680,41 @@ theorem outerLoop_invariant {w : ℕ} {hp : HashParams} {base s_val rKey : ℕ} 
 /-- Parameter-free `Memory.Prog` hash evaluation (`p = (hp, ((base, s_val), u_val))`):
 computes `rKey = oddMulModWord w₀ (s.mem base) u_val >>> (w₀ - R)` and evaluates `(c_tab + 1, d)`
 bit-packed double tabulation in `O(c_tab * d)` deterministic steps. -/
-@[expose] def evalGenProg (p : HashParams × ((ℕ × ℕ) × ℕ)) : Memory.Prog ℕ := do
-  let α_val ← Memory.read p.2.1.1
-  let x' ← pure (p.2.2 &&& hpMaskM p.1)
-  let α₀ ← pure (α_val &&& hpMaskHalf p.1)
-  let α₁ ← pure (α_val >>> hpHalfM p.1)
-  let x₀ ← pure (x' &&& hpMaskHalf p.1)
-  let x₁ ← pure (x' >>> hpHalfM p.1)
-  let p₀ ← pure ((α₀ * x₀) &&& hpMaskM p.1)
-  let p₁ ← pure (((α₀ * x₁) &&& hpMaskRem p.1) <<< hpHalfM p.1)
-  let p₂ ← pure (((α₁ * x₀) &&& hpMaskRem p.1) <<< hpHalfM p.1)
-  let p₃ ← pure (((α₁ &&& hpMaskTop p.1) * (x₁ &&& hpMaskTop p.1)) <<< hpTwoHalfM p.1)
-  let s₁ ← pure ((p₀ + p₁) &&& hpMaskM p.1)
-  let s₂ ← pure ((s₁ + p₂) &&& hpMaskM p.1)
-  let hm ← pure ((s₂ + p₃) &&& hpMaskM p.1)
-  let one_v ← pure 1
-  let rKey ← pure (((p.2.2 &&& one_v) +
-    ((((p.2.2 >>> one_v) + hm) &&& hpMaskM p.1) <<< one_v)) >>> hpShiftR p.1)
-  let zero_v ← pure 0
-  let out ← outerLoopGenProg
-    (((p.1, (p.2.1.1, (p.2.1.2, rKey))), (zero_v, zero_v)), hpD p.1)
-  pure out.2
+@[expose] def evalGenProg : HashParams × ((ℕ × ℕ) × ℕ) → Memory.Prog ℕ
+  | (hp, ((base, s_val), u_val)) => do
+    let α_val ← Memory.read base
+    let x' ← pure (u_val &&& hpMaskM hp)
+    let α₀ ← pure (α_val &&& hpMaskHalf hp)
+    let α₁ ← pure (α_val >>> hpHalfM hp)
+    let x₀ ← pure (x' &&& hpMaskHalf hp)
+    let x₁ ← pure (x' >>> hpHalfM hp)
+    let p₀ ← pure ((α₀ * x₀) &&& hpMaskM hp)
+    let p₁ ← pure (((α₀ * x₁) &&& hpMaskRem hp) <<< hpHalfM hp)
+    let p₂ ← pure (((α₁ * x₀) &&& hpMaskRem hp) <<< hpHalfM hp)
+    let p₃ ← pure (((α₁ &&& hpMaskTop hp) * (x₁ &&& hpMaskTop hp)) <<< hpTwoHalfM hp)
+    let s₁ ← pure ((p₀ + p₁) &&& hpMaskM hp)
+    let s₂ ← pure ((s₁ + p₂) &&& hpMaskM hp)
+    let hm ← pure ((s₂ + p₃) &&& hpMaskM hp)
+    let one_v ← pure 1
+    let rKey ← pure (((u_val &&& one_v) +
+      ((((u_val >>> one_v) + hm) &&& hpMaskM hp) <<< one_v)) >>> hpShiftR hp)
+    let zero_v ← pure 0
+    let out ← outerLoopGenProg
+      (((hp, (base, (s_val, rKey))), (zero_v, zero_v)), hpD hp)
+    pure out.2
 
 /-- Specialized `Memory.Prog` hash evaluation at concrete `(w, w₀, R, c_tab, d, b_char, M_out)`. -/
 @[expose] def evalProg (w w₀ R c_tab d b_char M_out : ℕ) (d_in : (ℕ × ℕ) × ℕ) : Memory.Prog ℕ :=
   evalGenProg (mkHashParams w w₀ R c_tab d b_char M_out, d_in)
 
 /-- Precondition for `evalGenProg`. -/
-@[expose] def EvalGenPre (w : ℕ) (p : HashParams × ((ℕ × ℕ) × ℕ)) (s : Memory.State) : Prop :=
-  HashEnv w p.1 p.2.1.1 ∧
-  p.2.1.1 < s.frontier ∧
-  s.mem p.2.1.1 ≤ hpMaskM p.1 ∧
-  p.2.1.2 < hpPowB p.1 ∧
-  p.2.2 ≤ (hpMaskM p.1 <<< 1) + 1
+@[expose] def EvalGenPre (w : ℕ) : HashParams × ((ℕ × ℕ) × ℕ) → Memory.State → Prop
+  | (hp, ((base, s_val), u_val)), s =>
+    HashEnv w hp base ∧
+    base < s.frontier ∧
+    s.mem base ≤ hpMaskM hp ∧
+    s_val < hpPowB hp ∧
+    u_val ≤ (hpMaskM hp <<< 1) + 1
 
 private theorem mul_parts_fits {w₀ w α_val u_val : ℕ} (hw₀ : 0 < w₀) (hw₀_le : w₀ ≤ w)
     (hα : α_val < 2 ^ (w₀ - 1)) (hu : u_val < 2 ^ w₀) :
@@ -2231,11 +2255,12 @@ private theorem validHistory_iterate_of_safe {δ σ : Type} {w : ℕ}
 
 /-- Memory history admissibility (`ValidHistory`) for `evalGenProg` under `EvalGenPre` and
 `base + space ≤ s.frontier`. -/
-theorem validHistory_evalGenProg {w : ℕ} {p : HashParams × ((ℕ × ℕ) × ℕ)} {s : Memory.State}
-    (hpre : EvalGenPre w p s)
-    (hfr : p.2.1.1 + space w (hpCTab p.1) (hpD p.1) (hpBChar p.1) (hpMOut p.1) ≤ s.frontier) :
-    (Memory.spec w).ValidHistory s ((Memory.spec w).clientHistory s (evalGenProg p)) := by
-  rcases p with ⟨hp, ⟨base, s_val⟩, u_val⟩
+theorem validHistory_evalGenProg {w : ℕ} {hp : HashParams} {base s_val u_val : ℕ}
+    {s : Memory.State}
+    (hpre : EvalGenPre w (hp, ((base, s_val), u_val)) s)
+    (hfr : base + space w (hpCTab hp) (hpD hp) (hpBChar hp) (hpMOut hp) ≤ s.frontier) :
+    (Memory.spec w).ValidHistory s
+      ((Memory.spec w).clientHistory s (evalGenProg (hp, ((base, s_val), u_val)))) := by
   obtain ⟨henv, hbase_fr, _, hs_lt, _⟩ := hpre
   obtain ⟨w₀, R, c_tab, d_par, b_char, M_out, hw, hw₀, hw₀_le, hb, hM, htop_lt, hbot_lt,
     hc1, hd_lt, hfit_sp, heq_hp⟩ := henv
@@ -2327,12 +2352,13 @@ theorem validHistory_evalGenProg {w : ℕ} {p : HashParams × ((ℕ × ℕ) × �
   exact validHistory_bind_of_eq (houter_valid _) trivial
 
 /-- Specialized `ValidHistory` lemma for `evalProg`. -/
-theorem validHistory_evalProg {w w₀ R c_tab d b_char M_out : ℕ} {d_in : (ℕ × ℕ) × ℕ}
+theorem validHistory_evalProg {w w₀ R c_tab d b_char M_out : ℕ} {base s_val u_val : ℕ}
     {s : Memory.State}
-    (hpre : EvalGenPre w (mkHashParams w w₀ R c_tab d b_char M_out, d_in) s)
-    (hfr : d_in.1.1 + space w c_tab d b_char M_out ≤ s.frontier) :
+    (hpre : EvalGenPre w (mkHashParams w w₀ R c_tab d b_char M_out, ((base, s_val), u_val)) s)
+    (hfr : base + space w c_tab d b_char M_out ≤ s.frontier) :
     (Memory.spec w).ValidHistory s
-      ((Memory.spec w).clientHistory s (evalProg w w₀ R c_tab d b_char M_out d_in)) :=
+      ((Memory.spec w).clientHistory s
+        (evalProg w w₀ R c_tab d b_char M_out ((base, s_val), u_val))) :=
   validHistory_evalGenProg hpre hfr
 
 end Cslib.DataStructure.HashFamily.WordRAM.BitPackedDoubleTabulation

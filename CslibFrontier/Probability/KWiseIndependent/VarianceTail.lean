@@ -610,105 +610,6 @@ private theorem exists_fresh_chain_of_card_ge {Q : Type*}
           simp only [Fin.cons_succ]
           exact hfresh_tail j' k' (Fin.succ_lt_succ_iff.mp hjk)
 
-/-- **Batch salt-collision count tail bound**:
-Under a `2 * r`-wise independent family `H : ι → Fin s_max × Q → Y`, given a batch
-`Q_set : Finset Q` and a window `W_set : Finset Q`, the fraction of seeds `i` for which at least
-`2 * r` keys `u ∈ Q_set` collide with some `v ∈ W_set \ {u}` under some salt `s : Fin s_max` is at
-most `((#Q_set * #W_set * s_max) / |Y|) ^ r`. -/
-theorem dens_card_salt_colliding_ge_le {r s_max : ℕ} {Q : Type*} [DecidableEq Q]
-    {H : ι → Fin s_max × Q → Y} (hh : IsKWiseIndependentHash (2 * r) H)
-    (Q_set W_set : Finset Q) :
-    (dens ({i : ι | 2 * r ≤
-      #(Q_set.filter fun u =>
-        ∃ v ∈ W_set, u ≠ v ∧ ∃ s : Fin s_max, H i (s, u) = H i (s, v))} : Finset ι) : ℝ) ≤
-      (((#Q_set * #W_set * s_max : ℕ) : ℝ) / Fintype.card Y) ^ r := by
-  classical
-  rcases Nat.eq_zero_or_pos r with rfl | hr_pos
-  · simp only [pow_zero]
-    exact_mod_cast Finset.dens_le_one (s := ({i : ι | 2 * 0 ≤
-      #(Q_set.filter fun u =>
-        ∃ v ∈ W_set, u ≠ v ∧ ∃ s : Fin s_max, H i (s, u) = H i (s, v))} : Finset ι))
-  let Triples := ((Q_set ×ˢ W_set).filter fun p => p.1 ≠ p.2) ×ˢ (univ : Finset (Fin s_max))
-  let Chains := (piFinset fun _ : Fin r => Triples).filter fun t =>
-    ∀ j k : Fin r, j < k → (t k).1.1 ≠ (t j).1.1 ∧ (t k).1.1 ≠ (t j).1.2
-  have hsub :
-      ({i : ι | 2 * r ≤
-        #(Q_set.filter fun u =>
-          ∃ v ∈ W_set, u ≠ v ∧ ∃ s : Fin s_max, H i (s, u) = H i (s, v))} : Finset ι) ⊆
-        Chains.biUnion (fun t =>
-          {i : ι | ∀ k : Fin r, H i ((t k).2, (t k).1.1) = H i ((t k).2, (t k).1.2)}) := by
-    intro i hi
-    simp only [mem_filter, mem_univ, true_and] at hi
-    set B := Q_set.filter fun u =>
-      ∃ v ∈ W_set, u ≠ v ∧ ∃ s : Fin s_max, H i (s, u) = H i (s, v)
-    have hB_ne : B.Nonempty := card_pos.mp (by omega)
-    have hex_wit : ∀ u, ∃ vs : Q × Fin s_max,
-        u ∈ B → vs.1 ∈ W_set ∧ u ≠ vs.1 ∧ H i (vs.2, u) = H i (vs.2, vs.1) := by
-      intro u
-      by_cases hu : u ∈ B
-      · obtain ⟨_, v, hvW, hne_uv, s, hcoll⟩ := mem_filter.mp hu
-        exact ⟨(v, s), fun _ => ⟨hvW, hne_uv, hcoll⟩⟩
-      · have ⟨_, v₀, _, _, s₀, _⟩ := mem_filter.mp hB_ne.choose_spec
-        exact ⟨(v₀, s₀), fun h => absurd h hu⟩
-    choose vs hvs using hex_wit
-    obtain ⟨u_ch, hu_mem, hfresh⟩ := exists_fresh_chain_of_card_ge r B (fun u => (vs u).1) hi
-      (fun u hu => (hvs u hu).2.1.symm)
-    refine mem_biUnion.mpr ⟨fun k => ((u_ch k, (vs (u_ch k)).1), (vs (u_ch k)).2), ?_, ?_⟩
-    · refine mem_filter.mpr ⟨mem_piFinset.mpr fun k => ?_, fun j k hjk => hfresh j k hjk⟩
-      have hkB := hu_mem k
-      have hkQ := (mem_filter.mp hkB).1
-      obtain ⟨hvW, hne_uv, _⟩ := hvs (u_ch k) hkB
-      exact mem_product.mpr ⟨mem_filter.mpr ⟨mem_product.mpr ⟨hkQ, hvW⟩, hne_uv⟩, mem_univ _⟩
-    · simp only [mem_filter, mem_univ, true_and]
-      intro k
-      exact (hvs (u_ch k) (hu_mem k)).2.2
-  have hcard_Triples : #Triples ≤ #Q_set * #W_set * s_max := by
-    calc #Triples = #((Q_set ×ˢ W_set).filter fun p => p.1 ≠ p.2) * s_max := by
-            simp [Triples, card_product]
-      _ ≤ #(Q_set ×ˢ W_set) * s_max := Nat.mul_le_mul_right _ (card_filter_le _ _)
-      _ = #Q_set * #W_set * s_max := by rw [card_product]
-  have hcard_Chains : (#Chains : ℝ) ≤ ((#Q_set * #W_set * s_max : ℕ) : ℝ) ^ r := by
-    have hc : #Chains ≤ (#Q_set * #W_set * s_max) ^ r := by
-      calc #Chains ≤ #(piFinset fun _ : Fin r => Triples) := card_filter_le _ _
-        _ = #Triples ^ r := by rw [card_piFinset, prod_const, card_univ, Fintype.card_fin]
-        _ ≤ (#Q_set * #W_set * s_max) ^ r := Nat.pow_le_pow_left hcard_Triples r
-    exact_mod_cast hc
-  have hstep1 :
-      (dens ({i : ι | 2 * r ≤
-        #(Q_set.filter fun u =>
-          ∃ v ∈ W_set, u ≠ v ∧ ∃ s : Fin s_max, H i (s, u) = H i (s, v))} : Finset ι) : ℝ) ≤
-        ∑ t ∈ Chains,
-          (dens ({i : ι | ∀ k : Fin r, H i ((t k).2, (t k).1.1) = H i ((t k).2, (t k).1.2)} :
-            Finset ι) : ℝ) := by
-    have hle : (dens ({i : ι | 2 * r ≤
-        #(Q_set.filter fun u =>
-          ∃ v ∈ W_set, u ≠ v ∧ ∃ s : Fin s_max, H i (s, u) = H i (s, v))} : Finset ι) : ℝ) ≤
-        ((Chains.biUnion (fun t =>
-          {i : ι | ∀ k : Fin r, H i ((t k).2, (t k).1.1) = H i ((t k).2, (t k).1.2)})).dens : ℝ) :=
-      (NNRat.cast_le (K := ℝ)).mpr (dens_le_dens hsub)
-    exact hle.trans (dens_biUnion_le_sum_real Chains _)
-  calc (dens ({i : ι | 2 * r ≤
-          #(Q_set.filter fun u =>
-            ∃ v ∈ W_set, u ≠ v ∧ ∃ s : Fin s_max, H i (s, u) = H i (s, v))} : Finset ι) : ℝ)
-      ≤ ∑ t ∈ Chains,
-          (dens ({i : ι | ∀ k : Fin r, H i ((t k).2, (t k).1.1) = H i ((t k).2, (t k).1.2)} :
-            Finset ι) : ℝ) := hstep1
-    _ ≤ ∑ _t ∈ Chains, ((Fintype.card Y : ℝ)⁻¹) ^ r := by
-        refine sum_le_sum fun t ht => ?_
-        obtain ⟨ht_pi, ht_fr⟩ := mem_filter.mp ht
-        rw [mem_piFinset] at ht_pi
-        refine hh.dens_fresh_pair_collisions_le
-          (fun k => ((t k).2, (t k).1.1)) (fun k => ((t k).2, (t k).1.2))
-          (fun k h => (mem_filter.mp (mem_product.mp (ht_pi k)).1).2 (congrArg Prod.snd h))
-          (fun j k hjk => ⟨fun h => (ht_fr j k hjk).1 (congrArg Prod.snd h),
-            fun h => (ht_fr j k hjk).2 (congrArg Prod.snd h)⟩)
-    _ = (#Chains : ℝ) * ((Fintype.card Y : ℝ)⁻¹) ^ r := by
-        rw [sum_const, nsmul_eq_mul]
-    _ ≤ ((#Q_set * #W_set * s_max : ℕ) : ℝ) ^ r * ((Fintype.card Y : ℝ)⁻¹) ^ r :=
-        mul_le_mul_of_nonneg_right hcard_Chains (by positivity)
-    _ = (((#Q_set * #W_set * s_max : ℕ) : ℝ) / Fintype.card Y) ^ r := by
-        rw [← mul_pow, div_eq_mul_inv]
-
 /-- **Per-key neighborhood salt-collision count tail bound**:
 Under a `2 * r`-wise independent family `H : ι → Fin s_max × Q → Y`, given a batch
 `Q_set : Finset Q` and per-key candidate collision sets `W_of : Q → Finset Q` with
@@ -820,6 +721,20 @@ theorem dens_card_local_salt_colliding_ge_le {r s_max w_cap : ℕ} {Q : Type*} [
         mul_le_mul_of_nonneg_right hcard_Chains (by positivity)
     _ = (((#Q_set * w_cap * s_max : ℕ) : ℝ) / Fintype.card Y) ^ r := by
         rw [← mul_pow, div_eq_mul_inv]
+
+/-- **Batch salt-collision count tail bound**:
+Under a `2 * r`-wise independent family `H : ι → Fin s_max × Q → Y`, given a batch
+`Q_set : Finset Q` and a window `W_set : Finset Q`, the fraction of seeds `i` for which at least
+`2 * r` keys `u ∈ Q_set` collide with some `v ∈ W_set \ {u}` under some salt `s : Fin s_max` is at
+most `((#Q_set * #W_set * s_max) / |Y|) ^ r`. -/
+theorem dens_card_salt_colliding_ge_le {r s_max : ℕ} {Q : Type*} [DecidableEq Q]
+    {H : ι → Fin s_max × Q → Y} (hh : IsKWiseIndependentHash (2 * r) H)
+    (Q_set W_set : Finset Q) :
+    (dens ({i : ι | 2 * r ≤
+      #(Q_set.filter fun u =>
+        ∃ v ∈ W_set, u ≠ v ∧ ∃ s : Fin s_max, H i (s, u) = H i (s, v))} : Finset ι) : ℝ) ≤
+      (((#Q_set * #W_set * s_max : ℕ) : ℝ) / Fintype.card Y) ^ r :=
+  dens_card_local_salt_colliding_ge_le hh Q_set (fun _ => W_set) (fun _ _ => le_rfl)
 
 end PairCollisions
 
