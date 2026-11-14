@@ -37,8 +37,9 @@ with their deterministic recovery and re-encryption rigidity lemmas. The generic
 interface, correctness and spreadness live in `CslibFrontier.Crypto.Protocols.PKE.ExplicitCoin`.
 The IND-CPA notion of the FO security theorems is two-stage IND-CPA (`cpaAdvantage`, via
 `PKE.cpaExperiment` on `ExplicitCoinPKE.toPKE`), not the fixed-message `indCpaGame`. Adaptive
-random-oracle IND-CCA games, the transfer of PKE `δ`-correctness to KEM correctness, and the
-security reductions live in the `FujisakiOkamoto/` submodules.
+random-oracle IND-CCA games and the security reductions live in the `FujisakiOkamoto/` submodules;
+a standalone transfer of PKE `δ`-correctness to KEM correctness is not formalized (`δ` enters only
+as a hop inside the IND-CCA bounds).
 
 ## Source map and model differences
 
