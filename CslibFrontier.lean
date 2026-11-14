@@ -5363,6 +5363,7 @@ public import CslibFrontier.Foundations.Combinatorics.Expander.ElementaryMove
 public import CslibFrontier.Foundations.Combinatorics.Expander.Existence
 public import CslibFrontier.Foundations.Combinatorics.Expander.Family
 public import CslibFrontier.Foundations.Combinatorics.Expander.FourthMoment
+public import CslibFrontier.Foundations.Combinatorics.Expander.Harmonic
 public import CslibFrontier.Foundations.Combinatorics.Expander.Hitting
 public import CslibFrontier.Foundations.Combinatorics.Expander.HittingProduct
 public import CslibFrontier.Foundations.Combinatorics.Expander.Hom
@@ -7026,6 +7027,7 @@ public import CslibFrontier.Probability.MarkovChain.Metropolis
 public import CslibFrontier.Probability.MarkovChain.Mixing
 public import CslibFrontier.Probability.MarkovChain.PathCoupling
 public import CslibFrontier.Probability.MarkovChain.RandomWalk
+public import CslibFrontier.Probability.MarkovChain.RotationMap
 public import CslibFrontier.Probability.MedianOfMeans
 public import CslibFrontier.Probability.MedianTrick
 public import CslibFrontier.Probability.MinEntropy
