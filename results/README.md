@@ -120,6 +120,15 @@ Reference integrity proves neither mathematical correspondence nor completeness.
 hypotheses and model limits remain authoritative. Probability bounds do not imply certified native
 runtime, and conditional results are not unconditional endpoints.
 
+An entry that cites a source theorem lists theorems that state that result
+([faithful headlines](../AGENTS.md#faithful-headlines)). The scope note describes the formal
+setting of a faithful statement. It does not excuse a gap between the listed theorem and the
+cited result. A stand-in, such as a theorem that assumes a property of its own reduction, or a
+bound for parameters chosen after the adversary, is not listed as the cited result. If it is
+listed at all, its entry's title and source say it is a step of that result. A published theorem
+enters the inventory only after a human maintainer has checked its statement against the source
+([review cycle](../AGENTS.md#review-cycle)).
+
 ## Remaining collection work
 
 Collect precise paper-to-result correspondences and source theorem names/numbers, audit their

@@ -71,6 +71,10 @@ statements does not discharge this work. Deferral is exceptional under
 [Improving library ergonomics](#improving-library-ergonomics).
 
 Optimize for trustworthy, reusable results, not the number of closed issues or merged PRs.
+Correct statements that are faithful to their sources take priority over forward progress. When
+the two conflict, fix the statement or the name, even if the milestone slips; do not land a weaker
+result under the name of the stronger one
+([Faithful headlines](#faithful-headlines)).
 When narrowing a task, preserve its original objective and record the bounded deliverable and
 remaining gap prominently. A restricted model, conditional result, or partial theorem does not
 complete a broader objective. Do not silently retitle an ambitious issue into an easier completed
@@ -544,6 +548,29 @@ a new copy of an argument the library already makes is a finding when the
 Lean acceptance under audited axioms does not establish that a definition matches its intended
 mathematics; state material limits of the review.
 
+**Check every new or changed headline before anything else**
+([Faithful headlines](#faithful-headlines)). In the review, quote its statement (abridged) and
+classify each hypothesis as one of:
+
+- (i) an assumption the cited source names, about an independently defined problem;
+- (ii) membership of the adversary or input in the admitted class;
+- (iii) a property of a generic component that the source takes as given;
+- (iv) anything else: a step of the cited proof, a property of an object the proof builds, or the
+  good behaviour of the construction's own algorithms.
+
+Then compare the name, docstring, PR title and any inventory entry with the statement. Any (iv)
+hypothesis, any undisclosed deviation, any vacuous hypothesis, or a weaker result presented as
+the cited one blocks approval. Such a finding is not a nit, and it is not deferred to a follow-up
+under [Improving library ergonomics](#improving-library-ergonomics). Resolve it by proving the
+faithful statement, or by renaming and redocumenting the result as a stand-in (rule 2 of
+Faithful headlines) and keeping the objective open. A reviewer who finds a gap does not offer
+"document it as a milestone" in place of that rule. Also check that the change removes any
+stand-in it supersedes (rule 4).
+
+Before a published theorem enters the [results inventory](results/README.md), a human maintainer
+checks the statement against the source and records that check in a comment written by the human,
+not by an agent posting from their account. Agent review alone does not admit an entry.
+
 Before approving library changes, read the **Parallel-definition**, **Duplicate-statement** and
 **Repeated-proof-block** notices in the CI job summary or step logs for the reviewed revision. Inspect both
 declarations or proof blocks for each relevant candidate. Record its resolution by reuse or
@@ -715,6 +742,46 @@ express the intended mathematics; explain a non-obvious decision to introduce a 
 Syntactic similarity is a prompt to inspect reuse, not proof that models should be identified.
 Generalization should improve concrete clients without obscuring semantics or making inference
 and usage harder.
+
+### Faithful headlines
+
+A *headline* is a theorem presented as a cited result or as the property its name advertises
+("security", "soundness", "hardness", "proof of knowledge", "is PPT"), whether by its name, its
+docstring, its module documentation, a manual page, a PR title or a
+[results inventory](results/README.md) entry. Lean checks proofs, not whether a statement says what
+its presentation claims, so this is the part of a change that review exists to check.
+
+1. **A headline states the result it names.** Its quantifiers, hypotheses, model, admitted
+   adversaries or inputs, resource conventions and conclusion match the source, apart from
+   deviations that the docstring names as part of the result's scope and that review accepts as
+   the same theorem in a different formal setting (for example, the library's two-world advantage
+   in place of the source's `|Pr[b' = b] - 1/2|`, with the factor of two carried through).
+2. **Disclosure does not license a weaker headline.** A result is a *stand-in* when it assumes a
+   step of the cited proof, or something about an object that its own proof builds (a reduction,
+   simulator, extractor, hybrid or decoder). It is also a stand-in when it replaces the
+   construction's algorithms with idealized ones, or proves the claim for a fixed finite instance
+   instead of a family. A weaker notion, model or adversary class also makes it one. A theorem the
+   source itself states conditionally, such as a hardness-magnification implication, is not a
+   stand-in when its hypothesis is the source's.
+   A stand-in may land, but only named and documented as what it proves. Its name states the
+   condition (`…_of_reduction_le`, `…_of_realization`). Its docstring opens by saying it is a
+   step or helper and not the cited result. It cites the source as "a step of" or "after", never
+   as its endpoint. The PR title and results inventory do not present it as the cited result.
+   Listing the gap under "Limitations", in the PR body, at the end of a docstring or in an
+   inventory scope note does not meet this rule.
+3. **No vacuous headlines.** A headline whose hypotheses cannot hold together, or whose
+   conclusion follows trivially (an extractor that ignores the transcript), is a misformalization
+   even when it is documented. When a hypothesis might be unsatisfiable, check a satisfying
+   instance.
+4. **The faithful statement supersedes its stand-ins.** A change that proves the faithful
+   statement deletes or demotes every stand-in it supersedes, together with their docstrings,
+   manual text, `ROADMAP.md` lines and inventory entries. Search for them by conclusion, by
+   `_of_…` names and in the milestone's issue, not only by name.
+
+Stand-ins already on `main` are misformalizations to fix under these rules, not precedents to copy.
+Record them in an issue (#5293 for cryptography). Domain contracts, such as the rules for
+computational security theorems (#5308), refine what counts as a named assumption and a generic
+component in their area.
 
 ### Structures for domain objects and records
 

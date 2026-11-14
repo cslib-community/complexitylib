@@ -77,8 +77,12 @@ failure. The [codebase troubleshooting chapter](workflows/troubleshooting.md) ex
 Assign review to an agent that did not design or implement the change. For example:
 
 > Independently review PR `<number>` at its current revision. Read the actual definitions and
-> statements. Check the mathematical claim, API and representative client, including the model,
-> encodings, hypotheses and resource bounds.
+> statements. Start with each headline: quote it, classify every hypothesis as a source-named
+> assumption, the admitted class, a generic component the source takes as given, or something
+> else, and compare its name, docstring and title with the statement. Any hypothesis in the last
+> class, or a weaker result presented as the cited one, blocks approval; do not offer
+> "document it as a milestone" instead. Check the mathematical claim, API and representative
+> client, including the model, encodings, hypotheses and resource bounds.
 > Check public API usability in a representative `module` client with ordinary imports of the API.
 > Read new and changed proofs against the rest of
 > their files, and report any substantial argument the change repeats that another proof or an
@@ -107,6 +111,14 @@ and why; the [caller review procedure](../AGENTS.md#check-the-api-through-its-ca
 checks. An approval must cover the final revision; substantive
 fixes require review of the affected reasoning. Unchanged evidence can be reused after checking
 its identity.
+
+A faithful statement matters more than a milestone. Agent reviews have approved theorems that
+assumed something about their own reduction because the PR disclosed it (#5293). When a report
+says a result landed "with limitations", ask whether the theorem is named and documented as a step
+([faithful headlines](../AGENTS.md#faithful-headlines)) and whether the cited result is still
+open. Before a published theorem enters the [results inventory](../results/README.md), check its
+statement against the source yourself and say so in your own comment; agent review alone does
+not admit an entry.
 
 ## Direct a coordinator
 
