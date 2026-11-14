@@ -88,7 +88,7 @@ probability `1` at every security parameter `n` regardless of the underlying `Si
 * `Cslib.Crypto.SignatureScheme.EUFCMA.wordEUFCMA_of_hashFamily`: specialization to a bundled
   `HashFamily`.
 * `Cslib.Crypto.SignatureScheme.EUFCMA.wordEUFCMA_merkleDamgard`: specialization to a
-  `CompressionFamily` via Merkle–Damgård domain extension.
+  `CompressionFamily` via the one-bit-per-block Merkle–Damgård instance `merkleDamgard`.
 * `Cslib.Crypto.HashAndSign.not_eufCMA_scheme_of_collision`: key-independent collisions break the
   scheme.
 
@@ -687,7 +687,8 @@ theorem SignatureScheme.EUFCMA.wordEUFCMA_of_hashFamily
 /-- **Merkle–Damgård + Hash-and-Sign** ([KatzLindell2020], Sections 6.2 and 13.3): an
 `EUFCMA`-secure fixed-length `SignatureScheme` together with a collision-resistant `2 n → n`
 `CompressionFamily` yields an `EUFCMA`-secure `WordSignatureScheme` on arbitrary-length messages via
-`merkleDamgard` and `HashAndSign.scheme`. -/
+`merkleDamgard` and `HashAndSign.scheme`. `merkleDamgard` puts one message bit in each block; it is
+not textbook length-strengthened Merkle–Damgård. -/
 theorem SignatureScheme.EUFCMA.wordEUFCMA_merkleDamgard
     {S : SignatureScheme} (hS : S.EUFCMA) {h : List Bool → List Bool → List Bool}
     (hh : CompressionFamily h) :

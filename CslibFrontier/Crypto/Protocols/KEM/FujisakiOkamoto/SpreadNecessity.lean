@@ -32,10 +32,11 @@ ciphertext space `Option CT`:
 * At `m ≠ m₀`, `encDet pk m r = some (P.encDet pk m r)`, and `dec sk (some c)` returns `some m`
   when `P.dec sk c = some m` with `m ≠ m₀`, and `none` otherwise.
 
-The modified PKE preserves `δ`-correctness (`unspreadPointPKE_deltaCorrect`) and preserves IND-CPA
-advantages on all message pairs away from `m₀` (`unspreadPointPKE_indCpaAdvantage`), while failing
-`γ`-spreadness for every `γ > 0` (`unspreadPointPKE_gammaSpread_zero`,
-`unspreadPointPKE_not_gammaSpread_of_pos`).
+The modified PKE preserves `δ`-correctness (`unspreadPointPKE_deltaCorrect`) and preserves
+fixed-message IND-CPA advantages (`indCpaAdvantage`) on all message pairs away from `m₀`
+(`unspreadPointPKE_indCpaAdvantage`); it is not two-stage IND-CPA secure (`cpaAdvantage`), since
+an adversary may choose `m₀`. It fails `γ`-spreadness for every `γ > 0`
+(`unspreadPointPKE_gammaSpread_zero`, `unspreadPointPKE_not_gammaSpread_of_pos`).
 
 The 1-query adversary `probeDecapsAdv` makes zero queries to `G`, zero queries to `H`, and a single
 decapsulation query `ROQuery.decaps none` (`roFullQueryBounds_probeDecapsAdv`), outputting whether
@@ -71,7 +72,8 @@ For a uniform message sampler on a finite message space `M`, the distinguishing 
   `Cslib.Crypto.Protocols.FujisakiOkamoto.unspreadPointPKE_indCpaAdvantage`,
   `Cslib.Crypto.Protocols.FujisakiOkamoto.unspreadPointPKE_gammaSpread_zero`,
   `Cslib.Crypto.Protocols.FujisakiOkamoto.unspreadPointPKE_not_gammaSpread_of_pos`:
-  `unspreadPointPKE P m₀` preserves `δ`-correctness and IND-CPA advantages away from `m₀`, is
+  `unspreadPointPKE P m₀` preserves `δ`-correctness and fixed-message IND-CPA advantages
+  (`indCpaAdvantage`) away from `m₀`, is
   `0`-spread, and is not `γ`-spread for any `γ > 0`.
 * `Cslib.Crypto.Protocols.FujisakiOkamoto.roFullQueryBounds_probeDecapsAdv`: `probeDecapsAdv`
   satisfies `ROFullQueryBounds probeDecapsAdv 0 0 1`.
@@ -163,7 +165,8 @@ theorem unspreadPointPKE_deltaCorrect [Fintype M] [Nonempty M]
       (P.msgFailProb_le_keyPairMaxFailProb x.1 x.2 m)
 
 /-- On any pair of challenge messages `m₁ ≠ m₀` and `m₂ ≠ m₀`, `unspreadPointPKE P m₀` has the exact
-same IND-CPA advantages as `P`. -/
+same fixed-message IND-CPA advantages (`indCpaAdvantage`) as `P`. It is not two-stage IND-CPA
+secure (`cpaAdvantage`), since a two-stage adversary may choose `m₀`. -/
 theorem unspreadPointPKE_indCpaAdvantage (P : ExplicitCoinPKE PK SK M R CT) (m₀ m₁ m₂ : M)
     (hm₁ : m₁ ≠ m₀) (hm₂ : m₂ ≠ m₀) (A : PK → Option CT → ProbComp Bool) :
     (unspreadPointPKE P m₀).indCpaAdvantage m₁ m₂ A =
