@@ -1900,6 +1900,7 @@ public import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.Games
 public import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.Games.PolyRounds
 public import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.Games.Repetition
 public import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.GraphNonIsomorphism
+public import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.Operators
 public import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.PH
 public import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.RoundCollapse
 public import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.SetLowerBound
