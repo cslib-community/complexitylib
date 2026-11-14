@@ -1126,13 +1126,13 @@ private theorem computableInPolyTime_evalNat {α : Type} {enc : α ↪ List Bool
     (hu : ComputableInPolyTime u enc encNat) :
     ComputableInPolyTime (fun a => evalNat (n a) (code a) (u a)) enc encNat := by
   have hlow : ComputableInPolyTime (fun a => lowBits (n a) (u a)) enc encBits :=
-    .of_tidy (ComputableTidilyInPolyTime.bitsLow hn.tidy hu.tidy)
+    ComputableInPolyTime.bitsLow hn hu
   have hev : ComputableInPolyTime (fun a => evalCircuitCode (n a) (code a) (lowBits (n a) (u a)))
       enc encBits :=
     computableInPolyTime_evalCircuitCode hn hcode hlow
   have hnat : ComputableInPolyTime (fun a =>
       ofBits (evalCircuitCode (n a) (code a) (lowBits (n a) (u a)))) enc encNat :=
-    .of_tidy (ComputableTidilyInPolyTime.bitsToNat.comp hev.tidy)
+    ComputableInPolyTime.bitsToNat.comp hev
   refine hnat.of_enc_eq fun a => ?_
   rw [evalNat, ofBits_eq_lsbValue]
 
@@ -1140,7 +1140,7 @@ private theorem computableInPolyTime_lsbValue {α : Type} {enc : α ↪ List Boo
     {bits : α → List Bool} (hbits : ComputableInPolyTime bits enc encBits) :
     ComputableInPolyTime (fun a => lsbValue (bits a)) enc encNat := by
   have h : ComputableInPolyTime (fun a => ofBits (bits a)) enc encNat :=
-    .of_tidy (ComputableTidilyInPolyTime.bitsToNat.comp hbits.tidy)
+    ComputableInPolyTime.bitsToNat.comp hbits
   refine h.of_enc_eq fun a => ?_
   rw [ofBits_eq_lsbValue]
 
@@ -1195,7 +1195,7 @@ private theorem computableInPolyTime_activeNbr {α : Type} {enc : α ↪ List Bo
   have hc2 := hv.decide_ne hu
   have hc3 := hnz.decide_ne (const 0)
   have hc4 := hgv.decide_eq' hu
-  exact .of_tidy (hc1.tidy.decide_and (hc2.tidy.decide_and (hc3.tidy.decide_and hc4.tidy)))
+  exact hc1.decide_and (hc2.decide_and (hc3.decide_and hc4))
 
 private theorem computableInPolyTime_activeOut {α : Type} {enc : α ↪ List Bool}
     {n : α → ℕ} {pCode sCode : α → CircuitCode} {u : α → ℕ}
@@ -1333,12 +1333,12 @@ private theorem computableInPolyTime_colorFun :
   have hm : ComputableInPolyTime (fun p : (ℕ × CircuitCode × CircuitCode) × List Bool =>
       eolInstN p + 5) encIn encUnary := unary_add' hn (const 5)
   have hxBits : ComputableInPolyTime (fun p => p.2.take (eolInstN p + 5)) encIn encBits :=
-    .of_tidy (ComputableTidilyInPolyTime.bitsTakeWithInput huv.tidy hm.tidy)
+    ComputableInPolyTime.bitsTakeWithInput huv hm
   have hyDrop : ComputableInPolyTime (fun p => p.2.drop (eolInstN p + 5)) encIn encBits :=
-    .of_tidy (ComputableTidilyInPolyTime.bitsDropWithInput huv.tidy hm.tidy)
+    ComputableInPolyTime.bitsDropWithInput huv hm
   have hyBits : ComputableInPolyTime (fun p => (p.2.drop (eolInstN p + 5)).take (eolInstN p + 5))
       encIn encBits :=
-    .of_tidy (ComputableTidilyInPolyTime.bitsTakeWithInput hyDrop.tidy hm.tidy)
+    ComputableInPolyTime.bitsTakeWithInput hyDrop hm
   have hx : ComputableInPolyTime
       (fun p => lsbValue (p.2.take (eolInstN p + 5))) encIn encNat :=
     computableInPolyTime_lsbValue hxBits
@@ -1359,7 +1359,7 @@ private theorem computableInPolyTime_colorFun :
     have c2 := binary_lt' hx hlim
     have c3 := binary_le' (const 16) hy
     have c4 := binary_lt' hy hlim
-    exact .of_tidy (c1.tidy.decide_and (c2.tidy.decide_and (c3.tidy.decide_and c4.tidy)))
+    exact c1.decide_and (c2.decide_and (c3.decide_and c4))
   have hX : ComputableInPolyTime (fun p => lsbValue (p.2.take (eolInstN p + 5)) / 16 - 1)
       encIn encNat :=
     computableInPolyTime_div16Sub1 hx
@@ -1438,11 +1438,11 @@ private theorem computableInPolyTime_decodeSol :
       eolInstN p + 5) encIn encUnary := unary_add' hn (const 5)
   have htail : ComputableInPolyTime (fun p : (ℕ × CircuitCode × CircuitCode) × List Bool =>
       p.2.tail) encIn encBits :=
-    .of_tidy (ComputableTidilyInPolyTime.bitsTail.comp hw.tidy)
+    ComputableInPolyTime.bitsTail.comp hw
   have hxBits : ComputableInPolyTime (fun p => p.2.tail.take (eolInstN p + 5)) encIn encBits :=
-    .of_tidy (ComputableTidilyInPolyTime.bitsTakeWithInput htail.tidy hm.tidy)
+    ComputableInPolyTime.bitsTakeWithInput htail hm
   have hyBits : ComputableInPolyTime (fun p => p.2.tail.drop (eolInstN p + 5)) encIn encBits :=
-    .of_tidy (ComputableTidilyInPolyTime.bitsDropWithInput htail.tidy hm.tidy)
+    ComputableInPolyTime.bitsDropWithInput htail hm
   have hx : ComputableInPolyTime
       (fun p => lsbValue (p.2.tail.take (eolInstN p + 5))) encIn encNat :=
     computableInPolyTime_lsbValue hxBits
@@ -1452,14 +1452,14 @@ private theorem computableInPolyTime_decodeSol :
   have hcond := (binary_lt' hx (const 16)).bool_or' (binary_lt' hy (const 16))
   have hzero : ComputableInPolyTime (fun p : (ℕ × CircuitCode × CircuitCode) × List Bool =>
       zeroVertex (eolInstN p)) encIn encBits :=
-    .of_tidy ((ComputableTidilyInPolyTime.bitsReplicate false).comp hn.tidy)
+    (ComputableInPolyTime.bitsReplicate false).comp hn
   have hX : ComputableInPolyTime
       (fun p => lsbValue (p.2.tail.take (eolInstN p + 5)) / 16 - 1) encIn encNat :=
     computableInPolyTime_div16Sub1 hx
   have hnz : ComputableInPolyTime
       (fun p => lowBits (eolInstN p) (lsbValue (p.2.tail.take (eolInstN p + 5)) / 16 - 1))
       encIn encBits :=
-    .of_tidy (ComputableTidilyInPolyTime.bitsLow hn.tidy hX.tidy)
+    ComputableInPolyTime.bitsLow hn hX
   have hres := hcond.ite hzero hnz
   refine hres.of_enc_eq fun p => congrArg encBits ?_
   rcases p with ⟨⟨n, pCode, sCode⟩, w⟩
