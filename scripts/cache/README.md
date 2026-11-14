@@ -98,6 +98,29 @@ miss, `.github/actions/install-lean` installs them with bounded
 retries and saves the entry before any Lake command runs, so it never contains the local artifact
 cache above.
 
+## Guide dependency cache
+
+Hosted Guide jobs separately restore the build directories of Verso, SubVerso, MD4Lean and
+Illuminate. They initialize the locked package checkouts before restoring those directories.
+The entry contains neither Guide chapter/generator outputs nor root/shared-library outputs or
+Lake's global artifact store, so the normal example, build and render commands still run.
+
+Only successful API documentation runs on `main` save this entry, after the Guide and generated
+links have passed, and only when the exact entry was absent. PRs and other branches only read.
+The key includes the OS, architecture and exact runner-image version, Lean toolchain, root and
+Guide lockfiles/configuration, and the cache action/helper itself. It has no commit or run ID
+and no less-specific fallback: a new compatible configuration gets one immutable entry, rather
+than a new copy for every PR. `CACHE_RECOVERY_GENERATION` invalidates these entries too, and
+`DISABLE_CACHE_RESTORE=true` or `1` disables both their restore and save. An unavailable cache
+leaves the normal build to compile dependencies; a failed restore discards its partial dependency
+outputs. Cache helpers and writes are optional, while Guide validation remains strict.
+
+The [controlled eight-core profile](https://github.com/cslib-community/cslib-frontier/actions/runs/43532737369)
+measured 2m35s to check examples with cold dependencies and 20s with them retained. Their build
+directories compressed to 98 MiB. This identifies the reusable work; the one-machine comparison
+did not include a cross-job cache transfer. Shared/root native object compilation is separate
+and is not included in this cache.
+
 ## Hosted-runner disk space
 
 Before restoring `.lake`, Lean CI runs `scripts/ci/prepare-runner.sh` to report available disk

@@ -881,6 +881,33 @@ the concatenated Reed–Muller/Reed–Solomon codec, establish primitive-prime a
 numerical DFR bound for the published parameter sets, or prove IND-CPA, Fujisaki–Okamoto or KEM
 security. These modules are therefore correctness prerequisites, not an HQC security endpoint.
 
+### SDitH binary regular syndrome decoding
+
+Import [`RegularSyndrome.lean`](../../CslibFrontier/Foundations/Data/Code/RegularSyndrome.lean)
+for the binary regular-syndrome relation from the
+[SDitH v3.0 specification](https://csrc.nist.gov/csrc/media/Projects/pqc-dig-sig/documents/SDitH_specifications.pdf),
+§2.2 (pp. 8–9) and Algorithms 1–2 (pp. 12–13). Coordinates have type
+`Fin chunks × Fin chunkSize`, so the word is visibly partitioned into equal chunks.
+`regularWord positions` uses `Pi.single` to put one `true` at the selected position of every
+chunk; `IsRegularWord x` reuses `Cslib.BitString.IsSingle` for each chunk, and the shared
+`hammingNorm_eq_one_iff_isSingle` theorem connects that representation to Hamming weight one. Then
+`IsRegularSyndromeSolution H y x` adds the existing `Cslib.Code.syndrome H x = y`
+relation. These reusable definitions and theorems live in `Cslib.Code` beside the parity-check
+API; they are not computational-hardness assumptions.
+`IsRegularWord.hammingNorm_eq` proves that every such word has total weight `chunks`.
+
+The [checked client](../../CslibFrontierTests/Crypto/SyndromeDecoding.lean) uses two chunks of
+length three and a parity-check matrix whose rows sum the respective chunks. It verifies a
+nonzero regular witness with syndrome `11` and rejects the zero word. Build it with
+`lake build CslibFrontierTests.Crypto.SyndromeDecoding`.
+
+This is only the reusable binary RSD relation. It does not model seed expansion, the PIOP,
+commitments, grinding, signing or verification, and it states no hardness or unforgeability
+claim. In particular, SDitH v3.0 §5.1 uses a heuristic uniqueness estimate in its advertised
+SD-to-RSD loss, and §5.3 defers a formal EUF-CMA proof to a future version. Those obligations and
+the quantum-security endpoint remain open under the
+[post-quantum program](https://github.com/cslib-community/cslib-frontier/issues/4987).
+
 ## Encryption and chosen-message attacks
 
 [AdversaryOf](https://github.com/cslib-community/cslib-frontier/blob/13e6a31951bf1c89a1a6258c44f9444aecbbefd8/Complexity/Crypto/Computational/Encryption/Basic.lean#L73) has a first stage choosing two messages and a saved word from the public key, and a second stage guessing from that saved state and the challenge ciphertext. Each stage has a native certificate. `INDCPAOn` explicitly constrains admissible message pairs. `WordINDCPA` requires equal lengths; the general `INDCPAOf` with all pairs is stronger for variable-length word messages. Invalid challenges are made independent of the hidden experiment bit. `Encryption.advantage (gameOn valid keyGen encrypt adversary) n` names the advantage between the two sides of the experiment at parameter `n`, and `INDCPAOn` asks that it be negligible for every admissible adversary; bounds on other two-sided encryption experiments, such as the DEM and CCA games, are stated with the same name.

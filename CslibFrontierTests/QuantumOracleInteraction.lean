@@ -242,9 +242,9 @@ theorem branch_prepared (request : Fin 2 → Bool) :
     ext i j
     simp [pureState_apply]
 
-noncomputable def h₈ : PlacedGate 8 := ⟨1, Gate.hadamard, ⟨![7], by decide⟩⟩
+@[expose] noncomputable def h₈ : PlacedGate 8 := ⟨1, Gate.hadamard, ⟨![7], by decide⟩⟩
 
-noncomputable def compareReply : PlacedGate 8 := ⟨2, Gate.cnot, ⟨![4, 1], by decide⟩⟩
+@[expose] noncomputable def compareReply : PlacedGate 8 := ⟨2, Gate.cnot, ⟨![4, 1], by decide⟩⟩
 
 abbrev baseWord (key memory : Bool) : Fin 8 → Bool :=
   ![false, false, false, true, key, false, false, memory]
