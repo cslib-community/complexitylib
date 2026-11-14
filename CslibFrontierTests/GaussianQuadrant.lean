@@ -4,6 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Vincent Liew
 -/
 
+module
+
+public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Inverse
 import CslibFrontier.Foundations.Probability.Gaussian.Quadrant
 
 /-! # Tests for the Gaussian quadrant probability function
@@ -13,6 +16,8 @@ Sheppard's value `Λ_{1/2}(1 / 2) = 1 / 3`, the independent and identical cases 
 formulas, the comparison with independence in both directions, instances of the Lipschitz bound,
 the noise stability of a concrete halfspace, and the probability integral transform at a
 non-unit variance. -/
+
+public section
 
 namespace CslibFrontierTests.GaussianQuadrant
 
