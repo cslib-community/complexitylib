@@ -13,6 +13,7 @@ public import CslibFrontier.Probability.StochasticDomination.Basic
 public import CslibFrontier.Probability.StochasticDomination.PoissonBinomial
 public import CslibFrontier.Probability.StochasticDomination.Adapted
 public import CslibFrontier.Probability.StochasticDomination.SequentialSupport
+public import CslibFrontier.Probability.StochasticDomination.SequentialUpper
 public import CslibFrontier.Probability.StochasticDomination.Stopping
 
 /-!
@@ -33,4 +34,6 @@ Umbrella module importing the base stochastic-domination toolkit:
   expectation identity and infinite-horizon stopping-time mean bounds `𝔼[τ] ≤ r / p`.
 * `CslibFrontier.Probability.StochasticDomination.SequentialSupport`: sequential count
   comparisons whose probability envelopes are required only at supported prefixes.
+* `CslibFrontier.Probability.StochasticDomination.SequentialUpper`: homogeneous upper
+  count comparisons, derived by complementing events and reflecting the binomial law.
 -/

@@ -18,8 +18,8 @@ Exercises `Scheme.indCcaRomAdvantage_le` on two concrete schemes:
    against the query-bounded adversary `queryCiphertextGAdv`.
 2. `pairCoinScheme` (`pairCoinPKE` with uniform `Fin 16` messages and coins, uniform `Fin 2` keys,
    `DeltaCorrect 0`, `GammaSpread 4`) against `probeZeroKeyAdv` (`qG = 0`, `qH = 1`), where the
-   IND-CPA reduction has advantage `0` and `Scheme.indCcaRomAdvantage_le` yields the non-trivial
-   bound `indCcaRomAdvantage ≤ 3 / 8`.
+   two-stage IND-CPA reduction has advantage `0` and `Scheme.indCcaRomAdvantage_le` yields the
+   non-trivial bound `indCcaRomAdvantage ≤ 3 / 8`.
 -/
 
 @[expose] public section
@@ -44,16 +44,16 @@ theorem notBotScheme_sampleMsg_uniform :
   simp [notBotScheme]
 
 /-- Instantiating `Scheme.indCcaRomAdvantage_le` with `qG = 1`, `qH = 0`, `δ = 0` and `γ = 0`:
-the IND-CCA advantage of `queryCiphertextGAdv` is at most twice an IND-CPA advantage of the
-reduction plus `1 / 2 + 2`. -/
-example : ∃ m₀ m₁ : Fin 4, m₀ ≠ m₁ ∧
-    (notBotScheme.indCcaRomAdvantage queryCiphertextGAdv : ℝ) ≤
-      2 * (notBotScheme.pke.indCpaAdvantage m₀ m₁
-        (notBotScheme.romCpaReduction queryCiphertextGAdv m₀ m₁) : ℝ) + (1 / 2 + 2) := by
-  obtain ⟨m₀, m₁, hne, h⟩ := notBotScheme.indCcaRomAdvantage_le queryCiphertextGAdv
-    queryCiphertextGAdv_bounds (by decide) notBotScheme_sampleMsg_uniform
-    identityPKE_deltaCorrect_zero identityPKE_gammaSpread_zero
-  refine ⟨m₀, m₁, hne, h.trans (le_of_eq ?_)⟩
+the IND-CCA advantage of `queryCiphertextGAdv` is at most twice the IND-CPA advantage of the one
+reduction `romCpaReduction` plus `1 / 2 + 2`. -/
+example :
+    (notBotScheme.indCcaRomAdvantage (.ofDeterministic queryCiphertextGAdv) : ℝ) ≤
+      2 * (notBotScheme.pke.cpaAdvantage
+        (notBotScheme.romCpaReduction (.ofDeterministic queryCiphertextGAdv)) : ℝ) +
+        (1 / 2 + 2) := by
+  refine (notBotScheme.indCcaRomAdvantage_le (.ofDeterministic queryCiphertextGAdv)
+    (fun _ => queryCiphertextGAdv_bounds) notBotScheme_sampleMsg_uniform
+    identityPKE_deltaCorrect_zero identityPKE_gammaSpread_zero).trans (le_of_eq ?_)
   simp only [Fintype.card_fin]
   norm_num
   ring
@@ -115,14 +115,15 @@ theorem probeZeroKeyAdv_bounds : ROQueryBounds probeZeroKeyAdv 0 1 := by
   · exact (OracleComp.IsCostBounded.query (ROQuery.H (false, 0, cStar))).bind
       fun _ => OracleComp.IsCostBounded.pure _ 0
 
-/-- In `romCpaReduction`, running `probeZeroKeyAdv` always queries `simHashG` at `0` and never at
-any other message, so `(st.gCache.lookup m₁).isSome` is constantly `0 == m₁`.
--/
-theorem eval_romCpaReduction_probeZeroKeyAdv (m₀ m₁ : Fin 16) (pk : Unit)
+/-- In the simulator run of the IND-CPA reduction, `probeZeroKeyAdv` always queries `simHashG` at
+`0` and never at any other message, so `(st.gCache.lookup m₁).isSome` is constantly `0 == m₁`.
+This holds for every decapsulation filter, since the adversary makes no decapsulation query. -/
+theorem eval_simFilterHit_probeZeroKeyAdv
+    (d : Unit → List (Fin 16 × Fin 16) → Fin 16 × Fin 16 → Bool) (pk : Unit) (m₁ : Fin 16)
     (cStar : Fin 16 × Fin 16) :
-    ProbComp.eval (pairCoinScheme.romCpaReduction probeZeroKeyAdv m₀ m₁ pk cStar) =
+    ProbComp.eval (pairCoinScheme.simFilterHit d probeZeroKeyAdv pk m₁ cStar) =
       PMF.pure (decide (m₁ = 0)) := by
-  simp only [Scheme.romCpaReduction, Scheme.romFilterCpaReduction, probeZeroKeyAdv,
+  simp only [Scheme.simFilterHit, probeZeroKeyAdv,
     Scheme.simFilterHandler, Scheme.simFilterDispatch,
     Scheme.simHashH, OracleComp.interpret_bind, OracleComp.interpret_query,
     OracleComp.interpret_pure, StateT.run_bind, StateT.run_pure, ProbComp.eval_bind,
@@ -149,29 +150,32 @@ theorem eval_romCpaReduction_probeZeroKeyAdv (m₀ m₁ : Fin 16) (pk : Unit)
       exact Scheme.simHashHRaw_gCache_eq _ _ _ _ hy
   by_cases hm : m₁ = 0 <;> simp [hyg, hzca, hm]
 
-/-- Because `romCpaReduction probeZeroKeyAdv` is independent of the challenge ciphertext, its
-two-message IND-CPA advantage on `pairCoinPKE` is `0` for every pair `(m₀, m₁)`. -/
-theorem pairCoinScheme_indCpaAdvantage_probeZeroKeyAdv (m₀ m₁ : Fin 16) :
-    pairCoinScheme.pke.indCpaAdvantage m₀ m₁
-      (pairCoinScheme.romCpaReduction probeZeroKeyAdv m₀ m₁) = 0 := by
-  have heq : ProbComp.eval (pairCoinScheme.pke.indCpaGame m₀ m₁ false
-      (pairCoinScheme.romCpaReduction probeZeroKeyAdv m₀ m₁)) =
-      ProbComp.eval (pairCoinScheme.pke.indCpaGame m₀ m₁ true
-        (pairCoinScheme.romCpaReduction probeZeroKeyAdv m₀ m₁)) := by
-    simp only [ExplicitCoinPKE.indCpaGame, ProbComp.eval_bind,
-      eval_romCpaReduction_probeZeroKeyAdv, PMF.bind_const]
-  rw [ExplicitCoinPKE.indCpaAdvantage, heq]
+/-- Because the simulator run of `probeZeroKeyAdv` ignores the challenge ciphertext, every IND-CPA
+reduction `romFilterCpaReduction d` built from it has two-stage IND-CPA advantage `0` on
+`pairCoinPKE`. -/
+theorem pairCoinScheme_cpaAdvantage_probeZeroKeyAdv
+    (d : Unit → List (Fin 16 × Fin 16) → Fin 16 × Fin 16 → Bool) :
+    pairCoinScheme.pke.cpaAdvantage
+      (pairCoinScheme.romFilterCpaReduction d (.ofDeterministic probeZeroKeyAdv)) = 0 := by
+  have heq : ProbComp.eval (pairCoinScheme.pke.toPKE.cpaExperiment (fun _ _ _ => true)
+      (pairCoinScheme.romFilterCpaReduction d (.ofDeterministic probeZeroKeyAdv)) false) =
+      ProbComp.eval (pairCoinScheme.pke.toPKE.cpaExperiment (fun _ _ _ => true)
+        (pairCoinScheme.romFilterCpaReduction d (.ofDeterministic probeZeroKeyAdv)) true) := by
+    simp only [PKE.cpaExperiment, ProbComp.eval_bind, eval_lrExperiment,
+      Scheme.romFilterCpaReduction, RandomizedROAdversary.ofDeterministic, ProbComp.eval_pure,
+      PMF.bind_bind, PMF.pure_bind, eval_simFilterHit_probeZeroKeyAdv, PMF.bind_const]
+  rw [ExplicitCoinPKE.cpaAdvantage, Experiment.advantage, heq]
   exact nndist_self _
 
 /-- **Informative security bound (`≤ 3 / 8`)**: with `qG = 0`, `qH = 1`, `δ = 0`, `γ = 4`, and
-`|M| = 16`, `Scheme.indCcaRomAdvantage_le` and `pairCoinScheme_indCpaAdvantage_probeZeroKeyAdv`
+`|M| = 16`, `Scheme.indCcaRomAdvantage_le` and `pairCoinScheme_cpaAdvantage_probeZeroKeyAdv`
 bound the ROM IND-CCA advantage of `probeZeroKeyAdv` by `3 / 8`. -/
 theorem pairCoinScheme_indCcaRomAdvantage_probeZeroKeyAdv_le :
-    (pairCoinScheme.indCcaRomAdvantage probeZeroKeyAdv : ℝ) ≤ 3 / 8 := by
-  obtain ⟨m₀, m₁, _, h⟩ := pairCoinScheme.indCcaRomAdvantage_le probeZeroKeyAdv
-    probeZeroKeyAdv_bounds (by decide) pairCoinScheme_sampleMsg_uniform
+    (pairCoinScheme.indCcaRomAdvantage (.ofDeterministic probeZeroKeyAdv) : ℝ) ≤ 3 / 8 := by
+  have h := pairCoinScheme.indCcaRomAdvantage_le (.ofDeterministic probeZeroKeyAdv)
+    (fun _ => probeZeroKeyAdv_bounds) pairCoinScheme_sampleMsg_uniform
     pairCoinPKE_deltaCorrect_zero pairCoinPKE_gammaSpread_four
-  rw [pairCoinScheme_indCpaAdvantage_probeZeroKeyAdv] at h
+  rw [Scheme.romCpaReduction, pairCoinScheme_cpaAdvantage_probeZeroKeyAdv] at h
   refine h.trans (le_of_eq ?_)
   simp only [Fintype.card_fin, NNReal.coe_zero]
   norm_num
