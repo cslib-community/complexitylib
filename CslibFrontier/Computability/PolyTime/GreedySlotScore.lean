@@ -590,9 +590,6 @@ theorem clearedJointScore_le_iff_normalizedPartialScore_le {E m n Q r : ℕ} (hr
 
 /-! ### Polynomial-time certificate for `clearedJointScore` -/
 
-private theorem binary_sum_polyTime :
-    ComputableInPolyTime List.sum (encList encNat) encNat := by fun_prop
-
 private theorem computableInPolyTime_clearedPartialCollision {α γ : Type} [DecidableEq α]
     {encA : α ↪ List Bool} {encIn : γ ↪ List Bool}
     {cardL i j : γ → ℕ} {assigned : γ → List (Option α)}
@@ -676,8 +673,8 @@ private theorem computableInPolyTime_coordProject :
     have hq1 := ComputableInPolyTime.fst (encPair eIn eEdge) eEdge
     have hq0 := hq1.fst'; have hq12 := hq1.snd'
     have hq2 := ComputableInPolyTime.snd (encPair eIn eEdge) eEdge
-    refine binary_sum_polyTime.comp (ComputableInPolyTime.mapWithInput
-      hedges (binary_sum_polyTime.comp
+    refine ComputableInPolyTime.binary_sum.comp (ComputableInPolyTime.mapWithInput
+      hedges (ComputableInPolyTime.binary_sum.comp
         (ComputableInPolyTime.mapWithInput (hedges.comp (ComputableInPolyTime.fst eIn eEdge)) ?_)))
     exact ComputableInPolyTime.binary_mul'
       (computableInPolyTime_clearedPartialCollision
@@ -696,9 +693,9 @@ private theorem computableInPolyTime_coordProject :
     have hr1 := ComputableInPolyTime.fst (encPair (encPair eIn encUnary) encUnary) encUnary
     have hr0 := hr1.fst'; have hr12 := hr1.snd'
     have hr2 := ComputableInPolyTime.snd (encPair (encPair eIn encUnary) encUnary) encUnary
-    refine binary_sum_polyTime.comp (ComputableInPolyTime.mapWithInput hrangeQ ?_)
-    refine binary_sum_polyTime.comp (ComputableInPolyTime.mapWithInput
-      (hrangeN.comp (ComputableInPolyTime.fst eIn encUnary)) (binary_sum_polyTime.comp
+    refine ComputableInPolyTime.binary_sum.comp (ComputableInPolyTime.mapWithInput hrangeQ ?_)
+    refine ComputableInPolyTime.binary_sum.comp (ComputableInPolyTime.mapWithInput
+      (hrangeN.comp (ComputableInPolyTime.fst eIn encUnary)) (ComputableInPolyTime.binary_sum.comp
         (ComputableInPolyTime.mapWithInput (hrangeN.comp hrStep1.fst') ?_)))
     exact computableInPolyTime_clearedPartialCollision (hrBin.comp hr0.fst') (hct.comp hr0)
       (ComputableInPolyTime.unary_to_binary.comp hr12)

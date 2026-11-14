@@ -126,7 +126,7 @@ theorem slotBits_polyTime : ComputableInPolyTime (fun q : ℕ × ℕ => slotBits
         (ComputableInPolyTime.snd _ _)))
   have hterms : ComputableInPolyTime (fun q : ℕ × ℕ => (List.range (q.2 + 1)).map (taper q.1))
       (encPair encUnary encUnary) (encList encNat) := by fun_prop
-  have hsum := (ComputableInPolyTime.of_tidy ComputableTidilyInPolyTime.binary_sum).comp hterms
+  have hsum := ComputableInPolyTime.binary_sum.comp hterms
   have hval (q : ℕ × ℕ) : slotBits q.1 q.2 = 2 * ((List.range (q.2 + 1)).map (taper q.1)).sum := by
     simp only [slotBits, prefixBits, sum_range_eq_list]
   refine (ComputableInPolyTime.binary_to_unary_bounded
@@ -470,8 +470,8 @@ theorem table_polyTime :
   have hdrop : ComputableInPolyTime (fun r : (Call T × List (List ℕ)) × ℕ =>
       r.1.2.drop ((nodes r.1.1).idxOf r.2 * numPoints r.1.1)) (encPair e encUnary)
       (encList (encList encNat)) :=
-    .of_tidy (ComputableTidilyInPolyTime.listDropWithInput hV'.tidy
-      (ComputableInPolyTime.unary_mul' hidx hn).tidy)
+    (ComputableInPolyTime.dropUnary).comp
+      (hV'.prod (ComputableInPolyTime.unary_mul' hidx hn))
   have htake : ComputableInPolyTime (fun r : (Call T × List (List ℕ)) × ℕ =>
       (r.1.2.drop ((nodes r.1.1).idxOf r.2 * numPoints r.1.1)).take (numPoints r.1.1))
       (encPair e encUnary) (encList (encList encNat)) :=

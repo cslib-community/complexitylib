@@ -700,7 +700,7 @@ theorem computableInPolyTime_branchAugmentedIncidence :
   let eEq := encList (encList encNat); let eS := encList eEq; let eI := encPair encUnary eS
   have hsc := computableInPolyTime_scopeWidthOn.comp' (((fst eI eEq).fst').prod (snd eI eEq))
   have hl := spc_map (snd encUnary eS) (unary_to_binary.comp' hsc)
-  have hsum := (of_tidy .binary_sum).comp' hl; have hnb := unary_to_binary.comp' (fst encUnary eS)
+  have hsum := ComputableInPolyTime.binary_sum.comp' hl; have hnb := unary_to_binary.comp' (fst encUnary eS)
   exact binary_add.comp' (hsum.prod hnb)
 
 @[fun_prop]
