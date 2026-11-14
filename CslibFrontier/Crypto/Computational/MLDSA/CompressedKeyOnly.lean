@@ -151,7 +151,7 @@ theorem selfTargetMap_compressedForgeryLowPart [NeZero P.q] (d : ℕ) (pk : Publ
   simp only [Pi.add_apply]
   ring
 
-private theorem abs_valMinAbs_add_le {q : ℕ} [NeZero q] (a b : ZMod q) :
+private theorem abs_valMinAbs_add_le {q : ℕ} (a b : ZMod q) :
     |(a + b).valMinAbs| ≤ |a.valMinAbs| + |b.valMinAbs| := by
   rw [Int.abs_eq_natAbs, Int.abs_eq_natAbs, Int.abs_eq_natAbs]
   norm_cast
