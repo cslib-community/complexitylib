@@ -499,6 +499,9 @@ theorem exists_le_crossCount_formulaEdges_iff {φ : CNF ℕ} (hφ : ∀ c ∈ φ
 
 /-! ### Polynomial time -/
 
+/-- Multigraph edge lists, such as `formulaEdges φ`, as framed lists of binary pairs. -/
+abbrev encEdgeList : List (ℕ × ℕ) ↪ List Bool := encList (encPair encNat encNat)
+
 @[fun_prop]
 theorem computableInPolyTime_literalVertex :
     ComputableInPolyTime literalVertex (encPair encNat encBool) encNat := by
@@ -513,7 +516,7 @@ theorem computableInPolyTime_variableEdge :
 
 @[fun_prop]
 theorem computableInPolyTime_formulaEdges :
-    ComputableInPolyTime formulaEdges encCNF (encList (encPair encNat encNat)) := by
+    ComputableInPolyTime formulaEdges encCNF encEdgeList := by
   have h0 := EUThreeSAT.computableInPolyTime_literalAt 0
   have h1 := EUThreeSAT.computableInPolyTime_literalAt 1
   have h2 := EUThreeSAT.computableInPolyTime_literalAt 2
@@ -522,10 +525,9 @@ theorem computableInPolyTime_formulaEdges :
 
 @[fun_prop]
 theorem computableInPolyTime_subdivisionEdges :
-    ComputableInPolyTime subdivisionEdges (encList (encPair encNat encNat))
-      (encList (encPair encNat encNat)) := by
+    ComputableInPolyTime subdivisionEdges encEdgeList encEdgeList := by
   have hget : ComputableInPolyTime (fun p : List (ℕ × ℕ) × ℕ => p.1.getD p.2 (0, 0))
-      (encPair (encList (encPair encNat encNat)) encUnary) (encPair encNat encNat) :=
+      (encPair encEdgeList encUnary) (encPair encNat encNat) :=
     ComputableInPolyTime.listGetDWithInput (ComputableInPolyTime.fst _ _)
       (ComputableInPolyTime.snd _ _) (0, 0)
   unfold subdivisionEdges pathEdges
@@ -533,7 +535,7 @@ theorem computableInPolyTime_subdivisionEdges :
 
 @[fun_prop]
 theorem computableInPolyTime_subdivide :
-    ComputableInPolyTime subdivide (encList (encPair encNat encNat)) encGraph := by
+    ComputableInPolyTime subdivide encEdgeList encGraph := by
   unfold subdivide
   fun_prop
 
