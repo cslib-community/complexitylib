@@ -4528,6 +4528,7 @@ public import CslibFrontier.Crypto.Computational.MLDSA.CompressedKeyOnly
 public import CslibFrontier.Crypto.Computational.MLDSA.Decompose
 public import CslibFrontier.Crypto.Computational.MLDSA.Hint
 public import CslibFrontier.Crypto.Computational.MLDSA.KeyOnly
+public import CslibFrontier.Crypto.Computational.MLDSA.Signing
 public import CslibFrontier.Crypto.Computational.MerkleDamgard
 public import CslibFrontier.Crypto.Computational.MerkleSignature
 public import CslibFrontier.Crypto.Computational.MerkleSignature.Security
@@ -7095,6 +7096,7 @@ public import CslibFrontier.Probability.IID.CrossCollisionCount
 public import CslibFrontier.Probability.IID.Distinct
 public import CslibFrontier.Probability.IID.Event
 public import CslibFrontier.Probability.IID.FirstAccepted
+public import CslibFrontier.Probability.IID.FirstSome
 public import CslibFrontier.Probability.IID.Occurrence
 public import CslibFrontier.Probability.Isolation
 public import CslibFrontier.Probability.JohnsonLindenstrauss
