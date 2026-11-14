@@ -65,23 +65,23 @@ def main():
         elif mode == "chapter":
             CHAPTER.write_text(chapter_fixture(original_chapter,
                 'run_cmd Lean.logWarning "GUIDE_CHAPTER_WARNING_FIXTURE"'))
-            run("chapter-warning", HELPER, status=1, marker="GUIDE_CHAPTER_WARNING_FIXTURE")
+            run("chapter-warning", HELPER, status=1, marker="error: GUIDE_CHAPTER_WARNING_FIXTURE")
             CHAPTER.write_text(chapter_fixture(original_chapter,
-                'run_cmd Lean.throwError "GUIDE_CHAPTER_ERROR_FIXTURE"'))
-            run("chapter-error", HELPER, status=1, marker="GUIDE_CHAPTER_ERROR_FIXTURE")
+                'run_cmd Lean.logError "GUIDE_CHAPTER_ERROR_FIXTURE"'))
+            run("chapter-error", HELPER, status=1, marker="error: GUIDE_CHAPTER_ERROR_FIXTURE")
         elif mode == "generator":
             # Same module frontend/options as native generation, without repeating C compilation.
             MAIN.write_text(original_main + '\nrun_cmd Lean.logWarning "GUIDE_GENERATOR_WARNING_FIXTURE"\n')
             run("generator-warning-native-frontend",
                 ["lake", "-d", "guide", "build", "--log-level=info",
-                 "+CslibFrontierGuideMain:leanArts"], marker="GUIDE_GENERATOR_WARNING_FIXTURE")
-            run("generator-warning-helper", HELPER, marker="GUIDE_GENERATOR_WARNING_FIXTURE")
+                 "+CslibFrontierGuideMain:leanArts"], marker="warning: GUIDE_GENERATOR_WARNING_FIXTURE")
+            run("generator-warning-helper", HELPER, marker="warning: GUIDE_GENERATOR_WARNING_FIXTURE")
             before = json.loads((REPORT / "baseline-site.json").read_text())
             after = hashes(Path("guide/.lake/build/site"))
             save("warning-output", {"equal": before == after, "files": len(after), "hashes": after})
             assert before == after, "nonfatal warning changed generated output"
-            MAIN.write_text(original_main + '\nrun_cmd Lean.throwError "GUIDE_GENERATOR_ERROR_FIXTURE"\n')
-            run("generator-error", HELPER, status=1, marker="GUIDE_GENERATOR_ERROR_FIXTURE")
+            MAIN.write_text(original_main + '\nrun_cmd Lean.logError "GUIDE_GENERATOR_ERROR_FIXTURE"\n')
+            run("generator-error", HELPER, status=1, marker="error: GUIDE_GENERATOR_ERROR_FIXTURE")
             assert original_main.count("def main (options") == 1
             MAIN.write_text(original_main.split("def main (options", 1)[0] + '''def main (_options : List String) : IO UInt32 := do
   IO.eprintln "GUIDE_RUNTIME_EXIT_FIXTURE"
