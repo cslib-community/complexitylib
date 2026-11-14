@@ -288,6 +288,12 @@ theorem testRealization (A : Adversary) (test : Nat → List Bool) (_htest : IsP
     (_h : ∀ n, distinguisher A n = test n) : True := trivial
 theorem memberRealization (A D : Adversary) (C : Class) (_hD : D ∈ C) (_h : D = reduction A) :
     True := trivial
+/-- The input adversary is certified too; that does not hide the realization, in either
+direction. -/
+theorem bothCertifiedRealization (A D : Adversary) (_hA : A.IsPPT) (_hD : D.IsPPT)
+    (_h : ∀ n, D.run n = (reduction A).run n) : True := trivial
+theorem reversedBothCertifiedRealization (A D : Adversary) (_hA : A.IsPPT) (_hD : D.IsPPT)
+    (_h : ∀ n, (reduction A).run n = D.run n) : True := trivial
 
 theorem adversaryPremise (A : Adversary) (_hA : A.IsPPT) (_h : Negligible (advantage A)) :
     True := trivial
@@ -308,6 +314,8 @@ theorem unnamedBoundPremise (A : Adversary) (ε : Nat) (_h : forgeExperiment (re
 /-- An equation between variables, as when a word program certifies a caller's typed program. -/
 theorem variableRealization (D E : Adversary) (_hD : D.IsPPT) (_h : ∀ n, D.run n = E.run n) :
     True := trivial
+theorem bothCertifiedVariables (A D : Adversary) (_hA : A.IsPPT) (_hD : D.IsPPT)
+    (_h : ∀ n, D.run n = A.run n) : True := trivial
 /-- No premise certifies `D`. -/
 theorem uncertifiedEquation (A D : Adversary) (_h : D = reduction A) : True := trivial
 theorem inequalityRealization (A D : Adversary) (_hD : D.IsPPT)
@@ -370,13 +378,24 @@ class CompiledFixtureTests(unittest.TestCase):
         # A variable with an efficiency or membership premise, and an equation saying that it
         # realizes a constructed object applied to another variable.
         for name in ("realizationPremise", "eventualRealization", "testRealization",
-                     "memberRealization"):
+                     "memberRealization", "bothCertifiedRealization",
+                     "reversedBothCertifiedRealization"):
             self.assertEqual(self.kinds(name), ("realization",), name)
             self.assertNotIn("_hD", self.flagged[name], name)
         self.assertEqual(self.flagged["realizationPremise"]["_h"][1],
                          ("Cslib.Crypto.Fixture.reduction",))
         self.assertEqual(self.flagged["testRealization"]["_h"][1],
                          ("Cslib.Crypto.Fixture.distinguisher",))
+
+    def test_a_certified_input_adversary_does_not_hide_a_realization(self) -> None:
+        # With `_hA : A.IsPPT` beside `_hD : D.IsPPT`, the equation still says that `D` realizes
+        # `reduction A`, whichever side `D` is on; only the realizing variable is excluded.
+        for name in ("bothCertifiedRealization", "reversedBothCertifiedRealization"):
+            self.assertEqual(self.flagged[name],
+                             {"_h": (("realization",), ("Cslib.Crypto.Fixture.reduction",))},
+                             name)
+        # Two certified variables equated, with no constructed constant, are not a realization.
+        self.assertNotIn("bothCertifiedVariables", self.flagged)
 
     def test_named_assumptions_at_library_objects_are_flagged(self) -> None:
         # Allowed by the rule, so such a premise needs a baseline entry with its justification.
@@ -387,7 +406,7 @@ class CompiledFixtureTests(unittest.TestCase):
     def test_bound_variables_assumptions_and_infrastructure_are_not(self) -> None:
         for name in ("adversaryPremise", "admissibleAdversary", "assumptionPremise",
                      "infrastructurePremise", "existentialWitness", "generatorPremise",
-                     "variableRealization", "uncertifiedEquation"):
+                     "variableRealization", "bothCertifiedVariables", "uncertifiedEquation"):
             self.assertNotIn(name, self.flagged)
 
     def test_private_theorems_are_not_scanned(self) -> None:
@@ -406,7 +425,7 @@ class CompiledFixtureTests(unittest.TestCase):
         self.assertNotIn("inequalityRealization", self.flagged)
 
     def test_exactly_the_expected_theorems(self) -> None:
-        self.assertEqual(len(self.flagged), 17)
+        self.assertEqual(len(self.flagged), 19)
         self.assertEqual(self.summary["missing"], [])
 
 

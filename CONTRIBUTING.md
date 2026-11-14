@@ -203,7 +203,8 @@ a definition builds from an adversary or scheme structure, directly or through a
 to it. It also flags an advantage bound that holds only for parameters an `∃` chooses for such a
 program, and a *realization*: an equation saying that a variable which another premise makes
 efficient or admissible computes such a program applied to another variable. That is how a
-theorem takes the reduction from the caller, as with `hD : IsOraclePPT encBool D` and
+theorem takes the reduction from the caller, as the Carter–Wegman theorems that #5347 deleted did
+with `hD : IsOraclePPT encBool D` and
 `hreal : eval (prfRealGame family D n) = … nonceFnDistinguisher … (forger n)`. Games,
 experiments, advantages, ideal laws, encodings and the theorem's own variables never count.
 `scripts/security_premises_baseline.json` records the allowed hits, one per line with a

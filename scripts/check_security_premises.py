@@ -26,8 +26,8 @@ existentially chosen parameters `x` of a constructed reduction `B`, since the re
 not uniform. And it flags a *realization*: an equation saying that a variable that another premise
 makes efficient or admissible (`hD : IsOraclePPT encBool D`) computes a constructed object applied
 to another variable (`hreal : eval (prfRealGame family D n) = … nonceFnDistinguisher … (forger
-n)`), so that the theorem takes the reduction from the caller. The Lean file's docstring gives the
-exact rules and the known gaps.
+n)`, from the Carter–Wegman theorems that #5347 deleted), so that the theorem takes the reduction
+from the caller. The Lean file's docstring gives the exact rules and the known gaps.
 
 `scripts/security_premises_baseline.json` records the flagged theorems that are allowed, one per
 line, as `{theorem: {"module": source path, "premises": [binder names], "why": justification}}`.

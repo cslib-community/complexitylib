@@ -93,10 +93,11 @@ object. Another premise *certifies* `x`: it has an efficiency or membership clai
 `x` or a function that applies it (`hD : IsOraclePPT encBool D`, `IsPPTOn … (fun p => test p.1
 p.2)`, `D ∈ 𝒟`). The flagged premise is an equation, under its own `∀`s, `∧`, `∃` and `∀ᶠ`, one
 side of which mentions `x`; the other side does not, and applies a constructed constant to
-another variable of the theorem, such as the adversary. For example, `hreal : eval (prfRealGame
-family D n) = (prfFnDist family n).bind (nonceFnDistinguisher (seed n) (hash n) (forger n))`
-beside `hD` is flagged, with the constant `nonceFnDistinguisher`. An equation between variables
-only, such as a word program computing a caller's typed simulator, is not.
+another variable of the theorem, such as the adversary, whether or not another premise certifies
+that variable too. For example, the Carter–Wegman theorems that #5347 deleted took `hreal : eval
+(prfRealGame family D n) = (prfFnDist family n).bind (nonceFnDistinguisher (seed n) (hash n)
+(forger n))` beside `hD`, which is flagged with the constant `nonceFnDistinguisher`. An equation
+between variables only, such as a word program computing a caller's typed simulator, is not.
 
 It prints one JSON line per theorem with a flagged premise or conclusion,
 `{"n": theorem, "m": module, "l": line, "h": [{"b": binder, "k": [kinds], "c": [constructed
@@ -422,17 +423,19 @@ def certifiedBy (env : Env) (vars : Array FVarId) (premise : Expr) : Array FVarI
     | _ => acc
 
 /-- Realization premises: an equation one side of which mentions a variable `x` of `certified`
-and the other side does not, but applies a constructed constant to another variable of the
-theorem (one of `others`). With `x`'s efficiency premise, it assumes that the constructed object
-has an efficient realization, as in `hreal : eval (prfRealGame family D n) = … (nonceFnDistinguisher
-(seed n) (hash n) (forger n))` beside `hD : IsOraclePPT encBool D`. Returns the constructed
-constants of the other side. -/
-def realizations (env : Env) (certified others : Array FVarId) (premise : Expr) : Array Name :=
+and the other side does not, but applies a constructed constant to another of the theorem's
+variables `vars`. With `x`'s efficiency premise, it assumes that the constructed object has an
+efficient realization, as in `hreal : eval (prfRealGame family D n) = … (nonceFnDistinguisher
+(seed n) (hash n) (forger n))` beside `hD : IsOraclePPT encBool D`. Only `x` is excluded on the
+other side, and it does not occur there: the other variable may be certified too, as the input
+adversary is in `D.run n = (reduction A).run n` beside `hA : A.IsPPT` and `hD : D.IsPPT`.
+Returns the constructed constants of the other side. -/
+def realizations (env : Env) (certified vars : Array FVarId) (premise : Expr) : Array Name :=
   (atoms premise).foldl (init := #[]) fun acc a =>
     if a.isAppOfArity ``Eq 3 then
       let side (s t : Expr) : Array Name :=
         if certified.any fun x => s.containsFVar x && !t.containsFVar x then
-          ((constructedWith env others t).run {}).2.toArray
+          ((constructedWith env vars t).run {}).2.toArray
         else #[]
       acc ++ side a.appFn!.appArg! a.appArg! ++ side a.appArg! a.appFn!.appArg!
     else acc
@@ -524,9 +527,8 @@ unsafe def run (libDir : System.FilePath) : IO Unit := do
         | _ => break
       let certified := premises.foldl (fun acc (_, ty) => acc ++ certifiedBy env vars ty) #[]
       unless certified.isEmpty do
-        let others := vars.filter (!certified.contains ·)
         for (label, ty) in premises do
-          let cs := (realizations env certified others ty).toList.eraseDups
+          let cs := (realizations env certified vars ty).toList.eraseDups
           unless cs.isEmpty do
             hyps := hyps.push <| Json.mkObj [("b", toJson label), ("k", toJson ["realization"]),
               ("c", toJson (cs.map (privateToUserName · |>.toString)))]
