@@ -4,8 +4,12 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+module
+
 import CslibFrontier.Computability.PCP.Approximation.Hastad
 import CslibFrontier.Computability.PCP.Approximation.MaxExactThreeSAT
+
+set_option linter.privateModule false
 
 /-!
 # Tests: Håstad's 3-bit linear test and its soundness against Label Cover
@@ -66,6 +70,26 @@ example : projectSet (fun _ : Bool => ()) ({false, true} : Finset Bool) = ∅ :=
 /-- A singleton `{false}` has odd fiber cardinality and therefore projects to `{()}`. -/
 example : projectSet (fun _ : Bool => ()) ({false} : Finset Bool) = {()} := by
   decide
+
+/-- **Long-code subcube test completeness** (Arora–Barak Exercise 18.16(d)): every long code passes
+`longCodeSubcubeProb` with probability `1`. -/
+example (x : Fin 3) : longCodeSubcubeProb (longCode x) = 1 :=
+  longCodeSubcubeProb_longCode x
+
+/-- **Long-code subcube test on the full 2-bit parity** (Arora–Barak Exercise 18.16(d)): on `Bool`,
+the linear function `f false ⊕ f true` (`hadamardCode (fun _ : Bool => true)`) has support size `2`
+and passes with probability `3 / 4 + (1 / 2) ^ 3 = 7 / 8`. -/
+example : longCodeSubcubeProb (hadamardCode (fun _ : Bool => true)) = 7 / 8 := by
+  have hs : (fun _ : Bool => true) ≠ 0 := by decide
+  have hcard : #{i : Bool | (fun _ : Bool => true) i} = 2 := by decide
+  rw [longCodeSubcubeProb_hadamardCode hs, hcard]
+  norm_num
+
+/-- **Long-code subcube test soundness bound** (Arora–Barak Exercise 18.16(d)): on `Fin 3`, the
+3-bit parity `hadamardCode (fun _ : Fin 3 => true)` passes with probability at most `7 / 8`
+(in fact `13 / 16`). -/
+example : longCodeSubcubeProb (hadamardCode (fun _ : Fin 3 => true)) ≤ 7 / 8 :=
+  longCodeSubcubeProb_hadamardCode_le (by decide)
 
 /-- A concrete 1-edge Label Cover instance on `Bool` with identity projection `id`. -/
 private def oneEdgeGraph : Graph (Bool → Bool) :=
