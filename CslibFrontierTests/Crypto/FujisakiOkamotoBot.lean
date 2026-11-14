@@ -19,9 +19,9 @@ Exercises `CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Bot` and
    where `Scheme.indCcaBotAdvantage_le` yields the tighter bound `indCcaBotAdvantage ≤ 1 / 4`
    (versus `3 / 8` for `FO-notbot`, since `FO^⊥` has no `2 qH / |M|` fallback seed-guessing term).
 2. `unspreadPointPKE pairCoinPKE 0` and `unspreadScheme pairCoinPKE 0`: `0`-correct, preserves
-   IND-CPA advantages away from `0`, fails `4`-spreadness, and lets the 1-query decapsulation probe
-   `probeDecapsAdv` (`qG = 0`, `qH = 0`, `qD = 1`) distinguish `eagerIndCcaBotGame` from
-   `simBotGame` with advantage `15 / 16`.
+   fixed-message IND-CPA advantages away from `0`, fails `4`-spreadness, and lets the 1-query
+   decapsulation probe `probeDecapsAdv` (`qG = 0`, `qH = 0`, `qD = 1`) distinguish
+   `eagerIndCcaBotGame` from `simBotGame` with advantage `15 / 16`.
 -/
 
 public section
@@ -40,33 +40,23 @@ theorem probeZeroKeyAdv_fullBounds : ROFullQueryBounds probeZeroKeyAdv 0 1 0 := 
   exact OracleComp.IsCostBounded.liftBind (ROQuery.H (false, 0, cStar)) _ 0
     fun _ => OracleComp.IsCostBounded.pure _ 0
 
-/-- Because `probeZeroKeyAdv` makes no decapsulation queries, `romBotCpaReduction` and
-`romCpaReduction` are equal on `probeZeroKeyAdv`. -/
-theorem romBotCpaReduction_probeZeroKeyAdv_eq (m₀ m₁ : Fin 16) :
-    pairCoinScheme.romBotCpaReduction probeZeroKeyAdv m₀ m₁ =
-      pairCoinScheme.romCpaReduction probeZeroKeyAdv m₀ m₁ := by
-  funext pk cStar
-  simp [Scheme.romBotCpaReduction, Scheme.romFilterCpaReduction, Scheme.romCpaReduction,
-    Scheme.simFilterHandler, Scheme.simFilterDispatch, probeZeroKeyAdv, OracleComp.interpret_query,
-    ROQuery.dispatch]
-
-/-- The two-message IND-CPA advantage of `romBotCpaReduction probeZeroKeyAdv` on `pairCoinPKE` is
-`0` for every pair `(m₀, m₁)`. -/
-theorem pairCoinScheme_indCpaAdvantage_romBotCpaReduction_probeZeroKeyAdv (m₀ m₁ : Fin 16) :
-    pairCoinScheme.pke.indCpaAdvantage m₀ m₁
-      (pairCoinScheme.romBotCpaReduction probeZeroKeyAdv m₀ m₁) = 0 := by
-  rw [romBotCpaReduction_probeZeroKeyAdv_eq]
-  exact pairCoinScheme_indCpaAdvantage_probeZeroKeyAdv m₀ m₁
+/-- The two-stage IND-CPA advantage of `romBotCpaReduction` built from `probeZeroKeyAdv` on
+`pairCoinPKE` is `0`: the adversary makes no decapsulation query, so its simulator run ignores the
+challenge ciphertext. -/
+theorem pairCoinScheme_cpaAdvantage_romBotCpaReduction_probeZeroKeyAdv :
+    pairCoinScheme.pke.cpaAdvantage
+      (pairCoinScheme.romBotCpaReduction (.ofDeterministic probeZeroKeyAdv)) = 0 :=
+  pairCoinScheme_cpaAdvantage_probeZeroKeyAdv _
 
 /-- **Informative `FO^⊥` security bound (`≤ 1 / 4`)**: with `qG = 0`, `qH = 1`, `qD = 0`, `δ = 0`,
 `γ = 4`, and `|M| = 16`, `Scheme.indCcaBotAdvantage_le` bounds the ROM IND-CCA advantage of
 `probeZeroKeyAdv` against `FO^⊥` by `1 / 4`. -/
 theorem pairCoinScheme_indCcaBotAdvantage_probeZeroKeyAdv_le :
-    (pairCoinScheme.indCcaBotAdvantage probeZeroKeyAdv : ℝ) ≤ 1 / 4 := by
-  obtain ⟨m₀, m₁, _, h⟩ := pairCoinScheme.indCcaBotAdvantage_le probeZeroKeyAdv
-    probeZeroKeyAdv_fullBounds (by decide) pairCoinScheme_sampleMsg_uniform
+    (pairCoinScheme.indCcaBotAdvantage (.ofDeterministic probeZeroKeyAdv) : ℝ) ≤ 1 / 4 := by
+  have h := pairCoinScheme.indCcaBotAdvantage_le (.ofDeterministic probeZeroKeyAdv)
+    (fun _ => probeZeroKeyAdv_fullBounds) pairCoinScheme_sampleMsg_uniform
     pairCoinPKE_deltaCorrect_zero pairCoinPKE_gammaSpread_four
-  rw [pairCoinScheme_indCpaAdvantage_romBotCpaReduction_probeZeroKeyAdv] at h
+  rw [pairCoinScheme_cpaAdvantage_romBotCpaReduction_probeZeroKeyAdv] at h
   refine h.trans (le_of_eq ?_)
   simp only [Fintype.card_fin, NNReal.coe_zero]
   norm_num

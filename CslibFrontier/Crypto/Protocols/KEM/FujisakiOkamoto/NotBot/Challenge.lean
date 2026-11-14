@@ -23,7 +23,9 @@ import CslibFrontier.Probability.PMF.Event
 The last hop of the ROM IND-CCA proof for `FO-notbot` ([HofheinzHoevelmannsKiltz2017], proof of
 the §3.1 theorem for `T` combined with the proof of the §3.2.2 IND-CCA theorem for `U-notbot`)
 bounds the distinguishing advantage of the keyless simulator game `Scheme.simGame` of
-`CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Hybrids` by the IND-CPA advantage of
+`CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Hybrids` by the success probability of
+the one-wayness experiment `Scheme.simFilterOwExperiment`, which
+`Scheme.succProbability_simFilterOwExperiment_le` bounds by the IND-CPA advantage of
 `Scheme.romCpaReduction`.
 
 In `simGame b` the simulator starts with `G(m*) = r*` and `Hq(c*) = kq` already cached, and the
@@ -38,18 +40,17 @@ compared with the run of the same simulator from empty caches, which is the run 
    cached, for either input key.
 3. In the unprogrammed run `Hq(c*)` is cached only after some cached coin `G(m)` re-encrypts `m`
    to `c*`, which by `γ`-spreadness has probability at most `(qG + qH) · 2^(-γ)`; caching `G(m*)`
-   for a uniform `m*` has the probability bounded by
-   `Scheme.avg_simHitProb_le_indCpaAdvantage_romCpaReduction`.
+   is the one-wayness experiment `Scheme.simFilterOwExperiment`.
 
-Each simulator game is within `Pr[G(m*) cached] + (qG + qH) 2^(-γ)` of the empty-cache run, so the
-two bits are within twice that, giving `2 (Adv_CPA + (qG + qH)/|M|) + 2 (qG + qH) 2^(-γ)`.
+Each simulator game is within `Pr[OW] + (qG + qH) 2^(-γ)` of the empty-cache run, so the two bits
+are within twice that.
 
 ## Main results
 
-* `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.advantage_simGame_le`: the advantage between
-  `simGame A false` and `simGame A true` is at most
-  `2 Adv_CPA(romCpaReduction A m₀ m₁) + 2 (qG + qH)/|M| + 2 (qG + qH) 2^(-γ)` for some distinct
-  messages `m₀ ≠ m₁`, when the message sampler is uniform and the PKE is `γ`-spread.
+* `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.advantage_simFilterGame_le`,
+  `Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.advantage_simGame_le`: the advantage between
+  `simGame A false` and `simGame A true` is at most `2 Pr[OW] + 2 (qG + qH) 2^(-γ)` when the PKE
+  is `γ`-spread, where `OW` is the one-wayness experiment `simFilterOwExperiment`.
 
 ## References
 
@@ -410,39 +411,21 @@ private theorem simRun_bad_le (S : Scheme PK SK M R CT K) (d : List (M × R) →
     _ ≤ _ := MeasureTheory.measure_union_le _ _
     _ ≤ _ := by gcongr
 
-/-- `simFilterHitProb d A m m` as the hit probability of the simulator run on a fresh encryption of
-`m`. -/
-private theorem simHitProb_self_eq (S : Scheme PK SK M R CT K)
-    (d : PK → List (M × R) → CT → Bool) (A : ROAdversary PK M R CT K) (m : M) :
-    S.simFilterHitProb d A m m = (((ProbComp.eval S.pke.keyGen).bind fun keys =>
-      (ProbComp.eval S.pke.sampleCoins).bind fun r =>
-      (ProbComp.eval S.sampleKey).bind fun k =>
-        (S.simRun (d keys.1) A keys.1 (S.pke.encDet keys.1 m r) k {}).map
-          fun x => (x.2.gCache.lookup m).isSome) true).toReal := by
-  simp only [simFilterHitProb, simRun, ExplicitCoinPKE.indCpaGame, ExplicitCoinPKE.encrypt,
-    romFilterCpaReduction, Bool.false_eq_true, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure,
-    OracleComp.map_run_interpret ProbComp.isMonadHom_eval, PMF.map, PMF.bind_bind,
-    PMF.pure_bind, Function.comp_def]
-
-/-- **Averaging**: with a uniform message sampler, the probability that the
-simulator run from the empty state on an encryption of a fresh message `m` records `m` in
-`gCache` is the diagonal average of `simFilterHitProb`. -/
-private theorem avg_simRun_hit [Fintype M] [Nonempty M] (S : Scheme PK SK M R CT K)
-    (d : PK → List (M × R) → CT → Bool) (A : ROAdversary PK M R CT K)
-    (hmsg : ProbComp.eval S.sampleMsg = PMF.uniformOfFintype M) :
-    (((ProbComp.eval S.pke.keyGen).bind fun keys =>
+/-- The one-wayness experiment `simFilterOwExperiment` as the probability that the simulator run
+from empty caches on an encryption of a fresh message `m` records `m` in `gCache`. -/
+private theorem eval_simFilterOwExperiment (S : Scheme PK SK M R CT K)
+    (d : PK → List (M × R) → CT → Bool) (A : ROAdversary PK M R CT K) :
+    ProbComp.eval (S.simFilterOwExperiment d A) =
+      (ProbComp.eval S.pke.keyGen).bind fun keys =>
       (ProbComp.eval S.sampleMsg).bind fun m =>
       (ProbComp.eval S.pke.sampleCoins).bind fun r =>
       (ProbComp.eval S.sampleKey).bind fun k =>
         (S.simRun (d keys.1) A keys.1 (S.pke.encDet keys.1 m r) k {}).map
-          fun x => (x.2.gCache.lookup m).isSome) true).toReal =
-      (∑ m : M, S.simFilterHitProb d A m m) / (Fintype.card M : ℝ) := by
-  rw [PMF.bind_comm, hmsg, PMF.bind_apply, tsum_fintype,
-    ENNReal.toReal_sum fun _ _ =>
-      ENNReal.mul_ne_top (PMF.apply_ne_top _ _) (PMF.apply_ne_top _ _), Finset.sum_div]
-  refine Finset.sum_congr rfl fun m _ => ?_
-  rw [simHitProb_self_eq, ENNReal.toReal_mul, PMF.uniformOfFintype_apply, ENNReal.toReal_inv,
-    ENNReal.toReal_natCast, div_eq_inv_mul]
+          fun x => (x.2.gCache.lookup m).isSome := by
+  simp only [simFilterOwExperiment, simFilterHit, simRun, ExplicitCoinPKE.encrypt,
+    ProbComp.eval_bind, ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind,
+    OracleComp.map_run_interpret ProbComp.isMonadHom_eval]
+  rfl
 
 /-! ### Simulators with lazily programmed points -/
 
@@ -1015,30 +998,21 @@ private theorem closeTo_simRun_preset (S : Scheme PK SK M R CT K)
   rw [← PMF.toOuterMeasure_apply_singleton, PMF.toOuterMeasure_map_apply]
   rfl
 
-/-- **Filtered challenge hop**: if the message sampler is uniform on a message space with at least
-two elements, the PKE is `γ`-spread, and the decapsulation filter `d` is invariant under
-programming `(mStar, rStar)` at ciphertexts `c ≠ Enc(pk, mStar; rStar)`, then for every adversary
-making at most `qG` queries to `G` and `qH` queries to `H`, some distinct messages `m₀ ≠ m₁` bound
-the advantage between `simFilterGame d A false` and `simFilterGame d A true` by
-`2 Adv_CPA(romFilterCpaReduction d A m₀ m₁) + 2 (qG + qH)/|M| + 2 (qG + qH) 2^(-γ)`. -/
-theorem advantage_simFilterGame_le [Fintype M] [Nonempty M]
-    (S : Scheme PK SK M R CT K) (d : PK → List (M × R) → CT → Bool)
+/-- **Filtered challenge hop**: if the PKE is `γ`-spread and the decapsulation filter `d` is
+invariant under programming `(mStar, rStar)` at ciphertexts `c ≠ Enc(pk, mStar; rStar)`, then for
+every adversary making at most `qG` queries to `G` and `qH` queries to `H`, the advantage between
+`simFilterGame d A false` and `simFilterGame d A true` is at most
+`2 Pr[simFilterOwExperiment d A] + 2 (qG + qH) 2^(-γ)`. -/
+theorem advantage_simFilterGame_le (S : Scheme PK SK M R CT K)
+    (d : PK → List (M × R) → CT → Bool)
     (hd : ∀ pk mStar rStar L c, c ≠ S.pke.encDet pk mStar rStar →
       LookupNoneOr mStar rStar L → d pk (ens mStar rStar L) c = d pk L c)
     (A : ROAdversary PK M R CT K) {qG qH : ℕ}
-    (hq : ROQueryBounds A qG qH) (hM : 2 ≤ Fintype.card M)
-    (hmsg : ProbComp.eval S.sampleMsg = PMF.uniformOfFintype M) {γ : ℝ}
-    (hγ : S.pke.GammaSpread γ) :
-    ∃ m₀ m₁ : M, m₀ ≠ m₁ ∧
-      (Game.advantage (ProbComp.eval (S.simFilterGame d A false))
-          (ProbComp.eval (S.simFilterGame d A true)) : ℝ) ≤
-        2 * (S.pke.indCpaAdvantage m₀ m₁ (S.romFilterCpaReduction d A m₀ m₁) : ℝ) +
-          2 * (((qG : ℝ) + qH) / Fintype.card M) +
-            2 * (((qG : ℝ) + qH) * (2 : ℝ) ^ (-γ)) := by
+    (hq : ROQueryBounds A qG qH) {γ : ℝ} (hγ : S.pke.GammaSpread γ) :
+    (Game.advantage (ProbComp.eval (S.simFilterGame d A false))
+        (ProbComp.eval (S.simFilterGame d A true)) : ℝ) ≤
+      2 * Pr[S.simFilterOwExperiment d A] + 2 * (((qG : ℝ) + qH) * (2 : ℝ) ^ (-γ)) := by
   classical
-  obtain ⟨m₀, m₁, hne, havg⟩ := S.avg_simFilterHitProb_le_indCpaAdvantage_romFilterCpaReduction
-    d A hM hq
-  refine ⟨m₀, m₁, hne, ?_⟩
   set ε : ℝ≥0∞ := ((qG + qH : ℕ) : ℝ≥0∞) * ENNReal.ofReal ((2 : ℝ) ^ (-γ)) with hε
   set H : ℝ≥0∞ := ((ProbComp.eval S.pke.keyGen).bind fun keys =>
       (ProbComp.eval S.sampleMsg).bind fun m =>
@@ -1097,29 +1071,22 @@ theorem advantage_simFilterGame_le [Fintype M] [Nonempty M]
   have hreal := ENNReal.toReal_mono (ENNReal.mul_ne_top ENNReal.ofNat_ne_top
     (ENNReal.add_ne_top.mpr ⟨hHtop, hεtop⟩)) hle
   rw [ENNReal.coe_toReal, ENNReal.toReal_mul, ENNReal.toReal_ofNat,
-    ENNReal.toReal_add hHtop hεtop, hH,
-    S.avg_simRun_hit d A hmsg, hε, ENNReal.toReal_mul, ENNReal.toReal_natCast,
-    ENNReal.toReal_ofReal (Real.rpow_nonneg (by norm_num) _)] at hreal
+    ENNReal.toReal_add hHtop hεtop, hH, ← eval_simFilterOwExperiment, hε, ENNReal.toReal_mul,
+    ENNReal.toReal_natCast, ENNReal.toReal_ofReal (Real.rpow_nonneg (by norm_num) _)] at hreal
   rw [Nat.cast_add] at hreal
   linarith
 
-/-- **Challenge hop of the `FO-notbot` IND-CCA proof**: if the message sampler is uniform on a
-message space with at least two elements and the PKE is `γ`-spread, then for every adversary
-making at most `qG` queries to `G` and `qH` queries to `H`, some distinct messages `m₀ ≠ m₁` bound
-the advantage between the keyless simulator games `simGame A false` and `simGame A true` by
-`2 Adv_CPA(romCpaReduction A m₀ m₁) + 2 (qG + qH)/|M| + 2 (qG + qH) 2^(-γ)`. -/
-theorem advantage_simGame_le [Fintype M] [Nonempty M]
-    (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K) {qG qH : ℕ}
-    (hq : ROQueryBounds A qG qH) (hM : 2 ≤ Fintype.card M)
-    (hmsg : ProbComp.eval S.sampleMsg = PMF.uniformOfFintype M) {γ : ℝ}
-    (hγ : S.pke.GammaSpread γ) :
-    ∃ m₀ m₁ : M, m₀ ≠ m₁ ∧
-      (Game.advantage (ProbComp.eval (S.simGame A false))
-          (ProbComp.eval (S.simGame A true)) : ℝ) ≤
-        2 * (S.pke.indCpaAdvantage m₀ m₁ (S.romCpaReduction A m₀ m₁) : ℝ) +
-          2 * (((qG : ℝ) + qH) / Fintype.card M) +
-            2 * (((qG : ℝ) + qH) * (2 : ℝ) ^ (-γ)) :=
-  S.advantage_simFilterGame_le (fun _ _ _ => true) (fun _ _ _ _ _ _ _ => rfl) A hq hM hmsg hγ
+/-- **Challenge hop of the `FO-notbot` IND-CCA proof**: if the PKE is `γ`-spread, then for every
+adversary making at most `qG` queries to `G` and `qH` queries to `H`, the advantage between the
+keyless simulator games `simGame A false` and `simGame A true` is at most
+`2 Pr[simFilterOwExperiment A] + 2 (qG + qH) 2^(-γ)` for the unfiltered simulator. -/
+theorem advantage_simGame_le (S : Scheme PK SK M R CT K) (A : ROAdversary PK M R CT K)
+    {qG qH : ℕ} (hq : ROQueryBounds A qG qH) {γ : ℝ} (hγ : S.pke.GammaSpread γ) :
+    (Game.advantage (ProbComp.eval (S.simGame A false))
+        (ProbComp.eval (S.simGame A true)) : ℝ) ≤
+      2 * Pr[S.simFilterOwExperiment (fun _ _ _ => true) A] +
+        2 * (((qG : ℝ) + qH) * (2 : ℝ) ^ (-γ)) :=
+  S.advantage_simFilterGame_le (fun _ _ _ => true) (fun _ _ _ _ _ _ _ => rfl) A hq hγ
 
 end Scheme
 
