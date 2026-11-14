@@ -125,6 +125,51 @@ example (e : Polynomial ℕ) : ∃ (p q : Polynomial ℕ) (V : _ × List Bool �
     mem_AM_iff_forall_errorExponent.mp (NP_subset_AM SAT.mem_NP) e
   exact ⟨p, q, V, hV, isArthurMerlinVerifierWithErrorExponent_iff_decidesWithErrorExponent.mp hAM⟩
 
+/-- A concrete randomized (`p = 1`) Merlin–Arthur verifier with perfect completeness (`1`) and
+tight soundness error (`1 / 2`), reduced to standard `(2 / 3, 1 / 3)` bounded error by
+`IsMerlinArthurOneVerifier.merlinArthurRepeat_one`. -/
+theorem head_isMerlinArthurOneVerifier :
+    IsMerlinArthurOneVerifier encBits 1 1
+      (fun (w, yr) => w.headD false || (yr.drop 1).headD false)
+      {w : List Bool | w.headD false = true} := by
+  intro w
+  generalize hm : (1 : Polynomial ℕ).eval (encBits w).length = m
+  obtain rfl : m = 1 := hm.symm.trans Polynomial.eval_one
+  refine ⟨fun hw => ⟨fun _ => true, fun r => ?_⟩, fun hw y => ?_⟩
+  · have hw' : w.headD false = true := hw
+    simp only [hw', Bool.true_or]
+  · have hwfalse : w.headD false = false := Bool.eq_false_iff.mpr hw
+    simp only [hwfalse, Bool.false_or]
+    revert y
+    decide
+
+example : IsMerlinArthurVerifier encBits 1 (2 * 1 * 1)
+    (merlinArthurRepeat encBits 1 1 1 (fun (w, yr) => w.headD false || (yr.drop 1).headD false))
+    {w : List Bool | w.headD false = true} :=
+  head_isMerlinArthurOneVerifier.merlinArthurRepeat_one
+
+/-- A concrete randomized (`p = 1`) Merlin–Arthur verifier with completeness `1 / 2` and perfect
+soundness (`0`), turned into a deterministic `NP` verifier of certificate length `1 + 1` by
+`IsMerlinArthurZeroVerifier.isVerifier`. -/
+theorem head_isMerlinArthurZeroVerifier :
+    IsMerlinArthurZeroVerifier encBits 1 1
+      (fun (w, yr) => w.headD false && (yr.drop 1).headD false)
+      {w : List Bool | w.headD false = true} := by
+  intro w
+  generalize hm : (1 : Polynomial ℕ).eval (encBits w).length = m
+  obtain rfl : m = 1 := hm.symm.trans Polynomial.eval_one
+  refine ⟨fun hw => ⟨fun _ => true, ?_⟩, fun hw y r => ?_⟩
+  · have hw' : w.headD false = true := hw
+    simp only [hw', Bool.true_and]
+    decide
+  · have hwfalse : w.headD false = false := Bool.eq_false_iff.mpr hw
+    simp only [hwfalse, Bool.false_and]
+
+example : IsVerifier encBits (1 + 1)
+    (fun (w, yr) => w.headD false && (yr.drop 1).headD false)
+    {w : List Bool | w.headD false = true} :=
+  head_isMerlinArthurZeroVerifier.isVerifier
+
 /-- Perfect soundness (`MAZero = NP`) and perfect completeness (`MA = MAOne`, `AM = AMOne`) for
 concrete problems. -/
 theorem perfectCompleteness_and_perfectSoundness_examples :

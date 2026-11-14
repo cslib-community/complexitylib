@@ -11,7 +11,6 @@ public import CslibFrontier.Init
 public import Cslib.Foundations.Data.BitString
 public import Mathlib.Algebra.Ring.BooleanRing
 public import Mathlib.Data.Fintype.Pi
-import CslibFrontier.Foundations.Combinatorics.FiniteCover.Basic
 import CslibFrontier.Foundations.Data.BitString.Basic
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import Mathlib.Data.Fintype.BigOperators
@@ -24,7 +23,7 @@ import Mathlib.Tactic.Ring
 Let `S` be a subset of a finite group `G`. If `S` is large, a few shifts of `S` cover `G`; if `S`
 is small, they do not. Precisely, if `|G| |G \ S| ^ k < |G| ^ k`, then some `k` elements `u i`
 satisfy `∀ g, ∃ i, g * u i ∈ S` (`exists_forall_exists_mul_mem_of_card_mul_card_compl_pow_lt`),
-by the union bound over `g` for uniformly random shifts (`exists_cover_of_scaled_card_lt`).
+by the union bound over `g` for uniformly random shifts (`card_filter_exists_forall_mul_mem_le`).
 Conversely, if `k |S| < |G|`, then no `k` shifts do (`exists_forall_mul_notMem_of_mul_card_lt`),
 as the `k` translates have at most `k |S|` elements in all. Each of these statements has an
 additive version, with `g + u i` in place of `g * u i`.
@@ -105,12 +104,10 @@ theorem exists_forall_exists_mul_mem_of_card_mul_card_compl_pow_lt [DecidableEq 
     {k : ℕ}
     (h : Fintype.card G * #Sᶜ ^ k < Fintype.card G ^ k) :
     ∃ u : Fin k → G, ∀ g, ∃ i, g * u i ∈ S := by
-  refine exists_cover_of_scaled_card_lt (fun u g => g * u ∈ S) #Sᶜ (Fintype.card G) k
-    (fun g => ?_) h
-  rw [mul_comm, Fintype.card_subtype]
-  exact le_of_eq <| congrArg (· * _) <|
-    card_nbij' (g * ·) (g⁻¹ * ·) (fun _ => by simp) (fun _ => by simp) (fun _ _ => by simp)
-      (fun _ _ => by simp)
+  have hlt : #{u : Fin k → G | ∃ g : G, ∀ i, g * u i ∈ Sᶜ} < #(univ : Finset (Fin k → G)) := by
+    simpa [card_univ] using (card_filter_exists_forall_mul_mem_le Sᶜ k).trans_lt h
+  obtain ⟨u, -, hu⟩ := exists_mem_notMem_of_card_lt_card hlt
+  exact ⟨u, by simpa using hu⟩
 
 /-- **Lautemann's covering lemma**, density form: if `S` misses at most a `1 / q` fraction of the
 finite group `G`, that is `q |G \ S| ≤ |G|`, and `|G| < q ^ k`, then some `k` shifts `u i` carry

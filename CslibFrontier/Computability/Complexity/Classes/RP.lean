@@ -13,6 +13,7 @@ public import CslibFrontier.Computability.Complexity.Classes.RepeatedTrials
 public import Mathlib.Data.Fintype.Pi
 import CslibFrontier.Computability.Complexity.Classes.SharpP
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import CslibFrontier.Foundations.Data.BitString.WordCount
 import Mathlib.Data.Fintype.BigOperators
 
 /-!
@@ -221,24 +222,18 @@ theorem SolvesWithOneSidedError.repeatAny {p : Polynomial ℕ} {V : α × List B
   rw [hlen]
   set k := q.eval (enc a).length
   set m := p.eval (enc a).length
-  set R := Finset.univ.filter fun u : Fin m → Bool => V (a, List.ofFn u) = false
   constructor
   · -- so all `k` runs reject on at most a `2 ^ (-k)` fraction
     intro ha
-    replace hR := hR ha
-    have hcard : (Finset.univ.filter fun x : BitString (k * m) =>
-        Complexity.repeatAny enc q p V (a, List.ofFn x) = false).card ≤ R.card ^ k := by
-      rw [← Fintype.card_piFinset_const, ← Finset.card_map BitString.blocksEquiv.toEmbedding]
-      refine Finset.card_le_card fun ω hω => ?_
-      obtain ⟨x, hx, rfl⟩ := Finset.mem_map.1 hω
+    have hsub : (Finset.univ.filter fun x : BitString (k * m) =>
+        Complexity.repeatAny enc q p V (a, List.ofFn x) = false) ⊆
+        Finset.univ.filter fun x : BitString (k * m) =>
+          ∀ i : Fin k, V (a, List.ofFn (BitString.block x i)) = false := fun x hx => by
       rw [Finset.mem_filter, ← Bool.not_eq_true, repeatAny_ofFn_eq_true_iff] at hx
-      simpa [Fintype.mem_piFinset, R] using hx.2
-    calc 2 ^ k * (Finset.univ.filter fun x : BitString (k * m) =>
-          Complexity.repeatAny enc q p V (a, List.ofFn x) = false).card
-        ≤ 2 ^ k * R.card ^ k := Nat.mul_le_mul_left _ hcard
-      _ = (2 * R.card) ^ k := (mul_pow _ _ _).symm
-      _ ≤ (2 ^ m) ^ k := Nat.pow_le_pow_left hR k
-      _ = 2 ^ (k * m) := by rw [← pow_mul, Nat.mul_comm]
+      simpa using hx.2
+    exact (Nat.mul_le_mul_left (2 ^ k) (Finset.card_le_card hsub)).trans
+      (BitString.two_pow_mul_card_filter_forall_block_le
+        (fun u : BitString m => V (a, List.ofFn u) = false) (hR ha))
   · -- on a no-instance, no run accepts
     intro ha x
     rw [← Bool.not_eq_true, repeatAny_ofFn_eq_true_iff]

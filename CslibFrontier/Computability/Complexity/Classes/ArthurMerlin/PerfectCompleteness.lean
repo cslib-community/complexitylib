@@ -1,14 +1,13 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Christian Reitwiessner, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Christian Reitwiessner, Samuel Schlesinger
 -/
 
 module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.PH
-public import CslibFrontier.Computability.Complexity.Classes.RP
 
 import CslibFrontier.Foundations.Combinatorics.Lautemann
 
@@ -36,7 +35,7 @@ Fürer, Goldreich, Mansour, Sipser and Zachos):
   `AM = AMOne`.
 
 By contrast, requiring perfect soundness (`0` acceptance on non-members) and completeness `1 / 2`
-on members defines `MAZero` (`Cslib.Complexity.MAZero`, written `MA(1)` in
+on members defines `MAZero` (`Cslib.Complexity.MAZero`, written `MA^{(1)}` in
 [Goldreich, Exercise 6.12(1)][Goldreich2007Draft]), which collapses to `NP`: any accepted pair of a
 proof and a random string is a deterministic certificate (`MAZero = NP`).
 
@@ -60,6 +59,7 @@ proof and a random string is a deterministic certificate (`MAZero = NP`).
 * `Cslib.Complexity.ArthurMerlin.isArthurMerlinOneVerifier_piTwoVerifier`,
   `Cslib.Complexity.AM_eq_AMOne`: `AM enc = AMOne enc` (two-message constant-round milestone of
   [Goldreich, Exercise 9.8(2)][Goldreich2007DraftR5]).
+* `Cslib.Complexity.MAOne_subset_AMOne`: `MAOne enc ⊆ AMOne enc`.
 
 ## References
 
@@ -81,10 +81,10 @@ open Finset Turing.MultiTapeTM
 
 variable {α : Type} {enc : α ↪ List Bool} {A : Set α}
 
-/-! ### Perfect soundness for `MA`: `MA(1) = NP` -/
+/-! ### Perfect soundness for `MA`: `MA^{(1)} = NP` -/
 
 /-- `V` is a Merlin–Arthur verifier for `A` with completeness `1 / 2` and perfect soundness (`0`),
-the class `MA(1)` of [Goldreich, Exercise 6.12(1)][Goldreich2007Draft], with proofs of length `q`
+the class `MA^{(1)}` of [Goldreich, Exercise 6.12(1)][Goldreich2007Draft], with proofs of length `q`
 and random strings of length `p`, both evaluated at the length of the encoded instance: on a member
 `a` some proof `y` is accepted on at least half of the random strings `r`; on a non-member every
 proof and random string are rejected. -/
@@ -98,7 +98,7 @@ def IsMerlinArthurZeroVerifier (enc : α ↪ List Bool) (q p : Polynomial ℕ)
       (r : Fin (p.eval (enc a).length) → Bool), V (a, List.ofFn y ++ List.ofFn r) = false)
 
 /-- The problems with polynomial-time Merlin–Arthur verifiers with completeness `1 / 2` and
-soundness error `0` (`MA(1)` in [Goldreich, Exercise 6.12(1)][Goldreich2007Draft]). -/
+soundness error `0` (`MA^{(1)}` in [Goldreich, Exercise 6.12(1)][Goldreich2007Draft]). -/
 def MAZero (enc : α ↪ List Bool) : Set (Set α) :=
   {A | ∃ (q p : Polynomial ℕ) (V : α × List Bool → Bool),
     ComputableInPolyTime V (encPair enc encBits) encBool ∧ IsMerlinArthurZeroVerifier enc q p V A}
@@ -161,8 +161,8 @@ theorem MAZero_subset_NP : MAZero enc ⊆ NP enc :=
 theorem NP_subset_MAZero : NP enc ⊆ MAZero enc :=
   fun _ ⟨q, V, hV, h⟩ => ⟨q, 0, V, hV, h.isMerlinArthurZeroVerifier⟩
 
-/-- **`MA(1) = NP`** [Goldreich, Exercise 6.12(1)][Goldreich2007Draft]: Merlin–Arthur proof systems
-with completeness `1 / 2` and perfect soundness (`0`) characterize `NP`. -/
+/-- **`MA^{(1)} = NP`** [Goldreich, Exercise 6.12(1)][Goldreich2007Draft]: Merlin–Arthur proof
+systems with completeness `1 / 2` and perfect soundness (`0`) characterize `NP`. -/
 theorem MAZero_eq_NP : MAZero enc = NP enc :=
   Set.Subset.antisymm MAZero_subset_NP NP_subset_MAZero
 
@@ -243,12 +243,10 @@ private theorem two_mul_two_pow_le_three_mul_card_two_trials_not_of_two_mul_le {
   refine BitString.two_mul_two_pow_le_of_four_mul_card_filter_not_le
     (fun x : BitString (2 * 1 * m) => ¬ 1 < #{i : Fin (2 * 1) | P (BitString.block x i)}) ?_
   simp only [not_not]
-  set G : Finset (BitString m) := univ.filter P
-  have hcard : #{x : BitString (2 * 1 * m) | 1 < #{i : Fin (2 * 1) | P (BitString.block x i)}} ≤
-      #G ^ (2 * 1) := by
-    rw [← Fintype.card_piFinset_const, ← card_map BitString.blocksEquiv.toEmbedding]
-    refine card_le_card fun ω hω => ?_
-    obtain ⟨x, hx, rfl⟩ := mem_map.1 hω
+  have hsub : (univ.filter fun x : BitString (2 * 1 * m) =>
+      1 < #{i : Fin (2 * 1) | P (BitString.block x i)}) ⊆
+      univ.filter fun x : BitString (2 * 1 * m) =>
+        ∀ i : Fin (2 * 1), P (BitString.block x i) := fun x hx => by
     have hx' : 1 < #{i : Fin (2 * 1) | P (BitString.block x i)} := (mem_filter.1 hx).2
     have hle : #{i : Fin (2 * 1) | P (BitString.block x i)} ≤ 2 :=
       (card_le_univ _).trans_eq (by simp)
@@ -256,12 +254,9 @@ private theorem two_mul_two_pow_le_three_mul_card_two_trials_not_of_two_mul_le {
       simp only [card_univ, Fintype.card_fin]
       omega
     have hall := filter_eq_self.1 (eq_of_subset_of_card_le (filter_subset _ _) heq.ge)
-    exact Fintype.mem_piFinset.2 fun i => mem_filter.2 ⟨mem_univ _, hall i (mem_univ i)⟩
-  calc 4 * #{x : BitString (2 * 1 * m) | 1 < #{i : Fin (2 * 1) | P (BitString.block x i)}}
-      ≤ 2 ^ (2 * 1) * #G ^ (2 * 1) := Nat.mul_le_mul_left 4 hcard
-    _ = (2 * #G) ^ (2 * 1) := (mul_pow 2 #G (2 * 1)).symm
-    _ ≤ (2 ^ m) ^ (2 * 1) := Nat.pow_le_pow_left hP (2 * 1)
-    _ = 2 ^ (2 * 1 * m) := by rw [← pow_mul, Nat.mul_comm]
+    exact mem_filter.2 ⟨mem_univ _, fun i => hall i (mem_univ i)⟩
+  exact (Nat.mul_le_mul_left (2 ^ (2 * 1)) (card_le_card hsub)).trans
+    (BitString.two_pow_mul_card_filter_forall_block_le P hP)
 
 /-- Repeating a perfectly complete Merlin–Arthur verifier twice (`r = 1`) reduces its soundness
 error from `1 / 2` to `1 / 4 ≤ 1 / 3`. -/
