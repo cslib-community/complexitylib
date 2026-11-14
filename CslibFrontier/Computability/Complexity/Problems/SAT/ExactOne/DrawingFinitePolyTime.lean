@@ -50,8 +50,6 @@ namespace Cslib.Complexity.SAT.ExactOne.DrawingFinitePolyTime
 
 open Cslib.Logic.PL Orthogonal Turing.MultiTapeTM
 
-attribute [local fun_prop] ComputableInPolyTime.tidy
-
 /-- The existing literal encoding, with binary natural variable labels. -/
 abbrev encClause : Clause ℕ ↪ List Bool := encList (encPair encNat encBool)
 
@@ -85,7 +83,6 @@ theorem boundedClauseLength_eq (c : Clause ℕ) :
 @[fun_prop]
 theorem computableInPolyTime_boundedClauseLength :
     ComputableInPolyTime boundedClauseLength encClause (encFinite (Fin 4)) := by
-  refine .of_tidy ?_
   unfold boundedClauseLength encClause
   fun_prop
 
@@ -106,26 +103,25 @@ private theorem clauseProfile_eq_tag (c : Clause ℕ) :
 theorem computableInPolyTime_clauseProfile :
     ComputableInPolyTime clauseProfile encClause (encFinite ClauseProfile) := by
   let tagEncoding := encPair (encFinite (Fin 4)) (encPair encBool (encPair encBool encBool))
-  have hget (i : ℕ) : ComputableTidilyInPolyTime
+  have hget (i : ℕ) : ComputableInPolyTime
       (fun c : Clause ℕ => (c.getD i (0, true)).2) encClause encBool := by
-    have hg := (ComputableTidilyInPolyTime.listGetD
+    have hg := (ComputableInPolyTime.listGetD
       (encA := encPair encNat encBool) (encL := encClause) (0, true)).comp
-      ((ComputableTidilyInPolyTime.id' (encIn := encClause)).prod
-        (ComputableTidilyInPolyTime.const i))
-    exact (ComputableTidilyInPolyTime.snd encNat encBool).comp hg
-  have htag : ComputableTidilyInPolyTime clauseTag encClause tagEncoding :=
-    computableInPolyTime_boundedClauseLength.tidy.prod ((hget 0).prod ((hget 1).prod (hget 2)))
-  have hfinite : ComputableTidilyInPolyTime profileOfTag tagEncoding (encFinite ClauseProfile) :=
+      ((ComputableInPolyTime.id' (encIn := encClause)).prod
+        (ComputableInPolyTime.const i))
+    exact (ComputableInPolyTime.snd encNat encBool).comp hg
+  have htag : ComputableInPolyTime clauseTag encClause tagEncoding :=
+    computableInPolyTime_boundedClauseLength.prod ((hget 0).prod ((hget 1).prod (hget 2)))
+  have hfinite : ComputableInPolyTime profileOfTag tagEncoding (encFinite ClauseProfile) :=
     .of_finite _
   have he : clauseProfile = profileOfTag ∘ clauseTag := funext clauseProfile_eq_tag
   rw [he]
-  exact .of_tidy (hfinite.comp htag)
+  exact hfinite.comp htag
 
 /-- A cardinal-vector classifier uses only three binary-coordinate equality tests. -/
 @[fun_prop]
 theorem computableInPolyTime_directionSide :
     ComputableInPolyTime directionSide encPoint (encFinite (Fin 4)) := by
-  refine .of_tidy ?_
   unfold directionSide
   fun_prop
 
@@ -136,40 +132,40 @@ theorem computableInPolyTime_choosePorts :
       (fun p : Fin 4 × Fin 4 × Fin 4 × Fin 4 => choosePorts p.1 p.2.1 p.2.2.1 p.2.2.2)
       (encPair (encFinite (Fin 4)) (encPair (encFinite (Fin 4))
         (encPair (encFinite (Fin 4)) (encFinite (Fin 4))))) (encFinite PortAssignment) :=
-  .of_tidy (.of_finite _)
+  .of_finite _
 
 /-- A fixed profile/port pair computes its placed local variable-position list. -/
 @[fun_prop]
 theorem computableInPolyTime_variablePositions :
     ComputableInPolyTime (fun p : ClauseProfile × PortAssignment =>
       (collaredPrefixGeometry (profilePrefixGeometry p.1) p.2).variablePositions)
-      encProfilePorts encRoute := .of_tidy (.of_finite _)
+      encProfilePorts encRoute := .of_finite _
 
 /-- A fixed profile/port pair computes its placed local clause-position list. -/
 @[fun_prop]
 theorem computableInPolyTime_clausePositions :
     ComputableInPolyTime (fun p : ClauseProfile × PortAssignment =>
       (collaredPrefixGeometry (profilePrefixGeometry p.1) p.2).clausePositions)
-      encProfilePorts encRoute := .of_tidy (.of_finite _)
+      encProfilePorts encRoute := .of_finite _
 
 /-- A fixed profile/port pair computes its actual local incidence routes and indices. -/
 @[fun_prop]
 theorem computableInPolyTime_incidenceRoutes :
     ComputableInPolyTime (fun p : ClauseProfile × PortAssignment =>
       (collaredPrefixGeometry (profilePrefixGeometry p.1) p.2).incidenceRoutes)
-      encProfilePorts (encList encLocalIncidence) := .of_tidy (.of_finite _)
+      encProfilePorts (encList encLocalIncidence) := .of_finite _
 
 /-- The source-variable list of a profile is a fixed finite lookup. -/
 @[fun_prop]
 theorem computableInPolyTime_profileVariables :
     ComputableInPolyTime profileVariables (encFinite ClauseProfile) (encList encRawVariable) :=
-  .of_tidy (.of_finite _)
+  .of_finite _
 
 /-- The exact logical formula of a profile is a fixed finite lookup. -/
 @[fun_prop]
 theorem computableInPolyTime_profileFormula :
     ComputableInPolyTime profileFormula (encFinite ClauseProfile)
-      (encList (encList (encPair encRawVariable encBool))) := .of_tidy (.of_finite _)
+      (encList (encList (encPair encRawVariable encBool))) := .of_finite _
 
 /-- Classify a fixed profile variable, normalizing its source position to the three finite slots.
 -/
@@ -237,19 +233,18 @@ theorem profileRole_map_val (p : ClauseProfile) (n : ℕ) :
 @[fun_prop]
 theorem computableInPolyTime_profileRoleTable :
     ComputableInPolyTime profileRoleTable (encFinite ClauseProfile)
-      (encList (encFinite (Option (Fin 3)))) := .of_tidy (.of_finite _)
+      (encList (encFinite (Option (Fin 3)))) := .of_finite _
 
 /-- A role table lookup accepts any unary index, with no promise that it lies in the table. -/
 @[fun_prop]
 theorem computableInPolyTime_profileRole :
     ComputableInPolyTime (fun p : ClauseProfile × ℕ => profileRole p.1 p.2)
       (encPair (encFinite ClauseProfile) encUnary) (encFinite (Option (Fin 3))) := by
-  have ht := computableInPolyTime_profileRoleTable.tidy.comp
-    (ComputableTidilyInPolyTime.fst (encFinite ClauseProfile) encUnary)
-  have hg := (ComputableTidilyInPolyTime.listGetD
+  have ht := computableInPolyTime_profileRoleTable.comp
+    (ComputableInPolyTime.fst (encFinite ClauseProfile) encUnary)
+  have hg := (ComputableInPolyTime.listGetD
     (encA := encFinite (Option (Fin 3))) (encL := encList (encFinite (Option (Fin 3))))
-    (some 0)).comp (ht.prod (ComputableTidilyInPolyTime.snd (encFinite ClauseProfile) encUnary))
-  refine .of_tidy ?_
+    (some 0)).comp (ht.prod (ComputableInPolyTime.snd (encFinite ClauseProfile) encUnary))
   simpa only [Function.comp_def, profileRole_eq_getD] using hg
 
 /-- Native computation of the selected collar follows from the three native source exits.
@@ -262,15 +257,14 @@ theorem computableInPolyTime_clausePorts_of_literalSide
     ComputableInPolyTime
       (fun p : (CNF ℕ × Graph.OrthogonalDrawing) × ℕ => clausePorts p.1.1 p.1.2 p.2)
       (encPair encInput encUnary) (encFinite PortAssignment) := by
-  have hc : ComputableTidilyInPolyTime
+  have hc : ComputableInPolyTime
       (fun p : (CNF ℕ × Graph.OrthogonalDrawing) × ℕ => p.1.1.getD p.2 [])
       (encPair encInput encUnary) encClause := by
     unfold encInput encCNF encClause
     fun_prop
-  have hn := computableInPolyTime_boundedClauseLength.tidy.comp hc
-  have ht := hn.prod ((hside 0).tidy.prod ((hside 1).tidy.prod (hside 2).tidy))
-  have h := computableInPolyTime_choosePorts.tidy.comp ht
-  refine .of_tidy ?_
+  have hn := computableInPolyTime_boundedClauseLength.comp hc
+  have ht := hn.prod ((hside 0).prod ((hside 1).prod (hside 2)))
+  have h := computableInPolyTime_choosePorts.comp ht
   simpa only [Function.comp_def, clausePorts, boundedClauseLength_eq] using h
 
 end Cslib.Complexity.SAT.ExactOne.DrawingFinitePolyTime
