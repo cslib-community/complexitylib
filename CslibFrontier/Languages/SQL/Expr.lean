@@ -29,7 +29,9 @@ Moving an expression across a scope boundary is explicit. `Expr.rename ρ` reind
 and `Expr.subst σ` replaces column `i` by an expression `σ i`: evaluating a substituted expression
 is evaluating the original on the row of results of `σ`, provided every `σ i` succeeds
 (`Expr.eval_subst`). For joins, whose rows are `Fin.append`, `Expr.eval_rename_castAdd` and
-`Expr.eval_rename_natAdd` evaluate an expression moved to the left or right side.
+`Expr.eval_rename_natAdd` evaluate an expression moved to the left or right side. Conversely,
+`Expr.lowerLeft` and `Expr.lowerRight` decide whether an expression over a joined row reads only
+one side, and return it as an expression over that side.
 
 It adapts and redesigns the expressions of `sql_equiv` (revision `38030a6b`) by Evelyn Mitchell.
 There, column references were names looked up in rows at evaluation time, `NULL` literals carried
@@ -42,6 +44,9 @@ is structural and total.
 * `Cslib.SQL.Expr`: resolved scalar expressions over `n` columns.
 * `Cslib.SQL.Expr.eval`: strict evaluation on a row; `Cslib.SQL.Expr.evalTruth` for predicates.
 * `Cslib.SQL.Expr.rename`, `Cslib.SQL.Expr.subst`: renaming and substitution of columns.
+* `Cslib.SQL.Expr.asLiteral`, `Cslib.SQL.Expr.ofDatum`: literals and their datums.
+* `Cslib.SQL.Expr.lower`, `Cslib.SQL.Expr.lowerLeft`, `Cslib.SQL.Expr.lowerRight`: renaming along
+  a partial map, and moving an expression over a joined row to one input.
 
 ## Main results
 
@@ -51,6 +56,9 @@ is structural and total.
   into a join reads its own side of the joined row.
 * `Cslib.SQL.Expr.toOption_eval_subst_congr`: substitutions with the same observations give
   expressions with the same observations.
+* `Cslib.SQL.Expr.rename_castAdd_of_lowerLeft_eq_some`,
+  `Cslib.SQL.Expr.rename_natAdd_of_lowerRight_eq_some`: a lowered expression renames back to the
+  original.
 -/
 
 @[expose] public section
@@ -135,6 +143,33 @@ theorem eval_caseWhen_of_ne_true {c : Expr n} {t : Truth} (hc : c.evalTruth r = 
 
 end Eval
 
+/-! ### Literals -/
+
+/-- The datum of a literal: `lit v` is `v` and `null τ` is `NULL`. Other expressions are not
+literals. -/
+def asLiteral : Expr n → Option Datum
+  | lit v => some (some v)
+  | null _ => some none
+  | _ => none
+
+/-- The literal of a datum, with `NULL` typed `τ`. -/
+def ofDatum (τ : SqlType) : Datum → Expr n
+  | none => null τ
+  | some v => lit v
+
+/-- A literal evaluates to its datum on every row. -/
+theorem eval_of_asLiteral_eq_some {e : Expr n} {d : Datum} (h : e.asLiteral = some d)
+    (r : Row n) : e.eval r = .ok d := by
+  cases e <;> cases h <;> rfl
+
+@[simp] theorem eval_ofDatum (τ : SqlType) (d : Datum) (r : Row n) :
+    (ofDatum τ d).eval r = .ok d := by
+  cases d <;> rfl
+
+@[simp] theorem asLiteral_ofDatum (τ : SqlType) (d : Datum) :
+    (ofDatum τ d : Expr n).asLiteral = some d := by
+  cases d <;> rfl
+
 /-! ### Renaming and substitution -/
 
 /-- Reindex the columns of an expression along `ρ`. -/
@@ -202,6 +237,73 @@ theorem toOption_eval_subst_congr {σ σ' : Fin n → Expr m} {r : Row m}
     (h : ∀ i, ((σ i).eval r).toOption = ((σ' i).eval r).toOption) (e : Expr n) :
     ((e.subst σ).eval r).toOption = ((e.subst σ').eval r).toOption := by
   induction e <;> simp_all [subst, eval, Except.toOption_bind, apply_ite Except.toOption]
+
+/-! ### Moving an expression into a join input -/
+
+/-- Rename the columns of an expression along the partial map `f`, failing when the expression
+mentions a column outside the domain of `f`. When `f` inverts a renaming `ρ`, a result `e'` is an
+expression with `e'.rename ρ = e` (`Expr.rename_of_lower_eq_some`). -/
+def lower (f : Fin n → Option (Fin m)) : Expr n → Option (Expr m)
+  | lit v => some (lit v)
+  | null τ => some (null τ)
+  | col i => (f i).map col
+  | unary op e => (e.lower f).map (unary op)
+  | binary op e₁ e₂ => do return binary op (← e₁.lower f) (← e₂.lower f)
+  | inList e vs => (e.lower f).map (inList · vs)
+  | caseWhen c a b => do return caseWhen (← c.lower f) (← a.lower f) (← b.lower f)
+
+/-- Lowering along a partial inverse of `ρ` undoes the renaming by `ρ`. -/
+theorem rename_of_lower_eq_some {f : Fin n → Option (Fin m)} {ρ : Fin m → Fin n}
+    (hf : ∀ i j, f i = some j → ρ j = i) {e : Expr n} {e' : Expr m} (h : e.lower f = some e') :
+    e'.rename ρ = e := by
+  induction e generalizing e' with
+  | lit v => cases h; rfl
+  | null τ => cases h; rfl
+  | col i =>
+    obtain ⟨j, hj, rfl⟩ := Option.map_eq_some_iff.mp h
+    exact congrArg col (hf i j hj)
+  | unary op e ih =>
+    obtain ⟨e', he, rfl⟩ := Option.map_eq_some_iff.mp h
+    exact congrArg (unary op) (ih he)
+  | binary op e₁ e₂ ih₁ ih₂ =>
+    simp only [lower, bind, pure, Option.bind_eq_some_iff, Option.some.injEq] at h
+    obtain ⟨e₁', h₁, e₂', h₂, rfl⟩ := h
+    simp only [rename, ih₁ h₁, ih₂ h₂]
+  | inList e vs ih =>
+    obtain ⟨e', he, rfl⟩ := Option.map_eq_some_iff.mp h
+    simp only [rename, ih he]
+  | caseWhen c a b ihc iha ihb =>
+    simp only [lower, bind, pure, Option.bind_eq_some_iff, Option.some.injEq] at h
+    obtain ⟨c', hc, a', ha, b', hb, rfl⟩ := h
+    simp only [rename, ihc hc, iha ha, ihb hb]
+
+/-- The expression over the left input of a join that `e` reads, if `e` mentions only left
+columns; then `e` is its renaming by `Fin.castAdd m`
+(`Expr.rename_castAdd_of_lowerLeft_eq_some`). -/
+def lowerLeft (e : Expr (n + m)) : Option (Expr n) :=
+  e.lower fun i => if h : (i : ℕ) < n then some ⟨i, h⟩ else none
+
+/-- The expression over the right input of a join that `e` reads, if `e` mentions only right
+columns; then `e` is its renaming by `Fin.natAdd n`
+(`Expr.rename_natAdd_of_lowerRight_eq_some`). -/
+def lowerRight (e : Expr (n + m)) : Option (Expr m) :=
+  e.lower fun i => if h : n ≤ (i : ℕ) then some ⟨i - n, by omega⟩ else none
+
+theorem rename_castAdd_of_lowerLeft_eq_some {e : Expr (n + m)} {e' : Expr n}
+    (h : e.lowerLeft = some e') : e'.rename (Fin.castAdd m) = e :=
+  rename_of_lower_eq_some (fun i j hij => by
+    split_ifs at hij with hi
+    cases hij
+    rfl) h
+
+theorem rename_natAdd_of_lowerRight_eq_some {e : Expr (n + m)} {e' : Expr m}
+    (h : e.lowerRight = some e') : e'.rename (Fin.natAdd n) = e :=
+  rename_of_lower_eq_some (fun i j hij => by
+    split_ifs at hij with hi
+    cases hij
+    ext
+    simp only [Fin.natAdd, Fin.val_mk]
+    omega) h
 
 end Expr
 
