@@ -154,37 +154,6 @@ theorem recursivelyPresentable_EXP : RecursivelyPresentable encBits (EXP encBits
 
 namespace RecursivelyPresentablePH
 
-/-- Cut consecutive blocks of uniform length `M` to lengths `p.eval n` for `p ∈ ps`. -/
-private def trimUniformBlocks (ps : List (Polynomial ℕ)) (n M : ℕ) : List Bool → List Bool :=
-  takeBlocks (ps.map fun p => (p.eval n, M))
-
-private theorem alternation_trimUniformBlocks {ps : List (Polynomial ℕ)} {n M : ℕ}
-    (hle : ∀ p ∈ ps, p.eval n ≤ M) {q : Bool} {P : List Bool → Prop} :
-    Alternation q (List.replicate ps.length M) (fun w => P (trimUniformBlocks ps n M w)) ↔
-      Alternation q (ps.map fun p => p.eval n) P := by
-  simpa only [trimUniformBlocks, List.map_map, Function.comp_def, List.map_const',
-    List.length_map] using
-    alternation_takeBlocks (ls := ps.map fun p => (p.eval n, M)) (q := q) (P := P)
-      (by simpa only [List.forall_mem_map] using hle)
-
-private theorem computableInPolyTime_trimUniformBlocks (ps : List (Polynomial ℕ)) (d : ℕ) :
-    ∀ {W : List Bool × List Bool → List Bool},
-      ComputableInPolyTime W (encPair encBits encBits) encBits →
-      ComputableInPolyTime
-        (fun x : List Bool × List Bool =>
-          trimUniformBlocks ps x.1.length (Ladner.clock d x.1.length) (W x))
-        (encPair encBits encBits) encBits := by
-  intro W hW
-  have hm : ComputableInPolyTime (fun x : List Bool × List Bool => Ladner.clock d x.1.length)
-      (encPair encBits encBits) encUnary := (unary_pow d).comp (by fun_prop)
-  simpa only [trimUniformBlocks, List.map_map, Function.comp_def] using
-    computableInPolyTime_takeBlocks
-      (ps.map fun p => (fun x : List Bool × List Bool => p.eval x.1.length,
-        fun x => Ladner.clock d x.1.length))
-      (fun l hl => by
-        obtain ⟨p, -, rfl⟩ := List.mem_map.mp hl
-        exact ⟨(unary_eval p).comp (by fun_prop), hm⟩) hW
-
 private noncomputable def clockPoly (d : ℕ) : Polynomial ℕ := (2 * Polynomial.X + 2) ^ d
 
 private theorem eval_clockPoly (d n : ℕ) : (clockPoly d).eval n = Ladner.clock d n := by
@@ -216,7 +185,8 @@ private theorem mem_SigmaP_encBits_iff {k : ℕ} {A : Set (List Bool)} :
       V (x.1, trimUniformBlocks ps x.1.length (Ladner.clock d x.1.length) x.2)
     have hV' : ComputableInPolyTime V' (encPair encBits encBits) encBool :=
       hV.comp ((ComputableInPolyTime.fst encBits encBits).prod
-        (computableInPolyTime_trimUniformBlocks ps d (.snd encBits encBits)))
+        (computableInPolyTime_trimUniformBlocks ps (by fun_prop)
+          ((unary_pow d).comp (by fun_prop)) (.snd encBits encBits)))
     have hW : {u : List Bool | V' (unframe u, dropFrame u) = true} ∈ P encBits := by
       have hunpairBits : ComputableInPolyTime (fun u : List Bool => (unframe u, dropFrame u))
           encBits (encPair encBits encBits) := by fun_prop
