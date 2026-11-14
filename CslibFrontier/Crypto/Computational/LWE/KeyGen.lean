@@ -60,6 +60,9 @@ distributional bridges to `DecisionLWE`, and uniform strict polynomial-time cert
 * `Cslib.Crypto.LWE.mem_support_sampleKeyInputs_iff`: exact coordinatewise error bound on
   supported key inputs.
 * `Cslib.Crypto.LWE.exists_uniform_seed_sampleKeyInputs`: flat uniform bit-tape realization.
+* `Cslib.Crypto.LWE.eval_replicate_sampleBinaryNat`,
+  `Cslib.Crypto.LWE.eval_replicate_replicate_sampleBinaryNat`: lists of unsigned `w`-bit samples
+  are the canonical representatives of a uniform residue vector or matrix.
 * `Cslib.Crypto.LWE.eval_keyGen_publicMatrix`, `Cslib.Crypto.LWE.eval_keyGen_publicWord`,
   `Cslib.Crypto.LWE.eval_keyGenSerialized_publicWord`: exact match with `LWE.publicMatrixLaw`
   and `LWE.realEnsemble`.
@@ -303,22 +306,37 @@ theorem eval_sampleBinaryNat_eq_map_val (w : ℕ) :
         ZMod.val_natCast_of_lt ((mem_support_sampleBinaryNat_iff w value).mp hvalue))
     _ = _ := PMF.map_id _
 
+/-- `count` independent unsigned `w`-bit integers list the canonical representatives of a uniform
+residue vector modulo `2 ^ w`. -/
+theorem eval_replicate_sampleBinaryNat (count w : ℕ) :
+    ProbComp.eval (OracleComp.replicate count (sampleBinaryNat w)) =
+      (PMF.uniformOfFintype (Fin count → ZMod (2 ^ w))).map
+        fun x => List.ofFn fun j => (x j).val := by
+  have h := ProbComp.eval_replicateFin_map (eval_sampleBinaryNat_eq_map_val w) count
+  change _ = (ProbComp.eval (sampleVector count w)).map _ at h
+  rwa [eval_sampleVector] at h
+
+/-- `rows` independent lists of `cols` unsigned `w`-bit integers list, row by row, the canonical
+representatives of a uniform `rows × cols` matrix modulo `2 ^ w`. -/
+theorem eval_replicate_replicate_sampleBinaryNat (rows cols w : ℕ) :
+    ProbComp.eval (OracleComp.replicate rows (OracleComp.replicate cols (sampleBinaryNat w))) =
+      (PMF.uniformOfFintype (_root_.Matrix (Fin rows) (Fin cols) (ZMod (2 ^ w)))).map
+        fun A => List.ofFn fun i => List.ofFn fun j => (A i j).val := by
+  have hrow := ProbComp.eval_replicateFin_map (eval_sampleBinaryNat_eq_map_val w) cols
+  have h := ProbComp.eval_replicateFin_map hrow rows
+  change _ = (ProbComp.eval (sampleMatrix rows cols w)).map _ at h
+  rwa [eval_sampleMatrix] at h
+
 /-- The efficient key-input sampler has exactly the typed sampler's joint law, including the
 independence of the secret, public-matrix part, and signed errors. -/
 theorem eval_sampleKeyInputsSerialized (n m w η : ℕ) :
     ProbComp.eval (sampleKeyInputsSerialized n m w η) =
       (ProbComp.eval (sampleKeyInputs n m w η)).map serializeKeyInputs := by
-  have hsecret := ProbComp.eval_replicateFin_map (eval_sampleBinaryNat_eq_map_val w) n
-  have hpublicPart := ProbComp.eval_replicateFin_map hsecret m
   have herror := ProbComp.eval_replicateFin_map
     (PMF.map_id (ProbComp.eval (sampleCenteredBinomial η))).symm m
   rw [eval_sampleKeyInputs]
-  change _ = (ProbComp.eval (sampleVector n w)).map _ at hsecret
-  change _ = (ProbComp.eval (sampleMatrix m n w)).map _ at hpublicPart
-  rw [eval_sampleVector] at hsecret
-  rw [eval_sampleMatrix] at hpublicPart
-  simp only [pmf_norm, sampleKeyInputsSerialized, hsecret, hpublicPart, herror,
-    _root_.Matrix, serializeKeyInputs, id]
+  simp only [pmf_norm, sampleKeyInputsSerialized, eval_replicate_sampleBinaryNat,
+    eval_replicate_replicate_sampleBinaryNat, herror, _root_.Matrix, serializeKeyInputs, id]
 
 /-- Decoding the efficient sampled lists recovers the mathematical key-input sampler. -/
 theorem eval_decodeKeyInputs_sampleKeyInputsSerialized (n m w η : ℕ) :

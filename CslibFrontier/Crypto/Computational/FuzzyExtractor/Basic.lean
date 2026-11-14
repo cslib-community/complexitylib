@@ -346,10 +346,9 @@ security parameter `κ`, for a set `sources` of source ensembles and a class `Ad
 distinguisher families: for every ensemble `source ∈ sources`, the real and ideal games of
 `fe κ` on `source κ` are indistinguishable to admissible distinguishers. Equivalently, every
 admissible `D` has negligible advantage `(fe κ).securityAdvantage (source κ) (D κ)`
-(`computationallySecure_iff`). This is the asymptotic form of `ComputationallySecureFor`
-([FullerMengReyzin2020], Definition 2.2), with the concrete bound `ε` replaced by negligibility in
-`κ`; each construction fixes its distinguisher class, typically uniform strict PPT on an encoding
-of the key and helper. -/
+(`computationallySecure_iff`). This is the asymptotic form of `ComputationallySecureFor`, with the
+concrete bound `ε` replaced by negligibility in `κ`; each construction fixes its distinguisher
+class, typically uniform strict PPT on an encoding of the key and helper. -/
 def ComputationallySecure (fe : (κ : ℕ) → FuzzyExtractor (M κ) (Key κ) (Helper κ))
     (sources : Set ((κ : ℕ) → PMF (M κ)))
     (Admissible : ((κ : ℕ) → Key κ → Helper κ → Experiment) → Prop) : Prop :=

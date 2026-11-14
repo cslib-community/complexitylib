@@ -22,12 +22,11 @@ import Mathlib.Algebra.BigOperators.Fin
 /-!
 # Asymptotic security of the LWE fuzzy extractor
 
-Fuller, Meng and Reyzin's LWE fuzzy extractor `lweFuzzyExtractor` ([FullerMengReyzin2020],
-Section 4) uses the noisy reading `w` as the error of an LWE sample. Its secret has `k + l`
-coordinates, of which the first `k` are the key. This module makes it a family in the security
-parameter `κ`, with `m κ` samples, key length `k κ`, `l κ` further secret coordinates and modulus
-`2 ^ w κ`, and proves it secure from decision LWE in dimension `l κ` whose error law is the
-source itself.
+Fuller, Meng and Reyzin's LWE fuzzy extractor `lweFuzzyExtractor` ([FullerMengReyzin2020]) uses
+the noisy reading `w` as the error of an LWE sample. Its secret has `k + l` coordinates, of which
+the first `k` are the key. This module makes it a family in the security parameter `κ`, with `m κ`
+samples, key length `k κ`, `l κ` further secret coordinates and modulus `2 ^ w κ`, and proves it
+secure from decision LWE in dimension `l κ` whose error law is the source itself.
 
 A distinguisher family reads the security parameter in unary, the key, and the helper matrix
 `[c | A]`, each residue as `w κ` binary digits (`LWEFamily.encInput`). It is admissible when one
@@ -71,11 +70,12 @@ program has the same output law as the typed reduction.
   not proved here.
 * The efficiency of the honest `Gen` and `Rep` is not certified; `Rep` runs an arbitrary decoder,
   whose correctness is a hypothesis in `DecodeThenExtract` (`DecoderCorrectWithError`).
+* Distinguishers are uniform strict PPT programs. Non-uniform, circuit-size formulations are not
+  treated.
 
 ## References
 
-* [B. Fuller, X. Meng, and L. Reyzin, *Computational Fuzzy Extractors*][FullerMengReyzin2020],
-  Section 4.
+* [B. Fuller, X. Meng, and L. Reyzin, *Computational Fuzzy Extractors*][FullerMengReyzin2020]
 -/
 
 @[expose] public section
@@ -183,23 +183,6 @@ private def coinVector (count width : ℕ) (coins : List ℕ) : Fin count → ZM
 private def coinMatrix (rows cols width : ℕ) (coins : List (List ℕ)) :
     _root_.Matrix (Fin rows) (Fin cols) (ZMod (2 ^ width)) :=
   fun i j => ((coins.getD i.val []).getD j.val 0 : ZMod (2 ^ width))
-
-private theorem eval_sampleCoins (count width : ℕ) :
-    ProbComp.eval (sampleCoins count width) =
-      (PMF.uniformOfFintype (Fin count → ZMod (2 ^ width))).map
-        fun x => List.ofFn fun j => (x j).val := by
-  have h := ProbComp.eval_replicateFin_map (LWE.eval_sampleBinaryNat_eq_map_val width) count
-  change _ = (ProbComp.eval (LWE.sampleVector count width)).map _ at h
-  rwa [LWE.eval_sampleVector] at h
-
-private theorem eval_sampleCoinRows (rows cols width : ℕ) :
-    ProbComp.eval (sampleCoinRows rows cols width) =
-      (PMF.uniformOfFintype (_root_.Matrix (Fin rows) (Fin cols) (ZMod (2 ^ width)))).map
-        fun A => List.ofFn fun i => List.ofFn fun j => (A i j).val := by
-  have hrow := ProbComp.eval_replicateFin_map (LWE.eval_sampleBinaryNat_eq_map_val width) cols
-  have h := ProbComp.eval_replicateFin_map hrow rows
-  change _ = (ProbComp.eval (LWE.sampleMatrix rows cols width)).map _ at h
-  rwa [LWE.eval_sampleMatrix] at h
 
 private theorem coinVector_ofFn {count width : ℕ} (x : Fin count → ZMod (2 ^ width)) :
     coinVector count width (List.ofFn fun j => (x j).val) = x := by
@@ -406,15 +389,17 @@ private noncomputable def uniformReductionWords (D : Distinguisher m k l w)
 private theorem eval_keyReductionWords (D : Distinguisher m k l w) (x : LWE.Input l m w) :
     ProbComp.eval (keyReductionWords D x) =
       ProbComp.eval (keyReduction D x.secParam x.matrix x.target) := by
-  simp only [keyReductionWords, keyReduction, hardcoreKeyReduction, ProbComp.eval_bind,
-    ProbComp.eval_uniform, eval_sampleCoinRows, eval_sampleCoins, PMF.bind_map,
-    Function.comp_def, reductionInput, coinMatrix_ofFn, coinVector_ofFn]
+  simp only [keyReductionWords, keyReduction, hardcoreKeyReduction, sampleCoinRows, sampleCoins,
+    ProbComp.eval_bind, ProbComp.eval_uniform, LWE.eval_replicate_replicate_sampleBinaryNat,
+    LWE.eval_replicate_sampleBinaryNat, PMF.bind_map, Function.comp_def, reductionInput,
+    coinMatrix_ofFn, coinVector_ofFn]
 
 private theorem eval_uniformReductionWords (D : Distinguisher m k l w) (x : LWE.Input l m w) :
     ProbComp.eval (uniformReductionWords D x) =
       ProbComp.eval (uniformReduction D x.secParam x.matrix x.target) := by
-  simp only [uniformReductionWords, uniformReduction, hardcoreUniformReduction,
-    ProbComp.eval_bind, ProbComp.eval_uniform, eval_sampleCoinRows, eval_sampleCoins,
+  simp only [uniformReductionWords, uniformReduction, hardcoreUniformReduction, sampleCoinRows,
+    sampleCoins, ProbComp.eval_bind, ProbComp.eval_uniform,
+    LWE.eval_replicate_replicate_sampleBinaryNat, LWE.eval_replicate_sampleBinaryNat,
     PMF.bind_map, Function.comp_def, reductionInput, coinMatrix_ofFn, coinVector_ofFn]
 
 /-- Sampling the coins is strict PPT on LWE inputs. -/
@@ -505,7 +490,7 @@ end LWEFamily
 
 /-! ### Asymptotic security -/
 
-/-- **Asymptotic security of the LWE fuzzy extractor** ([FullerMengReyzin2020], Section 4). Let
+/-- **Asymptotic security of the LWE fuzzy extractor** ([FullerMengReyzin2020]). Let
 `m, k, l, w` be computable in polynomial time in unary, and let `sources` be a set of source
 ensembles such that, for every `source ∈ sources`, decision LWE in dimension `l κ` with `m κ`
 samples, modulus `2 ^ w κ` and error law `source κ` holds against uniform strict PPT

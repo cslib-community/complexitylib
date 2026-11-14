@@ -201,19 +201,16 @@ private theorem publicKeySerialized_eq (n m w : ℕ) (inputs : SerializedKeyInpu
 theorem eval_keyGenSerialized_fst (n m w : ℕ) :
     (ProbComp.eval (keyGenSerialized n m w)).map Prod.fst =
       (ProbComp.eval (keyGen n m w)).map (fun keys => serializePublicKey keys.1) := by
-  have hrow := ProbComp.eval_replicateFin_map (LWE.eval_sampleBinaryNat_eq_map_val w) n
-  have hmat := ProbComp.eval_replicateFin_map hrow m
   have hbits := ProbComp.eval_replicateFin_map
     (PMF.map_id (ProbComp.eval (ProbComp.uniform Bool))).symm m
-  change _ = (ProbComp.eval (LWE.sampleMatrix m n w)).map _ at hmat
-  rw [LWE.eval_sampleMatrix] at hmat
   have hlhs : (ProbComp.eval (keyGenSerialized n m w)).map Prod.fst =
       (PMF.uniformOfFintype (_root_.Matrix (Fin m) (Fin n) (ZMod (2 ^ w)))).bind fun A =>
         (PMF.uniformOfFintype (Fin m → Bool)).bind fun bits =>
           PMF.pure (serializePublicKey (publicKeyOf A fun i => (bits i).toNat)) := by
     unfold keyGenSerialized sampleKeyInputsSerialized
-    simp only [pmf_norm, hmat, hbits, ProbComp.eval_replicateFin, ProbComp.eval_uniform,
-      PMF.pi_uniformOfFintype, _root_.Matrix, publicKeySerialized_eq]
+    simp only [pmf_norm, LWE.eval_replicate_replicate_sampleBinaryNat, hbits,
+      ProbComp.eval_replicateFin, ProbComp.eval_uniform, PMF.pi_uniformOfFintype, _root_.Matrix,
+      publicKeySerialized_eq]
     congr 1 with A : 1
     congr 1 with bits : 1
     refine congrArg PMF.pure (congrArg serializePublicKey ?_)
@@ -334,13 +331,11 @@ theorem eval_encryptSerialized (n m w η : ℕ) (publicWord : List Bool) (messag
     ProbComp.eval (encryptSerialized n m w η publicWord message) =
       (ProbComp.eval (encrypt η (decodePublicKey n m w publicWord) message)).map
         serializeCiphertext := by
-  have hs := ProbComp.eval_replicateFin_map (LWE.eval_sampleBinaryNat_eq_map_val w) n
   have hx := ProbComp.eval_replicateFin_map
     (PMF.map_id (ProbComp.eval (sampleCenteredBinomial η))).symm m
-  change _ = (ProbComp.eval (LWE.sampleVector n w)).map _ at hs
-  rw [LWE.eval_sampleVector] at hs
-  simp only [pmf_norm, encryptSerialized, sampleEncCoinsSerialized, hs, hx, encrypt,
-    LWE.eval_sampleVector, Function.comp_def, encryptWithCoinsSerialized_eq]
+  simp only [pmf_norm, encryptSerialized, sampleEncCoinsSerialized,
+    LWE.eval_replicate_sampleBinaryNat, hx, encrypt, LWE.eval_sampleVector, Function.comp_def,
+    encryptWithCoinsSerialized_eq]
   congr 1 with s : 1
   congr 1 with x : 1
   congr 1 with x₀ : 1
