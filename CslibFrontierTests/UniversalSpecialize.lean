@@ -67,8 +67,10 @@ example :
   -- These closed generated descriptions contain thousands of encoded bits. The scoped depth is
   -- used only to reduce their exact lengths; it does not affect any library proof or algorithm.
   have hzero : descLen (specialize readFirstProgramBit zeroTapeProgram) = 4072 := by
+    -- Reduce the complete 4,072-bit closed encoding for this regression check.
     set_option maxRecDepth 20000 in decide
   have hone : descLen (specialize readFirstProgramBit oneTapeProgram) = 7540 := by
+    -- Reduce the complete 7,540-bit closed encoding for this regression check.
     set_option maxRecDepth 50000 in decide
   refine ⟨descLen_specialize_le _ _, descLen_specialize_le _ _, by omega, ?_, ?_⟩
   · unfold specializeSize
