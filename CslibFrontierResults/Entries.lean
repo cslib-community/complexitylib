@@ -6,6 +6,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
+import CslibFrontier.Probability.Extractor.LeftoverHash
 import CslibFrontier.Foundations.Combinatorics.Expander.HittingProduct
 import CslibFrontier.Computability.Complexity.Problems.Permanent.Valiant
 import CslibFrontier.Computability.Complexity.Problems.ThreeSAT.Collapse
@@ -5786,3 +5787,17 @@ register_result "goldreich-expander-varying-density-hitting" where
     and independent uniform slot choices. Length counts t+1 vertices. Individual densities \
     retained, with explicit transport to lambda/d and the constant-set real half-length power. \
     No machine uniformity, runtime or Exercise 8.44 concentration claim."
+
+register_result "arora-barak-draft-leftover-hash" where
+  title := "Draft leftover hash lemma with entropy k/delta"
+  topic := "pseudorandomness"
+  sources := [
+    { paper := AroraBarak07, theorem := "Lemma 16.42; Chapter 16, Exercise 12",
+      locator := "January 8, 2007 draft; printed 308 / PDF 324; exercise printed 319 / PDF 335" }
+  ]
+  theorems := [Cslib.Probability.IsUniversalHash.isStrongExtractor_of_entropy_div,
+    Cslib.Probability.IsUniversalHash.isExtractor_append_of_entropy_div]
+  scope := "All n,k,t and positive delta. Uniform independent seed, distinct-input collision \
+    bound (1+delta)/2^k, source min-entropy at least k/delta, statistical distance at most \
+    sqrt(2 delta). Concatenated output is digest followed by seed. Includes zero digest \
+    and large delta; no efficiency or short-seed assertion."
