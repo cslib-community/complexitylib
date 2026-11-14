@@ -23,7 +23,9 @@ proof uses the explicit formula instead.
 
 ## Main results
 
-* `Cslib.Circuits.Boolean.parity_mem_NC_one`: the parity language is in NC¹.
+* `Cslib.Circuits.Boolean.parity_mem_NC_one`,
+  `Cslib.Circuits.Boolean.parity_mem_FormulaPoly`: the parity language is in NC¹ and in
+  `FormulaPoly`.
 
 ## References
 
@@ -42,5 +44,10 @@ theorem parity_mem_NC_one : Language.ofSlices parity ∈ NC 1 := by
   rw [Language.slice_ofSlices]
   refine (formulaDepth_parity_le_two_mul_clog n).trans (Nat.mul_le_mul_left 2 ?_)
   exact Nat.clog_le_of_le_pow (Nat.lt_pow_succ_log_self one_lt_two n).le
+
+/-- The parity language has polynomial-size De Morgan formulas (`FormulaPoly = NC 1`). -/
+theorem parity_mem_FormulaPoly : Language.ofSlices parity ∈ FormulaPoly := by
+  rw [FormulaPoly_eq_NC_one]
+  exact parity_mem_NC_one
 
 end Cslib.Circuits.Boolean
