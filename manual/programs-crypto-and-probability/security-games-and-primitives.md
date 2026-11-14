@@ -1190,9 +1190,17 @@ simulation. The security notion is in
 `WordPKE.romIndCcaGameWord` is the IND-CCA game of HHK17 Def. 2.4 / Fig. 4 with lazily sampled
 random oracles `G` and `H` (`WordPKE.roWordOracle`), the native encapsulation for the challenge,
 and the native decapsulation for the decapsulation oracle (`WordPKE.ccaWordOracle`).
-`WordPKE.ROMINDCCA` asks for negligible advantage against every `IsOraclePPT` adversary. Relating
-the reduction's advantage to the typed `cpaAdvantage`, and proving `ROMINDCCA` from IND-CPA of the
-family, remain for #5293.
+`WordPKE.ROMINDCCA` asks for negligible advantage against every `IsOraclePPT` adversary.
+[`FujisakiOkamoto/WordBridge.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/WordBridge.lean)
+relates these word objects to the typed ones at each parameter. `WordPKE.finiteScheme P keyLen n` is
+the bundle over bit strings and the ciphertext space `WordPKE.Ciphertext P n`, and
+`WordPKE.CiphertextFits`, `WordPKE.DeltaCorrect`, `WordPKE.GammaSpread` and `WordPKE.INDCPA` are
+properties of the family. `WordPKE.IsEfficient.exists_typedAdversary` turns each `IsOraclePPT`
+adversary into a typed adversary at each parameter (`WordPKE.savedCoinAdversary`, a replay of its
+saved coins) with polynomially many `G` and `H` queries; when the ciphertexts fit, the word game is
+its typed `Scheme.roIndCcaGame`, and the advantage of `romCpaReductionWord` is the typed
+`cpaAdvantage` of `Scheme.romCpaReduction`. Proving `ROMINDCCA` from IND-CPA of the family remains
+for #5293.
 
 ML-KEM ([fips203][fips203]) lives in
 [`MLKEM/KPKE.lean`](../../CslibFrontier/Crypto/Computational/SIS/MLKEM/KPKE.lean),
