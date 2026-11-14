@@ -225,7 +225,7 @@ example (n : ℕ) {γ : ℝ} (hγ : 0 ≤ γ) :
   rwa [hmean, Fintype.card_fin] at h
 
 -- The scores need only lie in `[0, 1]` on the support: a point mass at `false` may score `100`
--- at `true`, and the lower tail at deviation `n γ` still gets the bound `exp (-2 n γ²)`.
+-- at `true`, and both one-sided tails at deviation `n γ` still get the bound `exp (-2 n γ²)`.
 example (n : ℕ) {γ : ℝ} (hγ : 0 ≤ γ) :
     ((pi fun _ : Fin n => PMF.pure false).toOuterMeasure
       {x | (∑ i, if x i then (100 : ℝ) else 0) ≤
@@ -233,6 +233,15 @@ example (n : ℕ) {γ : ℝ} (hγ : 0 ≤ γ) :
           Fintype.card (Fin n) * γ}).toReal ≤
         Real.exp (-2 * Fintype.card (Fin n) * γ ^ 2) :=
   pi_sum_le_mean_sub_card_mul (fun _ : Fin n => PMF.pure false)
+    (fun _ b => if b then (100 : ℝ) else 0) (fun _ b h => by simp_all) hγ
+
+example (n : ℕ) {γ : ℝ} (hγ : 0 ≤ γ) :
+    ((pi fun _ : Fin n => PMF.pure false).toOuterMeasure
+      {x | (∑ _i : Fin n, ∑ b, ((PMF.pure false) b).toReal * (if b then (100 : ℝ) else 0)) +
+          Fintype.card (Fin n) * γ ≤
+        ∑ i, if x i then (100 : ℝ) else 0}).toReal ≤
+        Real.exp (-2 * Fintype.card (Fin n) * γ ^ 2) :=
+  pi_sum_ge_mean_add_card_mul (fun _ : Fin n => PMF.pure false)
     (fun _ b => if b then (100 : ℝ) else 0) (fun _ b h => by simp_all) hγ
 
 end CslibFrontierTests.ProbabilityToolkit3
