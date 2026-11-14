@@ -39,6 +39,8 @@ example : (∅ : Set ℕ) ∈ AM encUnary := by
   constructor
   · simp
   · intro _
+    rw [Finset.filter_true_of_mem (fun _ _ => fun _ => rfl)]
+    rw [Finset.card_univ, Fintype.card_fun, Fintype.card_bool, Fintype.card_fin]
     simp
 
 -- A library consumer transfers membership and obtains advice without reconstructing blocks.
