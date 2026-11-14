@@ -15,6 +15,7 @@ import CslibFrontier.Foundations.Combinatorics.Expander.VisitCount
 import CslibFrontier.Computability.Complexity.Classes.Padding.Tally
 import CslibFrontier.Computability.Complexity.Problems.Permanent.Valiant
 import CslibFrontier.Computability.Complexity.Problems.ThreeSAT.Collapse
+import CslibFrontier.Computability.Complexity.Problems.ThreeSAT.Tautology
 import CslibFrontier.Computability.Complexity.Classes.Sparse.Envelope
 import CslibFrontier.Computability.Complexity.Classes.Advice.OneBit
 import CslibFrontier.Computability.Complexity.Classes.Advice.LengthComparison
@@ -32,6 +33,7 @@ import CslibFrontier.Algorithms.WordRAM.Schoening.Amplify
 import CslibFrontier.Computability.QueryComplexity.MajorityThree
 import CslibFrontier.Computability.QueryComplexity.YaoExpected
 import CslibFrontier.Computability.Complexity.Problems.SharpCycle
+import CslibFrontier.Computability.Complexity.Problems.StronglyConnected.Completeness
 
 import CslibFrontier.Computability.QueryComplexity.AdjacentPair
 import CslibFrontier.Computability.Circuit.Arithmetic.BitBlast
@@ -562,6 +564,21 @@ register_result "reingold" where
     row-major adjacency matrix (encUSTCON). One native machine halts on and decides every \
     encoded instance of length L within c·(⌊log₂ L⌋ + 1) work cells; malformed inputs are \
     unconstrained. The reduction-defined SL = L corollary is not part of this entry."
+
+register_result "strongly-connected-nl-complete" where
+  title := "Strongly connected digraphs are NL-complete"
+  topic := "space complexity"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 4, Exercise 4",
+      locator := "Web draft 2007-01-08, printed p. 89; PDF p. 105" }
+  ]
+  theorems := [Cslib.Complexity.StronglyConnected.logSpaceComplete]
+  scope := "Digraphs on Fin n with loops allowed, encoded by encDigraph: a unary header 1^n 0 \
+    and the row-major adjacency matrix (the encSTCON layout without s and t); the empty digraph \
+    is strongly connected. Native visited-cell NL: membership by one nondeterministic counter \
+    program that guesses a path for every ordered pair, every branch halting; hardness by a \
+    native logspace many-one reduction from STCON adding arcs v → s and t → v. Completeness for \
+    the draft's ever-non-blank space class needs the measure bridge of draft Theorem 4.16."
 
 register_result "primes" where
   title := "Agrawal–Kayal–Saxena: PRIMES is in P"
@@ -5716,6 +5733,34 @@ register_result "three-sat-complement-ph-collapse" where
   scope := "Native polynomial-time many-one reduction with encCNF. ThreeSAT has clause width \
     at most three; its complement is inside all CNF Nat, including wider formulas. \
     The conclusion PH enc = NP enc holds for every explicit encoding enc."
+
+register_result "tautology-conp-complete" where
+  title := "TAUTOLOGY is coNP-complete"
+  topic := "NP-completeness"
+  sources := [
+    { paper := AroraBarak07, theorem := "Example 2.23",
+      locator := "2007 public draft, Section 2.6, printed p. 57 / PDF p. 73" }
+  ]
+  theorems := [Cslib.Complexity.TAUTOLOGY_coNPComplete]
+  scope := "Boolean formulas are the quantifier-free formulas of QBF Nat (variables, constants, \
+    negation, conjunction, disjunction) in the prefix token encoding encQBF; TAUTOLOGY is a \
+    total language on QBF Nat, so formulas with quantifiers are non-members. Membership in coNP \
+    uses a native polynomial-time verifier; hardness is under total native polynomial-time \
+    many-one reductions, through UNSAT by negation."
+
+register_result "np-eq-conp-iff-threesat-tautology" where
+  title := "NP = coNP iff 3SAT and TAUTOLOGY reduce to each other"
+  topic := "complexity classes"
+  sources := [
+    { paper := AroraBarak07, theorem := "Chapter 2, Exercise 7",
+      locator := "2007 public draft, printed p. 62 / PDF p. 78" }
+  ]
+  theorems := [Cslib.Complexity.NP_eq_coNP_iff_ThreeSAT_reducible_TAUTOLOGY]
+  scope := "NP = coNP is quantified over every explicit instance encoding. The reductions are \
+    native polynomial-time many-one reductions between ThreeSAT under encCNF (clause width at \
+    most three) and TAUTOLOGY under encQBF (quantifier-free QBF Nat). The proof instantiates \
+    NPComplete.NP_eq_coNP_iff_reducible, which holds for any NP-complete and coNP-complete \
+    pair."
 
 register_result "bounded-termination-exponential-completeness" where
   title := "Any-output bounded termination is in E but outside P and is EXP-complete"

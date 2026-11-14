@@ -205,27 +205,19 @@ theorem toTruth_eq_ok_iff {d : Datum} {t : Truth} : d.toTruth = .ok t ↔ d = t.
 
 /-- A datum has a truth value exactly when it is boolean-typed. -/
 theorem exists_toTruth_eq_ok_iff {d : Datum} : (∃ t, d.toTruth = .ok t) ↔ d.HasType .bool := by
-  match d with
-  | none => simp [toTruth]
-  | some (.bool _) => simp [toTruth]
-  | some (.int _) => simp [toTruth]
-  | some (.text _) => simp [toTruth]
+  rcases d with _ | (_ | _ | _) <;> simp [toTruth]
 
 /-- A datum is an integer operand exactly when it is integer-typed. -/
 theorem exists_asInt_eq_ok_iff {d : Datum} : (∃ x, d.asInt = .ok x) ↔ d.HasType .int := by
-  match d with
-  | none => simp [asInt]
-  | some (.int _) => simp [asInt]
-  | some (.text _) => simp [asInt]
-  | some (.bool _) => simp [asInt]
+  rcases d with _ | (_ | _ | _) <;> simp [asInt]
 
 /-- A datum is a text operand exactly when it is text-typed. -/
 theorem exists_asText_eq_ok_iff {d : Datum} : (∃ x, d.asText = .ok x) ↔ d.HasType .text := by
-  match d with
-  | none => simp [asText]
-  | some (.text _) => simp [asText]
-  | some (.int _) => simp [asText]
-  | some (.bool _) => simp [asText]
+  rcases d with _ | (_ | _ | _) <;> simp [asText]
+
+/-- An integer operand is a given integer exactly when the datum is that integer. -/
+theorem asInt_eq_ok_some {d : Datum} {z : ℤ} : d.asInt = .ok (some z) ↔ d = some (.int z) := by
+  rcases d with _ | (_ | _ | _) <;> simp [asInt]
 
 theorem toTruth_eq_error {d : Datum} {e : EvalError} (h : d.toTruth = .error e) :
     e = .typeMismatch := by

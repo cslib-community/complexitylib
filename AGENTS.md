@@ -326,8 +326,8 @@ encoding readability and projection chain ratchets, documentation pins, and the 
 statement and security premise ratchets, result registry and changed-file lints. Changed-file
 checks compare with the merge base of `origin/main`, or of `--base REF`. `scripts/full_check.py`
 records why each remaining step stays CI-only (advisory notices, cache plumbing, steps that need
-GitHub context), and its test fails when either execution job gains a step that is neither mirrored nor recorded there, when a
-mirrored step runs a line or sets an option that the local run does not repeat, or when the
+GitHub context), and its test fails when either execution job gains a step that is neither
+mirrored nor recorded there, when a mirrored step runs a line or sets an option that the local run does not repeat, or when the
 required aggregator stops requiring both jobs to succeed and forwarding the Lean job's publication
 output.
 The split overlaps work rather than removing it: it adds another checkout and runner plus the
@@ -799,9 +799,9 @@ on a component the scheme uses), stated relative to the setup sampler or compone
 circuit bound); and (c) properties of components that the cited result itself takes as given,
 supplied by the caller.
 
-It must not assume anything about an object that its proof derives from the adversary (a
-reduction, distinguisher, simulator, extractor or hybrid): not its advantage or success, its
-membership in an adversary class, or its efficiency. Nor may it take from the caller an object
+It must not assume anything about an object that its proof constructs, whether from the
+adversary or not (a reduction, distinguisher, simulator, extractor or hybrid): not its advantage
+or success, its membership in an adversary class, or its efficiency. Nor may it take from the caller an object
 whose existence or efficiency is the content of the cited result, such as the knowledge extractor
 of a proof of knowledge or the simulator of a zero-knowledge proof. It must not assume that the
 scheme's own algorithms behave like idealized ones (for example, that the key generator's output
