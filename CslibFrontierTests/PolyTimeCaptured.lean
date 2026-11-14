@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Init
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Captured
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Max
 public import CslibFrontier.Tactic.PolyTime
 
 /-!
@@ -131,5 +132,21 @@ example (x y : α → ℕ)
 example (x : α → ℕ) (hx : ComputableInPolyTime x enc encUnary) :
     ComputableInPolyTime (fun a => x a % 2) enc encUnary := by
   polytime
+
+-- `unary_min`, `unary_max`, and `unary_max'` discharge plain unary min/max goals without
+-- `.of_tidy` transitions, and `unary_min'` is available explicitly alongside `binary_min_unary'`.
+example (x y : α → ℕ)
+    (hx : ComputableInPolyTime x enc encUnary)
+    (hy : ComputableInPolyTime y enc encUnary) :
+    ComputableInPolyTime (fun a => max (x a) (y a)) enc encUnary := by
+  fail_if_success (clear hx; fun_prop (config := { maxTransitionDepth := 0 }))
+  fail_if_success (clear hy; fun_prop (config := { maxTransitionDepth := 0 }))
+  fun_prop (config := { maxTransitionDepth := 0 })
+
+example (x y : α → ℕ)
+    (hx : ComputableInPolyTime x enc encUnary)
+    (hy : ComputableInPolyTime y enc encUnary) :
+    ComputableInPolyTime (fun a => min (max (x a) 1) (y a)) enc encUnary :=
+  ComputableInPolyTime.unary_min' (by polytime) hy
 
 end CslibFrontierTests.PolyTimeCaptured
