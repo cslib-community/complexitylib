@@ -16,12 +16,15 @@ public import CslibFrontier.Computability.Circuit.Quantum.Oracle.Resources
 
 The existing compiler emits at most three NOT/CNOT/Toffoli gates per Boolean gate and at most
 three more to relocate the output. It uses `n + G + 1` qubits and makes no oracle queries.
-The encoded-length bound includes the framing and unary wire numbers of `encGateCode`.
+The encoded-length bound charges the per-instance instruction description, including framing
+and unary wire numbers in `encGateCode`. It does not measure implementation bytes.
 All bounds apply to the actual compiler, including its default-false malformed-code semantics.
 
 These original bounds concern a generated circuit. They do not bound the static description of
 the uniform generator or its running time, and do not certify a sampler or a cryptographic
-reduction. The compiler's existing polynomial-time certificate is preserved in `Reversible.Circuit`.
+reduction. Offline compilation time is separate from circuit execution; a reduction that runs a
+compiler during its attack must account for that computation. The compiler's existing
+polynomial-time certificate is preserved in `Reversible.Circuit`.
 
 ## Main results
 

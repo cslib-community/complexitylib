@@ -16,7 +16,7 @@ namespace CslibFrontierTests.BQPClassical
 open Cslib Cslib.Quantum Cslib.Complexity Cslib.Circuits Cslib.Circuits.Boolean
 
 /-- Exclusive or of the inputs `0, 1` as a De Morgan gate list: wire `2` is `x₀ ∨ x₁`, wire `3` is
-`x₀ ∧ x₁`, wire `4` is `¬ x₀ ∧ x₁`, and wire `5` is their conjunction. -/
+`x₀ ∧ x₁`, wire `4` is `¬ (x₀ ∧ x₁)`, and wire `5` is their conjunction. -/
 def xorGates : List (Op × List ℕ) := [(.or, [0, 1]), (.and, [0, 1]), (.not, [3]), (.and, [2, 4])]
 
 -- Compiled onto `2 + 4 + 1` qubits, qubit `5` holds `x₀ ⊕ x₁`.
