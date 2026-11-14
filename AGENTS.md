@@ -792,18 +792,28 @@ encoding-readability lint checks rule 1 against a per-module baseline that may o
 
 ### Security theorems
 
-A security theorem may assume only (a) named hardness assumptions about independently defined
-problems (`F.DDH setup`, `DecisionLWE …`, `OneWay f`), (b) that the adversary is in the admitted
-class (`A.IsPPT`, `IsOraclePPT …`), and (c) efficiency or correctness of generic components that
-the caller supplies. It must not assume anything about an object that the library constructs: the
-advantage or success of a reduction, distinguisher, simulator or extractor, that object's
-membership in an adversary class or its efficiency, or the quality of the scheme's own key
-generator. Nor may it bound the advantage only for parameters that an `∃` chooses after the
-adversary (`∃ m₀ m₁, Adv(A) ≤ Adv(B A m₀ m₁)`): the reduction must choose them itself.
+A security theorem may assume only (a) named hardness assumptions, that is, Prop-valued
+definitions documented as assumptions (`F.DDH setup`, `DecisionLWE …`, `OneWay f`,
+`QuadraticResiduosityHard setup`, or a named collision-resistance or circular-security assumption
+on a component the scheme uses), stated relative to the setup sampler or component they concern;
+(b) that the adversary is in the admitted class (`A.IsPPT`, `IsOraclePPT …`, or the model's
+circuit bound); and (c) properties of components that the cited result itself takes as given,
+supplied by the caller.
 
-Write each reduction as an explicit program with an `isPPT_…` or `isOraclePPT_…` lemma proved
-from the adversary's certificate, and prove the asymptotic theorem by applying the assumption to
-the reduction through that lemma, as `DDH.elGamalINDCPA` does
+It must not assume anything about an object that its proof derives from the adversary (a
+reduction, distinguisher, simulator, extractor or hybrid): not its advantage or success, its
+membership in an adversary class, or its efficiency. Nor may it take from the caller an object
+whose existence or efficiency is the content of the cited result, such as the knowledge extractor
+of a proof of knowledge or the simulator of a zero-knowledge proof. It must not assume that the
+scheme's own algorithms behave like idealized ones (for example, that the key generator's output
+is indistinguishable from an ideal key law) unless the cited result names that as an assumption.
+And it may not stop at a bound for parameters that an `∃` chooses after the adversary
+(`∃ m₀ m₁, Adv(A) ≤ Adv(B A m₀ m₁)`); a uniform reduction chooses them itself.
+
+Write each reduction as an explicit program with an efficiency witness proved from the
+adversary's certificate: an `isPPT_…` or `isOraclePPT_…` lemma, or the model's efficiency
+certificate (for example a circuit-size bound). Prove the asymptotic theorem by applying the
+assumption to the reduction through that witness, as `DDH.elGamalINDCPA` does
 ([pattern](manual/programs-crypto-and-probability/security-games-and-primitives.md#security-theorems-and-efficiency-witnesses)).
 Asymptotic statements come first; concrete runtime maps are secondary (#4088). A concrete bound
 `Adv(A) ≤ f(Adv(B_A))` is a lemma, not a security theorem. A lemma that takes a bound on `B_A`'s

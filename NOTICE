@@ -40,3 +40,8 @@ above; no source machine or instruction-cost contract supplies its native execut
 The native shared-band preparation selectively adapts the band-array and all-band
 organization from that same pinned source. Anthropic, PBC credit is retained in
 BandProgram.lean; its native mask scans, dense inverse table and execution proofs are new.
+
+The SQL semantics in CslibFrontier/Languages/SQL/ and its tests in
+CslibFrontierTests/Languages/SQL/ adapt and redesign evelynmitchell/sql_equiv by Evelyn Mitchell,
+revision 38030a6b614a87499bf4f1e258d75b7f2fa20672, licensed under the Apache License, Version 2.0.
+The module docstrings describe what was taken and what changed.
