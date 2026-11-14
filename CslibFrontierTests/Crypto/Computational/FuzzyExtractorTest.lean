@@ -8,6 +8,7 @@ module
 
 public import CslibFrontier.Crypto.Computational.FuzzyExtractor.Basic
 public import CslibFrontier.Crypto.Computational.FuzzyExtractor.DecodeThenExtract
+public import CslibFrontier.Crypto.Computational.FuzzyExtractor.DecodeThenExtract.Security
 import CslibFrontier.Probability.PMF.Uniform
 
 /-!
@@ -20,7 +21,9 @@ sketch-and-extract, the additive extractor on a uniform source, the LWE security
 Construction 4.1 at concrete dimensions against `LWE.advantage`, a concrete Hamming distance) and a
 separating negative fixture
 (`revealingFuzzyExtractor`) that is perfectly reproducible for every distance threshold `t` yet
-has distinguishing advantage `1 / 2` on a uniform 1-bit source.
+has distinguishing advantage `1 / 2` on a uniform 1-bit source. The asymptotic theorem
+`computationallySecure_lweFuzzyExtractor` is applied to the uniform source, for which its LWE
+premise holds unconditionally.
 -/
 
 public section
@@ -120,6 +123,40 @@ example
   subst hW
   simpa only [lweAdvantage_uniform_error_eq_zero, add_zero] using
     securityAdvantage_lweFuzzyExtractor_le decode (PMF.uniformOfFintype (Fin 4 → ZMod 7)) D
+
+/-! ### Asymptotic security: the premise is satisfiable -/
+
+/-- With uniform errors, `DecisionLWEWithErrors` holds for all dimensions: `A s + e` is uniform and
+independent of `(A, s)`, so the real and random games coincide. -/
+theorem decisionLWEWithErrors_uniform (n m w : ℕ → ℕ) :
+    DecisionLWEWithErrors n m w fun κ => PMF.uniformOfFintype (Fin (m κ) → ZMod (2 ^ w κ)) := by
+  intro D _
+  have hgame (κ : ℕ) : LWE.realGame (PMF.uniformOfFintype (Fin (n κ) → ZMod (2 ^ w κ)))
+      (PMF.uniformOfFintype (Fin (m κ) → ZMod (2 ^ w κ))) (D κ) = LWE.randomGame (D κ) := by
+    simp only [LWE.realGame, LWE.randomGame, LWE.eval_realExperiment,
+      LWE.eval_randomExperiment, PMF.monad_bind_eq_bind]
+    refine Eq.trans ?_ (PMF.bind_const (PMF.uniformOfFintype (Fin (n κ) → ZMod (2 ^ w κ))) _)
+    congr 1 with s : 1
+    rw [PMF.bind_comm (PMF.uniformOfFintype (Fin (m κ) → ZMod (2 ^ w κ)))]
+    congr 1 with A : 1
+    exact PMF.uniformOfFintype_bind_equiv (Equiv.addLeft (A.mulVec s))
+      (fun b => ProbComp.eval (D κ A b))
+  simp only [hgame, Game.advantage_self]
+  exact negligible_zero
+
+open Turing.MultiTapeTM in
+/-- The asymptotic theorem applies to the family with `κ` samples, key length `κ`, `κ` further
+secret coordinates and modulus `2`, on the uniform source. -/
+example (decode : (κ : ℕ) → Matrix (Fin κ) (Fin (κ + κ)) (ZMod (2 ^ 1)) →
+      (Fin κ → ZMod (2 ^ 1)) → ProbComp (Option (Fin (κ + κ) → ZMod (2 ^ 1)))) :
+    ComputationallySecure (fun κ => lweFuzzyExtractor κ κ κ (2 ^ 1) (decode κ))
+      {fun κ => PMF.uniformOfFintype (Fin κ → ZMod (2 ^ 1))}
+      (LWEFamily.Distinguisher.IsPPT (m := id) (k := id) (l := id) (w := fun _ => 1)) :=
+  computationallySecure_lweFuzzyExtractor (m := id) (k := id) (l := id) (w := fun _ => 1)
+    ComputableInPolyTime.id' ComputableInPolyTime.id' ComputableInPolyTime.id'
+    (ComputableInPolyTime.const 1) decode (by
+      rintro _ rfl
+      exact decisionLWEWithErrors_uniform id id fun _ => 1)
 
 /-! ### Separating fixture: reproducible for all `t`, but insecure -/
 
