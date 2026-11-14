@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Probability.StochasticOracle.AdaptiveSelection
 public import CslibFrontier.Probability.PMF.SequentialHistory
 public import Mathlib.Probability.Kernel.IonescuTulcea.Traj
+import CslibFrontier.Probability.StochasticOracle.AdaptiveSelection.HistoryExpectation
 import Mathlib.MeasureTheory.OuterMeasure.BorelCantelli
 import Mathlib.Probability.ProbabilityMassFunction.Integrals
 import Mathlib.Probability.Kernel.Composition.IntegralCompProd
@@ -152,19 +153,6 @@ private theorem responseMeasure_prefix_zero
       (law []).toPMF.toMeasure.map (MeasurableEquiv.piUnique _).symm := by
   rw [responseMeasure, Kernel.trajMeasure, Measure.map_comp _ _ (by fun_prop),
     Kernel.traj_map_frestrictLe, Kernel.partialTraj_self, Measure.id_comp]
-
-omit [MeasurableSpace Ω] [MeasurableSingletonClass Ω] in
-private theorem historyExpectation_succ_right
-    (law : List Ω → Cslib.Optimization.OneConstraint.Distribution Ω ℝ)
-    (f : List Ω → ℝ) (n : ℕ) (h : List Ω) :
-    historyExpectation law f (n + 1) h =
-      historyExpectation law (fun h => (law h).mean (fun y => f (y :: h))) n h := by
-  induction n generalizing h with
-  | zero => rfl
-  | succ n ih =>
-    change ((law h).mean fun x => historyExpectation law f (n + 1) (x :: h)) = _
-    simp only [ih]
-    rfl
 
 /-- Every finite-history real observable under the constructed infinite process
 has exactly the finite conditional-table expectation. No bound on bills or
