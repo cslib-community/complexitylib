@@ -3678,6 +3678,8 @@ public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilisti
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.SingleOracle
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Tidy
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Tidy.Redirect
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Universal.AdaptiveExample
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Universal.Description
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Degree
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Exponential
