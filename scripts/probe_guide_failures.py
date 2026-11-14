@@ -36,7 +36,12 @@ def run(name, command, status=0, marker=None):
     print(json.dumps(summary), flush=True)
     assert result.returncode == status, summary
     if marker:
-        assert marker in result.stdout, f"missing diagnostic {marker}"
+        # Lake prints "error: file:line:col: message"; direct Lean prints
+        # "file:line:col: error: message". Require the message to end its diagnostic line.
+        severity, message = marker.split(": ", 1) if ": " in marker else (None, marker)
+        assert any(line.endswith(message) and (
+            severity is None or line.startswith(f"{severity}: ") or f": {severity}: " in line
+        ) for line in result.stdout.splitlines()), f"missing diagnostic {marker}"
     if status:
         assert "Guide written to" not in result.stdout, "failure reported success"
     return result.stdout
