@@ -7,16 +7,16 @@ Authors: Evelyn Mitchell, Samuel Schlesinger
 module
 
 public import CslibFrontier.Languages.SQL.JoinSize
-public import CslibFrontier.Languages.SQL.QueryEquiv
+public import CslibFrontier.Languages.SQL.QueryLaws
 
 /-! Checked examples for the equijoin row count and for a rewrite of a concrete query, through
 ordinary imports. Each count is checked twice: by evaluating the query, and by the theorem
 `Query.eval_join_table_eqCols_length_eq_joinSize_filterMap`, whose `joinSize` is evaluated by
 `decide`. The examples cover duplicate keys, an empty input, `NULL` keys (contrasted with the
 count under structural equality of datums, and with the null-safe join that realizes it), and a
-key type mismatch, which shows that the typing hypothesis cannot be dropped. The rewrite moves a
-`WHERE` clause through a derived table by substitution; its safety guard is checked by `decide`,
-and an unsafe instance of the same rewrite changes the result. -/
+key type mismatch, which shows that the typing hypothesis cannot be dropped. The rewrite of a
+`WHERE` clause through a derived table is an instance of `Query.select_project`, whose safety guard
+is checked by `decide`, and an unsafe instance of the same rewrite changes the result. -/
 
 public section
 
@@ -169,9 +169,21 @@ example :
   fun h => absurd (Expr.isSafePredicate_eqCols_iff.mp h) (by decide)
 example : lw.typeOf = none := by decide
 
--- … so on a conforming instance with rows on both sides it fails instead of counting: there are
--- no rows whose number `joinSize` could give.
+-- … so on a conforming instance with a non-null key on both sides it fails instead of counting:
+-- there are no rows whose number `joinSize` could give.
 example : lw.eval D = .error .typeMismatch := rfl
+
+/-- Only `NULL` keys on the left, against a non-null text key. -/
+abbrev DNullKeys : Database S
+  | T.l => [nullRow "a", nullRow "b"]
+  | T.r => []
+  | T.words => [![some (.text "1"), some (.text "w")]]
+
+example : DNullKeys.Conforms := by decide
+
+-- A comparison with a `NULL` operand is `unknown`, not a type error, so without a non-null key on
+-- the left the join succeeds with no rows.
+example : (lw.eval DNullKeys).toOption = some [] := by decide
 
 -- With an empty side nothing is compared, and the join succeeds with no rows.
 example : (lw.eval DNull).toOption = some [] := by decide
@@ -197,50 +209,10 @@ example : p.subst es = binary (.cmp .eq) (binary (.arith .add) (col 0) (int 1)) 
 conforming row. -/
 theorem es_safe : ∀ i, (es i).IsSafe (S.ctx T.l) := by decide
 
-/-- The derived table has the types `tag text, k1 int`. -/
-theorem es_typeOf : ∀ i, (es i).typeOf (S.ctx T.l) = some (![.text, .int] i) := by decide
-
--- Once #5337 lands, this is an instance of its general law `Query.select_project`.
 /-- The rewrite is an ordered equivalence: on every conforming instance both queries return the
-same list of rows. -/
-theorem before_equiv_after : Equiv .ordered before after := by
-  rw [equiv_ordered_iff]
-  intro D' hD'
-  -- On every row of `l`, the `SELECT` list succeeds, and `p.subst es` reads its results.
-  have hrow : ∀ r ∈ D' T.l, ∃ d, Expr.evalRow es r = .ok d ∧
-      ((p.subst es).evalTruth r).toOption = (p.evalTruth d).toOption := by
-    intro r hr
-    obtain ⟨d, hd⟩ : ∃ d, Expr.evalRow es r = .ok d := Expr.exists_evalRow_eq_ok_iff.mpr
-      fun i => (es_safe i).exists_eval_eq_ok (hD' T.l r hr)
-    refine ⟨d, hd, ?_⟩
-    simp only [Expr.evalTruth, Expr.eval_subst (Expr.evalRow_eq_ok_iff.mp hd)]
-  have hsome : ∀ r ∈ D' T.l, (Expr.evalRow es r).toOption.isSome := fun r hr => by
-    obtain ⟨d, hd, -⟩ := hrow r hr
-    simp [hd]
-  -- `before`: project, then filter the results.
-  have hp : ∀ d ∈ (D' T.l).filterMap fun r => (Expr.evalRow es r).toOption,
-      (p.evalTruth d).toOption.isSome := by
-    intro d hd
-    obtain ⟨r, hr, hrd⟩ := List.mem_filterMap.mp hd
-    obtain ⟨d', hd', -⟩ := hrow r hr
-    rw [hd', Except.toOption_ok, Option.some.injEq] at hrd
-    subst hrd
-    obtain ⟨t, ht⟩ := Expr.IsSafePredicate.exists_evalTruth_eq_ok (Γ := ![.text, .int])
-      (e := p) (by decide) (r := d') fun i =>
-        Expr.hasType_of_eval_eq_ok (hD' T.l r hr) (es_typeOf i) (Expr.evalRow_eq_ok_iff.mp hd' i)
-    simp [ht]
-  have hsub : ∀ r ∈ D' T.l, ((p.subst es).evalTruth r).toOption.isSome := fun r hr => by
-    obtain ⟨d, hd, h⟩ := hrow r hr
-    rw [h]
-    exact hp d (List.mem_filterMap.mpr ⟨r, hr, by simp [hd]⟩)
-  simp only [eval_select, eval_project, eval_table, Except.ok_bind, Except.toOption_bind,
-    Except.toOption_mapM, Expr.toOption_filterRows]
-  rw [ite_eq_left hsome, Option.bind_some, ite_eq_left hp, ite_eq_left hsub, Option.bind_some,
-    ite_eq_left fun r hr => hsome r (List.mem_filter.mp hr).1, List.filter_filterMap,
-    List.filterMap_filter]
-  refine congrArg some (List.filterMap_congr fun r hr => ?_)
-  obtain ⟨d, hd, h⟩ := hrow r hr
-  simp only [hd, Except.toOption_ok, Option.filter_some, h]
+same list of rows. It is an instance of `Query.select_project`, whose guard is `es_safe`. -/
+theorem before_equiv_after : Equiv .ordered before after :=
+  select_project rfl es_safe p
 
 /-! ### The guard is needed -/
 

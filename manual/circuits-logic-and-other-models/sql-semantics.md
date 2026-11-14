@@ -309,10 +309,13 @@ counting; on non-null values `=` is `TRUE` exactly for equal values. Comparing k
 with `NULL` equal to `NULL`, counts `joinSize (rs.map (· i)) (ss.map (· j))` instead, which is the
 same number when one input has no `NULL` key (`Query.eval_join_eqCols_length_eq_joinSize`).
 
-The join need not succeed: comparing an integer key with a text key is a type error, and the join
-fails as soon as both inputs have a row. `Query.eval_join_eqCols_length_eq_joinSize_filterMap`
-guarantees success, and so the count, when every key cell holds `NULL` or a value of one type
-`τ`; the key domain is then the non-null values of `τ`.
+The join need not succeed: comparing an integer with a text value is a type error, but a
+comparison with a `NULL` operand is `unknown` whatever the other operand (`CmpOp.eval`). So when
+the keys are integers on one side and text on the other, the join fails exactly when each input has
+a row whose key is not `NULL`; otherwise every comparison is `unknown`, and the join succeeds with
+no rows. `Query.eval_join_eqCols_length_eq_joinSize_filterMap` guarantees success, and so the
+count, when every key cell holds `NULL` or a value of one type `τ`; the key domain is then the
+non-null values of `τ`.
 
 On a conforming instance the typing hypothesis comes from the schema.
 `Query.eval_join_eqCols_length_eq_joinSize_filterMap_of_typeOf` takes well-typed inputs whose key
@@ -340,8 +343,8 @@ Import `CslibFrontier.Languages.SQL.Scalar` for the operators,
 `CslibFrontier.Languages.SQL.JoinSize` for queries with the equijoin row counts, and open
 `Cslib.SQL`. Each re-exports the layers below it; name resolution
 (`CslibFrontier.Languages.SQL.Column`) comes with the schemas, and `JoinSize` includes neither
-query equivalence nor the laws. The definitions are exposed, so a concrete evaluation is checked by `rfl`, for
-example `evalBinOp (.arith .div) (some (.int 1)) (some (.int 0)) = .error .divisionByZero`.
+query equivalence nor the laws. The definitions are exposed, so a concrete evaluation is checked by
+`rfl`, as in `evalBinOp (.arith .div) (some (.int 1)) (some (.int 0)) = .error .divisionByZero`.
 Use `rfl` rather than `decide` for results of type `Except`: Batteries derives
 `DecidableEq (Except ε α)` without exposing its body, so `decide` cannot evaluate it from another
 module. `decide` does work on datums, truth values, rows and `Option`, for instance after
@@ -358,7 +361,8 @@ expressions with the congruence lemmas and into queries with `Query.Equiv.select
 siblings. For queries, `Query.Equiv.of_eval_eq` proves a law whose sides evaluate equally; in
 general, rewrite with the evaluation equations (`Query.eval_select`, …), `Except.toOption_bind`,
 and `Expr.toOption_filterRows` or `Except.toOption_mapM`, which reduce a query's observation to
-list operations. The checked examples are in [Truth.lean](../../CslibFrontierTests/Languages/SQL/Truth.lean),
+list operations. The checked examples are in
+[Truth.lean](../../CslibFrontierTests/Languages/SQL/Truth.lean),
 [Scalar.lean](../../CslibFrontierTests/Languages/SQL/Scalar.lean),
 [Expr.lean](../../CslibFrontierTests/Languages/SQL/Expr.lean),
 [Query.lean](../../CslibFrontierTests/Languages/SQL/Query.lean),
@@ -416,12 +420,13 @@ example (D' : Database S) (hD' : D'.Conforms) :
   eval_join_table_eqCols_length_eq_joinSize_filterMap 0 0 hD' rfl
 ```
 
-The same file proves a rewrite of a concrete query: `SELECT * FROM (SELECT tag, k + 1 AS k1 FROM
-l) WHERE k1 = 2` is ordered-equivalent to `SELECT tag, k + 1 FROM l WHERE k + 1 = 2`, the predicate
-moved below the projection by `Expr.subst`. The guard, that every projected expression is safe, is
-checked by `decide`. With the projection `tag, 100 / k` the guard fails, and an instance with a row
-whose key is `0` separates the two queries: the original divides by zero, while the rewritten query
-never evaluates `100 / 0` because the `WHERE` clause drops that row first.
+The same file proves a rewrite of a concrete query: `SELECT * FROM (SELECT tag, k + 1 AS k1 FROM l)
+WHERE k1 = 2` is ordered-equivalent to `SELECT tag, k + 1 FROM l WHERE k + 1 = 2`, as an instance of
+`Query.select_project`. Its typing side condition holds by `rfl`, and its guard, that every
+projected expression is safe, is checked by `decide`. With the projection `tag, 100 / k` the guard
+fails, and an instance with a row whose key is `0` separates the two queries: the original divides
+by zero, while the rewritten query never evaluates `100 / 0` because the `WHERE` clause drops that
+row first.
 
 ## Supported fragment and limitations
 
