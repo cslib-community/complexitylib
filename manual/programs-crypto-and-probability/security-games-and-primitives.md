@@ -1286,8 +1286,14 @@ decapsulation. Its native keyless simulator `WordPKE.simFilterWordHandler` answe
 domain with the typed `Scheme.simFilterHandler` of the bundle, and answers any other request with
 the empty word without changing its state. `WordPKE.IsEfficient.isPPT_romCpaReductionWord` proves
 the reduction uniform strict PPT from `IsOraclePPT encBool A`, covering the lazy `G`/`H`
-simulation. Relating its advantage to the typed `cpaAdvantage` and the asymptotic theorem remain
-for #5293.
+simulation. The security notion is in
+[`FujisakiOkamoto/WordGame.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/WordGame.lean):
+`WordPKE.romIndCcaGameWord` is the IND-CCA game of HHK17 Def. 2.4 / Fig. 4 with lazily sampled
+random oracles `G` and `H` (`WordPKE.roWordOracle`), the native encapsulation for the challenge,
+and the native decapsulation for the decapsulation oracle (`WordPKE.ccaWordOracle`).
+`WordPKE.ROMINDCCA` asks for negligible advantage against every `IsOraclePPT` adversary. Relating
+the reduction's advantage to the typed `cpaAdvantage`, and proving `ROMINDCCA` from IND-CPA of the
+family, remain for #5293.
 
 ML-KEM ([fips203][fips203]) lives in
 [`MLKEM/KPKE.lean`](../../CslibFrontier/Crypto/Computational/SIS/MLKEM/KPKE.lean),
