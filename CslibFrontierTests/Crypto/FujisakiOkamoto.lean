@@ -21,20 +21,24 @@ Exercises the HHK17 modular Fujisaki–Okamoto transforms (`T`, `FO^⊥`, `FO-no
    for `T`, `FO^⊥`, and `FO-notbot`, and rejection of a valid underlying PKE ciphertext encrypted
    under
    non-canonical coins (`c = (1, 6)` decrypts to `some 2` under PKE, yet `decapsBot` rejects with
-   `none` and `decapsNotBot` returns the domain-separated fallback key `H(true, fallback, c)`).
+   `none` and `decapsNotBot` returns the domain-separated fallback key `H(true, fallback, c)`),
+   and the same decapsulations with oracle access (`decapsBotM`, `decapsNotBotM`) against a `G`
+   oracle that records its queries.
 2. **Positive and negative witnesses for `DeltaCorrect` (including `δ > 0` tight and non-tight
    bounds)**: `identityPKE` (`DeltaCorrect 0`), `alwaysZeroDecPKE` (`¬ DeltaCorrect 0`), and
    `noisyCoinPKE` whose decryptor fails on coin `r = 1` with probability `1 / 2`, satisfying
    `DeltaCorrect (1 / 2)` (tight) and `DeltaCorrect (3 / 4)` (non-tight via `DeltaCorrect.mono`)
    while refuting `DeltaCorrect (1 / 4)`.
-3. **Positive and negative witnesses for `GammaSpread` and `indCpaAdvantage`**: `identityPKE`
-   satisfies `GammaSpread 0`, refutes `GammaSpread 1`, and admits a distinguisher with
-   `indCpaAdvantage 0 1 = 1`.
-4. **ROM IND-CCA games, simulator hit probability, and CPA reduction witnesses**:
-   `queryCiphertextGAdv` satisfies `ROQueryBounds queryCiphertextGAdv 1 0`, achieves
-   `simHitProb = 1` on diagonal message pairs `(m, m)` and `simHitProb = 0` on `(0, 1)`,
-   yields `indCpaAdvantage 0 1 (romCpaReduction queryCiphertextGAdv 0 1) = 1`, and instantiates
-   eager/lazy ROM IND-CCA equivalence and the OW-to-CPA averaging bound on `maskedShiftScheme`.
+3. **Positive and negative witnesses for `GammaSpread` and IND-CPA**: `identityPKE` satisfies
+   `GammaSpread 0`, refutes `GammaSpread 1`, and admits a distinguisher with fixed-message
+   `indCpaAdvantage 0 1 = 1` and a two-stage adversary with `cpaAdvantage = 1`.
+4. **ROM IND-CCA games, simulator runs, and the CPA reduction**: `queryCiphertextGAdv` satisfies
+   `ROQueryBounds queryCiphertextGAdv 1 0`, and its simulator run finds a message `m` exactly
+   when the challenge encrypts `m`. The two-stage reduction `romCpaReduction` built from it has
+   IND-CPA advantage exactly `3 / 4`: it always finds `m₁` when the challenge encrypts `m₁`, and
+   finds it with probability `1 / 4 = qG / |M|` when the challenge encrypts an independent `m₀`.
+   The module also instantiates eager/lazy ROM IND-CCA equivalence and the one-wayness bound on
+   `maskedShiftScheme`.
 5. **Axiom audit**: `#print axioms` confirms the choice-free algebraic transform theorems
    (`decT_encT_eq_some`, `encT_of_decT_eq_some`, `Scheme.decapsBot_encT_eq_some`,
    `Scheme.decapsNotBot_encT_eq`) depend only on `[propext]`.
@@ -108,6 +112,24 @@ example :
   exact ⟨by decide,
     maskedShiftScheme.decapsBot_eq_none_of_reencrypt_ne testG testH 3 3 (1, 6) hbad,
     maskedShiftScheme.decapsNotBot_of_reencrypt_ne testG testH ⟨3, 3, 7⟩ (1, 6) hbad⟩
+
+/-- `testG` as an oracle that records each query. -/
+def logG (m : Fin 8) : StateM (List (Fin 8)) (Fin 8) := do
+  modify (m :: ·)
+  return testG m
+
+/-- Decapsulation with oracle access: on the honest ciphertext `(0, 5)` and the non-canonical
+`(1, 6)`, `decapsBotM` and `decapsNotBotM` query `G(2)` exactly once, and the rejected `(1, 6)`
+keeps that query before returning `none` or the fallback key. With pure oracles, `decapsNotBotM`
+is `decapsNotBot`. -/
+example :
+    (maskedShiftScheme.decapsBotM logG (pure ∘ testH) 3 3 (1, 6)).run [] = (none, [2]) ∧
+    (maskedShiftScheme.decapsNotBotM logG (pure ∘ testH) ⟨3, 3, 7⟩ (1, 6)).run [] = (15, [2]) ∧
+    (maskedShiftScheme.decapsNotBotM logG (pure ∘ testH) ⟨3, 3, 7⟩
+      (encT maskedShiftPKE testG 3 2)).run [] = (2, [2]) ∧
+    maskedShiftScheme.decapsNotBotM (m := Id) (pure ∘ testG) (pure ∘ testH) ⟨3, 3, 7⟩ (1, 6) =
+      maskedShiftScheme.decapsNotBot testG testH ⟨3, 3, 7⟩ (1, 6) :=
+  ⟨rfl, rfl, rfl, maskedShiftScheme.decapsNotBotM_pure testG testH _ _⟩
 
 /-! ### 2. `DeltaCorrect` Witnesses (Zero-Error, Tight Non-Zero `δ > 0`, Non-Tight, and Negative) -/
 
@@ -207,7 +229,17 @@ theorem identityPKE_indCpaAdvantage_eq_one :
     Game.coe_succProbability]
   simp [ExplicitCoinPKE.indCpaGame, ExplicitCoinPKE.encrypt, identityPKE]
 
-/-! ### 4. ROM IND-CCA Games, Simulator Hit Probability, and CPA Reduction Witnesses -/
+/-- A two-stage adversary against `identityPKE` that chooses `(0, 1)` and checks whether the
+challenge ciphertext equals `1` has two-stage IND-CPA advantage `1`. -/
+theorem identityPKE_cpaAdvantage_eq_one :
+    (identityPKE.cpaAdvantage
+      (⟨fun _ => pure (⟨0, 1⟩, ()), fun _ c => pure (decide (c = 1))⟩ :
+        TwoStage Unit (MessagePair (Fin 4)) (Fin 4) Bool Unit) : ℝ) = 1 := by
+  rw [ExplicitCoinPKE.cpaAdvantage, Experiment.coe_advantage]
+  simp [PKE.cpaExperiment, lrExperiment, ExplicitCoinPKE.toPKE, ExplicitCoinPKE.encrypt,
+    identityPKE]
+
+/-! ### 4. ROM IND-CCA Games, Simulator Runs, and the CPA Reduction -/
 
 /-- HHK17 FO scheme wrapping `identityPKE` with uniform `Fin 4` messages and `Fin 2` keys. -/
 def identityScheme : Scheme Unit Unit (Fin 4) Unit (Fin 4) (Fin 2) where
@@ -215,13 +247,13 @@ def identityScheme : Scheme Unit Unit (Fin 4) Unit (Fin 4) (Fin 2) where
   sampleMsg := ProbComp.unifFin 3
   sampleKey := pure 0
 
-/-- ROM adversary against `identityScheme` that queries `G` on the challenge ciphertext `cStar`
-(which equals the plaintext message in `identityPKE`), queries punctured decapsulation on `cStar`,
+/-- ROM adversary against `identityScheme` that queries `G` on the challenge ciphertext `ch.ct`
+(which equals the plaintext message in `identityPKE`), queries punctured decapsulation on `ch.ct`,
 and outputs `true`. -/
 def queryCiphertextGAdv : ROAdversary Unit (Fin 4) Unit (Fin 4) (Fin 2) :=
-  fun (_, cStar, _) => do
-    let _ ← OracleComp.query (ROQuery.G cStar)
-    let _ ← OracleComp.query (ROQuery.decaps cStar)
+  fun ch => do
+    let _ ← OracleComp.query (ROQuery.G ch.ct)
+    let _ ← OracleComp.query (ROQuery.decaps ch.ct)
     return true
 
 /-- `queryCiphertextGAdv` makes at most `1` query to `G` and `0` queries to `H`. -/
@@ -235,40 +267,38 @@ theorem queryCiphertextGAdv_bounds : ROQueryBounds queryCiphertextGAdv 1 0 := by
       (fun _ => (OracleComp.IsCostBounded.query (ROQuery.decaps cStar)).bind
         fun _ => OracleComp.IsCostBounded.pure true 0)
 
-/-- Positive hit-probability witness: when `m₀ = m₁`, `queryCiphertextGAdv` queries `G(m₁)` with
-probability `1`. -/
-theorem identityScheme_simHitProb_diag (m : Fin 4) :
-    identityScheme.simHitProb queryCiphertextGAdv m m = 1 := by
-  simp [-bind_pure_comp, -_root_.PMF.bind_apply,
-    Scheme.simHitProb, Scheme.romCpaReduction, queryCiphertextGAdv,
-    identityScheme, identityPKE, ExplicitCoinPKE.indCpaGame, ExplicitCoinPKE.encrypt,
-    Scheme.simHandler, simHashG, OracleComp.interpret_bind, OracleComp.interpret_query,
-    OracleComp.interpret_pure]
-  simp [-_root_.PMF.bind_apply, StateT.run, RandomOracle.zoomStateT,
-    memoize_of_none _ m [] rfl]
+/-- In the simulator run of the IND-CPA reduction, `queryCiphertextGAdv` queries `G` only at the
+challenge ciphertext `c`, which is the encrypted message of `identityPKE`: the run finds `m` exactly
+when `m = c`. -/
+theorem identityScheme_simFilterHit (pk : Unit) (m c : Fin 4) :
+    ProbComp.eval (identityScheme.simFilterHit (fun _ _ _ => true) queryCiphertextGAdv pk m c) =
+      PMF.pure (decide (m = c)) := by
+  simp [-bind_pure_comp, -_root_.PMF.bind_apply, Scheme.simFilterHit, queryCiphertextGAdv,
+    identityScheme, Scheme.simFilterHandler, Scheme.simFilterDispatch, simHashG,
+    OracleComp.interpret_bind, OracleComp.interpret_query, OracleComp.interpret_pure,
+    ROQuery.dispatch]
+  by_cases hm : m = c
+  · simp [-_root_.PMF.bind_apply, StateT.run, RandomOracle.zoomStateT, identityPKE,
+      memoize_of_none _ c [] rfl, hm]
+  · simp [-_root_.PMF.bind_apply, StateT.run, RandomOracle.zoomStateT, identityPKE,
+      memoize_of_none _ c [] rfl, List.lookup_cons, beq_eq_false_iff_ne.mpr hm, hm]
 
-/-- Negative hit-probability witness: when `m₀ = 0` and `m₁ = 1`, `queryCiphertextGAdv` queries
-only `G(0)` and never `G(1)`, so `simHitProb = 0`. -/
-theorem identityScheme_simHitProb_zero_one :
-    identityScheme.simHitProb queryCiphertextGAdv 0 1 = 0 := by
-  simp [-bind_pure_comp, -_root_.PMF.bind_apply,
-    Scheme.simHitProb, Scheme.romCpaReduction, queryCiphertextGAdv,
-    identityScheme, identityPKE, ExplicitCoinPKE.indCpaGame, ExplicitCoinPKE.encrypt,
-    Scheme.simHandler, simHashG, OracleComp.interpret_bind, OracleComp.interpret_query,
-    OracleComp.interpret_pure]
-  simp [-_root_.PMF.bind_apply, StateT.run, RandomOracle.zoomStateT,
-    memoize_of_none _ (0 : Fin 4) [] rfl]
-
-/-- The HHK17 CPA reduction `romCpaReduction` built from `queryCiphertextGAdv` achieves
-IND-CPA advantage `1` on challenge messages `(0, 1)`. -/
-theorem identityScheme_indCpaAdvantage_romCpaReduction_eq_one :
-    (identityPKE.indCpaAdvantage 0 1
-      (identityScheme.romCpaReduction queryCiphertextGAdv 0 1) : ℝ) = 1 := by
-  change (identityScheme.pke.indCpaAdvantage 0 1
-    (identityScheme.romCpaReduction queryCiphertextGAdv 0 1) : ℝ) = 1
-  rw [identityScheme.indCpaAdvantage_romCpaReduction,
-    identityScheme_simHitProb_zero_one, identityScheme_simHitProb_diag]
-  norm_num
+/-- **The two-stage IND-CPA reduction is exact on `queryCiphertextGAdv`**: `romCpaReduction`
+built from `queryCiphertextGAdv` has IND-CPA advantage `3 / 4` against `identityPKE`. It always
+finds `m₁` when the challenge encrypts `m₁`, and finds the independent uniform `m₁` with
+probability `1 / 4` when the challenge encrypts `m₀`. -/
+theorem identityScheme_cpaAdvantage_romCpaReduction :
+    (identityPKE.cpaAdvantage
+      (identityScheme.romCpaReduction (.ofDeterministic queryCiphertextGAdv)) : ℝ) = 3 / 4 := by
+  change (identityScheme.pke.cpaAdvantage
+    (identityScheme.romCpaReduction (.ofDeterministic queryCiphertextGAdv)) : ℝ) = 3 / 4
+  rw [ExplicitCoinPKE.cpaAdvantage, Experiment.coe_advantage]
+  simp only [PKE.cpaExperiment, ProbComp.eval_bind, eval_lrExperiment, Scheme.romCpaReduction,
+    Scheme.romFilterCpaReduction, RandomizedROAdversary.ofDeterministic, ExplicitCoinPKE.toPKE,
+    ProbComp.eval_pure, PMF.bind_bind, PMF.pure_bind, identityScheme_simFilterHit, ite_true,
+    MessagePair.select_false, MessagePair.select_true]
+  simp [identityScheme, identityPKE, ExplicitCoinPKE.encrypt]
+  norm_num [abs_of_neg]
 
 /-- Variant of `identityScheme` with `sampleMsg := pure 0` and uniform `Fin 2` keys
 (`ProbComp.unifFin 1`), used to witness positive `indCcaRomAdvantage`. -/
@@ -277,17 +307,17 @@ def identityUnifKeyScheme : Scheme Unit Unit (Fin 4) Unit (Fin 4) (Fin 2) where
   sampleMsg := pure 0
   sampleKey := ProbComp.unifFin 1
 
-/-- ROM adversary that queries `H(false, cStar, cStar)` and checks whether the returned key equals
-the challenge key `kStar`. -/
+/-- ROM adversary that queries `H(false, c*, c*)` on the challenge ciphertext `c* = ch.ct` and
+checks whether the returned key equals the challenge key `ch.key`. -/
 def checkKeyHAdv : ROAdversary Unit (Fin 4) Unit (Fin 4) (Fin 2) :=
-  fun (_, cStar, kStar) => do
-    let k ← OracleComp.query (ROQuery.H (false, cStar, cStar))
-    return decide (k = kStar)
+  fun ch => do
+    let k ← OracleComp.query (ROQuery.H (false, ch.ct, ch.ct))
+    return decide (k = ch.key)
 
 /-- Positive-advantage witness for `indCcaRomAdvantage`: `checkKeyHAdv` distinguishes real from
 random keys in `identityUnifKeyScheme` with advantage `1 / 2`. -/
 theorem identityUnifKeyScheme_indCcaRomAdvantage_eq_half :
-    (identityUnifKeyScheme.indCcaRomAdvantage checkKeyHAdv : ℝ) = 1 / 2 := by
+    (identityUnifKeyScheme.indCcaRomAdvantage (.ofDeterministic checkKeyHAdv) : ℝ) = 1 / 2 := by
   have hgame (b : Bool) :
       identityUnifKeyScheme.roIndCcaGame checkKeyHAdv b =
         (do
@@ -296,11 +326,13 @@ theorem identityUnifKeyScheme_indCcaRomAdvantage_eq_half :
           return decide (kReal = if b then kRand else kReal)) := by
     simp [-bind_pure_comp, Scheme.roIndCcaGame, Scheme.keyGenNotBot,
       identityUnifKeyScheme, identityPKE, checkKeyHAdv, Scheme.roHandler, roHashH,
-      OracleComp.interpret_bind, OracleComp.interpret_query, OracleComp.interpret_pure]
+      OracleComp.interpret_bind, OracleComp.interpret_query, OracleComp.interpret_pure,
+      ROQuery.dispatch]
     simp [StateT.run, RandomOracle.zoomStateT,
       memoize_of_some _ (false, (0 : Fin 4), (0 : Fin 4)) [((false, 0, 0), _)] _ rfl]
-  rw [Scheme.indCcaRomAdvantage, hgame false, hgame true, Game.coe_advantage,
-    Game.coe_succProbability, Game.coe_succProbability]
+  rw [Scheme.indCcaRomAdvantage, RandomizedROAdversary.play_ofDeterministic,
+    RandomizedROAdversary.play_ofDeterministic, hgame false, hgame true,
+    Experiment.coe_advantage]
   simp only [Bool.false_eq_true, ↓reduceIte, ProbComp.eval_bind, ProbComp.eval_pure,
     PMF.bind_apply_toReal_tsum, tsum_fintype, ProbComp.eval_unifFin,
     PMF.uniformOfFintype_apply, Fintype.card_fin, _root_.PMF.pure_apply]
@@ -308,20 +340,20 @@ theorem identityUnifKeyScheme_indCcaRomAdvantage_eq_half :
   simp [Fin.sum_univ_two]
   norm_num
 
-/-- Instantiating eager/lazy ROM IND-CCA equivalence and the OW-to-CPA averaging bound on
-`maskedShiftScheme`. -/
+/-- Instantiating eager/lazy ROM IND-CCA equivalence and the one-wayness bound of the challenge
+hop on `maskedShiftScheme`, whose messages are uniform on `Fin 8`. -/
 example (A : ROAdversary (Fin 8) (Fin 8) (Fin 8) (Fin 8 × Fin 8) (Fin 16))
     (qG qH : ℕ) (hA : ROQueryBounds A qG qH) :
-    maskedShiftScheme.indCcaRomAdvantage A =
+    maskedShiftScheme.indCcaRomAdvantage (.ofDeterministic A) =
       Game.advantage (maskedShiftScheme.eagerIndCcaGame A false)
         (maskedShiftScheme.eagerIndCcaGame A true) ∧
-    ∃ m₀ m₁ : Fin 8, m₀ ≠ m₁ ∧
-      (∑ m : Fin 8, maskedShiftScheme.simHitProb A m m) / (Fintype.card (Fin 8) : ℝ) ≤
-      (maskedShiftPKE.indCpaAdvantage m₀ m₁
-        (maskedShiftScheme.romCpaReduction A m₀ m₁) : ℝ) +
+    Pr[maskedShiftScheme.simFilterOwExperiment (fun _ _ _ => true) A] ≤
+      (maskedShiftPKE.cpaAdvantage
+        (maskedShiftScheme.romCpaReduction (.ofDeterministic A)) : ℝ) +
       ((qG : ℝ) + (qH : ℝ)) / (Fintype.card (Fin 8) : ℝ) :=
   ⟨maskedShiftScheme.indCcaRomAdvantage_eq_eager A,
-    maskedShiftScheme.avg_simHitProb_le_indCpaAdvantage_romCpaReduction A (by decide) hA⟩
+    maskedShiftScheme.succProbability_simFilterOwExperiment_le (fun _ _ _ => true)
+      (.ofDeterministic A) (fun _ => hA) (by simp [maskedShiftScheme])⟩
 
 /-! ### 5. Axiom Hygiene Guards for Choice-Free Results -/
 

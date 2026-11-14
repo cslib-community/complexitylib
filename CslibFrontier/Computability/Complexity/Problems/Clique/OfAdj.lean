@@ -48,12 +48,12 @@ variable {V : Type}
 /-- The graph on the positions of `vs`, with an edge from `i` to `j` when `adj` holds of the
 entries at `i` and `j`. -/
 def ofAdj (vs : List V) (adj : V → V → Bool) : Graph :=
-  (List.range vs.length,
-    vs.zipIdx.flatMap fun a => (vs.zipIdx.filter fun b => adj a.1 b.1).map fun b => (a.2, b.2))
+  ⟨List.range vs.length,
+    vs.zipIdx.flatMap fun a => (vs.zipIdx.filter fun b => adj a.1 b.1).map fun b => (a.2, b.2)⟩
 
 /-- The edges of `ofAdj vs adj`. -/
 theorem mem_ofAdj_edges {vs : List V} {adj : V → V → Bool} {i j : ℕ} :
-    (i, j) ∈ (ofAdj vs adj).2 ↔
+    (i, j) ∈ (ofAdj vs adj).edges ↔
       ∃ (hi : i < vs.length) (hj : j < vs.length), adj vs[i] vs[j] = true := by
   simp only [ofAdj, List.mem_flatMap, List.mem_map, List.mem_filter, Prod.mk.injEq,
     List.mem_zipIdx_iff_getElem?]
@@ -85,9 +85,10 @@ theorem ofAdj_adj {vs : List V} {adj : V → V → Bool} {i j : ℕ} :
 /-- The cliques of `ofAdj vs adj`: sets of positions whose entries are pairwise adjacent in some
 direction. -/
 theorem mem_Clique_ofAdj_iff {vs : List V} {adj : V → V → Bool} {m : ℕ} :
-    (ofAdj vs adj, m) ∈ Clique ↔ ∃ S : Finset ℕ, S.card = m ∧ (∀ i ∈ S, i < vs.length) ∧
-      ∀ i ∈ S, ∀ j ∈ S, ∀ (hi : i < vs.length) (hj : j < vs.length), i ≠ j →
-        (adj vs[i] vs[j] || adj vs[j] vs[i]) = true := by
+    (⟨ofAdj vs adj, m⟩ : CliqueInstance) ∈ Clique ↔
+      ∃ S : Finset ℕ, S.card = m ∧ (∀ i ∈ S, i < vs.length) ∧
+        ∀ i ∈ S, ∀ j ∈ S, ∀ (hi : i < vs.length) (hj : j < vs.length), i ≠ j →
+          (adj vs[i] vs[j] || adj vs[j] vs[i]) = true := by
   rw [mem_Clique_iff]
   constructor
   · rintro ⟨S, hS, hclique⟩
@@ -103,8 +104,9 @@ theorem mem_Clique_ofAdj_iff {vs : List V} {adj : V → V → Bool} {m : ℕ} :
 pairwise adjacent in some direction. -/
 theorem mem_Clique_ofAdj_iff_entries {vs : List V} {adj : V → V → Bool}
     (hirr : ∀ v, adj v v = false) {m : ℕ} :
-    (ofAdj vs adj, m) ∈ Clique ↔ ∃ T : Finset V, T.card = m ∧ (∀ v ∈ T, v ∈ vs) ∧
-      ∀ v ∈ T, ∀ w ∈ T, v ≠ w → (adj v w || adj w v) = true := by
+    (⟨ofAdj vs adj, m⟩ : CliqueInstance) ∈ Clique ↔
+      ∃ T : Finset V, T.card = m ∧ (∀ v ∈ T, v ∈ vs) ∧
+        ∀ v ∈ T, ∀ w ∈ T, v ≠ w → (adj v w || adj w v) = true := by
   classical
   rw [mem_Clique_ofAdj_iff]
   constructor
@@ -153,15 +155,16 @@ theorem computableInPolyTime_ofAdj {vs : γ → List V} {adj : γ → V → V �
   have hb := ComputableInPolyTime.unary_to_binary
   have hlen : ComputableInPolyTime (fun a => (vs a).length) encIn encUnary := by
     fun_prop
-  have hverts : ComputableInPolyTime (fun a => (List.range (vs a).length).map id)
+  have hverts : ComputableInPolyTime (fun a => List.range (vs a).length)
       encIn (encList encNat) := by
-    fun_prop
+    simpa using (show ComputableInPolyTime (fun a => (List.range (vs a).length).map id)
+      encIn (encList encNat) by fun_prop)
   have hedges : ComputableInPolyTime (fun a => (vs a).zipIdx.flatMap fun c =>
       ((vs a).zipIdx.filter fun b => adj a c.1 b.1).map fun b => (c.2, b.2))
       encIn (encList (encPair encNat encNat)) := by
     fun_prop
-  unfold ofAdj encGraph
-  simpa using hverts.prod hedges
+  unfold ofAdj
+  exact encGraph_mk_polyTime hverts hedges
 
 end Graph
 

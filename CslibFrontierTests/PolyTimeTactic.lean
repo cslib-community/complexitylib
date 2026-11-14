@@ -475,4 +475,29 @@ example : ComputableInPolyTime (fun p : List ℕ × ℕ => p.1.length)
     (encPair (encList encNat) encNat) encNat := by
   fun_prop
 
+private structure AbbrevWrapper (tag : Bool) where
+  op : ℕ → ℕ
+
+private abbrev abbrevWrapper (tag : Bool) : AbbrevWrapper tag := ⟨fun n => n⟩
+
+private def abbrevWrapperEnc (_tag : Bool) : ℕ ↪ List Bool := encNat
+
+private abbrev abbrevEnc (tag : Bool) : ℕ ↪ List Bool := abbrevWrapperEnc tag
+
+@[fun_prop, program_certificate]
+private theorem abbrevWrapper_polytime (tag : Bool) :
+    ComputableTidilyInPolyTime (abbrevWrapper tag).op (abbrevWrapperEnc tag) encNat := by
+  dsimp [abbrevWrapper, abbrevWrapperEnc]
+  polytime
+
+-- Efficiency goals keep reducible `abbrev` and projection wrappers intact until certificates and
+-- `fun_prop` try, while fallback `simp_all` still handles efficiency goals needing simplification.
+example (tag : Bool) :
+    ComputableTidilyInPolyTime (fun n : ℕ => (abbrevWrapper tag).op n)
+      (abbrevWrapperEnc tag) encNat ∧
+    ComputableTidilyInPolyTime (fun n : ℕ => (abbrevWrapper tag).op n)
+      (abbrevEnc tag) encNat ∧
+    ComputableTidilyInPolyTime (fun n : ℕ => if True then n else 0) encNat encNat := by
+  exact ⟨by polytime, by polytime, by polytime⟩
+
 end CslibFrontierTests.PolyTimeTactic

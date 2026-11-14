@@ -161,9 +161,13 @@ noncomputable def basis : POVM ι ι where
     exact posSemidef_conjTranspose_mul_self _
   sum_effect := sum_single_one
 
+/-- Each basis effect is the projector onto its basis vector. -/
+@[simp] theorem basis_effect (x : ι) : (basis : POVM ι ι).effect x = single x x 1 := by
+  rfl
+
 theorem prob_basis (ψ : EuclideanSpace ℂ ι) (x : ι) : basis.prob ψ x = ‖ψ.ofLp x‖ ^ 2 := by
-  simp only [prob, basis, single_mulVec_eq, one_mul, dotProduct_smul, dotProduct_single, mul_one,
-    Pi.star_apply, smul_eq_mul]
+  simp only [prob, basis_effect, single_mulVec_eq, one_mul, dotProduct_smul, dotProduct_single,
+    mul_one, Pi.star_apply, smul_eq_mul]
   rw [Complex.star_def, Complex.mul_conj', ← Complex.ofReal_pow, Complex.ofReal_re]
 
 /-- Measuring with the basis POVM is the computational-basis measurement. -/

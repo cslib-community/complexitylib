@@ -1,13 +1,15 @@
 /-
-Copyright (c) 2026 Samuel Schlesinger. All rights reserved.
+Copyright (c) 2026 Samuel Schlesinger, Christian Reitwiessner. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Samuel Schlesinger
+Authors: Samuel Schlesinger, Christian Reitwiessner
 -/
 
 module
 -- upstream: candidate
 
 public import CslibFrontier.Probability.MinEntropy
+public import CslibFrontier.Foundations.Data.BitString.Basic
+import CslibFrontier.Probability.Product
 import CslibFrontier.Probability.StatisticalDistance
 
 /-!
@@ -40,11 +42,17 @@ two-source extractors are the two standard ways around this.
 * `Cslib.Probability.IsStrongExtractor.isExtractor`: strong extractors are extractors.
 * `Cslib.Probability.IsExtractor.dist_le_of_isSource`,
   `Cslib.Probability.IsStrongExtractor.dist_le_of_isSource`: extraction from `(k, δ)`-sources.
+* `Cslib.Probability.exists_minEntropy_map_eq_pure_bool`: a reusable Boolean-fiber witness.
+* `Cslib.Probability.exists_minEntropy_map_first_eq_pure`: positive-length bit-string witness,
+  fixed first output coordinate and distance at least `1 / 2` (Arora–Barak draft, exercise 16.7).
+* `Cslib.Probability.not_isExtractor_bitString`: the immediate multibit non-extractor consequence.
 * `Cslib.Probability.not_isExtractor_bool_of_subsingleton`: seedless extraction of one bit fails
   for sources missing one bit of min-entropy.
 
 ## References
 
+* [S. Arora, B. Barak, *Computational Complexity: A Modern Approach*][AroraBarak07],
+  January 8, 2007 draft, Chapter 16, Exercise 7
 * [N. Nisan, D. Zuckerman, *Randomness is Linear in Space*][NisanZuckerman1996]
 * [S. Vadhan, *Pseudorandomness*][Vadhan2012], Chapter 6
 -/
@@ -135,26 +143,22 @@ theorem IsStrongExtractor.dist_le_of_isSource (h : IsStrongExtractor ext k ε)
 
 /-! ### Seedless extraction is impossible -/
 
-/-- **Seedless extraction fails.** With a seed carrying no randomness, no function to `Bool` is a
-`(log₂ |Input| - 1, ε)`-extractor for `ε < 1 / 2`: some output value `b` has at least half of the
-inputs as preimages, and the uniform distribution on those inputs has min-entropy at least
-`log₂ |Input| - 1` while its output is constantly `b`. -/
-theorem not_isExtractor_bool_of_subsingleton [Nonempty Input] [Subsingleton Seed]
-    (ext : Input → Seed → Bool) (hε : ε < 1 / 2) :
-    ¬ IsExtractor ext (Real.logb 2 (Fintype.card Input) - 1) ε := by
+/-- A Boolean map has a flat source missing at most one bit of entropy on which it is constant. -/
+theorem exists_minEntropy_map_eq_pure_bool [Nonempty Input] (f : Input → Bool) :
+    ∃ (source : PMF Input) (b : Bool),
+      Real.logb 2 (Fintype.card Input) - 1 ≤ minEntropy source ∧
+      source.map f = PMF.pure b := by
   classical
-  intro h
-  obtain ⟨s₀⟩ := (inferInstance : Nonempty Seed)
-  -- One of the two preimages of `ext · s₀` contains at least half of the inputs.
+  -- One of the two preimages of `f` contains at least half of the inputs.
   obtain ⟨b, hb⟩ : ∃ b : Bool,
-      Fintype.card Input ≤ 2 * (Finset.univ.filter fun x => ext x s₀ = b).card := by
+      Fintype.card Input ≤ 2 * (Finset.univ.filter fun x => f x = b).card := by
     have hsplit := Finset.card_filter_add_card_filter_not
-      (s := (Finset.univ : Finset Input)) (fun x => ext x s₀ = true)
+      (s := (Finset.univ : Finset Input)) (fun x => f x = true)
     simp only [Bool.not_eq_true, Finset.card_univ] at hsplit
-    by_cases ht : Fintype.card Input ≤ 2 * (Finset.univ.filter fun x => ext x s₀ = true).card
+    by_cases ht : Fintype.card Input ≤ 2 * (Finset.univ.filter fun x => f x = true).card
     · exact ⟨true, ht⟩
     · exact ⟨false, by omega⟩
-  set T := Finset.univ.filter fun x => ext x s₀ = b
+  set T := Finset.univ.filter fun x => f x = b
   have hT : T.Nonempty := by
     rw [← Finset.card_pos]
     have := Fintype.card_pos (α := Input)
@@ -168,27 +172,80 @@ theorem not_isExtractor_bool_of_subsingleton [Nonempty Input] [Subsingleton Seed
       Real.logb_le_logb_of_le (by norm_num) hcard hle
     rw [Real.logb_mul (by norm_num) hTpos.ne', Real.logb_self_eq_one (by norm_num)] at hlog
     linarith
+  refine ⟨uniformOfFinset T hT, b, hentropy, ?_⟩
+  rw [PMF.map]
+  ext b'
+  rw [PMF.bind_apply]
+  calc
+    ∑' x, (uniformOfFinset T hT) x * PMF.pure (f x) b' =
+        ∑' x, (uniformOfFinset T hT) x * PMF.pure b b' := tsum_congr fun x => by
+      by_cases hx : x ∈ T
+      · rw [(Finset.mem_filter.mp hx).2]
+      · rw [(PMF.apply_eq_zero_iff _ x).mpr (by rwa [mem_support_uniformOfFinset_iff]),
+          zero_mul, zero_mul]
+    _ = PMF.pure b b' := by rw [ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
+
+/-- **Seedless extraction fails.** With a seed carrying no randomness, no function to `Bool` is a
+`(log₂ |Input| - 1, ε)`-extractor for `ε < 1 / 2`: some output value `b` has at least half of the
+inputs as preimages, and the uniform distribution on those inputs has min-entropy at least
+`log₂ |Input| - 1` while its output is constantly `b`. -/
+theorem not_isExtractor_bool_of_subsingleton [Nonempty Input] [Subsingleton Seed]
+    (ext : Input → Seed → Bool) (hε : ε < 1 / 2) :
+    ¬ IsExtractor ext (Real.logb 2 (Fintype.card Input) - 1) ε := by
+  classical
+  intro h
+  obtain ⟨s₀⟩ := (inferInstance : Nonempty Seed)
+  obtain ⟨source, b, hentropy, hmap⟩ := exists_minEntropy_map_eq_pure_bool (fun x => ext x s₀)
   have hseed : PMF.uniformOfFintype Seed = PMF.pure s₀ := by
     ext s
     have hcard : Fintype.card Seed = 1 :=
       Fintype.card_eq_one_iff.mpr ⟨s₀, fun y => Subsingleton.elim y s₀⟩
     rw [Subsingleton.elim s s₀]
     simp [hcard]
-  have hconst : ((uniformOfFinset T hT).bind fun x =>
+  have hconst : (source.bind fun x =>
       (PMF.uniformOfFintype Seed).map fun s => ext x s) = PMF.pure b := by
-    simp only [hseed, PMF.pure_map]
-    ext b'
-    rw [PMF.bind_apply]
-    calc
-      ∑' x, (uniformOfFinset T hT) x * PMF.pure (ext x s₀) b' =
-          ∑' x, (uniformOfFinset T hT) x * PMF.pure b b' := tsum_congr fun x => by
-        by_cases hx : x ∈ T
-        · rw [(Finset.mem_filter.mp hx).2]
-        · rw [(PMF.apply_eq_zero_iff _ x).mpr (by rwa [mem_support_uniformOfFinset_iff]),
-            zero_mul, zero_mul]
-      _ = PMF.pure b b' := by rw [ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
+    simpa only [hseed, PMF.map, PMF.pure_bind, Function.comp_def] using hmap
   have hdist := h _ hentropy
   rw [hconst, dist_uniformOfFintype_bool] at hdist
   cases b <;> norm_num at hdist <;> linarith
+
+/-- Explicit seedless impossibility on bit strings: a source of real min-entropy at least
+`n - 1` fixes the first output bit and has output distance at least `1 / 2` from uniform.
+This is [AroraBarak07], Chapter 16, §7 (printed page 319), with first coordinate indexed by
+zero in Lean. Both lengths are positive; there is no efficiency assumption. -/
+theorem exists_minEntropy_map_first_eq_pure {n m : ℕ} (_hn : 1 ≤ n) (hm : 1 ≤ m)
+    (f : BitString n → BitString m) :
+    ∃ (source : PMF (BitString n)) (b : Bool),
+      (n : ℝ) - 1 ≤ minEntropy source ∧
+      (source.map f).map (fun y => y ⟨0, hm⟩) = PMF.pure b ∧
+      1 / 2 ≤ dist (source.map f) (PMF.uniformOfFintype (BitString m)) := by
+  obtain ⟨source, b, hentropy, hmap⟩ :=
+    exists_minEntropy_map_eq_pure_bool (fun x => f x ⟨0, hm⟩)
+  have hcard : Real.logb 2 (Fintype.card (BitString n)) = n := by
+    simp [Real.logb_pow, Real.logb_self_eq_one]
+  rw [hcard] at hentropy
+  have hfirst : (source.map f).map (fun y => y ⟨0, hm⟩) = PMF.pure b := by
+    simpa only [PMF.map_comp, Function.comp_def] using hmap
+  refine ⟨source, b, hentropy, hfirst, ?_⟩
+  have huniform : (PMF.uniformOfFintype (BitString m)).map (fun y => y ⟨0, hm⟩) =
+      PMF.uniformOfFintype Bool := by
+    rw [← pi_uniformOfFintype, pi_map_eval]
+  have hdist := dist_map_le (source.map f) (PMF.uniformOfFintype (BitString m))
+    (fun y => y ⟨0, hm⟩)
+  rw [hfirst, huniform, dist_uniformOfFintype_bool] at hdist
+  cases b <;> norm_num at hdist ⊢ <;> exact hdist
+
+/-- With a singleton seed, no positive-length bit-string map extracts at error below `1 / 2`
+from all sources of min-entropy at least the real number `n - 1`. -/
+theorem not_isExtractor_bitString {n m : ℕ} (hn : 1 ≤ n) (hm : 1 ≤ m)
+    (f : BitString n → BitString m) (hε : ε < 1 / 2) :
+    ¬ IsExtractor (fun x (_ : Unit) => f x) ((n : ℝ) - 1) ε := by
+  intro h
+  obtain ⟨source, b, hentropy, _, hdist⟩ := exists_minEntropy_map_first_eq_pure hn hm f
+  have hupper := h source hentropy
+  have hunit : PMF.uniformOfFintype Unit = PMF.pure () := by ext u; simp
+  simp only [hunit, PMF.map, PMF.pure_bind, Function.comp_def] at hupper
+  change dist (source.map f) _ ≤ ε at hupper
+  linarith
 
 end Cslib.Probability

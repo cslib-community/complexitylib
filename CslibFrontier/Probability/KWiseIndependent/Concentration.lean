@@ -55,6 +55,9 @@ inequalities in the spirit of the limited-independence moment method of Bellare 
   `2 * (3 * m * μ / a ^ 2) ^ m` for `2m`-wise independent `[0, 1]` sums.
 * `Cslib.Probability.dens_abs_sum_sub_expect_le_two_pow`: exponential `2 * (1 / 2) ^ m`
   specialization when `6 * m * μ ≤ a ^ 2` and `a ≤ μ`.
+* `Cslib.Probability.dens_abs_sum_restrict_sub_expect_le`: `2m`-th moment tail bound for sums of
+  `[0, 1]`-valued functions of pairwise disjoint hash restrictions `(B b).restrict (h θ)` of size
+  at most `K` under `(2 * m * K)`-wise independence.
 
 ## References
 
@@ -367,5 +370,129 @@ theorem dens_abs_sum_sub_expect_le_two_pow {ι X Y : Type*} [Fintype ι] [Fintyp
   exact (dens_abs_sum_sub_expect_le hm hh R g hg hmean hmμ ha).trans
     (mul_le_mul_of_nonneg_left
       (pow_le_pow_left₀ (by positivity) hrat m) (by norm_num))
+
+/-- `2m`-th moment concentration for sums of `[0, 1]`-valued functions of pairwise disjoint hash
+restrictions `(B b).restrict (h θ)` of size `≤ K` under `(2 * m * K)`-wise independence. -/
+theorem dens_abs_sum_restrict_sub_expect_le {ι α β Y : Type*} [Fintype ι] [Fintype Y]
+    [DecidableEq Y] [Nonempty Y] {m K k_indep : ℕ} (hm : 1 ≤ m)
+    {h : ι → α → Y} (hh : IsKWiseIndependentHash k_indep h) (hk : 2 * m * K ≤ k_indep)
+    (R : Finset β) (B : β → Finset α) (hB : ∀ b ∈ R, #(B b) ≤ K)
+    (hdisj : (R : Set β).Pairwise fun b₁ b₂ => Disjoint (B b₁) (B b₂))
+    (score : (b : β) → (B b → Y) → ℝ) (hscore : ∀ b ∈ R, ∀ u, score b u ∈ Set.Icc 0 1)
+    {μ a : ℝ} (hmean : ∑ b ∈ R, (𝔼 θ, score b ((B b).restrict (h θ))) ≤ μ)
+    (hmμ : 2 * (m : ℝ) ≤ 3 * μ) (ha : 0 < a) :
+    (dens {θ : ι | a ≤ |∑ b ∈ R,
+      (score b ((B b).restrict (h θ)) - 𝔼 θ', score b ((B b).restrict (h θ')))|} : ℝ) ≤
+      2 * (3 * (m : ℝ) * μ / a ^ 2) ^ m := by
+  classical
+  have : Nonempty ι := hh.nonempty
+  let X' := {b : β // b ∈ R}; let Y' := Fin K → Y; let ι' := ι × (X' × Fin K → Y)
+  have : Nonempty Y' := ⟨fun _ => Classical.arbitrary Y⟩
+  have : Nonempty (X' × Fin K → Y) := ⟨fun _ => Classical.arbitrary Y⟩
+  let hSum (s : ι') : α ⊕ (X' × Fin K) → Y := Sum.elim (h s.1) s.2
+  have hSum_ind : IsKWiseIndependentHash k_indep hSum := ⟨fun {T} hT w => by
+    let T₁ : Finset α := T.preimage Sum.inl Sum.inl_injective.injOn
+    let T₂ : Finset (X' × Fin K) := T.preimage Sum.inr Sum.inr_injective.injOn
+    have hcard : #T₁ + #T₂ = #T := by
+      have h1 : #T₁ = #{u ∈ T | u.isLeft} := Finset.card_bij (fun a _ => Sum.inl a)
+        (fun a ha => Finset.mem_filter.mpr ⟨Finset.mem_preimage.mp ha, rfl⟩)
+        (fun _ _ _ _ h => Sum.inl.inj h) fun u hu => by
+          rcases u with a | _; · exact ⟨a, Finset.mem_preimage.mpr (Finset.mem_filter.mp hu).1, rfl⟩
+          · cases (Finset.mem_filter.mp hu).2
+      have h2 : #T₂ = #{u ∈ T | ¬ u.isLeft} := Finset.card_bij (fun p _ => Sum.inr p)
+        (fun p hp => Finset.mem_filter.mpr ⟨Finset.mem_preimage.mp hp, by simp⟩)
+        (fun _ _ _ _ h => Sum.inr.inj h) fun u hu => by
+          rcases u with _ | p; · exact absurd rfl (Finset.mem_filter.mp hu).2
+          · exact ⟨p, Finset.mem_preimage.mpr (Finset.mem_filter.mp hu).1, rfl⟩
+      rw [h1, h2, Finset.card_filter_add_card_filter_not]
+    let w₁ : T₁ → Y := fun ⟨a, ha⟩ => w ⟨Sum.inl a, Finset.mem_preimage.mp ha⟩
+    let w₂ : T₂ → Y := fun ⟨p, hp⟩ => w ⟨Sum.inr p, Finset.mem_preimage.mp hp⟩
+    have hiff (s : ι') : T.restrict (hSum s) = w ↔
+        T₁.restrict (h s.1) = w₁ ∧ T₂.restrict s.2 = w₂ :=
+      ⟨fun hs => ⟨funext fun ⟨a, ha⟩ => congrFun hs ⟨Sum.inl a, Finset.mem_preimage.mp ha⟩,
+          funext fun ⟨p, hp⟩ => congrFun hs ⟨Sum.inr p, Finset.mem_preimage.mp hp⟩⟩,
+        fun ⟨h1, h2⟩ => funext fun ⟨u, hu⟩ => by
+          rcases u with a | p
+          · exact congrFun h1 ⟨a, Finset.mem_preimage.mpr hu⟩
+          · exact congrFun h2 ⟨p, Finset.mem_preimage.mpr hu⟩⟩
+    have hd0 := Fintype.expect_boole (𝕜 := ℚ≥0) (fun s : ι' => T.restrict (hSum s) = w)
+    rw [NNRat.cast_id] at hd0; rw [← hd0]
+    have hprod (s : ι') : (if T.restrict (hSum s) = w then (1 : ℚ≥0) else 0) =
+        (if T₁.restrict (h s.1) = w₁ then (1 : ℚ≥0) else 0) *
+        (if T₂.restrict s.2 = w₂ then 1 else 0) := by
+      by_cases c1 : T₁.restrict (h s.1) = w₁ <;>
+        by_cases c2 : T₂.restrict s.2 = w₂ <;> simp [hiff s, c1, c2]
+    simp_rw [hprod]; rw [Fintype.expect_prod_type]
+    have hpull (θ : ι) : (𝔼 ξ : X' × Fin K → Y,
+        (if T₁.restrict (h θ) = w₁ then (1 : ℚ≥0) else 0) *
+        (if T₂.restrict ξ = w₂ then 1 else 0)) =
+        (if T₁.restrict (h θ) = w₁ then (1 : ℚ≥0) else 0) *
+        dens {ξ : X' × Fin K → Y | T₂.restrict ξ = w₂} := by
+      rw [← Finset.mul_expect, Fintype.expect_boole]; rfl
+    simp_rw [hpull]; rw [← Finset.expect_mul, Fintype.expect_boole]
+    have hd1 := (hh.mono (by omega : #T₁ ≤ k_indep)).dens_filter_restrict_eq le_rfl w₁
+    have hd2 := (isKWiseIndependentHash_id (X := X' × Fin K) (Y := Y) #T₂).dens_filter_restrict_eq
+      le_rfl w₂
+    dsimp only [id] at hd2; simp only [NNRat.cast_id]
+    rw [hd1, hd2, ← mul_inv, ← pow_add, hcard]⟩
+  let e (z : X') : B z.1 ≃ Fin #(B z.1) := (B z.1).equivFin
+  let emb (p : X' × Fin K) : α ⊕ (X' × Fin K) :=
+    if hj : p.2.val < #(B p.1.1) then Sum.inl ((e p.1).symm ⟨p.2.val, hj⟩).1 else Sum.inr p
+  have hemb : Function.Injective emb := by
+    rintro ⟨z₁, j₁⟩ ⟨z₂, j₂⟩ heq
+    by_cases h₁ : j₁.val < #(B z₁.1) <;> by_cases h₂ : j₂.val < #(B z₂.1) <;>
+      simp only [emb, h₁, h₂, ↓reduceDIte] at heq
+    · have ha := Sum.inl.inj heq
+      have hz : z₁ = z₂ := by
+        by_contra hne
+        exact Finset.disjoint_left.mp (hdisj z₁.2 z₂.2 (Subtype.coe_ne_coe.mpr hne))
+          ((e z₁).symm ⟨j₁.val, h₁⟩).2 (ha ▸ ((e z₂).symm ⟨j₂.val, h₂⟩).2)
+      subst hz; exact Prod.ext rfl (Fin.ext (Fin.mk.inj ((e z₁).symm.injective (Subtype.ext ha))))
+    · cases heq
+    · cases heq
+    · exact Sum.inr.inj heq
+  have hFlat_ind := (hSum_ind.comp hemb).mono hk
+  let H (s : ι') (z : X') (j : Fin K) : Y := hSum s (emb (z, j))
+  have hH_ind : IsKWiseIndependentHash (2 * m) H := ⟨fun {T} hT w => by
+    let Tp : Finset (X' × Fin K) := T ×ˢ Finset.univ
+    let wp : Tp → Y := fun ⟨p, hp⟩ => w ⟨p.1, (Finset.mem_product.mp hp).1⟩ p.2
+    have hset : ({s : ι' | T.restrict (H s) = w} : Finset ι') =
+        ({s : ι' | Tp.restrict (fun p => hSum s (emb p)) = wp} : Finset ι') := by
+      ext s; simp only [Finset.mem_filter, Finset.mem_univ, true_and, funext_iff, Finset.restrict]
+      exact ⟨fun hs ⟨⟨z, j⟩, hp⟩ => hs ⟨z, (Finset.mem_product.mp hp).1⟩ j,
+        fun hs ⟨z, hz⟩ j => hs ⟨(z, j), Finset.mem_product.mpr ⟨hz, Finset.mem_univ j⟩⟩⟩
+    have hc : #Tp = #T * K := by simp [Tp]
+    rw [hset, hFlat_ind.dens_filter_restrict_eq (hc ▸ Nat.mul_le_mul_right K hT) wp, hc,
+      mul_comm #T K, pow_mul, Fintype.card_fun, Fintype.card_fin, Nat.cast_pow]⟩
+  let g' (z : X') (v : Y') : ℝ :=
+    score z.1 (fun x => v ⟨(e z x).val, (e z x).isLt.trans_le (hB z.1 z.2)⟩)
+  have hg'_H (s : ι') (z : X') : g' z (H s z) = score z.1 ((B z.1).restrict (h s.1)) := by
+    dsimp only [g', H, emb, hSum]; congr 1; funext x; simp [(e z x).isLt, Finset.restrict]
+  have hexp_g' (z : X') : (𝔼 v : Y', g' z v) = 𝔼 θ : ι, score z.1 ((B z.1).restrict (h θ)) := by
+    have h1 := (hH_ind.mono (by omega : 1 ≤ 2 * m)).expect_prod (T := {z}) (by simp)
+      (fun _ v => g' z v)
+    simp only [Finset.prod_singleton] at h1; rw [← h1]; simp_rw [hg'_H]
+    exact Fintype.expect_comp_fst (α := ι) (β := X' × Fin K → Y)
+      (fun θ => score z.1 ((B z.1).restrict (h θ)))
+  have hmean' : ∑ z ∈ (Finset.univ : Finset X'), (𝔼 v : Y', g' z v) ≤ μ := by
+    simp_rw [hexp_g']
+    simpa only [X', Finset.univ_eq_attach,
+      Finset.sum_attach R (fun b => 𝔼 θ, score b ((B b).restrict (h θ)))] using hmean
+  have hconc := dens_abs_sum_sub_expect_le hm hH_ind Finset.univ g'
+    (fun z _ _ => hscore z.1 z.2 _) hmean' hmμ ha
+  have hev : (dens {s : ι' | a ≤ |∑ z : X', (g' z (H s z) - 𝔼 v, g' z v)|} : ℝ) =
+      dens {θ : ι | a ≤ |∑ b ∈ R,
+        (score b ((B b).restrict (h θ)) - 𝔼 θ', score b ((B b).restrict (h θ')))|} := by
+    rw [← Fintype.expect_boole, ← Fintype.expect_boole]
+    have hsum_z (s : ι') : (∑ z : X', (g' z (H s z) - 𝔼 v, g' z v)) =
+        ∑ b ∈ R, (score b ((B b).restrict (h s.1)) - 𝔼 θ', score b ((B b).restrict (h θ'))) := by
+      simp_rw [hg'_H, hexp_g']
+      simpa only [X', Finset.univ_eq_attach] using Finset.sum_attach R fun b =>
+        score b ((B b).restrict (h s.1)) - 𝔼 θ', score b ((B b).restrict (h θ'))
+    simp_rw [hsum_z]
+    exact Fintype.expect_comp_fst (α := ι) (β := X' × Fin K → Y) fun θ =>
+      if a ≤ |∑ b ∈ R, (score b ((B b).restrict (h θ)) - 𝔼 θ', score b ((B b).restrict (h θ')))|
+        then (1 : ℝ) else 0
+  rwa [hev] at hconc
 
 end Cslib.Probability

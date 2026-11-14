@@ -30,6 +30,16 @@ Small PRs usually need one or two paragraphs plus validation/review links and a 
 disclosure. State what changed, why, and important limitations. Keep evidence in one place;
 link to it instead of copying full reports, hashes or logs across threads.
 
+Write for a contributor who has not followed the task. Introduce the problem or mathematical
+setting, explain the central idea, and say what the change enables. Introduce specialized terms
+and notation before relying on them. For substantial developments, give a short roadmap
+explaining how the main steps connect and why consequential choices are needed. Use an example,
+equation, or before/after comparison when helpful. Scale the explanation to what the reader
+needs to understand, and put validation, manual impact and AI disclosure after it.
+
+For a substantial mathematical example, see the setting, statement and proof-strategy sections
+of [shmcg's lifting PR #4908](https://github.com/cslib-community/cslib-frontier/pull/4908).
+
 Comments should add a finding, answer, decision, blocker or useful handoff. Keep CI polling and
 internal agent discussion out of public threads. Reply directly to questions and fixes; a short
 "Fixed in <commit>" is enough when the change is clear. Be courteous, welcome disagreement, and
@@ -53,6 +63,12 @@ reviewable changes; batch closely related mechanical fixes when they share a con
 validation. Do not create a separate issue or PR for each incidental cleanup.
 
 ### Completion and scope
+
+Code quality is part of the acceptance criteria. Authors must resolve avoidable duplication,
+unnecessary proof plumbing, misplaced shared infrastructure and incomplete migration cleanup
+affecting their changes and clients before requesting approval. Passing CI or preserving theorem
+statements does not discharge this work. Deferral is exceptional under
+[Improving library ergonomics](#improving-library-ergonomics).
 
 Optimize for trustworthy, reusable results, not the number of closed issues or merged PRs.
 When narrowing a task, preserve its original objective and record the bounded deliverable and
@@ -189,10 +205,11 @@ exhaust the host's file handles before its processors; agree on a limit on concu
 
 Place reusable definitions and general lemmas in the lowest suitable mathematical module.
 Specialized theorem modules should import their prerequisites. During review, look for general
-APIs buried in a particular application or proof. Extract them when the dependency improvement is
-concrete and the change is small; otherwise record a specific follow-up with declaration names,
-consumers, and a proposed home. Apply the migration policy below when changing public interfaces.
-Do not expand a bounded PR into an unbounded architectural cleanup.
+APIs buried in a particular application or proof. Extract them to their natural shared home and
+update the affected clients in the same PR, applying the migration policy below. A second
+application importing the first for general infrastructure is a concrete signal to do this.
+Keep unrelated architectural redesign out of scope; use the exceptional deferral rule below when
+a technical dependency prevents completing the extraction.
 
 Do not prove a lemma that the library, CSLib, Mathlib or core already has, even privately or by
 re-deriving it inline inside another proof: use it, or make a private original public. After a
@@ -211,21 +228,63 @@ only what downstream proofs must unfold.
 
 ### Improving library ergonomics
 
-When work exposes library friction, workers should improve the relevant API, lemma, documentation
-or automation within the agreed scope, or record a concrete follow-up. Identify the affected
-client and declarations, search existing and upstream APIs, and prefer the smallest generally
-useful fix. Show representative before/after usage and explain what becomes clearer or easier.
+When work exposes library friction, improve the relevant API, lemma, proof strategy, documentation
+or automation in the original PR and carry the improvement through to its affected clients. Search
+existing APIs in this repository, Mathlib and CSLib before adding or re-proving anything, including
+private helpers. Making a duplicate private does not resolve duplication.
 
-Coordinators should be satisfied that the examples demonstrate a real improvement, that the
-proposal fits the mathematical API and upstream design, and that its benefit justifies the added
-maintenance and migration cost. Challenge arbitrary programming conventions and speculative
-abstractions; a familiar pattern alone is not a reason to adopt it. Reuse the placement,
-compatibility and review rules here.
+Reviewers must consider whether a different statement, representation, invariant, decomposition or
+proof strategy would make the mathematics more natural to state, prove and apply. Look beyond
+local tactic edits: applying an existing theorem, choosing a better induction argument or adding a
+small shared lemma can remove whole blocks of encoding, case or state-update bookkeeping. Assess
+the resulting client proofs and required imports as well as the new API. Preserve the mathematical
+claim, models, encodings, quantifiers and independent resource bounds when simplifying.
 
-Keep the evidence proportional. A small friction fix usually needs a short explanation and a
-checked example; broader API changes need representative affected clients and an in-repository
-migration plan. Investigate performance when it is material to the change, without requiring a
-benchmark campaign or separate design study for every small improvement.
+Require a concrete benefit from a proposed alternative: representative checked usage or a focused
+proof comparison explaining what becomes clearer or easier. Prefer the smallest generally useful
+change that fits the mathematical API and upstream design. Challenge speculative abstractions and
+arbitrary conventions; proof length alone is not a finding, and a personal preference does not
+justify rewriting an otherwise clear argument.
+
+Defer cleanup only when a specific technical dependency or independently substantial redesign
+prevents completing it with the PR. The reviewing coordinator must explicitly accept the reason,
+and a linked issue must name the remaining declarations, affected clients, proposed approach and
+responsible owner. A separate prerequisite PR may keep review focused, but the dependent PR waits
+for it. Creating a follow-up issue or citing scheduling pressure does not discharge cleanup that
+can be completed with the change.
+
+Keep the evidence proportional. A small improvement needs a short explanation and a checked
+client; broader API changes need representative affected clients and an in-repository migration
+plan. Investigate elaboration time and other performance costs when material, without requiring
+a benchmark campaign or separate design study for every small improvement.
+
+### Check the API through its callers
+
+Before handing off a changed API or reuse refactor, inspect a representative caller and the
+nearby implementations of the same idea. Reviewers repeat this check against the final change:
+
+- **Named access and semantic facts.** Use record fields or existing accessors in public
+  statements. When callers decode a Boolean matcher, unfold an embedding's coordinate arithmetic,
+  or rebuild field-projection certificates, provide the reusable characterization, range fact or
+  generated certificate they need and use it in the caller. Preserve the encoding layout and
+  resource bounds when migrating records; check a caller of the generated `enc_structure` rules.
+- **One implementation of shared behavior.** A game or algorithm should call its named handler
+  instead of repeating the same dispatch or transition code in its definition and proofs.
+  Different representations may need distinct implementations; keep their differences explicit
+  and connect them with the appropriate simulation or conversion lemma.
+- **Shared mathematics across representations.** Before repeating an argument in a sibling
+  module, look for a general statement and an existing bridge, such as PMF integration against
+  its induced measure. Derive the specialization when the bridge preserves the hypotheses and
+  intended dependencies. Put shared facts in a small topic module and migrate the existing
+  consumers together; do not create an abstraction whose callers must reconstruct the proof.
+- **Public API by purpose.** Keep expected properties of public objects available, including
+  matcher characterizations and embedding range facts. Keep one-proof wrappers around casts,
+  cache layouts or intermediate states private. Inspect references and automation before changing
+  visibility, but do not use a zero reference count alone to remove useful mathematical API.
+
+The handoff should identify the representative caller and the reasoning or representation work
+it no longer repeats, or explain why separate implementations remain necessary. A concise
+before/after example or source reference is enough; no separate audit report is required.
 
 ## Lean development: use the Lean MCP server first
 
@@ -236,9 +295,11 @@ MCP's `lean_build(fetch_cache=true)` fetches Mathlib's cache, not cslib-frontier
 or download failures leave Lean to compile missing outputs. The helper's actual retry behavior
 and opt-out for warm local builds are documented in [the cache guide](scripts/cache/README.md).
 
-Use MCP goal inspection, diagnostics and theorem search while iterating; reserve builds for
-validation checkpoints. `scripts/build.sh [Lake build arguments]`, `scripts/check.sh` and
-`scripts/worktree.sh create` run the same bootstrap automatically. Bare `lake` and MCP commands do
+Use MCP goal inspection, diagnostics and theorem search while iterating. When a build is needed,
+use `scripts/build.sh <affected modules and representative clients> --wfail --iofail`;
+reserve `scripts/check.sh --quick --no-full-fallback` for local validation checkpoints.
+`scripts/build.sh [Lake build arguments]`, `scripts/check.sh` and `scripts/worktree.sh create`
+run the same bootstrap automatically. Bare `lake` and MCP commands do
 not invoke it. If MCP tools are unavailable, say so and use the smallest shell check.
 
 Use `scripts/worktree.sh` for isolated worktrees; follow its
@@ -258,40 +319,61 @@ lake exe checkInitImports
 ```
 
 `scripts/check.sh` first runs the live manual checker and its tooling tests, then restores
-optional caches and runs every required step of CI's `ci-checks` job that can run locally, with
-CI's commands (`scripts/full_check.py`): these six Lean gates, the Python tooling tests, source
-hygiene, the encoding readability and projection chain ratchets, documentation pins, and the
-post-build tidy statement ratchet, result registry and changed-file lints. Changed-file checks
-compare with the merge base of `origin/main`, or of `--base REF`. `scripts/full_check.py` records
-why each remaining step stays CI-only (advisory notices, cache plumbing, steps that need GitHub
-context), and its test fails when the workflow gains a step that is neither mirrored nor recorded
-there, or when a mirrored step runs a line or sets an option that the local run does not repeat.
+optional caches and runs every locally reproducible step from CI's parallel `source-checks` and
+`lean-checks` jobs, whose results feed the required `ci-checks` aggregator, with CI's commands
+(`scripts/full_check.py`): these six Lean gates, the Python tooling tests, source hygiene, the
+encoding readability and projection chain ratchets, documentation pins, and the post-build tidy
+statement and security premise ratchets, result registry and changed-file lints. Changed-file
+checks compare with the merge base of `origin/main`, or of `--base REF`. `scripts/full_check.py`
+records why each remaining step stays CI-only (advisory notices, cache plumbing, steps that need
+GitHub context), and its test fails when either execution job gains a step that is neither
+mirrored nor recorded there, when a mirrored step runs a line or sets an option that the local
+run does not repeat, or when the required aggregator stops requiring both jobs to succeed and
+forwarding the Lean job's publication output.
+The split overlaps work rather than removing it: it adds another checkout and runner plus the
+aggregator's scheduling time, and saves only source-check time that would otherwise extend the
+slower Lean path. Treat observed wall-time improvements as run-specific, not a fixed reduction.
+After the Lean gates, full mode also re-elaborates built root-package sources whose individual
+artifacts Lake restored without diagnostic logs. This recovers warnings and informational output;
+it is not part of an ordinary targeted build. Quick mode checks the affected sources, including
+unchanged importing clients, built import aggregates and executable
+helpers
+([troubleshooting](manual/workflows/troubleshooting.md#diagnose-warnings-that-only-ci-reports)).
 Both full and quick modes require the manual checks; these stdlib-only checks need no PDF tools or
 generated research data. They catch source/link drift and malformed visual markup; they do not
 replace the required review of both manuals' meaning and usability.
 For Lean, dependency or build changes, all of these must pass on the final source revision before
 integration. A successful hosted run covering that revision supplies full validation; do not
-repeat it locally merely to satisfy a second reporting requirement. Use local full validation
-(`scripts/check.sh`) when hosted coverage is unavailable; changes to validation machinery also
-need direct checks of the changed behavior. Required CI and merge-group checks still apply.
+repeat it locally merely to satisfy a second reporting requirement. Run local full validation
+(`scripts/check.sh`) only when explicitly requested or hosted coverage is unavailable; changes
+to validation machinery also need direct checks of the changed behavior. Required CI and
+merge-group checks still apply.
 
 During development, check affected modules and representative clients before requesting review;
 a PR may use CI for the full run. For documentation-only changes, check consistency, links and
 any Lean examples introduced; a local whole-library rebuild is unnecessary.
 
-For the edit loop, `scripts/check.sh --quick [--base REF]` builds changed Lean modules and their
-transitive importing clients, then checks import aggregates. The comparison uses the merge base
+At local validation checkpoints, `scripts/check.sh --quick --no-full-fallback [--base REF]`
+builds changed Lean modules and their transitive importing clients, then checks import aggregates.
+The comparison uses the merge base
 with local `origin/main` by default, including committed, staged, unstaged and untracked changes;
-it does not fetch. It also runs source hygiene on the changed library and test files and, when a
-library module changed, the encoding readability and projection chain ratchets: all read only
-sources and take seconds. Quick mode lints only the affected library modules, skips the global
+it does not fetch. It also runs source hygiene and the source-only changed-file lints
+(`scripts/check_changed_files.py --source-only`) on the changed library and test files and,
+when a library module changed, the encoding readability and projection chain ratchets: all read
+only sources and take seconds. Run the same changed-file lints when building targets directly
+instead. Quick mode lints only the affected library modules, skips the global
 test/style/init-import gates and the post-build audits, which need whole-library outputs, and is
-not full validation. Non-Lean changes, deletions/renames, changed aggregates, unsupported layouts
-and ambiguous change/import analysis fall back to the full check. The exceptions are the
-ratchet baselines `scripts/encoding_readability_baseline.json` and
-`scripts/projection_chains_baseline.json`, which no Lean gate reads: a change to one runs its
-ratchet instead. Quick success alone does not satisfy the full validation requirement above;
-documentation-only checks need not invoke quick mode.
+not full validation. Without `--no-full-fallback`, non-Lean changes, deletions/renames, aggregate
+edits other than the import lines `lake exe mk_all` adds for new modules, unsupported layouts and
+ambiguous change/import
+analysis fall back to the full check. The exceptions are the ratchet baselines
+`scripts/encoding_readability_baseline.json` and `scripts/projection_chains_baseline.json`,
+which no Lean gate reads: a change to one runs its ratchet instead. With `--no-full-fallback`,
+an unsupported change exits with status 3: run focused checks for the changed files and
+representative clients, and leave the full run to hosted CI. Do not respond to status 3 by
+starting a full local check unless the full-validation condition above applies. Quick success
+alone does not satisfy the full validation requirement above; documentation-only checks need not invoke
+quick mode.
 
 `lake exe mk_all` regenerates `CslibFrontier.lean` after adding a file. New test files go in
 `CslibFrontierTests/`; the test library is built from a Lake glob, so there is no aggregator to update.
@@ -446,15 +528,32 @@ documentation and source credit). One non-authoring reviewer may cover both. Add
 specific uncovered question or needed expertise, not to reach an approval count. Contributors do
 not need a particular agent installation.
 
-Read the actual definitions and statements. For substantive mathematics, explain briefly what is
-proved, its limiting hypotheses/model/resource conventions, and a checked instance or edge case.
+Read the actual definitions, statements and proof arguments, and inspect representative clients.
+For substantive mathematics, explain briefly what is proved, its limiting hypotheses/model/resource
+conventions, and a checked instance or edge case.
 For a refactor, check declaration preservation, imports and a client using the intended API.
-Check new and changed statements against [Encodings in statements](#encodings-in-statements).
+For changed APIs and reuse refactors, follow [Check the API through its callers](#check-the-api-through-its-callers):
+inspect the actual caller and relevant sibling implementation, including generated certificates
+and any representation bridge. Compilation alone does not check placement or duplicated behavior.
+Check new and changed statements against
+[Structures for domain objects and records](#structures-for-domain-objects-and-records) and
+[Encodings in statements](#encodings-in-statements).
 Read new and changed proofs against the rest of their file and nearby modules, not only the diff:
 a new copy of an argument the library already makes is a finding when the
 [library quality standard](CONTRIBUTING.md#library-quality-standard) says a shared lemma pays.
 Lean acceptance under audited axioms does not establish that a definition matches its intended
 mathematics; state material limits of the review.
+
+Before approving library changes, read the **Parallel-definition**, **Duplicate-statement** and
+**Repeated-proof-block** notices in the CI job summary or step logs for the reviewed revision. Inspect both
+declarations or proof blocks for each relevant candidate. Record its resolution by reuse or
+generalization, or the concrete mathematical or API difference that justifies keeping both; link
+an existing author explanation rather than duplicating it. Locally, after a build, use
+`python3 -B scripts/parallel_defs.py --base REF` and the same command with `--theorems`;
+`python3 -B scripts/proof_copies.py --base REF` compares source proof blocks. `--limit N` expands
+truncated reports. Resolve skipped or incomplete scans, or record their coverage limits and
+perform targeted source checks. A successful exit, an empty report or a private declaration is
+not evidence of uniqueness; the tools supplement source search and semantic review.
 
 Review of both manuals is mandatory for every change. Follow
 [Maintaining the manuals](CONTRIBUTING.md#maintaining-the-manuals): check the impact assessment
@@ -464,10 +563,11 @@ agent should be able to reuse the account without reconstructing it from convers
 human direction, roles and handoffs in the Agent Operator's Manual when the workflow changes.
 A passing link or excerpt check does not replace this review.
 
-Use inline comments for local findings. Explain the problem and a concrete change or question;
-mark optional suggestions as nits. Group related points. Keep unrelated cleanup as a follow-up,
-and do not turn an optional preference into a moving merge requirement. Authors may disagree:
-discuss the technical reason and settle the point.
+Review API and proof quality for private helpers as well as public declarations, following
+[Improving library ergonomics](#improving-library-ergonomics). Request changes for concrete,
+avoidable complexity or duplication affecting the PR; reserve nits for optional preferences.
+Use inline comments for local findings, explain the problem and a concrete change or question,
+and group related points. Authors may disagree: discuss the technical reason and settle the point.
 
 After fixes, review the delta and affected reasoning. Revisit more of the code when a change
 invalidates earlier conclusions. Reuse existing reviews after verifying their scope and source
@@ -506,15 +606,33 @@ and [API review with explicit nonblocking nits](https://github.com/leanprover/cs
 ### Approve and queue
 
 Approving a PR's exact current head and queueing it are one step. A non-authoring reviewer with
-write access who approves runs `python3 scripts/queue_pr.py <PR> <approved head>`, which queues
-exactly that head once the required check has passed there; `--wait 30` waits up to 30 minutes
-for a check that is still running. Write access is sufficient authority to queue a head approved
-under this cycle. Approve without queueing, and say why in the approval, when:
+write access who approves uses `scripts/queue_pr.py` from a trusted checkout of current `main`,
+or an isolated copy obtained from a pinned revision of current `main`. Do not use the PR branch's
+helper or an old copy. Invoke the trusted script by its path; from private scratch, pass `--repo OWNER/NAME`
+explicitly ([queue command](manual/workflows/agent-operations.md#queue-approved-work-and-keep-its-approval)).
+Keep the approved PR head; do not refresh its branch just to obtain the tool. The helper queues
+exactly that head once its required check passes; `--wait 30` waits up to 30 minutes for a running
+check. Write access is sufficient authority to queue a head approved under this cycle. Approve
+without queueing, and say why in the approval, when:
 
 - human review has been requested in the PR, its comments or a linked issue; queueing is then left
   to that human or to whomever they name;
 - the approval names a hold, such as an unlanded lower PR, a migration or an upstream dependency;
   queue once the hold clears.
+
+Pending source, advisory-notice or rendered-manual review is also a hold. `--wait` queues
+automatically when the check passes; do not start it while completing CI will produce material
+that still needs review. Inspect that material first, then record the hold's resolution and link
+the existing proof/API/caller assessment before queueing. A successful check does not release a
+review hold, and the helper does not judge whether that review is complete. Updating `main` does
+not upgrade a running copy; an old waiter's owner stops it before replacing it after holds clear.
+
+When the helper actually waits, including its automatic mergeability retries, it snapshots the
+PR body, comments, submitted reviews and inline discussion before the first sleep and rereads
+them before enqueueing. Any change stops that enqueue: reread the discussion and holds, then
+rerun for the still-approved head when appropriate. It does not recheck linked issues or make
+the discussion read atomic with enqueue, so the reviewer's final hold check remains necessary.
+Instant-ready invocations and reports of already-queued entries are unchanged.
 
 The script refuses a head other than the approved one, a draft, a PR not based on `main`, a
 conflicting PR and failed checks. When the reviewer cannot queue, any other non-author agent with
@@ -530,6 +648,18 @@ head. After the merge, regenerate the import aggregates with `lake exe mk_all`, 
 [`leanagg` driver](CONTRIBUTING.md#proposing-and-contributing-work) merge them and then check them
 with `lake exe mk_all --check`, since the driver sees only the aggregates and not the merged tree;
 never trust a `merge=union` result, which keeps deleted imports and can misorder added ones.
+
+GitHub declines every push to the branch of a PR that is in the merge queue ("protected branch
+hook declined"), even when its entry is `UNMERGEABLE`. Whoever restacks a queued PR, by hand or
+with `--push` below, first removes it with **Remove from queue** on the PR page or:
+
+```bash
+gh api graphql -f id="$(gh pr view <PR> --json id --jq .id)" -f query='
+  mutation($id: ID!) { dequeuePullRequest(input: {id: $id}) { mergeQueueEntry { state } } }'
+```
+
+Dequeueing merges nothing, so the author may do it; the new head is queued again only by a
+non-author, once the `check_restack.py` check below passes or the delta is reviewed.
 
 When the only conflicts with `main` are in the aggregates or `references.bib`,
 `python3 scripts/restack_mechanical.py <PR> --approved-head <approved head>` does the whole restack
@@ -559,7 +689,9 @@ bibliography merge written by that script, with nothing else changed, passes. Af
 branch, which could change it.
 An approval given while a PR is based on another branch also names that branch's head, and the
 check then needs `--approved-base <that head>`. Without it, the lower branch's changes, which this
-review did not cover, would carry the approval if the lower PR never landed. Anyone, including
+review did not cover, would carry the approval if the lower PR never landed. Pass that head even
+when the approved head had also merged a newer `main`: the script then replays from the merge of
+the lower head and that `main`, and names it in the result. Anyone, including
 the author, may post the script's result line, which names both heads and the exact command. The
 non-author who queues the new head runs that command again rather than relying on the posted line.
 When the script reports differences, review the paths and diffs it prints as a delta, under the
@@ -583,6 +715,23 @@ express the intended mathematics; explain a non-obvious decision to introduce a 
 Syntactic similarity is a prompt to inspect reuse, not proof that models should be identified.
 Generalization should improve concrete clients without obscuring semantics or making inference
 and usage harder.
+
+### Structures for domain objects and records
+
+Define domain objects, problem instances, certificates, configurations, and multi-field algorithm
+contexts, states or records as documented `structure`s with named, documented fields—not as tuple
+type synonyms (`abbrev HittingSetInstance := (List ℕ × List (List ℕ)) × ℕ`) or bare product types
+in problem sets (`Set (List (ℕ × ℕ) × ℕ × ℕ)`, `Set (Graph × ℕ)`). A `structure` gives every
+component a name and docstring in editor hover and `doc-gen4`, supports dot-notation, prevents
+swapping homogeneous components, and avoids the `.1.2` positional projection chains banned by
+[#1764](https://github.com/cslib-community/cslib-frontier/issues/1764). Encode field-tuple
+structures with `enc_structure` under [Encodings in statements](#encodings-in-statements) below.
+
+Keep plain `Prod` (`×`) where the pair is not a domain record: generic binary combinators,
+mathematical Cartesian products, and uncurried multi-argument function inputs that merely pair an
+instance with a witness or second operand (such as an NP verifier `Instance × List Bool → Bool` or
+a binary operation `α × β → γ`). Existing tuple abbreviations and bare-product problem sets are
+migrated under [#4385](https://github.com/cslib-community/cslib-frontier/issues/4385).
 
 ### Encodings in statements
 
@@ -619,15 +768,65 @@ encoding-readability lint checks rule 1 against a per-module baseline that may o
    encoding, even where it occurs only once.
 5. **Declare structure encodings with `enc_structure`.** When a structure is encoded as the
    tuple of its fields in declaration order, declare the encoding with `enc_structure`, which
-   generates the embedding, its `_apply` equation and its `fun_prop` certificates, rather than
-   writing a `.trans` embedding and proving the certificates by hand. The
+   generates the embedding, its `_apply` equation and its `fun_prop` certificates (for degree,
+   `ComputableInO`, workspace budgets and `ComputableInPolyTime`), rather than writing a `.trans`
+   embedding and proving the certificates by hand. The
    [Operator's Manual](manual/workflows/choosing-models.md#write-the-contract-before-the-proof)
-   shows the declaration and what it generates.
+   shows the declaration and what it generates. Migrating a tuple to a record keeps its encoded
+   words, which `IsPPTOn` and the other machine predicates read. `enc_structure` frames every
+   field but the last and adds no nested grouping, so it reproduces a right-nested tuple such as
+   `encPair a (encPair b c)` but not a left-grouped one such as
+   `encPair (encPair a b) (encPair c d)`. For a left-grouped tuple, nest sub-records whose
+   generated layout matches, or define the encoding as `encOfEquiv` into the former tuple encoding
+   and keep the named projection and constructor certificates. Every migration, including a
+   right-nested one, adds a checked equality `encX r = <former tuple encoding> (…)` to the tests
+   (usually `rfl`) and states "encoded words unchanged" in the PR. Changing the layout needs a
+   coordinator's scope decision and a checked transport of efficiency and security in both
+   directions; a claim that the re-association is polynomial-time equivalent is not enough.
 6. **Show meaning-bearing choices.** Unary versus binary numbers, the representation of graphs
    and matrices, and framing that changes a length bound stay visible: the name or the first line
    of its docstring states the choice (`encUnaryPair`, not `encArgs`). A name must not hide one.
 7. **No hidden defaults.** Do not let an elaborator or typeclass choose an encoding for a type;
    the `enc%` proposal (#1830) is parked.
+
+### Security theorems
+
+A security theorem may assume only (a) named hardness assumptions, that is, Prop-valued
+definitions documented as assumptions (`F.DDH setup`, `DecisionLWE …`, `OneWay f`,
+`QuadraticResiduosityHard setup`, or a named collision-resistance or circular-security assumption
+on a component the scheme uses), stated relative to the setup sampler or component they concern;
+(b) that the adversary is in the admitted class (`A.IsPPT`, `IsOraclePPT …`, or the model's
+circuit bound); and (c) properties of components that the cited result itself takes as given,
+supplied by the caller.
+
+It must not assume anything about an object that its proof constructs, whether from the adversary
+or not (a reduction, distinguisher, simulator, extractor or hybrid): not its advantage or success,
+its membership in an adversary class, or its efficiency. Nor may it take from the caller an object
+whose existence or efficiency is the content of the cited result, such as the knowledge extractor
+of a proof of knowledge or the simulator of a zero-knowledge proof. It must not assume that the
+scheme's own algorithms behave like idealized ones (for example, that the key generator's output
+is indistinguishable from an ideal key law) unless the cited result names that as an assumption.
+And it may not stop at a bound for parameters that an `∃` chooses after the adversary
+(`∃ m₀ m₁, Adv(A) ≤ Adv(B A m₀ m₁)`); a uniform reduction chooses them itself.
+
+Write each reduction as an explicit program with an efficiency witness proved from the
+adversary's certificate: an `isPPT_…` or `isOraclePPT_…` lemma, or the model's efficiency
+certificate (for example a circuit-size bound). Prove the asymptotic theorem by applying the
+assumption to the reduction through that witness, as `DDH.elGamalINDCPA` does
+([pattern](manual/programs-crypto-and-probability/security-games-and-primitives.md#security-theorems-and-efficiency-witnesses)).
+Asymptotic statements come first; concrete runtime maps are secondary (#4088). A concrete bound
+`Adv(A) ≤ f(Adv(B_A))` is a lemma, not a security theorem. A lemma that takes a bound on `B_A`'s
+advantage, or `B_A ∈ 𝒟`, as a premise is an algebraic helper: its name (`…_of_reduction_le`) and
+docstring say so, and no headline or asymptotic theorem stops at it.
+
+Names and docstrings state the model (standard, random-oracle, ideal, query-bounded or
+information-theoretic), the notion (single- or multi-challenge, one-time or many-time,
+honest-verifier or malicious zero knowledge, semi-honest, static), and any deviation from the
+cited source. When a change replaces a misformalized theorem, it deletes the old one, or demotes it
+to an honestly named and documented helper, and updates its ROADMAP, manual and
+[results inventory](results/README.md) mentions (#5293).
+`scripts/check_security_premises.py` checks the premise rule after a build against a justified
+baseline ([details](CONTRIBUTING.md#library-quality-standard)).
 
 ## Design commitments (do not re-litigate casually)
 

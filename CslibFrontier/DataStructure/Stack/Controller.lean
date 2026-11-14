@@ -177,6 +177,7 @@ every width of at least three bits per input bit. -/
 public theorem positive_polytime :
     UniformComputableInPolyTime .standard positive (fun _ n => [n]) id :=
   realizes_program.uniformComputableInPolyTime .exactStandard 0 (.const 15) 3 (by decide)
+    (inputAdmissible_of_widthIndependent _ _)
     (fun _ _ j => by fin_cases j; rfl) fun n w hw hin => by
       have h4 : Fits w 4 := (show Fits 3 4 by decide).mono (le_trans (by simp [logWidth]) hw)
       have hroom : Fits w ((Memory.State.init [n]).frontier + 2) :=

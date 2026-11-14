@@ -538,12 +538,12 @@ private theorem runFrom_takeFromWorkTM (x : List Bool) (K : ℕ) (out₀ : List 
   have hseq₁ := runFrom_seq hcore' rfl hrewW rfl
   let rewI : MultiTapeTM 1 Bool RewindState := (rewindInput Bool).extendTapes (noTapes 1)
   have hrewI_early :
-      rewI.runFrom ((Sequential.rightCfg (State₀ := Unit) mid₂).withState (some rewI.q₀))
+      rewI.runFrom ((mid₂.mapState (Option.map (Sum.inr (α := Unit)))).withState (some rewI.q₀))
         (min K x.length + 2) =
       wordsCfg x none (fun _ => List.replicate K true) (out₀ ++ x.take K) := by
     dsimp only [rewI]
     rw [runFrom_noTapes]
-    have hno : noTapesCfg ((Sequential.rightCfg (State₀ := Unit) mid₂).withState
+    have hno : noTapesCfg ((mid₂.mapState (Option.map (Sum.inr (α := Unit)))).withState
         (some rewI.q₀)) =
         ⟨some (rewindInput Bool).q₀, ⟨min K x.length + 1, by lia⟩,
           Fin.elim0, Fin.elim0, out₀ ++ x.take K⟩ :=
@@ -553,7 +553,8 @@ private theorem runFrom_takeFromWorkTM (x : List Bool) (K : ℕ) (out₀ : List 
     rw [hno, htime, runFrom_rewindInput]
     exact Cfg.ext rfl rfl rfl rfl rfl
   have hrewI :
-      rewI.runFrom ((Sequential.rightCfg (State₀ := Unit) mid₂).withState (some rewI.q₀)) (K + 2) =
+      rewI.runFrom ((mid₂.mapState (Option.map (Sum.inr (α := Unit)))).withState (some rewI.q₀))
+        (K + 2) =
       wordsCfg x none (fun _ => List.replicate K true) (out₀ ++ x.take K) := by
     rw [runFrom_eq_of_halt rewI _ (by lia : min K x.length + 2 ≤ K + 2)
       (by rw [hrewI_early]; rfl), hrewI_early]

@@ -6,6 +6,7 @@ Authors: Samuel Schlesinger
 
 import CslibFrontier.Crypto.Computational.SIS.ModuleEncryption.Sampling
 import CslibFrontier.Probability.PMF.Uniform
+import CslibFrontier.Probability.Uniform
 
 /-! Sampling compatibility, small-secret support, native boundaries and a uniform-law failure. -/
 
@@ -21,7 +22,7 @@ example : realEncryptionView 1 2 32 (PMF.pure 0) ![true, false] =
 
 /-- A genuine small-secret law, with nonzero values in its support. -/
 private noncomputable def smallLaw : PMF (Fin 1 → Fin 2 → ZMod 32) :=
-  PMF.pi (fun _ => PMF.pi fun _ => Homomorphic.GSW.noiseLaw 5 1)
+  PMF.pi (fun _ => PMF.pi fun _ => LWE.noiseLaw 5 1)
 
 example : (![![1, -1]] : Fin 1 → Fin 2 → ZMod 32) ∈ smallLaw.support := by
   rw [smallLaw, PMF.mem_support_pi_iff]
@@ -43,10 +44,10 @@ example {s : Fin 1 → Fin 2 → ZMod 32} (hs : s ∈ smallLaw.support) :
 example : (do
     let s ← smallLaw
     let view ← encryptionViewOfKeyLaw
-      (moduleLWEPublicKeyLaw 1 2 32 (PMF.pi fun _ => Homomorphic.GSW.noiseLaw 5 1) (PMF.pure s))
-      (PMF.pi fun _ => Homomorphic.GSW.noiseLaw 5 1) ![true, false] smallLaw
+      (moduleLWEPublicKeyLaw 1 2 32 (PMF.pi fun _ => LWE.noiseLaw 5 1) (PMF.pure s))
+      (PMF.pi fun _ => LWE.noiseLaw 5 1) ![true, false] smallLaw
     pure (s, view)).map Prod.snd =
-      realEncryptionView 1 2 32 (PMF.pi fun _ => Homomorphic.GSW.noiseLaw 5 1)
+      realEncryptionView 1 2 32 (PMF.pi fun _ => LWE.noiseLaw 5 1)
         ![true, false] smallLaw smallLaw :=
   realEncryptionView_retained_secret_marginal _ _ _ _
 
@@ -62,7 +63,7 @@ example : ProbComp.eval (OracleComp.replicate 2
 
 example {s : Fin 1 → Fin 1 → ZMod (2 ^ 0)}
     (hs : s ∈ (PMF.pi (fun _ : Fin 1 => PMF.pi
-      (fun _ : Fin 1 => Homomorphic.GSW.noiseLaw 0 0))).support) :
+      (fun _ : Fin 1 => LWE.noiseLaw 0 0))).support) :
     ModuleSIS.inInfNormBound 0 s :=
   moduleLWECenteredBinomial_inInfNormBound (by decide) hs
 
@@ -110,9 +111,8 @@ private theorem outcome_eq (a s r : ZMod 16) :
 private theorem uniform_outcome (a s : ZMod 16) :
     (PMF.uniformOfFintype (ZMod 16)).map (outcome a s) =
       (PMF.uniformOfFintype (ZMod 16)).map (fun x => decide (4 < x.valMinAbs.natAbs)) := by
-  have hshift := PMF.uniformOfFintype_map_equiv (Equiv.addRight (9 - s))
   calc
-    _ = ((PMF.uniformOfFintype (ZMod 16)).map (Equiv.addRight (9 - s))).map
+    _ = ((PMF.uniformOfFintype (ZMod 16)).map (· + (9 - s))).map
         (fun x => decide (4 < x.valMinAbs.natAbs)) := by
       rw [PMF.map_comp]
       congr 1 with r : 1
@@ -120,7 +120,7 @@ private theorem uniform_outcome (a s : ZMod 16) :
       congr 4
       change 9 + r - s = r + (9 - s)
       ring
-    _ = _ := by rw [hshift]
+    _ = _ := by rw [PMF.uniformOfFintype_map_add_right]
 
 /-- For every public matrix coefficient, uniform secrets and ephemeral values with errors one
 succeed on the true message with probability only 7/16. Each scalar is the sole module/ring

@@ -29,7 +29,7 @@ example : PolyTimeReducible encGraph encTSP DirHamCycle TSP :=
 
 -- Certificates are quadratic in the encoded instance: every positive instance has a witness of
 -- length `len ^ 2`.
-example {x : List (List ℕ) × ℕ} (hx : x ∈ TSP) :
+example {x : TSPInstance} (hx : x ∈ TSP) :
     ∃ w : List Bool,
       w.length = (encTSP x).length ^ 2 ∧ TSP.verifier (x, w) = true := by
   simpa using (TSP.isVerifier x).mp hx
@@ -39,6 +39,9 @@ example {x : List (List ℕ) × ℕ} (hx : x ∈ TSP) :
 example : ComputableInPolyTime HamCycle.toTSP encGraph encTSP := by fun_prop
 
 example : ComputableInPolyTime TSP.verifier (encPair encTSP encBits) encBool := by fun_prop
+
+example : ComputableInPolyTime (fun x : TSPInstance => (⟨x.dist, x.bound + 1⟩ : TSPInstance))
+    encTSP encTSP := by fun_prop
 
 example : ComputableInPolyTime (fun x : List (List ℕ) × List ℕ => TSP.tourLength x.1 x.2)
     (encPair (encList (encList encNat)) (encList encNat)) encNat := by
@@ -51,8 +54,8 @@ example : ComputableInPolyTime
   fun_prop
 
 /-- Non-membership in `TSP`, checked over the permutations of the cities. -/
-private theorem notMem_TSP {x : List (List ℕ) × ℕ}
-    (h : ∀ p ∈ (List.range x.1.length).permutations', x.2 < TSP.tourLength x.1 p) :
+private theorem notMem_TSP {x : TSPInstance}
+    (h : ∀ p ∈ (List.range x.dist.length).permutations', x.bound < TSP.tourLength x.dist p) :
     x ∉ TSP := fun ⟨p, hp, hlen⟩ =>
   absurd hlen (Nat.not_le.2 (h p (List.mem_permutations'.2 hp)))
 
@@ -90,30 +93,30 @@ example : TSP.tourLength [[3], []] [0, 1] = 0 := rfl
 
 /-! ### Membership in `TSP` -/
 
-example : (square, 4) ∈ TSP := ⟨[0, 1, 2, 3], by decide, by decide⟩
-example : (square, 3) ∉ TSP := notMem_TSP (by decide)
-example : (oneWay, 3) ∈ TSP := ⟨[0, 1, 2], by decide, by decide⟩
-example : (oneWay, 2) ∉ TSP := notMem_TSP (by decide)
+example : (⟨square, 4⟩ : TSPInstance) ∈ TSP := ⟨[0, 1, 2, 3], by decide, by decide⟩
+example : (⟨square, 3⟩ : TSPInstance) ∉ TSP := notMem_TSP (by decide)
+example : (⟨oneWay, 3⟩ : TSPInstance) ∈ TSP := ⟨[0, 1, 2], by decide, by decide⟩
+example : (⟨oneWay, 2⟩ : TSPInstance) ∉ TSP := notMem_TSP (by decide)
 
 -- The matrix without rows is a yes-instance, through the empty tour.
-example : (([] : List (List ℕ)), 0) ∈ TSP := ⟨[], by decide, by decide⟩
+example : (⟨[], 0⟩ : TSPInstance) ∈ TSP := ⟨[], by decide, by decide⟩
 
 -- One city: the tour pays the diagonal entry.
-example : ([[0]], 0) ∈ TSP := ⟨[0], by decide, by decide⟩
-example : ([[1]], 0) ∉ TSP := notMem_TSP (by decide)
+example : (⟨[[0]], 0⟩ : TSPInstance) ∈ TSP := ⟨[0], by decide, by decide⟩
+example : (⟨[[1]], 0⟩ : TSPInstance) ∉ TSP := notMem_TSP (by decide)
 
 -- Ragged matrices: missing entries read `0`, so here every tour has length `0`.
-example : ([[3], []], 0) ∈ TSP := ⟨[0, 1], by decide, by decide⟩
+example : (⟨[[3], []], 0⟩ : TSPInstance) ∈ TSP := ⟨[0, 1], by decide, by decide⟩
 
 -- Rows of different lengths: the tour `[0, 2, 1]` pays `0 + 7 + 1`, and `[0, 1, 2]` pays
 -- `2 + 0 + 7`.
 private def ragged : List (List ℕ) := [[0, 2], [1], [7, 7, 7]]
 
-example : (ragged, 8) ∈ TSP := ⟨[0, 2, 1], by decide, by decide⟩
-example : (ragged, 7) ∉ TSP := notMem_TSP (by decide)
+example : (⟨ragged, 8⟩ : TSPInstance) ∈ TSP := ⟨[0, 2, 1], by decide, by decide⟩
+example : (⟨ragged, 7⟩ : TSPInstance) ∉ TSP := notMem_TSP (by decide)
 
 -- The budget is a natural number of any size; the binary encoding stays short.
-example : (square, 2 ^ 100) ∈ TSP := ⟨[0, 1, 2, 3], by decide, by decide⟩
+example : (⟨square, 2 ^ 100⟩ : TSPInstance) ∈ TSP := ⟨[0, 1, 2, 3], by decide, by decide⟩
 example : (encNat (2 ^ 100)).length = 101 := by
   rw [encNat_apply, Nat.size_eq_bits_len, Nat.size_pow]
 
@@ -128,74 +131,75 @@ example : Graph.decodeVertexList (List.range 4) (tour 4 [0, 2, 1, 3]) = [0, 2, 1
 
 -- The cheapest tour of `square` is accepted at budget `4` and rejected at budget `3`; a costlier
 -- tour needs a larger budget.
-example : TSP.verifier ((square, 4), tour 4 [0, 1, 2, 3]) = true := rfl
-example : TSP.verifier ((square, 3), tour 4 [0, 1, 2, 3]) = false := rfl
-example : TSP.verifier ((square, 12), tour 4 [0, 2, 1, 3]) = true := rfl
-example : TSP.verifier ((square, 11), tour 4 [0, 2, 1, 3]) = false := rfl
+example : TSP.verifier (⟨square, 4⟩, tour 4 [0, 1, 2, 3]) = true := rfl
+example : TSP.verifier (⟨square, 3⟩, tour 4 [0, 1, 2, 3]) = false := rfl
+example : TSP.verifier (⟨square, 12⟩, tour 4 [0, 2, 1, 3]) = true := rfl
+example : TSP.verifier (⟨square, 11⟩, tour 4 [0, 2, 1, 3]) = false := rfl
 
 -- An ordering that repeats or omits a city is rejected whatever the budget.
-example : TSP.verifier ((square, 100), tour 4 [0, 0, 1, 2]) = false := rfl
-example : TSP.verifier ((square, 100), []) = false := rfl
+example : TSP.verifier (⟨square, 100⟩, tour 4 [0, 0, 1, 2]) = false := rfl
+example : TSP.verifier (⟨square, 100⟩, []) = false := rfl
 
 -- The direction of the tour matters for asymmetric distances.
-example : TSP.verifier ((oneWay, 3), tour 3 [0, 1, 2]) = true := rfl
-example : TSP.verifier ((oneWay, 3), tour 3 [0, 2, 1]) = false := rfl
+example : TSP.verifier (⟨oneWay, 3⟩, tour 3 [0, 1, 2]) = true := rfl
+example : TSP.verifier (⟨oneWay, 3⟩, tour 3 [0, 2, 1]) = false := rfl
 
 -- Boundaries: the matrix without rows is accepted with the empty certificate, and a single city
 -- pays its diagonal entry.
-example : TSP.verifier ((([] : List (List ℕ)), 0), []) = true := rfl
-example : TSP.verifier (([[1]], 0), tour 1 [0]) = false := rfl
-example : TSP.verifier (([[1]], 1), tour 1 [0]) = true := rfl
+example : TSP.verifier (⟨[], 0⟩, []) = true := rfl
+example : TSP.verifier (⟨[[1]], 0⟩, tour 1 [0]) = false := rfl
+example : TSP.verifier (⟨[[1]], 1⟩, tour 1 [0]) = true := rfl
 
 -- Ragged matrices: missing entries read `0`.
-example : TSP.verifier ((ragged, 8), tour 3 [0, 2, 1]) = true := rfl
-example : TSP.verifier ((ragged, 7), tour 3 [0, 2, 1]) = false := rfl
+example : TSP.verifier (⟨ragged, 8⟩, tour 3 [0, 2, 1]) = true := rfl
+example : TSP.verifier (⟨ragged, 7⟩, tour 3 [0, 2, 1]) = false := rfl
 
 -- Binary distances and budgets: distances `2 ^ 100` are added and compared without unary
 -- expansion.
-example : TSP.verifier (([[0, 2 ^ 100], [2 ^ 100, 0]], 2 ^ 101), tour 2 [0, 1]) = true := by
+example : TSP.verifier (⟨[[0, 2 ^ 100], [2 ^ 100, 0]], 2 ^ 101⟩, tour 2 [0, 1]) = true := by
   decide
-example : TSP.verifier (([[0, 2 ^ 100], [2 ^ 100, 0]], 2 ^ 101 - 1), tour 2 [1, 0]) = false := by
+example : TSP.verifier (⟨[[0, 2 ^ 100], [2 ^ 100, 0]], 2 ^ 101 - 1⟩, tour 2 [1, 0]) = false := by
   decide
 
 /-! ### The reduction from `HamCycle` -/
 
 -- The cycle on four vertices: distance `1` along the cycle, `2` across and on the diagonal.
-private def c4 : Graph := ([0, 1, 2, 3], [(0, 1), (1, 2), (2, 3), (3, 0)])
+private def c4 : Graph := ⟨[0, 1, 2, 3], [(0, 1), (1, 2), (2, 3), (3, 0)]⟩
 
 example : HamCycle.toTSP c4 =
-    ([[2, 1, 2, 1], [1, 2, 1, 2], [2, 1, 2, 1], [1, 2, 1, 2]], 4) := by decide
+    ⟨[[2, 1, 2, 1], [1, 2, 1, 2], [2, 1, 2, 1], [1, 2, 1, 2]], 4⟩ := by decide
 
 example : HamCycle.toTSP c4 ∈ TSP := ⟨[0, 1, 2, 3], by decide, by decide⟩
 example : c4 ∈ HamCycle := (HamCycle.toTSP_mem_iff c4).1 ⟨[0, 1, 2, 3], by decide, by decide⟩
 
 -- The path on four vertices has no Hamiltonian cycle: every tour pays `2` for a missing edge.
-private def p4 : Graph := ([0, 1, 2, 3], [(0, 1), (1, 2), (2, 3)])
+private def p4 : Graph := ⟨[0, 1, 2, 3], [(0, 1), (1, 2), (2, 3)]⟩
 
 example : p4 ∉ HamCycle := fun h => notMem_TSP (by decide) ((HamCycle.toTSP_mem_iff p4).2 h)
 
 -- Cities are the distinct declared vertices in the order of their first occurrences; labels
 -- need not be contiguous, and self-loops are ignored.
-private def triangle : Graph := ([10, 20, 10, 30], [(10, 20), (20, 30), (30, 10), (10, 10)])
+private def triangle : Graph :=
+  ⟨[10, 20, 10, 30], [(10, 20), (20, 30), (30, 10), (10, 10)]⟩
 
 example : triangle.distinctVertices = [10, 20, 30] := by decide
-example : HamCycle.toTSP triangle = ([[2, 1, 1], [1, 2, 1], [1, 1, 2]], 3) := by decide
+example : HamCycle.toTSP triangle = ⟨[[2, 1, 1], [1, 2, 1], [1, 1, 2]], 3⟩ := by decide
 example : triangle ∈ HamCycle :=
   (HamCycle.toTSP_mem_iff triangle).1 ⟨[0, 1, 2], by decide, by decide⟩
 
 -- Edges with an undeclared endpoint are never used: `0 - 7 - 2` does not close the path.
-private def detour : Graph := ([0, 1, 2], [(0, 1), (1, 2), (2, 7), (7, 0)])
+private def detour : Graph := ⟨[0, 1, 2], [(0, 1), (1, 2), (2, 7), (7, 0)]⟩
 
-example : HamCycle.toTSP detour = ([[2, 1, 2], [1, 2, 1], [2, 1, 2]], 3) := by decide
+example : HamCycle.toTSP detour = ⟨[[2, 1, 2], [1, 2, 1], [2, 1, 2]], 3⟩ := by decide
 example : detour ∉ HamCycle :=
   fun h => notMem_TSP (by decide) ((HamCycle.toTSP_mem_iff detour).2 h)
 
 -- Graphs with fewer than three distinct vertices map to a fixed no-instance.
-example : HamCycle.toTSP ([0, 1, 0], [(0, 1)]) = ([[1]], 0) := by decide
-example : HamCycle.toTSP ([], []) = ([[1]], 0) := by decide
-example : (([0, 1, 0], [(0, 1)]) : Graph) ∉ HamCycle :=
+example : HamCycle.toTSP ⟨[0, 1, 0], [(0, 1)]⟩ = ⟨[[1]], 0⟩ := by decide
+example : HamCycle.toTSP ⟨[], []⟩ = ⟨[[1]], 0⟩ := by decide
+example : (⟨[0, 1, 0], [(0, 1)]⟩ : Graph) ∉ HamCycle :=
   fun h => notMem_TSP (by decide) ((HamCycle.toTSP_mem_iff _).2 h)
-example : (([], []) : Graph) ∉ HamCycle :=
+example : (⟨[], []⟩ : Graph) ∉ HamCycle :=
   fun h => notMem_TSP (by decide) ((HamCycle.toTSP_mem_iff _).2 h)
 
 end CslibFrontierTests.NPCompleteGraphs.TSP

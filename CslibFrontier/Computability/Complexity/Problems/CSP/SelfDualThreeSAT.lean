@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Complexity.Problems.CSP.Basic
 public import CslibFrontier.Computability.Complexity.Problems.ExactThreeSAT
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import Mathlib.Data.Fin.VecNotation
@@ -51,8 +52,24 @@ open Cslib.Logic.PL Turing.MultiTapeTM
 
 namespace SelfDualThreeSAT
 
-/-- Three literal polarities; all eight possibilities belong to the fixed language. -/
-abbrev SignPattern := Bool × (Bool × Bool)
+/-- Three literal polarities for a signed ternary clause; all eight possibilities belong to the
+fixed language. -/
+@[ext] structure SignPattern : Type where
+  /-- Polarity expected of the first clause literal relative to the reference bit. -/
+  first : Bool
+  /-- Polarity expected of the second clause literal relative to the reference bit. -/
+  second : Bool
+  /-- Polarity expected of the third clause literal relative to the reference bit. -/
+  third : Bool
+  deriving DecidableEq, Fintype
+
+private instance (p : SignPattern → Prop) [DecidablePred p] : Decidable (∀ s : SignPattern, p s) :=
+  decidable_of_iff (∀ a b c : Bool, p ⟨a, b, c⟩)
+    ⟨fun h ⟨a, b, c⟩ => h a b c, fun h a b c => h ⟨a, b, c⟩⟩
+
+private instance (p : SignPattern → Prop) [DecidablePred p] : Decidable (∃ s : SignPattern, p s) :=
+  decidable_of_iff (∃ a b c : Bool, p ⟨a, b, c⟩)
+    ⟨fun ⟨a, b, c, h⟩ => ⟨⟨a, b, c⟩, h⟩, fun ⟨⟨a, b, c⟩, h⟩ => ⟨a, b, c, h⟩⟩
 
 /-- A reference position followed by the three clause positions. -/
 @[expose] def arity (_ : SignPattern) : ℕ := 4
@@ -60,11 +77,17 @@ abbrev SignPattern := Bool × (Bool × Bool)
 /-- Evaluate a signed ternary clause relative to its first, reference coordinate. Other scope
 lengths are false; the CSP syntax guard also rejects them. -/
 @[expose] def sem (s : SignPattern) : List Bool → Bool
-  | [r, x, y, z] => ((x ^^ r) == s.1) || ((y ^^ r) == s.2.1) || ((z ^^ r) == s.2.2)
+  | [r, x, y, z] => ((x ^^ r) == s.first) || ((y ^^ r) == s.second) || ((z ^^ r) == s.third)
   | _ => false
 
 /-- Fixed binary encoding of the eight relation symbols. -/
-abbrev encSign : SignPattern ↪ List Bool := encPair encBool (encPair encBool encBool)
+enc_structure encSign : SignPattern where
+  first : encBool,
+  second : encBool,
+  third : encBool
+
+attribute [fun_prop] encSign_first_polyTime encSign_second_polyTime encSign_third_polyTime
+  encSign_mk_polyTime
 
 /-- The inherited framed CSP encoding, with binary variable labels. -/
 abbrev enc : CSP SignPattern ℕ ↪ List Bool := encCSP encSign encNat
@@ -84,7 +107,7 @@ theorem relation_not_iff (s : SignPattern) (a : Fin 4 → Bool) :
 theorem relation_nonempty (s : SignPattern) : (CSP.booleanRelation arity sem s).Nonempty := by
   obtain ⟨p, q, r⟩ := s
   refine ⟨![false, p, q, r], ?_⟩
-  change sem (p, q, r) (List.ofFn ![false, p, q, r]) = true
+  change sem ⟨p, q, r⟩ (List.ofFn ![false, p, q, r]) = true
   simp [sem, List.ofFn_succ]
 
 /-- Any two distinct positions are distinguished by some satisfying tuple of the relation. -/
@@ -103,17 +126,17 @@ end SelfDualThreeSAT
 namespace SelfDualThreeSAT
 
 private def signs (c : Clause ℕ) : SignPattern :=
-  ((c.getD 0 (0, true)).2, (c.getD 1 (0, true)).2, (c.getD 2 (0, true)).2)
+  ⟨(c.getD 0 (0, true)).2, (c.getD 1 (0, true)).2, (c.getD 2 (0, true)).2⟩
 
 private def constraint (c : Clause ℕ) : Constraint SignPattern ℕ :=
-  (signs c, 0 :: c.map (fun l => l.1 + 1))
+  ⟨signs c, 0 :: c.map (fun l => l.1 + 1)⟩
 
 private def valid (φ : CNF ℕ) : Bool := φ.all (fun c => decide (c.length = 3))
 
 /-- The reduction adds the shared reference at zero and shifts original labels by one.
 Malformed exact-three syntax produces a malformed target constraint. -/
 def ofExactThreeSAT (φ : CNF ℕ) : CSP SignPattern ℕ :=
-  if valid φ then φ.map constraint else [((true, true, true), [])]
+  if valid φ then φ.map constraint else [⟨⟨true, true, true⟩, []⟩]
 
 /-- The reference lift does not increase the number of clauses/constraints. An invalid input
 is nonempty, so the singleton malformed reject instance satisfies the same bound. -/
@@ -188,7 +211,7 @@ theorem computableInPolyTime_ofExactThreeSAT :
     ComputableInPolyTime ofExactThreeSAT encCNF enc := by
   unfold ofExactThreeSAT
   exact computable_valid.ite (ComputableInPolyTime.map computable_constraint)
-    (ComputableInPolyTime.const [((true, true, true), [])])
+    (ComputableInPolyTime.const [Constraint.mk (SignPattern.mk true true true) []])
 
 /-- Exact-three SAT reduces to the self-dual reference-lifted CSP in native polynomial time. -/
 theorem polyTimeReducible : PolyTimeReducible encCNF enc ExactThreeSAT SelfDualThreeSAT :=

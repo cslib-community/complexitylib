@@ -22,8 +22,9 @@ widths. Literal values may depend on width. Code selection and the input encodin
 `UniformDecidableInTime` uses one fixed program, which may read the width, branch on it,
 and have width-dependent execution time.
 
-All contracts are conditional on `InputFits`. Empty conditions or inputs that never fit can make
-them vacuous. A logarithmic lower threshold is not an input-fit certificate: word-count size alone
+Program execution contracts are conditional on `InputFits`. The existential decision predicates
+also require `InputAdmissible`: every instance has an allowed width at which its input fits.
+A logarithmic lower threshold is not an input-fit certificate: word-count size alone
 does not bound input words. An input-dependent width schedule can communicate advice. No effective
 code/encoding selection or identification with Turing-machine complexity is asserted.
 
@@ -34,6 +35,7 @@ code/encoding selection or identification with Turing-machine complexity is asse
 * `WordSizeDependentProgram`, `WordSizeDependentProgram.const`: code selected by word size, with a
   fixed register count, and constant families.
 * `WordSizeDependentProgram.BoundedCode`: one instruction-list length bound for every word size.
+* `InputAdmissible`: each instance has an allowed fitting width.
 * `WordSizeDependentProgram.DecidesInTime`, `Program.DecidesInTime`, `DecidableInTime`,
   `UniformDecidableInTime`: nonuniform and uniform instruction bounds.
 * `DecidableInTimeLogWord`, `UniformDecidableInTimeLogWord`: transdichotomous word-size conventions.
@@ -93,6 +95,58 @@ theorem mono_width (hp : ¬p.ReadsWidth) (h : p.Answers w input b time) {w' : �
   ⟨v, n, he.mono_width hp hw, hn⟩
 
 end Program.Answers
+
+/-- Every instance has an allowed width at which its encoded input fits. This excludes empty
+width conditions and encodings that never fit, without charging representation conversion. -/
+def InputAdmissible (encode : ℕ → α → List ℕ) (allowed : α → ℕ → Prop) : Prop :=
+  ∀ a, ∃ w, allowed a w ∧ InputFits w (encode w a)
+
+/-- A finite word list fits at some width above any prescribed lower bound. -/
+theorem InputFits.exists_width (input : List ℕ) (lower : ℕ) :
+    ∃ w, lower ≤ w ∧ InputFits w input := by
+  induction input with
+  | nil => exact ⟨lower, le_rfl, fits_zero _, by simp⟩
+  | cons v input ih =>
+    obtain ⟨w, hlower, hlength, hwords⟩ := ih
+    let w' := max (w + 1) v
+    have hww' : w ≤ w' := (Nat.le_succ w).trans (le_max_left _ _)
+    refine ⟨w', hlower.trans hww', ?_, ?_⟩
+    · exact (Nat.succ_le_of_lt hlength).trans_lt
+        ((Nat.pow_lt_pow_right Nat.one_lt_two (Nat.lt_succ_self w)).trans_le
+          (Nat.pow_le_pow_right (by decide) (le_max_left _ _)))
+    · intro u hu
+      rcases List.mem_cons.1 hu with rfl | hu
+      · exact (fits_self u).mono (le_max_right _ _)
+      · exact (hwords u hu).mono hww'
+
+/-- Any width-independent finite encoding admits a fitting input above an arbitrary threshold. -/
+theorem inputAdmissible_of_widthIndependent (encode : α → List ℕ) (lower : α → ℕ) :
+    InputAdmissible (fun _ => encode) (fun a w => lower a ≤ w) :=
+  fun a => InputFits.exists_width (encode a) (lower a)
+
+/-- A supplied fitting width schedule proves that every instance is admitted. -/
+theorem InputAdmissible.of_width {encode : ℕ → α → List ℕ} {allowed : α → ℕ → Prop}
+    (width : α → ℕ) (ha : ∀ a, allowed a (width a))
+    (hi : ∀ a, InputFits (width a) (encode (width a) a)) : InputAdmissible encode allowed :=
+  fun a => ⟨width a, ha a, hi a⟩
+
+/-- Enlarging the allowed widths preserves input admission. -/
+theorem InputAdmissible.mono {encode : ℕ → α → List ℕ} {allowed allowed' : α → ℕ → Prop}
+    (h : InputAdmissible encode allowed) (ha : ∀ a w, allowed a w → allowed' a w) :
+    InputAdmissible encode allowed' := by
+  intro a
+  obtain ⟨w, hw, hi⟩ := h a
+  exact ⟨w, ha a w hw, hi⟩
+
+/-- Admission transfers along an instance map when its allowed fitting widths remain allowed. -/
+theorem InputAdmissible.recode {encode : ℕ → α → List ℕ} {encode' : ℕ → β → List ℕ}
+    {allowed : α → ℕ → Prop} {allowed' : β → ℕ → Prop} (g : α → β)
+    (he : ∀ w a, encode w a = encode' w (g a))
+    (ha : ∀ a w, allowed' (g a) w → allowed a w)
+    (h : InputAdmissible encode' allowed') : InputAdmissible encode allowed := by
+  intro a
+  obtain ⟨w, hw, hi⟩ := h (g a)
+  exact ⟨w, ha a w hw, by simpa only [he] using hi⟩
 
 /-! ## Word sizes and program families -/
 
@@ -210,15 +264,19 @@ def Program.DecidesInTime (p : Program B r) (encode : ℕ → α → List ℕ) (
   (WordSizeDependentProgram.const p).DecidesInTime encode A time allowed
 
 /-- Nonuniform decision: width selects code, with one register count and one code-length bound
-shared by every width. The time bound and encoding may depend on width. -/
+shared by every width. The time bound and encoding may depend on width. Every instance must
+have an allowed fitting width. -/
 def DecidableInTime (B : Basis) (A : Set α) (encode : ℕ → α → List ℕ)
     (time : α → ℕ → ℕ) (allowed : α → ℕ → Prop) : Prop :=
-  ∃ r, ∃ P : WordSizeDependentProgram B r, P.BoundedCode ∧ P.DecidesInTime encode A time allowed
+  ∃ r, ∃ P : WordSizeDependentProgram B r,
+    P.BoundedCode ∧ P.DecidesInTime encode A time allowed ∧ InputAdmissible encode allowed
 
-/-- Uniform decision by one fixed program, possibly reading word size. -/
+/-- Uniform decision by one fixed program, possibly reading word size, with at least one allowed
+fitting width for every instance. -/
 def UniformDecidableInTime (B : Basis) (A : Set α) (encode : ℕ → α → List ℕ)
     (time : α → ℕ → ℕ) (allowed : α → ℕ → Prop) : Prop :=
-  ∃ r, ∃ p : Program B r, p.DecidesInTime encode A time allowed
+  ∃ r, ∃ p : Program B r,
+    p.DecidesInTime encode A time allowed ∧ InputAdmissible encode allowed
 
 variable {encode : ℕ → α → List ℕ} {A : Set α}
   {time time' : α → ℕ → ℕ} {allowed allowed' : α → ℕ → Prop}
@@ -230,26 +288,40 @@ theorem Program.DecidesInTime.mono {p : Program B r}
     p.DecidesInTime encode A time' allowed' :=
   WordSizeDependentProgram.DecidesInTime.mono h ht hw
 
+/-- A nonuniform decision certificate admits each instance at a fitting width. -/
+theorem DecidableInTime.inputAdmissible (h : DecidableInTime B A encode time allowed) :
+    InputAdmissible encode allowed := by
+  obtain ⟨_, _, _, _, hi⟩ := h
+  exact hi
+
+/-- A uniform decision certificate admits each instance at a fitting width. -/
+theorem UniformDecidableInTime.inputAdmissible
+    (h : UniformDecidableInTime B A encode time allowed) : InputAdmissible encode allowed := by
+  obtain ⟨_, _, _, hi⟩ := h
+  exact hi
+
 /-- A fixed program gives a bounded nonuniform family. -/
 theorem UniformDecidableInTime.decidableInTime
     (h : UniformDecidableInTime B A encode time allowed) :
     DecidableInTime B A encode time allowed :=
-  let ⟨r, p, hp⟩ := h
-  ⟨r, .const p, WordSizeDependentProgram.const_boundedCode p, hp⟩
+  let ⟨r, p, hp, hi⟩ := h
+  ⟨r, .const p, WordSizeDependentProgram.const_boundedCode p, hp, hi⟩
 
 /-- Increase time and restrict admitted widths without changing code. -/
 theorem DecidableInTime.mono (h : DecidableInTime B A encode time allowed)
-    (ht : ∀ a w, time a w ≤ time' a w) (hw : ∀ a w, allowed' a w → allowed a w) :
+    (ht : ∀ a w, time a w ≤ time' a w) (hw : ∀ a w, allowed' a w → allowed a w)
+    (hi : InputAdmissible encode allowed') :
     DecidableInTime B A encode time' allowed' :=
-  let ⟨r, P, hP, hp⟩ := h
-  ⟨r, P, hP, hp.mono ht hw⟩
+  let ⟨r, P, hP, hp, _⟩ := h
+  ⟨r, P, hP, hp.mono ht hw, hi⟩
 
 /-- Increase time and restrict admitted widths for a uniform certificate. -/
 theorem UniformDecidableInTime.mono (h : UniformDecidableInTime B A encode time allowed)
-    (ht : ∀ a w, time a w ≤ time' a w) (hw : ∀ a w, allowed' a w → allowed a w) :
+    (ht : ∀ a w, time a w ≤ time' a w) (hw : ∀ a w, allowed' a w → allowed a w)
+    (hi : InputAdmissible encode allowed') :
     UniformDecidableInTime B A encode time' allowed' :=
-  let ⟨r, p, hp⟩ := h
-  ⟨r, p, hp.mono ht hw⟩
+  let ⟨r, p, hp, _⟩ := h
+  ⟨r, p, hp.mono ht hw, hi⟩
 
 /-- Transfer nonuniform decision along a map preserving encoded words. -/
 theorem DecidableInTime.recode {encode' : ℕ → β → List ℕ} {A' : Set β}
@@ -257,9 +329,10 @@ theorem DecidableInTime.recode {encode' : ℕ → β → List ℕ} {A' : Set β}
     (hf : ∀ w a, encode w a = encode' w (f a)) (hA : ∀ a, a ∈ A ↔ f a ∈ A')
     (ht : ∀ a w, timeB (f a) w ≤ time a w)
     (hw : ∀ a w, allowed a w → allowedB (f a) w)
+    (hi : InputAdmissible encode allowed)
     (h : DecidableInTime B A' encode' timeB allowedB) : DecidableInTime B A encode time allowed :=
-  let ⟨r, P, hP, hp⟩ := h
-  ⟨r, P, hP, hp.recode f hf hA ht hw⟩
+  let ⟨r, P, hP, hp, _⟩ := h
+  ⟨r, P, hP, hp.recode f hf hA ht hw, hi⟩
 
 /-- Transfer uniform decision along a map preserving encoded words. -/
 theorem UniformDecidableInTime.recode {encode' : ℕ → β → List ℕ} {A' : Set β}
@@ -267,10 +340,11 @@ theorem UniformDecidableInTime.recode {encode' : ℕ → β → List ℕ} {A' : 
     (hf : ∀ w a, encode w a = encode' w (f a)) (hA : ∀ a, a ∈ A ↔ f a ∈ A')
     (ht : ∀ a w, timeB (f a) w ≤ time a w)
     (hw : ∀ a w, allowed a w → allowedB (f a) w)
+    (hi : InputAdmissible encode allowed)
     (h : UniformDecidableInTime B A' encode' timeB allowedB) :
     UniformDecidableInTime B A encode time allowed :=
-  let ⟨r, p, hp⟩ := h
-  ⟨r, p, WordSizeDependentProgram.DecidesInTime.recode f hf hA ht hw hp⟩
+  let ⟨r, p, hp, _⟩ := h
+  ⟨r, p, WordSizeDependentProgram.DecidesInTime.recode f hf hA ht hw hp, hi⟩
 
 /-! ## The transdichotomous word-size assumption and asymptotic time -/
 
@@ -368,7 +442,8 @@ theorem LinearTime.recode {encode' : ℕ → β → List ℕ} {A' : Set β} {siz
     (h : LinearTime B A' encode' size') : LinearTime B A encode size :=
   let ⟨c, k, hk, hd⟩ := h
   ⟨c, k, hk, hd.recode f hf hA (fun a _ => by rw [hs]) (fun a _ ha => by
-      simpa only [hs] using ha)⟩
+      simpa only [hs] using ha)
+    (hd.inputAdmissible.recode f hf (fun a _ ha => by simpa only [hs] using ha))⟩
 
 /-- Uniform linear time transfers when words and sizes agree. -/
 theorem UniformLinearTime.recode {encode' : ℕ → β → List ℕ} {A' : Set β} {size : α → ℕ}
@@ -377,7 +452,8 @@ theorem UniformLinearTime.recode {encode' : ℕ → β → List ℕ} {A' : Set �
     (h : UniformLinearTime B A' encode' size') : UniformLinearTime B A encode size :=
   let ⟨c, k, hk, hd⟩ := h
   ⟨c, k, hk, hd.recode f hf hA (fun a _ => by rw [hs]) (fun a _ ha => by
-      simpa only [hs] using ha)⟩
+      simpa only [hs] using ha)
+    (hd.inputAdmissible.recode f hf (fun a _ ha => by simpa only [hs] using ha))⟩
 
 /-- Polynomial time transfers when words and sizes agree. -/
 theorem PolynomialTime.recode {encode' : ℕ → β → List ℕ} {A' : Set β} {size : α → ℕ}
@@ -387,7 +463,8 @@ theorem PolynomialTime.recode {encode' : ℕ → β → List ℕ} {A' : Set β} 
   let ⟨T, hT, k, hk, hd⟩ := h
   ⟨T, hT, k, hk, hd.recode f hf hA (fun a _ => by rw [hs])
     (fun a _ ha => by
-      simpa only [hs] using ha)⟩
+      simpa only [hs] using ha)
+    (hd.inputAdmissible.recode f hf (fun a _ ha => by simpa only [hs] using ha))⟩
 
 /-- Uniform polynomial time transfers when words and sizes agree. -/
 theorem UniformPolynomialTime.recode {encode' : ℕ → β → List ℕ} {A' : Set β} {size : α → ℕ}
@@ -397,7 +474,8 @@ theorem UniformPolynomialTime.recode {encode' : ℕ → β → List ℕ} {A' : S
   let ⟨T, hT, k, hk, hd⟩ := h
   ⟨T, hT, k, hk, hd.recode f hf hA (fun a _ => by rw [hs])
     (fun a _ ha => by
-      simpa only [hs] using ha)⟩
+      simpa only [hs] using ha)
+    (hd.inputAdmissible.recode f hf (fun a _ ha => by simpa only [hs] using ha))⟩
 
 end Cslib.WordRAM
 

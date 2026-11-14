@@ -104,19 +104,21 @@ def encodeWord (L : ℕ) (w : List Bool) : List Bool :=
   List.replicate (L - w.length) false ++ true :: w
 
 /-- Decoding inverts coding. -/
-private theorem decodeWord_encodeWord (L : ℕ) (w : List Bool) : decodeWord
+theorem decodeWord_encodeWord (L : ℕ) (w : List Bool) : decodeWord
     (encodeWord L w) = w := by
   rw [decodeWord, encodeWord, List.idxOf_true_replicate_false_append, List.drop_append]
   simp
 
-private theorem length_encodeWord {L : ℕ} {w : List Bool} (hw : w.length ≤ L) :
+/-- The code of a word of length at most `L` has length `L + 1`. -/
+theorem length_encodeWord {L : ℕ} {w : List Bool} (hw : w.length ≤ L) :
     (encodeWord L w).length = L + 1 := by
   enc_len [encodeWord]
 
 private theorem true_mem_encodeWord (L : ℕ) (w : List Bool) : true ∈ encodeWord L w := by
   simp [encodeWord]
 
-private theorem length_decodeWord_le {L : ℕ} {u : List Bool} (hu : u.length = L + 1) :
+/-- Any word decoded from a code of length `L + 1` has length at most `L`. -/
+theorem length_decodeWord_le {L : ℕ} {u : List Bool} (hu : u.length = L + 1) :
     (decodeWord u).length ≤ L := by
   simp only [decodeWord, List.length_drop]
   lia
@@ -267,7 +269,7 @@ section PolyTime
 open _root_.Turing _root_.Turing.MultiTapeTM ComputableInPolyTime
 
 /-- Decoding a word is polynomial-time. -/
-private theorem computableInPolyTime_decodeWord :
+theorem computableInPolyTime_decodeWord :
     ComputableInPolyTime decodeWord encBits encBits := by
   have hidx : ComputableInPolyTime (fun u : List Bool => u.idxOf true + 1) encBits
       encUnary := by
@@ -618,7 +620,7 @@ theorem IP_subset_PSPACE (enc : α ↪ List Bool) : IP enc ⊆ PSPACE enc := by
     exact (ComputableInPolySpace.of_polyTime hpost).comp
       ((ComputableInPolySpace.of_polyTime hcap).prod
         (computableInPolySpace_evaluate M hfuel))
-  refine mem_PSPACE_of_computableInPolySpace hdec fun a => ?_
+  refine ⟨_, hdec, fun a => ?_⟩
   rw [mem_iff_two_pow_lt_value (fun a S oracle s => hreal a S oracle s) hA a, evaluate_eq,
     decide_eq_true_iff]
 

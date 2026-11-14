@@ -8,9 +8,11 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Computational.Encryption.PublicKeyReplacement
-public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.LWE
-public import CslibFrontier.Crypto.Computational.Homomorphic.GSW.Serialized.PolyTime
+public import CslibFrontier.Crypto.Computational.LWE.KeyGen
 public import CslibFrontier.Crypto.Computational.LWE.Regev
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Matrix.Binary
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Crypto.Negligible.Dyadic
 import CslibFrontier.Foundations.Data.List.Lookup
 import CslibFrontier.Tactic.PPT
@@ -21,8 +23,8 @@ import CslibFrontier.Tactic.PPT
 The serialized Regev encryption program reads a public word with the fixed-width row-major
 encoding of `Matrix.toBinary`, samples `m` fair coins and writes the `n + 1` ciphertext residues
 with `w` bits each. Missing bits and coins are zero and excess data is ignored, so the program is
-total. Key generation is the existing serialized LWE key generator
-`Homomorphic.GSW.keyGenSerialized`, whose public word is exactly a decision-LWE sample.
+total. Key generation is the shared serialized LWE key generator `LWE.keyGenSerialized`, whose
+public word is exactly a decision-LWE sample.
 
 Both honest programs are strict PPT, and the reduction to decision LWE is one uniform strict PPT
 distinguisher with loss two. The remaining statistical term is the single-challenge
@@ -36,6 +38,8 @@ This is the single-challenge IND-CPA theorem of [Regev2009, Section 5] and
 * `Regev.serializeCiphertext`: canonical ciphertext words.
 * `Regev.encryptWithCoinsSerialized`, `Regev.encryptSerialized`: the actual word encryption.
 * `Regev.lweDistinguisher`: the uniform hidden-bit reduction.
+* `Regev.typedAdversary`: a word-level adversary at one parameter, as a typed two-stage adversary
+  on public matrices and ciphertexts through their canonical encodings.
 * `Regev.hidingError`: the explicit statistical term.
 
 ## Main results
@@ -101,7 +105,7 @@ theorem encryptEntry_eq (n m w : ℕ) (publicWord : List Bool) (message : Bool)
     cases coins.getD r.val false <;> simp
   · by_cases hj : j = 0
     · subst hj
-      simp [encodeBit]
+      simp [LWE.encodeBit]
     · have hv : j.val ≠ 0 := fun h => hj (Fin.ext h)
       simp [hj, hv]
 
@@ -221,18 +225,29 @@ theorem isPPT_lweDistinguisher {n m w : ℕ → ℕ} {adversary : Encryption.Adv
   exact isPPTOn_encryptSerialized (hn.comp (by fun_prop)) (hm.comp (by fun_prop))
     (hw.comp (by fun_prop)) (by fun_prop) (by fun_prop)
 
+/-- The word-level adversary at parameter `security` as a typed two-stage adversary: it reads the
+public matrix through `Matrix.toBinary` and the challenge ciphertext through
+`serializeCiphertext`. -/
+noncomputable def typedAdversary {n m w : ℕ} (adversary : Encryption.Adversary) (security : ℕ) :
+    TwoStage (PublicKey n m w) (MessagePair Bool) (Ciphertext n w) Bool (List Bool) where
+  choose A := (adversary.toTwoStage security).choose (Cslib.Matrix.toBinary A)
+  guess state c := (adversary.toTwoStage security).guess state (serializeCiphertext c)
+
 /-- Under the uniform decision-LWE ensemble, the word experiment is the typed single-challenge
-experiment with the adversary's stages composed with the canonical encodings. -/
+experiment of `typedAdversary`. -/
 theorem publicKeyGame_uniformEnsemble (n m w : ℕ → ℕ) (adversary : Encryption.Adversary)
     (bit : Bool) (security : ℕ) :
     Encryption.publicKeyGame (LWE.uniformEnsemble n m w security)
       (fun k => encryptSerialized (n k) (m k) (w k)) adversary bit security =
         challengeGame (PMF.uniformOfFintype (PublicKey (n security) (m security) (w security)))
-          (fun A => ProbComp.eval (adversary.choose security (Cslib.Matrix.toBinary A)))
-          (fun state c => ProbComp.eval (adversary.guess security state (serializeCiphertext c)))
-          bit := by
-  simp only [Encryption.publicKeyGame, LWE.uniformEnsemble, challengeGame,
-    PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def, eval_encryptSerialized_toBinary]
+          (typedAdversary adversary security) bit := by
+  cases bit <;>
+    simp only [Encryption.publicKeyGame, Encryption.publicKeyGameOn, LWE.uniformEnsemble,
+      challengeGame, Game.withSetup, lrExperiment, typedAdversary,
+      Encryption.AdversaryOf.toTwoStage,
+      MessagePair.select_false, MessagePair.select_true, Bool.false_eq_true, ↓reduceIte,
+      PMF.monad_bind_eq_bind, PMF.bind_map, Function.comp_def, ProbComp.eval_bind,
+      ProbComp.eval_map, eval_encryptSerialized_toBinary]
 
 /-- Under the uniform ensemble, the advantage is at most the leftover-hash term. -/
 theorem advantage_uniformEnsemble_le (n m w : ℕ → ℕ) (adversary : Encryption.Adversary)
@@ -246,23 +261,23 @@ theorem advantage_uniformEnsemble_le (n m w : ℕ → ℕ) (adversary : Encrypti
   apply NNReal.coe_le_coe.mp
   rw [publicKeyGame_uniformEnsemble, publicKeyGame_uniformEnsemble]
   simpa only [hidingError, Real.coe_sqrt, NNReal.coe_div, NNReal.coe_pow, NNReal.coe_ofNat] using
-    challengeGame_uniform_advantage_le _ _
+    challengeGame_uniform_advantage_le _
 
 /-- One uniform reduction bounds the actual IND-CPA advantage by twice its decision-LWE
 advantage plus the leftover-hash term. No efficiency is needed for this inequality. -/
 theorem advantage_game_le (n m w η : ℕ → ℕ) (adversary : Encryption.Adversary) (security : ℕ) :
     Encryption.advantage
-      (Encryption.game (fun k => Homomorphic.GSW.keyGenSerialized (n k) (m k) (w k) (η k))
+      (Encryption.game (fun k => LWE.keyGenSerialized (n k) (m k) (w k) (η k))
         (fun k => encryptSerialized (n k) (m k) (w k)) adversary) security ≤
       2 * Game.advantage
         (distinguishingGame
-          (LWE.realEnsemble n m w (fun k => Homomorphic.GSW.noiseLaw (w k) (η k)) security)
+          (LWE.realEnsemble n m w (fun k => LWE.noiseLaw (w k) (η k)) security)
           (lweDistinguisher n m w adversary security))
         (distinguishingGame (LWE.uniformEnsemble n m w security)
           (lweDistinguisher n m w adversary security)) +
         hidingError (n security) (m security) (w security) := by
   simp only [Encryption.advantage, Encryption.eval_game_eq_publicKeyGame,
-    Homomorphic.GSW.eval_keyGenSerialized_publicWord]
+    LWE.eval_keyGenSerialized_publicWord]
   exact (Encryption.advantage_publicKeyGame_le _ (LWE.uniformEnsemble n m w security)
     _ adversary security).trans
       (add_le_add le_rfl (advantage_uniformEnsemble_le n m w adversary security))
@@ -275,11 +290,11 @@ theorem indCPA_of_decisionLWE {n m w η : ℕ → ℕ}
     (hm : ComputableInPolyTime m encUnary encUnary)
     (hw : ComputableInPolyTime w encUnary encUnary)
     (hmargin : ∀ᶠ security in atTop, (n security + 1) * w security + 2 * security ≤ m security)
-    (hLWE : DecisionLWE n m w (fun k => Homomorphic.GSW.noiseLaw (w k) (η k))) :
-    Encryption.INDCPA (fun k => Homomorphic.GSW.keyGenSerialized (n k) (m k) (w k) (η k))
+    (hLWE : DecisionLWE n m w (fun k => LWE.noiseLaw (w k) (η k))) :
+    Encryption.INDCPA (fun k => LWE.keyGenSerialized (n k) (m k) (w k) (η k))
       (fun k => encryptSerialized (n k) (m k) (w k)) := by
   intro adversary hadversary
-  have hsource := hLWE (lweDistinguisher n m w adversary)
+  have hsource := hLWE.encoded (lweDistinguisher n m w adversary)
     (isPPT_lweDistinguisher hn hm hw hadversary)
   have herror := negligible_mul_sqrt_pow_two_div_pow_two
     (count := fun _ => 1) (outputBits := fun k => (n k + 1) * w k) (by fun_prop) hmargin

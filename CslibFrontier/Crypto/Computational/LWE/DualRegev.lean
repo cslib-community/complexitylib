@@ -7,7 +7,9 @@ Authors: Karn Seth
 module
 -- upstream: candidate
 
-public import CslibFrontier.Crypto.Computational.LWE.Regev
+public import CslibFrontier.Crypto.Computational.LWE.Decoding
+public import CslibFrontier.Crypto.Computational.LWE.KeyGen
+public import CslibFrontier.Crypto.Game.Statistical
 public import CslibFrontier.Probability.BitString.SubsetSum.Matrix
 import CslibFrontier.Probability.PMF.Uniform
 
@@ -32,8 +34,9 @@ identity-based encryption scheme of [GentryPeikertVaikuntanathan2008, Section 7.
 zero error under the stated noise margin.
 
 The key generator `keyGen` draws a uniform binary secret. Its public key is statistically close to
-a uniform pair by the leftover hash lemma for `e ↦ eᵀ A`. The reduction of chosen-plaintext
-security of the dual scheme to decision LWE with `m + 1` samples is not formalized here.
+a uniform pair by the leftover hash lemma for `e ↦ eᵀ A`. Native serialized codecs, PPT
+certificates, and the IND-CPA security reduction to decision LWE with `m + 1` samples are in
+`LWE.DualRegev.Security`.
 
 ## Main definitions
 
@@ -90,11 +93,11 @@ def publicKeyOf {n m w : ℕ} (A : Matrix (Fin m) (Fin n) (ZMod (2 ^ w))) (e : F
 `(A s + x, ⟨u, s⟩ + x₀ + μ * 2 ^ (w - 1))`. -/
 def encryptWithCoins {n m w : ℕ} (pk : PublicKey n m w) (μ : Bool) (s : Fin n → ZMod (2 ^ w))
     (x : Fin m → ℤ) (x₀ : ℤ) : Ciphertext m w :=
-  (pk.1 *ᵥ s + castVector w x, pk.2 ⬝ᵥ s + (x₀ : ZMod (2 ^ w)) + Regev.encodeBit w μ)
+  (pk.1 *ᵥ s + castVector w x, pk.2 ⬝ᵥ s + (x₀ : ZMod (2 ^ w)) + LWE.encodeBit w μ)
 
 /-- Decrypt by rounding `c₀ - ⟨e, b⟩`. -/
 def decrypt {m w : ℕ} (e : Fin m → ℤ) (c : Ciphertext m w) : Bool :=
-  Homomorphic.GSW.decode w (c.2 - castVector w e ⬝ᵥ c.1)
+  LWE.decode w (c.2 - castVector w e ⬝ᵥ c.1)
 
 /-- The integer decryption noise `x₀ - ⟨e, x⟩`. -/
 def noise {m : ℕ} (e x : Fin m → ℤ) (x₀ : ℤ) : ℤ :=
@@ -107,7 +110,7 @@ theorem encryptWithCoins_residual {n m w : ℕ} (A : Matrix (Fin m) (Fin n) (ZMo
         castVector w e ⬝ᵥ (encryptWithCoins (publicKeyOf A e) μ s x x₀).1 =
       (((μ.toNat : ℤ) * 2 ^ (w - 1) + noise e x x₀ : ℤ) : ZMod (2 ^ w)) := by
   simp only [encryptWithCoins, publicKeyOf, dotProduct_add, ← Matrix.dotProduct_mulVec]
-  simp [noise, Regev.encodeBit, castVector, dotProduct]
+  simp [noise, LWE.encodeBit, castVector, dotProduct]
   ring
 
 /-- Bounded secrets and errors give decryption noise of magnitude at most `m * (β * η) + η`. -/
@@ -131,12 +134,12 @@ theorem decrypt_encryptWithCoins {n m w β η : ℕ} (A : Matrix (Fin m) (Fin n)
     (hx₀ : x₀.natAbs ≤ η) (hmargin : 4 * (m * (β * η) + η) < 2 ^ w) :
     decrypt e (encryptWithCoins (publicKeyOf A e) μ s x x₀) = μ := by
   rw [decrypt, encryptWithCoins_residual]
-  exact Homomorphic.GSW.decode_eq_of_error hw μ _
+  exact LWE.decode_eq_of_error hw μ _
     ((Nat.mul_le_mul_left 4 (natAbs_noise_le e x x₀ he hx hx₀)).trans_lt hmargin)
 
 /-- Sample a uniform matrix and a uniform binary secret, and output `(A, eᵀ A)` and `e`. -/
 noncomputable def keyGen (n m w : ℕ) : ProbComp (PublicKey n m w × (Fin m → ℤ)) := do
-  let A ← Homomorphic.GSW.sampleMatrix m n w
+  let A ← LWE.sampleMatrix m n w
   let bits ← OracleComp.replicateFin m (ProbComp.uniform Bool)
   let e : Fin m → ℤ := fun i => (bits i).toNat
   return (publicKeyOf A e, e)
@@ -144,18 +147,18 @@ noncomputable def keyGen (n m w : ℕ) : ProbComp (PublicKey n m w × (Fin m →
 /-- Encrypt with a uniform secret and independent centered-binomial errors of parameter `η`. -/
 noncomputable def encrypt {n m w : ℕ} (η : ℕ) (pk : PublicKey n m w) (μ : Bool) :
     ProbComp (Ciphertext m w) := do
-  let s ← Homomorphic.GSW.sampleVector n w
+  let s ← LWE.sampleVector n w
   let x ← OracleComp.replicateFin m (ProbComp.sampleCenteredBinomial η)
   let x₀ ← ProbComp.sampleCenteredBinomial η
   return encryptWithCoins pk μ s x x₀
 
 /-- Generated keys have the form `(A, eᵀ A)` with a binary secret. -/
-theorem mem_support_keyGen {n m w : ℕ} {keys : PublicKey n m w × (Fin m → ℤ)}
-    (hkeys : keys ∈ (ProbComp.eval (keyGen n m w)).support) :
-    keys.1 = publicKeyOf keys.1.1 keys.2 ∧ ∀ i, (keys.2 i).natAbs ≤ 1 := by
+theorem mem_support_keyGen {n m w : ℕ} {pk : PublicKey n m w} {e : Fin m → ℤ}
+    (hkeys : (pk, e) ∈ (ProbComp.eval (keyGen n m w)).support) :
+    pk = publicKeyOf pk.1 e ∧ ∀ i, (e i).natAbs ≤ 1 := by
   simp only [keyGen, ProbComp.eval_bind, ProbComp.eval_pure, PMF.mem_support_bind_iff,
-    PMF.mem_support_pure_iff] at hkeys
-  obtain ⟨A, -, bits, -, rfl⟩ := hkeys
+    PMF.mem_support_pure_iff, Prod.mk.injEq] at hkeys
+  obtain ⟨A, -, bits, -, rfl, rfl⟩ := hkeys
   exact ⟨rfl, fun i => by simpa using Bool.toNat_le (bits i)⟩
 
 /-- Supported ciphertexts are encryptions with errors bounded by `η`. -/
@@ -198,38 +201,37 @@ theorem dist_keyGen_uniform_le (n m w : ℕ) :
       invFun := fun M => M 0
       left_inv := fun _ => rfl
       right_inv := fun M => by ext i j; fin_cases i; rfl }
-  let first : Matrix (Fin m) (Fin n) (ZMod (2 ^ w)) × Matrix (Fin 1) (Fin n) (ZMod (2 ^ w)) →
-      PublicKey n m w := fun p => (p.1, p.2 0)
+  let cont : Matrix (Fin m) (Fin n) (ZMod (2 ^ w)) →
+      Matrix (Fin 1) (Fin n) (ZMod (2 ^ w)) → PMF (PublicKey n m w) :=
+    fun A r => PMF.pure (A, r 0)
   have hL : (ProbComp.eval (keyGen n m w)).map Prod.fst =
-      ((PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod (2 ^ w)))).bind fun A =>
-        (PMF.uniformOfFintype (Matrix (Fin 1) (Fin m) Bool)).map
-          fun r => (A, r.map (fun bit => (bit.toNat : ZMod (2 ^ w))) * A)).map first := by
+      (PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod (2 ^ w)))).bind fun A =>
+        (PMF.uniformOfFintype (Matrix (Fin 1) (Fin m) Bool)).bind fun r =>
+          cont A (r.map (fun bit => (bit.toNat : ZMod (2 ^ w))) * A) := by
     rw [← PMF.uniformOfFintype_map_equiv rowBool]
-    simp only [keyGen, ProbComp.eval_bind, ProbComp.eval_pure, Homomorphic.GSW.eval_sampleMatrix,
+    simp only [keyGen, ProbComp.eval_bind, ProbComp.eval_pure, LWE.eval_sampleMatrix,
       ProbComp.eval_replicateFin, ProbComp.eval_uniform, PMF.pi_uniformOfFintype, PMF.map_bind,
-      PMF.pure_map, PMF.map_comp]
+      PMF.pure_map, PMF.bind_map]
     congr 1 with A : 1
-    simp only [PMF.map, Function.comp_def]
+    simp only [Function.comp_def]
     congr 1 with b : 1
     refine congrArg PMF.pure (Prod.ext rfl ?_)
     funext j
-    simp only [first, publicKeyOf, castVector, Matrix.mul_apply, Matrix.vecMul, dotProduct,
+    simp only [publicKeyOf, castVector, Matrix.mul_apply, Matrix.vecMul, dotProduct,
       Int.cast_natCast, Matrix.map_apply]
     rfl
   have hR : (do
         let A ← PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod (2 ^ w)))
         let u ← PMF.uniformOfFintype (Fin n → ZMod (2 ^ w))
         return ((A, u) : PublicKey n m w)) =
-      ((PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod (2 ^ w)))).bind fun A =>
-        (PMF.uniformOfFintype (Matrix (Fin 1) (Fin n) (ZMod (2 ^ w)))).map (A, ·)).map first := by
+      (PMF.uniformOfFintype (Matrix (Fin m) (Fin n) (ZMod (2 ^ w)))).bind fun A =>
+        (PMF.uniformOfFintype (Matrix (Fin 1) (Fin n) (ZMod (2 ^ w)))).bind (cont A) := by
     rw [← PMF.uniformOfFintype_map_equiv rowResidue]
-    simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.map_bind, PMF.map_comp]
+    simp only [PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.bind_map]
     congr 1 with A : 1
   rw [hL, hR]
-  refine (dist_map_le _ _ first).trans
-    ((BitString.SubsetSum.dist_mul_le (q := 2 ^ w) (m := m) (d := n) (Rows := Fin 1)).trans
-      (le_of_eq ?_))
-  simp [pow_mul]
+  simpa [pow_mul] using
+    BitString.SubsetSum.dist_bind_mul_le (q := 2 ^ w) (m := m) (d := n) (Rows := Fin 1) cont
 
 /-! ### Preimage-sampleable trapdoors -/
 

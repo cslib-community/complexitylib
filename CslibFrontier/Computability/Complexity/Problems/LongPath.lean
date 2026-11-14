@@ -8,20 +8,24 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Complexity.Problems.Graph
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 public import Mathlib.Combinatorics.SimpleGraph.Paths
 
 /-!
 # k-Path
 
 `Cslib.Complexity.LongPath` is the decision version of *Longest Path* with the length as parameter
-[CyganEtAl2015, Section 5.2]: the pairs `(G, k)` such that the graph `G` has a simple path on `k` of
-its declared vertices. A path is a duplicate-free list of declared vertices in which consecutive
+[CyganEtAl2015, Section 5.2]: the instances `⟨G, k⟩` (`Cslib.Complexity.LongPathInstance`, encoded
+by `Cslib.Complexity.encLongPath`) such that the graph `G` has a simple path on `k` of its
+declared vertices. A path is a duplicate-free list of declared vertices in which consecutive
 vertices are adjacent (`Cslib.Complexity.Graph.IsVertexPath`); for `k = k' + 1` these are the paths
 of length `k'` of Mathlib's `SimpleGraph.Walk` on the induced graph
 (`Cslib.Complexity.mem_LongPath_succ_iff`). The target `k = 0` is accepted by the empty path.
 
 ## Main definitions
 
+* `Cslib.Complexity.LongPathInstance`, `Cslib.Complexity.encLongPath`: k-Path instances and their
+  binary encoding.
 * `Cslib.Complexity.Graph.IsVertexPath`: a path given by its list of vertices.
 * `Cslib.Complexity.LongPath`: graphs with a path on `k` vertices.
 
@@ -29,7 +33,7 @@ of length `k'` of Mathlib's `SimpleGraph.Walk` on the induced graph
 
 * `Cslib.Complexity.Graph.IsVertexPath.length_le`: a path has at most as many vertices as the
   distinct declared vertices.
-* `Cslib.Complexity.mem_LongPath_succ_iff`: `(G, k + 1) ∈ LongPath` exactly when the induced graph
+* `Cslib.Complexity.mem_LongPath_succ_iff`: `⟨G, k + 1⟩ ∈ LongPath` exactly when the induced graph
   has a path (`SimpleGraph.Walk.IsPath`) of length `k`.
 
 ## References
@@ -42,13 +46,15 @@ public section
 
 namespace Cslib.Complexity
 
+open Turing.MultiTapeTM
+
 namespace Graph
 
 /-- `p` is a path of `G`: a list of declared vertices without repetitions in which consecutive
 vertices are adjacent. -/
 @[expose]
 def IsVertexPath (G : Graph) (p : List ℕ) : Prop :=
-  p.Nodup ∧ (∀ v ∈ p, v ∈ G.1) ∧ p.IsChain G.toSimpleGraph.Adj
+  p.Nodup ∧ (∀ v ∈ p, v ∈ G.vertices) ∧ p.IsChain G.toSimpleGraph.Adj
 
 /-- A path has at most as many vertices as the distinct declared vertices. -/
 theorem IsVertexPath.length_le {G : Graph} {p : List ℕ} (hp : G.IsVertexPath p) :
@@ -63,35 +69,55 @@ theorem isVertexPath_nil (G : Graph) : G.IsVertexPath [] :=
 
 end Graph
 
-/-- **k-Path** (the decision version of *Longest Path*) [CyganEtAl2015, Section 5.2]: the pairs
-`(G, k)` such that `G` has a path on `k` vertices. -/
+/-- **k-Path** (the decision version of *Longest Path*) [CyganEtAl2015, Section 5.2]: the
+instances `⟨G, k⟩` such that `G` has a path on `k` vertices. -/
+@[ext]
+structure LongPathInstance where
+  /-- The undirected graph in which to find a simple path. -/
+  graph : Graph
+  /-- The target number of vertices on the path. -/
+  target : ℕ
+  deriving DecidableEq, Repr, Inhabited
+
+/-- Encoding of `LongPathInstance` as `(graph, target)` with `target` in binary. -/
+enc_structure encLongPath : LongPathInstance where
+  graph : encGraph,
+  target : encNat
+
+attribute [fun_prop] encLongPath_graph_polyTime encLongPath_target_polyTime
+  encLongPath_mk_polyTime
+
+/-- **k-Path** (the decision version of *Longest Path*) [CyganEtAl2015, Section 5.2]: the
+instances `⟨G, k⟩` such that `G` has a path on `k` vertices. -/
 @[expose]
-def LongPath : Set (Graph × ℕ) :=
-  {x | ∃ p : List ℕ, x.1.IsVertexPath p ∧ p.length = x.2}
+def LongPath : Set LongPathInstance :=
+  {x | ∃ p : List ℕ, x.graph.IsVertexPath p ∧ p.length = x.target}
 
 theorem mem_LongPath_iff {G : Graph} {k : ℕ} :
-    (G, k) ∈ LongPath ↔ ∃ p : List ℕ, G.IsVertexPath p ∧ p.length = k := Iff.rfl
+    (⟨G, k⟩ : LongPathInstance) ∈ LongPath ↔ ∃ p : List ℕ, G.IsVertexPath p ∧ p.length = k :=
+  Iff.rfl
 
 /-- Every graph has a path on no vertices. -/
-theorem mem_LongPath_zero (G : Graph) : (G, 0) ∈ LongPath := ⟨[], G.isVertexPath_nil, rfl⟩
+theorem mem_LongPath_zero (G : Graph) : (⟨G, 0⟩ : LongPathInstance) ∈ LongPath :=
+  ⟨[], G.isVertexPath_nil, rfl⟩
 
 /-- A graph has no path on more vertices than its distinct declared vertices. -/
 theorem not_mem_LongPath_of_lt {G : Graph} {k : ℕ} (hk : G.distinctVertices.length < k) :
-    (G, k) ∉ LongPath := fun ⟨_, hp, hlen⟩ =>
+    (⟨G, k⟩ : LongPathInstance) ∉ LongPath := fun ⟨_, hp, hlen⟩ =>
   absurd (hlen.symm.trans_le hp.length_le) (Nat.not_le.2 hk)
 
 /-- **Paths on `k + 1` vertices are paths of length `k`** of Mathlib's `SimpleGraph.Walk` on the
 induced graph. -/
 theorem mem_LongPath_succ_iff {G : Graph} {k : ℕ} :
-    (G, k + 1) ∈ LongPath ↔
-      ∃ (u v : {v // v ∈ G.1}) (w : G.induced.Walk u v), w.IsPath ∧ w.length = k := by
+    (⟨G, k + 1⟩ : LongPathInstance) ∈ LongPath ↔
+      ∃ (u v : {v // v ∈ G.vertices}) (w : G.induced.Walk u v), w.IsPath ∧ w.length = k := by
   rw [mem_LongPath_iff]
   constructor
   · rintro ⟨p, ⟨hnd, hV, hch⟩, hlen⟩
-    have hLne : p.pmap (fun a ha => (⟨a, ha⟩ : {v // v ∈ G.1})) hV ≠ [] := by
+    have hLne : p.pmap (fun a ha => (⟨a, ha⟩ : {v // v ∈ G.vertices})) hV ≠ [] := by
       grind [List.pmap_eq_nil_iff]
     have hLch := List.isChain_pmap_of_isChain (S := G.induced.Adj)
-      (f := fun a ha => (⟨a, ha⟩ : {v // v ∈ G.1})) (fun _ _ _ _ hab => hab) hch hV
+      (f := fun a ha => (⟨a, ha⟩ : {v // v ∈ G.vertices})) (fun _ _ _ _ hab => hab) hch hV
     refine ⟨_, _, SimpleGraph.Walk.ofSupport _ hLne hLch, ?_, ?_⟩
     · rw [SimpleGraph.Walk.isPath_def, SimpleGraph.Walk.support_ofSupport]
       exact hnd.pmap fun _ _ _ _ hab => congrArg Subtype.val hab

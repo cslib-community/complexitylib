@@ -16,7 +16,8 @@ operation, its exact memory cost against the proved bound `memCost 3 4 = 520`, a
 -/
 
 open Cslib.WordRAM Cslib.DataStructure
-open Cslib.Algorithms.WordRAM.Dijkstra (ListInstance encodeDist)
+open Cslib.Algorithms.Dijkstra (ListInstance)
+open Cslib.Algorithms.WordRAM.Dijkstra (encodeDist)
 open Cslib.Algorithms.Lean.Dijkstra.Memory
 
 set_option linter.hashCommand false

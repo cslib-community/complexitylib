@@ -8,8 +8,11 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Communication.Lifting.Partition
+public import CslibFrontier.Computability.Communication.Lifting.Volume
+public import CslibFrontier.Foundations.Data.Finset.BigHalf
 public import Mathlib.Analysis.Real.Sqrt
 public import Mathlib.Analysis.SpecialFunctions.Log.Base
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Mathlib.Data.Fintype.BigOperators
@@ -76,35 +79,6 @@ namespace Cslib.Communication.Lifting
 open Finset
 
 variable {n m : ℕ} {O : Type*}
-
-/-- The larger half of `s` under the bit `f`: at least half of `s` has `f a = bigHalf s f`. -/
-def bigHalf {α : Type*} (s : Finset α) (f : α → Bool) : Bool :=
-  decide (#s ≤ 2 * #(s.filter fun a => f a = true))
-
-theorem card_le_two_mul_card_filter_bigHalf {α : Type*} (s : Finset α) (f : α → Bool) :
-    (#s : ℝ) ≤ 2 * #(s.filter fun a => f a = bigHalf s f) := by
-  have hsum := card_filter_add_card_filter_not (s := s) (fun a => f a = true)
-  unfold bigHalf
-  by_cases h : #s ≤ 2 * #(s.filter fun a => f a = true)
-  · simp only [h, decide_true]; exact_mod_cast h
-  · simp only [h, decide_false]
-    simp only [Bool.not_eq_true] at hsum
-    have : #s ≤ 2 * #(s.filter fun a => f a = false) := by omega
-    exact_mod_cast this
-
-/-- A set fixed on `J` has at most `m ^ #Jᶜ` pointer vectors. -/
-theorem card_le_pow_of_fixed {J : Finset (Fin n)} {X : Finset (Fin n → Fin m)}
-    (hX : ∀ x ∈ X, ∀ x' ∈ X, ∀ i ∈ J, x i = x' i) : #X ≤ m ^ #Jᶜ := by
-  have hinj : Set.InjOn (fun x : Fin n → Fin m => fun i : (Jᶜ : Finset (Fin n)) => x i)
-      (X : Set (Fin n → Fin m)) := by
-    intro x hx x' hx' h
-    funext i
-    by_cases hi : i ∈ J
-    · exact hX x hx x' hx' i hi
-    · exact congrFun h ⟨i, mem_compl.mpr hi⟩
-  calc #X ≤ #(univ : Finset ((Jᶜ : Finset (Fin n)) → Fin m)) :=
-        card_le_card_of_injOn _ (fun _ _ => mem_univ _) hinj
-    _ = m ^ #Jᶜ := by simp [card_compl]
 
 /-- The state of the simulation: the queried coordinates `J` with answers `ρ`, the rectangle
 `X × Y`, and the number `t` of bits simulated so far. -/
@@ -581,22 +555,6 @@ end Invariants
 def SimState.init (n m : ℕ) : SimState n m :=
   ⟨∅, fun _ => false, univ, univ, 0⟩
 
-/-- All of `[m]ⁿ` is `τ`-dense when `τ ≤ m`. -/
-theorem isDense_univ {τ : ℝ} (hτ : 0 ≤ τ) (hτm : τ ≤ m) (F : Finset (Fin n)) :
-    IsDense τ F (univ : Finset (Fin n → Fin m)) := by
-  intro I _ _ α
-  have h1 : #((univ : Finset (Fin n → Fin m)).filter fun x => ∀ i ∈ I, x i = α i) ≤ m ^ #Iᶜ :=
-    card_le_pow_of_fixed fun x hx x' hx' i hi => by
-      rw [(mem_filter.mp hx).2 i hi, (mem_filter.mp hx').2 i hi]
-  have h1' : (#((univ : Finset (Fin n → Fin m)).filter fun x => ∀ i ∈ I, x i = α i) : ℝ) ≤
-      (m : ℝ) ^ #Iᶜ := by exact_mod_cast h1
-  have h2 : τ ^ #I ≤ (m : ℝ) ^ #I := pow_le_pow_left₀ hτ hτm _
-  have hu : (#(univ : Finset (Fin n → Fin m)) : ℝ) = (m : ℝ) ^ #Iᶜ * (m : ℝ) ^ #I := by
-    rw [← pow_add, card_compl, Nat.sub_add_cancel (card_le_univ I)]
-    simp
-  rw [hu]
-  exact mul_le_mul h1' h2 (by positivity) (by positivity)
-
 /-- When `4 ^ p.depth < (m / τ) ^ n` with `4 ≤ τ` and `320 * n ^ 2 * (Nat.log 2 m + 1) ≤ τ`,
 the protocol depth satisfies `64 * n * (5 * p.depth + 2) ≤ τ`. -/
 private theorem sixtyFour_mul_depth_le_of_four_pow_lt {τ : ℝ} (hτ4 : 4 ≤ τ)
@@ -701,7 +659,7 @@ theorem depth_mul_logb_le {R : (Fin n → Bool) → O → Prop} (hm : 16 ≤ m)
     conv_lhs => rw [← hsq]
     rw [Real.logb_pow]; push_cast; ring
   have : Real.logb 2 4 = 2 := by
-    rw [show (4 : ℝ) = 2 ^ (2 : ℕ) by norm_num, Real.logb_pow, Real.logb_self_eq_one (by norm_num)]
+    rw [show (4 : ℝ) = 2 ^ (2 : ℕ) by norm_num, Real.logb_two_pow]
     norm_num
   rw [this] at hlog
   rw [hsqrt]

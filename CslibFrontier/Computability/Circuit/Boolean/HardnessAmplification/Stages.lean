@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Computability.Circuit.Boolean.AtLeast
 public import CslibFrontier.Computability.Circuit.Boolean.BitBlast
+public import CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.GLSynthesis
 public import CslibFrontier.Computability.Circuit.Boolean.MassProduction.Point
 public import CslibFrontier.Computability.Circuit.ReedMullerDecoding
 public import CslibFrontier.Crypto.Computational.GoldreichLevin.Nonuniform
@@ -42,8 +43,9 @@ operation.
 ## Main definitions
 
 * `Cslib.Circuits.Boolean.BitSynthesis`: bit-synthesizable functions.
-* `Cslib.Circuits.Boolean.glPredictor`, `Cslib.Circuits.Boolean.glCost`: the Goldreich–Levin
-  decoder of the inner code and its gate budget.
+* `Cslib.Circuits.Boolean.glPredictor`: the Goldreich–Levin decoder of the inner code. Its gate
+  budget `Cslib.Circuits.Boolean.glCost` is defined in
+  `CslibFrontier.Computability.Circuit.Boolean.HardnessAmplification.GLSynthesis`.
 
 ## Main results
 
@@ -93,127 +95,21 @@ def glPredictor (enc : F ≃ BitString w) (C : BooleanFunction (m * w + w)) {K :
     (Crypto.GoldreichLevin.candidate
       (fun r => C (Fin.append (BitString.pointBits enc x) r)) masks guess)
 
-/-- The gate budget of the Goldreich–Levin stage: two constants, and for each output bit,
-`2 ^ K - 1` copies of the predictor, each with at most one negation, and a strict majority. -/
-def glCost (w K s : ℕ) : ℕ :=
-  2 + w * ((2 ^ K - 1) * (s + 1) + (2 + (2 ^ K - 1) * (2 * (2 ^ K - 1 + 2))))
-
-private theorem append_apply {n p q : ℕ} (A : Fin p → BooleanFunction n)
-    (B : Fin q → BooleanFunction n) (k : Fin (p + q)) (v : Fin n → Bool) :
-    Fin.append A B k v = Fin.append (fun i => A i v) (fun i => B i v) k := by
-  refine Fin.addCases (fun i => ?_) (fun i => ?_) k
-  · simp only [Fin.append_left]
-  · simp only [Fin.append_right]
-
-/-- A strict majority of the `N` votes of a finset, enumerated, is a threshold of `N` functions. -/
-private theorem strictMajorityOn_eq_atLeast {n : ℕ} {ι : Type*} (T : Finset ι)
-    (vote : ι → BooleanFunction n) (v : Fin n → Bool) :
-    BitString.strictMajorityOn T (fun i => vote i v) =
-      atLeast (fun l => if h : l < #T then vote (T.equivFin.symm ⟨l, h⟩) else fun _ => false)
-        #T (#T / 2 + 1) v := by
-  classical
-  simp only [BitString.strictMajorityOn, atLeast]
-  congr 1
-  rw [Nat.lt_iff_add_one_le]
-  congr 1
-  refine card_bij (fun i hi => (T.equivFin ⟨i, (mem_filter.1 hi).1⟩ : ℕ)) (fun i hi => ?_)
-    (fun i hi i' hi' h => ?_) (fun l hl => ?_)
-  · rw [mem_filter] at hi ⊢
-    refine ⟨mem_range.2 (T.equivFin _).2, ?_⟩
-    rw [dite_eq_left (T.equivFin _).2]
-    simpa using hi.2
-  · have := T.equivFin.injective (Fin.ext h)
-    exact congrArg Subtype.val this
-  · rw [mem_filter, mem_range] at hl
-    obtain ⟨hl, hv⟩ := hl
-    rw [dite_eq_left hl] at hv
-    refine ⟨T.equivFin.symm ⟨l, hl⟩, mem_filter.2 ⟨(T.equivFin.symm ⟨l, hl⟩).2, hv⟩, ?_⟩
-    simp
-
 /-- **The Goldreich–Levin stage.** If the predictor `C` has a De Morgan circuit with at most `s`
 gates, the Goldreich–Levin decoder with masks `masks` and guess `guess` is bit-synthesizable with
-`glCost w K s` gates. -/
+`glCost w K s` gates. This is `synthesis_candidate` with the bits of the point as the first
+`m * w` inputs of the predictor. -/
 theorem bitSynthesis_glPredictor (enc : F ≃ BitString w) {C : BooleanFunction (m * w + w)}
     {sC : ℕ} (hC : complexity interpretation (single C) ≤ sC) {K : ℕ}
     (masks : Fin K → BitString w) (guess : BitString K) :
     BitSynthesis enc (glPredictor enc C masks guess) (glCost w K sC) := by
-  classical
   intro n S φ hφ
-  obtain ⟨c, hc, hsize⟩ := complexity_le_iff.1 hC
-  -- the two constants
-  have hconst : Synthesis interpretation S ({fun _ => true} ∪ {fun _ => false}) 2 :=
-    (Synthesis.const (s := S) true).union (Synthesis.const (s := S) false)
-  set S₁ := S ∪ ({fun _ => true} ∪ {fun _ => false})
-  -- the bits of the point
-  let xb : Fin (m * w) → BooleanFunction n := fun k v => BitString.pointBits enc (fun i => φ i v) k
-  have hxb : ∀ k, xb k ∈ S₁ := fun k =>
-    Set.mem_union_left _ (hφ (finProdFinEquiv.symm k).1 (finProdFinEquiv.symm k).2)
-  -- one corrected vote: the predictor at a fixed query, xored with a fixed bit
-  have hvote : ∀ (r : BitString w) (bit : Bool), Synthesis interpretation S₁
-      {fun v => C (Fin.append (BitString.pointBits enc fun i => φ i v) r) ^^ bit} (sC + 1) := by
-    intro r bit
-    let g : Fin (m * w + w) → BooleanFunction n := Fin.append xb fun k _ => r k
-    have hg : ∀ k, g k ∈ S₁ := by
-      intro k
-      refine Fin.addCases (fun i => ?_) (fun i => ?_) k
-      · simp only [g, Fin.append_left]
-        exact hxb i
-      · simp only [g, Fin.append_right]
-        cases r i
-        · exact Set.mem_union_right _ (Set.mem_union_right _ rfl)
-        · exact Set.mem_union_right _ (Set.mem_union_left _ rfl)
-    have hcirc := Synthesis.circuit (I := interpretation) c g hg
-    have heval : (fun v => c.eval interpretation (fun k => g k v) 0) =
-        fun v => C (Fin.append (BitString.pointBits enc fun i => φ i v) r) := by
-      funext v
-      rw [hc]
-      simp only [single_apply]
-      congr 1 with k : 1
-      change Fin.append xb (fun k _ => r k) k v = _
-      rw [append_apply]
-    have h1 : Synthesis interpretation S₁
-        {fun v => C (Fin.append (BitString.pointBits enc fun i => φ i v) r)} sC :=
-      hcirc.mono Set.Subset.rfl (Set.singleton_subset_iff.2 ⟨0, heval⟩) hsize
-    cases bit
-    · simpa using h1.mono Set.Subset.rfl Set.Subset.rfl (Nat.le_succ _)
-    · simpa using h1.not
-  -- the strict majority for each output bit
-  set T := Crypto.GoldreichLevin.nonemptySubsets K
-  let V : Fin w → Finset (Fin K) → BooleanFunction n := fun j t v =>
-    C (Fin.append (BitString.pointBits enc fun i => φ i v)
-      (Pi.single j 1 + ∑ l ∈ t, masks l)) ^^
-      ∑ l ∈ t, guess l
-  have hbit : ∀ j, Synthesis interpretation S₁
-      {bitsOf enc (fun v => glPredictor enc C masks guess fun i => φ i v) j}
-      (#T * (sC + 1) + (2 + #T * (2 * (#T + 2)))) := by
-    intro j
-    have hvotes := Synthesis.biUnion (I := interpretation) (s := S₁) T (fun t => {V j t})
-      (fun _ => sC + 1) fun t _ => hvote _ _
-    set S₂ := S₁ ∪ ⋃ t ∈ T, {V j t}
-    have hmaj := synthesis_atLeast (s := S₂) (k := #T) (j := #T / 2 + 1)
-      (fun l => if h : l < #T then V j (T.equivFin.symm ⟨l, h⟩) else fun _ => false)
-      (fun l hl => by
-        rw [dite_eq_left hl]
-        exact Set.mem_union_right _ (Set.mem_biUnion (T.equivFin.symm ⟨l, hl⟩).2 rfl))
-      (by omega)
-    refine (hvotes.trans hmaj).mono Set.Subset.rfl (Set.singleton_subset_iff.2 ?_) ?_
-    · change _ = _
-      funext v
-      rw [← strictMajorityOn_eq_atLeast T (V j) v]
-      simp only [bitsOf, glPredictor, Equiv.apply_symm_apply, Crypto.GoldreichLevin.candidate,
-        V, T]
-      rfl
-    · simp only [sum_const, smul_eq_mul]
-      exact le_rfl
-  have hall := Synthesis.iUnion (I := interpretation) (s := S₁)
-    (fun j => {bitsOf enc (fun v => glPredictor enc C masks guess fun i => φ i v) j})
-    (fun _ => #T * (sC + 1) + (2 + #T * (2 * (#T + 2)))) hbit
-  refine (hconst.trans hall).mono Set.Subset.rfl ?_ ?_
-  · rintro _ ⟨j, rfl⟩
-    exact Set.mem_iUnion.2 ⟨j, rfl⟩
-  · simp only [sum_const, card_univ, Fintype.card_fin, smul_eq_mul, glCost, T,
-      Crypto.GoldreichLevin.card_nonemptySubsets]
-    exact le_rfl
+  refine (synthesis_candidate hC masks guess
+    (fun k v => BitString.pointBits enc (fun i => φ i v) k)
+    fun k => hφ (finProdFinEquiv.symm k).1 (finProdFinEquiv.symm k).2).mono Set.Subset.rfl ?_
+    le_rfl
+  rintro _ ⟨j, rfl⟩
+  exact ⟨j, by funext v; simp [bitsOf, glPredictor]⟩
 
 /-! ### The line stage -/
 
@@ -242,7 +138,8 @@ theorem BitSynthesis.lineListDecode {enc : F ≃ BitString w} {G : (Fin m → F)
   have hA : Synthesis (fullInterpretation (k := 2)) (inputs m) (Set.range ΨA)
       ((q + 5) * m + 2) :=
     Synthesis.full_linePoints (s := inputs m) (fun i v => v i) (fun i => ⟨i, rfl⟩) z
-  have hA' := Synthesis.bitBlast_synthesis enc ΨA hA φ hφ
+  have hA' := Synthesis.bitBlast_synthesis enc enc.symm enc.symm_apply_apply
+    ΨA hA φ hφ
   set TA := Set.range fun oj : Option (F × Fin m) × Fin w =>
     bitsOf enc (fun x => ΨA oj.1 fun i => φ i x) oj.2
   -- the oracle at the points of the line
@@ -281,7 +178,8 @@ theorem BitSynthesis.lineListDecode {enc : F ≃ BitString w} {G : (Fin m → F)
       exact Set.mem_union_left _ (Set.mem_union_right _ ⟨(none, j), rfl⟩)
     · simp only [φC, Fin.lastCases_castSucc]
       exact Set.mem_union_right _ (Set.mem_iUnion.2 ⟨e.symm k, j, rfl⟩)
-  have hC' := Synthesis.bitBlast_synthesis enc ΨC hC φC hφC
+  have hC' := Synthesis.bitBlast_synthesis enc enc.symm enc.symm_apply_apply
+    ΨC hC φC hφC
   refine (hA'.trans (hB.comp hC')).mono Set.Subset.rfl ?_ ?_
   · rintro _ ⟨j, rfl⟩
     refine Or.inr ⟨((), j), funext fun x => ?_⟩
@@ -319,7 +217,8 @@ theorem BitSynthesis.selfCorrect {enc : F ≃ BitString w} {C1 : (Fin m → F) �
       (fun o => Synthesis.full_unary (fun a => a + ν o.1.2 * V o.1.1 o.2)
         (⟨o.2, rfl⟩ : (fun v : Fin m → F => v o.2) ∈ inputs m))
     simpa [Fintype.card_prod, mul_comm, mul_left_comm, mul_assoc] using this
-  have hA' := Synthesis.bitBlast_synthesis enc ΨA hA φ hφ
+  have hA' := Synthesis.bitBlast_synthesis enc enc.symm enc.symm_apply_apply
+    ΨA hA φ hφ
   set TA := Set.range fun oj : ((Fin (3 ^ L) × Fin (d + 1)) × Fin m) × Fin w =>
     bitsOf enc (fun x => ΨA oj.1 fun i => φ i x) oj.2
   -- the oracle at the points
@@ -363,7 +262,8 @@ theorem BitSynthesis.selfCorrect {enc : F ≃ BitString w} {C1 : (Fin m → F) �
     C1 fun i => pt (finProdFinEquiv.symm k) i x
   have hφC : ∀ k j, bitsOf enc (φC k) j ∈ (S ∪ TA) ∪ TB := fun k j =>
     Set.mem_union_right _ (Set.mem_iUnion.2 ⟨finProdFinEquiv.symm k, j, rfl⟩)
-  have hC' := Synthesis.bitBlast_synthesis enc ΨC hC φC hφC
+  have hC' := Synthesis.bitBlast_synthesis enc enc.symm enc.symm_apply_apply
+    ΨC hC φC hφC
   refine (hA'.trans (hB.comp hC')).mono Set.Subset.rfl ?_ ?_
   · rintro _ ⟨j, rfl⟩
     refine Or.inr ⟨((), j), funext fun x => ?_⟩

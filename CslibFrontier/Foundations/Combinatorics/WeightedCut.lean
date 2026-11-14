@@ -29,7 +29,7 @@ sums the weights between the vertices sent to distinct supervertices
 (`Cslib.WeightedCut.IsContractionOf`). Pulling a cut of the contracted multigraph back to the
 original vertices gives a cut of the same weight (`Cslib.WeightedCut.cutWeight_pullbackCut`), so
 contraction never decreases the global minimum cut weight. Karger's contraction algorithm and the
-Karger–Stein algorithm (`CslibFrontier.Algorithms.WordRAM.Karger.Graph`) are built on these facts.
+Karger–Stein algorithm (`CslibFrontier.Algorithms.Karger.Graph`) are built on these facts.
 
 The multigraphs given by their ends (`Cslib.Multigraph`) have weight matrices with the same cut
 weights; see `CslibFrontier.Foundations.Combinatorics.WeightedCut.Multigraph`.
@@ -136,18 +136,26 @@ theorem isNonTrivialCut_compl {C : Finset V} (hC : IsNonTrivialCut C) :
       exact Finset.mem_univ x
     exact (Finset.mem_sdiff.mp hx').2 hx
 
-/-- Total weight of edges crossing `(C, Finset.univ \ C)`. -/
-def cutWeight (W : V → V → ℕ) (C : Finset V) : ℕ :=
+/-- Total weight of edges crossing `(C, Finset.univ \ C)`, for weights in any additive
+commutative monoid (natural numbers for multigraphs, or a linearly ordered field such as `ℝ`). -/
+def cutWeight {M : Type*} [AddCommMonoid M] (W : V → V → M) (C : Finset V) : M :=
   ∑ u ∈ C, ∑ v ∈ Finset.univ \ C, W u v
 
-theorem cutWeight_compl {W : V → V → ℕ} (hW : IsMultigraph W) (C : Finset V) :
+/-- For symmetric weights, the cut `(Finset.univ \ C, C)` weighs as much as `(C, Finset.univ \ C)`.
+-/
+theorem cutWeight_univ_sdiff_of_symm {M : Type*} [AddCommMonoid M] {W : V → V → M}
+    (hW : ∀ u v, W u v = W v u) (C : Finset V) :
     cutWeight W (Finset.univ \ C) = cutWeight W C := by
   unfold cutWeight
   have hsdiff : Finset.univ \ (Finset.univ \ C) = C := by
     ext x
     simp
   rw [hsdiff, Finset.sum_comm]
-  refine Finset.sum_congr rfl fun u _ => Finset.sum_congr rfl fun v _ => hW.1 v u
+  refine Finset.sum_congr rfl fun u _ => Finset.sum_congr rfl fun v _ => hW v u
+
+theorem cutWeight_compl {W : V → V → ℕ} (hW : IsMultigraph W) (C : Finset V) :
+    cutWeight W (Finset.univ \ C) = cutWeight W C :=
+  cutWeight_univ_sdiff_of_symm hW.1 C
 
 theorem cutWeight_le_sum_rowDeg (W : V → V → ℕ) (C : Finset V) :
     cutWeight W C ≤ ∑ u ∈ C, rowDeg W u := by

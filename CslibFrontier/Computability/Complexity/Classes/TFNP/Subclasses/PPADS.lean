@@ -37,9 +37,11 @@ We reuse the active-edge predicates `hasOut` and `hasIn` of the end-of-line pres
 * `Cslib.Complexity.sinkOfLineRel_iff`: sink-of-line solutions are the end-of-line solutions
   without an active outgoing edge.
 * `Cslib.Complexity.sinkOfLineRel_of_pigeonRel`, `Cslib.Complexity.isTotalSearch_sinkOfLineRel`:
-  the pigeonhole reduction used for `PPAD ⊆ PPP` already produces sinks.
+  the pigeonhole map `ppadToPppMap` reduces sink-of-line to pigeonhole.
 * `Cslib.Complexity.PPADS_subset_TFNP`, `Cslib.Complexity.PPAD_subset_PPADS`,
   `Cslib.Complexity.PPADS_subset_PPP`: `PPAD ⊆ PPADS ⊆ PPP ⊆ TFNP` [BeameEtAl1998].
+* `Cslib.Complexity.PPAD_subset_PPP`, `Cslib.Complexity.EndOfLine_mem_PPP`: `PPAD ⊆ PPP`
+  [Papadimitriou1994PPAD], derived through `PPADS`.
 
 ## References
 
@@ -119,8 +121,7 @@ theorem exists_sinkOfLine {n : α → ℕ} {P S : α × List Bool → List Bool}
 
 /-- `sinkOfLineRel` is total whenever the successor map preserves the vertex bit-length. -/
 theorem isTotalSearch_sinkOfLineRel {n : α → ℕ} {P S : α × List Bool → List Bool}
-    (hS : ∀ a u, u.length = n a → (S (a, u)).length = n a) :
-    IsTotalSearch (sinkOfLineRel n P S) :=
+    (hS : PreservesWidth n S) : IsTotalSearch (sinkOfLineRel n P S) :=
   fun a => exists_sinkOfLine (hS a)
 
 /-! ### `FNP` and `TFNP` membership -/
@@ -145,8 +146,7 @@ theorem sinkOfLineRel_mem_TFNP {enc : α ↪ List Bool} {n : α → ℕ}
     (hn : ComputableInPolyTime n enc encUnary)
     (hP : ComputableInPolyTime P (encPair enc encBits) encBits)
     (hS : ComputableInPolyTime S (encPair enc encBits) encBits)
-    (hS_len : ∀ a u, u.length = n a → (S (a, u)).length = n a) :
-    sinkOfLineRel n P S ∈ TFNP enc :=
+    (hS_len : PreservesWidth n S) : sinkOfLineRel n P S ∈ TFNP enc :=
   ⟨sinkOfLineRel_mem_FNP hn hP hS, isTotalSearch_sinkOfLineRel hS_len⟩
 
 /-! ### The class `PPADS` -/
@@ -160,8 +160,7 @@ def PPADS (enc : α ↪ List Bool) : Set (α → List Bool → Prop) :=
     ComputableInPolyTime n enc encUnary ∧
     ComputableInPolyTime P (encPair enc encBits) encBits ∧
     ComputableInPolyTime S (encPair enc encBits) encBits ∧
-    (∀ a u, u.length = n a → (P (a, u)).length = n a) ∧
-    (∀ a u, u.length = n a → (S (a, u)).length = n a) ∧
+    PreservesWidth n P ∧ PreservesWidth n S ∧
     SearchReducible enc enc R (sinkOfLineRel n P S)}
 
 variable {enc : α ↪ List Bool} {encB : β ↪ List Bool} {R : α → List Bool → Prop}
@@ -172,8 +171,7 @@ theorem mem_PPADS : R ∈ PPADS enc ↔ R ∈ FNP enc ∧
       ComputableInPolyTime n enc encUnary ∧
       ComputableInPolyTime P (encPair enc encBits) encBits ∧
       ComputableInPolyTime S (encPair enc encBits) encBits ∧
-      (∀ a u, u.length = n a → (P (a, u)).length = n a) ∧
-      (∀ a u, u.length = n a → (S (a, u)).length = n a) ∧
+      PreservesWidth n P ∧ PreservesWidth n S ∧
       SearchReducible enc enc R (sinkOfLineRel n P S) :=
   Iff.rfl
 
@@ -182,22 +180,16 @@ theorem sinkOfLineRel_mem_PPADS {n : α → ℕ} {P S : α × List Bool → List
     (hn : ComputableInPolyTime n enc encUnary)
     (hP : ComputableInPolyTime P (encPair enc encBits) encBits)
     (hS : ComputableInPolyTime S (encPair enc encBits) encBits)
-    (hP_len : ∀ a u, u.length = n a → (P (a, u)).length = n a)
-    (hS_len : ∀ a u, u.length = n a → (S (a, u)).length = n a) :
-    sinkOfLineRel n P S ∈ PPADS enc :=
+    (hP_len : PreservesWidth n P) (hS_len : PreservesWidth n S) : sinkOfLineRel n P S ∈ PPADS enc :=
   mem_PPADS.mpr ⟨sinkOfLineRel_mem_FNP hn hP hS, n, P, S, hn, hP, hS, hP_len, hS_len, .refl _ _⟩
 
 /-- `PPADS` is closed under polynomial-time search reductions across arbitrary instance types. -/
 theorem SearchReducible.mem_PPADS (h : SearchReducible enc encB R T) (hR : R ∈ FNP enc)
     (hT : T ∈ PPADS encB) : R ∈ PPADS enc := by
-  obtain ⟨-, n, P, S, hn, hP, hS, hP_len, hS_len, hT_red⟩ := Complexity.mem_PPADS.mp hT
-  obtain ⟨f, g, hf, hg, -, hsol⟩ := (h.trans hT_red)
-  refine Complexity.mem_PPADS.mpr ⟨hR, n ∘ f, fun p => P (f p.1, p.2), fun p => S (f p.1, p.2),
-    hn.comp hf, hP.comp ((hf.comp (.fst enc encBits)).prod (.snd enc encBits)),
-    hS.comp ((hf.comp (.fst enc encBits)).prod (.snd enc encBits)),
-    fun a u hu => hP_len (f a) u hu, fun a u hu => hS_len (f a) u hu,
-    .of_isTotalSearch (isTotalSearch_sinkOfLineRel fun a u hu => hS_len (f a) u hu)
-      ComputableInPolyTime.id' hg fun a w hw => hsol a w hw⟩
+  obtain ⟨-, n, P, S, hn, hP, hS, hP_len, hS_len, hT⟩ := Complexity.mem_PPADS.mp hT
+  obtain ⟨f, hf, h⟩ := (h.trans hT).exists_reindex
+  exact Complexity.mem_PPADS.mpr ⟨hR, n ∘ f, fun p => P (f p.1, p.2), fun p => S (f p.1, p.2),
+    hn.comp hf, by fun_prop, by fun_prop, fun a => hP_len (f a), fun a => hS_len (f a), h⟩
 
 /-! ### Inclusions -/
 
@@ -223,13 +215,21 @@ theorem PPADS_subset_PPP : PPADS enc ⊆ PPP enc := by
   have hF : ComputableInPolyTime (ppadToPppMap n P S) (encPair enc encBits) encBits := by
     unfold ppadToPppMap
     fun_prop
-  have hlen (a : α) (u : List Bool) (hu : u.length = n a) :
-      (ppadToPppMap n P S (a, u)).length = n a :=
-    length_ppadToPppMap (hS_len a) hu
+  have hlen : PreservesWidth n (ppadToPppMap n P S) :=
+    fun a _ hu => length_ppadToPppMap (hS_len a) hu
   refine mem_PPP.mpr ⟨hR, n, ppadToPppMap n P S, hn, hF, hlen, hred.trans ?_⟩
   refine .of_isTotalSearch (isTotalSearch_pigeonRel hlen) ComputableInPolyTime.id'
     (g := fun p => if !hasOut n P S p.1 (p.2.take (n p.1))
       then p.2.take (n p.1) else p.2.drop (n p.1)) ?_ fun a w hw => sinkOfLineRel_of_pigeonRel hw
   fun_prop
+
+/-- **`PPAD ⊆ PPP`** [Papadimitriou][Papadimitriou1994PPAD], [Beame et al.][BeameEtAl1998]: every
+problem in `PPAD` is in `PPP`, through `PPAD ⊆ PPADS ⊆ PPP`. -/
+theorem PPAD_subset_PPP : PPAD enc ⊆ PPP enc :=
+  fun _ h => PPADS_subset_PPP (PPAD_subset_PPADS h)
+
+/-- `EndOfLine` is in `PPP`. -/
+theorem EndOfLine_mem_PPP : EndOfLine ∈ PPP encEndOfLine :=
+  PPAD_subset_PPP EndOfLine_mem_PPAD
 
 end Cslib.Complexity

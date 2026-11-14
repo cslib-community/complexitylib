@@ -70,7 +70,8 @@ theorem polyOfBits_nil : polyOfBits [] = 0 := rfl
 theorem polyOfBits_cons (b : Bool) (l : List Bool) :
     polyOfBits (b :: l) = C (bitEquiv.symm b) + X * polyOfBits l := rfl
 
-private theorem polyOfBits_append (l l' : List Bool) :
+/-- Concatenating coefficient lists shifts the upper polynomial by `X ^ l.length`. -/
+theorem polyOfBits_append (l l' : List Bool) :
     polyOfBits (l ++ l') = polyOfBits l + X ^ l.length * polyOfBits l' := by
   induction l with
   | nil => simp
@@ -120,7 +121,8 @@ theorem polyOfBits_eq_zero_iff {l : List Bool} : polyOfBits l = 0 ↔ ∀ b ∈ 
       rw [h, bitEquiv_symm_false]
       simp
 
-private theorem degree_polyOfBits_lt (l : List Bool) : (polyOfBits l).degree < l.length := by
+/-- The degree of `polyOfBits l` is strictly less than `l.length`. -/
+theorem degree_polyOfBits_lt (l : List Bool) : (polyOfBits l).degree < l.length := by
   induction l with
   | nil => simp
   | cons b l ih =>
@@ -147,7 +149,8 @@ private theorem polyOfBits_take_of_getD {l : List Bool} {m : ℕ} (hl : l.length
   rw [hdrop, polyOfBits_append]
   simp [bitEquiv_symm_false]
 
-private theorem aeval_polyOfBits {A : Type*} [CommSemiring A] [Algebra (ZMod 2) A] (α : A)
+/-- Evaluating `polyOfBits l` at `α` sums `l.getD d false • α ^ d` over `d < l.length`. -/
+theorem aeval_polyOfBits {A : Type*} [CommSemiring A] [Algebra (ZMod 2) A] (α : A)
     (l : List Bool) :
     aeval α (polyOfBits l) =
       ∑ d ∈ Finset.range l.length, bitEquiv.symm (l.getD d false) • α ^ d := by

@@ -1,11 +1,11 @@
 # HTTP cache origin
 
-Optional MIT cache origin for [#2503](https://github.com/cslib-community/cslib-frontier/issues/2503)
+MIT fallback cache origin for [#2503](https://github.com/cslib-community/cslib-frontier/issues/2503)
 and [#2506](https://github.com/cslib-community/cslib-frontier/pull/2506). The
 [migration guide](../../scripts/cache/README.md#mit-origin-migration) describes CI publication.
-GCS remains an active CI publisher and the default reader. MIT CI publication is enabled;
-reader cutover remains a separate decision. The source and examples do not provision infrastructure
-or install credentials automatically.
+GCS remains an active CI publisher and the preferred reader; MIT is the default fallback.
+MIT CI publication is enabled. Making MIT the preferred reader remains a separate decision.
+The source and examples do not provision infrastructure or install credentials automatically.
 
 One Linux Go executable has three commands: `serve` accepts synchronous PUTs over a Unix socket,
 `pack` streams a publication package to stdout, and `gc` runs separately under a systemd timer.
@@ -54,8 +54,8 @@ rotation and service restart preserved history and accepted new records. Service
 with no new mail. The collector preserves the host's kernel audit policy.
 
 Initial commissioning used small synthetic packages. By November 7, 2026, main CI was publishing
-real builds successfully to both MIT and GCS. Reader cutover still requires a real MIT cold
-restore and recovery exercise. The
+real builds successfully to both MIT and GCS. MIT fallback is enabled; making it the preferred
+reader still requires a real MIT cold restore and recovery exercise. The
 [migration checklist](../../scripts/cache/README.md#mit-origin-migration) gives the repository
 administrator's configuration and the separate publication/reader cutover steps. Credentials
 and host-specific private configuration must stay outside this repository.
@@ -115,7 +115,8 @@ it neither fetches Git history nor runs Lean.
 
 ## Publication contract
 
-The sole application route is `PUT /publish/<40-hex revision>` with `Content-Type: application/x-tar`.
+The application route is `PUT /publish/<40-hex revision>`. Full packages use
+`Content-Type: application/x-tar`; old clients keep using this unchanged format.
 The socket is an authenticated-proxy boundary: only the operator and nginx may connect to it.
 After an operator configures nginx authentication, a CI upload would look like:
 
@@ -136,6 +137,32 @@ unknown: retry the same package. Successful retries do not refresh mapping reten
 Malformed packages are fully rejected before anything enters the public namespace. A failure
 during installation may leave unreferenced complete artifacts, but installs the mapping last.
 
+The Python publisher first sends a probe using
+`Content-Type: application/vnd.cslib.cache-probe.v1+tar`: the same version-1 inventory of **all**
+files, followed by only the complete revision mapping. The server validates its digest and
+exact correspondence to the inventory, checks retained file digests and admission capacity
+under the publication/GC lock, and installs nothing. HTTP 200 returns
+`{"version":1,"revision":"<40-hex revision>","missing":["a0/.../<16-hex>.art",...]}`.
+The list contains only missing archive keys; the mapping must always be sent. The probe has
+an application body limit of 16 MiB inventory + 8 MiB mapping + 16 KiB tar overhead, within
+nginx's unchanged 4 GiB buffering limit. It is a hint, not a reservation or acknowledgement.
+
+The client then sends `Content-Type: application/vnd.cslib.cache-delta.v1+tar`, with the complete
+inventory, complete mapping and requested archive payloads. Before installing anything, the
+server validates uploaded SHA-256 digests and independently hashes every retained omitted
+object under the same lock. The inventory must still describe exactly every mapping reference;
+ancestor mappings never stand in for checking actual objects. If GC removed an omitted archive,
+the commit returns 412 without publishing the mapping; the client retries once with a full
+package. Concurrent identical publishers succeed, and conflicting retained bytes still return
+409. Capacity, safe-file checks, mapping-last installation and retained-key semantics are the
+same as for full publication. A delta may include already-present identical payloads.
+
+An old server returns 415 to the probe and the new client falls back to a full package. Both
+requests use the existing PUT route, so the existing nginx auth/method rules work without a
+configuration change. Other probe failures, malformed responses, TLS/network failures and
+conflicts do not trigger that fallback. Deploying the server first avoids the legacy full-upload fallback;
+a client-first rollout or a server rollback remains compatible. No store migration is needed.
+
 Uploads stream to private, server-created staging files, with limits of 4 GiB per request,
 256 MiB per artifact, 8 MiB per mapping and 16 MiB inventory. The inventory-entry limit derives
 from the 100,000-entry store budget, including its mapping. That store budget also counts
@@ -151,6 +178,17 @@ access to it, and its own separate `nginx-tmp/` for request buffering. Applicati
 installed read-only using atomic hard-link creation; completed files are never edited in place.
 The program uses `os.Root` to confine filesystem access. This is not a sandbox against a
 compromised operator or program: publication and GC currently run as the same Unix user.
+
+## Reproduce client transfer measurements
+
+From the repository root, run `python3 tools/cache-origin/benchmark-client.py --baseline REV
+--output /tmp/cache-http-benchmark.json`, replacing `REV` with a commit containing the old
+full-upload publisher. This needs Python 3.11+, curl and openssl and opens only a loopback TLS
+listener with generated fixture credentials. Defaults model 9,533 opaque archives with 17
+missing; flags select counts, archive bytes and repeated alternating runs. Results include
+actual received body bytes and client wall/CPU time. The sink verifies uploaded digests but
+omits the Go origin's retained-object hashing, storage and fsync. Use these measurements to
+separate transfer savings from server work; they do not predict production end-to-end latency.
 
 ## Retention and cleanup
 
@@ -208,7 +246,7 @@ configuration and real identity/permission behavior before any activation.
 
 Passing source and loopback tests does not establish production commissioning. Not included:
 cryptographic producer attestations, automatic provisioning, OS quota setup, TLS/certificate lifecycle,
-historical backfill, or reader cutover. A stolen publisher credential can still publish malicious
+historical backfill, or a switch to MIT as the preferred reader. A stolen publisher credential can still publish malicious
 bytes under unused or collected keys; the origin operator controls served bytes. SHA-256 detects
 package corruption, not authorized provenance. Keep GCS readers/publication until a separately
 reviewed deployment and cold restore succeed. Follow [incident recovery](SECURITY.md) for every

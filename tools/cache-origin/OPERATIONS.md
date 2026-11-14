@@ -309,14 +309,34 @@ controlled service-failure notification through the installed alert unit and con
 delivery; inspect the Postfix queue. Test byte/inode threshold behavior in a fixture without
 filling production disks. Verify bandwidth caps are absent and journal storage remains bounded.
 
+For incremental publication, install the reviewed server binary before the Python publisher
+when practical; nginx's existing authenticated PUT route, limits and logs need no changes.
+Old publishers continue sending full packages. A new publisher against an old server receives
+415 for its probe and sends a full package. Check `CACHE_HTTP_PUBLICATION` in the CI log:
+`incremental` means the probe was supported, `legacy-full` identifies an old server, and
+`race-full` means an archive disappeared before commit and the client recovered with a full
+upload. A repeated 412 or any 409 needs investigation; never delete conflicting objects merely
+to make a publish succeed. Authentication/TLS errors and malformed probes fail the job.
+
+Commission the new protocol in an isolated store: probe without publishing a mapping, publish
+only the requested archives, restore the complete mapping, and exercise a GC-between-requests
+412 followed by successful full retry. Verify old-client full upload and new-client fallback
+through the installed nginx configuration. Probe and delta each consume an upload request;
+keep the existing rate/connection limits and watch for retry-induced 429s before changing them.
+The CI metric lists planned body bytes for each protocol request, excluding automatic curl
+retransmissions, HTTP/TLS overhead and response bytes; the usage journal still reports response
+bytes, not upload bytes. Two inventory/mapping transfers and server digest reads remain even
+when no archive payload is needed. Preparation/staging is unchanged.
+
 Rollback means restoring the saved binary/configuration and permissions, removing only these
 new unit drop-ins if necessary, inspecting any queue policy before restoring a saved one, running `nginx -t` and restarting
 the affected services. Keep the original mounted store intact; neither update nor rollback
 formats disks, deletes real build objects or replaces `state/lock`. Never roll back to exposed
 credentials. For a new installation, obtain exact-head human review and complete host
-commissioning before enabling CI publication. Before selecting MIT as the default reader,
+commissioning before enabling CI publication. Before selecting MIT as the preferred reader,
 complete a real-build cold restore, exercise recovery and obtain separate cutover approval. Keep GCS
-publication and the opt-in MIT-first/GCS-second mirror list during testing.
+publication; the default order remains GCS-first/MIT-second. The MIT-first/GCS-second
+mirror list remains an explicit override during testing.
 
 References: [nginx request limits](https://nginx.org/en/docs/http/ngx_http_limit_req_module.html),
 [connection limits](https://nginx.org/en/docs/http/ngx_http_limit_conn_module.html),

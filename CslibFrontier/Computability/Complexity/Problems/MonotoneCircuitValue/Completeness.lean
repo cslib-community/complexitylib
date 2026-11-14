@@ -303,13 +303,7 @@ theorem circuitValue_logSpaceReducible :
 /-- Monotone circuit value is in `L` exactly when `P = L`, for every encoding of instances. -/
 theorem mem_L_iff_forall_P_eq_L :
     MonotoneCircuitValue ∈ L encMonotoneCircuitValue ↔
-      ∀ {α : Type} (enc : α ↪ List Bool), P enc = L enc := by
-  constructor
-  · intro h α enc
-    ext A
-    exact ⟨fun hA => (logSpaceReducible_of_mem_P hA).mem_L h, fun hA => L_subset_P hA⟩
-  · intro h
-    rw [← h]
-    exact mem_P
+      ∀ {α : Type} (enc : α ↪ List Bool), P enc = L enc :=
+  logSpaceComplete.mem_L_iff fun _ => L_subset_P
 
 end Cslib.Complexity.MonotoneCircuitValue

@@ -5,6 +5,7 @@ Authors: Karn Seth
 -/
 
 import CslibFrontier.Crypto.Protocols.MPC.SPDZ
+import CslibFrontier.Languages.Probabilistic.Notation
 
 /-!
 # Concrete Tests for SPDZ Authenticated Sharing and Batch `MACCheck`
@@ -24,7 +25,7 @@ Non-vacuous concrete evaluations, protocol executions, and soundness instantiati
    of `sum_checkResidual_eq_neg_mul` and `sum_checkResidual_add_eq_zero_iff` on a forged opening.
 3. **`2 / p` standalone cheating-equation games (`ZMod 5`, `T = 1` and `T = 2`):** concrete
    instantiations of `eval_linearCombZeroGame_eq`, `eval_macCheckSoundnessGame_le`,
-   `succProbability_macCheckSoundnessGame_le`, and `eval_macCheckSoundnessAdvGame_le`, together with
+   `probability_macCheckSoundnessGame_le`, and `eval_macCheckSoundnessAdvGame_le`, together with
    exact counting of accepting `(alpha, e)` pairs (`9` out of `25` pairs on `T = 1`, strictly
    within the `2 / 5 = 10 / 25` bound).
 -/
@@ -179,13 +180,12 @@ example :
 example :
     let deltaShift : (Fin 1 → ZMod 5) → ZMod 5 := fun e => if e 0 = 0 then 0 else 1
     (ProbComp.eval (macCheckSoundnessGame 5 1 ![1] deltaShift)) true ≤ 2 / (5 : ℝ≥0∞) ∧
-      (Game.succProbability (ProbComp.eval (macCheckSoundnessGame 5 1 ![1] deltaShift)) : ℝ) ≤
-        2 / (5 : ℝ) ∧
+      Pr[macCheckSoundnessGame 5 1 ![1] deltaShift] ≤ 2 / 5 ∧
       (ProbComp.eval (macCheckSoundnessAdvGame 5 1 (ProbComp.uniform Bool)
         (fun b => if b then ![1] else ![2])
         (fun _ => deltaShift))) true ≤ 2 / (5 : ℝ≥0∞) :=
   ⟨eval_macCheckSoundnessGame_le (by decide) _,
-   succProbability_macCheckSoundnessGame_le (by decide) _,
+   probability_macCheckSoundnessGame_le (by decide) _,
    eval_macCheckSoundnessAdvGame_le _ _ _⟩
 
 end CslibFrontierTests.Crypto.SPDZ

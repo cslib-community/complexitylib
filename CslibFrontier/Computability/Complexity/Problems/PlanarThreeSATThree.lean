@@ -13,6 +13,7 @@ public import CslibFrontier.Computability.Complexity.Problems.ThreeSATThree.Size
 public import CslibFrontier.Computability.Complexity.Problems.Graph.OrthogonalDrawing.Encoding
 public import CslibFrontier.Computability.Complexity.Problems.SAT.Planar.PairedPolyTime
 public import CslibFrontier.Computability.Complexity.Problems.ThreeSATThree.Counting
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Structure
 import CslibFrontier.Computability.Complexity.Problems.SAT.Planar.PairedCounting
 import CslibFrontier.Computability.Complexity.Problems.SAT.Planar.PairedOccurrence
 import CslibFrontier.Computability.Complexity.Problems.SAT.Planar.PairedGeometry
@@ -43,6 +44,8 @@ local rings and crossover have unique extensions. Counts refer only to occurring
 
 ## Main definitions
 
+* `DrawnPlanarThreeSATThreeInstance`, `encDrawnPlanarThreeSATThree`: supplied-drawing instances
+  and their binary encoding.
 * `PlanarThreeSATThree`, `DrawnPlanarThreeSATThree`: formula and supplied-drawing problems.
 * `toDrawnPlanarThreeSATThree`, `toPlanarThreeSATThree`: total finite compilers.
 
@@ -68,31 +71,49 @@ The paired-port tiling, degree-three templates and explicit grid bounds are orig
 The fixed crossover's source credit is documented in `Crossover`.
 -/
 
-@[expose] public section
+public section
 
 namespace Cslib.Complexity
 
 open Cslib.Logic.PL Turing.MultiTapeTM
 
+/-- An instance of `DrawnPlanarThreeSATThree`: a CNF formula paired with a finite integer
+orthogonal drawing of its incidence graph. -/
+@[ext] structure DrawnPlanarThreeSATThreeInstance where
+  /-- The CNF formula. -/
+  formula : CNF ℕ
+  /-- The supplied integer orthogonal incidence drawing. -/
+  drawing : Graph.OrthogonalDrawing
+  deriving DecidableEq, Repr, Inhabited
+
+/-- Binary encoding of a CNF formula and its supplied orthogonal incidence drawing. -/
+enc_structure encDrawnPlanarThreeSATThree : DrawnPlanarThreeSATThreeInstance where
+  formula : encCNF, drawing : Graph.encOrthogonalDrawing
+
+attribute [fun_prop] encDrawnPlanarThreeSATThree_formula_polyTime
+  encDrawnPlanarThreeSATThree_drawing_polyTime encDrawnPlanarThreeSATThree_mk_polyTime
+
 /-- Satisfiable width-three, occurrence-three formulas whose actual incidence graph admits an
 integer orthogonal drawing with continuous endpoint-only contacts. -/
-def PlanarThreeSATThree : Set (CNF ℕ) :=
+@[expose] def PlanarThreeSATThree : Set (CNF ℕ) :=
   {φ | φ ∈ ThreeSATThree ∧ ∃ d, Graph.IsPlanarOrthogonalDrawing (SAT.incidenceGraph φ) d}
 
 /-- The same problem with finite vertex positions and incidence routes supplied explicitly. -/
-def DrawnPlanarThreeSATThree : Set (CNF ℕ × Graph.OrthogonalDrawing) :=
-  {x | x.1 ∈ ThreeSATThree ∧ Graph.IsPlanarOrthogonalDrawing (SAT.incidenceGraph x.1) x.2}
+@[expose] def DrawnPlanarThreeSATThree : Set DrawnPlanarThreeSATThreeInstance :=
+  {x | x.formula ∈ ThreeSATThree ∧
+    Graph.IsPlanarOrthogonalDrawing (SAT.incidenceGraph x.formula) x.drawing}
 
 /-- A total compiler, including an explicit drawing. Invalid syntactic inputs produce the
 unsatisfiable empty clause with its isolated clause vertex. -/
-def toDrawnPlanarThreeSATThree (φ : CNF ℕ) : CNF ℕ × Graph.OrthogonalDrawing :=
+@[expose] def toDrawnPlanarThreeSATThree (φ : CNF ℕ) : DrawnPlanarThreeSATThreeInstance :=
   if ThreeSATThree.syntaxCheck φ then
-    (SAT.ParsimoniousPlanar.formula φ,
-      SAT.ParsimoniousPlanar.positions φ, SAT.ParsimoniousPlanar.routes φ)
-  else ([[]], [(0, 0)], [])
+    ⟨SAT.ParsimoniousPlanar.formula φ,
+      (SAT.ParsimoniousPlanar.positions φ, SAT.ParsimoniousPlanar.routes φ)⟩
+  else ⟨[[]], ([(0, 0)], [])⟩
 
 /-- Forget the drawing emitted by the total compiler. -/
-def toPlanarThreeSATThree (φ : CNF ℕ) : CNF ℕ := (toDrawnPlanarThreeSATThree φ).1
+@[expose] def toPlanarThreeSATThree (φ : CNF ℕ) : CNF ℕ :=
+  (toDrawnPlanarThreeSATThree φ).formula
 
 private theorem rejection_drawing : Graph.IsPlanarOrthogonalDrawing
     (SAT.incidenceGraph ([[]] : CNF ℕ)) ([(0, 0)], []) := by
@@ -102,17 +123,20 @@ private theorem rejection_drawing : Graph.IsPlanarOrthogonalDrawing
 /-- The formula and explicit binary-coordinate drawing are computed in native polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_toDrawnPlanarThreeSATThree :
-    ComputableInPolyTime toDrawnPlanarThreeSATThree encCNF
-      (encPair encCNF Graph.encOrthogonalDrawing) := by
-  unfold toDrawnPlanarThreeSATThree Graph.encOrthogonalDrawing
+    ComputableInPolyTime toDrawnPlanarThreeSATThree encCNF encDrawnPlanarThreeSATThree := by
+  have hdraw : ComputableInPolyTime
+      (fun φ => (SAT.ParsimoniousPlanar.positions φ, SAT.ParsimoniousPlanar.routes φ))
+      encCNF Graph.encOrthogonalDrawing := by
+    unfold Graph.encOrthogonalDrawing
+    fun_prop
+  unfold toDrawnPlanarThreeSATThree
   fun_prop
 
 /-- Dropping the computed drawing gives a native polynomial-time formula compiler. -/
 @[fun_prop]
 theorem computableInPolyTime_toPlanarThreeSATThree :
     ComputableInPolyTime toPlanarThreeSATThree encCNF encCNF :=
-  (ComputableInPolyTime.fst encCNF Graph.encOrthogonalDrawing).comp
-    computableInPolyTime_toDrawnPlanarThreeSATThree
+  encDrawnPlanarThreeSATThree_formula_polyTime computableInPolyTime_toDrawnPlanarThreeSATThree
 
 /-- The total formula output has width at most three, including on rejected inputs. -/
 theorem width_toPlanarThreeSATThree (φ : CNF ℕ) :
@@ -171,7 +195,7 @@ theorem satisfiable_toPlanarThreeSATThree_iff (φ : CNF ℕ) :
 /-- Every total output, including the rejection branch, has the claimed actual drawing. -/
 theorem isPlanarOrthogonalDrawing_toDrawnPlanarThreeSATThree (φ : CNF ℕ) :
     Graph.IsPlanarOrthogonalDrawing (SAT.incidenceGraph (toPlanarThreeSATThree φ))
-      (toDrawnPlanarThreeSATThree φ).2 := by
+      (toDrawnPlanarThreeSATThree φ).drawing := by
   by_cases hg : ThreeSATThree.syntaxCheck φ = true
   · have hs := (ThreeSATThree.syntaxCheck_iff φ).1 hg
     simpa only [toPlanarThreeSATThree, toDrawnPlanarThreeSATThree, hg, ↓reduceIte] using
@@ -198,12 +222,12 @@ theorem mem_PlanarThreeSATThree_toPlanarThreeSATThree_iff (φ : CNF ℕ) :
     exact (satisfiable_toPlanarThreeSATThree_iff φ).1 h.1.2.2
   · intro h
     exact ⟨⟨width_toPlanarThreeSATThree φ, count_vars_toPlanarThreeSATThree φ,
-      (satisfiable_toPlanarThreeSATThree_iff φ).2 h⟩, (toDrawnPlanarThreeSATThree φ).2,
+      (satisfiable_toPlanarThreeSATThree_iff φ).2 h⟩, (toDrawnPlanarThreeSATThree φ).drawing,
         isPlanarOrthogonalDrawing_toDrawnPlanarThreeSATThree φ⟩
 
 /-- Native polynomial-time reduction to a formula with its actual orthogonal drawing. -/
 theorem polyTimeReducible_ThreeSATThree_DrawnPlanarThreeSATThree :
-    PolyTimeReducible encCNF (encPair encCNF Graph.encOrthogonalDrawing)
+    PolyTimeReducible encCNF encDrawnPlanarThreeSATThree
       ThreeSATThree DrawnPlanarThreeSATThree :=
   ⟨toDrawnPlanarThreeSATThree, computableInPolyTime_toDrawnPlanarThreeSATThree,
     fun φ => (mem_DrawnPlanarThreeSATThree_toDrawnPlanarThreeSATThree_iff φ).symm⟩
@@ -216,7 +240,7 @@ theorem polyTimeReducible_ThreeSATThree_PlanarThreeSATThree :
 
 /-- Orthogonal planar 3SAT-3 with the drawing supplied is NP-hard under binary encodings. -/
 theorem DrawnPlanarThreeSATThree_npHard :
-    NPHard (encPair encCNF Graph.encOrthogonalDrawing) DrawnPlanarThreeSATThree :=
+    NPHard encDrawnPlanarThreeSATThree DrawnPlanarThreeSATThree :=
   ThreeSATThree_npHard.trans polyTimeReducible_ThreeSATThree_DrawnPlanarThreeSATThree
 
 /-- Satisfiability of occurrence-three, width-three formulas admitting an integer orthogonal
@@ -226,7 +250,7 @@ theorem PlanarThreeSATThree_npHard : NPHard encCNF PlanarThreeSATThree :=
 
 /-- Explicit linear grid sides for the total supplied-drawing compiler. -/
 theorem toDrawnPlanarThreeSATThree_fits (φ : CNF ℕ) :
-    Graph.drawingFits (toDrawnPlanarThreeSATThree φ).2
+    Graph.drawingFits (toDrawnPlanarThreeSATThree φ).drawing
       (1920 * (φ.numVars + φ.length + φ.vars.length + 1))
       (1920 * (φ.numVars + φ.length + φ.vars.length + 1)) := by
   by_cases hg : ThreeSATThree.syntaxCheck φ = true
@@ -240,9 +264,10 @@ theorem toDrawnPlanarThreeSATThree_fits (φ : CNF ℕ) :
 theorem toDrawnPlanarThreeSATThree_costs (φ : CNF ℕ) :
     let out := toDrawnPlanarThreeSATThree φ
     let s := φ.numVars + φ.length + φ.vars.length + 1
-    out.1.length ≤ 5000 * s ^ 2 ∧ out.1.vars.length ≤ 10000 * s ^ 2 ∧
-      out.2.2.length ≤ 10000 * s ^ 2 ∧ Graph.drawingSegmentCount out.2 ≤ 12000 * s ^ 2 ∧
-        Graph.drawingWireLength out.2 ≤ 400000 * s ^ 2 := by
+    out.formula.length ≤ 5000 * s ^ 2 ∧ out.formula.vars.length ≤ 10000 * s ^ 2 ∧
+      out.drawing.2.length ≤ 10000 * s ^ 2 ∧
+        Graph.drawingSegmentCount out.drawing ≤ 12000 * s ^ 2 ∧
+        Graph.drawingWireLength out.drawing ≤ 400000 * s ^ 2 := by
   dsimp only
   by_cases hg : ThreeSATThree.syntaxCheck φ = true
   · simp only [toDrawnPlanarThreeSATThree, hg, ↓reduceIte]
@@ -257,25 +282,23 @@ theorem toDrawnPlanarThreeSATThree_costs (φ : CNF ℕ) :
     nlinarith
 
 /-- The original 3SAT input first passes through the linear occurrence splitter. -/
-def toDrawnPlanarThreeSAT (φ : CNF ℕ) : CNF ℕ × Graph.OrthogonalDrawing :=
+@[expose] def toDrawnPlanarThreeSAT (φ : CNF ℕ) : DrawnPlanarThreeSATThreeInstance :=
   toDrawnPlanarThreeSATThree (toThreeSATThree φ)
 
 /-- Formula projection of the total compiler from original 3SAT instances. -/
-def toPlanarThreeSAT (φ : CNF ℕ) : CNF ℕ := (toDrawnPlanarThreeSAT φ).1
+@[expose] def toPlanarThreeSAT (φ : CNF ℕ) : CNF ℕ := (toDrawnPlanarThreeSAT φ).formula
 
 /-- The composed compiler retains native polynomial time under binary input labels. -/
 @[fun_prop]
 theorem computableInPolyTime_toDrawnPlanarThreeSAT :
-    ComputableInPolyTime toDrawnPlanarThreeSAT encCNF
-      (encPair encCNF Graph.encOrthogonalDrawing) :=
+    ComputableInPolyTime toDrawnPlanarThreeSAT encCNF encDrawnPlanarThreeSATThree :=
   computableInPolyTime_toDrawnPlanarThreeSATThree.comp computableInPolyTime_toThreeSATThree
 
 /-- Formula output from original 3SAT is computed in native polynomial time. -/
 @[fun_prop]
 theorem computableInPolyTime_toPlanarThreeSAT :
     ComputableInPolyTime toPlanarThreeSAT encCNF encCNF :=
-  (ComputableInPolyTime.fst encCNF Graph.encOrthogonalDrawing).comp
-    computableInPolyTime_toDrawnPlanarThreeSAT
+  encDrawnPlanarThreeSATThree_formula_polyTime computableInPolyTime_toDrawnPlanarThreeSAT
 
 /-- Occurrence splitting and planarization preserve all models of width-three inputs. -/
 theorem modelCount_toPlanarThreeSAT (φ : CNF ℕ) (hw : ∀ c ∈ φ, c.length ≤ 3) :
@@ -292,7 +315,7 @@ theorem satisfiable_toPlanarThreeSAT_iff (φ : CNF ℕ) :
 /-- The composed output has its actual orthogonal drawing for every original CNF input. -/
 theorem isPlanarOrthogonalDrawing_toDrawnPlanarThreeSAT (φ : CNF ℕ) :
     Graph.IsPlanarOrthogonalDrawing (SAT.incidenceGraph (toPlanarThreeSAT φ))
-      (toDrawnPlanarThreeSAT φ).2 :=
+      (toDrawnPlanarThreeSAT φ).drawing :=
   isPlanarOrthogonalDrawing_toDrawnPlanarThreeSATThree (toThreeSATThree φ)
 
 /-- The original 3SAT language reduces to the supplied-drawing target by the composed compiler. -/
@@ -309,7 +332,7 @@ theorem mem_PlanarThreeSATThree_toPlanarThreeSAT_iff (φ : CNF ℕ) :
 
 /-- Linear grid sides are measured against the original formula's clause/literal size. -/
 theorem toDrawnPlanarThreeSAT_fits (φ : CNF ℕ) :
-    Graph.drawingFits (toDrawnPlanarThreeSAT φ).2
+    Graph.drawingFits (toDrawnPlanarThreeSAT φ).drawing
       (13440 * (φ.length + φ.vars.length + 1))
       (13440 * (φ.length + φ.vars.length + 1)) := by
   have hb := size_toThreeSATThree_le φ
@@ -320,9 +343,10 @@ theorem toDrawnPlanarThreeSAT_fits (φ : CNF ℕ) :
 theorem toDrawnPlanarThreeSAT_costs (φ : CNF ℕ) :
     let out := toDrawnPlanarThreeSAT φ
     let s := φ.length + φ.vars.length + 1
-    out.1.length ≤ 245000 * s ^ 2 ∧ out.1.vars.length ≤ 490000 * s ^ 2 ∧
-      out.2.2.length ≤ 490000 * s ^ 2 ∧ Graph.drawingSegmentCount out.2 ≤ 588000 * s ^ 2 ∧
-        Graph.drawingWireLength out.2 ≤ 19600000 * s ^ 2 := by
+    out.formula.length ≤ 245000 * s ^ 2 ∧ out.formula.vars.length ≤ 490000 * s ^ 2 ∧
+      out.drawing.2.length ≤ 490000 * s ^ 2 ∧
+        Graph.drawingSegmentCount out.drawing ≤ 588000 * s ^ 2 ∧
+        Graph.drawingWireLength out.drawing ≤ 19600000 * s ^ 2 := by
   have hb := size_toThreeSATThree_le φ
   have hs : ((toThreeSATThree φ).numVars + (toThreeSATThree φ).length +
       (toThreeSATThree φ).vars.length + 1) ^ 2 ≤

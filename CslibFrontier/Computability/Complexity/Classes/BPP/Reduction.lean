@@ -9,10 +9,7 @@ module
 
 public import CslibFrontier.Computability.Complexity.Classes.BPP
 public import CslibFrontier.Computability.Complexity.Reduction
-public import CslibFrontier.Foundations.Data.BitString.WordCount
-import CslibFrontier.Computability.Complexity.Classes.SharpP.Combinators
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
+import CslibFrontier.Computability.Complexity.Classes.TruncatedVerifier
 
 /-!
 # BPP is closed under polynomial-time reductions
@@ -21,10 +18,9 @@ If `A` reduces to `B` in polynomial time and `B` is in `BPP`, then so is `A`
 (`Cslib.Complexity.PolyTimeReducible.mem_BPP`): run the decider of `B` on the reduced instance.
 The random string for an instance `a` of `A` must have a length fixed by the length of `a` alone,
 so it is taken polynomially long enough for the reduced instance, and the decider reads only the
-prefix it expects (`Cslib.Complexity.andVerifier` with a trivial second part). Every prefix is
-extended by the same number of strings, so the fractions of right answers are unchanged
-(`Cslib.Complexity.acceptCount_andVerifier_true`), as for `PP`
-(`Cslib.Complexity.PolyTimeReducible.mem_PP`).
+prefix it expects (`Cslib.Complexity.exists_truncated_verifier`). Every prefix is extended by the
+same number of strings, so the fractions of right answers are unchanged
+(`Cslib.BitString.mul_two_pow_le_mul_card_filter_take`).
 
 ## Main results
 
@@ -39,55 +35,20 @@ public section
 
 namespace Cslib.Complexity
 
-open Turing.MultiTapeTM
-
 variable {α β : Type} {enc : α ↪ List Bool} {encB : β ↪ List Bool} {A : Set α} {B : Set β}
 
 /-- **`BPP` is closed under polynomial-time reductions.** The decider of `A` runs the decider of
 `B` on the reduced instance and on the prefix of the random string that this decider expects. -/
 theorem PolyTimeReducible.mem_BPP (h : PolyTimeReducible enc encB A B) (hB : B ∈ BPP encB) :
     A ∈ BPP enc := by
-  rw [Complexity.mem_BPP] at hB ⊢
-  obtain ⟨g, hg, hAB⟩ := h
+  obtain ⟨f, hf, hAB⟩ := h
   obtain ⟨q, W, hW, hWB⟩ := hB
-  have hlen : ComputableInPolyTime (fun a => q.eval (encB (g a)).length) enc encUnary :=
-    (ComputableInPolyTime.unary_eval q).comp
-      ((ComputableInPolyTime.encoding_length encB).comp hg)
-  obtain ⟨p, hle⟩ := hlen.polyBounded.exists_polynomial
-  refine ⟨p,
-    andVerifier (fun a => q.eval (encB (g a)).length) (fun x => W (g x.1, x.2)) fun _ => true,
-    (computableInPolyTime_andVerifier hlen
-      (hW.comp ((hg.comp (.fst enc encBits)).prod (.snd enc encBits))) (.const true)),
-    fun a => ?_⟩
-  obtain ⟨j, hj⟩ := Nat.exists_eq_add_of_le (hle a)
-  dsimp only [DecidesWithBoundedError, PromiseProblem.SolvesWithBoundedError, BoundedErrorAt]
-  rw [hj]
-  set k := q.eval (encB (g a)).length
-  set V := andVerifier (fun a => q.eval (encB (g a)).length) (fun x => W (g x.1, x.2))
-    fun _ => true
-  -- Accepting strings of `V` are the accepting prefixes of `W`, each extended `2 ^ j` ways.
-  have hacc : acceptCount V a (k + j) = acceptCount W (g a) k * 2 ^ j :=
-    acceptCount_andVerifier_true _ _ a j
-  have hsumA := acceptCount_add_card_filter_eq_false (V := V) (a := a) (n := k + j)
-  have hsumB := acceptCount_add_card_filter_eq_false (V := W) (a := g a) (n := k)
-  rw [pow_add] at hsumA
-  have hrej : (Finset.univ.filter fun r : Fin (k + j) → Bool => V (a, List.ofFn r) = false).card =
-      (Finset.univ.filter fun r : Fin k → Bool => W (g a, List.ofFn r) = false).card * 2 ^ j := by
-    have := congrArg (· * 2 ^ j) hsumB
-    simp only [Nat.add_mul] at this
-    omega
-  change (a ∈ A → 2 * 2 ^ (k + j) ≤ 3 * acceptCount V a (k + j)) ∧
-    (a ∉ A → 2 * 2 ^ (k + j) ≤
-      3 * (Finset.univ.filter fun r : Fin (k + j) → Bool => V (a, List.ofFn r) = false).card)
-  rw [hacc, hrej, pow_add]
-  refine ⟨fun ha => ?_, fun ha => ?_⟩
-  · have h : 2 * 2 ^ k ≤ 3 * acceptCount W (g a) k := (hWB (g a)).1 ((hAB a).1 ha)
-    have := Nat.mul_le_mul_right (2 ^ j) h
-    linarith
-  · have h : 2 * 2 ^ k ≤
-        3 * (Finset.univ.filter fun r : Fin k → Bool => W (g a, List.ofFn r) = false).card :=
-      (hWB (g a)).2 fun hgB => ha ((hAB a).2 hgB)
-    have := Nat.mul_le_mul_right (2 ^ j) h
-    linarith
+  obtain ⟨P, V, hV, hle, hVW⟩ := exists_truncated_verifier hf q hW
+  have key (a : α) (b : Bool) (hb : BoundedErrorAt encB q W (f a) b) :
+      BoundedErrorAt enc P V a b := by
+    simp only [BoundedErrorAt, hVW]
+    exact BitString.mul_two_pow_le_mul_card_filter_take (hle a) (fun w => W (f a, w) = b) hb
+  exact ⟨P, V, hV, fun a => ⟨fun ha => key a true ((hWB (f a)).1 ((hAB a).1 ha)),
+    fun ha => key a false ((hWB (f a)).2 fun hb => ha ((hAB a).2 hb))⟩⟩
 
 end Cslib.Complexity

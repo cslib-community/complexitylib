@@ -11,7 +11,8 @@ public import CslibFrontier.Computability.Circuit.Arithmetic
 public import CslibFrontier.Foundations.LinearAlgebra.Tensor.Basic
 public import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import CslibFrontier.Computability.Circuit.Synthesis
-import CslibFrontier.Computability.Circuit.Arithmetic.VP
+import CslibFrontier.Computability.Circuit.Arithmetic.Synthesis
+import CslibFrontier.Computability.Circuit.Inputization
 
 /-!
 # The exponent of matrix multiplication
@@ -221,35 +222,24 @@ section LowerBound
 
 variable [Nontrivial K] {n : ℕ} {C : Circuit (arithSignature K) (n * n + n * n) (n * n)}
 
-/-- The output wire of an entry of the product is a gate, not an input. -/
-private theorem exists_outputs_eq_gate (hC : ComputesMatMul K C) (t : Fin (n * n)) :
-    ∃ j, C.outputs t = Wire.gate j := by
-  rcases ht : C.outputs t with i | j
-  · exfalso
-    have key (A B : Matrix (Fin n) (Fin n) K) : entry K (A * B) t = matrixInputs K A B i := by
-      rw [← congrFun (hC A B) t]
-      change C.program.trace _ _ (C.outputs t) = _
-      rw [ht, Program.trace_input]
-    revert ht key
-    refine Fin.addCases (fun i => ?_) (fun i => ?_) i <;> intro ht key
-    · have := key (Matrix.of fun _ _ => 1) 0
-      simp only [Matrix.mul_zero, entry, Matrix.zero_apply, matrixInputs, Fin.append_left,
-        Matrix.of_apply] at this
-      exact zero_ne_one this
-    · have := key 0 (Matrix.of fun _ _ => 1)
-      simp only [Matrix.zero_mul, entry, Matrix.zero_apply, matrixInputs, Fin.append_right,
-        Matrix.of_apply] at this
-      exact zero_ne_one this
-  · exact ⟨j, rfl⟩
+omit [CommSemiring K] [Nontrivial K] in
+/-- The input vector is the encoding of the two matrices it encodes. -/
+private theorem matrixInputs_leftMatrix_rightMatrix (x : Fin (n * n + n * n) → K) :
+    matrixInputs K (leftMatrix x) (rightMatrix x) = x := by
+  funext i
+  refine Fin.addCases (fun i => ?_) (fun i => ?_) i
+  · simp only [matrixInputs, Fin.append_left, entry, leftMatrix_apply, Prod.mk.eta,
+      Equiv.apply_symm_apply]
+  · simp only [matrixInputs, Fin.append_right, entry, rightMatrix_apply, Prod.mk.eta,
+      Equiv.apply_symm_apply]
 
-/-- Distinct entries of the product are carried by distinct wires. -/
-private theorem outputs_injective (hC : ComputesMatMul K C) : Function.Injective C.outputs := by
+/-- Distinct entries of the product are distinct functions of the inputs. -/
+private theorem matMulFun_injective : Function.Injective (matMulFun (K := K) n) := by
   intro t t' htt'
   by_contra hne
   have key (A B : Matrix (Fin n) (Fin n) K) : entry K (A * B) t = entry K (A * B) t' := by
-    rw [← congrFun (hC A B) t, ← congrFun (hC A B) t']
-    change C.program.trace _ _ (C.outputs t) = C.program.trace _ _ (C.outputs t')
-    rw [htt']
+    simpa [matMulFun, leftMatrix_matrixInputs, rightMatrix_matrixInputs] using
+      congrFun htt' (matrixInputs K A B)
   have := key 1 (Matrix.of fun a b => if (a, b) = finProdFinEquiv.symm t then 1 else 0)
   have hne' : finProdFinEquiv.symm t' ≠ finProdFinEquiv.symm t :=
     fun h => hne (finProdFinEquiv.symm.injective h).symm
@@ -257,16 +247,35 @@ private theorem outputs_injective (hC : ComputesMatMul K C) : Function.Injective
   simp only [entry, Matrix.of_apply, Prod.mk.eta, ite_true, hne', ite_false] at this
   exact one_ne_zero this
 
-/-- A circuit computing `n × n` matrix multiplication has at least `n ^ 2` gates. -/
+/-- No entry of the product is an input. -/
+private theorem matMulFun_ne_input (t : Fin (n * n)) (i : Fin (n * n + n * n)) :
+    matMulFun (K := K) n t ≠ fun x => x i := by
+  intro h
+  have key (A B : Matrix (Fin n) (Fin n) K) : entry K (A * B) t = matrixInputs K A B i := by
+    simpa [matMulFun, leftMatrix_matrixInputs, rightMatrix_matrixInputs] using
+      congrFun h (matrixInputs K A B)
+  revert key
+  refine Fin.addCases (fun i => ?_) (fun i => ?_) i <;> intro key
+  · have := key (Matrix.of fun _ _ => 1) 0
+    simp only [Matrix.mul_zero, entry, Matrix.zero_apply, matrixInputs, Fin.append_left,
+      Matrix.of_apply] at this
+    exact zero_ne_one this
+  · have := key 0 (Matrix.of fun _ _ => 1)
+    simp only [Matrix.zero_mul, entry, Matrix.zero_apply, matrixInputs, Fin.append_right,
+      Matrix.of_apply] at this
+    exact zero_ne_one this
+
+/-- A circuit computing `n × n` matrix multiplication has at least `n ^ 2` gates: the entries of
+the product are `n ^ 2` distinct functions of the inputs, none of them an input. -/
 private theorem mul_self_le_size (hC : ComputesMatMul K C) : n * n ≤ C.size := by
-  have := Finset.card_le_card_of_injOn C.outputs (s := Finset.univ)
-    (t := Finset.univ.map ⟨Wire.gate, fun _ _ h => Wire.gate.inj h⟩) ?_
-    (outputs_injective hC).injOn
-  · simpa using this
-  · intro t _
-    obtain ⟨j, hj⟩ := exists_outputs_eq_gate hC t
-    rw [hj]
-    exact Finset.mem_coe.mpr (Finset.mem_map.mpr ⟨j, Finset.mem_univ _, rfl⟩)
+  have hcomp : C.Computes (arithInterpretation K) fun x t => matMulFun n t x := fun x => by
+    rw [← matrixInputs_leftMatrix_rightMatrix x, hC]
+    funext t
+    simp [matMulFun, leftMatrix_matrixInputs, rightMatrix_matrixInputs]
+  have h := (card_nonInputComponents_le_ecomplexity (arithInterpretation K)
+    fun x t => matMulFun n t x).trans (ecomplexity_le_of_computes C hcomp)
+  rw [card_nonInputComponents_eq matMulFun_injective matMulFun_ne_input] at h
+  exact_mod_cast h
 
 end LowerBound
 

@@ -502,26 +502,25 @@ theorem eval_spanningForestEdges_cons {n : ℕ} {E : Type} (endpts : E → Fin n
 edge in order. -/
 theorem runClient_spanningForestEdges_history {n : ℕ} {E : Type} (endpts : E → Fin n × Fin n)
     (es : List E) (p : Partition n) :
-    ((spec n).runClient p (spanningForestEdges endpts es)).2.2 =
+    (spec n).clientHistory p (spanningForestEdges endpts es) =
       es.map fun e => Op.union (endpts e).1 (endpts e).2 := by
   induction es generalizing p with
   | nil => rfl
   | cons e es ih =>
-    simp only [spanningForestEdges, union, StateTransitionSpec.runClient_lift_bind', spec,
-      List.map_cons]
+    simp only [spanningForestEdges, union, spec, List.map_cons]
     change Op.union (endpts e).1 (endpts e).2 ::
-        ((spec n).runClient (p.merge (endpts e).1 (endpts e).2)
-          ((spanningForestEdges endpts es).bind fun rest =>
-            pure (if !p.rel (endpts e).1 (endpts e).2 then e :: rest else rest))).2.2 =
+        (spec n).clientHistory (p.merge (endpts e).1 (endpts e).2)
+          ((spanningForestEdges endpts es) >>= fun rest =>
+            pure (if !p.rel (endpts e).1 (endpts e).2 then e :: rest else rest)) =
       Op.union (endpts e).1 (endpts e).2 ::
         List.map (fun e => Op.union (endpts e).1 (endpts e).2) es
-    rw [StateTransitionSpec.runClient_bind]
-    simp [ih (p.merge (endpts e).1 (endpts e).2)]
+    rw [StateTransitionSpec.clientHistory_bind, ih, StateTransitionSpec.clientHistory_pure,
+      List.append_nil]
 
 /-- `spanningForestEdges endpts es` issues `es.length` operations. -/
 theorem runClient_spanningForestEdges_length {n : ℕ} {E : Type} (endpts : E → Fin n × Fin n)
     (es : List E) (p : Partition n) :
-    ((spec n).runClient p (spanningForestEdges endpts es)).2.2.length = es.length := by
+    ((spec n).clientHistory p (spanningForestEdges endpts es)).length = es.length := by
   rw [runClient_spanningForestEdges_history, List.length_map]
 
 /-- Every retained edge belongs to the input edge list in order. -/

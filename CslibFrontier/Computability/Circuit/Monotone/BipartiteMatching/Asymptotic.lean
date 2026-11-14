@@ -11,7 +11,7 @@ public import CslibFrontier.Computability.Circuit.Monotone.BipartiteMatching.Low
 public import Cslib.Computability.Circuit.Complexity
 public import Mathlib.Data.Nat.Log
 import CslibFrontier.Foundations.Combinatorics.SmallSubsets
-import Mathlib.Algebra.Order.Ring.Pow
+import CslibFrontier.Foundations.Data.Nat.Choose
 import Mathlib.Data.Nat.Choose.Bounds
 import Mathlib.Data.Nat.Choose.Sum
 import Mathlib.Tactic.Linarith
@@ -80,17 +80,6 @@ end BipartiteMatching.Razborov
 namespace Monotone
 
 open BipartiteMatching.Razborov
-
-/-- `2 (a - 1) ^ a ≤ a ^ a` for `a ≥ 1`, that is `(1 - 1 / a) ^ a ≤ 1 / 2`. With `a = x + 1`,
-Bernoulli's inequality (`pow_add_mul_le_add_pow`) gives
-`x ^ (x + 1) + (x + 1) x ^ x ≤ (x + 1) ^ (x + 1)`. -/
-private theorem two_mul_sub_one_pow_le {a : ℕ} (ha : 1 ≤ a) : 2 * (a - 1) ^ a ≤ a ^ a := by
-  obtain ⟨x, rfl⟩ : ∃ x, a = x + 1 := ⟨a - 1, by omega⟩
-  have h := pow_add_mul_le_add_pow (a := x) (b := 1) (Nat.zero_le x) (Nat.zero_le _) (x + 1)
-  simp only [Nat.add_sub_cancel, Nat.cast_id, mul_one] at h ⊢
-  calc 2 * x ^ (x + 1) = x ^ (x + 1) + x * x ^ x := by ring
-    _ ≤ x ^ (x + 1) + (x + 1) * x ^ x := by gcongr; omega
-    _ ≤ (x + 1) ^ (x + 1) := h
 
 /-- `64 s ^ 3 ≤ 2 ^ s` for `s ≥ 20`. -/
 private theorem sixtyFour_mul_pow_three_le_two_pow {s : ℕ} (hs : 20 ≤ s) : 64 * s ^ 3 ≤ 2 ^ s := by
@@ -196,7 +185,7 @@ theorem two_pow_sq_lt_size_of_separates_ofPerm_ofColoring {n : ℕ} (hn : 320 �
       rw [mul_comm 2 (L + 1), pow_mul, sq]
       omega
     have hB : (2 ^ s - 1) ^ q * 2 ^ K ≤ 2 ^ (s * q) := by
-      have h := Nat.pow_le_pow_left (two_mul_sub_one_pow_le (a := 2 ^ s) Nat.one_le_two_pow) K
+      have h := Nat.pow_le_pow_left (Nat.two_mul_pred_pow_le (b := 2 ^ s) Nat.one_le_two_pow) K
       rw [mul_pow, ← pow_mul, ← pow_mul, ← pow_mul] at h
       calc (2 ^ s - 1) ^ q * 2 ^ K = 2 ^ K * (2 ^ s - 1) ^ (2 ^ s * K) := by
             rw [mul_comm, ← hqdef]

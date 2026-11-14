@@ -23,7 +23,7 @@ example : (toPlanarPositiveOneInExactThreeSATThree mixedSource).oneModelCount = 
 /-- The nonempty output has the actual emitted full-segment drawing. -/
 example : Graph.IsPlanarOrthogonalDrawing
     (SAT.incidenceGraph (toPlanarPositiveOneInExactThreeSATThree mixedSource))
-    (toDrawnPlanarPositiveOneInExactThreeSATThree mixedSource).2 :=
+    (toDrawnPlanarPositiveOneInExactThreeSATThree mixedSource).drawing :=
   isPlanarOrthogonalDrawing_toDrawnPlanarPositiveOneInExactThreeSATThree mixedSource
 
 /-- The emitted drawing passes the planarity guard, so the guarded count keeps all four models. -/
@@ -31,7 +31,7 @@ example : SharpDrawnPlanarPositiveOneInExactThreeSATThree
     (toDrawnPlanarPositiveOneInExactThreeSATThree mixedSource) = 4 := by
   rw [SharpDrawnPlanarPositiveOneInExactThreeSATThree]
   split
-  · rw [show (toDrawnPlanarPositiveOneInExactThreeSATThree mixedSource).1 =
+  · rw [show (toDrawnPlanarPositiveOneInExactThreeSATThree mixedSource).formula =
         toPlanarPositiveOneInExactThreeSATThree mixedSource from rfl,
       sharpPositiveOneInExactThreeSATThree_toPlanarPositiveOneInExactThreeSATThree]
     decide
@@ -69,5 +69,34 @@ example : SharpPositiveOneInExactThreeSATThree
       [[(0, true), (0, false), (0, true), (0, false)]]) = 0 := by
   rw [sharpPositiveOneInExactThreeSATThree_toPlanarPositiveOneInExactThreeSATThree]
   decide
+
+/-- The supplied-drawing count rejects a non-drawing even on a syntactically positive formula. -/
+example : SharpDrawnPlanarPositiveOneInExactThreeSATThree ⟨[[(0, true)]], ([], [])⟩ = 0 := by
+  rw [SharpDrawnPlanarPositiveOneInExactThreeSATThree]
+  split
+  · rename_i h
+    have hc := h.vertexCount
+    simp [SAT.incidenceGraph, Cslib.Logic.PL.occurrences] at hc
+  · rfl
+
+-- Generated `enc_structure` rules compose for `DrawnPlanarPositiveOneInExactThreeSATThreeInstance`.
+example : Turing.MultiTapeTM.ComputableInPolyTime
+    DrawnPlanarPositiveOneInExactThreeSATThreeInstance.formula
+    encDrawnPlanarPositiveOneInExactThreeSATThree encCNF := by
+  fun_prop
+
+example : Turing.MultiTapeTM.ComputableInPolyTime
+    DrawnPlanarPositiveOneInExactThreeSATThreeInstance.drawing
+    encDrawnPlanarPositiveOneInExactThreeSATThree Graph.encOrthogonalDrawing := by
+  fun_prop
+
+example : Turing.MultiTapeTM.ComputableInPolyTime
+    (fun p : CNF ℕ × Graph.OrthogonalDrawing =>
+      (⟨p.1, p.2⟩ : DrawnPlanarPositiveOneInExactThreeSATThreeInstance))
+    (Turing.MultiTapeTM.encPair encCNF Graph.encOrthogonalDrawing)
+    encDrawnPlanarPositiveOneInExactThreeSATThree := by
+  fun_prop
+
+example : (default : DrawnPlanarPositiveOneInExactThreeSATThreeInstance) = ⟨default, default⟩ := rfl
 
 end CslibFrontierTests.PlanarPositiveOneInThreeSAT

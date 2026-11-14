@@ -9,7 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Computational.SIS.MLKEM.Compress
 public import CslibFrontier.Crypto.Computational.SIS.ModuleEncryption
-public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto
+public import CslibFrontier.Crypto.Protocols.PKE.ExplicitCoin
 public import CslibFrontier.Languages.Probabilistic.CenteredBinomial
 public import CslibFrontier.Languages.Probabilistic.Vector
 
@@ -29,7 +29,8 @@ compression:
 The uncompressed ciphertext is the existing `moduleLWEEncrypt` ciphertext of the all-zero message
 shifted by the FIPS 203 message polynomial (`encryptRaw_eq_moduleLWEEncrypt_add`); the two encodings
 differ because FIPS 203 rounds `q / 2` up. Public keys reuse `ModuleLWEPublicKey`, and the scheme is
-packaged as an `ExplicitCoinPKE` (`toExplicitCoinPKE`) for the Fujisaki–Okamoto layer.
+packaged through the shared `ExplicitCoinPKE` interface (`toExplicitCoinPKE`) for later use by the
+Fujisaki–Okamoto layer.
 
 Correctness is deterministic: decryption recovers `m` whenever every coefficient of the decryption
 noise `decryptionNoise`, which collects the Module-LWE error terms and both compression errors, has

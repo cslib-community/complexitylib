@@ -34,6 +34,6 @@ The abstracts were retired because the library's own definitions proved as reada
 
 The current policy requires a nonauthor to inspect correctness and API quality on the relevant revision, and changed reasoning to receive fresh review. It allows one competent reviewer to cover both, distinguishes agent review from human/platform approval, and carries earlier approval only across a verified mechanical delta. These rules aim to make review substantive rather than a count of approving agents.
 
-The historical [withdrawal case](../development-history/case-studies.md) demonstrates why that distinction matters: accepted proofs can have hypotheses that assume the advertised endpoint, or noncomputational operations that silently provide the hard part. The library's response included deletion, narrower claims, model recovery and stricter headline selection. This is evidence of a correction process and a documented failure, not evidence that all later semantics have been independently certified.
+The historical [withdrawal case](../history/case-studies.md) demonstrates why that distinction matters: accepted proofs can have hypotheses that assume the advertised endpoint, or noncomputational operations that silently provide the hard part. The library's response included deletion, narrower claims, model recovery and stricter headline selection. This is evidence of a correction process and a documented failure, not evidence that all later semantics have been independently certified.
 
 [lean-validation]: ../sources.md#lean-validation

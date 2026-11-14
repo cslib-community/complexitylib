@@ -5,6 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import CslibFrontier.Crypto.Computational.Kilian
+import CslibFrontier.Tactic.PolyTime
 
 /-!
 # Tests for Kilian's protocol
@@ -19,7 +20,7 @@ are all rejected. The completeness theorem applies to the honest execution.
 
 namespace CslibFrontierTests.Crypto.Kilian
 
-open Cslib Cslib.Complexity Cslib.Crypto
+open Cslib Cslib.Complexity Cslib.Crypto Turing.MultiTapeTM
 
 /-- A hash that returns its message. -/
 def idHash (_ x : List Bool) : List Bool := x
@@ -73,11 +74,12 @@ abbrev root : List Bool := kilianCommit idHash toyVerifier key x [true, true]
 -- Flipping the bit opened in the second repetition is rejected by the Merkle check (and by the
 -- PCP verifier).
 example : kilianVerify idHash toyVerifier key x root challenges
-    [honest.getD 0 [], [(false, ((honest.getD 1 []).getD 0 (false, [])).2)]] = false := by decide
+    [honest.getD 0 [], [⟨false, ((honest.getD 1 []).getD 0 ⟨false, []⟩).path⟩]] = false := by
+  decide
 
 -- Opening the right bit with a path of the wrong length is rejected.
 example : kilianVerify idHash toyVerifier key x root challenges
-    [honest.getD 0 [], [(true, [])]] = false := by decide
+    [honest.getD 0 [], [⟨true, []⟩]] = false := by decide
 
 -- A missing repetition, or a missing opening, is rejected.
 example : kilianVerify idHash toyVerifier key x root challenges [honest.getD 0 []] = false := by
@@ -96,5 +98,39 @@ example : kilianCheck idHash toyVerifier key x (kilianCommit idHash toyVerifier 
 example (n : ℕ) :
     ProbComp.eval (kilianHonestGame idHash toyVerifier x [true, true] n) = PMF.pure true :=
   eval_kilianHonestGame idHash toyVerifier (by decide) n
+
+-- Extensionality and compositional polynomial-time certificates for `encKilianOpening`.
+example (o₁ o₂ : MerkleOpening Bool) (hbit : o₁.leaf = o₂.leaf) (hpath : o₁.path = o₂.path) :
+    o₁ = o₂ := by
+  ext1 <;> assumption
+
+example : ComputableInPolyTime
+    (fun p : Bool × MerkleOpening Bool => (⟨!p.1, p.2.path⟩ : MerkleOpening Bool))
+    (encPair encBool encKilianOpening) encKilianOpening := by
+  fun_prop
+
+example : ComputableInPolyTime (fun o : MerkleOpening Bool => o.leaf) encKilianOpening encBool := by
+  fun_prop
+
+-- Encoded words unchanged: an opening keeps the former `KilianOpening` layout, the framed bit
+-- followed by the framed path.
+example (o : MerkleOpening Bool) :
+    encKilianOpening o = encPair encBool (encList encBits) (o.leaf, o.path) := rfl
+
+-- Encoded words unchanged: the verifier's view and the honest prover's input keep the former
+-- `encKilianInput` layouts, the framed key, the framed statement and the last word.
+example {α : Type} (enc : α ↪ List Bool) (v : KilianView α) :
+    encKilianView enc v = encPair (encPair encBits (encPair enc encBits))
+      (encPair (encList encBits) encKilianResponse)
+      ((v.key, v.stmt, v.root), v.challenges, v.response) := rfl
+example {α : Type} (enc : α ↪ List Bool) (p : KilianProverInput α) :
+    encKilianProverInput enc p = encPair encBits (encPair enc encBits) (p.key, p.stmt, p.table) :=
+  rfl
+
+-- The field rules of `encKilianView` read the claim through the parent projection.
+example {α : Type} (enc : α ↪ List Bool) : ComputableInPolyTime
+    (fun v : KilianView α => (v.key, v.response)) (encKilianView enc)
+    (encPair encBits encKilianResponse) := by
+  fun_prop
 
 end CslibFrontierTests.Crypto.Kilian

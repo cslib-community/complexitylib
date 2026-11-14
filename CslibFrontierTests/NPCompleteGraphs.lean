@@ -27,19 +27,19 @@ open Cslib.Complexity Cslib.Logic.PL Turing.MultiTapeTM
 /-! ### Headline complexity class results -/
 
 example :
-    (VertexCover ∈ NP (encPair encGraph encNat) ∧
-        PolyTimeReducible encCNF (encPair encGraph encNat) SAT VertexCover) ∧
+    (VertexCover ∈ NP encVertexCoverInstance ∧
+        PolyTimeReducible encCNF encVertexCoverInstance SAT VertexCover) ∧
       (KColoring 2 ∈ NP encGraph ∧ KColoring 5 ∈ NP encGraph) ∧
       (ThreeColoring ∈ NP encGraph ∧
         PolyTimeReducible encCNF encGraph SAT ThreeColoring) ∧
       (KColoring 4 ∈ NP encGraph ∧
         PolyTimeReducible encCNF encGraph SAT (KColoring 4)) ∧
-      (DirHamPath ∈ NP (encPair encGraph (encPair encNat encNat)) ∧
-        PolyTimeReducible encCNF (encPair encGraph (encPair encNat encNat)) SAT DirHamPath) ∧
+      (DirHamPath ∈ NP encPathInstance ∧
+        PolyTimeReducible encCNF encPathInstance SAT DirHamPath) ∧
       (DirHamCycle ∈ NP encGraph ∧
         PolyTimeReducible encCNF encGraph SAT DirHamCycle) ∧
-      (HamPath ∈ NP (encPair encGraph (encPair encNat encNat)) ∧
-        PolyTimeReducible encCNF (encPair encGraph (encPair encNat encNat)) SAT HamPath) ∧
+      (HamPath ∈ NP encPathInstance ∧
+        PolyTimeReducible encCNF encPathInstance SAT HamPath) ∧
       (HamCycle ∈ NP encGraph ∧
         PolyTimeReducible encCNF encGraph SAT HamCycle) :=
   ⟨⟨VertexCover_npComplete.1, VertexCover_npComplete.2 encCNF SAT SAT.mem_NP⟩,
@@ -54,8 +54,8 @@ example :
 
 example :
     PolyTimeReducible encCNF encGraph SAT ThreeColoring ∧
-      PolyTimeReducible encCNF (encPair encGraph encNat) SAT VertexCover ∧
-      PolyTimeReducible encCNF (encPair encGraph (encPair encNat encNat)) SAT DirHamPath :=
+      PolyTimeReducible encCNF encVertexCoverInstance SAT VertexCover ∧
+      PolyTimeReducible encCNF encPathInstance SAT DirHamPath :=
   ⟨ThreeSAT_npComplete.2 encCNF SAT SAT.mem_NP |>.trans polyTimeReducible_ThreeSAT_ThreeColoring,
     polyTimeReducible_SAT_IndependentSet.trans polyTimeReducible_IndependentSet_VertexCover,
     ThreeSAT_npComplete.2 encCNF SAT SAT.mem_NP |>.trans polyTimeReducible_ThreeSAT_DirHamPath⟩
@@ -63,41 +63,40 @@ example :
 /-! ### Compositional `fun_prop` synthesis -/
 
 example :
-    ComputableInPolyTime IndependentSet.toVertexCover (encPair encGraph encNat)
-        (encPair encGraph encNat) ∧
+    ComputableInPolyTime IndependentSet.toVertexCover encIndependentSetInstance
+        encVertexCoverInstance ∧
       ComputableInPolyTime VertexCover.verifier
-        (encPair (encPair encGraph encNat) encBits) encBool ∧
+        (encPair encVertexCoverInstance encBits) encBool ∧
       ComputableInPolyTime (KColoring.verifier 3) (encPair encGraph encBits) encBool ∧
       ComputableInPolyTime SAT.toThreeColoring encCNF encGraph ∧
       ComputableInPolyTime (SAT.toKColoring 2) encCNF encGraph ∧
-      ComputableInPolyTime SAT.toDirHamPath encCNF
-        (encPair encGraph (encPair encNat encNat)) ∧
+      ComputableInPolyTime SAT.toDirHamPath encCNF encPathInstance ∧
       ComputableInPolyTime SAT.toDirHamCycle encCNF encGraph ∧
       ComputableInPolyTime
         (fun φ => IndependentSet.toVertexCover (SAT.toIndependentSet φ))
-        encCNF (encPair encGraph encNat) := by
+        encCNF encVertexCoverInstance := by
   refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;> fun_prop
 
 /-! ### `VertexCover` concrete and boundary tests -/
 
-private def triangle : Graph := ([0, 1, 2], [(0, 1), (1, 2), (2, 0)])
+private def triangle : Graph := ⟨[0, 1, 2], [(0, 1), (1, 2), (2, 0)]⟩
 
 -- A triangle has vertex covers with two vertices but none with one.
 example :
-    VertexCover.verifier ((triangle, 2), [true, true, false]) = true ∧
-      VertexCover.verifier ((triangle, 2), [false, true, true]) = true ∧
-      VertexCover.verifier ((triangle, 1), [true, false, false]) = false ∧
-      VertexCover.verifier ((triangle, 2), [true, false, false]) = false :=
+    VertexCover.verifier (⟨triangle, 2⟩, [true, true, false]) = true ∧
+      VertexCover.verifier (⟨triangle, 2⟩, [false, true, true]) = true ∧
+      VertexCover.verifier (⟨triangle, 1⟩, [true, false, false]) = false ∧
+      VertexCover.verifier (⟨triangle, 2⟩, [true, false, false]) = false :=
   ⟨rfl, rfl, rfl, rfl⟩
 
-example : (triangle, 2) ∈ VertexCover := by
+example : (⟨triangle, 2⟩ : VertexCoverInstance) ∈ VertexCover := by
   rw [mem_VertexCover_iff]
   refine ⟨{0, 1}, by decide, fun u hu v hv huv => ?_, rfl⟩
   simp only [triangle, List.mem_cons, List.not_mem_nil, or_false] at hu hv
   rcases hu with rfl | rfl | rfl <;> rcases hv with rfl | rfl | rfl <;>
     first | exact (huv.ne rfl).elim | simp
 
-example : (triangle, 1) ∉ VertexCover := by
+example : (⟨triangle, 1⟩ : VertexCoverInstance) ∉ VertexCover := by
   rw [mem_VertexCover_iff]
   rintro ⟨S, -, hS, hcard⟩
   obtain ⟨v, rfl⟩ := Finset.card_eq_one.1 hcard
@@ -111,7 +110,8 @@ example : (triangle, 1) ∉ VertexCover := by
   omega
 
 -- Covers have exactly `k` vertices: the triangle has one of all three vertices, but none of four.
-example : (triangle, 3) ∈ VertexCover ∧ (triangle, 4) ∉ VertexCover := by
+example : (⟨triangle, 3⟩ : VertexCoverInstance) ∈ VertexCover ∧
+    (⟨triangle, 4⟩ : VertexCoverInstance) ∉ VertexCover := by
   refine ⟨?_, fun h => absurd (mem_VertexCover_iff_exists_card_le.1 h).1 (by decide)⟩
   rw [mem_VertexCover_iff]
   refine ⟨{0, 1, 2}, by decide, fun u hu _ _ _ => Or.inl ?_, rfl⟩
@@ -119,10 +119,10 @@ example : (triangle, 3) ∈ VertexCover ∧ (triangle, 4) ∉ VertexCover := by
 
 -- Empty graph: `k = 0` is accepted and `k = 1` is rejected.
 example :
-    VertexCover.verifier ((([], []), 0), []) = true ∧
-      VertexCover.verifier ((([], []), 1), [true]) = false ∧
-      ((([], []) : Graph), 0) ∈ VertexCover ∧
-      ((([], []) : Graph), 1) ∉ VertexCover :=
+    VertexCover.verifier (⟨⟨[], []⟩, 0⟩, []) = true ∧
+      VertexCover.verifier (⟨⟨[], []⟩, 1⟩, [true]) = false ∧
+      (⟨⟨[], []⟩, 0⟩ : VertexCoverInstance) ∈ VertexCover ∧
+      (⟨⟨[], []⟩, 1⟩ : VertexCoverInstance) ∉ VertexCover :=
   ⟨rfl, rfl, mem_VertexCover_iff.2 ⟨∅, by simp, by simp, rfl⟩, fun h =>
     absurd (mem_VertexCover_iff_exists_card_le.1 h).1 (by decide)⟩
 
@@ -130,22 +130,23 @@ example :
 -- oversized binary targets are rejected without unary expansion; and `toVertexCover` complements
 -- the target within distinct declared vertices.
 example :
-    VertexCover.verifier ((([0, 0, 1], [(0, 1)]), 2), [true, true, false]) = false ∧
-      VertexCover.verifier ((([0, 0, 1], [(0, 1)]), 1), [true, false, false]) = true ∧
+    VertexCover.verifier (⟨⟨[0, 0, 1], [(0, 1)]⟩, 2⟩, [true, true, false]) = false ∧
+      VertexCover.verifier (⟨⟨[0, 0, 1], [(0, 1)]⟩, 1⟩, [true, false, false]) = true ∧
       VertexCover.verifier
-        ((([10, 20], [(10, 99), (99, 20), (10, 10)]), 0), [false, false]) = true ∧
-      VertexCover.verifier ((([0, 1], [(0, 1)]), 2 ^ 100), [true, true]) = false ∧
-      IndependentSet.toVertexCover (triangle, 1) = (triangle, 2) ∧
-      IndependentSet.toVertexCover (([0, 0, 1], []), 2) = (([0, 0, 1], []), 0) ∧
-      IndependentSet.toVertexCover (triangle, 4) = (triangle, 4) ∧
-      IndependentSet.toVertexCover (([], []), 0) = (([], []), 0) :=
+        (⟨⟨[10, 20], [(10, 99), (99, 20), (10, 10)]⟩, 0⟩, [false, false]) = true ∧
+      VertexCover.verifier (⟨⟨[0, 1], [(0, 1)]⟩, 2 ^ 100⟩, [true, true]) = false ∧
+      IndependentSet.toVertexCover ⟨triangle, 1⟩ = ⟨triangle, 2⟩ ∧
+      IndependentSet.toVertexCover ⟨⟨[0, 0, 1], []⟩, 2⟩ = ⟨⟨[0, 0, 1], []⟩, 0⟩ ∧
+      IndependentSet.toVertexCover ⟨triangle, 4⟩ = ⟨triangle, 4⟩ ∧
+      IndependentSet.toVertexCover ⟨⟨[], []⟩, 0⟩ = ⟨⟨[], []⟩, 0⟩ :=
   ⟨rfl, rfl, rfl, by decide, by decide, by decide, by decide, by decide⟩
 
 /-! ### `KColoring` and `ThreeColoring` concrete and boundary tests -/
 
 -- A certificate from a coloring `c`: block `i` of `k` bits has `c` of vertex `i` set bits.
 private def certificate (k : ℕ) (G : Graph) (c : ℕ → ℕ) : List Bool :=
-  (List.range (k * G.1.length)).map fun j => decide (j % k < c (G.1.getD (j / k) 0))
+  (List.range (k * G.vertices.length)).map fun j =>
+    decide (j % k < c (G.vertices.getD (j / k) 0))
 
 -- Colors are counts of set bits in each vertex's block of `k` bits, and the triangle is
 -- 3-colorable but not 2-colorable.
@@ -175,7 +176,7 @@ example : triangle ∉ KColoring 2 := by
   omega
 
 -- The complete graph on four vertices is not 3-colorable.
-private def k4 : Graph := ([0, 1, 2, 3], [(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)])
+private def k4 : Graph := ⟨[0, 1, 2, 3], [(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]⟩
 
 example : k4 ∉ ThreeColoring := by
   rw [mem_KColoring_iff]
@@ -195,31 +196,31 @@ example : k4 ∉ ThreeColoring := by
 example : KColoring.verifier 4 (k4, certificate 4 k4 id) = true := rfl
 
 -- A block with all bits set encodes the out-of-range color `k`.
-example : KColoring.verifier 3 (([0], []), [true, true, true]) = false := rfl
+example : KColoring.verifier 3 (⟨[0], []⟩, [true, true, true]) = false := rfl
 
 -- With `k = 0`, exactly the graphs without declared vertices are colorable.
-example : KColoring.verifier 0 (([], [(0, 1)]), []) = true := rfl
-example : KColoring.verifier 0 (([0], []), []) = false := rfl
-example : (([], [(0, 1)]) : Graph) ∈ KColoring 0 :=
+example : KColoring.verifier 0 (⟨[], [(0, 1)]⟩, []) = true := rfl
+example : KColoring.verifier 0 (⟨[0], []⟩, []) = false := rfl
+example : (⟨[], [(0, 1)]⟩ : Graph) ∈ KColoring 0 :=
   mem_KColoring_iff.2 ⟨fun _ => 0, by simp, by simp⟩
-example : (([0], []) : Graph) ∉ KColoring 0 := by
+example : (⟨[0], []⟩ : Graph) ∉ KColoring 0 := by
   rw [mem_KColoring_iff]
   rintro ⟨c, hc, -⟩
   exact Nat.not_lt_zero _ (hc 0 (by simp))
 
 -- Duplicate vertices share the block of their first occurrence; undeclared edges are ignored.
 example : KColoring.verifier 2
-    (([0, 1, 0], [(0, 1), (1, 7), (7, 0)]), [false, false, true, false]) = true := rfl
+    (⟨[0, 1, 0], [(0, 1), (1, 7), (7, 0)]⟩, [false, false, true, false]) = true := rfl
 
 /-! ### The 3-coloring gadget -/
 
 -- The gadget graph of the empty formula is the palette triangle.
-example : (SAT.toThreeColoring []).2 = [(0, 1), (1, 4), (4, 0)] := by decide
+example : (SAT.toThreeColoring []).edges = [(0, 1), (1, 4), (4, 0)] := by decide
 example : SAT.toThreeColoring [] ∈ ThreeColoring :=
   (SAT.toThreeColoring_mem_iff _).2 ⟨fun _ => true, rfl⟩
 
 -- The stage `0` output of an empty clause is adjacent to all three palette vertices.
-example : (SAT.toThreeColoring [[]]).2 =
+example : (SAT.toThreeColoring [[]]).edges =
     [(0, 1), (1, 4), (4, 0), (258, 0), (258, 4), (258, 1), (258, 4)] := by decide
 example : SAT.toThreeColoring [[]] ∉ ThreeColoring := by
   rw [SAT.toThreeColoring_mem_iff]
@@ -263,13 +264,13 @@ example : SAT.toKColoring 2 [[(0, true)], [(0, false)]] ∉ KColoring 5 := by
 
 -- A directed path through all vertices, and the boundary conventions for cycles: a single
 -- vertex needs a self-loop.
-example : (([0, 1, 2], [(0, 1), (1, 2)]), 0, 2) ∈ DirHamPath :=
+example : (⟨⟨[0, 1, 2], [(0, 1), (1, 2)]⟩, 0, 2⟩ : PathInstance) ∈ DirHamPath :=
   ⟨[0, 1, 2], by decide, fun _ => Iff.rfl, rfl, rfl, by decide⟩
 
-example : ([0], [(0, 0)]) ∈ DirHamCycle :=
+example : (⟨[0], [(0, 0)]⟩ : Graph) ∈ DirHamCycle :=
   ⟨[0], by decide, fun _ => Iff.rfl, by decide, (Cycle.chain_singleton _ _).2 (by decide)⟩
 
-example : ([0], []) ∉ DirHamCycle := by
+example : (⟨[0], []⟩ : Graph) ∉ DirHamCycle := by
   rintro ⟨p, hnd, hcov, hne, hch⟩
   obtain ⟨a, rest, rfl⟩ := List.exists_cons_of_ne_nil hne
   have ha : a = 0 := by simpa using (hcov a).1 List.mem_cons_self
@@ -279,23 +280,23 @@ example : ([0], []) ∉ DirHamCycle := by
   simp at hch
 
 -- Closing a path into a cycle needs an arc back to a start vertex that no arc enters.
-example : ([0, 1, 2], [(2, 0), (0, 1), (1, 2)]) ∈ DirHamCycle :=
-  (Graph.mem_DirHamCycle_cons_iff (G := ([0, 1, 2], [(0, 1), (1, 2)])) (by decide)
+example : (⟨[0, 1, 2], [(2, 0), (0, 1), (1, 2)]⟩ : Graph) ∈ DirHamCycle :=
+  (Graph.mem_DirHamCycle_cons_iff (G := ⟨[0, 1, 2], [(0, 1), (1, 2)]⟩) (by decide)
     (fun u => by simp)).2 ⟨[0, 1, 2], by decide, fun _ => Iff.rfl, rfl, rfl, by decide⟩
 
 -- The diamond graph of the empty formula is the single top node, and that of a unit clause has
 -- one diamond with a row of six nodes and one clause node.
-example : SAT.toDirHamPath [] = (([0], []), 0, 0) := by decide
+example : SAT.toDirHamPath [] = ⟨⟨[0], []⟩, 0, 0⟩ := by decide
 example : SAT.toDirHamPath [] ∈ DirHamPath := (SAT.toDirHamPath_mem_iff _).2 ⟨fun _ => true, rfl⟩
 
 example : SAT.toDirHamPath [[(0, true)]] =
-    (([0, 1, 2, 3, 17, 82, 257, 626, 6],
+    ⟨⟨[0, 1, 2, 3, 17, 82, 257, 626, 6],
       [(0, 2), (0, 626), (2, 1), (626, 1), (2, 3), (3, 2), (3, 17), (17, 3), (17, 82), (82, 17),
-        (82, 257), (257, 82), (257, 626), (626, 257), (17, 6), (6, 82)]), 0, 1) := by
+        (82, 257), (257, 82), (257, 626), (626, 257), (17, 6), (6, 82)]⟩, 0, 1⟩ := by
   decide
 
 -- The rightward traversal with the detour through the clause node.
-example : (SAT.toDirHamPath [[(0, true)]]).1.IsDirHamPath 0 1
+example : (SAT.toDirHamPath [[(0, true)]]).graph.IsDirHamPath 0 1
     [0, 2, 3, 17, 6, 82, 257, 626, 1] :=
   ⟨by decide, fun _ => (show [0, 2, 3, 17, 6, 82, 257, 626, 1].Perm
     [0, 1, 2, 3, 17, 82, 257, 626, 6] by decide).mem_iff, rfl, rfl, by decide⟩
@@ -318,5 +319,43 @@ example : SAT.toDirHamCycle [[(0, true)], [(0, false)]] ∉ DirHamCycle := by
 example : SAT.toDirHamPath [[(0, false), (1, false), (0, true), (2, false)], [(1, true)]] ∈
     DirHamPath :=
   (SAT.toDirHamPath_mem_iff _).2 ⟨fun _ => true, rfl⟩
+
+/-! ### Diamond detours -/
+
+example :
+    Diamond.detourArcs { clause := 1, row := 0, slot := 2, leftToRight := true } =
+      [(Diamond.rowNode 0 8, Diamond.clauseNode 1),
+        (Diamond.clauseNode 1, Diamond.rowNode 0 9)] := rfl
+
+example :
+    Diamond.detourArcs ⟨1, 0, 2, false⟩ =
+      [(Diamond.rowNode 0 9, Diamond.clauseNode 1),
+        (Diamond.clauseNode 1, Diamond.rowNode 0 8)] := rfl
+
+example {a b : Diamond.Detour} (h0 : a.clause = b.clause) (h1 : a.row = b.row)
+    (h2 : a.slot = b.slot) (h3 : a.leftToRight = b.leftToRight) : a = b :=
+  Diamond.Detour.ext h0 h1 h2 h3
+
+example : ComputableInPolyTime (fun d : Diamond.Detour => d.clause)
+    Diamond.encDetour encUnary := by
+  fun_prop
+
+example : ComputableInPolyTime (fun d : Diamond.Detour => d.row)
+    Diamond.encDetour encUnary := by
+  fun_prop
+
+example : ComputableInPolyTime (fun d : Diamond.Detour => d.slot)
+    Diamond.encDetour encUnary := by
+  fun_prop
+
+example : ComputableInPolyTime (fun d : Diamond.Detour => d.leftToRight)
+    Diamond.encDetour encBool := by
+  fun_prop
+
+example :
+    ComputableInPolyTime
+      (fun d : Diamond.Detour => Diamond.Detour.mk d.clause d.row d.slot (!d.leftToRight))
+      Diamond.encDetour Diamond.encDetour := by
+  fun_prop
 
 end CslibFrontierTests.NPCompleteGraphs

@@ -12,6 +12,7 @@ public import Mathlib.Algebra.BigOperators.Expect
 public import Mathlib.Probability.Moments.SubGaussian
 import CslibFrontier.Probability.PMF.Event
 import CslibFrontier.Probability.PMF.Expect
+import CslibFrontier.Probability.Product.Resample
 import Mathlib.Algebra.Order.BigOperators.Expect
 import Mathlib.Probability.ProbabilityMassFunction.Integrals
 
@@ -145,27 +146,6 @@ private theorem piecewise_update_left {s : Finset ι} {i : ι} (hi : i ∉ s) (y
     fun _ _ => rfl
 
 variable [Fintype ι] [∀ i, Fintype (α i)]
-
-omit [∀ i, Fintype (α i)] in
-/-- Fixing a coordinate of an independent product to `v` is the same as overwriting it with `v`
-after sampling. -/
-private theorem pi_update_pure [∀ i, Finite (α i)] (p : ∀ i, PMF (α i)) (i : ι) (v : α i) :
-    pi (Function.update p i (PMF.pure v)) = (pi p).map fun y => Function.update y i v := by
-  let overwrite : ∀ j, α j → α j := Function.update (fun j => id) i fun _ => v
-  have hlaw : (fun j => (p j).map (overwrite j)) = Function.update p i (PMF.pure v) := by
-    funext j
-    by_cases hj : j = i
-    · subst hj
-      simp only [overwrite, Function.update_self]
-      exact PMF.map_const (p j) v
-    · simp [overwrite, hj, PMF.map_id]
-  have hmap : (fun (y : ∀ j, α j) j => overwrite j (y j)) = fun y => Function.update y i v := by
-    funext y j
-    by_cases hj : j = i
-    · subst hj
-      simp [overwrite]
-    · simp [overwrite, hj]
-  rw [← hlaw, pi_map, hmap]
 
 /-- Averaging over a product while overwriting the coordinates in `insert i s` is averaging
 first over coordinate `i` and then over the coordinates in `s`. -/

@@ -13,6 +13,7 @@ public import CslibFrontier.Computability.Complexity.Classes.RepeatedTrials
 public import CslibFrontier.Computability.Complexity.Classes.SBP
 public import CslibFrontier.Foundations.Data.BitString.WordCount
 
+import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.RoundCollapse
 import CslibFrontier.Computability.Complexity.Classes.SharpP.Closure
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -41,18 +42,18 @@ In both cases a majority of `12 e(n)` runs errs on at most a `2 ^ (-e(n))` fract
 strings (`Cslib.BitString.two_pow_mul_card_filter_card_filter_block_le`, from the exponential
 moment bound `Cslib.card_filter_card_filter_le_le`).
 
-With error below `2 ^ (-q(n) - 2)`, a union bound over Merlin's proofs shows that the Merlin–Arthur
-verifier, with the order of its messages swapped, is an Arthur–Merlin verifier: `MA ⊆ AM`
-[Babai][Babai1985]. The same bound shows that the number of accepted pairs of a proof and a random
-string is at least `3 / 4` of the random strings on members and at most `1 / 4` on non-members,
-so `MA ⊆ SBP` [Böhler, Glaßer and Meister][BoehlerGlasserMeister2006].
+With error below `2 ^ (-q(n) - 2)` on `q(n)`-bit proofs, summing over Merlin's `2 ^ q(n)` proofs
+shows that the number of accepted pairs of a proof and a random string is at least `3 / 4` of the
+random strings on members and at most `1 / 4` on non-members, so `MA ⊆ SBP`
+[Böhler, Glaßer and Meister][BoehlerGlasserMeister2006].
 
-The swap behind `MA ⊆ AM` also works for an Arthur–Merlin verifier on pairs `(a, w)`: reduce its
-error below `2 ^ (-|w| - 2)` and let Merlin send `w` with his reply. By the union bound over the
-words `w`, Arthur's coins rarely admit an accepted answer for any `w` when no `w` works, so `AM`
-is closed under polynomially bounded existential quantification
-(`Cslib.Complexity.mem_AM_of_exists`) [Babai][Babai1985]. The class equality `MAM = AM` is
-`Cslib.Complexity.AMGameClass_merlin_arthur_merlin`.
+The containment `MA ⊆ AM` (`Cslib.Complexity.MA_subset_AM`) and closure of `AM` under polynomially
+bounded existential quantification (`Cslib.Complexity.mem_AM_of_exists`) [Babai][Babai1985] follow
+from the round collapse in
+`CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.RoundCollapse`: `MA` is the game `M A`
+(`Cslib.Complexity.AMGameClass_merlin_arthur`, `Cslib.Complexity.AMGameClass_subset_AM`), and
+existential quantification prepends a Merlin move (`Cslib.Complexity.mem_AMGameClass_cons_merlin`)
+to give `MAM = AM` (`Cslib.Complexity.AMGameClass_merlin_arthur_merlin`).
 
 ## Main definitions
 
@@ -307,70 +308,11 @@ theorem mem_AM_iff_forall_errorExponent :
 
 /-! ### `MA ⊆ AM` -/
 
-/-- If every `y : BitString Q` accepts at most a `2 ^ -(Q + 2)` fraction of `r : BitString P`, then
-at most a quarter of `r : BitString P` have some accepted `y`. -/
-private theorem four_mul_card_filter_not_forall_eq_false_le {P Q : ℕ}
-    {f : BitString Q → BitString P → Bool}
-    (hf : ∀ y, 2 ^ (Q + 2) * #{r : BitString P | f y r = true} ≤ 2 ^ P) :
-    4 * #{r : BitString P | ¬∀ y, f y r = false} ≤ 2 ^ P := by
-  have hunion : #{r : BitString P | ¬∀ y, f y r = false} ≤
-      ∑ y : BitString Q, #{r : BitString P | f y r = true} := by
-    refine (card_le_card fun r hr => ?_).trans card_biUnion_le
-    obtain ⟨y, hy⟩ := not_forall.1 (mem_filter.1 hr).2
-    exact mem_biUnion.2 ⟨y, mem_univ _, mem_filter.2 ⟨mem_univ _, by simpa using hy⟩⟩
-  have hpos : 0 < 2 ^ Q := by positivity
-  refine Nat.le_of_mul_le_mul_left ?_ hpos
-  calc 2 ^ Q * (4 * #{r : BitString P | ¬∀ y, f y r = false})
-      ≤ 2 ^ (Q + 2) * ∑ y : BitString Q, #{r : BitString P | f y r = true} := by
-        rw [pow_add, mul_assoc]
-        exact Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ hunion)
-    _ = ∑ y : BitString Q, 2 ^ (Q + 2) * #{r : BitString P | f y r = true} := mul_sum _ _ _
-    _ ≤ ∑ _y : BitString Q, 2 ^ P := sum_le_sum fun y _ => hf y
-    _ = 2 ^ Q * 2 ^ P := by rw [sum_const, card_univ, smul_eq_mul, BitString.card]
-
-/-- **`MA ⊆ AM`** [Babai][Babai1985], [Arora and Barak, Section 8.2][AroraBarak09]. Reduce the
-error of a Merlin–Arthur verifier with proofs of `q(n)` bits below `2 ^ (-q(n) - 2)` and let
-Arthur send his coins first: on a member the good proof still answers three quarters of the random
-strings, and on a non-member, by the union bound over the `2 ^ q(n)` proofs, at most a quarter of
-the random strings have an accepted reply. -/
-theorem MA_subset_AM : MA enc ⊆ AM enc := by
-  rintro A ⟨q, p, V, hV, h⟩
-  have h' := h.repeatMajority (q + 2)
-  set W := merlinArthurRepeat enc q (6 * (q + 2)) p V with hW
-  set P : Polynomial ℕ := 12 * (q + 2) * p with hP
-  have hPu : ComputableInPolyTime (fun a => P.eval (enc a).length) enc encUnary :=
-    (ComputableInPolyTime.unary_eval P).comp (ComputableInPolyTime.encoding_length enc)
-  refine ⟨P, q, fun x => W (x.1, x.2.drop (P.eval (enc x.1).length) ++
-    x.2.take (P.eval (enc x.1).length)), ?_, fun a => ?_⟩
-  · exact (computableInPolyTime_merlinArthurRepeat hV _ _ _).comp
-      ((ComputableInPolyTime.fst enc encBits).prod
-        (.bitsAppend (.bitsDropWithInput (.snd enc encBits) (hPu.comp (.fst enc encBits)))
-          (.bitsTakeWithInput (.snd enc encBits) (hPu.comp (.fst enc encBits)))))
-  have hswap (r : Fin (P.eval (enc a).length) → Bool) (y : Fin (q.eval (enc a).length) → Bool) :
-      (List.ofFn r ++ List.ofFn y).drop (P.eval (enc a).length) ++
-          (List.ofFn r ++ List.ofFn y).take (P.eval (enc a).length) =
-        List.ofFn y ++ List.ofFn r := by
-    rw [List.drop_left' List.length_ofFn, List.take_left' List.length_ofFn]
-  simp only [hswap]
-  have h4 : 4 ≤ 2 ^ (q + 2).eval (enc a).length := by
-    simp only [Polynomial.eval_add, Polynomial.eval_ofNat, pow_add]
-    exact Nat.le_mul_of_pos_left _ (by positivity)
-  constructor
-  · -- the good proof answers all but a quarter of the random strings
-    intro ha
-    obtain ⟨y, hy⟩ := (h' a).1 ha
-    refine BitString.two_mul_two_pow_le_of_four_mul_card_filter_not_le _ ?_
-    have hsub : #{r : Fin (P.eval (enc a).length) → Bool |
-          ¬∃ y' : Fin (q.eval (enc a).length) → Bool, W (a, List.ofFn y' ++ List.ofFn r) = true} ≤
-        #{r : Fin (P.eval (enc a).length) → Bool | W (a, List.ofFn y ++ List.ofFn r) = false} :=
-      card_le_card fun r hr => mem_filter.2 ⟨mem_univ _, by
-        simpa using (not_exists.1 (mem_filter.1 hr).2) y⟩
-    exact (Nat.mul_le_mul_left 4 hsub).trans ((Nat.mul_le_mul_right _ h4).trans hy)
-  · -- by the union bound, at most a quarter of the random strings have an accepted reply
-    intro ha
-    refine BitString.two_mul_two_pow_le_of_four_mul_card_filter_not_le _ ?_
-    exact four_mul_card_filter_not_forall_eq_false_le fun y => by
-      simpa [Polynomial.eval_add] using (h' a).2 ha y
+/-- **`MA ⊆ AM`** [Babai][Babai1985], [Arora and Barak, Section 8.2][AroraBarak09]: a special case
+of the round collapse (`Cslib.Complexity.AMGameClass_merlin_arthur`,
+`Cslib.Complexity.AMGameClass_subset_AM`). -/
+theorem MA_subset_AM : MA enc ⊆ AM enc :=
+  AMGameClass_merlin_arthur ▸ AMGameClass_subset_AM [.merlin, .arthur]
 
 /-- **`NP ⊆ AM`**. -/
 theorem NP_subset_AM : NP enc ⊆ AM enc := NP_subset_MA.trans MA_subset_AM
@@ -455,134 +397,17 @@ theorem MA_subset_SBP : MA enc ⊆ SBP enc := by
 
 /-! ### Existential quantification -/
 
-/-- The verifier for existential quantification over words of length `p(n)` before an `AM`
-verifier `VB` is computable in polynomial time. -/
-private theorem computableInPolyTime_existsAMVerifier {VB : (α × List Bool) × List Bool → Bool}
-    (hVB : ComputableInPolyTime VB (encPair (encPair enc encBits) encBits) encBool)
-    (P p : Polynomial ℕ) :
-    ComputableInPolyTime (fun x : α × List Bool => VB ((x.1,
-      (x.2.drop (P.eval (enc x.1).length)).take (p.eval (enc x.1).length)),
-      x.2.take (P.eval (enc x.1).length) ++
-        x.2.drop (P.eval (enc x.1).length + p.eval (enc x.1).length)))
-      (encPair enc encBits) encBool := by
-  have hP : ComputableInPolyTime (fun x : α × List Bool => P.eval (enc x.1).length)
-      (encPair enc encBits) encUnary :=
-    ((ComputableInPolyTime.unary_eval _).comp
-      (ComputableInPolyTime.encoding_length enc)).comp (.fst _ _)
-  have hp : ComputableInPolyTime (fun x : α × List Bool => p.eval (enc x.1).length)
-      (encPair enc encBits) encUnary :=
-    ((ComputableInPolyTime.unary_eval _).comp
-      (ComputableInPolyTime.encoding_length enc)).comp (.fst _ _)
-  exact hVB.comp (((ComputableInPolyTime.fst _ _).prod
-    (ComputableInPolyTime.bitsTakeWithInput
-      (ComputableInPolyTime.bitsDropWithInput (.snd _ _) hP) hp)).prod
-    (ComputableInPolyTime.bitsAppend
-      (ComputableInPolyTime.bitsTakeWithInput (.snd _ _) hP)
-      (ComputableInPolyTime.bitsDropWithInput (.snd _ _)
-        (ComputableInPolyTime.unary_add.comp (hP.prod hp)))))
-
-/-- On `List.ofFn r ++ List.ofFn y`, the existential `AM` verifier extracts the first component of
-`y` as the word and passes `r` followed by the second component of `y` to `VB`. -/
-private theorem existsAMVerifier_ofFn_append (VB : (α × List Bool) × List Bool → Bool) (a : α)
-    {P W Q : ℕ} (r : BitString P) (y : BitString (W + Q)) :
-    VB ((a, ((List.ofFn r ++ List.ofFn y).drop P).take W),
-      (List.ofFn r ++ List.ofFn y).take P ++ (List.ofFn r ++ List.ofFn y).drop (P + W)) =
-      VB ((a, List.ofFn ((Fin.appendEquiv W Q).symm y).1),
-        List.ofFn r ++ List.ofFn ((Fin.appendEquiv W Q).symm y).2) := by
-  -- the verifier reads the word and runs the verifier of the pairs
-  rw [List.drop_left' List.length_ofFn, List.take_left' List.length_ofFn,
-     List.ofFn_add, List.take_left' List.length_ofFn, ← List.append_assoc,
-     List.drop_left' (by simp)]
-  rfl
-
-/-- Completeness for existential `AM`: if `w : BitString W` fails on at most a `2 ^ -(E + 2)`
-fraction of `r : BitString P`, then the existential verifier fails on at most a quarter of `r`. -/
-private theorem four_mul_card_filter_not_exists_word_le {P W Q E : ℕ}
-    {f : BitString W → BitString P → BitString Q → Bool} (w : BitString W)
-    (hw : 2 ^ (E + 2) * #{r : BitString P | ∀ y, f w r y = false} ≤ 2 ^ P) :
-    4 * #{r : BitString P | ¬∃ y : BitString (W + Q),
-      f ((Fin.appendEquiv W Q).symm y).1 r ((Fin.appendEquiv W Q).symm y).2 = true} ≤ 2 ^ P := by
-  have h4 : 4 ≤ 2 ^ (E + 2) := by
-    rw [pow_add]
-    exact Nat.le_mul_of_pos_left _ (by positivity)
-  refine (Nat.mul_le_mul_left 4 (card_le_card fun r hr => ?_)).trans
-    ((Nat.mul_le_mul_right _ h4).trans hw)
-  rw [mem_filter] at hr ⊢
-  refine ⟨mem_univ _, fun y => ?_⟩
-  simpa [Fin.appendEquiv] using not_exists.1 hr.2 (Fin.append w y)
-
-/-- Union bound over `w : BitString W` and certificates `y : BitString Q` for existential `AM`
-soundness. -/
-private theorem four_mul_card_filter_exists_word_le {P W Q E : ℕ}
-    {f : BitString W → BitString P → BitString Q → Bool} (hWE : W ≤ E)
-    (hf : ∀ w, 2 ^ (E + 2) * #{r : BitString P | ∃ y, f w r y = true} ≤ 2 ^ P) :
-    4 * #{r : BitString P | ¬∀ y : BitString (W + Q),
-      f ((Fin.appendEquiv W Q).symm y).1 r ((Fin.appendEquiv W Q).symm y).2 = false} ≤ 2 ^ P := by
-  have hunion : #{r : BitString P | ¬∀ y : BitString (W + Q),
-      f ((Fin.appendEquiv W Q).symm y).1 r ((Fin.appendEquiv W Q).symm y).2 = false} ≤
-      ∑ w : BitString W, #{r : BitString P | ∃ y, f w r y = true} := by
-    refine (card_le_card fun r hr => ?_).trans card_biUnion_le
-    obtain ⟨y, hy⟩ := not_forall.1 (mem_filter.1 hr).2
-    exact mem_biUnion.2 ⟨_, mem_univ _, mem_filter.2 ⟨mem_univ _, _, by simpa using hy⟩⟩
-  have hpos : 0 < 2 ^ W := by positivity
-  refine Nat.le_of_mul_le_mul_left ?_ hpos
-  have h4 : 2 ^ W * 4 ≤ 2 ^ (E + 2) := by
-    rw [pow_add]
-    exact Nat.mul_le_mul_right _ (Nat.pow_le_pow_right (by norm_num) hWE)
-  calc 2 ^ W * (4 * #{r : BitString P | ¬∀ y : BitString (W + Q),
-        f ((Fin.appendEquiv W Q).symm y).1 r ((Fin.appendEquiv W Q).symm y).2 = false})
-      ≤ 2 ^ (E + 2) * ∑ w : BitString W, #{r : BitString P | ∃ y, f w r y = true} := by
-        rw [← mul_assoc]
-        exact Nat.mul_le_mul h4 hunion
-    _ = ∑ w : BitString W, 2 ^ (E + 2) * #{r : BitString P | ∃ y, f w r y = true} :=
-        mul_sum _ _ _
-    _ ≤ ∑ _w : BitString W, 2 ^ P := sum_le_sum fun w _ => hf w
-    _ = 2 ^ W * 2 ^ P := by rw [sum_const, card_univ, smul_eq_mul, BitString.card]
-
 /-- **`AM` is closed under existential quantification** [Babai][Babai1985]: if the pairs `(a, w)`
 form a problem in `AM`, with respect to the encoding of pairs, then so do the instances `a` for
 which some word `w` of length `p(n)`, `n` the length of the encoded instance, makes `(a, w)` a
-member. -/
+member. Prepending Merlin's choice of `w` gives a game of pattern `M A M`, which collapses to `AM`
+(`Cslib.Complexity.mem_AMGameClass_cons_merlin`,
+`Cslib.Complexity.AMGameClass_merlin_arthur_merlin`). -/
 theorem mem_AM_of_exists {B : Set (α × List Bool)} (hB : B ∈ AM (encPair enc encBits))
     (p : Polynomial ℕ) :
     {a | ∃ w : List Bool, w.length = p.eval (enc a).length ∧ (a, w) ∈ B} ∈ AM enc := by
-  obtain ⟨pB, qB, VB, hVB, hB'⟩ := mem_AM_iff_forall_errorExponent.mp hB (Polynomial.X + 2)
-  -- the length of the encoded pair of an instance and a word of length `p(n)`
-  set L : Polynomial ℕ := 2 * Polynomial.X + 1 + p with hLdef
-  have hL (a : α) (w : List Bool) (hw : w.length = p.eval (enc a).length) :
-      (encPair enc encBits (a, w)).length = L.eval (enc a).length := by
-    simp only [length_encPair, encBits_apply, hw, hLdef, Polynomial.eval_add, Polynomial.eval_mul,
-      Polynomial.eval_X, Polynomial.eval_one, Polynomial.eval_ofNat]
-  refine ⟨pB.comp L, p + qB.comp L, fun x => VB ((x.1,
-      (x.2.drop ((pB.comp L).eval (enc x.1).length)).take (p.eval (enc x.1).length)),
-      x.2.take ((pB.comp L).eval (enc x.1).length) ++
-        x.2.drop ((pB.comp L).eval (enc x.1).length + p.eval (enc x.1).length)),
-      computableInPolyTime_existsAMVerifier hVB (pB.comp L) p, fun a => ?_⟩
-  -- the verifier reads the word and runs the verifier of the pairs
-  rw [Polynomial.eval_add]
-  simp only [existsAMVerifier_ofFn_append]
-  -- the error bounds of the pairs, at the length of the encoded instance
-  have herr (w : BitString (p.eval (enc a).length)) := by
-    have h := hB' (a, List.ofFn w)
-    rw [hL a _ List.length_ofFn,
-      show (Polynomial.X + 2 : Polynomial ℕ).eval (L.eval (enc a).length) =
-        L.eval (enc a).length + 2 by simp] at h
-    exact h
-  rw [Polynomial.eval_comp, Polynomial.eval_comp]
-  constructor
-  · -- a good word leaves a quarter of the random strings without an accepted answer
-    rintro ⟨w, hw, hmem⟩
-    refine BitString.two_mul_two_pow_le_of_four_mul_card_filter_not_le _ ?_
-    have hw' : List.ofFn (BitString.ofList _ w) = w := BitString.ofFn_ofList hw
-    exact four_mul_card_filter_not_exists_word_le
-      (f := fun w r y => VB ((a, List.ofFn w), List.ofFn r ++ List.ofFn y))
-      (BitString.ofList _ w) ((herr (BitString.ofList _ w)).1 (by rwa [hw']))
-  · -- by the union bound over the words, a quarter of the random strings have an accepted answer
-    intro ha
-    refine BitString.two_mul_two_pow_le_of_four_mul_card_filter_not_le _ ?_
-    exact four_mul_card_filter_exists_word_le
-      (f := fun w r y => VB ((a, List.ofFn w), List.ofFn r ++ List.ofFn y))
-      (E := L.eval (enc a).length) (by simp [hLdef])
-      fun w => (herr w).2 fun hw => ha ⟨_, List.length_ofFn, hw⟩
+  rw [← AMGameClass_merlin_arthur_merlin]
+  rw [← AMGameClass_arthur_merlin] at hB
+  exact mem_AMGameClass_cons_merlin hB p
 
 end Cslib.Complexity

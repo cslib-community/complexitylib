@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Algorithms.Lean.Dijkstra.Native.Fibonacci.Memory
-import CslibFrontier.Algorithms.WordRAM.Dijkstra.Invariant
+import CslibFrontier.Algorithms.Dijkstra.Invariant
 import CslibFrontier.Algorithms.WordRAM.Dijkstra.ListEncode
 
 /-!
@@ -31,7 +31,8 @@ namespace Cslib.Algorithms.Lean.Dijkstra.Native.Fibonacci
 
 open Cslib.WordRAM Cslib.DataStructure Cslib.DataStructure.Memory
 open Cslib.DataStructure.PriorityQueue
-open Cslib.Algorithms.WordRAM.Dijkstra (ListInstance encodeDist)
+open Cslib.Algorithms.Dijkstra (ListInstance)
+open Cslib.Algorithms.WordRAM.Dijkstra (encodeDist)
 
 private def rate (n : ℕ) : OpKind → ℕ
   | .insert => 43

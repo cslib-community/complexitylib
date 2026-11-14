@@ -16,6 +16,7 @@ public import CslibFrontier.Foundations.BooleanAnalysis.Fibers
 public import CslibFrontier.Computability.Communication.TopDown.Rectangle
 public import CslibFrontier.Computability.Communication.TopDown.Adversary
 import CslibFrontier.Foundations.Analysis.BernoulliInequality
+import CslibFrontier.Foundations.Analysis.SpecialFunctions.Logb
 import Mathlib.Data.Fintype.Powerset
 import Mathlib.Analysis.SpecialFunctions.Pow.Asymptotics
 import Mathlib.Tactic.FieldSimp
@@ -95,8 +96,7 @@ private theorem strictMajorityDeficitBound_eventually_le {r c : ℝ} (hr : 0 < r
   have hl : Real.logb 2 (2 * ((n : ℝ) + 1)) ≤ Real.logb 2 (4 * (n : ℝ)) :=
     Real.logb_le_logb_of_le (by norm_num) (by positivity) (by linarith)
   have hfour : Real.logb 2 4 = 2 := by
-    rw [show (4 : ℝ) = (2 : ℝ) ^ 2 by norm_num, Real.logb_pow,
-      Real.logb_self_eq_one (by norm_num)]
+    rw [show (4 : ℝ) = (2 : ℝ) ^ 2 by norm_num, Real.logb_two_pow]
     norm_num
   rw [Real.logb_mul (by norm_num) (ne_of_gt hnpos), hfour] at hl
   have heq : Real.logb 2 (n : ℝ) = (Real.log 2)⁻¹ * Real.log n := by

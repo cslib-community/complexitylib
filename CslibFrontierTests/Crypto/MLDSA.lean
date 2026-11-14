@@ -1,17 +1,43 @@
 /-
-Copyright (c) 2026 Karn Seth. All rights reserved.
+Copyright (c) 2026 Karn Seth, Samuel Schlesinger. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Karn Seth
+Authors: Karn Seth, Samuel Schlesinger
 -/
+
+module
 
 import CslibFrontier.Crypto.Computational.MLDSA.KeyOnly
 
-/-! Concrete decompositions, the standard parameter sets, and a toy instance on which signing,
-verification and the forgery-to-self-target map are all exercised. -/
+/-! Concrete power-of-two and commitment decompositions, the standard parameter sets, and a toy
+instance on which signing, verification and the forgery-to-self-target map are all exercised. -/
+
+-- This regression module checks ordinary imports and exports no test fixtures.
+set_option linter.privateModule false
 
 open Cslib.Crypto Cslib.Crypto.MLDSA
 
 namespace MLDSATests
+
+/-! ### FIPS 204 `Power2Round` with `q = 8380417`, `d = 13` -/
+
+-- The positive tie belongs to the centered interval `(-4096, 4096]`.
+example : power2Round 8380417 13 4096 = (0, 4096) := by decide +kernel
+-- The next value crosses the centered boundary and increments the high part.
+example : power2Round 8380417 13 4097 = (1, -4095) := by decide +kernel
+-- Unlike `Decompose`, `Power2Round` has no `q - 1` wrap rule.
+example : power2Round 8380417 13 8380416 = (1023, 0) := by decide +kernel
+
+def compressedBoundary : Fin 1 → Fin 3 → ZMod 8380417 := fun _ => ![4096, 4097, 8380416]
+
+example :
+    (fun i j => (((power2RoundVec 8380417 13 compressedBoundary).1 i j * (2 ^ 13 : ℕ) +
+      (power2RoundVec 8380417 13 compressedBoundary).2 i j : ℤ) : ZMod 8380417)) =
+      compressedBoundary :=
+  power2RoundVec_reconstruct compressedBoundary
+
+example (i : Fin 1) (j : Fin 3) :
+    |(power2RoundVec 8380417 13 compressedBoundary).2 i j| ≤ (2 ^ 12 : ℕ) := by
+  exact abs_power2RoundVec_low_le (by decide) compressedBoundary i j
 
 /-! ### `Decompose` with `q = 17`, `γ₂ = 2` (rounding range `4`, high bits in `[0, 4)`) -/
 
@@ -78,18 +104,18 @@ theorem toySk_short : ∀ i j, |(toySk.s₂ i j).valMinAbs| ≤ toy.η := by dec
 def toyMask : Fin toy.ℓ → Fin toy.n → ZMod toy.q := fun _ => ![3, -2]
 
 theorem toy_signAttempt :
-    signAttempt toy toyHash toySk [] toyMask = some (fun _ => ![4, -2], ![1, 0]) := by
+    signAttempt toy toyHash toySk [] toyMask = some ⟨fun _ => ![4, -2], ![1, 0]⟩ := by
   decide +kernel
 
-theorem toy_verify : verify toy toyHash toySk.publicKey [] (fun _ => ![4, -2], ![1, 0]) = true :=
+theorem toy_verify : verify toy toyHash toySk.publicKey [] ⟨fun _ => ![4, -2], ![1, 0]⟩ = true :=
   verify_signAttempt toy_valid toyHash_inBall toySk_short toy_signAttempt
 
 -- Verification is not trivial: changing the response to `z = 1` changes the high bits.
-example : verify toy toyHash toySk.publicKey [] (fun _ => ![1, 0], ![1, 0]) = false := by
+example : verify toy toyHash toySk.publicKey [] ⟨fun _ => ![1, 0], ![1, 0]⟩ = false := by
   decide +kernel
 
 -- Signing with this mask and one attempt can output the signature.
-example : some ((fun _ => ![4, -2], ![1, 0]) : Signature toy) ∈
+example : some (⟨fun _ => ![4, -2], ![1, 0]⟩ : Signature toy) ∈
     (Cslib.ProbComp.eval (sign toy toyHash toySk (pure toyMask) [] 1)).support := by
   simp [sign, toy_signAttempt]
 
@@ -98,8 +124,7 @@ example : signAttempt toy toyHash toySk [] (fun _ => ![0, 0]) = none := by decid
 
 /-- The verifying signature, read as a self-target MSIS solution. -/
 example : IsSelfTargetSolution toy (selfTargetHash toy toyHash) (max toy.γ₁ toy.γ₂)
-    toySk.publicKey [] (forgeryLowPart toy toySk.publicKey (fun _ => ![4, -2], ![1, 0]))
-    (fun _ => ![4, -2]) ![1, 0] :=
+    toySk.publicKey (.ofForgery toy toySk.publicKey [] ⟨fun _ => ![4, -2], ![1, 0]⟩) :=
   isSelfTargetSolution_of_verify toy_valid toy_verify
 
 end MLDSATests

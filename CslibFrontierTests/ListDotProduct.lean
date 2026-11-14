@@ -53,7 +53,8 @@ example : lyubashevskyVerifyEqList 1 2 1 7 [[2, 3]] [[1]] [0] [2, 2] [false] = f
 
 /-- The actual native signer still emits the same commitment bytes. -/
 example : lyubashevskySignCommitment
-    ((((1, 2, 1, 6), (7, 2, 1)), [], [[2, 3]], []), [2, 1]) =
+    (({ n := 1, m := 2, k := 1, width := 6, q := 7, γ := 2, β := 1 },
+      [], [[2, 3]], []), [2, 1]) =
       encList encIntBin [0] := by
   simp only [lyubashevskySignCommitment, ListMatrix.dotProduct_eq_sum_map_range]
   decide

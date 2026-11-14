@@ -30,7 +30,7 @@ the facts used by follow-the-regularized-leader:
 * the *stability bound*: if moreover `ℓ x - ℓ y ≤ L * ‖x - y‖` and `m > 0`, then
   `f x + ℓ x - (f y + ℓ y) ≤ L ^ 2 / (2 * m)`;
 * in a real inner product space, `m / 2 * ‖y - x₀‖ ^ 2` is `m`-strongly convex (the Euclidean
-  regularizer).
+  regularizer), so the Tikhonov regularizer `r * ‖y‖ ^ 2` is `2 * r`-strongly convex.
 
 The first three need neither differentiability nor an inner product. The norm is that of the
 ambient space, so the same statements cover strong convexity with respect to `ℓ¹`, `ℓ²` or any
@@ -43,7 +43,8 @@ bound `L d - m / 2 d ² ≤ L ² / (2 m)`.
 * `StrongConvexOn.smul`, `StrongConvexOn.add_convexOn`: closure properties.
 * `StrongConvexOn.add_le_of_isMinOn`: quadratic growth at a minimizer.
 * `StrongConvexOn.sub_le_of_isMinOn`: the stability bound.
-* `strongConvexOn_mul_norm_sub_sq`: strong convexity of the squared Euclidean distance.
+* `strongConvexOn_mul_norm_sub_sq`, `strongConvexOn_mul_norm_sq`: strong convexity of the squared
+  Euclidean distance and of the Tikhonov regularizer.
 
 ## References
 
@@ -136,5 +137,13 @@ theorem strongConvexOn_mul_norm_sub_sq (hK : Convex ℝ K) (m : ℝ) (x₀ : F) 
   refine ⟨hK, fun x _ y _ a b _ _ hab => ?_⟩
   simp only [norm_sub_sq_real, smul_eq_mul, inner_add_left, real_inner_smul_left]
   linear_combination (-(m / 2 * ‖x₀‖ ^ 2)) * hab
+
+/-- In a real inner product space the Tikhonov regularizer `r * ‖y‖ ^ 2` is `2 * r`-strongly
+convex on every convex set. -/
+theorem strongConvexOn_mul_norm_sq (hK : Convex ℝ K) (r : ℝ) :
+    StrongConvexOn K (2 * r) fun y : F => r * ‖y‖ ^ 2 := by
+  convert strongConvexOn_mul_norm_sub_sq hK (2 * r) (0 : F) using 2 with y
+  rw [sub_zero]
+  ring
 
 end InnerProductSpace

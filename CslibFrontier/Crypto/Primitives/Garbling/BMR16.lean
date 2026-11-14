@@ -9,6 +9,7 @@ module
 
 public import CslibFrontier.Crypto.Primitives.Garbling.MixedModulus
 import CslibFrontier.Probability.Product
+import CslibFrontier.Probability.Product.Split
 import CslibFrontier.Probability.Uniform
 
 /-!
@@ -70,7 +71,9 @@ bounds for garbling, evaluation, the simulator or the reduction.
 * `Cslib.Crypto.Garbling.BMR16.reduction_isLegal`: the reduction is a legal adversary.
 * `Cslib.Crypto.Garbling.BMR16.advantage_realGame_simGame`: privacy, as an equality with the
   mixed-modulus CCR advantage of the reduction.
-* `Cslib.Crypto.Garbling.BMR16.advantage_realGame_simGame_le`: privacy from `MixedModulusCCR`.
+* `Cslib.Crypto.Garbling.BMR16.advantage_realGame_simGame_le_of_reduction_mem`: an algebraic
+  helper, not a security theorem: the bound `ε` of `MixedModulusCCR` transfers to privacy once the
+  caller shows that the reduction built from `D` lies in the assumption's adversary class.
 
 ## References
 
@@ -610,28 +613,6 @@ theorem reduceWith_congr {f g : (q : T × CCRInput μ ℓ) → Label μ ℓ q.2.
       simp only [MixedModulusCircuit.size]; omega) r]
 
 omit [Fintype ι] [DecidableEq ι] [∀ i, NeZero (μ i)] in
-/-- Restricting a uniform dependent function along an injective map gives a uniform function. -/
-private theorem uniformOfFintype_map_comp_of_injective {α S : Type} [Fintype α] [DecidableEq α]
-    {π : α → Type} [∀ a, Fintype (π a)] [∀ a, Nonempty (π a)] [∀ a, AddGroup (π a)] [Fintype S]
-    [DecidableEq S] (q : S → α) (hq : Function.Injective q) :
-    (PMF.uniformOfFintype (∀ a, π a)).map (fun f s => f (q s)) =
-      PMF.uniformOfFintype (∀ s, π (q s)) := by
-  classical
-  apply Cslib.Probability.PMF.uniformOfFintype_map_of_shift
-  intro c
-  let d : ∀ a, π a := fun a =>
-    if h : ∃ s, q s = a then cast (congrArg π h.choose_spec) (c h.choose) else 0
-  have hcast : ∀ s s' (h : q s' = q s), s' = s → cast (congrArg π h) (c s') = c s := by
-    rintro s s' h rfl
-    rfl
-  refine ⟨Equiv.addRight d, fun f => funext fun s => ?_⟩
-  have hd : d (q s) = c s := by
-    have h : ∃ s', q s' = q s := ⟨s, rfl⟩
-    simp only [d, dite_eq_left_of_eq_true (eq_true h)]
-    exact hcast s h.choose h.choose_spec (hq h.choose_spec)
-  simp only [Equiv.coe_addRight, Pi.add_apply, hd]
-
-omit [Fintype ι] [DecidableEq ι] [∀ i, NeZero (μ i)] in
 /-- The rows of a projection gate are uniform when the values of all input values but the active
 one are uniform. -/
 private theorem map_reduceRows_uniformOfFintype {m : ℕ} [NeZero m] {L : Type} [AddCommGroup L]
@@ -734,7 +715,7 @@ theorem bind_reduceWith_uniformOfFintype [Fintype T] [DecidableEq T] {β : Type}
         funext s
         simp only [G, Function.comp_apply, pt, dite_eq_ite]
         rfl
-      rw [hG, ← PMF.map_comp, uniformOfFintype_map_comp_of_injective pt hpt]
+      rw [hG, ← PMF.map_comp, Cslib.Probability.PMF.uniformOfFintype_map_comp_dep hpt]
       exact map_reduceRows_uniformOfFintype v (W.2 - v) (H t i W j)
     calc (PMF.uniformOfFintype (T → CCRTable μ ℓ)).bind
           (fun f => κ (reduceWith (fun q => f q.1 q.2) H tw k (.proj a φ next) A V))
@@ -766,11 +747,9 @@ theorem realGame_eq_ccrRealGame (H : MixedModulusHash T μ ℓ) (tw : ℕ → T)
     (C : MixedModulusCircuit μ (Projection μ) Γ Θ) (x : Env (Residue μ) Γ)
     (D : View ℓ C → ProbComp Bool) :
     realGame H tw C x D = ccrRealGame H (reduction H tw C x D) := by
-  have hself : ∀ {α : Type} (p : ProbComp α), OracleComp.interpret ProbComp.unifFin p = p :=
-    fun p => OracleComp.interpret_query_eq_self p
   simp only [realGame, ccrRealGame, reduction, garble, OracleComp.interpret_bind,
-    ProbOracleComp.interpret_sample, hself, interpret_reduceM, pure_bind, bind_assoc,
-    ProbComp.eval_bind, ProbComp.eval_uniform]
+    ProbOracleComp.interpret_sample, ProbComp.interpret_unifFin, interpret_reduceM, pure_bind,
+    bind_assoc, ProbComp.eval_bind, ProbComp.eval_uniform]
   refine congrArg (PMF.bind _) (funext fun δ => ?_)
   conv_rhs => rw [← map_encode_uniformOfFintype δ x]
   rw [PMF.bind_map]
@@ -784,11 +763,9 @@ theorem simGame_eq_ccrIdealGame [Fintype T] [DecidableEq T] (H : MixedModulusHas
     (tw : ℕ → T) (C : MixedModulusCircuit μ (Projection μ) Γ Θ) (x : Env (Residue μ) Γ)
     (D : View ℓ C → ProbComp Bool) (htw : Set.InjOn tw (Set.Iio C.size)) :
     simGame H tw C x D = ccrIdealGame (reduction H tw C x D) := by
-  have hself : ∀ {α : Type} (p : ProbComp α), OracleComp.interpret ProbComp.unifFin p = p :=
-    fun p => OracleComp.interpret_query_eq_self p
   simp only [simGame, ccrIdealGame, simulate, reduction, OracleComp.interpret_bind,
-    ProbOracleComp.interpret_sample, hself, interpret_reduceM, pure_bind, bind_assoc,
-    ProbComp.eval_bind, ProbComp.eval_uniform]
+    ProbOracleComp.interpret_sample, ProbComp.interpret_unifFin, interpret_reduceM, pure_bind,
+    bind_assoc, ProbComp.eval_bind, ProbComp.eval_uniform]
   conv_rhs => rw [PMF.bind_comm]
   refine congrArg (PMF.bind _) (funext fun A => ?_)
   rw [bind_reduceWith_uniformOfFintype H tw 0 C A x (htw.mono fun n hn => by
@@ -949,10 +926,14 @@ theorem reduction_isLegal [∀ i, NeZero (μ i)] (H : MixedModulusHash T μ ℓ)
 
 end Legality
 
-/-- **Simulation privacy of BMR16 from mixed-modulus CCR.** If `H` is mixed-modulus CCR with bound
-`ε` against a class of adversaries containing the reduction, every distinguisher has advantage at
-most `ε` between the real and the simulated view. -/
-theorem advantage_realGame_simGame_le [Fintype T] [DecidableEq T] (H : MixedModulusHash T μ ℓ)
+/-- Algebraic helper, not a security theorem. If `H` is mixed-modulus CCR with bound `ε` against a
+class `𝒟`, and the caller supplies `hD`, that the reduction built from this distinguisher `D` lies
+in `𝒟`, then `D` has advantage at most `ε` between the real and the simulated view. Legality of
+the reduction is proved (`reduction_isLegal`), but its membership in `𝒟` is a premise, and no cost
+bound for the reduction is proved. The concrete statement is the equality
+`advantage_realGame_simGame`. -/
+theorem advantage_realGame_simGame_le_of_reduction_mem [Fintype T] [DecidableEq T]
+    (H : MixedModulusHash T μ ℓ)
     (tw : ℕ → T) (C : MixedModulusCircuit μ (Projection μ) Γ Θ) (x : Env (Residue μ) Γ)
     (D : View ℓ C → ProbComp Bool) (htw : Set.InjOn tw (Set.Iio C.size))
     {𝒟 : Set (CCRAdversary T μ ℓ)} {ε : NNReal} (hH : MixedModulusCCR H 𝒟 ε)

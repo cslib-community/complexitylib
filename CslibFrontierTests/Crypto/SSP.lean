@@ -55,7 +55,8 @@ theorem eval_run_askBit (b : Bool) : ((bitPkg b).run askBit).eval = PMF.pure b :
 
 /-- `askBit` tells the two packages apart with certainty. -/
 theorem advantage_askBit : advantage askBit (bitPkg true) (bitPkg false) = 1 := by
-  rw [advantage, eval_run_askBit, eval_run_askBit, Game.advantage_pure_false]
+  rw [advantage, Experiment.advantage, eval_run_askBit, eval_run_askBit,
+    Game.advantage_pure_false]
   simp [Game.succProbability, PMF.pure_apply]
 
 /-- Query the session `j` once and output its reply. -/
@@ -72,7 +73,8 @@ certainty. -/
 theorem advantage_askSession :
     advantage (askSession 0) (parFin fun _ : Fin 2 => bitPkg true)
       (parFin fun _ => bitPkg false) = 1 := by
-  rw [advantage, eval_run_askSession, eval_run_askSession, Game.advantage_pure_false]
+  rw [advantage, Experiment.advantage, eval_run_askSession, eval_run_askSession,
+    Game.advantage_pure_false]
   simp [Game.succProbability, PMF.pure_apply]
 
 /-- The multi-session hybrid bound splits the advantage `1` of `askSession 0` between the
@@ -81,11 +83,6 @@ example : (1 : ℝ≥0) ≤ ∑ j : Fin 2, advantage
     (hybridDistinguisher (fun _ => bitPkg true) (fun _ => bitPkg false) (askSession 0) j)
     (bitPkg true) (bitPkg false) :=
   advantage_askSession.symm.trans_le (advantage_parFin_le_sum _ _ _)
-
-/-- The uniform bound, with the trivial single-session bound `1`. -/
-example : advantage (askSession 0) (parFin fun _ : Fin 2 => bitPkg true)
-    (parFin fun _ => bitPkg false) ≤ ((2 : ℕ) : ℝ≥0) * 1 :=
-  advantage_parFin_le_mul _ _ _ 1 fun _ => advantage_le_one _ _ _
 
 /-- The session package that answers `false` without consulting the global package. -/
 def falsePkg : Machine bitSpec bitSpec where
@@ -117,7 +114,8 @@ theorem eval_run_askGlobal_false :
 theorem advantage_askGlobal :
     advantage askGlobal (globalWorld (fun _ : Fin 2 => Machine.id bitSpec) (bitPkg true))
       (globalWorld (fun _ => falsePkg) (bitPkg true)) = 1 := by
-  rw [advantage, eval_run_askGlobal_id, eval_run_askGlobal_false, Game.advantage_pure_false]
+  rw [advantage, Experiment.advantage, eval_run_askGlobal_id, eval_run_askGlobal_false,
+    Game.advantage_pure_false]
   simp [Game.succProbability, PMF.pure_apply]
 
 /-- The global hybrid bound splits the advantage `1` of `askGlobal` between the single-session

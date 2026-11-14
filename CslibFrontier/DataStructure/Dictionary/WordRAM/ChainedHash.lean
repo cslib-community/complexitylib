@@ -1061,6 +1061,51 @@ private theorem evalBucket_spec {U V n_max w base : ℕ}
   rw [hm2] at hcur3
   exact hcur3
 
+/-- One `findInChainBody` iteration at chain index `idx₀` (`cur = idx₀ + 1`) with successor
+pointer `ptr'` keeps memory and the frame registers. On a key hit it sets `cur = 0`,
+`found = 1` and `matchIdx = idx₀`; otherwise it advances `cur` to `ptr'` and keeps `found`. -/
+private theorem findInChainBody_spec {U n_max w base : ℕ} (hS : Fits w (base + space n_max))
+    {u : Fin U} {idx₀ ptr' : ℕ} (hidx : idx₀ < n_max) {x : Data rHash}
+    (hz : x.regs zero = 0) (ho : x.regs one = 1)
+    (hkb : x.regs keyBaseReg = keyBase base n_max)
+    (hxb : x.regs nextBaseReg = nextBase base n_max)
+    (hu : x.regs argU = u.val) (hcur : x.regs cur = idx₀ + 1)
+    (hnext : x.mem (nextBase base n_max + idx₀) = ptr') :
+    ∃ x₁, Exec w findInChainBody x x₁ 7 ∧
+      x₁.mem = x.mem ∧
+      x₁.regs baseReg = x.regs baseReg ∧
+      x₁.regs tagReg = x.regs tagReg ∧
+      x₁.regs argU = u.val ∧
+      x₁.regs argV = x.regs argV ∧
+      x₁.regs regOut = x.regs regOut ∧
+      x₁.regs zero = 0 ∧
+      x₁.regs one = 1 ∧
+      x₁.regs headBaseReg = x.regs headBaseReg ∧
+      x₁.regs keyBaseReg = keyBase base n_max ∧
+      x₁.regs valBaseReg = x.regs valBaseReg ∧
+      x₁.regs nextBaseReg = nextBase base n_max ∧
+      (x.mem (keyBase base n_max + idx₀) = u.val →
+        x₁.regs cur = 0 ∧ x₁.regs found = 1 ∧ x₁.regs matchIdx = idx₀) ∧
+      (x.mem (keyBase base n_max + idx₀) ≠ u.val →
+        x₁.regs cur = ptr' ∧ x₁.regs found = x.regs found) := by
+  have hsp : 4 + numBuckets n_max + 3 * n_max = space n_max := rfl
+  have fidx : Fits w idx₀ := hS.of_le (by omega)
+  have fkaddr : Fits w (keyBase base n_max + idx₀) := hS.of_le (by unfold keyBase; omega)
+  have fnaddr : Fits w (nextBase base n_max + idx₀) := hS.of_le (by unfold nextBase; omega)
+  by_cases hhit : x.mem (keyBase base n_max + idx₀) = u.val
+  · refine ⟨?_, ?e1, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
+      fun _ => ⟨?_, ?_, ?_⟩, fun h => absurd hhit h⟩
+    case e1 =>
+      ram_exact_eval [findInChainBody, hcur, ho, hz, hkb, hu, hhit, Nat.add_sub_cancel,
+        fidx, fkaddr]
+    all_goals first | rfl | simp +decide [hu, hz, ho, hkb, hxb]
+  · refine ⟨?_, ?e2, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_,
+      fun h => absurd h hhit, fun _ => ⟨?_, ?_⟩⟩
+    case e2 =>
+      ram_exact_eval [findInChainBody, hcur, ho, hz, hkb, hxb, hu, hhit, Nat.add_sub_cancel,
+        fidx, fkaddr, fnaddr]
+    all_goals first | rfl | simp +decide [hu, hz, ho, hkb, hxb, hnext]
+
 private theorem findInChain_spec {U n_max w base sz : ℕ}
     (hS : Fits w (base + space n_max)) (hsz : sz ≤ n_max)
     {mem : ℕ → ℕ} {u : Fin U} {ptr : ℕ} {L : List ℕ} {x : Data rHash}
@@ -1096,48 +1141,11 @@ private theorem findInChain_spec {U n_max w base sz : ℕ}
       Or.inr ⟨?_, rfl⟩⟩
     intro i hi; cases hi
   | @cons idx₀ ptr' L' hidx hnext hc' ih =>
-    have hsp : 4 + numBuckets n_max + 3 * n_max = space n_max := rfl
-    have fidx : Fits w idx₀ := hS.of_le (by omega)
-    have fkaddr : Fits w (keyBase base n_max + idx₀) := hS.of_le (by unfold keyBase; omega)
+    obtain ⟨x₁, he1, hm1, hbase1, htag1, hargU1, hargV1, hout1, hz1, ho1,
+        hhb1, hkb1, hvb1, hxb1, hhitR, hmissR⟩ :=
+      findInChainBody_spec hS (by omega) hz ho hkb hxb hu hcur (hmem ▸ hnext)
     by_cases hhit : mem (keyBase base n_max + idx₀) = u.val
-    · have hhit_x : x.mem (keyBase base n_max + idx₀) = u.val := hmem ▸ hhit
-      obtain ⟨x₁, he1, hm1, hbase1, htag1, hargU1, hargV1, hout1, hz1, ho1,
-          hhb1, hkb1, hvb1, hxb1, hcur1, hfnd1, hmidx1⟩ :
-          ∃ x₁, Exec w findInChainBody x x₁ 7 ∧
-            x₁.mem = x.mem ∧
-            x₁.regs baseReg = x.regs baseReg ∧
-            x₁.regs tagReg = x.regs tagReg ∧
-            x₁.regs argU = u.val ∧
-            x₁.regs argV = x.regs argV ∧
-            x₁.regs regOut = x.regs regOut ∧
-            x₁.regs zero = 0 ∧
-            x₁.regs one = 1 ∧
-            x₁.regs headBaseReg = x.regs headBaseReg ∧
-            x₁.regs keyBaseReg = keyBase base n_max ∧
-            x₁.regs valBaseReg = x.regs valBaseReg ∧
-            x₁.regs nextBaseReg = nextBase base n_max ∧
-            x₁.regs cur = 0 ∧
-            x₁.regs found = 1 ∧
-            x₁.regs matchIdx = idx₀ := by
-        refine ⟨?_, ?e1, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
-        case e1 =>
-          ram_exact_eval [findInChainBody, hcur, ho, hz, hkb, hu, hhit_x, Nat.add_sub_cancel,
-            fidx, fkaddr]
-        · rfl
-        · simp +decide
-        · simp +decide
-        · simp +decide [hu]
-        · simp +decide
-        · simp +decide
-        · simp +decide [hz]
-        · simp +decide [ho]
-        · simp +decide
-        · simp +decide [hkb]
-        · simp +decide
-        · simp +decide [hxb]
-        · simp +decide
-        · simp +decide
-        · simp +decide
+    · obtain ⟨hcur1, hfnd1, hmidx1⟩ := hhitR (hmem ▸ hhit)
       have he2 : Exec w findInChain x₁ x₁ 2 :=
         Exec.loop_exit (by simp [Cond.Holds, hz1, hcur1])
       have he_tot : Exec w findInChain x x₁ (7 + 2 + 2) :=
@@ -1145,44 +1153,7 @@ private theorem findInChain_spec {U n_max w base sz : ℕ}
       refine ⟨x₁, he_tot.within.mono (by simp), he_tot.within.bounded hx,
         hm1.trans hmem, hbase1, htag1, hargU1, hargV1, hout1, hz1, ho1, hhb1, hkb1, hvb1, hxb1,
         Or.inl ⟨idx₀, List.mem_cons_self, hhit, hfnd1, hmidx1⟩⟩
-    · have hhit_x : x.mem (keyBase base n_max + idx₀) ≠ u.val := hmem ▸ hhit
-      have hnext_x : x.mem (nextBase base n_max + idx₀) = ptr' := hmem ▸ hnext
-      have fnaddr : Fits w (nextBase base n_max + idx₀) := hS.of_le (by unfold nextBase; omega)
-      obtain ⟨x₁, he1, hm1, hbase1, htag1, hargU1, hargV1, hout1, hz1, ho1,
-          hhb1, hkb1, hvb1, hxb1, hcur1, hfnd1⟩ :
-          ∃ x₁, Exec w findInChainBody x x₁ 7 ∧
-            x₁.mem = x.mem ∧
-            x₁.regs baseReg = x.regs baseReg ∧
-            x₁.regs tagReg = x.regs tagReg ∧
-            x₁.regs argU = u.val ∧
-            x₁.regs argV = x.regs argV ∧
-            x₁.regs regOut = x.regs regOut ∧
-            x₁.regs zero = 0 ∧
-            x₁.regs one = 1 ∧
-            x₁.regs headBaseReg = x.regs headBaseReg ∧
-            x₁.regs keyBaseReg = keyBase base n_max ∧
-            x₁.regs valBaseReg = x.regs valBaseReg ∧
-            x₁.regs nextBaseReg = nextBase base n_max ∧
-            x₁.regs cur = ptr' ∧
-            x₁.regs found = x.regs found := by
-        refine ⟨?_, ?e2, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
-        case e2 =>
-          ram_exact_eval [findInChainBody, hcur, ho, hz, hkb, hxb, hu, hhit_x, Nat.add_sub_cancel,
-            fidx, fkaddr, fnaddr]
-        · rfl
-        · simp +decide
-        · simp +decide
-        · simp +decide [hu]
-        · simp +decide
-        · simp +decide
-        · simp +decide [hz]
-        · simp +decide [ho]
-        · simp +decide
-        · simp +decide [hkb]
-        · simp +decide
-        · simp +decide [hxb]
-        · simp +decide [hnext_x]
-        · simp +decide
+    · obtain ⟨hcur1, hfnd1⟩ := hmissR (hmem ▸ hhit)
       have hx₁_bdd : x₁.Bounded w := he1.within.bounded hx
       obtain ⟨y, ⟨m₂, hm₂_le, he2⟩, hy_bdd, hmy, hbase2, htag2, hargU2, hargV2, hout2,
           hz2, ho2, hhb2, hkb2, hvb2, hxb2, hres⟩ :=

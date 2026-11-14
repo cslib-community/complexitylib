@@ -5,7 +5,7 @@ Authors: Samuel Schlesinger
 -/
 
 import CslibFrontier.Computability.Complexity.Classes.LogSpace.FirstOrder
-import CslibFrontier.Computability.Complexity.Fagin.Layout
+import CslibFrontier.Logics.FirstOrder.Encoding.Layout
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.LogSpace.CounterProgram.Output
 import CslibFrontierTests.FaginEncoding
 

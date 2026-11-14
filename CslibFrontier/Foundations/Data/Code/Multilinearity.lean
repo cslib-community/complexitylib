@@ -12,6 +12,7 @@ public import Mathlib.Algebra.BigOperators.Expect
 public import Mathlib.Basic.Real.Basic
 public import Mathlib.InformationTheory.Hamming
 public import Mathlib.LinearAlgebra.AffineSpace.AffineMap
+import CslibFrontier.Foundations.Data.Fin.Counting
 import CslibFrontier.Foundations.Data.Finset.ApplyUpdate
 import Mathlib.Algebra.BigOperators.Field
 import Mathlib.Algebra.Order.BigOperators.Expect
@@ -83,9 +84,6 @@ lines is less than `ε`, then `f` is `3 n ^ 2 (ε + δ + 1 / N)`-approximately m
   `Cslib.Code.isMultilinear_iff_eq_eval_multilinearExtension`: multilinear functions are the
   multilinear extensions of functions on the cube.
 * `Cslib.Code.isAffineFun_iff_exists_affineMap`: affine functions of one variable are affine maps.
-* `Cslib.BitString.indicatorPoly_mem_restrictDegree`,
-  `Cslib.BitString.multilinearExtension_mem_restrictDegree`: multilinear extensions have degree at
-  most one in each variable.
 * `Cslib.Code.isMultilinear_eval_of_mem_restrictDegree`,
   `Cslib.Code.isMultilinear_iff_exists_mem_restrictDegree`: multilinear functions are the
   evaluations of polynomials of degree at most one in each variable.
@@ -210,42 +208,6 @@ theorem IsAffineFun.eq_of_eq_of_eq {g h : F → F} (hg : IsAffineFun g) (hh : Is
   subst hbd
   funext t
   rw [hg, hh]
-
-/-! ### Multilinear extensions have degree at most one in each variable -/
-
-section RestrictDegree
-
-variable {R : Type*} [CommRing R]
-
-/-- An indicator polynomial has degree at most one in each variable. -/
-theorem _root_.Cslib.BitString.indicatorPoly_mem_restrictDegree [Fintype ι] (a : ι → Bool) :
-    (indicatorPoly a : MvPolynomial ι R) ∈ restrictDegree ι R 1 := by
-  classical
-  nontriviality R
-  rw [mem_restrictDegree]
-  intro s hs j
-  refine (degreeOf_le_iff.mp ?_) s hs
-  refine (degreeOf_prod_le j _ _).trans ?_
-  calc ∑ k, degreeOf j (if a k then X k else 1 - X k : MvPolynomial ι R)
-      ≤ ∑ k, if j = k then 1 else 0 := sum_le_sum fun k _ => by
-        have hX : degreeOf j (X k : MvPolynomial ι R) = if j = k then 1 else 0 := degreeOf_X j k
-        by_cases hk : a k
-        · simp only [hk, ite_true, hX, le_refl]
-        · simp only [hk, Bool.false_eq_true, ite_false]
-          refine (degreeOf_sub_le _ _ _).trans ?_
-          rw [hX, ← C_1, degreeOf_C]
-          simp
-    _ = 1 := by simp
-
-/-- The multilinear extension of a function on the cube has degree at most one in each
-variable. -/
-theorem _root_.Cslib.BitString.multilinearExtension_mem_restrictDegree [Fintype ι] [DecidableEq ι]
-    (g : (ι → Bool) → R) : multilinearExtension g ∈ restrictDegree ι R 1 :=
-  Submodule.sum_mem _ fun a _ => by
-    rw [C_mul']
-    exact Submodule.smul_mem _ _ (indicatorPoly_mem_restrictDegree a)
-
-end RestrictDegree
 
 /-! ### Multilinear functions -/
 
@@ -441,14 +403,6 @@ section Soundness
 
 variable [Fintype F] [DecidableEq F] {n : ℕ}
 
-omit [Field F] [DecidableEq F] in
-/-- Counting the points of `F ^ (n + 1)` by their first coordinate and their tail. -/
-private theorem card_filter_zero_tail (P : F → (Fin n → F) → Prop) [∀ t, DecidablePred (P t)] :
-    #{x : Fin (n + 1) → F | P (x 0) (Fin.tail x)} = ∑ t, #{y : Fin n → F | P t y} := by
-  simp only [card_filter]
-  rw [← (Fin.consEquiv fun _ => F).sum_comp, Fintype.sum_prod_type]
-  simp [Fin.consEquiv]
-
 omit [Field F] [Fintype F] [DecidableEq F] in
 /-- The lines of `f` in direction `j.succ` are the lines of its slices `x 0 = t` in direction
 `j`. -/
@@ -466,7 +420,7 @@ theorem card_wrongPoints_succ (f : (Fin (n + 1) → F) → F) (j : Fin n) :
     ext x
     simp only [wrongPoints, mem_filter, mem_univ, true_and, lineRestrict_succ]
   rw [this]
-  exact card_filter_zero_tail
+  exact Fin.card_filter_zero_tail
     (fun t y => ¬IsAffineFun (lineRestrict (fun y => f (Fin.cons t y)) y j))
 
 omit [DecidableEq F] in
@@ -549,7 +503,7 @@ theorem exists_isMultilinear_hammingDist_le_of_slices (f : (Fin (n + 1) → F) �
     exact hx (by simpa using congrFun hline (x 0))
   have hcard (t : F) (h : (Fin n → F) → F) :
       #(bad t h) = Fintype.card F * hammingDist (fun y => f (Fin.cons t y)) h := by
-    rw [card_filter_zero_tail (fun _ y => f (Fin.cons t y) ≠ h y), sum_const, card_univ,
+    rw [Fin.card_filter_zero_tail (fun _ y => f (Fin.cons t y) ≠ h y), sum_const, card_univ,
       smul_eq_mul, hammingDist]
   calc hammingDist f g = #({x | f x ≠ g x} : Finset (Fin (n + 1) → F)) := rfl
     _ ≤ #(wrongPoints f 0) + (#(bad t₁ g₁) + #(bad t₂ g₂)) :=

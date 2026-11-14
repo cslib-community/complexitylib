@@ -21,45 +21,43 @@ open Cslib Cslib.Probability Cslib.Crypto
 /-! ### OFB queries and block costs -/
 
 /-- A valid left-or-right query: two messages of two 8-bit blocks each. -/
-def ofbQueryLR : OFBQuery 8 := ([0, 1], [1, 1])
+def ofbQueryLR : BlockModeQuery 8 := ([0, 1], [1, 1])
 
 /-- A query whose two messages differ in length. -/
-def ofbQueryUnequal : OFBQuery 8 := ([0], [1, 1])
+def ofbQueryUnequal : BlockModeQuery 8 := ([0], [1, 1])
 
 /-- A valid query encrypts the selected message and costs its number of blocks. -/
-example : ofbSelect 2 true ofbQueryLR = [1, 1] ∧ ofbSelect 2 false ofbQueryLR = [0, 1] ∧
-    ofbBlocks 2 ofbQueryLR = 2 := by
+example : blockModeSelect 2 true ofbQueryLR = [1, 1] ∧
+    blockModeSelect 2 false ofbQueryLR = [0, 1] ∧ blockModeBlocks 2 ofbQueryLR = 2 := by
   decide
 
 /-- Messages of different lengths, or longer than the per-query limit, encrypt the empty message
 and cost nothing. -/
-example : ofbSelect 2 true ofbQueryUnequal = [] ∧ ofbBlocks 2 ofbQueryUnequal = 0 ∧
-    ofbSelect 1 false ofbQueryLR = [] ∧ ofbBlocks 1 ofbQueryLR = 0 := by
+example : blockModeSelect 2 true ofbQueryUnequal = [] ∧ blockModeBlocks 2 ofbQueryUnequal = 0 ∧
+    blockModeSelect 1 false ofbQueryLR = [] ∧ blockModeBlocks 1 ofbQueryLR = 0 := by
   decide
 
-/-- The encrypted plaintext always has `ofbBlocks ℓ q` blocks. -/
-example : (ofbSelect 2 true ofbQueryUnequal).length = ofbBlocks 2 ofbQueryUnequal :=
-  length_ofbSelect 2 true ofbQueryUnequal
+/-- The encrypted plaintext always has `blockModeBlocks ℓ q` blocks. -/
+example : (blockModeSelect 2 true ofbQueryUnequal).length = blockModeBlocks 2 ofbQueryUnequal :=
+  length_blockModeSelect 2 true ofbQueryUnequal
 
 /-- Answering the keystream calls with a fixed function `f` gives the OFB keystream
 `f x, f (f x), f (f (f x))`. -/
 example (f : BitString 8 → BitString 8) (x : BitString 8) :
-    OracleComp.interpret (OracleComp.sumHandler ProbComp.unifFin fun y => pure (f y))
-        (ofbChainQueries x 3) =
-      (pure [f x, f (f x), f (f (f x))] : ProbComp (List (BitString 8))) :=
-  interpret_ofbChainQueries f x 3
+    (ofbChainQueries x 3).run (fun y => pure (f y)) = pure [f x, f (f x), f (f (f x))] :=
+  run_ofbChainQueries f x 3
 
 /-! ### A concrete adversary for the OFB bounds -/
 
 /-- A one-query adversary: it asks `ofbQueryLR` and outputs `true` when the first ciphertext
 block is zero. -/
-def ofbOneQueryAdversary : OFBAdversary 8 := do
-  let r ← ProbOracleComp.query (spec := OFBSpec 8) ofbQueryLR
+def ofbOneQueryAdversary : BlockModeAdversary 8 := do
+  let r ← ProbOracleComp.query (spec := BlockModeSpec 8) ofbQueryLR
   return decide (r.2.head? = some 0)
 
 /-- The adversary asks for two blocks in total, with at most two blocks per query. -/
 theorem isCostBounded_ofbOneQueryAdversary :
-    OracleComp.IsCostBounded (ofbCost 2) ofbOneQueryAdversary 2 := by
+    OracleComp.IsCostBounded (blockModeCost 2) ofbOneQueryAdversary 2 := by
   unfold ofbOneQueryAdversary ProbOracleComp.query
   exact OracleComp.IsCostBounded.mono
     (OracleComp.IsCostBounded.bind (OracleComp.IsCostBounded.query (Sum.inr ofbQueryLR)) fun _ =>
@@ -76,15 +74,16 @@ def xorKeyed (k x : BitString 8) : BitString 8 := k + x
 
 /-- The OFB experiment for `xorKeyed` is the real PRF experiment for the reduction. -/
 example : ofbCpaGame xorKeyed 2 true ofbOneQueryAdversary =
-    PRF.realGame xorKeyed (ofbReduction 2 true ofbOneQueryAdversary) :=
-  ofbCpaGame_eq_realGame xorKeyed 2 true ofbOneQueryAdversary
+    ProbComp.eval (PRF.realExperiment xorKeyed (ofbReduction 2 true ofbOneQueryAdversary)) :=
+  ofbCpaGame_eq_realExperiment xorKeyed 2 true ofbOneQueryAdversary
 
 /-- With a uniform random function on 8-bit blocks, the adversary's view is within
 `2 · (2 + 2) / 2 ^ 8 = 1 / 32` of the ideal experiment. -/
 example :
-    (Game.advantage (PRF.idealGame (ofbReduction 2 false ofbOneQueryAdversary))
-        (ofbIdealGame 2 ofbOneQueryAdversary) : ℝ) ≤ 1 / 32 :=
-  (advantage_idealGame_ofbReduction_le 2 false isCostBounded_ofbOneQueryAdversary).trans_eq
+    (Game.advantage
+        (ProbComp.eval (PRF.idealExperiment (ofbReduction 2 false ofbOneQueryAdversary)))
+        (ProbComp.eval (blockModeIdealExperiment 2 ofbOneQueryAdversary)) : ℝ) ≤ 1 / 32 :=
+  (advantage_idealExperiment_ofbReduction_le 2 false isCostBounded_ofbOneQueryAdversary).trans_eq
     (by norm_num)
 
 /-- OFB mode with a uniform random function on 8-bit blocks: the adversary's left-or-right
@@ -182,12 +181,12 @@ example :
 
 /-! ### Axiom audits for the choice-free combinatorial results -/
 
-/-- info: 'Cslib.Crypto.length_ofbSelect' depends on axioms: [propext] -/
+/-- info: 'Cslib.Crypto.length_blockModeSelect' depends on axioms: [propext] -/
 #guard_msgs in
-#print axioms length_ofbSelect
-/-- info: 'Cslib.Crypto.interpret_ofbChainQueries' depends on axioms: [propext, Quot.sound] -/
+#print axioms length_blockModeSelect
+/-- info: 'Cslib.Crypto.run_ofbChainQueries' depends on axioms: [propext, Quot.sound] -/
 #guard_msgs in
-#print axioms interpret_ofbChainQueries
+#print axioms run_ofbChainQueries
 /-- info: 'Cslib.Crypto.not_isPrefix_prependLength' depends on axioms: [propext, Quot.sound] -/
 #guard_msgs in
 #print axioms not_isPrefix_prependLength

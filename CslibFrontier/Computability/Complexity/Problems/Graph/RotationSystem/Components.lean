@@ -33,7 +33,7 @@ namespace RotationSystem
 /-- Dual and source edge components agree on the same indexed darts. Isolated source points
 are excluded automatically, since this correspondence is stated at darts. -/
 theorem sameComponent_dual_iff {G : Graph} (r : RotationSystem G)
-    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.1) (d e : Dart G) :
+    (hG : ∀ v ∈ G.incidenceVertices, v ∈ G.vertices) (d e : Dart G) :
     RotationCertificate.SameComponent r.dualGraph
       (r.dualDartEquiv d).vertex (r.dualDartEquiv e).vertex ↔
       RotationCertificate.SameComponent G d.vertex e.vertex := by

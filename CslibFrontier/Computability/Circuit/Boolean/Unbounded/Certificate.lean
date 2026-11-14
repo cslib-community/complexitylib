@@ -18,6 +18,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Eq
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
+import CslibFrontier.Foundations.Data.List.Lookup
 import Mathlib.Data.List.GetD
 
 /-!
@@ -267,24 +268,12 @@ theorem getD_evalCode_eq_iff_of_claimable {n : ℕ} {gates : List (Op × List �
   obtain ⟨op, args⟩ := g
   cases op with
   | not => simp [claimable] at hb
-  | and m =>
+  | and m | or m =>
     simp only [claimable, Option.some.injEq] at hb
     subst hb
     dsimp only at hlen ⊢
-    rw [interpretation_and, decide_eq_true_iff]
-    constructor
-    · intro hall c hc
-      obtain ⟨i, hi, rfl⟩ := List.getElem_of_mem hc
-      have := hall ⟨i, by simp only [Op.arity] at hlen; omega⟩
-      simpa [List.getElem?_eq_getElem hi] using this
-    · intro hall i
-      have hi : i.val < args.length := by simp only [Op.arity] at hlen; omega
-      simpa [List.getElem?_eq_getElem hi] using hall _ (List.getElem_mem hi)
-  | or m =>
-    simp only [claimable, Option.some.injEq] at hb
-    subst hb
-    dsimp only at hlen ⊢
-    rw [interpretation_or, decide_eq_false_iff_not, not_exists]
+    simp only [interpretation_and, interpretation_or, decide_eq_true_iff, decide_eq_false_iff_not,
+      not_exists]
     constructor
     · intro hall c hc
       obtain ⟨i, hi, rfl⟩ := List.getElem_of_mem hc
@@ -371,13 +360,8 @@ private theorem le_maxTwo {l : List ℕ} (hl : l.length ≤ 2) {v : ℕ} (hv : v
   · simp [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi]
   · simp [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi]
 
-private theorem maxTwo_le {l : List ℕ} {D : ℕ} (h : ∀ v ∈ l, v ≤ D) : maxTwo l ≤ D := by
-  have key (i : ℕ) : l.getD i 0 ≤ D := by
-    rw [List.getD_eq_getElem?_getD]
-    rcases hi : l[i]? with _ | v
-    · simp
-    · exact h v (List.mem_of_getElem? hi)
-  exact max_le (key 0) (key 1)
+private theorem maxTwo_le {l : List ℕ} {D : ℕ} (h : ∀ v ∈ l, v ≤ D) : maxTwo l ≤ D :=
+  max_le (List.getD_le_of_forall_le h 0) (List.getD_le_of_forall_le h 1)
 
 /-- **Wires of small depth are determined by few inputs.** A wire of small depth `D ≤ d` has a set
 of at most `2 ^ D` inputs such that Kleene evaluation from partial inputs that agree with an

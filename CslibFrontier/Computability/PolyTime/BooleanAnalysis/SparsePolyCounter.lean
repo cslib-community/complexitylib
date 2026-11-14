@@ -22,6 +22,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Max
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.ResourceBounds.Polynomial.Automation
 import Mathlib.Data.List.GetD
@@ -615,19 +616,6 @@ private theorem spc_map {α β γ : Type} {encI : α ↪ List Bool} {encA : β �
     ComputableInPolyTime (fun a => (l a).map fun x => f (a, x)) encI (encList encB) :=
   mapWithInput (f := fun a x => f (a, x)) hl hf
 
-private theorem unaryFoldMax (init : ℕ) :
-    ComputableInPolyTime (fun l : List ℕ => l.foldl max init) (encList encUnary) encUnary := by
-  refine foldl' (encA := encUnary) (encL := encList encUnary) (encB := encUnary)
-    (list := id) (init := fun _ => init) (step := max)
-    id' (const init) (of_tidy .unary_max) (B := fun l => init + (encList encUnary l).length)
-    ((PolyBounded.const init).add .self) (fun l i _ => ?_)
-  simp only [encUnary_apply, List.length_replicate]
-  refine (List.max_le_iff (l := _ :: _) (by simp)).mpr ?_
-  simp only [List.mem_cons, forall_eq_or_imp]; refine ⟨Nat.le_add_right _ _, fun x hx => ?_⟩
-  have hsz := SizedListEncoding.length_elem_le (encA := encUnary) (encL := encList encUnary)
-    l x (List.mem_of_mem_take hx)
-  simp only [encUnary_apply, List.length_replicate] at hsz; omega
-
 @[fun_prop]
 theorem computableInPolyTime_checkVarsLt :
     ComputableInPolyTime (fun p : ℕ × List (List (List ℕ)) => checkVarsLt p.1 p.2)
@@ -685,7 +673,7 @@ theorem computableInPolyTime_scopeWidthOn :
 theorem computableInPolyTime_sysMaxDegree :
     ComputableInPolyTime sysMaxDegree encSparseSystem encUnary := by
   let encM := encList encNat
-  exact (unaryFoldMax 0).comp' ((map (length_list encNat)).comp' (of_tidy (.flatten encM)))
+  exact (unary_foldl_max 0).comp' ((map (length_list encNat)).comp' (of_tidy (.flatten encM)))
 
 @[fun_prop]
 theorem computableInPolyTime_branchMaxFactorIncidence :
@@ -694,7 +682,7 @@ theorem computableInPolyTime_branchMaxFactorIncidence :
   let encS := encList (encList (encList encNat)); let encIn := encPair encUnary encS
   have hr := range.comp' (fst encUnary encS); have hvb := unary_to_binary.comp' (snd encIn encUnary)
   have hvd := computableInPolyTime_varDegree.comp' (hvb.prod (fst encIn encUnary).snd')
-  have hmax := (unaryFoldMax 0).comp' (spc_map hr hvd)
+  have hmax := (unary_foldl_max 0).comp' (spc_map hr hvd)
   exact unary_to_binary.comp' (unary_add.comp' (hmax.prod (const 1)))
 
 @[fun_prop]
@@ -703,7 +691,7 @@ theorem computableInPolyTime_branchMaxFactorWidth :
       (encPair encUnary encSparseSystem) encNat := by
   let eEq := encList (encList encNat); let eS := encList eEq; let eI := encPair encUnary eS
   have hsc := computableInPolyTime_scopeWidthOn.comp' (((fst eI eEq).fst').prod (snd eI eEq))
-  exact unary_to_binary.comp' ((unaryFoldMax 1).comp' (spc_map (snd encUnary eS) hsc))
+  exact unary_to_binary.comp' ((unary_foldl_max 1).comp' (spc_map (snd encUnary eS) hsc))
 
 @[fun_prop]
 theorem computableInPolyTime_branchAugmentedIncidence :

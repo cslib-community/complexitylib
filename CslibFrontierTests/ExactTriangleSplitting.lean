@@ -52,12 +52,12 @@ example : (totalChunks zeroWeight 16 3 : ℝ) ≤ 3 + Real.sqrt 16 :=
   (totalChunks_le zeroWeight (by decide) (by decide) prime3).1
 example : ((instanceIndices zeroWeight 16 2 3).card : ℝ) ≤ 4 * 16 * 2 :=
   card_instanceIndices_le zeroWeight (by decide) (by decide) (by decide) prime3
-example : Fintype.card (lopInstance zeroWeight zeroWeight zeroWeight 16 2 3 (0, 0, 0)).M ≤ 16 :=
+example : Fintype.card (lopInstance zeroWeight zeroWeight zeroWeight 16 2 3 ⟨0, 0, 0⟩).M ≤ 16 :=
   card_middle_lopInstance zeroWeight zeroWeight zeroWeight (by decide) (by decide) prime3 _
 
 -- Residues include negative weights, and are independent of exact zero sums.
 example : (0, 0) ∈ residueClass (fun _ _ : Fin 1 => -1) 3 2 := by decide
-example : IsFalsePositive falseWeight zeroWeight zeroWeight 3 (0, 0, 0) := by decide
+example : IsFalsePositive falseWeight zeroWeight zeroWeight 3 ⟨0, 0, 0⟩ := by decide
 example : ¬ HasZeroTriangle falseWeight zeroWeight zeroWeight := by
   simp [HasZeroTriangle, falseWeight, zeroWeight]
 example : HasZeroTriangle zeroWeight zeroWeight zeroWeight := ⟨0, 0, 0, rfl⟩
@@ -70,14 +70,14 @@ example : scanPiece falseWeight zeroWeight zeroWeight 16 2 0 0 0 = none := by
 example : scanPiece zeroWeight zeroWeight zeroWeight 16 2 0 0 0 = some 0 := by
   simp [scanPiece, piece, pieceSize16, weightSum, zeroWeight, List.finRange_succ]
 example : runScans falseWeight zeroWeight zeroWeight 16 2
-    [(((0 : Fin 3), 0, 0), (0, 0))] = (none, 1) := by
+    [(⟨(0 : Fin 3), 0, 0⟩, (0, 0))] = (none, 1) := by
   have hscan : scanPiece falseWeight zeroWeight zeroWeight 16 2 0 0 0 = none := by
     rw [scanPiece_eq_none_iff]
     intro c _
     norm_num [weightSum, falseWeight, zeroWeight]
   simp [runScans, hscan]
 example : runScans zeroWeight zeroWeight zeroWeight 16 2
-    [(((0 : Fin 3), 0, 0), (0, 0)), ((0, 0, 1), (1, 1))] = (some (0, 0, 0), 1) := by
+    [(⟨(0 : Fin 3), 0, 0⟩, (0, 0)), (⟨0, 0, 1⟩, (1, 1))] = (some ⟨0, 0, 0⟩, 1) := by
   simp [runScans, scanPiece, piece, pieceSize16, weightSum, zeroWeight, List.finRange_succ]
 
 -- The query at rank 63 ends chunk 0; rank 64 starts chunk 1.
@@ -93,7 +93,7 @@ example : (4, 0) ∈ chunkOf zeroWeight 16 3 0 1 := by
   simp [chunkOf, queryCap16, hclass, chunk, rankIn_univ, pairIndex]
 
 private theorem falseQuery : (0, 0) ∈
-    (lopInstance falseWeight zeroWeight zeroWeight 16 2 3 (0, 0, 0)).W := by
+    (lopInstance falseWeight zeroWeight zeroWeight 16 2 3 ⟨0, 0, 0⟩).W := by
   change (0, 0) ∈ chunkOf falseWeight 16 3 0 0
   have hclass : residueClass falseWeight 3 0 = Finset.univ := by
     ext q
@@ -102,7 +102,7 @@ private theorem falseQuery : (0, 0) ∈
 
 -- A modular query really is accepted despite the absence of any exact zero triangle.
 example :
-    (lopInstance falseWeight zeroWeight zeroWeight 16 2 3 (0, 0, 0)).HasCommonNeighbor 0 0 := by
+    (lopInstance falseWeight zeroWeight zeroWeight 16 2 3 ⟨0, 0, 0⟩).HasCommonNeighbor 0 0 := by
   rw [hasCommonNeighbor_lopInstance_iff falseWeight zeroWeight zeroWeight (by decide) falseQuery]
   refine ⟨0, ?_, ?_⟩
   · simp [piece, pieceSize16]
@@ -111,7 +111,7 @@ example :
 -- Supply the actual finite modular answers, rather than an abstract unconstrained answer premise.
 private def modularAnswers (wAB wBC wAC : Fin 16 → Fin 16 → ℤ)
     (ι : InstanceIndex 3) (q : Fin 16 × Fin 16) : Bool :=
-  decide (∃ c ∈ piece 16 16 2 ι.2.2, weightSum wAB wBC wAC q.1 q.2 c ≡ 0 [ZMOD (3 : ℤ)])
+  decide (∃ c ∈ piece 16 16 2 ι.piece, weightSum wAB wBC wAC q.1 q.2 c ≡ 0 [ZMOD (3 : ℤ)])
 
 private theorem modularAnswers_correct (wAB wBC wAC : Fin 16 → Fin 16 → ℤ) :
     AnswersCorrect wAB wBC wAC 16 2 3 (modularAnswers wAB wBC wAC) := by
