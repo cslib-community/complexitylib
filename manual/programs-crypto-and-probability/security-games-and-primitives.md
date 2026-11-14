@@ -1182,11 +1182,13 @@ paper uses uniform draws and permits key-dependent `R`), and deterministic encry
 `encDet : PK → M → R → CT` alongside `keyGen` and `dec`, together with expected
 worst-case-message `δ`-correctness `ExplicitCoinPKE.DeltaCorrect` (defined via `ProbComp.expect`
 and `PMF.toOuterMeasure`, with `deltaCorrect_zero_of_perfect` and `DeltaCorrect.mono`),
-`γ`-spreadness `ExplicitCoinPKE.GammaSpread`, and the single-stage fixed-message distinguishing
-experiment `ExplicitCoinPKE.indCpaGame` (`ExplicitCoinPKE.indCpaAdvantage`, which takes
-caller-supplied messages `(m₀, m₁)` and probability-difference `Game.advantage` rather than
-§2.1 Def. 2.2 / Fig. 4's two-stage key-dependent-message guessing experiment and `|Pr[b' = b] - 1/2|`
-normalization). On top of `ExplicitCoinPKE`, `FujisakiOkamoto.encT` and `FujisakiOkamoto.decT`
+`γ`-spreadness `ExplicitCoinPKE.GammaSpread`, and two-stage IND-CPA (§2.1 Def. 2.2 / Fig. 4):
+`ExplicitCoinPKE.toPKE` is the randomized scheme as a `PKE`, and `ExplicitCoinPKE.cpaAdvantage` is
+its advantage in the shared experiment `PKE.cpaExperiment` with every message pair admissible. The
+advantage is the two-world difference, twice HHK17's `|Pr[b' = b] - 1/2|`. The narrower
+fixed-message experiment `ExplicitCoinPKE.indCpaGame` (`ExplicitCoinPKE.indCpaAdvantage`, messages
+`(m₀, m₁)` fixed before key generation, single-stage adversary) remains for the K-PKE bound; the FO
+theorems do not use it. On top of `ExplicitCoinPKE`, `FujisakiOkamoto.encT` and `FujisakiOkamoto.decT`
 define the derandomization transform `T[PKE, G]` (§3.1, Fig. 5) with mandatory re-encryption check
 `encT P G pk m' = c` (`decT_encT_eq_some`, `encT_of_decT_eq_some`, `dec_of_decT_eq_some`,
 `decT_eq_none_of_reencrypt_ne`), while `FujisakiOkamoto.Scheme` (with arbitrary samplers
@@ -1213,8 +1215,11 @@ simulated FO handler is built from its own `G`, `H` and decapsulation implementa
 hybrid handlers the same way), deterministic oracle adversaries `ROAdversary` on the challenge
 record `KEM.Challenge PK CT K` (fields `pk`, `ct`, `key`; defined in
 [`Encryption/KEM.lean`](../../CslibFrontier/Crypto/Computational/Encryption/KEM.lean)), pathwise
-`(qG, qH)` query budgets `ROQueryBounds` via `OracleComp.IsCostBounded`, and the lazy-cached executable game `Scheme.roIndCcaGame`
-(`Scheme.indCcaRomAdvantage`) and eager random-oracle game `Scheme.eagerIndCcaGame` with exact
+`(qG, qH)` query budgets `ROQueryBounds` via `OracleComp.IsCostBounded`, adversaries with explicit
+coins `RandomizedROAdversary` (a coin draw `coins`, then the deterministic adversary `run ω`;
+`ofDeterministic` for a single coin value; budgets `QueryBounds` and `FullQueryBounds` for every
+coin value), and the lazy-cached executable game `Scheme.roIndCcaGame` (played by a randomized
+adversary through `RandomizedROAdversary.play` in `Scheme.indCcaRomAdvantage`) and eager random-oracle game `Scheme.eagerIndCcaGame` with exact
 eager/lazy equivalence (`Scheme.eval_roIndCcaGame_eq_eagerIndCcaGame`,
 `Scheme.indCcaRomAdvantage_eq_eager`). Both games are instances of one ROM IND-CCA experiment
 `Scheme.romIndCcaExperiment`, which takes the key generator and the decapsulation oracle as a
@@ -1228,27 +1233,32 @@ with its decapsulation program and prove such bridges rather than writing new ha
 eager/lazy proof. Eager games draw their random oracles from the named tables `Scheme.coinTable`
 (for `G`) and `Scheme.keyTable X` (a key-valued table on `X`, such as `H` on `Bool × M × CT` or a
 ciphertext table on `CT`); new eager hybrids should use them rather than spelling out `PMF.pi`.
-The module also supplies the keyless simulator `Scheme.simHandler` and IND-CPA
-reduction `Scheme.romCpaReduction` (`Scheme.simHitProb`, `Scheme.indCpaAdvantage_romCpaReduction`,
-the query-count row bound `Scheme.sum_simHitProb_le`, and the OW-to-CPA averaging bound
-`Scheme.avg_simHitProb_le_indCpaAdvantage_romCpaReduction`). The IND-CCA theorem itself is
+The module also supplies the keyless simulator `Scheme.simHandler`, its run on a challenge
+`Scheme.simFilterHit`, and the IND-CPA reduction `Scheme.romCpaReduction A`, one `TwoStage`
+adversary whose first stage draws both challenge messages with `S.sampleMsg` (as `D₁` of HHK17
+Fig. 8 does) and whose second stage runs `A` against the simulator and reports whether `m₁` was
+queried to `G`. The one-wayness experiment of the challenge hop is `Scheme.simFilterOwExperiment`;
+`Scheme.succProbability_simFilterOwExperiment_le` bounds it by the reduction's `cpaAdvantage` plus
+`(qG + qH) / |M|`, and `RandomizedROAdversary.advantage_play_le` averages per-coin bounds over the
+adversary's coins. The IND-CCA theorem itself is
 [`FujisakiOkamoto/NotBot.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/NotBot.lean):
 `Scheme.indCcaRomAdvantage_le` bounds `indCcaRomAdvantage A` for uniform messages, a `δ`-correct
-and `γ`-spread PKE and `(qG, qH)` random-oracle queries (decapsulation queries unbounded) by
-`2 · indCpaAdvantage m₀ m₁ (romCpaReduction A m₀ m₁) + (2 qH + 2 (qG + qH)) / |M| +
-2 (qG + qH + 1) δ + 2 (qG + qH) 2^{-γ}` for some `m₀ ≠ m₁` (where `roIndCcaGame` draws both real `H` values and the independent ideal challenge key from the arbitrary sampler `S.sampleKey`, recovering the uniform-key experiment of HHK17 §2.2 Def. 2.4 / Fig. 4 when `S.sampleKey` is uniform). Its hybrids are fixed in
+and `γ`-spread PKE and `(qG, qH)` random-oracle queries for every coin value (decapsulation
+queries unbounded) by `2 · cpaAdvantage (romCpaReduction A) + (2 qH + 2 (qG + qH)) / |M| +
+2 (qG + qH + 1) δ + 2 (qG + qH) 2^{-γ}`. This is a concrete bound for one fixed scheme: there is
+no security parameter and no running-time certificate for the reduction yet (#5293) (where `roIndCcaGame` draws both real `H` values and the independent ideal challenge key from the arbitrary sampler `S.sampleKey`, recovering the uniform-key experiment of HHK17 §2.2 Def. 2.4 / Fig. 4 when `S.sampleKey` is uniform). Its hybrids are fixed in
 `NotBot/Hybrids.lean` (`Scheme.eagerFbGame`, `Scheme.eagerCoupledGame`, `Scheme.coupledGame`,
 `Scheme.simGame`), one file per hop: fallback-seed decoupling (`NotBot/Fallback.lean`), re-indexing
 the oracles so that decapsulation reads a ciphertext table (`NotBot/Pushforward.lean`) and its lazy
 realization (`NotBot/Lazy.lean`), the `δ`-correctness bad event (`NotBot/Correctness.lean`), and the
-challenge hop with the `γ` collision term (`NotBot/Challenge.lean`). To see why the re-encryption check of `T` cannot be omitted in `FO-notbot`, import [`FujisakiOkamoto/NoCheck.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/NoCheck.lean): for any explicit-coin PKE `P` over `Fin n → Bool`, `leakyPKE P` appends an `Option (Fin n)` tag to ciphertexts while preserving `indCpaAdvantage` (`leakyPKE_indCpaAdvantage`), `DeltaCorrect` (`leakyPKE_deltaCorrect`), and `GammaSpread` (`leakyPKE_gammaSpread`) and making `Scheme.decapsNotBot` reject tagged ciphertexts `(c, some i)` via the re-encryption check (`decapsNotBot_leakyPKE_some`), whereas dropping the re-encryption check (`Scheme.decapsNoCheck`, `Scheme.eagerNoCheckGame`) lets the bit-recovery adversary `leakAdv` (`roQueryBounds_leakAdv`, `0` `G`-queries and `n + 1` `H`-queries) achieve advantage at least `1 - (n + 1) / |K|` for a perfectly correct `P` and uniform keys (`advantage_eagerNoCheckGame_leakAdv`; checked client in [`CslibFrontierTests/Crypto/FujisakiOkamotoNoCheck.lean`](../../CslibFrontierTests/Crypto/FujisakiOkamotoNoCheck.lean)). For explicit-rejection `FO^⊥ = U^⊥ ∘ T` (§3.2.1, Fig. 9), import [`FujisakiOkamoto/Bot.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Bot.lean) (`ROFullQueryBounds`, `Scheme.roIndCcaBotGame`, `Scheme.eagerIndCcaBotGame`, `Scheme.eval_roIndCcaBotGame_eq_eagerIndCcaBotGame`, `Scheme.simBotGame`, `Scheme.romBotCpaReduction`, `Scheme.indCcaBotAdvantage_le`, which removes the `2 qH / |M|` fallback seed-guessing term and adds the `2 qD 2^{-γ}` ciphertext-validity spreadness term over `qD` decapsulation queries, with `roIndCcaBotGame` and `eagerIndCcaBotGame` likewise drawing both real `H` replies and the independent ideal challenge key from `S.sampleKey` so uniform `S.sampleKey` recovers the standard uniform-ideal-key experiment) and [`FujisakiOkamoto/SpreadNecessity.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/SpreadNecessity.lean) (`unspreadPointPKE`, `unspreadScheme`, `probeDecapsAdv`, `advantage_eagerIndCcaBotGame_simBotGame_probeDecapsAdv`, showing that a single decapsulation query `qD = 1` with `qG = qH = 0` achieves distinguishing advantage `1 - 1 / |M|` against `simBotGame` when `γ`-spreadness fails at one message); standalone OW-PCA / OW-PCVA security definitions for `T` are not formalized separately. Checked clients in
+challenge hop with the `γ` collision term (`NotBot/Challenge.lean`). To see why the re-encryption check of `T` cannot be omitted in `FO-notbot`, import [`FujisakiOkamoto/NoCheck.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/NoCheck.lean): for any explicit-coin PKE `P` over `Fin n → Bool`, `leakyPKE P` appends an `Option (Fin n)` tag to ciphertexts while preserving two-stage `cpaAdvantage` (`leakyPKE_cpaAdvantage`), `DeltaCorrect` (`leakyPKE_deltaCorrect`), and `GammaSpread` (`leakyPKE_gammaSpread`) and making `Scheme.decapsNotBot` reject tagged ciphertexts `(c, some i)` via the re-encryption check (`decapsNotBot_leakyPKE_some`), whereas dropping the re-encryption check (`Scheme.decapsNoCheck`, `Scheme.eagerNoCheckGame`) lets the bit-recovery adversary `leakAdv` (`roQueryBounds_leakAdv`, `0` `G`-queries and `n + 1` `H`-queries) achieve advantage at least `1 - (n + 1) / |K|` for a perfectly correct `P` and uniform keys (`advantage_eagerNoCheckGame_leakAdv`; checked client in [`CslibFrontierTests/Crypto/FujisakiOkamotoNoCheck.lean`](../../CslibFrontierTests/Crypto/FujisakiOkamotoNoCheck.lean)). For explicit-rejection `FO^⊥ = U^⊥ ∘ T` (§3.2.1, Fig. 9), import [`FujisakiOkamoto/Bot.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/Bot.lean) (`ROFullQueryBounds`, `Scheme.roIndCcaBotGame`, `Scheme.eagerIndCcaBotGame`, `Scheme.eval_roIndCcaBotGame_eq_eagerIndCcaBotGame`, `Scheme.simBotGame`, `Scheme.romBotCpaReduction`, `Scheme.indCcaBotAdvantage_le`, which removes the `2 qH / |M|` fallback seed-guessing term and adds the `2 qD 2^{-γ}` ciphertext-validity spreadness term over `qD` decapsulation queries, with `roIndCcaBotGame` and `eagerIndCcaBotGame` likewise drawing both real `H` replies and the independent ideal challenge key from `S.sampleKey` so uniform `S.sampleKey` recovers the standard uniform-ideal-key experiment) and [`FujisakiOkamoto/SpreadNecessity.lean`](../../CslibFrontier/Crypto/Protocols/KEM/FujisakiOkamoto/SpreadNecessity.lean) (`unspreadPointPKE`, `unspreadScheme`, `probeDecapsAdv`, `advantage_eagerIndCcaBotGame_simBotGame_probeDecapsAdv`, showing that a single decapsulation query `qD = 1` with `qG = qH = 0` achieves distinguishing advantage `1 - 1 / |M|` against `simBotGame` when `γ`-spreadness fails at one message); standalone OW-PCA / OW-PCVA security definitions for `T` are not formalized separately. Checked clients in
 [`CslibFrontierTests/Crypto/FujisakiOkamoto.lean`](../../CslibFrontierTests/Crypto/FujisakiOkamoto.lean)
 exercise honest `T`/`FO^⊥`/`FO-notbot` recovery and non-canonical-coin rejection on
 `maskedShiftPKE`, zero-error and non-zero tight/non-tight `DeltaCorrect` witnesses (`noisyCoinPKE`
-with failure probability `1 / 2`), positive and negative `GammaSpread` and `indCpaAdvantage`
-witnesses on `identityPKE`, and `ROQueryBounds`, `simHitProb`, `romCpaReduction`, positive
-`indCcaRomAdvantage`, and eager/lazy/averaging witnesses on `identityScheme`,
-`identityUnifKeyScheme`, and `maskedShiftScheme`;
+with failure probability `1 / 2`), positive and negative `GammaSpread` witnesses and fixed-message and two-stage IND-CPA
+witnesses on `identityPKE`, and `ROQueryBounds`, `simFilterHit`, the exact two-stage advantage
+`3 / 4` of `romCpaReduction`, positive `indCcaRomAdvantage`, and eager/lazy and one-wayness
+witnesses on `identityScheme`, `identityUnifKeyScheme`, and `maskedShiftScheme`;
 [`CslibFrontierTests/Crypto/FujisakiOkamotoNotBot.lean`](../../CslibFrontierTests/Crypto/FujisakiOkamotoNotBot.lean)
 and [`CslibFrontierTests/Crypto/FujisakiOkamotoBot.lean`](../../CslibFrontierTests/Crypto/FujisakiOkamotoBot.lean)
 instantiate `Scheme.indCcaRomAdvantage_le` (`≤ 3 / 8`) and `Scheme.indCcaBotAdvantage_le` (`≤ 1 / 4`, plus the `15 / 16` `probeDecapsAdv` separation on `unspreadPointPKE pairCoinPKE 0`) on `pairCoinScheme`.
