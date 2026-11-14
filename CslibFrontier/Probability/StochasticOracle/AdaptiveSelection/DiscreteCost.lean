@@ -35,6 +35,22 @@ open PartialCover MeasureTheory
 open scoped ENNReal
 variable {E J Ω : Type*} [DecidableEq E] [DecidableEq J]
 
+/-- Actual accrued bills agree when their next-response charges agree on every
+supported prefix and supported next response. -/
+theorem accruedBill_congr_on_support
+    (step : ∀ t : ℕ, (Fin t → Ω) → PMF Ω)
+    (bill other : List Ω → Ω → ℝ)
+    (H : ∀ t h, h ∈ (PMF.seqProcess step t).support →
+      ∀ x ∈ (step t h).support, bill (PMF.seqHistory h) x = other (PMF.seqHistory h) x)
+    (n : ℕ) (h : Fin n → Ω) (hh : h ∈ (PMF.seqProcess step n).support) :
+    accruedBill bill (PMF.seqHistory h) = accruedBill other (PMF.seqHistory h) := by
+  induction n with
+  | zero => simp [accruedBill]
+  | succ n ih =>
+    simp only [PMF.seqProcess, PMF.mem_support_bind_iff, PMF.mem_support_map_iff] at hh
+    obtain ⟨g, hg, x, hx, rfl⟩ := hh
+    rw [PMF.seqHistory_snoc, accruedBill, accruedBill, ih g hg, H n g hg x hx]
+
 /-- One-step tower accounting for the actual nonnegative accrued bill. The
 response and its charge may be correlated and have unbounded discrete support. -/
 theorem accruedBill_step_discrete (law : List Ω → PMF Ω)

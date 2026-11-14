@@ -86,7 +86,7 @@ theorem retaining_active (O : Oracle B R J) (I : Instance E J) (ρ : ℝ)
     cases x with
     | none =>
       have hc' : I.covered (selected I ρ (proposals O) h) ≠ I.ground := by
-        simpa only [selected, proposals, Instance.retain] using hc
+        simpa only [selected, proposals, recordProposals, Instance.retain] using hc
       have hs := ih hc'
       have hz : (law O (retainingPolicy O I ρ select) h).weight none = 0 := by
         simp [law, hs, retainingPolicy, hc', Distribution.bind, Distribution.map]
@@ -168,7 +168,8 @@ theorem upper_latency (O : Oracle B R J) (I : Instance E J) (ρ : ℝ)
   | nil => simp [accruedBill]
   | @cons h x hh hx ih =>
     cases x with
-    | none => simpa only [accruedBill, latency, add_zero, List.length_cons, Nat.cast_add,
+    | none => simpa only [accruedBill, latency, recordResource,
+        add_zero, List.length_cons, Nat.cast_add,
         Nat.cast_one] using ih.trans (by nlinarith)
     | some z =>
       rcases z with ⟨b, x⟩
@@ -185,7 +186,7 @@ theorem upper_latency (O : Oracle B R J) (I : Instance E J) (ρ : ℝ)
       rw [hw] at hx
       have ht := H.time h hh hc b (pos_of_mul_pos_left hx ((O.respond h b).nonneg x)) x
         (pos_of_mul_pos_right hx ((select h).nonneg b))
-      simp only [accruedBill, latency, List.length_cons, Nat.cast_add, Nat.cast_one]
+      simp only [accruedBill, latency, recordResource, List.length_cons, Nat.cast_add, Nat.cast_one]
       nlinarith
 
 private theorem historyExpectation_mono_terminal {Ω : Type} [Fintype Ω]

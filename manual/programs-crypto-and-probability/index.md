@@ -862,6 +862,37 @@ and checks both the survival sum and `2 * min(n, 2)` envelope.
 This removes the finite-alphabet restriction for finite-horizon coverage and stopped
 cost. Arbitrary-discrete infinite-path and native resource assembly remain separate.
 
+For an actual stopped batch-selecting policy, import
+`CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Discrete` and use its
+`SelectionPolicy.Discrete` namespace. `retainingLaw` samples the selected batch before
+its response and retains both in an optional record. At retained completion, or after
+a prior halt, every later record is `none`, with no proposals, charge or duration.
+`UpperBounds` supplies primitive productivity, conditional invoice-mean and actual
+duration envelopes only at reached incomplete histories and supported selected batches.
+Batch and response types can be arbitrary discrete types; selection can depend on
+the full transcript. No final coverage, latency, expected-cost or integrability claim
+is supplied as a contract field.
+
+`upper_conditional` derives the joint progress and invoice envelopes by averaging
+the actual batch-then-response law. `certified_success` bounds the probability of
+retained coverage, its dual weight certificate and actual deadline together. Physical
+latency is proved pathwise from supported batch durations. `cost_le_binomial_sum`
+and `cost_le_mean` bound the actual raw recorded invoices, using the proved equality
+with coverage-stopped billing on supported executions. The separate
+`SelectionPolicy.Discrete.FiniteTable` import proves `retainingLaw_toPMF`: the existing
+finite-table retaining policy has exactly this next-record law at every history,
+including unreachable prior-halt/incomplete histories. Both interfaces share the
+record proposal and resource decoders.
+
+The checked [adaptive batch client](../../CslibFrontierTests/StochasticOracleDiscreteBatches.lean)
+has two singleton obligations and queries the first one still uncovered by actual
+retention. A geometric zero response supplies that batch's singleton; other responses
+supply nothing. The batch choice changes after the first retained success. Invoices
+`x + 1` have unbounded positive-probability support and mean two, correlated with
+progress, while physical duration is one. The client checks certified deadline success
+and the actual stopped bill's `2 * min(u, 4)` envelope. This is a constructed finite-horizon
+semantic policy; it does not assert native realization of arbitrary stochastic kernels.
+
 The [complete reachable-history client](../../CslibFrontierTests/StochasticOracleAdaptiveReachable.lean)
 uses a correlated response law with a null response that poisons subsequent kernels
 and charges. It checks that both old all-history envelopes fail at that unreachable

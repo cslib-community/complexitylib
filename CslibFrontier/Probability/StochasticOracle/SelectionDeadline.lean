@@ -107,14 +107,15 @@ theorem latency_ge_calls (O : Oracle B R J) (π : Policy B R J) (I : Instance E 
   | @cons h x hh hx ih =>
     cases x with
     | none => simpa only [count, issued, Option.isSome_none, Bool.false_eq_true,
-        ite_false, Nat.add_zero, accruedBill, latency, add_zero] using ih
+        ite_false, Nat.add_zero, accruedBill, latency, recordResource, add_zero] using ih
     | some z =>
       rcases z with ⟨a, x⟩
       have hs := active_of_call O π h a x hx
       rw [law_weight_call O π h hs] at hx
       have hl := H.time h hh hs a (pos_of_mul_pos_left hx ((O.respond h a).nonneg x)) x
         (pos_of_mul_pos_right hx ((π.choose h).nonneg (some a)))
-      simp only [count, issued, Option.isSome_some, ite_true, accruedBill, latency, Nat.cast_add,
+      simp only [count, issued, Option.isSome_some, ite_true, accruedBill, latency, recordResource,
+        Nat.cast_add,
         Nat.cast_one, mul_add, mul_one]
       linarith
 
