@@ -8,7 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Oracle
-public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Complexity
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Encoding
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Inductive
 public import CslibFrontier.Foundations.Data.Fin.Decode
 
@@ -23,13 +23,21 @@ count and produces an actual `Fin operations` channel; an out-of-range tag halts
 calling an oracle. Thus operation dispatch is part of the finite description, not a semantic
 callback.
 
-The encoding is a bit string with the following convention. States, symbols and operation tags
-use `Turing.MultiTapeTM.encUnary`; blanks use `encOption`; finite vectors and the transition table
-use framed `encList`; products and structures use framed `encPair`; and the two action constructors
-use the leading-bit tags of `encSum`. Ordinary keys and tape actions retain the existing
-`Turing.MultiTapeTM.Universal.eKey` and `.eAct` layouts. The resulting `descLen` is therefore a
-rigorous unary model-code length, not an implementation byte count. It includes the declared
-control and operation counts, every control and operation tag, and the complete transition table.
+The encoding is a bit string with the following convention. The outer description uses the
+right-associated tuple encoding `encPair encUnary (encPair encUnary (encPair encUnary
+(encPair encUnary (encList ...))))`, in exact field order: work-tape count, user-state count,
+operation count, initial-state tag, transition table. Thus the first four field words are framed in
+turn, and the final `encList` word is the unframed tuple tail; that list is itself the concatenation
+of one frame per table entry. A table entry is an `encPair` of its key and two stored branches, so
+the key is framed and the branch pair is the tail. Keys list the ordinary state/input/work-head
+fields before the answer heads, and branches are ordered `false`, then `true`. States, symbols and
+operation tags use
+`Turing.MultiTapeTM.encUnary`; blanks use `encOption`; lists use `encList`; and the two action
+constructors use the leading-bit tags of `encSum`. Ordinary key and tape-action fields reuse the
+existing `Turing.MultiTapeTM.Universal.eKey` and `.eAct` encodings. The resulting `descLen` is
+therefore a rigorous unary model-code length, not an implementation byte count. It includes the
+declared control and operation counts, every control and operation tag, and the complete transition
+table.
 
 `Desc.runOracle` is the open denotational semantics. Its equality with the common
 `MultiTapePTM.runOracle` interpreter holds as a program, before any external handler is chosen;
@@ -261,8 +269,9 @@ attribute [nolint defsWithUnderscore] eAct_toSum eAct_elim
 /-- The pair of explicitly stored Boolean branches, in `false`, `true` order. -/
 enc_structure eBranches : Branches where falseBranch : eAct, trueBranch : eAct
 
-/-- Description encoding: unary tape count, unary operation count, unary initial state, then the
-framed list of framed key/branch pairs. The user-state count is unary too. -/
+/-- Description encoding as a right-associated tuple in declaration order: unary tape count,
+unary user-state count, unary operation count, unary initial-state tag, then the framed list of
+framed key/branch pairs. -/
 enc_structure eDesc : Desc where
   tapes : encUnary, states : encUnary, operations : encUnary, q₀ : encUnary,
   table : (encList (encPair eKey eBranches))

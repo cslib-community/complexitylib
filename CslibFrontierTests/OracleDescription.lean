@@ -21,8 +21,10 @@ The example also checks zero clock, an empty table, out-of-range operation and s
 and an invalid initial state tag. These are semantic boundary checks, not resource or security
 claims.
 
-The client imports the description module through its public interface. It checks the complete
-output and shared handler-state law, plus zero-clock, empty-table and malformed-tag boundaries.
+The library's `Desc.runWith_toMachine` theorem gives denotational equality for an arbitrary shared
+stateful handler. This client separately chooses one fixed logging handler and checks its complete
+output/log law, plus zero-clock, empty-table and malformed-tag boundaries; that concrete trace is
+not a claim about every handler.
 
 ## References
 
@@ -177,6 +179,17 @@ private theorem transition₃ (coin : Bool) :
     cfg₃.tapes.workTapeSymbols cfg₃.answerSymbols coin _ hfind]
   cases coin <;> rfl
 
+/-- Interpret a private fair coin before proving that it is irrelevant. This keeps the draw in the
+open program and discards it only after every interpreted branch has the same full stateful law. -/
+private theorem runWith_uniformBool_bind_const {Query State α : Type}
+    {spec : Query → Type} (oracle : (q : Query) → StateT State PMF (spec q))
+    (next : Bool → ProbOracleComp spec α) (state : State) (target : PMF (α × State))
+    (hnext : ∀ bit, ProbOracleComp.runWith oracle (next bit) state = target) :
+    ProbOracleComp.runWith oracle
+      (ProbOracleComp.sample (ProbComp.uniform Bool) >>= next) state = target := by
+  rw [ProbOracleComp.runWith_sample_bind, ProbComp.eval_uniform]
+  simpa only [hnext] using PMF.bind_const (PMF.uniformOfFintype Bool) target
+
 /-- The second request contains the first reply, and the final output contains the second reply. -/
 theorem run_description :
     ProbOracleComp.runWith handler (description.runOracle 4 []) [] =
@@ -192,12 +205,10 @@ theorem run_description :
         (machine.runFrom (ProbOracleComp.sample (ProbComp.uniform Bool))
           (fun op word => ProbOracleComp.query (op, word)) 3 cfg₁) [[]] := by
     rw [show 4 = 3 + 1 by omega, MultiTapePTM.runFrom_succ]
-    simp only [cfg₀_state, Fin.isValue, ProbOracleComp.runWith_bind,
-      ProbOracleComp.runWith_sample, ProbComp.eval_uniform, PMF.bind_map]
-    convert PMF.bind_const (PMF.uniformOfFintype Bool) _ using 1
-    apply congrArg (PMF.uniformOfFintype Bool).bind
-    funext bit
-    simp [Function.comp_apply, transition₀, handler, cfg₁, operation, cfg₀_queryBuffer]
+    simp only [cfg₀_state, Fin.isValue]
+    apply runWith_uniformBool_bind_const
+    intro bit
+    simp [transition₀, handler, cfg₁, operation, cfg₀_queryBuffer]
   rw [h₀]
   have h₁ : ProbOracleComp.runWith handler
       (machine.runFrom (ProbOracleComp.sample (ProbComp.uniform Bool))
@@ -206,12 +217,10 @@ theorem run_description :
         (machine.runFrom (ProbOracleComp.sample (ProbComp.uniform Bool))
           (fun op word => ProbOracleComp.query (op, word)) 2 cfg₂) [[]] := by
     rw [show 3 = 2 + 1 by omega, MultiTapePTM.runFrom_succ]
-    simp only [cfg₁_state, Fin.isValue, ProbOracleComp.runWith_bind,
-      ProbOracleComp.runWith_sample, ProbComp.eval_uniform, PMF.bind_map]
-    convert PMF.bind_const (PMF.uniformOfFintype Bool) _ using 1
-    apply congrArg (PMF.uniformOfFintype Bool).bind
-    funext bit
-    simp [Function.comp_apply, transition₁, cfg₂]
+    simp only [cfg₁_state, Fin.isValue]
+    apply runWith_uniformBool_bind_const
+    intro bit
+    simp [transition₁, cfg₂]
   rw [h₁]
   have h₂ : ProbOracleComp.runWith handler
       (machine.runFrom (ProbOracleComp.sample (ProbComp.uniform Bool))
@@ -220,25 +229,20 @@ theorem run_description :
         (machine.runFrom (ProbOracleComp.sample (ProbComp.uniform Bool))
           (fun op word => ProbOracleComp.query (op, word)) 1 cfg₃) [[], [7]] := by
     rw [show 2 = 1 + 1 by omega, MultiTapePTM.runFrom_succ]
-    simp only [cfg₂_state, Fin.isValue, ProbOracleComp.runWith_bind,
-      ProbOracleComp.runWith_sample, ProbComp.eval_uniform, PMF.bind_map]
-    convert PMF.bind_const (PMF.uniformOfFintype Bool) _ using 1
-    apply congrArg (PMF.uniformOfFintype Bool).bind
-    funext bit
-    simp [Function.comp_apply, transition₂, handler, cfg₃, operation, cfg₂_queryBuffer]
+    simp only [cfg₂_state, Fin.isValue]
+    apply runWith_uniformBool_bind_const
+    intro bit
+    simp [transition₂, handler, cfg₃, operation, cfg₂_queryBuffer]
   rw [h₂]
   change ProbOracleComp.runWith handler
     (machine.runFrom (ProbOracleComp.sample (ProbComp.uniform Bool))
       (fun op word => ProbOracleComp.query (op, word)) (0 + 1) cfg₃) [[], [7]] = _
   rw [MultiTapePTM.runFrom_succ]
-  simp only [cfg₃_state, Fin.isValue, MultiTapePTM.runFrom_zero, bind_pure_comp,
-    ProbOracleComp.runWith_bind, ProbOracleComp.runWith_sample, ProbComp.eval_uniform,
-    PMF.bind_map]
-  convert PMF.bind_const (PMF.uniformOfFintype Bool)
-    (PMF.pure ([9], [[], [7]])) using 1
-  apply congrArg (PMF.uniformOfFintype Bool).bind
-  funext bit
-  simp only [Function.comp_apply, transition₃]
+  simp only [cfg₃_state, Fin.isValue]
+  apply runWith_uniformBool_bind_const
+  intro bit
+  simp only [transition₃]
+  simp only [MultiTapePTM.runFrom_zero, ProbOracleComp.runWith_pure]
   change PMF.pure (cfg₄.tapes.output, [[], [7]]) = PMF.pure ([9], [[], [7]])
   rw [cfg₄_output]
 
