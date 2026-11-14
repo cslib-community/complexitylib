@@ -117,9 +117,7 @@ private theorem two_le_bucketCount (hγ : 0 < γ₂) (hdvd : 2 * γ₂ ∣ q - 1
 
 private theorem neg_one_emod_natCast {m : ℕ} (hm : 0 < m) :
     (-1 : ℤ) % (m : ℤ) = (m : ℤ) - 1 := by
-  rw [← Int.add_mul_emod_self_left (-1) (m : ℤ) 1,
-    Int.emod_eq_of_lt (by omega) (by omega)]
-  ring
+  simpa using (Int.negSucc_emod 0 (b := (m : ℤ)) (by omega))
 
 /-- The exceptional negative representatives next to zero are precisely the wrap-around bucket. -/
 private theorem highBits_intCast_eq_zero_of_neg (hγ : 0 < γ₂) (hdvd : 2 * γ₂ ∣ q - 1)
