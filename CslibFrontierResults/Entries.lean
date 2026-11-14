@@ -6,6 +6,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
+import CslibFrontier.Probability.MarkovChain.RandomWalk
 import CslibFrontier.Foundations.Combinatorics.Expander.HittingProduct
 import CslibFrontier.Computability.Complexity.Problems.Permanent.Valiant
 import CslibFrontier.Computability.Complexity.Problems.ThreeSAT.Collapse
@@ -5770,6 +5771,26 @@ register_result "bilinear-finite-field-fingerprint" where
     uniform product sampling detects a nonzero bilinear fingerprint with probability at \
     least (1 - 1/|F|)^2. Nonzero outer products attain equality, including characteristic \
     two. No runtime bound or general rank formula."
+
+register_result "random-walk-edge-hitting-time" where
+  title := "The random walk crosses an edge of a connected graph in expected time at most 2|E|"
+  topic := "randomized complexity"
+  sources := [
+    { paper := Goldreich2007Draft, theorem := "Exercise 6.19 (completing Proposition 6.13)",
+      locator := "February 2007 draft r3.pdf, PDF p. 56; printed p. 258" }
+  ]
+  theorems := [
+    Cslib.Probability.MarkovChain.hittingTime_randomWalk_le_of_adj,
+    Cslib.Probability.MarkovChain.hittingTime_randomWalk_add_degree_le,
+    Cslib.Probability.MarkovChain.degree_mul_returnTime_randomWalk,
+    Cslib.Probability.MarkovChain.hittingTime_randomWalk_le_dist_mul
+  ]
+  scope := "Finite simple graphs (Mathlib SimpleGraph) with the simple random walk as a \
+    MarkovChain; connectedness assumed. Expected hitting and return times are exact \
+    extended-real tail sums of the probabilities of avoiding the target, not finite-horizon \
+    approximations. Proves E_u[tau_v] + deg v <= 2|E| for every edge {u,v}, Kac's formula \
+    deg v * E_v[tau+_v] = 2|E|, and E_u[tau_v] <= 2|E| dist(u,v). Proposition 6.13's cover-time \
+    bound and the log-space USTCON algorithm are not included."
 
 register_result "goldreich-expander-varying-density-hitting" where
   title := "Expander-walk varying-density product and constant-set bound"

@@ -702,6 +702,42 @@ sample per stage never gives relative error `1 / 2` there. Run
 A goal of the form `t_mix(ε) = k` needs both directions: `mixingTime_le_of_distToStationary_le`
 for `≤`, and `(hπ : P.IsStationary π).mixingTime_le_iff` at `k - 1` for `≥`.
 
+## Bound expected hitting and return times of a finite Markov chain
+
+Import [MarkovChain/HittingTime.lean](../../CslibFrontier/Probability/MarkovChain/HittingTime.lean).
+For `P : MarkovChain V` with `[Fintype V] [DecidableEq V]`, `survival P v t x` is the probability
+`P_x(τ_v > t)` that the chain started at `x` avoids `v` at times `0, …, t`, defined by conditioning
+on the first step. `hittingTime P v x = ∑' t, survival P v t x` is the expected hitting time
+`E_x[τ_v]`, and `returnTime P v` is the expected return time `E_v[τ⁺_v]`. Both take values in
+`ℝ≥0∞`: they are exact expectations, possibly `⊤`, not truncated sums, and need no summability
+side conditions.
+
+Work with them through these lemmas rather than unfolding the tail sums.
+`hittingTime_eq_of_ne` and `returnTime_eq` are the first-step equations, and
+`hittingTime_le_add` is the triangle inequality `E_x[τ_w] ≤ E_x[τ_v] + E_v[τ_w]`.
+`mul_survival_le_hittingTime` is Markov's inequality `(t + 1) P_x(τ_v > t) ≤ E_x[τ_v]`, which
+turns an expectation bound into a bound on the probability that a `t`-step walk misses `v`.
+Kac's formula `mul_returnTime_eq` needs a stationary measure `π : V → ℝ≥0∞`, given as
+`∀ y, ∑ x, π x * P x y = π y`, and finiteness of `∑ x, π x * hittingTime P v x`; it gives
+`π v * returnTime P v = ∑ x, π x`. `IsStationary.mul_returnTime_eq_one` is the version for a
+stationary `PMF`. Finiteness comes from `hittingTime_ne_top`: give a set `S` closed under
+transitions of positive probability from which `v` is reachable along such transitions. Pass
+`Set.univ` for an irreducible chain, or a connected component.
+
+[MarkovChain/RandomWalk.lean](../../CslibFrontier/Probability/MarkovChain/RandomWalk.lean) is the
+worked client. `randomWalk G` is the simple random walk on a finite `SimpleGraph`, and an
+isolated vertex stays put, so it is a chain for every graph. The degrees are stationary
+(`sum_degree_mul_randomWalk`), so Kac's formula gives `degree_mul_returnTime_randomWalk`,
+`deg v * E_v[τ⁺_v] = 2 |E|`, for a connected graph. Then `hittingTime_randomWalk_add_degree_le`
+proves `E_u[τ_v] + deg v ≤ 2 |E|` for every edge (Goldreich, Exercise 6.19), and
+`hittingTime_randomWalk_le_dist_mul` proves `E_u[τ_v] ≤ dist(u, v) · 2 |E|`. The
+[checked clients](../../CslibFrontierTests/RandomWalkHitting.lean) state Exercise 6.19 in the
+source's form, compute `E_0[τ_1] = 1` and `E_0[τ⁺_0] = 2` on a single edge (so the edge bound is
+an equality there), and instantiate it on a triangle. Run
+`scripts/build.sh CslibFrontierTests.RandomWalkHitting`. If a proof needs `∑ y, P x y = 1`, use
+`sum_apply`. Do not convert to `ℝ` before the finiteness lemmas are available, since `toReal`
+sends `⊤` to `0`.
+
 ## Test for a perfect matching with a random determinant
 
 Import [Matching/Edmonds.lean](../../CslibFrontier/Algorithms/Matching/Edmonds.lean). A bipartite
