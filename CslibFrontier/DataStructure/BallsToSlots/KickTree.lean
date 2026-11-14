@@ -42,14 +42,17 @@ Lemma 1 (pp. 10–11 / PDF pp. 11–12) and Theorems 2–3 (p. 12 / PDF p. 13) 3
 and `2m`-th moment / `(1 - δ)`-w.h.p. multi-tree concentration.
 
 Namespace `Cslib.DataStructure.BallsToSlots` (and `KickTree`) holds this Section 3 pure
-balls-to-slots model, while the upcoming `Cslib.DataStructure.Dictionary.KickTree` (tracked in #5129
-and #5186) will hold the Sections 5–6 dictionary layers. Adaptations: (1) XOR probe deduplication
-`g(x) ^^^ (idx % M)` over primary slots; (2) dyadic schedule `capExp i = 2 * iterLog (i + 2) M` and
+balls-to-slots model, while `Cslib.DataStructure.Dictionary.KickTree` holds the quotient permutation
+layers (`QuotientPerm`, `RoundSeed`, `SmallUniversePerm`) and Section 4–5 metadata and multi-tier
+cubby saturation pieces (saturation, tail promotion and replacement, and tier-merge capacity
+arithmetic; dynamic resizing and the full Word-RAM dictionary realization are tracked in #5186).
+Adaptations: (1) XOR probe deduplication `g(x) ^^^ (idx % M)` over primary slots;
+(2) dyadic schedule `capExp i = 2 * iterLog (i + 2) M` and
 `binExp (i + 1) = 6 * iterLog (i + 2) M` (clamped by `effectiveDepth`), rounding the paper's
-`s_d ≈ (log^(d) n)^6` and `Pr[depthCap < i + 1] ≈ (log^(i+1) n)^(-2)` to powers of two (where `+2`
-aligns 0-based indexing with `Nat.iterLog` and Chebyshev's `L^4 / L^6 = 1 / L^2` yields a geometric
-series); (3) `2m`-th moment insertion-set snapshot bounds in place of full-independence Chernoff
-bounds.
+`s_d ≈ (log^(d) n)^6` and `Pr[depthCap < i + 1] ≈ (log^(i+1) n)^(-2)` to powers of two
+(where `+2` aligns 0-based indexing with `Nat.iterLog` and Chebyshev's `L^4 / L^6 = 1 / L^2`
+yields a geometric series); (3) `2m`-th moment insertion-set snapshot bounds in place of
+full-independence Chernoff bounds.
 
 ## Main definitions
 * `Cslib.DataStructure.BallsToSlots.KickTree.Params`, `State`, `Params.ValidState`,

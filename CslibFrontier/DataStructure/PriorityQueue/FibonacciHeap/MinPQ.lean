@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.DataStructure.PriorityQueue.FibonacciHeap.Memory
+public import CslibFrontier.Foundations.Data.Fin.Decode
 
 /-!
 # A Fibonacci heap with handles and values over memory
@@ -106,15 +107,12 @@ instance (n : ℕ) : DecidablePred (Slot.ok n) := fun c => by
 abbrev Lower (n K w : ℕ) : StateTransitionSpec :=
   product (indexedMinPQSpec n K) (Record.spec (Slot.ok n) w)
 
-/-- The handle a word names, if any. -/
-def toHandle (n x : ℕ) : Option (Fin n) := if h : x < n then some ⟨x, h⟩ else none
-
 /-- The allocator state that the heap and the slots represent: the heap's keys with the slots'
 values, the stack read from its top down, and the bump pointer. -/
 def allocState {n : ℕ} : IndexedMinPQ.State n × (Slot → ℕ) → PriorityQueue.MinPQ.AllocState n
   | (s, g) =>
     ⟨fun h => (s h).map fun u => (u, g (.val h)),
-      (List.range (g .top)).reverse.filterMap fun i => toHandle n (g (.free i)), g .fresh⟩
+      (List.range (g .top)).reverse.filterMap fun i => Fin.ofNat? n (g (.free i)), g .fresh⟩
 
 /-- The representation invariant: the allocator state is well formed, the stack holds handles,
 and keys are at most `K`. -/
@@ -204,7 +202,7 @@ def methods (n U V K w : ℕ) : Methods (allocSpec n U V) (Lower n K w)
     else do
       wr .top (t - 1)
       let x ← rd (.free (t - 1))
-      match toHandle n x with
+      match Fin.ofNat? n x with
       | none => pure none
       | some h => do
         wr (.val h) v
@@ -283,7 +281,7 @@ theorem run_insert_fresh {u v : ℕ} (ht : g .top = 0) (hf : g .fresh < n) :
 
 /-- `insert u v` pops the top freed handle `h`. -/
 theorem run_insert_pop {u v : ℕ} {h : Fin n} (ht : g .top ≠ 0)
-    (hh : toHandle n (g (.free (g .top - 1))) = some h) :
+    (hh : Fin.ofNat? n (g (.free (g .top - 1))) = some h) :
     (Lower n K w).runClient (s, g) (methods n U V K w (.insert u v)) =
       (some h, (Function.update s h (some u),
         Function.update (Function.update g .top (g .top - 1)) (.val h) v),
@@ -318,27 +316,27 @@ theorem run_extractMin :
 /-- The stack lists the handles of its `top` cells. -/
 theorem length_freeList (hfree : ∀ i < g .top, g (.free i) < n) :
     (allocState (s, g)).freeList.length = g .top := by
-  change ((List.range (g .top)).reverse.filterMap fun i => toHandle n (g (.free i))).length = _
+  change ((List.range (g .top)).reverse.filterMap fun i => Fin.ofNat? n (g (.free i))).length = _
   rw [List.length_filterMap_eq_countP, List.countP_eq_length.mpr, List.length_reverse,
     List.length_range]
   intro i hi
   simp only [List.mem_reverse, List.mem_range] at hi
-  simp [toHandle, hfree i hi]
+  simp [Fin.ofNat?, hfree i hi]
 
 /-- The stack's top cell holds the head of the free list. -/
 theorem freeList_eq_cons {t : ℕ} (ht : g .top = t + 1) :
-    (allocState (s, g)).freeList = (toHandle n (g (.free t))).toList ++
-      (List.range t).reverse.filterMap fun i => toHandle n (g (.free i)) := by
+    (allocState (s, g)).freeList = (Fin.ofNat? n (g (.free t))).toList ++
+      (List.range t).reverse.filterMap fun i => Fin.ofNat? n (g (.free i)) := by
   change (List.range (g .top)).reverse.filterMap _ = _
   rw [ht, List.range_succ, List.reverse_append, List.reverse_singleton, List.singleton_append,
     List.filterMap_cons]
-  cases toHandle n (g (.free t)) <;> rfl
+  cases Fin.ofNat? n (g (.free t)) <;> rfl
 
 /-- The free list read from slots that agree on the stack. -/
 private theorem freeList_filterMap_congr {g' : Slot → ℕ} {t : ℕ}
     (h : ∀ i < t, g' (.free i) = g (.free i)) :
-    ((List.range t).reverse.filterMap fun i => toHandle n (g' (.free i))) =
-      (List.range t).reverse.filterMap fun i => toHandle n (g (.free i)) :=
+    ((List.range t).reverse.filterMap fun i => Fin.ofNat? n (g' (.free i))) =
+      (List.range t).reverse.filterMap fun i => Fin.ofNat? n (g (.free i)) :=
   List.filterMap_congr fun i hi => by
     rw [h i (List.mem_range.mp (List.mem_reverse.mp hi))]
 
@@ -440,21 +438,21 @@ theorem methods_spec (hn : Fits w n) (hV : Fits w V) (hI : Inv n U s g)
       have hfl₀ := freeList_eq_cons (s := s) ht'
       have htn : g (.free t) < n := hfree t (by omega)
       set h : Fin n := ⟨g (.free t), htn⟩ with hh_def
-      have hh : toHandle n (g (.free (g .top - 1))) = some h := by
-        simp [toHandle, ht', htn, h]
+      have hh : Fin.ofNat? n (g (.free (g .top - 1))) = some h := by
+        simp [Fin.ofNat?, ht', htn, h]
       have hmem : h ∈ (allocState (s, g)).freeList := by
         rw [hfl₀]
-        simp [toHandle, htn, h]
+        simp [Fin.ofNat?, htn, h]
       have hnone : s h = none := by
         have := (hfl_none h hmem).2
         simpa [allocState] using this
       rw [run_insert_pop ht hh]
       have hah : PriorityQueue.MinPQ.allocHandle (allocState (s, g)) =
-          some (h, (List.range t).reverse.filterMap fun i => toHandle n (g (.free i)),
+          some (h, (List.range t).reverse.filterMap fun i => Fin.ofNat? n (g (.free i)),
             g .fresh) := by
         unfold PriorityQueue.MinPQ.allocHandle
         rw [hfl₀]
-        simp [toHandle, htn, h, hfresh]
+        simp [Fin.ofNat?, htn, h, hfresh]
       have heq : PriorityQueue.MinPQ.stepAlloc (allocState (s, g)) (.insert u v) =
           (allocState (Function.update s h (some u),
             Function.update (Function.update g .top (g .top - 1)) (.val h) v), some h) := by
@@ -520,7 +518,7 @@ theorem methods_spec (hn : Fits w n) (hV : Fits w V) (hI : Inv n U s g)
             (g := Function.update (Function.update g (.free (g .top)) h) .top (g .top + 1))
             (t := g .top) (by simp)]
           rw [freeList_filterMap_congr (g := g) fun i hi => by simp [Nat.ne_of_lt hi]]
-          simp [toHandle, allocState]
+          simp [Fin.ofNat?, allocState]
       refine ⟨⟨trivial, h.isLt, trivial, ⟨by simp only [Slot.ok]; omega, hn.of_le h.isLt.le⟩,
         ⟨trivial, hn.of_le htn⟩, trivial⟩, heq,
         ⟨by rw [heq] at hwf'; exact hwf', fun i hi => ?_, fun h' k hk => ?_⟩⟩
@@ -595,8 +593,8 @@ theorem amortized_impl {n U V w : ℕ} (hn : Fits w n) (hV : Fits w V) :
       simp [StateTransitionSpec.totalCost, productCharge, FibonacciHeap.charge, charge, credit]
     · obtain ⟨t, ht'⟩ : ∃ t, g .top = t + 1 := ⟨g .top - 1, by omega⟩
       have htn : g (.free t) < n := hfree t (by omega)
-      have hh : toHandle n (g (.free (g .top - 1))) = some ⟨g (.free t), htn⟩ := by
-        simp [toHandle, ht', htn]
+      have hh : Fin.ofNat? n (g (.free (g .top - 1))) = some ⟨g (.free t), htn⟩ := by
+        simp [Fin.ofNat?, ht', htn]
       rw [run_insert_pop ht hh]
       simp [StateTransitionSpec.totalCost, productCharge, FibonacciHeap.charge, charge, credit]
   | extractMin =>
