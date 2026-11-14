@@ -199,6 +199,16 @@ example :
 example : Equiv .ordered (distinct (unionAll noDept noDept)) (distinct noDept) :=
   distinct_unionAll_self _
 
+-- `WHERE` commutes with `DISTINCT` over a query with repeated rows, with no condition: an unsafe
+-- predicate such as `dept / 0 = 1` fails on both sides alike.
+example : Equiv .ordered (select isOne (distinct (unionAll emp emp)))
+    (distinct (select isOne (unionAll emp emp))) :=
+  select_distinct _ _
+
+example : ((select divZeroEq (distinct emp)).eval D).toOption = none ∧
+    ((distinct (select divZeroEq emp)).eval D).toOption = none := by
+  decide
+
 /-! ### Congruence in the expression arguments -/
 
 /-- `AND` has the same observations in either order. -/
