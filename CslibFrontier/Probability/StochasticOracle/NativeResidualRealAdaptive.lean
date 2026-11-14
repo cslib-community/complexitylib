@@ -239,17 +239,8 @@ theorem native_resources (P : Parameters z) (ν : PMF (Fin (z + 1) → ℕ)) (hz
       P.missing.toPMF.bind fun j =>
         ν.map fun g =>
           some ((((f 0 + g j.succ : ℕ) : ℝ≥0)), (2 : ℝ≥0)) := by
-  have h := congrArg (PMF.map (Option.map fun pair : Word ×
-      Memory Unit (ServerState (z + 1) Unit) =>
-        (tokenBill pair.2.events, elapsed pair.2.events))) (native_mixture T points candidates P
-          ν hz)
-  simp only [PMF.map_bind, PMF.map_comp, Function.comp_def, Option.map_map] at h
-  refine h.trans ?_
-  simp_rw [NativeResidualAttainment.native_resources T points candidates P _ hz]
-  apply congrArg ν.bind
-  funext f
-  change (ν.bind fun g => P.missing.toPMF.map fun j =>
-    some ((((f 0 + g j.succ : ℕ) : ℝ≥0)), (2 : ℝ≥0))) = _
+  rw [← NativeResidualConditionalInvoice.sample_const,
+    native_resources_conditional T points candidates P (fun _ _ _ => ν) hz]
   exact PMF.bind_comm _ _ _
 
 /-- The original adaptive program realizes arbitrary fixed real expected prices

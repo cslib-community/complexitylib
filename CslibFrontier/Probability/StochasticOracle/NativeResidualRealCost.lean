@@ -223,15 +223,8 @@ theorem native_all_resources (P : Parameters z) (ν : PMF (Fin (z + 1) → ℕ))
       (Option.map fun w => (tokenBill w.memory.events, elapsed w.memory.events)) =
     ν.map fun invoice =>
       some (((∑ j : Fin z, invoice j.succ : ℕ) : ℝ≥0), (1 : ℝ≥0)) := by
-  have h := congrArg (PMF.map (Option.map fun p : Word × Memory Unit (ServerState (z + 1) Unit) =>
-      (tokenBill p.2.events, elapsed p.2.events)))
-    (native_all_mixture ν
-      (NativeResidualOracle.sample T points candidates P) (NativeResidualAll.config budget)
-      (NativeResidualAttainment.input T points candidates) NativeResidualAttainment.initialMemory)
-  simp only [PMF.map_bind, PMF.map_comp, Function.comp_def, Option.map_map] at h
-  refine h.trans ?_
-  simp_rw [NativeResidualAll.native_resources T points candidates P _ hz budget hb]
-  rfl
+  simpa only [NativeResidualConditionalInvoice.sample_const] using
+    native_all_resources_conditional T points candidates P (fun _ _ _ => ν) hz budget hb
 
 /-- Real expected all-specialist cost in the actual accrued native trace.
 Almost-sure termination and finite expectation are conclusions of the construction,
