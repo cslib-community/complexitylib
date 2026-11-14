@@ -14,6 +14,8 @@ Clients of `CslibFrontier.Crypto.Protocols.MPC.DDHOT.Simulators` under module en
 * the encoded words of a simulator's input and of the simulated views;
 * the PPT certificates of the `sampleExp` simulator families and their statistical distance from
   the exact-sampling simulators;
+* the PPT predicates `DDHOTSimulator.IsPPTSender` and `DDHOTSimulator.IsPPTReceiver`, introduced
+  from a machine certificate and consumed as one;
 * `DDH.ddhOTStandaloneSemiHonestSecure`, unfolded to its witnesses. -/
 
 open Cslib Cslib.Probability Cslib.Crypto Cslib.Crypto.Protocols.MPC
@@ -48,6 +50,29 @@ example (F : PrimeOrderGroupFamily) (d : F.Desc) :
 example (F : PrimeOrderGroupFamily) :
     F.ddhOTSenderSimSampleExp.IsPPTSender ∧ F.ddhOTReceiverSimSampleExp.IsPPTReceiver :=
   ⟨F.isPPTSender_ddhOTSenderSimSampleExp, F.isPPTReceiver_ddhOTReceiverSimSampleExp⟩
+
+-- Introducing the predicate: a sender simulator family with the same output laws as
+-- `ddhOTSenderSimSampleExp` is PPT, through the latter's machine certificate.
+example (F : PrimeOrderGroupFamily) (S : F.DDHOTSimulator {0})
+    (hS : ∀ n d xI yI,
+      ProbComp.eval (S n d xI yI) = ProbComp.eval (F.ddhOTSenderSimSampleExp n d xI yI)) :
+    S.IsPPTSender :=
+  IsPPTOn.congr F.isPPTSender_ddhOTSenderSimSampleExp fun x => by
+    simp only [ProbComp.eval_map, hS]
+
+-- Consuming the predicate: the receiver simulator family that
+-- `DDH.ddhOTStandaloneSemiHonestSecure` provides writes view words of polynomially bounded length.
+example (F : PrimeOrderGroupFamily) (setup : ℕ → PMF F.Desc) (hDDH : F.DDH setup) :
+    ∃ (S₁ : F.DDHOTSimulator {1}) (c d : ℕ), ∀ (x : F.DDHOTReceiverSimInput) v,
+      v ∈ (ProbComp.eval (S₁ x.secParam x.groupParameters (uniqueElim x.choiceBit)
+        (uniqueElim x.output))).support →
+      (encDDHOTReceiverViewWords (F.ddhOTReceiverViewWords x.groupParameters
+        (v ⟨1, Finset.mem_singleton_self 1⟩))).length ≤
+        c * ((F.encDDHOTReceiverSimInput x).length + 1) ^ d := by
+  obtain ⟨-, S₁, -, h₁, -⟩ := hDDH.ddhOTStandaloneSemiHonestSecure
+  obtain ⟨c, d, h⟩ := IsPPTOn.length_le h₁
+  exact ⟨S₁, c, d, fun x v hv => h x _ (by
+    simpa only [ProbComp.eval_map, PMF.support_map] using Set.mem_image_of_mem _ hv)⟩
 
 -- Against a corrupted receiver, the ideal games with the exact-sampling and the `sampleExp`
 -- simulators differ by at most `6 / 2 ^ n`, for every distinguisher.

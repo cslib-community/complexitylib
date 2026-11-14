@@ -49,6 +49,13 @@ Section 23.5.7, Figure 23.17; DDH-based oblivious transfer of this kind goes bac
 * Figure 23.17 has no check. Here the sender checks `w₀ + w₁ = u`, the additive form of the check
   in [BonehShoup2023], Section 23.5.7.3, Remark 23.6, and sends zeros instead of aborting when the
   check fails. `ddhOTUncheckedProtocol` omits the check.
+* The honest parties draw exact uniform exponents in `ZMod q` (`sampleDDHOTSenderCoins` and the
+  receiver's `ProbComp.uniform (ZMod q)`), and their views hold these exponents. The source
+  requires the parties' only random objects to be random bit strings, from which they derive
+  values statistically indistinguishable from uniform ([BonehShoup2023], Section 23.5.7.2,
+  "Further assumptions about randomness", p. 1059). No bounded-time fair-coin machine draws an
+  exact uniform element of `ZMod q` when `q` is not a power of two, so this idealizes the
+  parties' algorithms.
 * Theorem 23.7 of [BonehShoup2023] is stated for Figure 23.17. The results below are proved
   directly for this variant.
 
@@ -106,7 +113,8 @@ Section 23.5.7, Figure 23.17; DDH-based oblivious transfer of this kind goes bac
 
 * [M. Naor and B. Pinkas, *Efficient Oblivious Transfer Protocols*][NaorPinkas2001]
 * [D. Boneh and V. Shoup, *A Graduate Course in Applied Cryptography*][BonehShoup2023],
-  Section 23.5.7 (Figure 23.17, Theorem 23.7, and Remark 23.6).
+  Section 23.5.7 (Figure 23.17, Theorem 23.7, the randomness assumptions on p. 1059, and
+  Remark 23.6).
 -/
 
 public section

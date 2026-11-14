@@ -25,9 +25,12 @@ bounded-time fair-coin machine can do for an odd prime order. This module gives 
 that run the same algorithms (`ddhOTSenderSimWithCoins`, `ddhOTReceiverSimWithCoins`) on six
 exponents drawn with `sampleExp n d`, the technique of [BonehShoup2023], Remark 23.5 (p. 1059),
 proves them uniform strict PPT, and proves that they are statistically within `6 / 2 ^ n` of the
-exact-sampling simulators. Under `F.DDH setup`, the protocol is therefore secure in the stand-alone
-semi-honest sense against the corruption of either party, with PPT simulators
-(`DDH.ddhOTStandaloneSemiHonestSecure`).
+exact-sampling simulators. Under `F.DDH setup`, the real runs are therefore indistinguishable
+from the ideal runs with these PPT simulators in the sense of `ddhOTRealIdealIndistinguishable`:
+for every distinguisher against a corrupted sender, and for every PPT distinguisher against a
+corrupted receiver (`DDH.ddhOTStandaloneSemiHonestSecure`). The two comparisons below say how
+this stand-alone semi-honest notion differs from [BonehShoup2023], Theorem 23.7, and from
+[Lindell2017], Definition 4.1.
 
 A simulator family is PPT (`DDHOTSimulator.IsPPTSender`, `DDHOTSimulator.IsPPTReceiver`) when one
 uniform strict PPT machine reads the unary security parameter, the group parameters and the
@@ -56,6 +59,30 @@ Section 23.5.2.2 (p. 1043) require, but it still differs from the theorem in the
 The library's PPT notion `IsPPTOn` is strict: every run halts within a polynomial bound. The
 source's compatibility condition (Section 23.5.2.2) bounds the running time only with overwhelming
 probability.
+
+## Comparison with [Lindell2017], Definition 4.1
+
+[Lindell2017], Section 4.2, Definition 4.1 (p. 7) defines security of a two-party protocol against
+static semi-honest adversaries in the stand-alone setting. Like `ddhOTStandaloneSemiHonestSecure`,
+it asks for one PPT simulator per corrupted party, given `1ⁿ`, that party's input and its output,
+and compares the simulator's output paired with both parties' outputs against that party's view
+paired with both parties' outputs. The simulators are fixed before the distinguisher. The notions
+differ as follows, so `DDH.ddhOTStandaloneSemiHonestSecure` is not that definition for DDH
+oblivious transfer:
+
+* In the source the parties run in polynomial time (p. 3), and a party's view holds the contents
+  of its random tape (p. 7). The honest parties of `ddhOTProtocol` draw exact uniform exponents in
+  `ZMod (F.order d)`, which no bounded-time fair-coin machine can do for an odd prime order, and
+  their views hold these exponents. This idealizes the protocol's own algorithms, as the
+  comparison with Theorem 23.7 above also notes.
+* Computational indistinguishability in the source (p. 3) quantifies over non-uniform
+  polynomial-time distinguishers, with one negligible function for all inputs. Here the
+  distinguishers against a corrupted receiver are uniform strict PPT machines
+  (`DDHOTDistinguisher.IsPPT`) that choose the inputs adaptively, after seeing the group
+  parameters, and the negligible function may depend on the distinguisher. The distinguishers
+  against a corrupted sender are unrestricted.
+* The group parameters are drawn from a public setup law, which both the simulator and the
+  distinguisher see. The source has no setup; a deterministic setup law corresponds to it.
 
 ## Main definitions
 
@@ -95,6 +122,8 @@ probability.
 * [D. Boneh, V. Shoup, *A Graduate Course in Applied Cryptography*,
   Version 0.6][BonehShoup2023], Section 23.5 (Section 23.5.2.2, p. 1043; Definition 23.5, p. 1044;
   Section 23.5.6, p. 1054; Theorem 23.7, p. 1058; Remark 23.5, p. 1059).
+* [Y. Lindell, *How To Simulate It – A Tutorial on the Simulation Proof Technique*, ECCC
+  TR17-112][Lindell2017], Section 2 (p. 3) and Section 4.2 (Definition 4.1, p. 7).
 -/
 
 public section
@@ -263,7 +292,7 @@ messages as words) and writes the words of the simulated view, `encDDHOTSenderVi
 input tuple of the coalition `{0}` is `uniqueElim (m₀, m₁)`, every output tuple is
 `uniqueElim ()`, and the words determine the view (`ddhOTSenderViewWords_injective`), so this
 constrains the simulator on all of its inputs and outputs. -/
-def DDHOTSimulator.IsPPTSender (S : F.DDHOTSimulator {0}) : Prop :=
+@[expose] def DDHOTSimulator.IsPPTSender (S : F.DDHOTSimulator {0}) : Prop :=
   IsPPTOn F.encDDHOTSenderSimInput encDDHOTSenderViewWords fun x =>
     (fun v => F.ddhOTSenderViewWords x.groupParameters (v ⟨0, Finset.mem_singleton_self 0⟩)) <$>
       S x.secParam x.groupParameters (uniqueElim (x.message₀, x.message₁)) (uniqueElim ())
@@ -275,7 +304,7 @@ choice bit and its output as a word) and writes the words of the simulated view,
 `uniqueElim σ`, `uniqueElim m_σ`, and the words determine the view
 (`ddhOTReceiverViewWords_injective`), so this constrains the simulator on all of its inputs and
 outputs. -/
-def DDHOTSimulator.IsPPTReceiver (S : F.DDHOTSimulator {1}) : Prop :=
+@[expose] def DDHOTSimulator.IsPPTReceiver (S : F.DDHOTSimulator {1}) : Prop :=
   IsPPTOn F.encDDHOTReceiverSimInput encDDHOTReceiverViewWords fun x =>
     (fun v => F.ddhOTReceiverViewWords x.groupParameters (v ⟨1, Finset.mem_singleton_self 1⟩)) <$>
       S x.secParam x.groupParameters (uniqueElim x.choiceBit) (uniqueElim x.output)
@@ -536,25 +565,10 @@ theorem DDH.ddhOTRealIdealIndistinguishable_sampleExpSim {F : PrimeOrderGroupFam
     F.ddhOTRealIdealIndistinguishable setup F.ddhOTSenderSimSampleExp
       F.ddhOTReceiverSimSampleExp := by
   have hexact := hDDH.ddhOTRealIdealIndistinguishable_exactSim
-  refine ⟨fun A _ => ?_, fun A hA => ?_⟩
-  · have hA := hexact.1 A trivial
-    have hbound : ∀ n, Game.advantage (F.ddhOTRealGame setup {0} A n)
-        (F.ddhOTIdealGame setup {0} F.ddhOTSenderSimSampleExp A n) ≤
-          Game.advantage (F.ddhOTRealGame setup {0} A n)
-            (F.ddhOTIdealGame setup {0} (fun _ d => ddhOTSenderSim (F.generator d) (F.order d))
-              A n) + 6 / 2 ^ n := fun n =>
-      (Game.advantage_triangle _ _ _).trans
-        (add_le_add le_rfl (F.advantage_ddhOTIdealGame_ddhOTSenderSimSampleExp_le setup A n))
-    negligible using hbound
-  · have hA := hexact.2 A hA
-    have hbound : ∀ n, Game.advantage (F.ddhOTRealGame setup {1} A n)
-        (F.ddhOTIdealGame setup {1} F.ddhOTReceiverSimSampleExp A n) ≤
-          Game.advantage (F.ddhOTRealGame setup {1} A n)
-            (F.ddhOTIdealGame setup {1} (fun _ d => ddhOTReceiverSim (F.generator d) (F.order d))
-              A n) + 6 / 2 ^ n := fun n =>
-      (Game.advantage_triangle _ _ _).trans
-        (add_le_add le_rfl (F.advantage_ddhOTIdealGame_ddhOTReceiverSimSampleExp_le setup A n))
-    negligible using hbound
+  exact ⟨hexact.1.trans fun A _ => by
+      negligible using F.advantage_ddhOTIdealGame_ddhOTSenderSimSampleExp_le setup A,
+    hexact.2.trans fun A _ => by
+      negligible using F.advantage_ddhOTIdealGame_ddhOTReceiverSimSampleExp_le setup A⟩
 
 /-- A step towards [BonehShoup2023], Theorem 23.7, not the cited result: `F.DDH setup` implies
 stand-alone semi-honest security of DDH oblivious transfer against the corruption of one party,
