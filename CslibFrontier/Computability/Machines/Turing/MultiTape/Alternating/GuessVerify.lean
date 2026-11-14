@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Frame
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.Sequential
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Plumbing.WordUpdate
 
 /-!
 # The guess-then-verify alternating machine
@@ -65,19 +66,6 @@ steps (`Turing.MultiTapeATM.acceptsWithin_add_iff_of_next_eq`,
 
 namespace Turing
 
-/-- Setting a cell of a word sets the cell of its tape. -/
-theorem tapeOfList_set {Symbol : Type*} (w : List Symbol) {i : ℕ} (hi : i < w.length)
-    (s : Symbol) : tapeOfList (w.set i s) = Function.update (tapeOfList w) (i : ℤ) (some s) := by
-  funext z
-  cases z with
-  | negSucc n => simp
-  | ofNat n =>
-    simp only [Int.ofNat_eq_natCast, tapeOfList_ofNat, Function.update_apply, Nat.cast_inj,
-      List.getElem?_set]
-    by_cases h : n = i
-    · subst h
-      simp [hi]
-    · simp [h, Ne.symm h]
 
 namespace MultiTapeATM
 

@@ -365,28 +365,40 @@ theorem val_mul_newton (x y : List ℕ) {m : ℕ} {w : Ring p fl}
   rw [this, h, show (2 : Ring p fl) ^ (2 * m) = 2 ^ m * 2 ^ m by rw [two_mul, pow_add]]
   ring
 
-/-- **Inversion is correct** when the seed inverts `x` modulo `2`. -/
-theorem val_mul_inv (x : List ℕ) {w : Ring p fl}
-    (h : val p fl x * val p fl x ^ (2 ^ fl.length - 2) = 1 + 2 * w) :
-    val p fl x * val p fl (inv p fl x) = 1 := by
-  have hstep (k : ℕ) : ∃ w' : Ring p fl, val p fl x *
+/-- After `k` Newton rounds, a seed correct modulo two is correct modulo `2 ^ (2 ^ k)`. -/
+theorem val_mul_newton_rounds (x : List ℕ) {w : Ring p fl}
+    (h : val p fl x * val p fl x ^ (2 ^ fl.length - 2) = 1 + 2 * w) (k : ℕ) :
+    ∃ w' : Ring p fl, val p fl x *
       val p fl ((List.range k).foldl (fun y _ => newton p fl x y) (seed p fl x)) =
         1 + 2 ^ 2 ^ k * w' := by
-    induction k with
-    | zero => exact ⟨w, by rw [List.range_zero, List.foldl_nil, val_seed, h, pow_zero, pow_one]⟩
-    | succ k ih =>
-      obtain ⟨w', hw'⟩ := ih
-      refine ⟨-w' ^ 2, ?_⟩
-      rw [List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil,
-        val_mul_newton _ _ hw', show 2 ^ (k + 1) = 2 * 2 ^ k by ring]
-  obtain ⟨w', hw'⟩ := hstep p
-  rw [inv, hw']
-  have hp : (2 : Ring p fl) ^ 2 ^ p = 0 := by
+  induction k with
+  | zero => exact ⟨w, by rw [List.range_zero, List.foldl_nil, val_seed, h, pow_zero, pow_one]⟩
+  | succ k ih =>
+    obtain ⟨w', hw'⟩ := ih
+    refine ⟨-w' ^ 2, ?_⟩
+    rw [List.range_succ, List.foldl_append, List.foldl_cons, List.foldl_nil,
+      val_mul_newton _ _ hw', show 2 ^ (k + 1) = 2 * 2 ^ k by ring]
+
+/-- Newton iteration gives an inverse as soon as the doubled precision reaches `p`. -/
+theorem val_mul_newton_rounds_eq_one (x : List ℕ) {w : Ring p fl}
+    (h : val p fl x * val p fl x ^ (2 ^ fl.length - 2) = 1 + 2 * w)
+    (k : ℕ) (hk : p ≤ 2 ^ k) :
+    val p fl x *
+      val p fl ((List.range k).foldl (fun y _ => newton p fl x y) (seed p fl x)) = 1 := by
+  obtain ⟨w', hw'⟩ := val_mul_newton_rounds x h k
+  rw [hw']
+  have hp : (2 : Ring p fl) ^ 2 ^ k = 0 := by
     have h2p : (2 : Ring p fl) ^ p = 0 := by
       rw [show (2 : Ring p fl) ^ p = ((2 ^ p : ℕ) : Ring p fl) by push_cast; rfl,
         natCast_two_pow]
-    exact pow_eq_zero_of_le Nat.lt_two_pow_self.le h2p
+    exact pow_eq_zero_of_le hk h2p
   rw [hp, zero_mul, add_zero]
+
+/-- **Inversion is correct** when the seed inverts `x` modulo `2`. -/
+theorem val_mul_inv (x : List ℕ) {w : Ring p fl}
+    (h : val p fl x * val p fl x ^ (2 ^ fl.length - 2) = 1 + 2 * w) :
+    val p fl x * val p fl (inv p fl x) = 1 :=
+  val_mul_newton_rounds_eq_one x h p Nat.lt_two_pow_self.le
 
 end Correctness
 

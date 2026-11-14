@@ -7,7 +7,7 @@ Authors: Samuel Schlesinger
 module
 -- upstream: candidate
 
-public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.GuessVerify
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Alternating.DeterministicPhase
 
 /-!
 # Word games on an alternating machine
@@ -47,6 +47,8 @@ exponential time to `APSPACE`.
 * `Turing.MultiTapeATM.WordGame.Reach`, `Turing.MultiTapeATM.WordGame.Wins`,
   `Turing.MultiTapeATM.WordGame.Ends`: reachable positions, won positions, and bounded plays.
 * `Turing.MultiTapeATM.wordGame`: the alternating machine playing a word game.
+* `Turing.MultiTapeATM.WordGame.StorageWins`, `.StorageRounds`: indexed games on persistent
+  work tapes, with explicitly supplied native round implementations.
 * `Turing.MultiTapeATM.WordGame.PrepSpec`, `Turing.MultiTapeATM.WordGame.RoundSpec`: the
   specifications of the preparing machine and of the round machine.
 
@@ -54,6 +56,8 @@ exponential time to `APSPACE`.
 
 * `Turing.MultiTapeATM.WordGame.wins_false_cons_cons_iff`,
   `Turing.MultiTapeATM.WordGame.wins_true_cons_cons_iff`: won positions of each player.
+* `Turing.MultiTapeATM.WordGame.accepts_storage_iff` and `.haltsWithin_storage_of_potential`:
+  acceptance and native branch time without copying positions or resetting other work cursors.
 * `Turing.MultiTapeATM.runsInTime_wordGame_of_potential`: a decreasing potential pays for
   position- and move-dependent round times.
 * `Turing.MultiTapeATM.wordGame_spec`: the machine stays within the space of the preparation and of
@@ -250,11 +254,12 @@ variable {k : ℕ} {S₁ S₂ : Type} {P : MultiTapeTM k Bool S₁} {R : MultiTa
   {N : Fin k} {input : List Bool}
 
 /-- A configuration of a phase machine as one of the word game machine. -/
-private def liftCfg {S : Type} (f : S → State S₁ S₂) (c : Cfg k Bool S input) :
+@[expose] def liftCfg {S : Type} (f : S → State S₁ S₂) (c : Cfg k Bool S input) :
     Cfg k Bool (State S₁ S₂) input :=
   c.mapState fun st => some (st.elim .disp0 f)
 
-private theorem next_liftCfg_round (b : Bool) {c : Cfg k Bool S₂ input} (h : c.state ≠ none) :
+/-- A running round phase preserves arbitrary work tapes and cursors. -/
+theorem next_liftCfg_round (b : Bool) {c : Cfg k Bool S₂ input} (h : c.state ≠ none) :
     (wordGame P R N).next b (liftCfg .round c) = liftCfg .round (R.step c) := by
   obtain ⟨q, hq⟩ := Option.ne_none_iff_exists'.mp h
   have hstate : (liftCfg (S₁ := S₁) .round c).state = some (State.round q) := by
@@ -263,7 +268,8 @@ private theorem next_liftCfg_round (b : Bool) {c : Cfg k Bool S₂ input} (h : c
   simp only [tm, MultiTapeTM.tr_ofTr, tr]
   rfl
 
-private theorem next_liftCfg_prep (b : Bool) {c : Cfg k Bool S₁ input} (h : c.state ≠ none) :
+/-- A running preparation phase preserves arbitrary work tapes and cursors. -/
+theorem next_liftCfg_prep (b : Bool) {c : Cfg k Bool S₁ input} (h : c.state ≠ none) :
     (wordGame P R N).next b (liftCfg .prep c) = liftCfg .prep (P.step c) := by
   obtain ⟨q, hq⟩ := Option.ne_none_iff_exists'.mp h
   have hstate : (liftCfg (S₂ := S₂) .prep c).state = some (State.prep q) := by
@@ -272,12 +278,16 @@ private theorem next_liftCfg_prep (b : Bool) {c : Cfg k Bool S₁ input} (h : c.
   simp only [tm, MultiTapeTM.tr_ofTr, tr]
   rfl
 
-/-- The configuration with the word `w` on tape `N` and its head at `pos`, every other work tape
-blank with its head at `0`, the input head at the start, and output `out`. -/
-private def cfg (N : Fin k) (q : Option (State S₁ S₂)) (w : List Bool) (pos : ℕ)
-    (out : List Bool) : Cfg k Bool (State S₁ S₂) input :=
-  ⟨q, 1, Function.update (fun _ _ => none) N (tapeOfList w),
-    Function.update (fun _ => 0) N (pos : ℤ), out⟩
+/-- Put `w` on control tape `N` with head `pos`, state `q`, and output `out`. The optional
+storage snapshot supplies the input cursor and every other work tape and cursor; its state,
+output, and fields at `N` are ignored. By default the other tapes are blank with heads at zero
+and the input cursor is at its start. -/
+@[expose] def cfg (N : Fin k) (q : Option (State S₁ S₂)) (w : List Bool) (pos : ℕ)
+    (out : List Bool)
+    (storage : Cfg k Bool Unit input := ⟨none, 1, fun _ _ => none, fun _ => 0, []⟩) :
+    Cfg k Bool (State S₁ S₂) input :=
+  ⟨q, storage.inputPos, Function.update storage.workTapes N (tapeOfList w),
+    Function.update storage.workTapePos N (pos : ℤ), out⟩
 
 private theorem cfg_zero (q : Option (State S₁ S₂)) (w : List Bool) (out : List Bool) :
     cfg (input := input) N q w 0 out =
@@ -286,11 +296,13 @@ private theorem cfg_zero (q : Option (State S₁ S₂)) (w : List Bool) (out : L
     simp [cfg, wordsCfg, hi]
 
 variable (P R N) in
-private theorem next_disp0_nil (b : Bool) :
-    (wordGame P R N).next b (cfg (input := input) N (some .disp0) [] 0 []) =
-      cfg N none [] 0 [] := by
+private theorem next_disp0_nil (b : Bool)
+    (storage : Cfg k Bool Unit input := ⟨none, 1, fun _ _ => none, fun _ => 0, []⟩) :
+    (wordGame P R N).next b (cfg (storage := storage) (input := input) N (some .disp0) [] 0 []) =
+      cfg (storage := storage) N none [] 0 [] := by
   rw [wordGame, next_ofTMs, MultiTapeTM.step_of_state rfl]
-  have hread : (cfg (input := input) N (some (State.disp0 (S₁ := S₁) (S₂ := S₂))) [] 0
+  have hread : (cfg (storage := storage) (input := input) N
+      (some (State.disp0 (S₁ := S₁) (S₂ := S₂))) [] 0
       []).workTapeSymbols N = none := by
     simp [Cfg.workTapeSymbols, cfg]
   simp only [tm, MultiTapeTM.tr_ofTr, tr, hread, act]
@@ -298,11 +310,14 @@ private theorem next_disp0_nil (b : Bool) :
     funext i <;> by_cases hi : i = N <;> simp [cfg, hi]
 
 variable (P R N) in
-private theorem next_disp0_cons (b u : Bool) (r : List Bool) :
-    (wordGame P R N).next b (cfg (input := input) N (some .disp0) (u :: r) 0 []) =
-      cfg N (some (.disp1 u)) (u :: r) 1 [] := by
+private theorem next_disp0_cons (b u : Bool) (r : List Bool)
+    (storage : Cfg k Bool Unit input := ⟨none, 1, fun _ _ => none, fun _ => 0, []⟩) :
+    (wordGame P R N).next b (cfg (storage := storage) (input := input) N
+      (some .disp0) (u :: r) 0 []) =
+      cfg (storage := storage) N (some (.disp1 u)) (u :: r) 1 [] := by
   rw [wordGame, next_ofTMs, MultiTapeTM.step_of_state rfl]
-  have hread : (cfg (input := input) N (some (State.disp0 (S₁ := S₁) (S₂ := S₂))) (u :: r) 0
+  have hread : (cfg (storage := storage) (input := input) N
+      (some (State.disp0 (S₁ := S₁) (S₂ := S₂))) (u :: r) 0
       []).workTapeSymbols N = some u := by
     simp [Cfg.workTapeSymbols, cfg, tapeOfList_zero]
   simp only [tm, MultiTapeTM.tr_ofTr, tr, hread, act]
@@ -310,11 +325,13 @@ private theorem next_disp0_cons (b u : Bool) (r : List Bool) :
     funext i <;> by_cases hi : i = N <;> simp [cfg, hi]
 
 variable (P R N) in
-private theorem next_disp1_halt (b u : Bool) {w : List Bool} (hw : w[1]? = none) :
-    (wordGame P R N).next b (cfg (input := input) N (some (.disp1 u)) w 1 []) =
-      cfg N none w 1 (if u then [true] else []) := by
+private theorem next_disp1_halt (b u : Bool) {w : List Bool} (hw : w[1]? = none)
+    (storage : Cfg k Bool Unit input := ⟨none, 1, fun _ _ => none, fun _ => 0, []⟩) :
+    (wordGame P R N).next b (cfg (storage := storage) (input := input) N (some (.disp1 u)) w 1 []) =
+      cfg (storage := storage) N none w 1 (if u then [true] else []) := by
   rw [wordGame, next_ofTMs, MultiTapeTM.step_of_state rfl]
-  have hread : (cfg (input := input) N (some (State.disp1 (S₁ := S₁) (S₂ := S₂) u)) w 1
+  have hread : (cfg (storage := storage) (input := input) N
+      (some (State.disp1 (S₁ := S₁) (S₂ := S₂) u)) w 1
       []).workTapeSymbols N = none := by
     have h1 : tapeOfList w 1 = w[1]? := by simpa using tapeOfList_ofNat w 1
     simp [Cfg.workTapeSymbols, cfg, h1, hw]
@@ -327,11 +344,13 @@ private theorem next_disp1_halt (b u : Bool) {w : List Bool} (hw : w[1]? = none)
   · cases u <;> simp [cfg]
 
 variable (P R N) in
-private theorem next_disp1_move (b u x : Bool) {w : List Bool} (hw : w[1]? = some x) :
-    (wordGame P R N).next b (cfg (input := input) N (some (.disp1 u)) w 1 []) =
-      cfg N (some (.move u)) w 1 [] := by
+private theorem next_disp1_move (b u x : Bool) {w : List Bool} (hw : w[1]? = some x)
+    (storage : Cfg k Bool Unit input := ⟨none, 1, fun _ _ => none, fun _ => 0, []⟩) :
+    (wordGame P R N).next b (cfg (storage := storage) (input := input) N (some (.disp1 u)) w 1 []) =
+      cfg (storage := storage) N (some (.move u)) w 1 [] := by
   rw [wordGame, next_ofTMs, MultiTapeTM.step_of_state rfl]
-  have hread : (cfg (input := input) N (some (State.disp1 (S₁ := S₁) (S₂ := S₂) u)) w 1
+  have hread : (cfg (storage := storage) (input := input) N
+      (some (State.disp1 (S₁ := S₁) (S₂ := S₂) u)) w 1
       []).workTapeSymbols N = some x := by
     have h1 : tapeOfList w 1 = w[1]? := by simpa using tapeOfList_ofNat w 1
     simp [Cfg.workTapeSymbols, cfg, h1, hw]
@@ -340,9 +359,10 @@ private theorem next_disp1_move (b u x : Bool) {w : List Bool} (hw : w[1]? = som
     funext i <;> by_cases hi : i = N <;> simp [cfg, hi]
 
 variable (P R N) in
-private theorem next_move (b u : Bool) {w : List Bool} (hw : 1 < w.length) :
-    (wordGame P R N).next b (cfg (input := input) N (some (.move u)) w 1 []) =
-      cfg N (some (.round R.q₀)) (w.set 1 b) 0 [] := by
+private theorem next_move (b u : Bool) {w : List Bool} (hw : 1 < w.length)
+    (storage : Cfg k Bool Unit input := ⟨none, 1, fun _ _ => none, fun _ => 0, []⟩) :
+    (wordGame P R N).next b (cfg (storage := storage) (input := input) N (some (.move u)) w 1 []) =
+      cfg (storage := storage) N (some (.round R.q₀)) (w.set 1 b) 0 [] := by
   rw [wordGame, next_ofTMs, MultiTapeTM.step_of_state rfl]
   simp only [tm, MultiTapeTM.tr_ofTr, tr, act]
   refine Cfg.ext rfl (by simp [cfg, moveInputPos_zero]) ?_ ?_ (by simp [cfg]) <;>
@@ -350,20 +370,9 @@ private theorem next_move (b u : Bool) {w : List Bool} (hw : 1 < w.length) :
 
 /-! ### Phases -/
 
-private theorem iterate_next_liftCfg {S : Type} {M : MultiTapeTM k Bool S}
-    (f : S → State S₁ S₂)
-    (hstep : ∀ b (c : Cfg k Bool S input), c.state ≠ none →
-      (wordGame P R N).next b (liftCfg f c) = liftCfg f (M.step c))
-    (c : Cfg k Bool S input) : ∀ j, (∀ i < j, (M.runFrom c i).state ≠ none) →
-      ((wordGame P R N).next false)^[j] (liftCfg f c) = liftCfg f (M.runFrom c j)
-  | 0, _ => rfl
-  | j + 1, h => by
-    rw [Function.iterate_succ_apply',
-      iterate_next_liftCfg f hstep c j (fun i hi => h i (by omega)),
-      hstep false _ (h j (by omega))]
-    simp only [MultiTapeTM.runFrom, Function.iterate_succ_apply']
-
-private theorem exists_phase {S : Type} {M : MultiTapeTM k Bool S} (f : S → State S₁ S₂)
+/-- A deterministic phase finishes on arbitrary work storage; its transitions are independent
+of the alternating choice until the handoff to dispatch. No tape normalization is required. -/
+theorem exists_phase {S : Type} {M : MultiTapeTM k Bool S} (f : S → State S₁ S₂)
     (hstep : ∀ b (c : Cfg k Bool S input), c.state ≠ none →
       (wordGame P R N).next b (liftCfg f c) = liftCfg f (M.step c))
     {c : Cfg k Bool S input} {t : ℕ} (ht : (M.runFrom c t).state = none) :
@@ -372,16 +381,8 @@ private theorem exists_phase {S : Type} {M : MultiTapeTM k Bool S} (f : S → St
         ((wordGame P R N).next false)^[j + 1] (liftCfg f c)) ∧
       (∀ j ≤ τ, (((wordGame P R N).next false)^[j] (liftCfg f c)).state ≠ none) ∧
       ((wordGame P R N).next false)^[τ] (liftCfg f c) = liftCfg f (M.runFrom c t) := by
-  classical
-  have hex : ∃ τ, (M.runFrom c τ).state = none := ⟨t, ht⟩
-  refine ⟨Nat.find hex, Nat.find_min' hex ht, fun j hj b => ?_, fun j hj => ?_, ?_⟩
-  · have hrun : ∀ i < j, (M.runFrom c i).state ≠ none := fun i hi => Nat.find_min hex (by omega)
-    rw [Function.iterate_succ_apply', iterate_next_liftCfg f hstep c j hrun,
-      hstep b _ (Nat.find_min hex hj), hstep false _ (Nat.find_min hex hj)]
-  · rw [iterate_next_liftCfg f hstep c j fun i hi => Nat.find_min hex (by omega)]
-    simp [liftCfg]
-  · rw [iterate_next_liftCfg f hstep c _ fun i hi => Nat.find_min hex hi,
-      MultiTapeTM.runFrom_eq_of_halt M c (Nat.find_min' hex ht) (Nat.find_spec hex)]
+  exact exists_deterministic_phase (wordGame P R N) (liftCfg f) hstep
+    (fun _ => by simp [liftCfg]) ht
 
 /-! ### Acceptance and halting -/
 
@@ -397,11 +398,46 @@ position `U (u :: b :: r)` and uses at most `sR` cells. -/
       (wordsCfg input (some R.q₀) (Function.update (fun _ => []) N (u :: b :: r)) []) tR).space ≤
         sR
 
+/-- Every reachable round computes the update and halts. Its time may depend on the position
+and move; no common time or space bound is part of this semantic contract. -/
+@[expose] def RoundComputes (R : MultiTapeTM k Bool S₂) (N : Fin k) (input : List Bool)
+    (U : List Bool → List Bool) (w₀ : List Bool) : Prop :=
+  ∀ u x r, Reach U w₀ (u :: x :: r) → ∀ b, ∃ t,
+    R.runFrom (wordsCfg input (some R.q₀) (Function.update (fun _ => []) N (u :: b :: r)) []) t =
+      wordsCfg input none (Function.update (fun _ => []) N (U (u :: b :: r))) []
+
+/-- A uniformly bounded round implementation computes every reachable update. -/
+theorem RoundSpec.computes {R : MultiTapeTM k Bool S₂} {N : Fin k} {input : List Bool}
+    {U : List Bool → List Bool} {w₀ : List Bool} {tR sR : ℕ}
+    (h : RoundSpec R N input U w₀ tR sR) : RoundComputes R N input U w₀ :=
+  fun u x r hr b => ⟨tR, (h u x r hr b).1⟩
+
 variable {U : List Bool → List Bool} {w₀ : List Bool} {tR sR : ℕ}
 
 private theorem liftCfg_round_wordsCfg (q : Option S₂) (ws : Fin k → List Bool) :
     liftCfg (S₁ := S₁) .round (wordsCfg input q ws []) =
       wordsCfg input (some (q.elim .disp0 .round)) ws [] := rfl
+
+/-- A round can change persistent storage without resetting other work heads. -/
+theorem exists_round_storage {v v' : List Bool}
+    (storage storage' : Cfg k Bool Unit input)
+    (hrun : R.runFrom
+      ((cfg (S₁ := S₁) (S₂ := S₂) N none v 0 [] storage).withState (some R.q₀)) tR =
+      (cfg (S₁ := S₁) (S₂ := S₂) N none v' 0 [] storage').withState none) :
+    ∃ τ ≤ tR, (∀ j < τ, ∀ b, (wordGame P R N).next b
+      (((wordGame P R N).next false)^[j] (cfg N (some (.round R.q₀)) v 0 [] storage)) =
+      ((wordGame P R N).next false)^[j + 1] (cfg N (some (.round R.q₀)) v 0 [] storage)) ∧
+      (∀ j ≤ τ, (((wordGame P R N).next false)^[j]
+        (cfg N (some (.round R.q₀)) v 0 [] storage)).state ≠ none) ∧
+      ((wordGame P R N).next false)^[τ] (cfg N (some (.round R.q₀)) v 0 [] storage) =
+        cfg N (some .disp0) v' 0 [] storage' := by
+  have hstep : ∀ b (c : Cfg k Bool S₂ input), c.state ≠ none →
+      (wordGame P R N).next b (liftCfg .round c) = liftCfg .round (R.step c) :=
+    fun b c h => next_liftCfg_round b h
+  obtain ⟨τ, hτ, h1, h2, h3⟩ := exists_phase .round hstep (hrun ▸ rfl : (R.runFrom
+    ((cfg (S₁ := S₁) (S₂ := S₂) N none v 0 [] storage).withState (some R.q₀)) tR).state = none)
+  rw [hrun] at h3
+  exact ⟨τ, hτ, h1, h2, h3⟩
 
 private theorem exists_round {v v' : List Bool}
     (hrun : R.runFrom (wordsCfg input (some R.q₀) (Function.update (fun _ => []) N v) []) tR =
@@ -413,56 +449,76 @@ private theorem exists_round {v v' : List Bool}
         (cfg (input := input) N (some (.round R.q₀)) v 0 [])).state ≠ none) ∧
       ((wordGame P R N).next false)^[τ] (cfg (input := input) N (some (.round R.q₀)) v 0 []) =
         cfg N (some .disp0) v' 0 [] := by
-  have hstep : ∀ b (c : Cfg k Bool S₂ input), c.state ≠ none →
-      (wordGame P R N).next b (liftCfg .round c) = liftCfg .round (R.step c) :=
-    fun b c h => next_liftCfg_round b h
-  obtain ⟨τ, hτ, h1, h2, h3⟩ := exists_phase .round hstep (hrun ▸ rfl : (R.runFrom
-    (wordsCfg input (some R.q₀) (Function.update (fun _ => []) N v) []) tR).state = none)
-  have hc : liftCfg (S₁ := S₁) .round
-      (wordsCfg input (some R.q₀) (Function.update (fun _ => []) N v) []) =
-      cfg N (some (.round R.q₀)) v 0 [] := by
-    rw [liftCfg_round_wordsCfg, cfg_zero]
-    rfl
-  rw [hc, hrun] at h3
-  rw [hc] at h1 h2
-  exact ⟨τ, hτ, h1, h2, h3.trans (by rw [liftCfg_round_wordsCfg, cfg_zero]; rfl)⟩
+  exact exists_round_storage
+    ⟨none, 1, fun _ _ => none, fun _ => 0, []⟩
+    ⟨none, 1, fun _ _ => none, fun _ => 0, []⟩ (by
+      simpa only [cfg_zero, wordsCfg, Cfg.withState] using hrun)
 
 /-- The dispatch configuration on the position `w`. -/
 private abbrev dcfg (N : Fin k) (w : List Bool) : Cfg k Bool (State S₁ S₂) input :=
   cfg N (some .disp0) w 0 []
 
-private theorem acceptsWithin_of_wins (hR : RoundSpec R N input U w₀ tR sR) {w : List Bool}
-    (hw : Wins U w) (hreach : Reach U w₀ w) :
-    ∃ n, (wordGame P R N).AcceptsWithin n (dcfg (input := input) N w) := by
+/-- The finite winning plays of an indexed game whose header chooses the player. The
+remaining position can live on persistent work tapes instead of being copied into the header. -/
+inductive StorageWins {α : Type*} (header : α → List Bool) (next : α → Bool → α) : α → Prop
+  | accept (a) : header a = [true] → StorageWins header next a
+  | existsMove (a) (x : Bool) (r : List Bool) (b : Bool) :
+      header a = false :: x :: r → StorageWins header next (next a b) →
+      StorageWins header next a
+  | forallMove (a) (x : Bool) (r : List Bool) : header a = true :: x :: r →
+      (∀ b, StorageWins header next (next a b)) → StorageWins header next a
+
+/-- Native correctness of each reachable round on persistent work storage. -/
+@[expose] def StorageRounds {α : Type*} (R : MultiTapeTM k Bool S₂) (N : Fin k)
+    (header : α → List Bool) (storage : α → Cfg k Bool Unit input)
+    (next : α → Bool → α) (valid : α → Prop) : Prop :=
+  ∀ a, valid a → ∀ u x r, header a = u :: x :: r → ∀ b,
+    valid (next a b) ∧ ∃ t, R.runFrom
+      ((cfg (S₁ := Unit) (S₂ := S₂) N none (u :: b :: r) 0 [] (storage a)).withState
+        (some R.q₀)) t =
+      (cfg (S₁ := Unit) (S₂ := S₂) N none (header (next a b)) 0 []
+        (storage (next a b))).withState none
+
+section StorageSemantics
+
+variable {α : Type*} {header : α → List Bool} {storage : α → Cfg k Bool Unit input}
+  {next : α → Bool → α} {valid : α → Prop}
+
+private theorem acceptsWithin_of_storageWins (hR : StorageRounds R N header storage next valid)
+    {a : α} (hw : StorageWins header next a) (ha : valid a) :
+    ∃ n, (wordGame P R N).AcceptsWithin n (cfg N (some .disp0) (header a) 0 [] (storage a)) := by
   induction hw with
-  | accept =>
+  | accept a he =>
     refine ⟨2, ?_⟩
-    rw [acceptsWithin_succ_of_next_eq (next_disp0_cons P R N · true []),
-      acceptsWithin_succ_of_next_eq (next_disp1_halt P R N · true rfl),
+    rw [he, acceptsWithin_succ_of_next_eq (next_disp0_cons P R N · true [] (storage a)),
+      acceptsWithin_succ_of_next_eq (next_disp1_halt P R N · true rfl (storage a)),
       acceptsWithin_of_halted _ rfl]
     rfl
-  | @existsMove x r b hwin ih =>
-    obtain ⟨n, hn⟩ := ih (Reach.move b hreach)
-    obtain ⟨τ, -, hnext, hrun, hd⟩ := exists_round (P := P) (hR false x r hreach b).1
+  | existsMove a x r b he hwin ih =>
+    obtain ⟨hv, t, ht⟩ := hR a ha false x r he b
+    obtain ⟨n, hn⟩ := ih hv
+    obtain ⟨τ, -, hnext, hrun, hd⟩ := exists_round_storage (P := P) (storage a)
+      (storage (next a b)) ht
     refine ⟨n + τ + 3, ?_⟩
-    rw [acceptsWithin_succ_of_next_eq (next_disp0_cons P R N · false (x :: r)),
-      acceptsWithin_succ_of_next_eq (next_disp1_move P R N · false x rfl),
+    rw [he, acceptsWithin_succ_of_next_eq (next_disp0_cons P R N · false (x :: r) (storage a)),
+      acceptsWithin_succ_of_next_eq (next_disp1_move P R N · false x rfl (storage a)),
       acceptsWithin_succ_of_existential _ rfl rfl]
     refine ⟨b, ?_⟩
-    rw [next_move P R N b false (by simp), List.set_cons_succ, List.set_cons_zero,
+    rw [next_move P R N b false (by simp) (storage a), List.set_cons_succ, List.set_cons_zero,
       acceptsWithin_iff_of_phase hnext hrun hd]
     simpa using hn
-  | @forallMove x r hwin ih =>
-    have h (b : Bool) := ih b (Reach.move b hreach)
+  | forallMove a x r he hwin ih =>
+    have h (b : Bool) := ih b (hR a ha true x r he b).1
     choose n hn using h
-    have hr (b : Bool) := exists_round (P := P) (hR true x r hreach b).1
+    have hr (b : Bool) := exists_round_storage (P := P) (storage a) (storage (next a b))
+      (hR a ha true x r he b).2.choose_spec
     choose τ hτ hnext hrun hd using hr
     refine ⟨max (n false + τ false) (n true + τ true) + 3, ?_⟩
-    rw [acceptsWithin_succ_of_next_eq (next_disp0_cons P R N · true (x :: r)),
-      acceptsWithin_succ_of_next_eq (next_disp1_move P R N · true x rfl),
+    rw [he, acceptsWithin_succ_of_next_eq (next_disp0_cons P R N · true (x :: r) (storage a)),
+      acceptsWithin_succ_of_next_eq (next_disp1_move P R N · true x rfl (storage a)),
       acceptsWithin_succ_of_universal _ rfl rfl]
     intro b
-    rw [next_move P R N b true (by simp), List.set_cons_succ, List.set_cons_zero,
+    rw [next_move P R N b true (by simp) (storage a), List.set_cons_succ, List.set_cons_zero,
       acceptsWithin_iff_of_phase (hnext b) (hrun b) (hd b)]
     have hle : n b + τ b ≤ max (n false + τ false) (n true + τ true) := by
       cases b
@@ -470,51 +526,158 @@ private theorem acceptsWithin_of_wins (hR : RoundSpec R N input U w₀ tR sR) {w
       · exact le_max_right _ _
     exact ⟨by omega, (hn b).mono (by omega)⟩
 
-private theorem wins_of_acceptsWithin (hR : RoundSpec R N input U w₀ tR sR) (n : ℕ) :
-    ∀ w, Reach U w₀ w → (wordGame P R N).AcceptsWithin n (dcfg (input := input) N w) →
-      Wins U w := by
+private theorem storageWins_of_acceptsWithin (hR : StorageRounds R N header storage next valid)
+    (n : ℕ) : ∀ a, valid a → (wordGame P R N).AcceptsWithin n
+      (cfg N (some .disp0) (header a) 0 [] (storage a)) → StorageWins header next a := by
   induction n using Nat.strong_induction_on with
   | _ n ih =>
-  intro w hreach hacc
-  rcases w with _ | ⟨u, _ | ⟨x, r⟩⟩
+  intro a ha hacc
+  rcases he : header a with _ | ⟨u, _ | ⟨x, r⟩⟩ <;> rw [he] at hacc
   · rcases n with _ | m
     · exact absurd hacc (not_acceptsWithin_zero _ rfl)
-    · rw [acceptsWithin_succ_of_next_eq (next_disp0_nil P R N), acceptsWithin_of_halted _ rfl]
+    · rw [acceptsWithin_succ_of_next_eq (next_disp0_nil P R N · (storage a)),
+        acceptsWithin_of_halted _ rfl]
         at hacc
       simp [cfg] at hacc
   · rcases n with _ | _ | m
     · exact absurd hacc (not_acceptsWithin_zero _ rfl)
-    · rw [acceptsWithin_succ_of_next_eq (next_disp0_cons P R N · u [])] at hacc
+    · rw [acceptsWithin_succ_of_next_eq (next_disp0_cons P R N · u [] (storage a))] at hacc
       exact absurd hacc (not_acceptsWithin_zero _ rfl)
-    · rw [acceptsWithin_succ_of_next_eq (next_disp0_cons P R N · u []),
-        acceptsWithin_succ_of_next_eq (next_disp1_halt P R N · u rfl),
+    · rw [acceptsWithin_succ_of_next_eq (next_disp0_cons P R N · u [] (storage a)),
+        acceptsWithin_succ_of_next_eq (next_disp1_halt P R N · u rfl (storage a)),
         acceptsWithin_of_halted _ rfl] at hacc
       cases u
       · simp [cfg] at hacc
-      · exact Wins.accept
+      · exact StorageWins.accept a he
   · rcases n with _ | _ | _ | m
     · exact absurd hacc (not_acceptsWithin_zero _ rfl)
-    · rw [acceptsWithin_succ_of_next_eq (next_disp0_cons P R N · u (x :: r))] at hacc
+    · rw [acceptsWithin_succ_of_next_eq (next_disp0_cons P R N · u (x :: r) (storage a))] at hacc
       exact absurd hacc (not_acceptsWithin_zero _ rfl)
-    · rw [acceptsWithin_succ_of_next_eq (next_disp0_cons P R N · u (x :: r)),
-        acceptsWithin_succ_of_next_eq (next_disp1_move P R N · u x rfl)] at hacc
+    · rw [acceptsWithin_succ_of_next_eq (next_disp0_cons P R N · u (x :: r) (storage a)),
+        acceptsWithin_succ_of_next_eq (next_disp1_move P R N · u x rfl (storage a))] at hacc
       exact absurd hacc (not_acceptsWithin_zero _ rfl)
-    · rw [acceptsWithin_succ_of_next_eq (next_disp0_cons P R N · u (x :: r)),
-        acceptsWithin_succ_of_next_eq (next_disp1_move P R N · u x rfl)] at hacc
+    · rw [acceptsWithin_succ_of_next_eq (next_disp0_cons P R N · u (x :: r) (storage a)),
+        acceptsWithin_succ_of_next_eq (next_disp1_move P R N · u x rfl (storage a))] at hacc
       cases u
       · rw [acceptsWithin_succ_of_existential _ rfl rfl] at hacc
         obtain ⟨b, hb⟩ := hacc
-        obtain ⟨τ, -, hnext, hrun, hd⟩ := exists_round (P := P) (hR false x r hreach b).1
-        rw [next_move P R N b false (by simp), List.set_cons_succ, List.set_cons_zero,
+        obtain ⟨hv, t, ht⟩ := hR a ha false x r he b
+        obtain ⟨τ, -, hnext, hrun, hd⟩ := exists_round_storage (P := P)
+          (storage a) (storage (next a b)) ht
+        rw [next_move P R N b false (by simp) (storage a), List.set_cons_succ, List.set_cons_zero,
           acceptsWithin_iff_of_phase hnext hrun hd] at hb
-        exact Wins.existsMove b (ih (m - τ) (by omega) _ (Reach.move b hreach) hb.2)
+        exact StorageWins.existsMove a x r b he (ih (m - τ) (by omega) _ hv hb.2)
       · rw [acceptsWithin_succ_of_universal _ rfl rfl] at hacc
-        refine Wins.forallMove fun b => ?_
+        refine StorageWins.forallMove a x r he fun b => ?_
         have hb := hacc b
-        obtain ⟨τ, -, hnext, hrun, hd⟩ := exists_round (P := P) (hR true x r hreach b).1
-        rw [next_move P R N b true (by simp), List.set_cons_succ, List.set_cons_zero,
+        obtain ⟨hv, t, ht⟩ := hR a ha true x r he b
+        obtain ⟨τ, -, hnext, hrun, hd⟩ := exists_round_storage (P := P)
+          (storage a) (storage (next a b)) ht
+        rw [next_move P R N b true (by simp) (storage a), List.set_cons_succ, List.set_cons_zero,
           acceptsWithin_iff_of_phase hnext hrun hd] at hb
-        exact ih (m - τ) (by omega) _ (Reach.move b hreach) hb.2
+        exact ih (m - τ) (by omega) _ hv hb.2
+
+/-- The existing native word-game dispatcher implements an indexed game on persistent storage.
+Every native round is explicitly supplied; the theorem assumes no oracle access to positions. -/
+theorem accepts_storage_iff (hR : StorageRounds R N header storage next valid) (a : α)
+    (ha : valid a) :
+    (∃ n, (wordGame P R N).AcceptsWithin n
+      (cfg N (some .disp0) (header a) 0 [] (storage a))) ↔ StorageWins header next a := by
+  constructor
+  · rintro ⟨n, hn⟩
+    exact storageWins_of_acceptsWithin hR n a ha hn
+  · exact fun h => acceptsWithin_of_storageWins hR h ha
+
+private theorem storageWins_words_iff (w : List Bool) :
+    StorageWins id (fun w b => U (w.set 1 b)) w ↔ Wins U w := by
+  constructor
+  · intro h
+    induction h with
+    | accept a he => change a = [true] at he; subst a; exact Wins.accept
+    | existsMove a x r b he hw ih =>
+      change a = false :: x :: r at he
+      subst a
+      exact Wins.existsMove b (by simpa using ih)
+    | forallMove a x r he hw ih =>
+      change a = true :: x :: r at he
+      subst a
+      exact Wins.forallMove fun b => by simpa using ih b
+  · intro h
+    induction h with
+    | accept => exact .accept _ rfl
+    | existsMove b hw ih => exact .existsMove _ _ _ b rfl (by simpa using ih)
+    | forallMove hw ih => exact .forallMove _ _ _ rfl fun b => by simpa using ih b
+
+private theorem storageRounds_words (hR : RoundComputes R N input U w₀) :
+    StorageRounds (input := input) R N id (fun _ => ⟨none, 1, fun _ _ => none, fun _ => 0, []⟩)
+      (fun w b => U (w.set 1 b)) (Reach U w₀) := by
+  intro w hw u x r he b
+  change w = u :: x :: r at he
+  subst w
+  refine ⟨by simpa using Reach.move b hw, ?_⟩
+  obtain ⟨t, ht⟩ := hR u x r hw b
+  exact ⟨t, by simpa only [List.set_cons_succ, List.set_cons_zero, id_eq,
+    cfg_zero, wordsCfg, Cfg.withState] using ht⟩
+
+private theorem acceptsWithin_of_wins (hR : RoundComputes R N input U w₀) {w : List Bool}
+    (hw : Wins U w) (hreach : Reach U w₀ w) :
+    ∃ n, (wordGame P R N).AcceptsWithin n (dcfg (input := input) N w) :=
+  acceptsWithin_of_storageWins (storageRounds_words hR) ((storageWins_words_iff w).mpr hw) hreach
+
+private theorem wins_of_acceptsWithin (hR : RoundComputes R N input U w₀) (n : ℕ) :
+    ∀ w, Reach U w₀ w → (wordGame P R N).AcceptsWithin n (dcfg (input := input) N w) →
+      Wins U w := fun w hw hn =>
+  (storageWins_words_iff w).mp (storageWins_of_acceptsWithin (storageRounds_words hR) n w hw hn)
+
+end StorageSemantics
+
+/-- A potential pays for native rounds on persistent work storage. Only the control tape is
+normalized at dispatch. Other tapes, their cursors, and the input cursor belong to `storage`.
+Each round pays its actual deterministic time and three dispatch steps; terminals cost at most
+two steps. The potential is proof-only and entails no free computational access. -/
+theorem haltsWithin_storage_of_potential {α : Type*}
+    (header : α → List Bool) (storage : α → Cfg k Bool Unit input)
+    (next : α → Bool → α) (valid : α → Prop) (potential : α → ℕ)
+    (hR : ∀ a, valid a → ∀ u x r, header a = u :: x :: r → ∀ b, ∃ t,
+      R.runFrom
+        ((cfg (S₁ := S₁) (S₂ := S₂) N none (u :: b :: r) 0 [] (storage a)).withState
+          (some R.q₀)) t =
+        (cfg (S₁ := S₁) (S₂ := S₂) N none (header (next a b)) 0 []
+          (storage (next a b))).withState none ∧
+      t + 3 + potential (next a b) ≤ potential a ∧ valid (next a b)) :
+    ∀ a, valid a → (wordGame P R N).HaltsWithin (potential a + 2)
+      (cfg N (some .disp0) (header a) 0 [] (storage a)) := by
+  have h (n : ℕ) : ∀ a, potential a = n → valid a →
+      (wordGame P R N).HaltsWithin (n + 2)
+        (cfg N (some .disp0) (header a) 0 [] (storage a)) := by
+    induction n using Nat.strong_induction_on with
+    | ind n ih =>
+      intro a hn ha
+      rcases he : header a with _ | ⟨u, _ | ⟨x, r⟩⟩
+      · exact haltsWithin_succ.mpr fun b => by
+          rw [next_disp0_nil P R N b (storage a)]
+          exact haltsWithin_of_halted rfl
+      · exact haltsWithin_succ.mpr fun b => by
+          rw [next_disp0_cons P R N b u [] (storage a)]
+          exact haltsWithin_succ.mpr fun b' => by
+            rw [next_disp1_halt P R N b' u rfl (storage a)]
+            exact haltsWithin_of_halted rfl
+      · have hnpos : 1 ≤ n := by
+          obtain ⟨t, _, ht, _⟩ := hR a ha u x r he false
+          omega
+        obtain ⟨m, rfl⟩ : ∃ m, n = m + 1 := ⟨n - 1, by omega⟩
+        refine haltsWithin_succ.mpr fun b₀ => ?_
+        rw [next_disp0_cons P R N b₀ u (x :: r) (storage a)]
+        refine haltsWithin_succ.mpr fun b₁ => ?_
+        rw [next_disp1_move P R N b₁ u x rfl (storage a)]
+        refine haltsWithin_succ.mpr fun b => ?_
+        obtain ⟨t, hrunR, ht, hv⟩ := hR a ha u x r he b
+        obtain ⟨τ, hτ, hnext, hrun, hd⟩ := exists_round_storage (P := P)
+          (storage a) (storage (next a b)) hrunR
+        rw [next_move P R N b u (by simp) (storage a), List.set_cons_succ,
+          List.set_cons_zero, haltsWithin_iff_of_phase hnext hrun hd]
+        exact ⟨by omega, (ih _ (by omega) _ rfl hv).mono (by omega)⟩
+  exact fun a ha => h _ a rfl ha
 
 private theorem haltsWithin_of_potential (potential : List Bool → ℕ)
     (hR : ∀ u x r, Reach U w₀ (u :: x :: r) → ∀ b, ∃ t,
@@ -524,35 +687,18 @@ private theorem haltsWithin_of_potential (potential : List Bool → ℕ)
       t + 3 + potential (U (u :: b :: r)) ≤ potential (u :: x :: r)) :
     ∀ w, Reach U w₀ w →
       (wordGame P R N).HaltsWithin (potential w + 2) (dcfg (input := input) N w) := by
-  have h (n : ℕ) : ∀ w, potential w = n → Reach U w₀ w →
-      (wordGame P R N).HaltsWithin (n + 2) (dcfg (input := input) N w) := by
-    induction n using Nat.strong_induction_on with
-    | ind n ih =>
-      intro w hn hreach
-      rcases w with _ | ⟨u, _ | ⟨x, r⟩⟩
-      · exact haltsWithin_succ.mpr fun b => by
-          rw [next_disp0_nil P R N]
-          exact haltsWithin_of_halted rfl
-      · exact haltsWithin_succ.mpr fun b => by
-          rw [next_disp0_cons P R N b u []]
-          exact haltsWithin_succ.mpr fun b' => by
-            rw [next_disp1_halt P R N b' u rfl]
-            exact haltsWithin_of_halted rfl
-      · have hnpos : 1 ≤ n := by
-          obtain ⟨t, _, ht⟩ := hR u x r hreach false
-          omega
-        obtain ⟨m, rfl⟩ : ∃ m, n = m + 1 := ⟨n - 1, by omega⟩
-        refine haltsWithin_succ.mpr fun b₀ => ?_
-        rw [next_disp0_cons P R N b₀ u (x :: r)]
-        refine haltsWithin_succ.mpr fun b₁ => ?_
-        rw [next_disp1_move P R N b₁ u x rfl]
-        refine haltsWithin_succ.mpr fun b => ?_
-        obtain ⟨t, hrunR, ht⟩ := hR u x r hreach b
-        obtain ⟨τ, hτ, hnext, hrun, hd⟩ := exists_round (P := P) hrunR
-        rw [next_move P R N b u (by simp), List.set_cons_succ, List.set_cons_zero,
-          haltsWithin_iff_of_phase hnext hrun hd]
-        exact ⟨by omega, (ih _ (by omega) _ rfl (.move b hreach)).mono (by omega)⟩
-  exact fun w hw => h _ w rfl hw
+  apply haltsWithin_storage_of_potential (P := P) (R := R) (N := N) id
+    (fun _ => ⟨none, 1, fun _ _ => none, fun _ => 0, []⟩)
+    (fun w b => U (w.set 1 b)) (Reach U w₀) potential
+  intro w hw u x r he b
+  change w = u :: x :: r at he
+  subst w
+  obtain ⟨t, hr, ht⟩ := hR u x r hw b
+  refine ⟨t, ?_, ?_, ?_⟩
+  · simpa only [List.set_cons_succ, List.set_cons_zero, id_eq, cfg_zero,
+      wordsCfg, Cfg.withState] using hr
+  · simpa only [List.set_cons_succ, List.set_cons_zero] using ht
+  · simpa only [List.set_cons_succ, List.set_cons_zero] using Reach.move b hw
 
 private theorem haltsWithin_of_ends (hR : RoundSpec R N input U w₀ tR sR) (n : ℕ) :
     ∀ w, Reach U w₀ w → Ends U n w →
@@ -779,6 +925,25 @@ theorem runsInTime_wordGame_of_potential {k : ℕ} {S₁ S₂ : Type}
   exact ⟨by omega, (haltsWithin_of_potential (P := P) potential hR w₀ .start).mono (by omega)⟩
 
 open WordGame in
+/-- The native machine accepts exactly the winning positions whenever preparation and every
+reachable round halt with the specified words. Round times need not have a common bound. -/
+theorem accepts_wordGame_iff_of_computes {k : ℕ} {S₁ S₂ : Type}
+    {P : MultiTapeTM k Bool S₁} {R : MultiTapeTM k Bool S₂} {N : Fin k}
+    {input w₀ : List Bool} {U : List Bool → List Bool} {tP : ℕ}
+    (hP : P.runFrom (Cfg.init P.q₀ input) tP =
+      wordsCfg input none (Function.update (fun _ => []) N w₀) [])
+    (hR : RoundComputes R N input U w₀) :
+    (wordGame P R N).Accepts input ↔ Wins U w₀ := by
+  obtain ⟨τ, hτ, hnext, hrun, hd⟩ := exists_prep (R := R) hP
+  constructor
+  · rintro ⟨n, hn⟩
+    rw [acceptsWithin_iff_of_phase hnext hrun hd] at hn
+    exact wins_of_acceptsWithin hR _ w₀ .start hn.2
+  · intro hw
+    obtain ⟨n, hn⟩ := acceptsWithin_of_wins (P := P) hR hw .start
+    exact ⟨n + τ, (acceptsWithin_iff_of_phase hnext hrun hd _).mpr (by simpa using hn)⟩
+
+open WordGame in
 /-- **The word game machine plays the word game.** If `P` writes the initial position `w₀` within
 `tP` steps and `sP` cells, and `R` performs the update `U` after every move from a reachable
 position within `tR` steps and `sR` cells, then every computation path of the machine stays within
@@ -794,15 +959,11 @@ theorem wordGame_spec {k : ℕ} {S₁ S₂ : Type} {P : MultiTapeTM k Bool S₁}
       ∀ n, Ends U n w₀ →
         (wordGame P R N).toPTM.toNTM.RunsInTime input (tP + (n * (tR + 3) + 2)) := by
   obtain ⟨τ, hτ, hnext, hrun, hd⟩ := exists_prep (R := R) hP.1
-  refine ⟨fun p => ?_, ⟨fun ⟨n, hn⟩ => ?_, fun hw => ?_⟩, fun n hn => ?_⟩
+  refine ⟨fun p => ?_, accepts_wordGame_iff_of_computes hP.1 hR.computes, fun n hn => ?_⟩
   · refine MultiTapeNTM.RunPath.InWindow.space_le fun c hc i => ?_
     exact (good_of_mem hP hR p c hc).workTapePos_mem hP hR
       ((le_max_left _ _).trans (le_max_left _ _)) ((le_max_right _ _).trans (le_max_left _ _))
       (le_max_right _ _) i
-  · rw [acceptsWithin_iff_of_phase hnext hrun hd] at hn
-    exact wins_of_acceptsWithin hR _ w₀ .start hn.2
-  · obtain ⟨n, hn⟩ := acceptsWithin_of_wins (P := P) hR hw .start
-    exact ⟨n + τ, (acceptsWithin_iff_of_phase hnext hrun hd _).mpr (by simpa using hn)⟩
   · rw [runsInTime_iff_haltsWithin, haltsWithin_iff_of_phase hnext hrun hd]
     exact ⟨by omega, (haltsWithin_of_ends (P := P) hR n w₀ .start hn).mono (by omega)⟩
 

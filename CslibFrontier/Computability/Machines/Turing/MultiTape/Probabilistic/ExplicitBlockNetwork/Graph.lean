@@ -245,7 +245,7 @@ contains its block; the sink `q + n` of the edge when there is none. -/
 
 /-- A block-edge number past the control edges has quotient `i` and remainder `δ + 3 h` by
 `3 k`. -/
-private theorem blockEdge_div_mod (i : Fin q) (h : Fin k) (δ : Fin 3) :
+theorem blockEdge_div_mod (i : Fin q) (h : Fin k) (δ : Fin 3) :
     ((δ : ℕ) + 3 * (h : ℕ) + k * 3 * (i : ℕ)) / (k * 3) = i ∧
       ((δ : ℕ) + 3 * (h : ℕ) + k * 3 * (i : ℕ)) % (k * 3) = (δ : ℕ) + 3 * (h : ℕ) := by
   have hlt : (δ : ℕ) + 3 * (h : ℕ) < k * 3 := by have := δ.isLt; have := h.isLt; omega

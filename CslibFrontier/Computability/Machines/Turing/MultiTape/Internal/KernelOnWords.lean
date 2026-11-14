@@ -31,6 +31,9 @@ Its `k + 1 + 2` work tapes are the `k` work tapes of `tm`, the *output work tape
 
 ## Main results
 
+* `Turing.MultiTapeTM.transformsTapes_onWords_embed`: run on selected tapes while preserving
+  arbitrary contents on every other tape.
+
 * `Turing.MultiTapeTM.ComputesTidilyInTimeAndSpace.onWords_extendTapes`: run between two
   selected tapes with exact time and space overheads.
 
@@ -102,5 +105,38 @@ theorem ComputesTidilyInTimeAndSpace.onWords_extendTapes
     (fun _ _ h => h.2) (fun _ _ _ _ _ h => h) le_rfl le_rfl).extendTapes_update e
   rw [hi, ho] at h'
   exact h'.imp (fun _ _ hws => ⟨trivial, hws⟩) (fun _ _ _ _ _ h => h) le_rfl le_rfl
+
+/-- **`onWords` on embedded tapes**, with every other tape arbitrary: the input on the tape
+selected for the input of `onWords`, its other tapes blank. -/
+theorem transformsTapes_onWords_embed {k K : ℕ} {Symbol S : Type*} {tm : MultiTapeTM k Symbol S}
+    {x y : List Symbol} {t s : ℕ}
+    (h : TransformsTapes tm (fun inp ws => inp = x ∧ ws = fun _ => [])
+      (fun _ _ ws' e => ws' = (fun _ => []) ∧ e = y) t s) (mark : Symbol)
+    (e : Fin (k + 1 + 2) ↪ Fin K) :
+    TransformsTapes ((tm.onWords mark).extendTapes e)
+      (fun _ ws => ws (e (Fin.natAdd (k + 1) 0)) = x ∧
+        ∀ j ≠ Fin.natAdd (k + 1) 0, ws (e j) = [])
+      (fun _ ws ws' em => ws' = Function.update ws (e ((Fin.last k).castAdd 2)) y ∧ em = [])
+      (t + y.length + 6) (s + 2 * x.length + 2 * y.length + 3 * k + 18 + (K - (k + 1 + 2))) := by
+  refine ((ComputesTidilyInTimeAndSpace.onWords mark h).extendTapes e).imp
+    (fun _ ws ⟨hx, hb⟩ => ?_)
+    (fun _ ws ws' _ _ ⟨⟨hv, hy⟩, hx⟩ => ⟨?_, hy⟩) le_rfl le_rfl
+  · funext j
+    by_cases hj : j = Fin.natAdd (k + 1) 0
+    · subst hj
+      simp [hx]
+    · rw [Function.update_of_ne hj]
+      exact hb j hj
+  · funext l
+    by_cases hl : l ∈ Set.range e
+    · obtain ⟨j, rfl⟩ := hl
+      have : ws' (e j) = Function.update (fun j => ws (e j)) ((Fin.last k).castAdd 2) y j :=
+        congrFun hv j
+      rw [this]
+      by_cases hj : j = (Fin.last k).castAdd 2
+      · subst hj
+        simp
+      · rw [Function.update_of_ne hj, Function.update_of_ne (e.injective.ne hj)]
+    · rw [hx l hl, Function.update_of_ne fun h => hl ⟨_, h.symm⟩]
 
 end Turing.MultiTapeTM
