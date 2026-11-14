@@ -3352,6 +3352,17 @@ probabilities satisfy lower or upper bounds.
   [`SequentialSupport.lean` client](../../CslibFrontierTests/SequentialSupport.lean) uses geometric
   metadata and fair success bits: actual histories have authenticated tags, while an impossible
   unauthenticated prefix has zero success probability and violates the older all-prefix premise.
+  For an upper envelope, use
+  [`StochasticDomination/SequentialUpper.lean`](../../CslibFrontier/Probability/StochasticDomination/SequentialUpper.lean):
+  `PMF.poissonBinomial_replicate_stochasticallyDominates_seqCount_of_support` bounds the count
+  by `poissonBinomial (List.replicate n p)` when each reached-prefix event probability is at
+  most `p`. `PMF.seqCount_toReal_Ici_le_of_support` exposes the binomial upper tail directly.
+  The same checked client complements its event: its probability is still one-half on actual
+  histories, but becomes one at the impossible prefix. The proof reuses the lower comparison
+  and [`PoissonBinomial/Reflection.lean`](../../CslibFrontier/Probability/PoissonBinomial/Reflection.lean),
+  which derives count reflection from `BitString.weight_not`; callers need no separate
+  comparison induction or assumptions on impossible histories. These are probability lemmas;
+  they do not by themselves instantiate a stochastic-oracle deadline lower bound.
 - **Infinite-horizon stopping-time means**:
   [`StochasticDomination/Stopping.lean`](../../CslibFrontier/Probability/StochasticDomination/Stopping.lean)
   proves the `WithTop ℕ` tail-sum identity (`lintegral_withTopToENNReal` for measurable `τ`, and
