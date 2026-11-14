@@ -15,11 +15,16 @@ import Mathlib.Tactic.Linarith
 # The sponge construction
 
 The sponge construction ([BertoniDaemenPeetersVanAssche2008]; [KatzLindell2020], Section 7.3.3
-and Construction 7.6) builds a hash function from a single unkeyed permutation `P` of an
+and Construction 7.6) builds a hash function from a single unkeyed permutation `P` on an
 `ℓ`-bit state split into a rate part of `r` bits and a capacity part of `c` bits, `r + c = ℓ`.
 Starting from the all-zero state, each `r`-bit message block is added (XORed) into the rate part
 and the state is permuted (*absorbing*); afterwards the hash outputs part of the state, permutes,
 and repeats (*squeezing*).
+
+The executable definitions and deterministic collision implications only apply `P`; they do not
+use its inverse or injectivity. Their parameter is therefore the underlying state function
+`R × C → R × C`. Permutations coerce to this function, while concrete clients such as FIPS 202's
+Keccak transformation need no unnecessary inverse wrapper.
 
 We write the state as a pair `(rate, capacity) : R × C`, with the rate part `R` an additive group
 (for bits, `BitString r`, where `+` is exclusive or). This is the source's `ℓ`-bit state with
@@ -52,6 +57,8 @@ security; we use this to solve [KatzLindell2020], Exercise 7.26.
 * `Cslib.Crypto.Sponge.badEvent_of_hash_eq`: every collision between distinct messages triggers
   one of the events E1, E2, E3 among the evaluated permutation inputs (Claim 7.8, forward
   queries).
+* `Cslib.Crypto.Sponge.take_squeeze`, `take_hashBlocks`: requesting more squeezing blocks
+  preserves every earlier block.
 * `Cslib.Crypto.Sponge.hash_eq_of_capacity_eq`: a capacity collision between equal-length
   full-block messages extends to a hash collision.
 * `Cslib.Crypto.Sponge.hash_prodCongr_collision`: a permutation that acts separately on the rate
@@ -80,61 +87,81 @@ variable {R C O : Type*} [AddGroup R] [Zero C]
 /-- One absorbing step: add the block `m` to the rate part of the state `y`, then permute,
 `y ↦ P (y.1 + m, y.2)`. -/
 @[expose]
-def absorbStep (P : Equiv.Perm (R × C)) (y : R × C) (m : R) : R × C :=
+def absorbStep (P : R × C → R × C) (y : R × C) (m : R) : R × C :=
   P (y.1 + m, y.2)
 
 /-- The absorbing phase: absorb the blocks `ms` in order, starting from the zero state. -/
 @[expose]
-def absorb (P : Equiv.Perm (R × C)) (ms : List R) : R × C :=
+def absorb (P : R × C → R × C) (ms : List R) : R × C :=
   ms.foldl (absorbStep P) 0
 
 /-- The squeezing phase: output `out y`, replace `y` by `P y`, and repeat, `k` outputs in
 total. -/
 @[expose]
-def squeeze (P : Equiv.Perm (R × C)) (out : R × C → O) : ℕ → R × C → List O
+def squeeze (P : R × C → R × C) (out : R × C → O) : ℕ → R × C → List O
   | 0, _ => []
   | k + 1, y => out y :: squeeze P out k (P y)
 
 /-- The sponge hash of a block sequence with `k` squeezing outputs. -/
 @[expose]
-def hashBlocks (P : Equiv.Perm (R × C)) (out : R × C → O) (k : ℕ) (ms : List R) : List O :=
+def hashBlocks (P : R × C → R × C) (out : R × C → O) (k : ℕ) (ms : List R) : List O :=
   squeeze P out k (absorb P ms)
 
 @[simp]
-theorem absorb_nil (P : Equiv.Perm (R × C)) : absorb P [] = 0 := rfl
+theorem absorb_nil (P : R × C → R × C) : absorb P [] = 0 := rfl
 
-theorem absorb_append (P : Equiv.Perm (R × C)) (a b : List R) :
+theorem absorb_append (P : R × C → R × C) (a b : List R) :
     absorb P (a ++ b) = b.foldl (absorbStep P) (absorb P a) := by
   simp [absorb, List.foldl_append]
 
 @[simp]
-theorem absorb_concat (P : Equiv.Perm (R × C)) (a : List R) (m : R) :
+theorem absorb_concat (P : R × C → R × C) (a : List R) (m : R) :
     absorb P (a ++ [m]) = P ((absorb P a).1 + m, (absorb P a).2) := by
   simp [absorb_append, absorbStep]
 
 omit [AddGroup R] [Zero C] in
 @[simp]
-theorem length_squeeze (P : Equiv.Perm (R × C)) (out : R × C → O) (k : ℕ) (y : R × C) :
+theorem length_squeeze (P : R × C → R × C) (out : R × C → O) (k : ℕ) (y : R × C) :
     (squeeze P out k y).length = k := by
   induction k generalizing y with
   | zero => rfl
   | succ k ih => simp [squeeze, ih]
 
-theorem hashBlocks_succ (P : Equiv.Perm (R × C)) (out : R × C → O) (k : ℕ) (ms : List R) :
+omit [AddGroup R] [Zero C] in
+/-- Squeezing more blocks preserves the entire previously requested prefix. -/
+theorem take_squeeze (P : R × C → R × C) (out : R × C → O) {m n : ℕ}
+    (h : m ≤ n) (y : R × C) :
+    (squeeze P out n y).take m = squeeze P out m y := by
+  induction n generalizing m y with
+  | zero => simp only [Nat.le_zero.mp h, squeeze, List.take_nil]
+  | succ n ih =>
+    cases m with
+    | zero => rfl
+    | succ m =>
+      simp only [squeeze, List.take_succ_cons, List.cons.injEq, true_and]
+      exact ih (Nat.le_of_succ_le_succ h) (P y)
+
+/-- Requesting more sponge output blocks preserves the entire previously requested prefix. -/
+theorem take_hashBlocks (P : R × C → R × C) (out : R × C → O) {m n : ℕ}
+    (h : m ≤ n) (ms : List R) :
+    (hashBlocks P out n ms).take m = hashBlocks P out m ms :=
+  take_squeeze P out h (absorb P ms)
+
+theorem hashBlocks_succ (P : R × C → R × C) (out : R × C → O) (k : ℕ) (ms : List R) :
     hashBlocks P out (k + 1) ms = out (absorb P ms) :: squeeze P out k (P (absorb P ms)) := rfl
 
 /-- `x` is one of the permutation inputs `x_i = (y_{i-1}.1 + m_i, y_{i-1}.2)` evaluated while
 absorbing `ms`. -/
 @[expose]
-def IsInput (P : Equiv.Perm (R × C)) (ms : List R) (x : R × C) : Prop :=
+def IsInput (P : R × C → R × C) (ms : List R) (x : R × C) : Prop :=
   ∃ a m b, ms = a ++ m :: b ∧ x = ((absorb P a).1 + m, (absorb P a).2)
 
-theorem IsInput.append_right {P : Equiv.Perm (R × C)} {a : List R} {x : R × C}
+theorem IsInput.append_right {P : R × C → R × C} {a : List R} {x : R × C}
     (h : IsInput P a x) (b : List R) : IsInput P (a ++ b) x := by
   obtain ⟨a₀, m, b₀, rfl, rfl⟩ := h
   exact ⟨a₀, m, b₀ ++ b, by simp, rfl⟩
 
-theorem isInput_concat (P : Equiv.Perm (R × C)) (a : List R) (m : R) :
+theorem isInput_concat (P : R × C → R × C) (a : List R) (m : R) :
     IsInput P (a ++ [m]) ((absorb P a).1 + m, (absorb P a).2) :=
   ⟨a, m, [], rfl, rfl⟩
 
@@ -142,32 +169,32 @@ theorem isInput_concat (P : Equiv.Perm (R × C)) (a : List R) (m : R) :
 event E1 of [KatzLindell2020], Claim 7.8; with `f = Prod.snd` (the capacity part) it is
 event E3. -/
 @[expose]
-def ImageCollision {D : Type*} (P : Equiv.Perm (R × C)) (f : R × C → D)
+def ImageCollision {D : Type*} (P : R × C → R × C) (f : R × C → D)
     (Q : R × C → Prop) : Prop :=
   ∃ x x', Q x ∧ Q x' ∧ x ≠ x' ∧ f (P x) = f (P x')
 
 /-- Some input in `Q` whose image under `P` has zero capacity part: event E2 of
 [KatzLindell2020], Claim 7.8. -/
 @[expose]
-def ZeroCapacity (P : Equiv.Perm (R × C)) (Q : R × C → Prop) : Prop :=
+def ZeroCapacity (P : R × C → R × C) (Q : R × C → Prop) : Prop :=
   ∃ x, Q x ∧ (P x).2 = 0
 
 omit [AddGroup R] [Zero C] in
-theorem ImageCollision.mono {D : Type*} {P : Equiv.Perm (R × C)} {f : R × C → D}
+theorem ImageCollision.mono {D : Type*} {P : R × C → R × C} {f : R × C → D}
     {Q Q' : R × C → Prop} (h : ImageCollision P f Q) (hQ : ∀ x, Q x → Q' x) :
     ImageCollision P f Q' := by
   obtain ⟨x, x', hx, hx', hne, heq⟩ := h
   exact ⟨x, x', hQ x hx, hQ x' hx', hne, heq⟩
 
 omit [AddGroup R] in
-theorem ZeroCapacity.mono {P : Equiv.Perm (R × C)} {Q Q' : R × C → Prop}
+theorem ZeroCapacity.mono {P : R × C → R × C} {Q Q' : R × C → Prop}
     (h : ZeroCapacity P Q) (hQ : ∀ x, Q x → Q' x) : ZeroCapacity P Q' := by
   obtain ⟨x, hx, h0⟩ := h
   exact ⟨x, hQ x hx, h0⟩
 
 /-- Distinct block sequences with equal capacity part after absorbing trigger event E3 or E2
 among their evaluated permutation inputs. -/
-theorem capacityCollision_or_zeroCapacity (P : Equiv.Perm (R × C)) :
+theorem capacityCollision_or_zeroCapacity (P : R × C → R × C) :
     ∀ ms ms' : List R, ms ≠ ms' → (absorb P ms).2 = (absorb P ms').2 →
       ImageCollision P Prod.snd (fun x => IsInput P ms x ∨ IsInput P ms' x) ∨
         ZeroCapacity P (fun x => IsInput P ms x ∨ IsInput P ms' x) := by
@@ -200,7 +227,7 @@ nonempty block sequences have equal first output, then among the permutation inp
 while absorbing them, event E1 (two distinct inputs whose images have equal output), event E2
 (an image with zero capacity part) or event E3 (two distinct inputs whose images have equal
 capacity part) occurs. -/
-theorem badEvent_of_out_eq (P : Equiv.Perm (R × C)) (out : R × C → O) {ms ms' : List R}
+theorem badEvent_of_out_eq (P : R × C → R × C) (out : R × C → O) {ms ms' : List R}
     (hms : ms ≠ []) (hms' : ms' ≠ []) (hne : ms ≠ ms')
     (h : out (absorb P ms) = out (absorb P ms')) :
     ImageCollision P out (fun x => IsInput P ms x ∨ IsInput P ms' x) ∨
@@ -220,7 +247,7 @@ theorem badEvent_of_out_eq (P : Equiv.Perm (R × C)) (out : R × C → O) {ms ms
 equal capacity part, then appending `m` to `a` and the corrected block
 `-(absorb P a').1 + ((absorb P a).1 + m)` to `a'` reaches the same state, so any common
 suffix gives equal hashes. -/
-theorem absorb_eq_of_capacity_eq (P : Equiv.Perm (R × C)) {a a' : List R}
+theorem absorb_eq_of_capacity_eq (P : R × C → R × C) {a a' : List R}
     (h : (absorb P a).2 = (absorb P a').2) (m : R) (s : List R) :
     absorb P (a ++ m :: s) =
       absorb P (a' ++ (-(absorb P a').1 + ((absorb P a).1 + m)) :: s) := by
@@ -379,14 +406,16 @@ variable {r c : ℕ} {O : Type*}
 into `r`-bit blocks and run `hashBlocks`. The output is the list `[h₁, …, h_k]`; with
 `out` the first `v` bits of the state, its flattening is `h₁ ‖ ⋯ ‖ h_k`. -/
 @[expose]
-def hash (P : Equiv.Perm (BitString r × BitString c)) (out : BitString r × BitString c → O)
+def hash (P : BitString r × BitString c → BitString r × BitString c)
+    (out : BitString r × BitString c → O)
     (k : ℕ) (msg : List Bool) : List O :=
   hashBlocks P out k (toBlocks r (pad r msg))
 
 /-- **Claim 7.8 for forward queries, on messages**: a collision between distinct messages
 triggers event E1, E2 or E3 among the permutation inputs evaluated while absorbing their padded
 block sequences. -/
-theorem badEvent_of_hash_eq (hr : 0 < r) (P : Equiv.Perm (BitString r × BitString c))
+theorem badEvent_of_hash_eq (hr : 0 < r)
+    (P : BitString r × BitString c → BitString r × BitString c)
     (out : BitString r × BitString c → O) (k : ℕ) {msg msg' : List Bool} (hne : msg ≠ msg')
     (h : hash P out (k + 1) msg = hash P out (k + 1) msg') :
     ImageCollision P out (fun x => IsInput P (toBlocks r (pad r msg)) x ∨
@@ -415,7 +444,8 @@ theorem toBlocks_pad_append_ofFn (hr : 0 < r) {u : List Bool} (hu : r ∣ u.leng
 length reach states with equal capacity part, then extending them by one block each (`m`, and the
 corrected block for `u'`) gives two distinct messages with equal hashes, for every output map
 and number of squeezing outputs. -/
-theorem hash_eq_of_capacity_eq (hr : 0 < r) (P : Equiv.Perm (BitString r × BitString c))
+theorem hash_eq_of_capacity_eq (hr : 0 < r)
+    (P : BitString r × BitString c → BitString r × BitString c)
     {u u' : List Bool} (hu : r ∣ u.length) (hlen : u.length = u'.length) (hne : u ≠ u')
     (h : (absorb P (toBlocks r u)).2 = (absorb P (toBlocks r u')).2) (m : BitString r)
     (out : BitString r × BitString c → O) (k : ℕ) :

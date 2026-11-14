@@ -51,16 +51,14 @@ This module proves that the Sigma-protocol security notions transfer across the 
   is doomed unless two distinct challenges have accepting responses; by 2-special soundness, no
   false statement can reach a non-doomed commitment, and from a doomed commitment at most one
   challenge in `C` has an accepting response.
-* **Straight-line knowledge soundness** (`SpecialSoundness.knowledgeSound_of_extractor`,
-  `SpecialSoundness.knowledgeSound`, `SpecialSoundness.efficientKnowledgeSound`): for a 2-special
-  sound `P`, any straight-line extractor that returns a valid witness on every accepting
-  transcript of a true statement makes `P.toInteractiveVerifier` knowledge sound with error
-  `1 / |C|`. Special soundness is used only to obtain plain soundness on false statements. The
-  classical witness chooser `P.witnessChooser R` ignores the transcript and is such an extractor,
-  so for it `KnowledgeSound` says no more than `SpecialSoundness.sound`.
-  `SpecialSoundness.efficientKnowledgeSound` takes that property and a polynomial-time
-  realization of an extractor family as hypotheses and concludes
-  `Verifier.EfficientKnowledgeSound`.
+* **Straight-line knowledge soundness from a supplied extractor**
+  (`SpecialSoundness.knowledgeSound_of_extractor`): for a 2-special sound `P`, any straight-line
+  extractor that returns a valid witness on every accepting transcript of a true statement makes
+  `P.toInteractiveVerifier` knowledge sound with error `1 / |C|`. That property of the extractor
+  is a hypothesis, and special soundness is used only to obtain plain soundness on false
+  statements. Such an extractor reads a witness off one transcript, which a special HVZK protocol
+  for a hard relation cannot allow efficiently, so this lemma is not the proof-of-knowledge
+  property of Sigma protocols: that property comes from rewinding the prover.
 * **Honest-verifier zero knowledge** (`SpecialHVZK.hvzk`, `SpecialHVZK.hvzk_zero`,
   `EfficientSpecialHVZK.efficientHVZK`): `P.SpecialHVZK R simulate` and a `ProbComp` simulator
   `simComp` within `ε` of `simulate` give `(P.toInteractiveReduction sampleCommit).HVZK
@@ -83,8 +81,6 @@ This module proves that the Sigma-protocol security notions transfer across the 
 * `SigmaProtocol.toInteractiveVerifier`, `SigmaProtocol.toInteractiveProver`,
   `SigmaProtocol.toInteractiveReduction`: the interactive verifier, prover and reduction.
 * `SigmaProtocol.rbrState`: the round-by-round state function on prefixes of `P.interactiveSpec`.
-* `SigmaProtocol.witnessChooser`: the classical witness chooser, a noncomputable straight-line
-  extractor that ignores the transcript.
 * `SigmaProtocol.interactiveSim`: the interactive transcript simulator induced by a
   challenge-conditioned simulator.
 * `SigmaProtocol.Encoding.toInteractiveEncoding`: interactive word encodings induced by a
@@ -98,14 +94,9 @@ This module proves that the Sigma-protocol security notions transfer across the 
 * `SigmaProtocol.Complete.toInteractiveReduction`: completeness transfer.
 * `SigmaProtocol.SpecialSoundness.rbrSound`, `SigmaProtocol.SpecialSoundness.sound`:
   round-by-round soundness and plain-model soundness with error `1 / |C|`.
-* `SigmaProtocol.SpecialSoundness.knowledgeSound_of_extractor`,
-  `SigmaProtocol.SpecialSoundness.knowledgeSound`,
-  `SigmaProtocol.SpecialSoundness.efficientKnowledgeSound`: from 2-special soundness,
-  straight-line knowledge soundness with error `1 / |C|` for an extractor that returns a valid
-  witness on every accepting transcript of a true statement. That property is a hypothesis in the
-  first and third and is proved for `P.witnessChooser R` in the second. The third, for an indexed
-  family, also assumes a polynomial-time realization of the extractor and concludes
-  `Verifier.EfficientKnowledgeSound`.
+* `SigmaProtocol.SpecialSoundness.knowledgeSound_of_extractor`: from 2-special soundness,
+  straight-line knowledge soundness with error `1 / |C|` for an extractor that is assumed to return
+  a valid witness on every accepting transcript of a true statement.
 * `SigmaProtocol.SpecialHVZK.hvzk`, `SigmaProtocol.SpecialHVZK.hvzk_zero`,
   `SigmaProtocol.EfficientSpecialHVZK.efficientHVZK`: HVZK and efficient HVZK transfer.
 -/
@@ -364,12 +355,13 @@ theorem SpecialSoundness.sound {W : Type} {R : W → Y → Prop}
   simpa only [PerChallenge.sum, interactiveSpec, threeMoveSpec, add_zero] using
     (SpecialSoundness.rbrSound h langOut).sound
 
-/-! ### Knowledge soundness and efficient knowledge soundness transfer -/
+/-! ### Knowledge soundness from a supplied extractor -/
 
 /-- For a 2-special sound `P`, any straight-line extractor `E` that recovers a valid witness from
 every accepting transcript on statements in `language (Function.swap R)` makes
 `P.toInteractiveVerifier` knowledge sound with error `1 / |C|`. Special soundness is used only for
-plain soundness on statements outside that language. -/
+plain soundness on statements outside that language. The extractor's correctness `hE` is a
+hypothesis about one transcript; this is not the rewinding proof of knowledge of Sigma protocols. -/
 theorem SpecialSoundness.knowledgeSound_of_extractor {W : Type} {R : W → Y → Prop}
     {extract : Y → T → C → Z → C → Z → W}
     (h : P.SpecialSoundness R extract)
@@ -391,25 +383,6 @@ theorem SpecialSoundness.knowledgeSound_of_extractor {W : Type} {R : W → Y →
   · refine (MeasureTheory.measure_mono ?_).trans (SpecialSoundness.sound h Set.univ y hy Unit strat)
     rintro r ⟨⟨x', hx', -⟩, -⟩
     exact ⟨x', Set.mem_univ x', hx'⟩
-
-/-- The classical witness chooser: it ignores the transcript and picks a witness for `y` whenever
-one exists. -/
-noncomputable def witnessChooser (P : SigmaProtocol X Y T C Z) {W : Type} [Nonempty W]
-    (R : W → Y → Prop) :
-    Y → Transcript P.interactiveSpec → Unit → W :=
-  fun y _ _ => Classical.epsilon (fun w => R w y)
-
-/-- **Knowledge soundness transfer**: 2-special soundness of `P` implies straight-line
-`KnowledgeSound` in the plain model with error `1 / |C|` for `P.witnessChooser R`. That extractor
-is noncomputable and ignores the transcript, so this says no more than `SpecialSoundness.sound`:
-nothing is extracted from the prover's messages. -/
-theorem SpecialSoundness.knowledgeSound {W : Type} [Nonempty W] {R : W → Y → Prop}
-    {extract : Y → T → C → Z → C → Z → W}
-    (h : P.SpecialSoundness R extract) :
-    P.toInteractiveVerifier.KnowledgeSound (Function.swap R) Accept (P.witnessChooser R)
-      (1 / (Fintype.card C : ℝ≥0∞)) :=
-  SpecialSoundness.knowledgeSound_of_extractor h (P.witnessChooser R) fun _ _ hy _ =>
-    Classical.epsilon_spec hy
 
 /-! ### Honest-verifier zero knowledge transfer -/
 
@@ -460,7 +433,7 @@ theorem SpecialHVZK.hvzk_zero {R : X → Y → Prop} {simulate : Y → C → PMF
       (P.interactiveSim simComp) 0 :=
   h.hvzk hcommit fun y c => by rw [hsim y c]; exact CloseTo.refl _
 
-/-! ### Indexed families: encodings, efficient knowledge soundness and efficient HVZK -/
+/-! ### Indexed families: encodings and efficient HVZK -/
 
 section Family
 
@@ -533,34 +506,6 @@ theorem isPPTOn_interactiveSimWord {enc : Encoding I YF TF CF ZF}
   exact isPPTOn_iff_encoded.mp h4
 
 variable [∀ i, Fintype (CF i)] [∀ i, Nonempty (CF i)]
-
-/-- **Efficient knowledge soundness transfer**: if `PF` is special sound at every index and a
-polynomial-time straight-line extractor family `E` recovers a valid witness on every accepting
-transcript of every true statement, then `fun i => (PF i).toInteractiveVerifier` satisfies
-`Verifier.EfficientKnowledgeSound` with error `fun i => 1 / |CF i|`. Both the correctness of `E`
-(`hE`) and its polynomial-time realization (`hpoly`) are hypotheses; special soundness is used
-only for plain soundness on false statements. -/
-theorem SpecialSoundness.efficientKnowledgeSound
-    {RF : ∀ i, WF i → YF i → Prop}
-    {extract : ∀ i, YF i → TF i → CF i → ZF i → CF i → ZF i → WF i}
-    {enc : Encoding I YF TF CF ZF} {encW : ∀ i, WF i ↪ List Bool}
-    {E : ∀ i, YF i → Transcript (PF i).interactiveSpec → Unit → WF i}
-    (h : ∀ i, (PF i).SpecialSoundness (RF i) (extract i))
-    (hE : ∀ i y τ, y ∈ language (Function.swap (RF i)) →
-      (PF i).Accepts y ((PF i).commitOfTranscript τ) ((PF i).challengeOfTranscript τ)
-        ((PF i).responseOfTranscript τ) →
-      RF i (E i y τ ()) y)
-    (hpoly : ∃ f, ComputableInPolyTime f
-      (encPair enc.index (encPair encBits (encPair encBits encBits))) encBits ∧
-      Interactive.ExtractorRealizedBy (enc.toInteractiveEncoding PF)
-        (fun _ => encUnit) encW E f) :
-    Interactive.Verifier.EfficientKnowledgeSound
-      (fun i => (PF i).toInteractiveVerifier)
-      (fun i => Function.swap (RF i)) (fun _ => Accept)
-      (enc.toInteractiveEncoding PF) (fun _ => encUnit) encW E
-      (fun i => 1 / (Fintype.card (CF i) : ℝ≥0∞)) where
-  knowledgeSound i := SpecialSoundness.knowledgeSound_of_extractor (h i) (E i) (hE i)
-  polyTime := hpoly
 
 /-- `interactiveSimWord` realizes `(PF i).interactiveSim (simComp i)` on encodings up to
 `δC i + δ i`, when `program` is within `δ i` of the encoded `simulate i` on every encoded input
