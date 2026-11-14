@@ -3341,6 +3341,17 @@ probabilities satisfy lower or upper bounds.
   `poissonBinomial_stochasticallyDominates_trajMeasure_adaptedCount`), and finite-horizon
   sequential `PMF` processes (`PMF.seqProcess`, `PMF.seqCount`,
   `PMF.seqCount_stochasticallyDominates_poissonBinomial`, `PMF.seqCount_active_toReal_Iio_le`).
+- **Sequential processes with unreachable histories**:
+  [`StochasticDomination/SequentialSupport.lean`](../../CslibFrontier/Probability/StochasticDomination/SequentialSupport.lean)
+  provides `PMF.seqCount_stochasticallyDominates_poissonBinomial_of_support` and
+  `PMF.seqCount_active_toReal_Iio_le_of_support`. Their probability envelopes are required only
+  when `h ∈ (PMF.seqProcess step t).support`; the latter also requires the original count to be
+  below the target. Use these when invariants of actual responses fail on impossible histories.
+  The response type can have unbounded discrete support. `PMF.seqCount_congr_on_support`
+  transfers counts between events agreeing at every reachable prefix. The checked
+  [`SequentialSupport.lean` client](../../CslibFrontierTests/SequentialSupport.lean) uses geometric
+  metadata and fair success bits: actual histories have authenticated tags, while an impossible
+  unauthenticated prefix has zero success probability and violates the older all-prefix premise.
 - **Infinite-horizon stopping-time means**:
   [`StochasticDomination/Stopping.lean`](../../CslibFrontier/Probability/StochasticDomination/Stopping.lean)
   proves the `WithTop ℕ` tail-sum identity (`lintegral_withTopToENNReal` for measurable `τ`, and
