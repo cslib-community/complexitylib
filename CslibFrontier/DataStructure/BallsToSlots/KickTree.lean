@@ -84,19 +84,24 @@ private theorem card_fin_div_two_pow_eq {m e : ℕ} (he : e ≤ m) (r₀ : Fin (
   let eqv := (finCongr (show 2 ^ m = 2 ^ (e + (m - e)) by rw [Nat.add_sub_cancel' he])).trans
     (dyadicSplitEquiv e (m - e))
   refine (Finset.card_nbij' (fun s => (eqv s).1) (fun j => eqv.symm (j, (eqv r₀).2))
-    (fun _ _ => Finset.mem_univ _) (fun _ _ => by simp [eqv]) (fun s hs => ?_)
-    (fun _ _ => by simp)).trans (by simp)
+    (fun _ _ => Finset.mem_univ _)
+    (fun j _ => by simp [eqv, Nat.add_mul_div_left j.val _ (Nat.two_pow_pos e),
+      Nat.div_eq_of_lt j.isLt])
+    (fun s hs => ?_) (fun _ _ => by simp)).trans (by simp)
   rw [Finset.mem_coe, Finset.mem_filter] at hs
-  exact eqv.injective (Prod.ext rfl (Fin.ext (by simpa [eqv] using hs.2)))
+  exact eqv.injective (Prod.ext (by simp) (Fin.ext (by simpa [eqv] using hs.2.symm)))
 
 private theorem expect_fin_mod_two_pow_eq_zero {b e : ℕ} (he : e ≤ b) :
     𝔼 c : Fin (2 ^ b), (if c.val % 2 ^ e = 0 then (1 : ℝ) else 0) = 1 / (2 ^ e : ℝ) := by
+  have : Nonempty (Fin (2 ^ (b - e))) := ⟨⟨0, by positivity⟩⟩
   let eqv := (finCongr (show 2 ^ b = 2 ^ (e + (b - e)) by rw [Nat.add_sub_cancel' he])).trans
     (dyadicSplitEquiv e (b - e))
   rw [Fintype.expect_equiv eqv _ (fun p : Fin (2 ^ e) × Fin (2 ^ (b - e)) =>
-    if p.1 = ⟨0, by positivity⟩ then (1 : ℝ) else 0) (fun c => by simp [eqv, Fin.ext_iff]),
-    Fintype.expect_prod_type]
-  simp [Fintype.expect_boole, Finset.dens_eq_card_div_card]
+    if p.1 = ⟨0, by positivity⟩ then (1 : ℝ) else 0) (fun c => by simp [eqv, Fin.ext_iff])]
+  rw [Fintype.expect_comp_fst
+    (fun a : Fin (2 ^ e) => if a = ⟨0, by positivity⟩ then (1 : ℝ) else 0)]
+  rw [Fintype.expect_ite_eq']
+  simp
 
 namespace KickTree
 /-- Parameters for a power-of-two `depth`-kick tree over `2 ^ slotBits` slots. -/
@@ -395,7 +400,7 @@ private theorem kickPlaceAux_spec (P : Params) (f : α → Fin (2 ^ P.hashBits))
             ih mid y' d' (st.assignment.put_occupant_ne_old hy hocc)
               (by have := Fin.lt_def.mp hk.2; omega)
               (hvalid.put hy hk.1 hd_cap) (hvalid.slotDepth_le_depthCap hocc) hmid_unsat
-          have hmid_pres := st.assignment.present_put_of_some hy hocc
+          have hmid_pres : mid.assignment.present = _ := st.assignment.present_put_of_some hy hocc
           refine ⟨hres_val, ?_, ?_, fun z hz => ?_, ?_⟩
           · rw [hres_pres, hmid_pres, Finset.insert_comm,
               Finset.insert_erase ((st.assignment.mem_present_iff y').mpr ⟨r, hocc⟩)]
@@ -403,8 +408,8 @@ private theorem kickPlaceAux_spec (P : Params) (f : α → Fin (2 ^ P.hashBits))
           · rcases eq_or_ne z y' with rfl | hzy'
             · rw [hres_y']
               simp [State.assignedDepth, (st.assignment.slotOf_eq_some_iff z r).mpr hocc, d']
-            · rw [hres_keep z (by rw [hmid_pres]; exact Finset.mem_insert_of_mem
-                (Finset.mem_erase.mpr ⟨hzy', hz⟩))]
+            · have hz_mid : z ∈ mid.assignment.present := by rw [hmid_pres]; simp [hzy', hz]
+              rw [hres_keep z hz_mid]
               exact st.assignedDepth_put_of_ne r y d (hne_y hz)
                 (by rw [hocc]; exact fun h => hzy' (Option.some.inj h).symm)
           · have := Fin.lt_def.mp hk.2
@@ -594,7 +599,7 @@ theorem ballProbeComplexity_le_snapshotProbeBound {α : Type*} [DecidableEq α] 
         | some _ =>
           rw [hf, Fin.val_castSucc] at hg; cases Fin.ext hg
           exact Or.inl (P.binSize_le_binLoad_of_binSaturated hst hS (f x)
-            (Fin.eq_true_of_find?_eq_some hf))
+            (Fin.eq_true_of_find?_eq_some (p := fun d => P.binSaturated st (f x) d.succ) hf))
       · exact Or.inr hc
     have hle := Finset.single_le_sum (f := fun i : Fin P.depth =>
       if P.binSize i.succ ≤ P.binLoad f S (f x) i.succ ∨ (P.depthCap (f x)).val < i.val + 1 then
@@ -871,8 +876,8 @@ theorem expect_snapshotProbeBound_standardParams_le {ι α : Type*} [Fintype ι]
         linarith
     have hsum_le : (𝔼 θ, ∑ i : Fin P.depth, err i θ) ≤ 84 := by
       rw [Finset.expect_sum_comm]; refine (Finset.sum_le_sum fun i _ => hterm_le i).trans ?_
-      rw [← Finset.mul_sum, Fin.sum_univ_eq_sum_range (fun j => ((1 : ℝ) / 2) ^ (D - j)) D]
-      linarith [hgeom D]
+      rw [← Finset.mul_sum, Fin.sum_univ_eq_sum_range (fun j => ((1 : ℝ) / 2) ^ (D - j)) P.depth]
+      change 84 * ∑ j ∈ Finset.range D, ((1 : ℝ) / 2) ^ (D - j) ≤ 84; linarith [hgeom D]
     refine ((Finset.expect_le_expect fun θ _ => hpw θ).trans_eq
       (by rw [Finset.expect_add_distrib, Fintype.expect_const])).trans ?_
     have hM_ge : (1 : ℝ) ≤ max (L (k + 1) : ℝ) 1 := le_max_right _ _
@@ -890,9 +895,10 @@ theorem expect_ballProbeComplexity_standardInsert_le {ι α : Type*} [Fintype ι
       (standardInsert m₀ k (h θ) (st θ) x).assignment x : ℝ) ≤
       96 * (max (Nat.iterLog (k + 1) (2 ^ m₀)) 1 : ℝ) :=
   (Finset.expect_le_expect (g := fun θ => ((standardParams m₀ k).snapshotProbeBound (h θ) S x : ℝ))
-    fun θ _ => by exact_mod_cast (standardParams m₀ k).ballProbeComplexity_le_snapshotProbeBound
-      (hst θ) ((hst θ).insert x) (hS θ) ((Params.insert_spec (h θ) (hst θ) x).2.2.2.2.2
-        (hS θ ▸ hx) (hS θ ▸ hlt))).trans
+    fun θ _ => by
+      exact_mod_cast (standardParams m₀ k).ballProbeComplexity_le_snapshotProbeBound (hst θ)
+        ((hst θ).insert x) (hS θ) ((Params.insert_spec (h θ) (hst θ) x).2.2.2.2.2
+          (hS θ ▸ hx) (hS θ ▸ hlt))).trans
     (expect_snapshotProbeBound_standardParams_le m₀ k hh hk hlt.le hx)
 private theorem ballProbeComplexity_run_le_choose {α : Type*} [DecidableEq α] (P : Params)
     (f : α → Fin (2 ^ P.hashBits)) {ops : List (Op α)} (hval : ValidOpSeq P.slotCount ops)

@@ -14,6 +14,7 @@ public import Mathlib.Data.Fintype.Prod
 import CslibFrontier.Foundations.Data.Finset.Expect
 import CslibFrontier.Foundations.Data.Finset.Markov
 import Mathlib.Algebra.BigOperators.Ring.Finset
+import Mathlib.Algebra.Order.BigOperators.Expect
 import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Data.Fintype.BigOperators
 import Mathlib.Tactic.Linarith
@@ -50,6 +51,7 @@ public section
 namespace Cslib.Probability
 
 open Finset
+open scoped BigOperators
 
 /-- **Two-stage counting.** If at least `ρ₁` elements of `s` are good, and each good `a` has at
 least `ρ₂` partners `b ∈ t` with `q a b`, then at least `ρ₁ ρ₂` pairs of `s ×ˢ t` satisfy `q`. -/
@@ -123,9 +125,8 @@ theorem dens_prod_le_add_of_good {α β : Type*} [Fintype α] [Nonempty α] [Fin
       _ = (dens {a : α | ¬ good a} : ℝ) + p := by
           rw [Finset.expect_add_distrib, Fintype.expect_boole, Fintype.expect_const]
       _ ≤ δ + p := by linarith
-  · have : IsEmpty (α × β) := ⟨fun s => hβ ⟨s.2⟩⟩
-    have hd0 : (dens {ab : α × β | bad ab} : ℝ) = 0 := by
-      simp [Finset.dens_eq_card_div_card, Subsingleton.elim _ (∅ : Finset (α × β))]
+  · have : IsEmpty β := not_nonempty_iff.mp hβ
+    have hd0 : (dens {ab : α × β | bad ab} : ℝ) = 0 := by simp [univ_eq_empty]
     have hδ0 : 0 ≤ δ := (by positivity : (0 : ℝ) ≤ dens _).trans hbad
     linarith
 
