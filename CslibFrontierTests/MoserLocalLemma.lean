@@ -4,10 +4,15 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+module
+-- upstream: local-only (test driver)
+
 import CslibFrontier.Logics.Propositional.CNF.LocalLemma
 import CslibFrontier.Logics.Propositional.CNF.Moser.LocalLemma
 
 /-! Tests for constructive `k`-SAT Moser–Tardos and Section 6 conflict-graph lopsided LLL. -/
+
+set_option linter.privateModule false
 
 namespace CslibFrontierTests.MoserLocalLemma
 
@@ -197,5 +202,47 @@ example {sel : (∀ p : Fin 8 × ℕ, (fun _ : Fin 8 => Bool) p.1) →
     norm_num [oneConflict3CNF]
   · exact ae_exists_eval_run_firstViolated_of_conflict_exp_mul_le oneConflict3_exact hcd hlll
   · exact oneConflict3_exact.satisfiable_of_conflict_exp_mul_le hcd hlll
+
+/-! ### Parallel `k`-SAT (`greedyParallelCNF` and expected parallel rounds) -/
+
+example {psel : (∀ p : Fin 16 × ℕ, (fun _ : Fin 16 => Bool) p.1) →
+      List (Fin star4CNF.length) → List (Fin star4CNF.length)}
+    (hrule : IsValidParallelRule (clauseVbl star4CNF) (violated star4CNF) psel) :
+    ∫⁻ T, parallelRounds (α := fun _ : Fin 16 => Bool) psel T ∂table (fairCoin (n := 16)) ≤
+        ENNReal.ofReal ((max 0 (Real.log ((5 : ℝ) / 4)) + 1) / (1 / 8 : ℝ)) ∧
+      (∀ᵐ T ∂table (fairCoin (n := 16)), ∃ N,
+        CNF.eval (current (clauseVbl star4CNF) T
+          (parallelRun (α := fun _ : Fin 16 => Bool) (greedyParallelCNF star4CNF) T N))
+          star4CNF = true) := by
+  have hlll : Real.exp 1 * ((4 : ℕ) + 1 : ℝ) ≤ (1 - (1 / 8 : ℝ)) * 2 ^ 4 := by
+    have := exp_one_le_eleven_quarters
+    norm_num
+    linarith
+  refine ⟨?_, ?_⟩
+  · simpa [star4CNF] using
+      lintegral_parallelRounds_le_of_exp_mul_le_of_pos star4_exact (d := 4) (ε := 1 / 8)
+        (by decide) (fun j => (star4_degree j).le) ⟨by norm_num, by norm_num⟩ hlll hrule
+  · exact ae_exists_eval_parallelRun_greedy_of_exp_mul_le star4_exact (d := 4) (ε := 1 / 8)
+      (fun j => (star4_degree j).le) ⟨by norm_num, by norm_num⟩ hlll
+
+-- Two disjoint exact `3`-clauses: `greedyParallelCNF` resamples both in round 0 simultaneously.
+private abbrev disj3CNF : CNF (Fin 6) :=
+  [ [(0, true), (1, true), (2, true)],
+    [(3, true), (4, true), (5, true)] ]
+
+private def stepTrue6Table (p : Fin 6 × ℕ) : (fun _ : Fin 6 => Bool) p.1 :=
+  decide (1 ≤ p.2)
+
+example :
+    greedyParallelCNF disj3CNF stepTrue6Table [] = [0, 1] ∧
+      parallelRun (α := fun _ : Fin 6 => Bool) (greedyParallelCNF disj3CNF) stepTrue6Table 1 =
+        [0, 1] ∧
+      greedyParallelCNF disj3CNF stepTrue6Table
+          (parallelRun (α := fun _ : Fin 6 => Bool)
+            (greedyParallelCNF disj3CNF) stepTrue6Table 1) = [] ∧
+      CNF.eval (current (clauseVbl disj3CNF) stepTrue6Table
+        (parallelRun (α := fun _ : Fin 6 => Bool)
+          (greedyParallelCNF disj3CNF) stepTrue6Table 1)) disj3CNF = true := by
+  decide
 
 end CslibFrontierTests.MoserLocalLemma

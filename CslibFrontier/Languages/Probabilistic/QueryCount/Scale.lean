@@ -22,6 +22,8 @@ satisfies (`OracleComp.QueriesSatisfy`), such as a size bound on the requests.
   predicate on which calls cost at most `c`, cost at most `n * c`.
 * `Cslib.OracleComp.IsQueryBounded.isCostBounded_mul_of_forall_le`: the case where every call
   costs at most `c`.
+* `Cslib.OracleComp.IsCostBounded.mul_of_le`: a budget `n` for one cost gives the budget `n * c`
+  for a cost at most `c` times it, for example external requests costing at most `c` each.
 -/
 
 public section
@@ -50,5 +52,16 @@ theorem IsQueryBounded.isCostBounded_mul {p : ι → Prop} (h : program.IsQueryB
 theorem IsQueryBounded.isCostBounded_mul_of_forall_le (h : program.IsQueryBounded n)
     (hcost : ∀ q, cost q ≤ c) : IsCostBounded cost program (n * c) :=
   h.isCostBounded_mul (.of_forall (p := fun _ => True) (fun _ => trivial) _) fun q _ => hcost q
+
+/-- A budget `n` for `cost` gives the budget `n * c` for every cost `cost'` with
+`cost' q ≤ cost q * c`. With `cost` counting only some calls, such as the external queries of a
+program with private coins, this bounds the total cost of those calls at `c` each. -/
+theorem IsCostBounded.mul_of_le {cost' : ι → ℕ} (h : IsCostBounded cost program n)
+    (hcost : ∀ q, cost' q ≤ cost q * c) : IsCostBounded cost' program (n * c) := by
+  induction h with
+  | pure a n => exact .pure a (n * c)
+  | liftBind q cont n _ ih =>
+    rw [Nat.add_mul]
+    exact (IsCostBounded.liftBind q cont (n * c) ih).mono (Nat.add_le_add_left (hcost q) _)
 
 end Cslib.OracleComp

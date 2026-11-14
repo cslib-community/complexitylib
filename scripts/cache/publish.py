@@ -38,7 +38,8 @@ def valid_password_token(password):
 
 
 def run(args, **kwargs):
-    return subprocess.run(args, cwd=ROOT, check=True, **kwargs)
+    kwargs.setdefault("check", True)
+    return subprocess.run(args, cwd=ROOT, **kwargs)
 
 
 def digest(path):
@@ -199,6 +200,32 @@ def gcs(bucket, directory):
     print(f"Published {data['revision']} to gs://{bucket}")
 
 
+HTTP_FULL = "application/x-tar"
+HTTP_PROBE = "application/vnd.cslib.cache-probe.v1+tar"
+HTTP_DELTA = "application/vnd.cslib.cache-delta.v1+tar"
+
+
+def http_package(package, directory, names):
+    """Keep the complete inventory even when only selected payloads are sent."""
+    with tarfile.open(package, "w", format=tarfile.USTAR_FORMAT) as archive:
+        for name in ["publication.json", *sorted(names)]:
+            archive.add(directory / name, arcname=name, recursive=False)
+
+
+def missing_archives(response, data, mapping):
+    """Treat the probe as untrusted input, never as publication acknowledgement."""
+    result = json.loads(response.read_text())
+    if (not isinstance(result, dict) or set(result) != {"version", "revision", "missing"}
+            or result["version"] != 1 or result["revision"] != data["revision"]
+            or not isinstance(result["missing"], list)):
+        raise ValueError("Invalid cache origin probe response")
+    missing = result["missing"]
+    if (any(not isinstance(name, str) or name == mapping or name not in data["files"]
+            for name in missing) or len(missing) != len(set(missing))):
+        raise ValueError("Invalid cache origin missing-archive list")
+    return missing
+
+
 def http(endpoint, directory):
     parsed = urlsplit(endpoint)
     if (parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password
@@ -213,21 +240,54 @@ def http(endpoint, directory):
     # configuration from stdin; escape the only special characters allowed here.
     credential = (user + ":" + password).replace("\\", "\\\\").replace('"', '\\"')
     config = f'user = "{credential}"\n'
+    mapping = f"r0/{SCOPE}/tc/{data['toolchain']}/{data['revision']}.jsonl"
     with tempfile.TemporaryDirectory(prefix="cache-upload-") as temporary:
         package = Path(temporary) / "publication.tar"
-        with tarfile.open(package, "w", format=tarfile.USTAR_FORMAT) as archive:
-            for name in ["publication.json", *sorted(data["files"])]:
-                archive.add(directory / name, arcname=name, recursive=False)
-        result = run(["curl", "--disable", "--config", "-", "--silent", "--show-error",
-             "--fail-with-body", "--proto", "=https", "--connect-timeout", "30",
-             "--max-time", "360", "--retry", "5", "--retry-max-time", "600",
-             "--output", str(Path(temporary) / "response"), "--write-out", "%{http_code}",
-             "--retry-connrefused", "--header", "Content-Type: application/x-tar",
-             "--upload-file", str(package),
-             endpoint.rstrip("/") + "/publish/" + data["revision"]],
-             input=config, text=True, stdout=subprocess.PIPE)
-        if result.stdout.strip() != "201":
-            raise ValueError("Cache origin did not acknowledge publication with HTTP 201")
+        response = Path(temporary) / "response"
+        package_bytes = []
+
+        def upload(media_type, names):
+            http_package(package, directory, names)
+            package_bytes.append(package.stat().st_size)
+            result = run(["curl", "--disable", "--config", "-", "--silent", "--show-error",
+                 "--fail-with-body", "--proto", "=https", "--connect-timeout", "30",
+                 "--max-time", "360", "--retry", "5", "--retry-max-time", "600",
+                 "--max-filesize", str(16 * 1024 * 1024),
+                 "--output", str(response), "--write-out", "%{http_code}",
+                 "--retry-connrefused", "--header", "Content-Type: " + media_type,
+                 "--upload-file", str(package),
+                 endpoint.rstrip("/") + "/publish/" + data["revision"]],
+                 input=config, text=True, stdout=subprocess.PIPE, check=False)
+            # curl 22 means an HTTP rejection with a complete status. Transport,
+            # TLS and response-size failures never authorize a fallback.
+            if result.returncode not in (0, 22):
+                raise subprocess.CalledProcessError(result.returncode, result.args)
+            return result.stdout.strip()
+
+        status = upload(HTTP_PROBE, [mapping])
+        if status == "415":
+            # Old origins only accept application/x-tar. Using the same PUT route
+            # also works through their unchanged nginx method/auth rules.
+            mode, names = "legacy-full", data["files"]
+            status = upload(HTTP_FULL, names)
+        elif status == "200":
+            missing = missing_archives(response, data, mapping)
+            mode, names = "incremental", [mapping, *missing]
+            status = upload(HTTP_DELTA, names)
+            if status == "412":
+                # GC may remove an omitted archive after the probe. Re-send the
+                # full validated publication once; all conflicts still fail.
+                mode, names = "race-full", data["files"]
+                status = upload(HTTP_FULL, names)
+        else:
+            raise ValueError(f"Cache origin probe failed with HTTP {status}")
+        if status != "201":
+            raise ValueError(f"Cache origin did not acknowledge publication with HTTP 201 (got {status})")
+        print("CACHE_HTTP_PUBLICATION " + json.dumps({
+            "mode": mode, "archives_sent": len(names) - 1,
+            "archives_total": len(data["files"]) - 1,
+            "request_body_bytes": package_bytes,
+        }, sort_keys=True), flush=True)
     print(f"Published {data['revision']} to {endpoint}")
 
 

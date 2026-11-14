@@ -21,7 +21,7 @@ import CslibFrontier.Tactic.PolyTime
 import CslibFrontier.Tactic.PPT
 
 /-!
-# Computational Even–Mansour block cipher and ideal-permutation PRP security
+# Word-level Even–Mansour block cipher and ideal-permutation PRP security
 
 The Even–Mansour block cipher ([EvenMansour1997]; [BonehShoup2023], Section 4.7;
 [KatzLindell2020]) constructs a block cipher on `n`-bit blocks from a public permutation `P` by
@@ -61,9 +61,14 @@ This module provides the computational word-level counterpart to
    `evenMansourWordRealGame`, `singleKeyEvenMansourWordRealGame`, and `evenMansourWordIdealGame`
    expose the bidirectional cipher and primitive permutation channels as word oracles (rejecting
    malformed queries with `[]`), satisfy the `2 * Q_C * Q_P / 2 ^ n` security bound, and are
-   computationally indistinguishable against all `IsOraclePPT encBool` distinguishers
+   `Game.Indistinguishable` against all `IsOraclePPT encBool` distinguishers
    (`indistinguishable_evenMansourWordRealGame_evenMansourWordIdealGame`,
    `indistinguishable_singleKeyEvenMansourWordRealGame_evenMansourWordIdealGame`).
+
+All security results here are information-theoretic in the ideal-permutation model: `P` is a
+uniformly random permutation, the bounds hold for every distinguisher with the stated query counts
+whatever its running time, and the `IsOraclePPT` theorems use that class only for its polynomial
+query bound. No computational assumption is involved.
 
 ## Main definitions
 
@@ -101,7 +106,8 @@ This module provides the computational word-level counterpart to
   `Cslib.Crypto.advantage_singleKeyEvenMansourWordRealGame_evenMansourWordIdealGame_le`,
   `Cslib.Crypto.indistinguishable_evenMansourWordRealGame_evenMansourWordIdealGame`,
   `Cslib.Crypto.indistinguishable_singleKeyEvenMansourWordRealGame_evenMansourWordIdealGame`:
-  quantitative and asymptotic `IsOraclePPT` security for word-oracle distinguishers.
+  quantitative and asymptotic security for word-oracle distinguishers, information-theoretic in
+  the ideal-permutation model (`IsOraclePPT` supplies only the query bound).
 
 ## References
 
@@ -1274,10 +1280,13 @@ private theorem indistinguishable_of_negligible_wordGame
     IsWordCallBounded.of_isQueryBounded
       (by simpa only [List.length_nil, Nat.add_zero, Q] using (hbounds n []).1)
 
-/-- **Computational two-key Even–Mansour ideal-permutation security against `IsOraclePPT`
+/-- **Two-key Even–Mansour security in the ideal-permutation model, against `IsOraclePPT`
 distinguishers** ([EvenMansour1997]; [BonehShoup2023], Theorem 4.14; [KatzLindell2020]): no
 uniform `IsOraclePPT encBool` distinguisher can distinguish `evenMansourWordRealGame` from
-`evenMansourWordIdealGame` with non-negligible advantage. -/
+`evenMansourWordIdealGame` with non-negligible advantage. The security is information-theoretic:
+the permutation is ideal, and the proof uses `IsOraclePPT` only for its polynomial query bound, so
+the conclusion holds for every distinguisher with polynomially many queries
+(`negligible_advantage_evenMansourWordRealGame`). -/
 theorem indistinguishable_evenMansourWordRealGame_evenMansourWordIdealGame :
     Game.Indistinguishable
       (fun adversary n => ProbComp.eval (evenMansourWordRealGame adversary n))
@@ -1286,10 +1295,13 @@ theorem indistinguishable_evenMansourWordRealGame_evenMansourWordIdealGame :
   indistinguishable_of_negligible_wordGame fun adversary _ _ =>
     negligible_advantage_evenMansourWordRealGame adversary
 
-/-- **Computational single-key Even–Mansour ideal-permutation security against `IsOraclePPT`
+/-- **Single-key Even–Mansour security in the ideal-permutation model, against `IsOraclePPT`
 distinguishers** ([DunkelmanKellerShamir2012]; [BonehShoup2023], Section 4.7): no uniform
 `IsOraclePPT encBool` distinguisher can distinguish `singleKeyEvenMansourWordRealGame` from
-`evenMansourWordIdealGame` with non-negligible advantage. -/
+`evenMansourWordIdealGame` with non-negligible advantage. The security is information-theoretic:
+the permutation is ideal, and the proof uses `IsOraclePPT` only for its polynomial query bound, so
+the conclusion holds for every distinguisher with polynomially many queries
+(`negligible_advantage_singleKeyEvenMansourWordRealGame`). -/
 theorem indistinguishable_singleKeyEvenMansourWordRealGame_evenMansourWordIdealGame :
     Game.Indistinguishable
       (fun adversary n => ProbComp.eval (singleKeyEvenMansourWordRealGame adversary n))

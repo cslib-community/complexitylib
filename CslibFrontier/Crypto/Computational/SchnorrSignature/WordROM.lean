@@ -51,22 +51,21 @@ open scoped ENNReal NNReal
 
 variable (F : PrimeOrderGroupFamily) (d : F.Desc) {m : ℕ} (hm : 2 ^ m ≤ F.order d)
 
-/-- Schnorr with word commitments and responses, using the sole native verifier at a canonical
-public key. The message argument of this explicit-challenge arithmetic verifier is immaterial;
-the surrounding Fiat–Shamir scheme enforces the message/commitment hash point. -/
+/-- Schnorr with word commitments and responses, using the sole native verifier
+`encodeSchnorrVerify` at a canonical public key. -/
 noncomputable def schnorrWordSigma :
     SigmaProtocol (ZMod (F.order d)) (F.Carrier d) (List Bool) (BitString m) (List Bool) where
   State := (F.schnorrBitSigma d hm).State
   commit x y := ((F.schnorrBitSigma d hm).commit x y).map (Prod.map (F.encode d) id)
   respond x y r c := F.encScalar d ((F.schnorrBitSigma d hm).respond x y r c)
-  verify y t c z := F.schnorrSigVerifyBits (d, F.encode d y, [], (t, z), List.ofFn c)
+  verify y t c z := F.encodeSchnorrVerify d (F.encode d y) t (List.ofFn c) z
 
 /-- Acceptance recovers a canonical commitment for every response word. -/
 theorem schnorrWordSigma_accepts_iff (u : F.Carrier d) (t z : List Bool) (c : BitString m) :
     (F.schnorrWordSigma d hm).Accepts u t c z ↔
       t = F.encode d ((ofBits z : ZMod (F.order d)) • F.generator d -
         F.challengeEmbedding d hm c • u) := by
-  exact F.schnorrSigVerifyBits_eq_true_iff d u [] t z (List.ofFn c)
+  exact F.encodeSchnorrVerify_eq_true_iff d u t (List.ofFn c) z
 
 /-- On encoded commitments, the word verifier agrees with typed Schnorr after interpreting the
 response scalar. No assumption on the response word is required. -/

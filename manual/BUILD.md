@@ -203,10 +203,17 @@ scripts/guide.sh
 python3 -m http.server --bind 127.0.0.1 --directory guide/.lake/build/site/html-multi
 ```
 
-The first build compiles Verso and links the guide's generator, which takes a few minutes. The
+The first build compiles Verso, which takes a few minutes. The helper checks the chapters,
+then uses `lake lean` to interpret the generator with its project options and up-to-date imports.
+This avoids compiling the imported library to native code just to render HTML; errors in Lean examples
+and chapter warnings still fail the build. For an explicitly native executable,
+`lake -d guide exe guide --output guide/.lake/build/site` remains available. The
 **API documentation** workflow publishes the guide from `main` at
 [/guide/](https://www.cslib.io/cslib-frontier/guide/). The **Guide** workflow builds pull
 requests that change the guide and uploads the pages as a `guide` artifact.
+
+Hosted jobs may reuse the [Guide dependency cache](../scripts/cache/README.md#guide-dependency-cache).
+It contains only dependency builds; the Guide's normal example and rendering checks still run.
 
 ## Regenerating research outputs
 

@@ -6,7 +6,10 @@ No Lean, external listener, production credential or root access is required.
 
 import base64
 from datetime import datetime
-from http.client import HTTPSConnection
+from http.client import HTTPConnection, HTTPSConnection
+from http.server import BaseHTTPRequestHandler
+from socketserver import UnixStreamServer
+import threading
 import hashlib
 import io
 import json
@@ -212,6 +215,78 @@ class RealNginxCacheTests(unittest.TestCase):
                                  self.endpoint, str(directory)], env=environment,
                                 capture_output=True, text=True, timeout=30)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        return result.stdout
+
+    def observe_uploads(self, legacy=False):
+        """Count bytes behind real nginx; optionally emulate the old 415 contract.
+
+        The legacy gate rejects vendor media types exactly as the old Go handler
+        did; accepted full packages still reach the real origin's validation.
+        """
+        upstream = self.root / "upstream.sock"
+        self.socket.rename(upstream)
+        requests = []
+        class Gate(BaseHTTPRequestHandler):
+            def log_message(self, *args):
+                pass
+
+            def do_PUT(self):
+                body = self.rfile.read(int(self.headers["Content-Length"]))
+                media_type = self.headers["Content-Type"]
+                requests.append((media_type, len(body)))
+                if legacy and media_type != "application/x-tar":
+                    self.send_response(415)
+                    self.end_headers()
+                    return
+                connection = HTTPConnection("local")
+                connection.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                connection.sock.connect(str(upstream))
+                try:
+                    connection.request("PUT", self.path, body, {"Content-Type": media_type})
+                    response = connection.getresponse()
+                    payload = response.read()
+                    self.send_response(response.status)
+                    self.send_header("Content-Length", str(len(payload)))
+                    self.end_headers()
+                    self.wfile.write(payload)
+                finally:
+                    connection.close()
+        gate = UnixStreamServer(str(self.socket), Gate)
+        thread = threading.Thread(target=gate.serve_forever, daemon=True)
+        thread.start()
+        def stop():
+            gate.shutdown()
+            gate.server_close()
+            thread.join(timeout=5)
+        self.addCleanup(stop)
+        return requests
+
+    def test_incremental_publication_transfers_only_missing_payloads_through_nginx(self):
+        uploads = self.observe_uploads()
+        old = b"existing archive" * 65536
+        stage, full, _, _ = self.publication("a" * 40, {1: old})
+        credentials = self.user + ":" + self.password
+        self.assertEqual(self.request("PUT", "/publish/" + "a" * 40, full, credentials)[0], 201)
+        stage, _, mapping, contents = self.publication("b" * 40, {1: old, 2: b"new archive"})
+        output = self.publish(stage)
+        self.assertIn('"mode": "incremental"', output)
+        self.assertIn('"archives_sent": 1', output)
+        self.assertEqual(len(uploads), 3)
+        self.assertLess(sum(size for _, size in uploads[1:]), len(old) // 10)
+        metrics = json.loads(next(line.split(" ", 1)[1] for line in output.splitlines()
+                                 if line.startswith("CACHE_HTTP_PUBLICATION ")))
+        self.assertEqual(metrics["request_body_bytes"], [size for _, size in uploads[1:]])
+        self.assertEqual(self.request("GET", "/" + mapping)[:2], (200, contents))
+
+    def test_new_client_falls_back_through_unchanged_nginx_to_legacy_handler(self):
+        uploads = self.observe_uploads(legacy=True)
+        stage, full, mapping, contents = self.publication("a" * 40, {1: b"legacy archive"})
+        output = self.publish(stage)
+        self.assertIn('"mode": "legacy-full"', output)
+        self.assertEqual([kind for kind, _ in uploads],
+                         ["application/vnd.cslib.cache-probe.v1+tar", "application/x-tar"])
+        self.assertEqual(uploads[1][1], len(full))
+        self.assertEqual(self.request("GET", "/" + mapping)[:2], (200, contents))
 
     def test_failed_auth_syslog_matches_the_jail_identifier_without_hostname(self):
         jail = (REPO / "tools/cache-origin/examples/cache-origin-fail2ban.conf").read_text()

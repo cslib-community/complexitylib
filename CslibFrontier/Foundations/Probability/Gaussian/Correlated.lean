@@ -13,6 +13,7 @@ public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Inverse
 public import Mathlib.Probability.Distributions.Gaussian.Multivariate
 import CslibFrontier.Foundations.MeasureTheory.Constructions.BorelSpace.Order
 import CslibFrontier.Foundations.Probability.Gaussian.Multivariate
+import CslibFrontier.Foundations.Probability.Gaussian.Real
 import CslibFrontier.Foundations.Probability.Gaussian.Sheppard
 import Mathlib.Probability.Distributions.Gaussian.Fernique
 
@@ -54,9 +55,12 @@ one coordinate is `1 / 2 - arccos ρ / (2π)` (Example 11.19); both rest on Shep
 * `ProbabilityTheory.isGaussian_correlatedGaussian`, `ProbabilityTheory.eq_correlatedGaussian`:
   the construction agrees with Definition 11.6.
 * `ProbabilityTheory.stdGaussian_map_inner_prod_eq_correlatedGaussian`: Fact 11.7.
-* `ProbabilityTheory.correlatedGaussian_zero`: a `0`-correlated pair is independent.
+* `ProbabilityTheory.correlatedGaussian_zero`, `ProbabilityTheory.correlatedGaussian_one`,
+  `ProbabilityTheory.correlatedGaussian_neg_one`: a `0`-correlated pair is independent, and a
+  `±1`-correlated pair is `(g, ±g)`.
 * `ProbabilityTheory.correlatedGaussian_map_fst`, `ProbabilityTheory.correlatedGaussian_map_snd`,
   `ProbabilityTheory.correlatedGaussian_map_swap`, `ProbabilityTheory.correlatedGaussian_map_neg`,
+  `ProbabilityTheory.correlatedGaussian_map_neg_snd`,
   `ProbabilityTheory.integral_correlatedGaussian_fst_mul_snd`: marginals, symmetries and
   correlation.
 * `ProbabilityTheory.measureReal_correlatedGaussian_zero_mem_uIoc`,
@@ -64,7 +68,9 @@ one coordinate is `1 / 2 - arccos ρ / (2π)` (Example 11.19); both rest on Shep
   forms (11.2) and (11.1).
 * `ProbabilityTheory.integral_correlatedGaussian_ite_pos_mul_ite_pos`: Corollary 11.20 on the
   line.
-* `ProbabilityTheory.correlatedGaussianPi_eq_map`,
+* `ProbabilityTheory.correlatedGaussianPi_eq_map_pi`,
+  `ProbabilityTheory.correlatedGaussianPi_eq_map`,
+  `ProbabilityTheory.correlatedGaussianPi_one`,
   `ProbabilityTheory.correlatedGaussianPi_map_eval`,
   `ProbabilityTheory.correlatedGaussianPi_map_fst`,
   `ProbabilityTheory.correlatedGaussianPi_map_snd`,
@@ -100,6 +106,12 @@ the law of Definition 11.6, the jointly Gaussian law with means `0`, variances `
 correlation `ρ` (`isGaussian_correlatedGaussian`, `eq_correlatedGaussian`). -/
 noncomputable def correlatedGaussian (ρ : ℝ) : Measure (ℝ × ℝ) :=
   ((gaussianReal 0 1).prod (gaussianReal 0 1)).map fun g => (g.1, ρ * g.1 + √(1 - ρ ^ 2) * g.2)
+
+/-- The defining formula of `correlatedGaussian`: the law of `(g₁, ρ g₁ + √(1 - ρ²) g₂)`. -/
+theorem correlatedGaussian_def (ρ : ℝ) :
+    correlatedGaussian ρ = ((gaussianReal 0 1).prod (gaussianReal 0 1)).map
+      fun g => (g.1, ρ * g.1 + √(1 - ρ ^ 2) * g.2) := by
+  rw [correlatedGaussian]
 
 instance isProbabilityMeasure_correlatedGaussian (ρ : ℝ) :
     IsProbabilityMeasure (correlatedGaussian ρ) :=
@@ -355,6 +367,38 @@ theorem correlatedGaussian_zero :
   simp only [zero_mul, zero_add, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, zero_pow,
     sub_zero, sqrt_one, one_mul, Prod.mk.eta, Measure.map_id']
 
+/-- Negating the second coordinate of a `ρ`-correlated pair gives a `-ρ`-correlated pair. -/
+theorem correlatedGaussian_map_neg_snd (ρ : ℝ) :
+    (correlatedGaussian ρ).map (fun p => (p.1, -p.2)) = correlatedGaussian (-ρ) := by
+  have hprod : ((gaussianReal 0 1).prod (gaussianReal 0 1)).map (fun g => (g.1, -g.2)) =
+      (gaussianReal 0 1).prod (gaussianReal 0 1) := by
+    rw [show (fun g : ℝ × ℝ => (g.1, -g.2)) = Prod.map id (fun y => -y) from rfl,
+      ← Measure.map_prod_map _ _ measurable_id measurable_neg, Measure.map_id,
+      gaussianReal_zero_map_neg]
+  rw [correlatedGaussian, correlatedGaussian, Measure.map_map (by fun_prop) (by fun_prop)]
+  conv_rhs => rw [← hprod, Measure.map_map (by fun_prop) (by fun_prop)]
+  congr 1
+  funext g
+  simp only [Function.comp_apply, neg_sq, Prod.mk.injEq, true_and]
+  ring
+
+/-- A `1`-correlated pair is a standard Gaussian repeated: `(g, g)`. -/
+theorem correlatedGaussian_one :
+    correlatedGaussian 1 = (gaussianReal 0 1).map fun x => (x, x) := by
+  have h : (fun g : ℝ × ℝ => (g.1, 1 * g.1 + √(1 - 1 ^ 2) * g.2)) =
+      (fun x => (x, x)) ∘ Prod.fst := by
+    funext g
+    simp only [one_mul, one_pow, sub_self, sqrt_zero, zero_mul, add_zero, Function.comp_apply]
+  rw [correlatedGaussian, h, ← Measure.map_map (by fun_prop) measurable_fst,
+    Measure.map_fst_prod, measure_univ, one_smul]
+
+/-- A `-1`-correlated pair is a standard Gaussian and its negation: `(g, -g)`. -/
+theorem correlatedGaussian_neg_one :
+    correlatedGaussian (-1) = (gaussianReal 0 1).map fun x => (x, -x) := by
+  rw [← correlatedGaussian_map_neg_snd, correlatedGaussian_one,
+    Measure.map_map (by fun_prop) (by fun_prop)]
+  rfl
+
 /-- `E[sgn g] = 0`: at `ρ = 0` the pair is independent, so `E[sgn g] ^ 2 = 1 - (2 / π) (π / 2)`. -/
 private theorem integral_gaussianReal_signPos : ∫ x, signPos x ∂gaussianReal 0 1 = 0 := by
   have h := integral_correlatedGaussian_ite_pos_mul_ite_pos (ρ := 0) (by norm_num)
@@ -419,6 +463,14 @@ instance isProbabilityMeasure_correlatedGaussianPi (ρ : ℝ) :
     IsProbabilityMeasure (correlatedGaussianPi ι ρ) :=
   inferInstanceAs (IsProbabilityMeasure (Measure.map _ _))
 
+/-- `ρ`-correlated vectors are assembled from mutually independent `ρ`-correlated coordinate
+pairs. This is the definition of `correlatedGaussianPi`. -/
+theorem correlatedGaussianPi_eq_map_pi (ρ : ℝ) :
+    correlatedGaussianPi ι ρ =
+      (Measure.pi fun _ : ι => correlatedGaussian ρ).map
+        fun p => (fun i => (p i).1, fun i => (p i).2) := by
+  rw [correlatedGaussianPi]
+
 /-- **`ρ`-correlated vectors from independent ones**
 [O'Donnell, Definition 11.10, Remark 11.11][ODonnell2014]:
 `(z, z')` is `ρ`-correlated when `z` is a standard Gaussian vector and `z' = ρ z + √(1 - ρ²) g`
@@ -437,6 +489,17 @@ theorem correlatedGaussianPi_eq_map (ρ : ℝ) :
   change ((Measure.pi fun _ : ι => ((gaussianReal 0 1).prod (gaussianReal 0 1)).map _).map _) = _
   rw [← h1, Measure.map_map (by fun_prop) (by fun_prop)]
   rfl
+
+/-- `1`-correlated Gaussian vectors are `(z, z)` for a standard Gaussian vector `z`. -/
+theorem correlatedGaussianPi_one :
+    correlatedGaussianPi ι 1 =
+      (Measure.pi fun _ : ι => gaussianReal 0 1).map fun z => (z, z) := by
+  have h : (fun q : (ι → ℝ) × (ι → ℝ) => (q.1, fun i => 1 * q.1 i + √(1 - 1 ^ 2) * q.2 i)) =
+      (fun z => (z, z)) ∘ Prod.fst := by
+    funext q
+    simp only [one_mul, one_pow, sub_self, sqrt_zero, zero_mul, add_zero, Function.comp_apply]
+  rw [correlatedGaussianPi_eq_map, h, ← Measure.map_map (by fun_prop) measurable_fst,
+    Measure.map_fst_prod, measure_univ, one_smul]
 
 /-- The coordinate pairs of `ρ`-correlated vectors are `ρ`-correlated. -/
 theorem correlatedGaussianPi_map_eval (ρ : ℝ) (i : ι) :
@@ -482,25 +545,15 @@ theorem correlatedGaussianPi_map_swap {ρ : ℝ} (hρ : |ρ| ≤ 1) :
   conv_rhs => rw [← h, Measure.map_map (by fun_prop) (by fun_prop)]
   rfl
 
-variable {ι} in
-/-- The Euclidean norm of `a`, as the square root of `a ⬝ᵥ a`. -/
-private theorem sqrt_dotProduct_self (a : ι → ℝ) :
-    √(a ⬝ᵥ a) = ‖WithLp.toLp 2 a‖ := by
-  rw [norm_eq_sqrt_real_inner, EuclideanSpace.inner_toLp_toLp, star_trivial]
-
 /-- **Projections of correlated vectors.** For `ρ`-correlated vectors `z`, `z'`, the projections
 `a ⬝ᵥ z` and `a ⬝ᵥ z'` are a `ρ`-correlated pair of standard Gaussians scaled by `√(a ⬝ᵥ a)`. -/
 theorem correlatedGaussianPi_map_dotProduct (ρ : ℝ) (a : ι → ℝ) :
     (correlatedGaussianPi ι ρ).map (fun p => (a ⬝ᵥ p.1, a ⬝ᵥ p.2)) =
       (correlatedGaussian ρ).map fun p => (√(a ⬝ᵥ a) * p.1, √(a ⬝ᵥ a) * p.2) := by
-  set c := √(a ⬝ᵥ a) with hc
+  set c := √(a ⬝ᵥ a)
   set σ := √(1 - ρ ^ 2)
   have hD : Measurable fun z : ι → ℝ => a ⬝ᵥ z := by fun_prop
-  have hlaw : (Measure.pi fun _ : ι => gaussianReal 0 1).map (a ⬝ᵥ ·) =
-      (gaussianReal 0 1).map (c * ·) := by
-    rw [pi_gaussianReal_map_dotProduct, gaussianReal_map_const_mul, mul_zero, mul_one, hc,
-      sqrt_dotProduct_self]
-    congr 1
+  have hlaw := pi_gaussianReal_map_dotProduct_eq_map_const_mul a
   have hcomp : (fun p : (ι → ℝ) × (ι → ℝ) => (a ⬝ᵥ p.1, a ⬝ᵥ p.2)) ∘
       (fun q : (ι → ℝ) × (ι → ℝ) => (q.1, fun i => ρ * q.1 i + σ * q.2 i)) =
         (fun s : ℝ × ℝ => (s.1, ρ * s.1 + σ * s.2)) ∘ Prod.map (a ⬝ᵥ ·) (a ⬝ᵥ ·) := by
@@ -560,11 +613,9 @@ theorem gaussianNoiseStability_ite_pos_dotProduct {ρ : ℝ} (hρ : |ρ| ≤ 1) 
     (ha : a ≠ 0) :
     gaussianNoiseStability ρ (fun z => if 0 < a ⬝ᵥ z then (1 : ℝ) else -1) =
       1 - 2 / π * arccos ρ := by
-  have hpos : 0 < √(a ⬝ᵥ a) :=
-    sqrt_pos.2 (by simpa using Matrix.dotProduct_self_star_pos_iff.2 ha)
   change gaussianNoiseStability ρ (fun z => signPos (a ⬝ᵥ z)) = _
   rw [gaussianNoiseStability_comp_dotProduct ρ a measurable_signPos]
-  simp only [signPos, mul_pos_iff_of_pos_left hpos]
+  simp only [signPos, mul_pos_iff_of_pos_left (sqrt_dotProduct_self_pos ha)]
   exact integral_correlatedGaussian_ite_pos_mul_ite_pos hρ
 
 /-- **Corollary 11.20, closed halfspaces** [O'Donnell, Corollary 11.20][ODonnell2014]: the `±1`

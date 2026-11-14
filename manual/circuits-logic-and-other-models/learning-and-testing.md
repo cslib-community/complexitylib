@@ -216,6 +216,44 @@ The corresponding [one-sided lower bound](https://github.com/cslib-community/csl
 
 The Fourier analysis behind these bounds lives in [BooleanAnalysis/Linearity](../../CslibFrontier/Foundations/BooleanAnalysis/Linearity.lean): `blrAcceptance_eq_sum_fourierCoeff_pow_three` and soundness `exists_hammingDist_parityOn_le_of_le_blrAcceptance` (O'Donnell, Theorem 1.30 [odonnell14]). [LinearityRejection](../../CslibFrontier/Foundations/BooleanAnalysis/LinearityRejection.lean) proves the converse rejection bound of O'Donnell's Exercise 1.28. If `f` is at relative distance `δ` from the parity on `T`, every other coefficient of `(-1)^f` has absolute value at most `2δ` (`abs_fourierCoeff_signVal_le_of_ne`). The test then accepts with probability at most `1 - 3δ + 10δ² - 8δ³` (`blrAcceptance_le_of_hammingDist_parityOn`); this holds for any parity, not only the nearest. The constant `3` is sharp: the indicator of a nonzero point on `n ≥ 2` bits is at distance `δ = 2⁻ⁿ` from its nearest parity and is rejected with probability exactly `3δ - 6δ²` (`blrAcceptance_decide_eq`). Hence, for every `c > 3`, no bound `cδ - Cδ²` holds for all functions at small distance from their nearest parity (`not_forall_mul_sub_mul_sq_le_one_sub_blrAcceptance`). [Affinity](../../CslibFrontier/Foundations/BooleanAnalysis/Affinity.lean) covers Exercise 1.29, with affine functions written `b ^^ parityOn S x`. They are characterized by `f (x + y + z) = (f x ^^ f y ^^ f z)` (`exists_eq_xor_parityOn_iff`) and by `f (x + y) = (f x ^^ f y ^^ f 0)` (`exists_eq_xor_parityOn_iff_add`). The four-query test with uniform queries `x`, `y`, `z`, `x + y + z` accepts with probability `1/2 + 1/2 Σ_S F̂(S)⁴` (`affinityAcceptance_eq_sum_fourierCoeff_pow_four`). Affine functions pass with probability one, and acceptance at least `1 - ε` gives an affine function at relative distance at most `ε` (`exists_hammingDist_xor_parityOn_le_of_le_affinityAcceptance`). The anchored variant replaces the fourth query by the point `0`; it is the BLR test on `x ↦ f x ^^ f 0` (`anchoredAffinityAcceptance_eq_blrAcceptance`) and has the same guarantees. Both acceptance probabilities are expectations over the cube; neither test is packaged as a `PCP.LocalTest` with query-depth bounds yet. The [checked examples](../../CslibFrontierTests/BooleanAnalysisLinearityTesting.lean) include a three-bit point indicator rejected with probability `9/32`, strictly between the cubic bound `15/64` and `3δ = 3/8`. They also include the conjunction of two bits, which attains the coefficient bound and passes the affinity test with probability `5/8`, and a negated parity that both affinity tests accept and the BLR test always rejects.
 
+For finite abelian groups, import
+[HomomorphismTesting](../../CslibFrontier/Foundations/Algebra/Group/HomomorphismTesting.lean)
+and use `Cslib.HomomorphismTesting`. Here `rejection f` is the uniform independent probability
+that `f x + f y ≠ f (x + y)`, and `distance f` is the attained minimum normalized Hamming
+disagreement over bundled additive homomorphisms. `min_le_rejection` proves
+`min (1/6) (distance f / 2) ≤ rejection f` (Goldreich draft Exercise 9.21).
+For Exercise 9.20, `three_mul_distance_sub_six_sq_le_rejection` gives the unconditional
+bound `3 * distance f - 6 * distance f ^ 2 ≤ rejection f`, including trivial groups.
+It is increasing only up to distance `1/4`, positive between `0` and `1/2`, and
+nonpositive from `1/2` onward. Do not substitute an arbitrary lower bound on distance into
+this quadratic: it is not globally monotone. Use the attained distance or supply the
+additional range argument. Exercise 9.21's bound remains useful at larger distances.
+
+For a supplied bundled homomorphism `h`, `OnlyFirstDisagreement f h x y` means disagreement
+at `x` and agreement at both `y` and `x + y`. `three_mul_onlyFirst_le_rejection` is part (1);
+`disagreement_sub_two_sq_le_onlyFirst` is part (2), with `d` the actual normalized Hamming
+disagreement with `h`. Neither requires nearestness, a small rejection probability, or a
+small distance. `three_mul_disagreement_sub_six_sq_le_rejection` combines them, so callers
+need no event algebra. Pairwise independence of the three sampled positions gives means
+`d²` for each pair of disagreement indicators; the shared triple intersection cancels when
+comparing the three exactly-one events. Translation invariance suffices: permuting the
+three positions naively would incorrectly assume disagreement is invariant under negation.
+The checked clients below include actual distances `1/4` and `1/2` on `ZMod 4 → ZMod 3`,
+where the zero homomorphism is the only homomorphism, and a distance-one nonzero constant
+on a trivial domain. These are probability statements, without an efficiency claim.
+
+Choose any `φ` satisfying `IsPlurality f φ`, whose existence is `exists_plurality`.
+`concentration` bounds the probability that the two-read vote `f (x + y) - f y` equals `φ x`
+by at least `1 - 2 * rejection f`, for every `x`. If rejection is strictly below `1/6`,
+`correction f hφ hε` bundles this same function as a homomorphism and `closeness` bounds its
+normalized disagreement by twice rejection. Trivial groups are included; no tie-breaking rule
+is required. The [checked clients](../../CslibFrontierTests/HomomorphismTesting.lean) show
+perfect passage on `ZMod 3` and trivial groups and assemble the corrected homomorphism and
+distance bound. This is a finite probability API without a group encoding or runtime model.
+The Boolean Fourier guarantee above remains the sharper choice on the cube.
+
+For junta proximity from resampling and degree-one characterizations on the cube, [FourierRestriction](../../CslibFrontier/Foundations/BooleanAnalysis/FourierRestriction.lean) expresses the coordinate-set variation of a real function `f` outside `J`, `𝔼 x, 𝔼 z, (f x - f (J.piecewise x z)) ^ 2`, as `2 ∑_{S ⊈ J} f̂(S)²` (`expect_expect_sub_piecewise_sq`), and for a Boolean function read as signs `F = signVal ∘ f` gives the disagreement probability `𝔼 x, 𝔼 z, if f x = f (J.piecewise x z) then 0 else 1` as `(1/2) ∑_{S ⊈ J} F̂(S)²` (`expect_expect_piecewise_ne`, O'Donnell Exercise 3.28 and Proposition 3.31 [odonnell14]). Combining this with spectral concentration in [FriedgutJunta](../../CslibFrontier/Foundations/BooleanAnalysis/FriedgutJunta.lean) yields a Boolean `J`-junta (`DependsOn g (J : Set ι)`) at relative Hamming distance at most twice the disagreement probability (`exists_dependsOn_hammingDist_div_le_two_mul_expect_piecewise_ne`, and in complement form `exists_dependsOn_compl_hammingDist_div_le_two_mul_expect_piecewise_ne` for resampling `I`, Arora–Barak 2007 draft, Chapter 19 Exercise 4). In [FourierDegree](../../CslibFrontier/Foundations/BooleanAnalysis/FourierDegree.lean), equality (or `≤`) holds in the Poincaré inequality if and only if `g ∈ lowDegree ℝ ι 1` (`totalInfluence_eq_expect_sub_expect_sq_iff_mem_lowDegree`, `totalInfluence_le_expect_sub_expect_sq_iff_mem_lowDegree`). For Boolean functions read as signs, degree at most one and Poincaré equality hold if and only if `f` is constant (`Function.const _ b`) or a literal `x ↦ b ^^ x i` (`mem_lowDegree_one_signVal_iff`, `totalInfluence_signVal_eq_expect_sub_expect_sq_iff`, O'Donnell Exercise 1.19 and Proposition 2.40 [odonnell14]); when `f` is balanced (`𝔼 x, signVal (f x) = 0`), its total influence (average sensitivity) is at most `1` (or equal to `1`) if and only if `f` is a literal `x ↦ b ^^ x i` (`totalInfluence_signVal_le_one_iff_of_expect_eq_zero`, `totalInfluence_signVal_eq_one_iff_of_expect_eq_zero`, Arora–Barak 2007 draft, Chapter 19 Exercise 5(b)). Checked examples, including a non-balanced constant counterexample to dropping the balance hypothesis, are in [KahnKalaiLinialFriedgut.lean](../../CslibFrontierTests/KahnKalaiLinialFriedgut.lean).
+
 ## Monotonicity testing
 
 [Monotonicity/Basic](../../CslibFrontier/Computability/PropertyTesting/Monotonicity/Basic.lean) works on the cube `ι → Bool` for a finite index type `ι` (for example `Fin n`), with Mathlib's coordinatewise order and Mathlib's `Monotone`. `monotone_iff_forall_update_le` reduces monotonicity to the edges `update x i false ≤ update x i true`. `violatedEdges f i` lists, by their lower endpoints, the edges in direction `i` along which `f` decreases. Below, `A_i = violatedEdges f i`. `f` is monotone exactly when there are none (`monotone_iff_forall_violatedEdges_eq_empty`). `distMonotone f` is the least Hamming distance from `f` to a monotone function, and `relDistMonotone f` divides it by `2 ^ n`. "`f` is `ε`-far from monotone" is stated as `ε ≤ relDistMonotone f`: every monotone function differs from `f` on at least `ε 2 ^ n` points (`le_relDistMonotone_iff`). `violatedEdgeFraction f` is `Σ_i |A_i|` divided by the `n 2 ^ (n - 1)` edges of the cube.

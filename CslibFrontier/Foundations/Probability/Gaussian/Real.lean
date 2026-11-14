@@ -37,6 +37,7 @@ Three estimates and a density formula for the real Gaussian distribution `gaussi
   `1 / √(2πv)` times its Lebesgue measure.
 * `ProbabilityTheory.gaussianReal_Icc_le`: Anderson's inequality on the line.
 * `ProbabilityTheory.gaussianReal_meas_ge_le`: Chebyshev's inequality for a Gaussian.
+* `ProbabilityTheory.gaussianReal_zero_map_neg`: a centered Gaussian is symmetric.
 * `ProbabilityTheory.gaussianReal_eq_withDensity_div`: the density of a nondegenerate Gaussian
   with respect to the standard Gaussian.
 -/
@@ -134,6 +135,11 @@ theorem gaussianReal_Icc_le (μ : ℝ) (v : ℝ≥0) (c w : ℝ) :
     Measure.map_apply (measurable_add_const μ) measurableSet_Icc, preimage_add_const_Icc,
     preimage_add_const_Icc]
   convert gaussianReal_zero_Icc_le v (c - μ) w using 3 <;> ring
+
+/-- A centered real Gaussian is symmetric: negation preserves `gaussianReal 0 v`. -/
+theorem gaussianReal_zero_map_neg (v : ℝ≥0) :
+    (gaussianReal 0 v).map (fun x => -x) = gaussianReal 0 v := by
+  rw [gaussianReal_map_neg, neg_zero]
 
 /-- **Chebyshev's inequality for a Gaussian.** A Gaussian deviates from its mean by at least
 `c > 0` with probability at most `v / c ^ 2`. -/

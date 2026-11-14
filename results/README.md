@@ -20,9 +20,15 @@ Its chapters 6–7 records distinguish native circuit/randomized endpoints from 
 expected-time and expander-concentration gaps and identify literal source defects.
 Its Chapter 11 connectivity milestone records the exact total edge-query lower bound and its
 empty-graph conventions; it does not establish the other chapter endpoints.
+The native BP·NP = AM milestone identifies the bounded-error NP operator with AM for
+arbitrary instance encodings and derives NP advice. Registry admission awaits a human source check; randomized reduction to 3SAT and the
+nondeterministic circuit endpoint remain open.
 Its chapters 8–10 record distinguishes constant-round protocols, counting-oracle interfaces
 and quantitative crypto bounds. The native `dip-eq-np` entry covers deterministic interaction in the oracle-PPT IP model;
 `perfect-soundness-ip-subset-np` covers perfect soundness with any positive completeness.
+Its Chapter 16 leftover-hash milestone derives the draft's entropy `k/δ` and error
+`√(2δ)` for all positive `δ` and all lengths, with digest-first concatenation;
+it asserts no efficiency or short-seed bound and leaves the broader extractor objective open.
 Its Chapter 14 record includes a checked degree obstruction to the draft's literal
 circuit-to-determinant statement.
 Its chapters 11–13, 15, 21 and 22 distinguish exact endpoints, model restrictions and
@@ -40,7 +46,10 @@ every end-of-chapter exercise as establishing new theory, covered, a source issu
 The [Goldreich draft audit](goldreich-2007.md) records a source-pinned chapter-level coverage comparison
 for *Computational Complexity: A Conceptual Perspective*, including the any-output bounded-termination
 endpoints of Exercises 4.6–4.7 in the documented total-decoder representation. It is not a claim of
-book-wide coverage.
+book-wide coverage. Exercise 8.43 has the varying-density product and constant-set
+real half-length power, with normalized spectral-parameter transport; Exercise 8.44 remains open.
+Exercise 9.21 now has plurality correction and the unconditional rejection bound for all finite
+abelian groups, including trivial groups, without computational representation claims.
 Its companion [exercise inventory](goldreich-2007-exercises.md) classifies the end-of-chapter
 exercises of chapters 2 and 5–10 as establishing new theory, covered, a source issue or routine.
 
@@ -114,6 +123,16 @@ Reference integrity proves neither mathematical correspondence nor completeness.
 hypotheses and model limits remain authoritative. Probability bounds do not imply certified native
 runtime, and conditional results are not unconditional endpoints.
 
+An entry that cites a source theorem lists theorems that state that result
+([faithful headlines](../AGENTS.md#faithful-headlines)). The scope note describes the formal
+setting of a faithful statement; it does not excuse a gap between the listed theorem and the
+cited result. A stand-in—such as a helper that assumes a property of its own reduction, or a
+bound for parameters chosen after the adversary—never occupies the cited result's entry (if a
+step is listed at all, its own title and `theorem` field say it is a step of that result), and
+original results are not registered as proofs of a nearby source theorem. A published theorem
+enters the inventory only after a human maintainer has checked its statement against the source
+([review cycle](../AGENTS.md#review-cycle)).
+
 ## Remaining collection work
 
 Collect precise paper-to-result correspondences and source theorem names/numbers, audit their
@@ -129,3 +148,8 @@ least half the truth tables have measure zero. This explains why the additive `-
 Razborov–Rudich Theorem 5.1(b) cannot simply be omitted as in the 2007 Arora–Barak draft's
 Theorem 22.3. It is not registered as a proof of either source theorem; the corrected density
 amplification endpoint remains open under [#4711](https://github.com/cslib-community/cslib-frontier/issues/4711).
+
+Goldreich Exercise 8.44 now has selected-time hitting, factorial-moment and integer-tail
+bounds, including strict half-visits for odd and even positive lengths. The
+[exercise inventory](goldreich-2007-exercises.md) records the strictness and integer
+conventions that qualify the printed statement.

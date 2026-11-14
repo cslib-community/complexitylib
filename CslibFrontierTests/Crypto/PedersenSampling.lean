@@ -11,6 +11,7 @@ public import CslibFrontier.Crypto.Computational.PedersenCommitment.ProbComp
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
 import CslibFrontier.Crypto.Computational.DiffieHellman.SampleExp
 import CslibFrontier.Probability.PMF.Uniform
+import CslibFrontier.Tactic.Negligible
 import Mathlib.Tactic.NormNum.Prime
 
 /-!
@@ -117,5 +118,84 @@ example : IsPPTOn
   have hv := schnorrGroups.pedersenPublicOperations.computableInPolyTime_verify
     hk hm hco.fst' hco.snd'
   exact schnorrGroups.isPPTOn_pedersenCommitProb.bind_with hv.isPPTOn
+
+/-- Native fair-coin Pedersen key generation is uniformly strict PPT in `(n, d)`. -/
+example : IsPPTOn (encPair encUnary schnorrGroups.encDesc)
+    schnorrGroups.pedersenScheme.encodeKey
+    (fun p : ℕ × schnorrGroups.Desc => schnorrGroups.pedersenKeyGenProb p.1 p.2) :=
+  schnorrGroups.isPPTOn_pedersenKeyGenProb
+
+/-- At accuracy four, native Pedersen key generation on `d23` has at most `1/16` advantage against
+exact uniform trapdoor-key generation. -/
+example (continuation : schnorrGroups.PedersenKey → Game) :
+    Game.advantage
+      ((ProbComp.eval (schnorrGroups.pedersenKeyGenProb 4 d23)).bind continuation)
+      ((PMF.uniformOfFintype (ZMod (schnorrGroups.order d23))).bind fun α =>
+        continuation ⟨d23, α • schnorrGroups.generator d23⟩) ≤
+        1 / 16 := by
+  have h := schnorrGroups.advantage_bind_pedersenKeyGenProb_le 4 d23 continuation
+  norm_num at h ⊢
+  exact h
+
+/-- At accuracy four on `key23` (where `h = 8 ≠ 1`), the native fair-coin Pedersen hiding game
+for any stateful adversary has advantage at most `1/8`. -/
+example (A : Encryption.WordAdversary) :
+    Game.advantage
+      (schnorrGroups.pedersenHidingProbForKey key23 A false 4)
+      (schnorrGroups.pedersenHidingProbForKey key23 A true 4) ≤
+        1 / 8 := by
+  have hne : key23.2 ≠ 0 := by
+    intro h0
+    have h1 := congrArg (schnorrGroups.encode d23) h0
+    revert h1
+    decide
+  have h := schnorrGroups.advantage_pedersenHidingProbForKey_le_of_ne_zero d23 hne A 4
+  norm_num at h ⊢
+  exact h
+
+/-- Concrete hiding bound for `pedersenHidingProbGame` on the constant-`d23` setup (`m = 11`):
+every stateful adversary has distinguishing advantage at most `1 / 11 + 4 / 2 ^ n`. -/
+example (A : Encryption.WordAdversary) (n : ℕ) :
+    Game.advantage
+      (schnorrGroups.pedersenHidingProbGame (fun _ => PMF.pure d23) A false n)
+      (schnorrGroups.pedersenHidingProbGame (fun _ => PMF.pure d23) A true n) ≤
+      1 / 11 + 4 / 2 ^ n := by
+  refine schnorrGroups.advantage_pedersenHidingProbGame_le (fun _ => PMF.pure d23) A n 11
+    (by decide) ?_
+  intro d hd
+  obtain rfl : d = d23 := (PMF.mem_support_pure_iff _ _).mp hd
+  decide
+
+/-- Native fair-coin Pedersen hiding after `pedersenKeyGenProb` is unconditionally negligible for
+every stateful adversary when `2 ^ n ≤ F.order d`, and the native hiding experiment is uniformly
+strict PPT when `A` is strict PPT. -/
+example (setup : ℕ → PMF schnorrGroups.Desc)
+    (hm : ∀ n, ∀ d ∈ (setup n).support, 2 ^ n ≤ schnorrGroups.order d)
+    (A : Encryption.WordAdversary) :
+    Negligible (fun n =>
+      Game.advantage
+        (schnorrGroups.pedersenHidingProbGame setup A false n)
+        (schnorrGroups.pedersenHidingProbGame setup A true n)) :=
+  schnorrGroups.negligible_advantage_pedersenHidingProbGame setup A
+    (fun n => Nat.two_pow_pos n) hm
+    (by simpa only [Nat.cast_pow, Nat.cast_ofNat] using negligible_one_div_two_pow)
+
+example (A : Encryption.WordAdversary) (hA : A.IsPPT) (b : Bool) :
+    IsPPTOn (encPair encUnary schnorrGroups.encDesc) encBool
+      (fun p : ℕ × schnorrGroups.Desc =>
+        schnorrGroups.pedersenHidingProbExperiment A b p.1 p.2) :=
+  schnorrGroups.isPPTOn_pedersenHidingProbExperiment hA b
+
+/-- Under the native fair-coin key distribution `pedersenKeyDistProb setup`, the Pedersen
+commitment scheme remains statistically hiding and computationally binding under `DiscreteLog`. -/
+example (setup : ℕ → PMF schnorrGroups.Desc)
+    (hm : ∀ n, ∀ d ∈ (setup n).support, 2 ^ n ≤ schnorrGroups.order d)
+    (hDL : schnorrGroups.DiscreteLog setup) :
+    schnorrGroups.pedersenScheme.StatisticalHiding (schnorrGroups.pedersenKeyDistProb setup) ∧
+      schnorrGroups.pedersenScheme.Binding (schnorrGroups.pedersenKeyDistProb setup) :=
+  ⟨schnorrGroups.pedersenScheme_statisticalHiding_pedersenKeyDistProb setup
+      (fun n => Nat.two_pow_pos n) hm
+      (by simpa only [Nat.cast_pow, Nat.cast_ofNat] using negligible_one_div_two_pow),
+    hDL.pedersenScheme_binding_pedersenKeyDistProb⟩
 
 end CslibFrontierTests.Crypto.PedersenSampling

@@ -131,29 +131,36 @@ example (fresh : Bool) : eufCmaGame scheme (explicitForger fresh) = PMF.pure fre
   cases fresh <;> simp [memoize, StateT.run, encBool_apply, PMF.bind_bind, List.lookup_cons,
     Bool.beq_eq_decide_eq]
 
--- The actual native program is routed into that same existing typed game.
+-- The actual native program's game `wordEufCmaGame` is that same existing typed game.
 example (fresh : Bool) (n : ℕ) :
-    worldGame scheme (fun pk => routeWordProgram encBool (nativeForger fresh n pk))
-      (fun verified ⟨msg, _⟩ pairs => verified && !(pairs.map Prod.fst).contains msg) =
-    eufCmaGame scheme (explicitForger fresh) := by
+    wordEufCmaGame encBool scheme (nativeForger fresh n) =
+      eufCmaGame scheme (explicitForger fresh) := by
   rw [eufCmaGame_eq_worldGame]
-  simp only [worldGame, scheme, explicitForger, PMF.monad_bind_eq_bind, PMF.pure_bind]
+  simp only [wordEufCmaGame, worldGame, scheme, explicitForger, PMF.monad_bind_eq_bind,
+    PMF.pure_bind]
   congr 2 with verified msig pairs : 3
   simp only [List.contains_eq_mem]
   congr 2
   exact decide_eq_decide.mpr Iff.rfl
 
--- The final bridge applies to actual key generation and an actual efficient oracle forger.
+-- The final bridge applies to actual key generation and an actual efficient oracle forger. The
+-- strict-PPT key generator bounds its supported public keys through `IsPPTOn.length_le`.
 example (fresh : Bool) : ∃ (k : ℕ) (Control : Type) (_ : Finite Control)
     (replay : MultiTapePTM k Bool Control Bool) (c d keyC keyD : ℕ),
-    ∀ n,
-      worldGame scheme (fun pk => routeWordProgram encBool (nativeForger fresh n pk))
-        (fun verified ⟨msg, _⟩ pairs => verified && !(pairs.map Prod.fst).contains msg) =
+    ∀ n, wordEufCmaGame encBool scheme (nativeForger fresh n) =
       eufCmaGame scheme (savedCoinForger replay encBool c d keyC keyD n) := by
   have hgen : IsPPTOn encUnary (encPair encBits encBits)
       (fun _ => (pure ([], []) : ProbComp (List Bool × List Bool))) := by fun_prop
-  obtain ⟨k, Control, hfinite, replay, c, d, keyC, keyD, _, hgame⟩ :=
-    exists_eufCmaGame_savedCoinForger hgen (nativeForger_ppt fresh)
+  obtain ⟨keyC, keyD, hkeys⟩ := hgen.length_le
+  have hbound (n : ℕ) (keys : List Bool × List Bool)
+      (hmem : keys ∈ (ProbComp.eval (pure ([], []) : ProbComp (List Bool × List Bool))).support) :
+      keys.1.length ≤ keyC * (n + 1) ^ keyD := by
+    have hk := hkeys n keys hmem
+    simp only [encUnary_apply, List.length_replicate] at hk
+    exact (length_le_encPair_left encBits encBits keys).trans hk
+  obtain ⟨k, Control, hfinite, replay, c, d, _, hgame⟩ :=
+    exists_eufCmaGame_savedCoinForger (gen := fun _ => pure ([], [])) hbound
+      (nativeForger_ppt fresh)
   exact ⟨k, Control, hfinite, replay, c, d, keyC, keyD, fun n =>
     (hgame n Bool encBool scheme rfl).2⟩
 

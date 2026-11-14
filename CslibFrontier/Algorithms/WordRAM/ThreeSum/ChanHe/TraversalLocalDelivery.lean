@@ -159,38 +159,9 @@ theorem deliverLocal_exec {w : ℕ} (x : Data 128)
       (x.regs (slot 2) + x.regs (slot 4) + x.regs (slot 6)) +
       4 * x.regs groups + x.regs selected)) :
     Exec w deliverLocal x (localDeliveryState x) 21 := by
-  have hbound (v : ℕ) (hv : v ≤ x.regs heap + 3 + 2 *
-      (x.regs (slot 2) + x.regs (slot 4) + x.regs (slot 6)) +
-      4 * x.regs groups + x.regs selected) : Fits w v := hfit.of_le hv
-  have h3 : Fits w 3 := hbound _ (by omega)
-  have hp₀ := hbound (x.regs heap + 3) (by omega)
-  have hp₁ := hbound (x.regs heap + 3 + x.regs (slot 2)) (by omega)
-  have hp₂ := hbound (x.regs heap + 3 + x.regs (slot 2) + x.regs (slot 4)) (by omega)
-  have hp := hbound (x.regs heap + 3 + x.regs (slot 2) + x.regs (slot 4) +
-    x.regs (slot 6)) (by omega)
-  have hd₀ := hbound (x.regs heap + 1) (by omega)
-  have hd₁ := hbound (x.regs heap + 1 + x.regs (slot 2)) (by omega)
-  have hd₁' := hbound (x.regs heap + 1 + x.regs (slot 2) + 1) (by omega)
-  have hd₂ := hbound (x.regs heap + 1 + x.regs (slot 2) + 1 + x.regs (slot 4)) (by omega)
-  have hd₂' := hbound (x.regs heap + 1 + x.regs (slot 2) + 1 + x.regs (slot 4) + 1) (by omega)
-  have he₀ := hbound (x.regs groups + x.regs groups) (by omega)
-  have he₁ := hbound (4 * x.regs groups) (by omega)
-  have he₂ := hbound (x.regs heap + 3 + x.regs (slot 2) + x.regs (slot 4) +
-    x.regs (slot 6) + 4 * x.regs groups) (by omega)
-  have he₃ := hbound (x.regs heap + 3 + x.regs (slot 2) + x.regs (slot 4) +
-    x.regs (slot 6) + 4 * x.regs groups + x.regs (slot 2)) (by omega)
-  have he₄ := hbound (x.regs heap + 3 + x.regs (slot 2) + x.regs (slot 4) +
-    x.regs (slot 6) + 4 * x.regs groups + x.regs (slot 2) + x.regs (slot 4)) (by omega)
-  have he₅ := hbound (x.regs heap + 3 + x.regs (slot 2) + x.regs (slot 4) +
-    x.regs (slot 6) + 4 * x.regs groups + x.regs (slot 2) + x.regs (slot 4) +
-    x.regs (slot 6)) (by omega)
-  have he := hbound (x.regs heap + 3 + x.regs (slot 2) + x.regs (slot 4) +
-    x.regs (slot 6) + 4 * x.regs groups + x.regs (slot 2) + x.regs (slot 4) +
-    x.regs (slot 6) + x.regs selected) (by omega)
   dsimp only [heap, slot, groups, selected, outputs, outputCount, one] at *
   ram_eval [deliverLocal, localDeliveryState, heavyBase, heavyLength, heap, slot, groups, selected,
-    outputs, outputCount, packed, temporary, endpoint, one, hone, h3, hp₀, hp₁, hp₂, hp,
-    hd₀, hd₁, hd₁', hd₂, hd₂', he₀, he₁, he₂, he₃, he₄, he₅, he,
+    outputs, outputCount, packed, temporary, endpoint, one, hone,
     Function.update_of_ne, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc,
     show ∀ n : ℕ, n + n + (n + n) = 4 * n by omega]
 

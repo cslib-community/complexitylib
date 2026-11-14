@@ -45,6 +45,7 @@ eigenvalue quantities they name:
 
 ## Main results
 
+* `Cslib.RotationMap.norm_walkEuclidean_le`: the walk operator is a contraction.
 * `Cslib.RotationMap.isSymmetric_walkEuclidean`, `Cslib.RotationMap.isSymmetric_orthogonalWalk`:
   `G.walkEuclidean` and `G.orthogonalWalk` are symmetric.
 * `Cslib.RotationMap.mem_orthogonalSubmodule_iff`: `WithLp.toLp 2 f ∈ orthogonalSubmodule V`
@@ -104,6 +105,14 @@ private theorem card_mul_expect_mul (x y : EuclideanSpace ℝ V) :
     (Fintype.card V : ℝ) * 𝔼 v, x.ofLp v * y.ofLp v = ⟪x, y⟫ := by
   rw [Fintype.card_mul_expect, EuclideanSpace.inner_eq_star_dotProduct, star_trivial, dotProduct]
   exact sum_congr rfl fun _ _ ↦ mul_comm _ _
+
+/-- The walk operator does not increase the Euclidean norm. -/
+theorem norm_walkEuclidean_le (x : EuclideanSpace ℝ V) : ‖G.walkEuclidean x‖ ≤ ‖x‖ := by
+  rw [← WithLp.toLp_ofLp 2 x, walkEuclidean_toLp]
+  have h := mul_le_mul_of_nonneg_left (G.expect_walk_sq_le x.ofLp)
+    (Nat.cast_nonneg (α := ℝ) (Fintype.card V))
+  rw [card_mul_expect_sq, card_mul_expect_sq] at h
+  exact (pow_le_pow_iff_left₀ (norm_nonneg _) (norm_nonneg _) two_ne_zero).1 h
 
 /-- The walk operator on `EuclideanSpace ℝ V` is symmetric. -/
 theorem isSymmetric_walkEuclidean : G.walkEuclidean.IsSymmetric := fun x y ↦ by

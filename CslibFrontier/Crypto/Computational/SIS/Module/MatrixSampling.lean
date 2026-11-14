@@ -17,6 +17,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Probabilistic.Repeat
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
+import CslibFrontier.Languages.Probabilistic.UniformNat.Residue
 import CslibFrontier.Languages.Probabilistic.Vector
 import CslibFrontier.Probability.PMF.Uniform
 
@@ -187,24 +188,12 @@ private theorem sampledMatrixWord_ppt :
     fun_prop
   exact h.map_with (expandedWord_polyTime.comp hpre)
 
-private theorem eval_binaryNat_uniform_residue (w : ℕ) :
-    ProbComp.eval (sampleBinaryNat w) =
-      (ProbComp.eval (ProbComp.uniform (ZMod (2 ^ w)))).map ZMod.val := by
-  rw [eval_sampleBinaryNat, ProbComp.eval_uniform,
-    ← PMF.uniformOfFintype_map_equiv (ZMod.finEquiv (2 ^ w)).toEquiv, PMF.map_comp]
-  simp only [Function.comp_def, RingEquiv.toEquiv_eq_coe, EquivLike.coe_coe, ZMod.val_finEquiv]
-
 private theorem eval_matrixCoefficients (d k n w : ℕ) :
     ProbComp.eval (OracleComp.replicate d
       (OracleComp.replicate k (OracleComp.replicate n (sampleBinaryNat w)))) =
       (PMF.uniformOfFintype (Matrix (Fin d) (Fin k) (Fin n → ZMod (2 ^ w)))).map
-        (fun A => List.ofFn fun i => List.ofFn fun j => List.ofFn fun l => (A i j l).val) := by
-  have h := ProbComp.eval_replicateFin_map
-    (ProbComp.eval_replicateFin_map
-      (ProbComp.eval_replicateFin_map (eval_binaryNat_uniform_residue w) n) k) d
-  simp only [ProbComp.eval_replicateFin, ProbComp.eval_uniform, PMF.pi_uniformOfFintype] at h
-  rw [h]
-  congr 1
+        (fun A => List.ofFn fun i => List.ofFn fun j => List.ofFn fun l => (A i j l).val) :=
+  eval_replicate_of_uniform d _ _ (eval_replicate_replicate_sampleBinaryNat k n w)
 
 private theorem sampledMatrixWord_eval (d k n w : ℕ) :
     ProbComp.eval (sampledMatrixWord (((d, k), n), w)) =
