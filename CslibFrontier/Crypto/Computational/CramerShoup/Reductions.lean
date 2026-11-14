@@ -7,11 +7,13 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Crypto.Computational.CramerShoup.Scheme
+public import CslibFrontier.Crypto.Computational.DiffieHellman.WithKey
 public import CslibFrontier.Languages.Probabilistic.UniformNat
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Captured
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
+import CslibFrontier.Computability.Probabilistic.Sampling
 import CslibFrontier.Computability.Probabilistic.UniformNat
 import CslibFrontier.Crypto.Computational.DiffieHellman.SampleExp
 import CslibFrontier.Crypto.Game.Statistical
@@ -45,10 +47,14 @@ Section 12.5.3, Theorem 12.9, printed pp. 488–493][BonehShoup2023]:
    `cramerShoupToCollisionFinder`, with `IsPPTOn` certificates
    `isPPTOn_cramerShoupMsgToCollisionFinder`, `isPPTOn_cramerShoupADToCollisionFinder`, and
    `isPPTOn_cramerShoupToCollisionFinder`.
-5. **Certified strict-PPT `Encryption.cca2ADGameOn` and `Encryption.cca2GameOn` operations**:
-   `cramerShoupValid`, `cramerShoupKeyGenProb`, `cramerShoupADEncryptProb`,
+5. **Certified strict-PPT `Encryption.cca2ADGameOn` and `Encryption.cca2GameOn` operations with a
+   keyed hash**: `cramerShoupValid`, `cramerShoupKeyGenProb`, `cramerShoupADEncryptProb`,
    `cramerShoupEncryptProb`, `cramerShoupADDecryptOpt`, and `cramerShoupDecryptOpt`, together with
-   their `ComputableInPolyTime` and `IsPPTOn` certificates.
+   their `ComputableInPolyTime` and `IsPPTOn` certificates. Key generation draws a uniform
+   `keyLen n`-bit hash key `hk` and publishes it in the public key ([CramerShoup2003], Section 6.1,
+   Figure 1); the algorithms run the word-level scheme over the parameters `(d n, hk)` of
+   `F.withKey`, and the hash `H` reads both the group and the key. `isElemWithKey` and
+   `cramerShoupPkHashKey` read the group and the key back.
 -/
 
 @[expose] public section
@@ -943,6 +949,48 @@ private theorem computableInPolyTime_decodeCramerShoupSK :
     (ComputableInPolyTime.bitsToNat.comp hp2)
   exact (hpair.comp hp1).prod ((hpair.comp (hp1.comp hp2)).prod (hpair.comp (hp2.comp hp2)))
 
+/-! #### Native keyed scheme
+
+[CramerShoup2003] (Section 6.1, Figure 1) draws the key `hk` of the hash function at key
+generation and puts it in the public key; [CramerShoup1998] (Section 3) likewise chooses the hash
+function from a family when it generates keys. The native scheme below does the same over the
+group family `F.withKey`, whose parameters `(d, hk)` attach a key to the group `d`. The group at
+parameter `n` is the fixed description `d n`, the key `hk` is a uniform `keyLen n`-bit word, the
+public key word starts with the encoded parameters `(d n, hk)`, and the secret key word starts
+with `hk`. The hash `H` reads both. -/
+
+/-- Group membership for the parameters `(d, hk)` of `F.withKey`: membership in the group of `d`,
+ignoring the key. -/
+def isElemWithKey (isElem : F.Desc × List Bool → Bool) : F.withKey.Desc × List Bool → Bool :=
+  fun ((d, _), x) => isElem (d, x)
+
+/-- `isElemWithKey isElem` recognizes the group words of `F.withKey` whenever `isElem` recognizes
+those of `F`. -/
+theorem isElemWithKey_iff {isElem : F.Desc × List Bool → Bool}
+    (hmem : ∀ d x, isElem (d, x) = true ↔ x ∈ Set.range (F.encode d))
+    (p : F.withKey.Desc) (x : List Bool) :
+    F.isElemWithKey isElem (p, x) = true ↔ x ∈ Set.range (F.withKey.encode p) :=
+  hmem p.1 x
+
+/-- `isElemWithKey isElem` is computable in polynomial time whenever `isElem` is. -/
+theorem computableInPolyTime_isElemWithKey {isElem : F.Desc × List Bool → Bool}
+    (hisElem : ComputableInPolyTime isElem (encPair F.encDesc encBits) encBool) :
+    ComputableInPolyTime (F.isElemWithKey isElem) (encPair F.withKey.encDesc encBits) encBool := by
+  have hp := ComputableInPolyTime.id' (encIn := encPair F.withKey.encDesc encBits)
+  exact hisElem.comp (hp.fst'.fst'.prod hp.snd')
+
+/-- The hash key in a public key word of `cramerShoupKeyGenProb`: the key attached to the group
+parameters at the front of the word. -/
+def cramerShoupPkHashKey (pk : List Bool) : List Bool :=
+  dropFrame (unframe pk)
+
+@[simp]
+theorem cramerShoupPkHashKey_encodeCramerShoupPublicKey (d : F.Desc) (hk u : List Bool)
+    (sk : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) :
+    cramerShoupPkHashKey (F.withKey.encodeCramerShoupPublicKey (d, hk) u sk) = hk := by
+  simp [cramerShoupPkHashKey, encodeCramerShoupPublicKey, encPair_apply, unframe_frame_append,
+    dropFrame_frame_append]
+
 /-- Challenge-pair group-membership admissibility predicate for `Encryption.cca2ADGameOn` and
 `Encryption.cca2GameOn` ([BonehShoup2023], Section 12.5.3 & Exercise 12.27): both challenge words
 `m₀` and `m₁` must belong to the group `F.Carrier (d n)`. -/
@@ -950,45 +998,56 @@ def cramerShoupValid (isElem : F.Desc × List Bool → Bool) (d : ℕ → F.Desc
     (n : ℕ) (_pk m₀ m₁ : List Bool) : Bool :=
   isElem (d n, m₀) && isElem (d n, m₁)
 
-/-- Probabilistic polynomial-time Cramer–Shoup key generation for a group family `d : ℕ → F.Desc`,
-sampling approximate uniform exponents via `sampleModNat`. -/
-noncomputable def cramerShoupKeyGenProb (d : ℕ → F.Desc) (n : ℕ) :
+/-- Probabilistic polynomial-time Cramer–Shoup key generation with a hash key, for a group family
+`d : ℕ → F.Desc` and key length `keyLen` ([CramerShoup2003], Section 6.1, Figure 1): draw a
+uniform `keyLen n`-bit hash key `hk`, then generate a key pair over the parameters `(d n, hk)` of
+`F.withKey`, sampling approximate uniform exponents via `sampleModNat`. The public key word
+encodes `(d n, hk)` and the four group elements; the secret key word is `hk` framed, followed by
+the six secret exponents. -/
+noncomputable def cramerShoupKeyGenProb (d : ℕ → F.Desc) (keyLen : ℕ → ℕ) (n : ℕ) :
     ProbComp (List Bool × List Bool) := do
-  let a ← F.sampleExp n (d n)
-  let sk ← F.sampleCramerShoupSK n (d n)
-  let u := F.smul (d n, a, F.encode (d n) (F.generator (d n)))
-  return (F.encodeCramerShoupPublicKey (d n) u sk, encCramerShoupSK sk)
+  let hk ← BitString.sampleList (keyLen n)
+  let a ← F.withKey.sampleExp n (d n, hk)
+  let sk ← F.withKey.sampleCramerShoupSK n (d n, hk)
+  let u := F.withKey.smul ((d n, hk), a, F.withKey.encode (d n, hk) (F.withKey.generator (d n, hk)))
+  return (F.withKey.encodeCramerShoupPublicKey (d n, hk) u sk,
+    encPair encBits encCramerShoupSK (hk, sk))
 
-/-- Probabilistic polynomial-time Cramer–Shoup encryption with associated data for a group family
-`d : ℕ → F.Desc`, sampling the encryption exponent via `sampleModNat`. -/
+/-- Probabilistic polynomial-time Cramer–Shoup encryption with associated data, for a group family
+`d : ℕ → F.Desc` and a keyed hash `H` ([CramerShoup2003], Section 6.1, Figure 1): read the hash
+key from the public key and encrypt over the parameters `(d n, hk)`, sampling the encryption
+exponent via `sampleModNat`. -/
 noncomputable def cramerShoupADEncryptProb
     {AD : Type} (encAD : AD ↪ List Bool)
-    (H : F.Desc × List Bool → List Bool) (d : ℕ → F.Desc)
+    (H : F.withKey.Desc × List Bool → List Bool) (d : ℕ → F.Desc)
     (n : ℕ) (pk m : List Bool) (ad : AD) : ProbComp (List Bool) := do
-  let b ← F.sampleExp n (d n)
-  return F.encodeCramerShoupEncrypt H (d n) (decodeBits4 (dropFrame pk)) m (encAD ad) b
+  let b ← F.withKey.sampleExp n (d n, cramerShoupPkHashKey pk)
+  return F.withKey.encodeCramerShoupEncrypt H (d n, cramerShoupPkHashKey pk)
+    (decodeBits4 (dropFrame pk)) m (encAD ad) b
 
-/-- Probabilistic polynomial-time Cramer–Shoup encryption for a group family `d : ℕ → F.Desc`
-(associated-data-free specialization `ad = []`), sampling the encryption exponent via
-`sampleModNat`. -/
+/-- Probabilistic polynomial-time Cramer–Shoup encryption with a keyed hash (associated-data-free
+specialization `ad = []`). -/
 noncomputable def cramerShoupEncryptProb
-    (H : F.Desc × List Bool → List Bool) (d : ℕ → F.Desc)
+    (H : F.withKey.Desc × List Bool → List Bool) (d : ℕ → F.Desc)
     (n : ℕ) (pk m : List Bool) : ProbComp (List Bool) := do
-  let b ← F.sampleExp n (d n)
-  return F.encodeCramerShoupEncrypt H (d n) (decodeBits4 (dropFrame pk)) m [] b
+  let b ← F.withKey.sampleExp n (d n, cramerShoupPkHashKey pk)
+  return F.withKey.encodeCramerShoupEncrypt H (d n, cramerShoupPkHashKey pk)
+    (decodeBits4 (dropFrame pk)) m [] b
 
-/-- Deterministic polynomial-time Cramer–Shoup decryption with associated data for
-`Encryption.cca2ADGameOn`. -/
+/-- Deterministic polynomial-time Cramer–Shoup decryption with associated data and a keyed hash,
+for `Encryption.cca2ADGameOn`: read the hash key from the secret key and decrypt over the
+parameters `(d n, hk)`. -/
 def cramerShoupADDecryptOpt
-    (H : F.Desc × List Bool → List Bool)
+    (H : F.withKey.Desc × List Bool → List Bool)
     (isElem : F.Desc × List Bool → Bool)
     (d : ℕ → F.Desc) (n : ℕ) (skBits ct ad : List Bool) : Option (List Bool) :=
-  F.decodeCramerShoup H isElem (d n) (decodeCramerShoupSK skBits) ct ad
+  F.withKey.decodeCramerShoup H (F.isElemWithKey isElem) (d n, unframe skBits)
+    (decodeCramerShoupSK (dropFrame skBits)) ct ad
 
-/-- Deterministic polynomial-time Cramer–Shoup decryption for `Encryption.cca2GameOn`
-(associated-data-free specialization `ad = []`). -/
+/-- Deterministic polynomial-time Cramer–Shoup decryption with a keyed hash, for
+`Encryption.cca2GameOn` (associated-data-free specialization `ad = []`). -/
 def cramerShoupDecryptOpt
-    (H : F.Desc × List Bool → List Bool)
+    (H : F.withKey.Desc × List Bool → List Bool)
     (isElem : F.Desc × List Bool → Bool)
     (d : ℕ → F.Desc) (n : ℕ) (skBits ct : List Bool) : Option (List Bool) :=
   F.cramerShoupADDecryptOpt H isElem d n skBits ct []
@@ -1008,69 +1067,87 @@ theorem computableInPolyTime_cramerShoupValid
     ((hisElem.comp (hd_in.prod hp.snd'.snd'.fst')).prod
       (hisElem.comp (hd_in.prod hp.snd'.snd'.snd')))
 
-/-- `cramerShoupKeyGenProb` is uniformly strict PPT whenever `d` is computable in polynomial
-time. -/
-theorem isPPTOn_cramerShoupKeyGenProb {d : ℕ → F.Desc}
-    (hd : ComputableInPolyTime d encUnary F.encDesc) :
-    IsPPTOn encUnary (encPair encBits encBits) (F.cramerShoupKeyGenProb d) := by
-  let E1 := encPair encUnary encNat
+/-- `cramerShoupKeyGenProb` is uniformly strict PPT whenever `d` and `keyLen` are computable in
+polynomial time. -/
+theorem isPPTOn_cramerShoupKeyGenProb {d : ℕ → F.Desc} {keyLen : ℕ → ℕ}
+    (hd : ComputableInPolyTime d encUnary F.encDesc)
+    (hkeyLen : ComputableInPolyTime keyLen encUnary encUnary) :
+    IsPPTOn encUnary (encPair encBits encBits) (F.cramerShoupKeyGenProb d keyLen) := by
+  let E1 := encPair encUnary encBits
   have hp1 := ComputableInPolyTime.id' (encIn := E1)
-  have hp2 := ComputableInPolyTime.id' (encIn := encPair E1 encCramerShoupSK)
-  have hd2 := hd.comp hp2.fst'.fst'
-  have hu := F.computableInPolyTime_smul.comp
-    (hd2.prod (hp2.fst'.snd'.prod (F.computableInPolyTime_generator.comp hd2)))
-  have hpk := F.computableInPolyTime_encodeCramerShoupPublicKey.comp
-    (hd2.prod (hu.prod hp2.snd'))
-  have hskBits := hp2.snd'.encoding_comp
-  exact (F.isPPTOn_sampleExp (.id' (encIn := encUnary)) hd).bind_with
-    ((F.isPPTOn_sampleCramerShoupSK hp1.fst' (hd.comp hp1.fst')).bind_with
-      (hpk.prod hskBits).isPPTOn)
+  have hD1 : ComputableInPolyTime (fun p : ℕ × List Bool => ((d p.1, p.2) : F.withKey.Desc))
+      E1 F.withKey.encDesc :=
+    (hd.comp hp1.fst').prod hp1.snd'
+  let E2 := encPair E1 encNat
+  have hp2 := ComputableInPolyTime.id' (encIn := E2)
+  have hp3 := ComputableInPolyTime.id' (encIn := encPair E2 encCramerShoupSK)
+  have hD3 := hD1.comp hp3.fst'.fst'
+  have hu := F.withKey.computableInPolyTime_smul.comp
+    (hD3.prod (hp3.fst'.snd'.prod (F.withKey.computableInPolyTime_generator.comp hD3)))
+  have hpk := F.withKey.computableInPolyTime_encodeCramerShoupPublicKey.comp
+    (hD3.prod (hu.prod hp3.snd'))
+  have hskBits := (hp3.fst'.fst'.snd'.prod hp3.snd').encoding_comp
+  exact hkeyLen.sampleList.bind_with
+    ((F.withKey.isPPTOn_sampleExp hp1.fst' hD1).bind_with
+      ((F.withKey.isPPTOn_sampleCramerShoupSK hp2.fst'.fst' (hD1.comp hp2.fst')).bind_with
+        (hpk.prod hskBits).isPPTOn))
+
+/-- The parameters `(d n, hk)` read from a public key word are computable in polynomial time. -/
+private theorem computableInPolyTime_withKeyOfPk {d : ℕ → F.Desc}
+    (hd : ComputableInPolyTime d encUnary F.encDesc)
+    {γ : Type} {encIn : γ ↪ List Bool} {n : γ → ℕ} {pk : γ → List Bool}
+    (hn : ComputableInPolyTime n encIn encUnary) (hpk : ComputableInPolyTime pk encIn encBits) :
+    ComputableInPolyTime (fun a => ((d (n a), cramerShoupPkHashKey (pk a)) : F.withKey.Desc))
+      encIn F.withKey.encDesc :=
+  (hd.comp hn).prod (ComputableInPolyTime.dropFrame.comp (ComputableInPolyTime.unframe.comp hpk))
 
 /-- `cramerShoupADEncryptProb` is uniformly strict PPT whenever `H` and `d` are computable in
 polynomial time. -/
 theorem isPPTOn_cramerShoupADEncryptProb
     {AD : Type} (encAD : AD ↪ List Bool)
-    {H : F.Desc × List Bool → List Bool} {d : ℕ → F.Desc}
-    (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
+    {H : F.withKey.Desc × List Bool → List Bool} {d : ℕ → F.Desc}
+    (hH : ComputableInPolyTime H (encPair F.withKey.encDesc encBits) encBits)
     (hd : ComputableInPolyTime d encUnary F.encDesc) :
     IsPPTOn (encPair encUnary (encPair encBits (encPair encBits encAD))) encBits
       (fun ⟨n, pk, m, ad⟩ => F.cramerShoupADEncryptProb encAD H d n pk m ad) := by
   let E0 := encPair encUnary (encPair encBits (encPair encBits encAD))
   have hp0 := ComputableInPolyTime.id' (encIn := E0)
   have hp1 := ComputableInPolyTime.id' (encIn := encPair E0 encNat)
-  have hct := (F.computableInPolyTime_encodeCramerShoupEncrypt hH).comp
-    ((hd.comp hp1.fst'.fst').prod
+  have hD0 := F.computableInPolyTime_withKeyOfPk hd hp0.fst' hp0.snd'.fst'
+  have hct := (F.withKey.computableInPolyTime_encodeCramerShoupEncrypt hH).comp
+    ((hD0.comp hp1.fst').prod
       ((computableInPolyTime_decodeBits4.comp
         (ComputableInPolyTime.dropFrame.comp hp1.fst'.snd'.fst')).prod
         (hp1.fst'.snd'.snd'.fst'.prod
           (hp1.fst'.snd'.snd'.snd'.encoding_comp.prod hp1.snd'))))
-  exact (F.isPPTOn_sampleExp hp0.fst' (hd.comp hp0.fst')).bind_with hct.isPPTOn
+  exact (F.withKey.isPPTOn_sampleExp hp0.fst' hD0).bind_with hct.isPPTOn
 
 /-- `cramerShoupEncryptProb` is uniformly strict PPT whenever `H` and `d` are computable in
 polynomial time. -/
 theorem isPPTOn_cramerShoupEncryptProb
-    {H : F.Desc × List Bool → List Bool} {d : ℕ → F.Desc}
-    (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
+    {H : F.withKey.Desc × List Bool → List Bool} {d : ℕ → F.Desc}
+    (hH : ComputableInPolyTime H (encPair F.withKey.encDesc encBits) encBits)
     (hd : ComputableInPolyTime d encUnary F.encDesc) :
     IsPPTOn (encPair encUnary (encPair encBits encBits)) encBits
       (fun ⟨n, pk, m⟩ => F.cramerShoupEncryptProb H d n pk m) := by
   let E0 := encPair encUnary (encPair encBits encBits)
   have hp0 := ComputableInPolyTime.id' (encIn := E0)
   have hp1 := ComputableInPolyTime.id' (encIn := encPair E0 encNat)
-  have hct := (F.computableInPolyTime_encodeCramerShoupEncrypt hH).comp
-    ((hd.comp hp1.fst'.fst').prod
+  have hD0 := F.computableInPolyTime_withKeyOfPk hd hp0.fst' hp0.snd'.fst'
+  have hct := (F.withKey.computableInPolyTime_encodeCramerShoupEncrypt hH).comp
+    ((hD0.comp hp1.fst').prod
       ((computableInPolyTime_decodeBits4.comp
         (ComputableInPolyTime.dropFrame.comp hp1.fst'.snd'.fst')).prod
         (hp1.fst'.snd'.snd'.prod
           ((ComputableInPolyTime.const []).prod hp1.snd'))))
-  exact (F.isPPTOn_sampleExp hp0.fst' (hd.comp hp0.fst')).bind_with hct.isPPTOn
+  exact (F.withKey.isPPTOn_sampleExp hp0.fst' hD0).bind_with hct.isPPTOn
 
 /-- `cramerShoupADDecryptOpt` is computable in polynomial time whenever `H`, `isElem`, and `d`
 are. -/
 theorem computableInPolyTime_cramerShoupADDecryptOpt
-    {H : F.Desc × List Bool → List Bool} {isElem : F.Desc × List Bool → Bool}
+    {H : F.withKey.Desc × List Bool → List Bool} {isElem : F.Desc × List Bool → Bool}
     {d : ℕ → F.Desc}
-    (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
+    (hH : ComputableInPolyTime H (encPair F.withKey.encDesc encBits) encBits)
     (hisElem : ComputableInPolyTime isElem (encPair F.encDesc encBits) encBool)
     (hd : ComputableInPolyTime d encUnary F.encDesc) :
     ComputableInPolyTime
@@ -1078,69 +1155,95 @@ theorem computableInPolyTime_cramerShoupADDecryptOpt
       (encPair encUnary (encPair encBits (encPair encBits encBits))) (encOption encBits) := by
   have hp := ComputableInPolyTime.id'
     (encIn := encPair encUnary (encPair encBits (encPair encBits encBits)))
-  exact F.computableInPolyTime_decodeCramerShoup_comp hH hisElem
-    (hd.comp hp.fst') (computableInPolyTime_decodeCramerShoupSK.comp hp.snd'.fst')
+  exact F.withKey.computableInPolyTime_decodeCramerShoup_comp hH
+    (F.computableInPolyTime_isElemWithKey hisElem)
+    ((hd.comp hp.fst').prod (ComputableInPolyTime.unframe.comp hp.snd'.fst'))
+    (computableInPolyTime_decodeCramerShoupSK.comp
+      (ComputableInPolyTime.dropFrame.comp hp.snd'.fst'))
     hp.snd'.snd'.fst' hp.snd'.snd'.snd'
 
 /-- `cramerShoupDecryptOpt` is computable in polynomial time whenever `H`, `isElem`, and `d`
 are. -/
 theorem computableInPolyTime_cramerShoupDecryptOpt
-    {H : F.Desc × List Bool → List Bool} {isElem : F.Desc × List Bool → Bool}
+    {H : F.withKey.Desc × List Bool → List Bool} {isElem : F.Desc × List Bool → Bool}
     {d : ℕ → F.Desc}
-    (hH : ComputableInPolyTime H (encPair F.encDesc encBits) encBits)
+    (hH : ComputableInPolyTime H (encPair F.withKey.encDesc encBits) encBits)
     (hisElem : ComputableInPolyTime isElem (encPair F.encDesc encBits) encBool)
     (hd : ComputableInPolyTime d encUnary F.encDesc) :
     ComputableInPolyTime
       (fun ⟨n, skBits, ct⟩ => F.cramerShoupDecryptOpt H isElem d n skBits ct)
       (encPair encUnary (encPair encBits encBits)) (encOption encBits) := by
   have hp := ComputableInPolyTime.id' (encIn := encPair encUnary (encPair encBits encBits))
-  exact F.computableInPolyTime_decodeCramerShoup_comp hH hisElem
-    (hd.comp hp.fst') (computableInPolyTime_decodeCramerShoupSK.comp hp.snd'.fst')
+  exact F.withKey.computableInPolyTime_decodeCramerShoup_comp hH
+    (F.computableInPolyTime_isElemWithKey hisElem)
+    ((hd.comp hp.fst').prod (ComputableInPolyTime.unframe.comp hp.snd'.fst'))
+    (computableInPolyTime_decodeCramerShoupSK.comp
+      (ComputableInPolyTime.dropFrame.comp hp.snd'.fst'))
     hp.snd'.snd' (.const [])
 
-/-- `cca2ADPhase1Oracle` for `cramerShoupADDecryptOpt` agrees with
-`cramerShoupPhase1Oracle true`. -/
-theorem cca2ADPhase1Oracle_cramerShoupADDecryptOpt
-    (H : F.Desc × List Bool → List Bool) (isElem : F.Desc × List Bool → Bool)
-    (d : ℕ → F.Desc) (n : ℕ) (sk : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) :
-    cca2ADPhase1Oracle encBits (F.cramerShoupADDecryptOpt H isElem d) n (encCramerShoupSK sk) =
-      F.cramerShoupPhase1Oracle true H isElem (d n) sk := by
-  funext req s
-  simp only [cca2ADPhase1Oracle, cramerShoupADDecryptOpt, decodeCramerShoupSK_encCramerShoupSK,
-    cramerShoupPhase1Oracle, cramerShoupPhase1Reply, splitCramerShoupQuery, ↓reduceIte]
+/-- The secret key word of `cramerShoupKeyGenProb`: the framed hash key, then the exponents. -/
+private theorem encPair_encCramerShoupSK (hk : List Bool) (sk : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) :
+    encPair encBits encCramerShoupSK (hk, sk) = frame hk ++ encCramerShoupSK sk :=
+  rfl
 
-/-- `cca2ADPhase2Oracle` for `cramerShoupADDecryptOpt` agrees with
-`cramerShoupPhase2Oracle true`. -/
-theorem cca2ADPhase2Oracle_cramerShoupADDecryptOpt
-    (H : F.Desc × List Bool → List Bool) (isElem : F.Desc × List Bool → Bool)
-    (d : ℕ → F.Desc) (n : ℕ) (sk : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) (ct ad : List Bool) :
-    cca2ADPhase2Oracle encBits (F.cramerShoupADDecryptOpt H isElem d) n (encCramerShoupSK sk)
-      ct ad =
-      F.cramerShoupPhase2Oracle true H isElem (d n) sk ct ad := by
+/-- `cca2ADPhase1Oracle` for `cramerShoupADDecryptOpt` on a generated secret key word agrees with
+`cramerShoupPhase1Oracle true` over the parameters `(d n, hk)`. -/
+theorem cca2ADPhase1Oracle_cramerShoupADDecryptOpt
+    (H : F.withKey.Desc × List Bool → List Bool) (isElem : F.Desc × List Bool → Bool)
+    (d : ℕ → F.Desc) (n : ℕ) (hk : List Bool) (sk : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) :
+    cca2ADPhase1Oracle encBits (F.cramerShoupADDecryptOpt H isElem d) n
+        (encPair encBits encCramerShoupSK (hk, sk)) =
+      F.withKey.cramerShoupPhase1Oracle true H (F.isElemWithKey isElem) (d n, hk) sk := by
+  rw [encPair_encCramerShoupSK]
   funext req s
-  simp only [cca2ADPhase2Oracle, cramerShoupADDecryptOpt, decodeCramerShoupSK_encCramerShoupSK,
-    cramerShoupPhase2Oracle, cramerShoupPhase2Reply, splitCramerShoupQuery, ↓reduceIte]
+  simp only [cca2ADPhase1Oracle, cramerShoupADDecryptOpt, unframe_frame_append,
+    dropFrame_frame_append, decodeCramerShoupSK_encCramerShoupSK, cramerShoupPhase1Oracle,
+    cramerShoupPhase1Reply, splitCramerShoupQuery, ↓reduceIte]
+
+/-- `cca2ADPhase2Oracle` for `cramerShoupADDecryptOpt` on a generated secret key word agrees with
+`cramerShoupPhase2Oracle true` over the parameters `(d n, hk)`. -/
+theorem cca2ADPhase2Oracle_cramerShoupADDecryptOpt
+    (H : F.withKey.Desc × List Bool → List Bool) (isElem : F.Desc × List Bool → Bool)
+    (d : ℕ → F.Desc) (n : ℕ) (hk : List Bool) (sk : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ)))
+    (ct ad : List Bool) :
+    cca2ADPhase2Oracle encBits (F.cramerShoupADDecryptOpt H isElem d) n
+        (encPair encBits encCramerShoupSK (hk, sk)) ct ad =
+      F.withKey.cramerShoupPhase2Oracle true H (F.isElemWithKey isElem) (d n, hk) sk ct ad := by
+  rw [encPair_encCramerShoupSK]
+  funext req s
+  simp only [cca2ADPhase2Oracle, cramerShoupADDecryptOpt, unframe_frame_append,
+    dropFrame_frame_append, decodeCramerShoupSK_encCramerShoupSK, cramerShoupPhase2Oracle,
+    cramerShoupPhase2Reply, splitCramerShoupQuery, ↓reduceIte]
   split_ifs <;> rfl
 
-/-- `cca2Phase1Oracle` for `cramerShoupDecryptOpt` agrees with `cramerShoupPhase1Oracle false`. -/
+/-- `cca2Phase1Oracle` for `cramerShoupDecryptOpt` on a generated secret key word agrees with
+`cramerShoupPhase1Oracle false` over the parameters `(d n, hk)`. -/
 theorem cca2Phase1Oracle_cramerShoupDecryptOpt
-    (H : F.Desc × List Bool → List Bool) (isElem : F.Desc × List Bool → Bool)
-    (d : ℕ → F.Desc) (n : ℕ) (sk : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) :
-    cca2Phase1Oracle encBits (F.cramerShoupDecryptOpt H isElem d) n (encCramerShoupSK sk) =
-      F.cramerShoupPhase1Oracle false H isElem (d n) sk := by
+    (H : F.withKey.Desc × List Bool → List Bool) (isElem : F.Desc × List Bool → Bool)
+    (d : ℕ → F.Desc) (n : ℕ) (hk : List Bool) (sk : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) :
+    cca2Phase1Oracle encBits (F.cramerShoupDecryptOpt H isElem d) n
+        (encPair encBits encCramerShoupSK (hk, sk)) =
+      F.withKey.cramerShoupPhase1Oracle false H (F.isElemWithKey isElem) (d n, hk) sk := by
+  rw [encPair_encCramerShoupSK]
   funext req s
   simp only [cca2Phase1Oracle, cramerShoupDecryptOpt, cramerShoupADDecryptOpt,
+    unframe_frame_append, dropFrame_frame_append,
     decodeCramerShoupSK_encCramerShoupSK, cramerShoupPhase1Oracle, cramerShoupPhase1Reply,
     splitCramerShoupQuery, Bool.false_eq_true, ↓reduceIte]
 
-/-- `cca2Phase2Oracle` for `cramerShoupDecryptOpt` agrees with `cramerShoupPhase2Oracle false`. -/
+/-- `cca2Phase2Oracle` for `cramerShoupDecryptOpt` on a generated secret key word agrees with
+`cramerShoupPhase2Oracle false` over the parameters `(d n, hk)`. -/
 theorem cca2Phase2Oracle_cramerShoupDecryptOpt
-    (H : F.Desc × List Bool → List Bool) (isElem : F.Desc × List Bool → Bool)
-    (d : ℕ → F.Desc) (n : ℕ) (sk : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ))) (ct : List Bool) :
-    cca2Phase2Oracle encBits (F.cramerShoupDecryptOpt H isElem d) n (encCramerShoupSK sk) ct =
-      F.cramerShoupPhase2Oracle false H isElem (d n) sk ct [] := by
+    (H : F.withKey.Desc × List Bool → List Bool) (isElem : F.Desc × List Bool → Bool)
+    (d : ℕ → F.Desc) (n : ℕ) (hk : List Bool) (sk : (ℕ × ℕ) × ((ℕ × ℕ) × (ℕ × ℕ)))
+    (ct : List Bool) :
+    cca2Phase2Oracle encBits (F.cramerShoupDecryptOpt H isElem d) n
+        (encPair encBits encCramerShoupSK (hk, sk)) ct =
+      F.withKey.cramerShoupPhase2Oracle false H (F.isElemWithKey isElem) (d n, hk) sk ct [] := by
+  rw [encPair_encCramerShoupSK]
   funext req s
   simp only [cca2Phase2Oracle, cramerShoupDecryptOpt, cramerShoupADDecryptOpt,
+    unframe_frame_append, dropFrame_frame_append,
     decodeCramerShoupSK_encCramerShoupSK, cramerShoupPhase2Oracle, cramerShoupPhase2Reply,
     splitCramerShoupQuery, Bool.false_eq_true, ↓reduceIte, BEq.rfl, Bool.and_true]
   split_ifs <;> rfl

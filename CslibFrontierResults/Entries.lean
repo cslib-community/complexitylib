@@ -172,7 +172,7 @@ import CslibFrontier.Crypto.Computational.GoldreichLevin.HardCore
 import CslibFrontier.Crypto.Computational.InaccessibleEntropy.OneWay
 import CslibFrontier.Crypto.Computational.InaccessibleEntropy.TargetCollision
 import CslibFrontier.Crypto.Computational.MLDSA.KeyOnly
-import CslibFrontier.Crypto.Computational.NaorYung
+import CslibFrontier.Crypto.Computational.NaorYungUOWHF
 import CslibFrontier.Crypto.Computational.Nonuniform.ZeroKnowledge
 import CslibFrontier.Crypto.Computational.OneWay.LiuPass
 import CslibFrontier.Crypto.Computational.OneWay.MCSP

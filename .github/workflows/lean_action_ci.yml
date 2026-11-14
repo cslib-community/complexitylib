@@ -228,6 +228,30 @@ jobs:
           test -d .lake/packages
           python3 -B -m unittest scripts/test_check_tidy_surface.py
           python3 -B scripts/check_tidy_surface.py
+      # Security theorems may not assume anything about objects their proofs construct, from the
+      # adversary or not (AGENTS.md, "Security theorems"; #5293). scripts/check_security_premises.py
+      # reads the built .olean files and compares the flagged premises with
+      # scripts/security_premises_baseline.json. Pull requests enforce it in the modules they
+      # change, or in every module when they change the checker or its baseline, and print other
+      # differences as a notice; merge groups and pushes only report, so a queued pull request is
+      # never ejected by a change elsewhere. Its compiled-fixture tests need Lean, so the Python
+      # tests at the start skip them; they run here. The base is the first parent of the merge
+      # commit, as for the changed-file lints below.
+      - name: "Security premise ratchet (changed modules)"
+        if: github.event_name == 'pull_request'
+        env:
+          RECORDED_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -e
+          BASE=$(git cat-file -p HEAD | sed -n 's/^parent //p' | head -n 1)
+          BASE=${BASE:-$RECORDED_BASE}
+          git fetch --no-tags --depth=1 origin "$BASE"
+          python3 -B -m unittest scripts/test_check_security_premises.py
+          python3 -B scripts/check_security_premises.py --base "$BASE"
+      - name: "Security premise report"
+        if: github.event_name != 'pull_request'
+        continue-on-error: true
+        run: python3 -B scripts/check_security_premises.py --report
       - name: "Result registry references"
         run: python3 -B scripts/results_registry.py --compiled
       # Lints for the files a pull request adds or changes: names in module docstrings' "Main …"

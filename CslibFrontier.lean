@@ -4325,6 +4325,7 @@ public import CslibFrontier.Crypto.Computational.DiffieHellman.GapCDH
 public import CslibFrontier.Crypto.Computational.DiffieHellman.MultiDDH
 public import CslibFrontier.Crypto.Computational.DiffieHellman.Order
 public import CslibFrontier.Crypto.Computational.DiffieHellman.SampleExp
+public import CslibFrontier.Crypto.Computational.DiffieHellman.WithKey
 public import CslibFrontier.Crypto.Computational.DiscreteLog
 public import CslibFrontier.Crypto.Computational.DiscreteLog.Extract
 public import CslibFrontier.Crypto.Computational.DiscreteLog.GroupHash
@@ -4507,6 +4508,7 @@ public import CslibFrontier.Crypto.Computational.LWE.Trapdoor.Gadget
 public import CslibFrontier.Crypto.Computational.Lattice.ShortestVector
 public import CslibFrontier.Crypto.Computational.LubyRackoff
 public import CslibFrontier.Crypto.Computational.MAC
+public import CslibFrontier.Crypto.Computational.MAC.Counter
 public import CslibFrontier.Crypto.Computational.MLDSA.Basic
 public import CslibFrontier.Crypto.Computational.MLDSA.Decompose
 public import CslibFrontier.Crypto.Computational.MLDSA.Hint
@@ -4523,7 +4525,7 @@ public import CslibFrontier.Crypto.Computational.ModulusGeneration
 public import CslibFrontier.Crypto.Computational.NaorReingold
 public import CslibFrontier.Crypto.Computational.NaorReingold.PRF
 public import CslibFrontier.Crypto.Computational.NaorReingold.Security
-public import CslibFrontier.Crypto.Computational.NaorYung
+public import CslibFrontier.Crypto.Computational.NaorYungUOWHF
 public import CslibFrontier.Crypto.Computational.Nonuniform.Advice
 public import CslibFrontier.Crypto.Computational.Nonuniform.Basic
 public import CslibFrontier.Crypto.Computational.Nonuniform.ZeroKnowledge
@@ -6181,6 +6183,7 @@ public import CslibFrontier.Foundations.Probability.Combinatorics.BinomialRandom
 public import CslibFrontier.Foundations.Probability.CoordinateExpectation
 public import CslibFrontier.Foundations.Probability.CoordinateFactorization
 public import CslibFrontier.Foundations.Probability.EfronStein
+public import CslibFrontier.Foundations.Probability.Gaussian.Borell
 public import CslibFrontier.Foundations.Probability.Gaussian.CDF
 public import CslibFrontier.Foundations.Probability.Gaussian.CenteredTail
 public import CslibFrontier.Foundations.Probability.Gaussian.CoefficientFiber
