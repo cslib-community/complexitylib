@@ -9,6 +9,8 @@ module
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Word
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.WordGame
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.WordBridge
+public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.WordSecurity
+import CslibFrontier.Crypto.Negligible.Dyadic
 import CslibFrontier.Languages.Probabilistic.Oracle.Norm
 import CslibFrontier.Languages.Probabilistic.Norm
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
@@ -33,7 +35,10 @@ ciphertext and a `G` request of the wrong length get the empty word and leave th
 unchanged, and an in-domain `G` request is answered and cached.
 
 The ciphertexts of the identity scheme fit its ciphertext space, and it is perfectly correct, so
-the typed bridge identifies the word game of `queryChallengeG` with a typed game.
+the typed bridge identifies the word game of `queryChallengeG` with a typed game. For the same
+reasons, the asymptotic theorem `WordPKE.INDCPA.romINDCCA` applies to the identity scheme with
+every premise discharged except IND-CPA security, its only security premise, which the identity
+scheme lacks.
 -/
 
 public section
@@ -205,5 +210,16 @@ example : ∃ (B : (n : ℕ) → RandomizedROAdversary (List Bool) (BitString n)
     (by fun_prop : ComputableInPolyTime (fun n : ℕ => n) encUnary encUnary)
     isOraclePPT_queryChallengeG
   exact ⟨B, q, hq, fun n => ⟨hbounds n, (hbridge identityPKE_ciphertextFits n).1⟩⟩
+
+/-! ### The asymptotic theorem -/
+
+/-- For the identity scheme, every premise of `WordPKE.INDCPA.romINDCCA` other than IND-CPA
+security holds: it is efficient, its ciphertexts fit, it is `0`-correct, and `2 ^ (-n)` is
+negligible. IND-CPA security is the only security premise left. -/
+example (hcpa : identityPKE.INDCPA) : identityPKE.ROMINDCCA (fun n => n) :=
+  hcpa.romINDCCA (δ := fun _ => 0) identityPKE_isEfficient
+    (by fun_prop : ComputableInPolyTime (fun n : ℕ => n) encUnary encUnary)
+    identityPKE_ciphertextFits identityPKE_deltaCorrect Crypto.negligible_zero
+    Crypto.negligible_inv_two_pow
 
 end CslibFrontierTests.Crypto.FujisakiOkamotoWord

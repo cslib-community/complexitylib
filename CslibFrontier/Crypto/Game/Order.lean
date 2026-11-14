@@ -23,18 +23,20 @@ the distinguishing advantage of two experiments bounds one success probability b
 * `Cslib.Crypto.Game.succProbability_le_add_of_advantage_le`,
   `Cslib.Crypto.Game.coe_succProbability_le_add_of_advantage_le`: bound a game's success probability
   by another game's success probability plus their distinguishing advantage.
+* `Cslib.Crypto.Game.apply_true_le_of_advantage_le`: an `ℝ≥0` advantage bound between two games
+  implies mutual `ℝ≥0∞` upper bounds on their acceptance probabilities.
 -/
 
 public section
 
 namespace Cslib.Crypto.Game
 
+open scoped ENNReal NNReal
+
 /-- Success probability is monotone in the mass of `true`. -/
 theorem succProbability_mono {g₁ g₂ : Game} (h : g₁ true ≤ g₂ true) :
     g₁.succProbability ≤ g₂.succProbability :=
   ENNReal.toNNReal_mono (PMF.apply_ne_top _ _) h
-
-open scoped NNReal
 
 /-- Bounding `advantage g₀ g₁ ≤ B` bounds `succProbability g₀ ≤ succProbability g₁ + B`. -/
 theorem succProbability_le_add_of_advantage_le {g₀ g₁ : Game} {B : ℝ≥0}
@@ -52,5 +54,16 @@ theorem coe_succProbability_le_add_of_advantage_le {g₀ g₁ : Game} {B : ℝ}
     (succProbability_le_add_of_advantage_le (g₀ := g₀) (g₁ := g₁) le_rfl)
   rw [NNReal.coe_add] at htri
   exact htri.trans (add_le_add le_rfl h)
+
+/-- An `ℝ≥0` advantage bound between two games implies mutual `ℝ≥0∞` upper bounds on their
+acceptance probabilities. -/
+theorem apply_true_le_of_advantage_le {g₁ g₂ : Game} {c : ℝ≥0}
+    (h : advantage g₁ g₂ ≤ c) :
+    g₁ true ≤ g₂ true + (c : ℝ≥0∞) ∧ g₂ true ≤ g₁ true + (c : ℝ≥0∞) := by
+  have hle {a b : Game} (hab : advantage a b ≤ c) : a true ≤ b true + (c : ℝ≥0∞) := by
+    have hsucc := ENNReal.coe_le_coe.mpr (succProbability_le_add_of_advantage_le hab)
+    rwa [ENNReal.coe_add, ENNReal.coe_toNNReal (PMF.apply_ne_top a true),
+      ENNReal.coe_toNNReal (PMF.apply_ne_top b true)] at hsucc
+  exact ⟨hle h, hle (advantage_comm g₂ g₁ ▸ h)⟩
 
 end Cslib.Crypto.Game

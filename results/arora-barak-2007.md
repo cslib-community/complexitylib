@@ -306,6 +306,8 @@ least valid upper bound; all norm comparisons here use the standard operator nor
 machine-checked counterexample clients for the elementary source defects are follow-ups, not
 artifacts produced or tested by this audit.
 
+The native operator milestone `BPOp_NP` in [ArthurMerlin/Operators.lean](../CslibFrontier/Computability/Complexity/Classes/ArthurMerlin/Operators.lean) proves `BP·NP = AM` and derives the NP advice inclusion for arbitrary instance encodings. Definitions 7.19–7.20 (printed 129 / PDF 145, rendered) use two-sided membership preservation with probability at least 2/3 and define BP·NP through randomized reductions to 3SAT. That correspondence, Exercise 7 §5’s nondeterministic-circuit endpoint and Exercise 7 §6’s source collapse bridge remain open. Exercise 8 §5 (printed 166 / PDF 182, rendered) states AM[2] = BP·NP; the native operator equality does not by itself discharge its source definition.
+
 ## Chapter 8: interactive proofs
 
 Snapshot: `b91d5151fd7dc665a5e3efcb466077caf44e690d` on 2026-11-12, CSLib pin

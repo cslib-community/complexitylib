@@ -64,8 +64,12 @@ strict PPT in the full state (`WordPKE.IsEfficient.isPPTOn_simFilterWordHandler`
 cached value at most `coinLen n + keyLen n` bits long, and adds at most a polynomial in the
 request length and `n` to the encoded state.
 
-Relating the advantage of this reduction to the typed `cpaAdvantage` of `Scheme.romCpaReduction`
-on a typed view of `A`, and the asymptotic IND-CCA theorem, are later steps of #5293.
+The advantage of this reduction is the typed `cpaAdvantage` of `Scheme.romCpaReduction` on a typed
+view of `A` (`WordPKE.IsEfficient.exists_typedAdversary` in
+`CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.WordBridge`), and the asymptotic IND-CCA
+theorem `WordPKE.INDCPA.romINDCCA` in
+`CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.WordSecurity` applies the IND-CPA assumption
+to it.
 
 ## Main definitions
 
