@@ -168,7 +168,7 @@ theorem cutStart (k radius : ℕ) :
     (hlen.prod (ComputableInPolyTime.const 2))
   have h := htest.ite_decide (route_dilate k) (hcut.cons' htail)
   change ComputableInPolyTime (fun r => Orthogonal.cutStart k radius r) _ _
-  simpa only [cutStart_eq, Function.comp_def] using h
+  simpa only [cutStart_eq, Function.comp_def, encRoute] using h
 
 /-- The trimmed exterior of each indexed source edge is polynomial-time. -/
 @[fun_prop]
