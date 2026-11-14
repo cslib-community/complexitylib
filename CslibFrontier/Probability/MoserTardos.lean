@@ -374,7 +374,7 @@ variable {V ι : Type*} {α : V → Type*}
 /-- The log (latest first) of the Moser–Tardos algorithm after `n` steps on the table `T`, under
 the selection rule `sel`. At each step `sel T w` names the event to resample after the log `w`, or
 returns `none`, after which the log stays fixed. -/
-def run (sel : (∀ p : V × ℕ, α p.1) → List ι → Option ι) (T : ∀ p : V × ℕ, α p.1) :
+@[expose] def run (sel : (∀ p : V × ℕ, α p.1) → List ι → Option ι) (T : ∀ p : V × ℕ, α p.1) :
     ℕ → List ι
   | 0 => []
   | n + 1 =>
