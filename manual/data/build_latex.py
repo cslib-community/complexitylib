@@ -26,6 +26,7 @@ ORDER = [
       'proof-systems', 'learning-and-testing', 'metacomplexity-and-methods']),
     ('programs-crypto-and-probability', ['index', 'programs-and-realization',
       'security-games-and-primitives', 'interactive-reductions', 'protocols-and-privacy',
+      'finite-sample-dependence',
       'average-case-hardness', 'distributional-complexity', 'homomorphic-encryption']),
     ('algorithms-and-memory', ['index', 'ram-variants', 'wordram-and-bridges',
       'memory-specifications', 'online-and-streaming', 'strategic-games',

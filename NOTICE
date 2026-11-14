@@ -45,3 +45,18 @@ The SQL semantics in CslibFrontier/Languages/SQL/, its tests in CslibFrontierTes
 and its guide chapter guide/CslibFrontierGuide/SQL.lean adapt and redesign evelynmitchell/sql_equiv
 by Evelyn Mitchell, revision 38030a6b614a87499bf4f1e258d75b7f2fa20672, licensed under the Apache
 License, Version 2.0. The module docstrings describe what was taken and what changed.
+
+The modules credited to Yuqing Kong in
+CslibFrontier/Foundations/Algebra/Polynomial/MaximalMinor/ and
+CslibFrontier/Probability/FiniteSampleInformation/ are ported from
+https://github.com/yuqkong-1844/finite-sample-information-monotones,
+revision 4e27ef9d167be69902385307d40123ec665dc532.
+Original formalization and mathematical credit: Yuqing Kong.
+Lean port and local adaptations: Christian Reitwiessner.
+The individual module docstrings identify their source files and scope.
+
+Finite-Sample Information Monotones: a Lean 4 formalization accompanying
+"Limits of Finite-Sample Dependence Measures under Data Processing Inequality"
+Copyright (c) 2026 Yuqing Kong
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
