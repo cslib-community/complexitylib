@@ -68,7 +68,7 @@ replaced by a path of three edges, which gives a simple graph and adds exactly `
 maximum cut. To count a cut of your own graph whose edge list has no loops or repeated edges, use
 `SimpleMaxCut.card_interedges_eq_crossCount`. The
 [checked examples](../../CslibFrontierTests/SimpleMaxCut.lean) evaluate cuts on small graphs and
-run the reduction on an NAE-satisfiable formula and on a malformed one; check them with
+run the reduction on an NAE-satisfiable and an NAE-unsatisfiable formula; check them with
 `scripts/build.sh CslibFrontierTests.SimpleMaxCut`.
 
 For sparse exact `k`-CNFs, import `CslibFrontier.Logics.Propositional.CNF.Moser.Probability`.
