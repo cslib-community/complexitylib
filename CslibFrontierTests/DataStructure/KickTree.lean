@@ -12,19 +12,31 @@ public import CslibFrontier.Foundations.Data.Finset.Density
 public import CslibFrontier.Probability.KWiseIndependent.Trinomial
 
 /-!
-# Unit and Non-Vacuity Tests for `BallsToSlots` and the STOC 2022 `k`-Kick Tree
+# Execution and API-Applicability Tests for `BallsToSlots` and the STOC 2022 `k`-Kick Tree
 
-Verifies concrete execution and non-vacuity of `Cslib.DataStructure.BallsToSlots`:
+Exercises concrete execution and hypothesis satisfiability of `Cslib.DataStructure.BallsToSlots`:
 1. Multi-step `insert → query → delete → insert` execution on a `2`-kick tree over `8` slots that
-   deterministically triggers a priority kick (`1 < switchingCost`), verifying `switchingCost ≤
-   depth + 1`, kick-depth invariance (`assignedDepth_insert_of_mem`), history-independent deletion
+   deterministically triggers a priority kick (`1 < switchingCost`), checking `switchingCost ≤
+   depth + 1`, kick-depth invariance (`assignedDepth_insert_of_mem`), removal-only deletion
    (`ValidState.delete`, `assignedDepth_delete_of_ne`), and `step_schemeSpec` refinement;
 2. Tight comparison between `max (Nat.iterLog 2 n) 1` and `Dictionary.Dynamic.logLogFactor n`;
-3. Non-vacuous instantiation of Lemma 1 (`expect_ballProbeComplexity_standardInsert_le`),
-   Theorem 2 (`expect_totalProbeComplexity_standardRun_le`) in the nontrivial multi-level regime
-   `m₀ = 32, k = 2`, and `2m`-th moment multi-tree concentration
-   (`dens_sum_totalProbeComplexity_standardRun_gt_le`) across disjoint-footprint histories using
-   the unconditional `k`-wise independent family `trinomialPolyHash`.
+3. Hypothesis-satisfiability and API-applicability checks instantiating
+   `expect_ballProbeComplexity_standardInsert_le`, `expect_totalProbeComplexity_standardRun_le`
+   (at `m₀ = 32, k = 2`, where `effectiveDepth 32 2 = 2`), and
+   `dens_sum_totalProbeComplexity_standardRun_gt_le` (at `m = 1, m₀ = 2, k = 1`) with unconditional
+   `trinomialPolyHash` families.
+
+**Quantitative regime note:** Every present ball deterministically satisfies
+`ballProbeComplexity ≤ 1 + m₀`. Consequently, the proved per-ball expectation bound
+`96 * max (Nat.iterLog (k + 1) (2 ^ m₀)) 1` improves on the deterministic ceiling `1 + m₀` once
+`96 * max (Nat.iterLog (k + 1) (2 ^ m₀)) 1 < 1 + m₀` — starting at `m₀ ≥ 96` for `k ≥ 3` (where
+`effectiveDepth 96 3 = 3` and `Nat.iterLog 4 (2 ^ 96) = 1`, giving `96 < 97`), and at `m₀ ≥ 288`
+for `k = 2` (`96 * 3 = 288 < 289`). Likewise, the tail event `{μ + Δ ≤ ∑ b ∈ R, ...}` in
+`dens_sum_totalProbeComplexity_standardRun_gt_le` is empty whenever `m₀ < 96`, and its Markov bound
+is `< 1` when `#R` is large relative to `2 ^ m₀ * (1 + m₀)`. At `m₀ = 32, k = 2` the expectation
+bound `192` exceeds `33`, and at `m₀ = 2, k = 1` (`effectiveDepth 2 1 = 0`) the tail event is
+empty; Section 3 below therefore checks hypothesis satisfiability and API applicability rather than
+numerical tightness at those small sizes.
 -/
 
 public section
@@ -65,8 +77,8 @@ open scoped BigOperators
   | _ => 24
 
 /-- Kernel-checked multi-step trace witnessing an actual priority kick (`switchingCost = 2`),
-kick-depth invariance for kicked ball `0`, history-independent deletion of ball `1`, and reuse of
-the vacated slot by ball `3`. -/
+kick-depth invariance for kicked ball `0`, removal-only deletion of ball `1`, and reuse of the
+vacated slot by ball `3`. -/
 theorem concrete_kick_and_delete_trace :
     let st₀ := State.empty testParams (Fin 4)
     let st₁ := testParams.insert testHash st₀ 0
@@ -113,7 +125,7 @@ theorem iterLog_bridge_at_five :
     Cslib.DataStructure.Dictionary.Dynamic.logLogFactor 5 ≤ 2 * max (Nat.iterLog 2 5) 1 :=
   ⟨by decide, max_iterLog_two_le_logLogFactor 5, logLogFactor_le_two_mul_max_iterLog_two 5⟩
 
-/-! ## 3. Non-vacuous Lemma 1, Theorem 2, and `2m`-th moment concentration -/
+/-! ## 3. Hypothesis-satisfiability and API-applicability checks via `trinomialPolyHash` -/
 
 /-- Admissible `insert → insert → delete → insert → query` operation history on `Fin 16`. -/
 @[expose] def sampleOps : List (Op (Fin 16)) :=
@@ -123,11 +135,12 @@ theorem validOpSeq_sampleOps_32 : ValidOpSeq (2 ^ 32) sampleOps ∧ #(activeSet 
   refine ⟨?_, by decide⟩
   simp [sampleOps, ValidOpSeq, ValidOpSeqFrom, ValidOp, stepSet]
 
-/-- Non-vacuous instantiation of **Lemma 1** (`expect_ballProbeComplexity_standardInsert_le`) and
-**Theorem 2** (`expect_totalProbeComplexity_standardRun_le`) in the nontrivial multi-level kick-tree
-regime `m₀ = 32, k = 2` (`effectiveDepth 32 2 = 2`) using unconditional 3-wise independent
-`trinomialPolyHash`. -/
-theorem theorem2_and_lemma1_nonvacuous :
+/-- Hypothesis-satisfiability and API-applicability check instantiating
+`expect_ballProbeComplexity_standardInsert_le` and `expect_totalProbeComplexity_standardRun_le` at
+`m₀ = 32, k = 2` (`effectiveDepth 32 2 = 2`) with unconditional 3-wise independent
+`trinomialPolyHash` (at `m₀ = 32` the per-ball bound `192` exceeds deterministic `33`; see the
+module docstring for the `m₀ ≥ 96` / `m₀ ≥ 288` regimes where it improves on `1 + m₀`). -/
+theorem expect_probeComplexity_trinomialPolyHash :
     let H := (standardParams 32 2).hashBits
     let t := trinomialStep 16 H
     let h := trinomialPolyHash t 3 16 H
@@ -152,15 +165,17 @@ theorem theorem2_and_lemma1_nonvacuous :
   rw [validOpSeq_sampleOps_32.2] at hT2
   exact ⟨hD, hh, hL1, by simpa using hT2⟩
 
-/-- Two disjoint-footprint operation sequences over `Fin 8` (one with deletion) for testing
-multi-tree `2m`-th moment concentration at `m = 1, m₀ = 2, k = 1`. -/
+/-- Two disjoint-footprint operation sequences over `Fin 8` (one with deletion) for checking
+multi-tree `2m`-th moment concentration premises at `m = 1, m₀ = 2, k = 1`. -/
 @[expose] def twoTreeOps : Bool → List (Op (Fin 8))
   | false => [.insert 0, .insert 1, .delete 0, .insert 2]
   | true => [.insert 4, .insert 5]
 
-/-- Non-vacuous instantiation of `dens_sum_totalProbeComplexity_standardRun_gt_le` across two
-partitioned kick trees using unconditional `32`-wise independent `trinomialPolyHash`. -/
-theorem multiTree_concentration_nonvacuous :
+/-- Hypothesis-satisfiability and API-applicability check instantiating
+`dens_sum_totalProbeComplexity_standardRun_gt_le` across two disjoint-footprint histories using
+unconditional `32`-wise independent `trinomialPolyHash` (at `m₀ = 2`, `effectiveDepth 2 1 = 0` and
+the tail event is empty; nonempty tail events require `m₀ ≥ 96`). -/
+theorem dens_sum_totalProbeComplexity_trinomialPolyHash :
     let H := (standardParams 2 1).hashBits
     let t := trinomialStep 8 H
     let h := trinomialPolyHash t 32 8 H

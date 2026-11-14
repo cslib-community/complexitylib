@@ -15,10 +15,13 @@ public import CslibFrontier.Init
 public import CslibFrontier.Probability.KWiseIndependent
 import CslibFrontier.Foundations.Data.Finset.Density
 import CslibFrontier.Foundations.Data.Finset.Expect
+import CslibFrontier.Foundations.Probability.TwoStage
 import CslibFrontier.Probability.KWiseIndependent.Concentration
+import CslibFrontier.Probability.KWiseIndependent.Restriction
 import Mathlib.Algebra.BigOperators.Field
 import Mathlib.Algebra.Order.BigOperators.Expect
 import Mathlib.Algebra.Order.BigOperators.Ring.Finset
+import Mathlib.Data.Fin.Tuple.Basic
 import Mathlib.Tactic.Linarith
 import Mathlib.Tactic.Positivity
 import Mathlib.Tactic.Ring
@@ -30,20 +33,25 @@ Formalizes the pure *`k`-kick tree* balls-to-slots scheme of Bender, Farach-Colt
 W. Kuszmaul, and Liu, *Proc. 54th ACM STOC*, pp. 1284–1297, 2022 (`arXiv:2111.00602v2`, 4 Nov 2021)
 [BenderFarachColtonKuszmaulKuszmaulLiu2022] (printed p. `p` = PDF p. `p + 1`): Section 2.4 (p. 7 /
 PDF p. 8) iterated-log bridge; Section 3.1 (pp. 8–10 / PDF pp. 9–11) hierarchy, priority kicks with
-`switchingCost ≤ k + 1`, kick-depth invariance, and history-independent deletion; Lemma 1 (pp. 10–11
-/ PDF pp. 11–12), Theorems 2–3 (p. 12 / PDF p. 13), and Lemma 19 (pp. 29–30 / PDF pp. 30–31) 3-wise
-expectation bounds and `2m`-th moment / `(1 - δ)`-w.h.p. multi-tree concentration.
-Adaptations: (1) XOR probe deduplication `g(x) ^^^ (idx % M)`; (2) dyadic `capExp_i =
-2 * iterLog (i + 2) M` and `binExp_{i+1} = 6 * iterLog (i + 2) M` (clamped by `effectiveDepth`) for
-3-wise Chebyshev sufficiency; (3) `2m`-th moment snapshot bounds.
+`switchingCost ≤ k + 1`, and kick-depth invariance; Section 5.1 (p. 27 / PDF p. 28) removal-only
+deletion (vacating only the deleted ball's slot without moving other balls; Sections 3–3.1 describe
+insertions only, and state still depends on insertion order so it is not history-independent); and
+Lemma 1 (pp. 10–11 / PDF pp. 11–12) and Theorems 2–3 (p. 12 / PDF p. 13) 3-wise expectation bounds
+and `2m`-th moment / `(1 - δ)`-w.h.p. multi-tree concentration.
+
+Namespace `Cslib.DataStructure.BallsToSlots` (and `KickTree`) holds this Section 3 pure
+balls-to-slots model, while `Cslib.DataStructure.Dictionary.KickTree` holds the Sections 5–6
+dictionary layers. Adaptations: (1) XOR probe deduplication `g(x) ^^^ (idx % M)` over primary slots;
+(2) shifted dyadic `capExp_i = 2 * iterLog (i + 2) M` and `binExp_{i+1} = 6 * iterLog (i + 2) M`
+(clamped by `effectiveDepth`) for 3-wise Chebyshev sufficiency; (3) `2m`-th moment insertion-set
+snapshot bounds in place of full-independence Chernoff bounds.
 
 ## Main definitions
 * `Cslib.DataStructure.BallsToSlots.KickTree.Params`, `State`, `Params.ValidState`,
   `effectiveDepth`, `standardParams`, `standardInsert`, `standardRun`.
 
 ## Main results
-* `max_iterLog_two_eq`, `max_iterLog_two_le_logLogFactor`,
-  `logLogFactor_le_two_mul_max_iterLog_two`.
+* `max_iterLog_two_le_logLogFactor`, `logLogFactor_le_two_mul_max_iterLog_two`.
 * `Params.ValidState.insert`, `Params.ValidState.delete`, `Params.ValidState.run`,
   `Params.switchingCost_insert_le`, `Params.assignedDepth_insert_of_mem`,
   `State.assignedDepth_delete_of_ne`.
@@ -54,7 +62,7 @@ Adaptations: (1) XOR probe deduplication `g(x) ^^^ (idx % M)`; (2) dyadic `capEx
 ## References
 * [M. A. Bender, M. Farach-Colton, J. Kuszmaul, W. Kuszmaul and M. Liu,
   *On the Optimal Time/Space Tradeoff for Hash Tables*,
-  Section 3.1][BenderFarachColtonKuszmaulKuszmaulLiu2022]
+  Sections 3.1 and 5.1][BenderFarachColtonKuszmaulKuszmaulLiu2022]
 -/
 
 public section
@@ -62,19 +70,33 @@ namespace Cslib.DataStructure.BallsToSlots
 open Cslib.Probability Finset Fintype
 open scoped BigOperators
 
-/-- Clamping `Nat.iterLog 2 n` below at `1` agrees everywhere with `Nat.iterLog 2 (max n 4)`. -/
-theorem max_iterLog_two_eq (n : ℕ) : max (Nat.iterLog 2 n) 1 = Nat.iterLog 2 (max n 4) := by
-  by_cases hn : n < 4
-  · match n, hn with | 0, _ => decide | 1, _ => decide | 2, _ => decide | 3, _ => decide
-  · have h := Nat.max_iterLog_two_max_four n; rw [max_eq_left (Nat.not_lt.mp hn)] at h ⊢; exact h
 /-- Lower bound comparing `max (Nat.iterLog 2 n) 1` with `Dictionary.Dynamic.logLogFactor n`. -/
 theorem max_iterLog_two_le_logLogFactor (n : ℕ) :
     max (Nat.iterLog 2 n) 1 ≤ Dictionary.Dynamic.logLogFactor n :=
-  max_iterLog_two_eq n ▸ Nat.iterLog_two_max_four_le_clog n
+  Nat.max_iterLog_two_eq n ▸ Nat.iterLog_two_max_four_le_clog n
 /-- Upper bound showing `Dictionary.Dynamic.logLogFactor n ≤ 2 * max (Nat.iterLog 2 n) 1`. -/
 theorem logLogFactor_le_two_mul_max_iterLog_two (n : ℕ) :
     Dictionary.Dynamic.logLogFactor n ≤ 2 * max (Nat.iterLog 2 n) 1 := by
-  rw [max_iterLog_two_eq]; exact Nat.clog_clog_max_four_le_two_mul_iterLog n
+  rw [Nat.max_iterLog_two_eq]; exact Nat.clog_clog_max_four_le_two_mul_iterLog n
+
+private theorem card_fin_div_two_pow_eq {m e : ℕ} (he : e ≤ m) (r₀ : Fin (2 ^ m)) :
+    #{s : Fin (2 ^ m) | s.val / 2 ^ e = r₀.val / 2 ^ e} = 2 ^ e := by
+  let eqv := (finCongr (show 2 ^ m = 2 ^ (e + (m - e)) by rw [Nat.add_sub_cancel' he])).trans
+    (dyadicSplitEquiv e (m - e))
+  refine (Finset.card_nbij' (fun s => (eqv s).1) (fun j => eqv.symm (j, (eqv r₀).2))
+    (fun _ _ => Finset.mem_univ _) (fun _ _ => by simp [eqv]) (fun s hs => ?_)
+    (fun _ _ => by simp)).trans (by simp)
+  rw [Finset.mem_coe, Finset.mem_filter] at hs
+  exact eqv.injective (Prod.ext rfl (Fin.ext (by simpa [eqv] using hs.2)))
+
+private theorem expect_fin_mod_two_pow_eq_zero {b e : ℕ} (he : e ≤ b) :
+    𝔼 c : Fin (2 ^ b), (if c.val % 2 ^ e = 0 then (1 : ℝ) else 0) = 1 / (2 ^ e : ℝ) := by
+  let eqv := (finCongr (show 2 ^ b = 2 ^ (e + (b - e)) by rw [Nat.add_sub_cancel' he])).trans
+    (dyadicSplitEquiv e (b - e))
+  rw [Fintype.expect_equiv eqv _ (fun p : Fin (2 ^ e) × Fin (2 ^ (b - e)) =>
+    if p.1 = ⟨0, by positivity⟩ then (1 : ℝ) else 0) (fun c => by simp [eqv, Fin.ext_iff]),
+    Fintype.expect_prod_type]
+  simp [Fintype.expect_boole, Finset.dens_eq_card_div_card]
 
 namespace KickTree
 /-- Parameters for a power-of-two `depth`-kick tree over `2 ^ slotBits` slots. -/
@@ -141,20 +163,23 @@ theorem inBin_iff_of_inBin {P : Params} {hx₁ hx₂ : Fin (2 ^ P.hashBits)} {i 
     α → ℕ → Fin P.slotCount := xorProbeSeq P.slotBits fun x => P.preferredSlot (f x)
 /-- Dyadic depth cap `s(x) ∈ Fin (P.depth + 1)` sampled from `P.capHash hx`. -/
 @[expose] def depthCap (P : Params) (hx : Fin (2 ^ P.hashBits)) : Fin (P.depth + 1) :=
-  match findFin? (n := P.depth) fun d => decide ((P.capHash hx).val % 2 ^ P.capExp d = 0) with
+  match Fin.find? (n := P.depth) fun d => decide ((P.capHash hx).val % 2 ^ P.capExp d = 0) with
   | some d => d.castSucc | none => Fin.last P.depth
 theorem depthCap_lt_succ_iff (P : Params) (hx : Fin (2 ^ P.hashBits)) (i : Fin P.depth) :
     (P.depthCap hx).val < i.val + 1 ↔ (P.capHash hx).val % 2 ^ P.capExp i = 0 := by
   unfold depthCap; cases hf :
-      findFin? (n := P.depth) (fun d => decide ((P.capHash hx).val % 2 ^ P.capExp d = 0)) with
+      Fin.find? (n := P.depth) (fun d => decide ((P.capHash hx).val % 2 ^ P.capExp d = 0)) with
   | none =>
-    have hnone := (findFin?_eq_none.mp hf) i; simp only [decide_eq_false_iff_not] at hnone
+    have hnone := Fin.find?_eq_none_iff.mp hf i; simp only [decide_eq_false_iff_not] at hnone
     simp only [Fin.val_last, hnone, iff_false, not_lt]; exact i.isLt
   | some d =>
-    have hd0 := of_decide_eq_true (findFin?_some hf); simp only [Fin.val_castSucc]
-    exact ⟨fun _ => Nat.mod_eq_zero_of_dvd ((Nat.pow_dvd_pow 2
+    have hmem := Fin.mem_find?_iff.mp (Option.mem_def.mpr hf)
+    have hd0 := of_decide_eq_true hmem.1; simp only [Fin.val_castSucc]
+    refine ⟨fun _ => Nat.mod_eq_zero_of_dvd ((Nat.pow_dvd_pow 2
       (P.capExp_antitone (Fin.le_def.mpr (by omega)))).trans (Nat.dvd_of_mod_eq_zero hd0)),
-      fun hi0 => Nat.lt_succ_of_le (Fin.le_def.mp (findFin?_le hf (decide_eq_true hi0)))⟩
+      fun hi0 => ?_⟩
+    have hle : d ≤ i := not_lt.mp fun hlt => hmem.2 i hlt (decide_eq_true hi0)
+    exact Nat.lt_succ_of_le (Fin.le_def.mp hle)
 end Params
 /-- State of a `P.depth`-kick tree over balls of type `α`. -/
 @[ext] structure State (P : Params) (α : Type*) where
@@ -172,7 +197,9 @@ variable {P : Params} {α : Type*} [DecidableEq α]
 /-- Priority depth currently associated with ball `x` (`none` if `x` is absent). -/
 @[expose] def assignedDepth (st : State P α) (x : α) : Option (Fin (P.depth + 1)) :=
   (st.assignment.slotOf x).map st.slotDepth
-/-- History-independent deletion: vacate `x`'s slot without moving or re-depthing any other ball. -/
+/-- Removal-only deletion ([BenderFarachColtonKuszmaulKuszmaulLiu2022], Section 5.1, printed p. 27
+/ PDF p. 28): vacate `x`'s slot without moving or re-depthing any other ball (the resulting state
+still depends on insertion order, so it is not history-independent). -/
 @[expose] def delete (st : State P α) (x : α) : State P α :=
   ⟨st.assignment.delete x, fun r =>
     if st.assignment.occupant r = some x then ⟨0, Nat.zero_lt_succ P.depth⟩ else st.slotDepth r⟩
@@ -219,11 +246,11 @@ theorem ValidState.respectsProbeSeq {α : Type*} {P : Params} {f : α → Fin (2
 /-- Least free slot inside the depth-`d` bin of `hx`, if any. -/
 @[expose] def findFree {α : Type*} (P : Params) (st : State P α) (hx : Fin (2 ^ P.hashBits))
     (d : Fin (P.depth + 1)) : Option (Fin P.slotCount) :=
-  findFin? fun r => decide (P.InBin hx d r) && (st.assignment.occupant r).isNone
+  Fin.find? fun r => decide (P.InBin hx d r) && (st.assignment.occupant r).isNone
 /-- Least slot inside the depth-`d` bin of `hx` holding a strictly shallower priority `< d`. -/
 @[expose] def findKick {α : Type*} (P : Params) (st : State P α) (hx : Fin (2 ^ P.hashBits))
     (d : Fin (P.depth + 1)) : Option (Fin P.slotCount) :=
-  findFin? fun r => decide (P.InBin hx d r) && decide (st.slotDepth r < d)
+  Fin.find? fun r => decide (P.InBin hx d r) && decide (st.slotDepth r < d)
 /-- A depth-`d` bin is saturated iff it has neither a free slot nor an occupant of depth `< d`. -/
 @[expose] def binSaturated {α : Type*} (P : Params) (st : State P α) (hx : Fin (2 ^ P.hashBits))
     (d : Fin (P.depth + 1)) : Bool := (P.findFree st hx d).isNone && (P.findKick st hx d).isNone
@@ -232,7 +259,7 @@ theorem binSaturated_eq_true_iff {α : Type*} (P : Params) (st : State P α)
     P.binSaturated st hx d = true ↔ ∀ r : Fin P.slotCount, P.InBin hx d r →
       (st.assignment.occupant r).isSome ∧ d ≤ st.slotDepth r := by
   simp only [binSaturated, Bool.and_eq_true, Option.isNone_iff_eq_none, findFree, findKick,
-    findFin?_eq_none]
+    Fin.find?_eq_none_iff]
   refine ⟨fun ⟨hfree, hkick⟩ r hr => ?_, fun hall => ⟨fun r => ?_, fun r => ?_⟩⟩
   · have hf := hfree r; have hk := hkick r
     simp only [hr, decide_true, Bool.true_and, Bool.eq_false_iff, ne_eq, Option.isNone_iff_eq_none,
@@ -245,7 +272,7 @@ theorem binSaturated_eq_true_iff {α : Type*} (P : Params) (st : State P α)
 /-- Largest depth `j` such that `g_0(x), …, g_j(x)` are all unsaturated. -/
 @[expose] def greedyUnsatDepth {α : Type*} (P : Params) (st : State P α)
     (hx : Fin (2 ^ P.hashBits)) : Fin (P.depth + 1) :=
-  match findFin? (n := P.depth) fun d => P.binSaturated st hx d.succ with
+  match Fin.find? (n := P.depth) fun d => P.binSaturated st hx d.succ with
   | some d => d.castSucc | none => Fin.last P.depth
 section Decidable
 variable {α : Type*} [DecidableEq α] {P : Params}
@@ -286,18 +313,16 @@ private theorem binSaturated_eq_false_of_le_greedyUnsatDepth (P : Params) (st : 
       (P.inBin_zero hx r)
     cases hocc : st.assignment.occupant r <;> simp [hocc] at hnone hall
   · unfold greedyUnsatDepth at hi'
-    cases hf : findFin? (n := P.depth) (fun d => P.binSaturated st hx d.succ) with
-    | none => exact (findFin?_eq_none.mp hf) i'
+    cases hf : Fin.find? (n := P.depth) (fun d => P.binSaturated st hx d.succ) with
+    | none => exact Fin.find?_eq_none_iff.mp hf i'
     | some d =>
-      rw [hf] at hi'; by_contra hne
-      exact lt_irrefl _ ((findFin?_le hf (Bool.eq_true_of_not_eq_false hne)).trans_lt
-        (Fin.lt_def.mpr (by simpa using Fin.le_def.mp hi')))
+      rw [hf] at hi'; by_contra hne; exact (Fin.mem_find?_iff.mp (Option.mem_def.mpr hf)).2 i'
+        (Fin.lt_def.mpr (by simpa using Fin.le_def.mp hi')) (Bool.eq_true_of_not_eq_false hne)
 /-- Fuel-bounded priority-kick loop placing ball `y` at depth `d`. -/
 @[expose] def kickPlaceAux (P : Params) (f : α → Fin (2 ^ P.hashBits)) :
     ℕ → State P α → α → Fin (P.depth + 1) → State P α
   | 0, st, _, _ => st
-  | fuel + 1, st, y, d =>
-    match P.findFree st (f y) d with
+  | fuel + 1, st, y, d => match P.findFree st (f y) d with
     | some r => st.put r y d
     | none => match P.findKick st (f y) d with
       | none => st
@@ -319,7 +344,6 @@ private theorem binSaturated_eq_false_of_le_greedyUnsatDepth (P : Params) (st : 
 /-- Execute an operation sequence `ops` from `State.empty P α` under hash `f`. -/
 @[expose] def run (P : Params) (f : α → Fin (2 ^ P.hashBits)) (ops : List (Op α)) : State P α :=
   ops.foldl (fun st o => (P.step f st o).1) (State.empty P α)
-
 private theorem kickPlaceAux_spec (P : Params) (f : α → Fin (2 ^ P.hashBits)) :
     ∀ (fuel : ℕ) (st : State P α) (y : α) (d : Fin (P.depth + 1)),
       (∀ r', st.assignment.occupant r' ≠ some y) → d.val < fuel → P.ValidState f st →
@@ -337,7 +361,7 @@ private theorem kickPlaceAux_spec (P : Params) (f : α → Fin (2 ^ P.hashBits))
       obtain ⟨rz, hrz⟩ := (st.assignment.mem_present_iff _).mp hz; exact hy rz (heq ▸ hrz)
     cases hfree : P.findFree st (f y) d with
     | some r =>
-      have hf := @findFin?_some P.slotCount _ r hfree
+      have hf := Fin.eq_true_of_find?_eq_some hfree
       simp only [Bool.and_eq_true, decide_eq_true_eq, Option.isNone_iff_eq_none] at hf
       exact ⟨hvalid.put hy hf.1 hd_cap, st.assignment.present_put_of_isNone hf.2 y,
         st.assignedDepth_put_self r y d,
@@ -348,10 +372,10 @@ private theorem kickPlaceAux_spec (P : Params) (f : α → Fin (2 ^ P.hashBits))
       cases hkick : P.findKick st (f y) d with
       | none => simp [binSaturated, hfree, hkick] at hsat_d
       | some r =>
-        have hk := @findFin?_some P.slotCount _ r hkick
+        have hk := Fin.eq_true_of_find?_eq_some hkick
         simp only [Bool.and_eq_true, decide_eq_true_eq] at hk
         cases hocc : st.assignment.occupant r with
-        | none => have hf_none := (findFin?_eq_none.mp hfree) r; simp [hk.1, hocc] at hf_none
+        | none => have hf_none := Fin.find?_eq_none_iff.mp hfree r; simp [hk.1, hocc] at hf_none
         | some y' =>
           dsimp only; simp only [hocc]; set d' := st.slotDepth r; set mid := st.put r y d
           have hmid_unsat (i) (hi : i ≤ d') : P.binSaturated mid (f y') i = false := by
@@ -371,9 +395,7 @@ private theorem kickPlaceAux_spec (P : Params) (f : α → Fin (2 ^ P.hashBits))
             ih mid y' d' (st.assignment.put_occupant_ne_old hy hocc)
               (by have := Fin.lt_def.mp hk.2; omega)
               (hvalid.put hy hk.1 hd_cap) (hvalid.slotDepth_le_depthCap hocc) hmid_unsat
-          have hmid_pres : mid.assignment.present =
-              Insert.insert y (st.assignment.present.erase y') :=
-            st.assignment.present_put_of_some hy hocc
+          have hmid_pres := st.assignment.present_put_of_some hy hocc
           refine ⟨hres_val, ?_, ?_, fun z hz => ?_, ?_⟩
           · rw [hres_pres, hmid_pres, Finset.insert_comm,
               Finset.insert_erase ((st.assignment.mem_present_iff y').mpr ⟨r, hocc⟩)]
@@ -381,17 +403,15 @@ private theorem kickPlaceAux_spec (P : Params) (f : α → Fin (2 ^ P.hashBits))
           · rcases eq_or_ne z y' with rfl | hzy'
             · rw [hres_y']
               simp [State.assignedDepth, (st.assignment.slotOf_eq_some_iff z r).mpr hocc, d']
-            · have hz_mid : z ∈ mid.assignment.present := by
-                rw [hmid_pres]; exact Finset.mem_insert_of_mem (Finset.mem_erase.mpr ⟨hzy', hz⟩)
-              rw [hres_keep z hz_mid]
+            · rw [hres_keep z (by rw [hmid_pres]; exact Finset.mem_insert_of_mem
+                (Finset.mem_erase.mpr ⟨hzy', hz⟩))]
               exact st.assignedDepth_put_of_ne r y d (hne_y hz)
                 (by rw [hocc]; exact fun h => hzy' (Option.some.inj h).symm)
           · have := Fin.lt_def.mp hk.2
             exact (changedSlots_triangle st.assignment mid.assignment _).trans
               ((Nat.add_le_add (st.assignment.changedSlots_put_le r hy) hres_chg).trans (by omega))
 private theorem insert_spec (f : α → Fin (2 ^ P.hashBits)) {st : State P α}
-    (hst : P.ValidState f st) (x : α) :
-    P.ValidState f (P.insert f st x) ∧
+    (hst : P.ValidState f st) (x : α) : P.ValidState f (P.insert f st x) ∧
     st.assignment.present ⊆ (P.insert f st x).assignment.present ∧
     (∀ z ∈ st.assignment.present, (P.insert f st x).assignedDepth z = st.assignedDepth z) ∧
     changedSlots st.assignment (P.insert f st x).assignment ≤ P.depth + 1 ∧
@@ -407,11 +427,11 @@ private theorem insert_spec (f : α → Fin (2 ^ P.hashBits)) {st : State P α}
       fun _ => (Finset.insert_eq_of_mem hmem).symm, fun hx => (hx hmem).elim⟩
   | none =>
     have hnmem : x ∉ st.assignment.present := fun hm => by
-      have := (st.assignment.mem_present_iff_slotOf_isSome x).mp hm; simp [hslot] at this
+      simpa [hslot] using (st.assignment.mem_present_iff_slotOf_isSome x).mp hm
     split_ifs with hlt
     · obtain ⟨h1, h2, h3, h4, h5⟩ := P.kickPlaceAux_spec f _ st x _
-        ((st.assignment.slotOf_eq_none_iff x).mp hslot) (Nat.lt_succ_self _) hst
-        (min_le_right _ _) fun i hi => P.binSaturated_eq_false_of_le_greedyUnsatDepth st (f x) hlt
+        ((st.assignment.slotOf_eq_none_iff x).mp hslot) (Nat.lt_succ_self _) hst (min_le_right _ _)
+        fun i hi => P.binSaturated_eq_false_of_le_greedyUnsatDepth st (f x) hlt
           (hi.trans (min_le_left _ _))
       exact ⟨h1, h2 ▸ Finset.subset_insert _ _, h4, h5.trans (by omega), fun _ => h2, fun _ _ => h3⟩
     · exact ⟨hst, Finset.Subset.refl _, fun _ _ => rfl, by simp,
@@ -533,7 +553,8 @@ theorem binSize_le_binLoad_of_binSaturated {α : Type*} [DecidableEq α] {P : Pa
     obtain ⟨y₁, hy₁⟩ := Option.isSome_iff_exists.mp (hall r₁ hr₁.2).1
     obtain ⟨y₂, hy₂⟩ := Option.isSome_iff_exists.mp (hall r₂ hr₂.2).1
     simp only [hy₁, hy₂, Option.getD_some] at heq; subst heq; exact st.assignment.injective hy₁ hy₂
-/-- History-independent upper bound on `x`'s probe complexity when inserted into active set `S`. -/
+/-- Insertion-time active-set upper bound on `x`'s probe complexity: depends only on the hash
+values on `insert x S`, independent of slot layout and of later operations not deleting `x`. -/
 def snapshotProbeBound {α : Type*} (P : Params) (f : α → Fin (2 ^ P.hashBits)) (S : Finset α)
     (x : α) : ℕ :=
   min (1 + P.slotBits) (1 + P.binExp (Fin.last P.depth) + ∑ i : Fin P.depth,
@@ -549,8 +570,7 @@ theorem snapshotProbeBound_congr {α : Type*} [DecidableEq α] (P : Params)
   have hload (d) : P.binLoad f₁ S (f₁ x) d = P.binLoad f₂ S (f₂ x) d := by
     unfold binLoad; rw [hx]; congr 1
     exact Finset.filter_congr fun y hy => by rw [heq y (Finset.mem_insert_of_mem hy)]
-  unfold snapshotProbeBound; congr 1; congr 1
-  exact Finset.sum_congr rfl fun i _ => by rw [hload, hx]
+  unfold snapshotProbeBound; congr 2; exact Finset.sum_congr rfl fun i _ => by rw [hload, hx]
 theorem ballProbeComplexity_le_snapshotProbeBound {α : Type*} [DecidableEq α] {P : Params}
     {f : α → Fin (2 ^ P.hashBits)} {st st' : State P α} (hst : P.ValidState f st)
     (hst' : P.ValidState f st') {S : Finset α} (hS : st.assignment.present = S) {x : α}
@@ -569,12 +589,12 @@ theorem ballProbeComplexity_le_snapshotProbeBound {α : Type*} [DecidableEq α] 
         (P.greedyUnsatDepth st (f x)).val = i₀.val ∨ (P.depthCap (f x)).val < i₀.val + 1) with
         hg | hc
       · unfold greedyUnsatDepth at hg
-        cases hf : findFin? (n := P.depth) (fun d => P.binSaturated st (f x) d.succ) with
+        cases hf : Fin.find? (n := P.depth) (fun d => P.binSaturated st (f x) d.succ) with
         | none => rw [hf, Fin.val_last] at hg; exact absurd hg.symm (ne_of_lt i₀.isLt)
         | some _ =>
           rw [hf, Fin.val_castSucc] at hg; cases Fin.ext hg
           exact Or.inl (P.binSize_le_binLoad_of_binSaturated hst hS (f x)
-            (@findFin?_some P.depth _ i₀ hf))
+            (Fin.eq_true_of_find?_eq_some hf))
       · exact Or.inr hc
     have hle := Finset.single_le_sum (f := fun i : Fin P.depth =>
       if P.binSize i.succ ≤ P.binLoad f S (f x) i.succ ∨ (P.depthCap (f x)).val < i.val + 1 then
@@ -676,7 +696,8 @@ theorem dens_binLoad_ge_le_pow {ι α : Type*} [Fintype ι] {m k_indep : ℕ} (h
     have : Nonempty ι := hh.nonempty; exact (show (dens _ : ℝ) ≤ 1 by
       exact_mod_cast Finset.dens_le_one).trans (by linarith [one_le_pow₀ hbase_ge (n := m)])
 /-- Under `(2m + 1)`-wise independence (`1 ≤ m`), `Pr[binSaturated (st θ) (h θ x) (i + 1)]` is at
-most `2 * (3 * m * 2 ^ (2 * capExp i) / binSize (i + 1)) ^ m`. -/
+most `2 * (3 * m * 2 ^ (2 * capExp i) / binSize (i + 1)) ^ m` (giving `6 * 2 ^ (2 * capExp i) /
+binSize (i + 1)` under `3`-wise independence at `m = 1`). -/
 theorem dens_binSaturated_le_pow {ι α : Type*} [Fintype ι] [DecidableEq α] {m k_indep : ℕ}
     (hm : 1 ≤ m) {P : Params} {h : ι → α → Fin (2 ^ P.hashBits)}
     (hh : IsKWiseIndependentHash k_indep h) (hk : 2 * m + 1 ≤ k_indep) {st : ι → State P α}
@@ -686,47 +707,24 @@ theorem dens_binSaturated_le_pow {ι α : Type*} [Fintype ι] [DecidableEq α] {
       2 * (3 * (m : ℝ) * (2 ^ (2 * P.capExp i) : ℝ) / P.binSize i.succ) ^ m := by
   classical
   have : Nonempty ι := hh.nonempty; obtain ⟨θ₀⟩ := ‹Nonempty ι›
-  refine (show (dens _ : ℝ) ≤ dens {θ : ι | P.binSize i.succ ≤ P.binLoad (h θ) S (h θ x) i.succ} by
+  exact (show (dens _ : ℝ) ≤ dens {θ : ι | P.binSize i.succ ≤ P.binLoad (h θ) S (h θ x) i.succ} by
     exact_mod_cast Finset.dens_le_dens fun θ hθ => Finset.mem_filter.mpr ⟨Finset.mem_univ _,
       P.binSize_le_binLoad_of_binSaturated (hst θ) (hS θ) (h θ x)
-        (Finset.mem_filter.mp hθ).2⟩).trans ?_
-  exact P.dens_binLoad_ge_le_pow hm hh hk (hS θ₀ ▸ (st θ₀).assignment.card_present_le) hx i
-/-- Under `3`-wise independence (`m = 1` Chebyshev), `Pr[binSaturated (st θ) (h θ x) (i + 1)]` is
-at most `6 * 2 ^ (2 * capExp i) / binSize (i + 1)`. -/
-theorem dens_binSaturated_le_of_three_le {ι α : Type*} [Fintype ι] [DecidableEq α] {k_indep : ℕ}
-    {P : Params} {h : ι → α → Fin (2 ^ P.hashBits)} (hh : IsKWiseIndependentHash k_indep h)
-    (hk : 3 ≤ k_indep) {st : ι → State P α} (hst : ∀ θ, P.ValidState (h θ) (st θ)) {S : Finset α}
-    (hS : ∀ θ, (st θ).assignment.present = S) {x : α} (hx : x ∉ S) (i : Fin P.depth) :
-    (dens {θ : ι | P.binSaturated (st θ) (h θ x) i.succ = true} : ℝ) ≤
-      6 * (2 ^ (2 * P.capExp i) : ℝ) / P.binSize i.succ :=
-  (P.dens_binSaturated_le_pow (m := 1) le_rfl hh hk hst hS hx i).trans_eq (by ring)
+        (Finset.mem_filter.mp hθ).2⟩).trans
+    (P.dens_binLoad_ge_le_pow hm hh hk (hS θ₀ ▸ (st θ₀).assignment.card_present_le) hx i)
 end Params
 section StandardSchedule
-private theorem six_mul_iterLog_two_le {m₀ : ℕ} (hm₀ : 32 ≤ m₀) :
-    6 * Nat.iterLog 2 (2 ^ m₀) ≤ m₀ := by
-  have h5 : 5 ≤ Nat.log 2 m₀ := (show 5 = Nat.log 2 32 by decide) ▸ Nat.log_mono_right hm₀
-  have := Nat.mul_le_mul_right (2 ^ 5) (Nat.lt_two_pow_self (n := Nat.log 2 m₀ - 5))
-  rw [← Nat.pow_add, Nat.sub_add_cancel h5] at this
-  have : 2 ^ Nat.log 2 m₀ ≤ m₀ := Nat.pow_log_le_self 2 (by omega)
-  rw [show Nat.iterLog 2 (2 ^ m₀) = Nat.log 2 m₀ by simp [Nat.log_pow Nat.one_lt_two]]; omega
-private theorem four_le_floorLogStar_two_pow {m₀ : ℕ} (hm₀ : 32 ≤ m₀) :
-    4 ≤ Nat.floorLogStar (2 ^ m₀) := Nat.succ_le_of_lt (Nat.lt_floorLogStar_iff.mpr
-  ((show 1 < Nat.iterLog 3 (2 ^ 32) by decide).trans_le
-    (Nat.iterLog_mono 3 (Nat.pow_le_pow_right (by omega) hm₀))))
-private theorem sub_le_iterLog_of_lt_floorLogStar {n D r : ℕ} (hD : D < Nat.floorLogStar n)
-    (hr : r ≤ D) : D + 1 - r ≤ Nat.iterLog (r + 1) n := by
-  have h1 : 1 < Nat.iterLog ((D - r) + r) n := Nat.lt_floorLogStar_iff.mp (by omega)
-  rw [Nat.iterLog_add, ← not_le, Nat.iterLog_le_one_iff_lt_twoTower, not_lt,
-    Nat.twoTower_succ] at h1
-  have : Nat.twoTower (D - r) ≤ Nat.iterLog (r + 1) n :=
-    (Nat.log_pow Nat.one_lt_two _).symm.trans_le (Nat.log_mono_right h1)
-  have := Nat.lt_twoTower (D - r); omega
 /-- Clamped kick depth `≤ k` (`0` if `m₀ < 32`, else `min k (floorLogStar (2 ^ m₀) - 1)`). -/
 @[expose] def effectiveDepth (m₀ k : ℕ) : ℕ :=
   if m₀ < 32 then 0 else min k (Nat.floorLogStar (2 ^ m₀) - 1)
 theorem effectiveDepth_le (m₀ k : ℕ) : effectiveDepth m₀ k ≤ k := by
   unfold effectiveDepth; split_ifs <;> [exact Nat.zero_le k; exact min_le_left _ _]
-/-- Canonical `k`-kick tree parameters ([BenderFarachColtonKuszmaulKuszmaulLiu2022], §3.1). -/
+/-- Canonical `k`-kick tree parameters ([BenderFarachColtonKuszmaulKuszmaulLiu2022], §3.1).
+Shifting `capExp i = 2 * iterLog (i + 2) (2 ^ m₀)` and `binExp (i + 1) = 6 * iterLog (i + 2)
+(2 ^ m₀)` by one log level makes the 3-wise Chebyshev failure bound
+`6 * 2 ^ (2 * capExp i) / 2 ^ (binExp (i + 1)) = 6 / 2 ^ (2 * iterLog (i + 2) (2 ^ m₀))` decay
+geometrically against `binExp i ≤ 12 * 2 ^ (iterLog (i + 2) (2 ^ m₀))`, preserving the
+`O(max (Nat.iterLog (k + 1) (2 ^ m₀)) 1)` bottom-level bound up to an `O(1)` geometric series. -/
 @[expose] def standardParams (m₀ k : ℕ) : Params where
   slotBits := m₀; depth := effectiveDepth m₀ k
   capBits := if effectiveDepth m₀ k = 0 then 0 else 2 * Nat.iterLog 2 (2 ^ m₀)
@@ -739,7 +737,7 @@ theorem effectiveDepth_le (m₀ k : ℕ) : effectiveDepth m₀ k ≤ k := by
         by_contra hlt; have : effectiveDepth m₀ k = 0 := by simp [effectiveDepth, hlt]
         have := j.isLt; omega
       exact (Nat.mul_le_mul_left 6 (Nat.iterLog_anti_left _ (by omega))).trans
-        (six_mul_iterLog_two_le hm₀)
+        (Nat.six_mul_iterLog_two_two_pow_le hm₀)
     · have := Fin.le_def.mp hij; omega
     · exact Nat.mul_le_mul_left 6 (Nat.iterLog_anti_left _ (by have := Fin.le_def.mp hij; omega))
   capExp_antitone _ _ hij :=
@@ -762,16 +760,15 @@ theorem switchingCost_standardInsert_le {α : Type*} [DecidableEq α] (m₀ k : 
     switchingCost st.assignment (standardInsert m₀ k f st x).assignment ≤ k + 1 :=
   ((standardParams m₀ k).switchingCost_insert_le f hst x).trans
     (Nat.add_le_add_right (effectiveDepth_le m₀ k) 1)
-/-- Top-down depth-step bound (`[BenderFarachColtonKuszmaulKuszmaulLiu2022]`, Lemma 19,
-printed pp. 29–30 / PDF pp. 30–31): `effectiveDepth m₀ k - d ≤ binExp d` at every depth `d`. -/
+/-- Schedule inequality on `standardParams m₀ k`: `effectiveDepth m₀ k - d ≤ binExp d`. -/
 theorem depthSteps_le_binExp (m₀ k : ℕ) (d : Fin ((standardParams m₀ k).depth + 1)) :
     effectiveDepth m₀ k - d.val ≤ (standardParams m₀ k).binExp d := by
   by_cases hD : effectiveDepth m₀ k = 0; · omega
   have hm₀ : 32 ≤ m₀ := by by_contra hlt; exact hD (by simp [effectiveDepth, hlt])
   have hlt_star : effectiveDepth m₀ k < Nat.floorLogStar (2 ^ m₀) := by
-    have := four_le_floorLogStar_two_pow hm₀; have : ¬ m₀ < 32 := by omega
+    have := Nat.four_le_floorLogStar_two_pow hm₀; have : ¬ m₀ < 32 := by omega
     unfold effectiveDepth; simp only [this, ↓reduceIte]; omega
-  have hsub := sub_le_iterLog_of_lt_floorLogStar (r := d.val) hlt_star
+  have hsub := Nat.sub_le_iterLog_of_lt_floorLogStar (r := d.val) hlt_star
     (by have := d.isLt; change d.val < effectiveDepth m₀ k + 1 at this; omega)
   dsimp only [standardParams]; split_ifs with hd0
   · rw [hd0] at hsub ⊢; simpa [Nat.log_pow Nat.one_lt_two] using Nat.le_of_succ_le hsub
@@ -792,7 +789,7 @@ theorem expect_snapshotProbeBound_standardParams_le {ι α : Type*} [Fintype ι]
     · refine (by have : (m₀ : ℝ) < 32 := by exact_mod_cast hm₀
                  linarith : (1 : ℝ) + m₀ ≤ 96 * 1).trans
         (mul_le_mul_of_nonneg_left (by exact_mod_cast le_max_right _ 1) (by norm_num))
-    · have := four_le_floorLogStar_two_pow (Nat.not_lt.mp hm₀)
+    · have := Nat.four_le_floorLogStar_two_pow (Nat.not_lt.mp hm₀)
       obtain rfl : k = 0 := by
         have hD' : effectiveDepth m₀ k = 0 := hD
         unfold effectiveDepth at hD'; simp only [hm₀, ↓reduceIte] at hD'; omega
@@ -801,7 +798,7 @@ theorem expect_snapshotProbeBound_standardParams_le {ι α : Type*} [Fintype ι]
         (mul_le_mul_of_nonneg_left (by exact_mod_cast (by simp [Nat.log_pow Nat.one_lt_two] :
           m₀ ≤ max (Nat.iterLog (0 + 1) (2 ^ m₀)) 1)) (by norm_num))
   · have hm₀ : 32 ≤ m₀ := by by_contra hlt; exact hD (by simp [D, effectiveDepth, hlt])
-    have := four_le_floorLogStar_two_pow hm₀; have hnlt : ¬ m₀ < 32 := by omega
+    have := Nat.four_le_floorLogStar_two_pow hm₀; have hnlt : ¬ m₀ < 32 := by omega
     have hdef : D = min k (Nat.floorLogStar (2 ^ m₀) - 1) := by simp [D, effectiveDepth, hnlt]
     have hlt_star : D < Nat.floorLogStar (2 ^ m₀) := by omega
     let L (r : ℕ) : ℕ := Nat.iterLog r (2 ^ m₀)
@@ -822,9 +819,8 @@ theorem expect_snapshotProbeBound_standardParams_le {ι α : Type*} [Fintype ι]
         exact_mod_cast (min_le_right _ _ : P.snapshotProbeBound (h θ) S x ≤ _)
       have hlast_be : P.binExp (Fin.last P.depth) = 6 * L (D + 1) := by
         change (if D = 0 then m₀ else 6 * L (D + 1)) = _; simp [hD]
-      have hsum_err : (∑ i : Fin P.depth,
-          if E₁ i θ ∨ E₂ i θ then (P.binExp i.castSucc : ℝ) else 0) ≤
-          ∑ i : Fin P.depth, err i θ := Finset.sum_le_sum fun i _ => by
+      have hsum_err : (∑ i : Fin P.depth, if E₁ i θ ∨ E₂ i θ then (P.binExp i.castSucc : ℝ) else 0)
+          ≤ ∑ i : Fin P.depth, err i θ := Finset.sum_le_sum fun i _ => by
         dsimp only [err]; by_cases h1 : E₁ i θ <;> by_cases h2 : E₂ i θ <;>
           simp [h1, h2]; linarith [show (0 : ℝ) ≤ P.binExp i.castSucc by positivity]
       rw [hlast_be] at hmin; push_cast at hmin; linarith
@@ -853,7 +849,7 @@ theorem expect_snapshotProbeBound_standardParams_le {ι α : Type*} [Fintype ι]
         rw [P.dens_depthCap_lt_succ hh (by omega) x i, hce]
       have hsub_L : D - i.val ≤ L (i.val + 2) := by
         simpa [L, show D + 1 - (i.val + 1) = D - i.val by omega] using
-          sub_le_iterLog_of_lt_floorLogStar (r := i.val + 1) hlt_star
+          Nat.sub_le_iterLog_of_lt_floorLogStar (r := i.val + 1) hlt_star
             (by have := i.isLt; change i.val < D at this; omega)
       rw [hexp_i]; calc
         _ ≤ (12 * (2 : ℝ) ^ L (i.val + 2)) * (7 / (2 : ℝ) ^ (2 * L (i.val + 2))) :=
@@ -865,7 +861,7 @@ theorem expect_snapshotProbeBound_standardParams_le {ι α : Type*} [Fintype ι]
         _ ≤ 84 / (2 : ℝ) ^ (D - i.val) := div_le_div_of_nonneg_left (by norm_num) (by positivity)
           (pow_le_pow_right₀ (by norm_num) hsub_L)
         _ = 84 * ((1 : ℝ) / 2) ^ (D - i.val) := by rw [div_eq_mul_inv, ← inv_pow, one_div]
-    have hgeom : ∀ n : ℕ, ∑ j ∈ Finset.range n, ((1 : ℝ) / 2) ^ (n - j) ≤ 1 := fun n => by
+    have hgeom (n : ℕ) : ∑ j ∈ Finset.range n, ((1 : ℝ) / 2) ^ (n - j) ≤ 1 := by
       induction n with | zero => simp | succ n ih =>
         rw [Finset.sum_range_succ, Nat.add_sub_self_left, pow_one]
         have hhalf : (∑ j ∈ Finset.range n, ((1 : ℝ) / 2) ^ (n + 1 - j)) =
@@ -875,9 +871,8 @@ theorem expect_snapshotProbeBound_standardParams_le {ι α : Type*} [Fintype ι]
         linarith
     have hsum_le : (𝔼 θ, ∑ i : Fin P.depth, err i θ) ≤ 84 := by
       rw [Finset.expect_sum_comm]; refine (Finset.sum_le_sum fun i _ => hterm_le i).trans ?_
-      rw [← Finset.mul_sum, show (∑ i : Fin P.depth, ((1 : ℝ) / 2) ^ (D - i.val)) =
-          ∑ j ∈ Finset.range D, ((1 : ℝ) / 2) ^ (D - j) from
-          Fin.sum_univ_eq_sum_range (fun j => ((1 : ℝ) / 2) ^ (D - j)) D]; linarith [hgeom D]
+      rw [← Finset.mul_sum, Fin.sum_univ_eq_sum_range (fun j => ((1 : ℝ) / 2) ^ (D - j)) D]
+      linarith [hgeom D]
     refine ((Finset.expect_le_expect fun θ _ => hpw θ).trans_eq
       (by rw [Finset.expect_add_distrib, Fintype.expect_const])).trans ?_
     have hM_ge : (1 : ℝ) ≤ max (L (k + 1) : ℝ) 1 := le_max_right _ _
@@ -895,10 +890,9 @@ theorem expect_ballProbeComplexity_standardInsert_le {ι α : Type*} [Fintype ι
       (standardInsert m₀ k (h θ) (st θ) x).assignment x : ℝ) ≤
       96 * (max (Nat.iterLog (k + 1) (2 ^ m₀)) 1 : ℝ) :=
   (Finset.expect_le_expect (g := fun θ => ((standardParams m₀ k).snapshotProbeBound (h θ) S x : ℝ))
-    fun θ _ => by
-      exact_mod_cast (standardParams m₀ k).ballProbeComplexity_le_snapshotProbeBound (hst θ)
-        ((hst θ).insert x) (hS θ) ((Params.insert_spec (h θ) (hst θ) x).2.2.2.2.2
-          (hS θ ▸ hx) (hS θ ▸ hlt))).trans
+    fun θ _ => by exact_mod_cast (standardParams m₀ k).ballProbeComplexity_le_snapshotProbeBound
+      (hst θ) ((hst θ).insert x) (hS θ) ((Params.insert_spec (h θ) (hst θ) x).2.2.2.2.2
+        (hS θ ▸ hx) (hS θ ▸ hlt))).trans
     (expect_snapshotProbeBound_standardParams_le m₀ k hh hk hlt.le hx)
 private theorem ballProbeComplexity_run_le_choose {α : Type*} [DecidableEq α] (P : Params)
     (f : α → Fin (2 ^ P.hashBits)) {ops : List (Op α)} (hval : ValidOpSeq P.slotCount ops)
@@ -934,9 +928,13 @@ theorem expect_totalProbeComplexity_standardRun_le {ι α : Type*} [Fintype ι] 
   exact (Finset.expect_le_expect (g := fun θ => (P.snapshotProbeBound (h θ) _ x : ℝ))
     fun θ _ => by exact_mod_cast ballProbeComplexity_run_le_choose P (h θ) hval hx).trans
     (expect_snapshotProbeBound_standardParams_le m₀ k hh hk hlt_pre.le hx_pre)
-/-- **`2m`-th moment concentration across partitioned `k`-kick trees** (finite-independence
-counterpart of [BenderFarachColtonKuszmaulKuszmaulLiu2022], Theorem 3, printed p. 12 / PDF p. 13,
-and Lemma 19, printed pp. 29–30 / PDF pp. 30–31) over arbitrary-length operation histories. -/
+/-- **`2m`-th moment concentration across partitioned `k`-kick trees** over arbitrary-length
+operation histories, adapting [BenderFarachColtonKuszmaulKuszmaulLiu2022] Theorem 3 (Section 3.1,
+printed p. 12 / PDF p. 13) with four explicit deviations: (a) the partition into disjoint-footprint
+sub-histories `R` is assumed as an explicit hypothesis; (b) there are no special slots or local
+query routing in this pure primary-slot model; (c) the tail bound is polynomial (`2m`-th moment
+Markov) rather than an exponential Chernoff bound; and (d) it assumes `max 3 (2 * m * 4 ^ m₀)`-wise
+(`max 3 (2 * m * 2 ^ (2 * m₀))`-wise) independence rather than full independence. -/
 theorem dens_sum_totalProbeComplexity_standardRun_gt_le {ι α β : Type*} [Fintype ι] [DecidableEq α]
     {m k_indep : ℕ} (hm : 1 ≤ m) (m₀ k : ℕ) {h : ι → α → Fin (2 ^ (standardParams m₀ k).hashBits)}
     (hh : IsKWiseIndependentHash k_indep h) (hk : max 3 (2 * m * 2 ^ (2 * m₀)) ≤ k_indep)
@@ -951,11 +949,9 @@ theorem dens_sum_totalProbeComplexity_standardRun_gt_le {ι α β : Type*} [Fint
   have : Nonempty (Fin (2 ^ (standardParams m₀ k).hashBits)) := ⟨⟨0, by positivity⟩⟩
   have hk2 : 2 * m * ((standardParams m₀ k).slotCount * (standardParams m₀ k).slotCount) ≤
       k_indep := by
-    change 2 * m * (2 ^ m₀ * 2 ^ m₀) ≤ k_indep; rw [← Nat.pow_add, ← Nat.two_mul]
+    change 2 * m * (2 ^ m₀ * 2 ^ m₀) ≤ _; rw [← Nat.pow_add, ← Nat.two_mul]
     exact le_of_max_le_right hk
-  have hcμ : 96 * (max (Nat.iterLog (k + 1) (2 ^ m₀)) 1 : ℝ) *
-      (∑ b ∈ R, (#(activeSet (ops b)) : ℝ)) ≤ μ := by linarith
-  have hres := dens_sum_totalProbeComplexity_gt_le_of_snapshotBound
+  refine (dens_sum_totalProbeComplexity_gt_le_of_snapshotBound
     (M := (standardParams m₀ k).slotCount) (B_max := 1 + m₀) hm (standardParams m₀ k).slotCount_pos
     (by positivity) hh hk2 (standardParams m₀ k).probeSeq
     (fun f l => (standardRun m₀ k f l).assignment) (standardParams m₀ k).snapshotProbeBound
@@ -964,10 +960,9 @@ theorem dens_sum_totalProbeComplexity_standardRun_gt_le {ι α β : Type*} [Fint
     (fun f _ hl => (standardParams m₀ k).present_run f hl)
     (fun f _ hl _ hx => ballProbeComplexity_run_le_choose (standardParams m₀ k) f hl hx) R ops hval
     hdisj (fun {_} hSle {_} hx => expect_snapshotProbeBound_standardParams_le m₀ k hh
-      (le_of_max_le_left hk) hSle hx) hcμ
+      (le_of_max_le_left hk) hSle hx) (by linarith)
     (by change 2 * (m : ℝ) * ((2 ^ m₀ : ℕ) : ℝ) * ((1 + m₀ : ℕ) : ℝ) ≤ 3 * μ; push_cast; exact hmμ)
-    hΔ
-  refine hres.trans_eq ?_
+    hΔ).trans_eq ?_
   change 2 * (3 * (m : ℝ) * ((2 ^ m₀ : ℕ) : ℝ) * ((1 + m₀ : ℕ) : ℝ) * μ / Δ ^ 2) ^ m = _
   push_cast; rfl
 /-- **`(1 - δ)`-w.h.p. multi-tree probe-complexity concentration** for two-stage hash families
@@ -989,7 +984,7 @@ theorem dens_sum_totalProbeComplexity_standardRun_gt_le_of_whp {ι₁ ι₂ α �
       δ + 2 * (3 * (m : ℝ) * (2 ^ m₀ : ℝ) * (1 + m₀) * μ / Δ ^ 2) ^ m := by
   have hμ0 : 0 ≤ μ := (mul_nonneg (mul_nonneg (by norm_num)
     (Finset.sum_nonneg fun _ _ => Nat.cast_nonneg _)) (by positivity)).trans hμ
-  exact dens_prod_le_add_of_good Good _ hbad (by positivity) fun θ₁ hg =>
+  exact dens_prod_le_add_of_good (· ∈ Good) _ hbad (by positivity) fun θ₁ hg =>
     dens_sum_totalProbeComplexity_standardRun_gt_le hm m₀ k (hgood θ₁ hg) hk R ops
       hval hdisj hμ hmμ hΔ
 end StandardSchedule

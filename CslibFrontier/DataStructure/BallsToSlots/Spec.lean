@@ -15,12 +15,12 @@ public import Mathlib.Data.Finset.Card
 public import Mathlib.Data.Fintype.Basic
 public import Mathlib.Data.List.FinRange
 public import Mathlib.Data.Nat.Log
+public import Mathlib.Logic.Equiv.Fin.Basic
 public import Mathlib.Order.Lattice.Nat
 import CslibFrontier.Foundations.Data.Finset.Density
 import CslibFrontier.Foundations.Data.Finset.Expect
 import CslibFrontier.Foundations.Data.Nat.Bitwise.CommonPrefix
 import CslibFrontier.Probability.KWiseIndependent.Concentration
-import CslibFrontier.Probability.KWiseIndependent.Restriction
 import Mathlib.Algebra.BigOperators.Field
 import Mathlib.Algebra.Order.BigOperators.Expect
 import Mathlib.Algebra.Order.BigOperators.Ring.Finset
@@ -33,16 +33,22 @@ import Mathlib.Tactic.Ring
 
 This module formalizes the pure *balls-to-slots* (probe-complexity) problem of Bender,
 Farach-Colton, J. Kuszmaul, W. Kuszmaul, and Liu, *"On the Optimal Time/Space Tradeoff for Hash
-Tables"*, *Proc. 54th ACM STOC*, pp. 1284–1297, 2022 (`arXiv:2111.00602v2`, Section 3,
-printed p. 8 / PDF p. 9) [BenderFarachColtonKuszmaulKuszmaulLiu2022], aligned with `Cslib`'s
-`StateTransitionSpec` grid:
+Tables"*, *Proc. 54th ACM STOC*, pp. 1284–1297, 2022 (`arXiv:2111.00602v2`, Section 2.1, printed
+p. 2 / PDF p. 3, and Section 3, printed p. 8 / PDF p. 9)
+[BenderFarachColtonKuszmaulKuszmaulLiu2022], aligned with `Cslib`'s `StateTransitionSpec` grid:
 * **Slot assignments (`SlotAssignment α M`)**: injective maps `Fin M → Option α` with `slotOf`,
   `present`, `freeSlots`, `delete`, and `put`. *(Adaptation: Section 3 permits `M` special slots
   of cost `log₂ M`; since Section 3.1's `k`-kick tree uses zero special slots, `SlotAssignment α M`
   stores all balls in primary slots `Fin M`.)*
-* **Operations & costs**: `Op α` (`insert`, `delete`, `query`), 0-indexed `probeIndex` with
-  `slotProbeComplexity = 1 + Nat.log 2 (probeIndex + 1)`, and `switchingCost` (Section 3.1,
-  printed p. 8 / PDF p. 9).
+* **Operations & costs**: `Op α` (`insert`, `delete`, `query`), 0-indexed `probeIndex` with integer
+  floor probe cost `slotProbeComplexity = 1 + Nat.log 2 (probeIndex + 1)` (differing from Section
+  2.1's real-logarithm `1 + log₂ i` by `< 1` per ball), and `switchingCost` (Section 2.1, printed
+  p. 2 / PDF p. 3, and Section 3.1, printed p. 8 / PDF p. 9).
+
+General `k`-wise fiber conditioning, disjoint-restriction concentration, and two-stage product
+union-tail bounds live in `CslibFrontier.Probability.KWiseIndependent.Restriction`,
+`CslibFrontier.Probability.KWiseIndependent.Concentration`, and
+`CslibFrontier.Foundations.Probability.TwoStage`.
 
 ## Main definitions
 
@@ -56,14 +62,13 @@ printed p. 8 / PDF p. 9) [BenderFarachColtonKuszmaulKuszmaulLiu2022], aligned wi
 * `SlotAssignment.slotOf_eq_some_iff`, `SlotAssignment.card_present_add_card_freeSlots`,
   `totalProbeComplexity_eq_sum_present`, `card_activeSet_le`,
   `exists_split_last_insert_of_mem_activeSet`.
-* `dens_le_of_hash_fiber`, `dens_abs_sum_restrict_sub_expect_le`,
-  `dens_sum_totalProbeComplexity_gt_le_of_snapshotBound`, `dens_prod_le_add_of_good`.
+* `dens_sum_totalProbeComplexity_gt_le_of_snapshotBound`.
 
 ## References
 
 * [M. A. Bender, M. Farach-Colton, J. Kuszmaul, W. Kuszmaul and M. Liu,
   *On the Optimal Time/Space Tradeoff for Hash Tables*,
-  Section 3][BenderFarachColtonKuszmaulKuszmaulLiu2022]
+  Sections 2.1 and 3][BenderFarachColtonKuszmaulKuszmaulLiu2022]
 -/
 
 public section
@@ -188,38 +193,6 @@ theorem exists_split_last_insert_of_mem_activeSet {n_max : ℕ} {ops : List (Op 
       | delete _ => exact (hx_init (Finset.mem_of_mem_erase hx)).elim
       | query _ => exact (hx_init hx).elim
 end ActiveSet
-
-/-- Structural search for the least index `i : Fin n` satisfying `p i = true`. -/
-@[expose] def findFin? : {n : ℕ} → (Fin n → Bool) → Option (Fin n)
-  | 0, _ => none
-  | _ + 1, p => if p 0 then some 0 else (findFin? fun i => p i.succ).map Fin.succ
-theorem findFin?_some {n : ℕ} {p : Fin n → Bool} {d : Fin n} (h : findFin? p = some d) :
-    p d = true := by
-  induction n with
-  | zero => exact d.elim0
-  | succ _ ih =>
-    simp only [findFin?] at h; split_ifs at h with h0
-    · cases h; exact h0
-    · obtain ⟨_, hd', rfl⟩ := Option.map_eq_some_iff.mp h; exact ih hd'
-theorem findFin?_eq_none {n : ℕ} {p : Fin n → Bool} :
-    findFin? p = none ↔ ∀ i : Fin n, p i = false := by
-  induction n with
-  | zero => exact ⟨fun _ i => i.elim0, fun _ => rfl⟩
-  | succ _ ih =>
-    simp only [findFin?]; split_ifs with h0
-    · exact ⟨by simp, fun h => by simp [h 0] at h0⟩
-    · rw [Option.map_eq_none_iff, ih]
-      exact ⟨fun h => Fin.cases (Bool.eq_false_iff.mpr h0) h, fun h i => h i.succ⟩
-theorem findFin?_le {n : ℕ} {p : Fin n → Bool} {d : Fin n} (h : findFin? p = some d)
-    {i : Fin n} (hi : p i = true) : d ≤ i := by
-  induction n with
-  | zero => exact d.elim0
-  | succ _ ih =>
-    simp only [findFin?] at h; split_ifs at h with h0
-    · cases h; exact Fin.zero_le i
-    · obtain ⟨_, hd', rfl⟩ := Option.map_eq_some_iff.mp h
-      exact Fin.cases (fun hp0 => absurd hp0 h0)
-        (fun _ hi' => Fin.succ_le_succ_iff.mpr (ih hd' hi')) i hi
 
 /-! ### Injective slot assignments -/
 
@@ -404,8 +377,11 @@ theorem probeSeq_probeIndex {α : Type*} {M : ℕ} (probeSeq : α → ℕ → Fi
     probeSeq x (probeIndex probeSeq x r) = r :=
   let ⟨idx, hidx⟩ := h; Nat.sInf_mem (s := {idx : ℕ | probeSeq x idx = r}) ⟨idx, hidx⟩
 
-/-- Probe complexity `1 + ⌊log₂ (probeIndex + 1)⌋` of storing ball `x` in slot `r`
-([BenderFarachColtonKuszmaulKuszmaulLiu2022], Section 3, printed p. 8 / PDF p. 9). -/
+/-- Integer probe complexity `1 + ⌊log₂ (probeIndex + 1)⌋` of storing ball `x` in slot `r`.
+Uses the floor logarithm `Nat.log 2` for 1-based probe index `i = probeIndex + 1`, differing from
+the real-logarithm measure `1 + log₂ i` of [BenderFarachColtonKuszmaulKuszmaulLiu2022] (Section 2.1,
+printed p. 2 / PDF p. 3, and Section 3, printed p. 8 / PDF p. 9) by strictly less than `1` per ball
+and agreeing asymptotically. -/
 noncomputable def slotProbeComplexity {α : Type*} {M : ℕ} (probeSeq : α → ℕ → Fin M)
     (x : α) (r : Fin M) : ℕ := 1 + Nat.log 2 (probeIndex probeSeq x r + 1)
 theorem slotProbeComplexity_le_of_probeIndex_lt_two_pow {α : Type*} {M : ℕ}
@@ -432,54 +408,20 @@ theorem slotProbeComplexity_xorProbeSeq_le_of_div_eq {α : Type*} (m : ℕ) (g :
     ((probeIndex_le (xorProbeSeq m g) x (xorProbeSeq_xor_self m g x r)).trans_lt
       ((Nat.div_two_pow_eq_iff_xor_lt _ _ _).mp hr.symm))
 
-/-- Canonical bijection splitting an `(m + c)`-bit word into `(low m bits, high c bits)`. -/
-@[expose] def dyadicSplitEquiv (m c : ℕ) : Fin (2 ^ (m + c)) ≃ Fin (2 ^ m) × Fin (2 ^ c) where
-  toFun u := (⟨u.val % 2 ^ m, Nat.mod_lt _ (by positivity)⟩,
-    ⟨u.val / 2 ^ m, Nat.div_lt_of_lt_mul (by simpa only [Nat.pow_add] using u.isLt)⟩)
-  invFun p := ⟨p.1.val + 2 ^ m * p.2.val, by
-    have h1 := p.1.isLt; have h2 : p.2.val + 1 ≤ 2 ^ c := p.2.isLt
-    calc p.1.val + 2 ^ m * p.2.val < 2 ^ m * (p.2.val + 1) := by ring_nf; omega
-      _ ≤ 2 ^ m * 2 ^ c := Nat.mul_le_mul_left _ h2
-      _ = 2 ^ (m + c) := (Nat.pow_add 2 m c).symm⟩
-  left_inv u := Fin.ext (Nat.mod_add_div u.val (2 ^ m))
-  right_inv p := by
-    ext <;> dsimp only
-    · rw [Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt p.1.isLt]
-    · rw [Nat.add_mul_div_left _ _ (by positivity), Nat.div_eq_of_lt p.1.isLt, zero_add]
+/-- Canonical bijection splitting an `(m + c)`-bit word into `(low m bits, high c bits)`, built
+from `finProdFinEquiv`. -/
+@[expose] def dyadicSplitEquiv (m c : ℕ) : Fin (2 ^ (m + c)) ≃ Fin (2 ^ m) × Fin (2 ^ c) :=
+  (finCongr ((Nat.pow_add 2 m c).trans (Nat.mul_comm (2 ^ m) (2 ^ c)))).trans
+    (finProdFinEquiv.symm.trans (Equiv.prodComm (Fin (2 ^ c)) (Fin (2 ^ m))))
 
-theorem card_fin_mod_two_pow_eq_zero {b e : ℕ} (he : e ≤ b) :
-    #{u : Fin (2 ^ b) | u.val % 2 ^ e = 0} = 2 ^ (b - e) := by
-  have hpow : 2 ^ b = 2 ^ e * 2 ^ (b - e) := by rw [← Nat.pow_add, Nat.add_sub_cancel' he]
-  refine (Finset.card_nbij'
-    (fun u : Fin (2 ^ b) => (⟨u.val / 2 ^ e, Nat.div_lt_of_lt_mul (hpow ▸ u.isLt)⟩ :
-      Fin (2 ^ (b - e))))
-    (fun q : Fin (2 ^ (b - e)) => (⟨q.val * 2 ^ e, by
-      calc q.val * 2 ^ e < 2 ^ (b - e) * 2 ^ e :=
-            Nat.mul_lt_mul_of_pos_right q.isLt (by positivity)
-        _ = 2 ^ b := by rw [Nat.mul_comm, ← hpow]⟩ : Fin (2 ^ b)))
-    (fun _ _ => Finset.mem_univ _) (fun _ _ => by simp) (fun u hu => ?_)
-    (fun _ _ => Fin.ext (Nat.mul_div_cancel _ (by positivity)))).trans (by simp)
-  rw [Finset.mem_coe, Finset.mem_filter] at hu
-  exact Fin.ext (Nat.div_mul_cancel (Nat.dvd_of_mod_eq_zero hu.2))
+@[simp] theorem val_dyadicSplitEquiv_fst (m c : ℕ) (u : Fin (2 ^ (m + c))) :
+    (dyadicSplitEquiv m c u).1.val = u.val % 2 ^ m := rfl
 
-theorem card_fin_div_two_pow_eq {m e : ℕ} (he : e ≤ m) (r₀ : Fin (2 ^ m)) :
-    #{s : Fin (2 ^ m) | s.val / 2 ^ e = r₀.val / 2 ^ e} = 2 ^ e := by
-  have hpow : 2 ^ m = 2 ^ e * 2 ^ (m - e) := by rw [← Nat.pow_add, Nat.add_sub_cancel' he]
-  have hq : r₀.val / 2 ^ e < 2 ^ (m - e) := Nat.div_lt_of_lt_mul (hpow ▸ r₀.isLt)
-  refine (Finset.card_nbij'
-    (fun s : Fin (2 ^ m) => (⟨s.val % 2 ^ e, Nat.mod_lt _ (by positivity)⟩ : Fin (2 ^ e)))
-    (fun j : Fin (2 ^ e) => (⟨(r₀.val / 2 ^ e) * 2 ^ e + j.val, by
-      have hj : j.val < 2 ^ e := j.isLt; have hq1 : r₀.val / 2 ^ e + 1 ≤ 2 ^ (m - e) := hq
-      calc (r₀.val / 2 ^ e) * 2 ^ e + j.val
-          < (r₀.val / 2 ^ e + 1) * 2 ^ e := by ring_nf; omega
-        _ ≤ 2 ^ (m - e) * 2 ^ e := Nat.mul_le_mul_right _ hq1
-        _ = 2 ^ m := by rw [Nat.mul_comm, ← hpow]⟩ : Fin (2 ^ m)))
-    (fun _ _ => Finset.mem_univ _) (fun j _ => ?_) (fun s hs => ?_)
-    (fun j _ => Fin.ext (by simp [Nat.mod_eq_of_lt j.isLt]))).trans (by simp)
-  · simp only [Finset.mem_coe, Finset.mem_filter, Finset.mem_univ, true_and]
-    rw [Nat.add_comm, Nat.add_mul_div_right _ _ (by positivity), Nat.div_eq_of_lt j.isLt, zero_add]
-  · rw [Finset.mem_coe, Finset.mem_filter] at hs
-    apply Fin.ext; dsimp only; rw [← hs.2, Nat.mul_comm, Nat.div_add_mod]
+@[simp] theorem val_dyadicSplitEquiv_snd (m c : ℕ) (u : Fin (2 ^ (m + c))) :
+    (dyadicSplitEquiv m c u).2.val = u.val / 2 ^ m := rfl
+
+@[simp] theorem val_dyadicSplitEquiv_symm (m c : ℕ) (p : Fin (2 ^ m) × Fin (2 ^ c)) :
+    ((dyadicSplitEquiv m c).symm p).val = p.1.val + 2 ^ m * p.2.val := rfl
 
 /-- Probe complexity of ball `x` in assignment `s` (`0` if `x` is absent). -/
 noncomputable def ballProbeComplexity {α : Type*} [DecidableEq α] {M : ℕ}
@@ -645,209 +587,6 @@ per-operation switching-cost bound `B_switch`. -/
 
 section Probability
 open Cslib.Probability Fintype
-theorem expect_fin_mod_two_pow_eq_zero {b e : ℕ} (he : e ≤ b) :
-    𝔼 c : Fin (2 ^ b), (if c.val % 2 ^ e = 0 then (1 : ℝ) else 0) = 1 / (2 ^ e : ℝ) := by
-  rw [Fintype.expect_boole, Finset.dens_eq_card_div_card, card_fin_mod_two_pow_eq_zero he,
-    Fintype.card_fin]
-  have hpow : (2 : ℝ) ^ b = (2 : ℝ) ^ (b - e) * (2 : ℝ) ^ e := by
-    rw [← pow_add, Nat.sub_add_cancel he]
-  push_cast; rw [hpow, div_mul_eq_div_mul_one_div, div_self (by positivity), one_mul]
-/-- Conditioning a `(k + 1)`-wise independent hash family `h` on `h θ x = v₀` yields a `k`-wise
-independent family on `{y // y ≠ x}`, bounding any seed event uniformly across fibers. -/
-theorem dens_le_of_hash_fiber {ι α Y : Type*} [Fintype ι] [Fintype Y] [DecidableEq Y]
-    [Nonempty Y] {k : ℕ} {h : ι → α → Y} (hh : IsKWiseIndependentHash (k + 1) h) (x : α)
-    (Bad : ι → Prop) [DecidablePred Bad] {B : ℝ}
-    (hfib : ∀ v₀ : Y, ∀ (_ : Nonempty {θ : ι // h θ x = v₀}),
-      IsKWiseIndependentHash k (fun (θ : {θ : ι // h θ x = v₀}) (y : {y : α // y ≠ x}) =>
-        h θ.1 y.1) →
-      (dens {θ : {θ : ι // h θ x = v₀} | Bad θ.1} : ℝ) ≤ B) :
-    (dens {θ : ι | Bad θ} : ℝ) ≤ B := by
-  classical
-  have : Nonempty ι := hh.nonempty
-  have hcard1 (v₀ : Y) : Fintype.card Y * Fintype.card {θ : ι // h θ x = v₀} = Fintype.card ι := by
-    have hc := hh.card_filter_restrict_eq (T := {x}) (by simp) (fun _ => v₀)
-    have hs : #{θ : ι | ({x} : Finset α).restrict (h θ) = fun _ => v₀} =
-        Fintype.card {θ : ι // h θ x = v₀} := by
-      rw [Fintype.card_subtype]; congr 1; ext θ; simp [funext_iff, Finset.restrict]
-    rwa [Finset.card_singleton, pow_one, hs] at hc
-  have hF_pos (v₀ : Y) : 0 < Fintype.card {θ : ι // h θ x = v₀} := by
-    by_contra h0; have := Fintype.card_pos (α := ι); have hc := hcard1 v₀
-    rw [Nat.eq_zero_of_not_pos h0, mul_zero] at hc; omega
-  have hind (v₀ : Y) : IsKWiseIndependentHash k
-      (fun (θ : {θ : ι // h θ x = v₀}) (y : {y : α // y ≠ x}) => h θ.1 y.1) := ⟨fun {T} hT y => by
-    let emb : {y : α // y ≠ x} ↪ α := ⟨Subtype.val, Subtype.val_injective⟩
-    let T' : Finset α := Insert.insert x (T.map emb)
-    have hmemT {a : α} (ha : a ≠ x) (hm : a ∈ T.map emb) : ⟨a, ha⟩ ∈ T := by
-      obtain ⟨u, hu, rfl⟩ := Finset.mem_map.mp hm; exact hu
-    let y' : T' → Y := fun ⟨a, ha⟩ =>
-      if hz : a = x then v₀ else y ⟨⟨a, hz⟩, hmemT hz ((Finset.mem_insert.mp ha).resolve_left hz)⟩
-    have hcardT' := hh.card_filter_restrict_eq (T := T') (by simp [T', emb]; omega) y'
-    have hbij : #{θ : {θ : ι // h θ x = v₀} | T.restrict (fun z => h θ.1 z.1) = y} =
-        #{θ : ι | T'.restrict (h θ) = y'} := by
-      refine Finset.card_bij (fun θ _ => θ.1) ?_ (fun _ _ _ _ h => Subtype.ext h) ?_
-      · intro θ hθ; refine Finset.mem_filter.mpr ⟨Finset.mem_univ _, funext fun ⟨a, ha⟩ => ?_⟩
-        rcases eq_or_ne a x with rfl | hzx
-        · simp [Finset.restrict, y', θ.2]
-        · simpa [Finset.restrict, y', hzx] using congrFun (Finset.mem_filter.mp hθ).2
-            ⟨⟨a, hzx⟩, hmemT hzx ((Finset.mem_insert.mp ha).resolve_left hzx)⟩
-      · intro θ hθ; rw [Finset.mem_filter] at hθ
-        have hx0 : h θ x = v₀ := by
-          simpa [Finset.restrict, y'] using congrFun hθ.2 ⟨x, Finset.mem_insert_self _ _⟩
-        refine ⟨⟨θ, hx0⟩, Finset.mem_filter.mpr ⟨Finset.mem_univ _, funext fun w => ?_⟩, rfl⟩
-        simpa [Finset.restrict, y', w.1.2] using
-          congrFun hθ.2 ⟨w.1.1, Finset.mem_insert_of_mem (Finset.mem_map_of_mem emb w.2)⟩
-    rw [show #T' = #T + 1 by simp [T', emb], pow_succ, mul_comm (Fintype.card Y ^ #T), mul_assoc,
-      ← hbij, ← hcard1 v₀] at hcardT'
-    rw [Finset.dens_eq_card_div_card, div_eq_iff (by exact_mod_cast (hF_pos v₀).ne'),
-      eq_inv_mul_iff_mul_eq₀ (by positivity)]
-    exact_mod_cast Nat.eq_of_mul_eq_mul_left Fintype.card_pos hcardT'⟩
-  rw [Finset.dens_eq_card_div_card, NNRat.cast_div, NNRat.cast_natCast, NNRat.cast_natCast,
-    div_le_iff₀ (by exact_mod_cast Fintype.card_pos (α := ι))]
-  have hY_ne : (Fintype.card Y : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr Fintype.card_ne_zero
-  have hpart : (#{θ : ι | Bad θ} : ℝ) = ∑ v₀ : Y, (#{θ : ι | Bad θ ∧ h θ x = v₀} : ℝ) := by
-    exact_mod_cast (Finset.card_eq_sum_card_fiberwise (f := fun θ => h θ x) (s := {θ : ι | Bad θ})
-      (t := Finset.univ) fun _ _ => Finset.mem_univ _).trans
-      (Finset.sum_congr rfl fun v₀ _ => congrArg Finset.card (by ext θ; simp))
-  have htot : (Fintype.card ι : ℝ) = ∑ v₀ : Y, (Fintype.card {θ : ι // h θ x = v₀} : ℝ) := by
-    have hdiv (v₀ : Y) :
-        (Fintype.card {θ : ι // h θ x = v₀} : ℝ) = Fintype.card ι / Fintype.card Y :=
-      eq_div_of_mul_eq hY_ne (by rw [mul_comm]; exact_mod_cast hcard1 v₀)
-    simp_rw [hdiv]; rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul, mul_div_cancel₀ _ hY_ne]
-  rw [hpart, htot, Finset.mul_sum]; refine Finset.sum_le_sum fun v₀ _ => ?_
-  have : Nonempty {θ : ι // h θ x = v₀} := Fintype.card_pos_iff.mp (hF_pos v₀)
-  have hf := hfib v₀ ‹_› (hind v₀)
-  rw [Finset.dens_eq_card_div_card, NNRat.cast_div, NNRat.cast_natCast, NNRat.cast_natCast,
-    div_le_iff₀ (by exact_mod_cast hF_pos v₀)] at hf
-  rwa [show #{θ : {θ : ι // h θ x = v₀} | Bad θ.1} = #{θ : ι | Bad θ ∧ h θ x = v₀} from
-    Finset.card_bij (fun θ _ => θ.1)
-      (fun θ hθ => Finset.mem_filter.mpr ⟨Finset.mem_univ _, (Finset.mem_filter.mp hθ).2, θ.2⟩)
-      (fun _ _ _ _ h => Subtype.ext h)
-      (fun θ hθ => ⟨⟨θ, (Finset.mem_filter.mp hθ).2.2⟩,
-        Finset.mem_filter.mpr ⟨Finset.mem_univ _, (Finset.mem_filter.mp hθ).2.1⟩, rfl⟩)] at hf
-
-/-- `2m`-th moment concentration for sums of `[0, 1]`-valued functions of pairwise disjoint hash
-restrictions `(B b).restrict (h θ)` of size `≤ K` under `(2m * K)`-wise independence. -/
-theorem dens_abs_sum_restrict_sub_expect_le {ι α β Y : Type*} [Fintype ι] [Fintype Y]
-    [DecidableEq Y] [Nonempty Y] {m K k_indep : ℕ} (hm : 1 ≤ m)
-    {h : ι → α → Y} (hh : IsKWiseIndependentHash k_indep h) (hk : 2 * m * K ≤ k_indep)
-    (R : Finset β) (B : β → Finset α) (hB : ∀ b ∈ R, #(B b) ≤ K)
-    (hdisj : (R : Set β).Pairwise fun b₁ b₂ => Disjoint (B b₁) (B b₂))
-    (score : (b : β) → (B b → Y) → ℝ) (hscore : ∀ b ∈ R, ∀ u, score b u ∈ Set.Icc 0 1)
-    {μ a : ℝ} (hmean : ∑ b ∈ R, (𝔼 θ, score b ((B b).restrict (h θ))) ≤ μ)
-    (hmμ : 2 * (m : ℝ) ≤ 3 * μ) (ha : 0 < a) :
-    (dens {θ : ι | a ≤ |∑ b ∈ R,
-      (score b ((B b).restrict (h θ)) - 𝔼 θ', score b ((B b).restrict (h θ')))|} : ℝ) ≤
-      2 * (3 * (m : ℝ) * μ / a ^ 2) ^ m := by
-  classical
-  have : Nonempty ι := hh.nonempty
-  let X' := {b : β // b ∈ R}; let Y' := Fin K → Y; let ι' := ι × (X' × Fin K → Y)
-  have : Nonempty Y' := ⟨fun _ => Classical.arbitrary Y⟩
-  have : Nonempty (X' × Fin K → Y) := ⟨fun _ => Classical.arbitrary Y⟩
-  let hSum (s : ι') : α ⊕ (X' × Fin K) → Y := Sum.elim (h s.1) s.2
-  have hSum_ind : IsKWiseIndependentHash k_indep hSum := ⟨fun {T} hT w => by
-    let T₁ : Finset α := T.preimage Sum.inl Sum.inl_injective.injOn
-    let T₂ : Finset (X' × Fin K) := T.preimage Sum.inr Sum.inr_injective.injOn
-    have hcard : #T₁ + #T₂ = #T := by
-      have h1 : #T₁ = #{u ∈ T | u.isLeft} := Finset.card_bij (fun a _ => Sum.inl a)
-        (fun a ha => Finset.mem_filter.mpr ⟨Finset.mem_preimage.mp ha, rfl⟩)
-        (fun _ _ _ _ h => Sum.inl.inj h) fun u hu => by
-          rcases u with a | _; · exact ⟨a, Finset.mem_preimage.mpr (Finset.mem_filter.mp hu).1, rfl⟩
-          · cases (Finset.mem_filter.mp hu).2
-      have h2 : #T₂ = #{u ∈ T | ¬ u.isLeft} := Finset.card_bij (fun p _ => Sum.inr p)
-        (fun p hp => Finset.mem_filter.mpr ⟨Finset.mem_preimage.mp hp, by simp⟩)
-        (fun _ _ _ _ h => Sum.inr.inj h) fun u hu => by
-          rcases u with _ | p; · exact absurd rfl (Finset.mem_filter.mp hu).2
-          · exact ⟨p, Finset.mem_preimage.mpr (Finset.mem_filter.mp hu).1, rfl⟩
-      rw [h1, h2, Finset.card_filter_add_card_filter_not]
-    let w₁ : T₁ → Y := fun ⟨a, ha⟩ => w ⟨Sum.inl a, Finset.mem_preimage.mp ha⟩
-    let w₂ : T₂ → Y := fun ⟨p, hp⟩ => w ⟨Sum.inr p, Finset.mem_preimage.mp hp⟩
-    have hiff (s : ι') : T.restrict (hSum s) = w ↔
-        T₁.restrict (h s.1) = w₁ ∧ T₂.restrict s.2 = w₂ :=
-      ⟨fun hs => ⟨funext fun ⟨a, ha⟩ => congrFun hs ⟨Sum.inl a, Finset.mem_preimage.mp ha⟩,
-          funext fun ⟨p, hp⟩ => congrFun hs ⟨Sum.inr p, Finset.mem_preimage.mp hp⟩⟩,
-        fun ⟨h1, h2⟩ => funext fun ⟨u, hu⟩ => by
-          rcases u with a | p
-          · exact congrFun h1 ⟨a, Finset.mem_preimage.mpr hu⟩
-          · exact congrFun h2 ⟨p, Finset.mem_preimage.mpr hu⟩⟩
-    have hd0 := Fintype.expect_boole (𝕜 := ℚ≥0) (fun s : ι' => T.restrict (hSum s) = w)
-    rw [NNRat.cast_id] at hd0; rw [← hd0]
-    have hprod (s : ι') : (if T.restrict (hSum s) = w then (1 : ℚ≥0) else 0) =
-        (if T₁.restrict (h s.1) = w₁ then (1 : ℚ≥0) else 0) *
-        (if T₂.restrict s.2 = w₂ then 1 else 0) := by
-      by_cases c1 : T₁.restrict (h s.1) = w₁ <;>
-        by_cases c2 : T₂.restrict s.2 = w₂ <;> simp [hiff s, c1, c2]
-    simp_rw [hprod]; rw [Fintype.expect_prod_type]
-    have hpull (θ : ι) : (𝔼 ξ : X' × Fin K → Y,
-        (if T₁.restrict (h θ) = w₁ then (1 : ℚ≥0) else 0) *
-        (if T₂.restrict ξ = w₂ then 1 else 0)) =
-        (if T₁.restrict (h θ) = w₁ then (1 : ℚ≥0) else 0) *
-        dens {ξ : X' × Fin K → Y | T₂.restrict ξ = w₂} := by
-      rw [← Finset.mul_expect, Fintype.expect_boole]; rfl
-    simp_rw [hpull]; rw [← Finset.expect_mul, Fintype.expect_boole]
-    have hd1 := (hh.mono (by omega : #T₁ ≤ k_indep)).dens_filter_restrict_eq le_rfl w₁
-    have hd2 := (isKWiseIndependentHash_id (X := X' × Fin K) (Y := Y) #T₂).dens_filter_restrict_eq
-      le_rfl w₂
-    dsimp only [id] at hd2; simp only [NNRat.cast_id]
-    rw [hd1, hd2, ← mul_inv, ← pow_add, hcard]⟩
-  let e (z : X') : B z.1 ≃ Fin #(B z.1) := (B z.1).equivFin
-  let emb (p : X' × Fin K) : α ⊕ (X' × Fin K) :=
-    if hj : p.2.val < #(B p.1.1) then Sum.inl ((e p.1).symm ⟨p.2.val, hj⟩).1 else Sum.inr p
-  have hemb : Function.Injective emb := by
-    rintro ⟨z₁, j₁⟩ ⟨z₂, j₂⟩ heq
-    by_cases h₁ : j₁.val < #(B z₁.1) <;> by_cases h₂ : j₂.val < #(B z₂.1) <;>
-      simp only [emb, h₁, h₂, ↓reduceDIte] at heq
-    · have ha := Sum.inl.inj heq
-      have hz : z₁ = z₂ := by
-        by_contra hne
-        exact Finset.disjoint_left.mp (hdisj z₁.2 z₂.2 (Subtype.coe_ne_coe.mpr hne))
-          ((e z₁).symm ⟨j₁.val, h₁⟩).2 (ha ▸ ((e z₂).symm ⟨j₂.val, h₂⟩).2)
-      subst hz; exact Prod.ext rfl (Fin.ext (Fin.mk.inj ((e z₁).symm.injective (Subtype.ext ha))))
-    · cases heq
-    · cases heq
-    · exact Sum.inr.inj heq
-  have hFlat_ind := (hSum_ind.comp hemb).mono hk
-  let H (s : ι') (z : X') (j : Fin K) : Y := hSum s (emb (z, j))
-  have hH_ind : IsKWiseIndependentHash (2 * m) H := ⟨fun {T} hT w => by
-    let Tp : Finset (X' × Fin K) := T ×ˢ Finset.univ
-    let wp : Tp → Y := fun ⟨p, hp⟩ => w ⟨p.1, (Finset.mem_product.mp hp).1⟩ p.2
-    have hset : ({s : ι' | T.restrict (H s) = w} : Finset ι') =
-        ({s : ι' | Tp.restrict (fun p => hSum s (emb p)) = wp} : Finset ι') := by
-      ext s; simp only [Finset.mem_filter, Finset.mem_univ, true_and, funext_iff, Finset.restrict]
-      exact ⟨fun hs ⟨⟨z, j⟩, hp⟩ => hs ⟨z, (Finset.mem_product.mp hp).1⟩ j,
-        fun hs ⟨z, hz⟩ j => hs ⟨(z, j), Finset.mem_product.mpr ⟨hz, Finset.mem_univ j⟩⟩⟩
-    have hc : #Tp = #T * K := by simp [Tp]
-    rw [hset, hFlat_ind.dens_filter_restrict_eq (hc ▸ Nat.mul_le_mul_right K hT) wp, hc,
-      mul_comm #T K, pow_mul, Fintype.card_fun, Fintype.card_fin, Nat.cast_pow]⟩
-  let g' (z : X') (v : Y') : ℝ :=
-    score z.1 (fun x => v ⟨(e z x).val, (e z x).isLt.trans_le (hB z.1 z.2)⟩)
-  have hg'_H (s : ι') (z : X') : g' z (H s z) = score z.1 ((B z.1).restrict (h s.1)) := by
-    dsimp only [g', H, emb, hSum]; congr 1; funext x; simp [(e z x).isLt, Finset.restrict]
-  have hexp_g' (z : X') : (𝔼 v : Y', g' z v) = 𝔼 θ : ι, score z.1 ((B z.1).restrict (h θ)) := by
-    have h1 := (hH_ind.mono (by omega : 1 ≤ 2 * m)).expect_prod (T := {z}) (by simp)
-      (fun _ v => g' z v)
-    simp only [Finset.prod_singleton] at h1; rw [← h1]; simp_rw [hg'_H]
-    exact Fintype.expect_comp_fst (α := ι) (β := X' × Fin K → Y)
-      (fun θ => score z.1 ((B z.1).restrict (h θ)))
-  have hmean' : ∑ z ∈ (Finset.univ : Finset X'), (𝔼 v : Y', g' z v) ≤ μ := by
-    simp_rw [hexp_g']
-    simpa only [X', Finset.univ_eq_attach,
-      Finset.sum_attach R (fun b => 𝔼 θ, score b ((B b).restrict (h θ)))] using hmean
-  have hconc := dens_abs_sum_sub_expect_le hm hH_ind Finset.univ g'
-    (fun z _ _ => hscore z.1 z.2 _) hmean' hmμ ha
-  have hev : (dens {s : ι' | a ≤ |∑ z : X', (g' z (H s z) - 𝔼 v, g' z v)|} : ℝ) =
-      dens {θ : ι | a ≤ |∑ b ∈ R,
-        (score b ((B b).restrict (h θ)) - 𝔼 θ', score b ((B b).restrict (h θ')))|} := by
-    rw [← Fintype.expect_boole, ← Fintype.expect_boole]
-    have hsum_z (s : ι') : (∑ z : X', (g' z (H s z) - 𝔼 v, g' z v)) =
-        ∑ b ∈ R, (score b ((B b).restrict (h s.1)) - 𝔼 θ', score b ((B b).restrict (h θ'))) := by
-      simp_rw [hg'_H, hexp_g']
-      simpa only [X', Finset.univ_eq_attach] using Finset.sum_attach R fun b =>
-        score b ((B b).restrict (h s.1)) - 𝔼 θ', score b ((B b).restrict (h θ'))
-    simp_rw [hsum_z]
-    exact Fintype.expect_comp_fst (α := ι) (β := X' × Fin K → Y) fun θ =>
-      if a ≤ |∑ b ∈ R, (score b ((B b).restrict (h θ)) - 𝔼 θ', score b ((B b).restrict (h θ')))|
-        then (1 : ℝ) else 0
-  rwa [hev] at hconc
 
 /-- `2m`-th moment concentration for total probe complexity across a collection `R` of admissible
 histories `ops b` with pairwise disjoint `opsBalls (ops b)`, given a per-ball snapshot bound. -/
@@ -955,35 +694,6 @@ theorem dens_sum_totalProbeComplexity_gt_le_of_snapshotBound {ι α β Y : Type*
   refine (show (dens _ : ℝ) ≤ dens _ by exact_mod_cast Finset.dens_le_dens hsub_ev).trans
     (hconc.trans_eq ?_)
   congr 2; dsimp only [M_cap]; field_simp [hM_pos.ne']
-
-/-- Union-tail bound over a product seed space `ι₁ × ι₂` when `θ₁ ∈ Good` fails with density `≤ δ`
-and each `θ₁ ∈ Good` has conditional fiber failure density `≤ p`. -/
-theorem dens_prod_le_add_of_good {ι₁ ι₂ : Type*} [Fintype ι₁] [Nonempty ι₁] [Fintype ι₂]
-    (Good : Set ι₁) [DecidablePred (· ∈ Good)] (Bad : ι₁ × ι₂ → Prop) [DecidablePred Bad]
-    {δ p : ℝ} (hbad : (dens {θ₁ : ι₁ | θ₁ ∉ Good} : ℝ) ≤ δ) (hp0 : 0 ≤ p)
-    (hgood : ∀ θ₁ ∈ Good, (dens {θ₂ : ι₂ | Bad (θ₁, θ₂)} : ℝ) ≤ p) :
-    (dens {s : ι₁ × ι₂ | Bad s} : ℝ) ≤ δ + p := by
-  by_cases hι₂ : Nonempty ι₂
-  · rw [← Fintype.expect_boole, Fintype.expect_prod_type]
-    have hrow (θ₁ : ι₁) : (𝔼 θ₂ : ι₂, if Bad (θ₁, θ₂) then (1 : ℝ) else 0) ≤
-        (if θ₁ ∉ Good then (1 : ℝ) else 0) + p := by
-      by_cases hg : θ₁ ∈ Good
-      · simp only [hg, not_true_eq_false, ↓reduceIte, zero_add, Fintype.expect_boole]
-        exact hgood θ₁ hg
-      · simp only [hg, not_false_eq_true, ↓reduceIte]
-        have h1 : (𝔼 θ₂ : ι₂, if Bad (θ₁, θ₂) then (1 : ℝ) else 0) ≤ 1 :=
-          Finset.expect_le Finset.univ_nonempty fun _ _ => by split_ifs <;> norm_num
-        linarith
-    calc _ ≤ 𝔼 θ₁ : ι₁, ((if θ₁ ∉ Good then (1 : ℝ) else 0) + p) :=
-          Finset.expect_le_expect fun θ₁ _ => hrow θ₁
-      _ = (dens {θ₁ : ι₁ | θ₁ ∉ Good} : ℝ) + p := by
-          rw [Finset.expect_add_distrib, Fintype.expect_boole, Fintype.expect_const]
-      _ ≤ δ + p := by linarith
-  · have : IsEmpty (ι₁ × ι₂) := ⟨fun s => hι₂ ⟨s.2⟩⟩
-    have hd0 : (dens {s : ι₁ × ι₂ | Bad s} : ℝ) = 0 := by
-      simp [Finset.dens_eq_card_div_card, Subsingleton.elim _ (∅ : Finset (ι₁ × ι₂))]
-    have hδ0 : 0 ≤ δ := (by positivity : (0 : ℝ) ≤ dens _).trans hbad
-    linarith
 
 end Probability
 
