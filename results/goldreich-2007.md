@@ -537,6 +537,14 @@ bound and linear cardinality bounds; this must not be mistaken for the encoded s
 runtime theorem in 9.19. Conversely, that remaining bridge does not invalidate the already
 proved class-level PCP theorem.
 
+The subsequent Exercise 9.21(1)–(3) now has its arbitrary finite abelian group endpoint in
+[HomomorphismTesting](../CslibFrontier/Foundations/Algebra/Group/HomomorphismTesting.lean).
+Its [exercise record](goldreich-2007-exercises.md) distinguishes this from the stronger Boolean
+Fourier result. Rendered r5 PDF 69–70 / printed 451–452 was independently inspected for the
+plurality definition, strict threshold and unconditional bound. The proof uses independent-vote
+collisions rather than the auxiliary graph in the guideline. This adds no encoding or runtime
+claim and does not change the historical numbered-result table.
+
 For zero knowledge, use the nonuniform OWF endpoint, not just
 `OneWay.exists_zkProof_of_npRelation`: the latter's generable-family guarantee
 is narrower. The full endpoint has a separate security parameter and polynomially bounded

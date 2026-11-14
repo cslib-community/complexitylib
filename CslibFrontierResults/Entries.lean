@@ -6,6 +6,7 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
+import CslibFrontier.Foundations.Algebra.Group.HomomorphismTesting
 import CslibFrontier.Probability.MarkovChain.RandomWalk
 import CslibFrontier.Probability.MarkovChain.RotationMap
 import CslibFrontier.Foundations.Combinatorics.Expander.HittingProduct
@@ -5833,6 +5834,22 @@ register_result "goldreich-expander-varying-density-hitting" where
     and independent uniform slot choices. Length counts t+1 vertices. Individual densities \
     retained, with explicit transport to lambda/d and the constant-set real half-length power. \
     No machine uniformity, runtime or Exercise 8.44 concentration claim."
+
+register_result "finite-abelian-homomorphism-testing" where
+  title := "Finite abelian homomorphism testing and plurality correction"
+  topic := "property testing"
+  sources := [
+    { paper := Goldreich2007DraftR5, theorem := "Exercise 9.21(1)–(3)",
+      locator := "r5.pdf; PDF 69–70 / printed 451–452; rendered notation checked" }
+  ]
+  theorems := [Cslib.HomomorphismTesting.concentration,
+    Cslib.HomomorphismTesting.plurality_add, Cslib.HomomorphismTesting.closeness,
+    Cslib.HomomorphismTesting.distance_attained, Cslib.HomomorphismTesting.min_le_rejection]
+  scope := "Arbitrary finite additive commutative groups, including trivial groups. Uniform \
+    independent rejection epsilon and attained minimum normalized homomorphism \
+    disagreement delta. Every plurality has mass at least 1-2epsilon; below 1/6 it is \
+    a homomorphism with disagreement at most 2epsilon. Unconditionally epsilon >= \
+    min(1/6,delta/2). No efficiency or encoding claim."
 
 register_result "linear-space-ne-np" where
   title := "Book: linear space is not NP"
