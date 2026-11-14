@@ -19,6 +19,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
 import CslibFrontier.Foundations.Data.List.Lookup
 import CslibFrontier.Languages.Probabilistic.Norm
+import CslibFrontier.Languages.Probabilistic.UniformNat.Residue
 import CslibFrontier.Probability.PMF.Map
 import CslibFrontier.Probability.PMF.Uniform
 import CslibFrontier.Tactic.PPT
@@ -122,13 +123,9 @@ noncomputable def sampleResidue (w : ℕ) : ProbComp (ZMod (2 ^ w)) :=
 /-- A uniform residue sample has the uniform finite-ring law modulo `2 ^ w`. -/
 @[simp] theorem eval_sampleResidue (w : ℕ) :
     ProbComp.eval (sampleResidue w) = PMF.uniformOfFintype (ZMod (2 ^ w)) := by
-  rw [sampleResidue, ProbComp.eval_map, eval_sampleBinaryNat, PMF.map_comp]
-  let e : Fin (2 ^ w) ≃ ZMod (2 ^ w) :=
-    { toFun := fun i => i.val
-      invFun := fun z => ⟨z.val, ZMod.val_lt z⟩
-      left_inv := fun i => Fin.ext (ZMod.val_cast_of_lt i.isLt)
-      right_inv := fun z => ZMod.natCast_zmod_val z }
-  exact PMF.uniformOfFintype_map_equiv e
+  rw [sampleResidue, ProbComp.eval_map, eval_sampleBinaryNat_eq_map_val, PMF.map_comp]
+  simp only [Function.comp_def, ZMod.natCast_zmod_val]
+  exact PMF.map_id _
 
 /-- Sample a uniformly random residue vector of length `count` modulo `2 ^ w`. -/
 noncomputable def sampleVector (count w : ℕ) : ProbComp (Fin count → ZMod (2 ^ w)) :=
@@ -291,34 +288,16 @@ def decodeKeyInputs (n m w : ℕ) (inputs : SerializedKeyInputs) : KeyInputs n m
   cases inputs
   simp only [decodeKeyInputs, serializeKeyInputs, List.getD_ofFn, ZMod.natCast_zmod_val]
 
-/-- Sampling an unsigned `w`-bit integer gives the canonical residue representative law. -/
-theorem eval_sampleBinaryNat_eq_map_val (w : ℕ) :
-    ProbComp.eval (sampleBinaryNat w) =
-      (ProbComp.eval (sampleResidue w)).map ZMod.val := by
-  rw [sampleResidue, ProbComp.eval_map, PMF.map_comp]
-  symm
-  calc
-    _ = (ProbComp.eval (sampleBinaryNat w)).map id :=
-      PMF.map_congr_on_support _ _ _ (fun value hvalue =>
-        ZMod.val_natCast_of_lt ((mem_support_sampleBinaryNat_iff w value).mp hvalue))
-    _ = _ := PMF.map_id _
-
 /-- The efficient key-input sampler has exactly the typed sampler's joint law, including the
 independence of the secret, public-matrix part, and signed errors. -/
 theorem eval_sampleKeyInputsSerialized (n m w η : ℕ) :
     ProbComp.eval (sampleKeyInputsSerialized n m w η) =
       (ProbComp.eval (sampleKeyInputs n m w η)).map serializeKeyInputs := by
-  have hsecret := ProbComp.eval_replicateFin_map (eval_sampleBinaryNat_eq_map_val w) n
-  have hpublicPart := ProbComp.eval_replicateFin_map hsecret m
   have herror := ProbComp.eval_replicateFin_map
     (PMF.map_id (ProbComp.eval (sampleCenteredBinomial η))).symm m
   rw [eval_sampleKeyInputs]
-  change _ = (ProbComp.eval (sampleVector n w)).map _ at hsecret
-  change _ = (ProbComp.eval (sampleMatrix m n w)).map _ at hpublicPart
-  rw [eval_sampleVector] at hsecret
-  rw [eval_sampleMatrix] at hpublicPart
-  simp only [pmf_norm, sampleKeyInputsSerialized, hsecret, hpublicPart, herror,
-    _root_.Matrix, serializeKeyInputs, id]
+  simp only [pmf_norm, sampleKeyInputsSerialized, eval_replicate_sampleBinaryNat,
+    eval_replicate_replicate_sampleBinaryNat, herror, _root_.Matrix, serializeKeyInputs, id]
 
 /-- Decoding the efficient sampled lists recovers the mathematical key-input sampler. -/
 theorem eval_decodeKeyInputs_sampleKeyInputsSerialized (n m w η : ℕ) :

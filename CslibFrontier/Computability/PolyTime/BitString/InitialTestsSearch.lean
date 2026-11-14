@@ -23,6 +23,7 @@ import CslibFrontier.Probability.SmallBias.Random
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Log
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Max
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.BitString.Dot
@@ -189,8 +190,7 @@ include hB
   .unary_mul' (.unary_mul' (.const 320000) ((unary_pow 2).comp hB))
     ((unary_pow 3).comp (mu_polyTime hm))
 @[fun_prop] theorem dG_polyTime : ComputableInPolyTime (fun a => dG (m a) (B a)) e encUnary :=
-  (of_tidy ComputableTidilyInPolyTime.unary_min).comp
-    (hm.prod (initialRowWeightBound_polyTime hm hB))
+  unary_min' hm (initialRowWeightBound_polyTime hm hB)
 @[fun_prop] theorem ellG_polyTime : ComputableInPolyTime (fun a => ellG (m a) (B a)) e encUnary :=
   have hd := dG_polyTime hm hB
   (unary_clog_const 2).comp (unary_div.comp ((unary_sub' (.unary_add' hm hd) (.const 1)).prod hd))

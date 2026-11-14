@@ -4369,6 +4369,7 @@ public import CslibFrontier.Crypto.Computational.Falcon.Verification
 public import CslibFrontier.Crypto.Computational.Falcon.VerificationFrontend
 public import CslibFrontier.Crypto.Computational.FuzzyExtractor.Basic
 public import CslibFrontier.Crypto.Computational.FuzzyExtractor.DecodeThenExtract
+public import CslibFrontier.Crypto.Computational.FuzzyExtractor.DecodeThenExtract.Security
 public import CslibFrontier.Crypto.Computational.GGM.Circuit
 public import CslibFrontier.Crypto.Computational.GGM.Evaluation
 public import CslibFrontier.Crypto.Computational.GGM.Expansion
@@ -4766,6 +4767,7 @@ public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot.Pushforw
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Security
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.SpreadNecessity
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Word
+public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.WordBridge
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.WordGame
 public import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.WordReduction
 public import CslibFrontier.Crypto.Protocols.KEM.MLKEM
@@ -6107,6 +6109,7 @@ public import CslibFrontier.Foundations.LinearAlgebra.Matrix.TraceRank
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Transvection
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.UniformGram
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.UnitaryGroup
+public import CslibFrontier.Foundations.LinearAlgebra.Matrix.UpperTriangularQuadratic
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.Vertex
 public import CslibFrontier.Foundations.LinearAlgebra.Matrix.VertexOrientation
 public import CslibFrontier.Foundations.LinearAlgebra.PivotSpace
@@ -6383,6 +6386,7 @@ public import CslibFrontier.Languages.Probabilistic.Traverse
 public import CslibFrontier.Languages.Probabilistic.Traverse.CoinTape
 public import CslibFrontier.Languages.Probabilistic.Traverse.SupportWith
 public import CslibFrontier.Languages.Probabilistic.UniformNat
+public import CslibFrontier.Languages.Probabilistic.UniformNat.Residue
 public import CslibFrontier.Languages.Probabilistic.UniformNat.Support
 public import CslibFrontier.Languages.Probabilistic.UntilBad
 public import CslibFrontier.Languages.Probabilistic.UntilBad.ChooseTwo
