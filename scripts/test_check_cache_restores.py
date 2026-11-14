@@ -155,7 +155,7 @@ class MainTests(Fixture):
                  argv: list[str] | None = None) -> tuple[int, str, list[str]]:
         calls = []
 
-        def elaborate(root, rel, env=None):
+        def elaborate(root, rel, **kwargs):
             calls.append(rel)
             return subprocess.CompletedProcess([], returncode, output)
 
@@ -186,7 +186,7 @@ class MainTests(Fixture):
         self.trace("DemoTests/Client", synthetic=True, log=[])
         out = io.StringIO()
 
-        def elaborate(root, rel, env=None):
+        def elaborate(root, rel, **kwargs):
             self.assertIn(rel, out.getvalue())
             self.assertNotIn("cleanly", out.getvalue())
             return subprocess.CompletedProcess([], 0, "")
@@ -207,7 +207,7 @@ class MainTests(Fixture):
         self.trace("DemoTests/Client", synthetic=True, log=[])
         second_finished = threading.Event()
 
-        def elaborate(root, rel, env=None):
+        def elaborate(root, rel, **kwargs):
             if rel == "Demo/A.lean":
                 self.assertTrue(second_finished.wait(timeout=5))
                 return subprocess.CompletedProcess([], 0, "warning: first file finished second\n")
@@ -253,46 +253,65 @@ class MainTests(Fixture):
         self.assertNotIn("[2/2]", out.getvalue())
         self.assertNotIn("cleanly", out.getvalue())
 
-    def test_parallel_cancellation_stops_submitting_remaining_files(self) -> None:
+    def test_parallel_cancellation_terminates_active_children_and_skips_rest(self) -> None:
         for i in range(4):
             self.write(f"Demo/Extra{i}.lean", f"def e{i} := {i}\n")
             self.trace(f"Demo/Extra{i}", synthetic=True, log=[])
         both_started = threading.Barrier(2, timeout=5)
-        main_exited = threading.Event()
         calls: list[str] = []
 
-        def elaborate(root, rel, env=None):
-            calls.append(rel)
-            both_started.wait()
-            if rel == "Demo/Base.lean":
-                raise KeyboardInterrupt
-            main_exited.wait(timeout=5)
-            return subprocess.CompletedProcess([], 0, "")
+        class FakePopen:
+            def __init__(self_proc, cmd, **kwargs):
+                self_proc.pid = 99999
+                self_proc.returncode = 0
+                self_proc._rel = cmd[-1].removeprefix("./")
+                self_proc._killed = threading.Event()
+
+            def __enter__(self_proc):
+                return self_proc
+
+            def __exit__(self_proc, *args):
+                return False
+
+            def communicate(self_proc):
+                calls.append(self_proc._rel)
+                both_started.wait()
+                if self_proc._rel == "Demo/Base.lean":
+                    raise KeyboardInterrupt
+                self.assertTrue(self_proc._killed.wait(timeout=5))
+                self_proc.returncode = -9
+                return "", None
+
+            def wait(self_proc):
+                return self_proc.returncode
 
         out = io.StringIO()
-        try:
-            with patch.object(c, "elaborate", side_effect=elaborate), \
-                 redirect_stdout(out), self.assertRaises(KeyboardInterrupt):
-                c.main(["--progress", "--jobs", "2"], self.root)
-            self.assertEqual(calls, ["Demo/Base.lean", "Demo/Extra0.lean"])
-            self.assertNotIn("cleanly", out.getvalue())
-        finally:
-            main_exited.set()
+        with patch.object(c.subprocess, "Popen", side_effect=FakePopen), \
+             patch.object(c, "terminate_process", side_effect=lambda p: p._killed.set()) as term, \
+             redirect_stdout(out), self.assertRaises(KeyboardInterrupt):
+            c.main(["--progress", "--jobs", "2"], self.root)
+        self.assertEqual(sorted(calls), ["Demo/Base.lean", "Demo/Extra0.lean"])
+        self.assertEqual(term.call_count, 2)
+        self.assertNotIn("cleanly", out.getvalue())
 
     def test_jobs_flag_env_override_and_validation(self) -> None:
         with patch.dict(os.environ, {}, clear=False):
             os.environ.pop(c.JOBS_ENV, None)
-            with patch.object(c.os, "cpu_count", return_value=64):
+            os.environ.pop("LEAN_NUM_THREADS", None)
+            with patch.object(c, "available_cpus", return_value=64):
                 self.assertEqual(c.resolve_jobs(None), c.DEFAULT_JOBS_CAP)
-            with patch.object(c.os, "cpu_count", return_value=3):
+                self.assertEqual(c.resolve_jobs(None, {"LEAN_NUM_THREADS": "2"}), 2)
+                self.assertEqual(c.resolve_jobs(None, {"LEAN_NUM_THREADS": "16"}),
+                                 c.DEFAULT_JOBS_CAP)
+            with patch.object(c, "available_cpus", return_value=3):
                 self.assertEqual(c.resolve_jobs(None), 3)
-            with patch.object(c.os, "cpu_count", return_value=None):
+            with patch.object(c, "available_cpus", return_value=1):
                 self.assertEqual(c.resolve_jobs(None), 1)
-        with patch.dict(os.environ, {c.JOBS_ENV: "4"}):
+        with patch.dict(os.environ, {c.JOBS_ENV: "4", "LEAN_NUM_THREADS": "2"}):
             self.assertEqual(c.resolve_jobs(None), 4)
-            self.assertEqual(c.resolve_jobs(2), 2)
-        with patch.dict(os.environ, {c.JOBS_ENV: "  "}):
-            with patch.object(c.os, "cpu_count", return_value=5):
+            self.assertEqual(c.resolve_jobs(3), 3)
+        with patch.dict(os.environ, {c.JOBS_ENV: "  ", "LEAN_NUM_THREADS": ""}):
+            with patch.object(c, "available_cpus", return_value=5):
                 self.assertEqual(c.resolve_jobs(None), 5)
         for bad_cli in (0, -3):
             err = io.StringIO()
@@ -306,23 +325,46 @@ class MainTests(Fixture):
             self.assertIn("Cannot audit restored sources", err.getvalue())
 
     def test_worker_env_bounds_lean_threads_and_cleans_temp_setup_dir(self) -> None:
+        parent_tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(parent_tmp.cleanup)
         seen: list[tuple[str | None, Path]] = []
+        seen_lock = threading.Lock()
 
-        def fake_run(cmd, *, cwd, env, text, stdout, stderr):
-            tmpdir = Path(env["TMPDIR"])
-            self.assertTrue(tmpdir.is_dir())
-            self.assertEqual(env["TEMP"], str(tmpdir))
-            self.assertEqual(env["TMP"], str(tmpdir))
-            (tmpdir / "tmp.setup").write_text("{}")
-            seen.append((env.get("LEAN_NUM_THREADS"), tmpdir))
-            return subprocess.CompletedProcess(cmd, 0, "")
+        class FakePopen:
+            def __init__(self_proc, cmd, *, cwd, env, text, stdout, stderr, start_new_session):
+                tmpdir = Path(env["TMPDIR"])
+                self.assertTrue(tmpdir.is_dir())
+                self.assertEqual(tmpdir.parent, Path(parent_tmp.name))
+                self.assertEqual(env["TEMP"], str(tmpdir))
+                self.assertEqual(env["TMP"], str(tmpdir))
+                (tmpdir / "tmp.setup").write_text("{}")
+                with seen_lock:
+                    seen.append((env.get("LEAN_NUM_THREADS"), tmpdir))
+                self_proc.returncode = 0
 
-        with patch.dict(os.environ, {"LEAN_NUM_THREADS": "8"}), \
-             patch.object(c.subprocess, "run", side_effect=fake_run), \
+            def __enter__(self_proc):
+                return self_proc
+
+            def __exit__(self_proc, *args):
+                return False
+
+            def communicate(self_proc):
+                return "", None
+
+            def wait(self_proc):
+                return 0
+
+        with patch.dict(os.environ, {"LEAN_NUM_THREADS": "8", "TMPDIR": parent_tmp.name}), \
+             patch.object(c.subprocess, "Popen", side_effect=FakePopen), \
              redirect_stdout(io.StringIO()):
+            # Single restored file: `workers == 1`, so `LEAN_NUM_THREADS=8` is preserved.
             self.assertEqual(c.main(["--jobs", "4", "--quiet"], self.root), 0)
+            # Two restored files with `--jobs 4`: `workers == 2`, so `LEAN_NUM_THREADS=1` is set.
+            self.trace("DemoTests/Client", synthetic=True, log=[])
+            self.assertEqual(c.main(["--jobs", "4", "--quiet"], self.root), 0)
+            # Explicit `--jobs 1` on two restored files: `workers == 1`, keeping `8`.
             self.assertEqual(c.main(["--jobs", "1", "--quiet"], self.root), 0)
-        self.assertEqual([threads for threads, _ in seen], ["1", "8"])
+        self.assertEqual([threads for threads, _ in seen], ["8", "1", "1", "8", "8"])
         for _, tmpdir in seen:
             self.assertFalse(tmpdir.exists())
 
@@ -440,7 +482,8 @@ class RealLakeTests(IsolatedLakeFixture):
             self.write(f"Demo/P{index}.lean", f"""import Lean.Elab.Command
 #eval show Lean.Elab.Command.CommandElabM Unit from do
   if ← (System.FilePath.mk "barrier.arm").pathExists then
-    IO.FS.writeFile "p{index}.ready" ""
+    let childTmp := (← IO.getEnv "TMPDIR").getD ""
+    IO.FS.writeFile "p{index}.ready" childTmp
     let mut ready := false
     for _ in [:500] do
       if ← (System.FilePath.mk "p{peer}.ready").pathExists then
@@ -495,6 +538,10 @@ class RealLakeTests(IsolatedLakeFixture):
                 parallel_out.getvalue())
         self.assertTrue((self.root / "p0.ready").is_file())
         self.assertTrue((self.root / "p1.ready").is_file())
+        for index in (0, 1):
+            recorded = Path((self.root / f"p{index}.ready").read_text())
+            self.assertEqual(recorded.parent, Path(tmpdir.name))
+            self.assertFalse(recorded.exists())
         self.assertEqual(list(Path(tmpdir.name).iterdir()), [])
 
         # Deterministic failure ordering across concurrent real Lake elaborations.

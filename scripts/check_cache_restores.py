@@ -23,9 +23,11 @@ traces are checked too.
 It runs `lake -q lean` on each selected file whose trace is synthetic and fails when the command
 fails or prints anything at all: `lake lean` exits 0 after warnings, and `--iofail` rejects
 informational output too. `lake lean` first builds the file's imports and replays their logs, so
-a reported message can also come from an import. Up to 8 files are elaborated concurrently by
-default (`--jobs N` or `CSLIB_FRONTIER_CACHE_AUDIT_JOBS=N`, `N >= 1`), with `LEAN_NUM_THREADS=1`
-in each worker when `N > 1` so parallel workers do not multiply Lean's internal thread pool, and
+a reported message can also come from an import; run parallel audits after building the selected
+targets so concurrent workers do not race rebuilding shared imports. Up to 8 files are elaborated
+concurrently by default (`--jobs N` or `CSLIB_FRONTIER_CACHE_AUDIT_JOBS=N`, `N >= 1`, also capped
+by a positive `LEAN_NUM_THREADS` when unset), with `LEAN_NUM_THREADS=1` in each worker when
+running multiple workers so parallel processes do not multiply Lean's internal thread pool, and
 failures are reported in deterministic source-path order. A successful audit leaves traces
 unchanged and records no receipt, so repeating it can re-elaborate the same sources. It does not
 repair the missing diagnostic metadata in Lake's individual-artifact cache. Outside CI, progress
@@ -42,6 +44,7 @@ import concurrent.futures
 import json
 import os
 from pathlib import Path
+import signal
 import subprocess
 import sys
 import tempfile
@@ -118,8 +121,22 @@ def restored_files(root: Path, files: list[str] | None = None,
             if (trace := trace_path(rel, lib_dir, dirs)) is None or restored(trace)]
 
 
+def available_cpus() -> int:
+    """Usable CPU count respecting process affinity when supported."""
+    if hasattr(os, "process_cpu_count"):
+        count = os.process_cpu_count()
+    elif hasattr(os, "sched_getaffinity"):
+        try:
+            count = len(os.sched_getaffinity(0))
+        except OSError:
+            count = os.cpu_count()
+    else:
+        count = os.cpu_count()
+    return max(1, count or 1)
+
+
 def resolve_jobs(cli_jobs: int | None, env: Mapping[str, str] = os.environ) -> int:
-    """Worker limit from `--jobs`, `CSLIB_FRONTIER_CACHE_AUDIT_JOBS`, or bounded CPU count."""
+    """Worker limit from `--jobs`, `CSLIB_FRONTIER_CACHE_AUDIT_JOBS`, or bounded CPU/thread cap."""
     if cli_jobs is not None:
         jobs = cli_jobs
     elif raw := env.get(JOBS_ENV, "").strip():
@@ -128,22 +145,64 @@ def resolve_jobs(cli_jobs: int | None, env: Mapping[str, str] = os.environ) -> i
         except ValueError as error:
             raise ValueError(f"{JOBS_ENV} must be an integer >= 1, got {raw!r}") from error
     else:
-        jobs = min(DEFAULT_JOBS_CAP, max(1, os.cpu_count() or 1))
+        jobs = min(DEFAULT_JOBS_CAP, available_cpus())
+        if lean_threads := env.get("LEAN_NUM_THREADS", "").strip():
+            try:
+                parsed = int(lean_threads)
+            except ValueError:
+                parsed = 0
+            if parsed >= 1:
+                jobs = min(jobs, parsed)
     if jobs < 1:
         raise ValueError(f"--jobs must be >= 1, got {jobs}")
     return jobs
 
 
-def elaborate(root: Path, rel: str,
-              env: Mapping[str, str] | None = None) -> subprocess.CompletedProcess:
+def terminate_process(proc: subprocess.Popen) -> None:
+    """Terminate `proc` and, on POSIX, its session process group."""
+    if os.name != "nt":
+        try:
+            os.killpg(proc.pid, signal.SIGKILL)
+            return
+        except ProcessLookupError:
+            return
+        except OSError:
+            pass
+    try:
+        proc.kill()
+    except OSError:
+        pass
+
+
+def elaborate(root: Path, rel: str, env: Mapping[str, str] | None = None,
+              active: set[subprocess.Popen] | None = None,
+              active_lock: threading.Lock | None = None) -> subprocess.CompletedProcess:
     """Elaborate `rel` with its library's options, without writing build outputs."""
     base_env = os.environ if env is None else env
+    parent = next((Path(value) for key in ("TMPDIR", "TEMP", "TMP")
+                   if (value := base_env.get(key)) and Path(value).is_dir()), None)
     # `lake lean` creates a temporary `--setup` file via `IO.FS.createTempFile` without removing
     # it; scoping temporary directories per invocation prevents `/tmp` growth across large audits.
-    with tempfile.TemporaryDirectory(prefix="cslib-frontier-lean-") as tmpdir:
+    with tempfile.TemporaryDirectory(prefix="cslib-frontier-lean-", dir=parent) as tmpdir:
         run_env = {**base_env, "TMPDIR": tmpdir, "TEMP": tmpdir, "TMP": tmpdir}
-        return subprocess.run(["lake", "-q", "lean", f"./{rel}"], cwd=root, env=run_env,
-                              text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        cmd = ["lake", "-q", "lean", f"./{rel}"]
+        with subprocess.Popen(cmd, cwd=root, env=run_env, text=True,
+                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                              start_new_session=(os.name != "nt")) as proc:
+            if active is not None and active_lock is not None:
+                with active_lock:
+                    active.add(proc)
+            try:
+                output, _ = proc.communicate()
+            except BaseException:
+                terminate_process(proc)
+                proc.wait()
+                raise
+            finally:
+                if active is not None and active_lock is not None:
+                    with active_lock:
+                        active.discard(proc)
+        return subprocess.CompletedProcess(cmd, proc.returncode, output)
 
 
 def report_result(rel: str, result: subprocess.CompletedProcess, failed: list[str],
@@ -192,12 +251,14 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
         return 1
     workers = min(jobs, max(1, len(files)))
     worker_env = ({**os.environ, "LEAN_NUM_THREADS": "1"}
-                  if jobs > 1 and os.environ.get("LEAN_NUM_THREADS") != "1" else None)
+                  if workers > 1 and os.environ.get("LEAN_NUM_THREADS") != "1" else None)
     if args.progress:
         mode = "serially" if workers == 1 else f"with {workers} worker(s)"
         print(f"Cache-restore audit: checking {len(files)} source(s) {mode}.", flush=True)
     failed: list[str] = []
     print_lock = threading.Lock() if workers > 1 else None
+    active_procs: set[subprocess.Popen] | None = set() if workers > 1 else None
+    active_lock = threading.Lock() if workers > 1 else None
 
     def run_one(index: int, rel: str) -> subprocess.CompletedProcess:
         if args.progress:
@@ -208,7 +269,15 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
             else:
                 with print_lock:
                     print(line, flush=True)
-        return elaborate(root, rel) if worker_env is None else elaborate(root, rel, env=worker_env)
+        if workers == 1:
+            return elaborate(root, rel)
+        kwargs: dict[str, object] = {}
+        if worker_env is not None:
+            kwargs["env"] = worker_env
+        if active_procs is not None and active_lock is not None:
+            kwargs["active"] = active_procs
+            kwargs["active_lock"] = active_lock
+        return elaborate(root, rel, **kwargs)
 
     if workers == 1:
         for index, rel in enumerate(files):
@@ -238,7 +307,12 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
                                               files[next_submit])] = next_submit
                     next_submit += 1
         except BaseException:
-            executor.shutdown(wait=False, cancel_futures=True)
+            if active_procs is not None and active_lock is not None:
+                with active_lock:
+                    running = list(active_procs)
+                for proc in running:
+                    terminate_process(proc)
+            executor.shutdown(wait=True, cancel_futures=True)
             raise
         else:
             executor.shutdown(wait=True)
