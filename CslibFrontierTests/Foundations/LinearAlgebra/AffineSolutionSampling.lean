@@ -8,6 +8,7 @@ module
 -- upstream: local-only (test driver)
 
 public import CslibFrontier.Foundations.LinearAlgebra.AffineSolutionSampling
+public import Mathlib.Data.ZMod.Defs
 import Mathlib.Algebra.Field.ZMod
 import Mathlib.LinearAlgebra.Matrix.Notation
 import Mathlib.Tactic.FinCases
