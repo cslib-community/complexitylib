@@ -24,6 +24,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Finite
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Length
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Words
 import CslibFrontier.Computability.PCP.Encoded.Size
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Captured
 
 /-!
 # Polynomial-time membership for satisfiable unique games

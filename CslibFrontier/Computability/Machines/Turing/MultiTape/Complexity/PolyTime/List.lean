@@ -978,23 +978,6 @@ theorem zip {α β : Type} (encA : α ↪ List Bool) (encB : β ↪ List Bool) :
       (encPair (encList encA) (encList encB)) (encList (encPair encA encB)) :=
   .of_tidy (ComputableTidilyInPolyTime.zip encA encB)
 
-/-- Replace a computed list entry at a unary index. Out-of-range indices preserve the list;
-the replacement and both slices are charged in their original element encoding. -/
-@[fun_prop]
-theorem listSetWithInput {γ α : Type} {encIn : γ ↪ List Bool} (encA : α ↪ List Bool)
-    {list : γ → List α} {idx : γ → ℕ} {val : γ → α}
-    (hlist : ComputableInPolyTime list encIn (encList encA))
-    (hidx : ComputableInPolyTime idx encIn encUnary)
-    (hval : ComputableInPolyTime val encIn encA) :
-    ComputableInPolyTime (fun x => (list x).set (idx x) (val x)) encIn (encList encA) := by
-  simp_rw [List.set_eq_take_append_cons_drop]
-  exact ite_decide
-    (unary_lt' hidx ((length_list encA).comp hlist))
-    (listAppend'
-      (listTakeWithInput hlist hidx)
-      (cons' hval (listDropWithInput hlist (unary_add.comp (hidx.prod (const 1))))))
-    hlist
-
 /-- Number the entries of a framed list with unary indices, charging the list and every index. -/
 @[fun_prop]
 theorem zipIdx {α : Type} (enc : α ↪ List Bool) :

@@ -171,7 +171,7 @@ Plain and internal tidy predicates have separate search rules at this snapshot. 
 
 For numbered framed lists, import `Complexity.PolyTime.List` and use the plain
 `ComputableInPolyTime.zipIdx` rule. It stores each index in `encUnary` and needs no inhabitant
-or decoder for the element type. The same module provides `listSetWithInput` for replacement at
+or decoder for the element type. `Complexity.PolyTime.Captured` provides `listSetWithInput` for replacement at
 a computed unary index; an out-of-range index leaves the list unchanged. Both rules compose
 with plain certificates for the original input. The ordinary-import regression client
 [`ListZipIdx.lean`](../../CslibFrontierTests/ListZipIdx.lean) covers empty element types,
