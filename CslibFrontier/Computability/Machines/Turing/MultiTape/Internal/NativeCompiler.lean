@@ -133,7 +133,8 @@ namespace NativeCompiler
     by intro a b h; cases a <;> cases b <;> simp_all⟩
 
 /-- The exact universal description of the named machine. -/
-noncomputable def description {α β : Type*} {f : α → β} {encIn : α ↪ List Bool}
+@[expose] noncomputable def description {α β : Type*} {f : α → β}
+    {encIn : α ↪ List Bool}
     {encOut : β ↪ List Bool} (compiler : NativeCompiler f encIn encOut) : Desc := by
   letI := compiler.stateFintype
   exact desc compiler.stateEncoding eBit compiler.machine
