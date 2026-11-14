@@ -3269,6 +3269,26 @@ torus `(ZMod 8)^3`. They check that a one-step word reaches the one-step neighbo
 This module covers items 1–4 (distributional and combinatorial word identities); explicit machine
 or streaming space realization (the post-item space bound of Lemma 6.3) is separate.
 
+## Bound bad visits along an expander walk
+
+Import [VisitCount.lean](../../CslibFrontier/Foundations/Combinatorics/Expander/VisitCount.lean).
+Let `G : RotationMap V D`, with finite nonempty vertex type `V` and incident-port type `D`.
+Write `L = t + 1` for the number of visited vertices, `m : ℕ` for an integer visit threshold,
+and `q = dens W + G.spectralExpansion ^ 2` for a bad-vertex set `W`.
+For this set, `G.visitCount W p` counts all `t+1` vertices, including the
+initial vertex. Apply `dens_filter_selected_walkAt_mem_le` to arbitrary selected times,
+`expect_choose_visitCount_le` for factorial moments, and `dens_filter_visitCount_gt_le`
+for strict integer tails. `dens_filter_visitCount_half_lt` bounds a strict majority of
+bad samples by `(32 * dens W)^((t+1)/4)` when expansion is below `sqrt(dens W)`.
+The [checked clients](../../CslibFrontierTests/ExpanderVisitCount.lean) cover nonconsecutive
+times excluding zero, computed counts, boundaries, and even/odd majority events.
+Goldreich Exercise 8.44's strict displayed integer bound needs positive `q` and
+`1≤m≤L`; the general non-strict tails include degenerate cases. These are uniform-start
+probabilities on vertices and port sequences, not a sampler or runtime certificate.
+
+From the repository root, run `scripts/build.sh CslibFrontierTests.ExpanderVisitCount`
+to check the examples.
+
 ## Bound adapted Bernoulli counts and hitting times by stochastic domination
 
 Import [`CslibFrontier.Probability.StochasticDomination`](../../CslibFrontier/Probability/StochasticDomination.lean)
