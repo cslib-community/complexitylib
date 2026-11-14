@@ -5803,7 +5803,8 @@ register_result "goldreich-expander-visit-count" where
     Cslib.RotationMap.dens_filter_visitCount_gt_lt,
     Cslib.RotationMap.dens_filter_visitCount_half_lt
   ]
-  scope := "Finite nonempty rotation map and ports; uniform initial vertex and independent ports. \
-    Length L=t+1 counts vertices, including time zero. Arbitrary selected times, factorial moments, \
-    integer tails and strict half-visits for every positive L. The source strict integer bound \
-    requires 1<=m<=L and rho+eta^2>0; alpha*L needs an integer convention. No sampler/runtime claim."
+  scope := "Finite nonempty rotation map and ports; uniform initial vertex and independent \
+    ports. Length L=t+1 counts vertices, including time zero. Arbitrary selected \
+    times, factorial moments, integer tails and strict half-visits for every positive \
+    L. The source strict integer bound requires 1<=m<=L and rho+eta^2>0; alpha*L needs \
+    an integer convention. No sampler/runtime claim."
