@@ -41,8 +41,10 @@ implicit-rejection transform `FO-notbot` (module
 `CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot`), `FO^⊥` has no secret fallback seed
 and therefore no `2 qH / |M|` seed-guessing term; conversely, because `decapsBot` explicitly
 outputs `none` when `decT` rejects (exposing the §3.1 ciphertext-validity oracle `CVO` of
-`T[PKE, G]`), simulating decapsulation from cached `G`-queries alone incurs an additional
-`2 qD 2^{-γ}` spreadness term.
+`T[PKE, G]`), simulating decapsulation from cached `G`-queries alone incurs a `2 qD 2^{-γ}`
+ciphertext-validity term, and its keyless challenge hop (step 4 below) pays a further
+`2 (qG + qH) 2^{-γ}` that `FO-notbot` avoids. In total `FO^⊥` pays `2 (qG + qH + qD) 2^{-γ}` for
+spreadness, where the `FO-notbot` bound has no spreadness term.
 
 The proof composes four game hops for each challenge bit `b : Bool`:
 

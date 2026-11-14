@@ -181,8 +181,6 @@ import CslibFrontier.Crypto.Computational.OneWayToPRG
 import CslibFrontier.Crypto.Computational.SIS.Ajtai
 import CslibFrontier.Crypto.Primitives.PRP.Finite
 import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.Bot
-import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.NotBot
-import CslibFrontier.Crypto.Protocols.KEM.FujisakiOkamoto.WordSecurity
 import CslibFrontier.Crypto.Protocols.PIR.Block
 import CslibFrontier.Crypto.Protocols.PIR.Collusion
 import CslibFrontier.Crypto.Protocols.PIR.GeneralCover
@@ -5229,61 +5227,6 @@ register_result "quantum-general-adversaries" where
     hierarchy λ(f) ≤ ADV(f) ≤ ADV±(f) and Alb₃ ≤ ADV(f), and the Hamming-distance barrier \
     ADV(f) ≤ N / k. Non-Boolean input alphabets (value queries / permutation inversion) and \
     general composition theorems are not formalized here."
-register_result "fujisaki-okamoto-notbot-ind-cca" where
-  title := "Concrete ROM IND-CCA advantage bound of the implicit-rejection Fujisaki–Okamoto \
-    transform FO-notbot for one typed scheme"
-  topic := "cryptography"
-  sources := [
-    { paper := HofheinzHoevelmannsKiltz2017, theorem := "Theorems 3.2 and 3.4",
-      locator := "§3.1, §3.2.2 and the §3.3 bounds table (IACR ePrint 2017/604, full version of \
-        2 November 2021)" }
-  ]
-  theorems := [
-    Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.indCcaRomAdvantage_le
-  ]
-  scope := "Domain-separated FO-notbot = U-notbot ∘ T over one fixed explicit-coin PKE: for \
-    uniform messages, a δ-correct and γ-spread PKE, and a randomized adversary with explicit \
-    coins each of whose coin values makes at most qG queries to G and qH queries to H \
-    (decapsulation queries unbounded), the ROM IND-CCA advantage is at most \
-    2·Adv^{IND-CPA}(romCpaReduction A) + (2qH + 2(qG + qH))/|M| + 2(qG + qH + 1)δ + \
-    2(qG + qH)2^{-γ}, where IND-CPA is the two-stage game of HHK17 Def. 2.2 and \
-    romCpaReduction A is one two-stage adversary that draws its own challenge messages. Both \
-    advantages are two-world differences (twice HHK17's). The proof composes the T and U-notbot \
-    hops directly instead of through OW-PCA; roIndCcaGame draws both real (H) and ideal challenge \
-    keys from the arbitrary sampler S.sampleKey (uniform sampleKey recovers HHK17 §2.2 Def. 2.4 / \
-    Fig. 4). The γ-spreadness hypothesis and the 2^{-γ} term go beyond the source, which requires \
-    no spreadness for FO-notbot (§1.1.2 table, p. 6; remark after the proof of Theorem 3.2, p. 13; \
-    KEM-notbot row of the §3.3 table, p. 22): they come from step 3 of the challenge hop \
-    (NotBot/Challenge.lean), which bounds by spreadness the event that a cached coin re-encrypts a \
-    message to the challenge ciphertext; removing them is #5376. \
-    Concrete bound for one scheme: no security parameter and no running-time certificate \
-    for the reduction; the asymptotic word-level theorem is \
-    fujisaki-okamoto-notbot-word-rom-ind-cca. FO^⊥ is registered separately as \
-    fujisaki-okamoto-bot-ind-cca."
-
-register_result "fujisaki-okamoto-notbot-word-rom-ind-cca" where
-  title := "ROM IND-CCA security of the word-level FO-notbot KEM from IND-CPA of the PKE family"
-  topic := "cryptography"
-  sources := [
-    { paper := HofheinzHoevelmannsKiltz2017, theorem := "Theorems 3.2 and 3.4",
-      locator := "§3.1, §3.2.2 and the §3.3 bounds table (IACR ePrint 2017/604, full version of \
-        2 November 2021)" }
-  ]
-  theorems := [
-    Cslib.Crypto.Protocols.FujisakiOkamoto.WordPKE.INDCPA.romINDCCA
-  ]
-  scope := "Asymptotic: for a word-level PKE family that is IND-CPA secure against uniform strict \
-    PPT adversaries (challenge messages in its message space), efficient, with ciphertexts in its \
-    ciphertext space, δ-correct and γ-spread with δ, 2^{-γ} and 2^{-msgLen} negligible, and a \
-    polynomial-time key length, the domain-separated FO-notbot KEM is IND-CCA secure in the random \
-    oracle model against uniform strict oracle PPT adversaries with any number of decapsulation \
-    queries. The proof applies IND-CPA to the explicit reduction romCpaReductionWord, certified \
-    uniform strict PPT, through the typed bridge to the concrete bound \
-    fujisaki-okamoto-notbot-ind-cca. The γ-spreadness premise is stronger than the source, which \
-    requires no spreadness for FO-notbot (§1.1.2 table, p. 6; remark after the proof of Theorem \
-    3.2, p. 13; §3.3 table, p. 22); it comes from one step of that concrete bound, and removing it \
-    is #5376. The game answers out-of-domain oracle requests with the empty word; advantages are \
-    two-world differences (twice HHK17's). FO^⊥ is not covered at the word level."
 
 register_result "fujisaki-okamoto-bot-ind-cca" where
   title := "ROM IND-CCA security of the explicit-rejection Fujisaki–Okamoto transform FO^⊥"
