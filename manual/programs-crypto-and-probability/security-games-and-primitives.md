@@ -1191,8 +1191,8 @@ and `PMF.toOuterMeasure`, with `deltaCorrect_zero_of_perfect` and `DeltaCorrect.
 its advantage in the shared experiment `PKE.cpaExperiment` with every message pair admissible. The
 advantage is the two-world difference, twice HHK17's `|Pr[b' = b] - 1/2|`. The narrower
 fixed-message experiment `ExplicitCoinPKE.indCpaGame` (`ExplicitCoinPKE.indCpaAdvantage`, messages
-`(m₀, m₁)` fixed before key generation, single-stage adversary) remains for the K-PKE bound; the FO
-theorems do not use it. On top of `ExplicitCoinPKE`, `FujisakiOkamoto.encT` and `FujisakiOkamoto.decT`
+`(m₀, m₁)` fixed before key generation, single-stage adversary) remains for the spread-necessity
+example; the FO theorems and the K-PKE bound do not use it. On top of `ExplicitCoinPKE`, `FujisakiOkamoto.encT` and `FujisakiOkamoto.decT`
 define the derandomization transform `T[PKE, G]` (§3.1, Fig. 5) with mandatory re-encryption check
 `encT P G pk m' = c` (`decT_encT_eq_some`, `encT_of_decT_eq_some`, `dec_of_decT_eq_some`,
 `decT_eq_none_of_reencrypt_ne`), while `FujisakiOkamoto.Scheme` (with arbitrary samplers
@@ -1307,10 +1307,14 @@ as `⌈q / 2⌋` rather than `encodePolyMsg`'s `⌊q / 2⌋`. The FIPS 203 round
 `compress_one_decompress_one_add`, which together give the deterministic bounded-noise correctness
 `decrypt_encrypt_eq_of_noise_le`. Key generation and coins are `ProbComp` programs over
 `sampleCenteredBinomial` with a uniform matrix in place of `SampleNTT`, and `toExplicitCoinPKE`
-feeds the scheme to the FO layer. `indCpaAdvantage_le` bounds its fixed-message IND-CPA advantage by
-four `ModuleLWE.advantage` terms of the explicit reductions `mlweKeyReduction` and
-`mlweReduction`, with centered-binomial secret and error laws; `DecisionModuleLWE` fixes a uniform
-secret, so it does not bound these terms. `MLKEMTransform.decapsWith` is the FIPS 203 implicit-rejection wrapper over any
+feeds the scheme to the FO layer. `cpaAdvantage_le` bounds its two-stage IND-CPA advantage
+(`ExplicitCoinPKE.cpaAdvantage`, messages chosen by the adversary after seeing the public key) by
+four `ModuleLWE.advantage` terms: the public-key hop `mlweKeyReduction A b` and the ciphertext hop
+`mlweReduction A b` for each challenge bit `b`, with centered-binomial secret and error laws. Both
+reductions are explicit programs that run the adversary's first stage themselves, as in the hops of
+Kyber v3.02 ([kyber302][kyber302], §4.4, eq. (6)), with a uniform matrix instead of `XOF` and a
+ciphertext hop on the uncompressed sample. The bound is concrete and charges no running time; `DecisionModuleLWE`
+fixes a uniform secret, so it does not bound these terms. `MLKEMTransform.decapsWith` is the FIPS 203 implicit-rejection wrapper over any
 `ExplicitCoinPKE`, defined through `FujisakiOkamoto.decT` and proved equal to the standard's
 decapsulation algorithm (`decapsWith_eq`). [`CslibFrontierTests/Crypto/MLKEM.lean`](../../CslibFrontierTests/Crypto/MLKEM.lean)
 checks the three parameter sets, sharpness of the compression and decoding bounds at `q = 3329`,
@@ -1627,6 +1631,7 @@ The finite query-only PRG/cipher results, semantic commitment interfaces and uni
 [hill99]: ../sources.md#hill99
 [holenstein06]: ../sources.md#holenstein06
 [katzlindell20]: ../sources.md#katzlindell20
+[kyber302]: ../sources.md#kyber302
 [manin56]: ../sources.md#manin56
 [naoryung89]: ../sources.md#naoryung89
 [rompel90]: ../sources.md#rompel90
