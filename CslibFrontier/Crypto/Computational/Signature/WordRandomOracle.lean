@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Crypto.Protocols.Signature.RandomOracle.Simulation
 public import CslibFrontier.Computability.Probabilistic.Oracle.ReplayParameter
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Decoder.Basic
+public import CslibFrontier.Crypto.Game
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.CoinTape.QueryBounds
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.CoinTape.Substitution
 import CslibFrontier.Languages.Probabilistic.Oracle.Norm
@@ -21,10 +22,17 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 /-!
 # Native word forgers in the typed random-oracle signature world
 
-Channel `false` signs a word; channel `true` hashes a word. Every hash payload is retained as a
-distinct query, and digest replies use the supplied injective encoding. Signing randomness remains
-in the shared world, separate from the forger's saved coins. The existing total pair decoder
-handles arbitrary native output, including words that are not canonical pair encodings.
+A native word forger is an oracle machine with two channels: channel `false` signs a word and
+channel `true` hashes a word. Every hash payload is retained as a distinct query, and digest replies
+use the supplied injective encoding. Signing randomness remains in the shared world, separate from
+the forger's private coins. The existing total pair decoder handles arbitrary native output,
+including words that are not canonical pair encodings.
+
+`wordEufCmaGame` is the EUF-CMA game of such a forger against a scheme whose keys, messages,
+signatures and hash points are words: the forger gets the public key, signs and hashes adaptively,
+and wins when its final signature verifies on a message it never asked to have signed. Signing,
+hashing and the final verification share one lazily sampled random oracle. `EUFCMA` is the
+asymptotic notion: every uniform oracle-PPT forger wins with negligible probability.
 
 The saved-coin adapter returns the empty pair without calls on oversized public keys, and truncates
 every supplied tape at the original input-dependent machine clock. Its sampling budget depends only
@@ -37,6 +45,9 @@ certify their native realization or the complete forking reduction.
 
 * `Cslib.Crypto.Protocols.ROMSignature.wordQuery`: exact Boolean channel routing.
 * `Cslib.Crypto.Protocols.ROMSignature.routeWordProgram`: retain private sampling while routing.
+* `Cslib.Crypto.Protocols.ROMSignature.wordEufCmaGame`: the EUF-CMA game of a native word forger.
+* `Cslib.Crypto.Protocols.ROMSignature.EUFCMA`: EUF-CMA security in the random-oracle model
+  against uniform oracle-PPT word forgers.
 * `Cslib.Crypto.Protocols.ROMSignature.savedCoinForger`: the existing explicit-coin forger model.
 * `Cslib.Crypto.Protocols.ROMSignature.encReplayInput`: the encoding of a saved-coin replay's
   input.
@@ -53,8 +64,8 @@ certify their native realization or the complete forking reduction.
   parameter-only call budget, and the signing and hash budgets.
 * `Cslib.Crypto.Protocols.ROMSignature.exists_savedCoinForger`: a polynomial length bound on the
   supported public keys and an actual oracle-PPT forger give a joint-state-preserving adapter.
-* `Cslib.Crypto.Protocols.ROMSignature.exists_eufCmaGame_savedCoinForger`: equality of the existing
-  shared-world native-forger game and explicit-coin EUF-CMA game.
+* `Cslib.Crypto.Protocols.ROMSignature.exists_eufCmaGame_savedCoinForger`: equality of the word
+  forger's game `wordEufCmaGame` and the explicit-coin EUF-CMA game.
 
 ## References
 
@@ -111,6 +122,63 @@ theorem routeWordProgram_runCoins {k : ℕ} {Control : Type}
     liftOracleForger (machine.runCoins (wordQuery digestEncoding) coins input) := by
   simp only [routeWordProgram, liftOracleForger, interpret_runCoins,
     ProbOracleComp.query, interpret_query, sumHandler]
+
+/-! ### The EUF-CMA game of a native word forger -/
+
+/-- **The EUF-CMA game of a native word forger** in the random-oracle model, for a scheme whose
+public keys, messages, signatures and hash points are words. The forger receives the public key,
+signs words on channel `false` and hashes words on channel `true`, with digests encoded by
+`digestEncoding`, and finally outputs a message and a signature. Signing, hashing and the final
+verification share one lazily sampled random oracle. The forger wins when the signature verifies
+and the message was never asked to be signed; repeated signing requests are allowed. This is
+`eufCmaGame` for a forger given as a native program with private randomness
+(`exists_eufCmaGame_savedCoinForger`). -/
+noncomputable def wordEufCmaGame {SK : Type} [Fintype Digest] [Nonempty Digest]
+    (digestEncoding : Digest ↪ List Bool)
+    (scheme : Scheme (List Bool) SK (List Bool) (List Bool) (List Bool) Digest)
+    (forger : List Bool → WordOracleComp Bool (List Bool × List Bool)) : Game :=
+  worldGame scheme (fun pk => routeWordProgram digestEncoding (forger pk))
+    (fun verified ⟨msg, _⟩ pairs => verified && !(pairs.map Prod.fst).contains msg)
+
+/-- **Existential unforgeability under adaptive chosen-message attack in the random-oracle
+model** (EUF-CMA) of a family of word-interface schemes: every uniform oracle-PPT word forger, run
+on the unary security parameter and the public key, wins `wordEufCmaGame` with negligible
+probability. The digest type, its encoding and the scheme may depend on the security parameter. -/
+def EUFCMA {Digest : ℕ → Type} [∀ n, Fintype (Digest n)] [∀ n, Nonempty (Digest n)] {SK : Type}
+    (digestEncoding : (n : ℕ) → Digest n ↪ List Bool)
+    (scheme : (n : ℕ) → Scheme (List Bool) SK (List Bool) (List Bool) (List Bool) (Digest n)) :
+    Prop :=
+  Game.Indistinguishable
+    (fun forger n => wordEufCmaGame (digestEncoding n) (scheme n) (forger n))
+    (fun _ _ => PMF.pure false)
+    (IsOraclePPT (encPair encBits encBits))
+
+section EUFCMA
+
+variable {Digest : ℕ → Type} [∀ n, Fintype (Digest n)] [∀ n, Nonempty (Digest n)] {SK : Type}
+  {digestEncoding : (n : ℕ) → Digest n ↪ List Bool}
+  {scheme : (n : ℕ) → Scheme (List Bool) SK (List Bool) (List Bool) (List Bool) (Digest n)}
+
+/-- EUF-CMA security gives negligible forgery probability for every oracle-PPT word forger. -/
+theorem EUFCMA.negligible (h : EUFCMA digestEncoding scheme)
+    (forger : ℕ → List Bool → WordOracleComp Bool (List Bool × List Bool))
+    (hforger : IsOraclePPT (encPair encBits encBits) forger) :
+    Negligible fun n =>
+      Game.succProbability (wordEufCmaGame (digestEncoding n) (scheme n) (forger n)) :=
+  Game.Indistinguishable.negligible_succProbability h forger hforger
+
+/-- Establish EUF-CMA security by bounding every oracle-PPT word forger's success probability. -/
+theorem EUFCMA.of_negligible
+    (h : ∀ forger : ℕ → List Bool → WordOracleComp Bool (List Bool × List Bool),
+      IsOraclePPT (encPair encBits encBits) forger →
+      Negligible fun n =>
+        Game.succProbability (wordEufCmaGame (digestEncoding n) (scheme n) (forger n))) :
+    EUFCMA digestEncoding scheme :=
+  Game.Indistinguishable.of_negligible_succProbability h
+
+end EUFCMA
+
+/-! ### Saved-coin replay -/
 
 /-- One polynomial budget for the source clock on every admitted public key. -/
 def savedCoinBudget (c d keyC keyD n : ℕ) : ℕ :=
@@ -327,10 +395,10 @@ theorem exists_savedCoinForger
     liftOracleForger, interpret_map] using h
 
 /-- The native private-random word forger and its explicit-coin adapter give exactly the same
-existing EUF-CMA game. Signing, hash queries, and final verification share one memoized world;
-freshness excludes only signing the final message, so repeated signing queries are allowed.
-One native replay machine and clock work for every digest type and encoding, which may therefore
-vary with the security parameter.
+EUF-CMA game: `wordEufCmaGame` of the forger is `eufCmaGame` of the adapter. Signing, hash queries,
+and final verification share one memoized world; freshness excludes only signing the final message,
+so repeated signing queries are allowed. One native replay machine and clock work for every digest
+type and encoding, which may therefore vary with the security parameter.
 The supported public keys need only a polynomial length bound `keyC * (n + 1) ^ keyD`.
 This bridge does not assert unforgeability or a discrete-log reduction. -/
 theorem exists_eufCmaGame_savedCoinForger
@@ -349,16 +417,15 @@ theorem exists_eufCmaGame_savedCoinForger
         scheme.keyGen = ProbComp.eval (gen n) →
         (savedCoinForger machine digestEncoding c d keyC keyD n).CallBounded
           (savedCoinBudget c d keyC keyD n) (savedCoinBudget c d keyC keyD n) ∧
-        worldGame scheme (fun pk => routeWordProgram digestEncoding (program n pk))
-          (fun verified ⟨msg, _⟩ pairs => verified && !(pairs.map Prod.fst).contains msg) =
-        eufCmaGame scheme (savedCoinForger machine digestEncoding c d keyC keyD n) := by
+        wordEufCmaGame digestEncoding scheme (program n) =
+          eufCmaGame scheme (savedCoinForger machine digestEncoding c d keyC keyD n) := by
   obtain ⟨k, Control, hfinite, machine, c, d, hefficient, hrun⟩ :=
     exists_savedCoinForger hgen hprogram
   refine ⟨k, Control, hfinite, machine, c, d, hefficient, ?_⟩
   intro n Digest _ _ digestEncoding scheme hgen'
   refine ⟨callBounded_savedCoinForger machine digestEncoding c d keyC keyD n, ?_⟩
   rw [eufCmaGame_eq_worldGame]
-  unfold worldGame
+  unfold wordEufCmaGame worldGame
   apply PMF.bind_congr_on_support
   intro keys hkeys
   rw [hgen'] at hkeys

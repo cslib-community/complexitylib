@@ -355,11 +355,13 @@ prerequisite is supplied by `IsOraclePPTOn.exists_savedCoins` in
 [`Oracle/Replay.lean`](../../CslibFrontier/Computability/Probabilistic/Oracle/Replay.lean), which charges
 full-input replay and retains external state.
 [`Signature/WordRandomOracle.lean`](../../CslibFrontier/Crypto/Computational/Signature/WordRandomOracle.lean)
-also gives a key-independent saved-coin adapter for actual Boolean-channel word forgers, with
-full-input native replay and equality of the existing shared-world and EUF-CMA games. All word
-hash payloads stay distinct. `exists_closeTo_worldGame_schnorrEncodedROMScheme` (below) applies
-it to Schnorr's encoded scheme, and `SchnorrSignature/Security.lean` (below) certifies the
-forking reduction built on it. See the
+names the EUF-CMA game of an actual Boolean-channel word forger, `ROMSignature.wordEufCmaGame`,
+and the asymptotic notion `ROMSignature.EUFCMA`: every uniform oracle-PPT word forger wins with
+negligible probability. It also gives a key-independent saved-coin adapter for such forgers, with
+full-input native replay and equality of `wordEufCmaGame` and the explicit-coin EUF-CMA game. All
+word hash payloads stay distinct. `exists_closeTo_wordEufCmaGame_schnorrNativeROMScheme` (below)
+applies it to the native Schnorr scheme, and `SchnorrSignature/Security.lean` (below) certifies
+the forking reduction built on it. See the
 checked algorithms and typed-ROM examples in
 [`CslibFrontierTests/Crypto/SchnorrSignature.lean`](../../CslibFrontierTests/Crypto/SchnorrSignature.lean).
 
@@ -387,7 +389,9 @@ entries, and preservation of external state through private nonce sampling.
 [`SchnorrSignature/EncodedROM.lean`](../../CslibFrontier/Crypto/Computational/SchnorrSignature/EncodedROM.lean)
 exposes the same arithmetic as `schnorrEncodedROMScheme`, an instance of the existing shared-ROM
 scheme with word keys and outer signature words. Its key law and scalar-nonce law are explicit:
-the actual sampler choices and the ideal uniform choices are not identified. Canonical-key
+the actual sampler choices and the ideal uniform choices are not identified.
+`schnorrNativeROMScheme n d m` is the scheme as the native algorithms run it, with the actual key
+generator `schnorrSigKeyGen` and nonce sampler `sampleExp`. Canonical-key
 per-call laws reuse the native signer/verifier realization, including their complete external
 state. No public-key decoder or additional reply-cap premise is introduced.
 
@@ -408,11 +412,11 @@ moves a forger from the actual key and nonce samplers to the ideal laws in the s
 every raw secret-key word and starting cache and signing log,
 `closeTo_runWith_schnorrEncodedROMScheme` bounds the change in the joint output/cache/log law by
 `Qs / 2^n`: each signing call pays one nonce error, and hash calls pay nothing because their
-transitions are identical. `closeTo_eufCmaGame_schnorrEncodedROMScheme` adds the key-generation
-error and compares the actual game with the canonical ideal word game within `(Qs+1) / 2^n`.
-For a native oracle-PPT forger and a deterministic description function whose encoded
-descriptions have polynomial length,
-`exists_closeTo_worldGame_schnorrEncodedROMScheme` takes the replay machine and the polynomial
+transitions are identical. `closeTo_eufCmaGame_schnorrNativeROMScheme` adds the key-generation
+error and compares the game of `schnorrNativeROMScheme` with the canonical ideal word game within
+`(Qs+1) / 2^n`. For a native oracle-PPT forger and a deterministic description function whose
+encoded descriptions have polynomial length,
+`exists_closeTo_wordEufCmaGame_schnorrNativeROMScheme` takes the replay machine and the polynomial
 budget `savedCoinBudget` from the saved-coin adapter, so no query cap is assumed
 ([#2764](https://github.com/cslib-community/cslib-frontier/issues/2764)). These are statistical
 hops only; `SchnorrSignature/Security.lean` (below) adds the efficient forking reduction and
@@ -445,11 +449,23 @@ total pair decoder accepts. As an ordinary `module` client, the same file applie
 order-11 Schnorr group modulo 23.
 
 [`SchnorrSignature/Security.lean`](../../CslibFrontier/Crypto/Computational/SchnorrSignature/Security.lean)
-proves **Schnorr EUF-CMA security under discrete log**: `negligible_worldGame_schnorrEncodedROMScheme`.
-For a group family `description` with one description per security parameter and encoded
-descriptions of polynomial length, a polynomial-time challenge width `w` with `2 ^ w n ≤ q` and
-negligible `2⁻ʷ`, and `F.DiscreteLog (fun n => PMF.pure (description n))`,
-every native forger with `IsOraclePPT` wins the shared-oracle game of the native scheme (actual
+proves **Schnorr EUF-CMA security under discrete log**:
+
+```lean
+theorem DiscreteLog.eufCma_schnorrNativeROMScheme {description : ℕ → F.Desc}
+    (hDL : F.DiscreteLog fun n => PMF.pure (description n))
+    (hdescription : PolynomiallyBounded fun n => (F.encDesc (description n)).length)
+    {width : ℕ → ℕ} (hwidth : ComputableInPolyTime width encUnary encUnary)
+    (hwq : ∀ n, 2 ^ width n ≤ F.order (description n))
+    (hchallenge : Negligible fun n => (1 / 2 ^ width n : ℝ≥0)) :
+    ROMSignature.EUFCMA (fun n => encBitString (width n))
+      (fun n => F.schnorrNativeROMScheme n (description n) (width n))
+```
+
+That is, for a group family `description` with one description per security parameter and
+encoded descriptions of polynomial length, a polynomial-time challenge width `w` with
+`2 ^ w n ≤ q` and negligible `2⁻ʷ`, and the discrete-log assumption for that family, every native
+forger with `IsOraclePPT` wins `wordEufCmaGame` against the native scheme (actual
 `schnorrSigKeyGen` keys, actual `sampleExp` nonces, adaptive signing, arbitrary hash words,
 final-message freshness) with negligible probability. Nothing is assumed about the reduction:
 `schnorrForkingAdversary` samples the forger's tape, `2B` strict-PPT simulated transcripts and two
@@ -463,9 +479,11 @@ gives the description to the reduction; only its encoded length enters, through 
 budget. Random group setups are not covered, because the existing game gives the forger only the
 public key ([#2568](https://github.com/cslib-community/cslib-frontier/issues/2568),
 [#5293](https://github.com/cslib-community/cslib-frontier/issues/5293)). The `module` client
-[`Crypto/SchnorrSecurity.lean`](../../CslibFrontierTests/Crypto/SchnorrSecurity.lean) applies the
-theorem to an adaptive native forger with `n`-bit challenges, over Schnorr groups and over the
-additive groups `ZMod p` of primes `2 ^ n < p ≤ 2 ^ (n + 1)` from Bertrand's postulate. For the
+[`Crypto/SchnorrSecurity.lean`](../../CslibFrontierTests/Crypto/SchnorrSecurity.lean) checks by
+`rfl` that `wordEufCmaGame` and `schnorrNativeROMScheme` only name the existing shared-oracle game,
+and applies the theorem with `n`-bit challenges, over Schnorr groups (and through it to an adaptive
+native forger) and over the additive groups `ZMod p` of primes `2 ^ n < p ≤ 2 ^ (n + 1)` from
+Bertrand's postulate. For the
 latter it discharges every parameter condition unconditionally, leaving the discrete-log assumption
 as the only premise (which fails for these groups, where discrete logarithms are easy). It also
 checks the extraction step on the group modulo 23.

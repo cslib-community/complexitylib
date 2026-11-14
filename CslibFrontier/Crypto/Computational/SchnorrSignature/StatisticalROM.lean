@@ -10,13 +10,14 @@ module
 public import CslibFrontier.Crypto.Computational.SchnorrSignature.EncodedROM
 public import CslibFrontier.Computability.Interactive.Security.Oracle
 public import CslibFrontier.Crypto.Computational.Signature.WordRandomOracle
+public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.BitString
 
 /-!
 # Actual Schnorr sampling in the adaptive random-oracle game
 
 `schnorrEncodedROMScheme` takes its key law and scalar-nonce law as parameters. The native
-algorithms sample with `schnorrSigKeyGen` and `sampleExp`, each within statistical distance `2⁻ⁿ`
-of the ideal uniform law, and the typed Fiat–Shamir bound
+scheme `schnorrNativeROMScheme` samples with `schnorrSigKeyGen` and `sampleExp`, each within
+statistical distance `2⁻ⁿ` of the ideal uniform law, and the typed Fiat–Shamir bound
 (`succProbability_eufCmaGame_schnorrWordROMScheme_le`) is proved for the ideal laws. This module
 moves a forger from the actual laws to the ideal ones in the existing EUF-CMA game:
 
@@ -34,8 +35,8 @@ certify the forking reduction.
 ## Main results
 
 * `closeTo_runWith_schnorrEncodedROMScheme`: adaptive joint-state nonce replacement.
-* `closeTo_eufCmaGame_schnorrEncodedROMScheme`: actual key and nonce sampling versus the ideal game.
-* `exists_closeTo_worldGame_schnorrEncodedROMScheme`: native forgers with a derived polynomial
+* `closeTo_eufCmaGame_schnorrNativeROMScheme`: actual key and nonce sampling versus the ideal game.
+* `exists_closeTo_wordEufCmaGame_schnorrNativeROMScheme`: native forgers with a derived polynomial
   query budget, for deterministic descriptions of polynomial encoded length.
 
 ## References
@@ -81,18 +82,17 @@ theorem closeTo_runWith_schnorrEncodedROMScheme
       CloseTo.refl (handler (F.schnorrEncodedROMScheme d m keyLaw
         (PMF.uniformOfFintype (ZMod (F.order d)))) sk (Sum.inr word) state)
 
-/-- The actual key and nonce distributions cost at most one key error plus one error per signing
-call. The final verification uses the same cache; repeated signing requests remain allowed.
-The right side is the existing canonical word game, with total outer signature decoding. -/
-theorem closeTo_eufCmaGame_schnorrEncodedROMScheme (hm : 2 ^ m ≤ F.order d)
+/-- The actual key and nonce distributions of the native scheme cost at most one key error plus
+one error per signing call. The final verification uses the same cache; repeated signing requests
+remain allowed. The right side is the existing canonical word game, with total outer signature
+decoding. -/
+theorem closeTo_eufCmaGame_schnorrNativeROMScheme (hm : 2 ^ m ≤ F.order d)
     (A : Forger (List Bool) (List Bool) (List Bool) (List Bool) (BitString m))
     {Qs Qro : ℕ} (hA : A.CallBounded Qs Qro) :
-    CloseTo
-      (eufCmaGame (F.schnorrEncodedROMScheme d m
-        (ProbComp.eval (F.schnorrSigKeyGen n d))
-        ((ProbComp.eval (F.sampleExp n d)).map Nat.cast)) A)
+    CloseTo (eufCmaGame (F.schnorrNativeROMScheme n d m) A)
       (eufCmaGame (F.schnorrWordROMScheme d hm) (F.schnorrDecodedForger d A))
       ((Qs + 1 : ℕ) * (1 / 2 ^ n : ℝ≥0)) := by
+  unfold schnorrNativeROMScheme
   rw [← F.eufCmaGame_schnorrEncodedROMScheme_eq d hm A]
   have hhandler (sk : List Bool) :
       handler (F.schnorrEncodedROMScheme d m (ProbComp.eval (F.schnorrSigKeyGen n d))
@@ -123,31 +123,27 @@ theorem closeTo_eufCmaGame_schnorrEncodedROMScheme (hm : 2 ^ m ≤ F.order d)
 /-- An actual native forger gets one efficient replay and one parameter-only polynomial query
 budget from actual key-generation support. Descriptions here are a fixed deterministic family whose
 encoded length is polynomial in the security parameter; the family need not be computable, and
-this does not assert a random-setup routing theorem. The raw-word world game retains the actual key
-and nonce laws before statistical transport. -/
-theorem exists_closeTo_worldGame_schnorrEncodedROMScheme
+this does not assert a random-setup routing theorem. The word forger's game retains the actual key
+and nonce laws of the native scheme before statistical transport. -/
+theorem exists_closeTo_wordEufCmaGame_schnorrNativeROMScheme
     (description : ℕ → F.Desc)
     (hdescription : PolynomiallyBounded fun n => (F.encDesc (description n)).length)
-    (width : ℕ → ℕ) (hwidth : ∀ n, 2 ^ width n ≤ F.order (description n))
+    (width : ℕ → ℕ) (hwq : ∀ n, 2 ^ width n ≤ F.order (description n))
     {program : ℕ → List Bool → WordOracleComp Bool (List Bool × List Bool)}
     (hprogram : IsOraclePPT (encPair encBits encBits) program) :
     ∃ (k : ℕ) (Control : Type) (_ : Finite Control)
       (machine : _root_.Turing.MultiTapePTM k Bool Control Bool) (c e keyC keyD : ℕ),
-      IsOraclePPTOn (encPair encUnary (encPair encBits encBits)) (encPair encBits encBits)
+      IsOraclePPTOn encReplayInput (encPair encBits encBits)
         (savedWordReplay machine (fun op word => ProbOracleComp.query (op, word))
           c e keyC keyD) ∧
       ∀ n,
-        let digestEncoding : BitString (width n) ↪ List Bool := ⟨List.ofFn, List.ofFn_injective⟩
-        let A := savedCoinForger machine digestEncoding c e keyC keyD n
+        let A := savedCoinForger machine (encBitString (width n)) c e keyC keyD n
         let budget := savedCoinBudget c e keyC keyD n
         A.CallBounded budget budget ∧
         CloseTo
-          (worldGame (F.schnorrEncodedROMScheme (description n) (width n)
-            (ProbComp.eval (F.schnorrSigKeyGen n (description n)))
-            ((ProbComp.eval (F.sampleExp n (description n))).map Nat.cast))
-            (fun pk => routeWordProgram digestEncoding (program n pk))
-            (fun verified ⟨msg, _⟩ pairs => verified && !(pairs.map Prod.fst).contains msg))
-          (eufCmaGame (F.schnorrWordROMScheme (description n) (hwidth n))
+          (wordEufCmaGame (encBitString (width n))
+            (F.schnorrNativeROMScheme n (description n) (width n)) (program n))
+          (eufCmaGame (F.schnorrWordROMScheme (description n) (hwq n))
             (F.schnorrDecodedForger (description n) A))
           ((budget + 1 : ℕ) * (1 / 2 ^ n : ℝ≥0)) := by
   obtain ⟨genC, genD, hgenLength⟩ := F.isPPTOn_schnorrSigKeyGen.length_le
@@ -167,13 +163,10 @@ theorem exists_closeTo_worldGame_schnorrEncodedROMScheme
   refine ⟨k, Control, hfinite, machine, c, e, keyC, keyD, hefficient, ?_⟩
   intro n
   dsimp only
-  obtain ⟨hbudget, heq⟩ := hgame n (BitString (width n)) ⟨List.ofFn, List.ofFn_injective⟩
-    (F.schnorrEncodedROMScheme (description n) (width n)
-      (ProbComp.eval (F.schnorrSigKeyGen n (description n)))
-      ((ProbComp.eval (F.sampleExp n (description n))).map Nat.cast)) rfl
+  obtain ⟨hbudget, heq⟩ := hgame n (BitString (width n)) (encBitString (width n))
+    (F.schnorrNativeROMScheme n (description n) (width n)) rfl
   refine ⟨hbudget, ?_⟩
   rw [heq]
-  exact F.closeTo_eufCmaGame_schnorrEncodedROMScheme (description n) n (width n)
-    (hwidth n) _ hbudget
+  exact F.closeTo_eufCmaGame_schnorrNativeROMScheme (description n) n (width n) (hwq n) _ hbudget
 
 end Cslib.Crypto.PrimeOrderGroupFamily

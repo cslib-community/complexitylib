@@ -26,9 +26,10 @@ Check the extraction step of the two-pass forking adversary in the order-11 subg
 it extracts only when the first pass names a query, the second pass names the same query, and the
 two answers there differ; and then it outputs `(c - c')⁻¹ (z - z')` modulo the group order.
 
-Then apply `negligible_worldGame_schnorrEncodedROMScheme` to an actual adaptive native forger with
-challenge width `n`. The forger's `IsOraclePPT` certificate, the width's runtime and the
-negligibility of `2⁻ⁿ` are discharged here.
+Then check that `ROMSignature.wordEufCmaGame` and `schnorrNativeROMScheme` only name the existing
+shared-oracle game of the native scheme, and apply `DiscreteLog.eufCma_schnorrNativeROMScheme` with
+challenge width `n`, and through it to an actual adaptive native forger. The width's runtime, the
+negligibility of `2⁻ⁿ` and the forger's `IsOraclePPT` certificate are discharged here.
 
 * Over Schnorr groups, the group family, its polynomial description length and its bound
   `2 ^ n ≤ q` remain hypotheses, as does the discrete-logarithm assumption: the library constructs
@@ -45,7 +46,7 @@ set_option linter.privateModule false
 
 namespace CslibFrontierTests.Crypto.SchnorrSecurity
 
-open Cslib Cslib.Probability Cslib.Crypto Cslib.Crypto.PrimeOrderGroupFamily
+open Cslib Cslib.Probability Cslib.Crypto Cslib.Crypto.PrimeOrderGroupFamily Cslib.Crypto.Protocols
 open Cslib.Crypto.Protocols.ROMSignature Turing.MultiTapeTM
 
 private def d23 : schnorrGroups.Desc :=
@@ -96,22 +97,40 @@ private theorem nativeForger_ppt : IsOraclePPT (encPair encBits encBits) nativeF
   · fun_prop
   fun_prop
 
--- Over any family of Schnorr groups with polynomial-length parameters and order at least `2 ^ n`
--- on which discrete logarithms are hard, this forger wins the native EUF-CMA game with `n`-bit
--- challenges, actual keys and actual nonces with negligible probability.
+-- The names only abbreviate the existing game: the forger's game against the native scheme is,
+-- by definition, the shared-oracle game of the encoded scheme with the actual key generator and
+-- nonce sampler, the forger routed into it, and final-message freshness.
+example (d : schnorrGroups.Desc) (n m : ℕ)
+    (forger : List Bool → WordOracleComp Bool (List Bool × List Bool)) :
+    wordEufCmaGame (encBitString m) (schnorrGroups.schnorrNativeROMScheme n d m) forger =
+      worldGame (schnorrGroups.schnorrEncodedROMScheme d m
+          (ProbComp.eval (schnorrGroups.schnorrSigKeyGen n d))
+          ((ProbComp.eval (schnorrGroups.sampleExp n d)).map Nat.cast))
+        (fun pk => routeWordProgram (⟨List.ofFn, List.ofFn_injective⟩ : BitString m ↪ List Bool)
+          (forger pk))
+        (fun verified ⟨msg, _⟩ pairs => verified && !(pairs.map Prod.fst).contains msg) :=
+  rfl
+
+/-- Over any family of Schnorr groups with polynomial-length parameters and order at least `2 ^ n`
+on which discrete logarithms are hard, the native scheme with `n`-bit challenges is EUF-CMA secure
+in the random-oracle model. -/
+private theorem eufCma_schnorrGroups (description : ℕ → schnorrGroups.Desc)
+    (hdescription : PolynomiallyBounded fun n => (schnorrGroups.encDesc (description n)).length)
+    (hwq : ∀ n, 2 ^ n ≤ schnorrGroups.order (description n))
+    (hDL : schnorrGroups.DiscreteLog fun n => PMF.pure (description n)) :
+    ROMSignature.EUFCMA (fun n => encBitString n)
+      (fun n => schnorrGroups.schnorrNativeROMScheme n (description n) n) :=
+  hDL.eufCma_schnorrNativeROMScheme hdescription (width := fun n => n) (by fun_prop) hwq
+    negligible_one_div_two_pow
+
+-- In particular, the adaptive forger above wins with negligible probability.
 example (description : ℕ → schnorrGroups.Desc)
     (hdescription : PolynomiallyBounded fun n => (schnorrGroups.encDesc (description n)).length)
     (hwq : ∀ n, 2 ^ n ≤ schnorrGroups.order (description n))
     (hDL : schnorrGroups.DiscreteLog fun n => PMF.pure (description n)) :
-    Negligible fun n => Game.succProbability
-      (worldGame (schnorrGroups.schnorrEncodedROMScheme (description n) n
-          (ProbComp.eval (schnorrGroups.schnorrSigKeyGen n (description n)))
-          ((ProbComp.eval (schnorrGroups.sampleExp n (description n))).map Nat.cast))
-        (fun pk => routeWordProgram (⟨List.ofFn, List.ofFn_injective⟩ : BitString n ↪ List Bool)
-          (nativeForger n pk))
-        (fun verified ⟨msg, _⟩ pairs => verified && !(pairs.map Prod.fst).contains msg)) :=
-  schnorrGroups.negligible_worldGame_schnorrEncodedROMScheme description hdescription
-    (width := fun n => n) (by fun_prop) hwq negligible_one_div_two_pow hDL nativeForger_ppt
+    Negligible fun n => Game.succProbability (wordEufCmaGame (encBitString n)
+      (schnorrGroups.schnorrNativeROMScheme n (description n) n) (nativeForger n)) :=
+  (eufCma_schnorrGroups description hdescription hwq hDL).negligible nativeForger nativeForger_ppt
 
 /-! ### Unconditional parameters: additive groups of Bertrand primes -/
 
@@ -202,15 +221,9 @@ private theorem polynomiallyBounded_bertrandPrime :
 -- With every parameter condition discharged, the headline needs only the discrete-logarithm
 -- assumption for the Bertrand primes. It fails for these groups (see the module docstring).
 example (hDL : primeFields.DiscreteLog fun n => PMF.pure (bertrandPrime n)) :
-    Negligible fun n => Game.succProbability
-      (worldGame (primeFields.schnorrEncodedROMScheme (bertrandPrime n) n
-          (ProbComp.eval (primeFields.schnorrSigKeyGen n (bertrandPrime n)))
-          ((ProbComp.eval (primeFields.sampleExp n (bertrandPrime n))).map Nat.cast))
-        (fun pk => routeWordProgram (⟨List.ofFn, List.ofFn_injective⟩ : BitString n ↪ List Bool)
-          (nativeForger n pk))
-        (fun verified ⟨msg, _⟩ pairs => verified && !(pairs.map Prod.fst).contains msg)) :=
-  primeFields.negligible_worldGame_schnorrEncodedROMScheme bertrandPrime
-    polynomiallyBounded_bertrandPrime (width := fun n => n) (by fun_prop)
-    two_pow_le_order_bertrandPrime negligible_one_div_two_pow hDL nativeForger_ppt
+    ROMSignature.EUFCMA (fun n => encBitString n)
+      (fun n => primeFields.schnorrNativeROMScheme n (bertrandPrime n) n) :=
+  hDL.eufCma_schnorrNativeROMScheme polynomiallyBounded_bertrandPrime (width := fun n => n)
+    (by fun_prop) two_pow_le_order_bertrandPrime negligible_one_div_two_pow
 
 end CslibFrontierTests.Crypto.SchnorrSecurity

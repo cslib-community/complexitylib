@@ -134,10 +134,12 @@ the full efficient Schnorr reduction is in `SchnorrSignature/Security.lean`.
 
 [`Signature/WordRandomOracle.lean`](../../CslibFrontier/Crypto/Computational/Signature/WordRandomOracle.lean)
 routes Boolean channel `false` to signing and `true` to hashing. All word hash payloads remain
-distinct, and digest replies use an injective encoding. `exists_eufCmaGame_savedCoinForger`
+distinct, and digest replies use an injective encoding. `wordEufCmaGame` is the resulting EUF-CMA
+game of a native word forger in the shared world, and `ROMSignature.EUFCMA` asks that every
+uniform oracle-PPT word forger win it with negligible probability. `exists_eufCmaGame_savedCoinForger`
 starts from key generation with a polynomial bound on supported public keys (which strict-PPT key
 generation supplies through `IsPPTOn.length_le`) and an actual `IsOraclePPT` word forger, and proves
-equality of the existing shared-world game and explicit-coin EUF-CMA game. One native machine
+equality of `wordEufCmaGame` and the explicit-coin EUF-CMA game. One native machine
 and clock work uniformly for all digest types and encodings, including parameter-dependent ones.
 Its native replay
 certificate charges the whole `(n, pk, coins)` input, the key-length guard, tape truncation, and

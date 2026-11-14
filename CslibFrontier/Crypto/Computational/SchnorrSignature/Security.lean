@@ -26,14 +26,24 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.Words
 /-!
 # Schnorr signatures are EUF-CMA secure under discrete log
 
-This module proves that Schnorr signatures in the random-oracle model are EUF-CMA secure under the
-discrete-logarithm assumption, for every uniform oracle-PPT native forger
-(`negligible_worldGame_schnorrEncodedROMScheme`; [BonehShoup2023], Theorem 19.7 and Lemma 19.8;
-[PointchevalStern2000]; [BellareNeven2006]). The forger plays the existing shared-oracle game of
-the native scheme: actual key generation `schnorrSigKeyGen`, actual nonces `sampleExp`, adaptive
-signing queries, hash queries on arbitrary words, and final-message freshness. The only premises
-are `F.DiscreteLog` for a fixed group family whose encoded descriptions have polynomial length, the
-forger's certificate, and a challenge width `w` with `2 ^ w ≤ q` and negligible `2⁻ʷ`.
+This module proves that Schnorr signatures are EUF-CMA secure in the random-oracle model under the
+discrete-logarithm assumption ([BonehShoup2023], Theorem 19.7 and Lemma 19.8;
+[PointchevalStern2000]; [BellareNeven2006]):
+
+```
+theorem DiscreteLog.eufCma_schnorrNativeROMScheme
+    (hDL : F.DiscreteLog fun n => PMF.pure (description n)) … :
+    ROMSignature.EUFCMA (fun n => encBitString (width n))
+      (fun n => F.schnorrNativeROMScheme n (description n) (width n))
+```
+
+`schnorrNativeROMScheme` is the scheme as its native algorithms run it, with the actual key
+generator `schnorrSigKeyGen` and nonce sampler `sampleExp`. `ROMSignature.EUFCMA` says that every
+uniform oracle-PPT word forger wins its EUF-CMA game `ROMSignature.wordEufCmaGame` (adaptive
+signing queries, hash queries on arbitrary words, final-message freshness) with negligible
+probability. The other premises fix a group family, one description per security parameter with
+encoded descriptions of polynomial length, and a challenge width `w` computable in polynomial time
+with `2 ^ w ≤ q` and negligible `2⁻ʷ`.
 
 The discrete-logarithm adversary is the explicit program `schnorrForkingAdversary`. It samples the
 forger's tape, `2B` strict-PPT simulated transcripts (`schnorrSimulatedTranscript`) and two banks of
@@ -45,8 +55,8 @@ taken from the second bank, and outputs `extractNat` of the two forgeries when t
 
 The proof chains four steps, each about existing objects:
 
-1. `exists_closeTo_worldGame_schnorrEncodedROMScheme` moves from the actual samplers to the typed
-   word game within `(B + 1) / 2 ^ n`;
+1. `exists_closeTo_wordEufCmaGame_schnorrNativeROMScheme` moves from the actual samplers to the
+   typed word game within `(B + 1) / 2 ^ n`;
 2. `succProbability_eufCmaGame_schnorrWordROMScheme_le` bounds the typed game by the one-way
    success of the typed forking reduction `schnorrWordROMSchemeReduction`;
 3. `succProbability_oneWayGame_schnorrWordROMSchemeReduction_le` replaces its perfect simulator by
@@ -73,7 +83,7 @@ the forger only the public key.
   sampled simulator.
 * `succProbability_oneWayGame_schnorrWordROMSchemeReduction_le`: the statistical simulator step.
 * `discreteLogGame_schnorrForkingAdversary`: its discrete-log game is that typed one-way game.
-* `negligible_worldGame_schnorrEncodedROMScheme`: EUF-CMA security under `F.DiscreteLog`.
+* `DiscreteLog.eufCma_schnorrNativeROMScheme`: EUF-CMA security under `F.DiscreteLog`.
 
 ## References
 
@@ -401,7 +411,7 @@ theorem map_eval_schnorrForkingAdversary {k : ℕ} {Control : Type}
         (fun guess => (ofBits guess : ZMod (F.order d))) =
       FiatShamir.reduction (encPair encBits encBits) (F.schnorrWordSigma d hm)
         (schnorrSampledSimulate n d) (F.schnorrWordExtract d hm) 0
-        (F.schnorrDecodedForger d (savedCoinForger machine ⟨List.ofFn, List.ofFn_injective⟩
+        (F.schnorrDecodedForger d (savedCoinForger machine (encBitString (width n))
           c e keyC keyD n))
         (savedCoinBudget c e keyC keyD n) (savedCoinBudget c e keyC keyD n) u := by
   simp only [schnorrForkingAdversary, ProbComp.eval_bind, ProbComp.eval_pure,
@@ -420,11 +430,11 @@ theorem map_eval_schnorrForkingAdversary {k : ℕ} {Control : Type}
   congr 1
   have hchal := fun (a : Fin (savedCoinBudget c e keyC keyD n + 1) → BitString (width n)) j hj =>
     forkingAlgorithm_challenge d hm (F.schnorrDecodedForger d
-    (savedCoinForger machine ⟨List.ofFn, List.ofFn_injective⟩ c e keyC keyD n))
+    (savedCoinForger machine (encBitString (width n)) c e keyC keyD n))
     (u, tape, List.ofFn transcripts) a (Classical.arbitrary _) (j := j) hj
   simp only [forkRunWords_eq, schnorrForkOutput]
   set A := F.schnorrDecodedForger d
-    (savedCoinForger machine ⟨List.ofFn, List.ofFn_injective⟩ c e keyC keyD n) with hA
+    (savedCoinForger machine (encBitString (width n)) c e keyC keyD n) with hA
   rcases hidx : (OracleComp.forkingAlgorithm (Classical.arbitrary (BitString (width n)))
       (savedCoinBudget c e keyC keyD n + 1) (FiatShamir.forkingProgram (encPair encBits encBits)
         (F.schnorrWordSigma d hm) A) (u, tape, List.ofFn transcripts) answers).1 with _ | j
@@ -560,7 +570,7 @@ theorem discreteLogGame_schnorrForkingAdversary {k : ℕ} {Control : Type}
         (FiatShamir.reduction (encPair encBits encBits) (F.schnorrWordSigma (description n) hm)
           (schnorrSampledSimulate n (description n)) (F.schnorrWordExtract (description n) hm) 0
           (F.schnorrDecodedForger (description n)
-            (savedCoinForger machine ⟨List.ofFn, List.ofFn_injective⟩ c e keyC keyD n))
+            (savedCoinForger machine (encBitString (width n)) c e keyC keyD n))
           (savedCoinBudget c e keyC keyD n) (savedCoinBudget c e keyC keyD n)) := by
   rw [oneWayGame_schnorrKeyGen_eq]
   simp only [discreteLogGame, PMF.monad_bind_eq_bind, PMF.monad_pure_eq_pure, PMF.pure_bind]
@@ -573,51 +583,41 @@ end Law
 
 /-! ### Security under the discrete-logarithm assumption -/
 
-open OracleComp in
+variable {F} in
 /-- **Schnorr signatures are EUF-CMA secure in the random-oracle model under the
 discrete-logarithm assumption** ([BonehShoup2023], Theorem 19.7 and Lemma 19.8;
 [PointchevalStern2000]; [BellareNeven2006]). Fix a group family `description`, one description
 per security parameter with encoded length polynomial in `n`, and a challenge width `w` computable
 in polynomial time with `2 ^ w n ≤ q` and negligible `1 / 2 ^ w n`. If discrete logarithms are
-hard for the setup `fun n => PMF.pure (description n)`, then every native word forger with
-`IsOraclePPT` wins the existing shared-oracle EUF-CMA game of the native Schnorr scheme with
-negligible probability. The game uses the actual key generator `schnorrSigKeyGen` and the actual
-nonce sampler `sampleExp`, adaptive signing queries, hash queries on arbitrary words, and
-final-message freshness.
+hard for the setup `fun n => PMF.pure (description n)`, then the native Schnorr scheme with
+`w n`-bit challenges is EUF-CMA secure in the random-oracle model: every uniform oracle-PPT word
+forger wins `ROMSignature.wordEufCmaGame` with negligible probability. The game uses the actual key
+generator `schnorrSigKeyGen` and nonce sampler `sampleExp`, adaptive signing queries, hash queries
+on arbitrary words, and final-message freshness.
 
-The only premises are the discrete-logarithm assumption, the forger's certificate and the
-parameter side conditions. The proof applies `F.DiscreteLog` to the explicit two-pass adversary
-`schnorrForkingAdversary`, whose certificate `isPPTOn_schnorrForkingAdversary` is derived from the
-forger's. The family need not be computable, because the discrete-logarithm game gives the
-description to the reduction. Random setups are not covered: the existing game gives the forger
-only the public key. -/
-theorem negligible_worldGame_schnorrEncodedROMScheme (description : ℕ → F.Desc)
+The premises are the discrete-logarithm assumption and the parameter side conditions; the
+forger's certificate is part of `ROMSignature.EUFCMA`. The proof applies `F.DiscreteLog` to the
+explicit two-pass adversary `schnorrForkingAdversary`, whose certificate
+`isPPTOn_schnorrForkingAdversary` is derived from the forger's. The family need not be computable,
+because the discrete-logarithm game gives the description to the reduction. Random setups are not
+covered: the game gives the forger only the public key. -/
+theorem DiscreteLog.eufCma_schnorrNativeROMScheme {description : ℕ → F.Desc}
+    (hDL : F.DiscreteLog fun n => PMF.pure (description n))
     (hdescription : PolynomiallyBounded fun n => (F.encDesc (description n)).length)
     {width : ℕ → ℕ} (hwidth : ComputableInPolyTime width encUnary encUnary)
     (hwq : ∀ n, 2 ^ width n ≤ F.order (description n))
-    (hchallenge : Negligible fun n => (1 / 2 ^ width n : ℝ≥0))
-    (hDL : F.DiscreteLog fun n => PMF.pure (description n))
-    {program : ℕ → List Bool → WordOracleComp Bool (List Bool × List Bool)}
-    (hprogram : IsOraclePPT (encPair encBits encBits) program) :
-    Negligible fun n => Game.succProbability
-      (worldGame (F.schnorrEncodedROMScheme (description n) (width n)
-          (ProbComp.eval (F.schnorrSigKeyGen n (description n)))
-          ((ProbComp.eval (F.sampleExp n (description n))).map Nat.cast))
-        (fun pk => routeWordProgram (⟨List.ofFn, List.ofFn_injective⟩ : BitString (width n) ↪
-          List Bool) (program n pk))
-        (fun verified ⟨msg, _⟩ pairs => verified && !(pairs.map Prod.fst).contains msg)) := by
+    (hchallenge : Negligible fun n => (1 / 2 ^ width n : ℝ≥0)) :
+    ROMSignature.EUFCMA (fun n => encBitString (width n))
+      (fun n => F.schnorrNativeROMScheme n (description n) (width n)) := by
+  refine ROMSignature.EUFCMA.of_negligible fun program hprogram => ?_
   obtain ⟨k, Control, hfinite, machine, c, e, keyC, keyD, -, hgame⟩ :=
-    F.exists_closeTo_worldGame_schnorrEncodedROMScheme description hdescription width hwq hprogram
+    F.exists_closeTo_wordEufCmaGame_schnorrNativeROMScheme description hdescription width hwq
+      hprogram
   have hadversary := F.isPPTOn_schnorrForkingAdversary machine c e keyC keyD hwidth
   have hbreak := hDL _ hadversary
   have hbudget := polynomiallyBounded_savedCoinBudget c e keyC keyD
-  have hbound : ∀ n, (Game.succProbability
-      (worldGame (F.schnorrEncodedROMScheme (description n) (width n)
-          (ProbComp.eval (F.schnorrSigKeyGen n (description n)))
-          ((ProbComp.eval (F.sampleExp n (description n))).map Nat.cast))
-        (fun pk => routeWordProgram (⟨List.ofFn, List.ofFn_injective⟩ : BitString (width n) ↪
-          List Bool) (program n pk))
-        (fun verified ⟨msg, _⟩ pairs => verified && !(pairs.map Prod.fst).contains msg)) : ℝ) ≤
+  have hbound : ∀ n, (Game.succProbability (wordEufCmaGame (encBitString (width n))
+      (F.schnorrNativeROMScheme n (description n) (width n)) (program n)) : ℝ) ≤
       savedCoinBudget c e keyC keyD n *
           (savedCoinBudget c e keyC keyD n + savedCoinBudget c e keyC keyD n) / 2 ^ width n +
         (savedCoinBudget c e keyC keyD n + 1) / 2 ^ width n +
@@ -633,8 +633,8 @@ theorem negligible_worldGame_schnorrEncodedROMScheme (description : ℕ → F.De
     have hforgery := F.succProbability_eufCmaGame_schnorrWordROMScheme_le (description n) (hwq n)
       _ (F.callBounded_schnorrDecodedForger (description n) hcall)
     have hstat := succProbability_oneWayGame_schnorrWordROMSchemeReduction_le n (description n)
-      (hwq n) (F.schnorrDecodedForger (description n) (savedCoinForger machine
-        ⟨List.ofFn, List.ofFn_injective⟩ c e keyC keyD n))
+      (hwq n) (F.schnorrDecodedForger (description n)
+        (savedCoinForger machine (encBitString (width n)) c e keyC keyD n))
       (savedCoinBudget c e keyC keyD n) (savedCoinBudget c e keyC keyD n)
     rw [← discreteLogGame_schnorrForkingAdversary machine c e keyC keyD width description n
       (hwq n)] at hstat

@@ -62,7 +62,7 @@ protocol over a `PrimeOrderGroupFamily` `F`:
 key and nonce laws, against forgers that are only call-bounded, not PPT. The forking reduction
 `schnorrFamilyROMSchemeReduction` is a distribution-level program with no efficiency certificate,
 so `F.DiscreteLog` cannot be applied to it directly. EUF-CMA security of the native scheme under
-`F.DiscreteLog`, for every oracle-PPT forger, is `negligible_worldGame_schnorrEncodedROMScheme` in
+`F.DiscreteLog`, for every oracle-PPT forger, is `DiscreteLog.eufCma_schnorrNativeROMScheme` in
 `CslibFrontier.Crypto.Computational.SchnorrSignature.Security`, through a certified native forking
 reduction. Strict-PPT identification and eavesdropping security under `F.DiscreteLog` are provided
 by `SchnorrIdentification` and `SchnorrEavesdrop`.
