@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Computability.PolyTime.CSP.Edge.Solver.Guard
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Captured
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Fold
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
@@ -34,13 +35,12 @@ private theorem poly_parity :
     ComputableInPolyTime wordParity (encList encBool) encBool := by
   unfold wordParity
   simp only [List.foldr_eq_foldl]
-  apply ComputableInPolyTime.of_tidy
-  apply ComputableTidilyInPolyTime.foldl_of_bounded_growth
+  apply ComputableInPolyTime.foldl_of_bounded_growth
     (encA := encBool) (encL := encList encBool) (encB := encBool)
-    (ComputableInPolyTime.id' (encIn := encList encBool)).tidy
-    (ComputableInPolyTime.const false).tidy
+    (ComputableInPolyTime.id' (encIn := encList encBool))
+    (ComputableInPolyTime.const false)
     (show ComputableInPolyTime (fun p : Bool × Bool => p.1 ^^ p.2)
-      (encPair encBool encBool) encBool from by fun_prop).tidy
+      (encPair encBool encBool) encBool from by fun_prop)
     (growth := 0)
   intro state value
   cases state <;> cases value <;> decide
@@ -142,10 +142,10 @@ binary names. Its count results are unary and bounded by the explicit occurrence
   have hcount : ComputableInPolyTime
       (fun p : CSP Table ℕ × ℕ => p.1.vars.count p.2)
       (encPair (encCSP encTable encNat) encNat) encUnary :=
-    .of_tidy (ComputableTidilyInPolyTime.countWithInput
+    (ComputableInPolyTime.countWithInput
       (show ComputableInPolyTime (fun p : CSP Table ℕ × ℕ => p.1.vars)
-        (encPair (encCSP encTable encNat) encNat) (encList encNat) from by fun_prop).tidy
-      (ComputableInPolyTime.snd _ _).tidy)
+        (encPair (encCSP encTable encNat) encNat) (encList encNat) from by fun_prop)
+      (ComputableInPolyTime.snd _ _))
   fun_prop
 
 /-- Every check in the full model guard is supplied internally by native machines.

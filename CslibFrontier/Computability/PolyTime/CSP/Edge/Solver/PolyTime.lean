@@ -153,9 +153,8 @@ theorem computableInPolyTime_optimize : ComputableInPolyTime optimize
   have hloop : ComputableInPolyTime
       (fun F : CSP Table ℕ => (checkedStep F)^[F.vars.eraseDups.length + 1]
         ((initialRows F).flatten, false)) (encCSP encTable encNat) encOptimizeState := by
-    apply ComputableInPolyTime.of_tidy
-    apply ComputableTidilyInPolyTime.iterateWithInput_of_bounded_growth hcount.tidy hinit.tidy
-      poly_checkedStep.tidy
+    apply ComputableInPolyTime.iterateWithInput_of_bounded_growth hcount hinit
+      poly_checkedStep
     refine ⟨?_, checkedStep_growth⟩
     simpa only [encUnary_apply, List.length_replicate] using hg.polyBounded_length
   have hguard := computableInPolyTime_checkModel
