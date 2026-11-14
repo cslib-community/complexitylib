@@ -4369,6 +4369,7 @@ public import CslibFrontier.Crypto.Computational.Falcon.Verification
 public import CslibFrontier.Crypto.Computational.Falcon.VerificationFrontend
 public import CslibFrontier.Crypto.Computational.FuzzyExtractor.Basic
 public import CslibFrontier.Crypto.Computational.FuzzyExtractor.DecodeThenExtract
+public import CslibFrontier.Crypto.Computational.FuzzyExtractor.DecodeThenExtract.Security
 public import CslibFrontier.Crypto.Computational.GGM.Circuit
 public import CslibFrontier.Crypto.Computational.GGM.Evaluation
 public import CslibFrontier.Crypto.Computational.GGM.Expansion
@@ -6383,6 +6384,7 @@ public import CslibFrontier.Languages.Probabilistic.Traverse
 public import CslibFrontier.Languages.Probabilistic.Traverse.CoinTape
 public import CslibFrontier.Languages.Probabilistic.Traverse.SupportWith
 public import CslibFrontier.Languages.Probabilistic.UniformNat
+public import CslibFrontier.Languages.Probabilistic.UniformNat.Residue
 public import CslibFrontier.Languages.Probabilistic.UniformNat.Support
 public import CslibFrontier.Languages.Probabilistic.UntilBad
 public import CslibFrontier.Languages.Probabilistic.UntilBad.ChooseTwo
