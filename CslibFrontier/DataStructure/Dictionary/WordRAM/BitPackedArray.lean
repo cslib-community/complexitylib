@@ -339,26 +339,20 @@ theorem low_xor_high_shiftLeft {val k₀ k₁ : ℕ} (hval : val < 2 ^ (k₀ + k
       rw [hsum, h1, h2, Bool.xor_false]
   rw [hxor, Nat.shiftLeft_eq, Nat.mul_comm, Nat.div_add_mod]
 
-/-! ## Section 3: Pure bit-packed array read/write and read-after-write laws -/
+/-! ## Section 3: Pure bit-slice and bit-packed array read/write and laws -/
 
-/-- Read the `k`-bit entry at index `idx` from bit-packed array at `base` on a `w`-bit machine. -/
-@[expose]
-def readPacked (base k w : ℕ) (mem : ℕ → ℕ) (idx : ℕ) : ℕ :=
-  let wOff := wordOffset k w idx
-  let bOff := bitOffset k w idx
-  let k₀ := lowWidth k w idx
-  let k₁ := highWidth k w idx
+/-- Read a `k`-bit field starting at `(base + wOff, bOff)` across at most 2 words. -/
+@[expose] def readBitSlice (base wOff bOff k w : ℕ) (mem : ℕ → ℕ) : ℕ :=
+  let k₀ := min k (w - bOff)
+  let k₁ := k - k₀
   let low := (mem (base + wOff) >>> bOff) &&& (2 ^ k₀ - 1)
   let high := (mem (base + wOff + 1) >>> 0) &&& (2 ^ k₁ - 1)
   low ^^^ (high <<< k₀)
 
-/-- Write `val` (`< 2 ^ k`) into the `k`-bit entry at index `idx` of bit-packed array at `base`. -/
-@[expose]
-def writePacked (base k w : ℕ) (mem : ℕ → ℕ) (idx val : ℕ) : ℕ → ℕ :=
-  let wOff := wordOffset k w idx
-  let bOff := bitOffset k w idx
-  let k₀ := lowWidth k w idx
-  let k₁ := highWidth k w idx
+/-- Write `val < 2 ^ k` into the `k`-bit field starting at `(base + wOff, bOff)`. -/
+@[expose] def writeBitSlice (base wOff bOff k w : ℕ) (mem : ℕ → ℕ) (val : ℕ) : ℕ → ℕ :=
+  let k₀ := min k (w - bOff)
+  let k₁ := k - k₀
   let old₀ := (mem (base + wOff) >>> bOff) &&& (2 ^ k₀ - 1)
   let val₀ := val &&& (2 ^ k₀ - 1)
   let mem₁ := Function.update mem (base + wOff)
@@ -366,45 +360,42 @@ def writePacked (base k w : ℕ) (mem : ℕ → ℕ) (idx val : ℕ) : ℕ → �
   let old₁ := (mem₁ (base + wOff + 1) >>> 0) &&& (2 ^ k₁ - 1)
   let val₁ := (val >>> k₀) &&& (2 ^ k₁ - 1)
   Function.update mem₁ (base + wOff + 1)
-    (mem₁ (base + wOff + 1) ^^^ (((old₁ ^^^ val₁) <<< 0)))
+    (mem₁ (base + wOff + 1) ^^^ ((old₁ ^^^ val₁) <<< 0))
 
-/-- Every value returned by `readPacked base k w mem idx` fits in `k` bits (`< 2 ^ k`). -/
-theorem readPacked_lt (base k w : ℕ) (mem : ℕ → ℕ) (idx : ℕ) :
-    readPacked base k w mem idx < 2 ^ k := by
-  unfold readPacked
+/-- Every value returned by `readBitSlice base wOff bOff k w mem` fits in `k` bits (`< 2 ^ k`). -/
+theorem readBitSlice_lt (base wOff bOff k w : ℕ) (mem : ℕ → ℕ) :
+    readBitSlice base wOff bOff k w mem < 2 ^ k := by
+  unfold readBitSlice
   dsimp only
-  conv_rhs => rw [← lowWidth_add_highWidth k w idx]
-  have hlow : ((mem (base + wordOffset k w idx) >>> bitOffset k w idx) &&&
-      (2 ^ lowWidth k w idx - 1)) < 2 ^ lowWidth k w idx := by
+  set k₀ := min k (w - bOff)
+  set k₁ := k - k₀
+  have hsum : k₀ + k₁ = k := Nat.add_sub_of_le (Nat.min_le_left _ _)
+  rw [← hsum]
+  have hlow : ((mem (base + wOff) >>> bOff) &&& (2 ^ k₀ - 1)) < 2 ^ k₀ := by
     rw [Nat.and_two_pow_sub_one_eq_mod]
     exact Nat.mod_lt _ (by positivity)
-  have hhigh : (((mem (base + wordOffset k w idx + 1) >>> 0) &&&
-      (2 ^ highWidth k w idx - 1)) <<< lowWidth k w idx) <
-      2 ^ (lowWidth k w idx + highWidth k w idx) := by
+  have hhigh : (((mem (base + wOff + 1) >>> 0) &&& (2 ^ k₁ - 1)) <<< k₀) < 2 ^ (k₀ + k₁) := by
     rw [Nat.shiftLeft_eq, Nat.pow_add, Nat.mul_comm]
     refine Nat.mul_lt_mul_of_pos_left ?_ (by positivity)
     rw [Nat.and_two_pow_sub_one_eq_mod]
     exact Nat.mod_lt _ (by positivity)
   exact Nat.xor_lt_two_pow (hlow.trans_le (Nat.pow_le_pow_right (by decide) (by omega))) hhigh
 
-/-- Reading from zeroed words returns `0`. -/
-theorem readPacked_zero {base k w : ℕ} {mem : ℕ → ℕ} {idx : ℕ}
-    (h0 : mem (base + wordOffset k w idx) = 0)
-    (h1 : mem (base + wordOffset k w idx + 1) = 0) :
-    readPacked base k w mem idx = 0 := by
-  unfold readPacked
+/-- Reading a bit-slice from zeroed words returns `0`. -/
+theorem readBitSlice_zero {base wOff bOff k w : ℕ} {mem : ℕ → ℕ}
+    (h0 : mem (base + wOff) = 0) (h1 : mem (base + wOff + 1) = 0) :
+    readBitSlice base wOff bOff k w mem = 0 := by
+  unfold readBitSlice
   simp [h0, h1]
 
-/-- Reading index `idx` immediately after writing `val < 2 ^ k` at `idx` returns `val`. -/
-theorem readPacked_writePacked_self (base k w : ℕ) (mem : ℕ → ℕ) (idx : ℕ) {val : ℕ}
+/-- Reading a bit slice immediately after writing `val < 2 ^ k` returns `val`. -/
+theorem readBitSlice_writeBitSlice_self (base wOff bOff k w : ℕ) (mem : ℕ → ℕ) {val : ℕ}
     (hval : val < 2 ^ k) :
-    readPacked base k w (writePacked base k w mem idx val) idx = val := by
-  unfold readPacked writePacked
+    readBitSlice base wOff bOff k w (writeBitSlice base wOff bOff k w mem val) = val := by
+  unfold readBitSlice writeBitSlice
   dsimp only
-  set wOff := wordOffset k w idx
-  set bOff := bitOffset k w idx
-  set k₀ := lowWidth k w idx
-  set k₁ := highWidth k w idx
+  set k₀ := min k (w - bOff)
+  set k₁ := k - k₀
   set old₀ := (mem (base + wOff) >>> bOff) &&& (2 ^ k₀ - 1)
   set val₀ := val &&& (2 ^ k₀ - 1)
   set mem₁ := Function.update mem (base + wOff)
@@ -417,7 +408,6 @@ theorem readPacked_writePacked_self (base k w : ℕ) (mem : ℕ → ℕ) (idx : 
         (mem₁ (base + wOff + 1) ^^^ ((old₁ ^^^ val₁) <<< 0)) (base + wOff) =
         mem (base + wOff) ^^^ ((old₀ ^^^ val₀) <<< bOff) := by
     rw [Function.update_of_ne hne]
-    dsimp only [mem₁]
     exact Function.update_self _ _ _
   have hmem1 :
       Function.update mem₁ (base + wOff + 1)
@@ -433,13 +423,10 @@ theorem readPacked_writePacked_self (base k w : ℕ) (mem : ℕ → ℕ) (idx : 
     dsimp only [val₁]
     rw [Nat.and_two_pow_sub_one_eq_mod]
     exact Nat.mod_lt _ (by positivity)
-  have hex0 := extract_xor_shiftLeft_self (mem (base + wOff)) bOff k₀ hval0_lt
-  have hex1 := extract_xor_shiftLeft_self (mem₁ (base + wOff + 1)) 0 k₁ hval1_lt
-  dsimp only at hex0 hex1
-  rw [hex0, hex1]
-  have hval' : val < 2 ^ (k₀ + k₁) := by
-    rwa [lowWidth_add_highWidth k w idx]
-  exact low_xor_high_shiftLeft hval'
+  rw [extract_xor_shiftLeft_self (mem (base + wOff)) bOff k₀ hval0_lt,
+    extract_xor_shiftLeft_self (mem₁ (base + wOff + 1)) 0 k₁ hval1_lt]
+  have hsum : k₀ + k₁ = k := Nat.add_sub_of_le (Nat.min_le_left _ _)
+  exact low_xor_high_shiftLeft (hsum.symm ▸ hval)
 
 /-- Updating word `addr_w` by XORing at `[a, a + len)` preserves extracting `[b, b + len')` from
 `addr_r` whenever every overlap `addr_w = addr_r` has disjoint bit intervals
@@ -456,24 +443,22 @@ theorem extract_update_xor_of_disjoint (mem : ℕ → ℕ) (addr_w addr_r : ℕ)
     exact extract_xor_shiftLeft_of_disjoint (mem addr_r) hδ (hdisj rfl)
   · rw [Function.update_of_ne heq]
 
-/-- Reading index `idx' ≠ idx` after writing at `idx` returns the original value at `idx'`. -/
-theorem readPacked_writePacked_of_ne {base k w : ℕ} (hw : 0 < w) (mem : ℕ → ℕ)
-    {idx idx' : ℕ} (hne : idx' ≠ idx) (val : ℕ) :
-    readPacked base k w (writePacked base k w mem idx val) idx' =
-      readPacked base k w mem idx' := by
+/-- Non-interference of `writeBitSlice` and `readBitSlice` for disjoint global bit intervals. -/
+theorem readBitSlice_writeBitSlice_of_disjoint {base wOff bOff k wOff' bOff' k' w : ℕ}
+    (hb : bOff < w) (hb' : bOff' < w)
+    (hdisj : (wOff * w + bOff) + k ≤ wOff' * w + bOff' ∨
+      (wOff' * w + bOff') + k' ≤ wOff * w + bOff)
+    (mem : ℕ → ℕ) (val : ℕ) :
+    readBitSlice base wOff' bOff' k' w (writeBitSlice base wOff bOff k w mem val) =
+      readBitSlice base wOff' bOff' k' w mem := by
   rcases Nat.eq_zero_or_pos k with rfl | _hk_pos
-  · unfold readPacked lowWidth highWidth
-    simp
-  unfold readPacked writePacked
+  · unfold readBitSlice writeBitSlice; dsimp only; simp
+  unfold readBitSlice writeBitSlice
   dsimp only
-  set wOff := wordOffset k w idx
-  set bOff := bitOffset k w idx
-  set k₀ := lowWidth k w idx
-  set k₁ := highWidth k w idx
-  set wOff' := wordOffset k w idx'
-  set bOff' := bitOffset k w idx'
-  set k₀' := lowWidth k w idx'
-  set k₁' := highWidth k w idx'
+  set k₀ := min k (w - bOff)
+  set k₁ := k - k₀
+  set k₀' := min k' (w - bOff')
+  set k₁' := k' - k₀'
   set old₀ := (mem (base + wOff) >>> bOff) &&& (2 ^ k₀ - 1)
   set val₀ := val &&& (2 ^ k₀ - 1)
   set mem₁ := Function.update mem (base + wOff)
@@ -492,20 +477,18 @@ theorem readPacked_writePacked_of_ne {base k w : ℕ} (hw : 0 < w) (mem : ℕ �
     · dsimp only [old₁, val₁]
       rw [Nat.and_two_pow_sub_one_eq_mod]
       exact Nat.mod_lt _ (by positivity)
-  have hglob : idx * k + k ≤ idx' * k ∨ idx' * k + k ≤ idx * k := by
-    rcases lt_or_gt_of_ne hne with hlt | hgt
-    · right
-      calc idx' * k + k = (idx' + 1) * k := by ring
-        _ ≤ idx * k := Nat.mul_le_mul_right k hlt
-    · left
-      calc idx * k + k = (idx + 1) * k := by ring
-        _ ≤ idx' * k := Nat.mul_le_mul_right k hgt
-  have hid0 : wOff * w + bOff = idx * k := wordOffset_mul_add_bitOffset
-  have hid0' : wOff' * w + bOff' = idx' * k := wordOffset_mul_add_bitOffset
-  have hsum : k₀ + k₁ = k := lowWidth_add_highWidth k w idx
-  have hsum' : k₀' + k₁' = k := lowWidth_add_highWidth k w idx'
-  have hle0 : bOff + k₀ ≤ w := bitOffset_add_lowWidth_le hw
-  have hle0' : bOff' + k₀' ≤ w := bitOffset_add_lowWidth_le hw
+  have hsum : k₀ + k₁ = k := Nat.add_sub_of_le (Nat.min_le_left _ _)
+  have hsum' : k₀' + k₁' = k' := Nat.add_sub_of_le (Nat.min_le_left _ _)
+  have hle0 : bOff + k₀ ≤ w := by have := Nat.min_le_right k (w - bOff); omega
+  have hle0' : bOff' + k₀' ≤ w := by have := Nat.min_le_right k' (w - bOff'); omega
+  have hbw_of_pos : 0 < k₁ → bOff + k₀ = w := fun hk1 => by
+    have hlt : w - bOff < k := by omega
+    have hmin : k₀ = w - bOff := Nat.min_eq_right hlt.le
+    omega
+  have hbw'_of_pos : 0 < k₁' → bOff' + k₀' = w := fun hk1' => by
+    have hlt : w - bOff' < k' := by omega
+    have hmin : k₀' = w - bOff' := Nat.min_eq_right hlt.le
+    omega
   have hw_add : (wOff + 1) * w = wOff * w + w := Nat.succ_mul wOff w
   have hw_add' : (wOff' + 1) * w = wOff' * w + w := Nat.succ_mul wOff' w
   have hlow_eq :
@@ -514,7 +497,7 @@ theorem readPacked_writePacked_of_ne {base k w : ℕ} (hw : 0 < w) (mem : ℕ �
     rw [extract_update_xor_of_disjoint mem₁ (base + wOff + 1) (base + wOff') hδ1 (fun haddr => by
       rcases Nat.eq_zero_or_pos k₁ with hk1_0 | hk1_pos
       · left; omega
-      · have hbw : bOff + k₀ = w := bitOffset_add_lowWidth_eq_of_highWidth_pos hw hk1_pos
+      · have hbw := hbw_of_pos hk1_pos
         have hw_eq : (wOff + 1) * w = wOff' * w := by
           have : wOff + 1 = wOff' := by omega
           rw [this]
@@ -529,12 +512,12 @@ theorem readPacked_writePacked_of_ne {base k w : ℕ} (hw : 0 < w) (mem : ℕ �
         ((mem (base + wOff' + 1) >>> 0) &&& (2 ^ k₁' - 1)) := by
     rcases Nat.eq_zero_or_pos k₁' with hk1'_0 | hk1'_pos
     · simp [hk1'_0]
-    · have hbw' : bOff' + k₀' = w := bitOffset_add_lowWidth_eq_of_highWidth_pos hw hk1'_pos
+    · have hbw' := hbw'_of_pos hk1'_pos
       rw [extract_update_xor_of_disjoint mem₁ (base + wOff + 1) (base + wOff' + 1) hδ1
         (fun haddr => by
           rcases Nat.eq_zero_or_pos k₁ with hk1_0 | hk1_pos
           · left; omega
-          · have hbw : bOff + k₀ = w := bitOffset_add_lowWidth_eq_of_highWidth_pos hw hk1_pos
+          · have hbw := hbw_of_pos hk1_pos
             have hw_eq : (wOff + 1) * w = (wOff' + 1) * w := by
               have : wOff + 1 = wOff' + 1 := by omega
               rw [this]
@@ -546,13 +529,63 @@ theorem readPacked_writePacked_of_ne {base k w : ℕ} (hw : 0 < w) (mem : ℕ �
         omega)
   rw [hlow_eq, hhigh_eq]
 
+/-- Read the `k`-bit entry at index `idx` from bit-packed array at `base` on a `w`-bit machine. -/
+@[expose]
+def readPacked (base k w : ℕ) (mem : ℕ → ℕ) (idx : ℕ) : ℕ :=
+  readBitSlice base (wordOffset k w idx) (bitOffset k w idx) k w mem
+
+/-- Write `val` (`< 2 ^ k`) into the `k`-bit entry at index `idx` of bit-packed array at `base`. -/
+@[expose]
+def writePacked (base k w : ℕ) (mem : ℕ → ℕ) (idx val : ℕ) : ℕ → ℕ :=
+  writeBitSlice base (wordOffset k w idx) (bitOffset k w idx) k w mem val
+
+/-- Every value returned by `readPacked base k w mem idx` fits in `k` bits (`< 2 ^ k`). -/
+theorem readPacked_lt (base k w : ℕ) (mem : ℕ → ℕ) (idx : ℕ) :
+    readPacked base k w mem idx < 2 ^ k :=
+  readBitSlice_lt _ _ _ _ _ _
+
+/-- Reading from zeroed words returns `0`. -/
+theorem readPacked_zero {base k w : ℕ} {mem : ℕ → ℕ} {idx : ℕ}
+    (h0 : mem (base + wordOffset k w idx) = 0)
+    (h1 : mem (base + wordOffset k w idx + 1) = 0) :
+    readPacked base k w mem idx = 0 :=
+  readBitSlice_zero h0 h1
+
+/-- Reading index `idx` immediately after writing `val < 2 ^ k` at `idx` returns `val`. -/
+theorem readPacked_writePacked_self (base k w : ℕ) (mem : ℕ → ℕ) (idx : ℕ) {val : ℕ}
+    (hval : val < 2 ^ k) :
+    readPacked base k w (writePacked base k w mem idx val) idx = val :=
+  readBitSlice_writeBitSlice_self _ _ _ _ _ _ hval
+
+/-- Reading index `idx' ≠ idx` after writing at `idx` returns the original value at `idx'`. -/
+theorem readPacked_writePacked_of_ne {base k w : ℕ} (hw : 0 < w) (mem : ℕ → ℕ)
+    {idx idx' : ℕ} (hne : idx' ≠ idx) (val : ℕ) :
+    readPacked base k w (writePacked base k w mem idx val) idx' =
+      readPacked base k w mem idx' := by
+  rcases Nat.eq_zero_or_pos k with rfl | _hk_pos
+  · unfold readPacked readBitSlice; simp
+  apply readBitSlice_writeBitSlice_of_disjoint (bitOffset_lt hw) (bitOffset_lt hw)
+  have hglob : idx * k + k ≤ idx' * k ∨ idx' * k + k ≤ idx * k := by
+    rcases lt_or_gt_of_ne hne with hlt | hgt
+    · right
+      calc idx' * k + k = (idx' + 1) * k := by ring
+        _ ≤ idx * k := Nat.mul_le_mul_right k hlt
+    · left
+      calc idx * k + k = (idx + 1) * k := by ring
+        _ ≤ idx' * k := Nat.mul_le_mul_right k hgt
+  have hid0 : wordOffset k w idx * w + bitOffset k w idx = idx * k :=
+    wordOffset_mul_add_bitOffset
+  have hid0' : wordOffset k w idx' * w + bitOffset k w idx' = idx' * k :=
+    wordOffset_mul_add_bitOffset
+  omega
+
 /-- Writing at `idx < N` leaves all memory addresses outside `[base, base + packedWords N k w)`
 unchanged. -/
 theorem writePacked_outside {base N k w : ℕ} (hw : 0 < w) (mem : ℕ → ℕ)
     {idx : ℕ} (hidx : idx < N) (val : ℕ) {addr : ℕ}
     (haddr : ¬(base ≤ addr ∧ addr < base + packedWords N k w)) :
     writePacked base k w mem idx val addr = mem addr := by
-  unfold writePacked
+  unfold writePacked writeBitSlice
   have hlt1 : wordOffset k w idx + 1 < packedWords N k w :=
     wordOffset_add_one_lt_packedWords hw hidx
   have hne1 : addr ≠ base + wordOffset k w idx + 1 := by omega
@@ -564,7 +597,7 @@ theorem readPacked_congr {base N k w : ℕ} (hw : 0 < w) {mem₁ mem₂ : ℕ �
     (h : ∀ addr, base ≤ addr ∧ addr < base + packedWords N k w → mem₁ addr = mem₂ addr)
     {idx : ℕ} (hidx : idx < N) :
     readPacked base k w mem₁ idx = readPacked base k w mem₂ idx := by
-  unfold readPacked
+  unfold readPacked readBitSlice
   dsimp only
   have hlt1 : wordOffset k w idx + 1 < packedWords N k w :=
     wordOffset_add_one_lt_packedWords hw hidx
@@ -594,7 +627,7 @@ address whenever `0 < w` and `k ≤ w`. -/
 theorem writePacked_lt_two_pow {base k w : ℕ} (hw : 0 < w) (hkw : k ≤ w) {mem : ℕ → ℕ}
     (hmem : ∀ addr, mem addr < 2 ^ w) (idx val : ℕ) (addr : ℕ) :
     writePacked base k w mem idx val addr < 2 ^ w := by
-  unfold writePacked
+  unfold writePacked writeBitSlice
   set wOff := wordOffset k w idx
   set bOff := bitOffset k w idx
   set k₀ := lowWidth k w idx
@@ -985,7 +1018,8 @@ theorem writePackedCode_execWithin {base offset N k w idx val : ℕ} {x : Data 1
   refine ⟨?_, by wram_simp [hr0, hr1', hr2']⟩
   subst hold₀ hval₀ hold₁ hval₁
   have hne : base + offset + wordOffset k w idx + 1 ≠ base + offset + wordOffset k w idx := by omega
-  simp only [Data.write_mem, Data.set_mem, hmem₁, writePacked, Function.update_of_ne hne]
+  simp only [Data.write_mem, Data.set_mem, hmem₁, writePacked, writeBitSlice,
+    Function.update_of_ne hne]
   rfl
 
 end Cslib.DataStructure.Dictionary.WordRAM.BitPackedArray
