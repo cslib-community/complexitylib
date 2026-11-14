@@ -36,7 +36,8 @@ interprets the learner's orientation bit, and is also the evaluator used by subs
 * `exists_evaluator`: discharge the replay law from one sequence-test certificate.
 * `learn_goodPredictor_error`: a noticeable sequence gap satisfies the boosting loop contract.
 * `failureBound_negligible`: the total failure bound is negligible for polynomial parameters.
-* `predict_extracted_error`: turn a gap against every dense masked source into prediction bias.
+* `predict_extracted_error_of_extraction_le`: turn a gap against every dense masked source into
+  prediction bias.
 
 ## References
 
@@ -434,7 +435,7 @@ theorem predict_error (source : ProbComp α) (observe : α → List Bool) (truth
 
 /-- Extraction error is the only additional loss when the complete reduction starts from a
 test of hashed labels. The statistical premise is needed only at dense boosting states. -/
-theorem predict_extracted_error {Seed Output : Type}
+theorem predict_extracted_error_of_extraction_le {Seed Output : Type}
     (source : ProbComp α) (observe : α → List Bool) (truth : α → Bool)
     (evaluate : List Bool → List Bool → Bool) (base : List Bool) (count c d width inverseGap : ℕ)
     (params : Parameters) (seed : ProbComp Seed) (hash : Seed → List Bool → Output)
@@ -475,7 +476,7 @@ theorem predict_extracted_error {Seed Output : Type}
     (fun samples => extractLabels seed hash samples >>= test)
     hparams hgap hgamma hwidth hbound hrealize
   intro state hdense
-  have h := extractLabels_sequence_gap ((fun x => (observe x, truth x)) <$> source)
+  have h := extractLabels_sequence_gap_of_extraction_le ((fun x => (observe x, truth x)) <$> source)
     (maskedSample source observe truth
       (fun x => mask (signedPredict evaluate) params state (observe x, truth x)))
     count seed hash test ideal (hclose state hdense)

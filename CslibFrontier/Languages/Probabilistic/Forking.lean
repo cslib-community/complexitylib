@@ -139,6 +139,15 @@ theorem runWithAnswers_bind {β : Type} (default : H) (program : OracleComp (fun
     | nil => simp
     | cons a rest => rfl
 
+/-- Mapping a program's result maps the result of its run and keeps its queries. -/
+theorem runWithAnswers_map {β : Type} (default : H) (f : α → β)
+    (program : OracleComp (fun _ : Query => H) α) (answers : List H) :
+    runWithAnswers default (f <$> program) answers =
+      (f (runWithAnswers default program answers).1,
+        (runWithAnswers default program answers).2) := by
+  rw [← bind_pure_comp, runWithAnswers_bind]
+  simp
+
 /-- A program making at most `n` calls asks at most `n` queries on every list of answers. -/
 theorem IsQueryBounded.length_runWithAnswers_le (default : H)
     {program : OracleComp (fun _ : Query => H) α} {n : ℕ} (h : IsQueryBounded program n)

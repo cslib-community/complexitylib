@@ -293,30 +293,6 @@ theorem mem_NP_encBinary : PartialMCSP ∈ NP encBinary :=
 
 /-! ### Polynomial-time reduction from `MCSP` to `PartialMCSP` -/
 
-private theorem foldl_cons_some (l : List Bool) (acc : List (Option Bool)) :
-    l.foldl (fun acc b => some b :: acc) acc = l.reverse.map some ++ acc := by
-  induction l generalizing acc with
-  | nil => simp
-  | cons b l ih =>
-    simp [ih, List.map_append]
-
-private theorem computableInPolyTime_bitsMapSome :
-    ComputableInPolyTime (List.map some) encBits encTable := by
-  have hfold := foldl_of_bounded_growth (encA := encBool) (encL := encBits)
-    (encB := encTable)
-    (step := fun acc b => some b :: acc) (init := fun _ => [])
-    (by fun_prop : ComputableInPolyTime List.reverse encBits encBits) (const [])
-    (show ComputableInPolyTime
-      (fun p : List (Option Bool) × Bool => some p.2 :: p.1)
-      (encPair encTable encBool) encTable by fun_prop)
-    (growth := 5) (fun acc b => by
-      dsimp only [encTable]
-      rw [encList_cons, List.length_append]
-      have hb : (frame (encOption encBool (some b))).length = 5 := by cases b <;> rfl
-      omega)
-  refine hfold.of_enc_eq fun l => ?_
-  rw [foldl_cons_some, List.reverse_reverse, List.append_nil]
-
 /-- Embedding a total `MCSP.Instance` as a `PartialMCSP.Instance` with no `*` entries is computable
 in polynomial time. -/
 theorem computableInPolyTime_ofTotal_encBinary :
@@ -328,7 +304,8 @@ theorem computableInPolyTime_ofTotal_encBinary :
   have hmap : ComputableInPolyTime
       (fun p : List Bool × ℕ => (p.1.map some, p.2))
       (encPair encBits encNat) (encPair encTable encNat) :=
-    (computableInPolyTime_bitsMapSome.comp (fst encBits encNat)).prod (snd encBits encNat)
+    (((map (optionSome encBool)).comp bitsToList).comp (fst encBits encNat)).prod
+      (snd encBits encNat)
   refine (hmap.comp hraw).of_enc_eq fun x => ?_
   have hofFn : (List.ofFn x.table).map some = List.ofFn (Instance.ofTotal x).table := by
     ext i b

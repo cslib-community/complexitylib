@@ -211,10 +211,8 @@ theorem computableInPolyTime_consistentCheck :
       (fun p : List (Option Bool) × List Bool =>
         (p.1.zip p.2).all fun q => q.1.getD q.2 == q.2)
       (encPair (encList (encOption encBool)) encBits) encBool :=
-    .of_tidy (ComputableTidilyInPolyTime.allWithInput hzip.tidy
-      ((ComputableTidilyInPolyTime.of_finite (fun q : Option Bool × Bool => q.1.getD q.2 == q.2)
-        (encA := encPair (encOption encBool) encBool) (encB := encBool)).comp
-        (ComputableTidilyInPolyTime.snd _ _)))
+    allWithInput hzip ((of_finite (fun q : Option Bool × Bool => q.1.getD q.2 == q.2)
+      (encIn := encPair (encOption encBool) encBool) (encOut := encBool)).comp (snd _ _))
   have hlen := unary_eq' ((length_list (encOption encBool)).comp hx) (length_bits.comp hy)
   exact bool_and.comp (hlen.prod hall)
 
@@ -285,8 +283,7 @@ theorem computableInPolyTime_ofTotal : ComputableInPolyTime ofTotal MINKT.enc en
   have hlist := (bits_encList_polyTime encBool).1.comp hstr
   have hmap : ComputableInPolyTime (fun i : MINKT.Instance => i.string.map some) MINKT.enc
       (encList (encOption encBool)) :=
-    .of_tidy ((ComputableTidilyInPolyTime.map
-      (ComputableTidilyInPolyTime.optionSome encBool)).comp hlist.tidy)
+    (map (optionSome encBool)).comp hlist
   exact enc_mk_polyTime hmap MINKT.Instance.computableInPolyTime_time
     MINKT.Instance.computableInPolyTime_size
 

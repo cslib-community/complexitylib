@@ -16,6 +16,12 @@ namespace CslibFrontierTests.QuantumCircuit
 
 open Cslib.Quantum
 
+/-- Two Hadamard gates on the same wire cancel in any register. -/
+theorem hadamard_twice {n : ℕ} (A : Fin 1 ↪ Fin n) (ψ : Qubits n) :
+    (PlacedGate.mk 1 Gate.hadamard A).eval ((PlacedGate.mk 1 Gate.hadamard A).eval ψ) = ψ := by
+  change unitaryEquiv (place A Gate.hadamard) (unitaryEquiv (place A Gate.hadamard) ψ) = ψ
+  rw [← unitaryEquiv_mul, ← map_mul, Gate.hadamard_mul_self, map_one, unitaryEquiv_one]
+
 /-- The Hadamard gate on the only qubit of a one-qubit register. -/
 @[expose] noncomputable def h₀ : PlacedGate 1 := ⟨1, Gate.hadamard, Function.Embedding.refl _⟩
 

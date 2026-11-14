@@ -32,6 +32,18 @@ satisfiable and unsatisfiable instances, and applications of these endpoints. Ru
 `scripts/build.sh CslibFrontierTests.NAEAndEUThreeSAT` from the repository root to check them;
 successful compilation confirms the displayed theorem types and examples.
 
+For exact-one semantics, `CNF.evalOne` requires exactly one true literal *occurrence* per clause,
+so a repeated literal counts twice and an empty clause is never satisfied. Import
+`CslibFrontier.Computability.Complexity.Problems.OneInThreeSAT.Signed` for **Exactly One 3SAT**
+(Arora–Barak Exercise 2.16): `OneInThreeSAT` permits literals of either polarity and width at
+most three, and `OneInThreeSAT_npComplete` proves it NP-complete. The positive variants, which
+forbid negated literals, are in `OneInThreeSAT.Reduction` (`PositiveOneInThreeSAT_npComplete` and
+its exact-three and occurrence-three siblings). The signed hardness proof shows the pattern for a
+source language that is a syntactic slice of the target: `PolyTimeReducible.of_guard` with the
+positive syntax test, the identity map and the rejected instance `[[]]`. Check the
+[examples](../../CslibFrontierTests/OneInThreeSAT.lean) with
+`scripts/build.sh CslibFrontierTests.OneInThreeSAT`.
+
 For maximum 2-satisfiability, import `CslibFrontier.Computability.Complexity.Problems.MaxTwoSAT` and
 use `MaxTwoSAT_npComplete`. An instance `⟨φ, K⟩ : MaxTwoSATInstance` is encoded by `encMaxTwoSAT`,
 so the target `K` is binary. Every clause has at most two literals, unit clauses included, and
@@ -246,6 +258,25 @@ Boolean ring. Dense Gaussian elimination preserves row count and weakly decrease
 state encoding at each column. See the [SCC and 2-SAT tests](../../CslibFrontierTests/SCCAndTwoSAT.lean),
 [Horn solver tests](../../CslibFrontierTests/HornSAT.lean)
 and [XOR solver tests](../../CslibFrontierTests/XORSAT.lean).
+
+Quadratic equations over `𝔽₂` are `QuadEquation` records in
+[CSP/Quadratic.lean](../../CslibFrontier/Logics/Propositional/CSP/Quadratic.lean): the list of
+monomials `(i, j)` with coefficient one and a Boolean right-hand side. As for affine equations,
+`QuadEquation.Holds` sums in the Boolean ring, so repeated monomials cancel in pairs, and the
+diagonal monomial `(i, i)` is the linear term `u_i`. To use the NP-completeness of the satisfiable
+systems (Arora–Barak draft, Exercise 2§18), import
+`CslibFrontier.Computability.Complexity.Problems.QUADEQ` and use
+`QUADEQ_npComplete : NPComplete QUADEQ.encoding QUADEQ`. Instances use binary natural-number labels
+with no bound on their values, so certificates list values along first occurrences
+(`QUADEQ.assignment`), as for `SAT`. Hardness reduces `SAT` by `toQUADEQ`: each clause
+`ℓ₀ ∨ … ∨ ℓ₍ₖ₋₁₎` gets auxiliary variables with `z₀ = 1`, `zₜ₊₁ = zₜ·¬ℓₜ` and `zₖ = 0`
+(`CNF.toQuadSystem`, proved equisatisfiable by `CNF.satisfiable_toQuadSystem`), numbered with
+`splitVarToNat`. Building a reduction to QUADEQ from a gadget over another variable type follows
+the same pattern: prove satisfiability with `QuadSystem.satisfiable_relabel` for an injective
+numbering, and certify the numbering for `computableInPolyTime_relabel`. The
+[QUADEQ tests](../../CslibFrontierTests/QUADEQ.lean) run the verifier and the reduction on concrete
+satisfiable and unsatisfiable instances; check them with
+`scripts/build.sh CslibFrontierTests.QUADEQ`.
 
 The hard branch `CSPSAT.npComplete_of_not_hasSchaeferPolymorphism` imports all its mathematical
 and reduction ingredients. The positive-arity Boolean clone classification

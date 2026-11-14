@@ -33,9 +33,9 @@ Collection XOR has a declared width and treats missing bits as false.
 
 ## Main results
 
-* `Cslib.BitString.ofFn_add`, `Cslib.BitString.zipWith_xor_self_left`,
-  `Cslib.BitString.zipWith_xor_self_right`, `Cslib.BitString.dotProduct_eq_foldl`: algebraic
-  representation and cancellation laws.
+* `Cslib.BitString.ofFn_add`, `Cslib.BitString.flatMap_ofFn_zipWith_add`,
+  `Cslib.BitString.zipWith_xor_self_left`, `Cslib.BitString.zipWith_xor_self_right`,
+  `Cslib.BitString.dotProduct_eq_foldl`: algebraic representation and cancellation laws.
 * `Cslib.BitString.listStrictMajority_map`: a list with distinct voting indices agrees with
   finite-set strict majority.
 * `Cslib.BitString.listXorSelected_eq_ofFn_sum`: the selector fold computes the finite mask sum.
@@ -62,6 +62,20 @@ theorem ofFn_add {n : ℕ} (left right : BitString n) :
   apply List.ext_getElem (by simp)
   intro i hi hi'
   simp [List.getElem_zipWith, Bool.add_eq_xor]
+
+/-- The sums of two equally long lists of blocks, concatenated, are the XOR of the two
+concatenations. -/
+theorem flatMap_ofFn_zipWith_add {n : ℕ} :
+    ∀ left right : List (BitString n), left.length = right.length →
+      (List.zipWith (· + ·) left right).flatMap List.ofFn =
+        List.zipWith Bool.xor (left.flatMap List.ofFn) (right.flatMap List.ofFn)
+  | [], [], _ => rfl
+  | [], _ :: _, h => by simp at h
+  | _ :: _, [], h => by simp at h
+  | x :: left, y :: right, h => by
+    rw [List.zipWith_cons_cons, List.flatMap_cons, List.flatMap_cons, List.flatMap_cons,
+      List.zipWith_append (by simp), ofFn_add,
+      flatMap_ofFn_zipWith_add left right (by simpa using h)]
 
 /-- Pointwise XOR of equal-length bit lists is left-involutive:
 `List.zipWith Bool.xor pad (List.zipWith Bool.xor pad msg) = msg`. -/

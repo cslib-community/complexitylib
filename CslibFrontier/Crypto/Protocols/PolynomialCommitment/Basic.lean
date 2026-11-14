@@ -102,8 +102,8 @@ says that the rows of `M` are codewords of `G` or close to codewords.
 * `Cslib.Crypto.Protocols.ligeroRowComb_mul`,
   `Cslib.Crypto.Protocols.toOuterMeasure_ligeroRowComb_eq`,
   `Cslib.Crypto.Protocols.LigeroMatrixIOP.columnReduction_complete`,
-  `Cslib.Crypto.Protocols.LigeroMatrixIOP.columnReduction_sound`: Ligero matrix-code completeness
-  and row-consistency soundness.
+  `Cslib.Crypto.Protocols.LigeroMatrixIOP.columnReduction_sound`: Ligero matrix-code completeness,
+  and soundness for the honest row-combination claim only.
 
 ## References
 
@@ -618,9 +618,11 @@ theorem columnReduction_rbrSound [Field F] [Fintype F] [DecidableEq F]
     simp only [ligeroColumnCheck, decide_eq_true_eq] at hchk
     exact hS hchk.symm
 
-/-- **Soundness of the Ligero column reduction**: if column `j` is not row-consistent with
-`L.U * L.G`, no prover strategy can make the verifier output a valid row-combination claim with
-probability greater than `1 / |F|`. -/
+/-- **Soundness of the Ligero column reduction, for the honest claim only**: if column `j` is not
+row-consistent with `L.U * L.G`, then against every prover the verifier accepts and outputs a claim
+in `L.relOut`, that is `(r, v)` with `v = ligeroRowComb r L.U`, with probability at most `1 / |F|`.
+The probability that the verifier accepts some other response `v ≠ ligeroRowComb r L.U` is not
+bounded, so this does not bound a cheating prover's acceptance probability. -/
 theorem columnReduction_sound [Field F] [Fintype F] [DecidableEq F]
     (L : LigeroMatrixIOP F m l n) :
     L.columnReduction.verifier.Sound (oP := OracleSpec.empty) World.plain

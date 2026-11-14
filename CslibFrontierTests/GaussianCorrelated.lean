@@ -77,21 +77,18 @@ example : (stdGaussian (EuclideanSpace ℝ (Fin 2))).map
     not_false_eq_true, PiLp.single_eq_of_ne, add_zero, mul_one]
 
 /-- At `ρ = 1` the pair is `(g, g)`. -/
-example : correlatedGaussian 1 = (gaussianReal 0 1).map fun x => (x, x) := by
-  rw [correlatedGaussian]
-  simp only [one_pow, sub_self, sqrt_zero, zero_mul, add_zero, one_mul]
-  rw [show (fun g : ℝ × ℝ => (g.1, g.1)) = (fun x : ℝ => (x, x)) ∘ Prod.fst from rfl,
-    ← Measure.map_map (by fun_prop) measurable_fst, Measure.map_fst_prod, measure_univ,
-    one_smul]
+example : correlatedGaussian 1 = (gaussianReal 0 1).map fun x => (x, x) :=
+  correlatedGaussian_one
 
 /-- At `ρ = -1` the pair is `(g, -g)`. -/
-example : correlatedGaussian (-1) = (gaussianReal 0 1).map fun x => (x, -x) := by
-  rw [correlatedGaussian]
-  simp only [even_two, Even.neg_pow, one_pow, sub_self, sqrt_zero, zero_mul, add_zero,
-    neg_one_mul]
-  rw [show (fun g : ℝ × ℝ => (g.1, -g.1)) = (fun x : ℝ => (x, -x)) ∘ Prod.fst from rfl,
-    ← Measure.map_map (by fun_prop) measurable_fst, Measure.map_fst_prod, measure_univ,
-    one_smul]
+example : correlatedGaussian (-1) = (gaussianReal 0 1).map fun x => (x, -x) :=
+  correlatedGaussian_neg_one
+
+/-- Negating the second coordinate of a `1 / 2`-correlated pair gives a `-1 / 2`-correlated
+pair. -/
+example : (correlatedGaussian (1 / 2)).map (fun p => (p.1, -p.2)) =
+    correlatedGaussian (-(1 / 2)) :=
+  correlatedGaussian_map_neg_snd _
 
 /-- The noise stability of a constant is its square. -/
 example (ρ c : ℝ) : gaussianNoiseStability ρ (fun _ : Fin 3 → ℝ => c) = c ^ 2 := by

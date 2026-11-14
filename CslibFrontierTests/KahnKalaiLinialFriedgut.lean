@@ -4,10 +4,16 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Samuel Schlesinger
 -/
 
+module
+
+import CslibFrontier.Foundations.BooleanAnalysis.FourierDegree
 import CslibFrontier.Foundations.BooleanAnalysis.FriedgutJunta
 
 /-! Instances and non-vacuity witnesses for the Kahn–Kalai–Linial theorem, Talagrand's
-inequality and Friedgut's junta theorem. -/
+inequality, Friedgut's junta theorem, coordinate-set variation and equality in the Poincaré
+inequality. -/
+
+set_option linter.privateModule false
 
 namespace CslibFrontierTests.KahnKalaiLinialFriedgut
 
@@ -94,5 +100,52 @@ example (f : (ι → Bool) → Bool) :
   refine ⟨g, hg, hfg.trans_eq ?_⟩
   rw [expect_sub_expect_sq_eq_sum_fourierCoeff_sq]
   simp only [subset_empty]
+
+/-! ### Coordinate-set variation and junta distance (Arora–Barak 19 §4) -/
+
+-- Resampling the coordinates in `I` gives a junta on `Iᶜ` at relative Hamming distance at most
+-- twice the disagreement probability.
+example (f : (ι → Bool) → Bool) (I : Finset ι) :
+    ∃ g : (ι → Bool) → Bool, DependsOn g ((Iᶜ : Finset ι) : Set ι) ∧
+      (hammingDist f g : ℝ) / 2 ^ Fintype.card ι ≤
+        2 * 𝔼 x, 𝔼 z, if f x = f (I.piecewise z x) then 0 else 1 :=
+  exists_dependsOn_compl_hammingDist_div_le_two_mul_expect_piecewise_ne f I
+
+-- For the dictator on coordinate `0`, resampling coordinate `1` never changes the value, so the
+-- variation outside `{0}` is `0`.
+example : (𝔼 x : Fin 2 → Bool, 𝔼 z : Fin 2 → Bool,
+    if x 0 = (({0} : Finset (Fin 2)).piecewise x z) 0 then (0 : ℝ) else 1) = 0 := by
+  simp
+
+/-! ### Poincaré equality and degree-one Boolean functions (Arora–Barak 19 §5(b)) -/
+
+-- The dictator `x ↦ x 0` on `Fin 2` is balanced and has total influence `1`.
+example : 𝔼 x : Fin 2 → Bool, signVal (x 0) = 0 := by
+  simpa [chi_singleton] using expect_chi ({0} : Finset (Fin 2))
+
+example : totalInfluence (fun x : Fin 2 → Bool => signVal (x 0)) = 1 := by
+  have h : (fun x : Fin 2 → Bool => signVal (x 0)) = chi ℝ {0} :=
+    funext fun x => (chi_singleton 0 x).symm
+  rw [h, totalInfluence_chi, card_singleton, Nat.cast_one]
+
+-- Every balanced Boolean function with total influence at most `1` is a literal.
+example {f : (ι → Bool) → Bool} (hbal : 𝔼 x, signVal (f x) = 0)
+    (hI : totalInfluence (fun x => signVal (f x)) ≤ 1) :
+    ∃ (i : ι) (b : Bool), f = fun x => b ^^ x i :=
+  (totalInfluence_signVal_le_one_iff_of_expect_eq_zero hbal).1 hI
+
+-- Balance is essential: the constant-`false` function on `Fin 2` has total influence `0 ≤ 1` and
+-- satisfies equality in the Poincaré inequality, but is not a literal.
+example : totalInfluence (fun _ : Fin 2 → Bool => signVal false) ≤ 1 ∧
+    ¬∃ (i : Fin 2) (b : Bool), (fun _ : Fin 2 → Bool => false) = fun x => b ^^ x i := by
+  refine ⟨?_, ?_⟩
+  · have h := (totalInfluence_signVal_eq_expect_sub_expect_sq_iff
+      (fun _ : Fin 2 → Bool => false)).2 (Or.inl ⟨false, rfl⟩)
+    simp only [sub_self, sq, mul_zero, expect_const univ_nonempty] at h
+    linarith
+  · rintro ⟨i, b, hi⟩
+    have h0 := congrFun hi (fun _ => false)
+    have h1 := congrFun hi (fun _ => true)
+    cases b <;> simp at h0 h1
 
 end CslibFrontierTests.KahnKalaiLinialFriedgut

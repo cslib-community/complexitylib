@@ -10,9 +10,11 @@ import CslibFrontierGuide.ApiDocs
 /-!
 # The guide's HTML generator
 
-`lake -d guide exe guide --output <dir>` writes the guide's pages to `<dir>/html-multi`;
-`scripts/guide.sh` runs it. The chapters' Lean examples are checked when `lake -d guide build`
-elaborates them, before this program runs.
+`scripts/guide.sh` checks the chapters and runs this generator through Lake’s `lean` command with `--run`,
+writing the pages to `guide/.lake/build/site/html-multi`. Lake builds its imports and applies
+the project options before Lean interprets `main`; it does not need native code for the
+imported library. `lake -d guide exe guide --output <dir>` also remains available for native
+generation.
 -/
 
 open Verso.Genre.Manual

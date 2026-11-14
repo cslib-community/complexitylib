@@ -61,8 +61,6 @@ recover `s`, and derives the key from `s`.
   and error distribution `W`, against explicit reductions that never see the secret of their
   challenge. This is Lemma 4.7 (secret-splitting form) composed into the security part of
   Theorem 4.11.
-* `Cslib.Crypto.FuzzyExtractor.computationallySecureFor_lweFuzzyExtractor`: the same bound
-  packaged as `ComputationallySecureFor` with loss `2 * ε`.
 * `Cslib.Crypto.FuzzyExtractor.realDistribution_decodeThenExtract_add_uniform`,
   `Cslib.Crypto.FuzzyExtractor.securityAdvantage_decodeThenExtract_add_uniform_eq_zero`: sanity
   checks for a uniform source and the additive key derivation `ext s x = s + x`, where the real
@@ -73,8 +71,12 @@ recover `s`, and derives the key from `s`.
 * Hardness of LWE with error distribution `W` (Theorems 4.6 and 4.8 of the paper, which rest on
   Döttling and Müller-Quade and on Regev); the security theorem is a reduction to that
   assumption, stated as an inequality between advantages.
-* Running time of the reductions (they are explicit `ProbComp` programs, but efficiency is not
-  formalized).
+* Running time of the reductions and asymptotic security, here. The parameters `m, k, l, q` are
+  fixed, so `securityAdvantage_lweFuzzyExtractor_le` is a concrete reduction inequality, not a
+  security theorem on its own. The module
+  `CslibFrontier.Crypto.Computational.FuzzyExtractor.DecodeThenExtract.Security` certifies the
+  reductions as strict PPT and proves the asymptotic theorem
+  `computationallySecure_lweFuzzyExtractor`.
 * Correctness of the decoder of Construction 4.9 (Lemma 4.10); it is a hypothesis.
 * The symbol-fixing and block-source results of Section 5.
 * No security claim is made for `decodeThenExtract` with a general `ext`: with a public seed and
@@ -519,7 +521,8 @@ uniform secret in dimension `l` and error distribution `W`, of the two explicit 
 
 This is an exact statement with no hypotheses; it does not bound the running time of the
 reductions, and it does not prove that LWE with error distribution `W` is hard (the paper obtains
-this from Theorem 4.6 for uniform-interval errors). -/
+this from Theorem 4.6 for uniform-interval errors). The asymptotic theorem built on it is
+`computationallySecure_lweFuzzyExtractor`, whose reductions are certified strict PPT. -/
 theorem securityAdvantage_lweFuzzyExtractor_le
     (decode : Matrix (Fin m) (Fin (k + l)) (ZMod q) → (Fin m → ZMod q) →
       ProbComp (Option (Fin (k + l) → ZMod q)))
@@ -533,27 +536,6 @@ theorem securityAdvantage_lweFuzzyExtractor_le
     randomGame_hardcoreKeyReduction,
     Game.advantage_comm ((lweFuzzyExtractor m k l q decode).idealGame W D)]
   exact Game.advantage_triangle _ _ _
-
-/-- Source-family form of `securityAdvantage_lweFuzzyExtractor_le`: if decisional LWE in
-dimension `l` with error distribution `W` is `ε`-hard for both reductions of every admissible
-distinguisher and every `W ∈ sources`, then `lweFuzzyExtractor` is `2ε`-secure for `sources`
-([FullerMengReyzin2020], Definition 2.2). -/
-theorem computationallySecureFor_lweFuzzyExtractor
-    (decode : Matrix (Fin m) (Fin (k + l)) (ZMod q) → (Fin m → ZMod q) →
-      ProbComp (Option (Fin (k + l) → ZMod q)))
-    {sources : Set (PMF (Fin m → ZMod q))}
-    {Admissible : ((Fin k → ZMod q) → DecodeHelper m (k + l) q Unit → Experiment) → Prop}
-    {ε : ℝ≥0}
-    (hlwe : ∀ W ∈ sources, ∀ D, Admissible D →
-      LWE.advantage (PMF.uniformOfFintype (Fin l → ZMod q)) W (hardcoreKeyReduction D) ≤ ε ∧
-        LWE.advantage (PMF.uniformOfFintype (Fin l → ZMod q)) W
-          (hardcoreUniformReduction D) ≤ ε) :
-    (lweFuzzyExtractor m k l q decode).ComputationallySecureFor sources Admissible (2 * ε) := by
-  intro W hW D hD
-  obtain ⟨hkey, hunif⟩ := hlwe W hW D hD
-  calc (lweFuzzyExtractor m k l q decode).securityAdvantage W D
-      ≤ ε + ε := (securityAdvantage_lweFuzzyExtractor_le decode W D).trans (add_le_add hkey hunif)
-    _ = 2 * ε := (two_mul ε).symm
 
 end Hardcore
 

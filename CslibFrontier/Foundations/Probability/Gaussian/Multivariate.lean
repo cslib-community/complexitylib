@@ -48,8 +48,11 @@ a centered Gaussian of variance `‖WithLp.toLp 2 a‖ ^ 2`, the squared Euclide
   window and tail bounds for a projection.
 * `ProbabilityTheory.measurePreserving_toLp_pi_gaussianReal`: independent standard Gaussian
   coordinates form a standard Gaussian vector of `EuclideanSpace ℝ ι`.
-* `ProbabilityTheory.pi_gaussianReal_map_dotProduct`: the law of a projection of independent
-  standard Gaussian coordinates.
+* `ProbabilityTheory.pi_gaussianReal_map_dotProduct`,
+  `ProbabilityTheory.pi_gaussianReal_map_dotProduct_eq_map_const_mul`: the law of a projection of
+  independent standard Gaussian coordinates.
+* `ProbabilityTheory.sqrt_dotProduct_self_eq_norm`, `ProbabilityTheory.sqrt_dotProduct_self_pos`:
+  `√(a ⬝ᵥ a)` is the Euclidean norm of `a`, positive for `a ≠ 0`.
 * `ProbabilityTheory.memLp_dotProduct_pi_gaussianReal`,
   `ProbabilityTheory.integrable_dotProduct_pi_gaussianReal`: its moments.
 * `ProbabilityTheory.measureReal_pi_gaussianReal_eq`: the product measure of standard Gaussians
@@ -135,6 +138,26 @@ theorem pi_gaussianReal_map_dotProduct {ι : Type*} [Fintype ι] (a : ι → ℝ
       dotProduct_comm]
   rw [h, ← Measure.map_map (by fun_prop) (by fun_prop),
     (measurePreserving_toLp_pi_gaussianReal ι).map_eq, stdGaussian_map_inner]
+
+/-- The square root of `a ⬝ᵥ a` is the Euclidean norm of `a` (the plain `‖a‖` on `ι → ℝ` is the
+sup norm). -/
+theorem sqrt_dotProduct_self_eq_norm {ι : Type*} [Fintype ι] (a : ι → ℝ) :
+    √(a ⬝ᵥ a) = ‖WithLp.toLp 2 a‖ := by
+  rw [norm_eq_sqrt_real_inner, EuclideanSpace.inner_toLp_toLp, star_trivial]
+
+/-- The Euclidean norm `√(a ⬝ᵥ a)` of a nonzero `a` is positive. -/
+theorem sqrt_dotProduct_self_pos {ι : Type*} [Fintype ι] {a : ι → ℝ} (ha : a ≠ 0) :
+    0 < √(a ⬝ᵥ a) :=
+  Real.sqrt_pos.2 (by simpa using Matrix.dotProduct_self_star_pos_iff.2 ha)
+
+/-- Under independent standard Gaussian coordinates, the projection `a ⬝ᵥ ·` is a standard
+Gaussian scaled by the Euclidean norm `√(a ⬝ᵥ a)`. -/
+theorem pi_gaussianReal_map_dotProduct_eq_map_const_mul {ι : Type*} [Fintype ι] (a : ι → ℝ) :
+    (Measure.pi fun _ : ι => gaussianReal 0 1).map (a ⬝ᵥ ·) =
+      (gaussianReal 0 1).map (√(a ⬝ᵥ a) * ·) := by
+  rw [pi_gaussianReal_map_dotProduct, gaussianReal_map_const_mul, mul_zero, mul_one,
+    sqrt_dotProduct_self_eq_norm]
+  congr 1
 
 /-- Under independent standard Gaussian coordinates, the projection `a ⬝ᵥ ·` has finite moments
 of every finite order. -/

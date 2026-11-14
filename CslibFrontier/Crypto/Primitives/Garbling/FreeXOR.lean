@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Karn Seth. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Karn Seth
+Authors: Karn Seth, Mayank Rathee
 -/
 
 module
@@ -47,6 +47,8 @@ free (`card_garbledRow`).
 ## Main results
 
 * `Cslib.Crypto.Garbling.FreeXOR.Garbled.run_garbleWith`: correctness.
+* `Cslib.Crypto.Garbling.FreeXOR.isTweakUnique_reduction`: when distinct slots have distinct
+  tweaks, the reduction asks every tweak at most once (`CCR.IsTweakUnique`).
 * `Cslib.Crypto.Garbling.FreeXOR.advantage_realGame_simGame`: privacy. The advantage of every
   distinguisher between the real and the simulated view equals the circular correlation
   robustness advantage of the reduction, which asks one query per slot of the garbled table
@@ -688,6 +690,21 @@ theorem isQueryBounded_reduction :
   rw [Finset.length_toList, Finset.card_univ] at h
   simp only [Nat.zero_add, Nat.add_zero] at h
   exact h
+
+/-- When distinct slots have distinct tweaks, the reduction makes at most one query with each
+tweak. -/
+theorem isTweakUnique_reduction [DecidableEq T] (htw : Function.Injective tw) :
+    CCR.IsTweakUnique (reduction C I H tw x D) := fun t => by
+  have h := (ProbOracleComp.isCostBounded_sample _
+    (ProbComp.uniform (Wire n C.size → K × Bool))).bind fun base =>
+    (ProbOracleComp.isCostBounded_tabulate_le_one (R := K × Bool) CCR.Query.tweak
+      (reductionQuery C I tw x (propagate C.topology free base))
+      (Finset.univ : Finset (GarbledSlot C.topology free)).nodup_toList
+      (by simpa [Function.comp_def, reductionQuery_tweak] using htw) t).bind fun O =>
+    ProbOracleComp.isCostBounded_sample _
+      (D (reductionView C.topology H tw (C.eval I x)
+        (propagate C.topology free base) O))
+  simpa only [reduction, Nat.zero_add, Nat.add_zero] using h
 
 private theorem eval_run_reduction (f : CCR.Query K T → K × Bool) :
     ProbComp.eval ((reduction C I H tw x D).run fun q => pure (f q)) =
