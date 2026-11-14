@@ -44,13 +44,13 @@ keep their documented access and supplement this evidence.
 
 For new bundled hypotheses, provide a satisfying instance; use a negative case when it exposes vacuity or a model boundary. Tests should exercise behavior or the interface rather than restate a theorem by name.
 
-After adding a library file, run `lake exe mk_all` to regenerate the aggregate. New tests belong in `CslibFrontierTests/` and are included by a Lake glob. During development:
+After adding a library file, run `lake exe mk_all` to regenerate the aggregate. New tests belong in `CslibFrontierTests/` and are included by a Lake glob. At a local validation checkpoint:
 
 ```bash
-scripts/check.sh --quick
+scripts/check.sh --quick --no-full-fallback
 ```
 
-Quick mode compares against the merge base with local `origin/main` without fetching by default. It includes committed, staged, unstaged and untracked changes and builds affected modules and importing clients when supported. It runs source hygiene on the changed files and the encoding readability and projection chain ratchets on changed library modules, then the declaration linters on the affected library modules, so an argument that a change leaves unused in a client is reported before CI. A changed ratchet baseline (`scripts/encoding_readability_baseline.json` or `scripts/projection_chains_baseline.json`) runs its ratchet. A library aggregate whose only edit is the import lines `lake exe mk_all` adds for new modules keeps the quick plan, which then builds the aggregate's importing clients. Other non-Lean, unsupported or ambiguous changes, including deletions and renames, fall back to the full check; `scripts/check.sh --quick --no-full-fallback` instead reports the reason and exits with status 3. Quick success is development feedback, not full integration validation.
+Quick mode compares against the merge base with local `origin/main` without fetching by default. It includes committed, staged, unstaged and untracked changes and builds affected modules and importing clients when supported. It runs source hygiene on the changed files and the encoding readability and projection chain ratchets on changed library modules, then the declaration linters on the affected library modules, so an argument that a change leaves unused in a client is reported before CI. A changed ratchet baseline (`scripts/encoding_readability_baseline.json` or `scripts/projection_chains_baseline.json`) runs its ratchet. A library aggregate whose only edit is the import lines `lake exe mk_all` adds for new modules keeps the quick plan, which then builds the aggregate's importing clients. With `--no-full-fallback`, other non-Lean, unsupported or ambiguous changes, including deletions and renames, report the reason and exit with status 3: run focused checks for the changed files and use hosted CI for full validation. Omitting the flag retains the automatic full-check fallback. Quick success is development feedback, not full integration validation.
 
 Quick mode also runs the changed-file lints that read only sources: an `@[expose]` section with nothing to expose, and a new test file that only restates signatures. When building targets directly instead, run them with `python3 scripts/check_changed_files.py --source-only`; CI's changed-file step additionally checks module-doc names against build outputs.
 

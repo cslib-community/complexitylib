@@ -248,33 +248,72 @@ Micciancio–Peikert gadget-based lattice trapdoors over `ZMod (2 ^ w)` (IACR eP
 
 ML-DSA (CRYSTALS-Dilithium) is in [`MLDSA/Decompose.lean`](../../CslibFrontier/Crypto/Computational/MLDSA/Decompose.lean),
 [`MLDSA/Basic.lean`](../../CslibFrontier/Crypto/Computational/MLDSA/Basic.lean) and
-[`MLDSA/KeyOnly.lean`](../../CslibFrontier/Crypto/Computational/MLDSA/KeyOnly.lean). `decompose`,
-`highBits` and `lowBits` follow the FIPS 204 rounding with its `q - 1` wrap-around rule; the
-reusable facts are uniqueness of the decomposition (`decompose_intCast_mul_add`) and stability of
-the high bits under `β`-short perturbations (`highBits_add_of_abs_lowBits_lt`). `signAttempt`,
+[`MLDSA/KeyOnly.lean`](../../CslibFrontier/Crypto/Computational/MLDSA/KeyOnly.lean).
+`power2Round` follows FIPS 204 Algorithm 35; `power2RoundVec_reconstruct` and
+`abs_power2RoundVec_low_le` give the coefficientwise public-key identity and low-part bound used by
+the Dilithium self-target calculation. `decompose`, `highBits` and `lowBits` follow the commitment
+rounding with its `q - 1` wrap-around rule; the reusable facts are uniqueness of the decomposition
+(`decompose_intCast_mul_add`) and stability of the high bits under `β`-short perturbations
+(`highBits_add_of_abs_lowBits_lt`). `signAttempt`,
 `sign` and `verify` model the uncompressed-public-key scheme with an arbitrary hash-to-ball
-function and mask sampler (no Power2Round, hints, byte encodings or seed expansion), and
+function and mask sampler (it does not yet use the available Power2Round layer, hints, byte
+encodings or seed expansion), and
 `verify_sign` proves correctness under `Params.Valid`, which the three standard parameter sets
 satisfy. `succProbability_koaGame_le` bounds key-only forgery by the Module-LWE advantage
 `ModuleLWE.advantage` of `forgeryDistinguisher` for the short secret and error laws plus the
 self-target MSIS success of `selfTargetReduction`;
 chosen-message security, which needs signing-oracle simulation in the random-oracle model, is not
-formalized. The [checked examples](../../CslibFrontierTests/Crypto/MLDSA.lean) cover the wrap-around
-case and a toy instance that signs, verifies, rejects a modified response and yields a self-target
-solution.
+formalized. The [checked examples](../../CslibFrontierTests/Crypto/MLDSA.lean) cover the
+Power2Round tie and high-end boundaries, the Decompose wrap-around case, and a toy instance that
+signs, verifies, rejects a modified response and yields a self-target solution.
 
-Falcon's current checked layer is deliberately narrower. Import
+The SLH-DSA address-domain layer from FIPS 205 ([fips205][fips205]) is in
+[`SLHDSA/Address.lean`](../../CslibFrontier/Crypto/Primitives/SLHDSA/Address.lean), with checked
+layouts in [`SLHDSAAddress.lean`](../../CslibFrontierTests/Crypto/SLHDSAAddress.lean).
+`Address.toBits` serializes the common layer and tree fields, the seven-valued address type and the
+three type-dependent words as the standard's canonical 32-byte big-endian address.
+`Address.setTypeAndClear` preserves the common fields while clearing all final 12 bytes, and the
+seven typed constructors satisfy the padding, fixed-layer and fixed-height requirements in
+Figures 3–9. `Address.toCompressedBits` is literally the byte-slice projection of Figure 18 used
+by the SHA2 parameter sets; it is injective under `Address.FitsCompressed`, which records that the
+one-byte layer and eight-byte tree fields do not overflow. The unrestricted compressed format is
+not injective, and the checked client exhibits the discarded high tree word. This module does not
+define the FIPS 205 hash instantiations, WOTS+, XMSS, FORS, the hypertree, signing or verification,
+nor does it prove classical or quantum security.
+
+Falcon's current checked layer is deliberately narrower than a security theorem. Import
 [`Falcon/Verification.lean`](../../CslibFrontier/Crypto/Computational/Falcon/Verification.lean) for
-the NIST-selected Falcon Round 3 submission version 1.2's post-decoding verification algebra.
-`Falcon.reconstructFirst` computes the centered representative of `c - s₂h` in the existing
-negacyclic coefficient ring, `Falcon.pairSquaredNorm` computes `‖(s₁,s₂)‖²`, and
-`Falcon.verify_of_signingRelation` proves that a centered pair satisfying `s₁ + s₂h = c mod q`
-and the configured bound is accepted. The [checked client](../../CslibFrontierTests/Crypto/Falcon.lean)
-includes one pair accepted exactly at the bound and one rejected above it. This is not an FN-DSA
-security theorem: decompression, salt and hash-to-point processing, NTRU key generation,
-FFT/NTT correctness, the adaptive Gaussian trapdoor sampler and rejection law, average-case
-NTRU-SIS, ROM/QROM reductions, efficiency, and reconciliation with the still-developing FIPS 206
-remain separate obligations.
+the NIST-selected Falcon Round 3 submission version 1.2's algebra after hashing and signature
+decoding: `Falcon.reconstructFirst` computes the centered representative of `c - s₂h`,
+`Falcon.pairSquaredNorm` computes `‖(s₁,s₂)‖²`, and
+`Falcon.verify_of_signingRelation` proves acceptance of a centered, bounded relation witness.
+Import
+[`Falcon/VerificationFrontend.lean`](../../CslibFrontier/Crypto/Computational/Falcon/VerificationFrontend.lean)
+for the v1.2 NIST signed-message frontend. `Falcon.parseNistSignedMessage` checks the two-byte
+big-endian signature length, 40-byte salt, `0010nnnn` degree header and canonical compressed
+`s₂`; `Falcon.hashToPointPrefix` applies Algorithm 3's big-endian 16-bit rejection rule to a
+finite XOF output prefix; and `Falcon.verifyNistWithXof` injects exactly `salt ++ message` into a
+caller-supplied prefix function before invoking the algebraic verifier. The
+[ordinary-import client](../../CslibFrontierTests/Crypto/Falcon.lean) covers canonical and
+malformed encodings, salt/message layout, rejection sampling, boundary acceptance, and compact
+decoder/hash fixtures derived from the first official Falcon-512 NIST KAT.
+
+The dependency graph does not yet provide SHAKE-256/Keccak, so the supplied-prefix boundary is not
+a hash implementation and the full KAT is not verified end to end. Public-key decoding, NTRU key
+generation, FFT/NTT correctness, the adaptive Gaussian trapdoor sampler and rejection law,
+average-case NTRU-SIS, ROM/QROM reductions, certified efficiency, and reconciliation with the
+still-developing FIPS 206 remain separate obligations.
+
+The source-faithful SLH-DSA WOTS+ digit preprocessing from FIPS 205 is in
+[`SLHDSA/WOTS/Digits.lean`](../../CslibFrontier/Crypto/Primitives/SLHDSA/WOTS/Digits.lean), with
+edge checks in [`SLHDSAWOTSDigits.lean`](../../CslibFrontierTests/Crypto/SLHDSAWOTSDigits.lean)
+[fips205][fips205]. `base2b` is Algorithm 4's big-endian byte-to-base conversion. For the three
+standard values `n = 16, 24, 32`, `WOTS.digits` implements the common first seven lines of
+`wots_sign` and `wots_pkFromSig`: the `2n` base-16 message digits followed by the three complement
+checksum digits, including the specified four-bit left shift and two-byte encoding. This milestone
+does not define the WOTS+ hash chain, key generation, signing, public-key reconstruction, concrete
+FIPS 205 hash instantiations, or any security reduction; those remain obligations under the NIST
+post-quantum portfolio roadmap item.
 
 These are implications from hardness assumptions. They do not prove that a concrete OWF, DDH group, LWE family or SIS parameter choice is hard. `DecisionLWE` runs the fixed-instance experiments `LWE.realExperiment` and `LWE.randomExperiment` over `ZMod (2 ^ w)`: a typed distinguisher receives a uniform matrix `A` and either `A t + e`, with independent errors and one shared uniform secret, or an independent uniform vector. For other secret and error laws over any finite commutative ring, `LWE.advantage` is the distance between `LWE.realGame` and `LWE.randomGame`. The distinguisher's machine reads only the row-major binary word of `[b | A]`, and `decisionLWE_iff_encoded` shows that this is the word-level assumption on the serialized public matrix `[B*t+e | B]` (checked in [`CslibFrontierTests/Crypto/DecisionLWE.lean`](../../CslibFrontierTests/Crypto/DecisionLWE.lean)); in [`SIS/Module.lean`](../../CslibFrontier/Crypto/Computational/SIS/Module.lean), `expandModuleMatrix` and `flattenPolyVec` embed negacyclic `ModuleSIS` and `ModuleLWE` instances over `ℤ_q[X]/(X^n+1)` into unstructured `(d * n) × (k * n)` matrices over `ℤ_q` (checked with concrete evaluations and nonvacuity proofs in [`CslibFrontierTests/Crypto/ModuleSIS.lean`](../../CslibFrontierTests/Crypto/ModuleSIS.lean)); [`LWE/Module.lean`](../../CslibFrontier/Crypto/Computational/LWE/Module.lean) states decision Module-LWE as the typed games `ModuleLWE.realGame` and `ModuleLWE.randomGame` for any secret and error laws, whose advantage `ModuleLWE.advantage` is the LWE advantage over the ring `Negacyclic (ZMod q) n` (`ModuleLWE.advantage_eq_lweAdvantage`), and `DecisionModuleLWE` fixes a uniform secret and is the word-level assumption by `decisionModuleLWE_iff_encoded` (checked in [`CslibFrontierTests/Crypto/DecisionModuleLWE.lean`](../../CslibFrontierTests/Crypto/DecisionModuleLWE.lean)); and [`SIS/ModuleEncryption.lean`](../../CslibFrontier/Crypto/Computational/SIS/ModuleEncryption.lean) builds Module-LWE public-key encryption (`moduleLWEKeyGen`, `moduleLWEEncrypt`, `moduleLWEDecrypt`), bounded-noise decryption correctness (`moduleLWEDecrypt_moduleLWEEncrypt_eq`), and two-hop public-key/ciphertext reductions to `ModuleLWE.sampleLaw` (`advantage_realEncryptionView_uniform_le`, `advantage_realEncryptionView_msg_le`, checked in [`CslibFrontierTests/Crypto/ModuleEncryption.lean`](../../CslibFrontierTests/Crypto/ModuleEncryption.lean)); no worst-case lattice reduction is asserted there.
 
@@ -767,6 +806,24 @@ zero and full weight, detect a comparison distribution with the wrong parity bas
 four-bit sample that an incorrect independent redraw of the third secret accepts but the shared
 law rejects. These are distribution definitions and exact finite laws, not assumptions that
 2-QCSD-P or 3-QCSD-PT are hard.
+
+Import [`Computational/HQC/DQCSD.lean`](../../CslibFrontier/Crypto/Computational/HQC/DQCSD.lean)
+to state that these exact source distributions are indistinguishable to the native quantum word
+tests above. `SyndromeSample.toWord` encodes the public block followed by the syndrome in `2n`
+bits. `TruncatedSyndromeSample.toWord` encodes both public blocks, the complete first syndrome,
+and the retained prefix of the second in `3n + (n - ell)` bits; both encodings are injective.
+`NativeQuantumTwoDQCSDP` and `NativeQuantumThreeDQCSDPT` are the resulting asymptotic assumptions,
+and their `of_within` theorems transfer concrete bounds with separate qubit, gate, and query
+budgets. The four `*_iff_*` theorems expose both source-named assumptions through the shared
+`NativeQuantum.IndistinguishableWithin` and
+`NativeQuantum.ComputationallyIndistinguishable` interfaces. The [checked
+client](../../CslibFrontierTests/Crypto/HQCDQCSD.lean) is an ordinary module that instantiates
+positive parameter families, checks both encodings and all four length contracts, runs the exact
+two-block words through the generic native game, exercises both concrete bridges, and consumes all
+four assumptions through those shared interfaces. This is original no-advice, no-useful-oracle
+packaging of the cited distributions: it proves no DQCSD hardness, does not bundle the
+specification's separate primitive-prime requirement, and adds no QROM, decoding-failure, or
+HQC-PKE/KEM security result.
 
 The word-source model assumes independence and uniformity; it does not establish them for an
 XOF. Positions use natural numbers, with checked 16-bit representability conditions for the
@@ -1366,6 +1423,7 @@ The finite query-only PRG/cipher results, semantic commitment interfaces and uni
 [complexitylib]: ../sources.md#complexitylib
 [cslib]: ../sources.md#cslib
 [fips203]: ../sources.md#fips203
+[fips205]: ../sources.md#fips205
 [fly22]: ../sources.md#fly22
 [fmr20]: ../sources.md#fmr20
 [ggm86]: ../sources.md#ggm86
