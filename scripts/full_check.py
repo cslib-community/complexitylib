@@ -33,15 +33,16 @@ from dataclasses import dataclass, field
 import os
 from pathlib import Path
 import shutil
-import subprocess
 import sys
 import tempfile
 from typing import TextIO
 
 try:
     import check_vm_map_count
+    from check_progress import run_logged
 except ModuleNotFoundError:
     from scripts import check_vm_map_count
+    from scripts.check_progress import run_logged
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -55,6 +56,7 @@ class Step:
     commands: tuple[str, ...]
     cwd: str | None = None  # the step's `working-directory`
     env: dict[str, str] = field(default_factory=dict)  # the step's literal `env` values
+    progress: bool = False  # stream the local cache audit's progress, retaining its full log
 
 
 STEPS = (
@@ -99,7 +101,7 @@ LOCAL_STEPS = (
     # The local artifact cache restores outputs without their warnings, which `--wfail` and
     # `--iofail` then miss (#4523). CI's remote cache is published only from `main`.
     Step("Re-elaborate root-package files restored from the artifact cache",
-         ("python3 -B scripts/check_cache_restores.py",)),
+         ("python3 -B scripts/check_cache_restores.py --progress",), progress=True),
 )
 
 # Run by scripts/check.sh before the cache bootstrap, in both full and quick modes.
@@ -142,12 +144,12 @@ def run_steps(steps: tuple[Step, ...], base: str, root: Path = ROOT,
     status = 0
     for number, step in enumerate(steps, 1):
         log = log_dir / f"{number}.log"
-        with log.open("w") as stream:
-            result = subprocess.run(
+        with log.open("wb") as stream:
+            result = run_logged(
                 ["bash", "-e", "-c", "\n".join(step.commands)],
                 cwd=root / step.cwd if step.cwd else root,
                 env={**os.environ, **step.env, "BASE": base},
-                stdout=stream, stderr=subprocess.STDOUT)
+                log=stream, progress=out if step.progress else None)
         if result.returncode:
             status = 1
             out.write(f"FAIL  {step.name}\n" + log.read_text(errors="replace"))

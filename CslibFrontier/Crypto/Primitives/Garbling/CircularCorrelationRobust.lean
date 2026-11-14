@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 Karn Seth. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Karn Seth, Samuel Schlesinger
+Authors: Karn Seth, Samuel Schlesinger, Mayank Rathee
 -/
 
 module
@@ -53,6 +53,8 @@ Definition 1, has its own dependent query type and lives in
 * `Cslib.Crypto.Garbling.CCR.Query`: a query of a label, a tweak and a bit.
 * `Cslib.Crypto.Garbling.CCR.oracle`: the circular oracle under an input and an output offset.
 * `Cslib.Crypto.Garbling.CCR.advantage`: the circular correlation robustness advantage.
+* `Cslib.Crypto.Garbling.CCR.IsTweakUnique`: tweak uniqueness for Boolean CCR adversaries (at most
+  one query per tweak on every execution path).
 * `Cslib.Crypto.Garbling.CCR.Arithmetic.advantage`: the arithmetic variant, with
   `Cslib.Crypto.Garbling.CCR.Arithmetic.IsTweakUnique`.
 
@@ -60,9 +62,11 @@ Definition 1, has its own dependent query type and lives in
 
 The definition of [GuoKatzWangYu2020] only allows adversaries that never ask both `(x, t, false)`
 and `(x, t, true)`, whose answers reveal the offset (`CCR.oracle_true_sub_oracle_false`). Here
-`advantage` is defined for every adversary, and the restriction is a property of the adversary at
-hand: the Free-XOR, half-gates and one-hot reductions ask every tweak at most once. The same holds
-for the arithmetic variant, whose restriction `IsTweakUnique` is formalized.
+`advantage` is defined for every adversary, and the restriction `IsTweakUnique` is stated as a
+property of the adversary at hand: the Free-XOR (`FreeXOR.isTweakUnique_reduction`), half-gates
+(`HalfGates.isTweakUnique_reduction`) and one-hot (`BinaryToOneHot.isTweakUnique_reduction`)
+reductions ask every tweak at most once. The same holds for the arithmetic variant, whose
+restriction `Arithmetic.IsTweakUnique` is likewise formalized.
 
 ## References
 
@@ -128,6 +132,25 @@ function. -/
     [Fintype T] [DecidableEq T] [Fintype M] [Nonempty M] (H : L → T → M) (δ : Key → L)
     (δ' : Key → M) (A : Adversary L T M) : NNReal :=
   PRF.advantage (keyed H δ δ') A
+
+/-- The adversary never repeats a tweak: on every path it makes at most one query with each
+tweak `t`. In particular, it never queries both `(x, t, false)` and `(x, t, true)`. -/
+@[expose] def IsTweakUnique [DecidableEq T] (A : Adversary L T M) : Prop :=
+  ∀ t : T, OracleComp.IsCostBounded
+    (Sum.elim (fun _ => 0) fun q : Query L T => if q.tweak = t then 1 else 0) A 1
+
+omit [AddCommGroup L] [AddCommGroup M] in
+/-- Against every stateful oracle, a tweak-unique adversary records at most one query with each
+tweak `t` on every supported execution. -/
+theorem IsTweakUnique.transcript_tweak_le_one [DecidableEq T] {A : Adversary L T M}
+    (h : IsTweakUnique A) {State : Type}
+    (oracle : (q : Query L T) → StateT State PMF M) {s s' : State} {result : Bool}
+    {transcript : OracleComp.Transcript fun _ : Query L T => M}
+    (hmem : (result, s', transcript) ∈
+      (ProbOracleComp.runWith (OracleComp.withTranscript oracle) A (s, [])).support)
+    (t : T) :
+    (transcript.map fun entry => if entry.1.tweak = t then 1 else 0).sum ≤ 1 :=
+  ProbOracleComp.transcript_cost_le (h t) oracle hmem
 
 /-! ### The arithmetic variant -/
 

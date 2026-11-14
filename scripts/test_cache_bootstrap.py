@@ -58,6 +58,7 @@ class CacheBootstrapTests(unittest.TestCase):
                          "BOOTSTRAP_LOG": str(self.log)})
         self.git("init", "-q")
         for name in ("scripts/build.sh", "scripts/check.sh", "scripts/quick_check.py",
+                     "scripts/check_progress.py",
                      "scripts/cache/ensure.sh", "scripts/cache/bounded.py", "scripts/cache/restore.py", "scripts/cache/windows_job.py"):
             path = self.root / name
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -70,7 +71,7 @@ class CacheBootstrapTests(unittest.TestCase):
             self.write(name, "raise SystemExit(0)\n")
         self.write("scripts/full_check.py", FAKE_FULL_CHECK)
         self.write("scripts/cache/get.sh", FAKE_FETCH).chmod(0o755)
-        self.write(".gitignore", ".lake/\n")
+        self.write(".gitignore", ".lake/\n__pycache__/\n")
         self.write("lean-toolchain", "leanprover/lean4:v4.36.0-rc1\n")
         self.write("lake-manifest.json", '{"packages": []}\n')
         self.write("lakefile.toml", 'name = "fixture"\n[[lean_lib]]\nname = "Demo"\n')
