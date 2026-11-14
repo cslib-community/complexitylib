@@ -10,6 +10,7 @@ module
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Probabilistic.Oracle
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.Complexity
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Inductive
+public import CslibFrontier.Foundations.Data.Fin.Decode
 
 /-!
 # Finite descriptions of fair-coin oracle machines
@@ -123,15 +124,15 @@ def Branches.get (branches : Branches) : Bool → Act
 /-- Decode a user control tag. `none` is the extra finite trap control used only when the initial
 tag is malformed. -/
 def control (states tag : ℕ) : Option (Fin states) :=
-  if h : tag < states then some ⟨tag, h⟩ else none
+  Fin.ofNat? states tag
 
 @[simp] theorem control_eq_some_of_lt (states tag : ℕ) (h : tag < states) :
     control states tag = some ⟨tag, h⟩ := by
-  simp only [control, h, dite_true]
+  simp only [control, Fin.ofNat?_eq_some_of_lt states tag h]
 
 @[simp] theorem control_eq_none_of_not_lt (states tag : ℕ) (h : ¬ tag < states) :
     control states tag = none := by
-  simp only [control, h, dite_false]
+  simp only [control, Fin.ofNat?_eq_none_of_not_lt states tag h]
 
 /-- Denotation uses exactly the declared user controls plus one malformed-initial trap control. -/
 theorem Desc.card_control (d : Desc) :
