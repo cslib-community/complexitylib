@@ -6391,6 +6391,7 @@ public import CslibFrontier.Probability.PMF.Option
 public import CslibFrontier.Probability.PMF.Option.Bind
 public import CslibFrontier.Probability.PMF.PolynomialAgreement
 public import CslibFrontier.Probability.PMF.SequentialHistory
+public import CslibFrontier.Probability.PMF.SequentialPrefix
 public import CslibFrontier.Probability.PMF.StoppedProcess
 public import CslibFrontier.Probability.PMF.StoppedProcess.Boundary
 public import CslibFrontier.Probability.PMF.StoppedProcess.Map
@@ -6476,6 +6477,7 @@ public import CslibFrontier.Probability.StochasticOracle.AdaptiveReachable
 public import CslibFrontier.Probability.StochasticOracle.AdaptiveSelection
 public import CslibFrontier.Probability.StochasticOracle.AdaptiveSelection.Discrete
 public import CslibFrontier.Probability.StochasticOracle.AdaptiveSelection.DiscreteCost
+public import CslibFrontier.Probability.StochasticOracle.AdaptiveSelection.Prefix
 public import CslibFrontier.Probability.StochasticOracle.AdaptiveStopping
 public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.Codec
 public import CslibFrontier.Probability.StochasticOracle.ConcurrentBatch.FiniteOracle
@@ -6555,11 +6557,14 @@ public import CslibFrontier.Probability.StochasticOracle.SelectionLowerBound
 public import CslibFrontier.Probability.StochasticOracle.SelectionOptimum
 public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy
 public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Discrete
+public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Discrete.Competitor
+public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Discrete.Deadline
 public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Discrete.FiniteTable
 public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Discrete.LowerCost
 public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Execution
 public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Output
 public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Record
+public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.RecordCount
 public import CslibFrontier.Probability.StochasticOracle.TwoBatchApproximation
 public import CslibFrontier.Probability.StochasticOracle.TwoBatchBinary
 public import CslibFrontier.Probability.StochasticOracle.TwoBatchGuarantees

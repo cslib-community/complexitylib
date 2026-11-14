@@ -8,6 +8,7 @@ module
 -- upstream: candidate
 
 public import CslibFrontier.Probability.StochasticOracle.SelectionLowerBound
+import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.RecordCount
 
 /-!
 # Necessary deadlines for arbitrary selection-only policies
@@ -119,25 +120,6 @@ theorem latency_ge_calls (O : Oracle B R J) (π : Policy B R J) (I : Instance E 
         Nat.cast_one, mul_add, mul_one]
       linarith
 
-omit [Fintype B] [Fintype R] in
-private theorem calls_eq_length (h : List (Record B R)) (hh : none ∉ h) :
-    count issued h = h.length := by
-  induction h with
-  | nil => rfl
-  | cons x h ih =>
-    have hn : x ≠ none ∧ none ∉ h := by simpa [eq_comm] using hh
-    cases x with
-    | none => exact (hn.1 rfl).elim
-    | some z => simp [count, issued, ih hn.2]
-
-omit [Fintype B] [Fintype R] in
-private theorem count_prefix_mono (f : List (Record B R) → Record B R → Bool)
-    (ω : ℕ → Record B R) : Monotone (fun n => count f (responseHistory ω n)) := by
-  apply monotone_nat_of_le_succ
-  intro n
-  rw [responseHistory_succ, count]
-  omega
-
 /-- Deadline-limited successful paths cannot gain any new revealed progress after
 v=min(u,floor(D/ell)): calls are sequential and halt is absorbing. -/
 theorem count_eq_deadline_prefix (O : Oracle B R J) (π : Policy B R J) (I : Instance E J)
@@ -152,37 +134,22 @@ theorem count_eq_deadline_prefix (O : Oracle B R J) (π : Policy B R J) (I : Ins
     apply (le_div_iff₀ hℓ).mpr
     have hl := latency_ge_calls O π I b p c ℓ H _ (hω u)
     nlinarith
-  have hn (t : ℕ) (hvt : v ≤ t) (htu : t < u) : ω t = none := by
-    cases he : ω t with
-    | none => rfl
+  change count (reveals I (proposals O)) (PMF.seqHistory (fun i : Fin u => ω i)) =
+    count (reveals I (proposals O))
+      (PMF.seqHistory (Fin.take v (min_le_left _ _) (fun i : Fin u => ω i)))
+  apply count_eq_prefix_of_issued_bound _ (reveals_none O I) (min_le_left _ _)
+  · intro t ht
+    change none ∉ responseHistory ω t.1
+    cases he : ω t.1 with
+    | none => exact (ht he).elim
     | some z =>
-      rcases z with ⟨a, x⟩
-      have hh := hω (t + 1)
+      have hh := hω (t.1 + 1)
       rw [responseHistory_succ, he] at hh
       cases hh with
-      | cons hh hx =>
-        have hs := active_of_call O π _ a x hx
-        have hc := calls_eq_length (responseHistory ω t) hs
-        have hlen : (responseHistory ω t).length = t := by simp [responseHistory]
-        have hm := count_prefix_mono issued ω (show t + 1 ≤ u by omega)
-        dsimp only at hm
-        rw [responseHistory_succ, he, count] at hm
-        simp only [issued, Option.isSome_some, ite_true] at hm
-        rw [hc, hlen] at hm
-        have hv : ⌊D / ℓ⌋₊ ≤ t := by dsimp [v] at hvt; omega
-        omega
-  have he : ∀ n, v ≤ n → n ≤ u →
-      count (reveals I (proposals O)) (responseHistory ω n) =
-        count (reveals I (proposals O)) (responseHistory ω v) := by
-    intro n hvn
-    induction n, hvn using Nat.le_induction with
-    | base => intro _; rfl
-    | succ n hvn ih =>
-      intro hnu
-      rw [responseHistory_succ, hn n hvn (by omega), count]
-      simp only [reveals_none, Bool.false_eq_true, ite_false, Nat.add_zero]
-      exact ih (by omega)
-  exact he u (min_le_left _ _) le_rfl
+      | cons _ hx => exact active_of_call O π _ z.1 z.2 hx
+  · apply le_min ?_ hk
+    simpa only [responseHistory, PMF.length_seqHistory] using
+      count_le_length issued (responseHistory ω u)
 
 /-- The source's necessary binomial deadline bound for arbitrary adaptive,
 randomized admissible output: at most min(u,floor(D/ell)) calls can finish by D. -/
