@@ -122,10 +122,11 @@ runtime, and conditional results are not unconditional endpoints.
 
 An entry that cites a source theorem lists theorems that state that result
 ([faithful headlines](../AGENTS.md#faithful-headlines)). The scope note describes the formal
-setting of a faithful statement. It does not excuse a gap between the listed theorem and the
-cited result. A stand-in, such as a theorem that assumes a property of its own reduction, or a
-bound for parameters chosen after the adversary, is not listed as the cited result. If it is
-listed at all, its entry's title and source say it is a step of that result. A published theorem
+setting of a faithful statement; it does not excuse a gap between the listed theorem and the
+cited result. A stand-in—such as a helper that assumes a property of its own reduction, or a
+bound for parameters chosen after the adversary—never occupies the cited result's entry (if a
+step is listed at all, its own title and `theorem` field say it is a step of that result), and
+original results are not registered as proofs of a nearby source theorem. A published theorem
 enters the inventory only after a human maintainer has checked its statement against the source
 ([review cycle](../AGENTS.md#review-cycle)).
 
