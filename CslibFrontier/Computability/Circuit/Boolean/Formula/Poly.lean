@@ -40,8 +40,9 @@ agrees with a language in `FormulaSIZE s` or `FormulaPoly`, respectively, mirror
 * `Cslib.Circuits.Boolean.formulaSize_not`, `Cslib.Circuits.Boolean.formulaSize_and_le`,
   `Cslib.Circuits.Boolean.formulaSize_or_le`: leaf-size bounds for Boolean operations on functions.
 * `Cslib.Circuits.Boolean.FormulaSIZE_mono`: monotonicity of `FormulaSIZE`.
-* `Cslib.Circuits.Boolean.mem_FormulaPoly_iff_exists_formulas`: characterization of `FormulaPoly` by
-  explicit formula families.
+* `Cslib.Circuits.Boolean.mem_FormulaPoly_iff_exists_formulas`,
+  `Cslib.Circuits.Boolean.mem_FormulaPoly_iff_exists_formulas_size`: characterizations of
+  `FormulaPoly` by explicit formula families bounded in leaf size or in operation-node count.
 * `Cslib.Circuits.Boolean.mem_FormulaPoly_iff_exists_mem_FormulaSIZE`: `FormulaPoly` is the union of
   `FormulaSIZE (fun n => c * (n + 1) ^ c)`.
 * `Cslib.Circuits.Boolean.FormulaPoly.compl`, `Cslib.Circuits.Boolean.FormulaPoly.sup`,
@@ -131,6 +132,38 @@ theorem mem_FormulaPoly_iff_exists_formulas {L : Language Bool} :
     exact ⟨F, _, hL, fun n => ⟨(hsize n).le, hF n⟩⟩
   · rintro ⟨F, p, hp, hF⟩
     exact hp.mono_of_le fun n => (formulaSize_le (hF n).2).trans (hF n).1
+
+/-- Every Boolean function has a De Morgan formula of least leaf size with at most
+`3 * formulaSize f + 1` operation nodes (`Formula.size`). -/
+theorem exists_computes_size_le_three_mul_formulaSize_add_one (f : BooleanFunction n) :
+    ∃ F : Formula signature n, F.Computes interpretation f ∧ F.leafSize = formulaSize f ∧
+      F.size ≤ 3 * formulaSize f + 1 := by
+  obtain ⟨F, hF, hL, h⟩ := exists_computes_size_le f
+  refine ⟨F, hF, hL, ?_⟩
+  rcases h with ⟨b, rfl⟩ | h
+  · simp
+  · omega
+
+/-- **`FormulaPoly` with operation-node bounds.** Because every formula `F` satisfies
+`F.leafSize ≤ F.size + 1` (`Formula.leafSize_le`) and every Boolean function has a formula of
+least leaf size with `F.size ≤ 3 * formulaSize f + 1`
+(`exists_computes_size_le_three_mul_formulaSize_add_one`), polynomial leaf size and polynomial
+operation-node count (`Formula.size`) define the same class `FormulaPoly`. -/
+theorem mem_FormulaPoly_iff_exists_formulas_size {L : Language Bool} :
+    L ∈ FormulaPoly ↔ ∃ (F : ∀ n, Formula signature n) (p : ℕ → ℕ), PolynomiallyBounded p ∧
+      ∀ n, (F n).size ≤ p n ∧ (F n).Computes interpretation (L.slice n) := by
+  constructor
+  · intro hL
+    choose F hF _ hsize using fun n =>
+      exists_computes_size_le_three_mul_formulaSize_add_one (L.slice n)
+    exact ⟨F, fun n => 3 * formulaSize (L.slice n) + 1,
+      ((PolynomiallyBounded.const 3).mul hL).add (PolynomiallyBounded.const 1),
+      fun n => ⟨hsize n, hF n⟩⟩
+  · rintro ⟨F, p, hp, hF⟩
+    refine (hp.add (PolynomiallyBounded.const 1)).mono_of_le fun n => ?_
+    have hleaf : (F n).leafSize ≤ (F n).size + 1 := by
+      simpa using (F n).leafSize_le arity_le_two
+    exact (formulaSize_le (hF n).2).trans (hleaf.trans (Nat.add_le_add_right (hF n).1 1))
 
 /-- `FormulaPoly` is the union of the classes `FormulaSIZE (fun n => c * (n + 1) ^ c)`. -/
 theorem mem_FormulaPoly_iff_exists_mem_FormulaSIZE {L : Language Bool} :

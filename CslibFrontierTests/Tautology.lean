@@ -53,3 +53,14 @@ example (h : ∀ {γ : Type} (encC : γ ↪ List Bool), NP encC = coNP encC) :
     PolyTimeReducible encQBF encCNF TAUTOLOGY ThreeSAT ∧
       PolyTimeReducible encCNF encQBF ThreeSAT TAUTOLOGY :=
   (NP_eq_coNP_iff_ThreeSAT_reducible_TAUTOLOGY.1 h).symm
+
+/-- Exercise 2 §12: `3SAT` and `TAUTOLOGY` Cook-reduce to each other unconditionally, and every
+`NP` problem Cook-reduces to `TAUTOLOGY`. -/
+example :
+    PolyTimeTuringReducible encCNF encQBF ThreeSAT TAUTOLOGY ∧
+      PolyTimeTuringReducible encQBF encCNF TAUTOLOGY ThreeSAT :=
+  ⟨polyTimeTuringReducible_ThreeSAT_TAUTOLOGY, polyTimeTuringReducible_TAUTOLOGY_ThreeSAT⟩
+
+example {α : Type} (enc : α ↪ List Bool) (A : Set α) (hA : A ∈ NP enc) :
+    PolyTimeTuringReducible enc encQBF A TAUTOLOGY :=
+  TAUTOLOGY_npTuringHard enc A hA

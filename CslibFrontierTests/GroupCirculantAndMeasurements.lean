@@ -68,6 +68,36 @@ example :
       fun x => ∏ i : Fin 2, (sylvesterTwo ℚ *ᵥ v i) (x i) :=
   kroneckerPow_mulVec_prod (sylvesterTwo ℚ) 2 (fun _ b => if b then 0 else 1)
 
+example :
+    let u : Fin 2 → ℚ := ![1, 2]
+    (rankOneMat ⊗ₖ rankOneMat) *ᵥ (fun q : Fin 2 × Fin 2 => u q.1 * u q.2) =
+      ((-1 : ℚ) * (-1)) • (fun q : Fin 2 × Fin 2 => u q.1 * u q.2) ∧
+    (fun q : Fin 2 × Fin 2 => u q.1 * u q.2) ≠ 0 := by
+  intro u
+  have hu : rankOneMat *ᵥ u = (-1 : ℚ) • u := by
+    ext i
+    fin_cases i <;> simp [rankOneMat, u, Matrix.mulVec, dotProduct] <;> ring
+  have hne : u ≠ 0 := by
+    intro h0
+    have h00 := congrFun h0 0
+    norm_num [u] at h00
+  exact ⟨kronecker_mulVec_smul rankOneMat rankOneMat u u (-1) (-1) hu hu,
+    mul_prod_ne_zero_iff.mpr ⟨hne, hne⟩⟩
+
+example :
+    (kroneckerPow rankOneMat 3).trace = (-1 : ℚ) ∧
+      ((kroneckerPow rankOneMat 3) ^ 2).trace = 1 := by
+  have htr : rankOneMat.trace = (-1 : ℚ) := by
+    simp [Matrix.trace, Fin.sum_univ_two, rankOneMat]
+    ring
+  have htr2 : (rankOneMat ^ 2).trace = (1 : ℚ) := by
+    simp [sq, Matrix.trace, Fin.sum_univ_two, rankOneMat]
+    ring
+  refine ⟨?_, ?_⟩
+  · rw [trace_kroneckerPow, htr]
+    norm_num
+  · rw [trace_kroneckerPow_pow, htr2, one_pow]
+
 /-! ### 2. Group-circulant spectra, Walsh–Hadamard matrices, and Cayley/DFT bridges -/
 
 private noncomputable def diff3 : ZMod 3 → ℂ :=

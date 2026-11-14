@@ -10,7 +10,9 @@ module
 public import CslibFrontier.Computability.BranchingProgram.PolyLength
 public import CslibFrontier.Computability.Circuit.Boolean.Barrington
 public import CslibFrontier.Computability.Circuit.Boolean.DepthClasses
+public import CslibFrontier.Computability.Circuit.Boolean.Formula.Poly
 import CslibFrontier.Computability.Circuit.Boolean.NegationNormalForm
+import CslibFrontier.Computability.Circuit.Boolean.Spira
 import CslibFrontier.Computability.Circuit.Unfolding
 import CslibFrontier.Foundations.Data.Nat.PolynomialBound.Log
 import Mathlib.GroupTheory.Perm.ViaEmbedding
@@ -19,9 +21,12 @@ import Mathlib.Tactic.Ring
 /-!
 # Barrington's theorem as a class equality
 
-**NC¹ is logarithmic formula depth**: a language is in NC¹ exactly when its slice at length `n`
-has a De Morgan formula with `O(log n)` AND and OR gates on every path
-(`Boolean.mem_NC_one_iff_formulaDepth_le`). A circuit unfolds into formulas of its depth
+**NC¹ is logarithmic formula depth and polynomial formula size**: a language is in NC¹ exactly
+when its slice at length `n` has a De Morgan formula with `O(log n)` AND and OR gates on every path
+(`Boolean.mem_NC_one_iff_formulaDepth_le`), and by Spira's theorem (`Boolean.Spira`) this is
+equivalent to having De Morgan formulas of polynomial leaf size or polynomial operation-node size
+(`Boolean.FormulaPoly_eq_NC_one`, `Boolean.mem_NC_one_iff_exists_formulas_size`,
+[AroraBarak07, Chapter 6, Exercise 10]). A circuit unfolds into formulas of its depth
 (`Circuit.toFormula`); conversely, a formula with `d` AND and OR gates on every path has a
 negation normal form of depth at most `d + 1` (`Formula.nnf`), which is a circuit with fewer than
 `2 ^ (d + 1)` gates.
@@ -49,6 +54,9 @@ nonuniform.
 ## Main results
 
 * `Cslib.Circuits.Boolean.mem_NC_one_iff_formulaDepth_le`: NC¹ is logarithmic formula depth.
+* `Cslib.Circuits.Boolean.FormulaPoly_eq_NC_one`,
+  `Cslib.Circuits.Boolean.mem_NC_one_iff_exists_formulas_size`: polynomial-size De Morgan formulas
+  (by leaf count or operation-node count) characterize NC¹.
 * `Cslib.Circuits.Boolean.exists_monoidProgram_alternatingGroup_computes_of_mem_NC_one`,
   `Cslib.Circuits.Boolean.exists_monoidProgram_computes_of_mem_NC_one`: Barrington's theorem for
   the languages of NC¹, over `A₅` and over `S₅`.
@@ -64,11 +72,14 @@ nonuniform.
 
 ## References
 
+* [S. Arora and B. Barak, *Computational Complexity: A Modern Approach*, draft of
+  2007-01-08][AroraBarak07]
 * [D. A. Barrington, *Bounded-width polynomial-size branching programs recognize exactly those
   languages in NC¹*][Barrington1989]
 * [D. A. Mix Barrington, D. Thérien, *Finite monoids and the fine structure of
   NC¹*][BarringtonTherien1988]
 * [S. Jukna, *Boolean Function Complexity: Advances and Frontiers*][Jukna2012]
+* [P. M. Spira, *On time-hardware complexity tradeoffs for Boolean functions*][Spira1971]
 -/
 
 @[expose] public section
@@ -79,7 +90,7 @@ open Equiv Equiv.Perm Cslib.BranchingPrograms
 
 variable {L : Language Bool}
 
-/-! ### NC¹ as logarithmic formula depth -/
+/-! ### NC¹ as logarithmic formula depth and polynomial formula size -/
 
 /-- **NC¹ is logarithmic formula depth.** A language is in NC¹ exactly when, for a constant `c`,
 its slice at every length `n` has formula depth at most `c (⌊log₂ n⌋ + 1)`: a De Morgan formula
@@ -105,6 +116,54 @@ theorem mem_NC_one_iff_formulaDepth_le :
     rw [F.size_toCircuit]
     exact (F.size_lt_pow_depth Boolean.arity_le_two le_rfl).le.trans
       (Nat.pow_le_pow_right two_pos hd')
+
+/-- The formula depth of a Boolean function is at most `4 ⌈log₂ L(f)⌉`, where `L(f)` is its
+formula leaf size (`formulaSize f`). -/
+theorem formulaDepth_le_four_mul_clog_formulaSize {n : ℕ} (f : BooleanFunction n) :
+    formulaDepth f ≤ 4 * Nat.clog 2 (formulaSize f) := by
+  obtain ⟨F, hF, hL⟩ := exists_computes_leafSize_eq f
+  exact hL ▸ formulaDepth_le_four_mul_clog hF
+
+/-- The formula leaf size of a Boolean function is at most `2 ^ d`, where `d` is its formula
+depth (`formulaDepth f`). -/
+theorem formulaSize_le_two_pow_formulaDepth {n : ℕ} (f : BooleanFunction n) :
+    formulaSize f ≤ 2 ^ formulaDepth f := by
+  obtain ⟨F, hF, hL⟩ := exists_computes_leafSize_le_two_pow_formulaDepth f
+  exact (formulaSize_le hF).trans hL
+
+/-- Every language with polynomial-size De Morgan formulas is in `NC 1`
+([Spira1971], [AroraBarak07, Chapter 6, Exercise 10]). -/
+theorem FormulaPoly_subset_NC_one : FormulaPoly ⊆ NC 1 := by
+  intro L hL
+  obtain ⟨a, ha⟩ := hL.exists_clog_le_mul_log
+  refine mem_NC_one_iff_formulaDepth_le.2 ⟨4 * a, fun n => ?_⟩
+  calc formulaDepth (L.slice n)
+      ≤ 4 * Nat.clog 2 (formulaSize (L.slice n)) :=
+        formulaDepth_le_four_mul_clog_formulaSize (L.slice n)
+    _ ≤ 4 * (a * (Nat.log 2 n + 1)) := Nat.mul_le_mul_left 4 (ha n)
+    _ = 4 * a * (Nat.log 2 n + 1) := (mul_assoc 4 a _).symm
+
+/-- Every language in `NC 1` has polynomial-size De Morgan formulas
+([AroraBarak07, Chapter 6, Exercise 10]). -/
+theorem NC_one_subset_FormulaPoly : NC 1 ⊆ FormulaPoly := by
+  intro L hL
+  obtain ⟨c, hc⟩ := mem_NC_one_iff_formulaDepth_le.1 hL
+  refine (polynomiallyBounded_two_pow_mul_log c).mono_of_le fun n => ?_
+  exact (formulaSize_le_two_pow_formulaDepth (L.slice n)).trans
+    (Nat.pow_le_pow_right two_pos (hc n))
+
+/-- **Polynomial-size De Morgan formulas characterize `NC 1`**
+([Spira1971], [AroraBarak07, Chapter 6, Exercise 10]): a language has polynomial-size De Morgan
+formulas if and only if it is in nonuniform `NC 1`. -/
+theorem FormulaPoly_eq_NC_one : FormulaPoly = NC 1 :=
+  Set.Subset.antisymm FormulaPoly_subset_NC_one NC_one_subset_FormulaPoly
+
+/-- Membership in `NC 1` is equivalent to having De Morgan formulas of polynomial operation-node
+size (`Formula.size`) at every input length ([AroraBarak07, Chapter 6, Exercise 10]). -/
+theorem mem_NC_one_iff_exists_formulas_size :
+    L ∈ NC 1 ↔ ∃ (F : ∀ n, Formula signature n) (p : ℕ → ℕ), PolynomiallyBounded p ∧
+      ∀ n, (F n).size ≤ p n ∧ (F n).Computes interpretation (L.slice n) := by
+  rw [← FormulaPoly_eq_NC_one, mem_FormulaPoly_iff_exists_formulas_size]
 
 /-! ### Barrington's theorem -/
 
