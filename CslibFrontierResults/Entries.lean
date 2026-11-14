@@ -6,7 +6,6 @@ Authors: Christian Reitwiessner, Samuel Schlesinger
 
 -- upstream: local-only (result registry collection)
 import CslibFrontierResults.Registry
-import CslibFrontier.Computability.Complexity.Classes.ArthurMerlin.Operators
 import CslibFrontier.Foundations.Algebra.Group.HomomorphismTesting
 import CslibFrontier.Probability.MarkovChain.RandomWalk
 import CslibFrontier.Probability.MarkovChain.RotationMap
@@ -648,18 +647,6 @@ register_result "dip-eq-np" where
   scope := "dIP is the coin-free case of the IP model: a deterministic word-query verifier run \
     against every randomized stateful prover, strict oracle PPT (one machine, one polynomial \
     clock), completeness 1 and soundness 0; arbitrary injective encodings."
-
-register_result "bpop-np-eq-am" where
-  title := "The native bounded-error NP operator equals AM"
-  topic := "interactive proofs"
-  sources := [
-    { paper := AroraBarak07, theorem := "Exercise 8.5 (native operator milestone)",
-      locator := "2007-01-08 draft, printed p. 166 / PDF p. 182" }
-  ]
-  theorems := [Cslib.Complexity.BPOp_NP, Cslib.Complexity.BPOp_NP_subset_NPPoly]
-  scope := "Native verifier BP.NP = AM and NP advice inclusion, for arbitrary instance encodings. \
-    Definition 7.20 randomized-reduction-to-3SAT correspondence, Exercise 7.5 nondeterministic \
-    circuit endpoint and Exercise 7.6 source collapse bridge remain open."
 
 register_result "perfect-soundness-ip-subset-np" where
   title := "Interactive proofs with perfect soundness are in NP"
