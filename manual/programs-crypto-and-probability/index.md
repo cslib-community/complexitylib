@@ -1033,6 +1033,35 @@ probability, and the response law has unbounded support. This extends the necess
 finite-horizon deadline comparison to arbitrary discrete semantic competitors; native
 representation remains a separate obligation.
 
+For instance-level cost comparisons in this semantic model, import
+[`Discrete/Optimum.lean`](../../CslibFrontier/Probability/StochasticOracle/SelectionPolicy/Discrete/Optimum.lean).
+`SelectionPolicy.Discrete.optimalCost` takes both an externally fixed turn budget and an
+independent `allowed` policy-class predicate. The class can express opportunity-use or other
+selection restrictions. `feasibleCosts` filters that class by successful-only `Admissible`
+provenance, the actual success requirement and `DeadlineFeasible` at every supported prefix.
+These feasibility predicates contain no progress or token-envelope assumption.
+`expectedCost` integrates actual accrued invoices in `ENNReal`, permitting infinite means;
+the infimum is infinity when the feasible class is empty. This fixed-budget class differs
+from the earlier finite `SelectionPolicy.optimalCost`, whose documented infimum permits
+all finite budgets.
+
+`le_optimalCost` derives the universal lower bound from primitive limitations on the allowed
+admissible competitors. `optimalCost_sandwich` constructs the retaining witness's feasibility
+and actual expected-cost upper bound; the caller must establish that the witness belongs to
+the chosen policy class. `matching_envelope_ratio` gives the `1/eta` comparison under matching
+envelopes. `optimalCost_eq_top_of_deadline_bound` derives infeasibility from the necessary
+binomial deadline bound, independently of token-cost envelopes. The accounted-duration and
+native-model boundaries above still apply.
+
+The checked [discrete optimum client](../../CslibFrontierTests/StochasticOracleDiscreteOptimum.lean)
+uses one legal singleton opportunity, geometric responses and invoice `x + 1`. At budget and
+deadline one, success one-half has optimum exactly two, attained by the actual retaining
+policy. Invoices of arbitrarily large size occur on supported issued records. A target above
+one-half has value infinity. Restricting the same source to policies that halt before querying
+also gives infinity at target one-half, checking that the specified class changes the infimum.
+This is a semantic optimum; equality with an infimum over native PTM implementations requires
+a separate representation argument.
+
 `retainingPolicy` constructs an admissible upper policy from a randomized batch
 selector; `UpperBounds` contains only its supported source contracts.
 `retaining_guarantee` derives its actual certified deadline probability and stopped

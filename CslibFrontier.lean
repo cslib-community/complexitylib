@@ -6564,6 +6564,7 @@ public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Discret
 public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Discrete.Deadline
 public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Discrete.FiniteTable
 public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Discrete.LowerCost
+public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Discrete.Optimum
 public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Execution
 public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Output
 public import CslibFrontier.Probability.StochasticOracle.SelectionPolicy.Record

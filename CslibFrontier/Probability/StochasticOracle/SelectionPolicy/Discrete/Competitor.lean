@@ -25,12 +25,14 @@ These interfaces assume no token-cost or latency envelope.
 ## Main definitions
 
 * `Outcome`, `outputLaw`: actual execution and randomized extraction.
+* `Admissible`: successful-only provenance, independent of source envelopes.
 * `ProgressBounds`: local progress/size limits and successful-only provenance.
 
 ## Main results
 
 * `revealed_card_le`, `success_count`: deterministic count certificates on actual support.
 * `success_le_count_tail`: the corresponding successful-output probability bound.
+* `outputLaw_pure`, `outputLaw_event_le`: deterministic extraction and event-precondition bounds.
 -/
 
 public section
@@ -54,6 +56,18 @@ structure Outcome (B R J : Type) where
     (output : List (Record B R) → PMF (Finset J)) (u : ℕ) : PMF (Outcome B R J) :=
   (PMF.seqProcess (responseStep (policyLaw choose respond)) u).bind fun h =>
     (output (PMF.seqHistory h)).map fun C => ⟨PMF.seqHistory h, C⟩
+
+omit [DecidableEq J] in
+/-- Deterministic final extraction preserves the actual joint transcript/output law. -/
+theorem outputLaw_pure
+    (choose : List (Record B R) → PMF (Option B))
+    (respond : List (Record B R) → B → PMF R)
+    (returned : List (Record B R) → Finset J) (u : ℕ) :
+    outputLaw choose respond (fun h => PMF.pure (returned h)) u =
+      (PMF.seqProcess (responseStep (policyLaw choose respond)) u).map
+        (fun h => (⟨PMF.seqHistory h, returned (PMF.seqHistory h)⟩ : Outcome B R J)) := by
+  simp only [outputLaw, PMF.pure_map]
+  rfl
 
 omit [DecidableEq J] in
 /-- An event in the actual randomized output can occur only on its supported
@@ -89,6 +103,15 @@ variable (I : Instance E J)
   (output : List (Record B R) → PMF (Finset J))
   (duration : List (Record B R) → B → R → ℝ)
 
+/-- Selection-only provenance for successfully certified actual outputs.
+Failed masks are unrestricted, and no progress, cost or time bound is assumed. -/
+@[expose] def Admissible (u : ℕ) (ρ D : ℝ) : Prop :=
+  ∀ h : Fin u → Record B R,
+    h ∈ (PMF.seqProcess (responseStep (policyLaw choose respond)) u).support →
+    ∀ C ∈ (output (PMF.seqHistory h)).support,
+      CertifiedOutput I ρ D duration (PMF.seqHistory h) C →
+      C ⊆ proposedSets (recordProposals propose) (PMF.seqHistory h)
+
 /-- Primitive progress limitations and provenance for an actual competitor.
 Only supported selected batches and successfully certified outputs are constrained. -/
 structure ProgressBounds (u b : ℕ) (p ρ D : ℝ) : Prop where
@@ -107,11 +130,7 @@ structure ProgressBounds (u b : ℕ) (p ρ D : ℝ) : Prop where
         revealed I (recordProposals propose) (PMF.seqHistory h)).card ≤ b
   /-- Successful extraction can use only actually proposed candidates; failed
   masks, even fabricated ones, need no provenance certificate. -/
-  provenance : ∀ h : Fin u → Record B R,
-    h ∈ (PMF.seqProcess (responseStep (policyLaw choose respond)) u).support →
-    ∀ C ∈ (output (PMF.seqHistory h)).support,
-      CertifiedOutput I ρ D duration (PMF.seqHistory h) C →
-      C ⊆ proposedSets (recordProposals propose) (PMF.seqHistory h)
+  provenance : Admissible I propose choose respond output duration u ρ D
 
 /-- A batchwise progress envelope averages over actual randomized selection,
 with no progress contribution from a halt or a previously halted history. -/
