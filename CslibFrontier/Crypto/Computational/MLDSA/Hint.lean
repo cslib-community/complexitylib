@@ -85,12 +85,16 @@ private theorem bucketCount_pos (hγ : 0 < γ₂) (hq : 4 * γ₂ < q) :
     0 < (q - 1) / (2 * γ₂) := by
   exact Nat.div_pos (by omega) (by omega)
 
+private theorem eq_bucketCount_mul_add_one (hq : 0 < q) (hdvd : 2 * γ₂ ∣ q - 1) :
+    q = (q - 1) / (2 * γ₂) * (2 * γ₂) + 1 := by
+  rw [Nat.div_mul_cancel hdvd]
+  omega
+
 private theorem two_le_bucketCount (hγ : 0 < γ₂) (hdvd : 2 * γ₂ ∣ q - 1)
     (hq : 4 * γ₂ < q) : 2 ≤ (q - 1) / (2 * γ₂) := by
   set m : ℕ := (q - 1) / (2 * γ₂)
-  have hmul : m * (2 * γ₂) = q - 1 := by
-    simpa only [m] using Nat.div_mul_cancel hdvd
-  have hqeq : q = m * (2 * γ₂) + 1 := by omega
+  have hqeq : q = m * (2 * γ₂) + 1 := by
+    simpa only [m] using eq_bucketCount_mul_add_one (by omega) hdvd
   nlinarith
 
 /-- The exceptional negative representatives next to zero are precisely the wrap-around bucket. -/
@@ -100,10 +104,9 @@ private theorem highBits_intCast_eq_zero_of_neg (hγ : 0 < γ₂) (hdvd : 2 * γ
   have : NeZero q := ⟨by omega⟩
   set m : ℕ := (q - 1) / (2 * γ₂)
   have hm : 0 < m := by simpa only [m] using bucketCount_pos hγ hq
-  have hmul : m * (2 * γ₂) = q - 1 := by
-    simpa only [m] using Nat.div_mul_cancel hdvd
   have hqeq : (q : ℤ) = (m : ℤ) * (2 * γ₂ : ℕ) + 1 := by
-    exact_mod_cast (show q = m * (2 * γ₂) + 1 by omega)
+    exact_mod_cast (show q = m * (2 * γ₂) + 1 by
+      simpa only [m] using eq_bucketCount_mul_add_one (by omega) hdvd)
   have hv₀ := abs_lowBits_le (q := q) hγ (c : ZMod q)
   rw [abs_le] at hv₀
   have hv₁₀ := highBits_nonneg (q := q) hγ (c : ZMod q)
@@ -209,10 +212,9 @@ theorem useHint_makeHint (hγ : 0 < γ₂) (hdvd : 2 * γ₂ ∣ q - 1) (hq : 4 
   have : NeZero q := ⟨by omega⟩
   set m : ℕ := (q - 1) / (2 * γ₂)
   have hm : 0 < m := by simpa only [m] using bucketCount_pos hγ hq
-  have hmul : m * (2 * γ₂) = q - 1 := by
-    simpa only [m] using Nat.div_mul_cancel hdvd
   have hqeq : (q : ℤ) = (m : ℤ) * (2 * γ₂ : ℕ) + 1 := by
-    exact_mod_cast (show q = m * (2 * γ₂) + 1 by omega)
+    exact_mod_cast (show q = m * (2 * γ₂) + 1 by
+      simpa only [m] using eq_bucketCount_mul_add_one (by omega) hdvd)
   have hr₀ := abs_lowBits_le (q := q) hγ r
   rw [abs_le] at hr₀
   have hz₀ := hz
