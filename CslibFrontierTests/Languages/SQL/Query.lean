@@ -170,13 +170,8 @@ example (D' : Database S) (hD' : D'.Conforms) : ∃ rs, (empDept.eval D').toOpti
 /-- The employees without a department. -/
 abbrev noDept : Query S 2 := select (unary .isNull (col 1)) emp
 
--- `UNION ALL` in either order gives the same bag …
-example : Equiv .bag (unionAll emp noDept) (unionAll noDept emp) := fun D' _ => by
-  simp only [eval_unionAll]
-  rcases emp.eval D' with _ | rs <;> rcases noDept.eval D' with _ | ss
-  exacts [.none, .none, .none, .some List.perm_append_comm]
-
--- … but not the same list.
+-- `UNION ALL` in either order gives the same bag (`Query.unionAll_comm`, used in
+-- `CslibFrontierTests.SQL.QueryLaws`) but not the same list.
 example : ¬Equiv .ordered (unionAll emp noDept) (unionAll noDept emp) := by
   rw [equiv_ordered_iff]
   intro h

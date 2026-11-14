@@ -5232,44 +5232,51 @@ register_result "fujisaki-okamoto-notbot-ind-cca" where
   title := "ROM IND-CCA security of the implicit-rejection Fujisaki–Okamoto transform FO-notbot"
   topic := "cryptography"
   sources := [
-    { paper := HofheinzHoevelmannsKiltz2017, theorem := unverified,
-      locator := "§3.1 and §3.2.2 (IACR ePrint 2017/604, full version of 2 November 2021)" }
+    { paper := HofheinzHoevelmannsKiltz2017, theorem := "Theorems 3.2 and 3.4",
+      locator := "§3.1, §3.2.2 and the §3.3 bounds table (IACR ePrint 2017/604, full version of \
+        2 November 2021)" }
   ]
   theorems := [
     Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.indCcaRomAdvantage_le
   ]
-  scope := "Domain-separated FO-notbot = U-notbot ∘ T over an explicit-coin PKE: for uniform \
-    messages, a δ-correct and γ-spread PKE, and a deterministic oracle adversary making at most \
-    qG queries to G and qH queries to H (decapsulation queries unbounded), the ROM IND-CCA \
-    advantage is at most 2·Adv^{IND-CPA}(romCpaReduction) + (2qH + 2(qG + qH))/|M| + \
-    2(qG + qH + 1)δ + 2(qG + qH)2^{-γ} for some distinct fixed challenge messages. The proof \
-    composes the T and U-notbot hops directly instead of through OW-PCA; roIndCcaGame draws both \
-    real (H) and ideal challenge keys from the arbitrary sampler S.sampleKey (uniform sampleKey \
-    recovers HHK17 §2.2 Def. 2.4 / Fig. 4); information-theoretic games with no running-time \
-    accounting for the reduction; FO^⊥ is registered separately as fujisaki-okamoto-bot-ind-cca."
+  scope := "Domain-separated FO-notbot = U-notbot ∘ T over one fixed explicit-coin PKE: for \
+    uniform messages, a δ-correct and γ-spread PKE, and a randomized adversary with explicit \
+    coins each of whose coin values makes at most qG queries to G and qH queries to H \
+    (decapsulation queries unbounded), the ROM IND-CCA advantage is at most \
+    2·Adv^{IND-CPA}(romCpaReduction A) + (2qH + 2(qG + qH))/|M| + 2(qG + qH + 1)δ + \
+    2(qG + qH)2^{-γ}, where IND-CPA is the two-stage game of HHK17 Def. 2.2 and \
+    romCpaReduction A is one two-stage adversary that draws its own challenge messages. Both \
+    advantages are two-world differences (twice HHK17's). The proof composes the T and U-notbot \
+    hops directly instead of through OW-PCA; roIndCcaGame draws both real (H) and ideal challenge \
+    keys from the arbitrary sampler S.sampleKey (uniform sampleKey recovers HHK17 §2.2 Def. 2.4 / \
+    Fig. 4). Concrete bound only: no security parameter and no running-time certificate for the \
+    reduction. FO^⊥ is registered separately as fujisaki-okamoto-bot-ind-cca."
 
 register_result "fujisaki-okamoto-bot-ind-cca" where
   title := "ROM IND-CCA security of the explicit-rejection Fujisaki–Okamoto transform FO^⊥"
   topic := "cryptography"
   sources := [
-    { paper := HofheinzHoevelmannsKiltz2017, theorem := unverified,
-      locator := "§3.1 and §3.2.1 (IACR ePrint 2017/604, full version of 2 November 2021)" }
+    { paper := HofheinzHoevelmannsKiltz2017, theorem := "Theorems 3.2 and 3.3",
+      locator := "§3.1, §3.2.1 and the §3.3 bounds table (IACR ePrint 2017/604, full version of \
+        2 November 2021)" }
   ]
   theorems := [
     Cslib.Crypto.Protocols.FujisakiOkamoto.Scheme.indCcaBotAdvantage_le
   ]
-  scope := "Explicit-rejection FO^⊥ = U^⊥ ∘ T over an explicit-coin PKE: for uniform messages, \
-    a δ-correct and γ-spread PKE, and a deterministic oracle adversary making at most qG queries \
-    to G, qH queries to H, and qD queries to decapsulation (ROFullQueryBounds A qG qH qD), the \
-    ROM IND-CCA advantage is at most 2·Adv^{IND-CPA}(romBotCpaReduction) + 2(qG + qH)/|M| + \
-    2(qG + qH + 1)δ + 2(qG + qH + qD)2^{-γ} for some distinct fixed challenge messages. \
-    Necessity of the qD·2^{-γ} ciphertext-validity spreadness term is proved in \
-    FujisakiOkamoto.SpreadNecessity (advantage_eagerIndCcaBotGame_simBotGame_probeDecapsAdv). \
+  scope := "Explicit-rejection FO^⊥ = U^⊥ ∘ T over one fixed explicit-coin PKE: for uniform \
+    messages, a δ-correct and γ-spread PKE, and a randomized adversary with explicit coins each \
+    of whose coin values makes at most qG queries to G, qH queries to H, and qD queries to \
+    decapsulation (FullQueryBounds A qG qH qD), the ROM IND-CCA advantage is at most \
+    2·Adv^{IND-CPA}(romBotCpaReduction A) + 2(qG + qH)/|M| + 2(qG + qH + 1)δ + \
+    2(qG + qH + qD)2^{-γ}, against two-stage IND-CPA (HHK17 Def. 2.2) and one reduction that \
+    draws its own challenge messages. Concrete bound only: no security parameter and no \
+    running-time certificate for the reduction. Necessity of the qD·2^{-γ} ciphertext-validity \
+    spreadness term is proved in FujisakiOkamoto.SpreadNecessity \
+    (advantage_eagerIndCcaBotGame_simBotGame_probeDecapsAdv). \
     Composes the T and U^⊥ hops directly instead of through standalone OW-PCVA; \
     roIndCcaBotGame and eagerIndCcaBotGame draw both real (H) replies and the independent ideal \
     challenge key from the arbitrary sampler S.sampleKey (uniform sampleKey recovers the \
-    standard uniform-ideal-key experiment of HHK17 §2.2 Def. 2.4 / Fig. 4); information-\
-    theoretic games with no running-time accounting for the reduction."
+    standard uniform-ideal-key experiment of HHK17 §2.2 Def. 2.4 / Fig. 4)."
 
 register_result "cgks-pir-coalition-lower-bound" where
   title := "Chor–Goldreich–Kushilevitz–Sudan: coalition t-privacy and full-coalition \
