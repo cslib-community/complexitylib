@@ -19,7 +19,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryLog
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Div
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Option
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
@@ -501,16 +501,6 @@ theorem computableInPolyTime_messageBlock_comp {γ : Type} {encIn : γ ↪ List 
     ComputableInPolyTime (fun a => messageBlock (w a) (m a) (i a)) encIn encBits :=
   computableInPolyTime_messageBlock.comp (hw.prod (hm.prod hi))
 
-/-- Comparing a unary number with `2 ^ L` is polynomial-time. -/
-private theorem computableInPolyTime_lt_two_pow_comp {γ : Type} {encIn : γ ↪ List Bool}
-    {L j : γ → ℕ} (hL : ComputableInPolyTime L encIn encUnary)
-    (hj : ComputableInPolyTime j encIn encUnary) :
-    ComputableInPolyTime (fun a => decide (j a < 2 ^ L a)) encIn encBool :=
-  ComputableInPolyTime.binary_lt' (ComputableInPolyTime.unary_to_binary.comp hj)
-    (ComputableInPolyTime.binary_two_pow.comp hL)
-
-attribute [local fun_prop] computableInPolyTime_lt_two_pow_comp
-
 /-- A block `Encoder` is polynomial-time when it is computable in polynomial time with unary
 widths/lengths/indices and bit-string identifier/block inputs. -/
 @[expose] def IsPolyTimeEncoder (E : Encoder) : Prop :=
@@ -701,8 +691,6 @@ def BlockwiseMACAdversary.toForger (replyBound : ℕ → ℕ → ℕ) (A : Block
 namespace MACScheme
 
 open BlockwiseMAC
-
-attribute [local fun_prop] computableInPolyTime_lt_two_pow_comp
 
 variable (M : MACScheme) (E : Encoder)
 

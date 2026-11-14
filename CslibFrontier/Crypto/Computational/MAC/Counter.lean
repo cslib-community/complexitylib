@@ -13,7 +13,7 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Membership
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat
-import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryLog
 import CslibFrontier.Computability.Probabilistic.Oracle.Composition
 import CslibFrontier.Computability.Probabilistic.Oracle.Substitution
 import CslibFrontier.Computability.Probabilistic.PPT.Capture
@@ -347,16 +347,6 @@ theorem succProbability_counterSufCmaGame_le {bound : ℕ → ℕ → ℕ} {n : 
   exact ⟨⟨⟨hwin.1.1, hnodup⟩, hwin.1.2⟩, hwin.2⟩
 
 /-! ### Efficiency of the reduction -/
-
-/-- Comparing a unary counter with `2 ^ L` is plain polynomial-time. -/
-private theorem computableInPolyTime_lt_two_pow_comp {γ : Type} {encIn : γ ↪ List Bool}
-    {L j : γ → ℕ} (hL : ComputableInPolyTime L encIn encUnary)
-    (hj : ComputableInPolyTime j encIn encUnary) :
-    ComputableInPolyTime (fun a => decide (j a < 2 ^ L a)) encIn encBool :=
-  ComputableInPolyTime.binary_lt' (ComputableInPolyTime.unary_to_binary.comp hj)
-    (ComputableInPolyTime.binary_two_pow.comp hL)
-
-attribute [local fun_prop] computableInPolyTime_lt_two_pow_comp
 
 /-- `counterHandler` is strict oracle PPT in the caller `(n, aux)`, the request and the counter,
 for every polynomial-time bound. -/

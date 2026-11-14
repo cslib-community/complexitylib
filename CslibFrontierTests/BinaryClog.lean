@@ -25,5 +25,7 @@ example :
     ComputableInPolyTime (fun B : ℕ => 2 ^ Nat.clog 2 B) encNat encNat ∧
       ComputableInPolyTime (fun n : ℕ => Nat.clog 2 (Nat.clog 2 n)) encNat encNat ∧
       ComputableInPolyTime (fun p : ℕ × ℕ => Nat.clog 2 (p.1 + p.2))
-        (encPair encNat encNat) encNat :=
-  ⟨binary_two_pow.comp binary_clog_two, by fun_prop, binary_clog_two_nat' binary_add⟩
+        (encPair encNat encNat) encNat ∧
+      ComputableInPolyTime (fun p : ℕ × ℕ => decide (p.1 < 2 ^ p.2))
+        (encPair encUnary encUnary) encBool :=
+  ⟨binary_two_pow.comp binary_clog_two, by fun_prop, binary_clog_two_nat' binary_add, by fun_prop⟩
