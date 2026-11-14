@@ -58,8 +58,7 @@ private theorem splitEdges_polyTime : ComputableInPolyTime
   let hn := ComputableInPolyTime.unary_to_binary.comp
     ((ComputableInPolyTime.length_list encNat).comp
       (encGraph_vertices_deg.computableInPolyTime.comp hg))
-  let hedges := (ComputableInPolyTime.of_tidy
-        (ComputableTidilyInPolyTime.zipIdx (encPair encNat encNat))).comp
+  let hedges := (ComputableInPolyTime.zipIdx (encPair encNat encNat)).comp
     (encGraph_edges_deg.computableInPolyTime.comp hg)
   unfold split
   apply ComputableInPolyTime.listAppend'
@@ -213,8 +212,7 @@ theorem prescribe_polyTime : ComputableInPolyTime
       encBlockInput (encList (encOption (encList encNat))) := by
     unfold prescribe
     apply ComputableInPolyTime.mapWithInput
-      ((ComputableInPolyTime.of_tidy
-        (ComputableTidilyInPolyTime.zipIdx (encOption (encList encNat)))).comp ho)
+      ((ComputableInPolyTime.zipIdx (encOption (encList encNat))).comp ho)
     let he := ComputableInPolyTime.snd encBlockInput
       (encPair (encOption (encList encNat)) encUnary)
     let hp' := ComputableInPolyTime.fst encBlockInput
@@ -356,8 +354,7 @@ theorem verifyFixed_polyTime : ComputableInPolyTime
   apply ComputableInPolyTime.optionElimWithInput
     (ComputableInPolyTime.snd _ _) (ComputableInPolyTime.const true)
   apply ComputableInPolyTime.allWithInput
-    ((ComputableInPolyTime.of_tidy
-        (ComputableTidilyInPolyTime.zipIdx encNat)).comp (ComputableInPolyTime.snd _ _))
+    ((ComputableInPolyTime.zipIdx encNat).comp (ComputableInPolyTime.snd _ _))
   apply ComputableInPolyTime.decide_eq'
   · exact ComputableInPolyTime.listGetD_binary (encA := encNat) 0
       (hs.comp (by fun_prop)) (by fun_prop)

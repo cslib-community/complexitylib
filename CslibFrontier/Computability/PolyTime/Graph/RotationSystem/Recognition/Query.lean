@@ -133,8 +133,7 @@ theorem validate_polyTime : ComputableInPolyTime validate encFixedRotationInput 
           (binaryVertexCount_polyTime.comp (ComputableInPolyTime.fst _ _))
     · fun_prop
   · apply ComputableInPolyTime.allWithInput
-      ((ComputableInPolyTime.of_tidy
-        (ComputableTidilyInPolyTime.zipIdx (encOption (encList encNat)))).comp orders_polyTime)
+      ((ComputableInPolyTime.zipIdx (encOption (encList encNat))).comp orders_polyTime)
     apply ComputableInPolyTime.optionElimWithInput (by fun_prop)
       (ComputableInPolyTime.const true)
     have hg : ComputableInPolyTime
@@ -155,8 +154,7 @@ theorem subdivide_polyTime :
   unfold subdivide encSegment
   apply ComputableInPolyTime.flatMapWithInput
     (encA := encPair (encPair encNat encNat) encUnary)
-    ((ComputableInPolyTime.of_tidy
-        (ComputableTidilyInPolyTime.zipIdx (encPair encNat encNat))).comp edges_polyTime)
+    ((ComputableInPolyTime.zipIdx (encPair encNat encNat)).comp edges_polyTime)
   have ha : ComputableInPolyTime
       (fun p : FixedRotationInput × ((ℕ × ℕ) × ℕ) => p.1.graph.vertices.length + 2 * p.2.2)
       (encPair encFixedRotationInput (encPair (encPair encNat encNat) encUnary)) encNat :=
@@ -305,12 +303,10 @@ theorem compileFrame_polyTime :
     ComputableInPolyTime compileFrame encFrame XORSAT.encoding := by
   unfold compileFrame XORSAT.encoding
   apply ComputableInPolyTime.flatMapWithInput
-    ((ComputableInPolyTime.of_tidy
-        (ComputableTidilyInPolyTime.zipIdx encSegment)).comp frameSegments_polyTime)
+    ((ComputableInPolyTime.zipIdx encSegment).comp frameSegments_polyTime)
   apply ComputableInPolyTime.mapWithInput
   · apply ComputableInPolyTime.filterWithInput
-      (((ComputableInPolyTime.of_tidy
-        (ComputableTidilyInPolyTime.zipIdx encSegment)).comp frameSegments_polyTime).comp
+      (((ComputableInPolyTime.zipIdx encSegment).comp frameSegments_polyTime).comp
         (ComputableInPolyTime.fst _ _))
     unfold encSegment
     fun_prop
