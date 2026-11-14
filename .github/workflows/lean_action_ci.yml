@@ -472,3 +472,52 @@ jobs:
         run: >-
           python3 scripts/cache/publish.py http "$CACHE_SERVER_URL"
           "$RUNNER_TEMP/lake-publication"
+
+  pilot-timings:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - name: Reclaim unused hosted-runner SDK space
+        continue-on-error: true
+        run: scripts/ci/prepare-runner.sh
+      # The steps below do what lean-action did, with bounded cache retries: install the toolchain,
+      # restore and save `.lake` under the same Actions cache key, then build, test and lint.
+      - name: Restore .lake from the Actions cache
+        id: lake-cache
+        if: vars.DISABLE_CACHE_RESTORE != 'true' && vars.DISABLE_CACHE_RESTORE != '1'
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: ./.lake
+          key: lake-${{ env.CACHE_RECOVERY_GENERATION }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('./lean-toolchain') }}-${{ hashFiles('./lake-manifest.json') }}-${{ github.sha }}
+          restore-keys: lake-${{ env.CACHE_RECOVERY_GENERATION }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('./lean-toolchain') }}-${{ hashFiles('./lake-manifest.json') }}
+      # Restore elan and the toolchain from the Actions cache, or install them with retries
+      # (.github/actions/install-lean, #1426). lean-action is not used: with every feature off it
+      # only reinstalled elan from GitHub releases, without retries, so a release outage failed CI.
+      - uses: ./.github/actions/install-lean
+      - name: Restore Mathlib cache with retries
+        if: vars.DISABLE_CACHE_RESTORE != 'true' && vars.DISABLE_CACHE_RESTORE != '1'
+        continue-on-error: true
+        timeout-minutes: 10
+        run: python3 -B scripts/cache/get_mathlib.py --lean-action
+      - name: Restore build outputs from the remote cache
+        if: vars.DISABLE_CACHE_RESTORE != 'true' && vars.DISABLE_CACHE_RESTORE != '1'
+        continue-on-error: true
+        timeout-minutes: 10
+        run: scripts/cache/get-missing.sh
+      - name: Compare exact pilot sources with warm identical imports
+        timeout-minutes: 40
+        run: python3 -u scripts/ci/time-fits-pilot.py
+      - name: Retain raw timing evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: fits-pilot-timings
+          path: ${{ runner.temp }}/fits-pilot-timings/
+          if-no-files-found: error
+          retention-days: 30
