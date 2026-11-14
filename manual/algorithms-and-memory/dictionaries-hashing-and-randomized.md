@@ -49,7 +49,9 @@ The curried slab, tail, chain, bucket and hash-dispatch programs specialize thei
 `GenProg` implementations at `mkDictParams`. When changing an operation, edit that packed
 implementation; the corresponding `_mk` equation connects it to the curried interface.
 Effect and admissibility proofs can simplify with the packed definition and its parameter
-projection equations before applying the existing operation specifications.
+projection equations and the called operations’ `_mk` equations before applying the existing
+operation specifications. For micro-chain loops, use `boundedWhile_microStepGenProg_mk` to
+transport the loop guard and step together.
 
 ### FKS two-level perfect hashing (static, abstract cost model)
 

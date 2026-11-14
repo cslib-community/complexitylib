@@ -132,7 +132,8 @@ abbrev gmPushSlabProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog
 
 theorem memoryCost_gmPushSlabProg_le (U V w n_max h_space : ℕ) (d : ℕ × ℕ) (s : Memory.State) :
     memoryCost (gmPushSlabProg U V w n_max h_space d) s ≤ 38 := by
-  simp only [gmPushSlabProg, gmPushSlabGenProg]
+  simp only [gmPushSlabProg, gmPushSlabGenProg, readGMGenProg_mk, writeGMGenProg_mk,
+    p_gmSlabMetaBase_mk, p_dirSlabs_mk, p_gmSlabDirBase_mk]
   simp only [← PFunctor.FreeM.bind_eq_bind, memoryCost_bind,
     memoryCost_readGMProg, memoryCost_writeGMProg]
   split_ifs <;> simp only [memoryCost_writeGMProg, memoryCost_pure] <;> omega
@@ -227,8 +228,8 @@ theorem gmPushSlabProg_effect {U V w n_max h_space base b : ℕ}
   have hres_top : (Memory.spec 0).clientResult s
       (readGMProg U V w n_max h_space (base, 4 + 3 * b + 2)) = top_old :=
     clientResult_readGMProg s htop_idx_lt
-  unfold s' gmPushSlabProg
-  dsimp only
+  simp only [s', gmPushSlabProg, gmPushSlabGenProg, readGMGenProg_mk, writeGMGenProg_mk,
+    p_gmSlabMetaBase_mk, p_dirSlabs_mk, p_gmSlabDirBase_mk]
   rw [StateTransitionSpec.clientState_bind, clientState_readGMProg, hres_q,
     StateTransitionSpec.clientState_bind, clientState_readGMProg, hres_p,
     StateTransitionSpec.clientState_bind, clientState_readGMProg, hres_top]
@@ -438,8 +439,8 @@ theorem gmUnlinkTopSlabProg_effect {U V w n_max h_space base b : ℕ}
   have hres_bel : (Memory.spec 0).clientResult s
       (readGMProg U V w n_max h_space (base, gmSlabMetaBase n_max + 4 * p_del + 2)) = bel_del :=
     clientResult_readGMProg s hbel_idx_lt
-  unfold s' gmUnlinkTopSlabProg
-  dsimp only
+  simp only [s', gmUnlinkTopSlabProg, gmUnlinkTopSlabGenProg, readGMGenProg_mk, writeGMGenProg_mk,
+    p_gmSlabMetaBase_mk]
   rw [StateTransitionSpec.clientResult_bind, StateTransitionSpec.clientState_bind,
     clientState_readGMProg, hres_q,
     StateTransitionSpec.clientResult_bind, StateTransitionSpec.clientState_bind,
@@ -612,8 +613,8 @@ abbrev gmRelinkMovedSlabProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × �
 theorem memoryCost_gmRelinkMovedSlabProg_le (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ)
     (s : Memory.State) :
     memoryCost (gmRelinkMovedSlabProg U V w n_max h_space d) s ≤ 14 := by
-  simp only [gmRelinkMovedSlabProg, gmRelinkMovedSlabGenProg]
-  dsimp only
+  simp only [gmRelinkMovedSlabProg, gmRelinkMovedSlabGenProg, readGMGenProg_mk, writeGMGenProg_mk,
+    p_gmSlabMetaBase_mk, p_dirSlabs_mk, p_gmSlabDirBase_mk]
   simp only [← PFunctor.FreeM.bind_eq_bind, memoryCost_bind, memoryCost_readGMProg]
   split_ifs <;> simp only [memoryCost_writeGMProg, memoryCost_pure] <;> omega
 
@@ -694,8 +695,8 @@ theorem gmRelinkMovedSlabProg_effect {U V w n_max h_space base p_del p_last : �
   have hres_q : (Memory.spec 0).clientResult s
       (readGMProg U V w n_max h_space (base, 4 + 3 * b_last)) = q_last :=
     clientResult_readGMProg s hq_last_lt
-  unfold s' gmRelinkMovedSlabProg
-  dsimp only
+  simp only [s', gmRelinkMovedSlabProg, gmRelinkMovedSlabGenProg, readGMGenProg_mk,
+    writeGMGenProg_mk, p_gmSlabMetaBase_mk, p_dirSlabs_mk, p_gmSlabDirBase_mk]
   rw [StateTransitionSpec.clientState_bind, clientState_readGMProg, hres_b,
     StateTransitionSpec.clientState_bind, clientState_readGMProg, hres_s,
     StateTransitionSpec.clientState_bind, clientState_readGMProg, hres_q,
@@ -794,8 +795,8 @@ abbrev gmLinkMovedNeighborsProg (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) ×
 theorem memoryCost_gmLinkMovedNeighborsProg_le (U V w n_max h_space : ℕ) (d : (ℕ × ℕ) × ℕ)
     (s : Memory.State) :
     memoryCost (gmLinkMovedNeighborsProg U V w n_max h_space d) s ≤ 34 := by
-  simp only [gmLinkMovedNeighborsProg, gmLinkMovedNeighborsGenProg]
-  dsimp only
+  simp only [gmLinkMovedNeighborsProg, gmLinkMovedNeighborsGenProg, readGMGenProg_mk,
+    writeGMGenProg_mk, p_gmSlabMetaBase_mk]
   simp only [← PFunctor.FreeM.bind_eq_bind, memoryCost_bind,
     memoryCost_readGMProg, memoryCost_writeGMProg]
   split_ifs <;> simp only [memoryCost_writeGMProg, memoryCost_pure] <;> omega
@@ -867,8 +868,8 @@ theorem gmLinkMovedNeighborsProg_effect {U V w n_max h_space base p_del p_last :
   have hres_q : (Memory.spec 0).clientResult s
       (readGMProg U V w n_max h_space (base, 4 + 3 * b_last)) = q_last :=
     clientResult_readGMProg s hq_last_lt
-  unfold s' gmLinkMovedNeighborsProg
-  dsimp only
+  simp only [s', gmLinkMovedNeighborsProg, gmLinkMovedNeighborsGenProg, readGMGenProg_mk,
+    writeGMGenProg_mk, p_gmSlabMetaBase_mk]
   rw [StateTransitionSpec.clientState_bind, clientState_readGMProg, hres_b,
     StateTransitionSpec.clientState_bind, clientState_readGMProg, hres_s,
     StateTransitionSpec.clientState_bind, clientState_readGMProg, hres_bel,
@@ -994,8 +995,8 @@ abbrev gmCompactSlabProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.P
 
 theorem memoryCost_gmCompactSlabProg_le (U V w n_max h_space : ℕ) (d : ℕ × ℕ) (s : Memory.State) :
     memoryCost (gmCompactSlabProg U V w n_max h_space d) s ≤ 54 := by
-  simp only [gmCompactSlabProg, gmCompactSlabGenProg]
-  dsimp only
+  simp only [gmCompactSlabProg, gmCompactSlabGenProg, readGMGenProg_mk,
+    gmRelinkMovedSlabGenProg_mk, gmLinkMovedNeighborsGenProg_mk, writeGMGenProg_mk]
   rw [← PFunctor.FreeM.bind_eq_bind, memoryCost_bind, memoryCost_readGMProg]
   split_ifs with hlt
   · simp only [← PFunctor.FreeM.bind_eq_bind, memoryCost_bind, memoryCost_writeGMProg]
@@ -1101,8 +1102,8 @@ theorem gmCompactSlabProg_effect {U V w n_max h_space base p_del : ℕ}
   have hmax_le : maxFullSlabs n_max ≤ n_max := maxFullSlabs_le n_max
   have hp_last_val_lt : p_last < 2 ^ globalPtrBits n_max :=
     lt_two_pow_globalPtrBits_of_le_n_max (by omega)
-  unfold s' gmCompactSlabProg
-  dsimp only
+  simp only [s', gmCompactSlabProg, gmCompactSlabGenProg, readGMGenProg_mk,
+    gmRelinkMovedSlabGenProg_mk, gmLinkMovedNeighborsGenProg_mk, writeGMGenProg_mk]
   have hres : (Memory.spec 0).clientResult s (readGMProg U V w n_max h_space (base, 0)) - 1 =
       p_last := by rw [clientResult_readGMProg s h0_lt]
   rw [StateTransitionSpec.clientState_bind, clientState_readGMProg, hres]
@@ -1163,7 +1164,7 @@ abbrev gmPopSlabProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) : Memory.Prog 
 
 theorem memoryCost_gmPopSlabProg_le (U V w n_max h_space : ℕ) (d : ℕ × ℕ) (s : Memory.State) :
     memoryCost (gmPopSlabProg U V w n_max h_space d) s ≤ 68 := by
-  simp only [gmPopSlabProg, gmPopSlabGenProg]
+  simp only [gmPopSlabProg, gmPopSlabGenProg, gmUnlinkTopSlabGenProg_mk, gmCompactSlabGenProg_mk]
   rw [← PFunctor.FreeM.bind_eq_bind, memoryCost_bind, memoryCost_gmUnlinkTopSlabProg]
   have h := memoryCost_gmCompactSlabProg_le U V w n_max h_space
     (d.1, (Memory.spec 0).clientResult s (gmUnlinkTopSlabProg U V w n_max h_space d))
@@ -1262,7 +1263,8 @@ theorem gmPopSlabProg_effect {U V w n_max h_space base b : ℕ}
     gmUnlinkTopSlabProg_effect (U := U) (V := V) (h_space := h_space) hw hb_pos hb s hslab hq_pos
   obtain ⟨hf2, hout2, -, -, -, hg2⟩ := gmCompactSlabProg_effect hw hb_pos _
     (gmCompactSlabInv_of_slabBijection hw hb_pos hb s hslab hq_pos)
-  unfold s' gmPopSlabProg
+  simp only [s', gmPopSlabProg, gmPopSlabGenProg, gmUnlinkTopSlabGenProg_mk,
+    gmCompactSlabGenProg_mk]
   rw [StateTransitionSpec.clientState_bind]
   refine GmFrame.effect hw ((GmFrame.mk hf1 hout1).trans ⟨hf2, hout2⟩) ?_
   rw [hg2, hg1, hres]

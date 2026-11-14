@@ -268,7 +268,6 @@ theorem promoteStepProg_effect {U V w n_max h_space base b k : ℕ}
     simp only [promoteStepProg, promoteStepGenProg, p_slabSizeSubOne_mk, p_slabSize_mk,
       p_gmTailPtrBase_mk, p_tailCap_mk, p_nMaxSubOne_mk, readGMGenProg_mk, readQuotGenProg_mk,
       readValGenProg_mk, writeQuotGenProg_mk, writeValGenProg_mk, removeLastTailItemGenProg_mk]
-    dsimp only
     repeat rw [StateTransitionSpec.clientResult_bind]
     rfl
   have hst : s' = s₅ := by
@@ -277,7 +276,6 @@ theorem promoteStepProg_effect {U V w n_max h_space base b k : ℕ}
     simp only [promoteStepProg, promoteStepGenProg, p_slabSizeSubOne_mk, p_slabSize_mk,
       p_gmTailPtrBase_mk, p_tailCap_mk, p_nMaxSubOne_mk, readGMGenProg_mk, readQuotGenProg_mk,
       readValGenProg_mk, writeQuotGenProg_mk, writeValGenProg_mk, removeLastTailItemGenProg_mk]
-    dsimp only
     rw [StateTransitionSpec.clientState_bind, clientState_readGMProg, hres_tu,
       StateTransitionSpec.clientState_bind, clientState_readGMProg, hres_ttop,
       StateTransitionSpec.clientState_bind, clientState_readGMProg, hres_p,
@@ -1133,7 +1131,9 @@ theorem promoteSlabProg_effect {U V w n_max h_space base b : ℕ}
   · rw [hst, hq_push, hv_push, hgm'_eq]
     rw [hgm'_eq] at hj
     exact ⟨hq_slot b' hb' j hj, hv_slot b' hb' j hj⟩
-  · unfold promoteSlabProg
+  · simp only [promoteSlabProg, promoteSlabGenProg, p_slabSize_mk,
+      promoteLoopGenProg_mk, gmPushSlabGenProg_mk]
+    unfold promoteLoopProg
     rw [← PFunctor.FreeM.bind_eq_bind, memoryCost_bind]
     change memoryCost
         (iterate (promoteStepProg U V w n_max h_space) (base, b) (slabSize n_max) 0) s +

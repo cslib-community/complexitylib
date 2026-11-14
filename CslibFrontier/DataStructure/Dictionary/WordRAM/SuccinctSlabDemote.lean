@@ -241,7 +241,6 @@ theorem demoteStepProg_effect {U V w n_max h_space base b k : ℕ}
     simp only [demoteStepProg, demoteStepGenProg, p_slabSizeSubOne_mk, p_slabSize_mk,
       p_nMaxSubOne_mk, readGMGenProg_mk, readQuotGenProg_mk, readValGenProg_mk, writeQuotGenProg_mk,
       writeValGenProg_mk, appendTailItemGenProg_mk]
-    dsimp only
     rw [StateTransitionSpec.clientResult_bind, clientState_readGMProg,
       clientResult_readGMProg s (by exact htop_idx_lt),
       StateTransitionSpec.clientResult_bind, clientState_readGMProg,
@@ -262,7 +261,6 @@ theorem demoteStepProg_effect {U V w n_max h_space base b k : ℕ}
     simp only [demoteStepProg, demoteStepGenProg, p_slabSizeSubOne_mk, p_slabSize_mk,
       p_nMaxSubOne_mk, readGMGenProg_mk, readQuotGenProg_mk, readValGenProg_mk, writeQuotGenProg_mk,
       writeValGenProg_mk, appendTailItemGenProg_mk]
-    dsimp only
     rw [StateTransitionSpec.clientState_bind, clientState_readGMProg,
       clientResult_readGMProg s (by exact htop_idx_lt),
       StateTransitionSpec.clientState_bind, clientState_readGMProg,
@@ -1076,7 +1074,9 @@ theorem demoteSlabProg_effect {U V w n_max h_space base b : ℕ}
   · rw [hst, hq_pop, hv_pop, hgm'_eq]
     rw [hgm'_eq] at hj
     exact ⟨hq_slot b' hb' j hj, hv_slot b' hb' j hj⟩
-  · unfold demoteSlabProg
+  · simp only [demoteSlabProg, demoteSlabGenProg, p_slabSize_mk,
+      demoteLoopGenProg_mk, gmPopSlabGenProg_mk]
+    unfold demoteLoopProg
     rw [← PFunctor.FreeM.bind_eq_bind, memoryCost_bind]
     change memoryCost
         (iterate (demoteStepProg U V w n_max h_space) (base, b) (slabSize n_max) 0) s +

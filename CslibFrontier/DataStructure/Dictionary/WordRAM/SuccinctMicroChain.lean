@@ -2057,15 +2057,17 @@ theorem searchMicroChainProg_spec {U V w₀ n_max h_space w : ℕ}
     (found := 0) (j_found := 0) (phys_found := 0)
     henv hb hinv hchain.2 hc_lt hchain.length_le hchain.1
   have hst : (Memory.spec 0).clientState s prog = s := by
-    simp only [prog, searchMicroChainProg, microLoopProg, searchMicroChainGenProg,
-      readLMHeadGenProg_mk, microLoopGenProg_mk, microLoopGenProg]
+    simp only [prog, searchMicroChainProg, searchMicroChainGenProg, readLMHeadGenProg_mk,
+      microLoopGenProg, p_nMax_mk,
+      boundedWhile_microStepGenProg_mk]
     simp only [pure_bind]
     rw [StateTransitionSpec.clientState_bind, clientState_readLMHeadProg,
       clientResult_readLMHeadProg _ hb hm]
     exact hbw.1
   have hcost : memoryCost prog s ≤ 2 + 8 * L.length := by
-    simp only [prog, searchMicroChainProg, microLoopProg, searchMicroChainGenProg,
-      readLMHeadGenProg_mk, microLoopGenProg_mk, microLoopGenProg]
+    simp only [prog, searchMicroChainProg, searchMicroChainGenProg, readLMHeadGenProg_mk,
+      microLoopGenProg, p_nMax_mk,
+      boundedWhile_microStepGenProg_mk]
     simp only [pure_bind, ← PFunctor.FreeM.bind_eq_bind]
     rw [memoryCost_bind, memoryCost_readLMHeadProg, clientState_readLMHeadProg,
       clientResult_readLMHeadProg _ hb hm]
@@ -2076,8 +2078,9 @@ theorem searchMicroChainProg_spec {U V w₀ n_max h_space w : ℕ}
         (boundedWhile microLoopGuard (microStepProg U V w₀ n_max h_space)
           (((base, b), q_target), 0) (effBucketCap n_max)
           (((lmHead n_max (lmAt base U V w₀ n_max h_space s.mem) b m, 0), 0), 0)) := by
-    simp only [prog, searchMicroChainProg, microLoopProg, searchMicroChainGenProg,
-      readLMHeadGenProg_mk, microLoopGenProg_mk, microLoopGenProg]
+    simp only [prog, searchMicroChainProg, searchMicroChainGenProg, readLMHeadGenProg_mk,
+      microLoopGenProg, p_nMax_mk,
+      boundedWhile_microStepGenProg_mk]
     simp only [pure_bind]
     rw [StateTransitionSpec.clientResult_bind, clientState_readLMHeadProg,
       clientResult_readLMHeadProg _ hb hm]

@@ -356,12 +356,14 @@ def LastSlotOfGenPre (w : ℕ) (d : DictParams × (ℕ × ℕ)) (s : Memory.Stat
 
 theorem clientState_lastSlotOfProg (U V w n_max h_space : ℕ) (d : ℕ × ℕ) (s : Memory.State) :
     (Memory.spec 0).clientState s (lastSlotOfProg U V w n_max h_space d) = s := by
-  simp only [lastSlotOfProg, lastSlotOfGenProg]
+  simp only [lastSlotOfProg, lastSlotOfGenProg, readGMGenProg_mk, p_bucketBits_mk,
+    p_gmTailPtrBase_mk, p_tailCap_mk, p_nMaxSubOne_mk]
   split_ifs <;> rfl
 
 theorem memoryCost_lastSlotOfProg_le (U V w n_max h_space : ℕ) (d : ℕ × ℕ) (s : Memory.State) :
     memoryCost (lastSlotOfProg U V w n_max h_space d) s ≤ 4 := by
-  simp only [lastSlotOfProg, lastSlotOfGenProg]
+  simp only [lastSlotOfProg, lastSlotOfGenProg, readGMGenProg_mk, p_bucketBits_mk,
+    p_gmTailPtrBase_mk, p_tailCap_mk, p_nMaxSubOne_mk]
   split_ifs
   · change 2 ≤ 4; omega
   · change 4 ≤ 4; omega
@@ -374,7 +376,8 @@ theorem clientResult_lastSlotOfProg {U V w n_max h_space : ℕ} (d : ℕ × ℕ)
       slotOf n_max (gmAt d.1 U V w n_max h_space s.mem) d.2
         (bCount n_max (gmAt d.1 U V w n_max h_space s.mem) d.2 - 1) := by
   let gm := gmAt d.1 U V w n_max h_space s.mem
-  simp only [lastSlotOfProg, lastSlotOfGenProg]
+  simp only [lastSlotOfProg, lastSlotOfGenProg, readGMGenProg_mk, p_bucketBits_mk,
+    p_gmTailPtrBase_mk, p_tailCap_mk, p_nMaxSubOne_mk]
   by_cases hb0 : bucketBits n_max = 0
   · have hd2 : d.2 = 0 := by
       have : numBuckets n_max = 1 := by simp [numBuckets, hb0]
