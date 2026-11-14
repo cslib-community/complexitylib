@@ -12,6 +12,7 @@ permissions:
   contents: read
 
 env:
+  CACHE_RECOVERY_GENERATION: ${{ vars.CACHE_RECOVERY_GENERATION || '0' }}
   DISABLE_CACHE_RESTORE: ${{ vars.DISABLE_CACHE_RESTORE }}
   COMPLEXITYLIB_CACHE_URLS: ${{ vars.COMPLEXITYLIB_CACHE_URLS }}
   LAKE_NO_CACHE: ${{ vars.DISABLE_CACHE_RESTORE == 'true' || vars.DISABLE_CACHE_RESTORE == '1' }}
@@ -55,11 +56,33 @@ jobs:
         run: scripts/cache/get-missing.sh
       - name: Generate API documentation
         run: DISABLE_EQUATIONS=1 lake -d docbuild build CslibFrontier:docs
+      - name: Restore Guide dependencies
+        id: guide-deps
+        if: vars.DISABLE_CACHE_RESTORE != 'true' && vars.DISABLE_CACHE_RESTORE != '1'
+        continue-on-error: true
+        timeout-minutes: 5
+        uses: ./.github/actions/cache-guide-deps
+        with:
+          generation: ${{ env.CACHE_RECOVERY_GENERATION }}
       # Also catches library changes that break one of the guide's examples.
       - name: Build the guide
         run: scripts/guide.sh
       - name: Check generated documentation and the guide's links into it
         run: python3 scripts/check_docs.py --trim --guide
+      # One entry per compatible toolchain/pins/image, not per commit or PR. A failed optional
+      # restore/save never replaces the normal Guide and generated-link checks above.
+      - name: Save Guide dependency builds
+        if: >-
+          github.ref == 'refs/heads/main' &&
+          vars.DISABLE_CACHE_RESTORE != 'true' && vars.DISABLE_CACHE_RESTORE != '1' &&
+          steps.guide-deps.outcome == 'success' &&
+          steps.guide-deps.outputs.key != '' && steps.guide-deps.outputs.cache-hit != 'true'
+        continue-on-error: true
+        timeout-minutes: 5
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: ${{ steps.guide-deps.outputs.paths }}
+          key: ${{ steps.guide-deps.outputs.key }}
       - name: Add the guide to the site
         run: cp -R guide/.lake/build/site/html-multi docbuild/.lake/build/doc/guide
       - name: Add source history dashboard to the site

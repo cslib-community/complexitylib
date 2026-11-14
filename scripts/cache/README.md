@@ -98,6 +98,29 @@ miss, `.github/actions/install-lean` installs them with bounded
 retries and saves the entry before any Lake command runs, so it never contains the local artifact
 cache above.
 
+## Guide dependency cache
+
+Hosted Guide jobs separately restore the build directories of Verso, SubVerso, MD4Lean and
+Illuminate. They initialize the locked package checkouts before restoring those directories.
+The entry contains neither Guide chapter/generator outputs nor root/shared-library outputs or
+Lake's global artifact store, so the normal example, build and render commands still run.
+
+Only successful API documentation runs on `main` save this entry, after the Guide and generated
+links have passed, and only when the exact entry was absent. PRs and other branches only read.
+The key includes the OS, architecture and exact runner-image version, Lean toolchain, root and
+Guide lockfiles/configuration, and the cache action/helper itself. It has no commit or run ID
+and no less-specific fallback: a new compatible configuration gets one immutable entry, rather
+than a new copy for every PR. `CACHE_RECOVERY_GENERATION` invalidates these entries too, and
+`DISABLE_CACHE_RESTORE=true` or `1` disables both their restore and save. An unavailable cache
+leaves the normal build to compile dependencies; a failed restore discards its partial dependency
+outputs. Cache helpers and writes are optional, while Guide validation remains strict.
+
+The [controlled eight-core profile](https://github.com/cslib-community/cslib-frontier/actions/runs/43532737369)
+measured 2m35s to check examples with cold dependencies and 20s with them retained. Their build
+directories compressed to 98 MiB. This identifies the reusable work; the one-machine comparison
+did not include a cross-job cache transfer. Shared/root native object compilation is separate
+and is not included in this cache.
+
 ## Hosted-runner disk space
 
 Before restoring `.lake`, Lean CI runs `scripts/ci/prepare-runner.sh` to report available disk
@@ -399,34 +422,26 @@ a long mapping build to recompilation. The real-Lake publication test checks mis
 retained archives with fixed tiny sources and verifies that OLean hashes and mtimes stay unchanged.
 It establishes that mechanism, not a speedup estimate for a full CI build.
 
-By default, CI saves its Actions `.lake` snapshot before publication staging, so newly packed
-archives can be absent from that snapshot. The repository variable
-`RETAIN_PUBLICATION_ARCHIVES=true` enables a reversible experiment: the ordinary save is skipped
-and the same `.lake` path and key are saved after staging and the publisher handoff. Actions string
-comparisons are case-insensitive, so any capitalization of `true` enables the experiment; an absent
-variable or every other value disables it. Retention is best-effort because the pinned cache-save
-action reports ordinary save failures as warnings.
+CI saves its Actions `.lake` snapshot after publication staging and before uploading the staged
+package. This keeps newly packed archives for later builds. Ordinary merge-group builds and
+handoffs preserve archives that Lake has not invalidated; no additional archive-preparation step
+runs on the merge queue, and no old archive is attached to a new output by filename.
 
-Use adjacent, representative `main` pushes with the same toolchain, thread settings, recovery
-generation and comparable source changes:
+The save remains best-effort: it runs for a successful library build even when later checks or
+staging fail, but neither a saved cache nor a failed stage authorizes publication. Cancellation
+before the late save forfeits that run's snapshot. Cache-recovery controls still disable saving,
+an exact existing cache key is not overwritten, and ordinary save failures are warnings. Retained
+archives increase snapshot size and can evict older entries. The retired
+`RETAIN_PUBLICATION_ARCHIVES` variable no longer changes the ordering.
 
-1. With the variable absent or unequal to `true` under the case-insensitive comparison, record the
-   source SHA, Actions restore/save duration and bytes, and `CACHE_STAGING_METRICS` archive counts
-   and mapping-build time.
-2. Set the variable to `true` in any capitalization for one `main` push. Record its late save
-   duration and bytes as well as the staging metrics; this run creates the snapshot that can retain
-   new archives.
-3. Keep it at `true` for the next representative `main` push. Compare restore duration and bytes,
-   `archives_before`, and mapping-build wall time with the baseline. Actions cache keys include the
-   commit SHA, so rerunning the first activated SHA cannot replace its already-created key.
-4. Roll back by deleting the variable or setting it to a value other than `true`, ignoring case.
-   The ordinary pre-publication save resumes immediately. A retained snapshot may still be restored
-   until a newer matching snapshot displaces or evicts it; rollback does not delete Actions cache
-   entries.
-
-This protocol tests the ordering change; it does not establish a speedup. Both remote publishers
-consume the same staged files, so the mapping/archive phase still delays fresh outputs on both
-origins.
+Compare representative runs with the same toolchain, thread settings, recovery generation and
+comparable source changes. Record source SHA, restored cache key, archive counts, and Actions
+restore/save time and bytes. Include the merge group's build and handoff pack/upload and `main`'s
+handoff download/unpack and publication staging. Confirm `Build handoff restored` rather than a
+platform/configuration miss. A shorter `main` stage alone does not establish a faster complete
+cycle; unchanged archives, source invalidations and a cold cache can have very different costs.
+Both remote publishers still consume the same staged files, so their upload improvements do not
+remove archive preparation cost.
 
 ## Maintainer runbook
 

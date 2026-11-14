@@ -75,10 +75,8 @@ evaluator sends the decoded output back to the garbler via `Steps.append`) are c
   `Cslib.Crypto.Protocols.MPC.semiHonestAdvantage_yaoBoth_garbler`: perfect privacy against the
   garbler.
 * `Cslib.Crypto.Protocols.MPC.semiHonestAdvantage_yao_evaluator_le`,
-  `Cslib.Crypto.Protocols.MPC.semiHonestAdvantage_yao_evaluator_le_mul`,
-  `Cslib.Crypto.Protocols.MPC.semiHonestAdvantage_yaoBoth_evaluator_le`,
-  `Cslib.Crypto.Protocols.MPC.semiHonestAdvantage_yaoBoth_evaluator_le_mul`: privacy against the
-  evaluator from the PRF security of the round function.
+  `Cslib.Crypto.Protocols.MPC.semiHonestAdvantage_yaoBoth_evaluator_le`: privacy against the
+  evaluator, bounded by the sum of the PRF advantages of the garbling reductions.
 
 ## References
 
@@ -95,7 +93,6 @@ public section
 namespace Cslib.Crypto.Protocols.MPC
 
 open Cslib.Circuits Cslib.Crypto.Garbling Probability
-open scoped NNReal
 
 universe v
 
@@ -491,23 +488,6 @@ theorem semiHonestAdvantage_yao_evaluator_le (C : Circuit σ (n₀ + n₁) m)
   rw [semiHonestAdvantage, hideal, hreal, Game.advantage_comm]
   exact advantage_realGame_simGame_le C I F tw htw _ _
 
-/-- **Privacy against the evaluator** with a uniform bound `ε` on the PRF advantage of each
-reduction: the advantage is at most `(n₀ + n₁ + C.size) * ε`. -/
-theorem semiHonestAdvantage_yao_evaluator_le_mul (C : Circuit σ (n₀ + n₁) m)
-    (I : Interpretation σ Bool) (F : K → T → K × Bool) (tw : Slot C.topology → T)
-    (htw : Function.Injective tw) (x : (i : Fin 2) → YaoIn n₀ n₁ i)
-    (D : ((i : ({1} : Finset (Fin 2))) → PartyView (YaoIn n₀ n₁) (YaoCoins C K) (yaoSchedule C K) i)
-      × ((i : Fin 2) → YaoOut m i) → ProbComp Bool) (ε : ℝ≥0)
-    (hε : ∀ j < n₀ + n₁ + C.size, PRF.advantage F (reduction C I F tw (yaoInput x)
-      (yaoEvaluatorDistinguisher C (x 1) (C.eval I (yaoInput x)) D) j) ≤ ε) :
-    semiHonestAdvantage (yaoProtocol C I F tw) (batchOTWorld n₁ (K × Bool)) (yaoFunctionality C I)
-        {1} (yaoEvaluatorSim C F tw) x D ≤ (n₀ + n₁ + C.size) * ε := by
-  refine (semiHonestAdvantage_yao_evaluator_le C I F tw htw x D).trans ?_
-  calc _ ≤ ∑ _j ∈ Finset.range (n₀ + n₁ + C.size), ε :=
-        Finset.sum_le_sum fun j hj => hε j (Finset.mem_range.mp hj)
-    _ = (n₀ + n₁ + C.size) * ε := by
-        rw [Finset.sum_const, Finset.card_range, nsmul_eq_mul, Nat.cast_add, Nat.cast_add]
-
 end
 
 /-! ### Two-output Yao protocol (both parties learn the output) -/
@@ -814,21 +794,5 @@ theorem semiHonestAdvantage_yaoBoth_evaluator_le (C : Circuit σ (n₀ + n₁) m
         (yaoBothEvaluatorDistinguisher C (x 1) (C.eval I (yaoInput x)) D) j) := by
   rw [semiHonestAdvantage_yaoBoth_evaluator_eq]
   exact advantage_realGame_simGame_le C I F tw htw _ _
-
-/-- **Privacy against the evaluator in `yaoBothProtocol`** with a uniform bound `ε` on the PRF
-advantage of each reduction: the advantage is at most `(n₀ + n₁ + C.size) * ε`. -/
-theorem semiHonestAdvantage_yaoBoth_evaluator_le_mul (C : Circuit σ (n₀ + n₁) m)
-    (I : Interpretation σ Bool) (F : K → T → K × Bool) (tw : Slot C.topology → T)
-    (htw : Function.Injective tw) (x : (i : Fin 2) → YaoIn n₀ n₁ i)
-    (D : ((i : ({1} : Finset (Fin 2))) →
-        PartyView (YaoIn n₀ n₁) (YaoCoins C K) (yaoBothSchedule C K) i) ×
-      (Fin 2 → Fin m → Bool) → ProbComp Bool) (ε : ℝ≥0)
-    (hε : ∀ j < n₀ + n₁ + C.size, PRF.advantage F (reduction C I F tw (yaoInput x)
-      (yaoBothEvaluatorDistinguisher C (x 1) (C.eval I (yaoInput x)) D) j) ≤ ε) :
-    semiHonestAdvantage (yaoBothProtocol C I F tw) (batchOTWorld n₁ (K × Bool))
-        (yaoBothFunctionality C I) {1} (yaoBothEvaluatorSim C F tw) x D ≤
-      (n₀ + n₁ + C.size) * ε := by
-  rw [semiHonestAdvantage_yaoBoth_evaluator_eq]
-  simpa only [Nat.cast_add] using advantage_realGame_simGame_le_mul C I F tw htw _ _ ε hε
 
 end Cslib.Crypto.Protocols.MPC

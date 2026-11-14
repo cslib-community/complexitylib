@@ -84,11 +84,6 @@ example : (1 : ℝ≥0) ≤ ∑ j : Fin 2, advantage
     (bitPkg true) (bitPkg false) :=
   advantage_askSession.symm.trans_le (advantage_parFin_le_sum _ _ _)
 
-/-- The uniform bound, with the trivial single-session bound `1`. -/
-example : advantage (askSession 0) (parFin fun _ : Fin 2 => bitPkg true)
-    (parFin fun _ => bitPkg false) ≤ ((2 : ℕ) : ℝ≥0) * 1 :=
-  advantage_parFin_le_mul _ _ _ 1 fun _ => advantage_le_one _ _ _
-
 /-- The session package that answers `false` without consulting the global package. -/
 def falsePkg : Machine bitSpec bitSpec where
   State := Unit

@@ -1,0 +1,47 @@
+name: Restore Guide dependencies
+description: Restore only the four Guide dependency build directories; never skip validation.
+inputs:
+  generation:
+    description: Repository cache recovery generation
+    required: true
+outputs:
+  key:
+    description: Exact compatible key for the main docs writer
+    value: ${{ steps.key.outputs.key }}
+  paths:
+    description: Dependency build directories, excluding Guide and root outputs
+    value: ${{ steps.key.outputs.paths }}
+  cache-hit:
+    description: Whether that exact entry was restored
+    value: ${{ steps.restore.outputs.cache-hit }}
+runs:
+  using: composite
+  steps:
+    # Restore build directories only after Lake has cloned the locked packages. Otherwise a
+    # build-only cache creates non-Git package directories before Lake tries to clone them.
+    - name: Initialize locked Guide packages
+      shell: bash
+      run: lake -q -d guide env true
+    - name: Select native-compatible Guide cache
+      id: key
+      shell: bash
+      env:
+        GUIDE_CACHE_GENERATION: ${{ inputs.generation }}
+      run: python3 "$GITHUB_ACTION_PATH/key.py"
+    - name: Restore Guide dependency builds
+      id: restore
+      continue-on-error: true
+      uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
+      with:
+        path: ${{ steps.key.outputs.paths }}
+        key: ${{ steps.key.outputs.key }}
+    - name: Discard an incomplete Guide cache restore
+      if: steps.restore.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        # The cache toolkit can turn extraction errors into successful misses. Keep restored
+        # outputs only after a confirmed exact hit, including when the action merely warns.
+        # These are disposable hosted-workspace outputs, never source or global Lake caches.
+        for package in verso subverso MD4Lean illuminate; do
+          rm -rf -- ".lake/packages/$package/.lake/build"
+        done

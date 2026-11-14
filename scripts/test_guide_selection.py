@@ -116,6 +116,9 @@ class GuideSelectionTests(unittest.TestCase):
     def test_missing_base_tooling_change_renders(self):
         self.assert_selected("scripts/check_docs.py", "true")
 
+    def test_missing_base_cache_helper_change_renders(self):
+        self.assert_selected(".github/actions/cache-guide-deps/key.py", "true")
+
     def test_present_base_needs_no_remote(self):
         checkout, base, head = self.checkout("CslibFrontier/Example.lean", depth=2)
         self.git(checkout, "remote", "remove", "origin")
