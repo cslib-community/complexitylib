@@ -63,6 +63,22 @@ variable {S H β : Type} {q : ℕ}
 /-- The answers of `h` before the index `j` and those of `h'` from `j` on. -/
 def splice (j : Fin q) (h h' : Fin q → H) : Fin q → H := fun i => if i < j then h i else h' i
 
+/-- A splice at `j` lists as the first `j` answers of `h` followed by those of `h'` from `j` on. -/
+theorem ofFn_splice (j : Fin q) (h h' : Fin q → H) :
+    List.ofFn (splice j h h') = (List.ofFn h).take j ++ (List.ofFn h').drop j := by
+  apply List.ext_getElem
+  · simp only [List.length_ofFn, List.length_append, List.length_take, List.length_drop]
+    omega
+  · intro i h₁ h₂
+    simp only [List.length_ofFn] at h₁
+    by_cases hi : i < j
+    · rw [List.getElem_append_left (by simp only [List.length_take, List.length_ofFn]; omega)]
+      simp [splice, Fin.lt_def, hi]
+    · rw [List.getElem_append_right (by simp only [List.length_take, List.length_ofFn]; omega)]
+      simp only [List.getElem_ofFn, List.getElem_drop, List.length_take, List.length_ofFn,
+        Nat.min_eq_left j.isLt.le, Nat.add_sub_cancel' (not_lt.mp hi)]
+      simp [splice, Fin.lt_def, hi]
+
 variable [Fintype H] [Nonempty H]
 
 /-- One run: draw coins and uniform answers, and accept when `A` outputs an index. -/

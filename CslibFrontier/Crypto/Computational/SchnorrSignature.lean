@@ -15,7 +15,6 @@ import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.BinaryDiv
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Plain
 import CslibFrontier.Probability.PMF
-import CslibFrontier.Tactic.Negligible
 import CslibFrontier.Tactic.PPT
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Encodings.Nat.WordsRoundTrip
 
@@ -58,19 +57,15 @@ protocol over a `PrimeOrderGroupFamily` `F`:
      `Qs · (Qs + Qro) / q + (Qro + 1) / 2 ^ m + √((Qro + 1) · ε')`, where `ε'` is the
      discrete-logarithm success probability of the forking reduction
      (`oneWayGame_schnorrKeyGen_eq`).
-   * `negligible_eufCmaGame_schnorrFamilyROMScheme_of_negligible_reduction` is the asymptotic
-     algebra of that bound. It is not a security theorem: it assumes that the forking reduction it
-     is applied to has negligible discrete-logarithm success.
 
 **Scope.** These bounds are concrete inequalities for a typed scheme with ideal uniform `ZMod q`
 key and nonce laws, against forgers that are only call-bounded, not PPT. The forking reduction
 `schnorrFamilyROMSchemeReduction` is a distribution-level program with no efficiency certificate,
-so `F.DiscreteLog` cannot be applied to it, and no theorem in this module derives EUF-CMA security
-from `F.DiscreteLog`. That needs a strict-PPT realization of the reduction, including its shared
-signing/hash oracle, lazy random-oracle sampling and programming, and private-coin replay; the
-bit-encoded arithmetic certificates here do not provide it (#2568, #5293). Strict-PPT
-identification and eavesdropping security under `F.DiscreteLog` are provided by
-`SchnorrIdentification` and `SchnorrEavesdrop`.
+so `F.DiscreteLog` cannot be applied to it directly. EUF-CMA security of the native scheme under
+`F.DiscreteLog`, for every oracle-PPT forger, is `DiscreteLog.eufCma_schnorrNativeROMScheme` in
+`CslibFrontier.Crypto.Computational.SchnorrSignature.Security`, through a certified native forking
+reduction. Strict-PPT identification and eavesdropping security under `F.DiscreteLog` are provided
+by `SchnorrIdentification` and `SchnorrEavesdrop`.
 
 ## Main definitions
 
@@ -106,9 +101,6 @@ identification and eavesdropping security under `F.DiscreteLog` are provided by
   `Cslib.Crypto.PrimeOrderGroupFamily.succProbability_eufCmaGame_schnorrScalarROMScheme_le`: ROM
   correctness and concrete Pointcheval–Stern / Bellare–Neven EUF-CMA bounds in terms of the
   forking reduction's discrete-logarithm success.
-* `PrimeOrderGroupFamily.negligible_eufCmaGame_schnorrFamilyROMScheme_of_negligible_reduction`:
-  the asymptotic form of that bound, conditional on the reduction's success (an algebraic helper,
-  not a security theorem).
 
 ## References
 
@@ -567,34 +559,5 @@ theorem succProbability_eufCmaGame_schnorrScalarROMScheme_le {M : Type} [Decidab
   have h := schnorr_succProbability_eufCmaGame_le (ι := Function.Embedding.refl (ZMod (F.order d)))
     (F.generator_ne_zero d) A hA
   simpa only [schnorrScalarROMScheme, schnorrScalarROMSchemeReduction, ZMod.card] using h
-
-/-- **Algebraic helper, not a security theorem.** The asymptotic form of
-`succProbability_eufCmaGame_schnorrFamilyROMScheme_le` across group descriptions `d : ℕ → F.Desc`:
-if `Qs` and `Qro` are polynomially bounded, `1 / F.order (d n)` and `1 / 2 ^ k n` are negligible,
-and the premise `hreduction` holds, then the EUF-CMA forgery probability is negligible.
-
-The premise `hreduction` is about `schnorrFamilyROMSchemeReduction`, the forking reduction this
-proof builds from the forger, not about the discrete-logarithm problem: it is not implied by
-`F.DiscreteLog`, because the reduction has no efficiency certificate. The scheme also uses ideal
-uniform `ZMod q` laws, and the forgers are only call-bounded. EUF-CMA security of Schnorr signatures
-under `F.DiscreteLog` for PPT forgers is not proved here (#2568, #5293). -/
-theorem negligible_eufCmaGame_schnorrFamilyROMScheme_of_negligible_reduction {M : Type}
-    [DecidableEq M]
-    {d : ℕ → F.Desc} {k Qs Qro : ℕ → ℕ}
-    (hm : ∀ n, 2 ^ k n ≤ F.order (d n))
-    (hQs : PolynomiallyBounded Qs) (hQro : PolynomiallyBounded Qro)
-    (horder : Negligible fun n => (1 / F.order (d n) : ℝ≥0))
-    (hchallenge : Negligible fun n => (1 / 2 ^ k n : ℝ≥0))
-    {A : (n : ℕ) → Forger (F.Carrier (d n)) M (F.Carrier (d n) × ZMod (F.order (d n)))
-      (M × F.Carrier (d n)) (BitString (k n))}
-    (hA : ∀ n, (A n).CallBounded (Qs n) (Qro n))
-    (hreduction : Negligible fun n => Game.succProbability
-      (oneWayGame (schnorrKeyGen (F.generator (d n)))
-        (fun α u => α • F.generator (d n) = u)
-        (F.schnorrFamilyROMSchemeReduction (d n) (hm n) (A n) (Qs n) (Qro n)))) :
-    Negligible fun n =>
-      Game.succProbability (eufCmaGame (F.schnorrFamilyROMScheme (d n) (hm n)) (A n)) := by
-  negligible using fun n =>
-    F.succProbability_eufCmaGame_schnorrFamilyROMScheme_le (d n) (hm n) (A n) (hA n)
 
 end Cslib.Crypto.PrimeOrderGroupFamily

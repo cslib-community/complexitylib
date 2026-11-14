@@ -23,6 +23,7 @@ is processed by the existing total pair decoder, without a framing rejection.
 ## Main definitions
 
 * `schnorrEncodedROMScheme`: the existing scheme model with word keys and signatures.
+* `schnorrNativeROMScheme`: that scheme with the actual key generator and nonce sampler.
 * `schnorrDecodedForger`: canonical public-key input and total signature-output decoding.
 
 ## Main results
@@ -68,6 +69,16 @@ noncomputable def schnorrEncodedROMScheme (d : F.Desc) (m : ℕ)
     let tz := (Decoder.bits.pair Decoder.bits).decode sig
     (fun c => F.schnorrSigVerifyBits (d, pk, msg, tz, List.ofFn c)) <$>
       query (encPair encBits encBits (msg, tz.1))
+
+/-- **The Schnorr signature scheme in the random-oracle model, as the native algorithms run it**,
+at security parameter `n`, group description `d` and challenge width `m`: keys come from the actual
+key generator `schnorrSigKeyGen` and nonces from the actual sampler `sampleExp`, whose laws are only
+statistically close to uniform. Public keys, messages, signatures and hash points are words, and
+challenges are `m`-bit strings. -/
+noncomputable def schnorrNativeROMScheme (n : ℕ) (d : F.Desc) (m : ℕ) :
+    Scheme (List Bool) (List Bool) (List Bool) (List Bool) (List Bool) (BitString m) :=
+  F.schnorrEncodedROMScheme d m (ProbComp.eval (F.schnorrSigKeyGen n d))
+    ((ProbComp.eval (F.sampleExp n d)).map Nat.cast)
 
 /-- Adapt an existing word forger without changing its coins or hash queries. Signing replies
 are encoded, the public key is encoded, and the final outer signature is total-decoded. -/

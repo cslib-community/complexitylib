@@ -221,39 +221,6 @@ theorem OV.dim_toOV_le (φ : CNF ℕ) : OV.dim (toOV φ) ≤ φ.length :=
 
 /-! ### Running time -/
 
-/-- `2 ^ h` in unary, by doubling `1` repeatedly. -/
-private theorem unary_two_pow {γ : Type} {encIn : γ ↪ List Bool} {h : γ → ℕ} {Th Sh : γ → ℕ}
-    (hh : ComputableInO h encIn encNat Th Sh) :
-    ComputableInO (fun x => 2 ^ h x) encIn encUnary
-      (fun x => Th x + (encIn x).length +
-        (h x + 1) * (2 * 2 ^ h x + 2 ^ h x + ((encNat (h x)).length + 1) ^ 2))
-      fun x => Sh x + (encIn x).length + 2 * 2 ^ h x + 2 ^ h x + (encNat (h x)).length := by
-  have hid : ComputableInO (fun m : ℕ => m) encUnary encUnary (fun m => (encUnary m).length)
-      fun m => (encUnary m).length := ComputableInO.of_linear (.of_eq fun _ => rfl)
-  have hdouble : ComputableInO (fun m : ℕ => 2 * m) encUnary encUnary
-      (fun m => (encUnary m).length + (encUnary m).length)
-      fun m => (encUnary m).length + (encUnary m).length :=
-    ComputableInO.append hid hid fun m => by
-      simp only [encUnary_apply, two_mul, List.replicate_add]
-  have hiter (k : ℕ) : (fun m : ℕ => 2 * m)^[k] 1 = 2 ^ k := by
-    induction k with
-    | zero => rfl
-    | succ k ih => rw [Function.iterate_succ_apply', ih, pow_succ, mul_comm]
-  have h := ComputableInO.iterate hh (ComputableInO.const 1) hdouble
-    (R := fun x => 2 * 2 ^ h x) (Q := fun x => 2 * 2 ^ h x) (B := fun x => 2 ^ h x)
-    (fun x k hk => by
-      simp only [hiter, encUnary_apply, List.length_replicate]
-      have := Nat.pow_le_pow_right (by norm_num : 0 < 2) hk
-      omega)
-    (fun x k hk => by
-      simp only [hiter, encUnary_apply, List.length_replicate]
-      have := Nat.pow_le_pow_right (by norm_num : 0 < 2) hk
-      omega)
-    (fun x k hk => by
-      simp only [hiter, encUnary_apply, List.length_replicate]
-      exact Nat.pow_le_pow_right (by norm_num) hk)
-  exact h.of_enc_eq fun x => by rw [hiter]
-
 namespace OV
 
 /-- The states of the stream of vectors: a formula, a list of variables, and the number of the
@@ -418,8 +385,9 @@ theorem exists_computableInO_stream {half : CNF ℕ → List ℕ}
   obtain ⟨d₀, _, hp₀⟩ := (show ComputableInPolyTime (fun φ : CNF ℕ => ((φ, half φ), 0))
     encCNF encStreamState by fun_prop).exists_degree
   obtain ⟨d₁, _, hp₁⟩ :=
-    ((ComputableInPolyTime.length_list_binary encNat).comp hhalf).exists_degree
-  have h := hstream.comp (hp₀.inO.prod (unary_two_pow hp₁.inO))
+    (show ComputableInPolyTime (fun φ => (half φ).length) encCNF encUnary from
+      (ComputableInPolyTime.length_list encNat).comp hhalf).exists_degree
+  have h := hstream.comp (hp₀.inO.prod (ComputableInO.unary_two_pow.comp hp₁.inO))
   -- the bounds
   obtain ⟨cv, dv, hV⟩ := hhalf.polyBounded_length.exists_le
   set Bb : CNF ℕ → ℕ := fun φ => (2 * cv + 8) * ((encCNF φ).length + 1) ^ (dv + 1)
@@ -440,54 +408,35 @@ theorem exists_computableInO_stream {half : CNF ℕ → List ℕ}
   have hL₁ : PolyBounded (fun φ : CNF ℕ => (encCNF φ).length) fun φ => (encCNF φ).length + 1 :=
     .of_forall_le 1 1 fun φ => by simp
   have hP : PolyBounded (fun φ : CNF ℕ => (encCNF φ).length)
-      fun φ => 2 * ((Bb φ + 1) ^ D + 3 * ((encCNF φ).length + 1)) := by growth_poly
+      fun φ => 2 * ((Bb φ + 1) ^ D + (encCNF φ).length + 1) := by growth_poly
   have hQ : PolyBounded (fun φ : CNF ℕ => (encCNF φ).length)
-      fun φ => 2 * (((encCNF φ).length + 1) ^ d₀ + ((encCNF φ).length + 1) ^ d₁ +
-        ((encCNF φ).length + 1) + ((encCNF φ).length + 1) ^ 3) := by growth_poly
+      fun φ => 2 * (((encCNF φ).length + 1) ^ d₀ + ((encCNF φ).length + 1) ^ d₁) := by growth_poly
   obtain ⟨c, e, hT⟩ := exists_le_mul_two_pow_of_polyBounded (μ := fun φ => (half φ).length)
     (T := fun φ => ((encCNF φ).length + 1) ^ d₀ + (((encCNF φ).length + 1) ^ d₁ +
-        (encCNF φ).length + ((half φ).length + 1) * (2 * 2 ^ (half φ).length +
-          2 ^ (half φ).length + ((encNat (half φ).length).length + 1) ^ 2)) +
+        ((half φ).length + 1) * 2 ^ (half φ).length) +
         (2 ^ (half φ).length + 1) * (B (((φ, half φ), 0), 2 ^ (half φ).length) + 1) ^ D +
-      (((encCNF φ).length + 1) ^ d₀ + (((encCNF φ).length + 1) ^ d₁ + (encCNF φ).length +
-        2 * 2 ^ (half φ).length + 2 ^ (half φ).length + (encNat (half φ).length).length) +
+      (((encCNF φ).length + 1) ^ d₀ + (((encCNF φ).length + 1) ^ d₁ + 2 ^ (half φ).length) +
         (2 ^ (half φ).length + 1) * (B (((φ, half φ), 0), 2 ^ (half φ).length) + 1) ^ D))
     hP hQ fun φ => by
       have h₁ := Nat.mul_le_mul_left (2 ^ (half φ).length + 1)
         (Nat.pow_le_pow_left (Nat.add_le_add_right (hBb φ) 1) D)
       have h₂ := hlen φ
-      have h₃ := (Universal.length_encNat_le (half φ).length).trans h₂
-      have h₄ : ((half φ).length + 1) * ((encNat (half φ).length).length + 1) ^ 2 ≤
-          ((encCNF φ).length + 1) ^ 3 := by
-        rw [pow_succ' _ 2]
-        exact Nat.mul_le_mul (by omega) (Nat.pow_le_pow_left (by omega) 2)
-      have h₇ : (encCNF φ).length + 1 ≤ ((encCNF φ).length + 1) ^ 3 := Nat.le_self_pow (by omega)
-        _
       generalize (B (((φ, half φ), 0), 2 ^ (half φ).length) + 1) ^ D = X at h₁ ⊢
       generalize (Bb φ + 1) ^ D = Y at h₁ ⊢
-      generalize ((encNat (half φ).length).length + 1) ^ 2 = K₂ at h₄ ⊢
-      generalize (encNat (half φ).length).length = K at h₃ ⊢
-      generalize ((encCNF φ).length + 1) ^ 3 = L₃ at h₄ h₇ ⊢
       generalize ((encCNF φ).length + 1) ^ d₀ = L₀
       generalize ((encCNF φ).length + 1) ^ d₁ = L₁
       generalize 2 ^ (half φ).length = N at h₁ ⊢
-      generalize (encCNF φ).length = L at h₂ h₃ h₇ ⊢
-      generalize (half φ).length = n at h₂ h₄ ⊢
-      have h₆ : (n + 1) * (3 * N) ≤ (N + 1) * (3 * (L + 1)) :=
-        calc (n + 1) * (3 * N) ≤ (L + 1) * (3 * (N + 1)) :=
-              Nat.mul_le_mul (by omega) (by omega)
-          _ = (N + 1) * (3 * (L + 1)) := by ring
-      have h₈ : 3 * N ≤ (N + 1) * (3 * (L + 1)) := by nlinarith
-      have e₁ : (n + 1) * (2 * N + N + K₂) = (n + 1) * (3 * N) + (n + 1) * K₂ := by ring
-      have e₂ : (N + 1) * (2 * (Y + 3 * (L + 1))) = 2 * ((N + 1) * Y) +
-          2 * ((N + 1) * (3 * (L + 1))) := by ring
-      omega
+      generalize (encCNF φ).length = L at h₂ ⊢
+      generalize (half φ).length = n at h₂ ⊢
+      have h₆ : (n + 1) * N + N ≤ (N + 1) * (2 * (L + 1)) := by nlinarith
+      nlinarith
   refine ⟨e, (h.mono c (fun φ => ?_) fun φ => ?_).of_enc_eq fun φ => ?_⟩
   all_goals try
-    have := hT φ
-    have e : c * (2 ^ (half φ).length * ((encCNF φ).length + 1) ^ e + 1) =
+    have hTφ := hT φ
+    have h2 : 1 ≤ 2 ^ (half φ).length := Nat.one_le_two_pow
+    have he : c * (2 ^ (half φ).length * ((encCNF φ).length + 1) ^ e + 1) =
       c * 2 ^ (half φ).length * ((encCNF φ).length + 1) ^ e + c := by ring
-    simp only [Function.comp_apply] at this ⊢
+    simp only [Function.comp_apply] at hTφ ⊢
     omega
   simp [halfVectors, Function.comp_def]
 
