@@ -2160,6 +2160,7 @@ public import CslibFrontier.Computability.Complexity.Classes.Padding.Language
 public import CslibFrontier.Computability.Complexity.Classes.Padding.NondeterministicPolynomial
 public import CslibFrontier.Computability.Complexity.Classes.Padding.Polynomial
 public import CslibFrontier.Computability.Complexity.Classes.Padding.Space
+public import CslibFrontier.Computability.Complexity.Classes.Padding.Tally
 public import CslibFrontier.Computability.Complexity.Classes.Padding.Translation
 public import CslibFrontier.Computability.Complexity.Classes.ParityP
 public import CslibFrontier.Computability.Complexity.Classes.ParityP.Closure
