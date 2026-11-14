@@ -23,7 +23,11 @@ adversary or scheme structure, as opposed to a game, experiment, advantage, idea
 or encoding. Bound variables (the input adversary, generic components) never count. The checker
 also flags a conclusion `∃ x, … Adv ≤ … Adv(B … x …)` whose bound holds only for some
 existentially chosen parameters `x` of a constructed reduction `B`, since the reduction then is
-not uniform. The Lean file's docstring gives the exact rules and the known gaps.
+not uniform. And it flags a *realization*: an equation saying that a variable that another premise
+makes efficient or admissible (`hD : IsOraclePPT encBool D`) computes a constructed object applied
+to another variable (`hreal : eval (prfRealGame family D n) = … nonceFnDistinguisher … (forger
+n)`), so that the theorem takes the reduction from the caller. The Lean file's docstring gives the
+exact rules and the known gaps.
 
 `scripts/security_premises_baseline.json` records the flagged theorems that are allowed, one per
 line, as `{theorem: {"module": source path, "premises": [binder names], "why": justification}}`.
@@ -51,11 +55,16 @@ ignores the baseline and prints every flagged theorem in the modules under the p
 of the enforced modules and removes their stale entries; fill in each `why`, or the check fails.
 
 This is a post-build check: it needs the outputs of `lake build CslibFrontier`, and refuses stale
-ones unless `--no-build-check` is given. The rules are syntactic over elaborated terms, so some
-premises escape them: one that hides the constructed object in its own definition body, a
-distribution applied only to numbers or functions, a bound without an advantage-named constant,
-and a caller-supplied object whose existence is what the theorem should prove. Review still checks
-that a security theorem's premises are the intended ones.
+ones unless `--no-build-check` is given.
+
+The check supplements review: a clean run is not evidence that a security theorem is right. It
+does not judge vacuous or misdefined notions, games and assumptions; a wrong or nonstandard
+assumption (such as an MLWE variant without the short secrets that ML-KEM's security needs);
+anything outside `Cslib.Crypto`; or names and docstrings that overclaim. Its rules are syntactic
+over elaborated terms, so some premises escape them: one that hides the constructed object in its
+own definition body, a distribution applied only to numbers or functions, a bound without an
+advantage-named constant, a caller-supplied object whose existence is what the theorem should
+prove, and a realization stated other than as an equation.
 """
 
 from __future__ import annotations

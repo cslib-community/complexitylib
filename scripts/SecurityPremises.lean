@@ -18,7 +18,7 @@ The scanned theorems are the public theorems of the listed modules, other than i
 those Lean generates, that lie under `CslibFrontier.Crypto` or in the namespace `Cslib.Crypto`.
 
 **Claims.** A hypothesis's *claim atoms* are what remains after its own `∀`s and premises, split
-at `∧` and `∃`. An atom is a *security claim* of one of these kinds:
+at `∧`, `∃` and `∀ᶠ`. An atom is a *security claim* of one of these kinds:
 
 * `negligible`: `Negligible …`;
 * `advantage`: an inequality `a ≤ b`, `a < b`, `a ≥ b` or `a > b` one of whose sides mentions an
@@ -73,6 +73,9 @@ pins each one.
   as an argument, is not seen.
 * A caller-supplied object whose existence is what the theorem should prove (the extractor of a
   proof of knowledge) is a bound variable, so it never counts.
+* A realization (below) stated other than as an equation, such as an inequality, a predicate of
+  the library or a bundled certified program, or whose constructed side applies the constructed
+  constant to no other variable of the theorem, is not seen.
 
 Conversely, a named assumption instantiated at an object of the library, such as `DDH G` for a
 group family `G` that the library defines, is flagged through its unfolding. Such a premise is
@@ -83,6 +86,17 @@ constant. The conclusion is flagged (as the binder `⊢`) when, under an `∃` r
 `∧`, an advantage inequality applies a constructed constant to an `∃`-bound variable, as in
 `∃ m₀ m₁, Adv(A) ≤ Adv(B A m₀ m₁)`: the bound holds only for parameters chosen after the
 adversary, so it is not a uniform reduction.
+
+**Realizations.** A premise is also flagged, with the kind `realization`, when the theorem takes
+the reduction from the caller as a variable `x` and assumes that `x` realizes the constructed
+object. Another premise *certifies* `x`: it has an efficiency or membership claim whose subject is
+`x` or a function that applies it (`hD : IsOraclePPT encBool D`, `IsPPTOn … (fun p => test p.1
+p.2)`, `D ∈ 𝒟`). The flagged premise is an equation, under its own `∀`s, `∧`, `∃` and `∀ᶠ`, one
+side of which mentions `x`; the other side does not, and applies a constructed constant to
+another variable of the theorem, such as the adversary. For example, `hreal : eval (prfRealGame
+family D n) = (prfFnDist family n).bind (nonceFnDistinguisher (seed n) (hash n) (forger n))`
+beside `hD` is flagged, with the constant `nonceFnDistinguisher`. An equation between variables
+only, such as a word program computing a caller's typed simulator, is not.
 
 It prints one JSON line per theorem with a flagged premise or conclusion,
 `{"n": theorem, "m": module, "l": line, "h": [{"b": binder, "k": [kinds], "c": [constructed
@@ -268,7 +282,7 @@ def constructedOf (env : Env) (es : Array Expr) : NameSet :=
 def mentionsAdvantage (e : Expr) : Bool :=
   e.getUsedConstants.any fun c => advantageName (last c)
 
-/-- The claim atoms of a hypothesis type: through its own `∀`s and premises, `∧`, `∃` and
+/-- The claim atoms of a hypothesis type: through its own `∀`s and premises, `∧`, `∃`, `∀ᶠ` and
 metadata. -/
 partial def atoms (e : Expr) : Array Expr :=
   match e with
@@ -278,6 +292,7 @@ partial def atoms (e : Expr) : Array Expr :=
   | e =>
     if e.isAppOfArity ``And 2 then atoms e.appFn!.appArg! ++ atoms e.appArg!
     else if e.isAppOfArity ``Exists 2 then atoms e.appArg!
+    else if e.isAppOfArity `Filter.Eventually 3 then atoms e.appFn!.appArg!
     else #[e]
 
 /-- The explicit arguments of an application of `f`, when the environment has `f`; otherwise all
@@ -390,6 +405,38 @@ partial def existentialFindings (env : Env) (vars : Array FVarId) (fresh : Nat) 
         (((subjects.forM (constructedWith env vars)).run {}).2).toArray
       | _ => #[]
 
+/-- Whether `e`, under its `fun`s, is the variable `x` or an application of it. -/
+partial def headedBy (x : FVarId) (e : Expr) : Bool :=
+  match e.consumeMData with
+  | .lam _ _ b _ => headedBy x b
+  | e => e.getAppFn.consumeMData.isFVarOf x
+
+/-- The variables among `vars` to which the hypothesis type `premise` gives an efficiency or
+class-membership claim, whose subject is the variable or a function that applies it, as in
+`hD : IsOraclePPT encBool D`, `IsPPTOn … (fun p => test p.1 p.2)` or `D ∈ 𝒟`. -/
+def certifiedBy (env : Env) (vars : Array FVarId) (premise : Expr) : Array FVarId :=
+  (atoms premise).foldl (init := #[]) fun acc a =>
+    match classify env a with
+    | some ("efficiency", subjects) | some ("member", subjects) =>
+      acc ++ vars.filter fun x => subjects.any (headedBy x)
+    | _ => acc
+
+/-- Realization premises: an equation one side of which mentions a variable `x` of `certified`
+and the other side does not, but applies a constructed constant to another variable of the
+theorem (one of `others`). With `x`'s efficiency premise, it assumes that the constructed object
+has an efficient realization, as in `hreal : eval (prfRealGame family D n) = … (nonceFnDistinguisher
+(seed n) (hash n) (forger n))` beside `hD : IsOraclePPT encBool D`. Returns the constructed
+constants of the other side. -/
+def realizations (env : Env) (certified others : Array FVarId) (premise : Expr) : Array Name :=
+  (atoms premise).foldl (init := #[]) fun acc a =>
+    if a.isAppOfArity ``Eq 3 then
+      let side (s t : Expr) : Array Name :=
+        if certified.any fun x => s.containsFVar x && !t.containsFVar x then
+          ((constructedWith env others t).run {}).2.toArray
+        else #[]
+      acc ++ side a.appFn!.appArg! a.appArg! ++ side a.appArg! a.appFn!.appArg!
+    else acc
+
 unsafe def declRanges (entries : Array (Name × Array EnvExtensionEntry)) :
     NameMap DeclarationRanges := Id.run do
   let mut ranges : NameMap DeclarationRanges := {}
@@ -455,20 +502,34 @@ unsafe def run (libDir : System.FilePath) : IO Unit := do
       let mut hyps : Array Json := #[]
       let mut t := v.type
       let mut index := 0
+      -- The theorem's variables, and its premises as `(binder label, type)`.
+      let mut vars : Array FVarId := #[]
+      let mut premises : Array (String × Expr) := #[]
       repeat
         match t with
         | .mdata _ b => t := b
         | .forallE n ty b bi =>
           index := index + 1
           unless bi.isInstImplicit do
+            premises := premises.push (binderLabel n index, ty)
             let fs := findings env 3 none ty
             unless fs.isEmpty do
               let kinds := (fs.map (·.1)).toList.eraseDups
               let cs := (fs.foldl (fun acc (_, cs) => acc ++ cs) #[]).toList.eraseDups
               hyps := hyps.push <| Json.mkObj [("b", toJson (binderLabel n index)),
                 ("k", toJson kinds), ("c", toJson (cs.map (privateToUserName · |>.toString)))]
-          t := b
+          let x : FVarId := ⟨.num `_binder index⟩
+          vars := vars.push x
+          t := b.instantiate1 (.fvar x)
         | _ => break
+      let certified := premises.foldl (fun acc (_, ty) => acc ++ certifiedBy env vars ty) #[]
+      unless certified.isEmpty do
+        let others := vars.filter (!certified.contains ·)
+        for (label, ty) in premises do
+          let cs := (realizations env certified others ty).toList.eraseDups
+          unless cs.isEmpty do
+            hyps := hyps.push <| Json.mkObj [("b", toJson label), ("k", toJson ["realization"]),
+              ("c", toJson (cs.map (privateToUserName · |>.toString)))]
       let cs := (existentialFindings env #[] 0 t).toList.eraseDups
       unless cs.isEmpty do
         hyps := hyps.push <| Json.mkObj [("b", toJson "⊢"),

@@ -200,6 +200,9 @@ public section
 structure PMF (α : Type) where
   weight : α → Nat
 
+/-- Stands in for Mathlib's `Filter.Eventually`, written `∀ᶠ`. -/
+def Filter.Eventually {α : Type} (p : α → Prop) (_f : Nat) : Prop := ∀ a, p a
+
 namespace Cslib.Crypto
 
 /-- Stands in for `Game`: an infrastructure type by name. -/
@@ -213,6 +216,7 @@ structure Adversary where
   run : Nat → Bool
 
 def Adversary.IsPPT (_A : Adversary) : Prop := True
+def IsPPTOn (_f : Nat → List Bool) : Prop := True
 
 /-- A class of adversaries, for memberships. -/
 structure Class where
@@ -274,6 +278,17 @@ theorem arrowPremise (A : Adversary) : Negligible (advantage (reduction A)) → 
 /-- Flagged by design: a named assumption at a library object goes in the baseline. -/
 theorem instantiatedAssumption (_h : GroupHard concreteGroup) : True := trivial
 
+/-- The reduction is taken from the caller as `D`, with a premise that it realizes the constructed
+one. -/
+theorem realizationPremise (A D : Adversary) (_hD : D.IsPPT)
+    (_h : ∀ n, D.run n = (reduction A).run n) : True := trivial
+theorem eventualRealization (A D : Adversary) (_hD : D.IsPPT)
+    (_h : Filter.Eventually (fun n => D.run n = (reduction A).run n) 0) : True := trivial
+theorem testRealization (A : Adversary) (test : Nat → List Bool) (_htest : IsPPTOn test)
+    (_h : ∀ n, distinguisher A n = test n) : True := trivial
+theorem memberRealization (A D : Adversary) (C : Class) (_hD : D ∈ C) (_h : D = reduction A) :
+    True := trivial
+
 theorem adversaryPremise (A : Adversary) (_hA : A.IsPPT) (_h : Negligible (advantage A)) :
     True := trivial
 theorem admissibleAdversary (Admissible : Adversary → Prop) (A : Adversary) (_h : Admissible A) :
@@ -290,6 +305,13 @@ theorem fixedKeyLawPremise (_h : ComputationallyIndistinguishable (keyLawOf 3) i
   trivial
 theorem unnamedBoundPremise (A : Adversary) (ε : Nat) (_h : forgeExperiment (reduction A) 0 ≤ ε) :
     True := trivial
+/-- An equation between variables, as when a word program certifies a caller's typed program. -/
+theorem variableRealization (D E : Adversary) (_hD : D.IsPPT) (_h : ∀ n, D.run n = E.run n) :
+    True := trivial
+/-- No premise certifies `D`. -/
+theorem uncertifiedEquation (A D : Adversary) (_h : D = reduction A) : True := trivial
+theorem inequalityRealization (A D : Adversary) (_hD : D.IsPPT)
+    (_h : ∀ n, forgeExperiment D n ≤ forgeExperiment (reduction A) n) : True := trivial
 private theorem privatePremise (A : Adversary) (_h : Negligible (advantage (reduction A))) :
     True := trivial
 
@@ -344,6 +366,18 @@ class CompiledFixtureTests(unittest.TestCase):
         # A premise written with an arrow is reported by its position.
         self.assertEqual(self.kinds("arrowPremise", "#2"), ("negligible",))
 
+    def test_realizations_are_flagged(self) -> None:
+        # A variable with an efficiency or membership premise, and an equation saying that it
+        # realizes a constructed object applied to another variable.
+        for name in ("realizationPremise", "eventualRealization", "testRealization",
+                     "memberRealization"):
+            self.assertEqual(self.kinds(name), ("realization",), name)
+            self.assertNotIn("_hD", self.flagged[name], name)
+        self.assertEqual(self.flagged["realizationPremise"]["_h"][1],
+                         ("Cslib.Crypto.Fixture.reduction",))
+        self.assertEqual(self.flagged["testRealization"]["_h"][1],
+                         ("Cslib.Crypto.Fixture.distinguisher",))
+
     def test_named_assumptions_at_library_objects_are_flagged(self) -> None:
         # Allowed by the rule, so such a premise needs a baseline entry with its justification.
         self.assertEqual(self.kinds("instantiatedAssumption"), ("unfolded negligible",))
@@ -352,7 +386,8 @@ class CompiledFixtureTests(unittest.TestCase):
 
     def test_bound_variables_assumptions_and_infrastructure_are_not(self) -> None:
         for name in ("adversaryPremise", "admissibleAdversary", "assumptionPremise",
-                     "infrastructurePremise", "existentialWitness", "generatorPremise"):
+                     "infrastructurePremise", "existentialWitness", "generatorPremise",
+                     "variableRealization", "uncertifiedEquation"):
             self.assertNotIn(name, self.flagged)
 
     def test_private_theorems_are_not_scanned(self) -> None:
@@ -367,9 +402,11 @@ class CompiledFixtureTests(unittest.TestCase):
         self.assertNotIn("fixedKeyLawPremise", self.flagged)
         # A bound without an advantage-named constant is not a security claim.
         self.assertNotIn("unnamedBoundPremise", self.flagged)
+        # A realization stated as an inequality rather than an equation.
+        self.assertNotIn("inequalityRealization", self.flagged)
 
     def test_exactly_the_expected_theorems(self) -> None:
-        self.assertEqual(len(self.flagged), 13)
+        self.assertEqual(len(self.flagged), 17)
         self.assertEqual(self.summary["missing"], [])
 
 
