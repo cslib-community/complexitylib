@@ -328,31 +328,22 @@ private theorem exists_computableInO_verifier (k : ℕ) :
     ComputableInO.of_linear (.of_frame fun _ => rfl)
   have hw := hun.comp hx
   have hbase := hfr.comp hw
-  have hsnoc : ComputableInO (fun p : List Bool × List Bool => p.1 ++ [false])
-      (encPair encBits encBits) encBits
-      (fun p => (encPair encBits encBits p).length + (encPair encBits encBits p).length)
-      (fun p => (encPair encBits encBits p).length + (encPair encBits encBits p).length) :=
-    hx.append (ComputableInO.const (encMid := encBits) [false]) fun _ => rfl
   have hL : ComputableInPolyTime (fun z : List Bool => (k + 2) * (z.length + 1)) encBits
       encUnary := by
     fun_prop
   obtain ⟨CE, hE₀⟩ := hL.exists_computableInO_unary_two_pow
   have hE := hE₀.comp hbase
   -- the numeric facts about the tests
-  have hfacts (p : List Bool × List Bool) : (unframe p.1).length ≤ p.1.length ∧
-      p.1.length ≤ (encPair encBits encBits p).length ∧
-      (encPair encBits encBits p).length + 1 ≤ cheap k p ∧
-      (horizon k (2 * (unframe p.1).length + 1) + 1) ^ 2 ≤ 25 * cheap k p ∧
+  have hfacts (p : List Bool × List Bool) : (encPair encBits encBits p).length + 1 ≤ cheap k p ∧
       (2 * (encPair encBits encBits p).length + 4 +
         horizon k (2 * (unframe p.1).length + 1)) ^ 2 ≤ 25 * cheap k p ∧
       CE * 2 ^ (2 * (unframe p.1).length + 1) +
         4 ^ ((k + 2) * (2 * (unframe p.1).length + 1 + 1)) ≤ (2 * CE + 1) * cheap k p := by
-    have hu := length_unframe_le p.1
     have hn : p.1.length ≤ (encPair encBits encBits p).length := by enc_len
     obtain ⟨hZ, hE'⟩ := horizon_le k CE p.1
     set Y := 4 ^ ((k + 2) * (p.1.length + 1))
     have hY : 1 ≤ Y := Nat.one_le_pow _ _ (by norm_num)
-    obtain ⟨h₁, h₂, h₃⟩ := LazyDiagonal.cheap_aux 1 hn hY
+    obtain ⟨h₁, -, h₃⟩ := LazyDiagonal.cheap_aux 1 hn hY
       (Z := horizon k (2 * (unframe p.1).length + 1)) (by omega)
     have hc : cheap k p = ((encPair encBits encBits p).length + 1) ^ 2 * Y ^ 2 := rfl
     have hY₁ : Y ≤ Y ^ 2 := Nat.le_self_pow two_ne_zero _
@@ -360,51 +351,27 @@ private theorem exists_computableInO_verifier (k : ℕ) :
       rw [hc]; exact Nat.le_mul_of_pos_left _ (Nat.pow_pos (Nat.succ_pos _))
     have e : (2 * CE + 1) * cheap k p = 2 * CE * cheap k p + cheap k p := by ring
     have := Nat.mul_le_mul_left (2 * CE) (hY₁.trans hY₂)
-    norm_num only at h₂ h₃
+    norm_num only at h₃
     rw [hc]
-    exact ⟨hu, hn, hc ▸ h₁, h₂, h₃, by rw [← hc]; omega⟩
-  set A := 8 + 4 * 25 + (2 * CE + 1)
-  have e (p : List Bool × List Bool) : A * (cheap k p + 1) =
-      8 * cheap k p + 4 * (25 * cheap k p) + (2 * CE + 1) * cheap k p + A := by ring
-  have hc₀ := ComputableInO.mono_time (Diagonal.computableInO_shortDesc.comp hw) (T' := cheap k)
-      A fun p => by
-    obtain ⟨hu, hn, h₁, -, h₃, -⟩ := hfacts p
-    have : ((unframe p.1).length + 1) ^ 2 ≤ (2 * (encPair encBits encBits p).length + 4 +
-        horizon k (2 * (unframe p.1).length + 1)) ^ 2 := Nat.pow_le_pow_left (by omega) 2
-    simp only [Function.comp_apply] at ⊢
-    have := e p; omega
+    exact ⟨hc ▸ h₁, h₃, by rw [← hc]; omega⟩
   have hE' := hE.mono_time (T' := cheap k) (4 + 2 * CE) fun p => by
-    obtain ⟨hu, hn, hc, hs, hq, ht⟩ := hfacts p
+    obtain ⟨hc, hq, ht⟩ := hfacts p
+    have hn : p.1.length ≤ (encPair encBits encBits p).length := by enc_len
     simp only [Function.comp_apply, length_frame, encBits_apply] at ⊢
     have he : (4 + 2 * CE) * (cheap k p + 1) =
         3 * cheap k p + (2 * CE + 1) * cheap k p + (4 + 2 * CE) := by ring
     omega
   have hQ (p) : (2 * (encPair encBits encBits p).length + 4 +
       horizon k (2 * (unframe p.1).length + 1)) ^ 2 ≤ 25 * cheap k p :=
-    (hfacts p).2.2.2.2.1
-  obtain ⟨S₁, hc₁⟩ := Diagonal.exists_computableInO_sizeLength_le
-    (hsnoc.mono_le (fun p => by omega) (fun p => le_rfl)) hE'
-    (fun p => by simp) (fun p => (hfacts p).2.2.1)
-    (fun p => by simpa only [Function.comp_apply, length_frame, horizon] using hQ p)
-    (K := 1) (fun p => by omega)
-  obtain ⟨S₂, hc₂⟩ := Diagonal.exists_computableInO_sizeLength_le
-    (hx.mono_le (fun p => by omega) (fun p => le_rfl)) hE'
-    (fun p => by omega) (fun p => (hfacts p).2.2.1)
-    (fun p => by simpa only [Function.comp_apply, length_frame, horizon] using hQ p)
-    (K := 1) (fun p => by omega)
-  have hc₁' := hc₁.of_enc_eq (encC := encBool) (g := fun p : List Bool × List Bool =>
-      decide (Nat.size (p.1.length + 1) ≤ horizon k (2 * (unframe p.1).length + 1))) fun p => by
-    simp only [Function.comp_apply, horizon, length_frame, List.length_append,
-      List.length_singleton]
-    rfl
-  have hc₂' := hc₂.of_enc_eq (encC := encBool) (g := fun p : List Bool × List Bool =>
-      decide (Nat.size p.1.length ≤ horizon k (2 * (unframe p.1).length + 1))) fun p => by
-    simp only [Function.comp_apply, horizon, length_frame]
-    rfl
+    (hfacts p).2.1
+  obtain ⟨S₀, S₁, S₂, hc₀, hc₁', hc₂'⟩ := Diagonal.exists_computableInO_lazyTests
+    (H := horizon k) (hE'.of_enc_eq fun p => by
+      simp only [Function.comp_apply, horizon, length_frame]
+      rfl) (fun p => (hfacts p).1) hQ
   obtain ⟨S, h⟩ := Diagonal.exists_computableInO_lazyVerifier
     (β := fun y v => ((frame y ++ v).length + 1) ^ 2)
     (L := certLen k) (H := horizon k) hacc hbrute hc₀ hc₁' hc₂'
-    (fun p => (hfacts p).2.2.1)
+    (fun p => (hfacts p).1)
   refine ⟨D, K, S, ?_⟩
   simpa only [verifier, length_frame] using h
 

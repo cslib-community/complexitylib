@@ -281,6 +281,13 @@ length-construction certificate and bound that composition. This keeps the cost 
 an exponentially long unary word explicit. The two hierarchy clients separately prove that
 their distinct acceptance bounds are polynomial before using the same search construction.
 
+`Diagonal.exists_computableInO_lazyTests` constructs the short-description test and both
+horizon comparisons together. Supply a unary certificate for `H (2 * |unframe x| + 1)`
+with time budget `C` and an independent space budget. Prove that `C` covers the encoded
+input length plus one and that the comparison square is bounded by a constant times `C`.
+The rule returns three independent existential space witnesses. Both hierarchy clients
+use it; their polynomial and exponential unary-clock estimates remain separate.
+
 `Diagonal.exists_computableInO_sizeLength_le` constructs either horizon comparison from
 a unary clock certificate and a certificate for the tested word. Bound the tested word by
 the input length plus one, its computation by twice the encoded input length, and the
