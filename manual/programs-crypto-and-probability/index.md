@@ -2275,6 +2275,48 @@ to arbitrary native silent execution and its stopping/source-epoch observations
 remains a further proof obligation; the model alone does not supply that native
 representation or the common-oracle optimum.
 
+The instruction-clock native connection is available from
+`CslibFrontier.Computability.Probabilistic.NativeInterface.Interaction`.
+It fixes an actual `Environment` and initial source-memory PMF before choosing
+the native machine. Its `source` kernel reads the real complete source memory and
+returns the same complete `Reply` with its word, token charge and duration. The
+policy retains actual native configurations and saved selections with `Unit`
+oracle memory; source-private data stays in the separate source component.
+Real-world readback uses the real source memory, including any pre-existing events.
+
+`step_world` proves that one interaction is one original native instruction. It
+uses actual instruction preparation and dispatch, with the same input, tape heads,
+query buffers and answer positions. `execution_native` identifies the resulting
+complete native-world marginal with the original clocked interpreter, including
+an arbitrary initial source-memory PMF. `execution_pure` is the ordinary fixed-world
+case. `world_posterior` derives the conditional product of private configuration
+and real source memory at a reached complete instruction history.
+`source_posterior` reads the resulting shared source filter; its target contains
+no machine or private configuration parameter. A local or halted instruction emits
+a `none` request and a zero reply. A genuine query remains `some` even when its
+reply word, invoice and duration are all zero.
+
+The [native interaction client](../../CslibFrontierTests/NativeInteraction.lean)
+actually writes `[true]`, issues it, then stores a fresh private output coin.
+An initially hidden source bit controls the invoice and duration while both answer
+words stay empty. The complete three-tick joint law checks raw buffers, private
+output, real memory and resources. Both source histories are reached; their derived
+native memory posteriors agree with the common filter. From a warm checkout, run:
+
+```bash
+scripts/build.sh CslibFrontierTests.NativeInteraction
+```
+
+`ObservedProcess.stateLaw_map` supplies the finite-clock transport and also replaces
+the existing local clock induction in `StoppedProcess.terminal_map`.
+`PMF.conditionalSnd_map_snd` transports supported conditionals through a hidden-state
+projection. Native instruction preparation commutes with arbitrary oracle-memory
+maps; no corresponding arbitrary dispatch-memory claim is used.
+
+This is a finite instruction-clock theorem for typed native programs. Collapsing
+unbounded silent work, removing no-call padding from source-epoch histories, and
+transferring the source deadline/turn-budget optimum remain further obligations.
+
 `NativeBatch.Quantitative.select` executes silent native code and holds the entire
 selected source batch. `Observation` retains its full receipt history and source
 signal. `conditional` conditions the actual hidden checkpoint and then dispatches
