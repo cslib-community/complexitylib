@@ -5735,6 +5735,7 @@ public import CslibFrontier.Foundations.Data.Finset.Markov
 public import CslibFrontier.Foundations.Data.Finset.Median
 public import CslibFrontier.Foundations.Data.Finset.NatGap
 public import CslibFrontier.Foundations.Data.Finset.OffDiag
+public import CslibFrontier.Foundations.Data.Finset.OrderEmb
 public import CslibFrontier.Foundations.Data.Finset.OrderGlue
 public import CslibFrontier.Foundations.Data.Finset.OrderedFilter
 public import CslibFrontier.Foundations.Data.Finset.PaleyZygmund

@@ -36,20 +36,30 @@ together with two basic binary prefix-free codes in `Cslib.BitString`:
 * `Cslib.BitString.finIdxBits`: fixed-width `⌈log₂ K⌉`-bit binary encoding of `Fin K`.
 * `Cslib.BitString.eliasGamma`, `Cslib.BitString.decodeEliasGamma`: little-endian-suffix variant of
   the Elias gamma code [Elias1975] of length `2 * ⌊log₂ m⌋ + 1` and its left inverse on `m ≥ 1`.
+* `Cslib.BitString.encodeFintype`, `Cslib.BitString.encodeMemFinset`,
+  `Cslib.BitString.encodeRestr`: canonical binary encodings for finite types, membership, and
+  restricted maps.
 
 ## Main results
 
 * `InformationTheory.IsPrefixFree.bind_append`,
+  `Cslib.BitString.prefix_append_of_length_eq`,
+  `Cslib.BitString.prefix_append_of_isPrefixFree`,
   `Cslib.BitString.isPrefixFree_biUnion_append`,
   `Cslib.BitString.isPrefixFree_image_append`,
   `Cslib.BitString.isPrefixFree_prod_append`,
   `Cslib.BitString.injOn_append`,
   `Cslib.BitString.injOn_prod_append`: sequential dependent concatenation of prefix-free codes
-  remains prefix-free and uniquely decomposable.
+  remains prefix-free and uniquely decomposable; equal-length or prefix-free heads preserve prefix
+  relations on tails.
 * `Cslib.BitString.finIdxBits_injective`,
   `Cslib.BitString.isPrefixFree_range_finIdxBits`,
   `Cslib.BitString.clog_two_lt_logb_add_one`: fixed-width index code properties and ceiling slack
   `(Nat.clog 2 K : ℝ) < Real.logb 2 K + 1`.
+* `Cslib.BitString.encodeFintype`, `Cslib.BitString.encodeMemFinset`,
+  `Cslib.BitString.encodeRestr`: canonical binary encodings, exact lengths, and injectivity for
+  finite types, subsets, and restricted maps (`encodeFintype_injective`, `encodeMemFinset_inj`,
+  `encodeRestr_inj`).
 * `Cslib.BitString.decodeEliasGamma_eliasGamma`,
   `Cslib.BitString.injOn_eliasGamma`,
   `Cslib.BitString.isPrefixFree_range_eliasGamma`,

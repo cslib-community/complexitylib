@@ -11,11 +11,13 @@ public import CslibFrontier.Init
 public import CslibFrontier.DataStructure.Dictionary.CellProbe.HardDist
 public import CslibFrontier.DataStructure.Dictionary.CellProbe.MetaTree
 public import CslibFrontier.Foundations.Combinatorics.Hypergeometric.IntersectionTail
+public import CslibFrontier.Foundations.Data.Finset.OrderEmb
 public import Mathlib.Analysis.SpecialFunctions.Log.Base
 import CslibFrontier.Foundations.Data.List.Counting
 import CslibFrontier.Foundations.Data.Nat.Choose
 import CslibFrontier.Foundations.Data.Nat.Choose.Real
 import CslibFrontier.Probability.PMF.Expect
+import CslibFrontier.Probability.PMF.Uniform
 import Mathlib.Analysis.Complex.ExponentialBounds
 import Mathlib.Data.Nat.Choose.Central
 import Mathlib.Tactic.FieldSimp
@@ -47,8 +49,8 @@ hold.
 
 * `IsQualified`, `IsCappedConsistent`, `MetaTree.IsGoodSeg`: probe-capped qualification,
   consistency, and good child-segment predicates.
-* `orderSubset`, `embSetPermEquiv`, `candidateQueryDeleteInsertOps`, `HardKeyValSeed`: candidate
-  segment simulations and global-value seeds.
+* `candidateQueryDeleteInsertOps`, `HardKeyValSeed`: candidate segment simulations and
+  global-value seeds.
 
 ## Main results
 
@@ -298,47 +300,7 @@ end MetaTree
 
 end Qualification
 
-/-! ### Candidate segment simulations, set-permutation equivalence, and `HardKeyValSeed` -/
-
-/-- Order an `m`-element subset `S` of `Fin U` by permutation `π : Equiv.Perm (Fin m)`. -/
-def orderSubset {U m : ℕ} (S : Finset (Fin U)) (hS : S.card = m) (π : Equiv.Perm (Fin m)) :
-    Fin m ↪ Fin U :=
-  π.toEmbedding.trans (S.orderEmbOfFin hS).toEmbedding
-
-@[simp] theorem orderSubset_apply {U m : ℕ} (S : Finset (Fin U)) (hS : S.card = m)
-    (π : Equiv.Perm (Fin m)) (r : Fin m) :
-    orderSubset S hS π r = S.orderEmbOfFin hS (π r) := by rfl
-
-@[simp] theorem image_orderSubset {U m : ℕ} (S : Finset (Fin U)) (hS : S.card = m)
-    (π : Equiv.Perm (Fin m)) : Finset.univ.image (orderSubset S hS π) = S := by
-  ext x; simp only [Finset.mem_image, Finset.mem_univ, true_and, orderSubset_apply]
-  refine ⟨fun ⟨r, hr⟩ => hr ▸ Finset.orderEmbOfFin_mem S hS (π r), fun hx => ?_⟩
-  obtain ⟨j, hj⟩ := (S.orderIsoOfFin hS).surjective ⟨x, hx⟩
-  exact ⟨π.symm j, by simpa using congrArg Subtype.val hj⟩
-
-/-- Bijection decomposing `f : Fin m ↪ Fin U` into its `m`-subset and relative order `π`. -/
-noncomputable def embSetPermEquiv (U m : ℕ) :
-    (Fin m ↪ Fin U) ≃ { S : Finset (Fin U) // S.card = m } × Equiv.Perm (Fin m) :=
-  (Equiv.ofBijective (fun sp => orderSubset sp.1.val sp.1.property sp.2) (by
-    rw [Fintype.bijective_iff_injective_and_card]
-    refine ⟨fun ⟨⟨S₁, hS₁⟩, π₁⟩ ⟨⟨S₂, hS₂⟩, π₂⟩ heq => ?_, ?_⟩
-    · dsimp only at heq
-      have hS_eq : S₁ = S₂ := by
-        rw [← image_orderSubset S₁ hS₁ π₁, ← image_orderSubset S₂ hS₂ π₂, heq]
-      subst hS_eq; refine Prod.ext rfl (Equiv.ext fun r => ?_)
-      exact (S₁.orderEmbOfFin hS₁).injective (congrArg (fun g : Fin m ↪ Fin U => g r) heq)
-    · rw [Fintype.card_prod, Fintype.card_perm, Fintype.card_embedding_eq, Fintype.card_fin,
-        Nat.descFactorial_eq_factorial_mul_choose, mul_comm]
-      congr 1; simp [Fintype.card_fin])).symm
-
-@[simp] theorem embSetPermEquiv_symm_apply (U m : ℕ)
-    (S : { S : Finset (Fin U) // S.card = m }) (π : Equiv.Perm (Fin m)) :
-    (embSetPermEquiv U m).symm (S, π) = orderSubset S.val S.property π := by rfl
-
-@[simp] theorem embSetPermEquiv_fst (U m : ℕ) (f : Fin m ↪ Fin U) :
-    ((embSetPermEquiv U m f).1 : Finset (Fin U)) = Finset.univ.image f := by
-  conv_rhs => rw [← (embSetPermEquiv U m).symm_apply_apply f]
-  rw [embSetPermEquiv_symm_apply, image_orderSubset]
+/-! ### Candidate segment simulations and `HardKeyValSeed` -/
 
 /-- Candidate `[query, delete, insert]` segment sequence of length `3 * m` ([LiLiangYuZhou2023],
 Section 4.2, p. 15 / PDF p. 16 and Section 5, p. 21 / PDF p. 22). -/
@@ -436,25 +398,6 @@ theorem elemSlice_insertDeleteSeq_eq_candidate {U V n t₀ m : ℕ}
         (segInsertedKeys keys t₀ m ht) kv := by
   rw [elemSlice_eq_flatMap_of_drop_take n 2 n _ _
     (drop_take_insertDeleteSeq keys (fun idx => kv (keys idx)) delPerm) ht]; rfl
-
-/-- Pulling back a uniform value table `kv : Fin U → Fin V` along any injective `keys` gives the
-uniform distribution on `Fin k → Fin V`. -/
-theorem map_comp_keys_uniformOfFintype {U V k : ℕ} (hV : 1 ≤ V) (keys : Fin k ↪ Fin U) :
-    letI : Nonempty (Fin V) := ⟨⟨0, hV⟩⟩
-    (PMF.uniformOfFintype (Fin U → Fin V)).map (fun kv i => kv (keys i)) =
-      PMF.uniformOfFintype (Fin k → Fin V) := by
-  let _ : Nonempty (Fin V) := ⟨⟨0, hV⟩⟩
-  set I : Finset (Fin U) := Finset.univ.image keys
-  let eIdx : Fin k ≃ I := Equiv.ofBijective
-    (fun i => ⟨keys i, Finset.mem_image_of_mem keys (Finset.mem_univ i)⟩) (by
-      rw [Fintype.bijective_iff_injective_and_card, Fintype.card_fin, Fintype.card_coe,
-        Finset.card_image_of_injective _ keys.injective, Finset.card_fin]
-      exact ⟨fun _ _ h => keys.injective (congrArg Subtype.val h), rfl⟩)
-  let pull : (I → Fin V) ≃ (Fin k → Fin V) := Equiv.piCongrLeft' (fun _ => Fin V) eIdx.symm
-  have hcomp : (fun (kv : Fin U → Fin V) i => kv (keys i)) = pull ∘ I.restrict := by
-    funext kv i; change kv (keys i) = pull (I.restrict kv) i; simp [pull, Finset.restrict, eIdx]
-  rw [hcomp, ← _root_.PMF.map_comp, PMF.uniformOfFintype_pi_map_restrict I,
-    PMF.uniformOfFintype_map_equiv pull]
 
 private theorem hardDist_eq_bind_keyVals {U V n : ℕ} (hU : 2 * n ≤ U) (hV : 1 ≤ V)
     (seq : (Fin (2 * n) ↪ Fin U) → (Fin (2 * n) → Fin V) →

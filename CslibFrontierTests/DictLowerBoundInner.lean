@@ -453,14 +453,26 @@ open Classical in
 /-- Closed ground instance at `(e = 20, k = 400)` (`U = 2 ^ 400, n = 2 ^ 20, m = 2 ^ 19`) for both
 Lemma 5.1 (`|A ∩ B| = 0`) and Lemma 4.4 (`|A ∩ B| < m / 2`), plus a `0`-probe adversarial
 non-soundness check on `validHistoriesUpTo`. -/
-private theorem section5_inner_game_concrete_and_zero_probe_guard :
-    (((section5Dist (V := 1) 0 (2 ^ 19) 0 h4n_20_400 le_rfl hm_n_19_20 hm2_pos_19 hm_le_19_20).map
+theorem section5_inner_game_concrete_and_zero_probe_guard :
+    (((section5Dist (V := 1) 0 (2 ^ 19) 0
+        (Eq.trans_le (by decide : 4 * 2 ^ 20 = 2 ^ 22)
+          (pow_le_pow_right₀ (by decide : 1 ≤ 2) (by decide : 22 ≤ 400)))
+        le_rfl
+        (by decide : 2 * 2 ^ 19 ≤ 2 ^ 20)
+        (by decide : 0 < 2 ^ 19 / 2)
+        (by decide : 0 + 2 ^ 19 ≤ 2 ^ 20)).map
         fun sb => decide (IsSeedConsistent (slotArrayScheme (2 ^ 400) (2 ^ 20) 400 le_rfl).toIndexed
-          0 (2 ^ 19) hm_le_19_20 (2 / (20 : ℝ)) 2 sb.1 sb.2)) true).toReal ≤
+          0 (2 ^ 19) (by decide : 0 + 2 ^ 19 ≤ 2 ^ 20) (2 / (20 : ℝ)) 2 sb.1 sb.2)) true).toReal ≤
       ((2 ^ 400 : ℕ) : ℝ) ^ (-(2 / (20 : ℝ)) * ((2 ^ 19 : ℕ) : ℝ)) ∧
-    (((section5LtHalfDist (V := 1) 0 (2 ^ 19) h4n_20_400 le_rfl hm2_19 hm_n_19_20 hm_le_19_20).map
+    (((section5LtHalfDist (V := 1) 0 (2 ^ 19)
+        (Eq.trans_le (by decide : 4 * 2 ^ 20 = 2 ^ 22)
+          (pow_le_pow_right₀ (by decide : 1 ≤ 2) (by decide : 22 ≤ 400)))
+        le_rfl
+        (by decide : 2 ≤ 2 ^ 19)
+        (by decide : 2 * 2 ^ 19 ≤ 2 ^ 20)
+        (by decide : 0 + 2 ^ 19 ≤ 2 ^ 20)).map
         fun sb => decide (IsSeedConsistent (slotArrayScheme (2 ^ 400) (2 ^ 20) 400 le_rfl).toIndexed
-          0 (2 ^ 19) hm_le_19_20 (2 / (20 : ℝ)) 2 sb.1 sb.2)) true).toReal ≤
+          0 (2 ^ 19) (by decide : 0 + 2 ^ 19 ≤ 2 ^ 20) (2 / (20 : ℝ)) 2 sb.1 sb.2)) true).toReal ≤
       ((2 ^ 400 : ℕ) : ℝ) ^ (-(2 / (20 : ℝ)) * ((2 ^ 19 : ℕ) : ℝ)) ∧
     ¬ (∀ ops ∈ validHistoriesUpTo 4 1 1 5,
         ((⟨zeroMem 1 1, fun o => match o with

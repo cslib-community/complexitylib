@@ -44,6 +44,8 @@ the Kővári–Sós–Turán bound.
 * `Nat.descFactorial_mul_pow_le`, `Nat.choose_mul_pow_le`, `Nat.choose_mul_sub_mul_pow_le`,
   `Nat.two_mul_pred_pow_le`, `Nat.two_pow_mul_choose_sub_le`: power comparisons and the
   block-avoidance binomial estimate.
+* `Nat.choose_le_two_pow_mul_choose_sub`: shrinking the ground set by `d` scales `U.choose k` by at
+  most `2 ^ k * (U - d).choose k` when `2 * d + k ≤ U + 1`.
 -/
 
 public section

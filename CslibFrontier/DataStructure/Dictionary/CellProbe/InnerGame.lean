@@ -1978,7 +1978,7 @@ open Classical in
 `c = 1` deterministic probe cap and Elias-gamma `β = 2` separator): conditioned on `|A ∩ B| = g`
 (`g < m / 2`) for uniform size-`m` `B ⊆ Finset.univ \ K`, `Pr[IsSeedConsistent] ≤ U ^ (-γ * m)`.
 
-In the paper setting where `w = Θ(log U)` and `t ≤ c * log(U / n)`, hypothesis `hbudget` corresponds
+In the paper setting where `w = Θ(log U)`, hypothesis `hbudget` corresponds
 to Lemma 5.1's premise `(1/2) * γ * m * log₂ U ≥ R + 5 * m + 2 * (β + 1) * m * t` (p. 21 / PDF
 p. 22) and Eq. (14) (p. 24 / PDF p. 25) with `6 * m * t + 11 * m` separator and prefix-free
 overhead, which holds for sufficiently small constant `γ > 0`. -/
@@ -2002,7 +2002,7 @@ open Classical in
 PDF p. 19 and Section 5.2, p. 25 / PDF p. 26): over `B ⊆ Finset.univ \ K` conditioned on
 `|A ∩ B| < m / 2`, `Pr[IsSeedConsistent] ≤ U ^ (-γ * m)`.
 
-Under `w = Θ(log U)` and `t ≤ c * log(U / n)`, `hbudget` reflects Lemma 5.1's premise
+Under `w = Θ(log U)`, `hbudget` reflects Lemma 5.1's premise
 `(1/2) * γ * m * log₂ U ≥ R + 5 * m + 2 * (β + 1) * m * t` (p. 21 / PDF p. 22) and Eq. (14)
 (p. 24 / PDF p. 25). -/
 theorem prob_isCappedConsistent_section5_lt_half_le (hm : 2 ≤ m) (ht₀ : t₀ + m ≤ n) :

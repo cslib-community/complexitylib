@@ -42,6 +42,10 @@ generating-function bound, motivated by the geometric thresholds in Appendix A.3
 * `Cslib.sum_choose_le_two_pow_div_add_one`: its natural-number rounded form.
 * `Cslib.le_mul_logb_of_two_pow_le_sum_choose_sq`: the logarithmic consequence.
 * `Cslib.mul_rpow_le_of_two_pow_le_sum_choose_sq`: the rearranged size lower bound.
+* `Cslib.div_pow_le_choose`, `Cslib.mul_logb_div_le_logb_choose`,
+  `Cslib.logb_choose_le_mul_logb_exp_mul_div`, `Cslib.logb_add_choose_le`,
+  `Cslib.logb_choose_sub_logb_choose_sub_le`: power and base-2 logarithm bounds for individual
+  binomial coefficients and binomial differences.
 * `Real.exists_one_le_and_mul_pow_le_pow`: a polynomial is eventually below an exponential with base
   `r > 1`.
 
