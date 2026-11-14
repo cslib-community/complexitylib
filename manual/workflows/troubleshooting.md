@@ -132,6 +132,10 @@ phase timings and archive counts in `CACHE_STAGING_METRICS`. The mapping-produci
 pack missing module archives even when no Lean source needs recompilation. The
 [cache publication profiling procedure](../../scripts/cache/README.md#profile-cache-publication)
 gives the clean-checkout command, metric meanings and controls for a comparison. Separate this
-preparation from upload time: both GCS and MIT receive the same staged files.
+preparation from upload time: both publishers consume the same complete staged files, while
+MIT can transfer only missing archive payloads. Its `CACHE_HTTP_PUBLICATION` log reports the
+request body sizes and whether it used incremental transfer or a full compatibility/race
+fallback. The [protocol contract](../../tools/cache-origin/README.md#publication-contract)
+explains those modes; a smaller upload does not mean staging became cheaper.
 
 [complexitylib]: ../sources.md#complexitylib
