@@ -7,6 +7,8 @@ Authors: Samuel Schlesinger
 module
 
 import CslibFrontier.Crypto.Primitives.HQC.SupportCircuit.PolyTime
+import CslibFrontier.Crypto.Primitives.HQC.SupportCircuit.Collision.PolyTime
+import CslibFrontier.Crypto.Primitives.HQC.SupportCircuit.Resolve
 public import CslibFrontier.Computability.Circuit.Quantum.Reversible.Resources
 import CslibFrontier.Foundations.Data.BitString.Binary
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.Nat.Binary
@@ -77,5 +79,56 @@ example (width : ℕ) : (candidateBit width).size ≤
     63 * (width + 4) ^ 2 + 342 := by
   have h := size_candidateCircuit_le width 3 5 1
   simpa [candidateBit, Nat.add_assoc] using h
+
+-- A collision replaces the current word, while a different later word leaves it alone.
+example : (collisionStepCircuit 2 1).eval interpretation
+    (Fin.append ![false, true] ![false, true]) = ![true, false] := by
+  rw [eval_collisionStepCircuit]
+  decide
+
+example : (collisionStepCircuit 2 1).eval interpretation
+    (Fin.append ![false, true] ![true, true]) = ![false, true] := by
+  rw [eval_collisionStepCircuit]
+  decide
+
+example : (collisionStepCode 0 7).2 = [] := by decide
+
+example (bits offset : ℕ) :
+    (collisionStepCircuit bits offset).size = 13 * bits + 6 :=
+  size_collisionStepCircuit bits offset
+
+example : ComputableInPolyTime
+    (fun p : ℕ × ℕ => (collisionStepCircuit p.1 p.2).code)
+    (encPair encUnary encUnary) encCode :=
+  computableInPolyTime_collisionStepCircuit (fst _ _) (snd _ _)
+
+-- After a collision, later comparisons retain the replacement and leave the suffix intact.
+example : (collisionScanCircuit 2 0 2 [0, 1]).eval interpretation
+    (Fin.append ![true, true] (BitString.blocksEquiv.symm ![![true, true], ![true, false]])) =
+      Fin.append ![false, false] (BitString.blocksEquiv.symm ![![true, true], ![true, false]]) := by
+  rw [eval_collisionScanCircuit]
+  decide
+
+example (bits offset count : ℕ) :
+    (collisionScanCircuit bits offset count (List.finRange count)).size =
+      count * (13 * bits + 6) := by
+  rw [size_collisionScanCircuit, List.length_finRange]
+
+-- The head must scan the corrected suffix: raw candidates [1, 2, 2] become [0, 1, 2].
+-- Comparing the head against only the original suffix would incorrectly retain 1.
+example : (fun j => (BitString.equivFin 2 (BitString.block
+    ((supportScanCircuit 2 0 3).eval interpretation
+      (BitString.blocksEquiv.symm ![![true, false], ![false, true], ![false, true]])) j) : ℕ)) =
+      ![0, 1, 2] := by
+  rw [val_eval_supportScanCircuit (by decide)]
+  decide
+
+example (bits offset : ℕ) : (supportScanCircuit bits offset 0).size = 0 := by
+  rw [size_supportScanCircuit]
+  simp
+
+example : (supportScanCircuit 0 0 2).size = 6 := by
+  rw [size_supportScanCircuit]
+  decide
 
 end CslibFrontierTests.HQCSupportCircuit
