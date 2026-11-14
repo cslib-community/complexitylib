@@ -8,6 +8,7 @@ module
 -- upstream: candidate (Batteries, `Batteries/Data/Except.lean`)
 
 public import CslibFrontier.Init
+import Batteries.Data.List.Lemmas
 
 /-!
 # Sequencing and observing `Except`
@@ -88,13 +89,8 @@ theorem toOption_mapM (f : α → Except ε β) (l : List α) :
 
 /-- `List.mapM` of steps that succeed returns their results. -/
 theorem mapM_eq_ok_map {f : α → Except ε β} {g : α → β} {l : List α}
-    (h : ∀ a ∈ l, f a = .ok (g a)) : l.mapM f = .ok (l.map g) := by
-  induction l with
-  | nil => rfl
-  | cons a l ih =>
-    rw [List.mapM_cons, h a List.mem_cons_self, ok_bind,
-      ih fun b hb => h b (List.mem_cons_of_mem a hb), ok_bind]
-    rfl
+    (h : ∀ a ∈ l, f a = .ok (g a)) : l.mapM f = .ok (l.map g) :=
+  List.mapM_eq_ok_iff_forall₂.mpr <| by induction l <;> simp_all
 
 /-- `List.mapM` of steps with the same observations on the list has the same observation. -/
 theorem toOption_mapM_congr {f g : α → Except ε β} {l : List α}

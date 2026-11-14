@@ -10,6 +10,8 @@ module
 public import CslibFrontier.Foundations.Data.Fin.AddFlip
 public import CslibFrontier.Foundations.Data.List.Product
 public import CslibFrontier.Languages.SQL.QueryEquiv
+-- `List.dedup_filter`
+import CslibFrontier.Foundations.Data.List.Dedup
 -- `Fin.append_comp_castAdd` and `Fin.append_comp_natAdd`
 import Cslib.Computability.Circuit.Composition
 
@@ -38,8 +40,8 @@ show for each condition a concrete instance on which the law fails without it.
   bag only (`Query.unionAll_comm`).
 * Joins are commutative as bags, exchanging the blocks of columns of the predicate and the result
   through `finAddFlip` (`Query.join_comm`).
-* `DISTINCT` is idempotent and absorbs a `UNION ALL` of a query with itself
-  (`Query.distinct_distinct`, `Query.distinct_unionAll_self`).
+* `DISTINCT` is idempotent, absorbs a `UNION ALL` of a query with itself, and commutes with `WHERE`
+  (`Query.distinct_distinct`, `Query.distinct_unionAll_self`, `Query.select_distinct`).
 
 All laws are ordered equivalences except the two commutativity laws, which hold for bags only.
 
@@ -62,8 +64,8 @@ table or into a join is explicit substitution or renaming.
 * `Cslib.SQL.Query.select_unionAll`, `Cslib.SQL.Query.project_unionAll`,
   `Cslib.SQL.Query.unionAll_assoc`, `Cslib.SQL.Query.unionAll_comm`: `UNION ALL` laws.
 * `Cslib.SQL.Query.join_comm`: join commutativity as bags.
-* `Cslib.SQL.Query.distinct_distinct`, `Cslib.SQL.Query.distinct_unionAll_self`: `DISTINCT`
-  laws.
+* `Cslib.SQL.Query.distinct_distinct`, `Cslib.SQL.Query.distinct_unionAll_self`,
+  `Cslib.SQL.Query.select_distinct`: `DISTINCT` laws.
 * `Cslib.SQL.Query.eval_select_of_isSafePredicate`, `Cslib.SQL.Query.eval_join_of_isSafePredicate`:
   a safe `WHERE` or join predicate is a filter.
 * `Cslib.SQL.Expr.IsSafePredicate.filterRows_eq_ok`, `Cslib.SQL.Expr.toOption_filterRows_map`,
@@ -467,6 +469,21 @@ theorem distinct_unionAll_self (q : Query S n) :
     · rfl
     simp only [Except.ok_bind, pure, Except.pure,
       List.Subset.dedup_append_right (List.Subset.refl rs)]
+
+/-- `WHERE` commutes with `DISTINCT`. The left side evaluates `p` on one copy of each row and the
+right side on every copy, but the copies are equal rows, so `p` has the same result, or fails, on
+all of them, and no condition is needed. Both sides keep the last copy of each kept row. -/
+theorem select_distinct (p : Expr n) (q : Query S n) :
+    Equiv .ordered (select p (distinct q)) (distinct (select p q)) := by
+  refine equiv_ordered_iff.mpr fun D _ => ?_
+  simp only [eval_select, eval_distinct]
+  rcases q.eval D with e | rs
+  · rfl
+  simp only [Except.ok_bind, pure_bind, Except.toOption_bind, Except.toOption_pure,
+    Expr.toOption_filterRows, List.mem_dedup]
+  split_ifs
+  · rw [Option.bind_some, List.dedup_filter]
+  · rfl
 
 end Query
 

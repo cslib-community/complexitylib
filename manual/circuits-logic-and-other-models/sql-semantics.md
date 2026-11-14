@@ -269,14 +269,20 @@ same rows on both sides need no condition.
 | `Query.unionAll_comm` | `UNION ALL` is commutative | bag | none |
 | `Query.join_comm` | a join is the exchanged join, with its columns put back through `finAddFlip` | bag | none |
 | `Query.distinct_distinct`, `Query.distinct_unionAll_self` | `DISTINCT` is idempotent and absorbs `q UNION ALL q` | ordered | none |
+| `Query.select_distinct` | `WHERE` commutes with `DISTINCT` | ordered | none |
 
 Each condition is needed, and the [law tests](../../CslibFrontierTests/Languages/SQL/QueryLaws.lean)
-show an instance for each. With `p` the unsafe `dept / 0 = 1`: `WHERE p` over `WHERE FALSE`
-succeeds with no rows, while `WHERE FALSE AND p` fails; pushing `WHERE p` into a join with an
-empty table makes the pushed side fail, while the original evaluates nothing. An unsafe projection
-fails under `WHERE FALSE` but not after the `WHERE` moves below it, and an unsafe inner projection
-that the outer one ignores disappears in fusion. The two commutativity laws fail at the ordered
-level: the inputs' rows come in another order.
+show an instance for each. With `p` an unsafe predicate such as `dept / 0 = 1`: `WHERE p` over
+`WHERE FALSE` succeeds with no rows, while `WHERE FALSE AND p` and `WHERE FALSE` over `WHERE p`
+fail, which covers `Query.select_select` and both conditions of `Query.select_comm`. Pushing
+`WHERE p` into either input of a join whose other input is an empty table makes the pushed side
+fail, while the original evaluates nothing; with an unsafe join predicate, pushing `WHERE FALSE`
+into either input leaves no pair for it to fail on. An unsafe projection fails under `WHERE FALSE`
+but not after the `WHERE` moves below it, and an unsafe inner projection that the outer one
+ignores disappears in fusion. The two commutativity laws fail at the ordered level: the inputs'
+rows come in another order. `Query.select_distinct` needs no condition although `DISTINCT` changes
+how often `p` is evaluated: the rows it removes are copies of rows it keeps, on which `p` has the
+same result or fails alike.
 
 Laws compose: an ordered law weakens to any level with `Query.Equiv.of_ordered`, chains with others
 by `calc`, and applies inside a larger query through the congruences of the previous section.
