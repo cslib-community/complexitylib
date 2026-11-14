@@ -2716,6 +2716,7 @@ public import CslibFrontier.Computability.Complexity.Problems.SAT.Units
 public import CslibFrontier.Computability.Complexity.Problems.SATUNSAT
 public import CslibFrontier.Computability.Complexity.Problems.STCON
 public import CslibFrontier.Computability.Complexity.Problems.STCON.Completeness
+public import CslibFrontier.Computability.Complexity.Problems.STCON.Header
 public import CslibFrontier.Computability.Complexity.Problems.STCON.Reduction
 public import CslibFrontier.Computability.Complexity.Problems.STCON.Search
 public import CslibFrontier.Computability.Complexity.Problems.SetCover
@@ -2727,6 +2728,10 @@ public import CslibFrontier.Computability.Complexity.Problems.SharpSAT
 public import CslibFrontier.Computability.Complexity.Problems.SharpThreeSAT
 public import CslibFrontier.Computability.Complexity.Problems.StatisticalDifference
 public import CslibFrontier.Computability.Complexity.Problems.StatisticalDifference.PolyTime
+public import CslibFrontier.Computability.Complexity.Problems.StronglyConnected
+public import CslibFrontier.Computability.Complexity.Problems.StronglyConnected.Completeness
+public import CslibFrontier.Computability.Complexity.Problems.StronglyConnected.Reduction
+public import CslibFrontier.Computability.Complexity.Problems.StronglyConnected.Search
 public import CslibFrontier.Computability.Complexity.Problems.SubsetSum
 public import CslibFrontier.Computability.Complexity.Problems.SubsetSum.Digits
 public import CslibFrontier.Computability.Complexity.Problems.TMSAT
