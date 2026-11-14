@@ -2431,6 +2431,8 @@ public import CslibFrontier.Computability.Complexity.Parameterized.WHierarchy.Cl
 public import CslibFrontier.Computability.Complexity.Parameterized.WHierarchy.Clique.Graph
 public import CslibFrontier.Computability.Complexity.Parameterized.WHierarchy.IndependentSet
 public import CslibFrontier.Computability.Complexity.Parameterized.WHierarchy.XP
+public import CslibFrontier.Computability.Complexity.Problems.Bipartite
+public import CslibFrontier.Computability.Complexity.Problems.Bipartite.LogSpace
 public import CslibFrontier.Computability.Complexity.Problems.BipartitePerfectMatching
 public import CslibFrontier.Computability.Complexity.Problems.BipartitePerfectMatching.Membership
 public import CslibFrontier.Computability.Complexity.Problems.BoundedComputation
