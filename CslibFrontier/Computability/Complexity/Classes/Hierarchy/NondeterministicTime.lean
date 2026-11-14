@@ -162,50 +162,21 @@ certificate. -/
 private theorem exists_computableInO_accepts (d : ℕ) : ∃ D, ComputableInO
     (fun q : List Bool × List Bool × List Bool => accepts d q.1 q.2.1 q.2.2)
     (encPair encBits (encPair encBits encBits)) encBool (accBound d D) (accBound d D) := by
-  obtain ⟨dd, ed, hdec⟩ := exists_computableInDegree_decodeDesc
-  set enc := encPair encBits (encPair encBits encBits)
-  have hdesc := hdec.inO.comp (ComputableInO.fst encBits (encPair encBits encBits))
-  have hword : ComputableInO (fun q : List Bool × List Bool × List Bool => frame q.2.1 ++ q.2.2)
-      enc encBits (fun q => (enc q).length) (fun q => (enc q).length) :=
-    (ComputableInO.snd encBits (encPair encBits encBits)).of_enc_eq fun _ => rfl
-  have hsym := Universal.computableInO_map_eBit.comp hword
-  have hy := (ComputableInO.snd encBits (encPair encBits encBits)).fst'
-  have hclock := (timeConstructible_succ_pow (d + 3)).computableInO.comp hy
-  have hU := computableInO_universal.comp (hdesc.prod (hsym.prod hclock))
-  have hv := Diagonal.computableInO_verdict.comp hU
-  have hnot := (ComputableInDegree.of_finite (encIn := encBool) (encMid := encBool)
-    (fun b : Bool => !b)).inO_one.comp hv
-  obtain ⟨cD, hcD⟩ := hdesc.length_le
-  obtain ⟨cO, hcO⟩ := hU.length_le
-  obtain ⟨K, hK⟩ := accBound_aux d cD cO
-  have hbounds (q : List Bool × List Bool × List Bool) := by
-    have hD := hcD q
-    have hE := hcO q
-    have hNl := length_encList_map_eBit_le (frame q.2.1 ++ q.2.2)
-    have hc : q.1.length + 1 ≤ (q.1.length + 1) ^ (dd + 1) :=
-      Nat.le_self_pow (Nat.succ_ne_zero _) _
-    have hA : (q.1.length + 1) ^ dd ≤ (q.1.length + 1) ^ (dd + 1) :=
-      Nat.pow_le_pow_right (Nat.succ_pos _) (Nat.le_succ _)
-    simp only [Function.comp_apply, encBits_apply, enc, length_encPair, List.length_append,
-      length_frame] at hD hE hNl ⊢
-    exact hK (X := (q.1.length + 1) ^ (dd + 1) + q.2.1.length + q.2.2.length + 1)
-      (by omega) (by omega) (by omega) hD hNl
-      ((length_encNat_clock_le d q.2.1.length).trans
-        ((Nat.mul_le_mul_right _ (Nat.le_succ _)).trans (Nat.mul_le_mul_left (d + 4) (by omega))))
-      (by omega) (Nat.one_le_pow _ _ (Nat.succ_pos _)) hE
-  have e (q : List Bool × List Bool × List Bool) : accBound d (dd + 1) q =
-      ((q.1.length + 1) ^ (dd + 1) + q.2.1.length + q.2.2.length + 1) ^ 4 *
-        ((q.2.1.length + 1) ^ (d + 3)) ^ 2 := by
+  have hclock := (timeConstructible_succ_pow (d + 3)).computableInO.comp
+    ((ComputableInO.snd encBits (encPair encBits encBits)).fst')
+  obtain ⟨D, h⟩ := Diagonal.exists_computableInO_lazyAccepts
+    (fun y _ => (y.length + 1) ^ (d + 3)) d hclock
+    (fun y v => (length_encNat_clock_le d y.length).trans
+      ((Nat.mul_le_mul_right _ (Nat.le_succ _)).trans
+        (Nat.mul_le_mul_left (d + 4) (by omega))))
+    (fun y v => Nat.one_le_pow _ _ (Nat.succ_pos _))
+  have e (q : List Bool × List Bool × List Bool) :
+      accBound d D q =
+        ((q.1.length + 1) ^ D + q.2.1.length + q.2.2.length + 1) ^ 4 *
+          ((q.2.1.length + 1) ^ (d + 3)) ^ 2 := by
     rw [accBound, ← pow_mul, show (d + 3) * 2 = 2 * d + 6 by ring]
-  have hb (b : Bool) : (encBool b).length = 1 := rfl
-  refine ⟨dd + 1, (hnot.mono K (fun q => ?_) fun q => ?_).of_enc_eq fun q => rfl⟩
-  all_goals
-    refine le_trans ?_ (Nat.mul_le_mul_left K (Nat.le_succ _))
-    rw [e]
-    have ⟨h₁, h₂⟩ := hbounds q
-    simp only [Function.comp_apply, encBits_apply, enc, length_encPair, List.length_append,
-      length_frame, hb] at h₁ h₂ ⊢
-    omega
+  exact ⟨D, (h.mono_le (fun q => le_of_eq (e q).symm)
+    (fun q => le_of_eq (e q).symm)).of_enc_eq fun _ => rfl⟩
 
 attribute [local fun_prop] ComputableInPolyTime.fst' ComputableInPolyTime.snd' in
 /-- The brute force at the end of an interval runs within time exponential in the description,

@@ -11,7 +11,9 @@ public import CslibFrontier.Computability.Complexity.Classes.Hierarchy.LazyDiago
 public import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Plain
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.PolyTime.List
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Complexity.BigO.Constructible
+import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.PolyTime
 import CslibFrontier.Computability.Machines.Turing.MultiTape.Universal.BitLength
+import CslibFrontier.Computability.Complexity.Classes.Hierarchy.LazyDiagonalBounds
 import Mathlib.Tactic.Ring
 
 /-!
@@ -24,6 +26,7 @@ charges only the branch taken; the space witness is independent of that time bou
 
 ## Main results
 
+* `Cslib.Complexity.Diagonal.exists_computableInO_lazyAccepts`: construct acceptance from a binary clock.
 * `Cslib.Complexity.Diagonal.exists_computableInO_sizeLength_le`: construct a horizon comparison
   from an independently bounded unary clock.
 * `Cslib.Complexity.Diagonal.exists_computableInO_lazyVerifier`: assemble a verifier from
@@ -35,6 +38,58 @@ public section
 namespace Cslib.Complexity.Diagonal
 
 open Turing Turing.MultiTapeTM Turing.MultiTapeTM.Universal
+
+/-- Construct the acceptance simulation with an arbitrary binary clock. Its time and space
+budgets include input access; positivity and a linear binary-length bound suffice for the
+shared universal-simulation estimate. The clock may depend on both input and certificate. -/
+theorem exists_computableInO_lazyAccepts
+    (β : List Bool → List Bool → ℕ) (a : ℕ)
+    (hclock : ComputableInO (fun q : List Bool × List Bool × List Bool => β q.2.1 q.2.2)
+      (encPair encBits (encPair encBits encBits)) encNat
+      (fun q => (encPair encBits (encPair encBits encBits) q).length + β q.2.1 q.2.2)
+      (fun q => (encPair encBits (encPair encBits encBits) q).length + β q.2.1 q.2.2))
+    (hlen : ∀ y v, (encNat (β y v)).length ≤ (a + 4) * (y.length + v.length + 1))
+    (hpos : ∀ y v, 1 ≤ β y v) :
+    ∃ D, ComputableInO (fun q : List Bool × List Bool × List Bool => lazyAccepts β q.1 q.2.1 q.2.2)
+      (encPair encBits (encPair encBits encBits)) encBool
+      (fun q => ((q.1.length + 1) ^ D + q.2.1.length + q.2.2.length + 1) ^ 4 * (β q.2.1 q.2.2) ^ 2)
+      (fun q => ((q.1.length + 1) ^ D + q.2.1.length + q.2.2.length + 1) ^ 4 * (β q.2.1 q.2.2) ^ 2) := by
+  obtain ⟨dd, ed, hdec⟩ := exists_computableInDegree_decodeDesc
+  set enc := encPair encBits (encPair encBits encBits)
+  have hdesc := hdec.inO.comp (ComputableInO.fst encBits (encPair encBits encBits))
+  have hword : ComputableInO (fun q : List Bool × List Bool × List Bool => frame q.2.1 ++ q.2.2)
+      enc encBits (fun q => (enc q).length) (fun q => (enc q).length) :=
+    (ComputableInO.snd encBits (encPair encBits encBits)).of_enc_eq fun _ => rfl
+  have hsym := Universal.computableInO_map_eBit.comp hword
+  have hU := computableInO_universal.comp (hdesc.prod (hsym.prod hclock))
+  have hv := Diagonal.computableInO_verdict.comp hU
+  have hnot := (ComputableInDegree.of_finite (encIn := encBool) (encMid := encBool)
+    (fun b : Bool => !b)).inO_one.comp hv
+  obtain ⟨cD, hcD⟩ := hdesc.length_le
+  obtain ⟨cO, hcO⟩ := hU.length_le
+  obtain ⟨K, hK⟩ := LazyDiagonal.accBound_aux a cD cO
+  have hbounds (q : List Bool × List Bool × List Bool) := by
+    have hD := hcD q
+    have hE := hcO q
+    have hNl := length_encList_map_eBit_le (frame q.2.1 ++ q.2.2)
+    have hc : q.1.length + 1 ≤ (q.1.length + 1) ^ (dd + 1) :=
+      Nat.le_self_pow (Nat.succ_ne_zero _) _
+    have hA : (q.1.length + 1) ^ dd ≤ (q.1.length + 1) ^ (dd + 1) :=
+      Nat.pow_le_pow_right (Nat.succ_pos _) (Nat.le_succ _)
+    simp only [Function.comp_apply, encBits_apply, enc, length_encPair, List.length_append,
+      length_frame] at hD hE hNl ⊢
+    exact hK (X := (q.1.length + 1) ^ (dd + 1) + q.2.1.length + q.2.2.length + 1)
+      (by omega) (by omega) (by omega) hD hNl
+      ((hlen q.2.1 q.2.2).trans (Nat.mul_le_mul_left (a + 4) (by omega)))
+      (by omega) (hpos q.2.1 q.2.2) hE
+  have hb (b : Bool) : (encBool b).length = 1 := rfl
+  refine ⟨dd + 1, (hnot.mono K (fun q => ?_) fun q => ?_).of_enc_eq fun q => rfl⟩
+  all_goals
+    refine le_trans ?_ (Nat.mul_le_mul_left K (Nat.le_succ _))
+    have ⟨h₁, h₂⟩ := hbounds q
+    simp only [Function.comp_apply, encBits_apply, enc, length_encPair, List.length_append,
+      length_frame, hb] at h₁ h₂ ⊢
+    omega
 
 /-- Construct a horizon comparison from a unary clock certificate. The tested word may
 be the input or its one-bit extension. Only its time and length bounds are needed; its

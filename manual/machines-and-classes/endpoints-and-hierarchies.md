@@ -264,6 +264,13 @@ The result keeps the nested branch-sensitive time bound and supplies a separate 
 it does not charge exhaustive search on the simulation branch. All five supplied certificates
 may have independent space bounds.
 
+`Diagonal.exists_computableInO_lazyAccepts` builds the acceptance simulation from a binary
+clock on the input and certificate. Supply a positive clock, a linear bound on its binary
+length, and its time and space certificates within encoded input length plus the clock.
+The rule shares description decoding, framed-word symbol conversion, universal execution,
+verdict extraction and output negation. Both hierarchy clients retain their original clocks
+and specialize the resulting fourth-power input factor times the squared clock.
+
 `Diagonal.exists_computableInO_sizeLength_le` constructs either horizon comparison from
 a unary clock certificate and a certificate for the tested word. Bound the tested word by
 the input length plus one, its computation by twice the encoded input length, and the
